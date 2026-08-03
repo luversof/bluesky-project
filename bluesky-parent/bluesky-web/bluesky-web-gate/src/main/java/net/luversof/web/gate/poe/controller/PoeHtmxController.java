@@ -81,8 +81,8 @@ public class PoeHtmxController {
   }
 
   /**
-   * 시뮬 폼 실시간 성향 미리보기 — 선택한 (첫 스킬 × 전직)의 poe.ninja 실빌드 성향/프로파일을 폼에서 바로 보여준다(실행 전).
-   * 전직=auto(빈값)면 서버가 스킬 단위 폴백. 스킬 미선택이면 빈 프래그먼트.
+   * 시뮬 폼 실시간 성향 미리보기 — 선택한 (첫 스킬 × 전직)의 poe.ninja 실빌드 성향/프로파일을 폼에서 바로 보여준다(실행 전). 전직=auto(빈값)면 서버가
+   * 스킬 단위 폴백. 스킬 미선택이면 빈 프래그먼트.
    */
   @GetMapping("/sim/archetype")
   public String simArchetype(
@@ -92,9 +92,24 @@ public class PoeHtmxController {
     net.luversof.web.gate.poe.dto.ArchetypeBenchmark bench = null;
     if (skills != null && !skills.isEmpty() && skills.get(0) != null && !skills.get(0).isBlank()) {
       try {
-        net.luversof.web.gate.poe.dto.PoeGem gem = poeDataClient.gem(skills.get(0));
-        if (gem != null && gem.name() != null && !gem.name().isBlank()) {
-          bench = poeOptimizeClient.archetype(gem.name(), ascendancy != null ? ascendancy : "");
+        // 선택 스킬 **전부**의 젬 이름을 풀어 조합 벤치 요청 — RF+화염덫이면 두 스킬 모두 쓰는 캐릭터만 집계
+        //   (사용자 요구). 단일 스킬이면 기존 아키타입 경로와 동일.
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (String slug : skills) {
+          if (slug == null || slug.isBlank()) {
+            continue;
+          }
+          net.luversof.web.gate.poe.dto.PoeGem gem = poeDataClient.gem(slug);
+          if (gem != null && gem.name() != null && !gem.name().isBlank()) {
+            names.add(gem.name());
+          }
+        }
+        if (names.size() >= 2) {
+          bench =
+              poeOptimizeClient.archetypeCombo(
+                  String.join(",", names), ascendancy != null ? ascendancy : "");
+        } else if (names.size() == 1) {
+          bench = poeOptimizeClient.archetype(names.get(0), ascendancy != null ? ascendancy : "");
         }
       } catch (Exception e) {
         bench = null; // api-poe 미가동/미매칭 → 미표시
@@ -114,8 +129,21 @@ public class PoeHtmxController {
       return null;
     }
     try {
-      return poeOptimizeClient.archetype(
-          result.gemName(), result.ascendancy() != null ? result.ascendancy() : "");
+      // 멀티스킬 결과면 선택 스킬 전부(메인+additionalSkills)를 쓰는 캐릭터만 집계한 조합 벤치 —
+      //   RF+화염덫 결과에 RF 전체 아키타입을 보여주지 않는다(사용자 요구). 단일이면 기존 경로.
+      java.util.List<String> names = new java.util.ArrayList<>();
+      names.add(result.gemName());
+      if (result.additionalSkills() != null) {
+        for (var s : result.additionalSkills()) {
+          if (s.name() != null && !s.name().isBlank() && !names.contains(s.name())) {
+            names.add(s.name());
+          }
+        }
+      }
+      String asc = result.ascendancy() != null ? result.ascendancy() : "";
+      return names.size() >= 2
+          ? poeOptimizeClient.archetypeCombo(String.join(",", names), asc)
+          : poeOptimizeClient.archetype(result.gemName(), asc);
     } catch (Exception e) {
       return null;
     }

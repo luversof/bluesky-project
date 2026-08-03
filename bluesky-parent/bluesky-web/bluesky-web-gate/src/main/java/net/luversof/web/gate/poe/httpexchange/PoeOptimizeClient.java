@@ -54,4 +54,9 @@ public interface PoeOptimizeClient {
   @GetExchange("/archetype")
   net.luversof.web.gate.poe.dto.ArchetypeBenchmark archetype(
       @RequestParam String skill, @RequestParam String ascendancy);
+
+  /** 멀티스킬 조합 벤치마크 — skills=콤마 젬 이름 목록, 그 스킬 전부 쓰는 캐릭터만 집계. 데이터 없으면 null. */
+  @GetExchange("/archetype")
+  net.luversof.web.gate.poe.dto.ArchetypeBenchmark archetypeCombo(
+      @RequestParam String skills, @RequestParam String ascendancy);
 }

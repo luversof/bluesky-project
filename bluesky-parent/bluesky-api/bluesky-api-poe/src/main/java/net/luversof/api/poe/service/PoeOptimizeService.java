@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,6 +34,8 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * 시뮬레이터 2단계 — 최적 조합 탐색.
@@ -366,24 +369,29 @@ public class PoeOptimizeService {
       JsonNode root = JsonMapper.builder().build().readTree(Files.readString(file));
       // (전직|스킬) 정확 매칭 시드
       JsonNode arr = root.get("archetypes");
-      // 성향(lean) 판정 기준선 = 전체 아키타입 DPS·EHP 중앙값(리그별로 갱신). 개별 벤치의 lean 산정 전에 먼저 계산.
+      // 특화 판정 기준선 = 전체 아키타입의 **컬럼별 중앙값**(리그별 갱신). ⚠ 단순 평균 금지 — 중앙값이라 개별 이상치에
+      //   강건하고, 여기에 더해 **저표본(sample<SPECIALIZE_MIN_SAMPLE) 아키타입은 제외**해 "값이 너무 다른" 소수 노이즈를
+      //   거른다(사용자 요구: 가중·이상치 필터). 개별 벤치의 lean/specializations 산정 전에 먼저 계산.
       if (arr != null && arr.isArray()) {
-        java.util.List<Double> dpsList = new java.util.ArrayList<>();
-        java.util.List<Double> ehpList = new java.util.ArrayList<>();
-        for (JsonNode a : arr) {
-          double d = a.path("medianDPS").asDouble();
-          double e = a.path("medianEHP").asDouble();
-          if (d > 0) dpsList.add(d);
-          if (e > 0) ehpList.add(e);
+        ninjaColMedian.clear();
+        for (String col : SPECIALIZE_COLS) {
+          java.util.List<Double> vals = new java.util.ArrayList<>();
+          for (JsonNode a : arr) {
+            if (a.path("sample").asInt() < SPECIALIZE_MIN_SAMPLE) {
+              continue; // 저표본 아키타입 제외(이상치 필터)
+            }
+            double v = a.path(col).asDouble();
+            if (v > 0) {
+              vals.add(v);
+            }
+          }
+          if (!vals.isEmpty()) {
+            java.util.Collections.sort(vals);
+            ninjaColMedian.put(col, vals.get(vals.size() / 2));
+          }
         }
-        if (!dpsList.isEmpty()) {
-          java.util.Collections.sort(dpsList);
-          ninjaGlobalMedianDps = dpsList.get(dpsList.size() / 2);
-        }
-        if (!ehpList.isEmpty()) {
-          java.util.Collections.sort(ehpList);
-          ninjaGlobalMedianEhp = ehpList.get(ehpList.size() / 2);
-        }
+        ninjaGlobalMedianDps = ninjaColMedian.getOrDefault("medianDPS", 2_500_000d);
+        ninjaGlobalMedianEhp = ninjaColMedian.getOrDefault("medianEHP", 70_000d);
       }
       if (arr != null && arr.isArray()) {
         for (JsonNode a : arr) {
@@ -395,6 +403,9 @@ public class PoeOptimizeService {
           }
           ninjaSeedByKey.put(asc + "|" + skill, seed);
           ninjaBenchByKey.put(asc + "|" + skill, benchOf(a));
+          if (a.path("facets").isObject()) {
+            ninjaFacetNodeByKey.put(asc + "|" + skill, a.path("facets"));
+          }
         }
       }
       // 스킬 단위 폴백 시드(전 전직 통합 실median — 자동전직 잡, 전직별 저표본 노이즈 회피).
@@ -408,12 +419,33 @@ public class PoeOptimizeService {
           }
           ninjaSeedBySkill.put(skill, seed);
           ninjaBenchBySkill.put(skill, benchOf(a));
+          if (a.path("facets").isObject()) {
+            ninjaFacetNodeBySkill.put(skill, a.path("facets"));
+          }
         }
       }
       logger.info(
           "poe.ninja 시드 로드: {} 아키타입키 / {} 스킬", ninjaSeedByKey.size(), ninjaSeedBySkill.size());
     } catch (Exception e) {
       logger.warn("poe.ninja 시드 로드 실패: {}", file, e);
+    }
+    // 원시 빌드(캐릭터 단위) — 멀티스킬 **조합** 벤치/시드용. 사용자 요구: RF+화염덫 선택 시 두 스킬을 모두 쓰는
+    //   캐릭터만으로 집계해야지, 첫 스킬 아키타입(RF 전체)을 보여주면 안 된다. 사전 집계 파일엔 조합 키가 없으므로
+    //   원시 빌드를 들고 있다가 요청 시 조합 필터→이상치 제거→중앙값을 즉석 계산한다(~3.4k행, 메모리/시간 무시 가능).
+    try {
+      Path buildsFile = file.getParent().resolve("ninja-builds.json");
+      if (Files.exists(buildsFile)) {
+        JsonNode broot = JsonMapper.builder().build().readTree(Files.readString(buildsFile));
+        JsonNode barr = broot.get("builds");
+        List<JsonNode> list = new ArrayList<>();
+        if (barr != null && barr.isArray()) {
+          barr.forEach(list::add);
+        }
+        this.ninjaBuilds = list;
+        logger.info("poe.ninja 원시 빌드 로드: {} 캐릭터(조합 벤치용)", list.size());
+      }
+    } catch (Exception e) {
+      logger.warn("poe.ninja 원시 빌드 로드 실패(조합 벤치 비활성): {}", file, e);
     }
   }
 
@@ -451,7 +483,9 @@ public class PoeOptimizeService {
         keystones,
         (int) a.path("medianFireRes").asDouble(),
         (int) a.path("medianColdRes").asDouble(),
-        (int) a.path("medianLightningRes").asDouble());
+        (int) a.path("medianLightningRes").asDouble(),
+        (int) a.path("medianChaosRes").asDouble(),
+        a.path("medianLifeRegen").asDouble());
   }
 
   /** 아키타입 JSON 노드 → 벤치마크(표시용 전체 중앙값 프로파일). */
@@ -473,9 +507,73 @@ public class PoeOptimizeService {
         (int) a.path("medianColdRes").asDouble(),
         (int) a.path("medianLightningRes").asDouble(),
         (int) a.path("medianChaosRes").asDouble(),
+        (long) a.path("medianLifeRegen").asDouble(),
+        (long) a.path("medianArmour").asDouble(),
+        (long) a.path("medianEvasion").asDouble(),
+        (int) a.path("medianBlock").asDouble(),
+        (int) a.path("medianSuppress").asDouble(),
+        (long) a.path("medianLowestMax").asDouble(),
+        (long) a.path("medianWard").asDouble(),
+        (long) a.path("medianMana").asDouble(),
+        (int) a.path("medianItemRarity").asDouble(),
+        (int) a.path("medianMovementSpeed").asDouble(),
+        (int) a.path("medianSpellBlock").asDouble(),
+        (int) a.path("medianSpellDodge").asDouble(),
+        (int) a.path("medianPhysTakenAs").asDouble(),
+        (int) a.path("medianStr").asDouble(),
+        (int) a.path("medianDex").asDouble(),
+        (int) a.path("medianInt").asDouble(),
+        (int) a.path("medianEnduranceCharges").asDouble(),
+        (int) a.path("medianFrenzyCharges").asDouble(),
+        (int) a.path("medianPowerCharges").asDouble(),
+        (int) a.path("medianClusterJewels").asDouble(),
+        (int) a.path("medianLargeCluster").asDouble(),
+        (int) a.path("medianMediumCluster").asDouble(),
+        (int) a.path("medianSmallCluster").asDouble(),
+        (int) a.path("medianUniqueEquip").asDouble(),
+        (int) a.path("medianMirroredItems").asDouble(),
+        (int) a.path("medianMirroredWeapons").asDouble(),
+        (int) a.path("medianMirroredArmours").asDouble(),
         topNames(a.path("topKeystones"), 6),
         topNames(a.path("topCoSkills"), 6),
-        leanOf(a.path("medianDPS").asDouble(), a.path("medianEHP").asDouble()));
+        topNames(a.path("topMasteries"), 6),
+        leanOf(a.path("medianDPS").asDouble(), a.path("medianEHP").asDouble()),
+        specializationsOf(a),
+        skillDpsOf(a.path("skillDps")),
+        a.path("facets").path("total").asLong(),
+        facetsOf(a.path("facets").path("groups")));
+  }
+
+  /** 패싯 groups 오브젝트 → {그룹명: [{name,count}]}. 없으면 null(구 데이터). */
+  private static Map<String, List<FacetEntry>> facetsOf(JsonNode groups) {
+    if (groups == null || !groups.isObject() || groups.isEmpty()) {
+      return null;
+    }
+    Map<String, List<FacetEntry>> out = new LinkedHashMap<>();
+    for (Map.Entry<String, JsonNode> e : groups.properties()) {
+      List<FacetEntry> list = new ArrayList<>();
+      for (JsonNode item : e.getValue()) {
+        list.add(new FacetEntry(item.path("name").asText(), item.path("count").asInt()));
+      }
+      if (!list.isEmpty()) {
+        out.put(e.getKey(), list);
+      }
+    }
+    return out.isEmpty() ? null : out;
+  }
+
+  /** 조합 벤치 skillDps 배열 → SkillDpsEntry 목록. 없으면 null(단일 스킬 벤치). */
+  private static List<SkillDpsEntry> skillDpsOf(JsonNode arr) {
+    if (arr == null || !arr.isArray() || arr.isEmpty()) {
+      return null;
+    }
+    List<SkillDpsEntry> out = new ArrayList<>();
+    for (JsonNode s : arr) {
+      out.add(
+          new SkillDpsEntry(
+              s.path("name").asText(), (long) s.path("dps").asDouble(), s.path("count").asInt()));
+    }
+    return out;
   }
 
   private static List<String> topNames(JsonNode arr, int n) {
@@ -506,6 +604,336 @@ public class PoeOptimizeService {
     return b != null ? b : ninjaBenchBySkill.get(skill);
   }
 
+  // 원시 빌드(캐릭터 단위, ninja-builds.json) — 조합 벤치 즉석 집계용. loadNinjaSeeds 에서 채운다.
+  private volatile List<JsonNode> ninjaBuilds = List.of();
+
+  // 패싯 원본 노드(사이드바 집계) — 조합 벤치가 메인 스킬의 패싯을 물려받을 때 사용. loadNinjaSeeds 에서 채운다.
+  private final Map<String, JsonNode> ninjaFacetNodeByKey = new HashMap<>();
+  private final Map<String, JsonNode> ninjaFacetNodeBySkill = new HashMap<>();
+
+  // ── P1 메타 마스터리 웜스타트 — 아키타입 패싯에서 채택률 META_MASTERY_ADOPTION 이상인 마스터리 효과의
+  //   정규화 텍스트. balanced 잡의 setSurvivalTargets 에서만 채워짐 → dps/ehp 잡(기준선 포함)은 항상 빈 집합.
+  private volatile Set<String> metaMasteries = Set.of();
+  private static final double META_MASTERY_ADOPTION = 0.4;
+  // 메타 마스터리용 트리 포인트 예약 — 마스터리 단계가 경로(1~5pt) 후보를 시험할 여유. 메타 없으면 0.
+  private static final int META_MASTERY_RESERVE = 8;
+
+  // ── P1② 메타 무기 구성 — 패싯 weaponmode 최다(점유율 50%+)로 무기 후보를 제약. balanced 전용, 잡마다 리셋.
+  //   실측: RF 치프틴 실빌드 96%가 Mace/Shield 인데 시뮬은 자유 선택이라 방패 방어층(막기 75%·방어도 12k)이 통째 빠짐.
+  private volatile Set<String> metaWeaponClasses = Set.of(); // 허용 무기 itemClass(빈=제약 없음)
+  private volatile boolean metaOffhandShield = false;
+
+  /** poe.ninja weaponmode 라벨 → 허용 무기 itemClass 집합. 미지 라벨은 빈 집합(제약 없음 폴백). */
+  private static Set<String> weaponModeClasses(String mode) {
+    String w = mode.startsWith("Dual ") ? mode.substring(5) : mode.split(" / ")[0].trim();
+    return switch (w) {
+      case "Mace" -> Set.of("One Hand Mace", "Sceptre"); // ninja 는 셉터를 Mace 로 묶는다(RF 치프틴 실사용은 셉터)
+      case "Sword" -> Set.of("One Hand Sword", "Thrusting One Hand Sword");
+      case "Axe" -> Set.of("One Hand Axe");
+      case "Dagger" -> Set.of("Dagger", "Rune Dagger");
+      case "Claw" -> Set.of("Claw");
+      case "Wand" -> Set.of("Wand");
+      case "Staff" -> Set.of("Staff", "Warstaff");
+      case "Bow" -> Set.of("Bow");
+      case "Two-Handed Mace", "Two Hand Mace" -> Set.of("Two Hand Mace");
+      case "Two-Handed Sword", "Two Hand Sword" -> Set.of("Two Hand Sword");
+      case "Two-Handed Axe", "Two Hand Axe" -> Set.of("Two Hand Axe");
+      default -> Set.of();
+    };
+  }
+
+  // ── P1③ 메타 판테온 — 패싯 pantheon 최다(메이저/마이너 각 1, 점유율 15%+)를 PoB Config 로 반영.
+  //   시뮬이 판테온을 아예 미모델하던 갭. balanced 전용, 잡마다 리셋. ""=미설정(Config 미출력 → 기준선 불변).
+  private volatile String metaPantheonMajor = "";
+  private volatile String metaPantheonMinor = "";
+  private static final Set<String> PANTHEON_MAJORS =
+      Set.of("Brine King", "The Brine King", "Lunaris", "Solaris", "Arakaali");
+
+  /** ninja 판테온 라벨 → PoB Config id ("Brine King"→TheBrineKing, 그 외 공백 제거). */
+  private static String pantheonId(String label) {
+    return label.contains("Brine King") ? "TheBrineKing" : label.replace(" ", "");
+  }
+
+  // 무기 itemClass → 유니크 category(굵은 분류) — 유니크 후보 필터용
+  private static final Map<String, String> WEAPON_CLASS_TO_CATEGORY =
+      Map.ofEntries(
+          Map.entry("One Hand Mace", "mace"),
+          Map.entry("Sceptre", "mace"),
+          Map.entry("Two Hand Mace", "mace"),
+          Map.entry("One Hand Sword", "sword"),
+          Map.entry("Thrusting One Hand Sword", "sword"),
+          Map.entry("Two Hand Sword", "sword"),
+          Map.entry("One Hand Axe", "axe"),
+          Map.entry("Two Hand Axe", "axe"),
+          Map.entry("Dagger", "dagger"),
+          Map.entry("Rune Dagger", "dagger"),
+          Map.entry("Claw", "claw"),
+          Map.entry("Wand", "wand"),
+          Map.entry("Staff", "staff"),
+          Map.entry("Warstaff", "staff"),
+          Map.entry("Bow", "bow"));
+
+  /** 스탯 텍스트 정규화 — 줄 구분/공백/구두점 차이를 무시하고 비교(ninja 패싯 라벨 ↔ 트리 masteryEffects). */
+  private static String normStat(String s) {
+    return s == null ? "" : s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9%+]", "");
+  }
+
+  private boolean isMetaMasteryEffect(PoeTreeGraphService.MasteryEffect e) {
+    if (metaMasteries.isEmpty() || e == null || e.stats() == null || e.stats().isEmpty()) {
+      return false;
+    }
+    return metaMasteries.contains(normStat(String.join("", e.stats())));
+  }
+
+  // 조합 집계용: median* 출력 키 ↔ ninja-builds.json 캐릭터 필드 매핑(스샷 전 41 컬럼).
+  //   페처 NUM_FIELDS 와 동일 집합 — 이상치 판정·중앙값 계산에 모두 사용.
+  private static final String[][] COMBO_COLS = {
+    {"medianLevel", "level"},
+    {"medianLife", "life"},
+    {"medianES", "energyShield"},
+    {"medianWard", "ward"},
+    {"medianMana", "mana"},
+    {"medianEHP", "ehp"},
+    {"medianDPS", "dps"},
+    {"medianLifeRegen", "lifeRegen"},
+    {"medianItemRarity", "itemRarity"},
+    {"medianMovementSpeed", "movementSpeed"},
+    {"medianFireRes", "fireRes"},
+    {"medianColdRes", "coldRes"},
+    {"medianLightningRes", "lightningRes"},
+    {"medianChaosRes", "chaosRes"},
+    {"medianArmour", "armour"},
+    {"medianEvasion", "evasion"},
+    {"medianBlock", "block"},
+    {"medianSpellBlock", "spellBlock"},
+    {"medianSpellDodge", "spellDodge"},
+    {"medianSuppress", "suppress"},
+    {"medianPhysTakenAs", "physTakenAs"},
+    {"medianStr", "str"},
+    {"medianDex", "dex"},
+    {"medianInt", "int"},
+    {"medianEnduranceCharges", "enduranceCharges"},
+    {"medianFrenzyCharges", "frenzyCharges"},
+    {"medianPowerCharges", "powerCharges"},
+    {"medianClusterJewels", "clusterJewels"},
+    {"medianLargeCluster", "largeCluster"},
+    {"medianMediumCluster", "mediumCluster"},
+    {"medianSmallCluster", "smallCluster"},
+    {"medianUniqueEquip", "uniqueEquip"},
+    {"medianMirroredItems", "mirroredItems"},
+    {"medianMirroredWeapons", "mirroredWeapons"},
+    {"medianMirroredArmours", "mirroredArmours"},
+    {"medianPhysicalMax", "physicalMax"},
+    {"medianFireMax", "fireMax"},
+    {"medianColdMax", "coldMax"},
+    {"medianLightningMax", "lightningMax"},
+    {"medianChaosMax", "chaosMax"},
+    {"medianLowestMax", "lowestMax"},
+  };
+
+  // 조합 집계도 페처와 동일 규칙: 96+ 절단 → 캐릭터 단위 이상치 제거(평균 절대 z > 1.75) → 중앙값.
+  private static final double COMBO_OUTLIER_MEAN_Z = 1.75;
+
+  /**
+   * 멀티스킬 조합 집계 — 선택 스킬을 <b>전부</b> 액티브로 쓰는 캐릭터만 골라, 96+ 절단 → 이상치 캐릭터 제거 → 중앙값 프로파일(median* 41 컬럼 +
+   * topKeystones/topCoSkills)을 ObjectNode 로 반환(benchOf/seedOf 재사용 목적). 표본 부족(&lt;MIN_SEED_SAMPLE)이면
+   * null.
+   */
+  private JsonNode comboAggregate(String ascendancy, List<String> skills) {
+    List<JsonNode> src = ninjaBuilds;
+    if (src.isEmpty() || skills == null || skills.size() < 2) {
+      return null;
+    }
+    List<JsonNode> matched = new ArrayList<>();
+    for (JsonNode b : src) {
+      if (ascendancy != null
+          && !ascendancy.isEmpty()
+          && !ascendancy.equals(b.path("ascendancy").asText())) {
+        continue;
+      }
+      JsonNode actives = b.path("activeSkills");
+      if (!actives.isArray()) {
+        continue;
+      }
+      Set<String> set = new HashSet<>();
+      actives.forEach(s -> set.add(s.asText()));
+      if (set.containsAll(skills)) {
+        matched.add(b);
+      }
+    }
+    if (matched.size() < MIN_SEED_SAMPLE) {
+      return null;
+    }
+    // 96+ 엔드게임 절단(표본 유지 폴백 포함) — 페처 endgameSubset 과 동일 규칙
+    List<JsonNode> endgame = matched.stream().filter(b -> b.path("level").asInt() >= 96).toList();
+    List<JsonNode> arr = endgame.size() >= MIN_SEED_SAMPLE ? endgame : matched;
+    // (1) 컬럼별 코호트 평균·표준편차
+    double[] mean = new double[COMBO_COLS.length];
+    double[] std = new double[COMBO_COLS.length];
+    for (int c = 0; c < COMBO_COLS.length; c++) {
+      double sum = 0;
+      int n = 0;
+      for (JsonNode b : arr) {
+        JsonNode v = b.path(COMBO_COLS[c][1]);
+        if (v.isNumber()) {
+          sum += v.asDouble();
+          n++;
+        }
+      }
+      mean[c] = n > 0 ? sum / n : 0;
+      double vr = 0;
+      for (JsonNode b : arr) {
+        JsonNode v = b.path(COMBO_COLS[c][1]);
+        if (v.isNumber()) {
+          vr += Math.pow(v.asDouble() - mean[c], 2);
+        }
+      }
+      std[c] = n > 0 ? Math.sqrt(vr / n) : 0;
+    }
+    // (2) 캐릭터별 평균 절대 z → 임계 초과 캐릭터 통째 제거(과다 제거 방지 floor)
+    record Scored(JsonNode b, double mz) {}
+    List<Scored> scored = new ArrayList<>();
+    for (JsonNode b : arr) {
+      double sum = 0;
+      int n = 0;
+      for (int c = 0; c < COMBO_COLS.length; c++) {
+        if (std[c] <= 0) {
+          continue;
+        }
+        JsonNode v = b.path(COMBO_COLS[c][1]);
+        if (!v.isNumber()) {
+          continue;
+        }
+        sum += Math.abs((v.asDouble() - mean[c]) / std[c]);
+        n++;
+      }
+      scored.add(new Scored(b, n > 0 ? sum / n : 0));
+    }
+    List<JsonNode> kept =
+        scored.stream().filter(s -> s.mz() <= COMBO_OUTLIER_MEAN_Z).map(Scored::b).toList();
+    int floor = Math.max(3, (int) Math.ceil(scored.size() * 0.5));
+    if (kept.size() < floor) {
+      kept =
+          scored.stream()
+              .sorted(Comparator.comparingDouble(Scored::mz))
+              .limit(floor)
+              .map(Scored::b)
+              .toList();
+    }
+    // (3) 생존 캐릭터들의 중앙값 프로파일
+    JsonMapper mapper = JsonMapper.builder().build();
+    ObjectNode agg = mapper.createObjectNode();
+    for (String[] col : COMBO_COLS) {
+      List<Double> vals = new ArrayList<>();
+      for (JsonNode b : kept) {
+        JsonNode v = b.path(col[1]);
+        if (v.isNumber()) {
+          vals.add(v.asDouble());
+        }
+      }
+      java.util.Collections.sort(vals);
+      agg.put(col[0], vals.isEmpty() ? 0d : vals.get(vals.size() / 2));
+    }
+    // DPS 의미 통일 — b.dps 는 수집 쿼리에 따라 "그 스킬 전용"이라 혼합 중앙값이 오염된다(화염덫 3.2M 가 RF 벤치
+    //   2.0M 로 둔갑하던 버그, 사용자 발견). 조합 벤치 DPS = **메인(첫 선택) 스킬 전용 DPS** 중앙값(dpsBySkill),
+    //   시뮬 표시 지표(메인 스킬 CombinedDPS)와 같은 의미라 결과 화면의 "실빌드 vs 내" 비교가 성립한다.
+    //   스킬별 전용 DPS 는 skillDps 브레이크다운으로 함께 노출.
+    ArrayNode skillDps = mapper.createArrayNode();
+    for (String s : skills) {
+      List<Double> vals = new ArrayList<>();
+      for (JsonNode b : kept) {
+        JsonNode v = b.path("dpsBySkill").path(s);
+        if (v.isNumber()) {
+          vals.add(v.asDouble());
+        }
+      }
+      java.util.Collections.sort(vals);
+      if (!vals.isEmpty()) {
+        ObjectNode o = mapper.createObjectNode();
+        o.put("name", s);
+        o.put("dps", vals.get(vals.size() / 2));
+        o.put("count", vals.size());
+        skillDps.add(o);
+      }
+    }
+    agg.set("skillDps", skillDps);
+    if (!skillDps.isEmpty() && skills.get(0).equals(skillDps.get(0).path("name").asText())) {
+      double mainDps = skillDps.get(0).path("dps").asDouble();
+      if (mainDps > 0) {
+        agg.put("medianDPS", mainDps);
+      }
+    }
+    agg.put("ascendancy", ascendancy == null ? "" : ascendancy);
+    agg.put("mainSkill", String.join(" + ", skills));
+    agg.put("sample", kept.size());
+    // 키스톤/함께 쓰는 스킬/마스터리 빈도(선택 스킬 제외, 마스터리는 샘플링된 캐릭터만 기여)
+    Map<String, Integer> keyCnt = new HashMap<>();
+    Map<String, Integer> coCnt = new HashMap<>();
+    Map<String, Integer> mastCnt = new HashMap<>();
+    for (JsonNode b : kept) {
+      b.path("keystones").forEach(k -> keyCnt.merge(k.asText(), 1, Integer::sum));
+      b.path("masteries").forEach(m -> mastCnt.merge(m.asText(), 1, Integer::sum));
+      b.path("activeSkills")
+          .forEach(
+              s -> {
+                String name = s.asText();
+                if (!skills.contains(name)) {
+                  coCnt.merge(name, 1, Integer::sum);
+                }
+              });
+    }
+    agg.set("topKeystones", topCountNode(mapper, keyCnt, 6));
+    agg.set("topCoSkills", topCountNode(mapper, coCnt, 8));
+    agg.set("topMasteries", topCountNode(mapper, mastCnt, 8));
+    // 패싯은 조합 필터로 즉석 계산 불가(모집단 집계는 서버측) — 메인(첫 선택) 스킬의 정밀/스킬 패싯을 물려받는다.
+    JsonNode facets =
+        ninjaFacetNodeByKey.get((ascendancy == null ? "" : ascendancy) + "|" + skills.get(0));
+    if (facets == null) {
+      facets = ninjaFacetNodeBySkill.get(skills.get(0));
+    }
+    if (facets != null) {
+      agg.set("facets", facets);
+    }
+    return agg;
+  }
+
+  private static ArrayNode topCountNode(JsonMapper mapper, Map<String, Integer> counter, int n) {
+    ArrayNode arr = mapper.createArrayNode();
+    counter.entrySet().stream()
+        .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+        .limit(n)
+        .forEach(
+            e -> {
+              ObjectNode o = mapper.createObjectNode();
+              o.put("name", e.getKey());
+              o.put("count", e.getValue());
+              arr.add(o);
+            });
+    return arr;
+  }
+
+  /**
+   * 멀티스킬 조합 벤치마크 — 선택 스킬을 전부 쓰는 캐릭터만 재집계(사용자 요구: RF+화염덫이면 그 조합 캐릭터 기준). 조합 표본 부족 시 전직 무시로 재시도, 그래도
+   * 없으면 첫 스킬 단일 벤치 폴백(mainSkill 표기로 구분 가능).
+   */
+  public ArchetypeBenchmark ninjaComboBenchmark(String ascendancy, List<String> skills) {
+    List<String> names =
+        skills == null
+            ? List.of()
+            : skills.stream().filter(s -> s != null && !s.isBlank()).distinct().toList();
+    if (names.isEmpty()) {
+      return null;
+    }
+    if (names.size() == 1) {
+      return ninjaBenchmark(ascendancy, names.get(0));
+    }
+    JsonNode agg = comboAggregate(ascendancy, names);
+    if (agg == null && ascendancy != null && !ascendancy.isEmpty()) {
+      agg = comboAggregate("", names);
+    }
+    return agg != null ? benchOf(agg) : ninjaBenchmark(ascendancy, names.get(0));
+  }
+
   private static double min4nonzero(double a, double b, double c, double d) {
     double m = Double.MAX_VALUE;
     for (double v : new double[] {a, b, c, d}) {
@@ -521,6 +949,14 @@ public class PoeOptimizeService {
    * 클램프로 극단치 방지(maxhit 0.3~8×, ehp 0.3~8× floor).
    */
   private void setSurvivalTargets(String ascendancy, String skill) {
+    setSurvivalTargets(ascendancy, skill, null);
+  }
+
+  /**
+   * comboSkills(2개 이상)가 주어지면 <b>그 스킬 전부를 쓰는 캐릭터만</b> 즉석 집계한 조합 시드를 최우선 채택(사용자 요구: RF+화염덫이면 그 조합
+   * 기준으로 목표를 잡아야 함 — RF 전체 아키타입이 아니라). 조합 표본 부족 시 기존 (전직|스킬)→스킬 폴백.
+   */
+  private void setSurvivalTargets(String ascendancy, String skill, List<String> comboSkills) {
     this.targetMaxHit = MAXHIT_FLOOR;
     this.targetEhp = EHP_FLOOR;
     this.targetFireRes = 75;
@@ -529,8 +965,101 @@ public class PoeOptimizeService {
     this.seededKeystones = List.of();
     this.esArchetype = false;
     this.targetEs = 0d;
+    this.targetLifeRegen = 0d;
+    this.targetChaosRes = 0;
+    this.metaMasteries = Set.of();
+    this.metaWeaponClasses = Set.of();
+    this.metaOffhandShield = false;
+    this.metaPantheonMajor = "";
+    this.metaPantheonMinor = "";
     if (!ninjaSeedEnabled || skill == null || skill.isEmpty()) {
       return;
+    }
+    // P1 메타 마스터리 웜스타트 — 아키타입 패싯(전체 모집단)에서 채택률 40%+ 마스터리 효과를 수집.
+    //   마스터리 단계에서 후보 우선 편입 + "최고 대비 1% 이내면 메타 채택" + 신규 문턱 완화에 쓰인다.
+    {
+      JsonNode facetNode = null;
+      if (ascendancy != null && !ascendancy.isEmpty()) {
+        facetNode = ninjaFacetNodeByKey.get(ascendancy + "|" + skill);
+      }
+      if (facetNode == null) {
+        facetNode = ninjaFacetNodeBySkill.get(skill);
+      }
+      if (facetNode != null) {
+        long total = facetNode.path("total").asLong();
+        if (total > 0) {
+          Set<String> metas = new LinkedHashSet<>();
+          List<String> labels = new ArrayList<>();
+          for (JsonNode m : facetNode.path("groups").path("masteries")) {
+            if (m.path("count").asDouble() / total >= META_MASTERY_ADOPTION) {
+              metas.add(normStat(m.path("name").asText()));
+              labels.add(
+                  m.path("name").asText()
+                      + "("
+                      + Math.round(m.path("count").asDouble() * 100 / total)
+                      + "%)");
+            }
+          }
+          if (!metas.isEmpty()) {
+            this.metaMasteries = metas;
+            log("poe.ninja 메타 마스터리 " + metas.size() + "개(채택률 40%+): " + String.join(" · ", labels));
+          }
+          // P1② 메타 무기 구성 — weaponmode 최다가 점유율 50%+ 면 무기 후보를 그 클래스로 제약.
+          JsonNode wm = facetNode.path("groups").path("weaponmode");
+          if (wm.isArray() && !wm.isEmpty()) {
+            JsonNode topW = wm.get(0);
+            double share = topW.path("count").asDouble() / total;
+            if (share >= 0.5) {
+              String mode = topW.path("name").asText();
+              Set<String> classes = weaponModeClasses(mode);
+              if (!classes.isEmpty()) {
+                this.metaWeaponClasses = classes;
+                this.metaOffhandShield = mode.contains("/ Shield");
+                log(
+                    "poe.ninja 메타 무기 구성: "
+                        + mode
+                        + " ("
+                        + Math.round(share * 100)
+                        + "%) — 무기 후보 제약"
+                        + (metaOffhandShield ? " + 방패 보조장비" : ""));
+              }
+            }
+          }
+          // P1③ 메타 판테온 — 메이저/마이너 각 최다(점유율 15%+, "None" 제외). 패싯은 count 내림차순 정렬됨.
+          JsonNode pj = facetNode.path("groups").path("pantheon");
+          if (pj.isArray()) {
+            String maj = null;
+            String min = null;
+            double majS = 0;
+            double minS = 0;
+            for (JsonNode p : pj) {
+              String nm = p.path("name").asText();
+              double share = p.path("count").asDouble() / total;
+              if (share < 0.15 || "None".equals(nm)) {
+                continue;
+              }
+              if (PANTHEON_MAJORS.contains(nm)) {
+                if (maj == null) {
+                  maj = nm;
+                  majS = share;
+                }
+              } else if (min == null) {
+                min = nm;
+                minS = share;
+              }
+            }
+            if (maj != null || min != null) {
+              this.metaPantheonMajor = maj != null ? pantheonId(maj) : "";
+              this.metaPantheonMinor = min != null ? pantheonId(min) : "";
+              log(
+                  "poe.ninja 메타 판테온: "
+                      + (maj != null ? maj + "(" + Math.round(majS * 100) + "%)" : "-")
+                      + " / "
+                      + (min != null ? min + "(" + Math.round(minS * 100) + "%)" : "-"));
+            }
+          }
+        }
+      }
     }
     // ES/CI(에너지실드 스태킹) 아키타입 감지 — ES 서브시스템(트리/장비 시드)의 게이트. 선택 동작은 후속 단계에서.
     if (isEsArchetype(ascendancy, skill)) {
@@ -543,7 +1072,21 @@ public class PoeOptimizeService {
               ascendancy == null || ascendancy.isEmpty() ? "any" : ascendancy, skill, targetEs));
     }
     NinjaSeed seed = null;
-    if (ascendancy != null && !ascendancy.isEmpty()) {
+    String seedSource = skill;
+    // 조합 시드 최우선 — 선택 스킬(데미지) 2개 이상이면 그 조합을 전부 쓰는 캐릭터만 즉석 집계.
+    if (comboSkills != null && comboSkills.size() >= 2) {
+      JsonNode agg = comboAggregate(ascendancy, comboSkills);
+      if (agg == null && ascendancy != null && !ascendancy.isEmpty()) {
+        agg = comboAggregate("", comboSkills);
+      }
+      NinjaSeed comboSeed = agg != null ? seedOf(agg) : null;
+      if (comboSeed != null && comboSeed.sample() >= MIN_SEED_SAMPLE) {
+        seed = comboSeed;
+        seedSource = String.join(" + ", comboSkills);
+        log("poe.ninja 조합 시드: [" + seedSource + "] 전부 사용 캐릭터 n=" + comboSeed.sample());
+      }
+    }
+    if (seed == null && ascendancy != null && !ascendancy.isEmpty()) {
       NinjaSeed exact = ninjaSeedByKey.get(ascendancy + "|" + skill);
       // 정확키(전직|스킬)는 표본이 충분할 때만 채택 — 희귀 전직×스킬(n<MIN)은 저표본 노이즈라
       //   견고한 스킬폴백(전 전직 통합)을 쓴다. 표시용 벤치마크는 이 가드 없이 정확키 그대로.
@@ -567,8 +1110,14 @@ public class PoeOptimizeService {
     if (seed.targetEhp() > 0) {
       this.targetEhp = clampD(seed.targetEhp(), EHP_FLOOR, EHP_FLOOR * 8);
     }
+    // 생명 재생 목표 — 실측 중앙값 그대로(상한만 안전 클램프). 자가연소(RF) 빌드에서만 objectiveOf(balanced)가 참조해
+    //   총재생을 이 목표까지 끌어올린다. 비-자가연소/비-balanced 는 미사용이라 기준선 불변.
+    this.targetLifeRegen =
+        seed.targetLifeRegen() > 0 ? Math.min(seed.targetLifeRegen(), 20000) : 0d;
     // 원소 저항 목표 — 아키타입 실측 중앙값을 [75, 90] 로 클램프(75 미만은 캡 미달이라 75 유지, 90=게임 최대저항 상한).
     //   대부분 75(불변)지만 치프틴 RF/화염덫처럼 최대저항 90 특화 아키타입은 90을 목표로 → survivalScore/저항채움 반영.
+    // P2 카오스 저항 목표 — 실빌드 중앙값(캡 75, 음수/0이면 비활성). balancedSurvival (2c)에서 감쇠로 유도.
+    this.targetChaosRes = Math.max(0, Math.min(75, seed.chaosRes()));
     this.targetFireRes = Math.max(75, Math.min(90, seed.fireRes()));
     this.targetColdRes = Math.max(75, Math.min(90, seed.coldRes()));
     this.targetLightRes = Math.max(75, Math.min(90, seed.lightRes()));
@@ -582,7 +1131,7 @@ public class PoeOptimizeService {
         String.format(
             "poe.ninja 생존 목표(%s/%s): maxhit≈%.0f ehp≈%.0f (n=%d)",
             ascendancy == null || ascendancy.isEmpty() ? "any" : ascendancy,
-            skill,
+            seedSource,
             targetMaxHit,
             targetEhp,
             seed.sample()));
@@ -888,7 +1437,9 @@ public class PoeOptimizeService {
       List<String> keystones,
       int fireRes,
       int coldRes,
-      int lightRes) {}
+      int lightRes,
+      int chaosRes,
+      double targetLifeRegen) {}
 
   // key = "ascendancy|mainSkill"(정확) 및 "mainSkill"(전직 무관 폴백, 표본 최대 아키타입)
   private final Map<String, NinjaSeed> ninjaSeedByKey = new HashMap<>();
@@ -914,11 +1465,61 @@ public class PoeOptimizeService {
       int coldRes,
       int lightningRes,
       int chaosRes,
+      // 생명 재생/초 — RF 등 자가연소·지속형 빌드의 생존 핵심(실빌드는 높은데 시뮬이 미반영하던 갭). 방어층(armour/evasion/block/
+      // suppress)·최약최대피격(lowestMax)도 "모든 컬럼 참조" 요구에 맞춰 캡처.
+      long lifeRegen,
+      long armour,
+      long evasion,
+      int block,
+      int suppress,
+      long lowestMax,
+      // 전 컬럼 참조(스샷 전 컬럼) — 부가 자원/속성/충전/주문막기·회피/물리피해전환/클러스터주얼·유니크·미러 개수.
+      long ward,
+      long mana,
+      int itemRarity,
+      int movementSpeed,
+      int spellBlock,
+      int spellDodge,
+      int physTakenAs,
+      int str,
+      int dex,
+      int intel,
+      int enduranceCharges,
+      int frenzyCharges,
+      int powerCharges,
+      int clusterJewels,
+      int largeCluster,
+      int mediumCluster,
+      int smallCluster,
+      int uniqueEquip,
+      int mirroredItems,
+      int mirroredWeapons,
+      int mirroredArmours,
       List<String> topKeystones,
       List<String> topCoSkills,
+      // 실빌드 마스터리(효과 텍스트) — 캐릭터 상세 JSON 채집(아키타입별 레벨 상위 샘플). 구 데이터엔 없어 null.
+      List<String> topMasteries,
       // 실빌드 성향: 이 (전직×스킬) 실측 DPS·EHP 를 전체 아키타입 중앙값과 비교한 편향. dps=공격특화(저EHP·고DPS),
       // ehp=생존특화(고EHP·저DPS), balanced=균형. 셀렉트 대신 이 성향으로 시뮬 목표를 정하는 근거(P2)이자 화면 표시용.
-      String lean) {}
+      String lean,
+      // 전 컬럼 참조 특화 판정 — 이 아키타입이 두드러진 컬럼 키 목록(dps/ehp/life/es/liferegen/armour/evasion/block/
+      // suppress/maxres). 전체 중앙값(저표본 제외) 대비 판정. 게이트가 로케일 라벨로 표시.
+      List<String> specializations,
+      // 멀티스킬 조합 벤치의 스킬별 전용 DPS 중앙값(dps-<스킬> 필터 실측) — dps 필드는 메인(첫 선택) 스킬 전용.
+      // 단일 스킬 벤치에선 null.
+      List<SkillDpsEntry> skillDps,
+      // 패싯(poe.ninja 검색 사이드바 집계) — 필터 매칭 **전체 모집단** 기준 카운트(top-100 표본 아님).
+      // facetTotal = 모집단 수(% 분모). groups:
+      // masteries/runegrafts/tattoos/weaponmode/pantheon/atlasskills/
+      // anointed/secondascendancy/bandit/items/keypassives/shrinebeltbuffs. 구 데이터엔 없어 0/null.
+      long facetTotal,
+      Map<String, List<FacetEntry>> facets) {}
+
+  /** 조합 벤치 스킬별 전용 DPS — count = 해당 스킬 전용 DPS 를 보유한 표본 수. */
+  public record SkillDpsEntry(String name, long dps, int count) {}
+
+  /** 패싯 항목 — 모집단 중 count 명이 사용. */
+  public record FacetEntry(String name, int count) {}
 
   private final Map<String, ArchetypeBenchmark> ninjaBenchByKey = new HashMap<>();
   private final Map<String, ArchetypeBenchmark> ninjaBenchBySkill = new HashMap<>();
@@ -926,6 +1527,89 @@ public class PoeOptimizeService {
   // 전체 아키타입의 DPS·EHP 중앙값 — 개별 (전직×스킬)의 성향(lean) 판정 기준선. loadNinjaSeeds 에서 리그 데이터로 채운다.
   private volatile double ninjaGlobalMedianDps = 2_500_000;
   private volatile double ninjaGlobalMedianEhp = 70_000;
+
+  // 특화 판정용 전체 컬럼 중앙값(저표본 제외). 컬럼명 → 중앙값. loadNinjaSeeds 에서 채운다.
+  private final Map<String, Double> ninjaColMedian = new HashMap<>();
+  // 특화 판정 대상 매그니튜드 컬럼(높을수록 특화). 저항/막기/회피억제는 캡형이라 별도 절대 임계.
+  private static final String[] SPECIALIZE_COLS = {
+    "medianDPS",
+    "medianEHP",
+    "medianLife",
+    "medianES",
+    "medianLifeRegen",
+    "medianArmour",
+    "medianEvasion",
+    // 전 컬럼 참조 — 부가 자원/속성/개수형도 전체 중앙값 대비 특화 판정(사용자 요구: 스샷 전 컬럼).
+    "medianWard",
+    "medianMana",
+    "medianItemRarity",
+    "medianMovementSpeed",
+    "medianStr",
+    "medianDex",
+    "medianInt",
+    "medianClusterJewels",
+    "medianUniqueEquip"
+  };
+  // 전체 중앙값 계산에서 제외할 저표본 하한(이상치·노이즈 필터). 개별 특화 판단도 이 표본 이상만.
+  private static final int SPECIALIZE_MIN_SAMPLE = 10;
+
+  /**
+   * 전 컬럼 참조 특화 판정 — 이 아키타입이 어느 컬럼에 특화됐는지(전체 중앙값 대비 두드러지게 높은 컬럼) 키 목록 반환. 매그니튜드 컬럼은 전체 중앙값의 배수 임계,
+   * 캡형(저항/막기/회피억제)은 절대 임계. 저표본 아키타입(sample&lt;하한)은 판단 보류(빈 목록). ⚠ 단순 평균 아닌 **중앙값 기준 + 저표본 제외**(사용자
+   * 요구: 가중·이상치 필터).
+   */
+  private List<String> specializationsOf(JsonNode a) {
+    List<String> spec = new ArrayList<>();
+    if (a.path("sample").asInt() < SPECIALIZE_MIN_SAMPLE) {
+      return spec; // 표본 부족 → 특화 판단 보류
+    }
+    specMag(spec, a, "medianDPS", "dps", 1.6, 0);
+    specMag(spec, a, "medianEHP", "ehp", 1.6, 0);
+    specMag(spec, a, "medianLife", "life", 1.5, 0);
+    specMag(spec, a, "medianES", "es", 1.5, 3000); // ES 는 절대 3000+ 도 요구(저ES 노이즈 배제)
+    specMag(spec, a, "medianLifeRegen", "liferegen", 1.6, 0);
+    specMag(spec, a, "medianArmour", "armour", 1.8, 0);
+    specMag(spec, a, "medianEvasion", "evasion", 1.8, 0);
+    // 전 컬럼 참조 — 부가 자원/속성/개수형 매그니튜드 특화(전체 중앙값 대비, 절대 하한으로 노이즈 배제).
+    specMag(spec, a, "medianWard", "ward", 1.6, 1000);
+    specMag(spec, a, "medianMana", "mana", 1.6, 0);
+    specMag(spec, a, "medianItemRarity", "rarity", 1.5, 0);
+    specMag(spec, a, "medianMovementSpeed", "movespeed", 1.3, 0);
+    specMag(spec, a, "medianStr", "str", 1.4, 0);
+    specMag(spec, a, "medianDex", "dex", 1.4, 0);
+    specMag(spec, a, "medianInt", "int", 1.4, 0);
+    specMag(spec, a, "medianClusterJewels", "cluster", 1.5, 3);
+    specMag(spec, a, "medianUniqueEquip", "unique", 1.4, 5);
+    // 캡형/개수형 — 절대 임계
+    if (a.path("medianBlock").asInt() >= 40) spec.add("block");
+    if (a.path("medianSuppress").asInt() >= 60) spec.add("suppress");
+    if (a.path("medianSpellBlock").asInt() >= 60) spec.add("spellblock");
+    if (a.path("medianSpellDodge").asInt() >= 30) spec.add("spelldodge");
+    if (a.path("medianPhysTakenAs").asInt() >= 30) spec.add("phystaken");
+    if (a.path("medianEnduranceCharges").asInt() >= 4) spec.add("echarge");
+    if (a.path("medianFrenzyCharges").asInt() >= 4) spec.add("fcharge");
+    if (a.path("medianPowerCharges").asInt() >= 4) spec.add("pcharge");
+    if (a.path("medianMirroredItems").asInt()
+            + a.path("medianMirroredWeapons").asInt()
+            + a.path("medianMirroredArmours").asInt()
+        >= 2) spec.add("mirror");
+    int minRes =
+        Math.min(
+            a.path("medianFireRes").asInt(),
+            Math.min(a.path("medianColdRes").asInt(), a.path("medianLightningRes").asInt()));
+    if (minRes >= 85) spec.add("maxres");
+    return spec;
+  }
+
+  /** 매그니튜드 컬럼 특화 판정 — 전체 중앙값 × mult 이상이고 절대 하한 minAbs 이상이면 key 추가. */
+  private void specMag(
+      List<String> spec, JsonNode a, String col, String key, double mult, double minAbs) {
+    double med = ninjaColMedian.getOrDefault(col, 0d);
+    double v = a.path(col).asDouble();
+    if (med > 0 && v >= med * mult && v >= minAbs) {
+      spec.add(key);
+    }
+  }
 
   /**
    * 실빌드 성향 판정: 이 아키타입의 DPS·EHP 를 전체 중앙값과 로그비교. dps 축이 EHP 축보다 뚜렷이 높으면 "dps"(공격특화), 반대면 "ehp"(생존특화),
@@ -959,6 +1643,11 @@ public class PoeOptimizeService {
   private volatile boolean esArchetype = false;
   // job-scoped ES 목표(에너지실드 중앙값) — ES 아키타입일 때만 >0. balancedSurvival/장비 시드에서 참조.
   private volatile double targetEs = 0d;
+  // job-scoped 생명 재생/초 목표(아키타입 실측 중앙값) — RF 등 자가연소 빌드는 재생이 생존 핵심인데 기존엔 순재생<0 게이트만
+  //   있어 시뮬이 재생 0(경계선)에 안주했다. balanced·자가연소 한정으로 이 목표까지 총재생을 끌어올린다(사용자 지적: 실빌드 2666인데 미반영).
+  private volatile double targetLifeRegen = 0d;
+  // P2 카오스 저항 목표(실빌드 중앙값, 캡 75) — balanced 전용, 0=비활성. 잡마다 리셋.
+  private volatile int targetChaosRes = 0;
   // ES 듀얼패스 임시 플래그 — true 동안 craftRare 가 방어 베이스를 ES 변형으로 강제(tryEsTemplate 내부에서만 on).
   private volatile boolean forceEsBase = false;
 
@@ -1242,19 +1931,28 @@ public class PoeOptimizeService {
       if ((gem == null && !autoPickSkill) || (gem != null && gem.isSupport())) {
         return false;
       }
-      // objective 자동(성향 구동): 빈값/"auto" 면 선택 스킬×전직의 poe.ninja 실빌드 성향(lean)으로 목표축을 정한다
-      //   (dps편향→dps, ehp편향→ehp, 그 외/미매칭→balanced). 명시 objective(dps/ehp/balanced)는 그대로 존중 —
-      //   QA 배터리는 명시로 호출하므로 기준선 불변. 스킬 미지정(유니크 anchor)이면 스킬을 아직 몰라 balanced.
+      // objective 자동(성향 구동): 빈값/"auto" 면 **balanced** 로 간다. balanced 는 이미 이 (전직×스킬)의 poe.ninja 실빌드
+      //   EHP·최대피격·저항 중앙값을 생존 목표 시드로 쓰므로(=실빌드 프로파일 존중), 그 바닥을 지키며 DPS 를 최대화한다.
+      //   ⚠ 성향(lean)을 raw dps/ehp objective 로 직결하면 안 된다: dps objective 는 EHP 바닥이 없어 실측 200k EHP
+      // 아키타입도
+      //   EHP 2k 유리대포를 낸다(실측 Penance Brand Elementalist). 성향은 화면 표시·강점축 강조(향후 가중)용이지 목표 대체가 아니다.
+      //   명시 objective(dps/ehp/balanced)는 그대로 존중 — QA 배터리는 명시 호출이라 기준선 불변.
       String resolvedObjective = objective;
-      if (resolvedObjective == null || resolvedObjective.isBlank() || "auto".equals(resolvedObjective)) {
+      if (resolvedObjective == null
+          || resolvedObjective.isBlank()
+          || "auto".equals(resolvedObjective)) {
         String skillName = gem != null ? gem.name() : null;
         ArchetypeBenchmark bench = skillName != null ? ninjaBenchmark(ascendancy, skillName) : null;
-        String lean = bench != null ? bench.lean() : null;
-        resolvedObjective = "dps".equals(lean) ? "dps" : "ehp".equals(lean) ? "ehp" : "balanced";
-        log("성향 자동 목표: " + (bench != null ? bench.mainSkill() + " → " + resolvedObjective + "(lean=" + lean + ")" : "미매칭 → balanced"));
+        resolvedObjective = "balanced";
+        log(
+            "성향 자동 목표: balanced (실빌드 프로파일 시드"
+                + (bench != null ? ", " + bench.mainSkill() + " lean=" + bench.lean() : ", 미매칭")
+                + ")");
       }
       String normalizedObjective =
-          "ehp".equals(resolvedObjective) || "balanced".equals(resolvedObjective) ? resolvedObjective : "dps";
+          "ehp".equals(resolvedObjective) || "balanced".equals(resolvedObjective)
+              ? resolvedObjective
+              : "dps";
       this.enemyScenario = SCENARIO_KO.containsKey(scenario) ? scenario : "Pinnacle"; // 화이트리스트
       this.combatBuffs = buffs;
       this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
@@ -1268,6 +1966,15 @@ public class PoeOptimizeService {
       this.targetMaxHit = MAXHIT_FLOOR; // poe.ninja 생존 목표치 초기화(스킬 확정 후 재설정)
       this.targetEhp = EHP_FLOOR;
       this.seededKeystones = List.of(); // 시드 키스톤 초기화(잡마다)
+      // ⚠ 메타 마스터리는 balanced 의 setSurvivalTargets 에서만 채워지므로 **잡마다 여기서 리셋** —
+      //   안 하면 직전 balanced 잡의 메타 세트가 dps/ehp 잡으로 누출돼 기준선이 이탈한다
+      //   (실사고: RF balanced 후 arc 41.9M→42.5M, 사이클론 9.9M→8.9M 오염, #161 계열).
+      this.metaMasteries = Set.of();
+      this.targetChaosRes = 0; // P2 카오스 저항 목표도 같은 누출 계열 — 잡마다 리셋
+      this.metaWeaponClasses = Set.of(); // P1② 메타 무기 구성 — 잡마다 리셋(누출 방지)
+      this.metaOffhandShield = false;
+      this.metaPantheonMajor = ""; // P1③ 메타 판테온 — 잡마다 리셋(누출 방지)
+      this.metaPantheonMinor = "";
       this.esArchetype = false; // ES/CI 아키타입 플래그 초기화(잡마다)
       this.targetEs = 0d;
       this.forceEsBase = false;
@@ -1362,9 +2069,17 @@ public class PoeOptimizeService {
       //   ⚠ 토템은 제외: calcFullDPS 가 토템은 미니언처럼 count 집계하지 않아 FullDPS 기반 탐색이 더 나쁜 빌드로
       //   흘러 AW 3,590,847→2,692,513 회귀(실측). 토템 count 스케일링은 별도 과제.
       this.multiActorBuild = gem.tags() != null && gem.tags().contains("Minion");
-      // balanced 잡의 생존 목표치를 poe.ninja 아키타입(전직×메인스킬) 실측 중앙값으로. 매칭 없으면 정적 floor 유지.
+      // balanced 잡의 생존 목표치를 poe.ninja 아키타입 실측 중앙값으로. 매칭 없으면 정적 floor 유지.
+      //   멀티스킬 선택(RF+화염덫 등)이면 **선택 데미지 스킬 전부를 쓰는 캐릭터만** 집계한 조합 시드를 우선.
       if ("balanced".equals(objectiveKey)) {
-        setSurvivalTargets(fixedAscendancy, gem.name());
+        List<String> comboNames = new ArrayList<>();
+        comboNames.add(gem.name());
+        for (PoeGem g : additionalSkills) {
+          if (isDamageSkill(g) && !comboNames.contains(g.name())) {
+            comboNames.add(g.name());
+          }
+        }
+        setSurvivalTargets(fixedAscendancy, gem.name(), comboNames);
       }
       log(gem.name() + " / 목표 " + objectiveKey + " / 키워드 " + keywords);
 
@@ -1723,7 +2438,11 @@ public class PoeOptimizeService {
         // 주얼 소켓 경로용으로 일부 예약.
         // (마스터리용 추가 예약도 재 봤지만 — 4점 예약 시 마스터리 4개 채택으로 잡 내부 이득 +43%,
         //  예약 없이 남는 점으로 1개 채택 시 +41% — 최종 DPS 는 2.44M vs 2.47M 로 차이가 없어 도입하지 않았다)
-        int treeBudget = POINT_BUDGET - JEWEL_RESERVE;
+        // ⚠ 위 실험은 dps 목표 기준. P1 메타 웜스타트(balanced + 메타 마스터리 존재)에선 마스터리 단계 도달 시
+        //   잔여 포인트가 0~1 이라(실측: RF 치프틴 후보 1개) 경로 후보가 전부 예산 탈락 — 실빌드가 81% 찍는
+        //   재생 숙련이 시도조차 못 된다. 메타가 있을 때만 예약을 부활한다(dps 잡은 메타 빈 집합 → 불변).
+        int treeBudget =
+            POINT_BUDGET - JEWEL_RESERVE - (metaMasteries.isEmpty() ? 0 : META_MASTERY_RESERVE);
         for (int round = 0; round < TREE_MAX_ROUNDS && points < treeBudget; round++) {
           record Reachable(
               PoeTreeGraphService.TreeNode node, List<Integer> path, double priority) {}
@@ -2179,6 +2898,8 @@ public class PoeOptimizeService {
         // 그런데 마스터리 하나가 "양손 적중 피해 60% 증가" 급이라 1포인트 대비 이득이 노터블보다 큰 경우가 많다.
         // 할당 집합에 인접한 미할당 마스터리를 키워드 점수 상위로 추려 후보에 넣는다(효과까지 함께 평가).
         Set<Integer> newMasteries = new LinkedHashSet<>();
+        // P1 메타 마스터리 호스트 경로 — 후보 id → 할당 경로(마지막이 마스터리 노드). 인접 후보는 [자기 자신].
+        Map<Integer, List<Integer>> masteryPaths = new LinkedHashMap<>();
         if (points < POINT_BUDGET) {
           record Candidate(int id, int score) {}
           List<Candidate> scored = new ArrayList<>();
@@ -2195,19 +2916,53 @@ public class PoeOptimizeService {
                       .mapToInt(e -> score(e.stats(), keywords))
                       .max()
                       .orElse(0);
+              // P1 메타 마스터리 웜스타트 — 실빌드 채택률 40%+ 효과를 가진 마스터리는 후보 상한에서
+              // 키워드 점수에 밀려 잘리지 않도록 대폭 가산(재생/방어 효과는 키워드 점수가 낮다).
+              if (node.masteryEffects().stream().anyMatch(this::isMetaMasteryEffect)) {
+                best += 1000;
+              }
               newMasteries.add(neighbor);
               scored.add(new Candidate(neighbor, best));
             }
           }
-          // 키워드 점수 높은 것부터, 예산 안에서 상한만큼
+          // P1 메타 마스터리 호스트 — 인접이 아니어도 **최단 경로로 도달 가능한**(예산 내, 경로 ≤5pt) 메타 효과
+          // 보유 마스터리를 후보에 넣는다. 실측: RF 치프틴에서 인접 후보가 1개뿐이라 실빌드가 81% 찍는
+          // 재생 숙련이 시도조차 되지 않았다. 채택은 여전히 경로 포함 실측 이득 기준(강제 아님).
+          if (!metaMasteries.isEmpty()) {
+            for (PoeTreeGraphService.TreeNode mn : poeTreeGraphService.masteryNodes()) {
+              if (allocated.contains(mn.id())
+                  || newMasteries.contains(mn.id())
+                  || mn.ascendancy() != null
+                  || mn.masteryEffects() == null
+                  || mn.masteryEffects().stream().noneMatch(this::isMetaMasteryEffect)) {
+                continue;
+              }
+              List<Integer> path = poeTreeGraphService.shortestPath(allocated, mn.id());
+              if (path == null
+                  || path.isEmpty()
+                  || path.size() > 5
+                  || points + path.size() > POINT_BUDGET) {
+                continue;
+              }
+              masteryPaths.put(mn.id(), path);
+              newMasteries.add(mn.id());
+              scored.add(new Candidate(mn.id(), 2000 - path.size() * 10)); // 경로 짧을수록 우선
+            }
+          }
+          // 점수 높은 것부터, 예산(경로 비용 반영) 안에서 상한만큼
           scored.sort(java.util.Comparator.comparingInt(Candidate::score).reversed());
           newMasteries.clear();
+          int planned = 0;
           for (Candidate candidate : scored) {
-            if (newMasteries.size() >= MASTERY_MAX_NEW
-                || points + newMasteries.size() >= POINT_BUDGET) {
-              break;
+            int cost =
+                masteryPaths.containsKey(candidate.id())
+                    ? masteryPaths.get(candidate.id()).size()
+                    : 1;
+            if (newMasteries.size() >= MASTERY_MAX_NEW || points + planned + cost > POINT_BUDGET) {
+              continue; // 비싼 경로는 건너뛰고 더 싼 후보는 계속 본다
             }
             newMasteries.add(candidate.id());
+            planned += cost;
           }
           masteryNodes.addAll(newMasteries);
         }
@@ -2225,15 +2980,17 @@ public class PoeOptimizeService {
                   + format(current));
           for (int nodeId : masteryNodes) {
             PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(nodeId);
-            // 신규 후보는 **노드 할당(1포인트)까지 포함**해 평가한다 — 이미 찍은 노드는 효과만 본다
+            // 신규 후보는 **할당 경로(1~5포인트)까지 포함**해 평가한다 — 이미 찍은 노드는 효과만 본다
             boolean isNew = newMasteries.contains(nodeId);
-            if (isNew && points >= POINT_BUDGET) {
+            List<Integer> allocPath =
+                isNew ? masteryPaths.getOrDefault(nodeId, List.of(nodeId)) : List.of();
+            if (isNew && points + allocPath.size() > POINT_BUDGET) {
               continue;
             }
             Set<Integer> trialNodes = allocated;
             if (isNew) {
               trialNodes = new LinkedHashSet<>(allocated);
-              trialNodes.add(nodeId);
+              trialNodes.addAll(allocPath);
             }
             // XML 조립은 공유 필드(fixedMasteries)를 쓰므로 **메인 스레드에서 미리** 만들어 둔다
             // (evalBatch 는 워커 스레드에서 xmlFor 를 호출한다 — 거기서 필드를 바꾸면 경쟁 상태)
@@ -2268,33 +3025,65 @@ public class PoeOptimizeService {
                 evalBatch(executor, effectIds, xmlByEffect::get, objectiveKey);
             Map.Entry<Integer, Double> best =
                 results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
-            // 이미 찍은 노드의 효과는 공짜라 조금이라도 나으면 채택. 신규 할당은 1포인트를 쓰니 문턱(+0.3%)을 둔다.
-            double threshold = isNew ? current * 1.003 : current;
-            if (best != null && best.getValue() > 0 && best.getValue() > threshold) {
+            // ── P1 메타 마스터리 웜스타트 — 실 유저 다수(채택률 40%+)가 고른 효과를 신뢰한다.
+            //   단일 지표 greedy 는 패키지 시너지(미초과 화염저항→재생 등)를 저평가하므로,
+            //   메타 효과가 최고 평가 대비 1% 이내면 메타를 채택. 신규 할당 문턱도 메타는 +0.05%로 완화.
+            Set<Integer> metaIds =
+                node.masteryEffects().stream()
+                    .filter(this::isMetaMasteryEffect)
+                    .map(PoeTreeGraphService.MasteryEffect::id)
+                    .collect(java.util.stream.Collectors.toSet());
+            Map.Entry<Integer, Double> bestMeta =
+                results.entrySet().stream()
+                    .filter(en -> metaIds.contains(en.getKey()))
+                    .max(Map.Entry.comparingByValue())
+                    .orElse(null);
+            Map.Entry<Integer, Double> pick = best;
+            if (bestMeta != null && best != null && bestMeta.getValue() >= best.getValue() * 0.99) {
+              pick = bestMeta;
+            }
+            boolean pickIsMeta = pick != null && metaIds.contains(pick.getKey());
+            // 이미 찍은 노드의 효과는 공짜라 조금이라도 나으면 채택. 신규 할당은 포인트당 문턱(+0.3%, 메타 +0.05%).
+            int cost = Math.max(1, allocPath.size());
+            double threshold =
+                isNew ? current * (1 + (pickIsMeta ? 0.0005 : 0.003) * cost) : current;
+            // 메타 픽이 문턱 미달인데 원래 최고는 통과하는 희귀 케이스 — 원래 최고로 폴백
+            if (pick != null
+                && pick != best
+                && !(pick.getValue() > 0 && pick.getValue() > threshold)
+                && best.getValue() > 0
+                && best.getValue() > (isNew ? current * (1 + 0.003 * cost) : current)) {
+              pick = best;
+              pickIsMeta = metaIds.contains(pick.getKey());
+              threshold = isNew ? current * (1 + 0.003 * cost) : current;
+            }
+            if (pick != null && pick.getValue() > 0 && pick.getValue() > threshold) {
+              final int pickedEffect = pick.getKey();
               Map<Integer, Integer> merged = new LinkedHashMap<>(fixedMasteries);
-              merged.put(nodeId, best.getKey());
+              merged.put(nodeId, pickedEffect);
               fixedMasteries = merged;
               if (isNew) {
-                allocated.add(nodeId);
-                points++;
+                allocated.addAll(allocPath);
+                points += allocPath.size();
               }
-              current = best.getValue();
+              current = pick.getValue();
               PoeTreeGraphService.MasteryEffect chosen =
                   node.masteryEffects().stream()
-                      .filter(e -> e.id() == best.getKey())
+                      .filter(e -> e.id() == pickedEffect)
                       .findFirst()
                       .orElse(null);
               String effectText =
                   chosen == null
-                      ? String.valueOf(best.getKey())
+                      ? String.valueOf(pickedEffect)
                       : (chosen.statsKo() != null && !chosen.statsKo().isEmpty()
                           ? chosen.statsKo().get(0)
                           : chosen.stats().isEmpty() ? "" : chosen.stats().get(0));
               log(
-                  (isNew ? "마스터리 신규(+1pt): " : "마스터리: ")
+                  (isNew ? "마스터리 신규(+" + allocPath.size() + "pt): " : "마스터리: ")
                       + (node.nameKo() != null ? node.nameKo() : node.name())
                       + " → "
                       + effectText
+                      + (pickIsMeta ? " (메타)" : "")
                       + " → "
                       + format(current));
             } else if (!isNew) {
@@ -3446,7 +4235,18 @@ public class PoeOptimizeService {
     if ("balanced".equals(objective)) {
       // 밸런스 = "실제로 쓸 수 있는 최상의 빌드". 생존을 문턱이 아니라 **연속 가치**로 평가한다.
       //   dps/ehp 분기는 무변경 → 그쪽 기준선 불변.
-      return dps * balancedSurvival(values) * factor;
+      double surv = balancedSurvival(values);
+      // RF 등 자가연소(selfBurnRun): 실빌드 총생명재생(targetLifeRegen, ninja 중앙값)까지 총재생을 유도한다.
+      //   기존 sustainFactor 는 순재생<0(자멸)만 감쇠 → 순재생 0(경계선·지속불가)에 안주하던 것을 교정
+      //   (사용자 지적: 실빌드 재생 2666인데 시뮬 0). balanced·자가연소 한정이라 dps/ehp 및 비-RF 기준선 불변.
+      if (selfBurnRun && targetLifeRegen > 0) {
+        double regen = values.getOrDefault("LifeRegen", 0d);
+        double r = Math.max(0d, Math.min(1d, regen / targetLifeRegen));
+        // P2 시도: 0.25+0.75r 로 강화했더니 초기 저재생 구간에서 팩터가 전 후보를 짓눌러 탐색이 왜곡,
+        //   전 축 하락(730k→580k, 카오스 게이트 무관 — 강도 2종에서 동일 결과로 분리 확인) → 0.5+0.5r 유지.
+        surv *= 0.5 + 0.5 * r; // 재생 0 → ×0.5(강한 유도), 목표 도달 → ×1.0
+      }
+      return dps * surv * factor;
     }
     return dps * factor;
   }
@@ -3513,6 +4313,17 @@ public class PoeOptimizeService {
       double r = values.getOrDefault(resKeys[i], target);
       if (r < target) {
         s *= Math.max(0.15, 1.0 - (target - r) * 0.025);
+      }
+    }
+    // (2c) P2 카오스 저항 목표 — 실빌드 중앙값(캡 75) 미달 1%당 0.4% 감쇠(하한 0.8).
+    //   (2)의 카오스 최대피격 2차 가중만으론 26% 방치(실측) — 명시 목표로 실빌드 파리티 유도.
+    //   ⚠ 1%/pt·하한 0.5 로 했더니 초기 트리 탐색까지 지배해 전 축 하락(730k→580k, 생명 10.6k→7.1k 실측) —
+    //   카오스저항은 주로 장비 접미어에서 오므로 아이템 단계를 조향할 약한 신호면 충분하다.
+    //   targetChaosRes=0(시드 없음/비-balanced)이면 무변경.
+    if (targetChaosRes > 0) {
+      double cr = values.getOrDefault("ChaosResist", (double) targetChaosRes);
+      if (cr < targetChaosRes) {
+        s *= Math.max(0.8, 1.0 - (targetChaosRes - cr) * 0.004);
       }
     }
     // (3) 지속 — 단일 히트가 아니라 도트/자가연소(RF) 지속 사망은 max hit 로 안 잡힌다. 순생명재생<0 near-hard 배제.
@@ -5191,12 +6002,28 @@ public class PoeOptimizeService {
             && (poeSkillWeaponDataService.allowsSceptre(gem.name())
                 || (poeSkillWeaponDataService.categories(gem.name()).isEmpty()
                     && categories.contains("wand")));
+    // P1② 메타 무기 구성 — 무기 유니크 후보도 메타 category 로 제약(교집합 비면 무제약 폴백).
+    Set<String> metaCategories =
+        slot == Slot.WEAPON && !metaWeaponClasses.isEmpty()
+            ? metaWeaponClasses.stream()
+                .map(WEAPON_CLASS_TO_CATEGORY::get)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet())
+            : Set.of();
     record Scored(PoeUniqueItem item, int score) {}
     return poeUniqueDataService.search(null, "all", null).stream()
         .filter(
             item ->
                 categories.contains(item.category())
                     || (spellWeapon
+                        && item.baseType() != null
+                        && item.baseType().contains("Sceptre")))
+        .filter(
+            item ->
+                metaCategories.isEmpty()
+                    || slot != Slot.WEAPON
+                    || metaCategories.contains(item.category())
+                    || (metaWeaponClasses.contains("Sceptre")
                         && item.baseType() != null
                         && item.baseType().contains("Sceptre")))
         .filter(item -> item.requiredLevel() == null || item.requiredLevel() <= LEVEL)
@@ -5401,7 +6228,10 @@ public class PoeOptimizeService {
         .append(" slot=\"Body Armour\">")
         .append("<Gem nameSpec=\"")
         .append(gem.name())
-        .append("\" level=\"20\" quality=\"20\" enabled=\"true\"/>");
+        // 메인 스킬 젬 21/20 — 실빌드 96+ 의 표준(부패 +1). 나머지 엔드게임 전제(20/20 보조·최상위 레어·
+        // 각성 계몽5)와 같은 계열. RF 등 젬 레벨 스케일 스킬의 ninja 대비 과소평가를 교정(20→21 연소 기본 +19%).
+        // ⚠ 전 잡 공통 가정 변경 — 기준선 재확립 필요(2026-08-03, #170 계열).
+        .append("\" level=\"21\" quality=\"20\" enabled=\"true\"/>");
     for (PoeGem support : supports) {
       // PoB 의 보조젬 이름은 "Support" 접미사가 없다 ("Spell Echo Support" 는 미인식 → 계산 무효)
       xml.append("<Gem nameSpec=\"")
@@ -5584,6 +6414,20 @@ public class PoeOptimizeService {
       //    GUI 표시 게이트라 **헤드리스 주입 시 원천 없이 무조건 +90% 카오스 적용**된다. 그러면 greedy 가
       //    "공짜 위더"를 노려 카오스 변환 빌드로 DPS 를 부풀린다(실측: 물리 cyclone 이 +40% 급등 = 근거 없음).
       //    위더는 반드시 최적화기가 실제 위더 원천(위더 스킬 셋업 등)을 넣었을 때만 = self-gated 로 모델링해야 함(후속).
+    }
+    // P1③ 메타 판테온(balanced 전용, 패싯 최다) — 미설정("")이면 미출력 → dps/ehp 기준선 불변.
+    //   ⚠ 정지 조건부 효과(Tukohama 등)는 PoB 의 Stationary 조건 게이트에 따르므로 일부만 반영될 수 있음.
+    if (!metaPantheonMajor.isEmpty()) {
+      config
+          .append("<Input name=\"pantheonMajorGod\" string=\"")
+          .append(metaPantheonMajor)
+          .append("\"/>");
+    }
+    if (!metaPantheonMinor.isEmpty()) {
+      config
+          .append("<Input name=\"pantheonMinorGod\" string=\"")
+          .append(metaPantheonMinor)
+          .append("\"/>");
     }
     config.append("</Config>");
     return config.toString();
@@ -6591,11 +7435,21 @@ public class PoeOptimizeService {
     } else {
       classes = List.of("Wand", "Sceptre");
     }
-    // 보조장비를 이미 낀 상태면 양손 무기 제외 — 게임에서 방패와 양손 무기는 동시에 못 든다
+    // P1② 메타 무기 구성 — 실빌드 최다 구성(점유율 50%+)의 클래스로 제약. 교집합이 비면 원래 후보 유지(폴백).
+    List<String> constrained =
+        metaWeaponClasses.isEmpty()
+            ? List.of()
+            : classes.stream().filter(metaWeaponClasses::contains).toList();
+    final List<String> allowedClasses = constrained.isEmpty() ? classes : constrained;
+    // 보조장비를 이미 낀 상태면 양손 무기 제외 — 게임에서 방패와 양손 무기는 동시에 못 든다.
+    // 메타가 "X / Shield" 구성이면 방패 자리를 지키기 위해 양손 무기를 처음부터 제외.
     boolean offhandOccupied = offhand != null;
     return poeBaseItemDataService.search(null, null).stream()
-        .filter(base -> base.weapon() != null && classes.contains(base.itemClass()))
-        .filter(base -> !offhandOccupied || !TWO_HANDED_CLASSES.contains(base.itemClass()))
+        .filter(base -> base.weapon() != null && allowedClasses.contains(base.itemClass()))
+        .filter(
+            base ->
+                (!offhandOccupied && !metaOffhandShield)
+                    || !TWO_HANDED_CLASSES.contains(base.itemClass()))
         .filter(base -> base.dropLevel() <= LEVEL)
         .sorted(
             Comparator.comparingDouble(

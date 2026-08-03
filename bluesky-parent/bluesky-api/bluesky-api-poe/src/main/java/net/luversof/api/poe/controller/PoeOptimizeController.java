@@ -32,7 +32,12 @@ public class PoeOptimizeController {
   @GetMapping("/archetype")
   public PoeOptimizeService.ArchetypeBenchmark archetype(
       @RequestParam(required = false, defaultValue = "") String skill,
-      @RequestParam(required = false, defaultValue = "") String ascendancy) {
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      // 멀티스킬 조합(콤마 구분 젬 이름) — 지정 시 그 스킬 **전부** 쓰는 캐릭터만 즉석 집계(단일이면 기존 경로)
+      @RequestParam(required = false, defaultValue = "") String skills) {
+    if (!skills.isBlank()) {
+      return poeOptimizeService.ninjaComboBenchmark(ascendancy, List.of(skills.split(",")));
+    }
     return poeOptimizeService.ninjaBenchmark(ascendancy, skill);
   }
 

@@ -90,6 +90,19 @@ const FAMILIES = [
 		slots: ["weaponSpell", "amulet", "ring"] },
 	{ key: "castSpeed", gen: "suffix", pattern: "IncreasedCastSpeed", keywords: ["spell", "cast speed"],
 		slots: ["weaponSpell", "amulet", "ring"] },
+	// 지속 피해 배율 (접미) — RF/도트 빌드 무기의 핵심(실빌드 셉터 표준 +25% 급). 풀에 아예 없어서
+	// 시뮬 레어가 실빌드 DPS 를 못 따라가던 구멍(RF 684k vs 실빌드 1.1M 수사에서 발견).
+	// 합법성은 craftRare 의 canSpawn(베이스 클래스×변형) 판정에 맡긴다. 양손 전용 *TwoHand 패밀리는 별도(미편입).
+	{ key: "dotMulti", gen: "suffix", pattern: "GlobalDamageOverTimeMultiplier", keywords: ["damage over time", "burning", "ignite", "poison", "bleed"],
+		slots: ["weaponSpell", "weaponAttack"] },
+	{ key: "fireDotMulti", gen: "suffix", pattern: "FireDamageOverTimeMultiplier", keywords: ["fire", "burning", "ignite", "damage over time"],
+		slots: ["weaponSpell"] },
+	{ key: "coldDotMulti", gen: "suffix", pattern: "ColdDamageOverTimeMultiplier", keywords: ["cold", "damage over time"],
+		slots: ["weaponSpell"] },
+	{ key: "chaosDotMulti", gen: "suffix", pattern: "ChaosDamageOverTimeMultiplier", keywords: ["chaos", "poison", "damage over time"],
+		slots: ["weaponSpell"] },
+	{ key: "physDotMulti", gen: "suffix", pattern: "PhysicalDamageOverTimeMultiplier", keywords: ["physical", "bleed", "damage over time"],
+		slots: ["weaponAttack"] },
 	// spellCrit(SpellCriticalStrikeChance) 는 스탯 설명이 보조젬 변형("Supported Skills have…")으로
 	// 렌더돼 장비 모드로 부적합 → 제외. 치명은 critMulti 로 커버.
 	// 공격 피해 (접두/접미)

@@ -113,10 +113,11 @@ const toSigned = (v) => (v >= (1n << 63n) ? Number(v - (1n << 64n)) : Number(v))
 // columnsParam(옵션): 스칼라 컬럼(저항/armour/per-type maxhit 등)을 골라 받는다. null=기본 10컬럼(skills/keypassives 포함).
 // ⚠ 리스트 컬럼(skills/keypassives/items/masteries)은 columns= 로 선택 불가 — 기본 세트에만 있음.
 // filterSkill(옵션): skills=<스킬명> 서버측 필터 → 그 스킬 사용 top-100 만 반환(검증: 반환 전 행에 해당 젬 인덱스 존재).
-async function fetchSearch(snapshot, league, columnsParam, filterSkill) {
+async function fetchSearch(snapshot, league, columnsParam, filterSkill, filterClass) {
 	let url = `${BASE}/api/builds/${snapshot}/search?overview=${league}&type=exp`;
 	if (columnsParam) url += `&columns=${columnsParam}`;
 	if (filterSkill) url += `&skills=${encodeURIComponent(filterSkill)}`;
+	if (filterClass) url += `&class=${encodeURIComponent(filterClass)}`;
 	const buf = await httpGet(url);
 	// 최상위 래퍼 field#1 언랩
 	const [, p0] = readVarint(buf, 0);
@@ -127,6 +128,35 @@ async function fetchSearch(snapshot, league, columnsParam, filterSkill) {
 	// dict 해시(40-hex) 전부 수집 (본문 전체에서)
 	const hashes = [...new Set((buf.toString("latin1").match(/[0-9a-f]{40}/g) || []))];
 
+	// field#1(varint) = 필터 매칭 **전체 모집단** 수(top-100 표본이 아님) — 패싯 % 의 분모.
+	const total = Number(top.find((x) => x.fn === 1 && x.w === 0)?.v ?? 0);
+	// field#6 = 차원 이름 → 사전 해시 (패싯 라벨 해석용)
+	const dimHash = {};
+	for (const t of top.filter((x) => x.fn === 6 && x.w === 2)) {
+		const parts = walk(t.sub);
+		const nm = parts.find((p) => p.fn === 1 && p.w === 2)?.sub.toString("utf8");
+		const h = parts.find((p) => p.fn === 2 && p.w === 2)?.sub.toString("utf8");
+		if (nm && h) dimHash[nm] = h;
+	}
+	// field#2 = 패싯 블록(사이트 좌측 사이드바 집계) — {1:이름, 2:차원, 3:버킷*}, 버킷 {1:사전인덱스(생략=0), 2:카운트}.
+	//   카운트는 **전체 모집단** 기준이라 top-100 표본 집계보다 훨씬 정확(사용자 요청의 근거 데이터).
+	const facets = [];
+	for (const t of top.filter((x) => x.fn === 2 && x.w === 2)) {
+		const parts = walk(t.sub);
+		const nm = parts.find((p) => p.fn === 1 && p.w === 2)?.sub.toString("utf8");
+		const dim = parts.find((p) => p.fn === 2 && p.w === 2)?.sub.toString("utf8");
+		if (!nm || !dim) continue;
+		const buckets = parts
+			.filter((p) => p.fn === 3 && p.w === 2)
+			.map((p) => {
+				const inner = walk(p.sub);
+				return {
+					i: Number(inner.find((x) => x.fn === 1 && x.w === 0)?.v ?? 0),
+					c: Number(inner.find((x) => x.fn === 2 && x.w === 0)?.v ?? 0),
+				};
+			});
+		facets.push({ name: nm, dim, buckets });
+	}
 	// field#5 = 데이터 컬럼
 	const columns = {};
 	let rowCount = 0;
@@ -149,7 +179,27 @@ async function fetchSearch(snapshot, league, columnsParam, filterSkill) {
 			return null;                                       // 빈 값(인덱스 0 / 없음)
 		});
 	}
-	return { columns, hashes, rowCount };
+	return { columns, hashes, rowCount, total, facets, dimHash };
+}
+
+// 패싯 라벨 해석 + 요약 — 사전으로 인덱스→라벨, 카운트 내림차순 상위 cap 개만.
+//   보존 차원: 사용자가 참고 요청한 마스터리/룬크래프트/문신/무기설정/판테온/아틀라스패시브 + 도유/혈맹/산적/장비/키스톤.
+const FACET_KEEP = new Set([
+	"masteries", "runegrafts", "tattoos", "weaponmode", "pantheons", "pantheon",
+	"atlasskills", "anointed", "secondascendancy", "bandit", "items", "keypassives", "shrinebeltbuffs",
+]);
+function resolveFacets(search, dicts, cap = 12) {
+	const out = {};
+	for (const f of search.facets || []) {
+		if (!FACET_KEEP.has(f.name)) continue;
+		const dict = dicts[f.dim] || [];
+		out[f.name] = f.buckets
+			.slice()
+			.sort((a, b) => b.c - a.c)
+			.slice(0, cap)
+			.map((b) => ({ name: dict[b.i] ?? `#${b.i}`, count: b.c }));
+	}
+	return { total: search.total, groups: out };
 }
 
 // ---------- 3) dictionaries ----------
@@ -182,10 +232,19 @@ const lbl = (dict, i) => (dict && i != null && i >= 0 && i < dict.length ? dict[
 const isSupportGem = (name) => /\bSupport$/.test(name); // 보조젬은 이름이 "... Support" 로 끝남
 
 // 리치(방어 스칼라·per-type maxhit) 컬럼 — columns= 로 요청 가능한 것만(리스트 컬럼 제외).
+// poe.ninja 검색 스칼라 컬럼 전체(스샷의 전 컬럼) — 실제 API 키명(사용자 제공/프로브 확정).
+//   방어/공격 스칼라 + 속성(str/dex/int) + 부가 자원(ward/mana/이동속도/아이템희귀도) +
+//   충전(echarges/fcharges/pcharges) + 주문막기/회피(sblock/sdodge) +
+//   클러스터주얼 개수(cjewels/lcjewels/mcjewels/scjewels) + 유니크/미러 장비 개수(uequip/mequip/mweapons/marmours).
+//   ※ character/level/life/energyshield/ehp/dps/keystoneskill 은 base 응답에 이미 포함 → 여기선 제외.
 const RICH_COLS = [
 	"liferegen", "fireres", "coldres", "lightningres", "chaosres",
 	"armour", "evasion", "block", "suppress", "phystakenas",
 	"physicalmax", "firemax", "coldmax", "lightningmax", "chaosmax", "lowestmax",
+	"ward", "mana", "movementspeed", "itemrarity", "str", "dex", "int",
+	"echarges", "fcharges", "pcharges", "sblock", "sdodge",
+	"cjewels", "lcjewels", "mcjewels", "scjewels",
+	"uequip", "mequip", "mweapons", "marmours",
 ].join(",");
 
 const MAX_FILTER_SKILLS = Number(process.env.NINJA_MAX_SKILLS || 80); // per-skill 확장 상한(요청 수 제어; overview 인기 스킬 대부분 커버)
@@ -214,6 +273,10 @@ async function decodePair(snapshot, league, dicts, filterSkill) {
 			level: base.columns.level?.[i] ?? null, life: base.columns.life?.[i] ?? null,
 			energyShield: base.columns.energyshield?.[i] ?? null,
 			ehp: parseAbbrev(base.columns.ehp?.[i]), dps: parseAbbrev(dpsCol?.[i]),
+			// 스킬별 전용 DPS — skills= 필터 응답의 dps-<스킬> 은 그 스킬 전용 DPS. 같은 캐릭터가 여러 스킬 필터
+			// top-100 에 겹치면 fetchLeague 의 add() 가 이 맵을 병합해 캐릭터당 {스킬: 전용DPS} 를 축적한다.
+			// (조합 벤치의 DPS 를 "메인 스킬 전용"으로 통일하는 근거 데이터 — 혼합 dps 중앙값은 의미가 없음.)
+			dpsBySkill: filterSkill && dpsKey && dpsKey.startsWith("dps-") ? { [filterSkill]: parseAbbrev(dpsCol?.[i]) } : {},
 			// skills= 필터 시엔 그 스킬을 메인으로 간주(overview 순서와 무관하게 요청 스킬이 정체성).
 			mainSkill: filterSkill && actives.includes(filterSkill) ? filterSkill : (actives[0] ?? null),
 			activeSkills: actives, keystones,
@@ -226,9 +289,83 @@ async function decodePair(snapshot, league, dicts, filterSkill) {
 			physicalMax: parseAbbrev(rc.physicalmax?.[j]), fireMax: parseAbbrev(rc.firemax?.[j]),
 			coldMax: parseAbbrev(rc.coldmax?.[j]), lightningMax: parseAbbrev(rc.lightningmax?.[j]),
 			chaosMax: parseAbbrev(rc.chaosmax?.[j]), lowestMax: parseAbbrev(rc.lowestmax?.[j]),
+			// 부가 자원/속성/충전/주문막기/클러스터·미러 개수(스샷 전 컬럼).
+			ward: parseAbbrev(rc.ward?.[j]), mana: parseAbbrev(rc.mana?.[j]),
+			movementSpeed: rc.movementspeed?.[j] ?? null, itemRarity: rc.itemrarity?.[j] ?? null,
+			str: rc.str?.[j] ?? null, dex: rc.dex?.[j] ?? null, int: rc.int?.[j] ?? null,
+			enduranceCharges: rc.echarges?.[j] ?? null, frenzyCharges: rc.fcharges?.[j] ?? null,
+			powerCharges: rc.pcharges?.[j] ?? null,
+			spellBlock: rc.sblock?.[j] ?? null, spellDodge: rc.sdodge?.[j] ?? null,
+			clusterJewels: rc.cjewels?.[j] ?? null, largeCluster: rc.lcjewels?.[j] ?? null,
+			mediumCluster: rc.mcjewels?.[j] ?? null, smallCluster: rc.scjewels?.[j] ?? null,
+			uniqueEquip: rc.uequip?.[j] ?? null, mirroredItems: rc.mequip?.[j] ?? null,
+			mirroredWeapons: rc.mweapons?.[j] ?? null, mirroredArmours: rc.marmours?.[j] ?? null,
 		});
 	}
-	return builds;
+	return { builds, search: base };
+}
+
+// ---------- 마스터리 채집 (캐릭터 상세 JSON) ----------
+// 검색 API 는 리스트 컬럼(masteries)을 columns= 로 주지 않는다(실측: 요청해도 기본 10컬럼만).
+// 대신 캐릭터 상세 `${BASE}/api/builds/{snapshot}/character?...` 가 **평문 JSON** 으로
+// masteries[{name,group,nodeId}] 를 노출한다. 전 캐릭터(3.5k) 페치는 과하므로
+// (전직|메인스킬) 그룹별 레벨 상위 N 명만 샘플링 + snapshot 단위 디스크 캐시로 재실행 무료화.
+// ⚠ 캐릭터 엔드포인트는 창(약 4~5분)당 ~60요청의 엄격한 레이트리밋(429 + Retry-After ~250s)이 있다.
+//   → 표본이 큰 아키타입부터 우선 채집 + snapshot 단위 디스크 캐시로 실행할 때마다 누적.
+//   기본은 429를 만나면 그 실행에선 중단(캐시에 쌓인 만큼만 반영). NINJA_MASTERY_WAIT=<분> 을 주면
+//   그 시간 예산 안에서 Retry-After 만큼 기다렸다 계속(집중 채집용).
+const MASTERY_SAMPLE_PER_GROUP = Number(process.env.NINJA_MASTERY_SAMPLE || 12);
+async function enrichMasteries(snapshot, league, builds) {
+	const groups = {};
+	for (const b of builds) {
+		if (b.ascendancy && b.mainSkill) (groups[`${b.ascendancy}|${b.mainSkill}`] ||= []).push(b);
+	}
+	// 대형 아키타입(표본 큰 것 = 벤치로 자주 쓰이는 것)부터 — 리밋에 걸려도 가치 높은 것부터 확보
+	const targets = [];
+	for (const arr of Object.values(groups).sort((a, b) => b.length - a.length)) {
+		const eg = arr.filter((b) => (b.level ?? 0) >= LEVEL_ENDGAME);
+		const pool = (eg.length >= ENDGAME_MIN_SAMPLE ? eg : arr).slice().sort((a, b) => (b.level ?? 0) - (a.level ?? 0));
+		targets.push(...pool.slice(0, MASTERY_SAMPLE_PER_GROUP));
+	}
+	const uniq = [...new Map(targets.map((b) => [`${b.account}|${b.name}`, b])).values()];
+	const cachePath = path.join(OUT_DIR, `chars-cache-${snapshot}.json`);
+	let cache = {};
+	try { cache = JSON.parse(fs.readFileSync(cachePath, "utf8")); } catch { /* 첫 실행 */ }
+	const waitBudgetMs = Number(process.env.NINJA_MASTERY_WAIT || 0) * 60_000;
+	const deadline = Date.now() + waitBudgetMs;
+	let fetched = 0, hit = 0, fail = 0, stopped = false;
+	for (const b of uniq) {
+		const key = `${b.account}|${b.name}`;
+		if (cache[key]) { b.masteries = cache[key]; hit++; continue; }
+		if (stopped) continue;
+		for (;;) {
+			try {
+				const u = `${BASE}/api/builds/${snapshot}/character?account=${encodeURIComponent(b.account)}&name=${encodeURIComponent(b.name)}&overview=${league}&type=0&timeMachine=`;
+				const res = await fetch(u, { headers: { "User-Agent": UA, "Accept": "*/*" } });
+				if (res.status === 429) {
+					const retryS = Number(res.headers.get("retry-after") || 300);
+					if (waitBudgetMs > 0 && Date.now() + retryS * 1000 < deadline) {
+						console.log(`[ninja] 마스터리 채집 레이트리밋 — ${retryS}s 대기 후 계속 (진행 ${fetched + hit}/${uniq.length})`);
+						await new Promise((s) => setTimeout(s, (retryS + 3) * 1000));
+						continue;
+					}
+					stopped = true; // 이번 실행은 여기까지 — 다음 실행이 캐시 위에 이어서 채집
+					break;
+				}
+				if (!res.ok) { fail++; break; }
+				const j = await res.json();
+				const ms = Array.isArray(j.masteries) ? j.masteries.map((m) => m.name).filter(Boolean) : [];
+				b.masteries = ms;
+				cache[key] = ms;
+				fetched++;
+				break;
+			} catch { fail++; break; }
+		}
+	}
+	fs.mkdirSync(OUT_DIR, { recursive: true });
+	fs.writeFileSync(cachePath, JSON.stringify(cache));
+	const covered = fetched + hit;
+	console.log(`[ninja] 마스터리 채집: ${covered}/${uniq.length} 커버 (신규 ${fetched}, 캐시 ${hit}, 실패 ${fail}${stopped ? ", 레이트리밋 중단 — 재실행 시 이어서" : ""})`);
 }
 
 // ---------- 리그 단위 페치 (overview + per-skill 필터 확장) ----------
@@ -240,30 +377,75 @@ async function fetchLeague(league) {
 	const dicts = await fetchDictionaries(overviewBase.hashes);
 	const gemDict = dicts.gem || [];
 
-	const seen = new Set();
+	// 중복 캐릭터는 버리지 않고 dpsBySkill 을 병합 — 같은 캐릭터가 RF 필터와 화염덫 필터 양쪽 top-100 에
+	// 잡히면 {RF: 전용DPS, FireTrap: 전용DPS} 둘 다 확보된다(조합 벤치의 스킬별 DPS 근거).
+	const byKey = new Map();
 	const all = [];
-	const add = (arr) => { for (const b of arr) { const key = `${b.league}|${b.name}`; if (b.name && !seen.has(key)) { seen.add(key); all.push(b); } } };
+	const add = (arr) => {
+		for (const b of arr) {
+			if (!b.name) continue;
+			const key = `${b.league}|${b.name}`;
+			const ex = byKey.get(key);
+			if (ex) { Object.assign(ex.dpsBySkill, b.dpsBySkill); continue; }
+			byKey.set(key, b);
+			all.push(b);
+		}
+	};
 
 	// 1) overview top-100
-	add(await decodePair(snapshot, league, dicts, null));
-	// 2) 인기 스킬(= overview 빌드의 메인 액티브 distinct) 별 top-100 확장
+	add((await decodePair(snapshot, league, dicts, null)).builds);
+	// 2) 인기 스킬(= overview 빌드의 메인 액티브 distinct) 별 top-100 확장 + 패싯(사이드바 집계) 캡처
 	const skillFreq = {};
 	for (const b of all) if (b.mainSkill) skillFreq[b.mainSkill] = (skillFreq[b.mainSkill] || 0) + 1;
 	const targetSkills = Object.entries(skillFreq).sort((a, b) => b[1] - a[1]).slice(0, MAX_FILTER_SKILLS).map(([s]) => s);
 	let expanded = 0;
+	const skillFacets = {}; // 스킬 → 패싯(전 전직 통합 모집단)
+	const ascFacets = {};   // "클래스|스킬" → 패싯(그 스킬의 최다 클래스 정밀 모집단)
+	const classDict = dicts.class || [];
 	for (const skill of targetSkills) {
 		try {
 			const before = all.length;
-			add(await decodePair(snapshot, league, dicts, skill));
+			const { builds: sb, search } = await decodePair(snapshot, league, dicts, skill);
+			add(sb);
 			expanded += all.length - before;
+			skillFacets[skill] = resolveFacets(search, dicts);
+			// 최다 클래스(전직)로 1회 더 — 사이드바와 동일한 (스킬×전직) 정밀 패싯. 표본 10 미만은 생략.
+			const cf = (search.facets || []).find((f) => f.name === "class");
+			const topC = cf ? cf.buckets.slice().sort((a, b) => b.c - a.c)[0] : null;
+			const cls = topC && topC.c >= 10 ? classDict[topC.i] : null;
+			if (cls) {
+				try {
+					const exact = await fetchSearch(snapshot, league, null, skill, cls);
+					ascFacets[`${cls}|${skill}`] = resolveFacets(exact, dicts);
+				} catch (e) { console.warn(`  facet ${cls}|${skill} 실패:`, e.message); }
+			}
 		} catch (e) { console.warn(`  skills=${skill} 실패:`, e.message); }
 	}
-	console.log(`[ninja] ${league} @${snapshot}: ${all.length} builds (overview + ${targetSkills.length}스킬 확장 +${expanded}, dict gem ${gemDict.length})`);
-	return { snapshot, builds: all };
+	console.log(`[ninja] ${league} @${snapshot}: ${all.length} builds (overview + ${targetSkills.length}스킬 확장 +${expanded}, 패싯 ${Object.keys(skillFacets).length}스킬/${Object.keys(ascFacets).length}정밀, dict gem ${gemDict.length})`);
+	await enrichMasteries(snapshot, league, all);
+	return { snapshot, builds: all, skillFacets, ascFacets };
 }
 
 // ---------- 아키타입 집계 ----------
 const _median = (arr) => { const s = arr.filter((v) => v != null && !Number.isNaN(v)).sort((a, x) => a - x); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+
+// 아키타입 목표치 산출에 쓰는 전 수치 컬럼(스샷 전 컬럼) → 캐릭터별 접근자.
+// 이 필드들로 (a)캐릭터 단위 이상치 판정(전 컬럼 z-점수 종합) 후 (b)살아남은 캐릭터들의 중앙값을 목표치로 낸다.
+// 즉 "값이 크게 벗어난 캐릭터를 통째로 걸러낸 뒤 중앙값" — 단순 전체 평균/전체 중앙값과 다르다.
+const NUM_FIELDS = {
+	level: (b) => b.level, life: (b) => b.life, energyShield: (b) => b.energyShield,
+	ward: (b) => b.ward, mana: (b) => b.mana, ehp: (b) => b.ehp, dps: (b) => b.dps,
+	lifeRegen: (b) => b.lifeRegen, itemRarity: (b) => b.itemRarity, movementSpeed: (b) => b.movementSpeed,
+	fireRes: (b) => b.fireRes, coldRes: (b) => b.coldRes, lightningRes: (b) => b.lightningRes, chaosRes: (b) => b.chaosRes,
+	armour: (b) => b.armour, evasion: (b) => b.evasion, block: (b) => b.block, spellBlock: (b) => b.spellBlock,
+	spellDodge: (b) => b.spellDodge, suppress: (b) => b.suppress, phystakenas: (b) => b.physTakenAs,
+	str: (b) => b.str, dex: (b) => b.dex, int: (b) => b.int,
+	enduranceCharges: (b) => b.enduranceCharges, frenzyCharges: (b) => b.frenzyCharges, powerCharges: (b) => b.powerCharges,
+	clusterJewels: (b) => b.clusterJewels, largeCluster: (b) => b.largeCluster, mediumCluster: (b) => b.mediumCluster, smallCluster: (b) => b.smallCluster,
+	uniqueEquip: (b) => b.uniqueEquip, mirroredItems: (b) => b.mirroredItems, mirroredWeapons: (b) => b.mirroredWeapons, mirroredArmours: (b) => b.mirroredArmours,
+	physicalMax: (b) => b.physicalMax, fireMax: (b) => b.fireMax, coldMax: (b) => b.coldMax,
+	lightningMax: (b) => b.lightningMax, chaosMax: (b) => b.chaosMax, lowestMax: (b) => b.lowestMax,
+};
 const _topN = (counter, n) => Object.entries(counter).sort((a, x) => x[1] - a[1]).slice(0, n).map(([k, c]) => ({ name: k, count: c }));
 
 // 엔드게임(96레벨+) 표본만으로 프로파일을 낸다. 저레벨 캐릭터는 저항/EHP가 미완성이라
@@ -278,30 +460,77 @@ function endgameSubset(arr) {
 	return hi.length >= ENDGAME_MIN_SAMPLE ? hi : arr;
 }
 
-/** 한 그룹(빌드 배열)의 중앙값 프로파일. base = 그룹 식별 필드({ascendancy?, mainSkill}). */
+// 캐릭터 단위 이상치 판정 임계(평균 절대 z). 이보다 크게 벗어난 캐릭터는 통째로 제거.
+const OUTLIER_MEAN_Z = 1.75;
+
+/**
+ * 한 그룹(빌드 배열)의 프로파일.
+ * 1) 엔드게임(96+) 부분집합에서 전 수치 컬럼의 코호트 평균·표준편차 계산.
+ * 2) 캐릭터별 "평균 절대 z"(전 컬럼 표준편차 대비 편차의 평균)를 구해, 크게 벗어난 캐릭터를 통째로 제거.
+ * 3) 살아남은 캐릭터들의 중앙값을 아키타입 목표치로 낸다.
+ * → 사용자 요구: 단순 전체 평균/중앙값이 아니라, 값이 크게 다른 캐릭터를 걸러낸 뒤 중앙값.
+ * base = 그룹 식별 필드({ascendancy?, mainSkill}).
+ */
 function groupProfile(fullArr, base) {
 	const arr = endgameSubset(fullArr);
-	const med = (f) => _median(arr.map(f));
-	const coCnt = {}, keyCnt = {};
-	for (const b of arr) {
+	// (1) 컬럼별 코호트 평균·표준편차
+	const stat = {};
+	for (const [k, f] of Object.entries(NUM_FIELDS)) {
+		const vs = arr.map(f).filter((v) => v != null && !Number.isNaN(v));
+		const mean = vs.length ? vs.reduce((a, x) => a + x, 0) / vs.length : 0;
+		const vr = vs.length ? vs.reduce((a, x) => a + (x - mean) ** 2, 0) / vs.length : 0;
+		stat[k] = { mean, std: Math.sqrt(vr) };
+	}
+	// (2) 캐릭터별 평균 절대 z → 임계 초과 캐릭터 제거(표본 너무 줄면 완화 폴백)
+	const scored = arr.map((b) => {
+		let sum = 0, n = 0;
+		for (const [k, f] of Object.entries(NUM_FIELDS)) {
+			const s = stat[k]; if (!s.std) continue;
+			const v = f(b); if (v == null || Number.isNaN(v)) continue;
+			sum += Math.abs((v - s.mean) / s.std); n++;
+		}
+		return { b, mz: n ? sum / n : 0 };
+	});
+	let kept = scored.filter((s) => s.mz <= OUTLIER_MEAN_Z).map((s) => s.b);
+	const floor = Math.max(3, Math.ceil(scored.length * 0.5));
+	if (kept.length < floor) kept = scored.slice().sort((a, b) => a.mz - b.mz).slice(0, floor).map((s) => s.b); // 과다 제거 방지
+	// (3) 살아남은 캐릭터들의 중앙값
+	const med = (f) => _median(kept.map(f));
+	const coCnt = {}, keyCnt = {}, mastCnt = {};
+	for (const b of kept) {
 		for (const s of b.activeSkills) if (s !== base.mainSkill) coCnt[s] = (coCnt[s] || 0) + 1;
 		for (const k of b.keystones) keyCnt[k] = (keyCnt[k] || 0) + 1;
+		for (const m of b.masteries || []) mastCnt[m] = (mastCnt[m] || 0) + 1; // 샘플링된 캐릭터만 기여
 	}
 	return {
-		...base, sample: arr.length, sampleTotal: fullArr.length,
+		...base, sample: kept.length, sampleTotal: fullArr.length, sampleEndgame: arr.length,
 		medianLevel: med((b) => b.level),
 		medianLife: med((b) => b.life), medianES: med((b) => b.energyShield),
-		medianEHP: med((b) => b.ehp), medianDPS: med((b) => b.dps),
+		medianWard: med((b) => b.ward), medianMana: med((b) => b.mana),
+		// DPS 는 **해당 스킬 전용 DPS**(dpsBySkill) 우선 — 수집 쿼리에 따라 b.dps 의미가 달라(overview=대표,
+		// 타 스킬 필터=그 스킬 전용) 혼합 중앙값이 오염되는 것을 방지(화염덫 3.2M 가 RF 벤치에 섞이던 버그).
+		medianEHP: med((b) => b.ehp), medianDPS: med((b) => b.dpsBySkill?.[base.mainSkill] ?? b.dps),
 		medianLifeRegen: med((b) => b.lifeRegen),
+		medianItemRarity: med((b) => b.itemRarity), medianMovementSpeed: med((b) => b.movementSpeed),
 		medianFireRes: med((b) => b.fireRes), medianColdRes: med((b) => b.coldRes),
 		medianLightningRes: med((b) => b.lightningRes), medianChaosRes: med((b) => b.chaosRes),
 		medianArmour: med((b) => b.armour), medianEvasion: med((b) => b.evasion),
-		medianBlock: med((b) => b.block), medianSuppress: med((b) => b.suppress),
+		medianBlock: med((b) => b.block), medianSpellBlock: med((b) => b.spellBlock),
+		medianSpellDodge: med((b) => b.spellDodge), medianSuppress: med((b) => b.suppress),
+		medianPhysTakenAs: med((b) => b.physTakenAs),
+		medianStr: med((b) => b.str), medianDex: med((b) => b.dex), medianInt: med((b) => b.int),
+		medianEnduranceCharges: med((b) => b.enduranceCharges), medianFrenzyCharges: med((b) => b.frenzyCharges),
+		medianPowerCharges: med((b) => b.powerCharges),
+		medianClusterJewels: med((b) => b.clusterJewels), medianLargeCluster: med((b) => b.largeCluster),
+		medianMediumCluster: med((b) => b.mediumCluster), medianSmallCluster: med((b) => b.smallCluster),
+		medianUniqueEquip: med((b) => b.uniqueEquip), medianMirroredItems: med((b) => b.mirroredItems),
+		medianMirroredWeapons: med((b) => b.mirroredWeapons), medianMirroredArmours: med((b) => b.mirroredArmours),
 		medianPhysicalMax: med((b) => b.physicalMax), medianFireMax: med((b) => b.fireMax),
 		medianColdMax: med((b) => b.coldMax), medianLightningMax: med((b) => b.lightningMax),
 		medianChaosMax: med((b) => b.chaosMax), medianLowestMax: med((b) => b.lowestMax),
 		topCoSkills: _topN(coCnt, 8),
 		topKeystones: _topN(keyCnt, 6),
+		topMasteries: _topN(mastCnt, 8),
 	};
 }
 
@@ -336,15 +565,32 @@ async function main() {
 	fs.mkdirSync(OUT_DIR, { recursive: true });
 	const all = [];
 	const snapshots = {};
+	const allSkillFacets = {};
+	const allAscFacets = {};
 	for (const league of LEAGUES) {
 		try {
-			const { snapshot, builds } = await fetchLeague(league);
+			const { snapshot, builds, skillFacets, ascFacets } = await fetchLeague(league);
 			snapshots[league] = snapshot;
 			all.push(...builds);
+			Object.assign(allSkillFacets, skillFacets || {});
+			Object.assign(allAscFacets, ascFacets || {});
 		} catch (e) { console.error(`[ninja] ${league} 실패:`, e.message); }
+	}
+	// ⚠ 전 리그 실패(레이트리밋 등)로 빈 결과면 **기존 canonical 파일을 절대 덮어쓰지 않는다**.
+	//   (실사고: 채집이 예산을 소진해 검색 API 가 429 → 0 builds 로 ninja-archetypes.json 이 비워짐)
+	if (all.length === 0) {
+		console.error("[ninja] 수집 0건 — canonical 파일 보존을 위해 중단(레이트리밋이면 잠시 후 재실행)");
+		process.exit(2);
 	}
 	const archetypes = aggregate(all);
 	const skillArchetypes = aggregateBySkill(all); // 스킬 단위 폴백(자동전직)
+	// 패싯(사이드바 집계) 부착 — (전직|스킬) 정밀 패싯 우선, 없으면 스킬 통합 패싯 폴백.
+	for (const a of archetypes) {
+		a.facets = allAscFacets[`${a.ascendancy}|${a.mainSkill}`] ?? allSkillFacets[a.mainSkill] ?? null;
+	}
+	for (const a of skillArchetypes) {
+		a.facets = allSkillFacets[a.mainSkill] ?? null;
+	}
 	// 서비스(PoeOptimizeService)가 읽는 canonical 파일명은 고정 — 리그/병합 무관하게 항상 최신을 로드.
 	//   run-all 자동감지(단일 리그)든 수동 다중 리그든 여기에 쓴다. tag 파일은 참고용 부가.
 	const buildsData = JSON.stringify({ leagues: LEAGUES, snapshots, fetchedRows: all.length, builds: all }, null, 2);

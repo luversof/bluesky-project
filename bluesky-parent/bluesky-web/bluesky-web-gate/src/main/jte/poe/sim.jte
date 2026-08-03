@@ -96,14 +96,7 @@
 							</select>
 						</div>
 					</div>
-					<%-- 실시간 성향 미리보기 — 선택한 스킬×전직의 poe.ninja 실빌드 성향/프로파일(실행 전). 스킬/전직 변경 시 갱신. --%>
-					<div id="poeArchetypeHint"
-					     hx-get="/poe/htmx/sim/archetype"
-					     hx-trigger="load, change from:select[name='skills'], change from:select[name='ascendancy']"
-					     hx-include="select[name='skills'], select[name='ascendancy']"
-					     hx-target="this"
-					     hx-swap="innerHTML"></div>
-					<!-- 최적화 설정 -->
+					<!-- 최적화 설정 — 스킬젬·고유템 선택 바로 아래(사용자 요청: 실행 버튼이 주 입력에 붙어 있어야 흐름이 자연스럽다) -->
 					<div class="flex flex-wrap items-center gap-2">
 						<%-- 목표(objective) 셀렉트 제거(2026-07-30): poe.ninja 실빌드 성향이 목표축을 자동 결정(위 미리보기). objective=auto → API가 성향으로 dps/ehp/balanced 해석 --%>
 						<span class="text-xs text-base-content/60 self-center" title="선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정">${net.luversof.web.gate.poe.PoeText.isKorean() ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
@@ -162,6 +155,13 @@
 							<a class="link link-primary text-xs" href="${loginUrl}">${MessageUtil.getMessage("poe.sim.opt.login")}</a>
 						@endif
 					</div>
+					<%-- 실시간 성향 미리보기 — 선택한 스킬×전직의 poe.ninja 실빌드 성향/프로파일(실행 전). 스킬/전직 변경 시 갱신. --%>
+					<div id="poeArchetypeHint"
+					     hx-get="/poe/htmx/sim/archetype"
+					     hx-trigger="load, change from:select[name='skills'], change from:select[name='ascendancy']"
+					     hx-include="select[name='skills'], select[name='ascendancy']"
+					     hx-target="this"
+					     hx-swap="innerHTML"></div>
 				</form>
 				@template.poe.htmx.simOptimizeWrap()
 				<!-- 최근 결과 이력 — 로드 시 채우고, 새 최적화 완료 시 상태 fragment 가 OOB 로 갱신 -->

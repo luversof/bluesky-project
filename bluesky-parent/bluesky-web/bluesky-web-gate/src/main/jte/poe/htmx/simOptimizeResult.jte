@@ -119,6 +119,9 @@
 				Integer myLife = statInt.apply("life");
 				Integer myEhp = statInt.apply("totalehp");
 				Integer myDps = statInt.apply("combineddps");
+				// 생명 재생 — RF 등 지속형은 이게 생존 핵심. 순재생(net) 우선, 없으면 총재생(gross). 실빌드 medianLifeRegen 과 비교.
+				Integer myRegen = statInt.apply("netliferegen");
+				if (myRegen == null) myRegen = statInt.apply("liferegen");
 				// 실빌드 중앙값 대비 60% 미만이면 "낮음"(참고용, 강제 아님)
 				java.util.function.BiFunction<Integer, Long, Boolean> low = (mine, med) -> mine != null && med > 0 && mine < med * 0.6;
 				// 실빌드 성향(lean): 이 (전직×스킬)을 실제 유저들이 공격특화/생존특화/균형 중 어디로 굴리는지. 시뮬 목표의 근거.
@@ -127,6 +130,139 @@
 					: "ehp".equals(lean) ? (ko ? "생존 특화 (고EHP)" : "Defense (high EHP)")
 					: (ko ? "균형형" : "Balanced");
 				String leanCls = "dps".equals(lean) ? "badge-error" : "ehp".equals(lean) ? "badge-info" : "badge-ghost";
+				// 전 컬럼 특화 판정(키→로케일 라벨). 어느 컬럼이 두드러진 실빌드인지 배지로.
+				java.util.function.Function<String, String> specLabel = k -> switch (k) {
+					case "dps" -> ko ? "공격(DPS)" : "DPS";
+					case "ehp" -> ko ? "생존(EHP)" : "EHP";
+					case "life" -> ko ? "생명" : "Life";
+					case "es" -> ko ? "에너지실드" : "ES";
+					case "liferegen" -> ko ? "생명재생" : "Life regen";
+					case "armour" -> ko ? "방어도" : "Armour";
+					case "evasion" -> ko ? "회피" : "Evasion";
+					case "block" -> ko ? "막기" : "Block";
+					case "suppress" -> ko ? "회피억제" : "Suppress";
+					case "maxres" -> ko ? "최대저항" : "Max res";
+					case "ward" -> ko ? "수호물" : "Ward";
+					case "mana" -> ko ? "마나" : "Mana";
+					case "rarity" -> ko ? "아이템희귀도" : "Item rarity";
+					case "movespeed" -> ko ? "이동속도" : "Move speed";
+					case "str" -> ko ? "힘" : "Str";
+					case "dex" -> ko ? "민첩" : "Dex";
+					case "int" -> ko ? "지능" : "Int";
+					case "cluster" -> ko ? "클러스터주얼" : "Cluster jewels";
+					case "unique" -> ko ? "유니크장비" : "Unique gear";
+					case "spellblock" -> ko ? "주문막기" : "Spell block";
+					case "spelldodge" -> ko ? "주문회피" : "Spell dodge";
+					case "phystaken" -> ko ? "물리피해전환" : "Phys taken as";
+					case "echarge" -> ko ? "인내충전" : "Endur. charges";
+					case "fcharge" -> ko ? "격노충전" : "Frenzy charges";
+					case "pcharge" -> ko ? "권능충전" : "Power charges";
+					case "mirror" -> ko ? "미러장비" : "Mirrored gear";
+					default -> k;
+				};
+				// ── 한눈 비교표(사용자 요청): 지표별 실빌드 중앙값 vs 내 결과 vs 대비. ──
+				//   행 = {라벨, 실빌드, 내, 대비, 색}. 매그니튜드는 %대비(상회=success, 60%미만=warning),
+				//   캡형(%지표)은 포인트차. 내 값이 없는 지표는 "-" 로 두되 실빌드 값은 보여준다.
+				Integer myEs = statInt.apply("energyshield");
+				Integer myArmour = statInt.apply("armour");
+				Integer myEvasion = statInt.apply("evasion");
+				Integer myMana = statInt.apply("mana");
+				Integer myBlock = statInt.apply("blockchance");
+				Integer mySuppress = statInt.apply("spellsuppressionchance");
+				Integer myFireRes = statInt.apply("fireresist");
+				Integer myColdRes = statInt.apply("coldresist");
+				Integer myLightRes = statInt.apply("lightningresist");
+				Integer myChaosRes = statInt.apply("chaosresist");
+				// 내 최대피격 — 결과 defenseHits(type→값)에서. 실빌드 medianXxxMax 와 직접 비교 가능.
+				java.util.Map<String, Long> myHits = new java.util.HashMap<>();
+				if (result.defenseHits() != null) {
+					for (var dh : result.defenseHits()) {
+						try { myHits.put(dh.type(), Long.parseLong(dh.value().replace(",", ""))); } catch (Exception e) { /* skip */ }
+					}
+				}
+				Long myLowestHit = myHits.values().stream().min(Long::compare).orElse(null);
+				// ── 비교표 2단(좌=공격·생존, 우=방어층·자원·속성·기타) — 벤치의 **모든 수치 컬럼**을 표로 통합. ──
+				//   행 = {라벨, 실빌드, 내, 대비, 색}. 내 값이 없는 컬럼(이동속도·충전 등 엔진 미노출)은 "—" + 대비 공란.
+				java.util.List<String[]> cmpL = new java.util.ArrayList<>();
+				java.util.List<String[]> cmpR = new java.util.ArrayList<>();
+				// v = {실빌드, 내(없으면 Long.MIN_VALUE), 캡형(%지표)이면 1}
+				java.util.function.BiConsumer<java.util.List<String[]>, Object[]> addCmp = (list, a) -> {
+					String label = (String) a[0];
+					long bench = (long) a[1];
+					Long mine = (Long) a[2];
+					boolean cap = (boolean) a[3];
+					if (bench <= 0 && (mine == null || mine <= 0)) return; // 양쪽 다 없으면 행 생략
+					String benchS = cap ? bench + "%" : fmt.apply(bench);
+					String mineS = mine == null ? "—" : (cap ? mine + "%" : fmt.apply(mine));
+					String delta = "";
+					String cls = "text-base-content/40";
+					if (mine != null && bench > 0) {
+						if (cap) {
+							long d = mine - bench;
+							delta = (d >= 0 ? "+" : "") + d + "p";
+							cls = d >= 0 ? "text-success" : d >= -10 ? "text-base-content/60" : "text-warning";
+						} else {
+							long p = Math.round(mine * 100.0 / bench) - 100;
+							delta = (p >= 0 ? "+" : "") + p + "%";
+							cls = p >= 0 ? "text-success" : p >= -40 ? "text-base-content/60" : "text-warning";
+						}
+					}
+					list.add(new String[] {label, benchS, mineS, delta, cls});
+				};
+				// 실빌드 전용 문자열 행(내 값 개념이 없는 컬럼 — 충전/클러스터 구성 등)
+				java.util.function.BiConsumer<java.util.List<String[]>, String[]> addInfo = (list, a) ->
+					list.add(new String[] {a[0], a[1], "—", "", "text-base-content/40"});
+				Long L = null; // 캐스팅 편의
+				// ── 좌: 공격·생존 ──
+				addCmp.accept(cmpL, new Object[] {ko ? "DPS(메인 스킬)" : "DPS (main)", ninjaBenchmark.dps(), myDps == null ? null : Long.valueOf(myDps), false});
+				if (ninjaBenchmark.skillDps() != null) {
+					for (int si = 1; si < ninjaBenchmark.skillDps().size(); si++) {
+						var sd = ninjaBenchmark.skillDps().get(si);
+						addInfo.accept(cmpL, new String[] {"DPS·" + sd.name(), fmt.apply(sd.dps())});
+					}
+				}
+				addCmp.accept(cmpL, new Object[] {"EHP", ninjaBenchmark.ehp(), myEhp == null ? null : Long.valueOf(myEhp), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "생명" : "Life", ninjaBenchmark.life(), myLife == null ? null : Long.valueOf(myLife), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "에너지실드" : "ES", ninjaBenchmark.energyShield(), myEs == null ? null : Long.valueOf(myEs), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "생명재생/초" : "Life regen/s", ninjaBenchmark.lifeRegen(), myRegen == null ? null : Long.valueOf(myRegen), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "최대피격(물리)" : "Max hit (phys)", ninjaBenchmark.physicalMax(), myHits.get("physical"), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "최대피격(화염)" : "Max hit (fire)", ninjaBenchmark.fireMax(), myHits.get("fire"), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "최대피격(냉기)" : "Max hit (cold)", ninjaBenchmark.coldMax(), myHits.get("cold"), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "최대피격(번개)" : "Max hit (light)", ninjaBenchmark.lightningMax(), myHits.get("lightning"), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "최대피격(카오스)" : "Max hit (chaos)", ninjaBenchmark.chaosMax(), myHits.get("chaos"), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "최약 최대피격" : "Lowest max hit", ninjaBenchmark.lowestMax(), myLowestHit, false});
+				// ── 우: 방어층·자원·속성·기타 ──
+				addCmp.accept(cmpR, new Object[] {ko ? "방어도" : "Armour", ninjaBenchmark.armour(), myArmour == null ? null : Long.valueOf(myArmour), false});
+				addCmp.accept(cmpR, new Object[] {ko ? "회피" : "Evasion", ninjaBenchmark.evasion(), myEvasion == null ? null : Long.valueOf(myEvasion), false});
+				addCmp.accept(cmpR, new Object[] {ko ? "막기" : "Block", (long) ninjaBenchmark.block(), myBlock == null ? null : Long.valueOf(myBlock), true});
+				addCmp.accept(cmpR, new Object[] {ko ? "주문막기" : "Spell block", (long) ninjaBenchmark.spellBlock(), L, true});
+				addCmp.accept(cmpR, new Object[] {ko ? "회피억제" : "Suppress", (long) ninjaBenchmark.suppress(), mySuppress == null ? null : Long.valueOf(mySuppress), true});
+				addCmp.accept(cmpR, new Object[] {ko ? "주문회피" : "Spell dodge", (long) ninjaBenchmark.spellDodge(), L, true});
+				addCmp.accept(cmpR, new Object[] {ko ? "물리피해전환" : "Phys taken as", (long) ninjaBenchmark.physTakenAs(), L, true});
+				addCmp.accept(cmpR, new Object[] {ko ? "화염 저항" : "Fire res", (long) ninjaBenchmark.fireRes(), myFireRes == null ? null : Long.valueOf(myFireRes), true});
+				addCmp.accept(cmpR, new Object[] {ko ? "냉기 저항" : "Cold res", (long) ninjaBenchmark.coldRes(), myColdRes == null ? null : Long.valueOf(myColdRes), true});
+				addCmp.accept(cmpR, new Object[] {ko ? "번개 저항" : "Light res", (long) ninjaBenchmark.lightningRes(), myLightRes == null ? null : Long.valueOf(myLightRes), true});
+				addCmp.accept(cmpR, new Object[] {ko ? "카오스 저항" : "Chaos res", (long) ninjaBenchmark.chaosRes(), myChaosRes == null ? null : Long.valueOf(myChaosRes), true});
+				addCmp.accept(cmpR, new Object[] {ko ? "마나" : "Mana", ninjaBenchmark.mana(), myMana == null ? null : Long.valueOf(myMana), false});
+				addCmp.accept(cmpR, new Object[] {ko ? "수호물" : "Ward", ninjaBenchmark.ward(), L, false});
+				addCmp.accept(cmpR, new Object[] {ko ? "힘" : "Str", (long) ninjaBenchmark.str(), statInt.apply("str") == null ? null : Long.valueOf(statInt.apply("str")), false});
+				addCmp.accept(cmpR, new Object[] {ko ? "민첩" : "Dex", (long) ninjaBenchmark.dex(), statInt.apply("dex") == null ? null : Long.valueOf(statInt.apply("dex")), false});
+				addCmp.accept(cmpR, new Object[] {ko ? "지능" : "Int", (long) ninjaBenchmark.intel(), statInt.apply("int") == null ? null : Long.valueOf(statInt.apply("int")), false});
+				addCmp.accept(cmpR, new Object[] {ko ? "이동속도" : "Move speed", (long) ninjaBenchmark.movementSpeed(), L, true});
+				addCmp.accept(cmpR, new Object[] {ko ? "아이템 희귀도" : "Item rarity", (long) ninjaBenchmark.itemRarity(), L, true});
+				if (ninjaBenchmark.enduranceCharges() + ninjaBenchmark.frenzyCharges() + ninjaBenchmark.powerCharges() > 0) {
+					addInfo.accept(cmpR, new String[] {ko ? "충전(인/격/권)" : "Charges (E/F/P)", ninjaBenchmark.enduranceCharges() + "/" + ninjaBenchmark.frenzyCharges() + "/" + ninjaBenchmark.powerCharges()});
+				}
+				if (ninjaBenchmark.largeCluster() + ninjaBenchmark.mediumCluster() + ninjaBenchmark.smallCluster() > 0) {
+					addInfo.accept(cmpR, new String[] {ko ? "클러스터(대/중/소)" : "Cluster (L/M/S)", ninjaBenchmark.largeCluster() + "/" + ninjaBenchmark.mediumCluster() + "/" + ninjaBenchmark.smallCluster()});
+				}
+				if (ninjaBenchmark.uniqueEquip() > 0) {
+					addInfo.accept(cmpR, new String[] {ko ? "유니크 장비" : "Unique gear", String.valueOf(ninjaBenchmark.uniqueEquip())});
+				}
+				int mirrorSum = ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours();
+				if (mirrorSum > 0) {
+					addInfo.accept(cmpR, new String[] {ko ? "미러 장비" : "Mirrored gear", String.valueOf(mirrorSum)});
+				}
 			}
 			<div class="rounded-box bg-base-100 px-3 py-2 text-xs space-y-1">
 				<div class="flex items-center gap-2">
@@ -138,14 +274,45 @@
 					@endif
 					<span class="text-base-content/40">n=${ninjaBenchmark.sample()}</span>
 				</div>
-				<div class="flex flex-wrap gap-x-4 gap-y-1 font-mono">
-					<span>${ko ? "생명" : "Life"} <span class="text-base-content/60">${fmt.apply(ninjaBenchmark.life())}</span>${low.apply(myLife, ninjaBenchmark.life()) ? " " : ""}<span class="${low.apply(myLife, ninjaBenchmark.life()) ? "text-warning" : "text-base-content/40"}">(${ko ? "내" : "you"} ${myLife != null ? fmt.apply(myLife.longValue()) : "-"})</span></span>
-					<span>EHP <span class="text-base-content/60">${fmt.apply(ninjaBenchmark.ehp())}</span> <span class="${low.apply(myEhp, ninjaBenchmark.ehp()) ? "text-warning" : "text-base-content/40"}">(${ko ? "내" : "you"} ${myEhp != null ? fmt.apply(myEhp.longValue()) : "-"})</span></span>
-					<span>DPS <span class="text-base-content/60">${fmt.apply(ninjaBenchmark.dps())}</span> <span class="${low.apply(myDps, ninjaBenchmark.dps()) ? "text-warning" : "text-base-content/40"}">(${ko ? "내" : "you"} ${myDps != null ? fmt.apply(myDps.longValue()) : "-"})</span></span>
+				<%-- 전 컬럼 참조 특화 판정 — 이 스킬×전직 실빌드가 두드러진 컬럼(전체 중앙값 대비, 저표본 제외). "어느 컬럼 특화인지"를 명시. --%>
+				@if(ninjaBenchmark.specializations() != null && !ninjaBenchmark.specializations().isEmpty())
+					<div class="flex flex-wrap items-center gap-1">
+						<span class="text-base-content/50">${ko ? "특화 컬럼" : "Specializes in"}</span>
+						@for(String sk : ninjaBenchmark.specializations())
+							<span class="badge badge-xs badge-warning badge-outline">${specLabel.apply(sk)}</span>
+						@endfor
+					</div>
+				@endif
+				<%-- ★ 한눈 비교표(사용자 요청) — poe.ninja 전 컬럼을 두 표로 통합(좌=공격·생존, 우=방어층·자원·속성·기타).
+				     산재 텍스트 행 없이 모든 수치가 실빌드|내|대비 형식. 내 값이 없는 컬럼(엔진 미노출)은 "—". --%>
+				<div class="grid gap-x-6 md:grid-cols-2">
+					@for(java.util.List<String[]> side : java.util.List.of(cmpL, cmpR))
+						<div class="overflow-x-auto">
+							<table class="table table-xs">
+								<thead>
+									<tr class="text-base-content/50">
+										<th class="font-sans">${ko ? "지표" : "Metric"}</th>
+										<th class="text-right font-sans">${ko ? "실빌드" : "Real"}</th>
+										<th class="text-right font-sans">${ko ? "내 결과" : "Mine"}</th>
+										<th class="text-right font-sans">${ko ? "대비" : "Δ"}</th>
+									</tr>
+								</thead>
+								<tbody class="font-mono">
+									@for(String[] row : side)
+										<tr>
+											<td class="font-sans text-base-content/70">${row[0]}</td>
+											<td class="text-right text-base-content/60">${row[1]}</td>
+											<td class="text-right">${row[2]}</td>
+											<td class="text-right ${row[4]}">${row[3]}</td>
+										</tr>
+									@endfor
+								</tbody>
+							</table>
+						</div>
+					@endfor
 				</div>
-				<%-- 실빌드 유형별 최대 피격(단일 히트 생존) — 결과 카드의 내 defenseHits 와 직접 비교. 물리가 대개 최약점. --%>
-				@if(ninjaBenchmark.physicalMax() > 0 || ninjaBenchmark.fireMax() > 0)
-					<div class="text-base-content/50">${ko ? "실빌드 최대피격" : "real-build max hit"} <span class="font-mono">${ko ? "물" : "Phys"} ${fmt.apply(ninjaBenchmark.physicalMax())} · ${ko ? "화" : "Fire"} ${fmt.apply(ninjaBenchmark.fireMax())} · ${ko ? "냉" : "Cold"} ${fmt.apply(ninjaBenchmark.coldMax())} · ${ko ? "번" : "Lit"} ${fmt.apply(ninjaBenchmark.lightningMax())}</span></div>
+				@if(ninjaBenchmark.skillDps() != null && ninjaBenchmark.skillDps().size() > 1)
+					<div class="text-[10px] text-base-content/40">${ko ? "DPS(메인 스킬)·내 DPS 는 메인 스킬 전용 — 추가 스킬 DPS 는 실빌드 참고값(DPS·스킬명 행)" : "Main-skill DPS on both sides; extra-skill rows are real-build reference"}</div>
 				@endif
 				@if(ninjaBenchmark.topKeystones() != null && !ninjaBenchmark.topKeystones().isEmpty())
 					<div class="text-base-content/50">${ko ? "실빌드 키스톤" : "common keystones"}: ${String.join(", ", ninjaBenchmark.topKeystones())}</div>
@@ -153,6 +320,12 @@
 				@if(ninjaBenchmark.topCoSkills() != null && !ninjaBenchmark.topCoSkills().isEmpty())
 					<div class="text-base-content/50">${ko ? "함께 쓰는 스킬" : "common co-skills"}: ${String.join(", ", ninjaBenchmark.topCoSkills())}</div>
 				@endif
+				<%-- 실빌드 마스터리(캐릭터 상세 채집) — 패싯이 없을 때만(패싯 패널이 모집단 기준이라 우선) --%>
+				@if(ninjaBenchmark.topMasteries() != null && !ninjaBenchmark.topMasteries().isEmpty() && (ninjaBenchmark.facets() == null || !ninjaBenchmark.facets().containsKey("masteries")))
+					<div class="text-base-content/50">${ko ? "실빌드 마스터리" : "common masteries"}: ${String.join(" · ", ninjaBenchmark.topMasteries())}</div>
+				@endif
+				<%-- 패싯(사이드바 집계) — 마스터리/룬크래프트/문신/무기/판테온/아틀라스 등 전체 모집단 사용률 --%>
+				@template.poe.htmx.benchFacets(bench = ninjaBenchmark, rows = 5)
 			</div>
 		@endif
 
