@@ -125,6 +125,14 @@ public class PoeModDataService {
    * 판정한다. 풀 자체가 없으면(데이터 미로드/미지원 클래스) 판정을 보류하고 true.
    */
   public boolean canSpawn(String itemClass, String variant, String familyPattern) {
+    return canSpawn(itemClass, variant, familyPattern, "");
+  }
+
+  /**
+   * @param influence 영향력 키(elder/shaper/…). 영향력 전용 패밀리(엘더 헬멧 소켓 지원 등)는 무영향력 풀에 없어 그 영향력 풀로 판정해야 한다.
+   */
+  public boolean canSpawn(
+      String itemClass, String variant, String familyPattern, String influence) {
     if (familyPattern == null || data.pools().isEmpty()) {
       return true;
     }
@@ -134,7 +142,14 @@ public class PoeModDataService {
     if (!data.families().containsKey(familyPattern)) {
       return true;
     }
-    Pool pool = data.pools().get(itemClass + "|" + (variant == null ? "" : variant) + "|");
+    Pool pool =
+        data.pools()
+            .get(
+                itemClass
+                    + "|"
+                    + (variant == null ? "" : variant)
+                    + "|"
+                    + (influence == null ? "" : influence));
     if (pool == null) {
       return true; // 이 클래스/변형 풀을 모르면 막지 않는다(무기 등 변형 없는 슬롯 포함)
     }

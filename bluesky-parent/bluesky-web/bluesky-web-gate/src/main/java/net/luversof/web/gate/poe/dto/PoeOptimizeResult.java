@@ -51,7 +51,9 @@ public record PoeOptimizeResult(
     java.util.List<String> treeMasteryLabels,
     /** 표시용 문신 요약("한글명 ×N") */
     java.util.List<String> treeTattooLabels,
-    Integer treeAnoint) {
+    Integer treeAnoint,
+    // P3 메타 기준선 게이트 — balanced 최종치가 실빌드 중앙값(DPS·EHP) 둘 다 하회하면 true. 구 히스토리는 null.
+    Boolean belowMeta) {
 
   public record SupportPick(String slug, String name, String nameKo) {}
 

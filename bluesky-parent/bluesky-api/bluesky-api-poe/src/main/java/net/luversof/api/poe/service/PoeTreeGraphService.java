@@ -58,7 +58,14 @@ public class PoeTreeGraphService {
       Double x,
       Double y,
       // 아뮬렛 도유로 이 노터블을 부여할 때 드는 성유 3종(slug). 있으면 = 도유 가능 노터블.
-      List<String> anoint) {}
+      List<String> anoint,
+      // 클러스터 서브그래프 참조(GGG 원본 expansionJewel) — 자동 클러스터 채택의 가상 노드 id 산출에
+      // 필요(id = 0x10000 + size/index 비트 + sizeIndex<<4 + templateIndex, 프론트 buildClusterSubgraph
+      // 파리티).
+      ExpansionJewel expansionJewel) {}
+
+  /** 클러스터 소켓의 확장 참조 — size(0소/1중/2대), index(부모 내 자리), proxy(생성 노드 부착 기준), parent(중첩 상위 소켓). */
+  public record ExpansionJewel(int size, int index, Integer proxy, Integer parent) {}
 
   /** 마스터리가 제공하는 효과 하나. id 는 PoB/GGG 인코딩에 쓰이는 effect id. */
   public record MasteryEffect(int id, List<String> stats, List<String> statsKo) {}
@@ -208,6 +215,15 @@ public class PoeTreeGraphService {
   /** PoB className → 트리 시작 노드 id (없으면 null) */
   public Integer classStart(String className) {
     return classStartByName.get(className);
+  }
+
+  /** 클러스터 주얼 전용 소켓(트리 외곽, expansionJewel 보유) — 자동 클러스터 채택 후보. id 정렬로 결정적. */
+  public List<TreeNode> clusterSockets() {
+    return nodeById.values().stream()
+        .filter(node -> node.ascendancy() == null)
+        .filter(node -> "jewel".equals(node.type()) && node.expansionJewel() != null)
+        .sorted(java.util.Comparator.comparingInt(TreeNode::id))
+        .toList();
   }
 
   /** 비전직 노터블/키스톤 후보 (최적화 탐색 대상). id 정렬로 실행 간 결정적 순서 보장(동점 타이브레이크 안정화) */

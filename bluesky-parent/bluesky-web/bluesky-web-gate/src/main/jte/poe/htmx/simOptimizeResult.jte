@@ -100,6 +100,14 @@
 			</div>
 		@endif
 
+		<%-- P3 메타 기준선 게이트 — 공격·생존 모두 실빌드 중앙값 하회(지배당함)면 명시 경고. 비교표에서 축별 확인. --%>
+		@if(Boolean.TRUE.equals(result.belowMeta()))
+			<div class="flex flex-wrap items-center gap-2 rounded border border-error/50 bg-error/10 px-3 py-2 text-xs">
+				<span class="font-bold text-error">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실빌드 중앙값 하회" : "Below real-build median"}</span>
+				<span class="text-base-content/70">${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 결과는 같은 스킬×전직의 poe.ninja 실빌드 중앙값보다 공격(DPS)·생존(EHP) 모두 낮습니다 — 아래 비교표에서 부족 축을 확인하세요" : "Both DPS and EHP are below the poe.ninja real-build median for this skill × ascendancy — see the comparison table below"}</span>
+			</div>
+		@endif
+
 		<div class="flex flex-wrap items-baseline gap-3">
 			<span class="text-sm text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.baseline")} <span class="font-mono">${result.baselineValue()}</span></span>
 			<span class="text-lg font-bold font-mono text-primary">→ ${result.finalValue()}</span>

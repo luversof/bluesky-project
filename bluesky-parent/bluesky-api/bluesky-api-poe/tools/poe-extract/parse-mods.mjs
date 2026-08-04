@@ -146,6 +146,12 @@ const FAMILIES = [
 		slots: ["amulet"] },
 	{ key: "lifeRegen", gen: "suffix", pattern: "LifeRegeneration", keywords: ["life", "regen"],
 		slots: ["body", "helmet", "gloves", "boots", "belt", "amulet", "ring", "shield"] },
+	// 소켓 시너지(엘더 헬멧) — "화염 피해 35% 증가 + 장착된 젬에 20레벨 화상 피해 보조 효과 적용"(of the Elder).
+	// 실빌드 RF 의 표준 헬멧이자 시뮬 DPS 갭(713k vs 2.58M)의 최대 요인. 소켓 지원은 시뮬레이터가
+	// 메인 링크에 Burning Damage 젬을 명시 추가하는 방식으로 모델링한다(키 elder* = 영향력 스폰 판정).
+	// 키워드는 fireDotMulti 와 같은 fire/burning 게이트 — 히트 빌드(아크/사이클론/ED)는 점수 0 → 미채택.
+	{ key: "elderBurningSupport", gen: "suffix", pattern: "IncreasedBurningDamageSupportedUber", keywords: ["fire", "burning"],
+		slots: ["helmet"] },
 ];
 
 /** 모드 한 행의 스탯 → 최대 롤 값 맵 (StatsKey1..N + StatNMax) */

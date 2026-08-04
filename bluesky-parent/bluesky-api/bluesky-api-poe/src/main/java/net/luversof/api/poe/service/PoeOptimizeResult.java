@@ -54,7 +54,12 @@ public record PoeOptimizeResult(
     /** 표시용 문신 요약("한글명 ×N") — treeTattoos 는 링크용 영문 dn 이라 그대로 보여줄 수 없다 */
     List<String> treeTattooLabels,
     /** 트리 링크(an=)로 되돌아갈 도유 노터블 id — 없으면(null) 도유 미채택 */
-    Integer treeAnoint) {
+    Integer treeAnoint,
+    /**
+     * P3 메타 기준선 게이트 — balanced 잡에서 최종 DPS·EHP 가 실빌드 중앙값을 **둘 다** 하회하면 true(지배당함, 결과 화면 경고). 비교
+     * 불가(비-balanced/벤치 없음/구 히스토리)면 null.
+     */
+    Boolean belowMeta) {
 
   public record SupportPick(String slug, String name, String nameKo) {}
 

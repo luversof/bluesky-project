@@ -357,7 +357,6 @@
 								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap" data-monthly-selection-table>
 								<thead>
 									<tr>
-										<th scope="col" class="w-10" rowspan="2"></th>
 										<th rowspan="2" scope="col" class="min-w-[13rem] align-middle">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 font-medium">
 												<div class="flex items-center gap-1">
@@ -494,12 +493,6 @@
 												data-expected-taxable-base="${(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO).toPlainString()}"
 												data-current-market-value="${(row.currentMarketValue() != null ? row.currentMarketValue() : BigDecimal.ZERO).toPlainString()}"
 													data-payout-window="${monthlyDividendPayoutWindowBySymbol.getOrDefault(normalizedRowSymbol, "")}">
-												<td class="align-top pt-2">
-													<input type="checkbox"
-														class="checkbox checkbox-primary checkbox-sm"
-														data-monthly-selection-toggle
-														aria-label="${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}">
-												</td>
 												<td class="align-top font-medium">
 													<div class="min-w-0">
 														<div class="flex items-center gap-2 whitespace-nowrap">
