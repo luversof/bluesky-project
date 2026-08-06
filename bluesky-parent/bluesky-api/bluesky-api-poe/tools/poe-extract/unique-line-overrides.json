@@ -1,0 +1,6 @@
+{
+	"_comment": "PoB 원문이 롤 범위를 고정값으로 단순화한 유니크 라인 보정 — 인게임 실물 기준 범위 복원(거래소 가변 옵션 프리필 판정용). 키=유니크 영문명, 값={원문 라인: 교체 라인}.",
+	"Coruscating Elixir": {
+		"Removed life is Regenerated as Energy Shield over 2 seconds": "Removed life is Regenerated as Energy Shield over (1-2) seconds"
+	}
+}

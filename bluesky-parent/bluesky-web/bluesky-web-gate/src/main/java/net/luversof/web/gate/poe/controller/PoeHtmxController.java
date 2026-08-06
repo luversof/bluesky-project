@@ -235,6 +235,10 @@ public class PoeHtmxController {
       Model model) {
     if (principal != null) {
       poeOptimizeClient.deleteHistory(id);
+    } else {
+      // 세션 만료 — 조용히 건너뛰면 목록이 그대로 200으로 내려가 화면은 성공 흐름을 탄다
+      // (실사고: "삭제되었습니다"가 뜨는데 삭제 안 됨). 미수행 사실을 배너로 알린다.
+      model.addAttribute("loginRequired", true);
     }
     model.addAttribute("history", poeOptimizeClient.history());
     return "poe/htmx/simOptimizeHistory";

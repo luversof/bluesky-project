@@ -71,8 +71,28 @@
 				@endif
 			</div>
 			@if(!logLines.isEmpty())
-				<pre class="max-h-72 overflow-y-auto rounded-box bg-neutral text-neutral-content/80 p-3 text-xs leading-5 whitespace-pre-wrap">@for(String logLine : logLines)${logLine}
+				<pre id="poeExtractLog" class="max-h-72 overflow-y-auto rounded-box bg-neutral text-neutral-content/80 p-3 text-xs leading-5 whitespace-pre-wrap">@for(String logLine : logLines)${logLine}
 @endfor</pre>
+				<%-- 폴링 스왑마다 pre 가 새로 생겨 스크롤이 최상단으로 리셋(사용자 지적) — tail 추적:
+				     기본은 맨 아래(새 라인)를 따라가고, 사용자가 위로 올려 읽는 중이면 그 위치를 유지, 다시 바닥 근처로 내리면 추적 재개 --%>
+				<script>
+					(function () {
+						var el = document.getElementById("poeExtractLog");
+						if (!el) return;
+						var s = window.__poeExtractLogScroll;
+						if (s && !s.atBottom) {
+							el.scrollTop = s.top;
+						} else {
+							el.scrollTop = el.scrollHeight;
+						}
+						el.addEventListener("scroll", function () {
+							window.__poeExtractLogScroll = {
+								top: el.scrollTop,
+								atBottom: el.scrollHeight - el.scrollTop - el.clientHeight < 24
+							};
+						});
+					})();
+				</script>
 			@endif
 	`)
 </div>

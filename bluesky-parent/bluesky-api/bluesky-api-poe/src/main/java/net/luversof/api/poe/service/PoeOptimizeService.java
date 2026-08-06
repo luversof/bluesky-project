@@ -255,6 +255,7 @@ public class PoeOptimizeService {
   private final PoeTreeGraphService poeTreeGraphService;
   private final PoeModPoolDataService poeModPoolDataService;
   private final PoeEssenceDataService poeEssenceDataService;
+  private final PoeTradeStatDataService poeTradeStatDataService;
   private final PoeEldritchDataService poeEldritchDataService;
   private final PoeModDataService poeModDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
@@ -329,6 +330,7 @@ public class PoeOptimizeService {
       PoeClusterJewelDataService poeClusterJewelDataService,
       PoeSkillWeaponDataService poeSkillWeaponDataService,
       PoeTattooDataService poeTattooDataService,
+      PoeTradeStatDataService poeTradeStatDataService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
       @Value("${poe.sim.tree-version:3_29}") String treeVersion,
       @Value("${poe.sim.parallelism:0}") int parallelism,
@@ -345,6 +347,7 @@ public class PoeOptimizeService {
     this.poeClusterJewelDataService = poeClusterJewelDataService;
     this.poeSkillWeaponDataService = poeSkillWeaponDataService;
     this.poeTattooDataService = poeTattooDataService;
+    this.poeTradeStatDataService = poeTradeStatDataService;
     this.resultFile = Path.of(dataDir, "sim", "optimize-last.json");
     this.historyDir = Path.of(dataDir, "sim", "history");
     this.treeVersion = treeVersion;
@@ -599,10 +602,19 @@ public class PoeOptimizeService {
     double myEhp = finalValues.getOrDefault("TotalEHP", 0d);
     // 엔진 벤치 우선 — 대표 실빌드를 우리 엔진으로 재계산한 값이라 지표가 정합(ninja 표기는 gross/표본 지표라
     //   과대·과소가 섞임). 없으면 기존 ninja 중앙값 경로.
-    JsonNode eb =
-        ascendancy != null && !ascendancy.isEmpty()
-            ? ninjaEngineBench.get(ascendancy + "|" + gem.name())
-            : null;
+    JsonNode eb = null;
+    if (ascendancy != null && !ascendancy.isEmpty()) {
+      // CI 혼재 아키타입(PB 등)은 서브그룹 벤치(|ci, |life)가 있으면 우리 최종 빌드의 체계(Life<=1=CI)와
+      //   같은 서브그룹 대표와 비교 — 단일 중앙값 대표는 혼재 모집단에서 어느 쪽도 대표하지 못한다.
+      String benchBase = ascendancy + "|" + gem.name();
+      String subgroup = finalValues.getOrDefault("Life", 0d) <= 1d ? "|ci" : "|life";
+      eb = ninjaEngineBench.get(benchBase + subgroup);
+      if (eb != null) {
+        log("메타 벤치: 서브그룹 대표(" + benchBase + subgroup + ")와 비교");
+      } else {
+        eb = ninjaEngineBench.get(benchBase);
+      }
+    }
     if (eb != null && eb.path("dps").asDouble() > 0 && eb.path("ehp").asDouble() > 0) {
       boolean below = myDps < eb.path("dps").asDouble() && myEhp < eb.path("ehp").asDouble();
       if (below) {
@@ -693,6 +705,10 @@ public class PoeOptimizeService {
   //   실측: RF 치프틴 실빌드 96%가 Mace/Shield 인데 시뮬은 자유 선택이라 방패 방어층(막기 75%·방어도 12k)이 통째 빠짐.
   private volatile Set<String> metaWeaponClasses = Set.of(); // 허용 무기 itemClass(빈=제약 없음)
   private volatile boolean metaOffhandShield = false;
+
+  // 추가 스킬(화염덫 등) 전용 보조젬 — slug → 선발 서포트(1b 패스). 잡별 상태, start() 리셋.
+  private final Map<String, List<PoeGem>> additionalSkillSupports =
+      new java.util.concurrent.ConcurrentHashMap<>();
 
   /** poe.ninja weaponmode 라벨 → 허용 무기 itemClass 집합. 미지 라벨은 빈 집합(제약 없음 폴백). */
   private static Set<String> weaponModeClasses(String mode) {
@@ -810,6 +826,43 @@ public class PoeOptimizeService {
    * topKeystones/topCoSkills)을 ObjectNode 로 반환(benchOf/seedOf 재사용 목적). 표본 부족(&lt;MIN_SEED_SAMPLE)이면
    * null.
    */
+  /**
+   * CI 서브그룹 생존 중앙값 — (전직|스킬) 풀에서 CI 키스톤 보유·96+ 필터 후 EHP 중앙값(표본<5면 0). 혼재 모집단(PB: CI 45/비CI 53)의 통합
+   * 중앙값은 CI 문맥에서 EHP 목표를 낮게 잡아 balanced 생존 팩터가 조기 포화 → Aegis Aurora 류 EHP 소스(실측 +21.1%)가 스코어에서 못
+   * 이긴다(48단계).
+   */
+  private double ciSubgroupMedianEhp(String ascendancy, String skillName) {
+    if (ninjaBuilds.isEmpty() || skillName == null) {
+      return 0;
+    }
+    List<Double> ehps = new ArrayList<>();
+    for (JsonNode b : ninjaBuilds) {
+      if (ascendancy != null
+          && !ascendancy.isEmpty()
+          && !ascendancy.equals(b.path("ascendancy").asText())) {
+        continue;
+      }
+      if (!skillName.equals(b.path("mainSkill").asText()) || b.path("level").asInt() < 96) {
+        continue;
+      }
+      boolean hasCi = false;
+      for (JsonNode k : b.path("keystones")) {
+        if ("Chaos Inoculation".equals(k.asText())) {
+          hasCi = true;
+          break;
+        }
+      }
+      if (hasCi && b.path("ehp").isNumber()) {
+        ehps.add(b.path("ehp").asDouble());
+      }
+    }
+    if (ehps.size() < 5) {
+      return 0;
+    }
+    ehps.sort(null);
+    return ehps.get(ehps.size() / 2);
+  }
+
   private JsonNode comboAggregate(String ascendancy, List<String> skills) {
     List<JsonNode> src = ninjaBuilds;
     if (src.isEmpty() || skills == null || skills.size() < 2) {
@@ -1746,6 +1799,9 @@ public class PoeOptimizeService {
   /** 주문 막기 목표(%) — 막기 특화 아키타입(중앙값 50%+)만 활성. 잡별 상태 — start() 리셋 블록 필수. */
   private volatile int targetSpellBlock = 0;
 
+  /** 이번 잡이 balanced 인지 — craftRare 등 objectiveKey 가 안 닿는 깊은 경로의 분기용. start() 리셋 필수. */
+  private volatile boolean balancedJob = false;
+
   // ES 듀얼패스 임시 플래그 — true 동안 craftRare 가 방어 베이스를 ES 변형으로 강제(tryEsTemplate 내부에서만 on).
   private volatile boolean forceEsBase = false;
 
@@ -1775,8 +1831,10 @@ public class PoeOptimizeService {
                         k != null
                             && (k.equalsIgnoreCase("Chaos Inoculation")
                                 || k.equalsIgnoreCase("Eldritch Battery")));
-    // ES 중앙값이 유의미(≥ES_ARCHETYPE_FLOOR)하고 생명 이상이면 실질 방어풀이 ES(=ES 스태킹). CI 빌드는 생명이 1~수백.
-    boolean esDominant = b.energyShield() >= ES_ARCHETYPE_FLOOR && b.energyShield() >= b.life();
+    // ES 중앙값이 유의미(≥ES_ARCHETYPE_FLOOR)하고 **생명의 2배 이상**이어야 진성 ES 스태킹 — "ES ≥ 생명"
+    // 완화 조건은 하이브리드(PB: 생명 3.2k+ES 0.9k 대표, EHP 원천은 럭키 막기)까지 CI 경로로 끌고 가
+    // 유리대포 CI 대안을 만들었다(실측 EHP 30k vs 벤치 132.8k — 31단계 분해로 방향 오류 확정).
+    boolean esDominant = b.energyShield() >= ES_ARCHETYPE_FLOOR && b.energyShield() >= b.life() * 2;
     return ciKeystone || esDominant;
   }
 
@@ -2071,6 +2129,8 @@ public class PoeOptimizeService {
       this.targetChaosRes = 0; // P2 카오스 저항 목표도 같은 누출 계열 — 잡마다 리셋
       this.targetSpellSuppress = 0; // 주문 억제 목표 — 같은 누출 계열
       this.targetSpellBlock = 0; // 주문 막기 목표 — 같은 누출 계열
+      this.balancedJob = false; // balanced 분기 플래그 — 같은 누출 계열
+      this.additionalSkillSupports.clear(); // 추가 스킬 보조젬(1b) — 잡마다 리셋(누출 방지)
       this.metaWeaponClasses = Set.of(); // P1② 메타 무기 구성 — 잡마다 리셋(누출 방지)
       this.metaOffhandShield = false;
       this.metaPantheonMajor = ""; // P1③ 메타 판테온 — 잡마다 리셋(누출 방지)
@@ -2133,6 +2193,7 @@ public class PoeOptimizeService {
     ExecutorService executor = Executors.newFixedThreadPool(parallelism);
     try {
       String objectiveKey = objective; // objectiveOf 가 objective 문자열을 해석 (dps/ehp/balanced)
+      this.balancedJob = "balanced".equals(objectiveKey);
       // 메인 스킬 결정: slug 지정이면 그것. 아니면 —
       //   (a) 사용자가 스킬을 선택했으면 **선택 순서상 첫 스킬**을 메인으로(사용자 의도 존중).
       //       ⚠ 예전엔 DPS 최고를 메인으로 골라, RF+FireTrap 선택 시 DPS 높은 Fire Trap 이 메인이 되고 RF 가 보조로 밀려
@@ -2444,6 +2505,84 @@ public class PoeOptimizeService {
           shortlist.remove(best.getKey());
           current = best.getValue();
           log("보조젬 채택: " + koName(best.getKey()) + " → " + format(current));
+        }
+      }
+
+      // ── 1b) 추가 스킬 보조젬 — 추가 데미지 스킬(화염덫 등)은 실빌드 4링크가 표준인데 단독 젬으로
+      // emit 되어 벤치(스킬별 DPS 3.8M)와 비교가 불공정했다. 메인 objective(CombinedDPS=메인 전용)에는
+      // 무기여라 일반 greedy 로는 영원히 미선발 — **그 스킬을 임시 메인으로 둔 XML** 로 자체 DPS("dps")
+      // 기준 greedy(4링크 가정, 서포트 3개). 메인 지표·기준선 불변(디버프성 서포트가 메인에 영향을 주면
+      // 그것대로 정당한 반영).
+      for (PoeGem extra : additionalSkills) {
+        if (!isDamageSkill(extra)) {
+          continue;
+        }
+        List<PoeGem> extraPool =
+            poeGemDataService.search(null, "support", "all", null).stream()
+                .filter(s -> !s.levels().isEmpty())
+                .filter(this::isProvidedSupport)
+                .filter(s -> supportCompatible(extra, s))
+                .toList();
+        List<PoeGem> extraPicked = new ArrayList<>();
+        Map<PoeGem, Double> extraFirst =
+            evalBatch(
+                executor,
+                extraPool,
+                s ->
+                    buildXml(
+                        extra,
+                        List.of(s),
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items),
+                "dps");
+        List<PoeGem> extraShort =
+            extraFirst.entrySet().stream()
+                .sorted(Map.Entry.<PoeGem, Double>comparingByValue().reversed())
+                .limit(SUPPORT_SHORTLIST)
+                .map(Map.Entry::getKey)
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        double extraCur = -1d;
+        while (extraPicked.size() < 3 && !extraShort.isEmpty()) {
+          Map<PoeGem, Double> round =
+              extraPicked.isEmpty()
+                  ? extraFirst
+                  : evalBatch(
+                      executor,
+                      extraShort,
+                      s ->
+                          buildXml(
+                              extra,
+                              joined(extraPicked, s),
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              allocated,
+                              items),
+                      "dps");
+          Map.Entry<PoeGem, Double> best =
+              round.entrySet().stream()
+                  .filter(e -> extraShort.contains(e.getKey()))
+                  .max(Map.Entry.comparingByValue())
+                  .orElse(null);
+          if (best == null || best.getValue() <= extraCur * 1.005) {
+            break;
+          }
+          extraPicked.add(best.getKey());
+          extraShort.remove(best.getKey());
+          extraCur = best.getValue();
+        }
+        if (!extraPicked.isEmpty()) {
+          additionalSkillSupports.put(extra.slug(), List.copyOf(extraPicked));
+          log(
+              "추가 스킬 보조젬: "
+                  + koName(extra)
+                  + " → "
+                  + extraPicked.stream()
+                      .map(this::koName)
+                      .collect(java.util.stream.Collectors.joining(", ")));
         }
       }
 
@@ -4090,7 +4229,9 @@ public class PoeOptimizeService {
                         Comparator.comparingLong(SkillCand::score)
                             .reversed()
                             .thenComparing(SkillCand::key))
-                    .limit(3)
+                    // 페이로드 휴리스틱은 랭킹만 못 믿는다(실사고: 부분문자열 스코어가 RF 에서 fire 4 <
+                    // spell 8 — 정크가 상위). 프리컷을 12로 넓혀 실측이 판정하게 한다(순차 ≤12 평가).
+                    .limit(12)
                     .map(SkillCand::key)
                     .toList();
         // 소켓은 스킬키와 무관 — 최근접 미사용 Large 소켓 1개
@@ -4214,6 +4355,157 @@ public class PoeOptimizeService {
                     + bestCost
                     + "pt) → "
                     + format(current));
+          } else if (!withinBudget && bestTrialVal > current * 1.003) {
+            // ── 예산 스왑 — 최종 컨텍스트에서 「최저가치 잎 사슬 제거 ↔ 클러스터 편입」 원자 교환.
+            // 예약 방식(트리를 미리 약화)은 실패 롤백됐다(18단계: 712,940→407,389) — 여기서는 완성 빌드
+            // 기준으로 제거·편입을 한 번에 실측해 상승할 때만 채택한다. 잎(유도 그래프 차수 ≤1)만 반복
+            // 제거하므로 잔여 트리 연결성이 보존된다.
+            int deficit = points + bestCost - POINT_BUDGET;
+            // 속성 슬랙 — 잎의 다수는 +10 속성 여행 노드라, 무제한 제거하면 젬 요구치가 깨져 빌드가
+            // 붕괴한다(실측: 11잎 제거 → 130,896). 현 빌드의 Str/Dex/Int 여유분 안에서만 속성 잎을 뗀다.
+            Map<String, Double> curVals =
+                poePobEngineService.calculateValues(
+                    buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels));
+            evalCount.incrementAndGet();
+            double slackStr = curVals.getOrDefault("Str", 0d) - curVals.getOrDefault("ReqStr", 0d);
+            double slackDex = curVals.getOrDefault("Dex", 0d) - curVals.getOrDefault("ReqDex", 0d);
+            double slackInt = curVals.getOrDefault("Int", 0d) - curVals.getOrDefault("ReqInt", 0d);
+            java.util.function.BiFunction<List<String>, String, Integer> attrOf =
+                (lines, attr) -> {
+                  int sum = 0;
+                  for (String line : lines == null ? List.<String>of() : lines) {
+                    var m =
+                        java.util.regex.Pattern.compile(
+                                "\\+(\\d+) to " + attr + "(?!\\w)|\\+(\\d+) to all Attributes")
+                            .matcher(line);
+                    while (m.find()) {
+                      sum += Integer.parseInt(m.group(1) != null ? m.group(1) : m.group(2));
+                    }
+                  }
+                  return sum;
+                };
+            Set<Integer> removable = new LinkedHashSet<>();
+            Set<Integer> pool = new HashSet<>(allocated);
+            while (removable.size() < deficit) {
+              Integer pick = null;
+              int pickScore = Integer.MAX_VALUE;
+              for (int id : pool) {
+                if (id >= 0x10000) {
+                  continue; // 가상 노드는 대상 아님
+                }
+                int degree = 0;
+                for (int nb : poeTreeGraphService.neighbors(id)) {
+                  if (pool.contains(nb)) {
+                    degree++;
+                  }
+                }
+                if (degree > 1) {
+                  continue; // 잎만 — 중간 노드 제거는 연결성을 깬다
+                }
+                PoeTreeGraphService.TreeNode treeNode = poeTreeGraphService.node(id);
+                if (treeNode != null
+                    && ("jewel".equals(treeNode.type())
+                        || "keystone".equals(treeNode.type())
+                        || "mastery".equals(treeNode.type()))) {
+                  // 차수 1·score 낮음이라 잎 후보가 되기 쉽지만 떼는 순간 빌드 기제가 통째로 무너지는
+                  // 노드들 — 주얼 소켓(유니크 주얼 상실, 실측 130k), 키스톤(혈마법 상실 → 오라 전멸,
+                  // 실측 3,247), 마스터리(선택 효과 상실). 전부 제거 대상에서 제외한다. 남는 잎이
+                  // 부족하면 "스왑 불가"로 정직하게 물러선다 — 이 예산에서 클러스터를 담는 정공법은
+                  // LEVEL 파리티(실빌드 L100 = +10pt)다.
+                  continue;
+                }
+                if (treeNode != null) {
+                  // 속성 슬랙 가드 — 이 잎을 떼면 요구치가 깨지는 속성이 있으면 후보 제외
+                  int lossStr = attrOf.apply(treeNode.stats(), "Strength");
+                  int lossDex = attrOf.apply(treeNode.stats(), "Dexterity");
+                  int lossInt = attrOf.apply(treeNode.stats(), "Intelligence");
+                  if ((lossStr > 0 && lossStr > slackStr)
+                      || (lossDex > 0 && lossDex > slackDex)
+                      || (lossInt > 0 && lossInt > slackInt)) {
+                    continue;
+                  }
+                }
+                int s = treeNode == null ? 0 : score(treeNode.stats(), keywords);
+                if (s < pickScore || (s == pickScore && (pick == null || id < pick))) {
+                  pickScore = s;
+                  pick = id;
+                }
+              }
+              if (pick == null) {
+                break; // 더 뗄 잎이 없음 — 스왑 불가
+              }
+              PoeTreeGraphService.TreeNode picked = poeTreeGraphService.node(pick);
+              if (picked != null) {
+                slackStr -= attrOf.apply(picked.stats(), "Strength");
+                slackDex -= attrOf.apply(picked.stats(), "Dexterity");
+                slackInt -= attrOf.apply(picked.stats(), "Intelligence");
+              }
+              removable.add(pick);
+              pool.remove(pick);
+            }
+            if (removable.size() >= deficit) {
+              Set<Integer> swapNodes = new LinkedHashSet<>(bestTrialNodes);
+              swapNodes.removeAll(removable);
+              List<ClusterSpec> withNew = new ArrayList<>(fixedClusters);
+              withNew.add(bestSpec);
+              List<ClusterSpec> savedClusters2 = fixedClusters;
+              double swapVal;
+              try {
+                fixedClusters = List.copyOf(withNew);
+                swapVal =
+                    objectiveOf(
+                        poePobEngineService.calculateValues(
+                            buildXml(
+                                gem,
+                                supports,
+                                className,
+                                ascendancy,
+                                ascendancyNodes,
+                                swapNodes,
+                                items,
+                                jewels)),
+                        objectiveKey);
+                evalCount.incrementAndGet();
+              } finally {
+                fixedClusters = savedClusters2;
+              }
+              if (swapVal > current * 1.003) {
+                clusterAdopted = true;
+                fixedClusters = List.copyOf(withNew);
+                allocated.clear();
+                allocated.addAll(swapNodes);
+                points = points - removable.size() + bestCost;
+                current = swapVal;
+                log(
+                    "자동 클러스터 예산 스왑 채택: Large "
+                        + bestKey
+                        + " ["
+                        + String.join(", ", bestNotables)
+                        + "] ↔ 잎 "
+                        + removable.size()
+                        + "pt 제거 → "
+                        + format(current));
+              } else {
+                log(
+                    "자동 클러스터 예산 스왑 기각: 교환 후 "
+                        + format(swapVal)
+                        + " vs 현재 "
+                        + format(current)
+                        + " (제거 잎 "
+                        + removable.size()
+                        + "pt)");
+              }
+            } else {
+              log("자동 클러스터: 스왑 불가(뗄 수 있는 잎 부족) — 미채택");
+            }
           } else {
             log(
                 "자동 클러스터: 미채택 — 최고 Large "
@@ -4315,6 +4607,155 @@ public class PoeOptimizeService {
                     + bestRefund.path().size()
                     + "pt) → "
                     + format(current));
+          }
+        }
+      }
+
+      // ── 방어 슬롯 최종 재대결(balanced) — 아이템 스테이지는 오라/주얼 이전의 중간 컨텍스트라 방어
+      // 요소가 저평가된 채 DPS 유니크가 이긴다(실사고: RF 에 Abyssus — 받는 물리 +45% 부채, 방어도 갭
+      // 5.9k/18.6k 의 원인). 완성 빌드 기준으로 각 방어 슬롯 유니크를 방어 크래프트 레어와 1:1 재대결,
+      // 최고 1건만 채택(에센스/소켓시너지 패스와 동형 — 상승 시만, 강제 유니크 존중).
+      if (balancedJob) {
+        record DefRematch(Slot slot, RareItem rare) {}
+        // 개선 소진까지 반복 — 한 슬롯 교체가 문맥을 바꿔 다음 슬롯의 재대결 결과도 달라진다
+        // (실측: 1건 채택만으로 +19.4%). 라운드 상한 = 방어 슬롯 수.
+        for (int rematchRound = 0; rematchRound < 7; rematchRound++) {
+          List<DefRematch> rematchTrials = new ArrayList<>();
+          for (Slot defSlot :
+              new Slot[] {
+                Slot.BODY,
+                Slot.HELMET,
+                Slot.GLOVES,
+                Slot.BOOTS,
+                // 장신구도 같은 저평가 대상 — 크래프트는 슬롯 문맥(craftRare 카테고리)대로
+                Slot.AMULET,
+                Slot.RING1,
+                Slot.RING2,
+                Slot.BELT
+              }) {
+            Equipped cur = items.get(defSlot);
+            if (cur == null || !cur.isUnique()) {
+              continue;
+            }
+            final Equipped curFinal = cur;
+            if (fixedUniques.stream().anyMatch(u -> u.slug().equals(curFinal.unique().slug()))) {
+              continue; // 사용자 강제 유니크 존중
+            }
+            RareItem rare = craftRare(defSlot, gem, keywords, 0.0);
+            if (rare != null) {
+              rematchTrials.add(new DefRematch(defSlot, rare));
+            }
+          }
+          if (rematchTrials.isEmpty()) {
+            break;
+          }
+          Map<DefRematch, Double> rematchResults =
+              evalBatch(
+                  executor,
+                  rematchTrials,
+                  trial -> {
+                    Map<Slot, Equipped> trialItems = new EnumMap<>(items);
+                    trialItems.put(trial.slot(), Equipped.ofRare(trial.rare()));
+                    return buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        trialItems,
+                        jewels);
+                  },
+                  objectiveKey);
+          Map.Entry<DefRematch, Double> bestRematch =
+              rematchResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (bestRematch != null && bestRematch.getValue() > current * 1.003) {
+            DefRematch trial = bestRematch.getKey();
+            String droppedName = items.get(trial.slot()).unique().name();
+            items.put(trial.slot(), Equipped.ofRare(trial.rare()));
+            current = bestRematch.getValue();
+            log(
+                "방어 슬롯 재대결: "
+                    + trial.slot().pobName
+                    + " "
+                    + droppedName
+                    + " → 방어 레어("
+                    + trial.rare().baseType()
+                    + ") → "
+                    + format(current));
+          } else {
+            log(
+                "방어 슬롯 재대결: 유지 — 최고 "
+                    + (bestRematch != null ? format(bestRematch.getValue()) : "-")
+                    + " vs 현재 "
+                    + format(current));
+            break;
+          }
+        }
+      }
+
+      // ── 무기 최종 재대결(balanced) — 무기는 아이템 스테이지 마지막(오라/마스터리/에센스/재대결 이전의
+      // 중간 문맥)에 채택돼 완성 빌드 기준 최적이 아닐 수 있다(실측: 유니크 롤 정합 후 RF 876k→683k
+      // 재수렴 — 중간 문맥 채택이 원인, 45단계). 방어 재대결과 동형: 후보 전수 실측, 상승 시만 교체.
+      if (balancedJob) {
+        Equipped curWeapon = items.get(Slot.WEAPON);
+        boolean weaponFixed =
+            curWeapon != null
+                && curWeapon.isUnique()
+                && fixedUniques.stream().anyMatch(u -> u.slug().equals(curWeapon.unique().slug()));
+        if (!weaponFixed) {
+          List<Equipped> weaponTrials = new ArrayList<>();
+          for (PoeUniqueItem unique : itemCandidates(Slot.WEAPON, gem, keywords, items)) {
+            weaponTrials.add(Equipped.ofUnique(unique));
+          }
+          String weaponCategory =
+              (gem.tags() != null && gem.tags().contains("Attack"))
+                  ? "weaponAttack"
+                  : "weaponSpell";
+          for (PoeBaseItem base : weaponBaseCandidates(gem, 6, items.get(Slot.OFFHAND))) {
+            RareItem weaponRare = craftRare(weaponCategory, base.name(), keywords, 0.0, false);
+            if (weaponRare != null) {
+              weaponTrials.add(Equipped.ofRare(weaponRare));
+            }
+          }
+          if (!weaponTrials.isEmpty()) {
+            Map<Equipped, Double> weaponResults =
+                evalBatch(
+                    executor,
+                    weaponTrials,
+                    trial -> {
+                      Map<Slot, Equipped> trialItems = new EnumMap<>(items);
+                      trialItems.put(Slot.WEAPON, trial);
+                      return buildXml(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          allocated,
+                          trialItems,
+                          jewels);
+                    },
+                    objectiveKey);
+            Map.Entry<Equipped, Double> bestWeapon =
+                weaponResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+            if (bestWeapon != null && bestWeapon.getValue() > current * 1.003) {
+              items.put(Slot.WEAPON, bestWeapon.getKey());
+              current = bestWeapon.getValue();
+              log(
+                  "무기 최종 재대결: → "
+                      + (bestWeapon.getKey().isUnique()
+                          ? bestWeapon.getKey().unique().name()
+                          : "레어 " + bestWeapon.getKey().rare().baseType())
+                      + " → "
+                      + format(current));
+            } else {
+              log(
+                  "무기 최종 재대결: 유지 — 최고 "
+                      + (bestWeapon != null ? format(bestWeapon.getValue()) : "-")
+                      + " vs 현재 "
+                      + format(current));
+            }
           }
         }
       }
@@ -4521,20 +4962,39 @@ public class PoeOptimizeService {
       //   arc/cyclone/RF·dps/ehp 는 구조적 불변. CI(생명→1)는 ES 장비+ES 트리와 **함께**여야 이득이라
       //   개별 greedy 로는 골짜기를 못 넘어(문서화된 EHP 964k→729k) 완성 빌드 대안 비교 방식으로만 가능.
       if (esArchetype && "balanced".equals(objectiveKey) && classStart != null) {
-        EsBuild es =
-            tryEsTemplate(
-                gem,
-                supports,
-                className,
-                ascendancy,
-                ascendancyNodes,
-                classStart,
-                allocated,
-                items,
-                jewels,
-                keywords,
-                objectiveKey,
-                executor);
+        // CI 서브그룹 생존 목표 스위치 — 듀얼패스 내부 트라이얼(장비/오라/재선발)이 CI 실빌드의 EHP
+        // 수준(|ci 중앙값)을 좇게 한다. 최종 채택 비교 전에 복원 — 생명 빌드와의 비교는 기존 목표로
+        // (편향 없는 단조-개선 보존, 채택 여부와 무관하게 이후 단계도 기존 목표).
+        double prevTargetEhp = targetEhp;
+        double ciMedianEhp = ciSubgroupMedianEhp(ascendancy, gem.name());
+        if (ciMedianEhp > 0) {
+          targetEhp = clampD(ciMedianEhp, EHP_FLOOR, EHP_FLOOR * 8);
+          log(
+              "ES/CI 생존 목표 스위치: |ci 서브그룹 EHP 중앙값 "
+                  + format(targetEhp)
+                  + " (혼재 "
+                  + format(prevTargetEhp)
+                  + ")");
+        }
+        EsBuild es;
+        try {
+          es =
+              tryEsTemplate(
+                  gem,
+                  supports,
+                  className,
+                  ascendancy,
+                  ascendancyNodes,
+                  classStart,
+                  allocated,
+                  items,
+                  jewels,
+                  keywords,
+                  objectiveKey,
+                  executor);
+        } finally {
+          targetEhp = prevTargetEhp;
+        }
         if (es != null
             && objectiveOf(es.values(), objectiveKey)
                 > objectiveOf(finalValues, objectiveKey) * 1.003) {
@@ -4548,6 +5008,11 @@ public class PoeOptimizeService {
           if (es.auraOverride() != null) {
             selectedAuras.clear();
             selectedAuras.addAll(es.auraOverride());
+          }
+          // 4e 후기 서포트 재선발 결과 — 안 맞추면 결과 서포트 목록과 XML 이 어긋난다(오라와 동일 원칙)
+          if (es.supportsOverride() != null) {
+            supports.clear();
+            supports.addAll(es.supportsOverride());
           }
           log(
               "ES/CI 듀얼패스 채택: CI+ES 빌드가 생명 빌드보다 우수 → "
@@ -4614,7 +5079,10 @@ public class PoeOptimizeService {
                 anointPool.stream().map(PoeTreeGraphService.TreeNode::name).toList(),
                 name -> withAnoint(baseXml, name),
                 objectiveKey);
-        double anointBase = displayMetric(finalValues, objective);
+        // ⚠ 기준은 objectiveOf 로 — 트라이얼(evalBatch)이 objectiveKey 스코어라, displayMetric(effectiveDps)
+        //   과 비교하면 balanced 잡(스코어 = DPS×생존팩터 < DPS)에선 어떤 도유도 못 넘어 영구 비활성이었다
+        //   (실측: RF "470개 모두 이득 없음" 인데 수동 A/B 는 Discipline and Training +4.8% DPS·EHP).
+        double anointBase = objectiveOf(finalValues, objectiveKey);
         String bestName = null;
         double bestValue = anointBase;
         for (PoeTreeGraphService.TreeNode node : anointPool) { // id 오름차순 순회 — 동점은 id 낮은 쪽(결정성)
@@ -4680,6 +5148,192 @@ public class PoeOptimizeService {
           evalCount.incrementAndGet();
           unreservedFinal = finalValues.getOrDefault("ManaUnreserved", 0d);
           unreservedLifeFinal = finalValues.getOrDefault("LifeUnreserved", 1d);
+        }
+      }
+
+      // ── 최종 재대결(도유 이후, balanced) — 방어 슬롯 재대결은 도유·재생 후기 스위치 **이전** 문맥이라,
+      // 이후 문맥에서 역전되는 차선 유니크가 남는다(실사고: Blasphemer's Grasp — 재대결 시점 651,675 에선
+      // 우세였지만 도유 후 737,301 문맥에선 평범 방어 레어가 +4.9% DPS/+6.6% EHP). 완성 finalXml 문맥에서
+      // 방어 슬롯 유니크를 방어 레어와 1:1 재대결, 상승 시만 채택(도유 재적용 포함, 개선 소진까지 최대 2라운드).
+      if (balancedJob) {
+        for (int finalRound = 0; finalRound < 2; finalRound++) {
+          boolean improvedFinal = false;
+          for (Slot defSlot :
+              new Slot[] {
+                Slot.BODY,
+                Slot.HELMET,
+                Slot.GLOVES,
+                Slot.BOOTS,
+                Slot.AMULET,
+                Slot.RING1,
+                Slot.RING2,
+                Slot.BELT
+              }) {
+            Equipped cur = items.get(defSlot);
+            if (cur == null || !cur.isUnique()) {
+              continue;
+            }
+            final Equipped curFinal2 = cur;
+            if (fixedUniques.stream().anyMatch(u -> u.slug().equals(curFinal2.unique().slug()))) {
+              continue;
+            }
+            // ⚠ 4-인자 craftRare 는 defensive=forceEsBase(평시 false)라 **데미지 레어**를 만든다 —
+            //   Blasphemer 를 이긴 건 생명+저항 방어 레어(craftDefensiveRare)였다(실측 +4.9%/+6.6%).
+            //   두 방향 모두 트라이얼(중복 구성은 1회).
+            List<RareItem> rareTrials = new ArrayList<>();
+            RareItem dmgRare = craftRare(defSlot, gem, keywords, 0.0);
+            if (dmgRare != null) {
+              rareTrials.add(dmgRare);
+            }
+            RareItem defRare = craftDefensiveRare(defSlot, gem, keywords);
+            if (defRare != null
+                && (dmgRare == null || !defRare.families().equals(dmgRare.families()))) {
+              rareTrials.add(defRare);
+            }
+            // 부족 속성 보정 재도전 — 유니크가 속성 공급원일 때(실사고: Blasphemer's Grasp 민첩 +50)
+            // 단순 레어는 feasibility 감쇠(0.5%/pt, ~40pt=×0.79)로 항상 진다. 기각된 트라이얼의 부족
+            // 최대 속성 접미(+60 T1)를 편입한 변형으로 1회 재도전(변형까지 지면 유니크 유지가 정당).
+            List<RareItem> pendingTrials = new ArrayList<>(rareTrials);
+            for (int t = 0; t < pendingTrials.size(); t++) {
+              RareItem rare = pendingTrials.get(t);
+              Map<Slot, Equipped> trialItems = new EnumMap<>(items);
+              trialItems.put(defSlot, Equipped.ofRare(rare));
+              String trialXml =
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      trialItems,
+                      jewels);
+              if (currentAnoint != null) {
+                trialXml = withAnoint(trialXml, currentAnoint.name());
+              }
+              Map<String, Double> trialVals = poePobEngineService.calculateValues(trialXml);
+              evalCount.incrementAndGet();
+              if (!(objectiveOf(trialVals, objectiveKey)
+                  > objectiveOf(finalValues, objectiveKey) * 1.003)) {
+                double shortStr =
+                    trialVals.getOrDefault("ReqStr", 0d) - trialVals.getOrDefault("Str", 0d);
+                double shortDex =
+                    trialVals.getOrDefault("ReqDex", 0d) - trialVals.getOrDefault("Dex", 0d);
+                double shortInt =
+                    trialVals.getOrDefault("ReqInt", 0d) - trialVals.getOrDefault("Int", 0d);
+                String attrKey =
+                    shortStr >= shortDex && shortStr >= shortInt && shortStr > 0
+                        ? "str"
+                        : shortDex >= shortInt && shortDex > 0
+                            ? "dex"
+                            : shortInt > 0 ? "int" : null;
+                if (attrKey != null && pendingTrials.size() < rareTrials.size() + 2) {
+                  RareItem fixed = withAttributeSuffix(rare, defSlot, attrKey);
+                  if (fixed != null) {
+                    pendingTrials.add(fixed);
+                  }
+                }
+              }
+              // (수사 종결 — 유니크가 이기는 주 요인은 feasibilityFactor: 예. Blasphemer's Grasp 민첩 +50이
+              //  젬 요구치를 지탱, 레어 교체 시 속성 ~40pt 부족 감쇠 ×0.79. raw DPS/EHP 우세만으로 교체하면
+              //  실전 착용 불가 조합이 된다 — 스코어의 정당 선호.)
+              if (objectiveOf(trialVals, objectiveKey)
+                  > objectiveOf(finalValues, objectiveKey) * 1.003) {
+                items.put(defSlot, Equipped.ofRare(rare));
+                finalXml = trialXml;
+                finalValues = trialVals;
+                improvedFinal = true;
+                log(
+                    "최종 재대결(도유 후): "
+                        + defSlot.pobName
+                        + " "
+                        + curFinal2.unique().name()
+                        + " → 방어 레어("
+                        + rare.baseType()
+                        + ") → "
+                        + format(objectiveOf(finalValues, objectiveKey)));
+                break;
+              }
+            }
+          }
+          if (!improvedFinal) {
+            break;
+          }
+        }
+      }
+
+      // ── 저항 채움 패스(balanced) — 아키타입 저항 목표(치프틴 RF 등 상향 캡 90) 미달분을 레어 접미 교체로 채운다.
+      // 조향(2b 감쇠)은 있었지만 탐색에 "+N% 저항" 수(move)가 없어 화염 86 정체(실측, 사용자 지적) — 속성 보정과
+      // 같은 패턴의 명시적 재도전. 가장 미달이 큰 원소부터, 레어 슬롯 하나씩 T1 저항 접미 교체 트라이얼, 개선 시 채택.
+      if (balancedJob) {
+        String[] resValueKeys = {"FireResist", "ColdResist", "LightningResist"};
+        String[] resFamilyKeys = {"fireRes", "coldRes", "lightRes"};
+        int[] resFillTargets = {targetFireRes, targetColdRes, targetLightRes};
+        for (int fillRound = 0; fillRound < 3; fillRound++) {
+          int worst = -1;
+          double worstShort = 0.5; // 0.5 미만 미달은 무시(반올림 노이즈)
+          for (int i = 0; i < resValueKeys.length; i++) {
+            double r = finalValues.getOrDefault(resValueKeys[i], (double) resFillTargets[i]);
+            double shortfall = resFillTargets[i] - r;
+            if (shortfall > worstShort) {
+              worstShort = shortfall;
+              worst = i;
+            }
+          }
+          if (worst < 0) {
+            break;
+          }
+          boolean filled = false;
+          for (Map.Entry<Slot, Equipped> entry : new ArrayList<>(items.entrySet())) {
+            if (entry.getValue().isUnique()) {
+              continue;
+            }
+            Slot slot = entry.getKey();
+            RareItem swapped =
+                withSuffixFamily(entry.getValue().rare(), slot, resFamilyKeys[worst]);
+            if (swapped == null) {
+              continue;
+            }
+            Map<Slot, Equipped> trialItems = new EnumMap<>(items);
+            trialItems.put(slot, Equipped.ofRare(swapped));
+            String trialXml =
+                buildXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    trialItems,
+                    jewels);
+            if (currentAnoint != null) {
+              trialXml = withAnoint(trialXml, currentAnoint.name());
+            }
+            Map<String, Double> trialVals = poePobEngineService.calculateValues(trialXml);
+            evalCount.incrementAndGet();
+            if (objectiveOf(trialVals, objectiveKey)
+                > objectiveOf(finalValues, objectiveKey) * 1.003) {
+              items.put(slot, Equipped.ofRare(swapped));
+              finalXml = trialXml;
+              finalValues = trialVals;
+              filled = true;
+              log(
+                  "저항 채움: "
+                      + slot.pobName
+                      + " 접미 → "
+                      + resFamilyKeys[worst]
+                      + " (목표 "
+                      + resFillTargets[worst]
+                      + ", 이전 "
+                      + String.format("%.0f", resFillTargets[worst] - worstShort)
+                      + ") → "
+                      + format(objectiveOf(finalValues, objectiveKey)));
+              break;
+            }
+          }
+          if (!filled) {
+            break;
+          }
         }
       }
 
@@ -4888,7 +5542,19 @@ public class PoeOptimizeService {
               tattooLabels(fixedTattoos),
               // 트리 링크(an=)로 도유까지 되돌아가게 — 없으면 트리 화면 수치가 결과보다 약하게 나온다
               currentAnoint != null ? currentAnoint.nodeId() : null,
-              belowMetaVerdict(objective, gem, ascendancy, finalValues));
+              belowMetaVerdict(objective, gem, ascendancy, finalValues),
+              // 추가 스킬 전용 보조젬(1b) — 계산 XML 에는 이미 링크됐는데 결과에 없어 화면에서 안 보였다
+              additionalSkillSupports.entrySet().stream()
+                  .collect(
+                      java.util.stream.Collectors.toMap(
+                          Map.Entry::getKey,
+                          entry ->
+                              entry.getValue().stream()
+                                  .map(
+                                      s ->
+                                          new PoeOptimizeResult.SupportPick(
+                                              s.slug(), s.name(), koName(s)))
+                                  .toList())));
 
       Files.createDirectories(resultFile.getParent());
       JsonMapper jsonMapper = JsonMapper.builder().build();
@@ -5232,12 +5898,29 @@ public class PoeOptimizeService {
    * 이번 시즌 실제 제공되는 보조젬인지. 각성한(Awakened) 보조젬은 더 이상 제공되지 않고, 특출난(Exceptional: 향상/강화/계몽) 계열만 각성판이 남는다.
    * 즉 이름이 "Awakened" 로 시작하면서 Exceptional 태그가 없는 젬(각성 화염 추가 등)은 후보에서 제외한다.
    */
+  /**
+   * 트리거 보조젬 전면 제외 — 우리 최적화기는 트리거 발동률(별도 트리거 소스/조건)을 모델하지 않아, 트리거 서포트가 메인 딜링 그룹에서 내는 이득은 전부 PoB 조건
+   * 무시 왜곡이다(실측: PB 에서 Cast on Death 제거 시 13.85M→4.20M = DPS 70%가 왜곡분, Cast on Melee Kill 도 근접 공격 없는
+   * 주문 빌드에서 +37% — 둘 다 실전 발동 불가). 태그 "Trigger" 기반 일반화, 태그 누락 대비 이름 3종은 이중 방어.
+   */
+  private static final Set<String> PASSIVE_TRIGGER_SUPPORTS =
+      Set.of("Cast on Death", "Cast when Stunned", "Cast when Damage Taken");
+
   private boolean isProvidedSupport(PoeGem support) {
     String name = support.name();
-    if (name == null || !name.startsWith("Awakened")) {
+    if (name == null) {
       return true;
     }
     List<String> tags = support.tags();
+    if (tags != null && tags.contains("Trigger")) {
+      return false;
+    }
+    if (PASSIVE_TRIGGER_SUPPORTS.contains(name.replaceFirst(" Support$", ""))) {
+      return false;
+    }
+    if (!name.startsWith("Awakened")) {
+      return true;
+    }
     return tags != null && tags.contains("Exceptional");
   }
 
@@ -5571,6 +6254,9 @@ public class PoeOptimizeService {
         keywords.add("burning");
       }
     }
+    // ⚠ balanced 에 "block" 키워드를 전역 추가하는 방식은 실패 롤백(2026-08-04): 키워드가 트리 greedy
+    //   후보 스코어까지 오염해 막기 노드로 포인트가 새고 EHP −42%·카저 75→−5 유리대포화(DPS +17%로
+    //   objective 는 올랐지만 balanced 설계 의도 위반). 방패 막기 접두는 craftRare 의 방패 국소 주입으로.
     // #2 자신을 태우고 데미지가 최대 생명에 비례하는 스킬(정의의 화염)엔 생명·재생을 후보 키워드로 —
     //    최대 생명이 곧 데미지 스케일러이자 자가피해 지속원이라 생명/재생 노드·모드가 후보가 돼야 한다.
     //    다른 스킬(사이클론/아크/ED)은 이 게이트에 안 걸려 후보 풀이 그대로다(기준선 불변).
@@ -7053,7 +7739,11 @@ public class PoeOptimizeService {
         // 다단계(skillPart) 스킬 — PoB 는 파트별로 데미지가 크게 다르다(예: 칼날 소용돌이 파트3=칼날 10개).
         //   미지정 시 파트1(소수 칼날)로 계산돼 과소평가된다(실측 ninja 대비 0.36×). 실빌드 표준 파트를 지정.
         .append(skillPartAttr(gem.name()))
-        .append(" slot=\"Body Armour\">")
+        // 소켓 시너지 투구(엘더 "장착된 젬에 화상 피해 보조")면 메인 그룹을 **투구 소켓에** — PoB 가
+        // 아이템 문구로 소켓 지원을 자동 적용한다(실측: 자동 731,840 vs 문구 미적용 546,149). 종전의
+        // 명시 Burning Damage 젬(퀄 20)은 실제 문구(퀄 0)보다 +1.6% 과대평가라 자동 적용이 정직하고,
+        // 결과 PoB 뷰에서도 "오라가 투구에 소켓된" 모순 표현이 사라진다(사용자 지적).
+        .append(hasElderBurningSupport(items) ? " slot=\"Helmet\">" : " slot=\"Body Armour\">")
         .append("<Gem nameSpec=\"")
         .append(gem.name())
         // 메인 스킬 젬 21/20 — 실빌드 96+ 의 표준(부패 +1). 나머지 엔드게임 전제(20/20 보조·최상위 레어·
@@ -7069,14 +7759,8 @@ public class PoeOptimizeService {
           .append(supportLevelOverride.getOrDefault(support.slug(), 20))
           .append("\" quality=\"20\" enabled=\"true\"/>");
     }
-    // 소켓 시너지(엘더 헬멧 "장착된 젬에 20레벨 화상 피해 보조") — 메인 스킬을 그 헬멧에 소켓한 가정으로
-    // 메인 그룹에 Burning Damage 젬을 직접 넣는다. 메인 그룹 slot 은 Body Armour 라 아이템 문구만으로는
-    // PoB 가 소켓 지원을 적용하지 않고, 같은 보조가 이미 링크에 있으면 게임에서 중복 무효라 추가하지 않는다.
-    if (hasElderBurningSupport(items)
-        && supports.stream()
-            .noneMatch(s -> "Burning Damage".equals(s.name().replaceFirst(" Support$", "")))) {
-      xml.append("<Gem nameSpec=\"Burning Damage\" level=\"20\" quality=\"20\" enabled=\"true\"/>");
-    }
+    // (소켓 시너지의 명시 Burning Damage 젬은 제거 — 메인 그룹을 투구 슬롯에 두면 PoB 가 아이템 문구로
+    //  자동 적용한다. 위 slot 분기 주석 참조. 명시 젬은 퀄 20이라 실제 문구(퀄 0) 대비 과대평가였다.)
     // 주얼: 소켓 노드는 nodes 에 포함되어야 하고, 주얼 아이템 id 는 장비(1..N)와 안 겹치게 900번대
     for (int socketNode : jewels.keySet()) {
       specNodes.add(socketNode);
@@ -7099,7 +7783,11 @@ public class PoeOptimizeService {
     // 각성한 계몽 5레벨 = 예약 감소 최대. 실측: 계몽3 → 4 → 각성5 로 갈수록 미예약 마나 136 → 151 → 165 로 늘어
     // 오라가 1~2개 더 들어간다(본섀터 DPS 1,513,597 → 1,580,649). 나머지 젬 가정(20/20, 최상위 레어)과 같은 엔드게임 전제.
     if (auras != null && !auras.isEmpty()) {
-      xml.append("<Skill enabled=\"true\" slot=\"Helmet\">")
+      // 소켓 시너지 투구면 메인 그룹이 Helmet 을 차지 — 오라는 Body Armour 로 스왑(슬롯 충돌 회피)
+      xml.append(
+              hasElderBurningSupport(items)
+                  ? "<Skill enabled=\"true\" slot=\"Body Armour\">"
+                  : "<Skill enabled=\"true\" slot=\"Helmet\">")
           .append(
               "<Gem nameSpec=\"Awakened Enlighten\" level=\"5\" quality=\"0\" enabled=\"true\"/>");
       for (PoeGem aura : auras) {
@@ -7113,10 +7801,19 @@ public class PoeOptimizeService {
       xml.append("</Skill>");
     }
     // 추가 스킬(사용자 지정) — 각자 별도 그룹으로 emit. PoB 가 오라=예약+버프, 커스=적약화, 헤럴드/가드 등 역할대로 반영.
+    // 1b 패스가 선발한 전용 보조젬(화염덫 4링크 등)을 함께 링크 — 벤치 스킬별 DPS(4링크 실빌드)와 공정 비교.
     for (PoeGem extra : additionalSkills) {
       xml.append("<Skill enabled=\"true\" slot=\"Gloves\"><Gem nameSpec=\"")
           .append(extra.name())
-          .append("\" level=\"20\" quality=\"20\" enabled=\"true\"/></Skill>");
+          .append("\" level=\"20\" quality=\"20\" enabled=\"true\"/>");
+      for (PoeGem extraSupport : additionalSkillSupports.getOrDefault(extra.slug(), List.of())) {
+        xml.append("<Gem nameSpec=\"")
+            .append(extraSupport.name().replaceFirst(" Support$", ""))
+            .append("\" level=\"")
+            .append(supportLevelOverride.getOrDefault(extraSupport.slug(), 20))
+            .append("\" quality=\"20\" enabled=\"true\"/>");
+      }
+      xml.append("</Skill>");
     }
     xml.append("</SkillSet></Skills>")
         .append("<Tree activeSpec=\"1\"><Spec treeVersion=\"")
@@ -7541,6 +8238,24 @@ public class PoeOptimizeService {
       // 저항 접미 2개 (공통)
       suffixPool.stream().filter(f -> hasKeyword(f, "resistance")).limit(2).forEach(suffixes::add);
     }
+    // balanced 방패 — 실빌드 표준 막기 접두(blockPctLocal)를 국소 보장. "block" 키워드 전역 주입은
+    // 트리 greedy 까지 오염해 유리대포화(EHP −42%·카저 −5)로 실패 롤백 — 방패 크래프트에만 결정적 편입.
+    if (balancedJob && "shield".equals(category)) {
+      for (String blockKey : List.of("blockPctLocal", "spellBlockLocal")) {
+        prefixPool.stream()
+            .filter(f -> blockKey.equals(f.key()))
+            .findFirst()
+            .ifPresent(
+                f -> {
+                  if (!prefixes.contains(f) && prefixes.size() < 3) {
+                    prefixes.add(f);
+                  }
+                });
+      }
+    }
+    // (활 추가 화살 주입은 롤백 — 완성 문맥 A/B 실측에서 화살 수가 CombinedDPS 에 무기여(문구 무관
+    //  A=B=C 동일): PoB 단일표적 계산은 투사체 수를 반영하지 않아 접미 슬롯만 낭비한다. 42단계 대표 활
+    //  이식 +45.3%는 물리 스택 효과였음. 54단계 판정.)
     // 남는 접두/접미 슬롯(각 3개까지)을 데미지 키워드 상위로 채움
     prefixPool.stream()
         .filter(f -> !prefixes.contains(f))
@@ -7988,7 +8703,10 @@ public class PoeOptimizeService {
       // ES 대안 전용 오라 세트(Discipline 추가/교체 결과) — 오라 greedy 는 생명 빌드 시점이라 flat ES 층이
       // 손해로 보여 기각된다. null 이면 무변경, 아니면 호출부가 selectedAuras 를 통째로 교체해야
       // 결과 표시와 XML 이 일치한다.
-      List<PoeGem> auraOverride) {}
+      List<PoeGem> auraOverride,
+      // 4e 후기 서포트 재선발 결과 — 서포트 greedy 는 생명 빌드 초기에 돌아 CI 문맥(카오스 전환 여부)의
+      // 최적과 다르다. null 이면 무변경, 아니면 호출부가 supports 를 통째로 교체.
+      List<PoeGem> supportsOverride) {}
 
   /** 노드 스탯에 에너지실드/CI 관련 문구가 있으면 가중(ES 트리 greedy 편향용). */
   private int esNodeScore(PoeTreeGraphService.TreeNode node) {
@@ -8211,6 +8929,79 @@ public class PoeOptimizeService {
         }
       }
     }
+    // 4b+) 헤럴드 스택 트라이얼 — |ci 대표(CuddleCorpse)의 주 DPS 소스가 헤럴드 5개 스택
+    //   ("헤럴드당 8% 피해" 마스터리 채택률 96%)인데 우리 오라 greedy 는 생명 문맥에서 돌아 CI 완성
+    //   빌드에선 재평가가 필요하다. greedy 라운드(상한 3): 현 오라 세트에 각 헤럴드 추가/교체 전수
+    //   트라이얼, 예약 여유+목표 상승을 충족하는 라운드 최고안 채택, 개선 없으면 종료.
+    {
+      List<String> heraldNames =
+          List.of(
+              "Herald of Ash",
+              "Herald of Thunder",
+              "Herald of Ice",
+              "Herald of Purity",
+              "Herald of Agony");
+      List<PoeGem> heraldGems =
+          poeGemDataService.search(null, "active", "all", null).stream()
+              .filter(a -> heraldNames.contains(a.name()))
+              .filter(a -> !a.levels().isEmpty())
+              .toList();
+      for (int round = 0; round < 3; round++) {
+        List<PoeGem> curAuras = auraOverride != null ? auraOverride : selectedAuras;
+        double bestObjective = objectiveOf(vals, objectiveKey);
+        List<PoeGem> bestAuras = null;
+        String bestXml = null;
+        Map<String, Double> bestVals = null;
+        for (PoeGem herald : heraldGems) {
+          if (curAuras.stream().anyMatch(a -> a.name().equals(herald.name()))) {
+            continue;
+          }
+          List<List<PoeGem>> trials = new ArrayList<>();
+          trials.add(joined(curAuras, herald));
+          for (int i = 0; i < curAuras.size(); i++) {
+            List<PoeGem> swapped = new ArrayList<>(curAuras);
+            swapped.set(i, herald);
+            trials.add(swapped);
+          }
+          for (List<PoeGem> trialAuras : trials) {
+            String trialXml =
+                buildXmlAuras(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    nodes,
+                    esItems,
+                    jewels,
+                    trialAuras);
+            Map<String, Double> trialVals = poePobEngineService.calculateValues(trialXml);
+            evalCount.incrementAndGet();
+            if (trialVals.getOrDefault("ManaUnreserved", -1d) >= 0d
+                && trialVals.getOrDefault("LifeUnreserved", 1d) > 0d
+                && objectiveOf(trialVals, objectiveKey) > bestObjective) {
+              bestObjective = objectiveOf(trialVals, objectiveKey);
+              bestAuras = trialAuras;
+              bestXml = trialXml;
+              bestVals = trialVals;
+            }
+          }
+        }
+        if (bestAuras == null) {
+          break;
+        }
+        auraOverride = bestAuras;
+        xml = bestXml;
+        vals = bestVals;
+        log(
+            "ES 듀얼패스 헤럴드 트라이얼: → "
+                + bestAuras.stream()
+                    .map(PoeGem::name)
+                    .collect(java.util.stream.Collectors.joining(", "))
+                + " → "
+                + format(bestObjective));
+      }
+    }
     // 4c) 보조장비(방패) 재평가 — 생명 빌드의 방패는 생명 문맥에서 뽑혀 ES/CI 문맥의 최적이 아니다.
     //   막기/ES 레이어는 목표 게이트로는 못 유도(막기 게이트 도입 실패 실측: EHP 45k→8k 붕괴)하고
     //   **소스 자체를 후보로** 넣어야 한다: 방어 키워드로 유니크 방패(Aegis Aurora/Rathpith 류) 상위 +
@@ -8259,6 +9050,13 @@ public class PoeOptimizeService {
       Map.Entry<Equipped, Double> bestOffhand =
           offhandResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
       if (bestOffhand != null && bestOffhand.getValue() > objectiveOf(vals, objectiveKey)) {
+        // ES 붕괴 가드 — CI 대안에서 objective(DPS 이득)만으로 ES 없는 생명 유니크가 채택되면
+        //   ES 절대량이 무너진다(실측: ES 2,185 vs |ci 대표 6,409 = EHP 갭 -57%의 본체). 스왑 후
+        //   ES 가 직전의 70% 미만이면 롤백.
+        Equipped prevOffhand = esItems.get(Slot.OFFHAND);
+        String prevXml = xml;
+        Map<String, Double> prevVals = vals;
+        double esBefore = vals.getOrDefault("EnergyShield", 0d);
         esItems.put(Slot.OFFHAND, bestOffhand.getKey());
         xml =
             buildXmlAuras(
@@ -8273,13 +9071,29 @@ public class PoeOptimizeService {
                 effectiveAuras);
         vals = poePobEngineService.calculateValues(xml);
         evalCount.incrementAndGet();
-        log(
-            "ES 듀얼패스 보조장비 재평가: → "
-                + (bestOffhand.getKey().isUnique()
-                    ? bestOffhand.getKey().unique().name()
-                    : bestOffhand.getKey().rare().baseType() + " (ES 레어)")
-                + " → "
-                + format(bestOffhand.getValue()));
+        double esAfter = vals.getOrDefault("EnergyShield", 0d);
+        if (esBefore > 0 && esAfter < esBefore * 0.7) {
+          esItems.put(Slot.OFFHAND, prevOffhand);
+          xml = prevXml;
+          vals = prevVals;
+          log(
+              "ES 듀얼패스 보조장비 기각(ES 붕괴): "
+                  + (bestOffhand.getKey().isUnique()
+                      ? bestOffhand.getKey().unique().name()
+                      : bestOffhand.getKey().rare().baseType() + " (ES 레어)")
+                  + " — ES "
+                  + format(esBefore)
+                  + " → "
+                  + format(esAfter));
+        } else {
+          log(
+              "ES 듀얼패스 보조장비 재평가: → "
+                  + (bestOffhand.getKey().isUnique()
+                      ? bestOffhand.getKey().unique().name()
+                      : bestOffhand.getKey().rare().baseType() + " (ES 레어)")
+                  + " → "
+                  + format(bestOffhand.getValue()));
+        }
       }
     }
     // 4d) 방어 슬롯 유니크 재평가 — 4c(방패)와 동형의 소스 편입. 스텝 2에서 방어 4슬롯을 ES 레어로 밀었는데,
@@ -8324,6 +9138,12 @@ public class PoeOptimizeService {
         Map.Entry<Equipped, Double> bestSlot =
             slotResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
         if (bestSlot != null && bestSlot.getValue() > objectiveOf(vals, objectiveKey)) {
+          // ES 붕괴 가드 — 4c 와 동형(주석 참조). 방어 4슬롯이 ES 없는 생명 유니크로 갈리는 것이
+          //   CI EHP 갭의 최대 요인(실측: Lightning Coil/Ravenous Passion 채택 → ES 2,185).
+          Equipped prevSlotItem = curEquip;
+          String prevXml = xml;
+          Map<String, Double> prevVals = vals;
+          double esBefore = vals.getOrDefault("EnergyShield", 0d);
           esItems.put(defSlot, bestSlot.getKey());
           xml =
               buildXmlAuras(
@@ -8338,17 +9158,209 @@ public class PoeOptimizeService {
                   effectiveAuras);
           vals = poePobEngineService.calculateValues(xml);
           evalCount.incrementAndGet();
-          log(
-              "ES 듀얼패스 "
-                  + defSlot.ko
-                  + " 재평가: → "
-                  + bestSlot.getKey().unique().name()
-                  + " → "
-                  + format(bestSlot.getValue()));
+          double esAfter = vals.getOrDefault("EnergyShield", 0d);
+          if (esBefore > 0 && esAfter < esBefore * 0.7) {
+            if (prevSlotItem != null) {
+              esItems.put(defSlot, prevSlotItem);
+            } else {
+              esItems.remove(defSlot);
+            }
+            xml = prevXml;
+            vals = prevVals;
+            log(
+                "ES 듀얼패스 "
+                    + defSlot.ko
+                    + " 기각(ES 붕괴): "
+                    + bestSlot.getKey().unique().name()
+                    + " — ES "
+                    + format(esBefore)
+                    + " → "
+                    + format(esAfter));
+          } else {
+            log(
+                "ES 듀얼패스 "
+                    + defSlot.ko
+                    + " 재평가: → "
+                    + bestSlot.getKey().unique().name()
+                    + " → "
+                    + format(bestSlot.getValue()));
+          }
         }
       }
     }
-    return new EsBuild(nodes, esItems, xml, vals, auraOverride);
+    // 4e) 후기 서포트 재선발 — 서포트 greedy 는 생명 빌드 초기(장비/트리/오라 확정 전)에 돌아 CI 완성
+    //   빌드의 최적과 다르다(실측 37단계: 우리 5링크가 Cast on Death 류 비무장, 대표 도트 3종을 우리
+    //   서포트로 바꾸면 대표 DPS -41%). 특히 Original Sin(원소→카오스 전환)은 ignite 를 소멸시켜 도트
+    //   서포트를 무효화하는 서포트 생태계 스위치라, ①현 장비 그대로 재선발 ②Original Sin 링→레어
+    //   교체+재선발 두 컨텍스트를 A/B 하고 목표값 상승 시만 채택한다.
+    List<PoeGem> supportsOverride = null;
+    {
+      List<PoeGem> effectiveAuras2 = auraOverride != null ? auraOverride : selectedAuras;
+      List<PoeGem> supportPool =
+          poeGemDataService.search(null, "support", "all", null).stream()
+              .filter(s -> !s.levels().isEmpty())
+              .filter(this::isProvidedSupport)
+              .filter(s -> supportCompatible(gem, s))
+              .toList();
+      List<Map<Slot, Equipped>> contexts = new ArrayList<>();
+      contexts.add(esItems);
+      Slot sinSlot = null;
+      for (Slot ringSlot : new Slot[] {Slot.RING1, Slot.RING2}) {
+        Equipped ring = esItems.get(ringSlot);
+        if (ring != null && ring.isUnique() && "Original Sin".equals(ring.unique().name())) {
+          sinSlot = ringSlot;
+          RareItem replacement = craftRare(ringSlot, gem, keywords, 0.0);
+          if (replacement != null) {
+            Map<Slot, Equipped> without = new EnumMap<>(esItems);
+            without.put(ringSlot, Equipped.ofRare(replacement));
+            contexts.add(without);
+          }
+          break;
+        }
+      }
+      double bestObjective = objectiveOf(vals, objectiveKey);
+      Map<Slot, Equipped> bestItems = null;
+      List<PoeGem> bestSupports = null;
+      String bestXml = null;
+      Map<String, Double> bestVals = null;
+      for (Map<Slot, Equipped> ctx : contexts) {
+        List<PoeGem> picked = new ArrayList<>();
+        Map<PoeGem, Double> firstRound =
+            evalBatch(
+                executor,
+                supportPool,
+                s ->
+                    buildXmlAuras(
+                        gem,
+                        List.of(s),
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        nodes,
+                        ctx,
+                        jewels,
+                        effectiveAuras2),
+                objectiveKey);
+        List<PoeGem> shortlist =
+            firstRound.entrySet().stream()
+                .sorted(Map.Entry.<PoeGem, Double>comparingByValue().reversed())
+                .limit(SUPPORT_SHORTLIST)
+                .map(Map.Entry::getKey)
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        double cur = -1d;
+        while (picked.size() < MAX_SUPPORTS && !shortlist.isEmpty()) {
+          Map<PoeGem, Double> round =
+              picked.isEmpty()
+                  ? firstRound
+                  : evalBatch(
+                      executor,
+                      shortlist,
+                      s ->
+                          buildXmlAuras(
+                              gem,
+                              joined(picked, s),
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              nodes,
+                              ctx,
+                              jewels,
+                              effectiveAuras2),
+                      objectiveKey);
+          Map.Entry<PoeGem, Double> best =
+              round.entrySet().stream()
+                  .filter(e -> shortlist.contains(e.getKey()))
+                  .max(Map.Entry.comparingByValue())
+                  .orElse(null);
+          if (best == null || best.getValue() <= cur * 1.005) {
+            break;
+          }
+          picked.add(best.getKey());
+          shortlist.remove(best.getKey());
+          cur = best.getValue();
+        }
+        if (cur > bestObjective * 1.003) {
+          bestObjective = cur;
+          bestItems = ctx;
+          bestSupports = picked;
+          bestXml =
+              buildXmlAuras(
+                  gem,
+                  picked,
+                  className,
+                  ascendancy,
+                  ascendancyNodes,
+                  nodes,
+                  ctx,
+                  jewels,
+                  effectiveAuras2);
+          bestVals = poePobEngineService.calculateValues(bestXml);
+          evalCount.incrementAndGet();
+        }
+      }
+      if (bestSupports != null) {
+        boolean sinDropped = bestItems != esItems;
+        if (sinDropped) {
+          esItems.clear();
+          esItems.putAll(bestItems);
+        }
+        xml = bestXml;
+        vals = bestVals;
+        supportsOverride = bestSupports;
+        log(
+            "ES 듀얼패스 서포트 재선발"
+                + (sinDropped && sinSlot != null ? "(Original Sin → 레어 " + sinSlot.ko + ")" : "")
+                + ": → "
+                + bestSupports.stream()
+                    .map(PoeGem::name)
+                    .collect(java.util.stream.Collectors.joining(", "))
+                + " → "
+                + format(bestObjective));
+      }
+    }
+    return new EsBuild(nodes, esItems, xml, vals, auraOverride, supportsOverride);
+  }
+
+  /**
+   * 레어의 마지막 접미를 속성 접미(str/dex/int, T1 +60)로 교체한 변형 — 유니크가 속성 공급원인 슬롯의 공정 경쟁용(최종 재대결 보정 재도전). 이미 그
+   * 속성 접미가 있거나 풀에 없으면 null. 접미가 하나도 없으면 추가(크래프트 접미 한도 3은 호출부 크래프트가 이미 지킴 — 교체가 기본이라 초과 없음).
+   */
+  private RareItem withAttributeSuffix(RareItem rare, Slot slot, String attrKey) {
+    return withSuffixFamily(rare, slot, attrKey);
+  }
+
+  /**
+   * 레어에 지정 접미 패밀리(T1)를 편입한 변형 — 속성/저항 보정 재도전 공용. 접미 3개(크래프트 한도) 미만이면 **추가**(기존 모드 무손실 — 저항 채움이 여기에
+   * 해당: 접미 2개 레어에서 마지막 접미(민첩 등 젬 요구치 지탱)를 교체하면 feasibility 감쇠로 전부 기각됐다, 실측), 꽉 찼으면 마지막 접미 교체. 이미
+   * 있거나 풀에 없으면 null.
+   */
+  private RareItem withSuffixFamily(RareItem rare, Slot slot, String familyKey) {
+    if (slot.modSlots.isEmpty()) {
+      return null;
+    }
+    PoeModPoolDataService.ModFamily family =
+        poeModPoolDataService.familiesForSlot(slot.modSlots.get(0)).stream()
+            .filter(f -> familyKey.equals(f.key()))
+            .findFirst()
+            .orElse(null);
+    if (family == null || rare.families().stream().anyMatch(f -> familyKey.equals(f.key()))) {
+      return null;
+    }
+    List<PoeModPoolDataService.ModFamily> families = new ArrayList<>(rare.families());
+    long suffixCount = families.stream().filter(f -> "suffix".equals(f.gen())).count();
+    if (suffixCount < 3) {
+      families.add(family);
+      return new RareItem(
+          rare.baseType(), families, 0.0, null, rare.implicitLines(), rare.implicitLinesKo());
+    }
+    for (int i = families.size() - 1; i >= 0; i--) {
+      if ("suffix".equals(families.get(i).gen())) {
+        families.set(i, family);
+        return new RareItem(
+            rare.baseType(), families, 0.0, null, rare.implicitLines(), rare.implicitLinesKo());
+      }
+    }
+    return null;
   }
 
   /** 슬롯의 카테고리/베이스만 뽑아 defensive 레어를 생성 (없으면 null) */
@@ -8689,10 +9701,20 @@ public class PoeOptimizeService {
       String genKo =
           "prefix".equals(family.gen()) ? "접두" : "suffix".equals(family.gen()) ? "접미" : null;
       boolean essence = family.key().startsWith("essence");
+      // 영향력(엘더/셰이퍼) 모드는 마커에 명시 — 이 아이템이 엘더 아이템임을 화면에서 알 수 있게
+      // (실사고: 소켓 시너지 엘더 투구가 영향력 미표기라 "엘더 아이템 미착용"으로 오해, Blasphemer's
+      //  Grasp 의 엘더 스택 유효성도 안 보였다).
+      String influence = influenceOf(family);
+      String influenceKo =
+          "elder".equals(influence) ? "엘더" : "shaper".equals(influence) ? "셰이퍼" : null;
       String marker =
           essence && genKo != null
               ? "(에센스·" + genKo + ") "
-              : essence ? "(에센스) " : genKo != null ? "(" + genKo + ") " : "";
+              : essence
+                  ? "(에센스) "
+                  : influenceKo != null && genKo != null
+                      ? "(" + influenceKo + "·" + genKo + ") "
+                      : genKo != null ? "(" + genKo + ") " : "";
       for (String line : tierAt(family, rare.fractionFor(i)).ko()) {
         lines.add(marker + line);
       }
@@ -8748,10 +9770,15 @@ public class PoeOptimizeService {
               ? "prefix"
               : "suffix".equals(family.gen()) ? "suffix" : null;
       boolean essence = family.key().startsWith("essence");
+      String influenceEn = influenceOf(family); // "elder"/"shaper" — ko 마커와 동일 취지(영향력 가시화)
       String marker =
           essence && genEn != null
               ? "(essence·" + genEn + ") "
-              : essence ? "(essence) " : genEn != null ? "(" + genEn + ") " : "";
+              : essence
+                  ? "(essence) "
+                  : influenceEn != null && genEn != null
+                      ? "(" + influenceEn + "·" + genEn + ") "
+                      : genEn != null ? "(" + genEn + ") " : "";
       for (String line : tierAt(family, rare.fractionFor(i)).en()) {
         lines.add(marker + line);
       }
@@ -8826,7 +9853,9 @@ public class PoeOptimizeService {
             List.of("물리 피해 60-120 추가", "명중 +2000"),
             List.of("Adds 60-120 Physical Damage", "+2000 Accuracy"),
             // 시뮬 표준 무기는 실제 롤이 아닌 고정 가정 — 티어 없음
-            List.of("", "")));
+            List.of("", ""),
+            null,
+            null));
   }
 
   private PoeOptimizeResult.ItemPick itemPick(Slot slot, Equipped equipped) {
@@ -8853,7 +9882,10 @@ public class PoeOptimizeService {
           unique.nameKo(),
           lines,
           linesEn,
-          tiers);
+          tiers,
+          // 유니크도 원클릭 링크 제공(사용자 요청) — 고유명 검색 + 즉시 구입. 실속형은 티어 개념이 없어 미제공.
+          uniqueTradeQuery(unique),
+          null);
     }
     RareItem rare = equipped.rare();
     // 레어도 베이스 한글명을 채운다 — 유니크만 한글로 나오고 레어는 영문이라 목록이 뒤죽박죽이었다
@@ -8879,7 +9911,194 @@ public class PoeOptimizeService {
         baseNameKo,
         rareLines,
         rareLinesEn,
-        rareTiers);
+        rareTiers,
+        tradeQueryFor(rare, baseNameKo, false),
+        tradeQueryFor(rare, baseNameKo, true));
+  }
+
+  /**
+   * 레어의 거래소 검색 쿼리(q JSON) — 베이스(한글명) + 익스플리싯 스탯 필터(min = **그 티어의 최저 롤**, 다중 수치/미매칭 라인은 존재 필터 생략).
+   * 최대롤 기준(×0.7 포함) 검색은 매물이 없거나 미러급이라 구매 불가(사용자 피드백) — 같은 티어면 시장에서 살 수 있는 하한으로 잡는다. koMin 없는 구 데이터는
+   * ×0.7 폴백. daum(한국) 거래소 기준이며 stat id 는 서버 공통. 사전 미로드/매칭 0건이면 null(링크 미표시).
+   */
+  private String tradeQueryFor(RareItem rare, String baseNameKo, boolean budget) {
+    List<String> filters = new ArrayList<>();
+    for (int i = 0; i < rare.families().size(); i++) {
+      // 실속형(budget): 필수(픽 우선순위 상위) 모드만 필터에 넣고, min 은 2티어 최저 롤(T2 이상 매물).
+      // 최상위 롤 매물이 없거나 비쌀 때의 대안 검색(사용자 요청) — 나머지 모드는 조건에서 제외.
+      if (budget && i >= BUDGET_ESSENTIAL) {
+        continue;
+      }
+      PoeModPoolDataService.ModFamily family = rare.families().get(i);
+      PoeModPoolDataService.ModTier tier =
+          budget
+              ? family.tiers().get(Math.min(1, family.tiers().size() - 1))
+              : tierAt(family, rare.fractionFor(i));
+      List<String> koLines = tier.ko();
+      List<String> koMinLines = tier.koMin();
+      for (int j = 0; j < koLines.size(); j++) {
+        String line = koLines.get(j);
+        // 생명력/저항/능력치는 합산(pseudo) 필터 우선 — 시장 매물은 순수+하이브리드 여러 모드로 총량을 채우므로
+        // explicit 단일 모드 min 은 T1 롤 매물만 잡혀 사실상 검색 불가(사용자 피드백: 화면의 +189 는 합산 표시)
+        String statId = poeTradeStatDataService.pseudoIdFor(line);
+        if (statId == null) {
+          statId = poeTradeStatDataService.statIdFor(line);
+        }
+        if (statId == null) {
+          continue;
+        }
+        boolean hasMinLine = koMinLines != null && j < koMinLines.size();
+        String minLine = hasMinLine ? koMinLines.get(j) : line;
+        // 단일 수치 라인만 min 필터 — "피해 X~Y 추가" 류 다중 수치는 id 존재 필터만
+        java.util.regex.Matcher m =
+            java.util.regex.Pattern.compile("[0-9]+(?:\\.[0-9]+)?").matcher(minLine);
+        Double value = null;
+        if (m.find()) {
+          double first = Double.parseDouble(m.group());
+          value = m.find() ? null : first;
+        }
+        if (value != null && !hasMinLine) {
+          value = Math.floor(value * 0.7); // koMin 없는 구 데이터 폴백
+        }
+        filters.add(
+            value != null
+                ? "{\"id\":\"" + statId + "\",\"value\":{\"min\":" + value + "}}"
+                : "{\"id\":\"" + statId + "\"}");
+      }
+    }
+    if (filters.isEmpty()) {
+      return null;
+    }
+    String typePart =
+        baseNameKo != null && !baseNameKo.isBlank()
+            ? "\"type\":\"" + baseNameKo.replace("\"", "") + "\","
+            : "";
+    // status=securable = 상단 드롭다운 "즉시 구입" — online(직접 거래)은 자리 비운 판매자를 기다려야 해 구매 동선이 나쁘다(사용자 피드백).
+    // sale_type 필터는 status 와 별개 축이라 드롭다운을 못 바꾼다(1차 시도 실패 교훈) — securable 로 대체.
+    return "{\"query\":{\"status\":{\"option\":\"securable\"},"
+        + typePart
+        + "\"stats\":[{\"type\":\"and\",\"filters\":["
+        + String.join(",", filters)
+        + "]}]},\"sort\":{\"price\":\"asc\"}}";
+  }
+
+  /**
+   * 잡 키워드(EN) → 거래소 임플리싯 사전(ko 텍스트) 매칭용 한글 조각 — **피해(DPS) 관련만**. 광의 "damage" 는 수백 건이 걸려 제외.
+   * life/regen(자기연소 스킬의 최적화기 키워드)은 매핑하지 않는다 — 마나 재생/생명력 획득 류 비DPS 임플리싯이 유효 옵션으로 섞였다(사용자 피드백). ehp
+   * 잡의 방어 키워드(resistance/armour 등)도 동일 이유로 제외 — 이 필터는 "이 유니크를 왜 쓰는가"(피해 스케일링)에 맞춘다.
+   */
+  private static final Map<String, String> KO_KEYWORD_BY_EN =
+      Map.ofEntries(
+          Map.entry("fire", "화염"),
+          Map.entry("cold", "냉기"),
+          Map.entry("lightning", "번개"),
+          Map.entry("chaos", "카오스"),
+          Map.entry("physical", "물리"),
+          Map.entry("spell", "주문"),
+          Map.entry("cast speed", "시전 속도"),
+          Map.entry("attack", "공격"),
+          Map.entry("projectile", "투사체"),
+          Map.entry("area", "광역"),
+          Map.entry("minion", "소환수"),
+          Map.entry("critical", "치명타"),
+          Map.entry("damage over time", "지속 피해"),
+          Map.entry("burning", "화상"),
+          Map.entry("totem", "토템"),
+          Map.entry("trap", "덫"),
+          Map.entry("mine", "지뢰"),
+          Map.entry("brand", "낙인"));
+
+  /** 임플리싯 그룹 필터 상한 — 60은 거래소 서버가 "쿼리가 너무 복잡합니다"로 거부(실측). 길이순 상위 30에 핵심 전부 포함. */
+  private static final int UNIQUE_IMPLICIT_FILTER_CAP = 30;
+
+  /** 유니크 템플릿 줄에 롤 범위 "(x-y)" 가 있는지 — 하한 음수 허용. */
+  private static boolean hasRollRange(String line) {
+    return line != null && line.matches(".*\\(-?\\d+(?:\\.\\d+)?[-~–]-?\\d+(?:\\.\\d+)?\\).*");
+  }
+
+  /**
+   * 유니크의 거래소 검색 쿼리 — 고유명(daum 서버는 한글명, 없으면 영문) + 즉시 구입 + 가격순. 변형/롤 유니크(옵션이 매물마다 다르거나 일부만 달림)는 이름만으로
+   * 검색하면 빌드에 무효한 옵션 매물이 섞이므로, 이번 잡 키워드(스킬 태그·직업 유래 — 엘드리치 선택과 동일 기준)에 유효한 옵션 라인을 존재 필터로 함께 건다(사용자
+   * 요청). 롤 수치는 필터하지 않는다(매물 폭 유지) — 어떤 옵션이 달렸느냐만 거른다.
+   *
+   * <p>결합(Synthesis) 계열 — "고정 속성 부여 규모 증가"(Implicit Modifier magnitudes) 익스플리싯을 가진 유니크(성운 등)는
+   * **임플리싯이 매물마다 랜덤**이고 그게 아이템의 존재 이유라, 빌드 키워드에 맞는 임플리싯을 "1개 이상 보유" count 그룹으로 건다(사용자 재지적 — 익스플리싯
+   * 필터는 고정 라인이라 아무것도 못 거른다).
+   */
+  private String uniqueTradeQuery(PoeUniqueItem unique) {
+    String name =
+        unique.nameKo() != null && !unique.nameKo().isBlank() ? unique.nameKo() : unique.name();
+    if (name == null || name.isBlank()) {
+      return null;
+    }
+    List<String> filters = new ArrayList<>();
+    List<String> en = unique.explicits() != null ? unique.explicits() : List.of();
+    List<String> ko = unique.explicitsKo() != null ? unique.explicitsKo() : List.of();
+    boolean implicitMagnitude = false;
+    for (int i = 0; i < en.size() && i < ko.size(); i++) {
+      if (en.get(i) != null && en.get(i).contains("Implicit Modifier magnitude")) {
+        implicitMagnitude = true;
+      }
+      if (ko.get(i) == null) {
+        continue;
+      }
+      // 롤 범위 "(60-120)%" 있는 옵션**만** 검색에 포함(사용자 확정 규칙) — 매물마다 수치가 달라 사용자가
+      // min 만 입력해 재검색하는 대상. 고정 문구 옵션은 전 매물이 동일해 필터 가치가 없고 패널만 어지럽힌다.
+      // 비활성(disabled) 포함은 사이트 패널에서 안 보여 무의미했다(1차 시도 실패).
+      // 하한이 음수인 범위 "(-35-35)%" 도 롤(전창조 지속시간 실측) — 선행 - 허용.
+      // ko 는 여러 EN 줄이 한 줄로 병합되며 범위 표기가 사라지는 데이터가 있어(빛나는 묘약 "(1-2)초" 실측)
+      // EN 대응 줄 + (마지막 ko 줄이면) 병합된 꼬리 EN 줄까지 보고 판정한다.
+      boolean rolled = hasRollRange(ko.get(i)) || hasRollRange(en.get(i));
+      if (!rolled && i == ko.size() - 1) {
+        for (int j = i + 1; j < en.size() && !rolled; j++) {
+          rolled = hasRollRange(en.get(j));
+        }
+      }
+      if (!rolled) {
+        continue;
+      }
+      // trade 사전 텍스트는 "#%" — 범위를 단일 # 로 접어 조회
+      String flatKo = ko.get(i).replaceAll("\\(-?\\d+(?:\\.\\d+)?[-~–]-?\\d+(?:\\.\\d+)?\\)", "#");
+      String statId = poeTradeStatDataService.statIdFor(flatKo);
+      if (statId != null) {
+        filters.add("{\"id\":\"" + statId + "\"}");
+      }
+    }
+    List<String> groups = new ArrayList<>();
+    boolean weighted = false;
+    if (implicitMagnitude) {
+      List<String> koKeys =
+          currentKeywords.stream()
+              .map(KO_KEYWORD_BY_EN::get)
+              .filter(java.util.Objects::nonNull)
+              .toList();
+      List<String> implicitIds = poeTradeStatDataService.implicitIdsMatching(koKeys);
+      if (!implicitIds.isEmpty()) {
+        // 가중 합계(weight2) 그룹 — min:1 로 "유효 고정 속성 1개 이상" 필터를 겸하면서, 정렬을 이 그룹의
+        // 합(값×가중치)으로 걸어 좋은 고정 속성이 크게 붙은 매물부터 보여준다(가격순은 싼-무효 매물이 상단 — 사용자 피드백).
+        // 후보 값이 대부분 % 스케일이라 가중치는 일괄 1(값 자체가 곧 크기).
+        String group =
+            implicitIds.stream()
+                .limit(UNIQUE_IMPLICIT_FILTER_CAP)
+                .map(id -> "{\"id\":\"" + id + "\",\"value\":{\"weight\":1}}")
+                .collect(java.util.stream.Collectors.joining(","));
+        // 정렬 키가 statgroup.0(첫 그룹) 이라 weight2 그룹을 반드시 맨 앞에 둔다
+        groups.add("{\"type\":\"weight2\",\"value\":{\"min\":1},\"filters\":[" + group + "]}");
+        weighted = true;
+      }
+    }
+    if (!filters.isEmpty()) {
+      groups.add("{\"type\":\"and\",\"filters\":[" + String.join(",", filters) + "]}");
+    }
+    String stats = groups.isEmpty() ? "" : ",\"stats\":[" + String.join(",", groups) + "]";
+    String sort = weighted ? "{\"statgroup.0\":\"desc\"}" : "{\"price\":\"asc\"}";
+    return "{\"query\":{\"status\":{\"option\":\"securable\"},\"name\":\""
+        + name.replace("\"", "")
+        + "\""
+        + stats
+        + "},\"sort\":"
+        + sort
+        + "}";
   }
 
   /** 고유 아이템 표시용 모드 라인 (임플리싯 + 익스플리싯, 한국어 우선·없으면 영문). 레어와 표시 일관성. */
@@ -9022,19 +10241,42 @@ public class PoeOptimizeService {
     List<String> extras = extraImplicits != null ? extraImplicits : List.of();
     text.append("Implicits: ").append(item.implicits().size() + extras.size()).append("\n");
     for (String implicit : item.implicits()) {
-      text.append(implicit).append("\n");
+      text.append(withMaxRoll(implicit)).append("\n");
     }
     for (String implicit : extras) {
-      text.append(implicit).append("\n");
+      text.append(withMaxRoll(implicit)).append("\n");
     }
     for (String explicit : item.explicits()) {
-      text.append(explicit).append("\n");
+      text.append(withMaxRoll(explicit)).append("\n");
     }
     // 타임리스(무궁한) 주얼은 시드 줄이 있어야 PoB 가 반경 패시브 변환을 계산한다(없으면 평범한 스탯 주얼).
     for (String line : timelessLines(item)) {
       text.append(line).append("\n");
     }
     return text.toString();
+  }
+
+  /**
+   * 해로운 모드 휴리스틱 — 실빌드는 이로운 모드 최대롤·해로운 모드 최소롤을 산다. 전면 {range:1}은 해로운 모드 과대 악화 왜곡(실측: 전면 최대화에서 RF
+   * -22%·arc -14% 하락)이라 방향별로 나눈다.
+   */
+  private static final java.util.regex.Pattern HARMFUL_MOD_LINE =
+      java.util.regex.Pattern.compile(
+          "(?i)(damage taken|takes? \\d|increased damage taken|reduced (life|energy shield|armour|evasion"
+              + "|maximum|resistance|attack speed|cast speed|movement speed)|less (life|energy shield|armour|damage)"
+              + "|receive|lose \\()");
+
+  /**
+   * 유니크 롤 정합 — 범위 표기 "(a-b)" 모드 라인에 PoB range 프리픽스: 이로운 모드 {range:1}(최대롤), 해로운 모드 {range:0}(최소롤).
+   * 미지정 시 PoB 는 중간롤(0.5)로 계산하는데 실빌드 96+ 는 좋은 롤 전제라 과소평가된다(실측: 동일 Grace of the Goddess 대표 롤이 우리
+   * 중간롤보다 DPS +7.8%). 21/20 젬·최상위 레어와 같은 엔드게임 전제 계열. {range} 문법 검증: 최소 1,768 < 중간 1,798 < 최대
+   * 1,827(단조).
+   */
+  private String withMaxRoll(String line) {
+    if (line == null || !line.matches(".*\\(\\d+(?:\\.\\d+)?-\\d+(?:\\.\\d+)?\\).*")) {
+      return line;
+    }
+    return (HARMFUL_MOD_LINE.matcher(line).find() ? "{range:0}" : "{range:1}") + line;
   }
 
   /** PoB 공유 코드 인코딩 (zlib deflate → base64url) */

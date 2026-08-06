@@ -59,7 +59,9 @@ public record PoeOptimizeResult(
      * P3 메타 기준선 게이트 — balanced 잡에서 최종 DPS·EHP 가 실빌드 중앙값을 **둘 다** 하회하면 true(지배당함, 결과 화면 경고). 비교
      * 불가(비-balanced/벤치 없음/구 히스토리)면 null.
      */
-    Boolean belowMeta) {
+    Boolean belowMeta,
+    /** 추가 스킬(화염덫 등) slug → 1b 패스가 선발한 전용 보조젬 — 표시용(계산 XML 에는 이미 링크됨). 구 히스토리 null. */
+    java.util.Map<String, List<SupportPick>> additionalSkillSupports) {
 
   public record SupportPick(String slug, String name, String nameKo) {}
 
@@ -88,7 +90,11 @@ public record PoeOptimizeResult(
       String nameKo,
       List<String> modLines,
       List<String> modLinesEn,
-      List<String> modTiers) {}
+      List<String> modTiers,
+      // 거래소 검색 쿼리(q JSON, 레어 전용) — 베이스(한글명)+스탯 필터(min=티어 최저 롤). null 이면 링크 없음.
+      String tradeQuery,
+      // 실속형 쿼리 — 필수(픽 우선순위 상위) 모드만, min=2티어 최저 롤(T2 이상 매물). null 이면 링크 없음.
+      String tradeQueryBudget) {}
 
   /** 레어 슬롯의 티어별 성능 비교 (T1/중간/하위) */
   public record SlotTierCompare(String slot, String slotKo, List<TierRow> rows) {}

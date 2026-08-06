@@ -71,6 +71,13 @@ public class PoePobEngineService {
           "ColdResist",
           "LightningResist",
           "ChaosResist",
+          // 캡 진단 — Missing=캡까지 미달분(>0 이면 총량 부족), OverCap=캡 초과 낭비분. 0 이면 toStats 가 생략.
+          "MissingFireResist",
+          "MissingColdResist",
+          "MissingLightningResist",
+          "FireResistOverCap",
+          "ColdResistOverCap",
+          "LightningResistOverCap",
           // 방어 레이어(현 패치 핵심) — 값 0 이면 toStats 가 생략(빌드에 없으면 미표시)
           "SpellSuppressionChance",
           "BlockChance",

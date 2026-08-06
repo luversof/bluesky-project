@@ -29,15 +29,28 @@ const groups = {};
 for (const b of data.builds) {
 	if (b.ascendancy && b.mainSkill) (groups[`${b.ascendancy}|${b.mainSkill}`] ||= []).push(b);
 }
+const median96 = (arr) => {
+	const eg = arr.filter((b) => (b.level ?? 0) >= LEVEL_ENDGAME);
+	const pool = eg.length ? eg : arr;
+	const sorted = pool.slice().sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
+	return sorted[Math.floor(sorted.length / 2)];
+};
+const isCi = (b) => (b.keystones || []).some((k) => /Chaos Inoculation/i.test(k));
 const targets = Object.entries(groups)
 	.sort((a, b) => b[1].length - a[1].length)
 	.slice(0, TOP_N)
-	.map(([key, arr]) => {
-		const eg = arr.filter((b) => (b.level ?? 0) >= LEVEL_ENDGAME);
-		const pool = eg.length ? eg : arr;
-		const sorted = pool.slice().sort((a, b) => (a.level ?? 0) - (b.level ?? 0));
-		const rep = sorted[Math.floor(sorted.length / 2)];
-		return { key, rep };
+	.flatMap(([key, arr]) => {
+		const out = [{ key, rep: median96(arr) }];
+		// CI 혼재 아키타입(PB: CI 45/비CI 53, 생명 중앙값 1 vs 2,905)은 단일 대표가 서브그룹을 대표하지
+		// 못한다 — 양쪽 다 5명 이상이면 서브그룹 대표를 별도 키(|ci, |life)로 캘리브레이션해 belowMeta 가
+		// 우리 빌드 스타일(CI=생명1)과 같은 서브그룹과 비교하게 한다.
+		const ci = arr.filter(isCi);
+		const life = arr.filter((b) => !isCi(b));
+		if (ci.length >= 5 && life.length >= 5) {
+			out.push({ key: key + "|ci", rep: median96(ci) });
+			out.push({ key: key + "|life", rep: median96(life) });
+		}
+		return out;
 	});
 
 const outPath = path.join(OUT_DIR, "ninja-engine-bench.json");
@@ -65,10 +78,27 @@ for (const { key, rep } of targets) {
 		const cj = await cr.json();
 		const code = cj.pathOfBuildingExport;
 		if (!code) { fail++; continue; }
+		// ⚠ Config 공정화 — 실빌드 export 의 Config 는 대개 **비어 있다**(비보스·무버프 PoB 기본값).
+		// 우리 잡은 Pinnacle+충전+전투버프 가정이라 그대로 비교하면 벤치가 부풀거나(비보스 적 저항)
+		// 꺼진다. 우리 buildXml 의 표준 가정과 동일한 Config 를 주입해 같은 조건으로 재계산한다
+		// (판테온은 대표 것이 있으면 유지 — Config 전체 교체라 함께 소실되지만 영향 미미).
+		const NORM_CONFIG = '<Config><Input name="enemyIsBoss" string="Pinnacle"/>'
+			+ '<Input name="usePowerCharges" boolean="true"/><Input name="useFrenzyCharges" boolean="true"/>'
+			+ '<Input name="useEnduranceCharges" boolean="true"/><Input name="buffOnslaught" boolean="true"/>'
+			+ '<Input name="multiplierRage" number="30"/><Input name="buffFortify" boolean="true"/>'
+			+ '<Input name="conditionEnemyShocked" boolean="true"/><Input name="conditionEnemyChilled" boolean="true"/>'
+			+ '<Input name="conditionEnemyIgnited" boolean="true"/><Input name="conditionEnemyPoisoned" boolean="true"/>'
+			+ '<Input name="conditionEnemyBleeding" boolean="true"/></Config>';
+		const zlib = await import("node:zlib");
+		let xml = zlib.inflateSync(Buffer.from(code.replace(/-/g, "+").replace(/_/g, "/"), "base64")).toString("utf8");
+		if (/<Config>[\s\S]*?<\/Config>/.test(xml)) xml = xml.replace(/<Config>[\s\S]*?<\/Config>/, NORM_CONFIG);
+		else if (/<Config\s*\/>/.test(xml)) xml = xml.replace(/<Config\s*\/>/, NORM_CONFIG);
+		else xml = xml.replace("</PathOfBuilding>", NORM_CONFIG + "</PathOfBuilding>");
+		const normCode = zlib.deflateSync(Buffer.from(xml, "utf8"), { level: 9 }).toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
 		const rr = await fetch(`${API}/api/poe/build/recalculate`, {
 			method: "POST",
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: "code=" + encodeURIComponent(code),
+			body: "code=" + encodeURIComponent(normCode),
 		});
 		if (!rr.ok) { fail++; continue; }
 		const er = await rr.json();

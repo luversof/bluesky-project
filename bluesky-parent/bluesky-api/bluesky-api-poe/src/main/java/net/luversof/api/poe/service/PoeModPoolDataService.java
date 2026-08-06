@@ -21,8 +21,12 @@ public class PoeModPoolDataService {
 
   private static final Logger logger = LoggerFactory.getLogger(PoeModPoolDataService.class);
 
-  /** 모드 티어 하나 — 최대 롤 기준 문장 (여러 스탯이면 여러 줄) */
-  public record ModTier(int level, List<String> en, List<String> ko) {}
+  /** 모드 티어 하나 — 최대 롤 기준 문장 (여러 스탯이면 여러 줄). koMin = 티어 최저 롤 문장(거래소 min 용, 구파일 null). */
+  public record ModTier(int level, List<String> en, List<String> ko, List<String> koMin) {
+    public ModTier(int level, List<String> en, List<String> ko) {
+      this(level, en, ko, null);
+    }
+  }
 
   /**
    * @param gen prefix | suffix

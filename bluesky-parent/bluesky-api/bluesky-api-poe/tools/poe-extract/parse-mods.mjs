@@ -146,26 +146,36 @@ const FAMILIES = [
 		slots: ["amulet"] },
 	{ key: "lifeRegen", gen: "suffix", pattern: "LifeRegeneration", keywords: ["life", "regen"],
 		slots: ["body", "helmet", "gloves", "boots", "belt", "amulet", "ring", "shield"] },
+	// 방패 막기(접두, 로컬) — 실빌드 밸런스 방패의 표준 방어층(대표 레어 방패 이식 실측 EHP +18.8k).
+	// 키워드 "block"은 keywords()가 balanced 목표에서만 추가 — dps/ehp 잡 기준선 불변.
+	{ key: "blockPctLocal", gen: "prefix", pattern: "LocalIncreasedBlockPercentage", keywords: ["block"],
+		slots: ["shield"] },
+	// 방패 주문 막기(접두) — 실빌드 밸런스 방패의 2번째 막기 레이어(PB 아키타입 주문막기 78% 메타).
+	{ key: "spellBlockLocal", gen: "prefix", pattern: "ShieldSpellBlockPercentage", keywords: ["block"],
+		slots: ["shield"] },
 	// 소켓 시너지(엘더 헬멧) — "화염 피해 35% 증가 + 장착된 젬에 20레벨 화상 피해 보조 효과 적용"(of the Elder).
 	// 실빌드 RF 의 표준 헬멧이자 시뮬 DPS 갭(713k vs 2.58M)의 최대 요인. 소켓 지원은 시뮬레이터가
 	// 메인 링크에 Burning Damage 젬을 명시 추가하는 방식으로 모델링한다(키 elder* = 영향력 스폰 판정).
 	// 키워드는 fireDotMulti 와 같은 fire/burning 게이트 — 히트 빌드(아크/사이클론/ED)는 점수 0 → 미채택.
 	{ key: "elderBurningSupport", gen: "suffix", pattern: "IncreasedBurningDamageSupportedUber", keywords: ["fire", "burning"],
 		slots: ["helmet"] },
+	// (활 추가 화살 패밀리는 롤백 — PoB 단일표적 CombinedDPS 는 투사체 수를 반영하지 않아(54단계 완성
+	//  문맥 A/B: 문구 무관 무기여) 접미 슬롯만 낭비. 대표 활 이식 +45.3%는 물리 스택 효과였다.)
 ];
 
-/** 모드 한 행의 스탯 → 최대 롤 값 맵 (StatsKey1..N + StatNMax) */
-function maxRollValues(mod) {
+/** 모드 한 행의 스탯 → 롤 값 맵 (StatsKey1..N + StatN{Max|Min}) */
+function rollValues(mod, bound) {
 	const values = new Map();
 	for (let i = 1; i <= 6; i++) {
 		const statIndex = mod["StatsKey" + i];
 		if (statIndex == null) continue;
 		const stat = stats[statIndex];
 		if (!stat) continue;
-		values.set(stat.Id, mod["Stat" + i + "Max"] ?? 0);
+		values.set(stat.Id, mod["Stat" + i + bound] ?? 0);
 	}
 	return values;
 }
+const maxRollValues = (mod) => rollValues(mod, "Max");
 
 const families = [];
 for (const family of FAMILIES) {
@@ -183,6 +193,8 @@ for (const family of FAMILIES) {
 			level: mod.Level,
 			en: describe(values, "English"),
 			ko: describe(values, "Korean"),
+			// 티어 최저 롤 문장 — 거래소 검색 min 산출용(최대롤 기준 검색은 매물 없음/미러급, 사용자 피드백)
+			koMin: describe(rollValues(mod, "Min"), "Korean"),
 		};
 	});
 	families.push({

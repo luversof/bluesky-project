@@ -65,55 +65,59 @@
 				@endfor
 			</div>
 		@endif
-		<%-- 전 컬럼 표시 — poe.ninja 참조하는 모든 컬럼을 그대로 노출(사용자 요구: 모든 컬럼 참조가 눈에 보이게). --%>
-		<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-base-content/60">
-			<span>EHP <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.ehp())}</span></span>
-			<span>DPS <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.dps())}</span></span>
-			<span>${ko ? "생명" : "Life"} <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.life())}</span></span>
-			<span>ES <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.energyShield())}</span></span>
-			<span>${ko ? "재생" : "Regen"} <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.lifeRegen())}</span></span>
+		<%-- 전 컬럼 표시 — 단순 텍스트 열거 대신 섹션별 라벨-값 그리드(각 셀: 라벨 좌 / 값 우측 정렬). --%>
+		!{
+			// 셀 하나(라벨/값) — JTE 안에서 반복 마크업을 줄이기 위한 조립 헬퍼
+			java.util.function.BiFunction<String, String, String> cell = (label, value) ->
+				"<div class=\"flex items-baseline justify-between gap-2 rounded bg-base-200/50 px-2 py-0.5\">"
+				+ "<span class=\"text-base-content/50\">" + label + "</span>"
+				+ "<span class=\"font-mono text-base-content/85\">" + value + "</span></div>";
+			String NBSP = " ";
+		}
+		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
+			$unsafe{cell.apply("EHP", fmt.apply(ninjaBenchmark.ehp()))}
+			$unsafe{cell.apply("DPS", fmt.apply(ninjaBenchmark.dps()))}
+			$unsafe{cell.apply(ko ? "생명" : "Life", fmt.apply(ninjaBenchmark.life()))}
+			$unsafe{cell.apply("ES", fmt.apply(ninjaBenchmark.energyShield()))}
+			$unsafe{cell.apply(ko ? "재생" : "Regen", fmt.apply(ninjaBenchmark.lifeRegen()))}
 		</div>
 		<%-- 조합 벤치의 스킬별 전용 DPS — 위 DPS 는 메인(첫 선택) 스킬 전용(시뮬 지표와 동일 의미) --%>
 		@if(ninjaBenchmark.skillDps() != null && ninjaBenchmark.skillDps().size() > 1)
-			<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-base-content/60">
-				<span class="font-sans text-base-content/50">${ko ? "스킬별 DPS" : "Per-skill DPS"}</span>
+			<div class="grid grid-cols-2 gap-1 sm:grid-cols-3">
 				@for(var sd : ninjaBenchmark.skillDps())
-					<span>${sd.name()} <span class="text-base-content/80">${fmt.apply(sd.dps())}</span></span>
+					<%-- 스킬명은 외부(poe.ninja) 문자열 — $unsafe 셀 조립에 넣기 전에 이스케이프 --%>
+					$unsafe{cell.apply((ko ? "스킬 DPS · " : "DPS · ") + sd.name().replace("&", "&amp;").replace("<", "&lt;"), fmt.apply(sd.dps()))}
 				@endfor
 			</div>
 		@endif
-		<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-base-content/60">
-			<span>${ko ? "수호물" : "Ward"} <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.ward())}</span></span>
-			<span>${ko ? "마나" : "Mana"} <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.mana())}</span></span>
-			<span>${ko ? "이동속도" : "MS"} <span class="text-base-content/80">${ninjaBenchmark.movementSpeed()}%</span></span>
-			<span>${ko ? "희귀도" : "Rarity"} <span class="text-base-content/80">${ninjaBenchmark.itemRarity()}%</span></span>
+		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/40">${ko ? "방어층" : "Defences"}</div>
+		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
+			$unsafe{cell.apply(ko ? "방어도" : "Armour", fmt.apply(ninjaBenchmark.armour()))}
+			$unsafe{cell.apply(ko ? "회피" : "Evasion", fmt.apply(ninjaBenchmark.evasion()))}
+			$unsafe{cell.apply(ko ? "막기" : "Block", ninjaBenchmark.block() + "%")}
+			$unsafe{cell.apply(ko ? "주문막기" : "Sp.block", ninjaBenchmark.spellBlock() + "%")}
+			$unsafe{cell.apply(ko ? "회피억제" : "Suppress", ninjaBenchmark.suppress() + "%")}
+			@if(ninjaBenchmark.spellDodge() > 0)$unsafe{cell.apply(ko ? "주문회피" : "Sp.dodge", ninjaBenchmark.spellDodge() + "%")}@endif
+			@if(ninjaBenchmark.physTakenAs() > 0)$unsafe{cell.apply(ko ? "물리전환" : "Phys taken", ninjaBenchmark.physTakenAs() + "%")}@endif
+			$unsafe{cell.apply(ko ? "저항" : "Res", (ko ? "화" : "F") + ninjaBenchmark.fireRes() + NBSP + (ko ? "냉" : "C") + ninjaBenchmark.coldRes() + NBSP + (ko ? "번" : "L") + ninjaBenchmark.lightningRes() + NBSP + (ko ? "카" : "Ch") + ninjaBenchmark.chaosRes())}
+			$unsafe{cell.apply(ko ? "최대피격(최약)" : "Max hit (min)", ninjaBenchmark.lowestMax() > 0 ? fmt.apply(ninjaBenchmark.lowestMax()) : "—")}
 		</div>
-		<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-base-content/60">
-			<span>${ko ? "힘" : "Str"} <span class="text-base-content/80">${ninjaBenchmark.str()}</span></span>
-			<span>${ko ? "민첩" : "Dex"} <span class="text-base-content/80">${ninjaBenchmark.dex()}</span></span>
-			<span>${ko ? "지능" : "Int"} <span class="text-base-content/80">${ninjaBenchmark.intel()}</span></span>
+		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/40">${ko ? "자원·속성" : "Resources & attributes"}</div>
+		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
+			$unsafe{cell.apply(ko ? "수호물" : "Ward", fmt.apply(ninjaBenchmark.ward()))}
+			$unsafe{cell.apply(ko ? "마나" : "Mana", fmt.apply(ninjaBenchmark.mana()))}
+			$unsafe{cell.apply(ko ? "이동속도" : "Move spd", ninjaBenchmark.movementSpeed() + "%")}
+			$unsafe{cell.apply(ko ? "희귀도" : "Rarity", ninjaBenchmark.itemRarity() + "%")}
+			$unsafe{cell.apply(ko ? "힘·민·지" : "Str·Dex·Int", ninjaBenchmark.str() + NBSP + "·" + NBSP + ninjaBenchmark.dex() + NBSP + "·" + NBSP + ninjaBenchmark.intel())}
 		</div>
-		<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-base-content/60">
-			<span>${ko ? "방어도" : "Armour"} <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.armour())}</span></span>
-			<span>${ko ? "회피" : "Evasion"} <span class="text-base-content/80">${fmt.apply(ninjaBenchmark.evasion())}</span></span>
-			<span>${ko ? "막기" : "Block"} <span class="text-base-content/80">${ninjaBenchmark.block()}%</span></span>
-			<span>${ko ? "주문막기" : "SpBlk"} <span class="text-base-content/80">${ninjaBenchmark.spellBlock()}%</span></span>
-			<span>${ko ? "회피억제" : "Suppress"} <span class="text-base-content/80">${ninjaBenchmark.suppress()}%</span></span>
-			@if(ninjaBenchmark.spellDodge() > 0)<span>${ko ? "주문회피" : "SpDodge"} <span class="text-base-content/80">${ninjaBenchmark.spellDodge()}%</span></span>@endif
-			@if(ninjaBenchmark.physTakenAs() > 0)<span>${ko ? "물리전환" : "PhysTaken"} <span class="text-base-content/80">${ninjaBenchmark.physTakenAs()}%</span></span>@endif
-		</div>
-		<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-base-content/60">
-			<span>${ko ? "저항" : "Res"} <span class="text-base-content/80">${ko ? "화" : "F"}${ninjaBenchmark.fireRes()} ${ko ? "냉" : "C"}${ninjaBenchmark.coldRes()} ${ko ? "번" : "L"}${ninjaBenchmark.lightningRes()} ${ko ? "카" : "Ch"}${ninjaBenchmark.chaosRes()}</span></span>
-		</div>
-		<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-base-content/60">
-			<span>${ko ? "충전" : "Charges"} <span class="text-base-content/80">${ko ? "인" : "E"}${ninjaBenchmark.enduranceCharges()} ${ko ? "격" : "F"}${ninjaBenchmark.frenzyCharges()} ${ko ? "권" : "P"}${ninjaBenchmark.powerCharges()}</span></span>
-			<span>${ko ? "클러스터" : "Cluster"} <span class="text-base-content/80">${ko ? "대" : "L"}${ninjaBenchmark.largeCluster()} ${ko ? "중" : "M"}${ninjaBenchmark.mediumCluster()} ${ko ? "소" : "S"}${ninjaBenchmark.smallCluster()}</span></span>
-			<span>${ko ? "유니크" : "Unique"} <span class="text-base-content/80">${ninjaBenchmark.uniqueEquip()}</span></span>
-			@if(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours() > 0)<span>${ko ? "미러" : "Mirror"} <span class="text-base-content/80">${ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours()}</span></span>@endif
-		</div>
-		<div class="flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-base-content/60">
-			<span>${ko ? "최대피격" : "Max hit"} <span class="text-base-content/80">${ko ? "물" : "Ph"}${fmt.apply(ninjaBenchmark.physicalMax())} ${ko ? "화" : "F"}${fmt.apply(ninjaBenchmark.fireMax())} ${ko ? "냉" : "C"}${fmt.apply(ninjaBenchmark.coldMax())} ${ko ? "번" : "L"}${fmt.apply(ninjaBenchmark.lightningMax())} ${ko ? "카" : "Ch"}${fmt.apply(ninjaBenchmark.chaosMax())}</span></span>
-			@if(ninjaBenchmark.lowestMax() > 0)<span class="text-base-content/45">(${ko ? "최약" : "min"} ${fmt.apply(ninjaBenchmark.lowestMax())})</span>@endif
+		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/40">${ko ? "구성" : "Setup"}</div>
+		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
+			$unsafe{cell.apply(ko ? "충전(인·격·권)" : "Charges E·F·P", ninjaBenchmark.enduranceCharges() + NBSP + "·" + NBSP + ninjaBenchmark.frenzyCharges() + NBSP + "·" + NBSP + ninjaBenchmark.powerCharges())}
+			$unsafe{cell.apply(ko ? "클러스터(대·중·소)" : "Cluster L·M·S", ninjaBenchmark.largeCluster() + NBSP + "·" + NBSP + ninjaBenchmark.mediumCluster() + NBSP + "·" + NBSP + ninjaBenchmark.smallCluster())}
+			$unsafe{cell.apply(ko ? "유니크" : "Uniques", String.valueOf(ninjaBenchmark.uniqueEquip()))}
+			@if(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours() > 0)$unsafe{cell.apply(ko ? "미러" : "Mirrored", String.valueOf(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours()))}@endif
+			$unsafe{cell.apply(ko ? "최대피격 물·화" : "Max hit Ph·F", fmt.apply(ninjaBenchmark.physicalMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.fireMax()))}
+			$unsafe{cell.apply(ko ? "최대피격 냉·번·카" : "Max hit C·L·Ch", fmt.apply(ninjaBenchmark.coldMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.lightningMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.chaosMax()))}
 		</div>
 		@if(ninjaBenchmark.topMasteries() != null && !ninjaBenchmark.topMasteries().isEmpty() && (ninjaBenchmark.facets() == null || !ninjaBenchmark.facets().containsKey("masteries")))
 			<div class="text-base-content/50">${ko ? "실빌드 마스터리" : "Common masteries"}: ${String.join(" · ", ninjaBenchmark.topMasteries())}</div>

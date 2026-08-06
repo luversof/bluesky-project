@@ -3,6 +3,14 @@
 @import net.luversof.web.gate.poe.dto.PoeJobStatus
 
 @param List<PoeJobStatus.OptimizeHistoryEntry> history = java.util.List.of()
+<%-- 세션 만료로 삭제가 수행되지 않았을 때 true — 성공처럼 보이는 무음 실패를 막는 안내 배너 --%>
+@param boolean loginRequired = false
+
+@if(loginRequired)
+	<div class="alert alert-warning py-1.5 px-3 text-xs mb-1.5">
+		${net.luversof.web.gate.poe.PoeText.isKorean() ? "로그인이 풀려 삭제되지 않았습니다 — 다시 로그인 후 시도해 주세요." : "Session expired — the result was not deleted. Please sign in again."}
+	</div>
+@endif
 
 <%-- 최근 결과 목록 — 항목 클릭 시 그 결과를 결과 fragment 로 되살려 **폴링과 분리된 지난-결과 뷰어**(#poeHistoryResultView)에 표시.
      상태 래퍼(#poeOptimizeStatusWrap)에 넣으면 실행 중 3초 폴링이 로딩화면으로 덮어써 사라졌다 — 그래서 별도 뷰어로 분리. --%>

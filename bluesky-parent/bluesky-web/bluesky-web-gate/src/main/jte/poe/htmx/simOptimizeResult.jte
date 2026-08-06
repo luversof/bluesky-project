@@ -460,6 +460,25 @@
 					@else
 						<span class="badge badge-accent badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</span>
 					@endif
+					<%-- 추가 스킬 전용 보조젬(1b 선발) — 계산엔 이미 링크됐는데 표시가 없어 "화염덫 보조젬 0"으로 보였다(사용자 지적) --%>
+					!{
+						java.util.List<PoeOptimizeResult.SupportPick> extraLinks =
+							result.additionalSkillSupports() != null ? result.additionalSkillSupports().get(extra.slug()) : null;
+					}
+					@if(extraLinks != null && !extraLinks.isEmpty())
+						<span class="text-base-content/40 text-xs">→</span>
+						@for(PoeOptimizeResult.SupportPick linkGem : extraLinks)
+							@if(linkGem.slug() != null && !linkGem.slug().isBlank())
+								<a class="poe-hover inline-flex items-center gap-1 badge badge-outline badge-sm cursor-pointer pl-1"
+								   href="/poe/gems/${linkGem.slug()}"
+								   hx-get="/poe/htmx/gems/detail?slug=${linkGem.slug()}"
+								   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
+									<img src="/poe-assets/gems/${linkGem.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(linkGem.nameKo(), linkGem.name())}</a>
+							@else
+								<span class="badge badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(linkGem.nameKo(), linkGem.name())}</span>
+							@endif
+						@endfor
+					@endif
 				@endfor
 			</div>
 		@endif
@@ -651,6 +670,17 @@
 									@else
 										<span class="font-semibold text-yellow-500">${MessageUtil.getMessage("poe.sim.opt.result.rare")} · ${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
 									@endif
+									<%-- 거래소 검색(사용자 요청) — 최상위(전체 모드, 해당 티어 최저 롤)와 실속형(필수 모드만, T2 이상) 두 링크 --%>
+									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
+											<a class="badge badge-xs badge-outline badge-info align-middle ml-1" target="_blank" rel="noopener"
+										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQuery(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "전체 옵션 · 표시 티어 기준으로 거래소 검색" : "Search trade — all mods at shown tier"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소 최상위" : "Trade top"}</a>
+									@endif
+									@if(item.tradeQueryBudget() != null && !item.tradeQueryBudget().isBlank())
+										<a class="badge badge-xs badge-outline badge-success align-middle ml-1" target="_blank" rel="noopener"
+										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQueryBudget(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "중요 옵션만 · 2티어 이상으로 거래소 검색(실속형)" : "Search trade — essential mods at tier 2+"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소 실속" : "Trade budget"}</a>
+									@endif
 									<div class="poe-tooltip poe-rar-rare w-80 shadow-2xl hidden group-hover:block absolute left-0 top-full z-30" data-rare-tooltip>
 										<div class="poe-tt-band poe-tt-band-2">
 											<div class="text-center font-bold text-[15px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</div>
@@ -707,6 +737,12 @@
 								@else
 									<span class="font-semibold text-orange-500">${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
 								@endif
+									<%-- 유니크 거래소 링크(사용자 요청) — 고유명 검색 + 즉시 구입. 티어 개념이 없어 배지 하나 --%>
+									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
+										<a class="badge badge-xs badge-outline badge-info align-middle ml-1" target="_blank" rel="noopener"
+										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQuery(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색" : "Search trade for this unique"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소" : "Trade"}</a>
+									@endif
 								@if(!shownModLines.isEmpty())
 									@template.poe.htmx.resultModLines(modLines = shownModLines, modTiers = item.modTiers())
 								@endif

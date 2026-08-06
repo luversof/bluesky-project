@@ -79,6 +79,10 @@ end
 			"ManaReserved", "ManaReservedPercent", "ManaUnreserved", "ManaUnreservedPercent",
 			"LifeReserved", "LifeReservedPercent",
 		"FireResist", "ColdResist", "LightningResist", "ChaosResist",
+		-- 실효 캡 대비 미달/초과 — 캡(최대 저항) 자체가 병목인지(치프틴 RF 화염 86 정체 수사) 판별용.
+		-- Missing = max(0, 캡-현재), OverCap = max(0, 총량-캡). Missing>0 이면 총량 부족, =0 인데 목표 미달이면 캡 부족.
+		"MissingFireResist", "MissingColdResist", "MissingLightningResist",
+		"FireResistOverCap", "ColdResistOverCap", "LightningResistOverCap",
 		-- 방어 레이어(현 패치 핵심): 주문 억제/막기/주문 막기 — PoB 스탯시트 파리티
 		"SpellSuppressionChance", "BlockChance", "SpellBlockChance",
 		"CritChance", "CritMultiplier", "EffectiveMovementSpeedMod",

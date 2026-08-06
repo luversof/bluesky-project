@@ -34,6 +34,17 @@ const nameKoOverrides = (() => {
 		return {};
 	}
 })();
+// PoB 원문이 롤 범위를 고정값으로 단순화한 라인 보정(빛나는 묘약 "(1-2)초" 등 — 거래소 가변 옵션 판정용)
+const lineOverrides = (() => {
+	try {
+		const raw = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "unique-line-overrides.json"), "utf8"));
+		delete raw._comment;
+		return raw;
+	} catch {
+		return {};
+	}
+})();
+
 const baseEn = load("English", "BaseItemTypes");
 const baseKo = load("Korean", "BaseItemTypes");
 const baseKoByEn = new Map();
@@ -93,8 +104,10 @@ function parseBlock(block, category) {
 	// implicitCount 는 파일 원문 라인 기준이므로 필터 전에 자른다
 	const implicitRaw = modSection.slice(0, implicitCount);
 	const explicitRaw = modSection.slice(implicitCount);
-	const implicits = implicitRaw.map(cleanLine).filter(Boolean);
-	const explicits = explicitRaw.map(cleanLine).filter(Boolean);
+	const overrides = lineOverrides[name] || {};
+	const applyOverride = (line) => overrides[line] || line;
+	const implicits = implicitRaw.map(cleanLine).filter(Boolean).map(applyOverride);
+	const explicits = explicitRaw.map(cleanLine).filter(Boolean).map(applyOverride);
 
 	return {
 		name,
