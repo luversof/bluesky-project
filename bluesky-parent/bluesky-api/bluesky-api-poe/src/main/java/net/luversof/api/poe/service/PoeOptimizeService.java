@@ -1560,6 +1560,9 @@ public class PoeOptimizeService {
   /** 트리 에디터에서 패시브에 새긴 문신(노드 id → 문신 dn). 지정하면 그 노드는 문신 노드로 교체돼 계산된다. */
   private volatile Map<Integer, String> fixedTattoos = Map.of();
 
+  /** 사용자가 요청으로 지정한 문신(불가침) — fixedTattoos 는 자동 채택이 병합돼 구분이 필요하다. 잡별 상태 — start() 세팅. */
+  private volatile Map<Integer, String> userTattoos = Map.of();
+
   // 트리 에디터에서 사용자가 고른 도유 노터블 id — 지정 시 자동 전수 스윕 대신 이것으로 고정(사용자 지정은 존중)
   private volatile Integer fixedAnoint = null;
 
@@ -2074,6 +2077,7 @@ public class PoeOptimizeService {
       this.saveHistoryForRun = saveHistory; // 완료 시 이력 저장 여부(잡마다)
       this.fixedTree = parseNodeIds(treeNodes);
       this.fixedTattoos = parseTattoos(tattoos);
+      this.userTattoos = this.fixedTattoos;
       this.fixedAnoint = anoint != null && anoint.matches("\\d+") ? Integer.valueOf(anoint) : null;
       this.fixedMasteries = parseMasteries(masteries);
       this.fixedJewels = parseJewels(jewels);
@@ -2114,6 +2118,7 @@ public class PoeOptimizeService {
       this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
       this.selectedAuras = new ArrayList<>(); // 방어 오라 초기화(잡마다)
       this.currentKeywords = List.of(); // 키워드 초기화(잡마다)
+      this.tattooAllocated = Set.of(); // 문신 할당-이웃 판정 기준 초기화(잡마다)
       this.currentAnoint = null; // 아뮬렛 도유 초기화(잡마다)
       this.supportLevelOverride = Map.of(); // 보조젬 레벨 하향 초기화(잡마다)
       this.feasibilitySteering = false; // 실현 가능성 조향 초기화(잡마다)
@@ -3629,6 +3634,7 @@ public class PoeOptimizeService {
       if (poeTattooDataService.hasData()) {
         enterPhase("tattoos");
         phaseDone.set(0);
+        this.tattooAllocated = Set.copyOf(allocated); // tattooFits 할당-이웃 판정 기준
         // 문신은 속성 패시브를 **통째로 교체**해 지능/힘/민첩을 깎는다 — 아이템 단계에서 요구치를
         // 통과한 장비(공허 충전기 지능 245 등)가 문신 뒤 장착 불가가 되는 실사고가 났다.
         // 단계 시작 시점에 요구치가 충족돼 있을 때만 강제한다(강제 장착 유니크로 이미 미충족이면
@@ -5337,6 +5343,287 @@ public class PoeOptimizeService {
         }
       }
 
+      // ── 저항 캡 채움(문신, balanced) — Missing==0(총량은 캡 초과)인데 캡이 아키타입 목표(치프틴 RF 90 등)에
+      // 미달인 원소를, **문신 없는** 소형 속성 노드에 "저항 최대치 +1%" 문신을 새겨 캡을 올린다.
+      // 문신 greedy 는 장비 확정 전이라 그 시점엔 총량<캡이어서 최대치 문신이 무가치 판정되는 순서 문제(실측:
+      // RF 화염 캡 86, OverCap 501). 사용자 지정·기존 자동 문신 노드는 건드리지 않는다(신규만 — 보수적 v1).
+      if (balancedJob && poeTattooDataService.hasData()) {
+        this.tattooAllocated = Set.copyOf(allocated); // 후기 트리 변경(재생 스위치 등) 반영해 갱신
+        String[] capStatEn = {
+          "maximum Fire Resistance", "maximum Cold Resistance", "maximum Lightning Resistance"
+        };
+        String[] capResKeys = {"FireResist", "ColdResist", "LightningResist"};
+        String[] capMissingKeys = {
+          "MissingFireResist", "MissingColdResist", "MissingLightningResist"
+        };
+        int[] capTargets = {targetFireRes, targetColdRes, targetLightRes};
+        for (int e = 0; e < capResKeys.length; e++) {
+          for (int round = 0; round < 5; round++) {
+            double res = finalValues.getOrDefault(capResKeys[e], (double) capTargets[e]);
+            Double missing = finalValues.get(capMissingKeys[e]);
+            // 캡 병목일 때만: 목표 미달 + 총량은 캡에 닿음(Missing≈0). Missing 미제공(구 워커)이면 보수적으로 중단.
+            if (res >= capTargets[e] - 0.5 || missing == null || missing > 0.5) {
+              break;
+            }
+            final int elemIdx = e;
+            boolean adopted = false;
+            capFill:
+            for (String attr : List.of("Strength", "Dexterity", "Intelligence")) {
+              for (PoeTattooDataService.Tattoo tattoo :
+                  poeTattooDataService.candidates("normal", attr)) {
+                if (tattoo.stats().isEmpty()
+                    || tattoo.stats().stream().noneMatch(l -> l.contains(capStatEn[elemIdx]))) {
+                  continue;
+                }
+                long used =
+                    fixedTattoos.values().stream().filter(dn -> dn.equals(tattoo.dn())).count();
+                if (used >= tattooLimit(tattoo)) {
+                  continue;
+                }
+                for (int nodeId : allocated) {
+                  // 사용자 지정 문신만 불가침 — 자동 채택 문신(비둘기 등)은 교체 시험 대상.
+                  // (v1 은 신규만이었는데 최대치 문신이 잎 전용(maxConnected=1)이라 잎을 선점한 자동
+                  //  문신에 막혀 시도 0건이었다 — 실측)
+                  if (userTattoos.containsKey(nodeId)
+                      || tattoo.dn().equals(fixedTattoos.get(nodeId))
+                      || !attr.equals(smallAttributeOf(poeTreeGraphService.node(nodeId)))
+                      || !tattooFits(tattoo, nodeId)) {
+                    continue;
+                  }
+                  Map<Integer, String> trial = new LinkedHashMap<>(fixedTattoos);
+                  trial.put(nodeId, tattoo.dn());
+                  Map<Integer, String> savedTattoos = fixedTattoos;
+                  String trialXml;
+                  try {
+                    fixedTattoos = Map.of();
+                    trialXml =
+                        withTattoos(
+                            buildXml(
+                                gem,
+                                supports,
+                                className,
+                                ascendancy,
+                                ascendancyNodes,
+                                allocated,
+                                items,
+                                jewels),
+                            trial,
+                            allocated);
+                  } finally {
+                    fixedTattoos = savedTattoos;
+                  }
+                  if (currentAnoint != null) {
+                    trialXml = withAnoint(trialXml, currentAnoint.name());
+                  }
+                  Map<String, Double> trialVals = poePobEngineService.calculateValues(trialXml);
+                  evalCount.incrementAndGet();
+                  if (objectiveOf(trialVals, objectiveKey)
+                      > objectiveOf(finalValues, objectiveKey) * 1.003) {
+                    fixedTattoos = trial;
+                    finalXml = trialXml;
+                    finalValues = trialVals;
+                    adopted = true;
+                    log(
+                        "저항 캡 채움(문신): "
+                            + (tattoo.nameKo() != null ? tattoo.nameKo() : tattoo.dn())
+                            + " ("
+                            + capResKeys[elemIdx]
+                            + " "
+                            + String.format("%.0f", res)
+                            + "→목표 "
+                            + capTargets[elemIdx]
+                            + ") → "
+                            + format(objectiveOf(finalValues, objectiveKey)));
+                    break capFill;
+                  }
+                }
+              }
+            }
+            if (!adopted) {
+              // 매달린 소형 신설 — 기존 자리(할당-이웃≤1 소형)가 트리에 없을 때(실측: 경로 소형은 이웃 2,
+              // 경로 끝은 노터블/소켓): 가치 낮은 잎 소형 1pt 를 회수하고 경로 인접 미할당 속성 소형을 새로
+              // 할당해 여정 문신 전용 자리를 만든다 — ninja 실빌드의 표준 기법.
+              dangling:
+              for (String attr : List.of("Strength", "Dexterity", "Intelligence")) {
+                for (PoeTattooDataService.Tattoo tattoo :
+                    poeTattooDataService.candidates("normal", attr)) {
+                  if (tattoo.stats().isEmpty()
+                      || tattoo.stats().stream().noneMatch(l -> l.contains(capStatEn[elemIdx]))) {
+                    continue;
+                  }
+                  long used =
+                      fixedTattoos.values().stream().filter(dn -> dn.equals(tattoo.dn())).count();
+                  if (used >= tattooLimit(tattoo)) {
+                    continue;
+                  }
+                  // 매달린 후보: 미할당 소형(해당 속성) && 할당 이웃 정확히 1(할당 시 여정 문신 조건 충족)
+                  List<Integer> danglings = new ArrayList<>();
+                  for (int a : allocated) {
+                    for (int nb : poeTreeGraphService.neighbors(a)) {
+                      if (allocated.contains(nb)
+                          || danglings.contains(nb)
+                          || !attr.equals(smallAttributeOf(poeTreeGraphService.node(nb)))) {
+                        continue;
+                      }
+                      long nbAlloc =
+                          poeTreeGraphService.neighbors(nb).stream()
+                              .filter(allocated::contains)
+                              .count();
+                      if (nbAlloc == 1) {
+                        danglings.add(nb);
+                      }
+                    }
+                  }
+                  danglings.sort(null);
+                  log(
+                      "캡 채움 진단["
+                          + capResKeys[elemIdx]
+                          + "]: "
+                          + tattoo.dn()
+                          + " 매달린 후보 "
+                          + danglings.size()
+                          + "개");
+                  // 회수 후보 잎: 할당-차수 ≤1 소형(사용자 문신 제외 — 자동 문신 잎은 제거 허용,
+                  // 끝단이라 제거해도 고아가 생기지 않는다)
+                  // 잎 후보는 **연결성 검증을 먼저** 통과한 것만 — 상위 N 컷을 먼저 하면 가짜 잎(다리)만
+                  // 남아 트라이얼 0건이 된다(실측: 후보 10개인데 상위 3잎 전부 연결성 탈락).
+                  // 다리 오판 원인 = 할당-이웃 수 판정이 그래프 밖 연결(클러스터 소켓 경유)을 모름
+                  // (실측: 잎 50904 제거 → 하위 트리 고아 → 784 붕괴).
+                  // ⚠ 절대 기준(전 노드 도달)으로 검사하면 애초에 그래프상 도달 불가인 할당 노드(전직 등)가
+                  // 섞여 있을 때 모든 잎이 탈락한다(실측: 통과 잎 0개). **기준선 대비 상대 비교** —
+                  // 제거 전에도 도달 불가였던 노드는 무시하고, 제거로 "새로" 도달 불가가 되는 노드가 없어야 잎.
+                  Set<Integer> baselineWithStart = new LinkedHashSet<>(allocated);
+                  baselineWithStart.add(classStart);
+                  Set<Integer> baselineReach =
+                      poeTreeGraphService.reachableFrom(classStart, baselineWithStart);
+                  List<Integer> leaves = new ArrayList<>();
+                  for (int a : allocated) {
+                    PoeTreeGraphService.TreeNode leafNode = poeTreeGraphService.node(a);
+                    if (leafNode == null
+                        || !"normal".equals(leafNode.type())
+                        || userTattoos.containsKey(a)) {
+                      continue;
+                    }
+                    long deg =
+                        poeTreeGraphService.neighbors(a).stream()
+                            .filter(allocated::contains)
+                            .count();
+                    if (deg > 1) {
+                      continue;
+                    }
+                    Set<Integer> withStart = new LinkedHashSet<>(allocated);
+                    withStart.remove(a);
+                    withStart.add(classStart);
+                    Set<Integer> reach = poeTreeGraphService.reachableFrom(classStart, withStart);
+                    final int removed = a;
+                    long newOrphans =
+                        baselineReach.stream()
+                            .filter(
+                                id ->
+                                    id != removed && allocated.contains(id) && !reach.contains(id))
+                            .count();
+                    log(
+                        "캡 채움 잎 후보: "
+                            + a
+                            + " deg="
+                            + deg
+                            + " 신규고아="
+                            + newOrphans
+                            + " baseline도달="
+                            + baselineReach.size());
+                    if (newOrphans == 0) {
+                      leaves.add(a);
+                    }
+                  }
+                  leaves.sort(null);
+                  log(
+                      "캡 채움 진단: 연결성 통과 잎 "
+                          + leaves.size()
+                          + "개"
+                          + (leaves.isEmpty()
+                              ? ""
+                              : " " + leaves.subList(0, Math.min(3, leaves.size()))));
+                  for (int d : danglings.subList(0, Math.min(2, danglings.size()))) {
+                    for (int l : leaves.subList(0, Math.min(3, leaves.size()))) {
+                      // 잎 제거로 매달린 노드의 유일 연결이 끊기는 조합은 무효
+                      if (l == d || poeTreeGraphService.neighbors(d).contains(l)) {
+                        continue;
+                      }
+                      Set<Integer> trialAlloc = new LinkedHashSet<>(allocated);
+                      trialAlloc.remove(l);
+                      trialAlloc.add(d);
+                      Map<Integer, String> trialTattoos = new LinkedHashMap<>(fixedTattoos);
+                      trialTattoos.remove(l);
+                      trialTattoos.put(d, tattoo.dn());
+                      Map<Integer, String> savedTattoos = fixedTattoos;
+                      String trialXml;
+                      try {
+                        fixedTattoos = Map.of();
+                        trialXml =
+                            withTattoos(
+                                buildXml(
+                                    gem,
+                                    supports,
+                                    className,
+                                    ascendancy,
+                                    ascendancyNodes,
+                                    trialAlloc,
+                                    items,
+                                    jewels),
+                                trialTattoos,
+                                trialAlloc);
+                      } finally {
+                        fixedTattoos = savedTattoos;
+                      }
+                      if (currentAnoint != null) {
+                        trialXml = withAnoint(trialXml, currentAnoint.name());
+                      }
+                      Map<String, Double> trialVals = poePobEngineService.calculateValues(trialXml);
+                      evalCount.incrementAndGet();
+                      log(
+                          "캡 채움 트라이얼: 잎 "
+                              + l
+                              + "→매달린 "
+                              + d
+                              + " = "
+                              + format(objectiveOf(trialVals, objectiveKey))
+                              + " (기준 "
+                              + format(objectiveOf(finalValues, objectiveKey))
+                              + ", fire "
+                              + trialVals.getOrDefault("FireResist", 0d)
+                              + ")");
+                      if (objectiveOf(trialVals, objectiveKey)
+                          > objectiveOf(finalValues, objectiveKey) * 1.003) {
+                        allocated.remove(l);
+                        allocated.add(d);
+                        this.tattooAllocated = Set.copyOf(allocated);
+                        fixedTattoos = trialTattoos;
+                        finalXml = trialXml;
+                        finalValues = trialVals;
+                        adopted = true;
+                        log(
+                            "저항 캡 채움(매달린 소형): 잎 "
+                                + l
+                                + " 회수 → "
+                                + d
+                                + " 할당 + "
+                                + (tattoo.nameKo() != null ? tattoo.nameKo() : tattoo.dn())
+                                + " → "
+                                + format(objectiveOf(finalValues, objectiveKey)));
+                        break dangling;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            if (!adopted) {
+              break;
+            }
+          }
+        }
+      }
+
       // ── 어픽스 예산 축(현실적 제작) 재평가 ──
       // 기본 결과는 모든 레어 모드를 T1 로 가정한다(낙관적). 실제로는 보통 필수 옵션 2~4개만 T1 이고
       // 나머지는 중위 티어다. 레어를 전부 "필수 N T1 + 나머지 중위"로 바꿔 N∈{2,3,4} 을 병렬 재계산해,
@@ -6420,11 +6707,20 @@ public class PoeOptimizeService {
    * 거기서 쓰는 numLinkedNodes 는 <b>할당 여부와 무관한 그 노드의 연결선 수</b>다. 계산 엔진이 PoB 인 이상 판정도 PoB 기준이어야 화면과 수치가
    * 어긋나지 않는다. (조건부 스탯 "인접 8개 할당 시" 부분은 PoB 계산이 알아서 처리한다)
    */
+  /** 잡별 할당 노드 스냅샷 — tattooFits 의 "연결된 **할당** 노드 수" 판정용. 잡별 상태 — runJob 트리 확정 시 갱신. */
+  private volatile Set<Integer> tattooAllocated = Set.of();
+
   private boolean tattooFits(PoeTattooDataService.Tattoo tattoo, int nodeId) {
     if (tattoo.minConnected() <= 0 && tattoo.maxConnected() >= 100) {
       return true; // 대부분은 제약이 없다 — 이웃 세는 비용도 아낀다
     }
-    int linked = poeTreeGraphService.neighbors(nodeId).size();
+    // 게임 규칙은 "인접한 **할당된** 패시브 수"다(마캉가 여정 문신 = 1개 이하). 정적 그래프 이웃 수로 세면
+    // 허브 근처 할당-끝단 소형(그래프 이웃 4, 할당 이웃 1)이 부당 탈락한다 — 실측: 나마후 문신 자리 0건.
+    java.util.Collection<Integer> neighbors = poeTreeGraphService.neighbors(nodeId);
+    long linked =
+        tattooAllocated.isEmpty()
+            ? neighbors.size()
+            : neighbors.stream().filter(tattooAllocated::contains).count();
     return linked >= tattoo.minConnected() && linked <= tattoo.maxConnected();
   }
 
@@ -7031,6 +7327,14 @@ public class PoeOptimizeService {
                 ? targetFireRes
                 : "coldRes".equals(e.getKey()) ? targetColdRes : targetLightRes;
         double gap = resTarget - values.getOrDefault(e.getValue(), 0d);
+        // 캡 인지 — Missing≈0 이면 총량은 이미 캡 도달(미달분은 최대 저항 부족). 총량 접미를 더 붙여도
+        // 무의미하므로 포기 처리(실측: RF 화염 86=캡, OverCap 501 인데 총량 교체만 5회 시도 후 포기하던 낭비).
+        Double missing = values.get("Missing" + e.getValue());
+        if (gap >= 1d && missing != null && missing <= 0.5) {
+          log("저항 보정 생략 — " + e.getKey() + " " + (int) gap + " 미달은 캡 병목(총량은 캡 도달, 최대 저항 소스 필요)");
+          unfixable.add(e.getKey());
+          continue;
+        }
         if (gap > worstGap) {
           worstGap = gap;
           worst = e.getKey();

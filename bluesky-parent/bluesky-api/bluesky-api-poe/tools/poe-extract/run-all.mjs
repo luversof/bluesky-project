@@ -30,7 +30,7 @@ try {
 	console.warn("pathofexile-dat 최신 설치 실패 — 기존 설치본으로 계속(오프라인/레지스트리 불가?):", e.message);
 }
 
-const steps = ["extract.mjs", "transform.mjs", "parse-uniques.mjs", "parse-items.mjs", "parse-mods.mjs", "parse-mods-full.mjs", "parse-essences.mjs", "parse-bench.mjs", "parse-eldritch.mjs", "parse-tree.mjs", "parse-atlas-tree.mjs", "parse-cluster-jewels.mjs", "parse-skill-weapons.mjs", "parse-tattoos.mjs",
+const steps = ["extract.mjs", "transform.mjs", "parse-uniques.mjs", "parse-items.mjs", "parse-mods.mjs", "parse-mods-full.mjs", "parse-map-mods.mjs", "parse-essences.mjs", "parse-bench.mjs", "parse-eldritch.mjs", "parse-tree.mjs", "parse-atlas-tree.mjs", "parse-cluster-jewels.mjs", "parse-skill-weapons.mjs", "parse-tattoos.mjs",
 	// parse-anoints 는 runExtractor 로 테이블을 재추출(기존 산출물 대체)하므로 테이블 소비 파서들 **뒤**에 둔다
 	"parse-anoints.mjs", "essence-icons.mjs", "tattoo-icons.mjs", "currency-icons.mjs", "tree-sprites.mjs", "archive-trees.mjs", "tree-layers.mjs", "icons.mjs", "item-icons.mjs", "unique-icons.mjs", "timeless-bin.mjs", "ui-assets.mjs"];
 

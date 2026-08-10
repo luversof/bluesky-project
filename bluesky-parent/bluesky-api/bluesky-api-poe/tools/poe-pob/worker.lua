@@ -62,6 +62,9 @@ local KEYS = {
 	"ManaReserved", "ManaReservedPercent", "ManaUnreserved", "ManaUnreservedPercent",
 	"LifeReserved", "LifeReservedPercent",
 	"FireResist", "ColdResist", "LightningResist", "ChaosResist",
+	-- 실효 캡 대비 미달/초과 — 캡(최대 저항)이 병목인지 판별용. calc.lua 와 목록 일치 필수.
+	"MissingFireResist", "MissingColdResist", "MissingLightningResist",
+	"FireResistOverCap", "ColdResistOverCap", "LightningResistOverCap",
 	-- 방어 레이어(현 패치 핵심): 주문 억제/막기/주문 막기 — calc.lua 와 목록 일치 필수.
 	"SpellSuppressionChance", "BlockChance", "SpellBlockChance",
 	"CritChance", "CritMultiplier", "EffectiveMovementSpeedMod",

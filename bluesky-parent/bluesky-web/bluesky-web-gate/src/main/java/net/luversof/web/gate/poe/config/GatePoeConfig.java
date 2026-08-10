@@ -12,6 +12,7 @@ import net.luversof.web.gate.poe.httpexchange.PoeBuildClient;
 import net.luversof.web.gate.poe.httpexchange.PoeDataClient;
 import net.luversof.web.gate.poe.httpexchange.PoeExtractClient;
 import net.luversof.web.gate.poe.httpexchange.PoeOptimizeClient;
+import net.luversof.web.gate.poe.httpexchange.PoeRegexClient;
 import net.luversof.web.gate.poe.httpexchange.PoeSimClient;
 
 @Configuration
@@ -52,5 +53,11 @@ public class GatePoeConfig {
   PoeExtractClient poeExtractClient(
       @Qualifier("poeHttpServiceProxyFactory") HttpServiceProxyFactory poeHttpServiceProxyFactory) {
     return poeHttpServiceProxyFactory.createClient(PoeExtractClient.class);
+  }
+
+  @Bean
+  PoeRegexClient poeRegexClient(
+      @Qualifier("poeHttpServiceProxyFactory") HttpServiceProxyFactory poeHttpServiceProxyFactory) {
+    return poeHttpServiceProxyFactory.createClient(PoeRegexClient.class);
   }
 }

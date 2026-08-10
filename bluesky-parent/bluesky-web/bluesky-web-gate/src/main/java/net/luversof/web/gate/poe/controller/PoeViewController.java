@@ -317,6 +317,16 @@ public class PoeViewController {
     return "poe/clusters";
   }
 
+  /**
+   * 지도 정규식 생성기 — 맵 모드 선택 → 인게임 검색용 정규식 생성·저장(poeregexkr 식). 데이터는 /poe-data/map-mods.json 을 클라이언트가
+   * 직접 로드.
+   */
+  @GetMapping("/regex")
+  public String regex(Model model) {
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    return "poe/regex";
+  }
+
   /** 문신 목록 페이지 — poedb Tattoos 식 브라우징(타입 칩 + 검색). */
   @GetMapping("/tattoos")
   public String tattoos(Model model) {

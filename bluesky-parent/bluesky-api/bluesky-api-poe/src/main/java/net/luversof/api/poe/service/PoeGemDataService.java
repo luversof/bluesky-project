@@ -1,6 +1,5 @@
 package net.luversof.api.poe.service;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -109,7 +108,7 @@ public class PoeGemDataService {
         loaded = jsonMapper.readValue(inputStream, PoeGemData.class);
         logger.info(
             "PoE 스킬젬 데이터 로드: {} ({}개, patch {})", dataFile, loaded.gems().size(), loaded.patch());
-      } catch (IOException e) {
+      } catch (Exception e) {
         logger.warn("PoE 스킬젬 데이터 로드 실패: {}", dataFile, e);
       }
     } else {
