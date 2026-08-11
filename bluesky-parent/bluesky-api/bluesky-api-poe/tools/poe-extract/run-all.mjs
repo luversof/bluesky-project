@@ -70,4 +70,15 @@ if (!fs.existsSync(pobSrc)) {
 	}
 }
 
+// 아키타입 엔진 벤치 (belowMeta 판정의 **지표 정합 기준값**) — 대표 실빌드를 우리 엔진으로 재계산해
+//   ninja-engine-bench.json 생성. 이게 없으면 판정이 poe.ninja 표기 지표(gross)로 폴백해 같은 빌드도
+//   "메타 하회"로 뜬다(다른 PC 실사고). 갱신은 api-poe 가 이 파이프라인을 띄우므로 40135 는 살아 있다.
+//   **네트워크(ninja 레이트리밋)·엔진 의존이라 비치명** — 실패해도 기존 벤치/폴백으로 계속.
+console.log("\n===== calibrate-archetypes.mjs (엔진 벤치, 비치명) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "calibrate-archetypes.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("엔진 벤치 캘리브레이션 실패 — 기존 벤치/ninja 표기 폴백으로 계속(api 미가동·레이트리밋?):", e.message);
+}
+
 console.log("\n===== 완료 =====");

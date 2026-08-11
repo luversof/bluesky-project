@@ -52,8 +52,16 @@ public class PoeTattooDataService {
   private volatile List<Tattoo> tattoos = List.of();
   private volatile Map<String, Tattoo> byDn = Map.of();
 
+  private final Path dataFile;
+
   public PoeTattooDataService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
-    Path file = Path.of(dataDir, "tattoos.json");
+    this.dataFile = Path.of(dataDir, "tattoos.json");
+    reload();
+  }
+
+  /** 데이터 파일을 다시 읽는다 (추출 파이프라인 완료 후 재시작 없이 반영). */
+  public synchronized void reload() {
+    Path file = dataFile;
     if (!Files.isReadable(file)) {
       logger.info("문신 정의 없음 — 문신 적용은 비활성: {}", file);
       return;

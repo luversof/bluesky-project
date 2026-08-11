@@ -70,9 +70,17 @@ public class PoeSkillWeaponDataService {
   /** 쌍수(양손 무기)여야 쓸 수 있는 스킬(듀얼 스트라이크 등) — 오프핸드 무기가 없으면 PoB 가 스킬을 비활성 처리한다. */
   private volatile Set<String> dualWieldSkills = Set.of();
 
+  private final Path dataFile;
+
   public PoeSkillWeaponDataService(
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
-    Path file = Path.of(dataDir, "skill-weapons.json");
+    this.dataFile = Path.of(dataDir, "skill-weapons.json");
+    reload();
+  }
+
+  /** 데이터 파일을 다시 읽는다 (추출 파이프라인 완료 후 재시작 없이 반영). */
+  public synchronized void reload() {
+    Path file = dataFile;
     if (!Files.isReadable(file)) {
       logger.info("스킬 무기 제한 데이터 없음 — 무기 후보는 태그 추정으로 동작: {}", file);
       return;

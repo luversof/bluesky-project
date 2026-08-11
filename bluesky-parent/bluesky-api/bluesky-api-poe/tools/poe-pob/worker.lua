@@ -45,6 +45,28 @@ function NewFileSearch(pattern, ...)
 	return nil
 end
 
+
+-- ⚠ PoB 는 빌드 로드 중 오류를 자신의 PCall 로 삼킨다. 그러면 스펙 임포트가 중단된 채
+-- 기본값(사이온·빈 트리) 빌드가 계산되어 **그럴듯한 가짜 수치**가 나간다(실측: 타임리스 주얼 빌드
+-- 16건이 전부 동일한 EHP 9,606). 로드 구간의 오류를 붙잡아 명시적 실패로 바꾼다.
+local pobLoadError = nil
+local pobCapturing = false
+local rawPCall = PCall
+-- 이 워커의 Lua 상태를 더 믿을 수 없는 상황 — 상주 워커는 빌드를 여러 번 실어 나면 PoB 내부 상태가
+-- 무너져 스펙 임포트가 조용히 실패한다(실측: 동일 XML 이 새 워커에선 성공, 상주 워커에선 클래스 3→0).
+-- 빌드 문제가 아니라 워커 문제니 스스로 죽어 Java 가 새 워커로 재시도하게 한다.
+local function fatal(msg)
+	io.write("@@POB_FATAL@@" .. msg .. (pobLoadError and (": " .. pobLoadError) or "") .. "\n")
+	io.flush()
+	os.exit(1)
+end
+
+function PCall(func, ...)
+	local err = rawPCall(func, ...)
+	if pobCapturing and type(err) == "string" and not pobLoadError then pobLoadError = err end
+	return err
+end
+
 local dkjson = require("dkjson")
 
 local KEYS = {
@@ -95,7 +117,23 @@ while true do
 	if gotEnd then
 		local xml = table.concat(lines, "\n")
 		local ok, err = pcall(function()
+			pobLoadError = nil
+			pobCapturing = true
 			loadBuildFromXML(xml)
+			pobCapturing = false
+			-- 로드 검증: 스펙 임포트가 조용히 실패하면 PoB 는 예외 없이 기본값 빌드를 계산해 **가짜 수치**를 낸다
+			-- (실측: 타임리스 주얼 빌드 16건이 마라우더 → 사이온으로 떨어져 전부 동일한 EHP 9,606).
+			-- XML 의 classId 와 실제 로드된 클래스를 대조해 어긋나면 명시적 실패로 바꾼다.
+			local wantClass = tonumber(xml:match('<Spec[^>]-%sclassId="(%d+)"'))
+			local gotClass = build.spec and build.spec.curClassId
+			if wantClass and gotClass and wantClass ~= gotClass then
+				fatal("스펙 임포트 실패(클래스 " .. wantClass .. " → " .. gotClass .. ")")
+			end
+			-- ⚠ 여기서 runCallback("OnFrame") 로 계산을 재촉하면 안 된다 — OnFrame 은 UI 작업(Build.lua 로드아웃 목록)을
+			-- 거쳐 헤드리스에서 오류를 내고 상주 워커의 treeTab 을 손상시킨다(다음 요청부터 specList 가 비어 스펙 임포트 실패).
+			if not build.calcsTab.mainOutput or next(build.calcsTab.mainOutput) == nil then
+				fatal("계산 결과 없음(mainOutput 비어 있음)")
+			end
 			local output = build.calcsTab.mainOutput or {}
 			-- 미니언 빌드 DPS 폴백(calc.lua 와 동일·nil-guard): player DPS 0 이면 미니언 output 값 사용.
 			local minionOut = nil

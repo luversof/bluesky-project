@@ -156,4 +156,14 @@ public class PoeBuildController {
           org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
     }
   }
+
+  /**
+   * 상주 워커·결과 캐시를 비운다. 데이터 갱신으로 PoB 소스/트리 파일이 바뀌면 이미 떠 있는 워커는 낡은 상태로 계산해 예외 없이 빈 결과를 돌려주므로, 갱신
+   * 파이프라인이 재계산을 쓰기 전에 호출한다.
+   */
+  @PostMapping("/engine/reset")
+  public java.util.Map<String, Object> resetEngine() {
+    poePobEngineService.reset();
+    return java.util.Map.of("reset", true);
+  }
 }

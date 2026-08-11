@@ -60,6 +60,12 @@ public class PoeExtractService {
   private final PoeEldritchDataService poeEldritchDataService;
   private final PoeEssenceDataService poeEssenceDataService;
   private final PoeBenchDataService poeBenchDataService;
+  private final PoeClusterJewelDataService poeClusterJewelDataService;
+  private final PoeSkillWeaponDataService poeSkillWeaponDataService;
+  private final PoeTattooDataService poeTattooDataService;
+  private final PoeTradeStatDataService poeTradeStatDataService;
+  private final PoeOptimizeService poeOptimizeService;
+  private final PoePobEngineService poePobEngineService;
 
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final Deque<String> logLines = new ArrayDeque<>();
@@ -78,7 +84,13 @@ public class PoeExtractService {
       PoeModDataService poeModDataService,
       PoeEldritchDataService poeEldritchDataService,
       PoeEssenceDataService poeEssenceDataService,
-      PoeBenchDataService poeBenchDataService) {
+      PoeBenchDataService poeBenchDataService,
+      PoeClusterJewelDataService poeClusterJewelDataService,
+      PoeSkillWeaponDataService poeSkillWeaponDataService,
+      PoeTattooDataService poeTattooDataService,
+      PoeTradeStatDataService poeTradeStatDataService,
+      PoeOptimizeService poeOptimizeService,
+      PoePobEngineService poePobEngineService) {
     this.extractDir = Path.of(extractDir).toAbsolutePath();
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
@@ -89,6 +101,12 @@ public class PoeExtractService {
     this.poeEldritchDataService = poeEldritchDataService;
     this.poeEssenceDataService = poeEssenceDataService;
     this.poeBenchDataService = poeBenchDataService;
+    this.poeClusterJewelDataService = poeClusterJewelDataService;
+    this.poeSkillWeaponDataService = poeSkillWeaponDataService;
+    this.poeTattooDataService = poeTattooDataService;
+    this.poeTradeStatDataService = poeTradeStatDataService;
+    this.poeOptimizeService = poeOptimizeService;
+    this.poePobEngineService = poePobEngineService;
   }
 
   /** 파이프라인 스크립트가 서버 로컬에 존재하는가 (k8s 파드에서는 false) */
@@ -249,6 +267,9 @@ public class PoeExtractService {
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {
                   appendLog("데이터 재로드 중...");
+                  // 상주 PoB 워커는 기동 시 소스/트리를 메모리에 올려두므로 갱신 후 그대로 두면 낡은 상태로 계산해
+                  // 예외 없이 빈 결과를 돌려준다(엔진 벤치 캘리브레이션이 전건 실패한 실사고). 먼저 비운다.
+                  poePobEngineService.reset();
                   poeGemDataService.reload();
                   // 베이스를 먼저 재로드해야 고유의 세부 itemClass 조인이 최신 데이터로 계산된다
                   poeBaseItemDataService.reload();
@@ -260,6 +281,13 @@ public class PoeExtractService {
                   poeEldritchDataService.reload();
                   poeEssenceDataService.reload();
                   poeBenchDataService.reload();
+                  // 최적화기 탐색이 쓰는 데이터도 함께 — 빠지면 갱신해도 재시작 전까지 옛 풀/옛 리그 시드로
+                  // 계속 돌아 결과가 조용히 나빠진다(클러스터·무기 제한·문신·거래소 스탯·ninja 시드/엔진 벤치).
+                  poeClusterJewelDataService.reload();
+                  poeSkillWeaponDataService.reload();
+                  poeTattooDataService.reload();
+                  poeTradeStatDataService.reload();
+                  poeOptimizeService.reloadNinja();
                   appendLog("완료 — 화면을 새로고침하면 반영됩니다.");
                   lastStatus = Status.SUCCESS;
                 } else {

@@ -278,6 +278,14 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     model.addAttribute("toDate", summary.toDate());
     model.addAttribute("periodReturnRatePct", summary.periodReturnRatePct());
     model.addAttribute("returnCalculable", summary.returnCalculable());
+    model.addAttribute("timeWeightedReturnPct", summary.timeWeightedReturnPct());
+    model.addAttribute("periodProfit", summary.periodProfit());
+    model.addAttribute("principalDelta", summary.principalDelta());
+    model.addAttribute("unrealizedStart", summary.unrealizedStart());
+    model.addAttribute("unrealizedEnd", summary.unrealizedEnd());
+    model.addAttribute("unrealizedEndPct", summary.unrealizedEndPct());
+    model.addAttribute("recoveredAmount", summary.recoveredAmount());
+    model.addAttribute("netNewProfit", summary.netNewProfit());
     return "stock/htmx/fragments/assetGrowthPeriodReturnSummary";
   }
 
@@ -434,7 +442,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   private AssetGrowthPeriodReturnSummary buildAssetGrowthPeriodReturnSummary(
       UUID userId, String from, String to, String timeZone) {
     if (userId == null || from == null || from.isBlank() || to == null || to.isBlank()) {
-      return new AssetGrowthPeriodReturnSummary(from, to, null, false);
+      return new AssetGrowthPeriodReturnSummary(
+          from, to, null, false, null, null, null, null, null, null, null, null);
     }
 
     LocalDate fromDate;
@@ -444,12 +453,24 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       toDate = LocalDate.parse(to);
     } catch (Exception ex) {
       logger.warn("Failed to parse asset growth period range: from={} to={}", from, to, ex);
-      return new AssetGrowthPeriodReturnSummary(from, to, null, false);
+      return new AssetGrowthPeriodReturnSummary(
+          from, to, null, false, null, null, null, null, null, null, null, null);
     }
 
     if (toDate.isBefore(fromDate)) {
       return new AssetGrowthPeriodReturnSummary(
-          fromDate.toString(), toDate.toString(), null, false);
+          fromDate.toString(),
+          toDate.toString(),
+          null,
+          false,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null);
     }
 
     try {
@@ -466,7 +487,18 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
               : null;
 
       return new AssetGrowthPeriodReturnSummary(
-          fromDate.toString(), toDate.toString(), periodReturnRatePct, periodReturnRatePct != null);
+          fromDate.toString(),
+          toDate.toString(),
+          periodReturnRatePct,
+          periodReturnRatePct != null,
+          holdingsValueWindow.timeWeightedReturnPct(),
+          holdingsValueWindow.periodProfit(),
+          holdingsValueWindow.principalDelta(),
+          holdingsValueWindow.unrealizedStart(),
+          holdingsValueWindow.unrealizedEnd(),
+          holdingsValueWindow.unrealizedEndPct(),
+          holdingsValueWindow.recoveredAmount(),
+          holdingsValueWindow.netNewProfit());
     } catch (Exception ex) {
       logger.warn(
           "Failed to build asset growth period return summary: from={} to={} timeZone={}",
@@ -475,7 +507,18 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
           timeZone,
           ex);
       return new AssetGrowthPeriodReturnSummary(
-          fromDate.toString(), toDate.toString(), null, false);
+          fromDate.toString(),
+          toDate.toString(),
+          null,
+          false,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null);
     }
   }
 
@@ -492,11 +535,17 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     List<TradeProfitTimeSeriesPoint> series = tradeProfitClient.timeSeries(params);
     if (series == null || series.isEmpty()) {
-      return new HoldingsValueWindow(BigDecimal.ZERO, BigDecimal.ZERO);
+      return HoldingsValueWindow.empty();
     }
 
     BigDecimal openingValue = null;
     BigDecimal closingValue = null;
+    TradeProfitTimeSeriesPoint firstPoint = null;
+    TradeProfitTimeSeriesPoint lastPoint = null;
+    // TWR(시간가중수익률): 일별로 입출금(원금 변동)을 제거한 수익률을 곱해 누적한다.
+    // 평가액 성장률은 입금까지 성과로 잡히므로, 순수 운용 성과는 이 값으로 본다.
+    double timeWeightedFactor = 1.0d;
+    TradeProfitTimeSeriesPoint previousPoint = null;
 
     for (TradeProfitTimeSeriesPoint point : series) {
       if (point == null || point.timestamp() == null) {
@@ -506,17 +555,95 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       if (pointDate.isBefore(fromDate) || pointDate.isAfter(toDate)) {
         continue;
       }
-      BigDecimal holdingsValue =
-          point.totalHoldingsValue() != null ? point.totalHoldingsValue() : BigDecimal.ZERO;
+      BigDecimal holdingsValue = nz(point.totalHoldingsValue());
       if (openingValue == null) {
         openingValue = holdingsValue;
+        firstPoint = point;
       }
       closingValue = holdingsValue;
+      lastPoint = point;
+
+      if (previousPoint != null) {
+        BigDecimal previousValue = nz(previousPoint.totalHoldingsValue());
+        if (previousValue.compareTo(BigDecimal.ZERO) > 0) {
+          // 당일 순수 손익 = (평가액 증가 - 원금 유입) + 실현손익 증가 + 배당 증가
+          BigDecimal cashFlow =
+              nz(point.totalHoldingsCost()).subtract(nz(previousPoint.totalHoldingsCost()));
+          BigDecimal realizedGain =
+              nz(point.cumulativeRealizedProfit())
+                  .subtract(nz(previousPoint.cumulativeRealizedProfit()));
+          BigDecimal dividendGain =
+              nz(point.cumulativeDividend()).subtract(nz(previousPoint.cumulativeDividend()));
+          BigDecimal dailyGain =
+              holdingsValue
+                  .subtract(previousValue)
+                  .subtract(cashFlow)
+                  .add(realizedGain)
+                  .add(dividendGain);
+          double dailyReturn =
+              dailyGain.divide(previousValue, 10, RoundingMode.HALF_UP).doubleValue();
+          timeWeightedFactor *= (1.0d + dailyReturn);
+        }
+      }
+      previousPoint = point;
     }
+
+    if (firstPoint == null || lastPoint == null) {
+      return HoldingsValueWindow.empty();
+    }
+
+    // 기간 총 손익 = 누적손익(미실현 + 실현 + 배당)의 기말 - 기초
+    BigDecimal periodProfit = accumulatedProfit(lastPoint).subtract(accumulatedProfit(firstPoint));
+    BigDecimal principalDelta =
+        nz(lastPoint.totalHoldingsCost()).subtract(nz(firstPoint.totalHoldingsCost()));
+    // 기간 손익이 "손실 회복분"인지 "순수 이익"인지 구분되도록 평가손익 기초/기말을 함께 준다.
+    // (예: -8,877만 -> +1,271만 이면 1억 손익 대부분이 회복분이고 누적은 +2.37%에 불과)
+    BigDecimal unrealizedStart =
+        nz(firstPoint.totalHoldingsValue()).subtract(nz(firstPoint.totalHoldingsCost()));
+    BigDecimal unrealizedEnd =
+        nz(lastPoint.totalHoldingsValue()).subtract(nz(lastPoint.totalHoldingsCost()));
+    BigDecimal endCost = nz(lastPoint.totalHoldingsCost());
+    Double unrealizedEndPct =
+        endCost.compareTo(BigDecimal.ZERO) > 0
+            ? unrealizedEnd
+                .multiply(BigDecimal.valueOf(100))
+                .divide(endCost, 4, RoundingMode.HALF_UP)
+                .doubleValue()
+            : null;
+
+    // 기간 손익을 '손실 회복분'과 '순증분'으로 분해한다.
+    // 회복분 = 마이너스였던 평가손익이 0 쪽으로 메워진 금액, 순증분 = 그 위로 새로 번 금액.
+    // (회복 + 순증 = 기간 손익 이 항상 성립하도록 순증분은 잔차로 구한다.)
+    BigDecimal lossGapStart = unrealizedStart.min(BigDecimal.ZERO).negate();
+    BigDecimal lossGapEnd = unrealizedEnd.min(BigDecimal.ZERO).negate();
+    BigDecimal recoveredAmount = lossGapStart.subtract(lossGapEnd);
+    BigDecimal netNewProfit = periodProfit.subtract(recoveredAmount);
+    Double timeWeightedReturnPct =
+        Double.isFinite(timeWeightedFactor) ? (timeWeightedFactor - 1.0d) * 100.0d : null;
 
     return new HoldingsValueWindow(
         openingValue != null ? openingValue : BigDecimal.ZERO,
-        closingValue != null ? closingValue : BigDecimal.ZERO);
+        closingValue != null ? closingValue : BigDecimal.ZERO,
+        timeWeightedReturnPct,
+        periodProfit,
+        principalDelta,
+        unrealizedStart,
+        unrealizedEnd,
+        unrealizedEndPct,
+        recoveredAmount,
+        netNewProfit);
+  }
+
+  /** 시점까지 쌓인 총 손익 = 미실현(평가액 - 원금) + 누적 실현손익 + 누적 배당. */
+  private static BigDecimal accumulatedProfit(TradeProfitTimeSeriesPoint point) {
+    return nz(point.totalHoldingsValue())
+        .subtract(nz(point.totalHoldingsCost()))
+        .add(nz(point.cumulativeRealizedProfit()))
+        .add(nz(point.cumulativeDividend()));
+  }
+
+  private static BigDecimal nz(BigDecimal value) {
+    return value != null ? value : BigDecimal.ZERO;
   }
 
   private Double calculatePeriodGrowthRate(BigDecimal openingValue, BigDecimal closingValue) {
@@ -545,8 +672,35 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
   }
 
-  private record HoldingsValueWindow(BigDecimal openingValue, BigDecimal closingValue) {}
+  private record HoldingsValueWindow(
+      BigDecimal openingValue,
+      BigDecimal closingValue,
+      Double timeWeightedReturnPct,
+      BigDecimal periodProfit,
+      BigDecimal principalDelta,
+      BigDecimal unrealizedStart,
+      BigDecimal unrealizedEnd,
+      Double unrealizedEndPct,
+      BigDecimal recoveredAmount,
+      BigDecimal netNewProfit) {
+
+    private static HoldingsValueWindow empty() {
+      return new HoldingsValueWindow(
+          BigDecimal.ZERO, BigDecimal.ZERO, null, null, null, null, null, null, null, null);
+    }
+  }
 
   private record AssetGrowthPeriodReturnSummary(
-      String fromDate, String toDate, Double periodReturnRatePct, boolean returnCalculable) {}
+      String fromDate,
+      String toDate,
+      Double periodReturnRatePct,
+      boolean returnCalculable,
+      Double timeWeightedReturnPct,
+      BigDecimal periodProfit,
+      BigDecimal principalDelta,
+      BigDecimal unrealizedStart,
+      BigDecimal unrealizedEnd,
+      Double unrealizedEndPct,
+      BigDecimal recoveredAmount,
+      BigDecimal netNewProfit) {}
 }

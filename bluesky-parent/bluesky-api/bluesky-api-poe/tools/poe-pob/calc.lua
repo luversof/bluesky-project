@@ -47,11 +47,40 @@ function NewFileSearch(pattern, ...)
 end
 
 
+-- ⚠ PoB 는 빌드 로드 중 오류를 자신의 PCall 로 삼킨다. 그러면 스펙 임포트가 중단된 채
+-- 기본값(사이온·빈 트리) 빌드가 계산되어 **그럴듯한 가짜 수치**가 나간다(실측: 타임리스 주얼 빌드
+-- 16건이 전부 동일한 EHP 9,606). 로드 구간의 오류를 붙잡아 명시적 실패로 바꾼다.
+local pobLoadError = nil
+local pobCapturing = false
+local rawPCall = PCall
+function PCall(func, ...)
+	local err = rawPCall(func, ...)
+	if pobCapturing and type(err) == "string" and not pobLoadError then pobLoadError = err end
+	return err
+end
+
+
 	local file = assert(io.open(xmlPath, "rb"), "빌드 XML 열기 실패: " .. xmlPath)
 	local xmlText = file:read("*a")
 	file:close()
 
+	pobLoadError = nil
+	pobCapturing = true
 	loadBuildFromXML(xmlText)
+	pobCapturing = false
+	-- 로드 검증: 스펙 임포트가 조용히 실패하면 PoB 는 예외 없이 기본값 빌드를 계산해 **가짜 수치**를 낸다
+	-- (실측: 타임리스 주얼 빌드 16건이 마라우더 → 사이온으로 떨어져 전부 동일한 EHP 9,606).
+	-- XML 의 classId 와 실제 로드된 클래스를 대조해 어긋나면 명시적 실패로 바꾼다.
+	local wantClass = tonumber(xmlText:match('<Spec[^>]-%sclassId="(%d+)"'))
+	local gotClass = build.spec and build.spec.curClassId
+	if wantClass and gotClass and wantClass ~= gotClass then
+		error("스펙 임포트 실패(클래스 " .. wantClass .. " → " .. gotClass .. ")" .. (pobLoadError and (": " .. pobLoadError) or ""))
+	end
+	-- ⚠ 여기서 runCallback("OnFrame") 로 계산을 재촉하면 안 된다 — OnFrame 은 UI 작업(Build.lua 로드아웃 목록)을
+	-- 거쳐 헤드리스에서 오류를 내고 상주 워커의 treeTab 을 손상시킨다(다음 요청부터 specList 가 비어 스펙 임포트 실패).
+	if not build.calcsTab.mainOutput or next(build.calcsTab.mainOutput) == nil then
+		error("계산 결과 없음(mainOutput 비어 있음)" .. (pobLoadError and (": " .. pobLoadError) or ""))
+	end
 
 	local output = build.calcsTab.mainOutput or {}
 	-- 미니언 빌드: 플레이어가 직접 안 때려 player output 의 DPS 는 0 이고 실제 피해는 미니언 output 에 있다.
@@ -103,7 +132,8 @@ end
 	end
 
 	local dkjson = require("dkjson")
-	print("@@POB_RESULT@@" .. dkjson.encode(result))
+	-- dkjson 은 빈 테이블을 배열 []로 인코딩한다 → Java 쪽 Map 역직렬화가 터져 진짜 원인이 가려진다(worker.lua 와 동일 조치).
+	print("@@POB_RESULT@@" .. (next(result) == nil and "{}" or dkjson.encode(result)))
 end)
 
 if not ok then

@@ -62,7 +62,9 @@ public class PoeOptimizeController {
   @PostMapping("/start")
   public boolean start(
       @RequestParam(required = false, defaultValue = "") String slug,
-      @RequestParam(required = false, defaultValue = "dps") String objective,
+      // 기본은 auto — 화면에서 목표 셀렉트를 없앤 뒤(2026-07-30) 사용자 경로는 auto(→balanced) 뿐이다.
+      // 기본값이 dps 면 파라미터를 빼고 호출했을 때 없어진 모드(EHP 바닥 없는 유리대포)로 돌아간다.
+      @RequestParam(required = false, defaultValue = "auto") String objective,
       @RequestParam(required = false, defaultValue = "Pinnacle") String scenario,
       @RequestParam(required = false, defaultValue = "false") boolean buffs,
       @RequestParam(required = false, defaultValue = "") String className,

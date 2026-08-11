@@ -62,7 +62,30 @@ const statOf = (stats, key) => {
 	return s ? Number(String(s.value).replace(/,/g, "").replace(/x/g, "")) : null;
 };
 
-let done = 0, skip = 0, fail = 0, stopped = false;
+// 지난 리그 벤치는 버린다 — belowMeta 는 이 파일을 **1순위 기준**으로 쓰므로, 남겨두면 현재 리그 빌드를
+// 지난 리그 정답값과 조용히 비교하게 된다(리그 교체 시 사고). 리그가 다르면 ninja 표기 중앙값 폴백이 낫다.
+for (const [k, v] of Object.entries(bench)) {
+	if (v && v.league !== league) delete bench[k];
+}
+
+// 레이트리밋(429) 대응 — 데이터 갱신 **한 번**으로 끝나야 하므로 중단 대신 창이 열릴 때까지 기다렸다 재시도한다
+// (직전 단계인 fetch-ninja-builds 의 마스터리 채집이 창을 소진한 채로 넘어오는 게 정상 경로다).
+const RATE_WAIT_MS = 65_000;
+const RATE_MAX_WAITS = 8; // 최대 ~9분 — 그래도 안 열리면 남은 건 다음 갱신에서 이어서
+let waits = 0;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// 상주 PoB 워커는 기동 시 엔진 소스/트리를 메모리에 올려둔다. 이 파이프라인이 그 파일들을 갱신한 뒤라
+// 워커가 살아 있으면 낡은 상태로 계산해 **예외 없이 빈 stats** 를 돌려준다(전건 실패했던 실사고).
+// 재계산을 쓰기 전에 한 번 비운다. 실패해도 비치명(엔진 미가동이면 어차피 아래에서 걸린다).
+try {
+	const rs = await fetch(`${API}/api/poe/build/engine/reset`, { method: "POST" });
+	console.log(`[calibrate] 엔진 리셋 ${rs.ok ? "완료" : "응답 " + rs.status}`);
+} catch (e) {
+	console.warn("[calibrate] 엔진 리셋 호출 실패 — 계속:", e.message);
+}
+
+let done = 0, skip = 0, fail = 0, emptyStats = 0, stopped = false;
 for (const { key, rep } of targets) {
 	// 대표가 바뀌면(선정 기준 변경 등) 캐시 무효 — 같은 스냅샷이라도 account/name 까지 일치해야 스킵
 	if (bench[key]
@@ -72,12 +95,21 @@ for (const { key, rep } of targets) {
 	if (stopped) continue;
 	try {
 		const cu = `${NINJA}/api/builds/${snapshot}/character?account=${encodeURIComponent(rep.account)}&name=${encodeURIComponent(rep.name)}&overview=${league}&type=0&timeMachine=`;
-		const cr = await fetch(cu, UA);
-		if (cr.status === 429) { console.log(`[calibrate] 레이트리밋 — 중단(${done} 완료, 재실행 시 이어서)`); stopped = true; continue; }
-		if (!cr.ok) { fail++; continue; }
+		let cr = await fetch(cu, UA);
+		while (cr.status === 429 && waits < RATE_MAX_WAITS) {
+			waits++;
+			// 서버가 Retry-After 로 남은 시간을 알려준다(약 250초) — 그걸 따르고, 없으면 기본 대기.
+			const ra = Number(cr.headers.get("retry-after"));
+			const waitMs = Number.isFinite(ra) && ra > 0 ? Math.min(ra * 1000 + 5000, 300_000) : RATE_WAIT_MS;
+			console.log(`[calibrate] 레이트리밋 — ${Math.round(waitMs / 1000)}초 대기 후 재시도 (${waits}/${RATE_MAX_WAITS})`);
+			await sleep(waitMs);
+			cr = await fetch(cu, UA);
+		}
+		if (cr.status === 429) { console.log(`[calibrate] 레이트리밋 지속 — 중단(${done} 완료, 다음 갱신에서 이어서)`); stopped = true; continue; }
+		if (!cr.ok) { fail++; console.warn(`[calibrate] ${key} 실패: 캐릭터 조회 HTTP ${cr.status}`); continue; }
 		const cj = await cr.json();
 		const code = cj.pathOfBuildingExport;
-		if (!code) { fail++; continue; }
+		if (!code) { fail++; console.warn(`[calibrate] ${key} 실패: export 없음`); continue; }
 		// ⚠ Config 공정화 — 실빌드 export 의 Config 는 대개 **비어 있다**(비보스·무버프 PoB 기본값).
 		// 우리 잡은 Pinnacle+충전+전투버프 가정이라 그대로 비교하면 벤치가 부풀거나(비보스 적 저항)
 		// 꺼진다. 우리 buildXml 의 표준 가정과 동일한 Config 를 주입해 같은 조건으로 재계산한다
@@ -100,9 +132,10 @@ for (const { key, rep } of targets) {
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 			body: "code=" + encodeURIComponent(normCode),
 		});
-		if (!rr.ok) { fail++; continue; }
+		if (!rr.ok) { fail++; console.warn(`[calibrate] ${key} 실패: 재계산 HTTP ${rr.status} — ${(await rr.text()).slice(0, 160)}`); continue; }
 		const er = await rr.json();
 		const entry = {
+			league, // 리그 교체 시 지난 리그 벤치를 자동으로 버리기 위한 표식
 			snapshot,
 			account: rep.account,
 			name: rep.name,
@@ -112,7 +145,8 @@ for (const { key, rep } of targets) {
 			netRegen: statOf(er.stats, "netliferegen"),
 			life: statOf(er.stats, "life"),
 		};
-		if (!entry.dps && !entry.ehp) { fail++; continue; } // 엔진이 못 읽은 코드(스킨/변형) — 저장 안 함
+		// 엔진이 못 읽은 코드(스킨/변형) — 저장 안 함. stats 자체가 비면 개별 빌드 문제가 아니라 엔진 쪽이다.
+		if (!entry.dps && !entry.ehp) { fail++; if (!(er.stats || []).length) emptyStats++; console.warn(`[calibrate] ${key} 실패: 유효 스탯 없음(stats ${(er.stats || []).length}개)`); continue; }
 		bench[key] = entry;
 		done++;
 		console.log(`[calibrate] ${key}: dps=${entry.dps} ehp=${entry.ehp} netRegen=${entry.netRegen} (${rep.name})`);
@@ -120,3 +154,7 @@ for (const { key, rep } of targets) {
 }
 fs.writeFileSync(outPath, JSON.stringify(bench, null, 1));
 console.log(`[calibrate] 완료: 신규 ${done}, 캐시 ${skip}, 실패 ${fail} → ${outPath} (총 ${Object.keys(bench).length} 아키타입)`);
+if (emptyStats) {
+	console.warn(`[calibrate] ⚠ 재계산이 빈 stats 를 ${emptyStats}건 반환 — 엔진 쪽 문제다(상주 워커가 낡은 데이터를 물고 있거나 PoB 소스 손상).`
+		+ " api-poe 재기동 또는 POST /api/poe/build/engine/reset 후 재실행.");
+}

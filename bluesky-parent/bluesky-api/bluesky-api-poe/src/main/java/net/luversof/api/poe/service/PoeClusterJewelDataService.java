@@ -51,9 +51,17 @@ public class PoeClusterJewelDataService {
 
   private volatile Map<String, NotableOption> notableOptions = Map.of();
 
+  private final Path dataFile;
+
   public PoeClusterJewelDataService(
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
-    Path file = Path.of(dataDir, "cluster-jewels.json");
+    this.dataFile = Path.of(dataDir, "cluster-jewels.json");
+    reload();
+  }
+
+  /** 데이터 파일을 다시 읽는다 (추출 파이프라인 완료 후 재시작 없이 반영). */
+  public synchronized void reload() {
+    Path file = dataFile;
     if (!Files.isReadable(file)) {
       logger.info("클러스터 주얼 정의 없음 — 클러스터 평가는 비활성: {}", file);
       return;

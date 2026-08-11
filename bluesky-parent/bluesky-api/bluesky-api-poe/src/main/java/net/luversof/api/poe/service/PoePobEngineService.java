@@ -42,6 +42,13 @@ public class PoePobEngineService {
 
   private static final String RESULT_MARKER = "@@POB_RESULT@@";
   private static final String ERROR_MARKER = "@@POB_ERROR@@";
+
+  /**
+   * 워커가 자신의 Lua 상태를 더 믿을 수 없다고 판단해 스스로 종료할 때 보내는 표식. 빌드 문제가 아니므로 새 워커로 재시도한다(실측: 같은 XML 이 새 워커에선
+   * 성공, 여러 빌드를 실은 워커에선 스펙 임포트가 조용히 실패해 클래스가 사이온으로 떨어졌다).
+   */
+  private static final String FATAL_MARKER = "@@POB_FATAL@@";
+
   private static final int CACHE_SIZE = 64;
 
   /** 표시 순서. uiMessage 의 poe.build.stat.<소문자 키> 와 짝을 이룬다. */
@@ -109,6 +116,10 @@ public class PoePobEngineService {
   // 상주 워커 풀 — HeadlessWrapper 를 한 번만 로드해두고 재사용(프로세스/데이터 로드 반복 제거로 크게 빨라짐)
   private final BlockingQueue<Worker> idleWorkers = new LinkedBlockingQueue<>();
   private final AtomicInteger workerCount = new AtomicInteger();
+
+  /** 워커 풀 세대 — {@link #reset()} 로 증가. 이전 세대 워커는 반납 시 폐기된다. */
+  private final AtomicInteger generation = new AtomicInteger();
+
   private final ScheduledExecutorService watchdog =
       Executors.newSingleThreadScheduledExecutor(
           r -> {
@@ -262,7 +273,8 @@ public class PoePobEngineService {
       return runRawOnce(buildXml);
     }
     IllegalStateException last = null;
-    for (int attempt = 0; attempt < 2; attempt++) {
+    // 3회 — 오염된 워커를 버리고 새 워커로 다시 붙는 경로라, 2회면 재시도가 또 다른 오염 워커를 잡아 실패한다(실측 4건).
+    for (int attempt = 0; attempt < 3; attempt++) {
       Worker worker = acquireWorker();
       if (worker == null) {
         // 워커를 만들 수 없으면 폴백
@@ -274,12 +286,12 @@ public class PoePobEngineService {
         if (worker.uses.incrementAndGet() >= workerRecycleAfter) {
           worker.kill();
         } else {
-          idleWorkers.offer(worker);
+          release(worker);
         }
         return values;
       } catch (BuildError e) {
         // 빌드만 잘못됨 — 워커는 정상이라 반납, 예외는 상위로(최적화기가 -1 처리)
-        idleWorkers.offer(worker);
+        release(worker);
         throw new IllegalStateException("PoB 엔진 오류: " + e.getMessage());
       } catch (WorkerFailure e) {
         worker.kill(); // 죽은 워커는 버리고 재시도
@@ -393,6 +405,10 @@ public class PoePobEngineService {
     final BufferedWriter stdin;
     final BufferedReader stdout;
     final AtomicInteger uses = new AtomicInteger();
+
+    /** 생성 시점의 풀 세대 — 데이터 갱신으로 세대가 바뀌면 반납 시 폐기한다. */
+    final int gen = generation.get();
+
     volatile boolean timedOut;
 
     Worker(Process process, BufferedWriter stdin, BufferedReader stdout) {
@@ -425,6 +441,10 @@ public class PoePobEngineService {
           if (line.startsWith(ERROR_MARKER)) {
             throw new BuildError(line.substring(ERROR_MARKER.length()));
           }
+          if (line.startsWith(FATAL_MARKER)) {
+            // 워커가 스스로 종료를 택한 상태 — 빌드가 아니라 워커가 망가진 것이라 새 워커로 재시도한다
+            throw new WorkerFailure(line.substring(FATAL_MARKER.length()));
+          }
           logger.debug("PoB worker: {}", line);
         }
         throw new WorkerFailure(timedOut ? "시간 초과" : "스트림 종료(EOF)");
@@ -445,6 +465,33 @@ public class PoePobEngineService {
         // 무시
       }
     }
+  }
+
+  /** 워커 반납 — 데이터 갱신으로 세대가 바뀐 워커는 낡은 게임 데이터를 물고 있으므로 폐기한다. */
+  private void release(Worker worker) {
+    if (worker.gen != generation.get()) {
+      worker.kill();
+      return;
+    }
+    idleWorkers.offer(worker);
+  }
+
+  /**
+   * 데이터 갱신 후 엔진 상태를 비운다. 상주 워커는 기동 시 PoB 소스/트리 데이터를 메모리에 올려두므로, 갱신으로 그 파일들이 바뀌면 낡은 상태로 계산해 <b>예외 없이
+   * 빈 결과</b>를 돌려준다(실제로 재계산이 stats 0 을 반환했다). 결과 캐시도 갱신 전 값이라 함께 비운다.
+   */
+  public void reset() {
+    generation.incrementAndGet();
+    synchronized (this) {
+      cache.clear();
+    }
+    int killed = 0;
+    Worker worker;
+    while ((worker = idleWorkers.poll()) != null) {
+      worker.kill();
+      killed++;
+    }
+    logger.info("PoB 엔진 리셋 — 결과 캐시 비움, 유휴 워커 {}개 종료(다음 평가부터 새 워커)", killed);
   }
 
   /** 유휴 워커를 얻거나, 풀 미달이면 새로 만든다. 풀이 꽉 차면 반납될 때까지 대기. 실패하면 null. */

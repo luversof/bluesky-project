@@ -68,6 +68,14 @@ function unpackVarints(bb) {
 	return out;
 }
 
+/** packed 스칼라 열 — 저항 등 음수는 2의 보수 64비트로 온다(예: 18446744073709551600 = -16). */
+function unpackSignedVarints(bb) {
+	const out = [];
+	let pos = 0;
+	while (pos < bb.length) { const [v, p] = readVarint(bb, pos); out.push(toSigned(v)); pos = p; }
+	return out;
+}
+
 // ---------- HTTP ----------
 async function httpGet(url, asText = false) {
 	const res = await fetch(url, { headers: { "User-Agent": UA, "Accept": "*/*" } });
@@ -81,11 +89,21 @@ async function httpGet(url, asText = false) {
 // **SC 베이스 리그 중 스냅샷 날짜가 최신**인 것을 고른다(HC/SSF/Ruthless/private/standard 제외).
 async function resolveCurrentLeagues() {
 	const clean = (await httpGet(`${BASE}/builds`, true)).replace(/&quot;/g, '"').replace(/&amp;/g, "&");
-	const re = /"version":\[0,"(20\d\d)-(\d{8})-\d+"\],"snapshotName":\[0,"([a-z]+)"\]/g;
+	// version = "<시퀀스>-<날짜>-<난수>". 앞자리는 **연도가 아니라 증가하는 시퀀스 번호**다(2031 → 2255 → 2300…).
+	// 예전엔 우연히 20xx 라 `20\d\d` 로 잡았는데, 2100 을 넘는 순간 그 리그가 통째로 안 보여 지난 리그로
+	// 폴백했다(실사고: 현재 리그 allflame 이 seq 2255 가 되며 미검출 → mirage 로 감지).
+	// 스냅샷명 중엔 실제 리그가 아닌 특수 오버뷰(streamers 등)도 섞여 있고 그쪽이 더 최신일 수 있다
+	// (실사고: streamers 가 오늘 날짜라 선택 → 그 오버뷰는 search 404). 페이지의 **경제 리그 목록**과
+	// 교집합인 것만 후보로 둔다(리그 항목만 url+displayName 쌍을 갖는다).
+	const leagueUrls = new Set(
+		[...clean.matchAll(/"url":\[0,"([a-z]+)"\],"displayName"/g)].map((x) => x[1]),
+	);
+	const re = /"version":\[0,"(\d{3,})-(\d{8})-\d+"\],"snapshotName":\[0,"([a-z]+)"\]/g;
 	let m; const cand = {};
 	while ((m = re.exec(clean))) {
 		const [, seq, date, url] = m;
-		// SC 베이스만: hc/ssf/r 접미어, standard/hardcore 제외
+		// SC 베이스 실제 리그만: 리그 목록에 없는 오버뷰, hc/ssf/r 접미어, standard/hardcore 제외
+		if (leagueUrls.size && !leagueUrls.has(url)) continue;
 		if (/(hc|ssf|r)$/.test(url) || url === "standard" || url === "hardcore") continue;
 		const prev = cand[url];
 		if (!prev || date > prev.date) cand[url] = { date, seq };
@@ -101,7 +119,7 @@ async function resolveSnapshot(league) {
 	// snapshot 리스트 엔트리는 version 과 snapshotName 이 인접 페어다:
 	//   "version":[0,"2031-20260720-57744"],"snapshotName":[0,"mirage"]
 	// snapshotName 이 리그 식별자이므로 이걸로 정확히 매칭한다(url 매칭은 드롭다운/중첩과 충돌).
-	const re = new RegExp(`"version":\\[0,"(20\\d\\d-\\d{8}-\\d+)"\\],"snapshotName":\\[0,"${league}"\\]`);
+	const re = new RegExp(`"version":\\[0,"(\\d{3,}-\\d{8}-\\d+)"\\],"snapshotName":\\[0,"${league}"\\]`);
 	const m = clean.match(re);
 	if (!m) throw new Error(`snapshot 해석 실패: league=${league}`);
 	return m[1];
@@ -157,15 +175,38 @@ async function fetchSearch(snapshot, league, columnsParam, filterSkill, filterCl
 			});
 		facets.push({ name: nm, dim, buckets });
 	}
-	// field#5 = 데이터 컬럼
+	// 데이터 컬럼 — field#5(구) / field#12(2026-08 개편). 둘 다 읽는다(사이트가 되돌려도 무회귀).
+	//   개편 전: 열 안에 **행마다 서브메시지**(f2) — {f1 문자열 | f3 packed 리스트 | f2 스칼라}.
+	//   개편 후: 열 단위로 몰아 저장 — f7=문자열 행 반복 / f9=행별 packed 리스트 / f6=스칼라 packed 한 덩어리,
+	//            f13=행 수. 값의 의미는 동일해 아래 소비 코드는 그대로 쓴다.
 	const columns = {};
 	let rowCount = 0;
-	for (const t of top.filter((x) => x.fn === 5 && x.w === 2)) {
+	for (const t of top.filter((x) => (x.fn === 5 || x.fn === 12) && x.w === 2)) {
 		const parts = walk(t.sub);
 		// 컬럼명 = field#1 문자열. skills= 필터 시 dps 컬럼은 "dps-<스킬명>"(공백/대문자 포함)으로 온다 → 관대하게 허용.
 		const nameField = parts.find((p) => p.fn === 1 && p.w === 2 && /^[a-z][\x20-\x7e]*$/.test(p.sub.toString("utf8")));
 		if (!nameField) continue;
 		const colName = nameField.sub.toString("utf8");
+		if (t.fn === 12) {
+			const count = Number(parts.find((p) => p.fn === 13 && p.w === 0)?.v ?? 0);
+			const strs = parts.filter((p) => p.fn === 7 && p.w === 2);
+			const lists = parts.filter((p) => p.fn === 9 && p.w === 2);
+			const packed = parts.find((p) => p.fn === 6 && p.w === 2);
+			let values;
+			if (strs.length) values = strs.map((p) => p.sub.toString("utf8"));       // 문자열/약어(ehp·dps)
+			// 리스트 범주(스킬·키스톤) — 행이 {f1: packed varint} 한 겹으로 더 감싸여 있다.
+			//   벗기지 않으면 앞에 태그/길이(10,N)가 값으로 섞여 사전 인덱스가 통째로 어긋난다(실측).
+			else if (lists.length)
+				values = lists.map((p) => {
+					const packed = walk(p.sub).find((x) => x.fn === 1 && x.w === 2);
+					return unpackVarints(packed ? packed.sub : p.sub);
+				});
+			else if (packed) values = unpackSignedVarints(packed.sub);               // 스칼라/단일범주(음수 가능)
+			else values = new Array(count).fill(null);
+			rowCount = Math.max(rowCount, count || values.length);
+			columns[colName] = values;
+			continue;
+		}
 		const rows = parts.filter((p) => p.fn === 2 && p.w === 2);
 		rowCount = Math.max(rowCount, rows.length);
 		columns[colName] = rows.map((r) => {
@@ -178,6 +219,15 @@ async function fetchSearch(snapshot, league, columnsParam, filterSkill, filterCl
 			if (scalar) return toSigned(scalar.v);            // 스칼라/단일범주(음수 가능)
 			return null;                                       // 빈 값(인덱스 0 / 없음)
 		});
+	}
+	// 개편으로 바뀐 컬럼명을 **구 이름 별칭**으로도 노출 — 소비 코드(decodePair)를 손대지 않기 위함.
+	//   축약 문자열 컬럼은 "<이름>__str"(ehp·physicalmax·firemax…) · dps → dps.total ·
+	//   dps-<스킬> → dps-<스킬>.total · 신규 dps(-<스킬>).skill = 메인 스킬 인덱스.
+	for (const [k, v] of Object.entries(columns)) {
+		if (k.endsWith("__str")) columns[k.slice(0, -"__str".length)] ??= v;
+		else if (k === "dps.total") columns.dps ??= v;
+		else if (k.startsWith("dps-") && k.endsWith(".total")) columns[k.slice(0, -".total".length)] ??= v;
+		else if (k === "dps.skill" || (k.startsWith("dps-") && k.endsWith(".skill"))) columns.mainskill ??= v;
 	}
 	return { columns, hashes, rowCount, total, facets, dimHash };
 }
@@ -203,18 +253,55 @@ function resolveFacets(search, dicts, cap = 12) {
 }
 
 // ---------- 3) dictionaries ----------
-async function fetchDictionaries(hashes) {
+/**
+ * 사전 바이너리 해독 — 2026-08 개편으로 protobuf 가 아니라 **"NDIC" 커스텀 포맷**이 온다.
+ *   [0..3] "NDIC" · [12..15] 항목 수(u32 LE) · 이후 어딘가에 varint **길이 테이블**(항목 수 만큼) ·
+ *   그 뒤에 라벨들이 **구분자 없이 연결**된 UTF-8 바이트.
+ * 헤더 길이가 사전마다 달라(52 · 452 …) 고정 오프셋을 못 쓴다 → 테이블 시작을 **자기검증으로 탐색**한다:
+ *   "길이 varint 를 항목 수 만큼 읽었을 때 끝 위치 = 문자열 시작이고, 길이 합 = 남은 바이트" 인 지점.
+ * ⚠ 라벨은 **바이트 길이**라 Buffer 로 잘라야 한다(문자열 slice 로 자르면 비ASCII 이후가 밀린다).
+ */
+function decodeNdicDictionary(b) {
+	if (b.length < 16 || b.toString("latin1", 0, 4) !== "NDIC") return null;
+	const count = b.readUInt32LE(12);
+	if (!count || count > 200000) return null;
+	for (let table = 16; table < Math.min(b.length, 8192); table++) {
+		let p = table, ok = true, sum = 0;
+		const lens = new Array(count);
+		for (let i = 0; i < count; i++) {
+			let r = 0, s = 0, guard = 0;
+			for (;;) {
+				if (p >= b.length || ++guard > 5) { ok = false; break; }
+				const y = b[p++];
+				r |= (y & 0x7f) << s;
+				if ((y & 0x80) === 0) break;
+				s += 7;
+			}
+			if (!ok) break;
+			lens[i] = r;
+			sum += r;
+		}
+		if (!ok || sum !== b.length - p) continue;
+		const labels = [];
+		for (const len of lens) { labels.push(b.subarray(p, p + len).toString("utf8")); p += len; }
+		return labels;
+	}
+	return null;
+}
+
+/** 차원명 → 라벨 배열. 개편 후 사전엔 이름이 안 들어있어 검색 응답의 dimHash(차원명→해시)로 붙인다. */
+async function fetchDictionaries(dimHash) {
 	const dicts = {}; // dimensionName -> string[]
-	for (const h of hashes) {
+	for (const [dim, h] of Object.entries(dimHash || {})) {
 		let buf;
 		try { buf = await httpGet(`${BASE}/api/builds/dictionary/${h}`); }
 		catch { continue; }
+		const ndic = decodeNdicDictionary(buf);
+		if (ndic) { dicts[dim] = ndic; continue; }
+		// 구 포맷(protobuf: f1=이름, f2 반복=라벨) 폴백 — 사이트가 되돌려도 무회귀
 		const parts = walk(buf);
-		const name = parts[0] && parts[0].w === 2 ? parts[0].sub.toString("utf8") : null;
-		if (!name) continue;
-		// field#2 반복 = 라벨(순서 = 인덱스)
 		const labels = parts.filter((p) => p.fn === 2 && p.w === 2).map((p) => p.sub.toString("utf8"));
-		dicts[name] = labels;
+		if (labels.length) dicts[dim] = labels;
 	}
 	return dicts;
 }
@@ -258,7 +345,8 @@ async function decodePair(snapshot, league, dicts, filterSkill) {
 	(rich.columns.name || []).forEach((nm, i) => { if (nm != null) richIdx[nm] = i; });
 	const rc = rich.columns;
 	// dps 컬럼: overview 는 "dps", skills= 필터는 "dps-<스킬명>"(해당 스킬 전용 DPS). 어느 쪽이든 잡는다.
-	const dpsKey = Object.keys(base.columns).find((k) => k === "dps" || k.startsWith("dps-"));
+	// 별칭으로 만든 "dps"/"dps-<스킬>" 만 집는다(개편 후 원본 키는 dps.total/.skill/.fire… 로 쪼개져 있다).
+	const dpsKey = Object.keys(base.columns).find((k) => (k === "dps" || k.startsWith("dps-")) && !k.includes("."));
 	const dpsCol = dpsKey ? base.columns[dpsKey] : null;
 	const builds = [];
 	for (let i = 0; i < base.rowCount; i++) {
@@ -278,7 +366,10 @@ async function decodePair(snapshot, league, dicts, filterSkill) {
 			// (조합 벤치의 DPS 를 "메인 스킬 전용"으로 통일하는 근거 데이터 — 혼합 dps 중앙값은 의미가 없음.)
 			dpsBySkill: filterSkill && dpsKey && dpsKey.startsWith("dps-") ? { [filterSkill]: parseAbbrev(dpsCol?.[i]) } : {},
 			// skills= 필터 시엔 그 스킬을 메인으로 간주(overview 순서와 무관하게 요청 스킬이 정체성).
-			mainSkill: filterSkill && actives.includes(filterSkill) ? filterSkill : (actives[0] ?? null),
+			//   그 외에는 개편으로 생긴 dps(.skill) 컬럼(=사이트가 고른 메인 스킬)을 쓰고, 없으면 기존처럼 첫 액티브.
+			mainSkill: filterSkill && actives.includes(filterSkill)
+				? filterSkill
+				: (lbl(gemDict, base.columns.mainskill?.[i]) ?? actives[0] ?? null),
 			activeSkills: actives, keystones,
 			lifeRegen: rc.liferegen?.[j] ?? null,
 			fireRes: rc.fireres?.[j] ?? null, coldRes: rc.coldres?.[j] ?? null,
@@ -314,8 +405,16 @@ async function decodePair(snapshot, league, dicts, filterSkill) {
 //   → 표본이 큰 아키타입부터 우선 채집 + snapshot 단위 디스크 캐시로 실행할 때마다 누적.
 //   기본은 429를 만나면 그 실행에선 중단(캐시에 쌓인 만큼만 반영). NINJA_MASTERY_WAIT=<분> 을 주면
 //   그 시간 예산 안에서 Retry-After 만큼 기다렸다 계속(집중 채집용).
-const MASTERY_SAMPLE_PER_GROUP = Number(process.env.NINJA_MASTERY_SAMPLE || 12);
+// **기본 0(끔)** — 이 채집은 캐릭터 엔드포인트 할당량(창당 ~60)을 1000건 넘게 태워, 바로 뒤에 오는
+// calibrate-archetypes(엔진 벤치, 캐릭터 ~16건이면 충분하고 belowMeta 판정의 근거)를 항상 굶겼다.
+// 마스터리는 이미 **패싯 집계로 대체**됐으므로(사이드바 dim=mastery) 파이프라인에선 끄고 할당량을 넘긴다.
+// 집중 채집이 필요하면 NINJA_MASTERY_SAMPLE=12 로 켠다.
+const MASTERY_SAMPLE_PER_GROUP = Number(process.env.NINJA_MASTERY_SAMPLE || 0);
 async function enrichMasteries(snapshot, league, builds) {
+	if (!MASTERY_SAMPLE_PER_GROUP) {
+		console.log("[ninja] 마스터리 채집: 생략(패싯 집계로 대체 · 캐릭터 할당량은 엔진 벤치에 양보)");
+		return;
+	}
 	const groups = {};
 	for (const b of builds) {
 		if (b.ascendancy && b.mainSkill) (groups[`${b.ascendancy}|${b.mainSkill}`] ||= []).push(b);
@@ -374,7 +473,7 @@ async function enrichMasteries(snapshot, league, builds) {
 async function fetchLeague(league) {
 	const snapshot = await resolveSnapshot(league);
 	const overviewBase = await fetchSearch(snapshot, league, null);
-	const dicts = await fetchDictionaries(overviewBase.hashes);
+	const dicts = await fetchDictionaries(overviewBase.dimHash);
 	const gemDict = dicts.gem || [];
 
 	// 중복 캐릭터는 버리지 않고 dpsBySkill 을 병합 — 같은 캐릭터가 RF 필터와 화염덫 필터 양쪽 top-100 에

@@ -265,6 +265,8 @@ public class PoeOptimizeService {
   private final Path resultFile;
   // 완료된 결과를 최근 N건까지 남기는 이력 디렉터리(파일명 = 저장 시각 epochMs). optimize-last.json 은 그대로 "마지막 1건" 용도.
   private final Path historyDir;
+  // poe.ninja 시드 파일(엔진 벤치는 같은 폴더) — 데이터 갱신 후 reloadNinja() 로 다시 읽는다.
+  private final Path ninjaSeedFile;
   // 최근 결과 보관 상한 — 오래된 것부터 정리. 결과 JSON 한 건이 크지 않아 30건이면 화면 목록으로 충분.
   private static final int HISTORY_LIMIT = 30;
   private final String treeVersion;
@@ -356,7 +358,16 @@ public class PoeOptimizeService {
     // 스레드가 워커를 못 잡고 대기하는 낭비 없음). 워커 풀은 코어/RAM 자동 산정. 다른 PC 이식성.
     this.parallelism = parallelism > 0 ? parallelism : poePobEngineService.poolSize();
     loadLastResult();
-    loadNinjaSeeds(Path.of(dataDir, "ninja", "ninja-archetypes.json"));
+    this.ninjaSeedFile = Path.of(dataDir, "ninja", "ninja-archetypes.json");
+    loadNinjaSeeds(ninjaSeedFile);
+  }
+
+  /**
+   * poe.ninja 시드·엔진 벤치를 다시 읽는다 — 데이터 갱신이 fetch-ninja-builds/calibrate-archetypes 로 파일을 새로 만들므로, 재시작
+   * 없이 그 결과가 판정에 반영되게 한다(빠지면 갱신해도 옛 시드로 계속 비교).
+   */
+  public void reloadNinja() {
+    loadNinjaSeeds(ninjaSeedFile);
   }
 
   /**
@@ -370,6 +381,14 @@ public class PoeOptimizeService {
     }
     try {
       JsonNode root = JsonMapper.builder().build().readTree(Files.readString(file));
+      // 재로드 대비 초기화 — put 병합만 하면 지난 리그의 아키타입 키가 남아 새 시드와 섞인다.
+      //   (읽기·파싱 성공 후에 비워야 깨진 파일 한 번에 멀쩡한 시드를 잃지 않는다)
+      ninjaSeedByKey.clear();
+      ninjaSeedBySkill.clear();
+      ninjaBenchByKey.clear();
+      ninjaBenchBySkill.clear();
+      ninjaFacetNodeByKey.clear();
+      ninjaFacetNodeBySkill.clear();
       // (전직|스킬) 정확 매칭 시드
       JsonNode arr = root.get("archetypes");
       // 특화 판정 기준선 = 전체 아키타입의 **컬럼별 중앙값**(리그별 갱신). ⚠ 단순 평균 금지 — 중앙값이라 개별 이상치에
