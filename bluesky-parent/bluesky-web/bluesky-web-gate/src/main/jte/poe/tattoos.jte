@@ -64,7 +64,7 @@
 							@if(tattooIcon != null)
 								<img src="/poe-assets/${tattooIcon}" class="w-7 h-7 object-contain shrink-0" alt="" loading="lazy" onerror="this.style.display='none'">
 							@endif
-							<span class="font-semibold text-amber-400">${PoeText.name(t.nameKo(), t.name())}</span>
+							<span class="font-semibold poe-entry-name">${PoeText.name(t.nameKo(), t.name())}</span>
 							<span class="badge badge-ghost badge-xs">${typeLabels.getOrDefault(t.targetType(), t.targetType())}</span>
 							@if(t.minConnected() > 0)
 								<span class="text-[10px] text-base-content/40" title="${ko ? "연결된 할당 노드 수 조건" : "Connected allocation requirement"}">${ko ? "연결" : "adj"} ${t.minConnected()}@if(t.maxConnected() > t.minConnected())–${t.maxConnected()}@endif</span>
@@ -72,7 +72,7 @@
 						</div>
 						!{List<String> tattooLines = ko && t.statsKo() != null && !t.statsKo().isEmpty() ? t.statsKo() : t.stats();}
 						@for(String line : tattooLines)
-							<div class="text-[12px] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+							<div class="poe-entry-stat text-[12px] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 						@endfor
 					</div>
 				@endfor

@@ -27,32 +27,50 @@ public class PoeModTranslateService {
   private static final String SLOT = "§"; // §
 
   private final PoeModPoolDataService poeModPoolDataService;
+  private final PoeModDataService poeModDataService;
   private volatile Map<String, String> dictionary = Map.of();
 
-  public PoeModTranslateService(PoeModPoolDataService poeModPoolDataService) {
+  public PoeModTranslateService(
+      PoeModPoolDataService poeModPoolDataService, PoeModDataService poeModDataService) {
     this.poeModPoolDataService = poeModPoolDataService;
+    this.poeModDataService = poeModDataService;
   }
 
   @PostConstruct
   public void build() {
-    if (!poeModPoolDataService.hasData()) {
-      return;
-    }
     Map<String, String> map = new HashMap<>();
-    for (PoeModPoolDataService.ModFamily family : poeModPoolDataService.families()) {
-      for (PoeModPoolDataService.ModTier tier : family.tiers()) {
-        List<String> en = tier.en();
-        List<String> ko = tier.ko();
-        if (en == null || ko == null) {
-          continue;
+    // ① 큐레이션 풀(mod-pool.json) 먼저 — putIfAbsent 라 먼저 넣은 쪽이 이긴다. 검증된 번역을 유지한다.
+    if (poeModPoolDataService.hasData()) {
+      for (PoeModPoolDataService.ModFamily family : poeModPoolDataService.families()) {
+        for (PoeModPoolDataService.ModTier tier : family.tiers()) {
+          registerPairs(map, tier.en(), tier.ko());
         }
-        for (int i = 0; i < en.size() && i < ko.size(); i++) {
-          register(map, en.get(i), ko.get(i));
+      }
+    }
+    int curated = map.size();
+    // ② 전체 풀(mods.json)로 빈 자리를 채운다. 큐레이션 풀은 시뮬 후보만 담고 있어 플라스크·주얼 등
+    //    거기 없는 모드는 임포트한 빌드에서 영문으로 남았다(실측: 매직 플라스크 모드 2줄 전부 영문).
+    if (poeModDataService.hasData()) {
+      for (PoeModDataService.ModFamily family : poeModDataService.allFamilies()) {
+        for (PoeModDataService.ModTier tier : family.tiers()) {
+          registerPairs(map, tier.en(), tier.ko());
+          // 최소롤 표기도 같은 문장이라 사전에 넣어두면 롤 값이 낮은 줄까지 잡힌다
+          registerPairs(map, tier.enMin(), tier.koMin());
         }
       }
     }
     this.dictionary = Map.copyOf(map);
-    logger.info("PoE 모드 번역 사전 구축: {}개", map.size());
+    logger.info(
+        "PoE 모드 번역 사전 구축: {}개 (큐레이션 {} + 전체 풀 보강 {})", map.size(), curated, map.size() - curated);
+  }
+
+  private void registerPairs(Map<String, String> map, List<String> en, List<String> ko) {
+    if (en == null || ko == null) {
+      return;
+    }
+    for (int i = 0; i < en.size() && i < ko.size(); i++) {
+      register(map, en.get(i), ko.get(i));
+    }
   }
 
   private void register(Map<String, String> map, String en, String ko) {

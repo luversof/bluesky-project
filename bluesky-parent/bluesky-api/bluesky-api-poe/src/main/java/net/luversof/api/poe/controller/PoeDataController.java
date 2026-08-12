@@ -40,6 +40,7 @@ public class PoeDataController {
   private final PoeBenchDataService poeBenchDataService;
   private final PoeTreeGraphService poeTreeGraphService;
   private final PoeTattooDataService poeTattooDataService;
+  private final net.luversof.api.poe.service.PoeDataLoadStamp poeDataLoadStamp;
 
   public PoeDataController(
       PoeGemDataService poeGemDataService,
@@ -51,7 +52,8 @@ public class PoeDataController {
       PoeEssenceDataService poeEssenceDataService,
       PoeBenchDataService poeBenchDataService,
       PoeTreeGraphService poeTreeGraphService,
-      PoeTattooDataService poeTattooDataService) {
+      PoeTattooDataService poeTattooDataService,
+      net.luversof.api.poe.service.PoeDataLoadStamp poeDataLoadStamp) {
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
@@ -62,6 +64,7 @@ public class PoeDataController {
     this.poeBenchDataService = poeBenchDataService;
     this.poeTreeGraphService = poeTreeGraphService;
     this.poeTattooDataService = poeTattooDataService;
+    this.poeDataLoadStamp = poeDataLoadStamp;
   }
 
   // ── 스킬젬 ──
@@ -83,6 +86,15 @@ public class PoeDataController {
   @GetMapping("/gems/{slug}")
   public PoeGem gem(@PathVariable String slug) {
     return poeGemDataService.findBySlug(slug).orElseThrow(PoeDataController::notFound);
+  }
+
+  /**
+   * API 가 데이터 파일을 마지막으로 읽은 시각(epoch ms). 관리 화면이 <b>파일 갱신 시각</b>과 비교해 "파이프라인은 돌았는데 API 는 아직 옛 데이터"
+   * 상태를 드러낸다 — 앱 밖에서 파이프라인을 돌리면 재기동 전까지 반영되지 않는다.
+   */
+  @GetMapping("/data/loaded-at")
+  public Map<String, Object> dataLoadedAt() {
+    return Map.of("loadedAtEpochMs", poeDataLoadStamp.loadedAt().toEpochMilli());
   }
 
   @GetMapping("/gems/meta")

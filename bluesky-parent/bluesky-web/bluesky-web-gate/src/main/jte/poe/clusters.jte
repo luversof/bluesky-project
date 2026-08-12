@@ -49,12 +49,14 @@
 							@if(clusterIcon != null)
 								<img src="/poe-assets/${clusterIcon}" class="w-12 h-12 object-contain shrink-0" alt="" loading="lazy" onerror="this.style.display='none'">
 							@endif
-							<span class="font-semibold text-cyan-600">${PoeText.name(n.nameKo(), n.name())}</span>
+							<%-- 인게임 색 관례: 노터블 **이름**은 툴팁 제목색(흰색), **스탯 줄**이 모드 파랑(#8888ff).
+							     여기만 반대로 이름이 파랑·스탯이 본문색이라 트리 노드 팝업(.poe-popup-title/.poe-popup-stat)과 어긋났다. --%>
+							<span class="poe-entry-name font-semibold">${PoeText.name(n.nameKo(), n.name())}</span>
 							<span class="hidden">${n.name()}</span>
 						</div>
 						!{List<String> clusterLines = ko && n.statsKo() != null && !n.statsKo().isEmpty() ? n.statsKo() : n.stats();}
 						@for(String line : clusterLines)
-							<div class="text-[12px] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+							<div class="poe-entry-stat text-[12px] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 						@endfor
 					</div>
 				@endfor

@@ -5,11 +5,18 @@
 @param List<PoeBaseItem> items
 @param int totalCount = 0
 @param int matchedCount = 0
+@param String listQ = ""
+@param String listItemClass = "all"
+@param int nextLimit = 0
 
 !{
 	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.count"), items.size(), totalCount);
 	String emptyLabel = MessageUtil.getMessage("poe.gems.empty");
 	boolean capped = matchedCount > items.size();
+	String moreLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.more"), Math.min(nextLimit, matchedCount) - items.size()) : null;
+	String moreUrl = "/poe/htmx/items?limit=" + nextLimit
+		+ "&q=" + java.net.URLEncoder.encode(listQ, java.nio.charset.StandardCharsets.UTF_8)
+		+ "&itemClass=" + java.net.URLEncoder.encode(listItemClass, java.nio.charset.StandardCharsets.UTF_8);
 	String cappedLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.capped"), matchedCount, items.size()) : null;
 }
 
@@ -25,11 +32,12 @@
 		@for(PoeBaseItem item : items)
 			!{
 				String displayName = net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name());
-				String displayClass = item.itemClassKo() != null ? item.itemClassKo() : item.itemClass();
+				// ⚠ 로케일 무시하고 itemClassKo 를 쓰면 EN 화면에도 "투구"가 그대로 나온다(실측 86건).
+				String displayClass = net.luversof.web.gate.poe.PoeText.name(item.itemClassKo(), item.itemClass());
 				// 카드 요약 수치: 방어구는 방어 스탯, 무기는 피해/공속
 				StringBuilder summary = new StringBuilder();
 				if (item.armour() != null) {
-					if (item.armour().block() > 0) summary.append("막기 ").append(item.armour().block()).append("%  ");
+					if (item.armour().block() > 0) summary.append(net.luversof.web.gate.poe.PoeText.isKorean() ? "막기 " : "Block ").append(item.armour().block()).append("%  ");
 					if (item.armour().armourMax() > 0) summary.append("AR ").append(item.armour().armourMin()).append("-").append(item.armour().armourMax()).append("  ");
 					if (item.armour().evasionMax() > 0) summary.append("EV ").append(item.armour().evasionMin()).append("-").append(item.armour().evasionMax()).append("  ");
 					if (item.armour().energyShieldMax() > 0) summary.append("ES ").append(item.armour().energyShieldMin()).append("-").append(item.armour().energyShieldMax()).append("  ");
@@ -80,4 +88,16 @@
 		@endfor
 	</div>
 @endif
+
+	@if(capped)
+		<%-- 더 보기 — 상한(90)만 두고 더 볼 방법이 없으면 1,268개 중 나머지는 검색어를 정확히 아는
+		     사람만 도달할 수 있었다. 한 단계(90개)씩 늘려 같은 목록 자리에 다시 그린다. --%>
+		<div class="flex justify-center pt-3">
+			<button type="button" class="btn btn-sm btn-outline"
+			        hx-get="${moreUrl}"
+			        hx-target="#poeItemList"
+			        hx-swap="innerHTML"
+			        hx-disabled-elt="this">${moreLabel}</button>
+		</div>
+	@endif
 @endif

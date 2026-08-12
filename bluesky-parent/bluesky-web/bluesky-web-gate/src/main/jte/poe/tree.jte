@@ -63,7 +63,13 @@
 					</span>
 				</div>
 				<div id="poeTreeShell" class="bg-base-100">
-				<div class="flex flex-wrap items-center gap-2 mb-2">
+				<%-- 좁은 화면에서는 이 툴바가 7줄로 쌓여 화면의 2/3 를 먹고 트리가 하단 320px 에 갇혔다
+				     (실측 390x820: 캔버스 top=548 · h=320). 모바일에서만 접고 데스크톱은 그대로 편다.
+				     포인트 표시는 접힘과 무관하게 항상 보이도록 details 밖에 둔다. --%>
+				<div class="flex items-start gap-2 mb-2">
+					<details class="poe-tools min-w-0 flex-1">
+						<summary class="btn btn-sm btn-outline sm:hidden">${net.luversof.web.gate.poe.PoeText.isKorean() ? "도구" : "Tools"}</summary>
+						<div class="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
 					<input id="poeTreeSearch" type="text" class="input input-sm input-bordered w-full sm:w-52" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "검색 (노드/스탯)" : "Search (node/stat)"}">
 					<span id="poeTreeSearchCount" class="text-xs font-mono text-base-content/50"></span>
 					<span id="poeTreeNotice" class="text-xs font-mono text-warning"></span>
@@ -90,7 +96,9 @@
 					<button id="poeTreeEval" type="button" class="btn btn-sm btn-primary btn-outline">${MessageUtil.getMessage("poe.tree.eval")}</button>
 					<button id="poeTreeToSim" type="button" class="btn btn-sm btn-secondary btn-outline">${MessageUtil.getMessage("poe.tree.tosim")}</button>
 					<button id="poeTreeFullscreen" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "전체 화면" : "Fullscreen"}</button>
-					<span id="poeTreePoints" class="ml-auto flex items-center gap-2 text-sm text-base-content/70"></span>
+						</div>
+					</details>
+					<span id="poeTreePoints" class="shrink-0 flex items-center gap-2 text-sm text-base-content/70"></span>
 				</div>
 				<div class="relative">
 					<canvas id="poeTreeCanvas" class="w-full h-[72vh] rounded-2xl shadow-sm cursor-grab" style="background:#0e1116" data-locale="${net.luversof.web.gate.poe.PoeText.isKorean() ? "ko" : "en"}" data-tree-src="${treeSrc}" data-sprites-src="${spritesSrc}"></canvas>

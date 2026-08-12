@@ -66,6 +66,7 @@ public class PoeExtractService {
   private final PoeTradeStatDataService poeTradeStatDataService;
   private final PoeOptimizeService poeOptimizeService;
   private final PoePobEngineService poePobEngineService;
+  private final PoeDataLoadStamp poeDataLoadStamp;
 
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final Deque<String> logLines = new ArrayDeque<>();
@@ -90,7 +91,8 @@ public class PoeExtractService {
       PoeTattooDataService poeTattooDataService,
       PoeTradeStatDataService poeTradeStatDataService,
       PoeOptimizeService poeOptimizeService,
-      PoePobEngineService poePobEngineService) {
+      PoePobEngineService poePobEngineService,
+      PoeDataLoadStamp poeDataLoadStamp) {
     this.extractDir = Path.of(extractDir).toAbsolutePath();
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
@@ -107,6 +109,7 @@ public class PoeExtractService {
     this.poeTradeStatDataService = poeTradeStatDataService;
     this.poeOptimizeService = poeOptimizeService;
     this.poePobEngineService = poePobEngineService;
+    this.poeDataLoadStamp = poeDataLoadStamp;
   }
 
   /** 파이프라인 스크립트가 서버 로컬에 존재하는가 (k8s 파드에서는 false) */
@@ -256,11 +259,18 @@ public class PoeExtractService {
                         .directory(extractDir.toFile())
                         .redirectErrorStream(true)
                         .start();
+                // 엔진 점검(verify-engine.mjs)은 데이터 추출과 별개 관심사라 종료 코드로 알리지 않는다.
+                // exit≠0 으로 알리면 아래 재로드 체인이 통째로 건너뛰어져 방금 뽑은 새 데이터가 버려진다.
+                boolean engineUnhealthy = false;
                 try (BufferedReader reader =
                     new BufferedReader(
                         new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
                   String line;
                   while ((line = reader.readLine()) != null) {
+                    if (line.contains("@@ENGINE_UNHEALTHY@@")) {
+                      engineUnhealthy = true;
+                      continue; // 내부 마커는 화면에 노출하지 않는다(진단 문구는 바로 앞 줄에 이미 찍혔다)
+                    }
                     appendLog(line);
                   }
                 }
@@ -288,8 +298,18 @@ public class PoeExtractService {
                   poeTattooDataService.reload();
                   poeTradeStatDataService.reload();
                   poeOptimizeService.reloadNinja();
-                  appendLog("완료 — 화면을 새로고침하면 반영됩니다.");
-                  lastStatus = Status.SUCCESS;
+                  // 화면이 "파일은 새것인데 API 는 옛것"을 구분할 수 있게 로드 시각을 남긴다
+                  poeDataLoadStamp.markReloaded();
+                  if (engineUnhealthy) {
+                    // 데이터는 반영됐다. 다만 시뮬레이터가 못 돌 상태라 **성공으로 덮으면 안 된다** —
+                    // 이걸 숨기면 사용자는 나중에 시뮬을 돌리다 "스펙 임포트 실패"로 처음 알게 된다(타 PC 사고).
+                    appendLog("데이터는 반영됐습니다. 다만 엔진 점검에 실패해 시뮬레이션은 동작하지 않을 수 있습니다.");
+                    appendLog("네트워크를 확인한 뒤 데이터 갱신을 한 번 더 실행하면 엔진 소스까지 복구됩니다.");
+                    lastStatus = Status.FAILED;
+                  } else {
+                    appendLog("완료 — 화면을 새로고침하면 반영됩니다.");
+                    lastStatus = Status.SUCCESS;
+                  }
                 } else {
                   appendLog("실패 (exit " + exitCode + ")");
                   lastStatus = Status.FAILED;

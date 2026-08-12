@@ -32,7 +32,9 @@ try {
 
 const steps = ["extract.mjs", "transform.mjs", "parse-uniques.mjs", "parse-items.mjs", "parse-mods.mjs", "parse-mods-full.mjs", "parse-map-mods.mjs", "parse-essences.mjs", "parse-bench.mjs", "parse-eldritch.mjs", "parse-tree.mjs", "parse-atlas-tree.mjs", "parse-cluster-jewels.mjs", "parse-skill-weapons.mjs", "parse-tattoos.mjs",
 	// parse-anoints 는 runExtractor 로 테이블을 재추출(기존 산출물 대체)하므로 테이블 소비 파서들 **뒤**에 둔다
-	"parse-anoints.mjs", "essence-icons.mjs", "tattoo-icons.mjs", "currency-icons.mjs", "tree-sprites.mjs", "archive-trees.mjs", "tree-layers.mjs", "icons.mjs", "item-icons.mjs", "unique-icons.mjs", "timeless-bin.mjs", "ui-assets.mjs"];
+	"parse-anoints.mjs", "essence-icons.mjs", "tattoo-icons.mjs", "currency-icons.mjs", "tree-sprites.mjs", "archive-trees.mjs", "tree-layers.mjs", "icons.mjs", "item-icons.mjs", "unique-icons.mjs", "ui-assets.mjs"];
+// ⚠ timeless-bin.mjs 는 여기 두면 안 된다 — PoB 소스보다 **먼저** 돌아 갱신된 .zip 을 못 보고 옛 .bin 을 남긴다
+//    (= 스펙 임포트가 조용히 깨져 사이온 빈 빌드 수치). 소스 갱신·패치 뒤로 옮겼다.
 
 for (const step of steps) {
 	console.log(`\n===== ${step} =====`);
@@ -57,17 +59,69 @@ try {
 	console.warn("poe.ninja 시드 갱신 실패 — 기존 시드/정적 floor 로 계속(오프라인/사이트 변경?):", e.message);
 }
 
-// PoB 엔진 소스 (빌드 재계산/시뮬레이터용) — 없으면 클론, 실패해도 데이터 파이프라인은 성공 처리
+// PoB 엔진 소스 (빌드 재계산/시뮬레이터용) — 갱신 실행 한 번으로 **항상 쓸 수 있는 상태**가 돼야 한다.
+//   사용자가 따로 알아야 하는 수동 절차가 남으면 그건 설계 실패다(타 PC 사고의 교훈).
 const pobSrc = path.join(WORK_DIR, "pob-src");
-if (!fs.existsSync(pobSrc)) {
-	console.log("\n===== PoB 엔진 소스 클론 (최초 1회) =====");
+const POB_REPO = "https://github.com/PathOfBuildingCommunity/PathOfBuilding.git";
+const clonePob = (why) => {
+	console.log(`\n===== PoB 엔진 소스 클론 (${why}) =====`);
 	try {
-		execSync(`git clone --depth 1 https://github.com/PathOfBuildingCommunity/PathOfBuilding.git "${pobSrc}"`, {
-			stdio: "inherit",
-		});
+		execSync(`git clone --depth 1 ${POB_REPO} "${pobSrc}"`, { stdio: "inherit" });
 	} catch (e) {
-		console.warn("PoB 소스 클론 실패 — 빌드 재계산/시뮬레이터는 비활성. 수동 셋업: tools/poe-pob/README.md");
+		console.warn("PoB 소스 클론 실패 — 빌드 재계산/시뮬레이터는 비활성. 네트워크 확인 후 데이터 갱신을 다시 실행하세요.");
 	}
+};
+
+if (!fs.existsSync(pobSrc)) {
+	clonePob("최초 1회");
+} else if (!fs.existsSync(path.join(pobSrc, ".git"))) {
+	// 클론이 중간에 끊겼거나 누가 폴더만 복사해 둔 경우 — git 명령이 전부 실패해 갱신이 영원히 안 된다.
+	// 여기서 조용히 넘어가면 "갱신했는데 왜 옛 데이터냐"가 되므로 **버리고 다시 받는다**(파생 캐시라 안전).
+	console.log("\n===== PoB 엔진 소스 재설치 (git 저장소가 아님) =====");
+	fs.rmSync(pobSrc, { recursive: true, force: true });
+	clonePob("손상 복구");
+} else {
+	// ⚠ 예전엔 "없을 때만 클론"이라 **한 번 받은 소스는 영원히 그대로**였다. 새 리그로 트리 버전이 올라가면
+	//    옛 소스엔 그 TreeData 가 없어 스펙 임포트가 기본 클래스로 떨어지고, 시뮬이
+	//    "스펙 임포트 실패(클래스 N → 0)" 로 죽는다(타 PC 실사고). 갱신 한 번으로 끝나야 하므로 여기서 맞춘다.
+	//    로컬 수정분(patch-pob)은 바로 아래 단계가 다시 입힌다.
+	console.log("\n===== PoB 엔진 소스 갱신 =====");
+	try {
+		execSync(`git -C "${pobSrc}" fetch --depth 1 origin HEAD`, { stdio: "inherit" });
+		execSync(`git -C "${pobSrc}" reset --hard FETCH_HEAD`, { stdio: "inherit" });
+	} catch (e) {
+		console.warn("PoB 소스 갱신 실패 — 기존 소스로 계속(오프라인?):", e.message);
+	}
+}
+
+// PoB 소스 필수 패치(멱등) — 재클론/갱신된 소스에도 자동 적용돼야 한다.
+//   안 입히면 주얄 소켓 nil 버그로 일부 실빌드 재계산이 조용히 빈 빌드 수치를 낸다.
+console.log("\n===== patch-pob.mjs (PoB 소스 패치) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "patch-pob.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("PoB 소스 패치 실패 — 계속:", e.message);
+}
+
+// 타임리스 주얼 .bin — **소스 갱신·패치 뒤에** 푼다(순서가 뒤바뀌면 옛 .bin 이 남는다).
+console.log("\n===== timeless-bin.mjs (타임리스 .bin 추출) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "timeless-bin.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("타임리스 .bin 추출 실패 — 계속:", e.message);
+}
+
+// 엔진 자가 점검 — 갱신이 끝난 시점에 "시뮬이 실제로 돌 수 있는 상태인가"를 확인한다.
+//   여기서 안 잡으면 사용자가 나중에 시뮬을 돌리다 "스펙 임포트 실패"로 처음 알게 된다.
+console.log("\n===== verify-engine.mjs (엔진 점검) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "verify-engine.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	// ⚠ 여기서 exitCode 를 1 로 두면 안 된다 — 앱(PoeExtractService)은 exit≠0 을 "파이프라인 실패"로 보고
+	//    **재로드 체인을 통째로 건너뛴다**. 그러면 방금 추출한 새 데이터가 버려져 엔진 문제 하나로 갱신 전체가 헛돈다.
+	//    데이터 추출 성공과 엔진 건강은 별개라, 마커 한 줄로 알리고 판단은 앱에 맡긴다.
+	console.error("\n⚠ 엔진 점검 실패 — 데이터는 갱신됐지만 시뮬레이터가 동작하지 않을 수 있습니다. 위 진단을 확인하세요.");
+	console.error("@@ENGINE_UNHEALTHY@@");
 }
 
 // 아키타입 엔진 벤치 (belowMeta 판정의 **지표 정합 기준값**) — 대표 실빌드를 우리 엔진으로 재계산해

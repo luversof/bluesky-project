@@ -194,6 +194,45 @@ public class PoeBaseItemDataService {
     return data.items().stream().filter(item -> item.name().equalsIgnoreCase(name)).findFirst();
   }
 
+  /**
+   * 접두/접미가 붙은 이름에서 베이스를 찾아낸다 — <b>매직/노멀 아이템 임포트용</b>.
+   *
+   * <p>PoB 의 {@code ItemClass:BuildRaw} 는 유니크/레어에만 베이스를 별도 줄로 쓰고, 매직·노멀은 {@code 접두 + 베이스 + 접미} 를
+   * <b>한 줄</b>로만 쓴다(Item.lua:1466-1471). 그래서 이름 정확 일치로는 절대 안 잡히고, 베이스가 없으면 플라스크 회복량·방어 수치·요구 사항·베이스
+   * 링크가 전부 빠진다(빌드의 플라스크는 거의 다 매직이다).
+   *
+   * <p>PoB 자신도 같은 상황에서 이름 안에 들어 있는 베이스를 찾아 쓴다(Item.lua bestMatch). 여기서도 <b>가장 긴</b> 후보를 고른다 — "Life
+   * Flask" 와 "Divine Life Flask" 가 동시에 걸리면 후자가 맞다.
+   */
+  public Optional<PoeBaseItem> findBaseWithinName(String name) {
+    if (name == null || name.isBlank()) {
+      return Optional.empty();
+    }
+    String lower = name.toLowerCase(Locale.ROOT);
+    return data.items().stream()
+        .filter(item -> containsWord(lower, item.name().toLowerCase(Locale.ROOT)))
+        .max(java.util.Comparator.comparingInt(item -> item.name().length()));
+  }
+
+  /** 단어 경계 포함 여부 — "Ring" 이 "Ringmail Gloves" 안에서 잡히는 일을 막는다. */
+  private static boolean containsWord(String haystack, String needle) {
+    int from = 0;
+    while (true) {
+      int at = haystack.indexOf(needle, from);
+      if (at < 0) {
+        return false;
+      }
+      boolean leftOk = at == 0 || !Character.isLetterOrDigit(haystack.charAt(at - 1));
+      int end = at + needle.length();
+      boolean rightOk =
+          end == haystack.length() || !Character.isLetterOrDigit(haystack.charAt(end));
+      if (leftOk && rightOk) {
+        return true;
+      }
+      from = at + 1;
+    }
+  }
+
   /** query: 이름 부분 일치(한/영), itemClass: all 또는 클래스 id */
   public List<PoeBaseItem> search(String query, String itemClass) {
     String normalizedQuery =

@@ -71,5 +71,5 @@ public record ArchetypeBenchmark(
   public record SkillDpsEntry(String name, long dps, int count) {}
 
   /** 패싯 항목 — 모집단 중 count 명이 사용. */
-  public record FacetEntry(String name, int count) {}
+  public record FacetEntry(String name, int count, String nameKo) {}
 }

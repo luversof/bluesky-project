@@ -27,6 +27,9 @@ import org.w3c.dom.NodeList;
 @Service
 public class PoePobImportService {
 
+  private static final org.slf4j.Logger logger =
+      org.slf4j.LoggerFactory.getLogger(PoePobImportService.class);
+
   /** zlib 압축 해제 상한 (조작된 코드로 인한 메모리 폭주 방지) */
   private static final int MAX_INFLATED_BYTES = 32 * 1024 * 1024;
 
@@ -129,7 +132,48 @@ public class PoePobImportService {
    */
   /** PoB 공유 코드 → PoB XML 문자열 (엔진 재계산 등 XML 이 직접 필요할 때) */
   public String decodeToXml(String code) {
-    return new String(inflate(decodeBase64Url(code)), java.nio.charset.StandardCharsets.UTF_8);
+    return sanitizeXml(
+        new String(inflate(decodeBase64Url(code)), java.nio.charset.StandardCharsets.UTF_8));
+  }
+
+  /** {@code <Socket ... itemId="N"/>} — N 이 실제 아이템 id 인지 확인용. */
+  private static final java.util.regex.Pattern SOCKET_ITEM_ID =
+      java.util.regex.Pattern.compile("<Socket\\b[^>]*\\bitemId=\"(\\d+)\"[^>]*/>");
+
+  private static final java.util.regex.Pattern ITEM_ID =
+      java.util.regex.Pattern.compile("<Item\\b[^>]*\\bid=\"(\\d+)\"");
+
+  /**
+   * 외부에서 들어온 PoB XML 의 <b>실체 없는 주얼 소켓 참조</b>를 걷어낸다.
+   *
+   * <p>poe.ninja 실빌드 export 에는 {@code <Socket itemId="N"/>} 만 있고 정작 {@code <Item id="N">} 은 없는 경우가
+   * 있다. PoB 의 {@code PassiveSpec:NodesInIntuitiveLeapLikeRadius} 는 {@code item.jewelRadiusIndex} 를
+   * <b>nil 검사보다 먼저</b> 읽어(PassiveSpec.lua:1071) 여기서 터지고, 그 예외를 PoB 가 삼켜 스펙 임포트가 중단된다 → 클래스가 사이온으로
+   * 떨어진 기본 빌드 수치가 예외 없이 나간다(실측: 아키타입 4건). 소켓 한 줄을 지우는 편이 정확하다 — 어차피 없는 주얼이다.
+   */
+  static String sanitizeXml(String xml) {
+    java.util.Set<String> itemIds = new java.util.HashSet<>();
+    java.util.regex.Matcher im = ITEM_ID.matcher(xml);
+    while (im.find()) {
+      itemIds.add(im.group(1));
+    }
+    java.util.regex.Matcher sm = SOCKET_ITEM_ID.matcher(xml);
+    StringBuilder out = new StringBuilder();
+    int dropped = 0;
+    while (sm.find()) {
+      String id = sm.group(1);
+      if (!"0".equals(id) && !itemIds.contains(id)) {
+        sm.appendReplacement(out, "");
+        dropped++;
+      } else {
+        sm.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(sm.group()));
+      }
+    }
+    sm.appendTail(out);
+    if (dropped > 0) {
+      logger.info("PoB XML 정화: 실체 없는 주얼 소켓 참조 {}개 제거", dropped);
+    }
+    return out.toString();
   }
 
   public PoeBuild importCode(String code) {
@@ -318,7 +362,8 @@ public class PoePobImportService {
                 matched.map(PoeGem::slug).orElse(null),
                 matched.map(PoeGem::isSupport).orElse(false),
                 parseInt(gem.getAttribute("level"), 1),
-                parseInt(gem.getAttribute("quality"), 0)));
+                parseInt(gem.getAttribute("quality"), 0),
+                matched.map(PoeGem::color).orElse(null)));
       }
       if (gems.isEmpty()) {
         continue;
@@ -412,6 +457,16 @@ public class PoePobImportService {
             ? poeUniqueDataService.findByName(name)
             : Optional.empty();
     Optional<PoeBaseItem> base = poeBaseItemDataService.findByName(baseType);
+    // 매직/노멀은 PoB 가 베이스 줄을 따로 안 쓰고 "접두 베이스 접미" 한 줄만 준다 → 정확 일치는 항상 실패한다.
+    // 이름 안에서 베이스를 찾아내야 플라스크 회복량·방어 수치·요구 사항·베이스 링크가 살아난다.
+    // hasBaseLine 이 false 인 경우(=매직·노멀)로 한정한다. 유니크/레어는 베이스가 별도 줄로 오므로
+    // 그쪽 조회가 실패했다면 데이터 문제이지 이름 파싱 문제가 아니고, 이름 안 검색은 오히려 엉뚱한 베이스를 붙인다.
+    if (base.isEmpty() && !hasBaseLine) {
+      base = poeBaseItemDataService.findBaseWithinName(name);
+      if (base.isPresent()) {
+        baseType = base.get().name();
+      }
+    }
     // 노멀 아이템은 이름 = 베이스라 베이스 한국어를 이름으로 쓴다
     String nameKo =
         unique
@@ -423,6 +478,23 @@ public class PoePobImportService {
     // 비고유 모드는 모드풀 사전으로 한국어화(실패분은 영문 유지). 고유는 자체 상세로 표시됨.
     List<String> modLinesKo =
         unique.isEmpty() ? poeModTranslateService.translate(modLines) : modLines;
+    // PoB 는 "Implicits: N" 뒤 N줄을 임플리싯으로 읽는다. 메타 줄은 모드 앞에 몰려 있으므로
+    // 추출된 모드 목록의 앞 N줄이 곧 임플리싯이다. 인게임처럼 구분선으로 갈라 보여주려면 여기서 나눠야 한다.
+    int implicitCount = implicitCount(lines);
+    int split = Math.min(implicitCount, modLines.size());
+    List<String> implicitLines = List.copyOf(modLines.subList(0, split));
+    List<String> implicitLinesKo =
+        List.copyOf(modLinesKo.subList(0, Math.min(split, modLinesKo.size())));
+    modLines = List.copyOf(modLines.subList(split, modLines.size()));
+    modLinesKo =
+        List.copyOf(modLinesKo.subList(Math.min(split, modLinesKo.size()), modLinesKo.size()));
+    // 인게임 아이템 툴팁은 부패 아이템에 맨 아래 **빨간 "부패됨"** 줄을 붙인다(더 이상 제작 불가라는 뜻).
+    // PoB 텍스트에도 "Corrupted" 줄이 있는데 ITEM_FLAGS 로 걸러만 내고 아무 데도 남기지 않아,
+    // 부패 아이템을 임포트하면 화면에서 부패 여부가 통째로 사라졌다.
+    int quality = itemQuality(lines);
+    boolean corrupted =
+        lines.subList(Math.min(rarityIndex, lines.size()), lines.size()).stream()
+            .anyMatch(l -> l.trim().equalsIgnoreCase("corrupted"));
     return new PoeBuild.BuildItem(
         slot,
         slotKo(slot),
@@ -435,7 +507,49 @@ public class PoePobImportService {
         base.map(PoeBaseItem::slug).orElse(null),
         modLines,
         modLinesKo,
+        implicitLines,
+        implicitLinesKo,
+        corrupted,
+        quality,
         base.orElse(null));
+  }
+
+  private static final java.util.regex.Pattern IMPLICIT_COUNT =
+      java.util.regex.Pattern.compile(
+          "^implicits:\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+  /** PoB 아이템 텍스트의 "Implicits: N". 없으면 0. */
+  /** PoB 아이템 텍스트의 "Quality: N" — 인게임 툴팁 속성 블록 **첫 줄**이 품질이다(PoB ItemsTab 4135/4170/4191 동일). */
+  private static final java.util.regex.Pattern ITEM_QUALITY =
+      java.util.regex.Pattern.compile(
+          "^quality:\\s*\\+?(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+  private static int itemQuality(List<String> lines) {
+    for (String line : lines) {
+      java.util.regex.Matcher m = ITEM_QUALITY.matcher(line.trim());
+      if (m.find()) {
+        try {
+          return Integer.parseInt(m.group(1));
+        } catch (NumberFormatException e) {
+          return 0;
+        }
+      }
+    }
+    return 0;
+  }
+
+  private static int implicitCount(List<String> lines) {
+    for (String line : lines) {
+      java.util.regex.Matcher m = IMPLICIT_COUNT.matcher(line.trim());
+      if (m.find()) {
+        try {
+          return Integer.parseInt(m.group(1));
+        } catch (NumberFormatException e) {
+          return 0;
+        }
+      }
+    }
+    return 0;
   }
 
   /** PoB 아이템 텍스트에서 메타데이터 줄을 걸러 실제 능력치(모드) 줄만 뽑는다 (최대 12줄). */

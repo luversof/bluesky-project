@@ -60,13 +60,42 @@ public class PoeViewController {
   }
 
   /** 젬 상세 페이지 — 호버 레이어(툴팁)를 그대로 바닥에 + 레벨별 진행표 등 상세 정보. */
+
+  /**
+   * 상세 페이지의 "찾을 수 없음" — 오타·오래된 북마크·데이터 갱신으로 사라진 slug 로 들어온 경우.
+   *
+   * <p>이전엔 API 404 가 게이트 공통 예외 핸들러로 흘러 <b>200 + 본문 0바이트</b>가 나갔다(실측: 젬·고유·일반 상세 3종 모두 백지). 사용자는 아무
+   * 설명도 못 보고, 검색엔진·모니터링도 정상 응답으로 읽는다. 그래서 여기서 잡아 404 상태로 안내 화면을 그린다.
+   */
+  private String notFound(
+      jakarta.servlet.http.HttpServletResponse response,
+      Model model,
+      String slug,
+      String messageKey,
+      String listUrl,
+      String listLabelKey) {
+    response.setStatus(org.springframework.http.HttpStatus.NOT_FOUND.value());
+    model.addAttribute("notFoundSlug", slug);
+    model.addAttribute("notFoundMessageKey", messageKey);
+    model.addAttribute("notFoundListUrl", listUrl);
+    model.addAttribute("notFoundListLabelKey", listLabelKey);
+    return "poe/notFound";
+  }
+
   @GetMapping("/gems/{slug}")
   public String gemPage(
       @org.springframework.web.bind.annotation.PathVariable String slug,
       @RequestParam(required = false, defaultValue = "20") int level,
-      Model model) {
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response) {
+    net.luversof.web.gate.poe.dto.PoeGem gem;
+    try {
+      gem = poeDataClient.gem(slug);
+    } catch (RuntimeException e) {
+      return notFound(response, model, slug, "poe.notfound.gem", "/poe", "layout.menu.poe.gems");
+    }
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
-    model.addAttribute("gem", poeDataClient.gem(slug));
+    model.addAttribute("gem", gem);
     model.addAttribute("displayLevel", level);
     return "poe/gemPage";
   }
@@ -74,8 +103,16 @@ public class PoeViewController {
   /** 고유 아이템 상세 페이지 — 툴팁 + 베이스/영문/요구 정보. */
   @GetMapping("/uniques/{slug}")
   public String uniquePage(
-      @org.springframework.web.bind.annotation.PathVariable String slug, Model model) {
-    var item = poeDataClient.unique(slug);
+      @org.springframework.web.bind.annotation.PathVariable String slug,
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response) {
+    net.luversof.web.gate.poe.dto.PoeUniqueItem item;
+    try {
+      item = poeDataClient.unique(slug);
+    } catch (RuntimeException e) {
+      return notFound(
+          response, model, slug, "poe.notfound.unique", "/poe/uniques", "poe.uniques.title");
+    }
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("item", item);
     model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
@@ -87,8 +124,14 @@ public class PoeViewController {
   public String itemPage(
       @org.springframework.web.bind.annotation.PathVariable String slug,
       @RequestParam(required = false, defaultValue = "") String influence,
-      Model model) {
-    var item = poeDataClient.baseItem(slug);
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response) {
+    net.luversof.web.gate.poe.dto.PoeBaseItem item;
+    try {
+      item = poeDataClient.baseItem(slug);
+    } catch (RuntimeException e) {
+      return notFound(response, model, slug, "poe.notfound.item", "/poe/items", "poe.items.title");
+    }
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("item", item);
     model.addAttribute("modFamilies", poeDataClient.modFamiliesForItemClass(item.itemClass()));
@@ -281,6 +324,36 @@ public class PoeViewController {
     return "poe/items";
   }
 
+  /**
+   * 모드 페이지 기본 클래스 — mods.jte 의 표시 순서(방어구 → 무기 → 장신구 → 플라스크·주얼)에서 첫 칩.
+   *
+   * <p>순서 판정은 화면과 같은 규칙을 쓴다. 여기서만 알파벳순 첫 항목을 고르면 선택 칩이 화면 맨 아래에 찍힌다.
+   */
+  private static String defaultModClass(
+      java.util.List<net.luversof.web.gate.poe.dto.PoeModItemClass> classes) {
+    if (classes.isEmpty()) {
+      return null;
+    }
+    java.util.List<java.util.function.Predicate<String>> displayOrder =
+        java.util.List.of(
+            id ->
+                java.util.Set.of("Body Armour", "Helmet", "Gloves", "Boots", "Shield").contains(id),
+            id ->
+                !id.contains("Flask")
+                    && !id.contains("Jewel")
+                    && !java.util.Set.of("Amulet", "Ring", "Belt", "Quiver").contains(id),
+            id -> java.util.Set.of("Amulet", "Ring", "Belt", "Quiver").contains(id),
+            id -> id.contains("Flask") || id.contains("Jewel"));
+    for (var group : displayOrder) {
+      for (var c : classes) {
+        if (group.test(c.itemClass())) {
+          return c.itemClass();
+        }
+      }
+    }
+    return classes.get(0).itemClass();
+  }
+
   /** 모드(poedb Modifiers식) 페이지 — 아이템 클래스 선택 시 접두/접미 티어 사다리 표시. */
   @GetMapping("/mods")
   public String mods(
@@ -291,11 +364,14 @@ public class PoeViewController {
     var classes = poeDataClient.modItemClasses();
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("modClasses", classes);
-    // 미지정이면 첫 클래스, 유효하지 않은 값이면 첫 클래스로 폴백
+    // 미지정/무효 값이면 **화면에서 첫 번째로 보이는 칩**으로 폴백한다.
+    // modClasses 는 알파벳순이라 classes.get(0) 은 Abyss Jewel — mods.jte 가 표시 순서를
+    // 방어구·무기·장신구·플라스크/주얼 로 다시 묶어 그리므로, 그대로 두면 맨 아랫줄 칩이
+    // 선택된 채 페이지가 열려 무엇이 선택됐는지 눈에 안 들어온다.
     String active =
         itemClass != null && classes.stream().anyMatch(c -> c.itemClass().equals(itemClass))
             ? itemClass
-            : classes.isEmpty() ? null : classes.get(0).itemClass();
+            : defaultModClass(classes);
     model.addAttribute("activeClass", active);
     // 아뮬렛엔 poedb 속성부여식 도유 목록도 — 도유는 아뮬렛 전용 부여라 다른 클래스엔 무의미
     model.addAttribute("anoints", "Amulet".equals(active) ? poeDataClient.anoints() : null);
@@ -399,6 +475,93 @@ public class PoeViewController {
     model.addAttribute("dataDir", dataDir);
     model.addAttribute("imageMagickInstalled", poeExtractClient.status().imageMagickInstalled());
     model.addAttribute("engineAvailable", poeBuildClient.available());
+    java.util.List<DataArtifact> artifacts = dataArtifacts();
+    model.addAttribute("artifacts", artifacts);
+    // API 가 데이터를 마지막으로 읽은 시각 — 파일보다 이르면 **실행 중인 API 는 아직 옛 데이터**다.
+    // 앱 밖(터미널)에서 파이프라인을 돌리면 재기동 전까지 반영되지 않는데, 화면엔 파일 시각만 보여
+    // "갱신했는데 왜 그대로냐" / "재기동했더니 결과가 달라졌다"가 원인 불명으로 남았다(2026-08-11 실사고).
+    Long loadedAt = null;
+    try {
+      loadedAt = poeDataClient.dataLoadedAt().get("loadedAtEpochMs");
+    } catch (Exception e) {
+      // API 가 옛 버전이면 이 엔드포인트가 없다 — 표시를 생략할 뿐 화면을 깨뜨리지 않는다
+    }
+    long newestFile =
+        artifacts.stream()
+            .filter(a -> a.modifiedEpochMs() != null)
+            .mapToLong(DataArtifact::modifiedEpochMs)
+            .max()
+            .orElse(0L);
+    model.addAttribute("dataLoadedAtEpochMs", loadedAt);
+    model.addAttribute("dataStaleInApi", loadedAt != null && newestFile > loadedAt);
     return "poe/admin";
+  }
+
+  /** 데이터 산출물 하나 — 파일명/존재/크기/갱신시각, stale=가장 최근 갱신보다 하루 이상 뒤처짐. */
+  public record DataArtifact(
+      String file,
+      String labelKey,
+      boolean exists,
+      long sizeBytes,
+      Long modifiedEpochMs,
+      boolean stale) {}
+
+  /**
+   * 추출 파이프라인이 만드는 산출물 목록 — 갱신 후 <b>무엇이 실제로 생성됐는지</b>를 화면에서 확인하려고.
+   *
+   * <p>이전엔 스킬젬·고유·일반·트리 5종만 보여줘서, 한 스텝이 조용히 실패해 특정 파일만 옛 버전으로 남아도 관리 화면에서는 드러나지 않았다(이번 세션의 타임리스
+   * .bin stale 오판이 정확히 그 사고였다). 그래서 존재·크기뿐 아니라 <b>갱신 시각</b>을 함께 보여주고, 가장 최근 갱신보다 하루 이상 뒤처진 파일에 표시를
+   * 남긴다.
+   */
+  private java.util.List<DataArtifact> dataArtifacts() {
+    // {파일명, 메시지 키} — 파이프라인 산출물. 새 추출 스텝을 추가하면 여기에도 한 줄 넣는다.
+    String[][] files = {
+      {"skill-gems.json", "poe.admin.data.gems"},
+      {"unique-items.json", "poe.admin.data.uniques"},
+      {"base-items.json", "poe.admin.data.baseitems"},
+      {"passive-tree.json", "poe.admin.data.tree"},
+      {"atlas-tree.json", "poe.admin.data.atlas"},
+      {"mods.json", "poe.admin.data.mods"},
+      {"mod-pool.json", "poe.admin.data.modpool"},
+      {"cluster-jewels.json", "poe.admin.data.clusters"},
+      {"tattoos.json", "poe.admin.data.tattoos"},
+      {"essences.json", "poe.admin.data.essences"},
+      {"bench.json", "poe.admin.data.bench"},
+      {"map-mods.json", "poe.admin.data.mapmods"},
+      {"eldritch-implicits.json", "poe.admin.data.eldritch"},
+      {"trade-stats.json", "poe.admin.data.tradestats"},
+      {"skill-weapons.json", "poe.admin.data.skillweapons"},
+    };
+    java.util.List<DataArtifact> list = new java.util.ArrayList<>();
+    long newest = 0L;
+    java.util.Map<String, Long> modified = new java.util.LinkedHashMap<>();
+    java.util.Map<String, Long> sizes = new java.util.LinkedHashMap<>();
+    for (String[] f : files) {
+      Path path = Path.of(dataDir, f[0]);
+      if (Files.exists(path)) {
+        try {
+          long ms = Files.getLastModifiedTime(path).toMillis();
+          modified.put(f[0], ms);
+          sizes.put(f[0], Files.size(path));
+          newest = Math.max(newest, ms);
+        } catch (java.io.IOException e) {
+          modified.put(f[0], null);
+        }
+      }
+    }
+    long staleBefore = newest - java.time.Duration.ofDays(1).toMillis();
+    for (String[] f : files) {
+      Long ms = modified.get(f[0]);
+      boolean exists = modified.containsKey(f[0]);
+      list.add(
+          new DataArtifact(
+              f[0],
+              f[1],
+              exists,
+              sizes.getOrDefault(f[0], 0L),
+              ms,
+              exists && ms != null && newest > 0 && ms < staleBefore));
+    }
+    return list;
   }
 }

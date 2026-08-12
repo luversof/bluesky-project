@@ -39,11 +39,13 @@
 			@if(!group.getValue().isEmpty())
 				!{
 					String color = group.getKey();
+					// 헤더 점도 젬 이름과 같은 인게임 색(PoB colorCodes)으로. Tailwind red-500/green-500 은
+					// 인게임 색이 아니라, 같은 화면에서 점과 이름 색이 미묘하게 어긋났다.
 					String accent = switch (color) {
-						case "red" -> "bg-red-500";
-						case "green" -> "bg-green-500";
-						case "blue" -> "bg-blue-500";
-						default -> "bg-gray-300";
+						case "red" -> "bg-[#e05030]";
+						case "green" -> "bg-[#70ff70]";
+						case "blue" -> "bg-[#7070ff]";
+						default -> "bg-[#d8d8d8]";
 					};
 					String attrLabel = MessageUtil.getMessage("poe.gems.attr." + color);
 				}
@@ -57,6 +59,14 @@
 					@for(PoeGem gem : group.getValue())
 						!{
 							String displayName = net.luversof.web.gate.poe.PoeText.name(gem.nameKo(), gem.name());
+							// 인게임은 젬 **이름 자체**를 소켓 색으로 그린다. 여기만 흰색이라 같은 젬이
+							// 빌드 화면(소켓 색)과 다르게 보였다. 부패(바알) 빨강은 그대로 우선한다.
+							String gemNameColor = switch (color) {
+								case "red" -> "poe-gem-red";
+								case "green" -> "poe-gem-green";
+								case "blue" -> "poe-gem-blue";
+								default -> "poe-gem-white";
+							};
 							List<String> displayTags = net.luversof.web.gate.poe.PoeText.lines(gem.tagsKo(), gem.tags());
 						}
 						<%-- 카드 마우스오버 → 게임 툴팁형 상세 레이어. 목록은 아이콘·이름·태그(+레벨)만. --%>
@@ -69,7 +79,7 @@
 							<div class="min-w-0 flex-1">
 								<div class="flex items-baseline gap-1.5">
 									<%-- 이름 클릭 → 상세 페이지 (호버 레이어 내용 + 레벨별 진행표) --%>
-								<a class="font-semibold truncate link-hover ${gem.isVaal() ? "text-[#d20000]" : ""}" href="/poe/gems/${gem.slug()}" title="${gem.name()}">${displayName}</a>
+								<a class="font-semibold truncate link-hover ${gem.isVaal() ? "text-[#d20000]" : gemNameColor}" href="/poe/gems/${gem.slug()}" title="${gem.name()}">${displayName}</a>
 									@if(gem.isVaal())
 										<%-- 인게임 부패(corrupted) 관례: 바알 젬은 붉은색. 목록에서 바로 구분되게 배지 표시 --%>
 										<span class="shrink-0 text-[9px] font-bold px-1 rounded bg-[#d20000]/15 text-[#d20000] border border-[#d20000]/40" title="${korean ? "바알 스킬 (부패) — 브라우저 표시 전용, 최적화기 미포함" : "Vaal skill (corrupted) — browse only, excluded from optimizer"}">${korean ? "바알" : "Vaal"}</span>

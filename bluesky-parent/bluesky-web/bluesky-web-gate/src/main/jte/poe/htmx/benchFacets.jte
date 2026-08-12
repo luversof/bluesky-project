@@ -43,7 +43,7 @@
 						<div class="mb-1 text-[10px] font-bold uppercase tracking-wide text-base-content/40">${ko ? o[1] : o[2]}</div>
 						@for(ArchetypeBenchmark.FacetEntry e : shown)
 							<div class="flex items-baseline gap-2 text-[11px] leading-5">
-								<span class="truncate text-base-content/70" title="${e.name()}">${e.name()}</span>
+								<span class="truncate text-base-content/70" title="${e.name()}">${PoeText.name(e.nameKo(), e.name())}</span>
 								<span class="ml-auto shrink-0 font-mono text-base-content/50">${Math.round(e.count() * 100.0 / bench.facetTotal())}%</span>
 							</div>
 						@endfor

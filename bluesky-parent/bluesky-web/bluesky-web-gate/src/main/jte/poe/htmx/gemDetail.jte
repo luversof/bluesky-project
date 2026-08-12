@@ -64,7 +64,8 @@
 			<div><span class="${label}">${levelLabel}: </span><span class="${value}">${displayLevel}</span></div>
 			@if(current != null)
 				@if(current.cost() != null && current.cost() > 0)
-					<div><span class="${label}">${costLabel}: </span><span class="${value}">${current.costType()} ${current.cost()}</span></div>
+					<%-- 수량 먼저 — 진행표(gemPage)와 순서를 맞춘다. 이전엔 툴팁만 "Mana 29", 표는 "29 Mana" 로 달랐다. --%>
+					<div><span class="${label}">${costLabel}: </span><span class="${value}">${current.cost()} ${net.luversof.web.gate.poe.PoeText.costType(current.costType())}</span></div>
 				@endif
 				@if(current.reservation() != null)
 					<div><span class="${label}">${reservationLabel}: </span><span class="${value}">${String.format("%.0f", current.reservation())}%</span></div>
@@ -94,7 +95,16 @@
 				@if(current.damageEffectiveness() != null)
 					<div><span class="${label}">${damageEffectivenessLabel}: </span><span class="${value}">${String.format("%.0f", current.damageEffectiveness())}%</span></div>
 				@endif
-				<div class="pt-0.5"><span class="${label}">${requiredLevelLabel} </span><span class="${value}">${current.requiredLevel()}</span></div>
+				<%-- 요구 사항 — 인게임은 "요구 레벨 70, 지능 155" 처럼 **어떤 속성이 필요한지**도 함께 보여준다.
+				     우리 데이터의 requiresStr/Dex/Int 는 boolean 플래그라 수치가 없다. 없는 수치를 지어내면
+				     틀린 값을 보여주게 되므로 **속성 종류만** 인게임 속성 색으로 덧붙인다(색은 사이클 16 팔레트). --%>
+				!{
+					java.util.List<String> reqAttrs = new java.util.ArrayList<>();
+					if (gem.requiresStr()) reqAttrs.add("<span class=\"poe-gem-red\">" + MessageUtil.getMessage("poe.items.detail.str") + "</span>");
+					if (gem.requiresDex()) reqAttrs.add("<span class=\"poe-gem-green\">" + MessageUtil.getMessage("poe.items.detail.dex") + "</span>");
+					if (gem.requiresInt()) reqAttrs.add("<span class=\"poe-gem-blue\">" + MessageUtil.getMessage("poe.items.detail.int") + "</span>");
+				}
+				<div class="pt-0.5"><span class="${label}">${requiredLevelLabel} </span><span class="${value}">${current.requiredLevel()}</span>@if(!reqAttrs.isEmpty())<span class="${label}">, </span>$unsafe{String.join("<span class=\"" + label + "\"> · </span>", reqAttrs)}@endif</div>
 			@endif
 		</div>
 

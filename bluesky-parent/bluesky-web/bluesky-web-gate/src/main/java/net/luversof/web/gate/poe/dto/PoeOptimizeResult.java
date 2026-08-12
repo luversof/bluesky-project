@@ -24,6 +24,8 @@ public record PoeOptimizeResult(
     List<SupportPick> additionalSkills,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
+    /** treeNotables 와 평행한 영문 이름 — 결과는 실행 시점에 저장돼 화면에서 번역할 수 없다. */
+    List<String> treeNotablesEn,
     List<Integer> treeNotableIds,
     List<SupportPick> jewels,
     List<ItemPick> items,
@@ -49,8 +51,12 @@ public record PoeOptimizeResult(
     String treeMasteries,
     /** 표시용 마스터리 요약("마스터리명 — 효과 첫 줄") */
     java.util.List<String> treeMasteryLabels,
+    /** treeMasteryLabels 의 영문판. */
+    java.util.List<String> treeMasteryLabelsEn,
     /** 표시용 문신 요약("한글명 ×N") */
     java.util.List<String> treeTattooLabels,
+    /** treeTattooLabels 의 영문판. */
+    java.util.List<String> treeTattooLabelsEn,
     Integer treeAnoint,
     // P3 메타 기준선 게이트 — balanced 최종치가 실빌드 중앙값(DPS·EHP) 둘 다 하회하면 true. 구 히스토리는 null.
     Boolean belowMeta,

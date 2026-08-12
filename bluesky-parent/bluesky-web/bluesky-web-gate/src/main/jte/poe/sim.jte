@@ -77,29 +77,29 @@
 							<a class="link link-primary ml-auto" href="/poe/sim">${MessageUtil.getMessage("poe.sim.opt.fixedtree.clear")}</a>
 						</div>
 					@endif
-					<!-- 주 입력: 스킬젬 · 고유템 (둘 다 선택사항, 여러 개 가능). 선택된 것을 기준으로 최적 조합 계산 -->
-					<div class="flex flex-wrap gap-3">
-						<div class="w-full sm:w-96">
+					<!-- 주 입력(스킬젬·고유템) + 최적화 설정을 한 줄로 — 셋 다 짧아 줄을 나눌 이유가 없다(사용자 요청).
+					     좁은 화면에선 flex-wrap 이 알아서 접고, items-end 로 라벨 있는 칸과 컨트롤의 밑선을 맞춘다. -->
+					<div class="flex flex-wrap items-end gap-3">
+						<div class="min-w-64 flex-1">
 							<label class="block text-xs font-semibold text-base-content/70 mb-1">${MessageUtil.getMessage("poe.sim.opt.skills")}</label>
-							<select name="skills" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.skills.placeholder")}" size="4" class="select select-sm select-bordered w-full sm:w-96">
+							<select name="skills" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.skills.placeholder")}" size="4" class="select select-sm select-bordered w-full">
 								@for(PoeGem skillOpt : activeGems)
 									<option value="${skillOpt.slug()}" selected="${preSkills.contains(skillOpt.slug())}">${net.luversof.web.gate.poe.PoeText.name(skillOpt.nameKo(), skillOpt.name())}</option>
 								@endfor
 							</select>
 						</div>
-						<div class="w-full sm:w-96">
+						<div class="min-w-64 flex-1">
 							<label class="block text-xs font-semibold text-base-content/70 mb-1">${MessageUtil.getMessage("poe.sim.opt.uniques")}</label>
-							<select name="uniques" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.uniques.placeholder")}" size="4" class="select select-sm select-bordered w-full sm:w-96">
+							<select name="uniques" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.uniques.placeholder")}" size="4" class="select select-sm select-bordered w-full">
 								@for(PoeUniqueItem uniqueItem : uniqueItems)
 									<option value="${uniqueItem.slug()}" selected="${preUniques.contains(uniqueItem.slug())}">${net.luversof.web.gate.poe.PoeText.name(uniqueItem.nameKo(), uniqueItem.name())}</option>
 								@endfor
 							</select>
 						</div>
-					</div>
-					<!-- 최적화 설정 — 스킬젬·고유템 선택 바로 아래(사용자 요청: 실행 버튼이 주 입력에 붙어 있어야 흐름이 자연스럽다) -->
-					<div class="flex flex-wrap items-center gap-2">
+						<%-- min-w-0: flex 아이템 기본값(min-width:auto)이면 내용 너비를 고집해 좁은 폭에서 가로 스크롤이 생긴다(768px 실측). --%>
+						<div class="flex min-w-0 flex-wrap items-center gap-2">
 						<%-- 목표(objective) 셀렉트 제거(2026-07-30): poe.ninja 실빌드 성향이 목표축을 자동 결정(위 미리보기). objective=auto → API가 성향으로 dps/ehp/balanced 해석 --%>
-						<span class="text-xs text-base-content/60 self-center" title="선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정">${net.luversof.web.gate.poe.PoeText.isKorean() ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
+						<span class="self-center whitespace-nowrap text-xs text-base-content/60" title="선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정">${net.luversof.web.gate.poe.PoeText.isKorean() ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
 						<select name="scenario" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.scenario")}">
 							<option value="None">${MessageUtil.getMessage("poe.sim.opt.scenario.none")}</option>
 							<option value="Boss">${MessageUtil.getMessage("poe.sim.opt.scenario.boss")}</option>
@@ -154,6 +154,7 @@
 							<button type="button" class="btn btn-primary btn-sm btn-disabled" disabled>${optimizeRun}</button>
 							<a class="link link-primary text-xs" href="${loginUrl}">${MessageUtil.getMessage("poe.sim.opt.login")}</a>
 						@endif
+						</div>
 					</div>
 					<%-- 실시간 성향 미리보기 — 선택한 스킬×전직의 poe.ninja 실빌드 성향/프로파일(실행 전). 스킬/전직 변경 시 갱신. --%>
 					<div id="poeArchetypeHint"

@@ -262,6 +262,11 @@ public class PoeOptimizeService {
   private final PoeClusterJewelDataService poeClusterJewelDataService;
   private final PoeSkillWeaponDataService poeSkillWeaponDataService;
   private final PoeTattooDataService poeTattooDataService;
+  private final PoeModTranslateService poeModTranslateService;
+
+  /** 아틀라스 패시브 이름(영문→한글) 원본 — 아틀라스 트리는 API 서비스로 안 올라와 파일에서 직접 읽는다. */
+  private final Path atlasTreeFile;
+
   private final Path resultFile;
   // 완료된 결과를 최근 N건까지 남기는 이력 디렉터리(파일명 = 저장 시각 epochMs). optimize-last.json 은 그대로 "마지막 1건" 용도.
   private final Path historyDir;
@@ -332,6 +337,7 @@ public class PoeOptimizeService {
       PoeClusterJewelDataService poeClusterJewelDataService,
       PoeSkillWeaponDataService poeSkillWeaponDataService,
       PoeTattooDataService poeTattooDataService,
+      PoeModTranslateService poeModTranslateService,
       PoeTradeStatDataService poeTradeStatDataService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
       @Value("${poe.sim.tree-version:3_29}") String treeVersion,
@@ -348,9 +354,11 @@ public class PoeOptimizeService {
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.poeClusterJewelDataService = poeClusterJewelDataService;
     this.poeSkillWeaponDataService = poeSkillWeaponDataService;
+    this.poeModTranslateService = poeModTranslateService;
     this.poeTattooDataService = poeTattooDataService;
     this.poeTradeStatDataService = poeTradeStatDataService;
     this.resultFile = Path.of(dataDir, "sim", "optimize-last.json");
+    this.atlasTreeFile = Path.of(dataDir, "atlas-tree.json");
     this.historyDir = Path.of(dataDir, "sim", "history");
     this.treeVersion = treeVersion;
     this.pobSourceDir = pobSourceDir;
@@ -583,8 +591,124 @@ public class PoeOptimizeService {
         facetsOf(a.path("facets").path("groups")));
   }
 
-  /** 패싯 groups 오브젝트 → {그룹명: [{name,count}]}. 없으면 null(구 데이터). */
-  private static Map<String, List<FacetEntry>> facetsOf(JsonNode groups) {
+  /** 패싯 이름 사전(영문 → 한글) — 문신 + 트리 노드(키스톤·노터블·마스터리). 최초 1회만 만든다. */
+  private volatile Map<String, String> facetNameKoCache;
+
+  private Map<String, String> facetNameKoMap() {
+    Map<String, String> cached = facetNameKoCache;
+    if (cached != null) {
+      return cached;
+    }
+    Map<String, String> map = new LinkedHashMap<>();
+    for (PoeTattooDataService.Tattoo t : poeTattooDataService.all()) {
+      if (t.name() != null && t.nameKo() != null && !t.nameKo().isBlank()) {
+        map.putIfAbsent(t.name(), t.nameKo());
+      }
+    }
+    // 키스톤·노터블(도유 포함)·마스터리는 트리 데이터에 한글명이 있다 — 패싯의 keypassives/anointed 차원이 여기서 잡힌다.
+    List<PoeTreeGraphService.TreeNode> treeNodes = new ArrayList<>();
+    treeNodes.addAll(poeTreeGraphService.searchCandidates());
+    treeNodes.addAll(poeTreeGraphService.anointableNotables());
+    treeNodes.addAll(poeTreeGraphService.masteryNodes());
+    for (PoeTreeGraphService.TreeNode n : treeNodes) {
+      if (n.name() != null && n.nameKo() != null && !n.nameKo().isBlank()) {
+        map.putIfAbsent(n.name(), n.nameKo());
+      }
+    }
+    // 마스터리 패싯은 **노드 이름이 아니라 고른 효과의 스탯 문장**이 항목으로 온다
+    // (예: "Regenerate 1 Life per second for each 1% Uncapped Fire Resistance").
+    // 이름만 사전에 넣으면 이 차원은 계속 영문으로 남는다 — 효과별 stats↔statsKo 도 함께 넣는다.
+    for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.masteryNodes()) {
+      if (n.masteryEffects() == null) {
+        continue;
+      }
+      for (PoeTreeGraphService.MasteryEffect effect : n.masteryEffects()) {
+        List<String> en = effect.stats();
+        List<String> ko = effect.statsKo();
+        if (en == null || ko == null) {
+          continue;
+        }
+        for (int i = 0; i < en.size() && i < ko.size(); i++) {
+          if (en.get(i) != null && ko.get(i) != null && !ko.get(i).isBlank()) {
+            map.putIfAbsent(en.get(i), ko.get(i));
+          }
+        }
+      }
+    }
+    // 아틀라스 패시브 패싯은 아틀라스 트리 노드 이름으로 온다(예: "Mounting Modifiers").
+    // 이 트리는 게이트 화면 전용이라 API 서비스에 안 올라와 있어, 파일에서 이름만 뽑아 쓴다.
+    if (Files.exists(atlasTreeFile)) {
+      try {
+        JsonNode atlas = JsonMapper.builder().build().readTree(Files.readString(atlasTreeFile));
+        for (JsonNode node : atlas.path("nodes")) {
+          String en = node.path("name").asText(null);
+          String ko = node.path("nameKo").asText(null);
+          if (en != null && ko != null && !ko.isBlank()) {
+            map.putIfAbsent(en, ko);
+          }
+        }
+      } catch (Exception e) {
+        logger.warn("아틀라스 트리 이름 사전 로드 실패: {}", atlasTreeFile, e);
+      }
+    }
+    facetNameKoCache = map;
+    return map;
+  }
+
+  /**
+   * 패싯 항목의 한국어 표기 — ① 이름 사전(문신·트리 노드) ② 문장형은 모드 번역 사전. 못 찾으면 null(영문 유지).
+   *
+   * <p>판테온·산적·무기 구성·장비 등은 우리 데이터에 한글 원본이 없어 영문으로 남는다 — 억지 번역보다 정직하다.
+   */
+  private String facetNameKo(String name) {
+    if (name == null || name.isBlank()) {
+      return null;
+    }
+    String direct = facetNameKoOne(name);
+    if (direct != null) {
+      return direct;
+    }
+    // poe.ninja 는 마스터리 효과의 여러 스탯을 ", " 로 이어 **한 항목**으로 보낸다
+    // (실측: "+12% to Fire Damage over Time Multiplier, 50% increased Ignite Duration on you").
+    // 통짜로는 사전에 없으니 조각별로 해석하되, **전부 성공할 때만** 합쳐 쓴다 — 한 조각만 번역되면
+    // 한글·영문이 섞인 줄이 나와 오히려 읽기 나쁘다.
+    if (name.contains(", ")) {
+      String[] parts = name.split(", ");
+      if (parts.length > 1) {
+        StringBuilder joined = new StringBuilder();
+        for (String part : parts) {
+          String one = facetNameKoOne(part.trim());
+          if (one == null) {
+            return null;
+          }
+          if (joined.length() > 0) {
+            joined.append(", ");
+          }
+          joined.append(one);
+        }
+        return joined.toString();
+      }
+    }
+    return null;
+  }
+
+  /** 단일 문자열 해석 — 이름 사전 → 모드 번역 사전. 못 찾으면 null. */
+  private String facetNameKoOne(String name) {
+    String byName = facetNameKoMap().get(name);
+    if (byName != null) {
+      return byName;
+    }
+    String translated = poeModTranslateService.translate(name);
+    return translated != null && !translated.equals(name) ? translated : null;
+  }
+
+  /**
+   * 패싯 groups 오브젝트 → {그룹명: [{name,count,nameKo}]}. 없으면 null(구 데이터).
+   *
+   * <p>한글 로케일인데 이 섹션만 영문으로 남아 있었다(실측: 마스터리·룬크래프트·문신 전부 영문). 문신은 nameKo 가 데이터에 있고, 스탯 문장형
+   * 항목(마스터리·룬크래프트·아틀라스 등)은 모드 번역 사전(804개)이 그대로 잡는다 — 있는 걸 안 쓰고 있던 셈이라 여기서 해석해 내려보낸다.
+   */
+  private Map<String, List<FacetEntry>> facetsOf(JsonNode groups) {
     if (groups == null || !groups.isObject() || groups.isEmpty()) {
       return null;
     }
@@ -592,7 +716,8 @@ public class PoeOptimizeService {
     for (Map.Entry<String, JsonNode> e : groups.properties()) {
       List<FacetEntry> list = new ArrayList<>();
       for (JsonNode item : e.getValue()) {
-        list.add(new FacetEntry(item.path("name").asText(), item.path("count").asInt()));
+        String name = item.path("name").asText();
+        list.add(new FacetEntry(name, item.path("count").asInt(), facetNameKo(name)));
       }
       if (!list.isEmpty()) {
         out.put(e.getKey(), list);
@@ -1685,7 +1810,10 @@ public class PoeOptimizeService {
   public record SkillDpsEntry(String name, long dps, int count) {}
 
   /** 패싯 항목 — 모집단 중 count 명이 사용. */
-  public record FacetEntry(String name, int count) {}
+  /**
+   * @param nameKo 한국어 표기(없으면 null) — 화면이 로케일에 맞게 고른다.
+   */
+  public record FacetEntry(String name, int count, String nameKo) {}
 
   private final Map<String, ArchetypeBenchmark> ninjaBenchByKey = new HashMap<>();
   private final Map<String, ArchetypeBenchmark> ninjaBenchBySkill = new HashMap<>();
@@ -5712,25 +5840,39 @@ public class PoeOptimizeService {
       Set<Integer> allNodes = new LinkedHashSet<>(ascendancyNodes);
       allNodes.addAll(allocated);
       List<String> notables = new ArrayList<>();
+      // 영문 평행 목록 — EN 로케일 화면이 저장된 한글 이름을 그대로 보여주던 것을 해소한다.
+      // (결과는 실행 시점에 저장되므로 화면에서 뒤늦게 번역할 수 없다 → 만들 때 둘 다 싣는다)
+      List<String> notablesEn = new ArrayList<>();
       List<Integer> notableIds = new ArrayList<>(); // 이름과 평행 — focus 딥링크용
       for (int nodeId : allNodes) {
         PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(nodeId);
         if (node != null && ("notable".equals(node.type()) || "keystone".equals(node.type()))) {
           notables.add(node.nameKo() != null ? node.nameKo() : node.name());
+          notablesEn.add(node.name());
           notableIds.add(nodeId);
         }
       }
       // 클러스터 주얼이 얹은 노터블은 트리 그래프에 없어(생성 노드) 위 루프에 안 걸린다 —
       // 목록에서 빠지면 "무슨 노터블을 쓰는 빌드인지"가 결과 화면에서 사라진다.
+      // 클러스터 노터블은 **영문 이름**으로 들고 다닌다 — 한글 목록엔 사전(ClusterNotable.nameKo)으로 옮겨 담아야
+      // 한국어 화면에 영문이 섞이지 않는다(트리 에디터 팝업은 이미 같은 사전으로 한글화한다).
+      Map<String, String> clusterNotableKo = new HashMap<>();
+      for (PoeTreeGraphService.ClusterNotable cn : poeTreeGraphService.clusterNotables()) {
+        if (cn.nameKo() != null && !cn.nameKo().isBlank()) {
+          clusterNotableKo.put(cn.name(), cn.nameKo());
+        }
+      }
       for (ClusterSpec spec : fixedClusters) {
-        notables.addAll(spec.notables());
-        for (int i = 0; i < spec.notables().size(); i++) {
+        for (String cn : spec.notables()) {
+          notables.add(clusterNotableKo.getOrDefault(cn, cn));
+          notablesEn.add(cn);
           notableIds.add(0); // 생성 노드 — 트리 그래프에 없어 focus 불가
         }
       }
       // 도유 노터블도 배지 목록에 — 포인트 없이 활성인 트리의 일부(결과 링크 an= 과 focus 로 연결)
       if (currentAnoint != null) {
         notables.add("(도유) " + currentAnoint.nameKo());
+        notablesEn.add("(Anoint) " + currentAnoint.name());
         notableIds.add(currentAnoint.nodeId());
       }
       String ascendancyKo = ascendancy;
@@ -5799,6 +5941,7 @@ public class PoeOptimizeService {
                   .toList(),
               List.copyOf(allNodes),
               notables,
+              notablesEn,
               notableIds,
               jewels.values().stream()
                   .map(
@@ -5844,8 +5987,10 @@ public class PoeOptimizeService {
                   .filter(entry -> allocated.contains(entry.getKey()))
                   .map(entry -> entry.getKey() + ":" + entry.getValue())
                   .collect(java.util.stream.Collectors.joining(",")),
-              masteryLabels(fixedMasteries, allocated),
-              tattooLabels(fixedTattoos),
+              masteryLabels(fixedMasteries, allocated, true),
+              masteryLabels(fixedMasteries, allocated, false),
+              tattooLabels(fixedTattoos, true),
+              tattooLabels(fixedTattoos, false),
               // 트리 링크(an=)로 도유까지 되돌아가게 — 없으면 트리 화면 수치가 결과보다 약하게 나온다
               currentAnoint != null ? currentAnoint.nodeId() : null,
               belowMetaVerdict(objective, gem, ascendancy, finalValues),
@@ -5898,8 +6043,12 @@ public class PoeOptimizeService {
     } catch (JobCancelledException e) {
       lastStatus = Status.CANCELLED;
       log("중지됨 — 사용자 요청으로 최적화를 취소했습니다");
-    } catch (Exception e) {
-      // 인터럽트로 인한 예외도 취소로 간주(중지 요청 중이면)
+    } catch (Throwable e) {
+      // ⚠ Exception 만 잡으면 안 된다 — Error(예: NoClassDefFoundError, OutOfMemoryError)는 빠져나가
+      //    lastStatus/lastResult 가 **직전 잡의 SUCCESS 와 결과 그대로** 남는다. running 은 finally 에서
+      //    false 가 되므로 조회하는 쪽은 "성공했고 결과는 이것"으로 읽어 **조용히 남의 결과를 받는다**.
+      //    실제로 2026-08-12 에 그 사고가 났다: ehp/ed 잡이 죽었는데 직전 사이클론 dps 값이 반환돼
+      //    기준선이 세 줄 똑같이 찍혔다(로그는 자기 잡 것이라 대조로만 발각됐다).
       if (cancelRequested) {
         lastStatus = Status.CANCELLED;
         log("중지됨 — 사용자 요청으로 최적화를 취소했습니다");
@@ -6767,7 +6916,8 @@ public class PoeOptimizeService {
   }
 
   /** 표시용 마스터리 요약 — "마스터리명 — 고른 효과 첫 줄". 자동 채택된 효과가 결과 화면에 보여야 표시=실제다. */
-  private List<String> masteryLabels(Map<Integer, Integer> picks, Set<Integer> allocated) {
+  private List<String> masteryLabels(
+      Map<Integer, Integer> picks, Set<Integer> allocated, boolean ko) {
     List<String> labels = new ArrayList<>();
     for (Map.Entry<Integer, Integer> entry : picks.entrySet()) {
       if (!allocated.contains(entry.getKey())) {
@@ -6786,22 +6936,24 @@ public class PoeOptimizeService {
         continue;
       }
       String effectText =
-          effect.statsKo() != null && !effect.statsKo().isEmpty()
+          ko && effect.statsKo() != null && !effect.statsKo().isEmpty()
               ? effect.statsKo().get(0)
               : effect.stats().isEmpty() ? "" : effect.stats().get(0);
-      labels.add((node.nameKo() != null ? node.nameKo() : node.name()) + " — " + effectText);
+      String nodeName = ko && node.nameKo() != null ? node.nameKo() : node.name();
+      labels.add(nodeName + " — " + effectText);
     }
     return labels;
   }
 
   /** 표시용 문신 요약 — 같은 문신을 여러 패시브에 새기므로 "한글명 ×N" 으로 묶는다. */
-  private List<String> tattooLabels(Map<Integer, String> picks) {
+  private List<String> tattooLabels(Map<Integer, String> picks, boolean ko) {
     Map<String, Integer> counts = new LinkedHashMap<>();
     for (String dn : picks.values()) {
       String label =
           poeTattooDataService
               .findByDn(dn)
-              .map(t -> t.nameKo() != null ? t.nameKo() : t.dn())
+              .map(
+                  t -> ko && t.nameKo() != null ? t.nameKo() : t.name() != null ? t.name() : t.dn())
               .orElse(dn);
       counts.merge(label, 1, Integer::sum);
     }

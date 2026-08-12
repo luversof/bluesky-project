@@ -105,6 +105,12 @@ public class PoePobEngineService {
   private final long evalTimeoutMs;
   private final int workerRecycleAfter;
 
+  /**
+   * 프로세스-per-eval 경로의 시간 예산. 상주 워커와 달리 매번 PoB 데이터를 다시 올리고(무궁무진 주얼 LUT 51MB 포함) 계산하므로 같은 120초를 쓰면
+   * 무거운 실빌드(미니언 등)가 로드 시간에 치여 타임아웃된다(실측 3건).
+   */
+  private final long onceTimeoutMs;
+
   private final Map<String, EngineResult> cache =
       new LinkedHashMap<>(16, 0.75f, true) {
         @Override
@@ -136,6 +142,7 @@ public class PoePobEngineService {
       @Value("${poe.pob.workers:0}") int poolSize,
       @Value("${poe.pob.eval-timeout-ms:120000}") long evalTimeoutMs,
       @Value("${poe.pob.worker-recycle-after:400}") int workerRecycleAfter,
+      @Value("${poe.pob.once-timeout-ms:300000}") long onceTimeoutMs,
       @Value("${poe.pob.luajit-path:}") String luajitPath) {
     this.sourceDir = Path.of(sourceDir);
     this.runnerScript = Path.of(runnerScript).toAbsolutePath();
@@ -143,6 +150,7 @@ public class PoePobEngineService {
     this.poolSize = autoPoolSize(poolSize);
     this.evalTimeoutMs = evalTimeoutMs;
     this.workerRecycleAfter = workerRecycleAfter;
+    this.onceTimeoutMs = onceTimeoutMs;
     this.luajitPath = resolveLuajit(luajitPath);
   }
 
@@ -248,7 +256,11 @@ public class PoePobEngineService {
         return cached;
       }
       EngineResult result = run(buildXml);
-      cache.put(cacheKey, result);
+      // 값이 하나도 없는 결과는 캐시하지 않는다 — 엔진 쪽 일시 장애를 sha256 키로 박제하면
+      // 재기동 전까지 같은 빌드가 계속 빈 결과를 받는다(실측: 갱신 직후 전건 stats 0).
+      if (!result.stats().isEmpty()) {
+        cache.put(cacheKey, result);
+      }
       return result;
     }
   }
@@ -262,9 +274,17 @@ public class PoePobEngineService {
     return runRaw(buildXml);
   }
 
+  /**
+   * 재계산 1건 — <b>상주 워커를 쓰지 않고</b> 프로세스-per-eval 로 돈다.
+   *
+   * <p>이 경로에는 남의 빌드(poe.ninja 실빌드 export, 사용자가 붙여넣은 PoB 코드)가 들어온다. 우리 최적화기가 만드는 빌드와 달리 무궁한 주얼·클러스터가
+   * 잔뜩 붙어 무겁고, 이런 빌드를 여러 개 실은 워커는 PoB 내부 상태가 무너져 <b>다음 빌드의 스펙 임포트가 조용히 실패</b>한다(실측: 아키타입 18건 중 4건이
+   * 새 워커 재시도 3회로도 못 넘김. 같은 XML 이 갓 띄운 워커에선 항상 성공). 어차피 회당 20~30초라 워커 재시도(≈워커 재기동 3회)보다 빠르고, 오염이
+   * 최적화기 풀로 번지지도 않는다.
+   */
   private EngineResult run(String buildXml) {
     long startedAt = System.currentTimeMillis();
-    return new EngineResult(toStats(runRaw(buildXml)), System.currentTimeMillis() - startedAt);
+    return new EngineResult(toStats(runRawOnce(buildXml)), System.currentTimeMillis() - startedAt);
   }
 
   /** 워커 풀 우선(빠름), 없으면 프로세스-per-eval 폴백. 워커 장애 시 한 번 재시도. */
@@ -292,13 +312,124 @@ public class PoePobEngineService {
       } catch (BuildError e) {
         // 빌드만 잘못됨 — 워커는 정상이라 반납, 예외는 상위로(최적화기가 -1 처리)
         release(worker);
-        throw new IllegalStateException("PoB 엔진 오류: " + e.getMessage());
+        // ⚠ 환경이 깨져도 **여기로** 나오는 경우가 있다. TreeData/<버전> 이 없으면 PoB 로더가 뜨지 못해
+        //    `calc.lua:69: attempt to call global 'loadBuildFromXML' (a nil value)` 같은 빌드 오류로 보인다
+        //    (2026-08-12 재현). 그 문구만으로는 원인을 절대 알 수 없으므로 환경 점검을 함께 붙인다.
+        //    점검은 캐시되어 평가마다 파일시스템을 두드리지 않는다.
+        String buildDiag = environmentDiagnosis(buildXml);
+        throw new IllegalStateException(
+            "PoB 엔진 오류: " + e.getMessage() + (buildDiag.isEmpty() ? "" : " · " + buildDiag));
       } catch (WorkerFailure e) {
         worker.kill(); // 죽은 워커는 버리고 재시도
         last = new IllegalStateException("PoB 워커 실패: " + e.getMessage(), e);
       }
     }
+    if (last != null) {
+      // 재시도까지 소진된 실패는 대개 **환경**(엔진 소스/타임리스 .bin/트리 버전) 문제다.
+      // 증상만 던지면 다른 PC 에서 원인 추적에 시간을 쓰게 되므로 여기서 스스로 점검해 붙인다.
+      String diag = environmentDiagnosis(buildXml);
+      if (!diag.isEmpty()) {
+        return throwWith(last, diag);
+      }
+    }
     throw last != null ? last : new IllegalStateException("PoB 워커 평가 실패");
+  }
+
+  private static Map<String, Double> throwWith(IllegalStateException base, String diag) {
+    throw new IllegalStateException(base.getMessage() + " · " + diag, base);
+  }
+
+  /**
+   * 실패가 반복될 때의 환경 점검 — "스펙 임포트 실패(클래스 N → 0)" 처럼 <b>매 요청이 같은 방식으로</b> 깨질 때 사람이 확인하던 것들을 자동으로 본다.
+   * 원인을 못 찾으면 빈 문자열(=추측을 지어내지 않는다).
+   *
+   * <p>점검 항목은 실제로 이 증상을 낸 적이 있는 것들이다:
+   *
+   * <ul>
+   *   <li>타임리스 주얼 .bin 이 없거나 원본(.zip)보다 오래됨 — LUT 인덱스가 어긋나 스펙 임포트가 중단된다
+   *   <li>요청한 트리 버전의 PoB TreeData 디렉터리가 없음 — 로드가 기본 클래스(사이온)로 떨어진다
+   * </ul>
+   */
+  /** 추출 파이프라인(timeless-bin.mjs)이 .bin 으로 푸는 주얼 — 이 목록 밖의 압축 파일은 검사 대상이 아니다. */
+  private static final java.util.Set<String> TIMELESS_JEWELS =
+      java.util.Set.of(
+          "BrutalRestraint",
+          "LethalPride",
+          "MilitantFaith",
+          "ElegantHubris",
+          "HeroicTragedy",
+          "GloriousVanity");
+
+  /**
+   * 점검 결과 캐시. BuildError 는 후보 평가마다 날 수 있어(최적화 한 판에 수천 번) 매번 파일시스템을 훑으면 그 자체가 부담이다. 환경은 잡 도중에 바뀌지
+   * 않으므로 트리 버전별로 짧게 캐시한다.
+   */
+  private final Map<String, String> diagCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+  private volatile long diagCachedAt;
+
+  private static final long DIAG_TTL_MS = 60_000;
+
+  private String environmentDiagnosis(String buildXml) {
+    java.util.regex.Matcher tv =
+        java.util.regex.Pattern.compile("treeVersion=\"([^\"]+)\"").matcher(buildXml);
+    String key = tv.find() ? tv.group(1) : "";
+    long now = System.currentTimeMillis();
+    if (now - diagCachedAt > DIAG_TTL_MS) {
+      diagCache.clear();
+      diagCachedAt = now;
+    }
+    return diagCache.computeIfAbsent(key, k -> environmentDiagnosisUncached(buildXml));
+  }
+
+  private String environmentDiagnosisUncached(String buildXml) {
+    List<String> problems = new java.util.ArrayList<>();
+    try {
+      // ⚠ 데이터는 저장소 루트가 아니라 <b>src/</b> 아래에 있다(엔진 실행도 src 를 작업 디렉터리로 쓴다).
+      //    루트 기준으로 찾으면 타임리스 점검은 폴더가 없어 통째로 건너뛰고, 트리 점검은 엔진이 멀쩡해도
+      //    항상 "트리 데이터 없음"을 붙인다 — 진단이 없느니만 못한 거짓 안내가 된다.
+      Path src = sourceDir.resolve("src");
+      Path timeless = src.resolve("Data").resolve("TimelessJewelData");
+      if (Files.isDirectory(timeless)) {
+        // 원본은 통짜 .zip 이거나 분할(.zip.part0…)이다 — 찬란한 허영심이 분할 형태라
+        // .zip 만 보면 **과거 실제로 stale 사고를 낸 주얼이 검사에서 빠진다**. 둘 다 원본으로 취급한다.
+        try (java.util.stream.Stream<Path> files = Files.list(timeless)) {
+          Map<String, Long> newestSource = new java.util.HashMap<>();
+          for (Path f : files.toList()) {
+            String name = f.getFileName().toString();
+            java.util.regex.Matcher zm =
+                java.util.regex.Pattern.compile("^(.+)\\.zip(?:\\.part\\d+)?$").matcher(name);
+            // ⚠ 폴더의 압축 파일을 전부 요구하면 안 된다 — Abyss* 처럼 **추출 대상이 아닌 것**이 섞여 있어
+            //    "AbyssAmanamu.bin 없음" 같은 거짓 진단이 쏟아진다(추출기 verify-engine.mjs 에서 실제로 겪음).
+            if (!zm.matches() || !TIMELESS_JEWELS.contains(zm.group(1))) {
+              continue;
+            }
+            long at = Files.getLastModifiedTime(f).toMillis();
+            newestSource.merge(zm.group(1), at, Math::max);
+          }
+          for (Map.Entry<String, Long> e : newestSource.entrySet()) {
+            Path bin = timeless.resolve(e.getKey() + ".bin");
+            if (!Files.exists(bin)) {
+              problems.add("타임리스 " + e.getKey() + ".bin 없음");
+            } else if (Files.getLastModifiedTime(bin).toMillis() < e.getValue()) {
+              problems.add("타임리스 " + e.getKey() + ".bin 이 원본보다 오래됨(stale)");
+            }
+          }
+        }
+      }
+      java.util.regex.Matcher m =
+          java.util.regex.Pattern.compile("treeVersion=\"([^\"]+)\"").matcher(buildXml);
+      if (m.find() && !Files.isDirectory(src.resolve("TreeData").resolve(m.group(1)))) {
+        problems.add("PoB 소스에 트리 " + m.group(1) + " 데이터 없음(엔진 갱신 필요)");
+      }
+    } catch (Exception e) {
+      logger.debug("환경 점검 실패", e);
+      return "";
+    }
+    if (problems.isEmpty()) {
+      return "";
+    }
+    return "환경 점검: " + String.join(", ", problems) + " — 추출 파이프라인을 한 번 돌린 뒤 엔진을 재설정하세요";
   }
 
   private Map<String, Double> runRawOnce(String buildXml) {
@@ -337,10 +468,11 @@ public class PoePobEngineService {
       outputReader.setDaemon(true);
       outputReader.start();
 
-      if (!process.waitFor(120, TimeUnit.SECONDS)) {
+      if (!process.waitFor(onceTimeoutMs, TimeUnit.MILLISECONDS)) {
         process.destroyForcibly();
         outputReader.join(5000);
-        throw new IllegalStateException("PoB 엔진 시간 초과 (120초) — 프로세스 강제 종료");
+        throw new IllegalStateException(
+            "PoB 엔진 시간 초과 (" + (onceTimeoutMs / 1000) + "초) — 프로세스 강제 종료");
       }
       outputReader.join(10000);
 
@@ -355,11 +487,22 @@ public class PoePobEngineService {
           logger.debug("PoB engine: {}", line);
         }
       }
+      // ⚠ 환경이 깨지면 **이 경로로** 나온다. 상주 워커를 못 띄우면 여기(프로세스-per-eval)로 폴백하는데,
+      //    TreeData/<버전> 이 없을 때가 정확히 그 경우다(2026-08-12 재현: 트리 폴더를 치우자 워커 대신
+      //    이쪽으로 빠져 `calc.lua:69: attempt to call global 'loadBuildFromXML' (a nil value)` 만 남았다).
+      //    그 문구로는 원인을 알 수 없으니 환경 점검을 붙인다.
       if (errorMessage != null) {
-        throw new IllegalStateException("PoB 엔진 오류: " + errorMessage);
+        String diag = environmentDiagnosis(buildXml);
+        throw new IllegalStateException(
+            "PoB 엔진 오류: " + errorMessage + (diag.isEmpty() ? "" : " · " + diag));
       }
       if (resultJson == null) {
-        throw new IllegalStateException("PoB 엔진 결과 누락 (exit " + process.exitValue() + ")");
+        String diag = environmentDiagnosis(buildXml);
+        throw new IllegalStateException(
+            "PoB 엔진 결과 누락 (exit "
+                + process.exitValue()
+                + ")"
+                + (diag.isEmpty() ? "" : " · " + diag));
       }
       return parseValues(resultJson);
     } catch (IllegalStateException e) {

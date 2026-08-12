@@ -24,6 +24,8 @@ public record PoeOptimizeResult(
     List<SupportPick> additionalSkills,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
+    /** treeNotables 와 평행한 영문 이름 — 결과는 실행 시점에 저장되므로 화면에서 뒤늦게 번역할 수 없다. */
+    List<String> treeNotablesEn,
     /** treeNotables 와 인덱스 평행 — 트리 focus 딥링크용 노드 id(클러스터 생성 노터블은 0=링크 없음) */
     List<Integer> treeNotableIds,
     List<SupportPick> jewels,
@@ -51,8 +53,12 @@ public record PoeOptimizeResult(
     String treeMasteries,
     /** 표시용 마스터리 요약("마스터리명 — 효과 첫 줄") — 자동 채택된 효과를 사용자가 결과에서 봐야 한다 */
     List<String> treeMasteryLabels,
+    /** treeMasteryLabels 의 영문판(노드명 + 효과 첫 줄). */
+    List<String> treeMasteryLabelsEn,
     /** 표시용 문신 요약("한글명 ×N") — treeTattoos 는 링크용 영문 dn 이라 그대로 보여줄 수 없다 */
     List<String> treeTattooLabels,
+    /** treeTattooLabels 의 영문판("English name ×N"). */
+    List<String> treeTattooLabelsEn,
     /** 트리 링크(an=)로 되돌아갈 도유 노터블 id — 없으면(null) 도유 미채택 */
     Integer treeAnoint,
     /**

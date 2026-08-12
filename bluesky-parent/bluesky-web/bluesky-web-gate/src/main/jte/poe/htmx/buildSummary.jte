@@ -67,9 +67,20 @@
 									<span class="badge badge-sm shrink-0">${MessageUtil.getMessage("poe.build.disabled")}</span>
 								@endif
 								@for(PoeBuild.BuildGem gem : skillGroup.gems())
+								<%-- 인게임은 젬을 소켓 색(힘 빨강 / 민첩 초록 / 지능 파랑)으로 구분한다. 여기만 액티브=초록·보조=파랑이라
+								     같은 젬이 /poe/gems 목록(속성별 색 그룹)과 빌드 화면에서 다른 색으로 보였다.
+								     보조 여부는 색이 아니라 흐린 배경으로 구분한다(인게임도 색은 속성 전용). --%>
+								!{
+									String gemColor = switch (gem.color() == null ? "" : gem.color()) {
+										case "red" -> "poe-gem-red";
+										case "green" -> "poe-gem-green";
+										case "blue" -> "poe-gem-blue";
+										default -> "poe-gem-white";
+									};
+								}
 									@if(gem.slug() != null)
 										<button type="button"
-										        class="badge badge-sm cursor-pointer transition-colors ${gem.isSupport() ? "badge-info badge-outline hover:bg-info/10" : "badge-success badge-outline hover:bg-success/10"}"
+										        class="badge badge-sm badge-outline cursor-pointer transition-colors hover:bg-base-content/10 ${gemColor}${gem.isSupport() ? " bg-base-content/5" : ""}"
 										        hx-get="/poe/htmx/gems/detail?slug=${gem.slug()}&level=${gem.level()}"
 										        hx-target="#poeBuildDetail"
 										        hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(gem.nameKo(), gem.name())} <span class="opacity-60 font-mono">${gem.level()}/${gem.quality()}</span></button>
@@ -91,9 +102,9 @@
 						@for(PoeBuild.BuildItem item : build.items())
 														!{
 								boolean isUnique = "UNIQUE".equals(item.rarity()) || "RELIC".equals(item.rarity());
-								String itemColor = isUnique ? "text-orange-500"
-									: "RARE".equals(item.rarity()) ? "text-yellow-500"
-									: "MAGIC".equals(item.rarity()) ? "text-blue-400" : "";
+								String itemColor = isUnique ? "poe-name-unique"
+									: "RARE".equals(item.rarity()) ? "poe-name-rare"
+									: "MAGIC".equals(item.rarity()) ? "poe-name-magic" : "poe-name-normal";
 								String tipClass = isUnique ? "poe-rar-unique" : "RARE".equals(item.rarity()) ? "poe-rar-rare"
 									: "MAGIC".equals(item.rarity()) ? "poe-rar-magic" : "poe-rar-white";
 								String tipColor = isUnique ? "#af6025" : "RARE".equals(item.rarity()) ? "#ffff77"
@@ -101,6 +112,7 @@
 								String displayName = net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name());
 								String displayBase = net.luversof.web.gate.poe.PoeText.name(item.baseTypeKo(), item.baseType());
 								java.util.List<String> displayMods = net.luversof.web.gate.poe.PoeText.lines(item.modLinesKo(), item.modLines());
+								java.util.List<String> displayImplicits = net.luversof.web.gate.poe.PoeText.lines(item.implicitLinesKo(), item.implicitLines());
 									boolean showMods = !isUnique && displayMods != null && !displayMods.isEmpty();
 								String itemClassLabel = item.base() != null ? net.luversof.web.gate.poe.PoeText.name(item.base().itemClassKo(), item.base().itemClass()) : null;
 							}
@@ -113,7 +125,14 @@
 									@if(!item.slot().isEmpty())
 										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</span>
 									@endif
-									<div class="min-w-0 text-sm truncate"><span class="font-semibold ${itemColor}">${displayName}</span>@if(!item.baseType().equals(item.name()))<span class="text-xs text-base-content/50 ml-1">${displayBase}</span>@endif</div>
+									<%-- 이름 줄 / 베이스 줄 분리 — 인게임 아이템 툴팁이 그렇고, 우리 고유 목록도 그렇다.
+								     한 줄에 붙여두면 truncate 가 걸릴 때 베이스가 먼저 잘려 무슨 베이스인지 안 보인다. --%>
+								<div class="min-w-0 text-sm">
+									<div class="truncate"><span class="font-semibold ${itemColor}">${displayName}</span></div>
+									@if(!item.baseType().equals(item.name()))
+										<div class="truncate text-xs text-base-content/50">${displayBase}</div>
+									@endif
+								</div>
 								</div>
 							@else
 								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors">
@@ -121,13 +140,18 @@
 										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</span>
 									@endif
 									<div class="min-w-0 text-sm">
-										<div class="truncate"><span class="font-semibold ${itemColor}">${item.name()}</span>@if(!item.baseType().equals(item.name()))<span class="text-xs text-base-content/50 ml-1">${displayBase}</span>@endif</div>
+										<%-- 유니크 행과 같은 구조(이름 줄 / 베이스 줄). 이름도 displayName 으로 — 여긴 원문만 쓰고 있어
+										     한글 이름이 있는 아이템에서 유니크 행과 표기가 달랐다. --%>
+										<div class="truncate"><span class="font-semibold ${itemColor}">${displayName}</span></div>
+										@if(!item.baseType().equals(item.name()))
+											<div class="truncate text-xs text-base-content/50">${displayBase}</div>
+										@endif
 										@if(showMods)
 											<div class="text-[11px] leading-4 text-[#8888ff]/80 line-clamp-3">${String.join(" / ", displayMods)}</div>
 										@endif
 									</div>
 									<div data-poe-tip class="hidden">
-										@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = item.name(), base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods)
+										@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = item.name(), base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods, implicitLines = displayImplicits, corrupted = item.corrupted(), quality = item.quality())
 									</div>
 								</div>
 							@endif

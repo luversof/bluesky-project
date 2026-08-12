@@ -84,6 +84,16 @@ public class PoeModDataService {
 
   public record NamedFamily(String key, ModFamily family) {}
 
+  /**
+   * 전체 모드 풀의 모든 패밀리 — 번역 사전 구축용.
+   *
+   * <p>큐레이션 풀(mod-pool.json)은 시뮬 후보로 쓰는 것만 담고 있어, 플라스크·주얼 등 거기 없는 모드는 임포트한 빌드에서 영문으로 남았다. 전체
+   * 풀(mods.json)에는 ko 가 함께 있으므로 사전의 빈 자리를 채우는 데 쓴다.
+   */
+  public java.util.Collection<ModFamily> allFamilies() {
+    return data.families().values();
+  }
+
   private final Path dataFile;
   private volatile ModData data = new ModData("", List.of(), Map.of(), Map.of());
 

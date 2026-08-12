@@ -65,7 +65,7 @@
 										<tr class="${l.level() == displayLevel ? "bg-primary/10" : ""}">
 											<td class="font-mono">${l.level()}</td>
 											<td class="font-mono">${l.requiredLevel()}</td>
-											<td class="font-mono">@if(l.cost() != null && l.cost() > 0)${l.cost()} ${l.costType()}@endif</td>
+											<td class="font-mono">@if(l.cost() != null && l.cost() > 0)${l.cost()} ${net.luversof.web.gate.poe.PoeText.costType(l.costType())}@endif</td>
 											<td class="font-mono">@if(l.baseMultiplier() != null)${String.format("%.0f", l.baseMultiplier())}%@elseif(l.damageEffectiveness() != null)${String.format("%.0f", l.damageEffectiveness())}%@endif</td>
 											<td class="font-mono">@if(l.critChance() != null)${String.format("%.2f", l.critChance())}%@endif</td>
 											<td class="text-xs whitespace-pre-line">${String.join("\n", PoeText.lines(l.statLinesKo(), l.statLines()))}</td>

@@ -6,11 +6,18 @@
 @param List<PoeUniqueItem> items
 @param int totalCount = 0
 @param int matchedCount = 0
+@param String listQ = ""
+@param String listItemClass = "all"
+@param int nextLimit = 0
 
 !{
 	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.count"), items.size(), totalCount);
 	String emptyLabel = MessageUtil.getMessage("poe.gems.empty");
 	boolean capped = matchedCount > items.size();
+	String moreLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.more"), Math.min(nextLimit, matchedCount) - items.size()) : null;
+	String moreUrl = "/poe/htmx/uniques?limit=" + nextLimit
+		+ "&q=" + java.net.URLEncoder.encode(listQ, java.nio.charset.StandardCharsets.UTF_8)
+		+ "&itemClass=" + java.net.URLEncoder.encode(listItemClass, java.nio.charset.StandardCharsets.UTF_8);
 	String cappedLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.capped"), matchedCount, items.size()) : null;
 }
 
@@ -52,7 +59,7 @@
 					<%-- 제목 (고유색) --%>
 					<div class="flex items-baseline gap-2">
 						<%-- 이름 클릭 → 상세 페이지 --%>
-						<a class="font-bold text-orange-600 dark:text-orange-400 truncate link-hover" href="/poe/uniques/${item.slug()}" title="${item.name()}">${displayName}</a>
+						<a class="font-bold poe-name-unique truncate link-hover" href="/poe/uniques/${item.slug()}" title="${item.name()}">${displayName}</a>
 						@if(PoeText.isKorean())
 							<span class="text-xs text-base-content/40 truncate">${item.name()}</span>
 						@endif
@@ -64,13 +71,18 @@
 							<span class="text-base-content/40">${levelLabel} ${item.requiredLevel()}</span>
 						@endif
 						@if(item.reqStr() != null && item.reqStr() > 0)
-							<span class="text-red-500/80">${strLabel} ${item.reqStr()}</span>
+							<span class="poe-gem-red">${strLabel} ${item.reqStr()}</span>
 						@endif
 						@if(item.reqDex() != null && item.reqDex() > 0)
-							<span class="text-green-500/80">${dexLabel} ${item.reqDex()}</span>
+							<span class="poe-gem-green">${dexLabel} ${item.reqDex()}</span>
 						@endif
 						@if(item.reqInt() != null && item.reqInt() > 0)
-							<span class="text-blue-500/80">${intLabel} ${item.reqInt()}</span>
+							<span class="poe-gem-blue">${intLabel} ${item.reqInt()}</span>
+						@endif
+						<%-- 리그 출처 — 444종이 특정 리그 기제에서만 나온다(하이스트 122, 브리치 34 …).
+						     이게 없으면 "지금 파밍할 수 있는 것"과 "그 리그 콘텐츠를 돌아야 하는 것"이 구분되지 않는다. --%>
+						@if(item.league() != null && !item.league().isBlank())
+							<span class="badge badge-ghost badge-xs" title="${PoeText.isKorean() ? "이 고유는 해당 리그 콘텐츠에서 나옵니다" : "Drops from this league's content"}">${item.league()}</span>
 						@endif
 					</div>
 					<%-- 옵션 — 인게임 툴팁 구조: 고정(암시)은 상단, 구분선 아래 접두/접미(폭발).
@@ -97,4 +109,16 @@
 		@endfor
 	</div>
 @endif
+
+	@if(capped)
+		<%-- 더 보기 — 상한(90)만 두고 더 볼 방법이 없으면 1,268개 중 나머지는 검색어를 정확히 아는
+		     사람만 도달할 수 있었다. 한 단계(90개)씩 늘려 같은 목록 자리에 다시 그린다. --%>
+		<div class="flex justify-center pt-3">
+			<button type="button" class="btn btn-sm btn-outline"
+			        hx-get="${moreUrl}"
+			        hx-target="#poeUniqueList"
+			        hx-swap="innerHTML"
+			        hx-disabled-elt="this">${moreLabel}</button>
+		</div>
+	@endif
 @endif

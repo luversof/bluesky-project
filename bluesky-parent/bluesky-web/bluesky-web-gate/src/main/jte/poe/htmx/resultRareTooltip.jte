@@ -64,14 +64,15 @@
 		<div class="text-center text-[13px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">@if(base != null)${PoeText.name(base.itemClassKo(), base.itemClass())}@else${rareLabel}@endif</div>
 	</div>
 
-	<%-- 요구 사항(베이스 고정 속성) — 인게임 툴팁 파리티. 방어/무기 수치는 모드 반영값이 없어 생략(부정확 방지). --%>
-	@if(base != null && (base.reqStr() > 0 || base.reqDex() > 0 || base.reqInt() > 0))
+	<%-- 요구 사항 — 인게임은 **레벨이 먼저**다("요구 능력치 레벨 62, 180 힘"). 방어/무기 수치는 모드 반영값이
+	     없어 생략(부정확 방지)하지만, 요구 사항은 베이스 고정값이라 정확히 보여줄 수 있다.
+	     이 템플릿만 레벨이 빠지고 라벨·속성명이 하드코딩이라 다른 화면(itemTooltip·itemDetail, 사이클 12)과
+	     표기가 달랐다 — 같은 메시지 키를 쓰고 형식을 통일한다.
+	     ⚠ 한 줄로 붙여 쓸 것: @if 사이 줄바꿈이 공백으로 렌더돼 "레벨 62 , 180 힘"처럼 쉼표 앞이 벌어진다. --%>
+	@if(base != null && (base.dropLevel() > 0 || base.reqStr() > 0 || base.reqDex() > 0 || base.reqInt() > 0))
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center text-[12px]">
-			<span class="text-[#7f7f7f]">${PoeText.isKorean() ? "요구 사항" : "Requires"} </span>
-			@if(base.reqStr() > 0)<span class="text-[#e0e0e0]">${base.reqStr()} </span><span class="text-[#7f7f7f]">${PoeText.isKorean() ? "힘" : "Str"}</span>@endif
-			@if(base.reqDex() > 0)<span class="text-[#e0e0e0]">${base.reqStr() > 0 ? ", " : ""}${base.reqDex()} </span><span class="text-[#7f7f7f]">${PoeText.isKorean() ? "민첩" : "Dex"}</span>@endif
-			@if(base.reqInt() > 0)<span class="text-[#e0e0e0]">${(base.reqStr() > 0 || base.reqDex() > 0) ? ", " : ""}${base.reqInt()} </span><span class="text-[#7f7f7f]">${PoeText.isKorean() ? "지능" : "Int"}</span>@endif
+			<span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>@if(base.dropLevel() > 0)<span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="text-[#e0e0e0]">${base.dropLevel()}</span>@endif@if(base.reqStr() > 0)<span class="text-[#e0e0e0]">${base.dropLevel() > 0 ? ", " : ""}${base.reqStr()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(base.reqDex() > 0)<span class="text-[#e0e0e0]">${(base.dropLevel() > 0 || base.reqStr() > 0) ? ", " : ""}${base.reqDex()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(base.reqInt() > 0)<span class="text-[#e0e0e0]">${(base.dropLevel() > 0 || base.reqStr() > 0 || base.reqDex() > 0) ? ", " : ""}${base.reqInt()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
 		</div>
 	@endif
 

@@ -29,7 +29,9 @@
 		var placeholder = select.getAttribute("data-placeholder") || t("검색…", "Search…");
 
 		var wrap = document.createElement("div");
-		wrap.className = "relative w-full sm:w-96";
+		// 너비는 담는 쪽이 정한다 — 예전엔 sm:w-96 을 박아둬 폭이 유연한 칸(시뮬 폼 한 줄 배치)에서
+		// 컨테이너를 384px 로 밀고 나가 가로 스크롤이 생겼다(768px 실측).
+		wrap.className = "relative w-full";
 		wrap.setAttribute("data-poe-msd-wrap", "1");
 
 		// 칩 + 검색 입력을 담는 가짜 인풋(클릭하면 검색 포커스)

@@ -99,6 +99,10 @@
 		cursor: pointer;
 		user-select: none;
 		text-align: center;
+		/* daisyUI 원본 .btn 에 있는 속성인데 대체 구현에서 빠져 있었다 —
+		   폭이 좁아지면 한글이 **글자 단위로** 줄바꿈된다(실측: 헤더 로그인 버튼이 768px 이하에서
+		   "로/그/인" 3줄, 데스크톱 1500px 에서는 1줄이라 눈에 안 띄었다). */
+		white-space: nowrap;
 		transition: background-color .15s, border-color .15s, color .15s, box-shadow .15s;
 	}
 	.btn:hover { background-color: var(--color-base-300); }
@@ -628,6 +632,77 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	color: #8888ff; /* 인게임 모드 파랑 */
 	white-space: pre-line;
 }
+/* 클러스터 사전 — 트리 노드 팝업과 같은 인게임 색 관례를 쓴다.
+   이름은 툴팁 제목색(.poe-popup-title), 스탯 줄은 모드 파랑(.poe-popup-stat).
+   예전엔 이름이 cyan 링크색·스탯이 본문색이라 같은 패시브 노터블인데 트리 팝업과 반대로 보였다. */
+/* 인게임 아이템/노드 표기 관례 — 이름은 툴팁 제목색(흰색), 스탯 줄이 모드 파랑(#8888ff).
+   클러스터 사전에서 먼저 고쳤는데(사이클 280) 문신 목록에 같은 결함이 남아 있었다(이름 amber·스탯 본문색).
+   페이지마다 재발하지 않도록 클러스터 전용 이름을 버리고 공용 클래스로 쓴다. */
+/* 희귀도 색 — 인게임 아이템 색 그대로(툴팁이 이미 쓰는 값과 동일).
+   목록·결과 행은 Tailwind 근사색(text-orange-500/yellow-500/blue-400)을 쓰고 있어서
+   같은 아이템이 행과 자기 툴팁에서 다른 색으로 보였다.
+   라이트 테마는 #ffff77 처럼 흰 배경에서 안 읽히는 값만 명도를 낮춘다(색상은 유지). */
+/* 트리·아틀라스 툴바 접기 — 좁은 화면에서만 접는다.
+   데스크톱(sm 이상)에서는 details 가 닫혀 있어도 내용을 그대로 펼쳐 보인다
+   (UA 기본 `details:not([open]) > *:not(summary){display:none}` 를 덮는다).
+   이렇게 하면 JS 없이 CSS 만으로 "모바일 접힘 / 데스크톱 항상 펼침"이 된다. */
+/* ⚠ 데스크톱에서 "닫힌 details 를 CSS 로 펼쳐 보이게" 하는 트릭은 **동작하지 않는다**.
+   Chrome 은 닫힌 details 의 내용을 렌더 트리에서 통째로 빼기 때문에 자식에 display 를 덮어써도 그려지지 않는다
+   (getBoundingClientRect 는 값이 나오고 getComputedStyle 도 visible 이라 검사로 잡기 어렵다 —
+    실제로 사이클 302 이후 데스크톱 트리 툴바 전체가 안 보인 채 배터리는 그린이었다).
+   → 펼침은 CSS 가 아니라 **open 속성**으로 한다(common.ts 가 뷰포트에 맞춰 동기화). 여기선 요약(토글)만 숨긴다. */
+@media (min-width: 640px) {
+	.poe-tools > summary { display: none; }
+}
+
+/* 모바일에서 툴바를 **펼칠 때** 캔버스를 밀어내지 않는다.
+   접기(사이클 302)로 캔버스는 320→524px 이 됐지만, 검색하려고 툴바를 열면 7줄짜리 툴바가
+   흐름에 끼어들어 캔버스가 y=920 (뷰포트 812 밖)으로 내려갔다 — 검색하는 순간 트리가 화면에서 사라지고
+   결과를 보려면 다시 스크롤해야 했다(journey-touch ⑥ 이 여기서 막혔다).
+   → 펼친 툴바를 절대 배치 오버레이로 띄워 흐름에서 빼고, 길면 툴바 안에서만 스크롤시킨다. */
+@media (max-width: 639px) {
+	.poe-tools { position: relative; }
+	.poe-tools[open] > *:not(summary) {
+		position: absolute;
+		left: 0;
+		right: 0;
+		/* 부모의 flex 자식이라 auto 폭이면 내용 폭으로 쪼그라들어 라벨이 잘린다 — 화면 폭을 다 쓴다. */
+		width: 100%;
+		z-index: 30;
+		max-height: 60vh;
+		overflow-y: auto;
+		padding: 0.5rem;
+		border-radius: var(--radius-box, 0.5rem);
+		background: var(--color-base-100);
+		box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+	}
+}
+
+.poe-name-unique { color: #af6025; }
+.poe-name-rare { color: #ffff77; }
+.poe-name-magic { color: #8888ff; }
+.poe-name-normal { color: #c8c8c8; }
+[data-theme="light"] .poe-name-unique { color: #8c4c1d; }
+[data-theme="light"] .poe-name-rare { color: #8a7a00; }
+[data-theme="light"] .poe-name-magic { color: #4646c8; }
+[data-theme="light"] .poe-name-normal { color: #4b5563; }
+
+.poe-entry-name { color: #fff; }
+[data-theme="light"] .poe-entry-name { color: #1f2937; }
+.poe-entry-stat { color: #8888ff; }
+[data-theme="light"] .poe-entry-stat { color: #4646c8; }
+
+/* 젬 소켓 색 — 인게임(PoB Data/Global.lua colorCodes) 값 그대로.
+   힘=MARAUDER #E05030 / 민첩=RANGER #70FF70 / 지능=WITCH #7070FF.
+   라이트 테마에선 #70FF70·#7070FF 가 흰 배경에서 안 읽혀 명도만 낮춘다(색상은 유지). */
+.poe-gem-red { color: #e05030; border-color: color-mix(in srgb, #e05030 55%, transparent); }
+.poe-gem-green { color: #70ff70; border-color: color-mix(in srgb, #70ff70 55%, transparent); }
+.poe-gem-blue { color: #7070ff; border-color: color-mix(in srgb, #7070ff 55%, transparent); }
+.poe-gem-white { color: #d8d8d8; border-color: color-mix(in srgb, #d8d8d8 55%, transparent); }
+[data-theme="light"] .poe-gem-red { color: #b83a1e; border-color: color-mix(in srgb, #b83a1e 55%, transparent); }
+[data-theme="light"] .poe-gem-green { color: #1e8a1e; border-color: color-mix(in srgb, #1e8a1e 55%, transparent); }
+[data-theme="light"] .poe-gem-blue { color: #3a3ac8; border-color: color-mix(in srgb, #3a3ac8 55%, transparent); }
+[data-theme="light"] .poe-gem-white { color: #4b5563; border-color: color-mix(in srgb, #4b5563 55%, transparent); }
 .poe-popup-reminder {
 	font-size: 0.7rem;
 	line-height: 1.05rem;
@@ -749,7 +824,34 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 /* 에센스/작업대 카드의 접두/접미 라벨(amber-400) — 라이트에서 옅음(감사 적발 ×114) */
 #mod-sec-essence .text-amber-400, #mod-sec-bench .text-amber-400 { color: #b45309; }
 [data-theme="dark"] #mod-sec-essence .text-amber-400, [data-theme="dark"] #mod-sec-bench .text-amber-400 { color: #fbbf24; }
+/* 부패/바알 빨강 — 인게임 부패 텍스트 색(#d20000) 그대로 쓰면 우리 다크 배경에선 대비가 모자란다(감사 적발 ×59).
+   게임은 거의 검은 툴팁 위에 이 색을 얹지만 우리 다크 표면은 그보다 밝다. 색 관례(부패=빨강)는 지키고
+   다크에서만 명도를 올린다. 라이트는 인게임 값 그대로. */
+:root { --poe-corrupt: #d20000; }
+[data-theme="dark"] { --poe-corrupt: #ff5a5a; }
+[data-theme="dark"] .text-\[\#d20000\] { color: var(--poe-corrupt); }
+[data-theme="dark"] .border-\[\#d20000\]\/40 { border-color: color-mix(in oklch, var(--poe-corrupt) 45%, transparent); }
+[data-theme="dark"] .border-\[\#d20000\]\/50 { border-color: color-mix(in oklch, var(--poe-corrupt) 55%, transparent); }
+[data-theme="dark"] .bg-\[\#d20000\]\/15 { background-color: color-mix(in oklch, var(--poe-corrupt) 18%, transparent); }
+[data-theme="dark"] .bg-\[\#d20000\]\/12 { background-color: color-mix(in oklch, var(--poe-corrupt) 15%, transparent); }
 /* 방어 피격 범례 번개 색 — 전용 클래스로 테마 분기 */
+/* 원소 색 — 인게임(PoB Data/Global.lua colorCodes) 값 그대로.
+   FIRE #B97123 · COLD #3F6DB3 · LIGHTNING #ADAA47 · CHAOS #D02090.
+   결과 방어 패널이 Tailwind 근사색(red-500/sky-400/fuchsia-500)을 써서 인게임과 어긋나 있었다.
+   어두운 배경에서 원본이 탁해 보이는 화염/냉기만 명도를 올리고(색상 유지), 라이트에선 낮춘다. */
+.poe-el-phys { color: #7f7f7f; }
+.poe-el-fire { color: #d98a2b; }
+.poe-el-cold { color: #5b8fd6; }
+.poe-el-lightning { color: #cfcb59; }
+/* 카오스만 원본(#D02090) 그대로 두면 어두운 배경에서 저대비로 걸린다(대비 감사 적발) —
+   다른 원소와 같은 규칙으로 명도만 올린다(hue 320° 유지). */
+.poe-el-chaos { color: #e85bb0; }
+[data-theme="light"] .poe-el-phys { color: #4b5563; }
+[data-theme="light"] .poe-el-fire { color: #96591a; }
+[data-theme="light"] .poe-el-cold { color: #35598f; }
+[data-theme="light"] .poe-el-lightning { color: #7d7a2c; }
+[data-theme="light"] .poe-el-chaos { color: #a51872; }
+
 .poe-def-lightning { color: #ca8a04; }
 [data-theme="dark"] .poe-def-lightning { color: #facc15; }
 

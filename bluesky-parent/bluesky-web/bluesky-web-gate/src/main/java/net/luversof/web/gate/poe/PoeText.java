@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.context.i18n.LocaleContextHolder;
 
+import io.github.luversof.boot.context.support.MessageUtil;
+
 /**
  * PoE 화면의 이름/설명을 현재 요청 로케일(한국어/영어)에 맞춰 고르는 헬퍼. 게임 데이터는 한/영을 모두 담고 있어, 한국어 로케일이면 한국어를(없으면 영어로 폴백)
  * 보여준다. JTE 에서 {@code PoeText.name(x.nameKo(), x.name())} 형태로 쓴다.
@@ -20,6 +22,28 @@ public final class PoeText {
   /** 로케일에 맞는 이름 (한국어면 ko, 비었으면 en 폴백) */
   public static String name(String ko, String en) {
     return isKorean() && ko != null && !ko.isBlank() ? ko : en;
+  }
+
+  /**
+   * 젬 소모 자원 표기 — 데이터의 costType 은 영문 코드(Mana/Life/ES/ManaPerMinute/ManaPercent)라 한글 로케일에서도 "Mana" 가
+   * 그대로 노출됐다(실측: 젬 툴팁 "소모: Mana 29", 진행표 "10 Mana").
+   *
+   * <p>모르는 값이 오면 원문을 그대로 돌려준다 — 새 자원이 추가돼도 화면이 비지 않는다.
+   */
+  public static String costType(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return "";
+    }
+    String key =
+        switch (raw) {
+          case "Mana" -> "poe.gems.costtype.mana";
+          case "Life" -> "poe.gems.costtype.life";
+          case "ES" -> "poe.gems.costtype.es";
+          case "ManaPerMinute" -> "poe.gems.costtype.manaperminute";
+          case "ManaPercent" -> "poe.gems.costtype.manapercent";
+          default -> null;
+        };
+    return key == null ? raw : MessageUtil.getMessage(key);
   }
 
   /** 로케일에 맞는 라인 목록 (한국어면 ko, 없으면 en 폴백) */

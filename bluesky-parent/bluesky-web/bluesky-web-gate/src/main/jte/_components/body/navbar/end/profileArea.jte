@@ -1,4 +1,5 @@
 @import net.luversof.web.gate.util.CspNonceHolder
+@import io.github.luversof.boot.context.support.MessageUtil
 @param boolean isAuthenticated = false
 @param String username = ""
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
@@ -14,7 +15,7 @@
 				<li>
 					<form action="/logout" method="post">
 						<button type="submit" class="flex items-center gap-1">
-							@template._components.icons.logout() 로그아웃
+							@template._components.icons.logout() ${MessageUtil.getMessage("layout.navbar.logout")}
 						</button>
 					</form>
 				</li>
@@ -23,7 +24,7 @@
 	</div>
 @else
 	<a class="btn btn-ghost" id="login-link" href="#">
-		@template._components.icons.login() 로그인
+		@template._components.icons.login() ${MessageUtil.getMessage("layout.navbar.login")}
 	</a>
 	<script nonce="${CspNonceHolder.getNonce()}">
 	document.addEventListener('DOMContentLoaded', function() {

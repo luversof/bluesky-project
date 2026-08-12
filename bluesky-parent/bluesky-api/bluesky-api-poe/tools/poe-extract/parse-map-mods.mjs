@@ -116,7 +116,10 @@ mods.forEach((mod, index) => {
 		else if (p) packSize = Number(p[1]);
 		else effectIdx.push(i);
 	});
-	if (effectIdx.length === 0) return; // 효과 없는 보상 전용 모드는 검색 대상 아님
+	// ⚠ 효과 줄이 0개라고 버리면 **실재하는 어픽스가 통째로 사라진다.**
+	//    "혈족의(of Bloodlines)" 와 "부패의(of Decaying)" 는 핵심 스탯(map_magic_pack_mod_rules 등)에
+	//    설명 텍스트가 없어 보상 3줄만 남는데, 예전엔 여기서 return 해 목록에서 빠졌다(스폰 가능 104개 중 102개만 산출).
+	//    이름은 멀쩡하므로 남겨서 **이름으로 거를 수 있게** 한다(매직 지도 이름에 접두/접미가 들어간다).
 	const pick = (arr) => effectIdx.map((i) => arr[i]).filter((s) => s != null);
 
 	const key = mod.Name + "|" + pick(enMax).map((s) => s.replace(NUM, "#")).join("|");

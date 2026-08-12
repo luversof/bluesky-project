@@ -51,7 +51,7 @@
 					</div>
 					<div class="flex flex-wrap gap-x-4 gap-y-1">
 						@for(var u : baseUniques)
-							<a class="poe-hover font-semibold text-orange-500 link-hover cursor-pointer text-sm"
+							<a class="poe-hover font-semibold poe-name-unique link-hover cursor-pointer text-sm"
 							   href="/poe/uniques/${u.slug()}"
 							   hx-get="/poe/htmx/uniques/detail?slug=${u.slug()}"
 							   hx-target="#poePreview"

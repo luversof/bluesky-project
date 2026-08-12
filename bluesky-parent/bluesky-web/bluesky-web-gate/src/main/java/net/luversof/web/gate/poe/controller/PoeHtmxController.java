@@ -400,6 +400,12 @@ public class PoeHtmxController {
   /** 목록 렌더 상한 — 전체(1000+)를 한 번에 그리면 느려서 상위 N개만, 나머지는 검색/부위로 좁힌다 */
   private static final int LIST_LIMIT = 90;
 
+  /** 요청 상한을 [LIST_LIMIT, 전체] 로 클램프 — 0/음수는 기본 한 페이지. */
+  private static int listLimit(int requested, int total) {
+    int wanted = requested <= 0 ? LIST_LIMIT : Math.max(requested, LIST_LIMIT);
+    return Math.min(wanted, total);
+  }
+
   @GetMapping("/items")
   public String baseItemList(
       @RequestParam(required = false) String q,
@@ -407,6 +413,7 @@ public class PoeHtmxController {
       // 방어구 속성 베이스 필터 — 순수 str=방어도(AR)/dex=회피(EV)/int=보호막(ES),
       // 하이브리드 strdex=AR/EV, strint=AR/ES, dexint=EV/ES. 방어구 클래스에서만 적용한다.
       @RequestParam(required = false, defaultValue = "all") String attr,
+      @RequestParam(required = false, defaultValue = "0") int limit,
       Model model) {
     var matched = poeDataClient.searchBaseItems(q, itemClass);
     // attr 는 방어구 부위(투구/갑옷/장갑/장화/방패)에서만 유효 — 무기 등에서 넘어와도 무시해 빈 목록을 막는다.
@@ -447,9 +454,12 @@ public class PoeHtmxController {
             .sorted(java.util.Comparator.comparingInt(PoeBaseItem::dropLevel).reversed())
             .toList();
     model.addAttribute("attr", attr);
-    model.addAttribute(
-        "items", matched.size() > LIST_LIMIT ? matched.subList(0, LIST_LIMIT) : matched);
+    int shown = listLimit(limit, matched.size());
+    model.addAttribute("items", matched.subList(0, shown));
     model.addAttribute("matchedCount", matched.size());
+    model.addAttribute("listQ", q == null ? "" : q);
+    model.addAttribute("listItemClass", itemClass);
+    model.addAttribute("nextLimit", shown + LIST_LIMIT);
     model.addAttribute("totalCount", poeDataClient.baseItemMeta().totalCount());
     return "poe/htmx/itemList";
   }
@@ -532,11 +542,17 @@ public class PoeHtmxController {
   public String uniqueList(
       @RequestParam(required = false) String q,
       @RequestParam(required = false, defaultValue = "all") String itemClass,
+      // 목록 상한 — "더 보기"가 한 단계씩 늘려 보낸다. 상한만 두고 더 볼 방법이 없으면
+      // 1,268개 중 90개 밖은 검색어를 정확히 아는 사람만 도달할 수 있다.
+      @RequestParam(required = false, defaultValue = "0") int limit,
       Model model) {
     var matched = poeDataClient.searchUniques(q, itemClass);
-    model.addAttribute(
-        "items", matched.size() > LIST_LIMIT ? matched.subList(0, LIST_LIMIT) : matched);
+    int shown = listLimit(limit, matched.size());
+    model.addAttribute("items", matched.subList(0, shown));
     model.addAttribute("matchedCount", matched.size());
+    model.addAttribute("listQ", q == null ? "" : q);
+    model.addAttribute("listItemClass", itemClass);
+    model.addAttribute("nextLimit", shown + LIST_LIMIT);
     model.addAttribute("totalCount", poeDataClient.uniqueMeta().totalCount());
     return "poe/htmx/uniqueList";
   }
@@ -588,7 +604,37 @@ public class PoeHtmxController {
     RestClientException.class,
     BlueskyException.class
   })
-  public String handleApiError(Exception e) {
+  public String handleApiError(Exception e, org.springframework.ui.Model model) {
+    model.addAttribute("notFound", isNotFound(e));
     return "poe/htmx/apiError";
+  }
+
+  /**
+   * 없는 항목(404)인지 — 일시 장애와 구분하려고.
+   *
+   * <p>이전엔 모든 예외를 "잠시 후 다시 시도해 주세요"로 뭉갰다. 그런데 삭제·개명된 slug 로 호버하면 영영 안 되는데도 재시도를 권하게 된다(실측:
+   * /poe/htmx/{gems,uniques,items}/detail?slug=bogus).
+   *
+   * <p>게이트는 API 404 를 BlueskyException 으로 감싸 받으므로 타입만으로는 못 가른다 — 메시지에 실린 상태를 본다. 문자열 의존이라 취약하지만, 못
+   * 갈라도 기존 문구로 안전하게 떨어질 뿐이라 손해가 없다.
+   */
+  private static boolean isNotFound(Exception e) {
+    if (e instanceof org.springframework.web.client.HttpClientErrorException.NotFound) {
+      return true;
+    }
+    for (Throwable t = e; t != null; t = t.getCause()) {
+      String message = String.valueOf(t.getMessage());
+      if (message.contains("404")) {
+        return true;
+      }
+      if (t instanceof BlueskyException be
+          && String.valueOf(be.getErrorMessage()).contains("404")) {
+        return true;
+      }
+      if (t.getCause() == t) {
+        break;
+      }
+    }
+    return false;
   }
 }

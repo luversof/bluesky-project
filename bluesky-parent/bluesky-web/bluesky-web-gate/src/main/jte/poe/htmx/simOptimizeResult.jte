@@ -7,6 +7,21 @@
 @param net.luversof.web.gate.poe.dto.ArchetypeBenchmark ninjaBenchmark = null
 @param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> rareBases = null
 
+!{
+	// 결과는 실행 시점 이름으로 저장되므로 API 가 한/영을 함께 싣는다 — 화면은 로케일대로 고르기만 한다.
+	// ⚠ 여러 섹션(노터블·마스터리·문신)이 쓰므로 **파일 최상단**에 둔다. 첫 섹션 안에 두면 뒤 섹션에서 스코프 밖이다.
+	// 구 히스토리(영문 목록 없음)는 한글로 폴백 — 옛 결과가 빈칸이 되면 안 된다.
+	java.util.function.BiFunction<java.util.List<String>, java.util.List<String>, java.util.List<String>> pickList =
+		(koList, enList) -> !net.luversof.web.gate.poe.PoeText.isKorean() && enList != null && !enList.isEmpty() ? enList : koList;
+	java.util.List<String> dNotables = pickList.apply(result.treeNotables(), result.treeNotablesEn());
+	java.util.List<String> dMasteryLabels = pickList.apply(result.treeMasteryLabels(), result.treeMasteryLabelsEn());
+	java.util.List<String> dTattooLabels = pickList.apply(result.treeTattooLabels(), result.treeTattooLabelsEn());
+	// 티어 비교 헤더는 T1/중간/하위 **고정 3값**이라 DTO 를 늘리지 않고 여기서 옮긴다(구 히스토리도 함께 해결된다).
+	java.util.Map<String, String> tierLabelEn = java.util.Map.of("T1", "T1", "중간", "Mid", "하위", "Low");
+	java.util.function.Function<String, String> tierLabel =
+		l -> net.luversof.web.gate.poe.PoeText.isKorean() ? l : tierLabelEn.getOrDefault(l, l);
+}
+
 @if(result != null)
 	!{
 		String gemLabel = net.luversof.web.gate.poe.PoeText.name(result.gemNameKo(), result.gemName());
@@ -371,11 +386,11 @@
 		@if(result.defenseHits() != null && !result.defenseHits().isEmpty())
 			!{
 				java.util.Map<String, String> defColor = java.util.Map.of(
-					"physical", "text-base-content/70",
-					"fire", "text-red-500",
-					"cold", "text-sky-400",
-					"lightning", "poe-def-lightning",
-					"chaos", "text-fuchsia-500");
+					"physical", "poe-el-phys",
+					"fire", "poe-el-fire",
+					"cold", "poe-el-cold",
+					"lightning", "poe-el-lightning",
+					"chaos", "poe-el-chaos");
 			}
 			<div class="space-y-1.5">
 				<span class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.defense")}</span>
@@ -488,13 +503,13 @@
 			<div class="flex flex-wrap items-center gap-1.5">
 				<span class="text-xs font-semibold text-base-content/50 mr-1">${treeLabel}</span>
 				!{java.util.List<Integer> nids = result.treeNotableIds();}
-				@for(int ni = 0; ni < result.treeNotables().size(); ni++)
+				@for(int ni = 0; ni < dNotables.size(); ni++)
 					!{int nid = nids != null && ni < nids.size() ? nids.get(ni) : 0;}
 					@if(nid > 0)
 						<%-- 노터블 클릭 → 트리에서 그 노드를 중앙에(도유 목록과 같은 focus 딥링크) --%>
-						<a class="badge badge-warning badge-outline badge-sm link-hover" href="${treeLink}&focus=${nid}">${result.treeNotables().get(ni)}</a>
+						<a class="badge badge-warning badge-outline badge-sm link-hover" href="${treeLink}&focus=${nid}">${dNotables.get(ni)}</a>
 					@else
-						<span class="badge badge-warning badge-outline badge-sm">${result.treeNotables().get(ni)}</span>
+						<span class="badge badge-warning badge-outline badge-sm">${dNotables.get(ni)}</span>
 					@endif
 				@endfor
 				<a class="link link-primary text-sm ml-1" href="${treeLink}">${MessageUtil.getMessage("poe.build.summary.tree.view")}</a>
@@ -506,7 +521,7 @@
 			<div class="space-y-1.5">
 				<span class="text-xs font-semibold text-base-content/50">${net.luversof.web.gate.poe.PoeText.isKorean() ? "마스터리" : "Masteries"}</span>
 				<div class="flex flex-col gap-1">
-					@for(String label : result.treeMasteryLabels())
+					@for(String label : dMasteryLabels)
 						<div class="flex items-baseline gap-2 text-sm">
 							<span class="badge badge-outline badge-sm shrink-0 w-16 justify-center border-sky-400 text-sky-700 dark:text-sky-300">◇ ${net.luversof.web.gate.poe.PoeText.isKorean() ? "숙련" : "Mastery"}</span>
 							<span class="text-sky-700 dark:text-sky-300 whitespace-normal">${label}</span>
@@ -521,7 +536,7 @@
 			<div class="space-y-1.5">
 				<span class="text-xs font-semibold text-base-content/50">${net.luversof.web.gate.poe.PoeText.isKorean() ? "문신" : "Tattoos"}</span>
 				<div class="flex flex-col gap-1">
-					@for(String label : result.treeTattooLabels())
+					@for(String label : dTattooLabels)
 						!{
 							String tattooNameKo = label.contains(" ×") ? label.substring(0, label.lastIndexOf(" ×")) : label;
 							String tattooIconPath = tattooIcons != null ? tattooIcons.get(tattooNameKo) : null;
@@ -635,9 +650,9 @@
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="${di.slug() != null ? "/poe/items/" + di.slug() : "#"}" title="${dName}">
 									@if(di.slug() != null)
 										<img src="/poe-assets/items/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
-										<span class="hidden max-h-full overflow-hidden text-[8px] font-semibold text-yellow-500 text-center leading-[1.15]">${dName}</span>
+										<span class="hidden max-h-full overflow-hidden text-[8px] font-semibold poe-name-rare text-center leading-[1.15]">${dName}</span>
 									@else
-										<span class="max-h-full overflow-hidden text-[8px] font-semibold text-yellow-500 text-center leading-[1.15] drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)]">${dName}</span>
+										<span class="max-h-full overflow-hidden text-[8px] font-semibold poe-name-rare text-center leading-[1.15] drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)]">${dName}</span>
 									@endif
 									<span data-poe-tip class="hidden">@template.poe.htmx.resultRareTooltip(name = di.name(), nameKo = di.nameKo(), modLines = dLines, modTiers = di.modTiers(), base = rareBases == null ? null : rareBases.get(di.slug()))</span>
 								</a>
@@ -645,7 +660,7 @@
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}"
 								   hx-get="/poe/htmx/uniques/detail?slug=${di.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML" title="${dName}">
 									<img src="/poe-assets/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
-									<span class="hidden text-[8px] font-semibold text-orange-500 text-center leading-tight">${dName}</span>
+									<span class="hidden text-[8px] font-semibold poe-name-unique text-center leading-tight">${dName}</span>
 								</a>
 							@endif
 						@endif
@@ -666,9 +681,9 @@
 								     호버 = 인게임식 툴팁(유니크 호버 레이어 파리티) — 데이터가 이미 여기 있어 서버 호출 없이 CSS 로만 띄운다 --%>
 								<span class="relative group">
 									@if(item.slug() != null)
-										<a class="font-semibold text-yellow-500 link-hover" href="/poe/items/${item.slug()}">${MessageUtil.getMessage("poe.sim.opt.result.rare")} · ${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</a>
+										<a class="font-semibold poe-name-rare link-hover" href="/poe/items/${item.slug()}">${MessageUtil.getMessage("poe.sim.opt.result.rare")} · ${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</a>
 									@else
-										<span class="font-semibold text-yellow-500">${MessageUtil.getMessage("poe.sim.opt.result.rare")} · ${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
+										<span class="font-semibold poe-name-rare">${MessageUtil.getMessage("poe.sim.opt.result.rare")} · ${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
 									@endif
 									<%-- 거래소 검색(사용자 요청) — 최상위(전체 모드, 해당 티어 최저 롤)와 실속형(필수 모드만, T2 이상) 두 링크 --%>
 									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
@@ -728,14 +743,14 @@
 							@else
 								<%-- 유니크: 목록과 같은 호버 레이어(인게임 툴팁) + 상세 페이지 링크 — 결과에서 바로 아이템을 확인할 수 있게 --%>
 								@if(item.slug() != null)
-									<a class="poe-hover font-semibold text-orange-500 link-hover cursor-pointer"
+									<a class="poe-hover font-semibold poe-name-unique link-hover cursor-pointer"
 									   href="/poe/uniques/${item.slug()}"
 									   hx-get="/poe/htmx/uniques/detail?slug=${item.slug()}"
 									   hx-target="#poePreview"
 									   hx-trigger="mouseenter delay:100ms"
 									   hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</a>
 								@else
-									<span class="font-semibold text-orange-500">${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
+									<span class="font-semibold poe-name-unique">${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
 								@endif
 									<%-- 유니크 거래소 링크(사용자 요청) — 고유명 검색 + 즉시 구입. 티어 개념이 없어 배지 하나 --%>
 									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
@@ -762,7 +777,7 @@
 							<tr>
 								<th>${MessageUtil.getMessage("poe.sim.opt.result.items")}</th>
 								@for(PoeOptimizeResult.TierRow row : result.tierComparisons().get(0).rows())
-									<th class="text-right">${row.label()}</th>
+									<th class="text-right">${tierLabel.apply(row.label())}</th>
 								@endfor
 							</tr>
 						</thead>

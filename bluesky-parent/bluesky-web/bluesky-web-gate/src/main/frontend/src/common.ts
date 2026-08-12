@@ -313,9 +313,13 @@ document.addEventListener("keydown", (event) => {
 	// htmx 가 hx-target="#poePreview" 를 찾을 수 있게 DOM 준비되면 미리 생성
 	if (document.body) ensureHost();
 	else document.addEventListener("DOMContentLoaded", () => ensureHost());
+	// 로딩 문구도 로케일에 맞춰야 한다 — 예전엔 한글 고정이라 EN 화면 호버 중에 "불러오는 중…"이 떴다.
+	//    lang 은 <html lang="…"> (서버가 로케일대로 찍는다).
+	const LOADING_LABEL =
+		(document.documentElement.lang || "ko").toLowerCase().indexOf("en") === 0 ? "Loading…" : "불러오는 중…";
 	// 서버 왕복(hx-get) 동안 띄우는 로딩 툴팁 — 빈 화면 대신 스피너를 보여준다(afterSwap 이 교체).
 	const LOADING_TIP =
-		'<div class="poe-tooltip poe-rar-white shadow-2xl" style="border-color:#c8c8c8"><div class="px-6 py-4 flex items-center justify-center gap-2"><span class="loading loading-spinner loading-sm text-primary"></span><span class="text-[12px] text-white/60">불러오는 중…</span></div></div>';
+		'<div class="poe-tooltip poe-rar-white shadow-2xl" style="border-color:#c8c8c8"><div class="px-6 py-4 flex items-center justify-center gap-2"><span class="loading loading-spinner loading-sm text-primary"></span><span class="text-[12px] text-white/60">' + (LOADING_LABEL) + '</span></div></div>';
 	document.addEventListener("mouseover", (event) => {
 		if (pinned) return;
 		const trigger = (event.target as Element)?.closest?.(".poe-hover");
@@ -455,3 +459,22 @@ document.addEventListener("htmx:beforeSwap", (event: any) => {
 		}
 	}
 });
+
+// 트리·아틀라스 툴바(details.poe-tools) 펼침을 뷰포트에 맞춘다.
+// 데스크톱은 항상 펼쳐야 하는데, 닫힌 details 는 Chrome 이 내용을 아예 렌더하지 않아 CSS 로는 펼칠 수 없다.
+// (사이클 302 의 CSS 트릭이 그래서 무효였고, 데스크톱 트리 컨트롤이 전부 사라져 있었다.)
+// 모바일은 접힌 채로 두되 **사용자가 연 상태는 건드리지 않는다** — 브레이크포인트를 넘을 때만 동기화한다.
+(() => {
+	const mq = window.matchMedia("(min-width: 640px)");
+	const apply = (desktop: boolean) => {
+		document.querySelectorAll("details.poe-tools").forEach((d) => {
+			if (desktop) d.setAttribute("open", "");
+			else d.removeAttribute("open");
+		});
+	};
+	const init = () => apply(mq.matches);
+	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+	else init();
+	// change 는 브레이크포인트를 실제로 넘을 때만 발생 — 모바일에서 사용자가 연 툴바를 리사이즈마다 닫지 않는다.
+	mq.addEventListener("change", (e) => apply(e.matches));
+})();

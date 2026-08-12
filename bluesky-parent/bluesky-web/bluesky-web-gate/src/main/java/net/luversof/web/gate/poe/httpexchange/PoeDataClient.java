@@ -40,6 +40,13 @@ public interface PoeDataClient {
   @GetExchange("/gems/meta")
   PoeJobStatus.GemMeta gemMeta();
 
+  /**
+   * API 가 데이터 파일을 마지막으로 읽은 시각(epoch ms). 관리 화면이 파일 갱신 시각과 비교해 "파이프라인은 돌았는데 API 는 옛 데이터" 를 드러내는 데 쓴다
+   * — 앱 밖에서 파이프라인을 돌리면 재기동 전까지 반영되지 않는다.
+   */
+  @GetExchange("/data/loaded-at")
+  java.util.Map<String, Long> dataLoadedAt();
+
   // ── 고유 아이템 ──
   @GetExchange("/uniques/search")
   List<PoeUniqueItem> searchUniques(

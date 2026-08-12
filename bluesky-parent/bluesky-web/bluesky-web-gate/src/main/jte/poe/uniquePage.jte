@@ -58,6 +58,10 @@
 								@if(item.category() != null)
 									<tr><td class="text-base-content/50">${ko ? "분류" : "Category"}</td><td>${item.category()}</td></tr>
 								@endif
+								<%-- 리그 출처 — 이 아이템을 얻으려면 해당 리그 기제를 돌려야 한다(목록 배지와 같은 정보) --%>
+								@if(item.league() != null && !item.league().isBlank())
+									<tr><td class="text-base-content/50">${ko ? "리그 출처" : "League"}</td><td>${item.league()}</td></tr>
+								@endif
 							</tbody>
 						</table>
 					</div>
