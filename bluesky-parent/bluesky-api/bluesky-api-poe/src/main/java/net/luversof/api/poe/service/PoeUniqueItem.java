@@ -19,6 +19,11 @@ public record PoeUniqueItem(
     List<String> implicitsKo,
     List<String> explicits,
     List<String> explicitsKo,
+    // 변형(Variant) 전수 — 임프레션스 물리/화염/…, 도리아니의 망상 9종처럼 **인게임에 동시에 존재하는**
+    // 선택지들. 과거 버전 보존분(PoB 의 "Pre 3.x")은 추출 단계에서 걸러진다. 변형이 하나뿐인 아이템은 null.
+    List<PoeUniqueVariant> variants,
+    // variants 가 있을 때, 위 implicits/explicits 가 어느 변형의 것인지(1-base). 없으면 null.
+    Integer defaultVariant,
     // 목록/상세 표시용 — baseType→베이스 조인으로 서비스가 채움(JSON 엔 없음). 아이콘 키 = 베이스 slug.
     Integer reqStr,
     Integer reqDex,

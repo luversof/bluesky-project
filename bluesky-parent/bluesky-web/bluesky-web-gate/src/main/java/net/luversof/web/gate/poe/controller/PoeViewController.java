@@ -104,6 +104,7 @@ public class PoeViewController {
   @GetMapping("/uniques/{slug}")
   public String uniquePage(
       @org.springframework.web.bind.annotation.PathVariable String slug,
+      @RequestParam(required = false) Integer variant,
       Model model,
       jakarta.servlet.http.HttpServletResponse response) {
     net.luversof.web.gate.poe.dto.PoeUniqueItem item;
@@ -116,6 +117,9 @@ public class PoeViewController {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("item", item);
     model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
+    model.addAttribute("variant", variant);
+    // 이 유니크에 붙을 수 있는 삿된 옵션(인게임 "삿된 XXX") — 없으면 섹션이 통째로 숨는다
+    model.addAttribute("foulborn", poeDataClient.foulbornForUnique(item.name()));
     return "poe/uniquePage";
   }
 
@@ -383,6 +387,24 @@ public class PoeViewController {
     model.addAttribute(
         "eldritch", active == null ? null : poeDataClient.eldritchForItemClass(active));
     return "poe/mods";
+  }
+
+  /**
+   * 삿된(Foulborn) 모드 사전 — 현재 리그 화폐로 유니크의 기존 모드를 대체할 때 붙는 모드 풀.
+   *
+   * <p>아이템 클래스가 아니라 <b>유니크 토큰</b> 단위라 모드 페이지(클래스별)에 끼우지 않고 별도 페이지로 둔다.
+   */
+  @GetMapping("/foulborn")
+  public String foulborn(
+      @RequestParam(required = false, defaultValue = "") String category,
+      @RequestParam(required = false, defaultValue = "") String q,
+      Model model) {
+    model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("groups", poeDataClient.foulborn(category, q));
+    model.addAttribute("categories", poeDataClient.foulbornCategories());
+    model.addAttribute("activeCategory", category);
+    model.addAttribute("query", q);
+    return "poe/foulborn";
   }
 
   /** 클러스터 주얼 노터블 페이지 — craftofexile Cluster 식 브라우징(검색). */

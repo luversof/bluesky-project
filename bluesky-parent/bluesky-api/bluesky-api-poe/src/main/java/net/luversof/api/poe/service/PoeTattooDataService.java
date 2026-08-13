@@ -117,6 +117,22 @@ public class PoeTattooDataService {
    * @param nodeType 트리 노드 종류("normal"/"notable"/"keystone"/"mastery")
    * @param attribute 소형 속성 패시브면 "Strength"/"Dexterity"/"Intelligence", 아니면 null
    */
+  /**
+   * 현재 리그에서 구할 수 없는 <b>레거시 문신</b> 접두 — "명예로운(Honoured)" 계열.
+   *
+   * <p>근거(실측): poe.ninja 현재 리그 실빌드 패싯에서 일반 문신 43종이 30.5만 회 쓰이는 동안 <b>명예로운 18종은 0회</b>다. 명예로운은
+   * 일반의 상위 호환(노터블을 +30 속성으로 대체)이라, 구할 수 있다면 상위 목록에서 통째로 빠질 이유가 없다. 게임 테이블엔 획득 가능 여부 플래그가
+   * 없어(둘 다 DropLevel 1) 이 이름 규칙이 현재로선 유일한 판별 수단이다.
+   *
+   * <p>목록/사전에서는 계속 보여준다 — 못 구한다고 존재까지 감출 이유는 없다. <b>최적화기 후보에서만</b> 뺀다.
+   */
+  private static final String LEGACY_TATTOO_PREFIX = "Honoured ";
+
+  /** 최적화기가 써도 되는 문신인가(현재 리그 획득 가능). */
+  public static boolean isCurrentLeague(Tattoo tattoo) {
+    return tattoo.name() == null || !tattoo.name().startsWith(LEGACY_TATTOO_PREFIX);
+  }
+
   public List<Tattoo> candidates(String nodeType, String attribute) {
     String target =
         switch (nodeType == null ? "" : nodeType) {
@@ -130,6 +146,7 @@ public class PoeTattooDataService {
     }
     boolean smallAttr = target.startsWith("Small ");
     return tattoos.stream()
+        .filter(PoeTattooDataService::isCurrentLeague)
         .filter(
             t ->
                 t.targetType().equals(target)

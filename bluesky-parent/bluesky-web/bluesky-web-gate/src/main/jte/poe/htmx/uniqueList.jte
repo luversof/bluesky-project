@@ -9,6 +9,7 @@
 @param String listQ = ""
 @param String listItemClass = "all"
 @param int nextLimit = 0
+@param java.util.Set<String> foulbornNames = java.util.Set.of()
 
 !{
 	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.count"), items.size(), totalCount);
@@ -83,6 +84,15 @@
 						     이게 없으면 "지금 파밍할 수 있는 것"과 "그 리그 콘텐츠를 돌아야 하는 것"이 구분되지 않는다. --%>
 						@if(item.league() != null && !item.league().isBlank())
 							<span class="badge badge-ghost badge-xs" title="${PoeText.isKorean() ? "이 고유는 해당 리그 콘텐츠에서 나옵니다" : "Drops from this league's content"}">${item.league()}</span>
+						@endif
+						<%-- 변형 — 같은 이름·같은 베이스인데 모드 구성이 다른 것들(임프레션스 5원소 등).
+						     목록엔 기본 변형만 나오므로, 나머지가 있다는 사실은 여기서 알린다. --%>
+						@if(item.variants() != null && item.variants().size() > 1)
+							<span class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" title="${PoeText.isKorean() ? "모드 구성이 다른 변형이 있습니다 — 상세에서 선택" : "Has alternate variants - pick one on the detail page"}">${PoeText.isKorean() ? "변형 " + item.variants().size() : item.variants().size() + " variants"}</span>
+						@endif
+						<%-- 인게임 "삿된 XXX" 가 존재하는 아이템 — 상세에서 붙을 수 있는 옵션 풀을 볼 수 있다 --%>
+						@if(foulbornNames != null && foulbornNames.contains(item.name()))
+							<a class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" href="/poe/uniques/${item.slug()}" title="${PoeText.isKorean() ? "삿된 오브로 바꿀 수 있는 옵션이 있습니다" : "Has Foulborn options"}">${PoeText.isKorean() ? "삿된" : "Foulborn"}</a>
 						@endif
 					</div>
 					<%-- 옵션 — 인게임 툴팁 구조: 고정(암시)은 상단, 구분선 아래 접두/접미(폭발).

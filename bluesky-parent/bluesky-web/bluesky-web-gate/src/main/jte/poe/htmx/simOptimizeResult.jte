@@ -598,6 +598,12 @@
 								   hx-target="#poePreview"
 								   hx-trigger="mouseenter delay:100ms"
 								   hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</a>
+							@elseif(jewel.lines() != null && !jewel.lines().isEmpty())
+								<%-- 제작 레어 주얼 — 상세 페이지가 없어 이름만 뜨던 자리. 붙일 slug 가 없을 뿐
+								     모드는 알고 있으므로, **장비 레어와 같은 인게임 호버 레이어**로 띄운다
+								     (data-poe-tip 자식을 common.ts 가 #poePreview 로 복제 — 유니크 주얼과 동일한 레이어 파리티). --%>
+								!{ java.util.List<String> jLines = net.luversof.web.gate.poe.PoeText.isKorean() || jewel.linesEn() == null || jewel.linesEn().isEmpty() ? jewel.lines() : jewel.linesEn(); }
+								<span class="poe-hover cursor-pointer text-cyan-500">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}<span data-poe-tip class="hidden">@template.poe.htmx.resultRareTooltip(name = jewel.name(), nameKo = jewel.nameKo(), modLines = jLines)</span></span>
 							@else
 								<span class="text-cyan-500">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</span>
 							@endif

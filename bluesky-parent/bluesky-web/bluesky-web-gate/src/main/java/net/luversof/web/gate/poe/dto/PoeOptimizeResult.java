@@ -63,7 +63,9 @@ public record PoeOptimizeResult(
     /** 추가 스킬 slug → 전용 보조젬(1b 선발) — 표시용. 구 히스토리 null. */
     java.util.Map<String, List<SupportPick>> additionalSkillSupports) {
 
-  public record SupportPick(String slug, String name, String nameKo) {}
+  /** lines/linesEn 은 제작 레어 주얼의 모드 줄(유니크는 slug 로 상세를 띄우므로 비어 있다). 구 히스토리는 null. */
+  public record SupportPick(
+      String slug, String name, String nameKo, List<String> lines, List<String> linesEn) {}
 
   /** 예약 초과로 제외된 오라. shortfall = 부족한 마나(양수). */
   public record BlockedAura(String name, String nameKo, int shortfall) {}

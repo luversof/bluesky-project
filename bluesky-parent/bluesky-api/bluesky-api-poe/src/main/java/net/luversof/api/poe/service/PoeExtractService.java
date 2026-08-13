@@ -58,6 +58,7 @@ public class PoeExtractService {
   private final PoeModPoolDataService poeModPoolDataService;
   private final PoeModDataService poeModDataService;
   private final PoeEldritchDataService poeEldritchDataService;
+  private final PoeFoulbornDataService poeFoulbornDataService;
   private final PoeEssenceDataService poeEssenceDataService;
   private final PoeBenchDataService poeBenchDataService;
   private final PoeClusterJewelDataService poeClusterJewelDataService;
@@ -84,6 +85,7 @@ public class PoeExtractService {
       PoeModPoolDataService poeModPoolDataService,
       PoeModDataService poeModDataService,
       PoeEldritchDataService poeEldritchDataService,
+      PoeFoulbornDataService poeFoulbornDataService,
       PoeEssenceDataService poeEssenceDataService,
       PoeBenchDataService poeBenchDataService,
       PoeClusterJewelDataService poeClusterJewelDataService,
@@ -101,6 +103,7 @@ public class PoeExtractService {
     this.poeModPoolDataService = poeModPoolDataService;
     this.poeModDataService = poeModDataService;
     this.poeEldritchDataService = poeEldritchDataService;
+    this.poeFoulbornDataService = poeFoulbornDataService;
     this.poeEssenceDataService = poeEssenceDataService;
     this.poeBenchDataService = poeBenchDataService;
     this.poeClusterJewelDataService = poeClusterJewelDataService;
@@ -289,6 +292,7 @@ public class PoeExtractService {
                   // 표시/탐색용 데이터도 함께 — 빠지면 원클릭 갱신 후 옛 풀이 그대로 보인다
                   poeModDataService.reload();
                   poeEldritchDataService.reload();
+                  poeFoulbornDataService.reload();
                   poeEssenceDataService.reload();
                   poeBenchDataService.reload();
                   // 최적화기 탐색이 쓰는 데이터도 함께 — 빠지면 갱신해도 재시작 전까지 옛 풀/옛 리그 시드로

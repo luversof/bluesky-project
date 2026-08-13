@@ -10,6 +10,8 @@
 @param String patch = ""
 @param PoeUniqueItem item
 @param PoeBaseItem base = null
+@param Integer variant = null
+@param java.util.List<net.luversof.web.gate.poe.dto.PoeFoulbornGroup> foulborn = null
 
 !{
 	String displayName = PoeText.name(item.nameKo(), item.name());
@@ -35,9 +37,7 @@
 
 			<div class="flex flex-wrap gap-6 items-start">
 				<%-- 호버 레이어(툴팁)를 그대로 바닥에 --%>
-				<div class="shrink-0">
-					@template.poe.htmx.uniqueDetail(item = item, base = base)
-				</div>
+				@template.poe.htmx.uniqueVariants(item = item, base = base, variant = variant)
 
 				<div class="flex-1 min-w-[20rem] space-y-4">
 					<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
@@ -66,7 +66,31 @@
 						</table>
 					</div>
 
-					!{java.util.List<String> engMods = item.explicits();}
+					<%-- 영문 원문도 **지금 보고 있는 변형** 기준이어야 한다 — 툴팁은 화염인데 원문만 카오스면 같은 화면이 서로 다른 말을 한다 --%>
+					!{
+						java.util.List<String> engMods = item.explicits();
+						if (variant != null && item.variants() != null) {
+							for (var v : item.variants()) {
+								if (v.index() == variant.intValue()) engMods = v.explicits();
+							}
+						}
+					}
+					<%-- 인게임 "삿된 XXX" — 이 유니크의 기존 모드를 대체하는 옵션 풀.
+					     아이템마다 붙을 수 있는 옵션이 정해져 있어서, 아이템 화면에 함께 있어야 쓸모가 있다. --%>
+					@if(foulborn != null && !foulborn.isEmpty())
+						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
+							<div class="mb-2 flex flex-wrap items-baseline gap-2">
+								<h2 class="font-bold text-fuchsia-500">${ko ? "삿된 옵션" : "Foulborn options"}</h2>
+								<span class="text-xs font-mono text-base-content/40">${foulborn.stream().mapToInt(g -> g.mods().size()).sum()}</span>
+								<span class="text-xs text-base-content/50">${ko ? "삿된 오브로 기존 모드 하나가 아래 중 하나로 바뀝니다" : "Foulborn currency replaces one existing mod with one of these"}</span>
+								<a class="ml-auto link link-hover text-xs text-base-content/60" href="/poe/foulborn?q=${item.name()}">${ko ? "삿된 사전에서 보기 →" : "Open in Foulborn list →"}</a>
+							</div>
+							<%-- 원본 → 삿된 대비. 인게임 색(삿된 #CD2285)과 취소선으로 "무엇이 밀려나는지" 를 그대로 보여준다 --%>
+							!{ java.util.List<net.luversof.web.gate.poe.dto.PoeFoulbornGroup.FoulbornMod> foulMods = foulborn.stream().flatMap(g -> g.mods().stream()).toList(); }
+							@template.poe.htmx.foulbornOptions(mods = foulMods)
+						</div>
+					@endif
+
 					@if(ko && engMods != null && !engMods.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 							<h2 class="font-bold mb-2">모드 원문 (영문)</h2>

@@ -5,14 +5,24 @@
 
 @param PoeUniqueItem item
 @param PoeBaseItem base = null
+<%-- 어느 변형을 보여줄지(1-base). null 이면 아이템의 기본 변형. 인게임엔 변형 라벨이 없으므로
+     **툴팁 안에는 라벨을 넣지 않는다** — 선택 칩은 툴팁 바깥(uniqueVariants)에 둔다. --%>
+@param Integer variant = null
 
 !{
 	String closeLabel = MessageUtil.getMessage("common.button.close");
+	// 변형이 지정되면 그 변형의 모드 줄로 갈아끼운다(임프레션스 화염 ↔ 카오스처럼 통째로 달라진다)
+	net.luversof.web.gate.poe.dto.PoeUniqueVariant picked = null;
+	if (variant != null && item.variants() != null) {
+		for (var v : item.variants()) {
+			if (v.index() == variant.intValue()) picked = v;
+		}
+	}
 	String displayName = PoeText.name(item.nameKo(), item.name());
 	String displayBase = PoeText.name(item.baseTypeKo(), item.baseType());
 	String displayClass = base != null ? PoeText.name(base.itemClassKo(), base.itemClass()) : null;
-	java.util.List<String> displayImplicits = PoeText.lines(item.implicitsKo(), item.implicits());
-	java.util.List<String> displayExplicits = PoeText.lines(item.explicitsKo(), item.explicits());
+	java.util.List<String> displayImplicits = picked != null ? PoeText.lines(picked.implicitsKo(), picked.implicits()) : PoeText.lines(item.implicitsKo(), item.implicits());
+	java.util.List<String> displayExplicits = picked != null ? PoeText.lines(picked.explicitsKo(), picked.explicits()) : PoeText.lines(item.explicitsKo(), item.explicits());
 	// PoE 고유(주황) 색
 	String rarity = "#af6025";
 	// 고유는 기본 퀄리티 20% — 무기 물리 피해에 반영해 게임 표기(예 57-171 → 68-205)에 맞춘다

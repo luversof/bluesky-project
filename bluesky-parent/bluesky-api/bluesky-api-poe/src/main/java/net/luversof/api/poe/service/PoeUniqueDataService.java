@@ -137,6 +137,8 @@ public class PoeUniqueDataService {
         it.implicitsKo(),
         it.explicits(),
         it.explicitsKo(),
+        it.variants(),
+        it.defaultVariant(),
         base != null ? base.reqStr() : null,
         base != null ? base.reqDex() : null,
         base != null ? base.reqInt() : null,

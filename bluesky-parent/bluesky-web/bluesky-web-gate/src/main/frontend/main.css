@@ -834,6 +834,13 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 [data-theme="dark"] .border-\[\#d20000\]\/50 { border-color: color-mix(in oklch, var(--poe-corrupt) 55%, transparent); }
 [data-theme="dark"] .bg-\[\#d20000\]\/15 { background-color: color-mix(in oklch, var(--poe-corrupt) 18%, transparent); }
 [data-theme="dark"] .bg-\[\#d20000\]\/12 { background-color: color-mix(in oklch, var(--poe-corrupt) 15%, transparent); }
+/* 삿된(변이) 자홍 — 인게임/PoB 값(#CD2285, Global.lua colorCodes.MUTATED)을 그대로 쓰면 우리 다크 표면에선
+   대비가 모자란다(감사 적발 ×59, 부패 빨강 때와 같은 사정). 색 관례(삿된=자홍)는 지키고 다크에서만 명도를 올린다.
+   라이트는 인게임 값 그대로. */
+:root { --poe-mutated: #cd2285; }
+[data-theme="dark"] { --poe-mutated: #f472b6; }
+[data-theme="dark"] .text-\[\#CD2285\] { color: var(--poe-mutated); }
+[data-theme="dark"] .text-\[\#CD2285\]\/70 { color: color-mix(in oklch, var(--poe-mutated) 75%, transparent); }
 /* 방어 피격 범례 번개 색 — 전용 클래스로 테마 분기 */
 /* 원소 색 — 인게임(PoB Data/Global.lua colorCodes) 값 그대로.
    FIRE #B97123 · COLD #3F6DB3 · LIGHTNING #ADAA47 · CHAOS #D02090.

@@ -69,7 +69,20 @@ public record PoeOptimizeResult(
     /** 추가 스킬(화염덫 등) slug → 1b 패스가 선발한 전용 보조젬 — 표시용(계산 XML 에는 이미 링크됨). 구 히스토리 null. */
     java.util.Map<String, List<SupportPick>> additionalSkillSupports) {
 
-  public record SupportPick(String slug, String name, String nameKo) {}
+  /**
+   * 보조젬·추가 스킬·주얼 공통 표시 항목.
+   *
+   * <p>{@code lines}/{@code linesEn} 은 <b>제작 레어 주얼</b>용이다. 유니크는 slug 로 상세/툴팁을 띄우지만 제작 주얼은 붙일 상세가 없어
+   * 화면에 이름만 뜨고 어떤 모드가 붙었는지 알 수 없었다 — 계산에는 생명/원소 피해 접두가 실제로 들어가 있는데 표시만 비어 있어 "속성이 표기 안 된다"는 보고가
+   * 나왔다. 보조젬 등 나머지 용도는 3-인자 생성자로 빈 목록을 쓴다.
+   */
+  public record SupportPick(
+      String slug, String name, String nameKo, List<String> lines, List<String> linesEn) {
+
+    public SupportPick(String slug, String name, String nameKo) {
+      this(slug, name, nameKo, List.of(), List.of());
+    }
+  }
 
   /** 예약 초과로 제외된 오라. shortfall = 부족한 마나(양수). */
   public record BlockedAura(String name, String nameKo, int shortfall) {}

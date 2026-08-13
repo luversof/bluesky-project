@@ -554,7 +554,20 @@ public class PoeHtmxController {
     model.addAttribute("listItemClass", itemClass);
     model.addAttribute("nextLimit", shown + LIST_LIMIT);
     model.addAttribute("totalCount", poeDataClient.uniqueMeta().totalCount());
+    // 삿된 옵션이 있는 유니크 — 목록에서 "이 아이템은 삿된판이 있다" 를 알리는 배지용
+    model.addAttribute("foulbornNames", poeDataClient.foulbornNames());
     return "poe/htmx/uniqueList";
+  }
+
+  /** 변형 칩 + 아이템 레이어 — 칩을 누르면 이 조각만 갈아끼워 변형별 모드를 보여준다. */
+  @GetMapping("/uniques/variant")
+  public String uniqueVariant(
+      @RequestParam String slug, @RequestParam(required = false) Integer variant, Model model) {
+    PoeUniqueItem item = poeDataClient.unique(slug);
+    model.addAttribute("item", item);
+    model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
+    model.addAttribute("variant", variant);
+    return "poe/htmx/uniqueVariants";
   }
 
   @GetMapping("/uniques/detail")

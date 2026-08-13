@@ -260,6 +260,7 @@ public class PoeOptimizeService {
   private final PoeModDataService poeModDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
   private final PoeClusterJewelDataService poeClusterJewelDataService;
+  private final PoeFoulbornDataService poeFoulbornDataService;
   private final PoeSkillWeaponDataService poeSkillWeaponDataService;
   private final PoeTattooDataService poeTattooDataService;
   private final PoeModTranslateService poeModTranslateService;
@@ -335,6 +336,7 @@ public class PoeOptimizeService {
       PoeModDataService poeModDataService,
       PoeBaseItemDataService poeBaseItemDataService,
       PoeClusterJewelDataService poeClusterJewelDataService,
+      PoeFoulbornDataService poeFoulbornDataService,
       PoeSkillWeaponDataService poeSkillWeaponDataService,
       PoeTattooDataService poeTattooDataService,
       PoeModTranslateService poeModTranslateService,
@@ -353,6 +355,7 @@ public class PoeOptimizeService {
     this.poeModDataService = poeModDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.poeClusterJewelDataService = poeClusterJewelDataService;
+    this.poeFoulbornDataService = poeFoulbornDataService;
     this.poeSkillWeaponDataService = poeSkillWeaponDataService;
     this.poeModTranslateService = poeModTranslateService;
     this.poeTattooDataService = poeTattooDataService;
@@ -5951,8 +5954,15 @@ public class PoeOptimizeService {
                                   jewel.unique().slug(),
                                   jewel.unique().name(),
                                   jewel.unique().nameKo())
-                              // 제작 레어 주얼 — slug 없음(사전 링크 불가), 표시명만.
-                              : new PoeOptimizeResult.SupportPick("", "Crafted Jewel", "제작 주얼"))
+                              // 제작 레어 주얼 — slug 가 없어 상세 링크는 못 걸지만, **붙은 모드는 보여준다**.
+                              //   계산에는 jewelLife/jewelFire 같은 접두가 실제로 들어가는데 화면엔 이름만 떠서
+                              //   "속성이 표기 안 된다"는 보고가 나왔다(장비 슬롯은 ItemPick 으로 이미 줄까지 보낸다).
+                              : new PoeOptimizeResult.SupportPick(
+                                  "",
+                                  "Crafted Jewel",
+                                  "제작 주얼",
+                                  rareModLinesKo(jewel.rare()),
+                                  rareModLinesEn(jewel.rare())))
                   .toList(),
               // 무기 유니크가 안 뽑히면 XML 에 표준 무기가 주입된다 — 목록에도 넣어야 화면과 실제 계산이 일치한다
               // (없으면 사용자는 "무기 없는 근접 빌드"로 오해한다)
@@ -7795,6 +7805,142 @@ public class PoeOptimizeService {
                   8000,
                   List.of("Vorana", "Uhtred", "Medved")));
 
+  /** 삿된 후보 포함 여부(잡 스코프) — 컨트롤러가 잡 시작 직전에 세팅한다. A/B 실측을 위해 끌 수 있다. */
+  private volatile boolean foulbornEnabled = true;
+
+  public void setFoulbornEnabled(boolean enabled) {
+    this.foulbornEnabled = enabled;
+  }
+
+  /** 삿된 후보 상한 — 후보 풀 폭발을 막는다(기본 후보 N개 위에 이만큼만 더 얹는다). */
+  private static final int FOULBORN_CANDIDATES = 8;
+
+  /**
+   * 여러 줄로 쪼개진 한 모드를 아이템 텍스트 한 덩어리로 합친다 — 우리 유니크 본문이 쓰는 것과 같은 모양(LF 로 이은 한 모드).
+   *
+   * <p>구분자는 언제나 LF 다(윈도우라고 CRLF 를 쓰면 PoB 파서가 줄을 잘못 센다).
+   */
+  private static String joinLines(List<String> lines) {
+    return String.join(String.valueOf((char) 10), lines);
+  }
+
+  /** 모드 문구 대조 키 — 숫자·괄호 범위·구두점을 지우고 낱말만 남긴다(우리 PoB 원문 ↔ 게임 스탯 문구의 표기 차 흡수). */
+  private static String modKey(String line) {
+    return line == null
+        ? ""
+        : line.replaceAll("\\([^)]*\\)", " ")
+            .replaceAll("[0-9]+(\\.[0-9]+)?", " ")
+            .toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z ]", " ")
+            .replaceAll("\\s+", " ")
+            .trim();
+  }
+
+  /**
+   * 이 유니크의 <b>삿된 사본들</b> — 삿된 오브로 기존 모드 하나를 대체한 물건.
+   *
+   * <p>인게임에선 "삿된 붉은 꿈" 처럼 아이템마다 붙을 수 있는 옵션과 <b>어느 모드를 밀어내는지</b>가 정해져 있다(PoB 삿된 지도). 그 원본 줄을 찾아
+   * 바꿔치기해야 실제 아이템이 된다 — 못 찾으면 <b>그 후보를 만들지 않는다</b>. 줄을 못 찾았는데 그냥 덧붙이면 원본+삿된을 동시에 가진, 게임에 없는 아이템이 되어
+   * 최적화기가 그걸 최고점으로 고른다(가장 나쁜 실패다).
+   */
+  private List<PoeUniqueItem> foulbornVariants(PoeUniqueItem item) {
+    List<PoeFoulbornDataService.FoulbornGroup> groups =
+        poeFoulbornDataService.forUnique(item.name());
+    if (groups.isEmpty() || item.explicits() == null || item.explicits().isEmpty()) {
+      return List.of();
+    }
+    List<PoeUniqueItem> out = new ArrayList<>();
+    for (PoeFoulbornDataService.FoulbornGroup group : groups) {
+      for (PoeFoulbornDataService.FoulbornMod mod : group.mods()) {
+        if (mod.origEn() == null
+            || mod.origEn().isEmpty()
+            || mod.en() == null
+            || mod.en().isEmpty()) {
+          continue; // 대체 대상 불명(지도 밖 신규 모드) — 어느 줄을 지울지 모르니 만들지 않는다
+        }
+        String wanted = modKey(String.join(" ", mod.origEn()));
+        int index = -1;
+        for (int i = 0; i < item.explicits().size(); i++) {
+          String key = modKey(item.explicits().get(i));
+          if (key.equals(wanted)
+              || (!key.isEmpty() && (key.contains(wanted) || wanted.contains(key)))) {
+            index = i;
+            break;
+          }
+        }
+        if (index < 0) {
+          continue;
+        }
+        List<String> explicits = new ArrayList<>(item.explicits());
+        explicits.set(index, joinLines(mod.en()));
+        List<String> explicitsKo =
+            item.explicitsKo() == null ? null : new ArrayList<>(item.explicitsKo());
+        if (explicitsKo != null && index < explicitsKo.size()) {
+          explicitsKo.set(
+              index,
+              mod.ko() != null && !mod.ko().isEmpty() ? joinLines(mod.ko()) : joinLines(mod.en()));
+        }
+        out.add(
+            new PoeUniqueItem(
+                "Foulborn " + item.name(),
+                item.nameKo() != null ? "삿된 " + item.nameKo() : null,
+                item.slug(),
+                item.baseType(),
+                item.baseTypeKo(),
+                item.category(),
+                item.requiredLevel(),
+                item.league(),
+                item.radius(),
+                item.implicits(),
+                item.implicitsKo(),
+                explicits,
+                explicitsKo,
+                item.variants(),
+                item.defaultVariant(),
+                item.reqStr(),
+                item.reqDex(),
+                item.reqInt(),
+                item.iconKey()));
+      }
+    }
+    return out;
+  }
+
+  /**
+   * 후보 목록에 삿된 사본을 얹는다 — 단, <b>이번 빌드 키워드 기준으로 원본만큼은 되는</b> 것만.
+   *
+   * <p>DPS 로 거르는 게 아니라(그건 평가 전엔 모른다) 기본 후보를 뽑을 때와 같은 잣대(키워드 점수)를 쓴다. 상한을 두는 이유는 유니크마다 옵션이 1~3개라 전부
+   * 얹으면 후보가 몇 배로 불어 탐색이 느려지기 때문이다.
+   */
+  private List<PoeUniqueItem> withFoulbornVariants(
+      List<PoeUniqueItem> base, List<String> keywords) {
+    if (!foulbornEnabled) {
+      return base;
+    }
+    List<PoeUniqueItem> out = new ArrayList<>(base);
+    int added = 0;
+    for (PoeUniqueItem item : base) {
+      if (added >= FOULBORN_CANDIDATES) {
+        break;
+      }
+      List<String> baseLines = new ArrayList<>(item.implicits());
+      baseLines.addAll(item.explicits());
+      int baseScore = score(baseLines, keywords);
+      for (PoeUniqueItem variant : foulbornVariants(item)) {
+        if (added >= FOULBORN_CANDIDATES) {
+          break;
+        }
+        List<String> lines = new ArrayList<>(variant.implicits());
+        lines.addAll(variant.explicits());
+        if (score(lines, keywords) >= baseScore) {
+          out.add(variant);
+          added++;
+        }
+      }
+    }
+    return out;
+  }
+
   /**
    * 타임리스 주얼에 <b>정복자·시드</b>를 지정한 사본을 만든다 — 같은 주얼이라도 이 둘에 따라 반경 패시브 변환 결과가 완전히 달라진다.
    *
@@ -7831,6 +7977,8 @@ public class PoeOptimizeService {
         item.implicitsKo(),
         lines,
         item.explicitsKo(),
+        item.variants(),
+        item.defaultVariant(),
         item.reqStr(),
         item.reqDex(),
         item.reqInt(),
@@ -7878,7 +8026,10 @@ public class PoeOptimizeService {
         .sorted(Comparator.comparingInt(Scored::score).reversed())
         .limit(ITEM_CANDIDATES)
         .map(Scored::item)
-        .toList();
+        .collect(
+            java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toList(),
+                list -> withFoulbornVariants(list, keywords)));
   }
 
   /** 유니크 카테고리 → 고정 슬롯 (반지/플라스크/무기는 별도 처리) */
@@ -8027,7 +8178,10 @@ public class PoeOptimizeService {
         .sorted(Comparator.comparingInt(Scored::score).reversed())
         .limit(ITEM_CANDIDATES)
         .map(Scored::item)
-        .toList();
+        .collect(
+            java.util.stream.Collectors.collectingAndThen(
+                java.util.stream.Collectors.toList(),
+                list -> withFoulbornVariants(list, keywords)));
   }
 
   /**

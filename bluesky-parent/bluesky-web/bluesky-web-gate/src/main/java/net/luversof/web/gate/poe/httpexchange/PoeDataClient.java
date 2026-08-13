@@ -108,6 +108,24 @@ public interface PoeDataClient {
   @GetExchange("/tree/cluster-notables")
   java.util.List<net.luversof.web.gate.poe.dto.PoeClusterNotable> clusterNotables();
 
+  /** 삿된(Foulborn) 모드 풀 — 분류(한글)·검색어로 거른 그룹. 토큰으로도 검색된다(이름 매핑 부재). */
+  @GetExchange("/foulborn")
+  java.util.List<net.luversof.web.gate.poe.dto.PoeFoulbornGroup> foulborn(
+      @RequestParam String category, @RequestParam String q);
+
+  /** 이 유니크(영문명)에 붙는 삿된 옵션 — 유니크 상세의 "삿된 옵션" 섹션용. */
+  @GetExchange("/foulborn/for")
+  java.util.List<net.luversof.web.gate.poe.dto.PoeFoulbornGroup> foulbornForUnique(
+      @RequestParam String name);
+
+  /** 삿된 옵션이 있는 유니크 영문명 집합 — 목록 배지용. */
+  @GetExchange("/foulborn/names")
+  java.util.Set<String> foulbornNames();
+
+  /** 삿된 분류별 모드 수 — 칩 개수용. */
+  @GetExchange("/foulborn/categories")
+  java.util.Map<String, Integer> foulbornCategories();
+
   /** 문신 목록 — nodeType/attribute 생략 시 전체(브라우징 페이지용). */
   @GetExchange("/tree/tattoos")
   java.util.List<net.luversof.web.gate.poe.dto.PoeTattoo> tattoos();

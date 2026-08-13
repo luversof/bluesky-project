@@ -78,7 +78,10 @@ public class PoeOptimizeController {
       @RequestParam(required = false, defaultValue = "") String tattoos,
       @RequestParam(required = false, defaultValue = "") String anoint,
       // 최근 결과 이력 저장 여부 — 사용자 실행은 true(기본), QA 배터리는 false 로 이력 오염 방지
+      // 삿된(Foulborn) 후보 포함 여부 — 기본 켬. A/B 실측·회귀 배터리가 끄고 돌릴 수 있어야 "삿된이 실제로 이득인지"를 잰다.
+      @RequestParam(required = false, defaultValue = "true") boolean foulborn,
       @RequestParam(required = false, defaultValue = "true") boolean saveHistory) {
+    poeOptimizeService.setFoulbornEnabled(foulborn);
     return poeOptimizeService.start(
         slug,
         objective,

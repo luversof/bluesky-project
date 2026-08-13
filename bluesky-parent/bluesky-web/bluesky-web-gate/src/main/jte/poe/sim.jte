@@ -165,6 +165,9 @@
 					     hx-swap="innerHTML"></div>
 				</form>
 				@template.poe.htmx.simOptimizeWrap()
+				<%-- ⚠ 순서: 목록이 **위**, 뷰어가 **아래**. 결과가 5천 px 를 넘길 때가 있어 뷰어를 위로 올리면
+				     목록이 그 아래로 파묻힌다(실측 y=5545). 대신 결과를 띄운 뒤 **목록을 화면 맨 위에 고정**해
+				     바로 다른 항목을 고를 수 있게 한다(예전엔 뷰어를 스크롤해 목록이 화면 위로 사라졌다: y=-182). --%>
 				<!-- 최근 결과 이력 — 로드 시 채우고, 새 최적화 완료 시 상태 fragment 가 OOB 로 갱신 -->
 				<div id="poeOptimizeHistory" class="mt-3" hx-get="/poe/htmx/sim/optimize/history" hx-trigger="load" hx-swap="innerHTML"></div>
 				<%-- 지난 결과 뷰어 — 폴링 래퍼(#poeOptimizeStatusWrap)와 분리되어, 최적화 실행 중에도 이전 결과를 계속 볼 수 있다
@@ -178,7 +181,7 @@
 						        onclick="var v=document.getElementById('poeHistoryResultView'); if(v){v.innerHTML='';} this.closest('#poeHistoryResultViewWrap').classList.add('hidden'); document.querySelectorAll('#poeOptimizeHistory button.poe-hist-active').forEach(function(b){b.classList.remove('poe-hist-active');});">${net.luversof.web.gate.poe.PoeText.isKorean() ? "닫기 ✕" : "Close ✕"}</button>
 					</div>
 					<div id="poeHistoryResultView"
-					     hx-on::after-swap="var w=document.getElementById('poeHistoryResultViewWrap'); if(this.innerHTML.trim()){w.classList.remove('hidden'); w.scrollIntoView({block:'nearest'});}"></div>
+					     hx-on::after-swap="var w=document.getElementById('poeHistoryResultViewWrap'); if(this.innerHTML.trim()){w.classList.remove('hidden'); var h=document.getElementById('poeOptimizeHistory'); if(h){h.scrollIntoView({block:'start'}); setTimeout(function(){h.scrollIntoView({block:'start'});},350);}}"></div>
 				</div>
 			</div>
 

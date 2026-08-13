@@ -16,6 +16,7 @@ import net.luversof.api.poe.service.PoeBaseItemDataService;
 import net.luversof.api.poe.service.PoeBenchDataService;
 import net.luversof.api.poe.service.PoeEldritchDataService;
 import net.luversof.api.poe.service.PoeEssenceDataService;
+import net.luversof.api.poe.service.PoeFoulbornDataService;
 import net.luversof.api.poe.service.PoeGem;
 import net.luversof.api.poe.service.PoeGemDataService;
 import net.luversof.api.poe.service.PoeModDataService;
@@ -36,6 +37,7 @@ public class PoeDataController {
   private final PoeModPoolDataService poeModPoolDataService;
   private final PoeModDataService poeModDataService;
   private final PoeEldritchDataService poeEldritchDataService;
+  private final PoeFoulbornDataService poeFoulbornDataService;
   private final PoeEssenceDataService poeEssenceDataService;
   private final PoeBenchDataService poeBenchDataService;
   private final PoeTreeGraphService poeTreeGraphService;
@@ -49,6 +51,7 @@ public class PoeDataController {
       PoeModPoolDataService poeModPoolDataService,
       PoeModDataService poeModDataService,
       PoeEldritchDataService poeEldritchDataService,
+      PoeFoulbornDataService poeFoulbornDataService,
       PoeEssenceDataService poeEssenceDataService,
       PoeBenchDataService poeBenchDataService,
       PoeTreeGraphService poeTreeGraphService,
@@ -60,6 +63,7 @@ public class PoeDataController {
     this.poeModPoolDataService = poeModPoolDataService;
     this.poeModDataService = poeModDataService;
     this.poeEldritchDataService = poeEldritchDataService;
+    this.poeFoulbornDataService = poeFoulbornDataService;
     this.poeEssenceDataService = poeEssenceDataService;
     this.poeBenchDataService = poeBenchDataService;
     this.poeTreeGraphService = poeTreeGraphService;
@@ -204,6 +208,31 @@ public class PoeDataController {
   @GetMapping("/eldritch/for-item-class")
   public PoeEldritchDataService.ClassEldritch eldritchForItemClass(@RequestParam String itemClass) {
     return poeEldritchDataService.forItemClass(itemClass);
+  }
+
+  // ── 삿된(Foulborn) 모드 풀 ──
+  // 유니크 이름 매핑이 게임 데이터에 없어 **토큰(Jewel85 등)** 이 곧 식별자다. 검색은 문구·토큰 양쪽을 본다.
+  @GetMapping("/foulborn")
+  public List<PoeFoulbornDataService.FoulbornGroup> foulborn(
+      @RequestParam(required = false, defaultValue = "") String category,
+      @RequestParam(required = false, defaultValue = "") String q) {
+    return poeFoulbornDataService.search(category, q);
+  }
+
+  /** 분류(한글) → 모드 수 — 화면 칩 개수. 데이터 없으면 빈 맵(섹션 감춤). */
+  @GetMapping("/foulborn/for")
+  public List<PoeFoulbornDataService.FoulbornGroup> foulbornForUnique(@RequestParam String name) {
+    return poeFoulbornDataService.forUnique(name);
+  }
+
+  @GetMapping("/foulborn/names")
+  public java.util.Set<String> foulbornNames() {
+    return poeFoulbornDataService.uniqueNames();
+  }
+
+  @GetMapping("/foulborn/categories")
+  public java.util.Map<String, Integer> foulbornCategories() {
+    return poeFoulbornDataService.byCategory();
   }
 
   // ── 에센스 제작 정보 ──

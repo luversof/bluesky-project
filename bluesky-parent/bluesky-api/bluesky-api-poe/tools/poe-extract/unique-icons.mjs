@@ -31,13 +31,31 @@ if (["Words", "UniqueStashLayout", "ItemVisualIdentity"].some((t) => !fs.existsS
 const words = loadTable("English", "Words");
 const layout = loadTable("English", "UniqueStashLayout");
 const visual = loadTable("English", "ItemVisualIdentity");
-const ddsByName = new Map();
+// ⚠ 한 이름에 배치 행이 여러 개 붙는다(실측 135종). 두 부류다:
+//   (1) **대체 아트**(미스터리 박스 스킨 등) — id 가 AlternateArt* 이고, 인게임 기본 모습이 아니다.
+//   (2) 변형 아트 — 임프레션스 a~e 처럼 변형마다 그림이 다른 정상 케이스.
+//   예전엔 그냥 덮어써서 **마지막 행이 이겼고**, 그 결과 117종이 스킨 아이콘으로 나갔다(화염의 망토 등).
+//   그래서 대체 아트를 먼저 걸러내고, 남은 것 중 **첫 행**(정식/첫 변형)을 쓴다.
+const rowsByName = new Map();
 for (const row of layout) {
 	const word = words[row.WordsKey];
 	const art = visual[row.ItemVisualIdentityKey];
-	if (word?.Text && art?.DDSFile) {
-		ddsByName.set(word.Text, art.DDSFile.toLowerCase());
-	}
+	if (!word?.Text || !art?.DDSFile) continue;
+	const list = rowsByName.get(word.Text) || [];
+	list.push({ id: art.Id || "", dds: art.DDSFile.toLowerCase() });
+	rowsByName.set(word.Text, list);
+}
+const ddsByName = new Map();
+let skinSkipped = 0;
+for (const [name, list] of rowsByName) {
+	const canonical = list.filter((r) => !/^AlternateArt/i.test(r.id));
+	// 스킨밖에 없는 아이템이면 그거라도 쓴다(아이콘 없는 것보다 낫다)
+	const pick = canonical.length ? canonical[0] : list[0];
+	if (canonical.length && canonical.length < list.length) skinSkipped++;
+	ddsByName.set(name, pick.dds);
+}
+if (skinSkipped) {
+	console.log(`대체 아트(스킨) 제외 ${skinSkipped}종 — 인게임 기본 아트를 씁니다`);
 }
 
 // slug → dds (우리가 가진 고유만)

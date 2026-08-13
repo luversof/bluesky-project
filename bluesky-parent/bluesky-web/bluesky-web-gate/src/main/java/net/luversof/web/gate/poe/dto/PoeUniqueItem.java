@@ -18,6 +18,10 @@ public record PoeUniqueItem(
     List<String> implicitsKo,
     List<String> explicits,
     List<String> explicitsKo,
+    /** 인게임에 동시에 존재하는 변형 전수(임프레션스 5원소 등). 변형이 하나뿐이면 null. */
+    List<PoeUniqueVariant> variants,
+    /** implicits/explicits 가 어느 변형의 것인지(1-base). variants 가 null 이면 null. */
+    Integer defaultVariant,
     Integer reqStr,
     Integer reqDex,
     Integer reqInt,
