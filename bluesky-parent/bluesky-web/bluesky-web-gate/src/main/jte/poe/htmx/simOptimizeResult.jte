@@ -607,6 +607,15 @@
 							@else
 								<span class="text-cyan-500">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</span>
 							@endif
+							<%-- 삿된/변형 표식 — 장비 행과 같은 표식을 주얼에도. 삿된은 실제로 **주얼에 가장 자주** 붙는다
+							     (파란 악몽/파란 꿈 등). 장비에만 배지를 달면 정작 채택된 자리에선 안 보인다. --%>
+							@if(jewel.name() != null && jewel.name().startsWith("Foulborn "))
+								<span class="badge badge-xs badge-outline border-[#CD2285]/50 text-[#CD2285]"
+								      title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "삿된 오브로 기존 모드 하나를 대체한 물건" : "Foulborn — one original mod replaced"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "삿된" : "Foulborn"}</span>
+							@elseif(jewel.name() != null && jewel.name().endsWith(")"))
+								<span class="badge badge-xs badge-outline border-fuchsia-500/40 text-fuchsia-500"
+								      title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유의 변형 중 이 빌드에 맞는 것" : "Variant of this unique that fits this build"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "변형" : "Variant"}</span>
+							@endif
 						</div>
 					@endfor
 				</div>
@@ -758,6 +767,16 @@
 								@else
 									<span class="font-semibold poe-name-unique">${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</span>
 								@endif
+									<%-- 삿된/변형 표식 — 이름에 이미 "삿된 X" / "X (주문)" 이 들어가지만, 인게임 색(#CD2285)으로
+									     한 번 더 못 박아야 "이건 그냥 그 유니크가 아니다"가 읽힌다.
+									     접두는 최적화기가 붙이는 **우리 규약**이라(foulbornVariants/uniqueVariants) 문자열 판정이 안전하다. --%>
+									@if(item.name() != null && item.name().startsWith("Foulborn "))
+										<span class="badge badge-xs badge-outline align-middle ml-1 border-[#CD2285]/50 text-[#CD2285]"
+										      title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "삿된 오브로 기존 모드 하나를 대체한 물건" : "Foulborn — one original mod replaced"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "삿된" : "Foulborn"}</span>
+									@elseif(item.name() != null && item.name().endsWith(")"))
+										<span class="badge badge-xs badge-outline align-middle ml-1 border-fuchsia-500/40 text-fuchsia-500"
+										      title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "같은 이름의 다른 변형(인게임에 동시 존재)" : "Alternate in-game variant"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "변형" : "Variant"}</span>
+									@endif
 									<%-- 유니크 거래소 링크(사용자 요청) — 고유명 검색 + 즉시 구입. 티어 개념이 없어 배지 하나 --%>
 									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
 										<a class="badge badge-xs badge-outline badge-info align-middle ml-1" target="_blank" rel="noopener"

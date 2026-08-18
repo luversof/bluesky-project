@@ -48,7 +48,9 @@
 	const state: State = {
 		tab: "normal",
 		english: false,
-		combine: "or",
+		// 수량·무리를 **둘 다** 적었으면 보통 둘 다 만족하는 지도를 찾는다(인게임 검색도 공백=AND).
+		// 예전 기본값 OR 는 "둘 중 하나만 넘어도 통과"라 기대와 반대였다.
+		combine: "and",
 		quant: null,
 		pack: null,
 		picks: {},
@@ -57,6 +59,8 @@
 		customTargets: {},
 	};
 	let mods: MapMod[] = [];
+	/** 지도 베이스 이름 — 항이 지도 이름과 겹치면 그 지도가 통째로 걸린다(생성 단계에서 배제) */
+	let mapNames: { en: string[]; ko: string[] } = { en: [], ko: [] };
 	let editingId: number | null = null;
 	// 문구 포함관계 연동 — A 의 모든 구간이 B 문구에 들어 있으면(일반↔T17 쌍둥이) A 만 거르는
 	// 문자열은 존재하지 않는다. A 선택 시 B 도 같은 상태로 연동해 항상 전체-유일 항만 생성되게
@@ -158,6 +162,7 @@
 		return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 	}
 
+
 	/**
 	 * 선택 모드 집합 → 최소 |-결합 문자열 목록 (그리디 셋커버).
 	 * 후보 = 각 선택 모드 구간의 부분 문자열(길이 2~14) 중 비선택 모드·헤더에 안 걸리는 것.
@@ -169,6 +174,8 @@
 		const negative: string[][] = [];
 		for (const m of mods) if (!selectedIds.has(m.id)) negative.push(segmentsOf(linesOf(m, english)));
 		negative.push(segmentsOf(english ? HEADER_EN : HEADER_KO));
+		// 지도 이름(527종)도 "걸리면 안 되는 말뭉치" — 이름에 든 낱말을 항으로 뽑으면 그 지도가 전부 걸린다
+		negative.push(segmentsOf(english ? mapNames.en : mapNames.ko));
 
 		const segsById: { [id: string]: string[] } = {};
 		const candsById: { [id: string]: string[] } = {};
@@ -188,6 +195,21 @@
 			candsById[m.id] = [...seen].filter((c) => !negative.some((n) => hits(c, n)));
 		}
 
+		// 공백이 들어간 후보는 인게임 문법상 `.`(임의 한 글자)로 바뀌어 나간다 — 글자 그대로일 땐 안 걸리던
+		// 다른 모드에 걸릴 수 있으므로, 바뀐 형태로 비선택 모드 전체를 한 번 더 검사해 거른다.
+		//   (`.` 는 줄바꿈을 안 넘으므로 줄 단위로 이어 붙인 말뭉치로 검사해도 안전하다.)
+		const negativeCorpus = negative.map((segs) => segs.join("\n")).join("\n");
+		for (const m of selected) {
+			candsById[m.id] = candsById[m.id].filter((c) => {
+				if (!/\s/.test(c)) return true;
+				try {
+					return !new RegExp(termize(c)).test(negativeCorpus);
+				} catch (e) {
+					return false;
+				}
+			});
+		}
+
 		const uncovered = new Set(selected.map((m) => m.id));
 		const terms: string[] = [];
 		while (uncovered.size > 0) {
@@ -197,12 +219,14 @@
 			for (const id of uncovered) {
 				for (const cand of candsById[id]) {
 					const cover = [...uncovered].filter((u) => hits(cand, segsById[u]));
-					if (
+					// 우선순위: 커버 많이 → 짧게 → 사전순(결정성). 무엇을 고르든 **말뭉치와 안 겹치는 것**만
+					// 후보에 남아 있으므로(candsById 필터), 여기서 별도의 낱말 목록을 관리하지 않는다.
+					const better =
+						best === null ||
 						cover.length > bestCover.length ||
 						(cover.length === bestCover.length &&
-							best !== null &&
-							(cand.length < best.length || (cand.length === best.length && cand < best)))
-					) {
+							(cand.length < best.length || (cand.length === best.length && cand < best)));
+					if (better) {
 						best = cand;
 						bestCover = cover;
 					}
@@ -291,28 +315,82 @@
 		return null;
 	}
 
-	/** min 이상(≤999)의 정수를 매치하는 숫자 패턴 */
+	/**
+	 * min 이상(≤999)의 정수를 매치하는 숫자 패턴.
+	 * 자리 채움은 \d 가 아니라 `.` — 인게임 검색은 250자 한도라 한 글자라도 아끼는 게 관례이고
+	 * (커뮤니티 생성기도 `([8-9].|[1-9]..)` 형태), 앵커 뒤 문맥상 숫자 외엔 오지 않는다.
+	 */
 	function numberGte(min: number): string {
 		const s = String(Math.max(1, Math.min(999, Math.floor(min))));
-		const parts: string[] = [];
+		// 자리별 [최소,최대] 로 후보를 만든 뒤 **합칠 수 있는 건 합친다** — "8.|9." 는 "[8-9]." 하나면 된다.
+		// (250자 한도가 빡빡해 커뮤니티 생성기도 이 형태를 쓴다: ([8-9].|[1-9]..))
+		const parts: Array<Array<[number, number]>> = [];
 		for (let i = s.length - 1; i >= 0; i--) {
 			const digit = Number(s.charAt(i));
 			const lo = i === s.length - 1 ? digit : digit + 1;
 			if (lo > 9) continue;
-			const cls = lo === 9 ? "9" : lo === 0 ? "\\d" : "[" + lo + "-9]";
-			parts.push(s.substring(0, i) + cls + "\\d".repeat(s.length - 1 - i));
+			const part: Array<[number, number]> = [];
+			for (let k = 0; k < i; k++) part.push([Number(s.charAt(k)), Number(s.charAt(k))]);
+			part.push([lo, 9]);
+			for (let k = i + 1; k < s.length; k++) part.push([0, 9]);
+			parts.push(part);
 		}
-		for (let len = s.length + 1; len <= 3; len++) parts.push("[1-9]" + "\\d".repeat(len - 1));
-		return "(" + parts.join("|") + ")";
+		for (let len = s.length + 1; len <= 3; len++) {
+			const part: Array<[number, number]> = [[1, 9]];
+			for (let k = 1; k < len; k++) part.push([0, 9]);
+			parts.push(part);
+		}
+		// 한 자리만 다르고 나머지가 같은 두 후보는 그 자리를 합친다(범위가 맞닿을 때만)
+		for (let merged = true; merged; ) {
+			merged = false;
+			outer: for (let a = 0; a < parts.length; a++) {
+				for (let b = a + 1; b < parts.length; b++) {
+					if (parts[a].length !== parts[b].length) continue;
+					let diff = -1;
+					let ok = true;
+					for (let k = 0; k < parts[a].length; k++) {
+						const [al, ah] = parts[a][k];
+						const [bl, bh] = parts[b][k];
+						if (al === bl && ah === bh) continue;
+						if (diff >= 0) { ok = false; break; }
+						diff = k;
+					}
+					if (!ok || diff < 0) continue;
+					const [al, ah] = parts[a][diff];
+					const [bl, bh] = parts[b][diff];
+					if (ah + 1 !== bl && bh + 1 !== al) continue; // 맞닿지 않으면 못 합침
+					parts[a][diff] = [Math.min(al, bl), Math.max(ah, bh)];
+					parts.splice(b, 1);
+					merged = true;
+					break outer;
+				}
+			}
+		}
+		const render = (part: Array<[number, number]>) =>
+			part
+				.map(([lo, hi]) => (lo === 0 && hi === 9 ? "." : lo === hi ? String(lo) : "[" + lo + "-" + hi + "]"))
+				.join("");
+		return "(" + parts.map(render).join("|") + ")";
+	}
+
+	/**
+	 * 인게임 검색창 문법에 맞춘 항 정규화.
+	 *   · 인게임은 **공백으로 항을 나눈다** — 항 안에 공백이 있으면 서로 다른 두 조건이 되어 버려
+	 *     "몬스터 피해 증가" 같은 항이 통째로 무의미해진다. 공백은 `.`(아무 글자 하나)로 바꾼다.
+	 *   · 쌍따옴표로 감싸면 정규식이 아니라 **그 문자열 그대로** 찾으므로 아무것도 안 걸린다. 그래서 안 감싼다.
+	 */
+	function termize(s: string): string {
+		return s.replace(/\s+/g, ".");
 	}
 
 	function thresholdTerms(english: boolean): string[] {
 		const terms: string[] = [];
-		// 맵 헤더: "아이템 수량: +N%" / "Item Quantity: +N%" — 희귀도(Rarity)와 안 겹치는 최단 앵커 사용
+		// 맵 헤더: "아이템 수량: +N%" / "Item Quantity: +N%" — 희귀도(Rarity)와 안 겹치는 최단 앵커 사용.
+		// ⚠ ": \+" 처럼 **공백을 넣으면 인게임에서 항이 쪼개져** 조건이 통째로 깨진다 → `.*` 로 잇는다.
 		if (state.quant != null && state.quant > 0)
-			terms.push((english ? "tity: \\+" : "량: \\+") + numberGte(state.quant) + "%");
+			terms.push((english ? "tity.*" : "수량.*") + numberGte(state.quant) + "%");
 		if (state.pack != null && state.pack > 0)
-			terms.push((english ? "ze: \\+" : "규모: \\+") + numberGte(state.pack) + "%");
+			terms.push((english ? "Size.*" : "규모.*") + numberGte(state.pack) + "%");
 		return terms;
 	}
 
@@ -322,13 +400,20 @@
 		const exclude = mods.filter((m) => state.picks[m.id] === "exclude");
 		const include = mods.filter((m) => state.picks[m.id] === "include");
 		const parts: string[] = [];
-		const ex = coverTerms(exclude, english, warnings).concat(state.customExclude);
-		if (ex.length) parts.push('"!' + ex.join("|") + '"');
-		const inc = coverTerms(include, english, warnings).concat(state.customInclude);
-		if (inc.length) parts.push('"' + inc.join("|") + '"');
-		const th = thresholdTerms(english);
-		if (th.length === 2 && state.combine === "or") parts.push('"' + th.join("|") + '"');
-		else for (const t of th) parts.push('"' + t + '"');
+		// 인게임 검색창은 공백으로 항을 나누고, 각 항을 정규식으로 본다. 따옴표로 감싸면 정규식이 아니라
+		// 그 문자열 자체를 찾아 아무것도 안 걸리므로 **감싸지 않는다**. 항 안의 공백은 termize 가 `.` 로 바꾼다.
+		const ex = coverTerms(exclude, english, warnings).map(termize);
+		if (ex.length) parts.push("!" + ex.join("|"));
+		const inc = coverTerms(include, english, warnings).map(termize);
+		if (inc.length) parts.push(inc.join("|"));
+		// 수동 항(우리 모드로 해석 못 한 외부 항)은 **들어온 묶음 그대로 각각 하나의 항**으로 낸다.
+		//   합쳐서 "a|b" 로 만들면 원래 "a b"(둘 다 만족 = AND)였던 조건이 OR 로 바뀐다 —
+		//   실제로 갑충석/화폐 축을 함께 쓴 외부 정규식이 가져오기 왕복에서 의미가 뒤집혔다.
+		for (const t of state.customExclude) parts.push("!" + termize(t));
+		for (const t of state.customInclude) parts.push(termize(t));
+		const th = thresholdTerms(english).map(termize);
+		if (th.length === 2 && state.combine === "or") parts.push(th.join("|"));
+		else for (const t of th) parts.push(t);
 		return { text: parts.join(" "), warnings };
 	}
 
@@ -421,11 +506,12 @@
 		const paren = alt.match(/\(([^)]*)\)/);
 		const pat = paren ? splitAlternatives(paren[1])[0] : alt;
 		if (!pat) return null;
-		const tokens = pat.match(/\[(\d)[-–]9\]|\\d|\d/g);
+		// `.` 도 자리 채움으로 읽는다 — 우리 생성기와 커뮤니티 생성기 모두 \d 대신 `.` 를 쓴다(250자 절약)
+		const tokens = pat.match(/\[(\d)[-–]9\]|\\d|\.|\d/g);
 		if (!tokens || tokens.length === 0) return null;
 		let digits = "";
 		for (const t of tokens) {
-			if (t === "\\d") digits += "0";
+			if (t === "\\d" || t === ".") digits += "0";
 			else if (t.length === 1) digits += t;
 			else {
 				const m = t.match(/\[(\d)/);
@@ -538,8 +624,10 @@
 		if (groups.length === 0) return uiKo ? "인식할 항이 없습니다" : "Nothing to import";
 
 		// 언어 감지 — 임계값 아닌 대안들을 한/영 코퍼스에 각각 대 보고 매치가 많은 쪽
-		const QUANT_KEY = /량: ?\\?\+|수량|tity: ?\\?\+|Quantity/i;
-		const PACK_KEY = /규모: ?\\?\+|무리|ze: ?\\?\+|Pack ?Size/i;
+		// 앵커 형태는 생성기마다 다르다(우리 옛 형식 "량: \+", 새 형식/커뮤니티 "수량.*", 영문 "tity.*").
+		// 어느 쪽이든 가져오기가 임계값으로 알아보게 **핵심 낱말만** 본다.
+		const QUANT_KEY = /수량|tity|Quantity/i;
+		const PACK_KEY = /규모|무리|Pack ?Size|\bSize/i;
 		const plainAlts: string[] = [];
 		for (const g of groups)
 			for (const alt of g.alts) if (!QUANT_KEY.test(alt) && !PACK_KEY.test(alt)) plainAlts.push(alt);
@@ -564,6 +652,9 @@
 		let rollCount = 0;
 		const thresholdGroups: number[] = []; // 임계값이 나온 그룹 인덱스 — 같은 그룹이면 OR, 다른 그룹이면 AND
 		groups.forEach((g, gi) => {
+			// 해석 못 한 대안은 **그 항 단위로 모았다가** 한 덩어리로 보존한다 —
+			// 낱개로 흩으면 "a|b"(OR) 와 "a b"(AND) 를 구분 못 해 재생성 때 의미가 바뀐다.
+			const leftovers: string[] = [];
 			for (const alt of g.alts) {
 				if (QUANT_KEY.test(alt)) {
 					const min = decodeMin(alt);
@@ -584,7 +675,7 @@
 				const matched = modsMatching(alt, english);
 				// 0개 = 해석 불가, 30개 초과 = 지나치게 일반적(헤더 앵커 등) — 수동 항으로 보존
 				if (matched.length === 0 || matched.length > 30) {
-					(g.negated ? state.customExclude : state.customInclude).push(alt);
+					leftovers.push(alt);
 					customCount++;
 					// 롤 수치를 노린 항은 "왜 체크가 안 켜졌는지"가 사용자에게 안 보이므로 따로 센다
 					if (matched.length === 0) {
@@ -602,6 +693,8 @@
 				}
 				matchedMods += matched.length;
 			}
+			// 이 항에서 해석 못 한 대안들은 원래 묶음(|)을 유지한 채 한 항으로 보존한다
+			if (leftovers.length) (g.negated ? state.customExclude : state.customInclude).push(leftovers.join("|"));
 		});
 		if (state.quant != null && state.pack != null)
 			state.combine = thresholdGroups.length === 2 && thresholdGroups[0] === thresholdGroups[1] ? "or" : "and";
@@ -1049,6 +1142,7 @@
 		.then((r) => r.json())
 		.then((d) => {
 			mods = d.mods || [];
+			mapNames = d.names || { en: [], ko: [] };
 			computeImplied();
 			const initQ = new URLSearchParams(location.search).get("q");
 			if (initQ) searchEl.value = initQ;

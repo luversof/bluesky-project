@@ -35,7 +35,8 @@ console.log(`아이콘 대상: ${ddsBySlug.size} / ${gems.length}`);
 const config = loadConfig();
 config.files = [...(config.files || []), ...new Set(ddsBySlug.values())];
 config.tables = []; // 아이콘 실행에서는 테이블 재추출 불필요
-runExtractor(config);
+// 자기가 쓸 테이블만 뽑는 축소 추출 — tables/ 를 갈아엎으므로 run-all 에서 **테이블 소비 파서 뒤**에 있다
+runExtractor(config, { partial: true });
 
 // files/art@2ditems@gems@fireball.png → icons/gems/SkillGemFireball.png
 fs.mkdirSync(ICON_DIR, { recursive: true });

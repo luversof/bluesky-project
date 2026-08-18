@@ -30,7 +30,7 @@ for (const entry of images) {
 // ⚠ 추출기는 files 목록을 **그대로 재생성**한다 — 기본 config 의 files(스탯 설명 txt)를 빼먹으면
 // 그 파일들이 삭제돼 다음 parse-tree 실행에서 한글 스탯이 통째로 비어 버린다(실제로 겪음).
 const baseConfig = loadConfig();
-runExtractor({ ...baseConfig, tables: [], files: [...(baseConfig.files || []), ...wanted.keys()] });
+runExtractor({ ...baseConfig, tables: [], files: [...(baseConfig.files || []), ...wanted.keys()] }, { partial: true });
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
 let copied = 0;

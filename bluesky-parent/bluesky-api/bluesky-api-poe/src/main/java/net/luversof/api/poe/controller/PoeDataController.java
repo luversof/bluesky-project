@@ -19,6 +19,7 @@ import net.luversof.api.poe.service.PoeEssenceDataService;
 import net.luversof.api.poe.service.PoeFoulbornDataService;
 import net.luversof.api.poe.service.PoeGem;
 import net.luversof.api.poe.service.PoeGemDataService;
+import net.luversof.api.poe.service.PoeMetaPopularityService;
 import net.luversof.api.poe.service.PoeModDataService;
 import net.luversof.api.poe.service.PoeModPoolDataService;
 import net.luversof.api.poe.service.PoeTattooDataService;
@@ -32,6 +33,7 @@ import net.luversof.api.poe.service.PoeUniqueItem;
 public class PoeDataController {
 
   private final PoeGemDataService poeGemDataService;
+  private final PoeMetaPopularityService poeMetaPopularityService;
   private final PoeUniqueDataService poeUniqueDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
   private final PoeModPoolDataService poeModPoolDataService;
@@ -46,6 +48,7 @@ public class PoeDataController {
 
   public PoeDataController(
       PoeGemDataService poeGemDataService,
+      PoeMetaPopularityService poeMetaPopularityService,
       PoeUniqueDataService poeUniqueDataService,
       PoeBaseItemDataService poeBaseItemDataService,
       PoeModPoolDataService poeModPoolDataService,
@@ -58,6 +61,7 @@ public class PoeDataController {
       PoeTattooDataService poeTattooDataService,
       net.luversof.api.poe.service.PoeDataLoadStamp poeDataLoadStamp) {
     this.poeGemDataService = poeGemDataService;
+    this.poeMetaPopularityService = poeMetaPopularityService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.poeModPoolDataService = poeModPoolDataService;
@@ -223,6 +227,26 @@ public class PoeDataController {
   @GetMapping("/foulborn/for")
   public List<PoeFoulbornDataService.FoulbornGroup> foulbornForUnique(@RequestParam String name) {
     return poeFoulbornDataService.forUnique(name);
+  }
+
+  /**
+   * 실빌드 사용 빈도 기반 목록 순서 — 시뮬 폼이 "많이 쓰는 것 먼저"로 재배치하는 데 쓴다.
+   *
+   * @param ascendancy 선택된 전직(없으면 전체 합산)
+   * @param skills 선택된 스킬 **영문명** 콤마 구분(없으면 전체 합산)
+   */
+  @GetMapping("/meta/order")
+  public PoeMetaPopularityService.MetaOrder metaOrder(
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      @RequestParam(required = false, defaultValue = "") String skills) {
+    List<String> skillNames =
+        skills.isBlank()
+            ? List.of()
+            : java.util.Arrays.stream(skills.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    return poeMetaPopularityService.order(ascendancy, skillNames);
   }
 
   @GetMapping("/foulborn/names")

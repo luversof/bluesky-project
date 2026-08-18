@@ -25,7 +25,8 @@ config.tables = [
 	{ name: "ItemVisualIdentity", columns: ["Id", "DDSFile"] },
 	{ name: "PassiveSkills", columns: ["Id", "PassiveSkillGraphId"] },
 ];
-runExtractor(config);
+// 자기가 쓸 테이블만 뽑는 축소 추출 — tables/ 를 갈아엎으므로 run-all 에서 **테이블 소비 파서 뒤**에 있다
+runExtractor(config, { partial: true });
 
 const recipes = loadTable("English", "BlightCraftingRecipes");
 const results = loadTable("English", "BlightCraftingResults");
@@ -88,7 +89,8 @@ if (magickDir) {
 	const dl = loadConfig();
 	dl.tables = [];
 	dl.files = [...new Set(ddsBySlug.values())];
-	runExtractor(dl);
+	// 아이콘 DDS 만 받는 추출 — 테이블은 안 뽑는다(위 축소 추출과 같은 이유로 명시)
+	runExtractor(dl, { partial: true });
 	fs.mkdirSync(iconDir, { recursive: true });
 	let done = 0;
 	for (const [slug, dds] of ddsBySlug) {

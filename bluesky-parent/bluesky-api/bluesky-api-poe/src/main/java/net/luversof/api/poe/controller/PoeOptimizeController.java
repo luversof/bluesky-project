@@ -80,8 +80,11 @@ public class PoeOptimizeController {
       // 최근 결과 이력 저장 여부 — 사용자 실행은 true(기본), QA 배터리는 false 로 이력 오염 방지
       // 삿된(Foulborn) 후보 포함 여부 — 기본 켬. A/B 실측·회귀 배터리가 끄고 돌릴 수 있어야 "삿된이 실제로 이득인지"를 잰다.
       @RequestParam(required = false, defaultValue = "true") boolean foulborn,
+      // 레거시(현재 리그 획득 불가) 고유 제외 여부 — 기본 켬. 끄면 제외 이전 동작이라 A/B 로 대가를 잰다.
+      @RequestParam(required = false, defaultValue = "true") boolean excludeLegacy,
       @RequestParam(required = false, defaultValue = "true") boolean saveHistory) {
     poeOptimizeService.setFoulbornEnabled(foulborn);
+    poeOptimizeService.setExcludeLegacyUniques(excludeLegacy);
     return poeOptimizeService.start(
         slug,
         objective,

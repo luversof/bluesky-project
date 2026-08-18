@@ -480,6 +480,11 @@ public class PoeViewController {
             .filter(u -> u.category() == null || !nonEquip.contains(u.category()))
             .sorted(java.util.Comparator.comparing(u -> u.nameKo() != null ? u.nameKo() : u.name()))
             .toList());
+    // 목록 정렬 근거(실빌드 사용 빈도) — 첫 렌더부터 "많이 쓰는 순"이어야 한다(선택 후에야 정렬되면 늦다)
+    net.luversof.web.gate.poe.dto.PoeMetaOrder order = poeDataClient.metaOrder(ascendancy, "");
+    model.addAttribute("skillOrder", order.skills());
+    model.addAttribute("ascendancyOrder", order.ascendancies());
+    model.addAttribute("itemOrder", order.items());
     return "poe/sim";
   }
 

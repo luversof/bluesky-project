@@ -36,10 +36,26 @@ export function findImageMagick() {
 	}
 }
 
-/** repo 의 config(또는 override)를 작업 디렉토리에 복사하고 pathofexile-dat CLI 를 실행한다. */
-export function runExtractor(configOverride) {
+/** repo 의 config(또는 override)를 작업 디렉토리에 복사하고 pathofexile-dat CLI 를 실행한다.
+ *  ⚠ CLI 는 tables/ 를 **통째로 비우고** config 에 적힌 테이블만 다시 쓴다.
+ *  그래서 테이블을 줄인 config 로 돌리면 나머지 테이블이 사라진다.
+ *    · **의도한 축소 추출**(parse-anoints·아이콘 스크립트들처럼 자기가 쓸 테이블만 뽑는 경우)은
+ *      run-all 이 이들을 테이블 소비 파서 **뒤**에 배치해 두었다 → { partial: true } 로 명시한다.
+ *    · 그 표식 없이 줄인 config 를 넘기면 사고다(즉석 재추출로 tables/ 를 날린 적이 있다) → 막는다.
+ */
+export function runExtractor(configOverride, { partial = false } = {}) {
 	fs.mkdirSync(WORK_DIR, { recursive: true });
 	const config = configOverride ?? loadConfig();
+	if (configOverride && !partial) {
+		const full = loadConfig().tables.length;
+		if ((configOverride.tables || []).length < full) {
+			throw new Error(
+				`추출기는 tables/ 를 비우고 다시 쓴다 — 테이블을 줄인 config(${configOverride.tables.length}/${full})는 ` +
+				"나머지 테이블을 지운다. 의도한 축소 추출이면 runExtractor(config, { partial: true }) 로 부르고, " +
+				"컬럼만 추가한 것이면 config.json 을 고쳐 전체 추출(node extract.mjs)을 돌릴 것.",
+			);
+		}
+	}
 	fs.writeFileSync(path.join(WORK_DIR, "config.json"), JSON.stringify(config, null, 2));
 
 	// ImageMagick 이 PATH 에 없으면 표준 설치 경로를 붙인다 (DDS→PNG 변환용).

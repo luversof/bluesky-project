@@ -7812,6 +7812,16 @@ public class PoeOptimizeService {
     this.foulbornEnabled = enabled;
   }
 
+  /**
+   * 지금 리그에서 못 얻는 고유(레거시)를 후보에서 뺄지 — 기본 켬(=뺀다). 끄면 옛 동작 그대로 전부 후보에 넣는다. 제외의 대가(DPS 손실)와 "무엇을 쓰고
+   * 있었는지"를 실측으로 귀속하려면 끄고 돌릴 수 있어야 한다.
+   */
+  private volatile boolean excludeLegacyUniques = true;
+
+  public void setExcludeLegacyUniques(boolean enabled) {
+    this.excludeLegacyUniques = enabled;
+  }
+
   /** 삿된 후보 상한 — 후보 풀 폭발을 막는다(기본 후보 N개 위에 이만큼만 더 얹는다). */
   private static final int FOULBORN_CANDIDATES = 8;
 
@@ -7890,6 +7900,7 @@ public class PoeOptimizeService {
                 item.category(),
                 item.requiredLevel(),
                 item.league(),
+                item.legacy(),
                 item.radius(),
                 item.implicits(),
                 item.implicitsKo(),
@@ -7902,6 +7913,87 @@ public class PoeOptimizeService {
                 item.reqInt(),
                 item.iconKey()));
       }
+    }
+    return out;
+  }
+
+  /** 변형 후보 상한 — 몰락의 눈(33변형)처럼 많은 아이템이 있어 상한 없이 얹으면 탐색이 무너진다. */
+  private static final int VARIANT_CANDIDATES = 8;
+
+  /**
+   * 이 유니크의 <b>변형 사본들</b> — 임프레션스 물리/화염/…, 도리아니의 망상 9종처럼 인게임에 동시에 존재하는 서로 다른 아이템.
+   *
+   * <p>지금까지 최적화기는 <b>기본 변형 하나만</b> 평가했다. 화염 빌드가 "화염 임프레션스"를 못 쓰고 카오스판만 보던 셈이라, 인게임에서 당연히 고르는 선택지가
+   * 후보에 아예 없었다.
+   */
+  private List<PoeUniqueItem> uniqueVariants(PoeUniqueItem item) {
+    if (item.variants() == null || item.variants().size() < 2) {
+      return List.of();
+    }
+    Integer base = item.defaultVariant();
+    List<PoeUniqueItem> out = new ArrayList<>();
+    for (PoeUniqueVariant variant : item.variants()) {
+      if (base != null && variant.index() == base.intValue()) {
+        continue; // 기본 변형은 이미 후보에 있다
+      }
+      String label = variant.nameKo() != null ? variant.nameKo() : variant.name();
+      out.add(
+          new PoeUniqueItem(
+              item.name() + " (" + variant.name() + ")",
+              item.nameKo() != null ? item.nameKo() + " (" + label + ")" : null,
+              item.slug(),
+              item.baseType(),
+              item.baseTypeKo(),
+              item.category(),
+              item.requiredLevel(),
+              item.league(),
+              item.legacy(),
+              item.radius(),
+              variant.implicits() != null ? variant.implicits() : item.implicits(),
+              variant.implicitsKo() != null ? variant.implicitsKo() : item.implicitsKo(),
+              variant.explicits() != null ? variant.explicits() : item.explicits(),
+              variant.explicitsKo() != null ? variant.explicitsKo() : item.explicitsKo(),
+              item.variants(),
+              variant.index(),
+              item.reqStr(),
+              item.reqDex(),
+              item.reqInt(),
+              item.iconKey()));
+    }
+    return out;
+  }
+
+  /**
+   * 후보 목록에 <b>다른 변형</b>을 얹는다 — 삿된과 같은 잣대(이번 빌드 키워드 점수)로 거른다.
+   *
+   * <p>기본 변형보다 이 빌드에 더 맞는 변형만 들어온다. 상한을 두는 이유는 변형이 최대 33개인 아이템이 있어서다.
+   */
+  private List<PoeUniqueItem> withUniqueVariants(List<PoeUniqueItem> base, List<String> keywords) {
+    List<PoeUniqueItem> out = new ArrayList<>(base);
+    int added = 0;
+    for (PoeUniqueItem item : base) {
+      if (added >= VARIANT_CANDIDATES) {
+        break;
+      }
+      List<String> baseLines = new ArrayList<>(item.implicits());
+      baseLines.addAll(item.explicits());
+      int baseScore = score(baseLines, keywords);
+      for (PoeUniqueItem variant : uniqueVariants(item)) {
+        if (added >= VARIANT_CANDIDATES) {
+          break;
+        }
+        List<String> lines = new ArrayList<>(variant.implicits());
+        lines.addAll(variant.explicits());
+        // **더 나은 변형만** 얹는다(같으면 굳이 후보를 늘릴 이유가 없다 — 탐색만 무거워진다)
+        if (score(lines, keywords) > baseScore) {
+          out.add(variant);
+          added++;
+        }
+      }
+    }
+    // 후보가 늘었는지 **보이게** 한다 — 안 보이면 "왜 변형이 안 뽑혔는지"를 추측하게 된다(실측 0건 사고).
+    if (added > 0) {
+      log("변형 후보 추가 " + added + "개 (기본 변형보다 이 빌드에 맞는 것만)");
     }
     return out;
   }
@@ -7938,6 +8030,9 @@ public class PoeOptimizeService {
         }
       }
     }
+    if (added > 0) {
+      log("삿된 후보 추가 " + added + "개");
+    }
     return out;
   }
 
@@ -7972,6 +8067,7 @@ public class PoeOptimizeService {
         item.category(),
         item.requiredLevel(),
         item.league(),
+        item.legacy(),
         item.radius(),
         item.implicits(),
         item.implicitsKo(),
@@ -8007,6 +8103,7 @@ public class PoeOptimizeService {
   private List<PoeUniqueItem> globalJewelCandidates(List<String> keywords) {
     record Scored(PoeUniqueItem item, int score) {}
     return poeUniqueDataService.search(null, "jewel", null).stream()
+        .filter(item -> !excludeLegacyUniques || !item.legacy())
         .filter(item -> item.requiredLevel() == null || item.requiredLevel() <= LEVEL)
         // 트리 소켓에 **꽂을 수 없는** 주얼을 후보에서 뺀다. PoB 는 소켓 종류를 검증하지 않으므로
         // 그냥 두면 게임에서 만들 수 없는 빌드가 더 높은 점수를 받는다(사이클 110 의 클러스터 소켓과 같은 계열).
@@ -8029,7 +8126,7 @@ public class PoeOptimizeService {
         .collect(
             java.util.stream.Collectors.collectingAndThen(
                 java.util.stream.Collectors.toList(),
-                list -> withFoulbornVariants(list, keywords)));
+                list -> withFoulbornVariants(withUniqueVariants(list, keywords), keywords)));
   }
 
   /** 유니크 카테고리 → 고정 슬롯 (반지/플라스크/무기는 별도 처리) */
@@ -8152,6 +8249,9 @@ public class PoeOptimizeService {
             : Set.of();
     record Scored(PoeUniqueItem item, int score) {}
     return poeUniqueDataService.search(null, "all", null).stream()
+        // 지금 리그에서 못 얻는 고유는 추천하지 않는다(명예로운 문신 제외와 같은 이유).
+        // 판정 근거는 게임의 고유 수집 탭 표시 플래그 — 실빌드 패싯은 상위 12개로 잘려 근거가 못 된다.
+        .filter(item -> !excludeLegacyUniques || !item.legacy())
         .filter(
             item ->
                 categories.contains(item.category())
@@ -8181,7 +8281,7 @@ public class PoeOptimizeService {
         .collect(
             java.util.stream.Collectors.collectingAndThen(
                 java.util.stream.Collectors.toList(),
-                list -> withFoulbornVariants(list, keywords)));
+                list -> withFoulbornVariants(withUniqueVariants(list, keywords), keywords)));
   }
 
   /**

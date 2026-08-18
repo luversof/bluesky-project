@@ -118,6 +118,11 @@ public interface PoeDataClient {
   java.util.List<net.luversof.web.gate.poe.dto.PoeFoulbornGroup> foulbornForUnique(
       @RequestParam String name);
 
+  /** 실빌드 사용 빈도 순서(스킬/전직/아이템) — 시뮬 폼 목록 정렬용. */
+  @GetExchange("/meta/order")
+  net.luversof.web.gate.poe.dto.PoeMetaOrder metaOrder(
+      @RequestParam String ascendancy, @RequestParam String skills);
+
   /** 삿된 옵션이 있는 유니크 영문명 집합 — 목록 배지용. */
   @GetExchange("/foulborn/names")
   java.util.Set<String> foulbornNames();

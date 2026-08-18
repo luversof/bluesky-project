@@ -38,7 +38,7 @@
 				<div id="poeRegexWarn" class="text-xs text-warning hidden"></div>
 				<%-- 기존 정규식 역파싱 — 붙여넣으면 해당 모드를 자동 선택해 편집 가능 상태로 복원 --%>
 				<div class="flex flex-wrap items-center gap-2">
-					<input id="poeRegexImport" type="text" class="input input-sm input-bordered flex-1 min-w-[16rem] font-mono" placeholder='${ko ? "기존 정규식 붙여넣기 — 예: \"!기절 면역|반사\" \"량: \\+9[5-9]%\"" : "Paste an existing regex to edit"}' autocomplete="off">
+					<input id="poeRegexImport" type="text" class="input input-sm input-bordered flex-1 min-w-[16rem] font-mono" placeholder='${ko ? "기존 정규식 붙여넣기 — 예: !기절|반사 수량.*(9[5-9]|1..)%" : "Paste an existing regex to edit"}' autocomplete="off">
 					<button id="poeRegexImportBtn" class="btn btn-sm">${ko ? "가져오기" : "Import"}</button>
 				</div>
 				<div id="poeRegexImportNote" class="text-xs text-base-content/50 hidden"></div>

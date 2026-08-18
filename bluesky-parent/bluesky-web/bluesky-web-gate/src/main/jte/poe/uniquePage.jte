@@ -62,6 +62,10 @@
 								@if(item.league() != null && !item.league().isBlank())
 									<tr><td class="text-base-content/50">${ko ? "리그 출처" : "League"}</td><td>${item.league()}</td></tr>
 								@endif
+								<%-- 획득 가능 여부 — 지금 리그에서 못 얻는 고유는 그 사실이 스펙만큼 중요하다(시뮬 후보에서도 빠진다) --%>
+								@if(item.legacy())
+									<tr><td class="text-base-content/50">${ko ? "획득" : "Obtainable"}</td><td class="text-warning">${ko ? "현재 리그 획득 불가 (스탠다드 보관분만)" : "Not obtainable in the current league"}</td></tr>
+								@endif
 							</tbody>
 						</table>
 					</div>

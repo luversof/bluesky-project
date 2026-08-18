@@ -559,6 +559,53 @@ public class PoeHtmxController {
     return "poe/htmx/uniqueList";
   }
 
+  /**
+   * 시뮬 폼의 세 선택(직업·스킬젬·고유템) — 서로의 선택에 따라 **많이 쓰는 순**으로 재배치해 다시 그린다.
+   *
+   * <p>정렬만 바꾸고 목록에서 빼지 않는다(실빌드 패싯은 상위 12개 절단이라 "없음 = 안 쓰임"이 아니다).
+   */
+  @GetMapping("/sim/selects")
+  public String simSelects(
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      @RequestParam(required = false, defaultValue = "") java.util.List<String> skills,
+      @RequestParam(required = false, defaultValue = "") java.util.List<String> uniques,
+      Model model) {
+    // 폼 최초 렌더(PoeViewController.sim)와 **같은 후보 집합**이어야 한다 — 다르면 재정렬 시 항목이 생겼다 사라진다
+    java.util.List<net.luversof.web.gate.poe.dto.PoeGem> gems =
+        poeDataClient.searchGems(null, "active", "all", null).stream()
+            .sorted(
+                java.util.Comparator.comparing(
+                    gem -> gem.nameKo() != null ? gem.nameKo() : gem.name()))
+            .toList();
+    java.util.Set<String> nonEquip = java.util.Set.of("jewel", "tincture", "fishing");
+    java.util.List<PoeUniqueItem> uniqueItems =
+        poeDataClient.searchUniques(null, "all").stream()
+            .filter(u -> u.category() == null || !nonEquip.contains(u.category()))
+            .sorted(java.util.Comparator.comparing(u -> u.nameKo() != null ? u.nameKo() : u.name()))
+            .toList();
+    // 정렬 대조는 **영문 이름**으로 한다(ninja 표기) — 화면 라벨(한글)과 분리
+    java.util.Map<String, String> slugToName = new java.util.HashMap<>();
+    for (var gem : gems) {
+      slugToName.put(gem.slug(), gem.name());
+    }
+    String skillNames =
+        skills.stream()
+            .map(slugToName::get)
+            .filter(java.util.Objects::nonNull)
+            .collect(java.util.stream.Collectors.joining(","));
+    net.luversof.web.gate.poe.dto.PoeMetaOrder order =
+        poeDataClient.metaOrder(ascendancy, skillNames);
+    model.addAttribute("activeGems", gems);
+    model.addAttribute("uniqueItems", uniqueItems);
+    model.addAttribute("preSkills", new java.util.LinkedHashSet<>(skills));
+    model.addAttribute("preUniques", new java.util.LinkedHashSet<>(uniques));
+    model.addAttribute("ascendancy", ascendancy);
+    model.addAttribute("skillOrder", order.skills());
+    model.addAttribute("ascendancyOrder", order.ascendancies());
+    model.addAttribute("itemOrder", order.items());
+    return "poe/htmx/simSelects";
+  }
+
   /** 변형 칩 + 아이템 레이어 — 칩을 누르면 이 조각만 갈아끼워 변형별 모드를 보여준다. */
   @GetMapping("/uniques/variant")
   public String uniqueVariant(

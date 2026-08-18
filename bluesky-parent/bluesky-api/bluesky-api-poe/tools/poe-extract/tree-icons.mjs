@@ -43,7 +43,8 @@ console.log(`트리 아이콘 대상: ${entries.length}개 (전체 ${byKey.size}
 const config = loadConfig();
 config.files = [...(config.files || []), ...new Set(entries.map((e) => e[1]))];
 config.tables = [];
-runExtractor(config);
+// 자기가 쓸 테이블만 뽑는 축소 추출 — tables/ 를 갈아엎으므로 run-all 에서 **테이블 소비 파서 뒤**에 있다
+runExtractor(config, { partial: true });
 
 fs.mkdirSync(ICON_DIR, { recursive: true });
 let copied = 0;

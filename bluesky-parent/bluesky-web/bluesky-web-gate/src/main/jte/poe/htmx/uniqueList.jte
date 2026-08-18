@@ -85,6 +85,12 @@
 						@if(item.league() != null && !item.league().isBlank())
 							<span class="badge badge-ghost badge-xs" title="${PoeText.isKorean() ? "이 고유는 해당 리그 콘텐츠에서 나옵니다" : "Drops from this league's content"}">${item.league()}</span>
 						@endif
+						<%-- 레거시 — 지금 리그에선 못 얻는 고유(레이스 보상 데미갓, 예언 전용 Fated, 삭제된 주얼).
+						     게임의 고유 수집 탭이 챌린지 리그/스탠다드 어디에도 칸을 안 보여주는 것들이다.
+						     시뮬레이터도 이걸 후보에서 뺀다 — 목록에서도 같은 사실을 알려야 화면끼리 말이 맞는다. --%>
+						@if(item.legacy())
+							<span class="badge badge-outline badge-xs border-warning/50 text-warning" title="${PoeText.isKorean() ? "현재 리그에서는 획득할 수 없습니다(스탠다드 보관분만 존재)" : "Cannot be obtained in the current league"}">${PoeText.isKorean() ? "레거시" : "Legacy"}</span>
+						@endif
 						<%-- 변형 — 같은 이름·같은 베이스인데 모드 구성이 다른 것들(임프레션스 5원소 등).
 						     목록엔 기본 변형만 나오므로, 나머지가 있다는 사실은 여기서 알린다. --%>
 						@if(item.variants() != null && item.variants().size() > 1)

@@ -19,6 +19,10 @@
 @param java.util.Set<String> preSkills = java.util.Set.of()
 @param java.util.Set<String> preUniques = java.util.Set.of()
 @param String fixedClassName = ""
+@param String fixedAscendancy = ""
+@param List<String> skillOrder = java.util.List.of()
+@param List<String> ascendancyOrder = java.util.List.of()
+@param List<String> itemOrder = java.util.List.of()
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe.sim.title");
@@ -80,21 +84,15 @@
 					<!-- 주 입력(스킬젬·고유템) + 최적화 설정을 한 줄로 — 셋 다 짧아 줄을 나눌 이유가 없다(사용자 요청).
 					     좁은 화면에선 flex-wrap 이 알아서 접고, items-end 로 라벨 있는 칸과 컨트롤의 밑선을 맞춘다. -->
 					<div class="flex flex-wrap items-end gap-3">
-						<div class="min-w-64 flex-1">
-							<label class="block text-xs font-semibold text-base-content/70 mb-1">${MessageUtil.getMessage("poe.sim.opt.skills")}</label>
-							<select name="skills" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.skills.placeholder")}" size="4" class="select select-sm select-bordered w-full">
-								@for(PoeGem skillOpt : activeGems)
-									<option value="${skillOpt.slug()}" selected="${preSkills.contains(skillOpt.slug())}">${net.luversof.web.gate.poe.PoeText.name(skillOpt.nameKo(), skillOpt.name())}</option>
-								@endfor
-							</select>
-						</div>
-						<div class="min-w-64 flex-1">
-							<label class="block text-xs font-semibold text-base-content/70 mb-1">${MessageUtil.getMessage("poe.sim.opt.uniques")}</label>
-							<select name="uniques" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.uniques.placeholder")}" size="4" class="select select-sm select-bordered w-full">
-								@for(PoeUniqueItem uniqueItem : uniqueItems)
-									<option value="${uniqueItem.slug()}" selected="${preUniques.contains(uniqueItem.slug())}">${net.luversof.web.gate.poe.PoeText.name(uniqueItem.nameKo(), uniqueItem.name())}</option>
-								@endfor
-							</select>
+						<%-- 세 선택(직업·스킬젬·고유템)은 서로의 선택에 따라 "많이 쓰는 순"으로 재배치된다.
+						     그래서 통째로 한 fragment 로 두고, 아무 값이나 바뀌면 이 컨테이너만 다시 그린다. --%>
+						<div id="poeSimSelects" class="contents"
+						     hx-get="/poe/htmx/sim/selects"
+						     hx-trigger="change from:#poeSimSelects select[name='ascendancy'], change from:#poeSimSelects select[name='skills']"
+						     hx-include="#poeSimSelects select"
+						     hx-target="this"
+						     hx-swap="innerHTML">
+							@template.poe.htmx.simSelects(activeGems = activeGems, uniqueItems = uniqueItems, preSkills = preSkills, preUniques = preUniques, ascendancy = fixedAscendancy, skillOrder = skillOrder, ascendancyOrder = ascendancyOrder, itemOrder = itemOrder)
 						</div>
 						<%-- min-w-0: flex 아이템 기본값(min-width:auto)이면 내용 너비를 고집해 좁은 폭에서 가로 스크롤이 생긴다(768px 실측). --%>
 						<div class="flex min-w-0 flex-wrap items-center gap-2">
@@ -105,43 +103,6 @@
 							<option value="Boss">${MessageUtil.getMessage("poe.sim.opt.scenario.boss")}</option>
 							<option value="Pinnacle" selected>${MessageUtil.getMessage("poe.sim.opt.scenario.pinnacle")}</option>
 							<option value="Uber">${MessageUtil.getMessage("poe.sim.opt.scenario.uber")}</option>
-						</select>
-						<select name="ascendancy" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.ascendancy")}">
-							<option value="">${MessageUtil.getMessage("poe.sim.opt.ascendancy.auto")}</option>
-							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("사이온", "Scion")}">
-								<option value="Ascendant">${net.luversof.web.gate.poe.PoeText.name("어센던트", "Ascendant")}</option>
-								<option value="Reliquarian">${net.luversof.web.gate.poe.PoeText.name("렐리쿼리언", "Reliquarian")}</option>
-							</optgroup>
-							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("머라우더", "Marauder")}">
-								<option value="Juggernaut">${net.luversof.web.gate.poe.PoeText.name("저거넛", "Juggernaut")}</option>
-								<option value="Berserker">${net.luversof.web.gate.poe.PoeText.name("버서커", "Berserker")}</option>
-								<option value="Chieftain">${net.luversof.web.gate.poe.PoeText.name("치프틴", "Chieftain")}</option>
-							</optgroup>
-							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("레인저", "Ranger")}">
-								<option value="Warden">${net.luversof.web.gate.poe.PoeText.name("워든", "Warden")}</option>
-								<option value="Deadeye">${net.luversof.web.gate.poe.PoeText.name("데드아이", "Deadeye")}</option>
-								<option value="Pathfinder">${net.luversof.web.gate.poe.PoeText.name("패스파인더", "Pathfinder")}</option>
-							</optgroup>
-							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("위치", "Witch")}">
-								<option value="Occultist">${net.luversof.web.gate.poe.PoeText.name("오컬티스트", "Occultist")}</option>
-								<option value="Elementalist">${net.luversof.web.gate.poe.PoeText.name("엘리멘탈리스트", "Elementalist")}</option>
-								<option value="Necromancer">${net.luversof.web.gate.poe.PoeText.name("네크로맨서", "Necromancer")}</option>
-							</optgroup>
-							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("듀얼리스트", "Duelist")}">
-								<option value="Slayer">${net.luversof.web.gate.poe.PoeText.name("슬레이어", "Slayer")}</option>
-								<option value="Gladiator">${net.luversof.web.gate.poe.PoeText.name("글래디에이터", "Gladiator")}</option>
-								<option value="Champion">${net.luversof.web.gate.poe.PoeText.name("챔피언", "Champion")}</option>
-							</optgroup>
-							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("템플러", "Templar")}">
-								<option value="Inquisitor">${net.luversof.web.gate.poe.PoeText.name("인퀴지터", "Inquisitor")}</option>
-								<option value="Hierophant">${net.luversof.web.gate.poe.PoeText.name("하이로펀트", "Hierophant")}</option>
-								<option value="Guardian">${net.luversof.web.gate.poe.PoeText.name("가디언", "Guardian")}</option>
-							</optgroup>
-							<optgroup label="${net.luversof.web.gate.poe.PoeText.name("섀도우", "Shadow")}">
-								<option value="Assassin">${net.luversof.web.gate.poe.PoeText.name("어쌔신", "Assassin")}</option>
-								<option value="Trickster">${net.luversof.web.gate.poe.PoeText.name("트릭스터", "Trickster")}</option>
-								<option value="Saboteur">${net.luversof.web.gate.poe.PoeText.name("사보추어", "Saboteur")}</option>
-							</optgroup>
 						</select>
 						<label class="flex items-center gap-1.5 text-sm cursor-pointer" title="${MessageUtil.getMessage("poe.sim.opt.buffs.hint")}">
 							<input type="checkbox" name="buffs" value="true" checked class="checkbox checkbox-sm">

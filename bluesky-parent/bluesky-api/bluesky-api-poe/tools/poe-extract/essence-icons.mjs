@@ -37,7 +37,8 @@ console.log(`에센스 ${wantedNames.size}종 중 DDS 매칭 ${ddsBySlug.size}�
 const dl = loadConfig();
 dl.tables = [];
 dl.files = [...new Set(ddsBySlug.values())];
-runExtractor(dl);
+// 아이콘 DDS 만 받는 추출(테이블 없음) — tables/ 를 갈아엎으므로 run-all 에서 테이블 소비 파서 뒤에 있다
+runExtractor(dl, { partial: true });
 
 const iconDir = path.join(DATA_DIR, "icons", "essences");
 fs.mkdirSync(iconDir, { recursive: true });

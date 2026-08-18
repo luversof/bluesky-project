@@ -67,6 +67,16 @@ function combineNumbers(a, b, fn) {
 }
 
 /** min/max 문장 쌍 → 수치가 다르면 "(min-max)" 범위 표기 하나로 병합 */
+/**
+ * GGG 내부 표기 정리 — 스탯 문구엔 "[내부이름|화면표기]" 가 섞여 나온다
+ * (예: "Rare Monsters have [PhysicalThorns|Physical Thorns] reflecting …").
+ * 인게임 아이템에는 **화면표기만** 찍히므로 그대로 두면 지도 정규식이 영원히 안 걸리고,
+ * 모드 목록에도 내부 이름이 그대로 노출된다. 파이프 뒤(표기)만 남긴다.
+ */
+function stripInternalNames(line) {
+	return line == null ? line : line.replace(/\[([^\]|]+)\|([^\]]+)\]/g, "$2").replace(/\[([^\]|]+)\]/g, "$1");
+}
+
 function mergeRange(minLine, maxLine) {
 	if (minLine == null || minLine === maxLine) return maxLine;
 	const minNums = minLine.match(NUM) || [];
@@ -165,8 +175,8 @@ const list = [...entries.values()].map((e) => ({
 	quant: e.quant,
 	rarity: e.rarity,
 	packSize: e.packSize,
-	en: e.enMax.map((s, i) => mergeRange(e.enMin[i], s)),
-	ko: e.koMax.map((s, i) => mergeRange(e.koMin[i], s)),
+	en: e.enMax.map((s, i) => stripInternalNames(mergeRange(e.enMin[i], s))),
+	ko: e.koMax.map((s, i) => stripInternalNames(mergeRange(e.koMin[i], s))),
 }));
 
 // 정렬: 일반맵 먼저, 접두→접미, 한글 문구순
@@ -176,8 +186,24 @@ list.sort((a, b) => {
 	return (a.ko[0] || "").localeCompare(b.ko[0] || "", "ko");
 });
 
+// 지도 **이름**도 같이 실어 보낸다 — 정규식 항이 지도 이름과 겹치면(예: 이름에 "가시"가 들어가는 지도)
+// 그 이름을 가진 지도가 전부 걸려 필터가 무의미해진다. 생성기는 이 목록을 "걸리면 안 되는 말뭉치"로 쓴다.
+const baseEn = loadTable("English", "BaseItemTypes");
+const baseKo = loadTable("Korean", "BaseItemTypes");
+const itemClasses = loadTable("English", "ItemClasses");
+const mapClassIds = new Set(
+	itemClasses.map((c, i) => (/^(Map|MiscMapItem)$/i.test(c.Id || "") ? i : -1)).filter((i) => i >= 0),
+);
+const names = { en: [], ko: [] };
+baseEn.forEach((b, i) => {
+	if (!mapClassIds.has(b.ItemClassesKey)) return;
+	if (b.Name) names.en.push(b.Name);
+	const ko = baseKo[i]?.Name;
+	if (ko) names.ko.push(ko);
+});
+
 const config = loadConfig();
-fs.writeFileSync(OUT, JSON.stringify({ patch: config.patch, mods: list }, null, "\t"), "utf8");
+fs.writeFileSync(OUT, JSON.stringify({ patch: config.patch, mods: list, names }, null, "\t"), "utf8");
 const normalCount = list.filter((m) => m.normal).length;
 const uberCount = list.filter((m) => m.uber && !m.normal).length;
 console.log(

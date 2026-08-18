@@ -45,6 +45,26 @@ const lineOverrides = (() => {
 	}
 })();
 
+// 현재 리그에서 얻을 수 있는지 — 게임 자신의 판정을 쓴다.
+//   UniqueStashLayout 은 고유 수집 탭의 칸 정의인데, 칸이 비었을 때 그 칸을 보여줄지를
+//   ShowIfEmptyChallengeLeague / ShowIfEmptyStandard 로 갈라 둔다. 지금 못 얻는 고유(레이스 보상 데미갓,
+//   예언으로만 만들던 Fated, 삭제된 레거시 주얼 등)는 **둘 다 꺼져 있다**.
+//   같은 이름이 대체 아트로 여러 행이면 한 행이라도 켜져 있으면 획득 가능으로 본다.
+//   (실빌드 패싯은 아키타입당 상위 12개로 잘려 "안 쓴다"를 증명하지 못한다 — 그래서 게임 플래그를 쓴다.)
+const legacyUniqueNames = (() => {
+	const layout = load("English", "UniqueStashLayout");
+	const hidden = new Set();
+	const shown = new Set();
+	for (const row of layout) {
+		const word = wordsEn[row.WordsKey];
+		const name = word && (word.Text2 || word.Text);
+		if (!name) continue;
+		(row.ShowIfEmptyChallengeLeague || row.ShowIfEmptyStandard ? shown : hidden).add(name);
+	}
+	for (const name of shown) hidden.delete(name);
+	return hidden;
+})();
+
 const baseEn = load("English", "BaseItemTypes");
 const baseKo = load("Korean", "BaseItemTypes");
 const baseKoByEn = new Map();
@@ -87,11 +107,53 @@ const VARIANT_WORD_KO = {
 	"Very Large Ring": "매우 큰 고리", "Massive Ring": "거대한 고리",
 	"Scorch": "이글거림", "Brittle": "취약", "Sap": "쇠약",
 	"One Abyssal Socket": "심연 홈 1개", "Two Abyssal Sockets": "심연 홈 2개", "Three Abyssal Sockets": "심연 홈 3개",
+	// 무엇을 강화하는 변형인지 가리키는 낱말 (인게임 용어)
+	"Spells": "주문", "Attacks": "공격", "Attack": "공격", "Spell": "주문",
+	"Minions": "소환수", "Minion": "소환수", "Totem": "토템", "Brand": "낙인", "Trap": "덫", "Mine": "지뢰",
+	"Conversion": "전환", "Penetration": "관통", "Proliferation": "확산", "Channelling": "집중",
+	"Duration": "지속시간", "Effect Duration": "효과 지속시간", "Skill Effect Duration": "스킬 효과 지속시간",
+	"Curse Effect": "저주 효과", "Additional Curse": "추가 저주", "Malediction": "저주 강화",
+	"Blind": "실명", "Impale": "꿰뚫기", "Tailwind": "순풍", "Elusive": "교묘함", "Onslaught": "맹공",
+	"Fortify": "축성", "Intimidate": "위협", "Rage": "분노", "Maim": "불구",
+	"Freeze": "빙결", "Shock": "감전", "Ignite": "점화", "Ailments": "상태 이상",
+	"Frenzy": "격노", "Power": "권능", "Endurance": "인내",
+	"Frenzy Charge": "격노 충전", "Power Charge": "권능 충전", "Endurance Charge": "인내 충전",
+	"Minimum Frenzy Charges": "최소 격노 충전", "Minimum Power Charges": "최소 권능 충전",
+	"Minimum Endurance Charges": "최소 인내 충전", "Minimum Charges": "최소 충전",
+	"Physical Damage Reduction": "물리 피해 감소", "Damage Reduction": "피해 감소",
+	"Damage over Time": "지속 피해", "Damage over Time Multiplier": "지속 피해 증폭",
+	"Area Damage": "지역 피해", "Global Physical Damage": "전역 물리 피해",
+	"Mana Cost": "마나 소모", "Skill Cost": "스킬 소모", "Cooldown Recovery": "재사용 대기시간 회복",
+	"Additional Projectile": "추가 발사체", "Extra Pierces": "추가 관통",
+	"Maximum Life": "최대 생명력", "Energy Shield Regen": "에너지 보호막 재생",
+	"ES": "에너지 보호막", "Gems": "젬", "Chance to Freeze": "빙결 확률",
+	"Quantity": "수량", "Attributes": "속성", "Accuracy": "정확도",
+};
+// 접미 합성 — "Fire Damage" 처럼 사전에 통짜로 없는 조합을 낱말+접미로 만들어 낸다.
+//   양쪽 다 확실할 때만 합성하고, 하나라도 모르면 null(영문 폴백)을 유지한다.
+const VARIANT_TAIL_KO = {
+	"Damage": "피해", "Resistance": "저항", "Resistances": "저항", "Regen": "재생",
+	"Effect": "효과", "Duration": "지속시간", "Speed": "속도", "Chance": "확률",
+	"Multiplier": "증폭", "Rating": "수치", "Damage over Time": "지속 피해",
 };
 function variantWordKo(word) {
 	const trimmed = word.trim();
 	if (!trimmed) return null;
-	return VARIANT_WORD_KO[trimmed] || gemKoByEn.get(trimmed) || baseKoByEn.get(trimmed) || null;
+	const direct = VARIANT_WORD_KO[trimmed] || gemKoByEn.get(trimmed) || baseKoByEn.get(trimmed);
+	if (direct) return direct;
+	// "Life on Kill" → "처치 시 생명력" (인게임 어순은 조건이 앞)
+	const onKill = trimmed.match(/^(.+?)\s+on Kill$/i);
+	if (onKill) {
+		const head = variantWordKo(onKill[1]);
+		return head ? `처치 시 ${head}` : null;
+	}
+	// "Fire Damage" = "Fire" + "Damage"
+	for (const [tail, tailKo] of Object.entries(VARIANT_TAIL_KO)) {
+		if (!trimmed.toLowerCase().endsWith(` ${tail.toLowerCase()}`)) continue;
+		const head = variantWordKo(trimmed.slice(0, trimmed.length - tail.length - 1));
+		if (head) return `${head} ${tailKo}`;
+	}
+	return null;
 }
 function variantNameKo(_itemName, label) {
 	// 괄호 부기는 통째로 다시 태워 본다: "Two-Toned Boots (Armour/Evasion)"
@@ -101,9 +163,9 @@ function variantNameKo(_itemName, label) {
 		const tail = variantNameKo(_itemName, paren[2]);
 		return head && tail ? `${head} (${tail})` : null;
 	}
-	for (const [sep, join] of [[": ", ": "], ["/", "/"], [" and ", " · "]]) {
+	for (const [sep, join] of [[": ", ": "], [", ", ", "], [" + ", " + "], ["/", "/"], [" and ", " · "]]) {
 		if (label.includes(sep)) {
-			const parts = label.split(sep).map(variantWordKo);
+			const parts = label.split(sep).map((p) => variantNameKo(_itemName, p));
 			return parts.every(Boolean) ? parts.join(join) : null;
 		}
 	}
@@ -116,7 +178,14 @@ function variantNameKo(_itemName, label) {
 const HISTORICAL_VARIANT = /\bPre[ -]\d/i;
 const isHistoricalVariant = (name) => name === "Current" || HISTORICAL_VARIANT.test(name);
 // "Fire and Chaos Resistances (Current)" → "Fire and Chaos Resistances" (현재분 표식은 라벨에서 군더더기)
-const normalizeVariantName = (name) => name.replace(/\s*\(Current\)\s*$/i, "").replace(/\s+Current$/i, "").trim();
+const normalizeVariantName = (name) =>
+	name
+		// "Current (Spells)" → "Spells", "Current - Crit Chance" → "Crit Chance", "Rhoa Current" → "Rhoa"
+		.replace(/^Current\s*\((.+)\)$/i, "$1")
+		.replace(/^Current\s*[-–]\s*/i, "")
+		.replace(/\s*\(Current\)\s*$/i, "")
+		.replace(/\s+Current$/i, "")
+		.trim();
 
 function parseBlock(block, category) {
 	const lines = block.split("\n").map((l) => l.trim()).filter((l) => l.length);
@@ -211,6 +280,7 @@ function parseBlock(block, category) {
 		category,
 		requiredLevel,
 		league,
+		legacy: legacyUniqueNames.has(name),
 		radius,
 		implicits,
 		implicitsKo: toKo(implicits),

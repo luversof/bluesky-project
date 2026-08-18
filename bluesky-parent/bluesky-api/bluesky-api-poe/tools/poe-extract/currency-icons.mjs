@@ -42,7 +42,8 @@ if (!ddsBySlug.size) process.exit(0);
 const dl = loadConfig();
 dl.tables = [];
 dl.files = [...new Set(ddsBySlug.values())];
-runExtractor(dl);
+// 아이콘 DDS 만 받는 추출(테이블 없음) — tables/ 를 갈아엎으므로 run-all 에서 테이블 소비 파서 뒤에 있다
+runExtractor(dl, { partial: true });
 
 fs.mkdirSync(ICON_DIR, { recursive: true });
 let done = 0;

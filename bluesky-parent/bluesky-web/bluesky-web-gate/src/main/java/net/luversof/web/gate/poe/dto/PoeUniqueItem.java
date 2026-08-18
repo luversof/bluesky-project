@@ -12,6 +12,8 @@ public record PoeUniqueItem(
     String category,
     Integer requiredLevel,
     String league,
+    /** 지금 리그에선 못 얻는 고유(데미갓·Fated·삭제된 레거시). 판정은 게임의 고유 수집 탭 표시 플래그. */
+    boolean legacy,
     /** 반경 라벨(Small/Medium/Large/Very Large) — "…in Radius" 모드를 가진 주얼만 값이 있다. */
     String radius,
     List<String> implicits,

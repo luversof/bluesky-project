@@ -41,7 +41,8 @@ console.log(`아이템 아이콘 대상: ${ddsBySlug.size} / ${bases.length}`);
 const config = loadConfig();
 config.files = [...(config.files || []), ...new Set(ddsBySlug.values())];
 config.tables = [];
-runExtractor(config);
+// 자기가 쓸 테이블만 뽑는 축소 추출 — tables/ 를 갈아엎으므로 run-all 에서 **테이블 소비 파서 뒤**에 있다
+runExtractor(config, { partial: true });
 
 // slug → category (플라스크 3프레임 합성 판단용)
 const catBySlug = new Map(bases.map((b) => [b.slug, b.category]));

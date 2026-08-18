@@ -12,6 +12,9 @@ public record PoeUniqueItem(
     String category,
     Integer requiredLevel,
     String league,
+    // 지금은 못 얻는 고유(레이스 보상 데미갓, 예언 전용 Fated, 삭제된 레거시 주얼 등).
+    // 판정은 게임 데이터 UniqueStashLayout.ShowIfEmpty{ChallengeLeague,Standard} — 둘 다 꺼진 칸이 그것이다.
+    boolean legacy,
     // 반경 라벨(Small/Medium/Large/Very Large) — "…in Radius" 모드는 이 줄이 아이템 텍스트에 있어야
     // PoB 가 반경 계산을 한다(없으면 그 모드는 조용히 무효).
     String radius,
