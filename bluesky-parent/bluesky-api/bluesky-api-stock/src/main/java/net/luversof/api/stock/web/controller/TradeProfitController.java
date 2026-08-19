@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,14 +64,10 @@ public class TradeProfitController {
     if (dates == null) {
       return result;
     }
-    dates.stream()
-        .filter(Objects::nonNull)
-        .distinct()
-        .forEach(
-            date ->
-                result.put(
-                    date.toString(),
-                    stockProfitService.getHoldingsSnapshot(userId, date, accountId)));
+    // 날짜마다 조회하면 날짜 수만큼 시뮬레이션이 돈다. 한 번의 시뮬레이션에서 모두 캡처한다.
+    stockProfitService
+        .getHoldingsSnapshotBatch(userId, dates, accountId)
+        .forEach((date, items) -> result.put(date.toString(), items));
     return result;
   }
 }

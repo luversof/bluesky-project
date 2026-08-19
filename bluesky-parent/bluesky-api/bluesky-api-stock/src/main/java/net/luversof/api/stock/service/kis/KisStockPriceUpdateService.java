@@ -32,7 +32,6 @@ import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemDateRange;
 import net.luversof.api.stock.domain.StockItemTradeDate;
 import net.luversof.api.stock.domain.StockPriceHistory;
-import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
@@ -46,8 +45,6 @@ public class KisStockPriceUpdateService {
   private static final Logger log = LoggerFactory.getLogger(KisStockPriceUpdateService.class);
 
   private static final ZoneId MARKET_ZONE_ID = ZoneId.of("Asia/Seoul");
-
-  @Autowired private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
   @Autowired private DividendRepository dividendRepository;
 
@@ -322,7 +319,10 @@ public class KisStockPriceUpdateService {
       ZoneId zoneId = MARKET_ZONE_ID;
       LocalDate today = LocalDate.now(zoneId);
       Instant updatedNow = Instant.now();
-      LocalDate snapshotInvalidationFromDate = null;
+      // 과거 시세가 바뀐 가장 이른 날짜와 수정주가 재조정(분할/합병) 여부.
+      // 예전에는 스냅샷 캐시 무효화에 썼고, 캐시를 없앤 지금은 "과거 평가액이 바뀐다"는
+      // 신호로 로그에 남긴다(모든 과거 시점 평가가 재계산되므로 알아둘 가치가 있다).
+      LocalDate changedHistoryFromDate = null;
       boolean priceAdjustmentDetected = false;
 
       for (KisDailyPriceItem item : items) {
@@ -374,7 +374,7 @@ public class KisStockPriceUpdateService {
                 hasMeaningfulHistoryChange(history, newOpen, newHigh, newLow, newClose, newVolume);
           }
           if (shouldInvalidateSnapshots) {
-            snapshotInvalidationFromDate = getMin(snapshotInvalidationFromDate, tradeDate);
+            changedHistoryFromDate = getMin(changedHistoryFromDate, tradeDate);
           }
 
           // 수정주가 재조정 감지: 기존 종가와 신규 종가 차이가 2% 초과이고,
@@ -408,8 +408,18 @@ public class KisStockPriceUpdateService {
 
       if (!newHistories.isEmpty()) {
         stockPriceHistoryRepository.saveAll(newHistories);
-        invalidateSnapshotsFromChangedDate(
-            stockItemId, snapshotInvalidationFromDate, priceAdjustmentDetected);
+      }
+
+      if (changedHistoryFromDate != null) {
+        if (priceAdjustmentDetected) {
+          log.info(
+              "Price adjustment detected for {} from {} (split/merger suspected);"
+                  + " historical valuations change accordingly.",
+              symbol,
+              changedHistoryFromDate);
+        } else {
+          log.debug("Price history changed for {} from {}", symbol, changedHistoryFromDate);
+        }
       }
     } catch (Exception e) {
       log.warn(
@@ -433,30 +443,5 @@ public class KisStockPriceUpdateService {
         || history.getLowPrice().compareTo(newLow) != 0
         || history.getClosePrice().compareTo(newClose) != 0
         || history.getVolume() != newVolume;
-  }
-
-  private void invalidateSnapshotsFromChangedDate(
-      UUID stockItemId, LocalDate fromDate, boolean priceAdjustmentDetected) {
-    if (fromDate == null) {
-      return;
-    }
-    try {
-      dailyAccountSnapshotRepository.deleteByWmaStateContainingStockItemIdAndDateGreaterThanEqual(
-          stockItemId.toString(), fromDate);
-      if (priceAdjustmentDetected) {
-        log.info(
-            "Invalidated DailyAccountSnapshots for stockItemId {} from {} due to price adjustment or corrected history.",
-            stockItemId,
-            fromDate);
-      } else {
-        log.info(
-            "Invalidated DailyAccountSnapshots for stockItemId {} from {} due to inserted/updated price history.",
-            stockItemId,
-            fromDate);
-      }
-    } catch (Exception ex) {
-      log.warn(
-          "Failed to invalidate snapshots for stockItemId {} from {}", stockItemId, fromDate, ex);
-    }
   }
 }

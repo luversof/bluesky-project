@@ -1,7 +1,6 @@
 package net.luversof.api.stock.service;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.api.stock.domain.Trade;
-import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 
 @Service
@@ -21,26 +19,13 @@ public class TradeService {
 
   @Autowired private AccountService accountService;
 
-  @Autowired private DailyAccountSnapshotRepository snapshotRepository;
-
   public void setTradeRepository(TradeRepository tradeRepository) {
     this.tradeRepository = tradeRepository;
   }
 
   public Trade createTrade(Trade trade) {
-    Trade savedTrade = tradeRepository.save(trade);
-
-    // 스냅샷 무효화 처리
-    accountService
-        .findById(trade.getAccountId())
-        .ifPresent(
-            account -> {
-              snapshotRepository.deleteByUserIdAndDateGreaterThanEqual(
-                  account.getUserId(),
-                  trade.getTradeDate().atZone(ZoneId.systemDefault()).toLocalDate());
-            });
-
-    return savedTrade;
+    // 보유 스냅샷 캐시가 사라져(시계열과 동일 시뮬레이션으로 계산) 무효화 처리도 필요 없다.
+    return tradeRepository.save(trade);
   }
 
   public List<Trade> findByAccountId(UUID accountId) {

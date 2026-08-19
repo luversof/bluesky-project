@@ -25,7 +25,6 @@ import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.domain.Trade;
-import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.service.AccountService;
 import net.luversof.api.stock.service.DividendService;
 import net.luversof.api.stock.service.StockItemService;
@@ -51,7 +50,6 @@ public class TradeProfitServiceReproductionTest {
   @Spy private ProfitCalculator profitCalculator = new AverageCostProfitCalculator();
   @Mock private StockItemService stockItemService;
   @Mock private DividendService dividendService;
-  @Mock private DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
   @InjectMocks private TradeProfitService tradeProfitService;
 
@@ -197,11 +195,6 @@ public class TradeProfitServiceReproductionTest {
 
   private void stubAggregateTimeSeriesDefaults() {
     when(dividendService.findDividends(any())).thenReturn(Collections.emptyList());
-    when(dailyAccountSnapshotRepository.findTopByAccountIdAndDateLessThanOrderByDateDesc(
-            any(), any()))
-        .thenReturn(null);
-    when(dailyAccountSnapshotRepository.findDatesByAccountIdAndDateBetween(any(), any(), any()))
-        .thenReturn(Collections.emptyList());
   }
 
   private TradeProfitRequest createUserAccountRequest(

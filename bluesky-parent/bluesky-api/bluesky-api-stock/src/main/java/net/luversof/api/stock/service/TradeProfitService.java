@@ -12,10 +12,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,13 +29,11 @@ import org.springframework.stereotype.Service;
 import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Account;
-import net.luversof.api.stock.domain.DailyAccountSnapshot;
 import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
-import net.luversof.api.stock.repository.DailyAccountSnapshotRepository;
 import net.luversof.api.stock.service.strategy.ProfitCalculator;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
@@ -42,16 +42,12 @@ import net.luversof.api.stock.web.dto.request.TradeSearchRequest;
 import net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.api.stock.web.dto.response.TradeResponse;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.json.JsonMapper;
 
 /** 통합 주식 손익 계산 서비스 실현손익(매매손익)과 미실현손익(보유손익)을 하나의 객체로 제공 */
 @Service
 public class TradeProfitService {
 
   private static final Logger log = LoggerFactory.getLogger(TradeProfitService.class);
-  // WmaState (de)serialization에 재사용하는 thread-safe JsonMapper. 호출마다 new 하지 않는다.
-  private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
   private static final BigDecimal MIN_CORPORATE_ACTION_FACTOR = BigDecimal.valueOf(2);
   private static final BigDecimal CORPORATE_ACTION_FACTOR_TOLERANCE = new BigDecimal("0.15");
 
@@ -61,7 +57,6 @@ public class TradeProfitService {
   private final ProfitCalculator profitCalculator;
   private final StockItemService stockItemService;
   private final DividendService dividendService;
-  private final DailyAccountSnapshotRepository dailyAccountSnapshotRepository;
 
   public TradeProfitService(
       AccountService accountService,
@@ -69,15 +64,13 @@ public class TradeProfitService {
       StockPriceService stockPriceService,
       ProfitCalculator profitCalculator,
       StockItemService stockItemService,
-      DividendService dividendService,
-      DailyAccountSnapshotRepository dailyAccountSnapshotRepository) {
+      DividendService dividendService) {
     this.accountService = accountService;
     this.tradeService = tradeService;
     this.stockPriceService = stockPriceService;
     this.profitCalculator = profitCalculator;
     this.stockItemService = stockItemService;
     this.dividendService = dividendService;
-    this.dailyAccountSnapshotRepository = dailyAccountSnapshotRepository;
   }
 
   public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
@@ -325,10 +318,33 @@ public class TradeProfitService {
     public void setStockItemId(UUID stockItemId) {
       this.stockItemId = stockItemId;
     }
+
+    /** 보유 스냅샷 캡처용 얕은 복사(필드가 모두 불변 타입이라 이것으로 충분). */
+    private WmaState copy() {
+      WmaState c = new WmaState();
+      c.quantity = this.quantity;
+      c.rawQuantity = this.rawQuantity;
+      c.totalCost = this.totalCost;
+      c.totalCostNet = this.totalCostNet;
+      c.stockItemId = this.stockItemId;
+      return c;
+    }
   }
 
   public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(
       TradeProfitRequest request, String granularity) {
+    return aggregateTimeSeries(request, granularity, null, null);
+  }
+
+  /**
+   * 시계열 집계. captureDates 가 주어지면 해당 날짜의 보유 상태(WmaState)를 capturedStates 에 담는다. 보유 스냅샷 조회가 이 캡처를 쓰므로,
+   * 차트 값과 스냅샷 값이 같은 계산에서 나와 항상 일치한다.
+   */
+  private List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(
+      TradeProfitRequest request,
+      String granularity,
+      Set<LocalDate> captureDates,
+      Map<LocalDate, Map<String, WmaState>> capturedStates) {
     Instant end = request.getEndDate() != null ? request.getEndDate() : Instant.now();
     Instant start = request.getStartDate();
     ZoneId zoneId = ZoneId.systemDefault();
@@ -393,88 +409,7 @@ public class TradeProfitService {
     LocalDate simulationStart = firstTradeDate;
     // 출력 시작일: 요청상 start 날짜 (없으면 첫 거래일)
     LocalDate outputStart = start != null ? toLocalDate(start, zoneId) : firstTradeDate;
-    // ---- Cache Read Logic ----
-    boolean isReadUserRequest =
-        (request.getRequestType() == TradeProfitRequestType.USER && request.getUserId() != null);
-    boolean isReadSingleAccountRequest =
-        (request.getRequestType() == TradeProfitRequestType.USER_ACCOUNT
-            && request.getAccountIdList() != null
-            && request.getAccountIdList().size() == 1);
-    boolean shouldReadCache = isReadUserRequest || isReadSingleAccountRequest;
-    // 시계열 평가액은 조회 창(시작일)과 무관하게 같은 날짜면 같아야 한다. 그런데 DailyAccountSnapshot
-    // 캐시는 한번 쓰이면 덮어쓰지 않아, 이후 거래 추가/정정·수정주가 반영이 생기면 stale 이 된다.
-    // 그 stale 스냅샷에서 상태를 시드하면 창마다 다른 시드를 써서 같은 날짜의 평가액이 달라지는
-    // 버그가 있었다(예: 2026-06-17 이 3개월/6개월/1년에서 서로 다른 값). 항상 첫 거래일부터
-    // 재시뮬레이션하여 창 독립적인 정확한 값을 보장한다. (실측상 캐시 시드 경로보다 오히려 빠름.)
-    boolean seedFromSnapshot = false;
-    boolean restoredFromSnapshot = false;
-    if (seedFromSnapshot && shouldReadCache) {
-      LocalDate targetDate = outputStart;
-      DailyAccountSnapshot snap = null;
-      if (isReadUserRequest) {
-        snap =
-            dailyAccountSnapshotRepository.findTopByUserIdAndDateLessThanOrderByDateDesc(
-                request.getUserId(), targetDate);
-      } else {
-        snap =
-            dailyAccountSnapshotRepository.findTopByAccountIdAndDateLessThanOrderByDateDesc(
-                request.getAccountIdList().get(0), targetDate);
-      }
-      if (snap != null) {
-        restoredFromSnapshot = true;
-        simulationStart = snap.getDate().plusDays(1);
-        globalCumulativeRealized =
-            snap.getCumulativeRealizedProfit() != null
-                ? snap.getCumulativeRealizedProfit()
-                : BigDecimal.ZERO;
-        globalCumulativeDividend =
-            snap.getCumulativeDividend() != null ? snap.getCumulativeDividend() : BigDecimal.ZERO;
-        if (snap.getWmaState() != null && !snap.getWmaState().isEmpty()) {
-          try {
-            TypeReference<HashMap<String, WmaState>> typeRef =
-                new TypeReference<HashMap<String, WmaState>>() {};
-            stateMap = JSON_MAPPER.convertValue(snap.getWmaState(), typeRef);
-          } catch (Exception ex) {
-            log.error("Failed to deserialize WmaState", ex);
-          }
-        }
-        // Remove trades properly BEFORE simulationStart
-        final LocalDate finalSimStart = simulationStart;
-        allTrades.removeIf(t -> toLocalDate(t.getTradeDate(), zoneId).isBefore(finalSimStart));
-        // Advance dividend iterator past simulationStart:
-        // dividends before simulationStart are already counted in the snapshot's
-        // cumulativeDividend
-        while (nextDividend != null
-            && toLocalDate(nextDividend.getPayDate(), zoneId).isBefore(finalSimStart)) {
-          nextDividend = divIt.hasNext() ? divIt.next() : null;
-        }
-      }
-    }
-    // ---------------------------
     LocalDate outputEnd = toInclusiveEndDate(end, zoneId);
-
-    // ---- Bulk Load Existing Snapshot Dates ----
-    Set<LocalDate> existingSnapshotDates = new HashSet<>();
-    if (shouldReadCache) {
-      try {
-        LocalDate fetchStartLocalDate =
-            simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
-        LocalDate fetchEndLocalDate = outputEnd;
-
-        if (isReadUserRequest) {
-          existingSnapshotDates.addAll(
-              dailyAccountSnapshotRepository.findDatesByUserIdAndAccountIdIsNullAndDateBetween(
-                  request.getUserId(), fetchStartLocalDate, fetchEndLocalDate));
-        } else if (isReadSingleAccountRequest) {
-          existingSnapshotDates.addAll(
-              dailyAccountSnapshotRepository.findDatesByAccountIdAndDateBetween(
-                  request.getAccountIdList().get(0), fetchStartLocalDate, fetchEndLocalDate));
-        }
-      } catch (Exception e) {
-        log.warn("Failed to load existing snapshot dates", e);
-      }
-    }
-    // -------------------------------------------
 
     // Price History (Bulk Load)
     LocalDate startLocalDate =
@@ -490,16 +425,6 @@ public class TradeProfitService {
           .put(h.getStockItemId(), h.getClosePrice());
     }
     Map<UUID, BigDecimal> lastKnownPrices = new HashMap<>();
-    if (restoredFromSnapshot && !stateMap.isEmpty()) {
-      LocalDate seedDate = startLocalDate.minusDays(1);
-      for (WmaState state : stateMap.values()) {
-        if (state.getStockItemId() == null || state.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
-          continue;
-        }
-        lastKnownPrices.put(
-            state.getStockItemId(), stockPriceService.getPriceAt(state.getStockItemId(), seedDate));
-      }
-    }
 
     List<TradeProfitTimeSeriesPoint> series = new ArrayList<>();
     Iterator<Trade> it = allTrades.iterator();
@@ -675,27 +600,12 @@ public class TradeProfitService {
                 totalHoldingsCost,
                 cumulativeTotalProfit,
                 globalCumulativeDividend));
-        // 스냅샷 저장이 가능한 요청(USER 전체, 또는 단일 계좌)인 경우
-        boolean isUserRequest =
-            (request.getRequestType() == TradeProfitRequestType.USER
-                && request.getUserId() != null);
-        boolean isSingleAccountRequest =
-            (request.getRequestType() == TradeProfitRequestType.USER_ACCOUNT
-                && request.getAccountIdList() != null
-                && request.getAccountIdList().size() == 1);
-
-        if (isUserRequest || isSingleAccountRequest) {
-          LocalDate snapDate = currentDay;
-          saveDailySnapshotIfNeeded(
-              request,
-              snapDate,
-              isSingleAccountRequest,
-              existingSnapshotDates,
-              totalHoldingsCost,
-              totalHoldingsValue,
-              globalCumulativeRealized,
-              globalCumulativeDividend,
-              stateMap);
+        // 보유 스냅샷 조회용 캡처: 요청된 날짜의 보유 상태를 그 시점 그대로 복사해 둔다.
+        // (DB 캐시 대신 이 캡처를 쓰므로 시계열과 스냅샷이 어긋날 수 없다.)
+        if (captureDates != null && capturedStates != null && captureDates.contains(currentDay)) {
+          Map<String, WmaState> copied = new HashMap<>();
+          stateMap.forEach((stateKey, stateValue) -> copied.put(stateKey, stateValue.copy()));
+          capturedStates.put(currentDay, copied);
         }
       }
 
@@ -704,46 +614,6 @@ public class TradeProfitService {
 
     // Apply Granularity filtering if requested, dynamically sample for large ranges
     return applyGranularity(series, granularity);
-  }
-
-  private void saveDailySnapshotIfNeeded(
-      TradeProfitRequest request,
-      LocalDate snapDate,
-      boolean isSingleAccountRequest,
-      Set<LocalDate> existingSnapshotDates,
-      BigDecimal totalHoldingsCost,
-      BigDecimal totalHoldingsValue,
-      BigDecimal globalCumulativeRealized,
-      BigDecimal globalCumulativeDividend,
-      Map<String, WmaState> stateMap) {
-    if (existingSnapshotDates.contains(snapDate)) {
-      return;
-    }
-    try {
-      Map<String, Object> wmaStateMap =
-          JSON_MAPPER.convertValue(stateMap, new TypeReference<Map<String, Object>>() {});
-
-      DailyAccountSnapshot snap = new DailyAccountSnapshot();
-
-      snap.setUserId(request.getUserId());
-      if (isSingleAccountRequest) {
-        snap.setAccountId(request.getAccountIdList().get(0));
-      } else {
-        snap.setAccountId(null);
-      }
-      snap.setDate(snapDate);
-      snap.setTotalCost(totalHoldingsCost);
-      snap.setTotalValue(totalHoldingsValue);
-      snap.setCumulativeRealizedProfit(globalCumulativeRealized);
-      snap.setCumulativeDividend(globalCumulativeDividend);
-      snap.setWmaState(wmaStateMap);
-      snap.setCreatedDate(java.time.Instant.now());
-
-      dailyAccountSnapshotRepository.save(snap);
-      existingSnapshotDates.add(snapDate);
-    } catch (Exception e) {
-      log.warn("Failed to save DailyAccountSnapshot", e);
-    }
   }
 
   private LocalDate toLocalDate(Instant instant, ZoneId zoneId) {
@@ -1087,30 +957,70 @@ public class TradeProfitService {
     return result;
   }
 
-  /** 특정 날짜의 보유 종목 스냅샷을 반환합니다. DailyAccountSnapshot의 wmaState를 활용합니다. */
+  /** 특정 날짜의 보유 종목 스냅샷을 반환합니다. */
   public List<HoldingsSnapshotItem> getHoldingsSnapshot(UUID userId, LocalDate date) {
     return getHoldingsSnapshot(userId, date, null);
   }
 
-  /** 보유 스냅샷. accountId 가 있으면 해당 계좌 스냅샷, 없으면 사용자 전체(account_id IS NULL) 스냅샷. */
+  /** 보유 스냅샷. accountId 가 있으면 해당 계좌, 없으면 사용자 전체 기준. */
   public List<HoldingsSnapshotItem> getHoldingsSnapshot(
       UUID userId, LocalDate date, UUID accountId) {
-    var snapshot =
-        accountId != null
-            ? dailyAccountSnapshotRepository.findLatestByUserIdAndAccountIdOnOrBefore(
-                userId, accountId, date)
-            : dailyAccountSnapshotRepository.findLatestByUserIdAndAccountIdIsNullOnOrBefore(
-                userId, date);
-    if (snapshot.isEmpty() || snapshot.get().getWmaState() == null) {
+    if (date == null) {
       return List.of();
     }
+    return getHoldingsSnapshotBatch(userId, List.of(date), accountId).getOrDefault(date, List.of());
+  }
 
-    Map<String, WmaState> stateMap;
+  /**
+   * 여러 날짜의 보유 스냅샷을 한 번의 시뮬레이션으로 계산한다.
+   *
+   * <p>예전에는 DailyAccountSnapshot 캐시를 읽었는데, 그 캐시는 한번 쓰이면 갱신되지 않아 거래 추가/정정이나 수정주가 반영 후 시계열 값과 어긋났다(실측
+   * 62일 중 3일 불일치). 이제 시계열과 같은 시뮬레이션에서 해당 날짜 상태를 캡처하므로 두 값이 어긋날 수 없다. 날짜가 여러 개여도 시뮬레이션은 한 번만 돈다.
+   */
+  public Map<LocalDate, List<HoldingsSnapshotItem>> getHoldingsSnapshotBatch(
+      UUID userId, List<LocalDate> dates, UUID accountId) {
+    Map<LocalDate, List<HoldingsSnapshotItem>> result = new LinkedHashMap<>();
+    if (userId == null || dates == null || dates.isEmpty()) {
+      return result;
+    }
+
+    TreeSet<LocalDate> targetDates = new TreeSet<>();
+    for (LocalDate date : dates) {
+      if (date != null) {
+        targetDates.add(date);
+      }
+    }
+    if (targetDates.isEmpty()) {
+      return result;
+    }
+
+    ZoneId zoneId = ZoneId.systemDefault();
+    TradeProfitRequest request = new TradeProfitRequest();
+    request.setUserId(userId);
+    if (accountId != null) {
+      request.setAccountIdList(List.of(accountId));
+    }
+    request.setStartDate(targetDates.first().atStartOfDay(zoneId).toInstant());
+    request.setEndDate(targetDates.last().plusDays(1).atStartOfDay(zoneId).toInstant());
+
+    Map<LocalDate, Map<String, WmaState>> capturedStates = new HashMap<>();
     try {
-      TypeReference<HashMap<String, WmaState>> typeRef = new TypeReference<>() {};
-      stateMap = JSON_MAPPER.convertValue(snapshot.get().getWmaState(), typeRef);
+      aggregateTimeSeries(request, "DAILY", targetDates, capturedStates);
     } catch (Exception ex) {
-      log.error("Failed to deserialize WmaState for holdingsSnapshot", ex);
+      log.warn("Failed to build holdings snapshot: userId={}, dates={}", userId, targetDates, ex);
+      return result;
+    }
+
+    for (LocalDate date : targetDates) {
+      result.put(date, buildHoldingsSnapshotItems(capturedStates.get(date), date));
+    }
+    return result;
+  }
+
+  /** 캡처된 보유 상태(WmaState)를 화면용 항목으로 변환한다. */
+  private List<HoldingsSnapshotItem> buildHoldingsSnapshotItems(
+      Map<String, WmaState> stateMap, LocalDate date) {
+    if (stateMap == null || stateMap.isEmpty()) {
       return List.of();
     }
 
@@ -1128,7 +1038,7 @@ public class TradeProfitService {
         symbol = item.getSymbol();
       }
 
-      // 표시용 수량: rawQuantity(정수)가 있으면 사용, 없으면(구버전 스냅샷)은 반올림 처리
+      // 표시용 수량: rawQuantity(정수)가 있으면 사용, 없으면 반올림 처리
       long displayQty =
           state.getRawQuantity() > 0
               ? state.getRawQuantity()

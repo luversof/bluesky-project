@@ -145,24 +145,3 @@ CREATE TABLE "OpenApiConfig" (
 );
 
 CREATE UNIQUE INDEX uk_openApiConfig_provider_userId ON "OpenApiConfig" ("provider", "user_id");
-CREATE TABLE "DailyAccountSnapshot" (
-        "id" UUID NOT NULL PRIMARY KEY,
-        "user_id" UUID NOT NULL,
-        "account_id" UUID,
-        "date" DATE NOT NULL,
-        "totalCost" DECIMAL(19, 4),
-        "totalValue" DECIMAL(19, 4),
-        "cumulativeRealizedProfit" DECIMAL(19, 4),
-        "cumulativeDividend" DECIMAL(19, 4),
-        "createdDate" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        "wmaState" JSONB
-);
-
-CREATE INDEX idx_snapshot_userId ON "DailyAccountSnapshot" ("user_id");
-CREATE INDEX idx_snapshot_date ON "DailyAccountSnapshot" ("date");
--- 계좌별 직전 스냅샷 조회(account_id = ? AND date < ? ORDER BY date DESC LIMIT 1) 용.
--- account_id 단독 인덱스가 없어 이 조회들이 전체 스캔이었다.
-CREATE INDEX idx_snapshot_accountId_date ON "DailyAccountSnapshot" ("account_id", "date");
--- 사용자 전체(account_id IS NULL) 스냅샷의 기간/직전 조회용
-CREATE INDEX idx_snapshot_userId_date ON "DailyAccountSnapshot" ("user_id", "date");
-

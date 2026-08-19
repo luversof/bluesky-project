@@ -24,8 +24,6 @@ public class AccountService {
   @Autowired private TradeRepository tradeRepository;
 
   @Autowired
-  private net.luversof.api.stock.repository.DailyAccountSnapshotRepository snapshotRepository;
-
   public void setAccountRepository(AccountRepository accountRepository) {
     this.accountRepository = accountRepository;
   }
@@ -81,8 +79,5 @@ public class AccountService {
           tradeRepository.deleteByAccountId(account.getId());
         });
     accountRepository.deleteAll(accountList);
-
-    snapshotRepository.deleteByUserIdAndDateGreaterThanEqual(
-        userId, java.time.LocalDate.of(1970, 1, 1));
   }
 }
