@@ -14,6 +14,10 @@
 @param Double unrealizedEndPct = null
 @param BigDecimal recoveredAmount = null
 @param BigDecimal netNewProfit = null
+@param Double maxDrawdownPct = null
+@param java.time.LocalDate maxDrawdownPeakDate = null
+@param java.time.LocalDate maxDrawdownTroughDate = null
+@param Double currentDrawdownPct = null
 
 !{
     DecimalFormat amountFormat = new DecimalFormat("#,##0");
@@ -45,6 +49,9 @@
     boolean splitAvailable = recoveredAmount != null && netNewProfit != null
         && recoveredAmount.signum() > 0;
     boolean netNewPositive = netNewProfit != null && netNewProfit.signum() >= 0;
+    String maxDrawdownLabel = MessageUtil.getMessage("stock.asset.growth.summary.max.drawdown");
+    boolean drawdownAvailable = maxDrawdownPct != null;
+    boolean drawdownRangeAvailable = maxDrawdownPeakDate != null && maxDrawdownTroughDate != null;
 }
 
 <div id="assetGrowthPeriodReturnSummary" class="rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3 mb-3">
@@ -93,6 +100,16 @@
                 <div class="text-sm font-semibold text-base-content/40">${unavailableLabel}</div>
             @endif
             <p class="text-[11px] leading-4 text-base-content/40 mt-0.5">${twrDescription}</p>
+            @if(drawdownAvailable)
+                <%-- 수익률의 짝이 되는 위험 지표. 입출금을 제거한 기준가로 계산해 입금에 희석되지 않는다. --%>
+                <p class="text-[11px] leading-4 mt-0.5">
+                    <span class="text-base-content/45">${maxDrawdownLabel}</span>
+                    <span class="font-semibold text-loss">${String.format("%.2f%%", maxDrawdownPct)}</span>
+                    @if(drawdownRangeAvailable)
+                        <span class="text-base-content/35">(${maxDrawdownPeakDate.toString()} → ${maxDrawdownTroughDate.toString()})</span>
+                    @endif
+                </p>
+            @endif
         </div>
 
         <div class="min-w-0">

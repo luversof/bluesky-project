@@ -17,6 +17,21 @@
 @param java.util.List<java.util.UUID> selectedAccountIds = java.util.List.of()
 @param java.util.List<java.util.UUID> selectedStockItemIds = java.util.List.of()
 @param java.util.List<String> selectedStockTags = java.util.List.of()
+@param Double periodReturnRatePct = null
+@param boolean returnCalculable = false
+@param Double timeWeightedReturnPct = null
+@param java.math.BigDecimal periodProfit = null
+@param java.math.BigDecimal principalDelta = null
+@param java.math.BigDecimal unrealizedStart = null
+@param java.math.BigDecimal unrealizedEnd = null
+@param Double unrealizedEndPct = null
+@param java.math.BigDecimal recoveredAmount = null
+@param java.math.BigDecimal netNewProfit = null
+@param java.util.List<net.luversof.web.gate.stock.dto.response.TradeProfitYearlySummary> yearlySummaries = java.util.List.of()
+@param Double maxDrawdownPct = null
+@param java.time.LocalDate maxDrawdownPeakDate = null
+@param java.time.LocalDate maxDrawdownTroughDate = null
+@param Double currentDrawdownPct = null
 
 !{
     boolean isAllMode = "all".equals(rangeMode);
@@ -190,14 +205,25 @@
                     <span>📈 ${chartDescriptionLabel} &bull;</span>
                     <span class="inline-block whitespace-nowrap text-info">${clickDateHoldingsLabel}</span>
                 </p>
-                <div id="assetGrowthPeriodReturnSummary" class="rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3 mb-3"
-                     hx-get="/stock/htmx/asset-growth/period-return?from=${startLocal != null ? startLocal.toString() : ""}&to=${endDisplayLocal != null ? endDisplayLocal.toString() : ""}&timeZone=${timeZone != null ? timeZone : ""}"
-                     hx-trigger="load"
-                     hx-swap="outerHTML">
-                    <div class="skeleton h-4 w-32 mb-2"></div>
-                    <div class="skeleton h-8 w-24 mb-2"></div>
-                    <div class="skeleton h-3 w-56"></div>
-                </div>
+                <%-- 요약은 시리즈와 같은 호출에서 이미 계산돼 왔으므로 별도 요청 없이 바로 렌더한다. --%>
+                @template.stock.htmx.fragments.assetGrowthPeriodReturnSummary(
+                    fromDate = startLocal != null ? startLocal.toString() : "",
+                    toDate = endDisplayLocal != null ? endDisplayLocal.toString() : "",
+                    periodReturnRatePct = periodReturnRatePct,
+                    returnCalculable = returnCalculable,
+                    timeWeightedReturnPct = timeWeightedReturnPct,
+                    periodProfit = periodProfit,
+                    principalDelta = principalDelta,
+                    unrealizedStart = unrealizedStart,
+                    unrealizedEnd = unrealizedEnd,
+                    unrealizedEndPct = unrealizedEndPct,
+                    recoveredAmount = recoveredAmount,
+                    netNewProfit = netNewProfit,
+                    maxDrawdownPct = maxDrawdownPct,
+                    maxDrawdownPeakDate = maxDrawdownPeakDate,
+                    maxDrawdownTroughDate = maxDrawdownTroughDate,
+                    currentDrawdownPct = currentDrawdownPct
+                )
                 <div class="w-full relative" style="height: 450px;">
                     <canvas id="assetGrowthChart" class="amount-chart"></canvas>
                 </div>
@@ -205,6 +231,8 @@
                 <div class="w-full" style="height: 250px;">
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
+                <%-- 연도별 성과: 시리즈와 같은 시뮬레이션에서 함께 계산돼 온다(추가 호출 없음). --%>
+                @template.stock.htmx.fragments.assetGrowthYearlySummary(yearlySummaries = yearlySummaries)
                 <div id="holdings-snapshot-container"></div>
                 <div id="trade-history-panel"
                      hx-get="/stock/htmx/trade-history?from=${startLocal != null ? startLocal.toString() : ""}&to=${endDisplayLocal != null ? endDisplayLocal.toString() : ""}"

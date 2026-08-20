@@ -131,6 +131,13 @@ class StockBaseHtmxControllerTest {
     }
 
     @Override
+    public net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult
+        timeSeriesWithSummary(MultiValueMap<String, String> params) {
+      return new net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult(
+          List.of(), null, List.of());
+    }
+
+    @Override
     public List<HoldingsSnapshotItem> holdingsSnapshot(MultiValueMap<String, String> params) {
       return List.of();
     }

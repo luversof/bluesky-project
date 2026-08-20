@@ -18,6 +18,7 @@ import net.luversof.api.stock.service.TradeProfitService;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
+import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesResult;
 
 @RestController
 @RequestMapping("/api/tradeProfit")
@@ -39,6 +40,13 @@ public class TradeProfitController {
       TradeProfitRequest request, String granularity) {
     // Delegate to service-level efficient aggregation
     return stockProfitService.aggregateTimeSeries(request, granularity);
+  }
+
+  /** 시리즈와 기간 요약을 한 번에 반환한다. 화면이 둘을 따로 호출하면 같은 시뮬레이션이 두 번 돌기 때문이다. */
+  @GetMapping("/timeSeriesWithSummary")
+  public TradeProfitTimeSeriesResult timeSeriesWithSummary(
+      TradeProfitRequest request, String granularity) {
+    return stockProfitService.aggregateTimeSeriesWithSummary(request, granularity);
   }
 
   @GetMapping("/holdingsSnapshot")

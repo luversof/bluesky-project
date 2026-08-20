@@ -41,6 +41,9 @@ import net.luversof.api.stock.web.dto.request.TradeProfitRequestType;
 import net.luversof.api.stock.web.dto.request.TradeSearchRequest;
 import net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
+import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesResult;
+import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesSummary;
+import net.luversof.api.stock.web.dto.response.TradeProfitYearlySummary;
 import net.luversof.api.stock.web.dto.response.TradeResponse;
 
 /** 통합 주식 손익 계산 서비스 실현손익(매매손익)과 미실현손익(보유손익)을 하나의 객체로 제공 */
@@ -333,16 +336,77 @@ public class TradeProfitService {
 
   public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(
       TradeProfitRequest request, String granularity) {
-    return aggregateTimeSeries(request, granularity, null, null);
+    return applyGranularity(simulateDailySeries(request, null, null), granularity);
+  }
+
+  /**
+   * 시리즈와 기간 요약(TWR/손익 등)을 한 번의 시뮬레이션으로 함께 계산한다.
+   *
+   * <p>예전에는 화면이 시리즈용과 요약용으로 각각 호출해 같은 시뮬레이션(전체 거래 이력)을 두 번 돌렸다. 요약은 다운샘플 이전의 일별 시리즈로 계산해야
+   * 정확하므로(주/월봉으로 TWR을 계산하면 틀림) 여기서 함께 만들어 돌려준다.
+   */
+  public TradeProfitTimeSeriesResult aggregateTimeSeriesWithSummary(
+      TradeProfitRequest request, String granularity) {
+    List<TradeProfitTimeSeriesPoint> dailySeries = simulateDailySeries(request, null, null);
+    return new TradeProfitTimeSeriesResult(
+        applyGranularity(dailySeries, granularity),
+        summarizeSeries(dailySeries),
+        summarizeByYear(dailySeries));
+  }
+
+  /**
+   * 연도별 성과. 각 연도 구간의 앞에 전년도 마지막 지점을 기초로 붙여 계산한다. 그래야 연초 첫날의 수익률이 빠지지 않고, 기초 평가액이 전년도 종가가 되어 연 단위
+   * 비교가 맞는다.
+   */
+  private List<TradeProfitYearlySummary> summarizeByYear(
+      List<TradeProfitTimeSeriesPoint> dailySeries) {
+    if (dailySeries == null || dailySeries.isEmpty()) {
+      return List.of();
+    }
+
+    ZoneId zoneId = ZoneId.systemDefault();
+    Map<Integer, List<TradeProfitTimeSeriesPoint>> byYear = new LinkedHashMap<>();
+    TradeProfitTimeSeriesPoint previousPoint = null;
+    Integer previousYear = null;
+
+    for (TradeProfitTimeSeriesPoint point : dailySeries) {
+      if (point == null || point.timestamp() == null) {
+        continue;
+      }
+      int year = point.timestamp().atZone(zoneId).toLocalDate().getYear();
+      List<TradeProfitTimeSeriesPoint> bucket = byYear.get(year);
+      if (bucket == null) {
+        bucket = new ArrayList<>();
+        // 연도가 바뀌는 지점: 전년도 마지막 값을 기초로 삼는다.
+        if (previousPoint != null && previousYear != null && previousYear != year) {
+          bucket.add(previousPoint);
+        }
+        byYear.put(year, bucket);
+      }
+      bucket.add(point);
+      previousPoint = point;
+      previousYear = year;
+    }
+
+    List<TradeProfitYearlySummary> result = new ArrayList<>();
+    byYear.forEach(
+        (year, points) -> {
+          TradeProfitTimeSeriesSummary summary = summarizeSeries(points);
+          // 보유도 거래도 없던 해(전부 0)는 표에 노이즈만 되므로 제외한다.
+          if (!isEmptyYear(summary)) {
+            result.add(new TradeProfitYearlySummary(year, summary));
+          }
+        });
+    result.sort(Comparator.comparingInt(TradeProfitYearlySummary::year).reversed());
+    return result;
   }
 
   /**
    * 시계열 집계. captureDates 가 주어지면 해당 날짜의 보유 상태(WmaState)를 capturedStates 에 담는다. 보유 스냅샷 조회가 이 캡처를 쓰므로,
    * 차트 값과 스냅샷 값이 같은 계산에서 나와 항상 일치한다.
    */
-  private List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(
+  private List<TradeProfitTimeSeriesPoint> simulateDailySeries(
       TradeProfitRequest request,
-      String granularity,
       Set<LocalDate> captureDates,
       Map<LocalDate, Map<String, WmaState>> capturedStates) {
     Instant end = request.getEndDate() != null ? request.getEndDate() : Instant.now();
@@ -612,8 +676,150 @@ public class TradeProfitService {
       currentDay = currentDay.plusDays(1);
     }
 
-    // Apply Granularity filtering if requested, dynamically sample for large ranges
-    return applyGranularity(series, granularity);
+    // 다운샘플은 호출부에서 수행한다(요약은 일별 시리즈로 계산해야 정확하므로).
+    return series;
+  }
+
+  /** 일별 시리즈로부터 기간 요약(성장률/TWR/손익 분해)을 계산한다. */
+  private TradeProfitTimeSeriesSummary summarizeSeries(List<TradeProfitTimeSeriesPoint> series) {
+    if (series == null || series.isEmpty()) {
+      return TradeProfitTimeSeriesSummary.empty();
+    }
+
+    TradeProfitTimeSeriesPoint firstPoint = null;
+    TradeProfitTimeSeriesPoint lastPoint = null;
+    TradeProfitTimeSeriesPoint previousPoint = null;
+    // TWR(시간가중수익률): 일별로 입출금(원금 변동)을 제거한 수익률을 곱해 누적한다.
+    // 평가액 성장률은 입금까지 성과로 잡히므로, 순수 운용 성과는 이 값으로 본다.
+    double timeWeightedFactor = 1.0d;
+    // MDD(최대 낙폭)는 위 TWR 지수(=입출금 제거한 기준가) 위에서 구한다.
+    // 평가액으로 구하면 입금으로 값이 뛰어 낙폭이 실제보다 작게 나온다.
+    ZoneId zoneId = ZoneId.systemDefault();
+    double peakFactor = 1.0d;
+    double maxDrawdown = 0.0d;
+    LocalDate runningPeakDate = null;
+    LocalDate drawdownPeakDate = null;
+    LocalDate drawdownTroughDate = null;
+
+    for (TradeProfitTimeSeriesPoint point : series) {
+      if (point == null || point.timestamp() == null) {
+        continue;
+      }
+      LocalDate pointDate = point.timestamp().atZone(zoneId).toLocalDate();
+      if (firstPoint == null) {
+        firstPoint = point;
+        runningPeakDate = pointDate;
+      }
+      lastPoint = point;
+
+      if (previousPoint != null) {
+        BigDecimal previousValue = nz(previousPoint.totalHoldingsValue());
+        if (previousValue.compareTo(BigDecimal.ZERO) > 0) {
+          // 당일 순수 손익 = (평가액 증가 - 원금 유입) + 실현손익 증가 + 배당 증가
+          BigDecimal cashFlow =
+              nz(point.totalHoldingsCost()).subtract(nz(previousPoint.totalHoldingsCost()));
+          BigDecimal realizedGain =
+              nz(point.cumulativeRealizedProfit())
+                  .subtract(nz(previousPoint.cumulativeRealizedProfit()));
+          BigDecimal dividendGain =
+              nz(point.cumulativeDividend()).subtract(nz(previousPoint.cumulativeDividend()));
+          BigDecimal dailyGain =
+              nz(point.totalHoldingsValue())
+                  .subtract(previousValue)
+                  .subtract(cashFlow)
+                  .add(realizedGain)
+                  .add(dividendGain);
+          timeWeightedFactor *=
+              1.0d + dailyGain.divide(previousValue, 10, RoundingMode.HALF_UP).doubleValue();
+
+          if (timeWeightedFactor > peakFactor) {
+            peakFactor = timeWeightedFactor;
+            runningPeakDate = pointDate;
+          } else if (peakFactor > 0.0d) {
+            double drawdown = (timeWeightedFactor - peakFactor) / peakFactor;
+            if (drawdown < maxDrawdown) {
+              maxDrawdown = drawdown;
+              drawdownPeakDate = runningPeakDate;
+              drawdownTroughDate = pointDate;
+            }
+          }
+        }
+      }
+      previousPoint = point;
+    }
+
+    if (firstPoint == null || lastPoint == null) {
+      return TradeProfitTimeSeriesSummary.empty();
+    }
+
+    BigDecimal openingValue = nz(firstPoint.totalHoldingsValue());
+    BigDecimal closingValue = nz(lastPoint.totalHoldingsValue());
+    Double growthRatePct =
+        openingValue.compareTo(BigDecimal.ZERO) > 0
+            ? closingValue
+                .subtract(openingValue)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(openingValue, 6, RoundingMode.HALF_UP)
+                .doubleValue()
+            : null;
+
+    // 기간 총 손익 = 누적손익(미실현 + 실현 + 배당)의 기말 - 기초
+    BigDecimal periodProfit = accumulatedProfit(lastPoint).subtract(accumulatedProfit(firstPoint));
+    BigDecimal principalDelta =
+        nz(lastPoint.totalHoldingsCost()).subtract(nz(firstPoint.totalHoldingsCost()));
+    // 기간 손익이 "손실 회복분"인지 "순수 이익"인지 구분되도록 평가손익 기초/기말도 함께 준다.
+    BigDecimal unrealizedStart = openingValue.subtract(nz(firstPoint.totalHoldingsCost()));
+    BigDecimal unrealizedEnd = closingValue.subtract(nz(lastPoint.totalHoldingsCost()));
+    BigDecimal endCost = nz(lastPoint.totalHoldingsCost());
+    Double unrealizedEndPct =
+        endCost.compareTo(BigDecimal.ZERO) > 0
+            ? unrealizedEnd
+                .multiply(BigDecimal.valueOf(100))
+                .divide(endCost, 4, RoundingMode.HALF_UP)
+                .doubleValue()
+            : null;
+
+    // 기간 손익 = 손실 회복분 + 순증분 (순증분은 잔차로 구해 합이 항상 맞게 한다)
+    BigDecimal recoveredAmount =
+        unrealizedStart
+            .min(BigDecimal.ZERO)
+            .negate()
+            .subtract(unrealizedEnd.min(BigDecimal.ZERO).negate());
+    BigDecimal netNewProfit = periodProfit.subtract(recoveredAmount);
+
+    return new TradeProfitTimeSeriesSummary(
+        openingValue,
+        closingValue,
+        growthRatePct,
+        Double.isFinite(timeWeightedFactor) ? (timeWeightedFactor - 1.0d) * 100.0d : null,
+        periodProfit,
+        principalDelta,
+        unrealizedStart,
+        unrealizedEnd,
+        unrealizedEndPct,
+        recoveredAmount,
+        netNewProfit,
+        maxDrawdown < 0.0d ? maxDrawdown * 100.0d : null,
+        maxDrawdown < 0.0d ? drawdownPeakDate : null,
+        maxDrawdown < 0.0d ? drawdownTroughDate : null,
+        peakFactor > 0.0d ? ((timeWeightedFactor - peakFactor) / peakFactor) * 100.0d : null);
+  }
+
+  /** 보유·거래·손익이 모두 0인 해(자산이 비어 있던 기간)인지. */
+  private static boolean isEmptyYear(TradeProfitTimeSeriesSummary summary) {
+    return summary == null
+        || (nz(summary.periodProfit()).signum() == 0
+            && nz(summary.principalDelta()).signum() == 0
+            && nz(summary.closingValue()).signum() == 0
+            && nz(summary.openingValue()).signum() == 0);
+  }
+
+  /** 시점까지 쌓인 총 손익 = 미실현(평가액 - 원금) + 누적 실현손익 + 누적 배당. */
+  private static BigDecimal accumulatedProfit(TradeProfitTimeSeriesPoint point) {
+    return nz(point.totalHoldingsValue())
+        .subtract(nz(point.totalHoldingsCost()))
+        .add(nz(point.cumulativeRealizedProfit()))
+        .add(nz(point.cumulativeDividend()));
   }
 
   private LocalDate toLocalDate(Instant instant, ZoneId zoneId) {
@@ -1005,7 +1211,7 @@ public class TradeProfitService {
 
     Map<LocalDate, Map<String, WmaState>> capturedStates = new HashMap<>();
     try {
-      aggregateTimeSeries(request, "DAILY", targetDates, capturedStates);
+      simulateDailySeries(request, targetDates, capturedStates);
     } catch (Exception ex) {
       log.warn("Failed to build holdings snapshot: userId={}, dates={}", userId, targetDates, ex);
       return result;

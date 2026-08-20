@@ -18,6 +18,11 @@ public interface TradeProfitClient {
       @org.springframework.web.bind.annotation.RequestParam
           org.springframework.util.MultiValueMap<String, String> request);
 
+  @GetExchange("/timeSeriesWithSummary")
+  net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult timeSeriesWithSummary(
+      @org.springframework.web.bind.annotation.RequestParam
+          org.springframework.util.MultiValueMap<String, String> params);
+
   @GetExchange("/timeSeries")
   List<TradeProfitTimeSeriesPoint> timeSeries(
       @org.springframework.web.bind.annotation.RequestParam

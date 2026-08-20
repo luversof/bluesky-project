@@ -1,7 +1,6 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -37,6 +36,7 @@ import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
+import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesSummary;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DataFirstDateClient;
@@ -128,9 +128,19 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // the first trade (carrying prior holdings) and only outputs from the requested start,
     // so a range query already reflects carried-over holdings at the right granularity
     // (AUTO picks DAILY for short windows). No client-side x-axis windowing needed.
+    // 시리즈와 기간 요약을 한 번에 받는다. 예전에는 요약을 별도 프래그먼트가 다시 호출해
+    // 같은 시뮬레이션(전체 거래 이력)이 두 번 돌았다.
     var seriesParams = request.toParams();
     seriesParams.add("granularity", "AUTO");
-    List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
+    var timeSeriesResult = tradeProfitClient.timeSeriesWithSummary(seriesParams);
+    List<TradeProfitTimeSeriesPoint> timeSeries =
+        timeSeriesResult != null ? timeSeriesResult.series() : null;
+    addPeriodSummaryAttributes(model, timeSeriesResult != null ? timeSeriesResult.summary() : null);
+    model.addAttribute(
+        "yearlySummaries",
+        timeSeriesResult != null && timeSeriesResult.yearly() != null
+            ? timeSeriesResult.yearly()
+            : List.of());
 
     // 날짜 네비게이션의 "이전" 가드용 최초 데이터 일자.
     // 전 기간 시계열을 다시 집계하면(기간 제거 timeSeries) 이 화면에서만 초 단위가 걸렸다.
@@ -265,6 +275,27 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     return "stock/htmx/asset-growth";
   }
 
+  /** 기간 요약 값을 화면 모델에 실는다. 요약이 없으면 '계산 불가'로 렌더된다. */
+  private void addPeriodSummaryAttributes(Model model, TradeProfitTimeSeriesSummary summary) {
+    model.addAttribute("periodReturnRatePct", summary != null ? summary.growthRatePct() : null);
+    model.addAttribute("returnCalculable", summary != null && summary.growthRatePct() != null);
+    model.addAttribute(
+        "timeWeightedReturnPct", summary != null ? summary.timeWeightedReturnPct() : null);
+    model.addAttribute("periodProfit", summary != null ? summary.periodProfit() : null);
+    model.addAttribute("principalDelta", summary != null ? summary.principalDelta() : null);
+    model.addAttribute("unrealizedStart", summary != null ? summary.unrealizedStart() : null);
+    model.addAttribute("unrealizedEnd", summary != null ? summary.unrealizedEnd() : null);
+    model.addAttribute("unrealizedEndPct", summary != null ? summary.unrealizedEndPct() : null);
+    model.addAttribute("recoveredAmount", summary != null ? summary.recoveredAmount() : null);
+    model.addAttribute("netNewProfit", summary != null ? summary.netNewProfit() : null);
+    model.addAttribute("maxDrawdownPct", summary != null ? summary.maxDrawdownPct() : null);
+    model.addAttribute(
+        "maxDrawdownPeakDate", summary != null ? summary.maxDrawdownPeakDate() : null);
+    model.addAttribute(
+        "maxDrawdownTroughDate", summary != null ? summary.maxDrawdownTroughDate() : null);
+    model.addAttribute("currentDrawdownPct", summary != null ? summary.currentDrawdownPct() : null);
+  }
+
   @BlueskyPreAuthorize
   @GetMapping("/asset-growth/period-return")
   public String assetGrowthPeriodReturn(
@@ -273,19 +304,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       @RequestParam(required = false) String timeZone,
       Model model) {
     var userId = UserUtil.getUserId();
-    var summary = buildAssetGrowthPeriodReturnSummary(userId, from, to, timeZone);
-    model.addAttribute("fromDate", summary.fromDate());
-    model.addAttribute("toDate", summary.toDate());
-    model.addAttribute("periodReturnRatePct", summary.periodReturnRatePct());
-    model.addAttribute("returnCalculable", summary.returnCalculable());
-    model.addAttribute("timeWeightedReturnPct", summary.timeWeightedReturnPct());
-    model.addAttribute("periodProfit", summary.periodProfit());
-    model.addAttribute("principalDelta", summary.principalDelta());
-    model.addAttribute("unrealizedStart", summary.unrealizedStart());
-    model.addAttribute("unrealizedEnd", summary.unrealizedEnd());
-    model.addAttribute("unrealizedEndPct", summary.unrealizedEndPct());
-    model.addAttribute("recoveredAmount", summary.recoveredAmount());
-    model.addAttribute("netNewProfit", summary.netNewProfit());
+    model.addAttribute("fromDate", from);
+    model.addAttribute("toDate", to);
+    addPeriodSummaryAttributes(model, loadPeriodSummary(userId, from, to, timeZone));
     return "stock/htmx/fragments/assetGrowthPeriodReturnSummary";
   }
 
@@ -439,227 +460,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     return "stock/htmx/trade-history";
   }
 
-  private AssetGrowthPeriodReturnSummary buildAssetGrowthPeriodReturnSummary(
-      UUID userId, String from, String to, String timeZone) {
-    if (userId == null || from == null || from.isBlank() || to == null || to.isBlank()) {
-      return new AssetGrowthPeriodReturnSummary(
-          from, to, null, false, null, null, null, null, null, null, null, null);
-    }
-
-    LocalDate fromDate;
-    LocalDate toDate;
-    try {
-      fromDate = LocalDate.parse(from);
-      toDate = LocalDate.parse(to);
-    } catch (Exception ex) {
-      logger.warn("Failed to parse asset growth period range: from={} to={}", from, to, ex);
-      return new AssetGrowthPeriodReturnSummary(
-          from, to, null, false, null, null, null, null, null, null, null, null);
-    }
-
-    if (toDate.isBefore(fromDate)) {
-      return new AssetGrowthPeriodReturnSummary(
-          fromDate.toString(),
-          toDate.toString(),
-          null,
-          false,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null);
-    }
-
-    try {
-      ZoneId zone = resolveZoneId(timeZone);
-      HoldingsValueWindow holdingsValueWindow =
-          loadHoldingsValueWindow(userId, fromDate, toDate, timeZone, zone);
-
-      Double periodReturnRate =
-          calculatePeriodGrowthRate(
-              holdingsValueWindow.openingValue(), holdingsValueWindow.closingValue());
-      Double periodReturnRatePct =
-          periodReturnRate != null && Double.isFinite(periodReturnRate)
-              ? periodReturnRate * 100.0d
-              : null;
-
-      return new AssetGrowthPeriodReturnSummary(
-          fromDate.toString(),
-          toDate.toString(),
-          periodReturnRatePct,
-          periodReturnRatePct != null,
-          holdingsValueWindow.timeWeightedReturnPct(),
-          holdingsValueWindow.periodProfit(),
-          holdingsValueWindow.principalDelta(),
-          holdingsValueWindow.unrealizedStart(),
-          holdingsValueWindow.unrealizedEnd(),
-          holdingsValueWindow.unrealizedEndPct(),
-          holdingsValueWindow.recoveredAmount(),
-          holdingsValueWindow.netNewProfit());
-    } catch (Exception ex) {
-      logger.warn(
-          "Failed to build asset growth period return summary: from={} to={} timeZone={}",
-          from,
-          to,
-          timeZone,
-          ex);
-      return new AssetGrowthPeriodReturnSummary(
-          fromDate.toString(),
-          toDate.toString(),
-          null,
-          false,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null);
-    }
-  }
-
-  private HoldingsValueWindow loadHoldingsValueWindow(
-      UUID userId, LocalDate fromDate, LocalDate toDate, String timeZone, ZoneId zone) {
-    TradeProfitRequest request = new TradeProfitRequest();
-    request.setUserId(userId);
-    request.setStartDate(fromDate.atStartOfDay(zone).toInstant());
-    request.setEndDate(toDate.plusDays(1).atStartOfDay(zone).toInstant());
-    request.setTimeZone(timeZone);
-
-    var params = request.toParams();
-    params.add("granularity", "DAILY");
-
-    List<TradeProfitTimeSeriesPoint> series = tradeProfitClient.timeSeries(params);
-    if (series == null || series.isEmpty()) {
-      return HoldingsValueWindow.empty();
-    }
-
-    BigDecimal openingValue = null;
-    BigDecimal closingValue = null;
-    TradeProfitTimeSeriesPoint firstPoint = null;
-    TradeProfitTimeSeriesPoint lastPoint = null;
-    // TWR(시간가중수익률): 일별로 입출금(원금 변동)을 제거한 수익률을 곱해 누적한다.
-    // 평가액 성장률은 입금까지 성과로 잡히므로, 순수 운용 성과는 이 값으로 본다.
-    double timeWeightedFactor = 1.0d;
-    TradeProfitTimeSeriesPoint previousPoint = null;
-
-    for (TradeProfitTimeSeriesPoint point : series) {
-      if (point == null || point.timestamp() == null) {
-        continue;
-      }
-      LocalDate pointDate = point.timestamp().atZone(zone).toLocalDate();
-      if (pointDate.isBefore(fromDate) || pointDate.isAfter(toDate)) {
-        continue;
-      }
-      BigDecimal holdingsValue = nz(point.totalHoldingsValue());
-      if (openingValue == null) {
-        openingValue = holdingsValue;
-        firstPoint = point;
-      }
-      closingValue = holdingsValue;
-      lastPoint = point;
-
-      if (previousPoint != null) {
-        BigDecimal previousValue = nz(previousPoint.totalHoldingsValue());
-        if (previousValue.compareTo(BigDecimal.ZERO) > 0) {
-          // 당일 순수 손익 = (평가액 증가 - 원금 유입) + 실현손익 증가 + 배당 증가
-          BigDecimal cashFlow =
-              nz(point.totalHoldingsCost()).subtract(nz(previousPoint.totalHoldingsCost()));
-          BigDecimal realizedGain =
-              nz(point.cumulativeRealizedProfit())
-                  .subtract(nz(previousPoint.cumulativeRealizedProfit()));
-          BigDecimal dividendGain =
-              nz(point.cumulativeDividend()).subtract(nz(previousPoint.cumulativeDividend()));
-          BigDecimal dailyGain =
-              holdingsValue
-                  .subtract(previousValue)
-                  .subtract(cashFlow)
-                  .add(realizedGain)
-                  .add(dividendGain);
-          double dailyReturn =
-              dailyGain.divide(previousValue, 10, RoundingMode.HALF_UP).doubleValue();
-          timeWeightedFactor *= (1.0d + dailyReturn);
-        }
-      }
-      previousPoint = point;
-    }
-
-    if (firstPoint == null || lastPoint == null) {
-      return HoldingsValueWindow.empty();
-    }
-
-    // 기간 총 손익 = 누적손익(미실현 + 실현 + 배당)의 기말 - 기초
-    BigDecimal periodProfit = accumulatedProfit(lastPoint).subtract(accumulatedProfit(firstPoint));
-    BigDecimal principalDelta =
-        nz(lastPoint.totalHoldingsCost()).subtract(nz(firstPoint.totalHoldingsCost()));
-    // 기간 손익이 "손실 회복분"인지 "순수 이익"인지 구분되도록 평가손익 기초/기말을 함께 준다.
-    // (예: -8,877만 -> +1,271만 이면 1억 손익 대부분이 회복분이고 누적은 +2.37%에 불과)
-    BigDecimal unrealizedStart =
-        nz(firstPoint.totalHoldingsValue()).subtract(nz(firstPoint.totalHoldingsCost()));
-    BigDecimal unrealizedEnd =
-        nz(lastPoint.totalHoldingsValue()).subtract(nz(lastPoint.totalHoldingsCost()));
-    BigDecimal endCost = nz(lastPoint.totalHoldingsCost());
-    Double unrealizedEndPct =
-        endCost.compareTo(BigDecimal.ZERO) > 0
-            ? unrealizedEnd
-                .multiply(BigDecimal.valueOf(100))
-                .divide(endCost, 4, RoundingMode.HALF_UP)
-                .doubleValue()
-            : null;
-
-    // 기간 손익을 '손실 회복분'과 '순증분'으로 분해한다.
-    // 회복분 = 마이너스였던 평가손익이 0 쪽으로 메워진 금액, 순증분 = 그 위로 새로 번 금액.
-    // (회복 + 순증 = 기간 손익 이 항상 성립하도록 순증분은 잔차로 구한다.)
-    BigDecimal lossGapStart = unrealizedStart.min(BigDecimal.ZERO).negate();
-    BigDecimal lossGapEnd = unrealizedEnd.min(BigDecimal.ZERO).negate();
-    BigDecimal recoveredAmount = lossGapStart.subtract(lossGapEnd);
-    BigDecimal netNewProfit = periodProfit.subtract(recoveredAmount);
-    Double timeWeightedReturnPct =
-        Double.isFinite(timeWeightedFactor) ? (timeWeightedFactor - 1.0d) * 100.0d : null;
-
-    return new HoldingsValueWindow(
-        openingValue != null ? openingValue : BigDecimal.ZERO,
-        closingValue != null ? closingValue : BigDecimal.ZERO,
-        timeWeightedReturnPct,
-        periodProfit,
-        principalDelta,
-        unrealizedStart,
-        unrealizedEnd,
-        unrealizedEndPct,
-        recoveredAmount,
-        netNewProfit);
-  }
-
-  /** 시점까지 쌓인 총 손익 = 미실현(평가액 - 원금) + 누적 실현손익 + 누적 배당. */
-  private static BigDecimal accumulatedProfit(TradeProfitTimeSeriesPoint point) {
-    return nz(point.totalHoldingsValue())
-        .subtract(nz(point.totalHoldingsCost()))
-        .add(nz(point.cumulativeRealizedProfit()))
-        .add(nz(point.cumulativeDividend()));
-  }
-
-  private static BigDecimal nz(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
-  }
-
-  private Double calculatePeriodGrowthRate(BigDecimal openingValue, BigDecimal closingValue) {
-    if (openingValue == null || closingValue == null) {
-      return null;
-    }
-    if (openingValue.compareTo(BigDecimal.ZERO) <= 0) {
-      return null;
-    }
-
-    return closingValue
-        .subtract(openingValue)
-        .divide(openingValue, 8, RoundingMode.HALF_UP)
-        .doubleValue();
-  }
-
   private ZoneId resolveZoneId(String timeZone) {
     if (timeZone == null || timeZone.isBlank()) {
       return ZoneId.systemDefault();
@@ -672,35 +472,31 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
   }
 
-  private record HoldingsValueWindow(
-      BigDecimal openingValue,
-      BigDecimal closingValue,
-      Double timeWeightedReturnPct,
-      BigDecimal periodProfit,
-      BigDecimal principalDelta,
-      BigDecimal unrealizedStart,
-      BigDecimal unrealizedEnd,
-      Double unrealizedEndPct,
-      BigDecimal recoveredAmount,
-      BigDecimal netNewProfit) {
-
-    private static HoldingsValueWindow empty() {
-      return new HoldingsValueWindow(
-          BigDecimal.ZERO, BigDecimal.ZERO, null, null, null, null, null, null, null, null);
+  /** 요약만 필요한 호출용. 시리즈와 요약을 함께 주는 엔드포인트를 그대로 재사용한다. */
+  private TradeProfitTimeSeriesSummary loadPeriodSummary(
+      UUID userId, String from, String to, String timeZone) {
+    if (userId == null || from == null || from.isBlank() || to == null || to.isBlank()) {
+      return null;
+    }
+    try {
+      LocalDate fromDate = LocalDate.parse(from);
+      LocalDate toDate = LocalDate.parse(to);
+      if (toDate.isBefore(fromDate)) {
+        return null;
+      }
+      ZoneId zone = resolveZoneId(timeZone);
+      TradeProfitRequest request = new TradeProfitRequest();
+      request.setUserId(userId);
+      request.setStartDate(fromDate.atStartOfDay(zone).toInstant());
+      request.setEndDate(toDate.plusDays(1).atStartOfDay(zone).toInstant());
+      request.setTimeZone(timeZone);
+      var params = request.toParams();
+      params.add("granularity", "DAILY");
+      var result = tradeProfitClient.timeSeriesWithSummary(params);
+      return result != null ? result.summary() : null;
+    } catch (Exception ex) {
+      logger.warn("Failed to load period summary: from={} to={} tz={}", from, to, timeZone, ex);
+      return null;
     }
   }
-
-  private record AssetGrowthPeriodReturnSummary(
-      String fromDate,
-      String toDate,
-      Double periodReturnRatePct,
-      boolean returnCalculable,
-      Double timeWeightedReturnPct,
-      BigDecimal periodProfit,
-      BigDecimal principalDelta,
-      BigDecimal unrealizedStart,
-      BigDecimal unrealizedEnd,
-      Double unrealizedEndPct,
-      BigDecimal recoveredAmount,
-      BigDecimal netNewProfit) {}
 }
