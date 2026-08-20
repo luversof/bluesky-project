@@ -16,8 +16,16 @@ management:
     configprops.show-values: always
   endpoints.web.exposure.include: '*'
   tracing:
-    enabled: true
+    # Spring Boot 4 에서 management.tracing.enabled -> management.tracing.export.enabled 로 변경됨
+    export.enabled: true
     sampling.probability: 0.1
+  # 메트릭은 prometheus 가 /actuator/prometheus 를 스크레이프하는 방식을 쓴다.
+  # spring-boot-starter-opentelemetry 가 micrometer-registry-otlp 를 함께 가져오는데,
+  # 그대로 두면 기본값 localhost:4318 로 메트릭 push 를 시도하다 매분 실패 로그를 남긴다.
+  otlp.metrics.export.enabled: false
+  # 로그는 앱에서 보내지 않고 opentelemetry-collector-logs DaemonSet 이
+  # 컨테이너 stdout 을 읽어 loki 로 보낸다. (앱 수정 불필요 + 기동 실패 로그도 수집)
+  opentelemetry.logging.export.enabled: false
   
 
 
@@ -49,9 +57,10 @@ eureka:
     serviceUrl:
       defaultZone: http://eureka1.cloud.bluesky.local/eureka/
 
-management.otlp:
-  tracing.endpoint: http://opentelemetry-collector.bluesky.local/v1/traces
-  logging.endpoint: http://opentelemetry-collector.bluesky.local/v1/logs
+# Spring Boot 4 에서 OTLP 프로퍼티가 management.opentelemetry.* 로 변경되었다.
+# (tracing 쪽은 타입이 달라져 properties-migrator 가 자동 변환하지 못하므로 새 이름을 직접 써야 한다)
+management.opentelemetry:
+  tracing.export.otlp.endpoint: http://opentelemetry-collector.bluesky.local/v1/traces
 
 ---
 spring:
@@ -107,6 +116,7 @@ eureka:
     service-url:
       defaultZone: http://bluesky-cloud-netflix-eureka-server-1-service.default.svc.cluster.local:30100/eureka/,http://bluesky-cloud-netflix-eureka-server-2-service.default.svc.cluster.local:30100/eureka/
 
-management.otlp:
-  tracing.endpoint: http://opentelemetry-collector-service.opensource.svc.cluster.local:4318/v1/traces
-  logging.endpoint: http://opentelemetry-collector-service.opensource.svc.cluster.local:4318/v1/logs
+# Spring Boot 4 에서 OTLP 프로퍼티가 management.opentelemetry.* 로 변경되었다.
+# (tracing 쪽은 타입이 달라져 properties-migrator 가 자동 변환하지 못하므로 새 이름을 직접 써야 한다)
+management.opentelemetry:
+  tracing.export.otlp.endpoint: http://opentelemetry-collector-service.opensource.svc.cluster.local:4318/v1/traces

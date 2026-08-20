@@ -6,4 +6,23 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <artifactId>bluesky-core</artifactId>
+
+  <dependencies>
+    <!-- (s) observability -->
+    <!--
+      Spring Boot 4 는 actuator 자동설정이 모듈로 분리되어 있어 starter 로 가져와야
+      Tracer / SpanExporter 자동설정이 등록된다.
+      (micrometer-tracing-bridge-otel, opentelemetry-exporter-otlp 만으로는 빈이 생성되지 않는다)
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-opentelemetry</artifactId>
+    </dependency>
+    <!--
+      로그는 앱이 보내지 않는다. opentelemetry-collector DaemonSet 이 컨테이너 stdout 을
+      읽어 loki 로 보내므로 앱 수정이 필요 없고, 기동 실패로 앱이 아무것도 못 보내는
+      구간의 로그까지 남는다.
+    -->
+    <!-- (e) observability -->
+  </dependencies>
 </project>
