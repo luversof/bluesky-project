@@ -12,7 +12,10 @@ import org.springframework.web.service.annotation.PostExchange;
 
 import net.luversof.web.gate.stock.domain.StockItem;
 
-@HttpExchange(url = "/api/stockItem", contentType = MediaType.APPLICATION_JSON_VALUE)
+@HttpExchange(
+    url = "/api/stockItem",
+    contentType = MediaType.APPLICATION_JSON_VALUE,
+    accept = MediaType.APPLICATION_JSON_VALUE)
 public interface StockItemClient {
 
   @PostExchange

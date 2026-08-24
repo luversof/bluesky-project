@@ -17,6 +17,8 @@ public class TradeService {
 
   @Autowired private TradeRepository tradeRepository;
 
+  @Autowired private net.luversof.api.stock.repository.TradeQuery tradeQuery;
+
   @Autowired private AccountService accountService;
 
   public void setTradeRepository(TradeRepository tradeRepository) {
@@ -32,8 +34,13 @@ public class TradeService {
     return tradeRepository.findByAccountId(accountId);
   }
 
+  /** 사용자의 모든 거래(계좌 조인). */
+  public List<Trade> findByUserId(UUID userId) {
+    return tradeQuery.findByUserId(userId);
+  }
+
   public List<Trade> findByAccountIdIn(List<UUID> accountIdList) {
-    return tradeRepository.findByAccountIdIn(accountIdList);
+    return tradeQuery.findByAccountIdIn(accountIdList);
   }
 
   public List<Trade> findByAccountIdInAndTradeDateBetween(

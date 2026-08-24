@@ -4,6 +4,35 @@ interface Window {
 	__stockTagFilterChipsAttached?: boolean;
 }
 
+// 종목 태그는 서버가 data-stock-tags 에 "|" 로 이어 붙인다(JTE 의 String.join("|", tags)).
+// 그래서 이 파싱 규칙은 서버 형식과 짝을 이루는 계약이고, 어느 한쪽만 바뀌면 필터가 조용히 어긋난다.
+//
+// 선택된 태그가 없으면 false 다 - "아무 태그도 안 고른 상태" 는 "전부 선택" 이 아니라 "칩으로 거르지 않음"
+// 이고, 그 처리는 호출부(applyAllStockSelection)가 따로 한다.
+//
+// 실측 2026-08-23: 이 사용자의 태그는 6 개(ETF / 리츠 / 월말배당 / 월배당 / 월중배당 / 커버드콜)이고
+// 구분자를 품은 태그도, 앞뒤 공백이 있는 태그도 없다.
+const TAG_SEPARATOR = "|";
+
+function optionMatchesSelectedTags(
+	option: { dataset: { stockTags?: string } },
+	selectedValues: Set<string>,
+): boolean {
+	if (!selectedValues.size) return false;
+
+	return (option.dataset.stockTags || "")
+		.split(TAG_SEPARATOR)
+		.map((value) => value.trim())
+		.filter((value) => value)
+		.some((tag) => selectedValues.has(tag));
+}
+
+// 브라우저에서는 쓰이지 않는다. 검증용으로만 읽는다(stockSimulator 와 같은 방식).
+(globalThis as any).__stockTagFilterInternals = {
+	optionMatchesSelectedTags,
+	TAG_SEPARATOR,
+};
+
 (() => {
 	if ((window as Window).__stockTagFilterChipsAttached) return;
 	(window as Window).__stockTagFilterChipsAttached = true;
@@ -74,19 +103,6 @@ interface Window {
 			button.classList.toggle(className, !active),
 		);
 		button.setAttribute("aria-pressed", active ? "true" : "false");
-	}
-
-	function optionMatchesSelectedTags(
-		option: HTMLOptionElement,
-		selectedValues: Set<string>,
-	): boolean {
-		if (!selectedValues.size) return false;
-
-		return (option.dataset.stockTags || "")
-			.split("|")
-			.map((value) => value.trim())
-			.filter((value) => value)
-			.some((tag) => selectedValues.has(tag));
 	}
 
 	function primeStockSelectionState(root: HTMLElement): void {

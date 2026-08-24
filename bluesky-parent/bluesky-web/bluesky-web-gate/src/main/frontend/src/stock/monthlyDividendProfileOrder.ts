@@ -1,6 +1,46 @@
 import { putJson } from "../fetchClient.js";
 import { handleApiError } from "../errorHandler.js";
 
+// 화면이 필터로 일부 종목만 보여 줄 때, 보이는 것만 끌어 옮긴 결과를 <b>전체 순서</b>에 다시 끼워 넣는다.
+//
+// 보이지 않는 종목은 원래 자리를 지키고, 보이는 자리에는 재정렬된 순서가 차례로 들어간다. 이 계산이 틀리면
+// 저장되는 순서에서 종목이 조용히 사라지거나 중복된다 - 화면은 저장에 성공했다고만 말한다.
+//
+// allSymbols 가 비어 있으면(전체 목록을 모르면) 보이는 순서를 그대로 쓴다.
+function mergeVisibleOrderIntoAll(
+	allSymbols: string[],
+	visibleSymbols: string[],
+): string[] {
+	if (allSymbols.length === 0) {
+		return visibleSymbols;
+	}
+
+	const visibleSet = new Set(visibleSymbols);
+	let visibleIndex = 0;
+	const requestSymbols: string[] = [];
+
+	for (const symbol of allSymbols) {
+		if (visibleSet.has(symbol)) {
+			if (visibleIndex < visibleSymbols.length) {
+				requestSymbols.push(visibleSymbols[visibleIndex++]);
+			}
+		} else {
+			requestSymbols.push(symbol);
+		}
+	}
+
+	for (; visibleIndex < visibleSymbols.length; visibleIndex += 1) {
+		requestSymbols.push(visibleSymbols[visibleIndex]);
+	}
+
+	return requestSymbols;
+}
+
+// 브라우저에서는 쓰이지 않는다. 검증용으로만 읽는다(stockSimulator 와 같은 방식).
+(globalThis as any).__monthlyDividendProfileOrderInternals = {
+	mergeVisibleOrderIntoAll,
+};
+
 (() => {
 	const lists = Array.from(
 		document.querySelectorAll<HTMLTableSectionElement>(
@@ -209,29 +249,7 @@ import { handleApiError } from "../errorHandler.js";
 		}
 
 		function buildRequestSymbols(visibleSymbols: string[]) {
-			if (currentAllSymbols.length === 0) {
-				return visibleSymbols;
-			}
-
-			const visibleSet = new Set(visibleSymbols);
-			let visibleIndex = 0;
-			const requestSymbols: string[] = [];
-
-			for (const symbol of currentAllSymbols) {
-				if (visibleSet.has(symbol)) {
-					if (visibleIndex < visibleSymbols.length) {
-						requestSymbols.push(visibleSymbols[visibleIndex++]);
-					}
-				} else {
-					requestSymbols.push(symbol);
-				}
-			}
-
-			for (; visibleIndex < visibleSymbols.length; visibleIndex += 1) {
-				requestSymbols.push(visibleSymbols[visibleIndex]);
-			}
-
-			return requestSymbols;
+			return mergeVisibleOrderIntoAll(currentAllSymbols, visibleSymbols);
 		}
 
 		function restoreOrder(symbols: string[]) {

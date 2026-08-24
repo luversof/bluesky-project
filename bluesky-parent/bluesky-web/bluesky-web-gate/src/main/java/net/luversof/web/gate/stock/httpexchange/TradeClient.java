@@ -10,7 +10,10 @@ import org.springframework.web.service.annotation.HttpExchange;
 
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
 
-@HttpExchange(url = "/api/trade", contentType = MediaType.APPLICATION_JSON_VALUE)
+@HttpExchange(
+    url = "/api/trade",
+    contentType = MediaType.APPLICATION_JSON_VALUE,
+    accept = MediaType.APPLICATION_JSON_VALUE)
 public interface TradeClient {
 
   @GetExchange

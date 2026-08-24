@@ -27,6 +27,16 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
   @Override
   public TradeProfit calculate(
       List<Trade> trades, TradeProfitRequest request, StockPriceService stockPriceService) {
+    return calculate(trades, request, stockPriceService, null);
+  }
+
+  @Override
+  public TradeProfit calculate(
+      List<Trade> trades,
+      TradeProfitRequest request,
+      StockPriceService stockPriceService,
+      java.util.Map<java.util.UUID, net.luversof.api.stock.domain.StockDailyClosePrice>
+          latestPrices) {
     if (trades == null || trades.isEmpty()) {
       return null;
     }
@@ -40,8 +50,16 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
             : null;
 
     // 2. Sort by date ascending
+    // 같은 시각이면 BUY 를 먼저 처리한다. 당일 매매(같은 timestamp 의 매수+매도)에서 매도가 먼저 오면
+    // 보유수량 0 이라 단위원가가 0 으로 잡혀 매도대금 전액이 실현손익이 되고, 뒤의 매수는 유령 보유로 남는다.
+    // 정렬 키가 tradeDate 뿐이면 그 순서는 DB 가 행을 돌려준 순서(쿼리에 ORDER BY 가 없다)에 좌우된다.
+    // 마지막 id 비교는 남은 동률까지 없애 결과를 입력 순서와 무관하게 만든다.
+    // 시계열 경로(TradeProfitService)도 같은 규칙으로 정렬한다.
     List<Trade> sortedTrades = new ArrayList<>(trades);
-    sortedTrades.sort(Comparator.comparing(Trade::getTradeDate));
+    sortedTrades.sort(
+        Comparator.comparing(Trade::getTradeDate)
+            .thenComparing(trade -> trade.getType() == TradeType.BUY ? 0 : 1)
+            .thenComparing(Trade::getId, Comparator.nullsLast(Comparator.naturalOrder())));
 
     // 3. Period accumulators
     BigDecimal periodTotalBuyAmount = BigDecimal.ZERO;
@@ -168,8 +186,19 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
     BigDecimal evaluationProfit = BigDecimal.ZERO; // Gross
     BigDecimal evaluationProfitNet = BigDecimal.ZERO; // Net
 
+    java.time.LocalDate currentPriceDate = null;
     if (!request.hasDateRange()) {
-      currentPrice = stockPriceService.getCurrentPrice(stockItemId);
+      // 가격과 그 가격의 거래일을 함께 받는다. 상위에서 일괄 조회해 넘겨준 맵이 있으면 그것을 쓰고,
+      // 없을 때만 개별 조회로 떨어진다(종목마다 조회하면 종목 수만큼 DB 왕복이 생긴다).
+      var preloaded = latestPrices != null ? latestPrices.get(stockItemId) : null;
+      if (preloaded != null) {
+        currentPrice = preloaded.closePrice() != null ? preloaded.closePrice() : BigDecimal.ZERO;
+        currentPriceDate = preloaded.tradeDate();
+      } else {
+        var latest = stockPriceService.getCurrentPriceHistory(stockItemId);
+        currentPrice = latest.map(h -> h.getClosePrice()).orElse(BigDecimal.ZERO);
+        currentPriceDate = latest.map(h -> h.getTradeDate()).orElse(null);
+      }
       evaluationAmount = currentPrice.multiply(BigDecimal.valueOf(holdingQuantity));
 
       evaluationProfit = evaluationAmount.subtract(currentTotalCost);
@@ -216,6 +245,7 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
     profit.setRealizedProfit(periodRealizedProfit);
     profit.setHoldingQuantity(holdingQuantity);
     profit.setCurrentPrice(currentPrice);
+    profit.setCurrentPriceDate(currentPriceDate);
     profit.setEvaluationAmount(evaluationAmount);
     profit.setEvaluationProfit(evaluationProfit);
     profit.setTotalProfit(totalProfit);

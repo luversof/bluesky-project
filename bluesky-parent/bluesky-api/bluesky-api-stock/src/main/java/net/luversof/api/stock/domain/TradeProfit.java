@@ -22,6 +22,10 @@ public class TradeProfit {
   // 보유 관련 정보 (미실현 손익 - 수수료 제외: 기존 호환 유지)
   private int holdingQuantity;
   private BigDecimal currentPrice;
+
+  /** currentPrice 가 어느 거래일의 종가인지. 오늘 시세가 아직 없으면 과거 일자가 된다. */
+  private java.time.LocalDate currentPriceDate;
+
   private BigDecimal evaluationAmount;
   private BigDecimal evaluationProfit;
 
@@ -129,6 +133,14 @@ public class TradeProfit {
 
   public void setCurrentPrice(BigDecimal currentPrice) {
     this.currentPrice = currentPrice;
+  }
+
+  public java.time.LocalDate getCurrentPriceDate() {
+    return currentPriceDate;
+  }
+
+  public void setCurrentPriceDate(java.time.LocalDate currentPriceDate) {
+    this.currentPriceDate = currentPriceDate;
   }
 
   public BigDecimal getEvaluationAmount() {

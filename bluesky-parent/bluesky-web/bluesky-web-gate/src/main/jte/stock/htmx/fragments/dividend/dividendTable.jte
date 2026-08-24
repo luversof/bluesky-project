@@ -7,6 +7,8 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<DividendView> dividendList
+<%-- 날짜 칸에 쓸 존. 이 화면의 기간 표시·필터와 같은 존이어야 한다(부모가 요청 타임존으로 푼 값). --%>
+@param java.time.ZoneId zone
 @param Pagination pagination
 @param String sort
 @param DecimalFormat decimalFormat
@@ -46,7 +48,7 @@
         </summary>
 
         <div id="dividendListContainer" class="flex flex-col relative mt-2">
-            <div class="flex-1 min-h-0 max-lg:overflow-x-auto">
+            <div class="flex-1 min-h-0 overflow-x-auto">
                 <table class="table w-full table-sm table-pin-rows pin-top-nav">
                     <thead>
                     <tr class="bg-base-200">
@@ -86,8 +88,22 @@
                     </thead>
                     <tbody>
                     @for(DividendView item : dividendList)
+                    <%-- 세금이 과세표준보다 큰 행이 실제로 있다. 표에는 두 값이 나란히 있어 그대로 보면
+                         산술이 성립하지 않는데, 왜 그런지는 관리 화면의 원장 점검에만 있었다
+                         (실측 2026-08-24: KODEX 한국부동산리츠인프라 8건 - 세금 29,210 · 과세표준 2,233).
+                         근거는 이 행 안에 있다 - 주당 과세표준 x 수량 = 297,424 로, 기록된 과세표준이
+                         다른 수량(29 x 77)으로 계산됐음을 그 자리에서 알 수 있다. 숫자는 바꾸지 않고 표시만 한다. --%>
+                    !{BigDecimal rowTax = item.tax() != null ? item.tax() : BigDecimal.ZERO;}
+                    !{BigDecimal rowTaxable = item.taxableAmount() != null ? item.taxableAmount() : BigDecimal.ZERO;}
+                    !{BigDecimal rowImpliedTaxable = item.taxableBasePerShare() != null && item.quantity() != null
+                        ? item.taxableBasePerShare().multiply(java.math.BigDecimal.valueOf(item.quantity())) : null;}
+                    !{boolean rowTaxableBelowTax = rowTaxable.signum() > 0 && rowTax.compareTo(rowTaxable) > 0;}
+                    !{String rowTaxableWarning = rowTaxableBelowTax ? java.text.MessageFormat.format(
+                        MessageUtil.getMessage("stock.dividend.taxable.below.tax"),
+                        decimalFormat.format(rowTaxable), decimalFormat.format(rowTax),
+                        rowImpliedTaxable != null ? decimalFormat.format(rowImpliedTaxable) : "-") : null;}
                     <tr>
-                        <td>${item.payDate() != null ? dateFormatter.format(item.payDate().atZone(java.time.ZoneId.systemDefault())) : ""}</td>
+                        <td>${item.payDate() != null ? dateFormatter.format(item.payDate().atZone(zone)) : ""}</td>
                         <td class="font-bold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName()}</a></td>
                         <td class="hidden sm:table-cell"><a href="/stock/account?accountId=${item.accountId() != null ? item.accountId().toString() : ""}" class="link link-hover">${item.accountName()}</a></td>
                         <td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
@@ -97,7 +113,7 @@
                         <td class="text-right hidden xl:table-cell amount-value">${item.principalCost() != null ? decimalFormat.format(item.principalCost()) : "-"}</td>
                         <td class="text-right text-dividend font-medium">${percentFormat.apply(item.yieldOnCostPct())}</td>
                         <td class="text-right hidden lg:table-cell amount-value">${item.tax() != null ? decimalFormat.format(item.tax()) : "0"}</td>
-                        <td class="text-right amount-value">${item.taxableAmount() != null ? decimalFormat.format(item.taxableAmount()) : "0"}</td>
+                        <td class="text-right amount-value${rowTaxableBelowTax ? " text-warning" : ""}" title="${rowTaxableWarning}" data-taxable-below-tax="${rowTaxableBelowTax ? "true" : null}">${item.taxableAmount() != null ? decimalFormat.format(item.taxableAmount()) : "0"}</td>
                     </tr>
                     @endfor
                     @if(dividendList == null || dividendList.isEmpty())

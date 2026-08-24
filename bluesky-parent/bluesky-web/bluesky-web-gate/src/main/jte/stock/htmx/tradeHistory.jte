@@ -9,6 +9,8 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<TradeResponse> trades
+<%-- 날짜 칸에 쓸 존. 이 화면(자산성장)의 기간 표시와 같은 존이어야 한다. --%>
+@param java.time.ZoneId zone
 @param int totalItems
 @param int currentPage
 @param int totalPages
@@ -22,12 +24,14 @@
 @param BigDecimal totalTax = BigDecimal.ZERO
 @param String tradePeriod
 @param Pagination pagination = null
+@param String tradeHistoryFilterQuery = ""
 
 !{
-DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zone);
 DecimalFormat df = new DecimalFormat("#,##0");
 String safeFrom = from != null ? from : "";
 String safeTo = to != null ? to : "";
+String safeFilterQuery = tradeHistoryFilterQuery != null ? tradeHistoryFilterQuery : "";
 BigDecimal safeBuy = totalBuy != null ? totalBuy : BigDecimal.ZERO;
 BigDecimal safeSell = totalSell != null ? totalSell : BigDecimal.ZERO;
 BigDecimal safeRp = totalRealizedProfit != null ? totalRealizedProfit : BigDecimal.ZERO;
@@ -68,40 +72,40 @@ ${historyTitle}
 </div>
 
 @if(totalItems == 0)
-<div class="text-center py-6 text-base-content/50">
+<div class="text-center py-6 text-base-content/60">
 <p>${noTradeInPeriodLabel}</p>
 </div>
 @else
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
 @template._components.ui.card(body = @`
-<div class="text-xs text-base-content/50 mb-1">${periodStatusLabel}</div>
+<div class="text-xs text-base-content/60 mb-1">${periodStatusLabel}</div>
 <div class="flex items-baseline gap-1 mb-2">
 <span class="text-xl font-bold text-error amount-value">&#x20A9;${df.format(safeBuy)}</span>
-<span class="text-xs text-base-content/40">${buyLabel}</span>
+<span class="text-xs text-base-content/60">${buyLabel}</span>
 </div>
-<div class="flex gap-4 text-xs text-base-content/50">
+<div class="flex gap-4 text-xs text-base-content/60">
 <span>${sellLabel} <span class="font-medium text-info amount-value">&#x20A9;${df.format(safeSell)}</span></span>
 <span class="ml-auto">${countMessage.apply(totalItems)}</span>
 </div>
 `)
 @template._components.ui.card(body = @`
-<div class="text-xs text-base-content/50 mb-1">${realizedProfitLabel}</div>
+<div class="text-xs text-base-content/60 mb-1">${realizedProfitLabel}</div>
 <div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
 ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div>
-<div class="text-xs text-base-content/40 mt-1">${sellCountPageLabel}</div>
+<div class="text-xs text-base-content/60 mt-1">${sellCountPageLabel}</div>
 `)
 @template._components.ui.card(body = @`
-<div class="text-xs text-base-content/50 mb-1">${tradingCostLabel}</div>
+<div class="text-xs text-base-content/60 mb-1">${tradingCostLabel}</div>
 <div class="text-xl font-bold amount-value">&#x20A9;${df.format(safeFee.add(safeTax))}</div>
-<div class="flex gap-4 text-xs text-base-content/50 mt-1">
+<div class="flex gap-4 text-xs text-base-content/60 mt-1">
 <span>${feeLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeFee)}</span></span>
 <span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeTax)}</span></span>
 </div>
 `)
 </div>
 
-<div class="max-lg:overflow-x-auto">
+<div class="overflow-x-auto">
 <table class="table w-full table-sm table-pin-rows pin-top-nav">
 <thead>
 <tr class="bg-base-200">
@@ -154,7 +158,7 @@ ${hasProfit && !isBuy ? df.format(trade.realizedProfit()) : ""}
 @if(pagination != null && totalPages > 1)
 @template._components.htmxPagination(
 	pagination = pagination,
-	url = "/stock/htmx/trade-history?from=" + safeFrom + "&to=" + safeTo + "&size=" + pageSize,
+	url = "/stock/htmx/trade-history?from=" + safeFrom + "&to=" + safeTo + "&size=" + pageSize + safeFilterQuery,
 	includeSelector = "this",
 	targetSelector = "#trade-history-panel")
 @endif

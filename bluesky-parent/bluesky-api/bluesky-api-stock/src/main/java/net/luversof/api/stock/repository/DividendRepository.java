@@ -22,6 +22,64 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
 			""")
   Instant findFirstDividendDateByUserId(UUID userId);
 
+  /** 사용자의 마지막 배당 지급일. 데이터 최신 시점 표시용(집계 1건). */
+  @Query(
+      """
+				SELECT MAX(d."payDate")
+				FROM "Dividend" d
+				JOIN "Account" a ON d."account_id" = a."id"
+				WHERE a."user_id" = :userId AND d."payDate" IS NOT NULL
+			""")
+  Instant findLastDividendDateByUserId(UUID userId);
+
+  /** 기간 내 배당이 있는 계좌 id (필터 목록용). */
+  @Query(
+      """
+				SELECT DISTINCT d."account_id"
+				FROM "Dividend" d
+				JOIN "Account" a ON d."account_id" = a."id"
+				WHERE a."user_id" = :userId
+					AND (CAST(:startDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") >= :startDate)
+					AND (CAST(:endDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") < :endDate)
+			""")
+  List<UUID> findDistinctAccountIds(UUID userId, Instant startDate, Instant endDate);
+
+  /** 기간 내 배당이 있는 종목 id (필터 목록용). */
+  @Query(
+      """
+				SELECT DISTINCT d."stockItem_id"
+				FROM "Dividend" d
+				JOIN "Account" a ON d."account_id" = a."id"
+				WHERE a."user_id" = :userId
+					AND (CAST(:startDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") >= :startDate)
+					AND (CAST(:endDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") < :endDate)
+			""")
+  List<UUID> findDistinctStockItemIds(UUID userId, Instant startDate, Instant endDate);
+
+  /** 사용자의 배당 건수. */
+  @Query(
+      """
+				SELECT COUNT(*)
+				FROM "Dividend" d
+				JOIN "Account" a ON d."account_id" = a."id"
+				WHERE a."user_id" = :userId
+			""")
+  long countByUserId(UUID userId);
+
+  /**
+   * 마지막 일자와 건수를 한 번에 읽는다. 따로 물으면 같은 조인을 두 번 훑는다.
+   *
+   * <p>{@code MAX} 는 NULL 을 무시하므로 예전 {@code IS NOT NULL} 조건과 결과가 같다.
+   */
+  @Query(
+      """
+				SELECT MAX(d."payDate") AS last_date, COUNT(*) AS total_count
+				FROM "Dividend" d
+				JOIN "Account" a ON d."account_id" = a."id"
+				WHERE a."user_id" = :userId
+			""")
+  UserLedgerSummary findLedgerSummaryByUserId(UUID userId);
+
   /** 사용자의 최초 배당 기준일(지급일·기준일 중 이른 쪽). 게이트 배당 목록의 날짜 하한 계산과 동일한 규칙. */
   @Query(
       """

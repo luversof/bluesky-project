@@ -61,6 +61,7 @@ class TradeProfitAggregatorTest {
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
-        BigDecimal.ZERO);
+        BigDecimal.ZERO,
+        null);
   }
 }

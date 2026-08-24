@@ -3,6 +3,7 @@
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param List<HoldingsSnapshotItem> holdings
 @param String date
@@ -44,9 +45,14 @@
             @template._components.ui.emptyState(message = noDataLabel, hint = savedDateOnlyLabel, padding = "py-6")
         @else
             !{
+                // 원금은 평가액에서 평가손익을 빼서 얻는다. avgCost 는 표기용으로 소수 2 자리 반올림돼 오므로
+                // avgCost x 수량 으로 만들면 정밀 원가와 어긋난다. api-stock 은 unrealizedProfit 을
+                // value - totalCost 로 만들므로 value - unrealizedProfit 이 곧 그 totalCost 다.
+                // 실측 2026-08-24: 반올림으로 만들면 이 표의 합계 세 칸이 서로 맞지 않았다
+                // (2026-08-19 총평가 - 총원금 - 총평가손익 = 28원, 2026-06-18 은 -22원).
                 BigDecimal totalPrincipal = holdings.stream()
-                    .map(item -> item.avgCost() != null && item.quantity() != null && item.quantity().compareTo(BigDecimal.ZERO) > 0
-                        ? item.avgCost().multiply(item.quantity())
+                    .map(item -> item.value() != null
+                        ? item.value().subtract(item.unrealizedProfit() != null ? item.unrealizedProfit() : BigDecimal.ZERO)
                         : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                 BigDecimal totalValue = holdings.stream()
@@ -58,23 +64,36 @@
                     .filter(v -> v != null)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                 boolean totalPositive = totalUnrealized.compareTo(BigDecimal.ZERO) >= 0;
+                // 고른 날짜에 시세가 없으면 그 이전 마지막 종가로 계산된다. 표의 "기준가"가 고른 날짜의
+                // 시세로 보이면 안 되므로, 실제 종가 일자가 고른 날짜보다 이르면 그 사실을 밝힌다
+                // (실측: 2026-08-22 를 고르면 수집이 2026-08-20 에서 멈춰 있어 그 날 종가가 쓰인다).
+                java.time.LocalDate latestPriceDate = holdings.stream()
+                    .map(HoldingsSnapshotItem::priceDate)
+                    .filter(v -> v != null)
+                    .max(java.time.LocalDate::compareTo)
+                    .orElse(null);
+                boolean priceOlderThanRequested = latestPriceDate != null && date != null && !date.isEmpty()
+                    && latestPriceDate.isBefore(java.time.LocalDate.parse(date));
             }
             <div class="grid gap-4 mb-3 text-sm md:grid-cols-3">
                 <div class="stat bg-base-200 rounded-box py-2 px-4">
                     <div class="stat-title text-xs">${principalLabel}</div>
-                    <div class="stat-value text-base amount-value">&#x20A9;${String.format("%,d", totalPrincipal.longValue())}</div>
+                    <div class="stat-value text-base amount-value">&#x20A9;${String.format("%,d", StockFormatUtil.displayWon(totalPrincipal))}</div>
                 </div>
                 <div class="stat bg-base-200 rounded-box py-2 px-4">
                     <div class="stat-title text-xs">${totalValueLabel}</div>
-                    <div class="stat-value text-base amount-value">&#x20A9;${String.format("%,d", totalValue.longValue())}</div>
+                    <div class="stat-value text-base amount-value">&#x20A9;${String.format("%,d", StockFormatUtil.displayWon(totalValue))}</div>
                 </div>
                 <div class="stat bg-base-200 rounded-box py-2 px-4">
                     <div class="stat-title text-xs">${totalUnrealizedLabel}</div>
                     <div class="stat-value text-base amount-value ${totalPositive ? "text-profit" : "text-loss"}">
-                        ${totalPositive ? "+" : ""}&#x20A9;${String.format("%,d", totalUnrealized.longValue())}
+                        ${totalPositive ? "+" : ""}&#x20A9;${String.format("%,d", StockFormatUtil.displayWon(totalUnrealized))}
                     </div>
                 </div>
             </div>
+            @if(priceOlderThanRequested)
+                <p class="mb-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", latestPriceDate.toString())}</p>
+            @endif
             <div class="overflow-x-auto">
                 <table class="table table-xs table-zebra w-full">
                     <thead>
@@ -95,31 +114,32 @@
                             boolean isProfit = item.unrealizedProfit() != null && item.unrealizedProfit().compareTo(BigDecimal.ZERO) >= 0;
                             String colorClass = isProfit ? "text-profit" : "text-loss";
                             String sign = isProfit ? "+" : "";
-                            BigDecimal cost = item.avgCost() != null && item.quantity() != null && item.quantity().compareTo(BigDecimal.ZERO) > 0
-                                ? item.avgCost().multiply(item.quantity())
+                            // 위 합계와 같은 기준(평가액 - 평가손익)으로 만든다.
+                            BigDecimal cost = item.value() != null
+                                ? item.value().subtract(item.unrealizedProfit() != null ? item.unrealizedProfit() : BigDecimal.ZERO)
                                 : BigDecimal.ZERO;
                             String pct = cost.compareTo(BigDecimal.ZERO) != 0 && item.unrealizedProfit() != null
                                 ? String.format("%.2f", item.unrealizedProfit().divide(cost, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue())
                                 : "0.00";
                             // 수량은 정수로 표시
                             String qtyDisplay = item.quantity() != null
-                                ? String.format("%,d", item.quantity().longValue())
+                                ? String.format("%,d", StockFormatUtil.displayWon(item.quantity()))
                                 : "0";
                         }
                         <tr>
                             <td>
                                 <div class="font-medium">${item.name()}</div>
                                 @if(item.symbol() != null && !item.symbol().isEmpty())
-                                    <div class="text-xs text-base-content/50">${item.symbol()}</div>
+                                    <div class="text-xs text-base-content/60">${item.symbol()}</div>
                                 @endif
                             </td>
                             <td class="text-right amount-value">${qtyDisplay}</td>
-                            <td class="text-right amount-value">${item.avgCost() != null ? "₩" + String.format("%,d", item.avgCost().longValue()) : "-"}</td>
-                            <td class="text-right amount-value">${cost.compareTo(BigDecimal.ZERO) > 0 ? "₩" + String.format("%,d", cost.longValue()) : "-"}</td>
-                            <td class="text-right amount-value">${item.priceAtDate() != null ? "₩" + String.format("%,d", item.priceAtDate().longValue()) : "-"}</td>
-                            <td class="text-right font-medium amount-value">${item.value() != null ? "₩" + String.format("%,d", item.value().longValue()) : "-"}</td>
+                            <td class="text-right amount-value">${item.avgCost() != null ? "₩" + String.format("%,d", StockFormatUtil.displayWon(item.avgCost())) : "-"}</td>
+                            <td class="text-right amount-value">${cost.compareTo(BigDecimal.ZERO) > 0 ? "₩" + String.format("%,d", StockFormatUtil.displayWon(cost)) : "-"}</td>
+                            <td class="text-right amount-value">${item.priceAtDate() != null ? "₩" + String.format("%,d", StockFormatUtil.displayWon(item.priceAtDate())) : "-"}</td>
+                            <td class="text-right font-medium amount-value">${item.value() != null ? "₩" + String.format("%,d", StockFormatUtil.displayWon(item.value())) : "-"}</td>
                             <td class="text-right font-medium ${colorClass} amount-value">
-                                ${sign}₩${item.unrealizedProfit() != null ? String.format("%,d", item.unrealizedProfit().longValue()) : "0"}
+                                ${sign}₩${item.unrealizedProfit() != null ? String.format("%,d", StockFormatUtil.displayWon(item.unrealizedProfit())) : "0"}
                             </td>
                             <td class="text-right ${colorClass}">${sign}${pct}%</td>
                         </tr>

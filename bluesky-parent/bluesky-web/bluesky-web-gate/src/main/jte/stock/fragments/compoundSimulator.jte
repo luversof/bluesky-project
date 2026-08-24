@@ -5,6 +5,8 @@
 !{
 	String inputsTitle = MessageUtil.getMessage("stock.simulator.compound.section.inputs.title");
 	String inputsDescription = MessageUtil.getMessage("stock.simulator.compound.section.inputs.desc");
+	String quickAddSmallLabel = MessageUtil.getMessage("stock.simulator.compound.quickadd.small");
+	String quickAddLargeLabel = MessageUtil.getMessage("stock.simulator.compound.quickadd.large");
 	String initialLabel = MessageUtil.getMessage("stock.simulator.compound.field.initial");
 	String contributionLabel = MessageUtil.getMessage("stock.simulator.compound.field.contribution");
 	String frequencyLabel = MessageUtil.getMessage("stock.simulator.compound.field.frequency");
@@ -34,7 +36,7 @@
 	String ratioHeader = MessageUtil.getMessage("stock.simulator.compound.table.ratio");
 }
 
-<div id="stockCompoundSimulator" class="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]" data-series-principal="${seriesPrincipalLabel}" data-series-profit="${seriesProfitLabel}">
+<div id="stockCompoundSimulator" class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]" data-series-principal="${seriesPrincipalLabel}" data-series-profit="${seriesProfitLabel}">
 	@template._components.ui.card(bodyClass = "gap-4", body = @`
 			<div class="flex flex-col gap-2">
 				<div class="space-y-2">
@@ -42,7 +44,7 @@
 					<p class="text-sm leading-6 text-base-content/60">${inputsDescription}</p>
 				</div>
 				<%-- 좁은 카드라 한 줄 배지는 넘친다 — 일반 문단으로 표시 --%>
-				<p class="text-xs leading-5 text-base-content/50">${storageNote}</p>
+				<p class="text-xs leading-5 text-base-content/60">${storageNote}</p>
 			</div>
 			<%-- 우측 결과 영역과 높이 균형을 맞추기 위해 md 이상에서 2열 배치 --%>
 			<form id="stockCompoundForm" class="grid gap-4 md:grid-cols-2">
@@ -54,8 +56,8 @@
 					<input id="stockCompoundInitial" name="initial" type="number" min="0" step="10000" value="0" class="input input-bordered w-full" />
 					<%-- 0 개수를 세지 않도록 만원 단위 증감 버튼 제공 (클릭 시 즉시 재계산) --%>
 					<div class="mt-1 flex flex-wrap gap-1">
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">+100만</button>
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">+1,000만</button>
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">${quickAddSmallLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">${quickAddLargeLabel}</button>
 						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="0">0</button>
 					</div>
 				</label>
@@ -66,8 +68,8 @@
 					</div>
 					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full" />
 					<div class="mt-1 flex flex-wrap gap-1">
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">+100만</button>
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">+1,000만</button>
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">${quickAddSmallLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">${quickAddLargeLabel}</button>
 						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="0">0</button>
 					</div>
 				</label>
@@ -78,7 +80,7 @@
 						<option value="monthly">${frequencyMonthlyLabel}</option>
 					</select>
 				</label>
-				<p id="stockCompoundMonthlyNote" class="hidden text-xs leading-5 text-base-content/50 md:col-span-2">${monthlyNote}</p>
+				<p id="stockCompoundMonthlyNote" class="hidden text-xs leading-5 text-base-content/60 md:col-span-2">${monthlyNote}</p>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${timingLabel}</span></div>
 					<select id="stockCompoundTiming" name="timing" class="select select-bordered w-full">
@@ -100,19 +102,19 @@
 	<div class="space-y-6">
 		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-					<div class="text-xs font-semibold text-base-content/50">${summaryFinalLabel}</div>
+					<div class="text-xs font-semibold text-base-content/60">${summaryFinalLabel}</div>
 					<div id="stockCompoundFinalValue" class="font-mono text-xl font-bold tabular-nums amount-value">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-					<div class="text-xs font-semibold text-base-content/50">${summaryPrincipalLabel}</div>
+					<div class="text-xs font-semibold text-base-content/60">${summaryPrincipalLabel}</div>
 					<div id="stockCompoundTotalPrincipal" class="font-mono text-xl font-bold tabular-nums amount-value">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-					<div class="text-xs font-semibold text-base-content/50">${summaryProfitLabel}</div>
+					<div class="text-xs font-semibold text-base-content/60">${summaryProfitLabel}</div>
 					<div id="stockCompoundTotalProfit" class="font-mono text-xl font-bold tabular-nums amount-value text-profit">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-					<div class="text-xs font-semibold text-base-content/50">${summaryReturnLabel}</div>
+					<div class="text-xs font-semibold text-base-content/60">${summaryReturnLabel}</div>
 					<div id="stockCompoundTotalReturn" class="font-mono text-xl font-bold tabular-nums text-profit">-</div>
 			`)
 		</div>

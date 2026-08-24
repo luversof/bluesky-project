@@ -64,6 +64,52 @@ public class MonthlyDividendCalculator {
   }
 
   /** 시뮬레이터 스냅샷 목록의 합계/예상 수익 집계 + 최선 종목 선정. */
+  /**
+   * 스냅샷 수량이 원장의 현재 보유와 얼마나 어긋났는지.
+   *
+   * @param staleCount 수량이 달라진 종목 수
+   * @param totalAtCurrentQuantity 1주당 배당(스냅샷)은 그대로 두고 수량만 현재 값으로 바꿔 다시 낸 월배당 합계
+   */
+  public record CurrentQuantitySummary(long staleCount, BigDecimal totalAtCurrentQuantity) {}
+
+  /**
+   * 스냅샷의 보유 수량은 사람이 갱신한 시점의 값이라 원장과 어긋난다(실측 2026-08-23: 8 종목 중 7 종목, 예상 월배당이 46,123 원 / 1.66% 낮게
+   * 잡혔다).
+   *
+   * <p>1주당 배당은 스냅샷 그대로 두고 <b>수량만</b> 현재 값으로 바꿔 합계를 다시 낸다 &mdash; 스냅샷의 {@code
+   * expectedMonthlyDividend} 가 정확히 {@code averageMonthlyDividendPerShare1y x heldQuantity} 임을 실측으로
+   * 확인했다(8 건 전부 일치).
+   *
+   * <p>현재 수량을 알 수 없는 행(보유 목록에 없는 종목 등)은 스냅샷 값을 그대로 더하고 어긋난 것으로 세지 않는다.
+   *
+   * <p>같은 계산이 요약 화면 안에만 있었다. 월배당 시뮬레이터의 합계 카드도 같은 스냅샷 수량으로 계산되는데 안내가 없어, 행에는 "현재 N 주" 경고가 뜨는데 헤드라인
+   * 합계만 조용히 옛 수량 기준이었다.
+   */
+  public static CurrentQuantitySummary currentQuantitySummary(
+      List<MonthlyDividendSnapshotResponse> rows,
+      java.util.Map<java.util.UUID, Integer> currentQuantityByStockItem) {
+    long staleCount = 0;
+    BigDecimal total = BigDecimal.ZERO;
+    if (rows == null) {
+      return new CurrentQuantitySummary(0, total);
+    }
+    java.util.Map<java.util.UUID, Integer> quantities =
+        currentQuantityByStockItem != null ? currentQuantityByStockItem : java.util.Map.of();
+    for (MonthlyDividendSnapshotResponse row : rows) {
+      BigDecimal perShare = row.averageMonthlyDividendPerShare1y();
+      Integer currentQuantity = quantities.get(row.stockItemId());
+      if (perShare == null || row.heldQuantity() == null || currentQuantity == null) {
+        total = total.add(safe(row.expectedMonthlyDividend()));
+        continue;
+      }
+      if (row.heldQuantity().intValue() != currentQuantity.intValue()) {
+        staleCount++;
+      }
+      total = total.add(perShare.multiply(BigDecimal.valueOf(currentQuantity)));
+    }
+    return new CurrentQuantitySummary(staleCount, total);
+  }
+
   public MonthlyDividendSimulatorSummaryView buildSimulatorSummary(
       List<MonthlyDividendSnapshotResponse> rows) {
     return buildSimulatorSummary(rows, java.util.Map.of());

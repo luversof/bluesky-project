@@ -2,15 +2,17 @@
 	"name": "frontend",
 	"private": true,
 	"scripts": {
-		"build": "npm-run-all check:nonce build:ts build:css build:vendor",
+		"build": "npm-run-all check:nonce build:ts build:css build:vendor build:manifest",
 		"build:ts": "tsc && node minify-js.mjs",
 		"build:css": "tailwindcss -i ./main.css -o ../resources/static/main.css --minify",
 		"build:vendor": "node copy-vendor.mjs",
+		"build:manifest": "node build-manifest.mjs",
 		"watch:css": "tailwindcss -i ./main.css -o ../resources/static/main.css --watch",
 		"watch:format": "chokidar \"src/**/*.ts\" -c \"prettier --write {path}\"",
 		"watch:ts": "tsc --watch",
 		"watch": "npm-run-all --parallel --print-label --color watch:css watch:ts",
-		"check:nonce": "node check-jte-script-nonce.mjs"
+		"check:nonce": "node check-jte-script-nonce.mjs",
+		"test:js": "node --test test/*.test.mjs"
 	},
 	"devDependencies": {
 		"@tailwindcss/typography": "^0.5.16",

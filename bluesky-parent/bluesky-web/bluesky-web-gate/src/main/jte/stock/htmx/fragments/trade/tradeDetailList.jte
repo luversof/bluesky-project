@@ -10,6 +10,8 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param List<TradeResponse> tradeList
+<%-- 날짜 칸에 쓸 존. 이 화면의 기간 표시·필터와 같은 존이어야 한다(부모가 요청 타임존으로 푼 값). --%>
+@param java.time.ZoneId zone
 @param Pagination pagination
 @param int totalItems
 @param Map<UUID, String> accountNames
@@ -52,7 +54,7 @@
         </summary>
 
         <div id="tradeListContainer" class="flex flex-col relative mt-2">
-            <div class="flex-1 min-h-0 max-lg:overflow-x-auto">
+            <div class="flex-1 min-h-0 overflow-x-auto">
                 <table class="table w-full table-sm table-pin-rows pin-top-nav">
                     <thead>
                     <tr class="bg-base-200">
@@ -91,7 +93,7 @@
                     <tbody>
                     @for(TradeResponse trade : tradeList)
                     <tr>
-                        <td class="whitespace-nowrap">${trade.tradeDate() != null ? dateFormatter.format(trade.tradeDate().atZone(java.time.ZoneId.systemDefault())) : ""}</td>
+                        <td class="whitespace-nowrap">${trade.tradeDate() != null ? dateFormatter.format(trade.tradeDate().atZone(zone)) : ""}</td>
                         <td>
                             <span class="${trade.type() == TradeType.BUY ? "badge badge-error badge-outline badge-sm" : "badge badge-info badge-outline badge-sm"}">
                                 ${tradeTypeLabel.apply(trade.type())}

@@ -11,6 +11,33 @@ function fmtDate(d: Date): string {
 	);
 }
 
+/**
+ * 화면이 고른 날짜(YYYY-MM-DD)를 서버에 보낼 instant 로 바꾼다.
+ *
+ * 시작일은 그대로(addDays=0), 종료일은 <b>다음 날 00:00</b>(addDays=1) 을 보낸다 - api-stock 의
+ * 기간 규약이 배타적이기 때문이다(시계열의 toInclusiveEndDate, 필터 id 조회의 `< :endDate`).
+ * 이 한 줄이 모든 주식 화면의 기간을 정한다.
+ *
+ * 형식이 아니면 "" 를 돌려준다(= 기간 없음). 예전에는 자릿수를 확인하지 않아 두 가지가 생겼다.
+ *  - "abc" 처럼 아예 못 읽는 값에서 RangeError 가 나 그 뒤 대입이 통째로 건너뛰어졌다.
+ *  - "2026-08-" 처럼 잘린 값은 Number("") 가 0 이라 조용히 2026-07-31 이 됐다(더 나쁘다 - 틀린 기간이
+ *    아무 표시 없이 조회에 실린다).
+ *
+ * 같은 규칙이 globalDateRange.ts 에 두 벌 더 있었고 셋의 동작이 서로 달랐다. 지금은 이 함수 하나만
+ * 있고 globalDateRange 는 __dateRangePickerInternals 로 이 함수를 가져다 쓴다(레이아웃이 이 파일을
+ * 먼저 로드한다).
+ */
+function localDateToInstantIso(ds: string, addDays?: number): string {
+	if (!ds) return "";
+	const matched = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(ds);
+	if (!matched) return "";
+	const y = Number.parseInt(matched[1], 10);
+	const m = Number.parseInt(matched[2], 10) - 1;
+	const d = Number.parseInt(matched[3], 10);
+	const dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0);
+	return Number.isNaN(dt.getTime()) ? "" : dt.toISOString();
+}
+
 const DateRangePicker = (function () {
 	function create(cfg: any) {
 		const _s: PickerState = { start: "", end: "", mode: "" };
@@ -310,15 +337,6 @@ const DateRangePicker = (function () {
 			// helper to update shared hidden inputs used by layout/HTMX
 			function setGlobalHiddenInputs(sStr: string, eStr: string, mStr: string) {
 				try {
-					function localDateToInstantIso(ds: string, addDays?: number) {
-						if (!ds) return "";
-						const parts = ds.split("-");
-						const y = Number.parseInt(parts[0], 10);
-						const m = Number.parseInt(parts[1], 10) - 1;
-						const d = Number.parseInt(parts[2], 10);
-						const dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0);
-						return dt.toISOString();
-					}
 					const gStart = document.getElementById(
 						"globalStartInstantInput",
 					) as HTMLInputElement | null;
@@ -395,15 +413,6 @@ const DateRangePicker = (function () {
 					if (ee) ee.value = endStr || "";
 					if (me) me.value = modeStr || "";
 					try {
-						function localDateToInstantIso(ds: string, addDays?: number) {
-							if (!ds) return "";
-							const parts = ds.split("-");
-							const y = Number.parseInt(parts[0], 10);
-							const m = Number.parseInt(parts[1], 10) - 1;
-							const d = Number.parseInt(parts[2], 10);
-							const dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0);
-							return dt.toISOString();
-						}
 						if (cfg.instantStartId) {
 							const instSe = el(cfg.instantStartId) as HTMLInputElement | null;
 							if (instSe)
@@ -520,15 +529,6 @@ const DateRangePicker = (function () {
 				if (ee) ee.value = endStr || "";
 				if (me) me.value = modeStr || "";
 				try {
-					function localDateToInstantIso(ds: string, addDays?: number) {
-						if (!ds) return "";
-						const parts = ds.split("-");
-						const y = Number.parseInt(parts[0], 10);
-						const m = Number.parseInt(parts[1], 10) - 1;
-						const d = Number.parseInt(parts[2], 10);
-						const dt = new Date(y, m, d + (addDays || 0), 0, 0, 0, 0);
-						return dt.toISOString();
-					}
 					if (cfg.instantStartId) {
 						const instSe = el(cfg.instantStartId) as HTMLInputElement | null;
 						if (instSe)
@@ -1141,3 +1141,5 @@ const DateRangePicker = (function () {
 
 // expose to global
 (globalThis as any).DateRangePicker = DateRangePicker as any;
+// 테스트가 계산만 따로 부를 수 있게 노출한다(브라우저 동작에는 영향 없음).
+(globalThis as any).__dateRangePickerInternals = { localDateToInstantIso, fmtDate };

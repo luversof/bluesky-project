@@ -31,8 +31,32 @@ async function fetchTimeSeries(params: Params = {}): Promise<any[]> {
 	return res.json();
 }
 
-function toChartData(series: any[]) {
-	const labels = series.map((p) => new Date(p.timestamp).toLocaleDateString());
+// 서버가 집계에 쓴 타임존으로 라벨을 만든다.
+//
+// 지점의 timestamp 는 그 타임존의 자정을 가리키는 instant 다(예: KST 2026-01-01 -> 2025-12-31T15:00:00Z).
+// toLocaleDateString() 을 타임존 없이 부르면 브라우저 로컬로 렌더되어, KST 밖에서는 라벨이 하루씩
+// 앞으로 밀린다. 실측: 2025-12-31T15:00:00Z 가 서울에서는 2026-01-01 인데 UTC/뉴욕/런던에서는
+// 2025-12-31 로 나와 연도 경계에서 해가 바뀐다.
+// 아래 두 함수는 순수 계산이라 브라우저 없이 검증할 수 있다. 라벨 타임존 버그는 이 두 함수에만
+// 들어 있으므로, DOM/fetch 를 끌어들이지 않고 여기만 테스트하려고 내보낸다
+// (test/timeSeriesChart.test.mjs 가 빌드 산출물을 그대로 불러 쓴다).
+export function resolveLabelZone(timeZone?: string): string | undefined {
+	if (!timeZone) return undefined;
+	try {
+		// 알 수 없는 타임존이면 RangeError 가 난다. 그때는 브라우저 로컬(예전 동작)로 돌아간다.
+		new Date().toLocaleDateString(undefined, { timeZone });
+		return timeZone;
+	} catch (e) {
+		return undefined;
+	}
+}
+
+export function toChartData(series: any[], timeZone?: string) {
+	const zone = resolveLabelZone(timeZone);
+	const options = zone ? { timeZone: zone } : undefined;
+	const labels = series.map((p) =>
+		new Date(p.timestamp).toLocaleDateString(undefined, options),
+	);
 	const cumulative = series.map((p) => Number(p.cumulativeRealizedProfit ?? 0));
 	const daily = series.map((p) => Number(p.dailyRealizedProfit ?? 0));
 	return { labels, cumulative, daily };
@@ -53,7 +77,10 @@ export async function renderTimeSeriesChart(
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
-		const data = toChartData(series);
+		const data = toChartData(
+			series,
+			typeof params?.timeZone === "string" ? params.timeZone : undefined,
+		);
 
 		if (
 			window._timeSeriesChart &&

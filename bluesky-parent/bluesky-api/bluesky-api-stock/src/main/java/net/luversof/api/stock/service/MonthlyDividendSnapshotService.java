@@ -55,8 +55,20 @@ public class MonthlyDividendSnapshotService {
           .forEach(item -> stockItemById.put(item.getId(), item));
     }
 
+    // 현재가도 1회 일괄 조회한다. 행마다 조회하면 보유 종목 수만큼 SELECT 가 더 나간다
+    // (실측: 8행 응답에 DB 왕복 11회, 그중 8회가 이 조회였다).
+    Map<UUID, BigDecimal> currentPriceById = new HashMap<>();
+    stockPriceService
+        .getLatestPrices(stockItemIds)
+        .forEach((stockItemId, price) -> currentPriceById.put(stockItemId, price.closePrice()));
+
     return snapshots.stream()
-        .map(snapshot -> toResponse(snapshot, stockItemById.get(snapshot.getStockItemId())))
+        .map(
+            snapshot ->
+                toResponse(
+                    snapshot,
+                    stockItemById.get(snapshot.getStockItemId()),
+                    currentPriceById.get(snapshot.getStockItemId())))
         .sorted(this::compareResponses)
         .toList();
   }
@@ -75,6 +87,8 @@ public class MonthlyDividendSnapshotService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Unknown stock symbol: " + request.getSymbol());
     }
+
+    validateAmounts(request);
 
     Instant now = Instant.now();
     MonthlyDividendSnapshot snapshot =
@@ -120,6 +134,16 @@ public class MonthlyDividendSnapshotService {
 
   private MonthlyDividendSnapshotResponse toResponse(
       MonthlyDividendSnapshot snapshot, StockItem providedStockItem) {
+    return toResponse(snapshot, providedStockItem, null);
+  }
+
+  /**
+   * @param providedCurrentPrice 미리 일괄 조회한 현재가. {@code null} 이면 이 행만 따로 조회한다(단건 경로용).
+   */
+  private MonthlyDividendSnapshotResponse toResponse(
+      MonthlyDividendSnapshot snapshot,
+      StockItem providedStockItem,
+      BigDecimal providedCurrentPrice) {
     StockItem stockItem =
         providedStockItem != null
             ? providedStockItem
@@ -132,7 +156,10 @@ public class MonthlyDividendSnapshotService {
     BigDecimal averageBuyPrice = safe(snapshot.getAverageBuyPrice());
     int heldQuantity = snapshot.getHeldQuantity() != null ? snapshot.getHeldQuantity() : 0;
     BigDecimal quantity = BigDecimal.valueOf(heldQuantity);
-    BigDecimal currentPrice = stockPriceService.getCurrentPrice(snapshot.getStockItemId());
+    BigDecimal currentPrice =
+        providedCurrentPrice != null
+            ? providedCurrentPrice
+            : stockPriceService.getCurrentPrice(snapshot.getStockItemId());
     BigDecimal currentMarketValue = currentPrice.multiply(quantity);
     BigDecimal expectedMonthlyDividend = averageMonthlyDividendPerShare1y.multiply(quantity);
     BigDecimal expectedMonthlyYieldPct = percent(expectedMonthlyDividend, currentMarketValue);
@@ -212,6 +239,43 @@ public class MonthlyDividendSnapshotService {
 
   private int compareAsc(BigDecimal left, BigDecimal right) {
     return safe(left).compareTo(safe(right));
+  }
+
+  /**
+   * 수치 입력이 말이 되는 값인지 본다.
+   *
+   * <p>지금까지는 {@code userId} 와 {@code symbol} 만 검사하고 수치는 그대로 저장했다. 화면 폼이 {@code min="0"} / {@code
+   * min="1"} 을 선언하지만 그건 브라우저 표시일 뿐이고, 이 서비스는 인증 없이 노출돼 있어 아무 값이나 그대로 들어온다. 음수 수량이나 음수 단가가 저장되면 예상
+   * 월배당·수익률이 음수로 나오고, 원인을 화면에서 되짚을 방법이 없다.
+   *
+   * <p>과세표준 비율은 배당 중 과세 대상 비중이라 0~100% 를 벗어날 수 없다.
+   */
+  private void validateAmounts(MonthlyDividendSnapshotUpsertRequest request) {
+    if (request.getHeldQuantity() != null && request.getHeldQuantity() < 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "heldQuantity must not be negative: " + request.getHeldQuantity());
+    }
+    rejectNegative("averageBuyPrice", request.getAverageBuyPrice());
+    rejectNegative("latestMonthlyDividendPerShare", request.getLatestMonthlyDividendPerShare());
+    rejectNegative(
+        "averageMonthlyDividendPerShare1y", request.getAverageMonthlyDividendPerShare1y());
+
+    BigDecimal taxableRatio = request.getAverageTaxableBaseRatio1y();
+    if (taxableRatio != null
+        && (taxableRatio.compareTo(BigDecimal.ZERO) < 0
+            || taxableRatio.compareTo(BigDecimal.valueOf(100)) > 0)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "averageTaxableBaseRatio1y must be between 0 and 100: " + taxableRatio);
+    }
+  }
+
+  private void rejectNegative(String field, BigDecimal value) {
+    if (value != null && value.compareTo(BigDecimal.ZERO) < 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, field + " must not be negative: " + value);
+    }
   }
 
   private BigDecimal safe(BigDecimal value) {

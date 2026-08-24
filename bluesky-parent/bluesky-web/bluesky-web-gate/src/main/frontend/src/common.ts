@@ -65,18 +65,13 @@ const ACTIVITY_TAB_ACTIVE_CLASSES = [
 	"shadow-sm",
 ];
 
-function applyActivityView(root: Element, rawMode: string | null) {
-	const mode =
-		rawMode === "timeline" || rawMode === "list" ? rawMode : "calendar";
-	const panels: Record<string, Element | null> = {
-		calendar: root.querySelector("#activityCalendarView"),
-		timeline: root.querySelector("#activityTimelineView"),
-		list: root.querySelector("#activityListView"),
-	};
-	Object.keys(panels).forEach((key) => {
-		const panel = panels[key];
-		if (panel) panel.classList.toggle("hidden", key !== mode);
-	});
+const ACTIVITY_VIEW_PANEL_ID: Record<string, string> = {
+	calendar: "activityCalendarView",
+	timeline: "activityTimelineView",
+	list: "activityListView",
+};
+
+function applyActivityTabState(root: Element, mode: string) {
 	root.querySelectorAll("[data-activity-view-tab]").forEach((tab) => {
 		const isActive = tab.getAttribute("data-activity-view-tab") === mode;
 		ACTIVITY_TAB_ACTIVE_CLASSES.forEach((cls) =>
@@ -84,6 +79,55 @@ function applyActivityView(root: Element, rawMode: string | null) {
 		);
 		tab.classList.toggle("text-base-content/60", !isActive);
 	});
+}
+
+function applyActivityView(root: Element, rawMode: string | null) {
+	const mode =
+		rawMode === "timeline" || rawMode === "list" ? rawMode : "calendar";
+	Object.keys(ACTIVITY_VIEW_PANEL_ID).forEach((key) => {
+		const panel = root.querySelector("#" + ACTIVITY_VIEW_PANEL_ID[key]);
+		if (panel) panel.classList.toggle("hidden", key !== mode);
+	});
+	applyActivityTabState(root, mode);
+}
+
+// 현재 화면이 만들어진 조회 조건은 data-sync-url 이 페이지 URL 에 반영해 둔다.
+// 그 쿼리를 그대로 재사용해야 지금 보이는 데이터와 같은 조건의 뷰를 받는다.
+async function loadActivityView(root: Element, mode: string) {
+	const panelId = ACTIVITY_VIEW_PANEL_ID[mode];
+	if (!panelId || root.querySelector("#" + panelId)) {
+		applyActivityView(root, mode);
+		return;
+	}
+	const params = new URLSearchParams(globalThis.location.search);
+	params.set("activityView", mode);
+	root.setAttribute("aria-busy", "true");
+	try {
+		const res = await fetch(
+			"/stock/htmx/activity-list?" + params.toString(),
+			{ headers: { "HX-Request": "true" } },
+		);
+		if (!res.ok) throw new Error("HTTP " + res.status);
+		const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+		const panel = doc.getElementById(panelId);
+		if (!panel) throw new Error("panel " + panelId + " 없음");
+		const panels = Object.keys(ACTIVITY_VIEW_PANEL_ID)
+			.map((k) => root.querySelector("#" + ACTIVITY_VIEW_PANEL_ID[k]))
+			.filter(Boolean) as Element[];
+		const last = panels[panels.length - 1];
+		const imported = document.importNode(panel, true);
+		if (last) last.after(imported);
+		else root.appendChild(imported);
+		applyActivityView(root, mode);
+	} catch (e) {
+		// 받아오지 못하면 "조회" 버튼의 htmx 경로로 프래그먼트 전체를 다시 그린다.
+		const refresh = root.querySelector(
+			"[data-activity-refresh]",
+		) as HTMLElement | null;
+		if (refresh) refresh.click();
+	} finally {
+		root.removeAttribute("aria-busy");
+	}
 }
 
 function restoreActivityView() {
@@ -95,7 +139,18 @@ function restoreActivityView() {
 	} catch (e) {
 		saved = null;
 	}
-	applyActivityView(root, saved);
+	const mode =
+		saved === "timeline" || saved === "list" ? saved : "calendar";
+	// 저장된 뷰가 응답에 없으면(직접 URL 로 다른 activityView 를 부른 경우 등)
+	// 실제로 온 뷰를 보여 준다 — 셋 다 hidden 이라 빈 화면이 되는 것을 막는다.
+	if (root.querySelector("#" + ACTIVITY_VIEW_PANEL_ID[mode])) {
+		applyActivityView(root, mode);
+		return;
+	}
+	const present = Object.keys(ACTIVITY_VIEW_PANEL_ID).find((k) =>
+		root.querySelector("#" + ACTIVITY_VIEW_PANEL_ID[k]),
+	);
+	applyActivityView(root, present || mode);
 }
 
 document.addEventListener("click", (event) => {
@@ -106,16 +161,23 @@ document.addEventListener("click", (event) => {
 	if (tab) {
 		const root = tab.closest("#activityListFragment");
 		if (!root) return;
-		const mode = tab.getAttribute("data-activity-view-tab");
-		applyActivityView(root, mode);
+		const raw = tab.getAttribute("data-activity-view-tab");
+		const mode = raw === "timeline" || raw === "list" ? raw : "calendar";
 		try {
-			localStorage.setItem(
-				ACTIVITY_VIEW_KEY,
-				mode === "timeline" || mode === "list" ? mode : "calendar",
-			);
+			localStorage.setItem(ACTIVITY_VIEW_KEY, mode);
 		} catch (e) {
 			// localStorage 불가 환경에서는 저장 없이 전환만
 		}
+		// 서버가 보이는 뷰 하나만 그리므로, 아직 없는 뷰는 받아와야 한다.
+		// (activityView=all 로 3종을 다 받은 경우엔 그대로 즉시 전환된다)
+		if (root.querySelector("#" + ACTIVITY_VIEW_PANEL_ID[mode])) {
+			applyActivityView(root, mode);
+			return;
+		}
+		// 없는 뷰는 그 뷰만 받아 DOM 에 붙인다. 프래그먼트 전체를 다시 스왑하면
+		// 이미 받아 둔 뷰까지 버려져 되돌아갈 때마다 왕복이 생긴다(실측 209ms).
+		applyActivityTabState(root, mode);
+		void loadActivityView(root, mode);
 		return;
 	}
 
@@ -179,6 +241,23 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 		event.detail.parameters[key] =
 			merged[key].length > 1 ? merged[key] : merged[key][0];
 	}
+});
+
+// activity-list fragment 요청에는 저장된 뷰 모드를 실어 보낸다.
+// 서버가 그 뷰 하나만 렌더하므로 숨은 뷰의 마크업(실측 1370KB)이 아예 생성되지 않는다.
+// data-params-from-query 훅보다 뒤에 등록해 URL 에 남은 옛 값을 localStorage 값으로 덮어쓴다.
+document.addEventListener("htmx:configRequest", (event: any) => {
+	const path = event.detail?.path;
+	if (typeof path !== "string" || !path.endsWith("/stock/htmx/activity-list"))
+		return;
+	let saved: string | null = null;
+	try {
+		saved = localStorage.getItem(ACTIVITY_VIEW_KEY);
+	} catch (e) {
+		saved = null;
+	}
+	event.detail.parameters.activityView =
+		saved === "timeline" || saved === "list" ? saved : "calendar";
 });
 
 // [data-sync-url="<fragment 경로>"]: 화면 래퍼에 지정한 목록 엔드포인트로의 GET 이 성공하면

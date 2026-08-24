@@ -7,20 +7,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
-@HttpExchange(url = "/api/stock/admin", contentType = MediaType.APPLICATION_JSON_VALUE)
+@HttpExchange(
+    url = "/api/stock/admin",
+    contentType = MediaType.APPLICATION_JSON_VALUE,
+    accept = MediaType.APPLICATION_JSON_VALUE)
 public interface StockAdminClient {
 
   @PostExchange("/stock-items")
   int stockItemBulkInsert(@RequestParam UUID userId);
 
   @PostExchange("/trades")
-  void tradeBulkInsert(@RequestParam UUID userId);
+  net.luversof.web.gate.stock.dto.response.LedgerImportResult tradeBulkInsert(
+      @RequestParam UUID userId);
 
   @PostExchange("/dividends")
-  void dividendBulkInsert(@RequestParam UUID userId);
+  net.luversof.web.gate.stock.dto.response.LedgerImportResult dividendBulkInsert(
+      @RequestParam UUID userId);
 
   @PostExchange("/price-histories")
-  void priceHistoriesUpdate(@RequestParam UUID userId);
+  net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateResult priceHistoriesUpdate(
+      @RequestParam UUID userId);
 
   @PostExchange("/monthly-dividend-snapshots/import-from-sheet")
   int monthlyDividendSnapshotImportFromSheet(@RequestParam UUID userId);

@@ -10,8 +10,15 @@
 @import net.luversof.web.gate.stock.dto.request.MonthlyDividendSnapshotUpsertRequest
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendSimulatorSummaryView
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
+<%-- 원장의 현재 보유 수량(종목 id -> 수량). 스냅샷 수량과 다르면 표에 함께 적는다. --%>
+@param java.util.Map<java.util.UUID, Integer> monthlyDividendCurrentQuantities = java.util.Map.of()
+@param long monthlyDividendStaleQuantityCount = 0L
+@param BigDecimal monthlyDividendCurrentQuantityTotal = java.math.BigDecimal.ZERO
+<%-- 원장의 현재 평균단가. 스냅샷 평단과 다르면 표에 함께 적는다 - 원가기준 수익률이 이 값으로 계산되기 때문이다. --%>
+@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = java.util.Map.of()
 @param MonthlyDividendSimulatorSummaryView monthlyDividendSummary = null
 @param List<StockItem> stockItems = java.util.List.of()
 @param MonthlyDividendSnapshotUpsertRequest monthlyDividendForm = null
@@ -75,6 +82,15 @@
 	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
 	String selectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
 	String selectionOverviewLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.overview");
+	// 기준 데이터의 '언제 시점' 값인지. asOfDate 는 그 종목 지급 이력의 최신 지급일과 같다.
+	// 이 값이 오래되면 최근 월 배당금 같은 대표 수치가 조용히 옛 분배금으로 계산된다
+	// (실측: 월중배당 4 종목이 30 일 뒤처져 총 최근 월 배당금이 46,635 원 과대).
+	java.time.LocalDate oldestAsOfDate = monthlyDividendRows.stream()
+		.map(net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse::asOfDate)
+		.filter(java.util.Objects::nonNull).min(java.time.LocalDate::compareTo).orElse(null);
+	java.time.LocalDate newestAsOfDate = monthlyDividendRows.stream()
+		.map(net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse::asOfDate)
+		.filter(java.util.Objects::nonNull).max(java.time.LocalDate::compareTo).orElse(null);
 	String selectionDividendLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.dividend");
 	String selectionInvestmentLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.investment");
 	String selectionEfficiencyLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.efficiency");
@@ -97,9 +113,11 @@
 	String monthlyDividendOrderEndpoint = "/stock/dividend/monthly-reference/profile/order";
 	String successMessage = "";
 	if ("single-saved".equals(monthlyDividendResult)) {
-		successMessage = "월배당 데이터를 저장했습니다.";
+		successMessage = MessageUtil.getMessage("stock.simulator.monthly.saved");
 	} else if ("sheet-imported".equals(monthlyDividendResult)) {
-		successMessage = "배당주 검색 시트에서 " + (monthlyDividendSavedCount != null ? monthlyDividendSavedCount : 0) + "건의 보유/평단가를 가져왔습니다.";
+		successMessage = java.text.MessageFormat.format(
+			MessageUtil.getMessage("stock.simulator.monthly.sheet.imported"),
+			monthlyDividendSavedCount != null ? monthlyDividendSavedCount : 0);
 	}
 }
 
@@ -129,7 +147,7 @@
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.form.title")}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.form.desc")}</p>
 						</div>
-						<div class="flex flex-wrap items-center gap-2"><form method="post" action="/stock/simulator/monthly-dividend/import-sheet" class="inline"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><button type="submit" class="btn btn-secondary btn-sm">${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}</button></form><a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a></div>
+						<div class="flex flex-wrap items-center gap-2"><form method="post" action="/stock/simulator/monthly-dividend/import-sheet" class="inline"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><button type="submit" class="btn btn-secondary btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}</button></form><a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a></div>
 					</div>
 					@if(symbolValue != null && !symbolValue.isEmpty() && !referenceValuesAvailable)
 						<div class="alert border border-warning/20 bg-warning/10 text-warning-content">
@@ -157,7 +175,7 @@
 						<div class="flex items-end">
 							<button type="submit" class="btn btn-primary w-full">${MessageUtil.getMessage("stock.simulator.monthly.form.submit")}</button>
 						</div>
-						<p class="text-xs leading-5 text-base-content/50 md:col-span-2 xl:col-span-4">${MessageUtil.getMessage("stock.simulator.monthly.form.hint")}</p>
+						<p class="text-xs leading-5 text-base-content/60 md:col-span-2 xl:col-span-4">${MessageUtil.getMessage("stock.simulator.monthly.form.hint")}</p>
 					</form>
 			`)
 		</div>
@@ -171,6 +189,23 @@
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.item.count")}</span>
 							<span class="font-mono font-semibold">${amountFormat.format(itemCount)}</span>
 						</div>
+						@if(oldestAsOfDate != null)
+						<div class="flex items-center justify-between gap-3 text-sm">
+							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.as.of.date")}</span>
+							<span class="font-mono">${oldestAsOfDate.toString()}${newestAsOfDate != null && !newestAsOfDate.equals(oldestAsOfDate) ? " ~ " + newestAsOfDate.toString() : ""}</span>
+						</div>
+						@endif
+						<%-- 이 카드의 합계는 스냅샷에 저장된 보유 수량으로 계산된다. 표의 각 행은 수량이 달라지면 "현재 N 주"를
+						     경고색으로 알리는데 합계만 조용하면 사용자는 현재 기준으로 읽는다. 요약 화면의 다가오는 배당 카드와
+						     같은 문구를 쓴다. --%>
+						@if(monthlyDividendStaleQuantityCount > 0)
+						<div class="text-[11px] text-warning">
+							${java.text.MessageFormat.format(
+								MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
+								String.valueOf(monthlyDividendStaleQuantityCount),
+								"₩" + String.format("%,d", StockFormatUtil.displayWon(monthlyDividendCurrentQuantityTotal)))}
+						</div>
+						@endif
 						<div class="flex items-start justify-between gap-3 text-sm">
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.best.choice")}</span>
 							<span class="text-right font-semibold">${bestChoice != null ? bestChoice.stockItemSymbol() : MessageUtil.getMessage("stock.simulator.monthly.summary.no.best.choice")}</span>
@@ -257,9 +292,9 @@
 						</div>
 					@else
 						<div class="space-y-4" data-monthly-simulator-selection-section>
-							<p class="text-xs text-base-content/50">${monthlySelectionHelperLabel}</p>
+							<p class="text-xs text-base-content/60">${monthlySelectionHelperLabel}</p>
 							<div id="monthlyDividendSimulatorOrderStatus" class="hidden"></div>
-							<p class="text-xs ${monthlyDividendReorderEnabled ? "text-primary/70" : "text-base-content/40"}">${monthlyDividendReorderEnabled ? monthlyDividendReorderEnabledLabel : monthlyDividendReorderDisabledLabel}</p>
+							<p class="text-xs ${monthlyDividendReorderEnabled ? "text-primary/70" : "text-base-content/60"}">${monthlyDividendReorderEnabled ? monthlyDividendReorderEnabledLabel : monthlyDividendReorderDisabledLabel}</p>
 							<div class="selection-reveal"><div>
 							<div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3"
 								 data-monthly-selection-summary
@@ -374,11 +409,11 @@
 														@endif
 													</a>
 												</div>
-												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.name")}</div>
+												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.name")}</div>
 											</div>
 										</th>
-										<th scope="col" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
-										<th scope="col" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
+										<th scope="col" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
+										<th scope="col" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
 										<th rowspan="2" scope="col" class="col-group-start min-w-[7.5rem] align-middle text-right">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 whitespace-normal text-right">
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover block text-sm font-medium no-underline">
@@ -389,10 +424,10 @@
 														<span>${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.dividend")}</span>
 													</span>
 												</a>
-												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.taxable.base")}</div>
+												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.taxable.base")}</div>
 											</div>
 										</th>
-										<th scope="col" class="col-group-start col-group-end col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/45" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
+										<th scope="col" class="col-group-start col-group-end col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
 									</tr>
 									<tr>
 										<th scope="col" class="col-group-start text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.dividend.per.share")}</th>
@@ -412,18 +447,18 @@
 										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div>${MessageUtil.getMessage("stock.simulator.monthly.table.header.quantity")}</div>
-												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.average.buy.price")}</div>
+												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.average.buy.price")}</div>
 											</div>
 										</th>
 										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div>${MessageUtil.getMessage("stock.simulator.monthly.table.header.buy.amount")}</div>
-												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.value")}</div>
+												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.value")}</div>
 											</div>
 										</th>
 										<th scope="col" class="col-group-start min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
-												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis")}</div>
+												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}
 													@if("monthly-yield".equals(monthlyDividendSort))
@@ -440,7 +475,7 @@
 										</th>
 										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
-												<div class="text-[11px] font-medium leading-4 text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost")}</div>
+												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}
 													@if("monthly-yield-on-cost".equals(monthlyDividendSort))
@@ -500,7 +535,7 @@
 												<td class="align-top font-medium">
 													<div class="min-w-0">
 														<div class="flex items-center gap-2 whitespace-nowrap">
-															<span class="inline-flex items-center gap-1 text-xs text-base-content/55">
+															<span class="inline-flex items-center gap-1 text-xs text-base-content/60">
 															@if(rowReorderable)
 																<span class="font-mono select-none" data-profile-order-handle>::</span>
 															@else
@@ -519,11 +554,11 @@
 											<td class="align-top text-right">
 												<div class="space-y-1 tabular-nums">
 													<div>
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(row.latestMonthlyDividendPerShare() != null ? row.latestMonthlyDividendPerShare() : BigDecimal.ZERO)}</span>
 													</div>
 													<div class="text-sm text-base-content/80">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(row.averageMonthlyDividendPerShare1y() != null ? row.averageMonthlyDividendPerShare1y() : BigDecimal.ZERO)}</span>
 													</div>
 												</div>
@@ -531,11 +566,11 @@
 											<td class="align-top text-right">
 												<div class="space-y-1 tabular-nums">
 													<div>
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(latestPerShareTaxableBase)}</span>
 													</div>
 													<div class="text-sm text-base-content/80">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(averagePerShareTaxableBase)}</span>
 													</div>
 												</div>
@@ -545,23 +580,31 @@
 											<td class="align-top text-right">
 												<div class="space-y-1 whitespace-nowrap tabular-nums">
 													<div>
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.short")}</span>
 														<span class="amount-value">${amountFormat.format(row.heldQuantity() != null ? row.heldQuantity() : 0)}</span>
+														!{Integer currentHeldQuantity = monthlyDividendCurrentQuantities.get(row.stockItemId());}
+														@if(currentHeldQuantity != null && row.heldQuantity() != null && currentHeldQuantity.intValue() != row.heldQuantity().intValue())
+														<span class="ml-1 text-[11px] text-warning">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.current"), amountFormat.format(currentHeldQuantity))}</span>
+														@endif
 													</div>
 													<div class="text-sm text-base-content/80">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(row.averageBuyPrice() != null ? row.averageBuyPrice() : BigDecimal.ZERO)}</span>
+														!{BigDecimal currentAverageBuyPrice = monthlyDividendCurrentAverageBuyPrices.get(row.stockItemId());}
+														@if(currentAverageBuyPrice != null && row.averageBuyPrice() != null && currentAverageBuyPrice.setScale(0, java.math.RoundingMode.HALF_UP).compareTo(row.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP)) != 0)
+														<span class="ml-1 text-[11px] text-warning">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.current"), amountFormat.format(currentAverageBuyPrice))}</span>
+														@endif
 													</div>
 												</div>
 											</td>
 											<td class="align-top text-right">
 												<div class="space-y-1 whitespace-nowrap tabular-nums">
 													<div>
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.buy.amount.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.buy.amount.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(buyAmount)}</span>
 													</div>
 													<div class="text-sm text-base-content/80">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.market.value.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.market.value.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(marketValue)}</span>
 													</div>
 												</div>
@@ -569,15 +612,15 @@
 											<td class="align-top text-right">
 												<div class="space-y-1 tabular-nums">
 													<div class="font-medium">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO)}</span>
 													</div>
 													<div class="text-sm text-base-content/80">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(latestMonthlyDividendAmount)}</span>
 													</div>
 													<div class="text-sm text-base-content/60">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.expected.taxable.base.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.expected.taxable.base.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO)}</span>
 													</div>
 												</div>
@@ -585,11 +628,11 @@
 											<td class="align-top text-right">
 												<div class="space-y-1 whitespace-nowrap tabular-nums">
 													<div>
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
 														<span>${percentFormat.format(row.expectedMonthlyYieldPct() != null ? row.expectedMonthlyYieldPct() : BigDecimal.ZERO)}% · ${percentFormat.format(row.expectedAnnualYieldPct() != null ? row.expectedAnnualYieldPct() : BigDecimal.ZERO)}%</span>
 													</div>
 													<div class="text-sm text-base-content/80">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
 														<span>${percentFormat.format(latestMonthlyYieldPct)}% · ${percentFormat.format(latestAnnualYieldPct)}%</span>
 													</div>
 												</div>
@@ -597,11 +640,11 @@
 											<td class="align-top text-right">
 												<div class="space-y-1 whitespace-nowrap tabular-nums">
 													<div>
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short")}</span>
 														<span>${percentFormat.format(row.expectedMonthlyYieldOnCostPct() != null ? row.expectedMonthlyYieldOnCostPct() : BigDecimal.ZERO)}% · ${percentFormat.format(row.expectedAnnualYieldOnCostPct() != null ? row.expectedAnnualYieldOnCostPct() : BigDecimal.ZERO)}%</span>
 													</div>
 													<div class="text-sm text-base-content/80">
-														<span class="mr-1 text-[11px] text-base-content/45">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
+														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
 														<span>${percentFormat.format(latestMonthlyYieldOnCostPct)}% · ${percentFormat.format(latestAnnualYieldOnCostPct)}%</span>
 													</div>
 												</div>

@@ -38,10 +38,19 @@ public class MonthlyDividendPayoutService {
   @Autowired private StockItemRepository stockItemRepository;
 
   public List<MonthlyDividendPayoutResponse> findPayouts(MonthlyDividendPayoutRequest request) {
-    UUID stockItemId =
-        resolveStockItemId(
-            request != null ? request.getStockItemId() : null,
-            request != null ? request.getSymbol() : null);
+    UUID stockItemId = request != null ? request.getStockItemId() : null;
+    String symbol = request != null ? request.getSymbol() : null;
+    if (stockItemId == null && StringUtils.hasText(symbol)) {
+      // 조회에서 모르는 심볼은 '해당 없음'이 정답이다. 예외를 던지면 화면이 통째로 오류가 된다
+      // (실측: 시뮬레이터에서 등록되지 않은 심볼을 고르면 페이지 전체가 오류 화면). 그렇다고 null 로
+      // 두면 아래 분기가 '전체 조회'로 빠져 필터가 사라지므로, 여기서 빈 결과로 끊는다.
+      // 저장/삭제 경로(upsert, deleteBySymbolAndDates)는 종전대로 모르는 심볼을 거부한다.
+      StockItem resolved = stockItemRepository.findBySymbol(symbol.trim());
+      if (resolved == null) {
+        return List.of();
+      }
+      stockItemId = resolved.getId();
+    }
 
     List<MonthlyDividendPayout> payouts =
         stockItemId != null
@@ -97,6 +106,9 @@ public class MonthlyDividendPayoutService {
     requireNonNegative(request.getDistributionRatePct(), "distributionRatePct must be >= 0");
     requireNonNegative(request.getDividendAmountPerShare(), "dividendAmountPerShare must be >= 0");
     requireNonNegative(request.getTaxableBasePerShare(), "taxableBasePerShare must be >= 0");
+    requireConsistentDates(request.getRecordDate(), request.getPayDate());
+    requireTaxableWithinDividend(
+        request.getTaxableBasePerShare(), request.getDividendAmountPerShare());
 
     StockItem stockItem = resolveStockItem(request.getSymbol());
     Instant now = Instant.now();
@@ -266,18 +278,6 @@ public class MonthlyDividendPayoutService {
         payout.getUpdatedDate());
   }
 
-  private UUID resolveStockItemId(UUID stockItemId, String symbol) {
-    if (stockItemId != null) {
-      return stockItemId;
-    }
-
-    if (!StringUtils.hasText(symbol)) {
-      return null;
-    }
-
-    return resolveStockItem(symbol).getId();
-  }
-
   private StockItem resolveStockItem(String symbol) {
     StockItem stockItem = stockItemRepository.findBySymbol(symbol.trim());
     if (stockItem == null) {
@@ -288,6 +288,39 @@ public class MonthlyDividendPayoutService {
 
   private BigDecimal safe(BigDecimal value) {
     return value != null ? value : BigDecimal.ZERO;
+  }
+
+  /**
+   * 지급일은 기준일보다 앞설 수 없다.
+   *
+   * <p>지급이력 전수(202건)의 기준일→지급일 간격은 2~8 일이었다. 뒤집힌 행이 한 번 들어오면 배당 달력의 "다가올 지급일" 과 월별 집계가 그 행 때문에
+   * 어긋나는데, 값 자체는 그럴듯해 보여 원인을 찾기 어렵다.
+   */
+  private void requireConsistentDates(java.time.LocalDate recordDate, java.time.LocalDate payDate) {
+    if (recordDate != null && payDate != null && payDate.isBefore(recordDate)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "payDate must not be before recordDate: " + payDate + " < " + recordDate);
+    }
+  }
+
+  /**
+   * 주당 과세표준은 주당 배당을 넘을 수 없다(배당 중 과세 대상 몫이므로).
+   *
+   * <p>넘어서면 시뮬레이터의 과세표준 비중이 100% 를 넘고, 세후 예상 배당이 실제보다 작게 나온다. 실측상 202건 모두 이 관계를 지키고 있어, 깨진 값이 들어오는
+   * 것을 여기서 막는다.
+   */
+  private void requireTaxableWithinDividend(BigDecimal taxableBase, BigDecimal dividendAmount) {
+    if (taxableBase != null
+        && dividendAmount != null
+        && taxableBase.compareTo(dividendAmount) > 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "taxableBasePerShare must not exceed dividendAmountPerShare: "
+              + taxableBase
+              + " > "
+              + dividendAmount);
+    }
   }
 
   private void requireNonNegative(BigDecimal value, String message) {

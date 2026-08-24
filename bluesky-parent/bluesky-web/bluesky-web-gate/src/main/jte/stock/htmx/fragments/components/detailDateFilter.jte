@@ -26,6 +26,10 @@
     String btnClass = idPrefix + "-range-btn";
 }
 
+<%-- 내비바의 endDate 는 '배타적' 경계다(컴포넌트가 배지에 찍을 때 하루를 뺀다).
+     여기 endLocal 은 컨트롤러가 이미 minusDays(1) 로 만든 '포함' 마지막 날이라 그대로 넘기면 하루가 더 빠진다.
+     실측: 8/1~8/31 구간 배지가 8-30, 하루짜리 구간은 8-01 ~ 07-31 로 역전됐다. --%>
+!{java.time.LocalDate navBarEndExclusive = endLocal != null ? endLocal.plusDays(1) : null;}
 @template.stock.htmx.fragments.dateRangeNavBar(
     pickerName = pickerVar,
     btnClass = btnClass,
@@ -33,7 +37,7 @@
     canNext = canNext,
     rangeMode = rangeMode,
     startDate = startLocal,
-    endDate = endLocal,
+    endDate = navBarEndExclusive,
     showRangeText = true
 )
 

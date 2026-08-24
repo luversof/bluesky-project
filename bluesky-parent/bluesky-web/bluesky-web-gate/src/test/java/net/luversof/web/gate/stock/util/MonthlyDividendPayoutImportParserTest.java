@@ -135,6 +135,48 @@ class MonthlyDividendPayoutImportParserTest {
         "60");
   }
 
+  /**
+   * 세 숫자 칸의 {@code -} 처리가 서로 다르다는 사실을 고정한다.
+   *
+   * <p>주당 과세표준액과 분배율은 {@code -} 를 "값 없음" 으로 받는다(각각 0 과 null). 그런데 <b>분배금액만</b> 예외를 던지고, 그러면 그 줄 하나
+   * 때문에 <b>가져오기 전체가 중단</b>된다. ETF 출처 페이지는 분배가 없던 달에 {@code -} 를 적는 곳이 있으므로 실제로 닿을 수 있는 경로다.
+   *
+   * <p>동작을 바꾸지 않은 이유: 네 곳의 출처가 분배금액 칸에 실제로 {@code -} 를 내는지는 바깥으로 요청을 보내야 알 수 있는데, 그 확인 없이 "건너뛴다" 로
+   * 바꾸면 정말 깨진 숫자까지 조용히 삼킨다. 그래서 지금 동작을 고정해 두고, 가져오기가 이 메시지로 실패하면 여기를 보게 한다.
+   *
+   * <p>실측 2026-08-23: 지금 저장된 지급 이력 202 건은 모두 분배금액이 0 보다 크다. 즉 아직 이 경로에 닿은 적은 없다.
+   */
+  @Test
+  void 분배금액이_대시면_가져오기가_그_줄에서_멈춘다() {
+    assertThatThrownBy(
+            () ->
+                parser.parse(
+                    "381170",
+                    """
+						지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
+						2024-12-30	2025-01-03	-	-
+						2024-11-29	2024-12-03	134	-
+						"""))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("주당 분배금");
+  }
+
+  /** 같은 자리에 값이 있으면 정상이다. 위 검사가 "대시" 때문임을 분명히 한다. */
+  @Test
+  void 분배금액에_값이_있으면_정상이다() {
+    List<MonthlyDividendPayoutUpsertRequest> requests =
+        parser.parse(
+            "381170",
+            """
+						지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
+						2024-12-30	2025-01-03	126	-
+						""");
+
+    assertThat(requests).hasSize(1);
+    assertThat(requests.get(0).getDividendAmountPerShare()).isEqualByComparingTo("126");
+    assertThat(requests.get(0).getTaxableBasePerShare()).isEqualByComparingTo("0");
+  }
+
   @Test
   void rejectsRowsWhosePayDateIsEarlierThanRecordDateWithExactValues() {
     assertThatThrownBy(

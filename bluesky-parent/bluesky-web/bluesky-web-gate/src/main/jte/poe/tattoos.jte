@@ -2,6 +2,7 @@
 @import net.luversof.web.gate.poe.dto.PoeTattoo
 @import net.luversof.web.gate.poe.PoeText
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.util.CspNonceHolder
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -77,7 +78,7 @@
 					</div>
 				@endfor
 			</div>
-			<script>
+			<script nonce="${CspNonceHolder.getNonce()}">
 				(function () {
 					var search = document.getElementById("poeTattooSearch");
 					var count = document.getElementById("poeTattooCount");

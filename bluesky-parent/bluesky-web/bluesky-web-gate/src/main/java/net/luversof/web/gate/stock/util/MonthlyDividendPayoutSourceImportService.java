@@ -21,7 +21,21 @@ import net.luversof.web.gate.stock.util.PlusMonthlyDividendPayoutSourceParser.Pl
 @Component
 public class MonthlyDividendPayoutSourceImportService {
 
+  /**
+   * PLUS 출처를 몇 페이지까지 따라갈지.
+   *
+   * <p><b>이 한계에 걸려 멈추면 조용히 잘린다</b> &mdash; 마지막 페이지 표시({@code last})를 보지 못한 채 반복문이 끝나고, 호출자는 짧아진 목록을
+   * 정상 결과로 받는다. 그러면 예상 월배당의 12 개월 평균이 일부 달만으로 계산된다.
+   *
+   * <p>지금은 여유가 크다(실측 2026-08-24: PLUS 고배당주위클리고정커버드콜의 저장된 지급 이력 17 건). 그래서 한계를 바꾸지 않고 성질만 적어 둔다.
+   *
+   * <p>이 상수와 {@link #TIGER_PAGE_SIZE} 는 <b>검사로 고정돼 있지 않다</b>. 값을 1 로 낮춰도 게이트 검사 360 개가 모두 통과한다 (실측
+   * 2026-08-24). 이 코드 경로는 호스트 이름으로 출처를 가려 내므로(예: {@code host.contains("plusetf.co.kr")}) 로컬 가짜 서버로는
+   * 탈 수 없고, 그걸 태우려면 호스트 판정을 주입 가능하게 바꿔야 한다. 결함이 확인되지 않은 상태에서 운영 코드를 그렇게 바꾸지는 않았다.
+   */
   private static final int PLUS_PAGE_SAFETY_LIMIT = 20;
+
+  /** TIGER 출처에 한 번에 요청할 행 수. 위와 같은 이유로 검사로 고정돼 있지 않다. */
   private static final int TIGER_PAGE_SIZE = 200;
 
   private final RestClient restClient;

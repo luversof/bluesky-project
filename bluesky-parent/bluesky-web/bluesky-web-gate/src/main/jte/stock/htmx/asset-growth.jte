@@ -32,10 +32,14 @@
 @param java.time.LocalDate maxDrawdownPeakDate = null
 @param java.time.LocalDate maxDrawdownTroughDate = null
 @param Double currentDrawdownPct = null
+@param java.math.BigDecimal openingValue = null
+@param java.math.BigDecimal closingValue = null
+@param net.luversof.web.gate.stock.controller.StockAssetGrowthHtmxController.TradeHistoryData tradeHistoryData = null
+@param String tradeHistoryFilterQuery = ""
 
 !{
     boolean isAllMode = "all".equals(rangeMode);
-    java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+    java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zone);
 
     java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
@@ -108,8 +112,9 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
                 ${detailSearchLabel}
                 @template.stock.htmx.fragments.components.filterBadge(
-                    startDate = startDate,
-                    endDate = endDate
+                    selectedAccountIds = selectedAccountIds,
+                    selectedStockItemIds = selectedStockItemIds,
+                    selectedStockTags = selectedStockTags
                 )
             </summary>
             <form id="assetGrowthSearchForm" class="mt-2 mb-2 rounded-2xl bg-base-100 p-3 shadow-sm"
@@ -122,8 +127,8 @@
                     <div class="form-control w-full">
                         <label class="label p-1" id="filterPeriodLabel"><span class="label-text text-xs">${periodLabel}</span></label>
                         <div class="join w-full" role="group" aria-labelledby="filterPeriodLabel">
-                            <input type="date" name="assetUiStartDate" id="assetStartDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startLocal != null ? startLocal.toString() : ""}">
-                            <input type="date" name="assetUiEndDate" id="assetEndDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDisplayLocal != null ? endDisplayLocal.toString() : ""}">
+                            <input type="date" name="assetUiStartDate" aria-label="${MessageUtil.getMessage("common.label.date.start")}" id="assetStartDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startLocal != null ? startLocal.toString() : ""}">
+                            <input type="date" name="assetUiEndDate" aria-label="${MessageUtil.getMessage("common.label.date.end")}" id="assetEndDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDisplayLocal != null ? endDisplayLocal.toString() : ""}">
                         </div>
                     </div>
 
@@ -201,7 +206,7 @@
                     @template._components.ui.emptyState(message = noDataLabel)
                 </div>
             @else
-                <p class="min-w-0 text-xs text-base-content/50">
+                <p class="min-w-0 text-xs text-base-content/60">
                     <span>📈 ${chartDescriptionLabel} &bull;</span>
                     <span class="inline-block whitespace-nowrap text-info">${clickDateHoldingsLabel}</span>
                 </p>
@@ -222,22 +227,46 @@
                     maxDrawdownPct = maxDrawdownPct,
                     maxDrawdownPeakDate = maxDrawdownPeakDate,
                     maxDrawdownTroughDate = maxDrawdownTroughDate,
-                    currentDrawdownPct = currentDrawdownPct
+                    currentDrawdownPct = currentDrawdownPct,
+                    openingValue = openingValue,
+                    closingValue = closingValue
                 )
                 <div class="w-full relative" style="height: 450px;">
                     <canvas id="assetGrowthChart" class="amount-chart"></canvas>
                 </div>
-                <p class="text-xs text-base-content/50 text-center py-1">💰 ${profitAnalysisLabel} &mdash; <span class="text-indigo-400">■</span> ${cumulativeRealizedDatasetLabel} + <span class="text-green-400">■</span> ${cumulativeDividendLabel} = ${cumulativeTotalDatasetLabel}</p>
+                <p class="text-xs text-base-content/60 text-center py-1">💰 ${profitAnalysisLabel} &mdash; <span class="text-indigo-400">■</span> ${cumulativeRealizedDatasetLabel} + <span class="text-green-400">■</span> ${cumulativeDividendLabel} = ${cumulativeTotalDatasetLabel}</p>
                 <div class="w-full" style="height: 250px;">
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
                 <%-- 연도별 성과: 시리즈와 같은 시뮬레이션에서 함께 계산돼 온다(추가 호출 없음). --%>
                 @template.stock.htmx.fragments.assetGrowthYearlySummary(yearlySummaries = yearlySummaries)
                 <div id="holdings-snapshot-container"></div>
-                <div id="trade-history-panel"
-                     hx-get="/stock/htmx/trade-history?from=${startLocal != null ? startLocal.toString() : ""}&to=${endDisplayLocal != null ? endDisplayLocal.toString() : ""}"
-                     hx-trigger="load"
-                     hx-swap="outerHTML"></div>
+                <%-- 매매 이력은 이 응답과 같은 기간으로 서버에서 함께 계산해 넣는다(추가 왕복 없음).
+                     페이징/정렬은 그대로 /stock/htmx/trade-history 를 다시 불러 이 패널만 교체한다. --%>
+                @if(tradeHistoryData != null)
+                    @template.stock.htmx.tradeHistory(
+                        zone = zone,
+                        trades = tradeHistoryData.trades(),
+                        totalItems = tradeHistoryData.totalItems(),
+                        currentPage = tradeHistoryData.currentPage(),
+                        totalPages = tradeHistoryData.totalPages(),
+                        pageSize = tradeHistoryData.pageSize(),
+                        from = tradeHistoryData.from(),
+                        to = tradeHistoryData.to(),
+                        totalBuy = tradeHistoryData.totalBuy(),
+                        totalSell = tradeHistoryData.totalSell(),
+                        totalRealizedProfit = tradeHistoryData.totalRealizedProfit(),
+                        totalFee = tradeHistoryData.totalFee(),
+                        totalTax = tradeHistoryData.totalTax(),
+                        tradePeriod = tradeHistoryData.tradePeriod(),
+                        pagination = tradeHistoryData.pagination(),
+                        tradeHistoryFilterQuery = tradeHistoryFilterQuery)
+                @else
+                    <div id="trade-history-panel"
+                         hx-get="/stock/htmx/trade-history?from=${startLocal != null ? startLocal.toString() : ""}&to=${endDisplayLocal != null ? endDisplayLocal.toString() : ""}${tradeHistoryFilterQuery}"
+                         hx-trigger="load"
+                         hx-swap="outerHTML"></div>
+                @endif
             @endif
         </div>
     </div>
@@ -282,6 +311,9 @@
         (function() {
             // Chart.js 는 아래 window.ensureStockCharts 콜백에서 필요할 때 로드된다.
             // 여기서 typeof Chart 로 조기 반환하면 로더를 부르기도 전에 끝나 차트가 영영 안 그려진다.
+            // 보유 스냅샷 조회 시 함께 넘길 타임존. 안 넘기면 서버 기본 타임존으로
+            // 집계돼 컨테이너가 UTC 인 환경에서 날짜가 하루 어긋난다.
+            var snapshotTz = encodeURIComponent('${timeZone != null ? timeZone : ""}' || Intl.DateTimeFormat().resolvedOptions().timeZone || '');
             var ctxMain = document.getElementById('assetGrowthChart');
             var ctxDividend = document.getElementById('dividendChart');
             if (!ctxMain || !ctxDividend) return;
@@ -391,7 +423,7 @@
                         if (markerClicked) { markerClicked = false; return; }
                         var clicked = elements[0];
                         var date = labels[clicked.index];
-                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
+                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date + '&timeZone=' + snapshotTz, {
                             target: '#holdings-snapshot-container',
                             swap: 'innerHTML'
                         });
@@ -502,7 +534,7 @@
                         if (!elements.length) return;
                         if (markerClicked) { markerClicked = false; return; } // 마커 클릭 시 중복 방지
                         var date = labels[elements[0].index];
-                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date, {
+                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date + '&timeZone=' + snapshotTz, {
                             target: '#holdings-snapshot-container',
                             swap: 'innerHTML'
                         });
@@ -526,7 +558,7 @@
                         var m = drawnMarkers[k];
                         if (Math.abs(mx - m.px) <= hitR && Math.abs(my - m.py) <= hitR) {
                             markerClicked = true;
-                            htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + m.date, {
+                            htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + m.date + '&timeZone=' + snapshotTz, {
                                 target: '#holdings-snapshot-container',
                                 swap: 'innerHTML'
                             });

@@ -37,6 +37,13 @@ public class GateRestClientConfig {
                     PoolingHttpClientConnectionManagerBuilder.create()
                         .setTlsSocketStrategy(
                             new DefaultClientTlsStrategy(sslContext, NoopHostnameVerifier.INSTANCE))
+                        // 기본값은 라우트당 5 다. 한 화면이 api-stock 호출을 6~7 개 던지면 딱 5 개만
+                        // 즉시 나가고 나머지는 연결이 빌 때까지 기다린다(실측: trade/list 7 개 중 5 개가
+                        // +0ms, 2 개가 +3ms / activity-list 6 개 중 1 개가 +3ms). 한 화면의 팬아웃을
+                        // 덮을 만큼만 올린다. 예전에 50/200 으로 크게 올렸다가 동시 16 에서 백엔드가
+                        // 밀려 타임아웃이 났으므로(그때는 되돌렸다) 여기서는 보수적으로 둔다.
+                        .setMaxConnPerRoute(10)
+                        .setMaxConnTotal(50)
                         .build())
                 .build();
 

@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 @import java.util.List
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.controller.StockSummaryHtmxController.AllocationBarRow
@@ -31,7 +32,7 @@
                     <div class="h-2 rounded-full" style="width: ${String.format("%.1f", row.weightPercent())}%; background: ${barColor}"></div>
                 </div>
                 <span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${String.format("%.1f%%", row.weightPercent())}</span>
-                <span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0" title="${String.format("%,d원", row.amount())}">${String.format("%,d", row.amount())}</span>
+                <span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0" title="${StockFormatUtil.fullKrw(row.amount())}">${String.format("%,d", row.amount())}</span>
             </div>
         @endfor
         @if(othersRow != null)
@@ -41,7 +42,7 @@
                     <div class="h-2 rounded-full" style="width: ${String.format("%.1f", othersRow.weightPercent())}%; background: rgba(156,163,175,0.8)"></div>
                 </div>
                 <span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${String.format("%.1f%%", othersRow.weightPercent())}</span>
-                <span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0" title="${String.format("%,d원", othersRow.amount())}">${String.format("%,d", othersRow.amount())}</span>
+                <span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0" title="${StockFormatUtil.fullKrw(othersRow.amount())}">${String.format("%,d", othersRow.amount())}</span>
             </div>
         @endif
     </div>

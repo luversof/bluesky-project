@@ -1,6 +1,7 @@
 @import java.util.List
 @import net.luversof.web.gate.poe.dto.PoeGroups
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.util.CspNonceHolder
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -70,7 +71,7 @@
 			<div id="poeItemDetail"></div>
 			<script src="/js/poe/filterUrl.js" defer></script>
 				<%-- 방어구 속성 칩은 방어구 부위(투구/갑옷/장갑/장화/방패) 선택 시에만 노출. 다른 부위면 숨기고 attr 초기화. --%>
-				<script>
+				<script nonce="${CspNonceHolder.getNonce()}">
 					(function () {
 						var ARMOUR = { Helmet: 1, "Body Armour": 1, Gloves: 1, Boots: 1, Shield: 1 };
 						var form = document.getElementById("poeItemFilter");

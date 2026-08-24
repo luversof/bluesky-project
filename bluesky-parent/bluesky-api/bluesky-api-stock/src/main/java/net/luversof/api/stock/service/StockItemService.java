@@ -14,8 +14,10 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemTag;
@@ -33,17 +35,49 @@ public class StockItemService {
     this.stockItemRepository = stockItemRepository;
   }
 
+  /**
+   * 종목을 만든다.
+   *
+   * <p>심볼과 이름은 반드시 있어야 한다. 심볼이 비면 시세 조회({@code findBySymbol})와 월배당 지급이력 등록이 그 종목을 영영 찾지 못하는데, 저장
+   * 자체는 성공해서 화면에는 이름 없는 종목만 남는다.
+   */
   @CacheEvict(value = "stockItems", allEntries = true)
   public StockItem createStockItem(StockItem stockItem) {
+    if (stockItem == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stockItem is required");
+    }
+    if (!StringUtils.hasText(stockItem.getSymbol())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "symbol is required");
+    }
+    if (!StringUtils.hasText(stockItem.getName())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+    }
     return stockItemRepository.save(stockItem);
   }
 
-  @Cacheable(value = "stockItems", key = "#id")
+  /**
+   * 캐시는 "찾은 것"만 담는다.
+   *
+   * <p>{@code stockItems} 캐시는 TTL 도 크기 제한도 없는 {@code ConcurrentHashMap} 이라, 못 찾은 결과까지 담으면 존재하지 않는
+   * 키를 부르는 만큼 <b>무한히 자란다</b>. 실측: 임의 UUID 100 개를 조회하자 100 개가 전부 캐시에 남아 재조회 시 DB 를 한 번도 타지 않았다. 아이디는
+   * 호출자가 얼마든지 만들어낼 수 있으므로 미스를 담아서는 안 된다.
+   *
+   * <p>주의: {@code unless} 를 평가할 때 스프링은 {@code Optional} 을 이미 벗겨낸다. {@code #result} 는 {@link
+   * StockItem} 이거나 {@code null} 이므로 {@code #result.isPresent()} 를 쓰면 {@code
+   * SpelEvaluationException} 으로 500 이 난다 (실측: EL1004E Method isPresent() cannot be found on type
+   * StockItem).
+   */
+  @Cacheable(value = "stockItems", key = "#id", unless = "#result == null")
   public Optional<StockItem> findById(UUID id) {
     return stockItemRepository.findById(id).map(this::attachTags);
   }
 
-  @Cacheable(value = "stockItems", key = "#name")
+  /**
+   * 이름으로 찾는다. {@link #findById(UUID)} 와 같은 이유로 못 찾은 결과는 담지 않는다.
+   *
+   * <p>실측: 존재하지 않는 이름 200 개를 조회하자 200 개가 전부 캐시에 남았다(재조회 DB 획득 0). 이름은 화면 검색으로 들어오는 값이라 특히 위험하다.
+   */
+  @Cacheable(value = "stockItems", key = "#name", unless = "#result == null")
   public StockItem findByName(String name) {
     return attachTags(stockItemRepository.findByName(name));
   }
@@ -53,6 +87,16 @@ public class StockItemService {
     stockItemRepository.findAllById(ids).forEach(list::add);
     attachTags(list);
     return list;
+  }
+
+  /**
+   * 태그를 붙이지 않는 종목 조회.
+   *
+   * <p>손익·시뮬레이션 경로는 종목을 심볼/이름(그룹 키)으로만 쓰는데, {@link #findAllById} 는 늘 태그 테이블을 한 번 더 읽는다(실측:
+   * holdingsSnapshotBatch 스택 샘플의 15% 가 attachTags). 그 경로에서는 이 메서드를 쓴다.
+   */
+  public Iterable<StockItem> findAllByIdWithoutTags(Iterable<UUID> ids) {
+    return stockItemRepository.findAllById(ids);
   }
 
   public List<StockItem> findAll() {

@@ -21,15 +21,17 @@
 @param String totalItemsCountText
 @param LocalDate prevStartDate
 @param LocalDate prevEndDate
+@param int currentPeriodElapsedDays = 0
+@param int currentPeriodTotalDays = 0
 @param List<DividendChange> dividendChangeContributors
 @param String taxLabel
 @param String taxableAmountLabel
 @param BigDecimal midMonthNetAmount = BigDecimal.ZERO
 @param BigDecimal monthEndNetAmount = BigDecimal.ZERO
 @param BigDecimal otherWindowNetAmount = BigDecimal.ZERO
-@param long midMonthCount = 0
-@param long monthEndCount = 0
-@param long otherWindowCount = 0
+@param long midMonthCount = 0L
+@param long monthEndCount = 0L
+@param long otherWindowCount = 0L
 
 !{
     String periodDividendLabel = MessageUtil.getMessage("stock.dividend.summary.period.total");
@@ -68,25 +70,25 @@
                 <!-- 세후 배당금 / 과세 금액: 서로 다른 개념이라 동등 비중의 별도 지표로 나란히 표시 -->
                 <div class="flex flex-wrap items-start gap-x-6 gap-y-2 mb-2">
                     <div class="min-w-0">
-                        <div class="text-xs text-base-content/50 mb-1">${periodDividendLabel}</div>
+                        <div class="text-xs text-base-content/60 mb-1">${periodDividendLabel}</div>
                         <div class="flex items-baseline gap-1">
                             <span class="text-xl font-bold text-dividend amount-value">₩ ${decimalFormat.format(safeAllNet)}</span>
-                            <span class="text-xs text-base-content/40">${netLabel}</span>
+                            <span class="text-xs text-base-content/60">${netLabel}</span>
                         </div>
                     </div>
                     <div class="min-w-0">
-                        <div class="text-xs text-base-content/50 mb-1">${taxableAmountLabel}</div>
+                        <div class="text-xs text-base-content/60 mb-1">${taxableAmountLabel}</div>
                         <div class="text-xl font-bold text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllTaxable)}</div>
-                        <div class="text-[11px] leading-4 text-base-content/40">${taxableNoteLabel}</div>
+                        <div class="text-[11px] leading-4 text-base-content/60">${taxableNoteLabel}</div>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-base-content/50">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-base-content/60">
                     <span>${grossLabel} <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllGross)}</span></span>
                     <span>${deductionLabel} <span class="font-medium text-base-content/70 amount-value">-₩ ${decimalFormat.format(allDeduction)}</span></span>
                     <span class="ml-auto">${totalItemsCountText}</span>
                 </div>
                 <!-- 차감 분해(항상 표시): 세전 − (세금 + 수수료·기타) = 세후. 과세 금액은 차감 항목이 아님(별도 표시). -->
-                <div class="mt-1 text-[11px] leading-4 text-base-content/40" title="${calcNoteLabel}">
+                <div class="mt-1 text-[11px] leading-4 text-base-content/60" title="${calcNoteLabel}">
                     ${deductionLabel} = ${taxLabel} <span class="amount-value">₩${decimalFormat.format(safeAllTax)}</span>
                     + ${deductionOtherLabel} <span class="amount-value">₩${decimalFormat.format(allOtherDeduction)}</span>
                 </div>
@@ -95,22 +97,22 @@
                 <div class="mt-2 pt-2 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                     <span class="inline-flex items-baseline gap-1">
                         <span class="inline-block w-1.5 h-1.5 rounded-full bg-info"></span>
-                        <span class="text-base-content/50">${midMonthLabel}</span>
+                        <span class="text-base-content/60">${midMonthLabel}</span>
                         <span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(midMonthNetAmount)}</span>
-                        <span class="text-base-content/40">${windowCount.apply(midMonthCount)}</span>
+                        <span class="text-base-content/60">${windowCount.apply(midMonthCount)}</span>
                     </span>
                     <span class="inline-flex items-baseline gap-1">
                         <span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                        <span class="text-base-content/50">${monthEndLabel}</span>
+                        <span class="text-base-content/60">${monthEndLabel}</span>
                         <span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(monthEndNetAmount)}</span>
-                        <span class="text-base-content/40">${windowCount.apply(monthEndCount)}</span>
+                        <span class="text-base-content/60">${windowCount.apply(monthEndCount)}</span>
                     </span>
                     @if(otherWindowCount > 0)
                     <span class="inline-flex items-baseline gap-1">
                         <span class="inline-block w-1.5 h-1.5 rounded-full bg-base-content/25"></span>
-                        <span class="text-base-content/50">${otherWindowLabel}</span>
+                        <span class="text-base-content/60">${otherWindowLabel}</span>
                         <span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(otherWindowNetAmount)}</span>
-                        <span class="text-base-content/40">${windowCount.apply(otherWindowCount)}</span>
+                        <span class="text-base-content/60">${windowCount.apply(otherWindowCount)}</span>
                     </span>
                     @endif
                 </div>
@@ -120,7 +122,7 @@
         <!-- Card 2: 전기 대비 -->
         @if(hasComparison)
         @template._components.ui.card(body = @`
-                <div class="text-xs text-base-content/50 mb-1">${previousComparisonLabel}
+                <div class="text-xs text-base-content/60 mb-1">${previousComparisonLabel}
                     @if(prevStartDate != null && prevEndDate != null)
                     <span class="opacity-40">(${prevStartDate.toString()} ~ ${prevEndDate.toString()})</span>
                     @endif
@@ -129,15 +131,20 @@
                     <span class="text-xl font-bold ${diffPositive ? "text-profit" : "text-loss"}">${diffPositive ? "▲" : "▼"} ${diffPct}%</span>
                     <span class="text-xs amount-value ${diffPositive ? "text-profit" : "text-loss"}">${diffPositive ? "+" : "-"}₩${decimalFormat.format(diffAmount.abs())}</span>
                 </div>
-                <div class="text-xs text-base-content/40">${previousPeriodLabel} <span class="amount-value">₩ ${decimalFormat.format(safePrevNet)}</span></div>
+                <div class="text-xs text-base-content/60">${previousPeriodLabel} <span class="amount-value">₩ ${decimalFormat.format(safePrevNet)}</span></div>
+                <%-- 이번 달/올해는 아직 끝나지 않았는데 전기는 완전한 전월/전년이라, 증감률이 실제 추세와
+                     반대로 읽힌다. 비교가 불공평하다는 사실만 밝힌다(수치는 그대로 둔다). --%>
+                @if(currentPeriodElapsedDays > 0 && currentPeriodTotalDays > currentPeriodElapsedDays)
+                <div class="text-xs text-base-content/50 mt-1">${MessageUtil.getMessage("stock.dividend.compare.period.in.progress").replace("{0}", String.valueOf(currentPeriodElapsedDays)).replace("{1}", String.valueOf(currentPeriodTotalDays))}</div>
+                @endif
         `)
         @endif
 
         <!-- Card 3: 월평균 -->
         @template._components.ui.card(body = @`
-                <div class="text-xs text-base-content/50 mb-1">${monthlyAverageLabel}</div>
+                <div class="text-xs text-base-content/60 mb-1">${monthlyAverageLabel}</div>
                 <div class="text-xl font-bold"><span id="avgAmountDisplay" class="amount-value">-</span></div>
-                <div class="text-xs text-base-content/40 mt-1" id="avgAmountDesc"></div>
+                <div class="text-xs text-base-content/60 mt-1" id="avgAmountDesc"></div>
         `)
 
     </div>
@@ -148,7 +155,7 @@
             <div class="flex items-baseline justify-between gap-2 mb-2">
                 <h3 class="font-bold text-sm">${changeTitleLabel}</h3>
                 @if(prevStartDate != null && prevEndDate != null)
-                <span class="text-xs text-base-content/40">vs ${prevStartDate.toString()} ~ ${prevEndDate.toString()}</span>
+                <span class="text-xs text-base-content/60">vs ${prevStartDate.toString()} ~ ${prevEndDate.toString()}</span>
                 @endif
             </div>
             <!-- 선택 합산 패널: 수익률 랭킹(data-dividend-yield-selection-summary)과 동일한 UX -->
@@ -202,13 +209,13 @@
                         @elseif(stopped)
                         <span class="badge badge-xs badge-ghost shrink-0">${changeStoppedLabel}</span>
                         @endif
-                        <span class="hidden sm:inline text-xs text-base-content/40 amount-value">₩${decimalFormat.format(ch.previousNet())} → ₩${decimalFormat.format(ch.currentNet())}</span>
+                        <span class="hidden sm:inline text-xs text-base-content/60 amount-value">₩${decimalFormat.format(ch.previousNet())} → ₩${decimalFormat.format(ch.currentNet())}</span>
                         <span class="w-28 text-right font-semibold amount-value ${up ? "text-profit" : "text-loss"}">${up ? "+" : "-"}₩${decimalFormat.format(ch.delta().abs())}</span>
                     </li>
                 @endfor
             </ul>
             @if(dividendChangeContributors.size() > 8)
-            <div class="text-xs text-base-content/40 mt-2">+ ${dividendChangeContributors.size() - 8}</div>
+            <div class="text-xs text-base-content/60 mt-2">+ ${dividendChangeContributors.size() - 8}</div>
             @endif
             <script nonce="${CspNonceHolder.getNonce()}">
             (function() {

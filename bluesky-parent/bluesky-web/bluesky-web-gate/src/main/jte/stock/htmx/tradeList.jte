@@ -77,7 +77,7 @@
         TradeResponse t = chartList.get(ci);
         if (ci > 0) jsSb.append(",");
         // Use the user's timezone (if provided) when rendering trade dates in JS payload
-        java.time.ZoneId _zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+        java.time.ZoneId _zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
         jsSb.append("{tradeDate:\"").append(t.tradeDate() != null ? ymd.format(t.tradeDate().atZone(_zone)) : "").append("\"");
         jsSb.append(",stockItem:\"").append(ej.apply(t.stockItemName())).append("\"");
         jsSb.append(",account:\"").append(ej.apply(accountNames != null ? accountNames.getOrDefault(t.accountId(), "") : "")).append("\"");
@@ -91,7 +91,7 @@
 
     // Nav 버튼 활성화 여부 (use client timezone if available)
     boolean isAllMode = "all".equals(rangeMode);
-    java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+    java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
     java.time.LocalDate today = java.time.LocalDate.now(zone);
     java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
     java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
@@ -183,6 +183,7 @@
 
     @template.stock.htmx.fragments.trade.tradeDetailList(
         tradeList = tradeList,
+        zone = zone,
         pagination = pagination,
         totalItems = totalItems,
         accountNames = accountNames,

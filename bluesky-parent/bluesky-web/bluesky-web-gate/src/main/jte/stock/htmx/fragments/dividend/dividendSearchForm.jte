@@ -43,8 +43,9 @@
             @template.stock.htmx.fragments.components.filterBadge(
                 selectedAccountId = selectedAccountId,
                 selectedStockItemId = selectedStockItemId,
-                startDate = startDate,
-                endDate = endDate
+                selectedAccountIds = selectedAccountIds,
+                selectedStockItemIds = selectedStockItemIds,
+                selectedStockTags = selectedStockTags
             )
         </summary>
     <form id="dividendSearchForm" class="mt-2 mb-2 rounded-2xl bg-base-100 p-3 shadow-sm"
@@ -58,8 +59,8 @@
             <div class="form-control w-full">
                 <label class="label p-1" id="filterPeriodLabel"><span class="label-text text-xs">${periodLabel}</span></label>
                 <div class="join w-full" role="group" aria-labelledby="filterPeriodLabel">
-                    <input type="date" name="dividendUiStartDate" id="startDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
-                    <input type="date" name="dividendUiEndDate" id="endDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
+                    <input type="date" name="dividendUiStartDate" aria-label="${MessageUtil.getMessage("common.label.date.start")}" id="startDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
+                    <input type="date" name="dividendUiEndDate" aria-label="${MessageUtil.getMessage("common.label.date.end")}" id="endDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
                 </div>
             </div>
 

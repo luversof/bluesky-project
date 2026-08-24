@@ -87,9 +87,18 @@
 		data-stock-chart-message-no-sell-data="${MessageUtil.getMessage("stock.trade.chart.message.no.sell.data")}"
 		data-stock-chart-message-no-buy-data="${MessageUtil.getMessage("stock.trade.chart.message.no.buy.data")}"></div>
 
+	<%-- 본문 바로가기. 없으면 키보드 사용자가 화면마다 상단 메뉴를 전부 지나야 한다
+	     (실측: 본문 첫 요소까지 Tab 15번). 평소엔 숨어 있다가 포커스되면 나타난다. --%>
+	<a href="#mainContent"
+	   class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-box focus:bg-primary focus:text-primary-content focus:shadow-lg">${MessageUtil.getMessage("common.label.skip.to.content")}</a>
+
 	@template._components.body.navbar.navbar(isAuthenticated = isAuthenticated, username = username, loginUrl = loginUrl, profile = profile, hideHamburger = hideHamburger)
 
-	${content}
+	<%-- 본문 랜드마크. 없으면 화면 낭독기에서 "본문으로 건너뛰기"가 동작하지 않는다
+	     (실측: 주식 8개 화면 모두 main 랜드마크 0개). --%>
+	<main id="mainContent" tabindex="-1">
+		${content}
+	</main>
 	
 	@template._components.body.footer()
 

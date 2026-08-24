@@ -42,6 +42,7 @@ import net.luversof.api.stock.repository.MonthlyDividendSnapshotRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockItemTagRepository;
 import net.luversof.api.stock.repository.TradeRepository;
+import net.luversof.api.stock.web.dto.response.LedgerImportResult;
 import net.luversof.app.google.stock.domain.GoogleSheetDividend;
 import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
 import net.luversof.app.google.stock.domain.GoogleSheetTrade;
@@ -135,7 +136,13 @@ public class StockAdminService {
     return savedStockItemList.size();
   }
 
-  public void tradeBulkInsert(UUID userId) {
+  /**
+   * 시트의 거래를 통째로 다시 넣는다.
+   *
+   * <p>매핑에 실패한 행은 예전에도 지금도 버려지지만, 이제는 <b>몇 행이 버려졌는지</b> 를 돌려준다. 특히 종목명을 못 찾은 행은 {@code log.debug} 한
+   * 줄만 남기고 사라져 운영에서는 흔적이 없었다.
+   */
+  public LedgerImportResult tradeBulkInsert(UUID userId) {
     tradeRepository.deleteAll();
 
     var stockItemList =
@@ -164,9 +171,19 @@ public class StockAdminService {
               log.debug("Created new account: {} with id: {}", accountName, savedAccount.getId());
             });
 
+    // 종목을 못 찾아 버린 이름을 모은다. 이름이 바뀌기만 해도 그 종목 거래가 전부 사라지므로,
+    // 몇 행이 어떤 이름 때문에 빠졌는지가 이 작업의 가장 중요한 결과다.
+    var unknownStockNames = new java.util.LinkedHashSet<String>();
     var tradeList =
         importableGoogleSheetsTradeList.stream()
-            .map(t -> toTrade(t, accountMap, stockItemList))
+            .map(
+                t -> {
+                  Trade trade = toTrade(t, accountMap, stockItemList);
+                  if (trade == null && t.get종목() != null) {
+                    unknownStockNames.add(t.get종목());
+                  }
+                  return trade;
+                })
             .filter(Objects::nonNull)
             .toList();
 
@@ -175,11 +192,30 @@ public class StockAdminService {
       log.debug("Skipped {} trade rows without price or quantity", skippedTradeCount);
     }
 
-    log.debug("Importing {} trades", tradeList.size());
     tradeRepository.saveAll(tradeList);
+    var result =
+        new LedgerImportResult(
+            googleSheetsTradeList.size(), tradeList.size(), List.copyOf(unknownStockNames));
+    logImport("trade", result);
+    return result;
   }
 
-  public void dividendBulkInsert(UUID userId) {
+  /** 버려진 행이 있으면 한 줄로 남긴다. 없으면 INFO 로 "전부 들어갔다" 는 사실을 남긴다. */
+  private void logImport(String kind, LedgerImportResult result) {
+    if (result.droppedCount() <= 0) {
+      log.info("{} import finished: {} rows, none dropped", kind, result.sourceRowCount());
+      return;
+    }
+    log.warn(
+        "{} import dropped rows: {}/{} not imported, unknown stock names = {}",
+        kind,
+        result.droppedCount(),
+        result.sourceRowCount(),
+        result.unknownStockNames());
+  }
+
+  /** 시트의 배당을 통째로 다시 넣는다. 거래와 같은 이유로 버려진 행 수를 돌려준다. */
+  public LedgerImportResult dividendBulkInsert(UUID userId) {
     dividendRepository.deleteAll();
 
     var googleSheetsDividendList = stockGoogleSheetService.getGoogleSheetDividendList(userId);
@@ -187,14 +223,26 @@ public class StockAdminService {
     var accountMap = prepareAccountMap(userId, googleSheetsDividendList);
     var stockItemMap = prepareStockItemMap(googleSheetsDividendList);
 
+    var unknownStockNames = new java.util.LinkedHashSet<String>();
     var dividends =
         googleSheetsDividendList.stream()
-            .map(googleSheetsDividend -> toDividend(googleSheetsDividend, accountMap, stockItemMap))
+            .map(
+                googleSheetsDividend -> {
+                  Dividend dividend = toDividend(googleSheetsDividend, accountMap, stockItemMap);
+                  if (dividend == null && googleSheetsDividend.get종목() != null) {
+                    unknownStockNames.add(googleSheetsDividend.get종목());
+                  }
+                  return dividend;
+                })
             .filter(Objects::nonNull)
             .toList();
 
-    log.debug("Importing {} dividends", dividends.size());
     dividendRepository.saveAll(dividends);
+    var result =
+        new LedgerImportResult(
+            googleSheetsDividendList.size(), dividends.size(), List.copyOf(unknownStockNames));
+    logImport("dividend", result);
+    return result;
   }
 
   /**

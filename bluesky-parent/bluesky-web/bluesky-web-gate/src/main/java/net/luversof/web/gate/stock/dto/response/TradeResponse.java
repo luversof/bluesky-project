@@ -4,8 +4,11 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import net.luversof.web.gate.stock.constant.TradeType;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record TradeResponse(
     UUID id,
     UUID accountId,

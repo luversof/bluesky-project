@@ -2,6 +2,7 @@
 @import java.math.BigDecimal
 @import java.util.List
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -21,6 +22,9 @@
 @param BigDecimal otherTotalLatest = java.math.BigDecimal.ZERO
 @param BigDecimal monthlyTotalLatest = java.math.BigDecimal.ZERO
 @param BigDecimal annualTotalLatest = java.math.BigDecimal.ZERO
+@param java.util.List<String> shortHistorySymbols = java.util.List.of()
+@param long calendarStaleQuantityCount = 0L
+@param BigDecimal calendarCurrentQuantityTotal = java.math.BigDecimal.ZERO
 
 !{
     boolean isCalendar = "calendar".equals(dividendTab);
@@ -58,7 +62,7 @@
 
 			<!-- 월배당 도구: 별도 페이지로 이동(링크). 탭과 구분되도록 버튼 형태로 표기 -->
 			<div class="flex flex-wrap items-center gap-2 text-sm">
-				<span class="text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.tools")}</span>
+				<span class="text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.tools")}</span>
 				<a href="/stock/admin?tab=monthly-reference" class="btn btn-sm btn-outline gap-1">
 					${MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")}
 					<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
@@ -88,6 +92,46 @@
 							avgValue = annualTotal,
 							latestValue = annualTotalLatest)
 					</div>
+					<%-- 이 달력의 예상 배당은 저장된 기준 데이터(스냅샷)로 계산된다. 스냅샷은 사람이 갱신해야 하고
+					     종목마다 시점이 달라 실제로 뒤처진다(실측 2026-08-22: 2026-07-20 ~ 2026-08-04, 최대 33 일 -
+					     그만큼 보유 수량이 옛 값이라 예상 월배당이 1.66% 낮게 잡혔다). 월배당 시뮬레이터에는 이미
+					     같은 표기가 있는데 이 화면과 대시보드 카드에만 없었다. --%>
+					!{
+						java.time.LocalDate calendarAsOfOldest = java.util.stream.Stream.of(midRows, endRows, otherRows)
+							.filter(java.util.Objects::nonNull).flatMap(java.util.List::stream)
+							.map(net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse::asOfDate)
+							.filter(java.util.Objects::nonNull).min(java.time.LocalDate::compareTo).orElse(null);
+						java.time.LocalDate calendarAsOfNewest = java.util.stream.Stream.of(midRows, endRows, otherRows)
+							.filter(java.util.Objects::nonNull).flatMap(java.util.List::stream)
+							.map(net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse::asOfDate)
+							.filter(java.util.Objects::nonNull).max(java.time.LocalDate::compareTo).orElse(null);
+					}
+					@if(calendarAsOfOldest != null)
+						<div class="text-xs text-base-content/60 mb-2">
+							${MessageUtil.getMessage("stock.simulator.monthly.summary.as.of.date")}
+							<span class="font-mono">${calendarAsOfOldest.toString()}${calendarAsOfNewest != null && !calendarAsOfNewest.equals(calendarAsOfOldest) ? " ~ " + calendarAsOfNewest.toString() : ""}</span>
+						</div>
+					@endif
+					<%-- 스냅샷 수량은 사람이 갱신한 시점의 값이라 원장과 어긋난다. 같은 안내가 요약 카드와
+					     월배당 시뮬레이터에는 있는데 이 달력에만 없어서, 같은 숫자가 화면에 따라 밝혀지기도
+					     하고 아무 말 없이 나가기도 했다(실측 2026-08-23: 8종목 중 7종목이 어긋나 46,124원 /
+					     1.66% 낮다). 문구·계산은 다른 두 화면과 같은 것을 쓴다. --%>
+					@if(calendarStaleQuantityCount > 0)
+						<div class="text-[11px] text-warning mb-2" data-calendar-stale-quantity="${calendarStaleQuantityCount}">
+							${java.text.MessageFormat.format(
+								MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
+								String.valueOf(calendarStaleQuantityCount),
+								StockFormatUtil.fullKrw(StockFormatUtil.displayWon(calendarCurrentQuantityTotal)))}
+						</div>
+					@endif
+					<%-- "평균" 기준은 최근 12건의 주당 배당을 평균한다(건수 기준이지 기간 기준이 아니다).
+					     상장이 얼마 안 된 종목은 이력이 12건에 못 미쳐 그만큼 짧은 평균이 되므로 그 사실을 밝힌다.
+					     실측 2026-08-23: 8종목 중 2종목이 10건(각 9개월 구간). --%>
+					@if(shortHistorySymbols != null && !shortHistorySymbols.isEmpty())
+						<div class="text-xs text-base-content/60 mb-2" data-short-history-count="${shortHistorySymbols.size()}">
+							${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.calendar.short.history"), String.join(", ", shortHistorySymbols))}
+						</div>
+					@endif
 					<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 						@template.stock.fragments.dividendCalendarGroup(title = midLabel, rows = midRows, subtotal = midTotal, subtotalLatest = midTotalLatest)
 						@template.stock.fragments.dividendCalendarGroup(title = endLabel, rows = endRows, subtotal = endTotal, subtotalLatest = endTotalLatest)

@@ -3,6 +3,7 @@
 @import net.luversof.web.gate.poe.dto.PoeModClass
 @import net.luversof.web.gate.poe.PoeText
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.util.CspNonceHolder
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -82,7 +83,7 @@
 			<div id="poeModBody">
 				@template.poe.htmx.modClass(mods = mods, eldritch = eldritch, anoints = anoints, essences = essences, bench = bench)
 			</div>
-			<script>
+			<script nonce="${CspNonceHolder.getNonce()}">
 				(function () {
 					var bar = document.querySelector("[data-mod-classchips]");
 					// htmx 는 본문만 교체하므로 활성 칩 하이라이트는 클릭 시 직접 옮긴다(전체 새로고침 땐 서버가 렌더)

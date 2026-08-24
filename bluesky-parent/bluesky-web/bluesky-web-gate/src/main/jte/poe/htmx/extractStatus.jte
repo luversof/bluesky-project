@@ -1,5 +1,6 @@
 @import java.util.List
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.util.CspNonceHolder
 
 @param boolean isAuthenticated = false
 @param boolean available = false
@@ -75,7 +76,7 @@
 @endfor</pre>
 				<%-- 폴링 스왑마다 pre 가 새로 생겨 스크롤이 최상단으로 리셋(사용자 지적) — tail 추적:
 				     기본은 맨 아래(새 라인)를 따라가고, 사용자가 위로 올려 읽는 중이면 그 위치를 유지, 다시 바닥 근처로 내리면 추적 재개 --%>
-				<script>
+				<script nonce="${CspNonceHolder.getNonce()}">
 					(function () {
 						var el = document.getElementById("poeExtractLog");
 						if (!el) return;

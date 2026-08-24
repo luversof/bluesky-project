@@ -42,6 +42,20 @@ type SelectionObject = {
 		return el.closest("form") as HTMLFormElement | null;
 	}
 
+	/**
+	 * 화면에 없는 선택지를 되살릴 때 끼워 넣을 자리.
+	 *
+	 * 맨 앞에 넣으면 '전체'(값이 빈 옵션) 보다 위에 놓여 목록 순서가 어색해진다
+	 * (실측: 매매 화면에서 고른 종목을 배당 화면에서 되살리면 "종목* | 전체 | ..." 가 됐다).
+	 * 빈 옵션이 있으면 그 다음, 없으면 맨 앞에 넣는다.
+	 */
+	function insertionAnchor(select: HTMLSelectElement): Node | null {
+		const options = Array.from(select.options);
+		const emptyIndex = options.findIndex((o) => !o.value);
+		if (emptyIndex < 0) return select.firstChild;
+		return options[emptyIndex + 1] || null;
+	}
+
 	function saveFromForm(form: HTMLFormElement | null): void {
 		try {
 			if (!form) return;
@@ -156,7 +170,7 @@ type SelectionObject = {
 							opt = document.createElement("option");
 							opt.value = sel.id;
 							opt.text = sel.text || sel.id;
-							acc.insertBefore(opt, acc.firstChild);
+							acc.insertBefore(opt, insertionAnchor(acc));
 							restored = true;
 						}
 						opt.selected = true;
@@ -169,7 +183,7 @@ type SelectionObject = {
 						opt = document.createElement("option");
 						opt.value = sel.id;
 						opt.text = sel.text || sel.id;
-						acc.insertBefore(opt, acc.firstChild);
+						acc.insertBefore(opt, insertionAnchor(acc));
 						restored = true;
 					}
 					acc.value = sel.id;
@@ -205,7 +219,7 @@ type SelectionObject = {
 							opt = document.createElement("option");
 							opt.value = sel.id;
 							opt.text = sel.text || sel.id;
-							stk.insertBefore(opt, stk.firstChild);
+							stk.insertBefore(opt, insertionAnchor(stk));
 							restored = true;
 						}
 						opt.selected = true;
@@ -218,7 +232,7 @@ type SelectionObject = {
 						opt = document.createElement("option");
 						opt.value = sel.id;
 						opt.text = sel.text || sel.id;
-						stk.insertBefore(opt, stk.firstChild);
+						stk.insertBefore(opt, insertionAnchor(stk));
 						restored = true;
 					}
 					stk.value = sel.id;
@@ -254,7 +268,7 @@ type SelectionObject = {
 							opt = document.createElement("option");
 							opt.value = sel.id;
 							opt.text = sel.text || sel.id;
-							tag.insertBefore(opt, tag.firstChild);
+							tag.insertBefore(opt, insertionAnchor(tag));
 							restored = true;
 						}
 						opt.selected = true;
@@ -267,7 +281,7 @@ type SelectionObject = {
 						opt = document.createElement("option");
 						opt.value = sel.id;
 						opt.text = sel.text || sel.id;
-						tag.insertBefore(opt, tag.firstChild);
+						tag.insertBefore(opt, insertionAnchor(tag));
 						restored = true;
 					}
 					tag.value = sel.id;
@@ -491,16 +505,18 @@ type SelectionObject = {
 					if (ev.detail) ev.detail.parameters = params;
 				}
 
-				// If the trigger element explicitly requests a reset (data-selection-reset="true")
-				// or its visible text is the localized '초기화', treat this as a reset action:
-				// clear stored selection and do not inject saved params.
+				// 초기화 버튼(data-selection-reset="true")이면 저장된 선택을 지우고 주입도 하지 않는다.
+				//
+				// 예전에는 버튼의 표시 텍스트가 '초기화' 인지도 함께 봤다(레거시). 그러면 화면 언어에 따라
+				// 동작이 달라진다 - 영어 화면의 'Reset' 은 걸리지 않는다. 실측으로 주식 화면의 저장/초기화
+				// 버튼 8 개가 모두 이 속성을 달고 있어(속성 없는 1 개는 상세 화면의 기간 조회 버튼으로
+				// 폼 제출도 초기화도 아니다) 텍스트 비교는 도달하지 않는 죽은 경로였다.
 				try {
 					if (triggerElt instanceof Element) {
-						const t = (triggerElt.textContent || "").trim();
 						const attrReset =
 							triggerElt.getAttribute &&
 							triggerElt.getAttribute("data-selection-reset");
-						if (attrReset === "true" || t === "초기화") {
+						if (attrReset === "true") {
 							try {
 								sessionStorage.removeItem(GLOBAL_KEY);
 							} catch (err) {
@@ -592,7 +608,7 @@ type SelectionObject = {
 							if (DEBUG)
 								console.debug(
 									"[selectionStorage] reset trigger detected - cleared stored selection and removed params",
-									{ text: t, attrReset },
+									{ attrReset },
 								);
 							return;
 						}
@@ -856,11 +872,11 @@ type SelectionObject = {
 				const form = e.target as HTMLFormElement | null;
 				if (!form) return;
 
-				// Decide whether this submit should persist selection. We persist only when
-				// the submitter (the button that triggered the submit) explicitly indicates
-				// save intent. This can be either a `data-selection-save="true"` attribute
-				// (recommended) or the visible text '조회' (legacy). Programmatic submits
-				// without a submitter will NOT persist unless we detect a primary htmx button.
+				// 이 제출이 선택을 저장해야 하는지 판단한다. 제출을 일으킨 버튼이 명시적으로
+				// data-selection-save="true" 를 달고 있을 때만 저장한다. 제출자 없는 프로그램적 제출은
+				// 저장하지 않는다.
+				//
+				// 예전에는 버튼 텍스트가 '조회' 인지도 봤는데, 화면 언어에 따라 동작이 갈린다.
 				const submitter = (e as any).submitter as Element | null;
 				let shouldSave = false;
 				if (submitter instanceof Element) {
@@ -868,8 +884,7 @@ type SelectionObject = {
 						const attrSave =
 							submitter.getAttribute &&
 							submitter.getAttribute("data-selection-save");
-						const txt = (submitter.textContent || "").trim();
-						if (attrSave === "true" || txt === "조회") shouldSave = true;
+						if (attrSave === "true") shouldSave = true;
 					} catch (err) {
 						/* ignore */
 					}
@@ -914,6 +929,11 @@ type SelectionObject = {
 								saveFromForm(form);
 							}
 							e.preventDefault();
+							// preventDefault 만으로는 폼의 기본 이동만 막힌다. 이 리스너는 document 캡처
+							// 단계라 아직 폼의 htmx 리스너가 남아 있어, 아래에서 버튼을 눌러 보내는 요청과
+							// 폼 자신의 htmx 요청이 둘 다 나간다(실측: 기간 버튼 1회 클릭에 200 응답 2건,
+							// 매매·활동·종목상세 3화면 모두 재현). 전파를 끊어 요청을 한 번만 보낸다.
+							e.stopPropagation();
 							try {
 								primary.click();
 							} catch (err) {

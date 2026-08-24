@@ -122,7 +122,8 @@ class StockBaseHtmxControllerTest {
               new BigDecimal("4519.75"),
               new BigDecimal("1004321"),
               new BigDecimal("-970200"),
-              new BigDecimal("34121")));
+              new BigDecimal("34121"),
+              null));
     }
 
     @Override
@@ -220,6 +221,18 @@ class StockBaseHtmxControllerTest {
     @Override
     public List<DividendResponse> findDividends(MultiValueMap<String, String> request) {
       return List.of();
+    }
+
+    @Override
+    public java.math.BigDecimal findDividendTotal(
+        org.springframework.util.MultiValueMap<String, String> request) {
+      return java.math.BigDecimal.ZERO;
+    }
+
+    @Override
+    public java.util.Map<java.util.UUID, java.math.BigDecimal> findDividendTotalByStockItem(
+        org.springframework.util.MultiValueMap<String, String> request) {
+      return java.util.Map.of();
     }
 
     @Override

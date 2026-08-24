@@ -6,16 +6,17 @@
 @import net.luversof.web.gate.stock.domain.TradeProfit
 @import net.luversof.web.gate.stock.dto.response.AssetStatusAccountHoldingView
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
-@param Map<String, TradeProfit> accountTotalMap
-@param Map<String, BigDecimal> accountProfitBasisMap
-@param Map<String, List<AssetStatusAccountHoldingView>> accountHoldingMap
+@param Map<java.util.UUID, TradeProfit> accountTotalMap
+@param Map<java.util.UUID, BigDecimal> accountProfitBasisMap
+@param java.util.Set<java.util.UUID> manualPrincipalAccountIds = java.util.Set.of()
+@param Map<java.util.UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap
 @param List<StockItem> stockItemList = java.util.List.of()
 @param List<TradeProfit> stockAggregated
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
-@param Map<String, java.util.UUID> holdingStockIdByName = java.util.Map.of()
-@param Map<String, java.util.UUID> accountIdByName = java.util.Map.of()
+@param java.time.LocalDate priceBasisDate = null
 
 !{
     String accountSectionTitle = MessageUtil.getMessage("stock.analytics.section.account.status");
@@ -68,10 +69,17 @@
 
     <!-- Section 1: 계좌별 현황 테이블 -->
     <div data-asset-status-account-section>
-        <h2 class="text-lg font-semibold mb-3 opacity-70">${accountSectionTitle}</h2>
+        <%-- "현재가"는 마지막으로 수집된 종가라, 오늘 시세가 없으면 며칠 전 값일 수 있다.
+             어느 날 기준인지 밝혀 사용자가 실시간 시세로 오해하지 않게 한다. --%>
+        <div class="flex flex-wrap items-baseline gap-2 mb-3">
+            <h2 class="text-lg font-semibold opacity-70">${accountSectionTitle}</h2>
+            @if(priceBasisDate != null)
+                <span class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())}</span>
+            @endif
+        </div>
         @if(accountTotalMap != null && !accountTotalMap.isEmpty())
             <div class="mb-3 flex flex-col gap-3">
-                <p class="text-xs text-base-content/50">${accountSelectionHelpLabel}</p>
+                <p class="text-xs text-base-content/60">${accountSelectionHelpLabel}</p>
                 <div class="selection-reveal"><div>
                 <div class="rounded-2xl border border-secondary/15 bg-secondary/5 px-4 py-3"
                      data-asset-status-account-selection-summary
@@ -120,6 +128,8 @@
         <style>
             .asset-status-account-row-selected > td {
                 background-color: color-mix(in oklch, var(--color-secondary) 10%, var(--color-base-100));
+                /* 좁은 화면에서 고정된 첫 칸도 같은 선택 색을 쓰도록 변수로 넘긴다. */
+                --sticky-first-bg: color-mix(in oklch, var(--color-secondary) 10%, var(--color-base-100));
             }
 
             .asset-status-account-row-selected > td:first-child {
@@ -196,7 +206,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                @for(Map.Entry<String, TradeProfit> entry : accountTotalMap.entrySet())
+                @for(Map.Entry<java.util.UUID, TradeProfit> entry : accountTotalMap.entrySet())
                     !{TradeProfit acc = entry.getValue();}
                     !{List<AssetStatusAccountHoldingView> holdings = accountHoldingMap != null && accountHoldingMap.get(entry.getKey()) != null ? accountHoldingMap.get(entry.getKey()) : List.of();}
                     !{BigDecimal buyAmount = acc.totalBuyCost() != null ? acc.totalBuyCost() : BigDecimal.ZERO;}
@@ -213,13 +223,15 @@
                     !{double rate = profitBasis.compareTo(BigDecimal.ZERO) > 0
                         ? principalReturnAmount.doubleValue() / profitBasis.doubleValue() * 100
                         : 0.0;}
-                    !{String detailRowId = "asset-status-account-detail-" + Math.abs((entry.getKey() != null ? entry.getKey() : "account").hashCode());}
+                    !{String detailRowId = "asset-status-account-detail-" + (entry.getKey() != null ? entry.getKey().toString() : "account");}
                     <tr
                         data-account-selectable-row
                         data-sortable-row
                         data-selected="false"
-                        aria-selected="false"
-                        data-account="${entry.getKey() != null ? entry.getKey() : ""}"
+                        tabindex="0"
+                        role="button"
+                        aria-pressed="false"
+                        data-account="${entry.getValue().accountName() != null ? entry.getValue().accountName() : ""}"
                         data-buy-amount="${buyAmount.toPlainString()}"
                         data-evaluation-amount="${evaluationAmount.toPlainString()}"
                         data-evaluation-profit="${evaluationProfitAmount.toPlainString()}"
@@ -228,7 +240,7 @@
                         data-weight="${accountWeightPct.toPlainString()}"
                         data-detail-row-id="${detailRowId}">
                         <td>
-                            <div class="font-semibold"><a href="/stock/account?accountId=${accountIdByName.get(entry.getKey()) != null ? accountIdByName.get(entry.getKey()).toString() : ""}" class="link link-hover">${entry.getKey()}</a></div>
+                            <div class="font-semibold"><a href="/stock/account?accountId=${entry.getKey() != null ? entry.getKey().toString() : ""}" class="link link-hover">${entry.getValue().accountName()}</a></div>
                             @if(holdings.isEmpty())
                                 <div class="text-xs opacity-50">${noHoldingsLabel}</div>
                             @else
@@ -245,25 +257,34 @@
                             @endif
                         </td>
                         <td class="text-right font-mono amount-value opacity-70">
-                            ${String.format("%,d", buyAmount.longValue())}
+                            ${String.format("%,d", StockFormatUtil.displayWon(buyAmount))}
                         </td>
                         <td class="text-right font-bold font-mono amount-value text-principal">
-                            ${String.format("%,d", evaluationAmount.longValue())}
+                            ${String.format("%,d", StockFormatUtil.displayWon(evaluationAmount))}
                         </td>
                         <td class="text-right">
                             <div class="font-bold font-mono amount-value ${evaluationProfitAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                ${String.format("%+,d", evaluationProfitAmount.longValue())}
+                                ${String.format("%+,d", StockFormatUtil.displayWon(evaluationProfitAmount))}
                             </div>
                             <div class="text-xs font-semibold ${evaluationProfitAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                 (${String.format("%+.1f%%", evaluationProfitRate)})
                             </div>
                         </td>
+                        <%-- 원금이 계좌 설정의 수동 입력값이면 그 사실을 드러낸다. 표시가 없으면 계산 원가와
+                             구분되지 않아, 그 설정이 사라져도 수익률만 조용히 달라진다. --%>
+                        !{boolean manualPrincipal = manualPrincipalAccountIds != null && manualPrincipalAccountIds.contains(entry.getKey());}
                         <td class="text-right font-mono hidden md:table-cell amount-value opacity-70">
-                            ${String.format("%,d", profitBasis.longValue())}
+                            ${String.format("%,d", StockFormatUtil.displayWon(profitBasis))}
+                            @if(manualPrincipal)
+                                <span class="badge badge-ghost badge-xs align-middle ml-1"
+                                      title="${MessageUtil.getMessage("stock.asset.status.label.manual.principal")}">
+                                    ${MessageUtil.getMessage("stock.asset.status.label.manual.principal")}
+                                </span>
+                            @endif
                         </td>
                         <td class="text-right ${principalReturnAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             <div class="font-bold font-mono amount-value">
-                                ${String.format("%+,d", principalReturnAmount.longValue())}
+                                ${String.format("%+,d", StockFormatUtil.displayWon(principalReturnAmount))}
                             </div>
                             <div class="text-xs font-semibold">
                                 (${String.format("%+.1f%%", rate)})
@@ -293,19 +314,19 @@
                                             <tbody>
                                                 @for(AssetStatusAccountHoldingView holding : holdings)
                                                     <tr>
-                                                        <td class="font-semibold"><a href="/stock/item?stockItemId=${holdingStockIdByName.get(holding.stockItemName()) != null ? holdingStockIdByName.get(holding.stockItemName()).toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></td>
+                                                        <td class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></td>
                                                         <td class="text-right font-mono hidden sm:table-cell amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
                                                         <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
-                                                        <td class="text-right font-mono hidden md:table-cell amount-value opacity-70">${String.format("%,d", holding.buyAmount() != null ? holding.buyAmount().longValue() : 0)}</td>
-                                                        <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", holding.currentPrice() != null ? holding.currentPrice().longValue() : 0)}</td>
-                                                        <td class="text-right font-mono amount-value text-principal">${String.format("%,d", holding.evaluationAmount() != null ? holding.evaluationAmount().longValue() : 0)}</td>
+                                                        <td class="text-right font-mono hidden md:table-cell amount-value opacity-70">${String.format("%,d", StockFormatUtil.displayWon(holding.buyAmount()))}</td>
+                                                        <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice()))}</td>
+                                                        <td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
                                                         <td class="text-right font-mono font-bold amount-value ${holding.evaluationProfit() != null && holding.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                                            ${String.format("%+,d", holding.evaluationProfit() != null ? holding.evaluationProfit().longValue() : 0)}
-                                                            <span class="text-xs opacity-70">(${String.format("%+.1f%%", holding.evaluationProfitRatePct() != null ? holding.evaluationProfitRatePct().doubleValue() : 0.0)})</span>
+                                                            ${String.format("%+,d", StockFormatUtil.displayWon(holding.evaluationProfit()))}
+                                                            <span class="text-xs">(${String.format("%+.1f%%", holding.evaluationProfitRatePct() != null ? holding.evaluationProfitRatePct().doubleValue() : 0.0)})</span>
                                                         </td>
                                                         <td class="text-right hidden xl:table-cell">
                                                             <div class="text-xs text-base-content/70">${accountWeightLabel} ${String.format("%.1f%%", holding.accountWeightPct() != null ? holding.accountWeightPct().doubleValue() : 0.0)}</div>
-                                                            <div class="text-xs text-base-content/50">${totalWeightLabel} ${String.format("%.1f%%", holding.totalWeightPct() != null ? holding.totalWeightPct().doubleValue() : 0.0)}</div>
+                                                            <div class="text-xs text-base-content/60">${totalWeightLabel} ${String.format("%.1f%%", holding.totalWeightPct() != null ? holding.totalWeightPct().doubleValue() : 0.0)}</div>
                                                         </td>
                                                     </tr>
                                                 @endfor
@@ -341,25 +362,25 @@
                     <tr>
                         <td>${totalLabel}</td>
                         <td class="text-right font-mono amount-value opacity-70">
-                            ${String.format("%,d", totalBuyAmount.longValue())}
+                            ${String.format("%,d", StockFormatUtil.displayWon(totalBuyAmount))}
                         </td>
                         <td class="text-right font-mono amount-value text-principal">
-                            ${String.format("%,d", totalAccountEvaluationAmount.longValue())}
+                            ${String.format("%,d", StockFormatUtil.displayWon(totalAccountEvaluationAmount))}
                         </td>
                         <td class="text-right ${totalAccountEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             <div class="font-bold font-mono amount-value">
-                                ${String.format("%+,d", totalAccountEvaluationProfit.longValue())}
+                                ${String.format("%+,d", StockFormatUtil.displayWon(totalAccountEvaluationProfit))}
                             </div>
                             <div class="text-xs font-semibold">
                                 (${String.format("%+.1f%%", totalEvaluationProfitRate)})
                             </div>
                         </td>
                         <td class="text-right font-mono hidden md:table-cell amount-value opacity-70">
-                            ${String.format("%,d", totalPrincipal.longValue())}
+                            ${String.format("%,d", StockFormatUtil.displayWon(totalPrincipal))}
                         </td>
                         <td class="text-right ${totalPrincipalReturnAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                             <div class="font-bold font-mono amount-value">
-                                ${String.format("%+,d", totalPrincipalReturnAmount.longValue())}
+                                ${String.format("%+,d", StockFormatUtil.displayWon(totalPrincipalReturnAmount))}
                             </div>
                             <div class="text-xs font-semibold">
                                 (${String.format("%+.1f%%", totalPrincipalReturnRate)})
@@ -377,7 +398,7 @@
         <h2 class="text-lg font-semibold mb-3 opacity-70">${stockSectionTitle} <span class="text-xs font-normal opacity-60">(${allAccountsLabel})</span></h2>
         @if(stockAggregated != null && !stockAggregated.isEmpty())
             <div class="mb-3 flex flex-col gap-3">
-                <p class="text-xs text-base-content/50">${stockSelectionHelpLabel}</p>
+                <p class="text-xs text-base-content/60">${stockSelectionHelpLabel}</p>
                 <div class="selection-reveal"><div>
                 <div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
                      data-asset-status-stock-selection-summary
@@ -421,6 +442,7 @@
 
             .asset-status-stock-row.asset-status-stock-row-selected > td {
                 background-color: color-mix(in oklch, var(--color-info) 10%, var(--color-base-100));
+                --sticky-first-bg: color-mix(in oklch, var(--color-info) 10%, var(--color-base-100));
             }
 
             .asset-status-stock-row.asset-status-stock-row-selected > td:first-child {
@@ -545,12 +567,12 @@
                                 <td class="font-semibold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
                                 <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
-                                <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", item.totalBuyCost() != null ? item.totalBuyCost().longValue() : 0)}</td>
-                                <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.currentPrice() != null ? item.currentPrice().longValue() : 0)}</td>
-                                <td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", item.evaluationAmount() != null ? item.evaluationAmount().longValue() : 0)}</td>
+                                <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", StockFormatUtil.displayWon(item.totalBuyCost()))}</td>
+                                <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(item.currentPrice()))}</td>
+                                <td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(item.evaluationAmount()))}</td>
                                 <td class="text-right font-mono font-bold ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-                                    <span class="amount-value">${String.format("%+,d", item.evaluationProfit() != null ? item.evaluationProfit().longValue() : 0)}</span>
-                                    <span class="text-xs opacity-70">(${String.format("%+.1f%%", evalProfitRate.doubleValue())})</span>
+                                    <span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(item.evaluationProfit()))}</span>
+                                    <span class="text-xs">(${String.format("%+.1f%%", evalProfitRate.doubleValue())})</span>
                                 </td>
                                 <td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", totalWeightPct.doubleValue())}</td>
                             </tr>
@@ -565,10 +587,10 @@
                         <td>${totalLabel}</td>
                         <td class="hidden lg:table-cell"></td>
                         <td class="hidden xl:table-cell"></td>
-                        <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", totalStockBuyAmount.longValue())}</td>
+                        <td class="text-right font-mono hidden sm:table-cell amount-value opacity-70">${String.format("%,d", StockFormatUtil.displayWon(totalStockBuyAmount))}</td>
                         <td class="hidden lg:table-cell"></td>
-                        <td class="text-right font-mono amount-value text-principal">${String.format("%,d", totalEvaluationAmount != null ? totalEvaluationAmount.longValue() : 0)}</td>
-                        <td class="text-right font-mono font-bold amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", totalEvaluationProfit != null ? totalEvaluationProfit.longValue() : 0)}</td>
+                        <td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(totalEvaluationAmount))}</td>
+                        <td class="text-right font-mono font-bold amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", StockFormatUtil.displayWon(totalEvaluationProfit))}</td>
                         <td class="text-right font-mono text-base-content/70">${totalEvaluationAmount != null && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0 ? "100.0%" : "0.0%"}</td>
                     </tr>
                 </tfoot>
@@ -812,7 +834,7 @@
 
         row.classList.toggle('asset-status-account-row-selected', selected);
         row.dataset.selected = selected ? 'true' : 'false';
-        row.setAttribute('aria-selected', selected ? 'true' : 'false');
+        row.setAttribute('aria-pressed', selected ? 'true' : 'false');
 
         var checkbox = row.querySelector('[data-account-selection-toggle]');
         if (checkbox) {
@@ -1101,6 +1123,23 @@
                         return;
                     }
 
+                    var isSelected = this.dataset.selected === 'true';
+                    setAssetStatusAccountRowSelection(this, !isSelected);
+                    updateAssetStatusAccountSelectionSummary(section);
+                });
+
+                // 같은 화면의 종목 표는 Enter/Space 로 선택되는데 계좌 표는 클릭 전용이었다
+                // (실측: 계좌 행은 focus() 조차 걸리지 않아 키보드로는 선택 자체가 불가능).
+                row.addEventListener('keydown', function(event) {
+                    if (event.target && event.target.closest('button, a, input, label, select, textarea')) {
+                        return;
+                    }
+
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                    }
+
+                    event.preventDefault();
                     var isSelected = this.dataset.selected === 'true';
                     setAssetStatusAccountRowSelection(this, !isSelected);
                     updateAssetStatusAccountSelectionSummary(section);

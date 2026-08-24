@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
@@ -14,6 +15,7 @@
 @import java.time.format.DateTimeFormatter
 @import java.time.LocalDate
 @import java.time.Instant
+@import net.luversof.web.gate.stock.util.RealizedBasisGap
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -24,9 +26,11 @@
 @param Account account = null
 @param int holdingCount = 0
 @param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
+@param java.time.LocalDate priceBasisDate = null
 @param BigDecimal totalBuyCost = java.math.BigDecimal.ZERO
 @param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
+@param BigDecimal realizedProfitOwnBasis = java.math.BigDecimal.ZERO
 @param BigDecimal totalDividend = java.math.BigDecimal.ZERO
 @param List<TradeProfit> holdings = java.util.List.of()
 @param List<TradeResponse> trades = java.util.List.of()
@@ -42,7 +46,9 @@
 @param String filterRangeMode = null
 
 !{
-    ZoneId zone = ZoneId.systemDefault();
+    // 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
+    // 예전에는 서버 존이라 브라우저 존이 다르면 한 화면 안에서 하루가 어긋났다.
+    ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(filterTimeZone);
     String evalColor = evaluationProfit != null && evaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
     String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
     BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
@@ -95,36 +101,49 @@
 						timeZone = filterTimeZone,
 						rangeMode = filterRangeMode)
 
+					<%-- "현재가"·평가액은 마지막으로 수집된 종가 기준이라, 오늘 시세가 아직 없으면 며칠 전 값일 수 있다.
+					     어느 날 기준인지 밝혀 실시간 시세로 오해하지 않게 한다(자산현황·포트폴리오와 같은 표기). --%>
+					@if(priceBasisDate != null)
+						<p class="mb-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())}</p>
+					@endif
 					<!-- 보유/손익 요약 -->
 					<div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.profit.evaluation.amount"),
-							value = String.format("%,d", evaluationAmount != null ? evaluationAmount.longValue() : 0),
-							valueTitle = String.format("%,d원", evaluationAmount != null ? evaluationAmount.longValue() : 0),
+							value = String.format("%,d", StockFormatUtil.displayWon(evaluationAmount)),
+							valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(evaluationAmount)),
 							tone = "text-principal")
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.item.detail.principal"),
-							value = String.format("%,d", totalBuyCost != null ? totalBuyCost.longValue() : 0),
-							valueTitle = String.format("%,d원", totalBuyCost != null ? totalBuyCost.longValue() : 0))
+							value = String.format("%,d", StockFormatUtil.displayWon(totalBuyCost)),
+							valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalBuyCost)))
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.account.detail.holding.count"),
 							value = String.valueOf(holdingCount),
 							amount = false)
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.profit.unrealized"),
-							value = String.format("%+,d", evaluationProfit != null ? evaluationProfit.longValue() : 0),
-							valueTitle = String.format("%,d원", evaluationProfit != null ? evaluationProfit.longValue() : 0),
+							value = String.format("%+,d", StockFormatUtil.displayWon(evaluationProfit)),
+							valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(evaluationProfit)),
 							sub = String.format("%+.1f%%", evalProfitRatePct),
 							tone = evalColor)
+						<%-- 기록된 실현손익은 계좌를 합친 원가를 따르므로 이 계좌의 매매와 크게 다를 수 있다
+						     (실측 2026-08-23: 연금저축1 415,053 vs 2,063,739, ISA 1,555,597 vs 14,921).
+						     매매 화면의 계좌별 표와 같은 규칙(RealizedBasisGap)·같은 문구를 쓴다. --%>
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.profit.realized"),
-							value = String.format("%+,d", realizedProfit != null ? realizedProfit.longValue() : 0),
-							valueTitle = String.format("%,d원", realizedProfit != null ? realizedProfit.longValue() : 0),
+							value = String.format("%+,d", StockFormatUtil.displayWon(realizedProfit)),
+							valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(realizedProfit)),
+							sub = RealizedBasisGap.isNotable(realizedProfit, realizedProfitOwnBasis)
+								? java.text.MessageFormat.format(
+									MessageUtil.getMessage("stock.trade.realized.basis.gap"),
+									String.format("%+,d", StockFormatUtil.displayWon(realizedProfitOwnBasis)))
+								: "",
 							tone = realizedColor)
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.summary.label.cumulative.dividend"),
-							value = String.format("%,d", totalDividend != null ? totalDividend.longValue() : 0),
-							valueTitle = String.format("%,d원", totalDividend != null ? totalDividend.longValue() : 0),
+							value = String.format("%,d", StockFormatUtil.displayWon(totalDividend)),
+							valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalDividend)),
 							tone = "text-dividend")
 					</div>
 
@@ -135,7 +154,7 @@
 							<div class="bg-base-100 rounded-box border border-base-200 p-4">
 								<div class="h-64"><canvas id="accountDetailChart" class="amount-chart"></canvas></div>
 							</div>
-							<p class="text-xs text-base-content/40 mt-1">${MessageUtil.getMessage("stock.account.detail.chart.click.hint")}</p>
+							<p class="text-xs text-base-content/60 mt-1">${MessageUtil.getMessage("stock.account.detail.chart.click.hint")}</p>
 						</div>
 						<div id="holdings-snapshot-container"></div>
 						<script nonce="${CspNonceHolder.getNonce()}">
@@ -186,7 +205,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.holdings")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<div class="max-lg:overflow-x-auto">
+								<div class="overflow-x-auto">
 								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
@@ -200,16 +219,16 @@
 									</thead>
 									<tbody>
 										@for(TradeProfit holding : holdings)
-											!{long evalProfit = holding.evaluationProfitNet() != null ? holding.evaluationProfitNet().longValue() : 0;}
+											!{long evalProfit = holding.evaluationProfit() != null ? holding.evaluationProfit().longValue() : 0;}
 											!{double holdingWeightPct = evaluationAmount != null && evaluationAmount.signum() != 0 && holding.evaluationAmount() != null ? holding.evaluationAmount().doubleValue() / evaluationAmount.doubleValue() * 100 : 0.0;}
-											!{BigDecimal holdingCostBasis = (holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO).subtract(holding.evaluationProfitNet() != null ? holding.evaluationProfitNet() : BigDecimal.ZERO);}
-											!{double holdingEvalRatePct = holdingCostBasis.signum() != 0 && holding.evaluationProfitNet() != null ? holding.evaluationProfitNet().doubleValue() / holdingCostBasis.doubleValue() * 100.0 : 0.0;}
+											!{BigDecimal holdingCostBasis = (holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO).subtract(holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO);}
+											!{double holdingEvalRatePct = holdingCostBasis.signum() != 0 && holding.evaluationProfit() != null ? holding.evaluationProfit().doubleValue() / holdingCostBasis.doubleValue() * 100.0 : 0.0;}
 											<tr>
 												<td class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></td>
 												<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
 												<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
-												<td class="text-right font-mono amount-value">${String.format("%,d", holding.evaluationAmount() != null ? holding.evaluationAmount().longValue() : 0)}</td>
-												<td class="text-right font-mono amount-value ${evalProfit >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", evalProfit)} <span class="text-xs opacity-70">(${String.format("%+.1f%%", holdingEvalRatePct)})</span></td>
+												<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
+												<td class="text-right font-mono amount-value ${evalProfit >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", evalProfit)} <span class="text-xs">(${String.format("%+.1f%%", holdingEvalRatePct)})</span></td>
 													<td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", holdingWeightPct)}</td>
 											</tr>
 										@endfor
@@ -227,7 +246,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.trades")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<div class="max-lg:overflow-x-auto">
+								<div class="overflow-x-auto">
 								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
@@ -248,8 +267,8 @@
 												<td class="font-semibold"><a href="/stock/item?stockItemId=${trade.stockItemId() != null ? trade.stockItemId().toString() : ""}" class="link link-hover">${tName}</a></td>
 												<td><span class="badge badge-sm ${isBuy ? "badge-error badge-outline" : "badge-info badge-outline"}">${isBuy ? MessageUtil.getMessage("stock.trade.label.buy") : MessageUtil.getMessage("stock.trade.label.sell")}</span></td>
 												<td class="text-right font-mono amount-value">${String.format("%,d", trade.quantity())}</td>
-												<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", trade.price() != null ? trade.price().longValue() : 0)}</td>
-												<td class="text-right font-mono amount-value">${String.format("%,d", trade.amount() != null ? trade.amount().longValue() : 0)}</td>
+												<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", StockFormatUtil.displayWon(trade.price()))}</td>
+												<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(trade.amount()))}</td>
 											</tr>
 										@endfor
 									</tbody>
@@ -266,7 +285,7 @@
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.dividends")}</div>
 						@else
 							@template._components.ui.tableCard(body = @`
-								<div class="max-lg:overflow-x-auto">
+								<div class="overflow-x-auto">
 								<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable>
 									<thead class="bg-base-200">
 										<tr>
@@ -283,9 +302,9 @@
 											<tr>
 												<td class="tabular-nums">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
 												<td class="font-semibold"><a href="/stock/item?stockItemId=${dividend.stockItemId() != null ? dividend.stockItemId().toString() : ""}" class="link link-hover">${dName}</a></td>
-												<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", dividend.grossAmount() != null ? dividend.grossAmount().longValue() : 0)}</td>
-												<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60">${String.format("%,d", dividend.tax() != null ? dividend.tax().longValue() : 0)}</td>
-												<td class="text-right font-mono font-bold amount-value text-dividend">${String.format("%,d", dividend.netAmount() != null ? dividend.netAmount().longValue() : 0)}</td>
+												<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
+												<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60">${String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
+												<td class="text-right font-mono font-bold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>
 											</tr>
 										@endfor
 									</tbody>

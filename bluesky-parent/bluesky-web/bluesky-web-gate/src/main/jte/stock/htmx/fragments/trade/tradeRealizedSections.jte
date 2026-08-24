@@ -5,6 +5,8 @@
 @import net.luversof.web.gate.stock.domain.TradeProfit
 @import net.luversof.web.gate.stock.controller.StockTradeHtmxController.AccountRealizedRow
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.RealizedBasisGap
 
 @param List<AccountRealizedRow> accountRealizedList
 @param List<TradeProfit> stockRealizedList
@@ -18,7 +20,12 @@
 !{
     String byAccountSectionLabel = MessageUtil.getMessage("stock.realized.section.by.account");
     String byStockSectionLabel = MessageUtil.getMessage("stock.realized.section.by.stock");
-    String buyAmountLabel = MessageUtil.getMessage("stock.trade.label.buy.amount");
+    // 이 절의 다른 숫자는 전부 '판 것' 기준인데 매수금액만 '산 것 전체' 기준이었다. 그래서 두 표의
+    // 매수금액 합이 서로 달랐다(실측 2026-08-24: 계좌별 1,779,858,067 vs 종목별 1,658,970,083,
+    // 차이 120,887,984 = 6.79%. 같은 종목을 한 계좌에서만 팔고 다른 계좌에선 들고 있으면 어떤
+    // 필터로도 두 값을 맞출 수 없다). 옆 칸 수익률의 실제 분모인 매도원가로 바꿔 절 전체가 한 기준을
+    // 쓰게 한다 - 매도금액·실현손익·거래세는 이미 두 표가 정확히 일치한다.
+    String soldCostLabel = MessageUtil.getMessage("stock.realized.column.sold.cost");
     String sellAmountLabel = MessageUtil.getMessage("stock.profit.sell.amount");
     String returnRateLabel = MessageUtil.getMessage("stock.label.return.rate");
     String winCountBadgeLabel = java.text.MessageFormat.format(
@@ -46,8 +53,8 @@
             </div>
             <div class="mt-3 grid gap-3 sm:grid-cols-4">
                 <div class="rounded-box bg-base-100/80 px-3 py-2">
-                    <div class="text-xs text-base-content/60">${buyAmountLabel}</div>
-                    <div class="mt-1 font-mono font-semibold amount-value" data-trade-realized-sel-buy>0</div>
+                    <div class="text-xs text-base-content/60">${soldCostLabel}</div>
+                    <div class="mt-1 font-mono font-semibold amount-value" data-trade-realized-sel-sold-cost>0</div>
                 </div>
                 <div class="rounded-box bg-base-100/80 px-3 py-2">
                     <div class="text-xs text-base-content/60">${sellAmountLabel}</div>
@@ -69,7 +76,7 @@
                 <thead class="bg-base-200">
                     <tr>
                         <th scope="col">${accountLabel}</th>
-                        <th scope="col" class="text-right">${buyAmountLabel}</th>
+                        <th scope="col" class="text-right">${soldCostLabel}</th>
                         <th scope="col" class="text-right">${sellAmountLabel}</th>
                         <th scope="col" class="text-right">${realizedProfitLabel}</th>
                         <th scope="col" class="text-right">${returnRateLabel}</th>
@@ -87,15 +94,26 @@
                         tabindex="0"
                         role="button"
                         aria-pressed="false"
-                        data-buy="${(row.buyAmount() != null ? row.buyAmount() : BigDecimal.ZERO).toPlainString()}"
                         data-sell="${(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO).toPlainString()}"
                         data-net="${rowNet.toPlainString()}"
                         data-sold-cost="${rowSoldCost.toPlainString()}">
                         <td class="font-semibold whitespace-nowrap">@if(row.accountId() != null)<a href="/stock/account?accountId=${row.accountId().toString()}" class="link link-hover">${row.name()}</a>@else${row.name()}@endif</td>
-                        <td class="text-right font-mono amount-value">${decimalFormat.format(row.buyAmount() != null ? row.buyAmount() : BigDecimal.ZERO)}</td>
+                        <td class="text-right font-mono amount-value">${decimalFormat.format(rowSoldCost)}</td>
                         <td class="text-right font-mono amount-value">${decimalFormat.format(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO)}</td>
                         <td class="text-right font-bold font-mono amount-value ${rowPositive ? "text-profit" : "text-loss"}">
-                            ${String.format("%+,d", rowNet.longValue())}
+                            ${String.format("%+,d", StockFormatUtil.displayWon(rowNet))}
+                            <%-- 기록된 실현손익은 계좌를 합친 원가를 따른다(실측 2026-08-23: 매도 54건 중
+                                 종목 단위 원가로 50건이 재현되고 계좌x종목 단위로는 38건뿐). 그래서 이 값은
+                                 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 415,053 vs 2,063,739,
+                                 ISA 1,555,597 vs 14,921. 크게 갈릴 때만 밝힌다(작은 차이까지 적으면 소음). --%>
+                            !{BigDecimal rowOwn = row.realizedOwnBasis() != null ? row.realizedOwnBasis() : BigDecimal.ZERO;}
+                            !{BigDecimal rowBasisGap = RealizedBasisGap.amount(rowNet, rowOwn);}
+                            @if(RealizedBasisGap.isNotable(rowNet, rowOwn))
+                                <span class="block text-[10px] font-normal text-base-content/60" data-realized-basis-gap="${StockFormatUtil.displayWon(rowBasisGap)}"
+                                      title="${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}">
+                                    ${java.text.MessageFormat.format(MessageUtil.getMessage("stock.trade.realized.basis.gap"), String.format("%+,d", StockFormatUtil.displayWon(rowOwn)))}
+                                </span>
+                            @endif
                         </td>
                         @if(rowHasRate)
                         <td class="text-right font-mono font-semibold ${rowRate >= 0 ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", rowRate)}</td>
@@ -131,8 +149,8 @@
             </div>
             <div class="mt-3 grid gap-3 sm:grid-cols-4">
                 <div class="rounded-box bg-base-100/80 px-3 py-2">
-                    <div class="text-xs text-base-content/60">${buyAmountLabel}</div>
-                    <div class="mt-1 font-mono font-semibold amount-value" data-trade-realized-sel-buy>0</div>
+                    <div class="text-xs text-base-content/60">${soldCostLabel}</div>
+                    <div class="mt-1 font-mono font-semibold amount-value" data-trade-realized-sel-sold-cost>0</div>
                 </div>
                 <div class="rounded-box bg-base-100/80 px-3 py-2">
                     <div class="text-xs text-base-content/60">${sellAmountLabel}</div>
@@ -154,7 +172,7 @@
                 <thead class="bg-base-200">
                     <tr>
                         <th scope="col">${stockLabel}</th>
-                        <th scope="col" class="text-right">${buyAmountLabel}</th>
+                        <th scope="col" class="text-right">${soldCostLabel}</th>
                         <th scope="col" class="text-right">${sellAmountLabel}</th>
                         <th scope="col" class="text-right">${realizedProfitLabel}</th>
                         <th scope="col" class="text-right">${returnRateLabel}</th>
@@ -162,8 +180,13 @@
                 </thead>
                 <tbody>
                 @for(TradeProfit item : stockRealizedList)
-                    !{BigDecimal itemNet = item.realizedProfitNet() != null ? item.realizedProfitNet() : BigDecimal.ZERO;}
-                    !{BigDecimal itemSoldCost = item.totalSellProceeds() != null ? item.totalSellProceeds().subtract(itemNet) : BigDecimal.ZERO;}
+                    <%-- 실현손익은 거래에 기록된 값(증권사 기준)으로 통일한다. 계좌별 표·헤드라인·거래목록과 같은 기준이라야 합이 맞는다. --%>
+                    !{BigDecimal itemNet = item.realizedProfit() != null ? item.realizedProfit() : BigDecimal.ZERO;}
+                    <%-- 매도 원가 = 매도금액 - 증권거래세 - 기록된 실현손익. 기록된 실현손익은 증권사가 세금까지
+                         뺀 뒤의 값이라 세금을 빼지 않으면 원가가 부풀고, 아래 선택 합계의 수익률(net/soldCost)도
+                         그만큼 낮게 나온다. 계좌별 표와 같은 식을 쓴다. --%>
+                    !{BigDecimal itemSellTax = item.totalSellTax() != null ? item.totalSellTax() : BigDecimal.ZERO;}
+                    !{BigDecimal itemSoldCost = item.totalSellAmount() != null ? item.totalSellAmount().subtract(itemSellTax).subtract(itemNet) : BigDecimal.ZERO;}
                     !{boolean itemHasRate = itemSoldCost.compareTo(BigDecimal.ZERO) > 0;}
                     !{double itemRate = itemHasRate ? itemNet.doubleValue() / itemSoldCost.doubleValue() * 100 : 0.0;}
                     !{boolean itemPositive = itemNet.compareTo(BigDecimal.ZERO) >= 0;}
@@ -172,15 +195,14 @@
                         tabindex="0"
                         role="button"
                         aria-pressed="false"
-                        data-buy="${(item.totalBuyAmount() != null ? item.totalBuyAmount() : BigDecimal.ZERO).toPlainString()}"
                         data-sell="${(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO).toPlainString()}"
                         data-net="${itemNet.toPlainString()}"
                         data-sold-cost="${itemSoldCost.toPlainString()}">
                         <td class="font-semibold whitespace-nowrap"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></td>
-                        <td class="text-right font-mono amount-value">${decimalFormat.format(item.totalBuyAmount() != null ? item.totalBuyAmount() : BigDecimal.ZERO)}</td>
+                        <td class="text-right font-mono amount-value">${decimalFormat.format(itemSoldCost)}</td>
                         <td class="text-right font-mono amount-value">${decimalFormat.format(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO)}</td>
                         <td class="text-right font-bold font-mono amount-value ${itemPositive ? "text-profit" : "text-loss"}">
-                            ${String.format("%+,d", itemNet.longValue())}
+                            ${String.format("%+,d", StockFormatUtil.displayWon(itemNet))}
                         </td>
                         @if(itemHasRate)
                         <td class="text-right font-mono font-semibold ${itemRate >= 0 ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", itemRate)}</td>
@@ -226,16 +248,15 @@
                     var reveal = summary.closest('.selection-reveal');
                     if (reveal) reveal.classList.toggle('is-open', selected.length > 0);
                     if (selected.length === 0) return;
-                    var buy = 0, sell = 0, net = 0, soldCost = 0;
+                    var sell = 0, net = 0, soldCost = 0;
                     for (var i = 0; i < selected.length; i++) {
-                        buy += Number(selected[i].dataset.buy || '0');
                         sell += Number(selected[i].dataset.sell || '0');
                         net += Number(selected[i].dataset.net || '0');
                         soldCost += Number(selected[i].dataset.soldCost || '0');
                     }
                     var countEl = summary.querySelector('[data-trade-realized-selection-count]');
                     if (countEl) countEl.textContent = (summary.dataset.countTemplate || '{0}').replace('{0}', selected.length);
-                    putAmount('[data-trade-realized-sel-buy]', buy, false);
+                    putAmount('[data-trade-realized-sel-sold-cost]', soldCost, false);
                     putAmount('[data-trade-realized-sel-sell]', sell, false);
                     putAmount('[data-trade-realized-sel-net]', net, true);
                     var rateEl = summary.querySelector('[data-trade-realized-sel-rate]');

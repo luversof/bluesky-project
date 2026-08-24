@@ -111,6 +111,11 @@
 							<sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
 							<contentType>Html</contentType>
 							<binaryStaticContent>true</binaryStaticContent>
+							<!-- 제어 구조가 만들던 들여쓰기 공백을 출력에서 뺀다.
+							     실측: 렌더 HTML 이 프래그먼트별 4~36% 감소(캘린더 339KB->217KB),
+							     보이는 글자와 태그열은 12/12 동일.
+							     localdev(런타임 컴파일)는 JteTrimConfig 가 같은 값을 준다 - 둘을 함께 유지할 것. -->
+							<trimControlStructures>true</trimControlStructures>
 							<targetResourceDirectory>
 								${project.build.directory}/generated-sources/jte</targetResourceDirectory>
 						</configuration>

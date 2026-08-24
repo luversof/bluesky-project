@@ -11,6 +11,20 @@ interface GlobalDateRange {
 	timezone?: string;
 }
 
+// 날짜(YYYY-MM-DD) -> 서버에 보낼 instant. 규칙은 date-range-picker.ts 에 한 벌만 둔다
+// (종료일은 다음 날 00:00 = 배타적 경계). 예전에는 이 파일 안에 두 벌이 복사돼 있었고 정본과도
+// 셋이 서로 달랐다 - 실측으로 "2026-08-" 은 두 사본에서 조용히 2026-07-31 이 됐고,
+// "2026-08-23T00:00:00" 은 사본에서만 예외를 던졌다.
+// 레이아웃(stockLayout.jte)이 date-range-picker.js 를 이 파일보다 먼저 동기 로드한다.
+function localToIso(ds: string, addDays?: number): string {
+	const shared = (globalThis as any).__dateRangePickerInternals;
+	if (!shared || typeof shared.localDateToInstantIso !== "function") {
+		// 규칙을 여기서 다시 구현하지 않는다. 날짜를 지어내느니 기간 없음으로 두는 쪽이 안전하다.
+		return "";
+	}
+	return shared.localDateToInstantIso(ds, addDays);
+}
+
 function input(id: string): HTMLInputElement | null {
 	return document.getElementById(id) as HTMLInputElement | null;
 }
@@ -37,14 +51,6 @@ function readGlobalRangeRaw(): string | null {
 		const raw = readGlobalRangeRaw();
 		if (raw) {
 			const obj: GlobalDateRange = JSON.parse(raw);
-			const localToIso = (ds: string, addDays?: number): string => {
-				if (!ds) return "";
-				const parts = ds.split("-");
-				const y = Number(parts[0]);
-				const m = Number(parts[1]) - 1;
-				const d = Number(parts[2]) + (addDays || 0);
-				return new Date(y, m, d, 0, 0, 0, 0).toISOString();
-			};
 			const gStart = input("globalStartInstantInput");
 			const gEnd = input("globalEndInstantInput");
 			const gTz = input("globalTimeZoneInput");
@@ -60,16 +66,6 @@ function readGlobalRangeRaw(): string | null {
 // 2) globalDateRange:changed 이벤트를 받아 폼/프래그먼트로 전파
 (function () {
 	try {
-		const localToIso = (ds: string, addDays?: number): string => {
-			if (!ds) return "";
-			const parts = ds.split("-");
-			const y = Number(parts[0]);
-			const m = Number(parts[1]) - 1;
-			const d = Number(parts[2]) + (addDays || 0);
-			const dt = new Date(y, m, d, 0, 0, 0, 0);
-			return isNaN(dt.getTime()) ? "" : dt.toISOString();
-		};
-
 		function applyGlobalDate(obj: GlobalDateRange) {
 			try {
 				const gStart = input("globalStartInstantInput");

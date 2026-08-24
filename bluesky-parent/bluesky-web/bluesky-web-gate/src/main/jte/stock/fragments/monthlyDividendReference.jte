@@ -132,7 +132,7 @@
 			<div class="space-y-2">
 				<h3 class="text-lg font-semibold">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.title")}</h3>
 				<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.desc")}</p>
-				<p class="text-xs leading-5 text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.selection.desc")}</p>
+				<p class="text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.selection.desc")}</p>
 			</div>
 			<a href="${monthlyDividendSimulatorUrl}" class="btn btn-outline btn-sm">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 		</div>
@@ -140,28 +140,30 @@
 
 	<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-			<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.payout.count")}</p>
+			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.payout.count")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">${amountFormat.format(payoutCount)}</p>
 			<p class="mt-2 text-sm text-base-content/60">${selectedMonthlyDividendSymbol}</p>
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-			<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.latest.dividend")}</p>
+			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.latest.dividend")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">₩${amountFormat.format(latestDividend)}</p>
 			<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.per.share")}</p>
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-			<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.dividend")}</p>
+			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.dividend")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">₩${amountFormat.format(averageDividend)}</p>
 			<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.last.year")}</p>
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-			<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.taxable.ratio")}</p>
+			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.taxable.ratio")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">${percentFormat.format(averageTaxableRatio)}%</p>
 			<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.last.year")}</p>
 		</div>
 	</div>
 
-	<div class="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]">
+	<%-- 모바일 단일 컬럼도 minmax(0,1fr) 로 못 박는다. 암시적 트랙은 auto 라
+	     내용의 min-content 만큼 벌어져 화면 밖으로 나간다(실측: 320px 에서 227px). --%>
+	<div class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]">
 		<div class="space-y-6">
 			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<div class="space-y-2">
@@ -189,7 +191,7 @@
 									@endif
 								@endfor
 							</select>
-							<p class="mt-2 text-xs leading-5 text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.symbol.desc")}</p>
+							<p class="mt-2 text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.symbol.desc")}</p>
 						</label>
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.source.url")}</span></div>
@@ -255,7 +257,7 @@
 						@else
 							<div class="mt-4 rounded-box border border-base-300 bg-base-100 px-4 py-3 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.empty")}</div>
 						@endif
-						<div class="divider my-4 text-xs text-base-content/40">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.title")}</div>
+						<div class="divider my-4 text-xs text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.title")}</div>
 						<div class="space-y-2">
 							<h3 class="text-sm font-semibold text-base-content">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.title")}</h3>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.desc")}</p>
@@ -267,7 +269,7 @@
 								<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
 								<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content">${payoutSymbolLabel}</div>
-								<p class="mt-2 text-xs leading-5 text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
+								<p class="mt-2 text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
 							</label>
 							<label class="form-control">
 								<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.bulk.input")}</span></div>
@@ -276,7 +278,7 @@
 							<button type="submit" class="btn btn-primary w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.submit")}</button>
 						</form>
 					</div>
-					<div class="divider my-0 text-xs text-base-content/40">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.manual.title")}</div>
+					<div class="divider my-0 text-xs text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.manual.title")}</div>
 					<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.manual.desc")}</p>
 					<form method="post" action="/stock/dividend/monthly-reference/payout" class="grid gap-4">
 						<input type="hidden" name="profileSort" value="${profileSortValue}" />
@@ -285,7 +287,7 @@
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input type="hidden" name="symbol" value="${payoutSymbolValue}" />
 							<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content">${payoutSymbolLabel}</div>
-							<p class="mt-2 text-xs leading-5 text-base-content/50">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
+							<p class="mt-2 text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
 						</label>
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.record.date")}</span></div>
@@ -327,7 +329,7 @@
 					<div class="space-y-2">
 						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.title")}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.desc")}</p>
-						<p class="text-xs leading-5 text-base-content/50">${profileReorderEnabled ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.enabled") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.disabled")}</p>
+						<p class="text-xs leading-5 text-base-content/60">${profileReorderEnabled ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.enabled") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.disabled")}</p>
 					</div>
 					<div class="rounded-2xl border border-base-300 bg-base-50/70 p-4">
 						<div class="space-y-1">
@@ -413,14 +415,14 @@
 											<td>
 												<div class="flex items-center gap-2">
 													@if(profileReorderEnabled)
-														<span class="font-mono text-xs text-base-content/40 select-none" data-profile-order-handle>::</span>
+														<span class="font-mono text-xs text-base-content/60 select-none" data-profile-order-handle>::</span>
 													@endif
 													<span data-profile-order-value>${row.displayOrder() != null ? String.valueOf(row.displayOrder()) : "-"}</span>
 												</div>
 											</td>
 											<td>
 												<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
-												<div class="text-xs text-base-content/50">${row.stockItemName()}</div>
+												<div class="text-xs text-base-content/60">${row.stockItemName()}</div>
 												<div class="mt-2 flex flex-wrap gap-2">
 													<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
 													<a href="/stock/simulator?tab=monthly-dividend&symbol=${row.stockItemSymbol()}&sort=display-order&direction=asc" class="btn btn-xs btn-primary">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>

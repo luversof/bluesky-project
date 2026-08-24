@@ -37,6 +37,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import io.github.luversof.boot.context.support.MessageUtil;
+import io.github.luversof.boot.exception.BlueskyErrorMessage;
+import io.github.luversof.boot.exception.BlueskyException;
+import io.github.luversof.boot.exception.ErrorMessage;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
@@ -70,6 +73,8 @@ import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
 import net.luversof.web.gate.stock.service.MonthlyDividendViewSupport;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutSourceImportService;
+import net.luversof.web.gate.stock.util.StockFormatUtil;
+import net.luversof.web.gate.stock.util.StockOwnershipUtil;
 
 @Controller
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
@@ -85,6 +90,16 @@ public class StockViewController {
   private AccountClient accountClient;
 
   private MonthlyDividendPayoutClient monthlyDividendPayoutClient;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  private net.luversof.web.gate.stock.httpexchange.DataStatusClient dataStatusClient;
+
+  @Autowired
+  private net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient ledgerIntegrityClient;
+
+  /** 상세 화면의 서로 독립적인 api-stock 조회를 동시에 던지기 위한 실행기. */
+  @org.springframework.beans.factory.annotation.Autowired
+  private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
 
   private MonthlyDividendProfileClient monthlyDividendProfileClient;
 
@@ -324,27 +339,102 @@ public class StockViewController {
     model.addAttribute(
         "annualTotal", sumExpectedMonthlyDividend(rows).multiply(BigDecimal.valueOf(12)));
     // 최근 배당금(직전 1회) 기준 합계도 병행 제공: latestMonthlyDividendPerShare × 보유수량
+    // 달력의 합계도 스냅샷 수량으로 계산된다. 요약 카드와 월배당 시뮬레이터에는 이 안내가 있는데
+    // 달력에만 없어서, 같은 숫자가 한 화면에서는 "옛 수량 기준" 이라고 밝혀지고 다른 화면에서는
+    // 아무 말 없이 나갔다(실측 2026-08-23: 8 종목 중 7 종목이 어긋나 46,124 원 / 1.66% 낮다).
+    var calendarQuantityBasis =
+        net.luversof.web.gate.stock.service.MonthlyDividendCalculator.currentQuantitySummary(
+            rows, loadCurrentHoldings(userId).quantities());
+    model.addAttribute("calendarStaleQuantityCount", calendarQuantityBasis.staleCount());
+    model.addAttribute(
+        "calendarCurrentQuantityTotal", calendarQuantityBasis.totalAtCurrentQuantity());
+
     model.addAttribute("midTotalLatest", sumLatestMonthlyDividend(midRows));
     model.addAttribute("endTotalLatest", sumLatestMonthlyDividend(endRows));
     model.addAttribute("otherTotalLatest", sumLatestMonthlyDividend(otherRows));
     model.addAttribute("monthlyTotalLatest", sumLatestMonthlyDividend(rows));
     model.addAttribute(
         "annualTotalLatest", sumLatestMonthlyDividend(rows).multiply(BigDecimal.valueOf(12)));
+
+    // "평균" 기준은 최근 <b>12건</b>의 주당 배당을 평균한다(기간 기준이 아니라 건수 기준이다).
+    // 상장이 얼마 안 된 종목은 이력이 12건에 못 미쳐 그만큼 짧은 기간의 평균이 되는데, 화면은 그냥
+    // "평균" 이라고만 적어 그 차이를 알 수 없었다.
+    //
+    // 실측 2026-08-23: 8 종목 중 2 종목이 이력 10 건이었다(RISE 코리아밸류업위클리고정커버드콜 ·
+    // TIGER 코리아배당다우존스위클리커버드콜, 각각 9 개월 구간). 두 종목의 예상 월배당 합은 32,518 원으로
+    // 전체의 1.2% 라 금액 영향은 작지만, "1년 평균" 이라고 읽히는 값이 아닌 것은 밝혀야 한다.
+    model.addAttribute("shortHistorySymbols", shortHistoryLabels(rows));
   }
 
-  private BigDecimal sumExpectedMonthlyDividend(List<MonthlyDividendSnapshotResponse> rows) {
+  /** 이력이 12건에 못 미치는 종목의 "이름(건수)" 목록. 없으면 빈 목록. */
+  private List<String> shortHistoryLabels(List<MonthlyDividendSnapshotResponse> rows) {
+    if (rows.isEmpty()) {
+      return List.of();
+    }
+    Map<String, Long> payoutCountBySymbol = new LinkedHashMap<>();
+    try {
+      List<MonthlyDividendPayoutResponse> payouts =
+          monthlyDividendPayoutClient.findPayouts(new LinkedMultiValueMap<>());
+      for (MonthlyDividendPayoutResponse payout :
+          payouts == null ? List.<MonthlyDividendPayoutResponse>of() : payouts) {
+        String symbol = normalizeMonthlyDividendSymbol(payout.stockItemSymbol());
+        if (symbol != null) {
+          payoutCountBySymbol.merge(symbol, 1L, Long::sum);
+        }
+      }
+    } catch (RuntimeException ex) {
+      // 이 안내가 없다고 화면이 못 뜰 이유는 없다.
+      log.warn("월배당 지급 이력 건수를 읽지 못했다", ex);
+      return List.of();
+    }
+
+    List<String> labels = new ArrayList<>();
+    for (MonthlyDividendSnapshotResponse row : rows) {
+      String symbol = normalizeMonthlyDividendSymbol(row.stockItemSymbol());
+      long count = symbol != null ? payoutCountBySymbol.getOrDefault(symbol, 0L) : 0L;
+      if (count > 0 && count < MONTHLY_DIVIDEND_AVERAGE_WINDOW) {
+        labels.add(row.stockItemName() + "(" + count + ")");
+      }
+    }
+    return labels;
+  }
+
+  /** api-stock 이 "1년 평균" 을 낼 때 쓰는 건수(MonthlyDividendPayoutService 의 limit(12)). */
+  private static final int MONTHLY_DIVIDEND_AVERAGE_WINDOW = 12;
+
+  /**
+   * 원장 점검에서 규칙마다 받아 올 예시 개수. api-stock 의 상한은 100 이다.
+   *
+   * <p>기본값(3)으로 두면 화면이 발견의 절반 이상을 감춘다 &mdash; 실측 2026-08-23: 발견 45 건 중 25 건이 예시 밖이었다. 조치하려면 어느 행인지
+   * 알아야 하므로 넉넉히 받아 온다(현재 가장 많은 규칙이 12 건).
+   */
+  static final int LEDGER_INTEGRITY_MAX_EXAMPLES = 20;
+
+  /**
+   * 화면에 원 단위로 찍히는 값. 소계는 행 표시값의 합이어야 사용자가 열을 더한 값과 맞는다.
+   *
+   * <p>실측 2026-08-23 월배당 8 종목: 정확한 합 2,778,304.4674 인데 행은 각각 버려져 합이 2,778,302, 소계는 합을 한 번만 버려
+   * 2,778,304 였다(<b>2 원</b> 차이). 지금은 양쪽 다 반올림해 2,778,305 로 맞는다.
+   */
+  static long displayWon(BigDecimal amount) {
+    return StockFormatUtil.displayWon(amount);
+  }
+
+  static BigDecimal sumExpectedMonthlyDividend(List<MonthlyDividendSnapshotResponse> rows) {
     return rows.stream()
         .map(
             row ->
-                row.expectedMonthlyDividend() != null
-                    ? row.expectedMonthlyDividend()
-                    : BigDecimal.ZERO)
+                BigDecimal.valueOf(
+                    displayWon(
+                        row.expectedMonthlyDividend() != null
+                            ? row.expectedMonthlyDividend()
+                            : BigDecimal.ZERO)))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
-  private BigDecimal sumLatestMonthlyDividend(List<MonthlyDividendSnapshotResponse> rows) {
+  static BigDecimal sumLatestMonthlyDividend(List<MonthlyDividendSnapshotResponse> rows) {
     return rows.stream()
-        .map(StockViewController::latestMonthlyDividend)
+        .map(row -> BigDecimal.valueOf(displayWon(latestMonthlyDividend(row))))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
@@ -383,11 +473,12 @@ public class StockViewController {
           monthlyDividendProfileForm,
           buildDefaultMonthlyDividendPayoutForm(monthlyDividendProfileForm.getSymbol()));
     } catch (Exception ex) {
+      log.warn("월배당 프로필 저장 실패: symbol={}", monthlyDividendProfileForm.getSymbol(), ex);
       return renderMonthlyDividendReferenceError(
           request,
           model,
           monthlyDividendProfileForm.getSymbol(),
-          "월배당 프로필을 저장하지 못했습니다. 입력값을 확인해 주세요.",
+          failureMessage(ex, "월배당 프로필을 저장하지 못했습니다."),
           monthlyDividendProfileForm,
           buildDefaultMonthlyDividendPayoutForm(monthlyDividendProfileForm.getSymbol()));
     }
@@ -419,11 +510,12 @@ public class StockViewController {
           buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
           buildDefaultMonthlyDividendPayoutForm(normalizedSymbol));
     } catch (Exception ex) {
+      log.warn("월배당 프로필 삭제 실패: symbol={}", normalizedSymbol, ex);
       return renderMonthlyDividendReferenceError(
           request,
           model,
           normalizedSymbol,
-          "월배당 프로필을 삭제하지 못했습니다. 다시 확인해 주세요.",
+          failureMessage(ex, "월배당 프로필을 삭제하지 못했습니다."),
           buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
           buildDefaultMonthlyDividendPayoutForm(normalizedSymbol));
     }
@@ -440,7 +532,13 @@ public class StockViewController {
       @RequestBody MonthlyDividendProfileReorderRequest monthlyDividendProfileReorderRequest) {
     if (isNotAuthenticated()) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of("message", "로그인이 필요합니다.", "isDisplayableMessage", true));
+          .body(
+              Map.of(
+                  "message",
+                  io.github.luversof.boot.context.support.MessageUtil.getMessage(
+                      "stock.label.login.required"),
+                  "isDisplayableMessage",
+                  true));
     }
 
     try {
@@ -452,10 +550,14 @@ public class StockViewController {
       return ResponseEntity.badRequest()
           .body(Map.of("message", ex.getMessage(), "isDisplayableMessage", true));
     } catch (Exception ex) {
+      log.warn("월배당 프로필 순서 저장 실패", ex);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
           .body(
               Map.of(
-                  "message", "월배당 프로필 순서를 저장하지 못했습니다. 다시 시도해 주세요.", "isDisplayableMessage", true));
+                  "message",
+                  failureMessage(ex, "월배당 프로필 순서를 저장하지 못했습니다."),
+                  "isDisplayableMessage",
+                  true));
     }
   }
 
@@ -490,11 +592,12 @@ public class StockViewController {
           buildDefaultMonthlyDividendProfileForm(monthlyDividendPayoutForm.getSymbol()),
           monthlyDividendPayoutForm);
     } catch (Exception ex) {
+      log.warn("월배당 지급 이력 저장 실패: symbol={}", monthlyDividendPayoutForm.getSymbol(), ex);
       return renderMonthlyDividendReferenceError(
           request,
           model,
           monthlyDividendPayoutForm.getSymbol(),
-          "월배당 지급 이력을 저장하지 못했습니다. 입력값을 확인해 주세요.",
+          failureMessage(ex, "월배당 지급 이력을 저장하지 못했습니다."),
           buildDefaultMonthlyDividendProfileForm(monthlyDividendPayoutForm.getSymbol()),
           monthlyDividendPayoutForm);
     }
@@ -536,11 +639,12 @@ public class StockViewController {
           buildDefaultMonthlyDividendPayoutForm(monthlyDividendPayoutImportForm.getSymbol()),
           monthlyDividendPayoutImportForm);
     } catch (Exception ex) {
+      log.warn("월배당 지급 이력 일괄 저장 실패: symbol={}", monthlyDividendPayoutImportForm.getSymbol(), ex);
       return renderMonthlyDividendReferenceError(
           request,
           model,
           monthlyDividendPayoutImportForm.getSymbol(),
-          "월배당 지급 이력을 일괄 저장하지 못했습니다. 입력값을 확인해 주세요.",
+          failureMessage(ex, "월배당 지급 이력을 일괄 저장하지 못했습니다."),
           buildDefaultMonthlyDividendProfileForm(monthlyDividendPayoutImportForm.getSymbol()),
           buildDefaultMonthlyDividendPayoutForm(monthlyDividendPayoutImportForm.getSymbol()),
           monthlyDividendPayoutImportForm);
@@ -587,11 +691,12 @@ public class StockViewController {
           buildDefaultMonthlyDividendPayoutForm(normalizedSymbol),
           buildDefaultMonthlyDividendPayoutImportForm(normalizedSymbol));
     } catch (Exception ex) {
+      log.warn("저장된 출처 URL 가져오기 실패: symbol={}", normalizedSymbol, ex);
       return renderMonthlyDividendReferenceError(
           request,
           model,
           normalizedSymbol,
-          "저장된 출처 URL에서 월배당 지급 이력을 가져오지 못했습니다. 다시 확인해 주세요.",
+          failureMessage(ex, "저장된 출처 URL에서 월배당 지급 이력을 가져오지 못했습니다."),
           profile != null
               ? buildDefaultMonthlyDividendProfileForm(profile)
               : buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
@@ -751,11 +856,12 @@ public class StockViewController {
           buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
           payoutForm);
     } catch (Exception ex) {
+      log.warn("월배당 지급 이력 삭제 실패: symbol={}", normalizedSymbol, ex);
       return renderMonthlyDividendReferenceError(
           request,
           model,
           normalizedSymbol,
-          "월배당 지급 이력을 삭제하지 못했습니다. 다시 확인해 주세요.",
+          failureMessage(ex, "월배당 지급 이력을 삭제하지 못했습니다."),
           buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
           payoutForm);
     }
@@ -830,34 +936,76 @@ public class StockViewController {
     model.addAttribute("stockItem", stockItem);
     UUID resolvedId = stockItem.id();
 
-    // 기간 지표(실현손익·기간 매수원가)는 기간 적용 호출로 집계 (계좌 합산)
+    // 종목이 정해진 뒤의 여섯 조회는 서로 의존이 없다. 순차로 던지면 응답시간이 그대로 합산된다
+    // (실측: 백엔드 7회 34.1ms 인데 화면은 84.5ms — 왕복이 줄줄이 이어진 탓).
+    // 요청 파라미터를 먼저 다 만들고 한꺼번에 던진 뒤, 쓰는 자리에서 결과를 받는다.
     TradeProfitRequest profitRequest = new TradeProfitRequest();
     profitRequest.setUserId(userId);
     profitRequest.setStockItemIdList(List.of(resolvedId));
     profitRequest.setStartDate(startDate);
     profitRequest.setEndDate(endDate);
-    List<TradeProfit> profits = tradeProfitClient.calculateProfit(profitRequest.toParams());
+    var profitParams = profitRequest.toParams();
+
+    TradeProfitRequest snapshotRequestPre = new TradeProfitRequest();
+    snapshotRequestPre.setUserId(userId);
+    snapshotRequestPre.setStockItemIdList(List.of(resolvedId));
+    var snapshotParams = snapshotRequestPre.toParams();
+
+    var tradeSearchParamsPre =
+        new TradeSearchRequest(userId, null, List.of(resolvedId), startDate, endDate).toParams();
+
+    MultiValueMap<String, String> dividendParamsPre = new LinkedMultiValueMap<>();
+    dividendParamsPre.add("userId", userId.toString());
+    dividendParamsPre.add("stockItemIdList", resolvedId.toString());
+    if (startDate != null) {
+      dividendParamsPre.add("startDate", startDate.toString());
+    }
+    if (endDate != null) {
+      dividendParamsPre.add("endDate", endDate.toString());
+    }
+
+    TradeProfitRequest seriesRequestPre = new TradeProfitRequest();
+    seriesRequestPre.setUserId(userId);
+    seriesRequestPre.setStockItemIdList(List.of(resolvedId));
+    seriesRequestPre.setStartDate(startDate);
+    seriesRequestPre.setEndDate(endDate);
+    var seriesParamsPre = seriesRequestPre.toParams();
+    seriesParamsPre.add("granularity", "AUTO");
+
+    var profitsFuture = stockAsync.supply(() -> tradeProfitClient.calculateProfit(profitParams));
+    var snapshotFuture = stockAsync.supply(() -> tradeProfitClient.calculateProfit(snapshotParams));
+    var tradesFuture = stockAsync.supply(() -> tradeClient.findTrades(tradeSearchParamsPre));
+    var dividendsFuture = stockAsync.supply(() -> dividendClient.findDividends(dividendParamsPre));
+    var timeSeriesFuture = stockAsync.supply(() -> tradeProfitClient.timeSeries(seriesParamsPre));
+    var accountsFuture = stockAsync.supply(() -> accountClient.getAccountsByUserId(userId));
+
+    List<TradeProfit> profits =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(profitsFuture);
     if (profits == null) {
       profits = List.of();
     }
     BigDecimal totalBuyCost = sumTradeProfit(profits, TradeProfit::totalBuyCost);
-    BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfitNet);
+    // 표시하는 실현손익은 매도 거래에 기록된 값(증권사 기준)으로 통일한다. 앱이 평균단가로 다시 계산한
+    // realizedProfitNet 을 쓰면 같은 화면의 거래 행 합계와 어긋난다(실측 2026-08-23: 28 종목이 달랐고
+    // 합계 차이 253,553 원, 최대 단일 종목 192,303 원). 매도 54 건 전부 기록값이 있어 잃는 값은 없다.
+    BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfit);
 
     // 보유 스냅샷(수량·평균단가·현재가·평가)은 기간 미적용 호출로 구한다.
     // API 의 totalBuyCost 는 "기간 내 매수원가"이고 holdingQuantity 는 전체 누적 보유량이라
     // 기간 원가 ÷ 누적 수량 식의 혼합 계산은 잘못된 평균단가를 만들고,
     // 기간이 지정되면(hasDateRange) API 가 현재가/평가를 계산하지 않아 0 으로 표시된다.
-    TradeProfitRequest snapshotRequest = new TradeProfitRequest();
-    snapshotRequest.setUserId(userId);
-    snapshotRequest.setStockItemIdList(List.of(resolvedId));
     List<TradeProfit> snapshotProfits =
-        tradeProfitClient.calculateProfit(snapshotRequest.toParams());
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(snapshotFuture);
     if (snapshotProfits == null) {
       snapshotProfits = List.of();
     }
     int holdingQuantity = snapshotProfits.stream().mapToInt(TradeProfit::holdingQuantity).sum();
     BigDecimal evaluationAmount = sumTradeProfit(snapshotProfits, TradeProfit::evaluationAmount);
-    BigDecimal evaluationProfit = sumTradeProfit(snapshotProfits, TradeProfit::evaluationProfitNet);
+    // 평가손익도 실현손익과 같은 기준(기본값)을 쓴다. 두 값은 각각 닫힌 삼중항이라
+    // (기록실현+기본평가=totalProfit, Net실현+Net평가=totalProfitNet) 섞으면 '실현+평가=총' 이
+    // 깨진다(실측 2026-08-23: 혼합 시 61행 중 18행 불일치, 평가 기준차 합 24,986 원).
+    // 자산현황·포트폴리오가 이미 기본값을 쓰므로 그쪽에 맞춘다.
+    BigDecimal evaluationProfit = sumTradeProfit(snapshotProfits, TradeProfit::evaluationProfit);
     BigDecimal currentPrice =
         snapshotProfits.stream()
             .map(TradeProfit::currentPrice)
@@ -880,9 +1028,8 @@ public class StockViewController {
             : BigDecimal.ZERO;
 
     // 매매 내역 (이 종목, 최신순, 기간 적용)
-    TradeSearchRequest tradeSearchRequest =
-        new TradeSearchRequest(userId, null, List.of(resolvedId), startDate, endDate);
-    List<TradeResponse> trades = tradeClient.findTrades(tradeSearchRequest.toParams());
+    List<TradeResponse> trades =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(tradesFuture);
     if (trades == null) {
       trades = List.of();
     }
@@ -894,16 +1041,8 @@ public class StockViewController {
             .toList();
 
     // 배당 내역 (이 종목, 최신순)
-    MultiValueMap<String, String> dividendParams = new LinkedMultiValueMap<>();
-    dividendParams.add("userId", userId.toString());
-    dividendParams.add("stockItemIdList", resolvedId.toString());
-    if (startDate != null) {
-      dividendParams.add("startDate", startDate.toString());
-    }
-    if (endDate != null) {
-      dividendParams.add("endDate", endDate.toString());
-    }
-    List<DividendResponse> dividends = dividendClient.findDividends(dividendParams);
+    List<DividendResponse> dividends =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(dividendsFuture);
     if (dividends == null) {
       dividends = List.of();
     }
@@ -919,14 +1058,8 @@ public class StockViewController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     // 보유 평가액·원가 추이 (차트용, 기간 적용 AUTO 단위)
-    TradeProfitRequest seriesRequest = new TradeProfitRequest();
-    seriesRequest.setUserId(userId);
-    seriesRequest.setStockItemIdList(List.of(resolvedId));
-    seriesRequest.setStartDate(startDate);
-    seriesRequest.setEndDate(endDate);
-    MultiValueMap<String, String> seriesParams = seriesRequest.toParams();
-    seriesParams.add("granularity", "AUTO");
-    List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
+    List<TradeProfitTimeSeriesPoint> timeSeries =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(timeSeriesFuture);
     if (timeSeries == null) {
       timeSeries = List.of();
     }
@@ -937,14 +1070,8 @@ public class StockViewController {
             .withZone(java.time.ZoneId.systemDefault()));
 
     // 기간 필터 모델 (날짜 필터 바)
-    java.time.ZoneId filterZone = java.time.ZoneId.systemDefault();
-    if (timeZone != null && !timeZone.isBlank()) {
-      try {
-        filterZone = java.time.ZoneId.of(timeZone);
-      } catch (Exception ignore) {
-        // 잘못된 타임존이면 시스템 기본값 사용
-      }
-    }
+    // 바꾸는 규칙은 StockZoneUtil.resolve 한 곳에만 둔다(잘못된 값이면 서버 기본 존).
+    java.time.ZoneId filterZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
     model.addAttribute(
         "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
     model.addAttribute(
@@ -965,7 +1092,8 @@ public class StockViewController {
     model.addAttribute("totalDividend", totalDividend);
     // 계좌별 보유 현황 (이 종목을 보유한 계좌별 분해; 기간 미적용 스냅샷 기준)
     Map<UUID, String> accountNameById = new HashMap<>();
-    List<Account> userAccounts = accountClient.getAccountsByUserId(userId);
+    List<Account> userAccounts =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountsFuture);
     if (userAccounts != null) {
       for (Account acc : userAccounts) {
         if (acc != null && acc.id() != null) {
@@ -989,6 +1117,17 @@ public class StockViewController {
             .toList();
     model.addAttribute("accountHoldings", accountHoldings);
 
+    // 이 화면의 "현재가"·평가액도 마지막으로 수집된 종가 기준이다. 어느 날 기준인지 밝히지 않으면
+    // 실시간 시세로 오해할 수 있다(실측: 오늘이 2026-08-22 인데 보유 15종목의 currentPriceDate 가
+    // 모두 2026-08-20 이었다). 자산현황·포트폴리오와 같은 표기를 쓴다.
+    // 전량 매도한 종목은 보유 행이 없어 보유 기준으로는 날짜가 나오지 않는다. 그러면 안내 줄만 사라지고
+    // 멈춰 있는 현재가는 그대로 남아 오늘 값처럼 보인다. 이 화면은 종목 하나만 다루므로 그 종목의
+    // 마지막 종가 일자로 되돌린다.
+    model.addAttribute(
+        "priceBasisDate",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.priceBasisDateWithFallback(
+            snapshotProfits));
+
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);
     return "stock/stockItemDetail";
@@ -1011,7 +1150,11 @@ public class StockViewController {
     UUID userId = UserUtil.getUserId();
 
     UUID parsedId = parseUuidOrNull(accountId);
-    Account account = parsedId != null ? accountClient.getAccountById(parsedId).orElse(null) : null;
+    // 계좌 단건 조회는 소유자를 가리지 않으므로 여기서 확인한다(규칙과 근거는 StockOwnershipUtil).
+    Account account =
+        parsedId != null
+            ? StockOwnershipUtil.ownedOrNull(accountClient.getAccountById(parsedId), userId)
+            : null;
 
     // 초기 진입(비 htmx)은 셸만 렌더하고, 콘텐츠는 전역 기간과 함께 htmx로 로드한다.
     // (풀페이지 새로고침 시에도 선택 기간이 서버에 적용되도록.)
@@ -1033,9 +1176,55 @@ public class StockViewController {
     model.addAttribute("account", account);
     UUID resolvedId = account.id();
 
+    // 계좌가 정해진 뒤의 다섯 조회는 서로 의존이 없다. 순차로 던지면 왕복이 줄줄이 이어진다
+    // (실측: 백엔드 7회 27.3ms 인데 화면은 75.3ms). 파라미터를 먼저 만들고 한꺼번에 던진다.
+    TradeProfitRequest profitRequestPre = new TradeProfitRequest();
+    profitRequestPre.setUserId(userId);
+    profitRequestPre.setAccountIdList(List.of(resolvedId));
+    profitRequestPre.setStartDate(startDate);
+    profitRequestPre.setEndDate(endDate);
+    var accProfitParams = profitRequestPre.toParams();
+
+    TradeProfitRequest snapshotRequestPre = new TradeProfitRequest();
+    snapshotRequestPre.setUserId(userId);
+    snapshotRequestPre.setAccountIdList(List.of(resolvedId));
+    var accSnapshotParams = snapshotRequestPre.toParams();
+
+    var accTradeParams =
+        new TradeSearchRequest(userId, List.of(resolvedId), null, startDate, endDate).toParams();
+
+    MultiValueMap<String, String> accDividendParams = new LinkedMultiValueMap<>();
+    accDividendParams.add("userId", userId.toString());
+    accDividendParams.add("accountIdList", resolvedId.toString());
+    if (startDate != null) {
+      accDividendParams.add("startDate", startDate.toString());
+    }
+    if (endDate != null) {
+      accDividendParams.add("endDate", endDate.toString());
+    }
+
+    TradeProfitRequest seriesRequestPre = new TradeProfitRequest();
+    seriesRequestPre.setUserId(userId);
+    seriesRequestPre.setAccountIdList(List.of(resolvedId));
+    seriesRequestPre.setStartDate(startDate);
+    seriesRequestPre.setEndDate(endDate);
+    var accSeriesParams = seriesRequestPre.toParams();
+    accSeriesParams.add("granularity", "AUTO");
+
+    var accProfitsFuture =
+        stockAsync.supply(() -> tradeProfitClient.calculateProfit(accProfitParams));
+    var accSnapshotFuture =
+        stockAsync.supply(() -> tradeProfitClient.calculateProfit(accSnapshotParams));
+    var accTradesFuture = stockAsync.supply(() -> tradeClient.findTrades(accTradeParams));
+    var accDividendsFuture =
+        stockAsync.supply(() -> dividendClient.findDividends(accDividendParams));
+    var accTimeSeriesFuture =
+        stockAsync.supply(() -> tradeProfitClient.timeSeries(accSeriesParams));
+    var accStockItemsFuture = stockAsync.supply(this::loadStockItems);
+
     // 종목 id → 종목명 (보유/내역 표의 종목명 + 종목 상세 링크용)
     Map<UUID, String> stockNameById = new HashMap<>();
-    loadStockItems()
+    net.luversof.web.gate.stock.support.StockAsyncSupport.join(accStockItemsFuture)
         .forEach(
             s -> {
               if (s.id() != null) {
@@ -1045,26 +1234,22 @@ public class StockViewController {
     model.addAttribute("stockNameById", stockNameById);
 
     // 기간 지표(실현손익·기간 매수원가)는 기간 적용 호출로 집계
-    TradeProfitRequest profitRequest = new TradeProfitRequest();
-    profitRequest.setUserId(userId);
-    profitRequest.setAccountIdList(List.of(resolvedId));
-    profitRequest.setStartDate(startDate);
-    profitRequest.setEndDate(endDate);
-    List<TradeProfit> profits = tradeProfitClient.calculateProfit(profitRequest.toParams());
+    List<TradeProfit> profits =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accProfitsFuture);
     if (profits == null) {
       profits = List.of();
     }
     BigDecimal totalBuyCost = sumTradeProfit(profits, TradeProfit::totalBuyCost);
-    BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfitNet);
+    // 표시하는 실현손익은 매도 거래에 기록된 값(증권사 기준)으로 통일한다. 앱이 평균단가로 다시 계산한
+    // realizedProfitNet 을 쓰면 같은 화면의 거래 행 합계와 어긋난다(실측 2026-08-23: 28 종목이 달랐고
+    // 합계 차이 253,553 원, 최대 단일 종목 192,303 원). 매도 54 건 전부 기록값이 있어 잃는 값은 없다.
+    BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfit);
 
     // 보유 종목 테이블/평가 합계는 기간 미적용 스냅샷 호출로 구한다.
     // 기간이 지정되면(hasDateRange) API 가 현재가/평가를 계산하지 않아
     // 보유 종목의 평가금액·평가손익이 전부 0 으로 표시되고 정렬도 무의미해진다.
-    TradeProfitRequest snapshotRequest = new TradeProfitRequest();
-    snapshotRequest.setUserId(userId);
-    snapshotRequest.setAccountIdList(List.of(resolvedId));
     List<TradeProfit> snapshotProfits =
-        tradeProfitClient.calculateProfit(snapshotRequest.toParams());
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accSnapshotFuture);
     if (snapshotProfits == null) {
       snapshotProfits = List.of();
     }
@@ -1085,12 +1270,15 @@ public class StockViewController {
                     .reversed())
             .toList();
     BigDecimal evaluationAmount = sumTradeProfit(enriched, TradeProfit::evaluationAmount);
-    BigDecimal evaluationProfit = sumTradeProfit(enriched, TradeProfit::evaluationProfitNet);
+    // 평가손익도 실현손익과 같은 기준(기본값)을 쓴다. 두 값은 각각 닫힌 삼중항이라
+    // (기록실현+기본평가=totalProfit, Net실현+Net평가=totalProfitNet) 섞으면 '실현+평가=총' 이
+    // 깨진다(실측 2026-08-23: 혼합 시 61행 중 18행 불일치, 평가 기준차 합 24,986 원).
+    // 자산현황·포트폴리오가 이미 기본값을 쓰므로 그쪽에 맞춘다.
+    BigDecimal evaluationProfit = sumTradeProfit(enriched, TradeProfit::evaluationProfit);
 
     // 매매 내역 (이 계좌, 최신순, 기간 적용)
-    TradeSearchRequest tradeSearchRequest =
-        new TradeSearchRequest(userId, List.of(resolvedId), null, startDate, endDate);
-    List<TradeResponse> trades = tradeClient.findTrades(tradeSearchRequest.toParams());
+    List<TradeResponse> trades =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accTradesFuture);
     if (trades == null) {
       trades = List.of();
     }
@@ -1102,16 +1290,8 @@ public class StockViewController {
             .toList();
 
     // 배당 내역 (이 계좌, 최신순)
-    MultiValueMap<String, String> dividendParams = new LinkedMultiValueMap<>();
-    dividendParams.add("userId", userId.toString());
-    dividendParams.add("accountIdList", resolvedId.toString());
-    if (startDate != null) {
-      dividendParams.add("startDate", startDate.toString());
-    }
-    if (endDate != null) {
-      dividendParams.add("endDate", endDate.toString());
-    }
-    List<DividendResponse> dividends = dividendClient.findDividends(dividendParams);
+    List<DividendResponse> dividends =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accDividendsFuture);
     if (dividends == null) {
       dividends = List.of();
     }
@@ -1127,27 +1307,15 @@ public class StockViewController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     // 평가액·원가 추이 (차트용, 기간 적용)
-    TradeProfitRequest seriesRequest = new TradeProfitRequest();
-    seriesRequest.setUserId(userId);
-    seriesRequest.setAccountIdList(List.of(resolvedId));
-    seriesRequest.setStartDate(startDate);
-    seriesRequest.setEndDate(endDate);
-    MultiValueMap<String, String> seriesParams = seriesRequest.toParams();
-    seriesParams.add("granularity", "AUTO");
-    List<TradeProfitTimeSeriesPoint> timeSeries = tradeProfitClient.timeSeries(seriesParams);
+    List<TradeProfitTimeSeriesPoint> timeSeries =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accTimeSeriesFuture);
     if (timeSeries == null) {
       timeSeries = List.of();
     }
 
     // 기간 필터 모델 (날짜 필터 바)
-    java.time.ZoneId filterZone = java.time.ZoneId.systemDefault();
-    if (timeZone != null && !timeZone.isBlank()) {
-      try {
-        filterZone = java.time.ZoneId.of(timeZone);
-      } catch (Exception ignore) {
-        // 잘못된 타임존이면 시스템 기본값 사용
-      }
-    }
+    // 바꾸는 규칙은 StockZoneUtil.resolve 한 곳에만 둔다(잘못된 값이면 서버 기본 존).
+    java.time.ZoneId filterZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
     model.addAttribute(
         "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
     model.addAttribute(
@@ -1160,10 +1328,20 @@ public class StockViewController {
 
     model.addAttribute("holdings", holdings);
     model.addAttribute("holdingCount", holdings.size());
+    // 이 화면의 "현재가"·평가액도 마지막으로 수집된 종가 기준이다. 어느 날 기준인지 밝히지 않으면
+    // 실시간 시세로 오해할 수 있다(실측: 오늘이 2026-08-22 인데 보유 15종목의 currentPriceDate 가
+    // 모두 2026-08-20 이었다). 자산현황·포트폴리오와 같은 표기를 쓴다.
+    model.addAttribute("priceBasisDate", latestPriceBasisDate(holdings));
     model.addAttribute("evaluationAmount", evaluationAmount);
     model.addAttribute("totalBuyCost", totalBuyCost);
     model.addAttribute("evaluationProfit", evaluationProfit);
     model.addAttribute("realizedProfit", realizedProfit);
+    // 기록된 실현손익은 계좌를 합친 원가를 따르므로 이 계좌 페이지의 헤드라인이 이 계좌의 매매와
+    // 크게 다를 수 있다(실측 2026-08-23: 연금저축1 415,053 vs 2,063,739, ISA 1,555,597 vs 14,921).
+    // 매매 화면의 계좌별 표와 같은 규칙·같은 문구를 쓴다. 종목 상세에는 붙이지 않는다 - 기록값이
+    // 종목 단위 기준이라 36 종목 전부 최대 11,835 원(값의 0.009%) 안에서 맞는다.
+    BigDecimal realizedProfitOwnBasis = sumTradeProfit(profits, TradeProfit::realizedProfitNet);
+    model.addAttribute("realizedProfitOwnBasis", realizedProfitOwnBasis);
     model.addAttribute("totalDividend", totalDividend);
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);
@@ -1173,6 +1351,49 @@ public class StockViewController {
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
             .withZone(java.time.ZoneId.systemDefault()));
     return "stock/accountDetail";
+  }
+
+  /**
+   * 백엔드가 알려준 실패 사유를 꺼낸다. 없으면 {@code null}.
+   *
+   * <p>api-stock 호출이 실패하면 bluesky-boot 의 {@code BlueskyClientResponseErrorHandler} 가 응답 본문을 {@link
+   * BlueskyException} 으로 바꿔 던진다. 그 안에는 백엔드가 "사용자에게 보여도 되는 문구"로 표시한 실제 사유가 들어 있는데, 화면은 그것을 버리고 "입력값을
+   * 확인해 주세요" 같은 문구로 덮고 있었다. 원인을 아는데도 모른다고 말하는 셈이다.
+   *
+   * <p>{@code displayableMessage} 가 아닌 메시지는 내부용(예외 클래스명 등)이라 그대로 보여주지 않는다.
+   */
+  static String remoteDisplayableMessage(Throwable throwable) {
+    if (!(throwable instanceof BlueskyException blueskyException)) {
+      return null;
+    }
+    List<ErrorMessage> candidates = new ArrayList<>();
+    if (blueskyException.getErrorMessage() != null) {
+      candidates.add(blueskyException.getErrorMessage());
+    }
+    if (blueskyException.getErrorMessageList() != null) {
+      candidates.addAll(blueskyException.getErrorMessageList());
+    }
+    for (ErrorMessage candidate : candidates) {
+      if (candidate instanceof BlueskyErrorMessage errorMessage
+          && errorMessage.isDisplayableMessage()
+          && errorMessage.getMessage() != null
+          && !errorMessage.getMessage().isBlank()) {
+        return errorMessage.getMessage();
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 사용자에게 보여줄 실패 문구.
+   *
+   * <p>백엔드가 사유를 알려줬으면 그것을 그대로 쓰고, 아니면 결과만 말한다. 예전에는 원인을 모르는 경우에도 "입력값을 확인해 주세요"라고 적어 입력 탓으로 돌렸는데, 이
+   * 경로는 지역 검증({@code IllegalArgumentException})이 이미 걸러낸 뒤라 정의상 입력 문제가 아닌 실패다 (연결 실패·서버 오류 등). 원인을
+   * 모를 때 아는 척하지 않는다.
+   */
+  private String failureMessage(Throwable throwable, String fallback) {
+    String remote = remoteDisplayableMessage(throwable);
+    return remote != null ? remote : fallback;
   }
 
   private static UUID parseUuidOrNull(String value) {
@@ -1283,6 +1504,7 @@ public class StockViewController {
           monthlyDividendForm,
           "");
     } catch (Exception ex) {
+      log.warn("월배당 데이터 저장 실패: userId={}", userId, ex);
       return renderMonthlyDividendError(
           model,
           userId,
@@ -1291,7 +1513,7 @@ public class StockViewController {
           keyword,
           minAnnualYield,
           positiveOnly,
-          "월배당 데이터를 저장하지 못했습니다. 종목코드와 입력값을 확인해 주세요.",
+          failureMessage(ex, "월배당 데이터를 저장하지 못했습니다."),
           monthlyDividendForm,
           "");
     }
@@ -1847,6 +2069,42 @@ public class StockViewController {
     return "stock/admin";
   }
 
+  /** 원장의 현재 보유 수량(종목 단위, 계좌 합산). 조회에 실패하면 빈 맵이라 표시는 예전 그대로다. */
+  /** 원장의 현재 보유 상태(종목 단위). 조회 한 번으로 수량과 평균단가를 함께 얻는다. */
+  private record CurrentHoldings(
+      Map<UUID, Integer> quantities, Map<UUID, BigDecimal> averageBuyPrices) {
+
+    static CurrentHoldings empty() {
+      return new CurrentHoldings(Map.of(), Map.of());
+    }
+  }
+
+  /** 조회에 실패하면 빈 맵이라 표시는 예전 그대로다(없는 값을 지어내지 않는다). */
+  private CurrentHoldings loadCurrentHoldings(UUID userId) {
+    MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+    params.add("userId", userId.toString());
+    params.add("groupBy", "STOCKITEM");
+    Map<UUID, Integer> quantities = new HashMap<>();
+    Map<UUID, BigDecimal> averageBuyPrices = new HashMap<>();
+    try {
+      List<TradeProfit> rows = tradeProfitClient.calculateProfit(params);
+      if (rows != null) {
+        for (TradeProfit row : rows) {
+          if (row.stockItemId() != null) {
+            quantities.merge(row.stockItemId(), row.holdingQuantity(), Integer::sum);
+            if (row.averageBuyPrice() != null) {
+              averageBuyPrices.put(row.stockItemId(), row.averageBuyPrice());
+            }
+          }
+        }
+      }
+    } catch (Exception ex) {
+      log.warn("현재 보유 상태 조회 실패: userId={}", userId, ex);
+      return CurrentHoldings.empty();
+    }
+    return new CurrentHoldings(quantities, averageBuyPrices);
+  }
+
   private void populateMonthlyDividendModel(
       Model model,
       UUID userId,
@@ -1860,6 +2118,9 @@ public class StockViewController {
     String monthlyDividendDirection =
         monthlyDividendViewSupport.resolveRowDirection(monthlyDividendSort, direction);
     String monthlyDividendKeyword = keyword != null ? keyword.trim() : "";
+    // 원장 수량 조회는 스냅샷/프로필 조회와 서로 의존이 없다. 순차로 붙이면 그대로 왕복이 더해진다
+    // (실측 2026-08-23: 이 조회 하나가 p50 31ms).
+    var currentHoldingsFuture = stockAsync.supply(() -> loadCurrentHoldings(userId));
     List<MonthlyDividendSnapshotResponse> allRows = loadMonthlyDividendRows(userId);
     List<MonthlyDividendProfileResponse> monthlyDividendProfiles =
         monthlyDividendViewSupport.sortProfiles(
@@ -1884,11 +2145,31 @@ public class StockViewController {
       }
     }
 
+    // 스냅샷의 보유 수량은 사람이 갱신한 시점의 값이라 원장과 어긋날 수 있다. 이 표는 그 수량을
+    // 그대로 '보유수량' 으로 찍으므로, 어긋나면 사용자는 자기 보유량을 잘못 읽는다
+    // (실측 2026-08-23: 8 종목 중 7 종목이 달랐고 전부 현재가 더 많았다).
+    CurrentHoldings currentHoldings =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(currentHoldingsFuture);
+    Map<UUID, Integer> monthlyDividendCurrentQuantities = currentHoldings.quantities();
+    model.addAttribute("monthlyDividendCurrentQuantities", monthlyDividendCurrentQuantities);
+    model.addAttribute(
+        "monthlyDividendCurrentAverageBuyPrices", currentHoldings.averageBuyPrices());
     model.addAttribute("monthlyDividendRows", filteredRows);
     model.addAttribute(
         "monthlyDividendSummary",
         monthlyDividendCalculator.buildSimulatorSummary(
             filteredRows, monthlyDividendPayoutWindowBySymbol));
+    // 합계 카드도 스냅샷 수량으로 계산된다. 행에는 "현재 N 주" 경고가 뜨는데 헤드라인만 조용하면
+    // 사용자는 합계를 현재 기준으로 읽는다(실측 2026-08-23: 7/8 종목이 어긋나 46,123 원 / 1.66% 낮았다).
+    // 요약 화면의 다가오는 배당 카드와 같은 규칙·같은 문구를 쓴다.
+    var monthlyDividendQuantityBasis =
+        net.luversof.web.gate.stock.service.MonthlyDividendCalculator.currentQuantitySummary(
+            filteredRows, monthlyDividendCurrentQuantities);
+    model.addAttribute(
+        "monthlyDividendStaleQuantityCount", monthlyDividendQuantityBasis.staleCount());
+    model.addAttribute(
+        "monthlyDividendCurrentQuantityTotal",
+        monthlyDividendQuantityBasis.totalAtCurrentQuantity());
     model.addAttribute("monthlyDividendPayoutWindowBySymbol", monthlyDividendPayoutWindowBySymbol);
     model.addAttribute("monthlyDividendProfileDisplayOrders", monthlyDividendProfileDisplayOrders);
     model.addAttribute(
@@ -1964,17 +2245,6 @@ public class StockViewController {
             Comparator.comparing(
                 stockItem -> safeString(stockItem.symbol()), String.CASE_INSENSITIVE_ORDER))
         .toList();
-  }
-
-  private boolean hasMonthlyDividendTag(StockItem stockItem) {
-    if (stockItem == null || stockItem.tags() == null || stockItem.tags().isEmpty()) {
-      return false;
-    }
-
-    return stockItem.tags().stream()
-        .filter(StringUtils::hasText)
-        .map(String::trim)
-        .anyMatch(MONTHLY_DIVIDEND_TAG::equals);
   }
 
   private String buildMonthlyDividendRedirect(
@@ -2169,6 +2439,13 @@ public class StockViewController {
     }
     requireNonNegative(request.getDividendAmountPerShare(), "주당 분배금은 0 이상이어야 합니다.");
     requireNonNegative(request.getTaxableBasePerShare(), "주당 과세표준액은 0 이상이어야 합니다.");
+    // 과세표준은 분배금 중 과세 대상 몫이라 분배금을 넘을 수 없다. api-stock 도 같은 검증을 하지만,
+    // 여기서 먼저 걸러야 사용자가 다른 항목과 같은 형식의 안내를 본다(서버까지 가면 일반 오류가 뜬다).
+    if (request.getTaxableBasePerShare() != null
+        && request.getDividendAmountPerShare() != null
+        && request.getTaxableBasePerShare().compareTo(request.getDividendAmountPerShare()) > 0) {
+      throw new IllegalArgumentException("주당 과세표준액은 주당 분배금보다 클 수 없습니다.");
+    }
   }
 
   private void normalizeMonthlyDividendRequest(
@@ -2208,7 +2485,7 @@ public class StockViewController {
     }
   }
 
-  private List<MonthlyDividendSnapshotUpsertRequest> parseBulkInput(String bulkInput, UUID userId) {
+  List<MonthlyDividendSnapshotUpsertRequest> parseBulkInput(String bulkInput, UUID userId) {
     if (!StringUtils.hasText(bulkInput)) {
       throw new IllegalArgumentException("붙여넣기 데이터가 비어 있습니다.");
     }
@@ -2232,6 +2509,17 @@ public class StockViewController {
 
       if (columns.length < 7) {
         throw new IllegalArgumentException((index + 1) + "번째 줄은 7개 열이 필요합니다.");
+      }
+
+      // 콤마로 나눈 줄에 열이 더 있으면 숫자의 천단위 콤마가 열을 갈라놓은 것이다.
+      // 이대로 앞 7개만 쓰면 값이 한 칸씩 밀려도 전부 숫자로 읽혀 오류 없이 잘못 저장된다
+      // (실측: "…,50,1,000,71,887" 이 9열이 되어 보유 수량 1,000 -> 1, 평단가 71,887 -> 000).
+      // 탭으로 나눈 줄은 콤마가 값 안에 남아 있어 안전하므로 이 검사가 필요 없다.
+      if (!line.contains("	") && columns.length > 7) {
+        throw new IllegalArgumentException(
+            (index + 1)
+                + "번째 줄의 열이 7개보다 많습니다. 숫자에 천단위 콤마가 있으면 열이 잘못 나뉩니다."
+                + " 탭으로 구분하거나 콤마를 빼고 붙여넣어 주세요.");
       }
 
       MonthlyDividendSnapshotUpsertRequest request = new MonthlyDividendSnapshotUpsertRequest();
@@ -2258,7 +2546,7 @@ public class StockViewController {
     return requests;
   }
 
-  private String[] splitBulkColumns(String line) {
+  String[] splitBulkColumns(String line) {
     String[] rawColumns = line.contains("\t") ? line.split("\t") : line.split(",");
     List<String> columns = new ArrayList<>();
     for (String rawColumn : rawColumns) {
@@ -2361,6 +2649,29 @@ public class StockViewController {
     String adminTab = resolveAdminTab(tab);
     model.addAttribute("adminTab", adminTab);
 
+    // 데이터 최신 시점은 서버에서 구한다. 예전에는 브라우저 로컬의 '마지막 갱신 클릭 시각'만 보여줘
+    // 다른 브라우저에서 보거나 갱신이 실패했을 때 실제로 어디까지 채워졌는지 알 수 없었다.
+    // 조회에 실패해도 관리 화면 자체는 떠야 하므로 값 없이 계속 진행한다.
+    UUID dataStatusUserId = UserUtil.getUserId();
+    if (dataStatusUserId != null) {
+      try {
+        model.addAttribute("dataStatus", dataStatusClient.findDataStatus(dataStatusUserId));
+      } catch (RuntimeException e) {
+        log.warn("data status lookup failed: {}", e.toString());
+      }
+      // 원장 점검도 같은 이유로 실패해도 화면은 떠야 한다. 다만 "이상 0 건"과 "검사가 못 돌았다"는
+      // 구분돼야 하므로, 실패하면 모델에 아무것도 넣지 않고 화면이 그 사실을 따로 적는다.
+      try {
+        // 예시를 기본 3 건만 받으면 발견의 절반 이상을 화면에서 볼 수 없다(실측 2026-08-23: 45 건 중 25 건).
+        // 조치하려면 어느 행인지 알아야 하므로 넉넉히 받아 접이식으로 보여 준다.
+        model.addAttribute(
+            "ledgerIntegrity",
+            ledgerIntegrityClient.check(dataStatusUserId, LEDGER_INTEGRITY_MAX_EXAMPLES));
+      } catch (RuntimeException e) {
+        log.warn("ledger integrity check failed: userId={}", dataStatusUserId, e);
+      }
+    }
+
     if (DIVIDEND_TAB_MONTHLY_REFERENCE.equals(adminTab)) {
       // 결과 코드(monthlyDividendReferenceResult)는 POST 후 flash 로만 전달된다.
       // URL 쿼리로 받으면 새로고침마다 이전 결과 메시지가 재표시되는 버그가 있어 제거했다.
@@ -2369,5 +2680,14 @@ public class StockViewController {
     }
 
     return "stock/admin";
+  }
+
+  /**
+   * 보유 종목 중 가장 최근 시세 기준일. 없으면 {@code null} 이고 화면은 표기를 생략한다.
+   *
+   * <p>수집이 종목마다 다른 날에 끝날 수 있어 가장 최근 값을 쓴다(자산현황 조각과 같은 규칙).
+   */
+  private java.time.LocalDate latestPriceBasisDate(List<TradeProfit> holdings) {
+    return net.luversof.web.gate.stock.util.StockPriceBasisUtil.latestPriceBasisDate(holdings);
   }
 }

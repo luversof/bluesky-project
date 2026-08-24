@@ -14,6 +14,8 @@
 @param String profile = "local"
 @param String simulatorTab = "sustainability"
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
+@param java.util.Map<java.util.UUID, Integer> monthlyDividendCurrentQuantities = java.util.Map.of()
+@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = java.util.Map.of()
 @param MonthlyDividendSimulatorSummaryView monthlyDividendSummary = null
 @param List<StockItem> stockItems = java.util.List.of()
 @param MonthlyDividendSnapshotUpsertRequest monthlyDividendForm = null
@@ -28,6 +30,7 @@
 @param boolean monthlyDividendPositiveOnly = false
 @param boolean monthlyDividendHasSavedRows = false
 @param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
+@param Map<String, String> monthlyDividendPayoutWindowBySymbol = java.util.Map.of()
 @param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
 @param boolean monthlyDividendReorderEnabled = false
 
@@ -144,6 +147,7 @@
 						summaryYearsLater: '${MessageUtil.getMessage("stock.simulator.summary.years.later")}',
 						summaryYearsOrMore: '${MessageUtil.getMessage("stock.simulator.summary.years.or.more")}',
 						summaryWithinHorizon: '${MessageUtil.getMessage("stock.simulator.summary.within.horizon")}',
+						summaryOverflowYear: '${MessageUtil.getMessage("stock.simulator.summary.overflow.year")}',
 						summaryLatestCoverage: '${MessageUtil.getMessage("stock.simulator.summary.latest.coverage")}',
 						summaryNoSpending: '${MessageUtil.getMessage("stock.simulator.summary.no.spending")}',
 						seriesAnnualDividend: '${MessageUtil.getMessage("stock.simulator.table.header.annual.dividend")}',
@@ -184,6 +188,8 @@
 			@if(monthlyDividendTab)
 				@template.stock.fragments.monthlyDividendSimulator(
 					monthlyDividendRows = monthlyDividendRows,
+					monthlyDividendCurrentQuantities = monthlyDividendCurrentQuantities,
+					monthlyDividendCurrentAverageBuyPrices = monthlyDividendCurrentAverageBuyPrices,
 					monthlyDividendSummary = monthlyDividendSummary,
 					stockItems = stockItems,
 					monthlyDividendForm = monthlyDividendForm,
@@ -198,6 +204,7 @@
 					monthlyDividendPositiveOnly = monthlyDividendPositiveOnly,
 					monthlyDividendHasSavedRows = monthlyDividendHasSavedRows,
 					monthlyDividendProfileDisplayOrders = monthlyDividendProfileDisplayOrders,
+					monthlyDividendPayoutWindowBySymbol = monthlyDividendPayoutWindowBySymbol,
 					monthlyDividendProfileOrderedSymbols = monthlyDividendProfileOrderedSymbols,
 					monthlyDividendReorderEnabled = monthlyDividendReorderEnabled
 				)
@@ -209,7 +216,10 @@
 					<script src="/js/vendor/chart.umd.min.js"></script>
 					<script src="/js/stock/compoundSimulator.js"></script>
 			@else
-			<div class="grid gap-6 xl:grid-cols-[20rem_minmax(0,1fr)]">
+			<%-- 모바일 단일 컬럼도 minmax(0,1fr) 로 명시한다. 기본값이면 그리드 자식의
+			     min-width:auto 때문에 카드가 콘텐츠 폭 아래로 줄지 못해 컬럼이 부풀고
+			     화면이 가로로 밀린다(375px 뷰포트에서 컬럼 573px 관측). --%>
+			<div class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${scenariosTitle}</h2>
@@ -227,11 +237,13 @@
 				<div class="space-y-6">
 					@template._components.ui.card(bodyClass = "gap-5", body = @`
 							<div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-								<div class="space-y-2">
+								<div class="min-w-0 space-y-2">
 									<h2 class="card-title text-lg">${inputsTitle}</h2>
 									<p class="text-sm leading-6 text-base-content/60">${inputsDescription}</p>
 								</div>
-								<div class="badge badge-outline badge-lg">${storageNote}</div>
+								<%-- 배지는 기본이 nowrap 이라 좁은 화면에서 이 줄의 최소 폭을 늘려
+								     카드 전체가 가로로 밀린다. 모바일에선 줄바꿈을 허용한다. --%>
+								<div class="badge badge-outline badge-lg h-auto min-w-0 whitespace-normal text-left">${storageNote}</div>
 							</div>
 
 							<form id="stockSimulatorForm" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -299,7 +311,9 @@
 							<h2 class="text-lg font-semibold text-base-content">${chartTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${chartDescription}</p>
 						</div>
-						<div class="grid gap-4 xl:grid-cols-2">
+						<%-- 모바일 단일 컬럼도 minmax(0,1fr) 로 못 박는다. 암시적 트랙은 auto 라
+						     내용의 min-content 만큼 벌어져(실측 366px) 화면 밖으로 나간다. --%>
+						<div class="grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-2">
 							@template._components.ui.card(bodyClass = "gap-4", body = @`
 									<div class="space-y-2">
 										<h3 class="card-title text-base">${cashFlowTitle}</h3>
@@ -323,18 +337,18 @@
 				</div>
 			</div>
 
-			<div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+			<div class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_20rem]">
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${compareTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${compareDescription}</p>
 						</div>
 						<div class="flex flex-wrap gap-2 text-xs text-base-content/70">
-							<span class="badge border-emerald-500 bg-emerald-50 text-emerald-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}</span>
-							<span class="badge border-amber-500 bg-amber-50 text-amber-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}</span>
-							<span class="badge border-orange-500 bg-orange-50 text-orange-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}</span>
-							<span class="badge border-yellow-500 bg-yellow-50 text-yellow-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
-							<span class="badge border-red-500 bg-red-50 text-red-700">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
+							<span class="badge border-emerald-500 sim-tint-stable text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}</span>
+							<span class="badge border-amber-500 sim-tint-deficit text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}</span>
+							<span class="badge border-orange-500 sim-tint-drawdown text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}</span>
+							<span class="badge border-yellow-500 sim-tint-decline text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
+							<span class="badge border-red-500 sim-tint-depleted text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
 						</div>
 						<div id="stockSimulatorTimelineList" class="space-y-3"></div>
 				`)

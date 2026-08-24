@@ -2,6 +2,7 @@
 @import net.luversof.web.gate.poe.dto.PoeModTier
 @import net.luversof.web.gate.poe.PoeText
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.util.CspNonceHolder
 
 @param PoeModClass mods
 @param net.luversof.web.gate.poe.dto.PoeEldritch eldritch = null
@@ -143,7 +144,7 @@
 		<span class="text-[11px] text-base-content/40">${ko ? "독립 가정 근사 — 접두/접미 자리 경쟁 미반영(실제는 더 낮음)" : "independence approximation"}</span>
 		<button type="button" class="btn btn-ghost btn-xs ml-auto" id="poeCraftCalcClear">${ko ? "선택 해제" : "Clear"}</button>
 	</div>
-	<script>
+	<script nonce="${CspNonceHolder.getNonce()}">
 		(function () {
 			var calc = document.getElementById("poeCraftCalc");
 			if (!calc) return;

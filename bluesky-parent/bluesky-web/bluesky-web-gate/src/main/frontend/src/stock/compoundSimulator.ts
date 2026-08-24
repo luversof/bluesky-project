@@ -1,3 +1,95 @@
+// 복리 계산 본체. 화면(DOM)과 떼어 두어 브라우저 없이 검증할 수 있게 한다.
+// 이 파일 전체가 IIFE 라 안쪽 함수는 내보낼 수 없어서, 계산만 모듈 최상위로 올렸다.
+// 동작은 그대로다 - 아래 simulate() 가 입력값을 읽어 이 함수를 부른다.
+
+const COMPOUND_MAX_YEARS = 100;
+// 이율 허용 범위. 입력 필드의 min/max 와 같은 값이다.
+// HTML 의 min/max 는 타이핑을 막지 못하고 필드를 :invalid 로만 표시하므로(값은 그대로 읽힌다),
+// 연수처럼 코드에서도 잘라 준다. 특히 -100% 아래로 내려가면 잔액이 양수와 음수를 오간다
+// (실측: -150% 로 10년 -> 1년차 -5,500,000 / 2년차 +2,250,000 / 3년차 -1,625,000 ...).
+const COMPOUND_MIN_RATE_PCT = -100;
+const COMPOUND_MAX_RATE_PCT = 200;
+
+interface YearRow {
+	year: number;
+	contribution: number;
+	cumulativePrincipal: number;
+	gain: number;
+	balance: number;
+}
+
+interface CompoundInput {
+	initial: number;
+	contribution: number;
+	ratePct: number;
+	years: number;
+	monthly: boolean;
+	contributeAtBegin: boolean;
+}
+
+/**
+ * 연차별 적립 결과. 입력 범위를 여기서 자르므로 호출부는 날값을 그대로 넘겨도 된다.
+ *
+ * 매월 모드는 연 이율/12 의 월 이율로 월복리 (일반적인 적금 계산기 관례).
+ */
+function projectCompound(input: CompoundInput): YearRow[] {
+	const initial = Math.max(0, input.initial);
+	const contribution = Math.max(0, input.contribution);
+	const rate =
+		Math.min(
+			COMPOUND_MAX_RATE_PCT,
+			Math.max(COMPOUND_MIN_RATE_PCT, input.ratePct),
+		) / 100;
+	const years = Math.min(
+		COMPOUND_MAX_YEARS,
+		Math.max(1, Math.floor(input.years)),
+	);
+	const periodsPerYear = input.monthly ? 12 : 1;
+	const periodRate = input.monthly ? rate / 12 : rate;
+
+	const rows: YearRow[] = [];
+	let balance = initial;
+	let cumulativePrincipal = initial;
+
+	for (let year = 1; year <= years; year++) {
+		let yearContribution = 0;
+		let yearGain = 0;
+		for (let period = 0; period < periodsPerYear; period++) {
+			if (input.contributeAtBegin) {
+				balance += contribution;
+				yearContribution += contribution;
+			}
+			const gain = balance * periodRate;
+			balance += gain;
+			yearGain += gain;
+			if (!input.contributeAtBegin) {
+				balance += contribution;
+				yearContribution += contribution;
+			}
+		}
+		cumulativePrincipal += yearContribution;
+		rows.push({
+			year,
+			contribution: yearContribution,
+			cumulativePrincipal,
+			gain: yearGain,
+			balance,
+		});
+	}
+
+	return rows;
+}
+
+// 이 파일은 type="module" 없이 classic <script src> 로 로드된다. export 문을 넣으면 브라우저가
+// "Unexpected token 'export'" 로 파일 전체를 거부해 화면 기능이 통째로 죽는다(실제로 그렇게 깨뜨렸다).
+// 그래서 검증용으로는 export 대신 전역에 붙인다 - 브라우저에서는 쓰이지 않고 테스트만 읽는다.
+(globalThis as any).__stockCompoundSimulatorInternals = {
+	projectCompound,
+	COMPOUND_MIN_RATE_PCT,
+	COMPOUND_MAX_RATE_PCT,
+	COMPOUND_MAX_YEARS,
+};
+
 (() => {
 	const root = document.getElementById("stockCompoundSimulator");
 	if (!root || root.dataset.compoundSimulatorInitialized === "true") {
@@ -6,7 +98,8 @@
 	root.dataset.compoundSimulatorInitialized = "true";
 
 	const STORAGE_KEY = "stock.compoundSimulator.v1";
-	const MAX_YEARS = 100;
+	// 이율/연수 상한은 모듈 최상위의 COMPOUND_* 상수를 쓴다(계산과 같은 값을 한 곳에서 관리).
+	// 인출 시뮬레이터는 annualRateToMonthlyRate 에서 이미 같은 하한을 두고 있다.
 
 	const initialInput = document.getElementById(
 		"stockCompoundInitial",
@@ -55,16 +148,17 @@
 		"stockCompoundGrowthChart",
 	) as HTMLCanvasElement | null;
 
-	const currencyFormatter = new Intl.NumberFormat("ko-KR");
+	// 앱 로케일을 쓴다. stock-charts.ts 의 resolveLocale 과 같은 규칙이다 - 이 파일들은 클래식 스크립트라
+	// import 를 쓸 수 없어 규칙을 옮겨 적고, compactNumberParity 옆의 selectorsResolve 처럼 테스트로 묶는다.
+	// 예전에는 이 파일만 로케일을 따로 정해, 같은 화면 안에서도 숫자 자릿수 구분이 갈릴 수 있었다
+	// (compoundSimulator 는 "ko-KR" 고정, stockSimulator 는 undefined = 브라우저 로케일).
+	const appLocale =
+		document.body?.dataset?.locale ||
+		document.documentElement?.lang ||
+		navigator.language ||
+		"ko-KR";
+	const currencyFormatter = new Intl.NumberFormat(appLocale);
 	let growthChart: any = null;
-
-	interface YearRow {
-		year: number;
-		contribution: number;
-		cumulativePrincipal: number;
-		gain: number;
-		balance: number;
-	}
 
 	function readNumber(input: HTMLInputElement | null, fallback: number) {
 		const raw = input?.value?.trim();
@@ -161,50 +255,14 @@
 	}
 
 	function simulate(): YearRow[] {
-		const initial = Math.max(0, readNumber(initialInput, 0));
-		const contribution = Math.max(0, readNumber(contributionInput, 0));
-		const rate = readNumber(rateInput, 0) / 100;
-		const years = Math.min(
-			MAX_YEARS,
-			Math.max(1, Math.floor(readNumber(yearsInput, 1))),
-		);
-		const monthly = frequencySelect?.value === "monthly";
-		const contributeAtBegin = timingSelect?.value !== "end";
-		// 매월 모드: 연 이율/12 의 월 이율로 월복리 (일반적인 적금 계산기 관례)
-		const periodsPerYear = monthly ? 12 : 1;
-		const periodRate = monthly ? rate / 12 : rate;
-
-		const rows: YearRow[] = [];
-		let balance = initial;
-		let cumulativePrincipal = initial;
-
-		for (let year = 1; year <= years; year++) {
-			let yearContribution = 0;
-			let yearGain = 0;
-			for (let period = 0; period < periodsPerYear; period++) {
-				if (contributeAtBegin) {
-					balance += contribution;
-					yearContribution += contribution;
-				}
-				const gain = balance * periodRate;
-				balance += gain;
-				yearGain += gain;
-				if (!contributeAtBegin) {
-					balance += contribution;
-					yearContribution += contribution;
-				}
-			}
-			cumulativePrincipal += yearContribution;
-			rows.push({
-				year,
-				contribution: yearContribution,
-				cumulativePrincipal,
-				gain: yearGain,
-				balance,
-			});
-		}
-
-		return rows;
+		return projectCompound({
+			initial: readNumber(initialInput, 0),
+			contribution: readNumber(contributionInput, 0),
+			ratePct: readNumber(rateInput, 0),
+			years: readNumber(yearsInput, 1),
+			monthly: frequencySelect?.value === "monthly",
+			contributeAtBegin: timingSelect?.value !== "end",
+		});
 	}
 
 	function renderPreviews() {
@@ -391,7 +449,7 @@
 						data: profitData,
 						backgroundColor: seriesColor(
 							"--color-compound-profit",
-							"rgba(240,68,82,0.75)",
+							"rgba(206,57,69,0.75)",
 						),
 						stack: "total",
 						borderRadius: 3,

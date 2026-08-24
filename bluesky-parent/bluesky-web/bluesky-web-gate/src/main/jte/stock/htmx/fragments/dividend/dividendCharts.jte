@@ -30,7 +30,7 @@
 
         <!-- Right: Monthly Bar Chart -->
         @template._components.ui.card(cssClass = "flex-[3] min-w-[280px] overflow-visible", body = @`
-                <h3 class="font-bold text-sm mb-3">${monthlyDividendsLabel}</h3>
+                <h2 class="font-bold text-sm mb-3">${monthlyDividendsLabel}</h2>
                 <div class="relative h-[280px]">
                     <canvas id="monthlyBarChart" class="amount-chart"></canvas>
                 </div>

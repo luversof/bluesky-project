@@ -51,7 +51,14 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
               attributes.put(name, serialized);
             });
 
+    // 내용이 그대로면 서버에 이미 같은 값이 있다. 만료 갱신은 validate-session 쪽에서 이미 하므로
+    // 여기서 굳이 왕복을 한 번 더 쓸 이유가 없다(자세한 근거는 ApiSession#savedAttributes 주석).
+    if (attributes.equals(session.getSavedAttributes())) {
+      return;
+    }
+
     userInfoApiClient.createSession(new CreateSessionRequest(session.getId(), attributes));
+    session.setSavedAttributes(attributes);
   }
 
   @Override
@@ -76,7 +83,13 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
       session.setLastAccessedTime(Instant.now());
       session.setMaxInactiveInterval(Duration.ofMinutes(30));
 
-      return new ApiSession(session, userInfoApiClient);
+      ApiSession apiSession = new ApiSession(session, userInfoApiClient);
+      // 방금 서버에서 받은 '직렬화된' 상태 그대로를 기준으로 삼는다.
+      apiSession.setSavedAttributes(
+          userInfo.sessionAttributes() == null
+              ? new HashMap<>()
+              : new HashMap<>(userInfo.sessionAttributes()));
+      return apiSession;
     } catch (Exception e) {
       e.printStackTrace();
       return null;

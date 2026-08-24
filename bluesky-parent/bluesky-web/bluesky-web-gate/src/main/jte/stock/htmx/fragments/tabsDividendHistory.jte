@@ -46,9 +46,9 @@
 @param BigDecimal midMonthNetAmount = BigDecimal.ZERO
 @param BigDecimal monthEndNetAmount = BigDecimal.ZERO
 @param BigDecimal otherWindowNetAmount = BigDecimal.ZERO
-@param long midMonthCount = 0
-@param long monthEndCount = 0
-@param long otherWindowCount = 0
+@param long midMonthCount = 0L
+@param long monthEndCount = 0L
+@param long otherWindowCount = 0L
 @param BigDecimal prevPeriodNetAmount = null
 @param LocalDate prevStartDate = null
 @param LocalDate prevEndDate = null
@@ -57,7 +57,7 @@
 @param BigDecimal portfolioYieldOnCostPct = null
 @param BigDecimal portfolioYieldOnMarketPct = null
 @param BigDecimal portfolioYieldAnnualizedPct = null
-@param long periodDayCount = 0
+@param long periodDayCount = 0L
 @param BigDecimal periodStartPrincipal = null
 @param BigDecimal periodEndPrincipal = null
 @param BigDecimal periodPrincipalDelta = null
@@ -65,8 +65,6 @@
 @param DividendYieldGroupView bestYieldStock = null
 @param DividendYieldGroupView bestYieldAccount = null
 @param List<DividendYieldGroupView> stockYieldRows = java.util.List.of()
-@param java.util.Map<String, UUID> yieldStockIdByName = java.util.Map.of()
-@param java.util.Map<String, UUID> yieldAccountIdByName = java.util.Map.of()
 @param List<DividendYieldGroupView> accountYieldRows = java.util.List.of()
 @param List<DividendYieldGroupView> yearlyYieldRows = java.util.List.of()
 @param String rangeMode = null
@@ -107,7 +105,7 @@
     for (int ci = 0; ci < chartList.size(); ci++) {
         DividendView d = chartList.get(ci);
         if (ci > 0) jsSb.append(",");
-        java.time.ZoneId _zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+        java.time.ZoneId _zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
         jsSb.append("{payDate:\"").append(d.payDate() != null ? ymd.format(d.payDate().atZone(_zone)) : "").append("\"");
         jsSb.append(",stockItem:\"").append(ej.apply(d.stockItemName())).append("\"");
         jsSb.append(",account:\"").append(ej.apply(d.accountName())).append("\"");
@@ -120,7 +118,7 @@
 
     // Nav 버튼 활성화 여부 (use client timezone if available)
     boolean isAllMode = "all".equals(rangeMode);
-    java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+    java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
     java.time.LocalDate today = java.time.LocalDate.now(zone);
     java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
     java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
@@ -236,8 +234,6 @@
         yearlyYieldRows = yearlyYieldRows,
         stockYieldRows = stockYieldRows,
         accountYieldRows = accountYieldRows,
-        yieldStockIdByName = yieldStockIdByName,
-        yieldAccountIdByName = yieldAccountIdByName,
         stockItemList = stockItemList,
         accountLabel = accountLabel,
         stockNameLabel = stockNameLabel,
@@ -252,6 +248,7 @@
 
     @template.stock.htmx.fragments.dividend.dividendTable(
         dividendList = dividendList,
+        zone = zone,
         pagination = pagination,
         sort = sort,
         decimalFormat = decimalFormat,
@@ -354,6 +351,16 @@
             let totalTaxableAmount = 0;
             let totalDailyPrincipalCost = 0;
             let totalAveragePrincipalCost = 0;
+            // 기준일 원금이 0 인 배당(지급일 이전에 이미 전량 매도한 건)은 분모에 기여하지 않는다.
+            // 그 세후액을 분자에 넣으면 수익률이 과대 계상되므로 서버 합계행은 이미 빼고 계산한다.
+            // 여기서도 같은 값을 써야 같은 행을 골랐을 때 합계행과 숫자가 맞는다
+            // (실측 2026-08-22: 배당 193건 중 5건·세후 144,360원이 그 대상 = 전체 세후의 0.23%).
+            //
+            // 세 수익률이 모두 이 값을 쓴다. 2026-08-24 까지는 일평균원금 기준만 totalNetAmount 를 썼고
+            // 같은 표의 합계행도 그랬다 - 그래서 선택 합계와 합계행은 서로 맞았지만, 둘 다 그 열의
+            // '행'과 어긋나 있었다(행은 서버가 걸러서 계산한 값을 그대로 그린다). 합계행을 행에 맞추면서
+            // 여기도 함께 맞췄다.
+            let totalNetWithPrincipalCost = 0;
 
             for (let i = 0; i < selectedRows.length; i++) {
                 const row = selectedRows[i];
@@ -363,6 +370,7 @@
                 totalTaxableAmount += Number(row.dataset.taxableAmount || '0');
                 totalDailyPrincipalCost += Number(row.dataset.averageDailyPrincipalCost || '0');
                 totalAveragePrincipalCost += Number(row.dataset.averagePrincipalCost || '0');
+                totalNetWithPrincipalCost += Number(row.dataset.netWithPrincipalCost || '0');
             }
 
             const totalNetReference = Number(summary.dataset.totalNetAmount || '0');
@@ -370,10 +378,10 @@
                 ? (totalNetAmount / totalNetReference) * 100
                 : 0;
             const yieldOnDailyAverageCost = totalDailyPrincipalCost > 0
-                ? (totalNetAmount / totalDailyPrincipalCost) * 100
+                ? (totalNetWithPrincipalCost / totalDailyPrincipalCost) * 100
                 : 0;
             const yieldOnBasisAverageCost = totalAveragePrincipalCost > 0
-                ? (totalNetAmount / totalAveragePrincipalCost) * 100
+                ? (totalNetWithPrincipalCost / totalAveragePrincipalCost) * 100
                 : 0;
 
             const countLabel = summary.querySelector('[data-dividend-yield-selection-count]');
@@ -897,9 +905,11 @@
             const avgPerMonth = totalNet / monthCount;
             displayEl.textContent = formatCurrency(Math.round(avgPerMonth));
             if (descEl) {
+                // 총액은 실제 배당 합계라 '금액 숨김' 대상이다. amount-value 로 감싸지 않으면
+                // 숨김을 켜도 이 줄만 그대로 보인다(실측: 배당내역에서 유일한 누락).
                 descEl.innerHTML = averageDescTemplate
                     .replace('{0}', formatNumber(monthCount))
-                    .replace('{1}', formatCurrency(Math.round(totalNet)))
+                    .replace('{1}', '<span class="amount-value">' + formatCurrency(Math.round(totalNet)) + '</span>')
                     .replace('{2}', formatCount(dividendData.length));
             }
         }

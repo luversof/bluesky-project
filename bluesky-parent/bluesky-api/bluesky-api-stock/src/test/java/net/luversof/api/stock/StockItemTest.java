@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,12 @@ class StockItemTest implements GeneralTest {
 
   @Autowired StockAdminService stockAdminService;
 
+  /**
+   * 실사용자 데이터를 실제로 바꾸는 개발용 도구다. 자동 실행에서 돌면 안 된다. 실측 사고(2026-08-22): 프로필을 주고 AccountTest 를 돌리자
+   * deleteAllByUserId 가 계좌 7 -> 0, 거래 250 -> 0, 배당 193 -> 0 으로 지웠다. 원장은 시트 재가져오기로 되돌렸지만 계좌
+   * 설정(manualPrincipalAmount)은 복구 경로가 없어 잃었다. 필요할 때 이 애노테이션을 손으로 떼고 쓸 것.
+   */
+  @Disabled("실사용자 데이터를 바꾼다 - 필요할 때만 손으로 실행")
   @Test
   void createStockItem() {
     var stockItem = new StockItem();
@@ -54,6 +61,12 @@ class StockItemTest implements GeneralTest {
     log.debug("result : {}", result);
   }
 
+  /**
+   * 실사용자 데이터를 실제로 바꾸는 개발용 도구다. 자동 실행에서 돌면 안 된다. 실측 사고(2026-08-22): 프로필을 주고 AccountTest 를 돌리자
+   * deleteAllByUserId 가 계좌 7 -> 0, 거래 250 -> 0, 배당 193 -> 0 으로 지웠다. 원장은 시트 재가져오기로 되돌렸지만 계좌
+   * 설정(manualPrincipalAmount)은 복구 경로가 없어 잃었다. 필요할 때 이 애노테이션을 손으로 떼고 쓸 것.
+   */
+  @Disabled("실사용자 데이터를 바꾼다 - 필요할 때만 손으로 실행")
   @Test
   void stockItemBulkInsert() {
     stockAdminService.stockItemBulkInsert(TestConstant.USER_ID);

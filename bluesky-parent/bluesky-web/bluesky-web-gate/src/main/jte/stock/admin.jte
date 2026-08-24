@@ -13,6 +13,8 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param String adminTab = "data-management"
+@param net.luversof.web.gate.stock.dto.response.DataStatusResponse dataStatus = null
+@param net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse ledgerIntegrity = null
 @param List<StockItem> stockItems = java.util.List.of()
 @param List<MonthlyDividendProfileResponse> monthlyDividendProfiles = java.util.List.of()
 @param List<MonthlyDividendPayoutResponse> monthlyDividendPayouts = java.util.List.of()
@@ -72,7 +74,7 @@
 						monthlyDividendReferenceResultIsError = monthlyDividendReferenceResultIsError)
 					<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
 				@else
-					@template.stock.htmx.fragments.adminActions(isAuthenticated = isAuthenticated)
+					@template.stock.htmx.fragments.adminActions(isAuthenticated = isAuthenticated, dataStatus = dataStatus, ledgerIntegrity = ledgerIntegrity)
 				@endif
 			</div>
 		</div>

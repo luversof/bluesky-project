@@ -58,8 +58,24 @@ const PROFIT_COLORS_NEG = [
 	"rgba(99,102,241,0.8)",
 ];
 
+/**
+ * 차트 툴팁·라벨의 금액. 앱 로케일을 쓴다.
+ *
+ * <p>예전에는 "ko-KR" 이 박혀 있었다. 같은 파일의 compactNumber 는 이미 앱 로케일을 보고 있었으므로, 축 라벨과 툴팁이 서로 다른 로케일로
+ * 찍힐 수 있는 상태였다(ko/en 은 자릿수 구분이 같아 눈에는 안 보인다).
+ */
 function fmtAmt(v: any): string {
-	return Number(v).toLocaleString("ko-KR");
+	return Number(v).toLocaleString(resolveLocale());
+}
+
+/**
+ * 레이아웃의 #app-config 에 실려 오는 화면 문구를 읽는다.
+ * 차트 데이터셋 라벨을 코드에 한글로 박아 두면 영어 화면에도 그대로 나온다(실측: 매매내역 차트의 '매수'/'매도').
+ */
+function appMessage(key: string, fallback: string): string {
+	const cfg = document.getElementById("app-config") as HTMLElement | null;
+	const value = cfg?.dataset?.[key];
+	return value && value.trim() ? value : fallback;
 }
 
 function resolveLocale(): string {
@@ -73,9 +89,35 @@ function resolveLocale(): string {
 
 function compactNumber(value: any): string {
 	const numeric = Number(value) || 0;
-	const abs = Math.abs(numeric);
+	let abs = Math.abs(numeric);
 	const sign = numeric < 0 ? "-" : "";
 	const locale = resolveLocale();
+
+	// 단위를 고른 뒤 반올림하면 경계에서 한 단위 아래 표기가 남는다
+	// (실측: 999,999 -> "1000K"(1M 이어야 한다), 99,999,999 -> "10,000만"(1억 이어야 한다)).
+	// 표시 자릿수로 먼저 반올림해 보고, 다음 단위에 닿으면 그 단위로 올린다.
+	const promote = (unit: number, next: number, digits: number) => {
+		if (abs >= unit && abs < next && Number((abs / unit).toFixed(digits)) >= next / unit) {
+			abs = next;
+		}
+	};
+
+	// 한국어가 아니면 국제 표기(B/M/K). 예전에는 로케일과 무관하게 억/만 을 붙여
+	// 영어 화면 차트 축에도 "25억" 이 그대로 나왔다(실측).
+	if (!locale.toLowerCase().startsWith("ko")) {
+		const trim = (v: number) => {
+			const t = v.toFixed(1);
+			return t.endsWith(".0") ? t.slice(0, -2) : t;
+		};
+		promote(1000, 1000000, 1);
+		promote(1000000, 1000000000, 1);
+		if (abs >= 1000000000) return sign + trim(abs / 1000000000) + "B";
+		if (abs >= 1000000) return sign + trim(abs / 1000000) + "M";
+		if (abs >= 1000) return sign + trim(abs / 1000) + "K";
+		return sign + new Intl.NumberFormat(locale).format(abs);
+	}
+
+	promote(10000, 100000000, abs >= 1000000 ? 0 : 1);
 
 	if (abs >= 100000000) {
 		const digits = abs >= 1000000000 ? 0 : 1;
@@ -260,14 +302,14 @@ StockCharts.initMonthlyFromData = function (
 			labels: m.labels,
 			datasets: [
 				{
-					label: "매수",
+					label: appMessage("stockLabelBuy", "Buy"),
 					data: m.buyData,
 					backgroundColor: "rgba(239,68,68,0.7)",
 					borderRadius: 3,
 					maxBarThickness: 36,
 				},
 				{
-					label: "매도",
+					label: appMessage("stockLabelSell", "Sell"),
 					data: m.sellData,
 					backgroundColor: "rgba(59,130,246,0.7)",
 					borderRadius: 3,
@@ -298,11 +340,7 @@ StockCharts.initMonthlyFromData = function (
 					grid: { color: gridColor },
 					ticks: {
 						font: { size: 10 },
-						callback: (v: any) => {
-							if (v >= 100000000) return (v / 100000000).toFixed(0) + "억";
-							if (v >= 10000) return (v / 10000).toFixed(0) + "만";
-							return v.toLocaleString("ko-KR");
-						},
+						callback: (v: any) => compactNumber(v),
 					},
 				},
 			},
@@ -337,11 +375,17 @@ StockCharts.initDonutFromData = function (
 		: null;
 	if (d.labels.length === 0) {
 		canvas.style.display = "none";
-		if (legendEl)
-			legendEl.innerHTML =
-				'<div class="text-xs opacity-40 pt-4 text-center">해당 기간 ' +
-				(isProfitMode ? "매도 내역" : "매수 내역") +
-				"이 없습니다.</div>";
+		if (legendEl) {
+			// 레이아웃이 이미 data-stock-chart-message-* 로 실어 보내는 문구다.
+			// 예전에는 여기서 한글을 직접 이어 붙여, 영어 화면에도 한글이 그대로 나갔다.
+			const emptyText = isProfitMode
+				? appMessage("stockChartMessageNoSellData", "No sell trades in this period.")
+				: appMessage("stockChartMessageNoBuyData", "No buy trades in this period.");
+			const holder = document.createElement("div");
+			holder.className = "text-xs opacity-40 pt-4 text-center";
+			holder.textContent = emptyText;
+			legendEl.replaceChildren(holder);
+		}
 		return null;
 	}
 	canvas.style.display = "";
@@ -370,7 +414,10 @@ StockCharts.initDonutFromData = function (
 	});
 	const titleEl = opts.titleId ? document.getElementById(opts.titleId) : null;
 	if (titleEl)
-		titleEl.textContent = isProfitMode ? "종목별 손익 기여" : "매수 집중도";
+		// 레이아웃이 data-stock-chart-title-* 로 실어 보내는 제목을 쓴다(영어 화면 대응).
+		titleEl.textContent = isProfitMode
+			? appMessage("stockChartTitleProfitContribution", "Profit Contribution")
+			: appMessage("stockChartTitleBuyConcentration", "Buy Concentration");
 	if (legendEl) {
 		const total = d.data.reduce((a: number, b: number) => a + b, 0);
 		legendEl.innerHTML = d.labels

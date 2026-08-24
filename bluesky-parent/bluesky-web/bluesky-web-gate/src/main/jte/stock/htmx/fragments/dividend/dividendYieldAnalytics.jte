@@ -15,7 +15,7 @@
 @param BigDecimal portfolioYieldOnCostPct
 @param BigDecimal portfolioYieldOnMarketPct
 @param BigDecimal portfolioYieldAnnualizedPct = null
-@param long periodDayCount = 0
+@param long periodDayCount = 0L
 @param BigDecimal periodStartPrincipal = null
 @param BigDecimal periodEndPrincipal = null
 @param BigDecimal periodPrincipalDelta = null
@@ -25,8 +25,6 @@
 @param List<DividendYieldGroupView> yearlyYieldRows
 @param List<DividendYieldGroupView> stockYieldRows
 @param List<DividendYieldGroupView> accountYieldRows
-@param java.util.Map<String, UUID> yieldStockIdByName
-@param java.util.Map<String, UUID> yieldAccountIdByName
 @param List<StockItem> stockItemList
 @param String accountLabel
 @param String stockNameLabel
@@ -117,9 +115,11 @@
     BigDecimal stockYieldFooterDailyPrincipalCost = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::averageDailyPrincipalCost);
     BigDecimal stockYieldFooterPrincipalCost = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::averagePrincipalCost);
     BigDecimal stockYieldFooterMarketValue = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::averagePrincipalMarketValue);
-    BigDecimal stockYieldFooterYieldOnDailyAverageCostPct = computeYieldPct.apply(stockYieldFooterNetAmount, stockYieldFooterDailyPrincipalCost);
-    BigDecimal stockYieldFooterYieldOnCostPct = computeYieldPct.apply(stockYieldFooterNetAmount, stockYieldFooterPrincipalCost);
-    BigDecimal stockYieldFooterYieldOnMarketPct = computeYieldPct.apply(stockYieldFooterNetAmount, stockYieldFooterMarketValue);
+    BigDecimal stockYieldFooterNetWithPrincipalCost = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::netAmountWithPrincipalCost);
+    BigDecimal stockYieldFooterYieldOnDailyAverageCostPct = computeYieldPct.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterDailyPrincipalCost);
+    BigDecimal stockYieldFooterNetWithPrincipalMarket = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::netAmountWithPrincipalMarket);
+    BigDecimal stockYieldFooterYieldOnCostPct = computeYieldPct.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterPrincipalCost);
+    BigDecimal stockYieldFooterYieldOnMarketPct = computeYieldPct.apply(stockYieldFooterNetWithPrincipalMarket, stockYieldFooterMarketValue);
     long stockYieldFooterDividendCount = sumDividendYieldCount.apply(stockYieldRows);
     BigDecimal accountYieldFooterGrossAmount = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::totalGrossAmount);
     BigDecimal accountYieldFooterNetAmount = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::totalNetAmount);
@@ -128,17 +128,35 @@
     BigDecimal accountYieldFooterDailyPrincipalCost = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::averageDailyPrincipalCost);
     BigDecimal accountYieldFooterPrincipalCost = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::averagePrincipalCost);
     BigDecimal accountYieldFooterMarketValue = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::averagePrincipalMarketValue);
-    BigDecimal accountYieldFooterYieldOnDailyAverageCostPct = computeYieldPct.apply(accountYieldFooterNetAmount, accountYieldFooterDailyPrincipalCost);
-    BigDecimal accountYieldFooterYieldOnCostPct = computeYieldPct.apply(accountYieldFooterNetAmount, accountYieldFooterPrincipalCost);
-    BigDecimal accountYieldFooterYieldOnMarketPct = computeYieldPct.apply(accountYieldFooterNetAmount, accountYieldFooterMarketValue);
+    BigDecimal accountYieldFooterNetWithPrincipalCost = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::netAmountWithPrincipalCost);
+    BigDecimal accountYieldFooterYieldOnDailyAverageCostPct = computeYieldPct.apply(accountYieldFooterNetWithPrincipalCost, accountYieldFooterDailyPrincipalCost);
+    BigDecimal accountYieldFooterNetWithPrincipalMarket = sumDividendYieldValue.apply(accountYieldRows, DividendYieldGroupView::netAmountWithPrincipalMarket);
+    BigDecimal accountYieldFooterYieldOnCostPct = computeYieldPct.apply(accountYieldFooterNetWithPrincipalCost, accountYieldFooterPrincipalCost);
+    BigDecimal accountYieldFooterYieldOnMarketPct = computeYieldPct.apply(accountYieldFooterNetWithPrincipalMarket, accountYieldFooterMarketValue);
     long accountYieldFooterDividendCount = sumDividendYieldCount.apply(accountYieldRows);
+    // 수익률의 분자는 "기준일 원금이 있는 배당"의 세후 합이라 화면의 배당금(세후) 열과 다르다
+    // (실측: 193건 중 5건·세후 144,360원이 분모에 기여하지 않아 제외된다. 화면 숫자로 나눠보면
+    //  61,645,687/863,424,795=7.14% 인데 표시는 7.12% 라서, 값이 틀린 것처럼 보였다).
+    // 실제 분자와 제외액을 셀 툴팁으로 붙여 표시값을 화면에서 재현할 수 있게 한다.
+    java.util.function.BiFunction<BigDecimal, BigDecimal, String> yieldBasisTitle = (usedNet, totalNet) -> {
+        if (usedNet == null || totalNet == null) {
+            return "";
+        }
+        BigDecimal excludedNet = totalNet.subtract(usedNet);
+        if (excludedNet.compareTo(BigDecimal.ZERO) <= 0) {
+            return "";
+        }
+        return java.text.MessageFormat.format(
+            MessageUtil.getMessage("stock.dividend.yield.basis.excluded"),
+            decimalFormat.format(usedNet), decimalFormat.format(excludedNet));
+    };
 }
 
     <!-- Row 3: Yield Analytics -->
     <div class="mb-3 px-1">
         <div class="flex items-center gap-2">
             <div class="text-sm font-bold">${dividendYieldTitle}</div>
-            <div class="tooltip tooltip-right shrink-0">
+            <div class="tooltip tooltip-bottom shrink-0">
                 <div class="tooltip-content z-[20] w-64 sm:w-72 max-w-[calc(100vw-2rem)] rounded-box bg-neutral text-neutral-content shadow-lg">
                     <div class="space-y-1 text-left text-xs leading-5">
                         <div class="font-semibold mb-1">${dividendYieldHelpTitleLabel}</div>
@@ -152,29 +170,29 @@
                 </button>
             </div>
         </div>
-        <div class="text-xs text-base-content/50 mt-1">${yieldBasisNoteLabel}</div>
+        <div class="text-xs text-base-content/60 mt-1">${yieldBasisNoteLabel}</div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         @template._components.ui.card(body = @`
-                <div class="text-xs text-base-content/50 mb-1">${dividendYieldPeriodDailyLabel}</div>
+                <div class="text-xs text-base-content/60 mb-1">${dividendYieldPeriodDailyLabel}</div>
                 <div class="text-xl font-bold text-dividend">${percentFormat.apply(portfolioYieldOnDailyAverageCostPct)}</div>
-                <div class="text-xs text-base-content/40 mt-1">${dividendYieldPeriodBasisLabel} <span class="font-medium">${percentFormat.apply(portfolioYieldOnCostPct)}</span></div>
-                <div class="text-xs text-base-content/40 mt-1">${yieldOnBasisMarketLabel} <span class="font-medium">${percentFormat.apply(portfolioYieldOnMarketPct)}</span></div>
+                <div class="text-xs text-base-content/60 mt-1">${dividendYieldPeriodBasisLabel} <span class="font-medium">${percentFormat.apply(portfolioYieldOnCostPct)}</span></div>
+                <div class="text-xs text-base-content/60 mt-1">${yieldOnBasisMarketLabel} <span class="font-medium">${percentFormat.apply(portfolioYieldOnMarketPct)}</span></div>
                 @if(portfolioYieldAnnualizedPct != null)
                 <div class="mt-2 border-t border-base-200/70 pt-2">
-                    <div class="text-xs text-base-content/50">${annualizedLabel}</div>
+                    <div class="text-xs text-base-content/60">${annualizedLabel}</div>
                     <div class="text-lg font-bold text-dividend">${percentFormat.apply(portfolioYieldAnnualizedPct)}</div>
-                    <div class="text-[11px] text-base-content/40">${annualizedNoteLabel}</div>
+                    <div class="text-[11px] text-base-content/60">${annualizedNoteLabel}</div>
                 </div>
                 @endif
                 @if(periodPrincipalDelta != null)
                 <div class="mt-2 border-t border-base-200/70 pt-2">
-                    <div class="text-xs text-base-content/50">${principalChangeLabel}</div>
+                    <div class="text-xs text-base-content/60">${principalChangeLabel}</div>
                     <div class="text-xs text-base-content/70 mt-0.5">
-                        <span class="text-base-content/45">${principalStartLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodStartPrincipal)}</span>
-                        <span class="text-base-content/40 mx-1">→</span>
-                        <span class="text-base-content/45">${principalEndLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodEndPrincipal)}</span>
+                        <span class="text-base-content/60">${principalStartLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodStartPrincipal)}</span>
+                        <span class="text-base-content/60 mx-1">→</span>
+                        <span class="text-base-content/60">${principalEndLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodEndPrincipal)}</span>
                     </div>
                     <div class="text-sm font-semibold mt-0.5 ${periodPrincipalDelta.signum() > 0 ? "text-profit" : periodPrincipalDelta.signum() < 0 ? "text-loss" : "text-base-content/60"}">
                         <span class="font-mono amount-value">${periodPrincipalDelta.signum() >= 0 ? "+" : "-"}₩ ${decimalFormat.format(periodPrincipalDelta.abs())}</span>
@@ -187,28 +205,28 @@
         `)
 
         @template._components.ui.card(body = @`
-                <div class="text-xs text-base-content/50 mb-1">${bestYieldStockLabel}</div>
+                <div class="text-xs text-base-content/60 mb-1">${bestYieldStockLabel}</div>
                 @if(bestYieldStock != null)
                     <div class="text-sm font-semibold truncate">${bestYieldStock.label()}</div>
                     <div class="text-xl font-bold text-dividend">${percentFormat.apply(bestYieldStock.yieldOnDailyAverageCostPct())}</div>
-                    <div class="text-xs text-base-content/40 mt-1">${dailyAverageInvestedCapitalLabel} <span class="font-medium amount-value">₩ ${bestYieldStock.averageDailyPrincipalCost() != null ? decimalFormat.format(bestYieldStock.averageDailyPrincipalCost()) : "-"}</span></div>
-                    <div class="text-xs text-base-content/40 mt-1">${yieldOnBasisAverageCostLabel} <span class="font-medium">${percentFormat.apply(bestYieldStock.yieldOnCostPct())}</span></div>
-                    <div class="text-xs text-base-content/40 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩ ${decimalFormat.format(bestYieldStock.totalNetAmount())}</span></div>
+                    <div class="text-xs text-base-content/60 mt-1">${dailyAverageInvestedCapitalLabel} <span class="font-medium amount-value">₩ ${bestYieldStock.averageDailyPrincipalCost() != null ? decimalFormat.format(bestYieldStock.averageDailyPrincipalCost()) : "-"}</span></div>
+                    <div class="text-xs text-base-content/60 mt-1">${yieldOnBasisAverageCostLabel} <span class="font-medium">${percentFormat.apply(bestYieldStock.yieldOnCostPct())}</span></div>
+                    <div class="text-xs text-base-content/60 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩ ${decimalFormat.format(bestYieldStock.totalNetAmount())}</span></div>
                 @else
-                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                    <div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
                 @endif
         `)
 
         @template._components.ui.card(body = @`
-                <div class="text-xs text-base-content/50 mb-1">${bestYieldAccountLabel}</div>
+                <div class="text-xs text-base-content/60 mb-1">${bestYieldAccountLabel}</div>
                 @if(bestYieldAccount != null)
                     <div class="text-sm font-semibold truncate">${bestYieldAccount.label()}</div>
                     <div class="text-xl font-bold text-dividend">${percentFormat.apply(bestYieldAccount.yieldOnDailyAverageCostPct())}</div>
-                    <div class="text-xs text-base-content/40 mt-1">${dailyAverageInvestedCapitalLabel} <span class="font-medium amount-value">₩ ${bestYieldAccount.averageDailyPrincipalCost() != null ? decimalFormat.format(bestYieldAccount.averageDailyPrincipalCost()) : "-"}</span></div>
-                    <div class="text-xs text-base-content/40 mt-1">${yieldOnBasisAverageCostLabel} <span class="font-medium">${percentFormat.apply(bestYieldAccount.yieldOnCostPct())}</span></div>
-                    <div class="text-xs text-base-content/40 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩ ${decimalFormat.format(bestYieldAccount.totalNetAmount())}</span></div>
+                    <div class="text-xs text-base-content/60 mt-1">${dailyAverageInvestedCapitalLabel} <span class="font-medium amount-value">₩ ${bestYieldAccount.averageDailyPrincipalCost() != null ? decimalFormat.format(bestYieldAccount.averageDailyPrincipalCost()) : "-"}</span></div>
+                    <div class="text-xs text-base-content/60 mt-1">${yieldOnBasisAverageCostLabel} <span class="font-medium">${percentFormat.apply(bestYieldAccount.yieldOnCostPct())}</span></div>
+                    <div class="text-xs text-base-content/60 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩ ${decimalFormat.format(bestYieldAccount.totalNetAmount())}</span></div>
                 @else
-                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                    <div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
                 @endif
         `)
     </div>
@@ -217,7 +235,7 @@
         @template._components.ui.card(cssClass = "min-w-0", body = @`
                 <div class="text-sm font-bold mb-3">${yearlyYieldSectionLabel}</div>
                 @if(yearlyYieldRows == null || yearlyYieldRows.isEmpty())
-                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                    <div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
                 @else
                     <div class="overflow-x-auto">
                         <table class="table table-xs w-full">
@@ -247,7 +265,7 @@
                                         <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
-                                        <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(row.yieldOnCostPct())}</td>
+                                        <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
                                         <td class="text-right">${countFormat.apply(row.dividendCount())}</td>
                                     </tr>
                                 @endfor
@@ -261,10 +279,10 @@
             <div class="card-body p-4" data-dividend-yield-selection-section>
                 <div class="text-sm font-bold mb-3">${stockYieldSectionLabel}</div>
                 @if(stockYieldRows == null || stockYieldRows.isEmpty())
-                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                    <div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
                 @else
                     <div class="mb-3 flex flex-col gap-3">
-                        <p class="text-xs text-base-content/50">${stockYieldSelectionHelperLabel}</p>
+                        <p class="text-xs text-base-content/60">${stockYieldSelectionHelperLabel}</p>
                         <div class="selection-reveal"><div>
                         <div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
                              data-dividend-yield-selection-summary
@@ -434,10 +452,11 @@
                                         data-average-daily-principal-cost="${row.averageDailyPrincipalCost() != null ? row.averageDailyPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-daily-average-cost="${row.yieldOnDailyAverageCostPct() != null ? row.yieldOnDailyAverageCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-net-with-principal-cost="${row.netAmountWithPrincipalCost() != null ? row.netAmountWithPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-dividend-count="${String.valueOf(row.dividendCount())}">
-                                        <td class="font-medium"><a href="/stock/item?stockItemId=${yieldStockIdByName.get(row.label()) != null ? yieldStockIdByName.get(row.label()).toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${row.label()}</a></td>
+                                        <td class="font-medium"><a href="/stock/item?stockItemId=${row.groupId() != null ? row.groupId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${row.label()}</a></td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
@@ -445,8 +464,8 @@
                                         <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
-                                        <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(row.yieldOnCostPct())}</td>
-                                        <td class="text-right hidden 2xl:table-cell text-base-content/70">${percentFormat.apply(row.yieldOnMarketPct())}</td>
+                                        <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
+                                        <td class="text-right hidden 2xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnMarketPct())}</td>
                                         <td class="text-right">${countFormat.apply(row.dividendCount())}</td>
                                     </tr>
                                 @endfor
@@ -461,8 +480,8 @@
                                     <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterDailyPrincipalCost)}</td>
                                     <td class="text-right text-dividend font-medium">${percentFormat.apply(stockYieldFooterYieldOnDailyAverageCostPct)}</td>
                                     <td class="text-right hidden xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterPrincipalCost)}</td>
-                                    <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(stockYieldFooterYieldOnCostPct)}</td>
-                                    <td class="text-right hidden 2xl:table-cell text-base-content/70">${percentFormat.apply(stockYieldFooterYieldOnMarketPct)}</td>
+                                    <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${percentFormat.apply(stockYieldFooterYieldOnCostPct)}</td>
+                                    <td class="text-right hidden 2xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalMarket, stockYieldFooterNetAmount)}">${percentFormat.apply(stockYieldFooterYieldOnMarketPct)}</td>
                                     <td class="text-right">${countFormat.apply(stockYieldFooterDividendCount)}</td>
                                 </tr>
                             </tfoot>
@@ -476,10 +495,10 @@
             <div class="card-body p-4" data-dividend-yield-selection-section>
                 <div class="text-sm font-bold mb-3">${accountYieldSectionLabel}</div>
                 @if(accountYieldRows == null || accountYieldRows.isEmpty())
-                    <div class="text-sm text-base-content/40">${noYieldAnalyticsLabel}</div>
+                    <div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
                 @else
                     <div class="mb-3 flex flex-col gap-3">
-                        <p class="text-xs text-base-content/50">${accountYieldSelectionHelperLabel}</p>
+                        <p class="text-xs text-base-content/60">${accountYieldSelectionHelperLabel}</p>
                         <div class="selection-reveal"><div>
                         <div class="rounded-2xl border border-secondary/15 bg-secondary/5 px-4 py-3"
                              data-dividend-yield-selection-summary
@@ -648,10 +667,11 @@
                                         data-average-daily-principal-cost="${row.averageDailyPrincipalCost() != null ? row.averageDailyPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-daily-average-cost="${row.yieldOnDailyAverageCostPct() != null ? row.yieldOnDailyAverageCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+                                        data-net-with-principal-cost="${row.netAmountWithPrincipalCost() != null ? row.netAmountWithPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                         data-dividend-count="${String.valueOf(row.dividendCount())}">
-                                        <td class="font-medium"><a href="/stock/account?accountId=${yieldAccountIdByName.get(row.label()) != null ? yieldAccountIdByName.get(row.label()).toString() : ""}" class="link link-hover">${row.label()}</a></td>
+                                        <td class="font-medium"><a href="/stock/account?accountId=${row.groupId() != null ? row.groupId().toString() : ""}" class="link link-hover">${row.label()}</a></td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
@@ -659,8 +679,8 @@
                                         <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
                                         <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
-                                        <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(row.yieldOnCostPct())}</td>
-                                        <td class="text-right hidden 2xl:table-cell text-base-content/70">${percentFormat.apply(row.yieldOnMarketPct())}</td>
+                                        <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
+                                        <td class="text-right hidden 2xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnMarketPct())}</td>
                                         <td class="text-right">${countFormat.apply(row.dividendCount())}</td>
                                     </tr>
                                 @endfor
@@ -675,8 +695,8 @@
                                     <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(accountYieldFooterDailyPrincipalCost)}</td>
                                     <td class="text-right text-dividend font-medium">${percentFormat.apply(accountYieldFooterYieldOnDailyAverageCostPct)}</td>
                                     <td class="text-right hidden xl:table-cell font-mono amount-value">${decimalFormat.format(accountYieldFooterPrincipalCost)}</td>
-                                    <td class="text-right hidden xl:table-cell text-base-content/70">${percentFormat.apply(accountYieldFooterYieldOnCostPct)}</td>
-                                    <td class="text-right hidden 2xl:table-cell text-base-content/70">${percentFormat.apply(accountYieldFooterYieldOnMarketPct)}</td>
+                                    <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(accountYieldFooterNetWithPrincipalCost, accountYieldFooterNetAmount)}">${percentFormat.apply(accountYieldFooterYieldOnCostPct)}</td>
+                                    <td class="text-right hidden 2xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(accountYieldFooterNetWithPrincipalMarket, accountYieldFooterNetAmount)}">${percentFormat.apply(accountYieldFooterYieldOnMarketPct)}</td>
                                     <td class="text-right">${countFormat.apply(accountYieldFooterDividendCount)}</td>
                                 </tr>
                             </tfoot>

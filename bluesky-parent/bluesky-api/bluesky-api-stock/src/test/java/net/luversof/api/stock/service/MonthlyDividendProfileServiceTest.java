@@ -154,6 +154,80 @@ class MonthlyDividendProfileServiceTest {
         .containsExactly(1, 2, 3);
   }
 
+  /**
+   * 일부만 재정렬해도 나머지가 이어서 번호를 받는지.
+   *
+   * <p>화면이 보이는 것만 보내거나 목록이 필터돼 있으면 요청에 일부 종목만 실린다. 그때 나머지를 그대로 두면 <b>순서가 겹쳐</b> 목록이 비결정적으로
+   * 보인다(1,2,3 중 둘을 1,2 로 바꾸면 남은 하나도 3 이 아니라 겹칠 수 있다). 요청분 뒤에 이어서 번호를 매겨야 한다.
+   */
+  @Test
+  void reorderKeepsRemainingProfilesDistinctWhenRequestIsPartial() {
+    StockItem plus = createStockItem("0018C0");
+    StockItem tiger = createStockItem("329200");
+    StockItem rise = createStockItem("494300");
+
+    MonthlyDividendProfile plusProfile = createProfile(plus, 1);
+    MonthlyDividendProfile tigerProfile = createProfile(tiger, 2);
+    MonthlyDividendProfile riseProfile = createProfile(rise, 3);
+
+    MonthlyDividendProfileReorderRequest request = new MonthlyDividendProfileReorderRequest();
+    request.setSymbols(List.of("494300"));
+
+    when(monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc())
+        .thenReturn(List.of(plusProfile, tigerProfile, riseProfile));
+    when(stockItemRepository.findBySymbol("494300")).thenReturn(rise);
+
+    monthlyDividendProfileService.reorder(request);
+
+    ArgumentCaptor<Iterable<MonthlyDividendProfile>> captor =
+        ArgumentCaptor.forClass(Iterable.class);
+    verify(monthlyDividendProfileRepository).saveAll(captor.capture());
+    List<MonthlyDividendProfile> savedProfiles = new ArrayList<>();
+    captor.getValue().forEach(savedProfiles::add);
+
+    // 요청한 것이 1 번, 나머지는 기존 순서대로 2, 3
+    assertThat(savedProfiles)
+        .extracting(MonthlyDividendProfile::getStockItemId)
+        .containsExactly(rise.getId(), plus.getId(), tiger.getId());
+    assertThat(savedProfiles)
+        .extracting(MonthlyDividendProfile::getDisplayOrder)
+        .containsExactly(1, 2, 3);
+    assertThat(savedProfiles)
+        .extracting(MonthlyDividendProfile::getDisplayOrder)
+        .doesNotHaveDuplicates();
+  }
+
+  @Test
+  void reorderRejectsDuplicateSymbols() {
+    MonthlyDividendProfileReorderRequest request = new MonthlyDividendProfileReorderRequest();
+    request.setSymbols(List.of("329200", "329200"));
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> monthlyDividendProfileService.reorder(request))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("duplicate");
+    verify(monthlyDividendProfileRepository, org.mockito.Mockito.never())
+        .saveAll(org.mockito.ArgumentMatchers.<Iterable<MonthlyDividendProfile>>any());
+  }
+
+  @Test
+  void reorderRejectsEmptySymbols() {
+    MonthlyDividendProfileReorderRequest empty = new MonthlyDividendProfileReorderRequest();
+    empty.setSymbols(List.of());
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> monthlyDividendProfileService.reorder(empty))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+
+    MonthlyDividendProfileReorderRequest blank = new MonthlyDividendProfileReorderRequest();
+    blank.setSymbols(List.of("   "));
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> monthlyDividendProfileService.reorder(blank))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+
+    verify(monthlyDividendProfileRepository, org.mockito.Mockito.never())
+        .saveAll(org.mockito.ArgumentMatchers.<Iterable<MonthlyDividendProfile>>any());
+  }
+
   private StockItem createStockItem(String symbol) {
     StockItem stockItem = new StockItem();
     stockItem.setId(UUID.randomUUID());

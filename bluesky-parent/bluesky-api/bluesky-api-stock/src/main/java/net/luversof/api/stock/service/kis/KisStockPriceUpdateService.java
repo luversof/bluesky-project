@@ -38,6 +38,7 @@ import net.luversof.api.stock.repository.StockPriceHistoryRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.kis.dto.KisDailyPriceItem;
 import net.luversof.api.stock.service.kis.dto.KisDailyPriceResponse;
+import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult;
 
 @Service
 public class KisStockPriceUpdateService {
@@ -61,33 +62,19 @@ public class KisStockPriceUpdateService {
   @Value("${kis.api.base-url:https://openapi.koreainvestment.com:9443}")
   private String baseUrl;
 
-  public void updatePriceHistory(UUID userId) {
+  public PriceHistoryUpdateResult updatePriceHistory(UUID userId) {
     Map<UUID, LocalDate> stockItemMinDateMap = new HashMap<>();
     Map<UUID, LocalDate> stockItemMaxDateMap = new HashMap<>();
 
     ZoneId zoneId = MARKET_ZONE_ID;
 
-    for (StockItemDateRange range : dividendRepository.findDividendDateRanges()) {
-      if (range.stockItemId() == null) continue;
-      LocalDate minDate =
-          range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
-      LocalDate maxDate =
-          range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
-
-      updateMinMaxMap(
-          stockItemMinDateMap, stockItemMaxDateMap, range.stockItemId(), minDate, maxDate);
-    }
-
-    for (StockItemDateRange range : tradeRepository.findTradeDateRanges()) {
-      if (range.stockItemId() == null) continue;
-      LocalDate minDate =
-          range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
-      LocalDate maxDate =
-          range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
-
-      updateMinMaxMap(
-          stockItemMinDateMap, stockItemMaxDateMap, range.stockItemId(), minDate, maxDate);
-    }
+    accumulateDateRanges(
+        dividendRepository.findDividendDateRanges(),
+        stockItemMinDateMap,
+        stockItemMaxDateMap,
+        zoneId);
+    accumulateDateRanges(
+        tradeRepository.findTradeDateRanges(), stockItemMinDateMap, stockItemMaxDateMap, zoneId);
 
     LocalDate today = LocalDate.now(zoneId);
 
@@ -114,6 +101,11 @@ public class KisStockPriceUpdateService {
     Map<UUID, StockItem> stockItemMap =
         stockItemsAssigned.stream().collect(Collectors.toMap(StockItem::getId, item -> item));
 
+    // 종목별 실패를 세어 호출자에게 알린다. 예전에는 실패해도 경고 한 줄만 남기고 넘어가
+    // 이 작업이 늘 성공으로 보였고, 가격에 구멍이 생겨도 화면에서 간접적으로만 드러났다.
+    int targetSymbolCount = 0;
+    List<String> failedSymbols = new ArrayList<>();
+
     for (StockItem stockItem : stockItemsAssigned) {
       UUID stockItemId = stockItem.getId();
       LocalDate minDate = stockItemMinDateMap.getOrDefault(stockItemId, today);
@@ -136,14 +128,17 @@ public class KisStockPriceUpdateService {
       Optional<StockPriceHistory> topDesc =
           stockPriceHistoryRepository.findTopByStockItemIdOrderByTradeDateDesc(stockItemId);
 
+      targetSymbolCount++;
+      boolean symbolSucceeded = true;
       if (topAsc.isPresent() && topDesc.isPresent()) {
         LocalDate dbMin = topAsc.get().getTradeDate();
         LocalDate dbMax = topDesc.get().getTradeDate();
 
         // dbMin 이전에 가져와야할 과거 데이터가 있는 경우
-        if (minDate.isBefore(dbMin)) {
-          fetchRangesInBlocks(
-              userId, stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1));
+        if (minDate.isBefore(dbMin)
+            && !fetchRangesInBlocks(
+                userId, stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1))) {
+          symbolSucceeded = false;
         }
 
         // 과거 보정(refreshTargetDates)과 전진 갱신(dbMax+1 ~ today)을 하나의 구간 집합으로 모은다.
@@ -160,13 +155,32 @@ public class KisStockPriceUpdateService {
           fetchRanges.add(new DateRange(dbMax.plusDays(1), maxDate));
         }
         for (DateRange range : mergeAdjacentRanges(fetchRanges)) {
-          fetchRangesInBlocks(
-              userId, stockItemId, stockItem.getSymbol(), range.start(), range.end());
+          if (!fetchRangesInBlocks(
+              userId, stockItemId, stockItem.getSymbol(), range.start(), range.end())) {
+            symbolSucceeded = false;
+          }
         }
-      } else {
-        fetchRangesInBlocks(userId, stockItemId, stockItem.getSymbol(), minDate, maxDate);
+      } else if (!fetchRangesInBlocks(
+          userId, stockItemId, stockItem.getSymbol(), minDate, maxDate)) {
+        symbolSucceeded = false;
+      }
+
+      if (!symbolSucceeded) {
+        failedSymbols.add(stockItem.getSymbol());
       }
     }
+
+    // 흩어진 종목별 경고와 별개로, 한 줄로 결과를 남긴다. 실패가 몇 개인지 로그를 뒤지지 않고 알 수 있다.
+    if (failedSymbols.isEmpty()) {
+      log.info("price history update finished: {} symbols, no failures", targetSymbolCount);
+    } else {
+      log.warn(
+          "price history update finished with failures: {}/{} symbols failed - {}",
+          failedSymbols.size(),
+          targetSymbolCount,
+          failedSymbols);
+    }
+    return new PriceHistoryUpdateResult(targetSymbolCount, List.copyOf(failedSymbols));
   }
 
   /** 조회 구간 [start, end] (양끝 포함). */
@@ -225,8 +239,10 @@ public class KisStockPriceUpdateService {
     return merged;
   }
 
-  private void fetchRangesInBlocks(
+  /** 구간 하나라도 실패하면 false. */
+  private boolean fetchRangesInBlocks(
       UUID userId, UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
+    boolean allSucceeded = true;
     LocalDate currentStartDate = startDate;
     while (!currentStartDate.isAfter(endDate)) {
       LocalDate currentEndDate = currentStartDate.plusDays(99);
@@ -234,7 +250,10 @@ public class KisStockPriceUpdateService {
         currentEndDate = endDate;
       }
 
-      fetchAndSavePriceHistory(userId, stockItemId, symbol, currentStartDate, currentEndDate);
+      if (!fetchAndSavePriceHistory(
+          userId, stockItemId, symbol, currentStartDate, currentEndDate)) {
+        allSucceeded = false;
+      }
 
       currentStartDate = currentEndDate.plusDays(1);
 
@@ -244,9 +263,37 @@ public class KisStockPriceUpdateService {
         Thread.currentThread().interrupt();
       }
     }
+    return allSucceeded;
   }
 
-  private void updateMinMaxMap(
+  /**
+   * 배당·매매 두 원천의 종목별 날짜 범위를 같은 규칙으로 합친다.
+   *
+   * <p>{@code minDate}/{@code maxDate} 는 <b>instant</b> 다. 시장 타임존으로 바꿔야 "그 종목의 거래가 있었던 날" 이 나온다
+   * &mdash; UTC 로 읽으면 KST 오전 0~9 시 사이 기록이 하루 앞으로 밀려, 수집 시작일이 하루 어긋난 채로 KIS 를 부른다.
+   *
+   * <p>예전에는 배당용·매매용으로 같은 10 줄이 나란히 복사돼 있었다(저장소 이름만 달랐다). 한쪽만 고치면 그 원천의 날짜만 밀린다.
+   *
+   * @param ranges 종목별 최소/최대 일자(둘 다 null 일 수 있다)
+   */
+  static void accumulateDateRanges(
+      List<StockItemDateRange> ranges,
+      Map<UUID, LocalDate> minMap,
+      Map<UUID, LocalDate> maxMap,
+      ZoneId zoneId) {
+    for (StockItemDateRange range : ranges) {
+      if (range.stockItemId() == null) {
+        continue;
+      }
+      LocalDate minDate =
+          range.minDate() != null ? range.minDate().atZone(zoneId).toLocalDate() : null;
+      LocalDate maxDate =
+          range.maxDate() != null ? range.maxDate().atZone(zoneId).toLocalDate() : null;
+      updateMinMaxMap(minMap, maxMap, range.stockItemId(), minDate, maxDate);
+    }
+  }
+
+  private static void updateMinMaxMap(
       Map<UUID, LocalDate> minMap,
       Map<UUID, LocalDate> maxMap,
       UUID stockItemId,
@@ -266,14 +313,16 @@ public class KisStockPriceUpdateService {
     return d1.isBefore(d2) ? d1 : d2;
   }
 
-  private void fetchAndSavePriceHistory(
+  /** 조회·저장에 성공하면 true. 실패는 여기서 삼키지 않고 호출자가 셀 수 있게 알린다. */
+  private boolean fetchAndSavePriceHistory(
       UUID userId, UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
     OpenApiConfig config;
     try {
       config = kisAuthService.getValidConfig(userId);
     } catch (Exception e) {
+      // 인증 설정이 없으면 이 실행의 모든 종목이 실패한다. 성공으로 넘기면 그 사실이 사라진다.
       log.warn("KIS API Auth is not configured: {}", e.getMessage());
-      return;
+      return false;
     }
 
     String path = "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice";
@@ -302,8 +351,9 @@ public class KisStockPriceUpdateService {
       ResponseEntity<KisDailyPriceResponse> response =
           kisRestTemplate.exchange(url, HttpMethod.GET, entity, KisDailyPriceResponse.class);
 
+      // 응답이 비었다는 건 그 구간에 시세가 없다는 뜻(휴장 등)이지 실패가 아니다.
       if (response.getBody() == null || response.getBody().getOutput2() == null) {
-        return;
+        return true;
       }
 
       List<KisDailyPriceItem> items = response.getBody().getOutput2();
@@ -324,6 +374,8 @@ public class KisStockPriceUpdateService {
       // 신호로 로그에 남긴다(모든 과거 시점 평가가 재계산되므로 알아둘 가치가 있다).
       LocalDate changedHistoryFromDate = null;
       boolean priceAdjustmentDetected = false;
+      // 거래가 없어 새 행을 만들지 않은 건수. 조용히 건너뛰면 "왜 어제까지만 있지?"를 설명할 수 없다.
+      int skippedZeroVolume = 0;
 
       for (KisDailyPriceItem item : items) {
         if (item.getStck_bsop_date() == null || item.getStck_bsop_date().isEmpty()) {
@@ -340,6 +392,19 @@ public class KisStockPriceUpdateService {
         boolean shouldSave;
 
         if (history == null) {
+          // 거래량 0 인 날은 그 날 거래가 없었다는 뜻이고, 그럴 때 KIS 는 종가 자리에 직전 종가를 실어 보낸다.
+          // 그대로 새 행으로 넣으면 "그 날의 확정 종가"가 하나 생겨 평가 기준 일자가 실제보다 앞당겨진다
+          // (실측 2026-08-22: 2026-08-20 행 9건이 전부 거래량 0 이고 종가는 08-19 와 동일한데, 화면은
+          // "평가 기준 2026-08-20 종가"라고 적고 있었다. 시가/고가/저가/거래량까지 같은 건 0 건이라
+          // 단순 행 복제가 아니라 이 유령 행이 원인이다).
+          //
+          // 넣지 않아도 평가액은 달라지지 않는다 - 어차피 직전 종가를 쓰고, 그 값이 같기 때문이다.
+          // 달라지는 것은 화면에 적히는 '기준 일자'뿐이고, 그게 사실에 맞게 된다.
+          // 이미 있는 행은 건드리지 않는다(과거 보정으로 거래량이 0 으로 정정되는 경우가 있을 수 있다).
+          if (newVolume == 0L) {
+            skippedZeroVolume++;
+            continue;
+          }
           history = new StockPriceHistory();
           history.setStockItemId(stockItemId);
           history.setTradeDate(tradeDate);
@@ -410,6 +475,14 @@ public class KisStockPriceUpdateService {
         stockPriceHistoryRepository.saveAll(newHistories);
       }
 
+      if (skippedZeroVolume > 0) {
+        log.info(
+            "{}: skipped {} zero-volume day(s) — no trading occurred, so no settled close exists"
+                + " for those dates",
+            symbol,
+            skippedZeroVolume);
+      }
+
       if (changedHistoryFromDate != null) {
         if (priceAdjustmentDetected) {
           log.info(
@@ -421,9 +494,11 @@ public class KisStockPriceUpdateService {
           log.debug("Price history changed for {} from {}", symbol, changedHistoryFromDate);
         }
       }
+      return true;
     } catch (Exception e) {
       log.warn(
           "Failed to fetch history for symbol {} range {} to {}", symbol, startDate, endDate, e);
+      return false;
     }
   }
 

@@ -10,7 +10,10 @@ import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
 
-@HttpExchange(url = "/api/tradeProfit", contentType = MediaType.APPLICATION_JSON_VALUE)
+@HttpExchange(
+    url = "/api/tradeProfit",
+    contentType = MediaType.APPLICATION_JSON_VALUE,
+    accept = MediaType.APPLICATION_JSON_VALUE)
 public interface TradeProfitClient {
 
   @GetExchange("/calculateProfit")

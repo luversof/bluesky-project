@@ -1,6 +1,361 @@
 // @ts-nocheck
 
+// 인출 시뮬레이션 본체. 화면(DOM)과 떼어 두어 브라우저 없이 검증할 수 있게 한다.
+// 이 파일 전체가 IIFE 라 안쪽 함수는 내보낼 수 없어서, 계산만 모듈 최상위로 올렸다.
+// 동작은 그대로다 - 아래 buildSimulationMap() 이 시나리오마다 simulateScenario() 를 부른다.
+// 여섯 함수 모두 인자만 쓰고 DOM/바깥 상태를 건드리지 않는다(옮기기 전에 확인).
+
+const MONTHS_PER_YEAR = 12;
+
+function annualRateToMonthlyRate(annualRate) {
+	const numericAnnualRate = Number(annualRate);
+	if (!Number.isFinite(numericAnnualRate)) {
+		return 0;
+	}
+	if (numericAnnualRate <= -1) {
+		return -1;
+	}
+
+	return Math.pow(1 + numericAnnualRate, 1 / MONTHS_PER_YEAR) - 1;
+}
+
+function calculateMonthlyDividend(state) {
+	return (state.shares * state.annualDividendPerShare) / MONTHS_PER_YEAR;
+}
+
+function settleCashFlow({
+	sharePrice,
+	shares,
+	cashReserve,
+	reinvestDividends,
+}) {
+	let nextShares = shares;
+	let nextCashReserve = cashReserve;
+	let soldSharesForSpending = 0;
+
+	if (nextCashReserve < 0 && sharePrice > 0 && nextShares > 0) {
+		const requiredCash = -nextCashReserve;
+		soldSharesForSpending = Math.min(
+			nextShares,
+			Math.ceil(requiredCash / sharePrice),
+		);
+		nextShares -= soldSharesForSpending;
+		nextCashReserve += soldSharesForSpending * sharePrice;
+	}
+
+	let reinvestedShares = 0;
+	if (reinvestDividends && nextCashReserve > 0 && sharePrice > 0) {
+		reinvestedShares = Math.floor(nextCashReserve / sharePrice);
+		nextShares += reinvestedShares;
+		nextCashReserve -= reinvestedShares * sharePrice;
+	}
+
+	return {
+		shares: nextShares,
+		cashReserve: nextCashReserve,
+		soldSharesForSpending,
+		reinvestedShares,
+	};
+}
+
+function createSimulationState(scenario, principal) {
+	const sharePrice = scenario.currentPrice;
+	const shares = sharePrice > 0 ? Math.floor(principal / sharePrice) : 0;
+	const cashReserve = principal - shares * sharePrice;
+	const dividendYieldRate = scenario.dividendYieldPct / 100;
+	return {
+		sharePrice,
+		shares,
+		// 배당수익률은 "첫 해 주당 배당금"의 초기값을 정하는 용도로만 쓴다.
+		// 이후 주당 배당금은 배당성장률로 성장하며, 주가와 무관하다.
+		annualDividendPerShare: sharePrice * dividendYieldRate,
+		annualSpending: scenario.annualSpending,
+		cumulativeDividends: 0,
+		cashReserve,
+	};
+}
+
+function buildInitialSimulationRecord(principal, state) {
+	return {
+		year: 0,
+		sharePrice: state.sharePrice,
+		shares: state.shares,
+		soldSharesForSpending: 0,
+		reinvestedShares: 0,
+		annualDividend: 0,
+		annualSpending: 0,
+		annualGap: 0,
+		spendingCoveragePct: null,
+		netDividendAfterSpending: 0,
+		cumulativeDividends: 0,
+		cashReserve: state.cashReserve,
+		marketValue: state.shares * state.sharePrice,
+		totalWealth: state.shares * state.sharePrice + state.cashReserve,
+		principalReturnPct: 0,
+		yieldOnCostPct: 0,
+		monthlyRecords: [],
+	};
+}
+
+function simulateYear(
+	year,
+	state,
+	reinvestDividends,
+	principal,
+	growthRates,
+	monthlyRates,
+) {
+	const plannedAnnualSpending = state.annualSpending;
+	const plannedMonthlySpending = plannedAnnualSpending / MONTHS_PER_YEAR;
+	let rollingState = {
+		sharePrice: state.sharePrice,
+		shares: state.shares,
+		annualDividendPerShare: state.annualDividendPerShare,
+		annualSpending: plannedAnnualSpending,
+		cumulativeDividends: state.cumulativeDividends,
+		cashReserve: state.cashReserve,
+	};
+	let annualDividend = 0;
+	let annualGap = 0;
+	let soldSharesForSpending = 0;
+	let reinvestedShares = 0;
+	let depleted = false;
+	let depletedMonth = null;
+	const monthlyRecords = [];
+
+	for (let month = 1; month <= MONTHS_PER_YEAR; month += 1) {
+		const monthlyDividend = calculateMonthlyDividend(rollingState);
+		const monthlyGap = monthlyDividend - plannedMonthlySpending;
+		const sharePrice =
+			rollingState.sharePrice * (1 + monthlyRates.priceGrowthRate);
+		const settledCashFlow = settleCashFlow({
+			sharePrice,
+			shares: rollingState.shares,
+			cashReserve: rollingState.cashReserve + monthlyGap,
+			reinvestDividends,
+		});
+		const cumulativeDividends =
+			rollingState.cumulativeDividends + monthlyDividend;
+		const marketValue = settledCashFlow.shares * sharePrice;
+		const totalWealth = marketValue + settledCashFlow.cashReserve;
+		// 주당 배당금은 주가와 무관하게 배당성장률로만 성장한다.
+		const nextAnnualDividendPerShare = Math.max(
+			0,
+			rollingState.annualDividendPerShare *
+				(1 + monthlyRates.dividendGrowthRate),
+		);
+
+		annualDividend += monthlyDividend;
+		annualGap += monthlyGap;
+		soldSharesForSpending += settledCashFlow.soldSharesForSpending;
+		reinvestedShares += settledCashFlow.reinvestedShares;
+		monthlyRecords.push({
+			month,
+			sharePrice,
+			shares: settledCashFlow.shares,
+			monthlyDividend,
+			monthlySpending: plannedMonthlySpending,
+			monthlyCoveragePct:
+				plannedMonthlySpending > 0
+					? (monthlyDividend * 100) / plannedMonthlySpending
+					: null,
+			monthlyGap,
+			soldSharesForSpending: settledCashFlow.soldSharesForSpending,
+			reinvestedShares: settledCashFlow.reinvestedShares,
+			cashReserve: settledCashFlow.cashReserve,
+			marketValue,
+			totalWealth,
+		});
+
+		rollingState = {
+			sharePrice,
+			shares: settledCashFlow.shares,
+			annualDividendPerShare: nextAnnualDividendPerShare,
+			annualSpending: plannedAnnualSpending,
+			cumulativeDividends,
+			cashReserve: settledCashFlow.cashReserve,
+		};
+
+		if (!depleted && totalWealth <= 0) {
+			depleted = true;
+			depletedMonth = month;
+		}
+	}
+
+	const finalMonth = monthlyRecords.at(-1);
+	const cumulativeDividends = rollingState.cumulativeDividends;
+	const marketValue = finalMonth ? finalMonth.marketValue : 0;
+	const totalWealth = finalMonth ? finalMonth.totalWealth : 0;
+
+	return {
+		hadDeficit: annualGap < 0,
+		depleted,
+		depletedMonth,
+		record: {
+			year,
+			sharePrice: finalMonth ? finalMonth.sharePrice : rollingState.sharePrice,
+			shares: finalMonth ? finalMonth.shares : rollingState.shares,
+			soldSharesForSpending,
+			reinvestedShares,
+			annualDividend,
+			annualSpending: plannedAnnualSpending,
+			annualGap,
+			spendingCoveragePct:
+				plannedAnnualSpending > 0
+					? (annualDividend * 100) / plannedAnnualSpending
+					: null,
+			netDividendAfterSpending: annualGap,
+			cumulativeDividends,
+			cashReserve: rollingState.cashReserve,
+			marketValue,
+			totalWealth,
+			principalReturnPct:
+				principal > 0 ? ((totalWealth - principal) * 100) / principal : 0,
+			yieldOnCostPct: principal > 0 ? (annualDividend * 100) / principal : 0,
+			monthlyRecords,
+		},
+		nextState: {
+			sharePrice: rollingState.sharePrice,
+			shares: rollingState.shares,
+			annualDividendPerShare: rollingState.annualDividendPerShare,
+			annualSpending:
+				state.annualSpending * (1 + growthRates.annualSpendingGrowthRate),
+			cumulativeDividends,
+			cashReserve: rollingState.cashReserve,
+		},
+	};
+}
+
+/** 화면에 낼 수 있는 값인지 - 하나라도 유한하지 않으면 그 연차는 통째로 쓸 수 없다. */
+function isFiniteRecord(record) {
+	return (
+		Number.isFinite(record.totalWealth) &&
+		Number.isFinite(record.marketValue) &&
+		Number.isFinite(record.cashReserve) &&
+		Number.isFinite(record.shares) &&
+		Number.isFinite(record.sharePrice) &&
+		Number.isFinite(record.annualDividend) &&
+		Number.isFinite(record.cumulativeDividends)
+	);
+}
+
+function simulateScenario(scenario) {
+	const principal = scenario.principal;
+	const growthRates = {
+		annualPriceGrowthRate: scenario.annualPriceGrowthPct / 100,
+		dividendGrowthRate: scenario.annualDividendGrowthPct / 100,
+		annualSpendingGrowthRate: scenario.annualSpendingGrowthPct / 100,
+	};
+	const monthlyRates = {
+		priceGrowthRate: annualRateToMonthlyRate(growthRates.annualPriceGrowthRate),
+		dividendGrowthRate: annualRateToMonthlyRate(growthRates.dividendGrowthRate),
+	};
+	let state = createSimulationState(scenario, principal);
+	let firstDeficitYear = null;
+	let firstWealthDeclineYear = null;
+	let firstShareSaleYear = null;
+	let depletionYear = null;
+	let depletionMonth = null;
+	let overflowYear = null;
+
+	const years = [buildInitialSimulationRecord(principal, state)];
+
+	for (let year = 1; year <= scenario.years; year += 1) {
+		const previousRecord = years.at(-1);
+		const result = simulateYear(
+			year,
+			state,
+			scenario.reinvestDividends,
+			principal,
+			growthRates,
+			monthlyRates,
+		);
+		// 배당이 주가와 무관하게 성장하는 모델이라 재투자를 켜고 지출이 없으면 주식 수가 기하급수로
+		// 늘어난다. 실측: 지출 0 / 재투자 / 주가성장 0% / 배당성장 10% / 100년이면 90년차에 배정밀도
+		// 범위를 넘어 totalWealth 가 Infinity - Infinity = NaN 이 되고, 그 뒤 11개 연차와 최종 자산이
+		// 전부 NaN 으로 화면에 나갔다(₩NaN). 표현할 수 없는 연차는 기록하지 않고 거기서 멈춘다.
+		if (!isFiniteRecord(result.record)) {
+			overflowYear = year;
+			break;
+		}
+
+		years.push(result.record);
+		state = result.nextState;
+
+		if (firstDeficitYear === null && result.hadDeficit) {
+			firstDeficitYear = year;
+		}
+		if (
+			firstWealthDeclineYear === null &&
+			previousRecord &&
+			result.record.totalWealth < previousRecord.totalWealth
+		) {
+			firstWealthDeclineYear = year;
+		}
+		if (
+			firstShareSaleYear === null &&
+			result.record.soldSharesForSpending > 0
+		) {
+			firstShareSaleYear = year;
+		}
+		if (depletionYear === null && result.depleted) {
+			depletionYear = year;
+			depletionMonth = result.depletedMonth;
+		}
+
+		if (result.depleted) {
+			break;
+		}
+	}
+
+	const finalYear = years.at(-1);
+	// 온전히 버틴 개월 수. 연 단위 지속 기간은 고갈이 일어난 해를 통째로 세므로 최대 11개월을 버린다
+	// (실측 2026-08-24: 4년차 1월에 고갈해도 "4년"으로 표시된다). 화면 표기는 그대로 두고, 시나리오
+	// 비교에서만 이 값을 1순위로 쓴다 - 연 단위로는 동률이 나서 무관한 기준이 승부를 갈랐다
+	// (실측: 고갈 시나리오 3,652개를 짝지은 141,648쌍 중 3,188쌍(2.25%)에서 실제로 더 오래 버틴
+	//  쪽이 아래로 밀렸다. 예: 65개월 vs 62개월인데 마지막 해 커버리지가 높은 62개월 쪽이 이겼다).
+	const sustainableMonths =
+		depletionYear !== null
+			? (depletionYear - 1) * MONTHS_PER_YEAR + ((depletionMonth || 1) - 1)
+			: (overflowYear ? overflowYear - 1 : scenario.years) * MONTHS_PER_YEAR;
+	return {
+		records: years,
+		summary: {
+			// 넘쳐서 멈췄으면 실제로 계산해 낸 마지막 해까지만 지속한 것이다(입력한 기간이 아니라).
+			sustainableYears:
+				depletionYear ||
+				(overflowYear ? overflowYear - 1 : scenario.years),
+			sustainableMonths,
+			firstDeficitYear,
+			firstWealthDeclineYear,
+			firstShareSaleYear,
+			depletionYear,
+			depletionMonth,
+			overflowYear,
+			finalWealth: finalYear.totalWealth,
+			finalSpendingCoveragePct: finalYear.spendingCoveragePct,
+		},
+	};
+}
+
+// 이 파일은 type="module" 없이 classic <script src> 로 로드된다. export 문을 넣으면 브라우저가
+// "Unexpected token 'export'" 로 파일 전체를 거부해 화면 기능이 통째로 죽는다(실제로 그렇게 깨뜨렸다).
+// 그래서 검증용으로는 export 대신 전역에 붙인다 - 브라우저에서는 쓰이지 않고 테스트만 읽는다.
+(globalThis as any).__stockWithdrawalSimulatorInternals = {
+	simulateScenario,
+	annualRateToMonthlyRate,
+	settleCashFlow,
+	MONTHS_PER_YEAR,
+};
+
 (() => {
+	// 시나리오 비교(어느 시나리오가 나은가)는 화면 밖에서도 검증할 수 있어야 한다 - 이 두 함수는
+	// 순수 계산이다. 함수 선언은 호이스팅되므로 아래 조기 반환보다 앞서 붙여도 된다.
+	(globalThis as any).__stockWithdrawalSimulatorInternals.buildComparisonValues =
+		buildComparisonValues;
+	(globalThis as any).__stockWithdrawalSimulatorInternals.compareComparisonEntries =
+		compareComparisonEntries;
+
 	const root = document.getElementById("stockSimulatorApp");
 	if (!root || root.dataset.stockSimulatorInitialized === "true") {
 		return;
@@ -11,7 +366,6 @@
 	const STORAGE_SCHEMA_VERSION = 3;
 	const MAX_SIMULATION_YEARS = 100;
 	const MAX_SCENARIOS = 5;
-	const MONTHS_PER_YEAR = 12;
 	const COLOR_CLASSES = [
 		"bg-primary",
 		"bg-secondary",
@@ -83,6 +437,7 @@
 		summaryYearsLater: "In {0} years",
 		summaryYearsOrMore: "{0}+ years",
 		summaryWithinHorizon: "Sustainable within the simulation horizon",
+		summaryOverflowYear: "Stopped: numbers exceeded the representable range",
 		summaryLatestCoverage: "Latest Spending Coverage",
 		summaryNoSpending: "No Spending",
 		seriesAnnualDividend: "Annual Dividend",
@@ -99,14 +454,23 @@
 		...i18nOverrides,
 	};
 
-	const currencyFormatter = new Intl.NumberFormat(undefined, {
+	// 앱 로케일을 쓴다. stock-charts.ts 의 resolveLocale 과 같은 규칙이다 - 이 파일들은 클래식 스크립트라
+	// import 를 쓸 수 없어 규칙을 옮겨 적고, compactNumberParity 옆의 selectorsResolve 처럼 테스트로 묶는다.
+	// 예전에는 이 파일만 로케일을 따로 정해, 같은 화면 안에서도 숫자 자릿수 구분이 갈릴 수 있었다
+	// (compoundSimulator 는 "ko-KR" 고정, stockSimulator 는 undefined = 브라우저 로케일).
+	const appLocale =
+		document.body?.dataset?.locale ||
+		document.documentElement?.lang ||
+		navigator.language ||
+		"ko-KR";
+	const currencyFormatter = new Intl.NumberFormat(appLocale, {
 		maximumFractionDigits: 0,
 	});
-	const percentFormatter = new Intl.NumberFormat(undefined, {
+	const percentFormatter = new Intl.NumberFormat(appLocale, {
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
 	});
-	const shareFormatter = new Intl.NumberFormat(undefined, {
+	const shareFormatter = new Intl.NumberFormat(appLocale, {
 		minimumFractionDigits: 0,
 		maximumFractionDigits: 4,
 	});
@@ -494,259 +858,6 @@
 		);
 	}
 
-	function simulateScenario(scenario) {
-		const principal = scenario.principal;
-		const growthRates = {
-			annualPriceGrowthRate: scenario.annualPriceGrowthPct / 100,
-			dividendGrowthRate: scenario.annualDividendGrowthPct / 100,
-			annualSpendingGrowthRate: scenario.annualSpendingGrowthPct / 100,
-		};
-		const monthlyRates = {
-			priceGrowthRate: annualRateToMonthlyRate(growthRates.annualPriceGrowthRate),
-			dividendGrowthRate: annualRateToMonthlyRate(growthRates.dividendGrowthRate),
-		};
-		let state = createSimulationState(scenario, principal);
-		let firstDeficitYear = null;
-		let firstWealthDeclineYear = null;
-		let firstShareSaleYear = null;
-		let depletionYear = null;
-
-		const years = [buildInitialSimulationRecord(principal, state)];
-
-		for (let year = 1; year <= scenario.years; year += 1) {
-			const previousRecord = years.at(-1);
-			const result = simulateYear(
-				year,
-				state,
-				scenario.reinvestDividends,
-				principal,
-				growthRates,
-				monthlyRates,
-			);
-			years.push(result.record);
-			state = result.nextState;
-
-			if (firstDeficitYear === null && result.hadDeficit) {
-				firstDeficitYear = year;
-			}
-			if (
-				firstWealthDeclineYear === null &&
-				previousRecord &&
-				result.record.totalWealth < previousRecord.totalWealth
-			) {
-				firstWealthDeclineYear = year;
-			}
-			if (
-				firstShareSaleYear === null &&
-				result.record.soldSharesForSpending > 0
-			) {
-				firstShareSaleYear = year;
-			}
-			if (depletionYear === null && result.depleted) {
-				depletionYear = year;
-			}
-
-			if (result.depleted) {
-				break;
-			}
-		}
-
-		const finalYear = years.at(-1);
-		return {
-			records: years,
-			summary: {
-				sustainableYears: depletionYear || scenario.years,
-				firstDeficitYear,
-				firstWealthDeclineYear,
-				firstShareSaleYear,
-				depletionYear,
-				finalWealth: finalYear.totalWealth,
-				finalSpendingCoveragePct: finalYear.spendingCoveragePct,
-			},
-		};
-	}
-
-	function createSimulationState(scenario, principal) {
-		const sharePrice = scenario.currentPrice;
-		const shares = sharePrice > 0 ? Math.floor(principal / sharePrice) : 0;
-		const cashReserve = principal - shares * sharePrice;
-		const dividendYieldRate = scenario.dividendYieldPct / 100;
-		return {
-			sharePrice,
-			shares,
-			// 배당수익률은 "첫 해 주당 배당금"의 초기값을 정하는 용도로만 쓴다.
-			// 이후 주당 배당금은 배당성장률로 성장하며, 주가와 무관하다.
-			annualDividendPerShare: sharePrice * dividendYieldRate,
-			annualSpending: scenario.annualSpending,
-			cumulativeDividends: 0,
-			cashReserve,
-		};
-	}
-
-	function buildInitialSimulationRecord(principal, state) {
-		return {
-			year: 0,
-			sharePrice: state.sharePrice,
-			shares: state.shares,
-			soldSharesForSpending: 0,
-			reinvestedShares: 0,
-			annualDividend: 0,
-			annualSpending: 0,
-			annualGap: 0,
-			spendingCoveragePct: null,
-			netDividendAfterSpending: 0,
-			cumulativeDividends: 0,
-			cashReserve: state.cashReserve,
-			marketValue: state.shares * state.sharePrice,
-			totalWealth: state.shares * state.sharePrice + state.cashReserve,
-			principalReturnPct: 0,
-			yieldOnCostPct: 0,
-			monthlyRecords: [],
-		};
-	}
-
-	function simulateYear(
-		year,
-		state,
-		reinvestDividends,
-		principal,
-		growthRates,
-		monthlyRates,
-	) {
-		const plannedAnnualSpending = state.annualSpending;
-		const plannedMonthlySpending = plannedAnnualSpending / MONTHS_PER_YEAR;
-		let rollingState = {
-			sharePrice: state.sharePrice,
-			shares: state.shares,
-			annualDividendPerShare: state.annualDividendPerShare,
-			annualSpending: plannedAnnualSpending,
-			cumulativeDividends: state.cumulativeDividends,
-			cashReserve: state.cashReserve,
-		};
-		let annualDividend = 0;
-		let annualGap = 0;
-		let soldSharesForSpending = 0;
-		let reinvestedShares = 0;
-		let depleted = false;
-		const monthlyRecords = [];
-
-		for (let month = 1; month <= MONTHS_PER_YEAR; month += 1) {
-			const monthlyDividend = calculateMonthlyDividend(rollingState);
-			const monthlyGap = monthlyDividend - plannedMonthlySpending;
-			const sharePrice =
-				rollingState.sharePrice * (1 + monthlyRates.priceGrowthRate);
-			const settledCashFlow = settleCashFlow({
-				sharePrice,
-				shares: rollingState.shares,
-				cashReserve: rollingState.cashReserve + monthlyGap,
-				reinvestDividends,
-			});
-			const cumulativeDividends =
-				rollingState.cumulativeDividends + monthlyDividend;
-			const marketValue = settledCashFlow.shares * sharePrice;
-			const totalWealth = marketValue + settledCashFlow.cashReserve;
-			// 주당 배당금은 주가와 무관하게 배당성장률로만 성장한다.
-			const nextAnnualDividendPerShare = Math.max(
-				0,
-				rollingState.annualDividendPerShare *
-					(1 + monthlyRates.dividendGrowthRate),
-			);
-
-			annualDividend += monthlyDividend;
-			annualGap += monthlyGap;
-			soldSharesForSpending += settledCashFlow.soldSharesForSpending;
-			reinvestedShares += settledCashFlow.reinvestedShares;
-			monthlyRecords.push({
-				month,
-				sharePrice,
-				shares: settledCashFlow.shares,
-				monthlyDividend,
-				monthlySpending: plannedMonthlySpending,
-				monthlyCoveragePct:
-					plannedMonthlySpending > 0
-						? (monthlyDividend * 100) / plannedMonthlySpending
-						: null,
-				monthlyGap,
-				soldSharesForSpending: settledCashFlow.soldSharesForSpending,
-				reinvestedShares: settledCashFlow.reinvestedShares,
-				cashReserve: settledCashFlow.cashReserve,
-				marketValue,
-				totalWealth,
-			});
-
-			rollingState = {
-				sharePrice,
-				shares: settledCashFlow.shares,
-				annualDividendPerShare: nextAnnualDividendPerShare,
-				annualSpending: plannedAnnualSpending,
-				cumulativeDividends,
-				cashReserve: settledCashFlow.cashReserve,
-			};
-
-			if (!depleted && totalWealth <= 0) {
-				depleted = true;
-			}
-		}
-
-		const finalMonth = monthlyRecords.at(-1);
-		const cumulativeDividends = rollingState.cumulativeDividends;
-		const marketValue = finalMonth ? finalMonth.marketValue : 0;
-		const totalWealth = finalMonth ? finalMonth.totalWealth : 0;
-
-		return {
-			hadDeficit: annualGap < 0,
-			depleted,
-			record: {
-				year,
-				sharePrice: finalMonth ? finalMonth.sharePrice : rollingState.sharePrice,
-				shares: finalMonth ? finalMonth.shares : rollingState.shares,
-				soldSharesForSpending,
-				reinvestedShares,
-				annualDividend,
-				annualSpending: plannedAnnualSpending,
-				annualGap,
-				spendingCoveragePct:
-					plannedAnnualSpending > 0
-						? (annualDividend * 100) / plannedAnnualSpending
-						: null,
-				netDividendAfterSpending: annualGap,
-				cumulativeDividends,
-				cashReserve: rollingState.cashReserve,
-				marketValue,
-				totalWealth,
-				principalReturnPct:
-					principal > 0 ? ((totalWealth - principal) * 100) / principal : 0,
-				yieldOnCostPct: principal > 0 ? (annualDividend * 100) / principal : 0,
-				monthlyRecords,
-			},
-			nextState: {
-				sharePrice: rollingState.sharePrice,
-				shares: rollingState.shares,
-				annualDividendPerShare: rollingState.annualDividendPerShare,
-				annualSpending:
-					state.annualSpending * (1 + growthRates.annualSpendingGrowthRate),
-				cumulativeDividends,
-				cashReserve: rollingState.cashReserve,
-			},
-		};
-	}
-
-	function calculateMonthlyDividend(state) {
-		return (state.shares * state.annualDividendPerShare) / MONTHS_PER_YEAR;
-	}
-
-	function annualRateToMonthlyRate(annualRate) {
-		const numericAnnualRate = Number(annualRate);
-		if (!Number.isFinite(numericAnnualRate)) {
-			return 0;
-		}
-		if (numericAnnualRate <= -1) {
-			return -1;
-		}
-
-		return Math.pow(1 + numericAnnualRate, 1 / MONTHS_PER_YEAR) - 1;
-	}
-
 	function handleYearlyTableToggle(event) {
 		const toggleButton = event.target?.closest?.("[data-year-toggle]");
 		if (!toggleButton) {
@@ -781,41 +892,6 @@
 
 	function isYearExpanded(scenarioId, year) {
 		return expandedYearRows.get(scenarioId)?.has(year) === true;
-	}
-
-	function settleCashFlow({
-		sharePrice,
-		shares,
-		cashReserve,
-		reinvestDividends,
-	}) {
-		let nextShares = shares;
-		let nextCashReserve = cashReserve;
-		let soldSharesForSpending = 0;
-
-		if (nextCashReserve < 0 && sharePrice > 0 && nextShares > 0) {
-			const requiredCash = -nextCashReserve;
-			soldSharesForSpending = Math.min(
-				nextShares,
-				Math.ceil(requiredCash / sharePrice),
-			);
-			nextShares -= soldSharesForSpending;
-			nextCashReserve += soldSharesForSpending * sharePrice;
-		}
-
-		let reinvestedShares = 0;
-		if (reinvestDividends && nextCashReserve > 0 && sharePrice > 0) {
-			reinvestedShares = Math.floor(nextCashReserve / sharePrice);
-			nextShares += reinvestedShares;
-			nextCashReserve -= reinvestedShares * sharePrice;
-		}
-
-		return {
-			shares: nextShares,
-			cashReserve: nextCashReserve,
-			soldSharesForSpending,
-			reinvestedShares,
-		};
 	}
 
 	function render(options = {}) {
@@ -912,7 +988,7 @@
 								<span class="mt-1 h-3 w-3 rounded-full ${COLOR_CLASSES[index % COLOR_CLASSES.length]}"></span>
 								<div class="space-y-1">
 									<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
-									<p class="text-xs text-base-content/55">${scenario.years}y · ${
+									<p class="text-xs text-base-content/60">${scenario.years}y · ${
 										scenario.reinvestDividends
 											? i18n.reinvestOn
 											: i18n.reinvestOff
@@ -927,11 +1003,11 @@
 						</div>
 						<div class="mt-4 grid grid-cols-2 gap-3 text-sm">
 							<div>
-								<p class="text-xs text-base-content/50">${i18n.summarySustainablePeriod}</p>
+								<p class="text-xs text-base-content/60">${i18n.summarySustainablePeriod}</p>
 								<p class="mt-1 font-semibold text-base-content">${summary ? formatSustainablePeriod(summary, scenario.years) : "-"}</p>
 							</div>
 							<div>
-								<p class="text-xs text-base-content/50">${i18n.summaryDeficitStart}</p>
+								<p class="text-xs text-base-content/60">${i18n.summaryDeficitStart}</p>
 								<p class="mt-1 font-semibold text-base-content">${summary ? formatOptionalYear(summary.firstDeficitYear, i18n.summaryNoDeficit) : "-"}</p>
 							</div>
 						</div>
@@ -971,7 +1047,9 @@
 				value: formatSustainablePeriod(summary, activeScenario.years),
 				note: summary.depletionYear
 					? `${i18n.summaryDepletionYear}: ${formatYearOffset(summary.depletionYear)}`
-					: i18n.summaryWithinHorizon,
+					: summary.overflowYear
+						? `${i18n.summaryOverflowYear}: ${formatYearOffset(summary.overflowYear)}`
+						: i18n.summaryWithinHorizon,
 			},
 			{
 				label: i18n.summaryDeficitStart,
@@ -1007,7 +1085,7 @@
 			.map(
 				(card) => `
 					<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-						<p class="text-xs font-medium uppercase tracking-wide text-base-content/50">${card.label}</p>
+						<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${card.label}</p>
 						<p class="mt-3 text-2xl font-semibold text-base-content">${card.value}</p>
 						<p class="mt-2 text-sm text-base-content/60">${escapeHtml(card.note || activeScenario.name)}</p>
 					</div>`,
@@ -1057,7 +1135,7 @@
 											: ""
 									}
 								</div>
-									<p class="text-xs text-base-content/55">${scenario.years}y · ${
+									<p class="text-xs text-base-content/60">${scenario.years}y · ${
 										scenario.reinvestDividends
 											? i18n.reinvestOn
 											: i18n.reinvestOff
@@ -1073,7 +1151,7 @@
 							<div class="text-sm font-medium text-base-content/70">${formatSustainablePeriod(summary, scenario.years)}</div>
 						</div>
 						<div class="mt-4 space-y-3">
-							<div class="relative h-4 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
+							<div class="relative h-4 overflow-hidden rounded-full bg-base-300 ring-1 ring-base-content/10">
 								${segments
 									.map(
 										(segment) => `
@@ -1091,7 +1169,7 @@
 									)
 									.join("")}
 							</div>
-							<div class="flex items-center justify-between text-[11px] text-base-content/50">
+							<div class="flex items-center justify-between text-[11px] text-base-content/60">
 								<span>0y</span>
 								<span>${scenario.years}y</span>
 							</div>
@@ -1131,6 +1209,8 @@
 
 	function buildComparisonValues(summary, simulationYears) {
 		return {
+			// 연 단위보다 먼저 본다. 같은 해에 고갈해도 몇 달 더 버틴 쪽이 실제로 낫다.
+			sustainableMonths: Number(summary?.sustainableMonths || 0),
 			sustainableYears: Number(summary?.sustainableYears || 0),
 			drawdownStartYear: normalizeComparisonYear(
 				summary?.firstShareSaleYear,
@@ -1165,6 +1245,10 @@
 
 	function compareComparisonEntries(left, right) {
 		return (
+			compareDescendingNumber(
+				left.values.sustainableMonths,
+				right.values.sustainableMonths,
+			) ||
 			compareDescendingNumber(
 				left.values.sustainableYears,
 				right.values.sustainableYears,
@@ -1242,8 +1326,8 @@
 						<td>${formatCurrency(record.sharePrice)}</td>
 						<td>${formatCurrency(record.annualDividend)}</td>
 						<td>${formatCurrency(record.annualSpending)}</td>
-						<td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold text-amber-700" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
-						<td class="${record.annualGap < 0 ? "font-semibold text-red-700" : "text-success"}">${formatCurrency(record.annualGap)}</td>
+						<td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
+						<td class="${record.annualGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(record.annualGap)}</td>
 						<td>${formatShares(record.soldSharesForSpending)}</td>
 						<td>${formatShares(record.reinvestedShares)}</td>
 						<td>${formatShares(record.shares)}</td>
@@ -1275,18 +1359,18 @@
 					<table class="table table-zebra">
 						<thead>
 							<tr>
-								<th>${escapeHtml(i18n.tableHeaderMonth)}</th>
-								<th>${escapeHtml(i18n.tableHeaderMonthEndPrice)}</th>
-								<th>${escapeHtml(i18n.tableHeaderMonthlyDividend)}</th>
-								<th>${escapeHtml(i18n.tableHeaderMonthlySpending)}</th>
-								<th>${escapeHtml(i18n.tableHeaderSpendingCoverage)}</th>
-								<th>${escapeHtml(i18n.tableHeaderMonthlyGap)}</th>
-								<th>${escapeHtml(i18n.tableHeaderSoldShares)}</th>
-								<th>${escapeHtml(i18n.tableHeaderReinvestedShares)}</th>
-								<th>${escapeHtml(i18n.tableHeaderMonthEndShares)}</th>
-								<th>${escapeHtml(i18n.tableHeaderMonthEndCashReserve)}</th>
-								<th>${escapeHtml(i18n.tableHeaderMonthEndMarketValue)}</th>
-								<th>${escapeHtml(i18n.tableHeaderMonthEndTotalWealth)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonth)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonthEndPrice)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonthlyDividend)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonthlySpending)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderSpendingCoverage)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonthlyGap)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderSoldShares)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderReinvestedShares)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonthEndShares)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonthEndCashReserve)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonthEndMarketValue)}</th>
+								<th scope="col">${escapeHtml(i18n.tableHeaderMonthEndTotalWealth)}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -1298,8 +1382,8 @@
 											<td>${formatCurrency(monthRecord.sharePrice)}</td>
 											<td>${formatCurrency(monthRecord.monthlyDividend)}</td>
 											<td>${formatCurrency(monthRecord.monthlySpending)}</td>
-											<td class="${monthRecord.monthlyCoveragePct !== null && monthRecord.monthlyCoveragePct < 100 ? "font-semibold text-amber-700" : ""}">${formatCoveragePercent(monthRecord.monthlyCoveragePct)}</td>
-											<td class="${monthRecord.monthlyGap < 0 ? "font-semibold text-red-700" : "text-success"}">${formatCurrency(monthRecord.monthlyGap)}</td>
+											<td class="${monthRecord.monthlyCoveragePct !== null && monthRecord.monthlyCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(monthRecord.monthlyCoveragePct)}</td>
+											<td class="${monthRecord.monthlyGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(monthRecord.monthlyGap)}</td>
 											<td>${formatShares(monthRecord.soldSharesForSpending)}</td>
 											<td>${formatShares(monthRecord.reinvestedShares)}</td>
 											<td>${formatShares(monthRecord.shares)}</td>
@@ -1317,13 +1401,13 @@
 
 	function resolveMonthlyRowClass(monthRecord) {
 		if (monthRecord.totalWealth <= 0) {
-			return "bg-red-50/80";
+			return "sim-tint-depleted";
 		}
 		if (monthRecord.soldSharesForSpending > 0) {
-			return "bg-orange-50/70";
+			return "sim-tint-drawdown";
 		}
 		if (monthRecord.monthlyGap < 0) {
-			return "bg-amber-50/70";
+			return "sim-tint-deficit";
 		}
 
 		return "";
@@ -1600,7 +1684,7 @@
 				buildTimelineEventBadge(
 					i18n.timelinePhaseDeficit,
 					summary.firstDeficitYear,
-					"bg-amber-50 text-amber-700",
+					"sim-tint-deficit text-base-content",
 				),
 			);
 		}
@@ -1610,7 +1694,7 @@
 				buildTimelineEventBadge(
 					i18n.timelinePhaseDrawdown,
 					summary.firstShareSaleYear,
-					"bg-orange-50 text-orange-700",
+					"sim-tint-drawdown text-base-content",
 				),
 			);
 		}
@@ -1620,7 +1704,7 @@
 				buildTimelineEventBadge(
 					i18n.timelinePhaseWealthDecline,
 					summary.firstWealthDeclineYear,
-					"bg-yellow-50 text-yellow-700",
+					"sim-tint-decline text-base-content",
 				),
 			);
 		}
@@ -1630,13 +1714,13 @@
 				buildTimelineEventBadge(
 					i18n.summaryDepletionYear,
 					summary.depletionYear,
-					"bg-red-50 text-red-700",
+					"sim-tint-depleted text-base-content",
 				),
 			);
 		}
 
 		if (!badges.length) {
-			return `<span class="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">${escapeHtml(i18n.summaryWithinHorizon)}</span>`;
+			return `<span class="rounded-full sim-tint-stable px-2 py-1 text-base-content">${escapeHtml(i18n.summaryWithinHorizon)}</span>`;
 		}
 
 		return badges.join("");
@@ -1716,11 +1800,29 @@
 	function formatCompactCurrency(value) {
 		const abs = Math.abs(value || 0);
 		const sign = Number(value || 0) < 0 ? "-" : "";
-		if (abs >= 100000000) {
-			return `${sign}₩${(abs / 100000000).toFixed(1)}억`;
+		// 로케일과 무관하게 억/만 을 붙이면 영어 화면에도 한글 단위가 그대로 나온다(실측).
+		const korean = (document.documentElement.lang || "").toLowerCase().startsWith("ko");
+		if (korean) {
+			if (abs >= 100000000) {
+				return `${sign}₩${(abs / 100000000).toFixed(1)}억`;
+			}
+			if (abs >= 10000) {
+				return `${sign}₩${(abs / 10000).toFixed(0)}만`;
+			}
+			return formatCurrency(value);
 		}
-		if (abs >= 10000) {
-			return `${sign}₩${(abs / 10000).toFixed(0)}만`;
+		const trim = (v) => {
+			const t = v.toFixed(1);
+			return t.endsWith(".0") ? t.slice(0, -2) : t;
+		};
+		if (abs >= 1000000000) {
+			return `${sign}₩${trim(abs / 1000000000)}B`;
+		}
+		if (abs >= 1000000) {
+			return `${sign}₩${trim(abs / 1000000)}M`;
+		}
+		if (abs >= 1000) {
+			return `${sign}₩${trim(abs / 1000)}K`;
 		}
 		return formatCurrency(value);
 	}
@@ -1812,19 +1914,19 @@
 		firstWealthDeclineYear,
 	) {
 		if (record.totalWealth <= 0) {
-			return "bg-red-50 text-red-900";
+			return "sim-tint-depleted";
 		}
 
 		if (record.soldSharesForSpending > 0) {
-			return "bg-orange-50";
+			return "sim-tint-drawdown";
 		}
 
 		if (firstWealthDeclineYear && record.year >= firstWealthDeclineYear) {
-			return "bg-yellow-50";
+			return "sim-tint-decline";
 		}
 
 		if (firstDeficitYear && record.year >= firstDeficitYear) {
-			return "bg-amber-50";
+			return "sim-tint-deficit";
 		}
 
 		return "";

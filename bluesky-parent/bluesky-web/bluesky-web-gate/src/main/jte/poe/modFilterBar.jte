@@ -1,4 +1,5 @@
 @import net.luversof.web.gate.poe.PoeText
+@import net.luversof.web.gate.util.CspNonceHolder
 
 <%-- 모드 검색 + 아이템 레벨 필터 (모디파이어 페이지 / 아이템 상세 공용).
      scope 안의 [data-mod-family] 카드를 대상으로 하며, htmx 로 scope 내용이 바뀌어도 조건을 다시 적용한다. --%>
@@ -17,7 +18,7 @@
 	</label>
 	<span id="${idPrefix}Count" class="text-xs font-mono text-base-content/50"></span>
 </div>
-<script>
+<script nonce="${CspNonceHolder.getNonce()}">
 	(function () {
 		//  - 검색어: 패밀리 카드 텍스트(모드명/스탯/키)에 포함된 것만.
 		//  - 아이템 레벨: 그 레벨에서 실제로 뜰 수 있는 티어만 보이고(요구 ilvl 초과 티어는 숨김),

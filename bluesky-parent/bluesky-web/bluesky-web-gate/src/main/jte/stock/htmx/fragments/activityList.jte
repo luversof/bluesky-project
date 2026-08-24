@@ -10,8 +10,10 @@
 @import java.math.BigDecimal
 @import java.text.DecimalFormat
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param List<Activity> activities
+@param String activityView = "all"
 @param java.time.Instant startDate = null
 @param java.time.Instant endDate = null
 @param String timeZone = null
@@ -25,14 +27,13 @@
 @param List<UUID> selectedAccountIds = java.util.List.of()
 @param List<UUID> selectedStockItemIds = java.util.List.of()
 @param List<String> selectedStockTags = java.util.List.of()
-@param long buyCount = 0
-@param long sellCount = 0
+@param long buyCount = 0L
+@param long sellCount = 0L
 @param BigDecimal buyAmount = BigDecimal.ZERO
 @param BigDecimal sellAmount = BigDecimal.ZERO
-@param long dividendCount = 0
+@param long dividendCount = 0L
 @param BigDecimal dividendAmount = BigDecimal.ZERO
-@param java.util.Map<String, UUID> activityStockIdByName = java.util.Map.of()
-@param java.util.Map<String, UUID> activityAccountIdByName = java.util.Map.of()
+@param java.util.Map<UUID, String> accountNames = java.util.Map.of()
 
 !{
     DecimalFormat df = new DecimalFormat("#,##0");
@@ -68,11 +69,15 @@
     String sharesLabel = MessageUtil.getMessage("stock.activity.label.shares");
 }
 
-<div id="activityListFragment">
+<%-- 보이는 뷰 하나만 그린다. activityView 가 "all" 이면(스크립트 없는 환경/직접 호출) 예전처럼 3종 모두. --%>
+!{boolean showCalendarView = "all".equals(activityView) || "calendar".equals(activityView);}
+!{boolean showTimelineView = "all".equals(activityView) || "timeline".equals(activityView);}
+!{boolean showListView = "all".equals(activityView) || "list".equals(activityView);}
+<div id="activityListFragment" data-activity-view="${activityView}">
 
     !{
         boolean isAllMode = "all".equals(rangeMode);
-        java.time.ZoneId zone = (timeZone != null && !timeZone.isEmpty()) ? java.time.ZoneId.of(timeZone) : java.time.ZoneId.systemDefault();
+        java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
         java.time.LocalDate today = java.time.LocalDate.now(zone);
         java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
         java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
@@ -96,8 +101,11 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             ${advancedSearchLabel}
             @template.stock.htmx.fragments.components.filterBadge(
-                startDate = startDate,
-                endDate = endDate
+                selectedAccountId = selectedAccountId,
+                selectedStockItemId = selectedStockItemId,
+                selectedAccountIds = selectedAccountIds,
+                selectedStockItemIds = selectedStockItemIds,
+                selectedStockTags = selectedStockTags
             )
         </summary>
     <form id="activitySearchForm" class="mt-2 mb-2 rounded-2xl bg-base-100 p-3 shadow-sm"
@@ -110,8 +118,8 @@
             <div class="form-control w-full">
                 <label class="label p-1" id="filterPeriodLabel"><span class="label-text text-xs">${periodLabel}</span></label>
                 <div class="join w-full" role="group" aria-labelledby="filterPeriodLabel">
-                    <input type="date" name="activityUiStartDate" id="activityStartDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
-                    <input type="date" name="activityUiEndDate" id="activityEndDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
+                    <input type="date" name="activityUiStartDate" aria-label="${MessageUtil.getMessage("common.label.date.start")}" id="activityStartDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
+                    <input type="date" name="activityUiEndDate" aria-label="${MessageUtil.getMessage("common.label.date.end")}" id="activityEndDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
                 </div>
             </div>
             <div class="form-control w-full">
@@ -156,7 +164,8 @@
                 )
 
                 <div class="flex justify-end gap-2 xl:self-end">
-                    <button type="button" class="btn btn-sm btn-primary" data-selection-save="true"
+                    <%-- data-activity-refresh: 아직 렌더되지 않은 뷰로 전환할 때 common.js 가 이 버튼을 눌러 재조회한다. --%>
+                    <button type="button" class="btn btn-sm btn-primary" data-selection-save="true" data-activity-refresh="true"
                         hx-get="/stock/htmx/activity-list"
                         hx-target="#activityListFragment"
                         hx-select="#activityListFragment"
@@ -187,12 +196,12 @@
 
         <!-- Card 1: 매매 현황 -->
         @template._components.ui.card(body = @`
-                <div class="text-xs text-base-content/50 mb-1">${tradeStatusLabel}</div>
+                <div class="text-xs text-base-content/60 mb-1">${tradeStatusLabel}</div>
                 <div class="flex items-baseline gap-1 mb-2">
                     <span class="text-xl font-bold text-error amount-value">₩ ${df.format(safeBuy)}</span>
-                    <span class="text-xs text-base-content/40">${buyLabel}</span>
+                    <span class="text-xs text-base-content/60">${buyLabel}</span>
                 </div>
-                <div class="flex gap-4 text-xs text-base-content/50">
+                <div class="flex gap-4 text-xs text-base-content/60">
                     <span>${buyLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount)}</span></span>
                     <span>${sellLabel} <span class="font-medium text-info amount-value">₩ ${df.format(safeSell)}</span> <span class="text-base-content/70">${countMessage.apply(sellCount)}</span></span>
                 </div>
@@ -200,18 +209,18 @@
 
         <!-- Card 2: 배당 수령 -->
         @template._components.ui.card(body = @`
-                <div class="text-xs text-base-content/50 mb-1">${dividendReceivedLabel}</div>
+                <div class="text-xs text-base-content/60 mb-1">${dividendReceivedLabel}</div>
                 <div class="flex items-baseline gap-1 mb-2">
                     <span class="text-xl font-bold text-dividend amount-value">₩ ${df.format(safeDividend)}</span>
                 </div>
-                <div class="text-xs text-base-content/50">${countMessage.apply(dividendCount)}</div>
+                <div class="text-xs text-base-content/60">${countMessage.apply(dividendCount)}</div>
         `)
 
         <!-- Card 3: 전체 활동 -->
         @template._components.ui.card(body = @`
-                <div class="text-xs text-base-content/50 mb-1">${totalActivityLabel}</div>
+                <div class="text-xs text-base-content/60 mb-1">${totalActivityLabel}</div>
                 <div class="text-xl font-bold">${countMessage.apply(activities != null ? activities.size() : 0)}</div>
-                <div class="flex gap-4 text-xs text-base-content/50 mt-1">
+                <div class="flex gap-4 text-xs text-base-content/60 mt-1">
                     <span>${tradeLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount + sellCount)}</span></span>
                     <span>${dividendLabel} <span class="font-medium text-base-content/70">${countMessage.apply(dividendCount)}</span></span>
                 </div>
@@ -266,12 +275,29 @@
             + "var activityChartSeriesLabels=[\"" + ej.apply(buyLabel) + "\",\"" + ej.apply(sellLabel) + "\",\"" + ej.apply(dividendLabel) + "\",\"" + ej.apply(MessageUtil.getMessage("stock.activity.chart.net.flow")) + "\"];";
     }
 
-    <!-- 월별 활동 스택 바 차트 (모든 뷰 공통, 활동 없으면 미렌더) -->
+    <%-- 차트는 활동이 있는 달만 막대로 그린다. 즉 X축이 시간캕이 아니라 빈 달이 통째로 사라진다.
+         실측(전체 기간): 2009-10~2026-08 203개월 중 132개월(65%)이 빠지고, 2010-03 막대 바로 옆에
+         2014-11 막대가 붙는다(실제는 55개월 공백). 막대를 203개로 채우면 읽힐 수 없게 되므로,
+         압축은 그대로 두고 생략된 달 수를 밝힌다. --%>
+    !{
+        long chartSkippedMonths = 0;
+        if (!activityMonths.isEmpty()) {
+            java.time.YearMonth chartFirstMonth = activityMonths.get(0);
+            java.time.YearMonth chartLastMonth = activityMonths.get(activityMonths.size() - 1);
+            long chartSpanMonths = java.time.temporal.ChronoUnit.MONTHS.between(chartFirstMonth, chartLastMonth) + 1;
+            chartSkippedMonths = chartSpanMonths - activityMonths.size();
+        }
+    }
     @if(!activityMonths.isEmpty())
         <div class="rounded-2xl bg-base-100 p-3 shadow-sm mb-4">
             <div class="relative w-full" style="height:170px">
                 <canvas id="activityMonthlyChart" class="amount-chart"></canvas>
             </div>
+            @if(chartSkippedMonths > 0)
+                <p class="mt-2 text-[11px] text-base-content/60" data-chart-skipped-months="${chartSkippedMonths}">
+                    ${java.text.MessageFormat.format(MessageUtil.getMessage("stock.activity.chart.skipped.months"), chartSkippedMonths)}
+                </p>
+            @endif
         </div>
     @endif
 
@@ -283,6 +309,7 @@
     </div>
 
     <!-- Calendar View -->
+    @if(showCalendarView)
     <div id="activityCalendarView" class="hidden">
         @if(activityMonths.isEmpty())
             @template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
@@ -301,13 +328,13 @@
                         int monthActivityCount = activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).values().stream().mapToInt(java.util.List::size).sum();
                     }
                     <details class="rounded-2xl bg-base-100 p-3 shadow-sm" open="${activityMonth.equals(latestActivityMonth)}">
-                        <summary class="flex items-baseline gap-2 cursor-pointer select-none">
+                        <summary class="flex items-baseline gap-2 cursor-pointer select-none tap-target-24">
                             <span class="text-sm font-bold">${monthTitle}</span>
-                            <span class="text-xs text-base-content/50">${countMessage.apply(monthActivityCount)}</span>
+                            <span class="text-xs text-base-content/60">${countMessage.apply(monthActivityCount)}</span>
                         </summary>
                         <div class="mt-2">
                         <!-- 날짜 그리드와 동일한 gap/패딩 + 가운데 정렬로 컬럼 라인을 맞춘다. 토/일은 빨간색 -->
-                        <div class="grid grid-cols-7 gap-1 text-[11px] text-base-content/50 mb-1 text-center">
+                        <div class="grid grid-cols-7 gap-1 text-[11px] text-base-content/60 mb-1 text-center">
                             @for(int weekdayIndex = 0; weekdayIndex < weekdayLabels.length; weekdayIndex++)
                                 <div class="p-1${weekdayIndex == 0 || weekdayIndex == 6 ? " text-error" : ""}">${weekdayLabels[weekdayIndex]}</div>
                             @endfor
@@ -375,7 +402,7 @@
                                                     @else
                                                         <span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
                                                     @endif
-                                                    <a href="/stock/item?stockItemId=${activityStockIdByName.get(dayDetailActivity.stockItemName()) != null ? activityStockIdByName.get(dayDetailActivity.stockItemName()).toString() : ""}" class="link link-hover font-bold">${dayDetailActivity.stockItemName()}</a>
+                                                    <a href="/stock/item?stockItemId=${dayDetailActivity.stockItemId() != null ? dayDetailActivity.stockItemId().toString() : ""}" class="link link-hover font-bold">${dayDetailActivity.stockItemName()}</a>
                                                     <span class="text-base-content/60 whitespace-nowrap">
                                                         @if(detailIsTrade)
                                                             <span class="amount-value">${dayDetailActivity.quantity()}</span> ${sharesLabel}
@@ -383,7 +410,7 @@
                                                             ${dayDetailActivity.description()}
                                                         @endif
                                                     </span>
-                                                    <span class="ml-auto font-mono font-bold amount-value ${detailAmountColor}">₩ ${String.format("%,d", dayDetailActivity.amount() != null ? dayDetailActivity.amount().longValue() : 0)}</span>
+                                                    <span class="ml-auto font-mono font-bold amount-value ${detailAmountColor}">₩ ${String.format("%,d", StockFormatUtil.displayWon(dayDetailActivity.amount()))}</span>
                                                 </div>
                                             @endfor
                                         </div>
@@ -397,8 +424,10 @@
             </div>
         @endif
     </div>
+    @endif
 
     <!-- Timeline View: 날짜 내림차순 세로 타임라인 -->
+    @if(showTimelineView)
     <div id="activityTimelineView" class="hidden">
         @if(activityByDate.isEmpty())
             @template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
@@ -433,7 +462,7 @@
                             <span class="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-primary border-2 border-base-100"></span>
                             <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-1">
                                 <span class="text-sm font-bold">${tlDateTitle}</span>
-                                <span class="text-xs text-base-content/50">${tlSummaryText}</span>
+                                <span class="text-xs text-base-content/60">${tlSummaryText}</span>
                                 <span class="text-xs font-mono font-bold amount-value ${tlNetPositive ? "text-profit" : "text-loss"}">${tlNetPositive ? "+" : "-"}₩ ${df.format(tlNetAmount.abs())}</span>
                             </div>
                             <div class="space-y-1">
@@ -449,7 +478,7 @@
                                         @else
                                             <span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
                                         @endif
-                                        <a href="/stock/item?stockItemId=${activityStockIdByName.get(tlRowActivity.stockItemName()) != null ? activityStockIdByName.get(tlRowActivity.stockItemName()).toString() : ""}" class="link link-hover font-bold">${tlRowActivity.stockItemName()}</a>
+                                        <a href="/stock/item?stockItemId=${tlRowActivity.stockItemId() != null ? tlRowActivity.stockItemId().toString() : ""}" class="link link-hover font-bold">${tlRowActivity.stockItemName()}</a>
                                         <span class="text-base-content/60 whitespace-nowrap">
                                             @if(tlIsTrade)
                                                 <span class="amount-value">${tlRowActivity.quantity()}</span> ${sharesLabel}
@@ -457,7 +486,7 @@
                                                 ${tlRowActivity.description()}
                                             @endif
                                         </span>
-                                        <span class="ml-auto font-mono font-bold amount-value ${tlAmountColor}">₩ ${String.format("%,d", tlRowActivity.amount() != null ? tlRowActivity.amount().longValue() : 0)}</span>
+                                        <span class="ml-auto font-mono font-bold amount-value ${tlAmountColor}">₩ ${String.format("%,d", StockFormatUtil.displayWon(tlRowActivity.amount()))}</span>
                                     </div>
                                 @endfor
                             </div>
@@ -467,14 +496,16 @@
             </div>
         @endif
     </div>
+    @endif
 
     <!-- List View (기존 테이블) -->
+    @if(showListView)
     <div id="activityListView" class="hidden">
         <div class="card-body">
             @if(activities == null || activities.isEmpty())
                 @template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
             @else
-                <div class="max-lg:overflow-x-auto">
+                <div class="overflow-x-auto">
                     <table class="table w-full table-sm table-pin-rows pin-top-nav">
                         <thead>
                             <tr class="bg-base-200">
@@ -489,7 +520,7 @@
                             @for(Activity activity : activities)
                                 <tr>
                                     <td class="whitespace-nowrap">
-                                        ${activity.date() != null ? activity.date().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : ""}
+                                        ${activity.date() != null ? activity.date().atZone(zone).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : ""}
                                     </td>
                                     <td>
                                         @if("TRADE".equals(activity.type()))
@@ -498,7 +529,7 @@
                                             <span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
                                         @endif
                                     </td>
-                                    <td class="font-bold"><a href="/stock/item?stockItemId=${activityStockIdByName.get(activity.stockItemName()) != null ? activityStockIdByName.get(activity.stockItemName()).toString() : ""}" class="link link-hover">${activity.stockItemName()}</a></td>
+                                    <td class="font-bold"><a href="/stock/item?stockItemId=${activity.stockItemId() != null ? activity.stockItemId().toString() : ""}" class="link link-hover">${activity.stockItemName()}</a></td>
                                     <td>
                                         <div class="flex items-center gap-2 whitespace-nowrap">
                                             <span>
@@ -510,15 +541,18 @@
                                             </span>
 
                                             <!-- Account Badges (Max 2 + Tooltip) -->
-                                            @if(activity.accountNames() != null && !activity.accountNames().isEmpty())
+                                            <%-- 계좌는 id 로 들고 다니고 표시 이름은 accountNames(id -> 이름) 에서 찾는다.
+                                                 예전에는 이름 목록만 있어 화면에서 이름으로 id 를 되찾았다. --%>
+                                            @if(activity.accountIds() != null && !activity.accountIds().isEmpty())
                                                 <span class="flex items-center gap-1">
-                                                    @for(int i = 0; i < Math.min(2, activity.accountNames().size()); i++)
-                                                        <a href="/stock/account?accountId=${activityAccountIdByName.get(activity.accountNames().get(i)) != null ? activityAccountIdByName.get(activity.accountNames().get(i)).toString() : ""}" class="badge badge-xs badge-outline opacity-70 link link-hover">${activity.accountNames().get(i)}</a>
+                                                    @for(int i = 0; i < Math.min(2, activity.accountIds().size()); i++)
+                                                        <a href="/stock/account?accountId=${activity.accountIds().get(i) != null ? activity.accountIds().get(i).toString() : ""}" class="badge badge-xs badge-outline opacity-70 link link-hover">${accountNames != null ? accountNames.getOrDefault(activity.accountIds().get(i), "") : ""}</a>
                                                     @endfor
 
-                                                    @if(activity.accountNames().size() > 2)
-                                                        <div class="tooltip tooltip-right" data-tip="${String.join(", ", activity.accountNames())}">
-                                                            <span class="badge badge-xs badge-outline opacity-70 cursor-help">+${activity.accountNames().size() - 2}</span>
+                                                    @if(activity.accountIds().size() > 2)
+                                                        !{java.util.List<String> allAccountLabels = activity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> !n.isEmpty()).toList();}
+                                                        <div class="tooltip tooltip-bottom" data-tip="${String.join(", ", allAccountLabels)}">
+                                                            <span class="badge badge-xs badge-outline opacity-70 cursor-help">+${activity.accountIds().size() - 2}</span>
                                                         </div>
                                                     @endif
                                                 </span>
@@ -526,7 +560,7 @@
                                         </div>
                                     </td>
                                     <td class="text-right font-mono font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
-                                        ₩ ${String.format("%,d", activity.amount() != null ? activity.amount().longValue() : 0)}
+                                        ₩ ${String.format("%,d", StockFormatUtil.displayWon(activity.amount()))}
                                     </td>
                                 </tr>
                             @endfor
@@ -536,6 +570,7 @@
             @endif
         </div>
     </div>
+    @endif
 
     <script nonce="${CspNonceHolder.getNonce()}">
     (function() {
@@ -601,8 +636,17 @@
             var n = Number(v) || 0;
             var abs = Math.abs(n);
             var sign = n < 0 ? '-' : '';
-            if (abs >= 100000000) return sign + (abs / 100000000).toFixed(0) + '억';
-            if (abs >= 10000) return sign + (abs / 10000).toFixed(0) + '만';
+            // 로케일과 무관하게 억/만 을 붙이면 영어 화면에도 한글 단위가 나온다(실측).
+            var ko = (document.documentElement.lang || '').toLowerCase().indexOf('ko') === 0;
+            var trim = function (x) { var t = x.toFixed(1); return t.slice(-2) === '.0' ? t.slice(0, -2) : t; };
+            if (ko) {
+                if (abs >= 100000000) return sign + (abs / 100000000).toFixed(0) + '억';
+                if (abs >= 10000) return sign + (abs / 10000).toFixed(0) + '만';
+                return n.toLocaleString();
+            }
+            if (abs >= 1000000000) return sign + trim(abs / 1000000000) + 'B';
+            if (abs >= 1000000) return sign + trim(abs / 1000000) + 'M';
+            if (abs >= 1000) return sign + trim(abs / 1000) + 'K';
             return n.toLocaleString();
         }
         window.activityMonthlyChartInst = new Chart(chartCanvas, {

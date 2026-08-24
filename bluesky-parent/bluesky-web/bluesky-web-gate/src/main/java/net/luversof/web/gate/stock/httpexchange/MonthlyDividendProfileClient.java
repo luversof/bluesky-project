@@ -15,7 +15,10 @@ import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileReorderRequ
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertRequest;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 
-@HttpExchange(url = "/api/monthlyDividendProfile", contentType = MediaType.APPLICATION_JSON_VALUE)
+@HttpExchange(
+    url = "/api/monthlyDividendProfile",
+    contentType = MediaType.APPLICATION_JSON_VALUE,
+    accept = MediaType.APPLICATION_JSON_VALUE)
 public interface MonthlyDividendProfileClient {
 
   @GetExchange
