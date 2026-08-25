@@ -50,9 +50,12 @@ public class PoeOptimizeService {
   private static final Logger logger = LoggerFactory.getLogger(PoeOptimizeService.class);
 
   private static final int LOG_LIMIT = 200;
-  private static final int LEVEL = 90;
-  // 패시브 포인트 예산 — 레벨 90 기준 실제 획득량(레벨업 89 + 퀘스트 24 = 113). 이전엔 임의의 100 이었다.
-  private static final int POINT_BUDGET = 113;
+  // 비교 대상(ninja 대표 실빌드·중앙값)이 전부 레벨 100 이라 전제를 맞춘다 — 90 으로 두면 패시브 10점을
+  // 덜 쓴 빌드를 100 레벨 빌드와 견주게 되어 "메타 하회"가 구조적으로 나온다(트리 잎 제거 로직 주석의
+  // "정공법은 LEVEL 파리티(실빌드 L100 = +10pt)" 가 가리키던 그 지점).
+  private static final int LEVEL = 100;
+  // 패시브 포인트 예산 — 레벨 100 기준 실제 획득량(레벨업 99 + 퀘스트 24 = 123).
+  private static final int POINT_BUDGET = 123;
   private static final int MAX_SUPPORTS = 5;
   private static final int SUPPORT_SHORTLIST =
       24; // 48 로 넓혀도 결과 동일(평가만 +11%) — 상위 24 안에 최적 보조젬이 이미 있다
@@ -4549,13 +4552,27 @@ public class PoeOptimizeService {
                   return sum;
                 };
             Set<Integer> removable = new LinkedHashSet<>();
-            Set<Integer> pool = new HashSet<>(allocated);
+            // ⚠ 차수는 **교환 후 평가할 트리**(기존 + 소켓 경로 + 소켓) 기준으로 세야 한다.
+            //    예전엔 클러스터를 얹기 전 트리(allocated)로 셌는데, 주얼 소켓까지 가는 경로의 앵커는
+            //    보통 기존 트리의 잎이라 "가장 값싼 잎"으로 뽑혀 떨어져 나갔다 → 소켓·클러스터가 통째로
+            //    끊겨 빌드가 붕괴(실측: 교환 후 640 vs 현재 587,450)하고 클러스터는 영원히 기각됐다.
+            Set<Integer> pool = new HashSet<>(bestTrialNodes);
+            // ⚠ 직업 시작 노드도 넣어야 한다. 시작 노드는 allocated 에 없어서, 여기에 안 넣으면 **시작에 붙은
+            //    첫 노드가 차수 1(=잎)로 보여** 제거 대상이 된다. 그걸 떼는 순간 트리 전체가 시작점과 끊겨
+            //    PoB 가 전부 무시한다(실측: 교환 후 953, 끊김 115/123 — 대조 현 트리는 끊김 0).
+            Integer classStartNode = poeTreeGraphService.classStart(className);
+            if (classStartNode != null) {
+              pool.add(classStartNode);
+            }
             while (removable.size() < deficit) {
               Integer pick = null;
               int pickScore = Integer.MAX_VALUE;
               for (int id : pool) {
                 if (id >= 0x10000) {
                   continue; // 가상 노드는 대상 아님
+                }
+                if (!allocated.contains(id)) {
+                  continue; // 이번에 새로 얹은 소켓 경로/소켓(과 시작 노드) — 떼면 클러스터·트리가 끊긴다
                 }
                 int degree = 0;
                 for (int nb : poeTreeGraphService.neighbors(id)) {
@@ -4610,6 +4627,36 @@ public class PoeOptimizeService {
             if (removable.size() >= deficit) {
               Set<Integer> swapNodes = new LinkedHashSet<>(bestTrialNodes);
               swapNodes.removeAll(removable);
+              // 진단 — 교환 후 트리가 실제로 이어져 있는지(끊긴 노드는 PoB 가 무시해 빌드가 통째로 무너진다).
+              // 이 수치 없이 "교환 후 953" 만 보고는 손익인지 붕괴인지 구분할 수 없었다.
+              Integer startNode = poeTreeGraphService.classStart(className);
+              if (startNode != null) {
+                Set<Integer> withStart = new LinkedHashSet<>(swapNodes);
+                withStart.add(startNode);
+                Set<Integer> reach = poeTreeGraphService.reachableFrom(startNode, withStart);
+                long orphan =
+                    swapNodes.stream().filter(id -> id < 0x10000 && !reach.contains(id)).count();
+                // 대조군 — 지금 쓰고 있는(정상) 트리에도 같은 잣대를 대 본다. 여기서도 끊김이 크게 나오면
+                // 트리가 아니라 진단(시작 노드/그래프 기준)이 틀린 것이다.
+                Set<Integer> curWithStart = new LinkedHashSet<>(allocated);
+                curWithStart.add(startNode);
+                Set<Integer> curReach = poeTreeGraphService.reachableFrom(startNode, curWithStart);
+                long curOrphan =
+                    allocated.stream().filter(id -> id < 0x10000 && !curReach.contains(id)).count();
+                log(
+                    "클러스터 스왑 진단: 노드 "
+                        + swapNodes.size()
+                        + " · 끊김 "
+                        + orphan
+                        + " · 제거 "
+                        + removable.size()
+                        + " || 대조(현 트리): 노드 "
+                        + allocated.size()
+                        + " · 끊김 "
+                        + curOrphan
+                        + " · start "
+                        + startNode);
+              }
               List<ClusterSpec> withNew = new ArrayList<>(fixedClusters);
               withNew.add(bestSpec);
               List<ClusterSpec> savedClusters2 = fixedClusters;
@@ -4913,6 +4960,155 @@ public class PoeOptimizeService {
                       + format(current));
             }
           }
+        }
+      }
+
+      // ── 트리 최종 재대결 — 트리는 **장비·오라·주얼이 없는 상태**에서 확정되고 그 뒤로 되돌아보지 않는다.
+      // 그래서 완성 빌드에선 값이 죽은 잎(예: 무기가 바뀌어 무의미해진 계열)이 남고, 정작 지금 문맥에서
+      // 강한 노터블은 못 들어온다. 후보/예산을 조금만 바꿔도 결과가 ±5~20% 흔들리던 원인이기도 하다
+      // (실측: 레벨 +10pt −4.1%, 유니크 후보 +34종 −9.3% — 국소 최적에 갇혀 경로에 휘둘림).
+      // 완성 문맥에서 「값싼 잎 제거 ↔ 미할당 노터블 편입」을 상승할 때만 반복 채택한다.
+      {
+        enterPhase("tree-rematch");
+        Integer startNode = poeTreeGraphService.classStart(className);
+        List<PoeTreeGraphService.TreeNode> rematchPool =
+            poeTreeGraphService.searchCandidates().stream()
+                .filter(n -> !allocated.contains(n.id()))
+                .filter(n -> score(n.stats(), keywords) > 0)
+                .sorted(
+                    Comparator.comparingInt((PoeTreeGraphService.TreeNode n) -> score(n.stats(), keywords))
+                        .reversed())
+                .limit(TREE_REMATCH_CANDIDATES)
+                .toList();
+        int adopted = 0;
+        for (int round = 0; round < TREE_REMATCH_ROUNDS; round++) {
+          PoeTreeGraphService.TreeNode bestNode = null;
+          Set<Integer> bestNodes = null;
+          double bestVal = current;
+          for (PoeTreeGraphService.TreeNode cand : rematchPool) {
+            if (allocated.contains(cand.id())) {
+              continue;
+            }
+            List<Integer> path = poeTreeGraphService.shortestPath(allocated, cand.id());
+            if (path == null || path.isEmpty()) {
+              continue;
+            }
+            Set<Integer> trial = new LinkedHashSet<>(allocated);
+            trial.addAll(path);
+            trial.add(cand.id());
+            int need = trial.size() - allocated.size() - (POINT_BUDGET - points);
+            if (need > 0) {
+              Set<Integer> freed =
+                  removableLeaves(trial, allocated, need, startNode, keywords, path, cand.id());
+              if (freed == null) {
+                continue; // 뗄 잎이 부족 — 이 후보는 넘어간다
+              }
+              trial.removeAll(freed);
+            }
+            double val =
+                objectiveOf(
+                    poePobEngineService.calculateValues(
+                        buildXml(
+                            gem, supports, className, ascendancy, ascendancyNodes, trial, items, jewels)),
+                    objectiveKey);
+            evalCount.incrementAndGet();
+            if (val > bestVal * 1.003) {
+              bestVal = val;
+              bestNode = cand;
+              bestNodes = trial;
+            }
+          }
+          if (bestNode == null) {
+            break;
+          }
+          points = points + bestNodes.size() - allocated.size();
+          allocated.clear();
+          allocated.addAll(bestNodes);
+          log(
+              "트리 재대결 채택: "
+                  + (bestNode.nameKo() != null ? bestNode.nameKo() : bestNode.name())
+                  + " → "
+                  + format(bestVal)
+                  + " (이전 "
+                  + format(current)
+                  + ")");
+          current = bestVal;
+          adopted++;
+        }
+        if (adopted == 0) {
+          log("트리 재대결: 이득 없음(현 트리 유지) — 후보 " + rematchPool.size() + "개");
+        }
+      }
+
+      // ── 유니크 최종 재대결 — 장비 단계는 주얼·오라·마스터리·문신 이전의 중간 문맥이라, 그 시점의
+      // 슬롯별 우승자가 완성 빌드에서도 최선이라는 보장이 없다. 특히 **다른 축으로 값을 내는 유니크**
+      // (예: 생명력을 크게 주는 갑옷 — RF 는 생명력이 곧 피해다)는 중간 문맥에서 피해 유니크에 밀린다.
+      // 실측 근거: 대표 실빌드는 생명력 21,798 인데 우리 빌드는 그 축을 아예 안 밟는다.
+      // 완성 문맥에서 슬롯별 유니크 후보를 다시 재 보고 상승할 때만 교체한다(기존 방어 재대결은
+      // "현재 유니크 ↔ 방어 레어" 1:1 이라 유니크 전수는 못 봤다).
+      {
+        enterPhase("unique-rematch");
+        int adoptedUnique = 0;
+        for (int round = 0; round < UNIQUE_REMATCH_ROUNDS; round++) {
+          Slot bestSlot = null;
+          PoeUniqueItem bestPick = null;
+          double bestVal = current;
+          for (Slot slot :
+              new Slot[] {
+                Slot.BODY, Slot.HELMET, Slot.GLOVES, Slot.BOOTS,
+                Slot.AMULET, Slot.RING1, Slot.RING2, Slot.BELT, Slot.OFFHAND
+              }) {
+            Equipped cur = items.get(slot);
+            if (cur != null
+                && cur.isUnique()
+                && fixedUniques.stream().anyMatch(u -> u.slug().equals(cur.unique().slug()))) {
+              continue; // 사용자 강제 유니크 존중
+            }
+            List<PoeUniqueItem> pool = itemCandidates(slot, gem, keywords, items);
+            int tried = 0;
+            for (PoeUniqueItem cand : pool) {
+              if (tried >= UNIQUE_REMATCH_PER_SLOT) {
+                break;
+              }
+              if (cur != null && cur.isUnique() && cur.unique().slug().equals(cand.slug())) {
+                continue;
+              }
+              tried++;
+              Map<Slot, Equipped> trial = new EnumMap<>(items);
+              trial.put(slot, Equipped.ofUnique(cand));
+              double val =
+                  objectiveOf(
+                      poePobEngineService.calculateValues(
+                          buildXml(
+                              gem, supports, className, ascendancy, ascendancyNodes, allocated, trial, jewels)),
+                      objectiveKey);
+              evalCount.incrementAndGet();
+              if (val > bestVal * 1.003) {
+                bestVal = val;
+                bestSlot = slot;
+                bestPick = cand;
+              }
+            }
+          }
+          if (bestSlot == null) {
+            break;
+          }
+          items.put(bestSlot, Equipped.ofUnique(bestPick));
+          log(
+              "유니크 재대결 채택: "
+                  + bestSlot.ko
+                  + " = "
+                  + (bestPick.nameKo() != null ? bestPick.nameKo() : bestPick.name())
+                  + " → "
+                  + format(bestVal)
+                  + " (이전 "
+                  + format(current)
+                  + ")");
+          current = bestVal;
+          adoptedUnique++;
+        }
+        if (adoptedUnique == 0) {
+          log("유니크 재대결: 이득 없음(현 장비 유지)");
         }
       }
 
@@ -6165,6 +6361,85 @@ public class PoeOptimizeService {
    *   <li>balanced: CombinedDPS × min(1, EHP/하한) — 유리대포 방지(생존 확보 전엔 DPS 가치 낮춤)
    * </ul>
    */
+  /** 유니크 최종 재대결 — 슬롯당 다시 볼 후보 수(키워드 점수 상위). */
+  private static final int UNIQUE_REMATCH_PER_SLOT = 10;
+
+  /** 유니크 최종 재대결 라운드 상한 — 한 슬롯 교체가 문맥을 바꿔 다음 라운드 결과도 달라진다. */
+  private static final int UNIQUE_REMATCH_ROUNDS = 3;
+
+  /** 트리 재대결 후보 수 — 완성 문맥에서 다시 볼 미할당 노터블 상위 N(키워드 점수순). */
+  private static final int TREE_REMATCH_CANDIDATES = 14;
+
+  /** 트리 재대결 라운드 상한 — 한 번 채택하면 문맥이 바뀌어 다음 후보의 값도 달라진다. */
+  private static final int TREE_REMATCH_ROUNDS = 4;
+
+  /**
+   * 포인트를 마련하려 뗄 **잎**을 고른다(못 고르면 null).
+   *
+   * <p>차수는 반드시 <b>교환 후 평가할 트리</b>(trial) 기준으로, 그리고 <b>직업 시작 노드를 포함</b>해서 세야 한다. 시작 노드는 allocated 에
+   * 없어서 빼먹기 쉬운데, 빼먹으면 시작에 붙은 첫 노드가 차수 1(=잎)로 보여 제거 대상이 되고 그 순간 트리 전체가 시작점과 끊긴다(실측: 클러스터 스왑에서
+   * 끊김 115/123, 교환 후 953 → 붕괴를 손익으로 오인해 클러스터가 영원히 기각됐다).
+   *
+   * <p>주얼 소켓·키스톤·마스터리는 떼는 순간 빌드 기제가 무너지므로 제외하고, 이번에 새로 얹은 경로(protect)도 보호한다.
+   */
+  private Set<Integer> removableLeaves(
+      Set<Integer> trial,
+      Set<Integer> allocated,
+      int need,
+      Integer startNode,
+      List<String> keywords,
+      List<Integer> protectedPath,
+      Integer protectedTarget) {
+    Set<Integer> removable = new LinkedHashSet<>();
+    Set<Integer> pool = new HashSet<>(trial);
+    if (startNode != null) {
+      pool.add(startNode);
+    }
+    Set<Integer> keep = new HashSet<>();
+    if (protectedPath != null) {
+      keep.addAll(protectedPath);
+    }
+    if (protectedTarget != null) {
+      keep.add(protectedTarget);
+    }
+    while (removable.size() < need) {
+      Integer pick = null;
+      int pickScore = Integer.MAX_VALUE;
+      for (int id : pool) {
+        if (id >= 0x10000 || !allocated.contains(id) || keep.contains(id)) {
+          continue; // 가상 노드 · 새로 얹은 경로 · 시작 노드는 대상 아님
+        }
+        int degree = 0;
+        for (int nb : poeTreeGraphService.neighbors(id)) {
+          if (pool.contains(nb)) {
+            degree++;
+          }
+        }
+        if (degree > 1) {
+          continue; // 잎만 — 중간 노드 제거는 연결성을 깬다
+        }
+        PoeTreeGraphService.TreeNode treeNode = poeTreeGraphService.node(id);
+        if (treeNode != null
+            && ("jewel".equals(treeNode.type())
+                || "keystone".equals(treeNode.type())
+                || "mastery".equals(treeNode.type()))) {
+          continue;
+        }
+        int sc = treeNode == null ? 0 : score(treeNode.stats(), keywords);
+        if (sc < pickScore || (sc == pickScore && (pick == null || id < pick))) {
+          pickScore = sc;
+          pick = id;
+        }
+      }
+      if (pick == null) {
+        return null; // 더 뗄 잎이 없음
+      }
+      removable.add(pick);
+      pool.remove(pick);
+    }
+    return removable;
+  }
+
   private double objectiveOf(Map<String, Double> values, String objective) {
     double factor = feasibilitySteering ? feasibilityFactor(values) : 1.0;
     // #1 정의의 화염류(RF) 지속력 게이트 — 자기 불에 타 죽는(순생명재생<0) 빌드를 선택 지표에서 감쇠.

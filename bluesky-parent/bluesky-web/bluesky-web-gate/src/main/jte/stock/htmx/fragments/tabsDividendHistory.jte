@@ -716,17 +716,47 @@
         let monthlyChart = null;
         let donutChart = null;
 
+        // 월별 라벨이 덮을 구간. 두 차트와 월평균 카드가 같은 답을 쓰도록 한 곳에서 정한다.
+        //
+        // '전체'를 고르면 rangeMode 가 all 이라 시작일·종료일이 아예 비어 온다. 예전에는 그때
+        // 빈 달을 채우는 경로를 통째로 건너뛰어, 배당이 들어온 달만 라벨이 됐다 - 그래서 월평균의
+        // 분모가 '개월수'가 아니라 '배당이 있었던 달의 수'였다(실측 2026-08-24: 2020-04 ~ 2026-08
+        // 은 달력으로 77개월인데 36으로 나눠 1,712,380원. 실제 달력 기준은 800,593원으로 2.14배 차이).
+        // 다른 기간(1년·3년 등)은 날짜가 채워져 있어 빈 달까지 세므로, '전체'만 기준이 달랐다.
+        //
+        // 전체일 때는 자료의 첫 달 ~ 마지막 달을 구간으로 삼는다. 그러면 분모가 달력 개월수가 되고
+        // 차트 x축에도 배당이 0원이던 달(실측 41개월)이 그대로 드러난다.
+        function monthlyRange() {
+            let from = filterStartDate, to = filterEndDate;
+            if (!from || !to) {
+                const seen = dividendData
+                    .filter(d => d.payDate)
+                    .map(d => d.payDate.slice(0, 7))
+                    .sort();
+                if (seen.length === 0) return null;
+                from = seen[0];
+                to = seen[seen.length - 1];
+            }
+            return { from: from, to: to };
+        }
+
+        /** from ~ to 사이의 'YYYY-MM' 을 빠짐없이 돌려준다. */
+        function monthsInRange(range) {
+            const months = [];
+            if (!range) return months;
+            let cur = range.from;
+            while (cur <= range.to) {
+                months.push(cur);
+                const parts = cur.split('-');
+                const y = Number(parts[0]), mo = Number(parts[1]);
+                cur = mo === 12 ? (y + 1) + '-01' : y + '-' + String(mo + 1).padStart(2, '0');
+            }
+            return months;
+        }
+
         function buildMonthlyData() {
             const map = {};
-            if (filterStartDate && filterEndDate) {
-                let cur = filterStartDate;
-                while (cur <= filterEndDate) {
-                    map[cur] = 0;
-                    const parts = cur.split('-');
-                    const y = Number(parts[0]), mo = Number(parts[1]);
-                    cur = mo === 12 ? (y + 1) + '-01' : y + '-' + String(mo + 1).padStart(2, '0');
-                }
-            }
+            monthsInRange(monthlyRange()).forEach(m => { map[m] = 0; });
             dividendData.forEach(d => {
                 if (!d.payDate) return;
                 const mon = d.payDate.slice(0, 7);
@@ -739,15 +769,7 @@
         // 월별 × 종목 누적: 어떤 종목이 각 달의 증감을 만들었는지 한눈에. 상위 N개 + 나머지는 '기타'.
         function buildMonthlyStackedData() {
             const monthSet = {};
-            if (filterStartDate && filterEndDate) {
-                let cur = filterStartDate;
-                while (cur <= filterEndDate) {
-                    monthSet[cur] = true;
-                    const parts = cur.split('-');
-                    const y = Number(parts[0]), mo = Number(parts[1]);
-                    cur = mo === 12 ? (y + 1) + '-01' : y + '-' + String(mo + 1).padStart(2, '0');
-                }
-            }
+            monthsInRange(monthlyRange()).forEach(m => { monthSet[m] = true; });
             dividendData.forEach(d => { if (d.payDate) monthSet[d.payDate.slice(0, 7)] = true; });
             const months = Object.keys(monthSet).sort();
             const monthIndex = {};

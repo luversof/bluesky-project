@@ -289,18 +289,35 @@ function parseBlock(block, category) {
 	};
 }
 
-// PoB 데이터가 없으면 GitHub 에서 받아온다 (부위별 lua)
+// PoB 유니크 원본 — **매 실행 최신본**을 쓴다.
+//   예전엔 GitHub 에서 한 번 받아 pob-uniques/ 에 캐시하고 `existsSync` 면 건너뛰어서, 한 번 받은 뒤로는
+//   신규·수정 유니크가 영원히 반영되지 않았다(실측: 캐시 jewel.lua 1,962줄 ↔ 최신 2,015줄).
+//   run-all 은 이미 pob-src 를 git 으로 최신화하므로 **그 소스를 우선 복사**하고, 없을 때만 내려받는다.
 const POB_FILES = ["amulet","axe","belt","body","boots","bow","claw","dagger","fishing","flask","gloves","helmet","jewel","mace","quiver","ring","shield","staff","sword","wand","tincture"];
 fs.mkdirSync(POB_DIR, { recursive: true });
+const POB_SRC_UNIQUES = path.join(DATA_DIR, "work", "pob-src", "src", "Data", "Uniques");
+let fromSrc = 0;
+let downloaded = 0;
 for (const name of POB_FILES) {
 	const target = path.join(POB_DIR, name + ".lua");
+	const src = path.join(POB_SRC_UNIQUES, name + ".lua");
+	if (fs.existsSync(src)) {
+		const next = fs.readFileSync(src, "utf8");
+		const prev = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : null;
+		if (next !== prev) {
+			fs.writeFileSync(target, next);
+			fromSrc++;
+		}
+		continue;
+	}
 	if (fs.existsSync(target)) continue;
 	const url = `https://raw.githubusercontent.com/PathOfBuildingCommunity/PathOfBuilding/master/src/Data/Uniques/${name}.lua`;
 	const response = await fetch(url);
 	if (!response.ok) throw new Error(`PoB 다운로드 실패: ${url} (${response.status})`);
 	fs.writeFileSync(target, await response.text());
-	console.log("다운로드:", name + ".lua");
+	downloaded++;
 }
+if (fromSrc || downloaded) console.log(`PoB 유니크 원본 갱신: pob-src ${fromSrc}개, 다운로드 ${downloaded}개`);
 
 const items = [];
 for (const file of fs.readdirSync(POB_DIR)) {

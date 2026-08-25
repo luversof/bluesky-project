@@ -33,6 +33,7 @@
     String profitDescription = MessageUtil.getMessage("stock.asset.growth.summary.period.profit.desc");
     String principalDeltaLabel = MessageUtil.getMessage("stock.asset.growth.summary.principal.delta");
     String unrealizedTrendLabel = MessageUtil.getMessage("stock.asset.growth.summary.unrealized.trend");
+    String unrealizedDescription = MessageUtil.getMessage("stock.asset.growth.summary.unrealized.desc");
     String recoveredLabel = MessageUtil.getMessage("stock.asset.growth.summary.profit.recovered");
     String netNewLabel = MessageUtil.getMessage("stock.asset.growth.summary.profit.net.new");
 
@@ -67,9 +68,13 @@
 
 <div id="assetGrowthPeriodReturnSummary" class="rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3 mb-3">
 
-    <%-- 주지표: 평가손익 — 사용자가 가장 중요하게 보는 "지금 원금 대비 얼마인가" --%>
+    <%-- 주지표: 기간 손익 — 이 화면은 기간을 고르는 화면이므로, 고른 기간에 답하는 값이 맨 위에 와야 한다.
+         예전에는 평가손익이 주지표였는데 그 값은 <b>기간이 끝나는 날</b>만 따라간다. 화면의 프리셋
+         (이번달·올해·1년·3년·전체)은 끝나는 날이 모두 오늘이라, 무엇을 골라도 큰 숫자가 꿈쩍하지 않았다
+         (실측 2026-08-24: 다섯 기간 모두 +915,129,989). 정작 기간 손익은 -18,659,731 ~ +1,202,320,825
+         로 갈렸고, 이번달은 손실인데 맨 위에는 +9억이 떠 있었다. 둘의 자리를 바꾼다. --%>
     <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span class="text-sm font-semibold text-base-content/70">${unrealizedLabel}</span>
+        <span class="text-sm font-semibold text-base-content/70">${profitTitle}</span>
         @if(!fromDate.isBlank() && !toDate.isBlank())
             <span class="inline-flex items-center rounded-full bg-base-200/80 px-2 py-0.5 text-[11px] font-medium text-base-content/60">
                 ${fromDate} ~ ${toDate}
@@ -77,29 +82,27 @@
         @endif
     </div>
     <div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        @if(unrealizedAvailable)
-            <span class="text-4xl font-bold leading-none amount-value ${unrealizedEndPositive ? "text-profit" : "text-loss"}">
-                ${unrealizedEndPositive ? "+" : "-"}₩${amountFormat.format(unrealizedEnd.abs())}
+        @if(profitAvailable)
+            <span class="text-4xl font-bold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
+                ${profitPositive ? "+" : "-"}₩${amountFormat.format(periodProfit.abs())}
             </span>
-            @if(unrealizedEndPct != null)
-                <span class="text-xl font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">
-                    ${String.format("%+.2f%%", unrealizedEndPct)}
-                </span>
-            @endif
         @else
             <span class="text-lg font-semibold text-base-content/60">${unavailableLabel}</span>
         @endif
     </div>
-    @if(unrealizedAvailable)
-        <p class="text-xs text-base-content/60 mt-1">
-            ${unrealizedTrendLabel}
-            <span class="amount-value font-medium ${unrealizedStartPositive ? "text-profit" : "text-loss"}">${unrealizedStartPositive ? "+" : "-"}₩${amountFormat.format(unrealizedStart.abs())}</span>
-            <span class="text-base-content/35">→</span>
-            <span class="amount-value font-medium ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEndPositive ? "+" : "-"}₩${amountFormat.format(unrealizedEnd.abs())}</span>
+    <p class="text-xs text-base-content/60 mt-1">${profitDescription}</p>
+    @if(splitAvailable)
+        <%-- 기간 손익 = 손실 회복분 + 순증분. 회복분은 되찾은 돈, 순증분이 새로 번 돈. --%>
+        <p class="text-xs mt-0.5">
+            <span class="text-base-content/60">${recoveredLabel}</span>
+            <span class="amount-value font-medium text-base-content/60">₩${amountFormat.format(recoveredAmount)}</span>
+            <span class="text-base-content/30 mx-0.5">·</span>
+            <span class="text-base-content/60">${netNewLabel}</span>
+            <span class="amount-value font-semibold ${netNewPositive ? "text-profit" : "text-loss"}">${netNewPositive ? "+" : "-"}₩${amountFormat.format(netNewProfit.abs())}</span>
         </p>
     @endif
 
-    <%-- 보조 지표: 운용 성과 / 기간 손익 / 자산 증가율 --%>
+    <%-- 보조 지표: 운용 성과 / 평가 손익 / 자산 증가율 --%>
     <div class="mt-3 pt-3 border-t border-base-200 grid gap-3 sm:grid-cols-3">
         <div class="min-w-0">
             <div class="text-xs text-base-content/60 mb-0.5">${twrTitle}</div>
@@ -135,23 +138,29 @@
         </div>
 
         <div class="min-w-0">
-            <div class="text-xs text-base-content/60 mb-0.5">${profitTitle}</div>
-            @if(profitAvailable)
-                <div class="text-lg font-bold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
-                    ${profitPositive ? "+" : "-"}₩${amountFormat.format(periodProfit.abs())}
+            <div class="text-xs text-base-content/60 mb-0.5">${unrealizedLabel}</div>
+            @if(unrealizedAvailable)
+                <div class="flex flex-wrap items-baseline gap-x-2">
+                    <span class="text-lg font-bold leading-none amount-value ${unrealizedEndPositive ? "text-profit" : "text-loss"}">
+                        ${unrealizedEndPositive ? "+" : "-"}₩${amountFormat.format(unrealizedEnd.abs())}
+                    </span>
+                    @if(unrealizedEndPct != null)
+                        <span class="text-sm font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">
+                            ${String.format("%+.2f%%", unrealizedEndPct)}
+                        </span>
+                    @endif
                 </div>
             @else
                 <div class="text-sm font-semibold text-base-content/60">${unavailableLabel}</div>
             @endif
-            <p class="text-[11px] leading-4 text-base-content/60 mt-0.5">${profitDescription}</p>
-            @if(splitAvailable)
-                <%-- 기간 손익 = 손실 회복분 + 순증분. 회복분은 '되찾은 돈', 순증분이 '새로 번 돈'. --%>
+            <%-- 자리를 내린 값이므로 무엇을 재는 값인지 밝힌다 - 기간이 아니라 기말 시점 값이다. --%>
+            <p class="text-[11px] leading-4 text-base-content/60 mt-0.5">${unrealizedDescription}</p>
+            @if(unrealizedAvailable)
                 <p class="text-[11px] leading-4 mt-0.5">
-                    <span class="text-base-content/60">${recoveredLabel}</span>
-                    <span class="amount-value font-medium text-base-content/60">₩${amountFormat.format(recoveredAmount)}</span>
-                    <span class="text-base-content/30 mx-0.5">·</span>
-                    <span class="text-base-content/60">${netNewLabel}</span>
-                    <span class="amount-value font-semibold ${netNewPositive ? "text-profit" : "text-loss"}">${netNewPositive ? "+" : "-"}₩${amountFormat.format(netNewProfit.abs())}</span>
+                    <span class="text-base-content/60">${unrealizedTrendLabel}</span>
+                    <span class="amount-value font-medium ${unrealizedStartPositive ? "text-profit" : "text-loss"}">${unrealizedStartPositive ? "+" : "-"}₩${amountFormat.format(unrealizedStart.abs())}</span>
+                    <span class="text-base-content/35">→</span>
+                    <span class="amount-value font-medium ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEndPositive ? "+" : "-"}₩${amountFormat.format(unrealizedEnd.abs())}</span>
                 </p>
             @endif
         </div>
