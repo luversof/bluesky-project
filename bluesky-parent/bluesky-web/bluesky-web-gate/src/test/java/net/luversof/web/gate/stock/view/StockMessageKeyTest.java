@@ -146,8 +146,8 @@ class StockMessageKeyTest {
         .forEach(koreanRules::add);
 
     assertThat(englishRules)
-        .as("api-stock 의 LedgerIntegrityService 가 정의한 규칙 수(24)보다 적으면 어떤 규칙은 이름 없이 그려진다")
-        .hasSizeGreaterThanOrEqualTo(24);
+        .as("api-stock 의 LedgerIntegrityService 가 정의한 규칙 수(20)보다 적으면 어떤 규칙은 이름 없이 그려진다")
+        .hasSizeGreaterThanOrEqualTo(20);
     assertThat(koreanRules).as("두 번들의 규칙 키 집합이 다르다").isEqualTo(englishRules);
 
     List<String> blank = new ArrayList<>();

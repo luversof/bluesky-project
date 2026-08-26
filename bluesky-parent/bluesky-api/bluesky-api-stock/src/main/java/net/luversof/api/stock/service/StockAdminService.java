@@ -300,7 +300,11 @@ public class StockAdminService {
         snapshot.setAsOfDate(stats.asOfDate());
         snapshot.setLatestMonthlyDividendPerShare(stats.latestPerShare());
         snapshot.setAverageMonthlyDividendPerShare1y(stats.averagePerShare1y());
-        snapshot.setAverageTaxableBaseRatio1y(stats.taxableBaseRatio1y());
+        // 과세비율은 원장 실적이 우선이다 - 참조는 종목당 값이 하나뿐이라 계좌별 혜택(비과세·분리과세)을 담지 못한다.
+        java.math.BigDecimal ledgerRatio =
+            monthlyDividendPayoutService.ledgerTaxableBaseRatio1y(userId, stockItem.getId());
+        snapshot.setAverageTaxableBaseRatio1y(
+            ledgerRatio != null ? ledgerRatio : stats.taxableBaseRatio1y());
       } else if (snapshot.getAsOfDate() == null) {
         snapshot.setAsOfDate(LocalDate.now());
       }

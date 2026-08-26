@@ -74,7 +74,12 @@ public class PoeOptimizeService {
   /** 주얼 소켓용으로 트리 예산에서 예약하는 포인트 (너무 크면 트리 노터블 손실) */
   private static final int JEWEL_RESERVE = 10;
 
-  /** 주얼 단계에서 평가할 최대 소켓 수 (가장 싸게 닿는 것부터) — 비용 제한 */
+  /**
+   * 주얼 단계에서 평가할 최대 소켓 수 (가장 싸게 닿는 것부터) — 비용 제한.
+   *
+   * <p>⚠ 8 로 올리고 예약을 16 으로 늘려 봤지만 **오히려 -18.1%**(RF 1,517,354 → 1,242,819)였다. 소켓은 그래도 5개만 잡혔고(상한이
+   * 병목이 아니다) 예약 포인트만 트리에서 빠져나갔다. 병목은 "닿는 소켓의 한계 이득"이지 이 상한이 아니다.
+   */
   private static final int JEWEL_MAX_SOCKETS = 5;
 
   /**
@@ -373,6 +378,8 @@ public class PoeOptimizeService {
     this.parallelism = parallelism > 0 ? parallelism : poePobEngineService.poolSize();
     loadLastResult();
     this.ninjaSeedFile = Path.of(dataDir, "ninja", "ninja-archetypes.json");
+    // 감시자의 눈 모드 풀은 **데이터 루트**에 있다(ninja/ 아래가 아니다 — 처음에 seed 파일 부모로 잡아 못 찾았다)
+    this.watchersEyeFile = Path.of(dataDir, "watchers-eye.json");
     loadNinjaSeeds(ninjaSeedFile);
   }
 
@@ -464,6 +471,27 @@ public class PoeOptimizeService {
           "poe.ninja 시드 로드: {} 아키타입키 / {} 스킬", ninjaSeedByKey.size(), ninjaSeedBySkill.size());
     } catch (Exception e) {
       logger.warn("poe.ninja 시드 로드 실패: {}", file, e);
+    }
+    // 감시자의 눈 모드 풀 — PoB 가 코드로 생성하는 유니크라 우리 유니크 데이터엔 없다(Special/WatchersEye.lua).
+    //   "…while affected by <오라>" 형태라 **지금 낀 오라**에 맞는 모드만 골라 합성해야 값이 산다.
+    try {
+      Path weFile = watchersEyeFile;
+      if (Files.exists(weFile)) {
+        JsonNode we = JsonMapper.builder().build().readTree(Files.readString(weFile));
+        watchersEyeMods.clear();
+        for (JsonNode mod : we.path("mods")) {
+          String aura = mod.path("aura").asText(null);
+          if (aura == null || aura.isBlank()) {
+            continue;
+          }
+          watchersEyeMods
+              .computeIfAbsent(aura, k -> new ArrayList<>())
+              .add(new WatchersEyeMod(mod.path("en").asText(), mod.path("ko").asText()));
+        }
+        logger.info("감시자의 눈 모드 풀 로드: 오라 {}종", watchersEyeMods.size());
+      }
+    } catch (Exception e) {
+      logger.warn("감시자의 눈 모드 풀 로드 실패", e);
     }
     // 엔진 벤치(calibrate-archetypes.mjs) — 대표 실빌드를 **우리 엔진으로 재계산한** 지표 정합 정답값.
     //   belowMeta 판정이 ninja 표기 지표 대신 이걸 우선 사용(gross/net 불일치 우회). 없으면 기존 경로.
@@ -765,6 +793,14 @@ public class PoeOptimizeService {
         eb = ninjaEngineBench.get(benchBase);
       }
     }
+    // 벤치가 스스로 "못 믿겠다"고 표시한 항목은 판정에서 뺀다(calibrate 의 reliable=false).
+    //   대표 1인 빌드는 발라 버스트가 메인이거나 트리거 그룹이 잡혀 자릿수가 어긋나는 일이 잦다
+    //   (실측: RF 중앙값 대비 11.9x, 혼의 균열|ci 0.02x). 못 믿을 기준으로 "메타 하회" 를 찍으면
+    //   사용자에게도 거짓말이고 개선 방향도 틀어진다 → 이럴 땐 아래 ninja 중앙값 경로로 내려간다.
+    if (eb != null && eb.has("reliable") && !eb.path("reliable").asBoolean()) {
+      log("메타 벤치: 신뢰도 낮음(중앙값 대비 " + eb.path("ratio").asDouble() + "x) — 중앙값 기준으로 판정");
+      eb = null;
+    }
     if (eb != null && eb.path("dps").asDouble() > 0 && eb.path("ehp").asDouble() > 0) {
       boolean below = myDps < eb.path("dps").asDouble() && myEhp < eb.path("ehp").asDouble();
       if (below) {
@@ -840,6 +876,13 @@ public class PoeOptimizeService {
 
   // 엔진 벤치("전직|스킬" → {dps,ehp,netRegen,life}) — 대표 실빌드의 우리-엔진 재계산값(지표 정합 정답).
   private final Map<String, JsonNode> ninjaEngineBench = new HashMap<>();
+
+  /** 감시자의 눈 모드 — 오라 이름 → 그 오라 조건부 모드 목록. */
+  private record WatchersEyeMod(String en, String ko) {}
+
+  private final Map<String, List<WatchersEyeMod>> watchersEyeMods = new HashMap<>();
+
+  private final Path watchersEyeFile;
 
   // ── P1 메타 마스터리 웜스타트 — 아키타입 패싯에서 채택률 META_MASTERY_ADOPTION 이상인 마스터리 효과의
   //   정규화 텍스트. balanced 잡의 setSurvivalTargets 에서만 채워짐 → dps/ehp 잡(기준선 포함)은 항상 빈 집합.
@@ -1669,6 +1712,9 @@ public class PoeOptimizeService {
   /** 방어 오라 스테이지에서 채택된 오라 — 최종/일반 buildXml 이 2번째 스킬 그룹으로 emit(트라이얼은 명시 전달). */
   private volatile List<PoeGem> selectedAuras = new ArrayList<>();
 
+  /** 영원한 축복으로 예약 없이 유지하는 오라(잡 스코프). 없으면 null. */
+  private volatile PoeGem blessingAura;
+
   // 이번 잡의 스킬 키워드 — XML 조립 시 유니크에 엘드리치 임플리싯을 고르는 데 쓴다(레어는 craft 시점에 이미 결정).
   private volatile List<String> currentKeywords = List.of();
   // 이 잡에서 아뮬렛에 걸 도유(잡마다 키워드가 정해질 때 1회 계산). null = 키워드에 맞는 노터블 없음
@@ -2270,6 +2316,7 @@ public class PoeOptimizeService {
       this.combatBuffs = buffs;
       this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
       this.selectedAuras = new ArrayList<>(); // 방어 오라 초기화(잡마다)
+      this.blessingAura = null;
       this.currentKeywords = List.of(); // 키워드 초기화(잡마다)
       this.tattooAllocated = Set.of(); // 문신 할당-이웃 판정 기준 초기화(잡마다)
       this.currentAnoint = null; // 아뮬렛 도유 초기화(잡마다)
@@ -2381,7 +2428,14 @@ public class PoeOptimizeService {
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
       }
       final PoeGem gem = resolved; // 이후 람다에서 참조되므로 final 고정
-      List<String> keywords = keywords(gem, objective);
+      List<String> baseKeywords = keywords(gem, objective);
+      // 원소 태그가 없는 공격 스킬(회오리 사격 등)은 **피해 축을 스스로 골라야** 한다.
+      //   태그만 보면 키워드가 [damage, attack, accuracy, projectile] 뿐이라 크래프트·평가가 물리로 굳고,
+      //   그 결과 원소 활 빌드에 잔혹 보조(원소·카오스 피해 0)까지 낀다(실측: 회오리 사격 569,816,
+      //   같은 활/데드아이인 번개 화살은 원소 태그 덕에 3,507,801).
+      //   축마다 기준 무기를 만들어 엔진으로 재 보고 가장 센 축의 키워드를 이번 잡에 쓴다.
+      // 람다들이 참조하므로 effectively final 이어야 한다 — 축 선택까지 끝낸 값을 한 번에 고정한다.
+      final List<String> keywords = pickDamageAxis(gem, objective, baseKeywords);
       this.currentKeywords = keywords;
       this.selfBurnRun = isSelfBurnLifeScaled(gem); // #1 RF 류면 선택 지표에 지속력 게이트
       // #235 메인 스킬이 미니언이면 선택/표시 지표를 미니언수 합산 총합(FullDPS)으로 — ninja 총합 표기 정합.
@@ -2502,6 +2556,48 @@ public class PoeOptimizeService {
       // 강제 장착 유니크를 미리 배치 → 모든 스테이지(트리/보조/오라/아이템)가 이 아이템 스탯을 반영
       placeFixedUniques(items);
       Map<Integer, Equipped> jewels = new LinkedHashMap<>(); // 소켓 노드 id → 장착 주얼(유니크/레어)
+
+      // 공격 스킬은 **무기가 없으면 피해가 0**이다. 그런데 보조젬·트리 단계는 아이템 단계보다 먼저 돌아,
+      // 무기 없는 상태로 후보를 재면 전부 0 이 나와 사실상 무작위로 뽑힌다
+      // (실측: 번개 화살 보조젬 채택값 0·0·0·1·1 → 마무리 타격·카오스 피해 추가 같은 엉뚱한 조합).
+      // 그래서 공격 스킬이면 **임시 기준 무기**(그 스킬이 쓸 수 있는 베이스의 크래프트 레어)를 미리 끼운다.
+      // 아이템 단계가 다시 최적 무기를 고르므로 최종 결과를 묶어 두지 않는다.
+      // ⚠ 활 스킬로 한정한다. "Attack" 전부에 끼웠더니 **방패 공격·쌍수 스킬이 0 DPS 로 무너졌다**
+      //   (실측: 신성한 폭발 0, 쌍수 강타 0 — 기준 무기가 그 슬롯 구성을 선점해 방패/오프핸드 무기가 못 들어감).
+      //   원래 목적도 활 빌드(무기 없으면 DPS 0)라 범위를 그대로 좁힌다.
+      if (gem.tags() != null && gem.tags().contains("Bow")) {
+        // **무기 한 자루만** 끼운다. 방어구까지 한 벌로 채워도 봤지만 합계로 손해였다(실측, 세 공격 아키타입):
+        //   기준 없음 4,669,195 → 무기만 6,755,249 → 한 벌 4,903,225.
+        //   전 슬롯 T1 레어는 초기 문맥을 너무 강하게 고정해 이후 유니크·문맥 선택을 밀어낸다.
+        if (!items.containsKey(Slot.WEAPON)) {
+          RareItem starterWeapon = craftRare(Slot.WEAPON, gem, keywords, 0.0);
+          if (starterWeapon != null) {
+            items.put(Slot.WEAPON, Equipped.ofRare(starterWeapon));
+            log("기준 무기 임시 장착(공격 스킬): " + starterWeapon.baseType() + " — 보조젬이 0 DPS 에서 고르지 않도록");
+          }
+        }
+      }
+
+      // 랭킹 전용 문맥 — 보조젬·트리 후보의 **순위를 매길 때만** 쓰는 가상 장비 한 벌.
+      //   공격 스킬은 초반 문맥에서 DPS 가 0~1 이라 후보 순위가 사실상 노이즈다(실측: 회오리 사격이
+      //   잔혹 보조(원소 피해 0)를 낌). 이걸 빌드에 **저장**해 버리면 이후 유니크 선택을 밀어내 손해였으므로
+      //   (합계 4,903,225 vs 무기만 6,755,249), 저장하지 않고 평가에만 쓴다.
+      Map<Slot, Equipped> rankingItems = new EnumMap<>(items);
+      if (gem.tags() != null && gem.tags().contains("Attack")) {
+        for (Slot slot :
+            new Slot[] {
+              Slot.BODY, Slot.HELMET, Slot.GLOVES, Slot.BOOTS,
+              Slot.AMULET, Slot.RING1, Slot.RING2, Slot.BELT
+            }) {
+          if (rankingItems.containsKey(slot)) {
+            continue;
+          }
+          RareItem provisional = craftRare(slot, gem, keywords, 0.0);
+          if (provisional != null) {
+            rankingItems.put(slot, Equipped.ofRare(provisional));
+          }
+        }
+      }
 
       enterPhase("baseline");
       Map<String, Double> baselineValues =
@@ -2624,7 +2720,7 @@ public class PoeOptimizeService {
                         ascendancy,
                         ascendancyNodes,
                         allocated,
-                        items),
+                        rankingItems),
                 objectiveKey);
 
         List<PoeGem> shortlist =
@@ -2649,7 +2745,7 @@ public class PoeOptimizeService {
                               ascendancy,
                               ascendancyNodes,
                               allocated,
-                              items),
+                              rankingItems),
                       objectiveKey);
           Map.Entry<PoeGem, Double> best =
               round.entrySet().stream()
@@ -2694,7 +2790,7 @@ public class PoeOptimizeService {
                         ascendancy,
                         ascendancyNodes,
                         allocated,
-                        items),
+                        rankingItems),
                 "dps");
         List<PoeGem> extraShort =
             extraFirst.entrySet().stream()
@@ -2718,7 +2814,7 @@ public class PoeOptimizeService {
                               ascendancy,
                               ascendancyNodes,
                               allocated,
-                              items),
+                              rankingItems),
                       "dps");
           Map.Entry<PoeGem, Double> best =
               round.entrySet().stream()
@@ -2874,7 +2970,7 @@ public class PoeOptimizeService {
                     Set<Integer> trial = new LinkedHashSet<>(allocated);
                     trial.addAll(candidate.path());
                     return buildXml(
-                        gem, supports, className, ascendancy, ascendancyNodes, trial, items);
+                        gem, supports, className, ascendancy, ascendancyNodes, trial, rankingItems);
                   },
                   objectiveKey);
           Reachable best = null;
@@ -2998,7 +3094,7 @@ public class PoeOptimizeService {
                         ascendancy,
                         ascendancyNodes,
                         trialNodes,
-                        items,
+                        rankingItems,
                         trialJewels);
                   },
                   objectiveKey);
@@ -3018,6 +3114,28 @@ public class PoeOptimizeService {
                     + format(current));
           }
         }
+      }
+
+      // 랭킹 문맥(가상 장비)에서 매긴 값은 **실제 빌드보다 크다**. 그대로 두면 current 가 부풀어 이후 단계가
+      // 아무것도 못 넘는다(실측: 주얼 단계가 45후보 중 0개 채택 → 주얼 없는 빌드). 트리가 끝나면 실제 문맥으로
+      // 기준값을 다시 잡는다.
+      if (!rankingItems.equals(items)) {
+        double realCurrent =
+            objectiveOf(
+                poePobEngineService.calculateValues(
+                    buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels)),
+                objectiveKey);
+        evalCount.incrementAndGet();
+        log("기준값 재산정(실제 장비): " + format(current) + " → " + format(realCurrent));
+        current = realCurrent;
       }
 
       // ── 4) 아이템 greedy (슬롯 순회) — 고유 후보 + 생성 레어(최상위 티어) 를 함께 평가 ──
@@ -4491,6 +4609,80 @@ public class PoeOptimizeService {
               bestCost = cost;
             }
           }
+          // ── 적재물 재선정 — 승자 스킬키의 노터블 3개는 **키워드 점수**로 골랐다. 그 점수는 이미
+          //    오판 전력이 있다(감시자의 눈: "받는 피해" 모드가 1순위로 올라옴). 승자에 한해 후보를
+          //    넓혀(상위 6) 하나씩 실측으로 교체해 본다 — 클러스터가 손해로 기각되던 이유가
+          //    "클러스터 자체"가 아니라 "적재물 선택"일 수 있기 때문이다.
+          if (bestKey != null && bestSocket != null) {
+            List<String> pool =
+                poeClusterJewelDataService.legalNotables(bestKey, "Large").stream()
+                    .map(
+                        n ->
+                            new ScoredNotable(
+                                n, score(statsByName.getOrDefault(n, List.of()), clusterKeywords)))
+                    .sorted(
+                        Comparator.comparingInt(ScoredNotable::score)
+                            .reversed()
+                            .thenComparing(ScoredNotable::name))
+                    .limit(CLUSTER_NOTABLE_POOL)
+                    .map(ScoredNotable::name)
+                    .toList();
+            List<ClusterSpec> savedForSwap = fixedClusters;
+            try {
+              for (String candidate : pool) {
+                if (bestNotables.contains(candidate)) {
+                  continue;
+                }
+                for (int slot = 0; slot < bestNotables.size(); slot++) {
+                  List<String> trialNotables = new ArrayList<>(bestNotables);
+                  trialNotables.set(slot, candidate);
+                  var trialPlan =
+                      poeClusterJewelDataService.subgraphPlan(
+                          bestSocket.expansionJewel(), "Large", 8, trialNotables, 0);
+                  if (trialPlan.isEmpty()) {
+                    continue;
+                  }
+                  ClusterSpec trialSpec =
+                      new ClusterSpec(bestSocket.id(), "Large", 8, bestKey, trialNotables, 0);
+                  Set<Integer> nodes = new LinkedHashSet<>(allocated);
+                  nodes.addAll(bestSocketPath);
+                  nodes.add(bestSocket.id());
+                  nodes.addAll(trialPlan.get().nodeIds());
+                  List<ClusterSpec> withTrial = new ArrayList<>(savedForSwap);
+                  withTrial.add(trialSpec);
+                  double val;
+                  fixedClusters = List.copyOf(withTrial);
+                  val =
+                      objectiveOf(
+                          poePobEngineService.calculateValues(
+                              buildXml(
+                                  gem,
+                                  supports,
+                                  className,
+                                  ascendancy,
+                                  ascendancyNodes,
+                                  nodes,
+                                  items,
+                                  jewels)),
+                          objectiveKey);
+                  evalCount.incrementAndGet();
+                  if (val > bestTrialVal * 1.003) {
+                    bestTrialVal = val;
+                    bestNotables = trialNotables;
+                    bestSpec = trialSpec;
+                    bestTrialNodes = nodes;
+                    bestCost =
+                        bestSocketPath.size()
+                            + (bestSocketPath.contains(bestSocket.id()) ? 0 : 1)
+                            + trialPlan.get().pointCost();
+                    log("클러스터 적재물 교체: " + candidate + " → " + format(bestTrialVal));
+                  }
+                }
+              }
+            } finally {
+              fixedClusters = savedForSwap;
+            }
+          }
         }
         if (bestSpec != null) {
           boolean withinBudget = points + bestCost <= POINT_BUDGET;
@@ -4830,6 +5022,10 @@ public class PoeOptimizeService {
                 Slot.HELMET,
                 Slot.GLOVES,
                 Slot.BOOTS,
+                // 보조장비도 대상 — 활 빌드의 화살통은 "화살 추가" 같은 결정적 모드를 크래프트로만 얻는데,
+                // 아이템 단계에선 유니크끼리만 겨뤄(값이 아직 29 수준) 크래프트가 최종 문맥에서 한 번도
+                // 비교되지 않았다.
+                Slot.OFFHAND,
                 // 장신구도 같은 저평가 대상 — 크래프트는 슬롯 문맥(craftRare 카테고리)대로
                 Slot.AMULET,
                 Slot.RING1,
@@ -4846,6 +5042,17 @@ public class PoeOptimizeService {
             }
             RareItem rare = craftRare(defSlot, gem, keywords, 0.0);
             if (rare != null) {
+              if (defSlot == Slot.OFFHAND) {
+                // 활 빌드의 화살통이 실제로 어떤 모드로 만들어졌는지 — "화살 추가"가 들어갔는지 확인용
+                log(
+                    "보조장비 크래프트 후보: "
+                        + rare.baseType()
+                        + " ["
+                        + rare.families().stream()
+                            .map(PoeModPoolDataService.ModFamily::key)
+                            .toList()
+                        + "]");
+              }
               rematchTrials.add(new DefRematch(defSlot, rare));
             }
           }
@@ -4976,7 +5183,8 @@ public class PoeOptimizeService {
                 .filter(n -> !allocated.contains(n.id()))
                 .filter(n -> score(n.stats(), keywords) > 0)
                 .sorted(
-                    Comparator.comparingInt((PoeTreeGraphService.TreeNode n) -> score(n.stats(), keywords))
+                    Comparator.comparingInt(
+                            (PoeTreeGraphService.TreeNode n) -> score(n.stats(), keywords))
                         .reversed())
                 .limit(TREE_REMATCH_CANDIDATES)
                 .toList();
@@ -5009,7 +5217,14 @@ public class PoeOptimizeService {
                 objectiveOf(
                     poePobEngineService.calculateValues(
                         buildXml(
-                            gem, supports, className, ascendancy, ascendancyNodes, trial, items, jewels)),
+                            gem,
+                            supports,
+                            className,
+                            ascendancy,
+                            ascendancyNodes,
+                            trial,
+                            items,
+                            jewels)),
                     objectiveKey);
             evalCount.incrementAndGet();
             if (val > bestVal * 1.003) {
@@ -5055,8 +5270,15 @@ public class PoeOptimizeService {
           double bestVal = current;
           for (Slot slot :
               new Slot[] {
-                Slot.BODY, Slot.HELMET, Slot.GLOVES, Slot.BOOTS,
-                Slot.AMULET, Slot.RING1, Slot.RING2, Slot.BELT, Slot.OFFHAND
+                Slot.BODY,
+                Slot.HELMET,
+                Slot.GLOVES,
+                Slot.BOOTS,
+                Slot.AMULET,
+                Slot.RING1,
+                Slot.RING2,
+                Slot.BELT,
+                Slot.OFFHAND
               }) {
             Equipped cur = items.get(slot);
             if (cur != null
@@ -5080,7 +5302,14 @@ public class PoeOptimizeService {
                   objectiveOf(
                       poePobEngineService.calculateValues(
                           buildXml(
-                              gem, supports, className, ascendancy, ascendancyNodes, allocated, trial, jewels)),
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              allocated,
+                              trial,
+                              jewels)),
                       objectiveKey);
               evalCount.incrementAndGet();
               if (val > bestVal * 1.003) {
@@ -5109,6 +5338,238 @@ public class PoeOptimizeService {
         }
         if (adoptedUnique == 0) {
           log("유니크 재대결: 이득 없음(현 장비 유지)");
+        }
+      }
+
+      // ── 금단의 화염/살점 — **다른 직업의 어센던시 노터블 1개**를 주얼 2칸으로 사 오는 실빌드 표준.
+      // PoB 는 아이템 문구("Allocates X if you have the matching modifier on Forbidden Flame/Flesh")를
+      // GrantedAscendancyNode 로 읽어 실제로 노터블을 켠다. 우리 유니크 데이터엔 이 둘이 없다 —
+      // PoB 가 아이템 목록이 아니라 코드로 생성하기 때문(Special/Generated.lua). 그래서 여기서 합성한다.
+      // 근거: 하회 아키타입(RF·번개 화살) 대표 실빌드가 **둘 다** 금단의 살점을 낀다.
+      if (!jewels.isEmpty() && forbiddenEnabled) {
+        enterPhase("forbidden");
+        List<PoeTreeGraphService.TreeNode> notables =
+            poeTreeGraphService.foreignAscendancyNotables(className, ascendancy).stream()
+                .filter(n -> score(n.stats(), keywords) > 0)
+                .sorted(
+                    Comparator.comparingInt(
+                            (PoeTreeGraphService.TreeNode n) -> score(n.stats(), keywords))
+                        .reversed())
+                .limit(FORBIDDEN_CANDIDATES)
+                .toList();
+        // 바꿔 낄 자리는 **지금 가장 값이 낮은 주얼 2칸** — 소켓은 트리에서 이미 확보돼 있다.
+        List<Integer> swapSockets =
+            jewels.entrySet().stream()
+                .sorted(
+                    Comparator.comparingInt(
+                        e ->
+                            e.getValue().isUnique()
+                                ? score(e.getValue().unique().explicits(), keywords)
+                                : 0))
+                .limit(2)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (swapSockets.size() == 2 && !notables.isEmpty()) {
+          PoeTreeGraphService.TreeNode bestNotable = null;
+          double bestVal = current;
+          for (PoeTreeGraphService.TreeNode notable : notables) {
+            Map<Integer, Equipped> trial = new LinkedHashMap<>(jewels);
+            trial.put(
+                swapSockets.get(0),
+                Equipped.ofUnique(forbiddenJewel(notable.name(), true, className)));
+            trial.put(
+                swapSockets.get(1),
+                Equipped.ofUnique(forbiddenJewel(notable.name(), false, className)));
+            double val =
+                objectiveOf(
+                    poePobEngineService.calculateValues(
+                        buildXml(
+                            gem,
+                            supports,
+                            className,
+                            ascendancy,
+                            ascendancyNodes,
+                            allocated,
+                            items,
+                            trial)),
+                    objectiveKey);
+            evalCount.incrementAndGet();
+            // 후보별 실측을 남긴다 — 값이 전부 같으면 "이득 없음"이 아니라 **문구가 안 먹은 것**이다.
+            log("금단 후보: " + notable.name() + " (" + notable.ascendancy() + ") → " + format(val));
+            if (val > bestVal * 1.003) {
+              bestVal = val;
+              bestNotable = notable;
+            }
+          }
+          if (bestNotable != null) {
+            jewels.put(
+                swapSockets.get(0),
+                Equipped.ofUnique(forbiddenJewel(bestNotable.name(), true, className)));
+            jewels.put(
+                swapSockets.get(1),
+                Equipped.ofUnique(forbiddenJewel(bestNotable.name(), false, className)));
+            log(
+                "금단 페어 채택: "
+                    + (bestNotable.nameKo() != null ? bestNotable.nameKo() : bestNotable.name())
+                    + " ("
+                    + bestNotable.ascendancy()
+                    + ") → "
+                    + format(bestVal)
+                    + " (이전 "
+                    + format(current)
+                    + ")");
+            current = bestVal;
+          } else {
+            log("금단 페어: 이득 없음 — 후보 " + notables.size() + "개(주얼 2칸 교체 기준)");
+          }
+        }
+      }
+
+      // ── 영원한 축복 오라 — 예약 없이 오라 하나를 더 얹는다(실빌드 표준 경로).
+      // 우리 빌드는 혈마법/예약 포화로 오라가 1개에서 멈추는데(미예약 마나 0), 대표 실빌드는
+      // Eternal Blessing 으로 지속 피해 배율 오라를 공짜로 유지한다. 이 경로가 없으면 오라 연계
+      // (감시자의 눈 오라 조건부 모드 등)도 통째로 죽는다 — 실측: 감시자의 눈 후보가 정화의 얼음뿐이라 기각.
+      {
+        enterPhase("blessing");
+        List<PoeGem> blessingPool =
+            poeGemDataService.search(null, "active", "all", null).stream()
+                .filter(a -> AURA_NAMES.contains(a.name()))
+                .filter(a -> !a.levels().isEmpty())
+                .filter(a -> selectedAuras.stream().noneMatch(x -> x.slug().equals(a.slug())))
+                .filter(a -> additionalSkills.stream().noneMatch(x -> x.slug().equals(a.slug())))
+                .filter(a -> score(List.of(a.name()), keywords) >= 0)
+                .toList();
+        PoeGem bestBlessing = null;
+        double bestBlessingVal = current;
+        PoeGem savedBlessing = blessingAura;
+        try {
+          for (PoeGem aura : blessingPool) {
+            blessingAura = aura;
+            double val =
+                objectiveOf(
+                    poePobEngineService.calculateValues(
+                        buildXml(
+                            gem,
+                            supports,
+                            className,
+                            ascendancy,
+                            ascendancyNodes,
+                            allocated,
+                            items,
+                            jewels)),
+                    objectiveKey);
+            evalCount.incrementAndGet();
+            if (val > bestBlessingVal * 1.003) {
+              bestBlessingVal = val;
+              bestBlessing = aura;
+            }
+          }
+        } finally {
+          blessingAura = savedBlessing;
+        }
+        if (bestBlessing != null) {
+          blessingAura = bestBlessing;
+          log(
+              "영원한 축복 오라 채택: "
+                  + (bestBlessing.nameKo() != null ? bestBlessing.nameKo() : bestBlessing.name())
+                  + " → "
+                  + format(bestBlessingVal)
+                  + " (이전 "
+                  + format(current)
+                  + ")");
+          current = bestBlessingVal;
+        } else {
+          log("영원한 축복 오라: 이득 없음 — 후보 " + blessingPool.size() + "개");
+        }
+      }
+
+      // ── 감시자의 눈 — 지금 낀 오라 조건부 모드를 골라 합성해 주얼 한 칸과 맞바꾼다.
+      // PoB 가 코드로 만드는 유니크라 우리 데이터엔 없고(Special/WatchersEye.lua = 모드 풀),
+      // 그래서 최적화기가 여태 한 번도 못 써 봤다 — 실빌드는 표준 장비다(대표 RF·LA 둘 다 착용).
+      if (!jewels.isEmpty()
+          && !watchersEyeMods.isEmpty()
+          && (!selectedAuras.isEmpty() || blessingAura != null)) {
+        enterPhase("watchers-eye");
+        // 오라 목록엔 **영원한 축복으로 유지하는 오라**도 포함해야 한다 — 그게 보통 핵심 오라(악의 등)라
+        // 감시자의 눈의 값이 거기서 나온다. 축복 단계보다 먼저 돌면 그 오라를 못 봐 늘 기각된다(실측).
+        List<PoeGem> auraNames = new ArrayList<>(selectedAuras);
+        if (blessingAura != null) {
+          auraNames.add(blessingAura);
+        }
+        List<WatchersEyeMod> pool = new ArrayList<>();
+        for (PoeGem aura : auraNames) {
+          pool.addAll(watchersEyeMods.getOrDefault(aura.name(), List.of()));
+        }
+        // 같은 문구가 여러 번 들어 있다(롤 구간별) — 문구 기준 중복 제거 후 키워드 점수 상위만 본다.
+        List<WatchersEyeMod> ranked =
+            pool.stream()
+                .collect(
+                    java.util.stream.Collectors.toMap(
+                        WatchersEyeMod::en, m -> m, (a, b) -> a, LinkedHashMap::new))
+                .values()
+                .stream()
+                .sorted(
+                    Comparator.comparingInt((WatchersEyeMod m) -> score(List.of(m.en()), keywords))
+                        .reversed())
+                .limit(WATCHERS_EYE_MOD_CANDIDATES)
+                .toList();
+        Integer swapSocket =
+            jewels.entrySet().stream()
+                .min(
+                    Comparator.comparingInt(
+                        e ->
+                            e.getValue().isUnique()
+                                ? score(e.getValue().unique().explicits(), keywords)
+                                : 0))
+                .map(Map.Entry::getKey)
+                .orElse(null);
+        if (swapSocket != null && ranked.size() >= 2) {
+          // 인게임 감시자의 눈은 오라 조건부 모드를 보통 2개 굴린다.
+          // ⚠ 어느 2개인지는 **엔진이** 고르게 한다 — 키워드 점수로 뽑으면 "받는 피해" 계열이 1순위로
+          //    올라온다(문구에 Fire/Damage 가 들어가서). 실측: 정화의 얼음 방어 모드가 악의 지속피해 배율을
+          //    제치고 뽑혀 조합이 통째로 기각됐다. 상위 4개의 모든 짝(6가지)을 재 보는 편이 정직하다.
+          List<WatchersEyeMod> shortlist = ranked.subList(0, Math.min(4, ranked.size()));
+          List<WatchersEyeMod> bestPair = null;
+          double bestPairVal = current;
+          for (int i = 0; i < shortlist.size(); i++) {
+            for (int j = i + 1; j < shortlist.size(); j++) {
+              List<WatchersEyeMod> pair = List.of(shortlist.get(i), shortlist.get(j));
+              Map<Integer, Equipped> trial = new LinkedHashMap<>(jewels);
+              trial.put(swapSocket, Equipped.ofUnique(watchersEyeJewel(pair)));
+              double val =
+                  objectiveOf(
+                      poePobEngineService.calculateValues(
+                          buildXml(
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              allocated,
+                              items,
+                              trial)),
+                      objectiveKey);
+              evalCount.incrementAndGet();
+              if (val > bestPairVal * 1.003) {
+                bestPairVal = val;
+                bestPair = pair;
+              }
+            }
+          }
+          if (bestPair != null) {
+            jewels.put(swapSocket, Equipped.ofUnique(watchersEyeJewel(bestPair)));
+            log(
+                "감시자의 눈 채택: "
+                    + bestPair.stream().map(WatchersEyeMod::en).toList()
+                    + " → "
+                    + format(bestPairVal)
+                    + " (이전 "
+                    + format(current)
+                    + ")");
+            current = bestPairVal;
+          } else {
+            log("감시자의 눈: 이득 없음 — 상위 " + shortlist.size() + "개 짝 전수 실측");
+          }
         }
       }
 
@@ -6200,6 +6661,7 @@ public class PoeOptimizeService {
               // 트리 링크(an=)로 도유까지 되돌아가게 — 없으면 트리 화면 수치가 결과보다 약하게 나온다
               currentAnoint != null ? currentAnoint.nodeId() : null,
               belowMetaVerdict(objective, gem, ascendancy, finalValues),
+              metaRatioOf(gem, ascendancy, finalValues),
               // 추가 스킬 전용 보조젬(1b) — 계산 XML 에는 이미 링크됐는데 결과에 없어 화면에서 안 보였다
               additionalSkillSupports.entrySet().stream()
                   .collect(
@@ -6367,6 +6829,9 @@ public class PoeOptimizeService {
   /** 유니크 최종 재대결 라운드 상한 — 한 슬롯 교체가 문맥을 바꿔 다음 라운드 결과도 달라진다. */
   private static final int UNIQUE_REMATCH_ROUNDS = 3;
 
+  /** 클러스터 적재물 재선정 시 볼 노터블 후보 수 — 승자 스킬키에 한해 실측으로 교체해 본다. */
+  private static final int CLUSTER_NOTABLE_POOL = 6;
+
   /** 트리 재대결 후보 수 — 완성 문맥에서 다시 볼 미할당 노터블 상위 N(키워드 점수순). */
   private static final int TREE_REMATCH_CANDIDATES = 14;
 
@@ -6377,8 +6842,8 @@ public class PoeOptimizeService {
    * 포인트를 마련하려 뗄 **잎**을 고른다(못 고르면 null).
    *
    * <p>차수는 반드시 <b>교환 후 평가할 트리</b>(trial) 기준으로, 그리고 <b>직업 시작 노드를 포함</b>해서 세야 한다. 시작 노드는 allocated 에
-   * 없어서 빼먹기 쉬운데, 빼먹으면 시작에 붙은 첫 노드가 차수 1(=잎)로 보여 제거 대상이 되고 그 순간 트리 전체가 시작점과 끊긴다(실측: 클러스터 스왑에서
-   * 끊김 115/123, 교환 후 953 → 붕괴를 손익으로 오인해 클러스터가 영원히 기각됐다).
+   * 없어서 빼먹기 쉬운데, 빼먹으면 시작에 붙은 첫 노드가 차수 1(=잎)로 보여 제거 대상이 되고 그 순간 트리 전체가 시작점과 끊긴다(실측: 클러스터 스왑에서 끊김
+   * 115/123, 교환 후 953 → 붕괴를 손익으로 오인해 클러스터가 영원히 기각됐다).
    *
    * <p>주얼 소켓·키스톤·마스터리는 떼는 순간 빌드 기제가 무너지므로 제외하고, 이번에 새로 얹은 경로(protect)도 보호한다.
    */
@@ -6438,6 +6903,75 @@ public class PoeOptimizeService {
       pool.remove(pick);
     }
     return removable;
+  }
+
+  /** 금단 페어 후보 노터블 수 — 키워드 점수 상위 N 만 엔진으로 재 본다(1개당 엔진 1회). */
+  private static final int FORBIDDEN_CANDIDATES = 8;
+
+  /**
+   * 금단의 화염/살점 한 짝을 합성한다. PoB 는 두 아이템의 문구가 **같은 노터블**을 가리킬 때만 그 노터블을 켠다(side=flame/flesh).
+   *
+   * @param flame true 면 화염(Crimson), false 면 살점(Cobalt)
+   */
+  private PoeUniqueItem forbiddenJewel(String notable, boolean flame, String className) {
+    String other = flame ? "Forbidden Flesh" : "Forbidden Flame";
+    return new PoeUniqueItem(
+        flame ? "Forbidden Flame" : "Forbidden Flesh",
+        flame ? "금단의 화염" : "금단의 살점",
+        flame ? "forbidden-flame" : "forbidden-flesh",
+        flame ? "Crimson Jewel" : "Cobalt Jewel",
+        flame ? "진홍색 주얼" : "코발트색 주얼",
+        "jewel",
+        68,
+        null,
+        false,
+        null,
+        List.of(),
+        List.of(),
+        // "Limited to:"/"Requires Class" 는 원래 아이템 속성 줄이지만, PoB 는 모드 블록에 있어도 무해하게 넘긴다.
+        // 진짜 필수 조건은 **같은 직업의 전직 노터블**이라는 것 — 타 직업 노터블은 엔진이 조용히 무시한다
+        // (실측: 타 직업 후보 8개가 전부 동일값 658,704 → 같은 직업으로 바꾸자 학살의 위상 914,736).
+        List.of(
+            "Limited to: 1",
+            "Requires Class " + className,
+            "Allocates " + notable + " if you have the matching modifier on " + other),
+        List.of("금단의 " + (flame ? "살점" : "화염") + "에 대응하는 모드가 있으면 " + notable + " 할당"),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /** 감시자의 눈 합성 시 검토할 모드 수(키워드 점수 상위). */
+  private static final int WATCHERS_EYE_MOD_CANDIDATES = 6;
+
+  /** 감시자의 눈 합성 — 프리즘 주얼 + 오라 조건부 모드 2개(인게임 통상 롤). */
+  private PoeUniqueItem watchersEyeJewel(List<WatchersEyeMod> mods) {
+    return new PoeUniqueItem(
+        "Watcher's Eye",
+        "감시자의 눈",
+        "watchers-eye",
+        "Prismatic Jewel",
+        "무지개색 주얼",
+        "jewel",
+        1,
+        null,
+        false,
+        null,
+        List.of(
+            "(4-6)% increased maximum Energy Shield",
+            "(4-6)% increased maximum Life", "(4-6)% increased maximum Mana"),
+        List.of("최대 에너지 보호막 (4-6)% 증가", "최대 생명력 (4-6)% 증가", "최대 마나 (4-6)% 증가"),
+        mods.stream().map(WatchersEyeMod::en).toList(),
+        mods.stream().map(WatchersEyeMod::ko).toList(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
   }
 
   private double objectiveOf(Map<String, Double> values, String objective) {
@@ -6577,6 +7111,99 @@ public class PoeOptimizeService {
    * FullDPS(calcFullDPS 로 미니언/토템 포함 집계, Calcs.lua:81)에 담긴다. CombinedDPS>0 인 일반 빌드는 그대로라
    * arc/cyclone/ED 기준선 불변. 이 폴백이 없으면 미니언 스킬이 DPS 0 으로 나와 최적화기가 아무것도 못 골랐다(SRS 실측 0).
    */
+  /**
+   * 실빌드 중앙값 대비 배수 — 우리 DPS ÷ 그 아키타입의 poe.ninja 중앙 DPS. 시드가 없으면 null.
+   *
+   * <p>우리 값은 만렙·전 슬롯 최상위 레어·전 버프 가정이라 중앙값보다 높은 게 정상이다(실측 1.1~2.3x). 다만 배수가 크게 튀는 아키타입은 그 가정이 특히
+   * 유리하게 맞아떨어진 경우라(혼의 균열 9.5x), 숫자만 보면 오해한다 — 화면이 그 사실을 같이 보여줄 수 있게 값을 내보낸다.
+   */
+  private Double metaRatioOf(PoeGem gem, String ascendancy, Map<String, Double> finalValues) {
+    if (ascendancy == null || ascendancy.isEmpty() || gem == null) {
+      return null;
+    }
+    ArchetypeBenchmark bench = ninjaBenchByKey.get(ascendancy + "|" + gem.name());
+    if (bench == null || bench.dps() <= 0) {
+      return null;
+    }
+    double myDps = effectiveDps(finalValues);
+    return myDps > 0 ? Math.round(myDps / bench.dps() * 100d) / 100d : null;
+  }
+
+  /** 원소 태그가 없는 공격 스킬의 피해 축 후보 — 물리(현행) + 3원소. 축마다 기준 무기 1회 실측. */
+  private static final List<String> DAMAGE_AXES = List.of("physical", "lightning", "cold", "fire");
+
+  /**
+   * 피해 축 선택 — 원소 태그가 없는 공격 스킬에만 적용한다.
+   *
+   * <p>축을 키워드에 넣으면 그 축으로 레어가 크래프트되고 트리·보조젬 평가도 그 축을 따른다. 어느 축이 센지는 게임 데이터가 아니라 **엔진 실측**이 정한다(각 축의
+   * 기준 무기를 낀 상태로 젬 단독 평가). 축이 이미 정해진 스킬(번개 화살 등)은 그대로 둔다.
+   */
+  private List<String> pickDamageAxis(PoeGem gem, String objective, List<String> keywords) {
+    List<String> tags = gem.tags() != null ? gem.tags() : List.of();
+    boolean attack = tags.contains("Attack");
+    boolean hasElement =
+        tags.contains("Fire")
+            || tags.contains("Cold")
+            || tags.contains("Lightning")
+            || tags.contains("Chaos");
+    if (!attack || hasElement || "ehp".equals(objective)) {
+      return keywords;
+    }
+    String bestAxis = null;
+    double bestVal = -1;
+    for (String axis : DAMAGE_AXES) {
+      List<String> trial = new ArrayList<>(keywords);
+      if (!trial.contains(axis)) {
+        trial.add(axis);
+      }
+      RareItem weapon = craftRare(Slot.WEAPON, gem, trial, 0.0);
+      if (weapon == null) {
+        continue;
+      }
+      Map<Slot, Equipped> probe = new EnumMap<>(Slot.class);
+      probe.put(Slot.WEAPON, Equipped.ofRare(weapon));
+      double val =
+          objectiveOf(
+              poePobEngineService.calculateValues(
+                  buildXml(gem, List.of(), classFor(gem), null, Set.of(), Set.of(), probe)),
+              "dps");
+      evalCount.incrementAndGet();
+      log("피해 축 후보: " + axis + " → " + format(val));
+      if (val > bestVal) {
+        bestVal = val;
+        bestAxis = axis;
+      }
+    }
+    if (bestAxis == null) {
+      return keywords;
+    }
+    List<String> chosen = new ArrayList<>(keywords);
+    if (!chosen.contains(bestAxis)) {
+      chosen.add(bestAxis);
+    }
+    log("피해 축 확정: " + bestAxis + " (원소 태그 없는 공격 스킬)");
+    return chosen;
+  }
+
+  /**
+   * 구조형 주얼 판별 — 문구에 피해 낱말이 없어도 빌드 구조를 바꿔 값을 내는 것들.
+   *
+   * <p>고정 목록(이름 나열) 대신 <b>문구 패턴</b>으로 판별한다: 목록은 리그마다 늙고, 새로 나온 주얼을 놓친다.
+   */
+  private static final java.util.regex.Pattern STRUCTURAL_JEWEL =
+      java.util.regex.Pattern.compile(
+          "(?i)(Adds? [0-9]+ Passive Skill|Jewel Socket|Allocates? |in Radius|Passives? in Radius"
+              + "|instead of|are Transformed|count as|have no|Notable Passive Skill)");
+
+  private boolean isStructuralJewel(PoeUniqueItem item) {
+    for (String line : item.explicits() == null ? List.<String>of() : item.explicits()) {
+      if (STRUCTURAL_JEWEL.matcher(line).find()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private double effectiveDps(Map<String, Double> values) {
     double combined = values.getOrDefault("CombinedDPS", 0d);
     double full = values.getOrDefault("FullDPS", 0d);
@@ -8097,6 +8724,16 @@ public class PoeOptimizeService {
     this.excludeLegacyUniques = enabled;
   }
 
+  /**
+   * 금단의 화염/살점 페어 편입 여부 — 기본 켬. 이 페어는 주얼 2칸을 먹으므로 "그 자리에 있던 주얼보다 나은가"를 A/B 로 재려면 끌 수 있어야 한다(실측: SRS
+   * 는 채택 시점 +4.9% 인데 최종은 기준선 대비 -15%).
+   */
+  private volatile boolean forbiddenEnabled = true;
+
+  public void setForbiddenEnabled(boolean enabled) {
+    this.forbiddenEnabled = enabled;
+  }
+
   /** 삿된 후보 상한 — 후보 풀 폭발을 막는다(기본 후보 N개 위에 이만큼만 더 얹는다). */
   private static final int FOULBORN_CANDIDATES = 8;
 
@@ -8394,7 +9031,10 @@ public class PoeOptimizeService {
         // 실측(소켓을 트리에 연결한 상태): 비옥한 정신 지능 82→102, 효율적 훈련 힘 24→44.
         // 예전엔 "반경/근처" 문구를 통째로 걸러 유니크 주얼 179개 중 81개가 후보에서 빠져 있었다.
         .map(item -> new Scored(item, score(item.explicits(), keywords)))
-        .filter(scored -> scored.score() > 0)
+        // 구조형 주얼은 점수가 0 이어도 통과시킨다 — 값어치가 문구가 아니라 **구조**에서 나오기 때문이다
+        // (소켓을 늘린다, 노터블을 할당한다, 반경 안 패시브를 바꾼다 …). 키워드 점수로 거르면 이런 건
+        // 평가조차 안 된다. 어느 게 이득인지는 아래 후보 컷을 통과한 뒤 **엔진이** 정한다.
+        .filter(scored -> scored.score() > 0 || isStructuralJewel(scored.item()))
         .sorted(Comparator.comparingInt(Scored::score).reversed())
         .limit(ITEM_CANDIDATES)
         .map(Scored::item)
@@ -8804,6 +9444,21 @@ public class PoeOptimizeService {
       }
       xml.append("</Skill>");
     }
+    // 영원한 축복(Eternal Blessing) 오라 — **예약 없이 상시 유지**되는 오라 한 개.
+    // 대표 실빌드(RF)의 메인 소켓 그룹이 바로 이 구성이었다(Eternal Blessing + Malevolence + Empower):
+    // 혈마법/예약 포화로 오라를 못 늘리는 빌드가 지속 피해 배율 같은 핵심 오라를 공짜로 가져가는 경로다.
+    // 우리 XML 엔 이 경로가 아예 없어, 오라가 1개에서 멈춘 채 감시자의 눈 같은 오라 연계도 죽어 있었다.
+    if (blessingAura != null) {
+      xml.append("<Skill enabled=\"true\" slot=\"Weapon 1\">")
+          .append(
+              "<Gem nameSpec=\"Eternal Blessing\" level=\"20\" quality=\"20\" enabled=\"true\"/>")
+          .append("<Gem nameSpec=\"")
+          .append(blessingAura.name())
+          .append("\" level=\"")
+          .append(supportLevelOverride.getOrDefault(blessingAura.slug(), 20))
+          .append("\" quality=\"20\" enabled=\"true\"/>")
+          .append("</Skill>");
+    }
     // 추가 스킬(사용자 지정) — 각자 별도 그룹으로 emit. PoB 가 오라=예약+버프, 커스=적약화, 헤럴드/가드 등 역할대로 반영.
     // 1b 패스가 선발한 전용 보조젬(화염덫 4링크 등)을 함께 링크 — 벤치 스킬별 DPS(4링크 실빌드)와 공정 비교.
     for (PoeGem extra : additionalSkills) {
@@ -9125,6 +9780,15 @@ public class PoeOptimizeService {
         category = "weaponSpell";
         rareBase = "Imbued Wand";
       }
+    } else if (slot == Slot.OFFHAND
+        && gem != null
+        && gem.tags() != null
+        && gem.tags().contains("Bow")) {
+      // 활 빌드의 보조장비는 **화살통**이다. 여태 Slot.OFFHAND 는 무조건 방패(Titanium Spirit Shield)로
+      // 크래프트돼, 인게임에서 들 수 없는 조합(활+방패)을 평가하고 화살통 전용 모드(화살 추가 등)는
+      // 후보에 낄 자리조차 없었다.
+      category = "quiver";
+      rareBase = "Feathered Arrow Quiver";
     } else {
       if (slot.rareBase == null || slot.modSlots.isEmpty()) {
         return null;

@@ -19,6 +19,19 @@ const TOP_N = Number(process.argv[2] || 12);
 const LEVEL_ENDGAME = 96;
 
 const data = JSON.parse(fs.readFileSync(path.join(OUT_DIR, "ninja-builds.json"), "utf8"));
+// 아키타입별 ninja 표기 중앙 DPS — 재계산 결과의 신뢰도 판정 기준(자릿수 대조용)
+const medianDpsByKey = (() => {
+	try {
+		const arch = JSON.parse(fs.readFileSync(path.join(OUT_DIR, "ninja-archetypes.json"), "utf8")).archetypes;
+		const map = {};
+		for (const a of Object.values(arch)) {
+			if (a.ascendancy && a.mainSkill && a.medianDPS) map[`${a.ascendancy}|${a.mainSkill}`] = a.medianDPS;
+		}
+		return map;
+	} catch {
+		return {};
+	}
+})();
 const league = data.leagues[0];
 const snapshot = data.snapshots[league];
 
@@ -126,6 +139,36 @@ for (const { key, rep } of targets) {
 		if (/<Config>[\s\S]*?<\/Config>/.test(xml)) xml = xml.replace(/<Config>[\s\S]*?<\/Config>/, NORM_CONFIG);
 		else if (/<Config\s*\/>/.test(xml)) xml = xml.replace(/<Config\s*\/>/, NORM_CONFIG);
 		else xml = xml.replace("</PathOfBuilding>", NORM_CONFIG + "</PathOfBuilding>");
+		// 메인 소켓 그룹을 **그 아키타입의 스킬**로 맞춘다.
+		//   빌드가 저장해 둔 mainSocketGroup 은 오라·이동기 그룹인 경우가 흔하다(실측: RF 대표의 메인 그룹은
+		//   Eternal Blessing+Malevolence 오라 그룹). 그대로 재계산하면 "대표 실빌드의 정의의 화염 DPS" 가 아니라
+		//   엉뚱한 그룹 값이 벤치가 되어, 우리 결과와의 비교가 통째로 의미를 잃는다(아키타입별 0.06~19x 편차의 정체).
+		//   같은 스킬을 담은 그룹 중 **발라(Vaal) 아닌** 것을 고른다(발라는 버스트라 지속 DPS 와 다른 축).
+		const skillName = key.split("|")[1];
+		const groups = [...xml.matchAll(/<Skill[^>]*>[\s\S]*?<\/Skill>/g)].map((m) => m[0]);
+		// 이름이 딱 맞지 않는 경우가 흔하다: 발라 변종("Vaal Righteous Fire"), 변형젬("Reap of Butchery").
+		//   그래서 ① 완전 일치 → ② 발라 아닌 포함 → ③ 포함 순으로 찾는다.
+		let exactIdx = -1;
+		let containsIdx = -1;
+		let vaalIdx = -1;
+		groups.forEach((g, i) => {
+			const gems = [...g.matchAll(/nameSpec="([^"]+)"/g)].map((m) => m[1]);
+			if (exactIdx < 0 && gems.some((n) => n === skillName)) exactIdx = i;
+			for (const n of gems) {
+				if (!n.includes(skillName)) continue;
+				if (/^Vaal /.test(n)) {
+					if (vaalIdx < 0) vaalIdx = i;
+				} else if (containsIdx < 0) {
+					containsIdx = i;
+				}
+			}
+		});
+		const mainIdx = exactIdx >= 0 ? exactIdx : containsIdx >= 0 ? containsIdx : vaalIdx;
+		if (mainIdx >= 0) {
+			xml = xml.replace(/(<Build[^>]*?)mainSocketGroup="\d+"/, `$1mainSocketGroup="${mainIdx + 1}"`);
+		} else {
+			console.warn(`[calibrate] ${key}: 스킬 그룹을 못 찾음 — 빌드 기본 메인 그룹으로 계산(비교 신뢰도 낮음)`);
+		}
 		const normCode = zlib.deflateSync(Buffer.from(xml, "utf8"), { level: 9 }).toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
 		const rr = await fetch(`${API}/api/poe/build/recalculate`, {
 			method: "POST",
@@ -144,7 +187,24 @@ for (const { key, rep } of targets) {
 			ehp: statOf(er.stats, "totalehp"),
 			netRegen: statOf(er.stats, "netliferegen"),
 			life: statOf(er.stats, "life"),
+			skillAligned: mainIdx >= 0, // 아키타입 스킬 그룹으로 맞춰 계산했는가
 		};
+		// 신뢰도 — 재계산값이 그 아키타입의 ninja 표기 중앙값과 자릿수가 맞는가.
+		//   대표 1인의 빌드는 발라 버스트가 메인이거나(RF: Vaal RF 만 보유) 트리거 그룹이 잡히는 등
+		//   엉뚱한 값이 나오기 쉽다(실측 편차 0.05~19x). 밴드를 벗어난 벤치는 belowMeta 판정에서 뺀다 —
+		//   못 믿을 기준으로 "메타 하회" 를 찍으면 개선 방향 자체가 틀어진다.
+		const med = medianDpsByKey[key.split("|").slice(0, 2).join("|")];
+		if (med > 0 && entry.dps > 0) {
+			const ratio = entry.dps / med;
+			entry.medianDps = med;
+			entry.ratio = Number(ratio.toFixed(2));
+			entry.reliable = ratio >= 0.25 && ratio <= 4;
+			if (!entry.reliable) {
+				console.warn(`[calibrate] ${key}: 신뢰도 낮음(중앙값 대비 ${entry.ratio}x) — belowMeta 판정에서 제외`);
+			}
+		} else {
+			entry.reliable = false;
+		}
 		// 엔진이 못 읽은 코드(스킨/변형) — 저장 안 함. stats 자체가 비면 개별 빌드 문제가 아니라 엔진 쪽이다.
 		if (!entry.dps && !entry.ehp) { fail++; if (!(er.stats || []).length) emptyStats++; console.warn(`[calibrate] ${key} 실패: 유효 스탯 없음(stats ${(er.stats || []).length}개)`); continue; }
 		bench[key] = entry;

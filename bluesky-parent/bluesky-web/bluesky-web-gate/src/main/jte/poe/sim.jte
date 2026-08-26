@@ -88,7 +88,10 @@
 						     그래서 통째로 한 fragment 로 두고, 아무 값이나 바뀌면 이 컨테이너만 다시 그린다. --%>
 						<div id="poeSimSelects" class="contents"
 						     hx-get="/poe/htmx/sim/selects"
-						     hx-trigger="change from:#poeSimSelects select[name='ascendancy'], change from:#poeSimSelects select[name='skills']"
+						     <%-- ⚠ from: 의 CSS 선택자에 **공백이 있으면 괄호로 감싸야** htmx 가 읽는다.
+						          안 감싸면 htmx:syntax:error 가 나고 트리거가 통째로 안 걸린다 — 직업을 바꿔도
+						          스킬/고유템 목록이 재정렬되지 않는 채 조용히 죽어 있었다(콘솔 오류 6건으로 발견). --%>
+						     hx-trigger="change from:(#poeSimSelects select[name='ascendancy']), change from:(#poeSimSelects select[name='skills'])"
 						     hx-include="#poeSimSelects select"
 						     hx-target="this"
 						     hx-swap="innerHTML">

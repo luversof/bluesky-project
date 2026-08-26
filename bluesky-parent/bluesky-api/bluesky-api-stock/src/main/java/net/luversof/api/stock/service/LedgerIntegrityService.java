@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 
 import net.luversof.api.stock.constant.TradeType;
 import net.luversof.api.stock.domain.Dividend;
-import net.luversof.api.stock.domain.MonthlyDividendPayout;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.AccountRepository;
@@ -55,6 +54,20 @@ public class LedgerIntegrityService {
    * <p>거래가 한두 건이면 공모주 청약만 있는 계좌일 수 있어 우연이다. 실측 2026-08-23 기준 이 원장에서 문제가 된 계좌는 26 건이고, 수수료가 붙는 계좌 중
    * 가장 작은 것도 25 건이다.
    */
+  /**
+   * 계좌 설정 키 &mdash; <b>수수료 기록을 되받을 수 없는 계좌</b>.
+   *
+   * <p>이 값이 참이면 {@code ACCOUNT_WITHOUT_ANY_FEE} 를 내지 않는다. 지적은 "고칠 수 있는 것" 만 남겨야 하는데, 폐쇄된 증권사 계좌처럼
+   * 원본 기록 자체가 사라진 경우는 영원히 고칠 수 없다. 그런 지적이 남아 있으면 점검 화면 전체가 "늘 빨간 화면" 이 되어 새로 생긴 진짜 문제를 가린다.
+   *
+   * <p>다만 사실이 사라지면 안 된다 &mdash; 그 계좌의 실현손익은 빠진 수수료/거래세만큼 부풀려져 있다. 그래서 계좌 상세 화면이 이 값을 읽어 그 자리에
+   * 밝힌다(gate {@code accountDetail.jte}).
+   *
+   * <p>실측 2026-08-25: 동양증권 매매 12 건 전부 수수료/거래세 기록이 없다. 빠진 수수료 최소 25,011 원 + 거래세 최소 462,827 원 만큼 그 계좌
+   * 실현손익이 크게 잡혀 있다.
+   */
+  static final String FEE_RECORDS_UNAVAILABLE = "feeRecordsUnavailable";
+
   private static final int MIN_TRADES_FOR_FEELESS_ACCOUNT = 10;
 
   /** 예시로 담을 최대 건수. 전체를 실으면 응답 크기가 원장 크기를 따라간다. */
@@ -82,15 +95,6 @@ public class LedgerIntegrityService {
    */
   private static final BigDecimal WITHHOLDING_RATE = new BigDecimal("0.154");
 
-  /** 참조 과세비율 이상치 판정에 필요한 최소 이력 수. 이보다 적으면 중앙값이 신뢰할 만하지 않다. */
-  private static final int MIN_REFERENCE_ROWS_FOR_RATIO_MEDIAN = 6;
-
-  /** 종목 중앙값이 이 값을 넘으면 원래 과세비율이 높은 종목(리츠형)이라 대상에서 뺀다. */
-  private static final BigDecimal REFERENCE_TAXABLE_RATIO_ITEM_MEDIAN_CAP = new BigDecimal("50");
-
-  /** 이 비율 이상이면 "배당금을 그대로 복사" 로 본다. */
-  private static final BigDecimal REFERENCE_TAXABLE_RATIO_OUTLIER_FLOOR = new BigDecimal("95");
-
   /**
    * 계좌 수수료율 중앙값을 믿을 만큼의 최소 거래 건수. 한두 건이면 중앙값이 곧 그 값이라 의미가 없다.
    *
@@ -108,14 +112,6 @@ public class LedgerIntegrityService {
    * 10 배로 둔다.
    */
   private static final BigDecimal FEE_RATE_OUTLIER_MULTIPLE = BigDecimal.TEN;
-
-  /**
-   * 두 출처의 과세표준 비율이 이만큼(%p) 넘게 벌어지면 알린다.
-   *
-   * <p>같은 배당이라도 원천징수액은 원 단위로 반올림되므로 소수점 차이는 늘 난다. 실측 2026-08-23 기준 두 출처가 일치하는 종목은 0.04%p 차이였고, 어긋나는
-   * 것은 10%p 이상이라 그 사이면 어디로 잡아도 결과가 같다.
-   */
-  private static final BigDecimal TAXABLE_RATIO_TOLERANCE_POINTS = new BigDecimal("5");
 
   private final TradeService tradeService;
   private final DividendService dividendService;
@@ -213,19 +209,6 @@ public class LedgerIntegrityService {
     }
   }
 
-  private static BigDecimal medianOf(List<BigDecimal> values) {
-    List<BigDecimal> sorted = new ArrayList<>(values);
-    sorted.sort(java.util.Comparator.naturalOrder());
-    int middle = sorted.size() / 2;
-    if (sorted.size() % 2 == 1) {
-      return sorted.get(middle);
-    }
-    return sorted
-        .get(middle - 1)
-        .add(sorted.get(middle))
-        .divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP);
-  }
-
   private static String day(Instant instant) {
     return instant == null ? null : instant.atZone(MARKET_ZONE_ID).toLocalDate().toString();
   }
@@ -267,18 +250,19 @@ public class LedgerIntegrityService {
 
     List<LedgerIntegrityFinding> findings = new ArrayList<>();
 
-    dividendRule(
-        findings,
-        names,
-        dividends,
-        "DIVIDEND_TAX_EXCEEDS_TAXABLE",
-        d -> positive(d.getTaxableAmount()) && nz(d.getTax()).compareTo(d.getTaxableAmount()) > 0,
-        LedgerIntegrityService::taxableDetail,
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+    // 과세금액(과세표준)은 원장(구글 시트)의 값을 그대로 믿는다. 앱이 다시 계산하지 않는다.
+    //
+    // 부동산 리츠 ETF 는 계좌에 따라 분리과세 혜택이 있어, 과세금액이 "주당 과세표준 x 수량" 도 아니고
+    // "세금 / 15.4%" 도 아니다. 혜택을 받고 남은 몫을 따로 계산해 시트에 적어 둔 값이다.
+    //
+    // 실측 2026-08-24: KB증권 위탁 x KODEX 한국부동산리츠인프라 8 건이 세전 297,424 · 세금 29,210 ·
+    // 시트 과세금액 2,233 으로, 실효세율이 8 건 모두 정확히 9.82% 였다(15.4% 가 아니다). 예전에는 이
+    // 8 건에서 네 가지 지적(세금>과세표준 · 다른 수량으로 계산 · 참조와 다름 · 예상 과세비율 어긋남)이
+    // 한꺼번에 나왔는데, 넷 다 "세금 = 과세금액 x 15.4%" 를 전제로 한 것이라 전부 오탐이었다.
+    //
+    // 그래서 그 네 규칙을 걷어냈다. 참조 시트 자체의 입력 오류를 보는 REFERENCE_TAXABLE_RATIO_OUTLIER 는
+    // 원천징수를 쓰지 않으므로 그대로 둔다.
+
     dividendRule(
         findings,
         names,
@@ -364,10 +348,17 @@ public class LedgerIntegrityService {
     // 지금은 그런 건이 없지만(실측 2026-08-22: 비과세 3계좌의 기록 세금 합 0 원) 화면이 이 전제에
     // 기대고 있으므로, 전제가 깨지는 순간 알 수 있어야 한다.
     java.util.Set<UUID> taxDeferredAccountIds = new java.util.HashSet<>();
+    Set<UUID> feeRecordsUnavailableAccountIds = new java.util.HashSet<>();
     for (var account : accountRepository.findByUserId(userId)) {
       var config = account.getJsonConfig();
-      if (config != null && Boolean.TRUE.equals(config.get("isTaxDeferred"))) {
+      if (config == null) {
+        continue;
+      }
+      if (Boolean.TRUE.equals(config.get("isTaxDeferred"))) {
         taxDeferredAccountIds.add(account.getId());
+      }
+      if (Boolean.TRUE.equals(config.get(FEE_RECORDS_UNAVAILABLE))) {
+        feeRecordsUnavailableAccountIds.add(account.getId());
       }
     }
     dividendRule(
@@ -386,113 +377,19 @@ public class LedgerIntegrityService {
         accountFindingCounts,
         accountDistinctRows);
 
-    // 참조 지급 이력의 과세비율이 그 종목 자신의 이력에서 튄다.
+    // 참조 과세비율의 월별 편차는 규칙으로 잡지 않는다.
     //
-    // 예상 과세표준은 참조의 최근 12 건 과세비율 평균으로 낸다. 그래서 참조 한 줄이 잘못 들어오면 그 종목의
-    // 예상 과세표준이 통째로 틀어진다.
+    // 예전에는 "그 종목 중앙값에서 크게 벗어난 달" 을 입력 오류로 봤다. 그런데 커버드콜·리츠 ETF 의 주당
+    // 과세표준은 그 달 분배금의 재원(배당소득 vs 매매차익)에 따라 달마다 크게 달라진다. 크거나 작은 것이
+    // 자연스러운 값이라, 중앙값에서 벗어난다는 것만으로는 아무것도 말해 주지 않는다.
     //
-    // "100% 면 이상" 으로 잡으면 안 된다 - 리츠·인프라형은 분배금이 거의 다 과세 대상이라 100% 가 정상이다
-    // (실측 2026-08-23: TIGER 리츠부동산인프라는 57 건 전부 100%, KODEX 한국부동산리츠인프라는 28 건 중
-    // 21 건이 100%). 그래서 <b>그 종목 자신의 중앙값</b>과 비교한다.
+    // 실측 2026-08-24(참조 지급 이력 전체): 7 종목 중 6 종목이 최대-최소 편차 43~100%p 였다.
     //
-    // 실측 2026-08-23: 그렇게 보면 5 건이 걸린다 - PLUS 고배당주위클리고정커버드콜 3 건(중앙값 14.0%),
-    // TIGER 배당커버드콜액티브 2024-02-02(중앙값 3.5%), TIGER 코리아배당다우존스위클리커버드콜
-    // 2026-02-03(중앙값 5.9%). 과세표준 칸을 못 가져와 배당금을 그대로 복사한 형태다.
+    //   PLUS 고배당주위클리고정커버드콜  최근 12개월 21 / 0 / 12 / 28 / 100 / 72 / 0 / 39 / 9 / 7 / 0 / 20 %
+    //   TIGER 배당커버드콜액티브        0 ~ 100%   ·  KODEX 200타겟위클리커버드콜  0 ~ 44%
     //
-    // 그 대가도 쟀다. 최근 12 건 평균 과세비율이 이 이상치 때문에 부풀어 있다:
-    //   PLUS 고배당주위클리고정커버드콜      25.18% -> 18.38% (6.80%p)
-    //   TIGER 코리아배당다우존스위클리커버드콜 30.26% -> 22.51% (7.75%p)
-    // 두 값 모두 지금 스냅샷에 저장된 값과 같다(즉 화면에 그대로 나가고 있다).
-    //
-    // <b>한계 - 이상치가 쌓이면 이 규칙은 그 종목에 눈먼다.</b> 판정 기준이 그 종목 자신의 중앙값이라,
-    // 잘못된 행이 절반을 넘으면 중앙값이 100% 쪽으로 끌려가 대상에서 빠진다. 실측 2026-08-24 로 여유를
-    // 쟀다 - 중앙값이 50% 를 넘기까지 필요한 추가 이상치 수:
-    //   RISE 200위클리커버드콜 +29 / TIGER 배당커버드콜액티브 +24 / KODEX 200타겟위클리커버드콜 +19
-    //   RISE 코리아밸류업위클리고정커버드콜 +10 / PLUS 고배당주위클리고정커버드콜 +9
-    //   <b>TIGER 코리아배당다우존스위클리커버드콜 +5</b> (이력이 10 건뿐이라 가장 약하다)
-    //
-    // 그 상태가 곧 사각은 아니다. 원장에 원천징수가 찍혀 있으면 DIVIDEND_TAX_EXCEEDS_TAXABLE /
-    // DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE / DIVIDEND_TAXABLE_COMPUTED_WITH_OTHER_QUANTITY 가
-    // 같은 행을 잡는다 - 실제로 KODEX 한국부동산리츠인프라(중앙값 100% 라 이 규칙 대상 밖)의 8 행이 그
-    // 세 규칙에 걸려 있다. 이 규칙이 <b>유일한</b> 방어선인 경우는 원장에 세금 신호가 없는 종목
-    // (과세이연 계좌만 보유하거나 그 달이 비과세였던 경우)이다.
-    // 참조 표는 사용자와 무관한 전역 자료다. 그대로 내면 데이터가 하나도 없는 신규 사용자에게도 지적이
-    // 나간다(실측 2026-08-23: 처음 만들었을 때 배당 0 / 매매 0 인데 지적 6 건이 나와 "신규 사용자 계약"
-    // 불변식이 잡았다). 그래서 <b>이 사용자가 보는 종목</b>으로 좁힌다 - 예상 과세표준이 틀어지는 것도 그
-    // 종목들뿐이다.
-    Set<UUID> userMonthlyDividendItemIds = new java.util.HashSet<>();
-    for (var snapshot :
-        monthlyDividendSnapshotRepository.findByUserIdOrderByUpdatedDateDesc(userId)) {
-      if (snapshot.getStockItemId() != null) {
-        userMonthlyDividendItemIds.add(snapshot.getStockItemId());
-      }
-    }
-
-    Map<UUID, List<BigDecimal>> referenceRatiosByItem = new java.util.LinkedHashMap<>();
-    List<MonthlyDividendPayout> referenceRows = new ArrayList<>();
-    for (var payout : monthlyDividendPayoutRepository.findAllByOrderByPayDateDescRecordDateDesc()) {
-      if (payout.getStockItemId() == null || payout.getPayDate() == null) {
-        continue;
-      }
-      if (!userMonthlyDividendItemIds.contains(payout.getStockItemId())) {
-        continue;
-      }
-      BigDecimal perShare = nz(payout.getDividendAmountPerShare());
-      if (perShare.signum() <= 0 || payout.getTaxableBasePerShare() == null) {
-        continue;
-      }
-      referenceRows.add(payout);
-      referenceRatiosByItem
-          .computeIfAbsent(payout.getStockItemId(), key -> new ArrayList<>())
-          .add(
-              nz(payout.getTaxableBasePerShare())
-                  .multiply(BigDecimal.valueOf(100))
-                  .divide(perShare, 4, RoundingMode.HALF_UP));
-    }
-
-    List<LedgerIntegrityFinding.Example> ratioOutliers = new ArrayList<>();
-    int ratioOutlierCount = 0;
-    for (MonthlyDividendPayout payout : referenceRows) {
-      List<BigDecimal> ratios = referenceRatiosByItem.get(payout.getStockItemId());
-      if (ratios == null || ratios.size() < MIN_REFERENCE_ROWS_FOR_RATIO_MEDIAN) {
-        continue;
-      }
-      BigDecimal median = medianOf(ratios);
-      if (median.compareTo(REFERENCE_TAXABLE_RATIO_ITEM_MEDIAN_CAP) > 0) {
-        // 종목 성격상 과세비율이 원래 높은 것(리츠형)은 대상이 아니다.
-        continue;
-      }
-      BigDecimal ratio =
-          nz(payout.getTaxableBasePerShare())
-              .multiply(BigDecimal.valueOf(100))
-              .divide(nz(payout.getDividendAmountPerShare()), 4, RoundingMode.HALF_UP);
-      if (ratio.compareTo(REFERENCE_TAXABLE_RATIO_OUTLIER_FLOOR) < 0) {
-        continue;
-      }
-      ratioOutlierCount++;
-      String rowKey = payout.getPayDate() + "|" + names.get(payout.getStockItemId());
-      distinctRows.add(rowKey, "REFERENCE_TAXABLE_RATIO_OUTLIER", null);
-      if (ratioOutliers.size() < maxExamples) {
-        ratioOutliers.add(
-            new LedgerIntegrityFinding.Example(
-                payout.getPayDate().toString(),
-                names.get(payout.getStockItemId()),
-                "참조 과세비율="
-                    + ratio.setScale(2, RoundingMode.HALF_UP)
-                    + "% (이 종목 중앙값 "
-                    + median.setScale(2, RoundingMode.HALF_UP)
-                    + "%), 주당 배당 "
-                    + nz(payout.getDividendAmountPerShare())
-                    + " / 주당 과세표준 "
-                    + nz(payout.getTaxableBasePerShare())
-                    + " - 과세표준 칸을 다시 가져올 것"));
-      }
-    }
-    if (ratioOutlierCount > 0) {
-      findings.add(
-          new LedgerIntegrityFinding(
-              "REFERENCE_TAXABLE_RATIO_OUTLIER", ratioOutlierCount, ratioOutliers));
-    }
+    // 즉 "중앙값에서 벗어나면 오류" 라는 전제가 이 자료에는 성립하지 않는다. 참조 시트 자체의 문제는 그 달
+    // 참조가 통째로 빠진 경우(MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH)로만 본다.
 
     // 배당을 받았는데 그 달의 참조 지급 이력이 없다.
     //
@@ -604,6 +501,24 @@ public class LedgerIntegrityService {
         individualStockItemIds.add(trade.getStockItemId());
       }
     }
+    // 원장에서 실제로 징수된 가장 작은 세액. 이보다 작은 예상 세액은 "안 뗀 것" 이 정상이다.
+    //
+    // 세액이 아주 작으면 원천징수를 하지 않는다. 그 경계를 바깥 지식으로 박지 않고 원장에서 스스로 잡는다
+    // (수수료·거래세 규칙과 같은 방식).
+    //
+    // 실측 2026-08-24: 개별주식 배당 36 건 중 세금이 0 인 것은 HK이노엔 2022-04-22 한 건뿐인데, 그 건이
+    // 곧 <b>예상 세액이 가장 작은 한 건</b>(591 원)이었다. 나머지 35 건은 예상 세액이 3,690 원 이상이고
+    // 전부 15.34~15.40% 로 징수됐다. 과세 계좌 전체로 넓혀도 예상 세액 1,000 원 미만인 9 건이 예외 없이
+    // 세금 0 이다. 즉 이 건은 누락이 아니라 소액이라 떼지 않은 것이다.
+    BigDecimal smallestWithheldTax = null;
+    for (Dividend dividend : dividends) {
+      if (positive(dividend.getTax())
+          && (smallestWithheldTax == null
+              || dividend.getTax().compareTo(smallestWithheldTax) < 0)) {
+        smallestWithheldTax = dividend.getTax();
+      }
+    }
+    BigDecimal withholdingFloor = smallestWithheldTax;
     dividendRule(
         findings,
         names,
@@ -615,7 +530,11 @@ public class LedgerIntegrityService {
                 && d.getStockItemId() != null
                 && individualStockItemIds.contains(d.getStockItemId())
                 && positive(d.getGrossAmount())
-                && !positive(d.getTax()),
+                && !positive(d.getTax())
+                // 예상 세액이 원장에서 관측된 최소 징수액보다 작으면 소액이라 떼지 않은 것이다.
+                && (withholdingFloor == null
+                    || nz(d.getGrossAmount()).multiply(WITHHOLDING_RATE).compareTo(withholdingFloor)
+                        >= 0),
         d ->
             "gross="
                 + nz(d.getGrossAmount())
@@ -659,13 +578,21 @@ public class LedgerIntegrityService {
 
     // 배당 기준일에 그 종목을 하나도 들고 있지 않았던 배당.
     //
-    // 조용히 어긋나는 곳: 배당수익률의 분모(기준일 원금)는 그 날 보유 스냅샷에서 나온다. 보유가 0 이면
-    // 분모를 만들 수 없어 그 배당은 분자에서도 빠진다 - 즉 화면의 수익률이 대표하지 못하는 금액이
-    // 생기는데, 합계만 보면 드러나지 않는다(실측 2026-08-23: 3 건 142,260 원).
+    // 다만 <b>기준일이 실제로 적혀 있을 때만</b> 판정한다. 이 원장에는 기준일 칸이 따로 없어서 지급일이 그대로
+    // 복사돼 들어온다(실측 2026-08-24: 배당 193 건 전부 recordDate == payDate). 그 상태에서 "기준일 보유" 를
+    // 따지면 사실은 "지급일 보유" 를 따지는 것이고, 결산배당은 거의 언제나 걸린다 - 기준일이 전년 12-31 이라
+    // 그 뒤에 팔아도 배당은 나오기 때문이다.
     //
-    // 대개는 입력 관례 때문이다 - 배당 기준일 자리에 지급일을 적으면, 기준일에는 들고 있었어도
-    // 지급일에는 이미 판 종목이 여기 걸린다(실측: NAVER 2020-12 기준 배당을 2021-04-08 지급일로 기록,
-    // 그 사이 2021-01-18 에 전량 매도).
+    // 실측 2026-08-24, 걸려 있던 3 건이 모두 그런 경우였다.
+    //
+    //   HK이노엔   2021-08-09 매수 -> 2021 결산배당 -> 2022-04-22 지급 + 같은 날 매도
+    //   NAVER     2020-01-30 매수 -> 2020 결산배당 -> 2021-01-18 매도 -> 2021-04-08 지급
+    //   삼성SDI    2019-12-13 매수 -> 2019 결산배당 -> 2020-01-28 매도 -> 2020-04-17 지급
+    //
+    // 셋 다 기준일에는 들고 있었으므로 정상이다. 기준일을 모르는 자료로 "보유가 없다" 고 말할 수는 없다.
+    //
+    // 기준일이 지급일과 다르게 적히기 시작하면 이 규칙이 다시 살아난다. 그때는 진짜로 "기준일에 보유 0" 인
+    // 배당만 걸린다.
     //
     // 거래가 아예 없는 종목은 DIVIDEND_WITHOUT_TRADE 가 이미 알리므로 여기서는 제외한다.
     Map<UUID, java.util.List<Trade>> tradesByStockItem = new java.util.HashMap<>();
@@ -684,6 +611,7 @@ public class LedgerIntegrityService {
         d ->
             d.getStockItemId() != null
                 && tradedStockItemIds.contains(d.getStockItemId())
+                && hasOwnRecordDate(d)
                 && holdingQuantityAt(tradesByStockItem.get(d.getStockItemId()), basisDate(d)) <= 0,
         d ->
             "기준일="
@@ -766,6 +694,29 @@ public class LedgerIntegrityService {
     // 이 하한도 전체 이력에서 뽑는다. 실측 2026-08-23: 전체 최소는 12,235 원(2025-09-03 의 그 이상치 거래)이고
     // 최근 12 건 기준은 49,080 원인데, 대상이 되는 매도 12 건의 최소 거래대금이 316,000 원이라 어느 쪽을 써도
     // 판정이 같다. 지급 지연 문턱과 달리 여기서는 창을 좁힐 이유가 없다.
+    // 수수료가 <b>한 건도</b> 없는 계좌. 아래 두 규칙이 함께 쓴다.
+    //
+    // 그런 계좌는 계좌 단위로 한 번만 알린다. 거래마다 또 알리면 같은 사정이 열몇 번 반복돼, 고칠 수 없는
+    // 지적이 화면을 덮는다(실측 2026-08-24: 동양증권 하나가 매도 12 건 + 계좌 1 건 = 13 건이었다.
+    // 그 계좌는 증권사에서 기록을 되받을 수 없어 채울 방법이 없다).
+    Set<UUID> feelessAccountIds = new java.util.HashSet<>();
+    Map<UUID, long[]> feeCountByAccount = new HashMap<>();
+    for (Trade trade : trades) {
+      if (trade.getAccountId() == null) {
+        continue;
+      }
+      long[] counts = feeCountByAccount.computeIfAbsent(trade.getAccountId(), key -> new long[2]);
+      counts[0]++;
+      if (positive(trade.getFee())) {
+        counts[1]++;
+      }
+    }
+    for (Map.Entry<UUID, long[]> entry : feeCountByAccount.entrySet()) {
+      if (entry.getValue()[1] == 0 && entry.getValue()[0] >= MIN_TRADES_FOR_FEELESS_ACCOUNT) {
+        feelessAccountIds.add(entry.getKey());
+      }
+    }
+
     BigDecimal feeThreshold = minFeeBearingAmount;
     if (feeThreshold != null) {
       tradeRule(
@@ -777,6 +728,8 @@ public class LedgerIntegrityService {
               t.getType() == TradeType.SELL
                   && !positive(t.getFee())
                   && !positive(t.getTax())
+                  // 계좌 전체에 수수료가 없으면 ACCOUNT_WITHOUT_ANY_FEE 가 한 번에 알린다.
+                  && !feelessAccountIds.contains(t.getAccountId())
                   && tradeAmount(t) != null
                   && tradeAmount(t).compareTo(feeThreshold) >= 0,
           // 계좌는 tradeRule 이 문장 끝에 붙인다. 여기서 또 붙이면 화면에 두 번 나온다
@@ -840,6 +793,10 @@ public class LedgerIntegrityService {
       if (withFee > 0 || total < MIN_TRADES_FOR_FEELESS_ACCOUNT) {
         continue;
       }
+      // 계좌 설정에서 "기록을 되받을 수 없다" 고 밝힌 계좌는 지적하지 않는다.
+      if (feeRecordsUnavailableAccountIds.contains(entry.getKey())) {
+        continue;
+      }
       feelessAccountCount++;
       distinctRows.add(
           day(firstTradeByAccount.get(entry.getKey())) + "|" + accountNames.get(entry.getKey()),
@@ -860,7 +817,10 @@ public class LedgerIntegrityService {
                     + amount
                     + missingFeeHint(
                         tradesByAccount.getOrDefault(entry.getKey(), List.of()),
-                        observedFeeRateFloorByYear)));
+                        observedFeeRateFloorByYear)
+                    + feelessSellTaxHint(
+                        tradesByAccount.getOrDefault(entry.getKey(), List.of()),
+                        observedTaxRateByYear)));
       }
     }
     if (feelessAccountCount > 0) {
@@ -868,78 +828,6 @@ public class LedgerIntegrityService {
           new LedgerIntegrityFinding(
               "ACCOUNT_WITHOUT_ANY_FEE", feelessAccountCount, feelessAccounts));
     }
-
-    // 같은 배당의 과세표준을 두 곳에서 알 수 있는데 서로 다른 경우.
-    //
-    //   (1) 증권사가 실제로 뗀 세금 -> 세금 / 15.4% (원천징수는 세전이 아니라 과세표준의 15.4% 다)
-    //   (2) 운용사 지급 이력의 주당 과세표준(사람이 가져오는 참조 데이터)
-    //
-    // 화면의 예상 과세표준은 (2) 를 쓰므로 (2) 가 틀리면 사용자가 신고할 금액이 부풀거나 줄어든다.
-    // (1) 은 실제로 뗀 돈이라 더 단단하다.
-    //
-    // 이 대조법이 믿을 만하다는 근거: 개별주식(삼성전자·SK텔레콤·NAVER·삼성SDI)은 (1) 로 역산하면
-    // 99.6~100.0% 가 나온다 - 배당 전액이 과세 대상인 것과 정확히 맞는다. TIGER 리츠부동산인프라는
-    // (1) 99.96% vs (2) 100.00% 로 두 출처가 0.04%p 이내로 일치한다.
-    //
-    // 실측 2026-08-23: 지급일로 짝지은 16 건 중 9 건이 5%p 넘게 어긋났고 전부 (2) 가 더 높았다.
-    //
-    // 그 9 건은 원인이 둘로 갈린다.
-    //   - 7 건은 참조가 <b>정확히 100%</b> 다(KODEX 한국부동산리츠인프라, 원장 역산 63.77%). 주당 과세표준
-    //     자리에 주당 배당금이 그대로 들어간 모양이다. 참조 전체 202 건 중 83 건이 이 모양이고, 그 종목만
-    //     보면 28 건 중 21 건이다. 다만 같은 종목에도 62.86% / 48.65% / 0% 같은 제대로 된 값이 섞여 있어,
-    //     "아직 확정되지 않은 달은 배당금을 그대로 싣는다" 는 설명과 맞는다.
-    //   - 2 건은 100% 가 아니다(RISE 200위클리커버드콜 2026-04-02 참조 17.14% vs 원장 6.81%,
-    //     KODEX 200타겟위클리커버드콜 2026-04-17 참조 16.41% vs 원장 5.52%). 이건 다른 사정이라 개별 확인이
-    //     필요하다.
-    //
-    // 그래서 상세에 "참조가 100% 인가"를 함께 적는다. 100% 인 건은 한꺼번에 재수집하면 되고, 아닌 건은
-    // 하나씩 봐야 한다 - 그 구분이 없으면 9 건을 전부 같은 문제로 착각한다.
-    Map<String, BigDecimal[]> referenceTaxable = new HashMap<>();
-    for (var payout : monthlyDividendPayoutRepository.findAllByOrderByPayDateDescRecordDateDesc()) {
-      if (payout.getStockItemId() == null || payout.getPayDate() == null) {
-        continue;
-      }
-      referenceTaxable.putIfAbsent(
-          payout.getStockItemId() + "@" + payout.getPayDate(),
-          new BigDecimal[] {
-            nz(payout.getDividendAmountPerShare()), nz(payout.getTaxableBasePerShare())
-          });
-    }
-    dividendRule(
-        findings,
-        names,
-        dividends,
-        "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE",
-        d ->
-            taxableRatioGapPoints(d, referenceTaxable) != null
-                && taxableRatioGapPoints(d, referenceTaxable)
-                        .abs()
-                        .compareTo(TAXABLE_RATIO_TOLERANCE_POINTS)
-                    > 0,
-        d -> {
-          BigDecimal[] reference = referenceTaxable.get(referenceKey(d));
-          BigDecimal referenceRatio =
-              reference[1]
-                  .multiply(BigDecimal.valueOf(100))
-                  .divide(reference[0], 4, RoundingMode.HALF_UP);
-          return "원천징수 역산="
-              + impliedTaxableRatio(d).setScale(2, RoundingMode.HALF_UP)
-              + "%, 참조="
-              + referenceRatio.setScale(2, RoundingMode.HALF_UP)
-              + "% (주당 배당 "
-              + reference[0]
-              + " / 주당 과세표준 "
-              + reference[1]
-              + "), 참조 기준 실효세율="
-              + effectiveRateOnReference(d, referenceRatio).setScale(2, RoundingMode.HALF_UP)
-              + "%(정상 15.40%)"
-              + storedTaxableVerdict(d, reference);
-        },
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
 
     // 저장된 과세표준이 그 배당의 수량이 아닌 다른 수량으로 계산된 경우.
     //
@@ -952,106 +840,6 @@ public class LedgerIntegrityService {
     //
     // 위 DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE 는 "비율이 참조와 다르다"까지만 알려 준다.
     // 어떤 수량으로 잘못 계산됐는지 짚어 줘야 사람이 바로 고칠 수 있다.
-    dividendRule(
-        findings,
-        names,
-        dividends,
-        "DIVIDEND_TAXABLE_COMPUTED_WITH_OTHER_QUANTITY",
-        d ->
-            taxableImpliedQuantity(d) != null && !taxableImpliedQuantity(d).equals(d.getQuantity()),
-        d ->
-            "과세표준 "
-                + nz(d.getTaxableAmount()).toPlainString()
-                + " / 주당 과세표준 "
-                + nz(d.getTaxPerShare()).toPlainString()
-                + " = 수량 "
-                + taxableImpliedQuantity(d)
-                + " 인데 이 배당의 수량은 "
-                + d.getQuantity()
-                + " 이다 (수량 기준이면 "
-                + nz(d.getTaxPerShare())
-                    .multiply(BigDecimal.valueOf(d.getQuantity()))
-                    .toPlainString()
-                + ")",
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
-
-    // 예상 배당의 과세비율이 원장의 원천징수와 맞는지.
-    //
-    // 스냅샷의 averageTaxableBaseRatio1y 는 최근 1 년 '지급 이력 참조'의 (주당 과세표준 / 주당 배당) 평균이다
-    // (MonthlyDividendPayoutService). 그래서 참조가 틀리면 원장뿐 아니라 예상 배당 화면의 과세표준까지 같이
-    // 틀린다 - 위 DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE 만 보고 있으면 그 전파를 놓친다.
-    //
-    // 기준은 실제 원천징수액을 15.4% 로 역산한 과세표준이다. 세금이 실제로 붙은 배당만 쓴다(비과세 계좌나
-    // 세금 0 인 건은 비율을 알 수 없다).
-    //
-    // 실측 2026-08-23: 8 종목 중 비교 가능한 4 종목에서 KODEX 한국부동산리츠인프라만 크게 어긋났다
-    // (예상 77.64% vs 원장 역산 63.64%, 14.00%p). 그 몫이 예상 과세표준 427,120 원에 그대로 들어가 있다.
-    Map<UUID, BigDecimal[]> withheldByStockItem = new HashMap<>();
-    for (Dividend dividend : dividends) {
-      if (dividend.getStockItemId() == null
-          || !positive(dividend.getTax())
-          || !positive(dividend.getGrossAmount())) {
-        continue;
-      }
-      BigDecimal[] totals =
-          withheldByStockItem.computeIfAbsent(
-              dividend.getStockItemId(),
-              key -> new BigDecimal[] {BigDecimal.ZERO, BigDecimal.ZERO});
-      totals[0] =
-          totals[0].add(dividend.getTax().divide(WITHHOLDING_RATE, 4, RoundingMode.HALF_UP));
-      totals[1] = totals[1].add(dividend.getGrossAmount());
-    }
-    List<LedgerIntegrityFinding.Example> forecastExamples = new ArrayList<>();
-    int forecastHits = 0;
-    for (var snapshot :
-        monthlyDividendSnapshotRepository.findByUserIdOrderByUpdatedDateDesc(userId)) {
-      BigDecimal[] totals = withheldByStockItem.get(snapshot.getStockItemId());
-      if (totals == null || totals[1].signum() <= 0) {
-        continue;
-      }
-      BigDecimal ledgerRatio =
-          totals[0].multiply(BigDecimal.valueOf(100)).divide(totals[1], 2, RoundingMode.HALF_UP);
-      BigDecimal forecastRatio = nz(snapshot.getAverageTaxableBaseRatio1y());
-      if (forecastRatio.subtract(ledgerRatio).abs().compareTo(TAXABLE_RATIO_TOLERANCE_POINTS)
-          <= 0) {
-        continue;
-      }
-      forecastHits++;
-      distinctRows.add(
-          (snapshot.getAsOfDate() == null ? "" : snapshot.getAsOfDate().toString())
-              + "|"
-              + names.get(snapshot.getStockItemId()),
-          "FORECAST_TAXABLE_RATIO_DISAGREES_WITH_WITHHOLDING",
-          null);
-      if (forecastExamples.size() < maxExamples) {
-        forecastExamples.add(
-            new LedgerIntegrityFinding.Example(
-                snapshot.getAsOfDate() == null ? null : snapshot.getAsOfDate().toString(),
-                names.get(snapshot.getStockItemId()),
-                "예상 과세비율="
-                    + forecastRatio
-                    + "%, 원장 원천징수 역산="
-                    + ledgerRatio
-                    + "% (예상 월배당 "
-                    + nz(snapshot.getAverageMonthlyDividendPerShare1y())
-                        .multiply(
-                            BigDecimal.valueOf(
-                                snapshot.getHeldQuantity() == null
-                                    ? 0
-                                    : snapshot.getHeldQuantity()))
-                        .setScale(0, RoundingMode.HALF_UP)
-                    + "원에 이 비율이 곱해진다)"));
-      }
-    }
-    if (forecastHits > 0) {
-      findings.add(
-          new LedgerIntegrityFinding(
-              "FORECAST_TAXABLE_RATIO_DISAGREES_WITH_WITHHOLDING", forecastHits, forecastExamples));
-    }
 
     // 그 계좌의 평소 수수료율에서 크게 벗어난 거래.
     //
@@ -1307,32 +1095,6 @@ public class LedgerIntegrityService {
             : "");
   }
 
-  private static String taxableDetail(Dividend dividend) {
-    BigDecimal tax = nz(dividend.getTax());
-    BigDecimal taxable = nz(dividend.getTaxableAmount());
-    BigDecimal gross = nz(dividend.getGrossAmount());
-    Integer quantity = dividend.getQuantity();
-    StringBuilder detail = new StringBuilder("tax=" + tax + ", taxable=" + taxable);
-    if (quantity != null && quantity > 0) {
-      BigDecimal shares = BigDecimal.valueOf(quantity);
-      detail
-          .append(", 수량=")
-          .append(quantity)
-          .append(", 주당 세전=")
-          .append(gross.divide(shares, 2, RoundingMode.HALF_UP))
-          .append(", 주당 과세표준=")
-          .append(taxable.divide(shares, 2, RoundingMode.HALF_UP));
-    }
-    // 무엇을 넣어야 하는지까지 알려준다. 원천징수액은 과세표준 x 15.4% 이므로 거꾸로 나누면 증권사가
-    // 실제로 쓴 과세표준이 나온다(실측 2026-08-23: 8 건 모두 기록값의 84.9 배, 합계 1,512,500 원 과소).
-    if (tax.signum() > 0) {
-      detail
-          .append(", 세율 15.4% 기준 추정 과세표준=")
-          .append(tax.divide(WITHHOLDING_RATE, 0, RoundingMode.HALF_UP));
-    }
-    return detail.toString();
-  }
-
   /** 거래대금(단가 x 수량). 둘 중 하나라도 없으면 {@code null}. */
   private static BigDecimal tradeAmount(Trade trade) {
     if (trade == null || trade.getPrice() == null) {
@@ -1364,16 +1126,6 @@ public class LedgerIntegrityService {
     return nz(dividend.getTax())
         .multiply(BigDecimal.valueOf(100))
         .divide(referenceTaxableAmount, 4, RoundingMode.HALF_UP);
-  }
-
-  /** 배당을 참조 지급 이력과 짝짓는 키. 지급일로 맞춘다(원장의 기준일에는 지급일이 들어 있기도 하다). */
-  private static String referenceKey(Dividend dividend) {
-    if (dividend.getStockItemId() == null || dividend.getPayDate() == null) {
-      return null;
-    }
-    return dividend.getStockItemId()
-        + "@"
-        + dividend.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate();
   }
 
   /** 실제로 뗀 세금에서 되짚은 과세표준 비율(세전 대비 %). */
@@ -1480,37 +1232,16 @@ public class LedgerIntegrityService {
         + "원 — 세율은 해마다 낮아져 왔으므로 실제는 이보다 크다)";
   }
 
-  private static BigDecimal impliedTaxableRatio(Dividend dividend) {
-    BigDecimal gross = nz(dividend.getGrossAmount());
-    if (gross.signum() <= 0) {
-      return BigDecimal.ZERO;
-    }
-    return nz(dividend.getTax())
-        .divide(WITHHOLDING_RATE, 10, RoundingMode.HALF_UP)
-        .multiply(BigDecimal.valueOf(100))
-        .divide(gross, 4, RoundingMode.HALF_UP);
-  }
-
   /**
-   * 두 출처의 과세표준 비율 차이(%p). 짝을 못 찾거나 세금이 없으면 {@code null}(비교 대상이 아니다).
+   * 기준일이 <b>따로</b> 적혀 있는가.
    *
-   * <p>세금이 0 인 배당(비과세 계좌)은 되짚을 수 없다 - 0/15.4% 는 언제나 0 이라 참조가 무엇이든 어긋난 것처럼 보인다.
+   * <p>기준일 칸이 없어 지급일이 복사된 자료에서는 기준일을 안다고 할 수 없다. 실측 2026-08-24: 배당 193 건 전부 {@code recordDate ==
+   * payDate} 라, 이 조건이 없으면 결산배당(기준일 전년 12-31)이 모두 "기준일에 보유 없음" 으로 걸린다.
    */
-  private static BigDecimal taxableRatioGapPoints(
-      Dividend dividend, Map<String, BigDecimal[]> referenceTaxable) {
-    String key = referenceKey(dividend);
-    if (key == null || !positive(dividend.getTax()) || !positive(dividend.getGrossAmount())) {
-      return null;
-    }
-    BigDecimal[] reference = referenceTaxable.get(key);
-    if (reference == null || reference[0].signum() <= 0) {
-      return null;
-    }
-    BigDecimal referenceRatio =
-        reference[1]
-            .multiply(BigDecimal.valueOf(100))
-            .divide(reference[0], 4, RoundingMode.HALF_UP);
-    return impliedTaxableRatio(dividend).subtract(referenceRatio);
+  private static boolean hasOwnRecordDate(Dividend dividend) {
+    return dividend.getRecordDate() != null
+        && dividend.getPayDate() != null
+        && !day(dividend.getRecordDate()).equals(day(dividend.getPayDate()));
   }
 
   /** 배당의 기준일. 기준일이 없으면 지급일을 쓴다(화면·수익률 계산과 같은 규칙). */
@@ -1577,15 +1308,48 @@ public class LedgerIntegrityService {
     return floors;
   }
 
-  /**
-   * 수수료가 한 건도 없는 계좌에서 <b>적어도 얼마가</b> 빠졌는지 되짚는다.
-   *
-   * <p>거래마다 그 해에 실제로 관측된 최저 수수료율을 쓴다. 관측이 시작되는 해보다 오래된 거래에는 그 최초 연도의 값을 쓴다 &mdash; 수수료율은 해마다 낮아져
-   * 왔으므로(실측 2019 0.004458% → 2026 0.002172%) 그보다 오래된 거래에는 하한이 된다.
-   *
-   * <p>실측 2026-08-23: 동양증권 26 건(거래대금 584,010,880) 중 그 해 관측이 있는 것이 6 건, 관측 이전이 20 건이었고 거래별 하한 합계는
-   * 25,011 원이다. 계좌 전체에 최초 연도 요율 하나를 곱하면 26,036 원이 나오는데, 그건 최근 거래를 과대평가한 값이다.
-   */
+  private static String feelessSellTaxHint(
+      List<Trade> accountTrades, Map<Integer, BigDecimal> observedTaxRateByYear) {
+    BigDecimal amount = BigDecimal.ZERO;
+    int sellCount = 0;
+    for (Trade trade : accountTrades) {
+      if (trade.getType() != TradeType.SELL || positive(trade.getTax())) {
+        continue;
+      }
+      BigDecimal tradeAmount = tradeAmount(trade);
+      if (tradeAmount == null) {
+        continue;
+      }
+      sellCount++;
+      amount = amount.add(tradeAmount);
+    }
+    if (sellCount == 0 || amount.signum() <= 0) {
+      return "";
+    }
+    BigDecimal floorRate = null;
+    for (BigDecimal rate : observedTaxRateByYear.values()) {
+      if (floorRate == null || rate.compareTo(floorRate) < 0) {
+        floorRate = rate;
+      }
+    }
+    if (floorRate == null) {
+      return ". 거래세 없는 매도 "
+          + sellCount
+          + "건(매도금액 "
+          + amount.setScale(0, RoundingMode.HALF_UP)
+          + ")";
+    }
+    return ". 거래세 없는 매도 "
+        + sellCount
+        + "건(매도금액 "
+        + amount.setScale(0, RoundingMode.HALF_UP)
+        + ") — 관측 최저 세율 "
+        + floorRate.setScale(4, RoundingMode.HALF_UP)
+        + "% 를 적용하면 최소 "
+        + amount.multiply(floorRate).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP)
+        + "원";
+  }
+
   private static String missingFeeHint(
       List<Trade> accountTrades, Map<Integer, BigDecimal> floorsByYear) {
     if (accountTrades.isEmpty() || floorsByYear.isEmpty()) {

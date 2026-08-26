@@ -119,20 +119,6 @@ class LedgerIntegrityServiceTest {
     assertThat(response.tradeCount()).isEqualTo(2);
   }
 
-  /** 실제로 발견된 유일한 이상. 세금이 과세표준보다 클 수는 없다. */
-  @Test
-  void 배당_세금이_과세표준보다_크면_찾는다() {
-    LedgerIntegrityResponse response =
-        run(List.of(dividend("297424", "29210", "2233", 10256, null)), List.of());
-
-    LedgerIntegrityFinding hit = finding(response, "DIVIDEND_TAX_EXCEEDS_TAXABLE");
-    assertThat(hit).isNotNull();
-    assertThat(hit.count()).isEqualTo(1);
-    assertThat(hit.examples()).hasSize(1);
-    assertThat(hit.examples().get(0).stockItemName()).isEqualTo("KODEX 한국부동산리츠인프라");
-    assertThat(hit.examples().get(0).detail()).contains("29210").contains("2233");
-  }
-
   /**
    * 매수 행의 실현손익 0 은 정상이다.
    *
@@ -219,6 +205,77 @@ class LedgerIntegrityServiceTest {
    * <p>실측 2026-08-22: 하나금융지주 배당 2건(세후 2,100원)에 대응하는 매매 기록이 0건이었다. 손익 집계는 매매에서 파생되므로 그 종목이 아예 빠지고,
    * 종목별 시계열을 전부 더해도 전체와 배당이 2,100원 어긋난다 - 화면에서는 원인을 알 수 없다.
    */
+  /**
+   * 예시는 상한을 둔다. 전부 실으면 응답 크기가 원장 크기를 따라간다.
+   *
+   * <p>예전에는 {@code DIVIDEND_TAX_EXCEEDS_TAXABLE} 로 확인했는데, 그 규칙은 분리과세 때문에 걷어냈다. 규칙이 아니라 예시 상한을 보는
+   * 검사이므로 살아 있는 배당 규칙으로 옮겨 그대로 둔다.
+   */
+  @Test
+  void 예시는_최대_3건만_담고_건수는_전부_센다() {
+    // 과세표준(2,000) > 세전(1,000) 인 배당 12 건.
+    List<Dividend> many =
+        java.util.stream.IntStream.range(0, 12)
+            .mapToObj(i -> dividend("1000", "0", "2000", 10, null))
+            .toList();
+
+    LedgerIntegrityFinding hit = finding(run(many, List.of()), "DIVIDEND_TAXABLE_EXCEEDS_GROSS");
+
+    assertThat(hit).as("대상 규칙이 걸리지 않았다 - 검사가 무력해진다").isNotNull();
+    assertThat(hit.count()).isEqualTo(12);
+    assertThat(hit.examples()).hasSize(3);
+  }
+
+  /**
+   * 한 행이 여러 규칙에 걸리면 행으로 묶어 낸다.
+   *
+   * <p>실측 2026-08-23: 발견 48 건이 30 행이고 그중 10 행이 사유를 2~4 개씩 달고 있었다. 규칙별 목록만 있으면 화면이 같은 행을 규칙 그룹마다 다시
+   * 그린다.
+   *
+   * <p>예전에는 과세표준 규칙 두 개가 함께 걸리는 행으로 확인했다. 그 규칙들은 분리과세 때문에 걷어냈으므로, 지금도 함께 걸리는 두 규칙으로 바꿔 둔다.
+   */
+  @Test
+  void 사유가_여러_개인_행을_묶어_낸다() {
+    // 과세표준(2,000) > 세전(1,000) 이면서, 주당(29) x 수량(10) = 290 != 세전(1,000).
+    LedgerIntegrityResponse response =
+        run(List.of(dividend("1000", "0", "2000", 10, "29")), List.of());
+
+    assertThat(response.multiReasonRows()).hasSize(1);
+    var row = response.multiReasonRows().get(0);
+    assertThat(row.date()).isEqualTo("2026-08-19");
+    assertThat(row.codes())
+        .as("한 행에 걸린 사유를 모두 담아야 화면이 묶어 그릴 수 있다")
+        .hasSizeGreaterThanOrEqualTo(2)
+        .contains("DIVIDEND_TAXABLE_EXCEEDS_GROSS");
+    assertThat(response.distinctRowCount()).isEqualTo(1);
+  }
+
+  /**
+   * 배당 발견에도 계좌명을 적는다.
+   *
+   * <p>실측 2026-08-23: 규칙마다 발견이 <b>한 계좌에 100% 집중</b>돼 있었다 &mdash; 매매 없는 배당 2 건은 한국투자증권 위탁, 수수료·거래세가
+   * 없는 매도 12 건은 전부 동양증권이다. 각 결함이 한 계좌의 입력 경로에 묶여 있다는 뜻이라, 계좌를 적으면 어디를 고쳐야 하는지가 드러난다.
+   */
+  @Test
+  void 배당_발견에도_계좌명을_적는다() {
+    java.util.UUID accountId = java.util.UUID.randomUUID();
+    var account = new net.luversof.api.stock.domain.Account();
+    account.setId(accountId);
+    account.setUserId(USER_ID);
+    account.setName("KB증권 위탁");
+    when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(account));
+
+    Dividend dividend = dividend("1000", "0", "2000", 10, null);
+    dividend.setAccountId(accountId);
+
+    LedgerIntegrityFinding found =
+        finding(run(List.of(dividend), List.of()), "DIVIDEND_TAXABLE_EXCEEDS_GROSS");
+    assertThat(found).isNotNull();
+    assertThat(found.examples().get(0).detail())
+        .as("어느 계좌의 입력 경로가 문제인지 알아야 한다")
+        .contains("[KB증권 위탁]");
+  }
+
   @Test
   void 매매_기록이_없는_종목의_배당을_찾는다() {
     UUID tradedOnly = UUID.randomUUID();
@@ -237,45 +294,26 @@ class LedgerIntegrityServiceTest {
     assertThat(hit.examples().get(0).detail()).contains("2100");
   }
 
-  /** 예시는 상한을 둔다. 전부 실으면 응답 크기가 원장 크기를 따라간다. */
-  @Test
-  void 예시는_최대_3건만_담고_건수는_전부_센다() {
-    List<Dividend> many =
-        java.util.stream.IntStream.range(0, 12)
-            .mapToObj(i -> dividend("1000", "500", "100", 10, null))
-            .toList();
-
-    LedgerIntegrityFinding hit = finding(run(many, List.of()), "DIVIDEND_TAX_EXCEEDS_TAXABLE");
-
-    assertThat(hit.count()).isEqualTo(12);
-    assertThat(hit.examples()).hasSize(3);
-  }
-
-  /**
-   * 상세 문구가 "무엇이 이상한지" 를 담는다.
-   *
-   * <p>두 숫자(tax, taxable)만 적으면 사용자는 어느 값을 고쳐야 할지 알 수 없다. 같은 행의 수량과 주당 금액을 함께 적으면 원인이 드러난다 &mdash;
-   * 실측 2026-08-23 의 8 건은 주당 세전 29 원인데 주당 과세표준이 0.22 원이었다(과세표준을 10,256 주가 아니라 77 주로 잡은 값과 일치).
-   */
-  @Test
-  void 세금이_과세표준보다_크면_주당_금액도_함께_적는다() {
-    // 실제 원장의 한 행: 세전 297,424 / 과세표준 2,233 / 세금 29,210 / 수량 10,256
-    var response = run(List.of(dividend("297424", "29210", "2233", 10256, "29")), List.of());
-    var finding = finding(response, "DIVIDEND_TAX_EXCEEDS_TAXABLE");
-
-    assertThat(finding).isNotNull();
-    String detail = finding.examples().get(0).detail();
-    assertThat(detail).contains("tax=29210").contains("taxable=2233");
-    assertThat(detail).as("수량이 없으면 주당으로 환산해 볼 수 없다").contains("수량=10256");
-    assertThat(detail).as("주당 세전 29 원 대비 과세표준 0.22 원이라는 것이 핵심이다").contains("주당 세전=29.00");
-    assertThat(detail).contains("주당 과세표준=0.22");
-  }
-
   /** 날짜를 지정할 수 있는 배당/매매. 기준일 보유 검사는 날짜가 전부이므로 따로 둔다. */
+  /**
+   * 기준일이 <b>따로</b> 적힌 배당. 지급일은 그보다 뒤로 둔다(결산배당의 실제 모양).
+   *
+   * <p>기준일과 지급일이 같으면 그건 기준일 칸이 없어 지급일이 복사된 자료라, 기준일 규칙이 판정하지 않는다. 예전에는 이 도우미가 둘을 같게 만들어서, 규칙을 검사한다고
+   * 하면서 실은 "지급일 보유" 를 검사하고 있었다.
+   */
   private Dividend dividendOn(String recordDate, Integer quantity) {
     Dividend dividend = dividend("10000", "1540", "10000", quantity, "100");
     dividend.setRecordDate(Instant.parse(recordDate + "T00:00:00Z"));
-    dividend.setPayDate(Instant.parse(recordDate + "T00:00:00Z"));
+    dividend.setPayDate(
+        Instant.parse(recordDate + "T00:00:00Z").plus(java.time.Duration.ofDays(90)));
+    return dividend;
+  }
+
+  /** 기준일 칸이 없어 지급일이 그대로 복사된 배당(이 원장의 실제 모양). */
+  private Dividend dividendWithoutOwnRecordDate(String payDate, Integer quantity) {
+    Dividend dividend = dividend("10000", "1540", "10000", quantity, "100");
+    dividend.setRecordDate(Instant.parse(payDate + "T00:00:00Z"));
+    dividend.setPayDate(Instant.parse(payDate + "T00:00:00Z"));
     return dividend;
   }
 
@@ -304,6 +342,31 @@ class LedgerIntegrityServiceTest {
     assertThat(found).isNotNull();
     assertThat(found.count()).isEqualTo(1);
     assertThat(found.examples().get(0).detail()).contains("그 날 보유=0");
+  }
+
+  /**
+   * 기준일 칸이 없어 지급일이 복사된 자료는 판정하지 않는다.
+   *
+   * <p>이 원장이 그렇다 &mdash; 실측 2026-08-24: 배당 193 건 전부 {@code recordDate == payDate}. 그 상태에서 "기준일 보유"
+   * 를 따지면 사실은 "지급일 보유" 를 따지는 것이라, 결산배당이 거의 언제나 걸린다. 기준일이 전년 12-31 이면 그 뒤에 팔아도 배당은 나오기 때문이다.
+   *
+   * <p>실측으로 걸려 있던 3 건이 모두 그런 경우였다 &mdash; HK이노엔(2021-08-09 매수 &rarr; 2022-04-22 지급 + 같은 날 매도),
+   * NAVER(2020-01-30 매수 &rarr; 2021-01-18 매도 &rarr; 2021-04-08 지급), 삼성SDI(2019-12-13 매수 &rarr;
+   * 2020-01-28 매도 &rarr; 2020-04-17 지급). 셋 다 기준일에는 들고 있었다.
+   */
+  @Test
+  void 기준일이_지급일과_같으면_판정하지_않는다() {
+    // HK이노엔 실측 모양: 지급일에 전량 매도. 기준일을 모르므로 "보유 없음" 이라고 말할 수 없다.
+    LedgerIntegrityResponse response =
+        run(
+            List.of(dividendWithoutOwnRecordDate("2022-04-22", 12)),
+            List.of(
+                tradeOn("2021-08-09", TradeType.BUY, 12),
+                tradeOn("2022-04-22", TradeType.SELL, 12)));
+
+    assertThat(finding(response, "DIVIDEND_WITHOUT_HOLDING_ON_BASIS_DATE"))
+        .as("기준일을 모르는 자료로 보유가 없다고 단정하면 결산배당이 전부 걸린다")
+        .isNull();
   }
 
   /** 기준일에 들고 있었으면 걸리지 않는다. 정상을 이상으로 잡으면 경고가 무의미해진다. */
@@ -391,67 +454,6 @@ class LedgerIntegrityServiceTest {
     assertThat(finding(response, "DIVIDEND_WITHOUT_HOLDING_ON_BASIS_DATE")).isNull();
   }
 
-  /**
-   * 지적에 "무엇을 넣어야 하는지"까지 담는다.
-   *
-   * <p>원천징수액은 과세표준 x 15.4% 이므로 거꾸로 나누면 증권사가 실제로 쓴 과세표준이 나온다. 실측 2026-08-23 의 8 건은 기록된 과세표준이 정확히 "주당
-   * 세전 x 77 주" 였고(29x77=2,233), 세율 기준 추정치는 189,675 원이다.
-   */
-  @Test
-  void 세금이_과세표준을_넘으면_세율_기준_추정치를_함께_알린다() {
-    LedgerIntegrityResponse response =
-        run(List.of(dividend("297424", "29210", "2233", 10256, "29")), List.of());
-
-    LedgerIntegrityFinding found = finding(response, "DIVIDEND_TAX_EXCEEDS_TAXABLE");
-    assertThat(found).isNotNull();
-    // 29,210 / 0.154 = 189,675.32 -> 189,675
-    assertThat(found.examples().get(0).detail())
-        .as("고칠 값을 알려주지 않으면 사용자는 얼마를 넣어야 할지 알 수 없다")
-        .contains("세율 15.4% 기준 추정 과세표준=189675");
-  }
-
-  /**
-   * 추정치가 세금에 따라 실제로 달라지는지. 한 값만 확인하면 상수를 박아 넣어도 통과한다.
-   *
-   * <p>이 규칙은 과세표준이 양수일 때만 걸리므로 세금은 항상 양수다. 그래서 "세금 0" 경로는 이 규칙으로 도달할 수 없다.
-   */
-  @Test
-  void 추정_과세표준은_세금에_비례한다() {
-    // 1,540 / 0.154 = 10,000
-    LedgerIntegrityResponse low =
-        run(List.of(dividend("20000", "1540", "100", 10, "2000")), List.of());
-    assertThat(finding(low, "DIVIDEND_TAX_EXCEEDS_TAXABLE").examples().get(0).detail())
-        .contains("세율 15.4% 기준 추정 과세표준=10000");
-
-    // 30,220 / 0.154 = 196,234 (실측 2026-04-17 행과 같은 크기)
-    LedgerIntegrityResponse high =
-        run(List.of(dividend("307680", "30220", "2310", 10256, "30")), List.of());
-    assertThat(finding(high, "DIVIDEND_TAX_EXCEEDS_TAXABLE").examples().get(0).detail())
-        .contains("세율 15.4% 기준 추정 과세표준=196234");
-  }
-
-  /**
-   * 한 행이 여러 규칙에 걸리면 행으로 묶어 낸다.
-   *
-   * <p>실측 2026-08-23: 발견 48 건이 30 행이고 그중 10 행이 사유를 2~4 개씩 달고 있었다. 규칙별 목록만 있으면 화면이 같은 행을 규칙 그룹마다 다시
-   * 그린다.
-   */
-  @Test
-  void 사유가_여러_개인_행을_묶어_낸다() {
-    // 세금 > 과세표준 이면서 과세표준이 다른 수량으로 계산된 배당 - 두 규칙에 함께 걸린다.
-    LedgerIntegrityResponse response =
-        run(List.of(dividend("297424", "29210", "2233", 10256, "29")), List.of());
-
-    assertThat(response.multiReasonRows()).hasSize(1);
-    var row = response.multiReasonRows().get(0);
-    assertThat(row.date()).isEqualTo("2026-08-19");
-    assertThat(row.codes())
-        .as("한 행에 걸린 사유를 모두 담아야 화면이 묶어 그릴 수 있다")
-        .hasSizeGreaterThanOrEqualTo(2)
-        .contains("DIVIDEND_TAX_EXCEEDS_TAXABLE");
-    assertThat(response.distinctRowCount()).isEqualTo(1);
-  }
-
   /** 사유가 하나뿐인 행은 묶음에 넣지 않는다. 전부 넣으면 묶음이 원래 목록과 같아져 쓸모가 없다. */
   @Test
   void 사유가_하나뿐인_행은_묶음에_넣지_않는다() {
@@ -471,6 +473,8 @@ class LedgerIntegrityServiceTest {
     var row = new net.luversof.api.stock.domain.MonthlyDividendPayout();
     row.setStockItemId(STOCK_ITEM_ID);
     row.setPayDate(java.time.LocalDate.parse(payDate));
+    // 참조 시트에는 기준일이 지급일보다 앞선다(실측: 2026-04-17 지급 / 2026-04-15 기준).
+    row.setRecordDate(java.time.LocalDate.parse(payDate).minusDays(2));
     row.setDividendAmountPerShare(new BigDecimal(perShare));
     row.setTaxableBasePerShare(new BigDecimal(taxablePerShare));
     return row;
@@ -482,165 +486,6 @@ class LedgerIntegrityServiceTest {
     snapshot.setStockItemId(STOCK_ITEM_ID);
     when(snapshotRepository.findByUserIdOrderByUpdatedDateDesc(USER_ID))
         .thenReturn(List.of(snapshot));
-  }
-
-  /**
-   * 참조 과세비율이 그 종목 자신의 이력에서 튀는 행.
-   *
-   * <p>"100% 면 이상" 으로 잡으면 안 된다 &mdash; 리츠·인프라형은 분배금이 거의 다 과세라 100% 가 정상이다(실측 2026-08-23: TIGER
-   * 리츠부동산인프라 57 건 전부 100%). 그래서 그 종목 자신의 중앙값과 비교한다.
-   *
-   * <p>실측 2026-08-23: 6 건이 걸렸고, 그중 하나는 정확히 100% 가 아니라 98.21%(112 → 110)였다. "100% 만" 보면 놓친다.
-   */
-  @Test
-  void 참조_과세비율이_그_종목에서_튀면_찾는다() {
-    snapshotForUser();
-    List<net.luversof.api.stock.domain.MonthlyDividendPayout> reference =
-        new java.util.ArrayList<>();
-    for (int month = 1; month <= 6; month++) {
-      reference.add(payoutWithRatio(String.format("2026-%02d-17", month), "100", "5"));
-    }
-    reference.add(payoutWithRatio("2026-07-17", "112", "110")); // 98.21%
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(reference);
-
-    LedgerIntegrityResponse response = run(List.of(), List.of());
-
-    LedgerIntegrityFinding found = finding(response, "REFERENCE_TAXABLE_RATIO_OUTLIER");
-    assertThat(found).isNotNull();
-    assertThat(found.count()).isEqualTo(1);
-    assertThat(found.examples().get(0).detail()).contains("98.21%", "이 종목 중앙값 5.00%");
-  }
-
-  /**
-   * 이력이 적은 종목은 중앙값을 믿을 수 없으므로 판정하지 않는다.
-   *
-   * <p>이력 5 건은 최소치(6 건)에 못 미친다. 이 사례가 없으면 최소치를 6 에서 1 로 낮춰도 검사가 통과한다(실제로 그렇게 뮤테이션이 살아남았다).
-   */
-  @Test
-  void 참조_이력이_적은_종목은_과세비율을_판정하지_않는다() {
-    snapshotForUser();
-    List<net.luversof.api.stock.domain.MonthlyDividendPayout> reference =
-        new java.util.ArrayList<>();
-    for (int month = 1; month <= 4; month++) {
-      reference.add(payoutWithRatio(String.format("2026-%02d-17", month), "100", "5"));
-    }
-    reference.add(payoutWithRatio("2026-05-17", "100", "100"));
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(reference);
-
-    assertThat(finding(run(List.of(), List.of()), "REFERENCE_TAXABLE_RATIO_OUTLIER"))
-        .as("이력 5 건으로 낸 중앙값으로는 이상치를 단정할 수 없다")
-        .isNull();
-  }
-
-  /**
-   * 이상치 하한(95%) 아래는 걸리지 않는다.
-   *
-   * <p>이 규칙이 잡으려는 것은 "과세표준 칸을 못 가져와 배당금을 그대로 복사한" 형태다. 중앙값보다 높다는 것만으로는 부족하다 &mdash; 그 정도 변동은 상품에 따라
-   * 정상이다. 이 사례가 없으면 하한을 95 에서 50 으로 낮춰도 검사가 통과한다(실제로 그렇게 뮤테이션이 살아남았다).
-   */
-  @Test
-  void 이상치_하한_아래는_걸리지_않는다() {
-    snapshotForUser();
-    List<net.luversof.api.stock.domain.MonthlyDividendPayout> reference =
-        new java.util.ArrayList<>();
-    for (int month = 1; month <= 6; month++) {
-      reference.add(payoutWithRatio(String.format("2026-%02d-17", month), "100", "5"));
-    }
-    // 70% - 중앙값(5%)보다 훨씬 높지만 "배당금을 그대로 복사" 는 아니다.
-    reference.add(payoutWithRatio("2026-07-17", "100", "70"));
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(reference);
-
-    assertThat(finding(run(List.of(), List.of()), "REFERENCE_TAXABLE_RATIO_OUTLIER"))
-        .as("중앙값보다 높다는 것만으로 이상치라고 하면 안 된다")
-        .isNull();
-  }
-
-  /**
-   * 과세비율이 원래 중간쯤인 종목도 대상이 아니다.
-   *
-   * <p>상한(50%)의 뜻은 "이 종목은 원래 과세비율이 높은 편" 이다. 중앙값이 60% 인 종목은 그 부류이므로 100% 짜리 한 줄이 있어도 이상치라고 단정하지 않는다
-   * &mdash; 그 정도 변동이 정상인 상품일 수 있다.
-   *
-   * <p>이 사례가 없으면 상한을 50 에서 99 로 올려도 검사가 통과한다(실제로 그렇게 뮤테이션이 살아남아 추가했다).
-   */
-  @Test
-  void 과세비율이_중간쯤인_종목도_대상이_아니다() {
-    snapshotForUser();
-    List<net.luversof.api.stock.domain.MonthlyDividendPayout> reference =
-        new java.util.ArrayList<>();
-    for (int month = 1; month <= 6; month++) {
-      reference.add(payoutWithRatio(String.format("2026-%02d-17", month), "100", "60"));
-    }
-    reference.add(payoutWithRatio("2026-07-17", "100", "100"));
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(reference);
-
-    assertThat(finding(run(List.of(), List.of()), "REFERENCE_TAXABLE_RATIO_OUTLIER"))
-        .as("중앙값 60% 는 '원래 높은 편' 이라 이상치 판정 대상이 아니다")
-        .isNull();
-  }
-
-  /**
-   * 이상치가 절반을 넘으면 이 규칙은 그 종목에 눈먼다.
-   *
-   * <p>판정 기준이 그 종목 자신의 중앙값이라, 잘못된 행이 많아지면 중앙값이 100% 쪽으로 끌려가 대상에서 빠진다. 숨겨 두면 나중에 "왜 안 잡히지" 가 되므로
-   * <b>알려진 성질</b>로 못박는다.
-   *
-   * <p>실측 2026-08-24 로 여유를 쟀다 &mdash; 중앙값이 50% 를 넘기까지 필요한 추가 이상치는 종목마다 +5 ~ +29 건이고, 가장 약한 것이 TIGER
-   * 코리아배당다우존스위클리커버드콜(이력 10 건, +5)이다.
-   *
-   * <p>다만 그 상태가 곧 사각은 아니다. 원장에 원천징수가 찍혀 있으면 다른 세 규칙이 같은 행을 잡는다.
-   */
-  @Test
-  void 이상치가_절반을_넘으면_그_종목에는_걸리지_않는다() {
-    snapshotForUser();
-    List<net.luversof.api.stock.domain.MonthlyDividendPayout> reference =
-        new java.util.ArrayList<>();
-    // 정상 3 건(5%) + 이상치 4 건(100%) -> 중앙값이 100% 로 끌려간다.
-    for (int month = 1; month <= 3; month++) {
-      reference.add(payoutWithRatio(String.format("2026-%02d-17", month), "100", "5"));
-    }
-    for (int month = 4; month <= 7; month++) {
-      reference.add(payoutWithRatio(String.format("2026-%02d-17", month), "100", "100"));
-    }
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(reference);
-
-    assertThat(finding(run(List.of(), List.of()), "REFERENCE_TAXABLE_RATIO_OUTLIER"))
-        .as("중앙값이 오염되면 이 규칙은 침묵한다 - 원장에 세금이 있으면 다른 규칙이 잡는다")
-        .isNull();
-  }
-
-  /** 리츠형처럼 원래 과세비율이 높은 종목은 대상이 아니다. 아니면 정상 자료가 통째로 걸린다. */
-  @Test
-  void 원래_과세비율이_높은_종목은_걸리지_않는다() {
-    snapshotForUser();
-    List<net.luversof.api.stock.domain.MonthlyDividendPayout> reference =
-        new java.util.ArrayList<>();
-    for (int month = 1; month <= 7; month++) {
-      reference.add(payoutWithRatio(String.format("2026-%02d-17", month), "100", "100"));
-    }
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(reference);
-
-    assertThat(finding(run(List.of(), List.of()), "REFERENCE_TAXABLE_RATIO_OUTLIER")).isNull();
-  }
-
-  /**
-   * 참조 표는 사용자와 무관한 전역 자료다. 이 사용자가 보지 않는 종목까지 내면 데이터가 없는 신규 사용자에게도 지적이 나간다.
-   *
-   * <p>실측 2026-08-23: 처음 만들었을 때 실제로 그랬다 &mdash; 배당 0 / 매매 0 인데 지적 6 건이 나와 검사 스크립트의 "신규 사용자 계약" 불변식이
-   * 잡았다.
-   */
-  @Test
-  void 사용자가_보지_않는_종목은_대상이_아니다() {
-    when(snapshotRepository.findByUserIdOrderByUpdatedDateDesc(USER_ID)).thenReturn(List.of());
-    List<net.luversof.api.stock.domain.MonthlyDividendPayout> reference =
-        new java.util.ArrayList<>();
-    for (int month = 1; month <= 6; month++) {
-      reference.add(payoutWithRatio(String.format("2026-%02d-17", month), "100", "5"));
-    }
-    reference.add(payoutWithRatio("2026-07-17", "100", "100"));
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(reference);
-
-    assertThat(finding(run(List.of(), List.of()), "REFERENCE_TAXABLE_RATIO_OUTLIER")).isNull();
   }
 
   private net.luversof.api.stock.domain.MonthlyDividendPayout payout(String payDate) {
@@ -750,7 +595,10 @@ class LedgerIntegrityServiceTest {
   void 개별_주식_배당인데_원천징수가_없으면_찾는다() {
     LedgerIntegrityResponse response =
         run(
-            List.of(dividendInAccount("3840", "0", "0", 12, "320")),
+            List.of(
+                dividendInAccount("100000", "0", "0", 100, "1000"),
+                // 하한을 잡을 재료. 실제로 15,400 원이 징수된 배당이 원장에 있다.
+                dividendInAccount("100000", "15400", "100000", 100, "1000")),
             // 매도에 거래세가 붙었으므로 이 종목은 개별 주식이다.
             List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
 
@@ -759,7 +607,67 @@ class LedgerIntegrityServiceTest {
     assertThat(found.count()).isEqualTo(1);
     assertThat(found.examples().get(0).detail())
         .as("얼마를 떼었어야 하는지 함께 보여야 고칠 수 있다")
-        .contains("gross=3840", "15.4% 기준 예상 세금=591");
+        .contains("gross=100000", "15.4% 기준 예상 세금=15400");
+  }
+
+  /**
+   * 예상 세액이 아주 작으면 안 뗀 것이 정상이다.
+   *
+   * <p>세액이 작으면 원천징수를 하지 않는다. 그 경계를 바깥 지식으로 박지 않고 <b>원장에서 실제로 징수된 가장 작은 세액</b>으로 잡는다(수수료·거래세 규칙과 같은
+   * 방식).
+   *
+   * <p>실측 2026-08-24: 개별주식 배당 36 건 중 세금이 0 인 것은 HK이노엔 2022-04-22(세전 3,840 · 예상 591) 한 건뿐인데, 그 건이 곧
+   * <b>예상 세액이 가장 작은 한 건</b>이었다. 나머지 35 건은 예상 세액이 3,690 원 이상이고 전부 15.34~15.40% 로 징수됐다. 과세 계좌 전체로 넓혀도
+   * 예상 세액 1,000 원 미만인 9 건이 예외 없이 세금 0 이다. 즉 누락이 아니라 소액이라 떼지 않은 것이다.
+   */
+  @Test
+  void 예상_세액이_원장의_최소_징수액보다_작으면_걸리지_않는다() {
+    LedgerIntegrityResponse response =
+        run(
+            List.of(
+                // HK이노엔 실측 모양: 세전 3,840 · 예상 세금 591.
+                dividendInAccount("3840", "0", "0", 12, "320"),
+                // 원장에서 실제로 징수된 가장 작은 세액이 1,480 원이다.
+                dividendInAccount("173968", "1480", "9610", 100, "1739.68")),
+            List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
+
+    assertThat(finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING"))
+        .as("소액이라 떼지 않은 건을 누락이라고 하면, 고칠 수 없는 지적이 계속 남는다")
+        .isNull();
+  }
+
+  /**
+   * 하한은 <b>가장 작은</b> 징수액이다. 가장 큰 것을 쓰면 진짜 누락까지 조용히 넘어간다.
+   *
+   * <p>징수된 세액이 1,480 원과 15,400 원 두 가지 있을 때, 예상 세액 5,000 원짜리 무징수 배당은 "작아서 안 뗀 것" 이 아니다 &mdash; 이미
+   * 1,480 원짜리도 징수됐기 때문이다. 최대(15,400)를 하한으로 쓰면 이 건이 빠져나간다.
+   */
+  @Test
+  void 하한은_가장_작은_징수액이다() {
+    LedgerIntegrityResponse response =
+        run(
+            List.of(
+                // 예상 세액 5,000 원. 하한(1,480)보다 크므로 누락이다.
+                dividendInAccount("32468", "0", "0", 100, "324.68"),
+                dividendInAccount("173968", "1480", "9610", 100, "1739.68"),
+                dividendInAccount("100000", "15400", "100000", 100, "1000")),
+            List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
+
+    LedgerIntegrityFinding found = finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING");
+    assertThat(found).as("하한을 최대 징수액으로 잡으면 이 누락이 조용히 넘어간다").isNotNull();
+    assertThat(found.count()).isEqualTo(1);
+    assertThat(found.examples().get(0).detail()).contains("gross=32468");
+  }
+
+  /** 원장에 징수된 세금이 하나도 없으면 하한을 알 수 없다. 그때는 예전처럼 판정한다. */
+  @Test
+  void 하한을_알_수_없으면_예전처럼_판정한다() {
+    LedgerIntegrityResponse response =
+        run(
+            List.of(dividendInAccount("3840", "0", "0", 12, "320")),
+            List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
+
+    assertThat(finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING")).isNotNull();
   }
 
   /** ETF 는 매도에 거래세가 붙지 않는다. 세금 0 이 정상이므로 걸리면 안 된다. */
@@ -782,6 +690,53 @@ class LedgerIntegrityServiceTest {
             List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
 
     assertThat(finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING")).isNull();
+  }
+
+  /**
+   * 수수료가 한 건도 없는 계좌는 <b>계좌 단위로 한 번만</b> 알린다.
+   *
+   * <p>거래마다 또 알리면 같은 사정이 열몇 번 반복돼 화면을 덮는다. 그 계좌는 증권사에서 기록을 되받을 수 없어 채울 방법이 없으므로, 반복될수록 나머지 지적까지 같이
+   * 무시하게 된다(실측 2026-08-24: 동양증권 하나가 매도 12 건 + 계좌 1 건 = 13 건이었다).
+   *
+   * <p>접으면서 금액을 잃지 않도록, 빠진 거래세 몫을 계좌 지적이 대신 짊어진다(실측: 매도 12 건 · 매도금액 308,553,380 원 · 거래세 추정 최소
+   * 771,352 원).
+   */
+  @Test
+  void 수수료가_없는_계좌는_거래마다_다시_알리지_않는다() {
+    java.util.UUID feelessId = java.util.UUID.randomUUID();
+    var feeless = new net.luversof.api.stock.domain.Account();
+    feeless.setId(feelessId);
+    feeless.setUserId(USER_ID);
+    feeless.setName("동양증권");
+    when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(feeless));
+
+    List<Trade> trades = new java.util.ArrayList<>();
+    // 수수료가 한 건도 없는 계좌를 만든다(하한 10건 이상).
+    for (int i = 0; i < 9; i++) {
+      Trade buy = trade(TradeType.BUY, 100, "10000", "0", "0", null);
+      buy.setAccountId(feelessId);
+      trades.add(buy);
+    }
+    // 수수료·거래세가 둘 다 없는 큰 매도. 예전에는 이 건이 따로 지적됐다.
+    Trade sell = trade(TradeType.SELL, 100, "100000", "0", "0", "0");
+    sell.setAccountId(feelessId);
+    trades.add(sell);
+    // 세율 관측 표본(다른 계좌의 정상 매도).
+    Trade taxed = trade(TradeType.SELL, 100, "100000", "5000", "23000", "0");
+    taxed.setAccountId(java.util.UUID.randomUUID());
+    trades.add(taxed);
+
+    LedgerIntegrityResponse response = run(List.of(), trades);
+
+    assertThat(finding(response, "ACCOUNT_WITHOUT_ANY_FEE"))
+        .as("계좌 단위 지적이 없으면 이 사정을 볼 곳이 사라진다")
+        .isNotNull();
+    assertThat(finding(response, "SELL_WITHOUT_FEE_AND_TAX"))
+        .as("계좌 단위로 이미 알린 것을 거래마다 다시 알리면 고칠 수 없는 지적이 화면을 덮는다")
+        .isNull();
+    assertThat(finding(response, "ACCOUNT_WITHOUT_ANY_FEE").examples().get(0).detail())
+        .as("접으면서 빠진 거래세 금액까지 사라지면 얼마나 어긋났는지 알 수 없다")
+        .contains("거래세 없는 매도 1건");
   }
 
   private Trade tradeOn(String isoDate, TradeType type, int quantity, String price) {
@@ -965,6 +920,70 @@ class LedgerIntegrityServiceTest {
     assertThat(finding(run(List.of(), trades), "ACCOUNT_WITHOUT_ANY_FEE")).isNull();
   }
 
+  /**
+   * 계좌 설정에 <b>기록을 되받을 수 없다</b>고 밝힌 계좌는 지적하지 않는다.
+   *
+   * <p>지적은 고칠 수 있는 것만 남아야 한다. 폐쇄된 증권사 계좌처럼 원본이 사라진 경우는 영원히 고칠 수 없어서, 남겨 두면 점검 화면이 늘 빨간 상태가 되고 새로 생긴
+   * 진짜 문제를 가린다(실측 2026-08-25: 동양증권 1 건이 유일하게 남은 계좌 지적이었다).
+   *
+   * <p>대신 사실은 계좌 상세 화면이 밝힌다 &mdash; gate {@code accountDetail.jte} 가 같은 키를 읽는다.
+   */
+  @Test
+  void 기록을_되받을_수_없다고_밝힌_계좌는_지적하지_않는다() {
+    UUID excused = UUID.randomUUID();
+    UUID other = UUID.randomUUID();
+    var excusedAccount = account(excused, "동양증권");
+    excusedAccount.setJsonConfig(java.util.Map.of("feeRecordsUnavailable", Boolean.TRUE));
+    when(accountRepository.findByUserId(USER_ID))
+        .thenReturn(List.of(excusedAccount, account(other, "다른 폐쇄 계좌")));
+
+    List<Trade> trades = new java.util.ArrayList<>();
+    for (int i = 0; i < 12; i++) {
+      trades.add(tradeIn(excused, TradeType.BUY, "10000", 10, "0"));
+      trades.add(tradeIn(other, TradeType.BUY, "10000", 10, "0"));
+    }
+
+    LedgerIntegrityFinding found = finding(run(List.of(), trades), "ACCOUNT_WITHOUT_ANY_FEE");
+
+    assertThat(found).as("밝히지 않은 계좌까지 함께 빠지면 규칙이 죽은 것이다").isNotNull();
+    assertThat(found.count()).as("밝힌 계좌가 그대로 지적되고 있다").isEqualTo(1);
+    assertThat(found.examples().get(0).stockItemName()).isEqualTo("다른 폐쇄 계좌");
+  }
+
+  /**
+   * 계좌 지적을 뺐다고 거래 단위 지적이 되살아나면 안 된다.
+   *
+   * <p>{@code SELL_WITHOUT_FEE_AND_TAX} 는 "계좌 단위로 이미 알렸으니 생략" 이라는 이유로 접혀 있다. 계좌 지적이 사라지는 순간 그 이유가
+   * 흔들려, 접었던 열몇 건이 한꺼번에 돌아올 수 있다 &mdash; 지적을 줄이려던 설정이 오히려 늘리는 셈이 된다.
+   */
+  @Test
+  void 계좌_지적을_빼도_매도_지적이_되살아나지_않는다() {
+    UUID excused = UUID.randomUUID();
+    var excusedAccount = account(excused, "동양증권");
+    excusedAccount.setJsonConfig(java.util.Map.of("feeRecordsUnavailable", Boolean.TRUE));
+    when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(excusedAccount));
+
+    List<Trade> trades = new java.util.ArrayList<>();
+    for (int i = 0; i < 9; i++) {
+      Trade buy = trade(TradeType.BUY, 100, "10000", "0", "0", null);
+      buy.setAccountId(excused);
+      trades.add(buy);
+    }
+    Trade sell = trade(TradeType.SELL, 100, "100000", "0", "0", "0");
+    sell.setAccountId(excused);
+    trades.add(sell);
+    Trade taxed = trade(TradeType.SELL, 100, "100000", "5000", "23000", "0");
+    taxed.setAccountId(UUID.randomUUID());
+    trades.add(taxed);
+
+    LedgerIntegrityResponse response = run(List.of(), trades);
+
+    assertThat(finding(response, "ACCOUNT_WITHOUT_ANY_FEE")).isNull();
+    assertThat(finding(response, "SELL_WITHOUT_FEE_AND_TAX"))
+        .as("계좌 지적을 뺀 대가로 거래 단위 지적이 열몇 건 돌아오면 안 된다")
+        .isNull();
+  }
+
   private net.luversof.api.stock.domain.MonthlyDividendPayout payout(
       String payDate, String perShare, String taxablePerShare) {
     var row = new net.luversof.api.stock.domain.MonthlyDividendPayout();
@@ -990,109 +1009,6 @@ class LedgerIntegrityServiceTest {
     return dividend;
   }
 
-  /**
-   * 같은 배당의 과세표준을 두 곳에서 알 수 있는데 서로 다르면 알린다.
-   *
-   * <p>실측 2026-08-23: KODEX 한국부동산리츠인프라 7건이 원천징수 역산 63.77% vs 참조 100.00% 로 어긋났다. 화면의 예상 과세표준은 참조를
-   * 쓰므로 사용자가 신고할 금액이 부풀어 보인다.
-   */
-  @Test
-  void 과세표준이_원천징수와_어긋나면_찾는다() {
-    // 세전 297,424 / 세금 29,210 -> 과세표준 189,675 (세전의 63.8%). 참조는 100% 라고 말한다.
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2026-08-19", "29", "29")));
-
-    LedgerIntegrityResponse response =
-        run(List.of(dividendPaidOn("2026-08-19", "297424", "29210", 10256)), List.of());
-
-    LedgerIntegrityFinding found = finding(response, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE");
-    assertThat(found).isNotNull();
-    assertThat(found.count()).isEqualTo(1);
-    assertThat(found.examples().get(0).detail()).contains("63.77").contains("100.00");
-    // 참조를 믿었다면 세율이 9.82% 였다는 뜻 - 정상 15.40% 와 견주면 참조가 부풀려진 것이 드러난다.
-    assertThat(found.examples().get(0).detail())
-        .as("참조가 틀린 것인지 세율이 다른 것인지 구분할 값이 없다")
-        .contains("실효세율=9.82%");
-  }
-
-  /**
-   * 실효세율은 <b>참조 과세표준</b> 기준이다(세전 기준이 아니다).
-   *
-   * <p>참조 비율이 100% 인 사례만으로는 두 공식이 같은 값을 내 구분되지 않는다. 비율이 50% 인 사례로 고정한다.
-   */
-  @Test
-  void 실효세율은_참조_과세표준_기준이다() {
-    // 주당 배당 100 / 주당 과세표준 50 -> 참조 비율 50%
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2026-08-19", "100", "50")));
-
-    // 세전 100,000 · 세금 4,000 -> 참조 과세표준 50,000 기준 8.00% (세전 기준이면 4.00%)
-    LedgerIntegrityResponse response =
-        run(List.of(dividendPaidOn("2026-08-19", "100000", "4000", 1000)), List.of());
-
-    LedgerIntegrityFinding found = finding(response, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE");
-    assertThat(found).isNotNull();
-    assertThat(found.examples().get(0).detail())
-        .as("세전 기준으로 계산하면 4.00% 가 나온다 - 참조 과세표준 기준이어야 한다")
-        .contains("실효세율=8.00%");
-  }
-
-  /**
-   * 참조가 맞고 세율이 정상이면 실효세율이 15.40% 로 떨어진다.
-   *
-   * <p>실측 2026-08-23: KODEX 한국부동산리츠인프라의 2025-12 지급은 참조가 100% 인데도 실효세율이 정확히 15.40% 였다. 즉 100% 자체가 틀린
-   * 것이 아니라 2026-01 부터 부풀려졌다. 이 구분이 없으면 정상인 달까지 의심하게 된다.
-   */
-  @Test
-  void 참조가_맞으면_실효세율이_15_40으로_떨어진다() {
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2025-12-17", "29", "29")));
-
-    // 세전 297,424 / 과세표준 100% / 세금 45,803 = 15.40%
-    LedgerIntegrityResponse response =
-        run(List.of(dividendPaidOn("2025-12-17", "297424", "45803", 10256)), List.of());
-
-    assertThat(finding(response, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE"))
-        .as("참조가 맞는 달까지 지적하면 안 된다")
-        .isNull();
-  }
-
-  /** 두 출처가 맞으면 걸리지 않는다. 정상을 이상으로 잡으면 경고가 무의미해진다. */
-  @Test
-  void 과세표준이_원천징수와_맞으면_걸리지_않는다() {
-    // 세전 100,000 / 세금 15,400 -> 과세표준 100,000 (100%). 참조도 100%.
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2026-08-19", "100", "100")));
-
-    LedgerIntegrityResponse response =
-        run(List.of(dividendPaidOn("2026-08-19", "100000", "15400", 1000)), List.of());
-
-    assertThat(finding(response, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE")).isNull();
-  }
-
-  /** 세금이 0 인 배당(비과세 계좌)은 되짚을 수 없으므로 비교 대상이 아니다. */
-  @Test
-  void 세금이_0인_배당은_비교하지_않는다() {
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2026-08-19", "100", "100")));
-
-    LedgerIntegrityResponse response =
-        run(List.of(dividendPaidOn("2026-08-19", "100000", "0", 1000)), List.of());
-
-    assertThat(finding(response, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE")).isNull();
-  }
-
-  /** 참조에 짝이 없으면 비교하지 않는다(대부분의 개별주식이 여기 해당한다). */
-  @Test
-  void 참조에_짝이_없으면_비교하지_않는다() {
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(List.of());
-
-    LedgerIntegrityResponse response =
-        run(List.of(dividendPaidOn("2026-08-19", "297424", "29210", 10256)), List.of());
-
-    assertThat(finding(response, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE")).isNull();
-  }
-
   /** 주당 과세표준까지 채운 배당. */
   private Dividend dividendWithTaxBase(
       String gross,
@@ -1104,62 +1020,6 @@ class LedgerIntegrityServiceTest {
     Dividend dividend = dividend(gross, tax, taxable, quantity, perShare);
     dividend.setTaxPerShare(taxBasePerShare == null ? null : new BigDecimal(taxBasePerShare));
     return dividend;
-  }
-
-  /**
-   * 과세표준이 이 배당의 수량이 아닌 다른 수량으로 계산된 경우.
-   *
-   * <p>실측 2026-08-23: KODEX 한국부동산리츠인프라 8 건(2026-01 ~ 2026-08)이 모두 과세표준 2,233 = 77 x 29 였다. 실제 수량은
-   * 10,256 이고, 같은 종목의 2025 년 건들은 수량과 정확히 일치했다. 낡은 수량 77 이 고정으로 물려 들어간 것이다.
-   */
-  @Test
-  void 과세표준이_다른_수량으로_계산되면_그_수량을_짚어_준다() {
-    LedgerIntegrityResponse response =
-        run(
-            List.of(dividendWithTaxBase("297424", "29210", "2233", 10256, "29", "29")),
-            List.of(trade(TradeType.BUY, 10256, "1000", "10", "0", "0")));
-
-    LedgerIntegrityFinding found =
-        finding(response, "DIVIDEND_TAXABLE_COMPUTED_WITH_OTHER_QUANTITY");
-    assertThat(found).as("낡은 수량으로 계산된 과세표준을 찾지 못했다").isNotNull();
-    assertThat(found.count()).isEqualTo(1);
-    assertThat(found.examples().get(0).detail())
-        .as("어떤 수량으로 잘못 계산됐는지 짚어 줘야 사람이 바로 고칠 수 있다")
-        .contains("수량 77")
-        .contains("10256")
-        .contains("297424");
-  }
-
-  @Test
-  void 과세표준이_그_배당의_수량으로_계산됐으면_걸리지_않는다() {
-    // 2025-12-17 의 실데이터: 16,650 x 29 = 482,850
-    LedgerIntegrityResponse response =
-        run(
-            List.of(dividendWithTaxBase("482850", "74340", "482850", 16650, "29", "29")),
-            List.of(trade(TradeType.BUY, 16650, "1000", "10", "0", "0")));
-
-    assertThat(finding(response, "DIVIDEND_TAXABLE_COMPUTED_WITH_OTHER_QUANTITY")).isNull();
-  }
-
-  @Test
-  void 나누어떨어지지_않으면_수량_문제로_보지_않는다() {
-    // 과세표준이 반올림된 경우까지 수량 문제로 몰면 오탐이 된다.
-    LedgerIntegrityResponse response =
-        run(
-            List.of(dividendWithTaxBase("297424", "29210", "189675", 10256, "29", "29")),
-            List.of(trade(TradeType.BUY, 10256, "1000", "10", "0", "0")));
-
-    assertThat(finding(response, "DIVIDEND_TAXABLE_COMPUTED_WITH_OTHER_QUANTITY")).isNull();
-  }
-
-  @Test
-  void 주당_과세표준이_없으면_판단하지_않는다() {
-    LedgerIntegrityResponse response =
-        run(
-            List.of(dividendWithTaxBase("297424", "29210", "2233", 10256, "29", null)),
-            List.of(trade(TradeType.BUY, 10256, "1000", "10", "0", "0")));
-
-    assertThat(finding(response, "DIVIDEND_TAXABLE_COMPUTED_WITH_OTHER_QUANTITY")).isNull();
   }
 
   /** 날짜를 지정한 매도. 연도별 관측 요율 검사를 위해 필요하다. */
@@ -1338,91 +1198,6 @@ class LedgerIntegrityServiceTest {
     snapshot.setAverageTaxableBaseRatio1y(new BigDecimal(taxableRatio));
     snapshot.setAsOfDate(java.time.LocalDate.parse("2026-08-19"));
     return snapshot;
-  }
-
-  /**
-   * 예상 배당의 과세비율이 원장 원천징수와 갈리는지.
-   *
-   * <p>스냅샷의 비율은 지급 이력 참조의 평균이라, 참조가 틀리면 예상 배당 화면의 과세표준까지 같이 틀린다. 실측 2026-08-23: KODEX 한국부동산리츠인프라가
-   * 예상 77.64% vs 원장 역산 63.64% 로 14.00%p 어긋났다.
-   */
-  @Test
-  void 예상_과세비율이_원장_원천징수와_갈리면_찾는다() {
-    when(snapshotRepository.findByUserIdOrderByUpdatedDateDesc(USER_ID))
-        .thenReturn(List.of(snapshot("77.64")));
-    // 총액 100,000 에 세금 9,801 -> 역산 과세표준 63,643 -> 63.64%
-    LedgerIntegrityResponse response =
-        run(
-            List.of(dividendWithTaxBase("100000", "9801", "63643", 10256, "30.50", null)),
-            List.of(trade(TradeType.BUY, 10256, "1000", "10", "0", "0")));
-
-    LedgerIntegrityFinding found =
-        finding(response, "FORECAST_TAXABLE_RATIO_DISAGREES_WITH_WITHHOLDING");
-    assertThat(found).as("예상 배당으로 번진 과세비율 오류를 찾지 못했다").isNotNull();
-    assertThat(found.count()).isEqualTo(1);
-    assertThat(found.examples().get(0).detail()).contains("77.64").contains("63.64");
-  }
-
-  @Test
-  void 예상_과세비율이_원장과_맞으면_걸리지_않는다() {
-    when(snapshotRepository.findByUserIdOrderByUpdatedDateDesc(USER_ID))
-        .thenReturn(List.of(snapshot("63.64")));
-    LedgerIntegrityResponse response =
-        run(
-            List.of(dividendWithTaxBase("100000", "9801", "63643", 10256, "30.50", null)),
-            List.of(trade(TradeType.BUY, 10256, "1000", "10", "0", "0")));
-
-    assertThat(finding(response, "FORECAST_TAXABLE_RATIO_DISAGREES_WITH_WITHHOLDING")).isNull();
-  }
-
-  /** 세금이 붙은 배당이 없으면 비율을 알 수 없으므로 판단하지 않는다. */
-  @Test
-  void 세금이_없으면_예상_과세비율을_판정하지_않는다() {
-    when(snapshotRepository.findByUserIdOrderByUpdatedDateDesc(USER_ID))
-        .thenReturn(List.of(snapshot("77.64")));
-    LedgerIntegrityResponse response =
-        run(
-            List.of(dividendWithTaxBase("100000", "0", "0", 10256, "30.50", null)),
-            List.of(trade(TradeType.BUY, 10256, "1000", "10", "0", "0")));
-
-    assertThat(finding(response, "FORECAST_TAXABLE_RATIO_DISAGREES_WITH_WITHHOLDING")).isNull();
-  }
-
-  /**
-   * 참조가 정확히 100% 인 건과 그렇지 않은 건을 상세에서 구분한다.
-   *
-   * <p>실측 2026-08-23: 5%p 넘게 어긋난 9 건의 원인이 둘로 갈렸다 &mdash; 7 건은 참조가 정확히 100%(KODEX 한국부동산리츠인프라, 원장 역산
-   * 63.77%)라 한꺼번에 재수집하면 되고, 2 건은 100% 가 아니어서(RISE 200위클리커버드콜 17.14% vs 6.81%, KODEX 200타겟위클리커버드콜
-   * 16.41% vs 5.52%) 하나씩 봐야 한다. 그 구분이 없으면 9 건을 전부 같은 문제로 착각한다.
-   */
-  @Test
-  void 참조가_100퍼센트인지_상세에서_구분한다() {
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2026-08-19", "29", "29")));
-    LedgerIntegrityResponse hundred =
-        run(
-            // 실데이터의 저장 과세표준은 2,233 이다(세전과 같지 않다).
-            List.of(dividendPaidOn("2026-08-19", "297424", "29210", 10256, "2233")), List.of());
-    assertThat(
-            finding(hundred, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE")
-                .examples()
-                .get(0)
-                .detail())
-        .as("100% 인 건은 한꺼번에 재수집하면 된다는 것을 알려야 한다")
-        .contains("참조가 정확히 100%");
-
-    // 참조가 100% 가 아닌데도 원장과 갈리는 경우
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2026-08-19", "100", "17")));
-    LedgerIntegrityResponse partial =
-        run(List.of(dividendPaidOn("2026-08-19", "100000", "1049", 1000, "5000")), List.of());
-    assertThat(
-            finding(partial, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE")
-                .examples()
-                .get(0)
-                .detail())
-        .as("100% 가 아니면 그 표시를 붙이지 않는다")
-        .doesNotContain("참조가 정확히 100%");
   }
 
   /** 계좌를 지정한 매수. 계좌별 수수료율 중앙값 검사를 위해 필요하다. */
@@ -1639,50 +1414,6 @@ class LedgerIntegrityServiceTest {
   }
 
   /**
-   * 어긋난 원인이 과세표준인지 세금인지 가른다.
-   *
-   * <p>실측 2026-08-23: 9 건 중 7 건은 저장 과세표준이 참조와 달랐고(2,233 vs 297,424), 2 건은 참조와 <b>정확히 같은데</b> 세금만 그
-   * 과세표준의 6.12% / 5.18% 였다(정상 15.4%). 뒤의 2 건은 참조를 다시 가져와도 해결되지 않는다.
-   */
-  @Test
-  void 과세표준이_참조와_같으면_세금_쪽을_보라고_한다() {
-    // RISE 200위클리커버드콜 2026-04-02 실측: 주당배당 210 / 주당과표 36, 수량 3,845
-    // 저장 과세표준 138,420 = 3,845 x 36(참조와 일치), 세금 8,470 -> 그 과표 대비 6.12%
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2026-04-02", "210", "36")));
-    LedgerIntegrityResponse response =
-        run(List.of(dividendPaidOn("2026-04-02", "807450", "8470", 3845, "138420")), List.of());
-
-    String detail =
-        finding(response, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE").examples().get(0).detail();
-    assertThat(detail)
-        .as("참조를 다시 가져와도 해결되지 않는 건이다")
-        .contains("저장 과세표준은 참조와 같다")
-        // "6.12%" 만 찾으면 상세 앞부분의 '참조 기준 실효세율' 에도 걸린다(실측: 그 변이가 검출되지 않았다).
-        .contains("그 과세표준 대비 실제 세율이 6.12%")
-        .contains("세금 쪽을 봐야 한다");
-    assertThat(detail).doesNotContain("과 다르다");
-  }
-
-  @Test
-  void 과세표준이_참조와_다르면_그_값을_함께_적는다() {
-    // KODEX 한국부동산리츠인프라 실측: 저장 2,233 vs 참조 기준 10,256 x 29 = 297,424
-    when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc())
-        .thenReturn(List.of(payout("2026-08-19", "29", "29")));
-    LedgerIntegrityResponse response =
-        run(List.of(dividendPaidOn("2026-08-19", "297424", "29210", 10256, "2233")), List.of());
-
-    assertThat(
-            finding(response, "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE")
-                .examples()
-                .get(0)
-                .detail())
-        .contains("저장 과세표준 2233")
-        .contains("297424")
-        .contains("과 다르다");
-  }
-
-  /**
    * 수수료·거래세가 없는 매도에 계좌명을 적는다.
    *
    * <p>실측 2026-08-23: 12 건이 <b>전부 동양증권</b>이었고, 누락 하한 794,159 원은 그 계좌 실현손익 33,095,880 원의 2.40% 다(수익률
@@ -1720,33 +1451,6 @@ class LedgerIntegrityServiceTest {
         finding(run(List.of(), List.of(baseline, zero)), "SELL_WITHOUT_FEE_AND_TAX");
     assertThat(found).isNotNull();
     assertThat(found.examples().get(0).detail()).doesNotContain("[");
-  }
-
-  /**
-   * 배당 발견에도 계좌명을 적는다.
-   *
-   * <p>실측 2026-08-23: 규칙마다 발견이 <b>한 계좌에 100% 집중</b>돼 있었다 &mdash; 과세표준 관련 배당 8 건은 전부 KB증권 위탁, 매매 없는
-   * 배당 2 건은 한국투자증권 위탁, 수수료·거래세가 없는 매도 12 건은 전부 동양증권이다. 각 결함이 한 계좌의 입력 경로에 묶여 있다는 뜻이라, 계좌를 적으면 어디를
-   * 고쳐야 하는지가 드러난다.
-   */
-  @Test
-  void 배당_발견에도_계좌명을_적는다() {
-    java.util.UUID accountId = java.util.UUID.randomUUID();
-    var account = new net.luversof.api.stock.domain.Account();
-    account.setId(accountId);
-    account.setUserId(USER_ID);
-    account.setName("KB증권 위탁");
-    when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(account));
-
-    Dividend dividend = dividend("297424", "29210", "2233", 10256, "29");
-    dividend.setAccountId(accountId);
-
-    LedgerIntegrityFinding found =
-        finding(run(List.of(dividend), List.of()), "DIVIDEND_TAX_EXCEEDS_TAXABLE");
-    assertThat(found).isNotNull();
-    assertThat(found.examples().get(0).detail())
-        .as("어느 계좌의 입력 경로가 문제인지 알아야 한다")
-        .contains("[KB증권 위탁]");
   }
 
   /**

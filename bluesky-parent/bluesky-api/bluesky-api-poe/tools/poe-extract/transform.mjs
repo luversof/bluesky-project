@@ -61,6 +61,9 @@ const COLORS = { 1: "red", 2: "green", 3: "blue" };
 const junkName = /\bDNT\b|\[UNUSED\]|\bWIP\b|^[. ]+$/i;
 
 const gems = [];
+// ⚠ 한 젬 행이 여러 **변형**(GemVariants)을 담는다: 기본 + 변형젬(3.23~, "Ice Nova of Frostbolts" 등).
+//    예전엔 [0] 만 취해 변형젬 445개가 통째로 빠졌고, 그래서 실빌드 메타의 상당수(사신 of Butchery,
+//    지배의 강타 of Inspiring …)를 시뮬이 아예 다루지 못했다. 변형마다 하나씩 내보낸다.
 for (const gem of en.gems) {
 	const base = en.base[gem.BaseItemTypesKey];
 	if (!base || !base.Name || junkName.test(base.Name)) continue;
@@ -69,7 +72,8 @@ for (const gem of en.gems) {
 	// 제외한다 — 소울 생성/지속 업타임을 모델링하지 않아 DPS가 왜곡되고 기존 기준선이 흔들리기 때문.
 	const isVaal = !!gem.IsVaalVariant;
 
-	const variantIndex = (gem.GemVariants || [])[0];
+	const emittedSlugs = new Set(); // 바알 젬은 같은 변형이 두 번 들어 있다 — 같은 slug 는 한 번만
+	for (const variantIndex of gem.GemVariants || []) {
 	const effect = variantIndex != null ? en.effects[variantIndex] : null;
 	if (!effect) continue;
 	if (effect.Name && junkName.test(effect.Name)) continue;
@@ -154,11 +158,19 @@ for (const gem of en.gems) {
 			}
 		}
 
+	// 변형젬은 **효과 이름**이 곧 젬 이름이다("Ice Nova of Frostbolts"). 기본 변형은 베이스 이름을 쓴다.
+	const variantName = effect.Name && effect.Name !== base.Name ? effect.Name : null;
+	const variantSuffix = variantName ? "_" + (effect.Id || String(variantIndex)) : "";
+	const variantSlug = base.Id.substring(base.Id.lastIndexOf("/") + 1) + variantSuffix;
+	if (emittedSlugs.has(variantSlug)) continue;
+	emittedSlugs.add(variantSlug);
 	gems.push({
-		id: base.Id,
-		slug: base.Id.substring(base.Id.lastIndexOf("/") + 1),
-		name: base.Name,
-		nameKo: baseKo ? baseKo.Name : null,
+		id: base.Id + variantSuffix,
+		slug: variantSlug,
+		name: variantName || base.Name,
+		nameKo: variantName ? (effectKo && effectKo.Name) || null : baseKo ? baseKo.Name : null,
+		// 변형젬 여부 — 목록/후보 풀에서 기본 젬과 구분해야 할 때 쓴다
+		transfigured: !!variantName,
 		isSupport: !!gem.IsSupport,
 		isVaal,
 		soulPreventionSeconds,
@@ -181,6 +193,7 @@ for (const gem of en.gems) {
 		qualityStatLinesKo,
 		levels,
 	});
+	} // 변형 루프
 }
 
 // 인게임에서 쓰이지 않는 플레이테스트(개발용) 젬 제외 — 목록·시뮬 후보 양쪽에서 빠져야 한다.

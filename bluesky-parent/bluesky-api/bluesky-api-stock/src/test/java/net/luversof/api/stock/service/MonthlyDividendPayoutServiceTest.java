@@ -37,6 +37,9 @@ class MonthlyDividendPayoutServiceTest {
 
   @Mock private StockItemRepository stockItemRepository;
 
+  /** 원장 실적 과세비율을 읽는다. 이 검사에서는 원장이 비어 있어 참조 값이 그대로 쓰인다. */
+  @Mock private DividendService dividendService;
+
   @InjectMocks private MonthlyDividendPayoutService monthlyDividendPayoutService;
 
   @Test

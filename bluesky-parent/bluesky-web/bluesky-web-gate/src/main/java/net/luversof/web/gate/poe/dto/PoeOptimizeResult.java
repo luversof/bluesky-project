@@ -60,6 +60,8 @@ public record PoeOptimizeResult(
     Integer treeAnoint,
     // P3 메타 기준선 게이트 — balanced 최종치가 실빌드 중앙값(DPS·EHP) 둘 다 하회하면 true. 구 히스토리는 null.
     Boolean belowMeta,
+    /** 실빌드 중앙값 대비 배수(우리 DPS ÷ ninja 중앙 DPS) — 가정이 얼마나 유리하게 반영됐는지 알리는 지표. */
+    Double metaRatio,
     /** 추가 스킬 slug → 전용 보조젬(1b 선발) — 표시용. 구 히스토리 null. */
     java.util.Map<String, List<SupportPick>> additionalSkillSupports) {
 

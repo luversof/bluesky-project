@@ -79,6 +79,13 @@ const FAMILIES = [
 	// 공격 스킬 원소 피해 증가 (접두) — 공격 무기/전통
 	{ key: "weaponEleDamage", gen: "prefix", pattern: "WeaponElementalDamage", keywords: ["attack", "fire", "cold", "lightning", "damage"],
 		slots: ["weaponAttack", "quiver"] },
+	// 화살 추가 (접미) — 활/화살통의 **빌드 결정 모드**. 게임 데이터엔 있는데(AdditionalArrowBow1_/2_,
+	// AdditionalArrowQuiver1_ · 접미 · 레벨 70/86) 풀에 없어서, 시뮬의 활 빌드가 실빌드와 다른 물건이 됐다
+	// (대표 번개 화살 실빌드는 화살통에 "Bow Attacks fire an additional Arrow" 를 박고 쓴다).
+	{ key: "additionalArrowBow", gen: "suffix", pattern: "AdditionalArrowBow", keywords: ["projectile", "attack", "bow", "damage"],
+		slots: ["weaponAttack"] },
+	{ key: "additionalArrowQuiver", gen: "suffix", pattern: "AdditionalArrowQuiver", keywords: ["projectile", "attack", "bow", "damage"],
+		slots: ["quiver"] },
 	// 치명타 배율 (접미) — 목걸이/무기
 	{ key: "critMulti", gen: "suffix", pattern: "CriticalMultiplier", keywords: ["critical"],
 		slots: ["amulet", "weaponSpell", "weaponAttack"] },
@@ -114,6 +121,17 @@ const FAMILIES = [
 		slots: ["weaponAttack", "gloves", "ring", "amulet", "quiver"] },
 	{ key: "addedLight", gen: "prefix", pattern: "AddedLightningDamage", keywords: ["attack", "lightning", "damage"],
 		slots: ["weaponAttack", "gloves", "ring", "amulet", "quiver"] },
+	// 화살통 전용 접두 — 게임 id 가 "…Quiver" 로 끝나 일반 패밀리 패턴에 안 걸린다(그래서 접두가 0개였다).
+	{ key: "addedLightQuiver", gen: "prefix", pattern: "AddedLightningDamageQuiver", keywords: ["attack", "lightning", "damage"],
+		slots: ["quiver"] },
+	{ key: "addedColdQuiver", gen: "prefix", pattern: "AddedColdDamageQuiver", keywords: ["attack", "cold", "damage"],
+		slots: ["quiver"] },
+	{ key: "addedFireQuiver", gen: "prefix", pattern: "AddedFireDamageQuiver", keywords: ["attack", "fire", "damage"],
+		slots: ["quiver"] },
+	{ key: "addedPhysQuiver", gen: "prefix", pattern: "AddedPhysicalDamageQuiver", keywords: ["attack", "physical", "damage"],
+		slots: ["quiver"] },
+	{ key: "bowDamageQuiver", gen: "prefix", pattern: "DamageWithBowSkills", keywords: ["attack", "bow", "projectile", "damage"],
+		slots: ["quiver"] },
 	{ key: "attackSpeed", gen: "suffix", pattern: "IncreasedAttackSpeed", keywords: ["attack", "attack speed"],
 		slots: ["gloves", "ring", "amulet", "quiver"] },
 	{ key: "critChance", gen: "suffix", pattern: "CriticalStrikeChance", keywords: ["critical"],
@@ -179,7 +197,9 @@ const maxRollValues = (mod) => rollValues(mod, "Max");
 
 const families = [];
 for (const family of FAMILIES) {
-	const re = new RegExp("^" + family.pattern + "\\d+_?$");
+	// 티어 접미 형태가 제각각이다: "…1_", "…6___", 숫자가 아예 없는 것(AddedLightningDamageQuiver)까지.
+	//   예전 패턴은 숫자 없는 id·밑줄 여러 개를 못 잡아 **화살통 접두가 통째로 비었다**(실측 접두 0개).
+	const re = new RegExp("^" + family.pattern + "[0-9]*_*$");
 	const tierMods = mods
 		.filter((m) => m.Domain === 1 && re.test(m.Id || ""))
 		.sort((a, b) => b.Level - a.Level); // best-first (높은 요구레벨 = 상위 티어)

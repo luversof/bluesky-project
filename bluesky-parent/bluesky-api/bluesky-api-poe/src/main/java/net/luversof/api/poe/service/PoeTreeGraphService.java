@@ -407,6 +407,25 @@ public class PoeTreeGraphService {
         .toList();
   }
 
+  /**
+   * 금단의 화염/살점으로 사 올 수 있는 노터블 — <b>같은 직업의 다른 전직</b> 것만이다.
+   *
+   * <p>인게임 아이템에 {@code Requires Class <직업>} 이 붙는다(실측: 마라우더/치프틴 대표 빌드가 광전사의 "Aspect of Carnage" 를
+   * 가져감). 타 직업 노터블을 넣으면 엔진이 조용히 무시해 후보 전부가 같은 값으로 나온다.
+   */
+  public List<TreeNode> foreignAscendancyNotables(String className, String ownAscendancy) {
+    List<String> sameClass = ascendancies(className);
+    return nodeById.values().stream()
+        .filter(node -> node.ascendancy() != null && !node.ascendancy().isBlank())
+        .filter(node -> sameClass.stream().anyMatch(a -> a.equalsIgnoreCase(node.ascendancy())))
+        .filter(node -> ownAscendancy == null || !ownAscendancy.equalsIgnoreCase(node.ascendancy()))
+        .filter(node -> "notable".equals(node.type()))
+        .filter(node -> !Boolean.TRUE.equals(node.ascendancyStart()))
+        .filter(node -> node.stats() != null && !node.stats().isEmpty())
+        .sorted(java.util.Comparator.comparingInt(TreeNode::id))
+        .toList();
+  }
+
   public List<TreeNode> ascendancyCandidates(String ascendancy) {
     List<TreeNode> all =
         nodeById.values().stream().filter(node -> ascendancy.equals(node.ascendancy())).toList();

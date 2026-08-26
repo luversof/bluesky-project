@@ -82,9 +82,12 @@ public class PoeOptimizeController {
       @RequestParam(required = false, defaultValue = "true") boolean foulborn,
       // 레거시(현재 리그 획득 불가) 고유 제외 여부 — 기본 켬. 끄면 제외 이전 동작이라 A/B 로 대가를 잰다.
       @RequestParam(required = false, defaultValue = "true") boolean excludeLegacy,
+      // 금단 페어(주얼 2칸 사용) 편입 여부 — 기본 켬. A/B 로 "그 2칸 값어치"를 재려면 끌 수 있어야 한다.
+      @RequestParam(required = false, defaultValue = "true") boolean forbidden,
       @RequestParam(required = false, defaultValue = "true") boolean saveHistory) {
     poeOptimizeService.setFoulbornEnabled(foulborn);
     poeOptimizeService.setExcludeLegacyUniques(excludeLegacy);
+    poeOptimizeService.setForbiddenEnabled(forbidden);
     return poeOptimizeService.start(
         slug,
         objective,

@@ -66,6 +66,13 @@ public record PoeOptimizeResult(
      * 불가(비-balanced/벤치 없음/구 히스토리)면 null.
      */
     Boolean belowMeta,
+    /**
+     * 실빌드 중앙값 대비 배수(우리 DPS ÷ poe.ninja 중앙 DPS). 아키타입 시드가 없으면 null.
+     *
+     * <p>결과가 중앙값의 몇 배인지 알려야 숫자를 곧이곧대로 읽지 않는다 — 우리 값은 만렙·전 슬롯 최상위 레어·전 버프 가정이라 실제 플레이 중앙값보다 높은 게
+     * 정상이지만(실측 1.1~2.3x), 유독 튀는 아키타입(혼의 균열 9.5x)은 가정이 과하게 유리하게 맞아떨어진 경우라 사용자에게 표시가 필요하다.
+     */
+    Double metaRatio,
     /** 추가 스킬(화염덫 등) slug → 1b 패스가 선발한 전용 보조젬 — 표시용(계산 XML 에는 이미 링크됨). 구 히스토리 null. */
     java.util.Map<String, List<SupportPick>> additionalSkillSupports) {
 

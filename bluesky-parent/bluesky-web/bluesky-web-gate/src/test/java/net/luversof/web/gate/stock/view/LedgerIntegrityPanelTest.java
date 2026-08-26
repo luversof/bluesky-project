@@ -47,7 +47,6 @@ class LedgerIntegrityPanelTest {
   /** 서버가 내는 규칙 코드. 하나라도 문구가 빠지면 화면에 빈 칸이 나간다. */
   private static final List<String> RULE_CODES =
       List.of(
-          "DIVIDEND_TAX_EXCEEDS_TAXABLE",
           "DIVIDEND_TAXABLE_EXCEEDS_GROSS",
           "DIVIDEND_PER_SHARE_MISMATCH",
           "DIVIDEND_NEGATIVE_AMOUNT",
@@ -95,22 +94,22 @@ class LedgerIntegrityPanelTest {
             List.of(),
             List.of(
                 new LedgerIntegrityResponse.Finding(
-                    "DIVIDEND_TAX_EXCEEDS_TAXABLE",
+                    "DIVIDEND_TAXABLE_EXCEEDS_GROSS",
                     8,
                     List.of(
                         new LedgerIntegrityResponse.Example(
-                            "2026-08-19", "KODEX 한국부동산리츠인프라", "tax=29210, taxable=2233")))));
+                            "2026-08-19", "KODEX 한국부동산리츠인프라", "taxable=2000, gross=1000")))));
 
     String html = render(response);
 
-    assertThat(html).containsPattern("(Dividend tax exceeds|배당 세금이 과세표준보다)");
+    assertThat(html).containsPattern("(Taxable amount exceeds|과세표준이 세전)");
     // "8" 만 찾으면 날짜·클래스명 어디에나 걸려 항상 통과한다(실측: 건수를 5로 바꿔도 통과했다).
     assertThat(html).as("건수가 없으면 한 건인지 여덟 건인지 알 수 없다").contains("data-ledger-count=\"8\"");
     assertThat(html)
         .as("원장에서 그 줄을 찾아갈 단서가 없다")
         .contains("2026-08-19")
         .contains("KODEX 한국부동산리츠인프라")
-        .contains("tax=29210, taxable=2233");
+        .contains("taxable=2000, gross=1000");
   }
 
   /** 검사가 돌아서 깨끗한 것과, 검사 자체가 못 돈 것은 다른 상태다. */
@@ -230,7 +229,7 @@ class LedgerIntegrityPanelTest {
             List.of(),
             List.of(
                 new LedgerIntegrityResponse.Finding(
-                    "DIVIDEND_TAX_EXCEEDS_TAXABLE",
+                    "DIVIDEND_TAXABLE_EXCEEDS_GROSS",
                     8,
                     List.of(new LedgerIntegrityResponse.Example("2026-08-19", "종목", "상세"))),
                 new LedgerIntegrityResponse.Finding(
@@ -288,24 +287,24 @@ class LedgerIntegrityPanelTest {
                     "KODEX 한국부동산리츠인프라",
                     "KB증권 위탁",
                     List.of(
-                        "DIVIDEND_TAX_EXCEEDS_TAXABLE",
-                        "DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE",
-                        "DIVIDEND_TAXABLE_COMPUTED_WITH_OTHER_QUANTITY",
-                        "FORECAST_TAXABLE_RATIO_DISAGREES_WITH_WITHHOLDING"))),
+                        "DIVIDEND_TAXABLE_EXCEEDS_GROSS",
+                        "DIVIDEND_PER_SHARE_MISMATCH",
+                        "DIVIDEND_QUANTITY_NOT_POSITIVE",
+                        "DIVIDEND_NEGATIVE_AMOUNT"))),
             List.of(
                 new LedgerIntegrityResponse.Finding(
-                    "DIVIDEND_TAX_EXCEEDS_TAXABLE",
+                    "DIVIDEND_TAXABLE_EXCEEDS_GROSS",
                     8,
                     List.of(
                         new LedgerIntegrityResponse.Example(
-                            "2026-07-20", "KODEX 한국부동산리츠인프라", "tax=29210, taxable=2233")))));
+                            "2026-07-20", "KODEX 한국부동산리츠인프라", "taxable=2000, gross=1000")))));
 
     String html = render(response);
     assertThat(html).as("행 묶음 자체가 없다").contains("data-ledger-multi-rows=\"1\"");
     assertThat(html).as("그 행에 사유가 몇 개인지 없다").contains("data-ledger-row-codes=\"4\"");
     assertThat(html).contains("2026-07-20").contains("KB증권 위탁");
     // 코드가 아니라 로케일 문구로 그려야 한다.
-    assertThat(html).doesNotContain("DIVIDEND_TAX_EXCEEDS_TAXABLE");
+    assertThat(html).doesNotContain("DIVIDEND_TAXABLE_EXCEEDS_GROSS");
   }
 
   /** 겹치는 행이 없으면 이 묶음을 내지 않는다. 항상 켜져 있으면 자리만 차지한다. */

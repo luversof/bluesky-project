@@ -123,6 +123,16 @@
 			</div>
 		@endif
 
+		<%-- 중앙값 대비 배수가 크게 튀면 "가정이 유리하게 맞은 결과"임을 알린다.
+		     우리 값은 만렙·전 슬롯 최상위 레어·전 버프 가정이라 중앙값보다 높은 게 정상이지만(실측 1.1~2.3배),
+		     아키타입에 따라 9배까지 벌어진다(혼의 균열). 숫자만 보면 실제로 그렇게 나올 거라 오해한다. --%>
+		@if(result.metaRatio() != null && result.metaRatio() >= 4.0)
+			<div class="flex flex-wrap items-center gap-2 rounded border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+				<span class="font-bold text-warning">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실빌드 중앙값의 " + String.format("%.1f", result.metaRatio()) + "배" : String.format("%.1f", result.metaRatio()) + "x real-build median"}</span>
+				<span class="text-base-content/70">${net.luversof.web.gate.poe.PoeText.isKorean() ? "만렙·전 슬롯 최상위 레어·전 버프 가정이 특히 유리하게 맞은 결과입니다 — 실제 플레이 수치는 이보다 낮게 나옵니다" : "This assumes level 100, top-tier rares in every slot and all buffs — real play lands lower"}</span>
+			</div>
+		@endif
+
 		<div class="flex flex-wrap items-baseline gap-3">
 			<span class="text-sm text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.baseline")} <span class="font-mono">${result.baselineValue()}</span></span>
 			<span class="text-lg font-bold font-mono text-primary">→ ${result.finalValue()}</span>

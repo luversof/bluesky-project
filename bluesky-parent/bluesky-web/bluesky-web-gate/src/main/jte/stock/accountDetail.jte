@@ -106,6 +106,12 @@
 					@if(priceBasisDate != null)
 						<p class="mb-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())}</p>
 					@endif
+					<%-- 수수료·거래세 기록을 되받을 수 없는 계좌. 원장 점검(ACCOUNT_WITHOUT_ANY_FEE)에서는 고칠 수 없는
+					     지적이라 빼지만, 사실 자체는 그 값이 어긋나는 자리에서 밝힌다 - 안 그러면 부풀려진 실현손익이
+					     아무 표시 없이 정상값처럼 보인다. 계좌 설정 jsonConfig 의 feeRecordsUnavailable 로 켠다. --%>
+					@if(account != null && account.jsonConfig() != null && Boolean.TRUE.equals(account.jsonConfig().get("feeRecordsUnavailable")))
+						<p class="mb-2 text-xs text-warning">${MessageUtil.getMessage("stock.account.detail.fee.records.unavailable")}</p>
+					@endif
 					<!-- 보유/손익 요약 -->
 					<div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
 						@template._components.ui.statCard(

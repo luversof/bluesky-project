@@ -24,6 +24,7 @@ import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.MonthlyDividendPayoutRepository;
 import net.luversof.api.stock.repository.MonthlyDividendSnapshotRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
+import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 import net.luversof.api.stock.web.dto.request.MonthlyDividendPayoutRequest;
 import net.luversof.api.stock.web.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.api.stock.web.dto.response.MonthlyDividendPayoutResponse;
@@ -36,6 +37,8 @@ public class MonthlyDividendPayoutService {
   @Autowired private MonthlyDividendSnapshotRepository monthlyDividendSnapshotRepository;
 
   @Autowired private StockItemRepository stockItemRepository;
+
+  @Autowired private DividendService dividendService;
 
   public List<MonthlyDividendPayoutResponse> findPayouts(MonthlyDividendPayoutRequest request) {
     UUID stockItemId = request != null ? request.getStockItemId() : null;
@@ -191,10 +194,51 @@ public class MonthlyDividendPayoutService {
               stats.asOfDate() != null ? stats.asOfDate() : snapshot.getAsOfDate());
           snapshot.setLatestMonthlyDividendPerShare(stats.latestPerShare());
           snapshot.setAverageMonthlyDividendPerShare1y(stats.averagePerShare1y());
-          snapshot.setAverageTaxableBaseRatio1y(stats.taxableBaseRatio1y());
+          // 과세비율은 원장 실적이 우선이다. 계좌별 혜택(비과세·분리과세)이 참조에는 담기지 않는다.
+          BigDecimal ledgerRatio =
+              ledgerTaxableBaseRatio1y(snapshot.getUserId(), stockItem.getId());
+          snapshot.setAverageTaxableBaseRatio1y(
+              ledgerRatio != null ? ledgerRatio : stats.taxableBaseRatio1y());
           snapshot.setUpdatedDate(now);
         });
     monthlyDividendSnapshotRepository.saveAll(snapshots);
+  }
+
+  /**
+   * 그 사용자의 <b>원장 실적</b>으로 낸 과세비율(%). 최근 1 년의 (Σ 과세금액 / Σ 세전).
+   *
+   * <p>예전에는 참조 지급 이력의 (주당 과세표준 / 주당 배당) 평균을 썼다. 그런데 과세금액은 계좌마다 다르다 &mdash; 비과세 계좌(ISA·연금저축)는 0 이고,
+   * 부동산 리츠 ETF 는 계좌에 따라 분리과세 혜택이 있어 "주당 과세표준 x 수량" 도 아니다. 참조는 종목 하나에 값 하나뿐이라 그 차이를 담을 수 없다.
+   *
+   * <p>실측 2026-08-24(최근 1 년): 참조 기준과 원장 실적 기준이 이만큼 갈린다.
+   *
+   * <pre>
+   *   KODEX 한국부동산리츠인프라   참조 77.64%  ->  원장 17.35%
+   *   TIGER 리츠부동산인프라       참조 100.00% ->  원장 14.58%
+   *   PLUS 고배당주위클리고정커버드콜 참조 25.18%  ->  원장  0.00%
+   *   RISE 200위클리커버드콜       참조  5.00%  ->  원장  4.60%
+   * </pre>
+   *
+   * <p>세전 합이 0 이면(그 해 배당이 없으면) {@code null} 을 돌려준다 &mdash; 호출자가 참조 값을 그대로 두게 하기 위해서다.
+   */
+  public BigDecimal ledgerTaxableBaseRatio1y(UUID userId, UUID stockItemId) {
+    if (userId == null || stockItemId == null) {
+      return null;
+    }
+    DividendSearchRequest request = new DividendSearchRequest();
+    request.setUserId(userId);
+    request.setStockItemIdList(List.of(stockItemId));
+    request.setStartDate(Instant.now().minus(java.time.Duration.ofDays(365)));
+    BigDecimal taxableSum = BigDecimal.ZERO;
+    BigDecimal grossSum = BigDecimal.ZERO;
+    for (var dividend : dividendService.findDividends(request)) {
+      taxableSum = taxableSum.add(safe(dividend.getTaxableAmount()));
+      grossSum = grossSum.add(safe(dividend.getGrossAmount()));
+    }
+    if (grossSum.signum() <= 0) {
+      return null;
+    }
+    return taxableSum.multiply(BigDecimal.valueOf(100)).divide(grossSum, 2, RoundingMode.HALF_UP);
   }
 
   /**
