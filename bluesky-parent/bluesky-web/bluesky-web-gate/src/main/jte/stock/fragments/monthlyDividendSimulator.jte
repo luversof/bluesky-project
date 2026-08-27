@@ -84,7 +84,7 @@
 	String selectionOverviewLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.overview");
 	// 기준 데이터의 '언제 시점' 값인지. asOfDate 는 그 종목 지급 이력의 최신 지급일과 같다.
 	// 이 값이 오래되면 최근 월 배당금 같은 대표 수치가 조용히 옛 분배금으로 계산된다
-	// (실측: 월중배당 4 종목이 30 일 뒤처져 총 최근 월 배당금이 46,635 원 과대).
+	// (실측: 월중배당 4 종목이 30 일 뒤처져 총 최근 월 배당금이 과대).
 	java.time.LocalDate oldestAsOfDate = monthlyDividendRows.stream()
 		.map(net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse::asOfDate)
 		.filter(java.util.Objects::nonNull).min(java.time.LocalDate::compareTo).orElse(null);

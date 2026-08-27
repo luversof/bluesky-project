@@ -468,7 +468,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                   entry.getValue().isEmpty() ? null : entry.getValue().get(0).accountName();
               // 실현손익은 매도 거래에 기록된 값(증권사 기준)을 쓴다. 앱이 평균단가로 다시 계산한
               // realizedProfitNet 을 쓰면 같은 화면의 헤드라인/거래목록(기록값 합계)과 어긋난다
-              // (실측: 헤드라인 225,584,549 인데 계좌별 합 225,330,995, 종목별 합 225,330,991).
+              // (실측: 헤드라인과 계좌별/종목별 합이 0.11% 어긋났다).
               // 화면의 다른 곳(자산현황 등)도 기록값을 쓰므로 여기만 예외였다.
               BigDecimal realized =
                   s.realizedProfit() != null ? s.realizedProfit() : BigDecimal.ZERO;
@@ -477,13 +477,13 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               // 매도 원가 = 매도금액 - 증권거래세 - 기록된 실현손익.
               // 기록된 실현손익은 증권사가 세금까지 뺀 뒤의 값이라, 세금을 빼지 않으면 원가가 그만큼
               // 부풀어 오른다. api-stock 의 costOfGoodsSold 와 배당 화면의 원가 계산이 이미 이 식을 쓴다.
-              // 실측 2026-08-22: 이 화면만 세금을 빠뜨려 한국투자증권 위탁 1,825,097 원,
-              // ISA 60,870 원(합 1,885,967 원)만큼 매도 원가가 과대 계상됐다.
+              // 실측 2026-08-22: 이 화면만 세금을 빠뜨려 두 계좌(한국투자증권 위탁 · ISA)의 매도 원가가
+              // 그 계좌 증권거래세 합만큼 과대 계상됐다.
               BigDecimal sellTax = s.totalSellTax() != null ? s.totalSellTax() : BigDecimal.ZERO;
               // 기록된 실현손익은 <b>계좌를 합친</b> 원가를 따른다(실측 2026-08-23: 매도 54 건 중 종목 단위
               // 원가로 50 건이 재현되고 계좌x종목 단위로는 38 건뿐이다). 그래서 이 행의 실현손익과
-              // 매도원가는 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 은 화면 415,053 원인데 그 계좌
-              // 매매만으로는 2,063,739 원이고(차이 1,648,686), ISA 는 반대로 1,555,597 vs 14,921 이다.
+              // 매도원가는 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 은 그 계좌 매매만으로 계산하면
+              // 화면값의 5.0 배가 되고, ISA 는 반대로 화면값이 그 계좌 기준의 104 배다.
               // 두 값이 크게 갈리면 그 사실을 화면이 밝힌다(값 자체는 다른 화면과 맞추기 위해 기록값 유지).
               BigDecimal realizedOwnBasis =
                   s.realizedProfitNet() != null ? s.realizedProfitNet() : BigDecimal.ZERO;
@@ -625,8 +625,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
   /**
    * 계좌별 실현손익 한 줄.
    *
-   * <p>매수금액은 담지 않는다 - 이 절의 다른 값은 전부 '판 것' 기준인데 매수금액만 '산 것 전체' 기준이라 종목별 표와 합이 달랐다(실측 2026-08-24:
-   * 1,779,858,067 vs 1,658,970,083). 화면은 수익률의 실제 분모인 {@code soldCost} 를 보여준다.
+   * <p>매수금액은 담지 않는다 - 이 절의 다른 값은 전부 '판 것' 기준인데 매수금액만 '산 것 전체' 기준이라 종목별 표와 합이 6.79% 달랐다(실측
+   * 2026-08-24). 화면은 수익률의 실제 분모인 {@code soldCost} 를 보여준다.
    */
   public record AccountRealizedRow(
       String name,

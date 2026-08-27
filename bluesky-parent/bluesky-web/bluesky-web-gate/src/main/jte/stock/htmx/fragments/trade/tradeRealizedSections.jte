@@ -21,8 +21,8 @@
     String byAccountSectionLabel = MessageUtil.getMessage("stock.realized.section.by.account");
     String byStockSectionLabel = MessageUtil.getMessage("stock.realized.section.by.stock");
     // 이 절의 다른 숫자는 전부 '판 것' 기준인데 매수금액만 '산 것 전체' 기준이었다. 그래서 두 표의
-    // 매수금액 합이 서로 달랐다(실측 2026-08-24: 계좌별 1,779,858,067 vs 종목별 1,658,970,083,
-    // 차이 120,887,984 = 6.79%. 같은 종목을 한 계좌에서만 팔고 다른 계좌에선 들고 있으면 어떤
+    // 매수금액 합이 서로 달랐다(실측 2026-08-24: 계좌별과 종목별이 6.79% 어긋났다.
+    // 같은 종목을 한 계좌에서만 팔고 다른 계좌에선 들고 있으면 어떤
     // 필터로도 두 값을 맞출 수 없다). 옆 칸 수익률의 실제 분모인 매도원가로 바꿔 절 전체가 한 기준을
     // 쓰게 한다 - 매도금액·실현손익·거래세는 이미 두 표가 정확히 일치한다.
     String soldCostLabel = MessageUtil.getMessage("stock.realized.column.sold.cost");
@@ -104,8 +104,8 @@
                             ${String.format("%+,d", StockFormatUtil.displayWon(rowNet))}
                             <%-- 기록된 실현손익은 계좌를 합친 원가를 따른다(실측 2026-08-23: 매도 54건 중
                                  종목 단위 원가로 50건이 재현되고 계좌x종목 단위로는 38건뿐). 그래서 이 값은
-                                 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 415,053 vs 2,063,739,
-                                 ISA 1,555,597 vs 14,921. 크게 갈릴 때만 밝힌다(작은 차이까지 적으면 소음). --%>
+                                 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 은 그 계좌 매매 기준의 1/5,
+                                 ISA 는 반대로 104 배. 크게 갈릴 때만 밝힌다(작은 차이까지 적으면 소음). --%>
                             !{BigDecimal rowOwn = row.realizedOwnBasis() != null ? row.realizedOwnBasis() : BigDecimal.ZERO;}
                             !{BigDecimal rowBasisGap = RealizedBasisGap.amount(rowNet, rowOwn);}
                             @if(RealizedBasisGap.isNotable(rowNet, rowOwn))

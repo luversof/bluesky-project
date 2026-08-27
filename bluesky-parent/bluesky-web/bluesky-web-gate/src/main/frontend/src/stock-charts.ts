@@ -568,6 +568,12 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 			for (let i = 0; i < valueData.length; i++) {
 				const v = parseFloat(valueData[i]);
 				if (isNaN(v)) continue;
+				// 마지막 값(현재)은 0 이어도 '지금' 이므로 세되, 고점/저점 후보에서는 평가액 0 인 날을 뺀다.
+				// 보유가 하나도 없던 날이라 기준점이 못 된다 - 예전에는 '전체' 기간에서 늘 "최저 0원" 이
+				// 그려졌다(실측 2026-08-27: 6,170 일 중 1,772 일이 평가액 0). 서버 요약도 같은 규칙이라
+				// 카드와 차트가 같은 지점을 가리킨다.
+				lastV = v;
+				if (v <= 0) continue;
 				if (v > maxV) {
 					maxV = v;
 					maxIdx = i;
@@ -576,7 +582,6 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 					minV = v;
 					minIdx = i;
 				}
-				lastV = v;
 			}
 			if (maxIdx < 0 || minIdx < 0 || maxIdx === minIdx || isNaN(lastV)) return;
 			const ctx = chart.ctx;

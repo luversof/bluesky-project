@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
  * <p>실측 2026-08-24(실데이터):
  *
  * <pre>
- *   TIGER 리츠부동산인프라  실현+평가 -2,929,544 · 세후 배당 +5,132,889  ->  실제 +2,203,345
+ *   TIGER 리츠부동산인프라  실현+평가는 손실인데 세후 배당이 그 1.75 배  ->  합치면 이익
  *   42 종목 중 이 1 종목이 뒤집힌다: 32/42 = 76.19%  ->  33/42 = 78.57%
  * </pre>
  *
@@ -38,20 +38,20 @@ class ProfitableStockCountTest {
   @Test
   void 배당으로_이익이_되는_종목을_수익권으로_센다() {
     Map<UUID, BigDecimal> profit = new LinkedHashMap<>();
-    profit.put(REIT, bd("-2929544"));
+    profit.put(REIT, bd("-2000000"));
     Map<UUID, BigDecimal> dividend = new HashMap<>();
-    dividend.put(REIT, bd("5132889"));
+    dividend.put(REIT, bd("3500000"));
 
     assertThat(StockSummaryHtmxController.countProfitableStocks(profit, dividend))
-        .as("실현+평가 -2,929,544 인데 배당 5,132,889 이면 실제로는 +2,203,345 이다")
+        .as("실현+평가가 손실이어도 배당이 그보다 크면 실제로는 이익이다")
         .isEqualTo(1L);
   }
 
   @Test
   void 배당을_얹어도_손실인_종목은_세지_않는다() {
-    // KODEX 한국부동산리츠인프라 실측: 실현+평가 -11,720,233 · 배당 5,385,714 -> 여전히 -6,334,519
-    Map<UUID, BigDecimal> profit = Map.of(LOSER, bd("-11720233"));
-    Map<UUID, BigDecimal> dividend = Map.of(LOSER, bd("5385714"));
+    // 실데이터와 같은 모양: 배당이 손실의 절반이 안 되면 얹어도 여전히 손실이다.
+    Map<UUID, BigDecimal> profit = Map.of(LOSER, bd("-8000000"));
+    Map<UUID, BigDecimal> dividend = Map.of(LOSER, bd("3500000"));
 
     assertThat(StockSummaryHtmxController.countProfitableStocks(profit, dividend)).isEqualTo(0L);
   }

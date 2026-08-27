@@ -171,7 +171,7 @@ public abstract class StockBaseHtmxController {
    */
   // 보유 원가 계산은 요약 화면과 포트폴리오 화면이 함께 쓴다. 예전에는 두 곳이 따로 계산했고
   // 폴백이 서로 달랐다 - 포트폴리오는 '평균단가 x 보유수량'(실측 오차 5 원), 요약은 totalBuyCost
-  // (실측 735,958,622 로 실제 632,223,825 보다 103,734,796 원 과대). 같은 뜻의 값이 화면마다
+  // (실측: 실제 보유원가보다 16.4% 과대). 같은 뜻의 값이 화면마다
   // 달라지지 않도록 한 곳에 둔다.
   protected BigDecimal resolveCurrentHoldingCost(TradeProfit holding) {
     if (holding == null) {
@@ -189,11 +189,11 @@ public abstract class StockBaseHtmxController {
    * 지금 보유분의 원가.
    *
    * <p>api-stock 이 {@code evaluationProfit = 평가액 - 원가} 로 두므로 {@code 평가액 - 평가손익} 이 곧 원가다(실측: 이렇게 구한
-   * 합 632,223,826 이 api-stock 시계열 보유원가와 정확히 같다). 현재가가 없어 평가액이 0 이어도 항등식은 그대로 성립한다.
+   * 합이 api-stock 시계열 보유원가와 <b>1 원 오차 없이</b> 같다). 현재가가 없어 평가액이 0 이어도 항등식은 그대로 성립한다.
    *
    * <p>폴백은 {@code 평균단가 x 보유수량} 이다. 예전에는 {@code totalBuyAmount} 를 썼는데 그것은 <b>기간 누적 매수액</b>이라 성격이
-   * 다르다(실측: 포트폴리오 735,929,747 vs 실제 보유원가 632,223,826, 삼성전자는 466,231,000 vs 362,525,079 로 29% 과대).
-   * 지금 api-stock 은 두 값을 항상 채우므로 이 폴백은 실제로 타지 않지만, 타는 날에 틀린 값을 쓰면 안 된다.
+   * 다르다(실측: 포트폴리오 값이 실제 보유원가보다 16.4% 과대, 삼성전자 한 종목만 보면 29% 과대). 지금 api-stock 은 두 값을 항상 채우므로 이 폴백은
+   * 실제로 타지 않지만, 타는 날에 틀린 값을 쓰면 안 된다.
    */
   protected BigDecimal resolveCurrentHoldingCost(
       BigDecimal evaluationAmount,

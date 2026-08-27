@@ -50,7 +50,7 @@
         <!-- Card 2: 실현손익 -->
         @template._components.ui.card(body = @`
                 <%-- 이 카드의 값은 거래 기록에 저장된 실현손익의 합이고, 대시보드 누적치는 수수료·세금을
-                     반영해 계산한 값이라 서로 다르다(실측 차 253,554원). 어느 쪽이 틀린 게 아니라
+                     반영해 계산한 값이라 서로 다르다(실측 차 0.11%). 어느 쪽이 틀린 게 아니라
                      근거가 달라서이므로 무엇을 보고 있는지 알려준다. --%>
                 <div class="text-xs text-base-content/60 mb-1 flex items-center gap-1">
                     <span>${realizedProfitLabel}</span>

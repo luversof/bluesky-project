@@ -73,8 +73,7 @@ public class MonthlyDividendCalculator {
   public record CurrentQuantitySummary(long staleCount, BigDecimal totalAtCurrentQuantity) {}
 
   /**
-   * 스냅샷의 보유 수량은 사람이 갱신한 시점의 값이라 원장과 어긋난다(실측 2026-08-23: 8 종목 중 7 종목, 예상 월배당이 46,123 원 / 1.66% 낮게
-   * 잡혔다).
+   * 스냅샷의 보유 수량은 사람이 갱신한 시점의 값이라 원장과 어긋난다(실측 2026-08-23: 8 종목 중 7 종목, 예상 월배당이 1.66% 낮게 잡혔다).
    *
    * <p>1주당 배당은 스냅샷 그대로 두고 <b>수량만</b> 현재 값으로 바꿔 합계를 다시 낸다 &mdash; 스냅샷의 {@code
    * expectedMonthlyDividend} 가 정확히 {@code averageMonthlyDividendPerShare1y x heldQuantity} 임을 실측으로

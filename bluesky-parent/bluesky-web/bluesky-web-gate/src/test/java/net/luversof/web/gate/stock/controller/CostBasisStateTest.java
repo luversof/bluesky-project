@@ -17,8 +17,8 @@ import net.luversof.web.gate.stock.dto.response.TradeResponse;
  * <p>매도로 빠져나가는 원가(COGS)는 증권사 기록 실현손익에서 역산하는데, 기록 실현손익의 정의는 {@code 매도금액 - 원가 - 세금} 으로 <b>매도 수수료는 빼지
  * 않는다</b>. 실측(사용자 매도 중 실현손익이 기록된 54 건 전부): 40 건이 이 정의와 1 원 이내로 일치했고 수수료까지 뺀 정의와 일치한 건은 0 건이었다.
  *
- * <p>실수령(수수료까지 뺀 금액)에서 역산하면 COGS 가 수수료만큼 작아져 원금이 부풀어 남는다. 실측: 이 화면의 삼성전자 원금이 362,531,274 로 계산돼
- * api-stock 의 362,525,079 보다 6,195 컸다(= 마지막 전량매도 이후 매도 수수료 4,611 + 1,584). 분모가 크면 배당수익률이 낮게 표시된다.
+ * <p>실수령(수수료까지 뺀 금액)에서 역산하면 COGS 가 수수료만큼 작아져 원금이 부풀어 남는다. 실측: 이 화면의 삼성전자 원금이 api-stock 값보다 컸고, 그
+ * 차이가 마지막 전량매도 이후의 매도 수수료 합과 1 원 오차 없이 같았다. 분모가 크면 배당수익률이 낮게 표시된다.
  */
 class CostBasisStateTest {
 
@@ -39,24 +39,24 @@ class CostBasisStateTest {
         Instant.parse("2026-01-02T00:00:00Z"));
   }
 
-  /** 삼성전자 2026-02-11 실측: 868주 x 166,900, 수수료 4,611, 세금 289,707, 기록손익 82,181,760. */
+  /** 실제 매도와 같은 모양의 표본: 800주 x 150,000, 수수료 4,000, 세금 240,000, 기록손익 60,000,000. */
   @Test
   void 매도_원가는_수수료를_되돌려주지_않는다() {
     var state = new StockDividendHtmxController.CostBasisState();
-    // 원가 200,000,000 짜리 보유를 만든 뒤 실측 매도를 적용한다.
+    // 원가 200,000,000 짜리 보유를 만든 뒤 매도를 적용한다.
     state.apply(trade(TradeType.BUY, 1000, "200000", "0", "0", null));
     assertThat(state.averageCost()).isEqualByComparingTo("200000.00");
 
-    state.apply(trade(TradeType.SELL, 868, "166900", "4611", "289707", "82181760"));
+    state.apply(trade(TradeType.SELL, 800, "150000", "4000", "240000", "60000000"));
 
-    // COGS = 144,869,200 - 289,707 - 82,181,760 = 62,397,733
-    // 남는 원금 = 200,000,000 - 62,397,733 = 137,602,267, 남는 수량 132주
-    assertThat(state.rawQuantity()).isEqualTo(132);
+    // COGS = 120,000,000 - 240,000 - 60,000,000 = 59,760,000
+    // 남는 원금 = 200,000,000 - 59,760,000 = 140,240,000, 남는 수량 200주
+    assertThat(state.rawQuantity()).isEqualTo(200);
     assertThat(state.averageCost())
-        .as("수수료를 실수령에서 빼면 원가가 4,611 만큼 덜 빠져 분모가 부풀어 오른다")
+        .as("수수료를 실수령에서 빼면 원가가 4,000 만큼 덜 빠져 분모가 부풀어 오른다")
         .isEqualByComparingTo(
-            new BigDecimal("137602267")
-                .divide(BigDecimal.valueOf(132), 2, java.math.RoundingMode.HALF_UP));
+            new BigDecimal("140240000")
+                .divide(BigDecimal.valueOf(200), 2, java.math.RoundingMode.HALF_UP));
   }
 
   /**
@@ -66,10 +66,10 @@ class CostBasisStateTest {
    */
   @Test
   void 실수령에서_역산하면_수수료만큼_원금이_남는다() {
-    BigDecimal sellAmount = new BigDecimal("144869200");
-    BigDecimal fee = new BigDecimal("4611");
-    BigDecimal tax = new BigDecimal("289707");
-    BigDecimal recordedProfit = new BigDecimal("82181760");
+    BigDecimal sellAmount = new BigDecimal("120000000");
+    BigDecimal fee = new BigDecimal("4000");
+    BigDecimal tax = new BigDecimal("240000");
+    BigDecimal recordedProfit = new BigDecimal("60000000");
 
     BigDecimal correctCogs = sellAmount.subtract(tax).subtract(recordedProfit);
     BigDecimal legacyCogs = sellAmount.subtract(fee).subtract(tax).subtract(recordedProfit);

@@ -134,7 +134,7 @@
 							sub = String.format("%+.1f%%", evalProfitRatePct),
 							tone = evalColor)
 						<%-- 기록된 실현손익은 계좌를 합친 원가를 따르므로 이 계좌의 매매와 크게 다를 수 있다
-						     (실측 2026-08-23: 연금저축1 415,053 vs 2,063,739, ISA 1,555,597 vs 14,921).
+						     (실측 2026-08-23: 연금저축1 은 그 계좌 매매 기준의 1/5, ISA 는 반대로 104 배).
 						     매매 화면의 계좌별 표와 같은 규칙(RealizedBasisGap)·같은 문구를 쓴다. --%>
 						@template._components.ui.statCard(
 							label = MessageUtil.getMessage("stock.profit.realized"),

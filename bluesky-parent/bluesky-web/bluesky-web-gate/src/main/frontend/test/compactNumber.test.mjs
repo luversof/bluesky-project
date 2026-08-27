@@ -29,7 +29,7 @@ test("한국어: 만·억 단위를 붙인다", () => {
 	assert.equal(fmt(12345), "1.2만");
 	assert.equal(fmt(1234567), "123만");
 	assert.equal(fmt(123456789), "1.2억");
-	assert.equal(fmt(1493281835), "15억");
+	assert.equal(fmt(1500000000), "15억");
 });
 
 test("한국어: 음수는 부호를 유지한다", () => {
@@ -56,7 +56,7 @@ test("영어: B/M/K 를 붙인다", () => {
 	assert.equal(fmt(999), "999");
 	assert.equal(fmt(1500), "1.5K");
 	assert.equal(fmt(2500000), "2.5M");
-	assert.equal(fmt(1493281835), "1.5B");
+	assert.equal(fmt(1500000000), "1.5B");
 });
 
 test("영어: 반올림이 다음 단위에 닿으면 그 단위로 적는다", () => {
@@ -68,7 +68,7 @@ test("영어: 반올림이 다음 단위에 닿으면 그 단위로 적는다", 
 
 test("한국어가 아니면 억/만 을 쓰지 않는다", () => {
 	setLocale("en-US");
-	for (const v of [12345, 123456789, 1493281835]) {
+	for (const v of [12345, 123456789, 1500000000]) {
 		assert.ok(!/[억만]/.test(fmt(v)), `영어 화면에 한국식 단위가 나온다: ${fmt(v)}`);
 	}
 });

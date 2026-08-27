@@ -26,7 +26,7 @@
     String principalLabel = MessageUtil.getMessage("stock.label.principal");
     // 이 값은 투자원금(계좌별 수동 지정이 있으면 그 값) 대비 손익이라 자산 현황의 "원금 대비 손익"과 같다.
     // 예전 라벨은 "현재 평가 손익"이었는데, 자산 현황에서 그 이름은 매수금액 기준의 다른 값을 가리킨다
-    // (실측: 871,685,932 vs 861,058,009 - 10,627,923 차이). 같은 이름이 화면마다 다른 수를 뜻하지
+    // (실측: 두 값이 1.2% 어긋난다). 같은 이름이 화면마다 다른 수를 뜻하지
     // 않도록 자산 현황과 같은 메시지 키를 쓴다.
     String currentEvaluationProfitLabel = MessageUtil.getMessage("stock.analytics.label.principal.return");
     String returnRateLabel = MessageUtil.getMessage("stock.label.return.rate");
@@ -65,7 +65,7 @@
 !{String combinedAdjustmentMeaning = hasCombinedAdjustment ? (combinedAdjustment.compareTo(BigDecimal.ZERO) < 0 ? combinedAdjustmentAddedLabel : combinedAdjustmentSubtractedLabel) : "";}
 !{double combinedRate = combinedPrincipal.compareTo(BigDecimal.ZERO) > 0 ? totalCombinedProfit.doubleValue() / combinedPrincipal.doubleValue() * 100 : 0.0;}
 <%-- 이 수익률의 분모는 화면에 적힌 '투자원금'(수동 설정 원금 반영)이 아니라 취득원가다.
-     그대로 두면 화면 숫자로 나눠도 값이 안 나온다(실측: 1,148,009,706 / 621,595,902 = 184.69% 인데 표시는 181.58%).
+     그대로 두면 화면 숫자로 나눠도 값이 안 나온다(실측: 화면의 손익/원금을 그대로 나누면 184.69% 인데 표시는 181.58%).
      기준 원금을 계산 내역과 툴팁에 밝혀 화면에서 재현할 수 있게 한다. --%>
 !{String combinedRateBasisText = java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.combined.rate.basis.tooltip"), String.format("%,d", StockFormatUtil.displayWon(totalCombinedProfit)), String.format("%,d", StockFormatUtil.displayWon(combinedPrincipal)), String.format("%+.2f", combinedRate));}
 !{String evalColor = currentEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}

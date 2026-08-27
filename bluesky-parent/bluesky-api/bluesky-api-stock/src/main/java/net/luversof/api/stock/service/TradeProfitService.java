@@ -370,7 +370,7 @@ public class TradeProfitService {
 
       // 계좌를 합쳐 WMA 를 한 번 돌리면, 이미 전량 매도한 계좌의 매입가가 남아 있는 보유분의
       // 평단에 섞인다. 그러면 같은 화면의 계좌별 합계와 종목별 합계가 어긋난다
-      // (실측: 잔여원가 632,223,831 vs 632,403,743, 차이 179,912 — 다계좌 보유 2종목에서 발생).
+      // (실측: 잔여원가가 계좌별로 계산한 값과 0.028% 어긋났다 — 다계좌 보유 2종목에서 발생).
       // 계좌별로 계산한 뒤 합쳐야 "지금 들고 있는 수량을 실제로 얼마에 샀는지"가 된다.
       TradeProfit profit = mergeByAccount(group, request, latestPrices);
       if (request.hasDateRange()) {
@@ -516,7 +516,7 @@ public class TradeProfitService {
         simulateDailySeries(request, null, null, null, null, null);
     // 시작일을 주지 않은 조회('전체' 기간)는 이력 맨 앞부터다. 이때 첫 지점은 '이전부터 있던 상태'가
     // 아니라 그날 처음 생긴 자산이므로, 기초를 0 으로 잡아야 첫날의 손익과 원금이 집계에 들어간다
-    // (실측: 첫 매수일 손익 39,400 원과 원금 347,060 원이 '전체' 합계에서 빠져 있었다.
+    // (실측: 첫 매수일의 손익과 원금이 '전체' 합계에서 통째로 빠져 있었다.
     //  기간을 2009-01-01 처럼 명시하면 시리즈 앞에 0 인 날이 들어와 값이 맞는 것과 대비된다).
     boolean fullHistory = request.getStartDate() == null;
     return new TradeProfitTimeSeriesResult(
@@ -663,8 +663,8 @@ public class TradeProfitService {
 
     // 평균단가(WMA) 상태의 키는 '계좌 + 종목'이다. 종목만으로 묶으면 계좌를 가로질러 원가가 섞인다 —
     // A 계좌에서 판 수량의 원가가 B 계좌 평균단가로 빠져나가 남은 원가가 실제와 달라진다.
-    // 실측: 같은 보유(수량 전부 일치)인데 이 경로의 원가 합이 632,414,879 로, 계좌별로 계산하는
-    // calculateProfit(632,223,831)과 191,048 원 어긋났다. TIGER 리츠부동산인프라는 계좌별 단가가
+    // 실측: 같은 보유(수량 전부 일치)인데 이 경로의 원가 합이 계좌별로 계산하는 calculateProfit 과
+    // 0.030% 어긋났다. TIGER 리츠부동산인프라는 계좌별 단가가
     // 4,366~4,367 인데 합쳐 굴리면 4,380.85 가 나왔다(화면 두 곳이 서로 다른 평균단가를 보여줬다).
     // 표시(보유 스냅샷)는 예전처럼 종목 단위라, 아래에서 계좌별 상태를 종목으로 합산해 내보낸다.
     Function<Trade, String> getGroupKey =
@@ -1022,6 +1022,15 @@ public class TradeProfitService {
     LocalDate runningPeakDate = null;
     LocalDate drawdownPeakDate = null;
     LocalDate drawdownTroughDate = null;
+    // 기간 중 평가액 고점/저점. 최대 낙폭(입출금 제거한 기준가 기준)과 달리 <b>화면에 찍히는 그 금액</b>이다.
+    //
+    // 평가액이 0 인 날은 세지 않는다 - 보유가 하나도 없던 날이라 "저점" 의 기준이 될 수 없다.
+    // 실측 2026-08-27 '전체' 기간: 6,170 일 중 1,772 일이 평가액 0 이라, 세면 저점이 늘 0 원이 되어
+    // 아무것도 말해 주지 않는다.
+    TradeProfitTimeSeriesPoint peakPoint = null;
+    TradeProfitTimeSeriesPoint troughPoint = null;
+    LocalDate peakValueDate = null;
+    LocalDate troughValueDate = null;
 
     for (TradeProfitTimeSeriesPoint point : series) {
       if (point == null || point.timestamp() == null) {
@@ -1033,6 +1042,18 @@ public class TradeProfitService {
         runningPeakDate = pointDate;
       }
       lastPoint = point;
+
+      BigDecimal holdingsValue = point.totalHoldingsValue();
+      if (holdingsValue != null && holdingsValue.signum() > 0) {
+        if (peakPoint == null || holdingsValue.compareTo(peakPoint.totalHoldingsValue()) > 0) {
+          peakPoint = point;
+          peakValueDate = pointDate;
+        }
+        if (troughPoint == null || holdingsValue.compareTo(troughPoint.totalHoldingsValue()) < 0) {
+          troughPoint = point;
+          troughValueDate = pointDate;
+        }
+      }
 
       if (previousPoint != null) {
         BigDecimal previousValue = nz(previousPoint.totalHoldingsValue());
@@ -1122,6 +1143,19 @@ public class TradeProfitService {
                 .doubleValue()
             : null;
 
+    // 기간 손익률 - 넣어 둔 돈 대비 얼마를 벌었나. 자산 증가율(평가액 기준)·TWR(입출금 제거)과 분모가
+    // 다른 별개의 값이다. 실측 2026-08-27(올해): 76.66% / 92.88% / 94.93% 로 셋 다 다르다.
+    //
+    // 기초 평가액이 0 이라 증가율을 못 내는 '전체' 기간에서도 이 값은 나온다 - 분모에 유입 원금이
+    // 들어가기 때문이다(실측 '전체': 증가율 계산 불가, 손익률 190.18%).
+    Double periodProfitRatePct =
+        capitalBase.compareTo(BigDecimal.ZERO) > 0
+            ? periodProfit
+                .multiply(BigDecimal.valueOf(100))
+                .divide(capitalBase, 6, RoundingMode.HALF_UP)
+                .doubleValue()
+            : null;
+
     return new TradeProfitTimeSeriesSummary(
         openingValue,
         closingValue,
@@ -1141,7 +1175,12 @@ public class TradeProfitService {
         maxDrawdown < 0.0d ? drawdownTroughDate : null,
         compoundedDays > 0 && peakFactor > 0.0d
             ? ((timeWeightedFactor - peakFactor) / peakFactor) * 100.0d
-            : null);
+            : null,
+        periodProfitRatePct,
+        peakPoint == null ? null : peakPoint.totalHoldingsValue(),
+        peakValueDate,
+        troughPoint == null ? null : troughPoint.totalHoldingsValue(),
+        troughValueDate);
   }
 
   /**
@@ -1152,8 +1191,8 @@ public class TradeProfitService {
    * WMA 와 달라 어느 쪽과도 맞지 않는다.
    *
    * <p>그래서 매도 <i>실수령</i>(수수료까지 뺀 금액)에서 역산하면 COGS 가 매도 수수료만큼 작아지고, 그만큼 보유 원가가 부풀어 남는다. 실측 피해: 삼성전자
-   * 보유 원가가 시계열 362,531,274 vs 종목별 표(WMA) 362,525,082 로 6,195 어긋났는데, 이는 마지막 전량매도 이후의 매도 수수료 합(4,611
-   * + 1,584 = 6,195) 과 정확히 같았다.
+   * 보유 원가가 시계열과 종목별 표(WMA)에서 어긋났는데, 그 차이가 마지막 전량매도 이후의 <b>매도 수수료 합과 1 원 오차 없이 같았다</b> &mdash; 원인이
+   * 수수료라는 것을 그대로 보여 준다.
    *
    * @param sellAmount 매도금액(단가 x 수량, 수수료·세금 차감 전)
    * @param tax 매도 세금
@@ -1364,7 +1403,12 @@ public class TradeProfitService {
     TradeProfitTimeSeriesPoint maxPoint = null;
     TradeProfitTimeSeriesPoint minPoint = null;
     for (TradeProfitTimeSeriesPoint p : daily) {
-      if (p == null || p.timestamp() == null || p.totalHoldingsValue() == null) {
+      // 요약(summarizeSeries)과 같은 규칙으로 0 인 날을 뺀다. 규칙이 갈리면 카드가 말하는 저점과
+      // 차트가 찍는 저점이 달라진다(실측 '전체': 0 을 세면 차트는 늘 "최저 0원" 을 그린다).
+      if (p == null
+          || p.timestamp() == null
+          || p.totalHoldingsValue() == null
+          || p.totalHoldingsValue().signum() <= 0) {
         continue;
       }
       if (maxPoint == null || p.totalHoldingsValue().compareTo(maxPoint.totalHoldingsValue()) > 0) {

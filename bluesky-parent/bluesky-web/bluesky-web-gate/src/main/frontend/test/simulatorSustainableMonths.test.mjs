@@ -163,7 +163,7 @@ test("시나리오 비교가 실제로 더 오래 버틴 쪽을 위로 올린다
 		scenario({
 			currentPrice: 41_946,
 			dividendYieldPct: 3.08,
-			annualSpending: 237_529_116,
+			annualSpending: 237_500_000,
 			annualPriceGrowthPct: 6.93,
 			annualDividendGrowthPct: 5,
 			annualSpendingGrowthPct: -0.33,
@@ -171,7 +171,7 @@ test("시나리오 비교가 실제로 더 오래 버틴 쪽을 위로 올린다
 		scenario({
 			currentPrice: 21_909,
 			dividendYieldPct: 9.44,
-			annualSpending: 200_685_066,
+			annualSpending: 200_700_000,
 			annualPriceGrowthPct: -9.54,
 			annualDividendGrowthPct: 0.52,
 			annualSpendingGrowthPct: -0.2,

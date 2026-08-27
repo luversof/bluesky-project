@@ -764,6 +764,13 @@ public class PoeOptimizeService {
    * P3 메타 기준선 게이트 — balanced 잡의 최종 DPS·EHP 가 같은 (전직×스킬조합) 실빌드 중앙값을 <b>둘 다</b> 하회하면 true(지배당함 — 결과
    * 화면 경고). 비-balanced/벤치 없음이면 null(판정 보류). "실빌드보다 나은 조합" 목적의 하한 신호.
    */
+  /**
+   * 메타 하회 판정의 여유 폭 — 대표는 **한 명**이라 몇 %差 는 표본 잡음이다. 실측: 번개 화살 4,989,100 vs 대표 5,223,102(**95.5%**)
+   * 인데 경고가 떴다 — 사용자에겐 "당신 빌드가 실빌드보다 못하다" 로 읽히지만 실제로는 ninja 중앙값의 156% 다. 5% 이내는 동급으로 본다(그 이상 벌어질 때만
+   * 경고).
+   */
+  private static final double BELOW_META_MARGIN = 0.95;
+
   private Boolean belowMetaVerdict(
       String objective, PoeGem gem, String ascendancy, Map<String, Double> finalValues) {
     if (!"balanced".equals(objective)) {
@@ -802,7 +809,9 @@ public class PoeOptimizeService {
       eb = null;
     }
     if (eb != null && eb.path("dps").asDouble() > 0 && eb.path("ehp").asDouble() > 0) {
-      boolean below = myDps < eb.path("dps").asDouble() && myEhp < eb.path("ehp").asDouble();
+      boolean below =
+          myDps < eb.path("dps").asDouble() * BELOW_META_MARGIN
+              && myEhp < eb.path("ehp").asDouble() * BELOW_META_MARGIN;
       if (below) {
         log(
             String.format(
@@ -815,7 +824,8 @@ public class PoeOptimizeService {
     if (bench == null || bench.dps() <= 0 || bench.ehp() <= 0) {
       return null;
     }
-    boolean below = myDps < bench.dps() && myEhp < bench.ehp();
+    boolean below =
+        myDps < bench.dps() * BELOW_META_MARGIN && myEhp < bench.ehp() * BELOW_META_MARGIN;
     if (below) {
       log(
           String.format(
@@ -959,7 +969,11 @@ public class PoeOptimizeService {
   }
 
   private boolean isMetaMasteryEffect(PoeTreeGraphService.MasteryEffect e) {
-    if (metaMasteries.isEmpty() || e == null || e.stats() == null || e.stats().isEmpty()) {
+    if (!SEED_MASTERY_ENABLED
+        || metaMasteries.isEmpty()
+        || e == null
+        || e.stats() == null
+        || e.stats().isEmpty()) {
       return false;
     }
     return metaMasteries.contains(normStat(String.join("", e.stats())));
@@ -1294,6 +1308,7 @@ public class PoeOptimizeService {
     if (!ninjaSeedEnabled || skill == null || skill.isEmpty()) {
       return;
     }
+    seedLogPending = true; // 아래에서 시드가 확정되면 내역 한 줄 — 진단 때마다 토글 실험을 반복하지 않도록
     // P1 메타 마스터리 웜스타트 — 아키타입 패싯(전체 모집단)에서 채택률 40%+ 마스터리 효과를 수집.
     //   마스터리 단계에서 후보 우선 편입 + "최고 대비 1% 이내면 메타 채택" + 신규 문턱 완화에 쓰인다.
     {
@@ -1424,10 +1439,18 @@ public class PoeOptimizeService {
     //   아키타입(ES/CI 등)에서 오히려 유리대포(저EHP·미캡)를 승인한다(Penance Brand Elementalist 실측:
     //   목표 11k로 낮추자 EHP 13.7k 번개저항43 유리대포 채택). 사용자 요구=유리대포 배제 → 하한은 정적 floor.
     if (seed.targetMaxHit() > 0) {
-      this.targetMaxHit = clampD(seed.targetMaxHit(), MAXHIT_FLOOR, MAXHIT_FLOOR * 8);
+      // 하한은 **시드가 있을 때** 그 아키타입 실측 중앙값을 존중한다(절대 바닥 MAXHIT_SEED_FLOOR 만 지킴).
+      //   예전엔 아키타입 무관 상수 15,000 이 하한이라, 실메타가 얇은 회피·억제형에서 메타의 2배 생존을 강제하며
+      //   DPS 예산을 잡아먹었다 — 실측: 번개 화살 실빌드 100건 최약최대피격 중앙값 7,500 인데 우리 결과는 20,195,
+      //   하한만 7,500 으로 낮추자 3,864,028(벤치 74%) → 4,989,100(**벤치 96%**), 생존은 7,312 로 메타와 일치.
+      //   시드가 없으면(매칭 실패) 종전대로 MAXHIT_FLOOR 가 하한 — 근거 없는 유리대포 방지.
+      this.targetMaxHit = clampD(seed.targetMaxHit(), MAXHIT_SEED_FLOOR, MAXHIT_FLOOR * 8);
     }
     if (seed.targetEhp() > 0) {
-      this.targetEhp = clampD(seed.targetEhp(), EHP_FLOOR, EHP_FLOOR * 8);
+      // 최약최대피격과 같은 함정 — 시드가 있어도 하한 40,000 에 눌려 아키타입 실측을 못 쓴다
+      //   (번개 화살 시드 25,000 → 40,000 으로 상향돼 실메타의 1.6배 EHP 를 목표로 잡고 있었다).
+      this.targetEhp =
+          clampD(seed.targetEhp(), EHP_TERM_ENABLED ? EHP_SEED_FLOOR : EHP_FLOOR, EHP_FLOOR * 8);
     }
     // 생명 재생 목표 — 실측 중앙값 × 0.6. ⚠ ninja lifeRegen 은 gross 지표라 PoB NetLifeRegen 과 다르다:
     //   실빌드 캐릭터(PoB export)를 우리 엔진으로 재계산해 검증한 결과 ninja 2,085 ↔ PoB net 1,176(비 0.56).
@@ -1468,6 +1491,26 @@ public class PoeOptimizeService {
             targetMaxHit,
             targetEhp,
             seed.sample()));
+    // 시드 내역 — 저항/억제 목표까지 확정된 **메서드 끝**에서 한 줄. 진단할 때마다 시드 on/off 토글 실험을
+    //   반복하지 않으려는 것(실측: 원소 강타가 시드 켬 6,102,794 vs 끔 10,961,381 로 −44%였는데 로그가 없어
+    //   어느 요소 탓인지 바로 못 짚었다).
+    if (seedLogPending) {
+      seedLogPending = false;
+      log(
+          String.format(
+              "시드 프로파일: 최약목표 %,.0f · EHP목표 %,.0f · 저항 화%d/냉%d/번%d/카%d · 억제 %d · 재생 %,.0f · 키스톤 [%s] · 마스터리 %d개 · 무기 %s",
+              targetMaxHit,
+              targetEhp,
+              targetFireRes,
+              targetColdRes,
+              targetLightRes,
+              targetChaosRes,
+              targetSpellSuppress,
+              targetLifeRegen,
+              String.join(", ", seededKeystones),
+              metaMasteries.size(),
+              metaWeaponClasses.isEmpty() ? "-" : String.join("/", metaWeaponClasses)));
+    }
   }
 
   private static double clampD(double v, double lo, double hi) {
@@ -1787,7 +1830,36 @@ public class PoeOptimizeService {
   // key = "ascendancy|mainSkill"(정확) 및 "mainSkill"(전직 무관 폴백, 표본 최대 아키타입)
   private final Map<String, NinjaSeed> ninjaSeedByKey = new HashMap<>();
   private final Map<String, NinjaSeed> ninjaSeedBySkill = new HashMap<>();
-  private volatile boolean ninjaSeedEnabled = true;
+
+  // 기본 on. 귀속 실험용으로만 끈다(POE_NINJA_SEED=off) — 시드는 목표치뿐 아니라 키스톤·마스터리·
+  //   무기클래스·판테온 웜스타트로도 쓰여서, 벤치 갱신 후 결과가 크게 바뀌면 시드 탓인지 가려야 한다.
+  /**
+   * 시드 키스톤 후보 주입 — **기본 off**(켜려면 POE_SEED_KEYSTONES=on).
+   *
+   * <p>topKeystones 는 그 아키타입 유저들의 **집계**지 한 빌드가 함께 찍는 조합이 아니다. 그대로 한 빌드에 주입하면 철의 반사신경(회피→방어도)과 유령
+   * 무도(회피 시 ES) 처럼 상호배타 키스톤이 동시에 후보가 되고, 빌드가 빈 시점(실측 값 44,344)에 6pt 를 써 채택된 뒤 트리 재대결도 되돌리지 못한다.
+   *
+   * <p>실측(원소 강타 분광/데드아이): 시드 전체 on 6,102,794 · 시드 전체 off 10,961,381 · **키스톤 주입만 off
+   * 15,084,361(+147%)** — 키스톤만 끈 쪽이 시드 전체를 끈 것보다 38% 높다(시드의 목표치·마스터리·저항은 이득). 7종 회귀에서는 전 축
+   * **±0.0%**(비트 동일) 로 손해 축이 없다 → 이득 증거 0, 손해 증거 1 이므로 기본 off. CI 아키타입 판정(isEsArchetype)은 이 토글과
+   * 무관하게 동작한다.
+   */
+  /** 시드 마스터리 웜스타트(후보 추가 + 트리 포인트 예약) on/off — 귀속 실험용. 기본 on. */
+  private static final boolean SEED_MASTERY_ENABLED =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_SEED_MASTERY", "on"));
+
+  /** 시드 무기 클래스 제한 on/off — 귀속 실험용. 기본 on. */
+  private static final boolean SEED_WEAPON_ENABLED =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_SEED_WEAPON", "on"));
+
+  private static final boolean SEED_KEYSTONES_ENABLED =
+      "on".equalsIgnoreCase(System.getenv().getOrDefault("POE_SEED_KEYSTONES", "off"));
+
+  /** 시드 내역 로그를 한 번만 찍기 위한 플래그. */
+  private volatile boolean seedLogPending = false;
+
+  private volatile boolean ninjaSeedEnabled =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_NINJA_SEED", "on"));
   private static final int MIN_SEED_SAMPLE = 5; // 정확키(전직|스킬) 시드 채택 최소 표본(미만은 스킬폴백)
 
   /** poe.ninja 실빌드 벤치마크(결과 표시용) — 아키타입 실측 중앙값 프로파일. */
@@ -2003,6 +2075,36 @@ public class PoeOptimizeService {
 
   /** 이번 잡이 balanced 인지 — craftRare 등 objectiveKey 가 안 닿는 깊은 경로의 분기용. start() 리셋 필수. */
   private volatile boolean balancedJob = false;
+
+  /**
+   * 볼록 생존 벌점을 켜는 구간인가 — **최종 재대결 이후에만** true.
+   *
+   * <p>탐색 중에는 켜면 안 된다. 중간 빌드는 아직 장비가 덜 찼으니 생존이 언제나 목표 미달이고, 볼록 벌점이 그 시점의 후보를 짓눌러 초반에 방어 장비를 사버린 뒤
+   * DPS 를 회복하지 못한다(실측: 곡률 1.5 전 축 회귀에서 사신이 생존 목표를 이미 1.18배 넘겼는데도 DPS 만 −44.5%, 번개 화살은 곡률 2.0 에서 생존
+   * 1.10 인 채 −53%). 완성된 빌드끼리 겨루는 최종 재대결에서만 켜면 목표를 이미 넘긴 아키타입은 sqrt 가지라 아예 무변화고, 유리대포만 교정된다.
+   */
+  private volatile boolean convexSurvivalPhase = false;
+
+  /**
+   * 가드 스킬(용융 껍질/강철 피부/불사의 외침) — 없으면 null.
+   *
+   * <p>PoB 는 가드 스킬이 빌드에 **있기만 하면** 버프를 자동 적용하고(CalcPerform 3277행), 피격 계산에서 GuardAbsorb 층을
+   * 더한다(CalcDefence 216~306행). 우리 XML 엔 이 그룹이 아예 없어 그 층이 통째로 0 이었다 — 실빌드는 거의 전부 하나씩 낀다(저거넛 뼈 박살 최약
+   * 최대피격 실빌드 39,000 vs 우리 11,482 의 유력한 원인).
+   */
+  private volatile String guardSkill;
+
+  /** 가드 스킬에 링크할 보조젬(없으면 null) — 흡수량은 젬 레벨·품질로 오르므로 기원/강화가 후보다. */
+  private volatile String guardSupport;
+
+  /** 유니크 주얼 최종 재대결 후보 풀 — 주얼은 아이템 이전에 확정되므로 완성 문맥에서 다시 겨룬다. */
+  private volatile List<PoeUniqueItem> jewelRematchPool = List.of();
+
+  /** 소켓당 최종 재대결에서 시험할 유니크 주얼 수(풀 상위). */
+  private static final int JEWEL_REMATCH_PER_SOCKET = 8;
+
+  /** 보조젬 최종 재대결 후보 풀(1라운드 숏리스트) — 랭킹 문맥에서 정해진 선택을 완성 문맥에서 다시 겨룬다. */
+  private volatile List<PoeGem> supportRematchPool = List.of();
 
   // ES 듀얼패스 임시 플래그 — true 동안 craftRare 가 방어 베이스를 ES 변형으로 강제(tryEsTemplate 내부에서만 on).
   private volatile boolean forceEsBase = false;
@@ -2335,6 +2437,11 @@ public class PoeOptimizeService {
       this.targetSpellSuppress = 0; // 주문 억제 목표 — 같은 누출 계열
       this.targetSpellBlock = 0; // 주문 막기 목표 — 같은 누출 계열
       this.balancedJob = false; // balanced 분기 플래그 — 같은 누출 계열
+      this.convexSurvivalPhase = false; // 잡마다 리셋(누출되면 다음 잡의 탐색이 왜곡된다)
+      this.guardSkill = null; // 잡마다 리셋
+      this.guardSupport = null;
+      this.supportRematchPool = List.of();
+      this.jewelRematchPool = List.of();
       this.additionalSkillSupports.clear(); // 추가 스킬 보조젬(1b) — 잡마다 리셋(누출 방지)
       this.metaWeaponClasses = Set.of(); // P1② 메타 무기 구성 — 잡마다 리셋(누출 방지)
       this.metaOffhandShield = false;
@@ -2578,12 +2685,29 @@ public class PoeOptimizeService {
         }
       }
 
+      enterPhase("baseline");
+      Map<String, Double> baselineValues =
+          poePobEngineService.calculateValues(
+              buildXml(gem, supports, className, ascendancy, ascendancyNodes, allocated, items));
+      double baseline = objectiveOf(baselineValues, objectiveKey);
+      evalCount.incrementAndGet();
+      double current = baseline;
+      log("기준값(젬 단독): " + format(baseline) + " / 전직 " + ascendancy);
+
       // 랭킹 전용 문맥 — 보조젬·트리 후보의 **순위를 매길 때만** 쓰는 가상 장비 한 벌.
-      //   공격 스킬은 초반 문맥에서 DPS 가 0~1 이라 후보 순위가 사실상 노이즈다(실측: 회오리 사격이
-      //   잔혹 보조(원소 피해 0)를 낌). 이걸 빌드에 **저장**해 버리면 이후 유니크 선택을 밀어내 손해였으므로
-      //   (합계 4,903,225 vs 무기만 6,755,249), 저장하지 않고 평가에만 쓴다.
+      //   장비가 없으면 값이 0~7 수준이라 후보 순위가 사실상 노이즈다(실측: 회오리 사격이 잔혹 보조(원소 피해 0)를
+      //   끼고, 폭발 덫은 보조젬을 하나만 달았다). 이걸 빌드에 **저장**하면 이후 유니크 선택을 밀어내 손해였으므로
+      //   (합계 4,903,225 vs 무기만 6,755,249) 저장하지 않고 평가에만 쓴다.
+      //   ⚠ 조건은 태그가 아니라 **측정한 기준값**이다 — "Attack 태그"로 걸었더니 덫·주문 계열의 같은 증상을
+      //     놓쳤다(폭발 덫: 중앙값의 0.37배). 젬 단독으로 잴 수 있는 빌드(Arc 등)는 그대로 둔다.
       Map<Slot, Equipped> rankingItems = new EnumMap<>(items);
-      if (gem.tags() != null && gem.tags().contains("Attack")) {
+      // ⚠ 조건을 "기준값 < 1,000"으로 넓혀 덫 계열까지 켜 봤더니 **오히려 -53%**였다
+      //   (폭발 덫 7,485,109 → 3,539,943). 보조젬 순위는 매겨졌지만(1개 → 5개) 랭킹용 가상 장비가
+      //   물리 쪽으로 치우쳐 화염 덫에 잔혹 보조(원소 피해 0)를 끼우는 등 **틀린 순위**를 만들었다.
+      //   이득이 확인된 활 계열(무기가 곧 피해원)로만 유지한다.
+      if (gem.tags() != null
+          && gem.tags().contains("Attack")
+          && baseline < RANKING_CONTEXT_BASELINE) {
         for (Slot slot :
             new Slot[] {
               Slot.BODY, Slot.HELMET, Slot.GLOVES, Slot.BOOTS,
@@ -2597,16 +2721,10 @@ public class PoeOptimizeService {
             rankingItems.put(slot, Equipped.ofRare(provisional));
           }
         }
+        if (rankingItems.size() > items.size()) {
+          log("랭킹 전용 문맥 사용(기준값 " + format(baseline) + " — 젬 단독으로는 순위를 못 가림)");
+        }
       }
-
-      enterPhase("baseline");
-      Map<String, Double> baselineValues =
-          poePobEngineService.calculateValues(
-              buildXml(gem, supports, className, ascendancy, ascendancyNodes, allocated, items));
-      double baseline = objectiveOf(baselineValues, objectiveKey);
-      evalCount.incrementAndGet();
-      double current = baseline;
-      log("기준값(젬 단독): " + format(baseline) + " / 전직 " + ascendancy);
 
       // ── 1) 전직 노드 greedy (예산 8포인트) ──
       Integer ascendancyStart =
@@ -2729,6 +2847,10 @@ public class PoeOptimizeService {
                 .limit(SUPPORT_SHORTLIST)
                 .map(Map.Entry::getKey)
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+        // 최종 재대결용으로 보관 — 보조젬은 **랭킹 문맥**(기준 무기만 든 상태, DPS 수십)에서 정해지는데
+        //   완성 빌드(수백만)에서 순위가 뒤집힐 수 있다. 실측(번개 화살): 채택된 젬과 신기루 궁수·규칙 뒤집기의
+        //   차이가 라운드마다 1~2점(동점 포함)이었고, 대표 실빌드는 바로 그 둘을 쓴다.
+        this.supportRematchPool = List.copyOf(shortlist);
 
         while (supports.size() < MAX_SUPPORTS && !shortlist.isEmpty()) {
           Map<PoeGem, Double> round =
@@ -2759,6 +2881,15 @@ public class PoeOptimizeService {
           shortlist.remove(best.getKey());
           current = best.getValue();
           log("보조젬 채택: " + koName(best.getKey()) + " → " + format(current));
+          // 채택 라운드의 상위 후보를 함께 남긴다 — "실빌드가 쓰는 젬이 우리 평가에서 몇 위였나" 를
+          //   추측이 아니라 순위로 답하기 위한 것(번개 화살 대표는 신기루 궁수·삼위일체를 쓰는데 우리는 미채택).
+          log(
+              "  후보 상위: "
+                  + round.entrySet().stream()
+                      .sorted(Map.Entry.<PoeGem, Double>comparingByValue().reversed())
+                      .limit(6)
+                      .map(e -> koName(e.getKey()) + " " + format(e.getValue()))
+                      .collect(java.util.stream.Collectors.joining(" · ")));
         }
       }
 
@@ -2901,7 +3032,7 @@ public class PoeOptimizeService {
         // poe.ninja 시드 키스톤 주입 — 키워드 미매칭(방어) 키스톤(CI/MoM/EB/피의마법 등)은 실빌드가 흔히 쓰나
         //   위 점수화(데미지 키워드)에서 0점이라 후보에서 빠진다. 실측 상위 키스톤을 baseline 점수로 후보에 넣어
         //   **평가 대상**이 되게 한다(채택은 여전히 full PoB 실측 이득 기준 → 강제 아님). 결정성: id 정렬 순회.
-        if (!seededKeystones.isEmpty()) {
+        if (!seededKeystones.isEmpty() && SEED_KEYSTONES_ENABLED) {
           int avg =
               candidateScores.isEmpty()
                   ? 40
@@ -2935,7 +3066,9 @@ public class PoeOptimizeService {
         //   잔여 포인트가 0~1 이라(실측: RF 치프틴 후보 1개) 경로 후보가 전부 예산 탈락 — 실빌드가 81% 찍는
         //   재생 숙련이 시도조차 못 된다. 메타가 있을 때만 예약을 부활한다(dps 잡은 메타 빈 집합 → 불변).
         int treeBudget =
-            POINT_BUDGET - JEWEL_RESERVE - (metaMasteries.isEmpty() ? 0 : META_MASTERY_RESERVE);
+            POINT_BUDGET
+                - JEWEL_RESERVE
+                - (!SEED_MASTERY_ENABLED || metaMasteries.isEmpty() ? 0 : META_MASTERY_RESERVE);
         // ⚠ CLUSTER_RESERVE 를 여기서 빼는 설계는 실패 롤백(2026-08-04): 트리가 11pt 약해진 중간 시점의
         //   낮아진 current 와 비교하니 정크 클러스터도 "개선"으로 채택돼 최종 붕괴(712,940→407,389).
         //   클러스터 예산 경쟁은 최종 컨텍스트 스왑(가장 값싼 가지 제거와 교환) 설계가 필요 — 예약 금지.
@@ -3025,6 +3158,9 @@ public class PoeOptimizeService {
       // 타임리스는 반경 노드 변환 계산이 무거워(시드→노드 매핑 로드) 자동 탐색 풀에 넣으면 잡 전체가 느려진다.
       // 대신 uniqueItemText() 가 타임리스 문구를 붙여, **트리에서 직접 꽂거나 강제 장착할 때** 제대로 계산되게 했다.
       List<PoeUniqueItem> jewelCandidates = globalJewelCandidates(keywords);
+      // 최종 재대결용 보관 — 주얼은 **아이템보다 먼저** 정해진다(실측 채택값 502~613, 최종은 수천만).
+      //   보조젬과 같은 결함 구조라 같은 처방을 쓴다(보조젬 재대결 실측: 번개 화살 +39.5%).
+      this.jewelRematchPool = List.copyOf(jewelCandidates);
       if (!jewelCandidates.isEmpty()) {
         log("주얼 후보 " + jewelCandidates.size() + "개 (자동 탐색; 타임리스는 소켓/강제 장착 시 반영)");
         Set<Integer> jewelReach = new LinkedHashSet<>(allocated);
@@ -3706,7 +3842,7 @@ public class PoeOptimizeService {
           // P1 메타 마스터리 호스트 — 인접이 아니어도 **최단 경로로 도달 가능한**(예산 내, 경로 ≤5pt) 메타 효과
           // 보유 마스터리를 후보에 넣는다. 실측: RF 치프틴에서 인접 후보가 1개뿐이라 실빌드가 81% 찍는
           // 재생 숙련이 시도조차 되지 않았다. 채택은 여전히 경로 포함 실측 이득 기준(강제 아님).
-          if (!metaMasteries.isEmpty()) {
+          if (SEED_MASTERY_ENABLED && !metaMasteries.isEmpty()) {
             for (PoeTreeGraphService.TreeNode mn : poeTreeGraphService.masteryNodes()) {
               if (allocated.contains(mn.id())
                   || newMasteries.contains(mn.id())
@@ -5011,6 +5147,8 @@ public class PoeOptimizeService {
       // 5.9k/18.6k 의 원인). 완성 빌드 기준으로 각 방어 슬롯 유니크를 방어 크래프트 레어와 1:1 재대결,
       // 최고 1건만 채택(에센스/소켓시너지 패스와 동형 — 상승 시만, 강제 유니크 존중).
       if (balancedJob) {
+        // 여기서부터 완성 빌드끼리의 재대결 — 볼록 생존 벌점을 켠다(탐색 경로는 위에서 이미 확정).
+        this.convexSurvivalPhase = true;
         record DefRematch(Slot slot, RareItem rare) {}
         // 개선 소진까지 반복 — 한 슬롯 교체가 문맥을 바꿔 다음 슬롯의 재대결 결과도 달라진다
         // (실측: 1건 채택만으로 +19.4%). 라운드 상한 = 방어 슬롯 수.
@@ -5040,12 +5178,29 @@ public class PoeOptimizeService {
             if (fixedUniques.stream().anyMatch(u -> u.slug().equals(curFinal.unique().slug()))) {
               continue; // 사용자 강제 유니크 존중
             }
-            RareItem rare = craftRare(defSlot, gem, keywords, 0.0);
-            if (rare != null) {
-              if (defSlot == Slot.OFFHAND) {
-                // 활 빌드의 화살통이 실제로 어떤 모드로 만들어졌는지 — "화살 추가"가 들어갔는지 확인용
+            // ⚠ 4-인자 craftRare 는 defensive=forceEsBase(생명 빌드에선 false)라 **데미지 레어**를 만든다.
+            //   그래서 "방어 슬롯 재대결" 이 실제로는 데미지 레어와 유니크를 붙이고 있었다 — 실측 교환곡선에서
+            //   후보 최고 생존 이득이 +4.1%(투구)에 그친 이유(필요치 +269%). 뒤쪽 단계(6069행)는 이미 두 방향을
+            //   모두 트라이얼하는데 이 단계만 빠져 있었다. 데미지/방어 두 레어를 함께 올린다(구성 같으면 1회).
+            List<RareItem> slotTrials = new ArrayList<>();
+            RareItem dmgRare0 = craftRare(defSlot, gem, keywords, 0.0);
+            if (dmgRare0 != null) {
+              slotTrials.add(dmgRare0);
+            }
+            RareItem defRare0 =
+                DEF_RARE_ENABLED ? craftDefensiveRare(defSlot, gem, keywords) : null;
+            if (defRare0 != null
+                && (dmgRare0 == null || !defRare0.families().equals(dmgRare0.families()))) {
+              slotTrials.add(defRare0);
+            }
+            for (RareItem rare : slotTrials) {
+              if (rematchRound == 0) {
+                // 어떤 모드로 만들어졌는지 — 스킬 고유 축(화살 추가/덫 재사용 등)이 실제로 들어갔는지 확인용.
+                // 슬롯을 유니크가 이기더라도 "축이 후보에 있었는지"와 "있었는데 졌는지"는 다른 결론이다.
                 log(
-                    "보조장비 크래프트 후보: "
+                    "크래프트 후보 "
+                        + defSlot.ko
+                        + ": "
                         + rare.baseType()
                         + " ["
                         + rare.families().stream()
@@ -5059,6 +5214,10 @@ public class PoeOptimizeService {
           if (rematchTrials.isEmpty()) {
             break;
           }
+          // 교환 곡선 측정 — 후보별 (DPS, 최약 최대피격) 을 그대로 남긴다. validator 훅은 이미 계산된 스탯을
+          //   재사용하므로 엔진 호출이 늘지 않는다. "DPS 조금 내주고 생존 크게 사는 후보가 애초에 있는가"를
+          //   점수함수 손대기 전에 눈으로 확인하기 위한 것(볼록 벌점 2판이 실패한 뒤 방향 전환).
+          Map<DefRematch, double[]> tradeProbe = new java.util.concurrent.ConcurrentHashMap<>();
           Map<DefRematch, Double> rematchResults =
               evalBatch(
                   executor,
@@ -5076,7 +5235,49 @@ public class PoeOptimizeService {
                         trialItems,
                         jewels);
                   },
-                  objectiveKey);
+                  objectiveKey,
+                  (trial, values) -> {
+                    tradeProbe.put(
+                        trial,
+                        new double[] {
+                          effectiveDps(values),
+                          weakestCommonHit(values),
+                          values.getOrDefault("TotalEHP", 0d)
+                        });
+                    return true; // 걸러내지 않는다 — 관측 전용
+                  });
+          if (rematchRound == 0 && !tradeProbe.isEmpty()) {
+            Map<String, Double> curVals =
+                poePobEngineService.calculateValues(
+                    buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels));
+            double curDps = effectiveDps(curVals);
+            double curWeak = weakestCommonHit(curVals);
+            log(
+                String.format(
+                    "방어 교환곡선 기준: DPS %,.0f · 최약 %,.0f (목표 %,.0f)", curDps, curWeak, targetMaxHit));
+            tradeProbe.entrySet().stream()
+                .sorted((a, b) -> Double.compare(b.getValue()[1], a.getValue()[1]))
+                .limit(10)
+                .forEach(
+                    e ->
+                        log(
+                            String.format(
+                                "  %s 방어레어: DPS %,.0f (%+.1f%%) · 최약 %,.0f (%+.1f%%) · EHP %,.0f",
+                                e.getKey().slot().ko,
+                                e.getValue()[0],
+                                curDps > 0 ? (e.getValue()[0] / curDps - 1) * 100 : 0,
+                                e.getValue()[1],
+                                curWeak > 0 ? (e.getValue()[1] / curWeak - 1) * 100 : 0,
+                                e.getValue()[2])));
+          }
           Map.Entry<DefRematch, Double> bestRematch =
               rematchResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
           if (bestRematch != null && bestRematch.getValue() > current * 1.003) {
@@ -5101,6 +5302,134 @@ public class PoeOptimizeService {
                     + format(current));
             break;
           }
+        }
+      }
+
+      // ── 보조젬 최종 재대결 — 방어/무기/유니크 재대결과 같은 이유. 보조젬은 아이템 이전의 **랭킹 문맥**
+      //   (기준 무기만 든 상태, 목표값 18~57 수준)에서 확정되는데, 완성 빌드는 수백만이라 순위가 뒤집힐 수 있다.
+      //   실측(번개 화살): 라운드마다 채택젬과 신기루 궁수·규칙 뒤집기의 차이가 1~2점(동점 포함)이었고,
+      //   대표 실빌드는 바로 그 둘을 쓴다. 슬롯별로 풀의 후보와 1:1 교체를 실측해 상승 시만 채택.
+      // 목표 무관 — 랭킹 문맥에서 확정된다는 결함은 dps/ehp 목표에도 똑같이 있다(objectiveKey 로 평가하므로
+      //   각 목표의 기준으로 재대결한다).
+      if (!supportRematchPool.isEmpty() && !supports.isEmpty()) {
+        enterPhase("supports-rematch");
+        record SupSwap(int idx, PoeGem cand) {}
+        for (int supRound = 0; supRound < 3; supRound++) {
+          List<SupSwap> supTrials = new ArrayList<>();
+          for (int i = 0; i < supports.size(); i++) {
+            for (PoeGem cand : supportRematchPool) {
+              if (!supports.contains(cand)) {
+                supTrials.add(new SupSwap(i, cand));
+              }
+            }
+          }
+          if (supTrials.isEmpty()) {
+            break;
+          }
+          Map<SupSwap, Double> supResults =
+              evalBatch(
+                  executor,
+                  supTrials,
+                  trial -> {
+                    List<PoeGem> swapped = new ArrayList<>(supports);
+                    swapped.set(trial.idx(), trial.cand());
+                    return buildXml(
+                        gem,
+                        swapped,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels);
+                  },
+                  objectiveKey);
+          Map.Entry<SupSwap, Double> bestSup =
+              supResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (bestSup != null && bestSup.getValue() > current * 1.003) {
+            PoeGem dropped = supports.get(bestSup.getKey().idx());
+            supports.set(bestSup.getKey().idx(), bestSup.getKey().cand());
+            current = bestSup.getValue();
+            log(
+                "보조젬 최종 재대결: "
+                    + koName(dropped)
+                    + " → "
+                    + koName(bestSup.getKey().cand())
+                    + " → "
+                    + format(current));
+          } else {
+            log(
+                "보조젬 최종 재대결: 유지 — 최고 "
+                    + (bestSup != null ? format(bestSup.getValue()) : "-")
+                    + " vs 현재 "
+                    + format(current)
+                    + " (후보 "
+                    + supTrials.size()
+                    + "개)");
+            break;
+          }
+        }
+      }
+
+      // ── 가드 스킬 선택 — 없음 포함 전수 실측 후 상승 시만 채택. 생존만 올리는 층이라 dps 목표에선 무의미,
+      //   balanced/ehp 에서만 돈다. 실빌드가 거의 전부 끼는 층인데 우리 XML 엔 아예 없었다.
+      if ((balancedJob || "ehp".equals(objectiveKey)) && GUARD_ENABLED) {
+        enterPhase("guard");
+        List<String> guardPool =
+            List.of("Molten Shell", "Steelskin", "Immortal Call", "Vaal Molten Shell");
+        // 보조 링크 후보 — null(단독) 포함. 각성한 강화는 실측에서 **전 조합 정확히 0**(품질은 흡수 한도에
+        //   영향 없음)이라 제외했다. 기원은 젬 레벨을 올려 흡수 한도를 키운다: 강철 피부 15,844→16,710(+5.5%),
+        //   용융 껍질 19,534→19,718, 발라 18,208→18,504. 단 승자였던 불사의 외침은 충전 기반이라 무변화(33,721).
+        List<String> guardSupportPool = new ArrayList<>();
+        guardSupportPool.add(null);
+        guardSupportPool.add("Awakened Empower");
+        String savedGuard = guardSkill;
+        String savedGuardSup = guardSupport;
+        Map<String, Double> guardResults = new LinkedHashMap<>();
+        for (String candidate :
+            guardPool.stream()
+                .flatMap(g -> guardSupportPool.stream().map(sup -> sup == null ? g : g + "|" + sup))
+                .toList()) {
+          int bar = candidate.indexOf('|');
+          guardSkill = bar < 0 ? candidate : candidate.substring(0, bar);
+          guardSupport = bar < 0 ? null : candidate.substring(bar + 1);
+          Map<String, Double> vals =
+              poePobEngineService.calculateValues(
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      items,
+                      jewels));
+          evalCount.incrementAndGet();
+          guardResults.put(candidate, objectiveOf(vals, objectiveKey));
+          log(
+              String.format(
+                  "가드 스킬 %s: 최약 %,.0f · EHP %,.0f · 목표값 %s",
+                  candidate,
+                  weakestCommonHit(vals),
+                  vals.getOrDefault("TotalEHP", 0d),
+                  format(guardResults.get(candidate))));
+        }
+        guardSkill = savedGuard;
+        guardSupport = savedGuardSup;
+        Map.Entry<String, Double> bestGuard =
+            guardResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+        if (bestGuard != null && bestGuard.getValue() > current * 1.003) {
+          int bar = bestGuard.getKey().indexOf('|');
+          guardSkill = bar < 0 ? bestGuard.getKey() : bestGuard.getKey().substring(0, bar);
+          guardSupport = bar < 0 ? null : bestGuard.getKey().substring(bar + 1);
+          current = bestGuard.getValue();
+          log("가드 스킬 채택: " + bestGuard.getKey() + " → " + format(current));
+        } else {
+          log(
+              "가드 스킬: 이득 없음 — 최고 "
+                  + (bestGuard != null ? format(bestGuard.getValue()) : "-")
+                  + " vs 현재 "
+                  + format(current));
         }
       }
 
@@ -5569,6 +5898,86 @@ public class PoeOptimizeService {
             current = bestPairVal;
           } else {
             log("감시자의 눈: 이득 없음 — 상위 " + shortlist.size() + "개 짝 전수 실측");
+          }
+        }
+      }
+
+      // ⚠ 위치 주의: 이 재대결은 **감시자의 눈 다음, 티어 비교 앞**에 둔다. 원래 가드 앞(이른 자리)에 뒀더니
+      //   채택 이후 단계들이 다른 가지로 내려가 정의의 화염이 −4.3% 났다(번개 화살 +19.7%·고행 +6.3% 는 유지).
+      //   뒤따르는 단계가 적을수록 경로 이탈 여지가 작다.
+      // ── 유니크 주얼 최종 재대결 — 보조젬과 같은 이유. 주얼은 **아이템 이전**에 확정되는데(실측 채택값
+      //   502~613, 최종 문맥은 수천만) 이후 유니크 주얼끼리 다시 겨루는 단계가 없었다. 뒤쪽 "주얼 최종
+      //   교체(제작 레어)" 는 제작 레어로 바꾸는 경로일 뿐이라 유니크↔유니크 비교를 대신하지 못한다.
+      //   소켓별로 풀 상위 후보와 1:1 교체를 실측해 상승 시만 채택.
+      if (balancedJob && !jewelRematchPool.isEmpty() && !jewels.isEmpty()) {
+        enterPhase("jewels-rematch");
+        record JewelSwap(int socket, PoeUniqueItem cand) {}
+        for (int jRound = 0; jRound < 2; jRound++) {
+          List<JewelSwap> jTrials = new ArrayList<>();
+          for (Integer socket : jewels.keySet()) {
+            Equipped cur = jewels.get(socket);
+            int tried = 0;
+            for (PoeUniqueItem cand : jewelRematchPool) {
+              if (tried >= JEWEL_REMATCH_PER_SOCKET) {
+                break;
+              }
+              if (cur != null && cur.isUnique() && cur.unique().slug().equals(cand.slug())) {
+                continue;
+              }
+              // 이미 다른 소켓에 낀 유니크는 중복 장착 불가
+              if (jewels.values().stream()
+                  .anyMatch(
+                      j -> j != null && j.isUnique() && j.unique().slug().equals(cand.slug()))) {
+                continue;
+              }
+              tried++;
+              jTrials.add(new JewelSwap(socket, cand));
+            }
+          }
+          if (jTrials.isEmpty()) {
+            break;
+          }
+          Map<JewelSwap, Double> jResults =
+              evalBatch(
+                  executor,
+                  jTrials,
+                  trial -> {
+                    Map<Integer, Equipped> trialJewels = new LinkedHashMap<>(jewels);
+                    trialJewels.put(trial.socket(), Equipped.ofUnique(trial.cand()));
+                    return buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        trialJewels);
+                  },
+                  objectiveKey);
+          Map.Entry<JewelSwap, Double> bestJ =
+              jResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (bestJ != null && bestJ.getValue() > current * 1.003) {
+            Equipped dropped = jewels.get(bestJ.getKey().socket());
+            jewels.put(bestJ.getKey().socket(), Equipped.ofUnique(bestJ.getKey().cand()));
+            current = bestJ.getValue();
+            log(
+                "주얼 최종 재대결: "
+                    + (dropped == null ? "-" : jewelLabel(dropped))
+                    + " → "
+                    + bestJ.getKey().cand().name()
+                    + " → "
+                    + format(current));
+          } else {
+            log(
+                "주얼 최종 재대결: 유지 — 최고 "
+                    + (bestJ != null ? format(bestJ.getValue()) : "-")
+                    + " vs 현재 "
+                    + format(current)
+                    + " (후보 "
+                    + jTrials.size()
+                    + "개)");
+            break;
           }
         }
       }
@@ -6599,6 +7008,24 @@ public class PoeOptimizeService {
                           new PoeOptimizeResult.SupportPick(
                               extra.slug(), extra.name(), extra.nameKo()))
                   .toList(),
+              // 가드 스킬 그룹 — 채택됐으면 [가드젬, 링크 보조젬] 순. 한글명은 젬 데이터에서 조회.
+              guardSkill == null
+                  ? List.of()
+                  : java.util.stream.Stream.of(guardSkill, guardSupport)
+                      .filter(java.util.Objects::nonNull)
+                      .map(
+                          nm ->
+                              // 보조젬은 데이터상 이름이 "... Support" 다(XML nameSpec 은 접미 없이 쓴다) —
+                              //   그대로 조회하면 각성한 기원이 slug·한글명 없이 나간다(실측).
+                              poeGemDataService
+                                  .findByName(nm)
+                                  .or(() -> poeGemDataService.findByName(nm + " Support"))
+                                  .map(
+                                      g ->
+                                          new PoeOptimizeResult.SupportPick(
+                                              g.slug(), g.name(), g.nameKo()))
+                                  .orElseGet(() -> new PoeOptimizeResult.SupportPick("", nm, nm)))
+                      .toList(),
               List.copyOf(allNodes),
               notables,
               notablesEn,
@@ -6683,6 +7110,21 @@ public class PoeOptimizeService {
       // 사용자 실행이면 최근 결과 이력에도 남긴다(QA 배터리는 saveHistoryForRun=false 로 제외)
       if (saveHistoryForRun) {
         saveHistory(resultJson);
+      }
+      // 생존 계수 내역 — "balanced 인데 왜 실빌드보다 물러터졌나"를 로그만으로 판정할 수 있게. 목표치는
+      //   해당 아키타입 ninja 실측 중앙값(setSurvivalTargets)이고, s 가 곧 DPS 에 곱해지는 값이다.
+      if ("balanced".equals(objective)) {
+        double weakest = weakestCommonHit(finalValues);
+        log(
+            String.format(
+                "생존 계수: 최약최대피격 %,.0f / 목표 %,.0f = %.2f · EHP %,.0f / 목표 %,.0f · surv=%.3f (곡률 %.1f)",
+                weakest,
+                targetMaxHit,
+                targetMaxHit > 0 ? weakest / targetMaxHit : 0d,
+                finalValues.getOrDefault("TotalEHP", 0d),
+                targetEhp,
+                balancedSurvival(finalValues),
+                SURVIVAL_SHORTFALL_EXP));
       }
       log(
           "완료: "
@@ -6806,7 +7248,50 @@ public class PoeOptimizeService {
    * 밸런스 목표의 단일 히트 생존 목표 — 흔한 치명 유형(물리+3원소)의 최대 피격이 이 값 미만이면 원샷 위험으로 DPS 점수 감쇠. 아키타입
    * 무관(생명·ES·방어도·블록·최대저항 무엇으로 올리든 이 값이 오른다).
    */
-  private static final double MAXHIT_FLOOR = 15000d;
+  /** 완성 단계 생존 래칫 on/off — 기본 off(동작 무변화). */
+  private static final boolean SURV_RATCHET_ENABLED =
+      "on"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.survRatchet", System.getenv().getOrDefault("POE_SURV_RATCHET", "off")));
+
+  /**
+   * EHP 2차 항 + EHP 시드 존중 — **기본 on**(벤치 갱신 후 승격). 끄려면 POE_EHP_TERM=off.
+   *
+   * <p>승격 근거(갱신 벤치 기준 깨끗한 A/B, 7종): 영향받는 축은 둘뿐이고 나머지 5축은 완전 동일. 회오리 3,629,914→3,216,209(−11.4%)에
+   * EHP 12,666→19,155(+51%), 번개 화살 6,959,002→6,549,649(−5.9%)에 EHP 14,767→27,307(+85%). 두 축 모두 벤치
+   * 대비 204%/199% 라 여유가 크고, EHP 는 실빌드 중앙값 (23,000 / 25,000)에 근접할 뿐 과잉이 아니다. 보류했던 유일한 근거("번개 화살이 벤치
+   * 96%→90%")는 벤치 갱신으로 소멸했다(현재 199%).
+   */
+  private static final boolean EHP_TERM_ENABLED =
+      "on"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.ehpTerm", System.getenv().getOrDefault("POE_EHP_TERM", "on")));
+
+  /** EHP 2차 항의 가중(하한은 1-가중/2). 0.3 은 혼의 균열 −13.7% 로 과했고 0.15 가 무릎점(실측). */
+  private static final double EHP_TERM_WEIGHT =
+      Double.parseDouble(
+          System.getProperty(
+              "poe.ehpWeight", System.getenv().getOrDefault("POE_EHP_WEIGHT", "0.15")));
+
+  /** EHP 시드 존중 시 절대 바닥. */
+  private static final double EHP_SEED_FLOOR =
+      Double.parseDouble(
+          System.getProperty(
+              "poe.ehpSeedFloor", System.getenv().getOrDefault("POE_EHP_SEED_FLOOR", "8000")));
+
+  /** 시드(아키타입 실측)가 있을 때의 절대 바닥 — 이 아래로는 어떤 메타라도 원샷이라 허용하지 않는다. */
+  private static final double MAXHIT_SEED_FLOOR =
+      Double.parseDouble(
+          System.getProperty(
+              "poe.maxhitSeedFloor",
+              System.getenv().getOrDefault("POE_MAXHIT_SEED_FLOOR", "5000")));
+
+  private static final double MAXHIT_FLOOR =
+      Double.parseDouble(
+          System.getProperty(
+              "poe.maxhitFloor", System.getenv().getOrDefault("POE_MAXHIT_FLOOR", "15000")));
 
   /** 카오스는 드문 위협이라 별도(더 낮은) 목표 + 약한 2차 가중 — 과투자 방지. */
   private static final double CHAOS_MAXHIT_FLOOR = 8000d;
@@ -6828,6 +7313,13 @@ public class PoeOptimizeService {
 
   /** 유니크 최종 재대결 라운드 상한 — 한 슬롯 교체가 문맥을 바꿔 다음 라운드 결과도 달라진다. */
   private static final int UNIQUE_REMATCH_ROUNDS = 3;
+
+  /**
+   * 랭킹 전용 문맥을 켜는 기준값 — 젬 단독 평가가 이 값보다 작으면 "잴 수 없는 상태"로 본다.
+   *
+   * <p>활·덫처럼 장비/트리가 있어야 피해가 생기는 계열은 초반 값이 한 자릿수라 후보 순위가 노이즈가 된다.
+   */
+  private static final double RANKING_CONTEXT_BASELINE = 1000d;
 
   /** 클러스터 적재물 재선정 시 볼 노터블 후보 수 — 승자 스킬키에 한해 실측으로 교체해 본다. */
   private static final int CLUSTER_NOTABLE_POOL = 6;
@@ -7015,6 +7507,41 @@ public class PoeOptimizeService {
    *
    * <p>dps/ehp 목표엔 적용 안 함(dps=유리대포 허용, ehp 기준선 보존).
    */
+  /** 흔한 치명 유형(물리+3원소) 최대 피격의 최솟값 — 실질 생존을 결정하는 값. 없으면 0. */
+  private static double weakestCommonHit(Map<String, Double> values) {
+    double weakest = Double.MAX_VALUE;
+    for (String key :
+        new String[] {
+          "PhysicalMaximumHitTaken", "FireMaximumHitTaken",
+          "ColdMaximumHitTaken", "LightningMaximumHitTaken"
+        }) {
+      Double v = values.get(key);
+      if (v != null && v > 0d) {
+        weakest = Math.min(weakest, v);
+      }
+    }
+    return weakest == Double.MAX_VALUE ? 0d : weakest;
+  }
+
+  /** 방어 재대결의 방어 레어 후보 on/off — 기여도 귀속(A/B) 용. 기본 on. */
+  private static final boolean DEF_RARE_ENABLED =
+      !"off"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.defRare", System.getenv().getOrDefault("POE_DEF_RARE", "on")));
+
+  /** 가드 스킬 단계 on/off — 기여도 귀속(A/B) 용. 기본 on. */
+  private static final boolean GUARD_ENABLED =
+      !"off"
+          .equalsIgnoreCase(
+              System.getProperty("poe.guard", System.getenv().getOrDefault("POE_GUARD", "on")));
+
+  /** 생존 미달 벌점의 곡률(1.0=선형·기존). 실험용으로만 환경변수/시스템 프로퍼티로 올린다. */
+  private static final double SURVIVAL_SHORTFALL_EXP =
+      Double.parseDouble(
+          System.getProperty(
+              "poe.survivalExp", System.getenv().getOrDefault("POE_SURVIVAL_EXP", "1.0")));
+
   private double balancedSurvival(Map<String, Double> values) {
     // (1) 결과-기반 아키타입-무관 한 방 생존 — PoB 가 계산한 유형별 "최대 피격(단일 히트)". 생명·ES·방어도·블록·최대저항
     //   무엇을 쌓든 그 효과가 이 값에 반영되므로, 스탯(생명/ES 등)을 하드코딩할 필요가 없다. 흔한 치명 유형(물리+3원소)의
@@ -7038,9 +7565,14 @@ public class PoeOptimizeService {
     double ehpTarget = targetEhp;
     double s;
     if (weakestCommon != Double.MAX_VALUE) {
+      // 미달 벌점의 곡률 — 선형(지수 1)이면 "생존 1% 손해 ↔ DPS 1% 이득"이 등가라, DPS 가 28배까지 벌리는
+      //   아키타입에서는 생존이 사실상 무시된다(실측: 저거넛 뼈 박살 balanced 가 최약 최대피격 10k vs 실빌드 32k,
+      //   EHP 20k vs 92k 인데 DPS 는 28배). 지수>1 이면 목표 미달이 초선형으로 아파 실빌드 수준으로 끌어올린다.
+      //   기본 1.0 = 기존 동작 그대로(기준선 불변). 실험은 POE_SURVIVAL_EXP 로만 켠다.
       s =
           weakestCommon < maxhitTarget
-              ? weakestCommon / maxhitTarget
+              ? Math.pow(
+                  weakestCommon / maxhitTarget, convexSurvivalPhase ? SURVIVAL_SHORTFALL_EXP : 1.0)
               : 1.0 + 0.2 * Math.min(1.0, Math.sqrt(weakestCommon / maxhitTarget) - 1.0);
     } else {
       // max hit 미제공 시 EHP 폴백(아키타입-무관 집계값).
@@ -7050,10 +7582,31 @@ public class PoeOptimizeService {
               ? ehp / ehpTarget
               : 1.0 + 0.2 * Math.min(1.0, Math.sqrt(ehp / ehpTarget) - 1.0);
     }
+    // (2a) 생존 래칫 — **완성 단계(convexSurvivalPhase)** 에서만, 목표를 이미 넘긴 빌드가 목표 아래로
+    //   내려가는 교환을 근사-배제한다(RF 지속 게이트와 같은 형태). 선형 벌점만으로는 "DPS 이득률 > 생존
+    //   손실률" 이면 무조건 채택돼, 도유 단계가 생명 노드(활력)를 공격 노드(복수)로 바꾸며 뼈 박살 최약
+    //   최대피격을 34,281(0.88) → 29,043(0.74) 로 떨어뜨렸다(실측). 탐색 구간에는 걸지 않는다 —
+    //   중간 빌드는 늘 목표 미달이라 경로가 비틀린다(볼록 벌점 2판 실패의 교훈).
+    if (SURV_RATCHET_ENABLED
+        && convexSurvivalPhase
+        && weakestCommon != Double.MAX_VALUE
+        && weakestCommon < maxhitTarget) {
+      s *= 0.05;
+    }
     // (2) 카오스 — 드문 위협이라 약한 2차 가중. 심하게 낮을 때만 완만 감쇠(하한 0.6, 과투자 방지).
     double chaos = values.getOrDefault("ChaosMaximumHitTaken", 0d);
     if (chaos > 0d && chaos < CHAOS_MAXHIT_FLOOR) {
       s *= Math.max(0.6, chaos / CHAOS_MAXHIT_FLOOR);
+    }
+    // (2e) EHP 목표 — 최약최대피격은 **단일 히트** 생존이고 EHP 는 **연속 피격** 버팀이라, 한쪽만 맞추면
+    //   실빌드와 프로파일이 갈린다(실측: 번개 화살 최약 7,312 로 실메타 7,500 에 맞췄는데 EHP 는 14,767 vs
+    //   실빌드 중앙값 25,000 = 0.59배). 다른 2차 항들과 같은 약한 형태 — 미달 비율에 비례한 완만 감쇠(하한 0.85).
+    if (EHP_TERM_ENABLED && ehpTarget > 0 && weakestCommon != Double.MAX_VALUE) {
+      double ehpNow = values.getOrDefault("TotalEHP", 0d);
+      if (ehpNow < ehpTarget) {
+        s *=
+            Math.max(1.0 - EHP_TERM_WEIGHT / 2, 1.0 - EHP_TERM_WEIGHT * (1.0 - ehpNow / ehpTarget));
+      }
     }
     // (2b) 원소 저항 캡 — 기본 75(전 빌드 공통)이나, 아키타입 실측(치프틴 RF 등 최대저항 특화)은 목표가 90.
     //   목표 미달 1%당 2.5% 감쇠(하한 0.15). 목표를 아키타입 seed 로 잡아 90 특화 빌드가 75 에서 멈추지 않게 한다.
@@ -9156,7 +9709,7 @@ public class PoeOptimizeService {
                     && categories.contains("wand")));
     // P1② 메타 무기 구성 — 무기 유니크 후보도 메타 category 로 제약(교집합 비면 무제약 폴백).
     Set<String> metaCategories =
-        slot == Slot.WEAPON && !metaWeaponClasses.isEmpty()
+        slot == Slot.WEAPON && SEED_WEAPON_ENABLED && !metaWeaponClasses.isEmpty()
             ? metaWeaponClasses.stream()
                 .map(WEAPON_CLASS_TO_CATEGORY::get)
                 .filter(java.util.Objects::nonNull)
@@ -9458,6 +10011,19 @@ public class PoeOptimizeService {
           .append(supportLevelOverride.getOrDefault(blessingAura.slug(), 20))
           .append("\" quality=\"20\" enabled=\"true\"/>")
           .append("</Skill>");
+    }
+    // 가드 스킬 — 별도 그룹. PoB 가 자동으로 버프를 머지해 GuardAbsorb 층을 만든다(설정 토글 불필요).
+    if (guardSkill != null) {
+      xml.append("<Skill enabled=\"true\" slot=\"Boots\"><Gem nameSpec=\"")
+          .append(guardSkill)
+          .append("\" level=\"20\" quality=\"20\" enabled=\"true\"/>");
+      if (guardSupport != null) {
+        // 기원/강화는 링크된 젬의 레벨·품질을 올려 흡수 한도를 키운다(지속시간 계열은 최대 피격 계산엔 무의미).
+        xml.append("<Gem nameSpec=\"")
+            .append(guardSupport)
+            .append("\" level=\"4\" quality=\"20\" enabled=\"true\"/>");
+      }
+      xml.append("</Skill>");
     }
     // 추가 스킬(사용자 지정) — 각자 별도 그룹으로 emit. PoB 가 오라=예약+버프, 커스=적약화, 헤럴드/가드 등 역할대로 반영.
     // 1b 패스가 선발한 전용 보조젬(화염덫 4링크 등)을 함께 링크 — 벤치 스킬별 DPS(4링크 실빌드)와 공정 비교.

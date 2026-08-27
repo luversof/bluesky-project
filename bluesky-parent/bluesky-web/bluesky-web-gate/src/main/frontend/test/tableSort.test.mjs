@@ -36,12 +36,12 @@ test("괄호 앞의 대표 수치만 정렬 키로 쓴다", () => {
 	// 고치기 전에는 3000000.5 처럼 두 수가 이어붙었다.
 	assert.equal(t.leadingNumericText("+300,000 (+0.5%)"), "+300000");
 	assert.equal(t.cellNum({ textContent: "+300,000 (+0.5%)" }), 300000);
-	assert.equal(t.cellNum({ textContent: "-4,917,426 (-18.3%)" }), -4917426);
+	assert.equal(t.cellNum({ textContent: "-4,900,000 (-18.3%)" }), -4900000);
 });
 
 test("괄호가 붙은 손익 열도 숫자로 판정한다", () => {
 	// 판정에 실패하면 문자열 정렬로 떨어져 음수가 뒤섞인다.
-	assert.equal(t.columnType(fakeTbody(["-4,917,426 (-18.3%)", "+885,617,421 (+246.6%)"]), 0), "num");
+	assert.equal(t.columnType(fakeTbody(["-4,900,000 (-18.3%)", "+885,600,000 (+246.6%)"]), 0), "num");
 });
 
 test("괄호 열이 실제로 부호 순서대로 정렬된다", () => {

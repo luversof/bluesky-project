@@ -22,6 +22,8 @@ public record PoeOptimizeResult(
     // 마나 예약 상한에 걸려 못 띄운 오라(부족 마나 포함) — 결과 화면 설명용
     List<BlockedAura> blockedAuras,
     List<SupportPick> additionalSkills,
+    /** 가드 스킬 그룹(가드젬 + 링크 보조젬) — 생존의 큰 축이라 화면에 표시한다. 비면 미채택. */
+    List<SupportPick> guardGems,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
     /** treeNotables 와 평행한 영문 이름 — 결과는 실행 시점에 저장돼 화면에서 번역할 수 없다. */

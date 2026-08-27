@@ -672,8 +672,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
    *
    * <pre>
    *   실측 2026-08-22
-   *   mtd  22일 3,062,734  vs 31일 3,355,246   화면 -8.7%  / 일평균 기준 +28.6%
-   *   ytd 234일 23,156,053 vs 365일 14,524,375 화면 +59.4% / 일평균 기준 +148.7%
+   *   mtd  22일치 vs 31일치   화면 -8.7%  / 일평균 기준 +28.6%
+   *   ytd 234일치 vs 365일치  화면 +59.4% / 일평균 기준 +148.7%
    * </pre>
    *
    * <p>상대 N개월 프리셋은 양쪽 길이가 최대 3 일 차이라 표기하지 않는다(실측: 1개월 -8.7% vs -11.7%).
@@ -1265,8 +1265,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         // 기록된 54건 전부): 40건이 이 정의와 1원 이내로 일치했고, 수수료까지 뺀 정의와 일치한 건은 0건.
         //
         // 그래서 매도 '실수령'(수수료까지 뺀 금액)에서 역산하면 COGS 가 수수료만큼 작아지고 그만큼
-        // 원금이 부풀어 남는다. 실측: 삼성전자 원금이 362,531,274 로 계산돼 api-stock 의 362,525,079
-        // 보다 6,195 컸다(= 마지막 전량매도 이후 매도 수수료 4,611 + 1,584). 이 원금은 배당수익률의
+        // 원금이 부풀어 남는다. 실측: 삼성전자 원금이 api-stock 값보다 컸고, 그 차이가 마지막 전량매도
+        // 이후의 매도 수수료 합과 1 원 오차 없이 같았다. 이 원금은 배당수익률의
         // 분모이므로 수익률이 그만큼 낮게 표시된다. api-stock 은 같은 계산을 이미 고쳤다.
         BigDecimal cogs = amount.subtract(nz(trade.tax())).subtract(nz(trade.realizedProfit()));
         totalCost = totalCost.subtract(cogs);
@@ -1334,7 +1334,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
       // 기준일 원금이 없는 배당(지급일에 이미 전량 매도한 경우 등)은 분모(기준일 평균원금)에
       // 기여하지 않는다. 그런데 분자에 전액을 넣으면 수익률이 과대 계상된다
-      // (실측: 193건 중 5건·세후 144,360원이 분모 없이 분자에만 들어가 7.12% 가 7.14% 로 보였다.
+      // (실측: 193건 중 5건이 분모 없이 분자에만 들어가 7.12% 가 7.14% 로 보였다.
       //  이 데이터에선 0.02%p 지만, 매도한 포지션의 비중이 큰 사용자에겐 커진다).
       // 분모에 기여한 배당만 따로 합산해 같은 모집단끼리 나눈다.
       if (dividend.principalCost() != null
@@ -1405,7 +1405,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       // (dailyPrincipalCostSum)에도 반드시 기여했다. 반대로 기준일 원금이 없는 배당은 기간에 따라
       // 일수 합계에 기여했을 수도, 전혀 아닐 수도 있다 - 예컨대 NAVER 는 2021-01-18 에 전량 매도했는데
       // 배당이 2021-04-08 에 기록돼 있어, 4월만 보는 기간에서는 원금이 하루도 없는데 배당만 분자에 들어간다.
-      // 그런 배당을 빼면 어떤 기간에서도 분모에 기여한 것만 분자에 남는다(실측 전 기간 기준 5건 144,360원).
+      // 그런 배당을 빼면 어떤 기간에서도 분모에 기여한 것만 분자에 남는다(실측 전 기간 기준 5건).
       BigDecimal yieldOnDailyAverageCostPct =
           averageDailyPrincipalCost != null
               ? percentage(netAmountWithPrincipalCost, averageDailyPrincipalCost)

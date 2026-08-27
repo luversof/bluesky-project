@@ -9,13 +9,12 @@ import org.junit.jupiter.api.Test;
 /**
  * 자산현황이 쓰는 '지금 보유분 원가' 규칙을 고정한다.
  *
- * <p>api-stock 이 {@code evaluationProfit = 평가액 - 원가} 로 두므로 {@code 평가액 - 평가손익} 이 곧 원가다. 실측: 이렇게 구한 합
- * 632,223,826 이 api-stock 시계열 보유원가와 정확히 같다(참고로 {@code 평균단가 x 수량} 은 632,223,831 로 평균단가 2 자리 반올림만큼
- * 어긋난다).
+ * <p>api-stock 이 {@code evaluationProfit = 평가액 - 원가} 로 두므로 {@code 평가액 - 평가손익} 이 곧 원가다. 실측: 이렇게 구한
+ * 합이 api-stock 시계열 보유원가와 1 원 오차 없이 같다(참고로 {@code 평균단가 x 수량} 은 평균단가 2 자리 반올림만큼 어긋난다).
  *
- * <p>폴백은 예전에 {@code totalBuyAmount} 였는데 그것은 <b>기간 누적 매수액</b>이라 성격이 다르다 &mdash; 실측: 포트폴리오
- * 735,929,747 vs 실제 보유원가 632,223,826, 삼성전자는 466,231,000 vs 362,525,079 로 29% 과대. 지금 api-stock 은 두
- * 값을 항상 채우므로 폴백이 타지 않지만, 타는 날에 틀린 값을 쓰면 안 된다.
+ * <p>폴백은 예전에 {@code totalBuyAmount} 였는데 그것은 <b>기간 누적 매수액</b>이라 성격이 다르다 &mdash; 실측: 포트폴리오 값이 실제
+ * 보유원가보다 16.4% 과대였고, 삼성전자 한 종목만 보면 29% 과대였다. 지금 api-stock 은 두 값을 항상 채우므로 폴백이 타지 않지만, 타는 날에 틀린 값을 쓰면
+ * 안 된다.
  */
 class CurrentHoldingCostTest {
 
@@ -37,11 +36,11 @@ class CurrentHoldingCostTest {
 
   @Test
   void 평가액에서_평가손익을_빼면_원가다() {
-    // 평가액 1,493,281,835 / 평가손익 861,058,009 -> 원가 632,223,826 (실측 합계)
+    // 평가액 1,000,000,000 / 평가손익 600,000,000 -> 원가 400,000,000
     assertThat(
             controller.resolveCurrentHoldingCost(
-                new BigDecimal("1493281835"), new BigDecimal("861058009"), null, 0))
-        .isEqualByComparingTo("632223826");
+                new BigDecimal("1000000000"), new BigDecimal("600000000"), null, 0))
+        .isEqualByComparingTo("400000000");
   }
 
   /** 평가손익이 음수(손실)여도 같은 항등식이 성립한다. */
@@ -110,8 +109,7 @@ class CurrentHoldingCostTest {
    * 요약 화면과 포트폴리오 화면이 같은 헬퍼로 보유 원가를 구하는지.
    *
    * <p>예전에는 두 곳이 따로 계산했고 폴백이 달랐다 &mdash; 포트폴리오는 {@code 평균단가 x 보유수량}(실측 오차 5 원), 요약은 {@code
-   * totalBuyCost}(실측 735,958,622 로 실제 632,223,825 보다 <b>103,734,796 원 과대</b>). 같은 뜻의 값이 화면마다 달라지면 안
-   * 된다.
+   * totalBuyCost}(실측: 실제 보유원가보다 <b>16.4% 과대</b>). 같은 뜻의 값이 화면마다 달라지면 안 된다.
    *
    * <p>지금은 api-stock 이 평가액/평가손익을 항상 채워 폴백이 타지 않지만, 타는 날에 틀린 값을 쓰면 안 된다.
    */

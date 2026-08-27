@@ -116,8 +116,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     if (userId == null) return loginRequiredView(model);
     request.setUserId(userId);
     // 이 화면의 요약 카드는 '지금 보유'다. 기간이 실려 오면 api-stock 은 평가(현재가/평가금액/평가손익)를
-    // 아예 계산하지 않아 평가액이 0 으로 나간다(실측: 같은 사용자의 보유 18행이 기간 없이는 평가액
-    // 1,493,281,835 인데 기간을 주면 0). 이 요청은 URL 에서 바인딩되므로 화면이 안 보내더라도
+    // 아예 계산하지 않아 평가액이 0 으로 나간다(실측: 같은 사용자의 보유 18행이 기간 없이는 평가액이
+    // 채워지는데 기간을 주면 통째로 0). 이 요청은 URL 에서 바인딩되므로 화면이 안 보내더라도
     // 엔드포인트를 직접 부르면 그대로 드러난다. 자산현황/포트폴리오와 같은 이유로 여기서 떨어낸다.
     request.setStartDate(null);
     request.setEndDate(null);
@@ -151,11 +151,11 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             : supplyRemote(() -> emptyIfNull(tradeProfitClient.calculateProfit(profitParams)));
     // 세후 배당 합계. 예전에는 전 기간 이력을 통째로 받아 더했고(193건 79,919 바이트), 그 다음에는
     // 사용자 전체 합계만 주는 meta 를 썼다. 후자는 계좌/종목 필터를 걸어도 배당만 전체 값이라
-    // '누적 확정 수익'이 실현손익(필터 적용)과 어긋났다(실측: KB증권 위탁 10,113,820 이어야 할 값이
-    // 61,646,257). 손익 조회와 같은 파라미터로 집계해 두 항의 조건을 맞춘다.
+    // '누적 확정 수익'이 실현손익(필터 적용)과 어긋났다(실측: KB증권 위탁 자리에 그 계좌 값의 6.1 배인
+    // 전 계좌 합계가 들어갔다). 손익 조회와 같은 파라미터로 집계해 두 항의 조건을 맞춘다.
     // 계좌 선택이 빈 목록이면 이 조회도 건너뛴다. 빈 목록은 toParams() 에서 파라미터가 통째로 빠져
-    // '필터 없음'(= 전체)이 되므로, 손익·추이는 0 인데 이 항만 전 기간 합계(실측 61,645,687)가 찍힌다.
-    // 위에 적힌 사고(10,113,820 자리에 61,646,257)와 같은 어긋남이 다른 문으로 되돌아오는 자리다.
+    // '필터 없음'(= 전체)이 되므로, 손익·추이는 0 인데 이 항만 전 기간 합계가 찍힌다.
+    // 위에 적힌 사고(한 계좌 자리에 전 계좌 합계)와 같은 어긋남이 다른 문으로 되돌아오는 자리다.
     // 종목별로 나눠 받는다. 합계는 값들의 합이라 /total 을 따로 부르지 않는다(호출 수 그대로).
     // 종목별이 필요한 이유는 아래 '수익권 종목 비율'에 있다.
     var dividendByStockFuture =
@@ -184,7 +184,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     // 매매 화면 헤드라인과 같은 기준(매도 거래에 기록된 값)을 쓴다. realizedProfitNet 은 앱이 평균단가로
-    // 다시 계산한 값이라 253,553 원 낮게 나왔다(실측 2026-08-23). 배당 합계도 세후이므로 세금이 이미
+    // 다시 계산한 값이라 0.11% 낮게 나왔다(실측 2026-08-23). 배당 합계도 세후이므로 세금이 이미
     // 빠진 기록값과 더하는 편이 '누적 확정 수익'의 뜻에 맞는다.
     BigDecimal totalRealizedVal =
         profitList.stream()
@@ -224,7 +224,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                   BigDecimal defaultEvaluationProfit =
                       Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
                   // 보유 원가는 포트폴리오 화면과 같은 헬퍼를 쓴다. 예전에는 폴백이 totalBuyCost 였는데
-                  // 그것은 기간 누적 매수액이라 성격이 다르다(실측: 735,958,622 vs 실제 632,223,825).
+                  // 그것은 기간 누적 매수액이라 성격이 다르다(실측: 실제 보유원가보다 16.4% 과대).
                   BigDecimal defaultPrincipal =
                       resolveCurrentHoldingCost(
                           sums.evaluationAmount(),
@@ -317,8 +317,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
     // 배당을 얹어서 센다. totalProfitNet 은 실현+평가일 뿐 배당이 없다. 이 카드 바로 위에 누적 배당이
     // 있고 같은 카드의 '합산 손익'은 배당을 더하는데, 승패만 배당을 빼고 세면 배당이 큰 종목이 실제로는
-    // 이익인데 패로 잡힌다(실측 2026-08-24: TIGER 리츠부동산인프라 실현+평가 -2,929,544 · 배당
-    // 5,132,889 -> 실제 +2,203,345. 42종목 중 이 1종목이 뒤집혀 76.19% 대신 78.57%).
+    // 이익인데 패로 잡힌다(실측 2026-08-24: TIGER 리츠부동산인프라는 실현+평가가 손실인데 배당이 그
+    // 1.75 배라 합치면 이익이다. 42종목 중 이 1종목이 뒤집혀 76.19% 대신 78.57%).
     long winCount = countProfitableStocks(profitByStockItem, dividendByStockItem);
     double winRate =
         profitByStockItem.isEmpty() ? 0.0 : (double) winCount / profitByStockItem.size() * 100;
@@ -365,7 +365,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     model.addAttribute("combinedAdjustmentAmount", combinedAdjustmentAmount);
     model.addAttribute("holdingFeeAdjustment", holdingFeeAdjustment);
     // 표시되는 평가손익은 매수 수수료를 원가로 보지 않는 기준이다. 그 금액을 밝히지 않으면
-    // 수수료가 반영된 값으로 오해한다(실측 2026-08-23: 24,986 원).
+    // 수수료가 반영된 값으로 오해한다(실측 2026-08-23).
     model.addAttribute(
         "excludedHoldingBuyFee",
         net.luversof.web.gate.stock.util.StockProfitBasisUtil.excludedHoldingBuyFee(profitList));
@@ -466,7 +466,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
    * 수익권 종목 수. 종목 손익에 그 종목의 세후 배당을 얹어 부호를 본다.
    *
    * <p>{@code totalProfitNet} 은 실현+평가일 뿐 배당이 없다. 배당이 큰 종목은 실제로 이익인데 패로 잡힌다(실측 2026-08-24: TIGER
-   * 리츠부동산인프라 실현+평가 -2,929,544 · 배당 5,132,889 -> 실제 +2,203,345).
+   * 리츠부동산인프라는 실현+평가가 손실인데 배당이 그 1.75 배라 합치면 이익이다).
    *
    * <p>분모는 손익 쪽 종목 수 그대로다. 배당만 있고 손익 행이 없는 종목이 분모를 늘리지 않는다.
    */
@@ -725,8 +725,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
    * 계좌 원금. 직접 입력한 원금이 있으면 그것을, 없으면 보유원가를 쓴다.
    *
    * <p>그래서 계좌마다 <b>기준이 다를 수 있다</b> &mdash; 화면은 그 차이를 "수동 원금 반영" 줄로 밝힌다. 실측 2026-08-23: 이 사용자의 6 개
-   * 계좌는 현재 전부 폴백이고(직접 입력값이 비어 있다) 합계가 632,223,826 원이다. ISA·연금저축1·연금저축2 에 각각 60,000,000 / 12,000,000
-   * / 18,000,000 을 넣으면 621,595,903 원이 되어 10,627,923 원 줄어든다.
+   * 계좌가 전부 폴백이던 때와, 비과세 3 계좌에 직접 입력 원금을 넣은 뒤를 견주면 합계가 <b>1.7% 줄어든다</b> &mdash; 폴백은 그만큼 과대다.
    */
   static BigDecimal accountPrincipal(BigDecimal manualPrincipal, BigDecimal holdingCost) {
     if (manualPrincipal != null) {

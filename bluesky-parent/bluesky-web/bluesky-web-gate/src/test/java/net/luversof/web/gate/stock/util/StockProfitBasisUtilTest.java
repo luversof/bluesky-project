@@ -15,7 +15,7 @@ import net.luversof.web.gate.stock.domain.TradeProfit;
  *
  * <p>거래 행이 증권사 기록값이라 화면 손익은 기본 기준({@code evaluationProfit})으로 통일했다. 그 기준은 매수 수수료를 원가로 보지 않으므로
  * ({@code currentTotalCostNet = currentTotalCost + fee}), 표시되는 평가손익에는 보유분 매수 수수료가 빠져 있지 않다. 그 금액을
- * 밝히지 않으면 수수료가 이미 반영된 값으로 오해한다(실측 2026-08-23: 24,986 원).
+ * 밝히지 않으면 수수료가 이미 반영된 값으로 오해한다(실측 2026-08-23).
  */
 class StockProfitBasisUtilTest {
 

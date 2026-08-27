@@ -19,9 +19,8 @@ import net.luversof.web.gate.stock.util.StockFormatUtil;
  * 금액을 원 단위로 찍을 때 버리지 않고 반올림하는지 본다.
  *
  * <p>{@code BigDecimal.longValue()} 는 0 방향으로 버린다. 그래서 나눗셈이 섞인 값에서 실제와 1 원 어긋나고, <b>음수는 손실이 작게</b>
- * 보인다 &mdash; 실측 2026-08-23 매매 화면: 실현손익(net) 61 행 중 23 행에 소수부가 있었고 그중 9 행이 다르게 찍혔다. 예를 들어 {@code
- * -8147.9999998918} 이 -8,147 로(정답 -8,148), {@code 1198069.999999998} 이 1,198,069 로(정답 1,198,070),
- * {@code 138557497.89861974} 가 138,557,497 로 나갔다.
+ * 보인다 &mdash; 실측 2026-08-23 매매 화면: 실현손익(net) 61 행 중 23 행에 소수부가 있었고 그중 9 행이 다르게 찍혔다. 소수부가 {@code
+ * .9999998} 처럼 1 에 거의 닿아 있어도 버려져, 정답보다 1 원 작게 나갔다.
  *
  * <p>표의 행과 합계가 서로 다른 규칙을 쓰면 사용자가 열을 더한 값이 합계와 맞지 않는다(배당 달력에서 실제로 2 원 어긋났다). 그래서 화면에 원 단위로 찍는 자리는 전부
  * {@link StockFormatUtil#displayWon} 하나로 모은다.
@@ -93,12 +92,12 @@ class MoneyDisplayRoundingTest {
   /** 규칙 자체. 0 방향 버림과 반올림이 실제로 갈리는 값들이다(실데이터에서 그대로 나온 수). */
   @Test
   void displayWon_은_0_방향_버림이_아니라_반올림이다() {
-    assertThat(StockFormatUtil.displayWon(new BigDecimal("-8147.9999998918"))).isEqualTo(-8148L);
-    assertThat(StockFormatUtil.displayWon(new BigDecimal("1198069.999999998"))).isEqualTo(1198070L);
-    assertThat(StockFormatUtil.displayWon(new BigDecimal("138557497.89861974")))
-        .isEqualTo(138557498L);
-    assertThat(StockFormatUtil.displayWon(new BigDecimal("550128.5"))).isEqualTo(550129L);
-    assertThat(StockFormatUtil.displayWon(new BigDecimal("102263.4"))).isEqualTo(102263L);
+    assertThat(StockFormatUtil.displayWon(new BigDecimal("-8000.9999998918"))).isEqualTo(-8001L);
+    assertThat(StockFormatUtil.displayWon(new BigDecimal("1200000.999999998"))).isEqualTo(1200001L);
+    assertThat(StockFormatUtil.displayWon(new BigDecimal("138000000.89861974")))
+        .isEqualTo(138000001L);
+    assertThat(StockFormatUtil.displayWon(new BigDecimal("550000.5"))).isEqualTo(550001L);
+    assertThat(StockFormatUtil.displayWon(new BigDecimal("102000.4"))).isEqualTo(102000L);
     assertThat(StockFormatUtil.displayWon(null)).isZero();
   }
 }

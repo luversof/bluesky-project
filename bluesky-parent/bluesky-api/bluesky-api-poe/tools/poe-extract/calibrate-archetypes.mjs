@@ -198,7 +198,15 @@ for (const { key, rep } of targets) {
 			const ratio = entry.dps / med;
 			entry.medianDps = med;
 			entry.ratio = Number(ratio.toFixed(2));
-			entry.reliable = ratio >= 0.25 && ratio <= 4;
+			// DPS 배수뿐 아니라 **생존이 성립하는 빌드인가**도 본다. 재계산에서 방어 축이 날아가면
+			// (임포트 손실·설정 불일치) 생명력 722·EHP 39 같은 값이 나오는데, DPS 만 멀쩡해 보여
+			// 밴드를 통과한다. 그런 대표와 우리 balanced 결과를 견주면 "하회"가 거짓으로 뜬다
+			// (실측: 폭발 덫 벤치 42,849,341 인데 EHP 39.1 — 우리 7,485,109 가 17% 로 찍혔다).
+			const viable = entry.ehp > 5000;
+			entry.reliable = ratio >= 0.25 && ratio <= 4 && viable;
+			if (!viable) {
+				console.warn(`[calibrate] ${key}: 생존 비성립(EHP ${entry.ehp}, 생명력 ${entry.life}) — belowMeta 판정에서 제외`);
+			}
 			if (!entry.reliable) {
 				console.warn(`[calibrate] ${key}: 신뢰도 낮음(중앙값 대비 ${entry.ratio}x) — belowMeta 판정에서 제외`);
 			}

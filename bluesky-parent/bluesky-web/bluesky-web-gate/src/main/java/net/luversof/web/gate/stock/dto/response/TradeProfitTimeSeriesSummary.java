@@ -22,4 +22,11 @@ public record TradeProfitTimeSeriesSummary(
     Double maxDrawdownPct,
     LocalDate maxDrawdownPeakDate,
     LocalDate maxDrawdownTroughDate,
-    Double currentDrawdownPct) {}
+    Double currentDrawdownPct,
+    /** 기간 손익률 - 넣어 둔 돈(기초 평가액 + 기간 중 순유입) 대비. 증가율·투자 수익률과 분모가 다르다. */
+    Double periodProfitRatePct,
+    /** 기간 중 평가액 고점/저점(평가액 0 인 날은 제외). 차트의 최고/최저 주석과 같은 규칙이다. */
+    BigDecimal peakValue,
+    LocalDate peakValueDate,
+    BigDecimal troughValue,
+    LocalDate troughValueDate) {}

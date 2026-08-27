@@ -10,7 +10,7 @@
 	"src/poe/multiSelect.ts": "5603aaea8ab647ed7931b03250989dae0a2973733be369ab5ca03e12963ea914",
 	"src/poe/regex.ts": "ce2f3d909f08ba4fd7052cf1b4e7c170e077d3bcb2073803c6d81d6ae68587f8",
 	"src/poe/tree.ts": "6f0261ee867dc045beb61a54152e9cc8713c583047b712e967d70211fdd8dc40",
-	"src/stock-charts.ts": "884f3ea3495c2a7b8a853d44ba8c1c0f480978132db53ba967252e696a2b7b83",
+	"src/stock-charts.ts": "389717e7844ee198b2d856d3e993979ee6e4110cd95bf328de074bdc2c817d9d",
 	"src/stock/compoundSimulator.ts": "ba41529bb22d48c046fdb0c2cb7fd7d4a1595c06f637bac23d24d1c7222623d7",
 	"src/stock/detailFilterState.ts": "5cb57b8bdf22c9fdc4a2e1350398e94b1cf5972b404bed9a3e10eb371cd6340e",
 	"src/stock/globalDateRange.ts": "fd51b29de5fc0af975a400129bd623e78877e6545de5308b1925e09c2da96adf",

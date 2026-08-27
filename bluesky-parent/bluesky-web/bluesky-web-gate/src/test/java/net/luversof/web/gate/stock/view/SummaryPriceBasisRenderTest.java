@@ -52,13 +52,13 @@ class SummaryPriceBasisRenderTest {
 
   private Map<String, Object> params(LocalDate priceBasisDate) {
     Map<String, Object> params = new HashMap<>();
-    params.put("totalAsset", new BigDecimal("1493281835"));
-    params.put("totalUnrealizedProfit", new BigDecimal("861058009"));
-    params.put("totalRealizedProfit", new BigDecimal("225584549"));
-    params.put("totalDividend", new BigDecimal("61646257"));
+    params.put("totalAsset", new BigDecimal("1500000000"));
+    params.put("totalUnrealizedProfit", new BigDecimal("900000000"));
+    params.put("totalRealizedProfit", new BigDecimal("200000000"));
+    params.put("totalDividend", new BigDecimal("60000000"));
     params.put("winRate", 0.62);
-    params.put("displayPrincipal", new BigDecimal("621595902"));
-    params.put("displayCurrentEvaluationProfit", new BigDecimal("871685932"));
+    params.put("displayPrincipal", new BigDecimal("620000000"));
+    params.put("displayCurrentEvaluationProfit", new BigDecimal("910000000"));
     params.put("combinedAdjustmentAmount", BigDecimal.ZERO);
     params.put("holdingFeeAdjustment", BigDecimal.ZERO);
     params.put("manualPrincipalAdjustment", BigDecimal.ZERO);

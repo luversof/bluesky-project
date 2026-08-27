@@ -106,8 +106,8 @@ class LedgerIntegrityServiceTest {
   void 정상_원장에서는_아무것도_찾지_않는다() {
     LedgerIntegrityResponse response =
         run(
-            List.of(dividend("297424", "29210", "297424", 10256, "29")),
-            // 배당 수량(10,256주)을 감당할 만큼 사고 절반을 판다. 매수 100주로 두면 "10,256주에 붙은
+            List.of(dividend("300000", "46200", "300000", 10000, "30")),
+            // 배당 수량(10,000주)을 감당할 만큼 사고 절반을 판다. 매수 100주로 두면 "10,000주에 붙은
             // 배당" 이 되어 DIVIDEND_QUANTITY_ABOVE_EVER_HELD 가 옳게 걸린다 - 정상 원장을 뜻하는
             // 이 검사의 자료 자체가 앞뒤가 맞지 않았다(2026-08-24 확인).
             List.of(
@@ -202,8 +202,8 @@ class LedgerIntegrityServiceTest {
   /**
    * 원장상 취득한 적이 없는 주식으로 배당을 받을 수는 없다.
    *
-   * <p>실측 2026-08-22: 하나금융지주 배당 2건(세후 2,100원)에 대응하는 매매 기록이 0건이었다. 손익 집계는 매매에서 파생되므로 그 종목이 아예 빠지고,
-   * 종목별 시계열을 전부 더해도 전체와 배당이 2,100원 어긋난다 - 화면에서는 원인을 알 수 없다.
+   * <p>실측 2026-08-22: 하나금융지주 배당 2건에 대응하는 매매 기록이 0건이었다. 손익 집계는 매매에서 파생되므로 그 종목이 아예 빠지고, 종목별 시계열을 전부
+   * 더해도 전체와 배당이 2,100원 어긋난다 - 화면에서는 원인을 알 수 없다.
    */
   /**
    * 예시는 상한을 둔다. 전부 실으면 응답 크기가 원장 크기를 따라간다.
@@ -327,7 +327,7 @@ class LedgerIntegrityServiceTest {
    * 기준일에 보유가 0 인 배당을 찾는다.
    *
    * <p>배당수익률의 분모(기준일 원금)가 그 날 보유 스냅샷에서 나오므로, 보유가 0 이면 그 배당은 분자에서도 빠진다. 합계만 보면 드러나지 않는다(실측
-   * 2026-08-23: 3 건 142,260 원 &mdash; 배당 기준일 자리에 지급일을 적어 그 사이 전량 매도한 경우).
+   * 2026-08-23: 3 건 &mdash; 배당 기준일 자리에 지급일을 적어 그 사이 전량 매도한 경우).
    */
   @Test
   void 기준일에_보유가_없는_배당을_찾는다() {
@@ -507,7 +507,7 @@ class LedgerIntegrityServiceTest {
         .thenReturn(List.of(payout("2026-07-20")));
 
     LedgerIntegrityResponse response =
-        run(List.of(dividendInAccount("297424", "45803", "297424", 10256, "29")), List.of());
+        run(List.of(dividendInAccount("300000", "46200", "300000", 10000, "30")), List.of());
 
     LedgerIntegrityFinding found = finding(response, "MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH");
     assertThat(found).isNotNull();
@@ -538,9 +538,9 @@ class LedgerIntegrityServiceTest {
     accountB.setName("한국투자증권 ISA");
     when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(accountA, accountB));
 
-    var first = dividendInAccount("297424", "45803", "297424", 10256, "29");
+    var first = dividendInAccount("300000", "46200", "300000", 10000, "30");
     first.setAccountId(firstAccountId);
-    var second = dividendInAccount("297424", "45803", "297424", 10256, "29");
+    var second = dividendInAccount("300000", "46200", "300000", 10000, "30");
     second.setAccountId(secondAccountId);
     LedgerIntegrityResponse response = run(List.of(first, second), List.of());
 
@@ -557,7 +557,7 @@ class LedgerIntegrityServiceTest {
         .thenReturn(List.of(payout("2026-08-19"), payout("2026-07-20")));
 
     LedgerIntegrityResponse response =
-        run(List.of(dividendInAccount("297424", "45803", "297424", 10256, "29")), List.of());
+        run(List.of(dividendInAccount("300000", "46200", "300000", 10000, "30")), List.of());
 
     assertThat(finding(response, "MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH")).isNull();
   }
@@ -572,7 +572,7 @@ class LedgerIntegrityServiceTest {
     when(payoutRepository.findAllByOrderByPayDateDescRecordDateDesc()).thenReturn(List.of());
 
     LedgerIntegrityResponse response =
-        run(List.of(dividendInAccount("297424", "45803", "297424", 10256, "29")), List.of());
+        run(List.of(dividendInAccount("300000", "46200", "300000", 10000, "30")), List.of());
 
     assertThat(finding(response, "MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH")).isNull();
   }
@@ -616,19 +616,19 @@ class LedgerIntegrityServiceTest {
    * <p>세액이 작으면 원천징수를 하지 않는다. 그 경계를 바깥 지식으로 박지 않고 <b>원장에서 실제로 징수된 가장 작은 세액</b>으로 잡는다(수수료·거래세 규칙과 같은
    * 방식).
    *
-   * <p>실측 2026-08-24: 개별주식 배당 36 건 중 세금이 0 인 것은 HK이노엔 2022-04-22(세전 3,840 · 예상 591) 한 건뿐인데, 그 건이 곧
-   * <b>예상 세액이 가장 작은 한 건</b>이었다. 나머지 35 건은 예상 세액이 3,690 원 이상이고 전부 15.34~15.40% 로 징수됐다. 과세 계좌 전체로 넓혀도
-   * 예상 세액 1,000 원 미만인 9 건이 예외 없이 세금 0 이다. 즉 누락이 아니라 소액이라 떼지 않은 것이다.
+   * <p>실측 2026-08-24: 개별주식 배당 36 건 중 세금이 0 인 것은 HK이노엔 2022-04-22(소액 배당) 한 건뿐인데, 그 건이 곧 <b>예상 세액이 가장
+   * 작은 한 건</b>이었다. 나머지 35 건은 예상 세액이 3,690 원 이상이고 전부 15.34~15.40% 로 징수됐다. 과세 계좌 전체로 넓혀도 예상 세액 1,000
+   * 원 미만인 9 건이 예외 없이 세금 0 이다. 즉 누락이 아니라 소액이라 떼지 않은 것이다.
    */
   @Test
   void 예상_세액이_원장의_최소_징수액보다_작으면_걸리지_않는다() {
     LedgerIntegrityResponse response =
         run(
             List.of(
-                // HK이노엔 실측 모양: 세전 3,840 · 예상 세금 591.
-                dividendInAccount("3840", "0", "0", 12, "320"),
-                // 원장에서 실제로 징수된 가장 작은 세액이 1,480 원이다.
-                dividendInAccount("173968", "1480", "9610", 100, "1739.68")),
+                // HK이노엔과 같은 모양(소액 배당): 세전 4,000 · 예상 세금 616.
+                dividendInAccount("4000", "0", "0", 12, "333.33"),
+                // 원장에서 실제로 징수된 가장 작은 세액이 1,500 원이라고 하자.
+                dividendInAccount("200000", "1500", "10000", 100, "2000")),
             List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
 
     assertThat(finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING"))
@@ -639,24 +639,24 @@ class LedgerIntegrityServiceTest {
   /**
    * 하한은 <b>가장 작은</b> 징수액이다. 가장 큰 것을 쓰면 진짜 누락까지 조용히 넘어간다.
    *
-   * <p>징수된 세액이 1,480 원과 15,400 원 두 가지 있을 때, 예상 세액 5,000 원짜리 무징수 배당은 "작아서 안 뗀 것" 이 아니다 &mdash; 이미
-   * 1,480 원짜리도 징수됐기 때문이다. 최대(15,400)를 하한으로 쓰면 이 건이 빠져나간다.
+   * <p>징수된 세액이 1,500 원과 15,400 원 두 가지 있을 때, 예상 세액 6,160 원짜리 무징수 배당은 "작아서 안 뗀 것" 이 아니다 &mdash; 이미
+   * 1,500 원짜리도 징수됐기 때문이다. 최대(15,400)를 하한으로 쓰면 이 건이 빠져나간다.
    */
   @Test
   void 하한은_가장_작은_징수액이다() {
     LedgerIntegrityResponse response =
         run(
             List.of(
-                // 예상 세액 5,000 원. 하한(1,480)보다 크므로 누락이다.
-                dividendInAccount("32468", "0", "0", 100, "324.68"),
-                dividendInAccount("173968", "1480", "9610", 100, "1739.68"),
+                // 예상 세액 6,160 원. 하한(1,500)보다 크므로 누락이다.
+                dividendInAccount("40000", "0", "0", 100, "400"),
+                dividendInAccount("200000", "1500", "10000", 100, "2000"),
                 dividendInAccount("100000", "15400", "100000", 100, "1000")),
             List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
 
     LedgerIntegrityFinding found = finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING");
     assertThat(found).as("하한을 최대 징수액으로 잡으면 이 누락이 조용히 넘어간다").isNotNull();
     assertThat(found.count()).isEqualTo(1);
-    assertThat(found.examples().get(0).detail()).contains("gross=32468");
+    assertThat(found.examples().get(0).detail()).contains("gross=40000");
   }
 
   /** 원장에 징수된 세금이 하나도 없으면 하한을 알 수 없다. 그때는 예전처럼 판정한다. */
@@ -664,7 +664,7 @@ class LedgerIntegrityServiceTest {
   void 하한을_알_수_없으면_예전처럼_판정한다() {
     LedgerIntegrityResponse response =
         run(
-            List.of(dividendInAccount("3840", "0", "0", 12, "320")),
+            List.of(dividendInAccount("4000", "0", "0", 12, "333.33")),
             List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
 
     assertThat(finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING")).isNotNull();
@@ -675,7 +675,7 @@ class LedgerIntegrityServiceTest {
   void ETF_분배금은_세금이_0_이어도_걸리지_않는다() {
     LedgerIntegrityResponse response =
         run(
-            List.of(dividendInAccount("1591520", "0", "0", 5684, "280")),
+            List.of(dividendInAccount("1400000", "0", "0", 5000, "280")),
             List.of(trade(TradeType.SELL, 10, "1000", "10", "0", "0")));
 
     assertThat(finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING")).isNull();
@@ -698,8 +698,7 @@ class LedgerIntegrityServiceTest {
    * <p>거래마다 또 알리면 같은 사정이 열몇 번 반복돼 화면을 덮는다. 그 계좌는 증권사에서 기록을 되받을 수 없어 채울 방법이 없으므로, 반복될수록 나머지 지적까지 같이
    * 무시하게 된다(실측 2026-08-24: 동양증권 하나가 매도 12 건 + 계좌 1 건 = 13 건이었다).
    *
-   * <p>접으면서 금액을 잃지 않도록, 빠진 거래세 몫을 계좌 지적이 대신 짊어진다(실측: 매도 12 건 · 매도금액 308,553,380 원 · 거래세 추정 최소
-   * 771,352 원).
+   * <p>접으면서 금액을 잃지 않도록, 빠진 거래세 몫을 계좌 지적이 대신 짊어진다(실측: 매도 12 건 · 추정 거래세는 그 매도금액의 0.25%).
    */
   @Test
   void 수수료가_없는_계좌는_거래마다_다시_알리지_않는다() {
@@ -1033,7 +1032,7 @@ class LedgerIntegrityServiceTest {
    * 수수료·거래세가 둘 다 없는 매도에, 같은 해 관측 요율로 빠진 금액을 되짚어 주는지.
    *
    * <p>실측 2026-08-23: 동양증권 12 건이 전부 0 이었고, 같은 해에 거래세가 기록된 매도가 있는 것은 2020 년 2 건뿐이었다(관측 중앙값 0.2500%,
-   * 합계 311,617 원). 나머지 10 건(2010~2019)은 원장에 표본이 없다.
+   * 그 2 건 기준). 나머지 10 건(2010~2019)은 원장에 표본이 없다.
    */
   @Test
   void 같은_해_관측_요율이_있으면_빠진_거래세를_되짚어_준다() {
@@ -1316,8 +1315,8 @@ class LedgerIntegrityServiceTest {
   /**
    * 수수료가 한 건도 없는 계좌에 "적어도 얼마가" 빠졌는지 되짚는지.
    *
-   * <p>실측 2026-08-23: 동양증권 26 건(거래대금 584,010,880)의 거래별 하한 합계는 25,011 원이다. 수수료율은 해마다 낮아져 왔으므로(2019
-   * 0.004458% → 2026 0.002172%) 그 해 최저값은 하한이 된다.
+   * <p>실측 2026-08-23: 동양증권 26 건의 거래별 하한을 더할 수 있다. 수수료율은 해마다 낮아져 왔으므로(2019 0.004458% → 2026
+   * 0.002172%) 그 해 최저값은 하한이 된다.
    */
   @Test
   void 수수료가_없는_계좌에_빠진_금액의_하한을_적는다() {
@@ -1416,9 +1415,8 @@ class LedgerIntegrityServiceTest {
   /**
    * 수수료·거래세가 없는 매도에 계좌명을 적는다.
    *
-   * <p>실측 2026-08-23: 12 건이 <b>전부 동양증권</b>이었고, 누락 하한 794,159 원은 그 계좌 실현손익 33,095,880 원의 2.40% 다(수익률
-   * 12.01% -> 11.73%). 계좌명이 없으면 같은 계좌의 {@code ACCOUNT_WITHOUT_ANY_FEE} 와 이어지지 않아, 한 계좌에 몰린 문제인지 흩어진
-   * 문제인지 알 수 없다.
+   * <p>실측 2026-08-23: 12 건이 <b>전부 동양증권</b>이었고, 누락 하한은 그 계좌 실현손익의 2.40% 다(수익률 12.01% -> 11.73%).
+   * 계좌명이 없으면 같은 계좌의 {@code ACCOUNT_WITHOUT_ANY_FEE} 와 이어지지 않아, 한 계좌에 몰린 문제인지 흩어진 문제인지 알 수 없다.
    */
   @Test
   void 수수료가_없는_매도에_계좌명을_적는다() {

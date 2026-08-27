@@ -341,7 +341,7 @@ public class StockViewController {
     // 최근 배당금(직전 1회) 기준 합계도 병행 제공: latestMonthlyDividendPerShare × 보유수량
     // 달력의 합계도 스냅샷 수량으로 계산된다. 요약 카드와 월배당 시뮬레이터에는 이 안내가 있는데
     // 달력에만 없어서, 같은 숫자가 한 화면에서는 "옛 수량 기준" 이라고 밝혀지고 다른 화면에서는
-    // 아무 말 없이 나갔다(실측 2026-08-23: 8 종목 중 7 종목이 어긋나 46,124 원 / 1.66% 낮다).
+    // 아무 말 없이 나갔다(실측 2026-08-23: 8 종목 중 7 종목이 어긋나 1.66% 낮다).
     var calendarQuantityBasis =
         net.luversof.web.gate.stock.service.MonthlyDividendCalculator.currentQuantitySummary(
             rows, loadCurrentHoldings(userId).quantities());
@@ -413,8 +413,8 @@ public class StockViewController {
   /**
    * 화면에 원 단위로 찍히는 값. 소계는 행 표시값의 합이어야 사용자가 열을 더한 값과 맞는다.
    *
-   * <p>실측 2026-08-23 월배당 8 종목: 정확한 합 2,778,304.4674 인데 행은 각각 버려져 합이 2,778,302, 소계는 합을 한 번만 버려
-   * 2,778,304 였다(<b>2 원</b> 차이). 지금은 양쪽 다 반올림해 2,778,305 로 맞는다.
+   * <p>실측 2026-08-23 월배당 8 종목: 정확한 합의 소수부가 버려지는 자리가 행과 소계에서 달라 <b>2 원</b> 차이가 났다. 지금은 양쪽 다 반올림해 같은
+   * 값이 된다.
    */
   static long displayWon(BigDecimal amount) {
     return StockFormatUtil.displayWon(amount);
@@ -987,7 +987,7 @@ public class StockViewController {
     BigDecimal totalBuyCost = sumTradeProfit(profits, TradeProfit::totalBuyCost);
     // 표시하는 실현손익은 매도 거래에 기록된 값(증권사 기준)으로 통일한다. 앱이 평균단가로 다시 계산한
     // realizedProfitNet 을 쓰면 같은 화면의 거래 행 합계와 어긋난다(실측 2026-08-23: 28 종목이 달랐고
-    // 합계 차이 253,553 원, 최대 단일 종목 192,303 원). 매도 54 건 전부 기록값이 있어 잃는 값은 없다.
+    // 합계 차이 0.11%). 매도 54 건 전부 기록값이 있어 잃는 값은 없다.
     BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfit);
 
     // 보유 스냅샷(수량·평균단가·현재가·평가)은 기간 미적용 호출로 구한다.
@@ -1003,7 +1003,7 @@ public class StockViewController {
     BigDecimal evaluationAmount = sumTradeProfit(snapshotProfits, TradeProfit::evaluationAmount);
     // 평가손익도 실현손익과 같은 기준(기본값)을 쓴다. 두 값은 각각 닫힌 삼중항이라
     // (기록실현+기본평가=totalProfit, Net실현+Net평가=totalProfitNet) 섞으면 '실현+평가=총' 이
-    // 깨진다(실측 2026-08-23: 혼합 시 61행 중 18행 불일치, 평가 기준차 합 24,986 원).
+    // 깨진다(실측 2026-08-23: 혼합 시 61행 중 18행 불일치).
     // 자산현황·포트폴리오가 이미 기본값을 쓰므로 그쪽에 맞춘다.
     BigDecimal evaluationProfit = sumTradeProfit(snapshotProfits, TradeProfit::evaluationProfit);
     BigDecimal currentPrice =
@@ -1242,7 +1242,7 @@ public class StockViewController {
     BigDecimal totalBuyCost = sumTradeProfit(profits, TradeProfit::totalBuyCost);
     // 표시하는 실현손익은 매도 거래에 기록된 값(증권사 기준)으로 통일한다. 앱이 평균단가로 다시 계산한
     // realizedProfitNet 을 쓰면 같은 화면의 거래 행 합계와 어긋난다(실측 2026-08-23: 28 종목이 달랐고
-    // 합계 차이 253,553 원, 최대 단일 종목 192,303 원). 매도 54 건 전부 기록값이 있어 잃는 값은 없다.
+    // 합계 차이 0.11%). 매도 54 건 전부 기록값이 있어 잃는 값은 없다.
     BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfit);
 
     // 보유 종목 테이블/평가 합계는 기간 미적용 스냅샷 호출로 구한다.
@@ -1272,7 +1272,7 @@ public class StockViewController {
     BigDecimal evaluationAmount = sumTradeProfit(enriched, TradeProfit::evaluationAmount);
     // 평가손익도 실현손익과 같은 기준(기본값)을 쓴다. 두 값은 각각 닫힌 삼중항이라
     // (기록실현+기본평가=totalProfit, Net실현+Net평가=totalProfitNet) 섞으면 '실현+평가=총' 이
-    // 깨진다(실측 2026-08-23: 혼합 시 61행 중 18행 불일치, 평가 기준차 합 24,986 원).
+    // 깨진다(실측 2026-08-23: 혼합 시 61행 중 18행 불일치).
     // 자산현황·포트폴리오가 이미 기본값을 쓰므로 그쪽에 맞춘다.
     BigDecimal evaluationProfit = sumTradeProfit(enriched, TradeProfit::evaluationProfit);
 
@@ -1337,9 +1337,9 @@ public class StockViewController {
     model.addAttribute("evaluationProfit", evaluationProfit);
     model.addAttribute("realizedProfit", realizedProfit);
     // 기록된 실현손익은 계좌를 합친 원가를 따르므로 이 계좌 페이지의 헤드라인이 이 계좌의 매매와
-    // 크게 다를 수 있다(실측 2026-08-23: 연금저축1 415,053 vs 2,063,739, ISA 1,555,597 vs 14,921).
+    // 크게 다를 수 있다(실측 2026-08-23: 연금저축1 은 그 계좌 매매 기준의 1/5, ISA 는 반대로 104 배).
     // 매매 화면의 계좌별 표와 같은 규칙·같은 문구를 쓴다. 종목 상세에는 붙이지 않는다 - 기록값이
-    // 종목 단위 기준이라 36 종목 전부 최대 11,835 원(값의 0.009%) 안에서 맞는다.
+    // 종목 단위 기준이라 36 종목 전부 값의 0.009% 안에서 맞는다.
     BigDecimal realizedProfitOwnBasis = sumTradeProfit(profits, TradeProfit::realizedProfitNet);
     model.addAttribute("realizedProfitOwnBasis", realizedProfitOwnBasis);
     model.addAttribute("totalDividend", totalDividend);
@@ -2160,7 +2160,7 @@ public class StockViewController {
         monthlyDividendCalculator.buildSimulatorSummary(
             filteredRows, monthlyDividendPayoutWindowBySymbol));
     // 합계 카드도 스냅샷 수량으로 계산된다. 행에는 "현재 N 주" 경고가 뜨는데 헤드라인만 조용하면
-    // 사용자는 합계를 현재 기준으로 읽는다(실측 2026-08-23: 7/8 종목이 어긋나 46,123 원 / 1.66% 낮았다).
+    // 사용자는 합계를 현재 기준으로 읽는다(실측 2026-08-23: 7/8 종목이 어긋나 1.66% 낮았다).
     // 요약 화면의 다가오는 배당 카드와 같은 규칙·같은 문구를 쓴다.
     var monthlyDividendQuantityBasis =
         net.luversof.web.gate.stock.service.MonthlyDividendCalculator.currentQuantitySummary(

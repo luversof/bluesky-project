@@ -30,8 +30,8 @@ import net.luversof.web.gate.stock.util.StockFormatUtil;
  * 배당 달력에 보이는 행을 더하면 소계와 같아야 한다.
  *
  * <p>예상 월배당은 주당 평균 x 보유수량이라 원 미만이 남는다. 예전에는 행이 각각 {@code longValue()} 로 버려지는데 소계만 BigDecimal 합계를 한
- * 번 버려서, <b>보이는 숫자를 더하면 소계와 달랐다</b> &mdash; 실측 2026-08-23: 월배당 8 종목의 행 합 2,778,302 vs 소계 2,778,304
- * 로 2 원 차이(지금은 행·소계 모두 반올림이라 2,778,305 로 맞는다). 버림이라 행마다 최대 1 원씩 모자라고 종목 수만큼 벌어진다.
+ * 번 버려서, <b>보이는 숫자를 더하면 소계와 달랐다</b> &mdash; 실측 2026-08-23 월배당 8 종목에서 행 합과 소계가 <b>2 원</b> 어긋났다. 버림이라
+ * 행마다 최대 1 원씩 모자라고 종목 수만큼 벌어진다.
  */
 class DividendCalendarSubtotalTest {
 
@@ -51,16 +51,21 @@ class DividendCalendarSubtotalTest {
     MessageUtil.setMessageSourceAccessor(null);
   }
 
-  /** 실측 8 종목의 주당 평균 배당과 보유 수량(2026-08-23 스냅샷). */
+  /**
+   * 실측 8 종목의 주당 평균 배당(운용사 공개값)에 보유 수량은 표본값을 물린 것.
+   *
+   * <p>이 검사가 재는 것은 <b>원 미만이 남는 곱</b>이 행마다 버려질 때 소계와 어긋나는지다. 그래서 필요한 성질은 "소수부가 남는 행이 섞여 있다" 뿐이고, 실제
+   * 보유 수량이어야 할 이유가 없다.
+   */
   private static final String[][] REAL_ROWS = {
-    {"KODEX 200타겟위클리커버드콜", "240.0", "857"}, // 205,680
-    {"RISE 200위클리커버드콜", "197.5833", "5710"}, // 1,128,200.643
-    {"TIGER 코리아배당다우존스위클리커버드콜", "106.1", "22"}, // 2,334.2
-    {"PLUS 고배당주위클리고정커버드콜", "150.9167", "117"}, // 17,657.2539
-    {"TIGER 리츠부동산인프라", "33.0", "13748"}, // 453,684
-    {"TIGER 배당커버드콜액티브", "350.1667", "1115"}, // 390,435.8705
-    {"RISE 코리아밸류업위클리고정커버드콜", "308.0", "98"}, // 30,184
-    {"KODEX 한국부동산리츠인프라", "30.5", "18037"}, // 550,128.5
+    {"KODEX 200타겟위클리커버드콜", "240.0", "100"}, // 24,000
+    {"RISE 200위클리커버드콜", "197.5833", "100"}, // 19,758.33
+    {"TIGER 코리아배당다우존스위클리커버드콜", "106.1", "100"}, // 10,610
+    {"PLUS 고배당주위클리고정커버드콜", "150.9167", "100"}, // 15,091.67
+    {"TIGER 리츠부동산인프라", "33.0", "100"}, // 3,300
+    {"TIGER 배당커버드콜액티브", "350.1667", "100"}, // 35,016.67
+    {"RISE 코리아밸류업위클리고정커버드콜", "308.0", "100"}, // 30,800
+    {"KODEX 한국부동산리츠인프라", "30.5", "100"}, // 3,050
   };
 
   private MonthlyDividendSnapshotResponse row(String name, String perShare, int quantity) {
@@ -158,7 +163,7 @@ class DividendCalendarSubtotalTest {
   /**
    * 버림 규칙이면 실제로 어긋난다. 이 값이 어긋나지 않으면 위 검사는 아무것도 지키지 못한다.
    *
-   * <p>실측 8 종목: 정확한 합 2,778,304.4674 / 버림 합 2,778,302 / 반올림 합 2,778,305.
+   * <p>위 표본 8 종목: 정확한 합 141,626.67 / 버림 합 141,625 / 반올림 합 141,627 &mdash; 2 원 차이.
    */
   @Test
   void 버림과_반올림은_실제로_다르다() {
@@ -169,7 +174,7 @@ class DividendCalendarSubtotalTest {
       truncated += r.expectedMonthlyDividend().longValue();
       rounded += StockFormatUtil.displayWon(r.expectedMonthlyDividend());
     }
-    assertThat(truncated).isEqualTo(2_778_302L);
-    assertThat(rounded).isEqualTo(2_778_305L);
+    assertThat(truncated).isEqualTo(141_625L);
+    assertThat(rounded).isEqualTo(141_627L);
   }
 }

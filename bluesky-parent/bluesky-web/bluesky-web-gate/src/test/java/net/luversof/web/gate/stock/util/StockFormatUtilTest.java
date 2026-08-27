@@ -62,8 +62,8 @@ class StockFormatUtilTest {
   /** 툴팁의 정확 금액. 한국어는 뒤에 "원", 그 외에는 앞에 "KRW". */
   @Test
   void 정확_금액은_로케일에_따라_통화를_붙인다() {
-    assertThat(StockFormatUtil.fullKrw(1_248_142_500L, KO)).isEqualTo("1,248,142,500원");
-    assertThat(StockFormatUtil.fullKrw(1_248_142_500L, EN)).isEqualTo("KRW 1,248,142,500");
+    assertThat(StockFormatUtil.fullKrw(1_234_567_890L, KO)).isEqualTo("1,234,567,890원");
+    assertThat(StockFormatUtil.fullKrw(1_234_567_890L, EN)).isEqualTo("KRW 1,234,567,890");
     assertThat(StockFormatUtil.fullKrw(0, KO)).isEqualTo("0원");
     assertThat(StockFormatUtil.fullKrw(-5_300, KO)).isEqualTo("-5,300원");
     assertThat(StockFormatUtil.fullKrw(-5_300, EN)).isEqualTo("KRW -5,300");
@@ -106,7 +106,7 @@ class StockFormatUtilTest {
    *
    * <p>이 클래스는 로케일을 인자로 받는데, 예전에는 단위 문자열("억"/"만"/"KRW")만 그 로케일을 보고 숫자 자체는 {@code
    * String.format("%,d", ...)} 로 <b>JVM 기본 로케일</b>을 썼다. 그래서 인자로 en 을 줘도 서버 설정에 따라 출력이 달라졌다 (실측: 기본
-   * 로케일을 fr-FR 로 두면 이 클래스 테스트 7 개 중 6 개가 깨졌다 &mdash; "1,248,142,500원" -> "1 248 142 500원", "5.3K"
+   * 로케일을 fr-FR 로 두면 이 클래스 테스트 7 개 중 6 개가 깨졌다 &mdash; "1,234,567,890원" -> "1 234 567 890원", "5.3K"
    * -> "5,3K"). 특히 {@code trimZero} 는 포맷한 문자열이 ".0" 으로 끝나는지 봤기 때문에 소수점이 쉼표인 로케일에서는 "1,0B" 가 그대로
    * 나갔다.
    *
@@ -123,9 +123,9 @@ class StockFormatUtilTest {
               java.util.Locale.FRANCE,
               java.util.Locale.GERMANY)) {
         java.util.Locale.setDefault(ambient);
-        assertThat(StockFormatUtil.compactKrw(1_493_281_835L, java.util.Locale.KOREA))
+        assertThat(StockFormatUtil.compactKrw(1_234_560_000L, java.util.Locale.KOREA))
             .as("기본 로케일 " + ambient)
-            .isEqualTo("14억 9,328만");
+            .isEqualTo("12억 3,456만");
         assertThat(StockFormatUtil.compactKrw(5_300L, java.util.Locale.KOREA))
             .as("기본 로케일 " + ambient)
             .isEqualTo("5,300");
@@ -143,12 +143,12 @@ class StockFormatUtilTest {
         assertThat(StockFormatUtil.compactKrw(5_300L, java.util.Locale.FRANCE))
             .as("소수 표기는 넘겨받은 로케일을 따른다: " + ambient)
             .isEqualTo("5,3K");
-        assertThat(StockFormatUtil.fullKrw(1_248_142_500L, java.util.Locale.KOREA))
+        assertThat(StockFormatUtil.fullKrw(1_234_567_890L, java.util.Locale.KOREA))
             .as("기본 로케일 " + ambient)
-            .isEqualTo("1,248,142,500원");
-        assertThat(StockFormatUtil.fullKrw(1_248_142_500L, java.util.Locale.US))
+            .isEqualTo("1,234,567,890원");
+        assertThat(StockFormatUtil.fullKrw(1_234_567_890L, java.util.Locale.US))
             .as("기본 로케일 " + ambient)
-            .isEqualTo("KRW 1,248,142,500");
+            .isEqualTo("KRW 1,234,567,890");
       }
     } finally {
       java.util.Locale.setDefault(original);

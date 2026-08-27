@@ -16,12 +16,11 @@ public final class StockFormatUtil {
   /**
    * 로케일에 맞춘 압축 표기. 한국어는 억/만, 그 외에는 국제 표기(B/M/K)를 쓴다.
    *
-   * <p>예전에는 로케일과 무관하게 억/만 을 붙여, 영어 화면에도 "14억 9,328만" 이 그대로 나왔다(실측: 영어 화면 15곳).
+   * <p>예전에는 로케일과 무관하게 억/만 을 붙여, 영어 화면에도 "n억 n,nnn만" 이 그대로 나왔다(실측: 영어 화면 15곳).
    *
    * <p>자릿수 구분과 소수점도 넘겨받은 로케일로 찍는다. 예전에는 단위 문자열만 로케일을 보고 숫자 포맷은 JVM 기본 로케일을 써서, 인자로 로케일을 줘도 출력이 서버
-   * 설정에 좌우됐다(실측: 기본 로케일을 fr-FR 로 두면 이 클래스 테스트 7 개 중 6 개가 깨진다 - "1,248,142,500원" -> "1 248 142
-   * 500원", "5.3K" -> "5,3K"). 배포 JVM 이 ko-KR 이라 지금 눈에 보이는 증상은 없지만, 로케일 인자를 받아놓고 무시하는 것은 계약 위반이라
-   * 고쳤다.
+   * 설정에 좌우됐다(실측: 기본 로케일을 fr-FR 로 두면 이 클래스 테스트 7 개 중 6 개가 깨진다 - 자릿수 구분이 쉼표에서 공백으로, 소수점이 마침표에서 쉼표로
+   * 바뀐다). 배포 JVM 이 ko-KR 이라 지금 눈에 보이는 증상은 없지만, 로케일 인자를 받아놓고 무시하는 것은 계약 위반이라 고쳤다.
    */
   public static String compactKrw(long value, java.util.Locale locale) {
     if (value == 0) {
@@ -56,8 +55,8 @@ public final class StockFormatUtil {
   /**
    * 툴팁에 쓰는 정확한 금액 표기. 로케일에 맞춰 통화 단위를 붙인다.
    *
-   * <p>템플릿 28 곳이 {@code String.format("%,d원", ...)} 로 "원" 을 직접 붙이고 있어, 영어 화면에서도 툴팁만
-   * "1,248,142,500원" 으로 나왔다(실측: 종목상세 7 개·계좌상세 5 개 등). 압축 표기(compactKrw)는 이미 로케일을 보므로 같은 규칙으로 맞춘다.
+   * <p>템플릿 28 곳이 {@code String.format("%,d원", ...)} 로 "원" 을 직접 붙이고 있어, 영어 화면에서도 툴팁만 한국식 "원" 표기로
+   * 나왔다(실측: 종목상세 7 개·계좌상세 5 개 등). 압축 표기(compactKrw)는 이미 로케일을 보므로 같은 규칙으로 맞춘다.
    */
   public static String fullKrw(long value) {
     return fullKrw(value, org.springframework.context.i18n.LocaleContextHolder.getLocale());
@@ -122,8 +121,8 @@ public final class StockFormatUtil {
    * 화면에 원 단위로 찍는 값. 표의 각 행과 소계가 같은 규칙을 써야 열을 더한 값이 소계와 맞는다.
    *
    * <p>예전에는 행이 각각 {@code longValue()}(버림)로 그려지는데 소계만 BigDecimal 합계를 한 번 버렸다. 그래서 보이는 숫자를 더하면 소계와
-   * 달랐다 &mdash; 실측 2026-08-23 월배당 8 종목: 정확한 합 2,778,304.4674 / 행 합 2,778,302 / 소계 2,778,304 로 <b>2
-   * 원</b> 차이. 버림이라 행마다 최대 1 원씩 모자라고 종목 수만큼 벌어진다. 지금은 행·소계 모두 반올림이라 2,778,305 로 맞는다.
+   * 달랐다 &mdash; 실측 2026-08-23 월배당 8 종목에서 행 합과 소계가 <b>2 원</b> 차이 났다. 버림이라 행마다 최대 1 원씩 모자라고 종목 수만큼
+   * 벌어진다. 지금은 행·소계 모두 반올림이라 정확히 맞는다.
    */
   public static long displayWon(java.math.BigDecimal amount) {
     return amount == null ? 0L : amount.setScale(0, java.math.RoundingMode.HALF_UP).longValue();

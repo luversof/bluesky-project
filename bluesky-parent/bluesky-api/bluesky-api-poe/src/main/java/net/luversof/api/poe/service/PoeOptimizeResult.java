@@ -22,6 +22,11 @@ public record PoeOptimizeResult(
     // 마나 예약 상한에 걸려 못 띄운 오라 — 사용자가 "왜 오라가 이것뿐인지" 알 수 있게 부족 마나와 함께 노출
     List<BlockedAura> blockedAuras,
     List<SupportPick> additionalSkills,
+    /**
+     * 가드 스킬 그룹(용융 껍질/불사의 외침 등 + 링크 보조젬) — 빌드 생존의 큰 축인데 화면에 없으면 "왜 이만큼 버티는지" 를 설명할 수 없다(실측: 가드 층 하나로
+     * 최약 최대피격 +199%). 비어 있으면 미채택.
+     */
+    List<SupportPick> guardGems,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
     /** treeNotables 와 평행한 영문 이름 — 결과는 실행 시점에 저장되므로 화면에서 뒤늦게 번역할 수 없다. */

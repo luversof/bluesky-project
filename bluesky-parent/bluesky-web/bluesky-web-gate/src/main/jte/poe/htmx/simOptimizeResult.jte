@@ -123,13 +123,38 @@
 			</div>
 		@endif
 
-		<%-- 중앙값 대비 배수가 크게 튀면 "가정이 유리하게 맞은 결과"임을 알린다.
-		     우리 값은 만렙·전 슬롯 최상위 레어·전 버프 가정이라 중앙값보다 높은 게 정상이지만(실측 1.1~2.3배),
-		     아키타입에 따라 9배까지 벌어진다(혼의 균열). 숫자만 보면 실제로 그렇게 나올 거라 오해한다. --%>
-		@if(result.metaRatio() != null && result.metaRatio() >= 4.0)
-			<div class="flex flex-wrap items-center gap-2 rounded border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
-				<span class="font-bold text-warning">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실빌드 중앙값의 " + String.format("%.1f", result.metaRatio()) + "배" : String.format("%.1f", result.metaRatio()) + "x real-build median"}</span>
-				<span class="text-base-content/70">${net.luversof.web.gate.poe.PoeText.isKorean() ? "만렙·전 슬롯 최상위 레어·전 버프 가정이 특히 유리하게 맞은 결과입니다 — 실제 플레이 수치는 이보다 낮게 나옵니다" : "This assumes level 100, top-tier rares in every slot and all buffs — real play lands lower"}</span>
+		<%-- 가정 주의 — "이 수치는 낙관적 가정의 결과" 라는 **같은 말**을 하던 배너 둘(중앙값 배수·현실적 제작)을
+		     하나로 합쳤다. 근거는 둘 다 보여주되 설명 문장은 한 번만: 경고 상자가 넷씩 쌓이면 다 안 읽힌다.
+		     · 중앙값 배수: 아키타입에 따라 27배까지 벌어진다(실측 뼈 박살 27.7배)
+		     · 현실적 제작: 전 슬롯 최상위 티어 가정과 필수 어픽스만 가정의 차이(실측 뼈 박살 3.9배) --%>
+		!{
+			var budget = result.affixBudget();
+			double headline = budget == null || budget.isEmpty() ? 0
+				: Double.parseDouble(result.finalValue().replaceAll("[^0-9.]", "").isEmpty() ? "0" : result.finalValue().replaceAll("[^0-9.]", ""));
+			String realisticText = null;
+			double realisticRatio = 0;
+			if (budget != null && !budget.isEmpty()) {
+				var last = budget.get(budget.size() - 1);
+				String digits = last.value().replaceAll("[^0-9.]", "");
+				double realistic = digits.isEmpty() ? 0 : Double.parseDouble(digits);
+				if (realistic > 0 && headline / realistic >= 2.0) {
+					realisticText = last.value();
+					realisticRatio = headline / realistic;
+				}
+			}
+			boolean bigMeta = result.metaRatio() != null && result.metaRatio() >= 4.0;
+			boolean koAssume = net.luversof.web.gate.poe.PoeText.isKorean();
+		}
+		@if(bigMeta || realisticText != null)
+			<div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+				<span class="font-bold text-warning">${koAssume ? "가정 주의" : "Optimistic assumptions"}</span>
+				@if(bigMeta)
+					<span class="text-warning">${koAssume ? "실빌드 중앙값의 " + String.format("%.1f", result.metaRatio()) + "배" : String.format("%.1f", result.metaRatio()) + "x real-build median"}</span>
+				@endif
+				@if(realisticText != null)
+					<span class="text-warning">${koAssume ? "현실적 제작 기준 " + realisticText + " (" + String.format("%.1f", realisticRatio) + "배 차이)" : "Realistic crafting: " + realisticText + " (" + String.format("%.1f", realisticRatio) + "x lower)"}</span>
+				@endif
+				<span class="text-base-content/70">${koAssume ? "만렙·전 슬롯 최상위 티어 어픽스·전 버프 가정이라 실제 플레이 수치는 이보다 낮습니다" : "Assumes level 100, top-tier affixes in every slot and all buffs — real play lands lower"}</span>
 			</div>
 		@endif
 
@@ -163,6 +188,28 @@
 					: "ehp".equals(lean) ? (ko ? "생존 특화 (고EHP)" : "Defense (high EHP)")
 					: (ko ? "균형형" : "Balanced");
 				String leanCls = "dps".equals(lean) ? "badge-error" : "ehp".equals(lean) ? "badge-info" : "badge-ghost";
+				// 교환 문구 — "DPS 가 중앙값보다 낮다"만 보고 결함으로 읽는 오독을 막는다. 실측 사례: 폭발 덫 아키타입은
+				//   중앙값 EHP 1,300 의 유리대포인데 우리 balanced 결과는 EHP 26,029 라, DPS 0.37배가 결함이 아니라 예산 배분의 결과였다
+				//   (같은 생존 수준으로 맞춘 dps 목표 실측 = 중앙값의 0.87배). 양쪽이 반대 방향으로 갈릴 때만 노출.
+				String tradeMsg = null;
+				if (myDps != null && myEhp != null && ninjaBenchmark.dps() > 0 && ninjaBenchmark.ehp() > 0) {
+					double dpsRatio = myDps / (double) ninjaBenchmark.dps();
+					double ehpRatio = myEhp / (double) ninjaBenchmark.ehp();
+					java.util.function.DoubleFunction<String> mul = r -> r >= 10 ? String.format("%.0f", r) : String.format("%.1f", r);
+					// 조언은 **지금 목표**에 따라 달라야 한다. 균형 목표로 돌린 결과에 "균형으로 바꾸라"고 하면 헛말이다
+					// (실측: 번개 화살 균형 결과가 DPS 1.6배·EHP 0.6배로 이 가지에 들어왔다). 균형에서 얇게 나오는 건
+					// 그 아키타입 실메타 자체가 얇기 때문이며(번개 화살 실빌드 최약최대피격 중앙값 7,500), 시뮬은 그 수준에 맞춘다.
+					boolean isBalanced = "balanced".equals(result.objective());
+					if (dpsRatio < 0.9 && ehpRatio > 1.5) {
+						tradeMsg = ko
+							? "DPS 는 실빌드 중앙값의 " + mul.apply(dpsRatio) + "배지만 EHP 는 " + mul.apply(ehpRatio) + "배 — 생존에 예산을 쓴 결과이지 성능 부족이 아니다." + (isBalanced ? " 같은 생존 수준을 원하면 목표를 DPS 우선으로." : "")
+							: "DPS is " + mul.apply(dpsRatio) + "x the real-build median but EHP is " + mul.apply(ehpRatio) + "x — budget spent on survival, not a shortfall." + (isBalanced ? " Switch the objective to DPS to match their survivability." : "");
+					} else if (dpsRatio > 1.5 && ehpRatio < 0.9) {
+						tradeMsg = ko
+							? "DPS 는 실빌드 중앙값의 " + mul.apply(dpsRatio) + "배지만 EHP 는 " + mul.apply(ehpRatio) + "배 — " + (isBalanced ? "균형 목표는 이 아키타입 실측 생존치를 기준으로 맞춘다. 더 두껍게 원하면 목표를 생존(EHP)으로." : "공격에 치우친 결과다. 생존을 원하면 목표를 균형/생존으로.")
+							: "DPS is " + mul.apply(dpsRatio) + "x the median but EHP is only " + mul.apply(ehpRatio) + "x — " + (isBalanced ? "the balanced objective targets this archetype's measured survivability. Pick the EHP objective for a tankier build." : "offense-heavy. Switch the objective to balanced/EHP for survivability.");
+					}
+				}
 				// 전 컬럼 특화 판정(키→로케일 라벨). 어느 컬럼이 두드러진 실빌드인지 배지로.
 				java.util.function.Function<String, String> specLabel = k -> switch (k) {
 					case "dps" -> ko ? "공격(DPS)" : "DPS";
@@ -307,6 +354,10 @@
 					@endif
 					<span class="text-base-content/40">n=${ninjaBenchmark.sample()}</span>
 				</div>
+				<%-- 교환 해설 — 수치 대조표만으로는 "낮다=나쁘다"로 읽힌다. 방향이 갈릴 때만 한 줄. --%>
+				@if(tradeMsg != null)
+					<div class="text-base-content/60">${tradeMsg}</div>
+				@endif
 				<%-- 전 컬럼 참조 특화 판정 — 이 스킬×전직 실빌드가 두드러진 컬럼(전체 중앙값 대비, 저표본 제외). "어느 컬럼 특화인지"를 명시. --%>
 				@if(ninjaBenchmark.specializations() != null && !ninjaBenchmark.specializations().isEmpty())
 					<div class="flex flex-wrap items-center gap-1">
@@ -361,6 +412,8 @@
 				@template.poe.htmx.benchFacets(bench = ninjaBenchmark, rows = 5)
 			</div>
 		@endif
+
+
 
 		<%-- 어픽스 예산 축: "필수 옵션 수"에 따른 현실적 DPS 곡선 — 레어가 있을 때만. 필수 많을수록 finalValue 에 수렴 --%>
 		@if(result.affixBudget() != null && !result.affixBudget().isEmpty())
@@ -467,6 +520,25 @@
 				<div class="font-semibold text-warning">${MessageUtil.getMessage("poe.sim.opt.result.unmet")}</div>
 				@for(PoeOptimizeResult.UnmetRequirement unmet : result.unmetRequirements())
 					<div class="font-mono text-base-content/70">${net.luversof.web.gate.poe.PoeText.name(unmet.nameKo(), unmet.name())} — ${MessageUtil.getMessage("poe.build.stat." + unmet.attribute())} ${unmet.required()} / ${unmet.actual()}</div>
+				@endfor
+			</div>
+		@endif
+
+		<%-- 가드 스킬 레이어 — 계산엔 들어가는데 화면에 없어서 "왜 이만큼 버티는지" 를 설명할 수 없었다
+		     (실측: 가드 층 하나로 최약 최대피격 +199%, DPS 비용 0). 추가 스킬과 동형 표기. --%>
+		@if(result.guardGems() != null && !result.guardGems().isEmpty())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "가드 스킬" : "Guard skill"}</span>
+				@for(PoeOptimizeResult.SupportPick g : result.guardGems())
+					@if(g.slug() != null && !g.slug().isBlank())
+						<a class="poe-hover inline-flex items-center gap-1 badge badge-info badge-outline badge-sm cursor-pointer pl-1"
+						   href="/poe/gems/${g.slug()}"
+						   hx-get="/poe/htmx/gems/detail?slug=${g.slug()}"
+						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
+							<img src="/poe-assets/gems/${g.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(g.nameKo(), g.name())}</a>
+					@else
+						<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(g.nameKo(), g.name())}</span>
+					@endif
 				@endfor
 			</div>
 		@endif

@@ -27,16 +27,18 @@ import io.github.luversof.boot.context.support.MessageUtil;
  * <p>실측 2026-08-24(실데이터, 끝나는 날 모두 2026-08-25):
  *
  * <pre>
- *   기간        평가손익(주지표)        기간 손익
- *   이번달       +915,129,989        -18,659,731   &lt;- 손실인데 맨 위엔 +9억
- *   올해         +915,129,989       +831,542,306
- *   최근 1년      +915,129,989     +1,144,675,462
- *   최근 3년      +915,129,989     +1,139,638,038
- *   전체         +915,129,989     +1,202,320,825
+ *   기간        평가손익(주지표)   기간 손익
+ *   이번달       다섯 기간 모두     손실        &lt;- 손실인데 맨 위엔 큰 이익
+ *   올해         완전히 같은 값     큰 이익
+ *   최근 1년                      더 큰 이익
+ *   최근 3년                      더 큰 이익
+ *   전체                          가장 큰 이익
  * </pre>
  *
- * <p>평가손익도 끝나는 날을 바꾸면 움직인다(2026-01-01~06-30 이면 1,328,777,569). 즉 틀린 값이 아니라 <b>기간을 재는 값이 아닌 것</b>이
+ * <p>평가손익도 끝나는 날을 바꾸면 움직인다(예: 2026-01-01~06-30 으로 잡으면 다른 값이 된다). 즉 틀린 값이 아니라 <b>기간을 재는 값이 아닌 것</b>이
  * 기간 화면의 주지표였다. 자리를 바꾸고, 내려간 값에는 무엇을 재는지 한 줄을 붙였다.
+ *
+ * <p>아래 모델 값은 실제 금액이 아니라 그 관계(기간 손익 = 기말 - 기초 = 평가손익 변화, 손실)를 그대로 지킨 표본이다.
  */
 class AssetGrowthHeadlineMetricTest {
 
@@ -60,27 +62,27 @@ class AssetGrowthHeadlineMetricTest {
     return new BigDecimal(value);
   }
 
-  /** 이번달 실측값 그대로. 기간 손익은 손실이고 평가손익은 큰 이익인, 둘이 갈리는 상태. */
+  /** 이번달과 같은 모양. 기간 손익은 손실이고 평가손익은 큰 이익인, 둘이 갈리는 상태. */
   private String render() {
     Map<String, Object> model = new HashMap<>();
     model.put("fromDate", "2026-08-01");
     model.put("toDate", "2026-08-25");
-    model.put("periodReturnRatePct", -1.19d);
+    model.put("periodReturnRatePct", -1.18d);
     model.put("returnCalculable", true);
-    model.put("timeWeightedReturnPct", -1.18d);
-    model.put("periodProfit", bd("-18659731"));
+    model.put("timeWeightedReturnPct", -1.17d);
+    model.put("periodProfit", bd("-20000000"));
     model.put("principalDelta", bd("5000000"));
-    model.put("unrealizedStart", bd("933789720"));
-    model.put("unrealizedEnd", bd("915129989"));
+    model.put("unrealizedStart", bd("920000000"));
+    model.put("unrealizedEnd", bd("900000000"));
     model.put("unrealizedEndPct", 144.75d);
     model.put("recoveredAmount", BigDecimal.ZERO);
-    model.put("netNewProfit", bd("-18659731"));
+    model.put("netNewProfit", bd("-20000000"));
     model.put("maxDrawdownPct", -57.04d);
     model.put("maxDrawdownPeakDate", LocalDate.parse("2015-03-06"));
     model.put("maxDrawdownTroughDate", LocalDate.parse("2016-01-21"));
     model.put("currentDrawdownPct", -20.84d);
-    model.put("openingValue", bd("1692009301"));
-    model.put("closingValue", bd("1673349570"));
+    model.put("openingValue", bd("1700000000"));
+    model.put("closingValue", bd("1680000000"));
 
     StringOutput output = new StringOutput();
     TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
@@ -101,8 +103,8 @@ class AssetGrowthHeadlineMetricTest {
 
     assertThat(headlineAmount(html))
         .as("맨 위 큰 숫자가 기간 손익이 아니다 - 기간을 골라도 값이 안 움직인다")
-        .contains("18,659,731")
-        .doesNotContain("915,129,989");
+        .contains("20,000,000")
+        .doesNotContain("900,000,000");
   }
 
   @Test
@@ -119,7 +121,7 @@ class AssetGrowthHeadlineMetricTest {
         .as("평가손익이 기간 손익보다 위에 있다")
         .isLessThan(html.indexOf(demotedTitle));
     // 평가손익 값 자체는 남아 있어야 한다.
-    assertThat(html).contains("915,129,989");
+    assertThat(html).contains("900,000,000");
   }
 
   @Test

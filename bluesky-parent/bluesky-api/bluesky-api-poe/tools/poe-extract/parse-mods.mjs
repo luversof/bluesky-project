@@ -177,6 +177,15 @@ const FAMILIES = [
 	// 키워드는 fireDotMulti 와 같은 fire/burning 게이트 — 히트 빌드(아크/사이클론/ED)는 점수 0 → 미채택.
 	{ key: "elderBurningSupport", gen: "suffix", pattern: "IncreasedBurningDamageSupportedUber", keywords: ["fire", "burning"],
 		slots: ["helmet"] },
+	// 셰이퍼 장갑의 덫 축 — 실빌드 덫 계열의 표준인데 풀에 **덫 모드가 하나도 없었다**(던지기 속도·재사용
+	// 대기 0개). 그래서 덫 빌드의 크래프트 레어가 일반 주문/화염 모드만 받아 중앙값의 0.37배에 머물렀다.
+	// 자연 스폰(Gloves|*_armour|shaper)이라 canSpawn 판정을 그대로 통과한다. 키 shaper* = 영향력 스폰.
+	{ key: "shaperTrapDamage", gen: "suffix", pattern: "TrapDamageUber", keywords: ["trap", "damage"],
+		slots: ["gloves"] },
+	{ key: "shaperTrapSpeedCooldown", gen: "suffix", pattern: "TrapSpeedCooldownUber", keywords: ["trap"],
+		slots: ["gloves"] },
+	{ key: "shaperTrapDamageCooldown", gen: "suffix", pattern: "TrapDamageCooldownUber", keywords: ["trap", "damage"],
+		slots: ["gloves"] },
 	// (활 추가 화살 패밀리는 롤백 — PoB 단일표적 CombinedDPS 는 투사체 수를 반영하지 않아(54단계 완성
 	//  문맥 A/B: 문구 무관 무기여) 접미 슬롯만 낭비. 대표 활 이식 +45.3%는 물리 스택 효과였다.)
 ];

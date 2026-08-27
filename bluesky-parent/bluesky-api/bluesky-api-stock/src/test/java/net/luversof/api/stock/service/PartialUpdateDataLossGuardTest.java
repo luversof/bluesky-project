@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
  * 사람이 넣은 값을 저장 한 번으로 잃지 않는지 본다.
  *
  * <p>실측 사고 2026-08-22: {@code manualPrincipalAmount}(직접 입력한 투자원금)는 이 앱에 쓰기 화면이 없어 직접 POST 로만 넣는데,
- * 계좌를 다른 목적으로 저장하면 {@code jsonConfig} 가 통째로 덮여 사라졌다. 세 계좌에서 그렇게 지워졌고 요약 화면 원금이 10,627,923 원 어긋났다
- * ({@link AccountJsonConfigCarryOverTest} 에서 고쳤다).
+ * 계좌를 다른 목적으로 저장하면 {@code jsonConfig} 가 통째로 덮여 사라졌다. 세 계좌에서 그렇게 지워졌고 요약 화면 원금이 1.7% 어긋났다 ({@link
+ * AccountJsonConfigCarryOverTest} 에서 고쳤다).
  *
  * <p>같은 함정이 다른 곳에도 있는지 2026-08-23 에 훑었고, 아래가 그때 확인한 사실이다. 각각이 무너지면 같은 사고가 난다.
  *

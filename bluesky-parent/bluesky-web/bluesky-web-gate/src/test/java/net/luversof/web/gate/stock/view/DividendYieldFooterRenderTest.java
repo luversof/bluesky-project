@@ -211,13 +211,13 @@ class DividendYieldFooterRenderTest {
   void 배당이_전부_걸러지면_행도_합계도_0이다() {
     // 지급일 이전에 전량 매도한 종목: 세후액은 있지만 기준일 원금이 없어 분자에서 빠진다.
     List<DividendYieldGroupView> rows =
-        List.of(row("전량매도", "120000", "102040", "120000", "0", "5000000", "0"));
+        List.of(row("전량매도", "120000", "100000", "120000", "0", "5000000", "0"));
 
     String html = render(rows);
 
     assertThat(html).as("걸러진 분자가 0 이면 행 수익률도 0 이어야 한다").contains("0.00%");
-    // 세후액(102,040)은 그대로 보이지만 수익률 분자로는 쓰이지 않는다.
-    assertThat(html).contains("102,040");
+    // 세후액(100,000)은 그대로 보이지만 수익률 분자로는 쓰이지 않는다.
+    assertThat(html).contains("100,000");
     assertThat(footerCells(html)).as("합계행도 같은 규칙이라 0.00% 여야 한다").contains("0.00%");
   }
 }

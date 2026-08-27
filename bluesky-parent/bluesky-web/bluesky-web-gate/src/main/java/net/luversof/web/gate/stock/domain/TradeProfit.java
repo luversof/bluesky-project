@@ -159,7 +159,7 @@ public record TradeProfit(
         null,
         totalSellAmount,
         // 화면(종목별 실현손익 표)은 거래에 기록된 실현손익을 쓴다. 예전에는 이 자리에도 net 값을
-        // 넣어, 같은 화면의 헤드라인·거래목록(기록값)과 표 합계가 어긋났다(실측 253,558원 차이).
+        // 넣어, 같은 화면의 헤드라인·거래목록(기록값)과 표 합계가 어긋났다(실측 0.11% 차이).
         realizedProfit,
         holdingQty,
         null,

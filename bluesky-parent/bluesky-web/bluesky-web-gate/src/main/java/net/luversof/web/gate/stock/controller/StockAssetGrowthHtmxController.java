@@ -409,8 +409,13 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     return "stock/htmx/asset-growth";
   }
 
-  /** 기간 요약 값을 화면 모델에 실는다. 요약이 없으면 '계산 불가'로 렌더된다. */
-  private void addPeriodSummaryAttributes(Model model, TradeProfitTimeSeriesSummary summary) {
+  /**
+   * 기간 요약 값을 화면 모델에 실는다. 요약이 없으면 '계산 불가'로 렌더된다.
+   *
+   * <p>같은 패키지의 테스트가 직접 부를 수 있게 package-private 이다 &mdash; 요약에 필드를 늘리고 <b>여기에 넣는 것을 잊으면</b> 화면은 조용히
+   * "계산 불가" 를 그린다. api-stock 이 값을 못 낸 것과 구분되지 않아, 원인을 엉뚱한 곳에서 찾게 된다.
+   */
+  void addPeriodSummaryAttributes(Model model, TradeProfitTimeSeriesSummary summary) {
     model.addAttribute("periodReturnRatePct", summary != null ? summary.growthRatePct() : null);
     model.addAttribute("returnCalculable", summary != null && summary.growthRatePct() != null);
     model.addAttribute(
@@ -430,6 +435,12 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     model.addAttribute("currentDrawdownPct", summary != null ? summary.currentDrawdownPct() : null);
     model.addAttribute("openingValue", summary != null ? summary.openingValue() : null);
     model.addAttribute("closingValue", summary != null ? summary.closingValue() : null);
+    model.addAttribute(
+        "periodProfitRatePct", summary != null ? summary.periodProfitRatePct() : null);
+    model.addAttribute("peakValue", summary != null ? summary.peakValue() : null);
+    model.addAttribute("peakValueDate", summary != null ? summary.peakValueDate() : null);
+    model.addAttribute("troughValue", summary != null ? summary.troughValue() : null);
+    model.addAttribute("troughValueDate", summary != null ? summary.troughValueDate() : null);
   }
 
   @BlueskyPreAuthorize

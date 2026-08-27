@@ -114,7 +114,7 @@
 					@endif
 					<%-- 스냅샷 수량은 사람이 갱신한 시점의 값이라 원장과 어긋난다. 같은 안내가 요약 카드와
 					     월배당 시뮬레이터에는 있는데 이 달력에만 없어서, 같은 숫자가 화면에 따라 밝혀지기도
-					     하고 아무 말 없이 나가기도 했다(실측 2026-08-23: 8종목 중 7종목이 어긋나 46,124원 /
+					     하고 아무 말 없이 나가기도 했다(실측 2026-08-23: 8종목 중 7종목이 어긋나
 					     1.66% 낮다). 문구·계산은 다른 두 화면과 같은 것을 쓴다. --%>
 					@if(calendarStaleQuantityCount > 0)
 						<div class="text-[11px] text-warning mb-2" data-calendar-stale-quantity="${calendarStaleQuantityCount}">

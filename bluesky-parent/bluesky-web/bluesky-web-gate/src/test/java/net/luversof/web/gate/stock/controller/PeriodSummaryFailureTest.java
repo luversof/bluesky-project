@@ -123,7 +123,7 @@ class PeriodSummaryFailureTest {
           List.of(),
           new TradeProfitTimeSeriesSummary(
               null, null, 12.5d, null, null, null, null, null, null, null, null, null, null, null,
-              null),
+              null, null, null, null, null, null),
           List.of());
     }
 

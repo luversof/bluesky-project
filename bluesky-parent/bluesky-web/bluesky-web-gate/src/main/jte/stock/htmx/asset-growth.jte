@@ -34,6 +34,11 @@
 @param Double currentDrawdownPct = null
 @param java.math.BigDecimal openingValue = null
 @param java.math.BigDecimal closingValue = null
+@param Double periodProfitRatePct = null
+@param java.math.BigDecimal peakValue = null
+@param java.time.LocalDate peakValueDate = null
+@param java.math.BigDecimal troughValue = null
+@param java.time.LocalDate troughValueDate = null
 @param net.luversof.web.gate.stock.controller.StockAssetGrowthHtmxController.TradeHistoryData tradeHistoryData = null
 @param String tradeHistoryFilterQuery = ""
 
@@ -229,7 +234,12 @@
                     maxDrawdownTroughDate = maxDrawdownTroughDate,
                     currentDrawdownPct = currentDrawdownPct,
                     openingValue = openingValue,
-                    closingValue = closingValue
+                    closingValue = closingValue,
+                    periodProfitRatePct = periodProfitRatePct,
+                    peakValue = peakValue,
+                    peakValueDate = peakValueDate,
+                    troughValue = troughValue,
+                    troughValueDate = troughValueDate
                 )
                 <div class="w-full relative" style="height: 450px;">
                     <canvas id="assetGrowthChart" class="amount-chart"></canvas>

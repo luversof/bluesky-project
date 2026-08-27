@@ -46,17 +46,21 @@ class AllocationBarsRenderTest {
     MessageUtil.setMessageSourceAccessor(null);
   }
 
-  /** 실측 2026-08-23 의 상위 5 종목. */
+  /**
+   * 실측 2026-08-23 의 상위 5 종목 <b>구성</b>(한 종목이 8 할 넘게 쏠린 모양). 금액은 표본값이다.
+   *
+   * <p>이 검사가 재는 것은 비중이 극단적으로 갈릴 때 막대와 라벨이 어떻게 그려지는지라, 실제 평가액이어야 할 이유가 없다.
+   */
   private static final List<AllocationBarRow> TOP_ROWS =
       List.of(
-          new AllocationBarRow(UUID.randomUUID(), "삼성전자", 83.58267, 1_248_142_500L),
-          new AllocationBarRow(UUID.randomUUID(), "KODEX 한국부동산리츠인프라", 5.08514, 75_935_770L),
-          new AllocationBarRow(UUID.randomUUID(), "RISE 200위클리커버드콜", 4.63238, 69_179_050L),
-          new AllocationBarRow(UUID.randomUUID(), "TIGER 리츠부동산인프라", 3.76829, 56_274_960L),
-          new AllocationBarRow(UUID.randomUUID(), "TIGER 배당커버드콜액티브", 1.46639, 21_897_610L));
+          new AllocationBarRow(UUID.randomUUID(), "삼성전자", 83.58267, 1_000_000_000L),
+          new AllocationBarRow(UUID.randomUUID(), "KODEX 한국부동산리츠인프라", 5.08514, 60_000_000L),
+          new AllocationBarRow(UUID.randomUUID(), "RISE 200위클리커버드콜", 4.63238, 55_000_000L),
+          new AllocationBarRow(UUID.randomUUID(), "TIGER 리츠부동산인프라", 3.76829, 45_000_000L),
+          new AllocationBarRow(UUID.randomUUID(), "TIGER 배당커버드콜액티브", 1.46639, 17_000_000L));
 
   private static final AllocationBarRow OTHERS_ROW =
-      new AllocationBarRow(null, "기타 4종목", 1.46335, 21_851_945L);
+      new AllocationBarRow(null, "기타 4종목", 1.46335, 17_000_000L);
 
   private String render(List<AllocationBarRow> rows, AllocationBarRow others) {
     Map<String, Object> params = new HashMap<>();

@@ -26,12 +26,12 @@ import net.luversof.web.gate.stock.dto.response.TradeProfitYearlySummary;
  *
  * <p>이 표는 보유도 거래도 없던 해를 아예 내지 않는다. 그래서 연도가 건너뛴 자리가 생기는데, 그대로 두면 자료가 빠진 것처럼 보인다.
  *
- * <p>실측 2026-08-24(실데이터): 행이 2009 · 2010 · <b>2014</b> · 2015 &hellip; 로 이어지고 기말이 0 &rarr;
- * 22,054,611 로 뛴다. 2011~2013 은 거래 0 건 · 배당 0 건 · 보유 스냅샷 빈 배열로 실제로 비어 있는 해다(원장으로 확인). 즉 자료 누락이 아니라
- * "그 해엔 아무것도 없었다"인데, 표만 보면 가릴 수 없다.
+ * <p>실측 2026-08-24(실데이터): 행이 2009 · 2010 · <b>2014</b> · 2015 &hellip; 로 이어지고 기말이 0 &rarr; 0 에서 갑자기
+ * 뛴다. 2011~2013 은 거래 0 건 · 배당 0 건 · 보유 스냅샷 빈 배열로 실제로 비어 있는 해다(원장으로 확인). 즉 자료 누락이 아니라 "그 해엔 아무것도
+ * 없었다"인데, 표만 보면 가릴 수 없다.
  *
- * <p>거래가 없어도 보유가 이어진 해는 그대로 나온다(실측: 2016 은 거래 0 건인데 기말 15,870,400 으로 표에 있다). 그러니 이 줄은 "거래가 없던 해"가
- * 아니라 "포트폴리오 자체가 없던 해"를 뜻한다.
+ * <p>거래가 없어도 보유가 이어진 해는 그대로 나온다(실측: 2016 은 거래 0 건인데 기말 평가액이 있어 표에 남는다). 그러니 이 줄은 "거래가 없던 해"가 아니라
+ * "포트폴리오 자체가 없던 해"를 뜻한다.
  */
 class YearlySummaryGapRenderTest {
 
@@ -68,7 +68,12 @@ class YearlySummaryGapRenderTest {
             -5.0d,
             LocalDate.of(value, 3, 1),
             LocalDate.of(value, 6, 1),
-            0.0d);
+            0.0d,
+            null,
+            null,
+            null,
+            null,
+            null);
     return new TradeProfitYearlySummary(
         value, LocalDate.of(value, 1, 1), LocalDate.of(value, 12, 31), true, summary);
   }
@@ -84,7 +89,7 @@ class YearlySummaryGapRenderTest {
 
   @Test
   void 건너뛴_해를_한_줄로_밝힌다() {
-    String html = render(List.of(year(2014, "22054611"), year(2010, "0"), year(2009, "11220480")));
+    String html = render(List.of(year(2014, "20000000"), year(2010, "0"), year(2009, "10000000")));
 
     assertThat(html).as("연도별 표를 그리지 못했다 - 검사가 무력해진다").contains("2014").contains("2009");
     assertThat(html).as("2011~2013 이 사라졌는데 아무 말이 없다").contains("data-yearly-gap=\"2011-2013\"");

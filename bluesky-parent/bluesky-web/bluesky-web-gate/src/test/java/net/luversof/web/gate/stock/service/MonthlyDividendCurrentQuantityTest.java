@@ -15,8 +15,8 @@ import net.luversof.web.gate.stock.service.MonthlyDividendCalculator.CurrentQuan
 /**
  * 스냅샷 수량이 원장의 현재 보유와 얼마나 어긋났는지 세는 규칙을 고정한다.
  *
- * <p>월배당 화면의 합계는 사람이 갱신하는 스냅샷 수량으로 계산된다. 실측 2026-08-23 기준 8 종목 중 7 종목이 달랐고, 그만큼 예상 월배당이 46,123 원
- * (1.66%) 낮게 잡혀 있었다. 이 규칙이 요약 화면 안에만 있어서 시뮬레이터 합계 카드는 아무 안내 없이 옛 수량 기준 값을 헤드라인으로 내보냈다.
+ * <p>월배당 화면의 합계는 사람이 갱신하는 스냅샷 수량으로 계산된다. 실측 2026-08-23 기준 8 종목 중 7 종목이 달랐고, 그만큼 예상 월배당이 (1.66%) 낮게
+ * 잡혀 있었다. 이 규칙이 요약 화면 안에만 있어서 시뮬레이터 합계 카드는 아무 안내 없이 옛 수량 기준 값을 헤드라인으로 내보냈다.
  */
 class MonthlyDividendCurrentQuantityTest {
 
@@ -61,15 +61,15 @@ class MonthlyDividendCurrentQuantityTest {
     assertThat(summary.totalAtCurrentQuantity()).isEqualByComparingTo("3000");
   }
 
-  /** 실데이터 모양: 스냅샷 857 주인데 실제 879 주. 1주당 240 원이면 합계가 205,680 -> 210,960 이 된다. */
+  /** 실데이터와 같은 모양: 스냅샷 수량이 실제보다 적다. 1주당 값은 그대로 두고 수량만 바꿔 다시 곱한다. */
   @Test
   void 수량이_늘었으면_현재_수량으로_다시_센다() {
     CurrentQuantitySummary summary =
         MonthlyDividendCalculator.currentQuantitySummary(
-            List.of(row(ITEM_A, 857, "240", "205680")), Map.of(ITEM_A, 879));
+            List.of(row(ITEM_A, 800, "240", "192000")), Map.of(ITEM_A, 900));
 
     assertThat(summary.staleCount()).isEqualTo(1);
-    assertThat(summary.totalAtCurrentQuantity()).isEqualByComparingTo("210960");
+    assertThat(summary.totalAtCurrentQuantity()).isEqualByComparingTo("216000");
   }
 
   @Test

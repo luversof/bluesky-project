@@ -63,8 +63,8 @@ class HoldingsSnapshotTotalsRenderTest {
   /**
    * 실데이터 모양 그대로의 행.
    *
-   * <p>{@code avgCost} 는 반올림된 값이고 {@code value}/{@code unrealizedProfit} 은 정밀값이다 &mdash; 실제 응답이
-   * 그렇다(실측: 삼성전자 avgCost 71,886.79 인데 정밀 원가는 362,525,079).
+   * <p>{@code avgCost} 는 <b>반올림된</b> 값이고 {@code value}/{@code unrealizedProfit} 은 정밀값이다 &mdash; 실제
+   * 응답이 그렇다. 그래서 {@code avgCost x 수량} 과 {@code 평가액 - 평가손익} 이 미세하게 갈린다. 아래 금액은 그 성질만 지킨 표본이다.
    */
   private static HoldingsSnapshotItem item(
       String name, String quantity, String avgCost, String value, String unrealized) {
@@ -91,29 +91,29 @@ class HoldingsSnapshotTotalsRenderTest {
 
   @Test
   void 합계_세_칸이_서로_닫힌다() {
-    // 반올림된 avgCost 로 만들면 원금이 71,886.79 x 5,043 = 362,525,081.97 이 되어 3 원 어긋난다.
-    // 정밀 원가는 평가액 − 평가손익 = 1,248,142,500 − 885,617,421 = 362,525,079 이다.
+    // 반올림된 avgCost 로 만들면 원금이 20,000.66 x 5,000 = 100,003,300 이 되어 3,300 원 어긋난다.
+    // 정밀 원가는 평가액 − 평가손익 = 400,000,000 − 300,000,000 = 100,000,000 이다.
     List<HoldingsSnapshotItem> holdings =
         List.of(
-            item("삼성전자", "5043", "71886.79", "1248142500", "885617421"),
-            item("리츠인프라", "18037", "4914.95", "75935770", "-12715200"));
+            item("삼성전자", "5000", "20000.66", "400000000", "300000000"),
+            item("리츠인프라", "10000", "5000.00", "60000000", "10000000"));
 
     String html = render(holdings);
 
-    // 총원금 = 362,525,079 + 88,650,970 = 451,176,049
+    // 총원금 = 100,000,000 + 50,000,000 = 150,000,000
     assertThat(html).as("보유 스냅샷 표를 그리지 못했다 - 검사가 무력해진다").contains("삼성전자");
-    assertThat(html).as("총원금이 표기용 avgCost 로 계산돼 정밀 원가와 어긋난다").contains("451,176,049");
-    // 총평가 1,324,078,270 · 총평가손익 872,902,221 -> 1,324,078,270 − 451,176,049 = 872,902,221
-    assertThat(html).contains("1,324,078,270");
-    assertThat(html).contains("872,902,221");
+    assertThat(html).as("총원금이 표기용 avgCost 로 계산돼 정밀 원가와 어긋난다").contains("150,000,000");
+    // 총평가 460,000,000 · 총평가손익 310,000,000 -> 460,000,000 − 150,000,000 = 310,000,000
+    assertThat(html).contains("460,000,000");
+    assertThat(html).contains("310,000,000");
   }
 
   @Test
   void 행_수익률도_같은_원가를_쓴다() {
-    // 평가 1,248,142,500 · 평가손익 885,617,421 -> 원가 362,525,079 -> 244.29%
-    // 반올림 avgCost 로 만든 362,525,081.97 을 쓰면 소수점 아래가 달라진다.
-    String html = render(List.of(item("삼성전자", "5043", "71886.79", "1248142500", "885617421")));
+    // 평가 400,000,000 · 평가손익 300,000,000 -> 원가 100,000,000 -> 300.00%
+    // 반올림 avgCost 로 만든 100,003,300 을 쓰면 299.99% 가 되어 소수점 아래가 달라진다.
+    String html = render(List.of(item("삼성전자", "5000", "20000.66", "400000000", "300000000")));
 
-    assertThat(html).as("행 수익률이 합계와 다른 원가로 계산됐다").contains("244.29");
+    assertThat(html).as("행 수익률이 합계와 다른 원가로 계산됐다").contains("300.00");
   }
 }

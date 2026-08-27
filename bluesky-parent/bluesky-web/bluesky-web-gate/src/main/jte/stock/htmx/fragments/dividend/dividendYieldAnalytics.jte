@@ -135,8 +135,8 @@
     BigDecimal accountYieldFooterYieldOnMarketPct = computeYieldPct.apply(accountYieldFooterNetWithPrincipalMarket, accountYieldFooterMarketValue);
     long accountYieldFooterDividendCount = sumDividendYieldCount.apply(accountYieldRows);
     // 수익률의 분자는 "기준일 원금이 있는 배당"의 세후 합이라 화면의 배당금(세후) 열과 다르다
-    // (실측: 193건 중 5건·세후 144,360원이 분모에 기여하지 않아 제외된다. 화면 숫자로 나눠보면
-    //  61,645,687/863,424,795=7.14% 인데 표시는 7.12% 라서, 값이 틀린 것처럼 보였다).
+    // (실측: 193건 중 5건이 분모에 기여하지 않아 제외된다. 화면에 적힌 배당/원금을 그대로 나누면
+    //  7.14% 인데 표시는 7.12% 라서, 값이 틀린 것처럼 보였다).
     // 실제 분자와 제외액을 셀 툴팁으로 붙여 표시값을 화면에서 재현할 수 있게 한다.
     java.util.function.BiFunction<BigDecimal, BigDecimal, String> yieldBasisTitle = (usedNet, totalNet) -> {
         if (usedNet == null || totalNet == null) {
