@@ -24,6 +24,13 @@ public record PoeOptimizeResult(
     List<SupportPick> additionalSkills,
     /** 가드 스킬 그룹(가드젬 + 링크 보조젬) — 생존의 큰 축이라 화면에 표시한다. 비면 미채택. */
     List<SupportPick> guardGems,
+    /** 채택한 저주 그룹(신성모독+저주젬) — API 와 평행. 미채택이면 빈 목록. */
+    List<SupportPick> curseGems,
+    /** 장갑 부패 임플리싯 저주 이름(영문) — 표시용 한글은 같은 이름의 저주 젬에서 찾는다. */
+    SupportPick curseOnHit,
+    /** 채택한 판테온(메이저/마이너) — 화면 표기용. 없으면 빈 문자열. */
+    String pantheonMajor,
+    String pantheonMinor,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
     /** treeNotables 와 평행한 영문 이름 — 결과는 실행 시점에 저장돼 화면에서 번역할 수 없다. */

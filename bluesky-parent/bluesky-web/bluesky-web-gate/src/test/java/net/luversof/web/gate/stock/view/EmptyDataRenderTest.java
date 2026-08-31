@@ -81,6 +81,9 @@ class EmptyDataRenderTest {
       List.of(
           "stock/htmx/fragments/adminActions.jte",
           "stock/htmx/fragments/assetGrowthYearlySummary.jte",
+          // 구간이 하나뿐이면 바로 위의 '합산 손익' 을 그대로 되풀이할 뿐이라 그리지 않는다.
+          // 같은 값을 두 번 적으면 읽는 사람이 둘을 견주려다 시간을 쓴다.
+          "stock/htmx/fragments/stockItemPeriodBreakdown.jte",
           "stock/htmx/fragments/components/filterBadge.jte");
 
   @Test

@@ -49,7 +49,10 @@ public class PoeOptimizeService {
 
   private static final Logger logger = LoggerFactory.getLogger(PoeOptimizeService.class);
 
-  private static final int LOG_LIMIT = 200;
+  // 최근 N 줄만 남기는 롤링 윈도다 — 200 이던 시절 balanced 런(200줄 초과)에서 **맨 앞 단계인 직업
+  //   프로브 로그가 통째로 밀려 나가** "프로브 0건"으로 보였다(동작 차이로 오독할 뻔했다).
+  //   초기 단계를 로그로 진단하려면 한 잡의 전 단계가 들어갈 만큼은 있어야 한다.
+  private static final int LOG_LIMIT = 600;
   // 비교 대상(ninja 대표 실빌드·중앙값)이 전부 레벨 100 이라 전제를 맞춘다 — 90 으로 두면 패시브 10점을
   // 덜 쓴 빌드를 100 레벨 빌드와 견주게 되어 "메타 하회"가 구조적으로 나온다(트리 잎 제거 로직 주석의
   // "정공법은 LEVEL 파리티(실빌드 L100 = +10pt)" 가 가리키던 그 지점).
@@ -86,6 +89,10 @@ public class PoeOptimizeService {
    * 노터블/키스톤 문신을 시험해 볼 자리 수 상한. 이 문신들은 "Limited to 1" 이라 (문신 × 자리) 를 전부 평가해야 하는데, 키스톤 풀만 45종이라 자리를 안
    * 막으면 평가 수가 곱으로 튄다.
    */
+  /** 문신 단계 on/off — 비용 대비 효과 실측용. 기본 on. */
+  private static final boolean TATTOOS_ENABLED =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_TATTOOS", "on"));
+
   private static final int TATTOO_MAX_SPOTS = 4;
 
   /** 자동으로 새로 찍어 볼 마스터리 후보 수 상한 — 후보마다 (효과 수)번 평가하므로 키워드 점수 상위만 본다. */
@@ -1407,6 +1414,9 @@ public class PoeOptimizeService {
     }
     NinjaSeed seed = null;
     String seedSource = skill;
+    // 어느 경로에서 온 시드인지 — 없으면 "왜 EHP 목표가 320,000 인가"를 매번 역추적해야 한다
+    //   (실측 2026-08-29: Reap 아키타입 표는 EHP 23,000/표본 1 뿐인데 적용 목표는 229,000~320,000 이었다).
+    String seedPath = "없음(정적 floor)";
     // 조합 시드 최우선 — 선택 스킬(데미지) 2개 이상이면 그 조합을 전부 쓰는 캐릭터만 즉석 집계.
     if (comboSkills != null && comboSkills.size() >= 2) {
       JsonNode agg = comboAggregate(ascendancy, comboSkills);
@@ -1417,6 +1427,7 @@ public class PoeOptimizeService {
       if (comboSeed != null && comboSeed.sample() >= MIN_SEED_SAMPLE) {
         seed = comboSeed;
         seedSource = String.join(" + ", comboSkills);
+        seedPath = "조합";
         log("poe.ninja 조합 시드: [" + seedSource + "] 전부 사용 캐릭터 n=" + comboSeed.sample());
       }
     }
@@ -1426,10 +1437,14 @@ public class PoeOptimizeService {
       //   견고한 스킬폴백(전 전직 통합)을 쓴다. 표시용 벤치마크는 이 가드 없이 정확키 그대로.
       if (exact != null && exact.sample() >= MIN_SEED_SAMPLE) {
         seed = exact;
+        seedPath = "정확키 " + ascendancy + "|" + skill;
       }
     }
     if (seed == null) {
       seed = ninjaSeedBySkill.get(skill);
+      if (seed != null) {
+        seedPath = "스킬폴백 " + skill;
+      }
     }
     if (seed == null) {
       return;
@@ -1452,6 +1467,17 @@ public class PoeOptimizeService {
       this.targetEhp =
           clampD(seed.targetEhp(), EHP_TERM_ENABLED ? EHP_SEED_FLOOR : EHP_FLOOR, EHP_FLOOR * 8);
     }
+    // 적용된 목표와 그 출처를 한 줄로 — 원시값과 클램프 후 값을 함께 남겨 "표본 1짜리가 EHP 320,000 을
+    //   요구하는가"를 로그만으로 판정할 수 있게 한다.
+    log(
+        String.format(
+            "생존 목표 확정: 최약 %,.0f (원시 %,.0f) · EHP %,.0f (원시 %,.0f) · 출처 %s · 표본 %d",
+            targetMaxHit,
+            seed.targetMaxHit(),
+            targetEhp,
+            seed.targetEhp(),
+            seedPath,
+            seed.sample()));
     // 생명 재생 목표 — 실측 중앙값 × 0.6. ⚠ ninja lifeRegen 은 gross 지표라 PoB NetLifeRegen 과 다르다:
     //   실빌드 캐릭터(PoB export)를 우리 엔진으로 재계산해 검증한 결과 ninja 2,085 ↔ PoB net 1,176(비 0.56).
     //   보정 없이 gross 목표를 net 지표에 요구하면 도달 불가 목표를 좇아 DPS 를 과희생한다(실측: −5.3% 트레이드).
@@ -1844,6 +1870,99 @@ public class PoeOptimizeService {
    * **±0.0%**(비트 동일) 로 손해 축이 없다 → 이득 증거 0, 손해 증거 1 이므로 기본 off. CI 아키타입 판정(isEsArchetype)은 이 토글과
    * 무관하게 동작한다.
    */
+  /** ehp 목표의 지표 — 기본 "totalehp"(현행). "maxhit" 이면 최약 최대피격(단일 피격 생존) 기준. */
+  private static final String EHP_METRIC =
+      System.getenv().getOrDefault("POE_EHP_METRIC", "totalehp");
+
+  /** 저주(신성모독) 층 on/off — 귀속 실험용. 기본 on(순수 추가 경로만, 교환은 POE_CURSE_SWAP 참고). */
+  private static final boolean CURSE_ENABLED =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_CURSE", "on"));
+
+  /**
+   * 저주를 넣으려 오라 하나를 버리는 교환 경로. **기본 off** — 12축 실측(2026-08-28)에서 손해가 전부 이 경로에서 나왔다.
+   *
+   * <p>교환 on: 이득 2축(정의의 화염 +38.6%, 혼의 균열 +34.4%) / 손해 5축(고행 -25.3%, 냉기 급습 -15.0%, 강타 -6.4%, 정전기
+   * -6.2%, 사신 -1.0%) → 비율 기하평균 +0.2% = 분산만 얹은 무이득.
+   *
+   * <p>교환 off(순수 추가만): 정의의 화염 +38.6%, 나머지 11축 정확히 0.0% = 순증.
+   *
+   * <p>이유: 순수 추가는 남는 마나만 쓰지만 교환은 검증된 오라를 버리는 도박이고, 그 손실을 하류가 메울 수 있는지는 결정 시점에 알 수 없다(하류 경로 발산). 저항
+   * 캡 붕괴는 판별자가 아니었다 — 이득 축도 손해 축도 똑같이 캡을 깼다.
+   */
+  private static final boolean CURSE_SWAP_ENABLED =
+      "on".equalsIgnoreCase(System.getenv().getOrDefault("POE_CURSE_SWAP", "off"));
+
+  /**
+   * 예약 없는 저주 전달(장갑 부패 임플리싯) — **기본 on**. 신성모독은 예약이 무거워 마나가 남는 축에서만 들어가는데, 이 경로는 예약이 0 이라 막혀 있던 축을
+   * 연다.
+   *
+   * <p>12축 실측(2026-08-28): DPS 상승 4축(냉기 급습 +14.6%, 혼의 균열 +12.2%, 사신 +8.3%, 고행 +2.4%), **DPS 비용 0 으로
+   * 생존만 상승 5축**(회오리·번개화살·맹독·뼈박살·강타, 최약최대피격 일제히 +9.9%), 무변화 3축, 회귀 0. dps 목표도 arc 57,469,962 →
+   * 65,015,207(+13.1%), cyclone·ed·ehp 불변, 결정성 155/155.
+   *
+   * <p>주의: 배터리 헤드라인 열은 balanced 에서도 displayMetric=effectiveDps 라 **생존만 오른 개선이 "0.0%" 로 보인다** — 생존
+   * 계수 로그를 함께 봐야 한다.
+   */
+  private static final boolean CURSE_ONHIT_ENABLED =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_CURSE_ONHIT", "on"));
+
+  /**
+   * 장갑 부패 임플리싯으로 붙는 "적중 시 저주" 9종 — mods.json families 의 V2CurseOnHit*(gen=corrupted, ilvl 30,
+   * weight 1000, Gloves 전 베이스). 상수 9개라 모드 풀 서비스(mod-pool.json 큐레이션)를 새로 뚫지 않고 여기 둔다.
+   */
+  private static final List<String> CURSE_ON_HIT_MODS =
+      List.of(
+          "Curse Enemies with Despair on Hit",
+          "Curse Enemies with Elemental Weakness on Hit",
+          "Curse Enemies with Enfeeble on Hit",
+          "Curse Enemies with Flammability on Hit",
+          "Curse Enemies with Frostbite on Hit",
+          "Curse Enemies with Conductivity on Hit",
+          "Curse Enemies with Vulnerability on Hit",
+          "Curse Enemies with Temporal Chains on Hit",
+          "Curse Enemies with Punishment on Hit");
+
+  /**
+   * 자가연소 지속력 게이트를 **장비발 자가연소까지** 확장 — 기본 on. off 면 종전대로 주 스킬이 RF 류일 때만 건다.
+   *
+   * <p>실측(2026-08-28): 켜기 전 회오리바람 dps 는 장화 "전멸의 접근"(초당 6000 화염 자해 → 아드레날린)을 신고 순생명재생 -1,868 / 생명
+   * 2,241 = 1~2초 자멸이었다. 켜면 두 축 모두 **자가연소가 완전히 소멸**하고 (NetLifeRegen 부재) 장화가 교체된다(회오리: 라이온아이의 발).
+   *
+   * <p>대가: cyclone 31,969,617 → 30,294,198(-5.2%), ed 5,610,350 → 5,371,818(-4.3%). 실현 불가능하던 수치가 실현
+   * 가능한 수치로 내려온 것이라 정상이다(트리거 보조젬 배제와 같은 층위). arc 는 오히려 65,015,207 → 79,729,100(+22.6%)인데 **기제 미규명**
+   * — 결론으로 쓰지 말 것. balanced 12축 전부 ±0.0%(생존 수치까지 동일 — balanced 는 원래 이 장화를 사지 않는다), ehp 불변, 결정성
+   * 170/170.
+   */
+  private static final boolean SUSTAIN_ITEM_DEGEN =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_SUSTAIN_ITEM_DEGEN", "on"));
+
+  /**
+   * 직업 프로브에서 그 직업의 승급을 **전수 평가** — 기본 on, 다만 코드에서 **dps 목표에만** 적용한다.
+   *
+   * <p>종전에는 chooseAscendancy(키워드 휴리스틱)가 직업당 승급 하나만 뽑아 그것만 프로브했다 = **승급을 측정으로 고른 적이 없었다**(후보가 하나뿐인
+   * 최댓값). 실측(2026-08-28) arc dps: 프로브 엘리멘탈리스트 7,446 / 네크로맨서 3,135 / 오컬티스트 2,858 → 최종 79,729,100 →
+   * **133,137,563(+67.0%)**, cyclone 30,294,198 → **47,844,271(+57.9%)**, ed·ehp 불변, 결정성
+   * 182/182(이름순 정렬로 동점 흔들림 방지).
+   *
+   * <p>balanced 에 걸면 **깨진다**: 정전기 강타 +105.5% · 맹독 +16.6% · 뼈 박살 +15.5% 대 혼의 균열 **-63.4%** · 강타
+   * -2.2%, 게다가 이득 축이 생존을 팔았다(뼈 박살 surv 0.746→0.337, 정전기 0.929→0.465, 셋은 생명 재생 음수 -114/-176/-184).
+   * 맨몸 프로브는 DPS 순위는 맞히지만 생존을 못 본다. dps 한정으로 좁힌 뒤 두 축 복귀 확인(혼의 균열 60,774,887 · 정전기 42,678,918, 둘 다
+   * ±0.0%).
+   */
+  private static final boolean ASC_PROBE_ALL =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_ASC_PROBE_ALL", "on"));
+
+  /**
+   * 전수 승급 프로브를 dps 외 목표에도 적용할지 — 기본 off(미검증). 승급 **미지정 + balanced** 조합은 아직 측정한 적이 없다(배터리 12축은 전부
+   * 승급을 명시하므로 그 조합을 재지 못한다).
+   */
+  private static final boolean ASC_PROBE_ALL_OBJECTIVES =
+      "on".equalsIgnoreCase(System.getenv().getOrDefault("POE_ASC_PROBE_ALL_OBJECTIVES", "off"));
+
+  /** 판테온 전수 선택 on/off — 귀속 실험용. 기본 on. */
+  private static final boolean PANTHEON_ENABLED =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_PANTHEON", "on"));
+
   /** 시드 마스터리 웜스타트(후보 추가 + 트리 포인트 예약) on/off — 귀속 실험용. 기본 on. */
   private static final boolean SEED_MASTERY_ENABLED =
       !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_SEED_MASTERY", "on"));
@@ -1860,6 +1979,11 @@ public class PoeOptimizeService {
 
   private volatile boolean ninjaSeedEnabled =
       !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_NINJA_SEED", "on"));
+
+  /** 모드가 빌드마다 달라지는 유니크 주얼 — 결과에 **고른 모드까지** 실어 보낸다. 나머지 유니크는 모드가 고정이라 상세 페이지 링크로 충분하다(중복 표기 방지). */
+  private static final Set<String> BUILD_SPECIFIC_JEWELS =
+      Set.of("watchers-eye", "forbidden-flame", "forbidden-flesh");
+
   private static final int MIN_SEED_SAMPLE = 5; // 정확키(전직|스킬) 시드 채택 최소 표본(미만은 스킬폴백)
 
   /** poe.ninja 실빌드 벤치마크(결과 표시용) — 아키타입 실측 중앙값 프로파일. */
@@ -2096,6 +2220,21 @@ public class PoeOptimizeService {
 
   /** 가드 스킬에 링크할 보조젬(없으면 null) — 흡수량은 젬 레벨·품질로 오르므로 기원/강화가 후보다. */
   private volatile String guardSupport;
+
+  /**
+   * 신성모독(Blasphemy)으로 상시 유지하는 저주 — 없으면 null.
+   *
+   * <p>오라 풀 24종에 **저주가 하나도 없었다**(오라·헤럴드·배너만). PoB 는 저주를 소켓에 넣기만 하면 curseSlots 로 모아 적에게
+   * 적용하므로(CalcPerform 3161~3192) 가드 스킬과 같은 "빠진 층" 이다. 단서: 실빌드가 아이템 트리거 저주(암살자의 징표)만으로 보스 평균피해 +5.6%
+   * 를 얻고 있었다.
+   */
+  private volatile String curseSkill;
+
+  /** 장갑에 얹은 "적중 시 저주" 임플리싯 문구(없으면 null) — 예약을 먹지 않는 저주 전달 경로. */
+  private volatile String curseOnHitMod;
+
+  /** 오라 최종 재대결 후보 풀 — 예약 초과로 막힌 오라를 완성 문맥에서 다시 시도한다. */
+  private volatile List<PoeGem> auraRematchPool = List.of();
 
   /** 유니크 주얼 최종 재대결 후보 풀 — 주얼은 아이템 이전에 확정되므로 완성 문맥에서 다시 겨룬다. */
   private volatile List<PoeUniqueItem> jewelRematchPool = List.of();
@@ -2440,8 +2579,11 @@ public class PoeOptimizeService {
       this.convexSurvivalPhase = false; // 잡마다 리셋(누출되면 다음 잡의 탐색이 왜곡된다)
       this.guardSkill = null; // 잡마다 리셋
       this.guardSupport = null;
+      this.curseSkill = null;
+      this.curseOnHitMod = null;
       this.supportRematchPool = List.of();
       this.jewelRematchPool = List.of();
+      this.auraRematchPool = List.of();
       this.additionalSkillSupports.clear(); // 추가 스킬 보조젬(1b) — 잡마다 리셋(누출 방지)
       this.metaWeaponClasses = Set.of(); // P1② 메타 무기 구성 — 잡마다 리셋(누출 방지)
       this.metaOffhandShield = false;
@@ -2581,12 +2723,43 @@ public class PoeOptimizeService {
         if (poeTreeGraphService.classStart(candidateClass) == null) {
           continue;
         }
-        String candidateAscendancy = chooseAscendancy(candidateClass, keywords);
-        probes.add(
-            new ClassProbe(
-                candidateClass,
-                candidateAscendancy,
-                heuristicAscendancyNodes(candidateAscendancy, keywords)));
+        // 승급은 **측정으로 고른 적이 없었다** — 직업마다 chooseAscendancy(키워드 휴리스틱)로 하나만 뽑아
+        //   그것만 프로브했으니 후보가 하나뿐인 최댓값이었다. 실측(2026-08-28): arc dps 자동 선택은
+        //   오컬티스트 79,729,100 인데 엘리멘탈리스트 강제는 133,137,563 = **+67%**(시드 off 에서도 동일한
+        //   값이라 시드 오염이 아니다). 후보 누락은 이번 세션 이득이 전부 나온 자리와 같은 부류다.
+        // **dps 한정**이다. 원인이 둘 겹쳐 있었고 **둘 다 참이었다**.
+        //   ① 지정 승급 덮어쓰기(위 ascFixedHere): 승급 목록을 직접 열거하면 chooseAscendancy 가 지키던
+        //      fixedAscendancy 존중이 우회된다. 배터리 12축은 승급을 명시하므로 여기서 크게 흔들렸다.
+        //   ② 맨몸 프로브는 생존을 못 본다: ①을 고치고 **승급 미지정 + balanced** 를 통제 비교하니
+        //      혼의 균열 60,774,887(오컬티스트) → 22,260,606(엘리멘탈리스트) = **-63.4%**,
+        //      정전기 87,291,402 → 95,648,418(+9.6%)·뼈 박살 189,169,029 → 218,514,520(+15.5%)은
+        //      둘 다 **버서커**(유리대포)를 골라 생존을 판 결과다(뼈 박살 surv 0.868→0.357,
+        //      생명 재생 77.4→-114 / 정전기 66.8→-178). 프로브가 피해만 보고 대가를 못 본다.
+        //   dps 는 목표에 생존이 없어 프로브 순위가 최종과 맞는다(arc +67.0% · cyclone +57.9%).
+        //   balanced 로 넓히려면 생존을 반영하는 프로브 문맥이 먼저다(POE_ASC_PROBE_ALL_OBJECTIVES).
+        // 사용자가 승급을 지정했으면 **그것을 존중한다**. chooseAscendancy 는 fixedAscendancy 를 지키는데,
+        //   승급 목록을 직접 열거하면 그 존중을 우회해 지정을 덮어쓴다 — balanced 12축이 크게 흔들린
+        //   진짜 이유가 이것이었다(배터리는 승급을 명시한다. 혼의 균열 -63.4% 는 지정한 오컬티스트를
+        //   덮어쓴 결과이지, 맨몸 프로브가 생존을 못 봐서가 아니다).
+        boolean ascFixedHere =
+            fixedAscendancy != null
+                && poeTreeGraphService.ascendancies(candidateClass).contains(fixedAscendancy);
+        List<String> ascPool =
+            ASC_PROBE_ALL
+                    && !ascFixedHere
+                    && (ASC_PROBE_ALL_OBJECTIVES || "dps".equals(objectiveKey))
+                ? poeTreeGraphService.ascendancies(candidateClass).stream().sorted().toList()
+                : List.of();
+        if (ascPool.isEmpty()) {
+          ascPool = List.of(chooseAscendancy(candidateClass, keywords));
+        }
+        for (String candidateAscendancy : ascPool) {
+          probes.add(
+              new ClassProbe(
+                  candidateClass,
+                  candidateAscendancy,
+                  heuristicAscendancyNodes(candidateAscendancy, keywords)));
+        }
       }
       // 프로브 입력 지문 — 프로세스 간 결과가 갈릴 때 "입력이 다른가, 엔진이 다른가"를 로그만으로 가른다.
       // 노드 수/합이 아니라 **XML 전체 해시**여야 확정적이다(합은 다른 집합에서도 같을 수 있다).
@@ -2638,16 +2811,61 @@ public class PoeOptimizeService {
               .orElse(null);
       String className = bestProbe != null ? bestProbe.probeClass() : classFor(gem);
       this.currentClassName = className;
+      // 전 후보가 진짜로 동점이면 max() 는 측정이 아니라 순회 순서상 첫 후보를 고르게 되므로, 그럴 땐
+      //   도메인 지식이 든 휴리스틱으로 되돌아간다. **다만 balanced 에서 이 조건은 걸리지 않는다** —
+      //   한때 "전 후보 0 점"으로 봤으나 그건 format() 반올림 착시였고, 실제 원시값은 뼈 박살 balanced
+      //   기준 Berserker 0.3087 / Juggernaut 0.0794 / Chieftain 0.0495 로 서로 다르다.
+      //   진짜 문제는 동점이 아니라 **생존이 순위에 못 낀다는 것**이다(생존기여 0.000035/0.000040/0.000039
+      //   = 1.14 배 차이인데 dps 는 8,811/1,966/1,285 = 6.9 배 차이). 이 폴백은 그 문제를 못 고친다.
+      boolean probeIndecisive =
+          probeResults.isEmpty()
+              || probeResults.values().stream().distinct().count() <= 1
+              || probeResults.values().stream().noneMatch(v -> v != null && v > 0);
       String ascendancy =
-          bestProbe != null ? bestProbe.probeAscendancy() : chooseAscendancy(className, keywords);
+          bestProbe != null && !probeIndecisive
+              ? bestProbe.probeAscendancy()
+              : chooseAscendancy(className, keywords);
+      if (probeIndecisive && probes.size() > 1) {
+        log("직업 프로브 변별 없음(전 후보 동점) — 휴리스틱 전직 사용: " + ascendancy);
+      }
+      // balanced 실험 시엔 **같은 후보를 dps 로도** 재서 함께 찍는다 — 두 값의 비가 곧 프로브 시점의 생존
+      //   기여다. "맨몸 프로브가 생존을 못 본다"가 맞다면 비가 후보마다 거의 같게 나온다(= 순위를 피해가
+      //   독점). 실험 토글이 켜졌을 때만 도는 추가 평가라 기본 경로 비용은 0.
+      Map<ClassProbe, Double> probeDps =
+          ASC_PROBE_ALL_OBJECTIVES && !"dps".equals(objectiveKey)
+              ? evalBatch(
+                  executor,
+                  probes,
+                  probe ->
+                      buildXml(
+                          gem,
+                          List.of(),
+                          probe.probeClass(),
+                          probe.probeAscendancy(),
+                          probe.probeNodes(),
+                          Set.of(),
+                          Map.of()),
+                  "dps")
+              : Map.of();
       for (Map.Entry<ClassProbe, Double> entry : probeResults.entrySet()) {
+        Double dpsVal = probeDps.get(entry.getKey());
+        String ratio =
+            dpsVal != null && dpsVal > 0
+                ? String.format(
+                    " · 원시 %.6f · dps %s · 생존기여 %.6f",
+                    entry.getValue(), format(dpsVal), entry.getValue() / dpsVal)
+                : "";
+        // format() 은 소수점을 버려 1 미만이 전부 "0" 으로 찍힌다 — 맨몸 프로브 값이 실제로 0.05~0.31
+        //   인데 "전 후보 0 점"으로 읽고 잘못된 결론을 냈다(2026-08-29). 작은 값은 원시로 보여준다.
+        double pv = entry.getValue() == null ? 0d : entry.getValue();
         log(
             "직업 프로브: "
                 + entry.getKey().probeClass()
                 + " · "
                 + entry.getKey().probeAscendancy()
                 + " → "
-                + format(entry.getValue()));
+                + (Math.abs(pv) < 1 ? String.format("%.6f", pv) : format(pv))
+                + ratio);
       }
       log("직업 선택: " + className + " · " + ascendancy);
 
@@ -3426,6 +3644,9 @@ public class PoeOptimizeService {
                 // 사용자가 추가 스킬로 이미 넣은 오라는 자동 선택에서 제외(중복 emit 방지)
                 .filter(a -> additionalSkills.stream().noneMatch(x -> x.slug().equals(a.slug())))
                 .toList();
+        // 최종 재대결용 보관 — 오라는 아이템 직후(7.3M~9.6M)에 정해지고, 그때 예약 초과로 막힌 후보는
+        //   이후 장비가 바뀌어도 재시도되지 않는다.
+        this.auraRematchPool = List.copyOf(auraPool);
         // 오라 비교 기준 = 주얼 포함 · 오라 없는 빌드(current 는 주얼 제외 아이템 값이라 부적합)
         double auraCurrent =
             objectiveOf(
@@ -4040,362 +4261,369 @@ public class PoeOptimizeService {
       // 아이템/오라 다음에 두는 이유: 저항·속성이 확정돼야 "이 문신이 실제로 이득인지"가 제대로 나온다.
       if (poeTattooDataService.hasData()) {
         enterPhase("tattoos");
-        phaseDone.set(0);
-        this.tattooAllocated = Set.copyOf(allocated); // tattooFits 할당-이웃 판정 기준
-        // 문신은 속성 패시브를 **통째로 교체**해 지능/힘/민첩을 깎는다 — 아이템 단계에서 요구치를
-        // 통과한 장비(공허 충전기 지능 245 등)가 문신 뒤 장착 불가가 되는 실사고가 났다.
-        // 단계 시작 시점에 요구치가 충족돼 있을 때만 강제한다(강제 장착 유니크로 이미 미충족이면
-        // 모든 후보가 탈락해 단계가 통째로 멎는 것을 막기 위함 — 그 경우는 기존 경고 경로가 알린다).
-        boolean enforceItemReqs;
-        {
-          Map<String, Double> tattooBaseline =
-              poePobEngineService.calculateValues(
-                  buildXml(
-                      gem,
-                      supports,
-                      className,
-                      ascendancy,
-                      ascendancyNodes,
-                      allocated,
-                      items,
-                      jewels));
-          evalCount.incrementAndGet();
-          enforceItemReqs = allRequirementsMet(items, tattooBaseline);
-          if (!enforceItemReqs) {
-            log("문신 요구치 강제 꺼짐 — 단계 시작 시점에 이미 미충족 장비 존재(강제 장착 추정)");
+        // 비용 대비 효과 측정용 토글(POE_TATTOOS=off) — 단계 전체를 건너뛴다. 기본 on.
+        if (!TATTOOS_ENABLED) {
+          log("문신 단계 건너뜀(POE_TATTOOS=off)");
+        } else {
+          phaseDone.set(0);
+          this.tattooAllocated = Set.copyOf(allocated); // tattooFits 할당-이웃 판정 기준
+          // 문신은 속성 패시브를 **통째로 교체**해 지능/힘/민첩을 깎는다 — 아이템 단계에서 요구치를
+          // 통과한 장비(공허 충전기 지능 245 등)가 문신 뒤 장착 불가가 되는 실사고가 났다.
+          // 단계 시작 시점에 요구치가 충족돼 있을 때만 강제한다(강제 장착 유니크로 이미 미충족이면
+          // 모든 후보가 탈락해 단계가 통째로 멎는 것을 막기 위함 — 그 경우는 기존 경고 경로가 알린다).
+          boolean enforceItemReqs;
+          {
+            Map<String, Double> tattooBaseline =
+                poePobEngineService.calculateValues(
+                    buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels));
+            evalCount.incrementAndGet();
+            enforceItemReqs = allRequirementsMet(items, tattooBaseline);
+            if (!enforceItemReqs) {
+              log("문신 요구치 강제 꺼짐 — 단계 시작 시점에 이미 미충족 장비 존재(강제 장착 추정)");
+            }
           }
-        }
-        final java.util.function.BiPredicate<Object, Map<String, Double>> reqValidator =
-            enforceItemReqs ? (candidate, values) -> allRequirementsMet(items, values) : null;
-        // 후보 노드 묶기 — **반경 주얼 안쪽을 먼저 따로** 본다.
-        // 반경 변환(붉은 악몽: 반경 내 저항 패시브 → 막기 확률)은 그 반경 안에서만 이득이라,
-        // 트리 전체에 한 종류를 바르는 방식으론 "전체로는 손해, 반경 안에선 이득"인 저항 문신이 영영 안 뽑힌다.
-        // 키는 "라벨|속성" — 라벨은 로그용, 속성은 후보 풀 선택용(힘 문신은 힘 소형에만).
-        Map<String, List<Integer>> tattooTargets = new LinkedHashMap<>();
-        Set<Integer> radiusCovered = new LinkedHashSet<>();
-        // 이번 잡에서 자동으로 새긴 노드 — 아래 혼합(스왑) 패스의 대상(사용자 지정은 건드리지 않는다)
-        List<Integer> autoInked = new ArrayList<>();
-        for (Map.Entry<Integer, Equipped> socketed : jewels.entrySet()) {
-          // 반경 변환(문신·무궁 주얼)은 유니크 주얼에만 있다 — 제작 레어 주얼은 반경 효과가 없어 건너뛴다.
-          if (!socketed.getValue().isUnique()) {
-            continue;
+          final java.util.function.BiPredicate<Object, Map<String, Double>> reqValidator =
+              enforceItemReqs ? (candidate, values) -> allRequirementsMet(items, values) : null;
+          // 후보 노드 묶기 — **반경 주얼 안쪽을 먼저 따로** 본다.
+          // 반경 변환(붉은 악몽: 반경 내 저항 패시브 → 막기 확률)은 그 반경 안에서만 이득이라,
+          // 트리 전체에 한 종류를 바르는 방식으론 "전체로는 손해, 반경 안에선 이득"인 저항 문신이 영영 안 뽑힌다.
+          // 키는 "라벨|속성" — 라벨은 로그용, 속성은 후보 풀 선택용(힘 문신은 힘 소형에만).
+          Map<String, List<Integer>> tattooTargets = new LinkedHashMap<>();
+          Set<Integer> radiusCovered = new LinkedHashSet<>();
+          // 이번 잡에서 자동으로 새긴 노드 — 아래 혼합(스왑) 패스의 대상(사용자 지정은 건드리지 않는다)
+          List<Integer> autoInked = new ArrayList<>();
+          for (Map.Entry<Integer, Equipped> socketed : jewels.entrySet()) {
+            // 반경 변환(문신·무궁 주얼)은 유니크 주얼에만 있다 — 제작 레어 주얼은 반경 효과가 없어 건너뛴다.
+            if (!socketed.getValue().isUnique()) {
+              continue;
+            }
+            PoeUniqueItem socketedJewel = socketed.getValue().unique();
+            double radius = jewelRadiusValue(socketedJewel.radius());
+            if (radius <= 0 || !allocated.contains(socketed.getKey())) {
+              continue;
+            }
+            String label =
+                socketedJewel.nameKo() != null ? socketedJewel.nameKo() : socketedJewel.name();
+            for (int nodeId : poeTreeGraphService.nodesWithinRadius(socketed.getKey(), radius)) {
+              if (!allocated.contains(nodeId) || fixedTattoos.containsKey(nodeId)) {
+                continue;
+              }
+              String attribute = smallAttributeOf(poeTreeGraphService.node(nodeId));
+              if (attribute != null && radiusCovered.add(nodeId)) {
+                tattooTargets
+                    .computeIfAbsent("반경:" + label + "|" + attribute, key -> new ArrayList<>())
+                    .add(nodeId);
+              }
+            }
           }
-          PoeUniqueItem socketedJewel = socketed.getValue().unique();
-          double radius = jewelRadiusValue(socketedJewel.radius());
-          if (radius <= 0 || !allocated.contains(socketed.getKey())) {
-            continue;
-          }
-          String label =
-              socketedJewel.nameKo() != null ? socketedJewel.nameKo() : socketedJewel.name();
-          for (int nodeId : poeTreeGraphService.nodesWithinRadius(socketed.getKey(), radius)) {
-            if (!allocated.contains(nodeId) || fixedTattoos.containsKey(nodeId)) {
+          for (int nodeId : allocated) {
+            if (fixedTattoos.containsKey(nodeId) || radiusCovered.contains(nodeId)) {
               continue;
             }
             String attribute = smallAttributeOf(poeTreeGraphService.node(nodeId));
-            if (attribute != null && radiusCovered.add(nodeId)) {
+            if (attribute != null) {
               tattooTargets
-                  .computeIfAbsent("반경:" + label + "|" + attribute, key -> new ArrayList<>())
+                  .computeIfAbsent("전체|" + attribute, key -> new ArrayList<>())
                   .add(nodeId);
             }
           }
-        }
-        for (int nodeId : allocated) {
-          if (fixedTattoos.containsKey(nodeId) || radiusCovered.contains(nodeId)) {
-            continue;
-          }
-          String attribute = smallAttributeOf(poeTreeGraphService.node(nodeId));
-          if (attribute != null) {
-            tattooTargets.computeIfAbsent("전체|" + attribute, key -> new ArrayList<>()).add(nodeId);
-          }
-        }
-        phaseTotal =
-            tattooTargets.keySet().stream()
-                .mapToInt(
-                    key ->
-                        poeTattooDataService
-                            .candidates("normal", key.substring(key.indexOf('|') + 1))
-                            .size())
-                .sum();
-        if (!tattooTargets.isEmpty()) {
-          log(
-              "문신 후보 패시브 "
-                  + tattooTargets.values().stream().mapToInt(List::size).sum()
-                  + "개("
-                  + tattooTargets.entrySet().stream()
-                      .map(e -> e.getKey() + " " + e.getValue().size())
-                      .collect(java.util.stream.Collectors.joining(", "))
-                  + ") · 현재 "
-                  + format(current));
-        }
-        for (Map.Entry<String, List<Integer>> group : tattooTargets.entrySet()) {
-          // 발동형(트리거) 문신은 소환수 스킬을 물고 들어와 평가가 불안정하다 — 스탯형만 본다
-          String groupAttribute = group.getKey().substring(group.getKey().indexOf('|') + 1);
-          String groupLabel = group.getKey().substring(0, group.getKey().indexOf('|'));
-          List<PoeTattooDataService.Tattoo> pool =
-              poeTattooDataService.candidates("normal", groupAttribute).stream()
-                  .filter(t -> !t.stats().isEmpty())
-                  .filter(t -> t.stats().stream().noneMatch(line -> line.startsWith("Trigger ")))
-                  .toList();
-          if (pool.isEmpty()) {
-            continue;
-          }
-          // 장착 한도("Limited to 1 …")가 그룹보다 작으면 남는 노드가 맨몸으로 남는다 —
-          // 채택할 때마다 새긴 자리를 빼고 **남은 노드로 반복**해 2등 문신까지 섞는다(혼합의 실체).
-          List<Integer> remaining = new ArrayList<>(group.getValue());
-          for (int round = 0; round < 4 && !remaining.isEmpty(); round++) {
-            // 이미 새겨진 문신의 남은 한도만큼만 시험(같은 문신을 한도 초과로 또 고르는 낭비 방지)
-            Map<String, Long> usedCounts =
-                fixedTattoos.values().stream()
-                    .collect(
-                        java.util.stream.Collectors.groupingBy(
-                            dn -> dn, java.util.stream.Collectors.counting()));
-            final List<Integer> targets = List.copyOf(remaining);
-            List<PoeTattooDataService.Tattoo> roundPool =
-                pool.stream()
-                    .filter(t -> usedCounts.getOrDefault(t.dn(), 0L) < tattooLimit(t))
-                    .toList();
-            if (roundPool.isEmpty()) {
-              break;
-            }
-            Map<PoeTattooDataService.Tattoo, Double> results =
-                evalBatch(
-                    executor,
-                    roundPool,
-                    tattoo -> {
-                      // 장착 한도와 연결 수 규칙을 모두 지키는 자리에만 새긴다
-                      Map<Integer, String> trial = new LinkedHashMap<>();
-                      for (int nodeId : tattooSpots(tattoo, targets)) {
-                        trial.put(nodeId, tattoo.dn());
-                      }
-                      return withTattoos(
-                          buildXml(
-                              gem,
-                              supports,
-                              className,
-                              ascendancy,
-                              ascendancyNodes,
-                              allocated,
-                              items,
-                              jewels),
-                          trial,
-                          allocated);
-                    },
-                    objectiveKey,
-                    // 이 문신 조합으로 장비 요구치가 깨지면(속성 패시브 교체) 이득이 커도 탈락
-                    reqValidator == null ? null : reqValidator::test);
-            Map.Entry<PoeTattooDataService.Tattoo, Double> best =
-                results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
-            if (best == null || best.getValue() <= current * 1.003) {
-              break; // 더 이득이 없으면 이 그룹은 끝
-            }
-            PoeTattooDataService.Tattoo tattoo = best.getKey();
-            List<Integer> spots = tattooSpots(tattoo, targets);
-            Map<Integer, String> merged = new LinkedHashMap<>(fixedTattoos);
-            for (int nodeId : spots) {
-              merged.put(nodeId, tattoo.dn());
-            }
-            fixedTattoos = merged;
-            autoInked.addAll(spots);
-            remaining.removeAll(spots);
-            current = best.getValue();
+          phaseTotal =
+              tattooTargets.keySet().stream()
+                  .mapToInt(
+                      key ->
+                          poeTattooDataService
+                              .candidates("normal", key.substring(key.indexOf('|') + 1))
+                              .size())
+                  .sum();
+          if (!tattooTargets.isEmpty()) {
             log(
-                "문신["
-                    + groupLabel
-                    + "]: "
-                    + (tattoo.nameKo() != null ? tattoo.nameKo() : tattoo.dn())
-                    + " ×"
-                    + spots.size()
-                    + (remaining.isEmpty() ? "" : " (남은 자리 " + remaining.size() + ")")
-                    + " → "
+                "문신 후보 패시브 "
+                    + tattooTargets.values().stream().mapToInt(List::size).sum()
+                    + "개("
+                    + tattooTargets.entrySet().stream()
+                        .map(e -> e.getKey() + " " + e.getValue().size())
+                        .collect(java.util.stream.Collectors.joining(", "))
+                    + ") · 현재 "
                     + format(current));
           }
-        }
-
-        // ── 혼합(스왑) 패스 — 그룹 그리디는 "그룹당 한 종류"라, 노드별로 다른 문신이 더 나은 조합을 놓친다.
-        // 자동으로 새긴 각 노드에 대해 (다른 문신 전부 + 제거) 를 시험해 이득이면 바꾼다. 1라운드만(비용 통제).
-        if (!autoInked.isEmpty()) {
-          double beforeSwap = current;
-          // 같은 속성의 소형 노드는 스탯이 전부 동일(+10)이라 스왑 평가도 동일하다 —
-          // (속성|현재 문신|연결선 수 계층) 시그니처당 대표 1회만 시험해 평가 수를 줄인다.
-          Set<String> swapSeen = new LinkedHashSet<>();
-          for (int nodeId : autoInked) {
-            String attribute = smallAttributeOf(poeTreeGraphService.node(nodeId));
-            if (attribute == null) {
+          for (Map.Entry<String, List<Integer>> group : tattooTargets.entrySet()) {
+            // 발동형(트리거) 문신은 소환수 스킬을 물고 들어와 평가가 불안정하다 — 스탯형만 본다
+            String groupAttribute = group.getKey().substring(group.getKey().indexOf('|') + 1);
+            String groupLabel = group.getKey().substring(0, group.getKey().indexOf('|'));
+            List<PoeTattooDataService.Tattoo> pool =
+                poeTattooDataService.candidates("normal", groupAttribute).stream()
+                    .filter(t -> !t.stats().isEmpty())
+                    .filter(t -> t.stats().stream().noneMatch(line -> line.startsWith("Trigger ")))
+                    .toList();
+            if (pool.isEmpty()) {
               continue;
             }
-            int linked = poeTreeGraphService.neighbors(nodeId).size();
-            String signature =
-                attribute
-                    + "|"
-                    + fixedTattoos.get(nodeId)
-                    + "|"
-                    + (linked >= 7 ? "hub" : linked <= 1 ? "leaf" : "mid");
-            if (!swapSeen.add(signature)) {
-              continue;
-            }
-            List<String> variants = new ArrayList<>();
-            variants.add(""); // 빈 문자열 = 문신 제거(원래 패시브 복원)
-            for (PoeTattooDataService.Tattoo tattoo :
-                poeTattooDataService.candidates("normal", attribute)) {
-              if (tattoo.stats().isEmpty()
-                  || tattoo.stats().stream().anyMatch(line -> line.startsWith("Trigger "))
-                  || tattoo.dn().equals(fixedTattoos.get(nodeId))
-                  || !tattooFits(tattoo, nodeId)) {
-                continue;
+            // 장착 한도("Limited to 1 …")가 그룹보다 작으면 남는 노드가 맨몸으로 남는다 —
+            // 채택할 때마다 새긴 자리를 빼고 **남은 노드로 반복**해 2등 문신까지 섞는다(혼합의 실체).
+            List<Integer> remaining = new ArrayList<>(group.getValue());
+            for (int round = 0; round < 4 && !remaining.isEmpty(); round++) {
+              // 이미 새겨진 문신의 남은 한도만큼만 시험(같은 문신을 한도 초과로 또 고르는 낭비 방지)
+              Map<String, Long> usedCounts =
+                  fixedTattoos.values().stream()
+                      .collect(
+                          java.util.stream.Collectors.groupingBy(
+                              dn -> dn, java.util.stream.Collectors.counting()));
+              final List<Integer> targets = List.copyOf(remaining);
+              List<PoeTattooDataService.Tattoo> roundPool =
+                  pool.stream()
+                      .filter(t -> usedCounts.getOrDefault(t.dn(), 0L) < tattooLimit(t))
+                      .toList();
+              if (roundPool.isEmpty()) {
+                break;
               }
-              // 장착 한도 — 이미 다른 노드에 한도만큼 새겨져 있으면 이 노드로는 못 바꾼다
-              long used =
-                  fixedTattoos.entrySet().stream()
-                      .filter(e -> e.getKey() != nodeId && e.getValue().equals(tattoo.dn()))
-                      .count();
-              if (used >= tattooLimit(tattoo)) {
-                continue;
-              }
-              variants.add(tattoo.dn());
-            }
-            // 잡 경로 XML(buildXml)이 fixedTattoos 를 이미 싣는다 — 스왑 시험 동안 잠시 비우고 trial 만 넣는다
-            Map<Integer, String> savedTattoos = fixedTattoos;
-            Map<String, Double> swapResults;
-            try {
-              fixedTattoos = Map.of();
-              String baseXml =
-                  buildXml(
-                      gem,
-                      supports,
-                      className,
-                      ascendancy,
-                      ascendancyNodes,
-                      allocated,
-                      items,
-                      jewels);
-              swapResults =
+              Map<PoeTattooDataService.Tattoo, Double> results =
                   evalBatch(
                       executor,
-                      variants,
-                      dn -> {
-                        Map<Integer, String> trial = new LinkedHashMap<>(savedTattoos);
-                        if (dn.isEmpty()) {
-                          trial.remove(nodeId);
-                        } else {
-                          trial.put(nodeId, dn);
+                      roundPool,
+                      tattoo -> {
+                        // 장착 한도와 연결 수 규칙을 모두 지키는 자리에만 새긴다
+                        Map<Integer, String> trial = new LinkedHashMap<>();
+                        for (int nodeId : tattooSpots(tattoo, targets)) {
+                          trial.put(nodeId, tattoo.dn());
                         }
-                        return withTattoos(baseXml, trial, allocated);
+                        return withTattoos(
+                            buildXml(
+                                gem,
+                                supports,
+                                className,
+                                ascendancy,
+                                ascendancyNodes,
+                                allocated,
+                                items,
+                                jewels),
+                            trial,
+                            allocated);
                       },
                       objectiveKey,
+                      // 이 문신 조합으로 장비 요구치가 깨지면(속성 패시브 교체) 이득이 커도 탈락
                       reqValidator == null ? null : reqValidator::test);
-            } finally {
-              fixedTattoos = savedTattoos;
-            }
-            Map.Entry<String, Double> bestSwap =
-                swapResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
-            if (bestSwap != null && bestSwap.getValue() > current * 1.003) {
+              Map.Entry<PoeTattooDataService.Tattoo, Double> best =
+                  results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+              if (best == null || best.getValue() <= current * 1.003) {
+                break; // 더 이득이 없으면 이 그룹은 끝
+              }
+              PoeTattooDataService.Tattoo tattoo = best.getKey();
+              List<Integer> spots = tattooSpots(tattoo, targets);
               Map<Integer, String> merged = new LinkedHashMap<>(fixedTattoos);
-              String dn = bestSwap.getKey();
-              if (dn.isEmpty()) {
-                merged.remove(nodeId);
-              } else {
-                merged.put(nodeId, dn);
+              for (int nodeId : spots) {
+                merged.put(nodeId, tattoo.dn());
               }
               fixedTattoos = merged;
-              current = bestSwap.getValue();
-              PoeTreeGraphService.TreeNode spot = poeTreeGraphService.node(nodeId);
+              autoInked.addAll(spots);
+              remaining.removeAll(spots);
+              current = best.getValue();
               log(
-                  "문신 스왑: "
-                      + (spot != null && spot.nameKo() != null
-                          ? spot.nameKo()
-                          : String.valueOf(nodeId))
-                      + " → "
-                      + (dn.isEmpty()
-                          ? "제거"
-                          : poeTattooDataService
-                              .findByDn(dn)
-                              .map(t -> t.nameKo() != null ? t.nameKo() : t.dn())
-                              .orElse(dn))
+                  "문신["
+                      + groupLabel
+                      + "]: "
+                      + (tattoo.nameKo() != null ? tattoo.nameKo() : tattoo.dn())
+                      + " ×"
+                      + spots.size()
+                      + (remaining.isEmpty() ? "" : " (남은 자리 " + remaining.size() + ")")
                       + " → "
                       + format(current));
             }
           }
-          if (current > beforeSwap) {
-            log("혼합 패스 이득: " + format(beforeSwap) + " → " + format(current));
-          }
-        }
 
-        // 노터블/키스톤 문신 — 대부분 "Limited to 1" 이라 **어느 노드에 새길지**까지 골라야 한다.
-        // (소형처럼 한 종류를 전부에 바르는 방식으론 노드 선택이 첫 번째로 고정돼 버린다)
-        // 마스터리 문신(룬 접합)도 같은 방식 — 마스터리 효과를 버리고 룬 접합 모드를 얻는 교환이라
-        // (실측: 생명력 마스터리 +30 이 사라지고 룬 접합이 붙는다) 이득일 때만 그리디가 채택한다.
-        for (String nodeType : List.of("notable", "keystone", "mastery")) {
-          List<Integer> spots =
-              allocated.stream()
-                  .filter(id -> !fixedTattoos.containsKey(id))
-                  .filter(
-                      id -> {
-                        PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(id);
-                        // 전직 노드는 문신을 새길 수 없다(전용 승천 문신은 별도 종류)
-                        return node != null
-                            && nodeType.equals(node.type())
-                            && node.ascendancy() == null;
-                      })
-                  .limit(TATTOO_MAX_SPOTS)
-                  .toList();
-          List<PoeTattooDataService.Tattoo> pool =
-              poeTattooDataService.candidates(nodeType, null).stream()
-                  .filter(t -> !t.stats().isEmpty())
-                  .filter(t -> t.stats().stream().noneMatch(line -> line.startsWith("Trigger ")))
-                  .toList();
-          if (spots.isEmpty() || pool.isEmpty()) {
-            continue;
-          }
-          record Ink(int nodeId, PoeTattooDataService.Tattoo tattoo) {}
-          List<Ink> trials = new ArrayList<>();
-          for (PoeTattooDataService.Tattoo tattoo : pool) {
-            for (int nodeId : spots) {
-              if (tattooFits(tattoo, nodeId)) {
-                trials.add(new Ink(nodeId, tattoo));
+          // ── 혼합(스왑) 패스 — 그룹 그리디는 "그룹당 한 종류"라, 노드별로 다른 문신이 더 나은 조합을 놓친다.
+          // 자동으로 새긴 각 노드에 대해 (다른 문신 전부 + 제거) 를 시험해 이득이면 바꾼다. 1라운드만(비용 통제).
+          if (!autoInked.isEmpty()) {
+            double beforeSwap = current;
+            // 같은 속성의 소형 노드는 스탯이 전부 동일(+10)이라 스왑 평가도 동일하다 —
+            // (속성|현재 문신|연결선 수 계층) 시그니처당 대표 1회만 시험해 평가 수를 줄인다.
+            Set<String> swapSeen = new LinkedHashSet<>();
+            for (int nodeId : autoInked) {
+              String attribute = smallAttributeOf(poeTreeGraphService.node(nodeId));
+              if (attribute == null) {
+                continue;
+              }
+              int linked = poeTreeGraphService.neighbors(nodeId).size();
+              String signature =
+                  attribute
+                      + "|"
+                      + fixedTattoos.get(nodeId)
+                      + "|"
+                      + (linked >= 7 ? "hub" : linked <= 1 ? "leaf" : "mid");
+              if (!swapSeen.add(signature)) {
+                continue;
+              }
+              List<String> variants = new ArrayList<>();
+              variants.add(""); // 빈 문자열 = 문신 제거(원래 패시브 복원)
+              for (PoeTattooDataService.Tattoo tattoo :
+                  poeTattooDataService.candidates("normal", attribute)) {
+                if (tattoo.stats().isEmpty()
+                    || tattoo.stats().stream().anyMatch(line -> line.startsWith("Trigger "))
+                    || tattoo.dn().equals(fixedTattoos.get(nodeId))
+                    || !tattooFits(tattoo, nodeId)) {
+                  continue;
+                }
+                // 장착 한도 — 이미 다른 노드에 한도만큼 새겨져 있으면 이 노드로는 못 바꾼다
+                long used =
+                    fixedTattoos.entrySet().stream()
+                        .filter(e -> e.getKey() != nodeId && e.getValue().equals(tattoo.dn()))
+                        .count();
+                if (used >= tattooLimit(tattoo)) {
+                  continue;
+                }
+                variants.add(tattoo.dn());
+              }
+              // 잡 경로 XML(buildXml)이 fixedTattoos 를 이미 싣는다 — 스왑 시험 동안 잠시 비우고 trial 만 넣는다
+              Map<Integer, String> savedTattoos = fixedTattoos;
+              Map<String, Double> swapResults;
+              try {
+                fixedTattoos = Map.of();
+                String baseXml =
+                    buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels);
+                swapResults =
+                    evalBatch(
+                        executor,
+                        variants,
+                        dn -> {
+                          Map<Integer, String> trial = new LinkedHashMap<>(savedTattoos);
+                          if (dn.isEmpty()) {
+                            trial.remove(nodeId);
+                          } else {
+                            trial.put(nodeId, dn);
+                          }
+                          return withTattoos(baseXml, trial, allocated);
+                        },
+                        objectiveKey,
+                        reqValidator == null ? null : reqValidator::test);
+              } finally {
+                fixedTattoos = savedTattoos;
+              }
+              Map.Entry<String, Double> bestSwap =
+                  swapResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+              if (bestSwap != null && bestSwap.getValue() > current * 1.003) {
+                Map<Integer, String> merged = new LinkedHashMap<>(fixedTattoos);
+                String dn = bestSwap.getKey();
+                if (dn.isEmpty()) {
+                  merged.remove(nodeId);
+                } else {
+                  merged.put(nodeId, dn);
+                }
+                fixedTattoos = merged;
+                current = bestSwap.getValue();
+                PoeTreeGraphService.TreeNode spot = poeTreeGraphService.node(nodeId);
+                log(
+                    "문신 스왑: "
+                        + (spot != null && spot.nameKo() != null
+                            ? spot.nameKo()
+                            : String.valueOf(nodeId))
+                        + " → "
+                        + (dn.isEmpty()
+                            ? "제거"
+                            : poeTattooDataService
+                                .findByDn(dn)
+                                .map(t -> t.nameKo() != null ? t.nameKo() : t.dn())
+                                .orElse(dn))
+                        + " → "
+                        + format(current));
               }
             }
+            if (current > beforeSwap) {
+              log("혼합 패스 이득: " + format(beforeSwap) + " → " + format(current));
+            }
           }
-          if (trials.isEmpty()) {
-            continue;
+
+          // 노터블/키스톤 문신 — 대부분 "Limited to 1" 이라 **어느 노드에 새길지**까지 골라야 한다.
+          // (소형처럼 한 종류를 전부에 바르는 방식으론 노드 선택이 첫 번째로 고정돼 버린다)
+          // 마스터리 문신(룬 접합)도 같은 방식 — 마스터리 효과를 버리고 룬 접합 모드를 얻는 교환이라
+          // (실측: 생명력 마스터리 +30 이 사라지고 룬 접합이 붙는다) 이득일 때만 그리디가 채택한다.
+          for (String nodeType : List.of("notable", "keystone", "mastery")) {
+            List<Integer> spots =
+                allocated.stream()
+                    .filter(id -> !fixedTattoos.containsKey(id))
+                    .filter(
+                        id -> {
+                          PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(id);
+                          // 전직 노드는 문신을 새길 수 없다(전용 승천 문신은 별도 종류)
+                          return node != null
+                              && nodeType.equals(node.type())
+                              && node.ascendancy() == null;
+                        })
+                    .limit(TATTOO_MAX_SPOTS)
+                    .toList();
+            List<PoeTattooDataService.Tattoo> pool =
+                poeTattooDataService.candidates(nodeType, null).stream()
+                    .filter(t -> !t.stats().isEmpty())
+                    .filter(t -> t.stats().stream().noneMatch(line -> line.startsWith("Trigger ")))
+                    .toList();
+            if (spots.isEmpty() || pool.isEmpty()) {
+              continue;
+            }
+            record Ink(int nodeId, PoeTattooDataService.Tattoo tattoo) {}
+            List<Ink> trials = new ArrayList<>();
+            for (PoeTattooDataService.Tattoo tattoo : pool) {
+              for (int nodeId : spots) {
+                if (tattooFits(tattoo, nodeId)) {
+                  trials.add(new Ink(nodeId, tattoo));
+                }
+              }
+            }
+            if (trials.isEmpty()) {
+              continue;
+            }
+            Map<Ink, Double> results =
+                evalBatch(
+                    executor,
+                    trials,
+                    ink ->
+                        withTattoos(
+                            buildXml(
+                                gem,
+                                supports,
+                                className,
+                                ascendancy,
+                                ascendancyNodes,
+                                allocated,
+                                items,
+                                jewels),
+                            Map.of(ink.nodeId(), ink.tattoo().dn()),
+                            allocated),
+                    objectiveKey);
+            Map.Entry<Ink, Double> best =
+                results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+            if (best != null && best.getValue() > current * 1.003) {
+              Map<Integer, String> merged = new LinkedHashMap<>(fixedTattoos);
+              merged.put(best.getKey().nodeId(), best.getKey().tattoo().dn());
+              fixedTattoos = merged;
+              current = best.getValue();
+              PoeTreeGraphService.TreeNode spot = poeTreeGraphService.node(best.getKey().nodeId());
+              PoeTattooDataService.Tattoo tattoo = best.getKey().tattoo();
+              log(
+                  "문신: "
+                      + (tattoo.nameKo() != null ? tattoo.nameKo() : tattoo.dn())
+                      + " → "
+                      + (spot != null && spot.nameKo() != null
+                          ? spot.nameKo()
+                          : String.valueOf(best.getKey().nodeId()))
+                      + " 자리 → "
+                      + format(current));
+            }
           }
-          Map<Ink, Double> results =
-              evalBatch(
-                  executor,
-                  trials,
-                  ink ->
-                      withTattoos(
-                          buildXml(
-                              gem,
-                              supports,
-                              className,
-                              ascendancy,
-                              ascendancyNodes,
-                              allocated,
-                              items,
-                              jewels),
-                          Map.of(ink.nodeId(), ink.tattoo().dn()),
-                          allocated),
-                  objectiveKey);
-          Map.Entry<Ink, Double> best =
-              results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
-          if (best != null && best.getValue() > current * 1.003) {
-            Map<Integer, String> merged = new LinkedHashMap<>(fixedTattoos);
-            merged.put(best.getKey().nodeId(), best.getKey().tattoo().dn());
-            fixedTattoos = merged;
-            current = best.getValue();
-            PoeTreeGraphService.TreeNode spot = poeTreeGraphService.node(best.getKey().nodeId());
-            PoeTattooDataService.Tattoo tattoo = best.getKey().tattoo();
-            log(
-                "문신: "
-                    + (tattoo.nameKo() != null ? tattoo.nameKo() : tattoo.dn())
-                    + " → "
-                    + (spot != null && spot.nameKo() != null
-                        ? spot.nameKo()
-                        : String.valueOf(best.getKey().nodeId()))
-                    + " 자리 → "
-                    + format(current));
-          }
-        }
+        } // POE_TATTOOS=off 분기 닫기
       }
 
       // ── 에센스 스왑 실측 패스 — 채택된 **레어 반지**의 같은 젠 어픽스 하나를 특수 에센스 전용
@@ -5371,9 +5599,404 @@ public class PoeOptimizeService {
         }
       }
 
+      // ⚠ 위치 = **가드 앞(이른 자리)**. 뒤로 옮겨 봤더니(감시자의 눈 다음) 세 축 모두 ±0.0% 로 재대결이
+      //   아무것도 바꾸지 못했다 — 그 시점엔 금단 페어·감시자의 눈이 소켓을 차지해 교체 여지가 없다.
+      //   이른 자리 실측: 번개 화살 +19.7%(6,549,649→7,841,892) · 고행 +6.3% · 정의의 화염 −4.3% ·
+      //   나머지 9축 ±0.0% → 손해 한 축을 안고도 순증이라 이 자리를 택했다.
+      // ── 유니크 주얼 최종 재대결 — 보조젬과 같은 이유. 주얼은 **아이템 이전**에 확정되는데(실측 채택값
+      //   502~613, 최종 문맥은 수천만) 이후 유니크 주얼끼리 다시 겨루는 단계가 없었다. 뒤쪽 "주얼 최종
+      //   교체(제작 레어)" 는 제작 레어로 바꾸는 경로일 뿐이라 유니크↔유니크 비교를 대신하지 못한다.
+      //   소켓별로 풀 상위 후보와 1:1 교체를 실측해 상승 시만 채택.
+      if (balancedJob && !jewelRematchPool.isEmpty() && !jewels.isEmpty()) {
+        enterPhase("jewels-rematch");
+        record JewelSwap(int socket, PoeUniqueItem cand) {}
+        for (int jRound = 0; jRound < 2; jRound++) {
+          List<JewelSwap> jTrials = new ArrayList<>();
+          for (Integer socket : jewels.keySet()) {
+            Equipped cur = jewels.get(socket);
+            int tried = 0;
+            for (PoeUniqueItem cand : jewelRematchPool) {
+              if (tried >= JEWEL_REMATCH_PER_SOCKET) {
+                break;
+              }
+              if (cur != null && cur.isUnique() && cur.unique().slug().equals(cand.slug())) {
+                continue;
+              }
+              // 이미 다른 소켓에 낀 유니크는 중복 장착 불가
+              if (jewels.values().stream()
+                  .anyMatch(
+                      j -> j != null && j.isUnique() && j.unique().slug().equals(cand.slug()))) {
+                continue;
+              }
+              tried++;
+              jTrials.add(new JewelSwap(socket, cand));
+            }
+          }
+          if (jTrials.isEmpty()) {
+            break;
+          }
+          Map<JewelSwap, Double> jResults =
+              evalBatch(
+                  executor,
+                  jTrials,
+                  trial -> {
+                    Map<Integer, Equipped> trialJewels = new LinkedHashMap<>(jewels);
+                    trialJewels.put(trial.socket(), Equipped.ofUnique(trial.cand()));
+                    return buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        trialJewels);
+                  },
+                  objectiveKey);
+          Map.Entry<JewelSwap, Double> bestJ =
+              jResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (bestJ != null && bestJ.getValue() > current * 1.003) {
+            Equipped dropped = jewels.get(bestJ.getKey().socket());
+            jewels.put(bestJ.getKey().socket(), Equipped.ofUnique(bestJ.getKey().cand()));
+            current = bestJ.getValue();
+            log(
+                "주얼 최종 재대결: "
+                    + (dropped == null ? "-" : jewelLabel(dropped))
+                    + " → "
+                    + bestJ.getKey().cand().name()
+                    + " → "
+                    + format(current));
+          } else {
+            log(
+                "주얼 최종 재대결: 유지 — 최고 "
+                    + (bestJ != null ? format(bestJ.getValue()) : "-")
+                    + " vs 현재 "
+                    + format(current)
+                    + " (후보 "
+                    + jTrials.size()
+                    + "개)");
+            break;
+          }
+        }
+      }
+
+      // ── 오라 최종 재대결 — 오라는 아이템 직후(실측 문맥 7.3M~9.6M, 최종 169.7M)에 정해지고, 그때
+      //   **예약 마나 부족으로 제외된 오라**(Pride/Hatred/Haste 등)는 이후 장비·주얼이 바뀌어 마나 사정이
+      //   달라져도 다시 시도되지 않는다. 예약 효율 실험이 실패했을 때 남긴 코드 주석("이 레버는 최종 컨텍스트
+      //   후기 패스로 재설계해야")이 가리키던 자리다. 완성 문맥에서 미선택 오라를 전수 재시도(예약 하한 준수).
+      if (balancedJob && !auraRematchPool.isEmpty()) {
+        enterPhase("auras-rematch");
+        for (int aRound = 0; aRound < 2 && selectedAuras.size() < MAX_AURAS; aRound++) {
+          List<PoeGem> auraRest =
+              auraRematchPool.stream().filter(a -> !selectedAuras.contains(a)).toList();
+          if (auraRest.isEmpty()) {
+            break;
+          }
+          Map<PoeGem, Double> aRound2 =
+              evalBatch(
+                  executor,
+                  auraRest,
+                  aura ->
+                      buildXmlAuras(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          allocated,
+                          items,
+                          jewels,
+                          joined(selectedAuras, aura)),
+                  objectiveKey);
+          boolean adopted = false;
+          for (Map.Entry<PoeGem, Double> cand :
+              aRound2.entrySet().stream()
+                  .sorted(Map.Entry.<PoeGem, Double>comparingByValue().reversed())
+                  .toList()) {
+            if (cand.getValue() <= current * 1.003) {
+              break;
+            }
+            Map<String, Double> tv =
+                poePobEngineService.calculateValues(
+                    buildXmlAuras(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels,
+                        joined(selectedAuras, cand.getKey())));
+            double unres = tv.getOrDefault("ManaUnreserved", 0d);
+            double unresLife = tv.getOrDefault("LifeUnreserved", 1d);
+            if (unres < MIN_UNRESERVED_MANA || unresLife < MIN_UNRESERVED_LIFE) {
+              continue; // 여전히 예약 초과 — 다음 후보로
+            }
+            selectedAuras.add(cand.getKey());
+            current = cand.getValue();
+            adopted = true;
+            log(
+                "오라 최종 재대결 채택: "
+                    + cand.getKey().name()
+                    + " → "
+                    + format(current)
+                    + " (미예약 마나 "
+                    + Math.round(unres)
+                    + ")");
+            break;
+          }
+          if (!adopted) {
+            log("오라 최종 재대결: 이득 없음 — 후보 " + auraRest.size() + "개");
+            break;
+          }
+        }
+      }
+
+      // ── 판테온 선택 — 지금까지는 ninja 패싯 점유율 15%+ 일 때만 메타 값을 **그대로 받았고**, 매칭이 없으면
+      //   아예 비었다(실빌드는 항상 하나씩 고른다). 가드 스킬과 같은 "층 자체가 빠진" 자리라 완성 문맥에서
+      //   전수 실측해 고른다. 메이저/마이너 각각 그리디 1패스(각 후보 1회 평가) — 비용은 십수 회 평가뿐.
+      // ⚠ balanced 전용 — ehp 목표에 켜면 크게 해롭다(실측: 판테온 on 87,255,811 vs off 113,182,940).
+      //   채택 시점엔 목표값을 올리지만 빌드가 바뀌며 이후 단계(유니크 재대결·ES 듀얼패스·티어)가 다른 가지로 간다.
+      if (balancedJob && PANTHEON_ENABLED) {
+        enterPhase("pantheon");
+        String savedMajor = metaPantheonMajor;
+        String savedMinor = metaPantheonMinor;
+        List<String> majors = List.of("TheBrineKing", "Lunaris", "Solaris", "Arakaali", "Tukohama");
+        List<String> minors =
+            List.of("Gruthkul", "Yugul", "Abberath", "Ryslatha", "Shakari", "Garukhan", "Ralakesh");
+        for (int slot = 0; slot < 2; slot++) {
+          List<String> pool = slot == 0 ? majors : minors;
+          String cur = slot == 0 ? metaPantheonMajor : metaPantheonMinor;
+          Map<String, Double> res = new LinkedHashMap<>();
+          for (String god : pool) {
+            if (god.equals(cur)) {
+              continue;
+            }
+            if (slot == 0) {
+              metaPantheonMajor = god;
+            } else {
+              metaPantheonMinor = god;
+            }
+            res.put(
+                god,
+                objectiveOf(
+                    poePobEngineService.calculateValues(
+                        buildXml(
+                            gem,
+                            supports,
+                            className,
+                            ascendancy,
+                            ascendancyNodes,
+                            allocated,
+                            items,
+                            jewels)),
+                    objectiveKey));
+            evalCount.incrementAndGet();
+          }
+          if (slot == 0) {
+            metaPantheonMajor = savedMajor;
+          } else {
+            metaPantheonMinor = savedMinor;
+          }
+          Map.Entry<String, Double> best =
+              res.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (best != null && best.getValue() > current * 1.003) {
+            if (slot == 0) {
+              metaPantheonMajor = best.getKey();
+              savedMajor = best.getKey();
+            } else {
+              metaPantheonMinor = best.getKey();
+              savedMinor = best.getKey();
+            }
+            current = best.getValue();
+            log(
+                "판테온 채택("
+                    + (slot == 0 ? "메이저" : "마이너")
+                    + "): "
+                    + best.getKey()
+                    + " → "
+                    + format(current));
+          } else {
+            log(
+                "판테온("
+                    + (slot == 0 ? "메이저" : "마이너")
+                    + "): 이득 없음 — 후보 "
+                    + res.size()
+                    + "개"
+                    + (cur.isEmpty() ? " (현재 없음)" : " (현재 " + cur + ")"));
+          }
+        }
+      }
+
+      // ⚠ 어센던시 최종 재대결은 **시도했다가 걷어냈다**(2026-08-28). 조건상 유리해 보였지만(최초 단계 확정,
+      //   노드 수 적어 교체 드묾) 4축 전부 ±0.0% 였고, 로그가 이유를 말해준다: 완성 문맥에서 **빈 상태부터 다시
+      //   고르면 오히려 22% 나쁘다**(재선택 18,845,300 vs 현재 24,074,990). 어센던시는 "낡은 선택"이 아니라
+      //   **트리가 그 위에 지어진 앵커**라서, 독립적으로 재선택하면 그 공동최적화를 버리게 된다.
+      //   재시도하려면 전체 재선택이 아니라 노드 1:1 교체(국소 탐색)여야 한다.
       // ── 가드 스킬 선택 — 없음 포함 전수 실측 후 상승 시만 채택. 생존만 올리는 층이라 dps 목표에선 무의미,
       //   balanced/ehp 에서만 돈다. 실빌드가 거의 전부 끼는 층인데 우리 XML 엔 아예 없었다.
-      if ((balancedJob || "ehp".equals(objectiveKey)) && GUARD_ENABLED) {
+      // ── 저주 선택(신성모독) — 오라 풀에 저주가 하나도 없어 이 층이 통째로 비어 있었다. 예약 마나를
+      //   먹으므로 오라와 같은 하한 검사를 거치고, 상승 시에만 채택한다. dps·balanced 만(ehp 는 예약만 먹고
+      //   이득이 없다 — 가드·판테온에서 ehp 게이트를 잘못 잡아 −68% 낸 전례를 따른다).
+      if (CURSE_ENABLED && (balancedJob || "dps".equals(objectiveKey))) {
+        enterPhase("curse");
+        List<String> cursePool =
+            List.of(
+                "Despair",
+                "Elemental Weakness",
+                "Flammability",
+                "Frostbite",
+                "Conductivity",
+                "Vulnerability",
+                "Enfeeble",
+                "Temporal Chains");
+        String savedCurse = curseSkill;
+        Map<String, Double> curseResults = new LinkedHashMap<>();
+        Map<String, double[]> curseReserve = new LinkedHashMap<>();
+        for (String cand : cursePool) {
+          curseSkill = cand;
+          Map<String, Double> v =
+              poePobEngineService.calculateValues(
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      items,
+                      jewels));
+          evalCount.incrementAndGet();
+          curseResults.put(cand, objectiveOf(v, objectiveKey));
+          curseReserve.put(
+              cand,
+              new double[] {
+                v.getOrDefault("ManaUnreserved", 0d), v.getOrDefault("LifeUnreserved", 1d)
+              });
+        }
+        curseSkill = savedCurse;
+        String bestCurse = null;
+        double bestCurseVal = current;
+        for (Map.Entry<String, Double> e :
+            curseResults.entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .toList()) {
+          double[] r = curseReserve.get(e.getKey());
+          if (r[0] < MIN_UNRESERVED_MANA || r[1] < MIN_UNRESERVED_LIFE) {
+            continue; // 예약 초과 — 인게임에서 못 띄운다
+          }
+          if (e.getValue() > current * 1.003) {
+            bestCurse = e.getKey();
+            bestCurseVal = e.getValue();
+          }
+          break; // 예약 가능한 최고 후보 하나만 본다
+        }
+        // 예약이 막혀 못 넣는 경우가 대부분이다(실측: 혼의균열 Despair 가 목표값 +23.9% 인데 미예약 −301,
+        //   고행 Enfeeble +14.9% 에 −283). 오라가 마나를 다 쓰고 있으니 **오라 하나와 맞바꿔** 본다 —
+        //   저주 이득이 가장 약한 오라의 기여보다 크면 교환이 남는다.
+        if (bestCurse == null && CURSE_SWAP_ENABLED && !selectedAuras.isEmpty()) {
+          record CurseSwap(PoeGem aura, String curse) {}
+          CurseSwap bestSwap = null;
+          int swapResBlocked = 0;
+          double swapBestBlocked = 0;
+          double bestSwapVal = current;
+          String savedCurse2 = curseSkill;
+          for (PoeGem aura : List.copyOf(selectedAuras)) {
+            for (String cand : cursePool) {
+              List<PoeGem> without = new ArrayList<>(selectedAuras);
+              without.remove(aura);
+              List<PoeGem> savedAuras = new ArrayList<>(selectedAuras);
+              selectedAuras.clear();
+              selectedAuras.addAll(without);
+              curseSkill = cand;
+              Map<String, Double> v =
+                  poePobEngineService.calculateValues(
+                      buildXml(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          allocated,
+                          items,
+                          jewels));
+              evalCount.incrementAndGet();
+              double val = objectiveOf(v, objectiveKey);
+              // 저항 캡 붕괴는 **판별자가 아니다**(가설 기각, 실측 2026-08-28): 이득 축(혼의 균열
+              //   +34.4%)과 손해 축(고행 -25.3%) 모두 교환이 캡을 깼다. 캡 유지를 조건으로 걸었더니
+              //   두 축 다 기각되어 +34.4% 까지 잃었다. 실제 차이는 "떨어뜨린 오라를 이후 단계가 싸게
+              //   메울 수 있는가"이고 교환 시점에는 알 수 없다 = 하류 경로 발산. 캡 상태는 로그로만 남긴다.
+              boolean resOk =
+                  v.getOrDefault("FireResist", (double) targetFireRes) >= targetFireRes
+                      && v.getOrDefault("ColdResist", (double) targetColdRes) >= targetColdRes
+                      && v.getOrDefault("LightningResist", (double) targetLightRes)
+                          >= targetLightRes;
+              boolean fits =
+                  v.getOrDefault("ManaUnreserved", 0d) >= MIN_UNRESERVED_MANA
+                      && v.getOrDefault("LifeUnreserved", 1d) >= MIN_UNRESERVED_LIFE;
+              selectedAuras.clear();
+              selectedAuras.addAll(savedAuras);
+              curseSkill = savedCurse2;
+              if (!resOk && val > current) {
+                swapResBlocked++;
+                swapBestBlocked = Math.max(swapBestBlocked, val);
+              }
+              // 캡을 깬 채 채택되는지 로그로 보이게 둔다 - 하류가 메우는지 확인용
+              if (fits && val > bestSwapVal * 1.003) {
+                bestSwapVal = val;
+                bestSwap = new CurseSwap(aura, cand);
+              }
+            }
+          }
+          if (bestSwap != null) {
+            selectedAuras.remove(bestSwap.aura());
+            curseSkill = bestSwap.curse();
+            current = bestSwapVal;
+            log(
+                "저주 교환 채택: 오라 "
+                    + bestSwap.aura().name()
+                    + " → 저주 "
+                    + bestSwap.curse()
+                    + " → "
+                    + format(current));
+          }
+          if (swapResBlocked > 0) {
+            log(
+                String.format(
+                    "저주 교환 참고: 저항 캡을 깨는 상승 후보 %d개(최고 %s) - 캡 여부는 결과 부호와 무관",
+                    swapResBlocked, format(swapBestBlocked)));
+          }
+        }
+        if (bestCurse != null) {
+          curseSkill = bestCurse;
+          current = bestCurseVal;
+          log("저주 채택: " + bestCurse + " → " + format(current));
+        } else if (curseSkill != null) {
+          // 위 교환 경로에서 이미 채택됨 — 아래 미채택 로그를 찍지 않는다.
+        } else {
+          // "이득 없음"과 "예약 초과"는 원인이 다르다 — 로그가 구분하지 못하면 다음 조사가 헛돈다.
+          Map.Entry<String, Double> top =
+              curseResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          double[] r = top == null ? new double[] {0, 0} : curseReserve.get(top.getKey());
+          boolean blocked = r[0] < MIN_UNRESERVED_MANA || r[1] < MIN_UNRESERVED_LIFE;
+          log(
+              String.format(
+                  "저주 미채택(%s): 최고 %s(%s) vs 현재 %s · 미예약 마나 %.0f / 생명 %.0f · 후보 %d개",
+                  blocked ? "예약 초과" : "이득 없음",
+                  top == null ? "-" : top.getKey(),
+                  top == null ? "-" : format(top.getValue()),
+                  format(current),
+                  r[0],
+                  r[1],
+                  cursePool.size()));
+        }
+      }
+
+      // ⚠ balanced 전용 — ehp 목표에선 오히려 −69%다(실측: 가드+판테온 off 369,700,700 vs 가드만 on 113,182,940).
+      //   가드는 EHP 를 더하는 층인데도 그렇다 = 채택이 하류 경로를 바꿔 ES 듀얼패스/유니크 재대결이 나쁜 가지로 간다.
+      //   balanced 에서는 최약최대피격 +199%·DPS 비용 0 으로 큰 이득이므로 그쪽만 유지한다.
+      if (balancedJob && GUARD_ENABLED) {
         enterPhase("guard");
         List<String> guardPool =
             List.of("Molten Shell", "Steelskin", "Immortal Call", "Vaal Molten Shell");
@@ -5608,6 +6231,11 @@ public class PoeOptimizeService {
                 Slot.RING2,
                 Slot.BELT,
                 Slot.OFFHAND
+                // ⚠ 플라스크(FLASK1~5)는 **의도적으로 제외**한다. 아이템 단계(값 38k~78k)에서 정해지므로
+                //   같은 "약한 문맥" 결함처럼 보여 5칸을 넣어 봤으나 12축 실측이 순손실이었다:
+                //   냉기 급습 −35.4%(11,683,301→7,550,092) · 회오리 −6.6% · 고행 −5.5% · 지배의 강타 −2.1%
+                //   vs 사신 +4.2% · 정의의 화염 +3.6% · 강타 +0.3%. 슬롯이 5개라 교체가 잦고 그만큼 탐욕
+                //   경로를 크게 흔든다(보조젬·주얼·오라 재대결이 순증이었던 것과 대조).
               }) {
             Equipped cur = items.get(slot);
             if (cur != null
@@ -5705,10 +6333,12 @@ public class PoeOptimizeService {
             Map<Integer, Equipped> trial = new LinkedHashMap<>(jewels);
             trial.put(
                 swapSockets.get(0),
-                Equipped.ofUnique(forbiddenJewel(notable.name(), true, className)));
+                Equipped.ofUnique(
+                    forbiddenJewel(notable.name(), notable.nameKo(), true, className)));
             trial.put(
                 swapSockets.get(1),
-                Equipped.ofUnique(forbiddenJewel(notable.name(), false, className)));
+                Equipped.ofUnique(
+                    forbiddenJewel(notable.name(), notable.nameKo(), false, className)));
             double val =
                 objectiveOf(
                     poePobEngineService.calculateValues(
@@ -5733,10 +6363,12 @@ public class PoeOptimizeService {
           if (bestNotable != null) {
             jewels.put(
                 swapSockets.get(0),
-                Equipped.ofUnique(forbiddenJewel(bestNotable.name(), true, className)));
+                Equipped.ofUnique(
+                    forbiddenJewel(bestNotable.name(), bestNotable.nameKo(), true, className)));
             jewels.put(
                 swapSockets.get(1),
-                Equipped.ofUnique(forbiddenJewel(bestNotable.name(), false, className)));
+                Equipped.ofUnique(
+                    forbiddenJewel(bestNotable.name(), bestNotable.nameKo(), false, className)));
             log(
                 "금단 페어 채택: "
                     + (bestNotable.nameKo() != null ? bestNotable.nameKo() : bestNotable.name())
@@ -5857,7 +6489,12 @@ public class PoeOptimizeService {
           // ⚠ 어느 2개인지는 **엔진이** 고르게 한다 — 키워드 점수로 뽑으면 "받는 피해" 계열이 1순위로
           //    올라온다(문구에 Fire/Damage 가 들어가서). 실측: 정화의 얼음 방어 모드가 악의 지속피해 배율을
           //    제치고 뽑혀 조합이 통째로 기각됐다. 상위 4개의 모든 짝(6가지)을 재 보는 편이 정직하다.
-          List<WatchersEyeMod> shortlist = ranked.subList(0, Math.min(4, ranked.size()));
+          // 상수는 6 인데 여기서 4 로 잘라 **2개는 평가조차 안 됐다**(상수/코드 불일치). 키워드 점수가
+          //   못 미덥다는 건 위 주석이 이미 실측으로 적어둔 사실이라, 짝만 전수로 돌리고 후보 선정은
+          //   여전히 키워드에 맡기면 5순위 이하의 좋은 모드는 영영 안 보인다. 상수까지 열어 15쌍을 본다
+          //   (엔진 평가 6회 → 15회, 이 단계 한정이라 비용은 미미).
+          List<WatchersEyeMod> shortlist =
+              ranked.subList(0, Math.min(WATCHERS_EYE_MOD_CANDIDATES, ranked.size()));
           List<WatchersEyeMod> bestPair = null;
           double bestPairVal = current;
           for (int i = 0; i < shortlist.size(); i++) {
@@ -5902,85 +6539,12 @@ public class PoeOptimizeService {
         }
       }
 
-      // ⚠ 위치 주의: 이 재대결은 **감시자의 눈 다음, 티어 비교 앞**에 둔다. 원래 가드 앞(이른 자리)에 뒀더니
-      //   채택 이후 단계들이 다른 가지로 내려가 정의의 화염이 −4.3% 났다(번개 화살 +19.7%·고행 +6.3% 는 유지).
-      //   뒤따르는 단계가 적을수록 경로 이탈 여지가 작다.
-      // ── 유니크 주얼 최종 재대결 — 보조젬과 같은 이유. 주얼은 **아이템 이전**에 확정되는데(실측 채택값
-      //   502~613, 최종 문맥은 수천만) 이후 유니크 주얼끼리 다시 겨루는 단계가 없었다. 뒤쪽 "주얼 최종
-      //   교체(제작 레어)" 는 제작 레어로 바꾸는 경로일 뿐이라 유니크↔유니크 비교를 대신하지 못한다.
-      //   소켓별로 풀 상위 후보와 1:1 교체를 실측해 상승 시만 채택.
-      if (balancedJob && !jewelRematchPool.isEmpty() && !jewels.isEmpty()) {
-        enterPhase("jewels-rematch");
-        record JewelSwap(int socket, PoeUniqueItem cand) {}
-        for (int jRound = 0; jRound < 2; jRound++) {
-          List<JewelSwap> jTrials = new ArrayList<>();
-          for (Integer socket : jewels.keySet()) {
-            Equipped cur = jewels.get(socket);
-            int tried = 0;
-            for (PoeUniqueItem cand : jewelRematchPool) {
-              if (tried >= JEWEL_REMATCH_PER_SOCKET) {
-                break;
-              }
-              if (cur != null && cur.isUnique() && cur.unique().slug().equals(cand.slug())) {
-                continue;
-              }
-              // 이미 다른 소켓에 낀 유니크는 중복 장착 불가
-              if (jewels.values().stream()
-                  .anyMatch(
-                      j -> j != null && j.isUnique() && j.unique().slug().equals(cand.slug()))) {
-                continue;
-              }
-              tried++;
-              jTrials.add(new JewelSwap(socket, cand));
-            }
-          }
-          if (jTrials.isEmpty()) {
-            break;
-          }
-          Map<JewelSwap, Double> jResults =
-              evalBatch(
-                  executor,
-                  jTrials,
-                  trial -> {
-                    Map<Integer, Equipped> trialJewels = new LinkedHashMap<>(jewels);
-                    trialJewels.put(trial.socket(), Equipped.ofUnique(trial.cand()));
-                    return buildXml(
-                        gem,
-                        supports,
-                        className,
-                        ascendancy,
-                        ascendancyNodes,
-                        allocated,
-                        items,
-                        trialJewels);
-                  },
-                  objectiveKey);
-          Map.Entry<JewelSwap, Double> bestJ =
-              jResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
-          if (bestJ != null && bestJ.getValue() > current * 1.003) {
-            Equipped dropped = jewels.get(bestJ.getKey().socket());
-            jewels.put(bestJ.getKey().socket(), Equipped.ofUnique(bestJ.getKey().cand()));
-            current = bestJ.getValue();
-            log(
-                "주얼 최종 재대결: "
-                    + (dropped == null ? "-" : jewelLabel(dropped))
-                    + " → "
-                    + bestJ.getKey().cand().name()
-                    + " → "
-                    + format(current));
-          } else {
-            log(
-                "주얼 최종 재대결: 유지 — 최고 "
-                    + (bestJ != null ? format(bestJ.getValue()) : "-")
-                    + " vs 현재 "
-                    + format(current)
-                    + " (후보 "
-                    + jTrials.size()
-                    + "개)");
-            break;
-          }
-        }
-      }
+      // ── 4a'') 속성 요구치 최종 보정 — 보정은 아이템/오라 단계에서만 돌았는데, 그 **뒤에** 젬을 더하는
+      //   단계가 여럿이다(가드 스킬 2젬·영원한 축복·보조젬/오라 재대결·유니크 재대결의 장비 교체).
+      //   그래서 최종 빌드가 요구치 미달로 끝나는 일이 있었다(실측: 정의의 화염 balanced 가 젬 총 민첩
+      //   98 필요/89 보유 = 9 부족, 그 이전 이력에선 갑옷 힘 191/183). 완성 직전에 한 번 더 메운다.
+      repairAttributeShortfalls(
+          items, gem, supports, className, ascendancy, ascendancyNodes, allocated, jewels);
 
       // ── 4) 레어 슬롯 티어 비교 — 채택된 레어를 T1/중/하 티어로 재계산 ──
       enterPhase("tiers");
@@ -6023,6 +6587,66 @@ public class PoeOptimizeService {
           rows.add(new PoeOptimizeResult.TierRow(probe.label(), format(value != null ? value : 0)));
         }
         tierComparisons.add(new PoeOptimizeResult.SlotTierCompare(slot.pobName, slot.ko, rows));
+      }
+
+      // ── 적중 시 저주(장갑 부패 임플리싯) — **파이프라인 맨 끝**에서 결정한다 ──
+      // 저주 단계(신성모독 옆)에 두었더니 단계 내 이득과 최종 부호가 갈렸다(실측 2026-08-28):
+      //   혼의 균열 단계 내 +14.9% → 최종 +12.2% / 고행 단계 내 +9.9% → 최종 **-18.6%**.
+      // 오라를 빼앗지 않는 순수 추가인데도 그렇다 = 채택이 뒤따르는 8개 단계(판테온·가드·트리재대결·
+      //   유니크재대결·금단·축복·감시자의눈·티어)의 선택을 바꿔 더 나쁜 골짜기로 보냈다는 뜻이다.
+      // 뒤에 아무 단계도 없으면 단계 내 이득 = 최종 이득이라 발산이 원천적으로 불가능하다.
+      if (balancedJob || "dps".equals(objectiveKey)) {
+        enterPhase("curse-onhit");
+        // 예약 없는 전달 경로 — 장갑 부패 임플리싯. **저주가 하나도 안 걸린 경우에만** 본다:
+        //   게임 기본 저주 한도는 1 이라 신성모독과 겹치면 둘 중 하나만 적용되고, 이미 채택된 저주를
+        //   갈아치우는 건 자원을 빼앗는 교환이 된다(교환 경로가 12축에서 손해 전량의 출처였다).
+        if (CURSE_ONHIT_ENABLED && curseSkill == null) {
+          String savedOnHit = curseOnHitMod;
+          Map<String, Double> onHitResults = new LinkedHashMap<>();
+          for (String mod : CURSE_ON_HIT_MODS) {
+            curseOnHitMod = mod;
+            double val =
+                objectiveOf(
+                    poePobEngineService.calculateValues(
+                        buildXml(
+                            gem,
+                            supports,
+                            className,
+                            ascendancy,
+                            ascendancyNodes,
+                            allocated,
+                            items,
+                            jewels)),
+                    objectiveKey);
+            evalCount.incrementAndGet();
+            onHitResults.put(mod, val);
+          }
+          curseOnHitMod = savedOnHit;
+          Map.Entry<String, Double> top =
+              onHitResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          // **미파싱 자멸 방지**: 추출 문구에 저주 레벨이 없어 PoB 가 이 줄을 못 읽으면 9종 값이 전부
+          //   똑같이 나오는데, 그걸 "이득 없음"으로 읽으면 원인을 전달 수단으로 오진한다. 값이 하나뿐이면
+          //   무효로 보고 그렇게 로그한다.
+          long distinct = onHitResults.values().stream().map(v -> Math.round(v)).distinct().count();
+          if (distinct <= 1) {
+            log(
+                String.format(
+                    "적중 시 저주: 9종 값이 전부 동일(%s) — PoB 가 임플리싯을 못 읽는 것으로 판단, 미채택",
+                    top == null ? "-" : format(top.getValue())));
+          } else if (top != null && top.getValue() > current * 1.003) {
+            curseOnHitMod = top.getKey();
+            current = top.getValue();
+            log("적중 시 저주 채택(장갑 임플리싯): " + top.getKey() + " → " + format(current));
+          } else {
+            log(
+                String.format(
+                    "적중 시 저주 미채택(이득 없음): 최고 %s(%s) vs 현재 %s · 서로 다른 값 %d개",
+                    top == null ? "-" : top.getKey(),
+                    top == null ? "-" : format(top.getValue()),
+                    format(current),
+                    distinct));
+          }
+        }
       }
 
       // ── 마무리: 최종 계산 + PoB 코드 ──
@@ -7026,6 +7650,24 @@ public class PoeOptimizeService {
                                               g.slug(), g.name(), g.nameKo()))
                                   .orElseGet(() -> new PoeOptimizeResult.SupportPick("", nm, nm)))
                       .toList(),
+              // 저주 그룹 — 채택됐으면 [신성모독, 저주젬]. 가드와 같은 조회 경로(보조젬은 "... Support").
+              curseSkill == null
+                  ? List.of()
+                  : java.util.stream.Stream.of("Blasphemy", curseSkill)
+                      .map(
+                          nm ->
+                              poeGemDataService
+                                  .findByName(nm)
+                                  .or(() -> poeGemDataService.findByName(nm + " Support"))
+                                  .map(
+                                      g ->
+                                          new PoeOptimizeResult.SupportPick(
+                                              g.slug(), g.name(), g.nameKo()))
+                                  .orElseGet(() -> new PoeOptimizeResult.SupportPick("", nm, nm)))
+                      .toList(),
+              curseOnHitPick(),
+              metaPantheonMajor == null ? "" : metaPantheonMajor,
+              metaPantheonMinor == null ? "" : metaPantheonMinor,
               List.copyOf(allNodes),
               notables,
               notablesEn,
@@ -7034,10 +7676,19 @@ public class PoeOptimizeService {
                   .map(
                       jewel ->
                           jewel.isUnique()
+                              // 감시자의 눈·금단 페어는 **우리가 고른 모드가 곧 빌드**다(오라 모드 쌍 /
+                              //   부여 노터블). 이름만 보내면 상세 페이지의 일반 유니크 정보가 뜰 뿐이라
+                              //   어떤 물건을 구해야 하는지 알 수 없다 — 가드·저주와 같은 노출 누락.
                               ? new PoeOptimizeResult.SupportPick(
                                   jewel.unique().slug(),
                                   jewel.unique().name(),
-                                  jewel.unique().nameKo())
+                                  jewel.unique().nameKo(),
+                                  BUILD_SPECIFIC_JEWELS.contains(jewel.unique().slug())
+                                      ? jewel.unique().explicitsKo()
+                                      : List.of(),
+                                  BUILD_SPECIFIC_JEWELS.contains(jewel.unique().slug())
+                                      ? jewel.unique().explicits()
+                                      : List.of())
                               // 제작 레어 주얼 — slug 가 없어 상세 링크는 못 걸지만, **붙은 모드는 보여준다**.
                               //   계산에는 jewelLife/jewelFire 같은 접두가 실제로 들어가는데 화면엔 이름만 떠서
                               //   "속성이 표기 안 된다"는 보고가 나왔다(장비 슬롯은 ItemPick 으로 이미 줄까지 보낸다).
@@ -7325,7 +7976,8 @@ public class PoeOptimizeService {
   private static final int CLUSTER_NOTABLE_POOL = 6;
 
   /** 트리 재대결 후보 수 — 완성 문맥에서 다시 볼 미할당 노터블 상위 N(키워드 점수순). */
-  private static final int TREE_REMATCH_CANDIDATES = 14;
+  private static final int TREE_REMATCH_CANDIDATES =
+      Integer.parseInt(System.getenv().getOrDefault("POE_TREE_REMATCH_CANDIDATES", "14"));
 
   /** 트리 재대결 라운드 상한 — 한 번 채택하면 문맥이 바뀌어 다음 후보의 값도 달라진다. */
   private static final int TREE_REMATCH_ROUNDS = 4;
@@ -7405,7 +8057,12 @@ public class PoeOptimizeService {
    *
    * @param flame true 면 화염(Crimson), false 면 살점(Cobalt)
    */
-  private PoeUniqueItem forbiddenJewel(String notable, boolean flame, String className) {
+  /**
+   * 금단 페어. **영문 줄은 건드리지 말 것** — PoB 가 "Allocates X" 를 파싱해 노터블을 부여한다. 한글 줄만 트리 한글명을 쓴다(그 전엔 한글 문장 안에
+   * 영문 노터블이 박혀 나갔다: "Aspect of Carnage 할당").
+   */
+  private PoeUniqueItem forbiddenJewel(
+      String notable, String notableKo, boolean flame, String className) {
     String other = flame ? "Forbidden Flesh" : "Forbidden Flame";
     return new PoeUniqueItem(
         flame ? "Forbidden Flame" : "Forbidden Flesh",
@@ -7427,7 +8084,12 @@ public class PoeOptimizeService {
             "Limited to: 1",
             "Requires Class " + className,
             "Allocates " + notable + " if you have the matching modifier on " + other),
-        List.of("금단의 " + (flame ? "살점" : "화염") + "에 대응하는 모드가 있으면 " + notable + " 할당"),
+        List.of(
+            "금단의 "
+                + (flame ? "살점" : "화염")
+                + "에 대응하는 모드가 있으면 "
+                + (notableKo != null && !notableKo.isBlank() ? notableKo : notable)
+                + " 할당"),
         null,
         null,
         null,
@@ -7472,7 +8134,16 @@ public class PoeOptimizeService {
     //    RF 외(selfBurnRun=false) 또는 NetLifeRegen 부재면 1.0 → 다른 스킬 기준선 불변.
     factor *= sustainFactor(values);
     if ("ehp".equals(objective)) {
-      return values.getOrDefault("TotalEHP", 0d) * factor;
+      // 기본은 PoB TotalEHP 그대로. 다만 그 지표는 **지속 기준**이라 경감+회복이 들어오는 피해를 넘는 순간
+      //   발산한다(실측: 주문억제 10% 짜리 도유 하나로 12,917,608 → 369,700,700, 생명·ES 는 불변).
+      //   대안 지표(POE_EHP_METRIC=maxhit)는 balanced 가 쓰는 **최약 최대피격**(단일 피격 생존)으로,
+      //   문턱 발산이 없다. 제품 정의에 관한 선택이라 기본값은 바꾸지 않는다.
+      return ("maxhit".equalsIgnoreCase(EHP_METRIC)
+              ? weakestCommonHit(values)
+              : "maxhit-all".equalsIgnoreCase(EHP_METRIC)
+                  ? weakestAllHit(values)
+                  : values.getOrDefault("TotalEHP", 0d))
+          * factor;
     }
     double dps = effectiveDps(values);
     if ("balanced".equals(objective)) {
@@ -7507,6 +8178,16 @@ public class PoeOptimizeService {
    *
    * <p>dps/ehp 목표엔 적용 안 함(dps=유리대포 허용, ehp 기준선 보존).
    */
+  /** 카오스까지 포함한 최약 최대피격 — ehp 목표 대안 지표용(실제로 죽는 유형을 그대로 본다). */
+  private static double weakestAllHit(Map<String, Double> values) {
+    double w = weakestCommonHit(values);
+    Double c = values.get("ChaosMaximumHitTaken");
+    if (c != null && c > 0d) {
+      w = w <= 0d ? c : Math.min(w, c);
+    }
+    return w;
+  }
+
   /** 흔한 치명 유형(물리+3원소) 최대 피격의 최솟값 — 실질 생존을 결정하는 값. 없으면 0. */
   private static double weakestCommonHit(Map<String, Double> values) {
     double weakest = Double.MAX_VALUE;
@@ -7778,7 +8459,12 @@ public class PoeOptimizeService {
    * 부재·net>=0 이면 1.0(불변).
    */
   private double sustainFactor(Map<String, Double> values) {
-    if (!selfBurnRun) {
+    // selfBurnRun(주 스킬이 RF 류) 조건은 **범위가 틀렸다**: 자가연소는 스킬만이 아니라 장비에서도 온다.
+    //   실측(2026-08-28) 회오리바람 dps 는 장화 "전멸의 접근"(Take 6000 Fire Damage per Second while
+    //   Flame-Touched → 아드레날린)을 신고 순생명재생 **-1,868 / 생명 2,241** = 1~2초 자멸인데,
+    //   주 스킬이 RF 가 아니라 게이트를 그냥 통과했다. NetLifeRegen 자체가 PoB 에서 TotalBuildDegen != 0
+    //   일 때만 나오므로 **존재 검사만으로 범위가 이미 맞다** — selfBurnRun 은 불필요하고 해롭다.
+    if (!SUSTAIN_ITEM_DEGEN && !selfBurnRun) {
       return 1.0;
     }
     Double net = values.get("NetLifeRegen");
@@ -7810,8 +8496,31 @@ public class PoeOptimizeService {
   }
 
   /** 표시용 대표 수치 — ehp 는 유효 체력, 그 외(dps/balanced)는 DPS (혼합점수 대신 실제 값) */
+  /**
+   * 장갑 부패 임플리싯 저주를 젬으로 해석 — "Curse Enemies with X on Hit" → 젬 X. 이름 문자열만 넘기면 화면이 영문으로 나간다(실측: 냉기 급습
+   * "Elemental Weakness"). 미채택이면 null.
+   */
+  private PoeOptimizeResult.SupportPick curseOnHitPick() {
+    String mod = curseOnHitMod;
+    if (mod == null) {
+      return null;
+    }
+    String name = mod.replace("Curse Enemies with ", "").replace(" on Hit", "").trim();
+    return poeGemDataService
+        .findByName(name)
+        .map(g -> new PoeOptimizeResult.SupportPick(g.slug(), g.name(), g.nameKo()))
+        .orElseGet(() -> new PoeOptimizeResult.SupportPick("", name, name));
+  }
+
   private double displayMetric(Map<String, Double> values, String objective) {
-    return "ehp".equals(objective) ? values.getOrDefault("TotalEHP", 0d) : effectiveDps(values);
+    if ("ehp".equals(objective)) {
+      return "maxhit".equalsIgnoreCase(EHP_METRIC)
+          ? weakestCommonHit(values)
+          : "maxhit-all".equalsIgnoreCase(EHP_METRIC)
+              ? weakestAllHit(values)
+              : values.getOrDefault("TotalEHP", 0d);
+    }
+    return effectiveDps(values);
   }
 
   /**
@@ -10012,6 +10721,15 @@ public class PoeOptimizeService {
           .append("\" quality=\"20\" enabled=\"true\"/>")
           .append("</Skill>");
     }
+    // 저주 — 신성모독으로 상시 유지(예약형). PoB 가 curseSlots 로 모아 적에게 적용한다.
+    if (curseSkill != null) {
+      xml.append("<Skill enabled=\"true\" slot=\"Helmet\">")
+          .append("<Gem nameSpec=\"Blasphemy\" level=\"20\" quality=\"20\" enabled=\"true\"/>")
+          .append("<Gem nameSpec=\"")
+          .append(curseSkill)
+          .append("\" level=\"20\" quality=\"20\" enabled=\"true\"/>")
+          .append("</Skill>");
+    }
     // 가드 스킬 — 별도 그룹. PoB 가 자동으로 버프를 머지해 GuardAbsorb 층을 만든다(설정 토글 불필요).
     if (guardSkill != null) {
       xml.append("<Skill enabled=\"true\" slot=\"Boots\"><Gem nameSpec=\"")
@@ -10071,8 +10789,16 @@ public class PoeOptimizeService {
       // 엘드리치 임플리싯(포식자/총주교)은 게임에서 **non-unique(레어/매직/일반)에만** 부여된다 — 엘드리치
       //   잉걸/영액은 고유템에 못 쓴다. 따라서 유니크엔 엘드리치를 붙이지 않는다(rareItemText 만 craft 시점에 반영).
       //   (아뮬렛 도유는 탐색이 끝난 뒤 withAnoint 로 얹는다 — 후보를 실제로 평가해 고르므로 여기서 붙이지 않는다)
+      // "적중 시 저주" 는 장갑 **부패 임플리싯**으로 얹는다(예약 0). 부패는 엘드리치와 달리 유니크에도
+      //   붙으므로 레어/유니크 모두 지원한다.
+      List<String> curseImplicit =
+          entry.getKey() == Slot.GLOVES && curseOnHitMod != null
+              ? List.of(curseOnHitMod)
+              : List.of();
       String itemText =
-          equipped.isUnique() ? uniqueItemText(equipped.unique()) : rareItemText(equipped.rare());
+          equipped.isUnique()
+              ? uniqueItemText(equipped.unique(), curseImplicit)
+              : rareItemText(equipped.rare(), curseImplicit);
       xml.append("<Item id=\"").append(itemId).append("\">\n").append(itemText).append("</Item>");
       slots
           .append("<Slot name=\"")

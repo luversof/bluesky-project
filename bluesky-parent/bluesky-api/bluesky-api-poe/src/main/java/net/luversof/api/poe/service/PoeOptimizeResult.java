@@ -27,6 +27,22 @@ public record PoeOptimizeResult(
      * 최약 최대피격 +199%). 비어 있으면 미채택.
      */
     List<SupportPick> guardGems,
+    /**
+     * 채택한 저주 — 신성모독 링크(예약형). 가드·판테온과 같은 이유로 노출한다: 최적화기가 고르는데 화면에 없으면 인게임에서 재현할 수 없다(실측 이득: 정의의 화염
+     * +38.6%). 미채택이면 빈 목록.
+     */
+    List<SupportPick> curseGems,
+    /**
+     * 예약 없는 저주 전달 — 장갑 부패 임플리싯으로 얹은 저주. 이름만 문자열로 넘기면 화면이 영문으로 나간다 (실측: 냉기 급습에서 "Elemental Weakness"
+     * 그대로 노출). 다른 배지와 같은 SupportPick 으로 넘겨 한글명·아이콘·링크를 붙인다. 미채택이면 null.
+     */
+    SupportPick curseOnHit,
+    /**
+     * 채택한 판테온(메이저/마이너, PoB id). 가드 스킬과 같은 이유로 노출한다 — 최적화기가 고르는데 화면에 없으면 인게임에서 재현할 수 없다(실측 이득: 회오리
+     * +13.5% · 원소 강타 +3.5%). 없으면 빈 문자열.
+     */
+    String pantheonMajor,
+    String pantheonMinor,
     List<Integer> treeNodeIds,
     List<String> treeNotables,
     /** treeNotables 와 평행한 영문 이름 — 결과는 실행 시점에 저장되므로 화면에서 뒤늦게 번역할 수 없다. */

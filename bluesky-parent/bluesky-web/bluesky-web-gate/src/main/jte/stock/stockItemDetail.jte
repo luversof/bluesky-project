@@ -41,6 +41,7 @@
 @param String filterTimeZone = null
 @param String filterRangeMode = null
 @param List<TradeProfit> accountHoldings = java.util.List.of()
+@param List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
 
 !{
     // 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
@@ -50,6 +51,23 @@
     String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
     BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
     double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
+
+    // 합산 손익 = 평가손익 + 실현손익 + 배당.
+    //
+    // 세 값이 카드로 흩어져 있어서 "이 종목에서 결국 얼마를 벌었나" 를 사람이 더해야 알 수 있었다.
+    // 요약 화면의 '총 합산 수익'과 같은 셈이라 두 화면이 같은 뜻을 말한다.
+    //
+    // 다만 <b>평가손익만 기간이 아니라 현재 시점 값</b>이다 - api-stock 은 기간이 실리면 평가를 계산하지
+    // 않으므로 이 화면이 평가만 기간 없이 따로 부른다. 시작일을 바꿔도 그 몫은 그대로이므로 화면에 밝힌다.
+    BigDecimal combinedProfit = (evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO)
+        .add(realizedProfit != null ? realizedProfit : BigDecimal.ZERO)
+        .add(totalDividend != null ? totalDividend : BigDecimal.ZERO);
+    boolean combinedPositive = combinedProfit.signum() >= 0;
+    // 분모는 요약 화면과 같은 취득원가(평가액 - 평가손익)다. 전량 매도한 종목은 0 이 되므로 그때는
+    // 비율을 내지 않는다 - 0 으로 나눈 값을 그리느니 금액만 답하는 편이 맞다.
+    boolean combinedRateAvailable = evalCostBasis.signum() > 0;
+    double combinedRatePct = combinedRateAvailable
+        ? combinedProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 }
 
 @template._layout.stockLayout(
@@ -111,6 +129,36 @@
 					@if(priceBasisDate != null)
 						<p class="mb-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())}</p>
 					@endif
+					<%-- 합산 손익 - 평가손익·실현손익·배당이 카드로 흩어져 있어 사람이 더해야 알 수 있었다.
+					     아래 격자의 세 값을 그대로 더한 것이라, 화면에서 눈으로 검산할 수 있게 셋을 함께 적는다. --%>
+					<div class="mb-3 rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3">
+						<div class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("stock.item.detail.combined.profit")}</div>
+						<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+							<span class="text-3xl font-bold leading-none amount-value ${combinedPositive ? "text-profit" : "text-loss"}"
+								  title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(combinedProfit))}">
+								${String.format("%+,d", StockFormatUtil.displayWon(combinedProfit))}
+							</span>
+							@if(combinedRateAvailable)
+								<span class="text-lg font-bold ${combinedPositive ? "text-profit" : "text-loss"}">
+									${String.format("%+.2f%%", combinedRatePct)}
+								</span>
+								<span class="text-[11px] text-base-content/50">${MessageUtil.getMessage("stock.item.detail.combined.basis")}</span>
+							@endif
+						</div>
+						<%-- 셋을 그대로 적어 화면에서 더해 볼 수 있게 한다. --%>
+						<p class="mt-1 text-[11px] leading-4 flex flex-wrap items-baseline gap-x-1.5">
+							<span class="text-base-content/60">${MessageUtil.getMessage("stock.profit.unrealized")}</span>
+							<span class="amount-value ${evalColor}">${String.format("%+,d", StockFormatUtil.displayWon(evaluationProfit))}</span>
+							<span class="text-base-content/35">+</span>
+							<span class="text-base-content/60">${MessageUtil.getMessage("stock.profit.realized")}</span>
+							<span class="amount-value ${realizedColor}">${String.format("%+,d", StockFormatUtil.displayWon(realizedProfit))}</span>
+							<span class="text-base-content/35">+</span>
+							<span class="text-base-content/60">${MessageUtil.getMessage("stock.summary.label.cumulative.dividend")}</span>
+							<span class="amount-value text-dividend">${String.format("%+,d", StockFormatUtil.displayWon(totalDividend))}</span>
+						</p>
+						<p class="mt-0.5 text-[11px] leading-4 text-base-content/35">${MessageUtil.getMessage("stock.item.detail.combined.note")}</p>
+					</div>
+
 					<!-- 보유/손익 요약 -->
 					<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
 						@template._components.ui.statCard(
@@ -151,6 +199,10 @@
 							valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalDividend)),
 							tone = "text-dividend")
 					</div>
+
+					<%-- 기간별 손익 - 고른 기간을 달(또는 해)로 쪼개 언제 벌고 언제 잃었는지 보여준다.
+					     위의 합산 손익과 같은 쪼갬(평가 변동 / 실현+배당)을 써서 두 자리가 같은 뜻을 말한다. --%>
+					@template.stock.htmx.fragments.stockItemPeriodBreakdown(periodBreakdown = periodBreakdown)
 
 					<!-- 보유 평가액·원가 추이 -->
 					@if(timeSeries != null && !timeSeries.isEmpty() && chartFormatter != null)

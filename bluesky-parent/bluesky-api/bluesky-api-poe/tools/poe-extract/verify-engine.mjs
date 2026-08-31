@@ -9,9 +9,11 @@
 //   3) 상류 PoB nil 버그 패치가 입혀졌는가 — 안 입히면 일부 빌드가 조용히 빈 빌드 수치를 낸다
 //
 // 문제를 찾으면 **비정상 종료**해 run-all 이 실패로 표시하게 한다(조용히 넘어가면 점검하는 의미가 없다).
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { WORK_DIR } from "./paths.mjs";
+import { WORK_DIR, findLuaJit } from "./paths.mjs";
 
 const POB = path.join(WORK_DIR, "pob-src", "src");
 const problems = [];
@@ -76,6 +78,56 @@ if (fs.existsSync(specFile)) {
 	const patched = /if\s+item\s+and\s+item\./.test(src) || /item\s*==\s*nil/.test(src);
 	if (patched) notes.push("PoB nil 버그 패치 적용됨");
 	else problems.push("PoB nil 버그 패치가 안 보임 — patch-pob.mjs 실패(일부 빌드가 빈 수치를 냅니다)");
+}
+
+// 4) Lua 구문 점검 — **표준 LuaJIT 이 이 소스를 읽을 수 있는가**
+//    상류 PoB 는 복합 대입(`x += 1`)을 지원하는 자체 LuaJIT 포크로 돌지만 우리는 표준 LuaJIT 을 쓴다.
+//    못 읽는 문법이 하나라도 들어오면 그 파일을 로드하는 순간 엔진이 통째로 죽는다:
+//      PLoadModule() error loading 'Modules/Main.lua': Modules/Main.lua:342: '=' expected near '+'
+//    실제로 상류가 Main.lua 에 `count += 1` 을 넣은 뒤 다른 PC 의 시뮬이 **모든 빌드에서** 이렇게 죽었다.
+//    patch-pob.mjs 가 되돌리지만, 놓친 경우를 여기서 잡아야 사용자가 시뮬을 돌리다 처음 알게 되지 않는다.
+//    생성 데이터(TreeData/·Data/)는 제외 — 손으로 쓴 코드가 아니고 5MB 짜리라 점검만 느려진다.
+const luajit = findLuaJit();
+if (!luajit) {
+	notes.push("luajit 없음 — Lua 구문 점검 건너뜀(엔진도 못 돕니다)");
+} else {
+	const targets = [];
+	const walk = (dir) => {
+		for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+			const full = path.join(dir, entry.name);
+			if (entry.isDirectory()) {
+				if (entry.name !== "TreeData" && entry.name !== "Data") walk(full);
+			} else if (entry.name.endsWith(".lua")) {
+				targets.push(full);
+			}
+		}
+	};
+	walk(POB);
+	// 파일당 프로세스를 띄우면 181개에 20초가 넘는다(Windows spawn 비용) → 목록을 넘겨 **한 번만** 띄운다.
+	const listFile = path.join(os.tmpdir(), "pob-lua-files.txt");
+	const checker = path.join(os.tmpdir(), "pob-syntax-check.lua");
+	fs.writeFileSync(listFile, targets.join("\n"));
+	fs.writeFileSync(
+		checker,
+		[
+			"local list = ...",
+			"local bad = 0",
+			"for line in io.lines(list) do",
+			"  if #line > 0 then",
+			"    local fn, err = loadfile(line)",
+			"    if not fn then bad = bad + 1 print(err) if bad >= 5 then break end end",
+			"  end",
+			"end",
+			"os.exit(bad == 0 and 0 or 1)",
+		].join("\n"),
+	);
+	try {
+		execFileSync(luajit, [checker, listFile], { encoding: "utf8", stdio: "pipe" });
+		notes.push(`Lua 구문 점검 통과(${targets.length}파일)`);
+	} catch (e) {
+		const detail = String(e.stdout || e.message).trim().split("\n").slice(0, 5).join(" / ");
+		problems.push(`PoB 소스에 표준 LuaJIT 이 못 읽는 문법이 있습니다 — 엔진이 로드 단계에서 죽습니다: ${detail}`);
+	}
 }
 
 for (const n of notes) console.log("  ok  " + n);

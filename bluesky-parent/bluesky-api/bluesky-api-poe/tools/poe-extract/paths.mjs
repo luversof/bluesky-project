@@ -71,3 +71,16 @@ export function runExtractor(configOverride, { partial = false } = {}) {
 	// PATH 의존 없이 현재 node 바이너리로 실행
 	execSync(`"${process.execPath}" "${cli}"`, { stdio: "inherit", cwd: WORK_DIR, env });
 }
+
+/** luajit 실행 파일 경로 — winget 설치 위치 우선, 없으면 PATH, 둘 다 없으면 null.
+ *  (PoePobEngineService.resolveLuajit 과 같은 후보 순서 — 한쪽만 찾는 상태가 생기면 안 된다.) */
+export function findLuaJit() {
+	const winget = path.join(os.homedir(), "AppData", "Local", "Programs", "LuaJIT", "bin", "luajit.exe");
+	if (fs.existsSync(winget)) return winget;
+	try {
+		execSync("luajit -v", { stdio: "ignore" });
+		return "luajit";
+	} catch (e) {
+		return null;
+	}
+}

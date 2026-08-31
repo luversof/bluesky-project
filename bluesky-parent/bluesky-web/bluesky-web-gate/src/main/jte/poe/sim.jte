@@ -30,6 +30,10 @@
 	String optimizeTitle = MessageUtil.getMessage("poe.sim.opt.title");
 	String optimizeDesc = MessageUtil.getMessage("poe.sim.opt.desc");
 	String optimizeRun = MessageUtil.getMessage("poe.sim.opt.run");
+	String rankingTitle = MessageUtil.getMessage("poe.sim.ranking.title");
+	// 탭 스타일은 아이템 탭(poe/itemTabs.jte)과 동일 — 같은 사이트에서 탭이 두 가지로 보이면 안 된다
+	String tabActive = "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm";
+	String tabInactive = "tab tab-lg flex-1 text-base-content/60 hover:text-base-content";
 }
 
 @template._layout.poeLayout(
@@ -45,9 +49,18 @@
 				<span class="badge badge-ghost">${patchLabel}</span>
 			</div>
 
+			<%-- 최적 조합 탐색 / 젬 DPS 랭킹 탭 — 두 기능이 한 화면에 세로로 쌓여 있어 아래쪽이 잘 안 보였다.
+			     ⚠ 패널은 **둘 다 DOM 에 남긴다**(서버 라우팅 탭이 아니다). 트리 에디터에서 넘어온 treeNodes/masteries/jewels
+			        는 이 페이지의 hidden input 에만 있어, 탭 전환이 페이지 이동이면 그 트리가 조용히 사라진다.
+			        진행 중인 최적화/랭킹 배치의 폴링 상태도 그대로 유지된다. --%>
+			<div id="poeSimTabs" class="tabs tabs-box w-full bg-base-200/70 p-1" role="tablist"
+			     data-tab-active="${tabActive}" data-tab-inactive="${tabInactive}">
+				<button type="button" role="tab" data-poe-sim-tab="optimize" class="${tabActive}">${optimizeTitle}</button>
+				<button type="button" role="tab" data-poe-sim-tab="ranking" class="${tabInactive}">${rankingTitle}</button>
+			</div>
+
 			<!-- 최적 조합 탐색: 젬 + 목표 선택 → 보조젬/트리/아이템 greedy 탐색 -->
-			<div class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
-				<h2 class="text-base font-bold">${optimizeTitle}</h2>
+			<div data-poe-sim-panel="optimize" class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
 				<div class="text-sm text-base-content/60">${optimizeDesc}</div>
 				<form class="space-y-3"
 				      hx-post="/poe/htmx/sim/optimize"
@@ -149,9 +162,8 @@
 				</div>
 			</div>
 
-			<!-- 젬 DPS 랭킹 — 페이지 제목이 시뮬레이터로 바뀌어 이 섹션에 자체 제목이 필요하다 -->
-			<div class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
-				<h2 class="text-base font-bold">${MessageUtil.getMessage("poe.sim.ranking.title")}</h2>
+			<!-- 젬 DPS 랭킹 (탭) — 제목은 탭 라벨이 대신한다 -->
+			<div data-poe-sim-panel="ranking" class="hidden space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
 				<!-- 배치 실행/상태 (고정 래퍼가 interval 폴링, 유휴 시 286 으로 중단. 완료 시 랭킹을 새로 불러온다) -->
 				@template.poe.htmx.simWrap()
 				<div id="poeSimRanking"></div>
@@ -162,6 +174,39 @@
 
 			<!-- 추가 스킬/유니크 멀티셀렉트를 공간절약형 드롭다운+검색으로 향상 -->
 			<script src="/js/poe/multiSelect.js"></script>
+			<%-- 탭 전환 — 패널 표시 토글만 한다(페이지 이동 없음). 선택은 ?tab= 과 sessionStorage 에 남겨
+			     새로고침/뒤로가기 후에도 보던 탭이 유지된다. history.replaceState 라 뒤로가기 스택을 늘리지 않는다. --%>
+			<script>
+			(function () {
+				var TABS = ['optimize', 'ranking'];
+				var bar = document.getElementById('poeSimTabs');
+				if (!bar) return;
+				var ACTIVE = bar.dataset.tabActive;
+				var INACTIVE = bar.dataset.tabInactive;
+				function show(name) {
+					if (TABS.indexOf(name) < 0) name = 'optimize';
+					document.querySelectorAll('[data-poe-sim-panel]').forEach(function (p) {
+						p.classList.toggle('hidden', p.dataset.poeSimPanel !== name);
+					});
+					document.querySelectorAll('[data-poe-sim-tab]').forEach(function (b) {
+						b.className = b.dataset.poeSimTab === name ? ACTIVE : INACTIVE;
+						b.setAttribute('aria-selected', String(b.dataset.poeSimTab === name));
+					});
+					try { sessionStorage.setItem('poeSimTab', name); } catch (e) { /* 프라이빗 모드 등 */ }
+					try {
+						var u = new URL(window.location.href);
+						u.searchParams.set('tab', name);
+						history.replaceState(null, '', u);
+					} catch (e) { /* 구형 브라우저 */ }
+				}
+				document.querySelectorAll('[data-poe-sim-tab]').forEach(function (b) {
+					b.addEventListener('click', function () { show(b.dataset.poeSimTab); });
+				});
+				var initial = new URLSearchParams(window.location.search).get('tab');
+				if (!initial) { try { initial = sessionStorage.getItem('poeSimTab'); } catch (e) { /* 무시 */ } }
+				show(initial || 'optimize');
+			})();
+			</script>
 		</div>
 	`
 )

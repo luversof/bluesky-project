@@ -34,7 +34,7 @@ class TimeSeriesIncludeSeriesTest {
         new TradeProfitService(null, null, null, null, null, null) {
           @Override
           public TradeProfitTimeSeriesResult aggregateTimeSeriesWithSummary(
-              TradeProfitRequest request, String granularity) {
+              TradeProfitRequest request, String granularity, String breakdown) {
             return result;
           }
         });
@@ -46,14 +46,15 @@ class TimeSeriesIncludeSeriesTest {
         List.of(
             new TradeProfitTimeSeriesPoint(
                 null, null, null, 0L, 0L, 0L, null, null, null, null, null));
-    return new TradeProfitTimeSeriesResult(series, SUMMARY, List.of());
+    return new TradeProfitTimeSeriesResult(series, SUMMARY, List.of(), List.of());
   }
 
   @Test
   void 기본값은_시리즈를_포함한다() {
     var full = sample();
     var response =
-        controllerReturning(full).timeSeriesWithSummary(new TradeProfitRequest(), "DAILY", true);
+        controllerReturning(full)
+            .timeSeriesWithSummary(new TradeProfitRequest(), "DAILY", true, null);
 
     assertSame(full, response, "기본 경로는 서비스 결과를 그대로 돌려줘야 한다");
     assertEquals(1, response.series().size());
@@ -63,7 +64,8 @@ class TimeSeriesIncludeSeriesTest {
   void 시리즈를_빼면_요약과_연도별은_남는다() {
     var full = sample();
     var response =
-        controllerReturning(full).timeSeriesWithSummary(new TradeProfitRequest(), "DAILY", false);
+        controllerReturning(full)
+            .timeSeriesWithSummary(new TradeProfitRequest(), "DAILY", false, null);
 
     assertTrue(response.series().isEmpty(), "시리즈는 비어야 한다");
     assertSame(SUMMARY, response.summary(), "요약은 그대로여야 한다");
@@ -74,6 +76,7 @@ class TimeSeriesIncludeSeriesTest {
   void 결과가_없으면_그대로_널이다() {
     assertEquals(
         null,
-        controllerReturning(null).timeSeriesWithSummary(new TradeProfitRequest(), "DAILY", false));
+        controllerReturning(null)
+            .timeSeriesWithSummary(new TradeProfitRequest(), "DAILY", false, null));
   }
 }

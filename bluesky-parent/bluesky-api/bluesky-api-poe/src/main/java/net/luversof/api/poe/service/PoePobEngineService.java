@@ -72,6 +72,15 @@ public class PoePobEngineService {
           "TotalEHP",
           // 순생명재생 — 자가연소(정의의 화염류)에서만 계산됨(TotalBuildDegen!=0). 음수면 제 불에 타 죽는 지속불가 빌드.
           "NetLifeRegen",
+          // 표시용 생명재생 — PoB 의 이름은 LifeRegenRecovery 다(BuildDisplayStats.lua 122행 label "Life
+          // Regen").
+          //   NetLifeRegen 은 자가연소(RF) 판정용이라 그 외 빌드에선 안 나와, 비교표가 "실빌드 989 / 내 —" 로 비어 있었다.
+          "LifeRegenRecovery",
+          // 흡혈은 **순재생에 안 들어간다** — PoB 는 NetLifeRegen = LifeRegenRecovery - totalLifeDegen 만
+          //   계산하고(CalcDefence 3469) 흡혈은 별도 스탯이다. 그래서 재생이 음수여도 흡혈로 버티는
+          //   근접 빌드는 정상인데, 이 값이 없으면 "재생 음수 = 결함"으로 오판한다(2026-08-29 조사).
+          "LifeLeechGainRate",
+          "LifeLeechGainPerHit",
           "ManaReservedPercent",
           "ManaUnreserved",
           "FireResist",
@@ -89,6 +98,13 @@ public class PoePobEngineService {
           "SpellSuppressionChance",
           "BlockChance",
           "SpellBlockChance",
+          // 비교표에서 우리 값만 "—" 로 비던 항목들 — 벤치는 값을 갖고 있어 격차가 안 보였다.
+          //   이름은 PoB BuildDisplayStats.lua 에서 확인(추측 아님): 181행 EffectiveMovementSpeedMod,
+          //   201행 LootRarity, 145행 Ward, 169행 SpellDodgeChance.
+          "EffectiveMovementSpeedMod",
+          "LootRarity",
+          "Ward",
+          "SpellDodgeChance",
           "CritChance",
           "CritMultiplier");
 
@@ -318,7 +334,10 @@ public class PoePobEngineService {
         //    점검은 캐시되어 평가마다 파일시스템을 두드리지 않는다.
         String buildDiag = environmentDiagnosis(buildXml);
         throw new IllegalStateException(
-            "PoB 엔진 오류: " + e.getMessage() + (buildDiag.isEmpty() ? "" : " · " + buildDiag));
+            "PoB 엔진 오류: "
+                + e.getMessage()
+                + (buildDiag.isEmpty() ? "" : " · " + buildDiag)
+                + luaSyntaxHint(e.getMessage()));
       } catch (WorkerFailure e) {
         worker.kill(); // 죽은 워커는 버리고 재시도
         last = new IllegalStateException("PoB 워커 실패: " + e.getMessage(), e);
@@ -369,6 +388,28 @@ public class PoePobEngineService {
   private volatile long diagCachedAt;
 
   private static final long DIAG_TTL_MS = 60_000;
+
+  /**
+   * Lua 파싱 실패면 조치를 붙인다.
+   *
+   * <p>상류 PoB 는 복합 대입(<code>x += 1</code>)을 지원하는 자체 LuaJIT 포크로 돌지만 우리는 표준 LuaJIT 을 쓴다. 상류가 그 문법을
+   * 들여오면 해당 파일을 로드하는 순간 엔진이 통째로 죽는다 — 실측(2026-08-31, 타 PC): {@code PLoadModule() error loading
+   * 'Modules/Main.lua': Modules/Main.lua:342: '=' expected near '+'} 로 **모든 빌드**가 실패했다. 원문만으로는 무엇을
+   * 해야 하는지 알 수 없어 사용자가 원인을 못 찾았다. 조치(데이터 갱신 1회 → patch-pob 가 되돌림)를 메시지에 함께 준다.
+   */
+  private static String luaSyntaxHint(String message) {
+    if (message == null) {
+      return "";
+    }
+    boolean luaParseError =
+        message.contains("PLoadModule() error")
+            || message.contains("expected near")
+            || message.contains("unexpected symbol near");
+    return luaParseError
+        ? " · 조치: PoB 소스에 표준 LuaJIT 이 못 읽는 문법이 있습니다(상류가 복합 대입 등을 들여온 경우)."
+            + " 데이터 갱신을 한 번 실행하면 소스 갱신·패치가 다시 돌며 자동으로 되돌립니다."
+        : "";
+  }
 
   private String environmentDiagnosis(String buildXml) {
     java.util.regex.Matcher tv =
@@ -494,7 +535,10 @@ public class PoePobEngineService {
       if (errorMessage != null) {
         String diag = environmentDiagnosis(buildXml);
         throw new IllegalStateException(
-            "PoB 엔진 오류: " + errorMessage + (diag.isEmpty() ? "" : " · " + diag));
+            "PoB 엔진 오류: "
+                + errorMessage
+                + (diag.isEmpty() ? "" : " · " + diag)
+                + luaSyntaxHint(errorMessage));
       }
       if (resultJson == null) {
         String diag = environmentDiagnosis(buildXml);

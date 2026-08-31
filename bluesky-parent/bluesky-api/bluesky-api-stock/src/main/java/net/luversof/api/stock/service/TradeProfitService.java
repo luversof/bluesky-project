@@ -42,6 +42,7 @@ import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequestType;
 import net.luversof.api.stock.web.dto.request.TradeSearchRequest;
 import net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem;
+import net.luversof.api.stock.web.dto.response.TradeProfitPeriodSummary;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesResult;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesSummary;
@@ -510,6 +511,15 @@ public class TradeProfitService {
    */
   public TradeProfitTimeSeriesResult aggregateTimeSeriesWithSummary(
       TradeProfitRequest request, String granularity) {
+    return aggregateTimeSeriesWithSummary(request, granularity, null);
+  }
+
+  /**
+   * @param breakdown 기간을 쪼개는 단위 &mdash; {@code AUTO} · {@code MONTH} · {@code YEAR}. 없으면 쪼개지 않는다(기존
+   *     화면의 응답 크기를 그대로 둔다).
+   */
+  public TradeProfitTimeSeriesResult aggregateTimeSeriesWithSummary(
+      TradeProfitRequest request, String granularity, String breakdown) {
     assertSupportedGranularity(granularity);
     ZoneId zoneId = request.resolveZoneId();
     List<TradeProfitTimeSeriesPoint> dailySeries =
@@ -519,10 +529,19 @@ public class TradeProfitService {
     // (실측: 첫 매수일의 손익과 원금이 '전체' 합계에서 통째로 빠져 있었다.
     //  기간을 2009-01-01 처럼 명시하면 시리즈 앞에 0 인 날이 들어와 값이 맞는 것과 대비된다).
     boolean fullHistory = request.getStartDate() == null;
+    List<TradeProfitPeriodSummary> periodBreakdown =
+        breakdown == null || breakdown.isBlank()
+            ? List.of()
+            : summarizeByPeriod(
+                dailySeries,
+                zoneId,
+                fullHistory,
+                resolveBreakdownUnit(dailySeries, zoneId, breakdown));
     return new TradeProfitTimeSeriesResult(
         applyGranularity(dailySeries, granularity, zoneId),
         summarizeSeries(dailySeries, zoneId, fullHistory),
-        summarizeByYear(dailySeries, zoneId, fullHistory));
+        summarizeByYear(dailySeries, zoneId, fullHistory),
+        periodBreakdown);
   }
 
   /**
@@ -532,68 +551,132 @@ public class TradeProfitService {
   // summarizeSeries 와 같은 이유로 static + package-private.
   static List<TradeProfitYearlySummary> summarizeByYear(
       List<TradeProfitTimeSeriesPoint> dailySeries, ZoneId zoneId, boolean fullHistory) {
+    List<TradeProfitYearlySummary> result = new ArrayList<>();
+    for (TradeProfitPeriodSummary period :
+        summarizeByPeriod(dailySeries, zoneId, fullHistory, "YEAR")) {
+      result.add(
+          new TradeProfitYearlySummary(
+              Integer.parseInt(period.label()),
+              period.fromDate(),
+              period.toDate(),
+              period.complete(),
+              period.summary()));
+    }
+    return result;
+  }
+
+  /**
+   * 기간을 달 또는 해로 쪼갠 성과.
+   *
+   * <p>각 구간 앞에 <b>직전 구간의 마지막 지점</b>을 기초로 붙여 계산한다. 그래야 그 달/해 첫날의 손익이 빠지지 않고, 기초 평가액이 직전 구간의 종가가 되어
+   * 구간끼리 견줄 수 있다.
+   *
+   * @param unit {@code YEAR} 또는 {@code MONTH}
+   */
+  static List<TradeProfitPeriodSummary> summarizeByPeriod(
+      List<TradeProfitTimeSeriesPoint> dailySeries,
+      ZoneId zoneId,
+      boolean fullHistory,
+      String unit) {
     if (dailySeries == null || dailySeries.isEmpty()) {
       return List.of();
     }
+    boolean monthly = "MONTH".equalsIgnoreCase(unit);
 
-    Map<Integer, List<TradeProfitTimeSeriesPoint>> byYear = new LinkedHashMap<>();
+    Map<String, List<TradeProfitTimeSeriesPoint>> byBucket = new LinkedHashMap<>();
     TradeProfitTimeSeriesPoint previousPoint = null;
-    Integer previousYear = null;
+    String previousKey = null;
 
     for (TradeProfitTimeSeriesPoint point : dailySeries) {
       if (point == null || point.timestamp() == null) {
         continue;
       }
-      int year = pointDate(point, zoneId).getYear();
-      List<TradeProfitTimeSeriesPoint> bucket = byYear.get(year);
+      String key = bucketKey(pointDate(point, zoneId), monthly);
+      List<TradeProfitTimeSeriesPoint> bucket = byBucket.get(key);
       if (bucket == null) {
         bucket = new ArrayList<>();
-        // 연도가 바뀌는 지점: 전년도 마지막 값을 기초로 삼는다.
-        if (previousPoint != null && previousYear != null && previousYear != year) {
+        // 구간이 바뀌는 지점: 직전 구간의 마지막 값을 기초로 삼는다.
+        if (previousPoint != null && previousKey != null && !previousKey.equals(key)) {
           bucket.add(previousPoint);
         }
-        byYear.put(year, bucket);
+        byBucket.put(key, bucket);
       }
       bucket.add(point);
       previousPoint = point;
-      previousYear = year;
+      previousKey = key;
     }
 
-    List<TradeProfitYearlySummary> result = new ArrayList<>();
-    // 첫 해만 앞에 붙일 전년도 지점이 없어 자기 첫 지점을 기초로 쓰게 된다. 이력 맨 앞부터 보는
-    // 조회라면 그 이전에는 아무것도 없었으므로 기초를 0 으로 잡는다(그 해 첫날이 빠지지 않게).
-    Integer firstYear = byYear.keySet().stream().findFirst().orElse(null);
-    byYear.forEach(
-        (year, points) -> {
+    List<TradeProfitPeriodSummary> result = new ArrayList<>();
+    // 첫 구간만 앞에 붙일 직전 지점이 없어 자기 첫 지점을 기초로 쓰게 된다. 이력 맨 앞부터 보는
+    // 조회라면 그 이전에는 아무것도 없었으므로 기초를 0 으로 잡는다(첫날이 빠지지 않게).
+    String firstKey = byBucket.keySet().stream().findFirst().orElse(null);
+    byBucket.forEach(
+        (key, points) -> {
           TradeProfitTimeSeriesSummary summary =
-              summarizeSeries(points, zoneId, fullHistory && year.equals(firstYear));
-          // 보유도 거래도 없던 해(전부 0)는 표에 노이즈만 되므로 제외한다.
-          if (isEmptyYear(summary)) {
+              summarizeSeries(points, zoneId, fullHistory && key.equals(firstKey));
+          // 보유도 거래도 없던 구간(전부 0)은 표에 노이즈만 되므로 제외한다.
+          if (isEmptyBucket(summary)) {
             return;
           }
-          // 실제로 덮은 구간. 앞에 붙인 전년도 기초 지점은 제외하고 그 해의 날짜만 본다.
-          LocalDate yearFrom = null;
-          LocalDate yearTo = null;
+          // 실제로 덮은 구간. 앞에 붙인 기초 지점은 제외하고 그 구간의 날짜만 본다.
+          LocalDate from = null;
+          LocalDate to = null;
           for (TradeProfitTimeSeriesPoint point : points) {
             LocalDate date = pointDate(point, zoneId);
-            if (date.getYear() != year) {
+            if (!bucketKey(date, monthly).equals(key)) {
               continue;
             }
-            if (yearFrom == null) {
-              yearFrom = date;
+            if (from == null) {
+              from = date;
             }
-            yearTo = date;
+            to = date;
           }
-          boolean fullYear =
-              yearFrom != null
-                  && yearTo != null
-                  && yearFrom.getDayOfYear() == 1
-                  && yearTo.equals(LocalDate.of(year, 12, 31));
-          result.add(new TradeProfitYearlySummary(year, yearFrom, yearTo, fullYear, summary));
+          boolean complete = from != null && to != null && coversWholeBucket(from, to, monthly);
+          result.add(
+              new TradeProfitPeriodSummary(
+                  monthly ? "MONTH" : "YEAR", key, from, to, complete, summary));
         });
-    result.sort(Comparator.comparingInt(TradeProfitYearlySummary::year).reversed());
+    // 최신이 위로. 문자열 키가 YYYY / YYYY-MM 라 사전순 역정렬이 곧 시간 역순이다.
+    result.sort(Comparator.comparing(TradeProfitPeriodSummary::label).reversed());
     return result;
   }
+
+  private static String bucketKey(LocalDate date, boolean monthly) {
+    return monthly
+        ? String.format("%04d-%02d", date.getYear(), date.getMonthValue())
+        : String.valueOf(date.getYear());
+  }
+
+  /** 그 달/해를 첫날부터 마지막 날까지 온전히 덮었는지. */
+  private static boolean coversWholeBucket(LocalDate from, LocalDate to, boolean monthly) {
+    if (monthly) {
+      return from.getDayOfMonth() == 1 && to.equals(from.withDayOfMonth(from.lengthOfMonth()));
+    }
+    return from.getDayOfYear() == 1 && to.equals(LocalDate.of(from.getYear(), 12, 31));
+  }
+
+  /**
+   * 조회 기간에 맞는 쪼갬 단위.
+   *
+   * <p>연 단위만 쓰면 "올해" 처럼 짧은 구간이 한 줄로 끝나 아무것도 말해 주지 않는다(실측 2026-08-31 삼성전자 '올해': 연도별 1 행). 반대로 17 년치를
+   * 달로 쪼개면 200 줄이 되어 읽히지 않는다.
+   */
+  static String resolveBreakdownUnit(
+      List<TradeProfitTimeSeriesPoint> dailySeries, ZoneId zoneId, String requested) {
+    if ("MONTH".equalsIgnoreCase(requested) || "YEAR".equalsIgnoreCase(requested)) {
+      return requested.toUpperCase(java.util.Locale.ROOT);
+    }
+    if (dailySeries == null || dailySeries.size() < 2) {
+      return "MONTH";
+    }
+    LocalDate first = pointDate(dailySeries.get(0), zoneId);
+    LocalDate last = pointDate(dailySeries.get(dailySeries.size() - 1), zoneId);
+    long months = java.time.temporal.ChronoUnit.MONTHS.between(first, last);
+    return months > MAX_MONTHLY_BREAKDOWN_MONTHS ? "YEAR" : "MONTH";
+  }
+
+  /** 이 개월수를 넘는 구간은 달이 아니라 해로 쪼갠다. 3 년치 36 줄이 표로 읽히는 한계다. */
+  private static final int MAX_MONTHLY_BREAKDOWN_MONTHS = 36;
 
   /**
    * 시계열 집계. captureDates 가 주어지면 해당 날짜의 보유 상태(WmaState)를 capturedStates 에 담는다. 보유 스냅샷 조회가 이 캡처를 쓰므로,
@@ -1217,7 +1300,7 @@ public class TradeProfitService {
   }
 
   /** 보유·거래·손익이 모두 0인 해(자산이 비어 있던 기간)인지. */
-  private static boolean isEmptyYear(TradeProfitTimeSeriesSummary summary) {
+  private static boolean isEmptyBucket(TradeProfitTimeSeriesSummary summary) {
     return summary == null
         || (nz(summary.periodProfit()).signum() == 0
             && nz(summary.principalDelta()).signum() == 0

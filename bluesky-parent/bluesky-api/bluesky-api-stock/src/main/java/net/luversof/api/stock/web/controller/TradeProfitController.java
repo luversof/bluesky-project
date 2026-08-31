@@ -58,12 +58,15 @@ public class TradeProfitController {
   public TradeProfitTimeSeriesResult timeSeriesWithSummary(
       TradeProfitRequest request,
       String granularity,
-      @RequestParam(required = false, defaultValue = "true") boolean includeSeries) {
-    var result = stockProfitService.aggregateTimeSeriesWithSummary(request, granularity);
+      @RequestParam(required = false, defaultValue = "true") boolean includeSeries,
+      // 기간을 달/해로 쪼갠 성과. 주지 않으면 계산도 전송도 하지 않아 기존 화면은 그대로다.
+      @RequestParam(required = false) String breakdown) {
+    var result = stockProfitService.aggregateTimeSeriesWithSummary(request, granularity, breakdown);
     if (includeSeries || result == null) {
       return result;
     }
-    return new TradeProfitTimeSeriesResult(List.of(), result.summary(), result.yearly());
+    return new TradeProfitTimeSeriesResult(
+        List.of(), result.summary(), result.yearly(), result.breakdown());
   }
 
   @GetMapping("/holdingsSnapshot")

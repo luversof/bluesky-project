@@ -971,12 +971,16 @@ public class StockViewController {
     seriesRequestPre.setEndDate(endDate);
     var seriesParamsPre = seriesRequestPre.toParams();
     seriesParamsPre.add("granularity", "AUTO");
+    // 차트용 시리즈와 '기간별 손익' 표를 한 번의 시뮬레이션으로 함께 받는다. 따로 부르면 같은 이력을
+    // 두 번 돌린다. 쪼갬 단위(달/해)는 조회 기간 길이에 따라 api-stock 이 고른다.
+    seriesParamsPre.add("breakdown", "AUTO");
 
     var profitsFuture = stockAsync.supply(() -> tradeProfitClient.calculateProfit(profitParams));
     var snapshotFuture = stockAsync.supply(() -> tradeProfitClient.calculateProfit(snapshotParams));
     var tradesFuture = stockAsync.supply(() -> tradeClient.findTrades(tradeSearchParamsPre));
     var dividendsFuture = stockAsync.supply(() -> dividendClient.findDividends(dividendParamsPre));
-    var timeSeriesFuture = stockAsync.supply(() -> tradeProfitClient.timeSeries(seriesParamsPre));
+    var timeSeriesFuture =
+        stockAsync.supply(() -> tradeProfitClient.timeSeriesWithSummary(seriesParamsPre));
     var accountsFuture = stockAsync.supply(() -> accountClient.getAccountsByUserId(userId));
 
     List<TradeProfit> profits =
@@ -1057,13 +1061,20 @@ public class StockViewController {
             .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    // 보유 평가액·원가 추이 (차트용, 기간 적용 AUTO 단위)
-    List<TradeProfitTimeSeriesPoint> timeSeries =
+    // 보유 평가액·원가 추이 (차트용, 기간 적용 AUTO 단위) + 기간별 손익 표
+    var timeSeriesResult =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(timeSeriesFuture);
-    if (timeSeries == null) {
-      timeSeries = List.of();
-    }
+    List<TradeProfitTimeSeriesPoint> timeSeries =
+        timeSeriesResult != null && timeSeriesResult.series() != null
+            ? timeSeriesResult.series()
+            : List.of();
     model.addAttribute("timeSeries", timeSeries);
+    // 구간이 하나뿐이면 위의 합산 손익을 되풀이할 뿐이라 조각이 스스로 그리지 않는다.
+    model.addAttribute(
+        "periodBreakdown",
+        timeSeriesResult != null && timeSeriesResult.breakdown() != null
+            ? timeSeriesResult.breakdown()
+            : List.of());
     model.addAttribute(
         "chartFormatter",
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")

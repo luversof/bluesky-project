@@ -68,7 +68,10 @@ public class PoeSimService {
     this.poePobEngineService = poePobEngineService;
     this.rankingFile = Path.of(dataDir, "sim", "gem-ranking.json");
     this.treeVersion = treeVersion;
-    this.parallelism = parallelism;
+    // 병렬성 미지정(≤0)이면 엔진 워커 풀 크기와 일치시킨다 — 설정 기본값이 0(자동)이라
+    // 그대로 쓰면 newFixedThreadPool(0) 이 "maximumPoolSize must be positive" 로 터진다(실측: 타 PC 젬 랭킹 전건 실패).
+    // 최적화기(PoeOptimizeService)와 같은 규칙. 워커 풀은 코어/RAM 자동 산정이라 다른 PC 에서도 그대로 동작한다.
+    this.parallelism = parallelism > 0 ? parallelism : poePobEngineService.poolSize();
     reload();
   }
 

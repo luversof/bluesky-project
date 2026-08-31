@@ -154,7 +154,7 @@
 				@if(realisticText != null)
 					<span class="text-warning">${koAssume ? "현실적 제작 기준 " + realisticText + " (" + String.format("%.1f", realisticRatio) + "배 차이)" : "Realistic crafting: " + realisticText + " (" + String.format("%.1f", realisticRatio) + "x lower)"}</span>
 				@endif
-				<span class="text-base-content/70">${koAssume ? "만렙·전 슬롯 최상위 티어 어픽스·전 버프 가정이라 실제 플레이 수치는 이보다 낮습니다" : "Assumes level 100, top-tier affixes in every slot and all buffs — real play lands lower"}</span>
+				<span class="text-base-content/70">${koAssume ? "만렙·전 슬롯 최상위 티어 어픽스·전 버프·이상적 소켓 색/링크 가정이라 실제 플레이 수치는 이보다 낮습니다" : "Assumes level 100, top-tier affixes in every slot, all buffs and ideal socket colours/links — real play lands lower"}</span>
 			</div>
 		@endif
 
@@ -180,6 +180,8 @@
 				// 생명 재생 — RF 등 지속형은 이게 생존 핵심. 순재생(net) 우선, 없으면 총재생(gross). 실빌드 medianLifeRegen 과 비교.
 				Integer myRegen = statInt.apply("netliferegen");
 				if (myRegen == null) myRegen = statInt.apply("liferegen");
+				// PoB 표시 스탯 이름은 LifeRegenRecovery — 순재생(NetLifeRegen)은 자가연소 빌드에서만 나온다.
+				if (myRegen == null) myRegen = statInt.apply("liferegenrecovery");
 				// 실빌드 중앙값 대비 60% 미만이면 "낮음"(참고용, 강제 아님)
 				java.util.function.BiFunction<Integer, Long, Boolean> low = (mine, med) -> mine != null && med > 0 && mine < med * 0.6;
 				// 실빌드 성향(lean): 이 (전직×스킬)을 실제 유저들이 공격특화/생존특화/균형 중 어디로 굴리는지. 시뮬 목표의 근거.
@@ -200,13 +202,16 @@
 					// (실측: 번개 화살 균형 결과가 DPS 1.6배·EHP 0.6배로 이 가지에 들어왔다). 균형에서 얇게 나오는 건
 					// 그 아키타입 실메타 자체가 얇기 때문이며(번개 화살 실빌드 최약최대피격 중앙값 7,500), 시뮬은 그 수준에 맞춘다.
 					boolean isBalanced = "balanced".equals(result.objective());
+					// "가정 주의" 배너가 이미 중앙값 배수를 말하는 경우(metaRatio>=4) 여기서는 그 숫자를 반복하지 않는다 —
+					// 390px 실측에서 "47.3배"와 "47배"가 두 줄 연속으로 나와 읽는 부담만 늘었다(배너 병합과 같은 취지).
+					boolean ratioShownAbove = result.metaRatio() != null && result.metaRatio() >= 4.0;
 					if (dpsRatio < 0.9 && ehpRatio > 1.5) {
 						tradeMsg = ko
 							? "DPS 는 실빌드 중앙값의 " + mul.apply(dpsRatio) + "배지만 EHP 는 " + mul.apply(ehpRatio) + "배 — 생존에 예산을 쓴 결과이지 성능 부족이 아니다." + (isBalanced ? " 같은 생존 수준을 원하면 목표를 DPS 우선으로." : "")
 							: "DPS is " + mul.apply(dpsRatio) + "x the real-build median but EHP is " + mul.apply(ehpRatio) + "x — budget spent on survival, not a shortfall." + (isBalanced ? " Switch the objective to DPS to match their survivability." : "");
 					} else if (dpsRatio > 1.5 && ehpRatio < 0.9) {
 						tradeMsg = ko
-							? "DPS 는 실빌드 중앙값의 " + mul.apply(dpsRatio) + "배지만 EHP 는 " + mul.apply(ehpRatio) + "배 — " + (isBalanced ? "균형 목표는 이 아키타입 실측 생존치를 기준으로 맞춘다. 더 두껍게 원하면 목표를 생존(EHP)으로." : "공격에 치우친 결과다. 생존을 원하면 목표를 균형/생존으로.")
+							? (ratioShownAbove ? "EHP 는 실빌드 중앙값의 " + mul.apply(ehpRatio) + "배 — " : "DPS 는 실빌드 중앙값의 " + mul.apply(dpsRatio) + "배지만 EHP 는 " + mul.apply(ehpRatio) + "배 — ") + (isBalanced ? "균형 목표는 이 아키타입 실측 생존치를 기준으로 맞춘다. 더 두껍게 원하면 목표를 생존(EHP)으로." : "공격에 치우친 결과다. 생존을 원하면 목표를 균형/생존으로.")
 							: "DPS is " + mul.apply(dpsRatio) + "x the median but EHP is only " + mul.apply(ehpRatio) + "x — " + (isBalanced ? "the balanced objective targets this archetype's measured survivability. Pick the EHP objective for a tankier build." : "offense-heavy. Switch the objective to balanced/EHP for survivability.");
 					}
 				}
@@ -247,8 +252,24 @@
 				Integer myArmour = statInt.apply("armour");
 				Integer myEvasion = statInt.apply("evasion");
 				Integer myMana = statInt.apply("mana");
-				Integer myBlock = statInt.apply("blockchance");
-				Integer mySuppress = statInt.apply("spellsuppressionchance");
+				// ⚠ 엔진은 **0 인 방어 레이어(막기·주문막기·억제)를 스탯에서 생략**한다(스탯시트 잡음 방지).
+				//   그대로 두면 비교표에 "실빌드 10% vs 내 —" 로 찍혀 "측정 안 됨"으로 읽히지만 실제 값은 0 이고
+				//   그건 진짜 격차다(390px 실측 화면에서 확인). 엔진이 돌았다면(=stats 존재) 부재는 0 으로 본다.
+				boolean statsPresent = result.stats() != null && !result.stats().isEmpty();
+				java.util.function.Function<String, Integer> defInt =
+					k -> { Integer v = statInt.apply(k); return v != null ? v : (statsPresent ? Integer.valueOf(0) : null); };
+				// Integer→Long 널 보존 변환 — 아래 비교행들이 Long 을 받는다.
+				java.util.function.Function<Integer, Long> toLong = v -> v == null ? null : Long.valueOf(v);
+				// 이동속도는 배수 문자열("2.8")이라 소수로 읽어 ×100 한다(ninja 와 같은 단위로).
+				Long myMoveSpeed = null;
+				for (var st : (result.stats() == null ? java.util.List.<net.luversof.web.gate.poe.dto.PoeBuild.PlayerStat>of() : result.stats())) {
+					if ("effectivemovementspeedmod".equals(st.key())) {
+						try { myMoveSpeed = Math.round(Double.parseDouble(st.value().replace(",", "")) * 100); } catch (Exception ignore) { /* 표시 생략 */ }
+					}
+				}
+				Integer myBlock = defInt.apply("blockchance");
+				Integer mySuppress = defInt.apply("spellsuppressionchance");
+				Integer mySpellBlock = defInt.apply("spellblockchance");
 				Integer myFireRes = statInt.apply("fireresist");
 				Integer myColdRes = statInt.apply("coldresist");
 				Integer myLightRes = statInt.apply("lightningresist");
@@ -315,21 +336,24 @@
 				addCmp.accept(cmpR, new Object[] {ko ? "방어도" : "Armour", ninjaBenchmark.armour(), myArmour == null ? null : Long.valueOf(myArmour), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "회피" : "Evasion", ninjaBenchmark.evasion(), myEvasion == null ? null : Long.valueOf(myEvasion), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "막기" : "Block", (long) ninjaBenchmark.block(), myBlock == null ? null : Long.valueOf(myBlock), true});
-				addCmp.accept(cmpR, new Object[] {ko ? "주문막기" : "Spell block", (long) ninjaBenchmark.spellBlock(), L, true});
+				addCmp.accept(cmpR, new Object[] {ko ? "주문막기" : "Spell block", (long) ninjaBenchmark.spellBlock(), mySpellBlock == null ? null : Long.valueOf(mySpellBlock), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "회피억제" : "Suppress", (long) ninjaBenchmark.suppress(), mySuppress == null ? null : Long.valueOf(mySuppress), true});
-				addCmp.accept(cmpR, new Object[] {ko ? "주문회피" : "Spell dodge", (long) ninjaBenchmark.spellDodge(), L, true});
+				addCmp.accept(cmpR, new Object[] {ko ? "주문회피" : "Spell dodge", (long) ninjaBenchmark.spellDodge(), toLong.apply(statInt.apply("spelldodgechance")), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "물리피해전환" : "Phys taken as", (long) ninjaBenchmark.physTakenAs(), L, true});
 				addCmp.accept(cmpR, new Object[] {ko ? "화염 저항" : "Fire res", (long) ninjaBenchmark.fireRes(), myFireRes == null ? null : Long.valueOf(myFireRes), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "냉기 저항" : "Cold res", (long) ninjaBenchmark.coldRes(), myColdRes == null ? null : Long.valueOf(myColdRes), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "번개 저항" : "Light res", (long) ninjaBenchmark.lightningRes(), myLightRes == null ? null : Long.valueOf(myLightRes), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "카오스 저항" : "Chaos res", (long) ninjaBenchmark.chaosRes(), myChaosRes == null ? null : Long.valueOf(myChaosRes), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "마나" : "Mana", ninjaBenchmark.mana(), myMana == null ? null : Long.valueOf(myMana), false});
-				addCmp.accept(cmpR, new Object[] {ko ? "수호물" : "Ward", ninjaBenchmark.ward(), L, false});
+				addCmp.accept(cmpR, new Object[] {ko ? "수호물" : "Ward", ninjaBenchmark.ward(), toLong.apply(statInt.apply("ward")), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "힘" : "Str", (long) ninjaBenchmark.str(), statInt.apply("str") == null ? null : Long.valueOf(statInt.apply("str")), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "민첩" : "Dex", (long) ninjaBenchmark.dex(), statInt.apply("dex") == null ? null : Long.valueOf(statInt.apply("dex")), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "지능" : "Int", (long) ninjaBenchmark.intel(), statInt.apply("int") == null ? null : Long.valueOf(statInt.apply("int")), false});
-				addCmp.accept(cmpR, new Object[] {ko ? "이동속도" : "Move speed", (long) ninjaBenchmark.movementSpeed(), L, true});
-				addCmp.accept(cmpR, new Object[] {ko ? "아이템 희귀도" : "Item rarity", (long) ninjaBenchmark.itemRarity(), L, true});
+				addCmp.accept(cmpR, new Object[] {ko ? "이동속도" : "Move speed", (long) ninjaBenchmark.movementSpeed(), myMoveSpeed, true});
+				// 단위 확정(같은 캐릭터 대조): ninja movementSpeed 277 ↔ 우리 EffectiveMovementSpeedMod 2.8
+				//   → **ninja = 배수 × 100**. statInt 로 읽으면 "1.3" 이 1 로 잘려 "194% / 1% / −193p" 가 나왔었다.
+				//   소수 파싱 후 ×100 으로 맞춘다(표시는 소수 1자리 반올림이라 ±1% 오차).
+				addCmp.accept(cmpR, new Object[] {ko ? "아이템 희귀도" : "Item rarity", (long) ninjaBenchmark.itemRarity(), toLong.apply(statInt.apply("lootrarity")), true});
 				if (ninjaBenchmark.enduranceCharges() + ninjaBenchmark.frenzyCharges() + ninjaBenchmark.powerCharges() > 0) {
 					addInfo.accept(cmpR, new String[] {ko ? "충전(인/격/권)" : "Charges (E/F/P)", ninjaBenchmark.enduranceCharges() + "/" + ninjaBenchmark.frenzyCharges() + "/" + ninjaBenchmark.powerCharges()});
 				}
@@ -543,6 +567,81 @@
 			</div>
 		@endif
 
+		<%-- 저주 레이어 — 가드와 같은 이유로 노출한다. 계산엔 들어가는데 화면에 없으면 인게임에서 재현할 수
+		     없다(실측 이득: 정의의 화염 +38.6% · 냉기 급습 +14.6%). 전달 수단이 둘이라 구분해 보여준다:
+		     신성모독 링크(마나 예약)와 장갑 부패 임플리싯(예약 0). --%>
+		@if(result.curseGems() != null && !result.curseGems().isEmpty())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "저주" : "Curse"}</span>
+				@for(PoeOptimizeResult.SupportPick c : result.curseGems())
+					@if(c.slug() != null && !c.slug().isBlank())
+						<a class="poe-hover inline-flex items-center gap-1 badge badge-info badge-outline badge-sm cursor-pointer pl-1"
+						   href="/poe/gems/${c.slug()}"
+						   hx-get="/poe/htmx/gems/detail?slug=${c.slug()}"
+						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
+							<img src="/poe-assets/gems/${c.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(c.nameKo(), c.name())}</a>
+					@else
+						<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(c.nameKo(), c.name())}</span>
+					@endif
+				@endfor
+			</div>
+		@endif
+		@if(result.curseOnHit() != null)
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "적중 시 저주" : "Curse on hit"}</span>
+				@if(result.curseOnHit().slug() != null && !result.curseOnHit().slug().isBlank())
+					<a class="poe-hover inline-flex items-center gap-1 badge badge-info badge-outline badge-sm cursor-pointer pl-1"
+					   href="/poe/gems/${result.curseOnHit().slug()}"
+					   hx-get="/poe/htmx/gems/detail?slug=${result.curseOnHit().slug()}"
+					   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
+						<img src="/poe-assets/gems/${result.curseOnHit().slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(result.curseOnHit().nameKo(), result.curseOnHit().name())}</a>
+				@else
+					<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(result.curseOnHit().nameKo(), result.curseOnHit().name())}</span>
+				@endif
+				<span class="text-xs text-base-content/50">${net.luversof.web.gate.poe.PoeText.isKorean() ? "장갑 부패 임플리싯 (마나 예약 없음)" : "gloves corrupted implicit (no reservation)"}</span>
+			</div>
+		@endif
+
+		<%-- ehp 목표 주의 — PoB TotalEHP 는 피격 사이 **회복까지 반영**하는 지속 기준이라 막기·회복 스택 빌드에서
+		     크게 발산한다(실측: 막기 78%+비호의 오로라 조합에서 369,700,700 = 실빌드 벤치 최대 630,174 의 586배).
+		     수치를 그대로 "체력 3억"으로 읽으면 오해라, 단일 피격 기준 실질 생존치를 함께 보여준다. --%>
+		!{
+			Long ehpLowestHit = null;
+			if ("ehp".equals(result.objective()) && result.defenseHits() != null) {
+				long lo = Long.MAX_VALUE;
+				for (var dh : result.defenseHits()) {
+					try { lo = Math.min(lo, Long.parseLong(dh.value().replace(",", ""))); } catch (Exception e) { /* skip */ }
+				}
+				ehpLowestHit = lo == Long.MAX_VALUE ? null : lo;
+			}
+		}
+		@if(ehpLowestHit != null)
+			<div class="flex flex-wrap items-center gap-2 rounded border border-info/40 bg-info/10 px-3 py-2 text-xs">
+				<span class="font-bold text-info">${net.luversof.web.gate.poe.PoeText.isKorean() ? "EHP 는 지속 기준" : "EHP is a sustained figure"}</span>
+				<span class="text-base-content/70">${net.luversof.web.gate.poe.PoeText.isKorean()
+					? "PoB 의 EHP 는 피격 사이 회복(막기·재생 등)까지 반영해 막기·회복 스택 빌드에서 크게 커집니다 — 단일 피격 기준 실질 생존은 최약 최대피격 " + String.format("%,d", ehpLowestHit) + " 입니다"
+					: "PoB's EHP counts recovery between hits, so it inflates on block/recovery builds — the single-hit figure is a lowest max hit of " + String.format("%,d", ehpLowestHit)}</span>
+			</div>
+		@endif
+
+		<%-- 판테온 — 가드 스킬과 같은 이유로 노출. 최적화기가 고르는 값인데 화면에 없으면 인게임 재현이 안 된다.
+		     저장값은 PoB id(TheBrineKing 등)라 대문자 앞에 공백을 넣어 읽히게 한다. --%>
+		!{
+			String pjMajor = result.pantheonMajor() == null ? "" : result.pantheonMajor().replaceAll("(?<=[a-z])(?=[A-Z])", " ");
+			String pjMinor = result.pantheonMinor() == null ? "" : result.pantheonMinor().replaceAll("(?<=[a-z])(?=[A-Z])", " ");
+		}
+		@if(!pjMajor.isBlank() || !pjMinor.isBlank())
+			<div class="flex flex-wrap items-center gap-1.5">
+				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "판테온(채택)" : "Pantheon (picked)"}</span>
+				@if(!pjMajor.isBlank())
+					<span class="badge badge-secondary badge-outline badge-sm">${pjMajor}</span>
+				@endif
+				@if(!pjMinor.isBlank())
+					<span class="badge badge-secondary badge-outline badge-sm">${pjMinor}</span>
+				@endif
+			</div>
+		@endif
+
 		<%-- 추가 스킬 레이어 — 보조젬/오라와 동형(젬 아이콘 + 인게임 호버 툴팁 #poePreview + 젬 상세 링크) --%>
 		@if(result.additionalSkills() != null && !result.additionalSkills().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
@@ -680,6 +779,13 @@
 								   hx-target="#poePreview"
 								   hx-trigger="mouseenter delay:100ms"
 								   hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</a>
+								<%-- 감시자의 눈·금단처럼 **모드가 빌드마다 다른** 유니크는 상세 페이지가 일반 정보만 보여준다
+								     — 우리가 고른 모드(오라 모드 쌍 / 부여 노터블)를 그 자리에 함께 적어야 어떤 물건을
+								     구해야 하는지 알 수 있다. --%>
+								@if(jewel.lines() != null && !jewel.lines().isEmpty())
+									!{ java.util.List<String> uLines = net.luversof.web.gate.poe.PoeText.isKorean() || jewel.linesEn() == null || jewel.linesEn().isEmpty() ? jewel.lines() : jewel.linesEn(); }
+									<span class="text-xs text-base-content/60">${String.join(" · ", uLines)}</span>
+								@endif
 							@elseif(jewel.lines() != null && !jewel.lines().isEmpty())
 								<%-- 제작 레어 주얼 — 상세 페이지가 없어 이름만 뜨던 자리. 붙일 slug 가 없을 뿐
 								     모드는 알고 있으므로, **장비 레어와 같은 인게임 호버 레이어**로 띄운다
