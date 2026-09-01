@@ -883,6 +883,73 @@ public class StockViewController {
     return "stock/trade";
   }
 
+  /**
+   * 종목 상세 위쪽의 전환기 목록 &mdash; <b>지금 보유 중인 종목</b>.
+   *
+   * <p>예전에는 다른 종목을 보려면 뒤로 가서 목록을 다시 찾아야 했다. 평가액이 큰 것부터 두어, 자주 보는 것이 위에 온다.
+   *
+   * <p>전량 매도한 종목을 보고 있으면 스냅샷에 없다. 그때도 지금 보는 것을 목록 맨 앞에 넣어, 어디에 있는지 알 수 있게 한다.
+   */
+  private List<net.luversof.web.gate.stock.domain.DetailNavEntry> stockNavEntries(
+      List<net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem> holdings,
+      UUID currentId,
+      net.luversof.web.gate.stock.domain.StockItem currentItem) {
+    List<net.luversof.web.gate.stock.domain.DetailNavEntry> entries = new ArrayList<>();
+    boolean currentIncluded = false;
+    if (holdings != null) {
+      var sorted = new ArrayList<>(holdings);
+      sorted.sort(
+          Comparator.comparing(
+                  (net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem h) ->
+                      h.value() != null ? h.value() : BigDecimal.ZERO)
+              .reversed());
+      for (var holding : sorted) {
+        if (holding == null || holding.stockItemId() == null) {
+          continue;
+        }
+        boolean current = holding.stockItemId().equals(currentId);
+        currentIncluded = currentIncluded || current;
+        entries.add(
+            new net.luversof.web.gate.stock.domain.DetailNavEntry(
+                holding.name() != null ? holding.name() : holding.symbol(),
+                String.format("%,d", StockFormatUtil.displayWon(holding.value())),
+                "/stock/item?stockItemId=" + holding.stockItemId(),
+                current));
+      }
+    }
+    if (!currentIncluded && currentItem != null && currentItem.id() != null) {
+      entries.add(
+          0,
+          new net.luversof.web.gate.stock.domain.DetailNavEntry(
+              currentItem.name() != null ? currentItem.name() : currentItem.symbol(),
+              "",
+              "/stock/item?stockItemId=" + currentItem.id(),
+              true));
+    }
+    return entries;
+  }
+
+  /** 계좌 상세 위쪽의 전환기 목록. 계좌는 몇 개뿐이라 이름만으로 충분하다. */
+  private List<net.luversof.web.gate.stock.domain.DetailNavEntry> accountNavEntries(
+      List<Account> accounts, UUID currentId) {
+    List<net.luversof.web.gate.stock.domain.DetailNavEntry> entries = new ArrayList<>();
+    if (accounts == null) {
+      return entries;
+    }
+    for (Account account : accounts) {
+      if (account == null || account.id() == null) {
+        continue;
+      }
+      entries.add(
+          new net.luversof.web.gate.stock.domain.DetailNavEntry(
+              account.name() != null ? account.name() : "-",
+              "",
+              "/stock/account?accountId=" + account.id(),
+              account.id().equals(currentId)));
+    }
+    return entries;
+  }
+
   /** 종목 상세: 한 종목의 보유/손익 요약 + 매매·배당 내역을 모아 보여준다(기존 엔드포인트 재활용). */
   @BlueskyPreAuthorize
   @GetMapping("/item")
@@ -982,6 +1049,43 @@ public class StockViewController {
     var timeSeriesFuture =
         stockAsync.supply(() -> tradeProfitClient.timeSeriesWithSummary(seriesParamsPre));
     var accountsFuture = stockAsync.supply(() -> accountClient.getAccountsByUserId(userId));
+    // 전환기(다른 종목으로 바로 가기) 목록. 다른 조회와 함께 던지므로 왕복이 늘지 않는다
+    // (실측 2026-08-31: holdingsSnapshot 50~60ms, 이 화면의 다른 호출보다 빠르다).
+    var navHoldingsParams = new LinkedMultiValueMap<String, String>();
+    navHoldingsParams.add("userId", userId.toString());
+    navHoldingsParams.add(
+        "date",
+        java.time.LocalDate.now(net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone))
+            .toString());
+    if (timeZone != null && !timeZone.isBlank()) {
+      navHoldingsParams.add("timeZone", timeZone);
+    }
+    var navHoldingsFuture =
+        stockAsync.supply(() -> tradeProfitClient.holdingsSnapshot(navHoldingsParams));
+
+    // 주가 차트용 일별 종가. 다른 조회와 함께 던지므로 왕복이 늘지 않는다
+    // (실측 2026-09-01 삼성전자 전 구간 1,593 행 · 71.8 KB · 94ms).
+    var priceHistoryParams = new LinkedMultiValueMap<String, String>();
+    if (startDate != null) {
+      priceHistoryParams.add(
+          "startDate",
+          startDate
+              .atZone(net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone))
+              .toLocalDate()
+              .toString());
+    }
+    if (endDate != null) {
+      // endDate 는 배타적이라 하루를 빼야 화면의 다른 날짜 칸과 같은 마지막 날이 된다.
+      priceHistoryParams.add(
+          "endDate",
+          endDate
+              .atZone(net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone))
+              .toLocalDate()
+              .minusDays(1)
+              .toString());
+    }
+    var priceHistoryFuture =
+        stockAsync.supply(() -> stockItemClient.getPriceHistory(resolvedId, priceHistoryParams));
 
     List<TradeProfit> profits =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(profitsFuture);
@@ -1075,6 +1179,39 @@ public class StockViewController {
         timeSeriesResult != null && timeSeriesResult.breakdown() != null
             ? timeSeriesResult.breakdown()
             : List.of());
+    var priceHistory =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceHistoryFuture);
+    model.addAttribute("priceHistory", priceHistory != null ? priceHistory : List.of());
+
+    // 합산 손익의 '평가' 몫은 <b>기간 평가 변동</b>이다(기말 평가손익 - 기초 평가손익).
+    //
+    // 예전에는 기간이 아닌 현재 시점 평가손익을 더했다. 그러면 아래 '기간별 손익' 표의 합과 맞지 않는다
+    // - 실측 2026-09-01 삼성전자 '올해' 2.9 억 차이, '최근 1년' 은 부호까지 반대(-0.26 억)였다.
+    // 같은 화면의 두 숫자가 안 맞으면 어느 쪽이 맞는지 알 수 없다.
+    //
+    // 평가 변동으로 바꾸면 (평가 변동 + 실현손익 + 배당) 이 요약의 periodProfit 과 1 원 오차 없이 같다
+    // (실측 두 기간 모두 차이 0). 표의 구간별 손익을 다 더한 값도 같은 수다.
+    var periodSummary = timeSeriesResult != null ? timeSeriesResult.summary() : null;
+    BigDecimal periodUnrealizedDelta =
+        periodSummary == null
+            ? null
+            : (periodSummary.unrealizedEnd() != null
+                    ? periodSummary.unrealizedEnd()
+                    : BigDecimal.ZERO)
+                .subtract(
+                    periodSummary.unrealizedStart() != null
+                        ? periodSummary.unrealizedStart()
+                        : BigDecimal.ZERO);
+    model.addAttribute("periodUnrealizedDelta", periodUnrealizedDelta);
+    // 비율도 자산 성장 화면과 같은 정의를 쓴다(기초 평가액 + 기간 중 순유입 원금 대비).
+    model.addAttribute(
+        "periodProfitRatePct", periodSummary != null ? periodSummary.periodProfitRatePct() : null);
+    model.addAttribute(
+        "stockNavEntries",
+        stockNavEntries(
+            net.luversof.web.gate.stock.support.StockAsyncSupport.join(navHoldingsFuture),
+            resolvedId,
+            stockItem));
     model.addAttribute(
         "chartFormatter",
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -1092,6 +1229,15 @@ public class StockViewController {
     model.addAttribute("filterEndInstant", endDate);
     model.addAttribute("filterTimeZone", timeZone);
     model.addAttribute("filterRangeMode", rangeMode);
+    // '전체' 는 날짜를 안 보내 기간 배지가 빌 수밖에 없다. 그때 대신 적을, 이 화면이 덮은 구간.
+    // 사용자 전체의 최초 일자가 아니라 <b>이 종목/계좌의</b> 시계열에서 뽑아야 맞는 날짜가 나온다.
+    var covered =
+        net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+            timeSeries,
+            net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
+            filterZone);
+    model.addAttribute("coveredStartLocal", covered.startDate());
+    model.addAttribute("coveredEndLocal", covered.endDate());
 
     model.addAttribute("holdingQuantity", holdingQuantity);
     model.addAttribute("averageBuyPrice", averageBuyPrice);
@@ -1186,6 +1332,9 @@ public class StockViewController {
     }
     model.addAttribute("account", account);
     UUID resolvedId = account.id();
+    model.addAttribute(
+        "accountNavEntries",
+        accountNavEntries(accountClient.getAccountsByUserId(userId), resolvedId));
 
     // 계좌가 정해진 뒤의 다섯 조회는 서로 의존이 없다. 순차로 던지면 왕복이 줄줄이 이어진다
     // (실측: 백엔드 7회 27.3ms 인데 화면은 75.3ms). 파라미터를 먼저 만들고 한꺼번에 던진다.
@@ -1336,6 +1485,15 @@ public class StockViewController {
     model.addAttribute("filterEndInstant", endDate);
     model.addAttribute("filterTimeZone", timeZone);
     model.addAttribute("filterRangeMode", rangeMode);
+    // '전체' 는 날짜를 안 보내 기간 배지가 빌 수밖에 없다. 그때 대신 적을, 이 화면이 덮은 구간.
+    // 사용자 전체의 최초 일자가 아니라 <b>이 종목/계좌의</b> 시계열에서 뽑아야 맞는 날짜가 나온다.
+    var covered =
+        net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+            timeSeries,
+            net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
+            filterZone);
+    model.addAttribute("coveredStartLocal", covered.startDate());
+    model.addAttribute("coveredEndLocal", covered.endDate());
 
     model.addAttribute("holdings", holdings);
     model.addAttribute("holdingCount", holdings.size());

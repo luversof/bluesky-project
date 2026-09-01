@@ -40,8 +40,14 @@
 @param Instant filterEndInstant = null
 @param String filterTimeZone = null
 @param String filterRangeMode = null
+@param LocalDate coveredStartLocal = null
+@param LocalDate coveredEndLocal = null
 @param List<TradeProfit> accountHoldings = java.util.List.of()
 @param List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
+@param List<net.luversof.web.gate.stock.domain.DetailNavEntry> stockNavEntries = java.util.List.of()
+@param List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory = java.util.List.of()
+@param BigDecimal periodUnrealizedDelta = null
+@param Double periodProfitRatePct = null
 
 !{
     // 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
@@ -52,22 +58,25 @@
     BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
     double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 
-    // 합산 손익 = 평가손익 + 실현손익 + 배당.
+    // 합산 손익 = <b>기간</b> 평가 변동 + 실현손익 + 배당.
     //
     // 세 값이 카드로 흩어져 있어서 "이 종목에서 결국 얼마를 벌었나" 를 사람이 더해야 알 수 있었다.
-    // 요약 화면의 '총 합산 수익'과 같은 셈이라 두 화면이 같은 뜻을 말한다.
     //
-    // 다만 <b>평가손익만 기간이 아니라 현재 시점 값</b>이다 - api-stock 은 기간이 실리면 평가를 계산하지
-    // 않으므로 이 화면이 평가만 기간 없이 따로 부른다. 시작일을 바꿔도 그 몫은 그대로이므로 화면에 밝힌다.
-    BigDecimal combinedProfit = (evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO)
+    // 평가 몫은 현재 시점 평가손익이 아니라 <b>기간 평가 변동</b>(기말 - 기초)이다. 현재 시점 값을 더하면
+    // 아래 '기간별 손익' 표의 합과 맞지 않는다 - 실측 2026-09-01 삼성전자 '올해' 2.9 억 차이, '최근 1년'
+    // 은 부호까지 반대였다. 같은 화면의 두 숫자가 안 맞으면 어느 쪽이 맞는지 알 수 없다.
+    //
+    // 이렇게 더한 값은 요약의 periodProfit 과 1 원 오차 없이 같다(실측 두 기간 모두 차이 0).
+    BigDecimal unrealizedDelta = periodUnrealizedDelta != null ? periodUnrealizedDelta : BigDecimal.ZERO;
+    BigDecimal combinedProfit = unrealizedDelta
         .add(realizedProfit != null ? realizedProfit : BigDecimal.ZERO)
         .add(totalDividend != null ? totalDividend : BigDecimal.ZERO);
     boolean combinedPositive = combinedProfit.signum() >= 0;
-    // 분모는 요약 화면과 같은 취득원가(평가액 - 평가손익)다. 전량 매도한 종목은 0 이 되므로 그때는
-    // 비율을 내지 않는다 - 0 으로 나눈 값을 그리느니 금액만 답하는 편이 맞다.
-    boolean combinedRateAvailable = evalCostBasis.signum() > 0;
-    double combinedRatePct = combinedRateAvailable
-        ? combinedProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
+    String deltaColor = unrealizedDelta.signum() >= 0 ? "text-profit" : "text-loss";
+    // 비율은 자산 성장 화면과 같은 정의(기초 평가액 + 기간 중 순유입 원금 대비)를 그대로 받아 쓴다.
+    // 화면마다 다른 분모를 쓰면 같은 이름이 다른 수를 뜻하게 된다.
+    boolean combinedRateAvailable = periodProfitRatePct != null;
+    double combinedRatePct = combinedRateAvailable ? periodProfitRatePct : 0.0;
 }
 
 @template._layout.stockLayout(
@@ -97,9 +106,11 @@
 						categoryLabel = MessageUtil.getMessage("stock.item.detail.breadcrumb"),
 						backLabel = MessageUtil.getMessage("common.button.back"))
 
+					<%-- 제목 옆 전환기 - 다른 종목을 보려고 뒤로 갔다가 목록에서 다시 찾을 필요가 없게 한다. --%>
 					@template._components.ui.pageHeader(
 						title = stockItem.name() != null ? stockItem.name() : stockItem.symbol(),
-						description = (stockItem.symbol() != null ? stockItem.symbol() : "") + (stockItem.market() != null && !stockItem.market().isEmpty() ? " · " + stockItem.market() : ""))
+						description = (stockItem.symbol() != null ? stockItem.symbol() : "") + (stockItem.market() != null && !stockItem.market().isEmpty() ? " · " + stockItem.market() : ""),
+						actions = @`@template.stock.htmx.fragments.detailNavSwitcher(entries = stockNavEntries, switchLabel = MessageUtil.getMessage("stock.detail.switch.stock"))`)
 
 					@if(stockItem.tags() != null && !stockItem.tags().isEmpty())
 						<div class="flex flex-wrap gap-1.5 -mt-2">
@@ -122,7 +133,9 @@
 						startInstant = filterStartInstant,
 						endInstant = filterEndInstant,
 						timeZone = filterTimeZone,
-						rangeMode = filterRangeMode)
+						rangeMode = filterRangeMode,
+						coveredStartDate = coveredStartLocal,
+						coveredEndDate = coveredEndLocal)
 
 					<%-- "현재가"·평가액은 마지막으로 수집된 종가 기준이라, 오늘 시세가 아직 없으면 며칠 전 값일 수 있다.
 					     어느 날 기준인지 밝혀 실시간 시세로 오해하지 않게 한다(자산현황·포트폴리오와 같은 표기). --%>
@@ -147,8 +160,8 @@
 						</div>
 						<%-- 셋을 그대로 적어 화면에서 더해 볼 수 있게 한다. --%>
 						<p class="mt-1 text-[11px] leading-4 flex flex-wrap items-baseline gap-x-1.5">
-							<span class="text-base-content/60">${MessageUtil.getMessage("stock.profit.unrealized")}</span>
-							<span class="amount-value ${evalColor}">${String.format("%+,d", StockFormatUtil.displayWon(evaluationProfit))}</span>
+							<span class="text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.unrealized.delta")}</span>
+							<span class="amount-value ${deltaColor}">${String.format("%+,d", StockFormatUtil.displayWon(unrealizedDelta))}</span>
 							<span class="text-base-content/35">+</span>
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.profit.realized")}</span>
 							<span class="amount-value ${realizedColor}">${String.format("%+,d", StockFormatUtil.displayWon(realizedProfit))}</span>
@@ -203,6 +216,42 @@
 					<%-- 기간별 손익 - 고른 기간을 달(또는 해)로 쪼개 언제 벌고 언제 잃었는지 보여준다.
 					     위의 합산 손익과 같은 쪼갬(평가 변동 / 실현+배당)을 써서 두 자리가 같은 뜻을 말한다. --%>
 					@template.stock.htmx.fragments.stockItemPeriodBreakdown(periodBreakdown = periodBreakdown)
+
+					<%-- 주가 추이 - 보유 평가액 추이만으로는 <b>주가 자체</b>를 볼 수 없다. 평가액은 수량이 바뀌면 같이
+					     움직이므로, 산 뒤로 주가가 어떻게 됐는지는 그 선에서 읽어낼 수 없다.
+					     점선은 <b>지금</b> 평균단가라 과거 구간에도 같은 값이 그어진다(평단은 매매마다 달라졌다).
+					     그래도 "지금 내 단가가 이 구간 어디쯤인지" 를 한눈에 보여주므로 함께 긋고, 이름으로 밝힌다. --%>
+					@if(priceHistory != null && !priceHistory.isEmpty())
+						<div>
+							<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.item.detail.price.chart.title")}</h2>
+							<div class="bg-base-100 rounded-box border border-base-200 p-4">
+								<div class="h-64"><canvas id="stockPriceChart" class="amount-chart"></canvas></div>
+							</div>
+							<p class="text-xs text-base-content/50 mt-1">${MessageUtil.getMessage("stock.item.detail.price.chart.desc")}</p>
+						</div>
+						<script nonce="${CspNonceHolder.getNonce()}">
+						(function() {
+							if (typeof window.ensureStockCharts !== 'function') return;
+							var avg = $unsafe{averageBuyPrice != null ? averageBuyPrice.setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"};
+							var series = { labels: [], value: [], cost: [], buyCount: [], dailyRealized: [] };
+							@for(net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint pt : priceHistory)
+								series.labels.push("$unsafe{pt.tradeDate() != null ? pt.tradeDate().toString() : ""}");
+								series.value.push($unsafe{pt.closePrice() != null ? pt.closePrice().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
+								series.cost.push(avg);
+							@endfor
+							window.ensureStockCharts(function() {
+								if (!window.StockCharts || !window.StockCharts.createHoldingsChart) return;
+								var __priceChart = window.StockCharts.createHoldingsChart('stockPriceChart', series, {
+									valueLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.close")}',
+									costLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average")}',
+									maxLabel: '${MessageUtil.getMessage("stock.chart.range.max")}',
+									minLabel: '${MessageUtil.getMessage("stock.chart.range.min")}'
+								}, { animate: true, showMarkers: false });
+								setTimeout(function() { try { if (__priceChart) __priceChart.resize(); } catch (e) {} }, 60);
+							});
+						})();
+						</script>
+					@endif
 
 					<!-- 보유 평가액·원가 추이 -->
 					@if(timeSeries != null && !timeSeries.isEmpty() && chartFormatter != null)
@@ -264,7 +313,14 @@
 											!{BigDecimal acctCostBasis = (holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO).subtract(holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO);}
 											!{double acctEvalRatePct = acctCostBasis.signum() != 0 && holding.evaluationProfit() != null ? holding.evaluationProfit().doubleValue() / acctCostBasis.doubleValue() * 100.0 : 0.0;}
 											<tr>
-												<td class="font-semibold">${holding.accountName() != null ? holding.accountName() : "-"}</td>
+												<%-- 계좌 상세로 잇는다. 이 방향 링크만 없어서 계좌 → 종목은 되는데 종목 → 계좌는 뒤로 가야 했다. --%>
+												<td class="font-semibold">
+													@if(holding.accountId() != null)
+														<a href="/stock/account?accountId=${holding.accountId().toString()}" class="link link-hover">${holding.accountName() != null ? holding.accountName() : "-"}</a>
+													@else
+														${holding.accountName() != null ? holding.accountName() : "-"}
+													@endif
+												</td>
 												<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
 												<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
 												<td class="text-right font-mono amount-value ${acctEvalProfit >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", acctEvalProfit)} <span class="text-xs">(${String.format("%+.1f%%", acctEvalRatePct)})</span></td>

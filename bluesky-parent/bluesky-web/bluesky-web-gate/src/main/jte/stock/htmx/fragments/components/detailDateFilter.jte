@@ -16,6 +16,8 @@
 @param Instant endInstant = null
 @param String timeZone = null
 @param String rangeMode = null
+@param java.time.LocalDate coveredStartDate = null
+@param java.time.LocalDate coveredEndDate = null
 @param String dataFirstDate = ""
 @param boolean canPrev = true
 @param boolean canNext = true
@@ -38,7 +40,9 @@
     rangeMode = rangeMode,
     startDate = startLocal,
     endDate = navBarEndExclusive,
-    showRangeText = true
+    showRangeText = true,
+    coveredStartDate = coveredStartDate,
+    coveredEndDate = coveredEndDate
 )
 
 <form id="${formId}" class="mb-4 rounded-2xl bg-base-100 p-3 shadow-sm flex flex-wrap items-end gap-2"

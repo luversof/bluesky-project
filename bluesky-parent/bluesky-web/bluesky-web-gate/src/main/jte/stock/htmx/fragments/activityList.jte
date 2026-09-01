@@ -84,6 +84,9 @@
         boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
         boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
             && startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+        // '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
+        // 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
+        var coveredRange = net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(activities, net.luversof.web.gate.stock.controller.StockTradeHtmxController.Activity::date, zone);
     }
     @template.stock.htmx.fragments.dateRangeNavBar(
         pickerName = "activityPicker",
@@ -92,7 +95,9 @@
         canNext = canNext,
         rangeMode = rangeMode,
         startDate = startLocal,
-        endDate = endLocal
+        endDate = endLocal,
+        coveredStartDate = coveredRange.startDate(),
+        coveredEndDate = coveredRange.endDate()
     )
 
     <!-- Filter Form (collapsible) -->

@@ -10,6 +10,9 @@
 @param LocalDate startDate = null
 @param LocalDate endDate = null
 @param boolean showRangeText = true
+<%-- '전체' 처럼 기간을 안 거는 경우에 대신 적을, 화면이 실제로 덮은 구간. --%>
+@param LocalDate coveredStartDate = null
+@param LocalDate coveredEndDate = null
 
 !{
     String periodLabel = MessageUtil.getMessage("common.label.period");
@@ -53,6 +56,13 @@
     @if(showRangeText && (startDate != null || endDate != null))
         <span class="badge badge-ghost badge-sm font-medium text-base-content/80 ml-1 whitespace-nowrap">
             ${startDate != null ? startDate.toString() : "?"} ~ ${endDate != null ? endDate.minusDays(1).toString() : "?"}
+        </span>
+    @elseif(showRangeText && (coveredStartDate != null || coveredEndDate != null))
+        <%-- '전체' 는 날짜를 안 보내므로 위 배지가 그릴 값이 없다. 그렇다고 비워 두면 그 구간이 몇 년치인지
+             화면 어디에서도 알 수 없다(종목마다 첫 거래일이 다르다). 조회된 자료의 구간을 대신 적되,
+             기간 필터로 오해하지 않게 '전체' 라고 앞에 붙인다. --%>
+        <span class="badge badge-ghost badge-sm font-medium text-base-content/60 ml-1 whitespace-nowrap" data-covered-range>
+            ${allLabel} · ${coveredStartDate != null ? coveredStartDate.toString() : "?"} ~ ${coveredEndDate != null ? coveredEndDate.toString() : "?"}
         </span>
     @endif
 </div>

@@ -31,6 +31,39 @@ public class StockItemService {
 
   @Autowired private StockItemTagRepository stockItemTagRepository;
 
+  @Autowired
+  private net.luversof.api.stock.repository.StockPriceHistoryRepository stockPriceHistoryRepository;
+
+  public void setStockPriceHistoryRepository(
+      net.luversof.api.stock.repository.StockPriceHistoryRepository stockPriceHistoryRepository) {
+    this.stockPriceHistoryRepository = stockPriceHistoryRepository;
+  }
+
+  /**
+   * 한 종목의 일별 종가. 종목 상세의 주가 차트가 쓴다.
+   *
+   * <p>보유 평가액 추이 차트만으로는 <b>주가 자체</b>를 볼 수 없다 &mdash; 평가액은 수량이 바뀌면 같이 움직이므로, 산 뒤로 주가가 어떻게 됐는지는 그 선에서
+   * 읽어낼 수 없다.
+   *
+   * <p>기간을 주지 않으면 전 구간이다.
+   */
+  public java.util.List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint>
+      findDailyClosePrices(
+          java.util.UUID stockItemId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+    if (stockItemId == null) {
+      return java.util.List.of();
+    }
+    java.util.List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint> points =
+        new java.util.ArrayList<>();
+    for (var row :
+        stockPriceHistoryRepository.findDailyClosePrices(stockItemId, startDate, endDate)) {
+      points.add(
+          new net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint(
+              row.tradeDate(), row.closePrice()));
+    }
+    return points;
+  }
+
   public void setStockItemRepository(StockItemRepository stockItemRepository) {
     this.stockItemRepository = stockItemRepository;
   }

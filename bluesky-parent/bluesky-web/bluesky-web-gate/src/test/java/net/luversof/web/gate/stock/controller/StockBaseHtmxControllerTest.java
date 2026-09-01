@@ -188,6 +188,13 @@ class StockBaseHtmxControllerTest {
     public List<StockItem> getStockItemsByTag(String tag) {
       return List.of();
     }
+
+    @Override
+    public java.util.List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint>
+        getPriceHistory(
+            java.util.UUID id, org.springframework.util.MultiValueMap<String, String> params) {
+      return java.util.List.of();
+    }
   }
 
   private static final class StubAccountClient implements AccountClient {

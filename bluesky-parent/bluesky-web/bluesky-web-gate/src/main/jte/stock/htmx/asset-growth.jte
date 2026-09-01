@@ -55,6 +55,9 @@
     // (content block 내부 클래스에서 참조하므로 effectively final 이어야 한다 — 단일 할당)
     @SuppressWarnings("unchecked")
     List<TradeProfitTimeSeriesPoint> ts = timeSeries instanceof List ? (List<TradeProfitTimeSeriesPoint>) timeSeries : null;
+    // '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
+    // 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
+    var coveredRange = net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(ts, net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp, zone);
 
     java.time.LocalDate today = java.time.LocalDate.now(zone);
     boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
@@ -109,7 +112,9 @@
             rangeMode = rangeMode,
             startDate = startLocal,
             endDate = endLocal,
-            showRangeText = true
+            showRangeText = true,
+            coveredStartDate = coveredRange.startDate(),
+            coveredEndDate = coveredRange.endDate()
         )
 
         <details class="mb-4" open data-detail-filter>

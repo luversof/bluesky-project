@@ -60,6 +60,32 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                 """)
   List<StockDailyClosePrice> findLatestClosePrices(@Param("ids") String ids);
 
+  /**
+   * 한 종목의 일별 종가(차트용).
+   *
+   * <p>엔티티로 읽지 않고 세 값만 투영한다 &mdash; 시가·고가·저가·거래량까지 매핑하면 행 수가 큰 구간에서 그 변환이 응답 시간을 지배한다(같은 이유로 {@code
+   * StockDailyClosePriceQuery} 도 위치 기반 RowMapper 를 쓴다).
+   *
+   * <p>거래량 0 행은 뺀다. 그 행의 종가 자리에는 직전 종가가 들어 있어(거래가 없던 날) 그대로 그리면 없던 날에 선이 이어진다. 앱의 다른 시세 조회와 같은
+   * 규칙이다.
+   */
+  @Query(
+      """
+                    SELECT h."stockItem_id" AS stock_item_id,
+                           h."tradeDate"    AS trade_date,
+                           h."closePrice"   AS close_price
+                    FROM "StockPriceHistory" h
+                    WHERE h."stockItem_id" = :stockItemId
+                      AND h."volume" > 0
+                      AND (CAST(:startDate AS date) IS NULL OR h."tradeDate" >= CAST(:startDate AS date))
+                      AND (CAST(:endDate   AS date) IS NULL OR h."tradeDate" <= CAST(:endDate   AS date))
+                    ORDER BY h."tradeDate"
+                """)
+  List<StockDailyClosePrice> findDailyClosePrices(
+      @Param("stockItemId") UUID stockItemId,
+      @Param("startDate") LocalDate startDate,
+      @Param("endDate") LocalDate endDate);
+
   Optional<StockPriceHistory> findByStockItemIdAndTradeDate(UUID stockItemId, LocalDate tradeDate);
 
   Optional<StockPriceHistory> findTopByStockItemIdOrderByTradeDateDesc(UUID stockItemId);

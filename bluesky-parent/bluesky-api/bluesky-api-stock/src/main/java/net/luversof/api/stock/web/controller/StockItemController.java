@@ -44,6 +44,26 @@ public class StockItemController {
     return stockItemService.findAll();
   }
 
+  /**
+   * 한 종목의 일별 종가(차트용). 기간을 주지 않으면 전 구간.
+   *
+   * <p>거래량 0 인 날은 빠진다 - 그 행의 종가 자리에는 직전 종가가 들어 있어 거래가 없던 날에 선이 이어진다.
+   */
+  @GetMapping("/{id}/priceHistory")
+  public java.util.List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint>
+      priceHistory(
+          @PathVariable UUID id,
+          @org.springframework.web.bind.annotation.RequestParam(required = false)
+              @org.springframework.format.annotation.DateTimeFormat(
+                  iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+              java.time.LocalDate startDate,
+          @org.springframework.web.bind.annotation.RequestParam(required = false)
+              @org.springframework.format.annotation.DateTimeFormat(
+                  iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+              java.time.LocalDate endDate) {
+    return stockItemService.findDailyClosePrices(id, startDate, endDate);
+  }
+
   @GetMapping("/search/findAllByTag/{tag}")
   public java.util.List<net.luversof.api.stock.domain.StockItem> findAllByTag(
       @PathVariable String tag) {

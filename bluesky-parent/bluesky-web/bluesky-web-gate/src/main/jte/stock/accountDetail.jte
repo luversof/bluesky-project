@@ -36,6 +36,7 @@
 @param List<TradeResponse> trades = java.util.List.of()
 @param List<DividendResponse> dividends = java.util.List.of()
 @param List<TradeProfitTimeSeriesPoint> timeSeries = java.util.List.of()
+@param List<net.luversof.web.gate.stock.domain.DetailNavEntry> accountNavEntries = java.util.List.of()
 @param DateTimeFormatter chartFormatter = null
 @param Map<UUID, String> stockNameById = java.util.Map.of()
 @param LocalDate filterStartLocal = null
@@ -44,6 +45,8 @@
 @param Instant filterEndInstant = null
 @param String filterTimeZone = null
 @param String filterRangeMode = null
+@param LocalDate coveredStartLocal = null
+@param LocalDate coveredEndLocal = null
 
 !{
     // 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
@@ -82,9 +85,11 @@
 						categoryLabel = MessageUtil.getMessage("stock.account.detail.breadcrumb"),
 						backLabel = MessageUtil.getMessage("common.button.back"))
 
+					<%-- 제목 옆 전환기 - 다른 계좌를 보려고 뒤로 갔다가 목록에서 다시 찾을 필요가 없게 한다. --%>
 					@template._components.ui.pageHeader(
 						title = account.name() != null ? account.name() : "-",
-						description = MessageUtil.getMessage("stock.account.detail.holdings.title"))
+						description = MessageUtil.getMessage("stock.account.detail.holdings.title"),
+						actions = @`@template.stock.htmx.fragments.detailNavSwitcher(entries = accountNavEntries, switchLabel = MessageUtil.getMessage("stock.detail.switch.account"))`)
 
 					@template.stock.htmx.fragments.components.detailDateFilter(
 						pickerVar = "accountDetailPicker",
@@ -99,7 +104,9 @@
 						startInstant = filterStartInstant,
 						endInstant = filterEndInstant,
 						timeZone = filterTimeZone,
-						rangeMode = filterRangeMode)
+						rangeMode = filterRangeMode,
+						coveredStartDate = coveredStartLocal,
+						coveredEndDate = coveredEndLocal)
 
 					<%-- "현재가"·평가액은 마지막으로 수집된 종가 기준이라, 오늘 시세가 아직 없으면 며칠 전 값일 수 있다.
 					     어느 날 기준인지 밝혀 실시간 시세로 오해하지 않게 한다(자산현황·포트폴리오와 같은 표기). --%>

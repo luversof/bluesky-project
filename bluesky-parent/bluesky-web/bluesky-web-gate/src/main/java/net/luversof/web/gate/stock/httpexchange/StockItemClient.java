@@ -32,4 +32,15 @@ public interface StockItemClient {
 
   @GetExchange("/search/findAllByTag/{tag}")
   java.util.List<StockItem> getStockItemsByTag(@PathVariable String tag);
+
+  /**
+   * 한 종목의 일별 종가(차트용). 기간을 주지 않으면 전 구간.
+   *
+   * <p>보유 평가액 추이만으로는 주가 자체를 볼 수 없다 &mdash; 평가액은 수량이 바뀌면 같이 움직이기 때문이다.
+   */
+  @GetExchange("/{id}/priceHistory")
+  java.util.List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> getPriceHistory(
+      @PathVariable UUID id,
+      @org.springframework.web.bind.annotation.RequestParam
+          org.springframework.util.MultiValueMap<String, String> params);
 }

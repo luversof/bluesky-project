@@ -8,6 +8,8 @@
 @param LocalDate startDate = null
 @param LocalDate endDate = null
 @param boolean showRangeText = true
+@param LocalDate coveredStartDate = null
+@param LocalDate coveredEndDate = null
 
 @template.stock.htmx.fragments.components.dateRangeNavBar(
     pickerName = pickerName,
@@ -17,5 +19,7 @@
     rangeMode = rangeMode,
     startDate = startDate,
     endDate = endDate,
-    showRangeText = showRangeText
+    showRangeText = showRangeText,
+    coveredStartDate = coveredStartDate,
+    coveredEndDate = coveredEndDate
 )

@@ -94,6 +94,9 @@
     java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
     java.time.LocalDate today = java.time.LocalDate.now(zone);
     java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+    // '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
+    // 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
+    var coveredRange = net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(allTradeList, net.luversof.web.gate.stock.dto.response.TradeResponse::tradeDate, zone);
     java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
     boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
     boolean canPrev = !isAllMode && startLocal != null
@@ -110,7 +113,9 @@
         canNext = canNext,
         rangeMode = rangeMode,
         startDate = startLocal,
-        endDate = endLocal
+        endDate = endLocal,
+        coveredStartDate = coveredRange.startDate(),
+        coveredEndDate = coveredRange.endDate()
     )
 
     @template.stock.htmx.fragments.trade.tradeSearchForm(
