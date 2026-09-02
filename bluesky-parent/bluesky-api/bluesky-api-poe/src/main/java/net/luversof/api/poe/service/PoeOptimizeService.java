@@ -2210,6 +2210,26 @@ public class PoeOptimizeService {
   private volatile boolean convexSurvivalPhase = false;
 
   /**
+   * 초반 탐색 구간(아이템 단계 종료 전) 여부 — balanced 목표에서 생존 계수를 중립(1.0)으로 두는 실험용 플래그.
+   *
+   * <p>근거(2026-09-02 실측, 정의의 화염): 같은 스킬·같은 단계를 dps 목표로 돌리면 기준값 35.95 · 전직 할당 43.90 → 48.51 · 혈맹 프로브
+   * 52.38/52.38/52.38/48.58/48.51/48.51 로 <b>후보가 구분된다</b>. 그런데 balanced 로 돌리면 같은 자리가 전부 {@code
+   * 0.0000} 이다 — 빌드가 죽은 게 아니라 <b>생존 계수가 초반 값을 0 으로 눌러</b> 판별력을 없앤다. 그 결과 전직 8pt·혈맹 2pt·보조젬이 전부 값 0
+   * 에서 정해진다.
+   *
+   * <p>코드가 이미 같은 교훈을 적어뒀다 — 생존 래칫은 "탐색 구간에는 걸지 않는다(중간 빌드는 늘 목표 미달이라 경로가 비틀린다)". 그 논리를 <b>기본
+   * 생존항</b>에도 적용하는 실험이다.
+   */
+  private volatile boolean earlySearchPhase = false;
+
+  /** 초반 탐색에서 생존 계수 중립화 on/off — 기여도 귀속(A/B) 용. 기본 off. */
+  private static final boolean EARLY_DPS_ENABLED =
+      "on"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.earlyDps", System.getenv().getOrDefault("POE_EARLY_DPS", "off")));
+
+  /**
    * 가드 스킬(용융 껍질/강철 피부/불사의 외침) — 없으면 null.
    *
    * <p>PoB 는 가드 스킬이 빌드에 **있기만 하면** 버프를 자동 적용하고(CalcPerform 3277행), 피격 계산에서 GuardAbsorb 층을
@@ -2577,6 +2597,7 @@ public class PoeOptimizeService {
       this.targetSpellBlock = 0; // 주문 막기 목표 — 같은 누출 계열
       this.balancedJob = false; // balanced 분기 플래그 — 같은 누출 계열
       this.convexSurvivalPhase = false; // 잡마다 리셋(누출되면 다음 잡의 탐색이 왜곡된다)
+      this.earlySearchPhase = true; // 잡마다 리셋 — 아이템 단계가 끝나면 false 로 내린다
       this.guardSkill = null; // 잡마다 리셋
       this.guardSupport = null;
       this.curseSkill = null;
@@ -2976,12 +2997,31 @@ public class PoeOptimizeService {
         enterPhase("bloodline");
         record BloodlineProbe(String id, Set<Integer> nodes) {}
         List<BloodlineProbe> blProbes = new ArrayList<>();
+        // 휴리스틱 키워드 점수도 같이 모은다 — 엔진 프로브가 동점(정보량 0)일 때 **싼 사전지표가
+        //   존재하는지** 판정하려면 지상진실(전 파이프라인 전수 A/B)과 대조할 순위가 필요하다.
+        //   회오리 전수 실측(2026-09-02): Breachlord 4,422,032 · Lycia 3,670,338 · 나머지 9개 1.37~1.41M
+        //   (최고/최저 **3.2배**). 이 순위를 키워드 점수가 맞히는지가 top-K 완주 설계의 전제다.
+        Map<String, Double> blHeuristic = new LinkedHashMap<>();
         for (String bl : bloodlineOptions) {
           Set<Integer> nodes = heuristicAscendancyNodes(bl, keywords, BLOODLINE_RESERVE);
+          double heur = 0;
+          for (Integer heurNode : nodes) {
+            PoeTreeGraphService.TreeNode heurInfo = poeTreeGraphService.node(heurNode);
+            if (heurInfo != null) {
+              heur += score(heurInfo.stats(), keywords);
+            }
+          }
+          blHeuristic.put(bl, heur);
           if (nodes.size() > 1) { // 시작 노드 외 실제 노드가 있어야 의미
             blProbes.add(new BloodlineProbe(bl, nodes));
           }
         }
+        log(
+            "혈맹 키워드 점수: "
+                + blHeuristic.entrySet().stream()
+                    .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                    .map(e -> e.getKey() + " " + String.format("%.1f", e.getValue()))
+                    .collect(java.util.stream.Collectors.joining(" · ")));
         if (!blProbes.isEmpty()) {
           Map<BloodlineProbe, Double> results =
               evalBatch(
@@ -2993,9 +3033,40 @@ public class PoeOptimizeService {
                     return buildXml(gem, supports, className, ascendancy, trial, allocated, items);
                   },
                   objectiveKey);
+          // 강제 지정(POE_BLOODLINE) — 선택 타당성 A/B 측정용. 미설정이면 기존 동작(최고점 채택).
+          String forcedBloodline = System.getenv("POE_BLOODLINE");
           Map.Entry<BloodlineProbe, Double> best =
-              results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
-          if (best != null && best.getValue() > current * 1.002) {
+              (forcedBloodline != null && !forcedBloodline.isBlank())
+                  ? results.entrySet().stream()
+                      .filter(e -> forcedBloodline.equals(e.getKey().id()))
+                      .findFirst()
+                      .orElse(null)
+                  : results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          // 프로브 전체 점수를 남긴다 — 선택이 "후보 하나짜리 최댓값"이 아닌지, 2등과 얼마나 붙는지
+          //   로그로 보여야 판정할 수 있다(승급 전수 프로브에서 같은 함정을 겪었다).
+          //   ⚠ 이 시점 빌드는 젬 단독이라 후보가 **거의 항상 동점**이다(실측: 전 후보 0 또는 1).
+          //   동점 개수를 같이 찍는다 — 안 찍으면 로그가 "측정해서 골랐다"처럼 읽혀 진단이 헛돈다.
+          //   실제 대가는 크다: 회오리 사격에서 임의 선택(Lycia) 3,670,338 vs Breachlord 4,422,032(+20.5%).
+          long bloodlineTies =
+              best == null
+                  ? 0
+                  : results.values().stream()
+                      .filter(v -> v != null && Math.abs(v - best.getValue()) < 1e-6)
+                      .count();
+          log(
+              "혈맹 프로브: "
+                  + results.entrySet().stream()
+                      .sorted(
+                          java.util.Map.Entry.<BloodlineProbe, Double>comparingByValue().reversed())
+                      .limit(6)
+                      .map(e -> e.getKey().id() + " " + format(e.getValue()))
+                      .collect(java.util.stream.Collectors.joining(" · "))
+                  + (bloodlineTies > 1
+                      ? " · ⚠ 최고점 동점 " + bloodlineTies + "개 — 이 선택은 측정이 아니라 순서로 정해진다"
+                      : ""));
+          if (best != null
+              && (forcedBloodline != null && !forcedBloodline.isBlank()
+                  || best.getValue() > current * 1.002)) {
             ascendancyNodes.addAll(best.getKey().nodes());
             secondaryAscendId = poeTreeGraphService.secondaryAscendClassId(best.getKey().id());
             chosenBloodline = best.getKey().id();
@@ -3012,71 +3083,10 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 1c) 혈맹 노드 실측 검증 — 기여 0 인 노드를 떼고 그 포인트를 직업 전직에 돌려준다 ──
-      // 혈맹 노드는 heuristicAscendancyNodes 가 **엔진 없이 키워드 점수만으로** 고른다. 조건부 노드는
-      // 설명에 damage 가 들어 있으면 점수를 받지만, 조건이 성립하지 않는 빌드에선 실효가 0 이다.
-      //   실측(2026-09-01, 정의의 화염 치프틴 balanced): Breachlord 동결생성("민첩/지능이 다른 두 능력치를
-      //   모두 초과하면 추가 냉기/번개 피해")은 힘 367·민첩 149·지능 179 인 마라우더에서 조건이 성립할 수
-      //   없다. 그 노드를 빼도 dps 1,935,660 · ehp 160,176 · 재생 1,692 가 한 자리도 안 바뀌었고,
-      //   회수한 1pt 를 치프틴 화염 노드로 돌리자 dps 1,951,926(+0.84%) · 재생 1,751(+3.5%) 이 됐다.
-      // 채택 판정이 노드 **세트 전체** 기준(>0.2%)이라, 진짜 이득을 내는 노드(최대 생명력 8%)에 묻어
-      // 무효 노드가 함께 들어온다. 세트를 통으로 받지 말고 노드별로 실측해 값이 안 떨어지면 버린다.
+      // ⚠ 혈맹 무효 노드 검증은 여기(혈맹 단계)서 하지 않는다 — 이 시점 빌드는 젬 단독에 가까워
+      //   "기여 0" 판정이 틀린다. 실측(2026-09-01, 혼의 균열): 여기서 `죄 지은 성자` 를 기여 0 으로 뺐는데
+      //   완성 빌드에서 같은 노드가 18,307,677 → 18,627,813(**+1.7%**) 였다. 검증은 재대결 단계로 옮겼다.
       int reclaimedBloodlinePoints = 0;
-      if (chosenBloodline != null && chosenBloodlineNodes.size() > 1) {
-        enterPhase("bloodline");
-        Integer bloodlineStart = poeTreeGraphService.ascendancyStart(chosenBloodline);
-        List<Integer> droppable = new ArrayList<>(chosenBloodlineNodes);
-        droppable.remove(bloodlineStart); // 시작 노드는 포인트를 쓰지 않는다
-        boolean droppedAny = true;
-        while (droppedAny && !droppable.isEmpty()) {
-          droppedAny = false;
-          // 뗐을 때 남은 혈맹 노드가 시작에서 끊기면 후보에서 뺀다 — 경로 노드는 뗄 수 없다
-          List<Integer> dropCandidates = new ArrayList<>();
-          for (Integer node : droppable) {
-            Set<Integer> without = new LinkedHashSet<>(ascendancyNodes);
-            without.remove(node);
-            List<Integer> rest = droppable.stream().filter(n -> !n.equals(node)).toList();
-            if (bloodlineStart == null
-                || poeTreeGraphService.reachableFrom(bloodlineStart, without).containsAll(rest)) {
-              dropCandidates.add(node);
-            }
-          }
-          if (dropCandidates.isEmpty()) {
-            break;
-          }
-          double before = current;
-          Map<Integer, Double> dropResults =
-              evalBatch(
-                  executor,
-                  dropCandidates,
-                  node -> {
-                    Set<Integer> trial = new LinkedHashSet<>(ascendancyNodes);
-                    trial.remove(node);
-                    return buildXml(gem, supports, className, ascendancy, trial, allocated, items);
-                  },
-                  objectiveKey);
-          for (Map.Entry<Integer, Double> entry : dropResults.entrySet()) {
-            // 값이 전혀 안 떨어지면 그 노드는 아무 일도 하지 않는다(엔진이 결정적이라 동률 비교로 충분)
-            if (entry.getValue() >= before - 1e-6) {
-              Integer node = entry.getKey();
-              ascendancyNodes.remove(node);
-              droppable.remove(node);
-              reclaimedBloodlinePoints++;
-              current = Math.max(current, entry.getValue());
-              PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(node);
-              log(
-                  "혈맹 무효 노드 제거: "
-                      + (info != null && info.nameKo() != null
-                          ? info.nameKo()
-                          : String.valueOf(node))
-                      + " (기여 0 — 1pt 회수) → "
-                      + format(current));
-              droppedAny = true;
-              break; // 한 개씩 떼고 다시 검증 — 동시 제거는 노드 간 상호작용을 못 본다
-            }
-          }
-        }
-      }
 
       // 혈맹 미채택(또는 무효 노드 회수)으로 남는 포인트를 직업 전직에 배분 — 노-혈맹 빌드가 약해지지 않도록
       if ((chosenBloodline == null || reclaimedBloodlinePoints > 0)
@@ -3696,6 +3706,9 @@ public class PoeOptimizeService {
       // 모든 슬롯이 유니크라 붙일 레어가 없으면 포기하고 기존 경고 경로에 맡긴다(정직한 실패).
       repairAttributeShortfalls(
           items, gem, supports, className, ascendancy, ascendancyNodes, allocated, jewels);
+
+      // 초반 탐색 종료 — 여기서부터는 장비가 붙어 생존 계수가 의미를 갖는다(오라·마스터리·문신·전 재대결이 뒤에 남아 적응한다)
+      this.earlySearchPhase = false;
 
       // ── 4b) 오라/헤럴드 greedy — 예약형 오라를 2번째 스킬 그룹으로 추가(방어+공격 모두 후보) ──
       // greedy 가 현재 목표에 이득 되는 오라만 채택: dps/balanced=데미지 오라, ehp=방어 오라.
@@ -5450,6 +5463,13 @@ public class PoeOptimizeService {
         record DefRematch(Slot slot, RareItem rare) {}
         // 개선 소진까지 반복 — 한 슬롯 교체가 문맥을 바꿔 다음 슬롯의 재대결 결과도 달라진다
         // (실측: 1건 채택만으로 +19.4%). 라운드 상한 = 방어 슬롯 수.
+        selfCheckProxy(
+            executor,
+            "방어 슬롯 재대결",
+            buildXml(
+                gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels),
+            current,
+            objectiveKey);
         for (int rematchRound = 0; rematchRound < 7; rematchRound++) {
           List<DefRematch> rematchTrials = new ArrayList<>();
           for (Slot defSlot :
@@ -5610,6 +5630,12 @@ public class PoeOptimizeService {
       // 목표 무관 — 랭킹 문맥에서 확정된다는 결함은 dps/ehp 목표에도 똑같이 있다(objectiveKey 로 평가하므로
       //   각 목표의 기준으로 재대결한다).
       // ── 전직 포인트 최종 재대결 — 미사용 전직 포인트를 **완성 빌드 기준**으로 마저 배분한다.
+      //   ⚠ 위치를 뒤로 옮기지 말 것(2026-09-01 실측). tiers 직전으로 옮겨보니 재대결은 **더 정확해졌다** —
+      //     스윕이 지목했던 `오라 효과` 를 3pt 로 처음 집었고 그 시점 값도 +0.9%(22,821,942→23,027,657)로
+      //     가드를 통과했다. 그런데 **최종은 35,046,396 → 33,940,040(−3.2%)** 였다.
+      //     뒤로 옮기면 재대결 이후 남는 단계가 tiers·finish·anoint 뿐이라, 이전 위치에서 전직 선택에
+      //     맞춰 재조정되던 단계들(주얼·오라·판테온·저주·유니크 재대결)이 **적응할 기회를 잃는다**.
+      //     전직만 국소적으로 좋아지고 나머지가 못 따라온다 → 원위치(tattoos 직후) 유지.
       //   전직·혈맹 배분은 파이프라인 앞단(젬 단독, 아이템·보조젬 없음)에서 정해지고 그 시점 목표값은 0 이라
       //   gainPerPoint 가 전부 0 이다 — 혈맹 무효 노드에서 회수한 포인트가 그대로 사장된다(실측 7/8 사용).
       //   ⚠ 후보와 기준값을 **같은 자**로 잰다: 둘 다 주얼을 포함한 8인자 buildXml 로 만들고, 기준값은
@@ -5620,23 +5646,95 @@ public class PoeOptimizeService {
       // 포인트가 이미 꽉 찼으면 후보 수집 전에 빠져나가므로 일반 빌드의 평가 비용은 0 이다.
       if (ascendancyStart != null) {
         enterPhase("ascendancy-rematch");
-        current =
-            greedyAscendancy(
-                executor,
-                gem,
-                supports,
-                className,
-                ascendancy,
-                ascendancyNodes,
-                allocated,
-                items,
-                jewels,
-                objectiveKey,
-                ASCENDANCY_POINT_BUDGET,
-                current);
+        // 되돌리기용 스냅샷 — 아래 제거/재배분이 **순이득을 못 내면 통째로 원복**한다.
+        //   제거 판정("빼도 값이 안 떨어진다")은 국소적으로 중립이지만, 바뀐 빌드 위에서 뒤따르는
+        //   tree-rematch·unique-rematch·도유가 다른 선택을 하며 더 나쁜 골짜기로 갈 수 있다.
+        //   실측(2026-09-01, arc/ehp/void-battery): 혈맹 2노드를 "기여 0" 으로 뺐지만 EHP 를 올리는
+        //   잔여 후보가 없어 2pt 가 통째로 사장됐고, 최종이 369,700,700 → 357,868,700(**−3.2%**) 이었다.
+        Set<Integer> ascendancySnapshot = new LinkedHashSet<>(ascendancyNodes);
+        // ── 혈맹 노드 실측 검증 — **완성 빌드 기준**으로 기여 0 인 노드를 떼고 포인트를 회수한다.
+        //   혈맹 노드는 heuristicAscendancyNodes 가 엔진 없이 키워드 점수로만 고르고(조건부 노드가 섞인다),
+        //   채택 판정은 노드 **세트 전체** 기준(>0.2%)이라 유효 노드에 무효 노드가 묻어 들어온다.
+        //   실측: Breachlord `동결생성`("민첩/지능이 다른 두 능력치를 초과하면 추가 냉기/번개 피해")은
+        //   힘 367·민첩 149·지능 179 인 마루더에서 조건이 성립할 수 없어 완성 빌드에서도 기여가 정확히 0 이다.
+        //   ⚠ 반드시 이 시점에서 잰다. 혈맹 단계(맨몸)에서 재면 나중에 값을 내는 노드까지 버린다(혼의 균열 +1.7%).
+        if (chosenBloodline != null && chosenBloodlineNodes.size() > 1) {
+          Integer bloodlineStart = poeTreeGraphService.ascendancyStart(chosenBloodline);
+          List<Integer> droppable = new ArrayList<>(chosenBloodlineNodes);
+          droppable.remove(bloodlineStart); // 시작 노드는 포인트를 쓰지 않는다
+          boolean droppedAny = true;
+          while (droppedAny && !droppable.isEmpty()) {
+            droppedAny = false;
+            List<Integer> dropCandidates = new ArrayList<>();
+            for (Integer node : droppable) {
+              Set<Integer> without = new LinkedHashSet<>(ascendancyNodes);
+              without.remove(node);
+              List<Integer> rest = droppable.stream().filter(n -> !n.equals(node)).toList();
+              if (bloodlineStart == null
+                  || poeTreeGraphService.reachableFrom(bloodlineStart, without).containsAll(rest)) {
+                dropCandidates.add(node);
+              }
+            }
+            if (dropCandidates.isEmpty()) {
+              break;
+            }
+            Double dropReference =
+                evalBatch(
+                        executor,
+                        List.of(new LinkedHashSet<>(ascendancyNodes)),
+                        nodes ->
+                            buildXml(
+                                gem,
+                                supports,
+                                className,
+                                ascendancy,
+                                nodes,
+                                allocated,
+                                items,
+                                jewels),
+                        objectiveKey)
+                    .values()
+                    .iterator()
+                    .next();
+            double dropBefore = dropReference != null ? dropReference : current;
+            Map<Integer, Double> dropResults =
+                evalBatch(
+                    executor,
+                    dropCandidates,
+                    node -> {
+                      Set<Integer> trial = new LinkedHashSet<>(ascendancyNodes);
+                      trial.remove(node);
+                      return buildXml(
+                          gem, supports, className, ascendancy, trial, allocated, items, jewels);
+                    },
+                    objectiveKey);
+            for (Map.Entry<Integer, Double> entry : dropResults.entrySet()) {
+              if (entry.getValue() >= dropBefore - 1e-6) {
+                Integer node = entry.getKey();
+                ascendancyNodes.remove(node);
+                droppable.remove(node);
+                reclaimedBloodlinePoints++;
+                PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(node);
+                log(
+                    "혈맹 무효 노드 제거: "
+                        + (info != null && info.nameKo() != null
+                            ? info.nameKo()
+                            : String.valueOf(node))
+                        + " (완성 빌드 기준 기여 0 — 1pt 회수)");
+                droppedAny = true;
+                break;
+              }
+            }
+          }
+        }
 
-        // greedyAscendancy 는 후보를 **노터블로만** 본다(ascendancyCandidates). 회수한 1pt 로는 노터블에
-        //   닿지 못해(보통 2pt 이상) 포인트가 사장되므로, 남는 포인트는 인접 **일반 노드**로라도 채운다.
+        // ⚠ 여기서 greedyAscendancy 를 부르지 않는다. 그쪽은 후보를 **노터블로만** 본다
+        //   (ascendancyCandidates). 노터블에 2점을 먼저 묶어 쓰는 바람에 더 나은 일반 노드 조합을 놓친다 —
+        //   실측(지배의 맹타, 완성 빌드 3점 조합 106종 전수): 현 선택 dps 35,027,024·ehp 45,221 대비
+        //   **dps·ehp 를 동시에 넘는 조합이 8개**였고 그 8개 전부가 일반 노드 "방어도 및 에너지 보호막,
+        //   오라 효과" 를 포함하며 노터블을 쓰지 않았다(최대 dps +0.36% · ehp +1.1%).
+        //   아래 채우기 greedy 는 노터블·일반을 **가리지 않고**(ascendancyAllNodes) 1점씩 실측해 고르므로
+        //   후보 풀만 넓어질 뿐 평가 비용은 그대로다.
         record AscendancyFill(int id, String tree, List<Integer> path) {}
         boolean filled = true;
         while (filled) {
@@ -5729,6 +5827,343 @@ public class PoeOptimizeService {
             filled = true;
           }
         }
+
+        // ── 전직 노드 1:1 교체 — 채우기는 **남는 포인트**만 쓴다. 이미 찍힌 8pt 는 파이프라인 앞단
+        //   (젬 단독·보조젬/아이템/주얼 없음)에서 정해진 그대로다. 그 시점 목표값은 0 이라 실측 로그가
+        //   `전직 할당: 폭풍으로 감싸는 자, 발라코 (+4pt, 4/6) → 0` 처럼 나온다 — **값을 보고 고른 적이 없다**.
+        //   같은 계열인 혈맹(2pt)에서 전 파이프라인 A/B 로 최고/최저 **3.2배**(회오리 4,422,032 vs 1,368,807)를
+        //   확인했고, 전직은 그보다 큰 8pt 다.
+        //   ⚠ 혈맹에서 배운 것: **늦은 교체는 위험하다**(국소 이득 +3.3% 에 최종 −80.3%). 그래서 여기서는
+        //     ①완성 빌드에서 재고 ②후보/기준을 같은 빌더로 재고 ③기존 스냅샷·순이득 가드 **안쪽**에 둬서
+        //     전체가 나빠지면 통째로 원복되게 한다. 채우기(add-only)가 이 가드 아래서 통과한 전례를 그대로 따른다.
+        //   비용을 묶기 위해 후보는 **인접 1칸**(path.size()==1)으로 제한한다.
+        record AscendancySwap(int drop, int add, List<Integer> path) {}
+        for (int swapRound = 0; swapRound < 2; swapRound++) {
+          List<Integer> swapDroppable = new ArrayList<>();
+          for (Integer allocatedId : ascendancyNodes) {
+            PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(allocatedId);
+            if (info != null && Boolean.TRUE.equals(info.ascendancyStart())) {
+              continue; // 시작 노드는 포인트를 쓰지 않는다
+            }
+            swapDroppable.add(allocatedId);
+          }
+          List<String> swapTrees = new ArrayList<>();
+          swapTrees.add(ascendancy);
+          if (chosenBloodline != null) {
+            swapTrees.add(chosenBloodline);
+          }
+          List<AscendancySwap> swaps = new ArrayList<>();
+          for (Integer drop : swapDroppable) {
+            Set<Integer> without = new LinkedHashSet<>(ascendancyNodes);
+            without.remove(drop);
+            // 제거해도 나머지 할당이 전부 연결돼 있어야 한다(끊기면 PoB 에서 무효)
+            boolean connected = true;
+            for (String tree : swapTrees) {
+              Integer treeStart = poeTreeGraphService.ascendancyStart(tree);
+              if (treeStart == null || !without.contains(treeStart)) {
+                continue;
+              }
+              Set<Integer> reachable = poeTreeGraphService.reachableFrom(treeStart, without);
+              for (Integer keep : without) {
+                PoeTreeGraphService.TreeNode keepInfo = poeTreeGraphService.node(keep);
+                if (keepInfo != null
+                    && tree.equals(keepInfo.ascendancy())
+                    && !reachable.contains(keep)) {
+                  connected = false;
+                  break;
+                }
+              }
+              if (!connected) {
+                break;
+              }
+            }
+            if (!connected) {
+              continue;
+            }
+            for (String tree : swapTrees) {
+              for (PoeTreeGraphService.TreeNode cand :
+                  poeTreeGraphService.ascendancyAllNodes(tree)) {
+                if (ascendancyNodes.contains(cand.id())
+                    || Boolean.TRUE.equals(cand.ascendancyStart())) {
+                  continue;
+                }
+                List<Integer> path =
+                    poeTreeGraphService.shortestPathInAscendancy(without, cand.id(), tree);
+                if (path == null || path.size() != 1) {
+                  continue; // 인접 1칸만 — 포인트 수지가 정확히 맞는 교체
+                }
+                swaps.add(new AscendancySwap(drop, cand.id(), path));
+              }
+            }
+          }
+          if (swaps.isEmpty()) {
+            break;
+          }
+          Double swapReference =
+              evalBatch(
+                      executor,
+                      List.of(new LinkedHashSet<>(ascendancyNodes)),
+                      nodes ->
+                          buildXml(
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              nodes,
+                              allocated,
+                              items,
+                              jewels),
+                      objectiveKey)
+                  .values()
+                  .iterator()
+                  .next();
+          double swapBefore = swapReference != null ? swapReference : current;
+          Map<AscendancySwap, Double> swapResults =
+              evalBatch(
+                  executor,
+                  swaps,
+                  trial -> {
+                    Set<Integer> trialNodes = new LinkedHashSet<>(ascendancyNodes);
+                    trialNodes.remove(trial.drop());
+                    trialNodes.addAll(trial.path());
+                    return buildXml(
+                        gem, supports, className, ascendancy, trialNodes, allocated, items, jewels);
+                  },
+                  objectiveKey);
+          Map.Entry<AscendancySwap, Double> bestSwap =
+              swapResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          // ⚠ 최소 마진 — "조금이라도 높으면 채택"으로 두면 **잡음을 실제 빌드와 바꾼다**. 실측(트라투스):
+          //   국소 +0.11%(4,016,334 → 4,020,842)짜리 교체를 채택했다가 최종이 99,204,359 → 98,889,201(**−0.32%**).
+          //   뒤 단계들이 바뀐 전직에 맞춰 다른 선택을 하므로, 국소 이득이 그 흔들림보다 커야 이득이 남는다.
+          //   다른 비교 단계(보조젬 1.003 등)가 같은 이유로 마진을 둔다.
+          if (bestSwap == null || bestSwap.getValue() <= swapBefore * 1.003) {
+            log(
+                "전직 노드 교체: 유지 — 최고 "
+                    + format(bestSwap == null ? 0d : bestSwap.getValue())
+                    + " vs 현재 "
+                    + format(swapBefore)
+                    + " (후보 "
+                    + swaps.size()
+                    + "개)");
+            break;
+          }
+          PoeTreeGraphService.TreeNode dropInfo =
+              poeTreeGraphService.node(bestSwap.getKey().drop());
+          PoeTreeGraphService.TreeNode addInfo = poeTreeGraphService.node(bestSwap.getKey().add());
+          ascendancyNodes.remove(bestSwap.getKey().drop());
+          ascendancyNodes.addAll(bestSwap.getKey().path());
+          current = Math.max(current, bestSwap.getValue());
+          log(
+              "전직 노드 교체: "
+                  + (dropInfo != null && dropInfo.nameKo() != null
+                      ? dropInfo.nameKo()
+                      : String.valueOf(bestSwap.getKey().drop()))
+                  + " → "
+                  + (addInfo != null && addInfo.nameKo() != null
+                      ? addInfo.nameKo()
+                      : String.valueOf(bestSwap.getKey().add()))
+                  + " ("
+                  + format(swapBefore)
+                  + " → "
+                  + format(bestSwap.getValue())
+                  + ", 후보 "
+                  + swaps.size()
+                  + "개)");
+        }
+
+        // ── 노터블 승격 — 1:1 교체는 **인접 1칸**만 보므로 일반 노드끼리만 바뀐다. 실측(2026-09-02): 채택된
+        //   교체 4건이 전부 일반 노드였다(방어도·생명력 재생 / 원소 피해 및 저항 / 원소 피해, 냉기 상태 이상
+        //   효과 / 생명력 재생, 화염 피해). 전직 **노터블은 경로가 2칸**이라 후보에 들지 못한다 —
+        //   혈맹 후보 수집에서 겪은 것과 같은 제약이다(1pt 예산에서 노터블 전부 탈락).
+        //   전수로 2칸을 열면 조합이 커지므로 싼 2단계로 연다:
+        //     ①단일 제거 손실을 재서 **가장 안 아픈 2개**를 고르고(≤8회) ②그 2pt 로 닿는 노터블만 시도(≤20회).
+        //   가드는 그대로 — 마진 1.003, 그리고 아래 스냅샷·순이득 검사 안쪽이라 전체가 나빠지면 통째로 원복된다.
+        record NotablePromotion(List<Integer> drops, int add, List<Integer> path) {}
+        // 라운드 상한 2. 1 로 줄여도 뼈 박살 최종이 **한 자리도 안 변했다**(181,610,139) — 2회째 승격(분투)은
+        //   최종에 영향이 없고, −3.9% 는 **첫 승격(무적, 국소 +6.6%)** 하나에서 온다. 라운드 제한은 처방이 아니다.
+        for (int promoteRound = 0; promoteRound < 2; promoteRound++) {
+          List<Integer> promoteDroppable = new ArrayList<>();
+          for (Integer allocatedId : ascendancyNodes) {
+            PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(allocatedId);
+            if (info == null || !Boolean.TRUE.equals(info.ascendancyStart())) {
+              promoteDroppable.add(allocatedId);
+            }
+          }
+          if (promoteDroppable.size() < 2) {
+            break;
+          }
+          List<String> promoteTrees = new ArrayList<>();
+          promoteTrees.add(ascendancy);
+          if (chosenBloodline != null) {
+            promoteTrees.add(chosenBloodline);
+          }
+          // ① 단일 제거 손실 — 값이 높게 남는 노드일수록 "빼도 안 아픈" 노드다
+          Map<Integer, Double> dropCost =
+              evalBatch(
+                  executor,
+                  promoteDroppable,
+                  node -> {
+                    Set<Integer> trial = new LinkedHashSet<>(ascendancyNodes);
+                    trial.remove(node);
+                    return buildXml(
+                        gem, supports, className, ascendancy, trial, allocated, items, jewels);
+                  },
+                  objectiveKey);
+          List<Integer> cheapest =
+              dropCost.entrySet().stream()
+                  .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
+                  .limit(2)
+                  .map(Map.Entry::getKey)
+                  .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+          if (cheapest.size() < 2) {
+            break;
+          }
+          Set<Integer> promoteWithout = new LinkedHashSet<>(ascendancyNodes);
+          promoteWithout.removeAll(cheapest);
+          // 두 개를 뺀 뒤에도 남은 할당이 전부 연결돼 있어야 한다
+          boolean promoteConnected = true;
+          for (String tree : promoteTrees) {
+            Integer treeStart = poeTreeGraphService.ascendancyStart(tree);
+            if (treeStart == null || !promoteWithout.contains(treeStart)) {
+              continue;
+            }
+            Set<Integer> reachable = poeTreeGraphService.reachableFrom(treeStart, promoteWithout);
+            for (Integer keep : promoteWithout) {
+              PoeTreeGraphService.TreeNode keepInfo = poeTreeGraphService.node(keep);
+              if (keepInfo != null
+                  && tree.equals(keepInfo.ascendancy())
+                  && !reachable.contains(keep)) {
+                promoteConnected = false;
+                break;
+              }
+            }
+            if (!promoteConnected) {
+              break;
+            }
+          }
+          if (!promoteConnected) {
+            break;
+          }
+          // ② 2pt 로 닿는 후보 — 노터블만(일반 노드는 이미 1:1 교체가 본다)
+          List<NotablePromotion> promotions = new ArrayList<>();
+          for (String tree : promoteTrees) {
+            for (PoeTreeGraphService.TreeNode cand :
+                poeTreeGraphService.ascendancyCandidates(tree)) {
+              if (ascendancyNodes.contains(cand.id())) {
+                continue;
+              }
+              List<Integer> path =
+                  poeTreeGraphService.shortestPathInAscendancy(promoteWithout, cand.id(), tree);
+              if (path == null || path.size() != 2) {
+                continue;
+              }
+              promotions.add(new NotablePromotion(cheapest, cand.id(), path));
+            }
+          }
+          if (promotions.isEmpty()) {
+            break;
+          }
+          Double promoteReference =
+              evalBatch(
+                      executor,
+                      List.of(new LinkedHashSet<>(ascendancyNodes)),
+                      nodes ->
+                          buildXml(
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              nodes,
+                              allocated,
+                              items,
+                              jewels),
+                      objectiveKey)
+                  .values()
+                  .iterator()
+                  .next();
+          double promoteBefore = promoteReference != null ? promoteReference : current;
+          Map<NotablePromotion, Double> promoteResults =
+              evalBatch(
+                  executor,
+                  promotions,
+                  trial -> {
+                    Set<Integer> trialNodes = new LinkedHashSet<>(promoteWithout);
+                    trialNodes.addAll(trial.path());
+                    return buildXml(
+                        gem, supports, className, ascendancy, trialNodes, allocated, items, jewels);
+                  },
+                  objectiveKey);
+          Map.Entry<NotablePromotion, Double> bestPromotion =
+              promoteResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (bestPromotion == null || bestPromotion.getValue() <= promoteBefore * 1.003) {
+            log(
+                "노터블 승격: 유지 — 최고 "
+                    + format(bestPromotion == null ? 0d : bestPromotion.getValue())
+                    + " vs 현재 "
+                    + format(promoteBefore)
+                    + " (후보 "
+                    + promotions.size()
+                    + "개)");
+            break;
+          }
+          PoeTreeGraphService.TreeNode promoteInfo =
+              poeTreeGraphService.node(bestPromotion.getKey().add());
+          ascendancyNodes.clear();
+          ascendancyNodes.addAll(promoteWithout);
+          ascendancyNodes.addAll(bestPromotion.getKey().path());
+          current = Math.max(current, bestPromotion.getValue());
+          log(
+              "노터블 승격: 일반 2개 → "
+                  + (promoteInfo != null && promoteInfo.nameKo() != null
+                      ? promoteInfo.nameKo()
+                      : String.valueOf(bestPromotion.getKey().add()))
+                  + " ("
+                  + format(promoteBefore)
+                  + " → "
+                  + format(bestPromotion.getValue())
+                  + ", 후보 "
+                  + promotions.size()
+                  + "개)");
+        }
+
+        // 순이득 검사 — 제거+재배분 결과가 원래보다 낫지 않으면 원복한다(같은 빌더로 양쪽을 잰다).
+        if (!ascendancySnapshot.equals(ascendancyNodes)) {
+          List<Set<Integer>> pair =
+              List.of(
+                  new LinkedHashSet<>(ascendancySnapshot), new LinkedHashSet<>(ascendancyNodes));
+          Map<Set<Integer>, Double> verdict =
+              evalBatch(
+                  executor,
+                  pair,
+                  nodes ->
+                      buildXml(
+                          gem, supports, className, ascendancy, nodes, allocated, items, jewels),
+                  objectiveKey);
+          Double beforeAll = verdict.get(pair.get(0));
+          Double afterAll = verdict.get(pair.get(1));
+          log(
+              "전직 재대결 판정: 원래 "
+                  + format(beforeAll)
+                  + " vs 변경 "
+                  + format(afterAll)
+                  + " · 노드 "
+                  + ascendancySnapshot.size()
+                  + "→"
+                  + ascendancyNodes.size());
+          if (beforeAll != null && afterAll != null && afterAll <= beforeAll) {
+            log(
+                "전직 재대결 원복: 순이득 없음 ("
+                    + format(beforeAll)
+                    + " → "
+                    + format(afterAll)
+                    + ") — 제거/재배분을 되돌린다");
+            ascendancyNodes.clear();
+            ascendancyNodes.addAll(ascendancySnapshot);
+            current = Math.max(current, beforeAll);
+          } else if (afterAll != null) {
+            current = Math.max(current, afterAll);
+          }
+        }
       }
 
       if (!supportRematchPool.isEmpty() && !supports.isEmpty()) {
@@ -5746,6 +6181,13 @@ public class PoeOptimizeService {
           if (supTrials.isEmpty()) {
             break;
           }
+          // 자기동일 후보 — **대리 빌드가 현재 상태를 재현하는지** 같은 배치에서 검사한다.
+          //   이 단계 로그가 "최고 510,955 vs 현재 634,331"(후보 95개 전부 −19%)처럼 나오는데,
+          //   그게 진짜 후보가 나쁜 건지 대리 빌드가 뭔가를 빠뜨린 건지 로그만으론 못 가른다.
+          //   같은 구성을 같은 빌더로 다시 재서 current 와 어긋나면 **비교 자체가 틀린 근거** 위에 있다.
+          //   (실측 발단: 잔여 전직 포인트 자리에서 대리 143,368 vs current 629,023 — 4.4배.)
+          SupSwap supIdentity = new SupSwap(0, supports.get(0));
+          supTrials.add(supIdentity);
           Map<SupSwap, Double> supResults =
               evalBatch(
                   executor,
@@ -5764,8 +6206,25 @@ public class PoeOptimizeService {
                         jewels);
                   },
                   objectiveKey);
+          Double supSelfCheck = supResults.get(supIdentity);
+          if (supSelfCheck != null && current > 0) {
+            double drift = Math.abs(supSelfCheck - current) / current;
+            if (drift > 0.001) {
+              log(
+                  "⚠ 보조젬 재대결 자기검증 불일치: 현재 "
+                      + format(current)
+                      + " vs 같은 구성 재측정 "
+                      + format(supSelfCheck)
+                      + " ("
+                      + String.format("%.1f", drift * 100)
+                      + "% 차이) — 이 단계의 후보 비교는 현재 빌드를 재현하지 못한다");
+            }
+          }
           Map.Entry<SupSwap, Double> bestSup =
-              supResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+              supResults.entrySet().stream()
+                  .filter(e -> !e.getKey().equals(supIdentity)) // 자기동일은 채택 후보가 아니다
+                  .max(Map.Entry.comparingByValue())
+                  .orElse(null);
           if (bestSup != null && bestSup.getValue() > current * 1.003) {
             PoeGem dropped = supports.get(bestSup.getKey().idx());
             supports.set(bestSup.getKey().idx(), bestSup.getKey().cand());
@@ -5801,6 +6260,13 @@ public class PoeOptimizeService {
       //   소켓별로 풀 상위 후보와 1:1 교체를 실측해 상승 시만 채택.
       if (balancedJob && !jewelRematchPool.isEmpty() && !jewels.isEmpty()) {
         enterPhase("jewels-rematch");
+        selfCheckProxy(
+            executor,
+            "주얼 최종 재대결",
+            buildXml(
+                gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels),
+            current,
+            objectiveKey);
         record JewelSwap(int socket, PoeUniqueItem cand) {}
         for (int jRound = 0; jRound < 2; jRound++) {
           List<JewelSwap> jTrials = new ArrayList<>();
@@ -5868,6 +6334,164 @@ public class PoeOptimizeService {
                     + jTrials.size()
                     + "개)");
             break;
+          }
+        }
+      }
+
+      // ── 혈맹 재선택 — **완성 빌드 기준**으로 다시 고른다 ─────────────────────────
+      //   혈맹은 파이프라인 앞단(젬 단독 · 보조젬/아이템/주얼 없음)에서 정해지는데, 그 시점 프로브는
+      //   후보가 전부 같은 값으로 나온다(실측: 모두 1) — 사실상 **무근거 선택**이다.
+      //   POE_BLOODLINE 강제 A/B 실측(2026-09-01, 최종값):
+      //     지배의 맹타 Necromantic 35,046,396 / Lycia 31,763,795(−9.4%) / Breachlord 14,358,011(−59.0%)
+      //     혼의 균열   Lycia 57,203,645 / Breachlord 54,926,174(−4.0%) / Necromantic
+      // 41,610,130(−27.3%)
+      //     정의의 화염 Breachlord 2,044,138(=앞단이 고른 값) < Necromantic **2,095,241(+2.5%)** ← 실제 손해
+      //   앞단 선택이 우연히 맞는 축도 있지만 틀리면 대가가 크다(최대 −59%) → 여기서 실측으로 확정한다.
+      //   ⚠ 2차 전직 id 는 공유 필드(secondaryAscendId)라 후보마다 바꾸면 병렬 평가가 서로의 값을 읽는다
+      //     → buildXmlSecondary 로 **인자 전달**하고, 필드는 채택이 확정된 뒤에만 갱신한다.
+      //   ⚠ 기준값도 같은 자로 잰다 — current(앞 단계 값)와 비교하면 빌드 상태가 달라 비교가 성립하지 않는다.
+      //     현 혈맹도 후보에 그대로 넣어 **같은 배치에서** 재고, 그 값보다 높을 때만 교체한다.
+      //   ⚠ 자리는 **주얼 재대결 뒤**여야 한다. 처음엔 전직 재대결 앞(tattoos 직후)에 뒀는데 상위 3후보가
+      //     정확히 동점(정의의 화염 실측: Breachlord=KingInTheMists=Necromantic=629,023)이라 교체가 일어나지
+      //     않았다. 두 최종 로그를 나란히 놓고 보니 방어 슬롯 재대결까지는 **완전히 같고**(629,023) 갈라지는
+      //     지점이 주얼 최종 재대결이었다 — 642,294(Breachlord) vs 660,361(Necromantic, +2.8%). 혈맹 스탯이
+      //     Combat Focus 로 바뀐 뒤에야 값으로 드러나므로, 그 앞에서 재면 차이가 0 으로 보인다.
+      // ⛔ 기본 **비활성**. 이 자리의 판정이 최종을 예측하지 못한다는 것이 실측으로 드러났다(2026-09-02):
+      //     정의의 화염  단계 645,849(유일 1위) → 최종 2,044,138 → 2,056,004 (**+0.58%**)
+      //     고행의 낙인  단계 10,643,826(**4후보 동점**) → 최종 68,132,380 기준 대비 61,970,908 (**−9.0%**)
+      //     ehp-uniq     단계 926,840(유일 1위, +3.3%) → 최종 369,700,700 → 72,954,140 (**−80.3%**)
+      //   단계 국소 이득 +1.5~+3.3% 에 최종 −9~−80% 가 붙는다. 동점이라 임의로 고른 축뿐 아니라
+      //   **유일 1위였던 Aul 조차** 재앙이었으므로 "동점만 거르면 된다"는 처방도 성립하지 않는다.
+      //   12축 순효과는 오히려 크게 플러스였다(회오리 +13.7 · 도살 +12.2 · 트라투스 +11.5 · 맹독 +9.3,
+      //   기존 대비 각각 +11pp 안팎) — 그러나 baseline ehp-uniq −80.3% 는 실격이라 채택하지 않는다.
+      //   혈맹은 뒤따르는 단계 전체가 적응하는 대상이라, 옳게 고르려면 후보마다 **남은 파이프라인을
+      //   끝까지 돌려야** 한다(11후보 × 4분). 그 비용 설계 전까지는 토글로만 남긴다.
+      //   연구용: POE_BLOODLINE_REMATCH=on
+      boolean bloodlineRematchEnabled =
+          "on".equalsIgnoreCase(String.valueOf(System.getenv("POE_BLOODLINE_REMATCH")));
+      if (bloodlineRematchEnabled
+          && BLOODLINE_RESERVE > 0
+          && chosenBloodline != null
+          && bloodlineOptions.size() > 1) {
+        enterPhase("bloodline-rematch");
+        final String priorBloodline = chosenBloodline;
+        record BloodlineCandidate(String id, Set<Integer> nodes, int secondaryId) {}
+        Set<Integer> withoutBloodline = new LinkedHashSet<>(ascendancyNodes);
+        withoutBloodline.removeAll(chosenBloodlineNodes);
+        // 쓰던 포인트 수를 그대로 유지한다 — 여기서 예산이 늘면 8점을 넘긴다.
+        //   ⚠ chosenBloodlineNodes.size() 로 세면 안 된다. 이 앞의 전직 재대결이 무효 노드를 빼고(정의의 화염:
+        //   `동결생성` 1pt 회수) 그 포인트를 다른 트리에 이미 써버렸으므로, **지금 실제로 남아 있는 수**를 센다.
+        int bloodlineInUse = 0;
+        for (Integer bloodlineNode : chosenBloodlineNodes) {
+          if (!ascendancyNodes.contains(bloodlineNode)) {
+            continue;
+          }
+          PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(bloodlineNode);
+          if (info == null || !Boolean.TRUE.equals(info.ascendancyStart())) {
+            bloodlineInUse++;
+          }
+        }
+        int bloodlinePoints = Math.max(1, bloodlineInUse);
+        // ⚠ heuristicAscendancyNodes 를 쓰면 안 된다 — 후보를 **노터블만**(ascendancyCandidates) 보는데
+        //   혈맹 노터블까지는 경로가 2노드라 `points + path.size() > budget` 에 걸려 1pt 예산에선 전부 탈락한다.
+        //   실측: 후보 0개로 단계가 0초 만에 빠져나갔다(정의의 화염). 전직 재대결에서 이미 겪은 함정이라
+        //   여기서도 ascendancyAllNodes(노터블+일반)로 넓히고, 휴리스틱 점수 대신 **엔진으로 직접** 고른다.
+        List<BloodlineCandidate> blCandidates = new ArrayList<>();
+        for (String bl : bloodlineOptions) {
+          Integer blStart = poeTreeGraphService.ascendancyStart(bl);
+          if (blStart == null) {
+            continue;
+          }
+          int blSecondaryId = poeTreeGraphService.secondaryAscendClassId(bl);
+          Set<Integer> seed = new LinkedHashSet<>();
+          seed.add(blStart);
+          Set<Set<Integer>> seenSets = new LinkedHashSet<>();
+          for (PoeTreeGraphService.TreeNode cand : poeTreeGraphService.ascendancyAllNodes(bl)) {
+            List<Integer> path = poeTreeGraphService.shortestPathInAscendancy(seed, cand.id(), bl);
+            if (path == null || path.isEmpty() || path.size() > bloodlinePoints) {
+              continue;
+            }
+            Set<Integer> set = new LinkedHashSet<>(seed);
+            set.addAll(path);
+            if (seenSets.add(new LinkedHashSet<>(set))) {
+              blCandidates.add(new BloodlineCandidate(bl, set, blSecondaryId));
+            }
+          }
+        }
+        // 현재 배치도 같은 배치에 넣어 같은 자로 잰다(교체 판정의 기준값)
+        Set<Integer> currentBloodlineSet = new LinkedHashSet<>();
+        for (Integer bloodlineNode : chosenBloodlineNodes) {
+          if (ascendancyNodes.contains(bloodlineNode)) {
+            currentBloodlineSet.add(bloodlineNode);
+          }
+        }
+        BloodlineCandidate currentCandidate =
+            new BloodlineCandidate(
+                priorBloodline,
+                currentBloodlineSet,
+                poeTreeGraphService.secondaryAscendClassId(priorBloodline));
+        blCandidates.removeIf(c -> c.equals(currentCandidate));
+        blCandidates.add(currentCandidate);
+        log(
+            "혈맹 재대결 후보: "
+                + blCandidates.size()
+                + "개 · 배정 가능 "
+                + bloodlinePoints
+                + "pt · 후보군 "
+                + bloodlineOptions.size()
+                + "개");
+        if (blCandidates.size() > 1) {
+          Map<BloodlineCandidate, Double> blResults =
+              evalBatch(
+                  executor,
+                  blCandidates,
+                  cand -> {
+                    Set<Integer> trial = new LinkedHashSet<>(withoutBloodline);
+                    trial.addAll(cand.nodes());
+                    return buildXmlSecondary(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        trial,
+                        allocated,
+                        items,
+                        jewels,
+                        cand.secondaryId());
+                  },
+                  objectiveKey);
+          log(
+              "혈맹 재대결: "
+                  + blResults.entrySet().stream()
+                      .sorted(Map.Entry.<BloodlineCandidate, Double>comparingByValue().reversed())
+                      .limit(5)
+                      .map(e -> e.getKey().id() + " " + format(e.getValue()))
+                      .collect(java.util.stream.Collectors.joining(" · ")));
+          Map.Entry<BloodlineCandidate, Double> blBest =
+              blResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          Double priorScore = blResults.get(currentCandidate);
+          if (blBest != null
+              && priorScore != null
+              && !blBest.getKey().equals(currentCandidate)
+              && blBest.getValue() > priorScore) {
+            ascendancyNodes.clear();
+            ascendancyNodes.addAll(withoutBloodline);
+            ascendancyNodes.addAll(blBest.getKey().nodes());
+            secondaryAscendId = blBest.getKey().secondaryId();
+            chosenBloodline = blBest.getKey().id();
+            chosenBloodlineNodes = blBest.getKey().nodes();
+            current = Math.max(current, blBest.getValue());
+            log(
+                "혈맹 교체: "
+                    + priorBloodline
+                    + " → "
+                    + chosenBloodline
+                    + "("
+                    + (chosenBloodlineNodes.size() - 1)
+                    + "pt) · "
+                    + format(priorScore)
+                    + " → "
+                    + format(blBest.getValue()));
           }
         }
       }
@@ -6258,6 +6882,13 @@ public class PoeOptimizeService {
                 && curWeapon.isUnique()
                 && fixedUniques.stream().anyMatch(u -> u.slug().equals(curWeapon.unique().slug()));
         if (!weaponFixed) {
+          selfCheckProxy(
+              executor,
+              "무기 최종 재대결",
+              buildXml(
+                  gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels),
+              current,
+              objectiveKey);
           List<Equipped> weaponTrials = new ArrayList<>();
           for (PoeUniqueItem unique : itemCandidates(Slot.WEAPON, gem, keywords, items)) {
             weaponTrials.add(Equipped.ofUnique(unique));
@@ -8026,6 +8657,44 @@ public class PoeOptimizeService {
   // ── 평가 헬퍼 ────────────────────────────────────────────
 
   /** 후보들을 병렬 평가해 목표 스탯 값을 돌려준다. 실패한 후보는 -1 (자연 탈락). */
+  /**
+   * 대리 빌드 자기검증 — 후보를 비교하는 단계에서 <b>현재 구성 그대로</b>를 같은 빌더·같은 목표로 다시 재고, {@code current} 와 어긋나면 경고를
+   * 남긴다. 어긋난다는 것은 그 단계의 후보 비교가 <b>현재 빌드를 재현하지 못하는 대리 빌드</b> 위에서 이뤄진다는 뜻이라, 그 자리에서 내려진 채택/기각 판정이 전부
+   * 무효다.
+   *
+   * <p>발단: 잔여 전직 포인트 자리에서 대리 빌드 143,368 vs 그 시점 current 629,023(<b>4.4배</b>) — 주얼을 뺀 7인자 빌더를 쓰고
+   * 있었다. 그때는 로그를 나란히 놓고서야 알았는데, 이 검사는 <b>단계마다 상시</b>로 같은 사고를 잡는다.
+   *
+   * <p>후보 목록에 끼워 넣지 않고 <b>별도 평가</b>로 재는 이유: 배치에 항목을 더하면 동점 후보의 선택 순서가 흔들려 결과가 바뀔 수 있다.
+   */
+  private void selfCheckProxy(
+      ExecutorService executor, String stage, String xml, double current, String objectiveKey) {
+    if (xml == null || current <= 0) {
+      return;
+    }
+    Double measured =
+        evalBatch(executor, List.of(xml), x -> x, objectiveKey).values().stream()
+            .filter(java.util.Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+    if (measured == null) {
+      return;
+    }
+    double drift = Math.abs(measured - current) / current;
+    if (drift > 0.001) {
+      log(
+          "⚠ "
+              + stage
+              + " 자기검증 불일치: 현재 "
+              + format(current)
+              + " vs 같은 구성 재측정 "
+              + format(measured)
+              + " ("
+              + String.format("%.1f", drift * 100)
+              + "% 차이) — 이 단계의 후보 비교는 현재 빌드를 재현하지 못한다");
+    }
+  }
+
   private <T> Map<T, Double> evalBatch(
       ExecutorService executor,
       List<T> candidates,
@@ -8416,6 +9085,9 @@ public class PoeOptimizeService {
               "poe.survivalExp", System.getenv().getOrDefault("POE_SURVIVAL_EXP", "1.0")));
 
   private double balancedSurvival(Map<String, Double> values) {
+    if (EARLY_DPS_ENABLED && earlySearchPhase) {
+      return 1.0; // 초반 탐색: 생존을 중립으로 두고 데미지로 후보를 가른다(위 필드 주석의 실측 근거)
+    }
     // (1) 결과-기반 아키타입-무관 한 방 생존 — PoB 가 계산한 유형별 "최대 피격(단일 히트)". 생명·ES·방어도·블록·최대저항
     //   무엇을 쌓든 그 효과가 이 값에 반영되므로, 스탯(생명/ES 등)을 하드코딩할 필요가 없다. 흔한 치명 유형(물리+3원소)의
     //   **최솟값**이 실질 생존을 결정(약한 타입에 죽는다) — 이 하나로 저항 캡·물리 감소·유효 풀(저생명 배제)이 자동 유도됨.
@@ -8794,7 +9466,18 @@ public class PoeOptimizeService {
     return gem.nameKo() != null ? gem.nameKo() : gem.name();
   }
 
+  /**
+   * 로그용 수치 서식. 큰 값은 정수, <b>작은 값은 소수 4자리</b>로 찍는다.
+   *
+   * <p>정수 반올림만 쓰던 때 초반 단계 로그가 전부 {@code → 0} / {@code → 1} 로 나왔고, 그걸 보고 "후보가 동점이라 선택이 무근거"라고 판정했다.
+   * balanced 목표는 초반 빌드에서 생존 계수가 극히 작아 목표값이 1 미만이라 <b>표시만 0</b>이었을 수 있는데, 반올림된 로그로는 진짜 동점인지 구분할 수
+   * 없다. 판정의 근거가 되는 값은 판정할 수 있게 찍어야 한다.
+   */
   private String format(double value) {
+    double abs = Math.abs(value);
+    if (abs > 0 && abs < 1000) {
+      return String.format(Locale.ROOT, "%,.4f", value);
+    }
     return String.format(Locale.ROOT, "%,.0f", value);
   }
 
@@ -10730,6 +11413,39 @@ public class PoeOptimizeService {
         items,
         jewels,
         selectedAuras);
+  }
+
+  /**
+   * 후보 혈맹(2차 전직)을 끼운 잡 경로 XML — 2차 전직 id 를 <b>인자로</b> 받는다. 공유 필드 {@code secondaryAscendId} 를 후보마다
+   * 바꿔가며 재면 병렬 평가가 서로의 값을 읽어 비교가 통째로 오염된다(적 시나리오/전투 버프에서 이미 겪은 함정).
+   */
+  private String buildXmlSecondary(
+      PoeGem gem,
+      List<PoeGem> supports,
+      String className,
+      String ascendancy,
+      Set<Integer> ascendancyNodes,
+      Set<Integer> treeNodes,
+      Map<Slot, Equipped> items,
+      Map<Integer, Equipped> jewels,
+      int candidateSecondaryAscendId) {
+    return buildXmlWithClusters(
+        buildXmlAuras(
+            gem,
+            supports,
+            className,
+            ascendancy,
+            ascendancyNodes,
+            treeNodes,
+            items,
+            jewels,
+            selectedAuras,
+            fixedMasteries,
+            enemyScenario,
+            combatBuffs,
+            additionalSkills,
+            candidateSecondaryAscendId),
+        treeNodes);
   }
 
   private String buildXmlAuras(
