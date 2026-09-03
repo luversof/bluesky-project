@@ -186,6 +186,14 @@
         realizedProfitLabel = realizedProfitLabel
     )
 
+    <%-- 달/해 단위 쪼갬. 카드는 고른 기간 전체를 답하고 아래 목록은 거래 하나하나라, 그 사이가
+         비어 있었다. 월별 매매 금액 차트가 모양은 주지만 수를 주지 않는다 - 그 해 수수료가
+         얼마였는지, 실현손익이 얼마였는지는 읽을 수 없다.
+         집계는 게이트에서 한다 - 화면이 이미 고른 기간의 매매 원장을 통째로 받고 있다. --%>
+    @template.stock.htmx.fragments.trade.tradePeriodBreakdown(
+        tradePeriods = net.luversof.web.gate.stock.util.StockTradePeriodUtil.of(allTradeList, zone)
+    )
+
     @template.stock.htmx.fragments.trade.tradeDetailList(
         tradeList = tradeList,
         zone = zone,

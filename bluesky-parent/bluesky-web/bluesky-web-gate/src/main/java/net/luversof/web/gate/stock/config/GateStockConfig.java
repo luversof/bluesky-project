@@ -49,6 +49,14 @@ public class GateStockConfig {
   }
 
   @Bean
+  net.luversof.web.gate.stock.httpexchange.YearlyCostClient yearlyCostClient(
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+    return stockHttpServiceProxyFactory.createClient(
+        net.luversof.web.gate.stock.httpexchange.YearlyCostClient.class);
+  }
+
+  @Bean
   AccountClient accountClient(
       @Qualifier("stockHttpServiceProxyFactory")
           HttpServiceProxyFactory stockHttpServiceProxyFactory) {

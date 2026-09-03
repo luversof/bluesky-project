@@ -2970,7 +2970,11 @@ public class PoeOptimizeService {
           ascendancy != null ? poeTreeGraphService.ascendancyStart(ascendancy) : null;
       // 전직 8포인트 중 일부(BLOODLINE_RESERVE)를 혈맹에 배분하기 위해 직업 전직 예산을 줄인다
       int classAscBudget = ASCENDANCY_POINT_BUDGET - BLOODLINE_RESERVE;
-      if (ascendancyStart != null) {
+      // 초반 전직 배분 건너뛰기(실험용, 기본 off) — 이 자리의 후보 값은 balanced 에서 전부 0 이라
+      //   할당이 사실상 순서로 정해진다. 실제로 유령 소환(미니언) 축은 여기서 **한 줄도 할당하지 못하고**
+      //   8pt 전부를 완성 빌드 재대결 채우기가 배분했는데 그 단계에서만 +7.7% 였다(1,848,833 → 1,991,654).
+      //   그렇다면 "초반 blind 배분 vs 완성 빌드 배분" 중 뒤쪽이 나은지 재봐야 한다. POE_DEFER_ASC=on
+      if (ascendancyStart != null && !DEFER_ASC_ENABLED) {
         enterPhase("ascendancy");
         current =
             greedyAscendancy(
@@ -3091,6 +3095,7 @@ public class PoeOptimizeService {
       // 혈맹 미채택(또는 무효 노드 회수)으로 남는 포인트를 직업 전직에 배분 — 노-혈맹 빌드가 약해지지 않도록
       if ((chosenBloodline == null || reclaimedBloodlinePoints > 0)
           && ascendancyStart != null
+          && !DEFER_ASC_ENABLED
           && classAscBudget < ASCENDANCY_POINT_BUDGET) {
         enterPhase("ascendancy");
         current =
@@ -3655,7 +3660,40 @@ public class PoeOptimizeService {
           slotCandidates.add(Equipped.ofRare(defensiveRare));
         }
         if (slotCandidates.isEmpty()) {
+          // 후보가 아예 없었던 슬롯을 남긴다 — 맹독의 비는 플라스크 5칸이 통째로 비었는데
+          //   "후보 0" 인지 "전부 기각" 인지 로그가 없어 구분되지 않았다(채우기에서 겪은 조용한 실패와 같은 계열).
+          if (slot.pobName.startsWith("Flask")) {
+            log("슬롯 후보 없음: " + slot.ko);
+          }
           continue;
+        }
+        if (DUMP_FLASK_ENABLED && slot.pobName.startsWith("Flask")) {
+          log(
+              "플라스크 후보: "
+                  + slotCandidates.stream()
+                      .map(this::equippedLabel)
+                      .collect(java.util.stream.Collectors.joining(" · ")));
+        }
+        // 플라스크 후보 XML 덤프(진단용, 기본 off) — "빈 슬롯에 아이템을 더했는데 −10.5%" 를 설명하려면
+        //   실제 빌더가 만든 XML 을 현재 빌드와 직접 대조해야 한다. POE_DUMP_FLASK=on
+        if (DUMP_FLASK_ENABLED && slot.pobName.startsWith("Flask") && !flaskDumped) {
+          flaskDumped = true;
+          String baseXml =
+              buildXml(
+                  gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels);
+          String trialXml =
+              buildXml(
+                  gem,
+                  supports,
+                  className,
+                  ascendancy,
+                  ascendancyNodes,
+                  allocated,
+                  withFlaskTrial(items, slot, slotCandidates.get(0)),
+                  jewels);
+          dumpXml("flask-base.xml", baseXml);
+          dumpXml("flask-trial.xml", trialXml);
+          log("플라스크 XML 덤프: " + slot.ko + " · 후보 " + equippedLabel(slotCandidates.get(0)));
         }
         Map<Equipped, Double> results =
             evalBatch(
@@ -3697,6 +3735,19 @@ public class PoeOptimizeService {
           }
           current = best.getValue();
           log("장비 채택: " + slot.ko + " = " + equippedLabel(best.getKey()) + " → " + format(current));
+        } else if (slot.pobName.startsWith("Flask")) {
+          // 플라스크 기각을 남긴다 — 맹독의 비는 5칸이 통째로 비는데 후보 수도 최고값도 안 보여
+          //   "후보 풀에 없어서"인지 "임계를 못 넘어서"인지 구분되지 않았다.
+          log(
+              "플라스크 기각: "
+                  + slot.ko
+                  + " · 후보 "
+                  + slotCandidates.size()
+                  + "개 · 최고 "
+                  + format(best == null ? 0d : best.getValue())
+                  + " vs 현재 "
+                  + format(current)
+                  + (best == null ? "" : " (" + equippedLabel(best.getKey()) + ")"));
         }
       }
 
@@ -5825,6 +5876,18 @@ public class PoeOptimizeService {
                     + format(bestFill.getValue())
                     + ")");
             filled = true;
+          } else {
+            // 채우기 실패를 조용히 넘기지 않는다 — 실측(맹독의 비): 전직 8pt 중 **4pt 가 미사용**인데
+            //   `잔여 전직 포인트 배분` 로그가 없어 후보가 0개였는지 전부 기각됐는지 구분할 수 없었다.
+            log(
+                "잔여 전직 포인트 미사용: 여유 "
+                    + freePoints
+                    + "pt · 후보 "
+                    + fills.size()
+                    + "개 · 최고 "
+                    + format(bestFill == null ? 0d : bestFill.getValue())
+                    + " vs 기준 "
+                    + format(beforeFill));
           }
         }
 
@@ -5982,12 +6045,31 @@ public class PoeOptimizeService {
         // 라운드 상한 2. 1 로 줄여도 뼈 박살 최종이 **한 자리도 안 변했다**(181,610,139) — 2회째 승격(분투)은
         //   최종에 영향이 없고, −3.9% 는 **첫 승격(무적, 국소 +6.6%)** 하나에서 온다. 라운드 제한은 처방이 아니다.
         for (int promoteRound = 0; promoteRound < 2; promoteRound++) {
+          // ⚠ **직업 전직 노터블은 희생 대상에서 뺀다.** 희생 목록을 찍어보니 4축이 종류로 완전히 갈렸다
+          //   (2026-09-02 실측): 직업 전직 노터블을 버린 축만 졌다 —
+          //     뼈 박살  방어도·생명력 재생(−1.74%) + **완고**(Unyielding, Juggernaut, −3.45%) → 최종 −3.9%
+          //     트라투스 무광 실루엣(−0.85%) + **완고**(−2.30%)                                  → 최종 −3.5%
+          //     한파     죄 지은 성자(Lycia 혈맹 노터블, −4.75%) + 카오스 피해(−4.92%)          → 최종 **+13.2%**
+          //     도살     무광 실루엣(KingInTheMists 혈맹 노터블, −2.12%) + 생명력(−6.39%)       → 최종 **+13.6%**
+          //   희생 **비용 크기로는 안 갈린다**(한파는 −4.9% 를 버리고도 이득). 갈리는 건 **소속**이다.
+          //   ⚠ 기제 설명 정정: 처음엔 "직업 전직 노터블은 빌드 정체성이라 떼면 안 된다"고 썼는데 **틀렸다**.
+          //   바로 위 1:1 교체는 직업 전직 노터블을 **버리고 이득**을 낸다 — 한파/고행은 `원소의 보루`
+          //   (Bastion of Elements, Elementalist 노터블)를, 정의의 화염은 `죽음의 광분, 히네코라`
+          //   (Chieftain 노터블)를 떼고 각각 +7.5% · +1.1pp · +0.8pp 였다. 즉 직업 노터블은 성역이 아니다.
+          //   이 규칙은 **이 단계(2개 희생 → 노터블 1개)에 한정된 경험칙**이고 근거는 위 4축 실측뿐이다.
+          //   같은 규칙을 교체 단계로 옮기면 안 된다(한파 +7.5% 가 사라진다).
           List<Integer> promoteDroppable = new ArrayList<>();
           for (Integer allocatedId : ascendancyNodes) {
             PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(allocatedId);
-            if (info == null || !Boolean.TRUE.equals(info.ascendancyStart())) {
-              promoteDroppable.add(allocatedId);
+            if (info == null || Boolean.TRUE.equals(info.ascendancyStart())) {
+              continue;
             }
+            if ("notable".equals(info.type())
+                && ascendancy != null
+                && ascendancy.equals(info.ascendancy())) {
+              continue; // 직업 전직 노터블 보호(혈맹 노터블·일반 노드는 그대로 후보)
+            }
+            promoteDroppable.add(allocatedId);
           }
           if (promoteDroppable.size() < 2) {
             break;
@@ -6018,46 +6100,84 @@ public class PoeOptimizeService {
           if (cheapest.size() < 2) {
             break;
           }
-          Set<Integer> promoteWithout = new LinkedHashSet<>(ascendancyNodes);
-          promoteWithout.removeAll(cheapest);
-          // 두 개를 뺀 뒤에도 남은 할당이 전부 연결돼 있어야 한다
-          boolean promoteConnected = true;
-          for (String tree : promoteTrees) {
-            Integer treeStart = poeTreeGraphService.ascendancyStart(tree);
-            if (treeStart == null || !promoteWithout.contains(treeStart)) {
-              continue;
-            }
-            Set<Integer> reachable = poeTreeGraphService.reachableFrom(treeStart, promoteWithout);
-            for (Integer keep : promoteWithout) {
-              PoeTreeGraphService.TreeNode keepInfo = poeTreeGraphService.node(keep);
-              if (keepInfo != null
-                  && tree.equals(keepInfo.ascendancy())
-                  && !reachable.contains(keep)) {
-                promoteConnected = false;
-                break;
-              }
-            }
-            if (!promoteConnected) {
-              break;
-            }
-          }
-          if (!promoteConnected) {
-            break;
-          }
+          // 무엇을 버리는지 남긴다 — 지금까지 판정은 **얻는 쪽**(마진)만 봤는데 그게 최종 부호를 예측하지
+          //   못했다(4회 실측). 버리는 쪽 비용이 축마다 다른지 보려면 우선 찍혀야 한다.
+          // 희생 조합은 **가장 싼 2개 하나**만 쓴다. 싼 3개로 넓혀 3쌍을 전부 시도해봤는데(2026-09-02 실측)
+          //   이득은 0 이고 트라투스만 99,204,359 → **98,889,201(−0.32%)** 로 다시 내려갔다 — 새로 찾은
+          //   `무광 실루엣 + 생명력 → 분투` 는 위 규칙상 "안전한" 희생(혈맹 노터블 + 일반)인데도 졌다.
+          //   즉 그 규칙은 **필요조건이지 충분조건이 아니다**. 탐색을 넓히면 이 단계가 못 보는 손해를
+          //   더 자주 집어 든다 → 폭은 좁게 유지한다(limit 2 = 조합 1개).
+          List<Integer> dropTop3 =
+              dropCost.entrySet().stream()
+                  .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
+                  .limit(2)
+                  .map(Map.Entry::getKey)
+                  .toList();
+          final double sacrificeBase = current; // current 는 재할당되므로 람다에서 직접 못 쓴다
+          log(
+              "노터블 승격 희생 후보("
+                  + dropTop3.size()
+                  + "개): "
+                  + dropTop3.stream()
+                      .map(
+                          node -> {
+                            PoeTreeGraphService.TreeNode dropInfo = poeTreeGraphService.node(node);
+                            Double after = dropCost.get(node);
+                            double loss =
+                                after == null || sacrificeBase <= 0
+                                    ? 0
+                                    : (1.0 - after / sacrificeBase) * 100.0;
+                            return (dropInfo != null && dropInfo.nameKo() != null
+                                    ? dropInfo.nameKo()
+                                    : String.valueOf(node))
+                                + String.format(" −%.2f%%", loss);
+                          })
+                      .collect(java.util.stream.Collectors.joining(" · ")));
           // ② 2pt 로 닿는 후보 — 노터블만(일반 노드는 이미 1:1 교체가 본다)
           List<NotablePromotion> promotions = new ArrayList<>();
-          for (String tree : promoteTrees) {
-            for (PoeTreeGraphService.TreeNode cand :
-                poeTreeGraphService.ascendancyCandidates(tree)) {
-              if (ascendancyNodes.contains(cand.id())) {
+          for (int dropA = 0; dropA < dropTop3.size(); dropA++) {
+            for (int dropB = dropA + 1; dropB < dropTop3.size(); dropB++) {
+              List<Integer> pair = List.of(dropTop3.get(dropA), dropTop3.get(dropB));
+              Set<Integer> without = new LinkedHashSet<>(ascendancyNodes);
+              without.removeAll(pair);
+              // 두 개를 뺀 뒤에도 남은 할당이 전부 연결돼 있어야 한다
+              boolean pairConnected = true;
+              for (String tree : promoteTrees) {
+                Integer treeStart = poeTreeGraphService.ascendancyStart(tree);
+                if (treeStart == null || !without.contains(treeStart)) {
+                  continue;
+                }
+                Set<Integer> reachable = poeTreeGraphService.reachableFrom(treeStart, without);
+                for (Integer keep : without) {
+                  PoeTreeGraphService.TreeNode keepInfo = poeTreeGraphService.node(keep);
+                  if (keepInfo != null
+                      && tree.equals(keepInfo.ascendancy())
+                      && !reachable.contains(keep)) {
+                    pairConnected = false;
+                    break;
+                  }
+                }
+                if (!pairConnected) {
+                  break;
+                }
+              }
+              if (!pairConnected) {
                 continue;
               }
-              List<Integer> path =
-                  poeTreeGraphService.shortestPathInAscendancy(promoteWithout, cand.id(), tree);
-              if (path == null || path.size() != 2) {
-                continue;
+              for (String tree : promoteTrees) {
+                for (PoeTreeGraphService.TreeNode cand :
+                    poeTreeGraphService.ascendancyCandidates(tree)) {
+                  if (ascendancyNodes.contains(cand.id())) {
+                    continue;
+                  }
+                  List<Integer> path =
+                      poeTreeGraphService.shortestPathInAscendancy(without, cand.id(), tree);
+                  if (path == null || path.size() != 2) {
+                    continue;
+                  }
+                  promotions.add(new NotablePromotion(pair, cand.id(), path));
+                }
               }
-              promotions.add(new NotablePromotion(cheapest, cand.id(), path));
             }
           }
           if (promotions.isEmpty()) {
@@ -6087,7 +6207,8 @@ public class PoeOptimizeService {
                   executor,
                   promotions,
                   trial -> {
-                    Set<Integer> trialNodes = new LinkedHashSet<>(promoteWithout);
+                    Set<Integer> trialNodes = new LinkedHashSet<>(ascendancyNodes);
+                    trialNodes.removeAll(trial.drops());
                     trialNodes.addAll(trial.path());
                     return buildXml(
                         gem, supports, className, ascendancy, trialNodes, allocated, items, jewels);
@@ -6108,12 +6229,21 @@ public class PoeOptimizeService {
           }
           PoeTreeGraphService.TreeNode promoteInfo =
               poeTreeGraphService.node(bestPromotion.getKey().add());
-          ascendancyNodes.clear();
-          ascendancyNodes.addAll(promoteWithout);
+          ascendancyNodes.removeAll(bestPromotion.getKey().drops());
           ascendancyNodes.addAll(bestPromotion.getKey().path());
           current = Math.max(current, bestPromotion.getValue());
           log(
-              "노터블 승격: 일반 2개 → "
+              "노터블 승격: "
+                  + bestPromotion.getKey().drops().stream()
+                      .map(
+                          node -> {
+                            PoeTreeGraphService.TreeNode dropInfo = poeTreeGraphService.node(node);
+                            return dropInfo != null && dropInfo.nameKo() != null
+                                ? dropInfo.nameKo()
+                                : String.valueOf(node);
+                          })
+                      .collect(java.util.stream.Collectors.joining(" + "))
+                  + " → "
                   + (promoteInfo != null && promoteInfo.nameKo() != null
                       ? promoteInfo.nameKo()
                       : String.valueOf(bestPromotion.getKey().add()))
@@ -6574,6 +6704,116 @@ public class PoeOptimizeService {
       //   전수 실측해 고른다. 메이저/마이너 각각 그리디 1패스(각 후보 1회 평가) — 비용은 십수 회 평가뿐.
       // ⚠ balanced 전용 — ehp 목표에 켜면 크게 해롭다(실측: 판테온 on 87,255,811 vs off 113,182,940).
       //   채택 시점엔 목표값을 올리지만 빌드가 바뀌며 이후 단계(유니크 재대결·ES 듀얼패스·티어)가 다른 가지로 간다.
+      // ── 마스터리 효과 재대결 — 효과는 오라 직후에 정해지는데 그 뒤로 문신·전직/보조젬/주얼/오라 재대결·
+      //   유니크 재대결·티어·도유가 문맥을 크게 바꾼다. **마스터리에는 재대결이 없어** 그때 고른 효과가 그대로 간다.
+      //   포인트 예산을 건드리지 않고 효과만 바꾸므로(노드 할당 불변) 교체·승격보다 위험이 낮다.
+      //   ⚠ fixedMasteries 는 공유 필드다 — 후보별로 바꾸려면 buildXmlMasteries 로 **인자 전달**해야 한다.
+      //   마진 1.003 은 같은 이유(잡음 교체가 하류를 흔든다, 실측 −0.32%)로 건다.
+      if (!fixedMasteries.isEmpty()) {
+        enterPhase("masteries-rematch");
+        record MasteryEffectSwap(int node, int effect) {}
+        for (int masteryRound = 0; masteryRound < 2; masteryRound++) {
+          final Map<Integer, Integer> baseMasteries = new LinkedHashMap<>(fixedMasteries);
+          Set<Integer> usedEffectIds = new java.util.HashSet<>(baseMasteries.values());
+          List<MasteryEffectSwap> masteryTrials = new ArrayList<>();
+          for (Map.Entry<Integer, Integer> entry : baseMasteries.entrySet()) {
+            PoeTreeGraphService.TreeNode masteryNode = poeTreeGraphService.node(entry.getKey());
+            if (masteryNode == null || masteryNode.masteryEffects() == null) {
+              continue;
+            }
+            for (PoeTreeGraphService.MasteryEffect effect : masteryNode.masteryEffects()) {
+              if (effect.id() == entry.getValue() || usedEffectIds.contains(effect.id())) {
+                continue; // 이미 쓰는 효과·다른 노드가 쓰는 효과는 제외(PoB 는 효과 중복 불가)
+              }
+              masteryTrials.add(new MasteryEffectSwap(entry.getKey(), effect.id()));
+            }
+          }
+          if (masteryTrials.isEmpty()) {
+            break;
+          }
+          Double masteryReference =
+              evalBatch(
+                      executor,
+                      List.of(baseMasteries),
+                      effects ->
+                          buildXmlMasteries(
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              allocated,
+                              items,
+                              jewels,
+                              effects),
+                      objectiveKey)
+                  .values()
+                  .iterator()
+                  .next();
+          double masteryBefore = masteryReference != null ? masteryReference : current;
+          Map<MasteryEffectSwap, Double> masteryResults =
+              evalBatch(
+                  executor,
+                  masteryTrials,
+                  trial -> {
+                    Map<Integer, Integer> effects = new LinkedHashMap<>(baseMasteries);
+                    effects.put(trial.node(), trial.effect());
+                    return buildXmlMasteries(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels,
+                        effects);
+                  },
+                  objectiveKey);
+          Map.Entry<MasteryEffectSwap, Double> bestMastery =
+              masteryResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (bestMastery == null || bestMastery.getValue() <= masteryBefore * 1.003) {
+            log(
+                "마스터리 재대결: 유지 — 최고 "
+                    + format(bestMastery == null ? 0d : bestMastery.getValue())
+                    + " vs 현재 "
+                    + format(masteryBefore)
+                    + " (후보 "
+                    + masteryTrials.size()
+                    + "개)");
+            break;
+          }
+          Map<Integer, Integer> mergedMasteries = new LinkedHashMap<>(baseMasteries);
+          mergedMasteries.put(bestMastery.getKey().node(), bestMastery.getKey().effect());
+          fixedMasteries = mergedMasteries;
+          current = Math.max(current, bestMastery.getValue());
+          PoeTreeGraphService.TreeNode swappedNode =
+              poeTreeGraphService.node(bestMastery.getKey().node());
+          String effectLabel =
+              swappedNode == null || swappedNode.masteryEffects() == null
+                  ? String.valueOf(bestMastery.getKey().effect())
+                  : swappedNode.masteryEffects().stream()
+                      .filter(e -> e.id() == bestMastery.getKey().effect())
+                      .map(
+                          e ->
+                              e.statsKo() != null && !e.statsKo().isEmpty()
+                                  ? e.statsKo().get(0)
+                                  : String.valueOf(e.id()))
+                      .findFirst()
+                      .orElse(String.valueOf(bestMastery.getKey().effect()));
+          log(
+              "마스터리 재대결: → "
+                  + effectLabel
+                  + " ("
+                  + format(masteryBefore)
+                  + " → "
+                  + format(bestMastery.getValue())
+                  + ", 후보 "
+                  + masteryTrials.size()
+                  + "개)");
+        }
+      }
+
       if (balancedJob && PANTHEON_ENABLED) {
         enterPhase("pantheon");
         String savedMajor = metaPantheonMajor;
@@ -9072,6 +9312,40 @@ public class PoeOptimizeService {
               System.getProperty(
                   "poe.defRare", System.getenv().getOrDefault("POE_DEF_RARE", "on")));
 
+  /** 플라스크 진단 덤프 on/off — 기본 off. */
+  private static final boolean DUMP_FLASK_ENABLED =
+      "on"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.dumpFlask", System.getenv().getOrDefault("POE_DUMP_FLASK", "off")));
+
+  private volatile boolean flaskDumped = false;
+
+  /** 진단용 XML 덤프 — 임시 폴더에 쓴다(실패해도 잡을 멈추지 않는다). */
+  private void dumpXml(String name, String xml) {
+    try {
+      java.nio.file.Path out = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), name);
+      java.nio.file.Files.writeString(out, xml);
+    } catch (Exception e) {
+      log("XML 덤프 실패: " + name + " — " + e.getMessage());
+    }
+  }
+
+  /** 후보 플라스크를 끼운 아이템 맵 사본(진단용). */
+  private Map<Slot, Equipped> withFlaskTrial(
+      Map<Slot, Equipped> items, Slot slot, Equipped candidate) {
+    Map<Slot, Equipped> trial = new EnumMap<>(items);
+    trial.put(slot, candidate);
+    return trial;
+  }
+
+  /** 초반 전직 배분 건너뛰기 — 완성 빌드 재대결 채우기에 전부 맡기는 A/B 용. 기본 off. */
+  private static final boolean DEFER_ASC_ENABLED =
+      "on"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.deferAsc", System.getenv().getOrDefault("POE_DEFER_ASC", "off")));
+
   /** 가드 스킬 단계 on/off — 기여도 귀속(A/B) 용. 기본 on. */
   private static final boolean GUARD_ENABLED =
       !"off"
@@ -11416,6 +11690,39 @@ public class PoeOptimizeService {
   }
 
   /**
+   * 마스터리 효과 맵을 <b>인자로</b> 받는 잡 경로 XML — 공유 필드 {@code fixedMasteries} 를 후보마다 바꾸면 병렬 평가가 서로의 값을
+   * 읽는다(2차 전직에서 겪은 것과 같은 함정).
+   */
+  private String buildXmlMasteries(
+      PoeGem gem,
+      List<PoeGem> supports,
+      String className,
+      String ascendancy,
+      Set<Integer> ascendancyNodes,
+      Set<Integer> treeNodes,
+      Map<Slot, Equipped> items,
+      Map<Integer, Equipped> jewels,
+      Map<Integer, Integer> masteryEffects) {
+    return buildXmlWithClusters(
+        buildXmlAuras(
+            gem,
+            supports,
+            className,
+            ascendancy,
+            ascendancyNodes,
+            treeNodes,
+            items,
+            jewels,
+            selectedAuras,
+            masteryEffects,
+            enemyScenario,
+            combatBuffs,
+            additionalSkills,
+            secondaryAscendId),
+        treeNodes);
+  }
+
+  /**
    * 후보 혈맹(2차 전직)을 끼운 잡 경로 XML — 2차 전직 id 를 <b>인자로</b> 받는다. 공유 필드 {@code secondaryAscendId} 를 후보마다
    * 바꿔가며 재면 병렬 평가가 서로의 값을 읽어 비교가 통째로 오염된다(적 시나리오/전투 버프에서 이미 겪은 함정).
    */
@@ -11480,8 +11787,21 @@ public class PoeOptimizeService {
    * 방지).
    */
   private String buildXmlWithClusters(String xml, Set<Integer> treeNodes) {
+    return buildXmlWithClusters(xml, treeNodes, fixedClusters);
+  }
+
+  /**
+   * 클러스터 목록을 <b>인자로</b> 받는 경로. 2인자 버전이 공유 필드({@code fixedClusters})를 넘겨 위임한다.
+   *
+   * <p>이 인자화로 "완성 빌드에서 클러스터 적재물만 다시 고르는" 재대결을 붙여 실측했는데 <b>기각</b>했다 (2026-09-03): 장착 축인 칼날 소용돌이는 개선
+   * 없음(최고 23,489,591 vs 현재 24,169,399), 피부 열상은 국소 <b>+0.67%</b>(7,938,687 → 7,992,231, {@code Force
+   * Multiplier → Furious Assault})를 채택했다가 최종이 22,116,852 → <b>17,069,930(−22.8%)</b> 였다. 이득 0 · 큰
+   * 손해 1 → 단계는 제거하고 인자화만 남긴다.
+   */
+  private String buildXmlWithClusters(
+      String xml, Set<Integer> treeNodes, List<ClusterSpec> clusters) {
     return withTattoos(
-        fixedClusters.isEmpty() ? xml : withClusterJewels(xml, fixedClusters, treeNodes),
+        clusters == null || clusters.isEmpty() ? xml : withClusterJewels(xml, clusters, treeNodes),
         fixedTattoos,
         treeNodes);
   }

@@ -114,4 +114,80 @@ class YearlySummaryGapRenderTest {
 
     assertThat(html).contains("data-yearly-gap=\"2025-2025\"");
   }
+
+  /** 합계를 볼 수 있게 값을 고른 해. 기말은 해마다 달라야 '더하지 않는다' 를 확인할 수 있다. */
+  private static TradeProfitYearlySummary yearWith(
+      int value, String closing, String profit, String principal, Double twr) {
+    TradeProfitTimeSeriesSummary summary =
+        new TradeProfitTimeSeriesSummary(
+            BigDecimal.ZERO,
+            new BigDecimal(closing),
+            null,
+            twr,
+            new BigDecimal(profit),
+            new BigDecimal(principal),
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    return new TradeProfitYearlySummary(
+        value, LocalDate.of(value, 1, 1), LocalDate.of(value, 12, 31), true, summary);
+  }
+
+  /**
+   * 전체 기간 줄. <b>기말 평가액만은 합계라는 것이 없다</b> &mdash; 가장 최근 해의 값이 곧 전체 기간의 기말이다.
+   *
+   * <p>그래서 줄 이름이 '합계' 가 아니라 '전체 기간' 이다. '합계' 라 적고 기말 칸에 최신 값을 넣으면 그 칸만 뜻이 달라져 읽는 사람을 속인다.
+   */
+  @Test
+  void 전체_기간_줄에_합계를_적고_기말은_최신_값을_쓴다() {
+    String html =
+        render(
+            List.of(
+                yearWith(2026, "1200", "300", "50", 20.0d),
+                yearWith(2025, "900", "-100", "30", -10.0d)));
+
+    assertThat(html)
+        .as("다 합치면 얼마인지가 없어 눈으로 더해야 했다")
+        .contains("data-yearly-total")
+        .contains(MessageUtil.getMessage("stock.asset.growth.total.row"));
+
+    String foot = html.substring(html.indexOf("data-yearly-total"));
+    assertThat(foot)
+        .as("손익 300 + (-100) = +200 / 원금 50 + 30 = +80")
+        .contains("+\u20a9200")
+        .contains("+\u20a980")
+        .as("1.20 x 0.90 = 1.08 이라 +8.00%")
+        .contains("+8.00%");
+    assertThat(foot)
+        .as("기말은 더하지 않는다 - 최신 해(첫 줄)의 값이 곧 전체 기간의 기말이다")
+        .contains("\u20a91,200")
+        .doesNotContain("\u20a92,100");
+  }
+
+  /**
+   * 해가 하나뿐이면 전체 기간 줄을 적지 않는다.
+   *
+   * <p>합계가 그 줄을 <b>그대로 되풀이할 뿐</b>이라 아무것도 더해 주지 않는다. 짧은 기간을 고르면 실제로 이렇게 된다.
+   */
+  @Test
+  void 해가_하나뿐이면_전체_기간_줄을_적지_않는다() {
+    String html = render(List.of(yearWith(2026, "1200", "300", "50", 20.0d)));
+
+    assertThat(html).as("한 줄짜리 표를 그리지 못했다 - 검사가 무력해진다").contains("2026");
+    assertThat(html)
+        .as("전체 기간 줄이 그 해를 그대로 되풀이할 뿐이다")
+        .doesNotContain("data-yearly-total")
+        .doesNotContain(MessageUtil.getMessage("stock.asset.growth.total.row"));
+  }
 }

@@ -6,6 +6,9 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param Object timeSeries
+@param java.util.List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
+@param String periodBreakdownNote = ""
+@param java.util.List<net.luversof.web.gate.stock.dto.response.YearlyCostSummary> yearlyCosts = java.util.List.of()
 @param String rangeMode
 @param String dataFirstDate = null
 @param java.time.Instant startDate = null
@@ -254,7 +257,12 @@
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
                 <%-- 연도별 성과: 시리즈와 같은 시뮬레이션에서 함께 계산돼 온다(추가 호출 없음). --%>
+                <%-- 기간별 손익 - 달 단위로 쪼갠 성과. 아래 '연도별 성과' 는 해 단위라, 짧은 구간을 고르면
+                     한 줄로 끝나 아무것도 말해 주지 않는다(실측 2026-09-01 '올해': 연도별 1행 vs 월별 8행). --%>
+                @template.stock.htmx.fragments.periodBreakdownTable(periodBreakdown = periodBreakdown, periodBreakdownNote = periodBreakdownNote)
                 @template.stock.htmx.fragments.assetGrowthYearlySummary(yearlySummaries = yearlySummaries)
+                <%-- 연도별 세금·비용 - 원장에는 다 있는데 합계를 내는 화면이 없던 값들이다. --%>
+                @template.stock.htmx.fragments.yearlyCostSummary(yearlyCosts = yearlyCosts)
                 <div id="holdings-snapshot-container"></div>
                 <%-- 매매 이력은 이 응답과 같은 기간으로 서버에서 함께 계산해 넣는다(추가 왕복 없음).
                      페이징/정렬은 그대로 /stock/htmx/trade-history 를 다시 불러 이 패널만 교체한다. --%>

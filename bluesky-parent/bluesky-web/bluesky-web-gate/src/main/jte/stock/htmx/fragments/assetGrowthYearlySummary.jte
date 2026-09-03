@@ -16,6 +16,7 @@
     String closingLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.closing");
     String partialLabel = MessageUtil.getMessage("stock.asset.growth.yearly.partial");
     String gapTemplate = MessageUtil.getMessage("stock.asset.growth.yearly.gap");
+    String totalLabel = MessageUtil.getMessage("stock.asset.growth.total.row");
 }
 
 @if(yearlySummaries != null && !yearlySummaries.isEmpty())
@@ -99,6 +100,46 @@
                             </tr>
                         @endfor
                     </tbody>
+                    <%-- 줄이 하나뿐이면 합계가 그 줄을 그대로 되풀이할 뿐이라 아무것도 더해 주지 않는다.
+                         (실측 2026-09-03: '올해' 를 고르면 연도별 성과가 2026 한 줄인데 합계가 같은 수를 한 번 더 적었다) --%>
+                    @if(yearlySummaries.size() > 1)
+                        <%-- 전체 기간 줄. 기말 평가액만은 합계라는 것이 없다 - 가장 최근 줄의 값이 곧
+                             전체 기간의 기말이다(표는 최신이 위). 그래서 '합계' 가 아니라 '전체 기간' 이다. --%>
+                        !{ var totals = net.luversof.web.gate.stock.util.StockPeriodTotalUtil.of(
+                                yearlySummaries.stream().map(TradeProfitYearlySummary::summary).toList());
+                           var latest = yearlySummaries.get(0).summary();
+                           java.math.BigDecimal latestClosing = latest != null ? latest.closingValue() : null;
+                           boolean totalTwrUp = totals.chainedReturnPct() != null && totals.chainedReturnPct() >= 0.0d;
+                           boolean totalProfitUp = totals.profit().signum() >= 0;
+                           boolean totalPrincipalUp = totals.principalDelta().signum() >= 0; }
+                        <tfoot>
+                            <tr class="border-t-2 border-base-content/20 font-semibold" data-yearly-total>
+                                <td>${totalLabel}</td>
+                                <td class="text-right tabular-nums">
+                                    @if(totals.chainedReturnPct() != null)
+                                        <span class="${totalTwrUp ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", totals.chainedReturnPct())}</span>
+                                    @else
+                                        <span class="text-base-content/30">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totalProfitUp ? "+" : "-"}₩${amountFormat.format(totals.profit().abs())}</span></td>
+                                <td class="text-right tabular-nums">
+                                    @if(totals.principalDelta().signum() != 0)
+                                        <span class="amount-value text-base-content/60">${totalPrincipalUp ? "+" : "-"}₩${amountFormat.format(totals.principalDelta().abs())}</span>
+                                    @else
+                                        <span class="text-base-content/30">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-right tabular-nums">
+                                    @if(latestClosing != null)
+                                        <span class="amount-value text-base-content/70">₩${amountFormat.format(latestClosing)}</span>
+                                    @else
+                                        <span class="text-base-content/30">-</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        </tfoot>
+                    @endif
                 </table>
             </div>
     `)

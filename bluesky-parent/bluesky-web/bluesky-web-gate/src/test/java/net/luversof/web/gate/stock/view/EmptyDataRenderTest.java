@@ -83,7 +83,11 @@ class EmptyDataRenderTest {
           "stock/htmx/fragments/assetGrowthYearlySummary.jte",
           // 구간이 하나뿐이면 바로 위의 '합산 손익' 을 그대로 되풀이할 뿐이라 그리지 않는다.
           // 같은 값을 두 번 적으면 읽는 사람이 둘을 견주려다 시간을 쓴다.
-          "stock/htmx/fragments/stockItemPeriodBreakdown.jte",
+          "stock/htmx/fragments/periodBreakdownTable.jte",
+          // 그 해에 매매도 배당도 없었으면 적을 줄이 없다.
+          "stock/htmx/fragments/yearlyCostSummary.jte",
+          // 구간이 하나뿐이면 바로 위의 요약 카드를 그대로 되풀이할 뿐이라 그리지 않는다.
+          "stock/htmx/fragments/trade/tradePeriodBreakdown.jte",
           // 갈 곳이 하나뿐(=지금 보는 것)이거나 없으면 전환기가 할 일이 없다.
           "stock/htmx/fragments/detailNavSwitcher.jte",
           "stock/htmx/fragments/components/filterBadge.jte");

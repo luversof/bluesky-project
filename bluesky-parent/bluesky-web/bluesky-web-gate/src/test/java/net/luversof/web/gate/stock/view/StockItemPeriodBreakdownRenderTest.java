@@ -31,7 +31,7 @@ import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesSummary;
  */
 class StockItemPeriodBreakdownRenderTest {
 
-  private static final String TEMPLATE = "stock/htmx/fragments/stockItemPeriodBreakdown.jte";
+  private static final String TEMPLATE = "stock/htmx/fragments/periodBreakdownTable.jte";
 
   @BeforeAll
   static void primeMessages() {
@@ -122,7 +122,7 @@ class StockItemPeriodBreakdownRenderTest {
 
     assertThat(html)
         .as("고른 기간이 한 숫자로만 답하면 언제 벌고 잃었는지 알 수 없다")
-        .contains(MessageUtil.getMessage("stock.item.detail.breakdown.title"))
+        .contains(MessageUtil.getMessage("stock.asset.growth.monthly.title"))
         .contains("2026-08")
         .contains("2026-07")
         .contains(won("+300,000"))
@@ -176,11 +176,123 @@ class StockItemPeriodBreakdownRenderTest {
 
     assertThat(html.trim())
         .as("한 줄짜리 표는 위의 합산 손익을 되풀이할 뿐이다")
-        .doesNotContain(MessageUtil.getMessage("stock.item.detail.breakdown.title"));
+        .doesNotContain(MessageUtil.getMessage("stock.asset.growth.monthly.title"));
   }
 
   @Test
   void 쪼갬이_없으면_아무것도_그리지_않는다() {
     assertThat(render(List.of()).trim()).isEmpty();
+  }
+
+  /**
+   * 표를 낼 수 없는 구간에서는 <b>자리를 비우지 않고</b> 까닭을 적는다.
+   *
+   * <p>실측 2026-09-03: 자산 성장의 기본 화면인 '전체'는 구간이 3년을 넘어 서버가 해 단위로 묶어 주는데, 게이트가 달 단위만 싣도록 잠가 둬서 표가
+   * <b>통째로 사라졌다</b>. 기능이 있는지조차 알 수 없어 화면에서 찾지 못했다. 달 단위를 다 싣는 것은 답이 아니다 &mdash; 전 구간이 148 행이고
+   * breakdown 만 106.6 KB 로 응답이 72.7 &rarr; 162.7 KB 가 된다.
+   */
+  @Test
+  void 표를_낼_수_없으면_빈_자리_대신_까닭을_적는다() {
+    Map<String, Object> model = new HashMap<>();
+    model.put("periodBreakdown", List.of());
+    model.put("periodBreakdownNote", "해 단위로 묶였습니다");
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
+
+    assertThat(output.toString())
+        .as("말없이 사라지면 기능이 있는지조차 알 수 없다")
+        .contains("data-period-breakdown-note")
+        .contains("해 단위로 묶였습니다")
+        .contains(MessageUtil.getMessage("stock.asset.growth.monthly.title"));
+  }
+
+  /** 까닭이 없으면 예전대로 아무것도 그리지 않는다 - 빈 자료에 빈 카드를 남기지 않기 위해서다. */
+  @Test
+  void 까닭이_없으면_아무것도_그리지_않는다() {
+    Map<String, Object> model = new HashMap<>();
+    model.put("periodBreakdown", List.of());
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
+
+    assertThat(output.toString().trim()).isEmpty();
+  }
+
+  /** 단위를 골라 만드는 구간. 해 단위 줄은 라벨이 "2026" 이라 기존 row() 의 날짜 파싱을 쓸 수 없다. */
+  private static TradeProfitPeriodSummary unitRow(
+      String unit, String label, String profit, String uStart, String uEnd, Double ratePct) {
+    TradeProfitTimeSeriesSummary summary =
+        new TradeProfitTimeSeriesSummary(
+            null,
+            null,
+            null,
+            ratePct,
+            bd(profit),
+            null,
+            bd(uStart),
+            bd(uEnd),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    return new TradeProfitPeriodSummary(
+        unit, label, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31), true, summary);
+  }
+
+  /** 손익 300 + (-100) = +200 / 수익률 1.20 x 0.90 = +8.00% (더하면 +10% 로 틀린다). */
+  private static List<TradeProfitPeriodSummary> unitRows(String unit) {
+    return List.of(
+        unitRow(unit, "2026-08", "300", "1000", "1200", 20.0d),
+        unitRow(unit, "2026-07", "-100", "800", "1000", -10.0d));
+  }
+
+  /**
+   * 표 이름을 <b>'연도별 성과' 와 같은 결</b>로 맞춘다.
+   *
+   * <p>한 화면에 '기간별 손익' 과 '연도별 성과' 가 나란히 있으면 서로 다른 것을 재는 표처럼 읽힌다. 실제로는 같은 것을 다른 잣대로 쪼갠 표다. 그래서 달 단위면
+   * '월별 성과', 해 단위면 '연도별 성과' 라 부른다. 해 단위 이름은 <b>연도별 성과 표와 같은 메시지 키</b>를 써서 한쪽만 바뀌는 일이 없게 한다.
+   */
+  @Test
+  void 달_단위면_월별_성과_해_단위면_연도별_성과라_부른다() {
+    assertThat(render(unitRows("MONTH")))
+        .contains(MessageUtil.getMessage("stock.asset.growth.monthly.title"))
+        .doesNotContain(MessageUtil.getMessage("stock.asset.growth.yearly.title"));
+    assertThat(render(unitRows("YEAR")))
+        .contains(MessageUtil.getMessage("stock.asset.growth.yearly.title"));
+  }
+
+  /**
+   * 전체 기간 줄. 금액은 더하고 <b>수익률은 곱해서 잇는다</b>.
+   *
+   * <p>줄마다의 성과만 있고 다 합치면 얼마인지가 없어 눈으로 더해야 했다. 수익률은 눈으로 더하면 복리를 놓쳐 아예 틀린 수가 된다.
+   */
+  @Test
+  void 전체_기간_줄에_합계를_적는다() {
+    String html = render(unitRows("MONTH"));
+
+    assertThat(html)
+        .as("다 합치면 얼마인지가 없어 눈으로 더해야 했다")
+        .contains("data-period-breakdown-total")
+        .contains(MessageUtil.getMessage("stock.asset.growth.total.row"));
+
+    String foot = html.substring(html.indexOf("data-period-breakdown-total"));
+    assertThat(foot)
+        .as("손익 300 + (-100) = +200")
+        .contains(won("+200"))
+        .as("평가 변동 200 + 200 = +400 (구간이 맞닿아 접힌다)")
+        .contains(won("+400"))
+        .as("실현+배당 = 손익 - 평가 변동 = -200")
+        .contains(won("-200"));
+    assertThat(foot)
+        .as("1.20 x 0.90 = 1.08 이라 +8.00%. 더하면 +10% 로 복리를 놓친다")
+        .contains("+8.00%")
+        .doesNotContain("+10.00%");
   }
 }

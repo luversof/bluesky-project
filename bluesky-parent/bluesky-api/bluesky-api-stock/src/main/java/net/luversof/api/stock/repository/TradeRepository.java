@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 import net.luversof.api.stock.domain.StockItemDateRange;
 import net.luversof.api.stock.domain.Trade;
@@ -21,6 +22,34 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
 				WHERE a."user_id" = :userId AND t."tradeDate" IS NOT NULL
 			""")
   Instant findFirstTradeDateByUserId(UUID userId);
+
+  /**
+   * 연도별 매매 비용·실현손익.
+   *
+   * <p>합계를 DB 에서 낸다 - 화면이 원장을 통째로 받아 더하면 응답이 원장 크기를 따라간다(실측 2026-09-01: 거래 251 행 80.7 KB).
+   *
+   * <p>해를 가르는 존을 인자로 받는다. 세금은 그 나라 기준이라 서버 존에 좌우되면 안 된다.
+   */
+  @Query(
+      """
+                SELECT EXTRACT(YEAR FROM (t."tradeDate" AT TIME ZONE :zone))::int AS year,
+                       COALESCE(SUM(t."fee"), 0)            AS fee,
+                       COALESCE(SUM(t."tax"), 0)            AS tax,
+                       COALESCE(SUM(t."realizedProfit"), 0) AS realized_profit
+                FROM "Trade" t
+                JOIN "Account" a ON t."account_id" = a."id"
+                WHERE a."user_id" = :userId
+                  AND t."tradeDate" IS NOT NULL
+                  AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= CAST(:startDate AS timestamptz))
+                  AND (CAST(:endDate   AS timestamptz) IS NULL OR t."tradeDate" <  CAST(:endDate   AS timestamptz))
+                GROUP BY 1
+                ORDER BY 1
+            """)
+  List<net.luversof.api.stock.domain.YearlyTradeCost> findYearlyCost(
+      @Param("userId") UUID userId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate,
+      @Param("zone") String zone);
 
   /** 사용자의 마지막 거래일. 데이터 최신 시점 표시용(집계 1건). */
   @Query(

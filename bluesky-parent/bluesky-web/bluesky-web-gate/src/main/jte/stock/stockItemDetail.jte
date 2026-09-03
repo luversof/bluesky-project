@@ -215,7 +215,7 @@
 
 					<%-- 기간별 손익 - 고른 기간을 달(또는 해)로 쪼개 언제 벌고 언제 잃었는지 보여준다.
 					     위의 합산 손익과 같은 쪼갬(평가 변동 / 실현+배당)을 써서 두 자리가 같은 뜻을 말한다. --%>
-					@template.stock.htmx.fragments.stockItemPeriodBreakdown(periodBreakdown = periodBreakdown)
+					@template.stock.htmx.fragments.periodBreakdownTable(periodBreakdown = periodBreakdown)
 
 					<%-- 주가 추이 - 보유 평가액 추이만으로는 <b>주가 자체</b>를 볼 수 없다. 평가액은 수량이 바뀌면 같이
 					     움직이므로, 산 뒤로 주가가 어떻게 됐는지는 그 선에서 읽어낼 수 없다.

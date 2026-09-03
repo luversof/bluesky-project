@@ -55,6 +55,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
   private final java.util.concurrent.ExecutorService stockRemoteCallExecutor;
 
+  private final net.luversof.web.gate.stock.httpexchange.YearlyCostClient yearlyCostClient;
+
   public StockAssetGrowthHtmxController(
       TradeProfitClient tradeProfitClient,
       TradeClient tradeClient,
@@ -62,6 +64,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       StockItemClient stockItemClient,
       DividendClient dividendClient,
       DataFirstDateClient dataFirstDateClient,
+      net.luversof.web.gate.stock.httpexchange.YearlyCostClient yearlyCostClient,
       java.util.concurrent.ExecutorService stockRemoteCallExecutor,
       MessageSource messageSource) {
     super(
@@ -72,6 +75,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         dividendClient,
         messageSource);
     this.dataFirstDateClient = dataFirstDateClient;
+    this.yearlyCostClient = yearlyCostClient;
     this.stockRemoteCallExecutor = stockRemoteCallExecutor;
   }
 
@@ -161,6 +165,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       request.setStockItemIdList(earlySelection.requestedStockItemIds());
       var earlySeriesParams = request.toParams();
       earlySeriesParams.add("granularity", "AUTO");
+      earlySeriesParams.add("breakdown", "AUTO");
       earlySeriesFuture =
           java.util.concurrent.CompletableFuture.supplyAsync(
               () -> tradeProfitClient.timeSeriesWithSummary(earlySeriesParams),
@@ -254,6 +259,23 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // (AUTO picks DAILY for short windows). No client-side x-axis windowing needed.
     // 시리즈와 기간 요약을 한 번에 받는다. 예전에는 요약을 별도 프래그먼트가 다시 호출해
     // 같은 시뮬레이션(전체 거래 이력)이 두 번 돌았다.
+    // 연도별 세금·비용. 원장 집계라 시뮬레이션과 무관하므로 따로, 그러나 함께 던진다
+    // (실측 2026-09-01: 14 행 1.7 KB 100ms. 게이트가 원장을 통째로 받아 더하면 159 KB 다).
+    var yearlyCostParams = new org.springframework.util.LinkedMultiValueMap<String, String>();
+    yearlyCostParams.add("userId", userId.toString());
+    if (request.getStartDate() != null) {
+      yearlyCostParams.add("startDate", request.getStartDate().toString());
+    }
+    if (request.getEndDate() != null) {
+      yearlyCostParams.add("endDate", request.getEndDate().toString());
+    }
+    if (request.getTimeZone() != null && !request.getTimeZone().isBlank()) {
+      yearlyCostParams.add("timeZone", request.getTimeZone());
+    }
+    var yearlyCostFuture =
+        java.util.concurrent.CompletableFuture.supplyAsync(
+            () -> yearlyCostClient.findYearlyCost(yearlyCostParams), stockRemoteCallExecutor);
+
     net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult timeSeriesResult;
     if (emptySelection) {
       timeSeriesResult = null;
@@ -263,11 +285,29 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     } else {
       var seriesParams = request.toParams();
       seriesParams.add("granularity", "AUTO");
+      seriesParams.add("breakdown", "AUTO");
       timeSeriesResult = tradeProfitClient.timeSeriesWithSummary(seriesParams);
     }
     List<TradeProfitTimeSeriesPoint> timeSeries =
         timeSeriesResult != null ? timeSeriesResult.series() : null;
     addPeriodSummaryAttributes(model, timeSeriesResult != null ? timeSeriesResult.summary() : null);
+    // 월 단위 쪼갬만 싣는다. 해 단위는 아래 '연도별 성과' 표가 이미 같은 줄을 답하므로 두 표가
+    // 되풀이하게 되고, 그렇다고 달 단위를 통째로 싣자니 전 구간이 148 행이다(실측 2026-09-03:
+    // breakdown 만 106.6 KB, 응답이 72.7 -> 162.7 KB).
+    //
+    // 다만 말없이 버리면 표가 통째로 사라져 화면에서 찾을 수가 없다 - 기본 화면인 '전체' 가
+    // 정확히 그 경우다. 버린 자리에 왜 없는지와 어떻게 보는지를 남긴다.
+    var breakdownRows =
+        timeSeriesResult != null && timeSeriesResult.breakdown() != null
+            ? timeSeriesResult.breakdown()
+            : java.util.List
+                .<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary>of();
+    boolean monthlyBreakdown =
+        !breakdownRows.isEmpty() && "MONTH".equals(breakdownRows.get(0).unit());
+    model.addAttribute("periodBreakdown", monthlyBreakdown ? breakdownRows : List.of());
+    model.addAttribute("periodBreakdownNote", periodBreakdownNote(breakdownRows));
+    var yearlyCosts = net.luversof.web.gate.stock.support.StockAsyncSupport.join(yearlyCostFuture);
+    model.addAttribute("yearlyCosts", yearlyCosts != null ? yearlyCosts : List.of());
     model.addAttribute(
         "yearlySummaries",
         timeSeriesResult != null && timeSeriesResult.yearly() != null
@@ -812,5 +852,25 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 원격 호출 실패는 여기서 삼키지 않는다. 호출자가 '불러오지 못했다' 로 답해야 하기 때문이다.
     var result = tradeProfitClient.timeSeriesWithSummary(params);
     return result != null ? result.summary() : null;
+  }
+
+  /**
+   * 달 단위 표를 낼 수 없을 때 그 자리에 남길 까닭. 낼 수 있으면 빈 문자열이다.
+   *
+   * <p>버리는 판단 자체는 옳다 &mdash; 해 단위는 아래 '연도별 성과' 가 같은 줄을 답하고, 그렇다고 달 단위를 통째로 실으면 전 구간이 148 행이다(실측
+   * 2026-09-03: breakdown 만 106.6 KB, 응답이 72.7 &rarr; 162.7 KB). 틀린 것은 <b>말없이</b> 버린 쪽이었다. 기본 화면인
+   * '전체' 가 정확히 이 경우라 표가 통째로 사라졌고, 기능이 있는지조차 알 수 없었다.
+   */
+  String periodBreakdownNote(
+      List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> breakdownRows) {
+    if (breakdownRows == null
+        || breakdownRows.isEmpty()
+        || "MONTH".equals(breakdownRows.get(0).unit())) {
+      return "";
+    }
+    return messageSource.getMessage(
+        "stock.asset.growth.breakdown.yearly.note",
+        null,
+        org.springframework.context.i18n.LocaleContextHolder.getLocale());
   }
 }

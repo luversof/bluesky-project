@@ -34,7 +34,8 @@ class PeriodSummaryModelKeyTest {
   private StockAssetGrowthHtmxController controller() {
     StaticMessageSource messages = new StaticMessageSource();
     messages.setUseCodeAsDefaultMessage(true);
-    return new StockAssetGrowthHtmxController(null, null, null, null, null, null, null, messages);
+    return new StockAssetGrowthHtmxController(
+        null, null, null, null, null, null, null, null, messages);
   }
 
   @Test
@@ -70,5 +71,32 @@ class PeriodSummaryModelKeyTest {
 
     assertThat(model.containsAttribute("periodProfitRatePct")).isTrue();
     assertThat(model.getAttribute("periodProfitRatePct")).isNull();
+  }
+
+  private static net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary row(
+      String unit) {
+    return new net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary(
+        unit, unit + " row", null, null, true, null);
+  }
+
+  /**
+   * 달 단위 표를 낼 수 없으면 <b>까닭을 남긴다</b>.
+   *
+   * <p>실측 2026-09-03: 자산 성장의 기본 화면인 '전체'는 구간이 3년을 넘어 서버가 해 단위로 묶는데, 게이트가 달 단위만 싣도록 잠가 둬서 표가 통째로
+   * 사라졌다 &mdash; 화면에서 기능을 찾을 수가 없었다. 버리는 판단은 옳으니 자리를 비우지 않는 것으로 고쳤다.
+   */
+  @Test
+  void 해_단위로_묶이면_까닭을_남긴다() {
+    assertThat(controller().periodBreakdownNote(List.of(row("YEAR"))))
+        .as("말없이 버리면 화면에서 표를 찾을 수가 없다")
+        .isEqualTo("stock.asset.growth.breakdown.yearly.note");
+  }
+
+  /** 달 단위면 표가 실제로 나가므로 까닭을 적을 자리가 없다. 적으면 표 위에 군더더기가 남는다. */
+  @Test
+  void 달_단위면_까닭을_남기지_않는다() {
+    assertThat(controller().periodBreakdownNote(List.of(row("MONTH")))).isEmpty();
+    assertThat(controller().periodBreakdownNote(List.of())).isEmpty();
+    assertThat(controller().periodBreakdownNote(null)).isEmpty();
   }
 }

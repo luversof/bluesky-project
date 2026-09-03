@@ -36,7 +36,8 @@ class PeriodSummaryFailureTest {
         org.springframework.context.i18n.LocaleContextHolder.getLocale(),
         "불러오지 못했습니다");
     messages.setUseCodeAsDefaultMessage(true);
-    return new StockAssetGrowthHtmxController(client, null, null, null, null, null, null, messages);
+    return new StockAssetGrowthHtmxController(
+        client, null, null, null, null, null, null, null, messages);
   }
 
   @Test
