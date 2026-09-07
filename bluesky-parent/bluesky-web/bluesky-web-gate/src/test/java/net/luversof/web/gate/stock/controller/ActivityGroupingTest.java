@@ -37,7 +37,8 @@ class ActivityGroupingTest {
         null,
         new BigDecimal(amount),
         Instant.parse(instant),
-        List.of(UUID.randomUUID()));
+        List.of(UUID.randomUUID()),
+        null);
   }
 
   /**

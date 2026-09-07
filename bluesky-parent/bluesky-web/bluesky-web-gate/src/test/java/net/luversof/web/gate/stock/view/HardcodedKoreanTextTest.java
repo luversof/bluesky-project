@@ -52,7 +52,11 @@ class HardcodedKoreanTextTest {
    */
   private static final Map<String, Integer> KNOWN_DEBT =
       Map.of(
-          "StockViewController.java", 50,
+          // 화면을 쪼개면서 이 빚도 함께 옮겨 다녔다. 늘어난 것이 아니라 자리가 바뀐 것이라,
+          // 옮긴 만큼 원래 자리를 줄인다(2026-09-07: 배당 갈래 21 · 검증 문구 3).
+          "StockViewController.java", 26,
+          "StockDividendViewController.java", 21,
+          "MonthlyDividendReferenceSupport.java", 3,
           "MonthlyDividendPayoutImportParser.java", 24,
           "MonthlyDividendPayoutSourceImportService.java", 11,
           "RiseMonthlyDividendPayoutSourceParser.java", 5,

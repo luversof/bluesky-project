@@ -214,6 +214,80 @@ document.addEventListener("click", (event) => {
 document.addEventListener("DOMContentLoaded", restoreActivityView);
 document.addEventListener("htmx:afterSettle", restoreActivityView);
 
+// ---------------------------------------------------------------------------
+// 범용 패널 탭.
+//
+// 표를 여러 개 세로로 쌓으면 아래쪽은 스크롤해야 나와서 있는 줄도 모르게 된다(실측 2026-09-07:
+// 자산 성장이 5,075px = 5.6 화면, 카드 9 개). 서버가 이미 다 그려 보낸 조각을 탭으로 보이고
+// 숨기기만 한다 - 왕복이 없다.
+//
+// 위의 활동 탭은 뷰를 서버에서 받아 오는 일까지 하므로 그쪽과 섞지 않고 따로 둔다.
+const PANEL_TAB_ACTIVE_CLASSES = ACTIVITY_TAB_ACTIVE_CLASSES;
+
+function panelTabKey(group: string) {
+	return "panel-tab:" + group;
+}
+
+function applyPanelTabs(root: ParentNode, group: string, name: string) {
+	root
+		.querySelectorAll('[data-panel-tab-group="' + group + '"] [data-panel-tab]')
+		.forEach((tab) => {
+			const isActive = tab.getAttribute("data-panel-tab") === name;
+			PANEL_TAB_ACTIVE_CLASSES.forEach((cls) =>
+				tab.classList.toggle(cls, isActive),
+			);
+			tab.classList.toggle("text-base-content/60", !isActive);
+		});
+	root
+		.querySelectorAll('[data-panel-group="' + group + '"]')
+		.forEach((panel) => {
+			panel.classList.toggle(
+				"hidden",
+				panel.getAttribute("data-panel") !== name,
+			);
+		});
+}
+
+/** 저장된 탭이 지금 화면에 없으면(그 기간에는 그 표가 안 그려졌다) 첫 탭으로 떨어뜨린다. */
+function restorePanelTabs() {
+	document.querySelectorAll("[data-panel-tab-group]").forEach((bar) => {
+		const group = bar.getAttribute("data-panel-tab-group");
+		if (!group) return;
+		const names = Array.from(bar.querySelectorAll("[data-panel-tab]"))
+			.map((tab) => tab.getAttribute("data-panel-tab"))
+			.filter((name): name is string => !!name);
+		if (!names.length) return;
+		let saved: string | null = null;
+		try {
+			saved = localStorage.getItem(panelTabKey(group));
+		} catch (e) {
+			saved = null;
+		}
+		const name = saved && names.indexOf(saved) >= 0 ? saved : names[0];
+		applyPanelTabs(document, group, name);
+	});
+}
+
+document.addEventListener("click", (event) => {
+	const target = event.target as HTMLElement;
+	if (!target || !target.closest) return;
+	const tab = target.closest("[data-panel-tab]");
+	if (!tab) return;
+	const bar = tab.closest("[data-panel-tab-group]");
+	const group = bar && bar.getAttribute("data-panel-tab-group");
+	const name = tab.getAttribute("data-panel-tab");
+	if (!group || !name) return;
+	try {
+		localStorage.setItem(panelTabKey(group), name);
+	} catch (e) {
+		// localStorage 불가 환경에서는 저장 없이 전환만
+	}
+	applyPanelTabs(document, group, name);
+});
+
+document.addEventListener("DOMContentLoaded", restorePanelTabs);
+document.addEventListener("htmx:afterSettle", restorePanelTabs);
+
 // CSP 대응: hx-on:/hx-vals="js:" 는 htmx 가 eval 로 실행해 nonce 기반 CSP 와 함께 쓸 수 없다.
 // 아래 데이터 속성 + 문서 위임으로 대체한다.
 

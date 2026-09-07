@@ -57,6 +57,9 @@
     String sellLabel = MessageUtil.getMessage("stock.trade.label.sell");
     String tradeLabel = MessageUtil.getMessage("stock.activity.label.trade");
     String dividendLabel = MessageUtil.getMessage("stock.activity.label.dividend");
+    String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");
+    String dividendChartTitle = MessageUtil.getMessage("stock.activity.chart.dividend.title");
+    String realizedChartTitle = MessageUtil.getMessage("stock.activity.chart.realized.title");
     String tradeStatusLabel = MessageUtil.getMessage("stock.activity.card.trade.status");
     String dividendReceivedLabel = MessageUtil.getMessage("stock.activity.card.dividend.received");
     String totalActivityLabel = MessageUtil.getMessage("stock.activity.card.total.activity");
@@ -247,37 +250,37 @@
         String timelineTabLabel = MessageUtil.getMessage("stock.activity.view.timeline");
         String listTabLabel = MessageUtil.getMessage("stock.activity.view.list");
 
-        // 월별 활동 스택 바 차트: 월(YearMonth) → [매수, 매도, 배당] 금액 합 (활동 있는 월만, 기간 순)
+        // 월별 집계: 월(YearMonth) → [배당(세후), 실현손익] 합 (활동 있는 월만, 기간 순)
+        // [0] 배당(세후) · [1] 실현손익. 예전에는 매수/매도/배당 금액을 한 축에 올렸는데,
+        // 성격이 다른 값이라 작은 쪽이 보이지 않았다(실측 2026-09-07: 배당 중앙값이 최대 막대의
+        // 0.62% = 170px 차트에서 1px). 이제 성격별로 나눠 각자 축을 준다.
         java.util.TreeMap<java.time.YearMonth, BigDecimal[]> monthlyChartAmounts = new java.util.TreeMap<>();
         for (java.util.Map.Entry<java.time.LocalDate, java.util.List<Activity>> chartDayEntry : activityByDate.entrySet()) {
-            BigDecimal[] monthSums = monthlyChartAmounts.computeIfAbsent(java.time.YearMonth.from(chartDayEntry.getKey()), k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });
+            BigDecimal[] monthSums = monthlyChartAmounts.computeIfAbsent(java.time.YearMonth.from(chartDayEntry.getKey()), k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO });
             for (Activity chartActivity : chartDayEntry.getValue()) {
                 BigDecimal chartAmount = chartActivity.amount() != null ? chartActivity.amount() : BigDecimal.ZERO;
                 if ("TRADE".equals(chartActivity.type())) {
-                    if ("BUY".equals(chartActivity.tradeType())) { monthSums[0] = monthSums[0].add(chartAmount); }
-                    else { monthSums[1] = monthSums[1].add(chartAmount); }
-                } else { monthSums[2] = monthSums[2].add(chartAmount); }
+                    // 실현손익은 매도에만 붙는다(매수는 null). 요약 카드·연도별 표와 같은 규칙이다.
+                    if (chartActivity.realizedProfit() != null) { monthSums[1] = monthSums[1].add(chartActivity.realizedProfit()); }
+                } else { monthSums[0] = monthSums[0].add(chartAmount); }
             }
         }
         // tradeList.jte 의 tradeDataJs 패턴: JS 배열 문자열을 만들어 $unsafe 로 심는다
         java.util.function.Function<String, String> ej = s ->
             s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
         StringBuilder chartLabelSb = new StringBuilder();
-        StringBuilder chartBuySb = new StringBuilder();
-        StringBuilder chartSellSb = new StringBuilder();
         StringBuilder chartDividendSb = new StringBuilder();
+        StringBuilder chartRealizedSb = new StringBuilder();
         for (java.util.Map.Entry<java.time.YearMonth, BigDecimal[]> chartMonthEntry : monthlyChartAmounts.entrySet()) {
-            if (chartLabelSb.length() > 0) { chartLabelSb.append(","); chartBuySb.append(","); chartSellSb.append(","); chartDividendSb.append(","); }
+            if (chartLabelSb.length() > 0) { chartLabelSb.append(","); chartDividendSb.append(","); chartRealizedSb.append(","); }
             chartLabelSb.append("\"").append(chartMonthEntry.getKey().getYear()).append(".").append(String.format("%02d", chartMonthEntry.getKey().getMonthValue())).append("\"");
-            chartBuySb.append(chartMonthEntry.getValue()[0].toPlainString());
-            chartSellSb.append(chartMonthEntry.getValue()[1].toPlainString());
-            chartDividendSb.append(chartMonthEntry.getValue()[2].toPlainString());
+            chartDividendSb.append(chartMonthEntry.getValue()[0].toPlainString());
+            chartRealizedSb.append(chartMonthEntry.getValue()[1].toPlainString());
         }
         String activityChartDataJs = "var activityChartLabels=[" + chartLabelSb + "];"
-            + "var activityChartBuy=[" + chartBuySb + "];"
-            + "var activityChartSell=[" + chartSellSb + "];"
             + "var activityChartDividend=[" + chartDividendSb + "];"
-            + "var activityChartSeriesLabels=[\"" + ej.apply(buyLabel) + "\",\"" + ej.apply(sellLabel) + "\",\"" + ej.apply(dividendLabel) + "\",\"" + ej.apply(MessageUtil.getMessage("stock.activity.chart.net.flow")) + "\"];";
+            + "var activityChartRealized=[" + chartRealizedSb + "];"
+            + "var activityChartSeriesLabels=[\"" + ej.apply(dividendLabel) + "\",\"" + ej.apply(realizedProfitLabel) + "\"];";
     }
 
     <%-- 차트는 활동이 있는 달만 막대로 그린다. 즉 X축이 시간캕이 아니라 빈 달이 통째로 사라진다.
@@ -295,8 +298,16 @@
     }
     @if(!activityMonths.isEmpty())
         <div class="rounded-2xl bg-base-100 p-3 shadow-sm mb-4">
-            <div class="relative w-full" style="height:170px">
-                <canvas id="activityMonthlyChart" class="amount-chart"></canvas>
+            <%-- 성격이 다른 둘을 각자 축으로 그린다. 배당은 매달 꾸준하고 작고, 실현손익은 판 달에만
+                 크게 난다 - 한 축에 두면 배당이 1px 이 된다. 부호는 손익 차트에만 뜻이 있다
+                 (플러스는 벌었고 마이너스는 잃은 것이라 설명이 필요 없다). --%>
+            <div class="mb-1 text-xs font-medium text-base-content/70">${dividendChartTitle}</div>
+            <div class="relative w-full" style="height:150px">
+                <canvas id="activityDividendChart" class="amount-chart"></canvas>
+            </div>
+            <div class="mt-3 mb-1 text-xs font-medium text-base-content/70">${realizedChartTitle}</div>
+            <div class="relative w-full" style="height:150px">
+                <canvas id="activityRealizedChart" class="amount-chart"></canvas>
             </div>
             @if(chartSkippedMonths > 0)
                 <p class="mt-2 text-[11px] text-base-content/60" data-chart-skipped-months="${chartSkippedMonths}">
@@ -618,25 +629,15 @@
     (function() {
         $unsafe{activityChartDataJs}
 
-        // 월별 활동 스택 바 차트 — Chart.js 는 stockLayout 에서 1회 로드됨(tradeList.jte 와 동일 패턴).
-        // htmx 재스왑 시 이전 인스턴스를 destroy 하여 중복 생성 방지.
+        // 월별 차트 두 개 — 배당(매달 꾸준함)과 실현손익(판 달에만)은 크기대가 달라 각자 축을 쓴다.
+        // 한 축에 올렸을 때 배당은 최대 막대의 0.62%(약 1px)라 사실상 보이지 않았다(실측 2026-09-07).
+        // Chart.js 는 stockLayout 에서 1회 로드된다. htmx 재스왑 시 이전 인스턴스를 destroy 한다.
         // 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다.
         setTimeout(function() {
-        var chartCanvas = document.getElementById('activityMonthlyChart');
-        if (!chartCanvas || activityChartLabels.length === 0) return;
+        if (activityChartLabels.length === 0) return;
         window.ensureStockCharts(function() {
         if (typeof Chart === 'undefined') return;
-        if (window.activityMonthlyChartInst) {
-            try { window.activityMonthlyChartInst.destroy(); } catch (e) {}
-            window.activityMonthlyChartInst = null;
-        }
-        var gridColor = 'rgba(128,128,128,0.1)';
-        // 현금 흐름 관점: 유입(매도+배당)은 0축 위로 스택, 유출(매수)은 음수로 아래에,
-        // 순흐름(유입-유출)은 라인으로 오버레이. (단순 3종 합산 스택은 방향이 달라 합계가 무의미)
-        var activityChartBuyOut = activityChartBuy.map(function(v) { return -Number(v || 0); });
-        var activityChartNetFlow = activityChartLabels.map(function(_, i) {
-            return Number(activityChartSell[i] || 0) + Number(activityChartDividend[i] || 0) - Number(activityChartBuy[i] || 0);
-        });
+
         function formatSignedCompact(v) {
             var n = Number(v) || 0;
             var abs = Math.abs(n);
@@ -654,52 +655,62 @@
             if (abs >= 1000) return sign + trim(abs / 1000) + 'K';
             return n.toLocaleString();
         }
-        window.activityMonthlyChartInst = new Chart(chartCanvas, {
-            type: 'bar',
-            data: {
-                labels: activityChartLabels,
-                datasets: [
-                    { label: activityChartSeriesLabels[1], data: activityChartSell, backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 3, maxBarThickness: 36, stack: 'flow', order: 1 },
-                    { label: activityChartSeriesLabels[2], data: activityChartDividend, backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 3, maxBarThickness: 36, stack: 'flow', order: 1 },
-                    { label: activityChartSeriesLabels[0], data: activityChartBuyOut, backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 3, maxBarThickness: 36, stack: 'flow', order: 1 },
-                    { label: activityChartSeriesLabels[3], data: activityChartNetFlow, type: 'line', borderColor: 'rgba(107,114,128,0.9)', backgroundColor: 'rgba(107,114,128,0.9)', borderWidth: 2, pointRadius: 3, fill: false, tension: 0, order: 0 }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
-                    tooltip: {
-                        callbacks: {
-                            label: function(ctx) {
-                                var raw = Number(ctx.parsed.y) || 0;
-                                // 데이터셋별 명시적 판별:
-                                // - line(순흐름): 부호 그대로 (+/- 표기)
-                                // - 매수(인덱스 2, 음수로 넣은 유출): 절대값 표시
-                                // - 매도/배당: 값 그대로
-                                if (ctx.dataset.type === 'line') {
-                                    return ctx.dataset.label + ': ' + (raw >= 0 ? '+' : '-') + '₩' + Math.abs(raw).toLocaleString();
+
+        var gridColor = 'rgba(128,128,128,0.1)';
+
+        function drawActivityBar(canvasId, instKey, label, data, colorFn, signed) {
+            var canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            if (window[instKey]) {
+                try { window[instKey].destroy(); } catch (e) {}
+                window[instKey] = null;
+            }
+            window[instKey] = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: activityChartLabels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: data.map(colorFn),
+                        borderRadius: 3,
+                        maxBarThickness: 36
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var raw = Number(ctx.parsed.y) || 0;
+                                    // 손익 차트에서만 부호가 뜻이다. 배당은 늘 들어온 돈이라 부호를 붙이지 않는다.
+                                    var prefix = signed ? (raw >= 0 ? '+' : '-') : '';
+                                    return ctx.dataset.label + ': ' + prefix + '₩' + Math.abs(raw).toLocaleString();
                                 }
-                                if (ctx.datasetIndex === 2) {
-                                    return ctx.dataset.label + ': ₩' + Math.abs(raw).toLocaleString();
-                                }
-                                return ctx.dataset.label + ': ₩' + raw.toLocaleString();
                             }
                         }
-                    }
-                },
-                scales: {
-                    x: { stacked: true, grid: { color: gridColor }, ticks: { font: { size: 10 } } },
-                    y: {
-                        stacked: true,
-                        grid: { color: gridColor },
-                        ticks: { font: { size: 10 }, callback: formatSignedCompact }
+                    },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
+                        y: { grid: { color: gridColor }, ticks: { font: { size: 10 }, callback: formatSignedCompact } }
                     }
                 }
-            }
-        });
+            });
+        }
+
+        // 배당: 늘 들어오는 돈이라 한 가지 색.
+        drawActivityBar('activityDividendChart', 'activityDividendChartInst',
+            activityChartSeriesLabels[0], activityChartDividend,
+            function() { return 'rgba(34,197,94,0.7)'; }, false);
+
+        // 실현손익: 부호가 곧 뜻이다 - 이익은 붉게, 손실은 푸르게(이 화면의 손익 색 관례).
+        drawActivityBar('activityRealizedChart', 'activityRealizedChartInst',
+            activityChartSeriesLabels[1], activityChartRealized,
+            function(v) { return Number(v) < 0 ? 'rgba(59,130,246,0.7)' : 'rgba(239,68,68,0.7)'; }, true);
         });
         }, 0);
     })();

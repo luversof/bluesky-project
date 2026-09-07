@@ -110,7 +110,7 @@ class DividendCalendarSubtotalTest {
    * 버림 규칙으로 되돌리는 변이가 그대로 살아남았다.
    */
   private BigDecimal subtotalOf(List<MonthlyDividendSnapshotResponse> rows) {
-    return StockViewController.sumExpectedMonthlyDividend(rows);
+    return StockDividendViewController.sumExpectedMonthlyDividend(rows);
   }
 
   private String render(List<MonthlyDividendSnapshotResponse> rows, BigDecimal subtotal) {

@@ -3,8 +3,6 @@ package net.luversof.web.gate.stock.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -13,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import io.github.luversof.boot.exception.BlueskyErrorMessage;
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.exception.ErrorMessage;
+import net.luversof.web.gate.stock.StockControllerSources;
+import net.luversof.web.gate.stock.support.StockViewSupport;
 
 /**
  * 백엔드가 알려준 실패 사유를 화면이 버리지 않는지 본다.
@@ -38,7 +38,7 @@ class RemoteFailureMessageTest {
   void 보여도_되는_사유는_그대로_쓴다() {
     BlueskyException ex = new BlueskyException(message("이미 등록된 종목입니다.", true));
 
-    assertThat(StockViewController.remoteDisplayableMessage(ex)).isEqualTo("이미 등록된 종목입니다.");
+    assertThat(StockViewSupport.remoteDisplayableMessage(ex)).isEqualTo("이미 등록된 종목입니다.");
   }
 
   /** 내부용 메시지(예외 클래스명 등)를 그대로 보여주면 안 된다. */
@@ -46,20 +46,17 @@ class RemoteFailureMessageTest {
   void 내부용_메시지는_쓰지_않는다() {
     BlueskyException ex = new BlueskyException(message("NullPointerException", false));
 
-    assertThat(StockViewController.remoteDisplayableMessage(ex)).isNull();
+    assertThat(StockViewSupport.remoteDisplayableMessage(ex)).isNull();
   }
 
   @Test
   void 빈_메시지는_쓰지_않는다() {
-    assertThat(
-            StockViewController.remoteDisplayableMessage(new BlueskyException(message("", true))))
+    assertThat(StockViewSupport.remoteDisplayableMessage(new BlueskyException(message("", true))))
         .isNull();
     assertThat(
-            StockViewController.remoteDisplayableMessage(
-                new BlueskyException(message("   ", true))))
+            StockViewSupport.remoteDisplayableMessage(new BlueskyException(message("   ", true))))
         .isNull();
-    assertThat(
-            StockViewController.remoteDisplayableMessage(new BlueskyException(message(null, true))))
+    assertThat(StockViewSupport.remoteDisplayableMessage(new BlueskyException(message(null, true))))
         .isNull();
   }
 
@@ -70,20 +67,20 @@ class RemoteFailureMessageTest {
         new BlueskyException(
             List.<ErrorMessage>of(message("internal", false), message("수량은 1 이상이어야 합니다.", true)));
 
-    assertThat(StockViewController.remoteDisplayableMessage(ex)).isEqualTo("수량은 1 이상이어야 합니다.");
+    assertThat(StockViewSupport.remoteDisplayableMessage(ex)).isEqualTo("수량은 1 이상이어야 합니다.");
   }
 
   @Test
   void 백엔드_예외가_아니면_null_이다() {
-    assertThat(StockViewController.remoteDisplayableMessage(new IllegalStateException("boom")))
+    assertThat(StockViewSupport.remoteDisplayableMessage(new IllegalStateException("boom")))
         .isNull();
-    assertThat(StockViewController.remoteDisplayableMessage(null)).isNull();
+    assertThat(StockViewSupport.remoteDisplayableMessage(null)).isNull();
   }
 
   /** 예외를 삼키면 실패 원인을 나중에 확인할 방법이 없다. */
   @Test
   void 모든_광범위_catch_는_예외를_로그로_남긴다() throws IOException {
-    String[] lines = Files.readString(CONTROLLER, StandardCharsets.UTF_8).split("\\R", -1);
+    String[] lines = StockControllerSources.all().split("\\R", -1);
     // 파서가 조용히 0건이 되면 검사가 무력해지므로 하한을 둔다(현재 13곳).
     int broadCatches = 0;
     for (int i = 0; i < lines.length; i++) {
@@ -98,7 +95,10 @@ class RemoteFailureMessageTest {
       String following =
           String.join(
               "\n", java.util.Arrays.asList(lines).subList(i + 1, Math.min(lines.length, i + 4)));
-      assertThat(following).as((i + 1) + "행의 catch 가 예외를 로그로 남기지 않는다").contains("log.");
+      // 로거 이름은 클래스마다 다르다(log / logger). 묻는 것은 '로그로 남기는가' 이지 이름이 아니다.
+      assertThat(following)
+          .as((i + 1) + "행의 catch 가 예외를 로그로 남기지 않는다")
+          .containsAnyOf("log.", "logger.");
     }
     assertThat(broadCatches).as("catch 블록을 하나도 찾지 못했다").isGreaterThan(8);
   }
@@ -109,7 +109,7 @@ class RemoteFailureMessageTest {
     // 주석까지 훑으면 "예전에는 이렇게 적었다"는 설명에 스스로 걸린다(실제로 처음에 그렇게 실패했다).
     // 코드 줄만 본다.
     String code =
-        Files.readString(CONTROLLER, StandardCharsets.UTF_8)
+        StockControllerSources.all()
             .lines()
             .map(String::strip)
             .filter(

@@ -260,4 +260,34 @@ class YearlyCostSummaryRenderTest {
         .doesNotContain("data-yearly-cost-total")
         .doesNotContain(MessageUtil.getMessage("stock.asset.growth.cost.sum.row"));
   }
+
+  /**
+   * 0 인 칸은 금액 대신 <b>줄표</b>다.
+   *
+   * <p>표마다 이 규칙을 다시 적다 보니 표기가 갈렸다 &mdash; 이 표만 ₩0 을 적고 있어서, 매매도 배당도 없던 해(실측 2026-09-07:
+   * 2009·2014·2015·2017~2019)가 ₩0 으로 도배됐다. 다른 표는 모두 '-' 였다. 규칙을 공용 칸 조각 하나로 모았다.
+   */
+  @Test
+  void 값이_0_인_칸은_금액_대신_줄표를_쓴다() {
+    String html =
+        render(
+            List.of(
+                new YearlyCostSummary(
+                    2018,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    bd("-661700"),
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO),
+                rows().get(0)));
+
+    int year2018 = html.indexOf("2018");
+    assertThat(year2018).as("2018 줄을 찾지 못했다 - 검사가 무력해진다").isGreaterThan(0);
+    String row2018 = html.substring(year2018, html.indexOf("</tr>", year2018));
+
+    assertThat(row2018).as("매매도 배당도 없던 해가 ₩0 으로 도배된다").doesNotContain("&#8361;0<");
+    assertThat(row2018).as("부호가 뜻을 바꾸는 실현손익은 그대로 적는다").contains("-&#8361;661,700");
+  }
 }

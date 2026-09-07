@@ -60,6 +60,12 @@ class ActivityListRenderTest {
   }
 
   private static Activity trade(String localDate, String tradeType, String amount) {
+    return trade(localDate, tradeType, amount, null);
+  }
+
+  /** 실현손익은 매도에만 붙는다(매수는 null). 원장이 그렇게 준다. */
+  private static Activity trade(
+      String localDate, String tradeType, String amount, String realizedProfit) {
     return new Activity(
         "TRADE",
         STOCK_ITEM_ID,
@@ -69,7 +75,8 @@ class ActivityListRenderTest {
         null,
         new BigDecimal(amount),
         kstNoon(localDate),
-        List.of(ACCOUNT_ID));
+        List.of(ACCOUNT_ID),
+        realizedProfit == null ? null : new BigDecimal(realizedProfit));
   }
 
   private static Activity dividend(String localDate, String amount) {
@@ -82,7 +89,8 @@ class ActivityListRenderTest {
         "배당",
         new BigDecimal(amount),
         kstNoon(localDate),
-        List.of(ACCOUNT_ID));
+        List.of(ACCOUNT_ID),
+        null);
   }
 
   private String render(List<Activity> activities) {
@@ -184,18 +192,38 @@ class ActivityListRenderTest {
         .isEqualTo(28L + 42L);
   }
 
+  /**
+   * 월별 집계는 <b>성격이 같은 것끼리</b> 모은다.
+   *
+   * <p>예전에는 매수 · 매도 · 배당 금액을 한 축에 올렸다. 셋은 크기대가 달라(실측 2026-09-07: 배당 중앙값이 최대 막대의 0.62%) 작은 쪽이 1px 이
+   * 됐고, 게다가 현금흐름이라 "매수가 왜 아래인가" 를 알아야만 읽혔다. 이제 배당과 실현손익을 각자 차트로 낸다.
+   */
   @Test
-  void 월별_집계는_매수_매도_배당을_따로_쌓는다() {
+  void 월별_집계는_배당과_실현손익을_따로_모은다() {
     String html =
         render(
             List.of(
                 trade("2026-08-03", "BUY", "100000"),
                 trade("2026-08-04", "BUY", "50000"),
-                trade("2026-08-05", "SELL", "70000"),
+                trade("2026-08-05", "SELL", "70000", "12000"),
                 dividend("2026-08-06", "1234")));
 
-    assertThat(html).contains("var activityChartBuy=[150000]");
-    assertThat(html).contains("var activityChartSell=[70000]");
+    assertThat(html).as("배당은 세후 금액 그대로 모은다").contains("var activityChartDividend=[1234]");
+    assertThat(html)
+        .as("실현손익은 매도 행의 것만 모은다 - 매수 금액이 섞이면 안 된다")
+        .contains("var activityChartRealized=[12000]");
+    assertThat(html)
+        .as("거래 금액을 그리던 계열은 걷어냈다")
+        .doesNotContain("var activityChartBuy=")
+        .doesNotContain("var activityChartSell=");
+  }
+
+  /** 판 것이 없는 달은 실현손익이 0 이다. 배당만 있는 달이 그렇다(실측: 최근 12개월 중 7개월). */
+  @Test
+  void 판_것이_없는_달은_실현손익이_0_이다() {
+    String html = render(List.of(dividend("2026-08-06", "1234")));
+
+    assertThat(html).contains("var activityChartRealized=[0]");
     assertThat(html).contains("var activityChartDividend=[1234]");
   }
 

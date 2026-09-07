@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe.dto.PoeGem
@@ -176,7 +177,7 @@
 			<script src="/js/poe/multiSelect.js"></script>
 			<%-- 탭 전환 — 패널 표시 토글만 한다(페이지 이동 없음). 선택은 ?tab= 과 sessionStorage 에 남겨
 			     새로고침/뒤로가기 후에도 보던 탭이 유지된다. history.replaceState 라 뒤로가기 스택을 늘리지 않는다. --%>
-			<script>
+			<script nonce="${CspNonceHolder.getNonce()}">
 			(function () {
 				var TABS = ['optimize', 'ranking'];
 				var bar = document.getElementById('poeSimTabs');

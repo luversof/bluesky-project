@@ -1760,6 +1760,22 @@ public class TradeProfitService {
    */
   public Map<LocalDate, List<HoldingsSnapshotItem>> getHoldingsSnapshotBatch(
       UUID userId, List<LocalDate> dates, UUID accountId, String timeZone) {
+    return getHoldingsSnapshotBatch(
+        userId, dates, accountId != null ? List.of(accountId) : null, null, timeZone);
+  }
+
+  /**
+   * 계좌·종목을 <b>여럿</b> 골라 조회한다.
+   *
+   * <p>화면이 다중 선택 필터를 갖고 있는데 스냅샷만 계좌 하나를 받으면, 그 필터를 건 화면에서 평가 부분만 전 계좌를 보게 된다. 종목별 기여 표가 정확히 그 경우다
+   * &mdash; 실현·배당은 필터를 따르는데 평가 변동만 따르지 않아 합계가 기간 손익과 어긋난다.
+   */
+  public Map<LocalDate, List<HoldingsSnapshotItem>> getHoldingsSnapshotBatch(
+      UUID userId,
+      List<LocalDate> dates,
+      List<UUID> accountIdList,
+      List<UUID> stockItemIdList,
+      String timeZone) {
     Map<LocalDate, List<HoldingsSnapshotItem>> result = new LinkedHashMap<>();
     if (userId == null || dates == null || dates.isEmpty()) {
       return result;
@@ -1779,8 +1795,11 @@ public class TradeProfitService {
     TradeProfitRequest request = new TradeProfitRequest();
     request.setTimeZone(timeZone);
     request.setUserId(userId);
-    if (accountId != null) {
-      request.setAccountIdList(List.of(accountId));
+    if (accountIdList != null && !accountIdList.isEmpty()) {
+      request.setAccountIdList(accountIdList);
+    }
+    if (stockItemIdList != null && !stockItemIdList.isEmpty()) {
+      request.setStockItemIdList(stockItemIdList);
     }
     request.setStartDate(targetDates.first().atStartOfDay(zoneId).toInstant());
     request.setEndDate(targetDates.last().plusDays(1).atStartOfDay(zoneId).toInstant());

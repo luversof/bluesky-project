@@ -88,6 +88,8 @@ class EmptyDataRenderTest {
           "stock/htmx/fragments/yearlyCostSummary.jte",
           // 구간이 하나뿐이면 바로 위의 요약 카드를 그대로 되풀이할 뿐이라 그리지 않는다.
           "stock/htmx/fragments/trade/tradePeriodBreakdown.jte",
+          // 종목이 하나뿐이면 위의 기간 손익 카드를 그대로 되풀이할 뿐이라 그리지 않는다.
+          "stock/htmx/fragments/stockContributionTable.jte",
           // 갈 곳이 하나뿐(=지금 보는 것)이거나 없으면 전환기가 할 일이 없다.
           "stock/htmx/fragments/detailNavSwitcher.jte",
           "stock/htmx/fragments/components/filterBadge.jte");

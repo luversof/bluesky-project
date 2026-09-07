@@ -9,10 +9,12 @@
 !{
     DecimalFormat amountFormat = new DecimalFormat("#,##0");
     String unit = tradePeriods != null && !tradePeriods.isEmpty() ? tradePeriods.get(0).unit() : "MONTH";
-    // 자산 성장의 성과 표와 같은 메시지 키를 쓴다 - 두 화면이 같은 단위를 다른 이름으로 부르면 견줄 수 없다.
+    // 이 표는 '성과' 가 아니라 거래 집계다(건수·매수·매도·수수료·거래세). 자산 성장의 성과 표와
+    // 같은 이름을 쓰면 화면에 '연도별 성과' 라는 제목으로 전혀 다른 열이 뜬다(실측 2026-09-07:
+    // 자산 성장 / 종목 상세 / 매매 세 화면이 모두 '연도별 성과' 였다). 단위만 같은 결로 맞춘다.
     String title = "YEAR".equals(unit)
-            ? MessageUtil.getMessage("stock.asset.growth.yearly.title")
-            : MessageUtil.getMessage("stock.asset.growth.monthly.title");
+            ? MessageUtil.getMessage("stock.trade.breakdown.title.year")
+            : MessageUtil.getMessage("stock.trade.breakdown.title.month");
     String description = MessageUtil.getMessage("stock.trade.breakdown.desc");
     String periodLabel = MessageUtil.getMessage("stock.item.detail.breakdown.col.period");
     String countLabel = MessageUtil.getMessage("stock.trade.breakdown.col.count");

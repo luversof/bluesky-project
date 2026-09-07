@@ -89,14 +89,22 @@ public class TradeProfitController {
       @RequestParam UUID userId,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) List<LocalDate> dates,
       @RequestParam(required = false) UUID accountId,
+      // 화면의 다중 선택 필터를 그대로 받는다. 하나만 받으면 필터를 건 화면에서 평가 부분만
+      // 전 계좌를 보게 되어, 종목별 기여의 합계가 기간 손익과 어긋난다.
+      @RequestParam(required = false) List<UUID> accountIdList,
+      @RequestParam(required = false) List<UUID> stockItemIdList,
       @RequestParam(required = false) String timeZone) {
     Map<String, List<HoldingsSnapshotItem>> result = new LinkedHashMap<>();
     if (dates == null) {
       return result;
     }
     // 날짜마다 조회하면 날짜 수만큼 시뮬레이션이 돈다. 한 번의 시뮬레이션에서 모두 캡처한다.
+    List<UUID> accounts =
+        accountIdList != null && !accountIdList.isEmpty()
+            ? accountIdList
+            : (accountId != null ? List.of(accountId) : null);
     stockProfitService
-        .getHoldingsSnapshotBatch(userId, dates, accountId, timeZone)
+        .getHoldingsSnapshotBatch(userId, dates, accounts, stockItemIdList, timeZone)
         .forEach((date, items) -> result.put(date.toString(), items));
     return result;
   }

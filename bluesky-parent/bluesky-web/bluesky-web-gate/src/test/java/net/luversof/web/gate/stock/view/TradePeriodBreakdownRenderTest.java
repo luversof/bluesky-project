@@ -129,21 +129,25 @@ class TradePeriodBreakdownRenderTest {
   }
 
   /**
-   * 표 이름을 자산 성장의 성과 표와 <b>같은 결</b>로 맞춘다.
+   * 이 표는 <b>'성과' 가 아니라 거래 집계</b>다. 그래서 자기 이름을 쓴다.
    *
-   * <p>두 화면이 같은 단위를 다른 이름으로 부르면 나란히 놓고 견줄 수 없다. 그래서 같은 메시지 키를 쓴다.
+   * <p>처음에는 자산 성장의 성과 표와 같은 메시지 키를 썼는데, 그 조각을 매매 화면도 쓰고 있어 <b>건수·매수·매도·수수료·거래세</b> 를 적은 표에 '연도별 성과'
+   * 라는 제목이 붙었다(실측 2026-09-07: 자산 성장 / 종목 상세 / 매매 세 화면이 모두 '연도별 성과'). 단위를 밝히는 결만 맞추고 이름은 이 표의 것을 쓴다.
    */
   @Test
-  void 달_단위면_월별_성과_해_단위면_연도별_성과라_부른다() {
+  void 달_단위면_월별_매매_해_단위면_연도별_매매라_부른다() {
     assertThat(renderTrades(trades()))
-        .contains(MessageUtil.getMessage("stock.asset.growth.monthly.title"));
+        .contains(MessageUtil.getMessage("stock.trade.breakdown.title.month"))
+        .as("거래 집계에 '성과' 라는 이름이 붙으면 자산 성장의 성과 표와 같은 것으로 읽힌다")
+        .doesNotContain(MessageUtil.getMessage("stock.asset.growth.monthly.title"));
 
     List<TradeResponse> longSpan =
         List.of(
             trade("2026-08-27", TradeType.SELL, "3000000", "3000", "1800", "500000"),
             trade("2020-01-06", TradeType.BUY, "1000000", "1000", "0", null));
     assertThat(renderTrades(longSpan))
-        .contains(MessageUtil.getMessage("stock.asset.growth.yearly.title"))
+        .contains(MessageUtil.getMessage("stock.trade.breakdown.title.year"))
+        .doesNotContain(MessageUtil.getMessage("stock.asset.growth.yearly.title"))
         .contains("data-trade-breakdown=\"YEAR\"");
   }
 

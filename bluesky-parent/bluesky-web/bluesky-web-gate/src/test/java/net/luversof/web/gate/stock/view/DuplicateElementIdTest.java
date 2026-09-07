@@ -65,7 +65,8 @@ class DuplicateElementIdTest {
         null,
         new BigDecimal(amount),
         kstNoon(localDate),
-        List.of(ACCOUNT_ID));
+        List.of(ACCOUNT_ID),
+        null);
   }
 
   private static Activity dividend(String localDate, String amount) {
@@ -78,7 +79,8 @@ class DuplicateElementIdTest {
         "배당",
         new BigDecimal(amount),
         kstNoon(localDate),
-        List.of(ACCOUNT_ID));
+        List.of(ACCOUNT_ID),
+        null);
   }
 
   private String renderActivityList(String view, List<Activity> activities) {

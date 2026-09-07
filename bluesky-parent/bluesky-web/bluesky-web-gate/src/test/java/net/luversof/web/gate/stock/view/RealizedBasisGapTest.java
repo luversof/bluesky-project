@@ -169,7 +169,8 @@ class RealizedBasisGapTest {
     String controller =
         java.nio.file.Files.readString(
             java.nio.file.Path.of(
-                "src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java"),
+                "src/main/java/net/luversof/web/gate/stock/controller/"
+                    + "StockDetailViewController.java"),
             java.nio.charset.StandardCharsets.UTF_8);
     assertThat(controller).contains("realizedProfitOwnBasis");
   }

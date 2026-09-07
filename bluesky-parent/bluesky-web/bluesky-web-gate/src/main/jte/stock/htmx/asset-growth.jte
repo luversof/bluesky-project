@@ -8,6 +8,10 @@
 @param Object timeSeries
 @param java.util.List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
 @param String periodBreakdownNote = ""
+@param java.util.List<net.luversof.web.gate.stock.util.StockContributionUtil.Contribution> stockContributions = java.util.List.of()
+@param net.luversof.web.gate.stock.util.StockContributionUtil.Contribution stockContributionTotal = null
+@param net.luversof.web.gate.stock.util.StockContributionUtil.Contribution stockContributionOthers = null
+@param int stockContributionOthersCount = 0
 @param java.util.List<net.luversof.web.gate.stock.dto.response.YearlyCostSummary> yearlyCosts = java.util.List.of()
 @param String rangeMode
 @param String dataFirstDate = null
@@ -256,13 +260,69 @@
                 <div class="w-full" style="height: 250px;">
                     <canvas id="dividendChart" class="amount-chart"></canvas>
                 </div>
-                <%-- 연도별 성과: 시리즈와 같은 시뮬레이션에서 함께 계산돼 온다(추가 호출 없음). --%>
-                <%-- 기간별 손익 - 달 단위로 쪼갠 성과. 아래 '연도별 성과' 는 해 단위라, 짧은 구간을 고르면
+                <%-- 표 넷을 탭으로 묶는다. 세로로 쌓으면 아래쪽은 스크롤해야 나와서 있는 줄도 모르게
+                     된다(실측 2026-09-07: 이 화면이 5,075px = 5.6 화면, 카드 9 개). 서버가 이미 다
+                     그려 보낸 조각을 보이고 숨기기만 하므로 탭을 눌러도 왕복이 없다.
+
+                     탭은 내용이 있는 것만 낸다 - 표마다 안 그리는 조건이 달라서(구간이 하나뿐이거나,
+                     그 해에 아무 일도 없었거나) 빈 탭이 생기면 눌렀을 때 아무것도 안 나온다.
+                     조건은 각 조각의 것과 같아야 하며, 어긋나면 아래 렌더 검사가 잡는다. --%>
+                !{
+                    boolean hasBreakdownPanel = (periodBreakdown != null && periodBreakdown.size() > 1)
+                            || (periodBreakdownNote != null && !periodBreakdownNote.isEmpty());
+                    boolean hasContributionPanel = stockContributions != null && stockContributionTotal != null
+                            && stockContributions.size() + stockContributionOthersCount > 1;
+                    boolean hasYearlyPanel = yearlySummaries != null && !yearlySummaries.isEmpty();
+                    boolean hasCostPanel = yearlyCosts != null && !yearlyCosts.isEmpty();
+                    int panelCount = (hasBreakdownPanel ? 1 : 0) + (hasContributionPanel ? 1 : 0)
+                            + (hasYearlyPanel ? 1 : 0) + (hasCostPanel ? 1 : 0);
+                }
+
+                @if(panelCount > 1)
+                    <%-- 탭이 하나뿐이면 고를 것이 없어 자리만 차지한다. --%>
+                    <div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-4" data-panel-tab-group="assetGrowthTables">
+                        @if(hasBreakdownPanel)
+                            <a role="tab" data-panel-tab="breakdown" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content">${MessageUtil.getMessage("stock.asset.growth.monthly.title")}</a>
+                        @endif
+                        @if(hasContributionPanel)
+                            <a role="tab" data-panel-tab="contribution" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content">${MessageUtil.getMessage("stock.asset.growth.contribution.title")}</a>
+                        @endif
+                        @if(hasYearlyPanel)
+                            <a role="tab" data-panel-tab="yearly" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content">${MessageUtil.getMessage("stock.asset.growth.yearly.title")}</a>
+                        @endif
+                        @if(hasCostPanel)
+                            <a role="tab" data-panel-tab="cost" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content">${MessageUtil.getMessage("stock.asset.growth.cost.title")}</a>
+                        @endif
+                    </div>
+                @endif
+
+                <%-- 기간별 손익 - 달 단위로 쪼갠 성과. '연도별 성과' 는 해 단위라, 짧은 구간을 고르면
                      한 줄로 끝나 아무것도 말해 주지 않는다(실측 2026-09-01 '올해': 연도별 1행 vs 월별 8행). --%>
-                @template.stock.htmx.fragments.periodBreakdownTable(periodBreakdown = periodBreakdown, periodBreakdownNote = periodBreakdownNote)
-                @template.stock.htmx.fragments.assetGrowthYearlySummary(yearlySummaries = yearlySummaries)
+                <div data-panel-group="assetGrowthTables" data-panel="breakdown">
+                    @template.stock.htmx.fragments.periodBreakdownTable(periodBreakdown = periodBreakdown, periodBreakdownNote = periodBreakdownNote)
+                </div>
+
+                <%-- 종목별 기여 - 같은 기간 손익을 시간이 아니라 종목으로 쪼갠 것이다.
+                     그 기간에 다 판 종목까지 들어오므로, 자산 현황(보유 중인 것만)이
+                     답하지 못하던 자리를 여기서 채운다. --%>
+                <div data-panel-group="assetGrowthTables" data-panel="contribution">
+                    @template.stock.htmx.fragments.stockContributionTable(
+                        stockContributions = stockContributions,
+                        stockContributionTotal = stockContributionTotal,
+                        stockContributionOthers = stockContributionOthers,
+                        stockContributionOthersCount = stockContributionOthersCount
+                    )
+                </div>
+
+                <%-- 연도별 성과: 시리즈와 같은 시뮬레이션에서 함께 계산돼 온다(추가 호출 없음). --%>
+                <div data-panel-group="assetGrowthTables" data-panel="yearly">
+                    @template.stock.htmx.fragments.assetGrowthYearlySummary(yearlySummaries = yearlySummaries)
+                </div>
+
                 <%-- 연도별 세금·비용 - 원장에는 다 있는데 합계를 내는 화면이 없던 값들이다. --%>
-                @template.stock.htmx.fragments.yearlyCostSummary(yearlyCosts = yearlyCosts)
+                <div data-panel-group="assetGrowthTables" data-panel="cost">
+                    @template.stock.htmx.fragments.yearlyCostSummary(yearlyCosts = yearlyCosts)
+                </div>
                 <div id="holdings-snapshot-container"></div>
                 <%-- 매매 이력은 이 응답과 같은 기간으로 서버에서 함께 계산해 넣는다(추가 왕복 없음).
                      페이징/정렬은 그대로 /stock/htmx/trade-history 를 다시 불러 이 패널만 교체한다. --%>

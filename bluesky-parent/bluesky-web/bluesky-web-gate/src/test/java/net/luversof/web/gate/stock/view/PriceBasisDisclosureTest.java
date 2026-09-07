@@ -40,7 +40,9 @@ class PriceBasisDisclosureTest {
               "src/main/java/net/luversof/web/gate/stock/controller/StockSummaryHtmxController.java"),
           Path.of(
               "src/main/java/net/luversof/web/gate/stock/controller/StockPortfolioHtmxController.java"),
-          Path.of("src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java"));
+          // 종목/계좌 상세는 StockDetailViewController 로 옮겼다(동작은 그대로).
+          Path.of(
+              "src/main/java/net/luversof/web/gate/stock/controller/StockDetailViewController.java"));
 
   private String read(Path path) throws IOException {
     assertThat(path).as("파일이 옮겨졌다: " + path).exists();

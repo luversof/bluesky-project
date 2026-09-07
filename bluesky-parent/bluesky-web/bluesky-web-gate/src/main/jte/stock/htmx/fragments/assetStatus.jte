@@ -14,6 +14,8 @@
 @param Map<java.util.UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap
 @param List<StockItem> stockItemList = java.util.List.of()
 @param List<TradeProfit> stockAggregated
+@param Map<java.util.UUID, net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown> stockProfitBreakdown = java.util.Map.of()
+@param net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown stockProfitBreakdownTotal = new net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO)
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
 @param java.time.LocalDate priceBasisDate = null
@@ -37,6 +39,11 @@
     String principalReturnLabel = MessageUtil.getMessage("stock.analytics.label.principal.return");
     String totalLabel = MessageUtil.getMessage("common.label.total");
     String noHoldingsLabel = MessageUtil.getMessage("stock.message.no.holdings");
+    // 종목 상세와 같은 문구를 쓴다 - 같은 값을 다른 이름으로 부르면 견줄 수 없다.
+    String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");
+    String dividendTotalLabel = MessageUtil.getMessage("stock.asset.status.col.dividend.total");
+    String combinedProfitLabel = MessageUtil.getMessage("stock.asset.status.col.combined.profit");
+    String heldOnlyNote = MessageUtil.getMessage("stock.asset.status.combined.held.only");
     String showHoldingsLabel = MessageUtil.getMessage("stock.analytics.account.holdings.show");
     String hideHoldingsLabel = MessageUtil.getMessage("stock.analytics.account.holdings.hide");
     String accountHoldingsDetailLabel = MessageUtil.getMessage("stock.analytics.account.holdings.detail");
@@ -399,6 +406,10 @@
         @if(stockAggregated != null && !stockAggregated.isEmpty())
             <div class="mb-3 flex flex-col gap-3">
                 <p class="text-xs text-base-content/60">${stockSelectionHelpLabel}</p>
+                <%-- 이 표에는 보유 중인 종목만 나온다. 실현손익·배당을 열로 넣으면서 밝히지 않으면
+                     합계를 전체 누적으로 오해한다(실측 2026-09-03: 이미 다 판 34 종목에
+                     실현 85,279,840 · 배당 6,582,497 이 더 있다). --%>
+                <p class="text-xs text-base-content/60" data-asset-status-held-only-note>${heldOnlyNote}</p>
                 <div class="selection-reveal"><div>
                 <div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
                      data-asset-status-stock-selection-summary
@@ -521,6 +532,33 @@
                                 <span data-sort-indicator class="opacity-60">↕</span>
                             </button>
                         </th>
+                        <th scope="col" class="text-right hidden xl:table-cell">
+                            <button type="button"
+                                    class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+                                    data-sort-key="realizedProfit"
+                                    data-sort-type="number">
+                                <span>${realizedProfitLabel}</span>
+                                <span data-sort-indicator class="opacity-60">↕</span>
+                            </button>
+                        </th>
+                        <th scope="col" class="text-right hidden xl:table-cell">
+                            <button type="button"
+                                    class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+                                    data-sort-key="dividendTotal"
+                                    data-sort-type="number">
+                                <span>${dividendTotalLabel}</span>
+                                <span data-sort-indicator class="opacity-60">↕</span>
+                            </button>
+                        </th>
+                        <th scope="col" class="text-right hidden lg:table-cell">
+                            <button type="button"
+                                    class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+                                    data-sort-key="combinedProfit"
+                                    data-sort-type="number">
+                                <span>${combinedProfitLabel}</span>
+                                <span data-sort-indicator class="opacity-60">↕</span>
+                            </button>
+                        </th>
                         <th scope="col" class="text-right">
                             <button type="button"
                                     class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
@@ -535,7 +573,7 @@
                 <tbody>
                     @if(stockAggregated == null || stockAggregated.isEmpty())
                         <tr>
-                            <td colspan="8">@template._components.ui.emptyState(message = noHoldingsLabel)</td>
+                            <td colspan="11">@template._components.ui.emptyState(message = noHoldingsLabel)</td>
                         </tr>
                     @else
                         @for(TradeProfit item : stockAggregated)
@@ -550,6 +588,9 @@
                                 ? item.evaluationAmount().divide(totalEvaluationAmount, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                                 : BigDecimal.ZERO;}
                             !{String stockTagTooltip = stockTagTooltipById.apply(item.stockItemId());}
+                            !{var breakdown = stockProfitBreakdown != null && stockProfitBreakdown.get(item.stockItemId()) != null
+                                ? stockProfitBreakdown.get(item.stockItemId())
+                                : new net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);}
                             <tr class="asset-status-stock-row"
                                 data-sortable-row
                                 data-stock-selectable-row
@@ -563,7 +604,10 @@
                                 data-current-price="${item.currentPrice() != null ? item.currentPrice().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-evaluation-amount="${item.evaluationAmount() != null ? item.evaluationAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
                                 data-evaluation-profit="${item.evaluationProfit() != null ? item.evaluationProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
-                                data-weight="${totalWeightPct.toPlainString()}">
+                                data-weight="${totalWeightPct.toPlainString()}"
+                                data-realized-profit="${breakdown.realizedProfit().toPlainString()}"
+                                data-dividend-total="${breakdown.dividendTotal().toPlainString()}"
+                                data-combined-profit="${breakdown.combinedProfit().toPlainString()}">
                                 <td class="font-semibold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></td>
                                 <td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
                                 <td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
@@ -573,6 +617,24 @@
                                 <td class="text-right font-mono font-bold ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
                                     <span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(item.evaluationProfit()))}</span>
                                     <span class="text-xs">(${String.format("%+.1f%%", evalProfitRate.doubleValue())})</span>
+                                </td>
+                                <%-- 판 적이 없으면 실현손익은 0 이 아니라 '없음' 이다. 배당도 마찬가지. --%>
+                                <td class="text-right font-mono hidden xl:table-cell">
+                                    @if(breakdown.realizedProfit().signum() != 0)
+                                        <span class="amount-value ${breakdown.realizedProfit().signum() >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", StockFormatUtil.displayWon(breakdown.realizedProfit()))}</span>
+                                    @else
+                                        <span class="text-base-content/30">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-right font-mono hidden xl:table-cell">
+                                    @if(breakdown.dividendTotal().signum() != 0)
+                                        <span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(breakdown.dividendTotal()))}</span>
+                                    @else
+                                        <span class="text-base-content/30">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-right font-mono font-bold hidden lg:table-cell ${breakdown.combinedProfit().signum() >= 0 ? "text-profit" : "text-loss"}">
+                                    <span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(breakdown.combinedProfit()))}</span>
                                 </td>
                                 <td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", totalWeightPct.doubleValue())}</td>
                             </tr>
@@ -591,6 +653,9 @@
                         <td class="hidden lg:table-cell"></td>
                         <td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(totalEvaluationAmount))}</td>
                         <td class="text-right font-mono font-bold amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", StockFormatUtil.displayWon(totalEvaluationProfit))}</td>
+                        <td class="text-right font-mono hidden xl:table-cell ${stockProfitBreakdownTotal.realizedProfit().signum() >= 0 ? "text-profit" : "text-loss"}"><span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.realizedProfit()))}</span></td>
+                        <td class="text-right font-mono hidden xl:table-cell"><span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.dividendTotal()))}</span></td>
+                        <td class="text-right font-mono font-bold hidden lg:table-cell ${stockProfitBreakdownTotal.combinedProfit().signum() >= 0 ? "text-profit" : "text-loss"}"><span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.combinedProfit()))}</span></td>
                         <td class="text-right font-mono text-base-content/70">${totalEvaluationAmount != null && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0 ? "100.0%" : "0.0%"}</td>
                     </tr>
                 </tfoot>

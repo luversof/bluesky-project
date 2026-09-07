@@ -276,6 +276,77 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         java.util.concurrent.CompletableFuture.supplyAsync(
             () -> yearlyCostClient.findYearlyCost(yearlyCostParams), stockRemoteCallExecutor);
 
+    // 종목별 기여. 이 화면은 기간 손익을 시간(달/해)으로만 쪼갤 수 있었고, 종목으로 쪼갤 곳이
+    // 없어 "이 기간에 누가 벌어줬나" 는 답이 없었다. 종목별 표는 두 군데 있었지만 둘 다 반쪽이다 -
+    // 자산 현황은 지금 보유한 것만, 매매 화면의 종목별 실현손익은 배당이 빠져 있다.
+    //
+    // 재료는 셋이다. 기초·기말 보유(한 번에 받는다) · 종목별 실현손익 · 종목별 배당.
+    // 종목마다 부르지 않으므로 원격은 3 회만 는다.
+    java.time.ZoneId contributionZone = resolveZoneIdOrDefault(request.getTimeZone());
+    java.time.LocalDate contributionStart =
+        request.getStartDate() != null
+            ? request.getStartDate().atZone(contributionZone).toLocalDate()
+            : null;
+    // 기말은 고른 끝날이거나, '전체' 처럼 끝이 없으면 오늘이다(요약의 기말도 현재 시점이다).
+    java.time.LocalDate contributionEnd =
+        request.getEndDate() != null
+            ? request.getEndDate().atZone(contributionZone).toLocalDate()
+            : java.time.LocalDate.now(contributionZone);
+    var snapshotParams = new org.springframework.util.LinkedMultiValueMap<String, String>();
+    snapshotParams.add("userId", userId.toString());
+    if (contributionStart != null) {
+      snapshotParams.add("dates", contributionStart.toString());
+    }
+    snapshotParams.add("dates", contributionEnd.toString());
+    snapshotParams.add("timeZone", contributionZone.getId());
+    // 화면의 계좌·종목 필터를 그대로 넘긴다. 안 넘기면 평가 변동만 전 계좌를 보게 되어
+    // 합계가 위 카드의 기간 손익과 어긋난다.
+    if (request.getAccountIdList() != null) {
+      for (UUID id : request.getAccountIdList()) {
+        if (id != null) {
+          snapshotParams.add("accountIdList", id.toString());
+        }
+      }
+    }
+    if (request.getStockItemIdList() != null) {
+      for (UUID id : request.getStockItemIdList()) {
+        if (id != null) {
+          snapshotParams.add("stockItemIdList", id.toString());
+        }
+      }
+    }
+    var snapshotFuture =
+        emptySelection
+            ? null
+            : java.util.concurrent.CompletableFuture.supplyAsync(
+                () -> tradeProfitClient.holdingsSnapshotBatch(snapshotParams),
+                stockRemoteCallExecutor);
+
+    var stockRealizedRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    stockRealizedRequest.setUserId(userId);
+    stockRealizedRequest.setStartDate(request.getStartDate());
+    stockRealizedRequest.setEndDate(request.getEndDate());
+    stockRealizedRequest.setTimeZone(request.getTimeZone());
+    stockRealizedRequest.setAccountIdList(request.getAccountIdList());
+    stockRealizedRequest.setStockItemIdList(request.getStockItemIdList());
+    stockRealizedRequest.setGroupBy(
+        net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+    var stockRealizedParams = stockRealizedRequest.toParams();
+    var stockRealizedFuture =
+        emptySelection
+            ? null
+            : java.util.concurrent.CompletableFuture.supplyAsync(
+                () -> tradeProfitClient.calculateProfit(stockRealizedParams),
+                stockRemoteCallExecutor);
+
+    var contributionDividendParams = request.toParams();
+    var contributionDividendFuture =
+        emptySelection
+            ? null
+            : java.util.concurrent.CompletableFuture.supplyAsync(
+                () -> dividendClient.findDividendTotalByStockItem(contributionDividendParams),
+                stockRemoteCallExecutor);
+
     net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult timeSeriesResult;
     if (emptySelection) {
       timeSeriesResult = null;
@@ -306,6 +377,45 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         !breakdownRows.isEmpty() && "MONTH".equals(breakdownRows.get(0).unit());
     model.addAttribute("periodBreakdown", monthlyBreakdown ? breakdownRows : List.of());
     model.addAttribute("periodBreakdownNote", periodBreakdownNote(breakdownRows));
+    var snapshots =
+        snapshotFuture == null
+            ? java.util.Map
+                .<String, List<net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem>>of()
+            : net.luversof.web.gate.stock.support.StockAsyncSupport.join(snapshotFuture);
+    if (snapshots == null) {
+      snapshots = java.util.Map.of();
+    }
+    // 이름을 여기서 채운다. calculateProfit(groupBy=STOCKITEM) 은 이름을 주지 않고(실측
+    // 2026-09-07: 43 행 전부 null), 스냅샷의 이름은 기말에 들고 있는 종목만이라, 채우지 않으면
+    // 이미 다 판 종목이 전부 '-' 로 나가 "보유 중인 것만 나온다" 로 보인다(44 줄 중 35 줄).
+    java.util.Map<UUID, String> contributionNames = new java.util.LinkedHashMap<>();
+    for (StockItem item : stockItemList) {
+      if (item != null && item.id() != null && item.name() != null) {
+        contributionNames.put(item.id(), item.name());
+      }
+    }
+    var contributions =
+        net.luversof.web.gate.stock.util.StockContributionUtil.of(
+            contributionStart != null ? snapshots.get(contributionStart.toString()) : null,
+            snapshots.get(contributionEnd.toString()),
+            stockRealizedFuture == null
+                ? List.<net.luversof.web.gate.stock.domain.TradeProfit>of()
+                : net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockRealizedFuture),
+            contributionDividendFuture == null
+                ? java.util.Map.<java.util.UUID, java.math.BigDecimal>of()
+                : net.luversof.web.gate.stock.support.StockAsyncSupport.join(
+                    contributionDividendFuture),
+            contributionNames);
+    // 합계는 접기 전 전체를 더한 값이다 - 접었다고 합계가 달라지면 위 카드와 어긋난다.
+    model.addAttribute(
+        "stockContributionTotal",
+        net.luversof.web.gate.stock.util.StockContributionUtil.total(contributions));
+    var foldedContributions =
+        net.luversof.web.gate.stock.util.StockContributionUtil.fold(
+            contributions, net.luversof.web.gate.stock.util.StockContributionUtil.DEFAULT_VISIBLE);
+    model.addAttribute("stockContributions", foldedContributions.rows());
+    model.addAttribute("stockContributionOthers", foldedContributions.others());
+    model.addAttribute("stockContributionOthersCount", foldedContributions.othersCount());
     var yearlyCosts = net.luversof.web.gate.stock.support.StockAsyncSupport.join(yearlyCostFuture);
     model.addAttribute("yearlyCosts", yearlyCosts != null ? yearlyCosts : List.of());
     model.addAttribute(

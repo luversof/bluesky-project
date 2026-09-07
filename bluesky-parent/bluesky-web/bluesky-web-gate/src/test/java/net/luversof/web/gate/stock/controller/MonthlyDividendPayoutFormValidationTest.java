@@ -27,12 +27,20 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
  */
 class MonthlyDividendPayoutFormValidationTest {
 
-  private final StockViewController controller = controllerWithKnownSymbol();
+  private final StockDividendViewController controller = controllerWithKnownSymbol();
 
   /** 심볼 검증이 종목 목록을 조회하므로, 그 조회만 대신할 최소 스텁을 넣는다. */
-  private StockViewController controllerWithKnownSymbol() {
-    var created = new StockViewController();
-    created.setStockItemClient(
+  private StockDividendViewController controllerWithKnownSymbol() {
+    var created = new StockDividendViewController();
+    // 심볼 검증은 MonthlyDividendReferenceSupport 로 옮겼다. 컨트롤러는 그것을 통해 부른다.
+    created.setMonthlyDividendReferenceSupport(support());
+    return created;
+  }
+
+  /** 심볼 검증이 서포트로 옮겨갔다. 종목 조회만 대신하는 최소 스텁을 넣는다. */
+  private net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport support() {
+    var support = new net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport();
+    support.setStockItemClient(
         new StockItemClient() {
           @Override
           public List<StockItem> getStockItems() {
@@ -67,7 +75,35 @@ class MonthlyDividendPayoutFormValidationTest {
             return stockItem;
           }
         });
-    return created;
+    support.setMonthlyDividendProfileClient(
+        new net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient() {
+          @Override
+          public List<net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse>
+              findProfiles(org.springframework.util.MultiValueMap<String, String> request) {
+            return List.of();
+          }
+
+          @Override
+          public net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse
+              upsertProfile(
+                  net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertRequest
+                      request) {
+            return null;
+          }
+
+          @Override
+          public void reorderProfiles(
+              net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileReorderRequest
+                  request) {
+            // 이 검사에서는 쓰지 않는다
+          }
+
+          @Override
+          public void deleteProfile(String symbol) {
+            // 이 검사에서는 쓰지 않는다
+          }
+        });
+    return support;
   }
 
   private MonthlyDividendPayoutUpsertRequest request() {
@@ -84,7 +120,7 @@ class MonthlyDividendPayoutFormValidationTest {
   private void validate(MonthlyDividendPayoutUpsertRequest request) {
     try {
       Method method =
-          StockViewController.class.getDeclaredMethod(
+          StockDividendViewController.class.getDeclaredMethod(
               "validateMonthlyDividendPayoutRequest", MonthlyDividendPayoutUpsertRequest.class);
       method.setAccessible(true);
       method.invoke(controller, request);

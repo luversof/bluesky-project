@@ -244,4 +244,24 @@ class StockTradePeriodUtilTest {
       assertThat(totals.realizedProfit()).isEqualByComparingTo(BigDecimal.ZERO);
     }
   }
+
+  /**
+   * 손실 난 달이 섞여도 <b>부호를 살려</b> 더한다.
+   *
+   * <p>절댓값을 더하면 손실 난 달이 이익처럼 얹힌다. 원래 이 검사의 값이 전부 양수라 그 변이를 구분하지 못했다(공용 합계 유틸을 절댓값 합으로 바꿔 놓아도 이 검사만
+   * 통과했다). 실데이터에도 손실로 끝난 해가 있다(실측 2026-09-07: 2018 년 -661,700).
+   */
+  @Test
+  void 손실_난_구간도_부호를_살려_더한다() {
+    List<TradeResponse> withLoss =
+        List.of(
+            trade("2026-08-27", TradeType.SELL, "3000", "30", "18", "500"),
+            trade("2026-07-20", TradeType.SELL, "1000", "10", "6", "-300"));
+
+    var totals = StockTradePeriodUtil.total(StockTradePeriodUtil.of(withLoss, KST));
+
+    assertThat(totals.realizedProfit())
+        .as("500 + (-300) = 200. 절댓값을 더하면 800 이 되어 손실이 이익처럼 얹힌다")
+        .isEqualByComparingTo(bd("200"));
+  }
 }

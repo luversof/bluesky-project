@@ -57,14 +57,33 @@
                                     @endif
                                 </td>
                                 <%-- 수수료·거래세는 나간 돈이라 부호를 붙이지 않고 금액만 적는다. --%>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.tradeFee() != null ? row.tradeFee() : BigDecimal.ZERO)}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.tradeTax() != null ? row.tradeTax() : BigDecimal.ZERO)}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.dividendGross() != null ? row.dividendGross() : BigDecimal.ZERO)}</span></td>
+                                @template._components.ui.amountCell(
+                                    value = row.tradeFee(),
+                                    bold = false
+                                )
+                                @template._components.ui.amountCell(
+                                    value = row.tradeTax(),
+                                    bold = false
+                                )
+                                @template._components.ui.amountCell(
+                                    value = row.dividendGross(),
+                                    bold = false
+                                )
                                 <%-- 과세금액은 세전에 세율을 곱한 값이 아니다 - 계좌별 분리과세 혜택 뒤 남은 몫이라
                                      세전보다 훨씬 작을 수 있다. 금융소득종합과세 판정은 이 값으로 한다. --%>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.dividendTaxable() != null ? row.dividendTaxable() : BigDecimal.ZERO)}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.dividendTax() != null ? row.dividendTax() : BigDecimal.ZERO)}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value font-semibold text-dividend">&#8361;${amountFormat.format(row.dividendNet() != null ? row.dividendNet() : BigDecimal.ZERO)}</span></td>
+                                @template._components.ui.amountCell(
+                                    value = row.dividendTaxable(),
+                                    bold = false
+                                )
+                                @template._components.ui.amountCell(
+                                    value = row.dividendTax(),
+                                    bold = false
+                                )
+                                @template._components.ui.amountCell(
+                                    value = row.dividendNet(),
+                                    cssClass = "text-dividend",
+                                    bold = true
+                                )
                             </tr>
                         @endfor
                     </tbody>
@@ -88,12 +107,31 @@
                                     @endif
                                 </td>
                                 <%-- 줄과 같은 규칙: 나간 돈에는 부호를 붙이지 않는다. --%>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(costTotals.tradeFee())}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(costTotals.tradeTax())}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(costTotals.dividendGross())}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(costTotals.dividendTaxable())}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value text-base-content/70">&#8361;${amountFormat.format(costTotals.dividendTax())}</span></td>
-                                <td class="text-right tabular-nums"><span class="amount-value font-semibold text-dividend">&#8361;${amountFormat.format(costTotals.dividendNet())}</span></td>
+                                @template._components.ui.amountCell(
+                                value = costTotals.tradeFee(),
+                                bold = false
+                            )
+                                @template._components.ui.amountCell(
+                                value = costTotals.tradeTax(),
+                                bold = false
+                            )
+                                @template._components.ui.amountCell(
+                                value = costTotals.dividendGross(),
+                                bold = false
+                            )
+                                @template._components.ui.amountCell(
+                                value = costTotals.dividendTaxable(),
+                                bold = false
+                            )
+                                @template._components.ui.amountCell(
+                                value = costTotals.dividendTax(),
+                                bold = false
+                            )
+                                @template._components.ui.amountCell(
+                                value = costTotals.dividendNet(),
+                                cssClass = "text-dividend",
+                                bold = true
+                            )
                             </tr>
                         </tfoot>
                     @endif

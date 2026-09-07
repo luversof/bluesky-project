@@ -21,6 +21,7 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 import io.github.luversof.boot.context.support.MessageUtil;
+import net.luversof.web.gate.stock.StockControllerSources;
 
 /**
  * 예상 월배당을 보여주는 화면이 "어느 시점 기준 데이터인지"를 밝히는지 본다.
@@ -130,11 +131,7 @@ class DividendAsOfDisclosureTest {
   /** 달력 화면에 넘길 값을 컨트롤러가 실제로 만드는지. 템플릿만 고치면 값이 늘 0 이라 안내가 영영 안 뜬다. */
   @Test
   void 컨트롤러가_달력용_수량_기준을_만든다() throws IOException {
-    String source =
-        Files.readString(
-            Path.of(
-                "src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java"),
-            StandardCharsets.UTF_8);
+    String source = StockControllerSources.all();
     assertThat(source).contains("calendarStaleQuantityCount");
     assertThat(source).contains("calendarCurrentQuantityTotal");
     // 요약 카드와 같은 계산을 써야 두 화면의 숫자가 갈리지 않는다.
@@ -257,11 +254,7 @@ class DividendAsOfDisclosureTest {
   /** 시뮬레이터 합계 카드도 같은 규칙을 쓰고 안내 문구를 낸다. */
   @Test
   void 시뮬레이터_합계도_같은_규칙과_문구를_쓴다() throws IOException {
-    String controller =
-        Files.readString(
-            Path.of(
-                "src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java"),
-            StandardCharsets.UTF_8);
+    String controller = StockControllerSources.all();
     assertThat(controller)
         .as("시뮬레이터가 현재 수량 기준 합계를 계산하지 않는다")
         .contains("MonthlyDividendCalculator.currentQuantitySummary(");

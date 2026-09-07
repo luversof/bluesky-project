@@ -31,32 +31,14 @@ public final class StockYearlyCostTotalUtil {
       BigDecimal dividendTax,
       BigDecimal dividendNet) {}
 
-  private static BigDecimal nz(BigDecimal value) {
-    return value == null ? BigDecimal.ZERO : value;
-  }
-
   public static Totals of(List<YearlyCostSummary> rows) {
-    BigDecimal fee = BigDecimal.ZERO;
-    BigDecimal tax = BigDecimal.ZERO;
-    BigDecimal realized = BigDecimal.ZERO;
-    BigDecimal gross = BigDecimal.ZERO;
-    BigDecimal taxable = BigDecimal.ZERO;
-    BigDecimal withheld = BigDecimal.ZERO;
-    BigDecimal net = BigDecimal.ZERO;
-    if (rows != null) {
-      for (YearlyCostSummary row : rows) {
-        if (row == null) {
-          continue;
-        }
-        fee = fee.add(nz(row.tradeFee()));
-        tax = tax.add(nz(row.tradeTax()));
-        realized = realized.add(nz(row.realizedProfit()));
-        gross = gross.add(nz(row.dividendGross()));
-        taxable = taxable.add(nz(row.dividendTaxable()));
-        withheld = withheld.add(nz(row.dividendTax()));
-        net = net.add(nz(row.dividendNet()));
-      }
-    }
-    return new Totals(fee, tax, realized, gross, taxable, withheld, net);
+    return new Totals(
+        StockAmountUtil.sum(rows, YearlyCostSummary::tradeFee),
+        StockAmountUtil.sum(rows, YearlyCostSummary::tradeTax),
+        StockAmountUtil.sum(rows, YearlyCostSummary::realizedProfit),
+        StockAmountUtil.sum(rows, YearlyCostSummary::dividendGross),
+        StockAmountUtil.sum(rows, YearlyCostSummary::dividendTaxable),
+        StockAmountUtil.sum(rows, YearlyCostSummary::dividendTax),
+        StockAmountUtil.sum(rows, YearlyCostSummary::dividendNet));
   }
 }

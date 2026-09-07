@@ -39,40 +39,21 @@ public final class StockPeriodTotalUtil {
       BigDecimal principalDelta,
       Double chainedReturnPct) {}
 
-  private static BigDecimal nz(BigDecimal value) {
-    return value == null ? BigDecimal.ZERO : value;
-  }
-
   /** 줄 순서와 무관하다 &mdash; 더하기도 곱하기도 순서를 타지 않는다. */
   public static Totals of(List<TradeProfitTimeSeriesSummary> summaries) {
-    BigDecimal profit = BigDecimal.ZERO;
-    BigDecimal unrealizedDelta = BigDecimal.ZERO;
-    BigDecimal principalDelta = BigDecimal.ZERO;
-    double factor = 1.0d;
-    boolean anyReturn = false;
-    if (summaries != null) {
-      for (TradeProfitTimeSeriesSummary summary : summaries) {
-        if (summary == null) {
-          continue;
-        }
-        profit = profit.add(nz(summary.periodProfit()));
-        unrealizedDelta =
-            unrealizedDelta.add(
-                nz(summary.unrealizedEnd()).subtract(nz(summary.unrealizedStart())));
-        principalDelta = principalDelta.add(nz(summary.principalDelta()));
-        Double rate = summary.timeWeightedReturnPct();
-        if (rate != null) {
-          // 자본이 없던 구간은 수익률이 없다(null). 그런 구간은 배수 1 이라 건너뛰면 된다.
-          factor *= 1.0d + rate / 100.0d;
-          anyReturn = true;
-        }
-      }
-    }
+    BigDecimal profit = StockAmountUtil.sum(summaries, TradeProfitTimeSeriesSummary::periodProfit);
+    // 평가 변동은 구간이 맞닿아 있어 망원경처럼 접힌다 - 줄마다의 (기말 - 기초) 를 더하면 된다.
+    BigDecimal unrealizedDelta =
+        StockAmountUtil.sum(
+            summaries,
+            summary ->
+                StockAmountUtil.nz(summary.unrealizedEnd())
+                    .subtract(StockAmountUtil.nz(summary.unrealizedStart())));
     return new Totals(
         profit,
         unrealizedDelta,
         profit.subtract(unrealizedDelta),
-        principalDelta,
-        anyReturn ? (factor - 1.0d) * 100.0d : null);
+        StockAmountUtil.sum(summaries, TradeProfitTimeSeriesSummary::principalDelta),
+        StockAmountUtil.chain(summaries, TradeProfitTimeSeriesSummary::timeWeightedReturnPct));
   }
 }

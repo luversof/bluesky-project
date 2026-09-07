@@ -71,6 +71,18 @@ public class PoeOptimizeService {
   /** 전직 포인트 예산 (만렙 성역 8포인트, 시작 노드 제외) */
   private static final int ASCENDANCY_POINT_BUDGET = 8;
 
+  /** 완성 빌드 남은 트리 포인트 채우기 — 라운드 상한(포인트 1개당 1라운드). */
+  /** 기여 0 주얼 재대결 라운드 상한(라운드당 한 자리). */
+  /** 끊긴 주얼 소켓 연결/회수 라운드 상한. */
+  private static final int STRANDED_SOCKET_ROUNDS = 4;
+
+  private static final int INERT_JEWEL_ROUNDS = 3;
+
+  private static final int LEFTOVER_TREE_ROUNDS = 8;
+
+  /** 같은 채우기의 라운드당 인접 후보 상한(비용 고정용). 실측 인접 후보는 축당 180~190개다. */
+  private static final int LEFTOVER_TREE_CANDIDATES = 120;
+
   /** 전직 8포인트 중 혈맹(2차 전직)에 배분 예약할 포인트 — 나머지는 직업 전직에 사용 */
   private static final int BLOODLINE_RESERVE = 2;
 
@@ -2582,6 +2594,7 @@ public class PoeOptimizeService {
       this.tattooAllocated = Set.of(); // 문신 할당-이웃 판정 기준 초기화(잡마다)
       this.currentAnoint = null; // 아뮬렛 도유 초기화(잡마다)
       this.supportLevelOverride = Map.of(); // 보조젬 레벨 하향 초기화(잡마다)
+      this.attrRepairs.clear(); // 속성 보정 희생 이력 초기화(잡마다)
       this.feasibilitySteering = false; // 실현 가능성 조향 초기화(잡마다)
       this.selfBurnRun = false; // 자가연소 지속력 게이트 초기화(잡마다)
       this.multiActorBuild = false; // #235 다중 액터(토템/미니언) 총합 지표 초기화(잡마다)
@@ -3609,6 +3622,14 @@ public class PoeOptimizeService {
         if (items.containsKey(slot)) {
           continue; // 강제 장착 유니크가 이미 점유한 슬롯 — 탐색 생략(고정)
         }
+        // 두 번째 반지를 금지하는 유니크가 이미 끼워져 있으면 그 슬롯 탐색을 건너뛴다.
+        //   실측(2026-09-03, 뼈 박살): 반지 1 = `Foulborn Ming's Heart` 의 모드가 `Can't use other Rings` 라
+        //   PoB 가 반지 2 를 적용하지 않는다 → 후보 79개(제작 레어 포함)가 **전부 기여 0**, 최고 = 현재로 기각된다.
+        //   결과는 옳지만 매 잡마다 79회를 헛평가하고, 로그만 보면 버그처럼 읽힌다. 이유를 남기고 건너뛴다.
+        if (slot == Slot.RING2 && ringsBlocked(items)) {
+          log("반지 2 건너뜀: 착용 중인 반지가 다른 반지 착용을 금지함(Can't use other Rings)");
+          continue;
+        }
         if (slot == Slot.WEAPON && "ehp".equals(objective)) {
           continue; // 무기 고유는 EHP 에 기여하지 않음 — 표준 무기 유지
         }
@@ -3667,16 +3688,18 @@ public class PoeOptimizeService {
           }
           continue;
         }
-        if (DUMP_FLASK_ENABLED && slot.pobName.startsWith("Flask")) {
+        if (DUMP_FLASK_ENABLED && slot == Slot.RING2 && !items.containsKey(slot)) {
           log(
-              "플라스크 후보: "
+              "빈 슬롯 후보: "
+                  + slot.ko
+                  + " = "
                   + slotCandidates.stream()
                       .map(this::equippedLabel)
                       .collect(java.util.stream.Collectors.joining(" · ")));
         }
         // 플라스크 후보 XML 덤프(진단용, 기본 off) — "빈 슬롯에 아이템을 더했는데 −10.5%" 를 설명하려면
         //   실제 빌더가 만든 XML 을 현재 빌드와 직접 대조해야 한다. POE_DUMP_FLASK=on
-        if (DUMP_FLASK_ENABLED && slot.pobName.startsWith("Flask") && !flaskDumped) {
+        if (DUMP_FLASK_ENABLED && slot == Slot.RING2 && !items.containsKey(slot) && !flaskDumped) {
           flaskDumped = true;
           String baseXml =
               buildXml(
@@ -3735,11 +3758,15 @@ public class PoeOptimizeService {
           }
           current = best.getValue();
           log("장비 채택: " + slot.ko + " = " + equippedLabel(best.getKey()) + " → " + format(current));
-        } else if (slot.pobName.startsWith("Flask")) {
+        } else if (!items.containsKey(slot)) {
+          // **빈 슬롯인데 아무것도 채택 못 한 경우**를 남긴다. 조용한 기각에 로그를 붙이는 것이
+          //   오늘 두 번 성과를 냈다(잔여 전직 5pt 미사용 · 플라스크 교착). 플라스크에만 붙였던 것을
+          //   전 슬롯으로 넓힌다 — 이미 아이템이 있는 슬롯의 기각은 정상이라 대상이 아니다.
+
           // 플라스크 기각을 남긴다 — 맹독의 비는 5칸이 통째로 비는데 후보 수도 최고값도 안 보여
           //   "후보 풀에 없어서"인지 "임계를 못 넘어서"인지 구분되지 않았다.
           log(
-              "플라스크 기각: "
+              "빈 슬롯 유지: "
                   + slot.ko
                   + " · 후보 "
                   + slotCandidates.size()
@@ -5887,7 +5914,19 @@ public class PoeOptimizeService {
                     + "개 · 최고 "
                     + format(bestFill == null ? 0d : bestFill.getValue())
                     + " vs 기준 "
-                    + format(beforeFill));
+                    + format(beforeFill)
+                    + " · 후보: "
+                    + fills.stream()
+                        .limit(8)
+                        .map(
+                            fill -> {
+                              PoeTreeGraphService.TreeNode fillInfo =
+                                  poeTreeGraphService.node(fill.id());
+                              return fillInfo != null && fillInfo.nameKo() != null
+                                  ? fillInfo.nameKo()
+                                  : String.valueOf(fill.id());
+                            })
+                        .collect(java.util.stream.Collectors.joining(" · ")));
           }
         }
 
@@ -6632,6 +6671,13 @@ public class PoeOptimizeService {
       //   후기 패스로 재설계해야")이 가리키던 자리다. 완성 문맥에서 미선택 오라를 전수 재시도(예약 하한 준수).
       if (balancedJob && !auraRematchPool.isEmpty()) {
         enterPhase("auras-rematch");
+        selfCheckProxy(
+            executor,
+            "오라 최종 재대결",
+            buildXml(
+                gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels),
+            current,
+            objectiveKey);
         for (int aRound = 0; aRound < 2 && selectedAuras.size() < MAX_AURAS; aRound++) {
           List<PoeGem> auraRest =
               auraRematchPool.stream().filter(a -> !selectedAuras.contains(a)).toList();
@@ -7192,6 +7238,13 @@ public class PoeOptimizeService {
       // 완성 문맥에서 「값싼 잎 제거 ↔ 미할당 노터블 편입」을 상승할 때만 반복 채택한다.
       {
         enterPhase("tree-rematch");
+        selfCheckProxy(
+            executor,
+            "트리 최종 재대결",
+            buildXml(
+                gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels),
+            current,
+            objectiveKey);
         Integer startNode = poeTreeGraphService.classStart(className);
         List<PoeTreeGraphService.TreeNode> rematchPool =
             poeTreeGraphService.searchCandidates().stream()
@@ -7278,6 +7331,13 @@ public class PoeOptimizeService {
       // "현재 유니크 ↔ 방어 레어" 1:1 이라 유니크 전수는 못 봤다).
       {
         enterPhase("unique-rematch");
+        selfCheckProxy(
+            executor,
+            "유니크 최종 재대결",
+            buildXml(
+                gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels),
+            current,
+            objectiveKey);
         int adoptedUnique = 0;
         for (int round = 0; round < UNIQUE_REMATCH_ROUNDS; round++) {
           Slot bestSlot = null;
@@ -7714,6 +7774,18 @@ public class PoeOptimizeService {
 
       // ── 마무리: 최종 계산 + PoB 코드 ──
       enterPhase("finish");
+
+      if (!attrRepairs.isEmpty()) {
+        // 속성 보정으로 버린 모드가 완성 빌드까지 남아 있는지 — 이후 장비가 바뀌어 속성이 넉넉해져도
+        //   되돌리는 경로가 없다. 되돌릴 대상이 실제로 있는지부터 수치로 본다.
+        log(
+            "속성 보정 희생 잔존: "
+                + attrRepairs.size()
+                + "건 · "
+                + attrRepairs.stream()
+                    .map(r -> r.slot().ko + " " + r.originalKey() + "→+" + r.attrKey())
+                    .collect(java.util.stream.Collectors.joining(" · ")));
+      }
       phaseDone.set(0);
       phaseTotal = 0;
       // 무기 합법화 패스 — 무기가 목표(특히 EHP)에 기여하지 않으면 그리디는 무기를 끝내 채택하지 않고
@@ -7980,6 +8052,101 @@ public class PoeOptimizeService {
       List<PoeTreeGraphService.TreeNode> anointPool =
           pinnedAnoint != null ? List.of() : anointCandidates();
       if (!anointPool.isEmpty()) {
+        // ── 속성 보정 되돌리기 — 보정은 요구치를 맞추려 레어 모드를 **희생**하는데(실측 잔존: 정의의 화염
+        //   `장갑 lifeRegen→+dex`, 맹독의 비 `갑옷 chaosRes→+str`·`장갑 attackSpeed→+str`) 그 뒤 장비가
+        //   바뀌어 속성이 넉넉해져도 **되돌리는 경로가 없다**. 완성 빌드에서 하나씩 원상 복구를 시도하고
+        //   ①값이 오르고 ②요구치를 여전히 만족할 때만 채택한다(meetsRequirements 가 검증자로 걸린다).
+        //   순수 복구라 포인트·슬롯 구성은 그대로다. 마진 1.003.
+        if (!attrRepairs.isEmpty()) {
+          record AttrReclaim(int index, Slot slot, Equipped restored) {}
+          List<AttrReclaim> reclaimTrials = new ArrayList<>();
+          for (int ri = 0; ri < attrRepairs.size(); ri++) {
+            AttrRepair repair = attrRepairs.get(ri);
+            Equipped equipped = items.get(repair.slot());
+            if (equipped == null || equipped.isUnique() || equipped.rare() == null) {
+              continue;
+            }
+            RareItem rare = equipped.rare();
+            if (repair.index() < 0 || repair.index() >= rare.families().size()) {
+              continue;
+            }
+            List<PoeModPoolDataService.ModFamily> restoredFamilies =
+                new ArrayList<>(rare.families());
+            restoredFamilies.set(repair.index(), repair.original());
+            reclaimTrials.add(
+                new AttrReclaim(
+                    ri,
+                    repair.slot(),
+                    Equipped.ofRare(
+                        new RareItem(
+                            rare.baseType(),
+                            List.copyOf(restoredFamilies),
+                            rare.tierFraction(),
+                            null,
+                            rare.implicitLines(),
+                            rare.implicitLinesKo()))));
+          }
+          if (!reclaimTrials.isEmpty()) {
+            Map<AttrReclaim, Double> reclaimResults =
+                evalBatch(
+                    executor,
+                    reclaimTrials,
+                    trial -> {
+                      Map<Slot, Equipped> trialItems = new EnumMap<>(items);
+                      trialItems.put(trial.slot(), trial.restored());
+                      String xml =
+                          buildXml(
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              allocated,
+                              trialItems,
+                              jewels);
+                      return currentAnoint != null ? withAnoint(xml, currentAnoint.name()) : xml;
+                    },
+                    objectiveKey,
+                    // 요구치 검증은 (장착 후보, 스탯) 시그니처다 — 복구한 아이템을 넘긴다
+                    (trial, values) -> meetsRequirements(trial.restored(), values));
+            Map.Entry<AttrReclaim, Double> bestReclaim =
+                reclaimResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+            if (bestReclaim != null && bestReclaim.getValue() > current * 1.003) {
+              AttrRepair undone = attrRepairs.get(bestReclaim.getKey().index());
+              items.put(bestReclaim.getKey().slot(), bestReclaim.getKey().restored());
+              current = bestReclaim.getValue();
+              // ⚠ finalXml/finalValues 를 여기서 갱신하는 변경을 넣었다가 **실측으로 원복**했다(2026-09-04).
+              //   일관성으로는 맞다 — 갱신하지 않으면 뒤 단계가 보정 전 기준값과 비교한다.
+              //   그러나 15축 실측: 회오리 +5.6%(3,698,848→3,905,240) 대비
+              //   고행 −7.7%(70,614,087→65,152,286) · 정전기 −8.3%(26,933,860→24,708,005),
+              //   나머지 12축 불변 — 순합 −10.4%p. 기준값을 올리면 뒤 단계가 엄격해져
+              //   더 먼 경로를 잔지를 못 가게 된다(중반 판단 ≠ 최종 결과의 또 다른 사례).
+              //   대신 감사로 덤는다: value-repro-audit.js 가 "보고한 수치 == 내보낸 PoB 코드로
+              //   재현한 수치" 를 검사해 어긋나면 잡는다.
+              log(
+                  "속성 보정 되돌림: "
+                      + undone.slot().ko
+                      + " +"
+                      + undone.attrKey()
+                      + " → "
+                      + undone.originalKey()
+                      + " ("
+                      + format(current)
+                      + ", 후보 "
+                      + reclaimTrials.size()
+                      + "건)");
+            } else {
+              log(
+                  "속성 보정 되돌림 기각: 최고 "
+                      + format(bestReclaim == null ? 0d : bestReclaim.getValue())
+                      + " vs 현재 "
+                      + format(current)
+                      + " (후보 "
+                      + reclaimTrials.size()
+                      + "건 — 요구치 미달이면 -1)");
+            }
+          }
+        }
         enterPhase("anoint");
         final String baseXml = finalXml;
         Map<String, Double> anointResults =
@@ -8648,6 +8815,869 @@ public class PoeOptimizeService {
         bloodlineName = blNode != null ? blNode.name() : chosenBloodline;
         bloodlineNameKo = blNode != null ? blNode.nameKo() : null;
       }
+      // 죽은 반지 정리 — `Can't use other Rings` 반지 옆의 두 번째 반지는 PoB 가 이미 무시한다.
+      //   실측(2026-09-04, 도살의 낫질): 그 반지를 빼도 dps 35,606,366 · life 4,011 · ehp 86,309 불변.
+      //   ⚠ 위치가 두 번 틀렸다 — finish 자리는 도유 후 재대결이 반지를 다시 끼워 늦었고, 파이프라인 끝은
+      //     **결과 생성 뒤**라 로그만 남고 결과물엔 반영되지 않았다(저장 빌드에 그대로 남음). 결과 생성 직전이 맞다.
+      //   ⚠ finalXml 을 다시 만들지 않는다 — 도유·설정·문신이 얹힌 최종 문자열이라 재계산은 다른 요소를
+      //     흔들 위험이 있다. 값에 영향이 없는 아이템이므로 **슬롯 줄만 걷어낸다**.
+      // ── 오라 1:1 교체 — 위 재대결은 **add-only** 라 마나 예산이 꽉 차면 더 못 간다. 실측(트라투스):
+      //   Wrath+Anger+증오로 미예약 마나가 211 만 남아 정화(화염)를 넣을 수 없고, 넣으면 **−251** 이다.
+      //   그런데 Anger 를 빼고 정화를 끼우면 화염저항 80→84 로 생존 항이 ×0.750→×0.850(+13.3%),
+      //   DPS 는 108,918,423→103,521,329(−5.0%) 이므로 balanced 로는 이득이다.
+      //   교환은 add-only 로 **절대 도달할 수 없는 조합**이라 별도 패스로 둔다.
+      //   ⚠ 이 자리에서만 보이는 이유: 저항 목표는 아키타입 실측(트라투스 화염 90, 표본 96)이고,
+      //     최대저항은 오라·유니크 말고는 올릴 레버가 없다.
+      if (balancedJob && !auraRematchPool.isEmpty() && !selectedAuras.isEmpty()) {
+        record AuraSwap(PoeGem out, PoeGem in) {}
+        List<PoeGem> auraSwapPool =
+            auraRematchPool.stream().filter(a -> !selectedAuras.contains(a)).toList();
+        List<AuraSwap> auraSwaps = new ArrayList<>();
+        for (PoeGem outAura : List.copyOf(selectedAuras)) {
+          for (PoeGem inAura : auraSwapPool) {
+            auraSwaps.add(new AuraSwap(outAura, inAura));
+          }
+        }
+        if (!auraSwaps.isEmpty()) {
+          double auraSwapBase = objectiveOf(finalValues, objectiveKey);
+          Map<AuraSwap, Double> auraSwapResults =
+              evalBatch(
+                  executor,
+                  auraSwaps,
+                  sw -> {
+                    List<PoeGem> trialAuras = new ArrayList<>(selectedAuras);
+                    trialAuras.remove(sw.out());
+                    trialAuras.add(sw.in());
+                    return buildXmlAuras(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels,
+                        trialAuras);
+                  },
+                  objectiveKey);
+          boolean auraSwapped = false;
+          for (Map.Entry<AuraSwap, Double> cand :
+              auraSwapResults.entrySet().stream()
+                  .sorted(Map.Entry.<AuraSwap, Double>comparingByValue().reversed())
+                  .toList()) {
+            if (cand.getValue() <= auraSwapBase * 1.003) {
+              break;
+            }
+            List<PoeGem> trialAuras = new ArrayList<>(selectedAuras);
+            trialAuras.remove(cand.getKey().out());
+            trialAuras.add(cand.getKey().in());
+            Map<String, Double> swapValues =
+                poePobEngineService.calculateValues(
+                    buildXmlAuras(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels,
+                        trialAuras));
+            evalCount.incrementAndGet();
+            double swapUnres = swapValues.getOrDefault("ManaUnreserved", 0d);
+            double swapUnresLife = swapValues.getOrDefault("LifeUnreserved", 1d);
+            if (swapUnres < MIN_UNRESERVED_MANA || swapUnresLife < MIN_UNRESERVED_LIFE) {
+              continue; // 교체해도 예약 초과 — 다음 후보로
+            }
+            selectedAuras.clear();
+            selectedAuras.addAll(trialAuras);
+            current = cand.getValue();
+            finalXml =
+                buildXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    items,
+                    jewels);
+            if (currentAnoint != null) {
+              finalXml = withAnoint(finalXml, currentAnoint.name());
+            }
+            finalValues = poePobEngineService.calculateValues(finalXml);
+            evalCount.incrementAndGet();
+            auraSwapped = true;
+            log(
+                "오라 1:1 교체: "
+                    + cand.getKey().out().name()
+                    + " → "
+                    + cand.getKey().in().name()
+                    + " ("
+                    + format(current)
+                    + ", 미예약 마나 "
+                    + Math.round(swapUnres)
+                    + ", 후보쌍 "
+                    + auraSwaps.size()
+                    + ")");
+            break;
+          }
+          if (!auraSwapped) {
+            // 후보쌍 값은 이미 손에 있다(추가 평가 0) — 무엇이 몇 위였는지 남긴다.
+            log(
+                "오라 1:1 교체: 이득 없음 — 후보쌍 "
+                    + auraSwaps.size()
+                    + "개 · 기준 "
+                    + format(auraSwapBase)
+                    + " · 상위 "
+                    + auraSwapResults.entrySet().stream()
+                        .sorted(Map.Entry.<AuraSwap, Double>comparingByValue().reversed())
+                        .limit(4)
+                        .map(
+                            e ->
+                                e.getKey().out().name()
+                                    + "→"
+                                    + e.getKey().in().name()
+                                    + " "
+                                    + format(e.getValue()))
+                        .collect(java.util.stream.Collectors.joining(" · ")));
+            log(
+                "오라 교체 후보 풀: "
+                    + auraSwapPool.stream()
+                        .map(PoeGem::name)
+                        .collect(java.util.stream.Collectors.joining(", ")));
+          }
+        }
+      }
+
+      // ── 끊긴 주얼 소켓 연결/회수(완성 빌드) — 주얼이 기여 0인 진짜 원인이다.
+      //   실측(2026-09-07): 소켓 노드가 트리 본체와 끊겨 있으면 PoB 가 그 주얼을 통째로 무시한다.
+      //   고행 4/5 · 칼날 소용돌이 3/5 · 혼의 균열 3/5 소켓이 끊겨 있었고(회오리는 0), 끊긴 소켓에
+      //   유니크 주얼 184개를 전수로 꽂아도 값이 자릿수까지 동일했다(716회 시도, 개선 0건).
+      //   즉 후보 풀이 좁아서가 아니라 소켓이 죽어 있어서다 — 풀을 넓혀도 아무 소용이 없다.
+      //   양성 대조: 살아 있는 소켓의 주얼을 바꾸면 dps 73,899,775 → 70,664,600 으로 움직인다.
+      //   연결 이득(실측): 칼날 소용돌이 +1pt 로 +5.09%, +4pt 로 +5.29% · 혼의 균열 +2pt 로 +6.68%
+      //   (고행은 연결해도 0.00% — 그 주얼들 자체가 약하다).
+      //   그래서 ①남는 포인트로 최단 경로를 이어 살릴 수 있으면 살리고 ②못 살리면 소켓을 해제해
+      //   포인트를 회수한다(끊긴 소켓은 기여가 정확히 0이라 해제는 순이득이고, 회수분은 뒤의
+      //   남은 트리 포인트 채우기가 실측으로 쓴다).
+      if (balancedJob && !jewels.isEmpty()) {
+        Integer jewelClassStart = poeTreeGraphService.classStart(className);
+        if (jewelClassStart != null) {
+          final AnointPick pinnedAnointForSocket = currentAnoint;
+          for (int socketRound = 0; socketRound < STRANDED_SOCKET_ROUNDS; socketRound++) {
+            Set<Integer> reach = new LinkedHashSet<>();
+            Deque<Integer> reachQueue = new ArrayDeque<>();
+            reach.add(jewelClassStart);
+            reachQueue.addLast(jewelClassStart);
+            while (!reachQueue.isEmpty()) {
+              int cur = reachQueue.removeFirst();
+              for (Integer next : poeTreeGraphService.neighbors(cur)) {
+                if (allocated.contains(next) && reach.add(next)) {
+                  reachQueue.addLast(next);
+                }
+              }
+            }
+            List<Integer> stranded =
+                jewels.keySet().stream()
+                    .filter(socket -> !reach.contains(socket))
+                    .sorted()
+                    .toList();
+            if (stranded.isEmpty()) {
+              if (socketRound == 0) {
+                log("끊긴 주얼 소켓: 없음 (소켓 " + jewels.size() + "개 전부 연결됨)");
+              }
+              break;
+            }
+            int freePoints = POINT_BUDGET - countTreePoints(finalXml);
+            record SocketFix(int socket, List<Integer> path, int cost) {}
+            List<SocketFix> fixes = new ArrayList<>();
+            for (Integer socket : stranded) {
+              List<Integer> path = poeTreeGraphService.shortestPath(reach, socket);
+              if (path == null || path.isEmpty()) {
+                continue;
+              }
+              int cost = (int) path.stream().filter(node -> !allocated.contains(node)).count();
+              if (cost <= 0 || cost > freePoints) {
+                continue;
+              }
+              fixes.add(new SocketFix(socket, path, cost));
+            }
+            if (socketRound == 0) {
+              log(
+                  "끊긴 주얼 소켓 "
+                      + stranded.size()
+                      + "/"
+                      + jewels.size()
+                      + "개 (여유 "
+                      + freePoints
+                      + "pt · 연결 가능 "
+                      + fixes.size()
+                      + "개) — PoB 가 무시하던 주얼: "
+                      + stranded.stream()
+                          .map(s -> equippedLabel(jewels.get(s)))
+                          .collect(java.util.stream.Collectors.joining(", ")));
+            }
+            if (fixes.isEmpty()) {
+              int reclaimed = 0;
+              for (Integer socket : stranded) {
+                if (allocated.remove(socket)) {
+                  reclaimed++;
+                }
+                jewels.remove(socket);
+              }
+              if (reclaimed > 0) {
+                finalXml =
+                    buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        allocated,
+                        items,
+                        jewels);
+                if (pinnedAnointForSocket != null) {
+                  finalXml = withAnoint(finalXml, pinnedAnointForSocket.name());
+                }
+                finalValues = poePobEngineService.calculateValues(finalXml);
+                evalCount.incrementAndGet();
+                current = objectiveOf(finalValues, objectiveKey);
+                log("끊긴 소켓 해제: " + reclaimed + "pt 회수 (값 " + format(current) + ")");
+              }
+              break;
+            }
+            final double socketBase = objectiveOf(finalValues, objectiveKey);
+            Map<SocketFix, Double> fixResults =
+                evalBatch(
+                    executor,
+                    fixes,
+                    fix -> {
+                      Set<Integer> trial = new LinkedHashSet<>(allocated);
+                      trial.addAll(fix.path());
+                      String trialXml =
+                          buildXml(
+                              gem,
+                              supports,
+                              className,
+                              ascendancy,
+                              ascendancyNodes,
+                              trial,
+                              items,
+                              jewels);
+                      return pinnedAnointForSocket != null
+                          ? withAnoint(trialXml, pinnedAnointForSocket.name())
+                          : trialXml;
+                    },
+                    objectiveKey);
+            Map.Entry<SocketFix, Double> bestFix =
+                fixResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+            if (bestFix == null || bestFix.getValue() <= socketBase * 1.003) {
+              log(
+                  "끊긴 소켓 연결 기각: 최고 "
+                      + format(bestFix == null ? 0d : bestFix.getValue())
+                      + " vs 현재 "
+                      + format(socketBase)
+                      + " (후보 "
+                      + fixes.size()
+                      + "개)");
+              // ⚠ 여기서 **해제해 포인트를 회수**하는 보강을 넣었다가 실측으로 원복했다(2026-09-07).
+              //   의도: 끊긴 소켓의 기여는 0이니 해제하면 포인트가 남아 트리 채우기가 쓴다.
+              //   실측(15축): 고행 +9.5% → **+0.0%**(이득 전부 소실) · 혼의 균열 +11.4% → +7.8% ·
+              //   칼날 소용돌이 +25.6% → +21.4% — **세 축 모두 악화**라 되돌렸다.
+              //   이유(코드로 확인): buildXml 이 `jewels.keySet()` 의 소켓 노드를 **무조건** specNodes 에
+              //   넣는다. 그래서 allocated 에서 빼도 XML 에는 남고, jewels 에서 빼면 그 시점 기여가 0이던
+              //   소켓까지 사라져 뒤 단계가 되살릴 여지를 잃는다(이 패스는 트리 채우기 **앞**에서 돈다).
+              //   근본 해결은 소켓 주입 자체를 연결 가능할 때로 제한하는 것 — 별도 사이클 대상.
+              break;
+            }
+            allocated.addAll(bestFix.getKey().path());
+            finalXml =
+                buildXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    items,
+                    jewels);
+            if (pinnedAnointForSocket != null) {
+              finalXml = withAnoint(finalXml, pinnedAnointForSocket.name());
+            }
+            finalValues = poePobEngineService.calculateValues(finalXml);
+            evalCount.incrementAndGet();
+            current = bestFix.getValue();
+            log(
+                "끊긴 소켓 연결: "
+                    + equippedLabel(jewels.get(bestFix.getKey().socket()))
+                    + " (+"
+                    + bestFix.getKey().cost()
+                    + "pt, "
+                    + format(socketBase)
+                    + " → "
+                    + format(bestFix.getValue())
+                    + ")");
+          }
+        }
+      }
+      // ── 기여 0 주얼 재대결(완성 빌드) — 실측(15축 전수, 소켓별 제거 후 재계산): **75개 중 13개가 기여 0**
+      //   이고 4축에 몰려 있다(칼날 소용돌이 4/5 · 고행 4/5 · 혼의 균열 3/5 · 유령 소환 2/4).
+      //   특히 **금단 페어를 동시에 빼도 0.00%** 인 축이 그 넷인데, 건강한 축(뼈 박살·트라투스·정의의 화염)
+      //   에서는 같은 페어가 **dps −28.4%** 짜리다. 주얼은 중반에 확정되고 이후 아이템·트리·전직 재대결이
+      //   조건을 깨뜨리는데, 소켓은 패시브 포인트를 쓰므로 헛도는 소켓은 그대로 낭비다.
+      //   ⚠ 기존 jewels-rematch 는 이 부류를 못 잡는다 — 그 단계 주석이 이미 이유를 적어 뒀다:
+      //     "그 시점엔 금단 페어·감시자의 눈이 소켓을 차지해 교체 여지가 없다".
+      //   그래서 여기서는 **기여 0으로 실측된 소켓만** 열어 후보와 겨룬다(측정 → 그 소켓만 재대결).
+      if (balancedJob && !jewels.isEmpty() && !jewelRematchPool.isEmpty()) {
+        final AnointPick pinnedAnointForJewel = currentAnoint;
+        Function<Map<Integer, Equipped>, String> jewelXmlFor =
+            trialJewels -> {
+              String trialXml =
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      items,
+                      trialJewels);
+              return pinnedAnointForJewel != null
+                  ? withAnoint(trialXml, pinnedAnointForJewel.name())
+                  : trialXml;
+            };
+        // 라운드 반복 — 한 라운드는 **가장 좋은 한 자리**만 바꾼다. 실측(칼날 소용돌이): 1라운드로
+        //   무효 4/5 → 3/5, 61,267,276 → 62,771,731(+2.5%). 남은 무효 자리도 잡으려면 반복이 필요하다.
+        for (int inertRound = 0; inertRound < INERT_JEWEL_ROUNDS; inertRound++) {
+          final double jewelBase = objectiveOf(finalValues, objectiveKey);
+          final double jewelEps = Math.max(1e-9, Math.abs(jewelBase) * 1e-6);
+          List<Integer> inertSockets = new ArrayList<>();
+          List<Integer> socketOrder = new ArrayList<>(jewels.keySet());
+          Map<Integer, Double> withoutResults =
+              evalBatch(
+                  executor,
+                  socketOrder,
+                  socket -> {
+                    Map<Integer, Equipped> trialJewels = new LinkedHashMap<>(jewels);
+                    trialJewels.remove(socket);
+                    return jewelXmlFor.apply(trialJewels);
+                  },
+                  objectiveKey);
+          for (Integer socket : socketOrder) {
+            Double without = withoutResults.get(socket);
+            if (without != null && Math.abs(without - jewelBase) <= jewelEps) {
+              inertSockets.add(socket);
+            }
+          }
+          if (inertSockets.isEmpty()) {
+            if (inertRound == 0) {
+              log("기여 0 주얼: 없음 (소켓 " + socketOrder.size() + "개 전부 기여)");
+            }
+            break;
+          } else {
+            log(
+                "기여 0 주얼 "
+                    + inertSockets.size()
+                    + "/"
+                    + socketOrder.size()
+                    + "개 — 그 소켓만 재대결: "
+                    + inertSockets.stream()
+                        .map(s -> equippedLabel(jewels.get(s)))
+                        .collect(java.util.stream.Collectors.joining(", ")));
+            record InertSwap(int socket, PoeUniqueItem cand) {}
+            List<InertSwap> inertTrials = new ArrayList<>();
+            for (Integer socket : inertSockets) {
+              int tried = 0;
+              for (PoeUniqueItem cand : jewelRematchPool) {
+                if (tried >= JEWEL_REMATCH_PER_SOCKET) {
+                  break;
+                }
+                if (jewels.values().stream()
+                    .anyMatch(
+                        j -> j != null && j.isUnique() && j.unique().slug().equals(cand.slug()))) {
+                  continue; // 이미 낀 유니크는 중복 장착 불가
+                }
+                tried++;
+                inertTrials.add(new InertSwap(socket, cand));
+              }
+            }
+            if (inertTrials.isEmpty()) {
+              log("기여 0 주얼 재대결: 후보 없음");
+              break;
+            } else {
+              Map<InertSwap, Double> inertResults =
+                  evalBatch(
+                      executor,
+                      inertTrials,
+                      trial -> {
+                        Map<Integer, Equipped> trialJewels = new LinkedHashMap<>(jewels);
+                        trialJewels.put(trial.socket(), Equipped.ofUnique(trial.cand()));
+                        return jewelXmlFor.apply(trialJewels);
+                      },
+                      objectiveKey);
+              Map.Entry<InertSwap, Double> bestInert =
+                  inertResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+              if (bestInert != null && bestInert.getValue() > jewelBase * 1.003) {
+                jewels.put(
+                    bestInert.getKey().socket(), Equipped.ofUnique(bestInert.getKey().cand()));
+                finalXml = jewelXmlFor.apply(jewels);
+                finalValues = poePobEngineService.calculateValues(finalXml);
+                evalCount.incrementAndGet();
+                current = bestInert.getValue();
+                log(
+                    "기여 0 주얼 교체: "
+                        + bestInert.getKey().cand().nameKo()
+                        + " ("
+                        + format(jewelBase)
+                        + " → "
+                        + format(bestInert.getValue())
+                        + ", 후보 "
+                        + inertTrials.size()
+                        + "건)");
+              } else {
+                log(
+                    "기여 0 주얼 재대결 기각: 최고 "
+                        + format(bestInert == null ? 0d : bestInert.getValue())
+                        + " vs 현재 "
+                        + format(jewelBase)
+                        + " (후보 "
+                        + inertTrials.size()
+                        + "건)");
+                break;
+              }
+            }
+          }
+        }
+      }
+      // ── 남은 트리 포인트 채우기(완성 빌드) — 실측(15축 저장 빌드 전수): 5축이 본트리 포인트를 남긴다
+      //   (칼날 소용돌이 6pt · 고행 5pt · 혼의 균열 5pt · 한파 1pt · 맹독의 비 1pt, 합 18pt).
+      //   원인은 전직 때의 "전부 동률" 과 다르다 — 트리 greedy 는 **키워드로 미리 점수 매긴 후보 풀**
+      //   (candidateScores)이 소진되면 멈춘다. 그래서 키워드에 안 걸리는 노드는 아예 후보가 못 된다.
+      //   ⚠ 그 대가가 크다(실측, 칼날 소용돌이 완성 빌드에 인접 노드 184개를 하나씩 붙여 재봄):
+      //     `힘` 1칸이 dps 55,447,735 → **64,122,514(+15.6%)** · `지능` +5.3% · `오라 효과` +2.9%.
+      //     이 빌드는 키스톤 **강철의 의지(Iron Will)** 를 찍어 힘이 주문 피해에 그대로 실리는데,
+      //     속성 노드는 데미지 키워드가 아니라 풀에 못 들어온다. DPS 개선 후보가 35개나 남아 있었다.
+      //   그래서 완성 빌드에서 **인접 1칸**만 실측으로 고른다(키워드 무관). 남는 포인트가 없으면
+      //   즉시 빠지므로 123pt 를 다 쓴 10축에는 평가가 추가되지 않는다.
+      {
+        final AnointPick pinnedAnointForTree = currentAnoint;
+        String treeSecondaryKey = "ehp".equals(objectiveKey) ? "dps" : "ehp";
+        boolean treeFilled = true;
+        int treeRounds = 0;
+        while (treeFilled && treeRounds < LEFTOVER_TREE_ROUNDS) {
+          treeFilled = false;
+          treeRounds++;
+          // ⚠ 여유 포인트는 allocated.size() 로 세면 **과대평가**된다 — 마스터리/클러스터 노드는
+          //   allocated 에 없지만 buildXml 이 nodes= 에 넣으므로 실제 소모 포인트에 포함된다.
+          //   실측(칼날 소용돌이): 이 자리에서 "여유 11pt" 로 봤는데 최종 빌드는 이미 123/123 이었다.
+          //   상한(LEFTOVER_TREE_ROUNDS)이 우연히 막아준 것이고, 그대로 두면 예산 초과 빌드를 낸다.
+          //   그래서 **최종 XML 의 nodes= 를 직접 세서** 감사와 같은 기준으로 맞춘다.
+          int usedTreePoints = countTreePoints(finalXml);
+          int freeTreePoints = POINT_BUDGET - usedTreePoints;
+          if (freeTreePoints <= 0) {
+            break;
+          }
+          List<Integer> treeCands = new ArrayList<>();
+          Set<Integer> treeSeen = new LinkedHashSet<>();
+          for (Integer allocatedId : new ArrayList<>(allocated)) {
+            for (Integer neighbor : poeTreeGraphService.neighbors(allocatedId)) {
+              if (allocated.contains(neighbor) || !treeSeen.add(neighbor)) {
+                continue;
+              }
+              PoeTreeGraphService.TreeNode neighborInfo = poeTreeGraphService.node(neighbor);
+              if (neighborInfo == null || neighborInfo.ascendancy() != null) {
+                continue;
+              }
+              treeCands.add(neighbor);
+            }
+          }
+          if (treeCands.isEmpty()) {
+            break;
+          }
+          if (treeCands.size() > LEFTOVER_TREE_CANDIDATES) {
+            treeCands = new ArrayList<>(treeCands.subList(0, LEFTOVER_TREE_CANDIDATES));
+          }
+          final double treeBase = objectiveOf(finalValues, objectiveKey);
+          Function<Integer, String> treeXmlFor =
+              id -> {
+                Set<Integer> trial = new LinkedHashSet<>(allocated);
+                trial.add(id);
+                String trialXml =
+                    buildXml(
+                        gem,
+                        supports,
+                        className,
+                        ascendancy,
+                        ascendancyNodes,
+                        trial,
+                        items,
+                        jewels);
+                return pinnedAnointForTree != null
+                    ? withAnoint(trialXml, pinnedAnointForTree.name())
+                    : trialXml;
+              };
+          Map<Integer, Double> treeResults =
+              evalBatch(executor, treeCands, treeXmlFor, objectiveKey);
+          Map.Entry<Integer, Double> bestTree =
+              treeResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          Integer treePick = null;
+          String treeReason = null;
+          if (bestTree != null && bestTree.getValue() > treeBase * 1.003) {
+            treePick = bestTree.getKey();
+            treeReason = format(treeBase) + " → " + format(bestTree.getValue());
+          } else {
+            // 목표 무손실 후보 중 2차 지표가 오르는 쪽 — 전직 남은 포인트와 같은 규칙.
+            final double treeEps = Math.max(1e-9, Math.abs(treeBase) * 1e-9);
+            List<Integer> treeTied =
+                treeResults.entrySet().stream()
+                    .filter(entry -> entry.getValue() != null)
+                    .filter(entry -> entry.getValue() >= treeBase - treeEps)
+                    .map(Map.Entry::getKey)
+                    .toList();
+            if (!treeTied.isEmpty()) {
+              double treeBaseSecondary = objectiveOf(finalValues, treeSecondaryKey);
+              Map<Integer, Double> treeSecondaryResults =
+                  evalBatch(executor, treeTied, treeXmlFor, treeSecondaryKey);
+              Map.Entry<Integer, Double> bestSecondary =
+                  treeSecondaryResults.entrySet().stream()
+                      .max(Map.Entry.comparingByValue())
+                      .orElse(null);
+              if (bestSecondary != null && bestSecondary.getValue() > treeBaseSecondary) {
+                treePick = bestSecondary.getKey();
+                treeReason =
+                    "목표 무손실 · 2차 "
+                        + treeSecondaryKey
+                        + " "
+                        + format(treeBaseSecondary)
+                        + " → "
+                        + format(bestSecondary.getValue());
+              }
+            }
+          }
+          if (treePick == null) {
+            log(
+                "남은 트리 포인트 미배분: 여유 "
+                    + freeTreePoints
+                    + "pt · 인접 후보 "
+                    + treeCands.size()
+                    + "개 · 최고 "
+                    + format(bestTree == null ? 0d : bestTree.getValue())
+                    + " vs 현재 "
+                    + format(treeBase));
+            break;
+          }
+          allocated.add(treePick);
+          finalXml =
+              buildXml(
+                  gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels);
+          if (pinnedAnointForTree != null) {
+            finalXml = withAnoint(finalXml, pinnedAnointForTree.name());
+          }
+          finalValues = poePobEngineService.calculateValues(finalXml);
+          evalCount.incrementAndGet();
+          PoeTreeGraphService.TreeNode pickInfo = poeTreeGraphService.node(treePick);
+          log(
+              "남은 트리 포인트 배분: "
+                  + (pickInfo != null && pickInfo.nameKo() != null
+                      ? pickInfo.nameKo()
+                      : String.valueOf(treePick))
+                  + " (+1pt, 여유 "
+                  + (freeTreePoints - 1)
+                  + "pt, "
+                  + treeReason
+                  + ")");
+          treeFilled = true;
+        }
+      }
+      // ── 빈 플라스크 슬롯 채우기(완성 빌드) — 실측(15축 저장 빌드 전수): 14축은 플라스크 5/5 인데
+      //   맹독의 비(패스파인더)만 **0/5** 다. 아이템 단계에선 후보 22종이 전부 기각된다(최고 250,085 vs
+      //   현재 279,516) — 그 시점엔 플라스크 효과를 키울 전직 노드가 없어 플라스크가 약해 보이고, 노드는
+      //   플라스크가 없어 무효로 보이는 교착이다. 중반에서 짝 시행(플라스크+노드)으로 묶어 봤지만
+      //   최고 595,619 vs 현재 683,145(**−12.8%**) 로 더 나빴다. 반면 dying-sun 을 처음부터 강제하면
+      //   최종 3,308,691 → 3,879,259(**+17.2%**) 다 — 완주해야만 보이는 이득이다.
+      //   ⚠ 그래서 완성 빌드에서 잰다. 같은 자리에서 남은 전직 포인트 배분이 통했고(순이득 가드 바깥),
+      //     여기서 플라스크가 들어가면 **뒤이어 도는 전직 배분**이 플라스크 의존 노드를 실측으로 집을 수 있다.
+      //   빈 슬롯이 없으면 즉시 빠지므로 나머지 14축에는 평가가 한 번도 추가되지 않는다.
+      {
+        List<Slot> flaskSlots =
+            List.of(Slot.FLASK1, Slot.FLASK2, Slot.FLASK3, Slot.FLASK4, Slot.FLASK5);
+        final AnointPick pinnedAnointForFlask = currentAnoint;
+        boolean flaskFilled = true;
+        while (flaskFilled) {
+          flaskFilled = false;
+          Slot emptyFlask = null;
+          for (Slot flaskSlot : flaskSlots) {
+            if (!items.containsKey(flaskSlot)) {
+              emptyFlask = flaskSlot;
+              break;
+            }
+          }
+          if (emptyFlask == null) {
+            break;
+          }
+          final Slot targetFlask = emptyFlask;
+          List<Equipped> flaskCands =
+              itemCandidates(targetFlask, gem, keywords, items).stream()
+                  .map(Equipped::ofUnique)
+                  .toList();
+          if (flaskCands.isEmpty()) {
+            log("빈 플라스크 미채움: " + targetFlask.ko + " — 후보 없음");
+            break;
+          }
+          final double flaskBase = objectiveOf(finalValues, objectiveKey);
+          Map<Equipped, Double> flaskResults =
+              evalBatch(
+                  executor,
+                  flaskCands,
+                  cand -> {
+                    String trialXml =
+                        buildXml(
+                            gem,
+                            supports,
+                            className,
+                            ascendancy,
+                            ascendancyNodes,
+                            allocated,
+                            withFlaskTrial(items, targetFlask, cand),
+                            jewels);
+                    return pinnedAnointForFlask != null
+                        ? withAnoint(trialXml, pinnedAnointForFlask.name())
+                        : trialXml;
+                  },
+                  objectiveKey,
+                  (cand, values) -> meetsRequirements(cand, values));
+          Map.Entry<Equipped, Double> bestFlask =
+              flaskResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (bestFlask == null || bestFlask.getValue() <= flaskBase * 1.003) {
+            log(
+                "빈 플라스크 미채움: "
+                    + targetFlask.ko
+                    + " · 후보 "
+                    + flaskCands.size()
+                    + "개 · 최고 "
+                    + format(bestFlask == null ? 0d : bestFlask.getValue())
+                    + " vs 현재 "
+                    + format(flaskBase));
+            // 후보 순위는 이미 손에 있다(추가 평가 0) — 어떤 플라스크가 어디쯤인지 남긴다.
+            log(
+                "빈 플라스크 후보 순위: "
+                    + flaskResults.entrySet().stream()
+                        .sorted(java.util.Map.Entry.<Equipped, Double>comparingByValue().reversed())
+                        .limit(6)
+                        .map(e -> equippedLabel(e.getKey()) + " " + format(e.getValue()))
+                        .collect(java.util.stream.Collectors.joining(" · ")));
+            if (bestFlask != null) {
+              // 빈 슬롯에 아이템을 더했는데 값이 **내려간다**면 개별 모드가 아니라 구조적 이유다
+              //   (22개 후보가 전부 같은 폭으로 진다). 무엇이 무너지는지 스탯으로 남긴다.
+              String diagXml =
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      withFlaskTrial(items, targetFlask, bestFlask.getKey()),
+                      jewels);
+              if (pinnedAnointForFlask != null) {
+                diagXml = withAnoint(diagXml, pinnedAnointForFlask.name());
+              }
+              Map<String, Double> diagValues = poePobEngineService.calculateValues(diagXml);
+              evalCount.incrementAndGet();
+              StringBuilder diag = new StringBuilder();
+              for (String key :
+                  List.of(
+                      "CombinedDPS",
+                      "TotalEHP",
+                      "Life",
+                      "LifeUnreserved",
+                      "ManaUnreserved",
+                      "LifeRegenRecovery",
+                      "TotalDegen")) {
+                diag.append(diag.length() == 0 ? "" : " · ")
+                    .append(key)
+                    .append(" ")
+                    .append(format(finalValues.getOrDefault(key, 0d)))
+                    .append("→")
+                    .append(format(diagValues.getOrDefault(key, 0d)));
+              }
+              log("빈 플라스크 기각 진단: " + equippedLabel(bestFlask.getKey()) + " · " + diag);
+            }
+            break;
+          }
+          items.put(targetFlask, bestFlask.getKey());
+          finalXml =
+              buildXml(
+                  gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels);
+          if (pinnedAnointForFlask != null) {
+            finalXml = withAnoint(finalXml, pinnedAnointForFlask.name());
+          }
+          finalValues = poePobEngineService.calculateValues(finalXml);
+          evalCount.incrementAndGet();
+          log(
+              "빈 플라스크 채움: "
+                  + targetFlask.ko
+                  + " = "
+                  + equippedLabel(bestFlask.getKey())
+                  + " ("
+                  + format(flaskBase)
+                  + " → "
+                  + format(objectiveOf(finalValues, objectiveKey))
+                  + ", 후보 "
+                  + flaskCands.size()
+                  + "개)");
+          flaskFilled = true;
+        }
+      }
+      // ── 남은 전직 포인트 동률 배분(완성 빌드) — 실측(15축 전수 감사): 전직 8pt 중 **7pt 가 버려졌다**
+      //   (칼날 소용돌이 2pt · 유령 소환 1pt · 맹독의 비 4pt). 버그가 아니라 목표 함수의 사각지대다:
+      //   트릭스터에 남은 노드는 전부 방어/유틸(주문분쇄자·심정지·탈출의 명수·회피/ES)이라 dps 목표에서
+      //   **정확히 0**(후보 10개 전부 62,684,223 = 기준), 패스파인더는 전직 전부가 플라스크 스케일링인데
+      //   그 시점 플라스크가 없어 후보 17개가 모두 683,145 로 동률이었다.
+      //   ⚠ 채우기 자리(파이프라인 중반)에 두면 **구조적으로 살아남지 못한다** — 실측(칼날 소용돌이):
+      //     동률 배분이 2pt 를 썼는데 "전직 재대결 원복: 순이득 없음 (62,684,223 → 62,684,223)" 이
+      //     통째로 되돌려 최종 빌드는 그대로 6pt 사용이었다(dps 112,332,862 로 적용 전과 동일).
+      //     목표 무손실은 정의상 순이득 0이라 그 가드에 **항상** 걸린다. 그래서 완성 빌드에서 돌리고
+      //     finalXml/finalValues 를 여기서 직접 갱신한다(늦은 단계의 노드 변경은 위쪽 조건부 재구성에
+      //     기대면 출력 XML 에 안 실릴 수 있다).
+      //   남는 전직 포인트는 예산이 분리돼 달리 쓸 데가 없으므로, 목표값을 깎지 않는 한 배분은 공짜다.
+      {
+        record LeftoverFill(int id, List<Integer> path) {}
+        String tieSecondaryKey = "ehp".equals(objectiveKey) ? "dps" : "ehp";
+        final AnointPick pinnedAnointForFill = currentAnoint;
+        boolean leftoverFilled = true;
+        while (leftoverFilled) {
+          leftoverFilled = false;
+          int usedAscPoints = 0;
+          for (Integer allocatedId : ascendancyNodes) {
+            PoeTreeGraphService.TreeNode allocatedInfo = poeTreeGraphService.node(allocatedId);
+            if (allocatedInfo == null || !Boolean.TRUE.equals(allocatedInfo.ascendancyStart())) {
+              usedAscPoints++;
+            }
+          }
+          int leftoverPoints = ASCENDANCY_POINT_BUDGET - usedAscPoints;
+          if (leftoverPoints <= 0) {
+            break;
+          }
+          List<String> leftoverTrees = new ArrayList<>();
+          leftoverTrees.add(ascendancy);
+          if (chosenBloodline != null) {
+            leftoverTrees.add(chosenBloodline);
+          }
+          List<LeftoverFill> leftoverCands = new ArrayList<>();
+          for (String leftoverTree : leftoverTrees) {
+            for (PoeTreeGraphService.TreeNode cand :
+                poeTreeGraphService.ascendancyAllNodes(leftoverTree)) {
+              if (ascendancyNodes.contains(cand.id())
+                  || Boolean.TRUE.equals(cand.ascendancyStart())) {
+                continue;
+              }
+              List<Integer> path =
+                  poeTreeGraphService.shortestPathInAscendancy(
+                      ascendancyNodes, cand.id(), leftoverTree);
+              if (path == null || path.isEmpty() || path.size() > leftoverPoints) {
+                continue;
+              }
+              leftoverCands.add(new LeftoverFill(cand.id(), path));
+            }
+          }
+          if (leftoverCands.isEmpty()) {
+            break;
+          }
+          Function<LeftoverFill, String> leftoverXmlFor =
+              cand -> {
+                Set<Integer> trialNodes = new LinkedHashSet<>(ascendancyNodes);
+                trialNodes.addAll(cand.path());
+                String trialXml =
+                    buildXml(
+                        gem, supports, className, ascendancy, trialNodes, allocated, items, jewels);
+                return pinnedAnointForFill != null
+                    ? withAnoint(trialXml, pinnedAnointForFill.name())
+                    : trialXml;
+              };
+          final double leftoverBase = objectiveOf(finalValues, objectiveKey);
+          final double leftoverEps = Math.max(1e-9, Math.abs(leftoverBase) * 1e-9);
+          Map<LeftoverFill, Double> leftoverPrimary =
+              evalBatch(executor, leftoverCands, leftoverXmlFor, objectiveKey);
+          List<LeftoverFill> leftoverTied =
+              leftoverPrimary.entrySet().stream()
+                  .filter(entry -> entry.getValue() != null)
+                  .filter(entry -> entry.getValue() >= leftoverBase - leftoverEps)
+                  .map(Map.Entry::getKey)
+                  .toList();
+          if (leftoverTied.isEmpty()) {
+            log(
+                "남은 전직 포인트 미배분: 여유 "
+                    + leftoverPoints
+                    + "pt · 후보 "
+                    + leftoverCands.size()
+                    + "개 — 목표값을 깎지 않는 후보가 없음");
+            break;
+          }
+          double leftoverBaseSecondary = objectiveOf(finalValues, tieSecondaryKey);
+          Map<LeftoverFill, Double> leftoverSecondary =
+              evalBatch(executor, leftoverTied, leftoverXmlFor, tieSecondaryKey);
+          Map.Entry<LeftoverFill, Double> leftoverBest =
+              leftoverSecondary.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          if (leftoverBest == null || leftoverBest.getValue() <= leftoverBaseSecondary) {
+            log(
+                "남은 전직 포인트 미배분: 여유 "
+                    + leftoverPoints
+                    + "pt · 무손실 후보 "
+                    + leftoverTied.size()
+                    + "개 · 2차 "
+                    + tieSecondaryKey
+                    + " 최고 "
+                    + format(leftoverBest == null ? 0d : leftoverBest.getValue())
+                    + " vs 현재 "
+                    + format(leftoverBaseSecondary));
+            break;
+          }
+          ascendancyNodes.addAll(leftoverBest.getKey().path());
+          finalXml =
+              buildXml(
+                  gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels);
+          if (pinnedAnointForFill != null) {
+            finalXml = withAnoint(finalXml, pinnedAnointForFill.name());
+          }
+          finalValues = poePobEngineService.calculateValues(finalXml);
+          evalCount.incrementAndGet();
+          PoeTreeGraphService.TreeNode pickInfo =
+              poeTreeGraphService.node(leftoverBest.getKey().id());
+          log(
+              "남은 전직 포인트 배분: "
+                  + (pickInfo != null && pickInfo.nameKo() != null
+                      ? pickInfo.nameKo()
+                      : String.valueOf(leftoverBest.getKey().id()))
+                  + " (+"
+                  + leftoverBest.getKey().path().size()
+                  + "pt, 목표 "
+                  + format(objectiveOf(finalValues, objectiveKey))
+                  + " 무손실 · 2차 "
+                  + tieSecondaryKey
+                  + " "
+                  + format(leftoverBaseSecondary)
+                  + " → "
+                  + format(objectiveOf(finalValues, tieSecondaryKey))
+                  + ")");
+          leftoverFilled = true;
+        }
+      }
+      if (ringsBlocked(items) && items.containsKey(Slot.RING1) && items.containsKey(Slot.RING2)) {
+        Slot deadRing = blockingRingSlot(items) == Slot.RING1 ? Slot.RING2 : Slot.RING1;
+        Equipped dropped = items.remove(deadRing);
+        if (dropped != null) {
+          finalXml =
+              finalXml.replaceAll("<Slot name=\"" + deadRing.pobName + "\" itemId=\"\\d+\"/>", "");
+          log(
+              "죽은 반지 정리: "
+                  + deadRing.ko
+                  + " = "
+                  + equippedLabel(dropped)
+                  + " 해제(다른 반지가 착용을 금지 — PoB 가 이미 무시하던 아이템)");
+        }
+      }
       PoeOptimizeResult result =
           new PoeOptimizeResult(
               gem.slug(),
@@ -8829,16 +9859,18 @@ public class PoeOptimizeService {
       //   해당 아키타입 ninja 실측 중앙값(setSurvivalTargets)이고, s 가 곧 DPS 에 곱해지는 값이다.
       if ("balanced".equals(objective)) {
         double weakest = weakestCommonHit(finalValues);
+        StringBuilder survivalDetail = new StringBuilder();
         log(
             String.format(
-                "생존 계수: 최약최대피격 %,.0f / 목표 %,.0f = %.2f · EHP %,.0f / 목표 %,.0f · surv=%.3f (곡률 %.1f)",
-                weakest,
-                targetMaxHit,
-                targetMaxHit > 0 ? weakest / targetMaxHit : 0d,
-                finalValues.getOrDefault("TotalEHP", 0d),
-                targetEhp,
-                balancedSurvival(finalValues),
-                SURVIVAL_SHORTFALL_EXP));
+                    "생존 계수: 최약최대피격 %,.0f / 목표 %,.0f = %.2f · EHP %,.0f / 목표 %,.0f · surv=%.3f (곡률 %.1f)",
+                    weakest,
+                    targetMaxHit,
+                    targetMaxHit > 0 ? weakest / targetMaxHit : 0d,
+                    finalValues.getOrDefault("TotalEHP", 0d),
+                    targetEhp,
+                    balancedSurvival(finalValues, survivalDetail),
+                    SURVIVAL_SHORTFALL_EXP)
+                + (survivalDetail.length() == 0 ? "" : " · 감쇠 " + survivalDetail));
       }
       log(
           "완료: "
@@ -9026,6 +10058,20 @@ public class PoeOptimizeService {
       Double.parseDouble(
           System.getProperty(
               "poe.ehpWeight", System.getenv().getOrDefault("POE_EHP_WEIGHT", "0.15")));
+
+  /**
+   * P2 카오스 저항 게이트 on/off — 기여도 귀속(A/B) 용. 기본 on.
+   *
+   * <p>발단(2026-09-04): 이 항의 하한은 0.8(최대 20% 감쇠)인데 EHP 항의 하한은 0.925(최대 7.5%)다. 즉 캡만 보면 카오스 저항이 EHP 보다
+   * <b>2.7배</b> 더 세게 작용할 수 있다. 실제로 회오리에서 EHP −18% · 최약최대피격 −18% 인 빌드가 카오스저항 항(0.800→0.988) 덕에 목표값
+   * +13.5% 로 <b>더 높은 점수</b>를 받았다. 다만 그건 반사실(counterfactual)이었고, 현재 산출물에 실제로 영향을 주는지는 별개다 — 후보가 모두
+   * 하한에 걸려 있으면 상수라 순위를 바꾸지 않는다. 그래서 끄고 재는 A/B 스위치를 둔다.
+   */
+  private static final boolean CHAOS_RES_GATE_ENABLED =
+      !"off"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.chaosResGate", System.getenv().getOrDefault("POE_CHAOS_RES_GATE", "on")));
 
   /** EHP 시드 존중 시 절대 바닥. */
   private static final double EHP_SEED_FLOOR =
@@ -9321,6 +10367,74 @@ public class PoeOptimizeService {
 
   private volatile boolean flaskDumped = false;
 
+  /**
+   * 빌드 XML 의 nodes= 에서 **본트리 포인트**를 센다(전직/혈맹·직업 시작 노드 제외).
+   *
+   * <p>tree-points-audit.js 와 같은 기준이다 — 마스터리·클러스터 노드도 포인트를 쓰므로 함께 센다.
+   */
+  private int countTreePoints(String xml) {
+    if (xml == null) {
+      return 0;
+    }
+    java.util.regex.Matcher m = java.util.regex.Pattern.compile("nodes=\"([^\"]*)\"").matcher(xml);
+    if (!m.find()) {
+      return 0;
+    }
+    int count = 0;
+    for (String raw : m.group(1).split(",")) {
+      if (raw.isBlank()) {
+        continue;
+      }
+      int id;
+      try {
+        id = Integer.parseInt(raw.trim());
+      } catch (NumberFormatException e) {
+        continue;
+      }
+      PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(id);
+      if (info != null && info.ascendancy() != null) {
+        continue; // 전직/혈맹은 별도 예산
+      }
+      if (info != null && "class".equals(info.type())) {
+        continue; // 직업 시작 노드는 포인트를 쓰지 않는다
+      }
+      count++;
+    }
+    return count;
+  }
+
+  /** 다른 반지 착용을 금지하는 반지가 어느 슬롯에 있는지(없으면 null). */
+  private Slot blockingRingSlot(Map<Slot, Equipped> items) {
+    for (Slot ringSlot : List.of(Slot.RING1, Slot.RING2)) {
+      Equipped equipped = items.get(ringSlot);
+      if (equipped == null || !equipped.isUnique() || equipped.unique() == null) {
+        continue;
+      }
+      List<String> lines = equipped.unique().explicits();
+      if (lines != null
+          && lines.stream().anyMatch(l -> l != null && l.contains("Can't use other Rings"))) {
+        return ringSlot;
+      }
+    }
+    return null;
+  }
+
+  /** 착용 중인 반지가 다른 반지 착용을 금지하는지(예: Foulborn Ming's Heart). PoB 가 두 번째 반지를 무시한다. */
+  private boolean ringsBlocked(Map<Slot, Equipped> items) {
+    for (Slot ringSlot : List.of(Slot.RING1, Slot.RING2)) {
+      Equipped equipped = items.get(ringSlot);
+      if (equipped == null || !equipped.isUnique() || equipped.unique() == null) {
+        continue;
+      }
+      List<String> lines = equipped.unique().explicits();
+      if (lines != null
+          && lines.stream().anyMatch(l -> l != null && l.contains("Can't use other Rings"))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** 진단용 XML 덤프 — 임시 폴더에 쓴다(실패해도 잡을 멈추지 않는다). */
   private void dumpXml(String name, String xml) {
     try {
@@ -9338,6 +10452,16 @@ public class PoeOptimizeService {
     trial.put(slot, candidate);
     return trial;
   }
+
+  /** 속성 보정으로 **희생한** 레어 모드 이력 — 나중에 속성이 넉넉해져도 되돌리는 경로가 없어서 남는다. */
+  private record AttrRepair(
+      Slot slot,
+      int index,
+      String originalKey,
+      String attrKey,
+      PoeModPoolDataService.ModFamily original) {}
+
+  private final List<AttrRepair> attrRepairs = new ArrayList<>();
 
   /** 초반 전직 배분 건너뛰기 — 완성 빌드 재대결 채우기에 전부 맡기는 A/B 용. 기본 off. */
   private static final boolean DEFER_ASC_ENABLED =
@@ -9359,6 +10483,27 @@ public class PoeOptimizeService {
               "poe.survivalExp", System.getenv().getOrDefault("POE_SURVIVAL_EXP", "1.0")));
 
   private double balancedSurvival(Map<String, Double> values) {
+    return balancedSurvival(values, null);
+  }
+
+  /**
+   * 생존 계수의 항별 기여를 사람이 읽을 형태로 붙인다(로그 전용, 산술 불변).
+   *
+   * <p>발단(실측): 로그가 최약최대피격과 EHP 만 보여줘서 <b>회오리 surv=0.653</b> 을 설명할 수 없었다 — 두 지표 모두 목표를 넘겼는데(1.28 ·
+   * 23,873/23,000) 계수는 0.653 이고, 목표를 못 넘긴 맹독의 비가 오히려 0.968 이다. 감쇠는 카오스·저항캡·주문억제·지속 항에서 오는데 그게 로그에
+   * 없었다.
+   */
+  private void appendSurvivalTerm(StringBuilder detail, String name, double factor) {
+    if (detail == null || factor >= 0.9995) {
+      return;
+    }
+    detail
+        .append(detail.length() == 0 ? "" : " ")
+        .append(name)
+        .append(String.format("×%.3f", factor));
+  }
+
+  private double balancedSurvival(Map<String, Double> values, StringBuilder detail) {
     if (EARLY_DPS_ENABLED && earlySearchPhase) {
       return 1.0; // 초반 탐색: 생존을 중립으로 두고 데미지로 후보를 가른다(위 필드 주석의 실측 근거)
     }
@@ -9411,11 +10556,14 @@ public class PoeOptimizeService {
         && weakestCommon != Double.MAX_VALUE
         && weakestCommon < maxhitTarget) {
       s *= 0.05;
+      appendSurvivalTerm(detail, "래칫", 0.05);
     }
     // (2) 카오스 — 드문 위협이라 약한 2차 가중. 심하게 낮을 때만 완만 감쇠(하한 0.6, 과투자 방지).
     double chaos = values.getOrDefault("ChaosMaximumHitTaken", 0d);
     if (chaos > 0d && chaos < CHAOS_MAXHIT_FLOOR) {
-      s *= Math.max(0.6, chaos / CHAOS_MAXHIT_FLOOR);
+      double chaosHitTerm = Math.max(0.6, chaos / CHAOS_MAXHIT_FLOOR);
+      s *= chaosHitTerm;
+      appendSurvivalTerm(detail, "카오스최대피격", chaosHitTerm);
     }
     // (2e) EHP 목표 — 최약최대피격은 **단일 히트** 생존이고 EHP 는 **연속 피격** 버팀이라, 한쪽만 맞추면
     //   실빌드와 프로파일이 갈린다(실측: 번개 화살 최약 7,312 로 실메타 7,500 에 맞췄는데 EHP 는 14,767 vs
@@ -9423,8 +10571,10 @@ public class PoeOptimizeService {
     if (EHP_TERM_ENABLED && ehpTarget > 0 && weakestCommon != Double.MAX_VALUE) {
       double ehpNow = values.getOrDefault("TotalEHP", 0d);
       if (ehpNow < ehpTarget) {
-        s *=
+        double ehpTerm =
             Math.max(1.0 - EHP_TERM_WEIGHT / 2, 1.0 - EHP_TERM_WEIGHT * (1.0 - ehpNow / ehpTarget));
+        s *= ehpTerm;
+        appendSurvivalTerm(detail, "EHP", ehpTerm);
       }
     }
     // (2b) 원소 저항 캡 — 기본 75(전 빌드 공통)이나, 아키타입 실측(치프틴 RF 등 최대저항 특화)은 목표가 90.
@@ -9435,7 +10585,9 @@ public class PoeOptimizeService {
       double target = resTargets[i];
       double r = values.getOrDefault(resKeys[i], target);
       if (r < target) {
-        s *= Math.max(0.15, 1.0 - (target - r) * 0.025);
+        double resTerm = Math.max(0.15, 1.0 - (target - r) * 0.025);
+        s *= resTerm;
+        appendSurvivalTerm(detail, resKeys[i], resTerm);
       }
     }
     // (2c) P2 카오스 저항 목표 — 실빌드 중앙값(캡 75) 미달 1%당 0.4% 감쇠(하한 0.8).
@@ -9443,13 +10595,15 @@ public class PoeOptimizeService {
     //   ⚠ 1%/pt·하한 0.5 로 했더니 초기 트리 탐색까지 지배해 전 축 하락(730k→580k, 생명 10.6k→7.1k 실측) —
     //   카오스저항은 주로 장비 접미어에서 오므로 아이템 단계를 조향할 약한 신호면 충분하다.
     //   targetChaosRes=0(시드 없음/비-balanced)이면 무변경.
-    if (targetChaosRes > 0) {
+    if (CHAOS_RES_GATE_ENABLED && targetChaosRes > 0) {
       double cr = values.getOrDefault("ChaosResist", (double) targetChaosRes);
       // CI(카오스 접종) 빌드는 카오스 피해 면역인데 PoB ChaosResist 값은 원시 저항(-5 등)을 그대로 보고한다 —
       // 생명 1 이 CI 의 시그니처. 면역인데 저항 미달 감쇠(최대 ×0.8)를 적용하면 ES/CI 대안이 부당 감점된다.
       boolean chaosImmune = values.getOrDefault("Life", 0d) <= 1d;
       if (!chaosImmune && cr < targetChaosRes) {
-        s *= Math.max(0.8, 1.0 - (targetChaosRes - cr) * 0.004);
+        double chaosResTerm = Math.max(0.8, 1.0 - (targetChaosRes - cr) * 0.004);
+        s *= chaosResTerm;
+        appendSurvivalTerm(detail, "카오스저항", chaosResTerm);
       }
     }
     // (2d) 주문 억제 목표 — 억제 특화 아키타입(중앙값 60%+)만. 억제 100% = 주문 피해 절반인데 EHP 연속
@@ -9458,7 +10612,9 @@ public class PoeOptimizeService {
     if (targetSpellSuppress > 0) {
       double suppress = values.getOrDefault("SpellSuppressionChance", 0d);
       if (suppress < targetSpellSuppress) {
-        s *= Math.max(0.8, 1.0 - (targetSpellSuppress - suppress) * 0.004);
+        double suppressTerm = Math.max(0.8, 1.0 - (targetSpellSuppress - suppress) * 0.004);
+        s *= suppressTerm;
+        appendSurvivalTerm(detail, "주문억제", suppressTerm);
       }
     }
     // (2e) 주문 막기 목표는 **도입 실패로 롤백**(2026-08-04) — 막기 75%는 현 레버(방패 접미·플라스크·마스터리)로
@@ -9471,7 +10627,9 @@ public class PoeOptimizeService {
     Double net = values.get("NetLifeRegen");
     if (net != null && net < 0d) {
       double life = Math.max(1.0, values.getOrDefault("Life", 1d));
-      s *= Math.max(0.02, 1.0 / (1.0 + (-net / life) * 120.0));
+      double sustainTerm = Math.max(0.02, 1.0 / (1.0 + (-net / life) * 120.0));
+      s *= sustainTerm;
+      appendSurvivalTerm(detail, "지속", sustainTerm);
     }
     return s;
   }
@@ -10770,8 +11928,12 @@ public class PoeOptimizeService {
           log("속성 보정 불가 — " + targetSlot.ko + " 접미어가 전부 속성(더 갈 곳 없음)");
           return;
         }
-        action = families.get(replaceAt).key() + " 교체";
+        String replacedKey = families.get(replaceAt).key(); // set 뒤에 읽으면 이미 덮인 값이 나온다
+        PoeModPoolDataService.ModFamily replacedFamily = families.get(replaceAt);
+        action = replacedKey + " 교체";
         families.set(replaceAt, attrFamily);
+        attrRepairs.add(
+            new AttrRepair(targetSlot, replaceAt, replacedKey, attrFamily.key(), replacedFamily));
       }
       items.put(
           targetSlot,
@@ -11500,7 +12662,11 @@ public class PoeOptimizeService {
       if (s.isEmpty() || !seen.add(s)) {
         continue;
       }
-      poeUniqueDataService.findBySlug(s).ifPresent(resolved::add);
+      // 못 찾은 slug 를 조용히 버리지 않는다 — 사용자가 강제 장착을 요청했는데 무시되면 결과가
+      //   "그냥 평범한 빌드"로 나와 이유를 알 수 없다(실측: the-bringer-of-rain 이 반영도, 경고도 없이 사라졌다).
+      poeUniqueDataService
+          .findBySlug(s)
+          .ifPresentOrElse(resolved::add, () -> log("강제 유니크 미해석(무시됨): " + s));
     }
     return resolved;
   }
@@ -12443,6 +13609,16 @@ public class PoeOptimizeService {
       }
       // 저항 접미 2개 (공통)
       suffixPool.stream().filter(f -> hasKeyword(f, "resistance")).limit(2).forEach(suffixes::add);
+      // ⚠ 주문 억제 접미 레버를 넣었다가 **실측으로 원복**했다(2026-09-04).
+      //   spellSuppress 는 데이터 풀에 있지만 방어 템플릿(생명 1 + 저항 2 + 나머지는 데미지 키워드)에서
+      //   **선택될 경로가 없다** — 그건 사실이다. 그러나 한 칸을 보장해도 소용이 없었다: 억제 목표는
+      //   시드가 **100%** 라 접미 1칸(+14%)이면 미달 86 → 항이 하한 0.800 에서 **전혀 안 움직인다**.
+      //   실측(회오리): dps 3,698,848→3,532,705(−4.5%) · EHP 23,873→19,496(−18%)
+      //   · 최약최대피격 8,048→6,612(−18%) — **물리 지표가 전부 나빠졌다**.
+      //   목표값은 2,415,348→2,741,379(+13.5%)로 올랐지만 그 상승은 억제가 아니라
+      //   **카오스저항 항(0.800→0.988)** 에서 왔다 — 0.4%/pt 짜리 항이 EHP −18% 를 이긴다는 뜻이라
+      //   모델 균형 문제로 따로 기록했다. 항을 실제로 움직이려면 4~5칸이 필요한데, 그건 키워드 전역
+      //   주입 롤백 선례(EHP −42%)와 같은 규모의 개입이다.
     }
     // balanced 방패 — 실빌드 표준 막기 접두(blockPctLocal)를 국소 보장. "block" 키워드 전역 주입은
     // 트리 greedy 까지 오염해 유리대포화(EHP −42%·카저 −5)로 실패 롤백 — 방패 크래프트에만 결정적 편입.

@@ -22,6 +22,7 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 import io.github.luversof.boot.context.support.MessageUtil;
+import net.luversof.web.gate.stock.StockControllerSources;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 
@@ -36,8 +37,6 @@ import net.luversof.web.gate.stock.domain.TradeProfit;
 class DetailCrossLinkTest {
 
   private static final Path JTE_ROOT = Path.of("src/main/jte");
-  private static final Path CONTROLLER =
-      Path.of("src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java");
 
   @BeforeAll
   static void primeMessages() {
@@ -127,7 +126,8 @@ class DetailCrossLinkTest {
 
   @Test
   void 컨트롤러가_두_전환기_목록을_모두_채운다() throws IOException {
-    String source = read(CONTROLLER);
+    // 파일 이름을 박아 두면 컨트롤러를 쪼갤 때 동작은 그대로인데 검사만 깨진다.
+    String source = StockControllerSources.all();
 
     assertThat(source)
         .as("모델에 넣지 않으면 전환기는 조용히 사라진다 - 갈 곳이 없는 것과 구분되지 않는다")

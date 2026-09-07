@@ -9,6 +9,8 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.stock.StockControllerSources;
+
 /**
  * "평균" 기준의 실제 표본 길이를 화면이 밝히는지 본다.
  *
@@ -33,7 +35,8 @@ class ShortPayoutHistoryNoticeTest {
 
   @Test
   void 컨트롤러가_짧은_이력_종목을_모아_넘긴다() throws IOException {
-    String source = read(CONTROLLER);
+    // 파일 이름을 박아 두면 컨트롤러를 쪼갤 때 동작은 그대로인데 검사만 깨진다.
+    String source = StockControllerSources.all();
     assertThat(source).contains("shortHistorySymbols");
     assertThat(source)
         .as("기준 건수가 api-stock 의 limit(12) 와 달라지면 안내가 틀린다")

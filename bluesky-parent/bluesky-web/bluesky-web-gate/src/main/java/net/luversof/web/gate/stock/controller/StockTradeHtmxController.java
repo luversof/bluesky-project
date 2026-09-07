@@ -647,7 +647,14 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       BigDecimal amount,
       Instant date,
       /** 계좌 id 목록. 예전에는 계좌명 목록이라 화면에서 '이름 -> id' 로 되찾아야 했다(동명 계좌 오연결 위험). */
-      List<UUID> accountIds) {}
+      List<UUID> accountIds,
+      /**
+       * 매도로 확정된 손익. 매수·배당에는 없다(null).
+       *
+       * <p>화면의 월별 차트가 <b>손익</b>을 그리려면 필요하다. 예전에는 {@code amount}(거래 금액)만 있어서 차트가 현금흐름밖에 그릴 수 없었고,
+       * 그래서 "매수가 왜 0 선 아래인가" 를 알아야만 읽히는 그림이 됐다.
+       */
+      BigDecimal realizedProfit) {}
 
   /**
    * 활동을 (날짜 · 유형 · 종목 · 매매구분) 으로 묶는다.
@@ -689,6 +696,14 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                   .add(a.amount() != null ? a.amount() : BigDecimal.ZERO);
         }
 
+        // 손익도 금액과 같은 규칙으로 합친다. 한쪽만 더하면 묶인 줄에서 손익이 사라진다.
+        BigDecimal newRealizedProfit = null;
+        if (existing.realizedProfit() != null || a.realizedProfit() != null) {
+          newRealizedProfit =
+              (existing.realizedProfit() != null ? existing.realizedProfit() : BigDecimal.ZERO)
+                  .add(a.realizedProfit() != null ? a.realizedProfit() : BigDecimal.ZERO);
+        }
+
         List<UUID> newAccountIds = new ArrayList<>(existing.accountIds());
         if (!a.accountIds().isEmpty() && !newAccountIds.contains(a.accountIds().get(0))) {
           newAccountIds.add(a.accountIds().get(0));
@@ -705,7 +720,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 existing.description(),
                 newAmount,
                 existing.date(),
-                newAccountIds));
+                newAccountIds,
+                newRealizedProfit));
       } else {
         groupedMap.put(key, a);
       }
@@ -783,7 +799,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               null,
               t.amount(),
               t.tradeDate(),
-              t.accountId() != null ? List.of(t.accountId()) : List.of()));
+              t.accountId() != null ? List.of(t.accountId()) : List.of(),
+              t.realizedProfit()));
     }
 
     for (DividendResponse d : dividends) {
@@ -802,7 +819,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               msg("stock.activity.type.dividend.payout"),
               d.netAmount(),
               d.payDate() != null ? d.payDate() : d.recordDate(),
-              d.accountId() != null ? List.of(d.accountId()) : List.of()));
+              d.accountId() != null ? List.of(d.accountId()) : List.of(),
+              null));
     }
 
     return groupActivitiesByDay(rawActivities, zone);
@@ -1251,7 +1269,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               null,
               t.amount(),
               t.tradeDate(),
-              t.accountId() != null ? List.of(t.accountId()) : List.of()));
+              t.accountId() != null ? List.of(t.accountId()) : List.of(),
+              t.realizedProfit()));
     }
 
     for (DividendResponse d : dividends) {
@@ -1270,7 +1289,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               msg("stock.activity.type.dividend.payout"),
               d.netAmount(),
               d.payDate() != null ? d.payDate() : d.recordDate(),
-              d.accountId() != null ? List.of(d.accountId()) : List.of()));
+              d.accountId() != null ? List.of(d.accountId()) : List.of(),
+              null));
     }
 
     return groupActivitiesByDay(rawActivities, zone);

@@ -191,30 +191,14 @@ public final class StockTradePeriodUtil {
 
   /** 줄 순서를 타지 않는다. */
   public static TradeTotals total(List<TradePeriod> rows) {
-    int count = 0;
-    int buyCount = 0;
-    int sellCount = 0;
-    BigDecimal buyAmount = BigDecimal.ZERO;
-    BigDecimal sellAmount = BigDecimal.ZERO;
-    BigDecimal fee = BigDecimal.ZERO;
-    BigDecimal tax = BigDecimal.ZERO;
-    BigDecimal realizedProfit = BigDecimal.ZERO;
-    if (rows != null) {
-      for (TradePeriod row : rows) {
-        if (row == null) {
-          continue;
-        }
-        count += row.count();
-        buyCount += row.buyCount();
-        sellCount += row.sellCount();
-        buyAmount = buyAmount.add(nz(row.buyAmount()));
-        sellAmount = sellAmount.add(nz(row.sellAmount()));
-        fee = fee.add(nz(row.fee()));
-        tax = tax.add(nz(row.tax()));
-        realizedProfit = realizedProfit.add(nz(row.realizedProfit()));
-      }
-    }
     return new TradeTotals(
-        count, buyCount, sellCount, buyAmount, sellAmount, fee, tax, realizedProfit);
+        StockAmountUtil.count(rows, TradePeriod::count),
+        StockAmountUtil.count(rows, TradePeriod::buyCount),
+        StockAmountUtil.count(rows, TradePeriod::sellCount),
+        StockAmountUtil.sum(rows, TradePeriod::buyAmount),
+        StockAmountUtil.sum(rows, TradePeriod::sellAmount),
+        StockAmountUtil.sum(rows, TradePeriod::fee),
+        StockAmountUtil.sum(rows, TradePeriod::tax),
+        StockAmountUtil.sum(rows, TradePeriod::realizedProfit));
   }
 }

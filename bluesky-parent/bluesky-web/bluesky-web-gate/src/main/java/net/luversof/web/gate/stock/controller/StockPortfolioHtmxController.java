@@ -301,6 +301,12 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         emptyAccountSelection
             ? null
             : async.supply(() -> emptyIfNull(tradeProfitClient.calculateProfit(profitParams)));
+    // 종목별 누적 배당(세후). 종목 상세가 쓰는 것과 같은 잣대다.
+    // 목록 전체(실측 202행 약 78KB)를 받지 않고 종목별 합계만 받는다(이 사용자 18행).
+    var dividendByStockItemFuture =
+        emptyAccountSelection
+            ? null
+            : async.supply(() -> dividendClient.findDividendTotalByStockItem(profitParams));
     var rawStockGroupedFuture =
         emptyAccountSelection
             ? null
@@ -443,6 +449,22 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     model.addAttribute("accountHoldingMap", accountHoldingMap);
     model.addAttribute("stockItemList", stockItemList);
     model.addAttribute("stockAggregated", stockAggregated);
+    // 종목별 실현손익·누적배당·합산손익. 세 값은 종목 상세에만 있어서 종목끼리 견줄 수가 없었다.
+    // 이 화면은 기간이 없는 '지금 보유' 스냅샷이라 전 기간이 대상이고, 전 기간의 평가 변동은 곧
+    // 현재 평가손익이므로(기초가 0) 종목 상세의 '전체' 와 어긋나지 않는다.
+    java.util.Map<UUID, BigDecimal> dividendByStockItem =
+        dividendByStockItemFuture == null
+            ? java.util.Map.<UUID, BigDecimal>of()
+            : emptyIfNullMap(
+                net.luversof.web.gate.stock.support.StockAsyncSupport.join(
+                    dividendByStockItemFuture));
+    var stockProfitBreakdown =
+        net.luversof.web.gate.stock.util.StockCombinedProfitUtil.byStockItem(
+            stockAggregated, dividendByStockItem);
+    model.addAttribute("stockProfitBreakdown", stockProfitBreakdown);
+    model.addAttribute(
+        "stockProfitBreakdownTotal",
+        net.luversof.web.gate.stock.util.StockCombinedProfitUtil.total(stockProfitBreakdown));
     model.addAttribute("totalEvaluationAmount", totalEvaluationAmount);
     model.addAttribute("totalEvaluationProfit", totalEvaluationProfit);
 
@@ -535,6 +557,10 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         profit.realizedProfitNet(),
         profit.evaluationProfitNet(),
         profit.totalProfitNet());
+  }
+
+  private static <K, V> java.util.Map<K, V> emptyIfNullMap(java.util.Map<K, V> value) {
+    return value != null ? value : java.util.Map.of();
   }
 
   private TradeProfit toAssetStatusStock(TradeProfit profit) {

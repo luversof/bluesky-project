@@ -23,6 +23,7 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 import io.github.luversof.boot.context.support.MessageUtil;
+import net.luversof.web.gate.stock.StockControllerSources;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 
 /**
@@ -139,15 +140,18 @@ class SimulatorHoldingQuantityTest {
         .as("simulator.jte 가 조각에 현재 수량을 넘기지 않는다")
         .contains("monthlyDividendCurrentQuantities = monthlyDividendCurrentQuantities");
 
-    String controller =
-        Files.readString(
-            Path.of(
-                "src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java"),
-            StandardCharsets.UTF_8);
+    String controller = StockControllerSources.all();
     assertThat(controller)
         .as("컨트롤러가 모델에 현재 수량을 싣지 않는다")
         .contains("model.addAttribute(\"monthlyDividendCurrentQuantities\"");
-    assertThat(controller)
+    // 원장을 읽는 일은 MonthlyDividendReferenceSupport 로 옮겼다(관리 화면도 같은 것을 쓴다).
+    String support =
+        Files.readString(
+            Path.of(
+                "src/main/java/net/luversof/web/gate/stock/service/"
+                    + "MonthlyDividendReferenceSupport.java"),
+            StandardCharsets.UTF_8);
+    assertThat(support)
         .as("현재 수량은 종목 단위로 묶어 읽어야 한다")
         .contains("params.add(\"groupBy\", \"STOCKITEM\")");
   }
