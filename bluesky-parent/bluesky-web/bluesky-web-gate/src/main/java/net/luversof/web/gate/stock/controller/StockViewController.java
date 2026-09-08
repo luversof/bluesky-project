@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.controller;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -338,7 +340,8 @@ public class StockViewController {
           keyword,
           minAnnualYield,
           positiveOnly,
-          StockViewSupport.failureMessage(ex, "월배당 데이터를 저장하지 못했습니다."),
+          StockViewSupport.failureMessage(
+              ex, msg("stock.monthly.reference.error.snapshot.save.failed")),
           monthlyDividendForm,
           "");
     }
@@ -368,7 +371,7 @@ public class StockViewController {
         keyword,
         minAnnualYield,
         positiveOnly,
-        "월배당 기준 데이터 등록은 배당 메뉴의 월배당 기준 데이터 탭에서 관리합니다.",
+        msg("stock.monthly.reference.error.reference.managed.elsewhere"),
         buildDefaultMonthlyDividendForm(),
         bulkInput);
   }
@@ -410,7 +413,7 @@ public class StockViewController {
           keyword,
           minAnnualYield,
           positiveOnly,
-          "배당주 검색 시트에서 보유/평단가를 가져오지 못했습니다. 시트 설정과 권한을 확인해 주세요.",
+          msg("stock.monthly.reference.error.sheet.import.failed"),
           buildDefaultMonthlyDividendForm(),
           "");
     }
@@ -659,13 +662,14 @@ public class StockViewController {
     MonthlyDividendReferenceSummaryView summary =
         monthlyDividendCalculator.buildReferenceSummary(request.getSymbol(), payouts);
     if (summary.payoutCount() <= 0) {
-      throw new IllegalArgumentException("월배당 기준 데이터가 없습니다. 배당 메뉴의 월배당 기준 데이터에서 먼저 등록해 주세요.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.reference.missing"));
     }
 
     LocalDate referenceDate =
         summary.latestPayDate() != null ? summary.latestPayDate() : summary.latestRecordDate();
     if (referenceDate == null) {
-      throw new IllegalArgumentException("기준 데이터에 사용할 지급일 정보가 없습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.reference.pay.date.missing"));
     }
 
     request.setAsOfDate(referenceDate);
@@ -685,30 +689,34 @@ public class StockViewController {
 
   private void validateMonthlyDividendRequest(MonthlyDividendSnapshotUpsertRequest request) {
     if (!StringUtils.hasText(request.getSymbol())) {
-      throw new IllegalArgumentException("종목코드는 필수입니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.symbol.required"));
     }
     if (request.getAsOfDate() == null) {
-      throw new IllegalArgumentException("기준일은 필수입니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.as.of.date.required"));
     }
     if (request.getHeldQuantity() == null || request.getHeldQuantity() <= 0) {
-      throw new IllegalArgumentException("보유 수량은 1 이상이어야 합니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.held.quantity.min"));
     }
     StockViewSupport.requireNonNegative(
-        request.getLatestMonthlyDividendPerShare(), "최근 주당 월배당금은 0 이상이어야 합니다.");
+        request.getLatestMonthlyDividendPerShare(),
+        msg("stock.monthly.reference.error.latest.dividend.negative"));
     StockViewSupport.requireNonNegative(
-        request.getAverageMonthlyDividendPerShare1y(), "1년 평균 주당 월배당금은 0 이상이어야 합니다.");
-    StockViewSupport.requireNonNegative(request.getAverageBuyPrice(), "매수 평단가는 0 이상이어야 합니다.");
+        request.getAverageMonthlyDividendPerShare1y(),
+        msg("stock.monthly.reference.error.average.dividend.negative"));
+    StockViewSupport.requireNonNegative(
+        request.getAverageBuyPrice(),
+        msg("stock.monthly.reference.error.average.buy.price.negative"));
 
     BigDecimal taxableBaseRatio = safe(request.getAverageTaxableBaseRatio1y());
     if (taxableBaseRatio.compareTo(BigDecimal.ZERO) < 0
         || taxableBaseRatio.compareTo(BigDecimal.valueOf(100)) > 0) {
-      throw new IllegalArgumentException("1년 평균 과세표준 비중은 0에서 100 사이여야 합니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.taxable.ratio.range"));
     }
   }
 
   List<MonthlyDividendSnapshotUpsertRequest> parseBulkInput(String bulkInput, UUID userId) {
     if (!StringUtils.hasText(bulkInput)) {
-      throw new IllegalArgumentException("붙여넣기 데이터가 비어 있습니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.bulk.empty"));
     }
 
     List<MonthlyDividendSnapshotUpsertRequest> requests = new ArrayList<>();
@@ -729,7 +737,8 @@ public class StockViewController {
       }
 
       if (columns.length < 7) {
-        throw new IllegalArgumentException((index + 1) + "번째 줄은 7개 열이 필요합니다.");
+        throw new IllegalArgumentException(
+            msg("stock.monthly.reference.error.bulk.columns.short", index + 1));
       }
 
       // 콤마로 나눈 줄에 열이 더 있으면 숫자의 천단위 콤마가 열을 갈라놓은 것이다.
@@ -738,9 +747,7 @@ public class StockViewController {
       // 탭으로 나눈 줄은 콤마가 값 안에 남아 있어 안전하므로 이 검사가 필요 없다.
       if (!line.contains("	") && columns.length > 7) {
         throw new IllegalArgumentException(
-            (index + 1)
-                + "번째 줄의 열이 7개보다 많습니다. 숫자에 천단위 콤마가 있으면 열이 잘못 나뉩니다."
-                + " 탭으로 구분하거나 콤마를 빼고 붙여넣어 주세요.");
+            msg("stock.monthly.reference.error.bulk.columns.long", index + 1));
       }
 
       MonthlyDividendSnapshotUpsertRequest request = new MonthlyDividendSnapshotUpsertRequest();
@@ -748,12 +755,19 @@ public class StockViewController {
       request.setSymbol(columns[0]);
       request.setAsOfDate(parseLocalDate(columns[1], index + 1));
       request.setLatestMonthlyDividendPerShare(
-          parseBigDecimal(columns[2], index + 1, "최근 주당 월배당금"));
+          parseBigDecimal(
+              columns[2], index + 1, msg("stock.monthly.reference.field.latest.dividend")));
       request.setAverageMonthlyDividendPerShare1y(
-          parseBigDecimal(columns[3], index + 1, "1년 평균 주당 월배당금"));
-      request.setAverageTaxableBaseRatio1y(parseBigDecimal(columns[4], index + 1, "1년 평균 과세표준 비중"));
-      request.setHeldQuantity(parseInteger(columns[5], index + 1, "보유 수량"));
-      request.setAverageBuyPrice(parseBigDecimal(columns[6], index + 1, "매수 평단가"));
+          parseBigDecimal(
+              columns[3], index + 1, msg("stock.monthly.reference.field.average.dividend")));
+      request.setAverageTaxableBaseRatio1y(
+          parseBigDecimal(
+              columns[4], index + 1, msg("stock.monthly.reference.field.taxable.ratio")));
+      request.setHeldQuantity(
+          parseInteger(columns[5], index + 1, msg("stock.monthly.reference.field.held.quantity")));
+      request.setAverageBuyPrice(
+          parseBigDecimal(
+              columns[6], index + 1, msg("stock.monthly.reference.field.average.buy.price")));
 
       normalizeMonthlyDividendRequest(request, userId);
       validateMonthlyDividendRequest(request);
@@ -761,7 +775,7 @@ public class StockViewController {
     }
 
     if (requests.isEmpty()) {
-      throw new IllegalArgumentException("등록할 데이터가 없습니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.bulk.nothing"));
     }
 
     return requests;
@@ -785,7 +799,8 @@ public class StockViewController {
     try {
       return LocalDate.parse(value.trim().replace('/', '-').replace('.', '-'));
     } catch (DateTimeParseException ex) {
-      throw new IllegalArgumentException(lineNumber + "번째 줄의 기준일 형식이 올바르지 않습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.bulk.date.invalid", lineNumber));
     }
   }
 
@@ -793,7 +808,8 @@ public class StockViewController {
     try {
       return new BigDecimal(value.trim().replace(",", "").replace("%", ""));
     } catch (NumberFormatException ex) {
-      throw new IllegalArgumentException(lineNumber + "번째 줄의 " + label + " 값이 올바르지 않습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.bulk.value.invalid", lineNumber, label));
     }
   }
 
@@ -801,7 +817,8 @@ public class StockViewController {
     try {
       return Integer.valueOf(value.trim().replace(",", ""));
     } catch (NumberFormatException ex) {
-      throw new IllegalArgumentException(lineNumber + "번째 줄의 " + label + " 값이 올바르지 않습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.bulk.value.invalid", lineNumber, label));
     }
   }
 

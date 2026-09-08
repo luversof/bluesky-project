@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.service;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -452,12 +454,11 @@ public class MonthlyDividendReferenceSupport {
   public void validateMonthlyDividendSymbol(String symbol) {
     String normalizedSymbol = normalizeMonthlyDividendSymbol(symbol);
     if (!StringUtils.hasText(normalizedSymbol)) {
-      throw new IllegalArgumentException("종목코드는 필수입니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.symbol.required"));
     }
 
     if (normalizedSymbol.startsWith("HTTP://") || normalizedSymbol.startsWith("HTTPS://")) {
-      throw new IllegalArgumentException(
-          "종목코드에는 URL이 아니라 종목 심볼을 입력해 주세요. 출처 URL은 출처 URL 칸에 넣으면 됩니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.symbol.url"));
     }
 
     boolean knownStockSymbol =
@@ -472,7 +473,7 @@ public class MonthlyDividendReferenceSupport {
                 .map(value -> value.trim().toUpperCase(Locale.ROOT))
                 .anyMatch(normalizedSymbol::equals);
     if (!knownStockSymbol) {
-      throw new IllegalArgumentException("등록되지 않은 종목코드입니다. 종목 심볼을 다시 확인해 주세요.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.symbol.unknown"));
     }
   }
 

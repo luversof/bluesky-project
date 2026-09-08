@@ -209,4 +209,66 @@ class AssetStatusCombinedProfitRenderTest {
         .contains(MessageUtil.getMessage("stock.message.no.holdings"));
     assertThat(ACCOUNT).isNotNull();
   }
+
+  // ---------------------------------------------------------------- 배당이 평가손실을 얼마나 메웠나 (2026-09-08)
+
+  /** 실측의 한 종목(평가 -12,444,645 · 배당 5,385,714)은 배당이 손실의 43% 를 덮었다. 표의 세 열을 빼지 않아도 보여야 한다. */
+  @Test
+  void 배당_상쇄_카드는_손실의_몇_퍼센트를_덮었는지_보여준다() {
+    String html = render(List.of(stock()), Map.of(STOCK, bd("5385714")));
+    int at = html.indexOf("data-dividend-coverage-row");
+    assertThat(at).as("상쇄 카드가 없다").isGreaterThan(0);
+    String row =
+        html.substring(at, html.indexOf("</div>\n", html.indexOf("data-coverage-pct", at)) + 6);
+
+    assertThat(row)
+        .contains("data-coverage-state=\"partial\"")
+        .contains("data-coverage-pct=\"43\"");
+    assertThat(html.substring(at, at + 3000))
+        .contains("테스트종목")
+        .contains("5,385,714")
+        .contains("12,444,645");
+    assertThat(html.substring(at, at + 3000))
+        .as("손실 막대가 100, 배당 막대가 43")
+        .contains("style=\"width:100%\"")
+        .contains("style=\"width:43%\"");
+  }
+
+  /** 평가익 종목은 덮을 손실이 없다. */
+  @Test
+  void 배당_상쇄_카드는_손실_없는_종목을_그렇게_표시한다() {
+    TradeProfit gaining =
+        TradeProfit.ofStockStatus(
+            STOCK,
+            "이익종목",
+            bd("20000"),
+            100,
+            bd("30000"),
+            bd("3000000"),
+            bd("1000000"),
+            bd("0"),
+            bd("2000000"));
+    String html = render(List.of(gaining), Map.of(STOCK, bd("5385714")));
+
+    assertThat(html).contains("data-coverage-state=\"none\"");
+  }
+
+  /** 손실도 배당도 없으면 카드 자체가 없다. */
+  @Test
+  void 배당_상쇄_카드는_할_말이_없으면_나오지_않는다() {
+    TradeProfit quiet =
+        TradeProfit.ofStockStatus(
+            STOCK,
+            "조용",
+            bd("20000"),
+            100,
+            bd("20000"),
+            bd("2000000"),
+            bd("0"),
+            bd("0"),
+            bd("2000000"));
+    String html = render(List.of(quiet), Map.of());
+
+    assertThat(html).doesNotContain("data-dividend-coverage");
+  }
 }

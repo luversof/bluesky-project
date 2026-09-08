@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -16,10 +18,10 @@ public class MonthlyDividendPayoutImportParser {
 
   public List<MonthlyDividendPayoutUpsertRequest> parse(String symbol, String bulkInput) {
     if (!StringUtils.hasText(symbol)) {
-      throw new IllegalArgumentException("종목코드는 필수입니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.symbol.required"));
     }
     if (!StringUtils.hasText(bulkInput)) {
-      throw new IllegalArgumentException("붙여넣기 데이터가 비어 있습니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.bulk.empty"));
     }
 
     String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
@@ -45,38 +47,50 @@ public class MonthlyDividendPayoutImportParser {
       MonthlyDividendPayoutUpsertRequest request = new MonthlyDividendPayoutUpsertRequest();
       request.setSymbol(normalizedSymbol);
       request.setRecordDate(
-          parseLocalDate(columns[columnMapping.recordDateIndex()], index + 1, "지급기준일"));
-      request.setPayDate(parseLocalDate(columns[columnMapping.payDateIndex()], index + 1, "실지급일"));
+          parseLocalDate(
+              columns[columnMapping.recordDateIndex()],
+              index + 1,
+              msg("stock.monthly.reference.field.record.date")));
+      request.setPayDate(
+          parseLocalDate(
+              columns[columnMapping.payDateIndex()],
+              index + 1,
+              msg("stock.monthly.reference.field.pay.date")));
       request.setDistributionRatePct(
           columnMapping.distributionRateIndex() >= 0
               ? parseOptionalBigDecimal(
-                  columns[columnMapping.distributionRateIndex()], index + 1, "분배율")
+                  columns[columnMapping.distributionRateIndex()],
+                  index + 1,
+                  msg("stock.monthly.reference.field.distribution.rate"))
               : null);
       request.setDividendAmountPerShare(
           parseRequiredBigDecimal(
-              columns[columnMapping.dividendAmountIndex()], index + 1, "주당 분배금"));
+              columns[columnMapping.dividendAmountIndex()],
+              index + 1,
+              msg("stock.monthly.reference.field.dividend.per.share")));
       request.setTaxableBasePerShare(
           parseZeroAllowedBigDecimal(
-              columns[columnMapping.taxableBaseIndex()], index + 1, "주당 과세표준액"));
+              columns[columnMapping.taxableBaseIndex()],
+              index + 1,
+              msg("stock.monthly.reference.field.taxable.base")));
 
       if (request.getPayDate().isBefore(request.getRecordDate())) {
         throw new IllegalArgumentException(
-            (index + 1)
-                + "번째 줄의 실지급일("
-                + request.getPayDate()
-                + ")은 지급기준일("
-                + request.getRecordDate()
-                + ")보다 빠를 수 없습니다.");
+            msg(
+                "stock.monthly.reference.error.bulk.pay.date.before.record",
+                index + 1,
+                request.getPayDate(),
+                request.getRecordDate()));
       }
 
       requests.add(request);
     }
 
     if (columnMapping == null) {
-      throw new IllegalArgumentException("헤더를 찾지 못했습니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.bulk.header.missing"));
     }
     if (requests.isEmpty()) {
-      throw new IllegalArgumentException("등록할 데이터가 없습니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.bulk.nothing"));
     }
 
     return requests;
@@ -129,7 +143,8 @@ public class MonthlyDividendPayoutImportParser {
         || payDateIndex < 0
         || dividendAmountIndex < 0
         || taxableBaseIndex < 0) {
-      throw new IllegalArgumentException("붙여넣기 헤더 형식을 인식하지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.bulk.header.unrecognized"));
     }
 
     return new ColumnMapping(
@@ -152,6 +167,8 @@ public class MonthlyDividendPayoutImportParser {
         .replace("%", "");
   }
 
+  // 아래 한글은 화면 문구가 아니라 붙여넣은 표의 헤더를 알아보는 데이터다. 메시지 키로 옮기면
+  // 영어 로케일에서 한글 헤더를 못 알아보게 된다(실측 2026-09-08: 옮겼다가 파서 검사 4개가 깨졌다).
   private boolean isRecordDateHeader(String normalizedHeader) {
     return normalizedHeader.contains("지급기준일")
         || normalizedHeader.equals("기준일")
@@ -192,13 +209,15 @@ public class MonthlyDividendPayoutImportParser {
       int day = Integer.parseInt(parts[2]);
       return LocalDate.of(year, month, day);
     } catch (RuntimeException ex) {
-      throw new IllegalArgumentException(lineNumber + "번째 줄의 " + label + " 형식이 올바르지 않습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.bulk.format.invalid", lineNumber, label));
     }
   }
 
   private BigDecimal parseRequiredBigDecimal(String value, int lineNumber, String label) {
     if (!StringUtils.hasText(value)) {
-      throw new IllegalArgumentException(lineNumber + "번째 줄의 " + label + " 값이 비어 있습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.bulk.value.empty", lineNumber, label));
     }
     return parseBigDecimal(value, lineNumber, label);
   }
@@ -227,7 +246,8 @@ public class MonthlyDividendPayoutImportParser {
               .replace("원", "")
               .replace("\u00A0", ""));
     } catch (NumberFormatException ex) {
-      throw new IllegalArgumentException(lineNumber + "번째 줄의 " + label + " 값이 올바르지 않습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.bulk.value.invalid", lineNumber, label));
     }
   }
 

@@ -24,7 +24,7 @@ const STATIC_JS = join(MAIN, "resources/static/js");
 
 /** 로드되지 않는 것이 확인된 파일과 그 사유. */
 const KNOWN_UNUSED = new Map([
-	["stock/timeSeriesChart.js", "시계열 차트는 asset-growth.jte 등의 인라인 스크립트가 그린다"],
+	["stock/timeSeriesChart.js", "시계열 차트는 stock/assetGrowth.ts(2026-09-08 까지 asset-growth.jte 인라인 스크립트)가 그린다"],
 	["stock/tradeProfit.js", "대상 DOM(#tradeProfitForm)이 어떤 템플릿에도 없다"],
 ]);
 

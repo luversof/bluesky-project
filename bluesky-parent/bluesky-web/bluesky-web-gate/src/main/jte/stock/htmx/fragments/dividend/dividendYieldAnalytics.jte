@@ -44,6 +44,7 @@
     String stockYieldSectionLabel = MessageUtil.getMessage("stock.dividend.yield.section.stock");
     String accountYieldSectionLabel = MessageUtil.getMessage("stock.dividend.yield.section.account");
     String yearLabel = MessageUtil.getMessage("stock.dividend.yield.column.year");
+    String wholePeriodLabel = MessageUtil.getMessage("stock.dividend.yield.total.row");
     String dailyAverageInvestedCapitalLabel = MessageUtil.getMessage("stock.dividend.yield.column.daily.average.invested.capital");
     String basisAverageInvestedCapitalLabel = MessageUtil.getMessage("stock.dividend.yield.column.basis.average.invested.capital");
     String yieldOnDailyAverageCostLabel = MessageUtil.getMessage("stock.dividend.yield.column.yield.on.daily.average.cost");
@@ -260,16 +261,41 @@
                                         <td class="font-medium">${row.label()}</td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
-                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
-                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() != 0 ? decimalFormat.format(row.totalTaxableAmount()) : "-"}</td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
-                                        <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
+                                        <td class="text-right text-dividend font-medium">${row.averageDailyPrincipalCost() != null && row.averageDailyPrincipalCost().signum() > 0 ? percentFormat.apply(row.yieldOnDailyAverageCostPct()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
                                         <td class="text-right">${countFormat.apply(row.dividendCount())}</td>
                                     </tr>
                                 @endfor
                             </tbody>
+                            <%-- 전체 기간 줄. 금액·건수는 연도 합이고, 원금과 수익률은 연도를 더한 값이 아니라
+                                 전체 기간의 값이다(연도별 일평균 원금을 더하면 뜻이 없다). 종목별 표의 합계행과 같은
+                                 값을 쓴다 - 같은 배당을 다른 축으로 쪼갠 것이라 서로 검산이 된다.
+                                 한 해뿐이면 붙이지 않는다(연도별 성과 표와 같은 규칙). --%>
+                            @if(yearlyYieldRows != null && yearlyYieldRows.size() > 1)
+                                !{BigDecimal yearlyTotalGross = sumDividendYieldValue.apply(yearlyYieldRows, DividendYieldGroupView::totalGrossAmount);}
+                                !{BigDecimal yearlyTotalNet = sumDividendYieldValue.apply(yearlyYieldRows, DividendYieldGroupView::totalNetAmount);}
+                                !{BigDecimal yearlyTotalTax = yearlyTotalGross.subtract(yearlyTotalNet);}
+                                !{BigDecimal yearlyTotalTaxable = sumDividendYieldValue.apply(yearlyYieldRows, DividendYieldGroupView::totalTaxableAmount);}
+                                !{long yearlyTotalCount = sumDividendYieldCount.apply(yearlyYieldRows);}
+                                <tfoot data-dividend-yearly-total>
+                                    <tr class="bg-base-200 font-bold">
+                                        <td>${wholePeriodLabel}</td>
+                                        <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(yearlyTotalGross)}</td>
+                                        <td class="text-right font-mono text-dividend amount-value">${decimalFormat.format(yearlyTotalNet)}</td>
+                                        <td class="text-right hidden 2xl:table-cell font-mono amount-value">${yearlyTotalTax.signum() != 0 ? decimalFormat.format(yearlyTotalTax) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell font-mono amount-value">${yearlyTotalTaxable.signum() != 0 ? decimalFormat.format(yearlyTotalTaxable) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterDailyPrincipalCost)}</td>
+                                        <td class="text-right text-dividend font-medium">${stockYieldFooterDailyPrincipalCost.signum() > 0 ? percentFormat.apply(stockYieldFooterYieldOnDailyAverageCostPct) : "-"}</td>
+                                        <td class="text-right hidden xl:table-cell font-mono amount-value">${decimalFormat.format(stockYieldFooterPrincipalCost)}</td>
+                                        <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${stockYieldFooterPrincipalCost.signum() > 0 ? percentFormat.apply(stockYieldFooterYieldOnCostPct) : "-"}</td>
+                                        <td class="text-right">${countFormat.apply(yearlyTotalCount)}</td>
+                                    </tr>
+                                </tfoot>
+                            @endif
                         </table>
                     </div>
                 @endif
@@ -459,10 +485,10 @@
                                         <td class="font-medium"><a href="/stock/item?stockItemId=${row.groupId() != null ? row.groupId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${row.label()}</a></td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
-                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
-                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() != 0 ? decimalFormat.format(row.totalTaxableAmount()) : "-"}</td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
-                                        <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
+                                        <td class="text-right text-dividend font-medium">${row.averageDailyPrincipalCost() != null && row.averageDailyPrincipalCost().signum() > 0 ? percentFormat.apply(row.yieldOnDailyAverageCostPct()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
                                         <td class="text-right hidden 2xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnMarketPct())}</td>
@@ -674,10 +700,10 @@
                                         <td class="font-medium"><a href="/stock/account?accountId=${row.groupId() != null ? row.groupId().toString() : ""}" class="link link-hover">${row.label()}</a></td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
                                         <td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
-                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null ? decimalFormat.format(rowTaxAmount) : "-"}</td>
-                                        <td class="text-right hidden 2xl:table-cell amount-value">${decimalFormat.format(row.totalTaxableAmount())}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+                                        <td class="text-right hidden 2xl:table-cell amount-value">${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() != 0 ? decimalFormat.format(row.totalTaxableAmount()) : "-"}</td>
                                         <td class="text-right hidden 2xl:table-cell amount-value">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}</td>
-                                        <td class="text-right text-dividend font-medium">${percentFormat.apply(row.yieldOnDailyAverageCostPct())}</td>
+                                        <td class="text-right text-dividend font-medium">${row.averageDailyPrincipalCost() != null && row.averageDailyPrincipalCost().signum() > 0 ? percentFormat.apply(row.yieldOnDailyAverageCostPct()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell amount-value">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}</td>
                                         <td class="text-right hidden xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
                                         <td class="text-right hidden 2xl:table-cell text-base-content/70" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnMarketPct())}</td>

@@ -3,12 +3,15 @@ package net.luversof.web.gate.stock.support;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.util.StringUtils;
 
+import io.github.luversof.boot.context.support.MessageUtil;
 import io.github.luversof.boot.exception.BlueskyErrorMessage;
 import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.exception.ErrorMessage;
@@ -81,6 +84,30 @@ public final class StockViewSupport {
 
     redirectUrl.append('&').append(key).append('=');
     redirectUrl.append(URLEncoder.encode(text, StandardCharsets.UTF_8));
+  }
+
+  /**
+   * 메시지 키를 현재 로케일의 문구로. 인자가 있으면 {@link MessageFormat} 으로 끼운다(Spring {@code MessageSource} 와 같은 규약).
+   *
+   * <p>컨트롤러는 {@code StockBaseHtmxController.msg} 가 있지만 파서·서포트 같은 <b>정적 문맥</b>에는 없어서, 그쪽의 검증·실패 문구
+   * 99 줄이 한글 리터럴로 박혀 있었다(실측 2026-09-08) &mdash; 로케일을 영어로 바꿔도 그 문구만 한글로 나갔다.
+   *
+   * <p>메시지 소스가 아직 없거나(단위 테스트) 키가 없어도 <b>오류 보고 자체가 죽어선 안 된다</b> &mdash; 그때는 키를 그대로 돌려 준다.
+   */
+  public static String msg(String code, Object... args) {
+    String pattern;
+    try {
+      pattern = MessageUtil.getMessage(code, code);
+    } catch (RuntimeException ex) {
+      pattern = code;
+    }
+    if (pattern == null || pattern.isEmpty()) {
+      pattern = code;
+    }
+    if (args == null || args.length == 0) {
+      return pattern;
+    }
+    return new MessageFormat(pattern, LocaleContextHolder.getLocale()).format(args);
   }
 
   public static void requireNonNegative(BigDecimal value, String message) {

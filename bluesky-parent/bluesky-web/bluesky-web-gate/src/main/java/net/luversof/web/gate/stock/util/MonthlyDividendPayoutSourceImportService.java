@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,14 +75,15 @@ public class MonthlyDividendPayoutSourceImportService {
   public List<MonthlyDividendPayoutUpsertRequest> fetchImportRequests(
       String symbol, String sourceUrl) {
     if (!StringUtils.hasText(sourceUrl)) {
-      throw new IllegalArgumentException("저장된 출처 URL이 없습니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.source.url.missing"));
     }
 
     URI sourceUri;
     try {
       sourceUri = URI.create(sourceUrl.trim());
     } catch (IllegalArgumentException ex) {
-      throw new IllegalArgumentException("저장된 출처 URL 형식이 올바르지 않습니다.", ex);
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.url.invalid"), ex);
     }
 
     String host = sourceUri.getHost() != null ? sourceUri.getHost().toLowerCase(Locale.ROOT) : "";
@@ -88,7 +91,7 @@ public class MonthlyDividendPayoutSourceImportService {
     if (host.contains("riseetf.co.kr")) {
       bulkInput =
           riseMonthlyDividendPayoutSourceParser.toBulkInput(
-              fetchBody(sourceUri, "출처 URL에서 지급 이력을 가져오지 못했습니다. 주소와 공개 여부를 확인해 주세요."));
+              fetchBody(sourceUri, msg("stock.monthly.reference.error.source.fetch.failed")));
     } else if (host.contains("plusetf.co.kr")) {
       bulkInput = plusMonthlyDividendPayoutSourceParser.toBulkInput(fetchPlusRows(sourceUri));
     } else if (host.contains("samsungfund.com")) {
@@ -98,8 +101,7 @@ public class MonthlyDividendPayoutSourceImportService {
         && sourceUri.getPath().contains("/tigeretf/")) {
       bulkInput = tigerMonthlyDividendPayoutSourceParser.toBulkInput(fetchTigerRows(sourceUri));
     } else {
-      throw new IllegalArgumentException(
-          "현재 자동 가져오기는 RISE ETF, PLUS ETF, KODEX ETF, TIGER ETF 출처만 지원합니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.source.unsupported"));
     }
 
     return monthlyDividendPayoutImportParser.parse(symbol, bulkInput);
@@ -109,7 +111,8 @@ public class MonthlyDividendPayoutSourceImportService {
     String productId =
         UriComponentsBuilder.fromUri(sourceUri).build().getQueryParams().getFirst("id");
     if (!StringUtils.hasText(productId)) {
-      throw new IllegalArgumentException("KODEX ETF 출처 URL에서 상품 식별자(id)를 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.id.missing", "KODEX", "id"));
     }
 
     URI apiUri =
@@ -122,9 +125,11 @@ public class MonthlyDividendPayoutSourceImportService {
 
     KodexDividendResponse response =
         kodexMonthlyDividendPayoutSourceParser.parseResponse(
-            fetchJsonBody(apiUri, "KODEX ETF 출처에서 지급 이력 데이터를 가져오지 못했습니다."));
+            fetchJsonBody(
+                apiUri, msg("stock.monthly.reference.error.source.data.fetch.failed", "KODEX")));
     if (response.dividList() == null || response.dividList().isEmpty()) {
-      throw new IllegalArgumentException("KODEX ETF 출처에서 분배금 지급 이력을 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rows.missing", "KODEX"));
     }
 
     return response.dividList();
@@ -134,7 +139,8 @@ public class MonthlyDividendPayoutSourceImportService {
     String productId =
         UriComponentsBuilder.fromUri(sourceUri).build().getQueryParams().getFirst("n");
     if (!StringUtils.hasText(productId)) {
-      throw new IllegalArgumentException("PLUS ETF 출처 URL에서 상품 식별자(n)를 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.id.missing", "PLUS", "n"));
     }
 
     List<PlusDividendRow> rows = new ArrayList<>();
@@ -150,7 +156,8 @@ public class MonthlyDividendPayoutSourceImportService {
 
       PlusDividendPage response =
           plusMonthlyDividendPayoutSourceParser.parsePage(
-              fetchJsonBody(apiUri, "PLUS ETF 출처에서 지급 이력 데이터를 가져오지 못했습니다."));
+              fetchJsonBody(
+                  apiUri, msg("stock.monthly.reference.error.source.data.fetch.failed", "PLUS")));
       if (response.content() == null || response.content().isEmpty()) {
         break;
       }
@@ -162,7 +169,8 @@ public class MonthlyDividendPayoutSourceImportService {
     }
 
     if (rows.isEmpty()) {
-      throw new IllegalArgumentException("PLUS ETF 출처에서 분배금 지급 이력을 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rows.missing", "PLUS"));
     }
 
     return rows;
@@ -172,7 +180,8 @@ public class MonthlyDividendPayoutSourceImportService {
     String ksdFund =
         UriComponentsBuilder.fromUri(sourceUri).build().getQueryParams().getFirst("ksdFund");
     if (!StringUtils.hasText(ksdFund)) {
-      throw new IllegalArgumentException("TIGER ETF 출처 URL에서 상품 식별자(ksdFund)를 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.id.missing", "TIGER", "ksdFund"));
     }
 
     URI apiUri =
@@ -185,7 +194,8 @@ public class MonthlyDividendPayoutSourceImportService {
             .build(true)
             .toUri();
 
-    return fetchBody(apiUri, "TIGER ETF 출처에서 지급 이력 데이터를 가져오지 못했습니다.");
+    return fetchBody(
+        apiUri, msg("stock.monthly.reference.error.source.data.fetch.failed", "TIGER"));
   }
 
   private String fetchBody(URI uri, String errorMessage) {

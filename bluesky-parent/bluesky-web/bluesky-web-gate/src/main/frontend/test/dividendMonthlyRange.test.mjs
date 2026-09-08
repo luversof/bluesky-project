@@ -17,7 +17,8 @@ import vm from "node:vm";
 
 import { extractFunction, JTE_ROOT } from "./inlineTemplateScript.mjs";
 
-const TEMPLATE = "stock/htmx/fragments/tabsDividendHistory.jte";
+// 2026-09-08 인라인 스크립트가 /js/stock/dividendHistory.ts 로 옮겨갔다. 빌드 산출물(식별자 보존)에서 꺼낸다.
+const TEMPLATE = "../resources/static/js/stock/dividendHistory.js";
 
 /** 템플릿에 박힌 월 범위 함수들을 그대로 꺼내 돌린다. */
 function load({ dividendData, filterStartDate = "", filterEndDate = "" }) {

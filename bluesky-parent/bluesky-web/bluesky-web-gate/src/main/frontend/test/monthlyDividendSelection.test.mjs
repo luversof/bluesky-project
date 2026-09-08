@@ -14,7 +14,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { runSelectionSummary } from "./inlineTemplateScript.mjs";
 
-const TEMPLATE = "stock/fragments/monthlyDividendSimulator.jte";
+// 2026-09-08 인라인 스크립트가 /js/stock/monthlyDividendSimulator.ts 로 옮겨갔다. 빌드 산출물에서 꺼낸다.
+const TEMPLATE = "../resources/static/js/stock/monthlyDividendSimulator.js";
 const NAMES = [
 	"formatMonthlyDividendSimulatorNumber",
 	"formatMonthlyDividendSimulatorCurrency",

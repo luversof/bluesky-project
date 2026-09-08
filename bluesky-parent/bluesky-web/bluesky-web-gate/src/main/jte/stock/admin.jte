@@ -73,6 +73,7 @@
 						monthlyDividendReferenceResultMessage = monthlyDividendReferenceResultMessage,
 						monthlyDividendReferenceResultIsError = monthlyDividendReferenceResultIsError)
 					<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
+					<script type="module" src="/js/stock/submitOverlay.js"></script>
 				@else
 					@template.stock.htmx.fragments.adminActions(isAuthenticated = isAuthenticated, dataStatus = dataStatus, ledgerIntegrity = ledgerIntegrity)
 				@endif

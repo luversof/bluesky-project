@@ -736,94 +736,15 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     return activities;
   }
 
-  /** 호출부가 이미 종목 목록을 읽었으면 넘겨서 재조회를 없앤다(측정: 최근활동 한 요청에 종목목록 2회). */
+  /** 필터·선행 조회 없이 전부 가져온다(최근 활동). 본문은 아래 10 인자판 하나다. */
   private List<Activity> getAllActivities(
       UUID userId,
       Instant startInstant,
       Instant endInstant,
       List<StockItem> preloadedStockItems,
       ZoneId zone) {
-    // 네 조회(거래·배당·종목목록·계좌)는 서로 의존이 없다. 순차로 던지면 응답시간이 그대로 합산된다
-    // (실측: 종목목록 16.7 + 거래 24.1 + 배당 13.6 + 계좌 17.7 = 72ms, 프래그먼트 실측 77.6ms).
-    // 호출 하나하나의 시간은 응답 크기와 거의 무관하다(거래 전체 80KB 24.1ms vs 이번달 3.3KB 19.2ms)
-    // — 즉 줄일 것은 전송량이 아니라 직렬 왕복 횟수다.
-    TradeSearchRequest tradeReq =
-        new TradeSearchRequest(userId, null, null, startInstant, endInstant);
-    var tradeParams = tradeReq.toParams();
-
-    DividendRequest divReq = new DividendRequest();
-    divReq.setUserId(userId);
-    divReq.setStartDate(startInstant);
-    divReq.setEndDate(endInstant);
-    var divParams = divReq.toParams();
-
-    var tradesFuture = async.supply(() -> emptyIfNull(tradeClient.findTrades(tradeParams)));
-    var dividendsFuture = async.supply(() -> emptyIfNull(dividendClient.findDividends(divParams)));
-    var stockItemsFuture =
-        preloadedStockItems != null
-            ? null
-            : async.supply(() -> emptyIfNull(stockItemClient.getStockItems()));
-    var accountsFuture = async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
-
-    List<TradeResponse> trades = StockAsyncSupport.join(tradesFuture);
-    List<DividendResponse> dividends = StockAsyncSupport.join(dividendsFuture);
-
-    List<StockItem> stockItemList =
-        preloadedStockItems != null
-            ? preloadedStockItems
-            : StockAsyncSupport.join(stockItemsFuture);
-    Map<UUID, String> stockItemNames =
-        stockItemList.stream().collect(Collectors.toMap(StockItem::id, StockItem::name));
-
-    List<Account> accountList = StockAsyncSupport.join(accountsFuture);
-    Map<UUID, String> accountNamesMap =
-        accountList.stream().collect(Collectors.toMap(Account::id, Account::name));
-
-    List<Activity> rawActivities = new ArrayList<>();
-
-    for (TradeResponse t : trades) {
-      // 거래 응답에 이미 종목명이 들어 있다(실측: 250건 전부 존재, 종목 목록과 값 동일).
-      // 배당 경로와 같은 규칙으로 응답 값을 먼저 쓰고, 없을 때만 목록에서 찾는다.
-      String stockName =
-          t.stockItemName() != null
-              ? t.stockItemName()
-              : stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"));
-      String accountName = accountNamesMap.getOrDefault(t.accountId(), "Unknown Account");
-      rawActivities.add(
-          new Activity(
-              "TRADE",
-              t.stockItemId(),
-              stockName,
-              t.type().name(),
-              t.quantity(),
-              null,
-              t.amount(),
-              t.tradeDate(),
-              t.accountId() != null ? List.of(t.accountId()) : List.of(),
-              t.realizedProfit()));
-    }
-
-    for (DividendResponse d : dividends) {
-      String stockName =
-          d.stockItemName() != null
-              ? d.stockItemName()
-              : stockItemNames.getOrDefault(d.stockItemId(), msg("stock.label.unknown"));
-      String accountName = accountNamesMap.getOrDefault(d.accountId(), "Unknown Account");
-      rawActivities.add(
-          new Activity(
-              "DIVIDEND",
-              d.stockItemId(),
-              stockName,
-              null,
-              null,
-              msg("stock.activity.type.dividend.payout"),
-              d.netAmount(),
-              d.payDate() != null ? d.payDate() : d.recordDate(),
-              d.accountId() != null ? List.of(d.accountId()) : List.of(),
-              null));
-    }
-
-    return groupActivitiesByDay(rawActivities, zone);
+    return getAllActivities(
+        userId, startInstant, endInstant, null, null, preloadedStockItems, null, null, null, zone);
   }
 
   @BlueskyPreAuthorize
@@ -1222,7 +1143,15 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       java.util.concurrent.CompletableFuture<List<TradeResponse>> preTradesFuture,
       java.util.concurrent.CompletableFuture<List<DividendResponse>> preDividendsFuture,
       ZoneId zone) {
-    // 거래와 배당 조회는 서로 의존이 없다(실측 22.7ms + 29.0ms). 함께 던진다.
+    // 네 조회(거래·배당·종목목록·계좌)는 서로 의존이 없다. 순차로 던지면 응답시간이 그대로 합산된다
+    // (실측: 종목목록 16.7 + 거래 24.1 + 배당 13.6 + 계좌 17.7 = 72ms, 프래그먼트 실측 77.6ms).
+    // 호출 하나하나의 시간은 응답 크기와 거의 무관하다(거래 전체 80KB 24.1ms vs 이번달 3.3KB 19.2ms)
+    // - 즉 줄일 것은 전송량이 아니라 직렬 왕복 횟수다. 호출부가 미리 받아 둔 것(preloaded*/pre*Future)이
+    // 있으면 그것을 쓰고, 없는 것만 여기서 함께 던진다.
+    //
+    // 2026-09-08 까지 이 메서드는 둘이었다 - 필터 없는 5 인자판(최근 활동)과 필터·선행 조회를 받는 10 인자판
+    // (활동 목록). 본문 80 줄이 같았고, 다른 점은 5 인자판만 종목목록·계좌를 함께 던진다는 것뿐이었다.
+    // 그 병렬 조회를 이쪽으로 옮기고 5 인자판은 위임만 한다.
     var tradesFuture = preTradesFuture;
     var dividendsFuture = preDividendsFuture;
     if (tradesFuture == null || dividendsFuture == null) {
@@ -1232,20 +1161,24 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       dividendsFuture =
           async.supply(() -> emptyIfNull(dividendClient.findDividends(params.divParams())));
     }
+    var stockItemsFuture =
+        preloadedStockItems != null
+            ? null
+            : async.supply(() -> emptyIfNull(stockItemClient.getStockItems()));
+    var accountsFuture =
+        preloadedAccounts != null
+            ? null
+            : async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
     List<TradeResponse> trades = StockAsyncSupport.join(tradesFuture);
     List<DividendResponse> dividends = StockAsyncSupport.join(dividendsFuture);
-
     List<StockItem> stockItemList =
         preloadedStockItems != null
             ? preloadedStockItems
-            : emptyIfNull(stockItemClient.getStockItems());
+            : StockAsyncSupport.join(stockItemsFuture);
     Map<UUID, String> stockItemNames =
         stockItemList.stream().collect(Collectors.toMap(StockItem::id, StockItem::name));
-
     List<Account> accountList =
-        preloadedAccounts != null
-            ? preloadedAccounts
-            : emptyIfNull(accountClient.getAccountsByUserId(userId));
+        preloadedAccounts != null ? preloadedAccounts : StockAsyncSupport.join(accountsFuture);
     Map<UUID, String> accountNamesMap =
         accountList.stream().collect(Collectors.toMap(Account::id, Account::name));
 

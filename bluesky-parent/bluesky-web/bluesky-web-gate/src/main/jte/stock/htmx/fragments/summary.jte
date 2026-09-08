@@ -1,6 +1,7 @@
 @import net.luversof.web.gate.util.CspNonceHolder
 @import java.math.BigDecimal
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockCoreHoldingUtil
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param BigDecimal totalAsset
@@ -20,6 +21,7 @@
 @param String trendChartValuesJs = "[]"
 @param int trendPointCount = 0
 @param java.time.LocalDate priceBasisDate = null
+@param StockCoreHoldingUtil.Split coreHoldingSplit = null
 
 !{
     String currentTotalAssetLabel = MessageUtil.getMessage("stock.summary.label.current.total.asset");
@@ -211,6 +213,69 @@
             amount = false,
             href = "/stock/analytics")
     </div>
+
+    <%-- 핵심 보유 한 종목 vs 나머지. 한 종목이 평가액의 절반을 넘을 때만 나온다(StockCoreHoldingUtil). --%>
+    @if(coreHoldingSplit != null)
+        !{
+            String coreTitle = MessageUtil.getMessage("stock.summary.core.title");
+            String coreLabel = MessageUtil.getMessage("stock.summary.core.label");
+            // 핵심이 한 종목이면 그 이름을, 여럿이면 개수를 적는다.
+            String coreName = coreHoldingSplit.core().label() != null
+                ? coreHoldingSplit.core().label()
+                : java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.core.multi"), coreHoldingSplit.core().stockCount());
+            String restLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.core.rest"), coreHoldingSplit.rest().stockCount());
+            String coreWeightLabel = MessageUtil.getMessage("stock.summary.core.weight");
+            String coreNote = MessageUtil.getMessage("stock.summary.core.note");
+            String evaluationAmountLabel = MessageUtil.getMessage("stock.profit.evaluation.amount");
+            String combinedProfitLabel = MessageUtil.getMessage("stock.asset.status.col.combined.profit");
+            java.util.function.Function<BigDecimal, String> signedKrw = v -> (v.signum() >= 0 ? "+" : "-") + StockFormatUtil.compactKrw(Math.abs(StockFormatUtil.displayWon(v)));
+            java.util.function.Function<BigDecimal, String> toneOf = v -> v.signum() >= 0 ? "text-profit" : "text-loss";
+        }
+        @template._components.ui.card(cssClass = "mt-3", bodyClass = "p-4", body = @`
+            <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2" data-core-holding-split>
+                <h3 class="text-sm font-semibold">${coreTitle}</h3>
+                <span class="text-xs text-base-content/60">${coreNote}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table table-xs w-full">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th class="text-right"><span class="text-base-content/60">${coreLabel}</span> <span class="font-semibold" data-core-holding-name>${coreName}</span></th>
+                            <th class="text-right" data-core-holding-rest>${restLabel}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>${evaluationAmountLabel} <span class="text-base-content/50">(${coreWeightLabel})</span></td>
+                            <td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}</span> <span class="text-xs text-base-content/60" data-core-holding-weight>${coreHoldingSplit.core().weightPct().toPlainString()}%</span></td>
+                            <td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}</span> <span class="text-xs text-base-content/60">${coreHoldingSplit.rest().weightPct().toPlainString()}%</span></td>
+                        </tr>
+                        <tr>
+                            <td>${MessageUtil.getMessage("stock.profit.unrealized")}</td>
+                            <td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().evaluationProfit())}">${signedKrw.apply(coreHoldingSplit.core().evaluationProfit())}</td>
+                            <td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().evaluationProfit())}">${signedKrw.apply(coreHoldingSplit.rest().evaluationProfit())}</td>
+                        </tr>
+                        <tr>
+                            <td>${realizedProfitLabel}</td>
+                            <td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().realizedProfit())}">${signedKrw.apply(coreHoldingSplit.core().realizedProfit())}</td>
+                            <td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().realizedProfit())}">${signedKrw.apply(coreHoldingSplit.rest().realizedProfit())}</td>
+                        </tr>
+                        <tr>
+                            <td>${cumulativeDividendLabel}</td>
+                            <td class="text-right font-mono amount-value text-dividend">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().dividendTotal()))}</td>
+                            <td class="text-right font-mono amount-value text-dividend">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().dividendTotal()))}</td>
+                        </tr>
+                        <tr class="font-semibold">
+                            <td>${combinedProfitLabel}</td>
+                            <td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().combinedProfit())}">${signedKrw.apply(coreHoldingSplit.core().combinedProfit())}</td>
+                            <td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().combinedProfit())}">${signedKrw.apply(coreHoldingSplit.rest().combinedProfit())}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `)
+    @endif
 </div>
 
 @if(hasTrendSeries)

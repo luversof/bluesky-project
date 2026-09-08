@@ -82,6 +82,7 @@
 		data-common-message-action-success="${MessageUtil.getMessage("common.message.action.success")}"
 		data-stock-label-buy="${MessageUtil.getMessage("stock.trade.label.buy")}"
 		data-stock-label-sell="${MessageUtil.getMessage("stock.trade.label.sell")}"
+		data-stock-label-realized-profit="${MessageUtil.getMessage("stock.profit.realized")}"
 		data-stock-chart-title-profit-contribution="${MessageUtil.getMessage("stock.trade.chart.title.profit.contribution")}"
 		data-stock-chart-title-buy-concentration="${MessageUtil.getMessage("stock.trade.chart.title.buy.concentration")}"
 		data-stock-chart-message-no-sell-data="${MessageUtil.getMessage("stock.trade.chart.message.no.sell.data")}"

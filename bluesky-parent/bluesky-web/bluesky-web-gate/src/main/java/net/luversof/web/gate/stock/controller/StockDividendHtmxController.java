@@ -124,6 +124,13 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     var dividendsFuture =
         async.supply(() -> emptyIfNull(dividendClient.findDividends(dividendParams)));
     var dividendMetaFuture = async.supply(() -> dividendClient.findDividendMeta(userId));
+    // 월별 차트의 '최근 12개월 합' 선. 표시 기간이 올해면 브라우저에 앞 11개월이 없으므로 전체 원장으로
+    // 서버가 낸다(호출 1회 추가 - 실측 배당 조회 13.6ms, 다른 조회와 함께 던져 응답시간에 거의 안 붙는다).
+    DividendRequest allDividendRequest = new DividendRequest();
+    allDividendRequest.setUserId(userId);
+    var allDividendParams = allDividendRequest.toParams();
+    var allDividendsFuture =
+        async.supply(() -> emptyIfNull(dividendClient.findDividends(allDividendParams)));
     var accountsFuture = async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
     var stockItemsFuture = async.supply(() -> emptyIfNull(stockItemClient.getStockItems()));
 
@@ -539,6 +546,12 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     }
     model.addAttribute("dividendList", displayDividendList);
     model.addAttribute("allDividendList", viewList);
+    model.addAttribute(
+        "dividendTtmJs",
+        net.luversof.web.gate.stock.util.StockDividendTtmUtil.toJs(
+            net.luversof.web.gate.stock.util.StockDividendTtmUtil.byMonth(
+                net.luversof.web.gate.stock.support.StockAsyncSupport.join(allDividendsFuture),
+                net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone))));
     model.addAttribute("pagination", pagination);
     model.addAttribute("totalItems", totalItems);
     model.addAttribute("totalPages", totalPages);

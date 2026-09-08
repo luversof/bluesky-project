@@ -80,60 +80,10 @@ public class TradeProfitService {
   }
 
   public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
-    // 요청 기준으로 tradeList를 조회
-    // 기간 요청이 있더라도 평단가 계산을 위해 전체 데이터를 조회해야 함
-    List<Trade> tradeList =
-        switch (request.getRequestType()) {
-          case USER -> {
-            // 계좌를 먼저 읽어 id 를 뽑고 다시 거래를 읽던 왕복 2회를 조인 1회로 줄인다.
-            // 이 엔드포인트는 시간의 3/4 을 DB 왕복 대기로 쓰므로(실측: 소켓 대기 51.6% + 드라이버 9.1%)
-            // 왕복 하나가 그대로 응답 시간이다. 거래가 하나도 없을 때만 "계좌가 아예 없는 사용자"인지
-            // 확인해 예전과 같은 오류를 낸다.
-            // 계좌도 거래도 없는 사용자는 오류가 아니라 '아직 아무것도 없는 사용자'다.
-            // 예전에는 여기서 400 을 던져, 가입만 하고 계좌를 아직 안 만든 사용자에게 대시보드
-            // 조각이 통째로 오류 상자로 나갔다(실측: 데이터 없는 userId 로 calculateProfit,
-            // timeSeries, timeSeriesWithSummary, holdingsSnapshot, holdingsSnapshotBatch
-            // 5 개가 모두 400 · StockErrorCode.INVALID_USER_ID). 빈 결과를 돌려주면 화면이
-            // "데이터 없음" 을 그린다.
-            //
-            // 남의 계좌를 보려는 요청은 이 분기로 오지 않는다. accountIdList 를 준 요청은
-            // USER_ACCOUNT 경로로 가고 거기서 소유권을 검사한다(그 검사는 그대로 둔다).
-            yield tradeService.findByUserId(request.getUserId());
-          }
-          case USER_ACCOUNT -> {
-            var accountList = accountService.findByIdIn(request.getAccountIdList());
-            if (accountList.isEmpty()) {
-              StockErrorCode.INVALID_USER_ID.throwException();
-            }
-
-            assertAccountsOwnedBy(accountList, request.getUserId());
-
-            yield tradeService.findByAccountIdIn(request.getAccountIdList());
-          }
-          case USER_STOCKITEM -> {
-            var accountList = accountService.findByUserId(request.getUserId());
-            // 계좌가 아직 없는 사용자는 오류가 아니라 빈 결과다(위 USER 분기와 같은 이유).
-            if (accountList.isEmpty()) {
-              yield List.of();
-            }
-
-            assertAccountsOwnedBy(accountList, request.getUserId());
-
-            yield tradeService.findByAccountIdInAndStockItemIdIn(
-                accountList.stream().map(Account::getId).toList(), request.getStockItemIdList());
-          }
-          case USER_ACCOUNT_STOCKITEM -> {
-            var accountList = accountService.findByIdIn(request.getAccountIdList());
-            if (accountList.isEmpty()) {
-              StockErrorCode.INVALID_USER_ID.throwException();
-            }
-
-            assertAccountsOwnedBy(accountList, request.getUserId());
-
-            yield tradeService.findByAccountIdInAndStockItemIdIn(
-                request.getAccountIdList(), request.getStockItemIdList());
-          }
-        };
+    // 거래 조회 규칙(요청 유형별 조회 · 소유권 검사 · 빈 사용자 처리)은 loadAllTrades 하나에 있다.
+    // 2026-09-08 까지 여기 46 줄이 그 메서드와 같은 스위치를 한 번 더 갖고 있었다(공통 블록 23 개).
+    // 기간 요청이 있더라도 평단가 계산을 위해 전체 거래를 읽는다.
+    List<Trade> tradeList = loadAllTrades(request);
 
     // 그룹별로 기본 손익 계산
     List<TradeProfit> base =
@@ -141,8 +91,6 @@ public class TradeProfitService {
           case ACCOUNT_AND_STOCKITEM -> calculateProfitByAccountAndStock(tradeList, request);
           case STOCKITEM -> calculateProfitByStock(tradeList, request);
         };
-
-    if (base.isEmpty()) return base;
 
     return base;
   }
@@ -176,23 +124,9 @@ public class TradeProfitService {
 
       TradeProfit profit =
           profitCalculator.calculate(group, request, stockPriceService, latestPrices);
-      if (request.hasDateRange()) {
-        // Include if Realized Profit != 0 OR if there was any Sell Activity OR any Buy
-        // Activity
-        boolean hasProfit = profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0;
-        boolean hasSell =
-            profit.getTotalSellAmount() != null
-                && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
-        boolean hasBuy =
-            profit.getTotalBuyAmount() != null
-                && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
-        if (hasProfit || hasSell || hasBuy) {
-          result.add(profit);
-        }
-      } else {
-        if (!isEmptyProfit(profit)) {
-          result.add(profit);
-        }
+      // 기간 조회면 그 기간에 활동(실현손익·매도·매수)이 있던 줄만, 아니면 빈 줄만 뺀다.
+      if (request.hasDateRange() ? hadActivityInRange(profit) : !isEmptyProfit(profit)) {
+        result.add(profit);
       }
     }
     // 이 목록은 groupingBy 가 만든 HashMap 의 values() 순서로 쌓인다. 같은 입력이면 재현되지만
@@ -374,26 +308,29 @@ public class TradeProfitService {
       // (실측: 잔여원가가 계좌별로 계산한 값과 0.028% 어긋났다 — 다계좌 보유 2종목에서 발생).
       // 계좌별로 계산한 뒤 합쳐야 "지금 들고 있는 수량을 실제로 얼마에 샀는지"가 된다.
       TradeProfit profit = mergeByAccount(group, request, latestPrices);
-      if (request.hasDateRange()) {
-        // Include if Realized Profit != 0 OR if there was any Sell Activity OR any Buy
-        // Activity
-        boolean hasProfit = profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0;
-        boolean hasSell =
-            profit.getTotalSellAmount() != null
-                && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
-        boolean hasBuy =
-            profit.getTotalBuyAmount() != null
-                && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
-        if (hasProfit || hasSell || hasBuy) {
-          result.add(profit);
-        }
-      } else {
-        if (!isEmptyProfit(profit)) {
-          result.add(profit);
-        }
+      // 기간 조회면 그 기간에 활동(실현손익·매도·매수)이 있던 줄만, 아니면 빈 줄만 뺀다.
+      if (request.hasDateRange() ? hadActivityInRange(profit) : !isEmptyProfit(profit)) {
+        result.add(profit);
       }
     }
     return result;
+  }
+
+  /**
+   * 기간 조회에서 그 줄을 남길지. 실현손익이 있거나 매도·매수가 하나라도 있었으면 남긴다 &mdash; 기간 안에 아무 일도 없던 보유 줄은 뺀다(그 줄의 평가손익은 기간의
+   * 성과가 아니다).
+   *
+   * <p>2026-09-08 까지 이 판정이 계좌·종목 집계와 종목 집계에 17 줄씩 두 벌 있었다.
+   */
+  private static boolean hadActivityInRange(TradeProfit profit) {
+    boolean hasProfit = profit.getRealizedProfit().compareTo(BigDecimal.ZERO) != 0;
+    boolean hasSell =
+        profit.getTotalSellAmount() != null
+            && profit.getTotalSellAmount().compareTo(BigDecimal.ZERO) > 0;
+    boolean hasBuy =
+        profit.getTotalBuyAmount() != null
+            && profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) > 0;
+    return hasProfit || hasSell || hasBuy;
   }
 
   private boolean isEmptyProfit(TradeProfit profit) {
@@ -1423,8 +1360,17 @@ public class TradeProfitService {
     return switch (request.getRequestType()) {
       case USER -> {
         // 계좌를 먼저 읽어 id 를 뽑고 다시 거래를 읽던 왕복 2회를 조인 1회로 줄인다.
-        // 거래가 하나도 없을 때만 "계좌가 아예 없는 사용자"인지 확인해 예전과 같은 오류를 낸다.
-        // 계좌도 거래도 없는 사용자는 오류가 아니라 빈 결과다(calculateProfit 의 USER 분기와 같은 규칙).
+        // 이 엔드포인트는 시간의 3/4 을 DB 왕복 대기로 쓰므로(실측: 소켓 대기 51.6% + 드라이버 9.1%)
+        // 왕복 하나가 그대로 응답 시간이다.
+        //
+        // 계좌도 거래도 없는 사용자는 오류가 아니라 '아직 아무것도 없는 사용자'다. 예전에는 여기서
+        // 400 을 던져, 가입만 하고 계좌를 아직 안 만든 사용자에게 대시보드 조각이 통째로 오류 상자로
+        // 나갔다(실측: 데이터 없는 userId 로 calculateProfit, timeSeries, timeSeriesWithSummary,
+        // holdingsSnapshot, holdingsSnapshotBatch 5 개가 모두 400 · StockErrorCode.INVALID_USER_ID).
+        // 빈 결과를 돌려주면 화면이 "데이터 없음" 을 그린다.
+        //
+        // 남의 계좌를 보려는 요청은 이 분기로 오지 않는다. accountIdList 를 준 요청은 USER_ACCOUNT
+        // 경로로 가고 거기서 소유권을 검사한다.
         yield tradeService.findByUserId(request.getUserId());
       }
       case USER_ACCOUNT -> {
@@ -1432,8 +1378,8 @@ public class TradeProfitService {
         if (accountList.isEmpty()) {
           StockErrorCode.INVALID_USER_ID.throwException();
         }
-        // 남의 계좌 id 를 넣어도 그대로 읽히던 구멍. 같은 조건을 쓰는 calculateProfit 은 이 검증을
-        // 하고 있었는데 여기만 빠져 있었다. 계좌는 이미 읽어둔 것이라 조회가 늘지 않는다.
+        // 남의 계좌 id 를 넣어도 그대로 읽히던 구멍(한때 여기만 검증이 빠져 있었다). 계좌는 이미
+        // 읽어둔 것이라 조회가 늘지 않는다. calculateProfit 도 이 메서드를 쓴다.
         assertAccountsOwnedBy(accountList, request.getUserId());
         yield tradeService.findByAccountIdIn(request.getAccountIdList());
       }

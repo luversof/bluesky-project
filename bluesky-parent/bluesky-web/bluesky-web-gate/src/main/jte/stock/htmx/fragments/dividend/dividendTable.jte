@@ -98,8 +98,8 @@
                         <td class="text-right hidden xl:table-cell amount-value">${item.referencePrice() != null ? decimalFormat.format(item.referencePrice()) : "-"}</td>
                         <td class="text-right hidden xl:table-cell amount-value">${item.principalCost() != null ? decimalFormat.format(item.principalCost()) : "-"}</td>
                         <td class="text-right text-dividend font-medium">${percentFormat.apply(item.yieldOnCostPct())}</td>
-                        <td class="text-right hidden lg:table-cell amount-value">${item.tax() != null ? decimalFormat.format(item.tax()) : "0"}</td>
-                        <td class="text-right amount-value">${item.taxableAmount() != null ? decimalFormat.format(item.taxableAmount()) : "0"}</td>
+                        <td class="text-right hidden lg:table-cell amount-value">${item.tax() != null && item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : "-"}</td>
+                        <td class="text-right amount-value">${item.taxableAmount() != null && item.taxableAmount().signum() != 0 ? decimalFormat.format(item.taxableAmount()) : "-"}</td>
                     </tr>
                     @endfor
                     @if(dividendList == null || dividendList.isEmpty())

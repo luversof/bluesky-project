@@ -3,7 +3,9 @@ package net.luversof.web.gate.stock.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -177,9 +179,9 @@ class StockContributionUtilTest {
   /**
    * 이름을 밖에서 채운다.
    *
-   * <p>{@code calculateProfit(groupBy=STOCKITEM)} 은 이름을 주지 않는다 &mdash; 실측 2026-09-07: 43 행 전부
-   * {@code stockItemName} 이 null 이었다. 스냅샷에는 이름이 있지만 그건 <b>기말에 들고 있는 종목만</b>이라, 채우지 않으면 이미 다 판 종목이
-   * 전부 '-' 로 나간다. 줄은 있는데 읽을 수가 없어 "보유 중인 것만 나온다" 로 보였다(44 줄 중 35 줄).
+   * <p>api-stock 의 {@code TradeProfit} 은 id 만 싣는 규약이라 응답에 이름 키가 없다(결함이 아니다 &mdash; 게이트의 다른 화면도
+   * {@code withNames} 로 붙인다). 스냅샷에는 이름이 있지만 그건 <b>기말에 들고 있는 종목만</b>이라, 채우지 않으면 이미 다 판 종목이 전부 '-' 로
+   * 나간다. 줄은 있는데 읽을 수가 없어 "보유 중인 것만 나온다" 로 보였다(44 줄 중 35 줄).
    */
   @Test
   void 다_판_종목의_이름을_밖에서_채운다() {
@@ -281,5 +283,70 @@ class StockContributionUtilTest {
 
     assertThat(folded.othersCount()).isZero();
     assertThat(folded.others()).isNull();
+  }
+
+  // ---------------------------------------------------------------- 스냅샷 날짜
+
+  private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+  private static final LocalDate TODAY = LocalDate.parse("2026-09-08");
+
+  private static Instant seoul(String text) {
+    return Instant.parse(text.replace("+09:00", "Z")).minusSeconds(9 * 3600);
+  }
+
+  /**
+   * 기말은 endDate <b>직전 순간</b>의 날짜다. endDate 는 배타적이라 자정이면 하루 전이다.
+   *
+   * <p>실측 2026-09-08: end=06-10T00:00 인 요약의 기말 평가손익은 06-09 스냅샷(1,261,330,159)과 같고 06-10
+   * 스냅샷(1,161,055,494)과는 다르다. 기말을 endDate 당일로 잡던 예전 코드는 올해 구간에서 76,066,520 원 어긋났다.
+   */
+  @Test
+  void 기말은_배타적_endDate_의_하루_전이다() {
+    var dates =
+        StockContributionUtil.snapshotDates(
+            seoul("2026-06-09T00:00:00+09:00"), seoul("2026-06-10T00:00:00+09:00"), SEOUL, TODAY);
+
+    assertThat(dates.end())
+        .as("end=06-10T00:00(배타) 의 기말은 06-09 다. 06-10 을 찍으면 요약보다 하루 뒤 평가액을 쓴다")
+        .isEqualTo(LocalDate.parse("2026-06-09"));
+    assertThat(dates.start())
+        .as("기초는 시작일 당일이다(실측: start=06-09 의 기초 = 06-09 스냅샷)")
+        .isEqualTo(LocalDate.parse("2026-06-09"));
+  }
+
+  /** 자정이 아닌 endDate 는 그날을 포함한다(실측: end=06-09T12:00 의 기말 = 06-09 스냅샷). */
+  @Test
+  void 자정이_아닌_endDate_는_그날이_기말이다() {
+    var dates =
+        StockContributionUtil.snapshotDates(null, seoul("2026-06-09T12:00:00+09:00"), SEOUL, TODAY);
+
+    assertThat(dates.end()).isEqualTo(LocalDate.parse("2026-06-09"));
+  }
+
+  /** '전체' 는 시작일이 없다 - 기초 없음(0), 기말은 오늘. 요약의 기말도 현재 시점이다. */
+  @Test
+  void 기간이_없으면_기초는_없고_기말은_오늘이다() {
+    var dates = StockContributionUtil.snapshotDates(null, null, SEOUL, TODAY);
+
+    assertThat(dates.start()).isNull();
+    assertThat(dates.end()).isEqualTo(TODAY);
+  }
+
+  /** 시간대는 요청의 것이다. 같은 순간이라도 UTC 로 읽으면 하루 앞선 날짜가 나온다. */
+  @Test
+  void 날짜는_요청의_시간대로_읽는다() {
+    Instant end = seoul("2026-06-10T00:00:00+09:00"); // = 2026-06-09T15:00Z
+
+    assertThat(StockContributionUtil.snapshotDates(null, end, SEOUL, TODAY).end())
+        .isEqualTo(LocalDate.parse("2026-06-09"));
+    assertThat(StockContributionUtil.snapshotDates(null, end, ZoneId.of("UTC"), TODAY).end())
+        .as("UTC 로는 06-09T15:00 직전 = 06-09")
+        .isEqualTo(LocalDate.parse("2026-06-09"));
+    assertThat(
+            StockContributionUtil.snapshotDates(
+                    seoul("2026-06-10T00:00:00+09:00"), null, ZoneId.of("UTC"), TODAY)
+                .start())
+        .as("서울 06-10 자정은 UTC 로 06-09 다 - 시간대를 무시하면 기초가 하루 밀린다")
+        .isEqualTo(LocalDate.parse("2026-06-09"));
   }
 }

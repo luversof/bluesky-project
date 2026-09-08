@@ -23,6 +23,11 @@
 @param java.util.List<String> stockTagList = java.util.List.of()
 @param java.util.List<java.util.UUID> selectedAccountIds = java.util.List.of()
 @param java.util.List<java.util.UUID> selectedStockItemIds = java.util.List.of()
+@param boolean coreHoldingTagged = false
+@param boolean coreHoldingExcluded = false
+@param String coreHoldingName = null
+@param int coreHoldingCount = 0
+@param String coreHoldingWeightPct = null
 @param java.util.List<String> selectedStockTags = java.util.List.of()
 @param Double periodReturnRatePct = null
 @param boolean returnCalculable = false
@@ -124,6 +129,36 @@
             coveredEndDate = coveredRange.endDate()
         )
 
+        <%-- 핵심 보유 제외 토글. 어느 종목이 핵심인지는 '핵심' 태그가 정한다. 태그를 단 종목이 없으면 나오지 않는다.
+             버튼은 폼(hidden 기간 값)과 함께 보내지고, 제외 상태는 폼의 hidden 으로 기간을 바꿔도 유지된다. --%>
+        @if(coreHoldingTagged)
+            !{
+                String coreToggleName = coreHoldingName != null
+                    ? coreHoldingName
+                    : java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.core.multi"), coreHoldingCount);
+                // 여럿이어도 무엇을 몇 개 빼는지 말한다: "핵심 보유 3종목 제외".
+                String coreExcludeLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.growth.exclude.core"), coreToggleName);
+                String coreExcludingLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.growth.exclude.core.active"), coreToggleName);
+            }
+            @if(coreHoldingExcluded)
+                <div class="mb-2 flex flex-wrap items-center gap-2" data-exclude-core="active">
+                    <span class="badge badge-warning badge-outline">${coreExcludingLabel}</span>
+                    <button type="button" class="btn btn-xs btn-ghost" data-exclude-core-clear
+                            hx-get="/stock/htmx/asset-growth/view" hx-include="#assetGrowthSearchForm" hx-vals='{"excludeCore": "false"}'
+                            hx-target="#assetGrowthFragment" hx-select="#assetGrowthFragment" hx-swap="outerHTML">${MessageUtil.getMessage("stock.asset.growth.exclude.core.clear")}</button>
+                </div>
+            @else
+                <div class="mb-2 flex flex-wrap items-center gap-2" data-exclude-core="available">
+                    <button type="button" class="btn btn-xs btn-outline" data-exclude-core-apply
+                            hx-get="/stock/htmx/asset-growth/view" hx-include="#assetGrowthSearchForm" hx-vals='{"excludeCore": "true"}'
+                            hx-target="#assetGrowthFragment" hx-select="#assetGrowthFragment" hx-swap="outerHTML">${coreExcludeLabel}</button>
+                    @if(coreHoldingWeightPct != null)
+                        <span class="text-xs text-base-content/50">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.growth.exclude.core.hint"), coreHoldingWeightPct)}</span>
+                    @endif
+                </div>
+            @endif
+        @endif
+
         <details class="mb-4" open data-detail-filter>
             <summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
@@ -211,9 +246,13 @@
                 <input type="hidden" name="endDate" id="assetEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
                 <input type="hidden" name="timeZone" id="assetTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
                 <input type="hidden" name="rangeMode" id="assetRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
+                @if(coreHoldingExcluded)
+                    <input type="hidden" name="excludeCore" value="true">
+                @endif
             </form>
         </details>
 
+        <script type="module" src="/js/stock/assetGrowth.js"></script>
         <script type="module" src="/js/stock/selectionStorage.js"></script>
         <script type="module" src="/js/stock/tagFilterChips.js"></script>
 
@@ -354,53 +393,34 @@
         </div>
     </div>
 
-    <script nonce="${CspNonceHolder.getNonce()}">
-    (function() {
-        var assetPicker = DateRangePicker.create({
-            formId:         'assetGrowthSearchForm',
-            startId:        'assetStartDateInput',
-            endId:          'assetEndDateInput',
-            instantStartId: 'assetStartInstantInput',
-            instantEndId:   'assetEndInstantInput',
-            timeZoneId:     'assetTimeZoneInput',
-            rangeModeId:    'assetRangeModeInput',
-            btnClass:       'asset-range-btn',
-            minDate:        '${dataFirstDate != null ? dataFirstDate : ""}',
-            globalKey:      'globalDateRange',
-            rootSelector:   '#assetGrowthFragment'
-        });
-        window.assetPicker = assetPicker;
-        // 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
-        try {
-            if (window.assetPicker && typeof window.assetPicker.getState === 'function') {
-                var __s = window.assetPicker.getState();
-                if ((!__s || !__s.mode) && (!__s || !__s.start) && (!__s || !__s.end)) {
-                    var __key = 'dateRangeDefaultApplied:assetPicker';
-                    try {
-                        if (!sessionStorage.getItem(__key)) {
-                            var _btn = document.querySelector('#assetGrowthFragment .asset-range-btn');
-                            window.assetPicker.set('mtd', _btn || null);
-                            sessionStorage.setItem(__key, '1');
-                        }
-                    } catch(e) { window.assetPicker.set('mtd', null); }
-                }
-            }
-        } catch(e) {}
-    })();
-    </script>
+    <%-- 서버가 아는 것만 넘긴다(타임존 · 선택기 minDate · 라벨). 동작은 /js/stock/assetGrowth.js 에 있다
+     (2026-09-08 까지 여기 인라인 스크립트 둘, 308 줄). 시계열 배열은 아래 @if 안의 블록이 싣는다. --%>
+<script nonce="${CspNonceHolder.getNonce()}">
+    window.assetGrowthConfig = {
+        snapshotTz: '${timeZone != null ? timeZone : ""}',
+        minDate: '${dataFirstDate != null ? dataFirstDate : ""}',
+        series: null,
+        labels: {
+            totalAsset: '${totalAssetDatasetLabel}',
+            principal: '${principalLabel}',
+            totalAssetAxis: '${totalAssetAxisLabel}',
+            unrealizedProfit: '${unrealizedProfitLabel}',
+            rangeMax: '${rangeMaxLabel}',
+            rangeMin: '${rangeMinLabel}',
+            clickTradeHistory: '${clickTradeHistoryLabel}',
+            tradeCount: '${tradeCountLabel}',
+            dailyRealizedProfit: '${dailyRealizedProfitLabel}',
+            cumulativeRealized: '${cumulativeRealizedDatasetLabel}',
+            cumulativeTotal: '${cumulativeTotalDatasetLabel}',
+            cumulativeDividend: '${cumulativeDividendLabel}',
+            cumulativeProfitAxis: '${cumulativeProfitAxisLabel}'
+        }
+    };
+</script>
 
     @if(ts != null && !ts.isEmpty())
     <script nonce="${CspNonceHolder.getNonce()}">
         (function() {
-            // Chart.js 는 아래 window.ensureStockCharts 콜백에서 필요할 때 로드된다.
-            // 여기서 typeof Chart 로 조기 반환하면 로더를 부르기도 전에 끝나 차트가 영영 안 그려진다.
-            // 보유 스냅샷 조회 시 함께 넘길 타임존. 안 넘기면 서버 기본 타임존으로
-            // 집계돼 컨테이너가 UTC 인 환경에서 날짜가 하루 어긋난다.
-            var snapshotTz = encodeURIComponent('${timeZone != null ? timeZone : ""}' || Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-            var ctxMain = document.getElementById('assetGrowthChart');
-            var ctxDividend = document.getElementById('dividendChart');
-            if (!ctxMain || !ctxDividend) return;
-
             var labels = [];
             var totalValueData = [];
             var totalCostData = [];
@@ -421,247 +441,11 @@
                 buyCountData.push($unsafe{String.valueOf(pt.buyCount())});
                 dailyRealizedProfitData.push($unsafe{pt.dailyRealizedProfit() != null ? pt.dailyRealizedProfit().setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0"});
             @endfor
-
-            // 현재 평가 손익(미실현) = 총 자산 평가액 - 투자 원금
-            var currentUnrealizedProfitData = totalValueData.map(function(v, i) {
-                return parseFloat(v) - parseFloat(totalCostData[i]);
-            });
-            // 총 누적 이익 = 누적 결산 손익 + 누적 배당금
-            var totalCumulativeProfitData = cumulativeRealizedProfitData.map(function(v, i) {
-                return parseFloat(v) + parseFloat(cumulativeDividendData[i]);
-            });
-
-            var yTicksCallback = function(value) {
-                if (window.StockCharts) return window.StockCharts.formatCompactNumber(value);
-                return new Intl.NumberFormat().format(value);
+            window.assetGrowthConfig.series = {
+                labels: labels, totalValueData: totalValueData, totalCostData: totalCostData,
+                cumulativeRealizedProfitData: cumulativeRealizedProfitData, cumulativeDividendData: cumulativeDividendData,
+                tradeCountData: tradeCountData, buyCountData: buyCountData, dailyRealizedProfitData: dailyRealizedProfitData
             };
-
-            var locale = window.StockCharts ? window.StockCharts.getLocale() : undefined;
-            var percentFormatter = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            var formatNumber = function(value) {
-                return window.StockCharts ? window.StockCharts.formatNumber(value) : new Intl.NumberFormat(locale).format(value);
-            };
-            var formatCurrency = function(value) {
-                return window.StockCharts ? window.StockCharts.formatCurrency(Math.round(value)) : ('₩' + Math.round(value).toLocaleString());
-            };
-            var formatSignedCurrency = function(value) {
-                var rounded = Math.round(value || 0);
-                var sign = rounded >= 0 ? '+' : '-';
-                return sign + formatCurrency(Math.abs(rounded));
-            };
-            var formatSignedPercent = function(value) {
-                var sign = value >= 0 ? '+' : '-';
-                return sign + percentFormatter.format(Math.abs(value)) + '%';
-            };
-
-            var syncing = false;
-            var mainChart, dividendChart;
-
-            window.ensureStockCharts(function() {
-                var series = {
-                    labels: labels,
-                    value: totalValueData,
-                    cost: totalCostData,
-                    buyCount: buyCountData,
-                    dailyRealized: dailyRealizedProfitData
-                };
-                mainChart = window.StockCharts.createHoldingsChart('assetGrowthChart', series, {
-                    valueLabel: '${totalAssetDatasetLabel}',
-                    costLabel: '${principalLabel}',
-                    axisLabel: '${totalAssetAxisLabel}',
-                    profitLabel: '${unrealizedProfitLabel}',
-                    maxLabel: '${rangeMaxLabel}',
-                    minLabel: '${rangeMinLabel}'
-                }, {
-                    animate: true,
-                    showMarkers: true,
-                    tooltipAfterBody: function(idx) {
-                        if (tradeCountData[idx] > 0) {
-                            var drp = parseFloat(dailyRealizedProfitData[idx]);
-                            var lines = ['─────────────────', '${clickTradeHistoryLabel}', '${tradeCountLabel}'.replace('{0}', formatNumber(tradeCountData[idx]))];
-                            if (drp !== 0) lines.push('${dailyRealizedProfitLabel}: ' + formatSignedCurrency(drp));
-                            return lines;
-                        }
-                        return [];
-                    },
-                    onHover: function(event, elements) {
-                        if (syncing || !dividendChart) return;
-                        event.native.target.style.cursor = 'default';
-                        syncing = true;
-                        var lineEl = elements.find(function(e) { return e.datasetIndex < 2; });
-                        if (!lineEl) {
-                            dividendChart.tooltip.setActiveElements([], { x: 0, y: 0 });
-                        } else {
-                            var idx = lineEl.index;
-                            var active = dividendChart.data.datasets.map(function(_, i) { return { datasetIndex: i, index: idx }; });
-                            var meta0 = dividendChart.getDatasetMeta(0);
-                            var pt = meta0 && meta0.data && meta0.data[idx];
-                            dividendChart.tooltip.setActiveElements(active, pt ? { x: pt.x, y: pt.y } : { x: 0, y: 0 });
-                        }
-                        dividendChart.update('none');
-                        syncing = false;
-                    },
-                    onClick: function(event, elements) {
-                        if (!elements.length) return;
-                        if (markerClicked) { markerClicked = false; return; }
-                        var clicked = elements[0];
-                        var date = labels[clicked.index];
-                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date + '&timeZone=' + snapshotTz, {
-                            target: '#holdings-snapshot-container',
-                            swap: 'innerHTML'
-                        });
-                    }
-                }, mainChart);
-            });
-
-            window.ensureStockCharts(function() {
-            dividendChart = window.StockCharts.createChart('dividendChart', {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: '${cumulativeRealizedDatasetLabel}',
-                            data: cumulativeRealizedProfitData,
-                            borderColor: 'rgba(99, 102, 241, 1)',
-                            backgroundColor: 'rgba(99, 102, 241, 0.25)',
-                            borderWidth: 2,
-                            fill: 'origin',
-                            pointRadius: 0,
-                            pointHitRadius: 10,
-                            pointHoverRadius: 4,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: '${cumulativeTotalDatasetLabel}',
-                            data: totalCumulativeProfitData,
-                            borderColor: 'rgba(34, 197, 94, 1)',
-                            backgroundColor: 'rgba(34, 197, 94, 0.25)',
-                            borderWidth: 2,
-                            fill: '-1',
-                            pointRadius: 0,
-                            pointHitRadius: 10,
-                            pointHoverRadius: 4,
-                            yAxisID: 'y'
-                        }
-                    ]
-                },
-                options: {
-                    animation: { duration: 600 },
-                    normalized: true,
-                    elements: {
-                        line: { tension: 0 },
-                        point: { radius: 0, hitRadius: 10, hoverRadius: 4 }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                // dataset label 은 숨기고 afterBody 에서 원하는 형태로 직접 구성
-                                label: function() { return null; },
-                                afterBody: function(tooltipItems) {
-                                    if (!tooltipItems.length) return [];
-                                    var idx = tooltipItems[0].dataIndex;
-                                    var realized  = cumulativeRealizedProfitData[idx];
-                                    var dividend  = cumulativeDividendData[idx];
-                                    var total     = (parseFloat(realized) || 0) + (parseFloat(dividend) || 0);
-                                    return [
-                                        '${cumulativeRealizedDatasetLabel}: ' + formatSignedCurrency(realized),
-                                        '${cumulativeDividendLabel}: ' + formatSignedCurrency(dividend),
-                                        '─────────────────────',
-                                        '${cumulativeTotalDatasetLabel}: ' + formatSignedCurrency(total)
-                                    ];
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        },
-                        y: {
-                            display: true,
-                            position: 'left',
-                            title: { display: true, text: '${cumulativeProfitAxisLabel}' },
-                            ticks: { callback: yTicksCallback }
-                        }
-                    },
-                    onHover: function(event, elements) {
-                        if (syncing || !mainChart) return;
-                        syncing = true;
-                        if (!elements.length) {
-                            mainChart.tooltip.setActiveElements([], { x: 0, y: 0 });
-                        } else {
-                            var idx = elements[0].index;
-                            var active = mainChart.data.datasets.map(function(_, i) { return { datasetIndex: i, index: idx }; });
-                            var meta0 = mainChart.getDatasetMeta(0);
-                            var pt = meta0 && meta0.data && meta0.data[idx];
-                            mainChart.tooltip.setActiveElements(active, pt ? { x: pt.x, y: pt.y } : { x: 0, y: 0 });
-                        }
-                        mainChart.update('none');
-                        syncing = false;
-                    },
-                    onClick: function(event, elements) {
-                        if (!elements.length) return;
-                        if (markerClicked) { markerClicked = false; return; } // 마커 클릭 시 중복 방지
-                        var date = labels[elements[0].index];
-                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date + '&timeZone=' + snapshotTz, {
-                            target: '#holdings-snapshot-container',
-                            swap: 'innerHTML'
-                        });
-                    }
-                }
-            });
-
-            });
-
-            // 마커 삼각형 클릭 감지 (afterDraw로 그린 삼각형은 Chart.js hit detection 밖이므로 직접 처리)
-            var markerClicked = false; // Chart.js onClick 중복 호출 방지 플래그
-            var c1El = document.getElementById('assetGrowthChart');
-            if (c1El) {
-                c1El.addEventListener('click', function(e) {
-                    var rect = c1El.getBoundingClientRect();
-                    var mx = e.clientX - rect.left;
-                    var my = e.clientY - rect.top;
-                    var hitR = 12;
-                    var drawnMarkers = (mainChart && mainChart.$drawnMarkers) || [];
-                    for (var k = 0; k < drawnMarkers.length; k++) {
-                        var m = drawnMarkers[k];
-                        if (Math.abs(mx - m.px) <= hitR && Math.abs(my - m.py) <= hitR) {
-                            markerClicked = true;
-                            htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + m.date + '&timeZone=' + snapshotTz, {
-                                target: '#holdings-snapshot-container',
-                                swap: 'innerHTML'
-                            });
-                            return;
-                        }
-                    }
-                });
-            }
-
-            // htmx swap(이전/다음·필터 조회) 직후엔 캔버스 크기가 0으로 잡혀 빈 차트로 보일 수 있다.
-            // realizedProfit 과 동일하게 레이아웃 확정 후 resize 로 보정한다.
-            function resizeAssetGrowthCharts() {
-                [mainChart, dividendChart].forEach(function(c) {
-                    if (!c || !c.canvas || !c.canvas.isConnected) return;
-                    try { c.resize(); c.update('none'); } catch (e) {}
-                });
-            }
-            setTimeout(resizeAssetGrowthCharts, 0);
-            setTimeout(resizeAssetGrowthCharts, 200);
-            setTimeout(resizeAssetGrowthCharts, 500);
         })();
     </script>
     @endif

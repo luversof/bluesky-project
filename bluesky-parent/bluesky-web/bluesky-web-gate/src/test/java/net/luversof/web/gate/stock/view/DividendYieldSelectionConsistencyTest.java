@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 class DividendYieldSelectionConsistencyTest {
 
   private static final Path SELECTION =
-      Path.of("src/main/jte/stock/htmx/fragments/tabsDividendHistory.jte");
+      // 2026-09-08 선택 합계 JS 가 인라인 스크립트에서 dividendHistory.ts 로 옮겨갔다
+      Path.of("src/main/frontend/src/stock/dividendHistory.ts");
 
   private static final Path ASSET_STATUS =
       Path.of("src/main/jte/stock/htmx/fragments/assetStatus.jte");
@@ -118,19 +119,37 @@ class DividendYieldSelectionConsistencyTest {
   @Test
   void 자산현황_선택_합계가_합계행과_같은_정의를_쓴다() throws IOException {
     String asset = read(ASSET_STATUS);
+    // 합계행의 정의는 2026-09-08 에 템플릿에서 StockAssetStatusUtil.accountTotals 로 옮겨갔다.
+    // 템플릿은 그 결과를 꺼내 쓰기만 하므로, 정의는 유틸 소스에서 보고 템플릿은 그 값을 쓰는지 본다.
+    String util =
+        Files.readString(
+            Path.of("src/main/java/net/luversof/web/gate/stock/util/StockAssetStatusUtil.java"),
+            StandardCharsets.UTF_8);
 
+    assertThat(util)
+        .as("합계행의 평가손익률 정의가 바뀌었다 - 평가손익 합 / 매수금액 합")
+        .contains("ratePct(evaluationProfit, buyAmount)");
+    assertThat(util)
+        .as("비율의 정의가 바뀌었다 - 분자 / 분모 * 100")
+        .contains("numerator.doubleValue() / denominator.doubleValue() * 100");
     assertThat(asset)
-        .as("합계행의 평가손익률 정의가 바뀌었다")
-        .contains(
-            "totalAccountEvaluationProfit.doubleValue() / totalBuyAmount.doubleValue() * 100");
-    assertThat(asset)
+        .as("합계행이 유틸의 평가손익률을 쓰지 않는다")
+        .contains("double totalEvaluationProfitRate = accountTotals.evaluationProfitRate();");
+    // 선택 합계 JS 는 2026-09-08 에 인라인 스크립트에서 frontend/src/stock/assetStatus.ts 로 옮겨갔다.
+    String assetScript =
+        Files.readString(
+            Path.of("src/main/frontend/src/stock/assetStatus.ts"), StandardCharsets.UTF_8);
+    assertThat(assetScript)
         .as("선택 합계의 평가손익률이 합계행과 다르다")
         .contains("(totalEvaluationProfitValue / totalBuyAmount) * 100");
 
+    assertThat(util)
+        .as("합계행의 원금 대비 수익률 정의가 바뀌었다 - (평가액 − 기준원금) 합 / 기준원금 합")
+        .contains("ratePct(principalReturn, principal)");
     assertThat(asset)
-        .as("합계행의 원금 대비 수익률 정의가 바뀌었다")
-        .contains("totalPrincipalReturnAmount.doubleValue() / totalPrincipal.doubleValue() * 100");
-    assertThat(asset)
+        .as("합계행이 유틸의 원금 대비 수익률을 쓰지 않는다")
+        .contains("double totalPrincipalReturnRate = accountTotals.principalReturnRate();");
+    assertThat(assetScript)
         .as("선택 합계의 원금 대비 수익률이 합계행과 다르다")
         .contains("(totalPrincipalReturnValue / totalPrincipalValue) * 100");
 

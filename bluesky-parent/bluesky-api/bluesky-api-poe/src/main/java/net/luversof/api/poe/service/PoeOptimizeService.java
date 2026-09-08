@@ -74,11 +74,44 @@ public class PoeOptimizeService {
   /** 완성 빌드 남은 트리 포인트 채우기 — 라운드 상한(포인트 1개당 1라운드). */
   /** 기여 0 주얼 재대결 라운드 상한(라운드당 한 자리). */
   /** 끊긴 주얼 소켓 연결/회수 라운드 상한. */
+  /** 대리 빌드 재현 진단(형태 비교·XML 덤프) on/off — 기본 off. */
+  private static final boolean PROXY_DUMP_ENABLED =
+      "on"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.proxyDump", System.getenv().getOrDefault("POE_PROXY_DUMP", "off")));
+
+  /**
+   * 전직 프로브를 **실플레이 전직**으로 제한 — 기본 off(POE_META_CLASS=on 으로 켠다).
+   *
+   * <p>발단(2026-09-08, 고드름 지뢰): 자동 선택이 **Elementalist** 를 골랐는데 ninja 상위100 에 그 전직은
+   * <b>0명</b>이다(Assassin n=37 · Deadeye n=36 · Occultist n=25). 강제 실측: Elementalist 18,756,793 vs
+   * Deadeye 28,953,127(+54%) vs <b>Assassin 44,544,090(+137%)</b> — 프로브가 셋 중 최악을 골랐다. 맨몸 프로브는 치명타
+   * 기반 전직의 위력을 못 본다(생존을 못 보는 것과 같은 계열). 우리에겐 스킬별 전직 표본이 이미 있으므로, 아무도 안 쓰는 전직을 후보에서 빼는 사전정보로 쓴다.
+   */
+  private static final boolean META_CLASS_ENABLED =
+      "on"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.metaClass", System.getenv().getOrDefault("POE_META_CLASS", "off")));
+
+  /** 그 제한에서 "실플레이" 로 인정할 최소 표본. */
+  private static final int META_CLASS_MIN_SAMPLE =
+      Integer.parseInt(
+          System.getProperty(
+              "poe.metaClassMinSample", System.getenv().getOrDefault("POE_META_CLASS_MIN", "5")));
+
   private static final int STRANDED_SOCKET_ROUNDS = 4;
 
   private static final int INERT_JEWEL_ROUNDS = 3;
 
-  private static final int LEFTOVER_TREE_ROUNDS = 8;
+  /** 죽은 트리 노드 회수 — 라운드 상한(라운드당 하나). 실측 최대 5개(고행). */
+  private static final int DEAD_NODE_ROUNDS = 6;
+
+  /** 같은 회수의 라운드당 후보 상한(비용 고정). 실측 제거 가능 노드는 축당 25~42개다. */
+  private static final int DEAD_NODE_CANDIDATES = 45;
+
+  private static final int LEFTOVER_TREE_ROUNDS = 12;
 
   /** 같은 채우기의 라운드당 인접 후보 상한(비용 고정용). 실측 인접 후보는 축당 180~190개다. */
   private static final int LEFTOVER_TREE_CANDIDATES = 120;
@@ -2753,6 +2786,41 @@ public class PoeOptimizeService {
                   .sorted(Map.Entry.comparingByValue())
                   .map(Map.Entry::getKey)
                   .toList();
+      // 실플레이 전직을 가진 직업으로 후보를 좁힌다(기본 off, POE_META_CLASS=on).
+      //   ⚠ "제한 대신 확장(합집합)" 으로 바꿔 봤다가 **실측으로 되돌렸다**: 합집합은 아무것도 못 고친다
+      //   (회오리 −60.4% · 트라투스 −71.3% 그대로). 맨몸 프로브는 스킬과 무관하게 Witch/Elementalist 를
+      //   상위로 매기므로, 후보에 남아 있는 한 계속 그걸 고른다 — 효과를 낸 것은 전직 필터가 아니라
+      //   **직업 후보 제한**이었다.
+      //   실측(balanced 자유선택 vs 배터리 지정): 제한 없음 회오리 −60.4% · 트라투스 −71.3% · 고행 +34.8%
+      //     → 제한 적용 회오리 **−7.4%**(Deadeye) · 트라투스 **0.0%**(Juggernaut) · 고행 +1.9%.
+      //   ⚠ 알려진 대가: 메타에 없는 더 나은 선택을 잃는다 — 고행의 Templar/Hierophant(+34.8%)가 그 예이고
+      //     ninja 데이터엔 낙인 대표 전직인 사제가 아예 없다(Elementalist n=99 · Inquisitor n=1).
+      //     근본 해법은 후보별 전 파이프라인 완주(사용자 판정 대기 항목)다.
+      if (META_CLASS_ENABLED && fixedClass == null) {
+        Set<String> playedAsc = metaAscendancies(gem.name());
+        if (!playedAsc.isEmpty()) {
+          List<String> narrowedClasses =
+              classPool.stream()
+                  .filter(
+                      cls ->
+                          poeTreeGraphService.ascendancies(cls).stream()
+                              .anyMatch(playedAsc::contains))
+                  .toList();
+          if (!narrowedClasses.isEmpty() && narrowedClasses.size() < classPool.size()) {
+            log(
+                "메타 전직 사전정보: 실플레이 전직 "
+                    + playedAsc.size()
+                    + "개 → 직업 후보 "
+                    + classPool.size()
+                    + "개에서 "
+                    + narrowedClasses.size()
+                    + "개로 제한 ("
+                    + String.join(", ", narrowedClasses)
+                    + ")");
+            classPool = narrowedClasses;
+          }
+        }
+      }
       for (String candidateClass : classPool) {
         if (poeTreeGraphService.classStart(candidateClass) == null) {
           continue;
@@ -2784,8 +2852,43 @@ public class PoeOptimizeService {
                     && (ASC_PROBE_ALL_OBJECTIVES || "dps".equals(objectiveKey))
                 ? poeTreeGraphService.ascendancies(candidateClass).stream().sorted().toList()
                 : List.of();
+        // 메타 사전정보(기본 off) — 그 스킬을 **아무도 안 쓰는 전직**을 후보에서 뺀다.
+        //   맨몸 프로브는 치명타 기반 전직의 위력을 못 봐서 최악을 고르는 수가 있다(고드름 지뢰 실측).
+        if (META_CLASS_ENABLED && !ascFixedHere && !ascPool.isEmpty()) {
+          Set<String> played = metaAscendancies(gem.name());
+          if (!played.isEmpty()) {
+            List<String> narrowed = ascPool.stream().filter(played::contains).toList();
+            if (!narrowed.isEmpty() && narrowed.size() < ascPool.size()) {
+              ascPool = narrowed;
+            }
+          }
+        }
         if (ascPool.isEmpty()) {
-          ascPool = List.of(chooseAscendancy(candidateClass, keywords));
+          // ⚠ balanced 는 전수 프로브가 꺼져 있어 여기(키워드 휴리스틱)로 온다 — 그래서 메타 필터가
+          //   이 경로를 못 덮고 있었다. 실측(2026-09-08, balanced 자유선택 vs 배터리 지정):
+          //   회오리 Witch/Elementalist 1,548,376 vs Ranger/Deadeye 3,905,240(**−60.4%**),
+          //   트라투스 Witch/Elementalist 31,948,837 vs Marauder/Juggernaut 111,208,897(**−71.3%**)
+          //   — 활 스킬과 철퇴 근접 스킬을 둘 다 마녀로 골랐다. 실플레이 전직이 있으면 거기서 고른다.
+          String heuristicAsc = chooseAscendancy(candidateClass, keywords);
+          Set<String> union = new LinkedHashSet<>();
+          if (heuristicAsc != null) {
+            union.add(heuristicAsc);
+          }
+          if (META_CLASS_ENABLED && !ascFixedHere) {
+            // **확장**: 휴리스틱 선택 + 그 스킬 실플레이 전직을 함께 프로브한다(제한이 아니라 합집합).
+            //   휴리스틱만 쓰면 활 스킬·철퇴 근접 스킬을 마녀로 고른다(회오리 −60.4% · 트라투스 −71.3%).
+            //   합집합이면 그 실패는 막으면서 메타 밖 더 나은 선택(사제 +34.8%)도 후보로 남는다.
+            Set<String> played = metaAscendancies(gem.name());
+            for (String asc : poeTreeGraphService.ascendancies(candidateClass)) {
+              if (played.contains(asc)) {
+                union.add(asc);
+              }
+            }
+          }
+          ascPool =
+              union.isEmpty()
+                  ? List.of(chooseAscendancy(candidateClass, keywords))
+                  : List.copyOf(union);
         }
         for (String candidateAscendancy : ascPool) {
           probes.add(
@@ -8115,6 +8218,28 @@ public class PoeOptimizeService {
               AttrRepair undone = attrRepairs.get(bestReclaim.getKey().index());
               items.put(bestReclaim.getKey().slot(), bestReclaim.getKey().restored());
               current = bestReclaim.getValue();
+              // ⚠ 상태(items)만 바꾸고 finalXml 을 두면 **뒤 단계의 모든 재구성이 다른 빌드가 된다.**
+              //   실측(2026-09-08, 고행): 첫 라운드 XML diff 가 정확히 한 줄이었다 —
+              //   finalXml `+60 to Dexterity`(보정됨) vs items 재구성 `+15% to Damage over Time
+              // Multiplier`.
+              //   되돌림이 items 에서 속성 접미어를 원래 데미지 모드로 복구했는데 finalXml 은 보정본 그대로라,
+              //   items 로 다시 만들면 요구치가 깨져 아이템이 비활성화되고 **10.4%** 가 사라진다
+              //   (자기검증: 현재 62,716,195 vs 재현 56,214,946). 그래서 승리한 시행과 **같은 XML** 로 맞춘다.
+              finalXml =
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      items,
+                      jewels);
+              if (currentAnoint != null) {
+                finalXml = withAnoint(finalXml, currentAnoint.name());
+              }
+              finalValues = poePobEngineService.calculateValues(finalXml);
+              evalCount.incrementAndGet();
               // ⚠ finalXml/finalValues 를 여기서 갱신하는 변경을 넣었다가 **실측으로 원복**했다(2026-09-04).
               //   일관성으로는 맞다 — 갱신하지 않으면 뒤 단계가 보정 전 기준값과 비교한다.
               //   그러나 15축 실측: 회오리 +5.6%(3,698,848→3,905,240) 대비
@@ -9019,35 +9144,32 @@ public class PoeOptimizeService {
                           .collect(java.util.stream.Collectors.joining(", ")));
             }
             if (fixes.isEmpty()) {
-              int reclaimed = 0;
-              for (Integer socket : stranded) {
-                if (allocated.remove(socket)) {
-                  reclaimed++;
-                }
-                jewels.remove(socket);
-              }
-              if (reclaimed > 0) {
-                finalXml =
-                    buildXml(
-                        gem,
-                        supports,
-                        className,
-                        ascendancy,
-                        ascendancyNodes,
-                        allocated,
-                        items,
-                        jewels);
-                if (pinnedAnointForSocket != null) {
-                  finalXml = withAnoint(finalXml, pinnedAnointForSocket.name());
-                }
-                finalValues = poePobEngineService.calculateValues(finalXml);
-                evalCount.incrementAndGet();
-                current = objectiveOf(finalValues, objectiveKey);
-                log("끊긴 소켓 해제: " + reclaimed + "pt 회수 (값 " + format(current) + ")");
-              }
+              // ⚠ 여기서 소켓을 해제해 포인트를 회수하던 코드를 걷어냈다(2026-09-07).
+              //   ①회수 자체가 실측으로 손해였고(고행 +9.5%→+0.0% 등 세 축 악화)
+              //   ②소켓 주입 제한 이후에는 `allocated.remove(socket)` 가 false 라 reclaimed==0 이 되어
+              //     **재구성도 로그도 없이 jewels 에서만 주얼이 사라졌다**. 그 결과 상태와 finalXml 이
+              //     어긋나 뒤 단계의 자기검증이 `현재 70,466,521 vs 재현 57,716,034(18.1% 차이)` 를 냈고,
+              //     남은 전직 포인트 후보가 전부 부당 기각됐다(실측: 그 중 3개는 dps 0.00%·ehp +1.98%).
+              //   교훈: **상태를 바꿨으면 같은 자리에서 finalXml 도 반드시 다시 만든다.**
+              log("끊긴 소켓: 연결 가능한 후보 없음 — 그대로 둔다(해제는 실측 손해)");
               break;
             }
             final double socketBase = objectiveOf(finalValues, objectiveKey);
+            selfCheckProxy(
+                executor,
+                "끊긴 소켓 연결",
+                currentProxyXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    items,
+                    jewels,
+                    pinnedAnointForSocket),
+                socketBase,
+                objectiveKey);
             Map<SocketFix, Double> fixResults =
                 evalBatch(
                     executor,
@@ -9151,6 +9273,21 @@ public class PoeOptimizeService {
         //   무효 4/5 → 3/5, 61,267,276 → 62,771,731(+2.5%). 남은 무효 자리도 잡으려면 반복이 필요하다.
         for (int inertRound = 0; inertRound < INERT_JEWEL_ROUNDS; inertRound++) {
           final double jewelBase = objectiveOf(finalValues, objectiveKey);
+          selfCheckProxy(
+              executor,
+              "기여 0 주얼 재대결",
+              currentProxyXml(
+                  gem,
+                  supports,
+                  className,
+                  ascendancy,
+                  ascendancyNodes,
+                  allocated,
+                  items,
+                  jewels,
+                  pinnedAnointForJewel),
+              jewelBase,
+              objectiveKey);
           final double jewelEps = Math.max(1e-9, Math.abs(jewelBase) * 1e-6);
           List<Integer> inertSockets = new ArrayList<>();
           List<Integer> socketOrder = new ArrayList<>(jewels.keySet());
@@ -9250,6 +9387,140 @@ public class PoeOptimizeService {
           }
         }
       }
+      // ── 죽은 트리 노드 회수(완성 빌드) — 실측(2026-09-08, 지표·소켓 결함을 고친 뒤 첫 신뢰 측정):
+      //   15축 합계 **죽은 노드 30개**(고행 5 · 피부 열상 4 · 혼의 균열 4 · RF 3 · 정전기 3 · 회오리 3 …).
+      //   제거해도 연결이 유지되고 값이 안 변하는 노드다 — 그만큼 패시브 포인트를 버리고 있다.
+      //   회수하면 바로 뒤 "남은 트리 포인트 채우기" 가 실측으로 다시 쓴다.
+      //   ⚠ 감사는 dps·ehp 만 봤지만 목표값에는 저항·억제 항이 들어가고, 힘/민첩 노드는 **장착 요구치**를
+      //     지탱할 수 있다. 그래서 여기서는 **목표값 무손실 + 요구치 유지** 둘 다 만족할 때만 뺀다.
+      //   제거는 서로 간섭하므로 한 라운드에 하나씩, 매번 연결성을 다시 계산한다.
+      {
+        Integer reclaimStart = poeTreeGraphService.classStart(className);
+        if (reclaimStart != null) {
+          final AnointPick pinnedAnointForReclaim = currentAnoint;
+          for (int reclaimRound = 0; reclaimRound < DEAD_NODE_ROUNDS; reclaimRound++) {
+            // 현재 연결 집합(직업 시작 노드 기준)
+            Set<Integer> reach = new LinkedHashSet<>();
+            Deque<Integer> queue = new ArrayDeque<>();
+            reach.add(reclaimStart);
+            queue.addLast(reclaimStart);
+            while (!queue.isEmpty()) {
+              int cur = queue.removeFirst();
+              for (Integer next : poeTreeGraphService.neighbors(cur)) {
+                if (allocated.contains(next) && reach.add(next)) {
+                  queue.addLast(next);
+                }
+              }
+            }
+            // 제거해도 **원래 연결돼 있던 노드**가 전부 연결을 유지하는 후보만 본다
+            List<Integer> removable = new ArrayList<>();
+            for (Integer node : new ArrayList<>(allocated)) {
+              PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(node);
+              if (info == null || info.ascendancy() != null) {
+                continue;
+              }
+              if (jewels.containsKey(node)) {
+                continue; // 주얼 소켓은 별도 패스가 다룬다
+              }
+              Set<Integer> rest = new LinkedHashSet<>(allocated);
+              rest.remove(node);
+              Set<Integer> restReach = new LinkedHashSet<>();
+              Deque<Integer> q2 = new ArrayDeque<>();
+              restReach.add(reclaimStart);
+              q2.addLast(reclaimStart);
+              while (!q2.isEmpty()) {
+                int cur = q2.removeFirst();
+                for (Integer next : poeTreeGraphService.neighbors(cur)) {
+                  if (rest.contains(next) && restReach.add(next)) {
+                    q2.addLast(next);
+                  }
+                }
+              }
+              boolean keepsConnected = true;
+              for (Integer x : rest) {
+                if (reach.contains(x) && !restReach.contains(x)) {
+                  keepsConnected = false;
+                  break;
+                }
+              }
+              if (keepsConnected) {
+                removable.add(node);
+              }
+            }
+            if (removable.isEmpty()) {
+              break;
+            }
+            if (removable.size() > DEAD_NODE_CANDIDATES) {
+              removable = new ArrayList<>(removable.subList(0, DEAD_NODE_CANDIDATES));
+            }
+            final double reclaimBase = objectiveOf(finalValues, objectiveKey);
+            final double reclaimEps = Math.max(1e-9, Math.abs(reclaimBase) * 1e-9);
+            Function<Integer, String> reclaimXmlFor =
+                node -> {
+                  Set<Integer> trial = new LinkedHashSet<>(allocated);
+                  trial.remove(node);
+                  String trialXml =
+                      buildXml(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          trial,
+                          items,
+                          jewels);
+                  return pinnedAnointForReclaim != null
+                      ? withAnoint(trialXml, pinnedAnointForReclaim.name())
+                      : trialXml;
+                };
+            Map<Integer, Double> reclaimResults =
+                evalBatch(executor, removable, reclaimXmlFor, objectiveKey);
+            Integer reclaimPick = null;
+            for (Map.Entry<Integer, Double> entry :
+                reclaimResults.entrySet().stream()
+                    .sorted(Map.Entry.<Integer, Double>comparingByValue().reversed())
+                    .toList()) {
+              if (entry.getValue() == null || entry.getValue() < reclaimBase - reclaimEps) {
+                break; // 목표값이 내려가면 그 아래 후보도 마찬가지다(정렬돼 있다)
+              }
+              // 요구치 가드 — 힘/민첩/지능 노드를 빼면 장비를 못 드는 수가 있다.
+              Map<String, Double> trialValues =
+                  poePobEngineService.calculateValues(reclaimXmlFor.apply(entry.getKey()));
+              evalCount.incrementAndGet();
+              boolean meets =
+                  trialValues.getOrDefault("Str", 0d) >= trialValues.getOrDefault("ReqStr", 0d)
+                      && trialValues.getOrDefault("Dex", 0d)
+                          >= trialValues.getOrDefault("ReqDex", 0d)
+                      && trialValues.getOrDefault("Int", 0d)
+                          >= trialValues.getOrDefault("ReqInt", 0d);
+              if (meets) {
+                reclaimPick = entry.getKey();
+                break;
+              }
+            }
+            if (reclaimPick == null) {
+              if (reclaimRound == 0) {
+                log("죽은 트리 노드: 없음 (제거 가능 " + removable.size() + "개 전부 값 기여)");
+              }
+              break;
+            }
+            allocated.remove(reclaimPick);
+            finalXml = reclaimXmlFor.apply(reclaimPick);
+            finalValues = poePobEngineService.calculateValues(finalXml);
+            evalCount.incrementAndGet();
+            current = objectiveOf(finalValues, objectiveKey);
+            PoeTreeGraphService.TreeNode pickInfo = poeTreeGraphService.node(reclaimPick);
+            log(
+                "죽은 트리 노드 회수: "
+                    + (pickInfo != null && pickInfo.nameKo() != null
+                        ? pickInfo.nameKo()
+                        : String.valueOf(reclaimPick))
+                    + " (−1pt, 값 "
+                    + format(current)
+                    + " 무손실 · 요구치 유지)");
+          }
+        }
+      }
       // ── 남은 트리 포인트 채우기(완성 빌드) — 실측(15축 저장 빌드 전수): 5축이 본트리 포인트를 남긴다
       //   (칼날 소용돌이 6pt · 고행 5pt · 혼의 균열 5pt · 한파 1pt · 맹독의 비 1pt, 합 18pt).
       //   원인은 전직 때의 "전부 동률" 과 다르다 — 트리 greedy 는 **키워드로 미리 점수 매긴 후보 풀**
@@ -9299,6 +9570,54 @@ public class PoeOptimizeService {
             treeCands = new ArrayList<>(treeCands.subList(0, LEFTOVER_TREE_CANDIDATES));
           }
           final double treeBase = objectiveOf(finalValues, objectiveKey);
+          if (PROXY_DUMP_ENABLED && treeRounds == 1) {
+            String treeProxy =
+                currentProxyXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    items,
+                    jewels,
+                    pinnedAnointForTree);
+            try {
+              java.nio.file.Path dumpDir =
+                  java.nio.file.Path.of(System.getProperty("user.home"), ".bluesky-qa", "logs");
+              java.nio.file.Files.writeString(dumpDir.resolve("tree-current.xml"), finalXml);
+              java.nio.file.Files.writeString(dumpDir.resolve("tree-rebuilt.xml"), treeProxy);
+              log("트리 자기검증 XML 덤프: logs/tree-current.xml · logs/tree-rebuilt.xml");
+              // finalXml **자체를** 다시 재는 대조 — 이 값이 finalValues 와 다르면 재현 문제가 아니라
+              //   **finalValues 가 stale**(어떤 단계가 finalXml 만 바꾸고 값을 갱신 안 함)이라는 뜻이다.
+              Map<String, Double> selfValues = poePobEngineService.calculateValues(finalXml);
+              evalCount.incrementAndGet();
+              log(
+                  "트리 자기검증 stale 대조: finalValues "
+                      + format(treeBase)
+                      + " vs finalXml 재측정 "
+                      + format(objectiveOf(selfValues, objectiveKey))
+                      + " · 재현본 동일여부 "
+                      + finalXml.equals(treeProxy));
+            } catch (Exception dumpError) {
+              log("트리 자기검증 덤프 실패: " + dumpError.getMessage());
+            }
+          }
+          selfCheckProxy(
+              executor,
+              "남은 트리 포인트",
+              currentProxyXml(
+                  gem,
+                  supports,
+                  className,
+                  ascendancy,
+                  ascendancyNodes,
+                  allocated,
+                  items,
+                  jewels,
+                  pinnedAnointForTree),
+              treeBase,
+              objectiveKey);
           Function<Integer, String> treeXmlFor =
               id -> {
                 Set<Integer> trial = new LinkedHashSet<>(allocated);
@@ -9426,6 +9745,21 @@ public class PoeOptimizeService {
             break;
           }
           final double flaskBase = objectiveOf(finalValues, objectiveKey);
+          selfCheckProxy(
+              executor,
+              "빈 플라스크 채우기",
+              currentProxyXml(
+                  gem,
+                  supports,
+                  className,
+                  ascendancy,
+                  ascendancyNodes,
+                  allocated,
+                  items,
+                  jewels,
+                  pinnedAnointForFlask),
+              flaskBase,
+              objectiveKey);
           Map<Equipped, Double> flaskResults =
               evalBatch(
                   executor,
@@ -9598,6 +9932,89 @@ public class PoeOptimizeService {
               };
           final double leftoverBase = objectiveOf(finalValues, objectiveKey);
           final double leftoverEps = Math.max(1e-9, Math.abs(leftoverBase) * 1e-9);
+          // ⚠ 기준값(finalValues)과 **같은 빌더로 만든 현재 구성**이 어긋나면 모든 후보가 부당하게
+          //   낮게 나온다. 실측(칼날 소용돌이): 인접 후보 6개 중 3개가 dps 0.00% · ehp +1.98% 인데도
+          //   패스는 "목표값을 깎지 않는 후보가 없음" 으로 전부 기각했다 — 대리 빌드 재현 문제를 의심해
+          //   같은 자리에서 자기검증을 남긴다(불일치면 로그로 드러난다).
+          // 재현 불일치를 팔 때 쓰는 진단(형태 비교 + 두 XML 덤프). 2026-09-07 에 실제 버그를
+          //   여기서 잡았지만(소켓 2개·주얼 2개 누락) 상시 켜 두면 매 잡마다 파일을 두 개 쓰고
+          //   로그를 세 줄 늘린다. 도구는 남기되 기본은 끈다 — POE_PROXY_DUMP=on 으로 켠다.
+          if (PROXY_DUMP_ENABLED) {
+            String proxyXml =
+                buildXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    items,
+                    jewels);
+            if (pinnedAnointForFill != null) {
+              proxyXml = withAnoint(proxyXml, pinnedAnointForFill.name());
+            }
+            java.util.function.BiFunction<String, String, Integer> count =
+                (hay, needle) -> {
+                  int n = 0;
+                  int i = hay.indexOf(needle);
+                  while (i >= 0) {
+                    n++;
+                    i = hay.indexOf(needle, i + 1);
+                  }
+                  return n;
+                };
+            java.util.function.Function<String, String> shape =
+                x ->
+                    "아이템 "
+                        + count.apply(x, "<Item id=")
+                        + " · 스킬그룹 "
+                        + count.apply(x, "<Skill ")
+                        + " · 젬 "
+                        + count.apply(x, "<Gem ")
+                        + " · 소켓 "
+                        + count.apply(x, "<Socket ")
+                        + " · 노드 "
+                        + countTreePoints(x)
+                        + " · 길이 "
+                        + x.length();
+            log("자기검증 형태 비교 · 현재: " + shape.apply(finalXml));
+            log("자기검증 형태 비교 · 재현: " + shape.apply(proxyXml));
+            try {
+              java.nio.file.Path dumpDir =
+                  java.nio.file.Path.of(System.getProperty("user.home"), ".bluesky-qa", "logs");
+              java.nio.file.Files.writeString(dumpDir.resolve("proxy-current.xml"), finalXml);
+              java.nio.file.Files.writeString(dumpDir.resolve("proxy-rebuilt.xml"), proxyXml);
+              log("자기검증 XML 덤프: logs/proxy-current.xml · logs/proxy-rebuilt.xml");
+            } catch (Exception dumpError) {
+              log("자기검증 XML 덤프 실패: " + dumpError.getMessage());
+            }
+          }
+          selfCheckProxy(
+              executor,
+              "남은 전직 포인트",
+              pinnedAnointForFill != null
+                  ? withAnoint(
+                      buildXml(
+                          gem,
+                          supports,
+                          className,
+                          ascendancy,
+                          ascendancyNodes,
+                          allocated,
+                          items,
+                          jewels),
+                      pinnedAnointForFill.name())
+                  : buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      items,
+                      jewels),
+              leftoverBase,
+              objectiveKey);
           Map<LeftoverFill, Double> leftoverPrimary =
               evalBatch(executor, leftoverCands, leftoverXmlFor, objectiveKey);
           List<LeftoverFill> leftoverTied =
@@ -9662,6 +10079,78 @@ public class PoeOptimizeService {
                   + format(objectiveOf(finalValues, tieSecondaryKey))
                   + ")");
           leftoverFilled = true;
+        }
+      }
+      // ── 미적용 주얼 정리(결과 직전) — 소켓 노드가 최종 nodes= 에 없으면 PoB 는 그 주얼을 무시한다.
+      //   그런 주얼이 결과 화면·내보내기에는 그대로 남아, 임포트하면 **실제로는 없는 주얼**이 보인다
+      //   (인게임 정합 위반). 실측(2026-09-08): 고행 4개 · 혼의 균열 2개가 그 상태였고, 연결해 봐야
+      //   고행 0.00% · 혼의 균열 +0.21%(4pt 소요)라 연결은 정당하게 기각된다 — 그러면 표시라도 맞춰야 한다.
+      //   ⚠ 값이 바뀌면 안 된다(기여가 0이므로). 바뀌면 그건 이 정리가 틀린 것이므로 되돌린다.
+      if (!jewels.isEmpty()) {
+        Integer cleanupClassStart = poeTreeGraphService.classStart(className);
+        java.util.regex.Matcher nodeMatcher =
+            java.util.regex.Pattern.compile("nodes=\"([^\"]*)\"").matcher(finalXml);
+        if (cleanupClassStart != null && nodeMatcher.find()) {
+          Set<Integer> finalNodes = new LinkedHashSet<>();
+          for (String raw : nodeMatcher.group(1).split(",")) {
+            if (!raw.isBlank()) {
+              try {
+                finalNodes.add(Integer.parseInt(raw.trim()));
+              } catch (NumberFormatException ignored) {
+                // 숫자가 아닌 항목은 건너뛴다
+              }
+            }
+          }
+          List<Integer> deadSockets =
+              jewels.keySet().stream().filter(socket -> !finalNodes.contains(socket)).toList();
+          if (!deadSockets.isEmpty()) {
+            double beforeCleanup = objectiveOf(finalValues, objectiveKey);
+            Map<Integer, Equipped> keptJewels = new LinkedHashMap<>(jewels);
+            List<String> dropped = new ArrayList<>();
+            for (Integer socket : deadSockets) {
+              Equipped removed = keptJewels.remove(socket);
+              dropped.add(equippedLabel(removed));
+            }
+            String cleanedXml =
+                buildXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    items,
+                    keptJewels);
+            if (currentAnoint != null) {
+              cleanedXml = withAnoint(cleanedXml, currentAnoint.name());
+            }
+            Map<String, Double> cleanedValues = poePobEngineService.calculateValues(cleanedXml);
+            evalCount.incrementAndGet();
+            double afterCleanup = objectiveOf(cleanedValues, objectiveKey);
+            if (Math.abs(afterCleanup - beforeCleanup)
+                <= Math.max(1e-9, Math.abs(beforeCleanup) * 1e-6)) {
+              jewels.clear();
+              jewels.putAll(keptJewels);
+              finalXml = cleanedXml;
+              finalValues = cleanedValues;
+              log(
+                  "미적용 주얼 정리: "
+                      + deadSockets.size()
+                      + "개 제거 (값 불변 "
+                      + format(afterCleanup)
+                      + ") — "
+                      + String.join(", ", dropped));
+            } else {
+              log(
+                  "미적용 주얼 정리 보류: 값이 바뀐다 "
+                      + format(beforeCleanup)
+                      + " → "
+                      + format(afterCleanup)
+                      + " (소켓 "
+                      + deadSockets.size()
+                      + "개) — 기여 0 전제가 깨졌으므로 그대로 둔다");
+            }
+          }
         }
       }
       if (ringsBlocked(items) && items.containsKey(Slot.RING1) && items.containsKey(Slot.RING2)) {
@@ -9939,6 +10428,44 @@ public class PoeOptimizeService {
    *
    * <p>후보 목록에 끼워 넣지 않고 <b>별도 평가</b>로 재는 이유: 배치에 항목을 더하면 동점 후보의 선택 순서가 흔들려 결과가 바뀔 수 있다.
    */
+  /**
+   * 현재 구성을 **같은 빌더로** 만든 XML(도유 포함) — 완성 빌드 패스의 자기검증용.
+   *
+   * <p>발단(2026-09-07): 남은 전직 포인트 패스에서 기준값(finalValues)과 대리 빌드가 18.1% 어긋나 (70,466,521 vs 57,716,034)
+   * 정상 후보가 전부 부당 기각됐다. 원인은 앞 패스가 상태만 바꾸고 finalXml 을 다시 만들지 않은 것. 같은 그물을 나머지 완성 빌드 패스에도 친다.
+   */
+  private String currentProxyXml(
+      PoeGem gem,
+      List<PoeGem> supports,
+      String className,
+      String ascendancy,
+      Set<Integer> ascendancyNodes,
+      Set<Integer> allocated,
+      Map<Slot, Equipped> items,
+      Map<Integer, Equipped> jewels,
+      AnointPick anoint) {
+    String xml =
+        buildXml(gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels);
+    return anoint != null ? withAnoint(xml, anoint.name()) : xml;
+  }
+
+  /** 그 스킬을 실제로 쓰는 전직 집합(ninja 표본 기준). 데이터가 없으면 빈 집합. */
+  private Set<String> metaAscendancies(String skillName) {
+    Set<String> out = new LinkedHashSet<>();
+    if (skillName == null || skillName.isEmpty()) {
+      return out;
+    }
+    String suffix = "|" + skillName;
+    for (Map.Entry<String, NinjaSeed> e : ninjaSeedByKey.entrySet()) {
+      if (e.getKey().endsWith(suffix)
+          && e.getValue() != null
+          && e.getValue().sample() >= META_CLASS_MIN_SAMPLE) {
+        out.add(e.getKey().substring(0, e.getKey().length() - suffix.length()));
+      }
+    }
+    return out;
+  }
+
   private void selfCheckProxy(
       ExecutorService executor, String stage, String xml, double current, String objectiveKey) {
     if (xml == null || current <= 0) {
@@ -13080,8 +13607,30 @@ public class PoeOptimizeService {
     // (소켓 시너지의 명시 Burning Damage 젬은 제거 — 메인 그룹을 투구 슬롯에 두면 PoB 가 아이템 문구로
     //  자동 적용한다. 위 slot 분기 주석 참조. 명시 젬은 퀄 20이라 실제 문구(퀄 0) 대비 과대평가였다.)
     // 주얼: 소켓 노드는 nodes 에 포함되어야 하고, 주얼 아이템 id 는 장비(1..N)와 안 겹치게 900번대
-    for (int socketNode : jewels.keySet()) {
-      specNodes.add(socketNode);
+    // ⚠ 예전엔 소켓 노드를 **무조건** 넣었다. 그게 끊긴 소켓의 진원지다 — 트리에 경로가 없는 소켓까지
+    //   nodes= 에 들어가면 PoB 는 그 주얼을 무시하면서 우리 포인트 계산만 1점을 먹는다.
+    //   실측(2026-09-07): 고행 4/5 · 칼날 소용돌이 3/5 · 혼의 균열 3/5 소켓이 그렇게 끊겨 있었고,
+    //   끊긴 소켓엔 유니크 주얼 184개를 전수로 꽂아도 값이 자릿수까지 동일했다(716회, 개선 0건).
+    //   그래서 **트리에 붙는 소켓만** 넣는다(이미 할당됐거나 이웃이 할당된 경우). 값은 달라지지 않고
+    //   (끊긴 소켓은 어차피 기여 0) 대신 그 포인트가 남은 트리 포인트 채우기로 넘어간다.
+    //   소켓끼리 사슬로 붙는 경우가 있어 더 붙는 게 없을 때까지 반복한다(소켓 수만큼이면 충분).
+    for (int socketRound = 0; socketRound < jewels.size(); socketRound++) {
+      boolean attached = false;
+      for (int socketNode : jewels.keySet()) {
+        if (specNodes.contains(socketNode)) {
+          continue;
+        }
+        for (int neighbor : poeTreeGraphService.neighbors(socketNode)) {
+          if (specNodes.contains(neighbor)) {
+            specNodes.add(socketNode);
+            attached = true;
+            break;
+          }
+        }
+      }
+      if (!attached) {
+        break;
+      }
     }
     StringBuilder sockets = new StringBuilder();
     if (!jewels.isEmpty()) {

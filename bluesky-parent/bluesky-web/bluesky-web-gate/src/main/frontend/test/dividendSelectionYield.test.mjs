@@ -21,7 +21,8 @@ import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
 const MAIN = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const TEMPLATE = join(MAIN, "jte/stock/htmx/fragments/tabsDividendHistory.jte");
+// 2026-09-08 인라인 스크립트가 /js/stock/dividendHistory.ts 로 옮겨갔다. 빌드 산출물(식별자 보존)에서 꺼낸다.
+const TEMPLATE = join(MAIN, "resources/static/js/stock/dividendHistory.js");
 const FUNCTION_NAME = "updateDividendYieldSelectionSummary";
 
 /** 이름 붙은 함수 하나를 중괄호 짝을 맞춰 잘라 낸다. */

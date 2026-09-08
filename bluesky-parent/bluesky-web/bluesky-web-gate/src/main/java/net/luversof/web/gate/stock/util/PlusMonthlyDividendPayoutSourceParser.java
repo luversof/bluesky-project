@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import java.util.List;
 
 import org.springframework.stereotype.Component;
@@ -24,13 +26,15 @@ public class PlusMonthlyDividendPayoutSourceParser {
     try {
       return objectMapper.readValue(json, PlusDividendPage.class);
     } catch (Exception ex) {
-      throw new IllegalArgumentException("PLUS ETF 출처 응답을 해석하지 못했습니다.", ex);
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.response.unparseable", "PLUS"), ex);
     }
   }
 
   public String toBulkInput(List<PlusDividendRow> rows) {
     if (rows == null || rows.isEmpty()) {
-      throw new IllegalArgumentException("PLUS ETF 출처에서 분배금 지급 이력을 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rows.missing", "PLUS"));
     }
 
     StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
@@ -54,7 +58,8 @@ public class PlusMonthlyDividendPayoutSourceParser {
     }
 
     if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
-      throw new IllegalArgumentException("PLUS ETF 출처에서 분배금 지급 이력을 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rows.missing", "PLUS"));
     }
 
     return bulkInput.toString();

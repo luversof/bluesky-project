@@ -13,6 +13,25 @@ import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertReques
 
 class MonthlyDividendPayoutImportParserTest {
 
+  // 문구가 메시지 키로 옮겨가서(2026-09-08) 검사도 번들을 켜야 한다. 아래 단정은 한국어 문구를 본다.
+  @org.junit.jupiter.api.BeforeAll
+  static void primeMessages() {
+    var source = new org.springframework.context.support.ReloadableResourceBundleMessageSource();
+    source.setBasename("classpath:uiMessage");
+    source.setDefaultEncoding("UTF-8");
+    source.setUseCodeAsDefaultMessage(true);
+    source.setFallbackToSystemLocale(false);
+    io.github.luversof.boot.context.support.MessageUtil.setMessageSourceAccessor(
+        new org.springframework.context.support.MessageSourceAccessor(source));
+    org.springframework.context.i18n.LocaleContextHolder.setDefaultLocale(java.util.Locale.KOREAN);
+  }
+
+  @org.junit.jupiter.api.AfterAll
+  static void clearMessages() {
+    io.github.luversof.boot.context.support.MessageUtil.setMessageSourceAccessor(null);
+    org.springframework.context.i18n.LocaleContextHolder.setDefaultLocale(null);
+  }
+
   private final MonthlyDividendPayoutImportParser parser = new MonthlyDividendPayoutImportParser();
 
   @Test

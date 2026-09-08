@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.controller;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.time.LocalDate;
@@ -287,7 +289,8 @@ public class StockDividendViewController {
           request,
           model,
           monthlyDividendProfileForm.getSymbol(),
-          StockViewSupport.failureMessage(ex, "월배당 프로필을 저장하지 못했습니다."),
+          StockViewSupport.failureMessage(
+              ex, msg("stock.monthly.reference.error.profile.save.failed")),
           monthlyDividendProfileForm,
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(
               monthlyDividendProfileForm.getSymbol()));
@@ -326,7 +329,8 @@ public class StockDividendViewController {
           request,
           model,
           normalizedSymbol,
-          StockViewSupport.failureMessage(ex, "월배당 프로필을 삭제하지 못했습니다."),
+          StockViewSupport.failureMessage(
+              ex, msg("stock.monthly.reference.error.profile.delete.failed")),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(normalizedSymbol));
     }
@@ -366,7 +370,8 @@ public class StockDividendViewController {
           .body(
               Map.of(
                   "message",
-                  StockViewSupport.failureMessage(ex, "월배당 프로필 순서를 저장하지 못했습니다."),
+                  StockViewSupport.failureMessage(
+                      ex, msg("stock.monthly.reference.error.profile.order.save.failed")),
                   "isDisplayableMessage",
                   true));
     }
@@ -409,7 +414,8 @@ public class StockDividendViewController {
           request,
           model,
           monthlyDividendPayoutForm.getSymbol(),
-          StockViewSupport.failureMessage(ex, "월배당 지급 이력을 저장하지 못했습니다."),
+          StockViewSupport.failureMessage(
+              ex, msg("stock.monthly.reference.error.payout.save.failed")),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
               monthlyDividendPayoutForm.getSymbol()),
           monthlyDividendPayoutForm);
@@ -460,7 +466,8 @@ public class StockDividendViewController {
           request,
           model,
           monthlyDividendPayoutImportForm.getSymbol(),
-          StockViewSupport.failureMessage(ex, "월배당 지급 이력을 일괄 저장하지 못했습니다."),
+          StockViewSupport.failureMessage(
+              ex, msg("stock.monthly.reference.error.payout.bulk.save.failed")),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
               monthlyDividendPayoutImportForm.getSymbol()),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(
@@ -486,10 +493,10 @@ public class StockDividendViewController {
     try {
       monthlyDividendReferenceSupport.validateMonthlyDividendSymbol(normalizedSymbol);
       if (profile == null) {
-        throw new IllegalArgumentException("저장된 월배당 프로필이 없습니다.");
+        throw new IllegalArgumentException(msg("stock.monthly.reference.error.profile.missing"));
       }
       if (!StringUtils.hasText(profile.sourceUrl())) {
-        throw new IllegalArgumentException("저장된 출처 URL이 없습니다.");
+        throw new IllegalArgumentException(msg("stock.monthly.reference.error.source.url.missing"));
       }
 
       List<MonthlyDividendPayoutUpsertRequest> importRequests =
@@ -517,7 +524,8 @@ public class StockDividendViewController {
           request,
           model,
           normalizedSymbol,
-          StockViewSupport.failureMessage(ex, "저장된 출처 URL에서 월배당 지급 이력을 가져오지 못했습니다."),
+          StockViewSupport.failureMessage(
+              ex, msg("stock.monthly.reference.error.source.import.failed")),
           profile != null
               ? monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(profile)
               : monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
@@ -587,7 +595,7 @@ public class StockDividendViewController {
       } catch (Exception ex) {
         failedSymbols.add(symbol);
         log.warn(
-            "월배당 출처 일괄 가져오기 실패: window={}, symbol={}, sourceUrl={}",
+            "monthly dividend source bulk import failed: window={}, symbol={}, sourceUrl={}",
             normalizedWindow,
             symbol,
             profile.sourceUrl(),
@@ -669,10 +677,11 @@ public class StockDividendViewController {
     try {
       monthlyDividendReferenceSupport.validateMonthlyDividendSymbol(normalizedSymbol);
       if (recordDate == null) {
-        throw new IllegalArgumentException("지급기준일은 필수입니다.");
+        throw new IllegalArgumentException(
+            msg("stock.monthly.reference.error.record.date.required"));
       }
       if (payDate == null) {
-        throw new IllegalArgumentException("실지급일은 필수입니다.");
+        throw new IllegalArgumentException(msg("stock.monthly.reference.error.pay.date.required"));
       }
       monthlyDividendPayoutClient.deletePayout(normalizedSymbol, recordDate, payDate);
       return buildMonthlyDividendReferenceRedirect(
@@ -691,7 +700,8 @@ public class StockDividendViewController {
           request,
           model,
           normalizedSymbol,
-          StockViewSupport.failureMessage(ex, "월배당 지급 이력을 삭제하지 못했습니다."),
+          StockViewSupport.failureMessage(
+              ex, msg("stock.monthly.reference.error.payout.delete.failed")),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
           payoutForm);
     }
@@ -858,12 +868,12 @@ public class StockDividendViewController {
   private void validateMonthlyDividendProfileReorderRequest(
       MonthlyDividendProfileReorderRequest request) {
     if (request == null || request.getSymbols() == null || request.getSymbols().isEmpty()) {
-      throw new IllegalArgumentException("변경할 월배당 프로필 순서가 없습니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.order.empty"));
     }
 
     request.getSymbols().forEach(monthlyDividendReferenceSupport::validateMonthlyDividendSymbol);
     if (request.getSymbols().size() != request.getSymbols().stream().distinct().count()) {
-      throw new IllegalArgumentException("중복된 종목코드가 포함되어 있습니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.order.duplicate"));
     }
   }
 
@@ -883,27 +893,33 @@ public class StockDividendViewController {
   private void validateMonthlyDividendPayoutRequest(MonthlyDividendPayoutUpsertRequest request) {
     monthlyDividendReferenceSupport.validateMonthlyDividendSymbol(request.getSymbol());
     if (request.getRecordDate() == null) {
-      throw new IllegalArgumentException("지급기준일은 필수입니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.record.date.required"));
     }
     if (request.getPayDate() == null) {
-      throw new IllegalArgumentException("실지급일은 필수입니다.");
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.pay.date.required"));
     }
     if (request.getPayDate().isBefore(request.getRecordDate())) {
-      throw new IllegalArgumentException("실지급일은 지급기준일보다 빠를 수 없습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.pay.date.before.record"));
     }
     if (request.getDistributionRatePct() != null
         && request.getDistributionRatePct().compareTo(BigDecimal.ZERO) < 0) {
-      throw new IllegalArgumentException("분배율은 0 이상이어야 합니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.distribution.rate.negative"));
     }
     StockViewSupport.requireNonNegative(
-        request.getDividendAmountPerShare(), "주당 분배금은 0 이상이어야 합니다.");
-    StockViewSupport.requireNonNegative(request.getTaxableBasePerShare(), "주당 과세표준액은 0 이상이어야 합니다.");
+        request.getDividendAmountPerShare(),
+        msg("stock.monthly.reference.error.dividend.per.share.negative"));
+    StockViewSupport.requireNonNegative(
+        request.getTaxableBasePerShare(),
+        msg("stock.monthly.reference.error.taxable.base.negative"));
     // 과세표준은 분배금 중 과세 대상 몫이라 분배금을 넘을 수 없다. api-stock 도 같은 검증을 하지만,
     // 여기서 먼저 걸러야 사용자가 다른 항목과 같은 형식의 안내를 본다(서버까지 가면 일반 오류가 뜬다).
     if (request.getTaxableBasePerShare() != null
         && request.getDividendAmountPerShare() != null
         && request.getTaxableBasePerShare().compareTo(request.getDividendAmountPerShare()) > 0) {
-      throw new IllegalArgumentException("주당 과세표준액은 주당 분배금보다 클 수 없습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.taxable.base.exceeds.dividend"));
     }
   }
 

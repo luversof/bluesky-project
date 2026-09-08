@@ -64,9 +64,13 @@ class FeeRecordsUnavailableNoticeTest {
     String notice = MessageUtil.getMessage(KEY);
     assertThat(notice).as("문구가 없으면 검사가 무력해진다").doesNotStartWith("stock.");
     assertThat(html).as("부풀려진 실현손익이 아무 표시 없이 정상값처럼 보인다").contains(notice);
+    // 레이아웃의 #app-config 는 차트 라벨용으로 같은 문구를 data-* 속성에 싣는다(2026-09-08 부터 실현손익도).
+    // 그건 본문이 아니므로 그 뒤부터 찾는다.
+    int appConfig = html.indexOf("id=\"app-config\"");
+    int contentStart = appConfig >= 0 ? html.indexOf("</div>", appConfig) : 0;
     assertThat(html.indexOf(notice))
         .as("실현손익보다 아래에 있으면 숫자를 먼저 읽고 만다")
-        .isLessThan(html.indexOf(MessageUtil.getMessage("stock.profit.realized")));
+        .isLessThan(html.indexOf(MessageUtil.getMessage("stock.profit.realized"), contentStart));
   }
 
   @Test

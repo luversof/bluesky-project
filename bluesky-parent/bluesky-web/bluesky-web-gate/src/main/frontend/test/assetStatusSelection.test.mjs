@@ -11,7 +11,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { runSelectionSummary } from "./inlineTemplateScript.mjs";
 
-const TEMPLATE = "stock/htmx/fragments/assetStatus.jte";
+// 2026-09-08 인라인 스크립트가 /js/stock/assetStatus.ts 로 옮겨갔다. 빌드 산출물(식별자 보존 미니파이)에서 꺼낸다 -
+// classicScriptParse / compoundSimulator 검사와 같이 npm run build 뒤에 돈다.
+const TEMPLATE = "../resources/static/js/stock/assetStatus.js";
 const FORMATTERS = [
 	"formatAssetStatusNumber",
 	"formatAssetStatusSignedNumber",

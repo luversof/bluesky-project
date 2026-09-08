@@ -85,6 +85,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       TradeProfitRequest request,
       @RequestParam(required = false) java.util.List<String> stockTagList,
       @RequestParam(required = false) String rangeMode,
+      @RequestParam(required = false) java.util.List<String> excludeCore,
       Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
@@ -92,6 +93,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
 
     request.setUserId(userId);
+    // 핵심 보유 제외 토글. 실측 2026-09-08: 한 종목이 평가액의 83.9% 라 이 화면의 차트·기간 손익이 사실상 그 종목
+    // 주가였다. 빼고 보면 배당 ETF 들의 성적이 드러난다. 무엇이 핵심인지는 종목의 '핵심' 태그가 정한다.
+    // 값은 폼의 hidden 과 누른 버튼 둘에서 함께 올 수 있다.
+    boolean excludeCoreRequested = resolveExcludeCore(excludeCore);
     String effectiveRangeMode = rangeMode;
 
     // 기간 판정과 기본값은 원격 조회에 의존하지 않는다. 먼저 확정해 두면 아래 조회들을
@@ -154,8 +159,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     boolean noStockTagSelected =
         stockTagList == null
             || stockTagList.stream().noneMatch(org.springframework.util.StringUtils::hasText);
+    // 제외가 걸리면 종목 목록이 와야 '나머지 전부' 를 알 수 있으므로 앞당긴 조회를 쓰지 않는다(태그와 같은 길).
     StockTagSelection earlySelection =
-        noStockTagSelected
+        noStockTagSelected && !excludeCoreRequested
             ? resolveStockTagSelection(null, request.getStockItemIdList(), stockTagList)
             : null;
     java.util.concurrent.CompletableFuture<
@@ -207,6 +213,21 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     List<net.luversof.web.gate.stock.domain.Account> accountList =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountsFuture);
 
+    // 핵심 보유 제외: 명시적 종목 선택이 없을 때만, 종목 목록 전체에서 그 종목만 뺀 집합을 필터로 쓴다.
+    java.util.Set<UUID> coreStockItemIds =
+        net.luversof.web.gate.stock.util.StockCoreHoldingUtil.coreStockItemIds(stockItemList);
+    boolean excludedApplied = false;
+    if (excludeCoreRequested
+        && !coreStockItemIds.isEmpty()
+        && (request.getStockItemIdList() == null || request.getStockItemIdList().isEmpty())) {
+      excludedApplied = true;
+      request.setStockItemIdList(
+          stockItemList.stream()
+              .map(StockItem::id)
+              .filter(id -> id != null && !coreStockItemIds.contains(id))
+              .toList());
+    }
+
     // Resolve tag selection -> stock item ids (tags drive the stock selection).
     StockTagSelection stockTagSelection =
         earlySelection != null
@@ -224,7 +245,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     boolean emptySelection = emptyAccountSelection || emptyStockSelection;
 
     List<UUID> requestedAccountIds = request.getAccountIdList();
-    List<UUID> requestedStockItemIds = request.getStockItemIdList();
+    // Exclusion is an implicit filter: keep the dropdown/model selection empty so the form does not
+    // carry 80+ ids (measured 2026-09-08: the GET grew to 4.7KB and Tomcat answered 400
+    // "Request header is too large"). The hidden excludeStockItemId carries the state instead.
+    List<UUID> requestedStockItemIds = excludedApplied ? List.of() : request.getStockItemIdList();
 
     // 매매 이력 패널은 예전엔 이 응답이 그려진 뒤에야 별도 요청으로 채워졌다(실측: 화면 완료 286ms 중
     // 127ms 가 두 번째 왕복 대기). 같은 기간으로 여기서 함께 계산해 왕복을 없앤다.
@@ -283,15 +307,15 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 재료는 셋이다. 기초·기말 보유(한 번에 받는다) · 종목별 실현손익 · 종목별 배당.
     // 종목마다 부르지 않으므로 원격은 3 회만 는다.
     java.time.ZoneId contributionZone = resolveZoneIdOrDefault(request.getTimeZone());
-    java.time.LocalDate contributionStart =
-        request.getStartDate() != null
-            ? request.getStartDate().atZone(contributionZone).toLocalDate()
-            : null;
-    // 기말은 고른 끝날이거나, '전체' 처럼 끝이 없으면 오늘이다(요약의 기말도 현재 시점이다).
-    java.time.LocalDate contributionEnd =
-        request.getEndDate() != null
-            ? request.getEndDate().atZone(contributionZone).toLocalDate()
-            : java.time.LocalDate.now(contributionZone);
+    // 기초·기말 날짜는 요약의 규칙(기말 = 배타 endDate 직전 순간)을 따른다. 규칙은 유틸에 있고 거기서 검사한다.
+    var contributionDates =
+        net.luversof.web.gate.stock.util.StockContributionUtil.snapshotDates(
+            request.getStartDate(),
+            request.getEndDate(),
+            contributionZone,
+            java.time.LocalDate.now(contributionZone));
+    java.time.LocalDate contributionStart = contributionDates.start();
+    java.time.LocalDate contributionEnd = contributionDates.end();
     var snapshotParams = new org.springframework.util.LinkedMultiValueMap<String, String>();
     snapshotParams.add("userId", userId.toString());
     if (contributionStart != null) {
@@ -385,9 +409,48 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     if (snapshots == null) {
       snapshots = java.util.Map.of();
     }
-    // 이름을 여기서 채운다. calculateProfit(groupBy=STOCKITEM) 은 이름을 주지 않고(실측
-    // 2026-09-07: 43 행 전부 null), 스냅샷의 이름은 기말에 들고 있는 종목만이라, 채우지 않으면
-    // 이미 다 판 종목이 전부 '-' 로 나가 "보유 중인 것만 나온다" 로 보인다(44 줄 중 35 줄).
+    // 제외 토글: 핵심 태그가 달린 종목이 있어야 낸다. 제외 중이면 그 종목이 스냅샷에 없으므로 비중은 못 낸다.
+    model.addAttribute("coreHoldingTagged", !coreStockItemIds.isEmpty());
+    model.addAttribute("coreHoldingExcluded", excludedApplied);
+    if (!coreStockItemIds.isEmpty()) {
+      List<String> coreNames =
+          stockItemList.stream()
+              .filter(item -> item.id() != null && coreStockItemIds.contains(item.id()))
+              .map(StockItem::name)
+              .filter(java.util.Objects::nonNull)
+              .toList();
+      model.addAttribute("coreHoldingName", coreNames.size() == 1 ? coreNames.get(0) : null);
+      model.addAttribute("coreHoldingCount", coreNames.size());
+      if (!excludedApplied) {
+        var endItems = snapshots.get(contributionEnd.toString());
+        if (endItems != null) {
+          java.math.BigDecimal totalValue = java.math.BigDecimal.ZERO;
+          java.math.BigDecimal coreValue = java.math.BigDecimal.ZERO;
+          for (var item : endItems) {
+            if (item == null || item.value() == null) {
+              continue;
+            }
+            totalValue = totalValue.add(item.value());
+            if (coreStockItemIds.contains(item.stockItemId())) {
+              coreValue = coreValue.add(item.value());
+            }
+          }
+          if (totalValue.signum() > 0 && coreValue.signum() > 0) {
+            model.addAttribute(
+                "coreHoldingWeightPct",
+                coreValue
+                    .multiply(java.math.BigDecimal.valueOf(100))
+                    .divide(totalValue, 1, java.math.RoundingMode.HALF_UP)
+                    .toPlainString());
+          }
+        }
+      }
+    }
+
+    // 이름을 여기서 채운다. api-stock 의 TradeProfit 은 id 만 싣는 규약이라(응답에 이름 키 자체가
+    // 없다 - 결함이 아니다. 다른 화면도 withNames 로 게이트에서 붙인다) 여기서 붙여야 하고, 스냅샷의
+    // 이름은 기말에 들고 있는 종목만이라 그것만 믿으면 이미 다 판 종목이 전부 '-' 로 나가
+    // "보유 중인 것만 나온다" 로 보인다(실측 2026-09-07: 44 줄 중 35 줄).
     java.util.Map<UUID, String> contributionNames = new java.util.LinkedHashMap<>();
     for (StockItem item : stockItemList) {
       if (item != null && item.id() != null && item.name() != null) {
@@ -982,5 +1045,22 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         "stock.asset.growth.breakdown.yearly.note",
         null,
         org.springframework.context.i18n.LocaleContextHolder.getLocale());
+  }
+
+  /**
+   * 핵심 보유를 뺄지. 폼의 hidden(현재 제외 중)과 누른 버튼(제외/해제)의 값이 함께 올 수 있어 목록으로 받는다.
+   *
+   * <p>거짓 값이 하나라도 있으면 '해제' 다 &mdash; 해제 버튼은 hidden 이 살아 있는 채로 눌리기 때문이다.
+   */
+  static boolean resolveExcludeCore(java.util.List<String> values) {
+    if (values == null || values.isEmpty()) {
+      return false;
+    }
+    for (String value : values) {
+      if (value == null || !"true".equalsIgnoreCase(value.trim())) {
+        return false;
+      }
+    }
+    return true;
   }
 }

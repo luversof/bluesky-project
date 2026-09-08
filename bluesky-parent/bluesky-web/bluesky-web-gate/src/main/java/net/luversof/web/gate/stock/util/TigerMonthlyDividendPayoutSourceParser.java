@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,7 +16,8 @@ public class TigerMonthlyDividendPayoutSourceParser {
 
   public String toBulkInput(String html) {
     if (!StringUtils.hasText(html)) {
-      throw new IllegalArgumentException("TIGER ETF 출처 응답이 비어 있습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.response.empty", "TIGER"));
     }
 
     Document document = Jsoup.parseBodyFragment("<table><tbody>" + html + "</tbody></table>");
@@ -48,7 +51,8 @@ public class TigerMonthlyDividendPayoutSourceParser {
     }
 
     if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
-      throw new IllegalArgumentException("TIGER ETF 출처에서 분배금 지급 이력을 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rows.missing", "TIGER"));
     }
 
     return bulkInput.toString();

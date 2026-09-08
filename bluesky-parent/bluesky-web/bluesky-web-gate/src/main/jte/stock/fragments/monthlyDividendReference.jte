@@ -244,7 +244,7 @@
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.desc")}</p>
 						</div>
 						@if(monthlyDividendProfileExists && sourceImportUrlValue != null && !sourceImportUrlValue.isEmpty())
-							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source" class="mt-4 grid gap-4">
+							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source" class="mt-4 grid gap-4" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
@@ -262,7 +262,7 @@
 							<h3 class="text-sm font-semibold text-base-content">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.title")}</h3>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.desc")}</p>
 						</div>
-						<form method="post" action="/stock/dividend/monthly-reference/payout/import" class="mt-4 grid gap-4">
+						<form method="post" action="/stock/dividend/monthly-reference/payout/import" class="mt-4 grid gap-4" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.submit")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.admin.message.please.wait")}">
 							<input type="hidden" name="profileSort" value="${profileSortValue}" />
 							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 							<label class="form-control">
@@ -337,13 +337,13 @@
 							<p class="text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.desc")}</p>
 						</div>
 						<div class="mt-3 flex flex-wrap gap-2">
-							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk">
+							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.mid.month")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 								<input type="hidden" name="payoutWindow" value="MID_MONTH" />
 								<button type="submit" class="btn btn-secondary btn-sm">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.mid.month")}</button>
 							</form>
-							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk">
+							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.month.end")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 								<input type="hidden" name="payoutWindow" value="MONTH_END" />
@@ -489,6 +489,16 @@
 	</div>
 </div>
 
+<%-- 가져오기는 프로필마다 외부 ETF 사이트를 차례로 내려받아 오래 걸린다
+     (실측 2026-09-08: riseetf.co.kr 한 건이 8.65 초). 평범한 POST 폼이라 htmx 의
+     hx-indicator 를 쓸 수 없어, 제출을 가로채 이 오버레이를 직접 띄운다. --%>
+<div data-submit-overlay-panel="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+	<div class="flex flex-col items-center gap-4 rounded-2xl bg-base-100 px-8 py-8 shadow-xl">
+		<span class="loading loading-spinner loading-lg text-primary"></span>
+		<div data-submit-overlay-heading="true" class="text-lg font-bold">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.title")}</div>
+		<div data-submit-overlay-note="true" class="text-sm opacity-70">${MessageUtil.getMessage("stock.admin.message.please.wait")}</div>
+	</div>
+</div>
 <script nonce="${CspNonceHolder.getNonce()}">
 	(function() {
 		var selects = document.querySelectorAll('select[data-sync-hidden-field]');

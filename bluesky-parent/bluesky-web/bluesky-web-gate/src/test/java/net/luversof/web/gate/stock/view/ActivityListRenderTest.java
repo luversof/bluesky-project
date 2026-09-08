@@ -236,4 +236,49 @@ class ActivityListRenderTest {
     assertThat(html).doesNotContain("<canvas id=\"activityMonthlyChart\"");
     assertThat(skippedMonths(html)).isEqualTo(-1L);
   }
+
+  // ---------------------------------------------------------------- 월 카드 헤더 요약 (2026-09-08)
+
+  /**
+   * 접힌 달 카드도 그 달에 무슨 일이 있었는지 말한다.
+   *
+   * <p>실측 2026-09-08: 올해 화면에서 최근 달만 펼쳐지고 나머지 여덟 달은 "15건" 같은 건수뿐이라, 한 화면이 빈 막대로 채워졌다. 매수·매도·배당 합은
+   * 차트를 그리느라 이미 계산돼 있었다.
+   */
+  @Test
+  void 월_카드_헤더에_그_달의_매수_매도_배당_실현손익을_적는다() {
+    String html =
+        render(
+            List.of(
+                trade("2026-03-03", "BUY", "1000"),
+                trade("2026-03-10", "SELL", "2000", "300"),
+                dividend("2026-03-20", "500")));
+
+    String summary = monthSummary(html, "2026.03");
+    assertThat(summary).as("매수 합").contains("1,000");
+    assertThat(summary).as("매도 합").contains("2,000");
+    assertThat(summary).as("배당 합").contains("500");
+    assertThat(summary).as("실현손익은 부호를 붙인다").contains("+").contains("300");
+  }
+
+  /** 없던 일은 적지 않는다. "매도 ₩0" 이 줄줄이 붙으면 있는 것과 없는 것이 구분되지 않는다. */
+  @Test
+  void 월_카드_헤더는_0_인_항목을_적지_않는다() {
+    String html = render(List.of(trade("2026-03-03", "BUY", "1000")));
+
+    String summary = monthSummary(html, "2026.03");
+    assertThat(summary).contains("1,000");
+    assertThat(summary).as("매도·배당·실현손익이 없으면 그 항목 자체가 없다").doesNotContain("₩0");
+    assertThat(summary.split("amount-value").length - 1).as("적힌 항목 수").isEqualTo(1);
+  }
+
+  /** 달 카드 헤더 안의 요약 마크업. */
+  private static String monthSummary(String html, String monthTitle) {
+    int at = html.indexOf(">" + monthTitle + "<");
+    assertThat(at).as(monthTitle + " 카드를 찾지 못했다").isGreaterThan(0);
+    int start = html.indexOf("data-activity-month-summary", at);
+    int end = html.indexOf("</summary>", start);
+    assertThat(start).isGreaterThan(at);
+    return html.substring(start, end);
+  }
 }

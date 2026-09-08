@@ -163,13 +163,20 @@ StockCharts.formatCompactNumber = function (value: any) {
 
 function buildMonthlyData(tradeData: any[] = []) {
 	const buyMap: Record<string, number> = {},
-		sellMap: Record<string, number> = {};
+		sellMap: Record<string, number> = {},
+		profitMap: Record<string, number> = {};
+	let hasSell = false;
 	tradeData.forEach((d: any) => {
 		if (!d || !d.tradeDate) return;
 		const mon = d.tradeDate.slice(0, 7);
 		const amt = Number(d.amount) || 0;
 		if (d.type === "BUY") buyMap[mon] = (buyMap[mon] || 0) + amt;
-		else if (d.type === "SELL") sellMap[mon] = (sellMap[mon] || 0) + amt;
+		else if (d.type === "SELL") {
+			sellMap[mon] = (sellMap[mon] || 0) + amt;
+			// 실현손익은 매도에만 붙는다(요약 카드·월별 표와 같은 규칙).
+			profitMap[mon] = (profitMap[mon] || 0) + (Number(d.profit) || 0);
+			hasSell = true;
+		}
 	});
 	const allMonths = Object.keys(buyMap).concat(Object.keys(sellMap));
 	const months = allMonths.filter((v, i, a) => a.indexOf(v) === i).sort();
@@ -177,6 +184,9 @@ function buildMonthlyData(tradeData: any[] = []) {
 		labels: months,
 		buyData: months.map((m) => buyMap[m] || 0),
 		sellData: months.map((m) => sellMap[m] || 0),
+		// 판 달에만 값이 있다. 안 판 달은 null 로 두어 선이 0 으로 꺼지지 않게 한다.
+		profitData: months.map((m) => (m in profitMap ? profitMap[m] : null)),
+		hasSell,
 	};
 }
 
@@ -315,6 +325,27 @@ StockCharts.initMonthlyFromData = function (
 					borderRadius: 3,
 					maxBarThickness: 36,
 				},
+				// 실현손익 선(오른쪽 축). 월별 표에만 있던 값을 차트에도 얹어, 표와 차트가 같은 숫자를 두 번 말하는
+				// 대신 차트는 '언제 팔아서 얼마 남겼나' 의 흐름을 답한다(2026-09-08). 매도가 하나도 없으면 선도 축도 없다.
+				...(m.hasSell
+					? [
+							{
+								type: "line",
+								label: appMessage("stockLabelRealizedProfit", "Realized profit"),
+								data: m.profitData,
+								yAxisID: "y1",
+								order: 0,
+								borderColor: "rgba(189,44,56,0.9)",
+								backgroundColor: "rgba(189,44,56,0.9)",
+								borderWidth: 2,
+								pointRadius: 3,
+								pointHoverRadius: 5,
+								spanGaps: true,
+								tension: 0.2,
+								fill: false,
+							},
+						]
+					: []),
 			],
 		},
 		options: {
@@ -329,6 +360,12 @@ StockCharts.initMonthlyFromData = function (
 				tooltip: {
 					callbacks: {
 						label: (ctx: any) => {
+							if (ctx.parsed.y === null || ctx.parsed.y === undefined) return null;
+							// 실현손익만 부호가 뜻이다.
+							if (ctx.dataset.type === "line") {
+								const v = Number(ctx.parsed.y) || 0;
+								return ctx.dataset.label + ": " + (v >= 0 ? "+" : "-") + "\u20a9" + fmtAmt(Math.abs(v));
+							}
 							return ctx.dataset.label + ": \u20a9" + fmtAmt(ctx.parsed.y);
 						},
 					},
@@ -338,6 +375,15 @@ StockCharts.initMonthlyFromData = function (
 				x: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
 				y: {
 					grid: { color: gridColor },
+					ticks: {
+						font: { size: 10 },
+						callback: (v: any) => compactNumber(v),
+					},
+				},
+				y1: {
+					display: m.hasSell,
+					position: "right",
+					grid: { drawOnChartArea: false },
 					ticks: {
 						font: { size: 10 },
 						callback: (v: any) => compactNumber(v),

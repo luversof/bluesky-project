@@ -250,18 +250,22 @@
         String timelineTabLabel = MessageUtil.getMessage("stock.activity.view.timeline");
         String listTabLabel = MessageUtil.getMessage("stock.activity.view.list");
 
-        // 월별 집계: 월(YearMonth) → [배당(세후), 실현손익] 합 (활동 있는 월만, 기간 순)
+        // 월별 집계: 월(YearMonth) → [배당(세후), 실현손익, 매수, 매도] 합 (활동 있는 월만, 기간 순)
+        // [2] 매수 · [3] 매도는 월 카드 헤더의 요약에만 쓴다(2026-09-08). 접힌 달 카드가 건수만 보여 줘
+        // 한 화면이 빈 막대 여덟 줄로 채워졌는데, 이 합은 이미 여기서 돌고 있었다.
         // [0] 배당(세후) · [1] 실현손익. 예전에는 매수/매도/배당 금액을 한 축에 올렸는데,
         // 성격이 다른 값이라 작은 쪽이 보이지 않았다(실측 2026-09-07: 배당 중앙값이 최대 막대의
         // 0.62% = 170px 차트에서 1px). 이제 성격별로 나눠 각자 축을 준다.
         java.util.TreeMap<java.time.YearMonth, BigDecimal[]> monthlyChartAmounts = new java.util.TreeMap<>();
         for (java.util.Map.Entry<java.time.LocalDate, java.util.List<Activity>> chartDayEntry : activityByDate.entrySet()) {
-            BigDecimal[] monthSums = monthlyChartAmounts.computeIfAbsent(java.time.YearMonth.from(chartDayEntry.getKey()), k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO });
+            BigDecimal[] monthSums = monthlyChartAmounts.computeIfAbsent(java.time.YearMonth.from(chartDayEntry.getKey()), k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });
             for (Activity chartActivity : chartDayEntry.getValue()) {
                 BigDecimal chartAmount = chartActivity.amount() != null ? chartActivity.amount() : BigDecimal.ZERO;
                 if ("TRADE".equals(chartActivity.type())) {
                     // 실현손익은 매도에만 붙는다(매수는 null). 요약 카드·연도별 표와 같은 규칙이다.
                     if (chartActivity.realizedProfit() != null) { monthSums[1] = monthSums[1].add(chartActivity.realizedProfit()); }
+                    if ("BUY".equals(chartActivity.tradeType())) { monthSums[2] = monthSums[2].add(chartAmount); }
+                    else { monthSums[3] = monthSums[3].add(chartAmount); }
                 } else { monthSums[0] = monthSums[0].add(chartAmount); }
             }
         }
@@ -344,9 +348,25 @@
                         int monthActivityCount = activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).values().stream().mapToInt(java.util.List::size).sum();
                     }
                     <details class="rounded-2xl bg-base-100 p-3 shadow-sm" open="${activityMonth.equals(latestActivityMonth)}">
-                        <summary class="flex items-baseline gap-2 cursor-pointer select-none tap-target-24">
+                        !{BigDecimal[] monthSummary = monthlyChartAmounts.getOrDefault(activityMonth, new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });}
+                        <summary class="flex flex-wrap items-baseline gap-x-2 gap-y-1 cursor-pointer select-none tap-target-24">
                             <span class="text-sm font-bold">${monthTitle}</span>
                             <span class="text-xs text-base-content/60">${countMessage.apply(monthActivityCount)}</span>
+                            <%-- 접힌 채로도 그 달에 무슨 일이 있었는지 읽히게. 0 인 항목은 적지 않는다. --%>
+                            <span class="ml-auto flex flex-wrap gap-x-3 text-xs tabular-nums" data-activity-month-summary>
+                                @if(monthSummary[2].signum() != 0)
+                                    <span><span class="text-base-content/50">${buyLabel}</span> <span class="amount-value">₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[2]))}</span></span>
+                                @endif
+                                @if(monthSummary[3].signum() != 0)
+                                    <span><span class="text-base-content/50">${sellLabel}</span> <span class="amount-value">₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[3]))}</span></span>
+                                @endif
+                                @if(monthSummary[0].signum() != 0)
+                                    <span><span class="text-base-content/50">${dividendLabel}</span> <span class="amount-value text-dividend">₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[0]))}</span></span>
+                                @endif
+                                @if(monthSummary[1].signum() != 0)
+                                    <span><span class="text-base-content/50">${realizedProfitLabel}</span> <span class="amount-value font-semibold ${monthSummary[1].signum() >= 0 ? "text-profit" : "text-loss"}">${monthSummary[1].signum() >= 0 ? "+" : "-"}₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[1].abs()))}</span></span>
+                                @endif
+                            </span>
                         </summary>
                         <div class="mt-2">
                         <!-- 날짜 그리드와 동일한 gap/패딩 + 가운데 정렬로 컬럼 라인을 맞춘다. 토/일은 빨간색 -->

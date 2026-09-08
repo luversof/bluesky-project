@@ -104,4 +104,47 @@ class SummaryPriceBasisRenderTest {
       assertThat(html).as("기준일=" + basis).isNotEmpty();
     }
   }
+
+  // ---------------------------------------------------------------- 핵심 보유 vs 나머지 (2026-09-08)
+
+  /** 한 종목이 평가액의 절반을 넘으면 그 종목과 나머지를 나란히 놓는다. 실측: 삼성전자 83.9% 라 모든 차트가 그 종목 그래프였다. */
+  @Test
+  void 핵심_보유가_있으면_분해_카드를_그린다() {
+    java.util.Map<String, Object> params = params(LocalDate.parse("2026-09-07"));
+    params.put(
+        "coreHoldingSplit",
+        new net.luversof.web.gate.stock.util.StockCoreHoldingUtil.Split(
+            new net.luversof.web.gate.stock.util.StockCoreHoldingUtil.Sleeve(
+                "삼성전자",
+                1,
+                new BigDecimal("1361610000"),
+                new BigDecimal("83.9"),
+                new BigDecimal("999084921"),
+                new BigDecimal("138569333"),
+                new BigDecimal("35340449"),
+                new BigDecimal("1172994703")),
+            new net.luversof.web.gate.stock.util.StockCoreHoldingUtil.Sleeve(
+                null,
+                9,
+                new BigDecimal("261142180"),
+                new BigDecimal("16.1"),
+                new BigDecimal("-18348602"),
+                new BigDecimal("1780962"),
+                new BigDecimal("23727088"),
+                new BigDecimal("7159448"))));
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, params, output);
+    String html = output.toString();
+
+    assertThat(html).contains("data-core-holding-split");
+    assertThat(html).contains("data-core-holding-name>삼성전자<");
+    assertThat(html).contains("data-core-holding-weight>83.9%<");
+    assertThat(html).as("나머지 종목 수").containsPattern("data-core-holding-rest>[^<]*9[^<]*<");
+  }
+
+  /** 분해가 없으면(고르게 분산) 카드도 없다. */
+  @Test
+  void 핵심_보유가_없으면_분해_카드가_없다() {
+    assertThat(render(LocalDate.parse("2026-09-07"))).doesNotContain("data-core-holding-split");
+  }
 }

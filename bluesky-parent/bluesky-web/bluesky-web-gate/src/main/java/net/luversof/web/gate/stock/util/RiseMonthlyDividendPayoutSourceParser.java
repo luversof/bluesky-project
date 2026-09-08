@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,7 +16,8 @@ public class RiseMonthlyDividendPayoutSourceParser {
 
   public String toBulkInput(String html) {
     if (!StringUtils.hasText(html)) {
-      throw new IllegalArgumentException("RISE ETF 출처 응답이 비어 있습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.response.empty", "RISE"));
     }
 
     Document document = Jsoup.parse(html);
@@ -23,13 +26,16 @@ public class RiseMonthlyDividendPayoutSourceParser {
             .filter(element -> "분배금 지급현황".equals(normalizeText(element.text())))
             .findFirst()
             .orElseThrow(
-                () -> new IllegalArgumentException("RISE ETF 출처에서 분배금 지급현황 영역을 찾지 못했습니다."));
+                () ->
+                    new IllegalArgumentException(
+                        msg("stock.monthly.reference.error.source.rise.section.missing")));
 
     Element wrapper = heading.closest("div.wrap_inner");
     Element table =
         findNextTable(wrapper != null ? wrapper.nextElementSibling() : heading.parent());
     if (table == null) {
-      throw new IllegalArgumentException("RISE ETF 출처에서 분배금 지급현황 표를 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rise.table.missing"));
     }
 
     StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
@@ -62,7 +68,8 @@ public class RiseMonthlyDividendPayoutSourceParser {
     }
 
     if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
-      throw new IllegalArgumentException("RISE ETF 출처에서 분배금 지급 이력을 찾지 못했습니다.");
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rows.missing", "RISE"));
     }
 
     return bulkInput.toString();

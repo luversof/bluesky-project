@@ -371,6 +371,16 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         net.luversof.web.gate.stock.util.StockProfitBasisUtil.excludedHoldingBuyFee(profitList));
     model.addAttribute("manualPrincipalAdjustment", manualPrincipalAdjustment);
     model.addAttribute("totalDividend", totalDividendVal);
+    // 핵심 보유 vs 나머지. 실측 2026-09-08: 한 종목이 83.9% 라 모든 차트가 그 종목 그래프였고, 배당 ETF 8종의
+    // 성적은 나란히 볼 곳이 없었다. 어느 쪽이 핵심인지는 종목의 '핵심' 태그가 정한다(평가액 1위 자동 판정은
+    // 주가가 움직이는 것만으로 기준이 말없이 바뀌어 그만뒀다). 손익·배당은 위와 같은 필터로 받은 것을 그대로 가른다.
+    model.addAttribute(
+        "coreHoldingSplit",
+        net.luversof.web.gate.stock.util.StockCoreHoldingUtil.split(
+            profitList,
+            dividendByStockItem,
+            net.luversof.web.gate.stock.util.StockCoreHoldingUtil.coreStockItemIds(
+                joinRemote(stockItemsFuture))));
     model.addAttribute("winRate", winRate);
     model.addAttribute("winCount", winCount);
     model.addAttribute("winDenominator", winDenominator);

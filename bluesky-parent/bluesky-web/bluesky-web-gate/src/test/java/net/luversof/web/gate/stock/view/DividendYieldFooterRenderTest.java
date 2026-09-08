@@ -144,6 +144,30 @@ class DividendYieldFooterRenderTest {
     return output.toString();
   }
 
+  /** 연도별 표까지 채워 렌더한다. 종목별 표는 {@code rows} 로, 연도별 표는 {@code yearly} 로. */
+  private String renderWithYearly(
+      List<DividendYieldGroupView> rows, List<DividendYieldGroupView> yearly) {
+    Map<String, Object> model = params(rows);
+    model.put("yearlyYieldRows", yearly);
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
+    return output.toString();
+  }
+
+  /** 연도별 표의 전체 기간 줄 셀. 없으면 빈 목록. */
+  private List<String> yearlyTotalCells(String html) {
+    int start = html.indexOf("<tfoot data-dividend-yearly-total");
+    if (start < 0) {
+      return List.of();
+    }
+    List<String> cells = new ArrayList<>();
+    Matcher matcher = CELL.matcher(html.substring(start, html.indexOf("</tfoot>", start)));
+    while (matcher.find()) {
+      cells.add(text(matcher.group(1)));
+    }
+    return cells;
+  }
+
   private static final Pattern CELL = Pattern.compile("<td[^>]*>(.*?)</td>", Pattern.DOTALL);
 
   /** 셀 안의 태그를 걷어 내고 남은 글자. */
@@ -219,5 +243,96 @@ class DividendYieldFooterRenderTest {
     // 세후액(100,000)은 그대로 보이지만 수익률 분자로는 쓰이지 않는다.
     assertThat(html).contains("100,000");
     assertThat(footerCells(html)).as("합계행도 같은 규칙이라 0.00% 여야 한다").contains("0.00%");
+  }
+
+  // ---------------------------------------------------------------- 연도별 표 전체 기간 줄 (2026-09-08)
+
+  /**
+   * 연도별 표에는 합계가 없었다(실측 2026-09-08: 7 개 해가 있는데 전체 기간 줄이 없어 "지금까지 배당을 얼마 받았나" 를 종목별 표 합계에서 찾아야 했다).
+   *
+   * <p>금액·건수는 연도 합이고, 원금과 수익률은 연도를 더한 값이 아니라 전체 기간의 값(종목별 표 합계행과 같은 값)이다. 연도별 일평균 원금을 더하면 뜻이 없다.
+   */
+  @Test
+  void 연도가_둘_이상이면_전체_기간_줄이_붙고_금액은_연도_합이다() {
+    List<DividendYieldGroupView> rows =
+        List.of(row("A", "1000000", "846000", "1000000", "846000", "10000000", "12000000"));
+    List<DividendYieldGroupView> yearly =
+        List.of(
+            row("2025", "600000", "507600", "600000", "507600", "9000000", "11000000"),
+            row("2026", "400000", "338400", "400000", "338400", "11000000", "13000000"));
+
+    List<String> cells = yearlyTotalCells(renderWithYearly(rows, yearly));
+
+    assertThat(cells).as("전체 기간 줄이 없다").isNotEmpty();
+    assertThat(cells.get(1)).as("세전 = 연도 합").isEqualTo("1,000,000");
+    assertThat(cells.get(2)).as("세후 = 연도 합").isEqualTo("846,000");
+    assertThat(cells.get(3)).as("세금 = 세전 − 세후").isEqualTo("154,000");
+    assertThat(cells.get(9)).as("건수 = 연도 합").isEqualTo("2");
+    assertThat(cells.get(5)).as("원금은 연도 합이 아니라 전체 기간 값(종목별 표 합계행과 같다)").isEqualTo("10,000,000");
+    assertThat(cells.get(6)).as("수익률도 전체 기간 값").isEqualTo(footerCells(render(rows)).get(6));
+  }
+
+  /** 한 해뿐이면 그 줄이 곧 전체다. 연도별 성과 표와 같은 규칙. */
+  @Test
+  void 연도가_하나면_전체_기간_줄이_없다() {
+    List<DividendYieldGroupView> rows =
+        List.of(row("A", "1000000", "846000", "1000000", "846000", "10000000", "12000000"));
+    List<DividendYieldGroupView> yearly =
+        List.of(row("2026", "1000000", "846000", "1000000", "846000", "10000000", "12000000"));
+
+    assertThat(yearlyTotalCells(renderWithYearly(rows, yearly))).isEmpty();
+  }
+
+  /**
+   * 세금·과세금액이 0 이면 '-' 로 적는다.
+   *
+   * <p>실측 2026-09-08: 배당 내역 202 줄 중 세금 0 이 147 줄, 과세금액 0 이 119 줄이라 표가 0 으로 도배됐다. 다른 표(연도별 세금·비용, 매매
+   * 쪼갬)는 이미 0 을 '-' 로 적고 있어 같은 값이 화면마다 다르게 보였다.
+   */
+  @Test
+  void 세금과_과세금액이_0_이면_대시로_적는다() {
+    String html =
+        render(List.of(row("면세", "500000", "500000", "0", "500000", "10000000", "12000000")));
+    int start = html.indexOf("<tr class=\"dividend-yield-stock-row\"");
+    assertThat(start).isGreaterThan(0);
+    List<String> cells = new ArrayList<>();
+    Matcher matcher = CELL.matcher(html.substring(start, html.indexOf("</tr>", start)));
+    while (matcher.find()) {
+      cells.add(text(matcher.group(1)));
+    }
+
+    assertThat(cells.get(3)).as("세금 0").isEqualTo("-");
+    assertThat(cells.get(4)).as("과세금액 0").isEqualTo("-");
+    assertThat(cells.get(2)).as("세후액은 값 그대로").isEqualTo("500,000");
+  }
+
+  /** 분모(일평균 투입원금)가 없으면 수익률은 0.00% 가 아니라 '-' 다. 0% 는 '못 벌었다' 로 읽힌다. */
+  @Test
+  void 원금이_없으면_수익률은_대시다() {
+    String html = render(List.of(row("원금없음", "500000", "423000", "500000", "423000", "0", "0")));
+    int start = html.indexOf("<tr class=\"dividend-yield-stock-row\"");
+    List<String> cells = new ArrayList<>();
+    Matcher matcher = CELL.matcher(html.substring(start, html.indexOf("</tr>", start)));
+    while (matcher.find()) {
+      cells.add(text(matcher.group(1)));
+    }
+
+    assertThat(cells.get(6)).isEqualTo("-");
+  }
+
+  /** 배당 내역 목록도 같은 규칙이다. 그 조각은 파라미터가 많아 소스로 본다. */
+  @Test
+  void 배당_내역_목록의_세금_0_도_대시다() throws java.io.IOException {
+    String source =
+        java.nio.file.Files.readString(
+            java.nio.file.Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendTable.jte"),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+    assertThat(source)
+        .contains("item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : \"-\"")
+        .contains(
+            "item.taxableAmount().signum() != 0 ? decimalFormat.format(item.taxableAmount()) : \"-\"")
+        .doesNotContain("decimalFormat.format(item.tax()) : \"0\"")
+        .doesNotContain("decimalFormat.format(item.taxableAmount()) : \"0\"");
   }
 }

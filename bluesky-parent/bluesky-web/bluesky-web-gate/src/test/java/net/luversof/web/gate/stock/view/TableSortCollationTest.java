@@ -16,9 +16,9 @@ import org.junit.jupiter.api.Test;
 /**
  * 표 정렬의 텍스트 비교 규칙이 화면마다 다르지 않은지 본다.
  *
- * <p>이 앱에는 표 정렬 구현이 셋이다 &mdash; 공용 {@code tableSort.ts}(계좌 상세/종목 상세)와 {@code assetStatus.jte},
- * {@code tabsDividendHistory.jte} 의 인라인 정렬기. 셋 다 {@code localeCompare} 로 텍스트 열을 정렬하는데, 로케일 인자를 하나만
- * 비워 두면 그 화면만 브라우저 로케일을 따라간다.
+ * <p>이 앱에는 표 정렬 구현이 셋이다 &mdash; 공용 {@code tableSort.ts}(계좌 상세/종목 상세)와 {@code assetStatus.ts},
+ * {@code dividendHistory.ts} 의 정렬기. 셋 다 {@code localeCompare} 로 텍스트 열을 정렬하는데, 로케일 인자를 하나만 비워 두면 그
+ * 화면만 브라우저 로케일을 따라간다.
  *
  * <p>실측(같은 종목명 목록): {@code ko} 는 한글 먼저(가나다, 삼성전자, 하이닉스, CJ씨푸드, HD현대중공업, KODEX...), {@code en} 은 라틴
  * 먼저(CJ씨푸드, HD현대중공업, KODEX..., 가나다, 삼성전자, 하이닉스)로 <b>순서가 뒤집힌다</b>. 게이트는 영어 번들 ({@code
@@ -29,8 +29,10 @@ class TableSortCollationTest {
   private static final List<Path> SORT_SOURCES =
       List.of(
           Path.of("src/main/frontend/src/stock/tableSort.ts"),
-          Path.of("src/main/jte/stock/htmx/fragments/assetStatus.jte"),
-          Path.of("src/main/jte/stock/htmx/fragments/tabsDividendHistory.jte"));
+          // 2026-09-08 인라인 정렬기가 assetStatus.ts 로 옮겨갔다(같은 구현, 파일만 바뀜)
+          Path.of("src/main/frontend/src/stock/assetStatus.ts"),
+          // 2026-09-08 인라인 정렬기가 dividendHistory.ts 로 옮겨갔다
+          Path.of("src/main/frontend/src/stock/dividendHistory.ts"));
 
   /** {@code localeCompare(x, <로케일>, ...)} 의 두 번째 인자를 뽑는다. */
   private static final Pattern LOCALE_ARG =

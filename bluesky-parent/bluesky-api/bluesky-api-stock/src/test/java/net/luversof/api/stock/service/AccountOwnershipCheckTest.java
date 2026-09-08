@@ -40,7 +40,9 @@ class AccountOwnershipCheckTest {
         .isEqualTo(1);
     assertThat(countOccurrences(source, "assertAccountsOwnedBy"))
         .as("헬퍼 선언 1 + 호출들이 있어야 한다")
-        .isGreaterThanOrEqualTo(5);
+        // 2026-09-08: calculateProfit 의 중복 스위치(호출 3 개)를 loadAllTrades 로 위임해 호출은 그쪽 3 개만 남았다.
+        // 선언 1 + 호출 3 = 4. 더 줄면 어느 분기에서 검사가 빠진 것이다.
+        .isGreaterThanOrEqualTo(4);
   }
 
   /** 헬퍼는 요청자 기준으로 비교해야 한다. 계좌 쪽을 기준으로 삼으면 소유자가 빈 계좌에서 500 이 난다. */

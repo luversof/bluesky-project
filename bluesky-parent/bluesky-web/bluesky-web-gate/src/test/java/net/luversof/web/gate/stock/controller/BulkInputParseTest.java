@@ -18,6 +18,25 @@ import org.junit.jupiter.api.Test;
  */
 class BulkInputParseTest {
 
+  // Messages moved to bundle keys (2026-09-08); assertions below read the Korean text.
+  @org.junit.jupiter.api.BeforeAll
+  static void primeMessages() {
+    var source = new org.springframework.context.support.ReloadableResourceBundleMessageSource();
+    source.setBasename("classpath:uiMessage");
+    source.setDefaultEncoding("UTF-8");
+    source.setUseCodeAsDefaultMessage(true);
+    source.setFallbackToSystemLocale(false);
+    io.github.luversof.boot.context.support.MessageUtil.setMessageSourceAccessor(
+        new org.springframework.context.support.MessageSourceAccessor(source));
+    org.springframework.context.i18n.LocaleContextHolder.setDefaultLocale(java.util.Locale.KOREAN);
+  }
+
+  @org.junit.jupiter.api.AfterAll
+  static void clearMessages() {
+    io.github.luversof.boot.context.support.MessageUtil.setMessageSourceAccessor(null);
+    org.springframework.context.i18n.LocaleContextHolder.setDefaultLocale(null);
+  }
+
   private final StockViewController controller = new StockViewController();
   private static final UUID USER = UUID.randomUUID();
 

@@ -1,6 +1,9 @@
 package net.luversof.web.gate.stock.util;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -82,9 +85,10 @@ public final class StockContributionUtil {
 
   /**
    * @param nameByStock 종목 id -> 이름. <b>반드시 넘겨야 한다.</b>
-   *     <p>{@code calculateProfit(groupBy=STOCKITEM)} 은 이름을 주지 않는다(실측 2026-09-07: 43 행 전부 {@code
-   *     stockItemName} 이 null). 스냅샷에는 이름이 있지만 그건 <b>기말에 들고 있는 종목만</b>이라, 이름을 밖에서 채우지 않으면 이미 다 판 종목이
-   *     전부 이름 없이 '-' 로 나간다 &mdash; 줄은 있는데 읽을 수가 없어 "보유 중인 것만 나온다" 로 보인다(실측: 44 줄 중 35 줄).
+   *     <p>api-stock 의 {@code TradeProfit} 은 <b>id 만 싣는 규약</b>이다 &mdash; 응답에 이름 키 자체가 없다(결함이 아니다.
+   *     게이트의 다른 화면도 {@code TradeProfit.withNames} 로 이름을 붙인다). 스냅샷에는 이름이 있지만 그건 <b>기말에 들고 있는
+   *     종목만</b>이라, 이름을 밖에서 채우지 않으면 이미 다 판 종목이 전부 이름 없이 '-' 로 나간다 &mdash; 줄은 있는데 읽을 수가 없어 "보유 중인 것만
+   *     나온다" 로 보인다(실측 2026-09-07: 44 줄 중 35 줄).
    */
   public static List<Contribution> of(
       List<HoldingsSnapshotItem> startSnapshot,
@@ -173,6 +177,35 @@ public final class StockContributionUtil {
   }
 
   /** 화면에 그대로 내보내기에 표가 길어지는 기준. 전 기간이 44 줄이고 그중 25 줄이 100 만원 미만이었다. */
+  /** 기초·기말 스냅샷을 찍을 날짜. 기초는 시작일이 없으면(= '전체') null 이다. */
+  public record SnapshotDates(LocalDate start, LocalDate end) {}
+
+  /**
+   * 기간 요청에서 <b>스냅샷을 찍을 날짜</b>를 고른다.
+   *
+   * <p>요약(기간 손익)의 규칙과 같아야 종목별 기여의 합이 요약과 맞는다. 그 규칙은 api-stock 이 실제로 답한 값으로 확인했다(실측 2026-09-08):
+   *
+   * <ul>
+   *   <li>기초 = {@code startDate} 당일의 스냅샷 (start=06-09 &rarr; 06-09 종가 기준 1,261,330,159)
+   *   <li>기말 = {@code endDate} <b>직전 순간</b>의 날짜. endDate 는 배타적이라 자정이면 하루 전이다 (end=06-10T00:00
+   *       &rarr; 06-09 의 1,261,330,159, 06-10 의 1,161,055,494 가 아니다). 자정이 아니면 그날이다 (end=06-09T12:00
+   *       &rarr; 06-09).
+   *   <li>endDate 가 없으면 오늘 &mdash; 요약의 기말도 현재 시점이다.
+   * </ul>
+   *
+   * <p>예전에는 기말을 {@code endDate} 당일로 잡았다. 화면의 기간 선택기는 고른 끝날 <b>+1 일 자정</b>을 보내므로, 끝날 다음 날이 거래일이면(달의
+   * 1 일, 임의 구간) 요약보다 하루 뒤의 평가액을 쓰게 되어 종목별 기여의 합이 기간 손익과 어긋났다. 프리셋(내일 자정)과 연말(1 월 1 일)은 그날 종가가 없어
+   * 우연히 맞았을 뿐이다. 실측 2026-09-08: 올해 구간이 하루 어긋나 76,066,520 원 차이.
+   *
+   * @param today 시계를 바깥에서 넣는다 &mdash; 검사에서 날짜를 고정하려고.
+   */
+  public static SnapshotDates snapshotDates(
+      Instant start, Instant end, ZoneId zone, LocalDate today) {
+    LocalDate startDate = start != null ? start.atZone(zone).toLocalDate() : null;
+    LocalDate endDate = end != null ? end.minusNanos(1).atZone(zone).toLocalDate() : today;
+    return new SnapshotDates(startDate, endDate);
+  }
+
   public static final int DEFAULT_VISIBLE = 15;
 
   /**
