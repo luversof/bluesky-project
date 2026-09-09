@@ -55,6 +55,9 @@
 		toggle.type = "button";
 		toggle.className =
 			"btn btn-sm btn-outline btn-block justify-between font-normal gap-2";
+		toggle.setAttribute("data-msd-toggle", "1");
+		toggle.setAttribute("aria-haspopup", "true");
+		toggle.setAttribute("aria-expanded", "false");
 		var summary = document.createElement("span");
 		summary.className = "truncate flex-1 min-w-0 text-left";
 		var caret = document.createElement("span");
@@ -165,7 +168,7 @@
 		toggle.addEventListener("click", function (e) {
 			e.stopPropagation();
 			closeAllPanels(panel);
-			panel.hidden = !panel.hidden;
+			setPanelOpen(panel, panel.hidden);
 			if (!panel.hidden && search) {
 				search.value = "";
 				search.dispatchEvent(new Event("input"));
@@ -231,6 +234,9 @@
 		toggle.type = "button";
 		toggle.className =
 			"btn btn-sm btn-outline btn-block justify-between font-normal gap-2";
+		toggle.setAttribute("data-msd-toggle", "1");
+		toggle.setAttribute("aria-haspopup", "true");
+		toggle.setAttribute("aria-expanded", "false");
 		var summary = document.createElement("span");
 		summary.className = "truncate flex-1 min-w-0 text-left";
 		var caret = document.createElement("span");
@@ -281,7 +287,7 @@
 		toggle.addEventListener("click", function (e) {
 			e.stopPropagation();
 			closeAllPanels(panel);
-			panel.hidden = !panel.hidden;
+			setPanelOpen(panel, panel.hidden);
 		});
 
 		var parent = card.parentNode;
@@ -295,13 +301,45 @@
 		updateSummary();
 	}
 
+	// 패널의 열림/닫힘과 토글 버튼의 aria-expanded 를 한 곳에서 맞춘다.
+	// 실측 2026-09-09: 토글에 펼침 상태가 없어 스크린리더는 눌러도 무슨 일이 났는지 알 수 없었고, Escape 로 닫을 수도 없었다.
+	function setPanelOpen(panel: HTMLElement, open: boolean) {
+		panel.hidden = !open;
+		var wrap = panel.parentElement;
+		var toggle = wrap ? (wrap.querySelector("[data-msd-toggle]") as HTMLElement | null) : null;
+		if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
+	}
+
 	function closeAllPanels(except: HTMLElement | null) {
 		Array.prototype.slice
 			.call(document.querySelectorAll("[data-msd-panel]"))
 			.forEach(function (p: HTMLElement) {
-				if (p !== except) p.hidden = true;
+				if (p !== except && !p.hidden) setPanelOpen(p, false);
 			});
 	}
+
+	// Escape: 열린 패널을 닫고 포커스를 토글로 되돌린다(WAI-ARIA 팝업 관례). 패널 밖으로 Tab 이 나가면 닫는다.
+	document.addEventListener("keydown", function (e) {
+		if (e.key !== "Escape") return;
+		var t = e.target as HTMLElement;
+		var wrap = t && typeof t.closest === "function" ? (t.closest("[data-msd-wrap]") as HTMLElement | null) : null;
+		if (!wrap) return;
+		var panel = wrap.querySelector("[data-msd-panel]") as HTMLElement | null;
+		if (!panel || panel.hidden) return;
+		e.preventDefault();
+		setPanelOpen(panel, false);
+		var toggle = wrap.querySelector("[data-msd-toggle]") as HTMLElement | null;
+		if (toggle) toggle.focus();
+	});
+	document.addEventListener("focusin", function (e) {
+		var t = e.target as HTMLElement;
+		var inside = t && typeof t.closest === "function" ? t.closest("[data-msd-wrap]") : null;
+		Array.prototype.slice
+			.call(document.querySelectorAll("[data-msd-panel]"))
+			.forEach(function (p: HTMLElement) {
+				if (!p.hidden && p.parentElement !== inside) setPanelOpen(p, false);
+			});
+	});
 
 	// 바깥 클릭 시 닫기
 	document.addEventListener("click", function (e) {

@@ -16,8 +16,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.context.MessageSource;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.constant.TradeType;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
@@ -123,8 +120,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       @RequestParam(required = false) Instant startDate,
       @RequestParam(required = false) Instant endDate,
       @RequestParam(required = false) String timeZone,
-      @RequestParam(defaultValue = "1") int page,
-      @RequestParam(defaultValue = "15") int size,
       @RequestParam(required = false) String sort,
       @RequestParam(required = false) String rangeMode,
       Model model) {
@@ -135,8 +130,10 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     }
 
     // If no date range provided by client, default to this year (ytd)
-    Instant startInst = startDate;
-    Instant endInst = endDate;
+    // 역순 기간은 앞뒤를 바로잡는다(피커와 같은 규칙). 그대로 두면 빈 결과가 '데이터 없음' 으로 읽힌다.
+    Instant[] orderedRange = effectiveRange(rangeMode, startDate, endDate);
+    Instant startInst = orderedRange[0];
+    Instant endInst = orderedRange[1];
     // rangeMode 는 어떤 프리셋 버튼이 눌렸는지 알리는 화면 상태값이지 기간 그 자체가 아니다
     // (기간은 startDate/endDate 로 온다). 그런데 이 가드가 rangeMode 의 '존재'를 보는 바람에,
     // 날짜 없이 rangeMode 만 실려 오면 기본 기간이 적용되지 않고 전 기간이 조회됐다
@@ -527,18 +524,10 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         && tp.realizedProfit().compareTo(BigDecimal.ZERO) > 0)
             .count();
 
-    if (size <= 0) size = 15;
-    // 상세 목록은 페이징 없이 전체를 펼쳐서 표시(헤더 sticky로 스크롤). 한 페이지에 전부 담는다.
-    if (!viewList.isEmpty()) size = viewList.size();
+    // 상세 목록은 페이징 없이 전체를 펼쳐서 표시한다(헤더 sticky 로 스크롤). 예전의 page/size 파라미터와 slice·Pagination 은
+    // 이 결정 뒤로 항상 '1 페이지 = 전체' 라 도달 불가였다(실측 2026-09-09: 폼·화면 어디서도 보내지 않고, 보내도 응답이 같았다).
     int totalItems = viewList.size();
-    int totalPages = (int) Math.ceil((double) totalItems / size);
-    int currentPage = Math.max(1, Math.min(page, totalPages));
-    if (totalPages == 0) currentPage = 1;
-
-    int fromIndex = (currentPage - 1) * size;
-    int toIndex = Math.min(fromIndex + size, totalItems);
-    List<TradeResponse> pagedList =
-        (fromIndex < totalItems) ? viewList.subList(fromIndex, toIndex) : Collections.emptyList();
+    List<TradeResponse> pagedList = viewList;
 
     BigDecimal totalFee =
         pagedList.stream()
@@ -554,9 +543,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
-    var pagination = new Pagination(pageImpl);
-
     // 조회/페이징은 그대로(기본=날짜 desc, 1페이지=최신 묶음) 두고, 화면에는 그 페이지를 오름차순(오래된 것 위)으로 표시.
     // 사용자가 컬럼 정렬을 명시한 경우(sort 존재)는 선택한 정렬을 그대로 보여준다.
     List<TradeResponse> displayTradeList = new ArrayList<>(pagedList);
@@ -565,11 +551,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     }
     model.addAttribute("tradeList", displayTradeList);
     model.addAttribute("allTradeList", viewList);
-    model.addAttribute("pagination", pagination);
     model.addAttribute("totalItems", totalItems);
-    model.addAttribute("totalPages", totalPages);
-    model.addAttribute("currentPage", currentPage);
-    model.addAttribute("size", size);
     model.addAttribute("accountList", finalAccountList);
     model.addAttribute("stockItemList", finalStockItemList);
     model.addAttribute(
@@ -853,8 +835,9 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
     // Convert start/end Instants into Instants for the helper (they already are
     // Instants)
-    Instant startInstant = startDate;
-    Instant endInstant = endDate;
+    Instant[] orderedRange = effectiveRange(rangeMode, startDate, endDate);
+    Instant startInstant = orderedRange[0];
+    Instant endInstant = orderedRange[1];
     // rangeMode 는 어떤 프리셋 버튼이 눌렸는지 알리는 화면 상태값이지 기간 그 자체가 아니다
     // (기간은 startDate/endDate 로 온다). 그런데 이 가드가 rangeMode 의 '존재'를 보는 바람에,
     // 날짜 없이 rangeMode 만 실려 오면 기본 기간이 적용되지 않고 전 기간이 조회됐다

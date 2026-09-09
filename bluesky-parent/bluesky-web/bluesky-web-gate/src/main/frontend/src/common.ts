@@ -153,6 +153,76 @@ function restoreActivityView() {
 	applyActivityView(root, present || mode);
 }
 
+// href 없는 <a role="tab"> 는 브라우저가 포커스도, Enter 도 주지 않는다(실측 2026-09-09: 주식 화면 4곳 탭 13개가 키보드로 닿지 않았다).
+// 템플릿이 tabindex="0" 을 주고 여기서 Enter/Space 를 click 으로 바꾼다. 좌우 화살표는 같은 tablist 안에서 포커스를 옮긴다(WAI-ARIA 탭 관례).
+document.addEventListener("keydown", (event) => {
+	const target = event.target as HTMLElement;
+	if (!target || !target.matches) return;
+	if (!target.matches('a[role="tab"]:not([href])')) return;
+	if (event.key === "Enter" || event.key === " ") {
+		event.preventDefault();
+		target.click();
+		return;
+	}
+	if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+	const list = target.closest('[role="tablist"]');
+	if (!list) return;
+	const tabs = Array.from(list.querySelectorAll<HTMLElement>('[role="tab"]'));
+	const index = tabs.indexOf(target);
+	if (index < 0) return;
+	event.preventDefault();
+	const next = tabs[(index + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+	next.focus();
+});
+
+// 활동 달력의 날짜 칸: 그날 상세(미리 렌더된 hidden 블록)를 펼치거나 접는다.
+// 마우스 클릭과 키보드(Enter/Space)가 같은 길을 탄다 - 칸은 role="button" tabindex="0" 인 div 라
+// 브라우저가 대신 click 을 만들어 주지 않는다(실측 2026-09-09: 전체 기간 181칸이 키보드로 열리지 않았다).
+function toggleCalendarDay(cell: Element) {
+	const root = cell.closest("#activityListFragment");
+	if (!root) return;
+	const dateKey = cell.getAttribute("data-cal-date");
+	const monthKey = cell.getAttribute("data-cal-month");
+	const panel = root.querySelector('[data-cal-panel="' + monthKey + '"]');
+	if (!panel) return;
+	const detail = panel.querySelector('[data-cal-detail="' + dateKey + '"]');
+	if (!detail) return;
+	const isSameOpen =
+		panel.classList.contains("is-open") &&
+		!detail.classList.contains("hidden");
+	if (isSameOpen) {
+		panel.classList.remove("is-open");
+		cell.classList.remove("bg-base-200");
+		cell.setAttribute("aria-expanded", "false");
+		return;
+	}
+	panel
+		.querySelectorAll("[data-cal-detail]")
+		.forEach((other) => other.classList.add("hidden"));
+	root
+		.querySelectorAll("[data-cal-date].bg-base-200")
+		.forEach((selected) => {
+			selected.classList.remove("bg-base-200");
+			selected.setAttribute("aria-expanded", "false");
+		});
+	detail.classList.remove("hidden");
+	panel.classList.add("is-open");
+	cell.classList.add("bg-base-200");
+	cell.setAttribute("aria-expanded", "true");
+}
+
+document.addEventListener("keydown", (event) => {
+	if (event.key !== "Enter" && event.key !== " ") return;
+	const target = event.target as HTMLElement;
+	if (!target || !target.closest) return;
+	// 칸 안의 링크 등 스스로 키를 처리하는 요소는 건드리지 않는다
+	if (target.closest("button, a, input, select, textarea")) return;
+	const cell = target.closest("[data-cal-date]");
+	if (!cell) return;
+	event.preventDefault(); // Space 가 화면을 스크롤하지 않게
+	toggleCalendarDay(cell);
+});
+
 document.addEventListener("click", (event) => {
 	const target = event.target as HTMLElement;
 	if (!target || !target.closest) return;
@@ -182,33 +252,7 @@ document.addEventListener("click", (event) => {
 	}
 
 	const cell = target.closest("[data-cal-date]");
-	if (cell) {
-		const root = cell.closest("#activityListFragment");
-		if (!root) return;
-		const dateKey = cell.getAttribute("data-cal-date");
-		const monthKey = cell.getAttribute("data-cal-month");
-		const panel = root.querySelector('[data-cal-panel="' + monthKey + '"]');
-		if (!panel) return;
-		const detail = panel.querySelector('[data-cal-detail="' + dateKey + '"]');
-		if (!detail) return;
-		const isSameOpen =
-			panel.classList.contains("is-open") &&
-			!detail.classList.contains("hidden");
-		if (isSameOpen) {
-			panel.classList.remove("is-open");
-			cell.classList.remove("bg-base-200");
-			return;
-		}
-		panel
-			.querySelectorAll("[data-cal-detail]")
-			.forEach((other) => other.classList.add("hidden"));
-		root
-			.querySelectorAll("[data-cal-date].bg-base-200")
-			.forEach((selected) => selected.classList.remove("bg-base-200"));
-		detail.classList.remove("hidden");
-		panel.classList.add("is-open");
-		cell.classList.add("bg-base-200");
-	}
+	if (cell) toggleCalendarDay(cell);
 });
 
 document.addEventListener("DOMContentLoaded", restoreActivityView);
@@ -631,3 +675,71 @@ document.addEventListener("htmx:beforeSwap", (event: any) => {
 	// change 는 브레이크포인트를 실제로 넘을 때만 발생 — 모바일에서 사용자가 연 툴바를 리사이즈마다 닫지 않는다.
 	mq.addEventListener("change", (e) => apply(e.matches));
 })();
+
+// 가로로 넘치는 표 래퍼(.overflow-x-auto)는 키보드로도 스크롤할 수 있어야 한다(axe scrollable-region-focusable).
+// 실제로 넘칠 때만 tabindex="0" 을 준다 - 데스크톱에서 넘치지 않는 표까지 탭 정지가 되면 안 된다.
+// 실측 2026-09-09: 375px 에서 매매·시뮬레이터·종목 상세의 표 래퍼가 걸렸다. 창 크기·조각 교체 때마다 다시 잰다.
+function syncScrollableFocus(root: ParentNode = document) {
+	root.querySelectorAll<HTMLElement>(".overflow-x-auto").forEach((el) => {
+		const scrolls = el.scrollWidth > el.clientWidth + 1;
+		const managed = el.dataset.scrollFocus === "true";
+		if (scrolls && !el.hasAttribute("tabindex")) {
+			el.setAttribute("tabindex", "0");
+			el.dataset.scrollFocus = "true";
+		} else if (!scrolls && managed) {
+			el.removeAttribute("tabindex");
+			delete el.dataset.scrollFocus;
+		}
+	});
+}
+document.addEventListener("DOMContentLoaded", () => syncScrollableFocus());
+document.addEventListener("htmx:afterSettle", () => syncScrollableFocus());
+let scrollFocusTimer: ReturnType<typeof setTimeout> | undefined;
+globalThis.addEventListener("resize", () => {
+	clearTimeout(scrollFocusTimer);
+	scrollFocusTimer = setTimeout(() => syncScrollableFocus(), 150);
+});
+
+// role="tab" 의 선택 상태: 네 곳(활동 뷰·자산 성장 패널·매매/배당 도넛)이 tab-active 클래스(색)만 바꾼다.
+// 실측 2026-09-09: 탭 13개 모두 aria-selected 가 없어 보조기술에는 어느 탭이 켜졌는지 없었다(WCAG 1.4.1).
+// 클래스를 바꾸는 코드 네 곳을 각각 고치는 대신, class 속성 변화를 관찰해 한 곳에서 맞춘다 - 인라인 스크립트 쪽도 함께 덮인다.
+function syncTabSelected(tab: Element) {
+	tab.setAttribute("aria-selected", tab.classList.contains("tab-active") ? "true" : "false");
+}
+function syncAllTabs(root: ParentNode = document) {
+	root.querySelectorAll('[role="tab"]').forEach(syncTabSelected);
+}
+new MutationObserver((records) => {
+	for (const r of records) {
+		const el = r.target as Element;
+		if (el.getAttribute && el.getAttribute("role") === "tab") syncTabSelected(el);
+	}
+}).observe(document.documentElement, { attributes: true, attributeFilter: ["class"], subtree: true });
+document.addEventListener("DOMContentLoaded", () => syncAllTabs());
+document.addEventListener("htmx:afterSettle", () => syncAllTabs());
+
+// 조각이 실어 온 화면 이름([data-page-title])으로 문서 제목을 맞춘다. 종목·계좌 상세의 껍데기는 이름을 모르고
+// 빵부스러기 라벨로만 제목을 만든다(실측 2026-09-09: 종목 탭을 여러 개 열면 전부 "종목 상세 · Bluesky Stock").
+function pageTitleFor(name: string | null | undefined, current: string): string {
+	const trimmed = (name || "").trim();
+	if (!trimmed) return current;
+	return trimmed + " \u00B7 Bluesky Stock";
+}
+function applyFragmentTitle(root: ParentNode = document) {
+	const el = root.querySelector("[data-page-title]") as HTMLElement | null;
+	if (!el) return;
+	document.title = pageTitleFor(el.getAttribute("data-page-title"), document.title);
+}
+document.addEventListener("htmx:afterSettle", () => applyFragmentTitle());
+(globalThis as any).__pageTitleInternals = { pageTitleFor, applyFragmentTitle };
+
+// htmx 트리거를 <th> 같은 비대화형 요소에 단 곳(배당 목록 정렬 머리 7개, 실측 2026-09-09)은 tabindex 를 줘도 Enter 가 통하지 않는다.
+// 버튼/링크가 아닌 포커스 가능한 hx-get 요소에서 Enter/Space 를 click 으로 바꾼다.
+document.addEventListener("keydown", (event) => {
+	if (event.key !== "Enter" && event.key !== " ") return;
+	const target = event.target as HTMLElement;
+	if (!target || !target.matches) return;
+	if (!target.matches("[hx-get][tabindex]:not(a):not(button):not(input):not(select):not(textarea)")) return;
+	event.preventDefault();
+	target.click();
+});

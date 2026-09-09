@@ -97,9 +97,11 @@ class FragmentParameterCoverageTest {
   @Test
   void 두_경로로_그리는_조각은_호출부가_파라미터를_다_넘긴다() throws IOException {
     Set<String> dualWired = controllerRenderedViews();
-    assertThat(dualWired)
-        .as("컨트롤러가 반환하는 조각을 하나도 찾지 못했다 - 검사가 무력해진다")
-        .contains("stock/htmx/fragments/assetGrowthPeriodReturnSummary");
+    assertThat(dualWired).as("컨트롤러가 반환하는 조각을 하나도 찾지 못했다 - 검사가 무력해진다").isNotEmpty();
+    // 2026-09-09: 유일하게 두 벌이던 assetGrowthPeriodReturnSummary 는 컨트롤러 쪽
+    // 배선(/asset-growth/period-return)을 지워
+    // 한 벌이 됐다. 다시 두 벌로 만들면 아래 루프가 페이지 쪽 파라미터 누락을 잡는다.
+    assertThat(dualWired).doesNotContain("stock/htmx/fragments/assetGrowthPeriodReturnSummary");
 
     List<Gap> gaps = new ArrayList<>();
     int checked = 0;
@@ -134,7 +136,7 @@ class FragmentParameterCoverageTest {
       }
     }
 
-    assertThat(checked).as("검사 대상 호출을 하나도 찾지 못했다").isPositive();
+    // 지금은 두 벌 배선이 하나도 없어 checked 가 0 이다. 그것이 목표 상태이므로 0 을 실패로 보지 않는다.
     assertThat(gaps)
         .as("페이지가 조각에 넘기지 않은 파라미터가 있다. 화면에는 '계산 불가'(또는 빈 값)로 나가고, 백엔드가 값을 못 낸 것과 구분되지 않는다")
         .isEmpty();

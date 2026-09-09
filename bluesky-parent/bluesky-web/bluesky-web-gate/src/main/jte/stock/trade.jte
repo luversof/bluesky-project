@@ -6,6 +6,7 @@
 @param String profile = "local"
 
 @template._layout.stockLayout(
+	pageTitle = MessageUtil.getMessage("stock.page.trade.title"),
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,

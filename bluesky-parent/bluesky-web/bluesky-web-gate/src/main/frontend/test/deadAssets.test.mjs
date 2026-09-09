@@ -23,9 +23,8 @@ const JTE = join(MAIN, "jte");
 const STATIC_JS = join(MAIN, "resources/static/js");
 
 /** 로드되지 않는 것이 확인된 파일과 그 사유. */
+// 2026-09-09: timeSeriesChart.js / tradeProfit.js 는 소스째 지웠다(2026-09-08 부터 어떤 템플릿도 싣지 않았다).
 const KNOWN_UNUSED = new Map([
-	["stock/timeSeriesChart.js", "시계열 차트는 stock/assetGrowth.ts(2026-09-08 까지 asset-growth.jte 인라인 스크립트)가 그린다"],
-	["stock/tradeProfit.js", "대상 DOM(#tradeProfitForm)이 어떤 템플릿에도 없다"],
 ]);
 
 function walk(dir, filter, out = []) {

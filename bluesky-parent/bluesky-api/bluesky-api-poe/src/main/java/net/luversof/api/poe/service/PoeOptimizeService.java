@@ -82,7 +82,46 @@ public class PoeOptimizeService {
                   "poe.proxyDump", System.getenv().getOrDefault("POE_PROXY_DUMP", "off")));
 
   /**
+   * 직업 프로브에 <b>표준 방어 기준장비</b>를 지급한다 — 기본 off.
+   *
+   * <p>맨몸 프로브는 생명 ~1천·저항 0 이라 생존 항이 후보 전원에게 바닥값으로 붙는다. 그래서 순위가 사실상 DPS 단독으로 결정되고 (실측 주석: 생존기여 1.14
+   * 배 차이 대 dps 6.9 배 차이), 유리대포 전직이 이긴다 — 뼈 박살 자유선택이 버서커로 굳어 목표값 -44.6% (surv 0.335 · 생명재생 -107) 로
+   * 끝나는 것이 그 결과다. 고정 방어 기준선을 깔아 생존 항을 바닥에서 떼면 전직의 방어 특성이 순위에 반영되는지 본다. 모든 후보에게 <b>같은</b> 장비를 주므로 후보
+   * 간 차이는 전직 자체에서만 나온다.
+   *
+   * <p><b>실측(2026-09-09) 결과 — 기본 on 으로 전환.</b> 자유선택 15 축에서 <b>피부 열상만</b> 바뀌었고 크게 좋아졌다:
+   * Witch/Elementalist 7,027,958(지정대비 -71.1%) -> <b>Duelist/Slayer 18,145,263(-25.5%, 목표값 -10.6% ·
+   * surv 1.089)</b>. 나머지 14 축은 직업·승급·수치가 전부 동일하고, 지정 배터리 15 축도 값이 전부 불변이다(직업 고정 시 후보가 1 개라 프로브를 타지
+   * 않는다). baseline-329 회귀 없음 · 결정성 199/199(늘어난 로그 1 줄은 이 기능의 주입 검증 로그).
+   *
+   * <p><b>못 고친 것</b>: 뼈 박살은 여전히 버서커를 고른다(목표값 -44.6% · surv 0.335 · 생명재생 -107). 방어 기준선을 깔아도 DPS
+   * 폭(6.9 배)이 생존 폭을 계속 압도한다 — 그 축은 이 접근으로 안 되고 완주 비교(top-K)가 필요하다.
+   */
+  private static final boolean PROBE_DEFENCE_ENABLED =
+      !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_PROBE_DEFENCE", "on"));
+
+  /** 망령 후보 수 — 피해 계수 상위 N 종만 잰다(전체 268 종을 다 재면 잡 1 회가 과하게 길어진다). */
+  private static final int SPECTRE_CANDIDATES =
+      Math.max(0, Integer.parseInt(System.getenv().getOrDefault("POE_SPECTRE_CANDIDATES", "24")));
+
+  /**
+   * 프로브 방어 기준장비의 배율 — 기본 1. 생존 항이 목표치에 한참 못 미쳐 변별을 못 하는지(포화) 확인하려고 둔 실험 손잡이. 뼈 박살은 EHP 목표 101,000 ·
+   * 최약최대피격 목표 34,000 인데 기본 기준장비(생명 +800)로는 근처에도 못 간다.
+   *
+   * <p><b>실측(2026-09-09): 포화 가설은 기각 — 기본 1 로 둔다.</b> 뼈 박살 프로브의 버서커:저거너트 비가 배율 1 에서 1.0282:0.2679,
+   * 배율 5 에서 2.6305:0.6851, 배율 15 에서 11.0591:2.8804 로 <b>전부 정확히 3.84 배</b>였다. 방어를 더 줘도 모든 후보 점수가 같은
+   * 배수로 커질 뿐 순위는 한 자리도 안 움직인다 = 생존 항이 후보와 무관하게 곱해진다. 손잡이는 같은 가설을 다시 세우지 않도록 남기되 기본은 1 이다.
+   */
+  private static final int PROBE_DEFENCE_SCALE =
+      Math.max(1, Integer.parseInt(System.getenv().getOrDefault("POE_PROBE_DEFENCE_SCALE", "1")));
+
+  /**
    * 전직 프로브를 **실플레이 전직**으로 제한 — 기본 off(POE_META_CLASS=on 으로 켠다).
+   *
+   * <p><b>기본 on 으로 전환(2026-09-08)</b> — 자유 선택 배터리 15축 전수 비교(off→on): 9축 개선 · 3축 불변 · 3축 악화, 평균
+   * <b>+37%p</b>. 대표적으로 뼈 박살 −82.0%→<b>+33.3%</b>(+115pp), 정전기 +12.4%→<b>+115.9%</b>, 혼의 균열
+   * −83.2%→0.0%, 트라투스 −71.3%→0.0%, 지배 −69.6%→0.0%. 악화는 고행 +34.8%→0.0%(사제 상실) · 칼날 +17.8%→−3.5% · 도살
+   * +9.7%→0.0% 로 상한이 −34.8pp 다. 지정 직업/전직은 존중하므로 배터리 15축(전직 명시)은 영향받지 않는다.
    *
    * <p>발단(2026-09-08, 고드름 지뢰): 자동 선택이 **Elementalist** 를 골랐는데 ninja 상위100 에 그 전직은
    * <b>0명</b>이다(Assassin n=37 · Deadeye n=36 · Occultist n=25). 강제 실측: Elementalist 18,756,793 vs
@@ -90,10 +129,10 @@ public class PoeOptimizeService {
    * 기반 전직의 위력을 못 본다(생존을 못 보는 것과 같은 계열). 우리에겐 스킬별 전직 표본이 이미 있으므로, 아무도 안 쓰는 전직을 후보에서 빼는 사전정보로 쓴다.
    */
   private static final boolean META_CLASS_ENABLED =
-      "on"
+      !"off"
           .equalsIgnoreCase(
               System.getProperty(
-                  "poe.metaClass", System.getenv().getOrDefault("POE_META_CLASS", "off")));
+                  "poe.metaClass", System.getenv().getOrDefault("POE_META_CLASS", "on")));
 
   /** 그 제한에서 "실플레이" 로 인정할 최소 표본. */
   private static final int META_CLASS_MIN_SAMPLE =
@@ -316,6 +355,8 @@ public class PoeOptimizeService {
   private final PoeModPoolDataService poeModPoolDataService;
   private final PoeEssenceDataService poeEssenceDataService;
   private final PoeTradeStatDataService poeTradeStatDataService;
+  private final PoeEngineUnmodeledDataService poeEngineUnmodeledDataService;
+  private final PoeSpectreDataService poeSpectreDataService;
   private final PoeEldritchDataService poeEldritchDataService;
   private final PoeModDataService poeModDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
@@ -401,6 +442,8 @@ public class PoeOptimizeService {
       PoeTattooDataService poeTattooDataService,
       PoeModTranslateService poeModTranslateService,
       PoeTradeStatDataService poeTradeStatDataService,
+      PoeEngineUnmodeledDataService poeEngineUnmodeledDataService,
+      PoeSpectreDataService poeSpectreDataService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
       @Value("${poe.sim.tree-version:3_29}") String treeVersion,
       @Value("${poe.sim.parallelism:0}") int parallelism,
@@ -420,6 +463,8 @@ public class PoeOptimizeService {
     this.poeModTranslateService = poeModTranslateService;
     this.poeTattooDataService = poeTattooDataService;
     this.poeTradeStatDataService = poeTradeStatDataService;
+    this.poeEngineUnmodeledDataService = poeEngineUnmodeledDataService;
+    this.poeSpectreDataService = poeSpectreDataService;
     this.resultFile = Path.of(dataDir, "sim", "optimize-last.json");
     this.atlasTreeFile = Path.of(dataDir, "atlas-tree.json");
     this.historyDir = Path.of(dataDir, "sim", "history");
@@ -1849,6 +1894,13 @@ public class PoeOptimizeService {
   // 이번 잡의 직업 — 레어 방어구의 속성 변형(힘=방어도/민첩=회피/지능=ES) 선택에 쓴다.
   private volatile String currentClassName = "";
 
+  /**
+   * 이번 잡이 쓰는 망령 id — buildXml 이 {@code <Spectre id>} 섹션과 젬의 {@code skillMinion} 을 이걸로 채운다.
+   *
+   * <p>buildXml 호출부가 103 곳이라 시그니처를 늘리는 대신 currentClassName 과 같은 필드 방식을 쓴다.
+   */
+  private volatile String currentSpectre = null;
+
   // 예약 초과로 제외된 오라(이름 → 부족 마나) — 결과 화면에서 "왜 오라가 이것뿐인지" 설명용
   private volatile Map<PoeGem, Integer> blockedAuraShortfall = new LinkedHashMap<>();
 
@@ -2660,6 +2712,7 @@ public class PoeOptimizeService {
       this.targetEs = 0d;
       this.forceEsBase = false;
       this.currentClassName = ""; // 직업 초기화(잡마다)
+      this.currentSpectre = null; // 망령 초기화(잡마다)
       this.blockedAuraShortfall = new LinkedHashMap<>(); // 제외 오라 초기화(잡마다)
       // 직업 고정 — 유효한 직업명만 채택, 그 외(빈값/auto/미지)는 null(자동 프로브)
       this.fixedClass = className != null && CLASS_IDS.containsKey(className) ? className : null;
@@ -2775,6 +2828,20 @@ public class PoeOptimizeService {
       // ── 0) 직업 비교 프로브 — 직업별 (최적 전직 + 휴리스틱 8pt) 를 엔진 1회씩 평가해 최고 직업 선택 ──
       enterPhase("class");
       record ClassProbe(String probeClass, String probeAscendancy, Set<Integer> probeNodes) {}
+      // 프로브 평가용 XML 생성기 — ClassProbe 가 메서드 로컬 레코드라 클래스 레벨 메서드로 뺄 수 없다.
+      java.util.function.Function<ClassProbe, String> probeXmlOf =
+          probe -> {
+            String px =
+                buildXml(
+                    gem,
+                    List.of(),
+                    probe.probeClass(),
+                    probe.probeAscendancy(),
+                    probe.probeNodes(),
+                    Set.of(),
+                    Map.of());
+            return PROBE_DEFENCE_ENABLED ? withProbeDefence(px) : px;
+          };
       List<ClassProbe> probes = new ArrayList<>();
       // 직업 고정 시 그 직업만, 아니면 전 직업 프로브.
       // CLASS_IDS 는 Map.of 라 keySet() 순회가 실행마다 다르다 — 프로브 점수가 동점이면 승자가 실행마다
@@ -2926,28 +2993,22 @@ public class PoeOptimizeService {
                 + " · nodes="
                 + (nodesAttr.find() ? nodesAttr.group(1) : "?"));
       }
+      if (PROBE_DEFENCE_ENABLED && !probes.isEmpty()) {
+        // 주입이 실제로 먹었는지 로그로 못 박는다 — 안 먹은 채 수치만 읽으면 잘못된 결론이 난다.
+        String sample = probeXmlOf.apply(probes.get(0));
+        log(
+            "프로브 방어 기준장비 지급: 슬롯 "
+                + (sample.split("Sim Probe", -1).length - 1)
+                + "부위 · 생명 +800 · 저항 화75/냉75/번75/카20");
+      }
       Map<ClassProbe, Double> probeResults =
-          evalBatch(
-              executor,
-              probes,
-              probe ->
-                  buildXml(
-                      gem,
-                      List.of(),
-                      probe.probeClass(),
-                      probe.probeAscendancy(),
-                      probe.probeNodes(),
-                      Set.of(),
-                      Map.of()),
-              objectiveKey);
+          evalBatch(executor, probes, probeXmlOf::apply, objectiveKey);
       ClassProbe bestProbe =
           probeResults.entrySet().stream()
               .filter(entry -> entry.getValue() >= 0)
               .max(Map.Entry.comparingByValue())
               .map(Map.Entry::getKey)
               .orElse(null);
-      String className = bestProbe != null ? bestProbe.probeClass() : classFor(gem);
-      this.currentClassName = className;
       // 전 후보가 진짜로 동점이면 max() 는 측정이 아니라 순회 순서상 첫 후보를 고르게 되므로, 그럴 땐
       //   도메인 지식이 든 휴리스틱으로 되돌아간다. **다만 balanced 에서 이 조건은 걸리지 않는다** —
       //   한때 "전 후보 0 점"으로 봤으나 그건 format() 반올림 착시였고, 실제 원시값은 뼈 박살 balanced
@@ -2958,31 +3019,34 @@ public class PoeOptimizeService {
           probeResults.isEmpty()
               || probeResults.values().stream().distinct().count() <= 1
               || probeResults.values().stream().noneMatch(v -> v != null && v > 0);
+      // 변별이 없을 때 **전직만 휴리스틱으로 되돌리고 직업은 순회 순서를 그대로 썼다** = 직업을 측정으로
+      //   고른 적이 없는 경로가 남아 있었다. 실측(2026-09-08) 유령 소환: 프로브 7 후보 전부 정확히
+      //   0.000000(맨몸이라 소환수가 없어 피해 0) -> max() 가 순회 첫 후보 Scion 을 집어 Scion/Reliquarian
+      //   4,787,383 으로 끝났다. 같은 조건에서 classFor(파랑 젬)=Witch 이고 지정 Witch/Necromancer 는
+      //   5,853,804 -> 직업도 함께 되돌린다.
+      //   ⚠ 이 폴백은 **직업이 실제로 자유일 때만** 건다. 직업을 고정하면 후보가 1 개라
+      //   distinct().count()==1 로 probeIndecisive 가 참이 되어, 폴백이 지정 직업을 색깔 기본값으로
+      //   덮어쓴다 — 실측(2026-09-08) 배터리 6 축이 그렇게 깨졌다(도살 Witch→Marauder,
+      //   지배 Templar→Marauder, 피부 열상 Duelist→Ranger, 칼날 Shadow→Ranger, 정의의 화염/ehp-uniq
+      //   Marauder→Witch, 전부 classFor(gem) 값).
+      String className =
+          bestProbe != null && (fixedClass != null || !probeIndecisive)
+              ? bestProbe.probeClass()
+              : classFor(gem);
+      this.currentClassName = className;
       String ascendancy =
           bestProbe != null && !probeIndecisive
               ? bestProbe.probeAscendancy()
               : chooseAscendancy(className, keywords);
       if (probeIndecisive && probes.size() > 1) {
-        log("직업 프로브 변별 없음(전 후보 동점) — 휴리스틱 전직 사용: " + ascendancy);
+        log("직업 프로브 변별 없음(전 후보 동점) — 휴리스틱 직업/전직 사용: " + className + " · " + ascendancy);
       }
       // balanced 실험 시엔 **같은 후보를 dps 로도** 재서 함께 찍는다 — 두 값의 비가 곧 프로브 시점의 생존
       //   기여다. "맨몸 프로브가 생존을 못 본다"가 맞다면 비가 후보마다 거의 같게 나온다(= 순위를 피해가
       //   독점). 실험 토글이 켜졌을 때만 도는 추가 평가라 기본 경로 비용은 0.
       Map<ClassProbe, Double> probeDps =
           ASC_PROBE_ALL_OBJECTIVES && !"dps".equals(objectiveKey)
-              ? evalBatch(
-                  executor,
-                  probes,
-                  probe ->
-                      buildXml(
-                          gem,
-                          List.of(),
-                          probe.probeClass(),
-                          probe.probeAscendancy(),
-                          probe.probeNodes(),
-                          Set.of(),
-                          Map.of()),
-                  "dps")
+              ? evalBatch(executor, probes, probeXmlOf::apply, "dps")
               : Map.of();
       for (Map.Entry<ClassProbe, Double> entry : probeResults.entrySet()) {
         Double dpsVal = probeDps.get(entry.getKey());
@@ -3037,6 +3101,45 @@ public class PoeOptimizeService {
             items.put(Slot.WEAPON, Equipped.ofRare(starterWeapon));
             log("기준 무기 임시 장착(공격 스킬): " + starterWeapon.baseType() + " — 보조젬이 0 DPS 에서 고르지 않도록");
           }
+        }
+      }
+
+      // 망령 선택 — **기준값 평가보다 먼저** 한다. 나중에 고르면 보조젬·트리·아이템이 전부 비-미니언으로 굳어
+      //   망령을 넣어도 기여가 0.03% 에 그친다(실측 2026-09-09: 사후 주입 시 미니언 DPS 1,453~2,063 / 전체 6,035,036).
+      //   후보마다 XML 을 새로 만들지 않고 **문자열 치환**으로 만든다 — currentSpectre 는 필드라 병렬 평가에 쓸 수 없다.
+      if (isSpectreSkill(gem) && SPECTRE_CANDIDATES > 0) {
+        List<PoeSpectreDataService.Spectre> spectreCandidates =
+            poeSpectreDataService.ranked(SPECTRE_CANDIDATES);
+        if (spectreCandidates.isEmpty()) {
+          log("망령 후보 없음 — spectres.json 미생성(parse-spectres.mjs). 망령 없이 계산한다");
+        } else {
+          String probeSpectreId = spectreCandidates.get(0).id();
+          this.currentSpectre = probeSpectreId;
+          String spectreProbeXml =
+              buildXml(gem, supports, className, ascendancy, ascendancyNodes, allocated, items);
+          Map<PoeSpectreDataService.Spectre, Double> spectreScores =
+              evalBatch(
+                  executor,
+                  spectreCandidates,
+                  candidate -> spectreProbeXml.replace(probeSpectreId, candidate.id()),
+                  objectiveKey);
+          PoeSpectreDataService.Spectre bestSpectre =
+              spectreScores.entrySet().stream()
+                  .filter(entry -> entry.getValue() != null && entry.getValue() >= 0)
+                  .max(Map.Entry.comparingByValue())
+                  .map(Map.Entry::getKey)
+                  .orElse(spectreCandidates.get(0));
+          this.currentSpectre = bestSpectre.id();
+          evalCount.addAndGet(spectreCandidates.size());
+          log(
+              "망령 선택: "
+                  + bestSpectre.name()
+                  + " (후보 "
+                  + spectreCandidates.size()
+                  + "종 · 피해계수 "
+                  + bestSpectre.damage()
+                  + ") → "
+                  + format(spectreScores.getOrDefault(bestSpectre, 0d)));
         }
       }
 
@@ -10289,6 +10392,13 @@ public class PoeOptimizeService {
                       standardWeaponPick(gem, items).stream())
                   .toList(),
               unmetRequirements(items, finalValues, standardWeapon(gem)),
+              poeEngineUnmodeledDataService.unmodeledIn(ascendancyNodes).stream()
+                  .map(
+                      node ->
+                          new PoeOptimizeResult.UnmodeledNode(
+                              node.id(), node.name(), node.nameKo(), node.ascendancy()))
+                  .toList(),
+              unmodeledAscendancyWarning(ascendancy),
               tierComparisons,
               scenarioMatrix,
               defenseHits,
@@ -10803,6 +10913,13 @@ public class PoeOptimizeService {
   }
 
   private double objectiveOf(Map<String, Double> values, String objective) {
+    // 인게임에서 **적용되지 않는** 보조젬이 섞인 빌드는 후보에서 뺀다(값 0).
+    //   PoB 는 그런 보조를 적용하지 않으면서도 자체 스킬로 피해를 내 목표값을 부풀린다(위 supportCompatible 주석의 Hextoad 실측).
+    //   판정은 러너(calc.lua/worker.lua)가 PoB 의 calcLib.canGrantedEffectSupportActiveSkill 로 세어 넘긴다 —
+    //   규칙이 소환수 타입·아이템 부여·imbued 까지 얽혀 있어 Java 로 재구현하면 틀린다.
+    if (values.getOrDefault("UnappliedSupportCount", 0d) > 0d) {
+      return 0d;
+    }
     double factor = feasibilitySteering ? feasibilityFactor(values) : 1.0;
     // #1 정의의 화염류(RF) 지속력 게이트 — 자기 불에 타 죽는(순생명재생<0) 빌드를 선택 지표에서 감쇠.
     //    RF 외(selfBurnRun=false) 또는 NetLifeRegen 부재면 1.0 → 다른 스킬 기준선 불변.
@@ -11385,11 +11502,16 @@ public class PoeOptimizeService {
    * 가능하며 이 필터 완화로는 안 됨.
    */
   private static final List<String> ARCHETYPE_TAGS =
-      List.of("Minion", "Trap", "Mine", "Totem", "Brand", "Warcry", "Bow");
+      List.of("Minion", "Trap", "Mine", "Totem", "Brand", "Warcry", "Bow", "Hex", "Curse");
 
   /**
    * 보조젬이 메인 스킬에 적용될 여지가 있는지(성능용 사전 필터). PoB 가 어차피 0 이득 처리하는 조합만 제외하므로 품질 손실이 없다: (1) 아키타입
-   * 태그(미니언/덫/기뢰/토템/브랜드/함성/활)를 스킬이 없으면 제외, (2) 주문 전용 보조젬 ↔ 순수 공격 스킬(상호 배타) 제외. 태그가 없으면 보수적으로 통과.
+   * 태그(미니언/덫/기뢰/토템/브랜드/함성/활/저주)를 스킬이 없으면 제외, (2) 주문 전용 보조젬 ↔ 순수 공격 스킬(상호 배타) 제외. 태그가 없으면 보수적으로 통과.
+   *
+   * <p>⚠ 종전 주석의 "PoB 가 어차피 0 이득 처리하니 품질 손실이 없다" 는 <b>틀렸다</b>. 적용되지 않는 보조젬이 자체 스킬로 피해를 내는 경우가 있다 —
+   * 실측(2026-09-09) 유령 소환 빌드의 Hextoad(requireSkillTypes = Hex+AppliesCurse)는 PoB 판정으로 지원가능=false 인데도
+   * Bursting Toad 를 만들어 축 피해의 <b>99.5%</b>(12,599,280/12,660,045)를 냈다. 그래서 Hex/Curse 를 아키타입 태그에 넣고,
+   * 최종 방어선은 objectiveOf 의 UnappliedSupportCount 차단이다(판정은 엔진이 직접 한다).
    */
   private boolean supportCompatible(PoeGem skill, PoeGem support) {
     List<String> st = support.tags() == null ? List.of() : support.tags();
@@ -11501,6 +11623,123 @@ public class PoeOptimizeService {
   }
 
   /** 젬 색상(주 능력치) 기준 직업 선택 */
+
+  /** 프로브 XML 에 표준 방어 기준장비를 끼워 넣는다(PROBE_DEFENCE_ENABLED 일 때만 호출). */
+  private String withProbeDefence(String xml) {
+    // 8 부위 합계: 생명 +800 · 화/냉/번 75 · 카오스 20 · 방어구 600. 후보 전원 동일하므로 순위 차이는 전직에서만 난다.
+    String[][] kit = {
+      {"Body Armour", "Sim Probe Body", "Astral Plate", "+120 to maximum Life\n+600 to Armour"},
+      {
+        "Helmet",
+        "Sim Probe Helm",
+        "Eternal Burgonet",
+        "+100 to maximum Life\n+45% to Fire Resistance"
+      },
+      {
+        "Gloves",
+        "Sim Probe Gloves",
+        "Titan Gauntlets",
+        "+100 to maximum Life\n+45% to Cold Resistance"
+      },
+      {
+        "Boots",
+        "Sim Probe Boots",
+        "Titan Greaves",
+        "+100 to maximum Life\n+45% to Lightning Resistance"
+      },
+      {"Belt", "Sim Probe Belt", "Leather Belt", "+120 to maximum Life\n+30% to Fire Resistance"},
+      {
+        "Amulet", "Sim Probe Amulet", "Onyx Amulet", "+100 to maximum Life\n+30% to Cold Resistance"
+      },
+      {
+        "Ring 1",
+        "Sim Probe Ring",
+        "Two-Stone Ring",
+        "+80 to maximum Life\n+30% to Lightning Resistance"
+      },
+      {
+        "Ring 2",
+        "Sim Probe Ring",
+        "Two-Stone Ring",
+        "+80 to maximum Life\n+20% to Chaos Resistance"
+      },
+    };
+    StringBuilder items = new StringBuilder();
+    StringBuilder slots = new StringBuilder();
+    int id = 700;
+    for (String[] piece : kit) {
+      // 이미 그 슬롯이 차 있으면 건드리지 않는다(프로브는 무기/방패만 들고 오지만 방어적으로 확인).
+      if (xml.contains("<Slot name=\"" + piece[0] + "\"")) {
+        continue;
+      }
+      id++;
+      String mods =
+          PROBE_DEFENCE_SCALE == 1
+              ? piece[3]
+              : java.util.regex.Pattern.compile("\\+(\\d+) to (maximum Life|Armour)")
+                  .matcher(piece[3])
+                  .replaceAll(
+                      m ->
+                          "+"
+                              + (Integer.parseInt(m.group(1)) * PROBE_DEFENCE_SCALE)
+                              + " to "
+                              + m.group(2));
+      items
+          .append("<Item id=\"")
+          .append(id)
+          .append("\">\nRarity: RARE\n")
+          .append(piece[1])
+          .append("\n")
+          .append(piece[2])
+          .append("\nItem Level: 84\nImplicits: 0\n")
+          .append(mods)
+          .append("\n</Item>");
+      slots
+          .append("<Slot name=\"")
+          .append(piece[0])
+          .append("\" itemId=\"")
+          .append(id)
+          .append("\"/>");
+    }
+    if (items.length() == 0) {
+      return xml;
+    }
+    int setAt = xml.indexOf("<ItemSet id=\"1\">");
+    if (setAt < 0) {
+      return xml; // Items 섹션이 없는 형태면 손대지 않는다
+    }
+    String open = "<ItemSet id=\"1\">";
+    return xml.substring(0, setAt) + items + open + slots + xml.substring(setAt + open.length());
+  }
+
+  /**
+   * 전직 자체가 엔진에 없는 기제에 기대면 경고를 만든다(스탯 노드의 40% 이상이 미모델링).
+   *
+   * <p>노드 목록만으로는 이 상황을 못 잡는다 — 최적화기는 값이 0 인 노드를 <b>스스로 피하므로</b> 아무것도 할당하지 않고 끝난다. 실측(2026-09-09)
+   * Scion/Luminary 강제 완주: 할당된 루미너리 노드 0 개 · 전직 8pt 통째로 미사용 · 최종 2,905,289. 화면엔 아무 설명이 없어 사용자는 그 전직이
+   * 제 몫을 한 수치라고 믿게 된다.
+   */
+  private PoeOptimizeResult.UnmodeledAscendancy unmodeledAscendancyWarning(String ascendancy) {
+    if (ascendancy == null) {
+      return null;
+    }
+    PoeEngineUnmodeledDataService.AscendancySummary summary =
+        poeEngineUnmodeledDataService.summaryOf(ascendancy);
+    if (summary == null || summary.total() <= 0) {
+      return null;
+    }
+    if ((double) summary.unmodeled() / summary.total() < 0.4d) {
+      return null;
+    }
+    return new PoeOptimizeResult.UnmodeledAscendancy(
+        ascendancy, summary.unmodeled(), summary.total());
+  }
+
+  /** 망령 계열 스킬인가 — 변형젬("Raise Spectre of ...")도 포함한다. */
+  private boolean isSpectreSkill(PoeGem gem) {
+    return gem != null && gem.name() != null && gem.name().startsWith("Raise Spectre");
+  }
+
   private String classFor(PoeGem gem) {
     if ("red".equals(gem.color())) {
       return "Marauder";
@@ -13573,7 +13812,13 @@ public class PoeOptimizeService {
         .append(className)
         .append("\" ascendClassName=\"")
         .append(ascendancy != null ? ascendancy : "None")
-        .append("\" mainSocketGroup=\"1\"/>")
+        // 망령 스킬이면 PoB 가 읽는 유일한 경로인 <Build> 자식 <Spectre id>를 넣는다(Build.lua:987-991).
+        //   이게 없으면 spectreList 가 비어 minionList 도 비고 **미니언이 아예 생성되지 않는다**
+        //   (실측 2026-09-09: 유령 소환 축의 값 6,035,036 은 전부 Hextoad 의 Bursting Toad 였다).
+        .append(
+            currentSpectre != null && isSpectreSkill(gem)
+                ? "\" mainSocketGroup=\"1\"><Spectre id=\"" + currentSpectre + "\"/></Build>"
+                : "\" mainSocketGroup=\"1\"/>")
         .append("<Skills activeSkillSet=\"1\"><SkillSet id=\"1\">")
         // #235 includeInFullDPS: PoB calcFullDPS 가 이 그룹을 집계(미니언을 마리수만큼 count-정확 합산)해
         //   output.FullDPS 에 담게 한다(헤드리스 기본 false). **미니언 잡에만 조건부** — 비미니언(단일 액터·토템)은
@@ -13589,7 +13834,13 @@ public class PoeOptimizeService {
         // 명시 Burning Damage 젬(퀄 20)은 실제 문구(퀄 0)보다 +1.6% 과대평가라 자동 적용이 정직하고,
         // 결과 PoB 뷰에서도 "오라가 투구에 소켓된" 모순 표현이 사라진다(사용자 지적).
         .append(hasElderBurningSupport(items) ? " slot=\"Helmet\">" : " slot=\"Body Armour\">")
-        .append("<Gem nameSpec=\"")
+        .append("<Gem")
+        // 어떤 망령을 쓸지 — 지정하지 않으면 PoB 는 목록 첫 항목을 쓴다(CalcActiveSkill.lua:699 `or 1`).
+        .append(
+            currentSpectre != null && isSpectreSkill(gem)
+                ? " skillMinion=\"" + currentSpectre + "\""
+                : "")
+        .append(" nameSpec=\"")
         .append(gem.name())
         // 메인 스킬 젬 21/20 — 실빌드 96+ 의 표준(부패 +1). 나머지 엔드게임 전제(20/20 보조·최상위 레어·
         // 각성 계몽5)와 같은 계열. RF 등 젬 레벨 스케일 스킬의 ninja 대비 과소평가를 교정(20→21 연소 기본 +19%).

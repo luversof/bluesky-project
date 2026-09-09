@@ -32,8 +32,8 @@ class HtmxTargetResolvesTest {
   private static final List<Path> ROOTS = List.of(Path.of("src/main/jte"));
 
   /** 이미 죽은 조각으로 확인돼 목록에 오른 것. 사유는 UnreachableEndpointTest 에 있다. */
-  private static final Map<String, String> KNOWN_BROKEN =
-      Map.of("tab-content", "tabsPortfolio.jte 는 쓰이지 않는 잔재다(UnreachableEndpointTest 참고)");
+  // tabsPortfolio.jte(#tab-content 를 겨냥하던 잔재)는 2026-09-09 에 지웠다 - 지금은 알려진 끊어진 타깃이 없다.
+  private static final Map<String, String> KNOWN_BROKEN = Map.of();
 
   /** id 로 인정하는 형태: 리터럴 id="x", 그리고 컴포넌트 인자 id = "x". */
   private Set<String> definedIds() throws IOException {

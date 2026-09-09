@@ -24,7 +24,6 @@ import org.springframework.ui.Model;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
@@ -97,16 +96,6 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
    */
   private static <T> T joinRemote(CompletableFuture<T> future) {
     return net.luversof.web.gate.stock.support.StockAsyncSupport.join(future);
-  }
-
-  @BlueskyPreAuthorize
-  @GetMapping("/dashboard")
-  public String dashboard(
-      @RequestHeader(value = "HX-Request", required = false) boolean hxRequest, Model model) {
-    if (hxRequest) {
-      return "stock/htmx/dashboardContent";
-    }
-    return "stock/htmx/dashboard";
   }
 
   @BlueskyPreAuthorize

@@ -50,36 +50,37 @@
 @param Double periodProfitRatePct = null
 
 !{
-    // 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
-    // 예전에는 서버 존이라 브라우저 존이 다르면 한 화면 안에서 하루가 어긋났다.
-    ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(filterTimeZone);
-    String evalColor = evaluationProfit != null && evaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
-    String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
-    BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
-    double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
+	// 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
+	// 예전에는 서버 존이라 브라우저 존이 다르면 한 화면 안에서 하루가 어긋났다.
+	ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(filterTimeZone);
+	String evalColor = evaluationProfit != null && evaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
+	String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
+	BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
+	double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 
-    // 합산 손익 = <b>기간</b> 평가 변동 + 실현손익 + 배당.
-    //
-    // 세 값이 카드로 흩어져 있어서 "이 종목에서 결국 얼마를 벌었나" 를 사람이 더해야 알 수 있었다.
-    //
-    // 평가 몫은 현재 시점 평가손익이 아니라 <b>기간 평가 변동</b>(기말 - 기초)이다. 현재 시점 값을 더하면
-    // 아래 '기간별 손익' 표의 합과 맞지 않는다 - 실측 2026-09-01 삼성전자 '올해' 2.9 억 차이, '최근 1년'
-    // 은 부호까지 반대였다. 같은 화면의 두 숫자가 안 맞으면 어느 쪽이 맞는지 알 수 없다.
-    //
-    // 이렇게 더한 값은 요약의 periodProfit 과 1 원 오차 없이 같다(실측 두 기간 모두 차이 0).
-    BigDecimal unrealizedDelta = periodUnrealizedDelta != null ? periodUnrealizedDelta : BigDecimal.ZERO;
-    BigDecimal combinedProfit = unrealizedDelta
-        .add(realizedProfit != null ? realizedProfit : BigDecimal.ZERO)
-        .add(totalDividend != null ? totalDividend : BigDecimal.ZERO);
-    boolean combinedPositive = combinedProfit.signum() >= 0;
-    String deltaColor = unrealizedDelta.signum() >= 0 ? "text-profit" : "text-loss";
-    // 비율은 자산 성장 화면과 같은 정의(기초 평가액 + 기간 중 순유입 원금 대비)를 그대로 받아 쓴다.
-    // 화면마다 다른 분모를 쓰면 같은 이름이 다른 수를 뜻하게 된다.
-    boolean combinedRateAvailable = periodProfitRatePct != null;
-    double combinedRatePct = combinedRateAvailable ? periodProfitRatePct : 0.0;
+	// 합산 손익 = <b>기간</b> 평가 변동 + 실현손익 + 배당.
+	//
+	// 세 값이 카드로 흩어져 있어서 "이 종목에서 결국 얼마를 벌었나" 를 사람이 더해야 알 수 있었다.
+	//
+	// 평가 몫은 현재 시점 평가손익이 아니라 <b>기간 평가 변동</b>(기말 - 기초)이다. 현재 시점 값을 더하면
+	// 아래 '기간별 손익' 표의 합과 맞지 않는다 - 실측 2026-09-01 삼성전자 '올해' 2.9 억 차이, '최근 1년'
+	// 은 부호까지 반대였다. 같은 화면의 두 숫자가 안 맞으면 어느 쪽이 맞는지 알 수 없다.
+	//
+	// 이렇게 더한 값은 요약의 periodProfit 과 1 원 오차 없이 같다(실측 두 기간 모두 차이 0).
+	BigDecimal unrealizedDelta = periodUnrealizedDelta != null ? periodUnrealizedDelta : BigDecimal.ZERO;
+	BigDecimal combinedProfit = unrealizedDelta
+		.add(realizedProfit != null ? realizedProfit : BigDecimal.ZERO)
+		.add(totalDividend != null ? totalDividend : BigDecimal.ZERO);
+	boolean combinedPositive = combinedProfit.signum() >= 0;
+	String deltaColor = unrealizedDelta.signum() >= 0 ? "text-profit" : "text-loss";
+	// 비율은 자산 성장 화면과 같은 정의(기초 평가액 + 기간 중 순유입 원금 대비)를 그대로 받아 쓴다.
+	// 화면마다 다른 분모를 쓰면 같은 이름이 다른 수를 뜻하게 된다.
+	boolean combinedRateAvailable = periodProfitRatePct != null;
+	double combinedRatePct = combinedRateAvailable ? periodProfitRatePct : 0.0;
 }
 
 @template._layout.stockLayout(
+	pageTitle = MessageUtil.getMessage("stock.item.detail.breadcrumb"),
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,
@@ -97,9 +98,16 @@
 					<div class="flex justify-center p-10"><span class="loading loading-spinner text-primary loading-lg"></span></div>
 				</div>
 			@else
-				<div id="stockItemDetailFragment" class="space-y-6">
+				<%-- 조각이 이름을 알면 문서 제목도 그 이름으로(common.ts applyFragmentTitle). 없는 id 면 속성이 빠져 제목은 그대로다. --%>
+				<div id="stockItemDetailFragment" class="space-y-6" data-page-title="${stockItem != null ? (stockItem.name() != null ? stockItem.name() : stockItem.symbol()) : null}">
 				@if(stockItem == null)
-					@template._components.ui.emptyState(message = MessageUtil.getMessage("common.message.no.data"), boxed = true)
+					<%-- 없는 id 로 들어와도 페이지다: 빵부스러기와 h1 이 있어야 뒤로 갈 길이 보이고 axe page-has-heading-one 에 걸리지 않는다(실측 2026-09-09). --%>
+					@template._components.ui.breadcrumbBack(
+						homeLabel = MessageUtil.getMessage("layout.menu.main.stock"),
+						categoryLabel = MessageUtil.getMessage("stock.item.detail.breadcrumb"),
+						backLabel = MessageUtil.getMessage("common.button.back"))
+					@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.item.detail.breadcrumb"))
+					@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.item.detail.notfound"), boxed = true)
 				@else
 					@template._components.ui.breadcrumbBack(
 						homeLabel = MessageUtil.getMessage("layout.menu.main.stock"),
@@ -155,21 +163,21 @@
 								<span class="text-lg font-bold ${combinedPositive ? "text-profit" : "text-loss"}">
 									${String.format("%+.2f%%", combinedRatePct)}
 								</span>
-								<span class="text-[11px] text-base-content/50">${MessageUtil.getMessage("stock.item.detail.combined.basis")}</span>
+								<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.basis")}</span>
 							@endif
 						</div>
 						<%-- 셋을 그대로 적어 화면에서 더해 볼 수 있게 한다. --%>
 						<p class="mt-1 text-[11px] leading-4 flex flex-wrap items-baseline gap-x-1.5">
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.unrealized.delta")}</span>
 							<span class="amount-value ${deltaColor}">${String.format("%+,d", StockFormatUtil.displayWon(unrealizedDelta))}</span>
-							<span class="text-base-content/35">+</span>
+							<span class="text-base-content/60">+</span>
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.profit.realized")}</span>
 							<span class="amount-value ${realizedColor}">${String.format("%+,d", StockFormatUtil.displayWon(realizedProfit))}</span>
-							<span class="text-base-content/35">+</span>
+							<span class="text-base-content/60">+</span>
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.summary.label.cumulative.dividend")}</span>
 							<span class="amount-value text-dividend">${String.format("%+,d", StockFormatUtil.displayWon(totalDividend))}</span>
 						</p>
-						<p class="mt-0.5 text-[11px] leading-4 text-base-content/35">${MessageUtil.getMessage("stock.item.detail.combined.note")}</p>
+						<p class="mt-0.5 text-[11px] leading-4 text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.note")}</p>
 					</div>
 
 					<!-- 보유/손익 요약 -->
@@ -223,11 +231,11 @@
 					     그래도 "지금 내 단가가 이 구간 어디쯤인지" 를 한눈에 보여주므로 함께 긋고, 이름으로 밝힌다. --%>
 					@if(priceHistory != null && !priceHistory.isEmpty())
 						<div>
-							<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.item.detail.price.chart.title")}</h2>
+							<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.price.chart.title")}</h2>
 							<div class="bg-base-100 rounded-box border border-base-200 p-4">
 								<div class="h-64"><canvas id="stockPriceChart" class="amount-chart"></canvas></div>
 							</div>
-							<p class="text-xs text-base-content/50 mt-1">${MessageUtil.getMessage("stock.item.detail.price.chart.desc")}</p>
+							<p class="text-xs text-base-content/60 mt-1">${MessageUtil.getMessage("stock.item.detail.price.chart.desc")}</p>
 						</div>
 						<script nonce="${CspNonceHolder.getNonce()}">
 						(function() {
@@ -256,7 +264,7 @@
 					<!-- 보유 평가액·원가 추이 -->
 					@if(timeSeries != null && !timeSeries.isEmpty() && chartFormatter != null)
 						<div>
-							<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
+							<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
 							<div class="bg-base-100 rounded-box border border-base-200 p-4">
 								<div class="h-64"><canvas id="stockDetailChart" class="amount-chart"></canvas></div>
 							</div>
@@ -290,7 +298,7 @@
 
 					<!-- 계좌별 보유 현황 -->
 					<div>
-						<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.item.detail.account.holdings.title")}</h2>
+						<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.account.holdings.title")}</h2>
 						@if(accountHoldings == null || accountHoldings.isEmpty())
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("common.message.no.data")}</div>
 						@else
@@ -336,7 +344,7 @@
 
 					<!-- 매매 내역 -->
 					<div>
-						<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.page.trade.title")}</h2>
+						<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.trade.title")}</h2>
 						@if(trades == null || trades.isEmpty())
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.item.detail.empty.trades")}</div>
 						@else
@@ -377,7 +385,7 @@
 
 					<!-- 배당 내역 -->
 					<div>
-						<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.page.dividend.title")}</h2>
+						<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.dividend.title")}</h2>
 						@if(dividends == null || dividends.isEmpty())
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.item.detail.empty.dividends")}</div>
 						@else

@@ -20,7 +20,8 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
  * <p>{@code @BlueskyPreAuthorize} 는 {@code @PreAuthorize("hasRole('USER')")} 메타 애노테이션인데, 이 앱에는 메서드
  * 보안이 켜져 있지 않아(@EnableMethodSecurity 없음) 실제로는 아무것도 막지 않는다. 실측: 로그인 없이 {@code GET
  * /api/stock/stockItem/search/findByName/삼성전자} 가 200 과 종목 정보를 그대로 돌려줬다. 화면 경로(/stock/**)는 URL 단위
- * 보안이 로그인으로 보내주지만 {@code /api/**} 는 그렇지 않으므로, 같은 파일군의 TradeProfitApiController 처럼 세션 사용자를 직접 확인한다.
+ * 보안이 로그인으로 보내주지만 {@code /api/**} 는 그렇지 않으므로, (2026-09-09 에 지운 TradeProfitApiController 가 그랬듯) 세션
+ * 사용자를 직접 확인한다.
  */
 @RestController
 @RequestMapping("/api/stock/stockItem")

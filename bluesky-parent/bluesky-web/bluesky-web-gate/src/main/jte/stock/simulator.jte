@@ -90,6 +90,7 @@
 }
 
 @template._layout.stockLayout(
+	pageTitle = pageTitle,
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,
@@ -209,6 +210,7 @@
 					monthlyDividendReorderEnabled = monthlyDividendReorderEnabled
 				)
 				<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
+				<script type="module" src="/js/stock/submitOverlay.js"></script>
 			@elseif(compoundTab)
 				@template.stock.fragments.compoundSimulator(storageNote = storageNote)
 				<%-- compoundSimulator.js 는 Chart 를 직접 쓰므로 이 화면에서만 Chart.js 를 먼저 로드한다

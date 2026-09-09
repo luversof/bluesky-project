@@ -548,6 +548,16 @@
 			</div>
 		@endif
 
+		<%-- 엔진이 모델링하지 않는 기제에 기댄 전직(예: 사이온 루미너리 = 용병) — 포인트를 쓸 곳이 없어
+		     전직이 통째로 놀지만, 표시가 없으면 사용자는 그 전직이 제 몫을 한 수치라고 믿는다.
+		     실측(2026-09-09): 회오리 사격 기준 루미너리 2,905,289 vs 데드아이 3,905,240 = -25.6%. --%>
+		@if(result.unmodeledAscendancy() != null)
+			<div class="rounded border border-warning/40 bg-warning/10 px-3 py-2 text-xs space-y-1">
+				<div class="font-semibold text-warning">${MessageUtil.getMessage("poe.sim.opt.result.unmodeled.asc")}</div>
+				<div class="text-base-content/70">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.unmodeled.asc.detail"), result.ascendancyKo() != null ? result.ascendancyKo() : result.unmodeledAscendancy().ascendancy(), result.unmodeledAscendancy().unmodeled(), result.unmodeledAscendancy().total())}</div>
+			</div>
+		@endif
+
 		<%-- 가드 스킬 레이어 — 계산엔 들어가는데 화면에 없어서 "왜 이만큼 버티는지" 를 설명할 수 없었다
 		     (실측: 가드 층 하나로 최약 최대피격 +199%, DPS 비용 0). 추가 스킬과 동형 표기. --%>
 		@if(result.guardGems() != null && !result.guardGems().isEmpty())

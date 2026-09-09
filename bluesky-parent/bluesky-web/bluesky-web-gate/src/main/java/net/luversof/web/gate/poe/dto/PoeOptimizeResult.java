@@ -40,6 +40,8 @@ public record PoeOptimizeResult(
     List<ItemPick> items,
     // 속성 부족으로 실제 장착이 불가능한 장비
     List<UnmetRequirement> unmetRequirements,
+    List<UnmodeledNode> unmodeledNodes,
+    UnmodeledAscendancy unmodeledAscendancy,
     List<SlotTierCompare> tierComparisons,
     List<ScenarioCell> scenarioMatrix,
     List<DefenseHit> defenseHits,
@@ -84,6 +86,12 @@ public record PoeOptimizeResult(
   /** 장착 요구 속성 미달 (attribute = str|dex|int) */
   public record UnmetRequirement(
       String name, String nameKo, String attribute, int required, int actual) {}
+
+  /** 엔진이 문장을 해석조차 못 해 값이 0 인 전직 노드. */
+  public record UnmodeledNode(int id, String name, String nameKo, String ascendancy) {}
+
+  /** 엔진이 모델링하지 않는 기제에 기대는 전직 — 그 전직을 골라도 포인트를 쓸 곳이 없다. */
+  public record UnmodeledAscendancy(String ascendancy, int unmodeled, int total) {}
 
   /**
    * 장착 아이템 하나.

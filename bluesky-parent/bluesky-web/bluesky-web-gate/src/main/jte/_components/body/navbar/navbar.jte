@@ -9,7 +9,8 @@
 <%-- 오른쪽 영역의 글자 라벨(금액 숨김/로케일/사용자명)은 xl 부터 보인다.
      이 라벨들이 일찍 나오면 좌우 영역 합이 화면보다 넓어져 모든 페이지에 가로 스크롤이 생긴다
      (실측: 한국어 768px 에서 4px, 영어 1024px 에서 108px). 영어 라벨이 더 길어 기준을 xl 로 잡았다. --%>
-<div class="navbar bg-base-100/90 backdrop-blur sticky top-0 z-50 shadow-sm">
+<%-- 사이트 머리(배너 랜드마크). axe region: 랜드마크 밖 내용 56건의 대부분이 이 안이었다(2026-09-09). --%>
+<header class="navbar bg-base-100/90 backdrop-blur sticky top-0 z-50 shadow-sm">
 	<div class="navbar-start">
 		@if(!hideHamburger)
 		<div class="dropdown">
@@ -59,7 +60,8 @@
 				<path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 00-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 016.75 12z" />
 			</svg>
 			<span class="text-xs font-medium hidden xl:inline text-base-content/60" id="hideAmountsText">${MessageUtil.getMessage("layout.navbar.hideamounts")}</span>
-			<input type="checkbox" class="toggle toggle-xs toggle-primary" id="hideAmountsToggle" />
+			<%-- 라벨 글자(#hideAmountsText)가 xl 아래에서 숨어 체크박스 이름이 사라진다(axe label, 375px 실측 2026-09-09) - 이름은 항상 준다. --%>
+			<input type="checkbox" class="toggle toggle-xs toggle-primary" id="hideAmountsToggle" aria-label="${MessageUtil.getMessage("layout.navbar.hideamounts")}" />
 		</label>
 		@template._components.body.navbar.end.profileArea(isAuthenticated = isAuthenticated, username = username, loginUrl = loginUrl)
 		@template._components.body.navbar.end.locale()
@@ -100,4 +102,4 @@
 			});
 		});
 	</script>
-</div>
+</header>

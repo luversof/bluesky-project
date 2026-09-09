@@ -142,9 +142,38 @@ class ActivityListRenderTest {
     return labels;
   }
 
+  /**
+   * 활동이 있는 칸은 클릭으로 그날 상세를 펼친다 - 키보드로도 닿아야 한다(수익률 표의 행과 같은 규칙: role="button" tabindex="0"). 실측
+   * 2026-09-09: 전체 기간 181칸이 tabindex 없이 div 라 Tab 으로 갈 수 없었다. 활동 없는 칸은 눌러도 아무 일이 없으니 버튼이 아니다.
+   */
+  @Test
+  void 활동_있는_칸만_키보드로_닿는_버튼이다() {
+    String html = render(List.of(trade("2026-08-19", "BUY", "100000")));
+
+    java.util.regex.Matcher active =
+        java.util.regex.Pattern.compile("<div class=\"cal-day [^\"]*cal-day-act[^\"]*\"[^>]*>")
+            .matcher(html);
+    assertThat(active.find()).as("활동 있는 칸이 있다").isTrue();
+    assertThat(active.group())
+        .contains("role=\"button\"")
+        .contains("tabindex=\"0\"")
+        .contains("aria-expanded=\"false\"")
+        .contains("data-cal-date=\"2026-08-19\"");
+
+    java.util.regex.Matcher inactive =
+        java.util.regex.Pattern.compile("<div class=\"cal-day (?![^\"]*cal-day-act)[^\"]*\"[^>]*>")
+            .matcher(html);
+    assertThat(inactive.find()).isTrue();
+    assertThat(inactive.group())
+        .doesNotContain("role=")
+        .doesNotContain("tabindex=")
+        .doesNotContain("aria-expanded");
+  }
+
   /** 달력 한 칸의 표식 개수. */
   private long gridCells(String html) {
-    String marker = "class=\"min-h-14 ";
+    // 날짜 칸은 .cal-day 컴포넌트 클래스로 시작한다(2026-09-09 유틸리티 묶음에서 바꿈 - 칸 2,625개의 클래스 문자열이 조각의 1/4 이었다).
+    String marker = "class=\"cal-day ";
     long count = 0;
     for (int at = html.indexOf(marker); at >= 0; at = html.indexOf(marker, at + 1)) {
       count++;

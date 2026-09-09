@@ -1,12 +1,8 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +16,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
@@ -37,6 +32,8 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
+// /stock/htmx/portfolio(tabsPortfolio.jte) 는 2026-09-09 에 지웠다 - 어떤 화면도 부르지 않는 서버 왕복 정렬 시절의 잔재였다
+// (UnreachableEndpointTest 가 2026-08-23 부터 '알려진 죽은 경로' 로 들고 있던 것). 지금 보유 표는 assetStatus 다.
 public class StockPortfolioHtmxController extends StockBaseHtmxController {
 
   private final DataFirstDateClient dataFirstDateClient;
@@ -61,208 +58,6 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         messageSource);
     this.dataFirstDateClient = dataFirstDateClient;
     this.async = async;
-  }
-
-  @BlueskyPreAuthorize
-  @GetMapping("/portfolio")
-  public String portfolio(
-      TradeProfitRequest request,
-      @RequestParam(required = false) String sort,
-      @RequestParam(defaultValue = "ACCOUNT") String viewGroupBy,
-      Model model) {
-    UUID userId = UserUtil.getUserId();
-    if (userId == null) {
-      return loginRequiredView(model);
-    }
-    request.setUserId(userId);
-    // 이 화면은 '지금 보유'다. 기간이 실려 오면 api-stock 은 평가(현재가/평가금액/평가손익)를 아예
-    // 계산하지 않으므로 수량과 평단만 있고 평가가 0 인 모순된 표가 된다(실측: 수량 5,043 · 평단
-    // 71,887 인데 현재가 0). 지금 화면에서는 기간을 보내지 않지만, 엔드포인트를 직접 부르면 그대로
-    // 드러나므로 여기서 떨어낸다. 기간별 손익은 거래/자산추이 화면이 담당한다.
-    request.setStartDate(null);
-    request.setEndDate(null);
-    // 날짜 범위 네비게이션의 하한(minDate)용 최초 거래일.
-    // 전체 거래를 내려받아 min() 하던 것을 DB 집계 엔드포인트 1회 호출로 대체했다.
-    ZoneId dataZone = resolveZoneIdOrDefault(request.getTimeZone());
-
-    // 이 프래그먼트의 원격 호출 4개는 서로 의존이 없는데 완전히 줄을 서 있었다
-    // (실측: 최초거래일 0ms -> 손익 5ms -> 종목 13ms -> 계좌 18ms). 손익 조회 결과에 이름을 입힐
-    // 재료(계좌/종목)는 손익과 무관하게 미리 읽을 수 있으므로 넷을 함께 던진다.
-    // 같은 파일의 asset-status 가 이미 쓰는 방식이다.
-    boolean stockView = "STOCK".equals(viewGroupBy);
-    var dataFirstDateFuture = async.supply(() -> dataFirstDateClient.findDataFirstDate(userId));
-    var namesAccountsFuture =
-        async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
-    var namesStockItemsFuture = async.supply(() -> emptyIfNull(stockItemClient.getStockItems()));
-
-    // 계좌 필터가 있으면 보내기 전에 이 사용자 계좌로 좁힌다(없는 id 하나에 화면이 통째로 죽는 것을 막는다).
-    // 필터가 없는 요청은 좁힐 것이 없으므로 계좌 응답을 기다리지 않고 그대로 던진다.
-    boolean emptyAccountSelection = narrowToOwnedAccounts(request, namesAccountsFuture);
-
-    // getEnrichedTradeProfits(request, STOCKITEM, names) 와 같은 분기 조건을 그대로 쓴다
-    // (이미 STOCKITEM 이면 원본을 그대로 써야 파라미터가 완전히 동일하다).
-    TradeProfitRequest profitRequest = request;
-    if (stockView
-        && request.getGroupBy()
-            != net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM) {
-      profitRequest = copyTradeProfitRequest(request);
-      profitRequest.setGroupBy(
-          net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
-    }
-    var profitParams = profitRequest.toParams();
-    var rawPortfolioProfitFuture =
-        emptyAccountSelection
-            ? null
-            : async.supply(() -> emptyIfNull(tradeProfitClient.calculateProfit(profitParams)));
-
-    Instant tradeFirstInstant =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(dataFirstDateFuture)
-            .tradeFirstDate();
-    LocalDate dataFirstDate =
-        tradeFirstInstant != null ? tradeFirstInstant.atZone(dataZone).toLocalDate() : null;
-
-    // 이름 붙이기는 메시지 조회를 타므로 반드시 요청 스레드에서 한다.
-    var portfolioNames =
-        toTradeProfitNames(
-            net.luversof.web.gate.stock.support.StockAsyncSupport.join(namesAccountsFuture),
-            net.luversof.web.gate.stock.support.StockAsyncSupport.join(namesStockItemsFuture));
-    List<TradeProfit> enrichedProfits =
-        rawPortfolioProfitFuture == null
-            ? List.of()
-            : enrichTradeProfits(
-                net.luversof.web.gate.stock.support.StockAsyncSupport.join(
-                    rawPortfolioProfitFuture),
-                userId,
-                portfolioNames);
-
-    // STOCK 뷰에서는 아래 종목 그룹 조회 결과만 쓰므로, 계좌 기준 조회를 미리 하지 않는다.
-    // (기존에는 조회 후 통째로 덮어써서 calculateProfit/종목/계좌 조회가 낭비됐다.)
-    // 이 표의 "현재가"도 asset-status 와 같이 마지막으로 수집된 종가다. 어느 날 기준인지 밝히지 않으면
-    // 실시간 시세로 오해할 수 있어 같은 표기를 붙인다(계산·문구 모두 asset-status 와 동일).
-    // 종목 뷰 변환(toPortfolioStock) 뒤에는 이 값이 남지 않으므로 변환 전에 구한다.
-    model.addAttribute(
-        "priceBasisDate",
-        net.luversof.web.gate.stock.util.StockPriceBasisUtil.latestPriceBasisDate(enrichedProfits));
-
-    List<TradeProfit> enrichedList = new ArrayList<>(enrichedProfits);
-    enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
-    if (stockView) {
-      enrichedList =
-          enrichedList.stream()
-              .map(this::toPortfolioStock)
-              .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    Comparator<TradeProfit> comparator = null;
-
-    if (sort != null && !sort.isEmpty()) {
-      String[] parts = sort.split(",");
-      String field = parts[0];
-      String direction = parts.length > 1 ? parts[1] : "asc";
-
-      comparator =
-          switch (field) {
-            case "accountName" ->
-                Comparator.comparing(
-                    TradeProfit::accountName, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "stockItemName" ->
-                Comparator.comparing(
-                    TradeProfit::stockItemName, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "holdingQuantity" ->
-                Comparator.comparing(
-                    TradeProfit::holdingQuantity, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "averageBuyPrice" ->
-                Comparator.comparing(
-                    TradeProfit::averageBuyPrice, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "currentPrice" ->
-                Comparator.comparing(
-                    TradeProfit::currentPrice, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "evaluationAmount" ->
-                Comparator.comparing(
-                    TradeProfit::evaluationAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "evaluationProfit" ->
-                Comparator.comparing(
-                    TradeProfit::evaluationProfit, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "realizedProfit" ->
-                Comparator.comparing(
-                    TradeProfit::realizedProfit, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> null;
-          };
-
-      if (comparator != null && "desc".equalsIgnoreCase(direction)) {
-        comparator = comparator.reversed();
-      }
-    }
-
-    Map<String, TradeProfit> accountTotalMap = new HashMap<>();
-    if ("ACCOUNT".equals(viewGroupBy)) {
-      Comparator<TradeProfit> accountComparator =
-          Comparator.comparing(
-              TradeProfit::accountName, Comparator.nullsLast(Comparator.naturalOrder()));
-      comparator =
-          (comparator == null) ? accountComparator : accountComparator.thenComparing(comparator);
-
-      // 계좌는 id 로 묶는다. 이름으로 묶으면 같은 이름의 계좌가 둘일 때 한 행으로 합쳐진다.
-      Map<UUID, List<TradeProfit>> byAccount =
-          enrichedList.stream().collect(Collectors.groupingBy(TradeProfit::accountId));
-
-      byAccount.forEach(
-          (groupAccountId, list) -> {
-            if (list.isEmpty()) return;
-
-            String accountName = list.get(0).accountName();
-            var s = TradeProfitAggregator.aggregate(list);
-            accountTotalMap.put(
-                accountName,
-                TradeProfit.ofPortfolioAccount(
-                    accountName,
-                    s.totalBuyAmount(),
-                    s.totalSellQuantity(),
-                    s.totalSellAmount(),
-                    s.realizedProfit(),
-                    s.holdingQuantity(),
-                    s.evaluationAmount(),
-                    s.evaluationProfit(),
-                    s.totalProfit(),
-                    s.totalBuyFee(),
-                    s.totalSellFee(),
-                    s.totalSellTax(),
-                    s.totalBuyCost(),
-                    s.totalSellProceeds(),
-                    s.realizedProfitNet(),
-                    s.evaluationProfitNet(),
-                    s.totalProfitNet()));
-          });
-    }
-
-    if (comparator != null) {
-      enrichedList.sort(comparator);
-    }
-
-    BigDecimal totalEvaluationAmount =
-        enrichedList.stream()
-            .map(TradeProfit::evaluationAmount)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalEvaluationProfit =
-        enrichedList.stream()
-            .map(TradeProfit::evaluationProfit)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalRealizedProfit =
-        enrichedList.stream()
-            .map(TradeProfit::realizedProfit)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    model.addAttribute("tradeProfitList", enrichedList);
-    model.addAttribute("sort", sort);
-    model.addAttribute("viewGroupBy", viewGroupBy);
-    model.addAttribute("totalEvaluationAmount", totalEvaluationAmount);
-    model.addAttribute("totalEvaluationProfit", totalEvaluationProfit);
-    model.addAttribute("totalRealizedProfit", totalRealizedProfit);
-    model.addAttribute("accountTotalMap", accountTotalMap);
-    return "stock/htmx/fragments/tabsPortfolio";
   }
 
   @BlueskyPreAuthorize
@@ -530,33 +325,6 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     }
 
     return BigDecimal.ZERO;
-  }
-
-  private TradeProfit toPortfolioStock(TradeProfit profit) {
-    return TradeProfit.ofPortfolioStock(
-        profit.stockItemId(),
-        profit.stockItemName(),
-        profit.totalBuyAmount(),
-        profit.averageBuyPrice(),
-        profit.totalSellQuantity(),
-        profit.averageSellPrice(),
-        profit.totalSellAmount(),
-        profit.realizedProfit(),
-        profit.holdingQuantity(),
-        profit.currentPrice(),
-        profit.evaluationAmount(),
-        profit.evaluationProfit(),
-        profit.totalProfit(),
-        profit.totalBuyFee(),
-        profit.totalSellFee(),
-        profit.totalSellTax(),
-        profit.totalBuyCost(),
-        profit.totalSellProceeds(),
-        profit.averageBuyPriceNet(),
-        profit.averageSellPriceNet(),
-        profit.realizedProfitNet(),
-        profit.evaluationProfitNet(),
-        profit.totalProfitNet());
   }
 
   private static <K, V> java.util.Map<K, V> emptyIfNullMap(java.util.Map<K, V> value) {

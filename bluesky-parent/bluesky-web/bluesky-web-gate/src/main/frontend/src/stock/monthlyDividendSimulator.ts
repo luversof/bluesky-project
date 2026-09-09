@@ -65,7 +65,7 @@ export {};
 			}
 
 			row.classList.toggle('monthly-dividend-row-selected', selected);
-			row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+			row.setAttribute('aria-selected', selected ? 'true' : 'false');
 
 		}
 
@@ -80,7 +80,7 @@ export {};
 				return;
 			}
 
-			const selectedRows = table.tBodies[0].querySelectorAll<HTMLElement>('[data-monthly-selection-row][aria-pressed="true"]');
+			const selectedRows = table.tBodies[0].querySelectorAll<HTMLElement>('[data-monthly-selection-row][aria-selected="true"]');
 			const selectedCount = selectedRows.length;
 			const reveal = summary.closest<HTMLElement>('.selection-reveal');
 			if (reveal) {
@@ -242,7 +242,7 @@ export {};
 							return;
 						}
 
-						const isSelected = this.getAttribute('aria-pressed') === 'true';
+						const isSelected = this.getAttribute('aria-selected') === 'true';
 						setMonthlyDividendSimulatorRowSelection(this, !isSelected);
 						updateMonthlyDividendSimulatorSelectionSummary(section);
 					});
@@ -257,7 +257,7 @@ export {};
 						}
 
 						event.preventDefault();
-						const isSelected = this.getAttribute('aria-pressed') === 'true';
+						const isSelected = this.getAttribute('aria-selected') === 'true';
 						setMonthlyDividendSimulatorRowSelection(this, !isSelected);
 						updateMonthlyDividendSimulatorSelectionSummary(section);
 					});
@@ -267,7 +267,7 @@ export {};
 				const clearButton = section.querySelector<HTMLElement>('[data-monthly-selection-clear]');
 				if (clearButton) {
 					clearButton.addEventListener('click', function(this: HTMLElement) {
-						const selectedRows = table.tBodies[0].querySelectorAll<HTMLElement>('[data-monthly-selection-row][aria-pressed="true"]');
+						const selectedRows = table.tBodies[0].querySelectorAll<HTMLElement>('[data-monthly-selection-row][aria-selected="true"]');
 						for (let k = 0; k < selectedRows.length; k++) {
 							setMonthlyDividendSimulatorRowSelection(selectedRows[k], false);
 						}

@@ -130,7 +130,7 @@
 	<div class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 			<div class="space-y-2">
-				<h3 class="text-lg font-semibold">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.title")}</h3>
+				<h2 class="text-lg font-semibold">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.title")}</h2>
 				<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.desc")}</p>
 				<p class="text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.selection.desc")}</p>
 			</div>
@@ -359,7 +359,7 @@
 							<table class="table table-sm">
 								<thead>
 									<tr>
-										<th scope="col">
+										<th scope="col" aria-sort="${"display-order".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
 											<a href="${referenceListBaseUrl}&profileSort=display-order&profileDirection=${displayOrderSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.display.order")}
 												@if("display-order".equals(profileSortValue))
@@ -367,7 +367,7 @@
 												@endif
 											</a>
 										</th>
-										<th scope="col">
+										<th scope="col" aria-sort="${"symbol".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
 											<a href="${referenceListBaseUrl}&profileSort=symbol&profileDirection=${symbolSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}
 												@if("symbol".equals(profileSortValue))
@@ -375,7 +375,7 @@
 												@endif
 											</a>
 										</th>
-										<th scope="col">
+										<th scope="col" aria-sort="${"payout-window".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
 											<a href="${referenceListBaseUrl}&profileSort=payout-window&profileDirection=${payoutWindowSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window")}
 												@if("payout-window".equals(profileSortValue))
@@ -383,7 +383,7 @@
 												@endif
 											</a>
 										</th>
-										<th scope="col">
+										<th scope="col" aria-sort="${"source-url".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
 											<a href="${referenceListBaseUrl}&profileSort=source-url&profileDirection=${sourceUrlSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.source.url")}
 												@if("source-url".equals(profileSortValue))
@@ -391,7 +391,7 @@
 												@endif
 											</a>
 										</th>
-										<th scope="col">
+										<th scope="col" aria-sort="${"last-verified-date".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
 											<a href="${referenceListBaseUrl}&profileSort=last-verified-date&profileDirection=${lastVerifiedDateSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.last.verified.date")}
 												@if("last-verified-date".equals(profileSortValue))
@@ -489,16 +489,7 @@
 	</div>
 </div>
 
-<%-- 가져오기는 프로필마다 외부 ETF 사이트를 차례로 내려받아 오래 걸린다
-     (실측 2026-09-08: riseetf.co.kr 한 건이 8.65 초). 평범한 POST 폼이라 htmx 의
-     hx-indicator 를 쓸 수 없어, 제출을 가로채 이 오버레이를 직접 띄운다. --%>
-<div data-submit-overlay-panel="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-	<div class="flex flex-col items-center gap-4 rounded-2xl bg-base-100 px-8 py-8 shadow-xl">
-		<span class="loading loading-spinner loading-lg text-primary"></span>
-		<div data-submit-overlay-heading="true" class="text-lg font-bold">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.title")}</div>
-		<div data-submit-overlay-note="true" class="text-sm opacity-70">${MessageUtil.getMessage("stock.admin.message.please.wait")}</div>
-	</div>
-</div>
+@template._components.ui.submitOverlay()
 <script nonce="${CspNonceHolder.getNonce()}">
 	(function() {
 		var selects = document.querySelectorAll('select[data-sync-hidden-field]');

@@ -16,7 +16,7 @@ import test from "node:test";
 const { ApiError, NetworkError, ParseError } = await import(
 	"../../resources/static/js/fetchClient.js"
 );
-const { handleApiError } = await import(
+const { handleApiError, defaultErrorText } = await import(
 	"../../resources/static/js/errorHandler.js"
 );
 
@@ -89,4 +89,47 @@ test("fetchJson 이 오류 메시지를 찾는 자리와 같다", () => {
 		isDisplayableMessage: true,
 	});
 	assert.equal(capture(displayable).displayable, "서버 사유");
+});
+
+// 서버 문구가 없을 때의 기본 안내는 화면 로케일을 따른다.
+// 실측 2026-09-09: 영어 화면에서도 네트워크 오류 알림이 한글이었다(클라이언트 리터럴 4건).
+function withLang(lang, fn) {
+	const prev = globalThis.document;
+	globalThis.document = { documentElement: { lang } };
+	try {
+		return fn();
+	} finally {
+		globalThis.document = prev;
+	}
+}
+
+test("영어 화면의 기본 안내는 영어다", () => {
+	withLang("en-US", () => {
+		assert.match(defaultErrorText("network"), /^A network error/);
+		assert.match(defaultErrorText("parse"), /^An error occurred while processing/);
+		assert.equal(defaultErrorText("generic"), "An error occurred.");
+	});
+});
+
+test("한국어 화면(과 lang 이 없는 문맥)의 기본 안내는 한국어다", () => {
+	withLang("ko-KR", () => assert.match(defaultErrorText("network"), /네트워크 오류/));
+	const prev = globalThis.document;
+	delete globalThis.document;
+	try {
+		assert.match(defaultErrorText("generic"), /오류가 발생했습니다/);
+	} finally {
+		globalThis.document = prev;
+	}
+});
+
+test("핸들러가 없으면 alert 도 로케일 문구를 쓴다", () => {
+	const prevAlert = globalThis.alert;
+	let shown = null;
+	globalThis.alert = (m) => { shown = m; };
+	try {
+		withLang("en-US", () => handleApiError(new NetworkError("down")));
+		assert.match(shown, /^A network error/);
+	} finally {
+		globalThis.alert = prevAlert;
+	}
 });

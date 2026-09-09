@@ -27,6 +27,48 @@ function fmtDate(d: Date): string {
  * 있고 globalDateRange 는 __dateRangePickerInternals 로 이 함수를 가져다 쓴다(레이아웃이 이 파일을
  * 먼저 로드한다).
  */
+/**
+ * 저장된 전역 기간(stored)이 조각이 지금 보여 주는 기간(current)과 같은가.
+ *
+ * create() 는 초기화 때 전역 기간을 복원하고 "데이터가 실리도록" 폼을 한 번 제출한다. 그런데 조각은 페이지의
+ * hx-include(#globalDateRangeInputs)로 이미 그 기간을 받아 렌더된 상태라, 같은 조회가 두 번 나갔다
+ * (실측 2026-09-09: /stock/dividend 진입 시 dividend/list 196KB x2, /stock/asset-growth 진입 시 asset-growth/view 66KB x2,
+ * 두 번째는 첫 번째와 바이트까지 같았다). 같으면 제출할 이유가 없다.
+ */
+function restoredRangeAlreadyShown(
+	current: PickerRange,
+	stored: PickerRange,
+): boolean {
+	const norm = (v: unknown) => (v == null ? "" : String(v));
+	return (
+		norm(current.start) === norm(stored.start) &&
+		norm(current.end) === norm(stored.end) &&
+		norm(current.mode) === norm(stored.mode)
+	);
+}
+
+type PickerRange = { start?: string | null; end?: string | null; mode?: string | null };
+
+/**
+ * 초기화 때 어느 기간을 쓸지. 조각(current)은 페이지가 hx-include 로 보낸 전역 기간, 또는 URL 쿼리가 덮어쓴 기간으로 이미
+ * 그려져 있다(common.ts 의 data-params-from-query: "URL 의 키가 hx-include 를 덮어쓴다").
+ *
+ * - 조각에 기간이 없다: 저장값(stored)으로 예전처럼 한 번 제출해 데이터를 실어 온다.
+ * - 같다: 이미 그려져 있으니 아무것도 하지 않는다.
+ * - 다르다: 조각이 이긴다. 저장값을 조각의 기간으로 갱신하고 제출하지 않는다.
+ *   (실측 2026-09-09: /stock/dividend?...rangeMode=3 으로 들어가면 첫 조회는 3개월인데 곧 저장된 ytd 로 재조회돼 공유 링크가 무력했다.)
+ */
+function resolveInitialRange(
+	current: PickerRange | null,
+	stored: PickerRange,
+): { range: PickerRange; submit: boolean; persist: boolean } {
+	const has = (r: PickerRange | null) => !!r && !!(r.start || r.end || r.mode);
+	if (!has(current)) return { range: stored, submit: true, persist: false };
+	if (restoredRangeAlreadyShown(current as PickerRange, stored))
+		return { range: stored, submit: false, persist: false };
+	return { range: current as PickerRange, submit: false, persist: true };
+}
+
 function localDateToInstantIso(ds: string, addDays?: number): string {
 	if (!ds) return "";
 	const matched = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(ds);
@@ -43,7 +85,9 @@ const DateRangePicker = (function () {
 		const _s: PickerState = { start: "", end: "", mode: "" };
 
 		const isCallback = () => typeof cfg.onApply === "function";
-		const activeClass = () => cfg.activeClass || "btn-primary";
+		// 프리셋(이번 달·1M·3M…)은 눌린 상태를 색(btn-primary)으로만 보였다. 토글 버튼의 상태는 aria-pressed 로도 알려야 한다
+		// (실측 2026-09-09 axe 는 잡지 못하는 항목 - 상태를 색으로만 전달, WCAG 1.4.1). 활성/비활성을 바꾸는 모든 자리에서 함께 맞춘다.
+const activeClass = () => cfg.activeClass || "btn-primary";
 		const resolvedTimeZone = () => {
 			try {
 				return Intl?.DateTimeFormat?.().resolvedOptions().timeZone || "";
@@ -132,7 +176,10 @@ const DateRangePicker = (function () {
 				: ([] as Element[]);
 
 		function clearActive(root?: Element | Document) {
-			btns(root).forEach((b) => b.classList.remove(activeClass()));
+			btns(root).forEach((b) => {
+				b.classList.remove(activeClass());
+				b.setAttribute("aria-pressed", "false");
+			});
 		}
 
 		// CSP 정리로 프리셋 버튼의 인라인 onclick 이 제거되어(data-picker-action/arg 로 전환)
@@ -257,8 +304,11 @@ const DateRangePicker = (function () {
 					: null;
 				let disablePrev = !canShift(-1);
 				let disableNext = !canShift(1);
+				// 서버가 그린 btn-disabled 도 여기 계산에 맞춘다. 실측 2026-09-09: 서버는 '다음' 을 막았는데(btn-disabled) 클라이언트 계산은
+				// 허용해 disabled 만 풀렸다 - 비활성처럼 보이는데 눌리고 포커스도 받는 버튼이 됐다(axe 도 대비 위반으로 잡음).
 				prevEls.forEach((el) => {
 					el.disabled = disablePrev;
+					el.classList.toggle("btn-disabled", disablePrev);
 					if (disablePrev) {
 						el.classList.add("opacity-40");
 						el.setAttribute("aria-disabled", "true");
@@ -275,6 +325,7 @@ const DateRangePicker = (function () {
 				});
 				nextEls.forEach((el) => {
 					el.disabled = disableNext;
+					el.classList.toggle("btn-disabled", disableNext);
 					if (disableNext) {
 						el.classList.add("opacity-40");
 						el.setAttribute("aria-disabled", "true");
@@ -327,6 +378,30 @@ const DateRangePicker = (function () {
 			return isCallback()
 				? _s.mode
 				: (el(cfg.rangeModeId) as HTMLInputElement | null)?.value || "";
+		}
+
+		/** 전역 저장(localStorage)과 레이아웃의 공용 숨은 입력을 이 기간으로 맞춘다. 이벤트는 내지 않는다(재조회 없음). */
+		function persistGlobalRange(startStr: string, endStr: string, modeStr: string) {
+			const tz = resolvedTimeZone() || "";
+			try {
+				if (cfg.globalKey && typeof localStorage !== "undefined") {
+					localStorage.setItem(
+						cfg.globalKey,
+						JSON.stringify({ start: startStr, end: endStr, mode: modeStr, timeZone: tz }),
+					);
+				}
+			} catch (e) {}
+			try {
+				const g = (id: string) => document.getElementById(id) as HTMLInputElement | null;
+				const gStart = g("globalStartInstantInput");
+				const gEnd = g("globalEndInstantInput");
+				const gTz = g("globalTimeZoneInput");
+				const gMode = g("globalRangeModeInput");
+				if (gStart) gStart.value = startStr ? localDateToInstantIso(startStr, 0) : "";
+				if (gEnd) gEnd.value = endStr ? localDateToInstantIso(endStr, 1) : "";
+				if (gTz) gTz.value = tz;
+				if (gMode) gMode.value = modeStr || "";
+			} catch (e) {}
 		}
 
 		function maxDateStr() {
@@ -564,6 +639,7 @@ const DateRangePicker = (function () {
 				try {
 					btn.classList.add(activeClass());
 					btn.classList.remove("btn-ghost");
+					btn.setAttribute("aria-pressed", "true");
 				} catch (e) {}
 			}
 			const maxStr = maxDateStr();
@@ -612,10 +688,12 @@ const DateRangePicker = (function () {
 				btns(root).forEach((b) => {
 					b.classList.remove(activeClass());
 					b.classList.add("btn-ghost");
+					b.setAttribute("aria-pressed", "false");
 				});
 				if (btn) {
 					btn.classList.add(activeClass());
 					btn.classList.remove("btn-ghost");
+					btn.setAttribute("aria-pressed", "true");
 				}
 			} catch (e) {}
 			applyRange(startStr, endStr, modeStr);
@@ -836,6 +914,7 @@ const DateRangePicker = (function () {
 				btns(root).forEach((b: Element) => {
 					b.classList.remove(activeClass());
 					b.classList.add("btn-ghost");
+					b.setAttribute("aria-pressed", "false");
 				});
 				Array.from(
 					(root as Element).querySelectorAll("." + cfg.btnClass),
@@ -843,6 +922,7 @@ const DateRangePicker = (function () {
 					if (btnMatchesMode(b, newMode)) {
 						b.classList.add(activeClass());
 						b.classList.remove("btn-ghost");
+						b.setAttribute("aria-pressed", "true");
 					}
 				});
 			} catch (e) {}
@@ -914,7 +994,17 @@ const DateRangePicker = (function () {
 					sessionStorage.getItem(cfg.globalKey);
 				if (raw) {
 					try {
-						const obj = JSON.parse(raw);
+						const stored = JSON.parse(raw);
+						// 조각이 이미 보여 주는 기간과 저장값을 견줘 쓸 기간을 정한다(콜백 모드는 예전처럼 저장값).
+						const initial = stored
+							? resolveInitialRange(
+									isCallback()
+										? null
+										: { start: getStart(), end: getEnd(), mode: getMode() },
+									stored,
+								)
+							: null;
+						const obj: any = initial ? { ...initial.range } : null;
 						if (obj) {
 							const root = cfg.rootSelector
 								? document.querySelector(cfg.rootSelector) || document
@@ -1020,23 +1110,31 @@ const DateRangePicker = (function () {
 								btns(rootEl).forEach((b) => {
 									b.classList.remove(activeClass());
 									b.classList.add("btn-ghost");
+									b.setAttribute("aria-pressed", "false");
 								});
 								if (foundBtn) {
 									foundBtn.classList.add(activeClass());
 									foundBtn.classList.remove("btn-ghost");
+									foundBtn.setAttribute("aria-pressed", "true");
 								}
 							} catch (e) {}
+							// 조각이 이미 이 기간으로 그려져 있으면(서버가 입력값을 채워 보냄) 아래 재제출은 같은 조회를 한 번 더 하는 것이다.
+							const alreadyShown = !initial!.submit;
 							applyRangeNoSubmit(
 								obj.start || "",
 								obj.end || "",
 								obj.mode || "",
 							);
+							if (initial!.persist) {
+								// 조각(URL)의 기간이 이겼다: 다른 화면도 이 기간을 따르도록 전역 저장과 공용 숨은 입력을 맞춘다.
+								persistGlobalRange(obj.start || "", obj.end || "", obj.mode || "");
+							}
 							// One-time apply: call callback or submit form once per-fragment to ensure data loads
 							try {
 								const appliedKey =
 									"__globalDateRangeApplied:" +
 									(cfg.formId || cfg.rootSelector || cfg.btnClass || "");
-								if (!sessionStorage.getItem(appliedKey)) {
+								if (!alreadyShown && !sessionStorage.getItem(appliedKey)) {
 									if (isCallback()) {
 										try {
 											_s.start = obj.start || "";
@@ -1105,6 +1203,7 @@ const DateRangePicker = (function () {
 							try {
 								b.classList.remove(activeClass());
 								b.classList.add("btn-ghost");
+								b.setAttribute("aria-pressed", "false");
 							} catch (e) {}
 						});
 						if (mode) {
@@ -1118,6 +1217,7 @@ const DateRangePicker = (function () {
 										try {
 											b.classList.add(activeClass());
 											b.classList.remove("btn-ghost");
+											b.setAttribute("aria-pressed", "true");
 										} catch (e) {}
 									}
 								});
@@ -1142,4 +1242,9 @@ const DateRangePicker = (function () {
 // expose to global
 (globalThis as any).DateRangePicker = DateRangePicker as any;
 // 테스트가 계산만 따로 부를 수 있게 노출한다(브라우저 동작에는 영향 없음).
-(globalThis as any).__dateRangePickerInternals = { localDateToInstantIso, fmtDate };
+(globalThis as any).__dateRangePickerInternals = {
+	localDateToInstantIso,
+	fmtDate,
+	restoredRangeAlreadyShown,
+	resolveInitialRange,
+};

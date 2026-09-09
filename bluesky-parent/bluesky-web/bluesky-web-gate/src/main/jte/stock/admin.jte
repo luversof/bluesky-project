@@ -37,6 +37,7 @@
 @param boolean monthlyDividendReferenceResultIsError = false
 
 @template._layout.stockLayout(
+	pageTitle = MessageUtil.getMessage("stock.page.admin.title"),
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,

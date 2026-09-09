@@ -15,8 +15,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -48,9 +46,6 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
-  private static final Logger logger =
-      LoggerFactory.getLogger(StockAssetGrowthHtmxController.class);
-
   private final DataFirstDateClient dataFirstDateClient;
 
   private final java.util.concurrent.ExecutorService stockRemoteCallExecutor;
@@ -93,6 +88,11 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
 
     request.setUserId(userId);
+    // 역순 기간은 앞뒤를 바로잡는다(피커와 같은 규칙). 그대로 두면 빈 차트가 '데이터 없음' 으로 읽힌다.
+    java.time.Instant[] orderedRange =
+        effectiveRange(rangeMode, request.getStartDate(), request.getEndDate());
+    request.setStartDate(orderedRange[0]);
+    request.setEndDate(orderedRange[1]);
     // 핵심 보유 제외 토글. 실측 2026-09-08: 한 종목이 평가액의 83.9% 라 이 화면의 차트·기간 손익이 사실상 그 종목
     // 주가였다. 빼고 보면 배당 ETF 들의 성적이 드러난다. 무엇이 핵심인지는 종목의 '핵심' 태그가 정한다.
     // 값은 폼의 hidden 과 누른 버튼 둘에서 함께 올 수 있다.
@@ -656,35 +656,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     model.addAttribute("troughValueDate", summary != null ? summary.troughValueDate() : null);
   }
 
-  @BlueskyPreAuthorize
-  @GetMapping("/asset-growth/period-return")
-  public String assetGrowthPeriodReturn(
-      @RequestParam(required = false) String from,
-      @RequestParam(required = false) String to,
-      @RequestParam(required = false) String timeZone,
-      Model model) {
-    var userId = UserUtil.getUserId();
-    // 로그인이 풀렸으면 같은 화면의 다른 조각들과 같은 안내를 돌려준다. 예전에는 여기만 '계산 불가'
-    // 자리표시자를 그렸다(실측: 비로그인 호출이 1,632바이트짜리 빈 요약, 다른 조각 13개는 344바이트 안내).
-    if (userId == null) {
-      return loginRequiredView(model);
-    }
-    // 템플릿은 이 두 값을 '빈 문자열 기본값'으로 선언하고 isBlank() 로 검사한다. 모델에 null 을 넣으면
-    // 그 기본값이 무효화되어 렌더 중 NPE 가 나고 화면이 500 이 된다(실측: 파라미터 없이 호출하면 500).
-    model.addAttribute("fromDate", from != null ? from : "");
-    model.addAttribute("toDate", to != null ? to : "");
-    TradeProfitTimeSeriesSummary summary;
-    try {
-      summary = loadPeriodSummary(userId, from, to, timeZone);
-    } catch (RuntimeException ex) {
-      // 실패를 삼키고 빈 요약을 그리면 "계산할 수 없는 기간" 과 구분되지 않는다.
-      logger.warn("Failed to load period summary: from={} to={} tz={}", from, to, timeZone, ex);
-      return remoteFailureView(model);
-    }
-    addPeriodSummaryAttributes(model, summary);
-    return "stock/htmx/fragments/assetGrowthPeriodReturnSummary";
-  }
-
   @GetMapping("/holdings-snapshot")
   public String holdingsSnapshot(
       @RequestParam(required = false) String date,
@@ -975,56 +946,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalFee", data.totalFee());
     model.addAttribute("totalTax", data.totalTax());
     model.addAttribute("tradePeriod", data.tradePeriod());
-  }
-
-  private ZoneId resolveZoneId(String timeZone) {
-    return resolveZoneIdOrDefault(timeZone);
-  }
-
-  /**
-   * 요약만 필요한 호출용. 시리즈와 요약을 함께 주는 엔드포인트를 재사용하되 시리즈는 받지 않는다.
-   *
-   * <p>실측(사용자 실데이터, {@code granularity=DAILY}): 시리즈까지 받으면 전체 기간 응답이 1,655,289 바이트인데 이 메서드가 실제로 쓰는
-   * 요약+연도별은 8,420 바이트다 — <b>99.5% 를 받아서 버렸다</b>(6,442 포인트). 5 년 99.3%, 1 년 98.4%.
-   *
-   * <p>{@code includeSeries=false} 를 모르는 옛 api-stock 은 이 파라미터를 무시하고 지금까지처럼 전체를 돌려준다. 그래도 이 메서드는 요약만
-   * 꺼내 쓰므로 동작은 같다.
-   */
-  /**
-   * 기간 요약을 읽는다. 테스트에서 직접 부르려고 package-private 로 둔다.
-   *
-   * <p>답이 두 갈래라는 것이 핵심이다 &mdash; 입력이 없거나 말이 안 되는 기간이면 {@code null}(정상적으로 계산할 값이 없음), 원격 호출이 실패하면
-   * <b>예외를 그대로 올린다</b>. 예전에는 둘 다 {@code null} 이라 화면에서 구분되지 않았다.
-   */
-  TradeProfitTimeSeriesSummary loadPeriodSummary(
-      UUID userId, String from, String to, String timeZone) {
-    // 입력이 없거나 말이 안 되는 기간은 '계산할 값이 없다'(정상). null 로 답한다.
-    if (userId == null || from == null || from.isBlank() || to == null || to.isBlank()) {
-      return null;
-    }
-    LocalDate fromDate;
-    LocalDate toDate;
-    try {
-      fromDate = LocalDate.parse(from);
-      toDate = LocalDate.parse(to);
-    } catch (java.time.format.DateTimeParseException ex) {
-      return null;
-    }
-    if (toDate.isBefore(fromDate)) {
-      return null;
-    }
-    ZoneId zone = resolveZoneId(timeZone);
-    TradeProfitRequest request = new TradeProfitRequest();
-    request.setUserId(userId);
-    request.setStartDate(fromDate.atStartOfDay(zone).toInstant());
-    request.setEndDate(toDate.plusDays(1).atStartOfDay(zone).toInstant());
-    request.setTimeZone(timeZone);
-    var params = request.toParams();
-    params.add("granularity", "DAILY");
-    params.add("includeSeries", "false");
-    // 원격 호출 실패는 여기서 삼키지 않는다. 호출자가 '불러오지 못했다' 로 답해야 하기 때문이다.
-    var result = tradeProfitClient.timeSeriesWithSummary(params);
-    return result != null ? result.summary() : null;
   }
 
   /**

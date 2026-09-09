@@ -46,11 +46,11 @@ class StockEndpointAuthGuardTest {
   /**
    * 사용자 데이터를 다루지 않아 검사가 없어도 되는 예외 목록.
    *
-   * <p>dashboard 는 hx-get 자리표시자만 있는 껍데기(내부 조각이 각자 안내를 낸다), realized-profit 은 /stock/trade 로 보내는
-   * 리다이렉트다. 실측으로 비로그인 응답에 사용자 데이터가 없음을 확인했다.
+   * <p>realized-profit 은 /stock/trade 로 보내는 리다이렉트다(dashboard 껍데기는 2026-09-09 에 지웠다). 실측으로 비로그인 응답에
+   * 사용자 데이터가 없음을 확인했다.
    */
   private static final Set<String> ALLOWED_WITHOUT_GUARD =
-      Set.of("StockSummaryHtmxController:/dashboard", "StockViewController:/realized-profit");
+      Set.of("StockViewController:/realized-profit");
 
   private record Endpoint(String file, String path, String verb, boolean guarded) {}
 

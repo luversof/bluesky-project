@@ -29,7 +29,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendSnapshotUpsertRequest;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
@@ -232,12 +231,9 @@ public class StockViewController {
       return StockViewSupport.loginRedirectView(request);
     }
 
-    UUID userId = UserUtil.getUserId();
-    var accounts = loadAccounts(userId);
-    model.addAttribute("accounts", accounts);
-
-    var stockItems = monthlyDividendReferenceSupport.loadStockItems();
-    model.addAttribute("stockItems", stockItems);
+    // 계좌·종목 목록은 조각(tradeList.jte)이 스스로 받아 그린다. 예전에는 여기서도 api-stock 을 두 번 불러 모델에 넣었지만
+    // trade.jte 는 그 값을 읽지 않았다(실측 2026-09-09: 페이지마다 헛호출 2회, api-stock 이 내려가면 껍데기 대신 전체 오류 화면).
+    // 껍데기는 백엔드 없이도 그려지고, 데이터 실패는 조각이 각자 안내한다 - 배당·활동 화면과 같은 규칙.
     return "stock/trade";
   }
 
@@ -546,15 +542,6 @@ public class StockViewController {
     if (!model.containsAttribute("monthlyDividendSavedCount")) {
       model.addAttribute("monthlyDividendSavedCount", null);
     }
-  }
-
-  private List<Account> loadAccounts(UUID userId) {
-    List<Account> accounts = accountClient.getAccountsByUserId(userId);
-    if (accounts == null || accounts.isEmpty()) {
-      return List.of();
-    }
-
-    return accounts.stream().filter(account -> account != null).toList();
   }
 
   private String buildMonthlyDividendRedirect(

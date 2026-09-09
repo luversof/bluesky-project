@@ -131,6 +131,29 @@ end
 		end
 	end
 
+
+	-- 인게임에서 **실제로는 적용되지 않는** 보조젬 수 — 판정은 PoB 자신의 함수를 그대로 쓴다
+	--   (규칙이 소환수 타입·아이템 부여·imbued 까지 얽혀 있어 재구현하면 틀린다).
+	--   발단(2026-09-09): 유령 소환 빌드가 Hextoad(requireSkillTypes = Hex+AppliesCurse)를 물고 있었다.
+	--   PoB 는 그걸 보조로 **적용하지 않으면서도** Bursting Toad 를 만들어 축 피해의 99.5% 를 냈다
+	--   (12,599,280 / 12,660,045). 인게임에선 소켓만 낭비하는 조합이라 최적화기가 고르면 안 된다.
+	do
+		local env2 = build.calcsTab.mainEnv
+		local ms2 = env2 and env2.player and env2.player.mainSkill
+		local group2 = build.skillsTab.socketGroupList
+			and build.skillsTab.socketGroupList[build.mainSocketGroup or 1]
+		if ms2 and group2 and calcLib and calcLib.canGrantedEffectSupportActiveSkill then
+			local unapplied = 0
+			for _, gi in ipairs(group2.gemList or {}) do
+				local ge = gi.gemData and gi.gemData.grantedEffect
+				if ge and ge.support and not calcLib.canGrantedEffectSupportActiveSkill(ge, ms2) then
+					unapplied = unapplied + 1
+				end
+			end
+			result.UnappliedSupportCount = unapplied
+		end
+	end
+
 	local dkjson = require("dkjson")
 	-- dkjson 은 빈 테이블을 배열 []로 인코딩한다 → Java 쪽 Map 역직렬화가 터져 진짜 원인이 가려진다(worker.lua 와 동일 조치).
 	print("@@POB_RESULT@@" .. (next(result) == nil and "{}" or dkjson.encode(result)))

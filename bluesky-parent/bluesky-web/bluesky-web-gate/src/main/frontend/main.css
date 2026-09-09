@@ -227,12 +227,23 @@
 	.toggle:checked::before { left: calc(100% - 1.35rem); }
 	.toggle-xs:checked::before { left: calc(100% - 0.9rem); }
 
+	/* ---- 활동 달력 날짜 칸 ---- 유틸리티 묶음(min-h-14 rounded-lg p-1 text-[11px] text-center border)과 같은 토큰.
+	   칸이 전체 기간에 2,625개라 클래스 문자열이 조각의 1/4 이었다(실측 2026-09-09). 테두리 색·투명도는 유틸리티(border-primary, opacity-30)가 덧입힌다. */
+	.cal-day { min-height: calc(var(--spacing) * 14); border-radius: var(--radius-lg); padding: calc(var(--spacing) * 1);
+		font-size: 11px; text-align: center; border-width: 1px; border-style: solid; }
+	.cal-day-act { cursor: pointer; transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+		transition-timing-function: var(--tw-ease, ease); transition-duration: 300ms; }
+	.cal-day-act:hover { background-color: var(--color-base-200); transition-duration: 75ms; }
+	.cal-day-num { font-weight: 500; color: color-mix(in oklab, var(--color-base-content) 70%, transparent); }
+
 	/* ---- loading spinner ---- */
 	.loading { display: inline-block; width: 1.5rem; height: 1.5rem; vertical-align: middle;
 		border: 3px solid currentColor; border-right-color: transparent; border-radius: 9999px;
 		animation: loading-spin 0.7s linear infinite; }
 	.loading-spinner { /* alias */ }
+	.loading-xs { width: 1rem; height: 1rem; border-width: 2px; }
 	.loading-sm { width: 1.25rem; height: 1.25rem; border-width: 2px; }
+	.loading-md { /* = 기본 크기 */ }
 	.loading-lg { width: 2.5rem; height: 2.5rem; border-width: 4px; }
 
 	/* ---- alert ---- */

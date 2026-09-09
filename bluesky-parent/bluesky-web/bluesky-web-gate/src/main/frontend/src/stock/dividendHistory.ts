@@ -11,13 +11,12 @@ export {};
 
 declare const Chart: any;
 
-/** 조각의 인라인 스크립트가 만드는 배당 한 줄(dividendDataJs). 금액은 숫자 리터럴로 실린다. */
+/** 조각의 인라인 스크립트가 만드는 배당 한 줄(dividendDataJs). 금액은 숫자 리터럴로 실린다. 세전(gross)은 싣지 않는다 - 차트가 쓰지 않는다. */
 interface DividendRow {
 	payDate: string;
 	stockItem: string;
 	account: string;
 	net: number;
-	gross: number;
 }
 /** window.dividendHistoryConfig */
 interface DividendHistoryConfig {
@@ -99,7 +98,7 @@ interface MonthRange {
 
             const selectionClass = row.dataset.selectionClass || 'dividend-yield-row-selected';
             row.classList.toggle(selectionClass, selected);
-            row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+            row.setAttribute('aria-selected', selected ? 'true' : 'false');
 
         }
 
@@ -114,7 +113,7 @@ interface MonthRange {
                 return;
             }
 
-            const selectedRows = table.tBodies[0].querySelectorAll<HTMLElement>('[data-dividend-yield-row][aria-pressed="true"]');
+            const selectedRows = table.tBodies[0].querySelectorAll<HTMLElement>('[data-dividend-yield-row][aria-selected="true"]');
             const selectedCount = selectedRows.length;
             const reveal = summary.closest<HTMLElement>('.selection-reveal');
             if (reveal) {
@@ -356,7 +355,7 @@ interface MonthRange {
                             return;
                         }
 
-                        const isSelected = this.getAttribute('aria-pressed') === 'true';
+                        const isSelected = this.getAttribute('aria-selected') === 'true';
                         setDividendYieldRowSelection(this, !isSelected);
                         updateDividendYieldSelectionSummary(section);
                     });
@@ -371,7 +370,7 @@ interface MonthRange {
                         }
 
                         event.preventDefault();
-                        const isSelected = this.getAttribute('aria-pressed') === 'true';
+                        const isSelected = this.getAttribute('aria-selected') === 'true';
                         setDividendYieldRowSelection(this, !isSelected);
                         updateDividendYieldSelectionSummary(section);
                     });
@@ -381,7 +380,7 @@ interface MonthRange {
                 const clearButton = section.querySelector<HTMLElement>('[data-dividend-yield-selection-clear]');
                 if (clearButton) {
                     clearButton.addEventListener('click', function() {
-                        const selectedRows = table.tBodies[0].querySelectorAll<HTMLElement>('[data-dividend-yield-row][aria-pressed="true"]');
+                        const selectedRows = table.tBodies[0].querySelectorAll<HTMLElement>('[data-dividend-yield-row][aria-selected="true"]');
                         for (let k = 0; k < selectedRows.length; k++) {
                             setDividendYieldRowSelection(selectedRows[k], false);
                         }
@@ -796,15 +795,6 @@ interface MonthRange {
         setTimeout(initAll, 0);
         setTimeout(() => { if (monthlyChart) monthlyChart.resize(); if (donutChart) donutChart.resize(); }, 200);
 
-        // 페이징 클릭 시 fragment 상단 스크롤
-        if (win.__pendingScrollTo === 'dividendListFragment') {
-            delete win.__pendingScrollTo;
-            const frag = document.getElementById('dividendListFragment');
-            if (frag) frag.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        document.querySelectorAll('#dividendListFragment .join button[hx-get]').forEach((btn: Element) => {
-            btn.addEventListener('click', () => { win.__pendingScrollTo = 'dividendListFragment'; });
-        });
 
 	}
 

@@ -29,7 +29,6 @@ class PriceBasisDisclosureTest {
       List.of(
           Path.of("src/main/jte/stock/htmx/fragments/summary.jte"),
           Path.of("src/main/jte/stock/htmx/fragments/assetStatus.jte"),
-          Path.of("src/main/jte/stock/htmx/fragments/tabsPortfolio.jte"),
           Path.of("src/main/jte/stock/stockItemDetail.jte"),
           Path.of("src/main/jte/stock/accountDetail.jte"));
 

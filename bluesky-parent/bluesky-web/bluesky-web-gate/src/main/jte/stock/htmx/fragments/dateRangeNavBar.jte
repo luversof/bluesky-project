@@ -12,14 +12,14 @@
 @param LocalDate coveredEndDate = null
 
 @template.stock.htmx.fragments.components.dateRangeNavBar(
-    pickerName = pickerName,
-    btnClass = btnClass,
-    canPrev = canPrev,
-    canNext = canNext,
-    rangeMode = rangeMode,
-    startDate = startDate,
-    endDate = endDate,
-    showRangeText = showRangeText,
-    coveredStartDate = coveredStartDate,
-    coveredEndDate = coveredEndDate
+	pickerName = pickerName,
+	btnClass = btnClass,
+	canPrev = canPrev,
+	canNext = canNext,
+	rangeMode = rangeMode,
+	startDate = startDate,
+	endDate = endDate,
+	showRangeText = showRangeText,
+	coveredStartDate = coveredStartDate,
+	coveredEndDate = coveredEndDate
 )

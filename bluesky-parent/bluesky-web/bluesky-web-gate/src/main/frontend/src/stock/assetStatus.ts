@@ -238,7 +238,7 @@ export {};
         }
 
         row.classList.toggle('asset-status-stock-row-selected', selected);
-        row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        row.setAttribute('aria-selected', selected ? 'true' : 'false');
 
     }
 
@@ -249,7 +249,7 @@ export {};
 
         row.classList.toggle('asset-status-account-row-selected', selected);
         row.dataset.selected = selected ? 'true' : 'false';
-        row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        row.setAttribute('aria-selected', selected ? 'true' : 'false');
 
     }
 
@@ -368,7 +368,7 @@ export {};
             return;
         }
 
-        var selectedRows = table!.tBodies[0].querySelectorAll<HTMLElement>('[data-stock-selectable-row][aria-pressed="true"]');
+        var selectedRows = table!.tBodies[0].querySelectorAll<HTMLElement>('[data-stock-selectable-row][aria-selected="true"]');
         var selectedCount = selectedRows.length;
         var reveal = summary.closest<HTMLElement>('.selection-reveal');
         if (reveal) {
@@ -459,7 +459,7 @@ export {};
                         return;
                     }
 
-                    var isSelected = this.getAttribute('aria-pressed') === 'true';
+                    var isSelected = this.getAttribute('aria-selected') === 'true';
                     setAssetStatusStockRowSelection(this, !isSelected);
                     updateAssetStatusStockSelectionSummary(section);
                 });
@@ -474,7 +474,7 @@ export {};
                     }
 
                     event.preventDefault();
-                    var isSelected = this.getAttribute('aria-pressed') === 'true';
+                    var isSelected = this.getAttribute('aria-selected') === 'true';
                     setAssetStatusStockRowSelection(this, !isSelected);
                     updateAssetStatusStockSelectionSummary(section);
                 });
@@ -484,7 +484,7 @@ export {};
             var clearButton = section.querySelector<HTMLElement>('[data-selection-clear]');
             if (clearButton) {
                 clearButton.addEventListener('click', function(this: HTMLElement) {
-                    var selectedRows = table!.tBodies[0].querySelectorAll<HTMLElement>('[data-stock-selectable-row][aria-pressed="true"]');
+                    var selectedRows = table!.tBodies[0].querySelectorAll<HTMLElement>('[data-stock-selectable-row][aria-selected="true"]');
                     for (var k = 0; k < selectedRows.length; k++) {
                         setAssetStatusStockRowSelection(selectedRows[k], false);
                     }

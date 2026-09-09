@@ -27,25 +27,26 @@
 @param BigDecimal calendarCurrentQuantityTotal = java.math.BigDecimal.ZERO
 
 !{
-    boolean isCalendar = "calendar".equals(dividendTab);
-    String activeTabClass = "tab tab-active flex-1 font-bold !bg-primary !text-primary-content shadow-sm";
-    String inactiveTabClass = "tab flex-1 text-base-content/60 hover:text-base-content";
+	boolean isCalendar = "calendar".equals(dividendTab);
+	String activeTabClass = "tab tab-active flex-1 font-bold !bg-primary !text-primary-content shadow-sm";
+	String inactiveTabClass = "tab flex-1 text-base-content/60 hover:text-base-content";
 
-    String midLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month");
-    String endLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end");
-    String otherLabel = MessageUtil.getMessage("stock.dividend.calendar.window.other");
-    String monthlyTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.monthly.total");
-    String annualTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.annual.total");
-    String avgBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");
-    String latestBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest");
-    String calendarDesc = MessageUtil.getMessage("stock.dividend.calendar.desc");
-    String emptyLabel = MessageUtil.getMessage("stock.dividend.calendar.empty");
-    boolean calendarEmpty = (midRows == null || midRows.isEmpty())
-        && (endRows == null || endRows.isEmpty())
-        && (otherRows == null || otherRows.isEmpty());
+	String midLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month");
+	String endLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end");
+	String otherLabel = MessageUtil.getMessage("stock.dividend.calendar.window.other");
+	String monthlyTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.monthly.total");
+	String annualTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.annual.total");
+	String avgBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");
+	String latestBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest");
+	String calendarDesc = MessageUtil.getMessage("stock.dividend.calendar.desc");
+	String emptyLabel = MessageUtil.getMessage("stock.dividend.calendar.empty");
+	boolean calendarEmpty = (midRows == null || midRows.isEmpty())
+		&& (endRows == null || endRows.isEmpty())
+		&& (otherRows == null || otherRows.isEmpty());
 }
 
 @template._layout.stockLayout(
+	pageTitle = MessageUtil.getMessage("stock.page.dividend.title"),
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,

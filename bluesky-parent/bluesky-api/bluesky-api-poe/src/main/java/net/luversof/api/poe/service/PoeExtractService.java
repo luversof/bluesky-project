@@ -65,6 +65,8 @@ public class PoeExtractService {
   private final PoeSkillWeaponDataService poeSkillWeaponDataService;
   private final PoeTattooDataService poeTattooDataService;
   private final PoeTradeStatDataService poeTradeStatDataService;
+  private final PoeEngineUnmodeledDataService poeEngineUnmodeledDataService;
+  private final PoeSpectreDataService poeSpectreDataService;
   private final PoeOptimizeService poeOptimizeService;
   private final PoePobEngineService poePobEngineService;
   private final PoeDataLoadStamp poeDataLoadStamp;
@@ -92,6 +94,8 @@ public class PoeExtractService {
       PoeSkillWeaponDataService poeSkillWeaponDataService,
       PoeTattooDataService poeTattooDataService,
       PoeTradeStatDataService poeTradeStatDataService,
+      PoeEngineUnmodeledDataService poeEngineUnmodeledDataService,
+      PoeSpectreDataService poeSpectreDataService,
       PoeOptimizeService poeOptimizeService,
       PoePobEngineService poePobEngineService,
       PoeDataLoadStamp poeDataLoadStamp) {
@@ -110,6 +114,8 @@ public class PoeExtractService {
     this.poeSkillWeaponDataService = poeSkillWeaponDataService;
     this.poeTattooDataService = poeTattooDataService;
     this.poeTradeStatDataService = poeTradeStatDataService;
+    this.poeEngineUnmodeledDataService = poeEngineUnmodeledDataService;
+    this.poeSpectreDataService = poeSpectreDataService;
     this.poeOptimizeService = poeOptimizeService;
     this.poePobEngineService = poePobEngineService;
     this.poeDataLoadStamp = poeDataLoadStamp;
@@ -301,6 +307,8 @@ public class PoeExtractService {
                   poeSkillWeaponDataService.reload();
                   poeTattooDataService.reload();
                   poeTradeStatDataService.reload();
+                  poeEngineUnmodeledDataService.reload();
+                  poeSpectreDataService.reload();
                   poeOptimizeService.reloadNinja();
                   // 화면이 "파일은 새것인데 API 는 옛것"을 구분할 수 있게 로드 시각을 남긴다
                   poeDataLoadStamp.markReloaded();

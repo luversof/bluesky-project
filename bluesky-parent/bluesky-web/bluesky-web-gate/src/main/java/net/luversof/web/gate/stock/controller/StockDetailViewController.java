@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
@@ -139,6 +140,7 @@ public class StockDetailViewController {
   @GetMapping("/item")
   public String stockItemDetailPage(
       HttpServletRequest request,
+      HttpServletResponse response,
       @RequestParam(required = false) String stockItemId,
       @RequestParam(required = false) String name,
       @RequestParam(required = false) java.time.Instant startDate,
@@ -170,6 +172,11 @@ public class StockDetailViewController {
     // 초기 진입(비 htmx)은 셸만 렌더하고, 콘텐츠는 전역 기간과 함께 htmx로 로드한다.
     // (풀페이지 새로고침 시에도 선택 기간이 서버에 적용되도록.)
     if (request.getHeader("HX-Request") == null) {
+      // 없는 id 는 404 다. 화면은 그대로 그리되(껍데기 + '찾을 수 없음' 조각) 상태 코드로는 사실을 말한다 - 실측 2026-09-09:
+      // ?stockItemId=garbage 가 200 이라 감시·북마크·검색엔진 모두 '있는 화면' 으로 봤다.
+      if (stockItem == null || stockItem.id() == null) {
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+      }
       model.addAttribute("contentReady", false);
       model.addAttribute(
           "stockItemIdParam",
@@ -479,6 +486,7 @@ public class StockDetailViewController {
   @GetMapping("/account")
   public String accountDetailPage(
       HttpServletRequest request,
+      HttpServletResponse response,
       @RequestParam(required = false) String accountId,
       @RequestParam(required = false) java.time.Instant startDate,
       @RequestParam(required = false) java.time.Instant endDate,
@@ -500,6 +508,11 @@ public class StockDetailViewController {
     // 초기 진입(비 htmx)은 셸만 렌더하고, 콘텐츠는 전역 기간과 함께 htmx로 로드한다.
     // (풀페이지 새로고침 시에도 선택 기간이 서버에 적용되도록.)
     if (request.getHeader("HX-Request") == null) {
+      // 없는 id 는 404 다. 화면은 그대로 그리되(껍데기 + '찾을 수 없음' 조각) 상태 코드로는 사실을 말한다 - 실측 2026-09-09:
+      // ?accountId=garbage 가 200 이라 감시·북마크·검색엔진 모두 '있는 화면' 으로 봤다.
+      if (account == null || account.id() == null) {
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+      }
       model.addAttribute("contentReady", false);
       model.addAttribute(
           "accountIdParam",

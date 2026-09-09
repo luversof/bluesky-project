@@ -147,7 +147,7 @@
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.form.title")}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.form.desc")}</p>
 						</div>
-						<div class="flex flex-wrap items-center gap-2"><form method="post" action="/stock/simulator/monthly-dividend/import-sheet" class="inline"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><button type="submit" class="btn btn-secondary btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}</button></form><a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a></div>
+						<div class="flex flex-wrap items-center gap-2"><form method="post" action="/stock/simulator/monthly-dividend/import-sheet" class="inline" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.simulator.monthly.import.sheet.overlay.desc")}"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><button type="submit" class="btn btn-secondary btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}</button></form><a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a></div>
 					</div>
 					@if(symbolValue != null && !symbolValue.isEmpty() && !referenceValuesAvailable)
 						<div class="alert border border-warning/20 bg-warning/10 text-warning-content">
@@ -294,7 +294,7 @@
 						<div class="space-y-4" data-monthly-simulator-selection-section>
 							<p class="text-xs text-base-content/60">${monthlySelectionHelperLabel}</p>
 							<div id="monthlyDividendSimulatorOrderStatus" class="hidden"></div>
-							<p class="text-xs ${monthlyDividendReorderEnabled ? "text-primary/70" : "text-base-content/60"}">${monthlyDividendReorderEnabled ? monthlyDividendReorderEnabledLabel : monthlyDividendReorderDisabledLabel}</p>
+							<p class="text-xs ${monthlyDividendReorderEnabled ? "text-primary" : "text-base-content/60"}">${monthlyDividendReorderEnabled ? monthlyDividendReorderEnabledLabel : monthlyDividendReorderDisabledLabel}</p>
 							<div class="selection-reveal"><div>
 							<div class="rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3"
 								 data-monthly-selection-summary
@@ -414,7 +414,7 @@
 										</th>
 										<th scope="col" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
 										<th scope="col" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
-										<th rowspan="2" scope="col" class="col-group-start min-w-[7.5rem] align-middle text-right">
+										<th rowspan="2" scope="col" class="col-group-start min-w-[7.5rem] align-middle text-right" aria-sort="${"monthly-dividend".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none"}">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 whitespace-normal text-right">
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover block text-sm font-medium no-underline">
 													<span class="inline-flex items-center justify-end gap-1">
@@ -432,7 +432,7 @@
 									<tr>
 										<th scope="col" class="col-group-start text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.dividend.per.share")}</th>
 										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.amount")}</th>
-										<th scope="col" class="text-right">
+										<th scope="col" class="text-right" aria-sort="${"taxable-base".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none"}">
 											<a href="${monthlyDividendTableBaseUrl}&sort=taxable-base&direction=${taxableBaseDirectionToggle}" class="link link-hover inline-flex items-end gap-1 font-medium no-underline">
 												<span class="inline-flex flex-col items-end whitespace-normal leading-4 text-right">
 													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio.line.one")}</span>
@@ -523,8 +523,7 @@
 												data-profile-order-row="${rowDisplayOrder != null ? "true" : "false"}"
 												data-symbol="${normalizedRowSymbol}"
 												tabindex="0"
-												role="button"
-												aria-pressed="false"
+												aria-selected="false"
 												draggable="${rowReorderable}"
 												data-latest-monthly-dividend="${latestMonthlyDividendAmount.toPlainString()}"
 												data-buy-amount="${buyAmount.toPlainString()}"
@@ -709,4 +708,5 @@
 </style>
 
 <%-- 행 선택 합계는 /js/stock/monthlyDividendSimulator.js 에 있다(2026-09-08 까지 여기 240 줄 인라인 스크립트). --%>
+@template._components.ui.submitOverlay()
 <script type="module" src="/js/stock/monthlyDividendSimulator.js"></script>

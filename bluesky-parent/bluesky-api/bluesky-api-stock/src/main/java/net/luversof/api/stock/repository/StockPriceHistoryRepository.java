@@ -224,51 +224,53 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
   /**
    * 하루 만에 가격제한폭(±30%)을 넘은 행의 개수.
    *
-   * <p>거래로는 생길 수 없는 변동이므로 분할·병합 같은 기업행위이거나 수집 오류다. 위의 거래량 0 점검은 이걸 못 잡는다 - 분할은 보통 거래량이 붙는다.
+   * <p>거래로는 생길 수 없는 변동이므로 분할·병합 같은 기업행위이거나 수집 오류다. 위의 거래량 0 점검과 짝을 이룬다.
    *
    * <p>오래 쉰 뒤의 첫 거래는 제한폭 판정 대상이 아니므로 직전 거래일과 7일 이내인 행만 본다.
+   *
+   * <p>직전 행은 LAG 윈도우로 잡는다. 예전에는 행마다 LATERAL 서브쿼리로 직전 행을 다시 찾았는데, 거래량 0 점검과 달리 이 조건은 전 행(실측
+   * 57,577행)을 대상으로 해 그 방식이 136ms 였다(2026-09-09, dataStatus 307ms 의 44%). 아래 행 조회와 합쳐 270ms.
    */
   @Query(
       """
+                    WITH w AS (
+                        SELECT "closePrice",
+                            "tradeDate",
+                            LAG("closePrice") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_close,
+                            LAG("tradeDate") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_date
+                        FROM "StockPriceHistory"
+                    )
                     SELECT COUNT(*)
-                    FROM "StockPriceHistory" h
-                    CROSS JOIN LATERAL (
-                        SELECT p."closePrice", p."tradeDate"
-                        FROM "StockPriceHistory" p
-                        WHERE p."stockItem_id" = h."stockItem_id"
-                            AND p."tradeDate" < h."tradeDate"
-                        ORDER BY p."tradeDate" DESC
-                        LIMIT 1
-                    ) AS x
-                    WHERE x."closePrice" > 0
-                        AND h."closePrice" > 0
-                        AND h."tradeDate" - x."tradeDate" <= 7
-                        AND ABS(h."closePrice"::numeric / x."closePrice"::numeric - 1) > 0.30
+                    FROM w
+                    WHERE prev_close > 0
+                        AND "closePrice" > 0
+                        AND "tradeDate" - prev_date <= 7
+                        AND ABS("closePrice"::numeric / prev_close::numeric - 1) > 0.30
                 """)
   long countPriceLimitBreachRows();
 
-  /** 위 개수에 해당하는 행 자체. 응답이 원장 크기를 따라가지 않도록 상한을 둔다. */
+  /** 위 개수에 해당하는 행 자체. 응답이 원장 크기를 따라가지 않도록 상한을 둔다. 직전 행은 위와 같은 LAG 윈도우다. */
   @Query(
       """
-                    SELECT h."stockItem_id" AS stock_item_id,
-                        h."tradeDate" AS trade_date,
-                        h."closePrice" AS close_price,
-                        x."closePrice" AS previous_close_price,
-                        x."tradeDate" AS previous_trade_date
-                    FROM "StockPriceHistory" h
-                    CROSS JOIN LATERAL (
-                        SELECT p."closePrice", p."tradeDate"
-                        FROM "StockPriceHistory" p
-                        WHERE p."stockItem_id" = h."stockItem_id"
-                            AND p."tradeDate" < h."tradeDate"
-                        ORDER BY p."tradeDate" DESC
-                        LIMIT 1
-                    ) AS x
-                    WHERE x."closePrice" > 0
-                        AND h."closePrice" > 0
-                        AND h."tradeDate" - x."tradeDate" <= 7
-                        AND ABS(h."closePrice"::numeric / x."closePrice"::numeric - 1) > 0.30
-                    ORDER BY h."tradeDate" DESC
+                    WITH w AS (
+                        SELECT "stockItem_id",
+                            "tradeDate",
+                            "closePrice",
+                            LAG("closePrice") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_close,
+                            LAG("tradeDate") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_date
+                        FROM "StockPriceHistory"
+                    )
+                    SELECT "stockItem_id" AS stock_item_id,
+                        "tradeDate" AS trade_date,
+                        "closePrice" AS close_price,
+                        prev_close AS previous_close_price,
+                        prev_date AS previous_trade_date
+                    FROM w
+                    WHERE prev_close > 0
+                        AND "closePrice" > 0
+                        AND "tradeDate" - prev_date <= 7
+                        AND ABS("closePrice"::numeric / prev_close::numeric - 1) > 0.30
+                    ORDER BY "tradeDate" DESC
                     LIMIT 5
                 """)
   List<PriceLimitBreachRow> findPriceLimitBreachRows();

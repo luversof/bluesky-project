@@ -7,7 +7,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,8 +22,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.context.MessageSource;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,7 +31,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
-import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
@@ -87,8 +83,6 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       @RequestParam(required = false) Instant startDate,
       @RequestParam(required = false) Instant endDate,
       @RequestParam(required = false) String timeZone,
-      @RequestParam(defaultValue = "1") int page,
-      @RequestParam(defaultValue = "15") int size,
       @RequestParam(required = false) String sort,
       @RequestParam(required = false) String rangeMode,
       Model model) {
@@ -97,8 +91,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       return loginRequiredView(model);
     }
 
-    Instant startInstant = startDate;
-    Instant endInstant = endDate;
+    // 역순 기간은 앞뒤를 바로잡는다(피커와 같은 규칙). 그대로 두면 빈 결과가 '데이터 없음' 으로 읽힌다.
+    Instant[] orderedRange = effectiveRange(rangeMode, startDate, endDate);
+    Instant startInstant = orderedRange[0];
+    Instant endInstant = orderedRange[1];
     // rangeMode 는 어떤 프리셋 버튼이 눌렸는지 알리는 화면 상태값이지 기간 그 자체가 아니다
     // (기간은 startDate/endDate 로 온다). 그런데 이 가드가 rangeMode 의 '존재'를 보는 바람에,
     // 날짜 없이 rangeMode 만 실려 오면 기본 기간이 적용되지 않고 전 기간이 조회됐다
@@ -388,29 +384,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
               DividendView::payDate, Comparator.nullsLast(Comparator.reverseOrder())));
     }
 
-    if (size <= 0) size = 15;
-    // 상세 목록은 페이징 없이 전체를 펼쳐서 표시(헤더 sticky로 스크롤).
-    if (!viewList.isEmpty()) size = viewList.size();
-
-    boolean isSearch =
-        (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
-            || (effectiveStockItemIdList != null && !effectiveStockItemIdList.isEmpty())
-            || startDate != null
-            || endDate != null;
-
-    if (isSearch) {
-      size = Math.max(viewList.size(), 1);
-    }
-
+    // 상세 목록은 페이징 없이 전체를 펼쳐서 표시한다(헤더 sticky 로 스크롤). 예전의 page/size 파라미터와 slice·Pagination 은
+    // 이 결정 뒤로 항상 '1 페이지 = 전체' 라 도달 불가였다(실측 2026-09-09: 폼·화면 어디서도 보내지 않고, 보내도 응답이 같았다).
     int totalItems = viewList.size();
-    int totalPages = (int) Math.ceil((double) totalItems / size);
-    int currentPage = Math.max(1, Math.min(page, totalPages));
-    if (totalPages == 0) currentPage = 1;
-
-    int fromIndex = (currentPage - 1) * size;
-    int toIndex = Math.min(fromIndex + size, totalItems);
-    List<DividendView> pagedList =
-        (fromIndex < totalItems) ? viewList.subList(fromIndex, toIndex) : Collections.emptyList();
+    List<DividendView> pagedList = viewList;
 
     BigDecimal totalGrossAmount =
         pagedList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -536,9 +513,6 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
               .collect(java.util.stream.Collectors.toList());
     }
 
-    var pageImpl = new PageImpl<>(pagedList, PageRequest.of(currentPage - 1, size), totalItems);
-    var pagination = new Pagination(pageImpl);
-
     // 조회/페이징은 그대로 두고, 화면에는 그 페이지를 오름차순(오래된 것 위)으로 표시(명시 정렬 시 제외).
     List<DividendView> displayDividendList = new java.util.ArrayList<>(pagedList);
     if (sort == null || sort.isEmpty()) {
@@ -552,11 +526,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             net.luversof.web.gate.stock.util.StockDividendTtmUtil.byMonth(
                 net.luversof.web.gate.stock.support.StockAsyncSupport.join(allDividendsFuture),
                 net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone))));
-    model.addAttribute("pagination", pagination);
     model.addAttribute("totalItems", totalItems);
-    model.addAttribute("totalPages", totalPages);
-    model.addAttribute("currentPage", currentPage);
-    model.addAttribute("size", size);
     model.addAttribute("accountList", finalAccountList);
     model.addAttribute("stockItemList", finalStockItemList);
     model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));

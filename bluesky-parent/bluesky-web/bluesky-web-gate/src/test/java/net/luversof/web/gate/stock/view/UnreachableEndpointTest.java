@@ -54,20 +54,15 @@ class UnreachableEndpointTest {
 
   private static final Map<String, String> KNOWN_UNREACHABLE = new LinkedHashMap<>();
 
+  // 2026-09-09: /stock/htmx/dashboard 껍데기와 /api/stock/tradeProfit/calculateProfit 통과 경로는 지웠다(목록에 남길
+  // 이유가 없어졌다). 같은 날 /stock/htmx/asset-growth/period-return 라우트도 지웠다(전용 헬퍼 loadPeriodSummary 포함).
   static {
-    KNOWN_UNREACHABLE.put(
-        "/api/stock/tradeProfit/calculateProfit", "게이트 JSON 통과 엔드포인트인데 부르는 화면/스크립트가 없다");
     KNOWN_UNREACHABLE.put("/stock/dashboard", "본문 없이 redirect:/stock 만 한다(메뉴는 /stock 을 가리킨다)");
-    KNOWN_UNREACHABLE.put("/stock/htmx/dashboard", "hx-get 자리표시자 껍데기인데 그 껍데기를 부르는 화면이 없다");
-    KNOWN_UNREACHABLE.put(
-        "/stock/htmx/asset-growth/period-return",
-        "기간 요약은 /asset-growth/view 가 함께 렌더한다. 이 라우트는 따로 호출되지 않는다");
     KNOWN_UNREACHABLE.put("/stock/realized-profit", "redirect:/stock/trade 로 남겨 둔 옛 주소");
     KNOWN_UNREACHABLE.put(
-        "/stock/htmx/portfolio",
-        "서버 왕복 정렬 시절의 잔재. 참조는 tabsPortfolio.jte 정렬 헤더 8 개가 자기 자신을 다시 부르는 것뿐이고,"
-            + " 그 헤더가 겨냥하는 #tab-content 는 이제 어디에도 없다. 지금 보유 표는 assetStatus.jte 가"
-            + " data-sort-key 로 클라이언트 정렬한다");
+        "/stock/api/timeSeries",
+        "유일한 호출자였던 죽은 timeSeriesChart.ts 를 2026-09-09 에 지웠다. 컨트롤러는 StockEndpointAuthGuardTest 가"
+            + " /stock/api 접두어 함정의 표본으로 쓰므로 남긴다");
   }
 
   private String read(Path path) throws IOException {

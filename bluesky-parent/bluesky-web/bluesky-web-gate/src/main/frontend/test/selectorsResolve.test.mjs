@@ -22,6 +22,7 @@ const SCRIPT_CREATED = new Map([
 	["simple-multi-style", "multiSelectInit.ts 가 주입하는 <style> 의 id"],
 	["data-msd-wrap", "multiSelectDropdown.ts 가 만드는 드롭다운 껍데기"],
 	["data-msd-panel", "multiSelectDropdown.ts 가 만드는 드롭다운 패널"],
+	["data-msd-toggle", "multiSelectDropdown.ts 가 만드는 토글 버튼(aria-expanded 를 맞추기 위한 표식)"],
 	["data-poe-chip", "poe/multiSelect.ts 가 만드는 칩"],
 	["data-poe-msd-wrap", "poe/multiSelect.ts 가 만드는 껍데기"],
 	["data-poe-msd-panel", "poe/multiSelect.ts 가 만드는 패널"],
@@ -34,8 +35,6 @@ const SCRIPT_CREATED = new Map([
 const KNOWN_DEAD = new Map([
 	["data-overlay", "common.ts 의 레이어 닫기 처리. 이 속성을 붙이는 마크업이 소스 어디에도 없다"],
 	["data-overlay-close", "위와 같은 처리의 닫기 버튼"],
-	["tradeProfitForm", "stock/tradeProfit.js 는 죽은 산출물이다(deadAssets.test.mjs 의 KNOWN_UNUSED)"],
-	["tradeProfitResult", "위와 같음"],
 ]);
 
 function walk(dir, ext, out = []) {

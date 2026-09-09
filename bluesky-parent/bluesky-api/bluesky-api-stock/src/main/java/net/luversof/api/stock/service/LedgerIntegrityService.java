@@ -261,6 +261,11 @@ public class LedgerIntegrityService {
     //
     // 그래서 그 네 규칙을 걷어냈다. 참조 시트 자체의 입력 오류를 보는 REFERENCE_TAXABLE_RATIO_OUTLIER 는
     // 원천징수를 쓰지 않으므로 그대로 둔다.
+    //
+    // 그 규칙들이 쓰던 헬퍼 셋(storedTaxableVerdict · effectiveRateOnReference · taxableImpliedQuantity)은
+    // 2026-09-09 에 지웠다(어디서도 부르지 않았다). 거기 적혀 있던 실측만 남긴다 - 2026-08-23 어긋난 9 건은
+    // 7 건이 저장 과세표준 쪽(참조 x 수량과 다름), 2 건이 세금 쪽(과세표준은 참조와 같은데 실효세율 6.12% / 5.18%)이었고,
+    // '참조를 믿었을 때의 실효세율이 15.40% 인가' 로 참조가 맞는지 부풀려졌는지 가를 수 있었다.
 
     dividendRule(
         findings,
@@ -1040,118 +1045,12 @@ public class LedgerIntegrityService {
         findings);
   }
 
-  /**
-   * 과세표준이 세금보다 작을 때, 무엇이 이상한지 행에서 바로 보이게 적는다.
-   *
-   * <p>예전에는 {@code tax=29210, taxable=2233} 처럼 두 숫자만 적었다. 사용자는 그것만 보고 어느 값을 고쳐야 할지 알 수 없다. 같은 행의 세전
-   * 금액과 수량으로 <b>주당 금액</b>을 함께 적으면 원인이 드러난다 &mdash; 실측 2026-08-23: 8 건 모두 주당 세전 29~30 원인데 주당 과세표준이
-   * 0.22 원이었고, 과세표준을 수량 10,256 주가 아니라 77 주로 계산한 값과 정확히 일치했다.
-   *
-   * <p>다만 "77 주로 계산했다" 고 단정하지는 않는다. 과세비율이 100% 가 아닌 달도 있어(이 종목의 2025-11 은 41.94%), 비율만 낮은 정상 행과 구분할
-   * 근거가 행 안에는 없다. 사실만 적고 판단은 사람에게 남긴다.
-   */
-  /**
-   * 어긋난 원인이 <b>과세표준</b>인지 <b>세금</b>인지 가른다.
-   *
-   * <p>저장된 과세표준을 참조(주당 과세표준 x 수량)와 직접 견주면 두 부류가 갈린다. 실측 2026-08-23 의 9 건:
-   *
-   * <ul>
-   *   <li>7 건은 저장 과세표준이 참조와 <b>다르다</b>(KODEX 한국부동산리츠인프라: 저장값이 참조의 0.75%). 그 과세표준으로 실효세율을 내면 1308% 가
-   *       나온다 &mdash; 과세표준 쪽이 틀렸다는 뜻이다.
-   *   <li>2 건은 저장 과세표준이 참조와 <b>정확히 같다</b>(RISE 200위클리커버드콜 · KODEX 200타겟위클리커버드콜 모두 저장값 = 주당 과세표준 x
-   *       수량 이 정확히 성립). 그런데 세금이 그 과세표준의 6.12% / 5.18% 뿐이다 (정상 15.4%). 여기서는 과세표준이 아니라 세금 쪽을 봐야 한다.
-   * </ul>
-   *
-   * <p>이 구분이 없으면 9 건을 전부 "참조를 다시 가져오면 되는 문제" 로 착각한다.
-   */
-  private static String storedTaxableVerdict(Dividend dividend, BigDecimal[] reference) {
-    BigDecimal stored = nz(dividend.getTaxableAmount());
-    BigDecimal quantity =
-        dividend.getQuantity() == null
-            ? BigDecimal.ZERO
-            : BigDecimal.valueOf(dividend.getQuantity());
-    BigDecimal referenceBase = reference[1].multiply(quantity);
-    if (stored.signum() > 0
-        && stored.subtract(referenceBase).abs().compareTo(BigDecimal.ONE) <= 0) {
-      BigDecimal effective =
-          nz(dividend.getTax())
-              .multiply(BigDecimal.valueOf(100))
-              .divide(stored, 2, RoundingMode.HALF_UP);
-      return " — 저장 과세표준은 참조와 같다("
-          + stored.setScale(0, RoundingMode.HALF_UP)
-          + "). 그 과세표준 대비 실제 세율이 "
-          + effective
-          + "% 라 세금 쪽을 봐야 한다(정상 15.40%)";
-    }
-    return " — 저장 과세표준 "
-        + stored.setScale(0, RoundingMode.HALF_UP)
-        + " 이 참조 기준 "
-        + referenceBase.setScale(0, RoundingMode.HALF_UP)
-        + " 과 다르다"
-        + (reference[1].compareTo(reference[0]) == 0
-            ? "(참조가 정확히 100% 다 — 주당 과세표준에 주당 배당금이 그대로 들어간 모양)"
-            : "");
-  }
-
   /** 거래대금(단가 x 수량). 둘 중 하나라도 없으면 {@code null}. */
   private static BigDecimal tradeAmount(Trade trade) {
     if (trade == null || trade.getPrice() == null) {
       return null;
     }
     return trade.getPrice().multiply(BigDecimal.valueOf(trade.getQuantity()));
-  }
-
-  /**
-   * 참조의 과세표준을 믿었다고 할 때 실제로 적용된 세율(%).
-   *
-   * <p>이 값이 15.40% 에 떨어지면 참조가 맞고, 그보다 낮으면 참조가 과세표준을 부풀린 것이다. 두 가지를 구분해 주는 값이라 지적에 함께 싣는다 &mdash;
-   * "참조가 100% 라고 한다" 만으로는 100% 가 틀린 것인지 세율이 다른 것인지 알 수 없다.
-   *
-   * <p>실측 2026-08-23 (KODEX 한국부동산리츠인프라): 2025-10~12 는 참조 비율이 51.52% / 41.94% / 100.00% 로 제각각인데
-   * 실효세율은 모두 정확히 15.40% 였다(참조가 맞다 - 100% 인 달도 정상이었다). 2026-01 부터 참조가 계속 100% 인데 실효세율이 9.82% 로 떨어진다
-   * (그때부터 참조가 부풀려졌다).
-   */
-  private static BigDecimal effectiveRateOnReference(Dividend dividend, BigDecimal referenceRatio) {
-    BigDecimal gross = nz(dividend.getGrossAmount());
-    if (gross.signum() <= 0 || referenceRatio.signum() <= 0) {
-      return BigDecimal.ZERO;
-    }
-    BigDecimal referenceTaxableAmount =
-        gross.multiply(referenceRatio).divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
-    if (referenceTaxableAmount.signum() <= 0) {
-      return BigDecimal.ZERO;
-    }
-    return nz(dividend.getTax())
-        .multiply(BigDecimal.valueOf(100))
-        .divide(referenceTaxableAmount, 4, RoundingMode.HALF_UP);
-  }
-
-  /** 실제로 뗀 세금에서 되짚은 과세표준 비율(세전 대비 %). */
-  /**
-   * 저장된 과세표준이 어떤 수량으로 계산됐는지 되돌린다.
-   *
-   * <p>과세표준 / 주당 과세표준 이 정수로 딱 떨어질 때만 값을 낸다. 나누어떨어지지 않으면 수량이 아니라 다른 사정(비율 반올림 등)이므로 판단하지 않는다.
-   *
-   * @return 계산에 쓰인 것으로 보이는 수량, 판단할 수 없으면 {@code null}
-   */
-  private static Integer taxableImpliedQuantity(Dividend dividend) {
-    if (dividend == null || dividend.getQuantity() == null) {
-      return null;
-    }
-    BigDecimal taxable = nz(dividend.getTaxableAmount());
-    BigDecimal perShare = nz(dividend.getTaxPerShare());
-    if (taxable.signum() <= 0 || perShare.signum() <= 0) {
-      return null;
-    }
-    BigDecimal[] divided = taxable.divideAndRemainder(perShare);
-    if (divided[1].signum() != 0) {
-      return null;
-    }
-    try {
-      return divided[0].intValueExact();
-    } catch (ArithmeticException ignored) {
-      return null;
-    }
   }
 
   /**

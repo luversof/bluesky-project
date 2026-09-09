@@ -5,9 +5,11 @@
 @param String username = ""
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
+<%-- 화면 이름. 비면 예전처럼 "Bluesky Stock" 만. 실측 2026-09-09: 화면 12개의 <title> 이 전부 같아 탭·히스토리에서 구분이 안 됐다. --%>
+@param String pageTitle = ""
 
 @template._layout.defaultLayout(
-	title = "Bluesky Stock",
+	title = pageTitle == null || pageTitle.isEmpty() ? "Bluesky Stock" : pageTitle + " \u00B7 Bluesky Stock",
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,
@@ -26,7 +28,7 @@
 
 		<div class="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
 			<div class="hidden lg:block lg:w-56 shrink-0 stock-sidebar-spacer">
-				<div class="fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-56 overflow-y-auto border-r border-base-200 bg-base-100 py-4 flex flex-col stock-sidebar">
+				<nav aria-label="${MessageUtil.getMessage("layout.menu.main.stock")}" class="fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-56 overflow-y-auto border-r border-base-200 bg-base-100 py-4 flex flex-col stock-sidebar">
 					@template._components.navmenu(menu = "stock", classAppend = "w-full")
 					<div class="mt-auto border-t border-base-200 px-2 pt-2">
 						<button type="button" class="sidebar-collapse-btn w-full font-medium rounded-box flex items-center justify-end gap-3 px-4 py-3 text-base-content/60 hover:bg-base-200 hover:text-base-content transition-all duration-300 hover:duration-75"
@@ -37,7 +39,7 @@
 							</svg>
 						</button>
 					</div>
-				</div>
+				</nav>
 			</div>
 			<script nonce="${CspNonceHolder.getNonce()}">
 				(function() {

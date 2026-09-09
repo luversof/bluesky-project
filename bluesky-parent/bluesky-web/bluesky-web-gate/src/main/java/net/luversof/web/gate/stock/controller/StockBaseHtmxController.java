@@ -55,7 +55,63 @@ public abstract class StockBaseHtmxController {
    */
   protected String loginRequiredView(org.springframework.ui.Model model) {
     model.addAttribute(ERROR_ATTRIBUTE, msg("stock.label.login.required"));
+    String loginUrl = loginUrlForCurrentRequest();
+    if (loginUrl != null) {
+      model.addAttribute(LOGIN_URL_ATTRIBUTE, loginUrl);
+    }
     return ERROR_VIEW;
+  }
+
+  protected static final String LOGIN_URL_ATTRIBUTE = "loginUrl";
+  protected static final String RETRY_URL_ATTRIBUTE = "retryUrl";
+
+  /**
+   * 세션이 풀린 조각에서 돌아갈 로그인 주소. 페이지 리다이렉트({@code StockViewSupport.loginRedirectView})와 같은 {@code
+   * /login?redirectUrl=} 규약을 쓰되, 돌아갈 곳은 조각 주소가 아니라 <b>사용자가 보고 있던 페이지</b>다 - htmx 가 실어 보내는 {@code
+   * HX-Current-URL} 이 그것이고, 없으면 요청 주소로 떨어진다.
+   *
+   * <p>실측 2026-09-09(익명으로 조각 27개 호출): 전부 "로그인이 필요합니다" 한 줄만 나왔고 로그인으로 가는 길이 없었다. 조각은 페이지처럼 리다이렉트할 수
+   * 없으니 링크로 대신한다.
+   *
+   * @return 요청 문맥이 없으면(단위 테스트 등) {@code null}
+   */
+  protected String loginUrlForCurrentRequest() {
+    jakarta.servlet.http.HttpServletRequest request = currentRequest();
+    if (request == null) {
+      return null;
+    }
+    String target = request.getHeader("HX-Current-URL");
+    if (target == null || target.isBlank()) {
+      StringBuilder url = new StringBuilder(request.getRequestURL());
+      if (request.getQueryString() != null) {
+        url.append('?').append(request.getQueryString());
+      }
+      target = url.toString();
+    }
+    return "/login?redirectUrl="
+        + java.net.URLEncoder.encode(target, java.nio.charset.StandardCharsets.UTF_8);
+  }
+
+  /**
+   * 실패한 조회를 그 자리에서 다시 부를 주소(쿼리 포함). 조회가 아닌 요청(POST 등)이나 요청 문맥이 없으면 {@code null}. 공통 예외 처리기({@code
+   * StockHtmxErrorResolver})의 loadError 조각과 같은 규칙이다.
+   */
+  protected String retryUrlForCurrentRequest() {
+    jakarta.servlet.http.HttpServletRequest request = currentRequest();
+    if (request == null || !"GET".equalsIgnoreCase(request.getMethod())) {
+      return null;
+    }
+    String query = request.getQueryString();
+    return query == null || query.isEmpty()
+        ? request.getRequestURI()
+        : request.getRequestURI() + "?" + query;
+  }
+
+  private static jakarta.servlet.http.HttpServletRequest currentRequest() {
+    return org.springframework.web.context.request.RequestContextHolder.getRequestAttributes()
+            instanceof org.springframework.web.context.request.ServletRequestAttributes attributes
+        ? attributes.getRequest()
+        : null;
   }
 
   /**
@@ -67,7 +123,43 @@ public abstract class StockBaseHtmxController {
    */
   protected String remoteFailureView(org.springframework.ui.Model model) {
     model.addAttribute(ERROR_ATTRIBUTE, msg("stock.error.fragment.title"));
+    String retryUrl = retryUrlForCurrentRequest();
+    if (retryUrl != null) {
+      model.addAttribute(RETRY_URL_ATTRIBUTE, retryUrl);
+    }
     return ERROR_VIEW;
+  }
+
+  /**
+   * 시작이 종료보다 뒤면 둘을 맞바꾼다. 화면의 날짜 피커는 이미 그렇게 바로잡지만(date-range-picker.ts), 주소를 손으로 고치거나 공유 링크가 어긋나면
+   * 서버에 역순 그대로 온다.
+   *
+   * <p>실측 2026-09-09: 역순으로 부른 자산성장·배당·매매·활동 조각 4개가 전부 오류도 안내도 없이 "2026-07-01 ~ 2026-02-28" 과 빈 결과를
+   * 그렸다. 사용자에게는 '그 기간에 데이터가 없다' 로 읽힌다. 한쪽만 있거나 같으면 그대로 둔다.
+   *
+   * @return {start, end} 순서가 맞은 두 값
+   */
+  /**
+   * 화면이 요청한 기간. {@code rangeMode=all} 이면 함께 실린 날짜를 버리고(전체), 아니면 앞뒤를 바로잡은 날짜다.
+   *
+   * <p>피커는 '전체' 를 고르면 날짜를 비워 보내므로 둘이 함께 오는 요청은 모순이다. 그런데 공유 주소 {@code ?rangeMode=all} 로 들어오면
+   * hx-include 가 저장된 날짜를 같이 실어 보낸다 - 실측 2026-09-09: 네 목록 조각 모두 버튼은 '전체' 인데 내용은 올해였다. 사용자가 고른 것은
+   * 모드이므로 모드가 이긴다.
+   */
+  protected static java.time.Instant[] effectiveRange(
+      String rangeMode, java.time.Instant startDate, java.time.Instant endDate) {
+    if ("all".equalsIgnoreCase(rangeMode)) {
+      return new java.time.Instant[] {null, null};
+    }
+    return orderedRange(startDate, endDate);
+  }
+
+  protected static java.time.Instant[] orderedRange(
+      java.time.Instant startDate, java.time.Instant endDate) {
+    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+      return new java.time.Instant[] {endDate, startDate};
+    }
+    return new java.time.Instant[] {startDate, endDate};
   }
 
   protected static final List<String> ACCOUNT_PRINCIPAL_CONFIG_KEYS =

@@ -6,11 +6,13 @@
 @param String profile = "local"
 @param String titleKey = "stock.error.fragment.title"
 @param String descKey = "stock.error.fragment.desc"
+@param String retryUrl = ""
 
 <%-- 페이지 렌더 도중 백엔드 호출이 실패했을 때 쓰는 전체 화면.
-     이게 없으면 공통 예외 처리기가 본문 없는 200 을 만들어 화면이 완전히 백지가 된다
-     (실측: 백엔드 중지 시 매매내역/배당캘린더/월배당/실현손익/관리-월배당이 본문 0자). --%>
+	 이게 없으면 공통 예외 처리기가 본문 없는 200 을 만들어 화면이 완전히 백지가 된다
+	 (실측: 백엔드 중지 시 매매내역/배당캘린더/월배당/실현손익/관리-월배당이 본문 0자). --%>
 @template._layout.stockLayout(
+	pageTitle = MessageUtil.getMessage(titleKey),
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,
@@ -22,9 +24,13 @@
 					<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
 				</svg>
 				<div class="min-w-0">
-					<div class="font-semibold">${MessageUtil.getMessage(titleKey)}</div>
+					<%-- 오류 화면도 페이지다: h1 이 없으면 axe page-has-heading-one 에 걸린다(실측 2026-09-09, 백엔드 중지 시 4화면). --%>
+					<h1 class="font-semibold text-base">${MessageUtil.getMessage(titleKey)}</h1>
 					<div class="text-sm opacity-80 whitespace-normal">${MessageUtil.getMessage(descKey)}</div>
 				</div>
+				@if(retryUrl != null && !retryUrl.isEmpty())
+					<a href="${retryUrl}" class="btn btn-sm btn-outline shrink-0">${MessageUtil.getMessage("common.button.retry")}</a>
+				@endif
 			</div>
 		</div>
 	`

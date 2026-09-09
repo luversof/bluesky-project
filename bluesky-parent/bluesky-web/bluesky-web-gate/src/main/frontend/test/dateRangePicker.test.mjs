@@ -69,3 +69,46 @@ test("이 계산은 한 벌만 있다", async () => {
 	const copies = source.split("function localDateToInstantIso").length - 1;
 	assert.equal(copies, 1, `localDateToInstantIso 가 ${copies} 벌 있다`);
 });
+
+// 복원한 전역 기간이 조각의 현재 값과 같으면 재제출하지 않는다.
+// 실측 2026-09-09: /stock/dividend 진입 시 dividend/list 가 196KB x2(두 번째는 첫 번째와 바이트까지 동일).
+test("같은 기간이면 이미 그려진 것으로 본다", () => {
+	assert.equal(
+		mod.restoredRangeAlreadyShown(
+			{ start: "2026-01-01", end: "2026-09-09", mode: "ytd" },
+			{ start: "2026-01-01", end: "2026-09-09", mode: "ytd", timeZone: "Asia/Seoul" },
+		),
+		true,
+	);
+});
+
+test("날짜나 모드가 하나라도 다르면 다시 실어야 한다", () => {
+	const cur = { start: "2026-01-01", end: "2026-09-09", mode: "ytd" };
+	assert.equal(mod.restoredRangeAlreadyShown(cur, { start: "2026-08-01", end: "2026-09-09", mode: "mtd" }), false);
+	assert.equal(mod.restoredRangeAlreadyShown(cur, { start: "2026-01-01", end: "2026-09-08", mode: "ytd" }), false);
+	assert.equal(mod.restoredRangeAlreadyShown(cur, { start: "2026-01-01", end: "2026-09-09", mode: "" }), false);
+});
+
+test("빈 값과 null 은 같은 것으로 본다(전체 기간은 날짜가 비어 있다)", () => {
+	assert.equal(mod.restoredRangeAlreadyShown({ start: "", end: "", mode: "all" }, { start: null, end: undefined, mode: "all" }), true);
+	assert.equal(mod.restoredRangeAlreadyShown({ start: "", end: "", mode: "" }, { start: "2026-01-01", end: "2026-09-09", mode: "ytd" }), false);
+});
+
+// 초기화 때 조각의 기간(URL 포함)과 저장된 전역 기간 중 무엇을 쓰는가.
+// 실측 2026-09-09: /stock/dividend?...rangeMode=3 진입 시 첫 조회는 3개월, 곧 저장된 ytd 로 재조회돼 공유 링크가 무력했다.
+const YTD = { start: "2026-01-01", end: "2026-09-09", mode: "ytd" };
+test("조각에 기간이 없으면 저장값으로 한 번 제출한다(예전 동작)", () => {
+	assert.deepEqual(mod.resolveInitialRange({ start: "", end: "", mode: "" }, YTD), { range: YTD, submit: true, persist: false });
+	assert.deepEqual(mod.resolveInitialRange(null, YTD), { range: YTD, submit: true, persist: false });
+});
+
+test("같으면 제출도 저장도 하지 않는다", () => {
+	assert.deepEqual(mod.resolveInitialRange({ ...YTD }, { ...YTD, timeZone: "Asia/Seoul" }), { range: { ...YTD, timeZone: "Asia/Seoul" }, submit: false, persist: false });
+});
+
+test("다르면 조각(URL)이 이긴다: 저장값을 갱신하고 제출하지 않는다", () => {
+	const fromUrl = { start: "2026-07-01", end: "2026-09-09", mode: "3" };
+	assert.deepEqual(mod.resolveInitialRange(fromUrl, YTD), { range: fromUrl, submit: false, persist: true });
+	// 전체 기간(all)은 날짜가 비어 있어도 mode 가 있으니 '기간이 있다' 로 본다.
+	assert.deepEqual(mod.resolveInitialRange({ start: "", end: "", mode: "all" }, YTD).persist, true);
+});

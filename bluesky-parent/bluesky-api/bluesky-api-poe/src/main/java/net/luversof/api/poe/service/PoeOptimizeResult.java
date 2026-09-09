@@ -53,6 +53,13 @@ public record PoeOptimizeResult(
     List<ItemPick> items,
     // 캐릭터 속성이 모자라 실제로는 장착 불가능한 장비 — 조용히 넘어가면 게임에서 못 쓰는 빌드가 나온다
     List<UnmetRequirement> unmetRequirements,
+    // 엔진이 아예 모델링하지 않는 전직 노드 — 포인트를 써도 값이 0 이다(예: 루미너리의 용병 노드).
+    //   조용히 넘어가면 사용자는 그 전직이 제 몫을 한 수치라고 믿게 된다.
+    List<UnmodeledNode> unmodeledNodes,
+    // 전직 자체가 엔진에 없는 기제(예: 루미너리=용병)일 때의 경고. null 이면 정상.
+    //   ⚠ 노드 목록만으로는 이 상황을 못 잡는다 — 최적화기가 값 0 인 노드를 **스스로 피해서** 아무것도 할당하지 않기 때문이다
+    //   (실측 2026-09-09: Scion/Luminary 강제 완주 시 할당된 루미너리 노드 0개, 전직 8pt 가 통째로 미사용).
+    UnmodeledAscendancy unmodeledAscendancy,
     List<SlotTierCompare> tierComparisons,
     List<ScenarioCell> scenarioMatrix,
     List<DefenseHit> defenseHits,
@@ -118,6 +125,21 @@ public record PoeOptimizeResult(
   /** 장착 요구 속성 미달 (attribute = str|dex|int) */
   public record UnmetRequirement(
       String name, String nameKo, String attribute, int required, int actual) {}
+
+  /**
+   * PoB 엔진이 모델링하지 않아 값이 0 인 전직 노드. 판별 근거는 PoB 의 ModCache 에서 그 문장이 modifier 로 변환되지 않은 것(모드=nil)이다.
+   * 대표 사례는 사이온 루미너리의 용병 노드 — PoB 계산 엔진에 용병 액터가 없다.
+   */
+  public record UnmodeledNode(int id, String name, String nameKo, String ascendancy) {}
+
+  /**
+   * 엔진이 모델링하지 않는 기제에 기대는 전직 — 그 전직을 골라도 포인트를 쓸 곳이 없다.
+   *
+   * @param ascendancy 전직 이름
+   * @param unmodeled 스탯 노드 중 엔진이 문장을 해석조차 못 하는 노드 수
+   * @param total 스탯을 가진 전직 노드 수
+   */
+  public record UnmodeledAscendancy(String ascendancy, int unmodeled, int total) {}
 
   /**
    * 장착 아이템 하나.

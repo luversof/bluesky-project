@@ -49,16 +49,17 @@
 @param LocalDate coveredEndLocal = null
 
 !{
-    // 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
-    // 예전에는 서버 존이라 브라우저 존이 다르면 한 화면 안에서 하루가 어긋났다.
-    ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(filterTimeZone);
-    String evalColor = evaluationProfit != null && evaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
-    String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
-    BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
-    double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
+	// 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
+	// 예전에는 서버 존이라 브라우저 존이 다르면 한 화면 안에서 하루가 어긋났다.
+	ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(filterTimeZone);
+	String evalColor = evaluationProfit != null && evaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
+	String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
+	BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
+	double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 }
 
 @template._layout.stockLayout(
+	pageTitle = MessageUtil.getMessage("stock.account.detail.breadcrumb"),
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,
@@ -76,9 +77,15 @@
 					<div class="flex justify-center p-10"><span class="loading loading-spinner text-primary loading-lg"></span></div>
 				</div>
 			@else
-				<div id="accountDetailFragment" class="space-y-6">
+				<div id="accountDetailFragment" class="space-y-6" data-page-title="${account != null ? account.name() : null}">
 				@if(account == null)
-					@template._components.ui.emptyState(message = MessageUtil.getMessage("common.message.no.data"), boxed = true)
+					<%-- 없는 id 로 들어와도 페이지다: 빵부스러기와 h1 이 있어야 뒤로 갈 길이 보이고 axe page-has-heading-one 에 걸리지 않는다(실측 2026-09-09). --%>
+					@template._components.ui.breadcrumbBack(
+						homeLabel = MessageUtil.getMessage("layout.menu.main.stock"),
+						categoryLabel = MessageUtil.getMessage("stock.account.detail.breadcrumb"),
+						backLabel = MessageUtil.getMessage("common.button.back"))
+					@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.account.detail.breadcrumb"))
+					@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.account.detail.notfound"), boxed = true)
 				@else
 					@template._components.ui.breadcrumbBack(
 						homeLabel = MessageUtil.getMessage("layout.menu.main.stock"),
@@ -163,7 +170,7 @@
 					<!-- 평가액·원가 추이 -->
 					@if(timeSeries != null && !timeSeries.isEmpty() && chartFormatter != null)
 						<div>
-							<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
+							<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
 							<div class="bg-base-100 rounded-box border border-base-200 p-4">
 								<div class="h-64"><canvas id="accountDetailChart" class="amount-chart"></canvas></div>
 							</div>
@@ -213,7 +220,7 @@
 
 					<!-- 보유 종목 -->
 					<div>
-						<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.account.detail.holdings.title")}</h2>
+						<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.account.detail.holdings.title")}</h2>
 						@if(holdings == null || holdings.isEmpty())
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.holdings")}</div>
 						@else
@@ -254,7 +261,7 @@
 
 					<!-- 매매 내역 -->
 					<div>
-						<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.page.trade.title")}</h2>
+						<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.trade.title")}</h2>
 						@if(trades == null || trades.isEmpty())
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.trades")}</div>
 						@else
@@ -293,7 +300,7 @@
 
 					<!-- 배당 내역 -->
 					<div>
-						<h2 class="text-lg font-semibold mb-2 opacity-70">${MessageUtil.getMessage("stock.page.dividend.title")}</h2>
+						<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.dividend.title")}</h2>
 						@if(dividends == null || dividends.isEmpty())
 							<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.dividends")}</div>
 						@else

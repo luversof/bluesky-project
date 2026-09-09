@@ -103,6 +103,24 @@ try {
 	console.warn("PoB 소스 패치 실패 — 계속:", e.message);
 }
 
+// 망령 목록 — ModCache 와 같은 이유로 **PoB 소스 갱신·패치 뒤에** 뽑는다.
+//   최적화기가 망령을 고르려면 후보 목록이 필요하다(안 그러면 spectreList 가 비어 미니언이 아예 안 생긴다).
+console.log("\n===== parse-spectres.mjs (망령 목록) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "parse-spectres.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("망령 목록 추출 실패 — 계속:", e.message);
+}
+
+// 엔진이 모델링하지 않는 전직 노드 — **PoB 소스 갱신·패치 뒤에** 뽑는다(ModCache 가 그때 최신이다).
+//   사용자가 그런 전직(예: 사이온 루미너리, 노드 11/17 이 용병 문구)을 골랐을 때 화면에 경고를 띄우는 근거 데이터다.
+console.log("\n===== parse-engine-unmodeled.mjs (엔진 미모델링 전직 노드) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "parse-engine-unmodeled.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("엔진 미모델링 노드 추출 실패 — 계속:", e.message);
+}
+
 // 타임리스 주얼 .bin — **소스 갱신·패치 뒤에** 푼다(순서가 뒤바뀌면 옛 .bin 이 남는다).
 console.log("\n===== timeless-bin.mjs (타임리스 .bin 추출) =====");
 try {

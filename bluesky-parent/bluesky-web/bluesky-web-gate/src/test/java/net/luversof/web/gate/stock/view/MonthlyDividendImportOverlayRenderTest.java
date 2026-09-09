@@ -49,7 +49,10 @@ class MonthlyDividendImportOverlayRenderTest {
   }
 
   private String render() {
-    Map<String, Object> model = new HashMap<>();
+    return render(TEMPLATE, new HashMap<>());
+  }
+
+  private String render(String template, Map<String, Object> model) {
     // 출처 단건 가져오기는 저장된 프로필과 출처 URL 이 있을 때만 나온다.
     model.put("monthlyDividendProfileExists", true);
     // 지급 이력 삭제 폼은 저장된 이력이 있을 때만 나온다 - 덮지 않아야 할 폼의 본보기다.
@@ -58,7 +61,7 @@ class MonthlyDividendImportOverlayRenderTest {
     model.put(
         "selectedMonthlyDividendSourceUrl", "https://www.samsungfund.com/etf/product/view.do");
     StringOutput output = new StringOutput();
-    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
+    TemplateEngine.createPrecompiled(ContentType.Html).render(template, model, output);
     return output.toString();
   }
 
@@ -130,6 +133,35 @@ class MonthlyDividendImportOverlayRenderTest {
         .doesNotContain("data-submit-overlay");
     assertThat(formTag(html, "/stock/dividend/monthly-reference/payout/delete"))
         .doesNotContain("data-submit-overlay");
+  }
+
+  /**
+   * 시뮬레이터의 '시트에서 보유/평단가 가져오기'도 같은 부류다 - 구글 시트를 읽어 저장하는 평범한 POST 폼. 패널은 공용 컴포넌트({@code
+   * _components/ui/submitOverlay})라 두 화면이 같은 마크업을 쓴다.
+   */
+  @Test
+  void 시뮬레이터_시트_가져오기도_같은_오버레이를_쓴다() {
+    String html = render("stock/fragments/monthlyDividendSimulator.jte", new HashMap<>());
+
+    assertThat(html).contains("data-submit-overlay-panel=\"true\"");
+    String sheetImport = formTag(html, "/stock/simulator/monthly-dividend/import-sheet");
+    assertThat(sheetImport)
+        .contains("data-submit-overlay=\"true\"")
+        .contains("data-submit-overlay-title=\"배당주 검색 시트에서 보유/평단가 가져오기\"")
+        .contains("data-submit-overlay-desc=\"구글 시트에서 읽어 오는 중이라 시간이 걸릴 수 있습니다.\"");
+    // 시뮬레이터 폼은 시뮬레이션 계산이라 금방 끝난다 - 덮지 않는다.
+    assertThat(formTag(html, "/stock/simulator/monthly-dividend"))
+        .doesNotContain("data-submit-overlay");
+  }
+
+  /** 시뮬레이터 화면도 스크립트를 싣는다(월배당 탭). */
+  @Test
+  void 시뮬레이터_화면이_스크립트를_싣는다() throws IOException {
+    String source =
+        Files.readString(Path.of("src/main/jte/stock/simulator.jte"), StandardCharsets.UTF_8);
+
+    assertThat(source)
+        .contains("<script type=\"module\" src=\"/js/stock/submitOverlay.js\"></script>");
   }
 
   /** 스크립트를 싣지 않으면 표시만 있고 아무 일도 일어나지 않는다. */
