@@ -23,10 +23,21 @@
 		} catch (e) {}
 	}
 
-	// 1) 상세 조회 필터: 모든 [data-detail-filter] 가 같은 상태를 공유(기본 펼침).
+	// 1) 상세 조회 필터: 모든 [data-detail-filter] 가 같은 상태를 공유한다.
+	// 기본은 접힘 - 실측 2026-09-10(qa/filter-space.cjs): 배당·매매·활동·자산성장 네 화면 모두 펼친 채로
+	// 열려 화면당 116~124px 를 먹는데 적용된 필터는 0개였다. 다만 필터가 걸려 있으면 왜 결과가 좁혀졌는지
+	// 보여야 하므로 펼친다. 사용자가 한 번이라도 접거나 펼치면 그 선택이 이긴다.
+	function hasActiveFilter(): boolean {
+		var els = document.querySelectorAll(FILTER_SELECTOR);
+		for (var i = 0; i < els.length; i++) {
+			if (els[i].getAttribute("data-filter-active") === "true") return true;
+		}
+		return false;
+	}
 	function filterIsOpen(): boolean {
 		var v = lsGet(FILTER_KEY);
-		return v === null ? true : v === "1";
+		if (v !== null) return v === "1";
+		return hasActiveFilter();
 	}
 	function applyFilters() {
 		var open = filterIsOpen();

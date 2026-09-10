@@ -112,17 +112,17 @@
 
 <div class="space-y-6">
 	@if(!successMessage.isEmpty())
-		<div class="alert alert-success border border-success/20 bg-success/10 text-success-content">
+		<div class="alert alert-success border border-success/20 bg-success/10 text-success-content" role="status">
 			<span>${successMessage}</span>
 		</div>
 	@endif
 	@if(monthlyDividendReferenceErrorMessage != null && !monthlyDividendReferenceErrorMessage.isEmpty())
-		<div class="alert alert-error border border-error/20 bg-error/10 text-error-content">
+		<div class="alert alert-error border border-error/20 bg-error/10 text-error-content" role="alert">
 			<span>${monthlyDividendReferenceErrorMessage}</span>
 		</div>
 	@endif
 	@if(monthlyDividendReferenceResultMessage != null && !monthlyDividendReferenceResultMessage.isEmpty())
-		<div class="alert ${monthlyDividendReferenceResultIsError ? "alert-error border border-error/20 bg-error/10 text-error-content" : "alert-success border border-success/20 bg-success/10 text-success-content"}">
+		<div class="alert ${monthlyDividendReferenceResultIsError ? "alert-error border border-error/20 bg-error/10 text-error-content" : "alert-success border border-success/20 bg-success/10 text-success-content"}" role="alert">
 			<span>${monthlyDividendReferenceResultMessage}</span>
 		</div>
 	@endif
@@ -252,7 +252,7 @@
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.url")}</span></div>
 									<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content break-all">${sourceImportUrlValue}</div>
 								</label>
-								<button type="submit" class="btn btn-secondary w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}</button>
+								<button type="submit" class="btn btn-secondary w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}</button>
 							</form>
 						@else
 							<div class="mt-4 rounded-box border border-base-300 bg-base-100 px-4 py-3 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.empty")}</div>
@@ -356,7 +356,7 @@
 						<div class="rounded-2xl border border-dashed border-base-300 bg-base-50 px-6 py-10 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.empty")}</div>
 					@else
 						<div class="overflow-x-auto">
-							<table class="table table-sm">
+							<table class="table table-sm" aria-label="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.title")}">
 								<thead>
 									<tr>
 										<th scope="col" aria-sort="${"display-order".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
@@ -432,7 +432,7 @@
 											<td>
 												@if(row.sourceUrl() != null && !row.sourceUrl().isEmpty())
 													<div class="space-y-1">
-														<a href="${row.sourceUrl()}" class="link link-primary" target="_blank" rel="noreferrer">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.open.link")}</a>
+														<a href="${row.sourceUrl()}" class="link link-primary" target="_blank" rel="noopener noreferrer">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.open.link")}<span class="sr-only"> (${MessageUtil.getMessage("common.label.opens.new.window")})</span></a>
 														<div class="max-w-xs break-all text-xs text-base-content/60">${row.sourceUrl()}</div>
 													</div>
 												@else
@@ -458,7 +458,7 @@
 						<div class="rounded-2xl border border-dashed border-base-300 bg-base-50 px-6 py-10 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.empty")}</div>
 					@else
 						<div class="overflow-x-auto">
-							<table class="table table-sm">
+							<table class="table table-sm" aria-label="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.title")}">
 								<thead>
 									<tr>
 										<th scope="col" class="whitespace-nowrap">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.record.date")}</th>

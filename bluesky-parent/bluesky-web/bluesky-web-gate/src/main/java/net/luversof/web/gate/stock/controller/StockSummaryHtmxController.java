@@ -42,6 +42,7 @@ import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
+import net.luversof.web.gate.stock.httpexchange.PeriodSummaryClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
@@ -51,9 +52,13 @@ import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockSummaryHtmxController extends StockBaseHtmxController {
 
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(StockSummaryHtmxController.class);
+
   private final MonthlyDividendSnapshotClient monthlyDividendSnapshotClient;
   private final MonthlyDividendProfileClient monthlyDividendProfileClient;
   private final MonthlyDividendPayoutClient monthlyDividendPayoutClient;
+  private final PeriodSummaryClient periodSummaryClient;
   private final MonthlyDividendCalculator monthlyDividendCalculator;
   private final ExecutorService stockRemoteCallExecutor;
 
@@ -66,6 +71,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       MonthlyDividendSnapshotClient monthlyDividendSnapshotClient,
       MonthlyDividendProfileClient monthlyDividendProfileClient,
       MonthlyDividendPayoutClient monthlyDividendPayoutClient,
+      PeriodSummaryClient periodSummaryClient,
       MonthlyDividendCalculator monthlyDividendCalculator,
       ExecutorService stockRemoteCallExecutor,
       MessageSource messageSource) {
@@ -76,6 +82,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         stockItemClient,
         dividendClient,
         messageSource);
+    this.periodSummaryClient = periodSummaryClient;
     this.monthlyDividendSnapshotClient = monthlyDividendSnapshotClient;
     this.monthlyDividendProfileClient = monthlyDividendProfileClient;
     this.monthlyDividendPayoutClient = monthlyDividendPayoutClient;
@@ -132,6 +139,21 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     trendRequest.setEndDate(trendToday.plusDays(1).atStartOfDay(trendZone).toInstant());
     var trendParams = trendRequest.toParams();
     trendParams.add("granularity", "MONTHLY");
+
+    // 올해 매매·배당 합계. 대시보드는 전기간 합계만 보여 줘서 "올해 얼마 벌었나" 는 화면 네 곳을
+    // 돌아야 알 수 있었다(실측 2026-09-10). api-stock 이 집계 한 줄로 돌려주므로(268 바이트) 여기서
+    // 나머지 호출과 나란히 던진다 - 순차로 붙이면 그만큼 응답이 늘어난다.
+    java.time.ZoneId periodZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(null);
+    LocalDate periodFrom = LocalDate.now(periodZone).withDayOfYear(1);
+    LocalDate periodTo = LocalDate.now(periodZone);
+    var periodParams = new org.springframework.util.LinkedMultiValueMap<String, String>();
+    periodParams.add("userId", userId.toString());
+    periodParams.add("startDate", periodFrom.atStartOfDay(periodZone).toInstant().toString());
+    // 끝은 배타적이다 - 오늘 거래를 넣으려면 내일 0시로 준다.
+    periodParams.add(
+        "endDate", periodTo.plusDays(1).atStartOfDay(periodZone).toInstant().toString());
+    var periodSummaryFuture =
+        supplyRemote(() -> periodSummaryClient.findPeriodSummary(periodParams));
 
     var stockItemsFuture = supplyRemote(() -> emptyIfNull(stockItemClient.getStockItems()));
     var rawProfitFuture =
@@ -373,6 +395,14 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     model.addAttribute("winRate", winRate);
     model.addAttribute("winCount", winCount);
     model.addAttribute("winDenominator", winDenominator);
+    // 집계 호출이 실패해도 화면은 떠야 한다 - 실패하면 모델에 넣지 않고 화면이 그 줄을 생략한다.
+    try {
+      model.addAttribute("periodSummary", joinRemote(periodSummaryFuture));
+      model.addAttribute("periodSummaryFrom", periodFrom);
+      model.addAttribute("periodSummaryTo", periodTo);
+    } catch (RuntimeException e) {
+      log.warn("period summary lookup failed: userId={}", userId, e);
+    }
 
     return "stock/htmx/fragments/summary";
   }

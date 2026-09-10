@@ -46,8 +46,12 @@ public class CspNonceFilter extends OncePerRequestFilter {
   private static final String ENFORCED_PATH_PREFIX = "/stock";
 
   private static final String POLICY_TEMPLATE =
-      "default-src 'self'; script-src 'self' 'nonce-%s'; style-src 'self' 'unsafe-inline'; "
-          + "img-src 'self' data:; font-src 'self' data:; connect-src 'self'; "
+      // 본문 폰트를 Google Fonts 에서 받는다(사용자 결정 2026-09-10: 자체 호스팅 3.2MB 대신).
+      // Pretendard 동적 서브셋은 CSS 와 폰트 파일이 모두 cdn.jsdelivr.net 에서 온다 - 그 한 곳만 연다.
+      "default-src 'self'; script-src 'self' 'nonce-%s'; "
+          + "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+          + "img-src 'self' data:; font-src 'self' data: https://cdn.jsdelivr.net; "
+          + "connect-src 'self'; "
           // frame-ancestors 는 X-Frame-Options: DENY 의 현대식 대응이고(둘 다 두면 최신 브라우저는 이쪽을 본다),
           // form-action 은 폼 전송 대상을 자기 출처로 묶는다. 실측: 템플릿의 <form> 25개 모두 상대 경로라 영향 없음.
           + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";

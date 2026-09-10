@@ -10,10 +10,13 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.session.MapSession;
 import org.springframework.session.SessionRepository;
+import org.springframework.web.context.request.RequestContextHolder;
 
+import io.github.luversof.boot.web.util.RequestAttributeUtil;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
 import net.luversof.client.user.httpexchange.UserInfoApiClient.CreateSessionRequest;
 import net.luversof.client.user.httpexchange.UserInfoApiClient.DeleteSessionRequest;
@@ -21,6 +24,8 @@ import net.luversof.client.user.httpexchange.UserInfoApiClient.DeleteSessionRequ
 public class ApiSessionRepository implements SessionRepository<ApiSession> {
 
   private final UserInfoApiClient userInfoApiClient;
+
+  private static final String SESSION_BY_ID = "__apiSession_by_id_";
 
   public ApiSessionRepository(UserInfoApiClient userInfoApiClient) {
     this.userInfoApiClient = userInfoApiClient;
@@ -61,8 +66,25 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
     session.setSavedAttributes(attributes);
   }
 
+  /**
+   * Spring Session looks a session up once per request and caches it, but that cache is cleared
+   * when the response is committed. A response larger than the Tomcat output buffer (8KB) commits
+   * while the view is still rendering, so the filter chain looked the session up again afterwards
+   * and spent a second remote validate-session round trip.
+   *
+   * <p>Measured 2026-09-10 on bluesky-web-gate: fragments of 2,843 / 4,295 / 5,586 bytes made one
+   * call, fragments of 12,994 / 80,260 / 148,916 bytes made two. Reusing the lookup for the rest of
+   * the request is the same request-scoped reuse the rest of the project uses.
+   */
   @Override
   public ApiSession findById(String id) {
+    if (RequestContextHolder.getRequestAttributes() == null) {
+      return loadById(id);
+    }
+    return RequestAttributeUtil.getObject(SESSION_BY_ID + id, () -> loadById(id));
+  }
+
+  private ApiSession loadById(String id) {
     try {
       var userInfo = userInfoApiClient.validateSession(id);
       if (userInfo == null) {
@@ -98,6 +120,11 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
 
   @Override
   public void deleteById(String id) {
+    // Drop the request-scoped reuse so a lookup later in the same request (logout, session
+    // invalidation) asks the server instead of handing back the session that was just deleted.
+    if (RequestContextHolder.getRequestAttributes() != null) {
+      RequestAttributeUtil.setRequestAttribute(SESSION_BY_ID + id, Optional.empty());
+    }
     userInfoApiClient.deleteSession(new DeleteSessionRequest(id));
   }
 

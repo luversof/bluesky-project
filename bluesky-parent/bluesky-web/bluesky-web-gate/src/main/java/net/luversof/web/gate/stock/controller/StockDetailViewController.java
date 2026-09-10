@@ -186,10 +186,12 @@ public class StockDetailViewController {
       return "stock/stockItemDetail";
     }
     model.addAttribute("contentReady", true);
+    // htmx 요청은 조각 템플릿만 렌더한다. 예전엔 레이아웃 전체를 렌더하고 클라이언트가 hx-select 로 골라 썼다
+    // (실측 2026-09-10: 종목 상세 조각 107,201자 중 레이아웃 28,447자 = 27% 가 버려졌다).
 
     if (stockItem == null || stockItem.id() == null) {
       model.addAttribute("stockItem", null);
-      return "stock/stockItemDetail";
+      return "stock/htmx/stockItemDetailContent";
     }
     model.addAttribute("stockItem", stockItem);
     UUID resolvedId = stockItem.id();
@@ -233,8 +235,16 @@ public class StockDetailViewController {
     // 두 번 돌린다. 쪼갬 단위(달/해)는 조회 기간 길이에 따라 api-stock 이 고른다.
     seriesParamsPre.add("breakdown", "AUTO");
 
-    var profitsFuture = stockAsync.supply(() -> tradeProfitClient.calculateProfit(profitParams));
-    var snapshotFuture = stockAsync.supply(() -> tradeProfitClient.calculateProfit(snapshotParams));
+    // 기간을 고르지 않은 기본 진입에서는 두 파라미터가 같아져 같은 호출이 두 번 나갔다(실측 2026-09-10).
+    var calls = stockAsync.deduper();
+    var profitsFuture =
+        calls.supply(
+            List.of("calculateProfit", profitParams),
+            () -> tradeProfitClient.calculateProfit(profitParams));
+    var snapshotFuture =
+        calls.supply(
+            List.of("calculateProfit", snapshotParams),
+            () -> tradeProfitClient.calculateProfit(snapshotParams));
     var tradesFuture = stockAsync.supply(() -> tradeClient.findTrades(tradeSearchParamsPre));
     var dividendsFuture = stockAsync.supply(() -> dividendClient.findDividends(dividendParamsPre));
     var timeSeriesFuture =
@@ -478,7 +488,7 @@ public class StockDetailViewController {
 
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);
-    return "stock/stockItemDetail";
+    return "stock/htmx/stockItemDetailContent";
   }
 
   /** 계좌 상세: 한 계좌의 보유/손익 요약 + 보유 종목 + 매매·배당 내역(종목 상세와 대칭, 필터 키만 account). */
@@ -522,10 +532,12 @@ public class StockDetailViewController {
       return "stock/accountDetail";
     }
     model.addAttribute("contentReady", true);
+    // htmx 요청은 조각 템플릿만 렌더한다. 예전엔 레이아웃 전체를 렌더하고 클라이언트가 hx-select 로 골라 썼다
+    // (실측 2026-09-10: 종목 상세 조각 107,201자 중 레이아웃 28,447자 = 27% 가 버려졌다).
 
     if (account == null || account.id() == null) {
       model.addAttribute("account", null);
-      return "stock/accountDetail";
+      return "stock/htmx/accountDetailContent";
     }
     model.addAttribute("account", account);
     UUID resolvedId = account.id();
@@ -568,10 +580,16 @@ public class StockDetailViewController {
     var accSeriesParams = seriesRequestPre.toParams();
     accSeriesParams.add("granularity", "AUTO");
 
+    // 기간을 고르지 않은 기본 진입에서는 두 파라미터가 같아져 같은 호출이 두 번 나갔다(실측 2026-09-10).
+    var accCalls = stockAsync.deduper();
     var accProfitsFuture =
-        stockAsync.supply(() -> tradeProfitClient.calculateProfit(accProfitParams));
+        accCalls.supply(
+            List.of("calculateProfit", accProfitParams),
+            () -> tradeProfitClient.calculateProfit(accProfitParams));
     var accSnapshotFuture =
-        stockAsync.supply(() -> tradeProfitClient.calculateProfit(accSnapshotParams));
+        accCalls.supply(
+            List.of("calculateProfit", accSnapshotParams),
+            () -> tradeProfitClient.calculateProfit(accSnapshotParams));
     var accTradesFuture = stockAsync.supply(() -> tradeClient.findTrades(accTradeParams));
     var accDividendsFuture =
         stockAsync.supply(() -> dividendClient.findDividends(accDividendParams));
@@ -716,7 +734,7 @@ public class StockDetailViewController {
         "chartFormatter",
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
             .withZone(java.time.ZoneId.systemDefault()));
-    return "stock/accountDetail";
+    return "stock/htmx/accountDetailContent";
   }
 
   private static UUID parseUuidOrNull(String value) {

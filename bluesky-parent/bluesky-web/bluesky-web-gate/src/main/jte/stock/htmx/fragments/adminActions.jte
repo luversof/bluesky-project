@@ -1,5 +1,6 @@
 @import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param boolean isAuthenticated = false
 @param net.luversof.web.gate.stock.dto.response.DataStatusResponse dataStatus = null
@@ -97,7 +98,7 @@
 			 다른 브라우저에서 보거나 갱신이 실패했을 때도 실제 범위를 알 수 있다. --%>
 		@if(dataStatus != null)
 			<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-base-content/70 mb-2">
-				<span class="font-semibold">${dataCoverageLabel}</span>
+				<h3 class="font-semibold" data-page-section>${dataCoverageLabel}</h3>
 				<span>${updateTradesLabel}: ${withCount.apply(asDate.apply(dataStatus.tradeLastDate()), dataStatus.tradeCount())}</span>
 				<span>${updateDividendsLabel}: ${withCount.apply(asDate.apply(dataStatus.dividendLastDate()), dataStatus.dividendCount())}</span>
 				<span>${updatePriceHistoriesLabel}: ${dataStatus.priceHistoryLastDate() != null ? dataStatus.priceHistoryLastDate().toString() : "-"}</span>
@@ -107,7 +108,7 @@
 				 '평가 기준'으로 적으므로, 여기서 사실을 밝히지 않으면 있지도 않은 최신성을 믿게 된다.
 				 (실측 2026-08-22: 2026-08-20 행 9건이 전부 거래량 0, 종가는 08-19 와 동일) --%>
 			@if(dataStatus.priceHistoryLastDateLooksUntraded())
-				<div class="alert alert-warning py-2 px-3 text-xs mb-2">
+				<div class="alert alert-warning py-2 px-3 text-xs mb-2" role="alert">
 					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.untraded"),
 						String.valueOf(dataStatus.priceHistoryLastDate()),
 						String.valueOf(dataStatus.priceHistoryItemCount()),
@@ -156,7 +157,7 @@
 							String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount()))}</div>
 						@if(dataStatus.priceHistoryPriceLimitBreachRows() != null)
 							@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.PriceLimitBreachRow row : dataStatus.priceHistoryPriceLimitBreachRows())
-								<div class="font-mono" data-price-limit-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}" data-price-limit-gap="${row.gapDays()}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()} (${String.format("%+.1f%%", row.changePercent())})@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.split"), row.splitRatioLabel())})</span>@endif</div>
+								<div class="font-mono" data-price-limit-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}" data-price-limit-gap="${row.gapDays()}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()} (${StockFormatUtil.signedPct(row.changePercent(), 1)})@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.split"), row.splitRatioLabel())})</span>@endif</div>
 							@endfor
 						@endif
 					@endif
@@ -188,7 +189,7 @@
 			 앱은 '어느 줄이 이상한지'만 알려 준다. --%>
 		<div class="mt-3 border-t border-base-200 pt-3">
 			<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-				<span class="font-semibold">${MessageUtil.getMessage("stock.admin.ledger.title")}</span>
+				<h3 class="font-semibold" data-page-section>${MessageUtil.getMessage("stock.admin.ledger.title")}</h3>
 				@if(ledgerIntegrity == null)
 					<span class="text-base-content/60">${MessageUtil.getMessage("stock.admin.ledger.unavailable")}</span>
 				@else
@@ -218,7 +219,7 @@
 				 (실측 2026-08-23: 발견 48건 = 30행, 그중 10행이 사유 2~4개. KODEX 한국부동산리츠인프라
 				  배당 8행이 전부 여기 속하고 원인은 과세표준을 옛 수량 77주로 잡은 것 하나다). --%>
 			@if(ledgerIntegrity != null && ledgerIntegrity.hasMultiReasonRows())
-				<div class="alert alert-info py-2 px-3 text-xs mt-2 block" data-ledger-multi-rows="${ledgerIntegrity.multiReasonRows().size()}">
+				<div class="alert alert-info py-2 px-3 text-xs mt-2 block" data-ledger-multi-rows="${ledgerIntegrity.multiReasonRows().size()}" role="status">
 					<div class="font-medium">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.ledger.multi.reason.rows"), ledgerIntegrity.multiReasonRows().size())}</div>
 					@for(net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse.RowFindingSummary row : ledgerIntegrity.multiReasonRows())
 						<div class="opacity-80" data-ledger-row-codes="${row.codes().size()}">
@@ -230,7 +231,7 @@
 			@endif
 			@if(ledgerIntegrity != null && !ledgerIntegrity.isClean())
 				@for(net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse.Finding finding : ledgerIntegrity.findings())
-					<div class="alert alert-warning py-2 px-3 text-xs mt-2 block">
+					<div class="alert alert-warning py-2 px-3 text-xs mt-2 block" role="alert">
 						<div class="font-medium" data-ledger-count="${finding.count()}">${MessageUtil.getMessage("stock.admin.ledger.rule." + finding.code())} (${finding.count()})</div>
 						<%-- 예시를 3건만 보여 주던 시절에는 발견의 절반 이상을 화면에서 볼 수 없었다
 							 (실측 2026-08-23: 45건 중 25건). 조치하려면 어느 행인지 알아야 하므로
@@ -263,7 +264,7 @@
 			@endif
 		</div>
 		<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-base-content/60">
-			<span class="font-semibold">${lastRunLabel}</span>
+			<h3 class="font-semibold" data-page-section>${lastRunLabel}</h3>
 			<span>${updateStockItemsLabel}: <span data-admin-last-run="stock-items">-</span></span>
 			<span>${updateTradesLabel}: <span data-admin-last-run="trades">-</span></span>
 			<span>${updateDividendsLabel}: <span data-admin-last-run="dividends">-</span></span>

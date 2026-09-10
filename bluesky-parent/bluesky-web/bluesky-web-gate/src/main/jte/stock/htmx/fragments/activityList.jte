@@ -104,7 +104,7 @@
 	)
 
 	<!-- Filter Form (collapsible) -->
-	<details class="mb-4" open data-detail-filter>
+	<details class="mb-4" data-detail-filter data-filter-active="${(selectedAccountIds != null && !selectedAccountIds.isEmpty()) || (selectedStockItemIds != null && !selectedStockItemIds.isEmpty()) || (selectedStockTags != null && !selectedStockTags.isEmpty()) ? "true" : "false"}">
 		<summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
 			${advancedSearchLabel}
@@ -307,11 +307,11 @@
 				 (플러스는 벌었고 마이너스는 잃은 것이라 설명이 필요 없다). --%>
 			<div class="mb-1 text-xs font-medium text-base-content/70">${dividendChartTitle}</div>
 			<div class="relative w-full" style="height:150px">
-				<canvas id="activityDividendChart" class="amount-chart"></canvas>
+				<canvas id="activityDividendChart" role="img" aria-label="${dividendLabel}" class="amount-chart"></canvas>
 			</div>
 			<div class="mt-3 mb-1 text-xs font-medium text-base-content/70">${realizedChartTitle}</div>
 			<div class="relative w-full" style="height:150px">
-				<canvas id="activityRealizedChart" class="amount-chart"></canvas>
+				<canvas id="activityRealizedChart" role="img" aria-label="${realizedProfitLabel}" class="amount-chart"></canvas>
 			</div>
 			@if(chartSkippedMonths > 0)
 				<p class="mt-2 text-[11px] text-base-content/60" data-chart-skipped-months="${chartSkippedMonths}">
@@ -323,14 +323,14 @@
 
 	<!-- View Tabs: 캘린더/타임라인/목록 (클라이언트 사이드 전환, localStorage 유지) -->
 	<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-4" id="activityViewTabs">
-		<a role="tab" data-activity-view-tab="calendar" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${calendarTabLabel}</a>
-		<a role="tab" data-activity-view-tab="timeline" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${timelineTabLabel}</a>
-		<a role="tab" data-activity-view-tab="list" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${listTabLabel}</a>
+		<a role="tab" data-activity-view-tab="calendar" aria-controls="${showCalendarView ? "activityCalendarView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${calendarTabLabel}</a>
+		<a role="tab" data-activity-view-tab="timeline" aria-controls="${showTimelineView ? "activityTimelineView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${timelineTabLabel}</a>
+		<a role="tab" data-activity-view-tab="list" aria-controls="${showListView ? "activityListView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${listTabLabel}</a>
 	</div>
 
 	<!-- Calendar View -->
 	@if(showCalendarView)
-	<div id="activityCalendarView" class="hidden">
+	<div id="activityCalendarView" role="tabpanel" class="hidden">
 		@if(activityMonths.isEmpty())
 			@template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
 		@else
@@ -404,10 +404,10 @@
 								     빠지는 속성(data-cal-*, title)은 줄을 나누면 빈 줄의 탭이 그대로 실리므로 한 줄에 둔다.
 								     활동 있는 칸은 클릭으로 그날 상세를 펼치므로 버튼 역할·탭 포커스·aria-expanded 를 준다(수익률 표의 행과 같은 규칙,
 								     실측 2026-09-09: 전체 기간 181칸이 키보드로는 열 수 없었다). Enter/Space 는 common.ts 가 받는다. --%>
-								<div class="cal-day ${isToday ? "border-primary" : "border-transparent"}${!inMonth ? " opacity-30" : ""}${hasActivity ? " cal-day-act" : ""}" data-cal-date="${hasActivity ? cellDate.toString() : null}" data-cal-month="${hasActivity ? ymKey : null}" role="${hasActivity ? "button" : null}" tabindex="${hasActivity ? "0" : null}" aria-expanded="${hasActivity ? "false" : null}" title="${holidayName}">
+								<div class="cal-day ${isToday ? "border-primary" : "border-transparent"}${!inMonth ? " cal-day-out" : ""}${hasActivity ? " cal-day-act" : ""}" data-cal-date="${hasActivity ? cellDate.toString() : null}" data-cal-month="${hasActivity ? ymKey : null}" role="${hasActivity ? "button" : null}" tabindex="${hasActivity ? "0" : null}" aria-expanded="${hasActivity ? "false" : null}" aria-controls="${hasActivity ? "cal-detail-" + cellDate.toString() : null}" title="${holidayName}">
 									<div class="cal-day-num${isToday ? " text-primary" : (isRedDay ? " text-error" : "")}">${cellDate.getDayOfMonth()}</div>
 									@if(holidayName != null)
-										<div class="text-[9px] leading-tight text-error/80 truncate">${holidayName}</div>
+										<div class="text-[9px] leading-tight text-error/80 truncate" title="${holidayName}">${holidayName}</div>
 									@endif
 									@if(hasActivity)
 										<div class="flex flex-wrap gap-x-1 justify-center leading-tight">
@@ -415,7 +415,7 @@
 											@if(daySellCount > 0)<span class="text-loss">●${daySellCount}</span>@endif
 											@if(dayDividendCount > 0)<span class="text-dividend">●${dayDividendCount}</span>@endif
 										</div>
-										<div class="amount-value text-[10px] text-base-content/60 truncate">₩ ${df.format(dayNetAmount)}</div>
+										<div class="amount-value text-[10px] text-base-content/60 truncate" title="₩ ${df.format(dayNetAmount)}">₩ ${df.format(dayNetAmount)}</div>
 									@endif
 								</div>
 							@endfor
@@ -424,7 +424,7 @@
 						<div class="selection-reveal mt-2" data-cal-panel="${ymKey}">
 							<div>
 								@for(java.util.Map.Entry<java.time.LocalDate, java.util.List<Activity>> dayEntry : activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).entrySet())
-									<div class="hidden rounded-xl bg-base-200/50 p-2 mb-1" data-cal-detail="${dayEntry.getKey().toString()}">
+									<div class="hidden rounded-xl bg-base-200/50 p-2 mb-1" id="cal-detail-${dayEntry.getKey().toString()}" data-cal-detail="${dayEntry.getKey().toString()}">
 										<div class="text-xs font-bold mb-1">${dayEntry.getKey().toString()}</div>
 										<div class="space-y-1">
 											@for(Activity dayDetailActivity : dayEntry.getValue())
@@ -465,11 +465,14 @@
 
 	<!-- Timeline View: 날짜 내림차순 세로 타임라인 -->
 	@if(showTimelineView)
-	<div id="activityTimelineView" class="hidden">
+	<div id="activityTimelineView" role="tabpanel" class="hidden">
 		@if(activityByDate.isEmpty())
 			@template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
 		@else
 			<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
+				<%-- 타임라인은 날짜 묶음이 쭉 이어질 뿐이라 5.5화면을 굴려도 지금이 몇 월인지 알 수 없었다
+				     (실측 2026-09-10: 이 화면의 제목 수 0, 날짜 묶음 42개). 달이 바뀌는 자리에 구역 제목을 넣는다. --%>
+				!{ java.time.YearMonth tlPrevMonth = null; }
 				<div class="relative border-l-2 border-base-300 ml-1.5 pl-6 space-y-6">
 					@for(java.util.Map.Entry<java.time.LocalDate, java.util.List<Activity>> tlEntry : activityByDate.descendingMap().entrySet())
 						!{
@@ -495,6 +498,14 @@
 							if (tlDividendCount > 0) { if (tlSummarySb.length() > 0) { tlSummarySb.append(" · "); } tlSummarySb.append(dividendLabel).append(" ").append(countMessage.apply(tlDividendCount)); }
 							String tlSummaryText = tlSummarySb.toString();
 						}
+						!{
+							java.time.YearMonth tlMonth = java.time.YearMonth.from(tlDate);
+							boolean tlMonthChanged = !tlMonth.equals(tlPrevMonth);
+							tlPrevMonth = tlMonth;
+						}
+						@if(tlMonthChanged)
+							<h2 class="text-sm font-bold -ml-[31px] pl-[31px] pt-1" data-page-section="${tlMonth.toString()}">${tlMonth.toString()}</h2>
+						@endif
 						<div class="relative">
 							<span class="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-primary border-2 border-base-100"></span>
 							<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-1">
@@ -537,13 +548,13 @@
 
 	<!-- List View (기존 테이블) -->
 	@if(showListView)
-	<div id="activityListView" class="hidden">
+	<div id="activityListView" role="tabpanel" class="hidden">
 		<div class="card-body">
 			@if(activities == null || activities.isEmpty())
 				@template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
 			@else
 				<div class="overflow-x-auto">
-					<table class="table w-full table-sm table-pin-rows pin-top-nav">
+					<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${listTabLabel}">
 						<thead>
 							<tr class="bg-base-200">
 								<th scope="col">${dateLabel}</th>
@@ -588,7 +599,7 @@
 
 													@if(activity.accountIds().size() > 2)
 														!{java.util.List<String> allAccountLabels = activity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> !n.isEmpty()).toList();}
-														<div class="tooltip tooltip-bottom" data-tip="${String.join(", ", allAccountLabels)}">
+														<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", allAccountLabels)}" data-tip="${String.join(", ", allAccountLabels)}">
 															<span class="badge badge-xs badge-outline opacity-70 cursor-help">+${activity.accountIds().size() - 2}</span>
 														</div>
 													@endif

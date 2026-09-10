@@ -793,7 +793,7 @@ interface MonthRange {
 
         // Chart.js 는 stockLayout 에서 1회 로드되어 항상 존재한다. (initAll 은 ensureStockCharts 로 헬퍼 보장)
         setTimeout(initAll, 0);
-        setTimeout(() => { if (monthlyChart) monthlyChart.resize(); if (donutChart) donutChart.resize(); }, 200);
+        setTimeout(() => { const SC = win.StockCharts; const fit = (c: any) => { if (!c) return; if (SC && SC.resizeIfChanged) SC.resizeIfChanged(c); else c.resize(); }; fit(monthlyChart); fit(donutChart); }, 200);
 
 
 	}

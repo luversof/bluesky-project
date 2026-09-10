@@ -169,7 +169,7 @@
 			<div class="rounded-3xl border border-base-300 bg-gradient-to-br from-base-100 via-base-100 to-base-200 shadow-sm">
 				<div class="flex flex-col gap-6 px-6 py-6 lg:flex-row lg:items-end lg:justify-between">
 					<div class="space-y-3">
-						<div class="badge badge-primary badge-outline">${toolTitle}</div>
+						<div class="badge badge-primary badge-outline h-auto min-h-6 whitespace-normal py-0.5 text-center">${toolTitle}</div>
 						<h1 class="text-3xl font-bold tracking-tight">${pageTitle}</h1>
 						<p class="max-w-3xl text-sm leading-6 text-base-content/70">${description}</p>
 					</div>
@@ -224,7 +224,7 @@
 			<div class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<div class="space-y-2">
-							<h2 class="card-title text-lg">${scenariosTitle}</h2>
+							<h2 class="card-title text-lg" data-page-section>${scenariosTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${scenariosDescription}</p>
 						</div>
 						<button id="stockSimulatorAddScenario" type="button" class="btn btn-primary btn-sm w-full">${addScenario}</button>
@@ -240,7 +240,7 @@
 					@template._components.ui.card(bodyClass = "gap-5", body = @`
 							<div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
 								<div class="min-w-0 space-y-2">
-									<h2 class="card-title text-lg">${inputsTitle}</h2>
+									<h2 class="card-title text-lg" data-page-section>${inputsTitle}</h2>
 									<p class="text-sm leading-6 text-base-content/60">${inputsDescription}</p>
 								</div>
 								<%-- 배지는 기본이 nowrap 이라 좁은 화면에서 이 줄의 최소 폭을 늘려
@@ -256,14 +256,14 @@
 								<label class="form-control">
 									<div class="label justify-between gap-3">
 										<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.principal")}</span>
-										<span id="stockSimulatorPrincipalPreview" class="label-text-alt text-right font-medium text-base-content/60"></span>
+										<span id="stockSimulatorPrincipalPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 									</div>
 									<input id="stockSimulatorPrincipal" name="principal" type="number" min="10000" step="10000" class="input input-bordered w-full" />
 								</label>
 								<label class="form-control">
 									<div class="label justify-between gap-3">
 										<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.current.price")}</span>
-										<span id="stockSimulatorCurrentPricePreview" class="label-text-alt text-right font-medium text-base-content/60"></span>
+										<span id="stockSimulatorCurrentPricePreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 									</div>
 									<input id="stockSimulatorCurrentPrice" name="currentPrice" type="number" min="1" step="1" class="input input-bordered w-full" />
 								</label>
@@ -282,7 +282,7 @@
 												<label class="form-control">
 													<div class="label justify-between gap-3">
 														<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.annual.spending")}</span>
-														<span id="stockSimulatorAnnualSpendingPreview" class="label-text-alt text-right font-medium text-base-content/60"></span>
+														<span id="stockSimulatorAnnualSpendingPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 													</div>
 													<input id="stockSimulatorAnnualSpending" name="annualSpending" type="number" min="0" step="10000" class="input input-bordered w-full" />
 												</label>
@@ -310,7 +310,7 @@
 
 					<section class="space-y-4">
 						<div class="space-y-2">
-							<h2 class="text-lg font-semibold text-base-content">${chartTitle}</h2>
+							<h2 class="text-lg font-semibold text-base-content" data-page-section>${chartTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${chartDescription}</p>
 						</div>
 						<%-- 모바일 단일 컬럼도 minmax(0,1fr) 로 못 박는다. 암시적 트랙은 auto 라
@@ -322,7 +322,7 @@
 										<p class="text-sm leading-6 text-base-content/60">${cashFlowDescription}</p>
 									</div>
 									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
-										<canvas id="stockSimulatorCashFlowChart"></canvas>
+										<canvas id="stockSimulatorCashFlowChart" role="img" aria-label="${cashFlowTitle}" class="amount-chart"></canvas>
 									</div>
 							`)
 							@template._components.ui.card(bodyClass = "gap-4", body = @`
@@ -331,7 +331,7 @@
 										<p class="text-sm leading-6 text-base-content/60">${assetDescription}</p>
 									</div>
 									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
-										<canvas id="stockSimulatorAssetChart"></canvas>
+										<canvas id="stockSimulatorAssetChart" role="img" aria-label="${assetTitle}" class="amount-chart"></canvas>
 									</div>
 							`)
 						</div>
@@ -342,7 +342,7 @@
 			<div class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_20rem]">
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<div class="space-y-2">
-							<h2 class="card-title text-lg">${compareTitle}</h2>
+							<h2 class="card-title text-lg" data-page-section>${compareTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${compareDescription}</p>
 						</div>
 						<div class="flex flex-wrap gap-2 text-xs text-base-content/70">
@@ -356,7 +356,7 @@
 				`)
 
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
-						<h2 class="card-title text-lg">${assumptionsTitle}</h2>
+						<h2 class="card-title text-lg" data-page-section>${assumptionsTitle}</h2>
 						<ul class="list-disc space-y-3 pl-5 text-sm leading-6 text-base-content/70">
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.one")}</li>
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.two")}</li>
@@ -370,11 +370,11 @@
 
 			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<div class="space-y-2">
-						<h2 class="card-title text-lg">${yearlyTitle}</h2>
+						<h2 class="card-title text-lg" data-page-section>${yearlyTitle}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${yearlyDescription}</p>
 					</div>
 					<div class="overflow-x-auto">
-						<table class="table table-pin-rows table-zebra table-sm">
+						<table class="table table-pin-rows table-zebra table-sm" aria-label="${yearlyTitle}">
 							<thead>
 								<tr>
 									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year")}</th>

@@ -73,6 +73,8 @@
 		<script src="/js/stock/tableSort.js"></script>
 		<script src="/js/stock/multiSelectDropdown.js"></script>
 
+		<%-- 조각 교체 알림(보조기술용): common.ts 가 정착 때 '화면 이름: 내용 갱신됨' 을 넣는다(실측 2026-09-10: 알림 0). --%>
+		<div id="stockLiveStatus" class="sr-only" role="status" aria-live="polite" data-message-updated="${MessageUtil.getMessage("common.message.content.updated")}"></div>
 		<!-- 모바일 하단 탭바 (lg 이상에서 숨김) -->
 		<nav class="dock dock-sm lg:hidden z-50 border-t border-base-200 bg-base-100/95 backdrop-blur">
 			@for(var menuItem : net.luversof.web.gate.util.TemplateUtil.getMenuList("stock"))
@@ -87,10 +89,13 @@
 			@endfor
 		</nav>
 		<script nonce="${CspNonceHolder.getNonce()}">
-			// dock 이 좌우 스크롤이라 현재 메뉴가 화면 밖일 수 있음 — 로드 시 가운데로 보이게
+			// dock 이 좌우 스크롤이라 현재 메뉴가 화면 밖일 수 있음 — 로드 시 가운데로 보이게.
+			// scrollIntoView 는 쓰지 않는다: Chromium 이 순차 포커스 시작점을 그 요소로 옮겨 375px 에서 첫 Tab 이
+			// 스킵 링크가 아니라 독의 다음 항목(시뮬레이터)에 떨어졌다(실측 2026-09-09). scrollLeft 계산은 포커스에 무관.
 			(function() {
-				var active = document.querySelector('.dock .dock-active');
-				if (active && active.scrollIntoView) active.scrollIntoView({ inline: 'center', block: 'nearest' });
+				var nav = document.querySelector('nav.dock');
+				var active = nav && nav.querySelector('.dock-active');
+				if (nav && active) nav.scrollLeft = active.offsetLeft + active.offsetWidth / 2 - nav.clientWidth / 2;
 			})();
 		</script>
 	`

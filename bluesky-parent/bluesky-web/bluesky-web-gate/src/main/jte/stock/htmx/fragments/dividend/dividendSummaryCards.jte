@@ -17,6 +17,7 @@
 @param boolean hasComparison
 @param boolean diffPositive
 @param String diffPct
+@param boolean diffZero = false
 @param BigDecimal diffAmount
 @param String totalItemsCountText
 @param LocalDate prevStartDate
@@ -50,7 +51,7 @@
 	String changeTitleLabel = MessageUtil.getMessage("stock.dividend.change.title");
 	String changeNewLabel = MessageUtil.getMessage("stock.dividend.change.new");
 	String changeStoppedLabel = MessageUtil.getMessage("stock.dividend.change.stopped");
-	String selectionSummaryLabel = MessageUtil.getMessage("stock.analytics.selection.summary");
+	String selectionSummaryLabel = MessageUtil.getMessage("stock.dividend.change.selection.summary");
 	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
 	String selectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
 	String selectionPrevLabel = MessageUtil.getMessage("stock.dividend.change.selection.previous");
@@ -128,8 +129,9 @@
 					@endif
 				</div>
 				<div class="flex items-baseline gap-2 mb-1">
-					<span class="text-xl font-bold ${diffPositive ? "text-profit" : "text-loss"}">${diffPositive ? "▲" : "▼"} ${diffPct}%</span>
-					<span class="text-xs amount-value ${diffPositive ? "text-profit" : "text-loss"}">${diffPositive ? "+" : "-"}₩${decimalFormat.format(diffAmount.abs())}</span>
+					<%-- 변화가 0 이면 오르내림 화살표도 손익 색도 붙이지 않는다(전기 0·이번 0 인데 "▲ ∞%" 가 나왔다). --%>
+					<span class="text-xl font-bold ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">${diffZero ? "-" : (diffPositive ? "▲" : "▼")} ${diffPct}%</span>
+					<span class="text-xs amount-value ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">${diffZero ? "" : (diffPositive ? "+" : "-")}₩${decimalFormat.format(diffAmount.abs())}</span>
 				</div>
 				<div class="text-xs text-base-content/60">${previousPeriodLabel} <span class="amount-value">₩ ${decimalFormat.format(safePrevNet)}</span></div>
 				<%-- 이번 달/올해는 아직 끝나지 않았는데 전기는 완전한 전월/전년이라, 증감률이 실제 추세와
@@ -153,7 +155,7 @@
 	@if(hasComparison && dividendChangeContributors != null && !dividendChangeContributors.isEmpty())
 	@template._components.ui.card(cssClass = "mb-4", id = "dividendChangeCard", body = @`
 			<div class="flex items-baseline justify-between gap-2 mb-2">
-				<h2 class="font-bold text-sm">${changeTitleLabel}</h2>
+				<h2 class="font-bold text-sm" data-page-section>${changeTitleLabel}</h2>
 				@if(prevStartDate != null && prevEndDate != null)
 				<span class="text-xs text-base-content/60">vs ${prevStartDate.toString()} ~ ${prevEndDate.toString()}</span>
 				@endif
@@ -189,7 +191,7 @@
 			</div></div>
 			<%-- 선택 가능한 행은 다른 표(수익률·자산 현황)와 같은 규칙: <tr tabindex="0" aria-selected>. <li role="button"> 은 안의 종목 링크를
 			     스크린리더가 못 닿게 하고(axe nested-interactive 8건) listitem 에 button 역할도 허용되지 않는다(aria-allowed-role 8건, 실측 2026-09-09). --%>
-			<table class="table table-sm w-full">
+			<table class="table table-sm w-full" aria-label="${changeTitleLabel}">
 				<tbody>
 				@for(int ci = 0; ci < Math.min(dividendChangeContributors.size(), 8); ci++)
 					!{
@@ -202,10 +204,11 @@
 						data-dividend-change-row
 						tabindex="0"
 						aria-selected="false"
+						data-row-select="${MessageUtil.getMessage("stock.table.row.select")}"
 						data-prev="${ch.previousNet().toPlainString()}"
 						data-current="${ch.currentNet().toPlainString()}"
 						data-delta="${ch.delta().toPlainString()}">
-						<td class="max-w-0 truncate">@if(ch.stockItemId() != null)<a href="/stock/item?stockItemId=${ch.stockItemId().toString()}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif
+						<td class="max-w-0 truncate" title="${ch.stockName()}">@if(ch.stockItemId() != null)<a href="/stock/item?stockItemId=${ch.stockItemId().toString()}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif
 							@if(isNew)
 							<span class="badge badge-xs badge-success badge-outline ml-1">${changeNewLabel}</span>
 							@elseif(stopped)

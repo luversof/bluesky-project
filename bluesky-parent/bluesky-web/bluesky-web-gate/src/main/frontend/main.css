@@ -31,13 +31,21 @@
 	--color-info-content: #ffffff;
 	--color-success: #15803d;
 	--color-success-content: #ffffff;
-	--color-warning: #b45309;
+	--color-warning: #92400e;
 	--color-warning-content: #ffffff;
 	--color-error: #c30115;
 	--color-error-content: #ffffff;
-	--radius-box: 0.5rem;
-	--radius-field: 0.375rem;
-	--radius-selector: 0.25rem;
+	/* 본문 폰트. Pretendard 를 jsDelivr 의 동적 서브셋으로 받는다(사용자 결정 2026-09-10).
+	   못 받아왔을 때를 대비해 시스템 스택을 뒤에 그대로 남긴다. */
+	--font-sans: "Pretendard Variable", Pretendard, ui-sans-serif, system-ui, -apple-system,
+		"Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+	--radius-box: 0.875rem;
+	--radius-field: 0.5rem;
+	--radius-selector: 0.375rem;
+	/* 카드 표면. 1px 회색 테두리만 있으면 종이 위 표처럼 밋밋하다 - 엷은 테두리 + 낮고 넓은 그림자로 띄운다. */
+	--shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+	--shadow-card-hover: 0 2px 4px rgba(15, 23, 42, 0.06), 0 12px 24px -8px rgba(15, 23, 42, 0.14);
+	--color-surface-line: rgba(15, 23, 42, 0.07);
 }
 
 [data-theme="dark"] {
@@ -57,6 +65,9 @@
 	--color-info-content: #07101f;
 	--color-success: #4ade80;
 	--color-success-content: #07101f;
+	--shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px -4px rgba(0, 0, 0, 0.45);
+	--shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.5), 0 14px 28px -10px rgba(0, 0, 0, 0.6);
+	--color-surface-line: rgba(255, 255, 255, 0.10);
 	--color-warning: #fbbf24;
 	--color-warning-content: #1a1203;
 	--color-error: #f87171;
@@ -138,7 +149,106 @@
 	}
 
 	/* ---- card ---- */
-	.card { position: relative; display: flex; flex-direction: column; border-radius: var(--radius-box); }
+	/* 카드 표면: 회색 1px 테두리만으로는 종이 위 표처럼 보인다. 엷은 선 + 낮고 넓은 그림자로 층을 준다.
+	   .card 를 쓰는 곳이 화면마다 border-base-200 을 직접 붙여 왔으므로 그 테두리 색도 여기서 부드럽게 덮는다. */
+	.card { position: relative; display: flex; flex-direction: column; border-radius: var(--radius-box);
+		box-shadow: var(--shadow-card); }
+	.card.border, .card.border-base-200, .card.border-base-300 { border-color: var(--color-surface-line); }
+	a.card:hover, .card-hoverable:hover { box-shadow: var(--shadow-card-hover); }
+	/* ---- 지표 카드 ---- */
+	/* 회색 상자 + 작은 글자 두 줄이던 것을 카드 표면 + 아이콘 칩 + 큰 값 + 알약 보조문구로 바꿨다. */
+	.stat-card {
+		position: relative; display: flex; flex-direction: column; gap: 0.5rem;
+		padding: 1rem 1.125rem; border-radius: var(--radius-box);
+		background-color: var(--color-base-100);
+		border: 1px solid var(--color-surface-line);
+		box-shadow: var(--shadow-card);
+	}
+	.stat-card-link {
+		text-decoration: none; color: inherit;
+		transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+	}
+	.stat-card-link:hover {
+		box-shadow: var(--shadow-card-hover);
+		transform: translateY(-2px);
+		border-color: color-mix(in oklch, var(--color-primary) 28%, var(--color-surface-line));
+	}
+	.stat-card-head { display: flex; align-items: center; gap: 0.5rem; }
+	.stat-card-label {
+		font-size: 0.8125rem; font-weight: 500; letter-spacing: -0.01em;
+		color: color-mix(in oklch, var(--color-base-content) 62%, transparent);
+	}
+	.stat-card-go { margin-left: auto; opacity: 0; transition: opacity .18s ease; color: var(--color-primary); }
+	.stat-card-link:hover .stat-card-go { opacity: 1; }
+	.stat-card-value {
+		font-size: 1.625rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em;
+		font-variant-numeric: tabular-nums; font-family: var(--font-mono, ui-monospace, monospace);
+	}
+	/* 카드 전체를 덮는 링크. 카드 안 글자는 그대로 읽히고, 어디를 눌러도 상세로 간다. */
+	.stat-card-cover { position: absolute; inset: 0; border-radius: inherit; }
+	.stat-card:has(.stat-card-cover:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+	.stat-card-link:hover .stat-card-go { opacity: 1; }
+	.stat-card-sub {
+		align-self: flex-start; padding: 0.1875rem 0.5rem; border-radius: 999px;
+		font-size: 0.75rem; font-weight: 500; font-variant-numeric: tabular-nums;
+		/* 보조 문구는 값에 딸린 꼬리표다 - 알약 바탕을 깔아 값과 구분한다(현재 글자색을 옅게 깐다). */
+		background-color: color-mix(in oklch, currentColor 6%, transparent);
+	}
+	/* 아이콘 칩: 성격별로 옅은 색 바탕에 같은 계열 선 아이콘. */
+	.stat-chip {
+		display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+		width: 2rem; height: 2rem; border-radius: 0.625rem;
+	}
+	.stat-chip svg { width: 1.125rem; height: 1.125rem; }
+	.stat-chip-primary { background-color: color-mix(in oklch, var(--color-primary) 12%, transparent); color: var(--color-primary); }
+	.stat-chip-profit { background-color: color-mix(in oklch, #bd2c38 12%, transparent); color: #bd2c38; }
+	.stat-chip-loss { background-color: color-mix(in oklch, #3159c4 12%, transparent); color: #3159c4; }
+	.stat-chip-dividend { background-color: color-mix(in oklch, #147449 12%, transparent); color: #147449; }
+	.stat-chip-neutral { background-color: color-mix(in oklch, var(--color-base-content) 10%, transparent); color: color-mix(in oklch, var(--color-base-content) 72%, transparent); }
+
+	/* 첫 화면의 주 지표 카드. 흰 카드가 줄줄이 놓이면 어디가 제일 중요한지 보이지 않는다
+	   - 옅은 브랜드 색을 깔고 위쪽에 얇은 강조선을 둬서 한 장만 도드라지게 한다. */
+	.hero-card {
+		background-image: linear-gradient(160deg,
+			color-mix(in oklch, var(--color-primary) 7%, var(--color-base-100)) 0%,
+			var(--color-base-100) 58%);
+		border-color: color-mix(in oklch, var(--color-primary) 18%, var(--color-surface-line));
+		overflow: hidden;
+	}
+	.hero-card::before {
+		content: ""; position: absolute; inset-inline: 0; top: 0; height: 3px;
+		background-image: linear-gradient(90deg, var(--color-primary), color-mix(in oklch, var(--color-accent) 80%, var(--color-primary)));
+	}
+
+	/* 구역 제목. 14px 굵은 글자 한 줄이라 본문 소제목과 구분이 안 됐다 - 앞에 짧은 강조 막대를 둔다.
+	   구역 표식(data-page-section)이 이미 붙어 있어 마크업을 더 고치지 않는다(details 에는 붙이지 않는다). */
+	:is(h2, h3)[data-page-section] {
+		display: flex; align-items: center; gap: 0.5rem;
+		font-size: 0.9375rem; font-weight: 700; letter-spacing: -0.01em;
+	}
+	:is(h2, h3)[data-page-section]::before {
+		content: ""; flex: none; width: 3px; height: 1.05em; border-radius: 999px;
+		background-color: var(--color-primary);
+	}
+
+	/* 카드 머리: 제목과 내용이 붙어 있어 카드 안이 한 덩어리로 보였다 - 제목 줄 아래에 엷은 선을 둔다.
+	   제목 줄은 화면마다 따로 짜여 있어 공통 클래스가 없다 - .card-title 을 품은 줄을 :has 로 집는다. */
+	.card-body > div:has(> .card-title) {
+		padding-bottom: 0.625rem;
+		border-bottom: 1px solid var(--color-surface-line);
+	}
+	.card-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
+	/* 카드 머리의 '전체보기 →' 같은 링크는 눌러도 되는 것처럼 보이게 한다. */
+	.card-body > div:has(> .card-title) .link {
+		padding: 0.125rem 0.5rem; border-radius: 999px; text-decoration: none;
+		color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+		transition: background-color .15s ease, color .15s ease;
+	}
+	.card-body > div:has(> .card-title) .link:hover {
+		background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+		color: var(--color-primary);
+	}
+
 	.card-body { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.5rem; flex: 1 1 auto; }
 	.card-title { display: flex; align-items: center; gap: 0.5rem; font-size: 1.125rem; font-weight: 600; }
 	.card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
@@ -159,22 +269,46 @@
 	.badge-success { background-color: var(--color-success); color: var(--color-success-content); border-color: transparent; }
 	.badge-error { background-color: var(--color-error); color: var(--color-error-content); border-color: transparent; }
 	.badge-ghost { background-color: var(--color-base-200); color: var(--color-base-content); border-color: transparent; }
-	.badge-outline { background-color: transparent; border-color: currentColor; color: inherit; }
+	/* outline 배지가 글자색과 같은 굵기의 테두리를 두르면 작은 칩이 시끄럽다
+	   - 테두리는 옅게 낮추고 같은 색 옅은 바탕을 깐다 - 10% 로 깔았더니 success 배지가 4.38 로 AA 미달이라 6% 로 낮췄다(실측 4.62). */
+	.badge-outline { background-color: color-mix(in oklch, currentColor 6%, transparent);
+		border-color: color-mix(in oklch, currentColor 28%, transparent); color: inherit; }
 	/* outline + 의미색 조합: outline 의 color:inherit 가 의미색을 지우지 않도록 복원 (daisyUI 동작) */
-	.badge-primary.badge-outline { background-color: transparent; color: var(--color-primary); border-color: currentColor; }
-	.badge-secondary.badge-outline { background-color: transparent; color: var(--color-secondary); border-color: currentColor; }
-	.badge-info.badge-outline { background-color: transparent; color: var(--color-info); border-color: currentColor; }
-	.badge-success.badge-outline { background-color: transparent; color: var(--color-success); border-color: currentColor; }
-	.badge-error.badge-outline { background-color: transparent; color: var(--color-error); border-color: currentColor; }
+	.badge-primary.badge-outline { color: var(--color-primary);
+		background-color: color-mix(in oklch, var(--color-primary) 6%, transparent);
+		border-color: color-mix(in oklch, var(--color-primary) 28%, transparent); }
+	.badge-secondary.badge-outline { color: var(--color-secondary);
+		background-color: color-mix(in oklch, var(--color-secondary) 6%, transparent);
+		border-color: color-mix(in oklch, var(--color-secondary) 28%, transparent); }
+	.badge-info.badge-outline { color: var(--color-info);
+		background-color: color-mix(in oklch, var(--color-info) 6%, transparent);
+		border-color: color-mix(in oklch, var(--color-info) 28%, transparent); }
+	.badge-success.badge-outline { color: var(--color-success);
+		background-color: color-mix(in oklch, var(--color-success) 6%, transparent);
+		border-color: color-mix(in oklch, var(--color-success) 28%, transparent); }
+	.badge-error.badge-outline { color: var(--color-error);
+		background-color: color-mix(in oklch, var(--color-error) 6%, transparent);
+		border-color: color-mix(in oklch, var(--color-error) 28%, transparent); }
 
 	/* ---- table ---- */
 	.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
 	.table :where(th, td) { padding: 0.75rem 1rem; vertical-align: middle; }
+	/* 표 머리가 본문과 같은 무게로 보이면 어디부터 자료인지 눈에 안 들어온다
+	   - 글자를 조금 굵게, 자간을 벌리고, 아래에 진한 선을 둬서 머리 띠로 읽히게 한다. */
 	.table :where(thead, tfoot) { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
-	.table :where(tbody tr) { border-top: 1px solid var(--color-base-200); }
+	.table thead :where(th, td) {
+		font-weight: 600; letter-spacing: 0.02em;
+		background-color: color-mix(in oklch, var(--color-base-200) 45%, transparent);
+		border-bottom: 1px solid color-mix(in oklch, var(--color-base-content) 12%, transparent);
+	}
+	/* 숫자 칸이 자리마다 흔들리면 표가 지저분해 보인다. */
+	.table :where(th, td) { font-variant-numeric: tabular-nums; }
+	.table :where(tbody tr):last-child :where(th, td):first-child { border-end-start-radius: var(--radius-box); }
+	.table :where(tbody tr):last-child :where(th, td):last-child { border-end-end-radius: var(--radius-box); }
+	.table :where(tbody tr) { border-top: 1px solid var(--color-surface-line); }
 	.table-sm :where(th, td) { padding: 0.4rem 0.75rem; font-size: 0.8125rem; }
 	.table-xs :where(th, td) { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
-	.table-zebra tbody tr:nth-child(even) { background-color: color-mix(in oklab, var(--color-base-200) 55%, transparent); }
+	.table-zebra tbody tr:nth-child(even) { background-color: color-mix(in oklab, var(--color-base-200) 38%, transparent); }
 	.table-pin-rows thead tr { position: sticky; top: 0; z-index: 1; background-color: var(--color-base-100); }
 	.table-pin-rows tfoot tr { position: sticky; bottom: 0; z-index: 1; background-color: var(--color-base-100); }
 	/* 행 hover 는 모든 테이블 공통 기본 동작 (in 즉각 / out 스르륵 — 메뉴와 동일한 비대칭) */
@@ -212,6 +346,19 @@
 		background-color: var(--color-base-100);
 	}
 	.checkbox-sm { width: 1rem; height: 1rem; }
+	/* 선택 가능한 표의 행 앞머리 체크박스를 감싸는 라벨. 24px 목표 크기(WCAG 2.5.8)는 이 라벨이 만든다.
+	   체크박스는 common.js 가 만들어 넣으므로(표마다 마크업을 고치지 않는다) 여기가 유일한 모양 정의다. */
+	.row-select-box {
+		/* 첫 칸 내용이 블록이면(계좌명 + 그 아래 펼침 버튼) inline-flex 는 윗줄로 밀린다
+		   - 실측 2026-09-10: 체크박스가 계좌명 위에 따로 놓였다. 띄워서 글 옆에 오게 한다. */
+		float: left; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+		width: 1.5rem; height: 1.5rem; margin: -0.125rem 0.5rem 0 0; cursor: pointer;
+	}
+
+	/* 첫 칸이 좁은 표(배당 수익률의 종목 칸은 82px)에서는 24px 체크박스가 이름을 한 글자씩 끊는다
+	   - 실측 2026-09-10: 최대 행 높이 81 → 99px, 페이지 7,401 → 7,733px. 첫 칸에 최소 폭을 준다
+	   (130px 로 주면 끊김이 사라져 행 63px·페이지 7,247px 로 체크박스가 없던 때보다도 짧아진다). */
+	table:has(tr[data-row-select]) tr > :first-child { min-width: 8.125rem; }
 	.checkbox:checked { background-color: var(--color-primary); border-color: var(--color-primary);
 		background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5'%3e%3cpath d='M3 8l3.5 3.5L13 4.5'/%3e%3c/svg%3e");
 		background-repeat: no-repeat; background-position: center; background-size: 0.9rem; }
@@ -322,14 +469,22 @@
 	/* ---- tooltip (hover bubble via ::before/::after or .tooltip-content) ---- */
 	.tooltip { position: relative; display: inline-block; }
 	.tooltip > .tooltip-content, .tooltip:before {
-		position: absolute; z-index: 40; opacity: 0; visibility: hidden; transition: opacity .12s;
+		/* visibility 는 0.2s 뒤에 숨긴다: 트리거와 말풍선 사이 0.25rem 틈을 포인터가 건널 시간(WCAG 1.4.13 hoverable). */
+		position: absolute; z-index: 40; opacity: 0; visibility: hidden; transition: opacity .12s, visibility 0s linear .2s;
 		pointer-events: none; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-0.25rem);
 	}
 	.tooltip:before {
 		content: attr(data-tip); white-space: nowrap; padding: 0.25rem 0.5rem; font-size: 0.75rem;
 		border-radius: var(--radius-field); background: var(--color-neutral); color: var(--color-neutral-content);
 	}
-	.tooltip:hover > .tooltip-content, .tooltip:hover:before { opacity: 1; visibility: visible; }
+	/* 키보드 포커스에서도 연다(실측 2026-09-09: tabindex 를 줘도 hover 규칙뿐이라 4/4 툴팁이 포커스 시 0/hidden).
+	   :focus-visible 이라 마우스 클릭으로 받은 포커스는 열지 않는다(hover 가 대신 연다). */
+	.tooltip:is(:hover, :focus-visible) > .tooltip-content, .tooltip:is(:hover, :focus-visible):before {
+		/* pointer-events 를 되살려 말풍선 위에서도 .tooltip:hover 가 유지된다(실측: none 이면 4/4 가 포인터를 옮기는 순간 hidden). */
+		opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s;
+	}
+	/* Escape 로 닫은 툴팁(common.ts 가 붙임) - 포커스·hover 가 남아 있어도 숨긴다(WCAG 1.4.13 dismissable). 표시 규칙 뒤에 둬야 이긴다. */
+	.tooltip.tooltip-dismissed > .tooltip-content, .tooltip.tooltip-dismissed:before { opacity: 0; visibility: hidden; pointer-events: none; }
 	/* .tooltip:before(짧은 말풍선)와 달리 .tooltip-content 는 블록 내용을 담으므로
 	   자체 안쪽 여백을 준다. (0 이면 텍스트가 박스 가장자리에 붙어 답답해 보인다.) */
 	.tooltip-content { padding: 0.75rem; }
@@ -413,6 +568,21 @@
 	[data-theme="dark"] .text-dividend { color: #69db7c; }
 }
 
+/* 선택된 탭은 !bg-primary·!text-primary-content(유틸 레이어, !important)로 흰 글자다.
+   인쇄에서 배경을 안 찍으면 흰 종이에 사라진다(실측 2026-09-10: 배당 '실수령 배당' 대비 1.00).
+   !important 끼리는 '나중 레이어'가 아니라 '앞선 레이어'가 이기므로 레이어 밖 규칙으로는 못 이긴다 -
+   같은 utilities 레이어에 더 높은 특이성으로 둔다. */
+@layer utilities {
+	@media print {
+		.tab.tab-active,
+		.tab[aria-selected="true"] {
+			background-color: transparent !important;
+			color: var(--color-base-content) !important;
+			box-shadow: none !important;
+		}
+	}
+}
+
 /* 적립식 복리 시뮬레이터 시리즈 색 — JTE 인라인 스타일과 TS(Chart.js) 가 공유하는 단일 소스.
    수익은 text-profit 과 같은 계열(빨강=수익 관례). */
 :root {
@@ -427,7 +597,145 @@
 
 /* 목록 화면 상세 검색 필터 공통 그리드 (활동/매매/배당/자산성장 4곳 공유).
    종목 컬럼은 최소 9rem 보장 — minmax(0,1fr) 이면 1440px 에서 고정 컬럼에 밀려 붕괴한다. */
-.stock-filter-grid { display: grid; gap: 0.75rem; }
+/* 인쇄. 실측 2026-09-10(qa/print-audit.cjs·print-clip.cjs, A4 794px, print 미디어):
+   (1) 고정 상단바(64px)와 하단 독(56px, 화면 폭 lg 미만이라 인쇄에도 보임)이 그대로 찍히고 독이 본문 마지막 줄을 덮었다.
+   (2) 가로 스크롤 표는 종이에서 잘렸다 - 자산 현황 '계좌별 현황' 760→842px(82px), 매매 '상세 목록' 762→936px(174px) 손실.
+   (3) 스티키 요소가 화면마다 1~4개 남아 쪽마다 끼어들 수 있다. */
+@media print {
+	/* 다크 테마로 인쇄하면 브라우저가 배경을 찍지 않아 흰 종이에 밝은 글자만 남는다
+	   (실측 2026-09-10 qa/print-dark.cjs: 본문 rgb(230,234,242)가 흰 종이 대비 1.21, 4화면 텍스트 1,765곳 중 1,765곳이 AA 미달).
+	   인쇄에는 라이트 팔레트를 쓴다. 값은 위 @theme(라이트)와 같아야 하며 PrintDarkThemeTest 가 대조한다. */
+	[data-theme="dark"] {
+		--color-base-100: #ffffff;
+		--color-base-200: #f5f7fa;
+		--color-base-300: #e5e9f0;
+		--color-base-content: #0d111b;
+		--color-primary: #3763d0;
+		--color-primary-content: #ffffff;
+		--color-secondary: #4b5563;
+		--color-secondary-content: #ffffff;
+		--color-accent: #0ea5e9;
+		--color-accent-content: #ffffff;
+		--color-neutral: #1f2937;
+		--color-neutral-content: #ffffff;
+		--color-info: #2062ab;
+		--color-info-content: #ffffff;
+		--color-success: #15803d;
+		--color-success-content: #ffffff;
+		--color-warning: #92400e;
+		--color-surface-line: rgba(15, 23, 42, 0.07);
+		--color-warning-content: #ffffff;
+		--color-error: #c30115;
+		--color-error-content: #ffffff;
+		--color-compound-profit: rgba(189, 44, 56, 0.75);
+	}
+	/* 손익·배당 색은 유틸 레이어에 있어 레이어 밖 규칙이 이긴다(라이트 값 = 흰 종이 AA 통과 값). */
+	[data-theme="dark"] .text-profit { color: #bd2c38; }
+	[data-theme="dark"] .text-loss { color: #3159c4; }
+	[data-theme="dark"] .text-dividend { color: #147449; }
+	/* 채워진 버튼은 흰 글자라, 배경을 안 찍는 인쇄에서는 흰 종이에 사라진다
+	   (실측 2026-09-10: 라이트·다크 모두 '전체'·'조회' 등 5곳이 대비 1.00). 종이에서는 테두리 있는 글자로 찍는다. */
+	.btn {
+		background-color: transparent !important;
+		color: var(--color-base-content) !important;
+		border: 1px solid var(--color-base-300) !important;
+		box-shadow: none !important;
+	}
+	:root { color-scheme: light; }
+	header.navbar,
+	nav.dock,
+	.stock-sidebar-spacer,
+	/* 아래 둘은 종이에서 쓸모가 없다 - 구역 막대는 누를 수 없고, 선택 체크박스는 빈 네모로만 찍힌다
+	   (실측 2026-09-10 qa/print-new-parts.cjs: 막대 3화면, 체크박스 배당 14·매매 8·자산현황 14개). */
+	[data-page-section-nav],
+	.row-select-box,
+	#app-toast,
+	#app-progress {
+		display: none !important;
+	}
+	/* 탭은 종이에서 누를 수 없다 - 선택 안 된 패널이 통째로 빠진다(실측 2026-09-10: 자산 성장 4패널 중 3개, 표 21행 중 12행이 인쇄에서 사라졌다).
+	   종이에는 모든 패널을 펼치고 탭 막대는 숨긴다. 각 패널에는 자기 이름(제목)이 있다. */
+	[data-panel-group] {
+		display: block !important;
+	}
+	[data-panel-tab-group] {
+		display: none !important;
+	}
+
+	/* 화면용 고정·스티키는 종이에서 의미가 없다(쪽마다 겹쳐 찍힌다). */
+	[class*="sticky"], .sticky, .table-pin-rows thead tr, .table-pin-rows tfoot tr {
+		position: static !important;
+	}
+	/* 잘린 열을 살린다: 가로 스크롤을 풀고 표를 쪽 폭에 맞춘 뒤 줄바꿈을 허용한다. */
+	.overflow-x-auto, .overflow-auto {
+		overflow: visible !important;
+	}
+	table {
+		width: 100% !important;
+		table-layout: auto !important;
+	}
+	.whitespace-nowrap, table .whitespace-nowrap {
+		white-space: normal !important;
+	}
+	/* width:100% 로도 못 줄이는 표가 있다(실측: 자산 현황 '계좌별 현황' 은 열들의 최소 폭 합이 842px > 760px).
+	   종이에서는 글자와 여백을 한 단계 줄여 열을 살린다. */
+	table {
+		font-size: 0.75rem;
+	}
+	table :is(th, td) {
+		padding-left: 0.25rem;
+		padding-right: 0.25rem;
+	}
+	/* 한 줄·한 카드가 쪽 경계에서 잘리지 않게. */
+	tr, .card, .rounded-box, .rounded-2xl {
+		break-inside: avoid;
+	}
+}
+
+/* 포커스가 고정 막대 뒤로 숨지 않게(WCAG 2.4.11). 실측 2026-09-10(qa/focus-obscured.cjs, 375px, 10화면): Tab 으로 옮긴 포커스
+   95개가 하단 독(.dock, 고정 4rem) 뒤에 들어갔다(배당 26·활동 21·매매 19). 브라우저의 포커스 스크롤은 뷰포트 가장자리까지만 보이게 하므로
+   고정 상단바(4rem)·독(lg 미만)만큼 scroll-padding 을 둔다. 1280px 에선 독이 없어 0. */
+html { scroll-padding-top: 7rem; }
+/* 화면 안 구역 막대. common.js 가 data-page-section 을 모아 본문 맨 앞에 만들어 넣는다
+   (실측 2026-09-10: 배당 화면은 마지막 구역이 3,185px 아래라 굴리는 것 말고는 닿을 길이 없었다).
+   상단 헤더 바로 아래에 붙어 따라다닌다 - 그래서 기준점 여백도 막대 높이만큼 더 준다. */
+.page-section-nav {
+	/* 실측 2026-09-10: 헤더는 sticky 0~71px 다. 3.5rem(56px) 로 두면 붙었을 때 헤더를 15px 파고들었다. */
+	position: sticky; top: 4.4375rem; z-index: 20; margin-bottom: 0.75rem;
+	background-color: color-mix(in oklch, var(--color-base-100) 92%, transparent);
+	backdrop-filter: blur(6px);
+	border-bottom: 1px solid var(--color-base-200);
+}
+.page-section-nav ul {
+	display: flex; gap: 0.25rem; overflow-x: auto; list-style: none; margin: 0;
+	padding: 0.375rem 0; scrollbar-width: thin;
+}
+.page-section-nav li { flex: 0 0 auto; }
+.page-section-nav a {
+	display: inline-flex; align-items: center; min-height: 1.75rem; padding: 0.25rem 0.625rem;
+	border-radius: var(--radius-selector); font-size: 0.8125rem; line-height: 1.25rem;
+	color: var(--color-base-content); opacity: 0.65; text-decoration: none; white-space: nowrap;
+}
+.page-section-nav a:hover { opacity: 1; background-color: var(--color-base-200); }
+.page-section-nav a.is-current {
+	opacity: 1; font-weight: 600;
+	color: var(--color-primary); background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+}
+
+@media (width < 64rem) {
+	html { scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+}
+
+.stock-filter-grid { display: grid; gap: 0.75rem; grid-template-columns: minmax(0, 1fr); }
+/* 실측 2026-09-10(qa/ag-join.cjs, 320px): date 입력은 고유 폭 125px(텍스트 간격 덧입히면 141px)이라 둘을 나란히 두면 트랙이
+   253~285px 로 자라 자산성장 필터(details 안, 214px)가 문서를 18px 넘겼다. 360px 미만에선 시작/종료일을 세로로 잇는다. */
+@media (width < 360px) {
+	.stock-filter-grid .join { flex-direction: column; }
+	.stock-filter-grid .join > .join-item { width: 100%; }
+	.stock-filter-grid .join > *:not(:first-child) { margin-left: 0; margin-top: -1px; }
+	.stock-filter-grid .join > *:first-child { border-radius: var(--radius-field) var(--radius-field) 0 0; }
+	.stock-filter-grid .join > *:last-child { border-radius: 0 0 var(--radius-field) var(--radius-field); }
+}
 @media (min-width: 48rem) {
 	.stock-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -987,6 +1295,32 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	}
 }
 
+/* 활동 달력의 달 밖 채움 칸(앞뒤 달 날짜): 셀 전체를 opacity-30 으로 눌렀더니 날짜 숫자 대비가 1.59:1,
+   붉은 날은 1.78:1 이었다(axe, 2026-09-09, 11px 글자 기준 4.5:1). 숫자 색만 본문색 60% 로 낮춘다
+   (계산: 라이트 4.9 / 다크 6.0). 붉은 날 강조(text-error, utilities 레이어)도 달 밖에서는 같은 회색으로 -
+   레이어 밖 규칙이라 유틸리티를 이긴다. */
+.cal-day-out .cal-day-num {
+	color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+}
+
+/* Windows 고대비(forced-colors): 배경·글자색이 시스템 색으로 강제돼 눌림(aria-pressed)·선택 탭·독 활성 항목이 색만으로는
+   비활성과 구별되지 않는다(실측 2026-09-09: 기간 프리셋·독 활성 항목의 스크린샷 하단 띠가 비활성과 동일). 밑줄로 상태를 남긴다 -
+   외곽선(outline)은 포커스 링과 겹치고 box-shadow 는 고대비에서 제거되므로 쓰지 않는다. 일반 모드에는 영향 없음. */
+@media (forced-colors: active) {
+	[aria-pressed="true"],
+	[role="tab"][aria-selected="true"],
+	.tab-active,
+	.dock-active {
+		text-decoration: underline;
+		text-decoration-thickness: 2px;
+		text-underline-offset: 3px;
+	}
+	/* 선택된 표 행(배당 수익률·자산 현황)은 배경색만 달라 고대비에서 구분되지 않았다(실측 2026-09-09). 첫 칸 앞에 표식을 둔다. */
+	tr[aria-selected="true"] > td:first-child::before {
+		content: "\25B8\00A0";
+	}
+}
+
 /* 시뮬레이터 타임라인 단계 틴트.
    행 배경/범례에 고정 팔레트(bg-amber-50 등)를 쓰면 테마를 따라가지 않아
    다크 테마에서 거의 흰 배경이 깔리고 밝은 본문 글자가 사라진다
@@ -1041,6 +1375,26 @@ tr.sim-tint-depleted > td {
 
 [data-theme="dark"] .stock-sidebar .sidebar-link.text-primary {
 	color: var(--color-primary);
+}
+
+/* 사이드바 항목은 글자 목록처럼 보였다 - 활성 항목은 알약 모양으로 채우고 왼쪽에 짧은 막대를 세운다.
+   테두리 4px 를 그대로 쓰면 접힘 애니메이션과 어긋나므로 왼쪽 막대는 ::before 로 그린다. */
+.stock-sidebar .sidebar-link {
+	border-radius: 0.625rem;
+	margin-inline: 0.25rem;
+}
+.stock-sidebar .sidebar-link.text-primary {
+	background-image: linear-gradient(90deg,
+		color-mix(in oklch, var(--color-primary) 16%, transparent),
+		color-mix(in oklch, var(--color-primary) 7%, transparent));
+	box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 18%, transparent);
+}
+.stock-sidebar .sidebar-link.text-primary::before {
+	content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+	width: 3px; height: 1.25rem; border-radius: 999px; background-color: currentColor;
+}
+.stock-sidebar .sidebar-link:not(.text-primary):hover {
+	background-color: color-mix(in oklch, var(--color-base-content) 6%, transparent);
 }
 
 /* 터치 대상 최소 크기(WCAG 2.2 AA, 24x24).

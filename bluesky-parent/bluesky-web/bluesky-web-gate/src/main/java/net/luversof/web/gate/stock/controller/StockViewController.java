@@ -69,6 +69,9 @@ public class StockViewController {
   @Autowired
   private net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient ledgerIntegrityClient;
 
+  /** 관리 화면의 두 조회를 나란히 던지기 위한 공용 실행기(다른 화면들이 쓰는 것과 같다). */
+  @Autowired private java.util.concurrent.ExecutorService stockRemoteCallExecutor;
+
   /** 상세 화면의 서로 독립적인 api-stock 조회를 동시에 던지기 위한 실행기. */
   @org.springframework.beans.factory.annotation.Autowired
   private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
@@ -836,8 +839,18 @@ public class StockViewController {
     // 조회에 실패해도 관리 화면 자체는 떠야 하므로 값 없이 계속 진행한다.
     UUID dataStatusUserId = UserUtil.getUserId();
     if (dataStatusUserId != null) {
+      // 두 조회는 서로 의존이 없는데 순차로 돌고 있었다 - 실측 2026-09-10: 데이터 상태 113ms +
+      // 원장 점검 45ms 가 그대로 합산돼 이 화면만 TTFB 165~244ms 였다(대시보드 15ms·배당 25ms).
+      // 한꺼번에 던지고 결과만 모은다.
+      java.util.concurrent.CompletableFuture<?> dataStatusFuture =
+          java.util.concurrent.CompletableFuture.supplyAsync(
+              () -> dataStatusClient.findDataStatus(dataStatusUserId), stockRemoteCallExecutor);
+      java.util.concurrent.CompletableFuture<?> ledgerFuture =
+          java.util.concurrent.CompletableFuture.supplyAsync(
+              () -> ledgerIntegrityClient.check(dataStatusUserId, LEDGER_INTEGRITY_MAX_EXAMPLES),
+              stockRemoteCallExecutor);
       try {
-        model.addAttribute("dataStatus", dataStatusClient.findDataStatus(dataStatusUserId));
+        model.addAttribute("dataStatus", dataStatusFuture.join());
       } catch (RuntimeException e) {
         log.warn("data status lookup failed: {}", e.toString());
       }
@@ -846,9 +859,7 @@ public class StockViewController {
       try {
         // 예시를 기본 3 건만 받으면 발견의 절반 이상을 화면에서 볼 수 없다(실측 2026-08-23: 45 건 중 25 건).
         // 조치하려면 어느 행인지 알아야 하므로 넉넉히 받아 접이식으로 보여 준다.
-        model.addAttribute(
-            "ledgerIntegrity",
-            ledgerIntegrityClient.check(dataStatusUserId, LEDGER_INTEGRITY_MAX_EXAMPLES));
+        model.addAttribute("ledgerIntegrity", ledgerFuture.join());
       } catch (RuntimeException e) {
         log.warn("ledger integrity check failed: userId={}", dataStatusUserId, e);
       }

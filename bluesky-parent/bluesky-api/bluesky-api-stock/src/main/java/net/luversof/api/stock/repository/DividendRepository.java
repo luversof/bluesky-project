@@ -39,6 +39,30 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
       @org.springframework.data.repository.query.Param("endDate") java.time.Instant endDate,
       @org.springframework.data.repository.query.Param("zone") String zone);
 
+  /**
+   * 기간 배당 집계 한 줄. 연도별 집계와 같은 기준(지급일)이다.
+   *
+   * <p>대시보드가 기간 배당을 보여 주려면 지금은 배당 원장을 통째로 받아 더해야 한다(실측 2026-09-10: 올해 202 행).
+   */
+  @Query(
+      """
+                SELECT COALESCE(SUM(d."grossAmount"), 0)   AS gross_amount,
+                       COALESCE(SUM(d."taxableAmount"), 0) AS taxable_amount,
+                       COALESCE(SUM(d."tax"), 0)           AS tax,
+                       COALESCE(SUM(d."fee"), 0)           AS fee,
+                       COUNT(*)                            AS count
+                FROM "Dividend" d
+                JOIN "Account" a ON d."account_id" = a."id"
+                WHERE a."user_id" = :userId
+                  AND d."payDate" IS NOT NULL
+                  AND (CAST(:startDate AS timestamptz) IS NULL OR d."payDate" >= CAST(:startDate AS timestamptz))
+                  AND (CAST(:endDate   AS timestamptz) IS NULL OR d."payDate" <  CAST(:endDate   AS timestamptz))
+            """)
+  net.luversof.api.stock.domain.PeriodDividendSummary findPeriodSummary(
+      @org.springframework.data.repository.query.Param("userId") UUID userId,
+      @org.springframework.data.repository.query.Param("startDate") Instant startDate,
+      @org.springframework.data.repository.query.Param("endDate") Instant endDate);
+
   /** 사용자의 최초 배당 지급일. 전체 배당을 내려받아 min() 하는 대신 DB 집계로 1행만 가져온다. */
   @Query(
       """

@@ -123,12 +123,12 @@
 
 <div class="space-y-6">
 	@if(!successMessage.isEmpty())
-		<div class="alert alert-success border border-success/20 bg-success/10 text-success-content">
+		<div class="alert alert-success border border-success/20 bg-success/10 text-success-content" role="status">
 			<span>${successMessage}</span>
 		</div>
 	@endif
 	@if(monthlyDividendErrorMessage != null && !monthlyDividendErrorMessage.isEmpty())
-		<div class="alert alert-error border border-error/20 bg-error/10 text-error-content">
+		<div class="alert alert-error border border-error/20 bg-error/10 text-error-content" role="alert">
 			<span>${monthlyDividendErrorMessage}</span>
 		</div>
 	@endif
@@ -150,7 +150,7 @@
 						<div class="flex flex-wrap items-center gap-2"><form method="post" action="/stock/simulator/monthly-dividend/import-sheet" class="inline" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.simulator.monthly.import.sheet.overlay.desc")}"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><button type="submit" class="btn btn-secondary btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}</button></form><a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a></div>
 					</div>
 					@if(symbolValue != null && !symbolValue.isEmpty() && !referenceValuesAvailable)
-						<div class="alert border border-warning/20 bg-warning/10 text-warning-content">
+						<div class="alert border border-warning/20 bg-warning/10 text-warning-content" role="status">
 							<div class="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
 								<span>${MessageUtil.getMessage("stock.simulator.monthly.reference.empty")}</span>
 								<a href="${monthlyDividendReferenceManageUrl}" class="btn btn-warning btn-sm">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a>
@@ -389,7 +389,7 @@
 							</div>
 							</div></div>
 							<div class="overflow-x-auto">
-								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap" data-monthly-selection-table>
+								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap" data-monthly-selection-table aria-label="${MessageUtil.getMessage("stock.simulator.monthly.tool.title")}">
 								<thead>
 									<tr>
 										<th rowspan="2" scope="col" class="min-w-[8rem] max-w-[11rem] align-middle">
@@ -459,13 +459,13 @@
 										<th scope="col" class="col-group-start min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis")}</div>
-												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
+												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}
 													@if("monthly-yield".equals(monthlyDividendSort))
 														<span class="ml-1 text-[11px] text-base-content/60">${currentDirectionIndicator}</span>
 													@endif
 												</a>
-												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield&direction=${annualYieldDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
+												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield&direction=${annualYieldDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}
 													@if("annual-yield".equals(monthlyDividendSort))
 														<span class="ml-1 text-[11px] text-base-content/60">${currentDirectionIndicator}</span>
@@ -476,13 +476,13 @@
 										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost")}</div>
-												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
+												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}
 													@if("monthly-yield-on-cost".equals(monthlyDividendSort))
 														<span class="ml-1 text-[11px] text-base-content/60">${currentDirectionIndicator}</span>
 													@endif
 												</a>
-												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield-on-cost&direction=${annualYieldOnCostDirectionToggle}" class="link link-hover block text-xs font-medium leading-4 no-underline">
+												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield-on-cost&direction=${annualYieldOnCostDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}
 													@if("annual-yield-on-cost".equals(monthlyDividendSort))
 														<span class="ml-1 text-[11px] text-base-content/60">${currentDirectionIndicator}</span>
@@ -522,8 +522,8 @@
 												data-monthly-selection-row
 												data-profile-order-row="${rowDisplayOrder != null ? "true" : "false"}"
 												data-symbol="${normalizedRowSymbol}"
-												tabindex="0"
 												aria-selected="false"
+												data-row-select="${MessageUtil.getMessage("stock.table.row.select")}"
 												draggable="${rowReorderable}"
 												data-latest-monthly-dividend="${latestMonthlyDividendAmount.toPlainString()}"
 												data-buy-amount="${buyAmount.toPlainString()}"
@@ -689,7 +689,8 @@
 		box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-primary) 65%, transparent);
 	}
 
-	.monthly-dividend-row:focus-visible {
+	/* 행은 더 이상 초점을 받지 않는다(선택은 첫 칸 체크박스). 체크박스에 초점이 오면 행 전체를 표시한다. */
+	.monthly-dividend-row:has(input:focus-visible) {
 		outline: 2px solid color-mix(in oklch, var(--color-primary) 35%, transparent);
 		outline-offset: -2px;
 	}

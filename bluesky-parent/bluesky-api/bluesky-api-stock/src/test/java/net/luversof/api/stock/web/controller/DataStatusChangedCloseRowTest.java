@@ -25,7 +25,7 @@ class DataStatusChangedCloseRowTest {
 
   private ZeroVolumeChangedClose row(String previousClose, String close) {
     return new ZeroVolumeChangedClose(
-        ITEM, LocalDate.of(2025, 5, 8), new BigDecimal(close), new BigDecimal(previousClose));
+        ITEM, LocalDate.of(2025, 5, 8), new BigDecimal(close), new BigDecimal(previousClose), 1L);
   }
 
   @Test

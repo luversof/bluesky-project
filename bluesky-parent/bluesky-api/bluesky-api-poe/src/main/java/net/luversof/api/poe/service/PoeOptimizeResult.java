@@ -60,6 +60,9 @@ public record PoeOptimizeResult(
     //   ⚠ 노드 목록만으로는 이 상황을 못 잡는다 — 최적화기가 값 0 인 노드를 **스스로 피해서** 아무것도 할당하지 않기 때문이다
     //   (실측 2026-09-09: Scion/Luminary 강제 완주 시 할당된 루미너리 노드 0개, 전직 8pt 가 통째로 미사용).
     UnmodeledAscendancy unmodeledAscendancy,
+    // 미니언이 **직접 장착한** 장비(수호자 기동 계열). 비면 해당 없음.
+    //   PoB 는 지정이 없으면 플레이어 세트로 폴백해 수호자가 플레이어 장비를 입는다 — 인게임 불가라 전용 세트를 준다.
+    List<MinionItem> minionItems,
     List<SlotTierCompare> tierComparisons,
     List<ScenarioCell> scenarioMatrix,
     List<DefenseHit> defenseHits,
@@ -140,6 +143,9 @@ public record PoeOptimizeResult(
    * @param total 스탯을 가진 전직 노드 수
    */
   public record UnmodeledAscendancy(String ascendancy, int unmodeled, int total) {}
+
+  /** 미니언이 장착한 장비 한 점(수호자 기동). */
+  public record MinionItem(String slot, String slotKo, String baseType, List<String> modLines) {}
 
   /**
    * 장착 아이템 하나.

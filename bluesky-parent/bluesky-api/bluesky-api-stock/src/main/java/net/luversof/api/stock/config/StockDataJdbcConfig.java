@@ -7,6 +7,7 @@ import javax.sql.DataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
+import org.springframework.data.jdbc.core.dialect.JdbcPostgresDialect;
 import org.springframework.data.jdbc.repository.config.EnableJdbcAuditing;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
@@ -45,9 +46,16 @@ public class StockDataJdbcConfig {
     return DataJdbcConverterUtil::prepareEntity;
   }
 
+  /**
+   * PostgreSQL dialect 의 단순 타입(PGobject 등)을 store conversions 에 넣어 만든다. 생성자 {@code new
+   * JdbcCustomConversions(List)} 로 만들면 PGobject 가 저장소 타입이 아니라서 기동마다 CustomConversions WARN
+   * 2줄(reading/writing converter ... doesn't convert from/to a store-supported type)이 났다(실측
+   * 2026-09-09). 이 설정은 stock_postgresql 전용이라 dialect 를 고정한다.
+   */
   @Bean
   JdbcCustomConversions stockJdbcCustomConversions() {
-    return new JdbcCustomConversions(
+    return JdbcCustomConversions.of(
+        JdbcPostgresDialect.INSTANCE,
         List.of(
             // new MapToStringConverter(),
             // new StringToMapConverter()

@@ -16,7 +16,7 @@ import test from "node:test";
 const { ApiError, NetworkError, ParseError } = await import(
 	"../../resources/static/js/fetchClient.js"
 );
-const { handleApiError, defaultErrorText } = await import(
+const { handleApiError, defaultErrorText, loginUrlFor, redirectToLoginIfUnauthorized } = await import(
 	"../../resources/static/js/errorHandler.js"
 );
 
@@ -131,5 +131,39 @@ test("핸들러가 없으면 alert 도 로케일 문구를 쓴다", () => {
 		assert.match(shown, /^A network error/);
 	} finally {
 		globalThis.alert = prevAlert;
+	}
+});
+
+// 401 은 안내 뒤 로그인으로 보낸다. 실측 2026-09-09: 순서 저장이 401 을 받으면 상태줄만 남고 갈 길이 없었다.
+test("로그인 주소는 페이지·조각과 같은 규약이다", () => {
+	assert.equal(loginUrlFor("https://x/stock/admin?tab=a"), "/login?redirectUrl=https%3A%2F%2Fx%2Fstock%2Fadmin%3Ftab%3Da");
+});
+
+test("401 이면 안내를 넘긴 뒤 현재 화면으로 돌아오는 로그인 주소로 보낸다", () => {
+	const prev = globalThis.location;
+	const assigned = [];
+	globalThis.location = { href: "https://x/stock/admin?tab=monthly-reference", assign: (u) => assigned.push(u) };
+	try {
+		const seen = capture(new ApiError(401, "로그인이 필요합니다", { message: "로그인이 필요합니다", isDisplayableMessage: true }));
+		assert.equal(seen.displayable, "로그인이 필요합니다", "안내는 그대로 넘긴다");
+		assert.deepEqual(assigned, ["/login?redirectUrl=https%3A%2F%2Fx%2Fstock%2Fadmin%3Ftab%3Dmonthly-reference"]);
+		assigned.length = 0;
+		capture(new ApiError(401, "", null));
+		assert.equal(assigned.length, 1, "문구가 없어도 401 은 로그인으로");
+		assigned.length = 0;
+		capture(new ApiError(400, "bad", { message: "bad", isDisplayableMessage: true }));
+		assert.equal(assigned.length, 0, "401 이 아니면 보내지 않는다");
+	} finally {
+		globalThis.location = prev;
+	}
+});
+
+test("브라우저가 아닌 문맥에서는 401 이어도 아무것도 하지 않는다", () => {
+	const prev = globalThis.location;
+	delete globalThis.location;
+	try {
+		assert.equal(redirectToLoginIfUnauthorized(401), false);
+	} finally {
+		if (prev !== undefined) globalThis.location = prev;
 	}
 });

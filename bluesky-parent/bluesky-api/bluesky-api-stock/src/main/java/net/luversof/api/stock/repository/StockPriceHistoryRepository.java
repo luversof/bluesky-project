@@ -205,7 +205,8 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                     SELECT h."stockItem_id" AS stock_item_id,
                         h."tradeDate" AS trade_date,
                         h."closePrice" AS close_price,
-                        x."closePrice" AS previous_close_price
+                        x."closePrice" AS previous_close_price,
+                        COUNT(*) OVER () AS total_count
                     FROM "StockPriceHistory" h
                     CROSS JOIN LATERAL (
                         SELECT p."closePrice"
@@ -264,7 +265,8 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                         "tradeDate" AS trade_date,
                         "closePrice" AS close_price,
                         prev_close AS previous_close_price,
-                        prev_date AS previous_trade_date
+                        prev_date AS previous_trade_date,
+                        COUNT(*) OVER () AS total_count
                     FROM w
                     WHERE prev_close > 0
                         AND "closePrice" > 0

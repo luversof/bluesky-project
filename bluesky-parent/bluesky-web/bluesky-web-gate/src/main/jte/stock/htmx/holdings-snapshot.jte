@@ -95,7 +95,7 @@
 				<p class="mb-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", latestPriceDate.toString())}</p>
 			@endif
 			<div class="overflow-x-auto">
-				<table class="table table-xs table-zebra w-full">
+				<table class="table table-xs table-zebra w-full" aria-label="${snapshotTitle}">
 					<thead>
 						<tr class="text-xs text-base-content/60">
 							<th scope="col">${stockNameLabel}</th>

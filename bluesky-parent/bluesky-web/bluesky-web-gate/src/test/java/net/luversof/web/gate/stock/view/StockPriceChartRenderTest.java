@@ -97,8 +97,8 @@ class StockPriceChartRenderTest {
   void 평균단가를_기준선으로_함께_긋는다() {
     String html = render(prices());
 
-    // 원 단위로 반올림해 넘긴다(차트 축이 원 단위다).
-    assertThat(html).contains("var avg = 71887;");
+    // 원 단위로 반올림해 넘긴다(차트 축이 원 단위다). 2026-09-10 부터 점선은 ChartSeriesJs 가 종가와 같은 길이의 배열로 채운다.
+    assertThat(html).contains("cost:new Array(2).fill(71887)");
     assertThat(html).contains(MessageUtil.getMessage("stock.item.detail.price.chart.average"));
   }
 

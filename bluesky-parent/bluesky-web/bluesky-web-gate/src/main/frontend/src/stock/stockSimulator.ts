@@ -1142,7 +1142,7 @@ function simulateScenario(scenario) {
 									}</p>
 								<div class="flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
 									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryLatestCoverage)} ${escapeHtml(formatCoveragePercent(summary.finalSpendingCoveragePct))}</span>
-									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryFinalWealth)} ${escapeHtml(formatCompactCurrency(summary.finalWealth))}</span>
+									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryFinalWealth)} <span class="amount-value">${escapeHtml(formatCompactCurrency(summary.finalWealth))}</span></span>
 								</div>
 								<div class="mt-2 flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
 									${buildScenarioConfigurationBadges(scenario)}
@@ -1323,17 +1323,17 @@ function simulateScenario(scenario) {
 								<span>${record.year}</span>
 							</button>
 						</td>
-						<td>${formatCurrency(record.sharePrice)}</td>
-						<td>${formatCurrency(record.annualDividend)}</td>
-						<td>${formatCurrency(record.annualSpending)}</td>
+						<td class="amount-value">${formatCurrency(record.sharePrice)}</td>
+						<td class="amount-value">${formatCurrency(record.annualDividend)}</td>
+						<td class="amount-value">${formatCurrency(record.annualSpending)}</td>
 						<td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
-						<td class="${record.annualGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(record.annualGap)}</td>
+						<td class="amount-value ${record.annualGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(record.annualGap)}</td>
 						<td>${formatShares(record.soldSharesForSpending)}</td>
 						<td>${formatShares(record.reinvestedShares)}</td>
 						<td>${formatShares(record.shares)}</td>
-						<td>${formatCurrency(record.cashReserve)}</td>
-						<td>${formatCurrency(record.marketValue)}</td>
-						<td>${formatCurrency(record.totalWealth)}</td>
+						<td class="amount-value">${formatCurrency(record.cashReserve)}</td>
+						<td class="amount-value">${formatCurrency(record.marketValue)}</td>
+						<td class="amount-value">${formatCurrency(record.totalWealth)}</td>
 					</tr>
 					<tr class="${expanded ? "" : "hidden"}">
 						<td colspan="12" class="bg-base-100/80 px-4 py-4">${renderMonthlyDetailsTable(record)}</td>
@@ -1351,12 +1351,13 @@ function simulateScenario(scenario) {
 			return `<div class="rounded-2xl border border-dashed border-base-300 px-4 py-6 text-center text-sm text-base-content/60">${escapeHtml(i18n.emptyMonthlyTable)}</div>`;
 		}
 
+		// 표 이름(aria-label)에 연도를 넣는다 - 연도마다 표가 하나씩이라 이름이 같으면 구분이 안 된다(실측 2026-09-09: 이름 없는 표 42개가 전부 이 표).
 		return `
 			<div class="space-y-3">
 				<div class="text-sm font-semibold text-base-content">${escapeHtml(i18n.monthlyDetailsTitle)}</div>
 				<p class="text-xs leading-5 text-base-content/60">${escapeHtml(i18n.yearlyDetailGuide)}</p>
 				<div class="overflow-x-auto">
-					<table class="table table-zebra">
+					<table class="table table-zebra" aria-label="${escapeHtml(i18n.monthlyDetailsTitle)} ${escapeHtml(String(record.year))}">
 						<thead>
 							<tr>
 								<th scope="col">${escapeHtml(i18n.tableHeaderMonth)}</th>
@@ -1379,17 +1380,17 @@ function simulateScenario(scenario) {
 									(monthRecord) => `
 										<tr class="${resolveMonthlyRowClass(monthRecord)}">
 											<td>${escapeHtml(formatMonthLabel(monthRecord.month))}</td>
-											<td>${formatCurrency(monthRecord.sharePrice)}</td>
-											<td>${formatCurrency(monthRecord.monthlyDividend)}</td>
-											<td>${formatCurrency(monthRecord.monthlySpending)}</td>
+											<td class="amount-value">${formatCurrency(monthRecord.sharePrice)}</td>
+											<td class="amount-value">${formatCurrency(monthRecord.monthlyDividend)}</td>
+											<td class="amount-value">${formatCurrency(monthRecord.monthlySpending)}</td>
 											<td class="${monthRecord.monthlyCoveragePct !== null && monthRecord.monthlyCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(monthRecord.monthlyCoveragePct)}</td>
-											<td class="${monthRecord.monthlyGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(monthRecord.monthlyGap)}</td>
+											<td class="amount-value ${monthRecord.monthlyGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(monthRecord.monthlyGap)}</td>
 											<td>${formatShares(monthRecord.soldSharesForSpending)}</td>
 											<td>${formatShares(monthRecord.reinvestedShares)}</td>
 											<td>${formatShares(monthRecord.shares)}</td>
-											<td>${formatCurrency(monthRecord.cashReserve)}</td>
-											<td>${formatCurrency(monthRecord.marketValue)}</td>
-											<td>${formatCurrency(monthRecord.totalWealth)}</td>
+											<td class="amount-value">${formatCurrency(monthRecord.cashReserve)}</td>
+											<td class="amount-value">${formatCurrency(monthRecord.marketValue)}</td>
+											<td class="amount-value">${formatCurrency(monthRecord.totalWealth)}</td>
 										</tr>`,
 								)
 								.join("")}
@@ -1528,6 +1529,11 @@ function simulateScenario(scenario) {
 		allowNegative,
 	) {
 		if (!existingChart) {
+			// 차트 텍스트 대안 플러그인(common.ts). 이 화면은 chart.umd 를 직접 로드해 stock-charts.js 의 등록을 거치지 않는다.
+			try {
+				const summaryPlugin = (globalThis as any).__chartSummaryInternals?.chartSummaryPlugin;
+				if (summaryPlugin && Chart.register) Chart.register(summaryPlugin);
+			} catch (e) {}
 			return new Chart(canvas, {
 				type: "line",
 				data: { labels, datasets },
@@ -1852,7 +1858,7 @@ function simulateScenario(scenario) {
 		return buildScenarioConfigurationSegments(scenario)
 			.map(
 				(segment) =>
-					`<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(segment)}</span>`,
+					`<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1${segment.includes("\u20a9") ? " amount-value" : ""}">${escapeHtml(segment)}</span>`,
 			)
 			.join("");
 	}

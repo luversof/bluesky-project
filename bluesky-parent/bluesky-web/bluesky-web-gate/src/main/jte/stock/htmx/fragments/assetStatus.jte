@@ -86,7 +86,7 @@
 		<%-- "현재가"는 마지막으로 수집된 종가라, 오늘 시세가 없으면 며칠 전 값일 수 있다.
 			 어느 날 기준인지 밝혀 사용자가 실시간 시세로 오해하지 않게 한다. --%>
 		<div class="flex flex-wrap items-baseline gap-2 mb-3">
-			<h2 class="text-lg font-semibold text-base-content/70">${accountSectionTitle}</h2>
+			<h2 class="text-lg font-semibold text-base-content/70" data-page-section>${accountSectionTitle}</h2>
 			@if(priceBasisDate != null)
 				<span class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())}</span>
 			@endif
@@ -151,12 +151,12 @@
 			}
 		</style>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
-			<table class="table table-sm w-full" data-sortable-table data-asset-status-account-table>
+			<table class="table table-sm w-full" data-sortable-table data-asset-status-account-table aria-label="${accountSectionTitle}">
 				<thead class="bg-base-200">
 					<tr>
 						<th scope="col">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="account"
 									data-sort-type="text">
 								<span>${accountLabel}</span>
@@ -165,7 +165,7 @@
 						</th>
 						<th scope="col" class="text-right">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="buyAmount"
 									data-sort-type="number">
 								<span>${buyAmountLabel}</span>
@@ -174,7 +174,7 @@
 						</th>
 						<th scope="col" class="text-right">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="evaluationAmount"
 									data-sort-type="number">
 								<span>${evaluationAmountLabel}</span>
@@ -183,7 +183,7 @@
 						</th>
 						<th scope="col" class="text-right">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="evaluationProfit"
 									data-sort-type="number">
 								<span>${evaluationProfitLabel}</span>
@@ -192,7 +192,7 @@
 						</th>
 						<th scope="col" class="text-right hidden md:table-cell">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="principal"
 									data-sort-type="number">
 								<span>${principalLabel}</span>
@@ -201,7 +201,7 @@
 						</th>
 						<th scope="col" class="text-right">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="principalReturn"
 									data-sort-type="number">
 								<span>${principalReturnLabel}</span>
@@ -210,7 +210,7 @@
 						</th>
 						<th scope="col" class="text-right">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="weight"
 									data-sort-type="number">
 								<span>${weightLabel}</span>
@@ -240,6 +240,7 @@
 						data-selected="false"
 						tabindex="0"
 						aria-selected="false"
+						data-row-select="${MessageUtil.getMessage("stock.table.row.select")}"
 						data-account="${entry.getValue().accountName() != null ? entry.getValue().accountName() : ""}"
 						data-buy-amount="${buyAmount.toPlainString()}"
 						data-evaluation-amount="${evaluationAmount.toPlainString()}"
@@ -254,8 +255,9 @@
 								<div class="text-xs text-base-content/60">${noHoldingsLabel}</div>
 							@else
 								<button type="button"
-										class="btn btn-ghost btn-xs h-auto min-h-0 px-1 mt-1 text-xs text-base-content/60 hover:text-base-content"
+										class="btn btn-ghost btn-xs h-auto min-h-6 px-1 mt-1 text-xs text-base-content/60 hover:text-base-content"
 										data-account-detail-toggle="${detailRowId}"
+										aria-controls="${detailRowId}"
 										aria-expanded="false"
 										data-expand-label="${showHoldingsLabel}"
 										data-collapse-label="${hideHoldingsLabel}">
@@ -276,7 +278,7 @@
 								${String.format("%+,d", StockFormatUtil.displayWon(evaluationProfitAmount))}
 							</div>
 							<div class="text-xs font-semibold ${evaluationProfitAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-								(${String.format("%+.1f%%", evaluationProfitRate)})
+								(${StockFormatUtil.signedPct(evaluationProfitRate, 1)})
 							</div>
 						</td>
 						<%-- 원금이 계좌 설정의 수동 입력값이면 그 사실을 드러낸다. 표시가 없으면 계산 원가와
@@ -296,10 +298,10 @@
 								${String.format("%+,d", StockFormatUtil.displayWon(principalReturnAmount))}
 							</div>
 							<div class="text-xs font-semibold">
-								(${String.format("%+.1f%%", rate)})
+								(${StockFormatUtil.signedPct(rate, 1)})
 							</div>
 						</td>
-						<td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", accountWeightPct.doubleValue())}</td>
+						<td class="text-right font-mono text-base-content/70">${StockFormatUtil.pct(accountWeightPct.doubleValue(), 1)}</td>
 					</tr>
 					@if(!holdings.isEmpty())
 						<tr id="${detailRowId}" class="hidden bg-base-200/40">
@@ -307,7 +309,7 @@
 								<div class="px-3 py-3">
 									<div class="text-xs font-semibold text-base-content/60 mb-2">${accountHoldingsDetailLabel}</div>
 									<div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
-										<table class="table table-xs w-full">
+										<table class="table table-xs w-full" aria-label="${accountHoldingsDetailLabel}">
 											<thead class="bg-base-200/70">
 												<tr>
 													<th scope="col">${stockNameLabel}</th>
@@ -331,11 +333,11 @@
 														<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
 														<td class="text-right font-mono font-bold amount-value ${holding.evaluationProfit() != null && holding.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
 															${String.format("%+,d", StockFormatUtil.displayWon(holding.evaluationProfit()))}
-															<span class="text-xs">(${String.format("%+.1f%%", holding.evaluationProfitRatePct() != null ? holding.evaluationProfitRatePct().doubleValue() : 0.0)})</span>
+															<span class="text-xs">(${StockFormatUtil.signedPct(holding.evaluationProfitRatePct() != null ? holding.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
 														</td>
 														<td class="text-right hidden xl:table-cell">
-															<div class="text-xs text-base-content/70">${accountWeightLabel} ${String.format("%.1f%%", holding.accountWeightPct() != null ? holding.accountWeightPct().doubleValue() : 0.0)}</div>
-															<div class="text-xs text-base-content/60">${totalWeightLabel} ${String.format("%.1f%%", holding.totalWeightPct() != null ? holding.totalWeightPct().doubleValue() : 0.0)}</div>
+															<div class="text-xs text-base-content/70">${accountWeightLabel} ${StockFormatUtil.pct(holding.accountWeightPct() != null ? holding.accountWeightPct().doubleValue() : 0.0, 1)}</div>
+															<div class="text-xs text-base-content/60">${totalWeightLabel} ${StockFormatUtil.pct(holding.totalWeightPct() != null ? holding.totalWeightPct().doubleValue() : 0.0, 1)}</div>
 														</td>
 													</tr>
 												@endfor
@@ -370,7 +372,7 @@
 								${String.format("%+,d", StockFormatUtil.displayWon(totalAccountEvaluationProfit))}
 							</div>
 							<div class="text-xs font-semibold">
-								(${String.format("%+.1f%%", totalEvaluationProfitRate)})
+								(${StockFormatUtil.signedPct(totalEvaluationProfitRate, 1)})
 							</div>
 						</td>
 						<td class="text-right font-mono hidden md:table-cell amount-value text-base-content/60">
@@ -381,7 +383,7 @@
 								${String.format("%+,d", StockFormatUtil.displayWon(totalPrincipalReturnAmount))}
 							</div>
 							<div class="text-xs font-semibold">
-								(${String.format("%+.1f%%", totalPrincipalReturnRate)})
+								(${StockFormatUtil.signedPct(totalPrincipalReturnRate, 1)})
 							</div>
 						</td>
 						<td class="text-right font-mono text-base-content/70">100.0%</td>
@@ -393,7 +395,7 @@
 
 	<!-- Section 2: 종목별 집계 테이블 (계좌 통합) -->
 	<div data-asset-status-stock-section>
-		<h2 class="text-lg font-semibold mb-3 text-base-content/70">${stockSectionTitle} <span class="text-xs font-normal text-base-content/60">(${allAccountsLabel})</span></h2>
+		<h2 class="text-lg font-semibold mb-3 text-base-content/70" data-page-section="${stockSectionTitle}">${stockSectionTitle} <span class="text-xs font-normal text-base-content/60">(${allAccountsLabel})</span></h2>
 		@if(stockAggregated != null && !stockAggregated.isEmpty())
 			<%-- 배당이 평가손실을 얼마나 메웠나. 표의 세 열(평가 손익 · 누적 배당 · 합산 손익)을 눈으로 빼야 보이던 것을
 				 종목마다 막대 둘로 놓는다. 막대는 줄 안에서만 견준다(줄의 손실·배당 중 큰 쪽이 100) - 절대 길이로 두면
@@ -402,7 +404,7 @@
 			@if(!coverageRows.isEmpty())
 				<div class="mb-4 rounded-2xl border border-base-200 bg-base-100 p-4" data-dividend-coverage>
 					<div class="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-						<h3 class="text-sm font-semibold">${coverageTitle}</h3>
+						<h3 class="text-sm font-semibold" data-page-section>${coverageTitle}</h3>
 						<span class="text-xs text-base-content/60">${coverageDesc}</span>
 					</div>
 					<div class="grid gap-3">
@@ -499,12 +501,12 @@
 			}
 		</style>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
-			<table class="table table-sm w-full" data-sortable-table data-asset-status-stock-table>
+			<table class="table table-sm w-full" data-sortable-table data-asset-status-stock-table aria-label="${stockSectionTitle}">
 				<thead class="bg-base-200">
 					<tr>
 						<th scope="col">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="stockName"
 									data-sort-type="text">
 								<span>${stockNameLabel}</span>
@@ -513,7 +515,7 @@
 						</th>
 						<th scope="col" class="text-right hidden lg:table-cell">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="quantity"
 									data-sort-type="number">
 								<span>${quantityLabel}</span>
@@ -522,7 +524,7 @@
 						</th>
 						<th scope="col" class="text-right hidden xl:table-cell">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="averageCost"
 									data-sort-type="number">
 								<span>${averageCostLabel}</span>
@@ -531,7 +533,7 @@
 						</th>
 						<th scope="col" class="text-right hidden sm:table-cell">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="buyAmount"
 									data-sort-type="number">
 								<span>${buyAmountLabel}</span>
@@ -540,7 +542,7 @@
 						</th>
 						<th scope="col" class="text-right hidden lg:table-cell">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="currentPrice"
 									data-sort-type="number">
 								<span>${currentPriceLabel}</span>
@@ -549,7 +551,7 @@
 						</th>
 						<th scope="col" class="text-right">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="evaluationAmount"
 									data-sort-type="number">
 								<span>${evaluationAmountLabel}</span>
@@ -558,7 +560,7 @@
 						</th>
 						<th scope="col" class="text-right">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="evaluationProfit"
 									data-sort-type="number">
 								<span>${evaluationProfitLabel}</span>
@@ -567,7 +569,7 @@
 						</th>
 						<th scope="col" class="text-right hidden xl:table-cell">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="realizedProfit"
 									data-sort-type="number">
 								<span>${realizedProfitLabel}</span>
@@ -576,7 +578,7 @@
 						</th>
 						<th scope="col" class="text-right hidden xl:table-cell">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="dividendTotal"
 									data-sort-type="number">
 								<span>${dividendTotalLabel}</span>
@@ -585,7 +587,7 @@
 						</th>
 						<th scope="col" class="text-right hidden lg:table-cell">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="combinedProfit"
 									data-sort-type="number">
 								<span>${combinedProfitLabel}</span>
@@ -594,7 +596,7 @@
 						</th>
 						<th scope="col" class="text-right">
 							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-0 px-1 text-xs text-base-content/60 hover:text-base-content"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="weight"
 									data-sort-type="number">
 								<span>${weightLabel}</span>
@@ -622,6 +624,7 @@
 								data-stock-selectable-row
 								tabindex="0"
 								aria-selected="false"
+								data-row-select="${MessageUtil.getMessage("stock.table.row.select")}"
 								data-stock-name="${item.stockItemName() != null ? item.stockItemName() : ""}"
 								data-quantity="${BigDecimal.valueOf(item.holdingQuantity()).toPlainString()}"
 								data-average-cost="${item.averageBuyPrice() != null ? item.averageBuyPrice().toPlainString() : BigDecimal.ZERO.toPlainString()}"
@@ -641,7 +644,7 @@
 								<td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(item.evaluationAmount()))}</td>
 								<td class="text-right font-mono font-bold ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
 									<span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(item.evaluationProfit()))}</span>
-									<span class="text-xs">(${String.format("%+.1f%%", evalProfitRate.doubleValue())})</span>
+									<span class="text-xs">(${StockFormatUtil.signedPct(evalProfitRate.doubleValue(), 1)})</span>
 								</td>
 								<%-- 판 적이 없으면 실현손익은 0 이 아니라 '없음' 이다. 배당도 마찬가지. --%>
 								<td class="text-right font-mono hidden xl:table-cell">
@@ -661,7 +664,7 @@
 								<td class="text-right font-mono font-bold hidden lg:table-cell ${breakdown.combinedProfit().signum() >= 0 ? "text-profit" : "text-loss"}">
 									<span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(breakdown.combinedProfit()))}</span>
 								</td>
-								<td class="text-right font-mono text-base-content/70">${String.format("%.1f%%", totalWeightPct.doubleValue())}</td>
+								<td class="text-right font-mono text-base-content/70">${StockFormatUtil.pct(totalWeightPct.doubleValue(), 1)}</td>
 							</tr>
 						@endfor
 					@endif

@@ -558,6 +558,19 @@
 			</div>
 		@endif
 
+		<%-- 수호자 기동 등 **아이템을 직접 장착하는** 미니언의 장비. 지정이 없으면 PoB 가 플레이어 세트로
+		     폴백해 수호자가 플레이어 장비를 입는다(인게임 불가). 실측 2026-09-10: 그 상태가 86% 부풀림
+		     (133,710 vs 빈 세트 71,696). 전용 세트를 주고 무엇을 입었는지 여기 보여준다. --%>
+		@if(result.minionItems() != null && !result.minionItems().isEmpty())
+			<div class="rounded border border-base-300 px-3 py-2 text-xs space-y-1">
+				<div class="font-semibold">${MessageUtil.getMessage("poe.sim.opt.result.minionitems")}</div>
+				<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.minionitems.hint")}</div>
+				@for(PoeOptimizeResult.MinionItem item : result.minionItems())
+					<div class="font-mono text-base-content/70">${item.slotKo()} — ${item.baseType()}<span class="text-base-content/50"> · ${String.join(" / ", item.modLines())}</span></div>
+				@endfor
+			</div>
+		@endif
+
 		<%-- 가드 스킬 레이어 — 계산엔 들어가는데 화면에 없어서 "왜 이만큼 버티는지" 를 설명할 수 없었다
 		     (실측: 가드 층 하나로 최약 최대피격 +199%, DPS 비용 0). 추가 스킬과 동형 표기. --%>
 		@if(result.guardGems() != null && !result.guardGems().isEmpty())

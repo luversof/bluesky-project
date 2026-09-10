@@ -14,6 +14,7 @@
 @import java.time.format.DateTimeFormatter
 @import java.text.DecimalFormat
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param List<DividendView> dividendList
 @param List<DividendView> allDividendList = java.util.List.of()
@@ -65,6 +66,8 @@
 @param List<DividendYieldGroupView> yearlyYieldRows = java.util.List.of()
 @param String rangeMode = null
 @param String dataFirstDate = null
+@param java.util.List<net.luversof.web.gate.stock.util.DividendPeriodBreakdown.Row> dividendYearlyRows = java.util.List.of()
+@param java.util.List<net.luversof.web.gate.stock.util.DividendPeriodBreakdown.Row> dividendMonthlyRows = java.util.List.of()
 
 !{
 	DecimalFormat decimalFormat = new DecimalFormat("#,##0");
@@ -82,13 +85,18 @@
 	BigDecimal diffAmount = hasComparison ? safeAllNet.subtract(safePrevNet) : BigDecimal.ZERO;
 	boolean diffPositive = diffAmount.compareTo(BigDecimal.ZERO) >= 0;
 	String diffPct = "";
+	// 전기가 0 이면 변화율을 낼 수 없다. 다만 이번 기간도 0 이면 "변화 없음"이지 무한대가 아니다
+	// (실측 2026-09-10: 자료가 없는 구간을 고르면 전기 0·이번 0 인데 "▲ ∞% +₩0" 이 나왔다).
+	boolean diffZero = hasComparison && diffAmount.compareTo(BigDecimal.ZERO) == 0;
 	if (hasComparison && safePrevNet.compareTo(BigDecimal.ZERO) != 0) {
 		diffPct = safeAllNet.subtract(safePrevNet)
 			.multiply(new BigDecimal("100"))
 			.divide(safePrevNet, 1, RoundingMode.HALF_UP)
 			.toPlainString();
-	} else if (hasComparison) {
+	} else if (hasComparison && !diffZero) {
 		diffPct = "∞";
+	} else if (hasComparison) {
+		diffPct = "0.0";
 	}
 
 	// Build JSON for charts
@@ -160,7 +168,7 @@
 	String averageDescTemplate = MessageUtil.getMessage("stock.dividend.summary.average.desc");
 	String countPattern = MessageUtil.getMessage("common.count");
 	String ttmLabel = MessageUtil.getMessage("stock.dividend.chart.ttm.label");
-	java.util.function.Function<BigDecimal, String> percentFormat = value -> value != null ? String.format("%.2f%%", value.doubleValue()) : "-";
+	java.util.function.Function<BigDecimal, String> percentFormat = value -> value != null ? StockFormatUtil.pct(value.doubleValue(), 2) : "-";
 	java.util.function.Function<Long, String> countFormat = count -> java.text.MessageFormat.format(countPattern, count);
 	// '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
 	// 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
@@ -214,6 +222,7 @@
 		hasComparison = hasComparison,
 		diffPositive = diffPositive,
 		diffPct = diffPct,
+		diffZero = diffZero,
 		diffAmount = diffAmount,
 		totalItemsCountText = totalItemsCountText,
 		prevStartDate = prevStartDate,
@@ -230,6 +239,13 @@
 	)
 
 	@template.stock.htmx.fragments.dividend.dividendCharts()
+
+	<%-- 연도별·월별 집계: 월별 막대 차트만으로는 '그 해에 얼마' 를 숫자로 못 읽는다(사용자 요청 2026-09-10). --%>
+	@template.stock.htmx.fragments.dividend.dividendPeriodBreakdown(
+		yearlyRows = dividendYearlyRows,
+		monthlyRows = dividendMonthlyRows,
+		decimalFormat = decimalFormat
+	)
 
 	@template.stock.htmx.fragments.dividend.dividendYieldAnalytics(
 		decimalFormat = decimalFormat,

@@ -18,4 +18,6 @@ public record ZeroVolumeChangedClose(
     LocalDate tradeDate,
     BigDecimal closePrice,
     /** 직전 거래일의 종가. 이 값과 {@code closePrice} 가 다르다는 것이 이 행이 뽑힌 이유다. */
-    BigDecimal previousClosePrice) {}
+    BigDecimal previousClosePrice,
+    /** 같은 조건에 걸린 전체 행 수. 개수를 따로 세면 같은 비싼 스캔을 두 번 하게 된다. */
+    long totalCount) {}

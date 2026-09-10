@@ -44,8 +44,8 @@ class CoveredRangeBadgeTest {
   /** 이 배지를 그리는 화면 전부. 한 화면만 고치면 어느 화면에서 되는지를 외워야 한다. */
   private static final List<String> SCREENS =
       List.of(
-          "stock/stockItemDetail.jte",
-          "stock/accountDetail.jte",
+          "stock/htmx/stockItemDetailContent.jte",
+          "stock/htmx/accountDetailContent.jte",
           "stock/htmx/asset-growth.jte",
           "stock/htmx/tradeList.jte",
           "stock/htmx/fragments/activityList.jte",

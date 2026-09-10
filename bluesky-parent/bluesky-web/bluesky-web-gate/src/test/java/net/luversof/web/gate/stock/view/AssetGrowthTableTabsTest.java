@@ -112,6 +112,11 @@ class AssetGrowthTableTabsTest {
    */
   @Test
   void 없는_탭이_저장돼_있으면_첫_탭으로_떨어진다() throws IOException {
-    assertThat(read(SCRIPT)).contains("names.indexOf(saved) >= 0 ? saved : names[0]");
+    // 2026-09-10 부터 화면이 기본 탭을 선언할 수 있다(data-panel-tab-default). 저장값이 없거나 없는 탭이면
+    // 선언 기본 -> 그것도 없으면 첫 탭 순으로 떨어진다.
+    String script = read(SCRIPT);
+    assertThat(script).contains("names.indexOf(saved) >= 0 ? saved : fallback");
+    assertThat(script)
+        .contains("preferred && names.indexOf(preferred) >= 0 ? preferred : names[0]");
   }
 }

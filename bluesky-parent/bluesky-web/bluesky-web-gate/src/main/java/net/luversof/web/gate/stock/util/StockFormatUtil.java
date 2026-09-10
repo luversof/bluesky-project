@@ -127,4 +127,30 @@ public final class StockFormatUtil {
   public static long displayWon(java.math.BigDecimal amount) {
     return amount == null ? 0L : amount.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
   }
+
+  /**
+   * 비율(%) 표기. 반올림한 뒤 음의 영을 0 으로 고쳐 "-0.0%" 가 나가지 않게 한다.
+   *
+   * <p>실측 2026-09-10: {@code String.format("%+.1f%%", -0.04)} 는 "-0.0%" 다. 2년 평가액 시계열 3,978 구간 중
+   * 16개(하루 구간 위주)가 그 범위에 들어 자산 성장 기간 수익률·일간 변동에 실제로 찍힐 수 있다. 반올림은 Formatter 와 같은 HALF_UP.
+   */
+  public static String pct(double value, int scale) {
+    return String.format("%." + scale + "f%%", roundForDisplay(value, scale));
+  }
+
+  /** {@link #pct} 의 부호 표기판(양수·영은 "+"). 영은 반올림 뒤 판정하므로 -0.04 도 "+0.0%" 다. */
+  public static String signedPct(double value, int scale) {
+    return String.format("%+." + scale + "f%%", roundForDisplay(value, scale));
+  }
+
+  /**
+   * 표시 자릿수로 먼저 반올림한다. BigDecimal 에는 음의 영이 없어 -0.04 는 0.0(부호 없음)이 되고, 그 값을 Formatter 에 넘기면 "-0.0%"
+   * 대신 "0.0%"/"+0.0%" 가 나온다. NaN/Infinity 는 그대로 둔다.
+   */
+  static double roundForDisplay(double value, int scale) {
+    if (!Double.isFinite(value)) return value;
+    return new java.math.BigDecimal(value)
+        .setScale(scale, java.math.RoundingMode.HALF_UP)
+        .doubleValue();
+  }
 }

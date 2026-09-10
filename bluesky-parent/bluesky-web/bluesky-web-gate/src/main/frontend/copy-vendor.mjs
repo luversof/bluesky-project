@@ -24,6 +24,7 @@ const jsFiles = [
 
 const cssFiles = [["easymde/dist/easymde.min.css", "easymde.min.css"]];
 
+
 function copyAll(dest, list) {
 	mkdirSync(dest, { recursive: true });
 	for (const [src, name] of list) {

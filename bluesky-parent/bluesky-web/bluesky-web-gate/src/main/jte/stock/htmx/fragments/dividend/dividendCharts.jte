@@ -13,26 +13,26 @@
 
 		<!-- Left: 비중 분석 -->
 		@template._components.ui.card(cssClass = "flex-[2] min-w-[200px]", body = @`
-				<div class="text-sm font-bold mb-3">${weightAnalysisLabel}</div>
+				<h2 class="text-sm font-bold mb-3" data-page-section>${weightAnalysisLabel}</h2>
 				<div class="flex gap-3">
 					<div class="flex-shrink-0 w-[200px] h-[200px]">
-						<canvas id="donutChart" class="amount-chart"></canvas>
+						<canvas id="donutChart" role="img" aria-label="${weightAnalysisLabel}" class="amount-chart"></canvas>
 					</div>
 					<div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
 						<div role="tablist" class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
-							<a class="tab tab-active" id="donutTabStock" data-dividend-donut-switch="stock" tabindex="0" role="tab">${byStockLabel}</a>
-							<a class="tab" id="donutTabAccount" data-dividend-donut-switch="account" tabindex="0" role="tab">${byAccountLabel}</a>
+							<a class="tab tab-active" id="donutTabStock" data-dividend-donut-switch="stock" tabindex="0" role="tab" aria-controls="donutLegend">${byStockLabel}</a>
+							<a class="tab" id="donutTabAccount" data-dividend-donut-switch="account" tabindex="0" role="tab" aria-controls="donutLegend">${byAccountLabel}</a>
 						</div>
-						<div id="donutLegend" tabindex="0" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
+						<div id="donutLegend" role="tabpanel" tabindex="0" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
 					</div>
 				</div>
 		`)
 
 		<!-- Right: Monthly Bar Chart -->
 		@template._components.ui.card(cssClass = "flex-[3] min-w-[280px] overflow-visible", body = @`
-				<h2 class="font-bold text-sm mb-3">${monthlyDividendsLabel}</h2>
+				<h2 class="font-bold text-sm mb-3" data-page-section>${monthlyDividendsLabel}</h2>
 				<div class="relative h-[280px]">
-					<canvas id="monthlyBarChart" class="amount-chart"></canvas>
+					<canvas id="monthlyBarChart" role="img" aria-label="${monthlyDividendsLabel}" class="amount-chart"></canvas>
 				</div>
 		`)
 

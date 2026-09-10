@@ -36,8 +36,8 @@ class PageErrorHeadingTest {
   void 없는_id_의_상세_화면에도_제목이_있다() throws IOException {
     for (String[] c :
         new String[][] {
-          {"stockItemDetail.jte", "stockItem", "stock.item.detail.breadcrumb"},
-          {"accountDetail.jte", "account", "stock.account.detail.breadcrumb"}
+          {"htmx/stockItemDetailContent.jte", "stockItem", "stock.item.detail.breadcrumb"},
+          {"htmx/accountDetailContent.jte", "account", "stock.account.detail.breadcrumb"}
         }) {
       String template = read(c[0]);
       int nullBranch = template.indexOf("@if(" + c[1] + " == null)");

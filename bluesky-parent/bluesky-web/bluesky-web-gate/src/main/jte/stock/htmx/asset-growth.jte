@@ -76,7 +76,6 @@
 	boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
 			&& startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
 
-	String assetGrowthTitle = MessageUtil.getMessage("stock.page.asset.growth.title");
 	String noDataLabel = MessageUtil.getMessage("common.message.no.data");
 	String rangeMaxLabel = MessageUtil.getMessage("stock.chart.range.max");
 	String rangeMinLabel = MessageUtil.getMessage("stock.chart.range.min");
@@ -112,9 +111,8 @@
 
 @template._components.ui.tableCard(id = "assetGrowthFragment", body = @`
 	<div class="card-body">
-		<div class="flex items-center gap-2 mb-2">
-			<h2 class="card-title text-base-content/70 m-0">${assetGrowthTitle}</h2>
-		</div>
+		<%-- 화면 제목(h1)이 바로 위에 같은 글자로 있어 카드 제목이 그대로 겹쳤다(실측 2026-09-10: 이 화면만
+		     제목 중복 1건). 화면 낭독기의 제목 목록에서도 같은 이름이 두 번 읽혀 지웠다. --%>
 
 		@template.stock.htmx.fragments.dateRangeNavBar(
 			pickerName = "assetPicker",
@@ -159,7 +157,7 @@
 			@endif
 		@endif
 
-		<details class="mb-4" open data-detail-filter>
+		<details class="mb-4" data-detail-filter data-filter-active="${(selectedAccountIds != null && !selectedAccountIds.isEmpty()) || (selectedStockItemIds != null && !selectedStockItemIds.isEmpty()) || (selectedStockTags != null && !selectedStockTags.isEmpty()) ? "true" : "false"}">
 			<summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
 				${detailSearchLabel}
@@ -264,7 +262,7 @@
 			@else
 				<p class="min-w-0 text-xs text-base-content/60">
 					<span>📈 ${chartDescriptionLabel} &bull;</span>
-					<span class="inline-block whitespace-nowrap text-info">${clickDateHoldingsLabel}</span>
+					<span class="inline-block text-info">${clickDateHoldingsLabel}</span>
 				</p>
 				<%-- 요약은 시리즈와 같은 호출에서 이미 계산돼 왔으므로 별도 요청 없이 바로 렌더한다. --%>
 				@template.stock.htmx.fragments.assetGrowthPeriodReturnSummary(
@@ -293,11 +291,11 @@
 					troughValueDate = troughValueDate
 				)
 				<div class="w-full relative" style="height: 450px;">
-					<canvas id="assetGrowthChart" class="amount-chart"></canvas>
+					<canvas id="assetGrowthChart" role="img" aria-label="${MessageUtil.getMessage("stock.page.asset.growth.title")}" class="amount-chart"></canvas>
 				</div>
 				<p class="text-xs text-base-content/60 text-center py-1">💰 ${profitAnalysisLabel} &mdash; <span class="text-indigo-400">■</span> ${cumulativeRealizedDatasetLabel} + <span class="text-green-400">■</span> ${cumulativeDividendLabel} = ${cumulativeTotalDatasetLabel}</p>
 				<div class="w-full" style="height: 250px;">
-					<canvas id="dividendChart" class="amount-chart"></canvas>
+					<canvas id="dividendChart" role="img" aria-label="${profitAnalysisLabel}" class="amount-chart"></canvas>
 				</div>
 				<%-- 표 넷을 탭으로 묶는다. 세로로 쌓으면 아래쪽은 스크롤해야 나와서 있는 줄도 모르게
 					 된다(실측 2026-09-07: 이 화면이 5,075px = 5.6 화면, 카드 9 개). 서버가 이미 다
@@ -321,30 +319,30 @@
 					<%-- 탭이 하나뿐이면 고를 것이 없어 자리만 차지한다. --%>
 					<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-4" data-panel-tab-group="assetGrowthTables">
 						@if(hasBreakdownPanel)
-							<a role="tab" data-panel-tab="breakdown" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.monthly.title")}</a>
+							<a role="tab" data-panel-tab="breakdown" aria-controls="assetGrowthPanel-breakdown" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.monthly.title")}</a>
 						@endif
 						@if(hasContributionPanel)
-							<a role="tab" data-panel-tab="contribution" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.contribution.title")}</a>
+							<a role="tab" data-panel-tab="contribution" aria-controls="assetGrowthPanel-contribution" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.contribution.title")}</a>
 						@endif
 						@if(hasYearlyPanel)
-							<a role="tab" data-panel-tab="yearly" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.yearly.title")}</a>
+							<a role="tab" data-panel-tab="yearly" aria-controls="assetGrowthPanel-yearly" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.yearly.title")}</a>
 						@endif
 						@if(hasCostPanel)
-							<a role="tab" data-panel-tab="cost" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.cost.title")}</a>
+							<a role="tab" data-panel-tab="cost" aria-controls="assetGrowthPanel-cost" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.cost.title")}</a>
 						@endif
 					</div>
 				@endif
 
 				<%-- 기간별 손익 - 달 단위로 쪼갠 성과. '연도별 성과' 는 해 단위라, 짧은 구간을 고르면
 					 한 줄로 끝나 아무것도 말해 주지 않는다(실측 2026-09-01 '올해': 연도별 1행 vs 월별 8행). --%>
-				<div data-panel-group="assetGrowthTables" data-panel="breakdown">
+				<div id="assetGrowthPanel-breakdown" role="tabpanel" data-panel-group="assetGrowthTables" data-panel="breakdown">
 					@template.stock.htmx.fragments.periodBreakdownTable(periodBreakdown = periodBreakdown, periodBreakdownNote = periodBreakdownNote)
 				</div>
 
 				<%-- 종목별 기여 - 같은 기간 손익을 시간이 아니라 종목으로 쪼갠 것이다.
 					 그 기간에 다 판 종목까지 들어오므로, 자산 현황(보유 중인 것만)이
 					 답하지 못하던 자리를 여기서 채운다. --%>
-				<div data-panel-group="assetGrowthTables" data-panel="contribution">
+				<div id="assetGrowthPanel-contribution" role="tabpanel" data-panel-group="assetGrowthTables" data-panel="contribution">
 					@template.stock.htmx.fragments.stockContributionTable(
 						stockContributions = stockContributions,
 						stockContributionTotal = stockContributionTotal,
@@ -354,14 +352,23 @@
 				</div>
 
 				<%-- 연도별 성과: 시리즈와 같은 시뮬레이션에서 함께 계산돼 온다(추가 호출 없음). --%>
-				<div data-panel-group="assetGrowthTables" data-panel="yearly">
+				<div id="assetGrowthPanel-yearly" role="tabpanel" data-panel-group="assetGrowthTables" data-panel="yearly">
 					@template.stock.htmx.fragments.assetGrowthYearlySummary(yearlySummaries = yearlySummaries)
 				</div>
 
 				<%-- 연도별 세금·비용 - 원장에는 다 있는데 합계를 내는 화면이 없던 값들이다. --%>
-				<div data-panel-group="assetGrowthTables" data-panel="cost">
+				<div id="assetGrowthPanel-cost" role="tabpanel" data-panel-group="assetGrowthTables" data-panel="cost">
 					@template.stock.htmx.fragments.yearlyCostSummary(yearlyCosts = yearlyCosts)
 				</div>
+				<%-- 보유 스냅샷 키보드 경로(실측 2026-09-09): 차트 점 클릭은 마우스 전용이라 같은 조각을 날짜 입력으로도 부른다. --%>
+				<form class="flex flex-wrap items-end gap-2 mt-3" hx-get="/stock/htmx/holdings-snapshot" hx-target="#holdings-snapshot-container" hx-swap="innerHTML" data-holdings-snapshot-form>
+					<input type="hidden" name="timeZone" value="${timeZone != null ? timeZone : ""}">
+					<label class="form-control">
+						<span class="label-text text-xs">${MessageUtil.getMessage("stock.holdings.snapshot.date.label")}</span>
+						<input type="date" name="date" required class="input input-sm input-bordered">
+					</label>
+					<button type="submit" class="btn btn-sm">${MessageUtil.getMessage("common.button.search")}</button>
+				</form>
 				<div id="holdings-snapshot-container"></div>
 				<%-- 매매 이력은 이 응답과 같은 기간으로 서버에서 함께 계산해 넣는다(추가 왕복 없음).
 					 페이징/정렬은 그대로 /stock/htmx/trade-history 를 다시 불러 이 패널만 교체한다. --%>

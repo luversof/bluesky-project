@@ -94,7 +94,7 @@ class StockItemCombinedProfitRenderTest {
 
     int combined = html.indexOf(MessageUtil.getMessage("stock.item.detail.combined.profit"));
     assertThat(combined).as("합산 손익 자리를 찾지 못했다 - 검사가 무력해진다").isGreaterThan(0);
-    int grid = html.indexOf("grid grid-cols-2 lg:grid-cols-4", combined);
+    int grid = html.indexOf("min-[360px]:grid-cols-2 lg:grid-cols-4", combined);
     assertThat(grid).as("카드 격자를 찾지 못했다").isGreaterThan(combined);
 
     String block = html.substring(combined, grid);

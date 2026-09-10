@@ -65,7 +65,7 @@
 							<div class="flex-1 min-w-0">
 								<div class="flex items-center gap-1.5 mb-0.5">
 									<span class="badge badge-xs ${badgeClass}">${badgeText}</span>
-									<a href="/stock/item?stockItemId=${activity.stockItemId() != null ? activity.stockItemId().toString() : ""}" class="font-bold text-sm truncate link link-hover">${activity.stockItemName()}</a>
+									<a href="/stock/item?stockItemId=${activity.stockItemId() != null ? activity.stockItemId().toString() : ""}" class="font-bold text-sm truncate link link-hover" title="${activity.stockItemName()}">${activity.stockItemName()}</a>
 								</div>
 								<div class="text-xs text-base-content/60">
 									@if("TRADE".equals(activity.type()))

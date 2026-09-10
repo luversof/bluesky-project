@@ -4,6 +4,8 @@
 //  - 평소엔 요약 버튼 1줄, 클릭 시 펼침. 종목은 검색창 제공.
 // tailwind 가 ./src 를 스캔하므로 여기 클래스도 빌드에 포함된다(빌드 필요).
 (function () {
+	// 패널 id 일련번호(aria-controls 용). 조각 교체로 여러 번 초기화돼도 겹치지 않게 모듈 수명 동안 증가만 한다.
+	var msdPanelSeq = 0;
 	var NAMES = ["accountIdList", "stockItemIdList"];
 
 	function lang(): string {
@@ -70,6 +72,9 @@
 		panel.className =
 			"absolute z-30 left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-64 overflow-auto";
 		panel.setAttribute("data-msd-panel", "1");
+		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
+		panel.id = "msd-panel-" + (++msdPanelSeq);
+		toggle.setAttribute("aria-controls", panel.id);
 		panel.hidden = true;
 
 		var search: HTMLInputElement | null = null;
@@ -249,6 +254,9 @@
 		panel.className =
 			"absolute z-30 left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-72 overflow-auto";
 		panel.setAttribute("data-msd-panel", "1");
+		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
+		panel.id = "msd-panel-" + (++msdPanelSeq);
+		toggle.setAttribute("aria-controls", panel.id);
 		panel.hidden = true;
 
 		// 카드 자체 라벨은 컬럼 라벨과 중복 → 숨기고, 카드 외곽 스타일은 평평하게.

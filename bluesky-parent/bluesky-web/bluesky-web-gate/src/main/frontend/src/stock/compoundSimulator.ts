@@ -83,8 +83,19 @@ function projectCompound(input: CompoundInput): YearRow[] {
 // 이 파일은 type="module" 없이 classic <script src> 로 로드된다. export 문을 넣으면 브라우저가
 // "Unexpected token 'export'" 로 파일 전체를 거부해 화면 기능이 통째로 죽는다(실제로 그렇게 깨뜨렸다).
 // 그래서 검증용으로는 export 대신 전역에 붙인다 - 브라우저에서는 쓰이지 않고 테스트만 읽는다.
+// 부호 있는 비율. 실측 2026-09-10: (-0.04).toFixed(1) 은 "-0.0" 이라 아주 작은 음의 실수익률이 "-0.0%" 로 찍힌다 - 반올림 뒤 영이면 부호를 지운다.
+function formatSignedPercent(value: number): string {
+	if (!Number.isFinite(value)) {
+		return "-";
+	}
+	// 먼저 1자리로 반올림한 수를 다시 찍는다: -0.04 → -0 이고 (-0).toFixed(1) 은 "0.0"(부호 없음)이다.
+	const rounded = Number(value.toFixed(1));
+	return `${rounded > 0 ? "+" : ""}${rounded.toFixed(1)}%`;
+}
+
 (globalThis as any).__stockCompoundSimulatorInternals = {
 	projectCompound,
+	formatSignedPercent,
 	COMPOUND_MIN_RATE_PCT,
 	COMPOUND_MAX_RATE_PCT,
 	COMPOUND_MAX_YEARS,
@@ -184,12 +195,6 @@ function projectCompound(input: CompoundInput): YearRow[] {
 		return rounded < 0 ? `-₩${formatted}` : `₩${formatted}`;
 	}
 
-	function formatSignedPercent(value: number) {
-		if (!Number.isFinite(value)) {
-			return "-";
-		}
-		return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
-	}
 
 	function applyProfitColor(element: HTMLElement | null, value: number) {
 		if (!element) {
@@ -427,6 +432,11 @@ function projectCompound(input: CompoundInput): YearRow[] {
 			return;
 		}
 
+		// 차트 텍스트 대안 플러그인(common.ts). 이 화면은 chart.umd 를 직접 로드해 stock-charts.js 의 등록을 거치지 않는다.
+		try {
+			const summaryPlugin = (globalThis as any).__chartSummaryInternals?.chartSummaryPlugin;
+			if (summaryPlugin && Chart.register) Chart.register(summaryPlugin);
+		} catch (e) {}
 		growthChart = new Chart(chartCanvas, {
 			type: "bar",
 			data: {

@@ -28,7 +28,7 @@
 				<p class="text-xs text-base-content/60">${description}</p>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-zebra table-sm whitespace-nowrap" data-yearly-cost>
+				<table class="table table-zebra table-sm whitespace-nowrap" data-yearly-cost aria-label="${title}">
 					<thead>
 						<tr>
 							<th scope="col">${yearLabel}</th>

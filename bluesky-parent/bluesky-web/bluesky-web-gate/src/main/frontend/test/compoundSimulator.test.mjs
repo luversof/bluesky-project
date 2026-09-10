@@ -117,3 +117,13 @@ test("기초 납입이 기말 납입보다 크다", () => {
 	const end = last({ ...base, contributeAtBegin: false }).balance;
 	assert.ok(begin > end, `${begin} <= ${end}`);
 });
+
+// 실측 2026-09-10: (-0.04).toFixed(1) 은 "-0.0" - 실수익률이 아주 작은 음수면 "-0.0%" 가 화면에 나갔다.
+test("부호 있는 비율: 반올림 결과가 영이면 부호가 없고, 그 외는 부호와 소수 1자리", () => {
+	assert.equal(mod.formatSignedPercent(-0.04), "0.0%");
+	assert.equal(mod.formatSignedPercent(0), "0.0%");
+	assert.equal(mod.formatSignedPercent(-0.05), "-0.1%");
+	assert.equal(mod.formatSignedPercent(2.345), "+2.3%");
+	assert.equal(mod.formatSignedPercent(-8.96), "-9.0%");
+	assert.equal(mod.formatSignedPercent(Number.NaN), "-");
+});

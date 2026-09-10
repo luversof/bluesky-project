@@ -520,6 +520,25 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     }
     model.addAttribute("dividendList", displayDividendList);
     model.addAttribute("allDividendList", viewList);
+    // 연도별·월별 집계(사용자 요청 2026-09-10): 월별 막대 차트만으로는 '그 해에 얼마' 를 숫자로 읽을 수 없었다.
+    // 화면이 쓰는 존 그대로 지급일 기준으로 묶는다 - 표의 다른 날짜와 하루가 어긋나지 않게.
+    java.time.ZoneId breakdownZone =
+        net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+    model.addAttribute(
+        "dividendYearlyRows",
+        net.luversof.web.gate.stock.util.DividendPeriodBreakdown.byYear(
+            viewList,
+            breakdownZone,
+            startDate != null ? startDate.atZone(breakdownZone).toLocalDate() : null,
+            // endDate 는 배타적이라 하루를 빼야 화면의 마지막 날과 같아진다.
+            endDate != null ? endDate.atZone(breakdownZone).toLocalDate().minusDays(1) : null));
+    model.addAttribute(
+        "dividendMonthlyRows",
+        net.luversof.web.gate.stock.util.DividendPeriodBreakdown.byMonth(
+            viewList,
+            breakdownZone,
+            startDate != null ? startDate.atZone(breakdownZone).toLocalDate() : null,
+            endDate != null ? endDate.atZone(breakdownZone).toLocalDate().minusDays(1) : null));
     model.addAttribute(
         "dividendTtmJs",
         net.luversof.web.gate.stock.util.StockDividendTtmUtil.toJs(

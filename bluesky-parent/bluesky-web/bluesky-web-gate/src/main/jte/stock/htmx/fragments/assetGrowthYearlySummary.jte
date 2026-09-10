@@ -2,6 +2,7 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.dto.response.TradeProfitYearlySummary
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param List<TradeProfitYearlySummary> yearlySummaries = java.util.List.of()
 
@@ -22,11 +23,11 @@
 @if(yearlySummaries != null && !yearlySummaries.isEmpty())
 	@template._components.ui.card(cssClass = "mb-4", bodyClass = "gap-3", body = @`
 			<div class="space-y-1">
-				<h3 class="card-title text-base">${title}</h3>
+				<h3 class="card-title text-base" data-page-section>${title}</h3>
 				<p class="text-xs text-base-content/60">${description}</p>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-zebra table-sm whitespace-nowrap">
+				<table class="table table-zebra table-sm whitespace-nowrap" aria-label="${title}">
 					<thead>
 						<tr>
 							<th scope="col">${yearLabel}</th>
@@ -71,7 +72,7 @@
 								</td>
 								<td class="text-right tabular-nums">
 									@if(twr != null)
-										<span class="font-semibold ${twrUp ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", twr)}</span>
+										<span class="font-semibold ${twrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(twr, 2)}</span>
 									@else
 										<span class="text-base-content/30">-</span>
 									@endif
@@ -117,7 +118,7 @@
 								<td>${totalLabel}</td>
 								<td class="text-right tabular-nums">
 									@if(totals.chainedReturnPct() != null)
-										<span class="${totalTwrUp ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", totals.chainedReturnPct())}</span>
+										<span class="${totalTwrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
 									@else
 										<span class="text-base-content/30">-</span>
 									@endif

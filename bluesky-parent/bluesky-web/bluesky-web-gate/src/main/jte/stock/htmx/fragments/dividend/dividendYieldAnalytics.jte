@@ -157,8 +157,8 @@
 	<!-- Row 3: Yield Analytics -->
 	<div class="mb-3 px-1">
 		<div class="flex items-center gap-2">
-			<div class="text-sm font-bold">${dividendYieldTitle}</div>
-			<div class="tooltip tooltip-bottom shrink-0">
+			<h2 class="text-sm font-bold" data-page-section>${dividendYieldTitle}</h2>
+			<div class="tooltip tooltip-bottom shrink-0" tabindex="0">
 				<div class="tooltip-content z-[20] w-64 sm:w-72 max-w-[calc(100vw-2rem)] rounded-box bg-neutral text-neutral-content shadow-lg">
 					<div class="space-y-1 text-left text-xs leading-5">
 						<div class="font-semibold mb-1">${dividendYieldHelpTitleLabel}</div>
@@ -209,7 +209,7 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${bestYieldStockLabel}</div>
 				@if(bestYieldStock != null)
-					<div class="text-sm font-semibold truncate">${bestYieldStock.label()}</div>
+					<div class="text-sm font-semibold truncate" title="${bestYieldStock.label()}">${bestYieldStock.label()}</div>
 					<div class="text-xl font-bold text-dividend">${percentFormat.apply(bestYieldStock.yieldOnDailyAverageCostPct())}</div>
 					<div class="text-xs text-base-content/60 mt-1">${dailyAverageInvestedCapitalLabel} <span class="font-medium amount-value">₩ ${bestYieldStock.averageDailyPrincipalCost() != null ? decimalFormat.format(bestYieldStock.averageDailyPrincipalCost()) : "-"}</span></div>
 					<div class="text-xs text-base-content/60 mt-1">${yieldOnBasisAverageCostLabel} <span class="font-medium">${percentFormat.apply(bestYieldStock.yieldOnCostPct())}</span></div>
@@ -222,7 +222,7 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${bestYieldAccountLabel}</div>
 				@if(bestYieldAccount != null)
-					<div class="text-sm font-semibold truncate">${bestYieldAccount.label()}</div>
+					<div class="text-sm font-semibold truncate" title="${bestYieldAccount.label()}">${bestYieldAccount.label()}</div>
 					<div class="text-xl font-bold text-dividend">${percentFormat.apply(bestYieldAccount.yieldOnDailyAverageCostPct())}</div>
 					<div class="text-xs text-base-content/60 mt-1">${dailyAverageInvestedCapitalLabel} <span class="font-medium amount-value">₩ ${bestYieldAccount.averageDailyPrincipalCost() != null ? decimalFormat.format(bestYieldAccount.averageDailyPrincipalCost()) : "-"}</span></div>
 					<div class="text-xs text-base-content/60 mt-1">${yieldOnBasisAverageCostLabel} <span class="font-medium">${percentFormat.apply(bestYieldAccount.yieldOnCostPct())}</span></div>
@@ -235,12 +235,12 @@
 
 	<div class="grid grid-cols-1 gap-4 mb-4">
 		@template._components.ui.card(cssClass = "min-w-0", body = @`
-				<div class="text-sm font-bold mb-3">${yearlyYieldSectionLabel}</div>
+				<h2 class="text-sm font-bold mb-3" data-page-section>${yearlyYieldSectionLabel}</h2>
 				@if(yearlyYieldRows == null || yearlyYieldRows.isEmpty())
 					<div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
 				@else
 					<div class="overflow-x-auto">
-						<table class="table table-xs w-full">
+						<table class="table table-xs w-full" aria-label="${yearlyYieldSectionLabel}">
 							<thead>
 								<tr class="text-base-content/60">
 									<th scope="col">${yearLabel}</th>
@@ -304,7 +304,7 @@
 
 		<div class="card min-w-0 bg-base-100 shadow-sm border border-base-200">
 			<div class="card-body p-4" data-dividend-yield-selection-section>
-				<div class="text-sm font-bold mb-3">${stockYieldSectionLabel}</div>
+				<h2 class="text-sm font-bold mb-3" data-page-section>${stockYieldSectionLabel}</h2>
 				@if(stockYieldRows == null || stockYieldRows.isEmpty())
 					<div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
 				@else
@@ -357,12 +357,12 @@
 						</div></div>
 					</div>
 					<div class="overflow-x-auto">
-						<table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table>
+						<table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table aria-label="${stockYieldSectionLabel}">
 							<thead>
 								<tr class="text-base-content/60">
 									<th scope="col">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="label"
 												data-sort-type="text">
 											<span>${stockNameLabel}</span>
@@ -371,7 +371,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="grossAmount"
 												data-sort-type="number">
 											<span>${grossAmountLabel}</span>
@@ -380,7 +380,7 @@
 									</th>
 									<th scope="col" class="text-right">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="netAmount"
 												data-sort-type="number">
 											<span>${netAmountLabel}</span>
@@ -389,7 +389,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="taxAmount"
 												data-sort-type="number">
 											<span>${taxLabel}</span>
@@ -398,7 +398,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="taxableAmount"
 												data-sort-type="number">
 											<span>${taxableAmountLabel}</span>
@@ -407,7 +407,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="averageDailyPrincipalCost"
 												data-sort-type="number">
 											<span>${dailyAverageInvestedCapitalLabel}</span>
@@ -416,7 +416,7 @@
 									</th>
 									<th scope="col" class="text-right">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="yieldOnDailyAverageCost"
 												data-sort-type="number">
 											<span>${yieldOnDailyAverageCostLabel}</span>
@@ -425,7 +425,7 @@
 									</th>
 									<th scope="col" class="text-right hidden xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="averagePrincipalCost"
 												data-sort-type="number">
 											<span>${basisAverageInvestedCapitalLabel}</span>
@@ -434,7 +434,7 @@
 									</th>
 									<th scope="col" class="text-right hidden xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="yieldOnCost"
 												data-sort-type="number">
 											<span>${yieldOnBasisAverageCostLabel}</span>
@@ -443,7 +443,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="yieldOnMarket"
 												data-sort-type="number">
 											<span>${yieldOnBasisMarketLabel}</span>
@@ -452,7 +452,7 @@
 									</th>
 									<th scope="col" class="text-right">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="dividendCount"
 												data-sort-type="number">
 											<span>${dividendCountLabel}</span>
@@ -470,6 +470,7 @@
 										data-selection-class="dividend-yield-stock-row-selected"
 										tabindex="0"
 										aria-selected="false"
+										data-row-select="${MessageUtil.getMessage("stock.table.row.select")}"
 										data-label="${row.label() != null ? row.label() : ""}"
 										data-gross-amount="${row.totalGrossAmount() != null ? row.totalGrossAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-net-amount="${row.totalNetAmount() != null ? row.totalNetAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
@@ -519,7 +520,7 @@
 
 		<div class="card min-w-0 bg-base-100 shadow-sm border border-base-200">
 			<div class="card-body p-4" data-dividend-yield-selection-section>
-				<div class="text-sm font-bold mb-3">${accountYieldSectionLabel}</div>
+				<h2 class="text-sm font-bold mb-3" data-page-section>${accountYieldSectionLabel}</h2>
 				@if(accountYieldRows == null || accountYieldRows.isEmpty())
 					<div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
 				@else
@@ -572,12 +573,12 @@
 						</div></div>
 					</div>
 					<div class="overflow-x-auto">
-						<table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table>
+						<table class="table table-xs w-full" data-dividend-yield-selection-table data-dividend-yield-sortable-table aria-label="${accountYieldSectionLabel}">
 							<thead>
 								<tr class="text-base-content/60">
 									<th scope="col">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="label"
 												data-sort-type="text">
 											<span>${accountLabel}</span>
@@ -586,7 +587,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="grossAmount"
 												data-sort-type="number">
 											<span>${grossAmountLabel}</span>
@@ -595,7 +596,7 @@
 									</th>
 									<th scope="col" class="text-right">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="netAmount"
 												data-sort-type="number">
 											<span>${netAmountLabel}</span>
@@ -604,7 +605,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="taxAmount"
 												data-sort-type="number">
 											<span>${taxLabel}</span>
@@ -613,7 +614,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="taxableAmount"
 												data-sort-type="number">
 											<span>${taxableAmountLabel}</span>
@@ -622,7 +623,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="averageDailyPrincipalCost"
 												data-sort-type="number">
 											<span>${dailyAverageInvestedCapitalLabel}</span>
@@ -631,7 +632,7 @@
 									</th>
 									<th scope="col" class="text-right">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="yieldOnDailyAverageCost"
 												data-sort-type="number">
 											<span>${yieldOnDailyAverageCostLabel}</span>
@@ -640,7 +641,7 @@
 									</th>
 									<th scope="col" class="text-right hidden xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="averagePrincipalCost"
 												data-sort-type="number">
 											<span>${basisAverageInvestedCapitalLabel}</span>
@@ -649,7 +650,7 @@
 									</th>
 									<th scope="col" class="text-right hidden xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="yieldOnCost"
 												data-sort-type="number">
 											<span>${yieldOnBasisAverageCostLabel}</span>
@@ -658,7 +659,7 @@
 									</th>
 									<th scope="col" class="text-right hidden 2xl:table-cell">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="yieldOnMarket"
 												data-sort-type="number">
 											<span>${yieldOnBasisMarketLabel}</span>
@@ -667,7 +668,7 @@
 									</th>
 									<th scope="col" class="text-right">
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-0 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
+												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
 												data-sort-key="dividendCount"
 												data-sort-type="number">
 											<span>${dividendCountLabel}</span>
@@ -684,6 +685,7 @@
 										data-selection-class="dividend-yield-account-row-selected"
 										tabindex="0"
 										aria-selected="false"
+										data-row-select="${MessageUtil.getMessage("stock.table.row.select")}"
 										data-label="${row.label() != null ? row.label() : ""}"
 										data-gross-amount="${row.totalGrossAmount() != null ? row.totalGrossAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-net-amount="${row.totalNetAmount() != null ? row.totalNetAmount().toPlainString() : BigDecimal.ZERO.toPlainString()}"

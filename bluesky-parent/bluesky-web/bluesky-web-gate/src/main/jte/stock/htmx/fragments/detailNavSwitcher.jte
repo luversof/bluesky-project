@@ -15,11 +15,12 @@
 			</svg>
 		</div>
 		<%-- 목록이 길어도 화면을 넘지 않게 스크롤을 둔다(실측 2026-08-31: 보유 종목 9). --%>
-		<ul tabindex="0" class="dropdown-content z-[1] menu menu-sm bg-base-200 rounded-box shadow w-72 max-h-80 flex-nowrap overflow-y-auto p-2">
+		<%-- 메뉴 상자 자체에는 tabindex 를 두지 않는다: 항목이 포커스를 받으면 focus-within 으로 열린 채 유지되고, 상자의 tabindex 는 빈 탭 정지만 만든다(실측 2026-09-10). --%>
+		<ul class="dropdown-content z-[1] menu menu-sm bg-base-200 rounded-box shadow w-72 max-h-80 flex-nowrap overflow-y-auto p-2">
 			@for(DetailNavEntry entry : entries)
 				<li>
 					<a href="${entry.href()}" class="${entry.current() ? "active font-semibold" : ""} justify-between gap-3">
-						<span class="truncate">${entry.label()}</span>
+						<span class="truncate" title="${entry.label()}">${entry.label()}</span>
 						@if(entry.detail() != null && !entry.detail().isEmpty())
 							<span class="amount-value shrink-0 text-[11px] text-base-content/60">${entry.detail()}</span>
 						@endif

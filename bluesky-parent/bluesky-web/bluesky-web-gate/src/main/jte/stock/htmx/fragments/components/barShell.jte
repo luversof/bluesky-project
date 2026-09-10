@@ -8,8 +8,8 @@
 }
 
 @template._components.ui.card(cssClass = "flex-[3] min-w-[280px] overflow-visible", body = @`
-		<h2 class="font-bold text-sm mb-3">${resolvedTitle}</h2>
+		<h2 class="font-bold text-sm mb-3" data-page-section>${resolvedTitle}</h2>
 		<div class="relative h-[220px]">
-			<canvas id="${canvasId}" class="amount-chart"></canvas>
+			<canvas id="${canvasId}" role="img" aria-label="${resolvedTitle}" class="amount-chart"></canvas>
 		</div>
 `)

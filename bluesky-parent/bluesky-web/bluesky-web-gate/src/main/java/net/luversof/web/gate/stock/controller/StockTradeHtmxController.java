@@ -719,6 +719,12 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
   }
 
   /** 필터·선행 조회 없이 전부 가져온다(최근 활동). 본문은 아래 10 인자판 하나다. */
+  /** 대시보드 "최근 활동" 이 보여 주는 줄 수. */
+  private static final int RECENT_ACTIVITY_COUNT = 5;
+
+  /** 최근 활동을 찾을 창(일). 이번 달이 더 길면 이번 달 시작까지 넓힌다. */
+  private static final int RECENT_WINDOW_DAYS = 90;
+
   private List<Activity> getAllActivities(
       UUID userId,
       Instant startInstant,
@@ -738,13 +744,29 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     // 종목 목록도 getAllActivities 안에서 나머지 조회와 동시에 던지게 둔다.
     // 여기서 먼저 동기로 읽으면 그 시간이 통째로 앞에 붙는다(실측 16.7ms).
     // 이 엔드포인트는 timeZone 을 받지 않아 서버 존으로 묶는다(활동목록 화면과 달리 요청 존이 없다).
-    List<Activity> activities = getAllActivities(userId, null, null, null, ZoneId.systemDefault());
+    // 이 조각은 요청 존을 받지 않는다. 주변 타임존에 기대는 자리를 늘리지 않도록 한 번만 읽어 돌려 쓴다.
+    ZoneId recentZone = ZoneId.systemDefault();
+    LocalDate now = LocalDate.now(recentZone);
+    LocalDate monthStart = now.withDayOfMonth(1);
+
+    // 이 조각이 쓰는 것은 최신 5건과 이번 달 합계뿐인데 원장을 통째로 받고 있었다
+    // (실측 2026-09-10: 매매 85,037 바이트 + 배당 83,694 바이트). 둘 다 담을 만큼만 창을 잡아 받고,
+    // 그 창에 5건이 안 차면(오래 쉬었던 사용자) 그때만 전체를 다시 받는다 - 5건이 줄어 보이면 안 된다.
+    LocalDate windowStart =
+        monthStart.isBefore(now.minusDays(RECENT_WINDOW_DAYS))
+            ? monthStart
+            : now.minusDays(RECENT_WINDOW_DAYS);
+    Instant windowStartInst = windowStart.atStartOfDay(recentZone).toInstant();
+    Instant windowEndInst = now.plusDays(1).atStartOfDay(recentZone).toInstant();
+    List<Activity> activities =
+        getAllActivities(userId, windowStartInst, windowEndInst, null, recentZone);
+    if (activities.size() < RECENT_ACTIVITY_COUNT) {
+      activities = getAllActivities(userId, null, null, null, recentZone);
+    }
 
     // 이번 달 요약
-    LocalDate now = LocalDate.now();
-    LocalDate monthStart = now.withDayOfMonth(1);
-    Instant monthStartInst = monthStart.atStartOfDay(ZoneId.systemDefault()).toInstant();
-    Instant monthEndInst = now.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+    Instant monthStartInst = monthStart.atStartOfDay(recentZone).toInstant();
+    Instant monthEndInst = now.plusDays(1).atStartOfDay(recentZone).toInstant();
     List<Activity> thisMonth =
         activities.stream()
             .filter(
@@ -780,7 +802,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     // 대시보드 "최근 활동"은 최신순 5건 유지.
-    model.addAttribute("activities", activities.stream().limit(5).toList());
+    model.addAttribute("activities", activities.stream().limit(RECENT_ACTIVITY_COUNT).toList());
     model.addAttribute("thisMonthLabel", shortMonthLabel(now));
     model.addAttribute("buyCount", buyCount);
     model.addAttribute("sellCount", sellCount);

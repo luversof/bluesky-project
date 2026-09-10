@@ -160,7 +160,7 @@ class RealizedBasisGapTest {
   void 계좌_상세도_같은_규칙을_쓴다() throws java.io.IOException {
     String source =
         java.nio.file.Files.readString(
-            java.nio.file.Path.of("src/main/jte/stock/accountDetail.jte"),
+            java.nio.file.Path.of("src/main/jte/stock/htmx/accountDetailContent.jte"),
             java.nio.charset.StandardCharsets.UTF_8);
     assertThat(source)
         .as("계좌 상세 헤드라인도 계좌를 합친 원가를 따르므로 같은 안내가 필요하다")
@@ -185,7 +185,7 @@ class RealizedBasisGapTest {
   void 종목_상세에는_붙이지_않는다() throws java.io.IOException {
     String source =
         java.nio.file.Files.readString(
-            java.nio.file.Path.of("src/main/jte/stock/stockItemDetail.jte"),
+            java.nio.file.Path.of("src/main/jte/stock/htmx/stockItemDetailContent.jte"),
             java.nio.charset.StandardCharsets.UTF_8);
     assertThat(source).doesNotContain("RealizedBasisGap");
   }

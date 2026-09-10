@@ -106,7 +106,7 @@ ${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div>
 
 <div class="overflow-x-auto">
-<table class="table w-full table-sm table-pin-rows pin-top-nav">
+<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${historyTitle}">
 <thead>
 <tr class="bg-base-200">
 <th scope="col">${dateLabel}</th>

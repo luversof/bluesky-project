@@ -31,7 +31,7 @@
 				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200">
 					<div class="h-2 rounded-full" style="width: ${String.format("%.1f", row.weightPercent())}%; background: ${barColor}"></div>
 				</div>
-				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${String.format("%.1f%%", row.weightPercent())}</span>
+				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${StockFormatUtil.pct(row.weightPercent(), 1)}</span>
 				<span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0" title="${StockFormatUtil.fullKrw(row.amount())}">${String.format("%,d", row.amount())}</span>
 			</div>
 		@endfor
@@ -41,7 +41,7 @@
 				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200">
 					<div class="h-2 rounded-full" style="width: ${String.format("%.1f", othersRow.weightPercent())}%; background: rgba(156,163,175,0.8)"></div>
 				</div>
-				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${String.format("%.1f%%", othersRow.weightPercent())}</span>
+				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${StockFormatUtil.pct(othersRow.weightPercent(), 1)}</span>
 				<span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0" title="${StockFormatUtil.fullKrw(othersRow.amount())}">${String.format("%,d", othersRow.amount())}</span>
 			</div>
 		@endif

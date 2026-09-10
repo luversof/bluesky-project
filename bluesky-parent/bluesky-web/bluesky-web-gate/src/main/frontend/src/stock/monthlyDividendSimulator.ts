@@ -247,21 +247,6 @@ export {};
 						updateMonthlyDividendSimulatorSelectionSummary(section);
 					});
 
-					row.addEventListener('keydown', function(this: HTMLElement, event: KeyboardEvent) {
-						if (event.target && (event.target as Element).closest('button, a, input, label, select, textarea, [data-profile-order-handle]')) {
-							return;
-						}
-
-						if (event.key !== 'Enter' && event.key !== ' ') {
-							return;
-						}
-
-						event.preventDefault();
-						const isSelected = this.getAttribute('aria-selected') === 'true';
-						setMonthlyDividendSimulatorRowSelection(this, !isSelected);
-						updateMonthlyDividendSimulatorSelectionSummary(section);
-					});
-
 				}
 
 				const clearButton = section.querySelector<HTMLElement>('[data-monthly-selection-clear]');

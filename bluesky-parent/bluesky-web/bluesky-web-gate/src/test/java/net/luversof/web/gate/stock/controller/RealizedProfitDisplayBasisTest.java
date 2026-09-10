@@ -111,7 +111,8 @@ class RealizedProfitDisplayBasisTest {
    */
   @Test
   void 상세_화면의_보유_행도_같은_기준을_쓴다() throws IOException {
-    for (String template : List.of("accountDetail.jte", "stockItemDetail.jte")) {
+    for (String template :
+        List.of("htmx/accountDetailContent.jte", "htmx/stockItemDetailContent.jte")) {
       String source =
           Files.readString(Path.of("src/main/jte/stock/" + template), StandardCharsets.UTF_8);
       assertThat(source)
@@ -127,7 +128,8 @@ class RealizedProfitDisplayBasisTest {
   @Test
   void 거래_행은_기록값을_찍는다() throws IOException {
     String template =
-        Files.readString(Path.of("src/main/jte/stock/stockItemDetail.jte"), StandardCharsets.UTF_8);
+        Files.readString(
+            Path.of("src/main/jte/stock/htmx/stockItemDetailContent.jte"), StandardCharsets.UTF_8);
     assertThat(template)
         .as("거래 행이 기록값을 찍지 않으면 헤드라인 기준을 다시 정해야 한다")
         .contains("trade.realizedProfit()");

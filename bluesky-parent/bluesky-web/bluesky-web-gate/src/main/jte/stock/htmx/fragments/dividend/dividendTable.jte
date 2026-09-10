@@ -37,7 +37,7 @@
 }
 
 	<!-- Collapsible Detail List -->
-	<details id="detailSection" class="mb-4" data-persist-open="dividendDetail">
+	<details id="detailSection" class="mb-4" data-persist-open="dividendDetail" data-page-section="${detailSummaryLabel}">
 		<summary class="cursor-pointer select-none flex items-center gap-2 font-semibold text-sm p-3 bg-base-200 rounded-box hover:bg-base-300 transition-colors">
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform detail-arrow" viewBox="0 0 20 20" fill="currentColor">
 				<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
@@ -47,7 +47,7 @@
 
 		<div id="dividendListContainer" class="flex flex-col relative mt-2">
 			<div class="flex-1 min-h-0 overflow-x-auto">
-				<table class="table w-full table-sm table-pin-rows pin-top-nav">
+				<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${detailSummaryLabel}">
 					<%-- 정렬 머리는 <th> 에 hx-get 만 있어 마우스 전용이었다(실측 2026-09-09: 포커스 불가). tabindex 로 닿게 하고(Enter/Space 는 common.ts),
 					     정렬 상태는 ▲▼ 글자 외에 aria-sort 로도 알린다. --%>
 					<thead>

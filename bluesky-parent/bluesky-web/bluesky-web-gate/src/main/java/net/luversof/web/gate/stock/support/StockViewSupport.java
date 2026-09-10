@@ -40,19 +40,44 @@ public final class StockViewSupport {
    * 요청이 뷰 이름 대신 주소 문자열을 반환하게 됐다. 그래서 이름을 View 로 바꿔 뜻을 맞춘다.
    */
   public static String loginRedirectView(HttpServletRequest request) {
-    StringBuilder urlBuilder = new StringBuilder();
-    urlBuilder.append(request.getScheme()).append("://").append(request.getServerName());
+    String encodedUrl =
+        java.net.URLEncoder.encode(
+            returnUrlAfterLogin(request), java.nio.charset.StandardCharsets.UTF_8);
+    return "redirect:/login?redirectUrl=" + encodedUrl;
+  }
+
+  /**
+   * 로그인 뒤 돌아올 주소.
+   *
+   * <p>조회(GET)는 그 주소 그대로다. 조회가 아닌 요청(폼 POST 등)은 그 주소로 돌아올 수 없다 - 저장 동작 주소를 GET 으로 열면 405 다. 실측
+   * 2026-09-09: 세션이 끊긴 채 월배당 기준 폼을 저장하면 로그인 뒤 "직접 열 수 없는 주소입니다" 화면에 떨어졌다(관리 폼 10곳 전부). 그런 요청은 폼이 있던
+   * 화면(같은 출처의 Referer)으로, 그것도 없으면 주식 첫 화면으로 돌아온다.
+   */
+  static String returnUrlAfterLogin(HttpServletRequest request) {
+    String origin = originOf(request);
+    String method = request.getMethod();
+    if (method == null || "GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method)) {
+      StringBuilder url = new StringBuilder(origin).append(request.getRequestURI());
+      if (request.getQueryString() != null) {
+        url.append("?").append(request.getQueryString());
+      }
+      return url.toString();
+    }
+    String referer = request.getHeader("Referer");
+    if (referer != null && referer.startsWith(origin + "/")) {
+      return referer;
+    }
+    return origin + "/stock";
+  }
+
+  private static String originOf(HttpServletRequest request) {
+    StringBuilder origin = new StringBuilder();
+    origin.append(request.getScheme()).append("://").append(request.getServerName());
     int serverPort = request.getServerPort();
     if (serverPort != 80 && serverPort != 443) {
-      urlBuilder.append(":").append(serverPort);
+      origin.append(":").append(serverPort);
     }
-    urlBuilder.append(request.getRequestURI());
-    if (request.getQueryString() != null) {
-      urlBuilder.append("?").append(request.getQueryString());
-    }
-    String encodedUrl =
-        java.net.URLEncoder.encode(urlBuilder.toString(), java.nio.charset.StandardCharsets.UTF_8);
-    return "redirect:/login?redirectUrl=" + encodedUrl;
+    return origin.toString();
   }
 
   public static String safeString(String value) {

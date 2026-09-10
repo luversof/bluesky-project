@@ -42,6 +42,7 @@ public record PoeOptimizeResult(
     List<UnmetRequirement> unmetRequirements,
     List<UnmodeledNode> unmodeledNodes,
     UnmodeledAscendancy unmodeledAscendancy,
+    List<MinionItem> minionItems,
     List<SlotTierCompare> tierComparisons,
     List<ScenarioCell> scenarioMatrix,
     List<DefenseHit> defenseHits,
@@ -92,6 +93,9 @@ public record PoeOptimizeResult(
 
   /** 엔진이 모델링하지 않는 기제에 기대는 전직 — 그 전직을 골라도 포인트를 쓸 곳이 없다. */
   public record UnmodeledAscendancy(String ascendancy, int unmodeled, int total) {}
+
+  /** 미니언이 직접 장착한 장비 한 점(수호자 기동). */
+  public record MinionItem(String slot, String slotKo, String baseType, List<String> modLines) {}
 
   /**
    * 장착 아이템 하나.

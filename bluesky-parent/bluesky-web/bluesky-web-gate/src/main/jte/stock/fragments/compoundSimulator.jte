@@ -135,7 +135,7 @@
 					</div>
 				</div>
 				<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
-					<canvas id="stockCompoundGrowthChart"></canvas>
+					<canvas id="stockCompoundGrowthChart" role="img" aria-label="${chartTitle}" class="amount-chart"></canvas>
 				</div>
 		`)
 
@@ -145,7 +145,7 @@
 					<p class="text-sm leading-6 text-base-content/60">${yearlyDescription}</p>
 				</div>
 				<div class="overflow-x-auto">
-					<table class="table table-zebra table-sm">
+					<table class="table table-zebra table-sm" aria-label="${yearlyTitle}">
 						<thead>
 							<tr>
 								<th scope="col">${yearHeader}</th>

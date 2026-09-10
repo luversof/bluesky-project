@@ -51,6 +51,33 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
       @Param("endDate") Instant endDate,
       @Param("zone") String zone);
 
+  /**
+   * 기간 매매 집계 한 줄.
+   *
+   * <p>대시보드가 기간 수치를 보여 주려면 지금은 원장을 통째로 받아 더해야 한다(실측 2026-09-10: 올해 258 행). 연도별 집계와 같은 방식으로 DB 에서
+   * 합계만 낸다. 매수/매도 금액은 단가 x 수량이다(수수료·세금은 따로 낸다).
+   */
+  @Query(
+      """
+                SELECT COALESCE(SUM(CASE WHEN t."type" = 'BUY'  THEN t."price" * t."quantity" ELSE 0 END), 0) AS buy_amount,
+                       COALESCE(SUM(CASE WHEN t."type" = 'SELL' THEN t."price" * t."quantity" ELSE 0 END), 0) AS sell_amount,
+                       COALESCE(SUM(t."fee"), 0)            AS fee,
+                       COALESCE(SUM(t."tax"), 0)            AS tax,
+                       COALESCE(SUM(t."realizedProfit"), 0) AS realized_profit,
+                       COUNT(*) FILTER (WHERE t."type" = 'BUY')  AS buy_count,
+                       COUNT(*) FILTER (WHERE t."type" = 'SELL') AS sell_count
+                FROM "Trade" t
+                JOIN "Account" a ON t."account_id" = a."id"
+                WHERE a."user_id" = :userId
+                  AND t."tradeDate" IS NOT NULL
+                  AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= CAST(:startDate AS timestamptz))
+                  AND (CAST(:endDate   AS timestamptz) IS NULL OR t."tradeDate" <  CAST(:endDate   AS timestamptz))
+            """)
+  net.luversof.api.stock.domain.PeriodTradeSummary findPeriodSummary(
+      @Param("userId") UUID userId,
+      @Param("startDate") Instant startDate,
+      @Param("endDate") Instant endDate);
+
   /** 사용자의 마지막 거래일. 데이터 최신 시점 표시용(집계 1건). */
   @Query(
       """

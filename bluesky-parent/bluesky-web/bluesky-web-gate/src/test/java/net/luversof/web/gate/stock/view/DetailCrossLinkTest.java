@@ -117,7 +117,8 @@ class DetailCrossLinkTest {
 
   @Test
   void 두_상세_화면_모두_전환기를_붙인다() throws IOException {
-    for (String page : List.of("stock/stockItemDetail.jte", "stock/accountDetail.jte")) {
+    for (String page :
+        List.of("stock/htmx/stockItemDetailContent.jte", "stock/htmx/accountDetailContent.jte")) {
       assertThat(read(JTE_ROOT.resolve(page)))
           .as(page + " 에 전환기가 없다 - 한쪽만 되면 어느 화면에서 되는지를 외워야 한다")
           .contains("detailNavSwitcher");

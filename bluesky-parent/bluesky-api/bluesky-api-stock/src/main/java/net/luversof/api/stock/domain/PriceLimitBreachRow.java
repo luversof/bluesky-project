@@ -20,4 +20,6 @@ public record PriceLimitBreachRow(
     LocalDate tradeDate,
     BigDecimal closePrice,
     BigDecimal previousClosePrice,
-    LocalDate previousTradeDate) {}
+    LocalDate previousTradeDate,
+    /** 같은 조건에 걸린 전체 행 수. 개수를 따로 세면 같은 비싼 스캔을 두 번 하게 된다. */
+    long totalCount) {}

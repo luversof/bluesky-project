@@ -1,6 +1,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
 @import java.text.DecimalFormat
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param String fromDate = ""
 @param String toDate = ""
@@ -99,11 +100,11 @@
 	String peakGapText = !peakAvailable ? ""
 		: peakAsMultiple
 			? String.format("x%,.0f", closingValue.doubleValue() / peakValue.doubleValue())
-			: String.format("%+.2f%%", peakGapPct);
+			: StockFormatUtil.signedPct(peakGapPct, 2);
 	String troughGapText = !troughAvailable ? ""
 		: troughAsMultiple
 			? String.format("x%,.0f", closingValue.doubleValue() / troughValue.doubleValue())
-			: String.format("%+.2f%%", troughGapPct);
+			: StockFormatUtil.signedPct(troughGapPct, 2);
 	boolean movementAvailable = peakAvailable || troughAvailable || drawdownAvailable
 		|| currentDrawdownAvailable;
 }
@@ -126,13 +127,13 @@
 	</div>
 	<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
 		@if(profitAvailable)
-			<span class="text-4xl font-bold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
+			<span class="text-3xl min-[360px]:text-4xl font-bold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
 				${profitPositive ? "+" : "-"}₩${amountFormat.format(periodProfit.abs())}
 			</span>
 			@if(profitRateAvailable)
 				<%-- 금액만으로는 "많이 번 건지" 를 알 수 없다. 넣어 둔 돈 대비 비율을 바로 옆에 붙인다. --%>
 				<span class="text-xl font-bold ${profitRatePositive ? "text-profit" : "text-loss"}">
-					${String.format("%+.2f%%", periodProfitRatePct)}
+					${StockFormatUtil.signedPct(periodProfitRatePct, 2)}
 				</span>
 			@endif
 		@else
@@ -162,7 +163,7 @@
 				<div class="text-xs text-base-content/60 mb-0.5">${profitRateTitle}</div>
 				@if(profitRateAvailable)
 					<div class="text-lg font-bold leading-none ${profitRatePositive ? "text-profit" : "text-loss"}">
-						${String.format("%+.2f%%", periodProfitRatePct)}
+						${StockFormatUtil.signedPct(periodProfitRatePct, 2)}
 					</div>
 				@else
 					<div class="text-sm font-semibold text-base-content/60">${unavailableLabel}</div>
@@ -174,7 +175,7 @@
 				<div class="text-xs text-base-content/60 mb-0.5">${twrTitle}</div>
 				@if(twrAvailable)
 					<div class="text-lg font-bold leading-none ${twrPositive ? "text-profit" : "text-loss"}">
-						${String.format("%+.2f%%", timeWeightedReturnPct)}
+						${StockFormatUtil.signedPct(timeWeightedReturnPct, 2)}
 					</div>
 				@else
 					<div class="text-sm font-semibold text-base-content/60">${unavailableLabel}</div>
@@ -186,7 +187,7 @@
 				<div class="text-xs text-base-content/60 mb-0.5">${growthTitle}</div>
 				@if(returnCalculable && periodReturnRatePct != null)
 					<div class="text-lg font-bold leading-none ${growthPositive ? "text-profit" : "text-loss"}">
-						${String.format("%+.2f%%", periodReturnRatePct)}
+						${StockFormatUtil.signedPct(periodReturnRatePct, 2)}
 					</div>
 					<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">${growthDescription}</p>
 				@elseif(amountFallbackAvailable)
@@ -260,7 +261,7 @@
 					@if(drawdownAvailable)
 						<%-- 수익률의 짝이 되는 위험 지표. 입출금을 제거한 기준가로 계산해 입금에 희석되지 않는다. --%>
 						<div class="text-lg font-bold leading-none text-loss">
-							${String.format("%.2f%%", maxDrawdownPct)}
+							${StockFormatUtil.pct(maxDrawdownPct, 2)}
 						</div>
 						<p class="text-[11px] leading-4 mt-0.5">
 							<span class="text-base-content/60">${maxDrawdownLabel}</span>
@@ -278,7 +279,7 @@
 							@if(atPeak)
 								<span class="font-semibold text-profit">${atPeakLabel}</span>
 							@else
-								<span class="font-semibold text-loss">${String.format("%.2f%%", currentDrawdownPct)}</span>
+								<span class="font-semibold text-loss">${StockFormatUtil.pct(currentDrawdownPct, 2)}</span>
 							@endif
 						</p>
 					@endif
@@ -294,7 +295,7 @@
 		@if(unrealizedAvailable)
 			<span class="amount-value font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEndPositive ? "+" : "-"}&#8361;${amountFormat.format(unrealizedEnd.abs())}</span>
 			@if(unrealizedEndPct != null)
-				<span class="font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", unrealizedEndPct)}</span>
+				<span class="font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(unrealizedEndPct, 2)}</span>
 			@endif
 			<span class="text-base-content/25">|</span>
 			<span class="text-base-content/60">${unrealizedTrendLabel}</span>

@@ -20,22 +20,22 @@
 
 @template._components.ui.card(cssClass = "flex-[2] min-w-[200px]", body = @`
 		<div class="flex items-center justify-between mb-2">
-			<div class="text-sm font-bold" id="${titleId}">${resolvedTitle}</div>
+			<h2 class="text-sm font-bold" id="${titleId}" data-page-section>${resolvedTitle}</h2>
 			<div role="tablist" class="tabs tabs-box tabs-xs">
-				<a class="tab" id="${metricProfitId}" data-trade-donut-metric="profit" tabindex="0" role="tab">${profitLabel}</a>
-				<a class="tab tab-active" id="${metricBuyId}" data-trade-donut-metric="buy" tabindex="0" role="tab">${buyAmountLabel}</a>
+				<a class="tab" id="${metricProfitId}" data-trade-donut-metric="profit" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${profitLabel}</a>
+				<a class="tab tab-active" id="${metricBuyId}" data-trade-donut-metric="buy" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${buyAmountLabel}</a>
 			</div>
 		</div>
-		<div class="flex gap-3">
+		<div id="${canvasId}Panel" role="tabpanel" class="flex gap-3">
 			<div class="flex-shrink-0 w-[200px] h-[200px]">
-				<canvas id="${canvasId}" class="amount-chart"></canvas>
+				<canvas id="${canvasId}" role="img" aria-label="${resolvedTitle}" class="amount-chart"></canvas>
 			</div>
 			<div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
 				<div role="tablist" class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
-					<a class="tab tab-active" id="${tabStockId}" data-trade-donut-mode="stock" tabindex="0" role="tab">${byStockLabel}</a>
-					<a class="tab" id="${tabAccountId}" data-trade-donut-mode="account" tabindex="0" role="tab">${byAccountLabel}</a>
+					<a class="tab tab-active" id="${tabStockId}" data-trade-donut-mode="stock" tabindex="0" role="tab" aria-controls="${legendId}">${byStockLabel}</a>
+					<a class="tab" id="${tabAccountId}" data-trade-donut-mode="account" tabindex="0" role="tab" aria-controls="${legendId}">${byAccountLabel}</a>
 				</div>
-				<div id="${legendId}" tabindex="0" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
+				<div id="${legendId}" role="tabpanel" tabindex="0" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
 			</div>
 		</div>
 `)

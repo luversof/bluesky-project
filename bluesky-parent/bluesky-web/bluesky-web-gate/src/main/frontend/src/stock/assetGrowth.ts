@@ -324,7 +324,8 @@ interface AssetGrowthConfig {
             function resizeAssetGrowthCharts() {
                 [mainChart, dividendChart].forEach(function(c: any) {
                     if (!c || !c.canvas || !c.canvas.isConnected) return;
-                    try { c.resize(); c.update('none'); } catch (e) {}
+                    // 크기가 실제로 달라졌을 때만 다시 그린다(소수 폭에서 resize() 는 매번 전체 재렌더 - stock-charts.ts resizeIfChanged 참고).
+                    try { const SC = (window as any).StockCharts; if (SC && SC.resizeIfChanged) SC.resizeIfChanged(c); else c.resize(); } catch (e) {}
                 });
             }
             setTimeout(resizeAssetGrowthCharts, 0);

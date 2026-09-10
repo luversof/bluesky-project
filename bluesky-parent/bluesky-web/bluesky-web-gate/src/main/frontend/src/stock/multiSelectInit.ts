@@ -102,11 +102,23 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
 		rememberSelectionSnapshot(sel);
 	}
 
-	function syncLinkedSelectHeights(scope: ParentNode | Document): void {
+	// 실측 2026-09-10(qa/cpu-profile-cols.cjs, 4배 CPU): 예전엔 여기서 getBoundingClientRect 를 읽어 htmx 목록 교체 직후
+	// MutationObserver 안에서 강제 동기 레이아웃이 났다(매매 493ms·배당 371ms 자체 시간, 가장 긴 작업의 대부분).
+	// ResizeObserver 는 레이아웃이 끝난 뒤 크기를 알려주므로 읽기 비용이 없고, 옵션 수가 바뀌어 높이가 변해도 따라간다.
+	function linkSelectHeights(accountSelect: HTMLSelectElement, stockSelect: HTMLSelectElement, height: number): void {
+		if (!height || height <= 0) return;
+		const px = `${height}px`;
+		if (stockSelect.style.height === px) return;
+		stockSelect.style.height = px;
+		stockSelect.style.maxHeight = px;
+		stockSelect.style.overflowY = "auto";
+	}
+
+	function syncLinkedSelectHeights(scope: ParentNode | Document): number {
 		const forms = Array.from(
 			(scope instanceof Element ? scope : document).querySelectorAll("form"),
 		) as HTMLFormElement[];
-
+		let linked = 0;
 		forms.forEach((form) => {
 			const accountSelect = form.querySelector<HTMLSelectElement>(
 				'select[name="accountIdList"]',
@@ -114,18 +126,28 @@ select[multiple]:focus, select.select[multiple]:focus, select.select-bordered[mu
 			const stockSelect = form.querySelector<HTMLSelectElement>(
 				'select[name="stockItemIdList"]',
 			);
-
 			if (!accountSelect || !stockSelect) return;
-
-			const accountHeight = accountSelect.getBoundingClientRect().height;
-			if (!accountHeight || accountHeight <= 0) return;
-
-			stockSelect.style.height = `${accountHeight}px`;
-			stockSelect.style.maxHeight = `${accountHeight}px`;
-			stockSelect.style.overflowY = "auto";
+			linked++;
+			const RO = (globalThis as any).ResizeObserver;
+			if (typeof RO !== "function") {
+				// 폴백(구형 브라우저): 예전처럼 즉시 읽는다.
+				linkSelectHeights(accountSelect, stockSelect, accountSelect.getBoundingClientRect().height);
+				return;
+			}
+			if ((stockSelect as any)._linkedHeightObserver) return;
+			const ro = new RO((entries: any[]) => {
+				for (const entry of entries) {
+					const box = entry.borderBoxSize && entry.borderBoxSize[0];
+					const height = box ? box.blockSize : entry.contentRect ? entry.contentRect.height : 0;
+					linkSelectHeights(accountSelect, stockSelect, height);
+				}
+			});
+			ro.observe(accountSelect, { box: "border-box" });
+			(stockSelect as any)._linkedHeightObserver = ro;
 		});
+		return linked;
 	}
-
+	(globalThis as any).__multiSelectInitInternals = { syncLinkedSelectHeights, linkSelectHeights };
 	function applySize(sel: HTMLSelectElement) {
 		try {
 			// Skip selects that explicitly opt out

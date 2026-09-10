@@ -43,7 +43,7 @@
 }
 
 	<!-- Collapsible Detail List -->
-	<details id="tradeDetailSection" class="mb-4" data-persist-open="tradeDetail">
+	<details id="tradeDetailSection" class="mb-4" data-persist-open="tradeDetail" data-page-section="${detailListLabel}">
 		<summary class="cursor-pointer select-none flex items-center gap-2 font-semibold text-sm p-3 bg-base-200 rounded-box hover:bg-base-300 transition-colors">
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform detail-arrow" viewBox="0 0 20 20" fill="currentColor">
 				<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
@@ -53,7 +53,7 @@
 
 		<div id="tradeListContainer" class="flex flex-col relative mt-2">
 			<div class="flex-1 min-h-0 overflow-x-auto">
-				<table class="table w-full table-sm table-pin-rows pin-top-nav">
+				<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${detailListLabel}">
 					<thead>
 					<tr class="bg-base-200">
 						<th scope="col" class="cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("tradeDate") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}"

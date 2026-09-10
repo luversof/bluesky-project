@@ -304,8 +304,10 @@
 		// Chart.js / StockCharts 는 stockLayout 에서 1회 로드되어 항상 존재한다. (initAll 내부에서도 자체 가드)
 		setTimeout(initAll, 0);
 		setTimeout(function() {
-			if (window.tradeMonthlyChartInst && window.tradeMonthlyChartInst.resize) window.tradeMonthlyChartInst.resize();
-			if (window.tradeDonutChartInst && window.tradeDonutChartInst.resize) window.tradeDonutChartInst.resize();
+			// 크기가 실제로 달라졌을 때만(소수 폭에서 resize() 는 매번 전체 재렌더 - stock-charts.ts resizeIfChanged 참고)
+			var fit = function(inst) { if (!inst || !inst.resize) return; if (window.StockCharts && window.StockCharts.resizeIfChanged) window.StockCharts.resizeIfChanged(inst); else inst.resize(); };
+			fit(window.tradeMonthlyChartInst);
+			fit(window.tradeDonutChartInst);
 		}, 200);
 
 		const detail = document.getElementById('tradeDetailSection');

@@ -3,6 +3,7 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param List<TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
 @param String periodBreakdownNote = ""
@@ -36,7 +37,7 @@
 				<p class="text-xs text-base-content/60">${description}</p>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-zebra table-sm whitespace-nowrap" data-period-breakdown="${periodBreakdown.get(0).unit()}">
+				<table class="table table-zebra table-sm whitespace-nowrap" data-period-breakdown="${periodBreakdown.get(0).unit()}" aria-label="${title}">
 					<thead>
 						<tr>
 							<th scope="col">${periodLabel}</th>
@@ -92,7 +93,7 @@
 								</td>
 								<td class="text-right tabular-nums">
 									@if(rate != null)
-										<span class="font-semibold ${rateUp ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", rate)}</span>
+										<span class="font-semibold ${rateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(rate, 2)}</span>
 									@else
 										<span class="text-base-content/30">-</span>
 									@endif
@@ -117,7 +118,7 @@
 							<td class="text-right tabular-nums"><span class="amount-value ${totalIncomeUp ? "text-profit" : "text-loss"}">${totalIncomeUp ? "+" : "-"}&#8361;${amountFormat.format(totals.realizedAndDividend().abs())}</span></td>
 							<td class="text-right tabular-nums">
 								@if(totals.chainedReturnPct() != null)
-									<span class="${totalRateUp ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", totals.chainedReturnPct())}</span>
+									<span class="${totalRateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
 								@else
 									<span class="text-base-content/30">-</span>
 								@endif

@@ -31,11 +31,11 @@
 @if(tradePeriods != null && tradePeriods.size() > 1)
 	@template._components.ui.card(cssClass = "mb-4", bodyClass = "gap-3", body = @`
 			<div class="space-y-1">
-				<h3 class="card-title text-base">${title}</h3>
+				<h3 class="card-title text-base" data-page-section>${title}</h3>
 				<p class="text-xs text-base-content/60">${description}</p>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-zebra table-sm whitespace-nowrap" data-trade-breakdown="${unit}">
+				<table class="table table-zebra table-sm whitespace-nowrap" data-trade-breakdown="${unit}" aria-label="${title}">
 					<thead>
 						<tr>
 							<th scope="col">${periodLabel}</th>

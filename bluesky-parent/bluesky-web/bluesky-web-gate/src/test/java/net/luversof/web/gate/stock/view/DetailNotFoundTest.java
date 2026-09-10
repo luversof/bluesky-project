@@ -59,8 +59,8 @@ class DetailNotFoundTest {
   void 조각의_빈_안내는_찾을_수_없음_문구다() throws IOException {
     for (String[] c :
         new String[][] {
-          {"jte/stock/stockItemDetail.jte", "stockItem", "stock.item.detail.notfound"},
-          {"jte/stock/accountDetail.jte", "account", "stock.account.detail.notfound"}
+          {"jte/stock/htmx/stockItemDetailContent.jte", "stockItem", "stock.item.detail.notfound"},
+          {"jte/stock/htmx/accountDetailContent.jte", "account", "stock.account.detail.notfound"}
         }) {
       String template = read(c[0]);
       int nullBranch = template.indexOf("@if(" + c[1] + " == null)");

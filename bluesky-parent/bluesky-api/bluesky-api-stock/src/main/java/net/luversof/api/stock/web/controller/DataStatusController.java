@@ -46,6 +46,12 @@ public class DataStatusController {
     var tradeSummary = tradeRepository.findLedgerSummaryByUserId(userId);
     var dividendSummary = dividendRepository.findLedgerSummaryByUserId(userId);
     var priceDuplicate = stockPriceHistoryRepository.findLastDateDuplicateSummary();
+    // 개수와 예시 행을 따로 조회하면 같은 비싼 스캔(시세 57,586행 위 LATERAL/윈도우)을 두 번 한다
+    // - 실측 2026-09-10: 이 엔드포인트만 113ms 로 다른 조회의 3~4배였다. 한 번에 행과 총 개수를 함께 받는다.
+    List<net.luversof.api.stock.domain.ZeroVolumeChangedClose> changedCloseRows =
+        stockPriceHistoryRepository.findZeroVolumeRowsWithChangedClose();
+    List<net.luversof.api.stock.domain.PriceLimitBreachRow> breachRows =
+        stockPriceHistoryRepository.findPriceLimitBreachRows();
     return new DataStatusResponse(
         tradeSummary != null ? tradeSummary.lastDate() : null,
         tradeSummary != null ? tradeSummary.totalCount() : 0L,
@@ -60,16 +66,16 @@ public class DataStatusController {
         priceDuplicate != null ? priceDuplicate.zeroVolumeCount() : 0L,
         stockPriceHistoryRepository.countAllRows(),
         stockPriceHistoryRepository.countZeroVolumeRows(),
-        stockPriceHistoryRepository.countZeroVolumeRowsWithChangedClose(),
-        toChangedCloseRows(stockPriceHistoryRepository.findZeroVolumeRowsWithChangedClose()),
+        changedCloseRows.isEmpty() ? 0L : changedCloseRows.get(0).totalCount(),
+        toChangedCloseRows(changedCloseRows),
         payouts.stream()
             .map(net.luversof.api.stock.domain.MonthlyDividendPayout::getPayDate)
             .filter(Objects::nonNull)
             .max(LocalDate::compareTo)
             .orElse(null),
         overduePayouts(payouts),
-        stockPriceHistoryRepository.countPriceLimitBreachRows(),
-        toBreachRows(stockPriceHistoryRepository.findPriceLimitBreachRows()));
+        breachRows.isEmpty() ? 0L : breachRows.get(0).totalCount(),
+        toBreachRows(breachRows));
   }
 
   /**

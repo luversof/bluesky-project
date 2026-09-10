@@ -31,6 +31,7 @@
 	String winCountBadgeLabel = java.text.MessageFormat.format(
 		MessageUtil.getMessage("stock.realized.summary.win.count"), realizedWinCount, realizedStockCount);
 	String selectionSummaryLabel = MessageUtil.getMessage("stock.analytics.selection.summary");
+	String accountSelectionSummaryLabel = MessageUtil.getMessage("stock.analytics.account.selection.summary");
 	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
 	String selectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
 }
@@ -38,7 +39,7 @@
 	@if(accountRealizedList != null && !accountRealizedList.isEmpty())
 	<!-- 계좌별 실현손익 -->
 	<div class="mb-4" data-trade-realized-section>
-		<h2 class="text-base font-semibold mb-2 text-base-content/70">${byAccountSectionLabel}</h2>
+		<h2 class="text-base font-semibold mb-2 text-base-content/70" data-page-section>${byAccountSectionLabel}</h2>
 		<div class="selection-reveal"><div>
 		<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
 			 data-trade-realized-summary
@@ -46,7 +47,7 @@
 			 aria-live="polite">
 			<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div class="flex flex-wrap items-center gap-2">
-					<h3 class="text-sm font-semibold">${selectionSummaryLabel}</h3>
+					<h3 class="text-sm font-semibold">${accountSelectionSummaryLabel}</h3>
 					<span class="badge badge-info badge-outline" data-trade-realized-selection-count></span>
 				</div>
 				<button type="button" class="btn btn-ghost btn-xs self-start" data-trade-realized-clear>${selectionClearLabel}</button>
@@ -72,7 +73,7 @@
 		</div>
 		</div></div>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
-			<table class="table table-sm w-full">
+			<table class="table table-sm w-full" aria-label="${byAccountSectionLabel}">
 				<thead class="bg-base-200">
 					<tr>
 						<th scope="col">${accountLabel}</th>
@@ -93,6 +94,7 @@
 						data-trade-realized-row
 						tabindex="0"
 						aria-selected="false"
+						data-row-select="${MessageUtil.getMessage("stock.table.row.select")}"
 						data-sell="${(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO).toPlainString()}"
 						data-net="${rowNet.toPlainString()}"
 						data-sold-cost="${rowSoldCost.toPlainString()}">
@@ -115,7 +117,7 @@
 							@endif
 						</td>
 						@if(rowHasRate)
-						<td class="text-right font-mono font-semibold ${rowRate >= 0 ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", rowRate)}</td>
+						<td class="text-right font-mono font-semibold ${rowRate >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(rowRate, 2)}</td>
 						@else
 						<td class="text-right font-mono opacity-40">-</td>
 						@endif
@@ -131,7 +133,7 @@
 	<!-- 종목별 실현손익 -->
 	<div class="mb-4" data-trade-realized-section>
 		<div class="flex items-center justify-between mb-2">
-			<h2 class="text-base font-semibold text-base-content/70">${byStockSectionLabel}</h2>
+			<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byStockSectionLabel}</h2>
 			<span class="badge badge-sm badge-ghost">${winCountBadgeLabel}</span>
 		</div>
 		<div class="selection-reveal"><div>
@@ -167,7 +169,7 @@
 		</div>
 		</div></div>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
-			<table class="table table-sm w-full">
+			<table class="table table-sm w-full" aria-label="${byStockSectionLabel}">
 				<thead class="bg-base-200">
 					<tr>
 						<th scope="col">${stockLabel}</th>
@@ -193,6 +195,7 @@
 						data-trade-realized-row
 						tabindex="0"
 						aria-selected="false"
+						data-row-select="${MessageUtil.getMessage("stock.table.row.select")}"
 						data-sell="${(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO).toPlainString()}"
 						data-net="${itemNet.toPlainString()}"
 						data-sold-cost="${itemSoldCost.toPlainString()}">
@@ -203,7 +206,7 @@
 							${String.format("%+,d", StockFormatUtil.displayWon(itemNet))}
 						</td>
 						@if(itemHasRate)
-						<td class="text-right font-mono font-semibold ${itemRate >= 0 ? "text-profit" : "text-loss"}">${String.format("%+.2f%%", itemRate)}</td>
+						<td class="text-right font-mono font-semibold ${itemRate >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(itemRate, 2)}</td>
 						@else
 						<td class="text-right font-mono opacity-40">-</td>
 						@endif

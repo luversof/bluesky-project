@@ -1,7 +1,9 @@
 package net.luversof.web.gate.stock.support;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
@@ -37,6 +39,38 @@ public class StockAsyncSupport {
       if (cause instanceof RuntimeException runtimeException) throw runtimeException;
       if (cause instanceof Error error) throw error;
       throw e;
+    }
+  }
+
+  /**
+   * 한 요청 안에서 같은 호출이 두 번 나가지 않게 한다.
+   *
+   * <p>실측 2026-09-10(qa/iso-fragment.cjs + 로깅 프록시): 조회 기간을 고르지 않은 기본 진입에서는 '기간 손익' 과 '전체 스냅샷' 의
+   * 파라미터가 완전히 같아져, 종목 상세·계좌 상세 조각이 {@code calculateProfit} 을 똑같은 URL 로 두 번 불렀다. 기간을 고르면 서로 달라지므로 조건
+   * 분기 대신 '같은 열쇠면 이미 던진 것을 그대로 쓴다' 로 푼다.
+   */
+  public Deduper deduper() {
+    return new Deduper(this);
+  }
+
+  /** 요청 하나의 수명 동안만 쓰는 호출 메모. 열쇠는 (엔드포인트 이름, 파라미터) 처럼 호출을 유일하게 가리키는 값이어야 한다. */
+  public static final class Deduper {
+
+    private final StockAsyncSupport async;
+    private final Map<Object, CompletableFuture<?>> started = new ConcurrentHashMap<>();
+
+    private Deduper(StockAsyncSupport async) {
+      this.async = async;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> CompletableFuture<T> supply(Object key, Supplier<T> supplier) {
+      return (CompletableFuture<T>) started.computeIfAbsent(key, ignored -> async.supply(supplier));
+    }
+
+    /** 던진 서로 다른 호출 수(테스트·측정용). */
+    public int startedCount() {
+      return started.size();
     }
   }
 }

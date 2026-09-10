@@ -39,6 +39,23 @@ export function defaultErrorText(
 	}
 }
 
+/** 세션이 끊긴 뒤 돌아올 로그인 주소. 페이지·조각(loginRequiredView)과 같은 규약이다. */
+export function loginUrlFor(currentHref: string): string {
+	return "/login?redirectUrl=" + encodeURIComponent(currentHref);
+}
+
+/**
+ * 401 이면 안내를 남긴 뒤 로그인으로 보낸다. 세션이 없으니 이 화면에서 더 할 수 있는 일이 없다.
+ * 실측 2026-09-09: 월배당 프로필 순서 저장이 401 을 받으면 상태줄에 "로그인이 필요합니다" 만 남고 갈 길이 없었다.
+ * 브라우저가 아닌 문맥(테스트)에서는 아무것도 하지 않는다.
+ */
+export function redirectToLoginIfUnauthorized(status: number): boolean {
+	if (status !== 401) return false;
+	if (typeof location === "undefined" || typeof location.assign !== "function") return false;
+	location.assign(loginUrlFor(location.href));
+	return true;
+}
+
 /**
  * 중앙화된 API 에러 핸들러
  * - isDisplayableMessage가 true인 경우 onDisplayableMessage로 전달 (없으면 alert)
@@ -66,9 +83,14 @@ export function handleApiError(
 				// 기본 동작: alert
 				alert(msg);
 			}
+			redirectToLoginIfUnauthorized(err.status);
 			return;
 		}
 
+		// 문구가 없어도 401 은 로그인으로 보낸다.
+		if (redirectToLoginIfUnauthorized(err.status)) {
+			return;
+		}
 		// displayable이 아닌 경우: 상세 정보 전달
 		if (onNonDisplayable) {
 			onNonDisplayable(err);

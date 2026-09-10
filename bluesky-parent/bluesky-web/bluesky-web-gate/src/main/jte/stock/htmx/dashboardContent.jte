@@ -18,11 +18,22 @@
 					<div class="h-36 w-full rounded bg-base-200"></div>
 				</div></div>
 			</div>
+			<%-- 지표 카드는 아이콘 칩과 큰 값이 들어가 136px 다(실측 2026-09-10). 80px 로 두면 조각이 들어올 때
+			     아래가 통째로 밀린다 - 대시보드 CLS 0.095 의 원인이었다. --%>
 			<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-				<div class="h-20 rounded-box bg-base-200"></div>
-				<div class="h-20 rounded-box bg-base-200"></div>
-				<div class="h-20 rounded-box bg-base-200"></div>
-				<div class="h-20 rounded-box bg-base-200"></div>
+				<div class="h-[136px] rounded-box bg-base-200"></div>
+				<div class="h-[136px] rounded-box bg-base-200"></div>
+				<div class="h-[136px] rounded-box bg-base-200"></div>
+				<div class="h-[136px] rounded-box bg-base-200"></div>
+			</div>
+			<%-- 올해 요약 줄(제목 + 지표 4칸). 서버가 집계를 못 받아오면 이 줄이 빠지지만, 스켈레톤이 없으면
+			     받아왔을 때 아래가 밀린다 - 있는 쪽에 맞춘다. --%>
+			<div class="h-5 w-32 rounded bg-base-300"></div>
+			<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+				<div class="h-[136px] rounded-box bg-base-200"></div>
+				<div class="h-[136px] rounded-box bg-base-200"></div>
+				<div class="h-[136px] rounded-box bg-base-200"></div>
+				<div class="h-[136px] rounded-box bg-base-200"></div>
 			</div>
 		</div>
 	</div>

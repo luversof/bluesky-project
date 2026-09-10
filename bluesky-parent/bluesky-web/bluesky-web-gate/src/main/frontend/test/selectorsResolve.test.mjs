@@ -29,6 +29,8 @@ const SCRIPT_CREATED = new Map([
 	["data-year-toggle", "stockSimulator.ts 가 표 행을 만들며 붙인다"],
 	["data-scenario-id", "stockSimulator.ts 가 시나리오 버튼을 만들며 붙인다"],
 	["poeTreeEvalStale", "poe/tree.ts 가 만드는 표식"],
+	["data-row-select-checkbox", "common.ts 가 선택 가능한 행(data-row-select)의 첫 칸에 만들어 넣는 체크박스"],
+	["data-page-section-nav", "common.ts 가 만드는 화면 안 구역 막대(구역 표식은 data-page-section)"],
 ]);
 
 /** 읽기만 하고 아무도 만들지 않는 것으로 확인된 것. */

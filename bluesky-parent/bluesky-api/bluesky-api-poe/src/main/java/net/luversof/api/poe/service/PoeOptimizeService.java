@@ -1968,8 +1968,28 @@ public class PoeOptimizeService {
    * 무관하게 동작한다.
    */
   /** ehp 목표의 지표 — 기본 "totalehp"(현행). "maxhit" 이면 최약 최대피격(단일 피격 생존) 기준. */
+  /**
+   * ehp 목표의 지표 — 기본 maxhit-all(사용자 판정 2026-09-10).
+   *
+   * <p>종전 totalehp 는 경감+회복이 들어오는 피해를 넘는 순간 <b>발산</b>해 생명 8,368 · ES 2,929 짜리 얇은 빌드가 435,959,900 을
+   * 표방했다. maxhit-all 은 다섯 피해 유형 중 <b>최악</b>을 기준으로 한 단일 피격 생존이라 문턱 발산이 없다.
+   *
+   * <p>⚠ 이 상수는 ehp 목표에만 쓰이는 게 아니다 — dps·balanced 목표는 동점 판정의 <b>보조 지표</b>로 "ehp" 를 쓴다
+   * (treeSecondaryKey · tieSecondaryKey). 그래서 지표를 바꾸면 그 동점 판정도 바뀐다. 실측(2026-09-10): 15 축(balanced)
+   * 최종값은 전부 불변, baseline 의 ed(dps)만 5,621,756 -> 5,619,456(-0.04%) 이동. 문턱 안이고 설명되는 파급이라 수용한다.
+   */
   private static final String EHP_METRIC =
-      System.getenv().getOrDefault("POE_EHP_METRIC", "totalehp");
+      System.getenv().getOrDefault("POE_EHP_METRIC", "maxhit-all");
+
+  /**
+   * ehp 목표에서 보조젬을 받을 때 지켜야 할 EHP 하한(기준값 대비). dps 로 고르되 이 아래로 떨어지면 거부한다 — "기능하는 탱커"의 정의.
+   *
+   * <p>사용자 판정(2026-09-10): 종전 ehp 목표는 보조젬 단계를 통째로 건너뛰어 DPS 7,432 짜리, 즉 아무것도 못 죽이는 빌드를 냈다. 지표도
+   * totalehp -> maxhit-all 로 함께 바꿨다(totalehp 는 경감+회복이 들어오는 피해를 넘는 순간 발산해 생명 8,368 짜리 빌드가 3.7 억을
+   * 표방했다).
+   */
+  private static final double EHP_SUPPORT_FLOOR =
+      Double.parseDouble(System.getenv().getOrDefault("POE_EHP_SUPPORT_FLOOR", "0.98"));
 
   /** 저주(신성모독) 층 on/off — 귀속 실험용. 기본 on(순수 추가 경로만, 교환은 POE_CURSE_SWAP 참고). */
   private static final boolean CURSE_ENABLED =
@@ -3333,8 +3353,19 @@ public class PoeOptimizeService {
                 current);
       }
 
-      // ── 2) 보조젬 greedy (순수 EHP 목표에서만 생략 — dps/balanced 는 실행) ──
-      if (!"ehp".equals(objective)) {
+      // ── 2) 보조젬 greedy ──
+      //   ehp 목표도 **실행한다**(사용자 판정 2026-09-10). 종전엔 통째로 건너뛰어 보조젬이 하나도 없는
+      //   결과가 나왔고, 그건 "EHP 3.7억을 표방하지만 DPS 7,432 라 아무것도 못 죽이는" 빌드였다.
+      //   ehp 에서는 **dps 로 고르되 EHP 가 떨어지는 후보는 거부**한다 = 기능하는 탱커.
+      //   거부는 evalBatch 의 validator 로 하므로 **엔진 호출이 늘지 않는다**(이미 계산한 원시 스탯 재사용).
+      final boolean ehpSupportRun = "ehp".equals(objective);
+      final String supportKey = ehpSupportRun ? "dps" : objectiveKey;
+      final double ehpSupportFloor =
+          ehpSupportRun ? objectiveOf(baselineValues, "ehp") * EHP_SUPPORT_FLOOR : 0d;
+      final java.util.function.BiPredicate<PoeGem, Map<String, Double>> ehpSupportGuard =
+          ehpSupportRun ? (candidate, raw) -> objectiveOf(raw, "ehp") >= ehpSupportFloor : null;
+      double supportCurrent = ehpSupportRun ? objectiveOf(baselineValues, "dps") : current;
+      {
         enterPhase("supports");
         List<PoeGem> candidates =
             poeGemDataService.search(null, "support", "all", null).stream()
@@ -3361,7 +3392,8 @@ public class PoeOptimizeService {
                         ascendancyNodes,
                         allocated,
                         rankingItems),
-                objectiveKey);
+                supportKey,
+                ehpSupportGuard);
 
         List<PoeGem> shortlist =
             firstRound.entrySet().stream()
@@ -3390,19 +3422,20 @@ public class PoeOptimizeService {
                               ascendancyNodes,
                               allocated,
                               rankingItems),
-                      objectiveKey);
+                      supportKey,
+                      ehpSupportGuard);
           Map.Entry<PoeGem, Double> best =
               round.entrySet().stream()
                   .filter(entry -> shortlist.contains(entry.getKey()))
                   .max(Map.Entry.comparingByValue())
                   .orElse(null);
-          if (best == null || best.getValue() <= current * 1.005) {
+          if (best == null || best.getValue() <= supportCurrent * 1.005) {
             break;
           }
           supports.add(best.getKey());
           shortlist.remove(best.getKey());
-          current = best.getValue();
-          log("보조젬 채택: " + koName(best.getKey()) + " → " + format(current));
+          supportCurrent = best.getValue();
+          log("보조젬 채택: " + koName(best.getKey()) + " → " + format(supportCurrent));
           // 채택 라운드의 상위 후보를 함께 남긴다 — "실빌드가 쓰는 젬이 우리 평가에서 몇 위였나" 를
           //   추측이 아니라 순위로 답하기 위한 것(번개 화살 대표는 신기루 궁수·삼위일체를 쓰는데 우리는 미채택).
           log(
@@ -3412,6 +3445,36 @@ public class PoeOptimizeService {
                       .limit(6)
                       .map(e -> koName(e.getKey()) + " " + format(e.getValue()))
                       .collect(java.util.stream.Collectors.joining(" · ")));
+        }
+        // 비-ehp 목표는 supportCurrent 가 곧 진행값이다 — **여기서 current 로 되돌리지 않으면**
+        //   이후 단계가 낡은 기준값과 비교해 채택 판정이 전부 틀어진다(실측 2026-09-10: 이 한 줄이 빠져
+        //   피부 열상 24,359,849 -> 6,252,901(-74%) · 정전기 -9.1% · 회오리 -4.8% 회귀. 게이트가 잡았다).
+        if (!ehpSupportRun) {
+          current = supportCurrent;
+        }
+        // ehp 는 dps 로 골랐으므로 진행값을 **실제 목표로 되돌린다** — 이후 단계가 current 를 ehp 로 읽는다.
+        //   비교 문맥을 맞추기 위해 이 단계가 쓰던 rankingItems 로 잰다.
+        if (ehpSupportRun && !supports.isEmpty()) {
+          Map<String, Double> afterSupports =
+              poePobEngineService.calculateValues(
+                  buildXml(
+                      gem,
+                      supports,
+                      className,
+                      ascendancy,
+                      ascendancyNodes,
+                      allocated,
+                      rankingItems));
+          evalCount.incrementAndGet();
+          current = objectiveOf(afterSupports, objectiveKey);
+          log(
+              "보조젬 후 목표값 재산정: "
+                  + format(current)
+                  + " (보조젬 "
+                  + supports.size()
+                  + "개 · dps "
+                  + format(supportCurrent)
+                  + ")");
         }
       }
 
@@ -10399,6 +10462,7 @@ public class PoeOptimizeService {
                               node.id(), node.name(), node.nameKo(), node.ascendancy()))
                   .toList(),
               unmodeledAscendancyWarning(ascendancy),
+              guardianItemPicks(gem),
               tierComparisons,
               scenarioMatrix,
               defenseHits,
@@ -11733,6 +11797,111 @@ public class PoeOptimizeService {
     }
     return new PoeOptimizeResult.UnmodeledAscendancy(
         ascendancy, summary.unmodeled(), summary.total());
+  }
+
+  /**
+   * 아이템을 <b>직접 장착하는</b> 미니언 스킬인가(수호자 기동 계열).
+   *
+   * <p>PoB 는 미니언에게 {@code skillMinionItemSet} 이 가리키는 아이템 세트를 입히는데, 지정이 없으면 {@code
+   * itemSetOrderList[1]} = <b>플레이어 자신의 세트</b>로 폴백한다(CalcActiveSkill.lua:742-745). 그러면 수호자가 플레이어의
+   * 엔드게임 장비를 통째로 입는다 — 인게임에선 불가능하다(희생시킨 아이템만 입는다). 실측(2026-09-10): 지정 없음 133,710 vs 빈 세트 71,696 =
+   * <b>86% 부풀림</b>. 같은 대조에서 망령은 1,981,662 로 불변이라 이 폴백이 실제로 장비를 입히는 건 수호자 계열뿐임이 확인됐다.
+   */
+  private boolean isItemWearingMinionSkill(PoeGem gem) {
+    return gem != null
+        && gem.name() != null
+        && (gem.name().startsWith("Animate Guardian") || gem.name().startsWith("Animate Weapon"));
+  }
+
+  /**
+   * 수호자에게 줄 표준 장비 — 플레이어 장비 상속을 끊고 <b>제 몫의</b> 장비를 준다.
+   *
+   * <p>실측(2026-09-10): 아무것도 안 주면(빈 세트) 71,696, 표준 무기만 줘도 102,697 로 +43% 다. 무기가 수호자 피해의 거의 전부라 방어구는
+   * 생존용으로만 붙인다(피해 불변 확인: 도끼만 102,697 = 도끼+갑옷 102,697).
+   */
+  /**
+   * 수호자에게 줄 표준 장비 — {슬롯, 슬롯 한글, 아이템명, 베이스, 모드}.
+   *
+   * <p>실측(2026-09-10): 아무것도 안 주면(빈 세트) 71,696, 표준 무기만 줘도 102,697 로 +43% 다. 무기가 수호자 피해의 거의 전부라 (전용
+   * 무기를 빼면 343,228 -> 70,109 = -80%) 방어구는 생존용으로만 붙인다.
+   */
+  private static final String[][] GUARDIAN_KIT = {
+    {
+      "Weapon 1",
+      "무기",
+      "Sim Guardian Weapon",
+      "Vaal Axe",
+      "250% increased Physical Damage\nAdds 60 to 110 Physical Damage\n25% increased Attack Speed\n+400 to Accuracy Rating"
+    },
+    {
+      "Body Armour",
+      "갑옷",
+      "Sim Guardian Body",
+      "Astral Plate",
+      "+150 to maximum Life\n+600 to Armour"
+    },
+    {
+      "Helmet",
+      "투구",
+      "Sim Guardian Helm",
+      "Eternal Burgonet",
+      "+120 to maximum Life\n+45% to Fire Resistance"
+    },
+    {
+      "Gloves",
+      "장갑",
+      "Sim Guardian Gloves",
+      "Titan Gauntlets",
+      "+100 to maximum Life\n+45% to Cold Resistance"
+    },
+    {
+      "Boots",
+      "장화",
+      "Sim Guardian Boots",
+      "Titan Greaves",
+      "+100 to maximum Life\n+45% to Lightning Resistance"
+    },
+  };
+
+  /** 수호자 전용 아이템 세트 XML(ItemSet id=2) — 플레이어 장비 상속을 끊는다. */
+  private String guardianItemSet(int firstItemId) {
+    StringBuilder items = new StringBuilder();
+    StringBuilder slots = new StringBuilder();
+    int id = firstItemId;
+    for (String[] piece : GUARDIAN_KIT) {
+      id++;
+      items
+          .append("<Item id=\"")
+          .append(id)
+          .append("\">\nRarity: RARE\n")
+          .append(piece[2])
+          .append("\n")
+          .append(piece[3])
+          .append("\nItem Level: 84\nImplicits: 0\n")
+          .append(piece[4])
+          .append("\n</Item>");
+      slots
+          .append("<Slot name=\"")
+          .append(piece[0])
+          .append("\" itemId=\"")
+          .append(id)
+          .append("\"/>");
+    }
+    return items + "<ItemSet id=\"2\">" + slots + "</ItemSet>";
+  }
+
+  /** 결과 표시용 — 수호자가 실제로 장착한 장비 목록. 수호자 계열이 아니면 빈 목록. */
+  private List<PoeOptimizeResult.MinionItem> guardianItemPicks(PoeGem gem) {
+    if (!isItemWearingMinionSkill(gem)) {
+      return List.of();
+    }
+    List<PoeOptimizeResult.MinionItem> picks = new ArrayList<>();
+    for (String[] piece : GUARDIAN_KIT) {
+      picks.add(
+          new PoeOptimizeResult.MinionItem(
+              piece[0], piece[1], piece[3], List.of(piece[4].split("\n"))));
+    }
+    return List.copyOf(picks);
   }
 
   /** 망령 계열 스킬인가 — 변형젬("Raise Spectre of ...")도 포함한다. */
@@ -13840,6 +14009,9 @@ public class PoeOptimizeService {
             currentSpectre != null && isSpectreSkill(gem)
                 ? " skillMinion=\"" + currentSpectre + "\""
                 : "")
+        // 수호자 계열은 **제 몫의 아이템 세트**를 가리킨다 — 지정하지 않으면 PoB 가 플레이어 세트로 폴백해
+        //   수호자가 플레이어의 엔드게임 장비를 입는다(실측 86% 부풀림).
+        .append(isItemWearingMinionSkill(gem) ? " skillMinionItemSet=\"2\"" : "")
         .append(" nameSpec=\"")
         .append(gem.name())
         // 메인 스킬 젬 21/20 — 실빌드 96+ 의 표준(부패 +1). 나머지 엔드게임 전제(20/20 보조·최상위 레어·
@@ -14073,6 +14245,9 @@ public class PoeOptimizeService {
     // Items 섹션 자체를 활성화하지 않아 트리 Sockets 로 연결한 주얼이 통째로 무시된다(트리 평가 경로에서 발견).
     if (itemId > 0) {
       xml.append("<ItemSet id=\"1\">").append(slots).append("</ItemSet>");
+    }
+    if (isItemWearingMinionSkill(gem)) {
+      xml.append(guardianItemSet(810));
     }
     xml.append("</Items>");
     // 적 시나리오 (DPS/EHP 계산에 반영) + 전투 버프 가정(충전+돌격)

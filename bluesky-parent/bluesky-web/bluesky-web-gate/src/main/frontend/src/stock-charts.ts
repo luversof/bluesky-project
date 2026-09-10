@@ -25,6 +25,7 @@ interface StockChartsAPI {
 	formatNumber?: (value: any) => string;
 	formatCurrency?: (value: any) => string;
 	formatCompactNumber?: (value: any) => string;
+	resizeIfChanged?: (chart: any) => boolean;
 }
 
 const StockCharts: StockChartsAPI = {};
@@ -143,6 +144,29 @@ function compactNumber(value: any): string {
 
 	return sign + new Intl.NumberFormat(locale).format(abs);
 }
+
+// htmx 교체 뒤 빈 차트 보정용 resize() 는 크기가 실제로 달라졌을 때만 부른다.
+// 실측 2026-09-10(qa/chart-resize-trace.cjs): Chart.js 4.5 retinaScale 은 컨테이너 폭을 0.1 단위로 반올림(570.4)해 정수 canvas.width(570)와
+// 비교하므로 소수 폭에선 resize() 마다 '바뀌었다' 고 보고 전부 다시 그렸다(배당 780점 ~100ms, 종목 주가 3,198점 ~256ms @4x CPU).
+function chartSizeChanged(chart: any): boolean {
+	const canvas = chart?.canvas as HTMLCanvasElement | undefined;
+	const parent = canvas?.parentElement;
+	if (!canvas || !parent) return false;
+	// 백킹 스토어(canvas.width)가 기대 장치 크기와 다르면(교체 직후 기본 300×150 등) 반드시 다시 잡는다.
+	const dpr = chart.currentDevicePixelRatio || 1;
+	if (canvas.width !== Math.floor((chart.width || 0) * dpr) || canvas.height !== Math.floor((chart.height || 0) * dpr)) return true;
+	if (Math.floor(parent.clientWidth) !== Math.floor(chart.width || 0)) return true;
+	const keepRatio = chart.options && chart.options.maintainAspectRatio !== false;
+	return !keepRatio && Math.floor(parent.clientHeight) !== Math.floor(chart.height || 0);
+}
+function resizeIfChanged(chart: any): boolean {
+	if (!chart || typeof chart.resize !== "function") return false;
+	if (!chartSizeChanged(chart)) return false;
+	chart.resize();
+	return true;
+}
+StockCharts.resizeIfChanged = resizeIfChanged;
+(window as any).__chartResizeInternals = { chartSizeChanged, resizeIfChanged };
 
 StockCharts.getLocale = function () {
 	return resolveLocale();
@@ -305,7 +329,10 @@ StockCharts.initMonthlyFromData = function (
 		try {
 			existingInstance.destroy();
 		} catch (e) {}
-	const gridColor = "rgba(128,128,128,0.1)";
+	const gridColor = "rgba(128,128,128,0.14)";
+	// 격자가 실선 두 방향으로 깔리면 자료보다 격자가 먼저 보인다 - 세로선은 지우고 가로선만 점선으로 남긴다.
+	const gridX = { display: false } as any;
+	const gridY = { color: gridColor, drawTicks: false, borderDash: [4, 4] } as any;
 	const inst = new Chart(ctx, {
 		type: "bar",
 		data: {
@@ -315,14 +342,14 @@ StockCharts.initMonthlyFromData = function (
 					label: appMessage("stockLabelBuy", "Buy"),
 					data: m.buyData,
 					backgroundColor: "rgba(239,68,68,0.7)",
-					borderRadius: 3,
+					borderRadius: 6,
 					maxBarThickness: 36,
 				},
 				{
 					label: appMessage("stockLabelSell", "Sell"),
 					data: m.sellData,
 					backgroundColor: "rgba(59,130,246,0.7)",
-					borderRadius: 3,
+					borderRadius: 6,
 					maxBarThickness: 36,
 				},
 				// 실현손익 선(오른쪽 축). 월별 표에만 있던 값을 차트에도 얹어, 표와 차트가 같은 숫자를 두 번 말하는
@@ -337,11 +364,11 @@ StockCharts.initMonthlyFromData = function (
 								order: 0,
 								borderColor: "rgba(189,44,56,0.9)",
 								backgroundColor: "rgba(189,44,56,0.9)",
-								borderWidth: 2,
-								pointRadius: 3,
+								borderWidth: 2.5,
+								pointRadius: 0,
 								pointHoverRadius: 5,
 								spanGaps: true,
-								tension: 0.2,
+								tension: 0.35,
 								fill: false,
 							},
 						]
@@ -372,9 +399,9 @@ StockCharts.initMonthlyFromData = function (
 				},
 			},
 			scales: {
-				x: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
+				x: { grid: gridX, ticks: { font: { size: 10 } } },
 				y: {
-					grid: { color: gridColor },
+					grid: gridY,
 					ticks: {
 						font: { size: 10 },
 						callback: (v: any) => compactNumber(v),
@@ -471,11 +498,13 @@ StockCharts.initDonutFromData = function (
 				const pct = total > 0 ? ((d.data[i] / total) * 100).toFixed(1) : "0.0";
 				const raw = d.rawData[i];
 				const sign = isProfitMode ? (raw >= 0 ? "\u25b2 " : "\u25bc ") : "";
+				// 손익 부호 색은 표와 같은 테마 토큰(text-error/text-info)으로. 인라인 rgba(239,68,68,.9)+opacity .75 는
+				// 라이트에서 2.52:1 이었다(axe 실측 2026-09-09, 매매 화면 '실현손익' 도넛 범례 7개 전부).
 				const valClass = isProfitMode
 					? raw >= 0
-						? "color:rgba(239,68,68,0.9)"
-						: "color:rgba(59,130,246,0.9)"
-					: "";
+						? "text-error"
+						: "text-info"
+					: "opacity-75";
 				return (
 					'<div class="flex items-center gap-1 mb-0.5">' +
 					'<span style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' +
@@ -486,7 +515,7 @@ StockCharts.initDonutFromData = function (
 					'">' +
 					l +
 					"</span>" +
-					'<span style="flex-shrink:0;opacity:0.75;' +
+					'<span class="shrink-0 ' +
 					valClass +
 					'">' +
 					sign +
@@ -715,7 +744,7 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 			animation: animate ? { duration: 600 } : false,
 			normalized: true,
 			elements: {
-				line: { tension: 0 },
+				line: { tension: 0.3 },
 				point: { radius: 0, hitRadius: 10, hoverRadius: 4 },
 			},
 			layout: { padding: { top: 20, bottom: 5 } },
@@ -810,5 +839,66 @@ StockCharts.createHoldingsChart = function (
 	);
 };
 
+// 축 눈금·범례 글자색을 테마 본문색에 맞춘다. 실측 2026-09-09(qa/chart-tick-contrast.cjs): Chart.js 기본 #666 은 다크 카드 배경
+// rgb(15,22,35) 위에서 3.15:1 로 11px 글자 기준(4.5:1)에 못 미쳤다(라이트 5.74:1). --color-base-content 는 oklch 라 1px 캔버스로 rgb 를
+// 얻고 alpha .75 로 본문보다 한 단계 옅게 쓴다. 테마 토글(html[data-theme]) 때 살아 있는 차트도 다시 그린다.
+function resolveCssColor(css: string): [number, number, number] | null {
+	try {
+		const cv = document.createElement("canvas") as HTMLCanvasElement;
+		cv.width = cv.height = 1;
+		const x = cv.getContext && (cv.getContext("2d") as any);
+		if (!x) return null;
+		x.fillStyle = "#010203";
+		x.fillStyle = css;
+		if (x.fillStyle === "#010203" && css.trim().toLowerCase() !== "#010203") return null;
+		x.fillRect(0, 0, 1, 1);
+		const d = x.getImageData(0, 0, 1, 1).data;
+		return [d[0], d[1], d[2]];
+	} catch (e) {
+		return null;
+	}
+}
+function chartTextColor(): string {
+	let raw = "";
+	try {
+		raw = getComputedStyle(document.documentElement).getPropertyValue("--color-base-content").trim();
+	} catch (e) {}
+	if (!raw) return "#666";
+	const rgb = resolveCssColor(raw);
+	return rgb ? "rgba(" + rgb.join(",") + ",0.75)" : raw;
+}
+function applyChartTheme(chartLib: any = (globalThis as any).Chart): string | null {
+	if (!chartLib || !chartLib.defaults) return null;
+	const c = chartTextColor();
+	chartLib.defaults.color = c;
+	const instances: any[] = chartLib.instances ? Object.values(chartLib.instances) : [];
+	// 살아 있는 차트는 defaults 만 바꿔서는 다시 칠해지지 않는다(실측: 테마 토글 뒤 scale.options.ticks.color 가 옛 값 유지) -
+	// 눈금·축 제목·범례 자리에 직접 써 넣고 다시 그린다.
+	for (const chart of instances) {
+		try {
+			chart.options.color = c;
+			for (const scale of Object.values(chart.options.scales || {}) as any[]) {
+				if (scale && scale.ticks) scale.ticks.color = c;
+				if (scale && scale.title) scale.title.color = c;
+			}
+			const labels = chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels;
+			if (labels) labels.color = c;
+			chart.update("none");
+		} catch (e) {}
+	}
+	return c;
+}
+applyChartTheme();
+// 차트 텍스트 대안 플러그인(common.ts 정의). 이 파일은 chart.umd 뒤에 로드되므로 여기서 한 번 등록하면 이후 만드는 차트 전부에 적용된다.
+try {
+	const summaryPlugin = (globalThis as any).__chartSummaryInternals?.chartSummaryPlugin;
+	if (summaryPlugin && (globalThis as any).Chart?.register) (globalThis as any).Chart.register(summaryPlugin);
+} catch (e) {}
+try {
+	if (typeof MutationObserver !== "undefined" && document.documentElement) {
+		new MutationObserver(() => applyChartTheme()).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+	}
+} catch (e) {}
+(window as any).__chartThemeInternals = { resolveCssColor, chartTextColor, applyChartTheme };
 // Attach to window so templates can use <script src="/js/stock-charts.js"></script>
 (window as any).StockCharts = StockCharts;

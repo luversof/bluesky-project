@@ -22,6 +22,9 @@
 @param int trendPointCount = 0
 @param java.time.LocalDate priceBasisDate = null
 @param StockCoreHoldingUtil.Split coreHoldingSplit = null
+@param net.luversof.web.gate.stock.dto.response.PeriodSummary periodSummary = null
+@param java.time.LocalDate periodSummaryFrom = null
+@param java.time.LocalDate periodSummaryTo = null
 
 !{
 	String currentTotalAssetLabel = MessageUtil.getMessage("stock.summary.label.current.total.asset");
@@ -35,6 +38,14 @@
 	String cumulativeRealizedIncomeLabel = MessageUtil.getMessage("stock.summary.label.cumulative.realized.income");
 	String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");
 	String cumulativeDividendLabel = MessageUtil.getMessage("stock.summary.label.cumulative.dividend");
+	String periodTitleLabel = MessageUtil.getMessage("stock.summary.period.title");
+	String periodTradeLabel = MessageUtil.getMessage("stock.summary.period.trade");
+	String periodRealizedLabel = MessageUtil.getMessage("stock.summary.period.realized");
+	String periodCostLabel = MessageUtil.getMessage("stock.summary.period.cost");
+	String periodDividendLabel = MessageUtil.getMessage("stock.summary.period.dividend");
+	String periodBuyLabel = MessageUtil.getMessage("stock.trade.label.buy");
+	String periodSellLabel = MessageUtil.getMessage("stock.trade.label.sell");
+	java.util.function.Function<Long, String> periodCount = n -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), n);
 	String totalCombinedProfitLabel = MessageUtil.getMessage("stock.summary.label.total.combined.profit");
 	String calculationDetailsLabel = MessageUtil.getMessage("stock.summary.label.calculation.details");
 	String combinedAdjustmentLabel = MessageUtil.getMessage("stock.summary.label.combined.adjustment");
@@ -80,10 +91,10 @@
 
 	<!-- 히어로: 총자산(주 지표) 카드 하나 + 자산 추이 미니 차트 -->
 	<div class="grid grid-cols-1 ${hasTrendSeries ? "lg:grid-cols-2" : ""} gap-3">
-		@template._components.ui.card(bodyClass = "p-5", body = @`
+		@template._components.ui.card(cssClass = "hero-card", bodyClass = "p-5", body = @`
 			<div class="flex items-center gap-1 text-sm text-base-content/60">
 				<span>${currentTotalAssetLabel}</span>
-				<span class="tooltip tooltip-bottom" data-tip="${MessageUtil.getMessage("stock.summary.tooltip.total.asset")}">
+				<span class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${MessageUtil.getMessage("stock.summary.tooltip.total.asset")}" data-tip="${MessageUtil.getMessage("stock.summary.tooltip.total.asset")}">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current opacity-60"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
 				</span>
 			</div>
@@ -104,7 +115,7 @@
 					<span>${totalCombinedProfitLabel}</span>
 					<%-- 시작점 정렬은 트리거 위치에 따라 오른쪽으로 밀려 좁은 화면에서 화면 밖으로 나간다
 						 (실측: 영어 라벨이 길어 375px 에서 14px 넘침). 중앙 정렬로 둔다. --%>
-					<div class="tooltip tooltip-bottom shrink-0">
+					<div class="tooltip tooltip-bottom shrink-0" tabindex="0">
 						<div class="tooltip-content z-[20] w-64 sm:w-72 lg:w-80 max-w-[calc(100vw-2rem)] rounded-box bg-neutral text-neutral-content shadow-lg">
 							<div class="space-y-1 text-left text-xs leading-5">
 								<div class="font-semibold mb-1">${calculationDetailsLabel}</div>
@@ -164,7 +175,7 @@
 				</div>
 				<div class="text-right">
 					<span class="text-xl font-bold amount-value ${combinedColor}" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalCombinedProfit))}</span>
-					<span class="ml-2 text-sm font-semibold ${combinedColor}" title="${combinedRateBasisText}">${String.format("%+.2f%%", combinedRate)}</span>
+					<span class="ml-2 text-sm font-semibold ${combinedColor}" title="${combinedRateBasisText}">${StockFormatUtil.signedPct(combinedRate, 2)}</span>
 				</div>
 			</div>
 		`)
@@ -176,7 +187,7 @@
 				<a href="/stock/asset-growth" class="link link-hover text-xs shrink-0 tap-target-24">${assetGrowthMenuLabel} →</a>
 			</div>
 			<div class="relative w-full flex-1" style="min-height:160px">
-				<canvas id="dashboardTrendChart" class="amount-chart"></canvas>
+				<canvas id="dashboardTrendChart" role="img" aria-label="${trendChartTitleLabel}" class="amount-chart"></canvas>
 			</div>
 		`)
 		@endif
@@ -190,20 +201,26 @@
 			label = currentEvaluationProfitLabel,
 			value = StockFormatUtil.compactKrw(currentEvaluationProfit.longValue()),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentEvaluationProfit)),
-			sub = returnRateLabel + " " + String.format("%+.2f%%", unrealizedRate),
+			sub = returnRateLabel + " " + StockFormatUtil.signedPct(unrealizedRate, 2),
 			tone = evalColor,
+			icon = "trend-up",
+			accent = evalColor.contains("loss") ? "loss" : "profit",
 			href = "/stock/analytics")
 		@template._components.ui.statCard(
 			label = realizedProfitLabel,
 			value = StockFormatUtil.compactKrw(totalRealizedProfit.longValue()),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalRealizedProfit)),
 			tone = realizedColor,
+			icon = "exchange",
+			accent = realizedColor.contains("loss") ? "loss" : "profit",
 			href = "/stock/trade")
 		@template._components.ui.statCard(
 			label = cumulativeDividendLabel,
 			value = StockFormatUtil.compactKrw(totalDividend.longValue()),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalDividend)),
 			tone = "text-dividend",
+			icon = "gift",
+			accent = "dividend",
 			href = "/stock/dividend")
 		@template._components.ui.statCard(
 			label = winRateLabel,
@@ -211,8 +228,61 @@
 			valueTitle = winRateBasisText,
 			sub = profitableStockRatioLabel,
 			amount = false,
+			icon = "target",
+			accent = "primary",
 			href = "/stock/analytics")
 	</div>
+
+	<%-- 올해 요약. 전기간 합계만 있던 탓에 "올해 얼마 벌었나" 는 매매·배당·활동·자산성장 네 화면을 돌아야
+	     알 수 있었다(실측 2026-09-10). api-stock 의 집계 한 줄(268 바이트)을 그대로 쓴다.
+	     집계 호출이 실패하면 모델에 값이 없고 이 줄은 통째로 빠진다 - 0 으로 보여 오해를 만들지 않는다. --%>
+	@if(periodSummary != null)
+		!{ java.math.BigDecimal periodTradeCost = (periodSummary.tradeFee() != null ? periodSummary.tradeFee() : java.math.BigDecimal.ZERO).add(periodSummary.tradeTax() != null ? periodSummary.tradeTax() : java.math.BigDecimal.ZERO); }
+		<div class="mt-4">
+			<div class="mb-2 flex items-baseline gap-2">
+				<h2 class="text-sm font-bold" data-page-section>${periodTitleLabel}</h2>
+				@if(periodSummaryFrom != null && periodSummaryTo != null)
+					<span class="text-xs text-base-content/60">${periodSummaryFrom.toString()} ~ ${periodSummaryTo.toString()}</span>
+				@endif
+			</div>
+			<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+				<%-- 값은 매수 금액이다. "매매" 라고만 적으면 매수+매도 합으로 읽힌다 - 라벨을 매수로 두고
+				     매도 금액과 건수를 보조 문구에 함께 적는다. --%>
+				@template._components.ui.statCard(
+					label = periodTradeLabel + " · " + periodBuyLabel,
+					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.buyAmount())),
+					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodSummary.buyAmount())) + " (" + periodCount.apply(periodSummary.buyCount()) + ")",
+					sub = periodSellLabel + " " + StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.sellAmount())) + " · " + periodCount.apply(periodSummary.sellCount()),
+					icon = "exchange",
+					accent = "neutral",
+					href = "/stock/trade")
+				@template._components.ui.statCard(
+					label = periodRealizedLabel,
+					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.realizedProfit())),
+					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodSummary.realizedProfit())),
+					tone = periodSummary.realizedProfit() != null && periodSummary.realizedProfit().signum() < 0 ? "text-loss" : "text-profit",
+					icon = "trend-up",
+					accent = periodSummary.realizedProfit() != null && periodSummary.realizedProfit().signum() < 0 ? "loss" : "profit",
+					href = "/stock/trade")
+				@template._components.ui.statCard(
+					label = periodDividendLabel,
+					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.dividendNet())),
+					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodSummary.dividendNet())),
+					sub = periodCount.apply(periodSummary.dividendCount()),
+					tone = "text-dividend",
+					icon = "gift",
+					accent = "dividend",
+					href = "/stock/dividend")
+				@template._components.ui.statCard(
+					label = periodCostLabel,
+					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodTradeCost)),
+					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodTradeCost)),
+					icon = "wallet",
+					accent = "neutral",
+					href = "/stock/trade")
+			</div>
+		</div>
+	@endif
 
 	<%-- 핵심 보유 한 종목 vs 나머지. 한 종목이 평가액의 절반을 넘을 때만 나온다(StockCoreHoldingUtil). --%>
 	@if(coreHoldingSplit != null)
@@ -237,7 +307,7 @@
 				<span class="text-xs text-base-content/60">${coreNote}</span>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-xs w-full">
+				<table class="table table-xs w-full" aria-label="${coreTitle}">
 					<thead>
 						<tr>
 							<th></th>

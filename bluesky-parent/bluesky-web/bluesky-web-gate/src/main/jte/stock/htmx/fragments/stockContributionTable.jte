@@ -3,6 +3,7 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.util.StockContributionUtil.Contribution
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param List<Contribution> stockContributions = java.util.List.of()
 @param Contribution stockContributionTotal = null
@@ -40,7 +41,7 @@
 				<p class="text-xs text-base-content/60">${description}</p>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-zebra table-sm whitespace-nowrap" data-stock-contribution>
+				<table class="table table-zebra table-sm whitespace-nowrap" data-stock-contribution aria-label="${title}">
 					<thead>
 						<tr>
 							<th scope="col">${stockLabel}</th>
@@ -75,7 +76,7 @@
 								<td class="text-right tabular-nums"><span class="amount-value font-semibold ${up ? "text-profit" : "text-loss"}">${up ? "+" : "-"}&#8361;${amountFormat.format(row.contribution().abs())}</span></td>
 								<td class="text-right tabular-nums">
 									@if(sharePct != null)
-										<span class="text-base-content/70">${String.format("%.1f%%", sharePct)}</span>
+										<span class="text-base-content/70">${StockFormatUtil.pct(sharePct, 1)}</span>
 									@else
 										<span class="text-base-content/30">-</span>
 									@endif
@@ -120,7 +121,7 @@
 								<td class="text-right tabular-nums"><span class="amount-value ${othersUp ? "text-profit" : "text-loss"}">${othersUp ? "+" : "-"}&#8361;${amountFormat.format(stockContributionOthers.contribution().abs())}</span></td>
 								<td class="text-right tabular-nums">
 									@if(othersShare != null)
-										<span>${String.format("%.1f%%", othersShare)}</span>
+										<span>${StockFormatUtil.pct(othersShare, 1)}</span>
 									@else
 										<span class="text-base-content/30">-</span>
 									@endif

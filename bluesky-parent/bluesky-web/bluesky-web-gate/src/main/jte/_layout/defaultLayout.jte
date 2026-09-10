@@ -28,6 +28,13 @@
 			if (localStorage.getItem('sidebarCollapsed') === 'true') document.documentElement.classList.add('sidebar-collapsed');
 		})();
 	</script>
+	<%-- 본문 폰트. 한글 웹폰트가 없어 윈도우에서는 맑은 고딕으로 떨어졌다(실측 2026-09-10).
+	     자체 호스팅은 정적 파일이 3.2MB 늘고, Google Fonts 는 외부 두 곳을 열어야 했다.
+	     Pretendard 가 같은 동적 서브셋을 CDN 으로 제공해 그것을 쓴다(사용자 결정) - 정적 0MB, 외부 한 곳.
+	     CSS 와 폰트 파일이 모두 cdn.jsdelivr.net 에서 오므로 CSP 의 style-src·font-src 에 그 한 곳만 있다. --%>
+	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+	<link rel="stylesheet" as="style" crossorigin
+		href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
 	<link href="/main.css" rel="stylesheet" />
 	<script src="/js/vendor/htmx.min.js"></script>
 	<script src="/js/vendor/json-enc.js"></script>
@@ -80,6 +87,7 @@
 		data-common-button-reset="${MessageUtil.getMessage("common.button.reset")}"
 		data-common-message-load-error="${MessageUtil.getMessage("common.message.load.error")}"
 		data-common-message-action-success="${MessageUtil.getMessage("common.message.action.success")}"
+		data-common-message-action-error="${MessageUtil.getMessage("common.message.action.error")}"
 		data-stock-label-buy="${MessageUtil.getMessage("stock.trade.label.buy")}"
 		data-stock-label-sell="${MessageUtil.getMessage("stock.trade.label.sell")}"
 		data-stock-label-realized-profit="${MessageUtil.getMessage("stock.profit.realized")}"
@@ -97,7 +105,9 @@
 
 	<%-- 본문 랜드마크. 없으면 화면 낭독기에서 "본문으로 건너뛰기"가 동작하지 않는다
 	     (실측: 주식 8개 화면 모두 main 랜드마크 0개). --%>
-	<main id="mainContent" tabindex="-1">
+	<%-- 3화면을 넘는 긴 화면은 화면 안에서 구역으로 뛸 방법이 없었다(실측 2026-09-10: 배당 7.2화면·매매 5.4화면에
+	     화면 안 이동 링크는 건너뛰기 링크 1개뿐). common.js 가 data-page-section 을 모아 구역 막대를 만든다. --%>
+	<main id="mainContent" tabindex="-1" data-section-nav-label="${io.github.luversof.boot.context.support.MessageUtil.getMessage("stock.page.sections")}">
 		${content}
 	</main>
 	
@@ -151,8 +161,20 @@
 			var cfg = document.getElementById('app-config');
 			return (cfg && cfg.dataset[key]) || fallback;
 		}
-		function showLoadError() {
-			showToast(cfgMessage('commonMessageLoadError', 'Failed to load.'), 'error', 5000);
+		// 401(세션 끊김)은 안내할 것이 아니라 로그인으로 보낼 일이다 - 페이지·조각·JSON 경로와 같은 /login?redirectUrl= 규약.
+		// 실측 2026-09-09: 관리 화면의 갱신 버튼(hx-post)이 401 을 받으면 "데이터 로드 중 오류" 토스트만 뜨고 갈 길이 없었다.
+		function showLoadError(evt) {
+			var xhr = evt && evt.detail && evt.detail.xhr;
+			if (xhr && xhr.status === 401) {
+				location.assign('/login?redirectUrl=' + encodeURIComponent(location.href));
+				return;
+			}
+			// 조회가 아닌 요청(저장·갱신)의 실패에 "데이터 로드 중 오류" 는 틀린 말이다(실측 2026-09-09: 시세 갱신 500).
+			var verb = evt && evt.detail && evt.detail.requestConfig && evt.detail.requestConfig.verb;
+			var isAction = !!verb && verb !== 'get';
+			showToast(isAction
+				? cfgMessage('commonMessageActionError', 'The request failed.')
+				: cfgMessage('commonMessageLoadError', 'Failed to load.'), 'error', 5000);
 		}
 		document.body.addEventListener('htmx:responseError', showLoadError);
 		document.body.addEventListener('htmx:sendError', showLoadError);

@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.filter.ShallowEtagHeaderFilter;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -76,6 +77,26 @@ public class GateStaticResourceSecurityConfig {
         new FilterRegistrationBean<>(filter);
     registration.addUrlPatterns(STATIC_URL_PATTERNS);
     registration.setOrder(Integer.MIN_VALUE);
+    return registration;
+  }
+
+  /**
+   * 정적 자산은 내용 기반 ETag 로 재검증한다.
+   *
+   * <p>위 필터가 붙이는 {@code no-cache} 는 "저장은 하되 매번 물어보라" 인데, 그 물음(If-Modified-Since)에 서버가 늘 304 로 답하면
+   * 배포해도 브라우저는 옛 파일을 쓴다. 실측 2026-09-09(k8s 게이트): jib 이미지는 모든 파일의 mtime 을 1970-01-01 로 고정하므로
+   * Last-Modified 가 배포마다 같고, If-Modified-Since 를 2026-01-01 로 보내도 304 였다. 그래서 {@code
+   * spring.web.resources.cache.use-last-modified=false} 로 날짜 검증을 끄고, 이 필터가 본문 해시(ETag)로 답한다 - 내용이
+   * 바뀐 배포에서만 200, 같으면 304.
+   */
+  @Bean
+  FilterRegistrationBean<ShallowEtagHeaderFilter> gateStaticResourceEtagFilter() {
+    ShallowEtagHeaderFilter filter = new ShallowEtagHeaderFilter();
+    filter.setWriteWeakETag(true);
+    FilterRegistrationBean<ShallowEtagHeaderFilter> registration =
+        new FilterRegistrationBean<>(filter);
+    registration.addUrlPatterns(STATIC_URL_PATTERNS);
+    registration.setOrder(Integer.MIN_VALUE + 1);
     return registration;
   }
 
