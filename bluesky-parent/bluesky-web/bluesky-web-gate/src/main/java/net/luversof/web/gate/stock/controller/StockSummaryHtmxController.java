@@ -336,8 +336,16 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     int winDenominator = profitByStockItem.size();
     BigDecimal totalDividendVal = dividendTotal != null ? dividendTotal : BigDecimal.ZERO;
 
+    // 같은 달에 점이 여러개 올 수 있다 - api-stock 이 구간의 최고·최저 평가액이 난 날을 waypoint 로
+    // 끼워 넣기 때문이다. 자산 성장 화면은 그 점에 주석을 달지만 이 작은 선은 점도 주석도
+    // 그리지 않고 x 축이 카테고리 축이라, 그 점은 날짜 간격만 어긋낸다(StockTrendSeriesUtil 참고).
     List<TradeProfitTimeSeriesPoint> trendSeries =
-        trendFuture == null ? List.<TradeProfitTimeSeriesPoint>of() : joinRemote(trendFuture);
+        net.luversof.web.gate.stock.util.StockTrendSeriesUtil.lastPerMonth(
+            trendFuture == null ? List.<TradeProfitTimeSeriesPoint>of() : joinRemote(trendFuture),
+            point ->
+                point == null || point.timestamp() == null
+                    ? null
+                    : point.timestamp().atZone(trendZone).toLocalDate());
     StringBuilder trendLabelSb = new StringBuilder();
     StringBuilder trendValueSb = new StringBuilder();
     int trendPointCount = 0;
@@ -569,6 +577,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     List<MonthlyDividendPayoutResponse> payouts = joinRemote(payoutsFuture);
     int midRepDay = representativePayDay(payouts, windowBySymbol, "MID_MONTH", 15);
     int endRepDay = representativePayDay(payouts, windowBySymbol, "MONTH_END", 31);
+    int midLastDay = latestPayDay(payouts, windowBySymbol, "MID_MONTH", midRepDay);
+    int endLastDay = latestPayDay(payouts, windowBySymbol, "MONTH_END", endRepDay);
 
     // 사용자가 실제 보유(스냅샷 존재)한 시기 중, 오늘 기준 지급일이 가장 가까운 시기를 "다가올" 시기로 선택.
     LocalDate today = LocalDate.now();
@@ -578,10 +588,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     LocalDate nextPayDate = null;
     if (holdsMid) {
       nextWindow = "MID_MONTH";
-      nextPayDate = projectedPayDate(today, midRepDay);
+      nextPayDate = projectedPayDate(today, midRepDay, midLastDay);
     }
     if (holdsEnd) {
-      LocalDate endDate = projectedPayDate(today, endRepDay);
+      LocalDate endDate = projectedPayDate(today, endRepDay, endLastDay);
       if (nextPayDate == null || endDate.isBefore(nextPayDate)) {
         nextWindow = "MONTH_END";
         nextPayDate = endDate;
@@ -614,11 +624,27 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                 : "";
     String nextPayDateLabel = nextPayDate != null ? monthDayLabel(nextPayDate) : "";
 
+    // 예상일은 지급 이력의 최빈일 하나다. 실제 지급일은 그 주변에 퍼져 있어, 날짜 하나만 적으면
+    // 사용자가 그 날 들어오는 것으로 읽는다 - 실측 2026-09-11: 월중 지급일 분포가 17일x39 · 19일x20 ·
+    // 18일x10 · 20일x9 였고 최근 여섯 달은 17/17/19/17/20/19 였다(최빈 17, 최근 두 달은 19·20).
+    // 최빈일과 마지막 관측일이 다르면 그 폭을 함께 적는다.
+    int spreadFrom =
+        "MID_MONTH".equals(nextWindow) ? midRepDay : "MONTH_END".equals(nextWindow) ? endRepDay : 0;
+    int spreadTo =
+        "MID_MONTH".equals(nextWindow)
+            ? midLastDay
+            : "MONTH_END".equals(nextWindow) ? endLastDay : 0;
+    model.addAttribute("payDaySpreadFrom", spreadTo > spreadFrom ? spreadFrom : 0);
+    model.addAttribute("payDaySpreadTo", spreadTo > spreadFrom ? spreadTo : 0);
+
     model.addAttribute("nextWindowLabel", nextWindowLabel);
     model.addAttribute("nextWindowIsMid", "MID_MONTH".equals(nextWindow));
     model.addAttribute("nextPayDateLabel", nextPayDateLabel);
     model.addAttribute("windowTotal", windowTotal);
+    // 목록은 다섯 줄까지지만 위의 합계는 이 창의 <b>모든</b> 종목을 더한 값이다. 몇이 더 있는지
+    // 밝히지 않으면 합계가 안 맞는 것처럼 읽힌다(같은 화면의 배분 막대는 이미 "기타 N개" 를 적는다).
     model.addAttribute("topDividendSnapshots", windowRows.stream().limit(5).toList());
+    model.addAttribute("upcomingDividendHiddenCount", Math.max(0, windowRows.size() - 5));
 
     // 스냅샷 수량 vs 원장의 현재 수량. 1주당 배당(평균 1년)은 스냅샷 그대로 두고 수량만 현재 값으로
     // 바꿔 합계를 다시 낸다 — 스냅샷의 expectedMonthlyDividend 가 정확히
@@ -741,13 +767,49 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
   }
 
   /** 오늘 이후 가장 가까운 대표 지급일. 이번 달 지급일이 오늘 이후면 이번 달, 지났으면 다음 달. */
-  private static LocalDate projectedPayDate(LocalDate today, int repDay) {
-    LocalDate thisMonth = today.withDayOfMonth(Math.min(repDay, today.lengthOfMonth()));
-    if (!today.isAfter(thisMonth)) {
-      return thisMonth;
+  /**
+   * 다음 지급일 추정.
+   *
+   * <p>{@code repDay} 는 지급이력의 최빈 일자다. 실제 지급은 그 날 <b>이후</b>로 밀리는 달이 잦다 &mdash; 실측 2026-09-11, 월중 그룹
+   * 11 개월: 당일 5 회 · +1 일 1 회 · +2 일 3 회 · +3 일 2 회. 휴일 때문만도 아니다(2026-07-17 은 금요일인데 7/20 지급).
+   *
+   * <p>그래서 {@code repDay} 가 지나자마자 다음 달로 넘기면 <b>내일 들어올 배당을 두고 "한 달 뒤" 라고 말하게 된다</b> &mdash; 8/18 에
+   * 8/19 지급을 두고 9/17 을 가리켰다. {@code lastDay}(그 시기에서 관측된 가장 늦은 일자)까지는 이번 달을 계속 가리킨다. 달력을 새로 만들지 않고
+   * 이미 가진 지급이력만 쓴다.
+   */
+  static LocalDate projectedPayDate(LocalDate today, int repDay, int lastDay) {
+    LocalDate thisRep = today.withDayOfMonth(Math.min(repDay, today.lengthOfMonth()));
+    if (!today.isAfter(thisRep)) {
+      return thisRep;
+    }
+    // 대표일은 지났지만 이번 달 지급이 아직 남아 있을 수 있다 - 관측된 가장 늦은 날까지는 이번 달을 가리킨다.
+    LocalDate thisLast =
+        today.withDayOfMonth(Math.min(Math.max(lastDay, repDay), today.lengthOfMonth()));
+    if (!today.isAfter(thisLast)) {
+      return thisLast;
     }
     LocalDate nm = today.plusMonths(1);
     return nm.withDayOfMonth(Math.min(repDay, nm.lengthOfMonth()));
+  }
+
+  /** 지급이력에서 그 시기의 가장 늦은 일자. 없으면 {@code fallback}. */
+  static int latestPayDay(
+      List<MonthlyDividendPayoutResponse> payouts,
+      Map<String, String> windowBySymbol,
+      String window,
+      int fallback) {
+    int latest = 0;
+    for (MonthlyDividendPayoutResponse payout : payouts) {
+      if (payout == null || payout.payDate() == null) {
+        continue;
+      }
+      String symbol = normalizeSymbol(payout.stockItemSymbol());
+      if (symbol == null || !window.equals(windowBySymbol.get(symbol))) {
+        continue;
+      }
+      latest = Math.max(latest, payout.payDate().getDayOfMonth());
+    }
+    return latest > 0 ? latest : fallback;
   }
 
   /**

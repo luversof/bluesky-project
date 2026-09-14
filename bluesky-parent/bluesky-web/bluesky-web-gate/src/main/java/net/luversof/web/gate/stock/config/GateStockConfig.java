@@ -37,8 +37,10 @@ public class GateStockConfig {
    */
   @Bean(destroyMethod = "shutdown")
   ExecutorService stockRemoteCallExecutor() {
-    return new DelegatingSecurityContextExecutorService(
-        Executors.newVirtualThreadPerTaskExecutor());
+    // 로케일도 같이 실어 보낸다 - 없으면 비동기로 만든 메시지가 기본 로케일로 풀린다
+    // (실측 2026-09-11: 영어 화면의 매매 이력 제목이 "Trade History 전체").
+    return new LocaleContextExecutorService(
+        new DelegatingSecurityContextExecutorService(Executors.newVirtualThreadPerTaskExecutor()));
   }
 
   @Bean

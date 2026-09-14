@@ -215,7 +215,7 @@ class TradePeriodBreakdownRenderTest {
         .as("한 번도 안 판 기간에 0 원을 적으면 본전이라는 뜻이 된다")
         .doesNotContain("text-profit")
         .doesNotContain("text-loss");
-    assertThat(foot).contains("<span class=\"text-base-content/30\">-</span>");
+    assertThat(foot).contains(">-</span>");
   }
 
   /**

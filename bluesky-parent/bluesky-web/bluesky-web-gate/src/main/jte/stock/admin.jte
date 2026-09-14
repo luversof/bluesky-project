@@ -36,8 +36,16 @@
 @param String monthlyDividendReferenceResultMessage = ""
 @param boolean monthlyDividendReferenceResultIsError = false
 
+!{
+	// 두 탭이 브라우저 탭·기록에서 같은 이름("관리")이었다 - 실측 2026-09-12: 13 화면 제목 전수에서
+	// 같은 제목을 쓰는 화면은 이곳뿐이었다. 화면 제목(H1)은 "관리" 그대로 두고 문서 제목에만 탭을 덧붙인다.
+	String adminTabLabel = "monthly-reference".equals(adminTab)
+		? MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")
+		: MessageUtil.getMessage("stock.admin.label.data.management");
+	String adminPageTitle = MessageUtil.getMessage("stock.page.admin.title") + " · " + adminTabLabel;
+}
 @template._layout.stockLayout(
-	pageTitle = MessageUtil.getMessage("stock.page.admin.title"),
+	pageTitle = adminPageTitle,
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,
@@ -47,8 +55,8 @@
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.admin.title"))
 			<div class="space-y-6">
 				<div class="tabs tabs-box w-full bg-base-200/70 p-1">
-					<a href="/stock/admin" class="${"data-management".equals(adminTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.admin.label.data.management")}</a>
-					<a href="/stock/admin?tab=monthly-reference" class="${"monthly-reference".equals(adminTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")}</a>
+					<a href="/stock/admin" aria-current="${"data-management".equals(adminTab) ? "page" : null}" class="${"data-management".equals(adminTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.admin.label.data.management")}</a>
+					<a href="/stock/admin?tab=monthly-reference" aria-current="${"monthly-reference".equals(adminTab) ? "page" : null}" class="${"monthly-reference".equals(adminTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")}</a>
 				</div>
 
 				@if("monthly-reference".equals(adminTab))

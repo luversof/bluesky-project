@@ -24,6 +24,25 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
   Instant findFirstTradeDateByUserId(UUID userId);
 
   /**
+   * 종목·계좌로 좁힌 최초 매매일. 둘 다 널이면 사용자 전체와 같다.
+   *
+   * <p>상세 화면의 '가장 이른 기간으로'(«) 는 이 날짜를 알아야 목표 창을 정한다 - 사용자 전체의 최초일을 쓰면 그 종목이 아직 없던 창으로 뛴다(실측
+   * 2026-09-13: 삼성전자 최초 매매는 2020-03-23 인데 사용자 전체는 2009-10-06).
+   *
+   * <p>널 파라미터는 PostgreSQL 이 타입을 못 정하므로 캐스팅해서 비교한다.
+   */
+  @Query(
+      """
+				SELECT MIN(t."tradeDate")
+				FROM "Trade" t
+				JOIN "Account" a ON t."account_id" = a."id"
+				WHERE a."user_id" = :userId AND t."tradeDate" IS NOT NULL
+					AND (CAST(:stockItemId AS uuid) IS NULL OR t."stockItem_id" = :stockItemId)
+					AND (CAST(:accountId AS uuid) IS NULL OR t."account_id" = :accountId)
+			""")
+  Instant findFirstTradeDate(UUID userId, UUID stockItemId, UUID accountId);
+
+  /**
    * 연도별 매매 비용·실현손익.
    *
    * <p>합계를 DB 에서 낸다 - 화면이 원장을 통째로 받아 더하면 응답이 원장 크기를 따라간다(실측 2026-09-01: 거래 251 행 80.7 KB).
@@ -35,13 +54,16 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
                 SELECT EXTRACT(YEAR FROM (t."tradeDate" AT TIME ZONE :zone))::int AS year,
                        COALESCE(SUM(t."fee"), 0)            AS fee,
                        COALESCE(SUM(t."tax"), 0)            AS tax,
-                       COALESCE(SUM(t."realizedProfit"), 0) AS realized_profit
+                       COALESCE(SUM(t."realizedProfit"), 0) AS realized_profit,
+                       COUNT(*) FILTER (WHERE t."type" = 'SELL') AS sell_count
                 FROM "Trade" t
                 JOIN "Account" a ON t."account_id" = a."id"
                 WHERE a."user_id" = :userId
                   AND t."tradeDate" IS NOT NULL
                   AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= CAST(:startDate AS timestamptz))
                   AND (CAST(:endDate   AS timestamptz) IS NULL OR t."tradeDate" <  CAST(:endDate   AS timestamptz))
+                  AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+                  AND (CAST(:stockItemIds AS text) IS NULL OR t."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
                 GROUP BY 1
                 ORDER BY 1
             """)
@@ -49,7 +71,9 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
       @Param("userId") UUID userId,
       @Param("startDate") Instant startDate,
       @Param("endDate") Instant endDate,
-      @Param("zone") String zone);
+      @Param("zone") String zone,
+      @Param("accountIds") String accountIds,
+      @Param("stockItemIds") String stockItemIds);
 
   /**
    * 기간 매매 집계 한 줄.
@@ -144,6 +168,33 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
 				GROUP BY "stockItem_id"
 			""")
   List<StockItemDateRange> findTradeDateRanges();
+
+  /**
+   * 사용자의 종목별 최초 매수 시점.
+   *
+   * <p>자산 현황이 "이 종목을 얼마나 오래 들고 있나"를 적으려면 종목마다 처음 산 날이 필요하다. 원장 전체(실측 2026-09-14: 258 행)를 받아 화면에서
+   * 종목마다 min() 하는 대신 DB 집계로 보유 종목 수만큼만 가져온다.
+   *
+   * <p>매도는 세지 않는다 &mdash; 보유 기간의 시작은 처음 산 날이다. 판 뒤 다시 산 종목도 최초 매수일을 쓴다(그 종목을 알게 된 시점이 기준).
+   *
+   * <p>계좌 목록은 쉼표로 이어 한 문자열로 받는다 &mdash; {@code IN (:list)} 는 빈 목록에서 {@code IN ()} 이 되어 문법 오류가 나므로 이
+   * 저장소가 이미 쓰는 {@code string_to_array(...)::uuid[]} 방식을 따른다. 널 파라미터는 PostgreSQL 이 타입을 못 정하므로 캐스팅해서
+   * 비교한다.
+   */
+  @Query(
+      """
+                SELECT t."stockItem_id" AS stock_item_id, MIN(t."tradeDate") AS first_buy_date
+                FROM "Trade" t
+                JOIN "Account" a ON t."account_id" = a."id"
+                WHERE a."user_id" = :userId
+                  AND t."tradeDate" IS NOT NULL
+                  AND t."stockItem_id" IS NOT NULL
+                  AND t."type" = 'BUY'
+                  AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+                GROUP BY t."stockItem_id"
+            """)
+  List<net.luversof.api.stock.domain.StockItemFirstBuy> findFirstBuyDateByStockItem(
+      @Param("userId") UUID userId, @Param("accountIds") String accountIds);
 
   @Query(
       """

@@ -7,12 +7,17 @@
 	String inputsDescription = MessageUtil.getMessage("stock.simulator.compound.section.inputs.desc");
 	String quickAddSmallLabel = MessageUtil.getMessage("stock.simulator.compound.quickadd.small");
 	String quickAddLargeLabel = MessageUtil.getMessage("stock.simulator.compound.quickadd.large");
+	// 증감 버튼은 필드마다 같은 글자(+100만·+1,000만·0)를 쓴다 - 실측 2026-09-12(접근성 트리): 여섯 버튼이
+	// 세 이름을 두 번씩 나눠 가져 어느 칸을 건드리는지 알 수 없었다. 눈으로는 바로 위 칸을 보면 알지만 이름만 듣는 쪽은 모른다.
+	String quickAddAriaPattern = MessageUtil.getMessage("stock.simulator.compound.quickadd.add.aria");
+	String quickResetAriaPattern = MessageUtil.getMessage("stock.simulator.compound.quickadd.reset.aria");
 	String initialLabel = MessageUtil.getMessage("stock.simulator.compound.field.initial");
 	String contributionLabel = MessageUtil.getMessage("stock.simulator.compound.field.contribution");
 	String frequencyLabel = MessageUtil.getMessage("stock.simulator.compound.field.frequency");
 	String frequencyYearlyLabel = MessageUtil.getMessage("stock.simulator.compound.frequency.yearly");
 	String frequencyMonthlyLabel = MessageUtil.getMessage("stock.simulator.compound.frequency.monthly");
 	String monthlyNote = MessageUtil.getMessage("stock.simulator.compound.monthly.note");
+	String effectiveRateTemplate = MessageUtil.getMessage("stock.simulator.compound.effective.rate");
 	String timingLabel = MessageUtil.getMessage("stock.simulator.compound.field.timing");
 	String timingBeginLabel = MessageUtil.getMessage("stock.simulator.compound.timing.begin");
 	String timingEndLabel = MessageUtil.getMessage("stock.simulator.compound.timing.end");
@@ -53,12 +58,12 @@
 						<span class="label-text font-medium">${initialLabel}</span>
 						<span id="stockCompoundInitialPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 					</div>
-					<input id="stockCompoundInitial" name="initial" type="number" min="0" step="10000" value="0" class="input input-bordered w-full" />
+					<input id="stockCompoundInitial" name="initial" type="number" min="0" step="10000" value="0" class="input input-bordered w-full" aria-label="${initialLabel}" />
 					<%-- 0 개수를 세지 않도록 만원 단위 증감 버튼 제공 (클릭 시 즉시 재계산) --%>
 					<div class="mt-1 flex flex-wrap gap-1">
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">${quickAddSmallLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">${quickAddLargeLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundInitial" data-amount-add="0">0</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">${quickAddSmallLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">${quickAddLargeLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickResetAriaPattern, initialLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="0">0</button>
 					</div>
 				</label>
 				<label class="form-control">
@@ -66,11 +71,11 @@
 						<span class="label-text font-medium">${contributionLabel}</span>
 						<span id="stockCompoundContributionPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 					</div>
-					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full" />
+					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full" aria-label="${contributionLabel}" />
 					<div class="mt-1 flex flex-wrap gap-1">
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">${quickAddSmallLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">${quickAddLargeLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" data-amount-add-target="stockCompoundContribution" data-amount-add="0">0</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">${quickAddSmallLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">${quickAddLargeLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickResetAriaPattern, contributionLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="0">0</button>
 					</div>
 				</label>
 				<label class="form-control">
@@ -80,7 +85,10 @@
 						<option value="monthly">${frequencyMonthlyLabel}</option>
 					</select>
 				</label>
-				<p id="stockCompoundMonthlyNote" class="hidden text-xs leading-5 text-base-content/60 md:col-span-2">${monthlyNote}</p>
+				<%-- 연/12 로 나눈다는 사실만으로는 그 결과를 알 수 없다. 입력 연 12%는 월복리로 실효 연 12.68%가 되고,
+				     20년이면 최종 자산이 실효 12% 가정보다 8.6% 커진다(실측 2026-09-11). 그 수치를 함께 적는다. --%>
+				<p id="stockCompoundMonthlyNote" class="hidden text-xs leading-5 text-base-content/60 md:col-span-2">${monthlyNote}
+					<span data-compound-effective data-template="${effectiveRateTemplate}"></span></p>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${timingLabel}</span></div>
 					<select id="stockCompoundTiming" name="timing" class="select select-bordered w-full">

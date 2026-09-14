@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.domain.MonthlyDividendSnapshot;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.MonthlyDividendSnapshotRepository;
@@ -35,8 +36,10 @@ public class MonthlyDividendSnapshotService {
   @Autowired private StockPriceService stockPriceService;
 
   public List<MonthlyDividendSnapshotResponse> findByUserId(UUID userId) {
+    // 사용자가 없는 요청은 빈 결과가 아니라 잘못된 요청이다(getTradeHistory 와 같은 이유).
+    // 실측 2026-09-11: 이 엔드포인트도 userId 없이 부르면 200 [] 이었다.
     if (userId == null) {
-      return List.of();
+      StockErrorCode.INVALID_USER_ID.throwException();
     }
 
     List<MonthlyDividendSnapshot> snapshots =

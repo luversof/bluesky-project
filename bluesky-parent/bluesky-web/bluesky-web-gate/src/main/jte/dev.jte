@@ -101,7 +101,7 @@
 					<input class="join-item btn btn-sm" type="radio" name="devSeg" aria-label="세그먼트B" />
 					<input class="join-item btn btn-sm" type="radio" name="devSeg" aria-label="세그먼트C" />
 				</div>
-				<span class="text-xs text-base-content/50 ml-2">radio-as-btn 세그먼트 (join)</span>
+				<span class="text-xs text-base-content/60 ml-2">radio-as-btn 세그먼트 (join)</span>
 			</div>
 		</section>
 
@@ -180,7 +180,7 @@
 					</tbody>
 				</table>
 			</div>
-			<p class="text-xs text-base-content/50 mt-1">스크롤 시 thead 고정(pin-rows), 손익 색: 빨강=수익 / 파랑=손실 / 초록=배당</p>
+			<p class="text-xs text-base-content/60 mt-1">스크롤 시 thead 고정(pin-rows), 손익 색: 빨강=수익 / 파랑=손실 / 초록=배당</p>
 		</section>
 
 		<section>

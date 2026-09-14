@@ -54,6 +54,10 @@
 		}
 	}
 	String payoutSymbolLabel = payoutSymbolLabelTmp;
+	// 지급 이력의 분배율은 출처에서 오지 않는다 - 실측 2026-09-11: 저장된 210 건 전부 null 이라 열이 "-" 로만 찼다.
+	// 붙여넣기로 직접 채우면 값이 생기므로, 열을 지우지 않고 값이 있을 때만 낸다.
+	boolean showDistributionRate = monthlyDividendPayouts != null
+			&& monthlyDividendPayouts.stream().anyMatch(payout -> payout.distributionRatePct() != null);
 	String sourceUrlValue = profileForm.getSourceUrl() != null ? profileForm.getSourceUrl() : "";
 	String payoutWindowValue = profileForm.getPayoutWindow() != null ? profileForm.getPayoutWindow() : "UNKNOWN";
 	String noteValue = profileForm.getNote() != null ? profileForm.getNote() : "";
@@ -83,6 +87,14 @@
 	String symbolSortDirection = "symbol".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String payoutWindowSortDirection = "payout-window".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String sourceUrlSortDirection = "source-url".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
+	// 검증한 적이 없으면 이 칸은 "-" 한 글자가 된다. 실측 2026-09-12: 프로필 8개가 모두 그랬고 그 칸에는
+	// title 도 sr-only 도 없어 마우스로도 낭독기로도 까닭을 알 수 없었다(이 화면은 탭 주소를 빼먹어 그동안 훑기에서 빠져 있었다).
+	String notVerifiedLabel = MessageUtil.getMessage("stock.monthly.reference.profile.not.verified");
+	// 줄마다 같은 글자의 링크가 선다 - 실측 2026-09-12(접근성 트리): "이 값으로 시뮬레이터 채우기" 9개,
+	// "이 종목 보기" 8개, "링크 열기 (새 창에서 열림)" 8개가 이름만으로는 구분되지 않았다(목적지는 전부 다르다).
+	String profileActionAriaPattern = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.action.aria");
+	String openLinkLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.open.link");
+	String opensNewWindowLabel = MessageUtil.getMessage("common.label.opens.new.window");
 	String lastVerifiedDateSortDirection = "last-verified-date".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String activeSortDirection = "active".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String recordDateValue = payoutForm.getRecordDate() != null ? String.valueOf(payoutForm.getRecordDate()) : String.valueOf(LocalDate.now());
@@ -424,22 +436,24 @@
 												<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
 												<div class="text-xs text-base-content/60">${row.stockItemName()}</div>
 												<div class="mt-2 flex flex-wrap gap-2">
-													<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
-													<a href="/stock/simulator?tab=monthly-dividend&symbol=${row.stockItemSymbol()}&sort=display-order&direction=asc" class="btn btn-xs btn-primary">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
+													<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
+													<a href="/stock/simulator?tab=monthly-dividend&symbol=${row.stockItemSymbol()}&sort=display-order&direction=asc" class="btn btn-xs btn-primary" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 												</div>
 											</td>
-											<td>${row.payoutWindow()}</td>
+											<%-- 같은 화면의 편집 폼은 "월중/월말/기타/미확인" 으로 보여 주는데 이 칸만 코드였다
+												 (실측 2026-09-12: 8 행이 MID_MONTH · MONTH_END). 폼과 같은 문구를 쓴다. --%>
+											<td>${net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil.label(row.payoutWindow())}</td>
 											<td>
 												@if(row.sourceUrl() != null && !row.sourceUrl().isEmpty())
 													<div class="space-y-1">
-														<a href="${row.sourceUrl()}" class="link link-primary" target="_blank" rel="noopener noreferrer">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.open.link")}<span class="sr-only"> (${MessageUtil.getMessage("common.label.opens.new.window")})</span></a>
+														<a href="${row.sourceUrl()}" class="link link-primary" target="_blank" rel="noopener noreferrer" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, openLinkLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol()) + " (" + opensNewWindowLabel + ")"}">${openLinkLabel}<span class="sr-only"> (${opensNewWindowLabel})</span></a>
 														<div class="max-w-xs break-all text-xs text-base-content/60">${row.sourceUrl()}</div>
 													</div>
 												@else
 													-
 												@endif
 											</td>
-											<td>${row.lastVerifiedDate() != null ? String.valueOf(row.lastVerifiedDate()) : "-"}</td>
+											<td title="${row.lastVerifiedDate() == null ? notVerifiedLabel : null}">${row.lastVerifiedDate() != null ? String.valueOf(row.lastVerifiedDate()) : "-"}@if(row.lastVerifiedDate() == null)<span class="sr-only">${notVerifiedLabel}</span>@endif</td>
 											<td>${row.active() ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active.true") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active.false")}</td>
 										</tr>
 									@endfor
@@ -451,7 +465,7 @@
 
 			@template._components.ui.card(bodyClass = "gap-5", body = @`
 					<div class="space-y-2">
-						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.title")}</h2>
+						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.title")}@if(payoutSymbolLabel != null && !payoutSymbolLabel.isBlank())<span class="badge badge-ghost badge-sm ml-2 align-middle" data-payout-history-symbol>${payoutSymbolLabel}</span>@endif</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.desc")}</p>
 					</div>
 					@if(monthlyDividendPayouts == null || monthlyDividendPayouts.isEmpty())
@@ -463,7 +477,9 @@
 									<tr>
 										<th scope="col" class="whitespace-nowrap">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.record.date")}</th>
 										<th scope="col" class="whitespace-nowrap">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.pay.date")}</th>
-										<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.distribution.rate")}</th>
+										@if(showDistributionRate)
+											<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.distribution.rate")}</th>
+										@endif
 										<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.dividend.amount")}</th>
 										<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.taxable.base")}</th>
 									</tr>
@@ -475,7 +491,9 @@
 												<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}&payoutRecordDate=${String.valueOf(row.recordDate())}&payoutPayDate=${String.valueOf(row.payDate())}" class="link link-hover font-medium tabular-nums">${String.valueOf(row.recordDate())}</a>
 											</td>
 											<td class="whitespace-nowrap tabular-nums">${String.valueOf(row.payDate())}</td>
-											<td class="text-right tabular-nums">@if(row.distributionRatePct() != null)${percentFormat.format(row.distributionRatePct())}%@else-@endif</td>
+											@if(showDistributionRate)
+												<td class="text-right tabular-nums">@if(row.distributionRatePct() != null)${percentFormat.format(row.distributionRatePct())}%@else-@endif</td>
+											@endif
 											<td class="text-right tabular-nums">₩${amountFormat.format(row.dividendAmountPerShare() != null ? row.dividendAmountPerShare() : BigDecimal.ZERO)}</td>
 											<td class="text-right tabular-nums">₩${amountFormat.format(row.taxableBasePerShare() != null ? row.taxableBasePerShare() : BigDecimal.ZERO)}</td>
 										</tr>

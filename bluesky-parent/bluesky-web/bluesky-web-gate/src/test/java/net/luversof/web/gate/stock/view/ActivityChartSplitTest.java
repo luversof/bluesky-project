@@ -101,9 +101,10 @@ class ActivityChartSplitTest {
                     + "StockTradeHtmxController.java"),
             StandardCharsets.UTF_8);
 
+    // 레코드의 '끝' 을 못박지 않는다. 성분이 하나 늘면(2026-09-10 recordCount) 뜻과 무관하게 깨진다.
     assertThat(controller)
         .as("Activity 가 실현손익을 나르지 않으면 차트가 손익을 그릴 수 없다")
-        .contains("BigDecimal realizedProfit) {}")
+        .contains("BigDecimal realizedProfit")
         .as("하루로 묶을 때 손익도 함께 더해야 묶인 줄에서 손익이 사라지지 않는다")
         .contains("newRealizedProfit");
   }

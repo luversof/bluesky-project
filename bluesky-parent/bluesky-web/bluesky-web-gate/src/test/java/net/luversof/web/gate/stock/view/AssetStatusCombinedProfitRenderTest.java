@@ -3,6 +3,7 @@ package net.luversof.web.gate.stock.view;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -71,7 +72,33 @@ class AssetStatusCombinedProfitRenderTest {
         bd("2000000"));
   }
 
+  private static String message(String code) {
+    return MessageUtil.getMessage(code);
+  }
+
+  /** 매수원가 1,000,000 · 합산 +200,000. 보유 기간만 바꿔 가며 연평균을 본다. */
+  private static TradeProfit steady() {
+    return TradeProfit.ofStockStatus(
+        STOCK,
+        "꾸준종목",
+        bd("10000"),
+        100,
+        bd("12000"),
+        bd("1200000"),
+        bd("200000"),
+        bd("0"),
+        bd("1000000"));
+  }
+
   private String render(List<TradeProfit> stocks, Map<UUID, BigDecimal> dividends) {
+    return render(stocks, dividends, Map.of(), null);
+  }
+
+  private String render(
+      List<TradeProfit> stocks,
+      Map<UUID, BigDecimal> dividends,
+      Map<UUID, LocalDate> firstBuyDates,
+      LocalDate holdingBasisDate) {
     var breakdown = StockCombinedProfitUtil.byStockItem(stocks, dividends);
     Map<String, Object> model = new HashMap<>();
     model.put("accountTotalMap", new LinkedHashMap<UUID, TradeProfit>());
@@ -85,6 +112,8 @@ class AssetStatusCombinedProfitRenderTest {
     model.put("totalEvaluationAmount", bd("1900000"));
     model.put("totalEvaluationProfit", bd("-12444645"));
     model.put("priceBasisDate", LocalDate.parse("2026-09-02"));
+    model.put("firstBuyDateByStockItem", firstBuyDates);
+    model.put("holdingBasisDate", holdingBasisDate);
     StringOutput output = new StringOutput();
     TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
     return output.toString();
@@ -148,11 +177,13 @@ class AssetStatusCombinedProfitRenderTest {
 
     int head = count(table.substring(0, table.indexOf("</thead>")), "<th ");
     String body = table.substring(table.indexOf("<tbody>"), table.indexOf("</tbody>"));
-    int row = count(body, "<td ");
+    // 집계 표는 본문 첫 칸도 th scope="row" 다(2026-09-11) - td 만 세면 한 칸이 빠진다.
+    int row = count(body, "<td ") + count(body, "<th ");
     String foot = table.substring(table.indexOf("<tfoot"));
-    int total = count(foot, "<td");
+    // 합계 줄의 첫 칸은 th scope="row" 다(2026-09-11) - td 만 세면 한 칸이 빠진다.
+    int total = count(foot, "<td") + count(foot, "<th");
 
-    assertThat(head).as("열을 더했는데 머리글이 따라오지 않았다").isEqualTo(11);
+    assertThat(head).as("열을 더했는데 머리글이 따라오지 않았다").isEqualTo(12);
     assertThat(row).as("본문 칸 수가 머리글과 다르다").isEqualTo(head);
     assertThat(total).as("합계 칸 수가 머리글과 다르다").isEqualTo(head);
   }
@@ -162,7 +193,7 @@ class AssetStatusCombinedProfitRenderTest {
   void 빈_표의_colspan_도_열_수를_따라간다() {
     String table = stockTable(render(List.of(), Map.of()));
 
-    assertThat(table).as("colspan 이 열 수보다 작으면 빈 줄이 표를 덜 덮는다").contains("colspan=\"11\"");
+    assertThat(table).as("colspan 이 열 수보다 작으면 빈 줄이 표를 덜 덮는다").contains("colspan=\"12\"");
   }
 
   /**
@@ -199,7 +230,7 @@ class AssetStatusCombinedProfitRenderTest {
     String table = stockTable(render(List.of(neverSold), Map.of()));
     String body = table.substring(table.indexOf("<tbody>"), table.indexOf("</tbody>"));
 
-    assertThat(body).as("한 번도 안 판 종목에 0 원을 적으면 본전이라는 뜻이 된다").contains("text-base-content/30\">-<");
+    assertThat(body).as("한 번도 안 판 종목에 0 원을 적으면 본전이라는 뜻이 된다").contains(">-</span>");
   }
 
   /** 계좌 id 는 이 표와 무관하지만, 모델을 비워도 렌더가 죽지 않아야 한다. */
@@ -210,33 +241,87 @@ class AssetStatusCombinedProfitRenderTest {
     assertThat(ACCOUNT).isNotNull();
   }
 
-  // ---------------------------------------------------------------- 배당이 평가손실을 얼마나 메웠나 (2026-09-08)
+  // ------------------------------------------------ 보유 기간 · 연평균 · 배당 상쇄율 (2026-09-14)
 
-  /** 실측의 한 종목(평가 -12,444,645 · 배당 5,385,714)은 배당이 손실의 43% 를 덮었다. 표의 세 열을 빼지 않아도 보여야 한다. */
+  /**
+   * 2026-09-14 까지 이 세 값을 말하던 것은 표 위의 별도 카드였다. 그 카드가 찍던 금액 세 개는 바로 아래 표에 이미 열로 있었고, 막대는 줄 안에서 정규화돼 둘
+   * 중 하나가 항상 100% 였다 - 옆 배지의 숫자와 같은 말이었다. 카드를 지우고 세 값을 각자 자기 값이 있는 칸 안으로 옮겼다.
+   */
   @Test
-  void 배당_상쇄_카드는_손실의_몇_퍼센트를_덮었는지_보여준다() {
-    String html = render(List.of(stock()), Map.of(STOCK, bd("5385714")));
-    int at = html.indexOf("data-dividend-coverage-row");
-    assertThat(at).as("상쇄 카드가 없다").isGreaterThan(0);
-    String row =
-        html.substring(at, html.indexOf("</div>\n", html.indexOf("data-coverage-pct", at)) + 6);
+  void 보유_기간을_종목_이름_아래에_적는다() {
+    String table =
+        stockTable(
+            render(
+                List.of(stock()),
+                Map.of(STOCK, bd("5385714")),
+                Map.of(STOCK, LocalDate.parse("2020-03-04")),
+                LocalDate.parse("2026-09-14")));
 
-    assertThat(row)
-        .contains("data-coverage-state=\"partial\"")
-        .contains("data-coverage-pct=\"43\"");
-    assertThat(html.substring(at, at + 3000))
-        .contains("테스트종목")
-        .contains("5,385,714")
-        .contains("12,444,645");
-    assertThat(html.substring(at, at + 3000))
-        .as("손실 막대가 100, 배당 막대가 43")
-        .contains("style=\"width:100%\"")
-        .contains("style=\"width:43%\"");
+    assertThat(table)
+        .as("보유 기간이 없다")
+        .contains("data-holding-period")
+        .contains("data-holding-days=\"2385\"");
+    assertThat(table)
+        .as("6 년 6 개월 (2020-03-04 -> 2026-09-14)")
+        .contains(MessageFormat.format(message("stock.asset.status.cell.holding.years"), "6", "6"));
+    assertThat(table)
+        .as("숫자만 있으면 무슨 값인지 모른다 - 이름과 근거가 낙독기에 닿아야 한다")
+        .contains(message("stock.asset.status.col.holding.period"))
+        .contains(
+            MessageFormat.format(message("stock.asset.status.cell.holding.since"), "2020-03-04"));
   }
 
-  /** 평가익 종목은 덮을 손실이 없다. */
+  /**
+   * 최초 매수일을 모르면(집계에 없는 종목) 기간을 지어내지 않는다.
+   *
+   * <p>열이 된 뒤로는 칸 자체는 남는다 - 빈 칸은 "0 일"로 읽히므로 사유를 적는다.
+   */
   @Test
-  void 배당_상쇄_카드는_손실_없는_종목을_그렇게_표시한다() {
+  void 최초_매수일을_모르면_사유를_적는다() {
+    String table =
+        stockTable(render(List.of(stock()), Map.of(), Map.of(), LocalDate.parse("2026-09-14")));
+
+    assertThat(table).contains(message("stock.asset.status.col.holding.period.unknown"));
+    assertThat(table)
+        .as("기간을 모르는데 연수/개월을 지어내면 안 된다")
+        .doesNotContain(
+            MessageFormat.format(message("stock.asset.status.cell.holding.years"), "6", "6"));
+  }
+
+  /** 보유 기간은 표시 문자열이 아니라 일수로 정렬해야 한다 - '6개월'이 '6년'보다 뒤에 오면 안 된다. */
+  @Test
+  void 보유_기간_열은_일수로_정렬한다() {
+    String table =
+        stockTable(
+            render(
+                List.of(stock()),
+                Map.of(STOCK, bd("5385714")),
+                Map.of(STOCK, LocalDate.parse("2020-03-04")),
+                LocalDate.parse("2026-09-14")));
+
+    assertThat(table).as("머리칸에 정렬 단추가 없으면 이 열로 정렬할 수 없다").contains("data-sort-key=\"holdingDays\"");
+    assertThat(table).as("정렬 값은 행의 일수여야 한다").contains("data-holding-days=\"2385\"");
+  }
+
+  /** 실측의 한 종목(평가 -12,444,645 · 배당 5,385,714)은 배당이 손실의 43% 를 덮었다. */
+  @Test
+  void 배당_상쇄율을_평가손익_칸에_적는다() {
+    String table =
+        stockTable(
+            render(
+                List.of(stock()),
+                Map.of(STOCK, bd("5385714")),
+                Map.of(STOCK, LocalDate.parse("2020-03-04")),
+                LocalDate.parse("2026-09-14")));
+
+    assertThat(table).contains("data-coverage-pct=\"43\"");
+    assertThat(table)
+        .contains(MessageFormat.format(message("stock.asset.status.cell.coverage"), "43"));
+  }
+
+  /** 평가익 종목은 덮을 손실이 없다 - 배당을 받았어도 상쇄율을 적지 않는다. */
+  @Test
+  void 평가익_종목에는_상쇄율을_적지_않는다() {
     TradeProfit gaining =
         TradeProfit.ofStockStatus(
             STOCK,
@@ -248,27 +333,72 @@ class AssetStatusCombinedProfitRenderTest {
             bd("1000000"),
             bd("0"),
             bd("2000000"));
-    String html = render(List.of(gaining), Map.of(STOCK, bd("5385714")));
+    String table =
+        stockTable(
+            render(
+                List.of(gaining),
+                Map.of(STOCK, bd("5385714")),
+                Map.of(STOCK, LocalDate.parse("2020-03-04")),
+                LocalDate.parse("2026-09-14")));
 
-    assertThat(html).contains("data-coverage-state=\"none\"");
+    assertThat(table).doesNotContain("data-dividend-coverage");
   }
 
-  /** 손실도 배당도 없으면 카드 자체가 없다. */
+  /**
+   * 연평균은 복리다. 매수원가 1,000,000 · 합산 +200,000 을 꼬박 1 년 들고 있었으면 연 20.0% 이다.
+   *
+   * <p>단순 환산이면 같은 값이 나오므로 이 줄만으로는 두 식을 가를 수 없다 - 아래 짧은 보유 검사가 그 일을 한다.
+   */
   @Test
-  void 배당_상쇄_카드는_할_말이_없으면_나오지_않는다() {
-    TradeProfit quiet =
-        TradeProfit.ofStockStatus(
-            STOCK,
-            "조용",
-            bd("20000"),
-            100,
-            bd("20000"),
-            bd("2000000"),
-            bd("0"),
-            bd("0"),
-            bd("2000000"));
-    String html = render(List.of(quiet), Map.of());
+  void 연평균을_합산_손익_칸에_적는다() {
+    String table =
+        stockTable(
+            render(
+                List.of(steady()),
+                Map.of(),
+                Map.of(STOCK, LocalDate.parse("2025-09-14")),
+                LocalDate.parse("2026-09-14")));
 
-    assertThat(html).doesNotContain("data-dividend-coverage");
+    assertThat(table).contains("data-annualized-return");
+    assertThat(table)
+        .contains(MessageFormat.format(message("stock.asset.status.cell.annualized"), "+20.0%"));
+    assertThat(table).as("1 년을 채웠으면 확대된 값이 아니다").contains("data-short-term=\"false\"");
+  }
+
+  /**
+   * 보유 117 일짜리 +20.0% 를 복리로 펼치면 연 76.6% 다(단순 환산이면 62.4%). 식을 바꿔 놓으면 이 검사가 깨진다.
+   *
+   * <p>실측 2026-09-14: 보유 9 종목 중 7 종목이 1 년 미만이라 이 확대가 표의 기본값에 가깝다. 근거를 함께 적는다.
+   */
+  @Test
+  void 보유_1년_미만은_연평균에_근거를_붙인다() {
+    String table =
+        stockTable(
+            render(
+                List.of(steady()),
+                Map.of(),
+                Map.of(STOCK, LocalDate.parse("2026-05-20")),
+                LocalDate.parse("2026-09-14")));
+
+    assertThat(table)
+        .as("복리가 아니면 62.4% 가 나온다")
+        .contains(MessageFormat.format(message("stock.asset.status.cell.annualized"), "+76.6%"));
+    assertThat(table).contains("data-short-term=\"true\"");
+    assertThat(table)
+        .contains(MessageFormat.format(message("stock.asset.status.cell.annualized.short"), "117"));
+  }
+
+  /** 원금보다 더 잃으면 복리로 환산할 수 없다(음수의 분수 거듭제곱). 억지로 -100% 를 적으면 '딱 전액 손실' 로 읽힌다. */
+  @Test
+  void 원금보다_더_잃으면_연평균을_비운다() {
+    String table =
+        stockTable(
+            render(
+                List.of(stock()),
+                Map.of(STOCK, bd("5385714")),
+                Map.of(STOCK, LocalDate.parse("2020-03-04")),
+                LocalDate.parse("2026-09-14")));
+
+    assertThat(table).doesNotContain("data-annualized-return");
   }
 }

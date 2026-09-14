@@ -82,11 +82,14 @@ class UntradedPriceDateWarningTest {
         zeroVolume,
         rowCount,
         zeroVolumeRows,
+        0L,
+        0L,
         zeroVolumeChangedClose,
         changedCloseRows,
         java.time.LocalDate.parse("2026-08-04"),
         OVERDUE_PAYOUTS,
         0L,
+        java.util.List.of(),
         java.util.List.of());
   }
 
@@ -271,11 +274,14 @@ class UntradedPriceDateWarningTest {
             9L,
             57459L,
             1352L,
+            9L,
+            4L,
             1L,
             CHANGED_CLOSE_ROWS,
             LocalDate.parse("2026-08-04"),
             java.util.List.of(),
             0L,
+            java.util.List.of(),
             java.util.List.of());
 
     String html = render(clean);

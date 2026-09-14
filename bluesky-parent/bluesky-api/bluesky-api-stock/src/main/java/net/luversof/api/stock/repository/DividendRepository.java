@@ -30,6 +30,8 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
                   AND d."payDate" IS NOT NULL
                   AND (CAST(:startDate AS timestamptz) IS NULL OR d."payDate" >= CAST(:startDate AS timestamptz))
                   AND (CAST(:endDate   AS timestamptz) IS NULL OR d."payDate" <  CAST(:endDate   AS timestamptz))
+                  AND (CAST(:accountIds AS text) IS NULL OR d."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+                  AND (CAST(:stockItemIds AS text) IS NULL OR d."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
                 GROUP BY 1
                 ORDER BY 1
             """)
@@ -37,7 +39,9 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
       @org.springframework.data.repository.query.Param("userId") java.util.UUID userId,
       @org.springframework.data.repository.query.Param("startDate") java.time.Instant startDate,
       @org.springframework.data.repository.query.Param("endDate") java.time.Instant endDate,
-      @org.springframework.data.repository.query.Param("zone") String zone);
+      @org.springframework.data.repository.query.Param("zone") String zone,
+      @org.springframework.data.repository.query.Param("accountIds") String accountIds,
+      @org.springframework.data.repository.query.Param("stockItemIds") String stockItemIds);
 
   /**
    * 기간 배당 집계 한 줄. 연도별 집계와 같은 기준(지급일)이다.
@@ -72,6 +76,18 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
 				WHERE a."user_id" = :userId AND d."payDate" IS NOT NULL
 			""")
   Instant findFirstDividendDateByUserId(UUID userId);
+
+  /** 종목·계좌로 좁힌 최초 배당일. 규칙은 {@code TradeRepository#findFirstTradeDate} 와 같다. */
+  @Query(
+      """
+				SELECT MIN(d."payDate")
+				FROM "Dividend" d
+				JOIN "Account" a ON d."account_id" = a."id"
+				WHERE a."user_id" = :userId AND d."payDate" IS NOT NULL
+					AND (CAST(:stockItemId AS uuid) IS NULL OR d."stockItem_id" = :stockItemId)
+					AND (CAST(:accountId AS uuid) IS NULL OR d."account_id" = :accountId)
+			""")
+  Instant findFirstDividendDate(UUID userId, UUID stockItemId, UUID accountId);
 
   /** 사용자의 마지막 배당 지급일. 데이터 최신 시점 표시용(집계 1건). */
   @Query(

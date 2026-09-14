@@ -23,6 +23,8 @@ interface DividendHistoryConfig {
 	dividendData: DividendRow[];
 	filterStartDate: string;
 	filterEndDate: string;
+	filterStartDay: string;
+	filterEndDay: string;
 	countPattern: string;
 	noDataLabel: string;
 	noPeriodHistoryLabel: string;
@@ -52,6 +54,8 @@ interface MonthRange {
         const dividendData: DividendRow[] = cfg.dividendData || [];
         const filterStartDate: string = cfg.filterStartDate || "";
         const filterEndDate: string = cfg.filterEndDate || "";
+        const filterStartDay: string = cfg.filterStartDay || "";
+        const filterEndDay: string = cfg.filterEndDay || "";
         const countPattern: string = cfg.countPattern || "";
         const noDataLabel: string = cfg.noDataLabel || "";
         const noPeriodHistoryLabel: string = cfg.noPeriodHistoryLabel || "";
@@ -494,6 +498,51 @@ interface MonthRange {
         //
         // 전체일 때는 자료의 첫 달 ~ 마지막 달을 구간으로 삼는다. 그러면 분모가 달력 개월수가 되고
         // 차트 x축에도 배당이 0원이던 달(실측 41개월)이 그대로 드러난다.
+        /**
+         * 기간을 '달 수' 로 환산한다. 달마다 기간이 덮은 일수 / 그 달의 총 일수 를 더한다.
+         *
+         * 걸친 달력 월 수를 세면 기간이 달 경계를 넘을 때마다 분모가 한 달씩 부풀어, 월평균이 그만큼 작아진다
+         * - 실측 2026-09-11(배당 화면): 1개월 프리셋 31일이 2개월로 나뉘어 월평균이 실제의 절반(-49%),
+         *   3개월 92일 -> 4개월(-25%), 6개월 184일 -> 7개월(-14%), 12개월 365일 -> 13개월(-8%).
+         * 연 환산 수익률이 이미 일수 기준(365/기간일수)이므로 같은 규칙으로 맞춘다.
+         */
+        function monthEquivalent(fromDay: string, toDay: string): number {
+            if (!fromDay || !toDay) return 0;
+            const start = new Date(fromDay + "T00:00:00Z");
+            const end = new Date(toDay + "T00:00:00Z");
+            if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return 0;
+            let total = 0;
+            let cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+            while (cursor <= end) {
+                const monthStart = cursor;
+                const monthEnd = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0));
+                const daysInMonth = monthEnd.getUTCDate();
+                const from = monthStart > start ? monthStart : start;
+                const to = monthEnd < end ? monthEnd : end;
+                if (to >= from) {
+                    const covered = Math.round((to.getTime() - from.getTime()) / 86400000) + 1;
+                    total += covered / daysInMonth;
+                }
+                cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+            }
+            return total;
+        }
+
+        /** 월평균의 분모. 필터 기간이 있으면 그 기간, 없으면(전체) 데이터의 첫 배당일 ~ 마지막 배당일. */
+        function averageMonthSpan(): number {
+            let from = filterStartDay, to = filterEndDay;
+            if (!from || !to) {
+                const days = dividendData
+                    .filter((d: DividendRow) => d.payDate)
+                    .map((d: DividendRow) => d.payDate)
+                    .sort();
+                if (days.length === 0) return 0;
+                from = days[0];
+                to = days[days.length - 1];
+            }
+            return monthEquivalent(from, to);
+        }
+
         function monthlyRange() {
             let from = filterStartDate, to = filterEndDate;
             if (!from || !to) {
@@ -568,15 +617,21 @@ interface MonthRange {
                 label: s,
                 data: seriesMap[s],
                 backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
-                borderWidth: 0,
+                // borderWidth 를 0 으로 박으면 stock-charts 의 요소 테두리(WCAG 1.4.11)가 안 걸린다
+                // - 실측 2026-09-10: 이 차트만 라이트 84개 요소가 3:1 미달로 남았다. 기본값(1)에 맡긴다.
                 borderRadius: 2
             }));
             if (othersSeries) {
+                // 라벨에 기준을 실어 카드의 "기타"(월중/월말 태그 없는 종목)와 가른다 - 같은 화면에 두 뜻이
+                // 있었고 수는 565 배까지 달랐다(실측 2026-09-12 올해: 카드 6,152,014 vs 차트 10,899).
+                const othersCount = ranked.length - TOP;
+                const othersText = othersLabel
+                    .replace("{0}", String(othersCount))
+                    .replace("{1}", String(TOP));
                 datasets.push({
-                    label: othersLabel,
+                    label: othersText,
                     data: othersSeries,
                     backgroundColor: 'rgba(148,163,184,0.6)',
-                    borderWidth: 0,
                     borderRadius: 2
                 });
             }
@@ -600,6 +655,9 @@ interface MonthRange {
             const canvasEl = document.getElementById(canvasId);
             if (!canvasEl) return;
             if (monthlyChart) try { monthlyChart.destroy(); } catch(e) {}
+            // 도넛과 같은 규칙: 자료가 없으면 빈 캔버스 대신 안내를 둔다.
+            // 라벨은 자료가 0건이어도 기간에서 만들어진다(실측: 라벨 1개 · 점 0개) - 점 개수로 판정해야 한다.
+            const monthlyPointCount = (m.datasets || []).reduce((sum: number, d: any) => sum + ((d && d.data ? d.data.length : 0)), 0);
             const fmtFull = (v: number) => '₩' + Math.round(v).toLocaleString();
             // 최근 12개월 합 선(오른쪽 축). 막대는 '이번 달' 을, 선은 '추세' 를 답한다. 막대 축(수백만)과 선 축(수천만)은
             // 크기대가 달라 한 축에 두면 막대가 눌린다.
@@ -613,8 +671,8 @@ interface MonthRange {
                     data: m.labels.map((label: string) => (ttmByMonth[label] !== undefined ? ttmByMonth[label] : null)),
                     yAxisID: 'y1',
                     order: 0,
-                    borderColor: 'rgba(20,116,73,0.9)',
-                    backgroundColor: 'rgba(20,116,73,0.9)',
+                    borderColor: 'rgba(20,116,73,1)',
+                    backgroundColor: 'rgba(20,116,73,1)',
                     borderWidth: 2,
                     pointRadius: 2,
                     pointHoverRadius: 4,
@@ -653,7 +711,13 @@ interface MonthRange {
                     }
                 }
             };
-            win.ensureStockCharts(function() { monthlyChart = win.StockCharts.createChart(canvasId, config, monthlyChart); });
+            win.ensureStockCharts(function() {
+                if (win.StockCharts.renderChartEmptyNote(canvasId, monthlyPointCount === 0, noPeriodHistoryLabel)) {
+                    monthlyChart = null;
+                    return;
+                }
+                monthlyChart = win.StockCharts.createChart(canvasId, config, monthlyChart);
+            });
         }
 
         function initDonutChart(mode: string) {
@@ -665,7 +729,7 @@ interface MonthRange {
             const legend = document.getElementById('donutLegend');
             if (d.labels.length === 0) {
                 canvasEl.style.display = 'none';
-                if (legend) legend.innerHTML = '<div class="text-xs opacity-40 pt-4 text-center">' + noPeriodHistoryLabel + '</div>';
+                if (legend) legend.innerHTML = '<div class="text-xs text-base-content/70 pt-4 text-center">' + noPeriodHistoryLabel + '</div>';
                 return;
             }
             if (canvasEl.parentElement) canvasEl.parentElement.style.display = '';
@@ -693,11 +757,15 @@ interface MonthRange {
             win.ensureStockCharts(function() { donutChart = win.StockCharts.createChart(canvasId, config, donutChart); });
             const total = d.data.reduce((sum: number, v: number) => sum + v, 0);
             if (legend) {
+                // 조각마다 따로 반올림하면 합이 100.0 이 아니게 된다(매매 도넛 실측 99.9%). 공용 규칙을 쓴다.
+                const shownPercents = win.StockCharts && win.StockCharts.balancedPercents
+                    ? win.StockCharts.balancedPercents(d.data, 1)
+                    : d.data.map((v: number) => (total > 0 ? ((v / total) * 100).toFixed(1) : '0.0'));
                 legend.innerHTML = d.labels.map((label: string, i: number) => {
-                    const pct = total > 0 ? ((d.data[i] / total) * 100).toFixed(1) : '0.0';
+                    const pct = shownPercents[i];
                     const color = CHART_COLORS[i % CHART_COLORS.length];
                     return '<div class="flex items-center gap-1 mb-0.5">'
-                        + '<span style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + '"></span>'
+                        + '<span class="chart-legend-swatch" style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + '"></span>'
                         + '<span class="flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + label + '">' + label + '</span>'
                         + '<span style="flex-shrink:0;opacity:0.75;">' + pct + '%</span>'
                         + '</div>';
@@ -715,16 +783,36 @@ interface MonthRange {
                 return;
             }
             const totalNet = dividendData.reduce((sum: number, d: DividendRow) => sum + Number(d.net), 0);
-            const monthCount = buildMonthlyData().labels.length || 1;
+            // 분모는 기간 길이(월 환산)다. 걸친 달력 월 수를 쓰면 경계를 넘을 때마다 한 달씩 부풀어 평균이 작아진다.
+            const span = averageMonthSpan();
+            const monthCount = span > 0 ? span : (buildMonthlyData().labels.length || 1);
             const avgPerMonth = totalNet / monthCount;
             displayEl.textContent = formatCurrency(Math.round(avgPerMonth));
             if (descEl) {
                 // 총액은 실제 배당 합계라 '금액 숨김' 대상이다. amount-value 로 감싸지 않으면
                 // 숨김을 켜도 이 줄만 그대로 보인다(실측: 배당내역에서 유일한 누락).
                 descEl.innerHTML = averageDescTemplate
-                    .replace('{0}', formatNumber(monthCount))
+                    // 표시한 개월수로 나누면 화면의 월평균이 다시 나와야 한다. 정수로 반올림하면 재현이 깨진다
+                    // (실측 2026-09-11: 전체 기간 76.83개월을 '77개월' 로 적으면 65,652,134/77 = 852,625 로 화면값 854,475 와 다르다).
+                    // 정수에 가까우면 정수로, 아니면 소수 한 자리로 적고, 정확한 구간과 개월수는 툴팁에 남긴다.
+                    .replace('{0}', Math.abs(monthCount - Math.round(monthCount)) < 0.05
+                        ? formatNumber(Math.round(monthCount))
+                        : String(Math.round(monthCount * 10) / 10))
                     .replace('{1}', '<span class="amount-value">' + formatCurrency(Math.round(totalNet)) + '</span>')
                     .replace('{2}', formatCount(dividendData.length));
+                const spanFrom = filterStartDay || (dividendData.map((d: DividendRow) => d.payDate).filter(Boolean).sort()[0] || "");
+                const spanTo = filterEndDay || (dividendData.map((d: DividendRow) => d.payDate).filter(Boolean).sort().slice(-1)[0] || "");
+                const spanDetail = spanFrom && spanTo
+                    ? spanFrom + " ~ " + spanTo + " (" + (Math.round(monthCount * 100) / 100) + ")"
+                    : "";
+                descEl.title = spanDetail;
+                // title 은 접근성 트리에 안 올라간다(이 앱이 2026-09-10 에 겪은 실수) - 같은 내용을 sr-only 로도 남긴다.
+                if (spanDetail) {
+                    const srSpan = document.createElement("span");
+                    srSpan.className = "sr-only";
+                    srSpan.textContent = " " + spanDetail;
+                    descEl.appendChild(srSpan);
+                }
             }
         }
 

@@ -202,8 +202,12 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     if (clientProvidedRange) {
       // 예전에는 이 집합을 얻으려고 전체 거래 목록(80KB) 또는 손익 전체 계산을 다시 받아 id 만 뽑고 버렸다.
       // 집계 엔드포인트가 같은 집합을 2.8KB 로 준다(실측: 전체·YTD·최근 1개월·2024년 네 구간 id 집합 완전 일치).
-      final Instant availStart = startDate;
-      final Instant availEnd = endDate;
+      // 보정 전 파라미터를 쓰면 목록과 필터가 다른 기간을 본다. 실측 2026-09-10:
+      // 역순 입력(9/10~8/10)에서 목록은 23행인데 필터는 계좌 6 -> 1, 종목 8 -> 1 로 비었고,
+      // 날짜 없이 프리셋만 오면(rangeMode=1) 같은 23행 목록인데 필터에는 그 기간에 없는 종목까지 44개가 실렸다.
+      // 바로 아래 활동 경로(activityFilterIdsClient 두 번째 호출)는 이미 보정값을 쓰고 있다.
+      final Instant availStart = startInst;
+      final Instant availEnd = endInst;
       availableIdsFuture =
           async.supply(
               () -> {
@@ -347,9 +351,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .collect(Collectors.toCollection(ArrayList::new));
 
     if (sort != null && !sort.isEmpty()) {
-      String[] parts = sort.split(",");
-      String field = parts[0];
-      String direction = parts.length > 1 ? parts[1] : "asc";
+      String field = net.luversof.web.gate.stock.util.StockSortUtil.field(sort);
+      boolean descending = net.luversof.web.gate.stock.util.StockSortUtil.descending("sort", sort);
       Comparator<TradeResponse> comparator =
           switch (field) {
             case "tradeDate" ->
@@ -367,12 +370,14 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             case "realizedProfit" ->
                 Comparator.comparing(
                     TradeResponse::realizedProfit, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> null;
+            // 배당 목록과 같은 규칙 - 모르는 열 이름은 이름을 들고 끊는다.
+            default ->
+                throw new net.luversof.web.gate.stock.support.StockSortParamException("sort", sort);
           };
-      if (comparator != null) {
-        if ("desc".equalsIgnoreCase(direction)) comparator = comparator.reversed();
-        viewList.sort(comparator.thenComparing(TRADE_TIE_BREAKER));
+      if (descending) {
+        comparator = comparator.reversed();
       }
+      viewList.sort(comparator.thenComparing(TRADE_TIE_BREAKER));
     } else {
       viewList.sort(
           Comparator.comparing(
@@ -636,7 +641,42 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
        * <p>화면의 월별 차트가 <b>손익</b>을 그리려면 필요하다. 예전에는 {@code amount}(거래 금액)만 있어서 차트가 현금흐름밖에 그릴 수 없었고,
        * 그래서 "매수가 왜 0 선 아래인가" 를 알아야만 읽히는 그림이 됐다.
        */
-      BigDecimal realizedProfit) {}
+      BigDecimal realizedProfit,
+      /**
+       * 이 줄로 묶이기 전의 원본 건수.
+       *
+       * <p>활동 타임라인은 (날짜 · 유형 · 종목 · 매매구분) 이 같은 활동을 <b>계좌를 가로질러</b> 한 줄로 합친다. 그 합친 줄 수를 "건" 으로 세면 다른
+       * 화면과 숫자가 어긋난다 &mdash; 실측 2026-09-10: 활동 화면이 매수 149 · 매도 53 · 배당 108 건이라 했는데 원장은 매수 203 · 매도
+       * 55 · 배당 202 건이다(금액은 정확했다). 매매 화면은 258 건, 배당 화면은 202 건을 보여준다.
+       */
+      int recordCount) {
+
+    /** 묶이기 전의 낱개 활동. 원본 건수는 1 이다. */
+    public Activity(
+        String type,
+        UUID stockItemId,
+        String stockItemName,
+        String tradeType,
+        Integer quantity,
+        String description,
+        BigDecimal amount,
+        Instant date,
+        List<UUID> accountIds,
+        BigDecimal realizedProfit) {
+      this(
+          type,
+          stockItemId,
+          stockItemName,
+          tradeType,
+          quantity,
+          description,
+          amount,
+          date,
+          accountIds,
+          realizedProfit,
+          1);
+    }
+  }
 
   /**
    * 활동을 (날짜 · 유형 · 종목 · 매매구분) 으로 묶는다.
@@ -703,7 +743,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 newAmount,
                 existing.date(),
                 newAccountIds,
-                newRealizedProfit));
+                newRealizedProfit,
+                existing.recordCount() + a.recordCount()));
       } else {
         groupedMap.put(key, a);
       }
@@ -779,11 +820,13 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     long buyCount =
         thisMonth.stream()
             .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
-            .count();
+            .mapToLong(Activity::recordCount)
+            .sum();
     long sellCount =
         thisMonth.stream()
             .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
-            .count();
+            .mapToLong(Activity::recordCount)
+            .sum();
     BigDecimal buyAmount =
         thisMonth.stream()
             .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
@@ -794,7 +837,11 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
             .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-    long dividendCount = thisMonth.stream().filter(a -> "DIVIDEND".equals(a.type())).count();
+    long dividendCount =
+        thisMonth.stream()
+            .filter(a -> "DIVIDEND".equals(a.type()))
+            .mapToLong(Activity::recordCount)
+            .sum();
     BigDecimal dividendAmount =
         thisMonth.stream()
             .filter(a -> "DIVIDEND".equals(a.type()))
@@ -1036,11 +1083,13 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     long buyCount =
         activities.stream()
             .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
-            .count();
+            .mapToLong(Activity::recordCount)
+            .sum();
     long sellCount =
         activities.stream()
             .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
-            .count();
+            .mapToLong(Activity::recordCount)
+            .sum();
     BigDecimal buyAmount =
         activities.stream()
             .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
@@ -1051,7 +1100,11 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
             .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-    long dividendCount = activities.stream().filter(a -> "DIVIDEND".equals(a.type())).count();
+    long dividendCount =
+        activities.stream()
+            .filter(a -> "DIVIDEND".equals(a.type()))
+            .mapToLong(Activity::recordCount)
+            .sum();
     BigDecimal dividendAmount =
         activities.stream()
             .filter(a -> "DIVIDEND".equals(a.type()))

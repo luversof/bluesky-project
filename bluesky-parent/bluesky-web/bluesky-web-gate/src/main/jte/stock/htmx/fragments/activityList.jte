@@ -63,20 +63,26 @@
 	String tradeStatusLabel = MessageUtil.getMessage("stock.activity.card.trade.status");
 	String dividendReceivedLabel = MessageUtil.getMessage("stock.activity.card.dividend.received");
 	String totalActivityLabel = MessageUtil.getMessage("stock.activity.card.total.activity");
-	String noActivityDataLabel = MessageUtil.getMessage("stock.activity.message.no.data");
+	// 이 목록은 기간이 걸린다. 대시보드의 "최근 활동" 카드는 기간을 안 받으므로 그쪽 문구(no.data)는 그대로 둔다.
+		String noActivityDataLabel = MessageUtil.getMessage("stock.activity.message.no.period.data");
 	String dateLabel = MessageUtil.getMessage("common.label.date");
 	String typeLabel = MessageUtil.getMessage("common.label.type");
 	String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
 	String detailLabel = MessageUtil.getMessage("common.label.detail");
 	String amountLabel = MessageUtil.getMessage("common.label.amount");
-	String sharesLabel = MessageUtil.getMessage("stock.activity.label.shares");
+	String sharesPattern = MessageUtil.getMessage("stock.activity.label.shares");
+	// The unit hugs the number in Korean ("111주") but needs a space in English ("111 shares"),
+	// so the spacing lives in the message and the template splits it at the placeholder.
+	String sharesBefore = net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(sharesPattern);
+	String sharesAfter = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(sharesPattern);
 }
 
 <%-- 보이는 뷰 하나만 그린다. activityView 가 "all" 이면(스크립트 없는 환경/직접 호출) 예전처럼 3종 모두. --%>
 !{boolean showCalendarView = "all".equals(activityView) || "calendar".equals(activityView);}
 !{boolean showTimelineView = "all".equals(activityView) || "timeline".equals(activityView);}
 !{boolean showListView = "all".equals(activityView) || "list".equals(activityView);}
-<div id="activityListFragment" data-activity-view="${activityView}">
+<%-- 매매 화면과 같은 규칙: 서버가 실제로 적용한 기간 프리셋을 실어 보낸다. --%>
+<div id="activityListFragment" data-activity-view="${activityView}" data-applied-range-mode="${rangeMode == null ? "" : rangeMode}">
 
 	!{
 		boolean isAllMode = "all".equals(rangeMode);
@@ -227,7 +233,10 @@
 		<!-- Card 3: 전체 활동 -->
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${totalActivityLabel}</div>
-				<div class="text-xl font-bold">${countMessage.apply(activities != null ? activities.size() : 0)}</div>
+				<%-- activities.size() 는 (날짜·유형·종목·매매구분) 으로 묶인 '줄' 수다. 그걸 "건" 으로 쓰면 바로 아래
+				     매매·배당 건수와도, 매매/배당 화면과도 어긋난다 - 실측 2026-09-10: 전체 310 인데 매매 258 + 배당 202 = 460.
+				     묶이기 전 원본 건수(recordCount)를 더한다. --%>
+				<div class="text-xl font-bold">${countMessage.apply(buyCount + sellCount + dividendCount)}</div>
 				<div class="flex gap-4 text-xs text-base-content/60 mt-1">
 					<span>${tradeLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount + sellCount)}</span></span>
 					<span>${dividendLabel} <span class="font-medium text-base-content/70">${countMessage.apply(dividendCount)}</span></span>
@@ -249,6 +258,11 @@
 		String calendarTabLabel = MessageUtil.getMessage("stock.activity.view.calendar");
 		String timelineTabLabel = MessageUtil.getMessage("stock.activity.view.timeline");
 		String listTabLabel = MessageUtil.getMessage("stock.activity.view.list");
+		// 뷰마다 문서 제목을 달리한다. 실측 2026-09-12: 세 뷰가 "활동 내역" 한 종류를 써서 브라우저 탭·기록에서
+		// 구분되지 않았다(시뮬레이터 3탭 3종·관리 2탭 2종·배당 2탭 2종은 이미 이름을 붙인다).
+		// 이 화면의 전환은 브라우저 안에서 패널을 갈아 끼우므로 서버 렌더만으로는 닿지 않는다 - 탭이 제 제목을 들고 있게 해서
+		// 이미 붙어 있는 패널로 되돌아갈 때(요청 없는 전환)도 제목이 맞게 한다.
+		String activityTitleBase = MessageUtil.getMessage("stock.page.activity.title") + " · ";
 
 		// 월별 집계: 월(YearMonth) → [배당(세후), 실현손익, 매수, 매도] 합 (활동 있는 월만, 기간 순)
 		// [2] 매수 · [3] 매도는 월 카드 헤더의 요약에만 쓴다(2026-09-08). 접힌 달 카드가 건수만 보여 줘
@@ -323,9 +337,9 @@
 
 	<!-- View Tabs: 캘린더/타임라인/목록 (클라이언트 사이드 전환, localStorage 유지) -->
 	<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-4" id="activityViewTabs">
-		<a role="tab" data-activity-view-tab="calendar" aria-controls="${showCalendarView ? "activityCalendarView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${calendarTabLabel}</a>
-		<a role="tab" data-activity-view-tab="timeline" aria-controls="${showTimelineView ? "activityTimelineView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${timelineTabLabel}</a>
-		<a role="tab" data-activity-view-tab="list" aria-controls="${showListView ? "activityListView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${listTabLabel}</a>
+		<a role="tab" data-activity-view-tab="calendar" data-view-page-title="${activityTitleBase + calendarTabLabel}" aria-controls="${showCalendarView ? "activityCalendarView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${calendarTabLabel}</a>
+		<a role="tab" data-activity-view-tab="timeline" data-view-page-title="${activityTitleBase + timelineTabLabel}" aria-controls="${showTimelineView ? "activityTimelineView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${timelineTabLabel}</a>
+		<a role="tab" data-activity-view-tab="list" data-view-page-title="${activityTitleBase + listTabLabel}" aria-controls="${showListView ? "activityListView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${listTabLabel}</a>
 	</div>
 
 	<!-- Calendar View -->
@@ -345,7 +359,9 @@
 						int daysInMonth = activityMonth.lengthOfMonth();
 						int totalCells = ((startPad + daysInMonth + 6) / 7) * 7;
 						String monthTitle = activityMonth.getYear() + "." + String.format("%02d", activityMonth.getMonthValue());
-						int monthActivityCount = activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).values().stream().mapToInt(java.util.List::size).sum();
+						// 줄 수가 아니라 묶이기 전 건수를 센다. 위 '전체 활동' 카드와 같은 규칙이다 - 실측 2026-09-11:
+						// 올해 기준 월 카드의 합이 114 인데 헤더는 214 였다(전체 기간은 310 대 460).
+						int monthActivityCount = activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).values().stream().flatMap(java.util.List::stream).mapToInt(Activity::recordCount).sum();
 					}
 					<details class="rounded-2xl bg-base-100 p-3 shadow-sm" open="${activityMonth.equals(latestActivityMonth)}">
 						!{BigDecimal[] monthSummary = monthlyChartAmounts.getOrDefault(activityMonth, new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });}
@@ -364,7 +380,7 @@
 									<span><span class="text-base-content/60">${dividendLabel}</span> <span class="amount-value text-dividend">₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[0]))}</span></span>
 								@endif
 								@if(monthSummary[1].signum() != 0)
-									<span><span class="text-base-content/60">${realizedProfitLabel}</span> <span class="amount-value font-semibold ${monthSummary[1].signum() >= 0 ? "text-profit" : "text-loss"}">${monthSummary[1].signum() >= 0 ? "+" : "-"}₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[1].abs()))}</span></span>
+									<span><span class="text-base-content/60">${realizedProfitLabel}</span> <span class="amount-value font-semibold ${monthSummary[1].signum() >= 0 ? "text-profit" : "text-loss"}">${monthSummary[1].signum() == 0 ? "" : (monthSummary[1].signum() > 0 ? "+" : "-")}₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[1].abs()))}</span></span>
 								@endif
 							</span>
 						</summary>
@@ -389,10 +405,12 @@
 									if (hasActivity) {
 										for (Activity dayActivity : dayActivities) {
 											BigDecimal dayAmount = dayActivity.amount() != null ? dayActivity.amount() : BigDecimal.ZERO;
+											// 칸의 ●N 도 줄이 아니라 묶이기 전 건수다(월 카드·타임라인과 같은 규칙).
+											int dayRecords = dayActivity.recordCount();
 											if ("TRADE".equals(dayActivity.type())) {
-												if ("BUY".equals(dayActivity.tradeType())) { dayBuyCount++; dayNetAmount = dayNetAmount.subtract(dayAmount); }
-												else { daySellCount++; dayNetAmount = dayNetAmount.add(dayAmount); }
-											} else { dayDividendCount++; dayNetAmount = dayNetAmount.add(dayAmount); }
+												if ("BUY".equals(dayActivity.tradeType())) { dayBuyCount += dayRecords; dayNetAmount = dayNetAmount.subtract(dayAmount); }
+												else { daySellCount += dayRecords; dayNetAmount = dayNetAmount.add(dayAmount); }
+											} else { dayDividendCount += dayRecords; dayNetAmount = dayNetAmount.add(dayAmount); }
 										}
 									}
 									boolean isToday = inMonth && cellDate.equals(today);
@@ -411,9 +429,12 @@
 									@endif
 									@if(hasActivity)
 										<div class="flex flex-wrap gap-x-1 justify-center leading-tight">
-											@if(dayBuyCount > 0)<span class="text-profit">●${dayBuyCount}</span>@endif
-											@if(daySellCount > 0)<span class="text-loss">●${daySellCount}</span>@endif
-											@if(dayDividendCount > 0)<span class="text-dividend">●${dayDividendCount}</span>@endif
+											<%-- 종류를 색으로만 갈랐다 - 낭독기에는 "●8" 로만 들리고, 색으로 못 가르는 사람에게도 뜻이 없다
+											     (실측 2026-09-12: 매수 text-profit · 매도 text-loss · 배당 text-dividend 세 가지가 모두 ●N 뿐).
+											     보이는 글자는 그대로 두고 이름만 붙인다. --%>
+											@if(dayBuyCount > 0)<span class="text-profit" title="${buyLabel}">●${dayBuyCount}<span class="sr-only"> ${buyLabel}</span></span>@endif
+											@if(daySellCount > 0)<span class="text-loss" title="${sellLabel}">●${daySellCount}<span class="sr-only"> ${sellLabel}</span></span>@endif
+											@if(dayDividendCount > 0)<span class="text-dividend" title="${dividendLabel}">●${dayDividendCount}<span class="sr-only"> ${dividendLabel}</span></span>@endif
 										</div>
 										<div class="amount-value text-[10px] text-base-content/60 truncate" title="₩ ${df.format(dayNetAmount)}">₩ ${df.format(dayNetAmount)}</div>
 									@endif
@@ -431,7 +452,10 @@
 												!{
 													boolean detailIsTrade = "TRADE".equals(dayDetailActivity.type());
 													boolean detailIsBuy = detailIsTrade && "BUY".equals(dayDetailActivity.tradeType());
-													String detailAmountColor = !detailIsTrade ? "text-dividend" : (detailIsBuy ? "text-profit" : "text-loss");
+													// 매수·매도 금액은 거래 금액이지 손익이 아니다. 손익 색(빨강=수익 · 파랑=손실)을 현금 방향에 쓰면
+													// 이익이 난 매도가 손실 색으로 찍힌다 - 실측 2026-09-11: 매도 금액이 text-loss(rgb 49,89,196) 였다.
+													// 같은 화면 목록 뷰와 매매 화면 상세 목록은 둘 다 금액을 기본색으로 두고 배당만 색을 준다 - 그 규칙에 맞춘다.
+													String detailAmountColor = detailIsTrade ? "" : "text-dividend";
 												}
 												<div class="flex items-center gap-2 text-xs flex-wrap">
 													@if(detailIsTrade)
@@ -442,11 +466,29 @@
 													<a href="/stock/item?stockItemId=${dayDetailActivity.stockItemId() != null ? dayDetailActivity.stockItemId().toString() : ""}" class="link link-hover font-bold">${dayDetailActivity.stockItemName()}</a>
 													<span class="text-base-content/60 whitespace-nowrap">
 														@if(detailIsTrade)
-															<span class="amount-value">${dayDetailActivity.quantity()}</span> ${sharesLabel}
+															${sharesBefore}<span class="amount-value">${dayDetailActivity.quantity()}</span>${sharesAfter}
 														@else
 															${dayDetailActivity.description()}
 														@endif
 													</span>
+													<%-- 이 줄은 (날짜·유형·종목·매매구분) 이 같은 활동을 계좌를 가로질러 묶은 것이라 한 줄이 여러 계좌를 뜻할 수 있다.
+													     목록 뷰는 계좌를 적는데 이 상세는 적지 않아 어느 계좌 것인지 알 수 없었다 - 실측 2026-09-11(2026-07-20):
+													     "매수 TIGER 리츠부동산인프라 62주" 한 줄이 목록에서는 계좌 3개(연금저축2·연금저축1·+1)였다.
+													     목록 뷰와 같은 표기(최대 2개 + 나머지는 +N 툴팁)를 쓴다. --%>
+													@if(dayDetailActivity.accountIds() != null && !dayDetailActivity.accountIds().isEmpty())
+														<span class="flex items-center gap-1" data-cal-detail-accounts>
+															@for(int di = 0; di < Math.min(2, dayDetailActivity.accountIds().size()); di++)
+																<span class="badge badge-xs badge-outline">${accountNames != null ? accountNames.getOrDefault(dayDetailActivity.accountIds().get(di), "") : ""}</span>
+															@endfor
+															@if(dayDetailActivity.accountIds().size() > 2)
+																!{java.util.List<String> detailAccountLabels = dayDetailActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
+																<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", detailAccountLabels)}" data-tip="${String.join(", ", detailAccountLabels)}">
+																	<span class="badge badge-xs badge-outline opacity-70 cursor-help">+${dayDetailActivity.accountIds().size() - 2}</span>
+																</div>
+															@endif
+														</span>
+													@endif
+													@template.stock.htmx.fragments.components.mergedRecordBadge(recordCount = dayDetailActivity.recordCount(), accountCount = dayDetailActivity.accountIds() == null ? 0 : dayDetailActivity.accountIds().size())
 													<span class="ml-auto font-mono font-bold amount-value ${detailAmountColor}">₩ ${String.format("%,d", StockFormatUtil.displayWon(dayDetailActivity.amount()))}</span>
 												</div>
 											@endfor
@@ -484,10 +526,12 @@
 							BigDecimal tlNetAmount = BigDecimal.ZERO;
 							for (Activity tlActivity : tlActivities) {
 								BigDecimal tlAmount = tlActivity.amount() != null ? tlActivity.amount() : BigDecimal.ZERO;
+								// 하루 요약의 "매수 N건" 도 줄이 아니라 묶이기 전 건수다(캘린더 월 카드와 같은 이유).
+								int tlRecords = tlActivity.recordCount();
 								if ("TRADE".equals(tlActivity.type())) {
-									if ("BUY".equals(tlActivity.tradeType())) { tlBuyCount++; tlNetAmount = tlNetAmount.subtract(tlAmount); }
-									else { tlSellCount++; tlNetAmount = tlNetAmount.add(tlAmount); }
-								} else { tlDividendCount++; tlNetAmount = tlNetAmount.add(tlAmount); }
+									if ("BUY".equals(tlActivity.tradeType())) { tlBuyCount += tlRecords; tlNetAmount = tlNetAmount.subtract(tlAmount); }
+									else { tlSellCount += tlRecords; tlNetAmount = tlNetAmount.add(tlAmount); }
+								} else { tlDividendCount += tlRecords; tlNetAmount = tlNetAmount.add(tlAmount); }
 							}
 							boolean tlNetPositive = tlNetAmount.compareTo(BigDecimal.ZERO) >= 0;
 							String tlWeekday = weekdayLabels[tlDate.getDayOfWeek().getValue() % 7];
@@ -511,14 +555,15 @@
 							<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-1">
 								<span class="text-sm font-bold">${tlDateTitle}</span>
 								<span class="text-xs text-base-content/60">${tlSummaryText}</span>
-								<span class="text-xs font-mono font-bold amount-value ${tlNetPositive ? "text-profit" : "text-loss"}">${tlNetPositive ? "+" : "-"}₩ ${df.format(tlNetAmount.abs())}</span>
+								<span class="text-xs font-mono font-bold amount-value ${tlNetPositive ? "text-profit" : "text-loss"}">${tlNetAmount.signum() == 0 ? "" : (tlNetPositive ? "+" : "-")}₩ ${df.format(tlNetAmount.abs())}</span>
 							</div>
 							<div class="space-y-1">
 								@for(Activity tlRowActivity : tlActivities)
 									!{
 										boolean tlIsTrade = "TRADE".equals(tlRowActivity.type());
 										boolean tlIsBuy = tlIsTrade && "BUY".equals(tlRowActivity.tradeType());
-										String tlAmountColor = !tlIsTrade ? "text-dividend" : (tlIsBuy ? "text-profit" : "text-loss");
+										// 캘린더 날짜 상세와 같은 이유로 거래 금액에는 손익 색을 쓰지 않는다(목록 뷰 규칙).
+										String tlAmountColor = tlIsTrade ? "" : "text-dividend";
 									}
 									<div class="flex items-center gap-2 text-xs flex-wrap">
 										@if(tlIsTrade)
@@ -529,11 +574,27 @@
 										<a href="/stock/item?stockItemId=${tlRowActivity.stockItemId() != null ? tlRowActivity.stockItemId().toString() : ""}" class="link link-hover font-bold">${tlRowActivity.stockItemName()}</a>
 										<span class="text-base-content/60 whitespace-nowrap">
 											@if(tlIsTrade)
-												<span class="amount-value">${tlRowActivity.quantity()}</span> ${sharesLabel}
+												${sharesBefore}<span class="amount-value">${tlRowActivity.quantity()}</span>${sharesAfter}
 											@else
 												${tlRowActivity.description()}
 											@endif
 										</span>
+										<%-- 캘린더 날짜 상세와 같은 이유로 계좌를 적는다 - 한 줄이 계좌를 가로질러 묶인 것이라
+										     어느 계좌 것인지 보이지 않으면 목록 뷰와 정보가 어긋난다(실측 2026-09-11: 타임라인 계좌 표기 0개). --%>
+										@if(tlRowActivity.accountIds() != null && !tlRowActivity.accountIds().isEmpty())
+											<span class="flex items-center gap-1" data-timeline-accounts>
+												@for(int ti = 0; ti < Math.min(2, tlRowActivity.accountIds().size()); ti++)
+													<span class="badge badge-xs badge-outline">${accountNames != null ? accountNames.getOrDefault(tlRowActivity.accountIds().get(ti), "") : ""}</span>
+												@endfor
+												@if(tlRowActivity.accountIds().size() > 2)
+													!{java.util.List<String> tlAccountLabels = tlRowActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
+													<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", tlAccountLabels)}" data-tip="${String.join(", ", tlAccountLabels)}">
+														<span class="badge badge-xs badge-outline opacity-70 cursor-help">+${tlRowActivity.accountIds().size() - 2}</span>
+													</div>
+												@endif
+											</span>
+										@endif
+										@template.stock.htmx.fragments.components.mergedRecordBadge(recordCount = tlRowActivity.recordCount(), accountCount = tlRowActivity.accountIds() == null ? 0 : tlRowActivity.accountIds().size())
 										<span class="ml-auto font-mono font-bold amount-value ${tlAmountColor}">₩ ${String.format("%,d", StockFormatUtil.displayWon(tlRowActivity.amount()))}</span>
 									</div>
 								@endfor
@@ -554,7 +615,7 @@
 				@template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
 			@else
 				<div class="overflow-x-auto">
-					<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${listTabLabel}">
+					<table class="table w-full table-sm table-pin-rows pin-top-nav" data-activity-list-table aria-label="${listTabLabel}">
 						<thead>
 							<tr class="bg-base-200">
 								<th scope="col">${dateLabel}</th>
@@ -582,7 +643,7 @@
 										<div class="flex items-center gap-2 whitespace-nowrap">
 											<span>
 												@if("TRADE".equals(activity.type()))
-													<span class="amount-value">${activity.quantity()}</span> ${sharesLabel}
+													${sharesBefore}<span class="amount-value">${activity.quantity()}</span>${sharesAfter}
 												@else
 													${activity.description()}
 												@endif
@@ -605,6 +666,7 @@
 													@endif
 												</span>
 											@endif
+											@template.stock.htmx.fragments.components.mergedRecordBadge(recordCount = activity.recordCount(), accountCount = activity.accountIds() == null ? 0 : activity.accountIds().size())
 										</div>
 									</td>
 									<td class="text-right font-mono font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">

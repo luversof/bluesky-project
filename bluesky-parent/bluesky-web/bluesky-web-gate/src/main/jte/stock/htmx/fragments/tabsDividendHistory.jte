@@ -162,7 +162,11 @@
 	String noDataLabel = MessageUtil.getMessage("common.message.no.data");
 
 	// 하단 인라인 스크립트에서 사용하는 라벨
-	String othersLabel = MessageUtil.getMessage("stock.chart.others");
+	// 이 차트의 "기타" 는 <b>총 배당 상위 8개 외 나머지 종목</b>이다. 같은 화면의 배당 카드에도 "기타" 가 있는데
+	// 그쪽은 <b>월중/월말 태그가 없는 종목</b>이라 뜻이 다르다 - 실측 2026-09-12: 올해 카드 기타 6,152,014원(3건) vs
+	// 차트 기타 10,899원, 전체 기간은 41,925,046원(68건) vs 829,848원. 같은 낱말로 565 배·50 배 다른 수를 말하고 있었다.
+	// 기준과 개수를 라벨에 실어 가른다({0}=나머지 종목 수, {1}=상위 N). 자리 채우기는 화면 쪽에서 한다.
+	String othersLabel = MessageUtil.getMessage("stock.dividend.chart.others.basis");
 	String noPeriodHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.period.history");
 	String averageNoDataLabel = MessageUtil.getMessage("stock.dividend.summary.no.data");
 	String averageDescTemplate = MessageUtil.getMessage("stock.dividend.summary.average.desc");
@@ -279,6 +283,7 @@
 	)
 
 	@template.stock.htmx.fragments.dividend.dividendTable(
+		widenRangeAction = !isAllMode,
 		dividendList = dividendList,
 		zone = zone,
 		sort = sort,
@@ -310,6 +315,10 @@
 			ttmLabel: "${ttmLabel}",
 			filterStartDate: "${startLocal != null ? startLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}",
 			filterEndDate: "${endLocalInclusive != null ? endLocalInclusive.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}",
+			<%-- 월평균의 분모는 '걸친 달력 월 수' 가 아니라 기간 길이여야 한다. 그러려면 달이 아니라 날짜가 필요하다
+			     - 실측 2026-09-11: 1개월 프리셋(08-12~09-11, 31일)이 2개월로 나뉘어 월평균이 실제의 절반이었다. --%>
+			filterStartDay: "${startLocal != null ? startLocal.toString() : ""}",
+			filterEndDay: "${endLocalInclusive != null ? endLocalInclusive.toString() : ""}",
 			countPattern: "${countPattern}",
 			noDataLabel: "${noDataLabel}",
 			noPeriodHistoryLabel: "${noPeriodHistoryLabel}",

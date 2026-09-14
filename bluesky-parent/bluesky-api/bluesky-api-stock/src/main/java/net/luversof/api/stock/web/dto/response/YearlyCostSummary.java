@@ -25,4 +25,11 @@ public record YearlyCostSummary(
      */
     BigDecimal dividendTaxable,
     BigDecimal dividendTax,
-    BigDecimal dividendNet) {}
+    BigDecimal dividendNet,
+    /**
+     * 그 해 매도 건수.
+     *
+     * <p>{@code realizedProfit} 이 0 일 때 "판 적이 없다" 와 "팔았는데 0 원" 을 가르는 유일한 단서다. 금액만 보면 둘이 같아 보인다
+     * &mdash; 실측 2026-09-12: 14 개 해 중 2024·2017·2009 이 실현손익 0 이었고 셋 다 매도 0 건이었다.
+     */
+    long sellCount) {}

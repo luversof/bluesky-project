@@ -104,6 +104,34 @@
 				<span>${updatePriceHistoriesLabel}: ${dataStatus.priceHistoryLastDate() != null ? dataStatus.priceHistoryLastDate().toString() : "-"}</span>
 				<span>${updateStockItemsLabel}: ${java.text.MessageFormat.format(countSuffix, dataStatus.stockItemCount())}</span>
 			</div>
+			<%-- 최신 시세 일자 한 줄만 적으면 전 종목이 그 날까지 최신인 것으로 읽힌다. 바로 위에 "종목 86건" 이
+				 나란히 있어 더 그렇다. 실측 2026-09-12: 86 종목 중 이 날짜 행이 있는 것은 9 종목뿐이고 70 종목은
+				 2026-04-01/03 에, 나머지는 그보다 더 전에 멈춰 있었다(이력이 아예 없는 종목 4). 시세 갱신이 보유
+				 종목 위주로 도는 결과라 데이터가 틀린 것은 아니지만, 밝히지 않으면 없는 최신성을 믿게 된다. --%>
+			@if(dataStatus.stockItemCount() > 0 && dataStatus.priceHistoryLastDate() != null)
+				<div class="text-[11px] text-base-content/60 mb-2">
+					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.history.coverage"),
+						String.format("%,d", dataStatus.stockItemCount()),
+						String.format("%,d", dataStatus.priceHistoryLastDateItemCount()),
+						String.format("%,d", dataStatus.priceHistoryNoHistoryItemCount()))}
+				</div>
+				<%-- 개수만 적으면 무엇을 고쳐야 할지 알 수 없다. 같은 화면의 다른 이상 항목(거래량 0 인데 종가가
+					 바뀐 행, 제한폭을 넘은 행)은 이미 종목·날짜까지 적는다 - 이것만 숫자였다. --%>
+				@if(dataStatus.priceHistoryNoHistoryItemRows() != null && !dataStatus.priceHistoryNoHistoryItemRows().isEmpty())
+					<div class="text-[11px] text-base-content/60 mb-2 font-mono" data-no-history-items="${dataStatus.priceHistoryNoHistoryItemRows().size()}">
+						@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.NoHistoryItemRow row : dataStatus.priceHistoryNoHistoryItemRows())
+							<div>${row.symbol()} ${row.stockItemName()}</div>
+						@endfor
+						@if(dataStatus.priceHistoryNoHistoryItemCount() > dataStatus.priceHistoryNoHistoryItemRows().size())
+							<div data-list-truncated="no-history">
+								${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.list.truncated"),
+									String.valueOf(dataStatus.priceHistoryNoHistoryItemRows().size()),
+									String.valueOf(dataStatus.priceHistoryNoHistoryItemCount() - dataStatus.priceHistoryNoHistoryItemRows().size()))}
+							</div>
+						@endif
+					</div>
+				@endif
+			@endif
 			<%-- 마지막 시세 일자가 '거래가 없던 날'이면 그 날짜에는 확정 종가가 없다. 화면 곳곳이 그 날짜를
 				 '평가 기준'으로 적으므로, 여기서 사실을 밝히지 않으면 있지도 않은 최신성을 믿게 된다.
 				 (실측 2026-08-22: 2026-08-20 행 9건이 전부 거래량 0, 종가는 08-19 와 동일) --%>
@@ -126,16 +154,10 @@
 						String.format("%,d", dataStatus.priceHistoryRowCount()),
 						String.format("%,d", dataStatus.priceHistoryZeroVolumeRowCount()),
 						String.format("%.2f", dataStatus.priceHistoryZeroVolumeRatioPercent()))}
-					<%-- 마지막 시세일이 직전 거래일과 얼마나 같은지. 종가만 같으면 '거래가 없던 날'이고,
-						 시가·고가·저가·거래량까지 같으면 행 자체가 복제됐다는 뜻이라 원인이 다르다.
-						 이 구분에 쓸 유일한 값(sameAll)이 api-stock 에서 오는데도 화면에 없었다
-						 (실측 2026-08-23: 9종목 중 종가 동일 9 / 전 항목 동일 0 - 복제는 아니다). --%>
-					@if(dataStatus.priceHistoryItemCount() > 0)
-						<div>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.duplicate.rows"),
-							String.valueOf(dataStatus.priceHistorySameCloseCount()),
-							String.valueOf(dataStatus.priceHistoryItemCount()),
-							String.valueOf(dataStatus.priceHistorySameAllCount()))}</div>
-					@endif
+					<%-- "그중" 은 바로 위의 거래량 0 행을 받는다. 2026-09-12 까지 이 문장이 중복 행 문장 뒤에 있어
+						 화면에서는 "9종목 중 1건" 다음에 "그중 ... 1건" 이 붙었다 - 두 1 이 우연히 같은 숫자라
+						 앞 문장의 1 건을 받는 것처럼 읽혔다(실제로는 앞은 2026-09-09 기준, 이것은 쌍방울 2025-05-08 로 무관).
+						 받는 말 바로 뒤로 옮긴다. --%>
 					@if(dataStatus.priceHistoryZeroVolumeChangedCloseCount() > 0)
 						&middot; ${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.changed"),
 							String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseCount()))}
@@ -146,12 +168,32 @@
 								 그 비를 함께 적는다(실측 2026-08-23: 쌍방울 2025-05-08 13,450 -> 2,690 = 정확히 1/5). --%>
 							<div class="font-mono" data-zero-volume-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()}@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.split"), row.splitRatioLabel())})</span>@endif</div>
 						@endfor
+						<%-- 이 목록도 상한이 있다(질의 LIMIT 5). 같은 화면의 다른 두 목록과 같은 규칙으로 밝힌다. --%>
+						@if(dataStatus.priceHistoryZeroVolumeChangedCloseCount() > dataStatus.priceHistoryZeroVolumeChangedCloseRows().size())
+							<div class="text-[11px] text-base-content/60" data-list-truncated="zero-volume">
+								${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.list.truncated"),
+									String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseRows().size()),
+									String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseCount() - dataStatus.priceHistoryZeroVolumeChangedCloseRows().size()))}
+							</div>
+						@endif
+					@endif
+					<%-- 마지막 시세일이 직전 거래일과 얼마나 같은지. 종가만 같으면 '거래가 없던 날'이고,
+						 시가·고가·저가·거래량까지 같으면 행 자체가 복제됐다는 뜻이라 원인이 다르다.
+						 이 구분에 쓸 유일한 값(sameAll)이 api-stock 에서 오는데도 화면에 없었다
+						 (실측 2026-08-23: 9종목 중 종가 동일 9 / 전 항목 동일 0 - 복제는 아니다). --%>
+					@if(dataStatus.priceHistoryItemCount() > 0)
+						<div>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.duplicate.rows"),
+							String.valueOf(dataStatus.priceHistorySameCloseCount()),
+							String.valueOf(dataStatus.priceHistoryItemCount()),
+							String.valueOf(dataStatus.priceHistorySameAllCount()))}</div>
 					@endif
 					<%-- 거래량 0 그물은 분할을 대부분 놓친다 - 분할은 보통 거래가 재개되며 거래량이 붙는다.
 						 (실측 2026-08-24: 그 그물에 걸린 유일한 행 쌍방울 2025-05-08 도 거래량이 우연히 0 이었을 뿐)
-						 하루 변동이 제한폭(±30%)을 넘으면 거래로는 생길 수 없으므로 따로 센다. 다만 정리매매·
-						 하한가는 제한폭이 적용되지 않거나 그 자체가 정상이므로 '오류'라고 쓰지 않고 배율을 함께
-						 적어 사람이 가리게 한다(실측: 5행 중 분할로 설명되는 것은 1행뿐이다). --%>
+						 하루 변동이 제한폭(±30%)을 넘으면 거래로는 생길 수 없으므로 따로 센다. 다만 정리매매는
+						 제한폭이 적용되지 않으므로 '오류'라고 쓰지 않고 배율을 함께 적어 사람이 가리게 한다.
+						 정상적인 하한가는 기준을 0.301 로 둬 애초에 걸리지 않는다 - 상·하한가는 기준가에 0.7/1.3 을
+						 곱한 뒤 호가단위로 맞추므로 30% 를 아주 조금 넘길 수 있다(실측 2026-09-10: 한화오션
+						 2015-07-15 -30.00036%). 그 한 행이 빠져 5행 -> 4행이 됐고, 남은 4행 중 분할로 설명되는 것은 1행이다. --%>
 					@if(dataStatus.priceHistoryPriceLimitBreachCount() > 0)
 						<div class="mt-1">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.limit"),
 							String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount()))}</div>
@@ -159,6 +201,15 @@
 							@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.PriceLimitBreachRow row : dataStatus.priceHistoryPriceLimitBreachRows())
 								<div class="font-mono" data-price-limit-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}" data-price-limit-gap="${row.gapDays()}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()} (${StockFormatUtil.signedPct(row.changePercent(), 1)})@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.split"), row.splitRatioLabel())})</span>@endif</div>
 							@endfor
+							<%-- 목록에는 상한이 있다. 개수만 크게 적고 몇 줄만 보이면 나머지가 있는 줄 모른다.
+								 (같은 화면의 다른 목록도 같은 규칙) --%>
+							@if(dataStatus.priceHistoryPriceLimitBreachCount() > dataStatus.priceHistoryPriceLimitBreachRows().size())
+								<div class="text-[11px] text-base-content/60" data-list-truncated="limit-breach">
+									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.list.truncated"),
+										String.valueOf(dataStatus.priceHistoryPriceLimitBreachRows().size()),
+										String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount() - dataStatus.priceHistoryPriceLimitBreachRows().size()))}
+								</div>
+							@endif
 						@endif
 					@endif
 				</div>

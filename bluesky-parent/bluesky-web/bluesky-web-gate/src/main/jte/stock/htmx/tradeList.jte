@@ -111,7 +111,10 @@
 		&& startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
 }
 
-<div id="tradeListFragment">
+<%-- 서버가 실제로 적용한 기간 프리셋. 프리셋 버튼의 눌린 표시는 클릭 즉시 바뀌는데, 앞 요청이
+     진행 중이면 뒤 요청이 버려져 표시와 데이터가 어긋난다(실측 2026-09-13: 12 회 중 6 회).
+     이 값이 있으면 스왑 뒤에 버튼을 실제 값으로 되돌릴 수 있다. --%>
+<div id="tradeListFragment" data-applied-range-mode="${rangeMode == null ? "" : rangeMode}">
 
 	@template.stock.htmx.fragments.dateRangeNavBar(
 		pickerName = "tradePicker",
@@ -201,7 +204,12 @@
 		tradePeriods = net.luversof.web.gate.stock.util.StockTradePeriodUtil.of(allTradeList, zone)
 	)
 
+	<%-- 빈 기간에서 다음 행동을 준다 - 실측 2026-09-13: 같은 상황(2019-02-01~07)에서 활동 목록만
+	     '기간 넓히기' 를 띄우고 매매 · 배당 · 자산 성장 셋은 문구만 남겼다. 네 화면 모두 '전체' 프리셋 단추를
+	     갖고 있어 CTA 가 그것을 눌러 준다(실측: 2019-02-01~07 -> 2009-10-06~2026-09-02).
+	     이미 '전체' 면 넓힐 곳이 없으므로 띄우지 않는다. --%>
 	@template.stock.htmx.fragments.trade.tradeDetailList(
+		widenRangeAction = !isAllMode,
 		tradeList = tradeList,
 		zone = zone,
 		totalItems = totalItems,

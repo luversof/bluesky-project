@@ -34,12 +34,18 @@
 	 여기 endLocal 은 컨트롤러가 이미 minusDays(1) 로 만든 '포함' 마지막 날이라 그대로 넘기면 하루가 더 빠진다.
 	 실측: 8/1~8/31 구간 배지가 8-30, 하루짜리 구간은 8-01 ~ 07-31 로 역전됐다. --%>
 !{java.time.LocalDate navBarEndExclusive = endLocal != null ? endLocal.plusDays(1) : null;}
+<%-- 기간을 지정하지 않고 들어오면 화면은 실제로 전 기간을 보여 주는데, rangeMode 가 비어 있어 '전체' 버튼이
+	 눌린 것으로 보이지 않았다 - 실측 2026-09-11: 같은 종목 상세가 ?rangeMode=all 로 들어오면 '전체' 강조,
+	 파라미터 없이 들어오면 같은 데이터에 아무 버튼도 강조되지 않았다(배지는 둘 다 "전체 · 2020-03-23 ~ 2026-09-11").
+	 강조만 맞추고 숨은 입력(rangeMode)은 그대로 비워 둔다 - 여기서 mode 를 채우면 첫 방문에 '전체' 가 전역 기간으로
+	 저장돼(firstVisitRange) 매매·배당 화면의 기본값까지 올해에서 전체로 바뀐다. --%>
+!{String navRangeMode = (rangeMode == null || rangeMode.isBlank()) && startLocal == null && endLocal == null ? "all" : rangeMode;}
 @template.stock.htmx.fragments.dateRangeNavBar(
 	pickerName = pickerVar,
 	btnClass = btnClass,
 	canPrev = canPrev,
 	canNext = canNext,
-	rangeMode = rangeMode,
+	rangeMode = navRangeMode,
 	startDate = startLocal,
 	endDate = navBarEndExclusive,
 	showRangeText = true,

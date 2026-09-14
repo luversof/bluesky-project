@@ -648,6 +648,15 @@ type SelectionObject = {
 						"asset-growth",
 						"trade-history",
 					];
+					// 주입은 막되, 호출자가 일부러 실은 값까지 지우지는 않는 곳.
+					//
+					// 실측 2026-09-12: 자산 성장에서 한 계좌로 좁힌 뒤 기간 프리셋을 누르면
+					// /stock/htmx/trade-history 를 프로그램으로 다시 부르는데, 여기서 계좌·종목 값이
+					// 지워져 좁혀 놓은 표에 다섯 계좌의 거래가 +83ms~+135ms 동안 보였다가 정정됐다.
+					// 서버가 그린 패널의 hx-get 은 같은 이름으로 이 값을 싣고 있으므로(=이 엔드포인트는
+					// 필터를 받는 계약이다) 지우는 쪽이 계약과 어긋난다. 저장된 "행 선택" 을 주입하지
+					// 않는다는 원래 목적은 그대로 둔다.
+					const keepCallerFilters = ["trade-history"];
 
 					// 1) If the path (set by htmx or provided programmatically) mentions an excluded
 					// endpoint, remove account/stock query params from the path and skip injection.
@@ -657,6 +666,11 @@ type SelectionObject = {
 						if (path) {
 							for (const kw of excluded) {
 								if (path.indexOf(kw) !== -1) {
+									if (
+										keepCallerFilters.some((k) => path.indexOf(k) !== -1)
+									) {
+										return;
+									}
 									try {
 										const url = new URL(path, location.href);
 										let changed = false;

@@ -4,6 +4,8 @@
 <%-- 잘못된 입력(4xx)이면 리졸버가 badrequest 키를 넘긴다. 기본은 "불러오지 못했습니다". --%>
 @param String titleKey = "stock.error.fragment.title"
 @param String descKey = "stock.error.fragment.desc"
+<%-- 형 변환이 실패한 파라미터 이름. 있으면 문구가 그 이름을 받는다(어느 값을 고쳐야 하는지 알려 주려고). --%>
+@param String descArg = null
 
 <%-- 백엔드 호출이 실패했을 때 htmx 가 갈아끼울 조각.
 	 이게 없으면 공통 예외 처리기가 본문 없는 200 을 돌려줘 화면이 아무 안내 없이 빈다. --%>
@@ -13,7 +15,7 @@
 	</svg>
 	<div class="min-w-0">
 		<div class="font-semibold">${MessageUtil.getMessage(titleKey)}</div>
-		<div class="text-sm opacity-80 whitespace-normal">${MessageUtil.getMessage(descKey)}</div>
+		<div class="text-sm opacity-80 whitespace-normal">${descArg == null || descArg.isBlank() ? MessageUtil.getMessage(descKey) : java.text.MessageFormat.format(MessageUtil.getMessage(descKey), descArg)}</div>
 	</div>
 	@if(retryUrl != null && !retryUrl.isEmpty())
 		<%-- 실패한 조회를 그 자리에서 다시 부른다. 이 알림 자체를 갈아끼우므로 성공하면 원래 조각이 들어온다. --%>

@@ -68,6 +68,52 @@ class PriceLimitBreachRenderTest {
         1);
   }
 
+  /** 그 안내 상자 안의 글자만 떼어 낸다 - 페이지 전체에서 숫자를 찾으면 아무 숫자나 걸린다. */
+  private String truncatedText(String html, String kind) {
+    String marker = "data-list-truncated=\"" + kind + "\">";
+    int at = html.indexOf(marker);
+    if (at < 0) {
+      return "";
+    }
+    int end = html.indexOf("</div>", at);
+    return html.substring(at + marker.length(), end < 0 ? html.length() : end).trim();
+  }
+
+  /** 거래량 0 인데 종가가 바뀐 목록도 같은 상한 규칙을 쓴다. */
+  private String renderZeroVolume(
+      long count, List<DataStatusResponse.ZeroVolumeChangedCloseRow> rows) {
+    DataStatusResponse dataStatus =
+        new DataStatusResponse(
+            null,
+            0L,
+            null,
+            0L,
+            LocalDate.parse("2026-08-24"),
+            86L,
+            LocalDate.parse("2026-08-21"),
+            9L,
+            9L,
+            0L,
+            9L,
+            57477L,
+            1352L,
+            9L,
+            4L,
+            count,
+            rows,
+            null,
+            List.of(),
+            0L,
+            List.of(),
+            java.util.List.of());
+    Map<String, Object> model = new HashMap<>();
+    model.put("isAuthenticated", true);
+    model.put("dataStatus", dataStatus);
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
+    return output.toString();
+  }
+
   private String render(long count, List<DataStatusResponse.PriceLimitBreachRow> rows) {
     DataStatusResponse dataStatus =
         new DataStatusResponse(
@@ -84,12 +130,15 @@ class PriceLimitBreachRenderTest {
             9L,
             57477L,
             1352L,
+            9L,
+            4L,
             0L,
             List.of(),
             null,
             List.of(),
             count,
-            rows);
+            rows,
+            java.util.List.of());
     Map<String, Object> model = new HashMap<>();
     model.put("isAuthenticated", true);
     model.put("dataStatus", dataStatus);
@@ -144,5 +193,60 @@ class PriceLimitBreachRenderTest {
         .doesNotContain(
             java.text.MessageFormat.format(
                 MessageUtil.getMessage("stock.admin.price.quality.limit"), "0"));
+  }
+
+  /**
+   * 목록에는 상한이 있다(질의 LIMIT 5). 개수만 크게 적고 다섯 줄만 보이면 나머지가 있는 줄 모른다 - 같은 화면이 다른 목록에서 조용히 자르던 것을 고친 적이
+   * 있다.
+   */
+  @Test
+  void 목록이_잘리면_몇_건이_더_있는지_적는다() {
+    String html =
+        render(
+            7L,
+            List.of(
+                row("가", "2026-08-24", "2026-08-21", "1000", "600", -40.0),
+                row("나", "2026-08-23", "2026-08-20", "1000", "600", -40.0)));
+
+    String note = truncatedText(html, "limit-breach");
+    assertThat(note).as("잘렸다는 사실을 적는다").isNotBlank();
+    assertThat(note).as("보여 준 줄 수").contains("2");
+    assertThat(note).as("남은 건수 7-2").contains("5");
+  }
+
+  /** 다 보여 줄 수 있으면 군더더기를 붙이지 않는다. */
+  @Test
+  void 다_보여_주면_안내를_안_붙인다() {
+    String html = render(1L, List.of(row("가", "2026-08-24", "2026-08-21", "1000", "600", -40.0)));
+
+    assertThat(html).doesNotContain("data-list-truncated");
+  }
+
+  /** 세 번째 목록(거래량 0 인데 종가가 바뀐 행)도 같은 규칙을 쓴다. */
+  @Test
+  void 거래량0_목록도_잘리면_밝힌다() {
+    String html =
+        renderZeroVolume(
+            9L,
+            List.of(
+                new DataStatusResponse.ZeroVolumeChangedCloseRow(
+                    "가", LocalDate.parse("2026-08-24"), bd("100"), bd("200"))));
+
+    String note = truncatedText(html, "zero-volume");
+    assertThat(note).isNotBlank();
+    assertThat(note).as("보여 준 줄 수").contains("1");
+    assertThat(note).as("남은 건수 9-1").contains("8");
+  }
+
+  @Test
+  void 거래량0_목록이_다_보이면_안내를_안_붙인다() {
+    String html =
+        renderZeroVolume(
+            1L,
+            List.of(
+                new DataStatusResponse.ZeroVolumeChangedCloseRow(
+                    "가", LocalDate.parse("2026-08-24"), bd("100"), bd("200"))));
+
+    assertThat(truncatedText(html, "zero-volume")).isEmpty();
   }
 }

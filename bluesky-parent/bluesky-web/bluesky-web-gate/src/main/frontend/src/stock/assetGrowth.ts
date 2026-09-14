@@ -203,7 +203,7 @@ interface AssetGrowthConfig {
                         {
                             label: L.cumulativeTotal,
                             data: totalCumulativeProfitData,
-                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderColor: 'rgba(29, 167, 80, 1)',
                             backgroundColor: 'rgba(34, 197, 94, 0.25)',
                             borderWidth: 2,
                             fill: '-1',
@@ -215,7 +215,6 @@ interface AssetGrowthConfig {
                     ]
                 },
                 options: {
-                    animation: { duration: 600 },
                     normalized: true,
                     elements: {
                         line: { tension: 0 },

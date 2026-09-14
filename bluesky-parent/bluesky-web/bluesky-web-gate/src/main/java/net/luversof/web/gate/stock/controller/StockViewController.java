@@ -274,6 +274,15 @@ public class StockViewController {
 
     String simulatorTab = resolveSimulatorTab(tab);
     model.addAttribute("simulatorTab", simulatorTab);
+    // 탭은 탭만 바꾼다 - 실측 2026-09-12: 월배당 표를 종목코드로 정렬한 뒤 다른 탭에 갔다 돌아오면
+    // sort/direction 이 주소에서 사라져 기본 순서로 되돌아갔다. 배당 화면과 같은 규칙을 쓴다.
+    String simulatorQuery = request.getQueryString();
+    for (String each : new String[] {"sustainability", "monthly-dividend", "compound"}) {
+      model.addAttribute(
+          simulatorTabHrefAttribute(each),
+          net.luversof.web.gate.stock.util.StockTabLinkUtil.tabHref(
+              "/stock/simulator", simulatorQuery, each));
+    }
 
     if ("monthly-dividend".equals(simulatorTab)) {
       UUID userId = UserUtil.getUserId();
@@ -453,6 +462,10 @@ public class StockViewController {
     // (실측 2026-08-23: 이 조회 하나가 p50 31ms).
     var currentHoldingsFuture =
         stockAsync.supply(() -> monthlyDividendReferenceSupport.loadCurrentHoldings(userId));
+    // 표가 보여 주는 과세표준 비중은 스냅샷에 저장된 값이라, 지급 이력이 갱신돼도 사용자가 다시 채우기 전까지 옛 값이다
+    // (실측 2026-09-11: 8 종목 전부 달랐고 최대 13.42% 對 100%). 같은 화면에서 차이를 알 수 있게 이력 기준 값도 함께 싣는다.
+    var referenceRatioFuture =
+        stockAsync.supply(() -> monthlyDividendReferenceSupport.referenceTaxableRatioBySymbol());
     List<MonthlyDividendSnapshotResponse> allRows =
         monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId);
     List<MonthlyDividendProfileResponse> monthlyDividendProfiles =
@@ -490,6 +503,65 @@ public class StockViewController {
     model.addAttribute("monthlyDividendCurrentQuantities", monthlyDividendCurrentQuantities);
     model.addAttribute(
         "monthlyDividendCurrentAverageBuyPrices", currentHoldings.averageBuyPrices());
+    // 이 표는 배당 기준값(스냅샷 시점)과 시세(최근 종가) 두 시점을 한 줄에 섞는다. 앞의 날짜만 적혀 있었다.
+    model.addAttribute("monthlyDividendPriceBasisDate", currentHoldings.priceBasisDate());
+    // 원장 조회가 실패하면 어긋난 줄에 붙던 "현재 N" 표시가 통째로 사라진다 - 사라진 표시는
+    // "원장과 같다" 로 읽히므로(실측 2026-09-12: 8 줄 중 3 줄이 이 표시를 달고 있었다),
+    // 실패했다는 사실을 화면에 남긴다.
+    model.addAttribute("monthlyDividendCurrentHoldingsUnavailable", currentHoldings.unavailable());
+    java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(referenceRatioFuture);
+    java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios =
+        new java.util.LinkedHashMap<>();
+    for (MonthlyDividendSnapshotResponse row : allRows) {
+      if (row.stockItemId() == null || row.stockItemSymbol() == null) {
+        continue;
+      }
+      BigDecimal referenceRatio =
+          referenceTaxableRatioBySymbol.get(
+              row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT));
+      if (referenceRatio != null) {
+        monthlyDividendReferenceTaxableRatios.put(row.stockItemId(), referenceRatio);
+      }
+    }
+    model.addAttribute(
+        "monthlyDividendReferenceTaxableRatios", monthlyDividendReferenceTaxableRatios);
+    // 행마다 "지급 이력 기준 N%" 를 알려도 합계 카드는 저장값으로만 계산된다 - 실측 2026-09-11:
+    // 총 예상 월 과세표준액이 220,539 인데 지급 이력 기준이면 994,375(4.5 배)였다. 세금은 이 값에 붙는다.
+    BigDecimal monthlyDividendReferenceTaxableTotal = BigDecimal.ZERO;
+    int monthlyDividendReferenceTaxableStaleCount = 0;
+    for (MonthlyDividendSnapshotResponse row : filteredRows) {
+      BigDecimal expectedDividend =
+          row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO;
+      BigDecimal referenceRatio =
+          row.stockItemId() != null
+              ? monthlyDividendReferenceTaxableRatios.get(row.stockItemId())
+              : null;
+      if (referenceRatio == null) {
+        monthlyDividendReferenceTaxableTotal =
+            monthlyDividendReferenceTaxableTotal.add(
+                row.expectedTaxableBaseAmount() != null
+                    ? row.expectedTaxableBaseAmount()
+                    : BigDecimal.ZERO);
+        continue;
+      }
+      monthlyDividendReferenceTaxableTotal =
+          monthlyDividendReferenceTaxableTotal.add(
+              expectedDividend
+                  .multiply(referenceRatio)
+                  .divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP));
+      BigDecimal savedRatio =
+          row.averageTaxableBaseRatio1y() != null
+              ? row.averageTaxableBaseRatio1y()
+              : BigDecimal.ZERO;
+      if (referenceRatio.subtract(savedRatio).abs().compareTo(BigDecimal.ONE) >= 0) {
+        monthlyDividendReferenceTaxableStaleCount++;
+      }
+    }
+    model.addAttribute(
+        "monthlyDividendReferenceTaxableTotal", monthlyDividendReferenceTaxableTotal);
+    model.addAttribute(
+        "monthlyDividendReferenceTaxableStaleCount", monthlyDividendReferenceTaxableStaleCount);
     model.addAttribute("monthlyDividendRows", filteredRows);
     model.addAttribute(
         "monthlyDividendSummary",
@@ -593,6 +665,21 @@ public class StockViewController {
     populateMonthlyDividendModel(
         model, userId, sort, direction, keyword, minAnnualYield, positiveOnly, null);
     return "stock/simulator";
+  }
+
+  /** 탭 값에서 모델 속성 이름을 만든다(monthly-dividend -> simulatorTabHrefMonthlyDividend). */
+  private static String simulatorTabHrefAttribute(String tabValue) {
+    StringBuilder sb = new StringBuilder("simulatorTabHref");
+    boolean upper = true;
+    for (char c : tabValue.toCharArray()) {
+      if (c == '-') {
+        upper = true;
+        continue;
+      }
+      sb.append(upper ? Character.toUpperCase(c) : c);
+      upper = false;
+    }
+    return sb.toString();
   }
 
   private MonthlyDividendSnapshotUpsertRequest buildDefaultMonthlyDividendForm() {
@@ -838,7 +925,11 @@ public class StockViewController {
     // 다른 브라우저에서 보거나 갱신이 실패했을 때 실제로 어디까지 채워졌는지 알 수 없었다.
     // 조회에 실패해도 관리 화면 자체는 떠야 하므로 값 없이 계속 진행한다.
     UUID dataStatusUserId = UserUtil.getUserId();
-    if (dataStatusUserId != null) {
+    // 이 두 값은 데이터 관리 탭의 adminActions 조각만 쓴다 - 월배당 기준 데이터 탭에서는 받아서 버렸다.
+    // 실측 2026-09-12: 그 탭 문서가 89ms(64~96) 였고 데이터 관리 탭은 67ms 다. 안 쓰는 탭에서는 묻지 않는다.
+    boolean adminDataStatusNeeded =
+        !MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE.equals(adminTab);
+    if (dataStatusUserId != null && adminDataStatusNeeded) {
       // 두 조회는 서로 의존이 없는데 순차로 돌고 있었다 - 실측 2026-09-10: 데이터 상태 113ms +
       // 원장 점검 45ms 가 그대로 합산돼 이 화면만 TTFB 165~244ms 였다(대시보드 15ms·배당 25ms).
       // 한꺼번에 던지고 결과만 모은다.

@@ -108,6 +108,25 @@ function applyActivityView(root: Element, rawMode: string | null) {
 		}
 	});
 	applyActivityTabState(root, mode);
+	applyActivityViewTitle(root, mode);
+}
+
+/**
+ * 보고 있는 뷰를 문서 제목에 적는다.
+ *
+ * 실측 2026-09-12: 세 뷰가 "활동 내역" 한 종류를 써서 브라우저 탭·기록·즐겨찾기에서 구분되지 않았다.
+ * 다른 탭 화면(시뮬레이터 3/3 · 관리 2/2 · 배당 2/2)은 이미 탭 이름을 붙인다.
+ * 제목은 탭이 `data-view-page-title` 로 들고 있다 - 이미 붙어 있는 패널로 되돌아가는 전환은 요청이 없어서
+ * 조각의 [data-page-title] 기제로는 닿지 않기 때문이다.
+ */
+function applyActivityViewTitle(root: ParentNode, mode: string) {
+	const tab = root.querySelector(
+		'[data-activity-view-tab="' + mode + '"]',
+	) as HTMLElement | null;
+	if (!tab) return;
+	const name = tab.getAttribute("data-view-page-title");
+	if (!name) return;
+	document.title = pageTitleFor(name, document.title);
 }
 
 // 현재 화면이 만들어진 조회 조건은 data-sync-url 이 페이지 URL 에 반영해 둔다.
@@ -373,6 +392,8 @@ document.addEventListener("htmx:afterRequest", (event: any) => {
 	}
 });
 
+const RANGE_QUERY_KEYS = ["startDate", "endDate", "rangeMode"];
+
 // [data-params-from-query]: 페이지 최초 로드 fragment 요청에 현재 URL 쿼리를 병합한다.
 // 필터 조건이 URL 에 남아 있으면(아래 data-sync-url 로 기록됨) 새로고침/공유 시 그대로 복원된다.
 // URL 의 키는 hx-include(전역 기간 입력 등)로 들어온 같은 키를 덮어쓴다.
@@ -387,11 +408,48 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 		event.detail.parameters[key] =
 			merged[key].length > 1 ? merged[key] : merged[key][0];
 	}
+	// 기간은 세 키가 한 묶음이다. 키 단위로만 덮어쓰면 URL 의 rangeMode 와 hx-include 의 날짜가 섞여
+	// 버튼과 실제 데이터가 달라진다. 실측 2026-09-11(저장된 기간 1개월 상태에서):
+	//   ?rangeMode=ytd            → 버튼 '올해' 인데 날짜는 2026-08-12~09-11 (20행)
+	//   ?startDate=..&endDate=..  → 버튼 '1개월' 인데 날짜는 2026-01-01~09-11 (115행)
+	// URL 이 세 키 중 하나라도 들고 있으면 나머지도 URL 쪽으로 맞춰 빈 것은 보내지 않는다
+	// (서버는 rangeMode 만 받으면 날짜를 직접 계산하고, 날짜만 받으면 프리셋 강조를 뺀다).
+	if (RANGE_QUERY_KEYS.some((key) => key in merged)) {
+		for (const key of RANGE_QUERY_KEYS) {
+			if (!(key in merged)) delete event.detail.parameters[key];
+		}
+	}
 });
 
 // activity-list fragment 요청에는 저장된 뷰 모드를 실어 보낸다.
 // 서버가 그 뷰 하나만 렌더하므로 숨은 뷰의 마크업(실측 1370KB)이 아예 생성되지 않는다.
 // data-params-from-query 훅보다 뒤에 등록해 URL 에 남은 옛 값을 localStorage 값으로 덮어쓴다.
+/**
+ * 첫 조회가 어느 뷰를 받을지.
+ *
+ * 주소에 뷰가 적혀 있으면 그것을 따른다. 2026-09-12 까지는 주소를 보지 않고 저장값으로 덮어써서,
+ * `?activityView=timeline` 같은 링크가 **어떤 조합에서도 효과가 없었다**(실측: 주소 calendar/timeline/list
+ * 셋 다 활성 탭은 늘 저장값, 저장값이 없으면 캘린더). 서버는 이 값을 받아 처리하는데도 그랬다.
+ * 기간(rangeMode)에서 같은 이유로 공유 링크가 무력했던 것을 고친 것과 같은 규칙이다.
+ *
+ * 뷰 전환은 htmx 가 아니라 loadActivityView 의 fetch 로 돌기 때문에 이 규칙이 전환을 막지 않는다.
+ */
+function resolveActivityViewForRequest(
+	search: string,
+	saved: string | null,
+): string {
+	const known = (v: string | null) =>
+		v === "timeline" || v === "list" || v === "calendar";
+	let fromUrl: string | null = null;
+	try {
+		fromUrl = new URLSearchParams(search || "").get("activityView");
+	} catch (e) {
+		fromUrl = null;
+	}
+	if (known(fromUrl)) return fromUrl as string;
+	return known(saved) ? (saved as string) : "calendar";
+}
+
 document.addEventListener("htmx:configRequest", (event: any) => {
 	const path = event.detail?.path;
 	if (typeof path !== "string" || !path.endsWith("/stock/htmx/activity-list"))
@@ -402,8 +460,17 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 	} catch (e) {
 		saved = null;
 	}
-	event.detail.parameters.activityView =
-		saved === "timeline" || saved === "list" ? saved : "calendar";
+	const search = (globalThis.location && globalThis.location.search) || "";
+	const view = resolveActivityViewForRequest(search, saved);
+	event.detail.parameters.activityView = view;
+	// 링크로 들어온 뷰는 지금 상태가 된다 - 안 그러면 조회는 그 뷰로 하고 복원은 저장값으로 해서 어긋난다.
+	if (view !== saved) {
+		try {
+			localStorage.setItem(ACTIVITY_VIEW_KEY, view);
+		} catch (e) {
+			/* ignore */
+		}
+	}
 });
 
 // [data-sync-url="<fragment 경로>"]: 화면 래퍼에 지정한 목록 엔드포인트로의 GET 이 성공하면
@@ -908,7 +975,7 @@ function applyFragmentTitle(root: ParentNode = document) {
 	document.title = pageTitleFor(el.getAttribute("data-page-title"), document.title);
 }
 document.addEventListener("htmx:afterSettle", () => applyFragmentTitle());
-(globalThis as any).__pageTitleInternals = { pageTitleFor, applyFragmentTitle };
+(globalThis as any).__pageTitleInternals = { pageTitleFor, applyFragmentTitle, applyActivityViewTitle };
 
 // 장식용 인라인 svg 는 보조기술에서 숨긴다. 실측 2026-09-09: 13화면의 svg 265개 중 aria-hidden 이 0개라 화면 읽기
 // 프로그램이 아이콘마다 '그래픽' 을 읽었다. 이름(aria-label/role/title)이 있는 svg 는 의미 있는 것이니 손대지 않는다.
@@ -958,6 +1025,78 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("mouseleave", (event) => restoreTooltip(event.target), true);
 document.addEventListener("focusout", (event) => restoreTooltip(event.target), true);
 (globalThis as any).__tooltipInternals = { dismissOpenTooltips, restoreTooltip, TOOLTIP_DISMISSED };
+
+// 말풍선은 트리거 가운데에 맞춰 펼쳐지는데 뷰포트 충돌 회피가 없다. 실측 2026-09-11(활동 화면):
+// 375px 에서 툴팁 48개 중 34개가 화면 밖으로 나갔고, 숨어 있는 말풍선도 레이아웃에 남아 문서가 36px 가로로 밀렸다
+// (768px 에서도 5개 잘림 + 32px). 트리거 위치와 말풍선 폭을 재서 안 들어가면 좌/우 끝 맞춤으로 바꾼다.
+// 순수 함수라 검사에서 그대로 돌린다. margin 은 화면 가장자리에 붙지 않게 두는 여백.
+const TOOLTIP_ALIGN_START = "tooltip-align-start";
+const TOOLTIP_ALIGN_END = "tooltip-align-end";
+function tooltipAlign(left: number, right: number, bubbleWidth: number, viewportWidth: number, margin = 8): string {
+	if (!(bubbleWidth > 0) || !(viewportWidth > 0)) return "center";
+	const center = (left + right) / 2;
+	const half = bubbleWidth / 2;
+	if (center - half >= margin && center + half <= viewportWidth - margin) return "center";
+	// 끝 맞춤: start 는 트리거 왼쪽 끝에 맞춰 오른쪽으로, end 는 오른쪽 끝에 맞춰 왼쪽으로 펼친다.
+	if (left + bubbleWidth <= viewportWidth - margin) return "start";
+	if (right - bubbleWidth >= margin) return "end";
+	// 어느 쪽으로도 안 들어가면(말풍선이 화면보다 넓음) 남는 공간이 큰 쪽으로 붙인다.
+	return left >= viewportWidth - right ? "end" : "start";
+}
+function tooltipBubbleWidth(el: Element): number {
+	const content = el.querySelector(".tooltip-content");
+	if (content && content.parentElement === el) return content.getBoundingClientRect().width;
+	const raw = getComputedStyle(el, "::before").width;
+	const w = parseFloat(raw || "0");
+	return Number.isFinite(w) ? w : 0;
+}
+// 세로 변형(tooltip-right/left)과 마크업이 이미 끝 맞춤을 고른 툴팁은 건드리지 않는다.
+function tooltipAlignable(el: Element): boolean {
+	const cl = el.classList;
+	return !cl.contains("tooltip-right") && !cl.contains("tooltip-left")
+		&& !cl.contains("tooltip-bottom-start") && !cl.contains("tooltip-bottom-end");
+}
+function alignTooltip(el: Element, viewportWidth: number): string {
+	if (!tooltipAlignable(el)) return "skip";
+	el.classList.remove(TOOLTIP_ALIGN_START, TOOLTIP_ALIGN_END);
+	const rect = el.getBoundingClientRect();
+	if (!(rect.width > 0)) return "hidden";
+	const align = tooltipAlign(rect.left, rect.right, tooltipBubbleWidth(el), viewportWidth);
+	if (align === "start") el.classList.add(TOOLTIP_ALIGN_START);
+	else if (align === "end") el.classList.add(TOOLTIP_ALIGN_END);
+	return align;
+}
+function alignTooltips(root: ParentNode = document): number {
+	const vw = document.documentElement ? document.documentElement.clientWidth : 0;
+	let n = 0;
+	root.querySelectorAll(".tooltip").forEach((el) => {
+		if (alignTooltip(el, vw) !== "skip") n++;
+	});
+	return n;
+}
+let tooltipAlignTimer: any = null;
+function scheduleTooltipAlign(): void {
+	if (tooltipAlignTimer) clearTimeout(tooltipAlignTimer);
+	tooltipAlignTimer = setTimeout(() => alignTooltips(), 120);
+}
+document.addEventListener("DOMContentLoaded", () => alignTooltips());
+document.addEventListener("htmx:afterSettle", () => alignTooltips());
+window.addEventListener("resize", scheduleTooltipAlign);
+// 열리기 직전에 한 번 더 잰다(표 가로 스크롤·접힘 펼침으로 트리거가 움직인 경우).
+document.addEventListener("pointerenter", (event) => {
+	const target = event.target;
+	if (target instanceof Element && target.classList && target.classList.contains("tooltip")) {
+		alignTooltip(target, document.documentElement.clientWidth);
+	}
+}, true);
+document.addEventListener("focusin", (event) => {
+	const target = event.target;
+	if (target instanceof Element && target.classList && target.classList.contains("tooltip")) {
+		alignTooltip(target, document.documentElement.clientWidth);
+	}
+});
+(globalThis as any).__tooltipAlignInternals = { tooltipAlign, tooltipAlignable, alignTooltip, alignTooltips, TOOLTIP_ALIGN_START, TOOLTIP_ALIGN_END };
+
 
 // htmx 가 걷어내는 요소 안의 canvas 에 붙은 Chart.js 인스턴스를 파괴한다. 실측 2026-09-09: 자산성장·배당 화면에서 기간 프리셋을
 // 10회 바꾸자 DOM 에 없는 canvas 를 쥔 인스턴스 20개(교체마다 2개)가 Chart.instances 에 남았다 - 조각 초기화 클로저가 매번 새로
@@ -1177,10 +1316,23 @@ function chartSummaryValue(point: unknown): number | null {
 	const n = typeof v === "string" ? Number(v) : v;
 	return typeof n === "number" && Number.isFinite(n) ? n : null;
 }
+// 금액 가리기(hide-amounts)는 화면을 흐리게만 한다 - 차트 요약은 sr-only 글자라 보조기술에는 그대로 읽힌다.
+// 실측 2026-09-11(가리기를 켠 채 9 화면): 요약 14 곳이 금액을 그대로 담고 있었다
+// (예: "투자원금: 39개 지점, 처음 2026-01-01 637,902,360, 끝 ..."). 라벨과 비중(%)은 화면에서도 안 가리므로 그대로 두고
+// 금액만 뺀다.
+function chartSummaryAmountsHidden(): boolean {
+	const root = document.documentElement;
+	// 최소 DOM 스텁(검사)에는 classList.contains 가 없을 수 있다 - 없으면 가리기가 꺼진 것으로 본다.
+	return (
+		!!root && !!root.classList && typeof root.classList.contains === "function"
+		&& root.classList.contains("hide-amounts")
+	);
+}
 function chartSummaryText(chart: any, lang: string = document.documentElement.lang): string {
 	const locale = chartSummaryLocale(lang);
 	const ko = locale === "ko-KR";
 	const fmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+	const hidden = chartSummaryAmountsHidden();
 	const type = chart?.config?.type || chart?.config?._config?.type || "";
 	const labels: unknown[] = chart?.data?.labels || [];
 	const datasets: any[] = (chart?.data?.datasets || []).filter((ds: any, i: number) => ds && Array.isArray(ds.data) && ds.data.length && (typeof chart.isDatasetVisible !== "function" || chart.isDatasetVisible(i)));
@@ -1190,23 +1342,35 @@ function chartSummaryText(chart: any, lang: string = document.documentElement.la
 		const total = values.reduce((a: number, v: number | null) => a + (v || 0), 0);
 		const parts = values.slice(0, CHART_SUMMARY_MAX_ITEMS).map((v: number | null, i: number) => {
 			const share = total > 0 && v != null ? Math.round((v / total) * 1000) / 10 : 0;
-			return chartSummaryLabel(labels[i], locale) + " " + fmt.format(v || 0) + " (" + share + "%)";
+			const label = chartSummaryLabel(labels[i], locale);
+			return hidden ? label + " (" + share + "%)" : label + " " + fmt.format(v || 0) + " (" + share + "%)";
 		});
 		const rest = values.length - parts.length;
 		if (rest > 0) parts.push(ko ? "외 " + rest + "개" : "and " + rest + " more");
 		return (ko ? "항목 " + values.length + "개: " : values.length + " items: ") + parts.join(", ");
 	}
-	return datasets.slice(0, CHART_SUMMARY_MAX_DATASETS).map((ds: any) => {
+	// 도넛은 넘치는 항목을 "외 N개" 로 밝히는데 선/막대는 4 개에서 조용히 잘랐다.
+	// 실측 2026-09-12(배당 내역 월별 배당금, 데이터셋 10 개): 요약 356 자가 앞 4 계열만 담고
+	// 나머지 6 개(기타 · 최근 12개월 합 포함)는 흔적도 없었다 - 보조기술은 그런 계열이 있는지조차 모른다.
+	const shownDatasets = datasets.slice(0, CHART_SUMMARY_MAX_DATASETS);
+	const restDatasets = datasets.length - shownDatasets.length;
+	const body = shownDatasets.map((ds: any) => {
 		const pts = ds.data.map((point: unknown, i: number) => ({ v: chartSummaryValue(point), l: chartSummaryLabel(labels[i] ?? (point && typeof point === "object" ? (point as any).x : undefined), locale) })).filter((x: any) => x.v != null);
 		if (!pts.length) return "";
 		let hi = pts[0], lo = pts[0];
 		for (const x of pts) { if (x.v > hi.v) hi = x; if (x.v < lo.v) lo = x; }
 		const first = pts[0], last = pts[pts.length - 1];
 		const name = ds.label ? String(ds.label) + ": " : "";
+		if (hidden)
+			return ko
+				? name + pts.length + "개 지점(금액 가림)"
+				: name + pts.length + " points (amounts hidden)";
 		return ko
 			? name + pts.length + "개 지점, 처음 " + first.l + " " + fmt.format(first.v) + ", 끝 " + last.l + " " + fmt.format(last.v) + ", 최고 " + fmt.format(hi.v) + " (" + hi.l + "), 최저 " + fmt.format(lo.v) + " (" + lo.l + ")"
 			: name + pts.length + " points, first " + first.l + " " + fmt.format(first.v) + ", last " + last.l + " " + fmt.format(last.v) + ", high " + fmt.format(hi.v) + " (" + hi.l + "), low " + fmt.format(lo.v) + " (" + lo.l + ")";
 	}).filter(Boolean).join(". ");
+	if (restDatasets <= 0) return body;
+	return body + (ko ? ". 외 " + restDatasets + "개 계열" : ". and " + restDatasets + " more series");
 }
 /** 캔버스 바로 뒤에 sr-only 요약을 두고(없으면 만들고) aria-describedby 로 잇는다. 요약이 비면 둘 다 거둔다. */
 function syncChartSummary(chart: any): HTMLElement | null {
@@ -1232,12 +1396,92 @@ function syncChartSummary(chart: any): HTMLElement | null {
 	canvas.setAttribute("aria-describedby", id);
 	return el;
 }
+/** 금액 가리기 토글이 바뀌면 이미 그려진 차트의 요약도 다시 쓴다(토글은 클래스만 바꾸고 차트는 갱신되지 않는다). */
+function resyncChartSummaries(root: ParentNode = document): number {
+	const lib = (globalThis as any).Chart;
+	if (!lib || typeof lib.getChart !== "function") return 0;
+	let n = 0;
+	root.querySelectorAll("canvas").forEach((canvas) => {
+		const chart = lib.getChart(canvas);
+		if (chart) {
+			syncChartSummary(chart);
+			n++;
+		}
+	});
+	return n;
+}
+// 근거 문구는 백분율 옆에 붙어 있어 요소 자체는 가림 대상이 아니다 - 그래서 가리기를 켠 채 hover 하면
+// title 로 정확한 금액이 그대로 보였다(실측 2026-09-11, 대시보드 합산 수익률: "총 합산 수익 1,271,376,178 ...").
+// 자릿수 구분이 있는 수만 가린다(백분율은 화면에서도 안 가리므로 그대로 둔다).
+// 숫자에 바로 붙은 "원" 도 같이 삼킨다 - 안 그러면 "1,622,109,770원" 이 "가림원" 이 된다(실측 2026-09-12).
+// 띄어쓰기가 있으면 삼키지 않는다("642,014,000 원금" 의 원금이 깨지지 않게).
+const AMOUNT_IN_TEXT = /₩?-?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:원)?/g;
+function maskAmountBasis(root: ParentNode = document): number {
+	const hidden = chartSummaryAmountsHidden();
+	const ko = (document.documentElement.lang || "").toLowerCase().startsWith("ko");
+	const mask = ko ? "가림" : "hidden";
+	let n = 0;
+	root.querySelectorAll("[data-amount-basis]").forEach((el) => {
+		const original = el.getAttribute("data-amount-basis");
+		if (!original) return;
+		const next = hidden ? original.replace(AMOUNT_IN_TEXT, mask) : original;
+		// 금액이 본문 글자에 들어 있는 안내문(툴팁도 sr-only 도 아닌 자리)은 글자 자체를 바꿔야 한다 -
+		// 실측 2026-09-12: 자산 현황의 "이 표에 없는 35종목의 실현손익 85,279,840원…" 이 가리기를 켜도 그대로 보였다.
+		if (el.getAttribute("data-amount-basis-text") !== null) {
+			if (el.textContent !== next) el.textContent = next;
+			n++;
+			return;
+		}
+		if (el.getAttribute("title") !== next) el.setAttribute("title", next);
+		const sr = el.querySelector(".sr-only");
+		if (sr && sr.textContent !== next) sr.textContent = next;
+		n++;
+	});
+	// 흐리게 하는 자리(.amount-value)에 붙은 title 은 흐림이 안 걸린다 - 켜 놓고 hover 하면 정확한 금액이 그대로 뜬다.
+	// 실측 2026-09-12(가리기 켜고 9 화면): 31 개가 그랬다(대시보드 "1,622,109,770원" · 종목 상세 "1,359,088,500원" 등).
+	// 템플릿 52 곳이 이런 title 을 내므로 하나씩 표식을 다는 대신 여기서 한 번에 가린다. 원본은 되돌리려고 남겨 둔다.
+	root.querySelectorAll(".amount-value[title]").forEach((el) => {
+		const kept = el.getAttribute("data-amount-title") ?? el.getAttribute("title");
+		if (kept === null) return;
+		if (el.getAttribute("data-amount-title") === null) el.setAttribute("data-amount-title", kept);
+		const next = hidden ? kept.replace(AMOUNT_IN_TEXT, mask) : kept;
+		if (el.getAttribute("title") !== next) el.setAttribute("title", next);
+		// 같은 값을 낭독기에 주는 sr-only 짝도 함께 가린다 - 2026-09-12 에 title 만 가렸더니
+		// 대시보드 10 곳에서 title 은 "가림" 인데 sr-only 는 "1,622,109,770원" 그대로였다.
+		// data-amount-basis 쪽은 예전부터 둘을 같이 가려 왔다 - 규칙을 맞춘다.
+		const srExact = el.querySelector(".sr-only");
+		if (srExact) {
+			const keptSr = el.getAttribute("data-amount-sr") ?? (srExact.textContent || "");
+			if (el.getAttribute("data-amount-sr") === null) el.setAttribute("data-amount-sr", keptSr);
+			const nextSr = hidden ? keptSr.replace(AMOUNT_IN_TEXT, mask) : keptSr;
+			if (srExact.textContent !== nextSr) srExact.textContent = nextSr;
+		}
+		n++;
+	});
+	return n;
+}
+document.addEventListener("DOMContentLoaded", () => maskAmountBasis());
+document.addEventListener("htmx:afterSettle", () => maskAmountBasis());
+let chartSummaryHiddenState = false;
+function watchHideAmounts(): void {
+	const root = document.documentElement;
+	if (!root || typeof MutationObserver !== "function") return;
+	chartSummaryHiddenState = chartSummaryAmountsHidden();
+	new MutationObserver(() => {
+		const now = chartSummaryAmountsHidden();
+		if (now === chartSummaryHiddenState) return;
+		chartSummaryHiddenState = now;
+		resyncChartSummaries();
+		maskAmountBasis();
+	}).observe(root, { attributes: true, attributeFilter: ["class"] });
+}
+watchHideAmounts();
 const chartSummaryPlugin = {
 	id: "a11ySummary",
 	afterInit: (chart: any) => { syncChartSummary(chart); },
 	afterUpdate: (chart: any) => { syncChartSummary(chart); },
 };
-(globalThis as any).__chartSummaryInternals = { chartSummaryText, syncChartSummary, chartSummaryPlugin };
+(globalThis as any).__chartSummaryInternals = { chartSummaryText, syncChartSummary, chartSummaryPlugin, chartSummaryAmountsHidden, resyncChartSummaries, maskAmountBasis };
 
 // 한국어 데이터 표시(WCAG 3.1.2 Language of Parts). 실측 2026-09-10(qa/lang-of-parts.cjs): 영어 화면(문서 lang=en-US) 12개에
 // 한글 텍스트 1,190곳(종목명·계좌명 등)이 lang 표시 없이 있었다 - 보조기술이 영어 음성으로 읽는다. 화면 문구가 아니라
@@ -1360,6 +1604,14 @@ function ensureRowCheckbox(row: Element): boolean {
 	box.setAttribute("data-row-select-checkbox", "");
 	box.setAttribute("aria-label", rowSelectName(row, template));
 	box.checked = isRowSelected(row);
+	// 행 머리 칸의 이름은 자식들의 글자를 이어 붙여 만들어진다 - 체크박스 이름까지 삼켜
+	// "삼성전자 선택 삼성전자" 가 된다(실측 2026-09-12: 세 화면 행머리 127 중 83). 칸이 읽히는
+	// 자리마다(행 안의 칸을 옮길 때마다) 같은 이름을 두 번 듣게 되므로 칸에 이름을 직접 준다.
+	// 넣기 전에 읽어야 한다 - 넣고 나면 사본에 빈 label 이 섞인다.
+	if (cell.tagName === "TH" && !cell.getAttribute("aria-label")) {
+		const bareName = rowSelectName(row, "{0}");
+		if (bareName) cell.setAttribute("aria-label", bareName);
+	}
 	label.appendChild(box);
 	cell.insertBefore(label, cell.firstChild);
 	// 행이 스스로 탭 정지였다면 이제 체크박스가 그 몫을 한다 - 행마다 탭 정지가 둘이 되지 않게 뗀다.
@@ -1581,3 +1833,4 @@ function startSectionNav(): void {
 }
 startSectionNav();
 (globalThis as any).__sectionNavInternals = { sectionLabel, pageSections, sectionAnchorId, buildSectionNav, markCurrentSection, renderSectionNav, sectionsContainer };
+(globalThis as any).__activityViewInternals = { resolveActivityViewForRequest };

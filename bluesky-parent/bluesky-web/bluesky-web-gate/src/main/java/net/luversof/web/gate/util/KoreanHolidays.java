@@ -373,7 +373,28 @@ public final class KoreanHolidays {
     put(2026, 12, 25, "성탄절");
   }
 
+  /** 표에 한 건이라도 수록된 해. 정적 블록이 끝난 뒤 한 번만 모은다. */
+  private static final java.util.Set<Integer> COVERED_YEARS =
+      HOLIDAYS.keySet().stream()
+          .map(LocalDate::getYear)
+          .collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+
   private KoreanHolidays() {}
+
+  /**
+   * 그 해가 표에 수록돼 있는지.
+   *
+   * <p>수록 범위 밖이면 {@link #holidayName(LocalDate)} 이 <b>전부 null</b> 이라 화면은 "그 해에는 공휴일이 없다" 처럼 보인다.
+   * 자료가 없는 것과 공휴일이 없는 것은 다르므로, 달력은 이 값을 보고 "자료 없음" 을 밝혀야 한다.
+   */
+  public static boolean covered(int year) {
+    return COVERED_YEARS.contains(year);
+  }
+
+  /** 수록된 해 목록(오름차순). 검사와 안내 문구가 쓴다. */
+  public static java.util.Set<Integer> coveredYears() {
+    return java.util.Collections.unmodifiableSet(COVERED_YEARS);
+  }
 
   /** 공휴일이면 이름을(겹치면 "·"로 병기), 아니면 null 을 반환한다. */
   public static String holidayName(LocalDate date) {

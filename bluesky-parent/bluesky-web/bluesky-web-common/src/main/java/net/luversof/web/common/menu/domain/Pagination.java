@@ -123,7 +123,12 @@ public class Pagination {
     int endPage = tempEndPage > totalPage ? totalPage : tempEndPage;
 
     var prevPage = startPage > 1 ? startPage - 1 : -1;
-    var nextPage = endPage < totalPage - 1 ? endPage + 1 : -1;
+    // The next block starts right after this one, so the only question is whether that page
+    // exists at all. Comparing against totalPage - 1 lost exactly one page: with 11 pages the
+    // block ends at 10, 10 < 10 is false, and both the next and the last button went dead -
+    // page 11 could not be reached from the pager at all (measured 2026-09-12 on the trade
+    // history list with size=24: 258 rows, 11 pages, buttons 1-10 plus two disabled arrows).
+    var nextPage = endPage < totalPage ? endPage + 1 : -1;
 
     navList = new ArrayList<>();
     for (int i = startPage; i <= endPage; i++) {

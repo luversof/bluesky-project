@@ -36,12 +36,21 @@ public final class StockAssetStatusUtil {
     return positive(denominator) ? numerator.doubleValue() / denominator.doubleValue() * 100 : 0.0;
   }
 
-  /** 분모가 0 이하이거나 분자가 없으면 0. 소수 4 자리 반올림 뒤 100 배(종목 행의 규칙). */
+  /**
+   * 분모가 0 이하이거나 분자가 없으면 0. <b>100 을 먼저 곱한 뒤</b> 소수 4 자리로 나눈다(종목 행의 규칙).
+   *
+   * <p>2026-09-12 까지는 {@code divide(denominator, 4).multiply(100)} 이라 백분율이 소수 <b>2</b> 자리로 잘린 뒤 화면이
+   * 다시 1 자리로 반올림했다. 같은 순서 실수가 {@code StockPortfolioHtmxController.percentage} 에도 있었고, 거기서는 실제로 값이
+   * 틀렸다(실측: 8,847,600 / 1,622,109,770 = 0.5454% 가 0.6% 로 나갔다).
+   *
+   * <p>이 헬퍼 쪽은 실측 2026-09-12(자산 현황 손익률 32 행) 기준으로 어긋난 줄이 없었다 - 잔차가 0.x5 경계에 닿지 않았을 뿐이라 자료가 바뀌면 같은
+   * 식으로 틀린다. 형제와 규칙을 맞춘다.
+   */
   private static BigDecimal ratePctScaled(BigDecimal numerator, BigDecimal denominator) {
     if (!positive(denominator) || numerator == null) {
       return BigDecimal.ZERO;
     }
-    return numerator.divide(denominator, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+    return numerator.multiply(BigDecimal.valueOf(100)).divide(denominator, 4, RoundingMode.HALF_UP);
   }
 
   /**

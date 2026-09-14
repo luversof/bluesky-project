@@ -114,6 +114,48 @@ class ActivityGroupingTest {
   }
 
   /**
+   * 묶어도 원본 건수와 금액 총합은 그대로다.
+   *
+   * <p>이 화면은 (날짜 · 유형 · 종목 · 매매구분) 이 같은 활동을 <b>계좌를 가로질러</b> 한 줄로 합친다. 그래서 줄 수는 원본 건수보다 작다 &mdash; 그
+   * 둘을 헷갈려 줄 수를 "건" 으로 센 것이 2026-09-10 의 결함이었다(활동 매수 149 · 매도 53 · 배당 108 이라 적었는데 원장은 203 · 55 ·
+   * 202).
+   *
+   * <p>실측 2026-09-12(전체 기간, 화면을 통째로 긁어 원장과 대조): 화면 310 줄 · {@code recordCount} 합 460 건이고 금액도 매수
+   * 1,808,299,872 · 매도 1,393,667,090 · 배당 65,652,134 로 원장과 <b>정확히</b> 같았다. (날짜·종목·구분) 묶음 단위로도 화면에만
+   * 있는 묶음 0 · 원장에만 있는 묶음 0 · 금액이 다른 묶음 0. 그 성질을 여기에 묶어 둔다.
+   */
+  @Test
+  void 묶어도_원본_건수와_금액_총합은_보존된다() {
+    UUID samsung = UUID.randomUUID();
+    UUID kodex = UUID.randomUUID();
+    List<Activity> raw =
+        List.of(
+            // 같은 날 · 같은 종목 · 세 계좌로 갈린 매수 - 한 줄로 합쳐진다.
+            trade("2026-08-19T00:00:00Z", samsung, "삼성전자", 1, "1000"),
+            trade("2026-08-19T00:00:00Z", samsung, "삼성전자", 2, "2000"),
+            trade("2026-08-19T00:00:00Z", samsung, "삼성전자", 3, "3000"),
+            // 같은 날 다른 종목 - 따로 남는다.
+            trade("2026-08-19T00:00:00Z", kodex, "KODEX", 4, "4000"),
+            // 다른 날 같은 종목 - 따로 남는다.
+            trade("2026-08-20T00:00:00Z", samsung, "삼성전자", 5, "5000"));
+
+    List<Activity> grouped = StockTradeHtmxController.groupActivitiesByDay(raw, SEOUL);
+
+    assertThat(grouped).as("계좌만 다른 셋이 한 줄로").hasSize(3);
+    assertThat(grouped.stream().mapToInt(Activity::recordCount).sum())
+        .as("묶인 줄 수가 아니라 원본 건수를 세야 다른 화면과 숫자가 맞는다")
+        .isEqualTo(raw.size());
+    assertThat(grouped.stream().map(Activity::amount).reduce(BigDecimal.ZERO, BigDecimal::add))
+        .as("금액 총합은 묶기 전후가 같아야 한다")
+        .isEqualByComparingTo("15000");
+    assertThat(grouped.stream().mapToInt(Activity::quantity).sum()).as("수량 총합도 보존된다").isEqualTo(15);
+    // 세 계좌짜리 줄은 건수 3 · 계좌 3 을 함께 들고 있어야 화면이 "+N" 을 그릴 수 있다.
+    Activity merged = grouped.stream().filter(a -> a.recordCount() > 1).findFirst().orElseThrow();
+    assertThat(merged.recordCount()).isEqualTo(3);
+    assertThat(merged.accountIds()).as("계좌가 모여 있어야 한다").hasSize(3);
+  }
+
+  /**
    * 같은 날 안의 행 순서가 정해져 있다.
    *
    * <p>예전에는 날짜 하나로만 정렬해 같은 날의 순서가 {@code HashMap} 순회 순서였다(실측: 299행 중 171행이 같은 날에 다른 행과 함께 있다).

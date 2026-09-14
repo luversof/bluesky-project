@@ -26,6 +26,7 @@
 @param java.time.LocalDate peakValueDate = null
 @param BigDecimal troughValue = null
 @param java.time.LocalDate troughValueDate = null
+@param boolean closingIsToday = true
 
 !{
 	DecimalFormat amountFormat = new DecimalFormat("#,##0");
@@ -63,6 +64,12 @@
 	String growthBaseTooSmallLabel = MessageUtil.getMessage("stock.asset.growth.summary.growth.base.too.small");
 	// 비율이 없을 때(기초가 무의미할 때) 금액으로 대체 표기
 	boolean amountFallbackAvailable = openingValue != null && closingValue != null;
+	// The fallback prints money, so the card title must not promise a rate. It also has to be the
+	// increase itself - printing the closing value under a growth label overstates it by the opening
+	// value (measured 2026-09-12, period from 2009-10-07: opening 389,790 vs closing 1,622,109,770).
+	boolean growthShowsAmount = !(returnCalculable && periodReturnRatePct != null) && amountFallbackAvailable;
+	String growthAmountTitle = MessageUtil.getMessage("stock.asset.growth.summary.period.growth.amount.title");
+	BigDecimal growthAmountValue = amountFallbackAvailable ? closingValue.subtract(openingValue) : null;
 	boolean drawdownAvailable = maxDrawdownPct != null;
 	boolean drawdownRangeAvailable = maxDrawdownPeakDate != null && maxDrawdownTroughDate != null;
 	// 전고점 대비 현재 위치. 0 에 가까우면 신고점이라는 뜻이라 별도 문구로 알려준다.
@@ -82,9 +89,20 @@
 	String movementTitle = MessageUtil.getMessage("stock.asset.growth.summary.movement.title");
 	String periodHighLabel = MessageUtil.getMessage("stock.asset.growth.summary.period.high");
 	String periodLowLabel = MessageUtil.getMessage("stock.asset.growth.summary.period.low");
-	String vsNowLabel = MessageUtil.getMessage("stock.asset.growth.summary.vs.now");
+	// 이 비율의 분모는 '지금' 이 아니라 기간 말 평가액(closingValue)이다. 기간이 오늘로 끝날 때만 둘이 같다.
+	// 실측 2026-09-12: 2016 년만 보면 "기간 최고 26,408,200 · 지금 대비 -39.90%" 라고 적혔는데,
+	// 지금 총 평가액은 16 억이라 그 말대로면 +6,000% 대여야 한다. 실제 분모는 2016 년 말 평가액(약 15.87M)이었다.
+	// 값은 맞고 이름만 틀렸으므로 이름을 기간에 맞춰 고른다.
+	String vsNowLabel = MessageUtil.getMessage(closingIsToday
+		? "stock.asset.growth.summary.vs.now"
+		: "stock.asset.growth.summary.vs.period.end");
 	String extremesDescription = MessageUtil.getMessage("stock.asset.growth.summary.extremes.desc");
 	String riskTitle = MessageUtil.getMessage("stock.asset.growth.summary.risk");
+	// 이 절의 낙폭은 입출금을 제거한 기준가(시간가중)로 잰다. 바로 위 "기간 최고 평가액" 옆의 비율은
+	// 원시 평가액(기간 말 / 최고)이라 분모가 다르다 - 실측 2026-09-12(전체 기간): 최고 대비가 -22.71%,
+	// 현재 전고점 대비가 -23.55% 로 갈렸다. 둘 다 맞지만 화면에는 둘 다 "전고점 대비" 로 읽혀
+	// 어느 쪽이 맞는지 알 수 없었다. 기준을 적어 둔다(옆의 투자 수익률 카드도 같은 문구를 쓴다).
+	String riskDescription = MessageUtil.getMessage("stock.asset.growth.summary.risk.desc");
 
 	boolean closingAvailable = closingValue != null;
 	boolean peakAvailable = peakValue != null && peakValue.signum() > 0 && closingAvailable;
@@ -128,7 +146,7 @@
 	<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
 		@if(profitAvailable)
 			<span class="text-3xl min-[360px]:text-4xl font-bold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
-				${profitPositive ? "+" : "-"}₩${amountFormat.format(periodProfit.abs())}
+				${periodProfit.signum() == 0 ? "" : (profitPositive ? "+" : "-")}₩${amountFormat.format(periodProfit.abs())}
 			</span>
 			@if(profitRateAvailable)
 				<%-- 금액만으로는 "많이 번 건지" 를 알 수 없다. 넣어 둔 돈 대비 비율을 바로 옆에 붙인다. --%>
@@ -146,9 +164,9 @@
 		<p class="text-xs mt-0.5">
 			<span class="text-base-content/60">${recoveredLabel}</span>
 			<span class="amount-value font-medium text-base-content/60">₩${amountFormat.format(recoveredAmount)}</span>
-			<span class="text-base-content/30 mx-0.5">·</span>
+			<span class="text-base-content/30 mx-0.5" aria-hidden="true">·</span>
 			<span class="text-base-content/60">${netNewLabel}</span>
-			<span class="amount-value font-semibold ${netNewPositive ? "text-profit" : "text-loss"}">${netNewPositive ? "+" : "-"}₩${amountFormat.format(netNewProfit.abs())}</span>
+			<span class="amount-value font-semibold ${netNewPositive ? "text-profit" : "text-loss"}">${netNewProfit.signum() == 0 ? "" : (netNewPositive ? "+" : "-")}₩${amountFormat.format(netNewProfit.abs())}</span>
 		</p>
 	@endif
 
@@ -184,7 +202,7 @@
 			</div>
 
 			<div class="min-w-0">
-				<div class="text-xs text-base-content/60 mb-0.5">${growthTitle}</div>
+				<div class="text-xs text-base-content/60 mb-0.5">${growthShowsAmount ? growthAmountTitle : growthTitle}</div>
 				@if(returnCalculable && periodReturnRatePct != null)
 					<div class="text-lg font-bold leading-none ${growthPositive ? "text-profit" : "text-loss"}">
 						${StockFormatUtil.signedPct(periodReturnRatePct, 2)}
@@ -194,7 +212,7 @@
 					<%-- 기초 평가액이 거의 0이면 비율이 해석 불가라 금액으로 답한다. 이때도 왼쪽의 기간
 						 손익률은 나온다 - 분모에 유입 원금이 들어가기 때문이다. --%>
 					<div class="text-lg font-bold leading-none amount-value text-base-content/80">
-						&#8361;${amountFormat.format(closingValue)}
+						${growthAmountValue.signum() < 0 ? "-" : ""}&#8361;${amountFormat.format(growthAmountValue.abs())}
 					</div>
 					<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">
 						${growthAmountLabel} <span class="amount-value">&#8361;${amountFormat.format(openingValue)}</span>
@@ -226,7 +244,7 @@
 						<p class="text-[11px] leading-4 mt-0.5">
 							@if(peakValueDate != null)
 								<span class="text-base-content/60">${peakValueDate.toString()}</span>
-								<span class="text-base-content/30 mx-0.5">&middot;</span>
+								<span class="text-base-content/30 mx-0.5" aria-hidden="true">&middot;</span>
 							@endif
 							<span class="text-base-content/60">${vsNowLabel}</span>
 							<span class="font-semibold ${peakGapPct >= 0.0d ? "text-profit" : "text-loss"}">${peakGapText}</span>
@@ -245,7 +263,7 @@
 						<p class="text-[11px] leading-4 mt-0.5">
 							@if(troughValueDate != null)
 								<span class="text-base-content/60">${troughValueDate.toString()}</span>
-								<span class="text-base-content/30 mx-0.5">&middot;</span>
+								<span class="text-base-content/30 mx-0.5" aria-hidden="true">&middot;</span>
 							@endif
 							<span class="text-base-content/60">${vsNowLabel}</span>
 							<span class="font-semibold ${troughGapPct >= 0.0d ? "text-profit" : "text-loss"}">${troughGapText}</span>
@@ -283,6 +301,10 @@
 							@endif
 						</p>
 					@endif
+					@if(drawdownAvailable || currentDrawdownAvailable)
+						<p class="text-[11px] leading-4 mt-0.5 text-base-content/60">${riskDescription}</p>
+					@endif
+
 				</div>
 			</div>
 		</div>
@@ -293,22 +315,22 @@
 	<div class="mt-3 pt-3 border-t border-base-200 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[11px] leading-4">
 		<span class="text-base-content/60">${unrealizedLabel}</span>
 		@if(unrealizedAvailable)
-			<span class="amount-value font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEndPositive ? "+" : "-"}&#8361;${amountFormat.format(unrealizedEnd.abs())}</span>
+			<span class="amount-value font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEnd.signum() == 0 ? "" : (unrealizedEndPositive ? "+" : "-")}&#8361;${amountFormat.format(unrealizedEnd.abs())}</span>
 			@if(unrealizedEndPct != null)
 				<span class="font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(unrealizedEndPct, 2)}</span>
 			@endif
-			<span class="text-base-content/25">|</span>
+			<span class="text-base-content/25" aria-hidden="true">|</span>
 			<span class="text-base-content/60">${unrealizedTrendLabel}</span>
-			<span class="amount-value ${unrealizedStartPositive ? "text-profit" : "text-loss"}">${unrealizedStartPositive ? "+" : "-"}&#8361;${amountFormat.format(unrealizedStart.abs())}</span>
+			<span class="amount-value ${unrealizedStartPositive ? "text-profit" : "text-loss"}">${unrealizedStart.signum() == 0 ? "" : (unrealizedStartPositive ? "+" : "-")}&#8361;${amountFormat.format(unrealizedStart.abs())}</span>
 			<span class="text-base-content/60">&#8594;</span>
-			<span class="amount-value ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEndPositive ? "+" : "-"}&#8361;${amountFormat.format(unrealizedEnd.abs())}</span>
+			<span class="amount-value ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEnd.signum() == 0 ? "" : (unrealizedEndPositive ? "+" : "-")}&#8361;${amountFormat.format(unrealizedEnd.abs())}</span>
 		@else
 			<span class="font-semibold text-base-content/60">${unavailableLabel}</span>
 		@endif
 		@if(principalDeltaAvailable)
-			<span class="text-base-content/25">|</span>
+			<span class="text-base-content/25" aria-hidden="true">|</span>
 			<span class="text-base-content/60">${principalDeltaLabel}</span>
-			<span class="amount-value font-medium text-base-content/60">${principalIncreased ? "+" : "-"}&#8361;${amountFormat.format(principalDelta.abs())}</span>
+			<span class="amount-value font-medium text-base-content/60">${principalDelta.signum() == 0 ? "" : (principalIncreased ? "+" : "-")}&#8361;${amountFormat.format(principalDelta.abs())}</span>
 		@endif
 	</div>
 	<p class="text-[11px] leading-4 text-base-content/60 mt-1">${unrealizedDescription}</p>

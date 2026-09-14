@@ -301,4 +301,37 @@ class DividendPeriodBreakdownTest {
     assertThat(rows).extracting(DividendPeriodBreakdown.Row::label).contains("2025-12");
     assertThat(DividendPeriodBreakdown.total(rows, "합계").netAmount()).isEqualByComparingTo("600");
   }
+
+  /**
+   * 한 건도 없으면 0 으로 채우지 않는다.
+   *
+   * <p>빈 달을 채우는 규칙은 <b>있는 달 사이의 구멍</b>을 보여 주려는 것이다. 실측 2026-09-11(없는 종목으로 거른 배당 화면): 상세 목록 &middot;
+   * 랭킹 &middot; 연도별 탭은 모두 "배당 내역이 없습니다" 인데 <b>월별 탭만 0 원 9 줄</b>을 그렸다.
+   */
+  @Test
+  void 한_건도_없으면_0_으로_채우지_않는다() {
+    List<DividendPeriodBreakdown.Row> rows =
+        DividendPeriodBreakdown.byMonth(
+            List.of(),
+            KST,
+            java.time.LocalDate.of(2026, 1, 1),
+            java.time.LocalDate.of(2026, 9, 11));
+
+    assertThat(rows).isEmpty();
+  }
+
+  /** 한 건이라도 있으면 사이의 빈 달은 그대로 0 으로 채운다(원래 규칙). */
+  @Test
+  void 한_건이라도_있으면_빈_달을_채운다() {
+    List<DividendPeriodBreakdown.Row> rows =
+        DividendPeriodBreakdown.byMonth(
+            List.of(dividend("2026-03-10T00:00:00Z", "100", "0", "100")),
+            KST,
+            java.time.LocalDate.of(2026, 1, 1),
+            java.time.LocalDate.of(2026, 5, 31));
+
+    assertThat(rows)
+        .extracting(DividendPeriodBreakdown.Row::label)
+        .containsExactly("2026-05", "2026-04", "2026-03", "2026-02", "2026-01");
+  }
 }

@@ -277,6 +277,53 @@ public class MonthlyDividendReferenceSupport {
     return List.copyOf(stockItemsBySymbol.values());
   }
 
+  /**
+   * 종목코드 -> 저장된 지급 이력으로 계산한 1년 평균 과세표준 비중.
+   *
+   * <p>시뮬레이터 표가 쓰는 값은 <b>스냅샷에 저장된</b> 비중이라, 지급 이력이 갱신돼도 사용자가 '이 값으로 시뮬레이터 채우기' 를 누르기 전까지 옛 값 그대로다.
+   * 실측 2026-09-11: 8 종목 전부 달랐고 KODEX 한국부동산리츠인프라는 저장 17.35% 對 이력 계산 82.79%, TIGER 리츠부동산인프라는 13.42% 對
+   * 100% 였다(주당 분배금은 8 종목 모두 일치했다 - 비중만 벌어졌다). 세후 예상 배당이 그만큼 달라지므로 화면이 그 차이를 알려 줄 수 있어야 한다.
+   *
+   * <p>계산은 관리 화면이 쓰는 {@code buildReferenceSummary} 를 그대로 불러 정의를 하나로 둔다.
+   */
+  public java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol() {
+    return referenceTaxableRatioBySymbol(
+        monthlyDividendPayoutClient.findPayouts(new LinkedMultiValueMap<>()));
+  }
+
+  /**
+   * 이미 읽어 둔 지급이력으로 같은 값을 낸다.
+   *
+   * <p>배당 캘린더는 지급일 추정 때문에 지급이력을 이미 갖고 있다 &mdash; 같은 목록을 한 번 더 받아 올 이유가 없다.
+   */
+  public java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol(
+      List<MonthlyDividendPayoutResponse> payouts) {
+    if (payouts == null || payouts.isEmpty()) {
+      return java.util.Map.of();
+    }
+    java.util.Map<String, List<MonthlyDividendPayoutResponse>> bySymbol =
+        new java.util.LinkedHashMap<>();
+    for (MonthlyDividendPayoutResponse payout : payouts) {
+      if (payout.stockItemSymbol() == null) {
+        continue;
+      }
+      bySymbol
+          .computeIfAbsent(
+              payout.stockItemSymbol().trim().toUpperCase(Locale.ROOT),
+              key -> new java.util.ArrayList<>())
+          .add(payout);
+    }
+    java.util.Map<String, BigDecimal> result = new java.util.LinkedHashMap<>();
+    for (var entry : bySymbol.entrySet()) {
+      var summary =
+          monthlyDividendCalculator.buildReferenceSummary(entry.getKey(), entry.getValue());
+      if (summary != null && summary.payoutCount() > 0) {
+        result.put(entry.getKey(), summary.averageTaxableBaseRatio1y());
+      }
+    }
+    return result;
+  }
+
   public List<MonthlyDividendPayoutResponse> loadMonthlyDividendPayouts(String symbol) {
     if (!StringUtils.hasText(symbol)) {
       return List.of();
@@ -494,8 +541,11 @@ public class MonthlyDividendReferenceSupport {
     params.add("groupBy", "STOCKITEM");
     Map<UUID, Integer> quantities = new HashMap<>();
     Map<UUID, BigDecimal> averageBuyPrices = new HashMap<>();
+    java.time.LocalDate basisDate = null;
     try {
       List<TradeProfit> rows = tradeProfitClient.calculateProfit(params);
+      basisDate =
+          net.luversof.web.gate.stock.util.StockPriceBasisUtil.priceBasisDateWithFallback(rows);
       if (rows != null) {
         for (TradeProfit row : rows) {
           if (row.stockItemId() != null) {
@@ -508,9 +558,9 @@ public class MonthlyDividendReferenceSupport {
       }
     } catch (Exception ex) {
       log.warn("현재 보유 상태 조회 실패: userId={}", userId, ex);
-      return CurrentHoldings.empty();
+      return CurrentHoldings.failed();
     }
-    return new CurrentHoldings(quantities, averageBuyPrices);
+    return new CurrentHoldings(quantities, averageBuyPrices, basisDate, false);
   }
 
   public List<MonthlyDividendSnapshotResponse> loadMonthlyDividendRows(UUID userId) {
@@ -521,11 +571,29 @@ public class MonthlyDividendReferenceSupport {
 
   /** 원장의 현재 보유 수량(종목 단위, 계좌 합산). 조회에 실패하면 빈 맵이라 표시는 예전 그대로다. */
   /** 원장의 현재 보유 상태(종목 단위). 조회 한 번으로 수량과 평균단가를 함께 얻는다. */
+  /**
+   * 원장 기준 현재 보유 상태.
+   *
+   * <p>{@code priceBasisDate} 는 이 표의 '현재가' 가 어느 날 종가인지다. 월배당 표는 배당 기준값(스냅샷 저장 시점)과 시세(최근 종가) 두 시점을
+   * 한 줄에 섞어 보여 주는데, 화면에는 앞의 날짜만 적혀 있었다 - 실측 2026-09-11: 스냅샷 기준일은 2026-08-19 인데 현재가는 2026-09-09
+   * 종가였다.
+   */
   public record CurrentHoldings(
-      Map<UUID, Integer> quantities, Map<UUID, BigDecimal> averageBuyPrices) {
+      Map<UUID, Integer> quantities,
+      Map<UUID, BigDecimal> averageBuyPrices,
+      java.time.LocalDate priceBasisDate,
+      boolean unavailable) {
 
     static CurrentHoldings empty() {
-      return new CurrentHoldings(Map.of(), Map.of());
+      return new CurrentHoldings(Map.of(), Map.of(), null, false);
+    }
+
+    /**
+     * 조회 자체가 실패한 경우. 빈 맵과 반드시 구분해야 한다 - 이 표들은 원장과 어긋나는 줄에만 표시를 달므로, 빈 맵을 돌려주면 표시가 사라져 "원장과 같다" 로
+     * 읽힌다.
+     */
+    static CurrentHoldings failed() {
+      return new CurrentHoldings(Map.of(), Map.of(), null, true);
     }
   }
 }

@@ -9,7 +9,9 @@ import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import net.luversof.api.stock.domain.ItemWithoutPriceHistory;
 import net.luversof.api.stock.domain.PriceHistoryDuplicateSummary;
+import net.luversof.api.stock.domain.PriceHistoryRowCounts;
 import net.luversof.api.stock.domain.PriceLimitBreachRow;
 import net.luversof.api.stock.domain.StockDailyClosePrice;
 import net.luversof.api.stock.domain.StockItemTradeDate;
@@ -156,44 +158,35 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
   PriceHistoryDuplicateSummary findLastDateDuplicateSummary();
 
   /**
-   * 전 구간에서 거래량이 0 인 시세 행 수. 관리 화면의 데이터 품질 표시용이다.
+   * 전체 시세 행 수와 그중 거래량이 0 인 행 수. 관리 화면의 데이터 품질 표시용이다.
    *
    * <p>거래가 없던 시점에 수집하면 KIS 가 직전 종가를 거래량 0 으로 실어 보낸다. 그런 행이 몇 개나 쌓여 있는지 알아야 "이 행들을 종가로 쓰지 않는다"는 판단이
    * 과거 평가액을 얼마나 흔드는지 가늠할 수 있다.
-   */
-  @Query(
-      """
-                    SELECT COUNT(*) FROM "StockPriceHistory" WHERE "volume" = 0
-                """)
-  long countZeroVolumeRows();
-
-  @Query(
-      """
-                    SELECT COUNT(*) FROM "StockPriceHistory"
-                """)
-  long countAllRows();
-
-  /**
-   * 거래량이 0 인데 종가가 직전 행과 <b>다른</b> 행 수.
    *
-   * <p>거래가 없으면 종가가 바뀔 수 없으므로 이 값은 0 에 가까워야 한다. 0 이면 거래량 0 행은 정보를 갖고 있지 않다는 뜻이고, 그때만 "종가로 쓰지 않는다"는
-   * 판단이 과거 평가액을 흔들지 않는다. 0 이 아니면 그 행들을 빼는 순간 과거 값이 달라지므로 함부로 뺄 수 없다.
+   * <p>두 값을 따로 물으면 같은 57,586 행을 두 번 훑는다. FILTER 로 한 번에 센다.
+   *
+   * <p>종목 단위 신선도도 같은 왕복에 실어 보낸다. 마지막 일자 하나만 알려 주면 전 종목이 그 날까지 최신인 것으로 읽히는데, 실측 2026-09-12 로는 86 종목
+   * 중 9 종목만 2026-09-09 이고 70 종목이 2026-04-01/03 에 멈춰 있었다(이력이 아예 없는 종목 4). 시세 갱신이 보유 종목 위주로 도는 결과라
+   * 데이터가 잘못된 것은 아니지만, 관리 화면이 그렇게 말하지 않으면 알 수 없다.
    */
   @Query(
       """
-                    SELECT COUNT(*)
-                    FROM "StockPriceHistory" h
-                    CROSS JOIN LATERAL (
-                        SELECT p."closePrice"
-                        FROM "StockPriceHistory" p
-                        WHERE p."stockItem_id" = h."stockItem_id"
-                            AND p."tradeDate" < h."tradeDate"
-                        ORDER BY p."tradeDate" DESC
-                        LIMIT 1
-                    ) AS x
-                    WHERE h."volume" = 0 AND h."closePrice" <> x."closePrice"
+                    SELECT COUNT(*) AS total_count,
+                        COUNT(*) FILTER (WHERE "volume" = 0) AS zero_volume_count,
+                        (SELECT COUNT(DISTINCT x."stockItem_id")
+                             FROM "StockPriceHistory" x
+                             WHERE x."tradeDate" = (SELECT MAX(y."tradeDate")
+                                                        FROM "StockPriceHistory" y)
+                        ) AS last_date_item_count,
+                        (SELECT COUNT(*)
+                             FROM "StockItem" s
+                             WHERE NOT EXISTS (SELECT 1
+                                                   FROM "StockPriceHistory" z
+                                                   WHERE z."stockItem_id" = s."id")
+                        ) AS no_history_item_count
+                    FROM "StockPriceHistory"
                 """)
-  long countZeroVolumeRowsWithChangedClose();
+  PriceHistoryRowCounts findRowCounts();
 
   /**
    * 위 개수에 해당하는 행 자체. 개수만으로는 그것이 수집 오류인지 액면분할 같은 정상 조정인지 알 수 없다.
@@ -223,34 +216,42 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
   List<ZeroVolumeChangedClose> findZeroVolumeRowsWithChangedClose();
 
   /**
-   * 하루 만에 가격제한폭(±30%)을 넘은 행의 개수.
+   * 시세 이력이 한 행도 없는 종목. 관리 화면이 개수만 말하던 것을 이름까지 적기 위한 목록이다.
    *
-   * <p>거래로는 생길 수 없는 변동이므로 분할·병합 같은 기업행위이거나 수집 오류다. 위의 거래량 0 점검과 짝을 이룬다.
-   *
-   * <p>오래 쉰 뒤의 첫 거래는 제한폭 판정 대상이 아니므로 직전 거래일과 7일 이내인 행만 본다.
-   *
-   * <p>직전 행은 LAG 윈도우로 잡는다. 예전에는 행마다 LATERAL 서브쿼리로 직전 행을 다시 찾았는데, 거래량 0 점검과 달리 이 조건은 전 행(실측
-   * 57,577행)을 대상으로 해 그 방식이 136ms 였다(2026-09-09, dataStatus 307ms 의 44%). 아래 행 조회와 합쳐 270ms.
+   * <p>개수를 세는 {@code findRowCounts} 의 하위 질의와 <b>같은 조건</b>이어야 한다 - 화면에 "4 개" 라고 적고 세 줄만 보여 주면 그것대로
+   * 거짓말이다. 상한은 두되 넉넉히 잡는다.
    */
   @Query(
       """
-                    WITH w AS (
-                        SELECT "closePrice",
-                            "tradeDate",
-                            LAG("closePrice") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_close,
-                            LAG("tradeDate") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_date
-                        FROM "StockPriceHistory"
-                    )
-                    SELECT COUNT(*)
-                    FROM w
-                    WHERE prev_close > 0
-                        AND "closePrice" > 0
-                        AND "tradeDate" - prev_date <= 7
-                        AND ABS("closePrice"::numeric / prev_close::numeric - 1) > 0.30
+                    SELECT s."id" AS stock_item_id, s."symbol" AS symbol, s."name" AS name
+                    FROM "StockItem" s
+                    WHERE NOT EXISTS (SELECT 1
+                                          FROM "StockPriceHistory" z
+                                          WHERE z."stockItem_id" = s."id")
+                    ORDER BY s."symbol"
+                    LIMIT 50
                 """)
-  long countPriceLimitBreachRows();
+  List<ItemWithoutPriceHistory> findItemsWithoutPriceHistory();
 
-  /** 위 개수에 해당하는 행 자체. 응답이 원장 크기를 따라가지 않도록 상한을 둔다. 직전 행은 위와 같은 LAG 윈도우다. */
+  /**
+   * 하루 만에 가격제한폭(±30%)을 넘은 행. 거래로는 생길 수 없는 변동이므로 분할·병합 같은 기업행위이거나 수집 오류다. 위의 거래량 0 점검과 짝을 이룬다.
+   *
+   * <p>응답이 원장 크기를 따라가지 않도록 상한을 두고, 총 개수는 같은 스캔 안에서 COUNT(*) OVER () 로 함께 낸다 - 개수와 행을 따로 물으면 같은 비싼
+   * 스캔(시세 57,586행 위 윈도우)을 두 번 한다.
+   *
+   * <p>오래 쉰 뒤의 첫 거래는 제한폭 판정 대상이 아니므로 직전 거래일과 7일 이내인 행만 본다. 직전 행은 LAG 윈도우로 잡는다 - 예전에는 행마다 LATERAL
+   * 서브쿼리로 직전 행을 다시 찾았는데, 거래량 0 점검과 달리 이 조건은 전 행을 대상으로 해 그 방식이 136ms 였다 (2026-09-09, dataStatus
+   * 307ms 의 44%).
+   *
+   * <p>기준을 0.30 이 아니라 0.301 로 두는 이유: 상·하한가는 기준가에 0.7/1.3 을 곱한 뒤 호가단위로 맞추므로, 정상적인 하한가도 30% 를 아주 조금
+   * 넘길 수 있다. 실측 2026-09-10: 한화오션 2015-07-15 은 55,526 -> 38,868 로 -30.00036% 였다(이론 하한가 38,868.2 를
+   * 호가단위로 내린 값). 호가단위/기준가 최대비는 모든 가격대에서 0.100%p 이므로(2,000 미만 1원 · 5,000 미만 5원 · 20,000 미만 10원 ·
+   * 50,000 미만 50원 · 200,000 미만 100원 · 500,000 미만 500원 · 그 이상 1,000원) 0.1%p 여유면 충분하다. 같은 원장의 진짜 이탈은
+   * 34.78% · 42.15% · 67.10% · 80.00% 로 이 여유와 한참 떨어져 있다.
+   *
+   * <p>실측 2026-09-10: 이 조회 하나가 28~29ms 로 dataStatus 57ms 의 절반이다. 같은 윈도우를 인덱스 컬럼만으로 돌리면 13~14ms 이므로
+   * 나머지 절반은 closePrice 힙 접근이다(유니크 인덱스는 stockItem_id, tradeDate 뿐).
+   */
   @Query(
       """
                     WITH w AS (
@@ -271,7 +272,7 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                     WHERE prev_close > 0
                         AND "closePrice" > 0
                         AND "tradeDate" - prev_date <= 7
-                        AND ABS("closePrice"::numeric / prev_close::numeric - 1) > 0.30
+                        AND ABS("closePrice"::numeric / prev_close::numeric - 1) > 0.301
                     ORDER BY "tradeDate" DESC
                     LIMIT 5
                 """)

@@ -59,6 +59,20 @@ class DividendTableCompactOutputTest {
   }
 
   private static DividendView row(String stock, String account, String net) {
+    return row(stock, account, net, new BigDecimal("50000"));
+  }
+
+  /**
+   * 기준일 원금을 되짚지 못한 행. 화면에서 수익률이 "-" 로 남고 까닭이 붙는다.
+   *
+   * <p>실측 2026-09-11: 전체 기간 배당 목록 473 행 중 이런 행은 5 행(1.06%)이다. 표본을 이쪽으로 잡으면 드문 경우의 비용을 모든 행에 물리게 된다.
+   */
+  private static DividendView rowWithoutBasis(String stock, String account, String net) {
+    return row(stock, account, net, null);
+  }
+
+  private static DividendView row(
+      String stock, String account, String net, BigDecimal principalCost) {
     return new DividendView(
         UUID.randomUUID(),
         UUID.randomUUID(),
@@ -74,12 +88,12 @@ class DividendTableCompactOutputTest {
         new BigDecimal(net),
         Instant.parse("2026-08-01T00:00:00Z"),
         Instant.parse("2026-08-15T00:00:00Z"),
-        null,
-        null,
-        null,
-        null,
-        null,
-        null);
+        new BigDecimal("10000"),
+        new BigDecimal("9000"),
+        principalCost,
+        principalCost == null ? null : new BigDecimal("60000"),
+        principalCost == null ? null : new BigDecimal("2.1"),
+        principalCost == null ? null : new BigDecimal("1.8"));
   }
 
   private String render(List<DividendView> rows) {
@@ -125,10 +139,38 @@ class DividendTableCompactOutputTest {
   /** 두 행의 크기 차이 = 행 하나의 비용. 들여쓰기 공백을 뺀 뒤에는 한 행이 1KB 를 넘지 않는다(실측: 줄이기 전 1,130 자). */
   @Test
   void 행_하나는_1KB_를_넘지_않는다() {
-    int one = render(List.of(row("삼성전자", "KB증권", "1000"))).length();
-    int two = render(List.of(row("삼성전자", "KB증권", "1000"), row("삼성전자", "KB증권", "1000"))).length();
+    assertThat(rowCost(DividendTableCompactOutputTest::row)).as("행 하나의 렌더 크기").isBetween(300, 1000);
+  }
 
-    assertThat(two - one).as("행 하나의 렌더 크기").isBetween(300, 1000);
+  /**
+   * 기준일 원금을 되짚지 못한 행은 까닭을 싣느라 더 크다 - 그래도 상한을 둔다.
+   *
+   * <p>2026-09-11 까지 이 테스트의 표본 행은 {@code principalCost} 가 null 이라 <b>모든 행</b>이 이 드문 경우였다. 그래서 까닭을
+   * 보조기술에 닿게 하려 할 때마다 1KB 상한에 걸렸다(1,035 / 1,080 / 1,019 자). 실측으로 분포를 확인했다 - 전체 기간 473 행 중 5
+   * 행(1.06%)만 해당하고 조각 전체는 397,532 자다. 다섯 행에 까닭을 실은 뒤 조각은 398,212 자가 됐다(+680, +0.17%). 평범한 행의 상한은
+   * 그대로 두고 이 행에만 따로 상한을 준다.
+   */
+  @Test
+  void 기준을_못_되짚은_행도_상한이_있다() {
+    int missing = rowCost(DividendTableCompactOutputTest::rowWithoutBasis);
+    int normal = rowCost(DividendTableCompactOutputTest::row);
+
+    assertThat(missing).as("기준 미산출 행의 렌더 크기").isBetween(300, 1300);
+    assertThat(missing - normal).as("까닭(툴팁 + sr-only) 이 붙어 늘어난 만큼").isLessThan(400);
+  }
+
+  private int rowCost(RowFactory factory) {
+    int one = render(List.of(factory.create("삼성전자", "KB증권", "1000"))).length();
+    int two =
+        render(
+                List.of(
+                    factory.create("삼성전자", "KB증권", "1000"), factory.create("삼성전자", "KB증권", "1000")))
+            .length();
+    return two - one;
+  }
+
+  private interface RowFactory {
+    DividendView create(String stock, String account, String net);
   }
 
   /**

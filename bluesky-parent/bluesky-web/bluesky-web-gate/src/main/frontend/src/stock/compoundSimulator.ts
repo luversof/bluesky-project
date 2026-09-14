@@ -122,6 +122,7 @@ function formatSignedPercent(value: number): string {
 		"stockCompoundFrequency",
 	) as HTMLSelectElement | null;
 	const monthlyNote = document.getElementById("stockCompoundMonthlyNote");
+	const effectiveRateEl = document.querySelector("[data-compound-effective]") as HTMLElement | null;
 	const timingSelect = document.getElementById(
 		"stockCompoundTiming",
 	) as HTMLSelectElement | null;
@@ -516,6 +517,20 @@ function formatSignedPercent(value: number): string {
 				"hidden",
 				frequencySelect?.value !== "monthly",
 			);
+		}
+		// 연/12 로 나눈 월 이율을 열두 번 곱하면 입력값보다 큰 실효 연이율이 된다(연 12% -> 12.68%).
+		// 기제만 적고 결과를 안 적으면, 사용자가 다른 상품의 연 수익률과 그대로 견주게 된다.
+		if (effectiveRateEl) {
+			const annualPct = rateInput ? Number(rateInput.value) : 0;
+			if (frequencySelect?.value === "monthly" && Number.isFinite(annualPct)) {
+				const effective = (Math.pow(1 + annualPct / 100 / 12, 12) - 1) * 100;
+				const template = effectiveRateEl.getAttribute("data-template") || "";
+				effectiveRateEl.textContent = template
+					.replace("{0}", String(Math.round(annualPct * 100) / 100))
+					.replace("{1}", String(Math.round(effective * 100) / 100));
+			} else {
+				effectiveRateEl.textContent = "";
+			}
 		}
 		const rows = simulate();
 		renderPreviews();

@@ -107,6 +107,12 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             ? null
             : async.supply(
                 () -> emptyIfNull(tradeProfitClient.calculateProfit(stockGroupedParams)));
+    // 종목별 최초 매수일. 보유 기간·연평균 수익률을 적으려면 처음 산 날이 필요한데, 원장 목록
+    // (실측 2026-09-14: 258 행)을 다시 받는 대신 종목별 집계만 받는다 - 배당 합계와 같은 방식이다.
+    var firstBuyDateFuture =
+        emptyAccountSelection
+            ? null
+            : async.supply(() -> tradeClient.findFirstBuyDateByStockItem(profitParams));
 
     List<net.luversof.web.gate.stock.domain.StockItem> stockItemList =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockItemsFuture);
@@ -217,6 +223,21 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                         rawStockGroupedFuture),
                     userId,
                     tradeProfitNames));
+    // 걸러내기 전에 '이미 다 판 종목' 몫을 따로 센다. 이 표의 합계는 보유 종목만이라 전체 누적보다 작은데,
+    // 얼마나 작은지는 화면 어디에도 없었다 - 실측 2026-09-11: 실현손익 합계가 자산 현황 140,350,295 인데
+    // 대시보드·매매·자산 성장은 225,630,135 를 적는다(차이 85,279,840, 37.8%). 그 차이를 숫자로 밝힌다.
+    List<TradeProfit> soldOutList =
+        stockGroupedList.stream().filter(tp -> tp.holdingQuantity() == 0).toList();
+    java.util.Set<UUID> soldOutStockItemIds =
+        soldOutList.stream()
+            .map(TradeProfit::stockItemId)
+            .filter(Objects::nonNull)
+            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+    BigDecimal soldOutRealizedProfit =
+        soldOutList.stream()
+            .map(TradeProfit::realizedProfit)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     // getStockGroupedTradeProfits(request, false) 와 같은 순서로 보유량 0 을 먼저 걸러낸다.
     stockGroupedList.removeIf(tp -> tp.holdingQuantity() == 0);
     List<TradeProfit> stockAggregated =
@@ -256,6 +277,29 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     var stockProfitBreakdown =
         net.luversof.web.gate.stock.util.StockCombinedProfitUtil.byStockItem(
             stockAggregated, dividendByStockItem);
+    // 이 표에 없는 종목 = 다 판 종목 + '거래는 없는데 배당만 있는 종목'. 후자를 빼면 합이 맞지 않는다 -
+    // 실측 2026-09-11: 하나금융지주가 거래 행 없이 배당 2,100 만 있어, 다 판 34 종목만 세면
+    // 59,067,537 + 6,582,497 = 65,650,034 로 전체 배당 65,652,134 에 2,100 모자랐다.
+    java.util.Set<UUID> heldStockItemIds =
+        stockGroupedList.stream()
+            .map(TradeProfit::stockItemId)
+            .filter(Objects::nonNull)
+            .collect(java.util.stream.Collectors.toSet());
+    java.util.Set<UUID> notListedStockItemIds = new java.util.LinkedHashSet<>(soldOutStockItemIds);
+    dividendByStockItem.forEach(
+        (stockItemId, amount) -> {
+          if (stockItemId != null && !heldStockItemIds.contains(stockItemId)) {
+            notListedStockItemIds.add(stockItemId);
+          }
+        });
+    BigDecimal soldOutDividend =
+        notListedStockItemIds.stream()
+            .map(dividendByStockItem::get)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    model.addAttribute("soldOutStockCount", notListedStockItemIds.size());
+    model.addAttribute("soldOutRealizedProfit", soldOutRealizedProfit);
+    model.addAttribute("soldOutDividend", soldOutDividend);
     model.addAttribute("stockProfitBreakdown", stockProfitBreakdown);
     model.addAttribute(
         "stockProfitBreakdownTotal",
@@ -268,6 +312,16 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     java.time.LocalDate priceBasisDate =
         net.luversof.web.gate.stock.util.StockPriceBasisUtil.latestPriceBasisDate(enrichedList);
     model.addAttribute("priceBasisDate", priceBasisDate);
+
+    // 보유 기간의 끝은 '오늘'이다. 요청 존으로 잡는다 - 서버 존(UTC)으로 잡으면 KST 오전에 하루가 덜 센다.
+    java.time.ZoneId holdingZone = resolveZoneIdOrDefault(request.getTimeZone());
+    model.addAttribute("holdingBasisDate", java.time.LocalDate.now(holdingZone));
+    model.addAttribute(
+        "firstBuyDateByStockItem",
+        firstBuyDateFuture == null
+            ? java.util.Map.<UUID, java.time.LocalDate>of()
+            : emptyIfNullMap(
+                net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstBuyDateFuture)));
     return "stock/htmx/fragments/assetStatus";
   }
 
@@ -350,11 +404,21 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         holdingCost);
   }
 
+  /**
+   * 백분율. <b>100 을 먼저 곱한 뒤</b> 나눈다 - 순서를 바꾸면 표시 자릿수보다 굵게 미리 반올림된다.
+   *
+   * <p>2026-09-12 까지는 {@code divide(base, 4).multiply(100)} 이라 <b>백분율이 소수 2 자리로 잘린 뒤</b> 화면이 다시 1
+   * 자리로 반올림했다. 실측 2026-09-12(자산 현황, 계좌별 보유 종목 상세): 연금저축2 의 TIGER 리츠부동산인프라 가 8,847,600 /
+   * 1,622,109,770 = 0.5454% 인데 0.0055 x 100 = 0.55% 를 거쳐 <b>0.6%</b> 로 나갔다(옳게 하면 0.5%). 같은 화면 37 행
+   * 중 이 한 줄이 걸렸다 - 나머지는 잔차가 0.x5 경계에 닿지 않았을 뿐이다.
+   *
+   * <p>{@code StockDividendHtmxController.percentage} 는 처음부터 이 순서였다. 같은 규칙으로 맞춘다.
+   */
   private BigDecimal percentage(BigDecimal amount, BigDecimal base) {
     if (amount == null || base == null || base.compareTo(BigDecimal.ZERO) <= 0) {
       return BigDecimal.ZERO;
     }
 
-    return amount.divide(base, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+    return amount.multiply(BigDecimal.valueOf(100)).divide(base, 4, java.math.RoundingMode.HALF_UP);
   }
 }

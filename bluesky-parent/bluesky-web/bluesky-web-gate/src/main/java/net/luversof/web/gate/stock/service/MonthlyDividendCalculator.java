@@ -158,15 +158,33 @@ public class MonthlyDividendCalculator {
             .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
             .map(MonthlyDividendCalculator::safe)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
+    // 연 값은 <b>화면에 적히는 월 값</b>의 12 배여야 한다 - 실측 2026-09-11: 시뮬레이터는 원 단위로 자르기 전의
+    // 합계에 12 를 곱해 36,657,049 를 냈는데, 화면의 월 값(3,054,754)에 12 를 곱하면 36,657,048 이다.
+    // 배당 캘린더는 같은 자료로 ...048 을 적고 있어 두 화면이 1 원 달랐고, 시뮬레이터 안에서도 월x12 가 연과 안 맞았다
+    // (과세표준은 220,539 x 12 = 2,646,468 인데 2,646,466 이었다).
+    BigDecimal displayedMonthlyDividend =
+        BigDecimal.valueOf(
+            net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
+                totalExpectedMonthlyDividend));
     BigDecimal totalExpectedAnnualDividend =
-        totalExpectedMonthlyDividend.multiply(BigDecimal.valueOf(12));
+        displayedMonthlyDividend.multiply(BigDecimal.valueOf(12));
+    // 배당 캘린더도 같은 값을 적는다. 거기서는 종목별 과세표준을 칸에 찍으므로 <b>보이는 값</b>을 더해야
+    // 손으로 맞는다 - 두 화면이 같은 자료로 다른 수를 적으면 어느 쪽이 맞는지 화면으로는 알 수 없다
+    // (예전에 배당 합계에서 1 원 어긋난 적이 있다). 그래서 여기도 행마다 반올림한 뒤 더한다.
     BigDecimal totalExpectedTaxableBaseAmount =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::expectedTaxableBaseAmount)
-            .map(MonthlyDividendCalculator::safe)
+            .map(
+                value ->
+                    BigDecimal.valueOf(
+                        net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(value)))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal displayedMonthlyTaxableBase =
+        BigDecimal.valueOf(
+            net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
+                totalExpectedTaxableBaseAmount));
     BigDecimal totalExpectedAnnualTaxableBaseAmount =
-        totalExpectedTaxableBaseAmount.multiply(BigDecimal.valueOf(12));
+        displayedMonthlyTaxableBase.multiply(BigDecimal.valueOf(12));
     BigDecimal totalCurrentMarketValue =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::currentMarketValue)

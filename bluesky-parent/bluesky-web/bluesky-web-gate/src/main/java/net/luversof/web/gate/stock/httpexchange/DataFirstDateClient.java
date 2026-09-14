@@ -22,4 +22,16 @@ public interface DataFirstDateClient {
 
   @GetExchange
   DataFirstDateResponse findDataFirstDate(@RequestParam UUID userId);
+
+  /**
+   * 종목·계좌로 좁힌 최초 일자. 상세 화면의 '가장 이른 기간으로'(«) 가 쓸 하한이다.
+   *
+   * <p>사용자 전체의 최초일을 쓰면 그 종목이 아직 없던 창으로 뛴다 - 실측 2026-09-13: 삼성전자 최초 매매는 2020-03-04 인데 사용자 전체는
+   * 2009-10-06 이다.
+   */
+  @GetExchange
+  DataFirstDateResponse findDataFirstDate(
+      @RequestParam UUID userId,
+      @RequestParam(required = false) UUID stockItemId,
+      @RequestParam(required = false) UUID accountId);
 }

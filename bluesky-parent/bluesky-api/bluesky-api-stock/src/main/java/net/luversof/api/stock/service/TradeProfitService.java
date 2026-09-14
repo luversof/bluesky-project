@@ -431,6 +431,25 @@ public class TradeProfitService {
     }
   }
 
+  private static final Set<String> SUPPORTED_BREAKDOWNS = Set.of("AUTO", "MONTH", "YEAR");
+
+  /**
+   * 모르는 breakdown 은 거절한다 &mdash; granularity 와 같은 규칙.
+   *
+   * <p>실측 2026-09-11: {@code granularity=BOGUS} 는 400 인데 {@code breakdown=BOGUS} 는 <b>200 에 달 단위 9
+   * 행</b>이었다 (같은 요청의 {@code breakdown=123} 도 마찬가지). 호출자는 해 단위를 달라고 적었다고 믿는데 달 단위가 오고, 오타는 끝까지 드러나지
+   * 않는다. 값을 아예 주지 않는 경우는 종전대로 "쪼개지 않음" 이다.
+   */
+  private static void assertSupportedBreakdown(String breakdown) {
+    if (breakdown == null || breakdown.isBlank()) {
+      return;
+    }
+    if (!SUPPORTED_BREAKDOWNS.contains(breakdown.trim().toUpperCase(Locale.ROOT))) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.BAD_REQUEST, "Unsupported breakdown: " + breakdown);
+    }
+  }
+
   public List<TradeProfitTimeSeriesPoint> aggregateTimeSeries(
       TradeProfitRequest request, String granularity) {
     assertSupportedGranularity(granularity);
@@ -458,6 +477,7 @@ public class TradeProfitService {
   public TradeProfitTimeSeriesResult aggregateTimeSeriesWithSummary(
       TradeProfitRequest request, String granularity, String breakdown) {
     assertSupportedGranularity(granularity);
+    assertSupportedBreakdown(breakdown);
     ZoneId zoneId = request.resolveZoneId();
     List<TradeProfitTimeSeriesPoint> dailySeries =
         simulateDailySeries(request, null, null, null, null, null);
@@ -714,6 +734,16 @@ public class TradeProfitService {
     // 출력 시작일: 요청상 start 날짜 (없으면 첫 거래일)
     LocalDate outputStart = start != null ? toLocalDate(start, zoneId) : firstTradeDate;
     LocalDate outputEnd = toInclusiveEndDate(end, zoneId);
+    // 아직 오지 않은 날은 시뮬레이션하지 않는다. 예전에는 요청한 끝날까지 그대로 굴려,
+    // 마지막으로 아는 평가액을 미래로 끌고 갔다 - 실측 2026-09-13: 2030 년 구간을 물으면
+    // 54 개 점이 오고 화면의 '월별 성과' 가 2030-01~12 를 손익 0 · 수익률 0.00% 로 그렸으며
+    // '연도별 성과' 는 2030 년 기말 평가액을 1,622,109,770 원이라고 적었다. 오지 않은 해의 기록이다.
+    // 현실적인 경우도 같다 - 2026-01-01~2026-12-31 을 고르면 10 · 11 · 12 월이 0 원 줄로 붙었다.
+    // 자료가 아예 없는 과거 구간(2000 년)은 이미 빈 표로 나오므로, 미래도 같게 만든다.
+    LocalDate lastRealDay = LocalDate.now(zoneId);
+    if (outputEnd.isAfter(lastRealDay)) {
+      outputEnd = lastRealDay;
+    }
 
     // Price History (Bulk Load)
     LocalDate startLocalDate =
@@ -1223,17 +1253,10 @@ public class TradeProfitService {
     return nz(sellAmount).subtract(nz(tax)).subtract(nz(recordedProfit));
   }
 
-  /** 타임존 ID 문자열을 해석한다. 비었거나 알 수 없으면 서버 기본 타임존. */
+  /** 타임존 ID 문자열을 해석한다. 비었으면 서버 기본 타임존, 알 수 없으면 400. */
   private static ZoneId resolveZoneIdOrDefault(String timeZone) {
-    if (timeZone == null || timeZone.isBlank()) {
-      return ZoneId.systemDefault();
-    }
-    try {
-      return ZoneId.of(timeZone);
-    } catch (Exception ex) {
-      log.debug("Unknown time zone '{}', falling back to system default", timeZone);
-      return ZoneId.systemDefault();
-    }
+    return net.luversof.api.stock.web.support.RequestZoneUtil.parse(
+        timeZone, ZoneId.systemDefault());
   }
 
   /** 보유·거래·손익이 모두 0인 해(자산이 비어 있던 기간)인지. */
@@ -1423,7 +1446,52 @@ public class TradeProfitService {
     // 다운샘플은 각 버킷의 '마지막 거래일' 값만 남기므로, 버킷 중간(예: 주중)에 발생한 실제 일별
     // 최고/최저 평가액이 후보에서 누락된다. 구간 내 실제 최고·최저 '그 날' 포인트를 결과 시리즈에
     // 반드시 포함시켜, 차트의 최고/최저 주석이 정확한 값·날짜를 가리키고 선이 그 지점을 지나게 한다.
-    return mergeHoldingsValueExtremes(series, downsampled);
+    return mergeOpeningPoint(series, mergeHoldingsValueExtremes(series, downsampled));
+  }
+
+  /**
+   * 구간의 <b>기초</b> 지점을 반드시 남긴다.
+   *
+   * <p>다운샘플은 버킷마다 마지막 날만 남기므로 첫 버킷의 앞머리가 통째로 사라진다. 그런데 요약의 {@code openingValue} 는 그 사라진 첫 지점의 값이라,
+   * 차트의 왼쪽 끝과 카드가 서로 다른 수를 말하게 된다.
+   *
+   * <p>실측 2026-09-13: '2025년' 은 차트 첫 점이 2025-01-04 456,672,455 인데 기초는 2024-12-31 447,114,050 이었고,
+   * '최근 3년' 은 차트 2023-09-29 493,978,320 · 기초 2023-09-13 524,988,225 로 3,100 만 원 차이에 오르내림의 방향까지 달라
+   * 보였다. 끝 지점은 마지막 버킷의 마지막 날이라 이미 남는다.
+   *
+   * <p>흐름값(거래 건수 · 매도 수량 · 일별 실현손익)은 0 으로 둔다 - 그 날의 흐름은 이미 첫 버킷의 대표 지점에 합산돼 있어, 다시 실으면 두 번 세어진다. 최고
+   * · 최저 waypoint 와 같은 규칙이다.
+   */
+  private List<TradeProfitTimeSeriesPoint> mergeOpeningPoint(
+      List<TradeProfitTimeSeriesPoint> daily, List<TradeProfitTimeSeriesPoint> downsampled) {
+    if (daily == null || daily.isEmpty()) {
+      return downsampled;
+    }
+    TradeProfitTimeSeriesPoint opening = daily.get(0);
+    if (opening == null || opening.timestamp() == null) {
+      return downsampled;
+    }
+    for (TradeProfitTimeSeriesPoint point : downsampled) {
+      if (point != null && opening.timestamp().equals(point.timestamp())) {
+        return downsampled;
+      }
+    }
+    List<TradeProfitTimeSeriesPoint> result = new ArrayList<>(downsampled);
+    result.add(
+        new TradeProfitTimeSeriesPoint(
+            opening.timestamp(),
+            opening.cumulativeRealizedProfit(),
+            BigDecimal.ZERO,
+            0L,
+            0L,
+            0L,
+            opening.totalHoldingsValue(),
+            opening.totalHoldingsCost(),
+            opening.cumulativeTotalProfit(),
+            opening.cumulativeDividend(),
+            opening.date()));
+    result.sort(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp));
+    return result;
   }
 
   /** 구간 내 실제 일별 최고/최저 평가액 포인트를 다운샘플 결과에 병합한다(누락 시에만 추가). */
@@ -1586,21 +1654,37 @@ public class TradeProfitService {
   }
 
   public List<TradeResponse> getTradeHistory(TradeSearchRequest request) {
+    // 사용자 자체가 없는 요청은 "거래가 없는 사용자" 가 아니라 잘못된 요청이다. 빈 배열을 돌려주면
+    // 부르는 쪽이 userId 를 흘린 것을 눈치채지 못하고 "거래 0건" 으로 읽는다 - 원장에서는 가장 나쁜 실패다.
+    // 실측 2026-09-11: userId 없이 부르면 같은 계열 8개(dividend·ledgerIntegrity·dataStatus·dataFirstDate
+    // ·periodSummary·yearlyCost·activityFilterIds)는 400 인데 이 엔드포인트만 200 [] 이었다.
+    // 계좌가 아직 없는 '정상적인 빈 사용자' 는 그대로 빈 결과다(아래 accountList.isEmpty()).
+    if (request.userId() == null) {
+      StockErrorCode.INVALID_USER_ID.throwException();
+    }
+
     // 1. Fetch all trades for the accounts/stockItems
     List<Trade> tradeList = null;
 
     List<Account> accountList = accountService.findByUserId(request.userId());
+    List<UUID> validAccountIds = accountList.stream().map(Account::getId).toList();
+
+    // 남의 계좌 id 를 짚은 요청은 계좌가 하나도 없는 사용자에게도 똑같이 거절해야 한다.
+    // 예전에는 accountList 가 비면 소유권 검사 앞에서 먼저 빈 결과로 돌아가, 계좌를 가진 사용자는 400 인데
+    // 계좌가 없는 사용자는 200 [] 라는 두 갈래가 생겼다(실측 2026-09-11: 없는 userId + 실제 계좌 id 로 200 []).
+    // 데이터가 새지는 않았지만, 같은 잘못을 다르게 답하면 부르는 쪽이 그 잘못을 못 본다.
+    if (request.accountIdList() != null
+        && !request.accountIdList().isEmpty()
+        && !validAccountIds.containsAll(request.accountIdList())) {
+      StockErrorCode.INVALID_USER_ID.throwException();
+    }
+
+    // 계좌가 아직 없는 사용자는 오류가 아니라 '아직 아무것도 없는 사용자' 다(빈 결과).
     if (accountList.isEmpty()) {
       return List.of();
     }
 
-    List<UUID> validAccountIds = accountList.stream().map(Account::getId).toList();
-
     if (request.accountIdList() != null && !request.accountIdList().isEmpty()) {
-      // Validate requested accounts belong to user
-      if (!validAccountIds.containsAll(request.accountIdList())) {
-        StockErrorCode.INVALID_USER_ID.throwException();
-      }
       if (request.stockItemIdList() != null && !request.stockItemIdList().isEmpty()) {
         tradeList =
             tradeService.findByAccountIdInAndStockItemIdIn(

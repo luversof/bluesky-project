@@ -20,11 +20,13 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param boolean contentReady = false
+@param boolean notFound = false
 @param String stockItemIdParam = ""
 @param StockItem stockItem = null
 @param int holdingQuantity = 0
 @param BigDecimal averageBuyPrice = java.math.BigDecimal.ZERO
 @param BigDecimal currentPrice = java.math.BigDecimal.ZERO
+@param boolean currentPriceUnknown = false
 @param java.time.LocalDate priceBasisDate = null
 @param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
 @param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
@@ -49,10 +51,12 @@
 @param List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory = java.util.List.of()
 @param BigDecimal periodUnrealizedDelta = null
 @param Double periodProfitRatePct = null
+@param String dataFirstDate = ""
+@param String rangeMode = ""
 
 
 @template._layout.stockLayout(
-	pageTitle = MessageUtil.getMessage("stock.item.detail.breadcrumb"),
+	pageTitle = notFound ? MessageUtil.getMessage("stock.item.detail.notfound.title") : MessageUtil.getMessage("stock.item.detail.breadcrumb"),
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,
@@ -61,8 +65,15 @@
 		<div class="w-full">
 			@if(!contentReady)
 				<!-- 셸: 콘텐츠를 전역 기간과 함께 htmx로 로드 (새로고침/이동 시에도 선택 기간 유지) -->
-				<div id="stockItemDetailFragment"
-				     hx-get="/stock/item?stockItemId=${stockItemIdParam}"
+				<%-- URL 의 기간(rangeMode 또는 날짜)이 조각 요청까지 가야 공유 주소가 산다. 없으면 hx-include 의
+				     전역 기간(= 마지막으로 보던 기간)만 실려, 주소에 적힌 기간이 조용히 무시됐다(실측 2026-09-11:
+				     ?rangeMode=ytd 로 들어가도 저장된 1개월 그대로였다). 기간 세 키를 한 묶음으로 다루는 규칙은
+				     common.ts 의 data-params-from-query 훅에 있다.
+				     id 는 hx-vals 로 준다 - hx-get 경로에 두면 그 훅이 URL 의 같은 키를 한 번 더 붙여 "id,id" 로
+				     묶인다(실측 2026-09-11: 상세가 통째로 '찾을 수 없습니다' 가 됐다). --%>
+				<div id="stockItemDetailFragment" data-params-from-query
+				     hx-get="/stock/item"
+				     hx-vals='{"stockItemId": "${stockItemIdParam}"}'
 				     hx-trigger="load"
 				     hx-include="#globalDateRangeInputs input"
 				     hx-select="#stockItemDetailFragment"
@@ -70,13 +81,15 @@
 					<div class="flex justify-center p-10"><span class="loading loading-spinner text-primary loading-lg"></span></div>
 				</div>
 			@else
-				<%-- 조각이 이름을 알면 문서 제목도 그 이름으로(common.ts applyFragmentTitle). 없는 id 면 속성이 빠져 제목은 그대로다. --%>
+				<%-- 조각이 이름을 알면 문서 제목도 그 이름으로(common.ts applyFragmentTitle).
+				     없는 id 면 "종목을 찾을 수 없습니다" 를 싣는다 - 2026-09-12 까지는 속성이 빠져 제목이 정상 화면과 같았다. --%>
 				@template.stock.htmx.stockItemDetailContent(
 					stockItemIdParam = stockItemIdParam,
 					stockItem = stockItem,
 					holdingQuantity = holdingQuantity,
 					averageBuyPrice = averageBuyPrice,
 					currentPrice = currentPrice,
+					currentPriceUnknown = currentPriceUnknown,
 					priceBasisDate = priceBasisDate,
 					evaluationAmount = evaluationAmount,
 					evaluationProfit = evaluationProfit,
@@ -95,6 +108,8 @@
 					filterRangeMode = filterRangeMode,
 					coveredStartLocal = coveredStartLocal,
 					coveredEndLocal = coveredEndLocal,
+					dataFirstDate = dataFirstDate,
+					rangeMode = rangeMode,
 					accountHoldings = accountHoldings,
 					periodBreakdown = periodBreakdown,
 					stockNavEntries = stockNavEntries,

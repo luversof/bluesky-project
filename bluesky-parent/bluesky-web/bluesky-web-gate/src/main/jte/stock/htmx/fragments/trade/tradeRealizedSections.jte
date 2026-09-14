@@ -34,12 +34,33 @@
 	String accountSelectionSummaryLabel = MessageUtil.getMessage("stock.analytics.account.selection.summary");
 	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
 	String selectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
+	// 두 표의 열은 매도원가·매도금액·실현손익·수익률인데, 매도금액 - 매도원가 는 실현손익이 되지 않는다.
+	// 실측 2026-09-11(전체 기간): 차이가 종목 37 행 전부 그 종목의 거래세와 정확히 같았고 합은 1,932,821 이다
+	// (수수료 100,671 은 빠지지 않는다). 화면에 거래세 열이 없어 빼서 맞춰 볼 수 없으므로 기준을 적어 둔다.
+	String realizedBasisNote = MessageUtil.getMessage("stock.realized.basis.note");
+	String totalLabel = MessageUtil.getMessage("common.label.total");
+	// 합계 줄. 같은 화면의 연도별/월별 매매 표와 상세 목록은 이미 tfoot 합계를 보여 주는데 이 두 표만 없었다
+	// (실측 2026-09-11). 그래서 매도원가 총합(전체 기간 1,166,104,134)은 화면 어디에도 없었고,
+	// 매도금액·실현손익도 표에서 더해 카드와 맞춰 볼 수 없었다. 행에서 쓰는 식을 그대로 다시 쓴다.
+	// JTE 는 표를 람다(tableCard body) 안에서 렌더하므로 누적 변수는 effectively final 이어야 한다 - 스트림으로 한 번에 접는다.
+	java.util.List<AccountRealizedRow> accRows = accountRealizedList != null ? accountRealizedList : java.util.List.<AccountRealizedRow>of();
+	java.util.List<TradeProfit> stockRows = stockRealizedList != null ? stockRealizedList : java.util.List.<TradeProfit>of();
+	java.util.function.Function<BigDecimal, BigDecimal> zeroIfNull = v -> v != null ? v : BigDecimal.ZERO;
+	BigDecimal accTotalSoldCost = accRows.stream().map(r -> zeroIfNull.apply(r.soldCost())).reduce(BigDecimal.ZERO, BigDecimal::add);
+	BigDecimal accTotalSell = accRows.stream().map(r -> zeroIfNull.apply(r.sellAmount())).reduce(BigDecimal.ZERO, BigDecimal::add);
+	BigDecimal accTotalNet = accRows.stream().map(r -> zeroIfNull.apply(r.realizedNet())).reduce(BigDecimal.ZERO, BigDecimal::add);
+	BigDecimal stockTotalSoldCost = stockRows.stream()
+		.map(i -> zeroIfNull.apply(i.totalSellAmount()).subtract(zeroIfNull.apply(i.totalSellTax())).subtract(zeroIfNull.apply(i.realizedProfit())))
+		.reduce(BigDecimal.ZERO, BigDecimal::add);
+	BigDecimal stockTotalSell = stockRows.stream().map(i -> zeroIfNull.apply(i.totalSellAmount())).reduce(BigDecimal.ZERO, BigDecimal::add);
+	BigDecimal stockTotalNet = stockRows.stream().map(i -> zeroIfNull.apply(i.realizedProfit())).reduce(BigDecimal.ZERO, BigDecimal::add);
 }
 
 	@if(accountRealizedList != null && !accountRealizedList.isEmpty())
 	<!-- 계좌별 실현손익 -->
 	<div class="mb-4" data-trade-realized-section>
-		<h2 class="text-base font-semibold mb-2 text-base-content/70" data-page-section>${byAccountSectionLabel}</h2>
+		<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byAccountSectionLabel}</h2>
+		<p class="text-[11px] leading-4 text-base-content/60 mb-2">${realizedBasisNote}</p>
 		<div class="selection-reveal"><div>
 		<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
 			 data-trade-realized-summary
@@ -98,11 +119,11 @@
 						data-sell="${(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO).toPlainString()}"
 						data-net="${rowNet.toPlainString()}"
 						data-sold-cost="${rowSoldCost.toPlainString()}">
-						<td class="font-semibold whitespace-nowrap">@if(row.accountId() != null)<a href="/stock/account?accountId=${row.accountId().toString()}" class="link link-hover">${row.name()}</a>@else${row.name()}@endif</td>
+						<th scope="row" class="font-semibold whitespace-nowrap">@if(row.accountId() != null)<a href="/stock/account?accountId=${row.accountId().toString()}" class="link link-hover">${row.name()}</a>@else${row.name()}@endif</th>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(rowSoldCost)}</td>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO)}</td>
 						<td class="text-right font-bold font-mono amount-value ${rowPositive ? "text-profit" : "text-loss"}">
-							${String.format("%+,d", StockFormatUtil.displayWon(rowNet))}
+							${StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowNet))}
 							<%-- 기록된 실현손익은 계좌를 합친 원가를 따른다(실측 2026-08-23: 매도 54건 중
 								 종목 단위 원가로 50건이 재현되고 계좌x종목 단위로는 38건뿐). 그래서 이 값은
 								 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 은 그 계좌 매매 기준의 1/5,
@@ -112,7 +133,9 @@
 							@if(RealizedBasisGap.isNotable(rowNet, rowOwn))
 								<span class="block text-[10px] font-normal text-base-content/60" data-realized-basis-gap="${StockFormatUtil.displayWon(rowBasisGap)}"
 									  title="${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}">
-									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.trade.realized.basis.gap"), String.format("%+,d", StockFormatUtil.displayWon(rowOwn)))}
+									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.trade.realized.basis.gap"), StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowOwn)))}
+									<%-- 까닭이 title 에만 있으면 마우스 전용이다(2026-09-10 실측). 같은 문구를 보조기술에도 남긴다. --%>
+									<span class="sr-only">${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}</span>
 								</span>
 							@endif
 						</td>
@@ -124,6 +147,19 @@
 					</tr>
 				@endfor
 				</tbody>
+				<tfoot>
+					<tr class="border-t-2 border-base-content/20 font-semibold" data-realized-total>
+						<th scope="row">${totalLabel}</th>
+						<td class="text-right font-mono amount-value">${decimalFormat.format(accTotalSoldCost)}</td>
+						<td class="text-right font-mono amount-value">${decimalFormat.format(accTotalSell)}</td>
+						<td class="text-right font-mono amount-value ${accTotalNet.signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(accTotalNet))}</td>
+						@if(accTotalSoldCost.signum() > 0)
+						<td class="text-right font-mono">${StockFormatUtil.signedPct(accTotalNet.doubleValue() / accTotalSoldCost.doubleValue() * 100, 2)}</td>
+						@else
+						<td class="text-right font-mono opacity-40">-</td>
+						@endif
+					</tr>
+				</tfoot>
 			</table>
 		`)
 	</div>
@@ -136,6 +172,7 @@
 			<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byStockSectionLabel}</h2>
 			<span class="badge badge-sm badge-ghost">${winCountBadgeLabel}</span>
 		</div>
+		<p class="text-[11px] leading-4 text-base-content/60 mb-2">${realizedBasisNote}</p>
 		<div class="selection-reveal"><div>
 		<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
 			 data-trade-realized-summary
@@ -199,11 +236,11 @@
 						data-sell="${(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO).toPlainString()}"
 						data-net="${itemNet.toPlainString()}"
 						data-sold-cost="${itemSoldCost.toPlainString()}">
-						<td class="font-semibold whitespace-nowrap"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></td>
+						<th scope="row" class="font-semibold whitespace-nowrap"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(itemSoldCost)}</td>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO)}</td>
 						<td class="text-right font-bold font-mono amount-value ${itemPositive ? "text-profit" : "text-loss"}">
-							${String.format("%+,d", StockFormatUtil.displayWon(itemNet))}
+							${StockFormatUtil.signedWon(StockFormatUtil.displayWon(itemNet))}
 						</td>
 						@if(itemHasRate)
 						<td class="text-right font-mono font-semibold ${itemRate >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(itemRate, 2)}</td>
@@ -213,6 +250,19 @@
 					</tr>
 				@endfor
 				</tbody>
+				<tfoot>
+					<tr class="border-t-2 border-base-content/20 font-semibold" data-realized-total>
+						<th scope="row">${totalLabel}</th>
+						<td class="text-right font-mono amount-value">${decimalFormat.format(stockTotalSoldCost)}</td>
+						<td class="text-right font-mono amount-value">${decimalFormat.format(stockTotalSell)}</td>
+						<td class="text-right font-mono amount-value ${stockTotalNet.signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockTotalNet))}</td>
+						@if(stockTotalSoldCost.signum() > 0)
+						<td class="text-right font-mono">${StockFormatUtil.signedPct(stockTotalNet.doubleValue() / stockTotalSoldCost.doubleValue() * 100, 2)}</td>
+						@else
+						<td class="text-right font-mono opacity-40">-</td>
+						@endif
+					</tr>
+				</tfoot>
 			</table>
 		`)
 	</div>

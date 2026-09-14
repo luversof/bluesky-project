@@ -42,8 +42,11 @@ class ChartSeriesJsTest {
     assertThat(js)
         .isEqualTo(
             "{labels:[\"2026-09-08\",\"2026-09-09\",\"\"],value:[269500,0,270000],cost:new Array(3).fill(71887),buyCount:[],dailyRealized:[]}");
+    // 2026-09-12 까지 이 자리는 cost:new Array(0).fill(0) 이었다. 평균단가가 없으면 0 으로 채우지
+    // 않고 계열을 비우도록 바꿨기 때문이다(ChartSeriesJsPriceTest 참고) - 이 테스트가 고정하려는
+    // 것은 "점마다 push 가 아니라 배열 리터럴" 이라는 형태이고, 그 형태는 그대로다.
     assertThat(ChartSeriesJs.priceSeries(null, null))
-        .isEqualTo("{labels:[],value:[],cost:new Array(0).fill(0),buyCount:[],dailyRealized:[]}");
+        .isEqualTo("{labels:[],value:[],cost:[],buyCount:[],dailyRealized:[]}");
   }
 
   @Test

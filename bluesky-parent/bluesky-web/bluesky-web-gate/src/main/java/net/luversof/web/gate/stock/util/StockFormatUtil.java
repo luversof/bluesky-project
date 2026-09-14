@@ -134,13 +134,120 @@ public final class StockFormatUtil {
    * <p>실측 2026-09-10: {@code String.format("%+.1f%%", -0.04)} 는 "-0.0%" 다. 2년 평가액 시계열 3,978 구간 중
    * 16개(하루 구간 위주)가 그 범위에 들어 자산 성장 기간 수익률·일간 변동에 실제로 찍힐 수 있다. 반올림은 Formatter 와 같은 HALF_UP.
    */
+  /**
+   * 한 표 안의 비중을 함께 반올림해, 표시값의 합이 전체(보통 100%)와 맞게 한다.
+   *
+   * <p>행마다 따로 반올림하면 표시값의 합이 어긋난다 - 실측 2026-09-11: 자산 현황 '종목별 현황' 9행이 99.9%, '계좌 보유 종목 상세' 두 표가
+   * 100.1% 였다(합계행은 100.0%). 각 행의 오차는 0.05%p 미만이라 값이 틀린 것은 아니고, 더한 결과만 어긋난다.
+   *
+   * <p>최대잔여법: 먼저 모두 내림한 뒤, 남은 몫을 버림 잔차가 큰 행부터 한 칸씩 나눠 준다. 행 하나가 원값에서 벗어나는 폭은 표시 자릿수 한 칸(0.1%p)을 넘지
+   * 않는다.
+   *
+   * <p>입력 합이 100 과 크게 다르면(필터로 일부만 보는 표 등) 손대지 않고 행마다 반올림한 값을 그대로 돌려준다.
+   */
+  public static java.util.List<String> balancedPct(
+      java.util.List<java.math.BigDecimal> values, int scale) {
+    java.util.List<String> fallback = new java.util.ArrayList<>();
+    if (values == null || values.isEmpty()) {
+      return fallback;
+    }
+    java.math.BigDecimal step = java.math.BigDecimal.ONE.movePointLeft(scale);
+    java.math.BigDecimal sum = java.math.BigDecimal.ZERO;
+    for (java.math.BigDecimal value : values) {
+      sum = sum.add(value == null ? java.math.BigDecimal.ZERO : value);
+    }
+    for (java.math.BigDecimal value : values) {
+      fallback.add(pct(value == null ? 0d : value.doubleValue(), scale));
+    }
+    java.math.BigDecimal hundred = java.math.BigDecimal.valueOf(100);
+    if (sum.subtract(hundred).abs().compareTo(step) > 0) {
+      return fallback;
+    }
+
+    int size = values.size();
+    java.math.BigDecimal[] floors = new java.math.BigDecimal[size];
+    java.math.BigDecimal[] remainders = new java.math.BigDecimal[size];
+    java.math.BigDecimal floorSum = java.math.BigDecimal.ZERO;
+    for (int i = 0; i < size; i++) {
+      java.math.BigDecimal value =
+          values.get(i) == null ? java.math.BigDecimal.ZERO : values.get(i);
+      java.math.BigDecimal floor = value.setScale(scale, java.math.RoundingMode.FLOOR);
+      floors[i] = floor;
+      remainders[i] = value.subtract(floor);
+      floorSum = floorSum.add(floor);
+    }
+    int spare =
+        hundred.subtract(floorSum).divide(step, 0, java.math.RoundingMode.HALF_UP).intValue();
+    if (spare < 0 || spare > size) {
+      return fallback;
+    }
+    Integer[] order = new Integer[size];
+    for (int i = 0; i < size; i++) {
+      order[i] = i;
+    }
+    java.util.Arrays.sort(order, (a, b) -> remainders[b].compareTo(remainders[a]));
+    boolean[] bump = new boolean[size];
+    for (int i = 0; i < spare; i++) {
+      bump[order[i]] = true;
+    }
+    java.util.List<String> out = new java.util.ArrayList<>();
+    for (int i = 0; i < size; i++) {
+      java.math.BigDecimal shown = bump[i] ? floors[i].add(step) : floors[i];
+      out.add(pct(shown.doubleValue(), scale));
+    }
+    return out;
+  }
+
+  /**
+   * 부호 붙은 원 단위 금액. <b>0 에는 부호를 붙이지 않는다.</b>
+   *
+   * <p>{@code String.format("%+,d", 0)} 은 {@code +0} 이다. 부호는 방향을 말하는 표시인데 0 에는 방향이 없다 &mdash; "+0"
+   * 은 "0 원 벌었다" 처럼 읽힌다. 실측 2026-09-11(10 화면): 부호 붙은 0 이 8 곳이었고, 그중 7 곳이 거래 이력 없는 종목 상세의 카드(합산 손익 ·
+   * 평가 변동 · 실현 손익 · 기간 배당)였다 &mdash; 그 종목은 아무 일도 없었던 것이지 0 원을 번 것이 아니다.
+   *
+   * <p>같은 규칙을 {@code amountCell} 이 먼저 정했다: 0 과 "아무 일도 없었다" 는 다르게 읽힌다.
+   */
+  /**
+   * 축약 표기에 부호를 붙인다. 영에는 붙이지 않는다({@link #signedWon} 과 같은 규칙).
+   *
+   * <p>{@code compactKrw} 는 음수에만 "-" 를 달고 양수는 맨 숫자로 낸다. 그래서 손익 카드는 방향을 <b>글자색</b>으로만 말하고 있었다
+   * &mdash; 실측 2026-09-12(고대비 모드): {@code .text-profit}/{@code .text-loss} 의 색이 모두 검정 한 가지로 합쳐져, 그
+   * 상태에서 "9억 9,117만" 은 벌었는지 잃었는지 알 수 없다.
+   *
+   * <p>손익이 아닌 값(총 자산·배당·매수 금액)에는 쓰지 않는다 &mdash; 나간 돈에 "+" 를 붙이면 번 돈처럼 읽힌다.
+   */
+  public static String signedCompactKrw(long value) {
+    if (value <= 0) {
+      return compactKrw(value);
+    }
+    return "+" + compactKrw(value);
+  }
+
+  public static String signedWon(long value) {
+    if (value == 0) {
+      return "0";
+    }
+    return String.format("%+,d", value);
+  }
+
   public static String pct(double value, int scale) {
     return String.format("%." + scale + "f%%", roundForDisplay(value, scale));
   }
 
-  /** {@link #pct} 의 부호 표기판(양수·영은 "+"). 영은 반올림 뒤 판정하므로 -0.04 도 "+0.0%" 다. */
+  /**
+   * {@link #pct} 의 부호 표기판. 영에는 부호를 붙이지 않는다.
+   *
+   * <p>영 판정은 반올림 뒤에 한다 - -0.04 는 "-0.0%" 도 "+0.0%" 도 아니고 "0.0%" 다.
+   *
+   * <p>2026-09-11 까지 영도 "+" 를 달았다(원래 목적은 "-0.0%" 를 막는 것이었다). 그런데 부호는 방향을 말하는 표시이고 0 에는 방향이 없다 - 거래
+   * 이력이 없는 종목 상세가 "평가 손익 0 +0.0%" 처럼 금액은 부호 없이, 비율만 "+" 를 달고 나갔다. {@link #signedWon} 과 같은 규칙으로 맞춘다.
+   */
   public static String signedPct(double value, int scale) {
-    return String.format("%+." + scale + "f%%", roundForDisplay(value, scale));
+    double rounded = roundForDisplay(value, scale);
+    if (rounded == 0) {
+      return String.format("%." + scale + "f%%", 0.0);
+    }
+    return String.format("%+." + scale + "f%%", rounded);
   }
 
   /**

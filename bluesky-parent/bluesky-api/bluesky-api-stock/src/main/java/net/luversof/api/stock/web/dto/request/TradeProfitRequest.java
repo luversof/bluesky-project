@@ -73,16 +73,23 @@ public class TradeProfitRequest {
     this.stockItemIdList = stockItemIdList;
   }
 
+  /**
+   * 조회 시작. 뒤집힌 구간으로 들어오면 앞뒤를 바로잡아 돌려준다.
+   *
+   * <p>뒤집힌 구간은 어느 질의에도 걸리지 않아 빈 결과가 되고, 그 빈 결과는 "자료 없음" 과 구분되지 않는다 &mdash; 실측 2026-09-12: 같은 두 날짜를
+   * 앞뒤만 바꾸면 {@code calculateProfit} 이 43 행에서 0 행이 됐다.
+   */
   public Instant getStartDate() {
-    return startDate;
+    return net.luversof.api.stock.web.support.RequestRangeUtil.ordered(startDate, endDate)[0];
   }
 
   public void setStartDate(Instant startDate) {
     this.startDate = startDate;
   }
 
+  /** 조회 끝. {@link #getStartDate()} 와 같은 규칙으로 앞뒤를 바로잡는다. */
   public Instant getEndDate() {
-    return endDate;
+    return net.luversof.api.stock.web.support.RequestRangeUtil.ordered(startDate, endDate)[1];
   }
 
   public void setEndDate(Instant endDate) {
@@ -117,16 +124,10 @@ public class TradeProfitRequest {
     this.timeZone = timeZone;
   }
 
-  /** 요청 타임존을 해석한다. 값이 없거나 알 수 없는 ID 면 서버 기본 타임존을 쓴다. */
+  /** 요청 타임존을 해석한다. 값이 없으면 서버 기본 타임존, 알 수 없는 ID 면 400. */
   public java.time.ZoneId resolveZoneId() {
-    if (timeZone == null || timeZone.isBlank()) {
-      return java.time.ZoneId.systemDefault();
-    }
-    try {
-      return java.time.ZoneId.of(timeZone);
-    } catch (Exception ex) {
-      return java.time.ZoneId.systemDefault();
-    }
+    return net.luversof.api.stock.web.support.RequestZoneUtil.parse(
+        timeZone, java.time.ZoneId.systemDefault());
   }
 
   public boolean hasDateRange() {

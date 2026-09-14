@@ -6,6 +6,8 @@
 @param String profile = "local"
 @param String titleKey = "stock.error.fragment.title"
 @param String descKey = "stock.error.fragment.desc"
+<%-- 형 변환이 실패한 파라미터 이름. 있으면 문구가 그 이름을 받는다(어느 값을 고쳐야 하는지 알려 주려고). --%>
+@param String descArg = null
 @param String retryUrl = ""
 
 <%-- 페이지 렌더 도중 백엔드 호출이 실패했을 때 쓰는 전체 화면.
@@ -26,7 +28,7 @@
 				<div class="min-w-0">
 					<%-- 오류 화면도 페이지다: h1 이 없으면 axe page-has-heading-one 에 걸린다(실측 2026-09-09, 백엔드 중지 시 4화면). --%>
 					<h1 class="font-semibold text-base">${MessageUtil.getMessage(titleKey)}</h1>
-					<div class="text-sm opacity-80 whitespace-normal">${MessageUtil.getMessage(descKey)}</div>
+					<div class="text-sm opacity-80 whitespace-normal">${descArg == null || descArg.isBlank() ? MessageUtil.getMessage(descKey) : java.text.MessageFormat.format(MessageUtil.getMessage(descKey), descArg)}</div>
 				</div>
 				@if(retryUrl != null && !retryUrl.isEmpty())
 					<a href="${retryUrl}" class="btn btn-sm btn-outline shrink-0">${MessageUtil.getMessage("common.button.retry")}</a>

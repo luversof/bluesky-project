@@ -127,12 +127,12 @@
 								: "0";
 						}
 						<tr>
-							<td>
+							<th scope="row">
 								<div class="font-medium">${item.name()}</div>
 								@if(item.symbol() != null && !item.symbol().isEmpty())
 									<div class="text-xs text-base-content/60">${item.symbol()}</div>
 								@endif
-							</td>
+							</th>
 							<td class="text-right amount-value">${qtyDisplay}</td>
 							<td class="text-right amount-value">${item.avgCost() != null ? "₩" + String.format("%,d", StockFormatUtil.displayWon(item.avgCost())) : "-"}</td>
 							<td class="text-right amount-value">${cost.compareTo(BigDecimal.ZERO) > 0 ? "₩" + String.format("%,d", StockFormatUtil.displayWon(cost)) : "-"}</td>

@@ -24,6 +24,7 @@
 	String unrealizedDeltaLabel = MessageUtil.getMessage("stock.item.detail.breakdown.col.unrealized.delta");
 	String realizedDividendLabel = MessageUtil.getMessage("stock.item.detail.breakdown.col.realized.dividend");
 	String returnLabel = MessageUtil.getMessage("stock.item.detail.breakdown.col.return");
+	String returnBasisNote = MessageUtil.getMessage("stock.item.detail.breakdown.return.basis");
 	String partialLabel = MessageUtil.getMessage("stock.item.detail.breakdown.partial");
 }
 
@@ -65,7 +66,7 @@
 								boolean rateUp = rate != null && rate >= 0.0d;
 							}
 							<tr>
-								<td class="font-medium">
+								<th scope="row" class="font-medium">
 									${row.label()}
 									@if(!row.complete() && row.fromDate() != null && row.toDate() != null)
 										<%-- 조회 기간에 잘린 구간. 밝히지 않으면 그 달/해 전체 성과로 오해한다. --%>
@@ -73,29 +74,29 @@
 											${partialLabel} ${row.fromDate().toString().substring(5)} ~ ${row.toDate().toString().substring(5)}
 										</div>
 									@endif
-								</td>
+								</th>
 								<td class="text-right tabular-nums">
-									<span class="amount-value font-semibold ${profitUp ? "text-profit" : "text-loss"}">${profitUp ? "+" : "-"}&#8361;${amountFormat.format(profit.abs())}</span>
+									<span class="amount-value font-semibold ${profitUp ? "text-profit" : "text-loss"}">${profit.signum() == 0 ? "" : (profitUp ? "+" : "-")}&#8361;${amountFormat.format(profit.abs())}</span>
 								</td>
 								<td class="text-right tabular-nums">
 									@if(unrealizedDelta.signum() != 0)
-										<span class="amount-value ${deltaUp ? "text-profit" : "text-loss"}">${deltaUp ? "+" : "-"}&#8361;${amountFormat.format(unrealizedDelta.abs())}</span>
+										<span class="amount-value ${deltaUp ? "text-profit" : "text-loss"}">${unrealizedDelta.signum() == 0 ? "" : (deltaUp ? "+" : "-")}&#8361;${amountFormat.format(unrealizedDelta.abs())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(realizedAndDividend.signum() != 0)
-										<span class="amount-value ${incomeUp ? "text-profit" : "text-loss"}">${incomeUp ? "+" : "-"}&#8361;${amountFormat.format(realizedAndDividend.abs())}</span>
+										<span class="amount-value ${incomeUp ? "text-profit" : "text-loss"}">${realizedAndDividend.signum() == 0 ? "" : (incomeUp ? "+" : "-")}&#8361;${amountFormat.format(realizedAndDividend.abs())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(rate != null)
 										<span class="font-semibold ${rateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(rate, 2)}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 							</tr>
@@ -112,21 +113,25 @@
 					   boolean totalRateUp = totals.chainedReturnPct() != null && totals.chainedReturnPct() >= 0.0d; }
 					<tfoot>
 						<tr class="border-t-2 border-base-content/20 font-semibold" data-period-breakdown-total>
-							<td>${totalLabel}</td>
-							<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totalProfitUp ? "+" : "-"}&#8361;${amountFormat.format(totals.profit().abs())}</span></td>
-							<td class="text-right tabular-nums"><span class="amount-value ${totalDeltaUp ? "text-profit" : "text-loss"}">${totalDeltaUp ? "+" : "-"}&#8361;${amountFormat.format(totals.unrealizedDelta().abs())}</span></td>
-							<td class="text-right tabular-nums"><span class="amount-value ${totalIncomeUp ? "text-profit" : "text-loss"}">${totalIncomeUp ? "+" : "-"}&#8361;${amountFormat.format(totals.realizedAndDividend().abs())}</span></td>
+							<th scope="row">${totalLabel}</th>
+							<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totals.profit().signum() == 0 ? "" : (totalProfitUp ? "+" : "-")}&#8361;${amountFormat.format(totals.profit().abs())}</span></td>
+							<td class="text-right tabular-nums"><span class="amount-value ${totalDeltaUp ? "text-profit" : "text-loss"}">${totals.unrealizedDelta().signum() == 0 ? "" : (totalDeltaUp ? "+" : "-")}&#8361;${amountFormat.format(totals.unrealizedDelta().abs())}</span></td>
+							<td class="text-right tabular-nums"><span class="amount-value ${totalIncomeUp ? "text-profit" : "text-loss"}">${totals.realizedAndDividend().signum() == 0 ? "" : (totalIncomeUp ? "+" : "-")}&#8361;${amountFormat.format(totals.realizedAndDividend().abs())}</span></td>
 							<td class="text-right tabular-nums">
 								@if(totals.chainedReturnPct() != null)
 									<span class="${totalRateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
 								@else
-									<span class="text-base-content/30">-</span>
+									<span class="text-base-content/60">-</span>
 								@endif
 							</td>
 						</tr>
 					</tfoot>
 				</table>
 			</div>
+			<%-- 손익(금액)과 수익률(시간가중)은 축이 다르다. 실현·배당이 큰 해에는 부호가 갈려
+			     한 줄이 모순처럼 읽힌다 - 실측 2026-09-13: 삼성전자 2021 년 손익 +9,445,170 인데 수익률 -0.71%.
+			     값은 둘 다 맞으므로 기준을 밝힌다. --%>
+			<p class="text-[11px] leading-4 text-base-content/60 mt-2" data-breakdown-return-basis>${returnBasisNote}</p>
 	`)
 @elseif(periodBreakdownNote != null && !periodBreakdownNote.isEmpty())
 	<%-- 표를 낼 수 없는 구간이면 자리를 비우지 않고 까닭을 적는다. 말없이 사라지면

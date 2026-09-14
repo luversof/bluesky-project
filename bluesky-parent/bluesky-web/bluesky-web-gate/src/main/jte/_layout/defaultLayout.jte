@@ -33,7 +33,10 @@
 	     Pretendard 가 같은 동적 서브셋을 CDN 으로 제공해 그것을 쓴다(사용자 결정) - 정적 0MB, 외부 한 곳.
 	     CSS 와 폰트 파일이 모두 cdn.jsdelivr.net 에서 오므로 CSP 의 style-src·font-src 에 그 한 곳만 있다. --%>
 	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-	<link rel="stylesheet" as="style" crossorigin
+	<%-- media="print" 로 받아 렌더를 막지 않는다. 다 받으면 아래 nonce 스크립트가 media 를 all 로 바꾼다.
+	     실측 2026-09-11(로그인 상태, /stock): 이 링크가 렌더 차단이라 CDN 이 5초 지연되면 본문 글자가
+	     5,296ms 동안 보이지 않았다(즉시 실패 291ms · 정상 540ms). 글꼴은 늦게 와도 글자는 먼저 보여야 한다. --%>
+	<link rel="stylesheet" media="print" data-font-css crossorigin
 		href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
 	<link href="/main.css" rel="stylesheet" />
 	<script src="/js/vendor/htmx.min.js"></script>
@@ -43,6 +46,17 @@
 	     stockLayout 으로 이동했다. board/poe/home 에서는 참조가 없어 로드할 필요가 없다. --%>
 
 	<script nonce="${CspNonceHolder.getNonce()}">
+		// 본문 폰트 CSS 를 화면용으로 되돌린다(위 link 는 렌더를 막지 않으려고 media="print" 로 받는다).
+		// 인라인 on* 속성은 CSP(script-src 'self' nonce) 에 걸리므로 여기서 붙인다.
+		(function() {
+			var fontCss = document.querySelector('link[data-font-css]');
+			if (!fontCss) { return; }
+			function activate() { fontCss.media = 'all'; }
+			if (fontCss.sheet) { activate(); return; }
+			fontCss.addEventListener('load', activate);
+			fontCss.addEventListener('error', function() { /* CDN 이 막혀도 화면은 기본 글꼴로 그대로 뜬다 */ });
+		})();
+
 		// 차트가 필요한 시점에만 Chart.js + stock-charts 헬퍼를 순서대로 로드한다.
 		// (차트 없는 화면에서 228KB 를 받지 않기 위함. 동시 호출은 큐로 모아 1회만 로드.)
 		window.ensureStockCharts = (function() {
@@ -89,12 +103,18 @@
 		data-common-message-action-success="${MessageUtil.getMessage("common.message.action.success")}"
 		data-common-message-action-error="${MessageUtil.getMessage("common.message.action.error")}"
 		data-stock-label-buy="${MessageUtil.getMessage("stock.trade.label.buy")}"
+		data-stock-chart-title-yearly-trade-amount="${MessageUtil.getMessage("stock.trade.chart.title.yearly.trade.amount")}"
 		data-stock-label-sell="${MessageUtil.getMessage("stock.trade.label.sell")}"
 		data-stock-label-realized-profit="${MessageUtil.getMessage("stock.profit.realized")}"
+		<%-- 월별 매매 차트의 실현손익은 '매도한 달에만' 찍힌다. 범례가 그것을 말해 주지 않으면
+		     표식 없는 달이 "그 달은 0원" 으로 읽힌다. --%>
+		data-stock-label-realized-profit-months="${MessageUtil.getMessage("stock.trade.chart.label.realized.profit.months")}"
+		data-stock-label-realized-profit-years="${MessageUtil.getMessage("stock.trade.chart.label.realized.profit.years")}"
 		data-stock-chart-title-profit-contribution="${MessageUtil.getMessage("stock.trade.chart.title.profit.contribution")}"
 		data-stock-chart-title-buy-concentration="${MessageUtil.getMessage("stock.trade.chart.title.buy.concentration")}"
 		data-stock-chart-message-no-sell-data="${MessageUtil.getMessage("stock.trade.chart.message.no.sell.data")}"
-		data-stock-chart-message-no-buy-data="${MessageUtil.getMessage("stock.trade.chart.message.no.buy.data")}"></div>
+		data-stock-chart-message-no-buy-data="${MessageUtil.getMessage("stock.trade.chart.message.no.buy.data")}"
+		data-stock-chart-message-no-trade-data="${MessageUtil.getMessage("stock.trade.chart.message.no.trade.data")}"></div>
 
 	<%-- 본문 바로가기. 없으면 키보드 사용자가 화면마다 상단 메뉴를 전부 지나야 한다
 	     (실측: 본문 첫 요소까지 Tab 15번). 평소엔 숨어 있다가 포커스되면 나타난다. --%>

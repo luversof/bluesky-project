@@ -8,7 +8,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockAssetStatusUtil
-@import net.luversof.web.gate.stock.util.StockDividendCoverageUtil
+@import net.luversof.web.gate.stock.util.StockHoldingReturnUtil
 
 @param Map<java.util.UUID, TradeProfit> accountTotalMap
 @param Map<java.util.UUID, BigDecimal> accountProfitBasisMap
@@ -18,9 +18,15 @@
 @param List<TradeProfit> stockAggregated
 @param Map<java.util.UUID, net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown> stockProfitBreakdown = java.util.Map.of()
 @param net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown stockProfitBreakdownTotal = new net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO)
+@param int soldOutStockCount = 0
+@param BigDecimal soldOutRealizedProfit = java.math.BigDecimal.ZERO
+@param BigDecimal soldOutDividend = java.math.BigDecimal.ZERO
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
 @param java.time.LocalDate priceBasisDate = null
+<%-- 종목별 최초 매수일과 '오늘'(요청 존). 보유 기간·연평균 수익률이 쓴다. --%>
+@param Map<java.util.UUID, java.time.LocalDate> firstBuyDateByStockItem = java.util.Map.of()
+@param java.time.LocalDate holdingBasisDate = null
 
 !{
 	String accountSectionTitle = MessageUtil.getMessage("stock.analytics.section.account.status");
@@ -45,15 +51,31 @@
 	String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");
 	String dividendTotalLabel = MessageUtil.getMessage("stock.asset.status.col.dividend.total");
 	String combinedProfitLabel = MessageUtil.getMessage("stock.asset.status.col.combined.profit");
+	// 보유 기간 · 연평균 수익률 · 배당 상쇄율. 셋 다 표의 값에서 나온 것이라 새 열을 만들지 않고
+	// 각자 자기 값이 있는 칸 안에 둔다 - 이 표는 열을 하나 더 붙이면 넓은 화면에서도 넘친다
+	// (실측 2026-09-10: 11 열 최소폭 1,063px, 1340px 부터 넘침 0).
+	String holdingPeriodLabel = MessageUtil.getMessage("stock.asset.status.col.holding.period");
+	String holdingPeriodUnknownLabel = MessageUtil.getMessage("stock.asset.status.col.holding.period.unknown");
+	String holdingYearsPattern = MessageUtil.getMessage("stock.asset.status.cell.holding.years");
+	String holdingYearsOnlyPattern = MessageUtil.getMessage("stock.asset.status.cell.holding.years.only");
+	String holdingMonthsPattern = MessageUtil.getMessage("stock.asset.status.cell.holding.months");
+	String holdingDaysPattern = MessageUtil.getMessage("stock.asset.status.cell.holding.days");
+	String holdingSincePattern = MessageUtil.getMessage("stock.asset.status.cell.holding.since");
+	String annualizedNameLabel = MessageUtil.getMessage("stock.asset.status.cell.annualized.name");
+	String annualizedPattern = MessageUtil.getMessage("stock.asset.status.cell.annualized");
+	String annualizedShortPattern = MessageUtil.getMessage("stock.asset.status.cell.annualized.short");
+	String coveragePattern = MessageUtil.getMessage("stock.asset.status.cell.coverage");
+	String coverageAllLabel = MessageUtil.getMessage("stock.asset.status.cell.coverage.all");
 	String heldOnlyNote = MessageUtil.getMessage("stock.asset.status.combined.held.only");
-	String coverageTitle = MessageUtil.getMessage("stock.asset.status.coverage.title");
-	String coverageDesc = MessageUtil.getMessage("stock.asset.status.coverage.desc");
-	String coverageNoLoss = MessageUtil.getMessage("stock.asset.status.coverage.no.loss");
-	String coverageAll = MessageUtil.getMessage("stock.asset.status.coverage.covered.all");
-	String coveragePctPattern = MessageUtil.getMessage("stock.asset.status.coverage.covered.pct");
+	String heldOnlyDetailNote = MessageUtil.getMessage("stock.asset.status.combined.held.only.detail");
 	String showHoldingsLabel = MessageUtil.getMessage("stock.analytics.account.holdings.show");
 	String hideHoldingsLabel = MessageUtil.getMessage("stock.analytics.account.holdings.hide");
 	String accountHoldingsDetailLabel = MessageUtil.getMessage("stock.analytics.account.holdings.detail");
+	// 계좌마다 펼쳐지는 표가 전부 같은 이름이면 낭독기의 표 목록에서 구분이 안 된다
+	// (실측 2026-09-12: "계좌 보유 종목 상세" 다섯 개). 이름에 계좌를 넣는다.
+	String accountHoldingsDetailNamedPattern = MessageUtil.getMessage("stock.analytics.account.holdings.detail.named");
+	// 펼침 버튼도 줄마다 같은 글자다 - 실측 2026-09-12: "보유 종목 보기 (3) ▼" 2개 · "(4) ▼" 3개가 이름으로 갈리지 않았다.
+	String accountHoldingsToggleAriaPattern = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.action.aria");
 	String accountSelectionHelpLabel = MessageUtil.getMessage("stock.analytics.account.selection.helper");
 	String accountSelectionSummaryLabel = MessageUtil.getMessage("stock.analytics.account.selection.summary");
 	String accountSelectionCountTemplate = MessageUtil.getMessage("stock.analytics.account.selection.count");
@@ -151,6 +173,11 @@
 			}
 		</style>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
+			<%-- 투자원금 열은 md(768px)에서 폈는데 그 폭에서 이 표는 813px 이 필요하고 본문 열은 734px 뿐이다.
+			     실측 2026-09-10: 767px 6열·표 733·넘침 0 → 768px 7열·표 813·컨 734·넘침 79 → 820px 27 → 845px 2 → 850px 0.
+			     넓혔는데 더 나빠지는 구간이라 들어가는 폭에서 편다. 안쪽의 계좌별 보유 상세 표는 별도 분기점이므로 건드리지 않는다.
+			     인쇄는 A4 794px 라 이 분기점 아래로 떨어져 투자원금이 빠졌었다(실측 2026-09-10: 인쇄 7열 → 6열).
+			     인쇄에는 스크롤이 없어 열이 좁아질 뿐 표 폭은 760px 로 같으므로(넘침 0) print 에서는 항상 보인다. --%>
 			<table class="table table-sm w-full" data-sortable-table data-asset-status-account-table aria-label="${accountSectionTitle}">
 				<thead class="bg-base-200">
 					<tr>
@@ -160,7 +187,7 @@
 									data-sort-key="account"
 									data-sort-type="text">
 								<span>${accountLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 						<th scope="col" class="text-right">
@@ -169,7 +196,7 @@
 									data-sort-key="buyAmount"
 									data-sort-type="number">
 								<span>${buyAmountLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 						<th scope="col" class="text-right">
@@ -178,7 +205,7 @@
 									data-sort-key="evaluationAmount"
 									data-sort-type="number">
 								<span>${evaluationAmountLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 						<th scope="col" class="text-right">
@@ -187,16 +214,16 @@
 									data-sort-key="evaluationProfit"
 									data-sort-type="number">
 								<span>${evaluationProfitLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden md:table-cell">
+						<th scope="col" class="text-right hidden min-[850px]:table-cell print:table-cell">
 							<button type="button"
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="principal"
 									data-sort-type="number">
 								<span>${principalLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 						<th scope="col" class="text-right">
@@ -205,7 +232,7 @@
 									data-sort-key="principalReturn"
 									data-sort-type="number">
 								<span>${principalReturnLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 						<th scope="col" class="text-right">
@@ -214,7 +241,7 @@
 									data-sort-key="weight"
 									data-sort-type="number">
 								<span>${weightLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 					</tr>
@@ -249,7 +276,7 @@
 						data-principal-return="${principalReturnAmount.toPlainString()}"
 						data-weight="${accountWeightPct.toPlainString()}"
 						data-detail-row-id="${detailRowId}">
-						<td>
+						<th scope="row">
 							<div class="font-semibold"><a href="/stock/account?accountId=${entry.getKey() != null ? entry.getKey().toString() : ""}" class="link link-hover">${entry.getValue().accountName()}</a></div>
 							@if(holdings.isEmpty())
 								<div class="text-xs text-base-content/60">${noHoldingsLabel}</div>
@@ -259,14 +286,17 @@
 										data-account-detail-toggle="${detailRowId}"
 										aria-controls="${detailRowId}"
 										aria-expanded="false"
+										aria-label="${java.text.MessageFormat.format(accountHoldingsToggleAriaPattern, showHoldingsLabel, entry.getValue().accountName() != null ? entry.getValue().accountName() : "")}"
 										data-expand-label="${showHoldingsLabel}"
-										data-collapse-label="${hideHoldingsLabel}">
+										data-collapse-label="${hideHoldingsLabel}"
+										data-expand-aria="${java.text.MessageFormat.format(accountHoldingsToggleAriaPattern, showHoldingsLabel, entry.getValue().accountName() != null ? entry.getValue().accountName() : "")}"
+										data-collapse-aria="${java.text.MessageFormat.format(accountHoldingsToggleAriaPattern, hideHoldingsLabel, entry.getValue().accountName() != null ? entry.getValue().accountName() : "")}">
 									<span data-label>${showHoldingsLabel}</span>
 									<span class="text-base-content/60">(${holdings.size()})</span>
 									<span data-icon class="opacity-60">▼</span>
 								</button>
 							@endif
-						</td>
+						</th>
 						<td class="text-right font-mono amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(buyAmount))}
 						</td>
@@ -275,7 +305,7 @@
 						</td>
 						<td class="text-right">
 							<div class="font-bold font-mono amount-value ${evaluationProfitAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-								${String.format("%+,d", StockFormatUtil.displayWon(evaluationProfitAmount))}
+								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(evaluationProfitAmount))}
 							</div>
 							<div class="text-xs font-semibold ${evaluationProfitAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
 								(${StockFormatUtil.signedPct(evaluationProfitRate, 1)})
@@ -284,7 +314,7 @@
 						<%-- 원금이 계좌 설정의 수동 입력값이면 그 사실을 드러낸다. 표시가 없으면 계산 원가와
 							 구분되지 않아, 그 설정이 사라져도 수익률만 조용히 달라진다. --%>
 						!{boolean manualPrincipal = manualPrincipalAccountIds != null && manualPrincipalAccountIds.contains(entry.getKey());}
-						<td class="text-right font-mono hidden md:table-cell amount-value text-base-content/60">
+						<td class="text-right font-mono hidden min-[850px]:table-cell print:table-cell amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(profitBasis))}
 							@if(manualPrincipal)
 								<span class="badge badge-ghost badge-xs align-middle ml-1"
@@ -295,7 +325,7 @@
 						</td>
 						<td class="text-right ${principalReturnAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
 							<div class="font-bold font-mono amount-value">
-								${String.format("%+,d", StockFormatUtil.displayWon(principalReturnAmount))}
+								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(principalReturnAmount))}
 							</div>
 							<div class="text-xs font-semibold">
 								(${StockFormatUtil.signedPct(rate, 1)})
@@ -304,39 +334,52 @@
 						<td class="text-right font-mono text-base-content/70">${StockFormatUtil.pct(accountWeightPct.doubleValue(), 1)}</td>
 					</tr>
 					@if(!holdings.isEmpty())
-						<tr id="${detailRowId}" class="hidden bg-base-200/40">
+						<tr id="${detailRowId}" class="hidden bg-base-200/40" data-account-detail-row>
 							<td colspan="7" class="p-0">
 								<div class="px-3 py-3">
 									<div class="text-xs font-semibold text-base-content/60 mb-2">${accountHoldingsDetailLabel}</div>
 									<div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
-										<table class="table table-xs w-full" aria-label="${accountHoldingsDetailLabel}">
+										<table class="table table-xs w-full" aria-label="${entry.getValue().accountName() != null && !entry.getValue().accountName().isBlank() ? java.text.MessageFormat.format(accountHoldingsDetailNamedPattern, entry.getValue().accountName()) : accountHoldingsDetailLabel}">
 											<thead class="bg-base-200/70">
 												<tr>
 													<th scope="col">${stockNameLabel}</th>
-													<th scope="col" class="text-right hidden sm:table-cell">${quantityLabel}</th>
-													<th scope="col" class="text-right hidden lg:table-cell">${averageCostLabel}</th>
-													<th scope="col" class="text-right hidden md:table-cell">${buyAmountLabel}</th>
-													<th scope="col" class="text-right hidden lg:table-cell">${currentPriceLabel}</th>
+													<th scope="col" class="text-right hidden sm:table-cell print:table-cell">${quantityLabel}</th>
+													<th scope="col" class="text-right hidden lg:table-cell print:table-cell">${averageCostLabel}</th>
+													<th scope="col" class="text-right hidden md:table-cell print:table-cell">${buyAmountLabel}</th>
+													<th scope="col" class="text-right hidden lg:table-cell print:table-cell">${currentPriceLabel}</th>
 													<th scope="col" class="text-right">${evaluationAmountLabel}</th>
 													<th scope="col" class="text-right">${evaluationProfitLabel}</th>
-													<th scope="col" class="text-right hidden xl:table-cell">${weightLabel}</th>
+													<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${weightLabel}</th>
 												</tr>
 											</thead>
 											<tbody>
+												<%-- 같은 이유로 계좌 안 비중도 함께 배분한다(실측: 다섯 표 중 둘이 100.1%). --%>
+												!{
+													java.util.List<BigDecimal> holdingWeightValues = new java.util.ArrayList<>();
+													for (AssetStatusAccountHoldingView weightHolding : holdings) {
+														holdingWeightValues.add(weightHolding.accountWeightPct() != null ? weightHolding.accountWeightPct() : BigDecimal.ZERO);
+													}
+													java.util.List<String> holdingWeightShown = StockFormatUtil.balancedPct(holdingWeightValues, 1);
+													java.util.Map<java.util.UUID, String> holdingWeightLabelById = new java.util.HashMap<>();
+													int holdingWeightIndex = 0;
+													for (AssetStatusAccountHoldingView weightHolding : holdings) {
+														holdingWeightLabelById.put(weightHolding.stockItemId(), holdingWeightShown.get(holdingWeightIndex++));
+													}
+												}
 												@for(AssetStatusAccountHoldingView holding : holdings)
 													<tr>
-														<td class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></td>
-														<td class="text-right font-mono hidden sm:table-cell amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
-														<td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
-														<td class="text-right font-mono hidden md:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holding.buyAmount()))}</td>
-														<td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice()))}</td>
+														<th scope="row" class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
+														<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
+														<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
+														<td class="text-right font-mono hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holding.buyAmount()))}</td>
+														<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice()))}</td>
 														<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
 														<td class="text-right font-mono font-bold amount-value ${holding.evaluationProfit() != null && holding.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-															${String.format("%+,d", StockFormatUtil.displayWon(holding.evaluationProfit()))}
+															${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holding.evaluationProfit()))}
 															<span class="text-xs">(${StockFormatUtil.signedPct(holding.evaluationProfitRatePct() != null ? holding.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
 														</td>
-														<td class="text-right hidden xl:table-cell">
-															<div class="text-xs text-base-content/70">${accountWeightLabel} ${StockFormatUtil.pct(holding.accountWeightPct() != null ? holding.accountWeightPct().doubleValue() : 0.0, 1)}</div>
+														<td class="text-right hidden xl:table-cell print:table-cell">
+															<div class="text-xs text-base-content/70">${accountWeightLabel} ${holdingWeightLabelById.getOrDefault(holding.stockItemId(), StockFormatUtil.pct(holding.accountWeightPct() != null ? holding.accountWeightPct().doubleValue() : 0.0, 1))}</div>
 															<div class="text-xs text-base-content/60">${totalWeightLabel} ${StockFormatUtil.pct(holding.totalWeightPct() != null ? holding.totalWeightPct().doubleValue() : 0.0, 1)}</div>
 														</td>
 													</tr>
@@ -360,7 +403,7 @@
 					!{double totalEvaluationProfitRate = accountTotals.evaluationProfitRate();}
 					!{double totalPrincipalReturnRate = accountTotals.principalReturnRate();}
 					<tr>
-						<td>${totalLabel}</td>
+						<th scope="row">${totalLabel}</th>
 						<td class="text-right font-mono amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(totalBuyAmount))}
 						</td>
@@ -369,18 +412,18 @@
 						</td>
 						<td class="text-right ${totalAccountEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
 							<div class="font-bold font-mono amount-value">
-								${String.format("%+,d", StockFormatUtil.displayWon(totalAccountEvaluationProfit))}
+								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalAccountEvaluationProfit))}
 							</div>
 							<div class="text-xs font-semibold">
 								(${StockFormatUtil.signedPct(totalEvaluationProfitRate, 1)})
 							</div>
 						</td>
-						<td class="text-right font-mono hidden md:table-cell amount-value text-base-content/60">
+						<td class="text-right font-mono hidden min-[850px]:table-cell print:table-cell amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(totalPrincipal))}
 						</td>
 						<td class="text-right ${totalPrincipalReturnAmount.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
 							<div class="font-bold font-mono amount-value">
-								${String.format("%+,d", StockFormatUtil.displayWon(totalPrincipalReturnAmount))}
+								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalPrincipalReturnAmount))}
 							</div>
 							<div class="text-xs font-semibold">
 								(${StockFormatUtil.signedPct(totalPrincipalReturnRate, 1)})
@@ -397,54 +440,15 @@
 	<div data-asset-status-stock-section>
 		<h2 class="text-lg font-semibold mb-3 text-base-content/70" data-page-section="${stockSectionTitle}">${stockSectionTitle} <span class="text-xs font-normal text-base-content/60">(${allAccountsLabel})</span></h2>
 		@if(stockAggregated != null && !stockAggregated.isEmpty())
-			<%-- 배당이 평가손실을 얼마나 메웠나. 표의 세 열(평가 손익 · 누적 배당 · 합산 손익)을 눈으로 빼야 보이던 것을
-				 종목마다 막대 둘로 놓는다. 막대는 줄 안에서만 견준다(줄의 손실·배당 중 큰 쪽이 100) - 절대 길이로 두면
-				 삼성전자 평가익이 나머지를 1px 로 누른다(실측 2026-09-08: 9.99 억 vs ETF 수백만). --%>
-			!{java.util.List<StockDividendCoverageUtil.Row> coverageRows = StockDividendCoverageUtil.of(stockAggregated, stockProfitBreakdown);}
-			@if(!coverageRows.isEmpty())
-				<div class="mb-4 rounded-2xl border border-base-200 bg-base-100 p-4" data-dividend-coverage>
-					<div class="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-						<h3 class="text-sm font-semibold" data-page-section>${coverageTitle}</h3>
-						<span class="text-xs text-base-content/60">${coverageDesc}</span>
-					</div>
-					<div class="grid gap-3">
-						@for(StockDividendCoverageUtil.Row coverageRow : coverageRows)
-							!{String coverageState = coverageRow.coveragePct() == null ? "none" : (coverageRow.fullyCovered() ? "full" : "partial");}
-							<div class="grid items-center gap-x-4 gap-y-1 sm:grid-cols-[minmax(9rem,13rem)_1fr_auto]" data-dividend-coverage-row data-coverage-state="${coverageState}" data-coverage-pct="${coverageRow.coveragePct() != null ? String.valueOf(coverageRow.coveragePct()) : ""}">
-								<div class="truncate text-sm font-medium" title="${coverageRow.stockItemName()}">${coverageRow.stockItemName()}</div>
-								<div class="flex flex-col gap-1">
-									<div class="flex items-center gap-2 text-xs">
-										<span class="w-16 shrink-0 text-base-content/60">${evaluationProfitLabel}</span>
-										<div class="h-2 flex-1 rounded bg-base-200"><div class="h-2 rounded bg-current ${coverageRow.hasLoss() ? "text-loss" : "text-profit"}" style="width:${coverageRow.hasLoss() ? coverageRow.lossBarPct() : 0}%"></div></div>
-										<span class="w-28 shrink-0 text-right amount-value ${coverageRow.hasLoss() ? "text-loss" : "text-profit"}">${coverageRow.evaluationProfit().signum() >= 0 ? "+" : "-"}₩${String.format("%,d", StockFormatUtil.displayWon(coverageRow.evaluationProfit().abs()))}</span>
-									</div>
-									<div class="flex items-center gap-2 text-xs">
-										<span class="w-16 shrink-0 text-base-content/60">${dividendTotalLabel}</span>
-										<div class="h-2 flex-1 rounded bg-base-200"><div class="h-2 rounded bg-current text-dividend" style="width:${coverageRow.dividendBarPct()}%"></div></div>
-										<span class="w-28 shrink-0 text-right amount-value text-dividend">₩${String.format("%,d", StockFormatUtil.displayWon(coverageRow.dividendTotal()))}</span>
-									</div>
-								</div>
-								<div class="text-xs sm:text-right whitespace-nowrap">
-									@if(coverageRow.coveragePct() == null)
-										<span class="badge badge-ghost badge-sm">${coverageNoLoss}</span>
-									@elseif(coverageRow.fullyCovered())
-										<span class="badge badge-success badge-outline badge-sm">${coverageAll}</span>
-									@else
-										<span class="badge badge-warning badge-outline badge-sm">${java.text.MessageFormat.format(coveragePctPattern, coverageRow.coveragePct())}</span>
-									@endif
-									<div class="mt-1"><span class="text-base-content/60">${combinedProfitLabel}</span> <span class="amount-value font-semibold ${coverageRow.combinedProfit().signum() >= 0 ? "text-profit" : "text-loss"}">${coverageRow.combinedProfit().signum() >= 0 ? "+" : "-"}₩${String.format("%,d", StockFormatUtil.displayWon(coverageRow.combinedProfit().abs()))}</span></div>
-								</div>
-							</div>
-						@endfor
-					</div>
-				</div>
-			@endif
 			<div class="mb-3 flex flex-col gap-3">
 				<p class="text-xs text-base-content/60">${stockSelectionHelpLabel}</p>
 				<%-- 이 표에는 보유 중인 종목만 나온다. 실현손익·배당을 열로 넣으면서 밝히지 않으면
 					 합계를 전체 누적으로 오해한다(실측 2026-09-03: 이미 다 판 34 종목에
 					 실현 85,279,840 · 배당 6,582,497 이 더 있다). --%>
-				<p class="text-xs text-base-content/60" data-asset-status-held-only-note>${heldOnlyNote}</p>
+				<%-- 얼마나 작은지도 적는다 - 실측 2026-09-11: 이 합계의 실현손익은 140,350,295 인데 대시보드·매매·
+					 자산 성장은 225,630,135 를 적는다(차이 85,279,840, 37.8%). 차이를 숫자로 밝히지 않으면
+					 같은 이름의 값이 화면마다 다른 이유를 알 길이 없다. 판 종목이 없으면 종전 문구 그대로. --%>
+				<p class="text-xs text-base-content/60" data-asset-status-held-only-note data-amount-basis-text data-amount-basis="${soldOutStockCount > 0 ? java.text.MessageFormat.format(heldOnlyDetailNote, String.valueOf(soldOutStockCount), String.format("%,d", StockFormatUtil.displayWon(soldOutRealizedProfit)), String.format("%,d", StockFormatUtil.displayWon(soldOutDividend))) : heldOnlyNote}">${soldOutStockCount > 0 ? java.text.MessageFormat.format(heldOnlyDetailNote, String.valueOf(soldOutStockCount), String.format("%,d", StockFormatUtil.displayWon(soldOutRealizedProfit)), String.format("%,d", StockFormatUtil.displayWon(soldOutDividend))) : heldOnlyNote}</p>
 				<div class="selection-reveal"><div>
 				<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3"
 					 data-asset-status-stock-selection-summary
@@ -501,7 +505,10 @@
 			}
 		</style>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
-			<table class="table table-sm w-full" data-sortable-table data-asset-status-stock-table aria-label="${stockSectionTitle}">
+			<%-- 평균 단가·실현 손익·누적 배당 열은 xl(1280px)에서 폈는데, 그 폭에서 이 표는 1,125px 이 필요하고 본문 열은 1,022px 뿐이다.
+			     실측 2026-09-10: 1279px 8열·표 1,021·넘침 0 → 1280px 11열·표 1,125·컨테이너 1,022·넘침 103 → 1366px 17 → 1400px 0. 2026-09-10 헤더 접기 뒤 최소폭이 1,063px 이 되어 1340px 부터 넘침 0(1320px 1).
+			     넓혔는데 더 나빠지는 구간이라 실제로 들어가는 폭에서 편다. 같은 파일의 계좌별 보유 상세 표(47열)는 xl 에서 들어가므로 그대로 둔다. --%>
+			<table class="table table-sm w-full print-dense" data-sortable-table data-asset-status-stock-table aria-label="${stockSectionTitle}">
 				<thead class="bg-base-200">
 					<tr>
 						<th scope="col">
@@ -510,43 +517,54 @@
 									data-sort-key="stockName"
 									data-sort-type="text">
 								<span>${stockNameLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden lg:table-cell">
+						<%-- 보유 기간은 종목 이름 다음에 온다 - "이 종목을 언제부터 들고 있나" 는 이름 바로 옆에서 읽힌다.
+						     정렬 값은 행의 data-holding-days(일수)다. '6년 6개월' 같은 표시 문자열로 정렬하면 6개월이 6년보다 뒤에 온다. --%>
+						<th scope="col">
+							<button type="button"
+									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
+									data-sort-key="holdingDays"
+									data-sort-type="number">
+								<span>${holdingPeriodLabel}</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
+							</button>
+						</th>
+						<th scope="col" class="text-right hidden lg:table-cell print:table-cell">
 							<button type="button"
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="quantity"
 									data-sort-type="number">
 								<span>${quantityLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden xl:table-cell">
+						<th scope="col" class="text-right hidden min-[1340px]:table-cell print:table-cell">
 							<button type="button"
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="averageCost"
 									data-sort-type="number">
 								<span>${averageCostLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden sm:table-cell">
+						<th scope="col" class="text-right hidden sm:table-cell print:table-cell">
 							<button type="button"
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="buyAmount"
 									data-sort-type="number">
 								<span>${buyAmountLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden lg:table-cell">
+						<th scope="col" class="text-right hidden lg:table-cell print:table-cell">
 							<button type="button"
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="currentPrice"
 									data-sort-type="number">
 								<span>${currentPriceLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 						<th scope="col" class="text-right">
@@ -555,7 +573,7 @@
 									data-sort-key="evaluationAmount"
 									data-sort-type="number">
 								<span>${evaluationAmountLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 						<th scope="col" class="text-right">
@@ -564,34 +582,34 @@
 									data-sort-key="evaluationProfit"
 									data-sort-type="number">
 								<span>${evaluationProfitLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden xl:table-cell">
+						<th scope="col" class="text-right hidden min-[1340px]:table-cell print:table-cell">
 							<button type="button"
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="realizedProfit"
 									data-sort-type="number">
 								<span>${realizedProfitLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden xl:table-cell">
+						<th scope="col" class="text-right hidden min-[1340px]:table-cell print:table-cell">
 							<button type="button"
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="dividendTotal"
 									data-sort-type="number">
 								<span>${dividendTotalLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden lg:table-cell">
+						<th scope="col" class="text-right hidden lg:table-cell print:table-cell">
 							<button type="button"
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="combinedProfit"
 									data-sort-type="number">
 								<span>${combinedProfitLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 						<th scope="col" class="text-right">
@@ -600,7 +618,7 @@
 									data-sort-key="weight"
 									data-sort-type="number">
 								<span>${weightLabel}</span>
-								<span data-sort-indicator class="opacity-60">↕</span>
+								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
 					</tr>
@@ -608,9 +626,23 @@
 				<tbody>
 					@if(stockAggregated == null || stockAggregated.isEmpty())
 						<tr>
-							<td colspan="11">@template._components.ui.emptyState(message = noHoldingsLabel)</td>
+							<td colspan="12">@template._components.ui.emptyState(message = noHoldingsLabel)</td>
 						</tr>
 					@else
+						<%-- 비중은 행마다 따로 반올림하면 표시값의 합이 어긋난다(실측 2026-09-11: 이 표 9행이 99.9%).
+						     한 번에 최대잔여법으로 배분해 합이 100.0% 가 되게 한다. --%>
+						!{
+							java.util.List<BigDecimal> stockWeightValues = new java.util.ArrayList<>();
+							for (TradeProfit weightItem : stockAggregated) {
+								stockWeightValues.add(StockAssetStatusUtil.stockRow(weightItem, totalEvaluationAmount).totalWeightPct());
+							}
+							java.util.List<String> stockWeightShown = StockFormatUtil.balancedPct(stockWeightValues, 1);
+							java.util.Map<java.util.UUID, String> stockWeightLabelById = new java.util.HashMap<>();
+							int stockWeightIndex = 0;
+							for (TradeProfit weightItem : stockAggregated) {
+								stockWeightLabelById.put(weightItem.stockItemId(), stockWeightShown.get(stockWeightIndex++));
+							}
+						}
 						@for(TradeProfit item : stockAggregated)
 							!{var stockRow = StockAssetStatusUtil.stockRow(item, totalEvaluationAmount);}
 							!{BigDecimal evalProfitRate = stockRow.evaluationProfitRatePct();}
@@ -619,6 +651,25 @@
 							!{var breakdown = stockProfitBreakdown != null && stockProfitBreakdown.get(item.stockItemId()) != null
 								? stockProfitBreakdown.get(item.stockItemId())
 								: new net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);}
+							!{java.time.LocalDate firstBuyDate = firstBuyDateByStockItem == null ? null : firstBuyDateByStockItem.get(item.stockItemId());}
+							!{var holdingReturn = StockHoldingReturnUtil.of(firstBuyDate, holdingBasisDate, item.totalBuyCost(), breakdown.combinedProfit(), item.evaluationProfit(), breakdown.dividendTotal());}
+							!{String holdingPeriodText = !holdingReturn.hasPeriod() ? ""
+								: (holdingReturn.daysOnly()
+									? java.text.MessageFormat.format(holdingDaysPattern, String.valueOf(holdingReturn.holdingDays()))
+									: (holdingReturn.years() == 0
+										? java.text.MessageFormat.format(holdingMonthsPattern, String.valueOf(holdingReturn.months()))
+										: (holdingReturn.months() == 0
+											? java.text.MessageFormat.format(holdingYearsOnlyPattern, String.valueOf(holdingReturn.years()))
+											: java.text.MessageFormat.format(holdingYearsPattern, String.valueOf(holdingReturn.years()), String.valueOf(holdingReturn.months())))));}
+							<%-- 배당 상쇄율은 평가손익이 마이너스일 때만 뜻이 있다 - 덮을 것이 없으면 적지 않는다. --%>
+							!{String coverageText = holdingReturn.coveragePct() == null || breakdown.dividendTotal().signum() <= 0 ? ""
+								: (holdingReturn.coveragePct() >= 100 ? coverageAllLabel : java.text.MessageFormat.format(coveragePattern, String.valueOf(holdingReturn.coveragePct())));}
+							!{String annualizedText = holdingReturn.annualizedPct() == null ? ""
+								: java.text.MessageFormat.format(annualizedPattern, StockFormatUtil.signedPct(holdingReturn.annualizedPct().doubleValue(), 1));}
+							<%-- 보유 1 년 미만은 연환산이 확대된 값이다(실측 2026-09-14: 117 일 -6.0% -> 연 -17.5%). 무슨 값인지 근거를 함께 준다. --%>
+							!{String annualizedNote = holdingReturn.shortTerm()
+								? java.text.MessageFormat.format(annualizedShortPattern, String.valueOf(holdingReturn.holdingDays()))
+								: annualizedNameLabel;}
 							<tr class="asset-status-stock-row"
 								data-sortable-row
 								data-stock-selectable-row
@@ -635,36 +686,54 @@
 								data-weight="${totalWeightPct.toPlainString()}"
 								data-realized-profit="${breakdown.realizedProfit().toPlainString()}"
 								data-dividend-total="${breakdown.dividendTotal().toPlainString()}"
-								data-combined-profit="${breakdown.combinedProfit().toPlainString()}">
-								<td class="font-semibold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></td>
-								<td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
-								<td class="text-right font-mono hidden xl:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
-								<td class="text-right font-mono hidden sm:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(item.totalBuyCost()))}</td>
-								<td class="text-right font-mono hidden lg:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(item.currentPrice()))}</td>
-								<td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(item.evaluationAmount()))}</td>
-								<td class="text-right font-mono font-bold ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-									<span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(item.evaluationProfit()))}</span>
-									<span class="text-xs">(${StockFormatUtil.signedPct(evalProfitRate.doubleValue(), 1)})</span>
-								</td>
-								<%-- 판 적이 없으면 실현손익은 0 이 아니라 '없음' 이다. 배당도 마찬가지. --%>
-								<td class="text-right font-mono hidden xl:table-cell">
-									@if(breakdown.realizedProfit().signum() != 0)
-										<span class="amount-value ${breakdown.realizedProfit().signum() >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", StockFormatUtil.displayWon(breakdown.realizedProfit()))}</span>
+								data-combined-profit="${breakdown.combinedProfit().toPlainString()}"
+								data-holding-days="${holdingReturn.holdingDays()}">
+								<th scope="row" class="font-semibold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
+								<td class="text-base-content/70" data-holding-period>
+									@if(holdingReturn.hasPeriod())
+										<span title="${java.text.MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}">${holdingPeriodText}</span><span class="sr-only">, ${java.text.MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<%-- 최초 매수일을 모르는 종목. 빈 칸은 "0 일"로 읽히므로 사유를 적는다. --%>
+										<span class="text-base-content/60" aria-hidden="true" title="${holdingPeriodUnknownLabel}">-</span><span class="sr-only">${holdingPeriodUnknownLabel}</span>
 									@endif
 								</td>
-								<td class="text-right font-mono hidden xl:table-cell">
+								<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
+								<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
+								<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(item.totalBuyCost()))}</td>
+								<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(item.currentPrice()))}</td>
+								<td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(item.evaluationAmount()))}</td>
+								<td class="text-right font-mono font-bold ${item.evaluationProfit() != null && item.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(item.evaluationProfit()))}</span>
+									<span class="text-xs">(${StockFormatUtil.signedPct(evalProfitRate.doubleValue(), 1)})</span>
+								@if(!coverageText.isEmpty())
+									<%-- 배당이 이 평가손실의 얼마를 덮었나. 자산 현황에 따로 있던 카드가 막대 두 개로 말하던 값인데, 막대는 줄 안에서 정규화돼 늘 한쪽이 100%였다(=배지와 같은 말). --%>
+									<div class="text-xs font-normal text-dividend" data-dividend-coverage data-coverage-pct="${holdingReturn.coveragePct()}">${coverageText}</div>
+								@endif
+								</td>
+								<%-- 판 적이 없으면 실현손익은 0 이 아니라 '없음' 이다. 배당도 마찬가지. --%>
+								<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell">
+									@if(breakdown.realizedProfit().signum() != 0)
+										<span class="amount-value ${breakdown.realizedProfit().signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(breakdown.realizedProfit()))}</span>
+									@else
+										<span class="text-base-content/60" aria-hidden="true" title="${MessageUtil.getMessage("stock.profit.realized.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.profit.realized.none")}</span>
+									@endif
+								</td>
+								<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell">
 									@if(breakdown.dividendTotal().signum() != 0)
 										<span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(breakdown.dividendTotal()))}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${MessageUtil.getMessage("stock.dividend.received.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.dividend.received.none")}</span>
 									@endif
 								</td>
-								<td class="text-right font-mono font-bold hidden lg:table-cell ${breakdown.combinedProfit().signum() >= 0 ? "text-profit" : "text-loss"}">
-									<span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(breakdown.combinedProfit()))}</span>
+								<td class="text-right font-mono font-bold hidden lg:table-cell print:table-cell ${breakdown.combinedProfit().signum() >= 0 ? "text-profit" : "text-loss"}">
+									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(breakdown.combinedProfit()))}</span>
+								@if(!annualizedText.isEmpty())
+									<%-- 1 년이 안 된 보유의 연평균은 흐리게 둔다(요구: 표시하되 약하게). 다만 /50 은 대비 3.55:1 로
+									     읽히지 않았다 - /60(4.95:1) 이 기준을 넘는 가장 흐린 단계다. 여전히 /70 보다 약하다. --%>
+									<div class="text-xs font-normal ${holdingReturn.shortTerm() ? "text-base-content/60" : "text-base-content/70"}" data-annualized-return data-short-term="${String.valueOf(holdingReturn.shortTerm())}" title="${annualizedNote}"><span class="sr-only">${annualizedNameLabel} </span>${annualizedText}<span class="sr-only">, ${annualizedNote}</span></div>
+								@endif
 								</td>
-								<td class="text-right font-mono text-base-content/70">${StockFormatUtil.pct(totalWeightPct.doubleValue(), 1)}</td>
+								<td class="text-right font-mono text-base-content/70">${stockWeightLabelById.getOrDefault(item.stockItemId(), StockFormatUtil.pct(totalWeightPct.doubleValue(), 1))}</td>
 							</tr>
 						@endfor
 					@endif
@@ -672,16 +741,18 @@
 				<tfoot class="bg-base-200 font-bold">
 					!{BigDecimal totalStockBuyAmount = StockAssetStatusUtil.totalBuyCost(stockAggregated);}
 					<tr>
-						<td>${totalLabel}</td>
-						<td class="hidden lg:table-cell"></td>
-						<td class="hidden xl:table-cell"></td>
-						<td class="text-right font-mono hidden sm:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(totalStockBuyAmount))}</td>
-						<td class="hidden lg:table-cell"></td>
+						<th scope="row">${totalLabel}</th>
+						<%-- 보유 기간 열은 합계가 없다(기간을 더할 수는 없다). 칸 수만 맞춘다. --%>
+						<td></td>
+						<td class="hidden lg:table-cell print:table-cell"></td>
+						<td class="hidden min-[1340px]:table-cell print:table-cell"></td>
+						<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(totalStockBuyAmount))}</td>
+						<td class="hidden lg:table-cell print:table-cell"></td>
 						<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(totalEvaluationAmount))}</td>
-						<td class="text-right font-mono font-bold amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", StockFormatUtil.displayWon(totalEvaluationProfit))}</td>
-						<td class="text-right font-mono hidden xl:table-cell ${stockProfitBreakdownTotal.realizedProfit().signum() >= 0 ? "text-profit" : "text-loss"}"><span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.realizedProfit()))}</span></td>
-						<td class="text-right font-mono hidden xl:table-cell"><span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.dividendTotal()))}</span></td>
-						<td class="text-right font-mono font-bold hidden lg:table-cell ${stockProfitBreakdownTotal.combinedProfit().signum() >= 0 ? "text-profit" : "text-loss"}"><span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.combinedProfit()))}</span></td>
+						<td class="text-right font-mono font-bold amount-value ${totalEvaluationProfit != null && totalEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalEvaluationProfit))}</td>
+						<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell ${stockProfitBreakdownTotal.realizedProfit().signum() >= 0 ? "text-profit" : "text-loss"}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.realizedProfit()))}</span></td>
+						<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell"><span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.dividendTotal()))}</span></td>
+						<td class="text-right font-mono font-bold hidden lg:table-cell print:table-cell ${stockProfitBreakdownTotal.combinedProfit().signum() >= 0 ? "text-profit" : "text-loss"}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.combinedProfit()))}</span></td>
 						<td class="text-right font-mono text-base-content/70">${totalEvaluationAmount != null && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0 ? "100.0%" : "0.0%"}</td>
 					</tr>
 				</tfoot>

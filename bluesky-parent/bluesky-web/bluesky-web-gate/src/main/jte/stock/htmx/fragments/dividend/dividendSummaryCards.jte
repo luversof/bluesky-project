@@ -39,12 +39,14 @@
 	String midMonthLabel = MessageUtil.getMessage("stock.dividend.summary.window.mid");
 	String monthEndLabel = MessageUtil.getMessage("stock.dividend.summary.window.end");
 	String otherWindowLabel = MessageUtil.getMessage("stock.dividend.summary.window.other");
+	String windowBasisLabel = MessageUtil.getMessage("stock.dividend.summary.window.basis");
 	String countPattern = MessageUtil.getMessage("common.count");
 	java.util.function.LongFunction<String> windowCount = c -> java.text.MessageFormat.format(countPattern, c);
 	// 월중/월말 태그가 붙은 배당이 하나라도 있으면 구분 표시(둘 다 없으면 의미 없음)
 	boolean hasWindowSplit = midMonthCount > 0 || monthEndCount > 0;
 	String netLabel = MessageUtil.getMessage("common.label.net");
 	String grossLabel = MessageUtil.getMessage("common.label.gross");
+	String dividendCountLabel = MessageUtil.getMessage("stock.activity.label.dividend");
 	String previousComparisonLabel = MessageUtil.getMessage("stock.dividend.summary.previous.comparison");
 	String previousPeriodLabel = MessageUtil.getMessage("stock.dividend.summary.previous.period");
 	String monthlyAverageLabel = MessageUtil.getMessage("stock.dividend.summary.monthly.average");
@@ -86,16 +88,28 @@
 				<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-base-content/60">
 					<span>${grossLabel} <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllGross)}</span></span>
 					<span>${deductionLabel} <span class="font-medium text-base-content/70 amount-value">-₩ ${decimalFormat.format(allDeduction)}</span></span>
-					<span class="ml-auto">${totalItemsCountText}</span>
+					<%-- 라벨을 붙인다. 이 수는 배당 기록 건수인데 같은 줄 왼쪽이 차감 금액이라, 라벨이 없으면
+						 차감 건수로 읽힌다 - 실측 2026-09-12(올해): 이 자리가 116건이고 바로 아래 줄은
+						 월중 56건 · 월말 57건 · 기타 3건 으로 모두 라벨이 있다(합이 116). 한 카드 안에서 윗줄만 비어 있었다.
+						 활동 화면은 같은 수량에 이미 이 라벨을 쓴다. --%>
+					<span class="ml-auto">${dividendCountLabel} ${totalItemsCountText}</span>
 				</div>
 				<!-- 차감 분해(항상 표시): 세전 − (세금 + 수수료·기타) = 세후. 과세 금액은 차감 항목이 아님(별도 표시). -->
 				<div class="mt-1 text-[11px] leading-4 text-base-content/60" title="${calcNoteLabel}">
 					${deductionLabel} = ${taxLabel} <span class="amount-value">₩${decimalFormat.format(safeAllTax)}</span>
-					+ ${deductionOtherLabel} <span class="amount-value">₩${decimalFormat.format(allOtherDeduction)}</span>
+					+ ${deductionOtherLabel} <span class="amount-value">₩${decimalFormat.format(allOtherDeduction)}</span>@template._components.ui.srExact(text = calcNoteLabel, visible = decimalFormat.format(allOtherDeduction))
 				</div>
 				<!-- 월중/월말 배당 구분(세후): 종목 태그(월중배당/월말배당) 기준. 태그 없는 종목은 기타. -->
 				@if(hasWindowSplit)
 				<div class="mt-2 pt-2 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+					<%-- 무엇으로 가르는지 밝힌다. 2026-09-12 까지 이 세 항목에는 title 도 aria-label 도 없었고
+						 화면 어디에도 근거가 없었다(실측: 본문 전체에 "태그" 라는 말이 필터 드롭다운 말고는 없다).
+						 "기타 6,152,014원 3건" 만 보고는 그것이 월중도 월말도 아닌 무엇인지 알 수 없다. --%>
+					<span class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${windowBasisLabel}" data-tip="${windowBasisLabel}" data-window-basis>
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 opacity-60" aria-hidden="true">
+							<path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+						</svg>
+					</span>
 					<span class="inline-flex items-baseline gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-info"></span>
 						<span class="text-base-content/60">${midMonthLabel}</span>
@@ -208,15 +222,15 @@
 						data-prev="${ch.previousNet().toPlainString()}"
 						data-current="${ch.currentNet().toPlainString()}"
 						data-delta="${ch.delta().toPlainString()}">
-						<td class="max-w-0 truncate" title="${ch.stockName()}">@if(ch.stockItemId() != null)<a href="/stock/item?stockItemId=${ch.stockItemId().toString()}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif
+						<th scope="row" class="max-w-0 truncate" title="${ch.stockName()}">@if(ch.stockItemId() != null)<a href="/stock/item?stockItemId=${ch.stockItemId().toString()}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif
 							@if(isNew)
 							<span class="badge badge-xs badge-success badge-outline ml-1">${changeNewLabel}</span>
 							@elseif(stopped)
 							<span class="badge badge-xs badge-ghost ml-1">${changeStoppedLabel}</span>
 							@endif
-						</td>
+						</th>
 						<td class="hidden sm:table-cell text-right text-xs text-base-content/60 amount-value whitespace-nowrap">₩${decimalFormat.format(ch.previousNet())} → ₩${decimalFormat.format(ch.currentNet())}</td>
-						<td class="w-28 text-right font-semibold amount-value whitespace-nowrap ${up ? "text-profit" : "text-loss"}">${up ? "+" : "-"}₩${decimalFormat.format(ch.delta().abs())}</td>
+						<td class="w-28 text-right font-semibold amount-value whitespace-nowrap ${up ? "text-profit" : "text-loss"}">${ch.delta().signum() == 0 ? "" : (up ? "+" : "-")}₩${decimalFormat.format(ch.delta().abs())}</td>
 					</tr>
 				@endfor
 				</tbody>

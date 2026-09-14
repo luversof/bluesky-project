@@ -408,6 +408,8 @@ function simulateScenario(scenario) {
 		maxScenarios: "You can compare up to five scenarios at once.",
 		yearlyToggleOpen: "Show monthly details",
 		yearlyToggleClose: "Hide monthly details",
+		yearlyToggleOpenNamed: "Show monthly details for year {0}",
+		yearlyToggleCloseNamed: "Hide monthly details for year {0}",
 		monthlyDetailsTitle: "Monthly Details",
 		tableHeaderMonth: "Month",
 		tableHeaderSpendingCoverage: "Spending Coverage",
@@ -1308,6 +1310,9 @@ function simulateScenario(scenario) {
 		elements.yearlyTableBody.innerHTML = yearlyRecords
 			.map(
 				(record) => {
+					// 접힌 해의 월별 표까지 미리 그리면 안 보는 칸이 대부분이다 - 실측 2026-09-11: 표 43 개 중 42 개가 숨어
+					// 있고 칸 7,110 개 중 6,552 개(92%)가 그 안이었다(DOM 8,483 노드 · 454KB).
+					// 펼칠 때 표 전체를 다시 그리므로(toggleYearlyDetails -> render) 그때 만들면 된다.
 					const expanded = isYearExpanded(activeScenarioId, record.year);
 					return `
 					<tr class="${resolveYearlyRowClass(record, firstDeficitYear, firstWealthDeclineYear)}">
@@ -1317,7 +1322,8 @@ function simulateScenario(scenario) {
 								class="inline-flex items-center gap-2 rounded-full px-2 py-1 text-left hover:bg-base-200"
 								data-year-toggle="${record.year}"
 								aria-expanded="${expanded ? "true" : "false"}"
-								aria-label="${escapeHtml(expanded ? i18n.yearlyToggleClose : i18n.yearlyToggleOpen)}"
+								aria-controls="${yearlyDetailRowId(record.year)}"
+								aria-label="${escapeHtml(yearlyToggleName(record.year, expanded))}"
 							>
 								<span class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-base-300 bg-base-100 text-xs">${expanded ? "-" : "+"}</span>
 								<span>${record.year}</span>
@@ -1328,22 +1334,24 @@ function simulateScenario(scenario) {
 						<td class="amount-value">${formatCurrency(record.annualSpending)}</td>
 						<td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
 						<td class="amount-value ${record.annualGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(record.annualGap)}</td>
-						<td>${formatShares(record.soldSharesForSpending)}</td>
-						<td>${formatShares(record.reinvestedShares)}</td>
-						<td>${formatShares(record.shares)}</td>
+						<td class="amount-value">${formatShares(record.soldSharesForSpending)}</td>
+						<td class="amount-value">${formatShares(record.reinvestedShares)}</td>
+						<td class="amount-value">${formatShares(record.shares)}</td>
 						<td class="amount-value">${formatCurrency(record.cashReserve)}</td>
 						<td class="amount-value">${formatCurrency(record.marketValue)}</td>
 						<td class="amount-value">${formatCurrency(record.totalWealth)}</td>
 					</tr>
-					<tr class="${expanded ? "" : "hidden"}">
-						<td colspan="12" class="bg-base-100/80 px-4 py-4">${renderMonthlyDetailsTable(record)}</td>
+					<tr id="${yearlyDetailRowId(record.year)}" class="${expanded ? "" : "hidden"}">
+						<td colspan="12" class="bg-base-100/80 px-4 py-4">${expanded ? renderMonthlyDetailsTable(record) : ""}</td>
 					</tr>`;
 				},
 			)
 			.join("");
 	}
 
-	function renderMonthlyDetailsTable(record) {
+	// 수량 칸도 amount-value 로 감싼다 - 금액 숨김은 자산 현황·활동 목록에서 수량까지 가린다
+// (실측 2026-09-11: 이 시뮬레이터의 수량 칸 40개만 숨김을 켜도 그대로 보였다).
+function renderMonthlyDetailsTable(record) {
 		const monthlyRecords = Array.isArray(record?.monthlyRecords)
 			? record.monthlyRecords
 			: [];
@@ -1385,9 +1393,9 @@ function simulateScenario(scenario) {
 											<td class="amount-value">${formatCurrency(monthRecord.monthlySpending)}</td>
 											<td class="${monthRecord.monthlyCoveragePct !== null && monthRecord.monthlyCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(monthRecord.monthlyCoveragePct)}</td>
 											<td class="amount-value ${monthRecord.monthlyGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(monthRecord.monthlyGap)}</td>
-											<td>${formatShares(monthRecord.soldSharesForSpending)}</td>
-											<td>${formatShares(monthRecord.reinvestedShares)}</td>
-											<td>${formatShares(monthRecord.shares)}</td>
+											<td class="amount-value">${formatShares(monthRecord.soldSharesForSpending)}</td>
+											<td class="amount-value">${formatShares(monthRecord.reinvestedShares)}</td>
+											<td class="amount-value">${formatShares(monthRecord.shares)}</td>
 											<td class="amount-value">${formatCurrency(monthRecord.cashReserve)}</td>
 											<td class="amount-value">${formatCurrency(monthRecord.marketValue)}</td>
 											<td class="amount-value">${formatCurrency(monthRecord.totalWealth)}</td>
@@ -1865,6 +1873,26 @@ function simulateScenario(scenario) {
 
 	function buildScenarioConfigurationText(scenario) {
 		return buildScenarioConfigurationSegments(scenario).join(" · ");
+	}
+
+	/**
+	 * 해마다 다른 이름을 준다.
+	 *
+	 * 실측 2026-09-12: 이 표의 펼침 단추 42 개가 모두 "월별 상세 펼치기" 하나였다(고유 이름 1 종).
+	 * 단추만 훑는 사용자에게는 42 개가 같은 것으로 들려 어느 해인지 고를 수 없다. 같은 화면의
+	 * 자산 현황은 이미 계좌 이름을 실어 5 개가 5 종이다 - 그 규칙에 맞춘다.
+	 */
+	function yearlyToggleName(year, expanded) {
+		var template = expanded ? i18n.yearlyToggleCloseNamed : i18n.yearlyToggleOpenNamed;
+		if (!template) {
+			return expanded ? i18n.yearlyToggleClose : i18n.yearlyToggleOpen;
+		}
+		return template.replace("{0}", String(year));
+	}
+
+	/** 단추가 여는 줄을 가리킬 수 있게 줄마다 고유한 id 를 준다. */
+	function yearlyDetailRowId(year) {
+		return "sustain-year-detail-" + String(year);
 	}
 
 	function formatYearOffset(year) {

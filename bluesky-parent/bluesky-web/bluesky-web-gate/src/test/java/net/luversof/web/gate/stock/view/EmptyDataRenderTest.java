@@ -92,7 +92,10 @@ class EmptyDataRenderTest {
           "stock/htmx/fragments/stockContributionTable.jte",
           // 갈 곳이 하나뿐(=지금 보는 것)이거나 없으면 전환기가 할 일이 없다.
           "stock/htmx/fragments/detailNavSwitcher.jte",
-          "stock/htmx/fragments/components/filterBadge.jte");
+          "stock/htmx/fragments/components/filterBadge.jte",
+          // 달력은 그릴 달이 정해져야 의미가 있다. 자료 없이 부르면 달을 지어내는 대신 아무것도 그리지 않는다
+          // (배당 캘린더 페이지는 자료가 없으면 이 조각을 아예 부르지 않고 빈 상태 문구를 띄운다).
+          "stock/fragments/dividendCalendarMonth.jte");
 
   @Test
   void 데이터가_없어도_조각이_예외를_내지_않는다() throws IOException {

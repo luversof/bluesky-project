@@ -12,6 +12,7 @@
 	String description = MessageUtil.getMessage("stock.asset.growth.yearly.desc");
 	String yearLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.year");
 	String twrLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.twr");
+	String returnBasisNote = MessageUtil.getMessage("stock.asset.growth.yearly.return.basis");
 	String profitLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.profit");
 	String principalLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.principal");
 	String closingLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.closing");
@@ -61,7 +62,7 @@
 								boolean principalUp = principal != null && principal.signum() >= 0;
 							}
 							<tr>
-								<td class="font-medium">
+								<th scope="row" class="font-medium">
 									${String.valueOf(row.year())}
 									@if(!row.fullYear() && row.fromDate() != null && row.toDate() != null)
 										<%-- 조회 기간에 잘린 해. 구간을 밝히지 않으면 그 해 전체 성과로 오해한다. --%>
@@ -69,33 +70,33 @@
 											${partialLabel} ${row.fromDate().toString().substring(5)} ~ ${row.toDate().toString().substring(5)}
 										</div>
 									@endif
-								</td>
+								</th>
 								<td class="text-right tabular-nums">
 									@if(twr != null)
 										<span class="font-semibold ${twrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(twr, 2)}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(profit != null)
-										<span class="amount-value ${profitUp ? "text-profit" : "text-loss"}">${profitUp ? "+" : "-"}₩${amountFormat.format(profit.abs())}</span>
+										<span class="amount-value ${profitUp ? "text-profit" : "text-loss"}">${profit.signum() == 0 ? "" : (profitUp ? "+" : "-")}₩${amountFormat.format(profit.abs())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(principal != null && principal.signum() != 0)
-										<span class="amount-value text-base-content/60">${principalUp ? "+" : "-"}₩${amountFormat.format(principal.abs())}</span>
+										<span class="amount-value text-base-content/60">${principal.signum() == 0 ? "" : (principalUp ? "+" : "-")}₩${amountFormat.format(principal.abs())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(closing != null)
 										<span class="amount-value text-base-content/70">₩${amountFormat.format(closing)}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 							</tr>
@@ -115,27 +116,27 @@
 						   boolean totalPrincipalUp = totals.principalDelta().signum() >= 0; }
 						<tfoot>
 							<tr class="border-t-2 border-base-content/20 font-semibold" data-yearly-total>
-								<td>${totalLabel}</td>
+								<th scope="row">${totalLabel}</th>
 								<td class="text-right tabular-nums">
 									@if(totals.chainedReturnPct() != null)
 										<span class="${totalTwrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
-								<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totalProfitUp ? "+" : "-"}₩${amountFormat.format(totals.profit().abs())}</span></td>
+								<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totals.profit().signum() == 0 ? "" : (totalProfitUp ? "+" : "-")}₩${amountFormat.format(totals.profit().abs())}</span></td>
 								<td class="text-right tabular-nums">
 									@if(totals.principalDelta().signum() != 0)
-										<span class="amount-value text-base-content/60">${totalPrincipalUp ? "+" : "-"}₩${amountFormat.format(totals.principalDelta().abs())}</span>
+										<span class="amount-value text-base-content/60">${totals.principalDelta().signum() == 0 ? "" : (totalPrincipalUp ? "+" : "-")}₩${amountFormat.format(totals.principalDelta().abs())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(latestClosing != null)
 										<span class="amount-value text-base-content/70">₩${amountFormat.format(latestClosing)}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 							</tr>
@@ -143,5 +144,9 @@
 					@endif
 				</table>
 			</div>
+			<%-- 손익(금액)과 투자 수익률(시간가중)은 축이 다르다. 원금을 많이 넣은 해에는 부호가 갈려
+			     한 줄이 모순처럼 읽힌다 - 실측 2026-09-13: 2021 년 손익 +12,459,027 인데 수익률 -1.93%
+			     (그 해 원금 변동 +136,526,730). 기준은 위 요약 카드에만 적혀 있었다. --%>
+			<p class="text-[11px] leading-4 text-base-content/60 mt-2" data-yearly-return-basis>${returnBasisNote}</p>
 	`)
 @endif

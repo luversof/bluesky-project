@@ -27,10 +27,13 @@ class PercentNegativeZeroTest {
 
   @Test
   void 반올림_결과가_영이면_부호를_지운다() {
-    assertThat(StockFormatUtil.signedPct(-0.04, 1)).isEqualTo("+0.0%");
+    // 2026-09-11: 영에는 부호를 아예 붙이지 않는다(이 테스트 제목 그대로). 예전에는 "+0.0%" 였는데,
+    // 부호는 방향을 말하고 0 에는 방향이 없다 - 금액은 "0", 비율만 "+0.0%" 가 되어 한 카드 안에서 어긋났다.
+    assertThat(StockFormatUtil.signedPct(-0.04, 1)).isEqualTo("0.0%");
     assertThat(StockFormatUtil.pct(-0.04, 1)).isEqualTo("0.0%");
     assertThat(StockFormatUtil.pct(-0.004, 2)).isEqualTo("0.00%");
-    assertThat(StockFormatUtil.signedPct(-0.0, 2)).isEqualTo("+0.00%");
+    assertThat(StockFormatUtil.signedPct(-0.0, 2)).isEqualTo("0.00%");
+    assertThat(StockFormatUtil.signedPct(0.0, 1)).isEqualTo("0.0%");
   }
 
   @Test

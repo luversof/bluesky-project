@@ -41,6 +41,8 @@
 	String periodTitleLabel = MessageUtil.getMessage("stock.summary.period.title");
 	String periodTradeLabel = MessageUtil.getMessage("stock.summary.period.trade");
 	String periodRealizedLabel = MessageUtil.getMessage("stock.summary.period.realized");
+	String allScopeNote = MessageUtil.getMessage("stock.summary.scope.all");
+	String ytdScopeNote = MessageUtil.getMessage("stock.summary.period.title");
 	String periodCostLabel = MessageUtil.getMessage("stock.summary.period.cost");
 	String periodDividendLabel = MessageUtil.getMessage("stock.summary.period.dividend");
 	String periodBuyLabel = MessageUtil.getMessage("stock.trade.label.buy");
@@ -98,9 +100,9 @@
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current opacity-60"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
 				</span>
 			</div>
-			<div class="text-3xl lg:text-4xl font-bold text-principal amount-value mt-1" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset))}</div>
+			<div class="text-3xl lg:text-4xl font-bold text-principal amount-value mt-1" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset)))</div>
 			<div class="text-sm text-base-content/70 mt-2">
-				${principalLabel} <span class="font-mono amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal))}</span>
+				${principalLabel} <span class="font-mono amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal)))</span>
 			</div>
 			<%-- 총자산은 마지막으로 수집된 종가로 계산된다. 이 앱은 시세를 자동 수집하지 않아(스케줄러 없음,
 				 관리 화면에서 수동 실행) 며칠 전 값일 수 있는데, 요약 화면만 그 사실을 밝히지 않고 있었다
@@ -139,13 +141,13 @@
 								@if(holdingFeeAdjustment != null && holdingFeeAdjustment.compareTo(BigDecimal.ZERO) != 0)
 								<div class="flex items-center justify-between gap-3 text-neutral-content/80">
 									<span>${holdingFeeAdjustmentLabel}</span>
-									<span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(holdingFeeAdjustment))}</span>
+									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingFeeAdjustment))}</span>
 								</div>
 								@endif
 								@if(manualPrincipalAdjustment != null && manualPrincipalAdjustment.compareTo(BigDecimal.ZERO) != 0)
 								<div class="flex items-center justify-between gap-3 text-neutral-content/80">
 									<span>${manualPrincipalAdjustmentLabel}</span>
-									<span class="amount-value">${String.format("%+,d", StockFormatUtil.displayWon(manualPrincipalAdjustment))}</span>
+									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(manualPrincipalAdjustment))}</span>
 								</div>
 								@endif
 								<div class="flex items-center justify-between gap-3 border-t border-neutral-content/20 pt-1 font-semibold">
@@ -174,8 +176,8 @@
 					</div>
 				</div>
 				<div class="text-right">
-					<span class="text-xl font-bold amount-value ${combinedColor}" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalCombinedProfit))}</span>
-					<span class="ml-2 text-sm font-semibold ${combinedColor}" title="${combinedRateBasisText}">${StockFormatUtil.signedPct(combinedRate, 2)}</span>
+					<span class="text-xl font-bold amount-value ${combinedColor}" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit))}">${StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit)), visible = StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit)))</span>
+					<span class="ml-2 text-sm font-semibold ${combinedColor}" title="${combinedRateBasisText}" data-amount-basis="${combinedRateBasisText}">${StockFormatUtil.signedPct(combinedRate, 2)}@template._components.ui.srExact(text = combinedRateBasisText, visible = StockFormatUtil.signedPct(combinedRate, 2))</span>
 				</div>
 			</div>
 		`)
@@ -195,25 +197,30 @@
 
 	<!-- 보조 지표 -->
 	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+	<%-- 카드가 집계한 기간을 링크에 실어 보낸다. 안 실으면 마지막으로 보던 기간이 복원돼, 카드에 적힌 수와
+	     다른 수가 있는 화면에 떨어진다(실측 2026-09-11: 저장된 기간이 1개월일 때 '올해 매수 2억 1,899만'
+	     카드를 눌렀더니 매매 화면은 1개월 20 건을 보여 줬다). 위 넉 장은 전기간, 아래 '올해' 넉 장은 올해다. --%>
 	<%-- 요약 지표는 히어로와 같은 축약 표기(억/만)로 통일 — 풀 숫자는 title 툴팁.
 		 각 카드는 해당 상세 화면으로 이동한다 (drill-down) --%>
 		@template._components.ui.statCard(
 			label = currentEvaluationProfitLabel,
-			value = StockFormatUtil.compactKrw(currentEvaluationProfit.longValue()),
+			value = StockFormatUtil.signedCompactKrw(currentEvaluationProfit.longValue()),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentEvaluationProfit)),
 			sub = returnRateLabel + " " + StockFormatUtil.signedPct(unrealizedRate, 2),
 			tone = evalColor,
 			icon = "trend-up",
 			accent = evalColor.contains("loss") ? "loss" : "profit",
-			href = "/stock/analytics")
+			href = "/stock/analytics",
+			scopeNote = allScopeNote)
 		@template._components.ui.statCard(
 			label = realizedProfitLabel,
-			value = StockFormatUtil.compactKrw(totalRealizedProfit.longValue()),
+			value = StockFormatUtil.signedCompactKrw(totalRealizedProfit.longValue()),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalRealizedProfit)),
 			tone = realizedColor,
 			icon = "exchange",
 			accent = realizedColor.contains("loss") ? "loss" : "profit",
-			href = "/stock/trade")
+			href = "/stock/trade?rangeMode=all",
+			scopeNote = allScopeNote)
 		@template._components.ui.statCard(
 			label = cumulativeDividendLabel,
 			value = StockFormatUtil.compactKrw(totalDividend.longValue()),
@@ -221,7 +228,8 @@
 			tone = "text-dividend",
 			icon = "gift",
 			accent = "dividend",
-			href = "/stock/dividend")
+			href = "/stock/dividend?rangeMode=all",
+			scopeNote = allScopeNote)
 		@template._components.ui.statCard(
 			label = winRateLabel,
 			value = String.format("%.1f", winRate) + "%",
@@ -230,7 +238,8 @@
 			amount = false,
 			icon = "target",
 			accent = "primary",
-			href = "/stock/analytics")
+			href = "/stock/analytics",
+			scopeNote = allScopeNote)
 	</div>
 
 	<%-- 올해 요약. 전기간 합계만 있던 탓에 "올해 얼마 벌었나" 는 매매·배당·활동·자산성장 네 화면을 돌아야
@@ -252,18 +261,22 @@
 					label = periodTradeLabel + " · " + periodBuyLabel,
 					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.buyAmount())),
 					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodSummary.buyAmount())) + " (" + periodCount.apply(periodSummary.buyCount()) + ")",
-					sub = periodSellLabel + " " + StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.sellAmount())) + " · " + periodCount.apply(periodSummary.sellCount()),
+					subBefore = periodSellLabel + " ",
+					subAmount = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.sellAmount())),
+					subAfter = " · " + periodCount.apply(periodSummary.sellCount()),
 					icon = "exchange",
 					accent = "neutral",
-					href = "/stock/trade")
+					href = "/stock/trade?rangeMode=ytd",
+					scopeNote = ytdScopeNote)
 				@template._components.ui.statCard(
 					label = periodRealizedLabel,
-					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.realizedProfit())),
+					value = StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(periodSummary.realizedProfit())),
 					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodSummary.realizedProfit())),
 					tone = periodSummary.realizedProfit() != null && periodSummary.realizedProfit().signum() < 0 ? "text-loss" : "text-profit",
 					icon = "trend-up",
 					accent = periodSummary.realizedProfit() != null && periodSummary.realizedProfit().signum() < 0 ? "loss" : "profit",
-					href = "/stock/trade")
+					href = "/stock/trade?rangeMode=ytd",
+					scopeNote = ytdScopeNote)
 				@template._components.ui.statCard(
 					label = periodDividendLabel,
 					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.dividendNet())),
@@ -272,14 +285,16 @@
 					tone = "text-dividend",
 					icon = "gift",
 					accent = "dividend",
-					href = "/stock/dividend")
+					href = "/stock/dividend?rangeMode=ytd",
+					scopeNote = ytdScopeNote)
 				@template._components.ui.statCard(
 					label = periodCostLabel,
 					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodTradeCost)),
 					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodTradeCost)),
 					icon = "wallet",
 					accent = "neutral",
-					href = "/stock/trade")
+					href = "/stock/trade?rangeMode=ytd",
+					scopeNote = ytdScopeNote)
 			</div>
 		</div>
 	@endif
@@ -298,7 +313,7 @@
 			String coreNote = MessageUtil.getMessage("stock.summary.core.note");
 			String evaluationAmountLabel = MessageUtil.getMessage("stock.profit.evaluation.amount");
 			String combinedProfitLabel = MessageUtil.getMessage("stock.asset.status.col.combined.profit");
-			java.util.function.Function<BigDecimal, String> signedKrw = v -> (v.signum() >= 0 ? "+" : "-") + StockFormatUtil.compactKrw(Math.abs(StockFormatUtil.displayWon(v)));
+			java.util.function.Function<BigDecimal, String> signedKrw = v -> (v.signum() == 0 ? "" : (v.signum() > 0 ? "+" : "-")) + StockFormatUtil.compactKrw(Math.abs(StockFormatUtil.displayWon(v)));
 			java.util.function.Function<BigDecimal, String> toneOf = v -> v.signum() >= 0 ? "text-profit" : "text-loss";
 		}
 		@template._components.ui.card(cssClass = "mt-3", bodyClass = "p-4", body = @`
@@ -318,8 +333,8 @@
 					<tbody>
 						<tr>
 							<td>${evaluationAmountLabel} <span class="text-base-content/60">(${coreWeightLabel})</span></td>
-							<td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}</span> <span class="text-xs text-base-content/60" data-core-holding-weight>${coreHoldingSplit.core().weightPct().toPlainString()}%</span></td>
-							<td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}</span> <span class="text-xs text-base-content/60">${coreHoldingSplit.rest().weightPct().toPlainString()}%</span></td>
+							<td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount())), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount())))</span> <span class="text-xs text-base-content/60" data-core-holding-weight>${coreHoldingSplit.core().weightPct().toPlainString()}%</span></td>
+							<td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount())), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount())))</span> <span class="text-xs text-base-content/60">${coreHoldingSplit.rest().weightPct().toPlainString()}%</span></td>
 						</tr>
 						<tr>
 							<td>${MessageUtil.getMessage("stock.profit.unrealized")}</td>

@@ -68,6 +68,22 @@ test("도넛: 항목별 값과 비중, 10개 초과는 '외 N개'", () => {
 	assert.ok(t.endsWith("and 2 more"), t);
 });
 
+// 도넛은 넘치는 항목을 "외 N개" 로 밝히는데 선/막대는 4 개에서 조용히 잘랐다.
+// 실측 2026-09-12(배당 내역 "월별 배당금", 데이터셋 10 개): 요약 356 자가 앞 4 계열만 담고
+// 나머지 6 개(기타 · 최근 12개월 합 포함)는 흔적도 없었다 - 보조기술은 그런 계열이 있는지조차 몰랐다.
+test("막대/선: 데이터셋 4개를 넘으면 '외 N개 계열' 을 붙인다", () => {
+	const ds = (n) => Array.from({ length: n }, (_, i) => ({ label: "S" + i, data: [1, 2] }));
+	const four = { config: { type: "bar" }, data: { labels: ["a", "b"], datasets: ds(4) } };
+	assert.ok(!mod.chartSummaryText(four, "ko-KR").includes("외 "), "4개까지는 군더더기가 없어야 한다");
+	const ten = { config: { type: "bar" }, data: { labels: ["a", "b"], datasets: ds(10) } };
+	const ko = mod.chartSummaryText(ten, "ko-KR");
+	assert.ok(ko.startsWith("S0: 2개 지점"), ko);
+	assert.ok(ko.endsWith(". 외 6개 계열"), ko);
+	assert.ok(!ko.includes("S4:"), "5번째부터는 담지 않는다");
+	const en = mod.chartSummaryText(ten, "en-US");
+	assert.ok(en.endsWith(". and 6 more series"), en);
+});
+
 test("동기화: 캔버스 뒤에 sr-only 요약을 만들고 aria-describedby 로 잇는다, 다시 부르면 재사용, 빈 요약이면 거둔다", () => {
 	const { canvas, parent } = fakeCanvas("c1");
 	const chart = { canvas, config: { type: "bar" }, data: { labels: ["a", "b"], datasets: [{ label: "S", data: [1, 2] }] } };
@@ -88,4 +104,105 @@ test("동기화: 캔버스 뒤에 sr-only 요약을 만들고 aria-describedby �
 	assert.equal(el.removed, true);
 	assert.equal(canvas.attrs["aria-describedby"], undefined);
 	assert.equal(mod.syncChartSummary({ canvas: null }), null, "캔버스 없는 차트는 무시");
+});
+
+// 금액 가리기를 켜면 요약에서도 금액을 뺀다.
+//
+// 실측 2026-09-11(가리기를 켠 채 9 화면): sr-only 요약 14곳이 금액을 그대로 담고 있었다 - 화면은 흐려지는데
+// 보조기술에는 "투자원금: 39개 지점, 처음 2026-01-01 637,902,360 ..." 이 그대로 읽혔다.
+test("가리기를 켜면 선/막대 요약에서 금액이 빠진다(라벨·지점 수는 남는다)", () => {
+	const chart = { config: { type: "line" }, data: { labels: ["2026-01", "2026-02"], datasets: [{ label: "투자원금", data: [1000, 2000] }] } };
+	const shown = mod.chartSummaryText(chart, "ko-KR");
+	assert.ok(shown.includes("1,000"), shown);
+
+	document.documentElement.classList.contains = (name) => name === "hide-amounts";
+	const hiddenText = mod.chartSummaryText(chart, "ko-KR");
+	document.documentElement.classList.contains = () => false;
+
+	assert.equal(hiddenText, "투자원금: 2개 지점(금액 가림)");
+	assert.ok(!/[0-9],[0-9]/.test(hiddenText), hiddenText);
+});
+
+test("가리기를 켜면 도넛 요약은 비중만 남는다", () => {
+	const chart = { config: { type: "doughnut" }, data: { labels: ["A", "B"], datasets: [{ data: [30, 70] }] } };
+	document.documentElement.classList.contains = (name) => name === "hide-amounts";
+	const hiddenText = mod.chartSummaryText(chart, "ko-KR");
+	document.documentElement.classList.contains = () => false;
+
+	assert.equal(hiddenText, "항목 2개: A (30%), B (70%)");
+});
+
+test("가리기가 꺼져 있으면 예전 그대로다", () => {
+	const chart = { config: { type: "doughnut" }, data: { labels: ["A", "B"], datasets: [{ data: [30, 70] }] } };
+	assert.equal(mod.chartSummaryText(chart, "ko-KR"), "항목 2개: A 30 (30%), B 70 (70%)");
+});
+
+test("영어도 같은 규칙", () => {
+	const chart = { config: { type: "line" }, data: { labels: ["2026-01", "2026-02"], datasets: [{ label: "Principal", data: [1000, 2000] }] } };
+	document.documentElement.classList.contains = (name) => name === "hide-amounts";
+	const hiddenText = mod.chartSummaryText(chart, "en-US");
+	document.documentElement.classList.contains = () => false;
+
+	assert.equal(hiddenText, "Principal: 2 points (amounts hidden)");
+});
+
+// 근거 문구(title + sr-only)의 금액도 가린다.
+//
+// 실측 2026-09-11: 가리기를 켠 채 대시보드 합산 수익률에 hover 하면 "수익률 = 총 합산 수익 1,271,376,178 ÷ 기준 원금 642,..."
+// 가 그대로 떴다(그 요소는 백분율이라 가림 대상이 아니었다).
+// 흐리게 하는 자리(.amount-value)에 붙은 title 은 흐림이 안 걸린다 - 켜 놓고 hover 하면 정확한 금액이 그대로 뜬다.
+// 실측 2026-09-12(가리기 켜고 9 화면): 31 개가 그랬다(대시보드 "1,622,109,770원" · 종목 상세 "1,359,088,500원" 등).
+// 템플릿 52 곳이 이런 title 을 내므로 하나씩 표식을 다는 대신 공통 처리에서 가린다.
+test("가리기를 켜면 amount-value 의 title 도 가려지고, 끄면 되돌아온다", () => {
+	const original = "1,622,109,770원";
+	// srExact 짝(sr-only)도 같은 값을 낭독기에 준다 - 2026-09-12 에 title 만 가렸더니 대시보드 10 곳에서
+	// title 은 "가림" 인데 sr-only 는 "1,622,109,770원" 그대로였다.
+	const sr = { textContent: original };
+	const el = {
+		attrs: { title: original },
+		getAttribute(n) { return this.attrs[n] ?? null; },
+		setAttribute(n, v) { this.attrs[n] = v; },
+		querySelector(sel) { return sel === ".sr-only" ? sr : null; },
+	};
+	document.querySelectorAll = (sel) => (sel === ".amount-value[title]" ? [el] : []);
+	document.documentElement.lang = "ko-KR";
+
+	document.documentElement.classList.contains = (name) => name === "hide-amounts";
+	assert.equal(mod.maskAmountBasis(document), 1);
+	assert.ok(!/1,622,109,770/.test(el.attrs.title), el.attrs.title);
+	assert.equal(el.attrs["data-amount-title"], original, "되돌리려면 원본을 남겨야 한다");
+	assert.equal(el.attrs.title, "가림", "숫자에 붙은 원도 같이 가려 \"가림원\" 이 되지 않게 한다");
+	assert.equal(sr.textContent, "가림", "낭독기가 읽는 짝도 같이 가린다");
+
+	document.documentElement.classList.contains = () => false;
+	assert.equal(mod.maskAmountBasis(document), 1);
+	assert.equal(el.attrs.title, original, "끄면 원래 금액으로 돌아온다");
+	assert.equal(sr.textContent, original, "sr-only 도 되돌아온다");
+	document.querySelectorAll = () => [];
+});
+
+test("가리기를 켜면 근거 문구의 금액만 가려지고 백분율은 남는다", () => {
+	const original = "수익률 = 총 합산 수익 1,271,376,178 ÷ 기준 원금 642,014,000 = +12.34%. 기준 원금은 ...";
+	const sr = { textContent: original };
+	const el = {
+		attrs: { title: original, "data-amount-basis": original },
+		getAttribute(n) { return this.attrs[n] ?? null; },
+		setAttribute(n, v) { this.attrs[n] = v; },
+		querySelector(sel) { return sel === ".sr-only" ? sr : null; },
+	};
+	document.querySelectorAll = (sel) => (sel === "[data-amount-basis]" ? [el] : []);
+	document.documentElement.lang = "ko-KR";
+
+	document.documentElement.classList.contains = (name) => name === "hide-amounts";
+	assert.equal(mod.maskAmountBasis(document), 1);
+	assert.ok(!/1,271,376,178/.test(el.attrs.title), el.attrs.title);
+	assert.ok(!/642,014,000/.test(el.attrs.title), el.attrs.title);
+	assert.ok(el.attrs.title.includes("+12.34%"), "백분율은 화면에서도 안 가린다");
+	assert.equal(sr.textContent, el.attrs.title, "보조기술이 읽는 값도 같이 가린다");
+
+	document.documentElement.classList.contains = () => false;
+	assert.equal(mod.maskAmountBasis(document), 1);
+	assert.equal(el.attrs.title, original, "끄면 원래 문구로 돌아온다");
+	assert.equal(sr.textContent, original);
+	document.querySelectorAll = () => [];
 });

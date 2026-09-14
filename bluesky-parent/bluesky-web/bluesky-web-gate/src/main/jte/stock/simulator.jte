@@ -13,9 +13,22 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param String simulatorTab = "sustainability"
+@param String simulatorTabHrefSustainability = "/stock/simulator?tab=sustainability"
+@param String simulatorTabHrefMonthlyDividend = "/stock/simulator?tab=monthly-dividend"
+@param String simulatorTabHrefCompound = "/stock/simulator?tab=compound"
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
 @param java.util.Map<java.util.UUID, Integer> monthlyDividendCurrentQuantities = java.util.Map.of()
 @param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = java.util.Map.of()
+@param java.time.LocalDate monthlyDividendPriceBasisDate = null
+@param boolean monthlyDividendCurrentHoldingsUnavailable = false
+<%-- 스냅샷 이후 원장 수량이 바뀐 종목 수와 현재 수량 기준 합계. 조각이 경고로 띄운다.
+     컨트롤러는 늘 모델에 넣고 있었는데 이 화면이 조각에 넘기지 않아, 조각이 기본값 0 을 써서
+     경고가 한 번도 렌더되지 않았다(같은 경고가 배당 캘린더에서는 정상 동작했다). --%>
+@param long monthlyDividendStaleQuantityCount = 0L
+@param BigDecimal monthlyDividendCurrentQuantityTotal = java.math.BigDecimal.ZERO
+@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = java.util.Map.of()
+@param BigDecimal monthlyDividendReferenceTaxableTotal = null
+@param int monthlyDividendReferenceTaxableStaleCount = 0
 @param MonthlyDividendSimulatorSummaryView monthlyDividendSummary = null
 @param List<StockItem> stockItems = java.util.List.of()
 @param MonthlyDividendSnapshotUpsertRequest monthlyDividendForm = null
@@ -51,7 +64,9 @@
 		toolTitle = MessageUtil.getMessage("stock.simulator.compound.tool.title");
 		toolDescription = MessageUtil.getMessage("stock.simulator.compound.tool.desc");
 	} else if (monthlyDividendTab) {
-		pageTitle = MessageUtil.getMessage("stock.page.simulator.title");
+		// 2026-09-12 까지 이 분기가 지속가능성 제목을 그대로 썼다 - 월배당 탭인데 화면 제목과 브라우저 탭이
+		// 모두 "지속가능성 시뮬레이터" 였다(적립식 복리 탭은 자기 제목을 갖고 있었다).
+		pageTitle = MessageUtil.getMessage("stock.page.simulator.monthly.title");
 		description = MessageUtil.getMessage("stock.simulator.monthly.description");
 		storageNote = MessageUtil.getMessage("stock.simulator.monthly.storage.note");
 		toolTitle = MessageUtil.getMessage("stock.simulator.monthly.tool.title");
@@ -119,6 +134,8 @@
 						maxScenarios: '${MessageUtil.getMessage("stock.simulator.alert.max.scenarios")}',
 						yearlyToggleOpen: '${MessageUtil.getMessage("stock.simulator.toggle.open.monthly")}',
 						yearlyToggleClose: '${MessageUtil.getMessage("stock.simulator.toggle.close.monthly")}',
+						yearlyToggleOpenNamed: '${MessageUtil.getMessage("stock.simulator.toggle.open.monthly.named")}',
+						yearlyToggleCloseNamed: '${MessageUtil.getMessage("stock.simulator.toggle.close.monthly.named")}',
 						monthlyDetailsTitle: '${MessageUtil.getMessage("stock.simulator.monthly.details.title")}',
 						tableHeaderMonth: '${MessageUtil.getMessage("stock.simulator.table.header.month")}',
 						tableHeaderSpendingCoverage: '${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}',
@@ -180,10 +197,13 @@
 				</div>
 			</div>
 
+			<%-- 이 탭들은 주소를 바꾸는 링크다(역할은 tab 이 아니라 링크). 지금 어느 탭인지 시각 스타일로만
+			     알렸다 - 실측 2026-09-12: role/aria-selected/aria-current 가 모두 없어 낭독기에는 링크 셋으로만
+			     들렸다. 링크형 탭의 표준 표식인 aria-current="page" 를 단다. --%>
 			<div class="tabs tabs-box w-full bg-base-200/70 p-1">
-				<a href="/stock/simulator?tab=sustainability" class="${sustainabilityTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${sustainabilityTabLabel}</a>
-				<a href="/stock/simulator?tab=monthly-dividend" class="${monthlyDividendTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${monthlyDividendTabLabel}</a>
-				<a href="/stock/simulator?tab=compound" class="${compoundTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${compoundTabLabel}</a>
+				<a href="${simulatorTabHrefSustainability}" aria-current="${sustainabilityTab ? "page" : null}" class="${sustainabilityTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${sustainabilityTabLabel}</a>
+				<a href="${simulatorTabHrefMonthlyDividend}" aria-current="${monthlyDividendTab ? "page" : null}" class="${monthlyDividendTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${monthlyDividendTabLabel}</a>
+				<a href="${simulatorTabHrefCompound}" aria-current="${compoundTab ? "page" : null}" class="${compoundTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${compoundTabLabel}</a>
 			</div>
 
 			@if(monthlyDividendTab)
@@ -191,6 +211,13 @@
 					monthlyDividendRows = monthlyDividendRows,
 					monthlyDividendCurrentQuantities = monthlyDividendCurrentQuantities,
 					monthlyDividendCurrentAverageBuyPrices = monthlyDividendCurrentAverageBuyPrices,
+					monthlyDividendPriceBasisDate = monthlyDividendPriceBasisDate,
+					monthlyDividendCurrentHoldingsUnavailable = monthlyDividendCurrentHoldingsUnavailable,
+					monthlyDividendStaleQuantityCount = monthlyDividendStaleQuantityCount,
+					monthlyDividendCurrentQuantityTotal = monthlyDividendCurrentQuantityTotal,
+					monthlyDividendReferenceTaxableRatios = monthlyDividendReferenceTaxableRatios,
+					monthlyDividendReferenceTaxableTotal = monthlyDividendReferenceTaxableTotal,
+					monthlyDividendReferenceTaxableStaleCount = monthlyDividendReferenceTaxableStaleCount,
 					monthlyDividendSummary = monthlyDividendSummary,
 					stockItems = stockItems,
 					monthlyDividendForm = monthlyDividendForm,
@@ -216,6 +243,10 @@
 				<%-- compoundSimulator.js 는 Chart 를 직접 쓰므로 이 화면에서만 Chart.js 를 먼저 로드한다
 					     (레이아웃 전역 선로드 제거 → 차트 없는 화면은 받지 않음) --%>
 					<script src="/js/vendor/chart.umd.min.js"></script>
+					<%-- stock-charts.js 도 함께 받는다. 이 화면만 그걸 건너뛰고 있어서 차트가 테마를 안 따랐고
+					     (실측 2026-09-14: 라이트·다크 모두 글자색 #666 - 다크 배경 rgb(15,22,35) 위에서 거의 안 보였다)
+					     애니메이션 길이도 다른 화면(600ms)과 달리 Chart.js 기본값 1000ms 였다. --%>
+					<script src="/js/stock-charts.js"></script>
 					<script src="/js/stock/compoundSimulator.js"></script>
 			@else
 			<%-- 모바일 단일 컬럼도 minmax(0,1fr) 로 명시한다. 기본값이면 그리드 자식의
@@ -398,6 +429,10 @@
 
 			<%-- stockSimulator.js 는 Chart 를 직접 쓰므로 이 화면에서만 Chart.js 를 먼저 로드한다 --%>
 			<script src="/js/vendor/chart.umd.min.js"></script>
+			<%-- stock-charts.js 도 함께 받는다. 이 화면만 그걸 건너뛰고 있어서 차트가 테마를 안 따랐고
+			     (실측 2026-09-14: 라이트·다크 모두 글자색 #666 - 다크 배경 rgb(15,22,35) 위에서 거의 안 보였다)
+			     애니메이션 길이도 다른 화면(600ms)과 달리 Chart.js 기본값 1000ms 였다. --%>
+			<script src="/js/stock-charts.js"></script>
 			<script src="/js/stock/stockSimulator.js"></script>
 			@endif
 		</div>

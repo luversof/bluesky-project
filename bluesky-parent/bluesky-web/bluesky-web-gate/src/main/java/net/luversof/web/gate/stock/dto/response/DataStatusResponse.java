@@ -31,6 +31,15 @@ public record DataStatusResponse(
     long priceHistoryZeroVolumeCount,
     long priceHistoryRowCount,
     long priceHistoryZeroVolumeRowCount,
+    /**
+     * 마지막 시세 일자에 행이 있는 종목 수와, 시세 이력이 하나도 없는 종목 수.
+     *
+     * <p>최신 일자 하나만 적으면 전 종목이 그 날까지 최신인 것으로 읽힌다 &mdash; 실측 2026-09-12: 86 종목 중 <b>9 종목</b>만
+     * 2026-09-09 이고 70 종목은 2026-04-01/03 에 멈춰 있으며 4 종목은 이력이 아예 없었다. 시세 갱신이 보유 종목 위주로 도는 결과라 데이터가 틀린
+     * 것은 아니지만, 관리 화면이 말해 주지 않으면 알 수 없다.
+     */
+    long priceHistoryLastDateItemCount,
+    long priceHistoryNoHistoryItemCount,
     long priceHistoryZeroVolumeChangedCloseCount,
     /**
      * 위 개수에 해당하는 행(최대 5건). 개수만으로는 수집 오류인지 액면분할 같은 정상 조정인지 알 수 없다.
@@ -52,7 +61,12 @@ public record DataStatusResponse(
      */
     long priceHistoryPriceLimitBreachCount,
     /** 위 개수에 해당하는 행(최대 5건). */
-    List<PriceLimitBreachRow> priceHistoryPriceLimitBreachRows) {
+    List<PriceLimitBreachRow> priceHistoryPriceLimitBreachRows,
+    /** 시세 이력이 한 행도 없는 종목. 개수만 알려 주면 무엇을 고쳐야 할지 알 수 없다. */
+    List<NoHistoryItemRow> priceHistoryNoHistoryItemRows) {
+
+  /** 시세 이력이 없는 종목 한 줄. */
+  public record NoHistoryItemRow(String symbol, String stockItemName) {}
 
   /** 지급 이력이 제 주기를 넘겨 밀린 종목. */
   @JsonIgnoreProperties(ignoreUnknown = true)

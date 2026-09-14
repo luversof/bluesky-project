@@ -38,6 +38,8 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.support.StockViewSupport;
 import net.luversof.web.gate.stock.util.StockFormatUtil;
 import net.luversof.web.gate.stock.util.StockOwnershipUtil;
+import net.luversof.web.gate.stock.util.StockRangePresetUtil;
+import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 /**
  * 종목 상세 · 계좌 상세 화면.
@@ -51,6 +53,9 @@ import net.luversof.web.gate.stock.util.StockOwnershipUtil;
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
 public class StockDetailViewController {
 
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(StockDetailViewController.class);
+
   @Autowired private AccountClient accountClient;
 
   @Autowired private StockItemClient stockItemClient;
@@ -60,6 +65,49 @@ public class StockDetailViewController {
   @Autowired private TradeProfitClient tradeProfitClient;
 
   @Autowired private DividendClient dividendClient;
+
+  @Autowired
+  private net.luversof.web.gate.stock.httpexchange.DataFirstDateClient dataFirstDateClient;
+
+  /**
+   * 이 화면(종목 또는 계좌)의 최초 데이터 일자. 날짜 선택기의 하한이자 '가장 이른 기간으로'(«) 의 목표다.
+   *
+   * <p>이 값이 없으면 « 는 아무 일도 못 해 비활성으로 그려진다 - 실측 2026-09-13: 상세 두 화면이 이 값을 안 넘겨 눌러도 기간이 그대로였다.
+   */
+  private String detailDataFirstDate(
+      java.util.UUID userId,
+      java.util.UUID stockItemId,
+      java.util.UUID accountId,
+      java.time.ZoneId zone) {
+    try {
+      var response = dataFirstDateClient.findDataFirstDate(userId, stockItemId, accountId);
+      if (response == null) {
+        return "";
+      }
+      return net.luversof.web.gate.stock.util.StockFirstDateUtil.earliestLocalDate(
+          response.tradeFirstDate(), response.dividendFirstDate(), zone);
+    } catch (Exception ex) {
+      // 하한을 모르면 « 가 비활성이 될 뿐이다 - 화면 전체를 막지 않는다.
+      log.warn("최초 데이터 일자 조회 실패: userId={}", userId, ex);
+      return "";
+    }
+  }
+
+  /**
+   * 기간을 걸지 않은 가격 이력. 고른 기간 안에 시세 점이 하나도 없을 때만 부른다.
+   *
+   * <p>실패해도 화면을 막지 않는다 - 현재가가 비어 있다고 표시될 뿐이다.
+   */
+  private List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> fullPriceHistory(
+      UUID stockItemId) {
+    try {
+      var history = stockItemClient.getPriceHistory(stockItemId, new LinkedMultiValueMap<>());
+      return history != null ? history : List.of();
+    } catch (Exception ex) {
+      log.warn("전 구간 가격 이력 조회 실패: stockItemId={}", stockItemId, ex);
+      return List.of();
+    }
+  }
 
   @Autowired private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
 
@@ -78,7 +126,8 @@ public class StockDetailViewController {
   private List<net.luversof.web.gate.stock.domain.DetailNavEntry> stockNavEntries(
       List<net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem> holdings,
       UUID currentId,
-      net.luversof.web.gate.stock.domain.StockItem currentItem) {
+      net.luversof.web.gate.stock.domain.StockItem currentItem,
+      String currentQuery) {
     List<net.luversof.web.gate.stock.domain.DetailNavEntry> entries = new ArrayList<>();
     boolean currentIncluded = false;
     if (holdings != null) {
@@ -98,7 +147,8 @@ public class StockDetailViewController {
             new net.luversof.web.gate.stock.domain.DetailNavEntry(
                 holding.name() != null ? holding.name() : holding.symbol(),
                 String.format("%,d", StockFormatUtil.displayWon(holding.value())),
-                "/stock/item?stockItemId=" + holding.stockItemId(),
+                net.luversof.web.gate.stock.util.StockTabLinkUtil.switchHref(
+                    "/stock/item", currentQuery, "stockItemId", holding.stockItemId().toString()),
                 current));
       }
     }
@@ -108,7 +158,8 @@ public class StockDetailViewController {
           new net.luversof.web.gate.stock.domain.DetailNavEntry(
               currentItem.name() != null ? currentItem.name() : currentItem.symbol(),
               "",
-              "/stock/item?stockItemId=" + currentItem.id(),
+              net.luversof.web.gate.stock.util.StockTabLinkUtil.switchHref(
+                  "/stock/item", currentQuery, "stockItemId", currentItem.id().toString()),
               true));
     }
     return entries;
@@ -116,7 +167,7 @@ public class StockDetailViewController {
 
   /** 계좌 상세 위쪽의 전환기 목록. 계좌는 몇 개뿐이라 이름만으로 충분하다. */
   private List<net.luversof.web.gate.stock.domain.DetailNavEntry> accountNavEntries(
-      List<Account> accounts, UUID currentId) {
+      List<Account> accounts, UUID currentId, String currentQuery) {
     List<net.luversof.web.gate.stock.domain.DetailNavEntry> entries = new ArrayList<>();
     if (accounts == null) {
       return entries;
@@ -129,7 +180,8 @@ public class StockDetailViewController {
           new net.luversof.web.gate.stock.domain.DetailNavEntry(
               account.name() != null ? account.name() : "-",
               "",
-              "/stock/account?accountId=" + account.id(),
+              net.luversof.web.gate.stock.util.StockTabLinkUtil.switchHref(
+                  "/stock/account", currentQuery, "accountId", account.id().toString()),
               account.id().equals(currentId)));
     }
     return entries;
@@ -137,6 +189,32 @@ public class StockDetailViewController {
 
   /** 종목 상세: 한 종목의 보유/손익 요약 + 매매·배당 내역을 모아 보여준다(기존 엔드포인트 재활용). */
   @BlueskyPreAuthorize
+  /**
+   * 날짜 없이 프리셋 상태({@code rangeMode})만 실려 온 요청의 기간을 정한다.
+   *
+   * <p>실측 2026-09-11: 상세 화면은 {@code rangeMode} 를 모델에 넘기기만 하고 기간으로 바꾸지 않았다. 그래서 {@code
+   * /stock/item?stockItemId=..&rangeMode=ytd} 로 들어가면 올해가 아니라 전 기간이 나왔고(삼성전자 실현손익 138,569,333 = 전 기간
+   * 값), 프리셋 버튼도 하나도 눌린 상태가 아니었다. 목록 화면들은 이미 같은 규칙을 서버에서 계산한다.
+   *
+   * <p>날짜가 하나라도 실려 있으면 그것이 기간이다. {@code all} 은 기간을 걸지 않겠다는 뜻이라 그대로 둔다. 프리셋 상태가 아예 없으면 이 화면의 기존
+   * 기본값(기간 없음 = 전체)을 유지한다 &mdash; 목록 화면의 올해 기본값을 여기에 끌어오지 않는다.
+   *
+   * @return {@code [startDate, endDate]}
+   */
+  private java.time.Instant[] resolveRange(
+      String rangeMode, java.time.Instant startDate, java.time.Instant endDate, String timeZone) {
+    if (startDate != null
+        || endDate != null
+        || !StockRangePresetUtil.hasMode(rangeMode)
+        || StockRangePresetUtil.isAll(rangeMode)) {
+      // 뒤집힌 기간은 목록 화면들과 같은 규칙으로 바로잡는다 - 실측 2026-09-11: 이 화면만 뒤집힌 채로 두어
+      // 배지가 "2026-09-12 ~ 2025-12-31" 로 뜨고 내역이 비었다.
+      return StockRangePresetUtil.ordered(startDate, endDate);
+    }
+    var preset = StockRangePresetUtil.resolve(rangeMode, StockZoneUtil.resolve(timeZone));
+    return new java.time.Instant[] {preset.start(), preset.end()};
+  }
+
   @GetMapping("/item")
   public String stockItemDetailPage(
       HttpServletRequest request,
@@ -152,6 +230,9 @@ public class StockDetailViewController {
       return StockViewSupport.loginRedirectView(request);
     }
     UUID userId = UserUtil.getUserId();
+    java.time.Instant[] resolvedRange = resolveRange(rangeMode, startDate, endDate, timeZone);
+    startDate = resolvedRange[0];
+    endDate = resolvedRange[1];
 
     // id 우선(잘못된/빈 값은 무시), 없으면 종목명(또는 심볼)으로 해석.
     StockItem stockItem = null;
@@ -177,6 +258,10 @@ public class StockDetailViewController {
       if (stockItem == null || stockItem.id() == null) {
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
       }
+      // 404 인데 문서 제목이 정상 화면과 같으면 탭·방문기록·북마크가 "종목 상세" 라고 말한다
+      // (실측 2026-09-12: 없는 id 도 제목이 "종목 상세 · Bluesky Stock"). 없는 경로의 404 는 이미 제목으로 말한다.
+      // 조건을 변수로 묶지 않는다 - DetailNotFoundTest 가 "404 는 엔티티가 없을 때만" 을 이 형태로 고정한다.
+      model.addAttribute("notFound", stockItem == null || stockItem.id() == null);
       model.addAttribute("contentReady", false);
       model.addAttribute(
           "stockItemIdParam",
@@ -383,6 +468,24 @@ public class StockDetailViewController {
     var priceHistory =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceHistoryFuture);
     model.addAttribute("priceHistory", priceHistory != null ? priceHistory : List.of());
+    // 거래한 적이 없는 종목은 손익 행이 없어 현재가가 0 으로 떨어졌다 - 실측 2026-09-11: 기업은행(024110)
+    // 상세가 "현재가 0" 을 찍었지만 가격 이력에는 2026-04-03 종가 21,350 이 있었다. 값이 없는 것과 0 원인 것은
+    // 다르고, 여기서는 값이 있다. 같은 이력으로 가격 차트를 이미 그리므로 그 마지막 점을 쓴다.
+    var lastPricePoint =
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.lastPricePoint(priceHistory);
+    // 그 이력은 고른 기간으로 잘려 있다 - 창 안에 시세 점이 하나도 없으면 폴백도 못 걸려 다시 0 이 남는다.
+    // 실측 2026-09-13 기업은행(024110): '전체' 는 21,350 인데 '최근 1개월' 과 2016 년은 둘 다 "현재가 0" 이었다
+    // (이 종목 이력은 2026-03-25~04-03 여덟 점뿐이다). 현재가는 기간 값이 아니라 시점 값이다 - 보유 종목은
+    // 기간을 좁혀도 같은 값을 보여준다(삼성전자 2016 년 화면도 269,500). 기간 없는 호출로 마지막 점을 한 번 더 구한다.
+    // 이 추가 호출은 창이 빈 경우에만 나간다(실측 25ms · 369B).
+    if (currentPrice.signum() == 0 && lastPricePoint == null) {
+      lastPricePoint =
+          net.luversof.web.gate.stock.util.StockPriceBasisUtil.lastPricePoint(
+              fullPriceHistory(resolvedId));
+    }
+    if (currentPrice.signum() == 0 && lastPricePoint != null) {
+      currentPrice = lastPricePoint.closePrice();
+    }
 
     // 합산 손익의 '평가' 몫은 <b>기간 평가 변동</b>이다(기말 평가손익 - 기초 평가손익).
     //
@@ -412,7 +515,8 @@ public class StockDetailViewController {
         stockNavEntries(
             net.luversof.web.gate.stock.support.StockAsyncSupport.join(navHoldingsFuture),
             resolvedId,
-            stockItem));
+            stockItem,
+            request.getQueryString()));
     model.addAttribute(
         "chartFormatter",
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -437,12 +541,42 @@ public class StockDetailViewController {
             timeSeries,
             net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
             filterZone);
-    model.addAttribute("coveredStartLocal", covered.startDate());
-    model.addAttribute("coveredEndLocal", covered.endDate());
+    String detailFirstDate = detailDataFirstDate(userId, resolvedId, null, filterZone);
+    // 배지의 시작은 시계열의 첫 점과 이 화면 데이터의 최초일 중 이른 쪽이다 - 시계열은 평가액이
+    // 잡히는 날부터라 첫 거래보다 늦게 시작할 수 있다(실측 2026-09-13: 삼성전자 19 일 · 한투 위탁 13 일).
+    model.addAttribute(
+        "coveredStartLocal",
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredStart(
+            covered.startDate(), detailFirstDate));
+    // 시계열이 없는 종목(배당만 있는 경우)은 끝을 못 정해 배지가 "~ ?" 로 나갔다 -
+    // 화면이 그린 매매·배당의 마지막 날로 메운다(실측 2026-09-13: 하나금융지주).
+    java.time.LocalDate contentLast =
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.later(
+            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+                    trades,
+                    net.luversof.web.gate.stock.dto.response.TradeResponse::tradeDate,
+                    filterZone)
+                .endDate(),
+            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+                    dividends,
+                    net.luversof.web.gate.stock.dto.response.DividendResponse::payDate,
+                    filterZone)
+                .endDate());
+    model.addAttribute(
+        "coveredEndLocal",
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredEnd(
+            covered.endDate(), contentLast));
+    // 이 종목의 최초 일자. 날짜 선택기 하한이자 '가장 이른 기간으로'(«) 의 목표다.
+    model.addAttribute("dataFirstDate", detailFirstDate);
+    // 빈 기간 안내에 "전체 기간으로 보기" 를 띄울지 화면이 판단하려면 지금 모드를 알아야 한다.
+    model.addAttribute("rangeMode", rangeMode == null ? "" : rangeMode);
 
     model.addAttribute("holdingQuantity", holdingQuantity);
     model.addAttribute("averageBuyPrice", averageBuyPrice);
     model.addAttribute("currentPrice", currentPrice);
+    // 그래도 값이 없는 종목이 있다 - 실측: 86 종목 중 4 종목(0177R0 · 0190G0 · 0210E0 · 0219E0)은 시세 이력 자체가 없다.
+    // 그 화면에서 "현재가 0" 은 잰 값처럼 읽힌다. 같은 화면의 다른 구역은 모두 "…없습니다" 라고 말하는데 이 카드만 0 을 적었다.
+    model.addAttribute("currentPriceUnknown", currentPrice.signum() == 0);
     model.addAttribute("evaluationAmount", evaluationAmount);
     model.addAttribute("evaluationProfit", evaluationProfit);
     model.addAttribute("realizedProfit", realizedProfit);
@@ -481,10 +615,14 @@ public class StockDetailViewController {
     // 전량 매도한 종목은 보유 행이 없어 보유 기준으로는 날짜가 나오지 않는다. 그러면 안내 줄만 사라지고
     // 멈춰 있는 현재가는 그대로 남아 오늘 값처럼 보인다. 이 화면은 종목 하나만 다루므로 그 종목의
     // 마지막 종가 일자로 되돌린다.
-    model.addAttribute(
-        "priceBasisDate",
+    // 기준일도 같은 규칙으로 되돌린다 - 값만 채우고 날짜가 없으면 멈춰 있는 종가가 오늘 값처럼 보인다.
+    java.time.LocalDate priceBasisDate =
         net.luversof.web.gate.stock.util.StockPriceBasisUtil.priceBasisDateWithFallback(
-            snapshotProfits));
+            snapshotProfits);
+    if (priceBasisDate == null && lastPricePoint != null) {
+      priceBasisDate = lastPricePoint.tradeDate();
+    }
+    model.addAttribute("priceBasisDate", priceBasisDate);
 
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);
@@ -507,6 +645,9 @@ public class StockDetailViewController {
       return StockViewSupport.loginRedirectView(request);
     }
     UUID userId = UserUtil.getUserId();
+    java.time.Instant[] resolvedRange = resolveRange(rangeMode, startDate, endDate, timeZone);
+    startDate = resolvedRange[0];
+    endDate = resolvedRange[1];
 
     UUID parsedId = parseUuidOrNull(accountId);
     // 계좌 단건 조회는 소유자를 가리지 않으므로 여기서 확인한다(규칙과 근거는 StockOwnershipUtil).
@@ -523,6 +664,7 @@ public class StockDetailViewController {
       if (account == null || account.id() == null) {
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
       }
+      model.addAttribute("notFound", account == null || account.id() == null);
       model.addAttribute("contentReady", false);
       model.addAttribute(
           "accountIdParam",
@@ -543,7 +685,8 @@ public class StockDetailViewController {
     UUID resolvedId = account.id();
     model.addAttribute(
         "accountNavEntries",
-        accountNavEntries(accountClient.getAccountsByUserId(userId), resolvedId));
+        accountNavEntries(
+            accountClient.getAccountsByUserId(userId), resolvedId, request.getQueryString()));
 
     // 계좌가 정해진 뒤의 다섯 조회는 서로 의존이 없다. 순차로 던지면 왕복이 줄줄이 이어진다
     // (실측: 백엔드 7회 27.3ms 인데 화면은 75.3ms). 파라미터를 먼저 만들고 한꺼번에 던진다.
@@ -707,8 +850,35 @@ public class StockDetailViewController {
             timeSeries,
             net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
             filterZone);
-    model.addAttribute("coveredStartLocal", covered.startDate());
-    model.addAttribute("coveredEndLocal", covered.endDate());
+    String detailFirstDate = detailDataFirstDate(userId, null, resolvedId, filterZone);
+    // 배지의 시작은 시계열의 첫 점과 이 화면 데이터의 최초일 중 이른 쪽이다 - 시계열은 평가액이
+    // 잡히는 날부터라 첫 거래보다 늦게 시작할 수 있다(실측 2026-09-13: 삼성전자 19 일 · 한투 위탁 13 일).
+    model.addAttribute(
+        "coveredStartLocal",
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredStart(
+            covered.startDate(), detailFirstDate));
+    // 시계열이 없는 종목(배당만 있는 경우)은 끝을 못 정해 배지가 "~ ?" 로 나갔다 -
+    // 화면이 그린 매매·배당의 마지막 날로 메운다(실측 2026-09-13: 하나금융지주).
+    java.time.LocalDate contentLast =
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.later(
+            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+                    trades,
+                    net.luversof.web.gate.stock.dto.response.TradeResponse::tradeDate,
+                    filterZone)
+                .endDate(),
+            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+                    dividends,
+                    net.luversof.web.gate.stock.dto.response.DividendResponse::payDate,
+                    filterZone)
+                .endDate());
+    model.addAttribute(
+        "coveredEndLocal",
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredEnd(
+            covered.endDate(), contentLast));
+    // 이 계좌의 최초 일자(종목 상세와 같은 규칙).
+    model.addAttribute("dataFirstDate", detailFirstDate);
+    // 빈 기간 안내에 "전체 기간으로 보기" 를 띄울지 화면이 판단하려면 지금 모드를 알아야 한다.
+    model.addAttribute("rangeMode", rangeMode == null ? "" : rangeMode);
 
     model.addAttribute("holdings", holdings);
     model.addAttribute("holdingCount", holdings.size());

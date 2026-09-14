@@ -98,6 +98,10 @@ public final class DividendPeriodBreakdown {
       List<DividendView> dividends, ZoneId zone, LocalDate rangeStart, LocalDate rangeEnd) {
     List<Row> rows = aggregate(dividends, zone, false);
     if (rangeStart == null || rangeEnd == null || rangeStart.isAfter(rangeEnd)) return rows;
+    // 한 건도 없으면 0 으로 채우지 않는다 - 빈 달을 보여 주는 규칙은 "있는 달 사이의 구멍" 을 위한 것이다.
+    // 실측 2026-09-11(없는 종목으로 거른 배당 화면): 다른 패널은 모두 "배당 내역이 없습니다" 인데
+    // 월별 탭만 0 원 9 줄을 그렸다(같은 카드의 연도별 탭은 빈 안내였다).
+    if (rows.isEmpty()) return rows;
     Map<String, Row> byKey = new LinkedHashMap<>();
     for (Row row : rows) byKey.put(row.sortKey(), row);
     List<Row> filled = new ArrayList<>();

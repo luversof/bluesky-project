@@ -6,8 +6,11 @@ import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -89,6 +92,62 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver {
         methodNotAllowed ? "stock.error.method.title" : "stock.error.badrequest.title";
     String clientDescKey =
         methodNotAllowed ? "stock.error.method.desc" : "stock.error.badrequest.desc";
+    // 어느 값이 문제였는지 말해 준다. 실측 2026-09-11: 주소에 startDate=2026-08-21 처럼 날짜만 적으면
+    // (컨트롤러가 받는 타입은 Instant 다) 네 화면이 전부 "입력한 값(기간·필터 등)을 확인해 주세요" 만 띄웠다 -
+    // 무엇을 어떻게 고쳐야 하는지가 없다. 파라미터 이름과 요구 타입이 예외에 들어 있으니 버리지 않는다.
+    String clientDescArg = null;
+    if (!methodNotAllowed && ex instanceof MethodArgumentTypeMismatchException mismatch) {
+      clientDescArg = mismatch.getName();
+      Class<?> requiredType = mismatch.getRequiredType();
+      boolean temporal =
+          requiredType != null && java.time.temporal.Temporal.class.isAssignableFrom(requiredType);
+      clientDescKey =
+          temporal ? "stock.error.badrequest.date.desc" : "stock.error.badrequest.param.desc";
+    }
+    // 묶음(@ModelAttribute)으로 받는 화면은 같은 입력이 BindException 으로 온다 - 실측 2026-09-11:
+    // /stock/htmx/asset-growth/view 만 MethodArgumentNotValidException 이라 위 갈래를 타지 못하고
+    // 혼자 옛 문구를 띄웠다. 필드 오류에 이름과 (형 변환이면) 요구 타입이 들어 있다.
+    if (!methodNotAllowed && clientDescArg == null && ex instanceof BindException bindException) {
+      FieldError fieldError = bindException.getBindingResult().getFieldError();
+      if (fieldError != null) {
+        clientDescArg = fieldError.getField();
+        Class<?> requiredType =
+            fieldError.contains(TypeMismatchException.class)
+                ? fieldError.unwrap(TypeMismatchException.class).getRequiredType()
+                : null;
+        boolean temporal =
+            requiredType != null
+                && java.time.temporal.Temporal.class.isAssignableFrom(requiredType);
+        clientDescKey =
+            temporal ? "stock.error.badrequest.date.desc" : "stock.error.badrequest.param.desc";
+      }
+    }
+    // 컨트롤러가 직접 읽는 날짜 문자열(매매 이력의 from/to)도 같은 대접을 한다 - 이름을 들고 오므로 그대로 쓴다.
+    if (ex instanceof net.luversof.web.gate.stock.support.StockDateParamException dateParam) {
+      clientDescArg = dateParam.getName();
+      clientDescKey = "stock.error.badrequest.day.desc";
+    }
+    // 타임존도 마찬가지다 - 실측 2026-09-11: timeZone=Not/AZone 이면 다섯 화면 중 자산성장만
+    // "입력한 값(기간·필터 등)을 확인해 주세요" 였고 나머지 넷은 조용히 서버 존으로 그렸다.
+    if (ex instanceof net.luversof.web.gate.stock.support.StockZoneParamException zoneParam) {
+      clientDescArg = zoneParam.getName();
+      clientDescKey = "stock.error.badrequest.timezone.desc";
+    }
+    // 정렬도 마찬가지다 - 실측 2026-09-11: sort=BOGUS 는 지정 없음과도 다른 순서를 조용히 그렸다.
+    if (ex instanceof net.luversof.web.gate.stock.support.StockSortParamException sortParam) {
+      clientDescArg = sortParam.getName();
+      clientDescKey = "stock.error.badrequest.sort.desc";
+    }
+    // 줄 수도 마찬가지다 - 실측 2026-09-12: size=0 은 조용히 20 이 되고 size=100000 은 상한 없이 258 행이었다.
+    if (ex instanceof net.luversof.web.gate.stock.support.StockPageSizeParamException sizeParam) {
+      clientDescArg = sizeParam.getName();
+      clientDescKey = "stock.error.badrequest.pagesize.desc";
+    }
+    // The page number follows the same rule - measured 2026-09-12: page=0 quietly drew page 1.
+    if (ex instanceof net.luversof.web.gate.stock.support.StockPageNumberParamException pageParam) {
+      clientDescArg = pageParam.getName();
+      clientDescKey = "stock.error.badrequest.page.desc";
+    }
     if (clientError) {
       log.warn("stock view rejected: {} htmx={} {}", uri, htmx, ex.toString());
       log.debug("stock view rejected: {}", uri, ex);
@@ -111,6 +170,7 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver {
         // 입력을 고쳐야 하는 상황이니 재시도 버튼은 달지 않는다.
         loadError.addObject("titleKey", clientTitleKey);
         loadError.addObject("descKey", clientDescKey);
+        loadError.addObject("descArg", clientDescArg);
         return loadError;
       }
       // 조회(GET)가 실패했으면 같은 주소를 다시 부를 수 있게 넘긴다 - 오류 조각의 "다시 시도" 버튼이 쓴다.
@@ -123,7 +183,9 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver {
       return loadError;
     }
     if (clientError) {
-      return pageErrorView(clientTitleKey, clientDescKey);
+      ModelAndView clientErrorView = pageErrorView(clientTitleKey, clientDescKey);
+      clientErrorView.addObject("descArg", clientDescArg);
+      return clientErrorView;
     }
     ModelAndView pageError =
         pageErrorView("stock.error.fragment.title", "stock.error.fragment.desc");
@@ -144,6 +206,21 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver {
       return errorResponse.getStatusCode().is4xxClientError();
     }
     if (ex instanceof TypeMismatchException) {
+      return true;
+    }
+    if (ex instanceof net.luversof.web.gate.stock.support.StockDateParamException) {
+      return true;
+    }
+    if (ex instanceof net.luversof.web.gate.stock.support.StockZoneParamException) {
+      return true;
+    }
+    if (ex instanceof net.luversof.web.gate.stock.support.StockSortParamException) {
+      return true;
+    }
+    if (ex instanceof net.luversof.web.gate.stock.support.StockPageSizeParamException) {
+      return true;
+    }
+    if (ex instanceof net.luversof.web.gate.stock.support.StockPageNumberParamException) {
       return true;
     }
     if (ex instanceof BlueskyException blueskyException) {

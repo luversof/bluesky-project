@@ -139,13 +139,23 @@ class StockAssetStatusUtilTest {
 
   // ---------------------------------------------------------------- 종목 행
 
-  /** 종목의 비율은 소수 4 자리로 반올림한 뒤 100 배다 &mdash; 1/3 은 33.33 이지 33.333… 이 아니다. */
+  /**
+   * 종목의 비율은 <b>100 을 먼저 곱한 뒤</b> 소수 4 자리로 반올림한다 &mdash; 1/3 은 33.3333 이다.
+   *
+   * <p>2026-09-12 까지는 비율을 4 자리로 먼저 반올림하고 100 을 곱해 33.33(백분율 2 자리)이었다. 화면은 어디서나 1 자리로 보여 주므로({@code
+   * pct(..., 1)} · {@code signedPct(..., 1)} · {@code balancedPct(..., 1)}) 2 자리로 미리 굵게 반올림하면
+   * <b>표시값이 한 칸 틀어질 수 있다</b> &mdash; 같은 순서 실수가 있던 {@code StockPortfolioHtmxController.percentage}
+   * 에서는 실제로 8,847,600 / 1,622,109,770 = 0.5454% 가 0.55% 를 거쳐 <b>0.6%</b> 로 나갔다(옳게 하면 0.5%).
+   *
+   * <p>이 헬퍼 쪽은 실측 2026-09-12(자산 현황 손익률 32 행) 기준으로 어긋난 줄이 <b>없었다</b> - 잔차가 0.x5 경계에 닿지 않았을 뿐이라 자료가
+   * 바뀌면 같은 식으로 틀린다. 두 헬퍼의 규칙을 맞춘다.
+   */
   @Test
-  void 종목_행의_비율은_소수_4자리_반올림이다() {
+  void 종목_행의_비율은_백분율_소수_4자리_반올림이다() {
     var row = StockAssetStatusUtil.stockRow(stock("1000", "1000", "3000"), bd("3000"));
 
-    assertThat(row.evaluationProfitRatePct()).isEqualByComparingTo("33.33");
-    assertThat(row.totalWeightPct()).isEqualByComparingTo("33.33");
+    assertThat(row.evaluationProfitRatePct()).isEqualByComparingTo("33.3333");
+    assertThat(row.totalWeightPct()).isEqualByComparingTo("33.3333");
   }
 
   @Test

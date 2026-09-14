@@ -92,11 +92,41 @@ class PeriodSummaryModelKeyTest {
         .isEqualTo("stock.asset.growth.breakdown.yearly.note");
   }
 
-  /** 달 단위면 표가 실제로 나가므로 까닭을 적을 자리가 없다. 적으면 표 위에 군더더기가 남는다. */
+  /** 달 단위 표가 실제로 나갈 때만 까닭을 비운다. 적으면 표 위에 군더더기가 남는다. */
   @Test
-  void 달_단위면_까닭을_남기지_않는다() {
-    assertThat(controller().periodBreakdownNote(List.of(row("MONTH")))).isEmpty();
-    assertThat(controller().periodBreakdownNote(List.of())).isEmpty();
-    assertThat(controller().periodBreakdownNote(null)).isEmpty();
+  void 표가_나가는_경우에만_까닭을_비운다() {
+    assertThat(controller().periodBreakdownNote(List.of(row("MONTH"), row("MONTH")))).isEmpty();
+  }
+
+  /**
+   * 표를 못 내는 나머지 경우도 자리를 남긴다.
+   *
+   * <p>실측 2026-09-11(자산 성장): 기록이 없는 기간 &middot; '이번달' &middot; '하루' 세 경우에 표와 함께 <b>H2 가 통째로</b> 사라져
+   * 제목 차례가 H1 &rarr; H3 으로 건너뛰었다(axe heading-order, 라이트&middot;다크 각 1 건). '이번달' 은 프리셋 한 번이면 닿는 기본
+   * 경로다. 예전 검사는 이 자리를 <b>빈 문자열로 못박아</b> 두고 있었다.
+   */
+  @Test
+  void 표를_못_내면_까닭을_남긴다() {
+    assertThat(controller().periodBreakdownNote(List.of(row("MONTH"))))
+        .as("구간이 하나뿐이라 표를 안 그릴 때")
+        .isEqualTo("stock.asset.growth.breakdown.single.note");
+    assertThat(controller().periodBreakdownNote(List.of()))
+        .as("기간에 기록이 없을 때")
+        .isEqualTo("stock.asset.growth.breakdown.empty.note");
+    assertThat(controller().periodBreakdownNote(null))
+        .isEqualTo("stock.asset.growth.breakdown.empty.note");
+  }
+
+  /** 새 문구 두 개가 양 번들에 있어야 한다 - 없으면 화면에 키 이름이 그대로 나간다. */
+  @Test
+  void 두_번들_모두_문구를_가진다() throws java.io.IOException {
+    for (String name : new String[] {"uiMessage.properties", "uiMessage_ko.properties"}) {
+      String bundle =
+          java.nio.file.Files.readString(
+              java.nio.file.Path.of("src/main/resources/" + name),
+              java.nio.charset.StandardCharsets.UTF_8);
+      assertThat(bundle).contains("stock.asset.growth.breakdown.empty.note");
+      assertThat(bundle).contains("stock.asset.growth.breakdown.single.note");
+    }
   }
 }

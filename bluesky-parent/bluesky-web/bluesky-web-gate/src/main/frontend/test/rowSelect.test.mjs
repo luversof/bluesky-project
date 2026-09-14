@@ -167,3 +167,49 @@ test("첫 칸의 펼침 버튼·끌기 손잡이는 이름에서 걷어낸다", 
 test("{0} 이 없는 이름틀은 그대로 쓴다", () => {
 	assert.equal(mod.rowSelectName(row({ template: "선택" }), "선택"), "선택");
 });
+
+// 행 머리 칸(th)의 이름은 자식 글자를 이어 붙여 만들어진다 - 체크박스 이름까지 삼키면 같은 말이 두 번 들린다.
+//
+// 실측 2026-09-12(접근성 트리): 자산현황 종목별 현황 9/10, 배당 변동 요인 8/8 · 종목별 랭킹 18/19 ·
+// 계좌별 랭킹 5/6, 매매 계좌별 6/7 · 종목별 37/38 - 세 화면 행머리 127 중 83 이 «삼성전자 선택 삼성전자» 꼴이었다.
+// 행 머리는 그 행의 칸을 옮길 때마다 다시 읽히므로, 11 열짜리 표에서는 한 행에 열한 번 되풀이된다.
+function headerRow({ template = "{0} 선택", label = "삼성전자" } = {}) {
+	const tr = new FakeElement("tr");
+	tr.setAttribute("data-row-select", template);
+	tr.setAttribute("aria-selected", "false");
+	const th = new FakeElement("th");
+	th.setAttribute("scope", "row");
+	th.textContent = "  " + label + String.fromCharCode(10) + "  ";
+	tr.appendChild(th);
+	return tr;
+}
+
+test("행 머리 칸은 제 이름을 따로 가진다 - 체크박스 이름이 겹쳐 읽히지 않게", () => {
+	const tr = headerRow();
+	mod.ensureRowCheckbox(tr);
+	const th = tr.querySelector("th");
+	assert.equal(th.getAttribute("aria-label"), "삼성전자", "행 머리 칸에 이름이 없다");
+	assert.equal(tr.querySelector("[data-row-select-checkbox]").getAttribute("aria-label"), "삼성전자 선택", "체크박스 이름은 그대로여야 한다");
+});
+
+test("이미 이름이 있는 행 머리 칸은 건드리지 않는다", () => {
+	const tr = headerRow();
+	const th = tr.querySelector("th");
+	th.setAttribute("aria-label", "직접 지은 이름");
+	mod.ensureRowCheckbox(tr);
+	assert.equal(th.getAttribute("aria-label"), "직접 지은 이름");
+});
+
+test("첫 칸이 td 면 이름을 붙이지 않는다 - 행 머리가 아니라 읽히는 자리가 다르다", () => {
+	const tr = row();
+	mod.ensureRowCheckbox(tr);
+	assert.equal(tr.querySelector("td").getAttribute("aria-label"), null);
+});
+
+test("행 머리 이름에는 '선택' 이 붙지 않는다", () => {
+	const tr = headerRow({ label: "KB증권 위탁" });
+	mod.ensureRowCheckbox(tr);
+	const name = tr.querySelector("th").getAttribute("aria-label");
+	assert.equal(name, "KB증권 위탁");
+	assert.ok(!name.includes("선택"), "행 머리 이름에 체크박스 문구가 섞였다");
+});

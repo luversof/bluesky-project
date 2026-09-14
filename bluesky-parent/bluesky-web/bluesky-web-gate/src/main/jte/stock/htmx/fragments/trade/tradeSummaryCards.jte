@@ -29,6 +29,7 @@
 	BigDecimal safeTax = totalAllTax != null ? totalAllTax : BigDecimal.ZERO;
 	BigDecimal safeRp = totalAllRealizedProfit != null ? totalAllRealizedProfit : BigDecimal.ZERO;
 	boolean rpPositive = safeRp.compareTo(BigDecimal.ZERO) >= 0;
+	String tradeCountLabel = MessageUtil.getMessage("stock.activity.label.trade");
 }
 
 	<!-- Summary Cards -->
@@ -43,7 +44,11 @@
 				</div>
 				<div class="flex gap-4 text-xs text-base-content/60">
 					<span>${sellLabel} <span class="font-medium text-info amount-value">&#8361; ${decimalFormat.format(safeSell)}</span></span>
-					<span class="ml-auto">${countMessage.apply(totalItems)}</span>
+					<%-- 라벨을 붙인다. 이 수는 매수+매도 전체 건수인데 같은 줄 왼쪽이 "매도" 라, 라벨이 없으면
+						 매도 건수로 읽힌다 - 실측 2026-09-12(올해): 이 자리가 98건(매수 91 + 매도 7)인데
+						 바로 옆 실현손익 카드는 "매도 7건" 이라, 한 화면이 매도를 98건과 7건 둘로 말했다.
+						 활동 화면은 같은 수량에 이미 이 라벨을 쓴다. --%>
+					<span class="ml-auto">${tradeCountLabel} ${countMessage.apply(totalItems)}</span>
 				</div>
 		`)
 

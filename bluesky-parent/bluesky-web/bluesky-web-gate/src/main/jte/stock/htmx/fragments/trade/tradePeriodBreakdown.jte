@@ -7,6 +7,11 @@
 @param List<TradePeriod> tradePeriods = java.util.List.of()
 
 !{
+	// 0 을 "-" 로 적는 자리에는 그 뜻을 달아 둔다(값이 없는 칸의 "-" 와 구분). 공용 규칙은 _components/ui/amountCell 과 같다.
+	String zeroAmountTitle = MessageUtil.getMessage("common.amount.zero.title");
+	// 판 것이 없어 비는 자리에도 까닭을 적는다 - 실측 2026-09-12: 이 표의 "-" 세 칸(2024·2017·2009)에는
+	// title 도 sr-only 도 없어 마우스로도 낭독기로도 왜 비었는지 알 수 없었다. 같은 줄의 다른 칸은 "0원" 을 달고 있었다.
+	String noSaleTitle = MessageUtil.getMessage("stock.trade.breakdown.realized.none");
 	DecimalFormat amountFormat = new DecimalFormat("#,##0");
 	String unit = tradePeriods != null && !tradePeriods.isEmpty() ? tradePeriods.get(0).unit() : "MONTH";
 	// 이 표는 '성과' 가 아니라 거래 집계다(건수·매수·매도·수수료·거래세). 자산 성장의 성과 표와
@@ -54,26 +59,26 @@
 								boolean realizedUp = realized.signum() >= 0;
 							}
 							<tr>
-								<td class="font-medium">
+								<th scope="row" class="font-medium">
 									${row.label()}
 									<%-- 매수만 있었는지 팔기만 했는지가 그 구간을 읽는 첫 단서다. --%>
 									<div class="text-[11px] font-normal leading-4 text-base-content/60">
 										${buyLabel} ${String.valueOf(row.buyCount())} · ${sellLabel} ${String.valueOf(row.sellCount())}
 									</div>
-								</td>
+								</th>
 								<td class="text-right tabular-nums">${String.valueOf(row.count())}</td>
 								<td class="text-right tabular-nums">
 									@if(row.buyAmount().signum() != 0)
 										<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.buyAmount())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(row.sellAmount().signum() != 0)
 										<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.sellAmount())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<%-- 수수료·거래세는 나간 돈이라 부호를 붙이지 않고 금액만 적는다. --%>
@@ -81,22 +86,22 @@
 									@if(row.fee().signum() != 0)
 										<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.fee())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(row.tax().signum() != 0)
 										<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.tax())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									<%-- 판 것이 없으면 실현손익은 0 이 아니라 '없음' 이다. 0 원과 뜻이 다르다. --%>
 									@if(row.sellCount() == 0)
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${noSaleTitle}">-</span><span class="sr-only">${noSaleTitle}</span>
 									@else
-										<span class="amount-value font-semibold ${realizedUp ? "text-profit" : "text-loss"}">${realizedUp ? "+" : "-"}&#8361;${amountFormat.format(realized.abs())}</span>
+										<span class="amount-value font-semibold ${realizedUp ? "text-profit" : "text-loss"}">${realized.signum() == 0 ? "" : (realizedUp ? "+" : "-")}&#8361;${amountFormat.format(realized.abs())}</span>
 									@endif
 								</td>
 							</tr>
@@ -109,48 +114,48 @@
 					   boolean totalRealizedUp = totals.realizedProfit().signum() >= 0; }
 					<tfoot>
 						<tr class="border-t-2 border-base-content/20 font-semibold" data-trade-breakdown-total>
-							<td>
+							<th scope="row">
 								${sumLabel}
 								<div class="text-[11px] font-normal leading-4 text-base-content/60">
 									${buyLabel} ${String.valueOf(totals.buyCount())} · ${sellLabel} ${String.valueOf(totals.sellCount())}
 								</div>
-							</td>
+							</th>
 							<td class="text-right tabular-nums">${String.valueOf(totals.count())}</td>
 							<%-- 0 이면 '-' 로 둔다 - 줄과 같은 규칙이어야 한 열이 위아래로 다르게 읽히지 않는다. --%>
 							<td class="text-right tabular-nums">
 								@if(totals.buyAmount().signum() != 0)
 									<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(totals.buyAmount())}</span>
 								@else
-									<span class="text-base-content/30">-</span>
+									<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
 								@if(totals.sellAmount().signum() != 0)
 									<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(totals.sellAmount())}</span>
 								@else
-									<span class="text-base-content/30">-</span>
+									<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
 								@if(totals.fee().signum() != 0)
 									<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(totals.fee())}</span>
 								@else
-									<span class="text-base-content/30">-</span>
+									<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
 								@if(totals.tax().signum() != 0)
 									<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(totals.tax())}</span>
 								@else
-									<span class="text-base-content/30">-</span>
+									<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
 								<%-- 고른 기간에 판 것이 하나도 없으면 실현손익은 0 이 아니라 '없음' 이다. --%>
 								@if(totals.sellCount() == 0)
-									<span class="text-base-content/30">-</span>
+									<span class="text-base-content/60">-</span>
 								@else
-									<span class="amount-value font-semibold ${totalRealizedUp ? "text-profit" : "text-loss"}">${totalRealizedUp ? "+" : "-"}&#8361;${amountFormat.format(totals.realizedProfit().abs())}</span>
+									<span class="amount-value font-semibold ${totalRealizedUp ? "text-profit" : "text-loss"}">${totals.realizedProfit().signum() == 0 ? "" : (totalRealizedUp ? "+" : "-")}&#8361;${amountFormat.format(totals.realizedProfit().abs())}</span>
 								@endif
 							</td>
 						</tr>

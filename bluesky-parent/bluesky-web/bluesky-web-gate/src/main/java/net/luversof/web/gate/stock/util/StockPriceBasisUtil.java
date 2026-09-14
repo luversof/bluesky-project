@@ -47,6 +47,28 @@ public final class StockPriceBasisUtil {
         .orElse(null);
   }
 
+  /**
+   * 손익 행이 아예 없을 때 쓸 마지막 종가 한 점(가격 이력에서).
+   *
+   * <p>거래한 적이 없는 종목은 손익 행이 없어 현재가가 {@code 0} 으로 떨어졌다 &mdash; 실측 2026-09-11: 기업은행(024110) 상세가 "현재가
+   * 0" 을 찍었는데, 그 종목의 가격 이력에는 2026-04-03 종가 21,350 이 있었다. 값이 없는 것과 0 원인 것은 다르고, 여기서는 값이 <b>있다</b>.
+   * 화면이 이미 같은 이력으로 가격 차트를 그리므로 그 마지막 점을 쓴다.
+   *
+   * @return 마지막 점(날짜 오름차순 기준). 이력이 비었으면 {@code null}
+   */
+  public static net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint lastPricePoint(
+      List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory) {
+    if (priceHistory == null || priceHistory.isEmpty()) {
+      return null;
+    }
+    return priceHistory.stream()
+        .filter(Objects::nonNull)
+        .filter(point -> point.tradeDate() != null && point.closePrice() != null)
+        .filter(point -> point.closePrice().signum() > 0)
+        .max((left, right) -> left.tradeDate().compareTo(right.tradeDate()))
+        .orElse(null);
+  }
+
   /** 보유 수량이 남은 종목들의 종가 일자 중 가장 늦은 날. 하나도 없으면 {@code null}. */
   public static LocalDate latestPriceBasisDate(List<TradeProfit> holdings) {
     if (holdings == null) {

@@ -74,7 +74,8 @@ class YearlyCostSummaryRenderTest {
             // 과세금액은 세전보다 훨씬 작다 - 계좌별 분리과세 혜택 뒤 남은 몫이다.
             bd("9172513"),
             bd("1412730"),
-            bd("24751685")),
+            bd("24751685"),
+            7L),
         new YearlyCostSummary(
             2024,
             bd("3007"),
@@ -83,7 +84,8 @@ class YearlyCostSummaryRenderTest {
             bd("11219044"),
             bd("10578571"),
             bd("1629100"),
-            bd("9589944")));
+            bd("9589944"),
+            0L));
   }
 
   @Test
@@ -280,7 +282,8 @@ class YearlyCostSummaryRenderTest {
                     BigDecimal.ZERO,
                     BigDecimal.ZERO,
                     BigDecimal.ZERO,
-                    BigDecimal.ZERO),
+                    BigDecimal.ZERO,
+                    2L),
                 rows().get(0)));
 
     int year2018 = html.indexOf("2018");
@@ -290,4 +293,50 @@ class YearlyCostSummaryRenderTest {
     assertThat(row2018).as("매매도 배당도 없던 해가 ₩0 으로 도배된다").doesNotContain("&#8361;0<");
     assertThat(row2018).as("부호가 뜻을 바꾸는 실현손익은 그대로 적는다").contains("-&#8361;661,700");
   }
+
+  /**
+   * 실현 손익의 "-" 는 까닭을 달고 나온다.
+   *
+   * <p>실측 2026-09-12: 14 개 해 중 셋(2024·2017·2009)이 이 자리였고, 셋 다 그 해 매도가 0 건이었는데 화면에는 까닭이 하나도 없었다. 금액만
+   * 보면 "0 원 벌었다" 와 "판 적이 없다" 가 같아 보인다 - api-stock 의 매도 건수로 가른다.
+   */
+  @Test
+  void 실현손익_줄표는_매도_유무로_까닭이_갈린다() {
+    String noSale =
+        render(
+            List.of(
+                new YearlyCostSummary(
+                    2024,
+                    bd("3007"),
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    bd("11219044"),
+                    bd("10578571"),
+                    bd("1629100"),
+                    bd("9589944"),
+                    0L)));
+    assertThat(noSale).as("매도 0 건인 해").contains("그 해엔 판 적이 없습니다");
+    assertThat(noSale).as("마우스에도 닿아야 한다").contains("title=" + Q + "그 해엔 판 적이 없습니다" + Q);
+    assertThat(noSale)
+        .as("낭독기에도 닿아야 한다")
+        .contains("<span class=" + Q + "sr-only" + Q + ">그 해엔 판 적이 없습니다</span>");
+
+    String soldForZero =
+        render(
+            List.of(
+                new YearlyCostSummary(
+                    2024,
+                    bd("3007"),
+                    bd("500"),
+                    BigDecimal.ZERO,
+                    bd("11219044"),
+                    bd("10578571"),
+                    bd("1629100"),
+                    bd("9589944"),
+                    2L)));
+    assertThat(soldForZero).as("팔았는데 0 원인 해").contains("0원");
+    assertThat(soldForZero).as("팔았는데 판 적 없다고 하면 안 된다").doesNotContain("그 해엔 판 적이 없습니다");
+  }
+
+  private static final String Q = String.valueOf((char) 34);
 }

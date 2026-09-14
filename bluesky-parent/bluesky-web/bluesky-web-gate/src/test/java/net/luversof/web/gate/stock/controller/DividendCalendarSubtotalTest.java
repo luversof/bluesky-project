@@ -3,13 +3,12 @@ package net.luversof.web.gate.stock.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,19 +22,21 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 import io.github.luversof.boot.context.support.MessageUtil;
-import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
+import net.luversof.web.gate.stock.dto.view.DividendCalendarView;
+import net.luversof.web.gate.stock.util.DividendCalendarGridUtil;
 import net.luversof.web.gate.stock.util.StockFormatUtil;
 
 /**
- * 배당 달력에 보이는 행을 더하면 소계와 같아야 한다.
+ * 배당 달력에서 <b>보이는 숫자를 더하면 그 칸의 합계와 같아야 한다.</b>
  *
- * <p>예상 월배당은 주당 평균 x 보유수량이라 원 미만이 남는다. 예전에는 행이 각각 {@code longValue()} 로 버려지는데 소계만 BigDecimal 합계를 한
- * 번 버려서, <b>보이는 숫자를 더하면 소계와 달랐다</b> &mdash; 실측 2026-08-23 월배당 8 종목에서 행 합과 소계가 <b>2 원</b> 어긋났다. 버림이라
- * 행마다 최대 1 원씩 모자라고 종목 수만큼 벌어진다.
+ * <p>예상 월배당은 주당 평균 x 보유수량이라 원 미만이 남는다. 행은 각각 원 단위로 반올림해 찍히는데 합계만 원값을 더한 뒤 한 번 반올림하면 <b>보이는 숫자를 더한
+ * 값과 달라진다</b> &mdash; 실측 2026-08-23 월배당 8 종목에서 행 합과 소계가 2 원 어긋났다.
+ *
+ * <p>2026-09-14 에 이 화면이 지급 시기 묶음(월중/월말)에서 <b>달력</b>으로 바뀌면서 같은 불변식이 '달력 한 칸'으로 옮겨왔다.
  */
 class DividendCalendarSubtotalTest {
 
-  private static final String GROUP = "stock/fragments/dividendCalendarGroup.jte";
+  private static final String CALENDAR = "stock/fragments/dividendCalendarMonth.jte";
 
   @BeforeAll
   static void primeMessages() {
@@ -51,130 +52,87 @@ class DividendCalendarSubtotalTest {
     MessageUtil.setMessageSourceAccessor(null);
   }
 
-  /**
-   * 실측 8 종목의 주당 평균 배당(운용사 공개값)에 보유 수량은 표본값을 물린 것.
-   *
-   * <p>이 검사가 재는 것은 <b>원 미만이 남는 곱</b>이 행마다 버려질 때 소계와 어긋나는지다. 그래서 필요한 성질은 "소수부가 남는 행이 섞여 있다" 뿐이고, 실제
-   * 보유 수량이어야 할 이유가 없다.
-   */
-  private static final String[][] REAL_ROWS = {
-    {"KODEX 200타겟위클리커버드콜", "240.0", "100"}, // 24,000
-    {"RISE 200위클리커버드콜", "197.5833", "100"}, // 19,758.33
-    {"TIGER 코리아배당다우존스위클리커버드콜", "106.1", "100"}, // 10,610
-    {"PLUS 고배당주위클리고정커버드콜", "150.9167", "100"}, // 15,091.67
-    {"TIGER 리츠부동산인프라", "33.0", "100"}, // 3,300
-    {"TIGER 배당커버드콜액티브", "350.1667", "100"}, // 35,016.67
-    {"RISE 코리아밸류업위클리고정커버드콜", "308.0", "100"}, // 30,800
-    {"KODEX 한국부동산리츠인프라", "30.5", "100"}, // 3,050
-  };
-
-  private MonthlyDividendSnapshotResponse row(String name, String perShare, int quantity) {
-    BigDecimal expected = new BigDecimal(perShare).multiply(BigDecimal.valueOf(quantity));
-    return new MonthlyDividendSnapshotResponse(
-        UUID.randomUUID(),
-        UUID.randomUUID(),
-        UUID.randomUUID(),
-        "000000",
-        name,
-        LocalDate.parse("2026-08-04"),
-        new BigDecimal(perShare),
-        new BigDecimal(perShare),
-        BigDecimal.ZERO,
-        quantity,
-        BigDecimal.ONE,
-        BigDecimal.ONE,
-        BigDecimal.ONE,
-        expected,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        Instant.parse("2026-08-04T00:00:00Z"));
+  /** 원 미만이 남는 금액들 - 각각 반올림하면 합계가 원값 합계의 반올림과 달라진다. */
+  private static DividendCalendarView.Entry entry(String name, String amount) {
+    BigDecimal value = new BigDecimal(amount);
+    return new DividendCalendarView.Entry(
+        name, name, value, value, BigDecimal.ZERO, null, 17, 17, 17, 12);
   }
 
-  private List<MonthlyDividendSnapshotResponse> realRows() {
-    List<MonthlyDividendSnapshotResponse> rows = new ArrayList<>();
-    for (String[] r : REAL_ROWS) {
-      rows.add(row(r[0], r[1], Integer.parseInt(r[2])));
-    }
-    return rows;
-  }
-
-  /**
-   * 소계는 <b>컨트롤러의 실제 코드</b>로 만든다.
-   *
-   * <p>처음에는 테스트가 소계를 직접 다시 계산해 화면 행과 비교했다. 그러면 양쪽을 같은 식으로 만든 셈이라 무엇을 바꿔도 통과한다 &mdash; 실제로 화면 행을 옛
-   * 버림 규칙으로 되돌리는 변이가 그대로 살아남았다.
-   */
-  private BigDecimal subtotalOf(List<MonthlyDividendSnapshotResponse> rows) {
-    return StockDividendViewController.sumExpectedMonthlyDividend(rows);
-  }
-
-  private String render(List<MonthlyDividendSnapshotResponse> rows, BigDecimal subtotal) {
-    Map<String, Object> params = new HashMap<>();
-    params.put("title", "월중");
-    params.put("rows", rows);
-    params.put("subtotal", subtotal);
-    params.put("subtotalLatest", subtotal);
+  private String render(List<DividendCalendarView.Entry> entries) {
+    YearMonth month = YearMonth.of(2026, 9);
+    DividendCalendarView calendar =
+        new DividendCalendarView(
+            month,
+            DividendCalendarGridUtil.build(
+                month,
+                LocalDate.parse("2026-09-14"),
+                DividendCalendarGridUtil.groupByDay(entries, month)),
+            List.of());
+    Map<String, Object> model = new HashMap<>();
+    model.put("calendar", calendar);
+    model.put("prevMonth", "2026-08");
+    model.put("nextMonth", "2026-10");
+    model.put("thisMonth", "2026-09");
+    model.put("isThisMonth", true);
+    model.put("avgLabel", "평균");
+    model.put("latestLabel", "최근");
     StringOutput output = new StringOutput();
-    TemplateEngine.createPrecompiled(ContentType.Html).render(GROUP, params, output);
+    TemplateEngine.createPrecompiled(ContentType.Html).render(CALENDAR, model, output);
     return output.toString();
   }
 
-  /** 렌더된 화면에서 콤마 숫자를 전부 뽑는다. */
-  private List<Long> numbers(String html) {
-    List<Long> found = new ArrayList<>();
-    Matcher matcher = Pattern.compile(">([0-9]{1,3}(?:,[0-9]{3})+)<").matcher(html);
-    while (matcher.find()) {
-      found.add(Long.parseLong(matcher.group(1).replace(",", "")));
-    }
-    return found;
+  /** 17 일 칸만 잘라 본다 - 다른 칸의 숫자까지 세면 검사가 헛돈다. */
+  private String dayCell(String html, String date) {
+    int at = html.indexOf("data-calendar-day=\"" + date + "\"");
+    assertThat(at).as(date + " 칸을 찾지 못했다 - 검사가 무력해진다").isGreaterThan(0);
+    int end = html.indexOf("</td>", at);
+    return html.substring(at, end);
   }
 
   @Test
-  void 보이는_행을_더하면_소계와_같다() {
-    List<MonthlyDividendSnapshotResponse> rows = realRows();
-    BigDecimal subtotal = subtotalOf(rows);
+  void 보이는_값을_더하면_칸_합계와_같다() {
+    List<DividendCalendarView.Entry> entries =
+        List.of(
+            entry("가", "581692.6"),
+            entry("나", "257894.5"),
+            entry("다", "82848.7"),
+            entry("라", "29633.6"));
 
-    String html = render(rows, subtotal);
-    List<Long> shown = numbers(html);
+    String cell = dayCell(render(entries), "2026-09-17");
 
-    // 화면에서 소계 줄을 빼고 남은 것이 행이다. 소계는 "평균"과 "최신" 두 줄로 같은 값이 두 번 나온다.
-    long subtotalShown = subtotal.longValue();
-    assertThat(shown).as("소계가 화면에 없다").contains(subtotalShown);
-
-    List<Long> rowNumbers = new ArrayList<>(shown);
-    rowNumbers.remove(Long.valueOf(subtotalShown)); // 평균 소계
-    rowNumbers.remove(Long.valueOf(subtotalShown)); // 최신 소계
-
-    long rowSum = 0;
-    for (Long value : rowNumbers) {
-      rowSum += value;
+    // 화면에 찍힌 '최근' 금액들을 실제로 긁어 더한다.
+    List<Long> shown = new ArrayList<>();
+    Matcher matcher =
+        Pattern.compile("class=\"amount-value\">([\\d,]+)\uc6d0</span>").matcher(cell);
+    while (matcher.find()) {
+      shown.add(Long.parseLong(matcher.group(1).replace(",", "")));
     }
-    // 행마다 "평균"과 "최신" 두 값이 그려지는데 이 픽스처는 둘을 같게 두었으므로 합은 소계의 2 배다.
-    assertThat(rowSum)
-        .as("화면에 보이는 행을 더한 값이 소계와 다르다 - 사용자가 열을 더하면 맞지 않는다")
-        .isEqualTo(subtotalShown * 2);
+    assertThat(shown).as("칸에서 금액을 읽지 못했다").hasSizeGreaterThan(entries.size());
+
+    long dayTotal = shown.remove(shown.size() - 1); // 마지막이 칸 합계
+    long rowSum = 0L;
+    for (int i = 0; i < shown.size(); i += 2) { // 종목마다 최근 · 평균 두 줄
+      rowSum += shown.get(i);
+    }
+
+    assertThat(dayTotal).as("보이는 행을 더한 값과 칸 합계가 다르면 사용자가 검산할 수 없다").isEqualTo(rowSum);
   }
 
-  /**
-   * 버림 규칙이면 실제로 어긋난다. 이 값이 어긋나지 않으면 위 검사는 아무것도 지키지 못한다.
-   *
-   * <p>위 표본 8 종목: 정확한 합 141,626.67 / 버림 합 141,625 / 반올림 합 141,627 &mdash; 2 원 차이.
-   */
+  /** 버림과 반올림은 실제로 다르다 - 규칙을 바꾸면 화면 숫자가 움직인다. */
   @Test
   void 버림과_반올림은_실제로_다르다() {
-    List<MonthlyDividendSnapshotResponse> rows = realRows();
-    long truncated = 0;
-    long rounded = 0;
-    for (MonthlyDividendSnapshotResponse r : rows) {
-      truncated += r.expectedMonthlyDividend().longValue();
-      rounded += StockFormatUtil.displayWon(r.expectedMonthlyDividend());
-    }
-    assertThat(truncated).isEqualTo(141_625L);
-    assertThat(rounded).isEqualTo(141_627L);
+    List<BigDecimal> amounts =
+        List.of(
+            new BigDecimal("581692.6"),
+            new BigDecimal("257894.5"),
+            new BigDecimal("82848.7"),
+            new BigDecimal("29633.6"));
+
+    long truncated = amounts.stream().mapToLong(BigDecimal::longValue).sum();
+    long rounded = amounts.stream().mapToLong(StockFormatUtil::displayWon).sum();
+
+    assertThat(truncated).isEqualTo(952_067L);
+    assertThat(rounded).isEqualTo(952_071L);
   }
 }

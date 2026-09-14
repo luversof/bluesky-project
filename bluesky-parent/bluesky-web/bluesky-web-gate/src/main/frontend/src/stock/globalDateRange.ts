@@ -25,6 +25,42 @@ function localToIso(ds: string, addDays?: number): string {
 	return shared.localDateToInstantIso(ds, addDays);
 }
 
+const TRADE_HISTORY_PATH = "/stock/htmx/trade-history";
+
+/**
+ * 기간이 바뀔 때 매매 내역 패널을 다시 불러올 주소.
+ *
+ * 기간만 바꾸고 나머지 조건(계좌·종목 필터, 페이지 크기, 정렬)은 그대로 이어받는다.
+ * 실측 2026-09-12(자산 성장, 한 계좌로 좁힌 상태에서 "1년" 클릭): 여기서 만든 주소에 계좌·종목
+ * 필터가 빠져 있어 좁혀 놓은 표에 다섯 계좌의 거래가 +83ms~+135ms 동안 보였다가 뒤늦게 정정됐다.
+ * 뒤에 오는 뷰 전체 재조회가 덮어 주지만, 덮기 전까지는 틀린 표다.
+ *
+ * 조건은 패널이 들고 있는 hx-get 을 먼저 보고, 없으면(교체된 뒤라 속성이 사라진 경우) 주소에서 읽는다.
+ */
+function tradeHistoryRefreshUrl(
+	panelHxGet: string,
+	locationSearch: string,
+	start: string,
+	end: string,
+): string {
+	const fromPanel =
+		panelHxGet.indexOf(TRADE_HISTORY_PATH) === 0 && panelHxGet.indexOf("?") >= 0;
+	const query = fromPanel
+		? panelHxGet.slice(panelHxGet.indexOf("?") + 1)
+		: locationSearch.replace("?", "");
+	const params = new URLSearchParams(query);
+	// 기간을 뜻하는 값은 이 갱신이 정한다 - 남겨 두면 옛 기간이 같이 실린다.
+	["rangeMode", "startDate", "endDate", "timeZone", "locale"].forEach((k) =>
+		params.delete(k),
+	);
+	if (start) params.set("from", start);
+	else params.delete("from");
+	if (end) params.set("to", end);
+	else params.delete("to");
+	const qs = params.toString();
+	return TRADE_HISTORY_PATH + (qs ? "?" + qs : "");
+}
+
 function input(id: string): HTMLInputElement | null {
 	return document.getElementById(id) as HTMLInputElement | null;
 }
@@ -162,9 +198,17 @@ function readGlobalRangeRaw(): string | null {
 								w.htmx &&
 								typeof w.htmx.ajax === "function"
 							) {
-								let url = "/stock/htmx/trade-history";
-								if (obj.start && obj.end)
-									url += "?from=" + obj.start + "&to=" + obj.end;
+								// 기간만 바꾸고 나머지 조건은 그대로 이어받는다.
+								// 실측 2026-09-12(자산 성장, 한 계좌로 좁힌 상태에서 "1년" 클릭):
+								// 여기서 만든 주소에 계좌·종목 필터가 빠져 있어서, 좁혀 놓은 표에
+								// 다섯 계좌의 거래가 +83ms~+135ms 동안 보였다가 뒤늦게 정정됐다.
+								// 뒤에 오는 뷰 전체 재조회가 덮어 주지만, 덮기 전까지는 틀린 표다.
+								const url = tradeHistoryRefreshUrl(
+									tradeHistoryPanel.getAttribute("hx-get") || "",
+									(window.location && window.location.search) || "",
+									obj.start || "",
+									obj.end || "",
+								);
 								w.htmx.ajax("GET", url, {
 									target: tradeHistoryPanel,
 									swap: "outerHTML",
@@ -224,5 +268,87 @@ function readGlobalRangeRaw(): string | null {
 				);
 			} catch (e) {}
 		});
+	} catch (e) {}
+})();
+
+(globalThis as any).__globalDateRangeInternals = { tradeHistoryRefreshUrl };
+
+// 4) 스왑이 끝나면 프리셋 버튼의 눌린 표시를 "서버가 실제로 적용한 기간" 으로 되돌린다.
+//    버튼은 클릭 즉시 눌린 표시를 바꾸는데(낙관적), 앞 요청이 진행 중이면 뒤 제출이 버려진다.
+//    그러면 화면은 "이번달" 이라고 말하면서 3년 데이터를 보여 준다
+//    (실측 2026-09-13, 매매 3년→이번달 연속 클릭 12 회 중 6 회). 값이 맞는 정상 경로에서는 아무것도 바뀌지 않는다.
+function pressedTargetsForMode(
+	mode: string,
+	args: string[],
+): boolean[] {
+	// 프리셋 버튼은 data-picker-arg 로 자기 모드를 들고 있다. '전체' 만 서버 값 all 에 대해 0 이다.
+	return args.map(
+		(arg) => mode !== "" && (arg === mode || (mode === "all" && arg === "0")),
+	);
+}
+
+(function () {
+	try {
+		const FRAGMENT_IDS = ["tradeListFragment", "activityListFragment"];
+		const syncPressed = (mode: string) => {
+			const btns = Array.from(
+				document.querySelectorAll("button.date-range-btn"),
+			);
+			const flags = pressedTargetsForMode(
+				mode,
+				btns.map((b) => b.getAttribute("data-picker-arg") || ""),
+			);
+			btns.forEach((b, i) => {
+				const on = flags[i];
+				b.classList.toggle("btn-primary", on);
+				b.classList.toggle("btn-ghost", !on);
+				b.setAttribute("aria-pressed", on ? "true" : "false");
+			});
+		};
+		let lastAppliedMode: string | null = null;
+		let requestSeen = false;
+		document.body.addEventListener(
+			"htmx:afterSwap",
+			(ev: Event) => {
+				try {
+					const target = ev.target as HTMLElement | null;
+					if (!target || !target.id) return;
+					if (FRAGMENT_IDS.indexOf(target.id) < 0) return;
+					const applied = target.getAttribute("data-applied-range-mode");
+					if (applied === null) return;
+					lastAppliedMode = applied;
+					syncPressed(applied);
+				} catch (e) {}
+			},
+			false,
+		);
+		// 클릭했는데 요청이 아예 안 나가는 경우(앞 요청 때문에 버려짐)에는 스왑도 없다.
+		// 그때는 마지막으로 서버가 적용한 기간으로 표시를 되돌려, 화면이 거짓말하지 않게 한다.
+		document.body.addEventListener(
+			"htmx:beforeRequest",
+			() => {
+				requestSeen = true;
+			},
+			true,
+		);
+		document.body.addEventListener(
+			"click",
+			(ev: Event) => {
+				try {
+					const el = ev.target as HTMLElement | null;
+					const btn = el && el.closest ? el.closest("button.date-range-btn") : null;
+					if (!btn) return;
+					requestSeen = false;
+					setTimeout(() => {
+						try {
+							if (requestSeen) return;
+							if (lastAppliedMode === null) return;
+							syncPressed(lastAppliedMode);
+						} catch (e) {}
+					}, 400);
+				} catch (e) {}
+			},
+			true,
+		);
 	} catch (e) {}
 })();

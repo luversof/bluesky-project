@@ -221,6 +221,12 @@ class StockBaseHtmxControllerTest {
     public List<TradeResponse> findTrades(MultiValueMap<String, String> request) {
       return List.of();
     }
+
+    @Override
+    public java.util.Map<java.util.UUID, java.time.LocalDate> findFirstBuyDateByStockItem(
+        MultiValueMap<String, String> request) {
+      return java.util.Map.of();
+    }
   }
 
   private static final class StubDividendClient implements DividendClient {

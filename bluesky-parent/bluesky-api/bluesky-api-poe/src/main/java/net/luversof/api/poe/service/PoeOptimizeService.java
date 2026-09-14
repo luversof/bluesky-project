@@ -2692,48 +2692,7 @@ public class PoeOptimizeService {
               : "dps";
       this.enemyScenario = SCENARIO_KO.containsKey(scenario) ? scenario : "Pinnacle"; // 화이트리스트
       this.combatBuffs = buffs;
-      this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
-      this.selectedAuras = new ArrayList<>(); // 방어 오라 초기화(잡마다)
-      this.blessingAura = null;
-      this.currentKeywords = List.of(); // 키워드 초기화(잡마다)
-      this.tattooAllocated = Set.of(); // 문신 할당-이웃 판정 기준 초기화(잡마다)
-      this.currentAnoint = null; // 아뮬렛 도유 초기화(잡마다)
-      this.supportLevelOverride = Map.of(); // 보조젬 레벨 하향 초기화(잡마다)
-      this.attrRepairs.clear(); // 속성 보정 희생 이력 초기화(잡마다)
-      this.feasibilitySteering = false; // 실현 가능성 조향 초기화(잡마다)
-      this.selfBurnRun = false; // 자가연소 지속력 게이트 초기화(잡마다)
-      this.multiActorBuild = false; // #235 다중 액터(토템/미니언) 총합 지표 초기화(잡마다)
-      this.targetMaxHit = MAXHIT_FLOOR; // poe.ninja 생존 목표치 초기화(스킬 확정 후 재설정)
-      this.targetEhp = EHP_FLOOR;
-      this.seededKeystones = List.of(); // 시드 키스톤 초기화(잡마다)
-      // ⚠ 메타 마스터리는 balanced 의 setSurvivalTargets 에서만 채워지므로 **잡마다 여기서 리셋** —
-      //   안 하면 직전 balanced 잡의 메타 세트가 dps/ehp 잡으로 누출돼 기준선이 이탈한다
-      //   (실사고: RF balanced 후 arc 41.9M→42.5M, 사이클론 9.9M→8.9M 오염, #161 계열).
-      this.metaMasteries = Set.of();
-      this.targetChaosRes = 0; // P2 카오스 저항 목표도 같은 누출 계열 — 잡마다 리셋
-      this.targetSpellSuppress = 0; // 주문 억제 목표 — 같은 누출 계열
-      this.targetSpellBlock = 0; // 주문 막기 목표 — 같은 누출 계열
-      this.balancedJob = false; // balanced 분기 플래그 — 같은 누출 계열
-      this.convexSurvivalPhase = false; // 잡마다 리셋(누출되면 다음 잡의 탐색이 왜곡된다)
-      this.earlySearchPhase = true; // 잡마다 리셋 — 아이템 단계가 끝나면 false 로 내린다
-      this.guardSkill = null; // 잡마다 리셋
-      this.guardSupport = null;
-      this.curseSkill = null;
-      this.curseOnHitMod = null;
-      this.supportRematchPool = List.of();
-      this.jewelRematchPool = List.of();
-      this.auraRematchPool = List.of();
-      this.additionalSkillSupports.clear(); // 추가 스킬 보조젬(1b) — 잡마다 리셋(누출 방지)
-      this.metaWeaponClasses = Set.of(); // P1② 메타 무기 구성 — 잡마다 리셋(누출 방지)
-      this.metaOffhandShield = false;
-      this.metaPantheonMajor = ""; // P1③ 메타 판테온 — 잡마다 리셋(누출 방지)
-      this.metaPantheonMinor = "";
-      this.esArchetype = false; // ES/CI 아키타입 플래그 초기화(잡마다)
-      this.targetEs = 0d;
-      this.forceEsBase = false;
-      this.currentClassName = ""; // 직업 초기화(잡마다)
-      this.currentSpectre = null; // 망령 초기화(잡마다)
-      this.blockedAuraShortfall = new LinkedHashMap<>(); // 제외 오라 초기화(잡마다)
+      resetJobState();
       // 직업 고정 — 유효한 직업명만 채택, 그 외(빈값/auto/미지)는 null(자동 프로브)
       this.fixedClass = className != null && CLASS_IDS.containsKey(className) ? className : null;
       // 전직만 선택해도 직업을 도출 — 직업 미지정 + 유효 전직이면 그 전직의 소속 직업으로 고정
@@ -2780,6 +2739,58 @@ public class PoeOptimizeService {
         running.set(false);
       }
     }
+  }
+
+  /**
+   * 잡마다 초기화해야 하는 <b>순수 상태</b> — 요청 파라미터 유래(fixedClass 등)나 로그·카운터는 포함하지 않는다.
+   *
+   * <p>추출 이유(2026-09-10): 완주 모드(top-K 전 파이프라인)는 패스마다 이걸 다시 돌려야 하는데, start() 안에 묻혀 있으면 재진입이 불가능하다. 이
+   * 블록은 <b>누출 사고가 반복된 자리</b>라(주석의 "같은 누출 계열" 다수) 하나만 빠뜨려도 조용히 틀린다 — 그래서 완주 루프를 얹기 <b>전에</b> 순수 추출만
+   * 먼저 하고 게이트로 검증했다.
+   */
+  private void resetJobState() {
+    this.secondaryAscendId = 0; // 혈맹 선택 초기화(잡마다)
+    this.selectedAuras = new ArrayList<>(); // 방어 오라 초기화(잡마다)
+    this.blessingAura = null;
+    this.currentKeywords = List.of(); // 키워드 초기화(잡마다)
+    this.tattooAllocated = Set.of(); // 문신 할당-이웃 판정 기준 초기화(잡마다)
+    this.currentAnoint = null; // 아뮬렛 도유 초기화(잡마다)
+    this.supportLevelOverride = Map.of(); // 보조젬 레벨 하향 초기화(잡마다)
+    this.attrRepairs.clear(); // 속성 보정 희생 이력 초기화(잡마다)
+    this.feasibilitySteering = false; // 실현 가능성 조향 초기화(잡마다)
+    this.selfBurnRun = false; // 자가연소 지속력 게이트 초기화(잡마다)
+    this.multiActorBuild = false; // #235 다중 액터(토템/미니언) 총합 지표 초기화(잡마다)
+    this.targetMaxHit = MAXHIT_FLOOR; // poe.ninja 생존 목표치 초기화(스킬 확정 후 재설정)
+    this.targetEhp = EHP_FLOOR;
+    this.seededKeystones = List.of(); // 시드 키스톤 초기화(잡마다)
+    // ⚠ 메타 마스터리는 balanced 의 setSurvivalTargets 에서만 채워지므로 **잡마다 여기서 리셋** —
+    //   안 하면 직전 balanced 잡의 메타 세트가 dps/ehp 잡으로 누출돼 기준선이 이탈한다
+    //   (실사고: RF balanced 후 arc 41.9M→42.5M, 사이클론 9.9M→8.9M 오염, #161 계열).
+    this.metaMasteries = Set.of();
+    this.targetChaosRes = 0; // P2 카오스 저항 목표도 같은 누출 계열 — 잡마다 리셋
+    this.targetSpellSuppress = 0; // 주문 억제 목표 — 같은 누출 계열
+    this.targetSpellBlock = 0; // 주문 막기 목표 — 같은 누출 계열
+    this.balancedJob = false; // balanced 분기 플래그 — 같은 누출 계열
+    this.convexSurvivalPhase = false; // 잡마다 리셋(누출되면 다음 잡의 탐색이 왜곡된다)
+    this.earlySearchPhase = true; // 잡마다 리셋 — 아이템 단계가 끝나면 false 로 내린다
+    this.guardSkill = null; // 잡마다 리셋
+    this.guardSupport = null;
+    this.curseSkill = null;
+    this.curseOnHitMod = null;
+    this.supportRematchPool = List.of();
+    this.jewelRematchPool = List.of();
+    this.auraRematchPool = List.of();
+    this.additionalSkillSupports.clear(); // 추가 스킬 보조젬(1b) — 잡마다 리셋(누출 방지)
+    this.metaWeaponClasses = Set.of(); // P1② 메타 무기 구성 — 잡마다 리셋(누출 방지)
+    this.metaOffhandShield = false;
+    this.metaPantheonMajor = ""; // P1③ 메타 판테온 — 잡마다 리셋(누출 방지)
+    this.metaPantheonMinor = "";
+    this.esArchetype = false; // ES/CI 아키타입 플래그 초기화(잡마다)
+    this.targetEs = 0d;
+    this.forceEsBase = false;
+    this.currentClassName = ""; // 직업 초기화(잡마다)
+    this.currentSpectre = null; // 망령 초기화(잡마다)
+    this.blockedAuraShortfall = new LinkedHashMap<>(); // 제외 오라 초기화(잡마다)
   }
 
   private void runJob(PoeGem gemArg, String objective) {

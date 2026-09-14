@@ -43,6 +43,9 @@
 @param String filterRangeMode = null
 @param LocalDate coveredStartLocal = null
 @param LocalDate coveredEndLocal = null
+@param String dataFirstDate = ""
+<%-- 지금 기간 모드. 빈 안내에 '전체 기간으로 보기' 를 띄울지 정한다. --%>
+@param String rangeMode = ""
 
 !{
 	// 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
@@ -52,9 +55,17 @@
 	String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
 	BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
 	double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
+	// 원가가 0 이면 수익률은 <b>없는 값</b>이다(0 / 0). 예전에는 0.0 으로 떨어져 "0 0.0%" 가 잰 값처럼 보였다 -
+	// 실측 2026-09-13: 보유가 없는 종목 77 개와 계좌 1 개(동양증권 - 매수 2.75 억 · 실현 +3,309 만)가 모두 그랬다.
+	// 금액 0 은 맞지만 비율은 모른다. 모르면 적지 않는다.
+	boolean evalRateKnown = evalCostBasis.signum() != 0;
+	// 세금 0 은 잰 값이지만 표마다 다르게 적혀 있었다 - 배당 이력 · 수익률 표는 이미 "-" 와 사유를 달고,
+	// 상세 두 화면만 "0" 이었다. 실측 2026-09-13: 배당 202 건 중 147 건(72.8%)이 세금 0 이라
+	// 같은 값이 화면마다 달리 보였다. 사유는 title 과 aria-label 에 함께 단다(마우스 전용이 되지 않게).
+	String zeroAmountTitle = MessageUtil.getMessage("stock.dividend.zero.amount.title");
 }
 
-<div id="accountDetailFragment" class="space-y-6" data-page-title="${account != null ? account.name() : null}">
+<div id="accountDetailFragment" class="space-y-6" data-page-title="${account != null ? account.name() : MessageUtil.getMessage("stock.account.detail.notfound.title")}">
 @if(account == null)
 	<%-- 없는 id 로 들어와도 페이지다: 빵부스러기와 h1 이 있어야 뒤로 갈 길이 보이고 axe page-has-heading-one 에 걸리지 않는다(실측 2026-09-09). --%>
 	@template._components.ui.breadcrumbBack(
@@ -75,6 +86,8 @@
 		description = MessageUtil.getMessage("stock.account.detail.holdings.title"),
 		actions = @`@template.stock.htmx.fragments.detailNavSwitcher(entries = accountNavEntries, switchLabel = MessageUtil.getMessage("stock.detail.switch.account"))`)
 
+	<%-- dataFirstDate 가 없으면 '가장 이른 기간으로'(«) 가 목표를 못 정해 비활성이 된다.
+	     JTE 는 호출 인자 목록 안에 주석을 못 쓴다 - 여기에 적는다. --%>
 	@template.stock.htmx.fragments.components.detailDateFilter(
 		pickerVar = "accountDetailPicker",
 		formId = "accountDetailSearchForm",
@@ -90,7 +103,8 @@
 		timeZone = filterTimeZone,
 		rangeMode = filterRangeMode,
 		coveredStartDate = coveredStartLocal,
-		coveredEndDate = coveredEndLocal)
+		coveredEndDate = coveredEndLocal,
+		dataFirstDate = dataFirstDate)
 
 	<%-- "현재가"·평가액은 마지막으로 수집된 종가 기준이라, 오늘 시세가 아직 없으면 며칠 전 값일 수 있다.
 	     어느 날 기준인지 밝혀 실시간 시세로 오해하지 않게 한다(자산현황·포트폴리오와 같은 표기). --%>
@@ -104,6 +118,8 @@
 		<p class="mb-2 text-xs text-warning">${MessageUtil.getMessage("stock.account.detail.fee.records.unavailable")}</p>
 	@endif
 	<!-- 보유/손익 요약 -->
+	<%-- 기간 매수·실현 손익·기간 배당은 고른 기간의 값이고, 평가 금액·평가 손익·보유 종목 수는 지금 보유분이다.
+	     라벨이 축을 말해야 나란히 놓인 값끼리 검산이 된다 - 종목 상세와 같은 이유(실측 2026-09-11). --%>
 	<div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.profit.evaluation.amount"),
@@ -120,25 +136,36 @@
 			amount = false)
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.profit.unrealized"),
-			value = String.format("%+,d", StockFormatUtil.displayWon(evaluationProfit)),
+			value = StockFormatUtil.signedWon(StockFormatUtil.displayWon(evaluationProfit)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(evaluationProfit)),
-			sub = StockFormatUtil.signedPct(evalProfitRatePct, 1),
+			sub = evalRateKnown ? StockFormatUtil.signedPct(evalProfitRatePct, 1) : "",
 			tone = evalColor)
 		<%-- 기록된 실현손익은 계좌를 합친 원가를 따르므로 이 계좌의 매매와 크게 다를 수 있다
 		     (실측 2026-08-23: 연금저축1 은 그 계좌 매매 기준의 1/5, ISA 는 반대로 104 배).
 		     매매 화면의 계좌별 표와 같은 규칙(RealizedBasisGap)·같은 문구를 쓴다. --%>
+		<%-- 금액을 sub 로 넘기면 통째로 글자라 금액 숨김이 안 걸린다 - 실측 2026-09-12(숨김 켜고 10 화면 · 금액 텍스트 540 개):
+			 이 줄 "이 계좌 기준 +2,063,739" 한 곳만 흐려지지 않았다. 자리표시자 위치가 로케일마다 달라
+			 (한국어는 뒤, 영어는 앞) 앞/뒤 글자를 박을 수 없으므로 패턴을 쪼개 금액만 따로 넘긴다. --%>
+		!{
+			boolean basisGapNotable = RealizedBasisGap.isNotable(realizedProfit, realizedProfitOwnBasis);
+			String basisGapPattern = MessageUtil.getMessage("stock.trade.realized.basis.gap");
+		}
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.profit.realized"),
-			value = String.format("%+,d", StockFormatUtil.displayWon(realizedProfit)),
+			value = StockFormatUtil.signedWon(StockFormatUtil.displayWon(realizedProfit)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(realizedProfit)),
-			sub = RealizedBasisGap.isNotable(realizedProfit, realizedProfitOwnBasis)
-				? java.text.MessageFormat.format(
-					MessageUtil.getMessage("stock.trade.realized.basis.gap"),
-					String.format("%+,d", StockFormatUtil.displayWon(realizedProfitOwnBasis)))
+			subBefore = basisGapNotable
+				? net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(basisGapPattern)
+				: "",
+			subAmount = basisGapNotable
+				? StockFormatUtil.signedWon(StockFormatUtil.displayWon(realizedProfitOwnBasis))
+				: "",
+			subAfter = basisGapNotable
+				? net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(basisGapPattern)
 				: "",
 			tone = realizedColor)
 		@template._components.ui.statCard(
-			label = MessageUtil.getMessage("stock.summary.label.cumulative.dividend"),
+			label = MessageUtil.getMessage("stock.item.detail.period.dividend"),
 			value = String.format("%,d", StockFormatUtil.displayWon(totalDividend)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalDividend)),
 			tone = "text-dividend")
@@ -223,11 +250,11 @@
 							!{BigDecimal holdingCostBasis = (holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO).subtract(holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO);}
 							!{double holdingEvalRatePct = holdingCostBasis.signum() != 0 && holding.evaluationProfit() != null ? holding.evaluationProfit().doubleValue() / holdingCostBasis.doubleValue() * 100.0 : 0.0;}
 							<tr>
-								<td class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></td>
+								<th scope="row" class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
 								<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
-								<td class="text-right font-mono amount-value ${evalProfit >= 0 ? "text-profit" : "text-loss"}">${String.format("%+,d", evalProfit)} <span class="text-xs">(${StockFormatUtil.signedPct(holdingEvalRatePct, 1)})</span></td>
+								<td class="text-right font-mono amount-value ${evalProfit >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(evalProfit)} <span class="text-xs">(${StockFormatUtil.signedPct(holdingEvalRatePct, 1)})</span></td>
 									<td class="text-right font-mono text-base-content/70">${StockFormatUtil.pct(holdingWeightPct, 1)}</td>
 							</tr>
 						@endfor
@@ -242,7 +269,9 @@
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.trade.title")}</h2>
 		@if(trades == null || trades.isEmpty())
-			<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.trades")}</div>
+			<%-- 빈 기간에서 다음 행동을 준다 - 실측 2026-09-13: 목록 네 화면은 "전체 기간으로 보기" 를 띄우는데
+			     상세 두 화면의 기간 안내 다섯 자리만 평문 상자라 막다른 길이었다(프리셋 '전체' 단추는 있었다). --%>
+			@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.account.detail.empty.trades"), boxed = true, padding = "py-6", widenRangeAction = !"all".equals(rangeMode))
 		@else
 			@template._components.ui.tableCard(body = @`
 				<div class="overflow-x-auto">
@@ -281,7 +310,9 @@
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.dividend.title")}</h2>
 		@if(dividends == null || dividends.isEmpty())
-			<div class="bg-base-200 rounded-box p-6 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.account.detail.empty.dividends")}</div>
+			<%-- 빈 기간에서 다음 행동을 준다 - 실측 2026-09-13: 목록 네 화면은 "전체 기간으로 보기" 를 띄우는데
+			     상세 두 화면의 기간 안내 다섯 자리만 평문 상자라 막다른 길이었다(프리셋 '전체' 단추는 있었다). --%>
+			@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.account.detail.empty.dividends"), boxed = true, padding = "py-6", widenRangeAction = !"all".equals(rangeMode))
 		@else
 			@template._components.ui.tableCard(body = @`
 				<div class="overflow-x-auto">
@@ -298,11 +329,12 @@
 					<tbody>
 						@for(DividendResponse dividend : dividends)
 							!{String dName = dividend.stockItemName() != null ? dividend.stockItemName() : stockNameById.getOrDefault(dividend.stockItemId(), "-");}
+							!{ boolean dividendTaxZero = dividend.tax() == null || dividend.tax().signum() == 0; }
 							<tr>
 								<td class="tabular-nums">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
 								<td class="font-semibold"><a href="/stock/item?stockItemId=${dividend.stockItemId() != null ? dividend.stockItemId().toString() : ""}" class="link link-hover">${dName}</a></td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
-								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60">${String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
+								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60" title="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
 								<td class="text-right font-mono font-bold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>
 							</tr>
 						@endfor

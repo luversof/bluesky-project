@@ -3,7 +3,10 @@
 <%-- htmx 가 아닌 평범한 POST 폼이 오래 걸릴 때 덮는 오버레이. 전역 htmx 피드백(#app-progress)은 htmx 요청만 덮는다.
      폼에 data-submit-overlay(+ -title / -desc)를 달면 /js/stock/submitOverlay.js 가 이 패널을 띄우고 두 번째 제출을 막는다.
      한 화면에 한 벌만 둔다. 실측 2026-09-08: 출처 일괄 가져오기가 외부 ETF 사이트 한 건에 8.65 초. --%>
-<div data-submit-overlay-panel="true" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+<%-- m-0 은 장식이 아니다. 이 패널은 부모의 간격 유틸리티를 그대로 물려받는데(실측 2026-09-14: 관리 화면의
+     space-y-6 이 margin-block-end: 1.5rem 을 준다), top:0 + bottom:0 과 겹치면 높이가 뷰포트보다 그만큼
+     짧아져 화면 아래 24px 이 안 덮인다. 부모가 어떤 간격을 주든 뷰포트를 꽉 채우게 못박는다. --%>
+<div data-submit-overlay-panel="true" class="hidden fixed inset-0 m-0 z-50 flex items-center justify-center bg-black/50">
 	<div class="flex flex-col items-center gap-4 rounded-2xl bg-base-100 px-8 py-8 shadow-xl">
 		<span class="loading loading-spinner loading-lg text-primary"></span>
 		<div data-submit-overlay-heading="true" class="text-lg font-bold">${MessageUtil.getMessage("common.message.submit.overlay.title")}</div>

@@ -46,6 +46,8 @@ public class DataStatusController {
     var tradeSummary = tradeRepository.findLedgerSummaryByUserId(userId);
     var dividendSummary = dividendRepository.findLedgerSummaryByUserId(userId);
     var priceDuplicate = stockPriceHistoryRepository.findLastDateDuplicateSummary();
+    // 전체 행 수와 거래량 0 행 수는 같은 표를 두 번 훑지 않도록 한 줄로 받는다.
+    var rowCounts = stockPriceHistoryRepository.findRowCounts();
     // 개수와 예시 행을 따로 조회하면 같은 비싼 스캔(시세 57,586행 위 LATERAL/윈도우)을 두 번 한다
     // - 실측 2026-09-10: 이 엔드포인트만 113ms 로 다른 조회의 3~4배였다. 한 번에 행과 총 개수를 함께 받는다.
     List<net.luversof.api.stock.domain.ZeroVolumeChangedClose> changedCloseRows =
@@ -64,8 +66,10 @@ public class DataStatusController {
         priceDuplicate != null ? priceDuplicate.sameCloseCount() : 0L,
         priceDuplicate != null ? priceDuplicate.sameAllCount() : 0L,
         priceDuplicate != null ? priceDuplicate.zeroVolumeCount() : 0L,
-        stockPriceHistoryRepository.countAllRows(),
-        stockPriceHistoryRepository.countZeroVolumeRows(),
+        rowCounts != null ? rowCounts.totalCount() : 0L,
+        rowCounts != null ? rowCounts.zeroVolumeCount() : 0L,
+        rowCounts != null ? rowCounts.lastDateItemCount() : 0L,
+        rowCounts != null ? rowCounts.noHistoryItemCount() : 0L,
         changedCloseRows.isEmpty() ? 0L : changedCloseRows.get(0).totalCount(),
         toChangedCloseRows(changedCloseRows),
         payouts.stream()
@@ -75,7 +79,10 @@ public class DataStatusController {
             .orElse(null),
         overduePayouts(payouts),
         breachRows.isEmpty() ? 0L : breachRows.get(0).totalCount(),
-        toBreachRows(breachRows));
+        toBreachRows(breachRows),
+        stockPriceHistoryRepository.findItemsWithoutPriceHistory().stream()
+            .map(row -> new DataStatusResponse.NoHistoryItemRow(row.symbol(), row.name()))
+            .toList());
   }
 
   /**

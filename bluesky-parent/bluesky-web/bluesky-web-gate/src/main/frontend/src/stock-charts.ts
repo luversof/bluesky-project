@@ -2,6 +2,10 @@
 declare const Chart: any;
 
 interface StockChartsAPI {
+	/** Chart.js 전역 애니메이션 기본값을 다시 적용한다(검증·재초기화용). */
+	applyChartAnimationDefaults?: (chartLib?: any) => number | null;
+	/** 첫 등장 애니메이션 플러그인(검증용). */
+	entryAnimationPlugin?: any;
 	initMonthlyFromData?: (
 		tradeData: any[],
 		canvasId?: string,
@@ -12,6 +16,12 @@ interface StockChartsAPI {
 		opts?: any,
 		existingInstance?: any,
 	) => any;
+	balancedPercents?: (values: number[], digits?: number) => string[];
+	renderChartEmptyNote?: (
+		canvasId: string,
+		isEmpty: boolean,
+		message: string,
+	) => boolean;
 	createChart?: (canvasId: string, config: any, existingInstance?: any) => any;
 	holdingsChartConfig?: (series: any, texts: any, opts?: any) => any;
 	createHoldingsChart?: (
@@ -172,6 +182,31 @@ StockCharts.getLocale = function () {
 	return resolveLocale();
 };
 
+/**
+ * 조각 백분율을 함께 반올림해 표시값의 합이 100.0 이 되게 한다(최대잔여법).
+ *
+ * 조각마다 따로 toFixed 하면 합이 어긋난다 - 실측 2026-09-11: 매매 화면 도넛 범례 43개의 합이 99.9% 였다
+ * (배당 화면 18개는 우연히 100.0). 표 쪽은 StockFormatUtil.balancedPct 가 같은 규칙을 쓴다.
+ * 값이 비었거나 합이 0 이면 "0.0" 을 돌려준다.
+ */
+function balancedPercents(values: number[], digits?: number): string[] {
+	const scale = typeof digits === "number" ? digits : 1;
+	const factor = Math.pow(10, scale);
+	const list = Array.isArray(values) ? values.map((v) => (Number.isFinite(Number(v)) ? Number(v) : 0)) : [];
+	const total = list.reduce((a, b) => a + b, 0);
+	if (!list.length || total <= 0) return list.map(() => (0).toFixed(scale));
+	const exact = list.map((v) => (v / total) * 100 * factor);
+	const floors = exact.map((v) => Math.floor(v));
+	let spare = Math.round(100 * factor - floors.reduce((a, b) => a + b, 0));
+	const order = exact
+		.map((v, i) => ({ i, rem: v - Math.floor(v) }))
+		.sort((a, b) => b.rem - a.rem);
+	const bumped = floors.slice();
+	for (let k = 0; k < order.length && spare > 0; k++, spare--) bumped[order[k].i] += 1;
+	return bumped.map((v) => (v / factor).toFixed(scale));
+}
+StockCharts.balancedPercents = balancedPercents;
+
 StockCharts.formatNumber = function (value: any) {
 	return new Intl.NumberFormat(resolveLocale()).format(Number(value) || 0);
 };
@@ -184,6 +219,40 @@ StockCharts.formatCurrency = function (value: any) {
 StockCharts.formatCompactNumber = function (value: any) {
 	return compactNumber(value);
 };
+
+// 거래가 없던 달을 빼면 시간축이 거짓말을 한다.
+//
+// Chart.js 는 labels 문자열 배열을 카테고리 축으로 그리므로 점 간격이 날짜와 무관하게 
+// 모두 같다. 실측 2026-09-12: "월별 매매 금액" 은 2009-10 ~ 2026-09 의 204 개월 중 거래가 있던 
+// 61 개월만 그려, 143 개월(70%)이 통째로 빠졌다. 그 탓에 2010-03 → 2014-11 의 4.7 년 공백이 
+// 2018-03 → 2018-04 의 한 달과 같은 폭을 차지해, 활동이 17 년 내내 고르게 있었던 것처럼 보였다.
+//
+// 형제 화면인 배당 내역의 월별 막대는 이미 빈 달을 채운다(실측: 78 개월 전부 연속). 같은 모양의 
+// 차트가 화면마다 다른 규칙을 쓰지 않게 여기도 채운다.
+// 이 개수를 넘으면 해 단위로 묶는다. 60 개월(5년)까지는 월 막대가 읽힌다(실측 1900px 기준 칸 14px).
+const MONTHLY_BAR_LIMIT = 60;
+
+function fillMonthGaps(sortedMonths: string[]): string[] {
+	if (sortedMonths.length < 2) return sortedMonths;
+	const index = (m: string) => {
+		const year = Number(m.slice(0, 4));
+		const month = Number(m.slice(5, 7));
+		return Number.isFinite(year) && Number.isFinite(month) && month >= 1 && month <= 12
+			? year * 12 + (month - 1)
+			: null;
+	};
+	const first = index(sortedMonths[0]);
+	const last = index(sortedMonths[sortedMonths.length - 1]);
+	// 달 모양이 아닌 라벨이 섮이면 손대지 않는다 - 짐작하다 없는 달을 만드느니 그대로 두는 편이 낫다.
+	if (first === null || last === null || last < first) return sortedMonths;
+	const filled: string[] = [];
+	for (let i = first; i <= last; i++) {
+		const year = Math.floor(i / 12);
+		const month = (i % 12) + 1;
+		filled.push(year + "-" + (month < 10 ? "0" + month : String(month)));
+	}
+	return filled;
+}
 
 function buildMonthlyData(tradeData: any[] = []) {
 	const buyMap: Record<string, number> = {},
@@ -203,16 +272,54 @@ function buildMonthlyData(tradeData: any[] = []) {
 		}
 	});
 	const allMonths = Object.keys(buyMap).concat(Object.keys(sellMap));
-	const months = allMonths.filter((v, i, a) => a.indexOf(v) === i).sort();
+	const traded = allMonths.filter((v, i, a) => a.indexOf(v) === i).sort();
+	const months = fillMonthGaps(traded);
+	// 빈 달을 채우고 나면 전체 기간에서는 칸이 너무 많아진다 - 실측 2026-09-12: 204 개월을
+	// 그리면 막대 하나가 1900px 에서 1.5px, 375px 에서 0.38px 로 사실상 안 보인다.
+	// 길면 해 단위로 묶는다 - 칸이 줄어드는 것이지 자료가 사라지는 것은 아니며, 빈 해도 그대로 남아
+	// 시간축은 계속 정직하다. 월 단위가 보고 싶으면 기간을 좁히면 된다.
+	const bucket: "month" | "year" = months.length > MONTHLY_BAR_LIMIT ? "year" : "month";
+	if (bucket === "month") {
+		return {
+			labels: months,
+			buyData: months.map((m) => buyMap[m] || 0),
+			sellData: months.map((m) => sellMap[m] || 0),
+			// 판 달에만 값이 있다. 안 판 달은 null 로 두어 선이 0 으로 꺼지지 않게 한다.
+			profitData: months.map((m) => (m in profitMap ? profitMap[m] : null)),
+			hasSell,
+			bucket,
+		};
+	}
+	const years: string[] = [];
+	for (const m of months) {
+		const y = m.slice(0, 4);
+		if (years[years.length - 1] !== y) years.push(y);
+	}
+	const sumBy = (map: Record<string, number>, year: string) =>
+		months
+			.filter((m) => m.slice(0, 4) === year)
+			.reduce((acc, m) => acc + (map[m] || 0), 0);
 	return {
-		labels: months,
-		buyData: months.map((m) => buyMap[m] || 0),
-		sellData: months.map((m) => sellMap[m] || 0),
-		// 판 달에만 값이 있다. 안 판 달은 null 로 두어 선이 0 으로 꺼지지 않게 한다.
-		profitData: months.map((m) => (m in profitMap ? profitMap[m] : null)),
+		labels: years,
+		buyData: years.map((y) => sumBy(buyMap, y)),
+		sellData: years.map((y) => sumBy(sellMap, y)),
+		// 달 단위와 같은 규칙 - 한 번도 안 판 해는 null 로 두어 선을 끊는다.
+		profitData: years.map((y) =>
+			months.some((m) => m.slice(0, 4) === y && m in profitMap)
+				? sumBy(profitMap, y)
+				: null,
+		),
 		hasSell,
+		bucket,
 	};
 }
+
+(window as any).__monthlyChartInternals = {
+	fillMonthGaps,
+	buildMonthlyData,
+	buildRealizedProfitDataset,
+	snapLine,
+};
 
 function buildDonutData(
 	tradeData: any[] = [],
@@ -317,6 +424,187 @@ function makeDonutTooltipHandler(
 	};
 }
 
+// 자료가 한 점도 없으면 캔버스만 덩그러니 남는다 - 도넛은 이미 캔버스를 감추고 안내를 띄우는데
+// 월별 막대(배당·매매)는 그 처리가 없었다. 실측 2026-09-11(2013-01~03 구간): 배당 화면은 도넛 자리에
+// "해당 기간에 배당 내역이 없습니다" 가 뜨는데 바로 옆 "월별 배당금" 은 280px 빈 캔버스였고,
+// 매매 화면도 같은 모양(220px)이었다. 같은 화면 안에서 빈 상태 규칙이 카드마다 달랐다.
+// 자료가 생기면 안내를 걷어내고 캔버스를 되돌린다(조각이 htmx 로 다시 그려질 수 있다).
+function renderChartEmptyNote(
+	canvasId: string,
+	isEmpty: boolean,
+	message: string,
+): boolean {
+	const canvas = document.getElementById(canvasId) as HTMLElement | null;
+	if (!canvas) return false;
+	const noteId = canvasId + "EmptyNote";
+	const existing = document.getElementById(noteId);
+	if (!isEmpty) {
+		if (existing && existing.parentElement)
+			existing.parentElement.removeChild(existing);
+		canvas.style.display = "";
+		return false;
+	}
+	canvas.style.display = "none";
+	let note = existing;
+	if (!note) {
+		note = document.createElement("div");
+		note.id = noteId;
+		note.className =
+			"text-xs text-base-content/70 h-full flex items-center justify-center text-center";
+		(canvas.parentElement || document.body).appendChild(note);
+	}
+	note.textContent = message;
+	return true;
+}
+StockCharts.renderChartEmptyNote = renderChartEmptyNote;
+
+// 해 단위로 묶였으면 제목도 그렇게 말해야 한다 - "월별 매매 금액" 아래에 연 합계가 서 있으면
+// 막대 하나가 한 달치로 읽힌다. 제목은 barShell 이 그려 둔 h2(data-page-section)와 캔버스의
+// 접근성 이름 둘 다 갈아 끼운다. 서버가 다시 그려 주는 경우를 위해 원래 문구는 남겨 둔다.
+function applyMonthlyBucketTitle(
+	canvas: HTMLCanvasElement,
+	bucket: "month" | "year",
+) {
+	let scope: HTMLElement | null = canvas.parentElement;
+	while (scope && !scope.querySelector("[data-page-section]")) {
+		scope = scope.parentElement;
+	}
+	const heading = scope?.querySelector("[data-page-section]") as HTMLElement | null;
+	if (!heading) return;
+	if (!heading.dataset.barTitleDefault) {
+		heading.dataset.barTitleDefault = heading.textContent || "";
+	}
+	const yearly = appMessage(
+		"stockChartTitleYearlyTradeAmount",
+		"Yearly trade amount",
+	);
+	const next =
+		bucket === "year" ? yearly : heading.dataset.barTitleDefault || "";
+	if (!next) return;
+	heading.textContent = next;
+	canvas.setAttribute("aria-label", next);
+}
+
+// 실현손익은 그 달에 <b>판</b> 결과다 - 달과 달 사이에 이어지는 값이 아니다.
+//
+// 2026-09-14 이전에는 선이었다. 안 판 달을 null 로 두긴 했으나 `spanGaps: true` 가 그 구멍을 건너뛰어
+// 이어 버렸고 `tension` 이 두 매도 사이에 없는 궤적까지 그렸다(실측: 18 해 중 11 해만 매도인데 선은 18 칸을
+// 끊김 없이 갔다). 그 뒤 점으로 바꿔 봤으나 막대 둘 옆에 점 하나는 문법이 섞여 어색했다.
+//
+// 그래서 <b>같은 막대 문법으로, 자기 칸에서</b> 읽히게 한다. 실현손익은 그해 거래금액의 0~38%
+// (중앙값 3% 안팎)라 같은 축에 두면 대부분의 해에 2~7px 로 뭉개지고, 축만 달리해 막대를 나란히 두면
+// 높이가 견줄 수 있는 것처럼 보인다. 위/아래 칸으로 갈라 각자 축에서 읽게 한다.
+const REALIZED_PROFIT_COLOR = "rgba(189,44,56,0.75)";
+const REALIZED_LOSS_COLOR = "rgba(49,89,196,0.75)";
+
+/**
+ * 1 CSS 픽셀 선을 장치 픽셀 격자에 맞춘다.
+ *
+ * 캔버스 컨텍스트는 이미 DPR 로 확대돼 있으므로 좌표와 두께는 CSS 픽셀로 준다. 그대로 주면
+ * 선이 장치 픽셀 사이에 걸쳐 두 줄로 번지고, 정수로 반올림하면 이번엔 제자리를 벗어난다
+ * (실측 2026-09-14: 경계가 179.667px 인데 `Math.round(x) + 0.5` 가 180.5px 에 그려 0.83px 어긋났다).
+ *
+ * 규칙은 하나다 - 장치 픽셀 폭이 <b>홀수면 중심이 반픽셀</b>, 짝수면 정수여야 또렷하다.
+ */
+function snapLine(position: number, dpr: number) {
+	const ratio = dpr > 0 ? dpr : 1;
+	const widthDev = Math.max(1, Math.round(ratio));
+	// 홀수 폭은 '가장 가까운 반픽셀' 로 가야 한다. 정수로 반올림한 뒤 0.5 를 더하면 최대 0.5 장치픽셀
+	// 더 밀린다(실측: 179.667 -> 180.5, 0.83px 어긋남). 내림 후 0.5 가 맞다.
+	const centerDev =
+		widthDev % 2 === 1
+			? Math.floor(position * ratio) + 0.5
+			: Math.round(position * ratio);
+	return { center: centerDev / ratio, width: widthDev / ratio };
+}
+
+/**
+ * 두 칸(매매 금액 / 실현손익) 사이의 구분선.
+ *
+ * 축을 위아래로 쌓으면 경계에 눈금이 두 벌 붙는다 - 위 칸의 0 과 아래 칸의 꼭대기가 나란히 서서
+ * 어느 숫자가 어느 칸 것인지 한눈에 안 갈린다(실측 2026-09-14). 선 하나로 칸을 갈라 준다.
+ *
+ * 선은 두 칸이 맞닿는 자리(`y.bottom` = `y2.top`)에 정확히 놓는다 - 위 칸 막대의 밑변이 거기다.
+ */
+const panelDividerPlugin = {
+	id: "monthlyPanelDivider",
+	// 아래 칸에 아주 옅은 바탕을 깐다. 경계의 눈금(아래 칸의 꼭대기 값)이 선 위에 놓여
+	// 위 칸의 기준선처럼 읽히던 것을, 구역을 눈으로 갈라 해소한다.
+	beforeDatasetsDraw(chart: any) {
+		const bottom = chart.scales?.y2;
+		const area = chart.chartArea;
+		if (!bottom || !bottom.options?.display || !area) return;
+		const ctx = chart.ctx;
+		ctx.save();
+		ctx.fillStyle = "rgba(128,128,128,0.055)";
+		// 눈금 자리까지 함께 덮는다 - 경계의 눈금은 아래 칸 값인데, 바탕이 그림 영역에서만 끝나면
+		// 그 눈금만 흰 바탕에 남아 여전히 위 칸 것처럼 읽힌다.
+		ctx.fillRect(
+			0,
+			Math.round(bottom.top),
+			Math.round(area.right),
+			Math.round(bottom.bottom) - Math.round(bottom.top),
+		);
+		ctx.restore();
+	},
+	afterDatasetsDraw(chart: any) {
+		const top = chart.scales?.y;
+		const bottom = chart.scales?.y2;
+		if (!top || !bottom || !bottom.options?.display) return;
+		const area = chart.chartArea;
+		if (!area) return;
+		const line = snapLine(top.bottom, chart.currentDevicePixelRatio || 1);
+		const ctx = chart.ctx;
+		ctx.save();
+		ctx.strokeStyle = "rgba(128,128,128,0.45)";
+		ctx.lineWidth = line.width;
+		ctx.beginPath();
+		ctx.moveTo(Math.round(area.left), line.center);
+		ctx.lineTo(Math.round(area.right), line.center);
+		ctx.stroke();
+		ctx.restore();
+	},
+};
+
+/** 아래 칸에 들어가는 월별 실현손익 막대. */
+function buildRealizedProfitDataset(
+	profitData: (number | null)[],
+	bucket: "month" | "year" = "month",
+) {
+	const colors = profitData.map((v) =>
+		Number(v) < 0 ? REALIZED_LOSS_COLOR : REALIZED_PROFIT_COLOR,
+	);
+	// 해 단위로 묶였으면 범례도 그렇게 말해야 한다 - 제목은 이미 바꾸는데(applyMonthlyBucketTitle)
+	// 범례만 "매도한 달" 로 남으면 한 칸이 한 달로 읽힌다.
+	return {
+		type: "bar",
+		label:
+			bucket === "year"
+				? appMessage(
+						"stockLabelRealizedProfitYears",
+						"Realized profit (years with sales)",
+					)
+				: appMessage(
+						"stockLabelRealizedProfitMonths",
+						"Realized profit (months with sales)",
+					),
+		// 판 칸에만 값이 있다. 안 판 칸은 null 이라 막대가 아예 서지 않는다.
+		data: profitData,
+		// 매수/매도와 <b>같은 x 축</b>을 쓴다. 전용 축을 따로 두면 칸 가운데가 어긋난다
+		// (실측 2026-09-14: 매수·매도 쌍의 중앙 349.8px 인데 손익 막대는 373.1px - 23.3px 오른쪽).
+		xAxisID: "x",
+		yAxisID: "y2",
+		// grouped:false 라야 매수/매도 옆 '세 번째 자리' 로 밀리지 않고 칸 한가운데에 선다.
+		grouped: false,
+		// 묶이지 않으면 칸 전체 폭을 먹어 매수/매도보다 꼭 두 배 두꺼워진다(실측 20.97 vs 10.49).
+		// 기본값(0.9)의 절반을 줘서 매수/매도 한 개와 같은 폭으로 맞춘다.
+		barPercentage: 0.45,
+		backgroundColor: colors,
+		borderRadius: 3,
+		maxBarThickness: 36,
+	};
+}
+
 StockCharts.initMonthlyFromData = function (
 	tradeData: any[],
 	canvasId = "tradeMonthlyChart",
@@ -325,6 +613,20 @@ StockCharts.initMonthlyFromData = function (
 	const m = buildMonthlyData(tradeData);
 	const ctx = document.getElementById(canvasId) as HTMLCanvasElement | null;
 	if (!ctx) return null;
+	applyMonthlyBucketTitle(ctx, m.bucket);
+	if (
+		renderChartEmptyNote(
+			canvasId,
+			m.labels.length === 0,
+			appMessage("stockChartMessageNoTradeData", "No trades in this period."),
+		)
+	) {
+		if (existingInstance)
+			try {
+				existingInstance.destroy();
+			} catch (e) {}
+		return null;
+	}
 	if (existingInstance)
 		try {
 			existingInstance.destroy();
@@ -335,12 +637,15 @@ StockCharts.initMonthlyFromData = function (
 	const gridY = { color: gridColor, drawTicks: false, borderDash: [4, 4] } as any;
 	const inst = new Chart(ctx, {
 		type: "bar",
+		plugins: [panelDividerPlugin],
 		data: {
 			labels: m.labels,
 			datasets: [
 				{
 					label: appMessage("stockLabelBuy", "Buy"),
 					data: m.buyData,
+					xAxisID: "x",
+					yAxisID: "y",
 					backgroundColor: "rgba(239,68,68,0.7)",
 					borderRadius: 6,
 					maxBarThickness: 36,
@@ -348,31 +653,14 @@ StockCharts.initMonthlyFromData = function (
 				{
 					label: appMessage("stockLabelSell", "Sell"),
 					data: m.sellData,
+					xAxisID: "x",
+					yAxisID: "y",
 					backgroundColor: "rgba(59,130,246,0.7)",
 					borderRadius: 6,
 					maxBarThickness: 36,
 				},
-				// 실현손익 선(오른쪽 축). 월별 표에만 있던 값을 차트에도 얹어, 표와 차트가 같은 숫자를 두 번 말하는
-				// 대신 차트는 '언제 팔아서 얼마 남겼나' 의 흐름을 답한다(2026-09-08). 매도가 하나도 없으면 선도 축도 없다.
-				...(m.hasSell
-					? [
-							{
-								type: "line",
-								label: appMessage("stockLabelRealizedProfit", "Realized profit"),
-								data: m.profitData,
-								yAxisID: "y1",
-								order: 0,
-								borderColor: "rgba(189,44,56,0.9)",
-								backgroundColor: "rgba(189,44,56,0.9)",
-								borderWidth: 2.5,
-								pointRadius: 0,
-								pointHoverRadius: 5,
-								spanGaps: true,
-								tension: 0.35,
-								fill: false,
-							},
-						]
-					: []),
+				// 실현손익(오른쪽 축). 매도가 하나도 없으면 축도 표식도 없다.
+				...(m.hasSell ? [buildRealizedProfitDataset(m.profitData, m.bucket)] : []),
 			],
 		},
 		options: {
@@ -388,8 +676,8 @@ StockCharts.initMonthlyFromData = function (
 					callbacks: {
 						label: (ctx: any) => {
 							if (ctx.parsed.y === null || ctx.parsed.y === undefined) return null;
-							// 실현손익만 부호가 뜻이다.
-							if (ctx.dataset.type === "line") {
+							// 실현손익만 부호가 뜻이다(아래 칸 막대).
+							if (ctx.dataset.yAxisID === "y2") {
 								const v = Number(ctx.parsed.y) || 0;
 								return ctx.dataset.label + ": " + (v >= 0 ? "+" : "-") + "\u20a9" + fmtAmt(Math.abs(v));
 							}
@@ -399,21 +687,36 @@ StockCharts.initMonthlyFromData = function (
 				},
 			},
 			scales: {
+				// 세 막대가 한 축을 쓴다 - 같은 달이 같은 세로줄에 서려면 축이 하나여야 한다.
 				x: { grid: gridX, ticks: { font: { size: 10 } } },
-				y: {
+				// 매도가 있을 때만 칸을 나눈다 - 판 적이 없으면 아래 칸은 빈 띠일 뿐이다.
+				//
+				// 스택 안에서는 <b>먼저 적은 축이 아래</b>다(실측 2026-09-14: y 를 먼저 적었더니 손익 칸이 위로 갔다).
+				// 실현손익 칸은 x 눈금 바로 위에 와야 "이 해에 얼마" 로 읽히므로 y2 를 먼저 적는다.
+				y2: {
+					display: m.hasSell,
+					stack: "monthly",
+					// 1 로 두면 아래 칸이 56px 이라 눈금 간격이 2억 단위로 벌어져 축이 -2~2억 이 된다
+					// (실제 값은 -0.07~1.3억). 눈금 셋이 촘촘히 들어갈 만큼만 키운다.
+					stackWeight: 1.5,
+					// beginAtZero 는 두지 않는다 - 막대 차트는 이미 0 을 기준선으로 잡고, 이걸 켜면
+					// 눈금이 대칭으로 벌어져(실측 2026-09-14: 실제 -0.07~1.3억인데 축이 -2~2억) 아래 칸 절반이 빈다.
 					grid: gridY,
 					ticks: {
 						font: { size: 10 },
 						callback: (v: any) => compactNumber(v),
 					},
 				},
-				y1: {
-					display: m.hasSell,
-					position: "right",
-					grid: { drawOnChartArea: false },
+				y: {
+					...(m.hasSell ? { stack: "monthly", stackWeight: 3 } : {}),
+					grid: gridY,
 					ticks: {
 						font: { size: 10 },
-						callback: (v: any) => compactNumber(v),
+						// 위 칸의 0 은 아래 칸의 꼭대기 눈금과 나란히 서서 겹친다. 둘 중 이 0 을 비운다 -
+						// 막대가 어디서 시작하는지는 구분선이 말해 주고, 아래 칸은 눈금 하나를 잃으면
+						// 양수 쪽 배율이 통째로 사라진다(실측 2026-09-14 연 단위: 0 과 -1억 만 남았다).
+						callback: (v: any) =>
+							m.hasSell && Number(v) === 0 ? "" : compactNumber(v),
 					},
 				},
 			},
@@ -455,7 +758,7 @@ StockCharts.initDonutFromData = function (
 				? appMessage("stockChartMessageNoSellData", "No sell trades in this period.")
 				: appMessage("stockChartMessageNoBuyData", "No buy trades in this period.");
 			const holder = document.createElement("div");
-			holder.className = "text-xs opacity-40 pt-4 text-center";
+			holder.className = "text-xs text-base-content/70 pt-4 text-center";
 			holder.textContent = emptyText;
 			legendEl.replaceChildren(holder);
 		}
@@ -493,9 +796,11 @@ StockCharts.initDonutFromData = function (
 			: appMessage("stockChartTitleBuyConcentration", "Buy Concentration");
 	if (legendEl) {
 		const total = d.data.reduce((a: number, b: number) => a + b, 0);
+		// 조각마다 따로 반올림하면 범례 백분율의 합이 100.0 이 아니게 된다(실측: 매매 도넛 43개 합 99.9%).
+		const shownPercents = balancedPercents(d.data, 1);
 		legendEl.innerHTML = d.labels
 			.map((l: string, i: number) => {
-				const pct = total > 0 ? ((d.data[i] / total) * 100).toFixed(1) : "0.0";
+				const pct = shownPercents[i];
 				const raw = d.rawData[i];
 				const sign = isProfitMode ? (raw >= 0 ? "\u25b2 " : "\u25bc ") : "";
 				// 손익 부호 색은 표와 같은 테마 토큰(text-error/text-info)으로. 인라인 rgba(239,68,68,.9)+opacity .75 는
@@ -507,7 +812,7 @@ StockCharts.initDonutFromData = function (
 					: "opacity-75";
 				return (
 					'<div class="flex items-center gap-1 mb-0.5">' +
-					'<span style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' +
+					'<span class="chart-legend-swatch" style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' +
 					d.colors[i] +
 					'"></span>' +
 					'<span class="flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' +
@@ -571,11 +876,17 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 	const buyCountData: any[] = (series && series.buyCount) || [];
 	const dailyRealizedData: any[] = (series && series.dailyRealized) || [];
 	const showMarkers = !opts || opts.showMarkers !== false;
-	const animate = !!(opts && opts.animate);
+	const animate = opts && opts.animate === false ? false : true;
 	const t = texts || {};
 	const o = opts || {};
 	// maxLabel/minLabel 이 주어진 차트만 범위 내 최고/최저 주석을 그린다
 	const showExtremes = !!(t.maxLabel && t.minLabel);
+
+	// 원가 계열이 비어 있으면 그 선은 아예 긋지 않는다. 지금 보유가 없는 종목의 "현재 평균단가" 는
+	// 0 이 아니라 없는 값인데, 0 으로 그으면 종가가 20 만 원인 차트 바닥에 선이 깔려 공짜로 산 것처럼
+	// 읽힌다(실측 2026-09-12: 매매 이력 43 종목 중 34 종목이 수량 0). 평가액 선의 채움도 원가 선을
+	// 기준으로 삼고 있으니(target "-1") 함께 끈다 - 기준이 없는데 위/아래를 칠할 수는 없다.
+	const hasCostSeries = costData.length > 0;
 
 	const tradeMarkersPlugin = {
 		id: "holdingsTradeMarkers",
@@ -715,23 +1026,27 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 		data: {
 			labels: labels,
 			datasets: [
-				{
-					type: "line",
-					label: t.costLabel || "",
-					data: costData,
-					borderColor: "rgba(156, 163, 175, 1)",
-					borderWidth: 2,
-					borderDash: [5, 5],
-					fill: false,
-					order: 0,
-				},
+				...(hasCostSeries
+					? [
+							{
+								type: "line",
+								label: t.costLabel || "",
+								data: costData,
+								borderColor: "rgba(139, 145, 156, 1)",
+								borderWidth: 2,
+								borderDash: [5, 5],
+								fill: false,
+								order: 0,
+							},
+						]
+					: []),
 				{
 					type: "line",
 					label: t.valueLabel || "",
 					data: valueData,
-					borderColor: "rgba(75, 192, 192, 1)",
+					borderColor: "rgba(62, 159, 159, 1)",
 					borderWidth: 2,
-					fill: {
+					fill: !hasCostSeries ? false : {
 						target: "-1",
 						above: "rgba(255, 99, 132, 0.25)",
 						below: "rgba(54, 162, 235, 0.25)",
@@ -741,7 +1056,9 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 			],
 		},
 		options: {
-			animation: animate ? { duration: 600 } : false,
+			// animate 를 안 주면 켜 둔다 - 예전에는 그 반대라, 호출부가 한 줄 빠뜨리면
+			// 그 화면만 조용히 정지 화면이 됐다.
+			animation: animate === false ? false : { duration: CHART_ANIMATION_MS },
 			normalized: true,
 			elements: {
 				line: { tension: 0.3 },
@@ -842,6 +1159,68 @@ StockCharts.createHoldingsChart = function (
 // 축 눈금·범례 글자색을 테마 본문색에 맞춘다. 실측 2026-09-09(qa/chart-tick-contrast.cjs): Chart.js 기본 #666 은 다크 카드 배경
 // rgb(15,22,35) 위에서 3.15:1 로 11px 글자 기준(4.5:1)에 못 미쳤다(라이트 5.74:1). --color-base-content 는 oklch 라 1px 캔버스로 rgb 를
 // 얻고 alpha .75 로 본문보다 한 단계 옅게 쓴다. 테마 토글(html[data-theme]) 때 살아 있는 차트도 다시 그린다.
+/**
+ * 차트 애니메이션 길이(ms). <b>한 곳에서만 정한다.</b>
+ *
+ * 2026-09-14 까지는 화면마다 달랐다 - 자산 성장 · 종목/계좌 상세는 600ms 인데 대시보드 · 매매 · 배당 ·
+ * 활동 · 시뮬레이터는 Chart.js 기본값 1000ms 였다(실측 9 화면 12 차트). 같은 앱에서 어떤 차트는 느리게,
+ * 어떤 차트는 빠르게 그려지면 화면을 옮길 때마다 리듬이 달라진다.
+ *
+ * <p><b>prefers-reduced-motion 으로 감싸지 않는다</b> - 이 PC 는 Windows 애니메이션 효과가 꺼져 있어
+ * 그 질의가 항상 참이다. 감싸면 의도한 애니메이션이 아예 안 보인다(전에 한 번 겪었다).
+ */
+const CHART_ANIMATION_MS = 600;
+
+/**
+ * 첫 등장 애니메이션.
+ *
+ * <p>애니메이션 길이를 맞춰도 <b>막대가 자라지 않았다</b>(도넛은 회전이 보였다). 실측 2026-09-14 -
+ * 차트를 만들면 Chart.js 가 생성 도중 캔버스를 300x150 에서 실제 크기로 <b>리사이즈</b>하고,
+ * 그 리사이즈는 {@code update("resize")} 로 처리되는데 이 전환은 길이가 <b>0</b> 이다. 그래서 최종 모양이
+ * 즉시 박히고, 이어지는 첫 {@code update} 는 '같은 값 -> 같은 값' 이라 움직일 것이 남지 않는다:
+ *
+ * <pre>resize 300x150 -> resize 858x280 -> update(resize) -> update(undefined)</pre>
+ *
+ * <p>그래서 레이아웃이 끝난 다음 프레임에 <b>한 번만</b> 되감아 다시 그린다. 리사이즈 전환의 길이를 늘리는
+ * 방법도 있지만 그러면 창 크기를 바꿀 때마다 모든 차트가 600ms 씩 다시 그려진다 - 이 앱은 그 재렌더를
+ * 피하려고 {@code resizeIfChanged} 까지 두고 있다.
+ */
+const entryAnimationPlugin = {
+	id: "chartEntryAnimation",
+	afterInit(chart: any) {
+		if (!chart || chart.$entryAnimationQueued) return;
+		if (chart.options?.animation === false) return;
+		chart.$entryAnimationQueued = true;
+		const raf =
+			typeof requestAnimationFrame === "function"
+				? requestAnimationFrame
+				: (fn: any) => setTimeout(fn, 16);
+		// 두 프레임 기다린다 - 생성 직후의 리사이즈가 한 번 더 오는 경우가 있어(실측 t=11ms),
+		// 되감자마자 그것이 다시 최종값으로 박아 버린다.
+		raf(() =>
+			raf(() => {
+				try {
+					if (!chart.canvas || !chart.ctx) return;
+					chart.reset();
+					chart.update();
+				} catch (e) {}
+			}),
+		);
+	},
+};
+StockCharts.entryAnimationPlugin = entryAnimationPlugin;
+
+/** Chart.js 전역 기본값. 개별 차트가 options.animation 을 안 주면 이 값으로 그려진다. */
+function applyChartAnimationDefaults(chartLib: any = (globalThis as any).Chart) {
+	if (!chartLib?.defaults) return null;
+	chartLib.defaults.animation = {
+		...(chartLib.defaults.animation || {}),
+		duration: CHART_ANIMATION_MS,
+	};
+	return chartLib.defaults.animation.duration;
+}
+StockCharts.applyChartAnimationDefaults = applyChartAnimationDefaults;
+
 function resolveCssColor(css: string): [number, number, number] | null {
 	try {
 		const cv = document.createElement("canvas") as HTMLCanvasElement;
@@ -867,10 +1246,37 @@ function chartTextColor(): string {
 	const rgb = resolveCssColor(raw);
 	return rgb ? "rgba(" + rgb.join(",") + ",0.75)" : raw;
 }
+/**
+ * 막대·도넛 조각의 테두리 색. 채움만으로는 요소 경계가 배경과 구분되지 않는다 - 실측 2026-09-10:
+ * 라이트 152개 · 다크 47개 요소가 WCAG 1.4.11(비텍스트 3:1) 미달이었고(도넛 amber 1.51 · 막대 1.82~2.88),
+ * 막대는 borderWidth 0, 도넛은 테두리색이 배경과 같아(대비 1.00) 채움이 유일한 단서였다.
+ * 팔레트를 어둡게 바꾸면 계열끼리 구분이 되레 나빠지므로, 색은 두고 경계를 보이게 한다.
+ * 값은 폼 컨트롤 경계와 같은 토큰(--color-control-line: 라이트 3.25 · 다크 3.34)을 쓴다.
+ */
+function chartElementEdgeColor(): string {
+	let raw = "";
+	try {
+		raw = getComputedStyle(document.documentElement).getPropertyValue("--color-control-line").trim();
+	} catch (e) {}
+	if (!raw) return "#868fa1";
+	const rgb = resolveCssColor(raw);
+	return rgb ? "rgb(" + rgb.join(",") + ")" : raw;
+}
+
+/** 테두리를 얹을 차트 종류. 선 차트의 borderColor 는 선 자체 색이라 건드리면 안 된다. */
+const EDGE_TYPES = ["bar", "doughnut", "pie", "polarArea"];
+
 function applyChartTheme(chartLib: any = (globalThis as any).Chart): string | null {
 	if (!chartLib || !chartLib.defaults) return null;
 	const c = chartTextColor();
 	chartLib.defaults.color = c;
+	const edge = chartElementEdgeColor();
+	chartLib.defaults.datasets = chartLib.defaults.datasets || {};
+	for (const type of EDGE_TYPES) {
+		chartLib.defaults.datasets[type] = chartLib.defaults.datasets[type] || {};
+		chartLib.defaults.datasets[type].borderColor = edge;
+		chartLib.defaults.datasets[type].borderWidth = 1;
+	}
 	const instances: any[] = chartLib.instances ? Object.values(chartLib.instances) : [];
 	// 살아 있는 차트는 defaults 만 바꿔서는 다시 칠해지지 않는다(실측: 테마 토글 뒤 scale.options.ticks.color 가 옛 값 유지) -
 	// 눈금·축 제목·범례 자리에 직접 써 넣고 다시 그린다.
@@ -883,12 +1289,24 @@ function applyChartTheme(chartLib: any = (globalThis as any).Chart): string | nu
 			}
 			const labels = chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels;
 			if (labels) labels.color = c;
+			// 이미 만들어진 차트는 defaults 를 안 다시 읽는다. 데이터셋에 직접 써 넣는다
+			// (borderWidth 0 을 명시한 곳이 있어 falsy 면 1 로 올린다).
+			for (const ds of (chart.data && chart.data.datasets) || []) {
+				const type = ds.type || (chart.config && (chart.config.type || (chart.config._config && chart.config._config.type)));
+				if (!EDGE_TYPES.includes(type)) continue;
+				ds.borderColor = edge;
+				if (!ds.borderWidth) ds.borderWidth = 1;
+			}
 			chart.update("none");
 		} catch (e) {}
 	}
 	return c;
 }
 applyChartTheme();
+applyChartAnimationDefaults();
+try {
+	(globalThis as any).Chart?.register?.(entryAnimationPlugin);
+} catch (e) {}
 // 차트 텍스트 대안 플러그인(common.ts 정의). 이 파일은 chart.umd 뒤에 로드되므로 여기서 한 번 등록하면 이후 만드는 차트 전부에 적용된다.
 try {
 	const summaryPlugin = (globalThis as any).__chartSummaryInternals?.chartSummaryPlugin;
@@ -899,6 +1317,16 @@ try {
 		new MutationObserver(() => applyChartTheme()).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 	}
 } catch (e) {}
-(window as any).__chartThemeInternals = { resolveCssColor, chartTextColor, applyChartTheme };
+// 종이에는 라이트 팔레트를 쓴다(main.css 의 @media print 가 [data-theme="dark"] 의 --color-* 를 라이트 값으로 덮는다).
+// 그런데 캔버스는 CSS 변수 교체에 반응하지 않는다 - 이미 칠해 둔 픽셀이라 그대로 찍힌다. 실측 2026-09-11(816px, print):
+// 다크 테마로 인쇄하면 축·범례 글자가 rgb(240,240,240) 로 흰 종이 대비 1.14 였다(자산성장 1,053px · 배당 5,966px).
+// 인쇄 직전에 다시 칠하면 라이트와 같은 rgb(24,24,24)·대비 17.76 이 된다. 끝나면 화면 색으로 되돌린다.
+try {
+	if (typeof globalThis.addEventListener === "function") {
+		globalThis.addEventListener("beforeprint", () => applyChartTheme());
+		globalThis.addEventListener("afterprint", () => applyChartTheme());
+	}
+} catch (e) {}
+(window as any).__chartThemeInternals = { resolveCssColor, chartTextColor, applyChartTheme , applyChartAnimationDefaults, CHART_ANIMATION_MS };
 // Attach to window so templates can use <script src="/js/stock-charts.js"></script>
 (window as any).StockCharts = StockCharts;

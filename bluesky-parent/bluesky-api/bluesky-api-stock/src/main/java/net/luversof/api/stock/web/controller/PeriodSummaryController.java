@@ -28,6 +28,8 @@ public class PeriodSummaryController {
       @RequestParam UUID userId,
       @RequestParam(required = false) Instant startDate,
       @RequestParam(required = false) Instant endDate) {
-    return periodSummaryService.findPeriodSummary(userId, startDate, endDate);
+    java.time.Instant[] range =
+        net.luversof.api.stock.web.support.RequestRangeUtil.ordered(startDate, endDate);
+    return periodSummaryService.findPeriodSummary(userId, range[0], range[1]);
   }
 }

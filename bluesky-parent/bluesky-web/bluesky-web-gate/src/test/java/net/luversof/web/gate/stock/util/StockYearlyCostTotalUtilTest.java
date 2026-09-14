@@ -34,7 +34,8 @@ class StockYearlyCostTotalUtilTest {
             bd("28580530"),
             bd("8040065"),
             bd("1418030"),
-            bd("27162500")),
+            bd("27162500"),
+            7L),
         new YearlyCostSummary(
             2025,
             bd("21141"),
@@ -43,7 +44,8 @@ class StockYearlyCostTotalUtilTest {
             bd("16632675"),
             bd("13705309"),
             bd("2108300"),
-            bd("14524375")),
+            bd("14524375"),
+            11L),
         // 매매만 있고 배당이 없던 해. 손실로 끝난 해이기도 하다.
         new YearlyCostSummary(
             2018,
@@ -53,7 +55,8 @@ class StockYearlyCostTotalUtilTest {
             BigDecimal.ZERO,
             BigDecimal.ZERO,
             BigDecimal.ZERO,
-            BigDecimal.ZERO));
+            BigDecimal.ZERO,
+            2L));
   }
 
   /** 일곱 열이 모두 그냥 더한 값이다. */
@@ -99,7 +102,8 @@ class StockYearlyCostTotalUtilTest {
     var totals =
         StockYearlyCostTotalUtil.of(
             Arrays.asList(
-                new YearlyCostSummary(2026, null, null, bd("100"), null, null, null, null), null));
+                new YearlyCostSummary(2026, null, null, bd("100"), null, null, null, null, 7L),
+                null));
 
     assertThat(totals.realizedProfit()).isEqualByComparingTo(bd("100"));
     assertThat(totals.tradeFee()).isEqualByComparingTo(BigDecimal.ZERO);

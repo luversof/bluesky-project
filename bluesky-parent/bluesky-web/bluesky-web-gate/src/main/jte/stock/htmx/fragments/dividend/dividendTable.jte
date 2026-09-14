@@ -23,17 +23,44 @@
 @param String taxLabel
 @param String taxableAmountLabel
 @param String totalLabel
+<%-- 빈 기간일 때 '기간 넓히기' 를 띄울지. 부모 화면이 '전체' 인지 알고 있다. --%>
+@param boolean widenRangeAction = false
 
 !{
+	String zeroAmountTitle = MessageUtil.getMessage("stock.dividend.zero.amount.title");
 	String sortField = sort != null ? sort.split(",")[0] : "";
 	String sortDir = sort != null && sort.contains(",") ? sort.split(",")[1] : "";
 	DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	// 기준 가격·기준일 원금이 비는 줄이 왜 비었는지 그 자리에서 말한다. 실측 2026-09-11(전체 기간 202건 중 5건):
+	// 하나금융지주 2건은 매매 기록 자체가 없고, 삼성SDI·NAVER·HK이노엔 3건은 결산배당인데 배당 기준일이 기록돼 있지 않아
+	// 지급일로 되짚는다 - 그 사이에 팔았으니 그 날 보유가 0 이다(api 의 원장 점검도 같은 이유로 이 3건을 지적하지 않는다).
+	// 이 줄들은 수익률 분자·분모에서 함께 빠진다. 수익률 칸의 근거(stock.dividend.yield.basis.excluded)와 짝이다.
+	// 근거는 "항상 보이는" 수익률 칸 한 곳에만 단다. 세 칸에 달았더니 행 하나가 1,146B 가 되어
+	// 행당 1KB 상한(DividendTableCompactOutputTest)을 넘었다 - 실측 2026-09-11. 기준 가격·기준일 원금 칸은
+	// xl 이상에서만 보이고 그때도 이 칸이 바로 옆이다.
+	java.util.function.Function<DividendView, String> basisMissingTitle = item -> {
+		if (item.principalCost() != null) {
+			return null;
+		}
+		java.time.Instant basisInstant = item.recordDate() != null ? item.recordDate() : item.payDate();
+		if (basisInstant == null) {
+			return null;
+		}
+		String basisDay = dateFormatter.format(basisInstant.atZone(zone));
+		String note = java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.basis.missing"), basisDay);
+		// "기준일이 따로 적혀 있지 않다" 는 비어 있는 경우만이 아니다 - 실측 2026-09-11: 이 5건은 모두 기준일이
+		// 지급일과 같은 날로 적혀 있었다. api 의 원장 점검도 같은 기준(hasOwnRecordDate: 기준일이 있고 지급일과 다를 것)으로
+		// 이 줄들을 지적하지 않는다. 그래서 같은 날이면 "지급일로 되짚었다" 고 밝힌다.
+		boolean ownRecordDate = item.recordDate() != null && item.payDate() != null
+			&& !dateFormatter.format(item.recordDate().atZone(zone)).equals(dateFormatter.format(item.payDate().atZone(zone)));
+		return ownRecordDate ? note : note + " " + MessageUtil.getMessage("stock.dividend.basis.missing.paydate");
+	};
 	String dateLabel = MessageUtil.getMessage("common.label.date");
 	String quantityLabel = MessageUtil.getMessage("common.label.quantity");
 	String referencePriceLabel = MessageUtil.getMessage("stock.column.reference.price");
 	String basisCostLabel = MessageUtil.getMessage("stock.dividend.yield.column.basis.cost");
 	String yieldOnBasisCostLabel = MessageUtil.getMessage("stock.dividend.yield.column.yield.on.basis.cost");
-	String noDividendHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.history");
+	String noDividendHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.period.history");
 }
 
 	<!-- Collapsible Detail List -->
@@ -73,10 +100,10 @@
 							${netAmountLabel} @if(sortField.equals("netAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
 						<th scope="col" class="text-right hidden md:table-cell">${quantityLabel}</th>
-						<th scope="col" class="text-right hidden xl:table-cell">${referencePriceLabel}</th>
-						<th scope="col" class="text-right hidden xl:table-cell">${basisCostLabel}</th>
+						<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${referencePriceLabel}</th>
+						<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${basisCostLabel}</th>
 						<th scope="col" class="text-right">${yieldOnBasisCostLabel}</th>
-						<th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell" tabindex="0" aria-sort="${sortField.equals("tax") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
+						<th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell print:table-cell" tabindex="0" aria-sort="${sortField.equals("tax") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 							hx-vals='{"sort": "tax,${sortField.equals("tax") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
 							${taxLabel} @if(sortField.equals("tax"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
@@ -95,30 +122,36 @@
 						<td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
 						<td class="text-right text-dividend font-bold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
 						<td class="text-right hidden md:table-cell amount-value">${item.quantity() != null ? decimalFormat.format(item.quantity()) : "-"}</td>
-						<td class="text-right hidden xl:table-cell amount-value">${item.referencePrice() != null ? decimalFormat.format(item.referencePrice()) : "-"}</td>
-						<td class="text-right hidden xl:table-cell amount-value">${item.principalCost() != null ? decimalFormat.format(item.principalCost()) : "-"}</td>
-						<td class="text-right text-dividend font-medium">${percentFormat.apply(item.yieldOnCostPct())}</td>
-						<td class="text-right hidden lg:table-cell amount-value">${item.tax() != null && item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : "-"}</td>
-						<td class="text-right amount-value">${item.taxableAmount() != null && item.taxableAmount().signum() != 0 ? decimalFormat.format(item.taxableAmount()) : "-"}</td>
+						<td class="text-right hidden xl:table-cell print:table-cell amount-value">${item.referencePrice() != null ? decimalFormat.format(item.referencePrice()) : "-"}</td>
+						<td class="text-right hidden xl:table-cell print:table-cell amount-value">${item.principalCost() != null ? decimalFormat.format(item.principalCost()) : "-"}</td>
+						<td class="text-right text-dividend font-medium" title="${basisMissingTitle.apply(item)}">${percentFormat.apply(item.yieldOnCostPct())}@if(basisMissingTitle.apply(item) != null)<span class="sr-only">${basisMissingTitle.apply(item)}</span>@endif</td>
+						<%-- 이 표에서 "-" 는 두 뜻으로 읽힌다 - 0 원(세금 147 · 과세금액 119 줄)과 값 없음(기준 가격 등 5 줄, 까닭 tooltip 있음).
+						     0 을 그대로 적으면 표가 0 으로 도배되므로(2026-09-08 결정) 기호는 두고 0 쪽에만 까닭을 붙인다. --%>
+						<td class="text-right hidden lg:table-cell print:table-cell amount-value" title="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}">${item.tax() != null && item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : "-"}</td>
+						<td class="text-right amount-value" title="${item.taxableAmount() != null && item.taxableAmount().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.taxableAmount() != null && item.taxableAmount().signum() == 0 ? zeroAmountTitle : null}">${item.taxableAmount() != null && item.taxableAmount().signum() != 0 ? decimalFormat.format(item.taxableAmount()) : "-"}</td>
 					</tr>
 					@endfor
 					@if(dividendList == null || dividendList.isEmpty())
 					<tr>
-						<td colspan="11">@template._components.ui.emptyState(message = noDividendHistoryLabel)</td>
+						<td colspan="11">@template._components.ui.emptyState(message = noDividendHistoryLabel, widenRangeAction = widenRangeAction)</td>
 					</tr>
 					@endif
 					</tbody>
 					<tfoot>
 						<tr class="font-bold bg-base-200">
-							<td colspan="3" class="text-center sm:text-right sm:pr-4">${totalLabel}</td>
+							<%-- 합계 라벨의 colspan 은 고정인데 그 범위 안의 계좌 열은 sm 미만에서 숨는다. 그대로 두면 합계 줄이 헤더보다
+						     한 칸 넓어져 값이 다른 열 밑에 붙는다 - 실측 2026-09-11 375px: 헤더 보임 6 칸인데 합계 줄은 7 칸.
+						     숨는 열은 colspan 밖으로 빼고 헤더와 같은 클래스를 단 빈 칸으로 둔다. --%>
+							<th scope="row" colspan="2" class="text-center sm:text-right sm:pr-4">${totalLabel}</th>
+							<td class="hidden sm:table-cell"></td>
 							<td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
 							<td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
 							<td class="text-right hidden md:table-cell">-</td>
-							<td class="text-right hidden xl:table-cell">-</td>
-							<td class="text-right hidden xl:table-cell">-</td>
+							<td class="text-right hidden xl:table-cell print:table-cell">-</td>
+							<td class="text-right hidden xl:table-cell print:table-cell">-</td>
 							<td class="text-right">-</td>
-							<td class="text-right font-mono hidden lg:table-cell amount-value">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
-							<td class="text-right font-mono amount-value">${totalTaxableAmount != null ? decimalFormat.format(totalTaxableAmount) : "0"}</td>
+							<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">@if(totalTax == null || totalTax.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTax)}@endif</td>
+							<td class="text-right font-mono amount-value">@if(totalTaxableAmount == null || totalTaxableAmount.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTaxableAmount)}@endif</td>
 						</tr>
 					</tfoot>
 				</table>

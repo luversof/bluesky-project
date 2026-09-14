@@ -18,6 +18,7 @@
 @param java.time.Instant startDate = null
 @param java.time.Instant endDate = null
 @param String timeZone = null
+@param java.time.LocalDate priceBasisDate = null
 @param java.util.List<net.luversof.web.gate.stock.domain.Account> accountList = null
 @param java.util.List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = null
 @param java.util.List<String> stockTagList = java.util.List.of()
@@ -84,6 +85,12 @@
 	String profitAnalysisLabel = MessageUtil.getMessage("stock.asset.growth.profit.analysis");
 	String principalLabel = MessageUtil.getMessage("stock.label.principal");
 	String totalAssetDatasetLabel = MessageUtil.getMessage("stock.asset.growth.dataset.total.asset");
+	// 범례의 ■ 는 차트의 선 색과 <b>같은 값</b>이라야 한다(assetGrowth.ts 의 dividendChart 데이터셋).
+	// 2026-09-12 까지는 tailwind 의 -400 계열을 써서 실제 선 색과 달랐고, 흰 바탕에서 green-400 은 대비 1.78 로
+	// 사실상 보이지 않았다(indigo 129,140,248 vs 선 99,102,241 / green 74,222,128 vs 선 29,167,80).
+	// 낱말이 바로 옆에 이름을 적고 있으므로 이 글자 자체는 보조기술에서 숨긴다.
+	String assetGrowthRealizedSwatch = "rgb(99, 102, 241)";
+	String assetGrowthDividendSwatch = "rgb(29, 167, 80)";
 	String cumulativeRealizedDatasetLabel = MessageUtil.getMessage("stock.asset.growth.dataset.cumulative.realized");
 	String cumulativeDividendLabel = MessageUtil.getMessage("stock.summary.label.cumulative.dividend");
 	String cumulativeTotalDatasetLabel = MessageUtil.getMessage("stock.asset.growth.dataset.cumulative.total");
@@ -257,17 +264,23 @@
 		<div class="w-full flex flex-col gap-4">
 			@if(ts == null || ts.isEmpty())
 				<div class="w-full flex justify-center items-center" style="height: 600px;">
-					@template._components.ui.emptyState(message = noDataLabel)
+					@template._components.ui.emptyState(message = noDataLabel, widenRangeAction = !isAllMode)
 				</div>
 			@else
+				<%-- 이 화면도 평가액을 보여 주므로 그 값이 어느 날 종가 기준인지 적는다
+				     (실측 2026-09-11: 평가값을 보여 주는 여섯 화면 중 여기와 월배당 탭만 빠져 있었다). --%>
 				<p class="min-w-0 text-xs text-base-content/60">
 					<span>📈 ${chartDescriptionLabel} &bull;</span>
+					@if(priceBasisDate != null)
+					<span>${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())} &bull;</span>
+					@endif
 					<span class="inline-block text-info">${clickDateHoldingsLabel}</span>
 				</p>
 				<%-- 요약은 시리즈와 같은 호출에서 이미 계산돼 왔으므로 별도 요청 없이 바로 렌더한다. --%>
 				@template.stock.htmx.fragments.assetGrowthPeriodReturnSummary(
 					fromDate = startLocal != null ? startLocal.toString() : "",
 					toDate = endDisplayLocal != null ? endDisplayLocal.toString() : "",
+					closingIsToday = endDisplayLocal == null || !endDisplayLocal.isBefore(today),
 					periodReturnRatePct = periodReturnRatePct,
 					returnCalculable = returnCalculable,
 					timeWeightedReturnPct = timeWeightedReturnPct,
@@ -293,7 +306,7 @@
 				<div class="w-full relative" style="height: 450px;">
 					<canvas id="assetGrowthChart" role="img" aria-label="${MessageUtil.getMessage("stock.page.asset.growth.title")}" class="amount-chart"></canvas>
 				</div>
-				<p class="text-xs text-base-content/60 text-center py-1">💰 ${profitAnalysisLabel} &mdash; <span class="text-indigo-400">■</span> ${cumulativeRealizedDatasetLabel} + <span class="text-green-400">■</span> ${cumulativeDividendLabel} = ${cumulativeTotalDatasetLabel}</p>
+				<p class="text-xs text-base-content/60 text-center py-1">💰 ${profitAnalysisLabel} &mdash; <span aria-hidden="true" style="color:${assetGrowthRealizedSwatch}">■</span> ${cumulativeRealizedDatasetLabel} + <span aria-hidden="true" style="color:${assetGrowthDividendSwatch}">■</span> ${cumulativeDividendLabel} = ${cumulativeTotalDatasetLabel}</p>
 				<div class="w-full" style="height: 250px;">
 					<canvas id="dividendChart" role="img" aria-label="${profitAnalysisLabel}" class="amount-chart"></canvas>
 				</div>
@@ -387,6 +400,8 @@
 						totalRealizedProfit = tradeHistoryData.totalRealizedProfit(),
 						totalFee = tradeHistoryData.totalFee(),
 						totalTax = tradeHistoryData.totalTax(),
+						totalSellCount = tradeHistoryData.totalSellCount(),
+						accountNames = tradeHistoryData.accountNames(),
 						tradePeriod = tradeHistoryData.tradePeriod(),
 						pagination = tradeHistoryData.pagination(),
 						tradeHistoryFilterQuery = tradeHistoryFilterQuery)

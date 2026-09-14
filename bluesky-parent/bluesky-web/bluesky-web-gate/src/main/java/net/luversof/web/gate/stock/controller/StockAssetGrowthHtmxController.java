@@ -29,6 +29,7 @@ import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.constant.TradeType;
+import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
@@ -116,9 +117,11 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       var preset = resolvePresetRange(rangeMode, zone);
       request.setStartDate(preset.start());
       request.setEndDate(preset.end());
-      if (effectiveRangeMode == null || effectiveRangeMode.isBlank()) {
-        effectiveRangeMode = preset.mode();
-      }
+      // 실효 모드를 그대로 쓴다 - 예전에는 '비어 있을 때만' 채워, 모르는 값이 오면 그 값이 살아남았다.
+      // 그러면 데이터는 올해로 떨어지는데 '올해' 버튼은 눌리지 않는다 - 실측 2026-09-13
+      // rangeMode=oops: 이 화면만 눌린 프리셋이 없고 기간은 2026-01-01~2026-09-13(올해)이었다.
+      // 형제 컨트롤러(매매 · 배당 · 활동)는 이미 조건 없이 preset.mode() 를 쓴다.
+      effectiveRangeMode = preset.mode();
     }
 
     // 1단계: 서로 의존이 없는 조회를 동시에 던진다.
@@ -270,7 +273,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
                         stockItemList,
                         tradeHistoryAccountIds,
                         tradeHistoryStockIds,
-                        tradeHistoryPreFuture),
+                        tradeHistoryPreFuture,
+                        accountsFuture),
             stockRemoteCallExecutor);
     // 페이징 링크가 같은 필터를 유지하도록 질의 문자열을 만들어 넘긴다.
     model.addAttribute(
@@ -295,6 +299,23 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
     if (request.getTimeZone() != null && !request.getTimeZone().isBlank()) {
       yearlyCostParams.add("timeZone", request.getTimeZone());
+    }
+    // 화면의 계좌·종목 필터를 그대로 넘긴다. 2026-09-12 까지 이 표만 안 넘겨서, 한 계좌로 좁혀도
+    // 연도별 세금·비용은 전 계좌 합계를 그렸다(실측: 좁히기 전후 표가 바이트 단위로 같았다).
+    // 같은 화면의 다른 구역은 모두 이 필터를 따르므로 한 표만 다른 범위를 말하던 셈이다.
+    if (request.getAccountIdList() != null) {
+      for (UUID id : request.getAccountIdList()) {
+        if (id != null) {
+          yearlyCostParams.add("accountIdList", id.toString());
+        }
+      }
+    }
+    if (request.getStockItemIdList() != null) {
+      for (UUID id : request.getStockItemIdList()) {
+        if (id != null) {
+          yearlyCostParams.add("stockItemIdList", id.toString());
+        }
+      }
     }
     var yearlyCostFuture =
         java.util.concurrent.CompletableFuture.supplyAsync(
@@ -346,6 +367,27 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
                 () -> tradeProfitClient.holdingsSnapshotBatch(snapshotParams),
                 stockRemoteCallExecutor);
 
+    // 평가 기준일(마지막 종가 일자)은 "기간을 건 손익" 응답에는 없다 - 실측 2026-09-11:
+    // 같은 엔드포인트라도 기간을 주면 currentPrice·evaluationAmount 가 0 이고 currentPriceDate 는 10 행 모두 null 인 반면,
+    // 기간 없이 부르면 43 행 전부 날짜가 있고 보유 종목의 마지막 종가가 2026-09-09 다. 그래서 이 화면의 안내 줄이
+    // 늘 빠져 있었다(자산 현황·종목 상세·계좌 상세·월배당 탭은 기간 없는 호출을 써서 잘 나온다).
+    // 기준일만 쓰는 가벼운 호출을 따로 병렬로 던진다(실측: 28~39ms).
+    var priceBasisRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    priceBasisRequest.setUserId(userId);
+    // 기간은 명시로 떨어낸다 - 실리면 api-stock 이 평가를 계산하지 않는다(HoldingEvaluationRangeGuardTest 의 규칙).
+    priceBasisRequest.setStartDate(null);
+    priceBasisRequest.setEndDate(null);
+    priceBasisRequest.setTimeZone(request.getTimeZone());
+    priceBasisRequest.setAccountIdList(request.getAccountIdList());
+    priceBasisRequest.setStockItemIdList(request.getStockItemIdList());
+    priceBasisRequest.setGroupBy(
+        net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+    var priceBasisParams = priceBasisRequest.toParams();
+    var priceBasisFuture =
+        emptySelection
+            ? null
+            : java.util.concurrent.CompletableFuture.supplyAsync(
+                () -> tradeProfitClient.calculateProfit(priceBasisParams), stockRemoteCallExecutor);
     var stockRealizedRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
     stockRealizedRequest.setUserId(userId);
     stockRealizedRequest.setStartDate(request.getStartDate());
@@ -457,13 +499,26 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         contributionNames.put(item.id(), item.name());
       }
     }
+    // 이 화면도 평가액을 보여 주는데 그 값이 어느 날 종가 기준인지 적지 않고 있었다
+    // (실측 2026-09-11: 평가값을 보여 주는 여섯 화면 중 대시보드·자산 현황·종목 상세·계좌 상세 넷은 적고 여기만 없었다).
+    // 종목별 손익 목록에 종목마다 쓰인 종가 일자가 들어 있으니 그중 가장 늦은 날을 쓴다.
+    List<net.luversof.web.gate.stock.domain.TradeProfit> stockRealizedList =
+        stockRealizedFuture == null
+            ? List.<net.luversof.web.gate.stock.domain.TradeProfit>of()
+            : net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockRealizedFuture);
+    List<net.luversof.web.gate.stock.domain.TradeProfit> priceBasisHoldings =
+        priceBasisFuture == null
+            ? List.<net.luversof.web.gate.stock.domain.TradeProfit>of()
+            : net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceBasisFuture);
+    model.addAttribute(
+        "priceBasisDate",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.priceBasisDateWithFallback(
+            priceBasisHoldings));
     var contributions =
         net.luversof.web.gate.stock.util.StockContributionUtil.of(
             contributionStart != null ? snapshots.get(contributionStart.toString()) : null,
             snapshots.get(contributionEnd.toString()),
-            stockRealizedFuture == null
-                ? List.<net.luversof.web.gate.stock.domain.TradeProfit>of()
-                : net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockRealizedFuture),
+            stockRealizedList,
             contributionDividendFuture == null
                 ? java.util.Map.<java.util.UUID, java.math.BigDecimal>of()
                 : net.luversof.web.gate.stock.support.StockAsyncSupport.join(
@@ -713,6 +768,25 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     return sb.toString();
   }
 
+  /** 주소로 받은 두 날짜의 앞뒤를 바로잡는다(둘 다 있을 때만). 읽지 못하는 값은 그대로 두어 아래에서 같은 안내로 걸린다. */
+  private static String[] orderedDayParams(String from, String to) {
+    if (from == null || from.isBlank() || to == null || to.isBlank()) {
+      return new String[] {from, to};
+    }
+    LocalDate fromDay = parseDayParam("from", from);
+    LocalDate toDay = parseDayParam("to", to);
+    return fromDay.isAfter(toDay) ? new String[] {to, from} : new String[] {from, to};
+  }
+
+  /** 주소에서 온 날짜 문자열을 읽는다. 못 읽으면 어느 값인지 이름을 달아 던진다(오류 화면이 그 이름을 쓴다). */
+  private static LocalDate parseDayParam(String name, String value) {
+    try {
+      return LocalDate.parse(value);
+    } catch (java.time.format.DateTimeParseException ex) {
+      throw new net.luversof.web.gate.stock.support.StockDateParamException(name, ex);
+    }
+  }
+
   private org.springframework.util.MultiValueMap<String, String> tradeHistoryParams(
       UUID userId, String from, String to) {
     return tradeHistoryParams(userId, from, to, null, null);
@@ -728,7 +802,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       UUID userId, String from, String to, List<UUID> accountIdList, List<UUID> stockItemIdList) {
     Instant tradeStart =
         (from != null && !from.isBlank())
-            ? LocalDate.parse(from).atStartOfDay(ZoneOffset.UTC).toInstant()
+            ? parseDayParam("from", from).atStartOfDay(ZoneOffset.UTC).toInstant()
             : null;
     // 종료는 '그 다음 날 0시'가 아니라 '그 날의 마지막 순간'이어야 한다. 백엔드는 endDate 를
     // isAfter 로만 걸러내므로(= 경계 포함), 다음 날 0시를 그대로 주면 그 시각 거래가 범위에 들어온다.
@@ -736,7 +810,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // (실측: 2026-08-01~2026-08-18 조회에 08-19 거래 5건이 섞여 10행).
     Instant tradeEnd =
         (to != null && !to.isBlank())
-            ? LocalDate.parse(to)
+            ? parseDayParam("to", to)
                 .plusDays(1)
                 .atStartOfDay(ZoneOffset.UTC)
                 .toInstant()
@@ -754,7 +828,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       int size,
       List<StockItem> preloadedStockItems) {
     return buildTradeHistoryData(
-        userId, from, to, page, size, preloadedStockItems, null, null, null);
+        userId, from, to, page, size, preloadedStockItems, null, null, null, null);
   }
 
   /** 거래 조회를 호출부가 이미 던져 뒀으면 그 future 를 그대로 쓴다. */
@@ -767,7 +841,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       List<StockItem> preloadedStockItems,
       List<UUID> accountIdList,
       List<UUID> stockItemIdList,
-      java.util.concurrent.CompletableFuture<List<TradeResponse>> preTradesFuture) {
+      java.util.concurrent.CompletableFuture<List<TradeResponse>> preTradesFuture,
+      java.util.concurrent.CompletableFuture<List<Account>> preAccountsFuture) {
     var allFromApi =
         preTradesFuture != null
             ? net.luversof.web.gate.stock.support.StockAsyncSupport.join(preTradesFuture)
@@ -781,6 +856,17 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             : emptyIfNull(stockItemClient.getStockItems());
     Map<UUID, String> stockItemNames =
         stockItems.stream().collect(Collectors.toMap(StockItem::id, StockItem::name, (l, r) -> l));
+
+    // 계좌명이 없으면 같은 날 같은 값의 다른 계좌 거래가 화면에서 완전히 같은 줄이 된다.
+    // 실측 2026-09-10: 258행 중 2쌍(2026-09-02 · 2026-07-02 PLUS 고배당주위클리고정커버드콜)이
+    // 연금저축1/연금저축2 로 갈리는 별개 거래인데 구분할 길이 없었다. 매매 화면의 같은 표는 계좌 열이 있다.
+    // 자산성장 화면은 계좌를 이미 던져 뒀다 - 그 future 를 받으면 같은 요청에서 두 번 부르지 않는다.
+    List<Account> accounts =
+        preAccountsFuture != null
+            ? net.luversof.web.gate.stock.support.StockAsyncSupport.join(preAccountsFuture)
+            : emptyIfNull(accountClient.getAccountsByUserId(userId));
+    Map<UUID, String> accountNames =
+        accounts.stream().collect(Collectors.toMap(Account::id, Account::name, (l, r) -> l));
 
     var allTrades =
         allFromApi.stream()
@@ -829,9 +915,14 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     int totalItems = allTrades.size();
-    if (size <= 0) size = 20;
+    // 2026-09-12 까지 size <= 0 이면 조용히 20 으로 바꿨고 위끝은 아예 없었다. 형제 값들이 이미
+    // 이름을 들고 끊는 마당에(sort · timeZone · size=abc) 이것만 다른 수로 바꿔 그릴 까닭이 없다.
+    size = net.luversof.web.gate.stock.util.StockPageSizeUtil.resolve("size", size);
     int totalPages = totalItems > 0 ? (int) Math.ceil((double) totalItems / size) : 0;
-    int currentPage = Math.max(1, Math.min(page, Math.max(1, totalPages)));
+    // A page below one is not a page. The top end still clamps: the list can shrink between two
+    // visits and a bookmarked page 10 should open at the last page rather than be refused.
+    page = net.luversof.web.gate.stock.util.StockPageNumberUtil.resolve("page", page);
+    int currentPage = Math.min(page, Math.max(1, totalPages));
     int fromIdx = (currentPage - 1) * size;
     int toIdx = Math.min(fromIdx + size, totalItems);
     List<TradeResponse> pagedTrades =
@@ -860,6 +951,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         totalRealizedProfit,
         totalFee,
         totalTax,
+        accountNames,
+        allTrades.stream().filter(t -> t.type() == TradeType.SELL).count(),
         tradePeriod,
         new Pagination(
             new PageImpl<>(pagedTrades, PageRequest.of(currentPage - 1, size), totalItems)));
@@ -879,6 +972,16 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       BigDecimal totalRealizedProfit,
       BigDecimal totalFee,
       BigDecimal totalTax,
+      /** 계좌 id -> 이름. 상세 줄에 계좌를 찍어 같은 날 같은 값의 다른 계좌 거래를 구분한다. */
+      Map<UUID, String> accountNames,
+      /**
+       * 기간 전체의 매도 건수.
+       *
+       * <p>실현손익 카드의 금액은 기간 전체인데 건수만 현재 페이지에서 세고 있었다 &mdash; 실측 2026-09-10: 자산성장 화면이 "실현손익
+       * +225,630,135 · 매도 0건(페이지 기준)" 이라고 했다. 1페이지가 최근 매수로만 차 있어 0 이 나온 것이다. 같은 카드를 매매 화면은 "매도 55건"
+       * 으로 보여준다(원장도 55). 한 카드 안에서 금액과 건수의 범위가 달랐다.
+       */
+      long totalSellCount,
       String tradePeriod,
       Pagination pagination) {}
 
@@ -896,6 +999,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
+        Map.of(),
+        0L,
         "",
         null);
   }
@@ -917,10 +1022,15 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     if (userId == null) {
       return loginRequiredView(model);
     }
+    // 뒤집힌 기간은 목록 화면들과 같은 규칙으로 바로잡는다 - 실측 2026-09-11: 이 조각만 뒤집힌 채로 물어봐
+    // 배지가 "2026-09-11 ~ 2026-01-01" 로 뜨고 "해당 기간의 매매 내역이 없습니다" 가 나왔다.
+    String[] orderedDays = orderedDayParams(from, to);
+    from = orderedDays[0];
+    to = orderedDays[1];
     // 화면의 계좌/종목 필터를 그대로 이어받는다. 없으면 예전처럼 전체를 본다.
     TradeHistoryData data =
         buildTradeHistoryData(
-            userId, from, to, page, size, null, accountIdList, stockItemIdList, null);
+            userId, from, to, page, size, null, accountIdList, stockItemIdList, null, null);
     addTradeHistoryAttributes(
         model, data, net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone));
     model.addAttribute(
@@ -945,11 +1055,16 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalRealizedProfit", data.totalRealizedProfit());
     model.addAttribute("totalFee", data.totalFee());
     model.addAttribute("totalTax", data.totalTax());
+    model.addAttribute("totalSellCount", data.totalSellCount());
+    model.addAttribute("accountNames", data.accountNames());
     model.addAttribute("tradePeriod", data.tradePeriod());
   }
 
   /**
    * 달 단위 표를 낼 수 없을 때 그 자리에 남길 까닭. 낼 수 있으면 빈 문자열이다.
+   *
+   * <p>실측 2026-09-11: 세 경우가 <b>말없이</b> 사라져 있었다 &mdash; 기간에 기록이 없을 때, '이번달', '하루'. 셋 다 H2 가 통째로 빠져
+   * 제목 차례가 H1 &rarr; H3 으로 건너뛰었다(axe heading-order, 라이트·다크 각 1 건).
    *
    * <p>버리는 판단 자체는 옳다 &mdash; 해 단위는 아래 '연도별 성과' 가 같은 줄을 답하고, 그렇다고 달 단위를 통째로 실으면 전 구간이 148 행이다(실측
    * 2026-09-03: breakdown 만 106.6 KB, 응답이 72.7 &rarr; 162.7 KB). 틀린 것은 <b>말없이</b> 버린 쪽이었다. 기본 화면인
@@ -957,15 +1072,19 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
    */
   String periodBreakdownNote(
       List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> breakdownRows) {
-    if (breakdownRows == null
-        || breakdownRows.isEmpty()
-        || "MONTH".equals(breakdownRows.get(0).unit())) {
-      return "";
+    if (breakdownRows == null || breakdownRows.isEmpty()) {
+      return message("stock.asset.growth.breakdown.empty.note");
     }
+    if ("MONTH".equals(breakdownRows.get(0).unit())) {
+      // 한 구간뿐이면 표가 위 요약을 되풀이할 뿐이라 그리지 않는다 - 그래도 자리는 남긴다.
+      return breakdownRows.size() > 1 ? "" : message("stock.asset.growth.breakdown.single.note");
+    }
+    return message("stock.asset.growth.breakdown.yearly.note");
+  }
+
+  private String message(String code) {
     return messageSource.getMessage(
-        "stock.asset.growth.breakdown.yearly.note",
-        null,
-        org.springframework.context.i18n.LocaleContextHolder.getLocale());
+        code, null, org.springframework.context.i18n.LocaleContextHolder.getLocale());
   }
 
   /**

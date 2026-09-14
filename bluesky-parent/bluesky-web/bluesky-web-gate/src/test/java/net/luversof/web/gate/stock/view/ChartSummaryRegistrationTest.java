@@ -25,9 +25,14 @@ class ChartSummaryRegistrationTest {
   @Test
   void 플러그인은_common_ts_가_정의한다() throws IOException {
     String common = Files.readString(SRC.resolve("common.ts"), StandardCharsets.UTF_8);
-    assertThat(common)
-        .contains(
-            "__chartSummaryInternals = { chartSummaryText, syncChartSummary, chartSummaryPlugin }");
+    // 공개 목록은 늘어날 수 있다(금액 가리기 연동 등) - 이름이 들어 있는지만 못박는다.
+    int internals = common.indexOf("__chartSummaryInternals = {");
+    assertThat(internals).isGreaterThan(0);
+    String exported = common.substring(internals, common.indexOf("}", internals));
+    assertThat(exported)
+        .contains("chartSummaryText")
+        .contains("syncChartSummary")
+        .contains("chartSummaryPlugin");
     assertThat(common)
         .contains("id: \"a11ySummary\"")
         .contains("afterInit")

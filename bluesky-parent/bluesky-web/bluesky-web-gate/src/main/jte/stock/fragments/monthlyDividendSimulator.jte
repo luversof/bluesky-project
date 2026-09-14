@@ -13,6 +13,13 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
+<%-- 이 표의 '현재가'가 어느 날 종가인지. 배당 기준값(스냅샷 시점)과 시세는 시점이 다르다. --%>
+@param java.time.LocalDate monthlyDividendPriceBasisDate = null
+@param boolean monthlyDividendCurrentHoldingsUnavailable = false
+<%-- 종목 -> 저장된 지급 이력으로 계산한 1년 평균 과세표준 비중(관리 탭과 같은 계산). 저장값과 벌어지면 그 자리에서 알린다. --%>
+@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = java.util.Map.of()
+@param BigDecimal monthlyDividendReferenceTaxableTotal = null
+@param int monthlyDividendReferenceTaxableStaleCount = 0
 <%-- 원장의 현재 보유 수량(종목 id -> 수량). 스냅샷 수량과 다르면 표에 함께 적는다. --%>
 @param java.util.Map<java.util.UUID, Integer> monthlyDividendCurrentQuantities = java.util.Map.of()
 @param long monthlyDividendStaleQuantityCount = 0L
@@ -66,6 +73,26 @@
 	String taxableBaseRatioValue = form.getAverageTaxableBaseRatio1y() != null ? form.getAverageTaxableBaseRatio1y().stripTrailingZeros().toPlainString() : "";
 	String heldQuantityValue = form.getHeldQuantity() != null ? String.valueOf(form.getHeldQuantity()) : "";
 	String averageBuyPriceValue = form.getAverageBuyPrice() != null ? form.getAverageBuyPrice().stripTrailingZeros().toPlainString() : "";
+	// 폼은 저장된 스냅샷 값을 그대로 채운다 - 원장과 어긋날 수 있다. 아래 표는 이미 "현재 N" 으로 알려 주는데
+	// 정작 고치는 자리인 폼에는 아무 말이 없었다(실측 2026-09-12: 8 종목 중 3 종목의 평균단가가 달랐고
+	// 표에는 "현재 4,915" · "현재 4,367" · "현재 11,281" 이 떠 있었지만 폼에는 4,914 · 4,381 · 11,307 만 있었다).
+	java.util.UUID formStockItemId = null;
+	if (!symbolValue.isBlank() && stockItems != null) {
+		for (StockItem candidate : stockItems) {
+			if (candidate != null && candidate.symbol() != null && candidate.symbol().equalsIgnoreCase(symbolValue.trim())) {
+				formStockItemId = candidate.id();
+				break;
+			}
+		}
+	}
+	Integer formCurrentQuantity = formStockItemId != null ? monthlyDividendCurrentQuantities.get(formStockItemId) : null;
+	BigDecimal formCurrentAverageBuyPrice = formStockItemId != null ? monthlyDividendCurrentAverageBuyPrices.get(formStockItemId) : null;
+	// 표와 같은 판정: 수량은 그대로, 평균단가는 원 단위로 반올림해 견준다.
+	boolean formQuantityDiffers = formCurrentQuantity != null && form.getHeldQuantity() != null
+			&& formCurrentQuantity.intValue() != form.getHeldQuantity().intValue();
+	boolean formAverageBuyPriceDiffers = formCurrentAverageBuyPrice != null && form.getAverageBuyPrice() != null
+			&& formCurrentAverageBuyPrice.setScale(0, java.math.RoundingMode.HALF_UP)
+					.compareTo(form.getAverageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP)) != 0;
 	String minAnnualYieldValue = monthlyDividendMinAnnualYield != null ? monthlyDividendMinAnnualYield.stripTrailingZeros().toPlainString() : "";
 	String monthlyDividendReferenceManageUrl = "/stock/admin?tab=monthly-reference";
 	String totalLatestMonthlyDividendLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.latest.monthly.dividend");
@@ -82,6 +109,11 @@
 	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
 	String selectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
 	String selectionOverviewLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.overview");
+	// 이 표의 '저장된 기준값' 3열은 관리 탭의 기준 데이터를 그때그때 계산한 값이 아니라, 저장해 둔 스냅샷이다.
+	// 둘이 벌어질 수 있다 - 실측 2026-09-11, 같은 이름('1년 평균 과세표준 비중')인데 8종목 전부 달랐다:
+	//   476800 관리 82.79% / 여기 17.35%, 329200 관리 100.00% / 여기 13.42%, 498400 관리 4.46% / 여기 4.06%.
+	// (주당 분배금은 두 화면이 일치한다 - 비중만 벌어졌다.) 그래서 열 이름을 '기준 데이터' 에서 바꿔
+	// 관리 탭의 값과 같은 것처럼 읽히지 않게 했다. 값 자체는 사용자가 관리 화면의 '이 값으로 시뮬레이터 채우기' 로 갱신한다.
 	// 기준 데이터의 '언제 시점' 값인지. asOfDate 는 그 종목 지급 이력의 최신 지급일과 같다.
 	// 이 값이 오래되면 최근 월 배당금 같은 대표 수치가 조용히 옛 분배금으로 계산된다
 	// (실측: 월중배당 4 종목이 30 일 뒤처져 총 최근 월 배당금이 과대).
@@ -99,10 +131,35 @@
 	String selectionMarketWeightLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.weight.market.value");
 	String selectionInvestmentProfitLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.investment.profit");
 	String selectionInvestmentReturnLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.investment.return");
-	String monthlyDividendTableBaseUrl = "/stock/simulator?tab=monthly-dividend";
+	// 머리칸 정렬은 전체 이동 링크다. 화면의 필터(검색어·최소 연배당 수익률·양수만)를 함께 싣지 않으면
+	// 정렬 한 번에 필터가 조용히 풀린다 - 실측 2026-09-13: keyword=TIGER 로 3 행이던 표가 정렬 클릭 뒤
+	// 8 행(전체)이 되었고 검색어 칸도 비워졌다.
+	String monthlyDividendTableBaseUrl = "/stock/simulator?tab=monthly-dividend"
+		+ (monthlyDividendKeyword == null || monthlyDividendKeyword.isBlank() ? ""
+			: "&keyword=" + java.net.URLEncoder.encode(monthlyDividendKeyword, java.nio.charset.StandardCharsets.UTF_8))
+		+ (monthlyDividendMinAnnualYield == null ? ""
+			: "&minAnnualYield=" + monthlyDividendMinAnnualYield.toPlainString())
+		+ (monthlyDividendPositiveOnly ? "&positiveOnly=true" : "");
 	String currentDirectionIndicator = "asc".equals(monthlyDividendDirection) ? "↑" : "↓";
 	String displayOrderDirection = "display-order".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
 	String symbolDirectionToggle = "symbol".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
+	// 두 묶음(현재가 기준 / 평단 기준)에 같은 이름의 정렬 링크가 각각 있다. 화면에서는 바로 위 묶음 제목으로
+	// 갈리지만 링크 이름만 들으면 구분되지 않는다 - 실측 2026-09-11: 월배당 수익률/연배당 수익률이 각각
+	// 두 번씩이고 정렬 키는 monthly-yield 와 monthly-yield-on-cost 로 다르다.
+	String marketBasisLabel = MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis");
+	String onCostBasisLabel = MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost");
+	String marketYieldAriaSort = ("monthly-yield".equals(monthlyDividendSort) || "annual-yield".equals(monthlyDividendSort))
+		? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none";
+	String onCostYieldAriaSort = ("monthly-yield-on-cost".equals(monthlyDividendSort) || "annual-yield-on-cost".equals(monthlyDividendSort))
+		? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none";
+	// 한 칸에 정렬 링크가 둘인 머리글(표시 순서 / 종목코드)과 예상 합산 칸에는 상태가 없었다.
+	// 실측 2026-09-12: sort=symbol / sort=combined-return / 기본(display-order) 셋 다 aria-sort 가 붙은 칸이
+	// 0 개였고, 어느 열로 정렬됐는지는 링크 이름에 섞인 "↑" 글자로만 알 수 있었다.
+	// 나머지 네 칸(예상 월 배당금·과세 표준 비중·수익률 둘)은 이미 제대로 켜진다.
+	String displayOrderAriaSort = ("display-order".equals(monthlyDividendSort) || "symbol".equals(monthlyDividendSort))
+		? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none";
+	String combinedReturnAriaSort = "combined-return".equals(monthlyDividendSort)
+		? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none";
 	String monthlyYieldDirectionToggle = "monthly-yield".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
 	String monthlyDividendDirectionToggle = "monthly-dividend".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "desc";
 	String taxableBaseDirectionToggle = "taxable-base".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
@@ -167,10 +224,16 @@
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.quantity")}</span></div>
 							<input name="heldQuantity" type="number" min="1" step="1" value="${heldQuantityValue}" class="input input-bordered w-full" required />
+							@if(formQuantityDiffers)
+								<span class="label-text-alt mt-1 text-warning amount-value" data-form-current-quantity>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.current"), amountFormat.format(formCurrentQuantity))}</span>
+							@endif
 						</label>
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.average.buy.price")}</span></div>
 							<input name="averageBuyPrice" type="number" min="0" step="0.01" value="${averageBuyPriceValue}" class="input input-bordered w-full" required />
+							@if(formAverageBuyPriceDiffers)
+								<span class="label-text-alt mt-1 text-warning amount-value" data-form-current-average-buy-price>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.current"), amountFormat.format(formCurrentAverageBuyPrice))}</span>
+							@endif
 						</label>
 						<div class="flex items-end">
 							<button type="submit" class="btn btn-primary w-full">${MessageUtil.getMessage("stock.simulator.monthly.form.submit")}</button>
@@ -195,6 +258,15 @@
 							<span class="font-mono">${oldestAsOfDate.toString()}${newestAsOfDate != null && !newestAsOfDate.equals(oldestAsOfDate) ? " ~ " + newestAsOfDate.toString() : ""}</span>
 						</div>
 						@endif
+						<%-- 시세 기준일은 스냅샷 기준일과 다르다 - 실측 2026-09-11: 스냅샷 2026-08-19 인데 현재가는 2026-09-09 종가였다. --%>
+						@if(monthlyDividendPriceBasisDate != null)
+						<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", monthlyDividendPriceBasisDate.toString())}</div>
+						@endif
+						<%-- 원장 조회가 실패하면 어긋난 줄에 붙던 "현재 N" 표시가 통째로 사라진다. 표시가 없는 표는
+						     "원장과 같다" 로 읽히므로(실측 2026-09-12: 8 줄 중 3 줄이 표시를 달고 있었다) 실패를 밝힌다. --%>
+						@if(monthlyDividendCurrentHoldingsUnavailable)
+						<div class="text-[11px] text-warning" data-ledger-unavailable="true">${MessageUtil.getMessage("stock.holdings.ledger.unavailable")}</div>
+						@endif
 						<%-- 이 카드의 합계는 스냅샷에 저장된 보유 수량으로 계산된다. 표의 각 행은 수량이 달라지면 "현재 N 주"를
 						     경고색으로 알리는데 합계만 조용하면 사용자는 현재 기준으로 읽는다. 요약 화면의 다가오는 배당 카드와
 						     같은 문구를 쓴다. --%>
@@ -208,7 +280,18 @@
 						@endif
 						<div class="flex items-start justify-between gap-3 text-sm">
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.best.choice")}</span>
-							<span class="text-right font-semibold">${bestChoice != null ? bestChoice.stockItemSymbol() : MessageUtil.getMessage("stock.simulator.monthly.summary.no.best.choice")}</span>
+							<%-- 이 카드는 화면의 결론이다 - 실측 2026-09-12: 종목코드만 적혀 "498400" 이었는데, 같은 화면의 표는
+								 줄마다 "498400 KODEX 200타겟위클리커버드콜" 처럼 코드와 이름을 함께 적는다. 코드만으로는 어느 종목인지 모른다. --%>
+							<span class="text-right font-semibold">
+								@if(bestChoice != null)
+									${bestChoice.stockItemSymbol()}
+									@if(bestChoice.stockItemName() != null && !bestChoice.stockItemName().isBlank())
+										<span class="block text-xs font-normal text-base-content/60" data-best-choice-name>${bestChoice.stockItemName()}</span>
+									@endif
+								@else
+									${MessageUtil.getMessage("stock.simulator.monthly.summary.no.best.choice")}
+								@endif
+							</span>
 						</div>
 					</div>
 				</div>
@@ -259,6 +342,9 @@
 						<div>
 							<div class="text-[11px] text-base-content/60">${totalMonthlyTaxableBaseSummaryLabel}</div>
 							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalExpectedTaxableBaseAmount)}</div>
+							@if(monthlyDividendReferenceTaxableStaleCount > 0 && monthlyDividendReferenceTaxableTotal != null)
+								<div class="mt-1 text-[11px] text-warning amount-value" data-reference-taxable-total="${monthlyDividendReferenceTaxableTotal.toPlainString()}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.summary.taxable.reference"), amountFormat.format(monthlyDividendReferenceTaxableTotal), String.valueOf(monthlyDividendReferenceTaxableStaleCount))}</div>
+							@endif
 						</div>
 						<div>
 							<div class="text-[11px] text-base-content/60">${totalAnnualTaxableBaseSummaryLabel}</div>
@@ -389,37 +475,40 @@
 							</div>
 							</div></div>
 							<div class="overflow-x-auto">
-								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap" data-monthly-selection-table aria-label="${MessageUtil.getMessage("stock.simulator.monthly.tool.title")}">
+								<table class="table table-pin-rows table-zebra table-sm whitespace-nowrap print-dense" data-monthly-selection-table aria-label="${MessageUtil.getMessage("stock.simulator.monthly.tool.title")}">
 								<thead>
 									<tr>
-										<th rowspan="2" scope="col" class="min-w-[8rem] max-w-[11rem] align-middle">
+										<th rowspan="2" scope="col" aria-sort="${displayOrderAriaSort}" class="min-w-[8rem] max-w-[11rem] align-middle">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 font-medium">
 												<div class="flex items-center gap-1">
 													<a href="${monthlyDividendTableBaseUrl}&sort=display-order&direction=${displayOrderDirection}" class="link link-hover no-underline">
 														${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.display.order")}
 														@if("display-order".equals(monthlyDividendSort))
-															<span class="text-xs text-base-content/60">${currentDirectionIndicator}</span>
+															<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 														@endif
 													</a>
 													<span>/</span>
 													<a href="${monthlyDividendTableBaseUrl}&sort=symbol&direction=${symbolDirectionToggle}" class="link link-hover no-underline">
 														${MessageUtil.getMessage("stock.simulator.monthly.table.header.symbol")}
 														@if("symbol".equals(monthlyDividendSort))
-															<span class="text-xs text-base-content/60">${currentDirectionIndicator}</span>
+															<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 														@endif
 													</a>
 												</div>
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.name")}</div>
 											</div>
 										</th>
-										<th scope="col" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
-										<th scope="col" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
+										<%-- 여러 칸을 덮는 묶음 머리글은 scope="colgroup" 이라야 그 아래 칸들과 이어진다.
+										     scope="col" 은 자기 칸 하나만 가리켜, 낭독기가 "저장된 기준값" 을 첫 열에만 붙인다
+										     - 실측 2026-09-12: colspan=3 머리글 셋(저장된 기준값 · 입력값 · 수익률)이 모두 col 이었다. --%>
+										<th scope="colgroup" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.reference")}</th>
+										<th scope="colgroup" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
 										<th rowspan="2" scope="col" class="col-group-start min-w-[7.5rem] align-middle text-right" aria-sort="${"monthly-dividend".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none"}">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 whitespace-normal text-right">
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover block text-sm font-medium no-underline">
 													<span class="inline-flex items-center justify-end gap-1">
 														@if("monthly-dividend".equals(monthlyDividendSort))
-															<span class="text-xs text-base-content/60">${currentDirectionIndicator}</span>
+															<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 														@endif
 														<span>${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.monthly.dividend")}</span>
 													</span>
@@ -427,7 +516,7 @@
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.taxable.base")}</div>
 											</div>
 										</th>
-										<th scope="col" class="col-group-start col-group-end col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
+										<th scope="colgroup" class="col-group-start col-group-end col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.yield")}</th>
 									</tr>
 									<tr>
 										<th scope="col" class="col-group-start text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.dividend.per.share")}</th>
@@ -439,7 +528,7 @@
 													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio.line.two")}</span>
 												</span>
 												@if("taxable-base".equals(monthlyDividendSort))
-													<span class="text-xs text-base-content/60">${currentDirectionIndicator}</span>
+													<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 												@endif
 											</a>
 										</th>
@@ -456,47 +545,51 @@
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.value")}</div>
 											</div>
 										</th>
-										<th scope="col" class="col-group-start min-w-[6.5rem] align-bottom text-right">
+										<th scope="col" aria-sort="${marketYieldAriaSort}" class="col-group-start min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
-													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}<span class="sr-only"> ${marketBasisLabel}</span>
 													@if("monthly-yield".equals(monthlyDividendSort))
-														<span class="ml-1 text-[11px] text-base-content/60">${currentDirectionIndicator}</span>
+														<span class="ml-1 text-[11px] text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 													@endif
 												</a>
 												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield&direction=${annualYieldDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
-													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}<span class="sr-only"> ${marketBasisLabel}</span>
 													@if("annual-yield".equals(monthlyDividendSort))
-														<span class="ml-1 text-[11px] text-base-content/60">${currentDirectionIndicator}</span>
+														<span class="ml-1 text-[11px] text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 													@endif
 												</a>
 											</div>
 										</th>
-										<th scope="col" class="min-w-[6.5rem] align-bottom text-right">
+										<th scope="col" aria-sort="${onCostYieldAriaSort}" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
-													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}<span class="sr-only"> ${onCostBasisLabel}</span>
 													@if("monthly-yield-on-cost".equals(monthlyDividendSort))
-														<span class="ml-1 text-[11px] text-base-content/60">${currentDirectionIndicator}</span>
+														<span class="ml-1 text-[11px] text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 													@endif
 												</a>
 												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield-on-cost&direction=${annualYieldOnCostDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
-													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}
+													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}<span class="sr-only"> ${onCostBasisLabel}</span>
 													@if("annual-yield-on-cost".equals(monthlyDividendSort))
-														<span class="ml-1 text-[11px] text-base-content/60">${currentDirectionIndicator}</span>
+														<span class="ml-1 text-[11px] text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 													@endif
 												</a>
 											</div>
 										</th>
-										<th scope="col" class="col-group-end min-w-[6rem] align-bottom text-right">
+										<th scope="col" aria-sort="${combinedReturnAriaSort}" class="col-group-end min-w-[6rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
+												<%-- This column carries two different numbers, so both need names. Until 2026-09-12 the first
+												 line said only "on cost", which is the same phrase the previous column uses as a basis - so the
+												 price return had no name at all and the column read as one metric with two numbers. --%>
+												<div class="text-[11px] font-medium leading-4 text-base-content/60">${onCostBasisLabel}</div>
 												<div class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.total.return.on.cost.line.one")}</div>
 												<a href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
 													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.combined.return.line.one")}</span>
 													@if("combined-return".equals(monthlyDividendSort))
-														<span class="text-xs text-base-content/60">${currentDirectionIndicator}</span>
+														<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 													@endif
 												</a>
 											</div>
@@ -547,7 +640,15 @@
 																<span class="badge badge-success badge-xs">${MessageUtil.getMessage("stock.simulator.compare.best.choice")}</span>
 															@endif
 														</div>
-														<div class="mt-1 text-sm font-normal leading-tight text-base-content/70">${row.stockItemName()}</div>
+														<%-- 다른 표 17개(476행)는 모두 종목명을 상세로 잇는데 이 표만 링크가 없었다(실측 2026-09-11). --%>
+																					<div class="mt-1 text-sm font-normal leading-tight text-base-content/70">@if(row.stockItemId() != null)<a class="link link-hover" href="/stock/item?stockItemId=${row.stockItemId().toString()}">${row.stockItemName()}</a>@else${row.stockItemName()}@endif</div>
+												<%-- 행마다 기준일이 다르다. 위 요약은 "기준일 2026-08-19 ~ 2026-09-02" 처럼 범위로만 적는데,
+												     그 범위는 갱신이 밀린 것과 지급 시기가 다른 것을 구분해 주지 못한다 - 실측 2026-09-11:
+												     월중 지급 4 종목이 08-19, 월말 지급 4 종목이 09-02 로 둘 다 자기 최신 지급일이었다(지연 아님).
+												     행에 적어 두면 어느 종목이 어느 기준일인지 바로 보인다. --%>
+												@if(row.asOfDate() != null)
+													<div class="mt-0.5 text-[11px] font-normal leading-tight text-base-content/60" data-row-as-of>${MessageUtil.getMessage("stock.simulator.monthly.summary.as.of.date")} <span class="font-mono">${row.asOfDate().toString()}</span></div>
+												@endif
 													</div>
 												</td>
 											<td class="align-top text-right">
@@ -574,7 +675,20 @@
 													</div>
 												</div>
 											</td>
-											<td class="text-right">${percentFormat.format(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO)}%</td>
+											<td class="text-right">
+												<div class="whitespace-nowrap tabular-nums">${percentFormat.format(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO)}%</div>
+												<%-- 저장값과 지급 이력 계산값이 벌어지면 알린다(수량 어긋남 표기와 같은 규칙).
+												     실측 2026-09-11: 8종목 전부 달랐고 최대 13.42% 對 100% 였다 - 세후 예상 배당이 그만큼 달라진다. --%>
+												!{BigDecimal referenceTaxableRatio = monthlyDividendReferenceTaxableRatios.get(row.stockItemId());}
+												@if(referenceTaxableRatio != null && referenceTaxableRatio.subtract(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO).abs().compareTo(new BigDecimal("1")) >= 0)
+												<%-- 알리기만 하면 사용자는 어디서 고치는지 모른다 - 그 종목의 기준 데이터 관리로 바로 보낸다
+												     (실측 2026-09-11: 이 표의 행에는 링크가 하나도 없었다). --%>
+												<div class="text-[11px] text-warning whitespace-nowrap tabular-nums" data-reference-taxable-ratio="${referenceTaxableRatio.toPlainString()}">
+													<a class="link link-hover" href="/stock/admin?tab=monthly-reference&amp;symbol=${java.net.URLEncoder.encode(row.stockItemSymbol() != null ? row.stockItemSymbol() : "", java.nio.charset.StandardCharsets.UTF_8)}"
+													   title="${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference.link")}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference"), percentFormat.format(referenceTaxableRatio))}<span class="sr-only">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference.link")}</span></a>
+												</div>
+												@endif
+											</td>
 											<td class="text-right"><span class="amount-value">₩${amountFormat.format(row.currentPrice() != null ? row.currentPrice() : BigDecimal.ZERO)}</span></td>
 											<td class="align-top text-right">
 												<div class="space-y-1 whitespace-nowrap tabular-nums">
@@ -583,7 +697,7 @@
 														<span class="amount-value">${amountFormat.format(row.heldQuantity() != null ? row.heldQuantity() : 0)}</span>
 														!{Integer currentHeldQuantity = monthlyDividendCurrentQuantities.get(row.stockItemId());}
 														@if(currentHeldQuantity != null && row.heldQuantity() != null && currentHeldQuantity.intValue() != row.heldQuantity().intValue())
-														<span class="ml-1 text-[11px] text-warning">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.current"), amountFormat.format(currentHeldQuantity))}</span>
+														<span class="ml-1 text-[11px] text-warning amount-value">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.current"), amountFormat.format(currentHeldQuantity))}</span>
 														@endif
 													</div>
 													<div class="text-sm text-base-content/80">
@@ -591,7 +705,7 @@
 														<span class="amount-value">₩${amountFormat.format(row.averageBuyPrice() != null ? row.averageBuyPrice() : BigDecimal.ZERO)}</span>
 														!{BigDecimal currentAverageBuyPrice = monthlyDividendCurrentAverageBuyPrices.get(row.stockItemId());}
 														@if(currentAverageBuyPrice != null && row.averageBuyPrice() != null && currentAverageBuyPrice.setScale(0, java.math.RoundingMode.HALF_UP).compareTo(row.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP)) != 0)
-														<span class="ml-1 text-[11px] text-warning">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.current"), amountFormat.format(currentAverageBuyPrice))}</span>
+														<span class="ml-1 text-[11px] text-warning amount-value">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.current"), amountFormat.format(currentAverageBuyPrice))}</span>
 														@endif
 													</div>
 												</div>
@@ -650,8 +764,11 @@
 											</td>
 											<td class="align-top text-right">
 												<div class="space-y-1 tabular-nums">
-													<div class="${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? "text-profit" : "text-loss"}">${percentFormat.format(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct() : BigDecimal.ZERO)}%</div>
-													<div class="font-semibold ${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? "text-profit" : "text-loss"}">${percentFormat.format(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct() : BigDecimal.ZERO)}%</div>
+													<%-- 손익 방향은 부호로도 말한다 - 실측 2026-09-12(고대비 모드): 이 열의 색이 모두 검정 한 가지로
+														 합쳐지면 "10.69%" 가 이득인지 손실인지 알 수 없다. 음수는 이미 "-" 를 달고 있었고(16 값 중 7),
+														 양수 9 개만 맨 숫자였다. 칸 폭 98px 에 "-13.92%" 가 이미 들어가므로 폭은 그대로다. --%>
+													<div class="${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct().doubleValue() : 0.0d, 2)}</div>
+													<div class="font-semibold ${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct().doubleValue() : 0.0d, 2)}</div>
 												</div>
 											</td>
 										</tr>

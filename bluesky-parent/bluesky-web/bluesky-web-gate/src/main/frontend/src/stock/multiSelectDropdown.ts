@@ -19,6 +19,33 @@
 		return lang().indexOf("en") === 0 ? "Search" : "검색";
 	}
 
+	// 검색 상자의 이름·알림 문구. 순수 계산이라 모듈 범위에 두고 테스트에 노출한다.
+	function msdSearchLabel(fieldLabel: string, langCode: string): string {
+		var en = (langCode || "ko").toLowerCase().indexOf("en") === 0;
+		var base = en ? "Search" : "검색";
+		var field = (fieldLabel || "").trim();
+		if (!field) return base;
+		return en ? base + " " + field : field + " " + base;
+	}
+	// 검색어가 있을 때만 말한다 - 패널을 여는 순간의 초기화까지 읽어 주면 시끄럽다.
+	function msdSearchStatusText(query: string, matchCount: number, langCode: string): string {
+		if (!query) return "";
+		var en = (langCode || "ko").toLowerCase().indexOf("en") === 0;
+		if (matchCount <= 0) return en ? "No matching items" : "검색 결과 없음";
+		return en ? matchCount + " items" : "검색 결과 " + matchCount + "개";
+	}
+	function msdEmptyText(langCode: string): string {
+		var en = (langCode || "ko").toLowerCase().indexOf("en") === 0;
+		return en ? "No matching items" : "검색 결과 없음";
+	}
+	try {
+		(globalThis as any).__msdInternals = {
+			msdSearchLabel: msdSearchLabel,
+			msdSearchStatusText: msdSearchStatusText,
+			msdEmptyText: msdEmptyText,
+		};
+	} catch (e) {}
+
 	function enhance(select: HTMLSelectElement) {
 		if (!select) return;
 		if (select.dataset.msd === "1") {
@@ -78,12 +105,31 @@
 		panel.hidden = true;
 
 		var search: HTMLInputElement | null = null;
+		var searchStatus: HTMLElement | null = null;
+		var searchEmpty: HTMLElement | null = null;
 		if (isStock) {
 			search = document.createElement("input");
 			search.type = "text";
 			search.className = "input input-bordered input-sm w-full mb-1";
 			search.placeholder = searchPlaceholder();
+			// placeholder 는 값을 치면 사라진다 - 이름은 따로 달아 둔다(실측 2026-09-12: 이 상자만 이름이 없었다).
+			search.setAttribute("aria-label", msdSearchLabel(fieldLabel, lang()));
 			panel.appendChild(search);
+			// 걸러낸 결과 수는 눈으로만 보였다(43 → 2 → 0 으로 줄어도 알림 없음).
+			searchStatus = document.createElement("p");
+			searchStatus.className = "sr-only";
+			searchStatus.setAttribute("role", "status");
+			searchStatus.setAttribute("aria-live", "polite");
+			panel.appendChild(searchStatus);
+			// 0 개일 때 패널에 "전체" 버튼만 남아 빈 상자처럼 보였다.
+			searchEmpty = document.createElement("p");
+			searchEmpty.className = "px-2 py-1 text-sm text-base-content/70";
+			searchEmpty.textContent = msdEmptyText(lang());
+			searchEmpty.hidden = true;
+			// 같은 문구를 위의 알림 영역이 이미 읽어 준다 - 둘 다 노출하면 "검색 결과 없음" 이 두 번 들린다
+			// (실측 2026-09-12: 패널 낭독이 "검색 결과 없음 검색 결과 없음 전체"). 이건 눈으로 보는 몫이다.
+			searchEmpty.setAttribute("aria-hidden", "true");
+			panel.appendChild(searchEmpty);
 		}
 
 		var allItem = document.createElement("button");
@@ -162,11 +208,20 @@
 
 		if (search) {
 			search.addEventListener("input", function () {
-				var q = (search as HTMLInputElement).value.toLowerCase();
+				var raw = (search as HTMLInputElement).value;
+				var q = raw.toLowerCase();
+				var matched = 0;
 				Array.prototype.slice.call(list.children).forEach(function (it: HTMLElement) {
 					var t = (it.textContent || "").toLowerCase();
-					it.style.display = t.indexOf(q) !== -1 ? "" : "none";
+					var hit = t.indexOf(q) !== -1;
+					it.style.display = hit ? "" : "none";
+					if (hit) matched++;
 				});
+				if (searchEmpty) searchEmpty.hidden = !raw || matched > 0;
+				if (searchStatus) {
+					var next = msdSearchStatusText(raw, matched, lang());
+					if (searchStatus.textContent !== next) searchStatus.textContent = next;
+				}
 			});
 		}
 

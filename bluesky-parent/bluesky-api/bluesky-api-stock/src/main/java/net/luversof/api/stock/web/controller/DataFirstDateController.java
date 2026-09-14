@@ -21,10 +21,17 @@ public class DataFirstDateController {
 
   @Autowired private DividendRepository dividendRepository;
 
+  /**
+   * @param stockItemId 주면 그 종목만, 없으면 사용자 전체
+   * @param accountId 주면 그 계좌만, 없으면 사용자 전체
+   */
   @GetMapping
-  public DataFirstDateResponse findDataFirstDate(@RequestParam UUID userId) {
+  public DataFirstDateResponse findDataFirstDate(
+      @RequestParam UUID userId,
+      @RequestParam(required = false) UUID stockItemId,
+      @RequestParam(required = false) UUID accountId) {
     return new DataFirstDateResponse(
-        tradeRepository.findFirstTradeDateByUserId(userId),
-        dividendRepository.findFirstDividendDateByUserId(userId));
+        tradeRepository.findFirstTradeDate(userId, stockItemId, accountId),
+        dividendRepository.findFirstDividendDate(userId, stockItemId, accountId));
   }
 }

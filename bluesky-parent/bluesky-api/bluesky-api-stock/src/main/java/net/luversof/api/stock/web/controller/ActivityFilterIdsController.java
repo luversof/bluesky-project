@@ -30,10 +30,12 @@ public class ActivityFilterIdsController {
           Instant startDate,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
           Instant endDate) {
+    java.time.Instant[] range =
+        net.luversof.api.stock.web.support.RequestRangeUtil.ordered(startDate, endDate);
     return new ActivityFilterIdsResponse(
-        tradeRepository.findDistinctAccountIds(userId, startDate, endDate),
-        tradeRepository.findDistinctStockItemIds(userId, startDate, endDate),
-        dividendRepository.findDistinctAccountIds(userId, startDate, endDate),
-        dividendRepository.findDistinctStockItemIds(userId, startDate, endDate));
+        tradeRepository.findDistinctAccountIds(userId, range[0], range[1]),
+        tradeRepository.findDistinctStockItemIds(userId, range[0], range[1]),
+        dividendRepository.findDistinctAccountIds(userId, range[0], range[1]),
+        dividendRepository.findDistinctStockItemIds(userId, range[0], range[1]));
   }
 }

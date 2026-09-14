@@ -24,6 +24,17 @@ public class MonthlyDividendViewSupport {
   public static final String SORT_DISPLAY_ORDER = "display-order";
   public static final String SORT_SYMBOL = "symbol";
 
+  /**
+   * 표의 마지막 열(예상 종합 수익률) 정렬 키.
+   *
+   * <p>2026-09-12 까지 이 값만 허용 목록에서 빠져 있었다. 머리 링크는 화면이 직접 만들어 내보내는데 ({@code
+   * monthlyDividendSimulator.jte}) {@code resolveRowSort} 가 그 값을 모른 채 표시 순서로 되돌려, 눌러도 아무 일이 없었다
+   * &mdash; 실측 2026-09-12: {@code sort=combined-return&direction=desc} 의 행 순서가 {@code
+   * sort=display-order&direction=desc} 와 완전히 같았다. {@code sortRows} 에는 비교기가 이미 있었지만 {@code default}
+   * 가지에만 있어 닿지 못했다(도달 불가 코드).
+   */
+  public static final String SORT_COMBINED_RETURN = "combined-return";
+
   /** 프로파일 정렬 키 검증(허용되지 않은 값은 기본 정렬). */
   public String resolveProfileSort(String sort) {
     if (!StringUtils.hasText(sort)) {
@@ -106,7 +117,8 @@ public class MonthlyDividendViewSupport {
           "annual-yield",
           "monthly-dividend",
           "taxable-base",
-          "updated-date" ->
+          "updated-date",
+          SORT_COMBINED_RETURN ->
           sort;
       default -> SORT_DISPLAY_ORDER;
     };
@@ -184,6 +196,8 @@ public class MonthlyDividendViewSupport {
           case "updated-date" ->
               Comparator.comparing(
                   row -> row.updatedDate() != null ? row.updatedDate() : Instant.EPOCH);
+          case SORT_COMBINED_RETURN ->
+              Comparator.comparing(row -> safe(row.expectedCombinedReturnPct()));
           default -> Comparator.comparing(row -> safe(row.expectedCombinedReturnPct()));
         };
 

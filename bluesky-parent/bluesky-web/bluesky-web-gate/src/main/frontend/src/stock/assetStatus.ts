@@ -38,6 +38,13 @@ export {};
                 : button.dataset.expandLabel!;
         }
 
+        // 버튼 이름에는 계좌가 들어 있다(줄마다 같은 글자였던 것을 2026-09-12 에 고쳤다).
+        // 보이는 글자만 바꾸면 이름이 "보기" 에 머물러, 펼친 뒤에도 "보기" 라고 읽힌다.
+        var nextAria = nextExpanded ? button.dataset.collapseAria : button.dataset.expandAria;
+        if (nextAria) {
+            button.setAttribute('aria-label', nextAria);
+        }
+
         var iconEl = button.querySelector<HTMLElement>('[data-icon]');
         if (iconEl) {
             iconEl.textContent = nextExpanded ? '▲' : '▼';
@@ -80,7 +87,10 @@ export {};
         for (var i = 0; i < buttons.length; i++) {
             var button = buttons[i];
             var indicator = button.querySelector<HTMLElement>('[data-sort-indicator]');
-            var headerCell = button.parentElement;
+            // aria-sort 는 헤더 셀(th)에 있어야 보조기술이 정렬 상태를 읽는다. parentElement 로 잡으면
+            // 버튼을 레이아웃용 div 로 한 겹만 감싸도 aria-sort 가 div 로 가서 th 에서 조용히 사라진다.
+            // 형제 구현(tableSort.ts)은 th 에 직접 달고 있어 둘이 어긋나 있었다.
+            var headerCell = button.closest<HTMLElement>('th, td') || button.parentElement;
             var isActive = button.dataset.sortKey === activeKey;
 
             if (indicator) {
@@ -656,6 +666,13 @@ export {};
         initializeAssetStatusStockSelection();
         win.initializeStockTagHoverTooltips(document);
     }
+
+    // 테스트에서 직접 부를 수 있게 노출한다(classic script 라 export 를 쓸 수 없다).
+    // 다른 주식 스크립트도 같은 방식이다(__tableSortInternals 등).
+    (globalThis as any).__assetStatusInternals = {
+        updateSortIndicators: updateAssetStatusSortIndicators,
+        sortValue: getAssetStatusSortValue,
+    };
 
     win.initializeAssetStatus = initializeAssetStatus;
     document.addEventListener("htmx:afterSettle", initializeAssetStatus);

@@ -36,6 +36,8 @@ public record DataStatusResponse(
     long priceHistoryRowCount,
     /** 그중 거래량이 0 인 행 수. 거래가 없던 시점에 수집된 행이다. */
     long priceHistoryZeroVolumeRowCount,
+    long priceHistoryLastDateItemCount,
+    long priceHistoryNoHistoryItemCount,
     /** 그중 종가가 직전 행과 다른 행 수. 거래가 없으면 종가가 바뀔 수 없으므로 0 에 가까워야 한다. */
     long priceHistoryZeroVolumeChangedCloseCount,
     /**
@@ -68,7 +70,12 @@ public record DataStatusResponse(
      */
     long priceHistoryPriceLimitBreachCount,
     /** 위 개수에 해당하는 행(최대 5건). 며칠 만의 변동인지 보여야 거래정지 뒤 첫 거래와 가를 수 있다. */
-    List<PriceLimitBreachRow> priceHistoryPriceLimitBreachRows) {
+    List<PriceLimitBreachRow> priceHistoryPriceLimitBreachRows,
+    /**
+     * 시세 이력이 한 행도 없는 종목(최대 50). 개수만 알려 주면 무엇을 고쳐야 할지 알 수 없다 - 실측 2026-09-13: 화면이 "(시세 이력이 없는 종목
+     * 4개)" 라고만 적었다.
+     */
+    List<NoHistoryItemRow> priceHistoryNoHistoryItemRows) {
 
   /** 지급 이력이 제 주기를 넘겨 밀린 종목. */
   public record MonthlyDividendPayoutOverdueRow(
@@ -87,6 +94,9 @@ public record DataStatusResponse(
       java.math.BigDecimal closePrice,
       double changePercent,
       int gapDays) {}
+
+  /** 시세 이력이 한 행도 없는 종목. 화면이 이름으로 짚을 수 있게 종목코드와 이름을 담는다. */
+  public record NoHistoryItemRow(String symbol, String stockItemName) {}
 
   /** 거래량 0 인데 종가가 바뀐 행. 종목 이름까지 붙여 화면이 바로 읽을 수 있게 한다. */
   public record ZeroVolumeChangedCloseRow(

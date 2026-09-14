@@ -28,6 +28,75 @@ function fmtDate(d: Date): string {
  * 먼저 로드한다).
  */
 /**
+ * 사용자 지정(모드 없는) 구간을 한 칸 앞뒤로 옮긴다.
+ *
+ * <p>표시 구간은 <b>양끝 포함</b>이라 길이는 {@code end - start + 1}일이다. 예전에는 {@code end - start} 만큼만 옮겨
+ * 직전 구간이 원래 시작일을 다시 덮었다 - 실측 2026-09-11: 5/10~5/19(10일)에서 '이전' 이 5/1~5/10 을 줘 5/10 이 두 구간에
+ * 들어갔고, 하루짜리 구간(6/10~6/10)은 {@code ms <= 0} 이라 아예 움직이지 않았다.
+ */
+/**
+ * N개월 프리셋을 <b>데이터 처음부터 앞으로</b> 잡을지 정한다(현재 규칙을 그대로 옮겨 적은 것이다).
+ *
+ * 보고 있는 창이 데이터의 시작에 붙어 있고 끝(오늘)에는 닿지 않았을 때만 그렇게 한다 - 처음부터 훑어 보는 사람이
+ * "1년" 을 누르면 첫 1년을 보고 싶어 하기 때문이다. 그 밖에는 늘 오늘에서 뒤로 N개월이다.
+ *
+ * <p>알려진 함정(실측 2026-09-12, 오늘 09-12): 주소에 {@code 2009-01-01~2026-09-11} 처럼 <b>데이터 전체를 덮되
+ * 끝이 오늘보다 이른</b> 구간을 싣고 들어가 "1년" 을 누르면 2009-10-06~2010-10-05 가 나온다 - 같은 버튼이 깨끗한
+ * 진입에서는 2025-09-13~2026-09-12 를 준다. 경계는 데이터 첫날이다(시작 2009-10-06 이하면 앞으로, 10-07 부터는 오늘 기준).
+ * {@code rangeMode=all}·모드 없는 진입·2010 년 이후 시작은 모두 정상이라 화면의 링크로는 닿지 않는다.
+ * "이미 전체를 보고 있을 때 프리셋이 무엇을 뜻하는가" 는 제품 결정이라 여기서 바꾸지 않았다.
+ */
+function presetAnchorsAtDataStart(
+	curStart: string,
+	curEnd: string,
+	minDateStr: string | null | undefined,
+	maxDateStr: string,
+	todayStr: string,
+): boolean {
+	const atDataEnd = !curEnd || curEnd >= todayStr;
+	if (atDataEnd) return false;
+	return !!minDateStr && !!curStart && curStart <= minDateStr;
+}
+
+function shiftFreeRange(startStr: string, endStr: string, dir: number) {
+	if (!startStr || !endStr) return null;
+	const s = new Date(startStr + "T00:00:00");
+	const e = new Date(endStr + "T00:00:00");
+	const span = e.getTime() - s.getTime();
+	if (isNaN(span) || span < 0) return null;
+	const step = span + 86400000; // 양끝 포함이므로 하루를 더해야 구간이 겹치지 않는다
+	return {
+		start: new Date(s.getTime() + dir * step),
+		end: new Date(e.getTime() + dir * step),
+	};
+}
+
+/**
+ * 사용자 지정 구간을 그 방향으로 옮길 수 있는가.
+ *
+ * <p>앞으로 갈 때는 <b>시작</b>이 최대일(오늘)을 넘을 때만 막는다. 끝이 넘는 경우는 적용 쪽이 오늘로 자른다.
+ * 예전에는 끝으로 막아 그 자르기 코드가 닿지 못했고, 사용자 지정 구간만 마지막 창에 도달하지 못했다 -
+ * 실측 2026-09-11: 8/20~8/29 를 앞으로 밀면 8/30~9/8 에서 버튼이 죽어 9/9~9/11 을 볼 수 없었다
+ * (같은 화면의 1개월 창은 9/1~9/11 로 잘려 도달한다).
+ */
+function freeRangeShiftAllowed(
+	startStr: string,
+	endStr: string,
+	dir: number,
+	maxDateStr: string,
+	minDateStr?: string | null,
+): boolean {
+	const moved = shiftFreeRange(startStr, endStr, dir);
+	if (!moved) return false;
+	if (dir > 0) {
+		if (!maxDateStr) return true;
+		return moved.start <= new Date(maxDateStr + "T00:00:00");
+	}
+	if (minDateStr) return moved.start >= new Date(minDateStr + "T00:00:00");
+	return true;
+}
+
+/**
  * 저장된 전역 기간(stored)이 조각이 지금 보여 주는 기간(current)과 같은가.
  *
  * create() 는 초기화 때 전역 기간을 복원하고 "데이터가 실리도록" 폼을 한 번 제출한다. 그런데 조각은 페이지의
@@ -58,14 +127,34 @@ type PickerRange = { start?: string | null; end?: string | null; mode?: string |
  * - 다르다: 조각이 이긴다. 저장값을 조각의 기간으로 갱신하고 제출하지 않는다.
  *   (실측 2026-09-09: /stock/dividend?...rangeMode=3 으로 들어가면 첫 조회는 3개월인데 곧 저장된 ytd 로 재조회돼 공유 링크가 무력했다.)
  */
+type InitialRange = { range: PickerRange; submit: boolean; persist: boolean };
+
+/** 기간이라고 할 만한 것이 하나라도 들어 있는가. */
+function hasRange(r: PickerRange | null): boolean {
+	return !!r && !!(r.start || r.end || r.mode);
+}
+
 function resolveInitialRange(
 	current: PickerRange | null,
 	stored: PickerRange,
-): { range: PickerRange; submit: boolean; persist: boolean } {
-	const has = (r: PickerRange | null) => !!r && !!(r.start || r.end || r.mode);
-	if (!has(current)) return { range: stored, submit: true, persist: false };
+): InitialRange {
+	if (!hasRange(current)) return { range: stored, submit: true, persist: false };
 	if (restoredRangeAlreadyShown(current as PickerRange, stored))
 		return { range: stored, submit: false, persist: false };
+	return { range: current as PickerRange, submit: false, persist: true };
+}
+
+/**
+ * 저장된 전역 기간이 아직 없는 첫 방문에 쓸 기간.
+ *
+ * 예전에는 저장값이 없으면 초기화를 통째로 건너뛰었다. 그래서 공유 링크의 기간이 그 화면 한 장에서만 살고, 메뉴를 한 번만 눌러도 사라졌다
+ * (실측 2026-09-11, 저장값을 지운 상태: /stock/trade?rangeMode=3 은 3개월로 열리지만 배당 화면으로 넘어가면 올해로 돌아갔다.
+ * 종목 상세에서 '다른 종목' 으로 바꿔도 마찬가지였다). 저장값이 한 번이라도 있으면 멀쩡했던 이유가 이것이다.
+ *
+ * 조각은 이미 그 기간으로 그려져 있으니 저장만 하고 제출하지 않는다 - 여기서 제출하면 같은 조회가 두 번 나간다.
+ */
+function firstVisitRange(current: PickerRange | null): InitialRange | null {
+	if (!hasRange(current)) return null;
 	return { range: current as PickerRange, submit: false, persist: true };
 }
 
@@ -80,6 +169,86 @@ function localDateToInstantIso(ds: string, addDays?: number): string {
 	return Number.isNaN(dt.getTime()) ? "" : dt.toISOString();
 }
 
+// 기간 창 이동 계산. 예전에는 초기화 클로저 안에 있어 node 테스트가 닿지 못했고,
+// 실행 시점에만 내부 노출 객체에 얹혔다(브라우저에서 초기화되기 전에는 undefined).
+// 순수 계산이라 모듈 범위로 올린다 - 실측 2026-09-12: 이동/왕복/경계 규칙에 가드가 하나도 없었다.
+const parseLocalDate = (value: string) => new Date(value + "T00:00:00");
+const isLastDayOfMonth = (date: Date) =>
+	date.getDate() ===
+	new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+const addMonthsClamped = (date: Date, months: number) => {
+	const targetFirst = new Date(
+		date.getFullYear(),
+		date.getMonth() + months,
+		1,
+	);
+	const targetLastDay = new Date(
+		targetFirst.getFullYear(),
+		targetFirst.getMonth() + 1,
+		0,
+	).getDate();
+	return new Date(
+		targetFirst.getFullYear(),
+		targetFirst.getMonth(),
+		Math.min(date.getDate(), targetLastDay),
+	);
+};
+// 상대 개월 구간(1/3/6/12/36개월)은 "정확히 N개월"이어야 한다.
+// minusMonths(N) 은 양끝 포함이라 N개월+1일이 되므로, 시작일은 +1일,
+// (데이터 시작 앵커의) 종료일은 -1일 보정한다.
+const addDays = (date: Date, days: number) =>
+	new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+const isWholeMonthRange = (startStr: string, endStr: string) => {
+	if (!startStr || !endStr) return false;
+	const startDate = parseLocalDate(startStr);
+	const endDate = parseLocalDate(endStr);
+	return startDate.getDate() === 1 && isLastDayOfMonth(endDate);
+};
+const shiftNumericMonthRange = (
+	startStr: string,
+	endStr: string,
+	months: number,
+	dir: number,
+	maxDate?: Date,
+	minDate?: Date | null,
+) => {
+	if (!startStr || !endStr) return null;
+	const startDate = parseLocalDate(startStr);
+	const endDate = parseLocalDate(endStr);
+	let nextStart: Date;
+	let nextEnd: Date;
+
+	if (isWholeMonthRange(startStr, endStr)) {
+		nextStart = new Date(
+			startDate.getFullYear(),
+			startDate.getMonth() + dir * months,
+			1,
+		);
+		nextEnd = new Date(
+			nextStart.getFullYear(),
+			nextStart.getMonth() + months,
+			0,
+		);
+	} else {
+		// 종료일은 옮긴 시작일에서 다시 센다. 양끝을 따로 클램프하면 창 길이가 달라진다 -
+		// 실측 2026-09-11: 1개월 창을 뒤로 걸어가면 1/28~2/28 처럼 32 일짜리가 나왔다(31 일이어야 한다).
+		// 통월 가지가 이미 같은 방식이고, 서버의 프리셋 정의(minusMonths(N).plusDays(1))와도 맞는다.
+		nextStart = addMonthsClamped(startDate, dir * months);
+		nextEnd = addDays(addMonthsClamped(nextStart, months), -1);
+	}
+
+	if (dir > 0 && maxDate) {
+		if (nextStart > maxDate) return null;
+		if (nextEnd > maxDate) nextEnd = new Date(maxDate);
+	}
+	if (dir < 0 && minDate && nextStart < minDate) return null;
+
+	return {
+		start: fmtDate(nextStart),
+		end: fmtDate(nextEnd),
+	};
+};
+
 const DateRangePicker = (function () {
 	function create(cfg: any) {
 		const _s: PickerState = { start: "", end: "", mode: "" };
@@ -87,6 +256,14 @@ const DateRangePicker = (function () {
 		const isCallback = () => typeof cfg.onApply === "function";
 		// 프리셋(이번 달·1M·3M…)은 눌린 상태를 색(btn-primary)으로만 보였다. 토글 버튼의 상태는 aria-pressed 로도 알려야 한다
 		// (실측 2026-09-09 axe 는 잡지 못하는 항목 - 상태를 색으로만 전달, WCAG 1.4.1). 활성/비활성을 바꾸는 모든 자리에서 함께 맞춘다.
+// '가장 이른 기간으로'(«) 는 데이터 시작일을 알아야 목표를 정할 수 있다. 모르면 doJumpToEdge 가
+// 그냥 돌아오는데, 버튼은 눌리는 채로 남아 아무 반응이 없다 - 실측 2026-09-13: 종목·계좌 상세에서
+// minDate 가 빈 값이라 두 번 눌러도 기간이 그대로였다(매매 화면은 2009-10-06 으로 이동).
+// '전체' 일 때도 같은 이유로 돌아오므로 함께 막는다.
+function jumpStartDisabled(minDate: string, mode: string): boolean {
+	return !minDate || mode === "all";
+}
+
 const activeClass = () => cfg.activeClass || "btn-primary";
 		const resolvedTimeZone = () => {
 			try {
@@ -95,79 +272,7 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 				return "";
 			}
 		};
-		const parseLocalDate = (value: string) => new Date(value + "T00:00:00");
-		const isLastDayOfMonth = (date: Date) =>
-			date.getDate() ===
-			new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-		const addMonthsClamped = (date: Date, months: number) => {
-			const targetFirst = new Date(
-				date.getFullYear(),
-				date.getMonth() + months,
-				1,
-			);
-			const targetLastDay = new Date(
-				targetFirst.getFullYear(),
-				targetFirst.getMonth() + 1,
-				0,
-			).getDate();
-			return new Date(
-				targetFirst.getFullYear(),
-				targetFirst.getMonth(),
-				Math.min(date.getDate(), targetLastDay),
-			);
-		};
-		// 상대 개월 구간(1/3/6/12/36개월)은 "정확히 N개월"이어야 한다.
-		// minusMonths(N) 은 양끝 포함이라 N개월+1일이 되므로, 시작일은 +1일,
-		// (데이터 시작 앵커의) 종료일은 -1일 보정한다.
-		const addDays = (date: Date, days: number) =>
-			new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
-		const isWholeMonthRange = (startStr: string, endStr: string) => {
-			if (!startStr || !endStr) return false;
-			const startDate = parseLocalDate(startStr);
-			const endDate = parseLocalDate(endStr);
-			return startDate.getDate() === 1 && isLastDayOfMonth(endDate);
-		};
-		const shiftNumericMonthRange = (
-			startStr: string,
-			endStr: string,
-			months: number,
-			dir: number,
-			maxDate?: Date,
-			minDate?: Date | null,
-		) => {
-			if (!startStr || !endStr) return null;
-			const startDate = parseLocalDate(startStr);
-			const endDate = parseLocalDate(endStr);
-			let nextStart: Date;
-			let nextEnd: Date;
 
-			if (isWholeMonthRange(startStr, endStr)) {
-				nextStart = new Date(
-					startDate.getFullYear(),
-					startDate.getMonth() + dir * months,
-					1,
-				);
-				nextEnd = new Date(
-					nextStart.getFullYear(),
-					nextStart.getMonth() + months,
-					0,
-				);
-			} else {
-				nextStart = addMonthsClamped(startDate, dir * months);
-				nextEnd = addMonthsClamped(endDate, dir * months);
-			}
-
-			if (dir > 0 && maxDate) {
-				if (nextStart > maxDate) return null;
-				if (nextEnd > maxDate) nextEnd = new Date(maxDate);
-			}
-			if (dir < 0 && minDate && nextStart < minDate) return null;
-
-			return {
-				start: fmtDate(nextStart),
-				end: fmtDate(nextEnd),
-			};
-		};
 
 		const el = (id?: string) => (id ? document.getElementById(id) : null);
 		const btns = (root?: Element | Document) =>
@@ -268,17 +373,13 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 				}
 				// Free range
 				if (!end) return false;
-				const s = new Date(start + "T00:00:00");
-				const e = new Date(end + "T00:00:00");
-				const ms = e.getTime() - s.getTime();
-				if (ms <= 0) return false;
-				const ns = new Date(s.getTime() + dir * ms);
-				const ne = new Date(e.getTime() + dir * ms);
-				// when shifting forward, new end must not exceed maxDate
-				if (dir > 0 && ne > maxDate) return false;
-				// when shifting backward, new start must not be before minDate
-				if (dir < 0 && minDate) return ns >= minDate;
-				return true;
+				return freeRangeShiftAllowed(
+					start,
+					end,
+					dir,
+					maxDateStr(),
+					cfg.minDate || null,
+				);
 			} catch (e) {
 				return false;
 			}
@@ -310,6 +411,33 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 					el.disabled = disablePrev;
 					el.classList.toggle("btn-disabled", disablePrev);
 					if (disablePrev) {
+						el.classList.add("opacity-40");
+						el.setAttribute("aria-disabled", "true");
+						try {
+							el.style.opacity = "0.2";
+						} catch (e) {}
+					} else {
+						el.classList.remove("opacity-40");
+						el.removeAttribute("aria-disabled");
+						try {
+							el.style.opacity = "";
+						} catch (e) {}
+					}
+				});
+				// 눌리는데 아무 일도 안 하는 버튼을 남기지 않는다.
+				const jumpStartEls = Array.from(
+					(root as Element).querySelectorAll(
+						'[data-picker-action="jump"][data-picker-arg="start"]',
+					),
+				) as HTMLButtonElement[];
+				const disableJumpStart = jumpStartDisabled(cfg.minDate || "", mode);
+				jumpStartEls.forEach((el) => {
+					// « 는 '이전' 과 같은 클래스(date-range-prev)를 달고 있어 위에서 이미 판정이 끝났다.
+					// 여기서 되살리면 최저 구간에 도착해 막아 둔 버튼이 다시 눌리게 된다 - 막기만 한다.
+					const off = disableJumpStart || el.disabled;
+					el.disabled = off;
+					el.classList.toggle("btn-disabled", off);
+					if (off) {
 						el.classList.add("opacity-40");
 						el.setAttribute("aria-disabled", "true");
 						try {
@@ -665,9 +793,13 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 				const curEnd = getEnd();
 				const curStart = getStart();
 				const todayStr = fmtDate(today);
-				const atDataEnd = !curEnd || curEnd >= todayStr;
-				const atDataStart =
-					!atDataEnd && !!cfg.minDate && !!curStart && curStart <= cfg.minDate;
+				const atDataStart = presetAnchorsAtDataStart(
+					curStart,
+					curEnd,
+					cfg.minDate,
+					maxStr,
+					todayStr,
+				);
 				if (atDataStart) {
 					const minD = new Date(cfg.minDate + "T00:00:00");
 					let e = addDays(addMonthsClamped(minD, months), -1);
@@ -896,12 +1028,10 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 				}
 			} else {
 				if (!end) return;
-				const s = new Date(start + "T00:00:00");
-				const e = new Date(end + "T00:00:00");
-				const ms = e.getTime() - s.getTime();
-				if (ms <= 0) return;
-				const ns = new Date(s.getTime() + dir * ms);
-				const ne = new Date(e.getTime() + dir * ms);
+				const moved = shiftFreeRange(start, end, dir);
+				if (!moved) return;
+				const ns = moved.start;
+				const ne = moved.end;
 				if (dir > 0 && ns > maxDate) return;
 				if (dir > 0 && ne > maxDate) ne.setTime(maxDate.getTime());
 				newStart = fmtDate(ns);
@@ -992,18 +1122,17 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 					(typeof localStorage !== "undefined" &&
 						localStorage.getItem(cfg.globalKey)) ||
 					sessionStorage.getItem(cfg.globalKey);
-				if (raw) {
+				{
 					try {
-						const stored = JSON.parse(raw);
+						const stored = raw ? JSON.parse(raw) : null;
 						// 조각이 이미 보여 주는 기간과 저장값을 견줘 쓸 기간을 정한다(콜백 모드는 예전처럼 저장값).
+						// 저장값이 아직 없으면 조각이 들고 있는 기간을 저장만 한다(firstVisitRange).
+						const current = isCallback()
+							? null
+							: { start: getStart(), end: getEnd(), mode: getMode() };
 						const initial = stored
-							? resolveInitialRange(
-									isCallback()
-										? null
-										: { start: getStart(), end: getEnd(), mode: getMode() },
-									stored,
-								)
-							: null;
+							? resolveInitialRange(current, stored)
+							: firstVisitRange(current);
 						const obj: any = initial ? { ...initial.range } : null;
 						if (obj) {
 							const root = cfg.rootSelector
@@ -1247,4 +1376,11 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 	fmtDate,
 	restoredRangeAlreadyShown,
 	resolveInitialRange,
+	firstVisitRange,
+	shiftFreeRange,
+	freeRangeShiftAllowed,
+	shiftNumericMonthRange,
+	addMonthsClamped,
+	isWholeMonthRange,
+	presetAnchorsAtDataStart,
 };

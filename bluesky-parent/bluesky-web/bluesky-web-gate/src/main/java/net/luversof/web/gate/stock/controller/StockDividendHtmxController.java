@@ -108,47 +108,44 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       rangeMode = preset.mode();
     }
 
-    var request = new DividendRequest();
-    request.setUserId(userId);
-    request.setStartDate(startInstant);
-    request.setEndDate(endInstant);
-
-    // 이 화면 앞부분의 네 호출(배당/배당메타/계좌/종목)은 서로 의존이 없어 함께 던진다.
+    // 이 화면 앞부분의 세 호출(배당/배당메타/계좌/종목)은 서로 의존이 없어 함께 던진다.
     // "전체 기간" 필터 UI 에 필요한 건 최초 기준일과 배당 보유 종목 ID 뿐이라,
     // 전 기간 배당 이력을 통째로 내려받는 대신 메타 엔드포인트 1회로 대체한다.
-    var dividendParams = request.toParams();
-    var dividendsFuture =
-        async.supply(() -> emptyIfNull(dividendClient.findDividends(dividendParams)));
-    var dividendMetaFuture = async.supply(() -> dividendClient.findDividendMeta(userId));
-    // 월별 차트의 '최근 12개월 합' 선. 표시 기간이 올해면 브라우저에 앞 11개월이 없으므로 전체 원장으로
-    // 서버가 낸다(호출 1회 추가 - 실측 배당 조회 13.6ms, 다른 조회와 함께 던져 응답시간에 거의 안 붙는다).
+    //
+    // 이 화면은 월별 차트의 '최근 12개월 합' 선 때문에 전 기간 원장을 어차피 한 번 받는다. 표시 기간과
+    // 전기 구간은 그 원장의 부분집합이라, 예전처럼 기간별로 따로 묻지 않고 받은 원장에서 걸러 쓴다
+    // (백엔드 필터는 payDate >= start AND payDate < end 하나뿐이고 정렬도 같다 - 실측 2026-09-10:
+    // 올해 116행 · 전기 56행 · 1개월 18행 · 3개월 52행 · 경계 1일 1행 모두 서버 응답과 필드까지 일치).
     DividendRequest allDividendRequest = new DividendRequest();
     allDividendRequest.setUserId(userId);
     var allDividendParams = allDividendRequest.toParams();
     var allDividendsFuture =
         async.supply(() -> emptyIfNull(dividendClient.findDividends(allDividendParams)));
+    var dividendMetaFuture = async.supply(() -> dividendClient.findDividendMeta(userId));
     var accountsFuture = async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
     var stockItemsFuture = async.supply(() -> emptyIfNull(stockItemClient.getStockItems()));
 
-    // 전기 비교용 배당도 여기서 함께 던진다. 구간은 요청 파라미터만으로 정해지고 응답 필터는
-    // 받은 뒤에 적용하므로 다른 조회를 기다릴 이유가 없다(예전에는 맨 뒤에서 순차로 불러
-    // 기간 지정 화면에서 배당 조회가 2회 직렬이었다 — 실측 YTD 90.4ms, dividend 2회 14.2ms).
     ZoneId earlyZone = resolveZoneIdOrDefault(timeZone);
-    PreviousPeriod previousPeriod = resolvePreviousPeriod(startDate, endDate, rangeMode, earlyZone);
-    java.util.concurrent.CompletableFuture<List<DividendResponse>> prevDividendsFuture = null;
-    if (previousPeriod != null) {
-      var prevRequestEarly = new DividendRequest();
-      prevRequestEarly.setUserId(userId);
-      prevRequestEarly.setStartDate(previousPeriod.start().atStartOfDay(earlyZone).toInstant());
-      prevRequestEarly.setEndDate(
-          previousPeriod.end().plusDays(1).atStartOfDay(earlyZone).toInstant());
-      var prevParams = prevRequestEarly.toParams();
-      prevDividendsFuture =
-          async.supply(() -> emptyIfNull(dividendClient.findDividends(prevParams)));
-    }
+    // 전기 구간은 목록과 같은 기간에서 나와야 한다. 예전에는 원본 파라미터(startDate/endDate)를 그대로 넘겨,
+    // effectiveRange 의 역순 교정과 프리셋 기본 기간이 전기 계산에는 반영되지 않았다. 실측 2026-09-10:
+    // (1) 역순 입력(9/10~6/10)에서 전기가 2026-12-10 ~ 2026-09-09 로 나왔다 - 미래이자 역순이다
+    //     (durationDays 가 -91 이 되어 startLocal.minusDays(-91) 이 미래로 갔다). 정상은 2026-03-09 ~
+    // 2026-06-09.
+    // (2) 날짜 없이 들어오는 기본 경로(파라미터 없음 · rangeMode=3/ytd/mtd)에서는 전기가 아예 없어
+    //     "변동 요인 (전기 대비)" 섹션 전체가 화면에서 빠졌다.
+    PreviousPeriod previousPeriod =
+        resolvePreviousPeriod(startInstant, endInstant, rangeMode, earlyZone);
 
-    List<DividendResponse> dividends =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(dividendsFuture);
+    List<DividendResponse> allDividends =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(allDividendsFuture);
+    List<DividendResponse> dividends = inPayDateRange(allDividends, startInstant, endInstant);
+    List<DividendResponse> prevDividends =
+        previousPeriod == null
+            ? java.util.List.<DividendResponse>of()
+            : inPayDateRange(
+                allDividends,
+                previousPeriod.start().atStartOfDay(earlyZone).toInstant(),
+                previousPeriod.end().plusDays(1).atStartOfDay(earlyZone).toInstant());
     var dividendMeta =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(dividendMetaFuture);
     ZoneId zone = resolveZoneIdOrDefault(timeZone);
@@ -342,9 +339,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     viewList = analyticsResult.dividendViews();
 
     if (sort != null && !sort.isEmpty()) {
-      String[] parts = sort.split(",");
-      String field = parts[0];
-      String direction = parts.length > 1 ? parts[1] : "asc";
+      String field = net.luversof.web.gate.stock.util.StockSortUtil.field(sort);
+      boolean descending = net.luversof.web.gate.stock.util.StockSortUtil.descending("sort", sort);
 
       Comparator<DividendView> comparator =
           switch (field) {
@@ -369,15 +365,16 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             case "taxableAmount" ->
                 Comparator.comparing(
                     DividendView::taxableAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> null;
+            // 모르는 열 이름은 조용히 넘기지 않는다 - 넘기면 정렬도 표시 역순도 걸리지 않아
+            // 지정 없음과도 다른 세 번째 순서가 나온다(실측 2026-09-11).
+            default ->
+                throw new net.luversof.web.gate.stock.support.StockSortParamException("sort", sort);
           };
 
-      if (comparator != null) {
-        if ("desc".equalsIgnoreCase(direction)) {
-          comparator = comparator.reversed();
-        }
-        viewList.sort(comparator);
+      if (descending) {
+        comparator = comparator.reversed();
       }
+      viewList.sort(comparator);
     } else {
       viewList.sort(
           Comparator.comparing(
@@ -444,14 +441,12 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     LocalDate prevEndDate = null;
     List<DividendChange> dividendChangeContributors = java.util.List.of();
     if (previousPeriod != null) {
-      // 전기 구간과 조회는 앞에서 이미 끝냈다(resolvePreviousPeriod + prevDividendsFuture).
+      // 전기 구간과 그 구간의 배당은 앞에서 이미 정해졌다(resolvePreviousPeriod + inPayDateRange).
       prevStartDate = previousPeriod.start();
       prevEndDate = previousPeriod.end();
 
       final List<UUID> finalAccountIdList = effectiveAccountIdList;
       final List<UUID> finalStockItemIdList = effectiveStockItemIdList;
-      List<DividendResponse> prevDividends =
-          net.luversof.web.gate.stock.support.StockAsyncSupport.join(prevDividendsFuture);
       prevPeriodNetAmount =
           prevDividends.stream()
               .filter(d -> matchesFilter(finalAccountIdList, d.accountId()))
@@ -529,22 +524,37 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         net.luversof.web.gate.stock.util.DividendPeriodBreakdown.byYear(
             viewList,
             breakdownZone,
-            startDate != null ? startDate.atZone(breakdownZone).toLocalDate() : null,
+            // 바로잡은 구간(startInstant/endInstant)을 쓴다. 원본 파라미터를 그대로 읽으면 역순 기간에서
+            // 이 표만 다른 모양이 된다 - 실측 2026-09-12: 뒤집힌 주소로 들어가면 월별 표가 213 행에서 37 행으로
+            // 줄었다(빈 달 채우기가 rangeStart.isAfter(rangeEnd) 에서 그냥 빠져나간다). 합계와 상세 목록은 같았다.
+            startInstant != null ? startInstant.atZone(breakdownZone).toLocalDate() : null,
             // endDate 는 배타적이라 하루를 빼야 화면의 마지막 날과 같아진다.
-            endDate != null ? endDate.atZone(breakdownZone).toLocalDate().minusDays(1) : null));
+            endInstant != null
+                ? endInstant.atZone(breakdownZone).toLocalDate().minusDays(1)
+                : null));
     model.addAttribute(
         "dividendMonthlyRows",
         net.luversof.web.gate.stock.util.DividendPeriodBreakdown.byMonth(
             viewList,
             breakdownZone,
-            startDate != null ? startDate.atZone(breakdownZone).toLocalDate() : null,
-            endDate != null ? endDate.atZone(breakdownZone).toLocalDate().minusDays(1) : null));
+            startInstant != null ? startInstant.atZone(breakdownZone).toLocalDate() : null,
+            endInstant != null
+                ? endInstant.atZone(breakdownZone).toLocalDate().minusDays(1)
+                : null));
+    // TTM 선은 표시 기간 <b>밖</b>의 달까지 필요해서 날짜로 자르지 않은 원장을 쓴다. 다만 계좌·종목 필터는
+    // 따라야 한다 - 예전에는 allDividends 를 그대로 넘겨 막대만 필터를 따르고 선은 전체 포트폴리오를 그렸다.
+    // 실측 2026-09-10: 삼성SDI 로 걸면 막대 합은 298,640 인데 TTM 선은 11,427,786(올바른 값 131,130)이었고
+    // 61개 점이 전부 틀렸다. 에스디바이오센서는 20,364 자리에 2,678,912 - 전체 원장의 2022-04 TTM 값 그대로였다.
+    List<DividendResponse> ttmSource =
+        allDividends.stream()
+            .filter(d -> matchesFilter(effectiveAccountIdList, d.accountId()))
+            .filter(d -> matchesFilter(effectiveStockItemIdList, d.stockItemId()))
+            .toList();
     model.addAttribute(
         "dividendTtmJs",
         net.luversof.web.gate.stock.util.StockDividendTtmUtil.toJs(
             net.luversof.web.gate.stock.util.StockDividendTtmUtil.byMonth(
-                net.luversof.web.gate.stock.support.StockAsyncSupport.join(allDividendsFuture),
-                net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone))));
+                ttmSource, net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone))));
     model.addAttribute("totalItems", totalItems);
     model.addAttribute("accountList", finalAccountList);
     model.addAttribute("stockItemList", finalStockItemList);
@@ -615,14 +625,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         analyticsResult.portfolioYield() != null
             ? analyticsResult.portfolioYield().yieldOnDailyAverageCostPct()
             : null;
-    BigDecimal annualizedYieldPct = null;
-    if (periodYieldPct != null && analyticsResult.periodDayCount() > 0) {
-      annualizedYieldPct =
-          periodYieldPct
-              .multiply(BigDecimal.valueOf(365))
-              .divide(
-                  BigDecimal.valueOf(analyticsResult.periodDayCount()), 2, RoundingMode.HALF_UP);
-    }
+    BigDecimal annualizedYieldPct =
+        net.luversof.web.gate.stock.util.StockYieldUtil.annualizedPct(
+            periodYieldPct, analyticsResult.periodDayCount());
     model.addAttribute("portfolioYieldAnnualizedPct", annualizedYieldPct);
     model.addAttribute("periodDayCount", analyticsResult.periodDayCount());
 
@@ -700,15 +705,22 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return elapsedDays < totalDays ? new int[] {elapsedDays, totalDays} : null;
   }
 
-  private record PreviousPeriod(LocalDate start, LocalDate end) {}
+  record PreviousPeriod(LocalDate start, LocalDate end) {}
 
-  private PreviousPeriod resolvePreviousPeriod(
+  static PreviousPeriod resolvePreviousPeriod(
       Instant startDate, Instant endDate, String rangeMode, ZoneId zone) {
     if (startDate == null || endDate == null) {
       return null;
     }
     LocalDate startLocal = startDate.atZone(zone).toLocalDate();
     LocalDate endLocal = endDate.atZone(zone).toLocalDate();
+    // 호출부가 이미 effectiveRange 로 바로잡아 넘기지만, 여기서도 막는다. 역순이 그대로 들어오면
+    // durationDays 가 음수가 되어 minusDays(음수) 가 전기를 미래로 보낸다(실측: -91 -> 2026-12-10).
+    if (startLocal.isAfter(endLocal)) {
+      LocalDate swap = startLocal;
+      startLocal = endLocal;
+      endLocal = swap;
+    }
     if ("mtd".equals(rangeMode)) {
       // 이번 달 선택 시 전기 = 전월 1일 ~ 말일 (달력 기준 통월)
       LocalDate thisMonthFirst = startLocal.withDayOfMonth(1);
@@ -1178,6 +1190,32 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
    * 봤는데, 전기 비교는 {@code || list.isEmpty()} 가 붙어 "필터 없음" 으로 봤다. 그래서 해당이 없는 필터를 고르면 <b>이번 기간 0 원 vs 전기
    * 전체 금액</b> 이 되어 증감이 통째로 잘못 나왔다. 판정을 한 곳으로 모아 갈릴 수 없게 한다.
    */
+  /**
+   * 전 기간 배당 원장에서 한 구간만 골라낸다. 백엔드의 기간 필터와 같은 규칙이다 - 지급일 기준, 시작은 포함, 끝은 배타적이며 지급일이 없는 행은 빠진다.
+   *
+   * <p>이 화면은 월별 차트 때문에 전 기간 원장을 어차피 받으므로, 구간마다 다시 묻는 대신 여기서 거른다. 실측 2026-09-10: 올해 116행 · 전기 56행 ·
+   * 1개월 18행 · 3개월 52행 · 경계 1일 1행 모두 서버 응답과 순서·필드까지 같았다(지급일 없는 행은 202행 중 0행).
+   */
+  static List<DividendResponse> inPayDateRange(
+      List<DividendResponse> dividends, java.time.Instant start, java.time.Instant end) {
+    if (start == null && end == null) {
+      return dividends;
+    }
+    return dividends.stream()
+        .filter(
+            d -> {
+              java.time.Instant payDate = d.payDate();
+              if (payDate == null) {
+                return false;
+              }
+              if (start != null && payDate.isBefore(start)) {
+                return false;
+              }
+              return end == null || payDate.isBefore(end);
+            })
+        .toList();
+  }
+
   static boolean matchesFilter(List<UUID> filter, UUID id) {
     if (filter == null) {
       return true;

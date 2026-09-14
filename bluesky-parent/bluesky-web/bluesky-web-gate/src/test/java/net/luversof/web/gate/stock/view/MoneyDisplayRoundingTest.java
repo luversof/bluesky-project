@@ -31,7 +31,12 @@ class MoneyDisplayRoundingTest {
 
   /** 금액을 원 단위로 찍는 호출. */
   private static final List<String> MONEY_FORMATS =
-      List.of("String.format(\"%,d\"", "String.format(\"%+,d\"", "fullKrw(");
+      List.of(
+          "String.format(\"%,d\"",
+          "String.format(\"%+,d\"",
+          // 부호 붙은 금액은 signedWon 으로 옮겼다(0 에 "+" 를 붙이지 않기 위해) - 같은 반올림 규칙을 계속 본다.
+          "signedWon(",
+          "fullKrw(");
 
   private List<String> moneyLinesUsingLongValue() throws IOException {
     List<String> offenders = new ArrayList<>();

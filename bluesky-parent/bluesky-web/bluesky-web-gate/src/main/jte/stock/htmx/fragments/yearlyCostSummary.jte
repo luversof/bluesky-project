@@ -19,6 +19,10 @@
 	String withholdingLabel = MessageUtil.getMessage("stock.asset.growth.cost.col.dividend.tax");
 	String netLabel = MessageUtil.getMessage("stock.asset.growth.cost.col.dividend.net");
 	String sumLabel = MessageUtil.getMessage("stock.asset.growth.cost.sum.row");
+	// "-" 한 글자로는 0 원인지 그 해엔 판 적이 없는지 알 수 없다(실측 2026-09-12: 14 개 해 중 셋이 이 자리였고
+	// 셋 다 매도 0 건이었는데 까닭이 하나도 붙어 있지 않았다). 매도 건수로 갈라 까닭을 적는다.
+	String noSaleLabel = MessageUtil.getMessage("stock.asset.growth.cost.realized.none");
+	String zeroAmountLabel = MessageUtil.getMessage("common.amount.zero.title");
 }
 
 @if(yearlyCosts != null && !yearlyCosts.isEmpty())
@@ -48,12 +52,13 @@
 								boolean realizedUp = realized.signum() >= 0;
 							}
 							<tr>
-								<td class="font-medium">${String.valueOf(row.year())}</td>
+								<th scope="row" class="font-medium">${String.valueOf(row.year())}</th>
+								!{ String realizedReason = row.sellCount() > 0 ? zeroAmountLabel : noSaleLabel; }
 								<td class="text-right tabular-nums">
 									@if(realized.signum() != 0)
-										<span class="amount-value font-semibold ${realizedUp ? "text-profit" : "text-loss"}">${realizedUp ? "+" : "-"}&#8361;${amountFormat.format(realized.abs())}</span>
+										<span class="amount-value font-semibold ${realizedUp ? "text-profit" : "text-loss"}">${realized.signum() == 0 ? "" : (realizedUp ? "+" : "-")}&#8361;${amountFormat.format(realized.abs())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${realizedReason}">-</span><span class="sr-only">${realizedReason}</span>
 									@endif
 								</td>
 								<%-- 수수료·거래세는 나간 돈이라 부호를 붙이지 않고 금액만 적는다. --%>
@@ -98,12 +103,12 @@
 						   boolean costRealizedUp = costTotals.realizedProfit().signum() >= 0; }
 						<tfoot>
 							<tr class="border-t-2 border-base-content/20 font-semibold" data-yearly-cost-total>
-								<td>${sumLabel}</td>
+								<th scope="row">${sumLabel}</th>
 								<td class="text-right tabular-nums">
 									@if(costTotals.realizedProfit().signum() != 0)
-										<span class="amount-value ${costRealizedUp ? "text-profit" : "text-loss"}">${costRealizedUp ? "+" : "-"}&#8361;${amountFormat.format(costTotals.realizedProfit().abs())}</span>
+										<span class="amount-value ${costRealizedUp ? "text-profit" : "text-loss"}">${costTotals.realizedProfit().signum() == 0 ? "" : (costRealizedUp ? "+" : "-")}&#8361;${amountFormat.format(costTotals.realizedProfit().abs())}</span>
 									@else
-										<span class="text-base-content/30">-</span>
+										<span class="text-base-content/60">-</span>
 									@endif
 								</td>
 								<%-- 줄과 같은 규칙: 나간 돈에는 부호를 붙이지 않는다. --%>

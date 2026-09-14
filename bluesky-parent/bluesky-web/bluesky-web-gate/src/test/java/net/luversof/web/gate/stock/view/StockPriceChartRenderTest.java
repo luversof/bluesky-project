@@ -109,14 +109,21 @@ class StockPriceChartRenderTest {
         .contains(MessageUtil.getMessage("stock.item.detail.price.chart.desc"));
   }
 
-  /** 시세가 없으면 빈 차트 틀만 그리지 않는다. 축만 있는 그림은 자료가 없다는 사실을 가린다. */
+  /**
+   * 시세가 없으면 빈 차트 틀을 그리지 않는다. 축만 있는 그림은 자료가 없다는 사실을 가린다.
+   *
+   * <p>2026-09-12 까지는 구역째 빼서 제목도 내지 않았다. 그런데 그러면 <b>아무 말도 하지 않는다</b> &mdash; 실측: 시세가 2026-04-01 에
+   * 끝난 종목을 최근 3개월로 보면 이 구역만 조용히 사라지는데, 같은 화면의 매매·배당은 "이 종목의 … 내역이 없습니다" 를 띄운다. 화면만 봐서는 자료가 없는 것인지
+   * 원래 없는 구역인지 알 수 없다. 그래서 <b>캔버스는 그대로 내지 않고</b>(원래 규칙) 글로 까닭만 남긴다.
+   */
   @Test
-  void 시세가_없으면_차트를_그리지_않는다() {
+  void 시세가_없으면_차트_대신_까닭을_적는다() {
     String html = render(List.of());
 
+    assertThat(html).as("빈 차트 틀은 자료가 없다는 사실을 가린다 - 캔버스는 내지 않는다").doesNotContain("stockPriceChart");
     assertThat(html)
-        .as("빈 차트 틀은 자료가 없다는 사실을 가린다")
-        .doesNotContain("stockPriceChart")
-        .doesNotContain(MessageUtil.getMessage("stock.item.detail.price.chart.title"));
+        .as("대신 구역 제목과 까닭을 남겨 '없다' 는 사실을 말한다")
+        .contains(MessageUtil.getMessage("stock.item.detail.price.chart.title"))
+        .contains(MessageUtil.getMessage("stock.item.detail.empty.price.history"));
   }
 }

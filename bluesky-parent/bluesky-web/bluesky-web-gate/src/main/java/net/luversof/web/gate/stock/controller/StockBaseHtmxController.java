@@ -156,10 +156,8 @@ public abstract class StockBaseHtmxController {
 
   protected static java.time.Instant[] orderedRange(
       java.time.Instant startDate, java.time.Instant endDate) {
-    if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-      return new java.time.Instant[] {endDate, startDate};
-    }
-    return new java.time.Instant[] {startDate, endDate};
+    // 규칙은 StockRangePresetUtil 한 곳에만 둔다 - 상세 화면도 같은 것을 쓴다.
+    return net.luversof.web.gate.stock.util.StockRangePresetUtil.ordered(startDate, endDate);
   }
 
   protected static final List<String> ACCOUNT_PRINCIPAL_CONFIG_KEYS =
@@ -337,32 +335,13 @@ public abstract class StockBaseHtmxController {
   /**
    * 화면의 기간 프리셋을 서버에서 그대로 계산한다.
    *
-   * <p>{@code rangeMode} 는 어떤 프리셋 버튼이 눌렸는지 알리는 상태값이고 기간 자체는 {@code startDate}/{@code endDate} 로 온다.
-   * 그래서 날짜 없이 이 값만 오면 기간이 정해지지 않는다. 화면 쪽 계산( {@code date-range-picker.ts})은 선택 상태가 없을 때 오늘을 기준으로
-   * 삼고, N 개월 프리셋은 "정확히 N 개월"이 되도록 시작일을 하루 밀어 준다. 여기서는 그 규칙을 그대로 옮긴다.
-   *
-   * <p>{@code "all"} 은 이 메서드를 부르기 전에 호출부가 걸러 낸다(기간 없음이 곧 의도다). 알 수 없는 값은 예전 기본값인 올해(YTD)로 떨어뜨린다.
+   * <p>규칙 자체는 {@link net.luversof.web.gate.stock.util.StockRangePresetUtil} 한 곳에만 둔다. 상세 화면 컨트롤러는 이
+   * 클래스를 상속하지 않으면서 같은 규칙이 필요해, 규칙을 유틸로 옮기고 여기서는 그것을 부른다 &mdash; 두 벌이 되면 같은 기간 버튼이 화면마다 다른 구간을 뜻하게
+   * 된다.
    */
   protected PresetRange resolvePresetRange(String rangeMode, ZoneId zone) {
-    java.time.LocalDate today = java.time.LocalDate.now(zone);
-    String mode = rangeMode == null ? "" : rangeMode.trim();
-    java.time.LocalDate from;
-    String resolvedMode;
-    if ("mtd".equalsIgnoreCase(mode)) {
-      from = today.withDayOfMonth(1);
-      resolvedMode = "mtd";
-    } else if (mode.matches("[1-9][0-9]{0,3}") && Long.parseLong(mode) <= 1200L) {
-      // 화면과 같은 규칙: minusMonths 는 양끝 포함이라 하루를 더해 정확히 N 개월로 만든다.
-      from = today.minusMonths(Long.parseLong(mode)).plusDays(1);
-      resolvedMode = mode;
-    } else {
-      from = java.time.LocalDate.of(today.getYear(), 1, 1);
-      resolvedMode = "ytd";
-    }
-    return new PresetRange(
-        from.atStartOfDay(zone).toInstant(),
-        today.plusDays(1).atStartOfDay(zone).toInstant(),
-        resolvedMode);
+    var preset = net.luversof.web.gate.stock.util.StockRangePresetUtil.resolve(rangeMode, zone);
+    return new PresetRange(preset.start(), preset.end(), preset.mode());
   }
 
   /**

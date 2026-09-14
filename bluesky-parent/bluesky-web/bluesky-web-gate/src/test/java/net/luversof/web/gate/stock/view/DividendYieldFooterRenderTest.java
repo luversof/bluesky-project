@@ -168,7 +168,8 @@ class DividendYieldFooterRenderTest {
     return cells;
   }
 
-  private static final Pattern CELL = Pattern.compile("<td[^>]*>(.*?)</td>", Pattern.DOTALL);
+  // 합계 줄의 첫 칸은 th scope="row" 다(2026-09-11). 자리로 읽는 검사라 그 칸도 함께 잡아야 번호가 밀리지 않는다.
+  private static final Pattern CELL = Pattern.compile("<t[dh][^>]*>(.*?)</t[dh]>", Pattern.DOTALL);
 
   /** 셀 안의 태그를 걷어 내고 남은 글자. */
   private static String text(String cell) {

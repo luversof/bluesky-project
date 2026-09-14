@@ -20,6 +20,11 @@
 	String nextLabel = MessageUtil.getMessage("common.button.next");
 	String previousCompactLabel = MessageUtil.getMessage("common.button.previous.compact");
 	String nextCompactLabel = MessageUtil.getMessage("common.button.next.compact");
+	// The two edge arrows had no name at all - their whole accessible name was the glyph
+	// (measured 2026-09-12: 6 screens x 2 locales, 24 buttons). They do not step one period like
+	// the neighbouring buttons; they jump the window to the first or the last data date.
+	String jumpEarliestLabel = MessageUtil.getMessage("stock.range.jump.earliest");
+	String jumpLatestLabel = MessageUtil.getMessage("stock.range.jump.latest");
 	String thisMonthLabel = MessageUtil.getMessage("stock.range.this.month");
 	String oneMonthLabel = MessageUtil.getMessage("stock.range.one.month");
 	String threeMonthsLabel = MessageUtil.getMessage("stock.range.three.months");
@@ -41,7 +46,7 @@
 
 <div class="flex flex-wrap gap-2 mb-3 items-center">
 	<span class="text-xs text-base-content/60 mr-1">${periodLabel}</span>
-	<button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} data-picker="${pickerName}" data-picker-action="jump" data-picker-arg="start">«</button>
+	<button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" $unsafe{!canPrev ? "disabled" : ""} title="${jumpEarliestLabel}" aria-label="${jumpEarliestLabel}" data-picker="${pickerName}" data-picker-action="jump" data-picker-arg="start"><span aria-hidden="true">«</span></button>
 	<button type="button" class="btn btn-xs btn-ghost date-range-prev${!canPrev ? " btn-disabled opacity-40" : ""}" title="${previousLabel}" aria-label="${previousLabel}" $unsafe{!canPrev ? "disabled" : ""} data-picker="${pickerName}" data-picker-action="shift" data-picker-arg="-1">‹ ${useCompactEnglishLabels ? previousCompactLabel : previousLabel}</button>
 	<button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("mtd") ? "btn-primary" : "btn-ghost"}" aria-pressed="${rangeMode != null && rangeMode.equals("mtd") ? "true" : "false"}" title="${thisMonthLabel}" aria-label="${thisMonthLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="mtd">${useCompactEnglishLabels ? thisMonthCompactLabel : thisMonthLabel}</button>
 	<button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("1") ? "btn-primary" : "btn-ghost"}" aria-pressed="${rangeMode != null && rangeMode.equals("1") ? "true" : "false"}" title="${oneMonthLabel}" aria-label="${oneMonthLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="1">${useCompactEnglishLabels ? oneMonthCompactLabel : oneMonthLabel}</button>
@@ -52,7 +57,7 @@
 	<button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("36") ? "btn-primary" : "btn-ghost"}" aria-pressed="${rangeMode != null && rangeMode.equals("36") ? "true" : "false"}" title="${threeYearsLabel}" aria-label="${threeYearsLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="36">${useCompactEnglishLabels ? threeYearsCompactLabel : threeYearsLabel}</button>
 	<button type="button" class="btn btn-xs ${btnClass} ${rangeMode != null && rangeMode.equals("all") ? "btn-primary" : "btn-ghost"}" aria-pressed="${rangeMode != null && rangeMode.equals("all") ? "true" : "false"}" title="${allLabel}" aria-label="${allLabel}" data-picker="${pickerName}" data-picker-action="set" data-picker-arg="0">${useCompactEnglishLabels ? allCompactLabel : allLabel}</button>
 	<button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" title="${nextLabel}" aria-label="${nextLabel}" $unsafe{!canNext ? "disabled" : ""} data-picker="${pickerName}" data-picker-action="shift" data-picker-arg="1">${useCompactEnglishLabels ? nextCompactLabel : nextLabel} ›</button>
-	<button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} data-picker="${pickerName}" data-picker-action="jump" data-picker-arg="end">»</button>
+	<button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} title="${jumpLatestLabel}" aria-label="${jumpLatestLabel}" data-picker="${pickerName}" data-picker-action="jump" data-picker-arg="end"><span aria-hidden="true">»</span></button>
 	@if(showRangeText && (startDate != null || endDate != null))
 		<span class="badge badge-ghost badge-sm font-medium text-base-content/80 ml-1 whitespace-nowrap">
 			${startDate != null ? startDate.toString() : "?"} ~ ${endDate != null ? endDate.minusDays(1).toString() : "?"}

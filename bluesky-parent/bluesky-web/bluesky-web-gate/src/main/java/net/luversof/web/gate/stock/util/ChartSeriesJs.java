@@ -29,15 +29,20 @@ public final class ChartSeriesJs {
       sep(labels).append(jsString(pt.tradeDate() != null ? pt.tradeDate().toString() : ""));
       sep(value).append(won(pt.closePrice()));
     }
+    // 지금 보유가 없으면 평균단가가 0 이 아니라 "없음" 이다. 0 으로 채우면 종가가 20 만 원인 차트
+    // 바닥에 "현재 평균단가 0" 선이 깔려 공짜로 산 것처럼 읽힌다 - 실측 2026-09-12: 매매 이력이 있는
+    // 43 종목 중 34 종목이 수량 0 이고, 표본 4 종목 모두 1,151~2,740 점이 전부 0 이었다(기아 · 나노팀 ·
+    // 삼성SDI · 에스디바이오센서). 보조기술에도 "최고 0, 최저 0" 으로 읽혔다. 비워서 선을 긋지 않는다.
+    boolean hasAverage = averageBuyPrice != null && averageBuyPrice.signum() != 0;
+    String cost =
+        hasAverage ? "new Array(" + safe.size() + ").fill(" + won(averageBuyPrice) + ")" : "[]";
     return "{labels:["
         + labels
         + "],value:["
         + value
-        + "],cost:new Array("
-        + safe.size()
-        + ").fill("
-        + won(averageBuyPrice)
-        + "),buyCount:[],dailyRealized:[]}";
+        + "],cost:"
+        + cost
+        + ",buyCount:[],dailyRealized:[]}";
   }
 
   /** 보유 평가액·원가 추이(종목·계좌 상세): 평가액, 원가, 매수 건수, 일별 실현손익. */

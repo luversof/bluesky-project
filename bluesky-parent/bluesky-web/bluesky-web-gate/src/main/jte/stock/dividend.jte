@@ -9,6 +9,8 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param String dividendTab = "history"
+@param String dividendHistoryTabHref = "/stock/dividend?tab=history"
+@param String dividendCalendarTabHref = "/stock/dividend?tab=calendar"
 @param List<MonthlyDividendSnapshotResponse> midRows = java.util.List.of()
 @param List<MonthlyDividendSnapshotResponse> endRows = java.util.List.of()
 @param List<MonthlyDividendSnapshotResponse> otherRows = java.util.List.of()
@@ -23,8 +25,17 @@
 @param BigDecimal monthlyTotalLatest = java.math.BigDecimal.ZERO
 @param BigDecimal annualTotalLatest = java.math.BigDecimal.ZERO
 @param java.util.List<String> shortHistorySymbols = java.util.List.of()
-@param long calendarStaleQuantityCount = 0L
+@param long calendarStaleQuantityCount = 0L
+@param boolean calendarCurrentQuantityUnavailable = false
 @param BigDecimal calendarCurrentQuantityTotal = java.math.BigDecimal.ZERO
+<%-- 달력 한 달치. 컨트롤러가 지급이력의 종목별 최빈 지급일로 종목을 날짜에 놓아 둔다. --%>
+@param net.luversof.web.gate.stock.dto.view.DividendCalendarView dividendCalendar = null
+@param String calendarPrevMonth = ""
+@param String calendarNextMonth = ""
+@param String calendarThisMonth = ""
+@param boolean calendarIsThisMonth = true
+@param BigDecimal calendarTaxableMonthly = java.math.BigDecimal.ZERO
+@param BigDecimal calendarTaxableAnnual = java.math.BigDecimal.ZERO
 
 !{
 	boolean isCalendar = "calendar".equals(dividendTab);
@@ -38,15 +49,25 @@
 	String annualTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.annual.total");
 	String avgBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");
 	String latestBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest");
+	String taxableTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.taxable.total");
+	String monthlyBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.monthly");
+	String annualBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.annual");
 	String calendarDesc = MessageUtil.getMessage("stock.dividend.calendar.desc");
 	String emptyLabel = MessageUtil.getMessage("stock.dividend.calendar.empty");
 	boolean calendarEmpty = (midRows == null || midRows.isEmpty())
 		&& (endRows == null || endRows.isEmpty())
 		&& (otherRows == null || otherRows.isEmpty());
+	// 탭마다 문서 제목을 달리한다. 실측 2026-09-12: 이 화면의 두 탭이 제목 한 종류("배당 내역")를 써서
+	// 탭 두 개를 함께 열어 두면 브라우저 탭·기록·즐겨찾기에서 구분되지 않았다. 시뮬레이터(3탭 3종)와
+	// 관리(2탭 2종)는 이미 탭 이름을 붙이고 있다 - 같은 규칙을 쓴다.
+	String dividendTabLabel = isCalendar
+		? MessageUtil.getMessage("stock.page.dividend.tab.calendar")
+		: MessageUtil.getMessage("stock.page.dividend.tab.history");
+	String dividendPageTitle = MessageUtil.getMessage("stock.page.dividend.title") + " · " + dividendTabLabel;
 }
 
 @template._layout.stockLayout(
-	pageTitle = MessageUtil.getMessage("stock.page.dividend.title"),
+	pageTitle = dividendPageTitle,
 	isAuthenticated = isAuthenticated,
 	username = username,
 	loginUrl = loginUrl,
@@ -57,8 +78,8 @@
 
 			<!-- 같은 페이지 탭: 클릭 시 이 페이지에서 내용만 교체된다 -->
 			<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1">
-				<a role="tab" href="/stock/dividend?tab=history" class="${!isCalendar ? activeTabClass : inactiveTabClass}">${MessageUtil.getMessage("stock.page.dividend.tab.history")}</a>
-				<a role="tab" href="/stock/dividend?tab=calendar" class="${isCalendar ? activeTabClass : inactiveTabClass}">${MessageUtil.getMessage("stock.page.dividend.tab.calendar")}</a>
+				<a role="tab" href="${dividendHistoryTabHref}" class="${!isCalendar ? activeTabClass : inactiveTabClass}">${MessageUtil.getMessage("stock.page.dividend.tab.history")}</a>
+				<a role="tab" href="${dividendCalendarTabHref}" class="${isCalendar ? activeTabClass : inactiveTabClass}">${MessageUtil.getMessage("stock.page.dividend.tab.calendar")}</a>
 			</div>
 
 			<!-- 월배당 도구: 별도 페이지로 이동(링크). 탭과 구분되도록 버튼 형태로 표기 -->
@@ -79,19 +100,26 @@
 				@if(calendarEmpty)
 					<div class="bg-base-200 rounded-box p-10 text-center text-base-content/60">${emptyLabel}</div>
 				@else
-					<div class="grid grid-cols-2 gap-3">
+					<div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
 						@template.stock.fragments.dividendCalendarTotalCard(
 							label = monthlyTotalLabel,
-							avgLabel = avgBasisLabel,
-							latestLabel = latestBasisLabel,
-							avgValue = monthlyTotal,
-							latestValue = monthlyTotalLatest)
+							topLabel = avgBasisLabel,
+							bottomLabel = latestBasisLabel,
+							topValue = monthlyTotal,
+							bottomValue = monthlyTotalLatest)
 						@template.stock.fragments.dividendCalendarTotalCard(
 							label = annualTotalLabel,
-							avgLabel = avgBasisLabel,
-							latestLabel = latestBasisLabel,
-							avgValue = annualTotal,
-							latestValue = annualTotalLatest)
+							topLabel = avgBasisLabel,
+							bottomLabel = latestBasisLabel,
+							topValue = annualTotal,
+							bottomValue = annualTotalLatest)
+						<%-- 과세표준은 '최근' 기준이 스냅샷에 없다. 배당 카드가 평균/최근을 쌓는 자리에 월/연을 쌓는다. --%>
+						@template.stock.fragments.dividendCalendarTotalCard(
+							label = taxableTotalLabel,
+							topLabel = monthlyBasisLabel,
+							bottomLabel = annualBasisLabel,
+							topValue = calendarTaxableMonthly,
+							bottomValue = calendarTaxableAnnual)
 					</div>
 					<%-- 이 달력의 예상 배당은 저장된 기준 데이터(스냅샷)로 계산된다. 스냅샷은 사람이 갱신해야 하고
 					     종목마다 시점이 달라 실제로 뒤처진다(실측 2026-08-22: 2026-07-20 ~ 2026-08-04, 최대 33 일 -
@@ -117,6 +145,10 @@
 					     월배당 시뮬레이터에는 있는데 이 달력에만 없어서, 같은 숫자가 화면에 따라 밝혀지기도
 					     하고 아무 말 없이 나가기도 했다(실측 2026-08-23: 8종목 중 7종목이 어긋나
 					     1.66% 낮다). 문구·계산은 다른 두 화면과 같은 것을 쓴다. --%>
+					<%-- 조회가 실패하면 어긋난 줄이 0 이라 위 안내가 사라진다 - 안내 없는 화면은 "원장과 같다" 로 읽힌다. --%>
+					@if(calendarCurrentQuantityUnavailable)
+						<div class="text-[11px] text-warning mb-2" data-ledger-unavailable="true">${MessageUtil.getMessage("stock.holdings.ledger.unavailable")}</div>
+					@endif
 					@if(calendarStaleQuantityCount > 0)
 						<div class="text-[11px] text-warning mb-2" data-calendar-stale-quantity="${calendarStaleQuantityCount}">
 							${java.text.MessageFormat.format(
@@ -133,14 +165,25 @@
 							${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.calendar.short.history"), String.join(", ", shortHistorySymbols))}
 						</div>
 					@endif
-					<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-						@template.stock.fragments.dividendCalendarGroup(title = midLabel, rows = midRows, subtotal = midTotal, subtotalLatest = midTotalLatest)
-						@template.stock.fragments.dividendCalendarGroup(title = endLabel, rows = endRows, subtotal = endTotal, subtotalLatest = endTotalLatest)
+					<%-- 월중/월말은 소계 한 줄로만 남긴다. 달력이 종목별 날짜를 말하므로 덩어리 목록은 더 필요 없고,
+					     같은 목록은 월배당 시뮬레이터에 정렬 가능한 표로 이미 있다.
+					     금액은 amount-value 로 감싼다 - MessageFormat 안에 넣으면 '금액 숨김' 이 못 가린다. --%>
+					<div class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-base-content/60" data-calendar-window-subtotal>
+						<span><span>${midLabel}</span> <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(midTotalLatest))}</span></span>
+						<span><span>${endLabel}</span> <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(endTotalLatest))}</span></span>
+						@if(otherRows != null && !otherRows.isEmpty())
+							<span><span>${otherLabel}</span> <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(otherTotalLatest))}</span></span>
+						@endif
 					</div>
-					@if(otherRows != null && !otherRows.isEmpty())
-						<div class="grid grid-cols-1">
-							@template.stock.fragments.dividendCalendarGroup(title = otherLabel, rows = otherRows, subtotal = otherTotal, subtotalLatest = otherTotalLatest)
-						</div>
+					@if(dividendCalendar != null)
+						@template.stock.fragments.dividendCalendarMonth(
+							calendar = dividendCalendar,
+							prevMonth = calendarPrevMonth,
+							nextMonth = calendarNextMonth,
+							thisMonth = calendarThisMonth,
+							isThisMonth = calendarIsThisMonth,
+							avgLabel = avgBasisLabel,
+							latestLabel = latestBasisLabel)
 					@endif
 				@endif
 			@else

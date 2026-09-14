@@ -83,7 +83,9 @@ class ClientErrorNoticeTest {
     assertThat(view.getViewName()).isEqualTo("stock/htmx/fragments/loadError");
     assertThat(view.getModel())
         .containsEntry("titleKey", "stock.error.badrequest.title")
-        .containsEntry("descKey", "stock.error.badrequest.desc")
+        .as("어느 값이 문제였는지 말해야 한다 - 날짜·시각이면 형식까지")
+        .containsEntry("descKey", "stock.error.badrequest.date.desc")
+        .containsEntry("descArg", "startDate")
         .as("입력을 고쳐야 하는 상황에 재시도 버튼은 거짓 희망이다")
         .doesNotContainKey("retryUrl");
     assertThat(response.getStatus()).as("htmx 가 갈아끼우려면 200").isEqualTo(200);

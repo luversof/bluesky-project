@@ -1,6 +1,8 @@
 package net.luversof.web.gate.stock.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -10,6 +12,8 @@ import java.time.ZoneId;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+
+import net.luversof.web.gate.stock.support.StockZoneParamException;
 
 /**
  * 타임존 문자열을 ZoneId 로 바꾸는 규칙을 고정한다.
@@ -37,13 +41,52 @@ class StockZoneUtilTest {
     assertThat(StockZoneUtil.resolve("UTC")).isEqualTo(ZoneId.of("UTC"));
   }
 
-  /** 알 수 없는 값에서 예외가 나가면 화면이 조용히 빈다. 기본 존으로 떨어져야 한다. */
+  /**
+   * 알 수 없는 값은 이름을 들고 끊는다.
+   *
+   * <p>2026-09-11 까지 여기서 기본 존으로 떨어뜨렸다. 그때의 근거는 "예외가 나가면 화면이 조용히 빈다" 였는데, 그건 공통 처리기가 이 예외를 몰라서 본문 없는
+   * 200 을 내던 시절의 이야기다. 지금은 {@code StockHtmxErrorResolver} 가 이름을 붙여 오류 조각을 그린다.
+   *
+   * <p>조용한 폴백이 남긴 실제 손해(실측 {@code ?timeZone=Not/AZone} 으로 다섯 화면): 자산성장만 "입력한 값(기간·필터 등)을 확인해 주세요" 를
+   * 띄우고 나머지 넷은 <b>아무 말 없이</b> 그려졌다 &mdash; 주소에 적은 존이 아니라 서버 존으로 계산한 값이다. 존은 일자 경계를 옮긴다.
+   */
   @Test
-  void 알_수_없는_값은_예외_대신_기본_존이다() {
+  void 알_수_없는_값은_이름을_들고_끊는다() {
     for (String bad : new String[] {"Mars/Olympus", "not a zone", "Asia/Seoul; DROP", "+99:00"}) {
-      assertThat(StockZoneUtil.resolve(bad))
-          .as(bad + " 에서 예외가 나가면 화면이 조용히 빈다")
-          .isEqualTo(ZoneId.systemDefault());
+      assertThatThrownBy(() -> StockZoneUtil.resolve(bad))
+          .as(bad + " 는 조용히 서버 존으로 바뀌면 안 된다")
+          .isInstanceOf(StockZoneParamException.class);
+    }
+    assertThat(
+            catchThrowableOfType(
+                    () -> StockZoneUtil.resolve("zone", "Mars/Olympus"),
+                    StockZoneParamException.class)
+                .getName())
+        .as("어느 파라미터였는지 들고 다녀야 한다")
+        .isEqualTo("zone");
+  }
+
+  /**
+   * 끊더라도 화면이 조용히 비면 안 된다 - 옛 규칙의 근거였던 성질이다.
+   *
+   * <p>공통 처리기가 이 예외를 4xx 로 알아보고 이름 있는 문구를 골라야 한다. 하나라도 빠지면 htmx 가 본문 없는 200 을 갈아끼워 화면이 빈다.
+   */
+  @Test
+  void 끊은_뒤에는_이름_있는_문구가_나간다() throws IOException {
+    String resolver =
+        Files.readString(
+            Path.of("src/main/java/net/luversof/web/gate/stock/config/StockHtmxErrorResolver.java"),
+            StandardCharsets.UTF_8);
+    assertThat(countOccurrences(resolver, "StockZoneParamException"))
+        .as("4xx 판정 한 번 + 문구 선택 한 번")
+        .isEqualTo(2);
+    assertThat(resolver).contains("stock.error.badrequest.timezone.desc");
+    for (String bundle : new String[] {"uiMessage.properties", "uiMessage_ko.properties"}) {
+      assertThat(
+              Files.readString(
+                  Path.of("src/main/resources").resolve(bundle), StandardCharsets.UTF_8))
+          .as(bundle)
+          .contains("stock.error.badrequest.timezone.desc");
     }
   }
 
@@ -59,7 +102,7 @@ class StockZoneUtilTest {
     try (Stream<Path> files = Files.walk(root)) {
       for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
         String source = Files.readString(file, StandardCharsets.UTF_8);
-        copies += countOccurrences(source, "ZoneId.of(timeZone)");
+        copies += countOccurrences(source, "ZoneId.of(timeZone");
       }
     }
     assertThat(copies).as("ZoneId.of(timeZone) 호출은 StockZoneUtil.resolve 에만 있어야 한다").isEqualTo(1);
