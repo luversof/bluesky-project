@@ -510,23 +510,11 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 	}
 });
 
-// [data-overlay] 레이어 닫기: X 버튼([data-overlay-close]), 배경 클릭, ESC
-document.addEventListener("click", (event) => {
-	const target = event.target as HTMLElement;
-	const closeButton = target.closest?.("[data-overlay-close]");
-	if (closeButton) {
-		closeButton.closest("[data-overlay]")?.remove();
-		return;
-	}
-	if (target.matches?.("[data-overlay]")) {
-		target.remove();
-	}
-});
-document.addEventListener("keydown", (event) => {
-	if (event.key !== "Escape") return;
-	const overlays = document.querySelectorAll("[data-overlay]");
-	if (overlays.length) overlays[overlays.length - 1].remove();
-});
+// [data-overlay] 레이어 닫기 처리는 2026-09-14 에 걷어냈다.
+// 그 속성을 붙이는 마크업이 소스 어디에도 없어 **모든 화면에서 클릭·ESC 마다 헛돌기만** 했다
+// (selectorsResolve 검사가 KNOWN_DEAD 로 기록해 두고 있었다).
+// 실제 오버레이는 data-submit-overlay 다 - 느린 POST 를 덮어 **두 번째 제출을 막는** 것이라
+// 배경 클릭·ESC 로 닫히면 오히려 안 된다. 닫기 처리를 그쪽에 이어 붙이지 말 것.
 
 // PoE 아이템 호버 미리보기 — .poe-hover 요소에 마우스를 올리면 hx-get 으로 로드된 게임 툴팁을
 // 요소 근처(뷰포트 안)에 띄운다. 툴팁은 pointer-events-none 이라 마우스가 카드를 벗어나면 사라진다.

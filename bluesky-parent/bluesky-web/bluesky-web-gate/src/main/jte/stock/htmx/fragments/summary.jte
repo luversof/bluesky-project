@@ -186,7 +186,7 @@
 		@template._components.ui.card(cssClass = "h-full", bodyClass = "p-4 h-full gap-2", body = @`
 			<div class="flex items-baseline justify-between gap-2">
 				<h2 class="text-sm font-semibold text-base-content/70">${trendChartTitleLabel} <span class="font-normal text-xs text-base-content/60">${trendChartCaptionLabel}</span></h2>
-				<a href="/stock/asset-growth" class="link link-hover text-xs shrink-0 tap-target-24">${assetGrowthMenuLabel} →</a>
+				<a href="/stock/asset-growth" class="link link-hover text-xs shrink-0 tap-target-24">${assetGrowthMenuLabel} <span aria-hidden="true">→</span></a>
 			</div>
 			<div class="relative w-full flex-1" style="min-height:160px">
 				<canvas id="dashboardTrendChart" role="img" aria-label="${trendChartTitleLabel}" class="amount-chart"></canvas>

@@ -4,6 +4,7 @@
 @import java.time.format.DateTimeFormatter
 @import net.luversof.web.gate.stock.dto.response.DividendView
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<DividendView> dividendList
 <%-- 날짜 칸에 쓸 존. 이 화면의 기간 표시·필터와 같은 존이어야 한다(부모가 요청 타임존으로 푼 값). --%>
@@ -28,6 +29,9 @@
 
 !{
 	String zeroAmountTitle = MessageUtil.getMessage("stock.dividend.zero.amount.title");
+	// 합계 줄에서 합계가 성립하지 않는 열(수량·기준 가격·기준일 원금·수익률)의 "-".
+	// 이 행에는 다른 까닭이 없어 낭독기가 하이픈 네 번만 듣게 된다.
+	String noTotalTitle = MessageUtil.getMessage("common.total.none");
 	String sortField = sort != null ? sort.split(",")[0] : "";
 	String sortDir = sort != null && sort.contains(",") ? sort.split(",")[1] : "";
 	DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -117,8 +121,8 @@
 					@for(DividendView item : dividendList)
 					<tr>
 						<td>${item.payDate() != null ? dateFormatter.format(item.payDate().atZone(zone)) : ""}</td>
-						<td class="font-bold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName()}</a></td>
-						<td class="hidden sm:table-cell"><a href="/stock/account?accountId=${item.accountId() != null ? item.accountId().toString() : ""}" class="link link-hover">${item.accountName()}</a></td>
+						<td class="font-bold"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName()}</a></td>
+						<td class="hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(item.accountId() != null ? item.accountId().toString() : "")}" class="link link-hover">${item.accountName()}</a></td>
 						<td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
 						<td class="text-right text-dividend font-bold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
 						<td class="text-right hidden md:table-cell amount-value">${item.quantity() != null ? decimalFormat.format(item.quantity()) : "-"}</td>
@@ -146,10 +150,10 @@
 							<td class="hidden sm:table-cell"></td>
 							<td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
 							<td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
-							<td class="text-right hidden md:table-cell">-</td>
-							<td class="text-right hidden xl:table-cell print:table-cell">-</td>
-							<td class="text-right hidden xl:table-cell print:table-cell">-</td>
-							<td class="text-right">-</td>
+							<td class="text-right hidden md:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true">-</span></td>
+							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true">-</span></td>
+							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true">-</span></td>
+							<td class="text-right" aria-label="${noTotalTitle}"><span aria-hidden="true">-</span></td>
 							<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">@if(totalTax == null || totalTax.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTax)}@endif</td>
 							<td class="text-right font-mono amount-value">@if(totalTaxableAmount == null || totalTaxableAmount.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTaxableAmount)}@endif</td>
 						</tr>

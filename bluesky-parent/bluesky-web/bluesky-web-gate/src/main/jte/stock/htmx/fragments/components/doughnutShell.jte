@@ -26,11 +26,15 @@
 				<a class="tab tab-active" id="${metricBuyId}" data-trade-donut-metric="buy" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${buyAmountLabel}</a>
 			</div>
 		</div>
-		<div id="${canvasId}Panel" role="tabpanel" class="flex gap-3">
+		<%-- 범례는 자리가 모자라면 아래 줄로 내려간다. 캔버스가 flex-shrink-0 w-[200px] 라
+		     좁은 카드에서는 남는 폭이 음수가 되고 w-0 flex-1 인 범례가 0px 로 찌부러져 통째로 사라졌다
+		     (실측 2026-09-15, 640px 2열 배치: 카드 203px 안에 캔버스 200px + gap 12px - 범례 폭 0).
+		     종목별 비중이 안 보이던 자리다. --%>
+		<div id="${canvasId}Panel" role="tabpanel" class="flex flex-wrap gap-3">
 			<div class="flex-shrink-0 w-[200px] h-[200px]">
 				<canvas id="${canvasId}" role="img" aria-label="${resolvedTitle}" class="amount-chart"></canvas>
 			</div>
-			<div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
+			<div class="flex flex-col min-w-[10rem] flex-1 h-[200px] overflow-hidden">
 				<div role="tablist" class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
 					<a class="tab tab-active" id="${tabStockId}" data-trade-donut-mode="stock" tabindex="0" role="tab" aria-controls="${legendId}">${byStockLabel}</a>
 					<a class="tab" id="${tabAccountId}" data-trade-donut-mode="account" tabindex="0" role="tab" aria-controls="${legendId}">${byAccountLabel}</a>

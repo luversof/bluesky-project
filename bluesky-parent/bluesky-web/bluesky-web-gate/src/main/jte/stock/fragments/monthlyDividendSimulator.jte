@@ -11,6 +11,7 @@
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendSimulatorSummaryView
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
 <%-- 이 표의 '현재가'가 어느 날 종가인지. 배당 기준값(스냅샷 시점)과 시세는 시점이 다르다. --%>
@@ -641,7 +642,7 @@
 															@endif
 														</div>
 														<%-- 다른 표 17개(476행)는 모두 종목명을 상세로 잇는데 이 표만 링크가 없었다(실측 2026-09-11). --%>
-																					<div class="mt-1 text-sm font-normal leading-tight text-base-content/70">@if(row.stockItemId() != null)<a class="link link-hover" href="/stock/item?stockItemId=${row.stockItemId().toString()}">${row.stockItemName()}</a>@else${row.stockItemName()}@endif</div>
+																					<div class="mt-1 text-sm font-normal leading-tight text-base-content/70">@if(row.stockItemId() != null)<a class="link link-hover" href="${StockDetailLinkUtil.item(row.stockItemId().toString())}">${row.stockItemName()}</a>@else${row.stockItemName()}@endif</div>
 												<%-- 행마다 기준일이 다르다. 위 요약은 "기준일 2026-08-19 ~ 2026-09-02" 처럼 범위로만 적는데,
 												     그 범위는 갱신이 밀린 것과 지급 시기가 다른 것을 구분해 주지 못한다 - 실측 2026-09-11:
 												     월중 지급 4 종목이 08-19, 월말 지급 4 종목이 09-02 로 둘 다 자기 최신 지급일이었다(지연 아님).

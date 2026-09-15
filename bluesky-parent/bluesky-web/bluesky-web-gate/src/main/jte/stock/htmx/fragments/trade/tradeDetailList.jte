@@ -8,6 +8,7 @@
 @import net.luversof.web.gate.stock.dto.response.TradeResponse
 @import net.luversof.web.gate.stock.constant.TradeType
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<TradeResponse> tradeList
 <%-- 날짜 칸에 쓸 존. 이 화면의 기간 표시·필터와 같은 존이어야 한다(부모가 요청 타임존으로 푼 값). --%>
@@ -109,8 +110,8 @@
 								${tradeTypeLabel.apply(trade.type())}
 							</span>
 						</td>
-						<td class="font-bold whitespace-nowrap"><a href="/stock/item?stockItemId=${trade.stockItemId() != null ? trade.stockItemId().toString() : ""}" class="link link-hover">${trade.stockItemName()}</a></td>
-						<td class="whitespace-nowrap hidden sm:table-cell"><a href="/stock/account?accountId=${trade.accountId() != null ? trade.accountId().toString() : ""}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
+						<td class="font-bold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${trade.stockItemName()}</a></td>
+						<td class="whitespace-nowrap hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(trade.accountId() != null ? trade.accountId().toString() : "")}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
 						<td class="text-right font-mono amount-value">${trade.price() != null ? decimalFormat.format(trade.price()) : "0"}</td>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(trade.quantity())}</td>
 						<td class="text-right font-mono amount-value">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>

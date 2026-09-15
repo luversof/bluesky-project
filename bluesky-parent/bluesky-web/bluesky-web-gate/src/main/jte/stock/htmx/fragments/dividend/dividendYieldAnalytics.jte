@@ -6,6 +6,7 @@
 @import net.luversof.web.gate.stock.domain.StockItem
 @import net.luversof.web.gate.stock.dto.view.DividendYieldGroupView
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param DecimalFormat decimalFormat
 @param java.util.function.Function<BigDecimal, String> percentFormat
@@ -205,7 +206,7 @@
 					<div class="text-xs text-base-content/60">${principalChangeLabel}</div>
 					<div class="text-xs text-base-content/70 mt-0.5">
 						<span class="text-base-content/60">${principalStartLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodStartPrincipal)}</span>
-						<span class="text-base-content/60 mx-1">→</span>
+						<span class="text-base-content/60 mx-1" aria-hidden="true">→</span>
 						<span class="text-base-content/60">${principalEndLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodEndPrincipal)}</span>
 					</div>
 					<div class="text-sm font-semibold mt-0.5 ${periodPrincipalDelta.signum() > 0 ? "text-profit" : periodPrincipalDelta.signum() < 0 ? "text-loss" : "text-base-content/60"}">
@@ -500,7 +501,7 @@
 										data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-dividend-count="${String.valueOf(row.dividendCount())}">
-										<th scope="row" class="font-medium"><a href="/stock/item?stockItemId=${row.groupId() != null ? row.groupId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${row.label()}</a></th>
+										<th scope="row" class="font-medium"><a href="${StockDetailLinkUtil.item(row.groupId() != null ? row.groupId().toString() : "")}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${row.label()}</a></th>
 										<td class="text-right hidden min-[1150px]:table-cell print:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
 										<td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
 										<td class="text-right hidden min-[1150px]:table-cell print:table-cell amount-value" title="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}" aria-label="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>
@@ -720,7 +721,7 @@
 										data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-dividend-count="${String.valueOf(row.dividendCount())}">
-										<th scope="row" class="font-medium"><a href="/stock/account?accountId=${row.groupId() != null ? row.groupId().toString() : ""}" class="link link-hover">${row.label()}</a></th>
+										<th scope="row" class="font-medium"><a href="${StockDetailLinkUtil.account(row.groupId() != null ? row.groupId().toString() : "")}" class="link link-hover">${row.label()}</a></th>
 										<td class="text-right hidden min-[1150px]:table-cell print:table-cell amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
 										<td class="text-right amount-value">${decimalFormat.format(row.totalNetAmount())}</td>
 										<td class="text-right hidden min-[1150px]:table-cell print:table-cell amount-value" title="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}" aria-label="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>

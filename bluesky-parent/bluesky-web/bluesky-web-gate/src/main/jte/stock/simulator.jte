@@ -405,7 +405,7 @@
 						<p class="text-sm leading-6 text-base-content/60">${yearlyDescription}</p>
 					</div>
 					<div class="overflow-x-auto">
-						<table class="table table-pin-rows table-zebra table-sm" aria-label="${yearlyTitle}">
+						<table class="table table-pin-rows table-zebra table-sm" data-sustain-yearly-table aria-label="${yearlyTitle}">
 							<thead>
 								<tr>
 									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year")}</th>

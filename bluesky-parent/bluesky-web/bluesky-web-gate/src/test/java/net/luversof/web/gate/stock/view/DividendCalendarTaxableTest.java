@@ -30,7 +30,8 @@ class DividendCalendarTaxableTest {
 
   private static DividendCalendarView.Entry entry(String name, String taxable) {
     BigDecimal value = new BigDecimal(taxable);
-    return new DividendCalendarView.Entry(name, name, value, value, value, null, 17, 17, 17, 12);
+    return new DividendCalendarView.Entry(
+        name, name, value, value, value, null, 17, 17, 17, 12, false);
   }
 
   @Test

@@ -57,9 +57,9 @@ class DividendCalendarHolidayTest {
             List.of());
     Map<String, Object> model = new HashMap<>();
     model.put("calendar", calendar);
-    model.put("prevMonth", month.minusMonths(1).toString());
-    model.put("nextMonth", month.plusMonths(1).toString());
-    model.put("thisMonth", "2026-09");
+    model.put("prevHref", "/stock/dividend?tab=calendar&month=" + month.minusMonths(1));
+    model.put("nextHref", "/stock/dividend?tab=calendar&month=" + month.plusMonths(1));
+    model.put("thisHref", "/stock/dividend?tab=calendar&month=2026-09");
     model.put("isThisMonth", false);
     model.put("avgLabel", "평균");
     model.put("latestLabel", "최근");

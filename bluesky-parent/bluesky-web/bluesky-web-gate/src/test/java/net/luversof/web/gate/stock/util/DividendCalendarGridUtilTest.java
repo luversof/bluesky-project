@@ -26,7 +26,8 @@ class DividendCalendarGridUtilTest {
         payDay,
         payDay,
         payDay,
-        12);
+        12,
+        false);
   }
 
   /** 줄은 일요일에서 시작한다. 요일이 밀리면 모든 종목이 엉뚱한 날에 놓인다. */

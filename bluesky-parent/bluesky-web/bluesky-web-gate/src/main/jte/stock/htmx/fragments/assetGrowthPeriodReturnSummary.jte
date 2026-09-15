@@ -216,7 +216,7 @@
 					</div>
 					<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">
 						${growthAmountLabel} <span class="amount-value">&#8361;${amountFormat.format(openingValue)}</span>
-						<span class="text-base-content/60">&#8594;</span>
+						<span class="text-base-content/60" aria-hidden="true">&#8594;</span>
 						<span class="amount-value">&#8361;${amountFormat.format(closingValue)}</span>
 					</p>
 					<p class="text-[11px] leading-4 text-base-content/60">${growthBaseTooSmallLabel}</p>
@@ -284,7 +284,9 @@
 						<p class="text-[11px] leading-4 mt-0.5">
 							<span class="text-base-content/60">${maxDrawdownLabel}</span>
 							@if(drawdownRangeAvailable)
-								<span class="text-base-content/60">(${maxDrawdownPeakDate.toString()} &#8594; ${maxDrawdownTroughDate.toString()})</span>
+								<%-- 두 날짜 사이 화살표는 눈으로만 읽는다. 낭독기에는 '부터 ~ 까지' 를 준다 -
+								     기호를 그냥 두면 '오른쪽 화살표' 로 읽히고, 빼기만 하면 두 날짜가 나열될 뿐이다. --%>
+								<span class="text-base-content/60"><span aria-hidden="true">(${maxDrawdownPeakDate.toString()} &#8594; ${maxDrawdownTroughDate.toString()})</span><span class="sr-only">${java.text.MessageFormat.format(MessageUtil.getMessage("common.range.from.to"), maxDrawdownPeakDate.toString(), maxDrawdownTroughDate.toString())}</span></span>
 							@endif
 						</p>
 					@else
@@ -322,7 +324,7 @@
 			<span class="text-base-content/25" aria-hidden="true">|</span>
 			<span class="text-base-content/60">${unrealizedTrendLabel}</span>
 			<span class="amount-value ${unrealizedStartPositive ? "text-profit" : "text-loss"}">${unrealizedStart.signum() == 0 ? "" : (unrealizedStartPositive ? "+" : "-")}&#8361;${amountFormat.format(unrealizedStart.abs())}</span>
-			<span class="text-base-content/60">&#8594;</span>
+			<span class="text-base-content/60" aria-hidden="true">&#8594;</span>
 			<span class="amount-value ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEnd.signum() == 0 ? "" : (unrealizedEndPositive ? "+" : "-")}&#8361;${amountFormat.format(unrealizedEnd.abs())}</span>
 		@else
 			<span class="font-semibold text-base-content/60">${unavailableLabel}</span>

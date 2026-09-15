@@ -56,11 +56,60 @@ class CalendarMarkerNameTest {
     }
   }
 
-  /** 보이는 글자는 그대로 - 화면에서 ●N 이 사라지면 안 된다. */
+  /**
+   * 보이는 글자는 그대로 — 화면에서 {@code ●N} 이 사라지면 안 된다.
+   *
+   * <p>예전엔 {@code ●${dayBuyCount}} 라는 <b>글자 모양</b>을 그대로 재서 지켰는데, 그러면 점을 {@code aria-hidden} 으로 감싸는
+   * 정당한 개선까지 막는다(실측 2026-09-15: 낭독기가 "6 ●1 매수" 로 읽어 기호가 소음이었다). 둘을 가른다 — <b>점과 건수가 같은 줄에 남아
+   * 보이는가</b>만 본다.
+   */
   @Test
   void 보이는_표시는_그대로_둔다() throws IOException {
     String template = Files.readString(TEMPLATE, StandardCharsets.UTF_8);
 
-    assertThat(count(template, "●${day")).as("매수·매도·배당 세 곳").isEqualTo(3);
+    for (String countVar : new String[] {"dayBuyCount", "daySellCount", "dayDividendCount"}) {
+      int at = template.indexOf("@if(" + countVar + " > 0)");
+      assertThat(at).as(countVar + " 표시").isPositive();
+      String line = template.substring(at, template.indexOf((char) 10, at));
+      assertThat(line)
+          .as(countVar + " 는 점과 건수가 화면에 남아 있어야 한다")
+          .contains("●")
+          .contains("${" + countVar + "}");
+    }
+  }
+
+  /**
+   * 기호는 낭독기에서 빠진다.
+   *
+   * <p>점은 장식이고 뜻은 옆의 이름이 전한다. 감싸지 않으면 낭독기가 "6 ●1 매수" 로 읽는다 — 이 저장소는 정렬 기호(↕)와 범례 사각형(■)에서 이미 같은 규칙을
+   * 정했다.
+   */
+  @Test
+  void 기호는_낭독기에서_빠진다() throws IOException {
+    String template = Files.readString(TEMPLATE, StandardCharsets.UTF_8);
+
+    assertThat(count(template, "<span aria-hidden=" + (char) 34 + "true" + (char) 34 + ">●</span>"))
+        .as("매수·매도·배당 세 곳 모두")
+        .isEqualTo(3);
+  }
+
+  /**
+   * 칸이 role=button 이니 이름에 온 날짜가 들어간다.
+   *
+   * <p>보이는 것은 날짜 숫자만이지만 칸이 버튼 목록에 오르므로 "6" 하나로는 어느 달인지 알 수 없다 &mdash; 실측 2026-09-15: 낭독 텍스트가 "6 ●1
+   * 매수 ₩ -347,060" 이었다.
+   */
+  @Test
+  void 칸_이름에_온_날짜가_들어간다() throws IOException {
+    String template = Files.readString(TEMPLATE, StandardCharsets.UTF_8);
+
+    int at = template.indexOf("cal-day-num");
+    assertThat(at).as("날짜 칸").isPositive();
+    String line = template.substring(at, template.indexOf((char) 10, at));
+    assertThat(line)
+        .as("보이는 숫자는 장식이 아니다 - 낭독기에만 온 날짜를 준다")
+        .contains("${cellDate.getDayOfMonth()}")
+        .contains(
+            "<span class=" + (char) 34 + "sr-only" + (char) 34 + ">${cellDate.toString()}</span>");
   }
 }

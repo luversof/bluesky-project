@@ -68,7 +68,8 @@ class DividendCalendarZeroTaxableTest {
         17,
         17,
         17,
-        12);
+        12,
+        false);
   }
 
   private static String render(List<DividendCalendarView.Entry> entries) {
@@ -82,9 +83,9 @@ class DividendCalendarZeroTaxableTest {
             List.of());
     Map<String, Object> model = new HashMap<>();
     model.put("calendar", calendar);
-    model.put("prevMonth", "2026-08");
-    model.put("nextMonth", "2026-10");
-    model.put("thisMonth", "2026-09");
+    model.put("prevHref", "/stock/dividend?tab=calendar&month=2026-08");
+    model.put("nextHref", "/stock/dividend?tab=calendar&month=2026-10");
+    model.put("thisHref", "/stock/dividend?tab=calendar&month=2026-09");
     model.put("isThisMonth", true);
     model.put("avgLabel", "평균");
     model.put("latestLabel", "최근");

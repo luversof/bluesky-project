@@ -10,6 +10,7 @@
 @import net.luversof.web.common.menu.domain.Pagination
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<TradeResponse> trades
 <%-- 날짜 칸에 쓸 존. 이 화면(자산성장)의 기간 표시와 같은 존이어야 한다. --%>
@@ -160,8 +161,8 @@ String tradeDateStr = trade.tradeDate() != null ? fmt.format(trade.tradeDate()) 
 ${isBuy ? buyLabel : sellLabel}
 </span>
 </td>
-<td class="font-bold whitespace-nowrap"><a href="/stock/item?stockItemId=${trade.stockItemId() != null ? trade.stockItemId().toString() : ""}" class="link link-hover">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</a></td>
-<td class="whitespace-nowrap hidden sm:table-cell"><a href="/stock/account?accountId=${trade.accountId() != null ? trade.accountId().toString() : ""}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
+<td class="font-bold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</a></td>
+<td class="whitespace-nowrap hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(trade.accountId() != null ? trade.accountId().toString() : "")}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
 <td class="text-right font-mono amount-value">${trade.price() != null ? df.format(trade.price()) : "0"}</td>
 <td class="text-right font-mono amount-value">${df.format(trade.quantity())}</td>
 <td class="text-right font-mono amount-value">${trade.amount() != null ? df.format(trade.amount()) : "0"}</td>

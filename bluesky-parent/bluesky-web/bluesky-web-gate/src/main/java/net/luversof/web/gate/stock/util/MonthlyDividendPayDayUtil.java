@@ -59,6 +59,37 @@ public final class MonthlyDividendPayDayUtil {
    * <p>지급일이 없는 행과 종목 코드가 빈 행은 세지 않는다. 이력이 아예 없는 종목은 결과에 담기지 않는다 &mdash; 화면이 "날짜를 모른다" 를 따로 다뤄야 하기
    * 때문이다(0 이나 1 일로 채워 넣으면 없는 일정을 지어내는 셈이다).
    */
+  /**
+   * 그 달에 <b>실제로</b> 지급된 날(종목코드 &rarr; 일자).
+   *
+   * <p>달력은 지급이력의 최빈일로 날짜를 <b>추정</b>하는데, 이미 지나간 달은 추정할 이유가 없다 &mdash; 그 달의 지급이력이 곧 답이다. 실측
+   * 2026-09-15: 2026-08 은 8 종목 전부 최빈일(2 일·17 일)에 놓였는데 실제 지급은 4 일·19 일이었다. 하필 2 일은 일요일, 17 일은
+   * 대체공휴일(광복절)이라 <b>지급이 있을 수 없는 날</b>에 찍혀 있었다. 2026-07 도 4 종목이 17 일(실제 20 일)로 어긋났다.
+   *
+   * <p>한 달에 두 번 지급된 종목이 있으면 <b>가장 늦은 날</b>을 쓴다(달력 한 칸에 한 번만 놓는다).
+   */
+  public static Map<String, Integer> actualDayByStockItem(
+      List<Payout> payouts, java.time.YearMonth month) {
+    Map<String, Integer> bySymbol = new LinkedHashMap<>();
+    if (payouts == null || month == null) {
+      return bySymbol;
+    }
+    for (Payout payout : payouts) {
+      if (payout == null || payout.payDate() == null) {
+        continue;
+      }
+      if (!java.time.YearMonth.from(payout.payDate()).equals(month)) {
+        continue;
+      }
+      String symbol = normalizeSymbol(payout.symbol());
+      if (symbol == null) {
+        continue;
+      }
+      bySymbol.merge(symbol, payout.payDate().getDayOfMonth(), Math::max);
+    }
+    return bySymbol;
+  }
+
   public static Map<String, PayDay> byStockItem(List<Payout> payouts) {
     Map<String, Map<Integer, Integer>> countBySymbol = new LinkedHashMap<>();
     Map<String, Map<Integer, LocalDate>> latestDateBySymbol = new HashMap<>();

@@ -39,7 +39,7 @@
 			<span class="badge badge-sm ${nextWindowIsMid ? "badge-info" : "badge-secondary"} badge-outline shrink-0 whitespace-nowrap max-sm:shrink max-sm:whitespace-normal max-sm:h-auto">${nextWindowLabel}@if(nextPayDateLabel != null && !nextPayDateLabel.isEmpty()) · ${nextPayDateLabel}@endif</span>
 			@endif
 		</div>
-		<a href="/stock/dividend?tab=calendar" class="link link-hover text-xs shrink-0">${dividendMenuLabel} →</a>
+		<a href="/stock/dividend?tab=calendar" class="link link-hover text-xs shrink-0">${dividendMenuLabel} <span aria-hidden="true">→</span></a>
 	</div>
 <%-- 예상 배당은 저장된 기준 데이터(스냅샷)로 계산된다. 스냅샷은 사람이 갱신해야 하고 종목마다 시점이 달라
 	 실제로 뒤처진다(실측 2026-08-22: 2026-07-20 ~ 2026-08-04, 최대 33 일 - 그만큼 보유 수량이 옛 값이라

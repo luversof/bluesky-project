@@ -2,6 +2,7 @@
 @import java.util.List
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.controller.StockSummaryHtmxController.AllocationBarRow
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<AllocationBarRow> allocationRows = java.util.List.of()
 @param AllocationBarRow othersRow = null
@@ -14,7 +15,7 @@
 @template._components.ui.card(cssClass = "h-full", body = @`
 	<div class="flex justify-between items-center mb-2">
 		<h2 class="card-title text-base m-0">${titleLabel}</h2>
-		<a href="/stock/analytics" class="link link-hover text-xs">${assetStatusLabel} →</a>
+		<a href="/stock/analytics" class="link link-hover text-xs">${assetStatusLabel} <span aria-hidden="true">→</span></a>
 	</div>
 	@if(!allocationRows.isEmpty())
 	<%-- 막대마다 따로 반올림하면 표시값의 합이 100.0% 가 아니게 된다(실측 2026-09-11: 대시보드 비중 합 99.9%).
@@ -35,16 +36,19 @@
 		 글자 쪽을 원값으로 되돌리면 합 100.0% 성질이 깨지므로 막대가 글자를 따른다. --%>
 	!{String[] allocationBarColors = {"rgba(99,102,241,0.8)", "rgba(34,197,94,0.8)", "rgba(251,191,36,0.8)", "rgba(239,68,68,0.8)", "rgba(59,130,246,0.8)"};}
 	<div class="space-y-1">
+		<%-- 아주 좁은 화면에서는 막대를 접는다. 종목명(96px) · 비중(44px) · 금액(86px)이 모두 고정폭이라
+		     막대만 줄어드는데, 실측 2026-09-15(320px)에서 4px 까지 눌려 비중을 전혀 못 보여줬다.
+		     값은 옆의 백분율이 그대로 말하므로 정보는 잃지 않는다. --%>
 		@for(int allocationRowIndex = 0; allocationRowIndex < allocationRows.size(); allocationRowIndex++)
 			!{AllocationBarRow row = allocationRows.get(allocationRowIndex);}
 			!{String barColor = allocationBarColors[allocationRowIndex % allocationBarColors.length];}
-			<div class="flex items-center gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
+			<div class="flex items-center justify-between gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
 				@if(row.stockItemId() != null)
-				<a href="/stock/item?stockItemId=${row.stockItemId().toString()}" class="link link-hover truncate w-24 sm:w-28 shrink-0" title="${row.stockItemName()}">${row.stockItemName()}</a>
+				<a href="${StockDetailLinkUtil.item(row.stockItemId().toString())}" class="link link-hover truncate w-24 sm:w-28 shrink-0" title="${row.stockItemName()}">${row.stockItemName()}</a>
 				@else
 				<span class="truncate w-24 sm:w-28 shrink-0" title="${row.stockItemName()}">${row.stockItemName()}</span>
 				@endif
-				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200">
+				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200 max-[400px]:hidden">
 					<div class="h-2 rounded-full" style="width: ${allocationShown.get(allocationRowIndex).replace("%", "")}%; background: ${barColor}"></div>
 				</div>
 				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${allocationShown.get(allocationRowIndex)}</span>
@@ -52,9 +56,9 @@
 			</div>
 		@endfor
 		@if(othersRow != null)
-			<div class="flex items-center gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
+			<div class="flex items-center justify-between gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
 				<span class="truncate w-24 sm:w-28 shrink-0 text-base-content/60" title="${othersRow.stockItemName()}">${othersRow.stockItemName()}</span>
-				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200">
+				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200 max-[400px]:hidden">
 					<div class="h-2 rounded-full" style="width: ${allocationShown.get(allocationRows.size()).replace("%", "")}%; background: rgba(156,163,175,0.8)"></div>
 				</div>
 				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${allocationShown.get(allocationRows.size())}</span>

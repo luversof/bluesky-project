@@ -56,7 +56,7 @@ class DividendCalendarSubtotalTest {
   private static DividendCalendarView.Entry entry(String name, String amount) {
     BigDecimal value = new BigDecimal(amount);
     return new DividendCalendarView.Entry(
-        name, name, value, value, BigDecimal.ZERO, null, 17, 17, 17, 12);
+        name, name, value, value, BigDecimal.ZERO, null, 17, 17, 17, 12, false);
   }
 
   private String render(List<DividendCalendarView.Entry> entries) {
@@ -71,9 +71,9 @@ class DividendCalendarSubtotalTest {
             List.of());
     Map<String, Object> model = new HashMap<>();
     model.put("calendar", calendar);
-    model.put("prevMonth", "2026-08");
-    model.put("nextMonth", "2026-10");
-    model.put("thisMonth", "2026-09");
+    model.put("prevHref", "/stock/dividend?tab=calendar&month=2026-08");
+    model.put("nextHref", "/stock/dividend?tab=calendar&month=2026-10");
+    model.put("thisHref", "/stock/dividend?tab=calendar&month=2026-09");
     model.put("isThisMonth", true);
     model.put("avgLabel", "평균");
     model.put("latestLabel", "최근");
@@ -81,6 +81,18 @@ class DividendCalendarSubtotalTest {
     TemplateEngine.createPrecompiled(ContentType.Html).render(CALENDAR, model, output);
     return output.toString();
   }
+
+  private static final String QUOTE = String.valueOf((char) 34);
+
+  /** 화면에 찍힌 금액 하나. 압축 표기(221만)는 단위가 달라 걸리지 않는다. */
+  private static final String AMOUNT_PATTERN =
+      "class="
+          + QUOTE
+          + "amount-value"
+          + QUOTE
+          + ">([0-9,]+)"
+          + String.valueOf((char) 0xC6D0)
+          + "</span>";
 
   /** 17 일 칸만 잘라 본다 - 다른 칸의 숫자까지 세면 검사가 헛돈다. */
   private String dayCell(String html, String date) {
@@ -99,24 +111,38 @@ class DividendCalendarSubtotalTest {
             entry("다", "82848.7"),
             entry("라", "29633.6"));
 
-    String cell = dayCell(render(entries), "2026-09-17");
+    String html = render(entries);
 
-    // 화면에 찍힌 '최근' 금액들을 실제로 긁어 더한다.
-    List<Long> shown = new ArrayList<>();
-    Matcher matcher =
-        Pattern.compile("class=\"amount-value\">([\\d,]+)\uc6d0</span>").matcher(cell);
-    while (matcher.find()) {
-      shown.add(Long.parseLong(matcher.group(1).replace(",", "")));
-    }
-    assertThat(shown).as("칸에서 금액을 읽지 못했다").hasSizeGreaterThan(entries.size());
+    // 칸에는 합계만 남았다 - 종목별 금액은 달력 아래 목록이 제 크기로 말한다(사용자 지적 2026-09-15:
+    // 42 칸 중 평균 2 칸만 차는 격자 때문에 금액이 11px 로 눌려 있었다). 검산은 그대로 지킨다.
+    List<Long> cellAmounts = amounts(dayCell(html, "2026-09-17"));
+    assertThat(cellAmounts).as("칸에서 합계를 읽지 못했다").hasSize(1);
+    long dayTotal = cellAmounts.get(0);
 
-    long dayTotal = shown.remove(shown.size() - 1); // 마지막이 칸 합계
     long rowSum = 0L;
-    for (int i = 0; i < shown.size(); i += 2) { // 종목마다 최근 · 평균 두 줄
-      rowSum += shown.get(i);
+    Matcher row =
+        Pattern.compile("data-calendar-entry=.*?</li>", Pattern.DOTALL)
+            .matcher(html.substring(html.indexOf("data-calendar-daylist")));
+    int rows = 0;
+    while (row.find()) {
+      List<Long> shown = amounts(row.group());
+      assertThat(shown).as("종목 줄에서 금액을 읽지 못했다").isNotEmpty();
+      rowSum += shown.get(0); // 첫 값이 세전 - 칸 합계와 같은 축이다
+      rows++;
     }
+    assertThat(rows).as("목록에서 종목 줄을 읽지 못했다 - 검사가 무력해진다").isEqualTo(entries.size());
 
     assertThat(dayTotal).as("보이는 행을 더한 값과 칸 합계가 다르면 사용자가 검산할 수 없다").isEqualTo(rowSum);
+  }
+
+  /** 화면에 찍힌 금액만 순서대로. 압축 표기(221만)는 단위가 달라 걸리지 않는다. */
+  private List<Long> amounts(String fragment) {
+    List<Long> found = new ArrayList<>();
+    Matcher matcher = Pattern.compile(AMOUNT_PATTERN).matcher(fragment);
+    while (matcher.find()) {
+      found.add(Long.parseLong(matcher.group(1).replace(",", "")));
+    }
+    return found;
   }
 
   /** 버림과 반올림은 실제로 다르다 - 규칙을 바꾸면 화면 숫자가 움직인다. */

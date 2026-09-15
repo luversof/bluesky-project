@@ -14,11 +14,15 @@
 		<!-- Left: 비중 분석 -->
 		@template._components.ui.card(cssClass = "flex-[2] min-w-[200px]", body = @`
 				<h2 class="text-sm font-bold mb-3" data-page-section>${weightAnalysisLabel}</h2>
-				<div class="flex gap-3">
+				<%-- 범례는 자리가 모자라면 아래 줄로 내려간다. 캔버스가 flex-shrink-0 w-[200px] 라
+				     좁은 카드에서는 남는 폭이 음수가 되고 w-0 flex-1 인 범례가 0px 로 찌부러져 통째로 사라졌다
+				     (실측 2026-09-15, 640px 2열 배치: 카드 203px 안에 캔버스 200px + gap 12px - 범례 폭 0).
+				     종목별 비중이 안 보이던 자리다. --%>
+				<div class="flex flex-wrap gap-3">
 					<div class="flex-shrink-0 w-[200px] h-[200px]">
 						<canvas id="donutChart" role="img" aria-label="${weightAnalysisLabel}" class="amount-chart"></canvas>
 					</div>
-					<div class="flex flex-col w-0 flex-1 h-[200px] overflow-hidden">
+					<div class="flex flex-col min-w-[10rem] flex-1 h-[200px] overflow-hidden">
 						<div role="tablist" class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
 							<a class="tab tab-active" id="donutTabStock" data-dividend-donut-switch="stock" tabindex="0" role="tab" aria-controls="donutLegend">${byStockLabel}</a>
 							<a class="tab" id="donutTabAccount" data-dividend-donut-switch="account" tabindex="0" role="tab" aria-controls="donutLegend">${byAccountLabel}</a>

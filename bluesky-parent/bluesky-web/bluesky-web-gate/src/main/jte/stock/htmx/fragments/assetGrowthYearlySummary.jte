@@ -19,6 +19,9 @@
 	String partialLabel = MessageUtil.getMessage("stock.asset.growth.yearly.partial");
 	String gapTemplate = MessageUtil.getMessage("stock.asset.growth.yearly.gap");
 	String totalLabel = MessageUtil.getMessage("stock.asset.growth.total.row");
+	// 빈 칸의 "-" 가 낭독기에 뜻을 전하게 한다 — 이 표는 한 행에 다른 까닭이 없어 그 칸이 말해야 한다.
+	String zeroAmountTitle = MessageUtil.getMessage("common.amount.zero.title");
+	String noValueTitle = MessageUtil.getMessage("common.value.none");
 }
 
 @if(yearlySummaries != null && !yearlySummaries.isEmpty())
@@ -60,6 +63,8 @@
 								boolean twrUp = twr != null && twr >= 0.0d;
 								boolean profitUp = profit != null && profit.signum() >= 0;
 								boolean principalUp = principal != null && principal.signum() >= 0;
+								// 원금 변동의 "-" 는 두 뜻이다 - 기록이 없거나(null) 그해 움직임이 없거나(0).
+								String principalNoneTitle = principal == null ? noValueTitle : zeroAmountTitle;
 							}
 							<tr>
 								<th scope="row" class="font-medium">
@@ -75,28 +80,28 @@
 									@if(twr != null)
 										<span class="font-semibold ${twrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(twr, 2)}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(profit != null)
 										<span class="amount-value ${profitUp ? "text-profit" : "text-loss"}">${profit.signum() == 0 ? "" : (profitUp ? "+" : "-")}₩${amountFormat.format(profit.abs())}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(principal != null && principal.signum() != 0)
 										<span class="amount-value text-base-content/60">${principal.signum() == 0 ? "" : (principalUp ? "+" : "-")}₩${amountFormat.format(principal.abs())}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${principalNoneTitle}">-</span><span class="sr-only">${principalNoneTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(closing != null)
 										<span class="amount-value text-base-content/70">₩${amountFormat.format(closing)}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
 									@endif
 								</td>
 							</tr>
@@ -121,7 +126,7 @@
 									@if(totals.chainedReturnPct() != null)
 										<span class="${totalTwrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totals.profit().signum() == 0 ? "" : (totalProfitUp ? "+" : "-")}₩${amountFormat.format(totals.profit().abs())}</span></td>
@@ -129,14 +134,14 @@
 									@if(totals.principalDelta().signum() != 0)
 										<span class="amount-value text-base-content/60">${totals.principalDelta().signum() == 0 ? "" : (totalPrincipalUp ? "+" : "-")}₩${amountFormat.format(totals.principalDelta().abs())}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(latestClosing != null)
 										<span class="amount-value text-base-content/70">₩${amountFormat.format(latestClosing)}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
 									@endif
 								</td>
 							</tr>

@@ -162,10 +162,22 @@ class StockMessageKeyTest {
     assertThat(blank).isEmpty();
   }
 
-  /** 조립 키가 이 한 곳뿐이라는 전제. 늘어나면 위 검사만으로는 부족해진다. */
+  /**
+   * 키를 <b>그 자리에서</b> 조립하는 곳은 이제 없다.
+   *
+   * <p>못 찾은 키는 예외도 코드도 아닌 <b>빈 문자열</b>이 된다({@code MessageUtil.getMessage(String)} 의 기본값이 {@code ""}
+   * 다). 그래서 조립한 키가 빗나가면 화면에서 글자만 조용히 사라진다 &mdash; 원장 점검은 "(3)" 처럼 건수만 남았다.
+   *
+   * <p>2026-09-14 에 조립을 이름 있는 유틸로 옮겼다 &mdash; {@code StockLedgerRuleLabelUtil} 과 {@code
+   * StockPayoutWindowLabelUtil} 은 둘 다 <b>모르는 코드를 코드 그대로</b> 보여 주고, 각자 로케일 가드를 갖고 있다 ({@code
+   * StockLedgerRuleLabelTest}).
+   *
+   * <p>여기서 지키는 것은 그 구조다 &mdash; 템플릿·컨트롤러가 다시 제자리에서 조립하기 시작하면 대비책 없는 자리가 늘어난다.
+   */
   @Test
-  void 조립되는_메시지_키는_원장_점검_한_곳뿐이다() throws IOException {
+  void 메시지_키를_그_자리에서_조립하지_않는다() throws IOException {
     List<String> prefixes = new ArrayList<>();
+    int scanned = 0;
     for (Path root : SOURCE_ROOTS) {
       if (!Files.isDirectory(root)) {
         continue;
@@ -176,6 +188,7 @@ class StockMessageKeyTest {
                 .filter(Files::isRegularFile)
                 .filter(p -> p.toString().endsWith(".jte") || p.toString().endsWith(".java"))
                 .toList()) {
+          scanned++;
           Matcher matcher =
               Pattern.compile("(?:getMessage|(?<![\\w.])msg)\\(\\s*\"([^\"]*\\.)\"\\s*\\+")
                   .matcher(Files.readString(file, StandardCharsets.UTF_8));
@@ -185,8 +198,7 @@ class StockMessageKeyTest {
         }
       }
     }
-    assertThat(prefixes)
-        .as("접두어 + 변수로 만드는 키가 새로 생겼다. 그 접두어도 두 로케일 검사를 붙일 것")
-        .containsOnly(LEDGER_RULE_PREFIX);
+    assertThat(scanned).as("파일을 하나도 안 읽었다면 이 검사는 공짜로 통과한다").isGreaterThan(100);
+    assertThat(prefixes).as("키를 제자리에서 조립하면 모르는 값이 빈 칸이 된다 - 이름 있는 유틸로 옮기고 로케일 가드를 붙일 것").isEmpty();
   }
 }

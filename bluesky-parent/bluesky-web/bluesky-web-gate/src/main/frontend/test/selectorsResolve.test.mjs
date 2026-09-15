@@ -33,11 +33,14 @@ const SCRIPT_CREATED = new Map([
 	["data-page-section-nav", "common.ts 가 만드는 화면 안 구역 막대(구역 표식은 data-page-section)"],
 ]);
 
-/** 읽기만 하고 아무도 만들지 않는 것으로 확인된 것. */
-const KNOWN_DEAD = new Map([
-	["data-overlay", "common.ts 의 레이어 닫기 처리. 이 속성을 붙이는 마크업이 소스 어디에도 없다"],
-	["data-overlay-close", "위와 같은 처리의 닫기 버튼"],
-]);
+/**
+ * 읽기만 하고 아무도 만들지 않는 것으로 확인된 것.
+ *
+ * 2026-09-14 에 비웠다 - 유일한 항목이던 data-overlay / data-overlay-close 는 기록만 해 둘 게 아니라
+ * 코드를 걷어내는 쪽이 맞았다(모든 화면에서 클릭·ESC 마다 헛도는 전역 리스너 둘이었다).
+ * 여기에 무언가를 새로 적고 싶어지면, 먼저 그 코드를 지울 수 없는지 보라.
+ */
+const KNOWN_DEAD = new Map([]);
 
 function walk(dir, ext, out = []) {
 	for (const name of readdirSync(dir)) {

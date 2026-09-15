@@ -79,6 +79,9 @@ public class StockDividendViewController {
 
   @Autowired private MonthlyDividendPayoutClient monthlyDividendPayoutClient;
 
+  /** 지나간 달의 <b>실제 수령액</b>은 기준 데이터가 아니라 원장에 있다. */
+  @Autowired private net.luversof.web.gate.stock.httpexchange.DividendClient dividendClient;
+
   @Autowired private MonthlyDividendPayoutImportParser monthlyDividendPayoutImportParser;
 
   @Autowired
@@ -136,7 +139,7 @@ public class StockDividendViewController {
     }
 
     if ("calendar".equals(dividendTab)) {
-      populateDividendCalendarModel(UserUtil.getUserId(), month, model);
+      populateDividendCalendarModel(UserUtil.getUserId(), month, request.getQueryString(), model);
     }
 
     model.addAttribute("dividendTab", dividendTab);
@@ -154,8 +157,13 @@ public class StockDividendViewController {
     return "stock/dividend";
   }
 
-  /** 배당 캘린더 모델: 보유 월배당 종목의 예상 월 배당을 지급 시기(월중/월말)별로 그룹핑한다. */
-  private void populateDividendCalendarModel(UUID userId, String monthParam, Model model) {
+  /**
+   * 배당 캘린더 모델: 보유 월배당 종목의 예상 월 배당을 지급 시기(월중/월말)별로 그룹핑한다.
+   *
+   * @param currentQuery 지금 주소의 질의 문자열. 달 이동 링크가 조건을 들고 가는 데 쓴다
+   */
+  private void populateDividendCalendarModel(
+      UUID userId, String monthParam, String currentQuery, Model model) {
     List<MonthlyDividendSnapshotResponse> rows =
         monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId);
     if (rows == null) {
@@ -247,7 +255,7 @@ public class StockDividendViewController {
     // 지급이력은 한 번만 읽어 '짧은 이력 안내'와 '달력의 지급일 추정' 두 곳에 쓴다.
     List<MonthlyDividendPayoutResponse> payouts = loadPayoutsQuietly();
     model.addAttribute("shortHistorySymbols", shortHistoryLabels(rows, payouts));
-    populateCalendarGrid(rows, payouts, monthParam, model);
+    populateCalendarGrid(rows, payouts, monthParam, currentQuery, model);
   }
 
   /**
@@ -262,6 +270,7 @@ public class StockDividendViewController {
       List<MonthlyDividendSnapshotResponse> rows,
       List<MonthlyDividendPayoutResponse> payouts,
       String monthParam,
+      String currentQuery,
       Model model) {
     LocalDate today = LocalDate.now();
     YearMonth month = parseCalendarMonth(monthParam, YearMonth.from(today));
@@ -275,6 +284,23 @@ public class StockDividendViewController {
     }
     Map<String, MonthlyDividendPayDayUtil.PayDay> payDayBySymbol =
         MonthlyDividendPayDayUtil.byStockItem(payDayInput);
+    // 지나간 달은 추정하지 않는다 - 그 달의 지급이력이 곧 답이다.
+    // 실측 2026-09-15: 2026-08 이 8 종목 전부 최빈일(2 일·17 일)에 놓였는데 실제는 4 일·19 일이었고,
+    // 2 일은 일요일 · 17 일은 대체공휴일이라 지급이 있을 수 없는 날에 찍혀 있었다.
+    Map<String, Integer> actualDayBySymbol =
+        MonthlyDividendPayDayUtil.actualDayByStockItem(payDayInput, month);
+
+    // 그 달에 실제로 받은 배당. 있으면 예상치 대신 이것을 적는다(사용자 결정 2026-09-15).
+    Map<UUID, MonthActual> actualByItem = loadMonthDividendsQuietly(UserUtil.getUserId(), month);
+    // 지나간 달에 원장이 답을 준다면 원장에 없는 종목은 그 달에 아무것도 받지 않은 것이다. 그런 종목에
+    // 예상치를 적으면 오지 않은 돈이 지난 달력에 찍힌다. 원장을 못 읽었으면(null) 아무것도 지우지 않는다 -
+    // 조회 실패로 지난 달력이 통째로 비면 그게 더 나쁘다.
+    //
+    // 한 건도 없는 달도 원장의 답이다. 그 달엔 정말 아무것도 안 받았다는 뜻이라, 비었다고 예상치로
+    // 되돌리면 안 받은 배당이 지난 달력에 그대로 찍힌다 - 실측 2026-09-15: 배당이 있는 첫 달(2020-04)
+    // 부터 지난 달까지 사이에만 그런 달이 41 개(2020-06, 2021-01 ...) 있고, 그 이전 달은 전부 그렇다.
+    boolean actualOnly = actualByItem != null && month.isBefore(YearMonth.from(today));
+    java.util.Set<UUID> placedItemIds = new java.util.LinkedHashSet<>();
 
     // 저장된 과세표준이 0 인 종목이 있다. 그게 비과세인지 미등록인지는 지급이력이 말해 준다 -
     // 지급일 추정 때문에 이미 읽어 둔 목록을 그대로 넘겨 두 번 받아 오지 않는다.
@@ -287,20 +313,77 @@ public class StockDividendViewController {
       String symbol =
           monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(row.stockItemSymbol());
       MonthlyDividendPayDayUtil.PayDay payDay = symbol != null ? payDayBySymbol.get(symbol) : null;
+      Integer actualDay = symbol != null ? actualDayBySymbol.get(symbol) : null;
+      MonthActual actual =
+          actualByItem != null && row.stockItemId() != null
+              ? actualByItem.get(row.stockItemId())
+              : null;
+      if (actual == null && actualOnly) {
+        continue;
+      }
+      if (actual != null) {
+        placedItemIds.add(row.stockItemId());
+        actualDay = actual.day();
+      }
       DividendCalendarView.Entry entry =
           new DividendCalendarView.Entry(
               symbol,
               row.stockItemName(),
-              row.expectedMonthlyDividend(),
-              latestMonthlyDividend(row),
-              row.expectedTaxableBaseAmount(),
+              // 실제로 받은 달에는 둘째 줄이 평균 대신 세후 실수령이 된다 - 그 달의 새 소식은 이쪽이다.
+              actual != null ? actual.net() : row.expectedMonthlyDividend(),
+              // 큰 숫자는 늘 세전이다(칸 합계·소계가 이 축이다). 실제 달에도 축을 바꾸지 않는다.
+              actual != null ? actual.gross() : latestMonthlyDividend(row),
+              actual != null ? actual.taxable() : row.expectedTaxableBaseAmount(),
               symbol != null ? historyTaxableRatioBySymbol.get(symbol) : null,
-              payDay != null ? payDay.day() : 0,
+              actualDay != null ? actualDay : (payDay != null ? payDay.day() : 0),
               payDay != null ? payDay.earliest() : 0,
               payDay != null ? payDay.latest() : 0,
-              payDay != null ? payDay.sampleCount() : 0);
-      (payDay != null ? dated : undated).add(entry);
+              payDay != null ? payDay.sampleCount() : 0,
+              actualDay != null,
+              actual != null);
+      // 그 달 이력이 있으면 최빈일을 못 구한 종목이라도 달력에 놓을 수 있다.
+      (payDay != null || actualDay != null ? dated : undated).add(entry);
     }
+
+    // 달력은 월배당 기준 데이터가 있는 종목만 그린다. 그 달 원장에 있는 나머지는 통째로 안 보이므로
+    // 금액과 함께 밝힌다 - 실측 2026-09-15: 2026-08 은 분기배당인 삼성전자 1,886,082 원이 빠져
+    // 그 달 배당(세전 4,982,406 원)의 37.9% 가 달력 밖에 있었다. 자산 현황의 "이 표에 없는 종목" 과 같은 처방.
+    List<DividendCalendarView.Missing> missing = new ArrayList<>();
+    if (actualByItem != null) {
+      for (Map.Entry<UUID, MonthActual> actualEntry : actualByItem.entrySet()) {
+        if (placedItemIds.contains(actualEntry.getKey())) {
+          continue;
+        }
+        MonthActual actual = actualEntry.getValue();
+        String name = actual.name() != null ? actual.name() : actualEntry.getKey().toString();
+        if (actualOnly) {
+          // 지나간 달은 원장이 지급일을 안다 - 월배당 기준 데이터가 없다고 달력에서 뺄 이유가 없다
+          // (사용자 결정 2026-09-15). 실측: 2026-08 의 삼성전자 1,886,082 원은 원장에 8 월 28 일이라고
+          // 적혀 있는데도 '달력 밖' 상자로 빠져 그 달 배당의 37.9% 가 달력에서 안 보였다.
+          // 앞으로 올 달은 지급일을 알 길이 없으니 그때만 상자로 남는다.
+          dated.add(
+              new DividendCalendarView.Entry(
+                  null,
+                  name,
+                  actual.net(),
+                  actual.gross(),
+                  actual.taxable(),
+                  null,
+                  actual.day(),
+                  actual.day(),
+                  actual.day(),
+                  0,
+                  true,
+                  true));
+          continue;
+        }
+        missing.add(new DividendCalendarView.Missing(name, actual.gross()));
+      }
+      missing.sort(Comparator.comparing(DividendCalendarView.Missing::amount).reversed());
+    }
+
+    // 빈 격자만 두면 화면이 고장 난 것처럼 보인다 - "그 달엔 받은 게 없다" 고 말하게 한다.
+    boolean settledEmpty = actualOnly && actualByItem.isEmpty();
 
     model.addAttribute(
         "dividendCalendar",
@@ -308,11 +391,24 @@ public class StockDividendViewController {
             month,
             DividendCalendarGridUtil.build(
                 month, today, DividendCalendarGridUtil.groupByDay(dated, month)),
-            undated));
-    model.addAttribute("calendarPrevMonth", month.minusMonths(1).toString());
-    model.addAttribute("calendarNextMonth", month.plusMonths(1).toString());
-    model.addAttribute("calendarThisMonth", YearMonth.from(today).toString());
+            undated,
+            missing,
+            settledEmpty));
+    // 달 이동은 <b>달만</b> 바꾼다 - 탭 링크와 같은 규칙이다.
+    //
+    // 실측 2026-09-14: 이 세 링크는 "/stock/dividend?tab=calendar&month=..." 를 손으로 붙이고 있어
+    // 기간·필터를 통째로 버렸다. 한 달 넘긴 것뿐인데 돌아간 실수령 배당 탭이 조용히 전체 기간이 된다
+    // (같은 화면의 탭 링크는 이미 조건을 들고 간다 - 둘이 어긋나 있었다).
+    model.addAttribute("calendarPrevHref", monthHref(currentQuery, month.minusMonths(1)));
+    model.addAttribute("calendarNextHref", monthHref(currentQuery, month.plusMonths(1)));
+    model.addAttribute("calendarThisHref", monthHref(currentQuery, YearMonth.from(today)));
     model.addAttribute("calendarIsThisMonth", month.equals(YearMonth.from(today)));
+  }
+
+  /** 달만 바꾼 같은 화면 주소. 나머지 조건은 조각째 옮긴다(인코딩·중복 키 순서 보존). */
+  private static String monthHref(String currentQuery, YearMonth month) {
+    return net.luversof.web.gate.stock.util.StockTabLinkUtil.switchHref(
+        "/stock/dividend", currentQuery, "month", month.toString());
   }
 
   /**
@@ -329,6 +425,78 @@ public class StockDividendViewController {
       return YearMonth.parse(monthParam.trim());
     } catch (DateTimeParseException ex) {
       throw new net.luversof.web.gate.stock.support.StockDateParamException("month", ex);
+    }
+  }
+
+  /**
+   * 그 달에 <b>실제로 받은</b> 배당(종목 id &rarr; 그 달 합계). 못 읽으면 {@code null} &mdash; 없는 것과는 다르다.
+   *
+   * <p>이 달력은 오래도록 "지금 보유 수량 x 최근 주당 배당" 이라는 예상치만 보여 줬다. 앞으로 올 달에는 그것 말고 방법이 없지만 지나간 달은 원장이 답을 갖고 있다
+   * &mdash; 실측 2026-09-15: 2026-08 달력 합계가 3,956,660 원인데 그 여덟 종목이 실제로 받은 세전 금액은 3,096,324 원으로
+   * <b>+27.8%</b> 부풀려져 있었고, 종목별로는 최대 +132.5% 였다. 게다가 예상치라 <b>달을 넘겨도 값이 똑같았다</b>.
+   *
+   * <p>기간은 그 달 전체다. {@code endDate} 는 배타적이라 다음 달 1 일을 준다. 존은 이 화면의 다른 날짜와 같은 서버 존이다.
+   */
+  private Map<UUID, MonthActual> loadMonthDividendsQuietly(UUID userId, YearMonth month) {
+    if (userId == null || month == null) {
+      return null;
+    }
+    java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+    LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+    params.add("userId", userId.toString());
+    params.add("startDate", month.atDay(1).atStartOfDay(zone).toInstant().toString());
+    params.add("endDate", month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toString());
+
+    List<net.luversof.web.gate.stock.dto.response.DividendResponse> rows;
+    try {
+      rows = dividendClient.findDividends(params);
+    } catch (RuntimeException ex) {
+      // 원장을 못 읽었다고 달력이 못 뜰 이유는 없다 - 예상치로 되돌아간다(지급이력 읽기와 같은 규칙).
+      log.warn("배당 원장을 읽지 못했다 - 달력이 예상치로 돌아간다", ex);
+      return null;
+    }
+    if (rows == null) {
+      return Map.of();
+    }
+
+    Map<UUID, MonthActual> byItem = new LinkedHashMap<>();
+    for (net.luversof.web.gate.stock.dto.response.DividendResponse row : rows) {
+      if (row == null || row.stockItemId() == null || row.payDate() == null) {
+        continue;
+      }
+      byItem.merge(
+          row.stockItemId(),
+          new MonthActual(
+              row.payDate().atZone(zone).toLocalDate().getDayOfMonth(),
+              zeroIfNull(row.grossAmount()),
+              zeroIfNull(row.netAmount()),
+              zeroIfNull(row.taxableAmount()),
+              row.stockItemName()),
+          MonthActual::plus);
+    }
+    return byItem;
+  }
+
+  private static BigDecimal zeroIfNull(BigDecimal value) {
+    return value != null ? value : BigDecimal.ZERO;
+  }
+
+  /**
+   * 한 종목이 그 달에 받은 것의 합.
+   *
+   * <p>한 달에 여러 번 받은 종목이 있다(실측 2026-08: 아홉 종목 중 넷이 2~4 건). 금액은 더하고 날짜는 <b>가장 늦은 날</b>을 쓴다 &mdash; 달력
+   * 한 칸에 한 번만 놓기 때문이다.
+   */
+  private record MonthActual(
+      int day, BigDecimal gross, BigDecimal net, BigDecimal taxable, String name) {
+
+    MonthActual plus(MonthActual other) {
+      return new MonthActual(
+          Math.max(day, other.day),
+          gross.add(other.gross),
+          net.add(other.net),
+          taxable.add(other.taxable),
+          name != null ? name : other.name);
     }
   }
 

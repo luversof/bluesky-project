@@ -699,6 +699,13 @@
 		width: 100% !important;
 		table-layout: auto !important;
 	}
+	/* 다만 `table-fixed` 를 붙인 표는 예외다 - 작성자가 '열 폭이 곧 뜻' 이라고 명시한 표다.
+	   위 규칙은 열 많은 '자료표'를 쪽 폭에 맞추려는 것인데, '달력'에 걸리면 요일 정렬이 깨진다:
+	   실측 2026-09-15(배당 캘린더, 816px 인쇄) 화면에선 7 열이 모두 107px 인데 종이에선
+	   41·40·40·270·247·43·67px 로 벌어졌다(편차 230px). 종목이 있는 수·목만 넓어져 달력으로 안 읽힌다. */
+	table.table-fixed {
+		table-layout: fixed !important;
+	}
 	.whitespace-nowrap, table .whitespace-nowrap {
 		white-space: normal !important;
 	}
@@ -717,6 +724,14 @@
 	   같은 화면 '계좌별 현황' 은 다 살려도 679px 라 손대지 않는다 - 필요한 표에만 붙인다. */
 	table.print-dense :is(th, td) {
 		font-size: 0.70rem;
+	}
+	/* 지속가능성 시뮬레이터의 연도별 표는 열이 12 개다. 화면에서는 가로 스크롤 래퍼가 감싸지만(문서 넘침 0),
+	   종이에서는 위의 .overflow-x-auto 해제로 그 래퍼가 풀려 표가 그대로 지면 밖으로 나간다 -
+	   실측 2026-09-15(816px, print): 표 925px · 문서 150px 초과로 오른쪽 열들이 통째로 잘렸다.
+	   print-dense(0.70rem)로는 816px 까지만 줄어 좌우 여백만큼(41px) 여전히 넘쳤고, 한 단계 더 줄이면 768px 로 들어간다.
+	   패딩을 줄이는 쪽은 48px 밖에 못 줄여 부족했다(실측). 화면은 그대로 두고 종이에서만 줄인다. */
+	table[data-sustain-yearly-table] :is(th, td) {
+		font-size: 0.65rem;
 	}
 	/* 월배당 시뮬레이터의 선택 표는 열마다 최소 폭(7.5rem · 6.5rem x 4 · 6rem)을 못박아 두어, 글자를 줄여도
 	   폭이 거의 그대로다 - 실측 2026-09-11(816px, print): 988px -> print-dense 만으로는 973px 로 지면(=816)을

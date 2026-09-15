@@ -5,6 +5,7 @@
 @import java.time.format.DateTimeFormatter
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<Activity> activities
 @param String thisMonthLabel
@@ -34,11 +35,13 @@
 @template._components.ui.card(cssClass = "h-full", body = @`
 	<div class="flex justify-between items-center mb-3">
 		<h2 class="card-title text-xl">${recentActivityTitle}</h2>
-		<a href="/stock/activity" class="link link-hover text-xs">${viewAllLabel} →</a>
+		<a href="/stock/activity" class="link link-hover text-xs">${viewAllLabel} <span aria-hidden="true">→</span></a>
 	</div>
-	<div class="flex gap-4">
+	<%-- 자리가 모자라면 요약이 아래 줄로 내려간다. 예전에는 요약이 폭을 고수해 왼쪽 목록이
+	     94px 까지 눌리고 종목명이 0px 로 사라졌다(실측 2026-09-15, 320px). --%>
+	<div class="flex flex-wrap gap-4">
 		<%-- 좌: 활동 목록 --%>
-		<div class="flex-1 min-w-0">
+		<div class="flex-1 min-w-[11rem]">
 			@if(activities == null || activities.isEmpty())
 				<div class="text-center text-base-content/60 py-4">${noActivityLabel}</div>
 			@else
@@ -71,7 +74,7 @@
 							<div class="flex-1 min-w-0">
 								<div class="flex items-center gap-1.5 mb-0.5">
 									<span class="badge badge-xs ${badgeClass}">${badgeText}</span>
-									<a href="/stock/item?stockItemId=${activity.stockItemId() != null ? activity.stockItemId().toString() : ""}" class="font-bold text-sm truncate link link-hover" title="${activity.stockItemName()}">${activity.stockItemName()}</a>
+									<a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="font-bold text-sm truncate link link-hover" title="${activity.stockItemName()}">${activity.stockItemName()}</a>
 								</div>
 								<%-- 이 카드는 계좌를 아예 보여주지 않으므로(폭이 없다) 묶인 줄은 건수로만 드러난다.
 								     그래서 accountCount 는 0 이다 - 배지 규칙은 "화면이 보여 주는 것으로 설명되지 않으면 건수를 적는다".

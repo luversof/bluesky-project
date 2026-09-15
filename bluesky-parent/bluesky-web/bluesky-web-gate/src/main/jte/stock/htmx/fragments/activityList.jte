@@ -11,6 +11,7 @@
 @import java.text.DecimalFormat
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<Activity> activities
 @param String activityView = "all"
@@ -423,7 +424,9 @@
 								     활동 있는 칸은 클릭으로 그날 상세를 펼치므로 버튼 역할·탭 포커스·aria-expanded 를 준다(수익률 표의 행과 같은 규칙,
 								     실측 2026-09-09: 전체 기간 181칸이 키보드로는 열 수 없었다). Enter/Space 는 common.ts 가 받는다. --%>
 								<div class="cal-day ${isToday ? "border-primary" : "border-transparent"}${!inMonth ? " cal-day-out" : ""}${hasActivity ? " cal-day-act" : ""}" data-cal-date="${hasActivity ? cellDate.toString() : null}" data-cal-month="${hasActivity ? ymKey : null}" role="${hasActivity ? "button" : null}" tabindex="${hasActivity ? "0" : null}" aria-expanded="${hasActivity ? "false" : null}" aria-controls="${hasActivity ? "cal-detail-" + cellDate.toString() : null}" title="${holidayName}">
-									<div class="cal-day-num${isToday ? " text-primary" : (isRedDay ? " text-error" : "")}">${cellDate.getDayOfMonth()}</div>
+									<%-- 칸은 role=button 이라 버튼 목록에 오른다. 보이는 건 날짜 숫자뿐이지만
+									     낭독기에는 온 날짜를 준다 - '6' 만 들으면 어느 달인지 알 수 없다. --%>
+									<div class="cal-day-num${isToday ? " text-primary" : (isRedDay ? " text-error" : "")}"><span aria-hidden="true">${cellDate.getDayOfMonth()}</span><span class="sr-only">${cellDate.toString()}</span></div>
 									@if(holidayName != null)
 										<div class="text-[9px] leading-tight text-error/80 truncate" title="${holidayName}">${holidayName}</div>
 									@endif
@@ -432,9 +435,9 @@
 											<%-- 종류를 색으로만 갈랐다 - 낭독기에는 "●8" 로만 들리고, 색으로 못 가르는 사람에게도 뜻이 없다
 											     (실측 2026-09-12: 매수 text-profit · 매도 text-loss · 배당 text-dividend 세 가지가 모두 ●N 뿐).
 											     보이는 글자는 그대로 두고 이름만 붙인다. --%>
-											@if(dayBuyCount > 0)<span class="text-profit" title="${buyLabel}">●${dayBuyCount}<span class="sr-only"> ${buyLabel}</span></span>@endif
-											@if(daySellCount > 0)<span class="text-loss" title="${sellLabel}">●${daySellCount}<span class="sr-only"> ${sellLabel}</span></span>@endif
-											@if(dayDividendCount > 0)<span class="text-dividend" title="${dividendLabel}">●${dayDividendCount}<span class="sr-only"> ${dividendLabel}</span></span>@endif
+											@if(dayBuyCount > 0)<span class="text-profit" title="${buyLabel}"><span aria-hidden="true">●</span>${dayBuyCount}<span class="sr-only"> ${buyLabel}</span></span>@endif
+											@if(daySellCount > 0)<span class="text-loss" title="${sellLabel}"><span aria-hidden="true">●</span>${daySellCount}<span class="sr-only"> ${sellLabel}</span></span>@endif
+											@if(dayDividendCount > 0)<span class="text-dividend" title="${dividendLabel}"><span aria-hidden="true">●</span>${dayDividendCount}<span class="sr-only"> ${dividendLabel}</span></span>@endif
 										</div>
 										<div class="amount-value text-[10px] text-base-content/60 truncate" title="₩ ${df.format(dayNetAmount)}">₩ ${df.format(dayNetAmount)}</div>
 									@endif
@@ -463,7 +466,7 @@
 													@else
 														<span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
 													@endif
-													<a href="/stock/item?stockItemId=${dayDetailActivity.stockItemId() != null ? dayDetailActivity.stockItemId().toString() : ""}" class="link link-hover font-bold">${dayDetailActivity.stockItemName()}</a>
+													<a href="${StockDetailLinkUtil.item(dayDetailActivity.stockItemId() != null ? dayDetailActivity.stockItemId().toString() : "")}" class="link link-hover font-bold">${dayDetailActivity.stockItemName()}</a>
 													<span class="text-base-content/60 whitespace-nowrap">
 														@if(detailIsTrade)
 															${sharesBefore}<span class="amount-value">${dayDetailActivity.quantity()}</span>${sharesAfter}
@@ -571,7 +574,7 @@
 										@else
 											<span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
 										@endif
-										<a href="/stock/item?stockItemId=${tlRowActivity.stockItemId() != null ? tlRowActivity.stockItemId().toString() : ""}" class="link link-hover font-bold">${tlRowActivity.stockItemName()}</a>
+										<a href="${StockDetailLinkUtil.item(tlRowActivity.stockItemId() != null ? tlRowActivity.stockItemId().toString() : "")}" class="link link-hover font-bold">${tlRowActivity.stockItemName()}</a>
 										<span class="text-base-content/60 whitespace-nowrap">
 											@if(tlIsTrade)
 												${sharesBefore}<span class="amount-value">${tlRowActivity.quantity()}</span>${sharesAfter}
@@ -638,7 +641,7 @@
 											<span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
 										@endif
 									</td>
-									<td class="font-bold"><a href="/stock/item?stockItemId=${activity.stockItemId() != null ? activity.stockItemId().toString() : ""}" class="link link-hover">${activity.stockItemName()}</a></td>
+									<td class="font-bold"><a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="link link-hover">${activity.stockItemName()}</a></td>
 									<td>
 										<div class="flex items-center gap-2 whitespace-nowrap">
 											<span>
@@ -655,7 +658,7 @@
 											@if(activity.accountIds() != null && !activity.accountIds().isEmpty())
 												<span class="flex items-center gap-1">
 													@for(int i = 0; i < Math.min(2, activity.accountIds().size()); i++)
-														<a href="/stock/account?accountId=${activity.accountIds().get(i) != null ? activity.accountIds().get(i).toString() : ""}" class="badge badge-xs badge-outline opacity-70 link link-hover">${accountNames != null ? accountNames.getOrDefault(activity.accountIds().get(i), "") : ""}</a>
+														<a href="${StockDetailLinkUtil.account(activity.accountIds().get(i) != null ? activity.accountIds().get(i).toString() : "")}" class="badge badge-xs badge-outline opacity-70 link link-hover">${accountNames != null ? accountNames.getOrDefault(activity.accountIds().get(i), "") : ""}</a>
 													@endfor
 
 													@if(activity.accountIds().size() > 2)

@@ -30,9 +30,9 @@
 @param BigDecimal calendarCurrentQuantityTotal = java.math.BigDecimal.ZERO
 <%-- 달력 한 달치. 컨트롤러가 지급이력의 종목별 최빈 지급일로 종목을 날짜에 놓아 둔다. --%>
 @param net.luversof.web.gate.stock.dto.view.DividendCalendarView dividendCalendar = null
-@param String calendarPrevMonth = ""
-@param String calendarNextMonth = ""
-@param String calendarThisMonth = ""
+@param String calendarPrevHref = ""
+@param String calendarNextHref = ""
+@param String calendarThisHref = ""
 @param boolean calendarIsThisMonth = true
 @param BigDecimal calendarTaxableMonthly = java.math.BigDecimal.ZERO
 @param BigDecimal calendarTaxableAnnual = java.math.BigDecimal.ZERO
@@ -45,10 +45,14 @@
 	String midLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month");
 	String endLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end");
 	String otherLabel = MessageUtil.getMessage("stock.dividend.calendar.window.other");
+	String windowBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.window.basis");
 	String monthlyTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.monthly.total");
 	String annualTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.annual.total");
 	String avgBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");
 	String latestBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest");
+	// 지나간 달은 금액도 추정이 아니다 - 그때 두 줄은 세전/실수령이다.
+	String actualGrossBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.actual.gross");
+	String actualNetBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.actual.net");
 	String taxableTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.taxable.total");
 	String monthlyBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.monthly");
 	String annualBasisLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.annual");
@@ -96,9 +100,23 @@
 			</div>
 
 			@if(isCalendar)
-				<p class="text-sm text-base-content/60">${calendarDesc}</p>
+				<%-- 지나간 달은 달력이 예상이 아니라 그 달 실제 지급을 그린다 - 그때 '예상 지급 일정입니다' 는
+				     화면 맨 위에서 아래 달력과 반대되는 말을 하는 셈이다. 그 달 안내는 달력 상자가 이미 하므로
+				     여기서는 접는다(같은 말을 두 번 하지 않는다). --%>
+				!{boolean calendarShowsActual = dividendCalendar != null && dividendCalendar.hasActualAmount();}
+				@if(!calendarShowsActual)
+					<p class="text-sm text-base-content/60" data-calendar-desc>${calendarDesc}</p>
+				@endif
 				@if(calendarEmpty)
-					<div class="bg-base-200 rounded-box p-10 text-center text-base-content/60">${emptyLabel}</div>
+					<%-- 빈 상태엔 다음 행동을 준다(공용 emptyState 의 규칙). 이 상자만 손으로 만들어 그 규칙 밖에 있었다 -
+					     문구는 '월배당 기준 데이터에서 종목을 등록하라' 고 말하면서 정작 그리로 가는 링크가 없었다.
+					     화면 위에 같은 링크가 있긴 하지만, 빈 상태에서 다음 걸음을 그 자리에 두는 것이 이 저장소의 규칙이다
+					     (기간 넓히기 CTA 를 네 화면에 붙인 것과 같은 이유). --%>
+					@template._components.ui.emptyState(
+						message = emptyLabel,
+						boxed = true,
+						actionLabel = MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference"),
+						actionHref = "/stock/admin?tab=monthly-reference")
 				@else
 					<div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
 						@template.stock.fragments.dividendCalendarTotalCard(
@@ -168,7 +186,11 @@
 					<%-- 월중/월말은 소계 한 줄로만 남긴다. 달력이 종목별 날짜를 말하므로 덩어리 목록은 더 필요 없고,
 					     같은 목록은 월배당 시뮬레이터에 정렬 가능한 표로 이미 있다.
 					     금액은 amount-value 로 감싼다 - MessageFormat 안에 넣으면 '금액 숨김' 이 못 가린다. --%>
+					<%-- 라벨 없는 숫자 셋이었다 - 이 값들은 달과 무관한 '지금 보유 수량 기준 예상' 인데
+					     그 사실이 화면 어디에도 없어, 지나간 달을 보면 그 달 실적으로 읽혔다
+					     (실측 2026-09-15: 어느 달을 봐도 3,956,660 원 고정, 2026-08 실제와 -20.6% 차이). --%>
 					<div class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-base-content/60" data-calendar-window-subtotal>
+						<span class="font-medium text-base-content/70" data-calendar-subtotal-basis>${windowBasisLabel}</span>
 						<span><span>${midLabel}</span> <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(midTotalLatest))}</span></span>
 						<span><span>${endLabel}</span> <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(endTotalLatest))}</span></span>
 						@if(otherRows != null && !otherRows.isEmpty())
@@ -178,12 +200,14 @@
 					@if(dividendCalendar != null)
 						@template.stock.fragments.dividendCalendarMonth(
 							calendar = dividendCalendar,
-							prevMonth = calendarPrevMonth,
-							nextMonth = calendarNextMonth,
-							thisMonth = calendarThisMonth,
+							prevHref = calendarPrevHref,
+							nextHref = calendarNextHref,
+							thisHref = calendarThisHref,
 							isThisMonth = calendarIsThisMonth,
 							avgLabel = avgBasisLabel,
-							latestLabel = latestBasisLabel)
+							latestLabel = latestBasisLabel,
+							actualGrossLabel = actualGrossBasisLabel,
+							actualNetLabel = actualNetBasisLabel)
 					@endif
 				@endif
 			@else

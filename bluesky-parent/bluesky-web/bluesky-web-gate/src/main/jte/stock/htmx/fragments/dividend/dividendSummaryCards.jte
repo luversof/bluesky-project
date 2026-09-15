@@ -5,6 +5,7 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.controller.StockDividendHtmxController.DividendChange
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param DecimalFormat decimalFormat
 @param BigDecimal safeAllNet
@@ -222,7 +223,7 @@
 						data-prev="${ch.previousNet().toPlainString()}"
 						data-current="${ch.currentNet().toPlainString()}"
 						data-delta="${ch.delta().toPlainString()}">
-						<th scope="row" class="max-w-0 truncate" title="${ch.stockName()}">@if(ch.stockItemId() != null)<a href="/stock/item?stockItemId=${ch.stockItemId().toString()}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif
+						<th scope="row" class="max-w-0 truncate" title="${ch.stockName()}">@if(ch.stockItemId() != null)<a href="${StockDetailLinkUtil.item(ch.stockItemId().toString())}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif
 							@if(isNew)
 							<span class="badge badge-xs badge-success badge-outline ml-1">${changeNewLabel}</span>
 							@elseif(stopped)

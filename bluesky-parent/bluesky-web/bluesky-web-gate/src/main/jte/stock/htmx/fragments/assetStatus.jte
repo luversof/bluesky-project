@@ -9,6 +9,7 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockAssetStatusUtil
 @import net.luversof.web.gate.stock.util.StockHoldingReturnUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param Map<java.util.UUID, TradeProfit> accountTotalMap
 @param Map<java.util.UUID, BigDecimal> accountProfitBasisMap
@@ -277,7 +278,7 @@
 						data-weight="${accountWeightPct.toPlainString()}"
 						data-detail-row-id="${detailRowId}">
 						<th scope="row">
-							<div class="font-semibold"><a href="/stock/account?accountId=${entry.getKey() != null ? entry.getKey().toString() : ""}" class="link link-hover">${entry.getValue().accountName()}</a></div>
+							<div class="font-semibold"><a href="${StockDetailLinkUtil.account(entry.getKey() != null ? entry.getKey().toString() : "")}" class="link link-hover">${entry.getValue().accountName()}</a></div>
 							@if(holdings.isEmpty())
 								<div class="text-xs text-base-content/60">${noHoldingsLabel}</div>
 							@else
@@ -368,7 +369,7 @@
 												}
 												@for(AssetStatusAccountHoldingView holding : holdings)
 													<tr>
-														<th scope="row" class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
+														<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.item(holding.stockItemId() != null ? holding.stockItemId().toString() : "")}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
 														<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
 														<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
 														<td class="text-right font-mono hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holding.buyAmount()))}</td>
@@ -688,7 +689,7 @@
 								data-dividend-total="${breakdown.dividendTotal().toPlainString()}"
 								data-combined-profit="${breakdown.combinedProfit().toPlainString()}"
 								data-holding-days="${holdingReturn.holdingDays()}">
-								<th scope="row" class="font-semibold"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
+								<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
 								<td class="text-base-content/70" data-holding-period>
 									@if(holdingReturn.hasPeriod())
 										<span title="${java.text.MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}">${holdingPeriodText}</span><span class="sr-only">, ${java.text.MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}</span>

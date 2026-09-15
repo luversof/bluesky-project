@@ -14,6 +14,7 @@
 @import java.time.LocalDate
 @import java.time.Instant
 @import net.luversof.web.gate.stock.util.ChartSeriesJs
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param String stockItemIdParam = ""
 @param StockItem stockItem = null
@@ -350,7 +351,7 @@
 								<%-- 계좌 상세로 잇는다. 이 방향 링크만 없어서 계좌 → 종목은 되는데 종목 → 계좌는 뒤로 가야 했다. --%>
 								<th scope="row" class="font-semibold">
 									@if(holding.accountId() != null)
-										<a href="/stock/account?accountId=${holding.accountId().toString()}" class="link link-hover">${holding.accountName() != null ? holding.accountName() : "-"}</a>
+										<a href="${StockDetailLinkUtil.account(holding.accountId().toString())}" class="link link-hover">${holding.accountName() != null ? holding.accountName() : "-"}</a>
 									@else
 										${holding.accountName() != null ? holding.accountName() : "-"}
 									@endif

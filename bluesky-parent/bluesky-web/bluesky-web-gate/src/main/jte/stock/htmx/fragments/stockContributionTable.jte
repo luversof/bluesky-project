@@ -4,6 +4,7 @@
 @import net.luversof.web.gate.stock.util.StockContributionUtil.Contribution
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<Contribution> stockContributions = java.util.List.of()
 @param Contribution stockContributionTotal = null
@@ -76,7 +77,7 @@
 							}
 							<tr>
 								<th scope="row" class="font-medium">
-									<a href="/stock/item?stockItemId=${row.stockItemId() != null ? row.stockItemId().toString() : ""}" class="link link-hover">${row.stockItemName() != null ? row.stockItemName() : "-"}</a>
+									<a href="${StockDetailLinkUtil.item(row.stockItemId() != null ? row.stockItemId().toString() : "")}" class="link link-hover">${row.stockItemName() != null ? row.stockItemName() : "-"}</a>
 									<%-- 그 기간에 다 판 종목. 밝히지 않으면 왜 자산 현황에 없는지 알 수 없다. --%>
 									@if(!row.heldAtEnd())
 										<span class="badge badge-ghost badge-sm ml-1">${soldOutLabel}</span>

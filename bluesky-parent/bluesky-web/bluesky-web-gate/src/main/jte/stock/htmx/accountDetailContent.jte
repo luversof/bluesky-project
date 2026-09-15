@@ -17,6 +17,7 @@
 @import java.time.Instant
 @import net.luversof.web.gate.stock.util.RealizedBasisGap
 @import net.luversof.web.gate.stock.util.ChartSeriesJs
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param String accountIdParam = ""
 @param Account account = null
@@ -250,7 +251,7 @@
 							!{BigDecimal holdingCostBasis = (holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO).subtract(holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO);}
 							!{double holdingEvalRatePct = holdingCostBasis.signum() != 0 && holding.evaluationProfit() != null ? holding.evaluationProfit().doubleValue() / holdingCostBasis.doubleValue() * 100.0 : 0.0;}
 							<tr>
-								<th scope="row" class="font-semibold"><a href="/stock/item?stockItemId=${holding.stockItemId() != null ? holding.stockItemId().toString() : ""}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
+								<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.item(holding.stockItemId() != null ? holding.stockItemId().toString() : "")}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
 								<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
@@ -292,7 +293,7 @@
 							!{String tName = trade.stockItemName() != null ? trade.stockItemName() : stockNameById.getOrDefault(trade.stockItemId(), "-");}
 							<tr>
 								<td class="tabular-nums">${trade.tradeDate() != null ? trade.tradeDate().atZone(zone).toLocalDate().toString() : "-"}</td>
-								<td class="font-semibold"><a href="/stock/item?stockItemId=${trade.stockItemId() != null ? trade.stockItemId().toString() : ""}" class="link link-hover">${tName}</a></td>
+								<td class="font-semibold"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${tName}</a></td>
 								<td><span class="badge badge-sm ${isBuy ? "badge-error badge-outline" : "badge-info badge-outline"}">${isBuy ? MessageUtil.getMessage("stock.trade.label.buy") : MessageUtil.getMessage("stock.trade.label.sell")}</span></td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", trade.quantity())}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", StockFormatUtil.displayWon(trade.price()))}</td>
@@ -332,7 +333,7 @@
 							!{ boolean dividendTaxZero = dividend.tax() == null || dividend.tax().signum() == 0; }
 							<tr>
 								<td class="tabular-nums">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
-								<td class="font-semibold"><a href="/stock/item?stockItemId=${dividend.stockItemId() != null ? dividend.stockItemId().toString() : ""}" class="link link-hover">${dName}</a></td>
+								<td class="font-semibold"><a href="${StockDetailLinkUtil.item(dividend.stockItemId() != null ? dividend.stockItemId().toString() : "")}" class="link link-hover">${dName}</a></td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60" title="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
 								<td class="text-right font-mono font-bold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>

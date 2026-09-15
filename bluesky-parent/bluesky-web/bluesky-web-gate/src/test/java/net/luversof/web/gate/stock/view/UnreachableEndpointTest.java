@@ -40,6 +40,16 @@ class UnreachableEndpointTest {
   private static final List<Path> REFERENCE_ROOTS =
       List.of(Path.of("src/main/jte"), Path.of("src/main/frontend/src"));
 
+  /**
+   * 링크를 대신 만들어 주는 도구도 참조로 센다.
+   *
+   * <p>2026-09-14 부터 목록의 종목·계좌 링크는 템플릿이 아니라 {@code StockDetailLinkUtil} 이 만든다 &mdash; 목록에서 보던 기간을
+   * 상세로 들고 가게 하려고 26 곳을 그리로 옮겼다. 그래서 템플릿에는 경로 문자열이 없다. 이 파일을 안 보면 실제로는 화면에서 매일 눌리는 {@code
+   * /stock/item} · {@code /stock/account} 가 "닿을 수 없다" 로 잡힌다.
+   */
+  private static final List<Path> LINK_BUILDER_SOURCES =
+      List.of(Path.of("src/main/java/net/luversof/web/gate/stock/util/StockDetailLinkUtil.java"));
+
   private static final Pattern CLASS_MAPPING =
       Pattern.compile("@RequestMapping\\(\\s*(?:value\\s*=\\s*)?\"([^\"]*)\"");
 
@@ -129,6 +139,11 @@ class UnreachableEndpointTest {
                 .toList()) {
           texts.put(file, Files.readString(file, StandardCharsets.UTF_8));
         }
+      }
+    }
+    for (Path file : LINK_BUILDER_SOURCES) {
+      if (Files.isRegularFile(file)) {
+        texts.put(file, Files.readString(file, StandardCharsets.UTF_8));
       }
     }
     return texts;

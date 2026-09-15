@@ -35,6 +35,11 @@
 @param String monthlyDividendReferenceResultMessage = ""
 @param boolean monthlyDividendReferenceResultIsError = false
 
+<%-- 주소에 싣는 종목 코드는 인코딩해서 싣는다.
+     이 파일은 같은 값을 74·77 행에서는 URLEncoder 로 싣고 표 안 링크 네 곳에서는 날것으로 싣고 있었다.
+     실측 2026-09-14: 등록된 86 종목이 모두 6 자리 [0-9CDEGMNPR] 라 지금은 둘 다 같은 결과다 -
+     즉 화면으로는 영원히 안 드러난다. 코드 모양을 강제하는 것은 게이트가 아니라 원장이므로
+     (검증은 '등록된 코드인가' 만 본다) 한 기능 안에서 규칙이 갈린 채로 두지 않는다. --%>
 !{
 	DecimalFormat amountFormat = new DecimalFormat("#,##0.####");
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
@@ -433,11 +438,11 @@
 												</div>
 											</td>
 											<td>
-												<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
+												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
 												<div class="text-xs text-base-content/60">${row.stockItemName()}</div>
 												<div class="mt-2 flex flex-wrap gap-2">
-													<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
-													<a href="/stock/simulator?tab=monthly-dividend&symbol=${row.stockItemSymbol()}&sort=display-order&direction=asc" class="btn btn-xs btn-primary" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
+													<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
+													<a href="/stock/simulator?tab=monthly-dividend&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&sort=display-order&direction=asc" class="btn btn-xs btn-primary" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 												</div>
 											</td>
 											<%-- 같은 화면의 편집 폼은 "월중/월말/기타/미확인" 으로 보여 주는데 이 칸만 코드였다
@@ -488,7 +493,7 @@
 									@for(MonthlyDividendPayoutResponse row : monthlyDividendPayouts)
 										<tr class="${selectedMonthlyDividendPayoutKey.equals(String.valueOf(row.recordDate()) + "|" + String.valueOf(row.payDate())) ? "bg-base-200/60" : ""}">
 											<td class="whitespace-nowrap tabular-nums">
-												<a href="/stock/admin?tab=monthly-reference&symbol=${row.stockItemSymbol()}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}&payoutRecordDate=${String.valueOf(row.recordDate())}&payoutPayDate=${String.valueOf(row.payDate())}" class="link link-hover font-medium tabular-nums">${String.valueOf(row.recordDate())}</a>
+												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}&payoutRecordDate=${URLEncoder.encode(String.valueOf(row.recordDate()), StandardCharsets.UTF_8)}&payoutPayDate=${URLEncoder.encode(String.valueOf(row.payDate()), StandardCharsets.UTF_8)}" class="link link-hover font-medium tabular-nums">${String.valueOf(row.recordDate())}</a>
 											</td>
 											<td class="whitespace-nowrap tabular-nums">${String.valueOf(row.payDate())}</td>
 											@if(showDistributionRate)

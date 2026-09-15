@@ -7,6 +7,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.RealizedBasisGap
+@import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<AccountRealizedRow> accountRealizedList
 @param List<TradeProfit> stockRealizedList
@@ -119,7 +120,7 @@
 						data-sell="${(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO).toPlainString()}"
 						data-net="${rowNet.toPlainString()}"
 						data-sold-cost="${rowSoldCost.toPlainString()}">
-						<th scope="row" class="font-semibold whitespace-nowrap">@if(row.accountId() != null)<a href="/stock/account?accountId=${row.accountId().toString()}" class="link link-hover">${row.name()}</a>@else${row.name()}@endif</th>
+						<th scope="row" class="font-semibold whitespace-nowrap">@if(row.accountId() != null)<a href="${StockDetailLinkUtil.account(row.accountId().toString())}" class="link link-hover">${row.name()}</a>@else${row.name()}@endif</th>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(rowSoldCost)}</td>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO)}</td>
 						<td class="text-right font-bold font-mono amount-value ${rowPositive ? "text-profit" : "text-loss"}">
@@ -236,7 +237,7 @@
 						data-sell="${(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO).toPlainString()}"
 						data-net="${itemNet.toPlainString()}"
 						data-sold-cost="${itemSoldCost.toPlainString()}">
-						<th scope="row" class="font-semibold whitespace-nowrap"><a href="/stock/item?stockItemId=${item.stockItemId() != null ? item.stockItemId().toString() : ""}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
+						<th scope="row" class="font-semibold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(itemSoldCost)}</td>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO)}</td>
 						<td class="text-right font-bold font-mono amount-value ${itemPositive ? "text-profit" : "text-loss"}">
