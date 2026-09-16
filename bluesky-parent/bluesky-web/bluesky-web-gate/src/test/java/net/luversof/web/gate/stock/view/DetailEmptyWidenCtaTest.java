@@ -61,33 +61,45 @@ class DetailEmptyWidenCtaTest {
     }
   }
 
-  /** 종목 상세 세 자리(시세 · 매매 · 배당)에 모두 붙어 있다. */
+  /** 종목 상세 네 자리(시세 · 보유 평가액 추이 · 매매 · 배당)에 모두 붙어 있다. */
   @Test
-  void 종목_상세_세_자리에_붙는다() throws IOException {
+  void 종목_상세_네_자리에_붙는다() throws IOException {
     String src = read(ITEM);
 
     assertThat(src).contains("@param String rangeMode = \"\"");
-    assertThat(count(src, CTA)).as("종목 상세 CTA 수").isEqualTo(3);
+    assertThat(count(src, CTA)).as("종목 상세 CTA 수").isEqualTo(4);
     for (String key :
         new String[] {
           "stock.item.detail.empty.price.history",
+          "stock.item.detail.empty.valuation.series",
           "stock.item.detail.empty.trades",
           "stock.item.detail.empty.dividends"
         }) {
-      int at = src.indexOf(key);
+      int at = src.indexOf(key + "\"");
 
       assertThat(at).as(key).isPositive();
       assertThat(src.substring(at, Math.min(src.length(), at + 130))).as(key).contains(CTA);
     }
   }
 
-  /** 계좌 상세 두 자리(매매 · 배당)에 모두 붙어 있다. */
+  /** 계좌 상세 세 자리(보유 평가액 추이 · 매매 · 배당)에 모두 붙어 있다. */
   @Test
-  void 계좌_상세_두_자리에_붙는다() throws IOException {
+  void 계좌_상세_세_자리에_붙는다() throws IOException {
     String src = read(ACCOUNT);
 
     assertThat(src).contains("@param String rangeMode = \"\"");
-    assertThat(count(src, CTA)).as("계좌 상세 CTA 수").isEqualTo(2);
+    assertThat(count(src, CTA)).as("계좌 상세 CTA 수").isEqualTo(3);
+    for (String key :
+        new String[] {
+          "stock.account.detail.empty.valuation.series",
+          "stock.account.detail.empty.trades",
+          "stock.account.detail.empty.dividends"
+        }) {
+      int at = src.indexOf(key + "\"");
+
+      assertThat(at).as(key).isPositive();
+      assertThat(src.substring(at, Math.min(src.length(), at + 130))).as(key).contains(CTA);
+    }
   }
 
   /** 기간과 무관한 안내에는 붙이지 않는다 - 넓혀도 달라지지 않는다. */
@@ -102,7 +114,7 @@ class DetailEmptyWidenCtaTest {
             "stock.account.detail.notfound",
             "stock.account.detail.empty.holdings"
           }) {
-        int at = src.indexOf(key);
+        int at = src.indexOf(key + "\"");
         if (at < 0) {
           continue;
         }

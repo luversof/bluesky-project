@@ -42,6 +42,7 @@
 @param LocalDate coveredEndLocal = null
 @param List<TradeProfit> accountHoldings = java.util.List.of()
 @param List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
+@param String periodBreakdownNote = ""
 @param List<net.luversof.web.gate.stock.domain.DetailNavEntry> stockNavEntries = java.util.List.of()
 @param List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory = java.util.List.of()
 @param BigDecimal periodUnrealizedDelta = null
@@ -244,7 +245,7 @@
 
 	<%-- 기간별 손익 - 고른 기간을 달(또는 해)로 쪼개 언제 벌고 언제 잃었는지 보여준다.
 	     위의 합산 손익과 같은 쪼갬(평가 변동 / 실현+배당)을 써서 두 자리가 같은 뜻을 말한다. --%>
-	@template.stock.htmx.fragments.periodBreakdownTable(periodBreakdown = periodBreakdown)
+	@template.stock.htmx.fragments.periodBreakdownTable(periodBreakdown = periodBreakdown, periodBreakdownNote = periodBreakdownNote)
 
 	<%-- 주가 추이 - 보유 평가액 추이만으로는 <b>주가 자체</b>를 볼 수 없다. 평가액은 수량이 바뀌면 같이
 	     움직이므로, 산 뒤로 주가가 어떻게 됐는지는 그 선에서 읽어낼 수 없다.
@@ -316,6 +317,14 @@
 			});
 		})();
 		</script>
+	@else
+		<%-- 자료가 없으면 구역째 사라지고 있었다.
+		     실측 2026-09-16: 거래가 없는 43 종목(86 중)에서 이 제목이 통째로 빠졌다.
+		     형제 구역(매매·배당·보유·주가 추이)은 모두 "없습니다" 라고 말한다. --%>
+		<div>
+			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
+			@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.item.detail.empty.valuation.series"), boxed = true, padding = "py-6", widenRangeAction = !"all".equals(rangeMode))
+		</div>
 	@endif
 
 	<!-- 계좌별 보유 현황 -->

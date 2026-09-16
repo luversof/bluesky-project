@@ -119,6 +119,54 @@ class DividendCalendarLayoutTest {
     return Files.readString(Path.of(path), StandardCharsets.UTF_8).replaceAll("[ \t\r\n]+", " ");
   }
 
+  /**
+   * 항목을 가리키는 속성은 <b>한 가지 뜻</b>만 갖는다.
+   *
+   * <p>월배당 기준 데이터가 없는 종목은 원장에서 바로 달력에 놓는데, 원장 응답에는 종목코드가 없다. 예전에는 그 자리를 <b>종목명으로 메워</b> 같은 속성이 자리마다
+   * 코드이기도 이름이기도 했다 &mdash; 실측 2026-09-16(2026-08): 아홉 항목 중 여덟은 코드인데 삼성전자만 "삼성전자" 였다. 코드로 짝지으면 그 종목만
+   * 조용히 빠진다.
+   */
+  @Test
+  void 코드가_없으면_이름을_코드_자리에_넣지_않는다() {
+    DividendCalendarView.Entry withSymbol =
+        new DividendCalendarView.Entry(
+            "475720",
+            "RISE 200위클리커버드콜",
+            BigDecimal.valueOf(1337470),
+            BigDecimal.valueOf(1341850),
+            BigDecimal.ZERO,
+            null,
+            4,
+            4,
+            4,
+            0,
+            true,
+            true);
+    // 원장에서 온 항목 - 코드를 모른다.
+    DividendCalendarView.Entry withoutSymbol =
+        new DividendCalendarView.Entry(
+            null,
+            "삼성전자",
+            BigDecimal.valueOf(1595632),
+            BigDecimal.valueOf(1886082),
+            BigDecimal.ZERO,
+            null,
+            28,
+            28,
+            28,
+            0,
+            true,
+            true);
+
+    String html = render(List.of(withSymbol, withoutSymbol));
+
+    assertThat(html).as("코드가 있으면 코드를 싣는다").contains("data-calendar-entry=\"475720\"");
+    assertThat(html).as("코드 자리에 이름이 앉지 않는다").doesNotContain("data-calendar-entry=\"삼성전자\"");
+    assertThat(html).as("이름은 이름 자리에 있다").contains("data-calendar-entry-name=\"삼성전자\"");
+    // 코드를 모르는 항목도 셀렉터로는 잡혀야 한다(빈 값으로 남는다).
+    assertThat(html).as("코드를 몰라도 항목 자리는 남는다").contains("data-calendar-entry=\"\"");
+  }
+
   /** 칸에는 그 날 합계 하나만. 종목명과 종목별 금액은 칸에 없다. */
   @Test
   void 칸은_며칠에_얼마만_말한다() {
@@ -184,7 +232,11 @@ class DividendCalendarLayoutTest {
    *
    * <p>JTE 는 값이 {@code null} 인 속성을 <b>통째로 지운다</b>. 원장으로만 놓은 종목(월배당 기준 데이터가 없어 심볼이 없다)은 그래서 {@code
    * data-calendar-entry} 가 사라졌다 &mdash; 실측 2026-09-15: 2024-11 의 삼성전자 · SK텔레콤 두 종목이 화면에는 멀쩡히 있는데 QA
-   * 탐침은 0 종목으로 읽었다. 심볼이 없으면 종목명을 쓴다.
+   * 탐침은 0 종목으로 읽었다.
+   *
+   * <p>처음에는 그 자리를 <b>종목명으로 메웠다</b>. 그러면 같은 속성이 자리마다 코드이기도 이름이기도 해서, 코드로 짝지으면 그 종목만 조용히 빠진다 &mdash;
+   * 실측 2026-09-16(2026-08): 아홉 항목 중 여덟은 코드인데 삼성전자만 "삼성전자" 였다. 목적(식별자가 사라지지 않는다)은 그대로 두고 수단만 바꾼다
+   * &mdash; 코드 자리는 <b>빈 값</b>으로 남기고 이름은 자기 속성으로 간다.
    */
   @Test
   void 심볼이_없어도_식별자는_남는다() {
@@ -206,7 +258,13 @@ class DividendCalendarLayoutTest {
 
     assertThat(list)
         .as("속성이 사라지면 화면엔 보여도 자동 검사는 그 종목을 못 본다")
-        .contains("data-calendar-entry=" + String.valueOf((char) 34) + "삼성전자");
+        .contains("data-calendar-entry=" + String.valueOf((char) 34) + String.valueOf((char) 34));
+    assertThat(list)
+        .as("코드를 몰라도 이름으로는 닿는다")
+        .contains("data-calendar-entry-name=" + String.valueOf((char) 34) + "삼성전자");
+    assertThat(list)
+        .as("코드 자리에 이름이 앉지 않는다")
+        .doesNotContain("data-calendar-entry=" + String.valueOf((char) 34) + "삼성전자");
   }
 
   /**

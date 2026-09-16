@@ -29,7 +29,15 @@ public final class StockYearlyCostTotalUtil {
       BigDecimal dividendGross,
       BigDecimal dividendTaxable,
       BigDecimal dividendTax,
-      BigDecimal dividendNet) {}
+      BigDecimal dividendNet,
+      /**
+       * 고른 구간 전체의 매도 건수.
+       *
+       * <p>합계 실현손익 0 이 "판 적이 없다" 인지 "팔았는데 0 원" 인지는 금액만으로 갈리지 않는다 &mdash; 줄은 이미 {@link
+       * YearlyCostSummary#sellCount()} 로 가르는데(실측 2026-09-15: 매도 0 건인 해 둘을 고르면 두 줄 다 "그 해엔 판 적이
+       * 없습니다" 라고 말하는데) 합계 줄만 못 갈라 까닭 없는 "-" 한 글자였다.
+       */
+      long sellCount) {}
 
   public static Totals of(List<YearlyCostSummary> rows) {
     return new Totals(
@@ -39,6 +47,21 @@ public final class StockYearlyCostTotalUtil {
         StockAmountUtil.sum(rows, YearlyCostSummary::dividendGross),
         StockAmountUtil.sum(rows, YearlyCostSummary::dividendTaxable),
         StockAmountUtil.sum(rows, YearlyCostSummary::dividendTax),
-        StockAmountUtil.sum(rows, YearlyCostSummary::dividendNet));
+        StockAmountUtil.sum(rows, YearlyCostSummary::dividendNet),
+        sumSellCount(rows));
+  }
+
+  /** {@link StockAmountUtil#sum} 과 같은 null 처리 - 목록도 줄도 없으면 0 건이다. */
+  private static long sumSellCount(List<YearlyCostSummary> rows) {
+    if (rows == null) {
+      return 0L;
+    }
+    long total = 0L;
+    for (YearlyCostSummary row : rows) {
+      if (row != null) {
+        total += row.sellCount();
+      }
+    }
+    return total;
   }
 }

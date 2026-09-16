@@ -99,9 +99,14 @@ interface AssetGrowthConfig {
                 return parseFloat(v) + parseFloat(cumulativeDividendData[i]);
             });
 
+            // 공용 규칙(common.js 의 appLocale)을 쓴다. 아직 안 올라왔으면 같은 차례로 찾는다.
+            var appLocaleOrDefault = function(): string {
+                var shared = (globalThis as any).appLocale;
+                return typeof shared === 'function' ? shared() : (document.documentElement.lang || 'ko-KR');
+            };
             var yTicksCallback = function(value: any) {
                 if (win.StockCharts) return win.StockCharts.formatCompactNumber(value);
-                return new Intl.NumberFormat().format(value);
+                return new Intl.NumberFormat(appLocaleOrDefault()).format(value);
             };
 
             var locale: string | undefined = win.StockCharts ? win.StockCharts.getLocale() : undefined;
@@ -110,16 +115,19 @@ interface AssetGrowthConfig {
                 return win.StockCharts ? win.StockCharts.formatNumber(value) : new Intl.NumberFormat(locale).format(value);
             };
             var formatCurrency = function(value: number) {
-                return win.StockCharts ? win.StockCharts.formatCurrency(Math.round(value)) : ('₩' + Math.round(value).toLocaleString());
+                return win.StockCharts ? win.StockCharts.formatCurrency(Math.round(value)) : ('₩' + Math.round(value).toLocaleString(appLocaleOrDefault()));
             };
             var formatSignedCurrency = function(value: number) {
                 var rounded = Math.round(value || 0);
-                var sign = rounded >= 0 ? '+' : '-';
+                // 0 에는 방향이 없다. 판정은 **반올림 뒤**에 한다(compoundSimulator 의 규칙과 같다).
+                var sign = rounded > 0 ? '+' : (rounded < 0 ? '-' : '');
                 return sign + formatCurrency(Math.abs(rounded));
             };
             var formatSignedPercent = function(value: number) {
-                var sign = value >= 0 ? '+' : '-';
-                return sign + percentFormatter.format(Math.abs(value)) + '%';
+                // 표시 자릿수(2)로 먼저 반올림한다 - -0.004 는 '-0.00%' 도 '+0.00%' 도 아니고 '0.00%' 다.
+                var rounded = Math.round((value || 0) * 100) / 100;
+                var sign = rounded > 0 ? '+' : (rounded < 0 ? '-' : '');
+                return sign + percentFormatter.format(Math.abs(rounded)) + '%';
             };
 
             var syncing = false;

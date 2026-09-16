@@ -151,18 +151,40 @@ class TradePeriodBreakdownRenderTest {
         .contains("data-trade-breakdown=\"YEAR\"");
   }
 
-  /** 구간이 하나뿐이면 위의 요약 카드를 그대로 되풀이할 뿐이라 그리지 않는다. */
+  /**
+   * 구간이 하나뿐이면 위의 요약 카드를 그대로 되풀이할 뿐이라 <b>표를</b> 그리지 않는다.
+   *
+   * <p>버리는 판단은 그대로다. 바뀐 것은 <b>자리를 비우지 않는다</b>는 것뿐이다 &mdash; 실측 2026-09-16(빈 기간): 이 표만 제목째 사라져 같은
+   * 화면의 매수 집중도·월별 매매 금액·상세 목록이 모두 "없습니다" 라고 말하는 것과 어긋났다. 형제 조각(periodBreakdownTable)은 이미 까닭을 남기고
+   * 있었다.
+   */
   @Test
-  void 구간이_하나뿐이면_그리지_않는다() {
+  void 구간이_하나뿐이면_표를_그리지_않는다() {
     String html =
         renderTrades(List.of(trade("2026-08-27", TradeType.BUY, "1000000", "1000", "0", null)));
 
-    assertThat(html.trim()).isEmpty();
+    assertThat(html)
+        .as("표는 그리지 않는다")
+        .doesNotContain("<table")
+        .doesNotContain("data-trade-breakdown=");
+    assertThat(html)
+        .as("자리는 남기고 까닭을 적는다")
+        .contains("data-trade-breakdown-note")
+        .contains(MessageUtil.getMessage("stock.trade.breakdown.single.note"));
   }
 
   @Test
-  void 자료가_없으면_아무것도_그리지_않는다() {
-    assertThat(render(List.of()).trim()).isEmpty();
+  void 자료가_없으면_표_대신_까닭을_남긴다() {
+    String html = render(List.of());
+
+    assertThat(html)
+        .as("표는 그리지 않는다")
+        .doesNotContain("<table")
+        .doesNotContain("data-trade-breakdown=");
+    assertThat(html)
+        .as("자리는 남기고 까닭을 적는다")
+        .contains("data-trade-breakdown-note")
+        .contains(MessageUtil.getMessage("stock.trade.breakdown.empty.note"));
   }
 
   /** 조각만 만들고 화면에 붙이지 않으면 없는 것과 같다. */

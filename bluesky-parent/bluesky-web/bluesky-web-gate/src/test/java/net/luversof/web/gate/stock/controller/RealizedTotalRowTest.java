@@ -69,7 +69,9 @@ class RealizedTotalRowTest {
 
     assertThat(template).contains("@if(accTotalSoldCost.signum() > 0)");
     assertThat(template).contains("@if(stockTotalSoldCost.signum() > 0)");
-    assertThat(count(template, "text-right font-mono opacity-40\">-</td>"))
+    // 2026-09-15: 그 대시 넷은 title 도 sr-only 도 없는 맨 대시였고 opacity-40 은 대비가 AA 에
+    // 못 미쳤다(RealizedRateNoneReasonTest). 세는 자리는 그대로 넷이고 모양만 바뀌었다.
+    assertThat(count(template, "title=\"${rateNoneLabel}\">-</span>"))
         .as("행 2 곳 + 합계 2 곳")
         .isEqualTo(4);
   }

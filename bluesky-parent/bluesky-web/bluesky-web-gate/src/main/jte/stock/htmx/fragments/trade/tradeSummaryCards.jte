@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 @import java.util.List
 @import java.math.BigDecimal
 @import java.text.DecimalFormat
@@ -66,7 +67,7 @@
 					</span>
 				</div>
 				<div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
-					${rpPositive ? "+" : ""}&#8361; ${decimalFormat.format(safeRp)}
+					${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#8361; ${decimalFormat.format(safeRp)}
 				</div>
 				!{
 					long sellCount = allTradeList != null ? allTradeList.stream()

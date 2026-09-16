@@ -87,7 +87,7 @@
 				<div class="stat bg-base-200 rounded-box py-2 px-4">
 					<div class="stat-title text-xs">${totalUnrealizedLabel}</div>
 					<div class="stat-value text-base amount-value ${totalPositive ? "text-profit" : "text-loss"}">
-						${totalPositive ? "+" : ""}&#x20A9;${String.format("%,d", StockFormatUtil.displayWon(totalUnrealized))}
+						${StockFormatUtil.displayWon(totalUnrealized) > 0 ? "+" : ""}&#x20A9;${String.format("%,d", StockFormatUtil.displayWon(totalUnrealized))}
 					</div>
 				</div>
 			</div>
@@ -113,7 +113,9 @@
 						!{
 							boolean isProfit = item.unrealizedProfit() != null && item.unrealizedProfit().compareTo(BigDecimal.ZERO) >= 0;
 							String colorClass = isProfit ? "text-profit" : "text-loss";
-							String sign = isProfit ? "+" : "";
+							// 0 에는 방향이 없다 - 색(isProfit)과 부호는 판정이 다르다.
+							// 한 줄로 둔다: SignedZeroTest 가 줄 단위로 판정을 읽는다.
+							String sign = StockFormatUtil.displayWon(item.unrealizedProfit()) > 0 ? "+" : "";
 							// 위 합계와 같은 기준(평가액 - 평가손익)으로 만든다.
 							BigDecimal cost = item.value() != null
 								? item.value().subtract(item.unrealizedProfit() != null ? item.unrealizedProfit() : BigDecimal.ZERO)

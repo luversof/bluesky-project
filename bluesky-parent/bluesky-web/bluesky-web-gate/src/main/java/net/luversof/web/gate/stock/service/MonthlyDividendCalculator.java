@@ -23,7 +23,15 @@ public class MonthlyDividendCalculator {
       String symbol, List<MonthlyDividendPayoutResponse> payouts) {
     if (!StringUtils.hasText(symbol) || payouts == null || payouts.isEmpty()) {
       return new MonthlyDividendReferenceSummaryView(
-          safeString(symbol), 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null);
+          safeString(symbol),
+          0,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          0,
+          0,
+          null,
+          null);
     }
 
     List<MonthlyDividendPayoutResponse> lastYearRows = payouts.stream().limit(12).toList();
@@ -59,6 +67,9 @@ public class MonthlyDividendCalculator {
         latestDividendAmountPerShare,
         averageDividendAmountPerShare1y,
         averageTaxableBaseRatio1y,
+        // 화면 문구가 이 수를 말한다 - 둘은 서로 다를 수 있다(과세표준은 분배금이 0 보다 큰 행만 쓴다).
+        lastYearRows.size(),
+        taxableBaseRatios.size(),
         latestRow.recordDate(),
         latestRow.payDate());
   }

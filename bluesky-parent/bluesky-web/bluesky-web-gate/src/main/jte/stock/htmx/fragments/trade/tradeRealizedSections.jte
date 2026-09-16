@@ -17,6 +17,7 @@
 @param String accountLabel
 @param String stockLabel
 @param String realizedProfitLabel
+@param boolean widenRangeAction = false
 
 !{
 	String byAccountSectionLabel = MessageUtil.getMessage("stock.realized.section.by.account");
@@ -29,6 +30,9 @@
 	String soldCostLabel = MessageUtil.getMessage("stock.realized.column.sold.cost");
 	String sellAmountLabel = MessageUtil.getMessage("stock.profit.sell.amount");
 	String returnRateLabel = MessageUtil.getMessage("stock.label.return.rate");
+	// The return rate divides by sold cost. With nothing sold the denominator does not exist,
+	// so the cell shows a dash - and a bare dash says nothing to either a mouse or a screen reader.
+	String rateNoneLabel = MessageUtil.getMessage("stock.realized.rate.none");
 	String winCountBadgeLabel = java.text.MessageFormat.format(
 		MessageUtil.getMessage("stock.realized.summary.win.count"), realizedWinCount, realizedStockCount);
 	String selectionSummaryLabel = MessageUtil.getMessage("stock.analytics.selection.summary");
@@ -66,6 +70,7 @@
 		<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
 			 data-trade-realized-summary
 			 data-count-template="${selectionCountTemplate}"
+			 data-rate-none="${rateNoneLabel}"
 			 aria-live="polite">
 			<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div class="flex flex-wrap items-center gap-2">
@@ -89,7 +94,7 @@
 				</div>
 				<div class="rounded-box bg-base-100/80 px-3 py-2">
 					<div class="text-xs text-base-content/60">${returnRateLabel}</div>
-					<div class="mt-1 font-mono font-semibold" data-trade-realized-sel-rate>-</div>
+					<div class="mt-1 font-mono font-semibold" data-trade-realized-sel-rate title="${rateNoneLabel}"><span aria-hidden="true">-</span><span class="sr-only">${rateNoneLabel}</span></div>
 				</div>
 			</div>
 		</div>
@@ -143,7 +148,7 @@
 						@if(rowHasRate)
 						<td class="text-right font-mono font-semibold ${rowRate >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(rowRate, 2)}</td>
 						@else
-						<td class="text-right font-mono opacity-40">-</td>
+						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
 					</tr>
 				@endfor
@@ -157,12 +162,20 @@
 						@if(accTotalSoldCost.signum() > 0)
 						<td class="text-right font-mono">${StockFormatUtil.signedPct(accTotalNet.doubleValue() / accTotalSoldCost.doubleValue() * 100, 2)}</td>
 						@else
-						<td class="text-right font-mono opacity-40">-</td>
+						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
 					</tr>
 				</tfoot>
 			</table>
 		`)
+	</div>
+	@else
+		<%-- 자료가 없으면 구역째 사라지고 있었다 - 실측 2026-09-16(빈 기간): 같은 화면의 매수 집중도·월별 매매 금액·
+		     상세 목록은 모두 "없습니다" 라고 말하는데 실현손익 두 구역만 제목까지 빠졌다. 판 것이 없는 기간은 흔하다
+		     (실측: 전체 거래 중 매도는 7 건뿐이다). --%>
+	<div class="mb-4" data-trade-realized-section>
+		<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byAccountSectionLabel}</h2>
+		@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.realized.empty.by.account"), boxed = true, padding = "py-6", widenRangeAction = widenRangeAction)
 	</div>
 	@endif
 
@@ -178,6 +191,7 @@
 		<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
 			 data-trade-realized-summary
 			 data-count-template="${selectionCountTemplate}"
+			 data-rate-none="${rateNoneLabel}"
 			 aria-live="polite">
 			<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div class="flex flex-wrap items-center gap-2">
@@ -201,7 +215,7 @@
 				</div>
 				<div class="rounded-box bg-base-100/80 px-3 py-2">
 					<div class="text-xs text-base-content/60">${returnRateLabel}</div>
-					<div class="mt-1 font-mono font-semibold" data-trade-realized-sel-rate>-</div>
+					<div class="mt-1 font-mono font-semibold" data-trade-realized-sel-rate title="${rateNoneLabel}"><span aria-hidden="true">-</span><span class="sr-only">${rateNoneLabel}</span></div>
 				</div>
 			</div>
 		</div>
@@ -246,7 +260,7 @@
 						@if(itemHasRate)
 						<td class="text-right font-mono font-semibold ${itemRate >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(itemRate, 2)}</td>
 						@else
-						<td class="text-right font-mono opacity-40">-</td>
+						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
 					</tr>
 				@endfor
@@ -260,12 +274,17 @@
 						@if(stockTotalSoldCost.signum() > 0)
 						<td class="text-right font-mono">${StockFormatUtil.signedPct(stockTotalNet.doubleValue() / stockTotalSoldCost.doubleValue() * 100, 2)}</td>
 						@else
-						<td class="text-right font-mono opacity-40">-</td>
+						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
 					</tr>
 				</tfoot>
 			</table>
 		`)
+	</div>
+	@else
+	<div class="mb-4" data-trade-realized-section>
+		<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byStockSectionLabel}</h2>
+		@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.realized.empty.by.stock"), boxed = true, padding = "py-6", widenRangeAction = widenRangeAction)
 	</div>
 	@endif
 
@@ -289,7 +308,12 @@
 					var el = summary.querySelector(sel);
 					if (!el) return;
 					var abs = Math.abs(Math.round(value));
-					el.textContent = (signed ? (value >= 0 ? '+' : '-') : '') + '₩' + abs.toLocaleString();
+					var rounded = Math.round(value) || 0;
+					// 0 에는 방향이 없다 - 판정은 반올림 뒤에(StockFormatUtil.signedWon 과 같은 규칙).
+					var sign = rounded > 0 ? '+' : (rounded < 0 ? '-' : '');
+					// 로케일은 앱이 정한다(common.js 의 appLocale) - 인자를 빼면 브라우저 로케일을 따라
+					// 같은 화면 안에서 자릿수 구분이 갈린다(실측 2026-09-15).
+					el.textContent = (signed ? sign : '') + '₩' + abs.toLocaleString(appLocale());
 					if (signed) {
 						el.classList.toggle('text-profit', value >= 0);
 						el.classList.toggle('text-loss', value < 0);
@@ -314,12 +338,25 @@
 					var rateEl = summary.querySelector('[data-trade-realized-sel-rate]');
 					if (rateEl) {
 						if (soldCost > 0) {
-							var rate = net / soldCost * 100;
-							rateEl.textContent = (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
+							// 표시 자릿수(2)로 먼저 반올림한다 - 0 에는 방향이 없다(StockFormatUtil.signedPct 와 같은 규칙).
+							var rate = Number((net / soldCost * 100).toFixed(2));
+							rateEl.textContent = (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
+							rateEl.removeAttribute('title');
 							rateEl.classList.toggle('text-profit', rate >= 0);
 							rateEl.classList.toggle('text-loss', rate < 0);
 						} else {
-							rateEl.textContent = '-';
+							// 나눌 매도원가가 없다. 하이픈만 두면 왜 비었는지 마우스로도 낭독기로도 알 수 없다.
+							var rateNone = summary.dataset.rateNone || '';
+							rateEl.textContent = '';
+							var rateMark = document.createElement('span');
+							rateMark.setAttribute('aria-hidden', 'true');
+							rateMark.textContent = '-';
+							var rateSpoken = document.createElement('span');
+							rateSpoken.className = 'sr-only';
+							rateSpoken.textContent = rateNone;
+							rateEl.title = rateNone;
+							rateEl.appendChild(rateMark);
+							rateEl.appendChild(rateSpoken);
 							rateEl.classList.remove('text-profit', 'text-loss');
 						}
 					}

@@ -93,9 +93,19 @@ function formatSignedPercent(value: number): string {
 	return `${rounded > 0 ? "+" : ""}${rounded.toFixed(1)}%`;
 }
 
+// 부호를 붙이지 않는 비율. 같은 함정이라 같은 규칙을 쓴다 - (-0.001).toFixed(1) 은 '-0.0' 이므로
+// 먼저 반올림한 수를 다시 찍어 음의 영을 지운다(서버의 StockFormatUtil.pct 와 같다).
+function formatPercent(value: number, scale = 1): string {
+	if (!Number.isFinite(value)) {
+		return "-";
+	}
+	return `${Number(value.toFixed(scale)).toFixed(scale)}%`;
+}
+
 (globalThis as any).__stockCompoundSimulatorInternals = {
 	projectCompound,
 	formatSignedPercent,
+	formatPercent,
 	COMPOUND_MIN_RATE_PCT,
 	COMPOUND_MAX_RATE_PCT,
 	COMPOUND_MAX_YEARS,
@@ -332,8 +342,8 @@ function formatSignedPercent(value: number): string {
 		// 수익이 음수면 원금 바가 100%를 채우고 수익 비율은 음수로만 표기한다.
 		ratioPrincipalBar.style.width = `${Math.min(100, Math.max(0, principalPct))}%`;
 		ratioProfitBar.style.width = `${Math.min(100, Math.max(0, profitPct))}%`;
-		ratioPrincipalPct.textContent = `${principalPct.toFixed(1)}%`;
-		ratioProfitPct.textContent = `${profitPct.toFixed(1)}%`;
+		ratioPrincipalPct.textContent = formatPercent(principalPct);
+		ratioProfitPct.textContent = formatPercent(profitPct);
 	}
 
 	function ratioShares(row: YearRow) {
@@ -352,7 +362,20 @@ function formatSignedPercent(value: number): string {
 		td.className = "text-right";
 		const shares = ratioShares(row);
 		if (!shares) {
-			td.textContent = "-";
+			// 연말 자산이 0 이하면 나눌 것이 없다. 대시만 두면 낭독기에는 하이픈 하나로만 가고,
+			// 이 표는 한 행에 다른 까닭이 없어 그 칸이 스스로 말해야 한다.
+			// 실측 2026-09-15(이율 -100% / 원금 0): 그런 칸이 여섯 개 남았다.
+			const reason =
+				(root as HTMLElement).dataset.ratioNone || "No balance to split";
+			const mark = document.createElement("span");
+			mark.setAttribute("aria-hidden", "true");
+			mark.textContent = "-";
+			const spoken = document.createElement("span");
+			spoken.className = "sr-only";
+			spoken.textContent = reason;
+			td.title = reason;
+			td.appendChild(mark);
+			td.appendChild(spoken);
 			return td;
 		}
 
@@ -376,7 +399,8 @@ function formatSignedPercent(value: number): string {
 		const text = document.createElement("span");
 		text.className =
 			"font-mono tabular-nums text-xs text-base-content/60 whitespace-nowrap";
-		text.textContent = `${shares.principalPct.toFixed(1)} / ${shares.profitPct.toFixed(1)}%`;
+		text.textContent =
+			`${formatPercent(shares.principalPct).replace("%", "")} / ${formatPercent(shares.profitPct)}`;
 
 		wrapper.appendChild(bar);
 		wrapper.appendChild(text);

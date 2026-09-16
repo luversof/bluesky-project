@@ -193,7 +193,8 @@
 		decimalFormat = decimalFormat,
 		accountLabel = accountLabel,
 		stockLabel = stockLabel,
-		realizedProfitLabel = realizedProfitLabel
+		realizedProfitLabel = realizedProfitLabel,
+		widenRangeAction = !isAllMode
 	)
 
 	<%-- 달/해 단위 쪼갬. 카드는 고른 기간 전체를 답하고 아래 목록은 거래 하나하나라, 그 사이가

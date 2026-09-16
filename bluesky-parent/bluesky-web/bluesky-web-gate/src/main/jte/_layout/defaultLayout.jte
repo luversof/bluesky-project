@@ -97,6 +97,9 @@
 		id="app-config"
 		data-login-url="/login"
 		data-locale="${org.springframework.context.i18n.LocaleContextHolder.getLocale().toLanguageTag()}"
+		<%-- 화면의 기준 시간대. 주소에 timeZone 이 있으면 그것이 이기고(서버도 그렇다),
+		     없으면 서버 존이 기준이다 - 브라우저가 찍는 날짜·시각도 이 값을 따라야 한다. --%>
+		data-time-zone="${java.time.ZoneId.systemDefault().getId()}"
 		data-common-button-search="${MessageUtil.getMessage("common.button.search")}"
 		data-common-button-reset="${MessageUtil.getMessage("common.button.reset")}"
 		data-common-message-load-error="${MessageUtil.getMessage("common.message.load.error")}"

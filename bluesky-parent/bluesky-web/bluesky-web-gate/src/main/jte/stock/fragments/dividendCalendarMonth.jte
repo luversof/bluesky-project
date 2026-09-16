@@ -156,7 +156,7 @@
 										: "") + java.text.MessageFormat.format(samplePattern, String.valueOf(entry.sampleCount())));}
 									!{boolean taxableUnknown = entry.taxableLooksUnregistered();}
 									!{String taxableNote = taxableUnknown ? java.text.MessageFormat.format(taxableUnregisteredPattern, StockFormatUtil.pct(entry.historyTaxableRatioPct().doubleValue(), 1)) : "";}
-									<li class="flex flex-col gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-3" data-calendar-entry="${entry.symbol() != null ? entry.symbol() : entry.name()}" title="${entryNote}">
+									<li class="flex flex-col gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-3" data-calendar-entry="${entry.symbol() != null ? entry.symbol() : ""}" data-calendar-entry-name="${entry.name()}" title="${entryNote}">
 										<span class="min-w-0 truncate text-xs sm:flex-1" title="${entry.name()}">${entry.name()}</span>
 										<span class="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] sm:shrink-0">
 											<span class="text-xs font-medium text-dividend"><span class="sr-only">${entry.actualAmount() ? actualGrossLabel : latestLabel} </span><span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span></span>

@@ -42,7 +42,7 @@
 		@for(int allocationRowIndex = 0; allocationRowIndex < allocationRows.size(); allocationRowIndex++)
 			!{AllocationBarRow row = allocationRows.get(allocationRowIndex);}
 			!{String barColor = allocationBarColors[allocationRowIndex % allocationBarColors.length];}
-			<div class="flex items-center justify-between gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
+			<div class="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
 				@if(row.stockItemId() != null)
 				<a href="${StockDetailLinkUtil.item(row.stockItemId().toString())}" class="link link-hover truncate w-24 sm:w-28 shrink-0" title="${row.stockItemName()}">${row.stockItemName()}</a>
 				@else
@@ -56,7 +56,7 @@
 			</div>
 		@endfor
 		@if(othersRow != null)
-			<div class="flex items-center justify-between gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
+			<div class="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
 				<span class="truncate w-24 sm:w-28 shrink-0 text-base-content/60" title="${othersRow.stockItemName()}">${othersRow.stockItemName()}</span>
 				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200 max-[400px]:hidden">
 					<div class="h-2 rounded-full" style="width: ${allocationShown.get(allocationRows.size()).replace("%", "")}%; background: rgba(156,163,175,0.8)"></div>

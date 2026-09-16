@@ -405,7 +405,7 @@
 					legend: { display: false },
 					tooltip: {
 						callbacks: {
-							label: function (ctx) { return '₩' + (Number(ctx.parsed.y) || 0).toLocaleString(); }
+							label: function (ctx) { return StockCharts.formatCurrency(Number(ctx.parsed.y) || 0); }
 						}
 					}
 				},
@@ -419,20 +419,9 @@
 						ticks: {
 							font: { size: 10 },
 							maxTicksLimit: 4,
-							callback: function (v) {
-								// 로케일과 무관하게 억/만 을 붙이면 영어 화면 축에도 한글 단위가 나온다(실측).
-								var ko = (document.documentElement.lang || '').toLowerCase().indexOf('ko') === 0;
-								var trim = function (x) { var t = x.toFixed(1); return t.slice(-2) === '.0' ? t.slice(0, -2) : t; };
-								if (ko) {
-									if (v >= 100000000) return trim(v / 100000000) + '억';
-									if (v >= 10000) return (v / 10000).toFixed(0) + '만';
-									return Number(v).toLocaleString();
-								}
-								if (v >= 1000000000) return trim(v / 1000000000) + 'B';
-								if (v >= 1000000) return trim(v / 1000000) + 'M';
-								if (v >= 1000) return trim(v / 1000) + 'K';
-								return Number(v).toLocaleString();
-							}
+							// 압축 표기는 공용 포맷터 한 곳에 있다(로케일 + 경계 승격). 여기에 사본을 두었더니
+							// 승격 규칙이 빠져 99,999,999 가 '10000만' 으로 나갈 수 있었다(실측 2026-09-15).
+							callback: function (v) { return StockCharts.formatCompactNumber(v); }
 						}
 					}
 				}

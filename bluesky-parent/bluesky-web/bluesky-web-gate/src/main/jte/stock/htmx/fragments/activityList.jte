@@ -207,18 +207,19 @@
 	<script type="module" src="/js/stock/tagFilterChips.js"></script>
 
 	<!-- Summary Cards -->
-	<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+	<%-- 자동 검사가 짚을 자리를 준다(달 카드 · 달력 항목과 같은 관례). 이 카드의 "건" 은 묶인 줄 수를 센 적이 있다. --%>
+	<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" data-activity-summary="true">
 
 		<!-- Card 1: 매매 현황 -->
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${tradeStatusLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
-					<span class="text-xl font-bold text-error amount-value">₩ ${df.format(safeBuy)}</span>
+					<span class="text-xl font-bold text-error amount-value" data-activity-kind="buy-amount">₩ ${df.format(safeBuy)}</span>
 					<span class="text-xs text-base-content/60">${buyLabel}</span>
 				</div>
 				<div class="flex gap-4 text-xs text-base-content/60">
-					<span>${buyLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount)}</span></span>
-					<span>${sellLabel} <span class="font-medium text-info amount-value">₩ ${df.format(safeSell)}</span> <span class="text-base-content/70">${countMessage.apply(sellCount)}</span></span>
+					<span>${buyLabel} <span class="font-medium text-base-content/70" data-activity-kind="buy-count">${countMessage.apply(buyCount)}</span></span>
+					<span>${sellLabel} <span class="font-medium text-info amount-value" data-activity-kind="sell-amount">₩ ${df.format(safeSell)}</span> <span class="text-base-content/70" data-activity-kind="sell-count">${countMessage.apply(sellCount)}</span></span>
 				</div>
 		`)
 
@@ -226,9 +227,9 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${dividendReceivedLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
-					<span class="text-xl font-bold text-dividend amount-value">₩ ${df.format(safeDividend)}</span>
+					<span class="text-xl font-bold text-dividend amount-value" data-activity-kind="dividend-amount">₩ ${df.format(safeDividend)}</span>
 				</div>
-				<div class="text-xs text-base-content/60">${countMessage.apply(dividendCount)}</div>
+				<div class="text-xs text-base-content/60" data-activity-kind="dividend-count">${countMessage.apply(dividendCount)}</div>
 		`)
 
 		<!-- Card 3: 전체 활동 -->
@@ -237,10 +238,10 @@
 				<%-- activities.size() 는 (날짜·유형·종목·매매구분) 으로 묶인 '줄' 수다. 그걸 "건" 으로 쓰면 바로 아래
 				     매매·배당 건수와도, 매매/배당 화면과도 어긋난다 - 실측 2026-09-10: 전체 310 인데 매매 258 + 배당 202 = 460.
 				     묶이기 전 원본 건수(recordCount)를 더한다. --%>
-				<div class="text-xl font-bold">${countMessage.apply(buyCount + sellCount + dividendCount)}</div>
+				<div class="text-xl font-bold" data-activity-kind="total-count">${countMessage.apply(buyCount + sellCount + dividendCount)}</div>
 				<div class="flex gap-4 text-xs text-base-content/60 mt-1">
-					<span>${tradeLabel} <span class="font-medium text-base-content/70">${countMessage.apply(buyCount + sellCount)}</span></span>
-					<span>${dividendLabel} <span class="font-medium text-base-content/70">${countMessage.apply(dividendCount)}</span></span>
+					<span>${tradeLabel} <span class="font-medium text-base-content/70" data-activity-kind="trade-count">${countMessage.apply(buyCount + sellCount)}</span></span>
+					<span>${dividendLabel} <span class="font-medium text-base-content/70" data-activity-kind="total-dividend-count">${countMessage.apply(dividendCount)}</span></span>
 				</div>
 		`)
 	</div>
@@ -735,22 +736,10 @@
 		window.ensureStockCharts(function() {
 		if (typeof Chart === 'undefined') return;
 
+		// 압축 표기는 공용 포맷터 한 곳에 있다(로케일 + 경계 승격). 여기 사본에는 승격이 빠져
+		// 있었고 억 단위를 소수 없이 잘라 1.5 억이 '2억' 이 됐다(실측 2026-09-15).
 		function formatSignedCompact(v) {
-			var n = Number(v) || 0;
-			var abs = Math.abs(n);
-			var sign = n < 0 ? '-' : '';
-			// 로케일과 무관하게 억/만 을 붙이면 영어 화면에도 한글 단위가 나온다(실측).
-			var ko = (document.documentElement.lang || '').toLowerCase().indexOf('ko') === 0;
-			var trim = function (x) { var t = x.toFixed(1); return t.slice(-2) === '.0' ? t.slice(0, -2) : t; };
-			if (ko) {
-				if (abs >= 100000000) return sign + (abs / 100000000).toFixed(0) + '억';
-				if (abs >= 10000) return sign + (abs / 10000).toFixed(0) + '만';
-				return n.toLocaleString();
-			}
-			if (abs >= 1000000000) return sign + trim(abs / 1000000000) + 'B';
-			if (abs >= 1000000) return sign + trim(abs / 1000000) + 'M';
-			if (abs >= 1000) return sign + trim(abs / 1000) + 'K';
-			return n.toLocaleString();
+			return StockCharts.formatCompactNumber(Number(v) || 0);
 		}
 
 		var gridColor = 'rgba(128,128,128,0.1)';
@@ -783,10 +772,11 @@
 						tooltip: {
 							callbacks: {
 								label: function(ctx) {
-									var raw = Number(ctx.parsed.y) || 0;
+									var raw = Math.round(Number(ctx.parsed.y) || 0);
 									// 손익 차트에서만 부호가 뜻이다. 배당은 늘 들어온 돈이라 부호를 붙이지 않는다.
-									var prefix = signed ? (raw >= 0 ? '+' : '-') : '';
-									return ctx.dataset.label + ': ' + prefix + '₩' + Math.abs(raw).toLocaleString();
+									// 0 에는 방향이 없다 - 반올림 뒤에 판정한다.
+									var prefix = signed ? (raw > 0 ? '+' : (raw < 0 ? '-' : '')) : '';
+									return ctx.dataset.label + ': ' + prefix + StockCharts.formatCurrency(Math.abs(raw));
 								}
 							}
 						}

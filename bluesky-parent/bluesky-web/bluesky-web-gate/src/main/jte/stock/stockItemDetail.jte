@@ -47,6 +47,7 @@
 @param LocalDate coveredEndLocal = null
 @param List<TradeProfit> accountHoldings = java.util.List.of()
 @param List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
+@param String periodBreakdownNote = ""
 @param List<net.luversof.web.gate.stock.domain.DetailNavEntry> stockNavEntries = java.util.List.of()
 @param List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory = java.util.List.of()
 @param BigDecimal periodUnrealizedDelta = null
@@ -112,6 +113,7 @@
 					rangeMode = rangeMode,
 					accountHoldings = accountHoldings,
 					periodBreakdown = periodBreakdown,
+					periodBreakdownNote = periodBreakdownNote,
 					stockNavEntries = stockNavEntries,
 					priceHistory = priceHistory,
 					periodUnrealizedDelta = periodUnrealizedDelta,

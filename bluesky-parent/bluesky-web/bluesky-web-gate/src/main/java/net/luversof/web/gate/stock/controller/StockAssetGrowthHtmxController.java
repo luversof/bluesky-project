@@ -1072,14 +1072,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
    */
   String periodBreakdownNote(
       List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> breakdownRows) {
-    if (breakdownRows == null || breakdownRows.isEmpty()) {
-      return message("stock.asset.growth.breakdown.empty.note");
-    }
-    if ("MONTH".equals(breakdownRows.get(0).unit())) {
-      // 한 구간뿐이면 표가 위 요약을 되풀이할 뿐이라 그리지 않는다 - 그래도 자리는 남긴다.
-      return breakdownRows.size() > 1 ? "" : message("stock.asset.growth.breakdown.single.note");
-    }
-    return message("stock.asset.growth.breakdown.yearly.note");
+    // 판단은 한 곳에 둔다(종목 상세도 같은 규칙을 쓴다) - 문구만 이 화면의 MessageSource 가 찾는다.
+    String key =
+        net.luversof.web.gate.stock.util.StockBreakdownNoteUtil.noteKey(breakdownRows, true);
+    return key.isEmpty() ? "" : message(key);
   }
 
   private String message(String code) {

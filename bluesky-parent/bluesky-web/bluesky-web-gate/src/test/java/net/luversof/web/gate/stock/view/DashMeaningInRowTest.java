@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -100,5 +101,90 @@ class DashMeaningInRowTest {
         }
       }
     }
+  }
+
+  /**
+   * 필터를 걸어야 드러나는 자리들.
+   *
+   * <p>실측 2026-09-15: 위의 9,175 칸 훑기는 <b>필터 없는 상태</b>였다. 필터를 걸어 매도 0 건 · 기여 0 원 같은 상황을 만들자 까닭 없는 대시가
+   * 세 템플릿에서 더 나왔다 &mdash; 기간별 성과 4 칸(평가 변동 · 실현+배당 · 본문 수익률 · 합계 수익률), 종목별 기여 2 칸(비중 · 기타 비중), 실현손익
+   * 두 표의 수익률 4 칸.
+   *
+   * <p>뜻이 서로 다르다는 점이 중요하다: 금액 0 은 "0원"이고, 수익률·비중은 <b>낼 기준이 없다</b>. 하나의 문구로 뭉뚱그리면 {@link
+   * net.luversof.web.gate.stock.view.DashReasonSweepTest} 가 막아 둔 구분이 무너진다.
+   */
+  @Test
+  void 필터를_걸어야_드러나는_칸에도_까닭이_있다() throws IOException {
+    for (String rel :
+        List.of(
+            "src/main/jte/stock/htmx/fragments/periodBreakdownTable.jte",
+            "src/main/jte/stock/htmx/fragments/stockContributionTable.jte",
+            "src/main/jte/stock/htmx/fragments/trade/tradeRealizedSections.jte")) {
+      assertThat(bareDashSpans(read(rel))).as(rel + " 의 까닭 없는 대시").isZero();
+    }
+
+    String breakdown = read("src/main/jte/stock/htmx/fragments/periodBreakdownTable.jte");
+    // 금액 0 과 '수익률을 낼 수 없음' 은 다른 말이다 - 둘을 같은 문구로 덮으면 안 된다.
+    assertThat(breakdown).contains("common.amount.zero.title");
+    assertThat(breakdown).contains("stock.breakdown.return.none");
+    assertThat(count(breakdown, "title=\"${zeroAmountTitle}\"")).as("0 원 칸").isEqualTo(2);
+    assertThat(count(breakdown, "title=\"${rateNoneTitle}\"")).as("수익률 칸").isEqualTo(2);
+
+    String contribution = read("src/main/jte/stock/htmx/fragments/stockContributionTable.jte");
+    assertThat(contribution).contains("stock.contribution.share.none");
+    assertThat(count(contribution, "title=\"${shareNoneTitle}\"")).as("비중 칸").isEqualTo(3);
+  }
+
+  /** 배당 상세 합계의 빈 칸은 낭독기엔 닿았는데 마우스엔 안 닿았다(aria-label 만 있었다). */
+  @Test
+  void 배당_상세_합계의_빈_칸은_마우스에도_닿는다() throws IOException {
+    String table = read("src/main/jte/stock/htmx/fragments/dividend/dividendTable.jte");
+
+    assertThat(table)
+        .as("aria-label 만 달면 마우스 사용자는 왜 비었는지 알 수 없다")
+        .doesNotContain("aria-label=\"${noTotalTitle}\"><span aria-hidden=\"true\">-</span>");
+    assertThat(count(table, "<span aria-hidden=\"true\" title=\"${noTotalTitle}\">-</span>"))
+        .as("합계가 성립하지 않는 네 열")
+        .isEqualTo(4);
+  }
+
+  /**
+   * 합계 줄은 본문 줄과 같은 규칙으로 0 을 적는다.
+   *
+   * <p>실측 2026-09-15(매도 0 건인 종목 둘로 좁혀 실현 손익 열을 전부 0 으로 만듦): 종목별 기여의 본문 줄은 0 을 "-" + "0원" 으로 적는데
+   * <b>합계 줄과 '기타' 줄만</b> 금액 0 을 적었다. 한 열이 위아래로 다르게 읽힌다 &mdash; 형제 표 tradePeriodBreakdown 에는 그 결정이
+   * 이미 적혀 있다.
+   *
+   * <p>합계 줄의 비중 칸은 조건부 문자열({@code signum() > 0 ? "100.0%" : "-"})이라 대시 패턴 검사가 닿지 않던 자리다. 까닭이 아예
+   * 없었다.
+   */
+  @Test
+  void 종목별_기여의_합계도_본문과_같은_규칙을_쓴다() throws IOException {
+    String template = read("src/main/jte/stock/htmx/fragments/stockContributionTable.jte");
+
+    // 0 을 그대로 적는 금액 칸이 남아 있으면 안 된다 - 본문은 대시로 적는다.
+    // '기여' 열은 본문도 합계도 0 을 금액으로 적는다 - 그 열은 위아래가 갈리지 않는다.
+    // 갈렸던 것은 평가 변동 · 실현 손익 · 기간 배당 세 열이다.
+    // 본문 줄에도 같은 삼항이 남아 있으나 그쪽은 @if 안이라 닿지 않는 가지다.
+    // 여기서 보는 것은 합계('Total')와 '기타'('Others') 줄이다.
+    for (String scope : new String[] {"stockContributionTotal", "stockContributionOthers"}) {
+      for (String column : new String[] {"unrealizedDelta", "realizedProfit"}) {
+        assertThat(squeeze(template))
+            .as(scope + " 의 " + column + " 이 0 을 금액으로 적는다")
+            .doesNotContain(scope + "." + column + "().signum() == 0 ? \"\"");
+      }
+    }
+    assertThat(squeeze(template))
+        .as("합계 비중이 까닭 없는 대시다")
+        .doesNotContain("signum() > 0 ? \"100.0%\" : \"-\"");
+    // 본문 3 + 기타 3 + 합계 3 = 아홉 칸이 같은 규칙을 쓴다.
+    assertThat(count(template, "title=\"${zeroAmountTitle}\"")).as("0 원 까닭을 단 칸").isEqualTo(9);
+    // 본문 비중 + 기타 비중 + 합계 비중.
+    assertThat(count(template, "title=\"${shareNoneTitle}\"")).as("비중을 낼 수 없다는 까닭").isEqualTo(3);
+  }
+
+  /** 빌드가 ${} 안 공백을 지우므로 원본 서식 그대로 비교하면 변이를 통과시킨다. */
+  private static String squeeze(String source) {
+    return source.replaceAll("\s+", " ");
   }
 }

@@ -26,6 +26,10 @@
 	String returnLabel = MessageUtil.getMessage("stock.item.detail.breakdown.col.return");
 	String returnBasisNote = MessageUtil.getMessage("stock.item.detail.breakdown.return.basis");
 	String partialLabel = MessageUtil.getMessage("stock.item.detail.breakdown.partial");
+	String rateNoneTitle = MessageUtil.getMessage("stock.breakdown.return.none");
+	String zeroAmountTitle = MessageUtil.getMessage("common.amount.zero.title");
+	// a value that exists and is zero says "0"; a rate that cannot be computed says so instead.
+	// A bare "-" reaches neither a mouse nor a screen reader. Same rule as _components/ui/amountCell:
 }
 
 <%-- 종목 상세와 자산 성장이 함께 쓴다 - 같은 계산이라 두 화면이 같은 뜻을 말한다.
@@ -78,25 +82,25 @@
 								<td class="text-right tabular-nums">
 									<span class="amount-value font-semibold ${profitUp ? "text-profit" : "text-loss"}">${profit.signum() == 0 ? "" : (profitUp ? "+" : "-")}&#8361;${amountFormat.format(profit.abs())}</span>
 								</td>
-								<td class="text-right tabular-nums">
+								<td class="text-right tabular-nums" aria-label="${unrealizedDelta.signum() == 0 ? zeroAmountTitle : null}">
 									@if(unrealizedDelta.signum() != 0)
 										<span class="amount-value ${deltaUp ? "text-profit" : "text-loss"}">${unrealizedDelta.signum() == 0 ? "" : (deltaUp ? "+" : "-")}&#8361;${amountFormat.format(unrealizedDelta.abs())}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" title="${zeroAmountTitle}">-</span>
 									@endif
 								</td>
-								<td class="text-right tabular-nums">
+								<td class="text-right tabular-nums" aria-label="${realizedAndDividend.signum() == 0 ? zeroAmountTitle : null}">
 									@if(realizedAndDividend.signum() != 0)
 										<span class="amount-value ${incomeUp ? "text-profit" : "text-loss"}">${realizedAndDividend.signum() == 0 ? "" : (incomeUp ? "+" : "-")}&#8361;${amountFormat.format(realizedAndDividend.abs())}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" title="${zeroAmountTitle}">-</span>
 									@endif
 								</td>
-								<td class="text-right tabular-nums">
+								<td class="text-right tabular-nums" aria-label="${rate == null ? rateNoneTitle : null}">
 									@if(rate != null)
 										<span class="font-semibold ${rateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(rate, 2)}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" title="${rateNoneTitle}">-</span>
 									@endif
 								</td>
 							</tr>
@@ -117,11 +121,11 @@
 							<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totals.profit().signum() == 0 ? "" : (totalProfitUp ? "+" : "-")}&#8361;${amountFormat.format(totals.profit().abs())}</span></td>
 							<td class="text-right tabular-nums"><span class="amount-value ${totalDeltaUp ? "text-profit" : "text-loss"}">${totals.unrealizedDelta().signum() == 0 ? "" : (totalDeltaUp ? "+" : "-")}&#8361;${amountFormat.format(totals.unrealizedDelta().abs())}</span></td>
 							<td class="text-right tabular-nums"><span class="amount-value ${totalIncomeUp ? "text-profit" : "text-loss"}">${totals.realizedAndDividend().signum() == 0 ? "" : (totalIncomeUp ? "+" : "-")}&#8361;${amountFormat.format(totals.realizedAndDividend().abs())}</span></td>
-							<td class="text-right tabular-nums">
+							<td class="text-right tabular-nums" aria-label="${totals.chainedReturnPct() == null ? rateNoneTitle : null}">
 								@if(totals.chainedReturnPct() != null)
 									<span class="${totalRateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
 								@else
-									<span class="text-base-content/60">-</span>
+									<span class="text-base-content/60" title="${rateNoneTitle}">-</span>
 								@endif
 							</td>
 						</tr>

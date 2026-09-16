@@ -62,7 +62,7 @@
 	<input type="hidden" name="${extraName}" value="${extraValue}">
 	<div class="form-control">
 		<label class="label p-1" id="${idPrefix}PeriodLabel"><span class="label-text text-xs">${periodLabel}</span></label>
-		<div class="join" role="group" aria-labelledby="${idPrefix}PeriodLabel">
+		<div class="join flex-wrap" role="group" aria-labelledby="${idPrefix}PeriodLabel">
 			<input type="date" name="uiStartDate" id="${idPrefix}StartDateInput" aria-label="${startDateLabel}" class="input input-sm input-bordered join-item" value="${startLocal != null ? startLocal.toString() : ""}">
 			<input type="date" name="uiEndDate" id="${idPrefix}EndDateInput" aria-label="${endDateLabel}" class="input input-sm input-bordered join-item" value="${endLocal != null ? endLocal.toString() : ""}">
 		</div>

@@ -1,3 +1,4 @@
+@import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.util.CspNonceHolder
 @import java.util.List
 @import java.time.LocalDate
@@ -88,7 +89,7 @@
 				</div>
 				<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-base-content/60">
 					<span>${grossLabel} <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllGross)}</span></span>
-					<span>${deductionLabel} <span class="font-medium text-base-content/70 amount-value">-₩ ${decimalFormat.format(allDeduction)}</span></span>
+					<span>${deductionLabel} <span class="font-medium text-base-content/70 amount-value">${StockFormatUtil.displayWon(allDeduction) > 0 ? "-" : ""}₩ ${decimalFormat.format(allDeduction)}</span></span>
 					<%-- 라벨을 붙인다. 이 수는 배당 기록 건수인데 같은 줄 왼쪽이 차감 금액이라, 라벨이 없으면
 						 차감 건수로 읽힌다 - 실측 2026-09-12(올해): 이 자리가 116건이고 바로 아래 줄은
 						 월중 56건 · 월말 57건 · 기타 3건 으로 모두 라벨이 있다(합이 116). 한 카드 안에서 윗줄만 비어 있었다.
@@ -255,7 +256,12 @@
 					var el = summary.querySelector(sel);
 					if (!el) return;
 					var abs = Math.abs(Math.round(value));
-					el.textContent = (signed ? (value >= 0 ? '+' : '-') : '') + '₩' + abs.toLocaleString();
+					var rounded = Math.round(value) || 0;
+					// 0 에는 방향이 없다 - 판정은 반올림 뒤에(StockFormatUtil.signedWon 과 같은 규칙).
+					var sign = rounded > 0 ? '+' : (rounded < 0 ? '-' : '');
+					// 로케일은 앱이 정한다(common.js 의 appLocale) - 인자를 빼면 브라우저 로케일을 따라
+					// 같은 화면 안에서 자릿수 구분이 갈린다(실측 2026-09-15).
+					el.textContent = (signed ? sign : '') + '₩' + abs.toLocaleString(appLocale());
 					if (signed) {
 						el.classList.toggle('text-profit', value >= 0);
 						el.classList.toggle('text-loss', value < 0);

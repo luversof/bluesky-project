@@ -4,6 +4,7 @@ declare const Chart: any;
 interface StockChartsAPI {
 	/** Chart.js 전역 애니메이션 기본값을 다시 적용한다(검증·재초기화용). */
 	applyChartAnimationDefaults?: (chartLib?: any) => number | null;
+	applyChartLocaleDefault?: (chartLib?: any) => string | null;
 	/** 첫 등장 애니메이션 플러그인(검증용). */
 	entryAnimationPlugin?: any;
 	initMonthlyFromData?: (
@@ -90,6 +91,11 @@ function appMessage(key: string, fallback: string): string {
 }
 
 function resolveLocale(): string {
+	// 규칙은 common.js 의 appLocale 한 곳에 있다(먼저 로드된다). 없으면 같은 차례로 찾는다.
+	const shared = (globalThis as any).appLocale;
+	if (typeof shared === "function") {
+		return shared();
+	}
 	return (
 		document.body?.dataset?.locale ||
 		document.documentElement?.lang ||
@@ -678,8 +684,10 @@ StockCharts.initMonthlyFromData = function (
 							if (ctx.parsed.y === null || ctx.parsed.y === undefined) return null;
 							// 실현손익만 부호가 뜻이다(아래 칸 막대).
 							if (ctx.dataset.yAxisID === "y2") {
-								const v = Number(ctx.parsed.y) || 0;
-								return ctx.dataset.label + ": " + (v >= 0 ? "+" : "-") + "\u20a9" + fmtAmt(Math.abs(v));
+								const v = Math.round(Number(ctx.parsed.y) || 0);
+								// 0 에는 방향이 없다 - 반올림 뒤에 판정한다.
+								const sign = v > 0 ? "+" : v < 0 ? "-" : "";
+								return ctx.dataset.label + ": " + sign + "\u20a9" + fmtAmt(Math.abs(v));
 							}
 							return ctx.dataset.label + ": \u20a9" + fmtAmt(ctx.parsed.y);
 						},
@@ -981,8 +989,9 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 			} catch (e) {}
 			function pctText(extreme: number) {
 				if (extreme === 0) return "";
-				const pct = ((lastV - extreme) / Math.abs(extreme)) * 100;
-				return " (" + (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%)";
+				// 표시 자릿수(2)로 먼저 반올림한다 - 0 에는 방향이 없고 -0.004 는 '0.00%' 다.
+				const pct = Number((((lastV - extreme) / Math.abs(extreme)) * 100).toFixed(2));
+				return " (" + (pct > 0 ? "+" : "") + pct.toFixed(2) + "%)";
 			}
 			function drawExtreme(idx: number, v: number, isMax: boolean, label: string) {
 				const px = xAxis.getPixelForValue(idx);
@@ -1101,16 +1110,19 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 							const c = parseFloat(costData[idx]);
 							const lines: string[] = [];
 							if (!isNaN(v) && !isNaN(c)) {
-								const diff = v - c;
-								const pct = c !== 0 ? (diff / c) * 100 : 0;
+								const diff = Math.round(v - c);
+								const pct = c !== 0 ? Number((((v - c) / c) * 100).toFixed(2)) : 0;
+								// 0 에는 방향이 없다 - 둘 다 반올림 뒤에 판정한다.
+								const diffSign = diff > 0 ? "+" : diff < 0 ? "-" : "";
+								const pctSign = pct > 0 ? "+" : pct < 0 ? "-" : "";
 								lines.push("─────────────────");
 								lines.push(
 									(t.profitLabel || "") +
 										": " +
-										(diff >= 0 ? "+" : "-") +
+										diffSign +
 										StockCharts.formatCurrency!(Math.abs(diff)) +
 										" (" +
-										(pct >= 0 ? "+" : "-") +
+										pctSign +
 										Math.abs(pct).toFixed(2) +
 										"%)",
 								);
@@ -1221,6 +1233,21 @@ function applyChartAnimationDefaults(chartLib: any = (globalThis as any).Chart) 
 }
 StockCharts.applyChartAnimationDefaults = applyChartAnimationDefaults;
 
+/**
+ * Chart.js 전역 로케일. 기본값이 navigator.language 라, 콜백을 안 준 차트의 툴팁·축은
+ * **브라우저 로케일**로 찍힌다(값은 맞고 자릿수 구분만 달라져 한국어 브라우저로는 안 보인다).
+ *
+ * 실측 2026-09-15: 브라우저를 de-DE 로 두자 매매 도넛의 내부 툴팁 모델이 "466.231.000" 이었다.
+ * 그 차트는 external 툴팁으로 따로 그려 화면엔 안 나왔지만, 콜백 없는 차트가 하나라도 생기면
+ * 그대로 나간다. 규칙은 appLocale 한 곳이므로 라이브러리 기본값도 거기에 맞춘다.
+ */
+function applyChartLocaleDefault(chartLib: any = (globalThis as any).Chart) {
+	if (!chartLib?.defaults) return null;
+	chartLib.defaults.locale = resolveLocale();
+	return chartLib.defaults.locale;
+}
+StockCharts.applyChartLocaleDefault = applyChartLocaleDefault;
+
 function resolveCssColor(css: string): [number, number, number] | null {
 	try {
 		const cv = document.createElement("canvas") as HTMLCanvasElement;
@@ -1304,6 +1331,7 @@ function applyChartTheme(chartLib: any = (globalThis as any).Chart): string | nu
 }
 applyChartTheme();
 applyChartAnimationDefaults();
+applyChartLocaleDefault();
 try {
 	(globalThis as any).Chart?.register?.(entryAnimationPlugin);
 } catch (e) {}
@@ -1327,6 +1355,6 @@ try {
 		globalThis.addEventListener("afterprint", () => applyChartTheme());
 	}
 } catch (e) {}
-(window as any).__chartThemeInternals = { resolveCssColor, chartTextColor, applyChartTheme , applyChartAnimationDefaults, CHART_ANIMATION_MS };
+(window as any).__chartThemeInternals = { resolveCssColor, chartTextColor, applyChartTheme , applyChartAnimationDefaults, applyChartLocaleDefault, CHART_ANIMATION_MS };
 // Attach to window so templates can use <script src="/js/stock-charts.js"></script>
 (window as any).StockCharts = StockCharts;

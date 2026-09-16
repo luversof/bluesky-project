@@ -25,6 +25,8 @@ class EmptyStateWidenCtaTest {
   private static final String TRADE_FRAGMENT =
       "src/main/jte/stock/htmx/fragments/trade/tradeDetailList.jte";
   private static final String TRADE_PARENT = "src/main/jte/stock/htmx/tradeList.jte";
+  private static final String REALIZED_FRAGMENT =
+      "src/main/jte/stock/htmx/fragments/trade/tradeRealizedSections.jte";
   private static final String DIVIDEND_FRAGMENT =
       "src/main/jte/stock/htmx/fragments/dividend/dividendTable.jte";
   private static final String DIVIDEND_PARENT =
@@ -113,15 +115,67 @@ class EmptyStateWidenCtaTest {
     assertThat(src).as("옛 평문 블록이 남아 있지 않다").doesNotContain("<p>${noTradeInPeriodLabel}</p>");
   }
 
-  /** 넘기는 자리가 조각마다 하나씩이어야 한다 - 두 번 넘기면 JTE 가 같은 인자를 두 번 받는다. */
+  /**
+   * 넘기는 자리가 <b>한 호출 안에 하나씩</b>이어야 한다 - 두 번 넘기면 JTE 가 같은 인자를 두 번 받는다.
+   *
+   * <p>한 화면이 이 인자를 여러 조각에 넘기는 것은 정상이다 - 실측 2026-09-16: 매매 화면이 상세 목록과 실현손익 구역 둘에 넘긴다. 파일 전체에서 글자를 세면
+   * 그 정상까지 막는다. 뜻은 '한 호출 안에서 한 번' 이므로 호출 단위로 센다.
+   */
   @Test
   void 같은_인자를_두_번_넘기지_않는다() throws IOException {
     for (String path : new String[] {TRADE_PARENT, DIVIDEND_PARENT}) {
       String src = read(path);
-      int at = src.indexOf("widenRangeAction = !isAllMode");
-      int again = src.indexOf("widenRangeAction = !isAllMode", at + 1);
-
-      assertThat(again).as(path + " 에 같은 인자가 두 번 있다").isEqualTo(-1);
+      int calls = 0;
+      int at = src.indexOf("@template.");
+      while (at >= 0) {
+        String call = callBody(src, at);
+        calls++;
+        int first = call.indexOf("widenRangeAction");
+        if (first >= 0) {
+          assertThat(call.indexOf("widenRangeAction", first + 1))
+              .as(path + " 의 한 호출이 같은 인자를 두 번 받는다: " + call)
+              .isEqualTo(-1);
+        }
+        at = src.indexOf("@template.", at + call.length());
+      }
+      assertThat(calls).as(path + " 에서 조각 호출을 하나도 못 찾았다").isPositive();
     }
+  }
+
+  /**
+   * 빈 상태를 그리는 조각은 부모가 기간 모드를 넘겨줘야 단추를 띄운다.
+   *
+   * <p>안 넘기면 기본값 false 로 조용히 단추만 사라진다 &mdash; 빌드는 멀줡하다. 실측 2026-09-16: 실현손익 두 구역에 빈 상태를 달면서 이 인자를
+   * 빼면 같은 화면의 옆 구역만 단추를 띄운다.
+   */
+  @Test
+  void 실현손익_구역도_넓히기를_받는다() throws IOException {
+    String src = read(TRADE_PARENT);
+    int at = src.indexOf("@template.stock.htmx.fragments.trade.tradeRealizedSections(");
+
+    assertThat(at).as(TRADE_PARENT + " 가 실현손익 조각을 부르지 않는다").isNotNegative();
+    assertThat(callBody(src, at))
+        .as("빈 상태가 '전체 기간으로 보기' 를 띄울 수 있게")
+        .contains("widenRangeAction = !isAllMode");
+    assertThat(read(REALIZED_FRAGMENT))
+        .as("조각이 그 인자를 받는다")
+        .contains("@param boolean widenRangeAction = false");
+  }
+
+  /** {@code @template.} 에서 짝이 맞는 닫는 괄호까지. 인자 안의 괄호에 속지 않는다. */
+  private static String callBody(String src, int start) {
+    int depth = 0;
+    for (int i = start; i < src.length(); i++) {
+      char c = src.charAt(i);
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+        if (depth == 0) {
+          return src.substring(start, i + 1);
+        }
+      }
+    }
+    return src.substring(start);
   }
 }

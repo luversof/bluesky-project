@@ -34,9 +34,12 @@ class AllocationBarNarrowFoldTest {
     assertThat(markup)
         .as("4px 막대는 비중을 못 보여준다 - 자리가 없으면 접어야 한다")
         .contains("h-2 rounded-full bg-base-200 max-[400px]:hidden");
+    // 앞부분(flex ...)까지 한 덩어리로 찾으면 사이에 유틸 하나만 끼어도 깨진다 - 실측 2026-09-16:
+    // 글꼴이 커질 때 넘치지 않게 flex-wrap 을 넣자 이 검사가 막았다. 뜻은 '양끝으로 퍼진다' 이므로
+    // 그 자리에 justify-between 이 있는지만 본다.
     assertThat(markup)
         .as("막대가 접히면 남는 셋이 양끝으로 퍼져야 한다")
-        .contains("flex items-center justify-between gap-2 text-sm py-1.5");
+        .contains("items-center justify-between gap-2 text-sm py-1.5");
   }
 
   /** 접어도 값은 남는다 - 이 검사의 전제라 함께 못 박는다. */

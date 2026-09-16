@@ -465,6 +465,12 @@ public class StockDetailViewController {
         timeSeriesResult != null && timeSeriesResult.breakdown() != null
             ? timeSeriesResult.breakdown()
             : List.of());
+    // 표를 못 내는 구간에서도 자리를 비우지 않는다 - 자산 성장과 같은 규칙을 쓴다.
+    // 이 화면은 해 단위 표도 그리므로 monthlyOnly 는 false 다.
+    model.addAttribute(
+        "periodBreakdownNote",
+        net.luversof.web.gate.stock.util.StockBreakdownNoteUtil.note(
+            timeSeriesResult != null ? timeSeriesResult.breakdown() : null, false));
     var priceHistory =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceHistoryFuture);
     model.addAttribute("priceHistory", priceHistory != null ? priceHistory : List.of());

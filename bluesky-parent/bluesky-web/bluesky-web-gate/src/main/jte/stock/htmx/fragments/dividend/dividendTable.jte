@@ -150,10 +150,10 @@
 							<td class="hidden sm:table-cell"></td>
 							<td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
 							<td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
-							<td class="text-right hidden md:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true">-</span></td>
-							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true">-</span></td>
-							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true">-</span></td>
-							<td class="text-right" aria-label="${noTotalTitle}"><span aria-hidden="true">-</span></td>
+							<td class="text-right hidden md:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
+							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
+							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
+							<td class="text-right" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
 							<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">@if(totalTax == null || totalTax.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTax)}@endif</td>
 							<td class="text-right font-mono amount-value">@if(totalTaxableAmount == null || totalTaxableAmount.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTaxableAmount)}@endif</td>
 						</tr>

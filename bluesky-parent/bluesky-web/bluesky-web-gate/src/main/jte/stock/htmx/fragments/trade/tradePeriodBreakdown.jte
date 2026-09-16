@@ -30,6 +30,9 @@
 	String realizedProfitLabel = MessageUtil.getMessage("stock.trade.label.realized.profit");
 	// 연도별 세금·비용 표와 같은 키 - 두 표가 같은 줄을 다른 이름으로 부르지 않는다.
 	String sumLabel = MessageUtil.getMessage("stock.asset.growth.cost.sum.row");
+	// 표를 못 낼 때 남길 까닭. 고르는 규칙은 자산 성장·종목 상세와 한 곳에서 나온다.
+	String breakdownNote = net.luversof.web.gate.stock.util.StockBreakdownNoteUtil
+			.tradeNote(tradePeriods == null ? 0 : tradePeriods.size());
 }
 
 <%-- 구간이 하나뿐이면 표가 위의 요약 카드를 되풀이할 뿐이라 아무것도 더해 주지 않는다. --%>
@@ -151,9 +154,10 @@
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
-								<%-- 고른 기간에 판 것이 하나도 없으면 실현손익은 0 이 아니라 '없음' 이다. --%>
+								<%-- 고른 기간에 판 것이 하나도 없으면 실현손익은 0 이 아니라 '없음' 이다.
+									 그 까닭은 줄과 마찬가지로 마우스와 낭독기 모두에 닿아야 한다 - 여기만 맨 '-' 였다. --%>
 								@if(totals.sellCount() == 0)
-									<span class="text-base-content/60">-</span>
+									<span class="text-base-content/60" aria-hidden="true" title="${noSaleTitle}">-</span><span class="sr-only">${noSaleTitle}</span>
 								@else
 									<span class="amount-value font-semibold ${totalRealizedUp ? "text-profit" : "text-loss"}">${totals.realizedProfit().signum() == 0 ? "" : (totalRealizedUp ? "+" : "-")}&#8361;${amountFormat.format(totals.realizedProfit().abs())}</span>
 								@endif
@@ -162,5 +166,12 @@
 					</tfoot>
 				</table>
 			</div>
+	`)
+<%-- 표를 낼 수 없는 구간이면 자리를 비우지 않고 까닭을 적는다 - 형제 조각(periodBreakdownTable)이 이미
+     그렇게 한다. 실측 2026-09-16(빈 기간): 이 표만 제목째 사라져 같은 화면의 다른 구역과 어긋났다. --%>
+@elseif(!breakdownNote.isEmpty())
+	@template._components.ui.card(cssClass = "mb-4", bodyClass = "gap-2", body = @`
+			<h3 class="card-title text-base" data-page-section>${title}</h3>
+			<p class="text-xs text-base-content/60" data-trade-breakdown-note>${breakdownNote}</p>
 	`)
 @endif

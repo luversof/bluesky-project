@@ -353,6 +353,10 @@ function simulateScenario(scenario) {
 	// 순수 계산이다. 함수 선언은 호이스팅되므로 아래 조기 반환보다 앞서 붙여도 된다.
 	(globalThis as any).__stockWithdrawalSimulatorInternals.buildComparisonValues =
 		buildComparisonValues;
+	// 화면 표기도 시험한다 - 계산이 맞아도 표기가 거짓말을 할 수 있다.
+	// 문구가 아니라 '몇 년' 을 내보낸다(i18n 은 앱 루트가 있을 때만 초기화된다).
+	(globalThis as any).__stockWithdrawalSimulatorInternals.sustainablePeriodFacts =
+		sustainablePeriodFacts;
 	(globalThis as any).__stockWithdrawalSimulatorInternals.compareComparisonEntries =
 		compareComparisonEntries;
 
@@ -468,9 +472,11 @@ function simulateScenario(scenario) {
 	const currencyFormatter = new Intl.NumberFormat(appLocale, {
 		maximumFractionDigits: 0,
 	});
+	// 퍼센트 표시 자릿수. 반올림 판정이 이 값과 어긋나면 음의 영이 새어 나가므로 한 곳에 둔다.
+	const PERCENT_SCALE = 2;
 	const percentFormatter = new Intl.NumberFormat(appLocale, {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
+		minimumFractionDigits: PERCENT_SCALE,
+		maximumFractionDigits: PERCENT_SCALE,
 	});
 	const shareFormatter = new Intl.NumberFormat(appLocale, {
 		minimumFractionDigits: 0,
@@ -1812,11 +1818,25 @@ function renderMonthlyDetailsTable(record) {
 	}
 
 	function formatCompactCurrency(value) {
-		const abs = Math.abs(value || 0);
+		let abs = Math.abs(value || 0);
 		const sign = Number(value || 0) < 0 ? "-" : "";
+		// 단위를 고른 뒤 반올림하면 경계에서 한 단위 아래 표기가 남는다. 압축 표기는 자릿수를
+		// 줄이려고 쓰는 것이라 그 목적을 정확히 어긴다 - 실측 2026-09-15: 99,999,999 는
+		// "₩10000만"(1 억이어야 한다), 999,999,999 는 "₩1000M"(1B) 으로 나갔다.
+		// 공용 포맷터(stock-charts.compactNumber)와 서버(StockFormatUtil)는 이미 올린다.
+		const promote = (unit, next, digits) => {
+			if (
+				abs >= unit &&
+				abs < next &&
+				Number((abs / unit).toFixed(digits)) >= next / unit
+			) {
+				abs = next;
+			}
+		};
 		// 로케일과 무관하게 억/만 을 붙이면 영어 화면에도 한글 단위가 그대로 나온다(실측).
 		const korean = (document.documentElement.lang || "").toLowerCase().startsWith("ko");
 		if (korean) {
+			promote(10000, 100000000, 0);
 			if (abs >= 100000000) {
 				return `${sign}₩${(abs / 100000000).toFixed(1)}억`;
 			}
@@ -1829,6 +1849,8 @@ function renderMonthlyDetailsTable(record) {
 			const t = v.toFixed(1);
 			return t.endsWith(".0") ? t.slice(0, -2) : t;
 		};
+		promote(1000, 1000000, 1);
+		promote(1000000, 1000000000, 1);
 		if (abs >= 1000000000) {
 			return `${sign}₩${trim(abs / 1000000000)}B`;
 		}
@@ -1842,12 +1864,10 @@ function renderMonthlyDetailsTable(record) {
 	}
 
 	function formatSignedPercent(value) {
-		const number = Number(value);
-		if (!Number.isFinite(number)) {
-			return formatPercent(0);
-		}
-
-		return `${number > 0 ? "+" : ""}${percentFormatter.format(number)}%`;
+		// 방향은 **반올림한 뒤**의 수로 정한다. 0.004 에 + 를 붙이면 "+0.00%" 가 되어
+		// 0 이 이득처럼 읽힌다(실측 2026-09-15: ko·en 양쪽 시나리오 배지 세 자리).
+		const rounded = roundPercent(value);
+		return `${rounded > 0 ? "+" : ""}${formatPercent(rounded)}`;
 	}
 
 	function buildScenarioConfigurationSegments(scenario) {
@@ -1906,14 +1926,37 @@ function renderMonthlyDetailsTable(record) {
 		return year ? formatYearOffset(year) : emptyLabel;
 	}
 
-	function formatSustainablePeriod(summary, simulationYears) {
+	/**
+	 * 화면에 적을 '버틴 해'. 문구와 따로 두어 시험에서 i18n 없이 부를 수 있게 한다.
+	 *
+	 * 넘쳐서 멈췄으면 끝까지 버틴 것이 아니다 - 입력한 기간을 그대로 적으면 거짓말이 된다.
+	 * 실측 2026-09-15(소비 0 · 주가성장 0% · 배당성장 10% · 재투자 ON · 100년):
+	 * 차트는 89년까지만 그리고 요약 카드 주석도 "숫자 표현 한계로 중단: 90년 후" 라고 적는데,
+	 * 머리 숫자만 "100년+" 이었다. 시나리오 카드에는 그 주석조차 없어 바로잡을 길이 없었다.
+	 * summary.sustainableYears 가 이미 세 경우를 다 가른다 - 고갈 / 넘침(overflowYear-1) / 끝까지.
+	 */
+	function sustainablePeriodFacts(summary, simulationYears) {
+		// 고갈한 해는 '딱 그 해까지' 다 - 더 버텼을 수도 있다는 말(+)을 붙이면 안 된다.
 		if (summary.depletionYear) {
-			return formatYearOffset(summary.depletionYear);
+			return { year: summary.depletionYear, orMore: false };
+		}
+		// 넘쳤든 끝까지 갔든 '적어도 그만큼' 이다.
+		const year =
+			Number.isFinite(summary.sustainableYears) && summary.sustainableYears
+				? summary.sustainableYears
+				: simulationYears;
+		return { year, orMore: true };
+	}
+
+	function formatSustainablePeriod(summary, simulationYears) {
+		const facts = sustainablePeriodFacts(summary, simulationYears);
+		if (!facts.orMore) {
+			return formatYearOffset(facts.year);
 		}
 
 		return i18n.summaryYearsOrMore.replace(
 			"{0}",
-			currencyFormatter.format(simulationYears || 0),
+			currencyFormatter.format(facts.year || 0),
 		);
 	}
 
@@ -1925,8 +1968,24 @@ function renderMonthlyDetailsTable(record) {
 		return formatYearOffset(depletionYear);
 	}
 
+	/**
+	 * 표시 자릿수로 **먼저 반올림**한 수. 0 이면 부호를 지운다.
+	 *
+	 * Intl.NumberFormat 은 반올림 결과가 0 이어도 원래 부호를 남긴다 - 실측 2026-09-15:
+	 * format(-0.004) 도 format(-0) 도 "-0.00" 이다. toFixed 를 쓰는 형제 탭(복리)은
+	 * 이미 '반올림한 뒤에 판정' 규칙을 쓰는데 이 탭만 빠져 있었다.
+	 */
+	function roundPercent(value) {
+		const number = Number(value);
+		const rounded = Number(
+			(Number.isFinite(number) ? number : 0).toFixed(PERCENT_SCALE),
+		);
+		// -0 은 0 과 같다(=== 로 갈린다) - 0 을 돌려줘 부호를 없앤다.
+		return rounded === 0 ? 0 : rounded;
+	}
+
 	function formatPercent(value) {
-		return `${percentFormatter.format(value || 0)}%`;
+		return `${percentFormatter.format(roundPercent(value))}%`;
 	}
 
 	function formatCoveragePercent(value) {

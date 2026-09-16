@@ -116,7 +116,7 @@ ${historyTitle}
 @template._components.ui.card(body = @`
 <div class="text-xs text-base-content/60 mb-1">${realizedProfitLabel}</div>
 <div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
-${rpPositive ? "+" : ""}&#x20A9;${df.format(safeRp)}
+${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div>
 <div class="text-xs text-base-content/60 mt-1">${sellCountPageLabel}</div>
 `)

@@ -14,6 +14,8 @@
 !{
 	// 0 을 "-" 로 적는 자리에는 그 뜻을 달아 둔다(값이 없는 칸의 "-" 와 구분). 공용 규칙은 _components/ui/amountCell 과 같다.
 	String zeroAmountTitle = MessageUtil.getMessage("common.amount.zero.title");
+	String shareNoneTitle = MessageUtil.getMessage("stock.contribution.share.none");
+	// A share needs a total to divide by - a bare dash says nothing about why it is missing.
 	DecimalFormat amountFormat = new DecimalFormat("#,##0");
 	String title = MessageUtil.getMessage("stock.asset.growth.contribution.title");
 	String description = MessageUtil.getMessage("stock.asset.growth.contribution.desc");
@@ -84,11 +86,11 @@
 									@endif
 								</th>
 								<td class="text-right tabular-nums"><span class="amount-value font-semibold ${up ? "text-profit" : "text-loss"}">${row.contribution().signum() == 0 ? "" : (up ? "+" : "-")}&#8361;${amountFormat.format(row.contribution().abs())}</span></td>
-								<td class="text-right tabular-nums">
+								<td class="text-right tabular-nums" aria-label="${sharePct == null ? shareNoneTitle : null}">
 									@if(sharePct != null)
 										<span class="text-base-content/70">${StockFormatUtil.pct(sharePct, 1)}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" title="${shareNoneTitle}">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums hidden md:table-cell">
@@ -129,16 +131,16 @@
 							<tr class="text-base-content/70" data-stock-contribution-others>
 								<th scope="row">${othersLabel}</th>
 								<td class="text-right tabular-nums"><span class="amount-value ${othersUp ? "text-profit" : "text-loss"}">${stockContributionOthers.contribution().signum() == 0 ? "" : (othersUp ? "+" : "-")}&#8361;${amountFormat.format(stockContributionOthers.contribution().abs())}</span></td>
-								<td class="text-right tabular-nums">
+								<td class="text-right tabular-nums" aria-label="${othersShare == null ? shareNoneTitle : null}">
 									@if(othersShare != null)
 										<span>${StockFormatUtil.pct(othersShare, 1)}</span>
 									@else
-										<span class="text-base-content/60">-</span>
+										<span class="text-base-content/60" title="${shareNoneTitle}">-</span>
 									@endif
 								</td>
-								<td class="text-right tabular-nums hidden md:table-cell"><span class="amount-value ${othersDeltaUp ? "text-profit" : "text-loss"}">${stockContributionOthers.unrealizedDelta().signum() == 0 ? "" : (othersDeltaUp ? "+" : "-")}&#8361;${amountFormat.format(stockContributionOthers.unrealizedDelta().abs())}</span></td>
-								<td class="text-right tabular-nums hidden lg:table-cell print:table-cell"><span class="amount-value ${othersRealizedUp ? "text-profit" : "text-loss"}">${stockContributionOthers.realizedProfit().signum() == 0 ? "" : (othersRealizedUp ? "+" : "-")}&#8361;${amountFormat.format(stockContributionOthers.realizedProfit().abs())}</span></td>
-								<td class="text-right tabular-nums hidden lg:table-cell print:table-cell"><span class="amount-value text-dividend">&#8361;${amountFormat.format(stockContributionOthers.dividendTotal())}</span></td>
+								<td class="text-right tabular-nums hidden md:table-cell">@if(stockContributionOthers.unrealizedDelta().signum() != 0)<span class="amount-value ${othersDeltaUp ? "text-profit" : "text-loss"}">${othersDeltaUp ? "+" : "-"}&#8361;${amountFormat.format(stockContributionOthers.unrealizedDelta().abs())}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@endif</td>
+								<td class="text-right tabular-nums hidden lg:table-cell print:table-cell">@if(stockContributionOthers.realizedProfit().signum() != 0)<span class="amount-value ${othersRealizedUp ? "text-profit" : "text-loss"}">${othersRealizedUp ? "+" : "-"}&#8361;${amountFormat.format(stockContributionOthers.realizedProfit().abs())}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@endif</td>
+								<td class="text-right tabular-nums hidden lg:table-cell print:table-cell">@if(stockContributionOthers.dividendTotal().signum() != 0)<span class="amount-value text-dividend">&#8361;${amountFormat.format(stockContributionOthers.dividendTotal())}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@endif</td>
 							</tr>
 						@endif
 					</tbody>
@@ -151,10 +153,10 @@
 						<tr class="border-t-2 border-base-content/20 font-semibold" data-stock-contribution-total>
 							<th scope="row">${sumLabel}</th>
 							<td class="text-right tabular-nums"><span class="amount-value ${totalUp ? "text-profit" : "text-loss"}">${stockContributionTotal.contribution().signum() == 0 ? "" : (totalUp ? "+" : "-")}&#8361;${amountFormat.format(stockContributionTotal.contribution().abs())}</span></td>
-							<td class="text-right tabular-nums"><span class="text-base-content/70">${totalContribution.signum() > 0 ? "100.0%" : "-"}</span></td>
-							<td class="text-right tabular-nums hidden md:table-cell"><span class="amount-value ${totalDeltaUp ? "text-profit" : "text-loss"}">${stockContributionTotal.unrealizedDelta().signum() == 0 ? "" : (totalDeltaUp ? "+" : "-")}&#8361;${amountFormat.format(stockContributionTotal.unrealizedDelta().abs())}</span></td>
-							<td class="text-right tabular-nums hidden lg:table-cell print:table-cell"><span class="amount-value ${totalRealizedUp ? "text-profit" : "text-loss"}">${stockContributionTotal.realizedProfit().signum() == 0 ? "" : (totalRealizedUp ? "+" : "-")}&#8361;${amountFormat.format(stockContributionTotal.realizedProfit().abs())}</span></td>
-							<td class="text-right tabular-nums hidden lg:table-cell print:table-cell"><span class="amount-value text-dividend">&#8361;${amountFormat.format(stockContributionTotal.dividendTotal())}</span></td>
+							<td class="text-right tabular-nums">@if(totalContribution.signum() > 0)<span class="text-base-content/70">100.0%</span>@else<span class="text-base-content/60" aria-hidden="true" title="${shareNoneTitle}">-</span><span class="sr-only">${shareNoneTitle}</span>@endif</td>
+							<td class="text-right tabular-nums hidden md:table-cell">@if(stockContributionTotal.unrealizedDelta().signum() != 0)<span class="amount-value ${totalDeltaUp ? "text-profit" : "text-loss"}">${totalDeltaUp ? "+" : "-"}&#8361;${amountFormat.format(stockContributionTotal.unrealizedDelta().abs())}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@endif</td>
+							<td class="text-right tabular-nums hidden lg:table-cell print:table-cell">@if(stockContributionTotal.realizedProfit().signum() != 0)<span class="amount-value ${totalRealizedUp ? "text-profit" : "text-loss"}">${totalRealizedUp ? "+" : "-"}&#8361;${amountFormat.format(stockContributionTotal.realizedProfit().abs())}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@endif</td>
+							<td class="text-right tabular-nums hidden lg:table-cell print:table-cell">@if(stockContributionTotal.dividendTotal().signum() != 0)<span class="amount-value text-dividend">&#8361;${amountFormat.format(stockContributionTotal.dividendTotal())}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@endif</td>
 						</tr>
 					</tfoot>
 				</table>

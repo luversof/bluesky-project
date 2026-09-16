@@ -285,6 +285,10 @@
 		background-color: var(--color-base-200); color: var(--color-base-content); white-space: nowrap;
 	}
 	.badge-sm { height: 1.25rem; padding-inline: 0.5rem; font-size: 0.75rem; }
+	/* 기간 배지는 날짜 둘이라 길다. .badge 기본이 nowrap 이라 유틸(whitespace-normal)로는 못 이겨
+	   글꼴이 커지면 배지 하나가 창보다 넓어진다 - 실측 2026-09-16(320px·글꼴 200%): 배지 394px, 창 320px.
+	   이 두 배지만 줄을 바꾸게 하고 높이도 따라 늘린다(기본 글꼴에서는 198x20 그대로다). */
+	.badge[data-range-text], .badge[data-covered-range] { white-space: normal; height: auto; }
 	.badge-xs { height: 1rem; padding-inline: 0.4rem; font-size: 0.6875rem; }
 	.badge-lg { height: 1.75rem; padding-inline: 0.75rem; font-size: 0.875rem; }
 	.badge-primary { background-color: var(--color-primary); color: var(--color-primary-content); border-color: transparent; }
@@ -463,10 +467,13 @@
 	.menu-horizontal > li { flex-direction: row; }
 
 	/* ---- navbar ---- */
-	.navbar { display: flex; align-items: center; gap: 0.5rem; min-height: 4rem; padding: 0.5rem 1rem; width: 100%; }
+	/* 오른쪽 묶음이 넘치면 줄을 바꾼다. 라벨을 뷰포트 폭(xl:)으로만 숨겨 두면 **글자가 커지는 축**은 못 막는다
+	   - 실측 2026-09-16(글꼴 200%, 1440px): 11 화면 모두 문서가 486px 가로로 넘쳤고 진원지는 .navbar-end 하나였다.
+	   줄바꿈을 허용하면 넘침 0, 헤더 높이는 224 -> 252px 만 는다. 기본 글꼴에서는 여섯 폭 모두 그대로다(64/71px). */
+	.navbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-height: 4rem; padding: 0.5rem 1rem; width: 100%; }
 	.navbar-start { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 0; justify-content: flex-start; }
 	.navbar-center { display: flex; align-items: center; gap: 0.5rem; }
-	.navbar-end { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 0; justify-content: flex-end; }
+	.navbar-end { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; flex: 1 1 0; justify-content: flex-end; }
 
 	/* ---- dock (mobile bottom nav) ----
 	   메뉴가 많으면 좌우 스와이프로 넘긴다: 항목은 min-width 를 갖고(flex 축소 금지),
@@ -870,6 +877,10 @@ html { scroll-padding-top: 7rem; }
 
 /* 금액 가리기 */
 html.hide-amounts .amount-value { filter: blur(10px); opacity: 0.6; user-select: none; pointer-events: none; }
+/* 금액은 공백 없는 한 덩어리라 자리가 모자라도 안 끊긴다 - 실측 2026-09-16(320px·글꼴 200%):
+   자산 성장 기간 손익이 226px, 배당 캘린더 총액이 146px 문서 밖으로 나갔다.
+   자리가 넉넉하면 아무 일도 일어나지 않는다. */
+.amount-value { overflow-wrap: anywhere; }
 html.hide-amounts .amount-chart { filter: blur(15px); opacity: 0.3; user-select: none; pointer-events: none; }
 
 /* 클라이언트 정렬 테이블 */

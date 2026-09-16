@@ -124,6 +124,10 @@
 	BigDecimal latestDividend = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.latestDividendAmountPerShare() : BigDecimal.ZERO;
 	BigDecimal averageDividend = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.averageDividendAmountPerShare1y() : BigDecimal.ZERO;
 	BigDecimal averageTaxableRatio = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.averageTaxableBaseRatio1y() : BigDecimal.ZERO;
+	// 문구가 말하는 기준 건수. 두 카드는 서로 다른 행을 쓰므로 각자 자기 수를 말한다.
+	int averageBasisRows = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.averageBasisRowCount() : 0;
+	int taxableBasisRows = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.taxableRatioBasisRowCount() : 0;
+	String basisRowsTemplate = MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.basis.rows");
 	int payoutCount = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.payoutCount() : 0;
 }
 
@@ -168,13 +172,15 @@
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.dividend")}</p>
-			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">₩${amountFormat.format(averageDividend)}</p>
-			<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.last.year")}</p>
+			<%-- 평균은 넷째 자리까지 구해 두고 **표시할 때 한 번만** 반올림한다. 그대로 찍으면 같은 카드가
+			     종목에 따라 ₩32.25 와 ₩106.3636 으로 갈린다(실측 2026-09-16). --%>
+			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">₩${amountFormat.format(averageDividend.setScale(2, java.math.RoundingMode.HALF_UP))}</p>
+			<p class="mt-2 text-sm text-base-content/60">${java.text.MessageFormat.format(basisRowsTemplate, averageBasisRows)}</p>
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.taxable.ratio")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">${percentFormat.format(averageTaxableRatio)}%</p>
-			<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.last.year")}</p>
+			<p class="mt-2 text-sm text-base-content/60">${java.text.MessageFormat.format(basisRowsTemplate, taxableBasisRows)}</p>
 		</div>
 	</div>
 

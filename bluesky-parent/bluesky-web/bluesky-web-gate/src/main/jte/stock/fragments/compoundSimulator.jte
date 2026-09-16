@@ -39,9 +39,12 @@
 	String interestHeader = MessageUtil.getMessage("stock.simulator.compound.table.interest");
 	String balanceHeader = MessageUtil.getMessage("stock.simulator.compound.table.balance");
 	String ratioHeader = MessageUtil.getMessage("stock.simulator.compound.table.ratio");
+	// 연말 자산이 0 이하인 해는 원금/수익 비율이 성립하지 않는다. 그때 대시만 남기면
+	// 낭독기에는 하이픈 하나로만 간다 - 까닭을 함께 내려 준다.
+	String ratioNoneLabel = MessageUtil.getMessage("stock.simulator.compound.table.ratio.none");
 }
 
-<div id="stockCompoundSimulator" class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]" data-series-principal="${seriesPrincipalLabel}" data-series-profit="${seriesProfitLabel}">
+<div id="stockCompoundSimulator" class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]" data-series-principal="${seriesPrincipalLabel}" data-series-profit="${seriesProfitLabel}" data-ratio-none="${ratioNoneLabel}">
 	@template._components.ui.card(bodyClass = "gap-4", body = @`
 			<div class="flex flex-col gap-2">
 				<div class="space-y-2">

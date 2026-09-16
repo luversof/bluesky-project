@@ -19,6 +19,9 @@
 	String updatingLabel = MessageUtil.getMessage("stock.admin.message.updating");
 	String pleaseWaitLabel = MessageUtil.getMessage("stock.admin.message.please.wait");
 	String lastRunLabel = MessageUtil.getMessage("stock.admin.label.last.run");
+	// 기록이 없으면 대시만 남는다 - 대시는 스스로 뜻을 말하지 못하므로 까닭을 함께 둔다.
+	// JS 가 시각을 넣을 때는 이 칸을 통째로 갈아치우므로 까닭도 함께 사라진다.
+	String lastRunNoneLabel = MessageUtil.getMessage("stock.admin.label.last.run.none");
 	String dataCoverageLabel = MessageUtil.getMessage("stock.admin.label.data.coverage");
 	String importOkTemplate = MessageUtil.getMessage("stock.admin.import.result.ok");
 	String importDroppedTemplate = MessageUtil.getMessage("stock.admin.import.result.dropped");
@@ -316,10 +319,10 @@
 		</div>
 		<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-base-content/60">
 			<h3 class="font-semibold" data-page-section>${lastRunLabel}</h3>
-			<span>${updateStockItemsLabel}: <span data-admin-last-run="stock-items">-</span></span>
-			<span>${updateTradesLabel}: <span data-admin-last-run="trades">-</span></span>
-			<span>${updateDividendsLabel}: <span data-admin-last-run="dividends">-</span></span>
-			<span>${updatePriceHistoriesLabel}: <span data-admin-last-run="price-histories">-</span></span>
+			<span>${updateStockItemsLabel}: <span data-admin-last-run="stock-items"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></span>
+			<span>${updateTradesLabel}: <span data-admin-last-run="trades"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></span>
+			<span>${updateDividendsLabel}: <span data-admin-last-run="dividends"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></span>
+			<span>${updatePriceHistoriesLabel}: <span data-admin-last-run="price-histories"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></span>
 		</div>
 	</div>
 	
@@ -349,7 +352,11 @@
 		var lastRunMap = readMap();
 		document.querySelectorAll('[data-admin-last-run]').forEach(function(el) {
 			var ts = lastRunMap[el.getAttribute('data-admin-last-run')];
-			if (ts) el.textContent = new Date(ts).toLocaleString();
+			// 시간대도 앱이 정한다(common.js 의 appTimeZone). 인자를 빼면 브라우저 존을 따라
+			// 같은 기록이 기기마다 다른 날짜로 읽힌다(실측 2026-09-16: 9/16 10:30 vs 9/15 8:30).
+			if (ts) {
+				el.textContent = new Date(ts).toLocaleString(appLocale(), { timeZone: appTimeZone() });
+			}
 		});
 		var RESULT_KEY = 'stock.admin.lastResult.v1';
 

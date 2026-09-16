@@ -76,12 +76,17 @@ interface MonthRange {
             return (document.body && document.body.dataset && document.body.dataset.locale) || document.documentElement.lang || navigator.language || 'ko-KR';
         }
 
+        // 공용 규칙(common.js 의 appLocale)을 쓴다. 아직 안 올라왔으면 같은 차례로 찾는다.
+        function appLocaleOrDefault(): string {
+            const shared = (globalThis as any).appLocale;
+            return typeof shared === 'function' ? shared() : (document.documentElement.lang || 'ko-KR');
+        }
         function formatNumber(value: number) {
             return win.StockCharts ? win.StockCharts.formatNumber(value) : new Intl.NumberFormat(resolveLocale()).format(value);
         }
 
         function formatCurrency(value: number) {
-            return win.StockCharts ? win.StockCharts.formatCurrency(value) : ('₩' + Math.round(value).toLocaleString());
+            return win.StockCharts ? win.StockCharts.formatCurrency(value) : ('₩' + Math.round(value).toLocaleString(appLocaleOrDefault()));
         }
 
         function formatCount(value: number) {
@@ -658,7 +663,11 @@ interface MonthRange {
             // 도넛과 같은 규칙: 자료가 없으면 빈 캔버스 대신 안내를 둔다.
             // 라벨은 자료가 0건이어도 기간에서 만들어진다(실측: 라벨 1개 · 점 0개) - 점 개수로 판정해야 한다.
             const monthlyPointCount = (m.datasets || []).reduce((sum: number, d: any) => sum + ((d && d.data ? d.data.length : 0)), 0);
-            const fmtFull = (v: number) => '₩' + Math.round(v).toLocaleString();
+            // 툴팁도 앱 로케일을 따라야 한다 - 예전에는 로케일 인자가 없어 브라우저 로케일로 찍혔다
+            // (실측 2026-09-15: 브라우저 de-DE 에서 이 툴팁만 '₩37.980' 으로 갈렸다).
+            const fmtFull = (v: number) => (win.StockCharts
+                ? win.StockCharts.formatCurrency(v)
+                : '₩' + Math.round(v).toLocaleString(appLocaleOrDefault()));
             // 최근 12개월 합 선(오른쪽 축). 막대는 '이번 달' 을, 선은 '추세' 를 답한다. 막대 축(수백만)과 선 축(수천만)은
             // 크기대가 달라 한 축에 두면 막대가 눌린다.
             const ttmByMonth: Record<string, number> = cfg.ttmByMonth || {};
@@ -706,7 +715,7 @@ interface MonthRange {
                     },
                     scales: {
                         x: { stacked: true, grid: { color: gridColor }, ticks: { maxRotation: 45, font: { size: 11 } } },
-                        y: { stacked: true, beginAtZero: true, grid: { color: gridColor }, ticks: { callback: (v: any) => win.StockCharts ? win.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(), font: { size: 11 } } },
+                        y: { stacked: true, beginAtZero: true, grid: { color: gridColor }, ticks: { callback: (v: any) => win.StockCharts ? win.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(appLocaleOrDefault()), font: { size: 11 } } },
                         y1: { display: hasTtm, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { callback: (v: any) => win.StockCharts ? win.StockCharts.formatCompactNumber(v) : v, font: { size: 10 } } }
                     }
                 }

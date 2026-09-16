@@ -38,6 +38,43 @@ const param = (() => {
 // 전역으로 노출
 (globalThis as any).param = param;
 
+// 화면에 숫자·날짜를 찍을 때 쓰는 **앱 로케일**. 브라우저 로케일이 아니다.
+//
+// 실측 2026-09-15: 서식을 만드는 자리 아홉 곳이 로케일 인자 없이 toLocaleString()/Intl 을
+// 불러 브라우저 로케일을 따랐다. 브라우저를 de-DE 로 두고 한국어 화면을 열면 같은 화면
+// 안에서 툴팁·카드만 "\u20a91.143.757.310" 으로 갈렸다(16 자리). 규칙은 한 곳에 둔다 -
+// common.js 는 모든 화면에 가장 먼저 로드되므로 인라인 스크립트에서도 부를 수 있다.
+function appLocale(): string {
+	const body = document.body as HTMLElement | null;
+	return (
+		(body && body.dataset && body.dataset.locale) ||
+		document.documentElement?.lang ||
+		"ko-KR"
+	);
+}
+(globalThis as any).appLocale = appLocale;
+(globalThis as any).__appLocaleInternals = { appLocale };
+
+// 화면의 기준 **시간대**. 브라우저 시간대가 아니다.
+//
+// 서버는 StockZoneUtil 로 기준을 정한다 - 주소의 timeZone 이 있으면 그것, 없으면 서버 존.
+// 브라우저가 찍는 날짜·시각이 그 기준을 안 따르면 한 화면에 기준이 둘이 된다. 존은 일자
+// 경계를 옮기므로(실측 2026-09-16: 같은 타임스탬프가 UTC+14 에서 9/16, UTC-12 에서 9/15)
+// 조용한 어긋남은 틀린 값을 그럴듯하게 만든다.
+function appTimeZone(): string {
+	const fromUrl = new URLSearchParams(location.search).get("timeZone");
+	if (fromUrl) {
+		return fromUrl;
+	}
+	const cfg = document.getElementById("app-config") as HTMLElement | null;
+	return (
+		(cfg && cfg.dataset && cfg.dataset.timeZone) ||
+		Intl.DateTimeFormat().resolvedOptions().timeZone
+	);
+}
+(globalThis as any).appTimeZone = appTimeZone;
+(globalThis as any).__appTimeZoneInternals = { appTimeZone };
+
 // 테마 토글([data-theme-toggle]): light/dark 전환 + localStorage 저장.
 // 초기 적용은 defaultLayout <head>의 early-apply 스크립트가 담당한다.
 document.addEventListener("click", (event) => {
@@ -1294,8 +1331,11 @@ function chartSummaryLocale(lang: string): string {
 	return (lang || "").toLowerCase().startsWith("ko") ? "ko-KR" : "en-US";
 }
 function chartSummaryLabel(raw: unknown, locale: string): string {
-	if (raw instanceof Date) return raw.toLocaleDateString(locale);
-	if (typeof raw === "number" && raw > 1e11) return new Date(raw).toLocaleDateString(locale);
+	// 날짜는 기준 시간대로 찍는다 - 안 그러면 차트 요약만 브라우저 존으로 하루 어긋난다.
+	const dateOptions = { timeZone: appTimeZone() };
+	if (raw instanceof Date) return raw.toLocaleDateString(locale, dateOptions);
+	if (typeof raw === "number" && raw > 1e11)
+		return new Date(raw).toLocaleDateString(locale, dateOptions);
 	if (raw == null) return "";
 	return String(raw);
 }

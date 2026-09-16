@@ -223,6 +223,14 @@
 			});
 		})();
 		</script>
+	@else
+		<%-- 자료가 없으면 구역째 사라지고 있었다.
+		     실측 2026-09-16: 거래가 없는 43 종목(86 중)에서 이 제목이 통째로 빠졌다.
+		     형제 구역(매매·배당·보유·주가 추이)은 모두 "없습니다" 라고 말한다. --%>
+		<div>
+			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
+			@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.account.detail.empty.valuation.series"), boxed = true, padding = "py-6", widenRangeAction = !"all".equals(rangeMode))
+		</div>
 	@endif
 
 	<!-- 보유 종목 -->

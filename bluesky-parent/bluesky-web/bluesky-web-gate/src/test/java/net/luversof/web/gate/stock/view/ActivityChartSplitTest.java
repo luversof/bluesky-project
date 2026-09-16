@@ -73,12 +73,20 @@ class ActivityChartSplitTest {
         .contains("chartActivity.realizedProfit() != null");
   }
 
-  /** 배당은 늘 들어온 돈이라 부호를 붙이지 않고, 손익만 부호를 붙인다. */
+  /**
+   * 배당은 늘 들어온 돈이라 부호를 붙이지 않고, 손익만 부호를 붙인다.
+   *
+   * <p>2026-09-15: 이 검사는 옛 표기를 통째로 박아 두고 있었다({@code raw >= 0 ? '+' : '-'}). 그 꼴은 <b>0 에도 "+" 를
+   * 붙인다</b> &mdash; 지키려던 것은 "signed 일 때만 부호" 이지 그 비교식이 아니었다. 두 뜻을 따로 본다: signed 가 아니면 부호를 안 붙이고,
+   * signed 라도 0 에는 안 붙인다.
+   */
   @Test
   void 부호는_손익_차트에만_붙인다() throws IOException {
     String source = source();
 
-    assertThat(source).contains("signed ? (raw >= 0 ? '+' : '-') : ''");
+    assertThat(source).as("signed 가 아니면 부호를 붙이지 않는다").contains("var prefix = signed ?");
+    assertThat(source).as("0 에도 부호를 붙이는 옛 꼴이 남아 있다").doesNotContain("raw >= 0 ?");
+    assertThat(source).as("0 은 반올림 뒤에 가른다").contains("raw > 0 ? '+' : (raw < 0 ? '-' : '')");
     assertThat(source)
         .as("배당 차트는 부호 없이, 손익 차트는 부호와 함께 그린다")
         .contains("activityChartDividend,")
