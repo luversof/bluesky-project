@@ -34,6 +34,8 @@
 @param String monthlyDividendReferenceResult = ""
 @param String monthlyDividendReferenceResultMessage = ""
 @param boolean monthlyDividendReferenceResultIsError = false
+<%-- 가져오기는 됐지만 출처 표의 잘못된 행을 건너뛰었을 때의 안내. 성공(초록)도 오류(빨강)도 아니다. --%>
+@param String monthlyDividendReferenceWarningMessage = ""
 
 <%-- 주소에 싣는 종목 코드는 인코딩해서 싣는다.
      이 파일은 같은 값을 74·77 행에서는 URLEncoder 로 싣고 표 안 링크 네 곳에서는 날것으로 싣고 있었다.
@@ -145,6 +147,13 @@
 	@if(monthlyDividendReferenceResultMessage != null && !monthlyDividendReferenceResultMessage.isEmpty())
 		<div class="alert ${monthlyDividendReferenceResultIsError ? "alert-error border border-error/20 bg-error/10 text-error-content" : "alert-success border border-success/20 bg-success/10 text-success-content"}" role="alert">
 			<span>${monthlyDividendReferenceResultMessage}</span>
+		</div>
+	@endif
+	<%-- 출처 사이트의 오타 한 줄 때문에 가져오기가 통째로 실패하던 것을, 그 줄만 건너뛰게 바꿨다(실측 2026-09-17: RISE 44J2
+	     실지급일 2025-05-19, 사용자 결정). 건너뛴 줄을 말하지 않으면 이력에 빈 달이 생겨도 모른다 - 그래서 사유를 그대로 적는다. --%>
+	@if(monthlyDividendReferenceWarningMessage != null && !monthlyDividendReferenceWarningMessage.isEmpty())
+		<div class="alert alert-warning border border-warning/30 bg-warning/10 text-base-content" role="alert" data-import-skipped-warning>
+			<span>${monthlyDividendReferenceWarningMessage}</span>
 		</div>
 	@endif
 

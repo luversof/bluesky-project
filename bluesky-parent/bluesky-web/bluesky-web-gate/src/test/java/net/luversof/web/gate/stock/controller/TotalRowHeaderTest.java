@@ -92,7 +92,8 @@ class TotalRowHeaderTest {
       {"periodBreakdownTable.jte", "2"},
       {"dividend/dividendYieldAnalytics.jte", "6"},
       {"dividend/dividendSummaryCards.jte", "1"},
-      {"assetStatus.jte", "5"},
+      // 종목 표의 "보유 계좌 보기" 상세(2026-09-17)도 계좌 칸을 행 머리글로 둔다: 5 -> 6.
+      {"assetStatus.jte", "6"},
       {"dividend/dividendPeriodBreakdown.jte", "4"},
     };
 

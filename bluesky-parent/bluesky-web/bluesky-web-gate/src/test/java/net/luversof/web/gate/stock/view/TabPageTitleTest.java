@@ -19,21 +19,20 @@ import org.junit.jupiter.api.Test;
  */
 class TabPageTitleTest {
 
+  /**
+   * 배당 화면은 2026-09-17 캘린더 탭을 실수령 배당에 통합해 탭이 하나도 남지 않았다(사용자 결정) - 제목은 화면 이름이다. 옛 탭 제목 규칙이 남아 있으면 없는
+   * 탭 이름이 제목에 붙는다.
+   */
   @Test
-  void 배당_탭은_제목에_탭_이름을_넣는다() throws IOException {
+  void 배당_화면은_탭이_없어_화면_이름을_제목으로_쓴다() throws IOException {
     String jte =
         flatten(
             Files.readString(Path.of("src/main/jte/stock/dividend.jte"), StandardCharsets.UTF_8));
     assertThat(jte)
-        .as("탭에 따라 이름을 고르는 규칙")
-        .contains(flatten("String dividendTabLabel = isCalendar"));
-    assertThat(jte).contains(flatten("stock.page.dividend.tab.calendar"));
-    assertThat(jte).contains(flatten("stock.page.dividend.tab.history"));
+        .contains(flatten("pageTitle = MessageUtil.getMessage(\"stock.page.dividend.title\"),"));
     assertThat(jte)
-        .as("고정 제목을 그대로 넘기면 두 탭이 같아진다")
-        .doesNotContain(
-            flatten("pageTitle = MessageUtil.getMessage(\"stock.page.dividend.title\"),"));
-    assertThat(jte).contains(flatten("pageTitle = dividendPageTitle,"));
+        .doesNotContain("role=\"tablist\"")
+        .doesNotContain("stock.page.dividend.tab.calendar");
   }
 
   /** 이미 지키고 있던 두 화면이 되돌아가지 않게 함께 묶는다. */

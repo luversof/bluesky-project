@@ -110,7 +110,7 @@ class DividendAsOfDisclosureTest {
         List.of(
             "src/main/jte/stock/htmx/fragments/upcomingDividends.jte",
             "src/main/jte/stock/fragments/monthlyDividendSimulator.jte",
-            "src/main/jte/stock/dividend.jte")) {
+            "src/main/jte/stock/fragments/upcomingDividendSchedule.jte")) {
       String source = Files.readString(Path.of(template), StandardCharsets.UTF_8);
       assertThat(source)
           .as("%s 에 스냅샷 수량 안내가 없다 - 같은 숫자인데 이 화면만 조용하다", template)
@@ -122,20 +122,20 @@ class DividendAsOfDisclosureTest {
   @Test
   void 달력은_어긋난_수량이_없으면_안내를_내지_않는다() throws IOException {
     String source =
-        Files.readString(Path.of("src/main/jte/stock/dividend.jte"), StandardCharsets.UTF_8);
-    assertThat(source)
-        .as("조건 없이 항상 그리면 어긋나지 않을 때도 경고가 뜬다")
-        .contains("@if(calendarStaleQuantityCount > 0)");
+        Files.readString(
+            Path.of("src/main/jte/stock/fragments/upcomingDividendSchedule.jte"),
+            StandardCharsets.UTF_8);
+    assertThat(source).as("조건 없이 항상 그리면 어긋나지 않을 때도 경고가 뜬다").contains("@if(staleQuantityCount > 0)");
   }
 
   /** 달력 화면에 넘길 값을 컨트롤러가 실제로 만드는지. 템플릿만 고치면 값이 늘 0 이라 안내가 영영 안 뜬다. */
   @Test
   void 컨트롤러가_달력용_수량_기준을_만든다() throws IOException {
     String source = StockControllerSources.all();
-    assertThat(source).contains("calendarStaleQuantityCount");
-    assertThat(source).contains("calendarCurrentQuantityTotal");
+    assertThat(source).contains("upcomingStaleQuantityCount");
+    assertThat(source).contains("upcomingCurrentQuantityTotal");
     // 요약 카드와 같은 계산을 써야 두 화면의 숫자가 갈리지 않는다.
-    int at = source.indexOf("calendarStaleQuantityCount");
+    int at = source.indexOf("upcomingStaleQuantityCount");
     assertThat(source.substring(Math.max(0, at - 600), at)).contains("currentQuantitySummary(");
   }
 
@@ -164,9 +164,11 @@ class DividendAsOfDisclosureTest {
   @Test
   void 배당_달력도_기준일을_적는다() throws IOException {
     String source =
-        Files.readString(Path.of("src/main/jte/stock/dividend.jte"), StandardCharsets.UTF_8);
-    assertThat(source).contains(KEY).contains("calendarAsOfOldest");
-    assertThat(source).as("기준일이 없을 때도 그리면 빈 라벨만 남는다").contains("@if(calendarAsOfOldest != null)");
+        Files.readString(
+            Path.of("src/main/jte/stock/fragments/upcomingDividendSchedule.jte"),
+            StandardCharsets.UTF_8);
+    assertThat(source).contains(KEY).contains("asOfOldest");
+    assertThat(source).as("기준일이 없을 때도 그리면 빈 라벨만 남는다").contains("@if(asOfOldest != null)");
   }
 
   @Test

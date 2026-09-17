@@ -40,7 +40,7 @@
 
 		<%-- 짧은 구간을 고르면 연도별은 한 줄이라 아무것도 말해 주지 않는다 - 그럴 때는 월별을 먼저 보여 준다
 		     (자산 성장의 기간별 손익이 같은 이유로 달 단위를 먼저 보여 준다). 사용자가 고른 탭이 있으면 그것이 우선. --%>
-		<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-3" data-panel-tab-group="dividendPeriod" data-panel-tab-default="${yearlyRows != null && yearlyRows.size() > 1 ? "year" : "month"}">
+		<div role="tablist" class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1 mb-3" data-panel-tab-group="dividendPeriod" data-panel-tab-default="${yearlyRows != null && yearlyRows.size() > 1 ? "year" : "month"}">
 			<a role="tab" data-panel-tab="year" aria-controls="dividendPeriodPanel-year" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${yearTabLabel}</a>
 			<a role="tab" data-panel-tab="month" aria-controls="dividendPeriodPanel-month" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${monthTabLabel}</a>
 		</div>

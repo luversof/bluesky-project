@@ -33,7 +33,11 @@
 @param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfitOwnBasis = java.math.BigDecimal.ZERO
+@param BigDecimal realizedCostBasis = java.math.BigDecimal.ZERO
+@param BigDecimal realizedOwnCostBasis = java.math.BigDecimal.ZERO
 @param BigDecimal totalDividend = java.math.BigDecimal.ZERO
+@param net.luversof.web.gate.stock.util.StockHoldingReturnUtil.Row accountReturn = null
+@param java.time.LocalDate accountFirstTradeDate = null
 @param List<TradeProfit> holdings = java.util.List.of()
 @param List<TradeResponse> trades = java.util.List.of()
 @param List<DividendResponse> dividends = java.util.List.of()
@@ -89,7 +93,11 @@
 					evaluationProfit = evaluationProfit,
 					realizedProfit = realizedProfit,
 					realizedProfitOwnBasis = realizedProfitOwnBasis,
+					realizedCostBasis = realizedCostBasis,
+					realizedOwnCostBasis = realizedOwnCostBasis,
 					totalDividend = totalDividend,
+					accountReturn = accountReturn,
+					accountFirstTradeDate = accountFirstTradeDate,
 					holdings = holdings,
 					trades = trades,
 					dividends = dividends,

@@ -174,10 +174,11 @@ class DividendCalendarActualPayDayTest {
         .contains("MonthlyDividendPayDayUtil.actualDayByStockItem(");
     assertThat(source)
         .as("실제 지급일이 있으면 그것을 먼저 써야 한다")
-        .contains("actualDay != null ? actualDay : (payDay != null ? payDay.day() : 0)");
+        .contains("announced != null ? announced : payDay.day()");
     assertThat(source)
         .as("확정 여부를 Entry 에 실어야 화면이 '추정' 이라고 거짓말하지 않는다")
-        .contains("actualDay != null,");
+        .contains(
+            "upcomingEntry(row, symbol, ratio, payDay, date.getDayOfMonth(), announced != null)");
   }
 
   /**

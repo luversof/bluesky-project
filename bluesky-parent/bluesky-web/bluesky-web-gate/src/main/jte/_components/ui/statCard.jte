@@ -42,8 +42,13 @@
 	<%-- valueTitle 은 2026-09-10 까지 title 속성에만 있었다. title 은 role 없는 div 에서 접근성 트리에 노출되지
 	     않아 마우스 호버 전용이었다. 판단 규칙은 srExact 가 갖는다 - 화면 값과 숫자가 같으면 내보내지 않는다. --%>
 	<div class="stat-card-value ${amount ? "amount-value" : ""} ${toneClass}" title="${valueTitle}">${value}@template._components.ui.srExact(text = valueTitle, visible = value)</div>
-	@if((sub != null && !sub.isEmpty()) || (subAmount != null && !subAmount.isEmpty()))
-	<div class="stat-card-sub ${subClass}">${subBefore}@if(subAmount != null && !subAmount.isEmpty())<span class="amount-value">${subAmount}</span>@endif${subAfter}${sub}</div>
+	<%-- sub 와 금액 줄을 함께 넘기면 두 줄이다 - 계좌 상세 실현 손익이 "+5.3% · 판 주식 원가 대비" 와 "이 계좌 기준 +2,063,739 · +33.6%" 를
+	     함께 적는다(사용자 선택 2026-09-17). 한 알약에 이으면 두 비율이 어느 금액의 것인지 갈리지 않는다. 하나만 넘기면 예전과 같다. --%>
+	@if(sub != null && !sub.isEmpty())
+	<div class="stat-card-sub ${subClass}">${sub}</div>
+	@endif
+	@if(subAmount != null && !subAmount.isEmpty())
+	<div class="stat-card-sub ${subClass}">${subBefore}<span class="amount-value">${subAmount}</span>${subAfter}</div>
 	@endif
 	@if(href != null)
 	<a href="${href}" class="stat-card-cover"><span class="sr-only">${label}${scopeNote != null && !scopeNote.isEmpty() ? " " + scopeNote : ""}</span></a>

@@ -195,6 +195,11 @@
 	.stat-card-label {
 		font-size: 0.8125rem; font-weight: 500; letter-spacing: -0.01em;
 		color: color-mix(in oklch, var(--color-base-content) 62%, transparent);
+		/* 보조줄과 같은 규칙 - 한글 단어는 띄어쓰기에서만 나누고, 단어 하나가 카드보다 넓을 때만 그 안에서 끊는다.
+		   실측 2026-09-17(22 화면 x 5 조합): 연평균 카드 라벨이 375 · 414px 에서 "매/수" 로 끊겼다. keep-all 만 주면 단어 중간 끊김
+		   63 -> 0 이지만 320px + 글꼴 200% 에서 "평가 금액" 조차 카드보다 넓어 라벨 넘침이 13 -> 49 로 는다. overflow-wrap: anywhere 를
+		   함께 주면 끊김 63 -> 49(남은 것은 모두 320px + 200% 의 넘칠 자리), 라벨 넘침 13 -> 8(남은 것은 아이콘 칩 · 화살표 몫), 문서 넘침 불변. */
+		word-break: keep-all; overflow-wrap: anywhere;
 	}
 	.stat-card-go { margin-left: auto; opacity: 0; transition: opacity .18s ease; color: var(--color-primary); }
 	.stat-card-link:hover .stat-card-go { opacity: 1; }
@@ -217,6 +222,12 @@
 		font-size: 0.75rem; font-weight: 500; font-variant-numeric: tabular-nums;
 		/* 보조 문구는 값에 딸린 꼬리표다 - 알약 바탕을 깔아 값과 구분한다(현재 글자색을 옅게 깐다). */
 		background-color: color-mix(in oklch, currentColor 6%, transparent);
+		/* 한글 단어 안에서 줄을 바꾸지 않는다 - 좁은 카드에서 "보유 원가 대/비" 처럼 끊겼다(실측 2026-09-17: 18 화면 x 5 조합에서 17 곳 -> 0,
+		   보조줄 넘침 6 · 문서 넘침 합 349px 은 넣기 전과 같다). 띄어쓰기에서는 그대로 줄을 바꾼다.
+		   단어 하나가 카드보다 넓을 때만 그 안에서 끊는다(overflow-wrap: anywhere) - 같은 날 계좌 상세 카드에 기준 문구와 "최초 매수 2025-03-28"
+		   이 붙자 320px + 글꼴 200% 에서 끊을 수 없는 날짜 · 비율이 페이지를 가로로 밀었다. 실측 22 화면 x 5 조합: 문서 넘침 367 -> 322px
+		   (계좌 상세 여섯 곳 27 · 7 · 7 · 4 -> 0), 단어 안 끊김은 그 폭에서만 0 -> 28, 다른 폭은 변화 없음. */
+		word-break: keep-all; overflow-wrap: anywhere;
 	}
 	/* 아이콘 칩: 성격별로 옅은 색 바탕에 같은 계열 선 아이콘. */
 	.stat-chip {
@@ -229,6 +240,22 @@
 	.stat-chip-loss { background-color: color-mix(in oklch, #3159c4 12%, transparent); color: #3159c4; }
 	.stat-chip-dividend { background-color: color-mix(in oklch, #147449 12%, transparent); color: #147449; }
 	.stat-chip-neutral { background-color: color-mix(in oklch, var(--color-base-content) 10%, transparent); color: color-mix(in oklch, var(--color-base-content) 72%, transparent); }
+	/* 카드 안쪽이 글꼴에 비해 아주 좁으면 장식(아이콘 칩 · 호버 화살표)을 뺀다 - 라벨만 남긴다. 기준이 rem 이라 글꼴을 키우면 같이 커진다.
+	   실측 2026-09-17(브라우저 기본 글꼴 32px): 대시보드 카드 안쪽이 320 ~ 414px 에서 1.31 ~ 2.78rem 인데 칩 2rem 과 화살표가 들어가
+	   카드 머리가 넘쳤고 320px 에서는 페이지를 36px 밀었다. 기본 글꼴에서 가장 좁은 카드 안쪽은 6.25rem(320px) 이라 5rem 은
+	   기본 글꼴 화면을 바꾸지 않는다. 글꼴 200% 768px 은 8.31rem 이라 칩이 남는다.
+	   칩 · 화살표 기본 규칙(display: inline-flex 등) 뒤에 둬야 한다 - 앞에 뒀더니 같은 우선순위라 칩이 그대로 남았다(화살표만 사라짐). */
+	@container (max-width: 5rem) {
+		.stat-chip, .stat-card-go { display: none; }
+	}
+	/* 지표 카드 격자는 격자 폭이 글꼴에 비해 좁으면 카드를 한 줄에 한 장 놓는다(사용자 선택 2026-09-17). 기준이 rem 이라 글꼴을 키우면 같이 커진다.
+	   실측(브라우저 기본 글꼴 설정): 기본 글꼴에서 가장 좁은 격자는 18rem(320px) 이라 17rem 은 기본 글꼴 화면을 바꾸지 않는다.
+	   글꼴 200% 는 320 · 375 · 414px 격자가 8 · 9.7 · 10.9rem(카드 안쪽 1.4 ~ 2.8rem) 이라 라벨과 금액이 한두 자씩 세로로 쌓였다 -
+	   한 줄 한 장이면 안쪽 5.8 ~ 8.7rem. 768px(22rem) 은 두 장 그대로(안쪽 8.4rem). 격자는 부모 폭을 받는 블록이라 크기 격리가 폭을 바꾸지 않는다. */
+	.stat-card-grid { container: stat-card-grid / inline-size; }
+	@container stat-card-grid (max-width: 17rem) {
+		.stat-card-grid > *, .stat-card-grid > .contents > * { grid-column: 1 / -1; }
+	}
 
 	/* 첫 화면의 주 지표 카드. 흰 카드가 줄줄이 놓이면 어디가 제일 중요한지 보이지 않는다
 	   - 옅은 브랜드 색을 깔고 위쪽에 얇은 강조선을 둬서 한 장만 도드라지게 한다. */
@@ -454,6 +481,13 @@
 	.tab { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2rem; padding-inline: 0.75rem;
 		font-size: 0.875rem; cursor: pointer; border-radius: var(--radius-field); color: color-mix(in oklab, var(--color-base-content) 70%, transparent); }
 	.tab-active, .tab.tab-active, .tab[aria-selected="true"] { background-color: var(--color-base-100); color: var(--color-base-content); font-weight: 600; }
+	/* 탭 줄이 글자에 비해 좁으면 탭을 줄이지 않고 줄 안에서 가로로 스크롤한다(사용자 선택 2026-09-17: 큰 글꼴 + 폰 폭 세로 글자).
+	   flex-1 탭은 자리가 남으면 똑같이 나누고, 모자라면 제 글자 폭 밑으로 줄지 않는다 - 전에는 높이 2rem 탭 안에서 글자가 여러 줄로
+	   접혀 탭 밖으로 넘쳤다. 실측(브라우저 기본 글꼴 설정): 글꼴 200% 375px 시뮬레이터 탭 "지속가능성" 5 줄 · 자산 성장 표 탭 4 ~ 7 줄,
+	   기본 글꼴에서도 폰 폭 자산 성장 표 탭 2 ~ 4 줄(320 · 375 · 414px) · 시뮬레이터 · 관리 탭 2 줄(320px). 768px 이상은 모두 한 줄이라 그대로다.
+	   스크롤 상자라 안쪽 절대배치 sr-only 가 문서를 밀지 않게 relative. */
+	.tabs-scroll { flex-wrap: nowrap; overflow-x: auto; position: relative; }
+	.tabs-scroll > .tab { min-width: max-content; white-space: nowrap; }
 
 	/* ---- menu (sidebar / dropdown lists) ---- */
 	.menu { display: flex; flex-direction: column; gap: 0.125rem; padding: 0.5rem; list-style: none; }
@@ -770,6 +804,11 @@
 	[data-account-detail-toggle] {
 		display: none !important;
 	}
+	/* 종목 표의 "보유 계좌 보기" 는 종이에서 펼치지 않는다 - 같은 계좌 x 종목 행이 위 계좌 표의 보유 종목 상세로 이미 찍힌다(두 번 찍지 않는다).
+	   누를 수 없는 버튼만 감춘다. */
+	[data-stock-detail-toggle] {
+		display: none !important;
+	}
 	/* 종이에는 선택 체크박스를 찍지 않는다(위에서 .row-select-box 를 숨긴다). 그런데 그 체크박스 자리로 준
 	   첫 칸 최소 폭(8.125rem = 130px)이 인쇄에도 남아 폭을 붙잡고 있었다 - 실측 2026-09-11(816px, print):
 	   배당 '종목별/계좌별 배당 수익률' 이 첫 칸 130px 탓에 표폭 775px 가 되어 컨테이너(750)를 넘었다.
@@ -879,8 +918,14 @@ html { scroll-padding-top: 7rem; }
 html.hide-amounts .amount-value { filter: blur(10px); opacity: 0.6; user-select: none; pointer-events: none; }
 /* 금액은 공백 없는 한 덩어리라 자리가 모자라도 안 끊긴다 - 실측 2026-09-16(320px·글꼴 200%):
    자산 성장 기간 손익이 226px, 배당 캘린더 총액이 146px 문서 밖으로 나갔다.
-   자리가 넉넉하면 아무 일도 일어나지 않는다. */
+   카드 · 요약처럼 자리가 넉넉하면 아무 일도 일어나지 않는다 - 표는 다르다(아래). */
 .amount-value { overflow-wrap: anywhere; }
+/* 표 안 금액은 자릿수 중간에서 끊지 않는다. anywhere 는 줄만 바꾸는 게 아니라 칸의 최소 폭을 한 글자로 만들고,
+   표는 그 최소 폭까지 칸을 누른다 - 자리가 넉넉한 넓은 화면에서도 "362,525,/079" 로 끊겼다
+   (실측 2026-09-17: 9 화면 x 6 폭에서 7,534 곳, 지속가능성 1440px 243 · 배당 내역 1280px 523 · 자산 현황 1340px 41).
+   표는 가로 스크롤 상자 안에 있어 안 끊겨도 문서는 넘치지 않는다(같은 실측, 문서 넘침 0 - 대신 상자 안 스크롤이 는다).
+   사용자 결정 2026-09-17: 표 안 금액만 안 끊기. */
+table .amount-value { overflow-wrap: normal; }
 html.hide-amounts .amount-chart { filter: blur(15px); opacity: 0.3; user-select: none; pointer-events: none; }
 
 /* 클라이언트 정렬 테이블 */
@@ -1560,6 +1605,7 @@ thead [data-sort-key] {
 
 [data-sort-key],
 [data-account-detail-toggle],
+[data-stock-detail-toggle],
 .table td a,
 .card-body li a,
 .card-body .flex > a.link,
@@ -1569,6 +1615,7 @@ thead [data-sort-key] {
 
 [data-sort-key]::after,
 [data-account-detail-toggle]::after,
+[data-stock-detail-toggle]::after,
 .table td a::after,
 .card-body li a::after,
 .card-body .flex > a.link::after,

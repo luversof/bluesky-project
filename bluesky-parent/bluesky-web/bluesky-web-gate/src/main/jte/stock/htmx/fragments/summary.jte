@@ -196,7 +196,7 @@
 	</div>
 
 	<!-- 보조 지표 -->
-	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+	<div class="grid stat-card-grid grid-cols-2 lg:grid-cols-4 gap-3">
 	<%-- 카드가 집계한 기간을 링크에 실어 보낸다. 안 실으면 마지막으로 보던 기간이 복원돼, 카드에 적힌 수와
 	     다른 수가 있는 화면에 떨어진다(실측 2026-09-11: 저장된 기간이 1개월일 때 '올해 매수 2억 1,899만'
 	     카드를 눌렀더니 매매 화면은 1개월 20 건을 보여 줬다). 위 넉 장은 전기간, 아래 '올해' 넉 장은 올해다. --%>
@@ -254,7 +254,7 @@
 					<span class="text-xs text-base-content/60">${periodSummaryFrom.toString()} ~ ${periodSummaryTo.toString()}</span>
 				@endif
 			</div>
-			<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+			<div class="grid stat-card-grid grid-cols-2 lg:grid-cols-4 gap-3">
 				<%-- 값은 매수 금액이다. "매매" 라고만 적으면 매수+매도 합으로 읽힌다 - 라벨을 매수로 두고
 				     매도 금액과 건수를 보조 문구에 함께 적는다. --%>
 				@template._components.ui.statCard(

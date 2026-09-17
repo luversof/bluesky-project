@@ -515,6 +515,18 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     }
     model.addAttribute("dividendList", displayDividendList);
     model.addAttribute("allDividendList", viewList);
+    // 기간이 달력 한 달이면 그 달 지급을 날짜에 놓은 달력을 함께 그린다 - 옛 '배당 캘린더' 탭을 실수령 배당에 통합했다
+    // (사용자 결정 2026-09-17). 이 목록(viewList)은 이미 계좌 · 종목 · 태그 필터를 거쳤으므로 달력도 필터를 따른다.
+    java.time.LocalDate calendarToday = java.time.LocalDate.now(zone);
+    java.time.YearMonth calendarMonth =
+        net.luversof.web.gate.stock.util.DividendMonthCalendarUtil.calendarMonth(
+            startInstant, endInstant, zone, calendarToday);
+    model.addAttribute(
+        "dividendMonthCalendar",
+        calendarMonth == null
+            ? null
+            : net.luversof.web.gate.stock.util.DividendMonthCalendarUtil.build(
+                viewList, calendarMonth, calendarToday, zone));
     // 연도별·월별 집계(사용자 요청 2026-09-10): 월별 막대 차트만으로는 '그 해에 얼마' 를 숫자로 읽을 수 없었다.
     // 화면이 쓰는 존 그대로 지급일 기준으로 묶는다 - 표의 다른 날짜와 하루가 어긋나지 않게.
     java.time.ZoneId breakdownZone =

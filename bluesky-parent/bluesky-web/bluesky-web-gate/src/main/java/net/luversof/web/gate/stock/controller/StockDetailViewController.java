@@ -335,6 +335,20 @@ public class StockDetailViewController {
     var timeSeriesFuture =
         stockAsync.supply(() -> tradeProfitClient.timeSeriesWithSummary(seriesParamsPre));
     var accountsFuture = stockAsync.supply(() -> accountClient.getAccountsByUserId(userId));
+    // 보유 기간 · 연평균 수익률 - 자산 현황과 같은 입력(최초 매수일 · 종목별 누적 배당 · 하루치 순현금흐름)을 같은 API 로 받는다.
+    // 기간 선택과 무관한 '보유 전체' 값이라 기간을 싣지 않는다(사용자 요청 2026-09-17). 존은 '오늘' 을 정하는 존과 같게 싣는다 -
+    // 흐름의 날짜와 오늘이 다른 존이면 하루가 어긋난다.
+    MultiValueMap<String, String> holdingReturnParams = new LinkedMultiValueMap<>();
+    holdingReturnParams.add("userId", userId.toString());
+    holdingReturnParams.add("stockItemIdList", resolvedId.toString());
+    holdingReturnParams.add(
+        "timeZone", net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone).getId());
+    var firstBuyDateFuture =
+        stockAsync.supply(() -> tradeClient.findFirstBuyDateByStockItem(holdingReturnParams));
+    var dividendTotalFuture =
+        stockAsync.supply(() -> dividendClient.findDividendTotalByStockItem(holdingReturnParams));
+    var cashFlowFuture =
+        stockAsync.supply(() -> tradeClient.findCashFlowsByStockItem(holdingReturnParams));
     // 전환기(다른 종목으로 바로 가기) 목록. 다른 조회와 함께 던지므로 왕복이 늘지 않는다
     // (실측 2026-08-31: holdingsSnapshot 50~60ms, 이 화면의 다른 호출보다 빠르다).
     var navHoldingsParams = new LinkedMultiValueMap<String, String>();
@@ -383,6 +397,12 @@ public class StockDetailViewController {
     // realizedProfitNet 을 쓰면 같은 화면의 거래 행 합계와 어긋난다(실측 2026-08-23: 28 종목이 달랐고
     // 합계 차이 0.11%). 매도 54 건 전부 기록값이 있어 잃는 값은 없다.
     BigDecimal realizedProfit = sumTradeProfit(profits, TradeProfit::realizedProfit);
+    // 실현 손익 카드의 수익률 분모 - 판 주식의 원가(매도 금액 - 기록 실현손익). 실현손익과 같은 기간 행에서 구해야 기간을 바꿔도
+    // 분자와 분모가 같은 매도를 말한다(사용자 선택 2026-09-17 "카드마다 그 원금 대비"). 이 기간에 판 적이 없으면 0 이고 카드는 비율 대신
+    // 사유를 적는다.
+    BigDecimal periodSellAmount = sumTradeProfit(profits, TradeProfit::totalSellAmount);
+    BigDecimal realizedCostBasis =
+        periodSellAmount.signum() > 0 ? periodSellAmount.subtract(realizedProfit) : BigDecimal.ZERO;
 
     // 보유 스냅샷(수량·평균단가·현재가·평가)은 기간 미적용 호출로 구한다.
     // API 의 totalBuyCost 는 "기간 내 매수원가"이고 holdingQuantity 는 전체 누적 보유량이라
@@ -577,6 +597,50 @@ public class StockDetailViewController {
     // 빈 기간 안내에 "전체 기간으로 보기" 를 띄울지 화면이 판단하려면 지금 모드를 알아야 한다.
     model.addAttribute("rangeMode", rangeMode == null ? "" : rangeMode);
 
+    // 보유 전체 기준 보유 기간 · 연평균 수익률(복리). 자산 현황의 종목 줄과 <b>같은 계산 · 같은 입력</b>이다 -
+    // 자산 현황의 종목 줄과 같은 계산 · 같은 입력이다 - 연평균은 이 종목의 하루치 순현금흐름에 지금 평가액을 더한 XIRR(사용자 결정
+    // 2026-09-17), 상쇄율은 평가손익과 누적 배당(세후, totalByStockItem). 두 화면이 다른 식을 쓰면 같은 종목이 두 연평균을 갖는다.
+    // 사용자 요청 2026-09-17: "종목 상세에서 보유 손익 + 배당 손익, 보유 기간 대비 손익".
+    java.util.Map<UUID, java.time.LocalDate> firstBuyDates =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstBuyDateFuture);
+    java.util.Map<UUID, BigDecimal> dividendTotals =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(dividendTotalFuture);
+    java.util.Map<UUID, List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse>>
+        cashFlows = net.luversof.web.gate.stock.support.StockAsyncSupport.join(cashFlowFuture);
+    java.time.LocalDate holdingFirstBuyDate =
+        firstBuyDates != null ? firstBuyDates.get(resolvedId) : null;
+    BigDecimal holdingDividendTotal =
+        dividendTotals != null && dividendTotals.get(resolvedId) != null
+            ? dividendTotals.get(resolvedId)
+            : BigDecimal.ZERO;
+    List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse> holdingCashFlows =
+        cashFlows != null ? cashFlows.get(resolvedId) : null;
+    model.addAttribute("holdingFirstBuyDate", holdingFirstBuyDate);
+    model.addAttribute(
+        "holdingReturn",
+        net.luversof.web.gate.stock.util.StockHoldingReturnUtil.of(
+            holdingFirstBuyDate,
+            java.time.LocalDate.now(
+                net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone)),
+            holdingCashFlows,
+            evaluationAmount,
+            evaluationProfit,
+            holdingDividendTotal));
+    // 합산 손익의 세 몫(평가 변동 · 실현 · 배당)에 붙일 비율의 분모. 합산 비율(periodProfitRatePct)과 같은 분모라야 세 비율의
+    // 합이 합산 비율이 된다 - api-stock 은 '넣어 둔 돈' 을 기초 평가액 + max(기간 순유입, 0) 으로 둔다(TradeProfitService).
+    model.addAttribute(
+        "periodCapitalBase",
+        periodSummary == null
+            ? null
+            : (periodSummary.openingValue() != null
+                    ? periodSummary.openingValue()
+                    : BigDecimal.ZERO)
+                .add(
+                    (periodSummary.principalDelta() != null
+                            ? periodSummary.principalDelta()
+                            : BigDecimal.ZERO)
+                        .max(BigDecimal.ZERO)));
+
     model.addAttribute("holdingQuantity", holdingQuantity);
     model.addAttribute("averageBuyPrice", averageBuyPrice);
     model.addAttribute("currentPrice", currentPrice);
@@ -586,6 +650,7 @@ public class StockDetailViewController {
     model.addAttribute("evaluationAmount", evaluationAmount);
     model.addAttribute("evaluationProfit", evaluationProfit);
     model.addAttribute("realizedProfit", realizedProfit);
+    model.addAttribute("realizedCostBasis", realizedCostBasis);
     model.addAttribute("totalBuyCost", totalBuyCost);
     model.addAttribute("totalDividend", totalDividend);
     // 계좌별 보유 현황 (이 종목을 보유한 계좌별 분해; 기간 미적용 스냅샷 기준)
@@ -745,6 +810,16 @@ public class StockDetailViewController {
     var accTimeSeriesFuture =
         stockAsync.supply(() -> tradeProfitClient.timeSeries(accSeriesParams));
     var accStockItemsFuture = stockAsync.supply(this::loadStockItems);
+    // 연평균 수익률(XIRR) 카드 입력 - 이 계좌의 매수 · 매도 · 배당 하루치 순현금흐름(종목별로 온다). 기간 선택과 무관한
+    // '이 계좌 전체 거래' 값이라 기간을 싣지 않는다(사용자 선택 2026-09-17). 존은 '오늘' 을 정하는 존과 같게 싣는다 -
+    // 흐름의 날짜와 오늘이 다른 존이면 하루가 어긋난다.
+    MultiValueMap<String, String> accCashFlowParams = new LinkedMultiValueMap<>();
+    accCashFlowParams.add("userId", userId.toString());
+    accCashFlowParams.add("accountIdList", resolvedId.toString());
+    accCashFlowParams.add(
+        "timeZone", net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone).getId());
+    var accCashFlowFuture =
+        stockAsync.supply(() -> tradeClient.findCashFlowsByStockItem(accCashFlowParams));
 
     // 종목 id → 종목명 (보유/내역 표의 종목명 + 종목 상세 링크용)
     Map<UUID, String> stockNameById = new HashMap<>();
@@ -902,6 +977,41 @@ public class StockDetailViewController {
     // 종목 단위 기준이라 36 종목 전부 값의 0.009% 안에서 맞는다.
     BigDecimal realizedProfitOwnBasis = sumTradeProfit(profits, TradeProfit::realizedProfitNet);
     model.addAttribute("realizedProfitOwnBasis", realizedProfitOwnBasis);
+    // 실현 손익 카드의 수익률 분모 - 종목 상세와 같은 규칙(판 주식의 원가 = 매도 금액 - 기록 실현손익, 같은 기간 행).
+    // 기록값이 계좌를 합친 원가를 따르므로 '이 계좌 기준' 줄에는 그 기준의 분모를 따로 둔다 - 이 계좌 매매로 다시 계산한 원가
+    // (매도 총수령액 - 이 계좌 기준 실현손익). 실측 2026-09-17 연금저축1: 기록 +415,053 / 7,788,782 = +5.3%,
+    // 이 계좌 기준 +2,063,739 / 6,139,752 = +33.6% (사용자 선택: 카드 금액 기준 + 차이 줄에 그 기준 비율).
+    // 이 기간에 판 적이 없으면 둘 다 0 이고 카드는 비율 대신 사유를 적는다.
+    BigDecimal periodSellAmount = sumTradeProfit(profits, TradeProfit::totalSellAmount);
+    model.addAttribute(
+        "realizedCostBasis",
+        periodSellAmount.signum() > 0
+            ? periodSellAmount.subtract(realizedProfit)
+            : BigDecimal.ZERO);
+    model.addAttribute(
+        "realizedOwnCostBasis",
+        periodSellAmount.signum() > 0
+            ? sumTradeProfit(profits, TradeProfit::totalSellProceeds)
+                .subtract(realizedProfitOwnBasis)
+            : BigDecimal.ZERO);
+    // 연평균 수익률(XIRR) - 이 계좌의 모든 종목 흐름을 합치고 지금 평가액을 오늘 들어온 돈으로 친다(종목 상세 · 자산 현황과 같은 계산).
+    // 기간은 이 계좌의 첫 흐름(= 최초 매수)부터 오늘까지. 실측 2026-09-17: 위탁 +30.1% · KB +2.3% · ISA -0.1% ·
+    // 연금저축1 +12.6% · 연금저축2 -4.4%.
+    List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse> accountCashFlows =
+        net.luversof.web.gate.stock.util.StockHoldingReturnUtil.combine(
+            net.luversof.web.gate.stock.support.StockAsyncSupport.join(accCashFlowFuture));
+    java.time.LocalDate accountFirstTradeDate =
+        net.luversof.web.gate.stock.util.StockHoldingReturnUtil.firstDate(accountCashFlows);
+    model.addAttribute("accountFirstTradeDate", accountFirstTradeDate);
+    model.addAttribute(
+        "accountReturn",
+        net.luversof.web.gate.stock.util.StockHoldingReturnUtil.of(
+            accountFirstTradeDate,
+            java.time.LocalDate.now(filterZone),
+            accountCashFlows,
+            evaluationAmount,
+            evaluationProfit,
+            BigDecimal.ZERO));
     model.addAttribute("totalDividend", totalDividend);
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);

@@ -61,6 +61,19 @@ function tradeHistoryRefreshUrl(
 	return TRADE_HISTORY_PATH + (qs ? "?" + qs : "");
 }
 
+/**
+ * 이 기간 변경으로 매매 이력 패널을 따로 불러야 하는가.
+ *
+ * 같은 탭의 피커에서 온 변경이면 부르지 않는다 - 피커는 이벤트를 보낸 뒤 반드시 화면을 다시 부르고
+ * (onApply 또는 requestSubmit), 자산 성장 뷰는 그 응답 안에 같은 기간의 매매 이력을 함께 넣는다.
+ * 실측 2026-09-17(자산 성장, 1년·전체 3회씩): 따로 나간 요청(TTFB 38~54ms, 29KB)이 먼저 들어가고
+ * ~50ms 뒤 뷰가 패널째 덮었다(6/6) - 서버가 같은 표를 두 번 만들고 하나를 버렸다.
+ * 다른 탭에서 온 변경(storage)은 화면을 다시 부르지 않으므로 이것이 유일한 갱신이다 - 그때는 부른다.
+ */
+function shouldRefreshTradeHistory(detail: { source?: string } | null | undefined): boolean {
+	return !(detail && detail.source === "picker");
+}
+
 function input(id: string): HTMLInputElement | null {
 	return document.getElementById(id) as HTMLInputElement | null;
 }
@@ -193,6 +206,7 @@ function readGlobalRangeRaw(): string | null {
 								"trade-history-panel",
 							);
 							if (
+								shouldRefreshTradeHistory(detail) &&
 								tradeHistoryPanel &&
 								typeof w.htmx !== "undefined" &&
 								w.htmx &&
@@ -271,7 +285,7 @@ function readGlobalRangeRaw(): string | null {
 	} catch (e) {}
 })();
 
-(globalThis as any).__globalDateRangeInternals = { tradeHistoryRefreshUrl };
+(globalThis as any).__globalDateRangeInternals = { tradeHistoryRefreshUrl, shouldRefreshTradeHistory };
 
 // 4) 스왑이 끝나면 프리셋 버튼의 눌린 표시를 "서버가 실제로 적용한 기간" 으로 되돌린다.
 //    버튼은 클릭 즉시 눌린 표시를 바꾸는데(낙관적), 앞 요청이 진행 중이면 뒤 제출이 버려진다.

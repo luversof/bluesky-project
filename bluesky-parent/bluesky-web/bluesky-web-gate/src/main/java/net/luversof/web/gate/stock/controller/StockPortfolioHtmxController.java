@@ -109,6 +109,12 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                 () -> emptyIfNull(tradeProfitClient.calculateProfit(stockGroupedParams)));
     // 종목별 최초 매수일. 보유 기간·연평균 수익률을 적으려면 처음 산 날이 필요한데, 원장 목록
     // (실측 2026-09-14: 258 행)을 다시 받는 대신 종목별 집계만 받는다 - 배당 합계와 같은 방식이다.
+    // 종목별 하루치 순현금흐름(매수 · 매도 · 배당) - 연평균 수익률(XIRR)의 재료. 최초 매수일 하나로는 나눠 산 돈이 언제 들어갔는지
+    // 알 수 없다(사용자 결정 2026-09-17: 복리 환산 -> XIRR). 최초 매수일 · 배당 합계와 같은 조건(계좌 필터 · 존)으로 받는다.
+    var cashFlowFuture =
+        emptyAccountSelection
+            ? null
+            : async.supply(() -> tradeClient.findCashFlowsByStockItem(profitParams));
     var firstBuyDateFuture =
         emptyAccountSelection
             ? null
@@ -213,6 +219,11 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                       s.totalSellProceeds()));
             });
 
+    // 종목별 보유 계좌(사용자 요청 2026-09-17: 계좌 표의 "보유 종목 보기" 처럼 종목 줄에서 그 종목을 가진 계좌를 펼쳐 본다).
+    // 계좌 표 펼침과 같은 재료(계좌 x 종목 손익 행)를 뒤집어 모은다 - 두 펼침의 수량 · 금액이 서로 어긋나지 않게.
+    Map<UUID, List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView>>
+        stockHoldingAccountMap = buildStockHoldingAccountViews(enrichedList, totalEvaluationAmount);
+
     // 종목별 집계 (계좌 무시)
     List<TradeProfit> stockGroupedList =
         new ArrayList<>(
@@ -263,6 +274,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     // 사라져도(계좌 설정에는 갱신 UI 가 없다) 수익률만 조용히 달라진다.
     model.addAttribute("manualPrincipalAccountIds", manualPrincipalAccountIds);
     model.addAttribute("accountHoldingMap", accountHoldingMap);
+    model.addAttribute("stockHoldingAccountMap", stockHoldingAccountMap);
     model.addAttribute("stockItemList", stockItemList);
     model.addAttribute("stockAggregated", stockAggregated);
     // 종목별 실현손익·누적배당·합산손익. 세 값은 종목 상세에만 있어서 종목끼리 견줄 수가 없었다.
@@ -322,6 +334,13 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             ? java.util.Map.<UUID, java.time.LocalDate>of()
             : emptyIfNullMap(
                 net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstBuyDateFuture)));
+    model.addAttribute(
+        "cashFlowsByStockItem",
+        cashFlowFuture == null
+            ? java.util.Map
+                .<UUID, List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse>>of()
+            : emptyIfNullMap(
+                net.luversof.web.gate.stock.support.StockAsyncSupport.join(cashFlowFuture)));
     return "stock/htmx/fragments/assetStatus";
   }
 
@@ -358,6 +377,65 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     }
 
     return views;
+  }
+
+  /**
+   * 종목마다 그 종목을 가진 계좌(평가액 큰 순, 같으면 계좌 이름 순). 금액 규칙은 계좌 표 펼침({@link #buildAccountHoldingViews})과 같다
+   * &mdash; 매수금액은 지금 보유분 원가, 평단은 그 계좌의 평단.
+   */
+  Map<UUID, List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView>>
+      buildStockHoldingAccountViews(List<TradeProfit> holdings, BigDecimal totalEvaluationAmount) {
+    Map<UUID, List<TradeProfit>> byStock = new LinkedHashMap<>();
+    if (holdings != null) {
+      for (TradeProfit holding : holdings) {
+        if (holding == null || holding.stockItemId() == null || holding.holdingQuantity() == 0) {
+          continue;
+        }
+        byStock.computeIfAbsent(holding.stockItemId(), key -> new ArrayList<>()).add(holding);
+      }
+    }
+    Map<UUID, List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView>> result =
+        new LinkedHashMap<>();
+    byStock.forEach(
+        (stockItemId, rows) -> {
+          BigDecimal stockEvaluationAmount =
+              rows.stream()
+                  .map(TradeProfit::evaluationAmount)
+                  .filter(Objects::nonNull)
+                  .reduce(BigDecimal.ZERO, BigDecimal::add);
+          List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView> views =
+              new ArrayList<>(rows.size());
+          for (TradeProfit holding : rows) {
+            BigDecimal evaluationAmount =
+                holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO;
+            BigDecimal buyAmount = resolveCurrentHoldingCost(holding);
+            BigDecimal evaluationProfit =
+                holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO;
+            views.add(
+                new net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView(
+                    holding.accountId(),
+                    holding.accountName(),
+                    holding.holdingQuantity(),
+                    resolveHoldingAverageBuyPrice(holding, buyAmount),
+                    evaluationAmount,
+                    buyAmount,
+                    evaluationProfit,
+                    percentage(evaluationProfit, buyAmount),
+                    percentage(evaluationAmount, stockEvaluationAmount),
+                    percentage(evaluationAmount, totalEvaluationAmount)));
+          }
+          views.sort(
+              Comparator.comparing(
+                      net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView
+                          ::evaluationAmount,
+                      Comparator.nullsLast(Comparator.reverseOrder()))
+                  .thenComparing(
+                      net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView
+                          ::accountName,
+                      Comparator.nullsLast(Comparator.naturalOrder())));
+          result.put(stockItemId, views);
+        });
+    return result;
   }
 
   private BigDecimal resolveHoldingAverageBuyPrice(TradeProfit holding, BigDecimal buyAmount) {

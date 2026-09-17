@@ -207,6 +207,10 @@
 			</div></div>
 			<%-- 선택 가능한 행은 다른 표(수익률·자산 현황)와 같은 규칙: <tr tabindex="0" aria-selected>. <li role="button"> 은 안의 종목 링크를
 			     스크린리더가 못 닿게 하고(axe nested-interactive 8건) listitem 에 button 역할도 허용되지 않는다(aria-allowed-role 8건, 실측 2026-09-09). --%>
+			<%-- 좁은 폭 · 큰 글꼴에서는 표가 제 상자 안에서 가로로 스크롤한다. 상자가 없으면 표가 문서를 민다 - 실측 2026-09-17(글꼴 200%):
+			     320px 에서 문서 219px, 640px 에서 표 321px, 1024px 에서 표 385px 넘쳤다(이번달 · 1년 보기, 전체 기간엔 이 표가 없다).
+			     종목 이름 칸의 max-w-0 truncate 는 표 자동 폭에서는 듣지 않는다(칸의 max-width 는 무시된다) - 이름은 줄지 않고 한 줄로 남는다. --%>
+			<div class="overflow-x-auto" data-dividend-change-table-scroll>
 			<table class="table table-sm w-full" aria-label="${changeTitleLabel}">
 				<tbody>
 				@for(int ci = 0; ci < Math.min(dividendChangeContributors.size(), 8); ci++)
@@ -237,6 +241,7 @@
 				@endfor
 				</tbody>
 			</table>
+			</div>
 			@if(dividendChangeContributors.size() > 8)
 			<div class="text-xs text-base-content/60 mt-2">+ ${dividendChangeContributors.size() - 8}</div>
 			@endif

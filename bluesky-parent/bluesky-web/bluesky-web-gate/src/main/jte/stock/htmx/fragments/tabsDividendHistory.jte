@@ -68,6 +68,8 @@
 @param String dataFirstDate = null
 @param java.util.List<net.luversof.web.gate.stock.util.DividendPeriodBreakdown.Row> dividendYearlyRows = java.util.List.of()
 @param java.util.List<net.luversof.web.gate.stock.util.DividendPeriodBreakdown.Row> dividendMonthlyRows = java.util.List.of()
+<%-- 기간이 달력 한 달일 때만 있다 - 그 달 지급을 날짜에 놓은 달력(옛 배당 캘린더 탭을 통합, 사용자 결정 2026-09-17). --%>
+@param net.luversof.web.gate.stock.dto.view.DividendCalendarView dividendMonthCalendar = null
 
 !{
 	DecimalFormat decimalFormat = new DecimalFormat("#,##0");
@@ -241,6 +243,17 @@
 		monthEndCount = monthEndCount,
 		otherWindowCount = otherWindowCount
 	)
+
+	<%-- 기간이 달력 한 달이면 그 달의 지급을 날짜에 놓는다. 금액은 아래 목록과 같은 행에서 온다(필터도 같다).
+	     달 이동은 위 기간 선택기(이번달 · ‹ ›)가 한다. --%>
+	@if(dividendMonthCalendar != null)
+		@template.stock.fragments.dividendCalendarMonth(
+			calendar = dividendMonthCalendar,
+			avgLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average"),
+			latestLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest"),
+			actualGrossLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.actual.gross"),
+			actualNetLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.actual.net"))
+	@endif
 
 	@template.stock.htmx.fragments.dividend.dividendCharts()
 

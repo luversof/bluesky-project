@@ -1,19 +1,24 @@
 package net.luversof.api.stock.service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import net.luversof.api.stock.domain.StockItemCashFlow;
 import net.luversof.api.stock.domain.StockItemFirstBuy;
 import net.luversof.api.stock.repository.TradeRepository;
+import net.luversof.api.stock.web.dto.response.StockCashFlowResponse;
 
 /**
  * 종목별 최초 매수일.
@@ -60,6 +65,51 @@ public class StockHoldingPeriodService {
       }
       result.put(row.stockItemId(), firstBuy.atZone(zone).toLocalDate());
     }
+    return result;
+  }
+
+  /**
+   * 종목별 하루치 순현금흐름(요청 존의 날짜, 오름차순). 자산 현황 · 종목 상세의 연평균 수익률(XIRR)이 쓴다.
+   *
+   * <p>같은 날의 돈은 더해 한 건으로 둔다 &mdash; XIRR 은 날짜 단위로 할인하므로 같은 날의 매수 · 매도 · 배당을 나눠 둘 까닭이 없다. 날짜는 최초
+   * 매수일과 같은 규칙으로 <b>서버에서</b> 존을 정해 바꾼다(UTC 문자열을 자르면 KST 로 하루 밀린다).
+   *
+   * @param zoneId 널이면 {@link #DEFAULT_ZONE}
+   * @param accountIdList 널이거나 비면 좁히지 않음
+   * @param stockItemIdList 널이거나 비면 좁히지 않음
+   */
+  public Map<UUID, List<StockCashFlowResponse>> findCashFlowsByStockItem(
+      UUID userId, ZoneId zoneId, List<UUID> accountIdList, List<UUID> stockItemIdList) {
+    return netByDay(
+        tradeRepository.findCashFlowsByStockItem(
+            userId, joinIds(accountIdList), joinIds(stockItemIdList)),
+        zoneId == null ? DEFAULT_ZONE : zoneId);
+  }
+
+  /** 종목마다 같은 날(존 기준)의 돈을 더한다. 종목 · 날짜 · 금액이 빠진 줄은 버린다. */
+  static Map<UUID, List<StockCashFlowResponse>> netByDay(
+      List<StockItemCashFlow> rows, ZoneId zone) {
+    Map<UUID, TreeMap<java.time.LocalDate, BigDecimal>> byItem = new LinkedHashMap<>();
+    if (rows != null) {
+      for (StockItemCashFlow row : rows) {
+        if (row == null
+            || row.stockItemId() == null
+            || row.flowAt() == null
+            || row.amount() == null) {
+          continue;
+        }
+        byItem
+            .computeIfAbsent(row.stockItemId(), key -> new TreeMap<>())
+            .merge(row.flowAt().atZone(zone).toLocalDate(), row.amount(), BigDecimal::add);
+      }
+    }
+    Map<UUID, List<StockCashFlowResponse>> result = new LinkedHashMap<>();
+    byItem.forEach(
+        (stockItemId, days) -> {
+          List<StockCashFlowResponse> flows = new ArrayList<>();
+          days.forEach((date, amount) -> flows.add(new StockCashFlowResponse(date, amount)));
+          result.put(stockItemId, flows);
+        });
     return result;
   }
 

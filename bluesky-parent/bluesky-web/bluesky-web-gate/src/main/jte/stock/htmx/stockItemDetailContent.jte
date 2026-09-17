@@ -26,6 +26,8 @@
 @param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
 @param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
+<%-- 실현 손익 카드의 수익률 분모 = 판 주식 원가(같은 기간의 매도 금액 - 실현 손익). 판 적이 없으면 0. --%>
+@param BigDecimal realizedCostBasis = java.math.BigDecimal.ZERO
 @param BigDecimal totalBuyCost = java.math.BigDecimal.ZERO
 @param BigDecimal totalDividend = java.math.BigDecimal.ZERO
 @param List<TradeResponse> trades = java.util.List.of()
@@ -47,6 +49,11 @@
 @param List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory = java.util.List.of()
 @param BigDecimal periodUnrealizedDelta = null
 @param Double periodProfitRatePct = null
+<%-- 합산 비율의 분모(넣어 둔 돈 = 기초 평가액 + max(기간 순유입, 0)). 세 몫의 비율도 이 분모로 낸다. --%>
+@param BigDecimal periodCapitalBase = null
+<%-- 보유 전체 기준 보유 기간 · 연평균 수익률(복리). 자산 현황의 종목 줄과 같은 계산이다. --%>
+@param net.luversof.web.gate.stock.util.StockHoldingReturnUtil.Row holdingReturn = null
+@param java.time.LocalDate holdingFirstBuyDate = null
 @param String dataFirstDate = ""
 <%-- 지금 기간 모드. 빈 안내에 '전체 기간으로 보기' 를 띄울지 정한다. --%>
 @param String rangeMode = ""
@@ -63,6 +70,14 @@
 	// 실측 2026-09-13: 보유가 없는 종목 77 개와 계좌 1 개(동양증권 - 매수 2.75 억 · 실현 +3,309 만)가 모두 그랬다.
 	// 금액 0 은 맞지만 비율은 모른다. 모르면 적지 않는다.
 	boolean evalRateKnown = evalCostBasis.signum() != 0;
+	// 카드마다 그 돈의 원금 대비 비율(사용자 선택 2026-09-17 "카드마다 그 원금 대비"): 평가 손익 = 보유 원가 · 실현 손익 = 판 주식 원가 ·
+	// 기간 배당 = 보유 원가. 위 합산 상자의 세 몫은 '넣어 둔 돈' 대비라 더하면 합산이 되지만 카드는 각자의 원금을 말한다 - 그래서 기준을 글자로 붙인다.
+	// 실측 2026-09-17 TIGER 리츠부동산인프라(전체): 평가 -7.1% · 실현 +2.4%(874,593 / 37,199,152) · 배당 9.3%(5,587,497 / 60,159,793).
+	String holdingBasisLabel = MessageUtil.getMessage("stock.item.detail.rate.basis.holding");
+	boolean realizedRateKnown = realizedCostBasis != null && realizedCostBasis.signum() > 0;
+	double realizedCostRatePct = realizedRateKnown && realizedProfit != null ? realizedProfit.doubleValue() * 100.0 / realizedCostBasis.doubleValue() : 0.0;
+	boolean dividendRateKnown = evalCostBasis.signum() > 0 && holdingQuantity > 0;
+	double dividendCostRatePct = dividendRateKnown && totalDividend != null ? totalDividend.doubleValue() * 100.0 / evalCostBasis.doubleValue() : 0.0;
 	// 세금 0 은 잰 값이지만 표마다 다르게 적혀 있었다 - 배당 이력 · 수익률 표는 이미 "-" 와 사유를 달고,
 	// 상세 두 화면만 "0" 이었다. 실측 2026-09-13: 배당 202 건 중 147 건(72.8%)이 세금 0 이라
 	// 같은 값이 화면마다 달리 보였다. 사유는 title 과 aria-label 에 함께 단다(마우스 전용이 되지 않게).
@@ -87,6 +102,25 @@
 	// 화면마다 다른 분모를 쓰면 같은 이름이 다른 수를 뜻하게 된다.
 	boolean combinedRateAvailable = periodProfitRatePct != null;
 	double combinedRatePct = combinedRateAvailable ? periodProfitRatePct : 0.0;
+	// 세 몫(평가 변동 · 실현 · 배당)에도 비율을 붙인다 - 사용자 요청 2026-09-17: "보유 손익 + 배당 손익 표시(수익률 퍼센트도)".
+	// 합산 비율과 같은 분모를 써야 셋을 더한 값이 합산 비율이 된다(화면에서 검산할 수 있게).
+	boolean componentRateAvailable = combinedRateAvailable && periodCapitalBase != null && periodCapitalBase.signum() > 0;
+	double unrealizedDeltaRatePct = componentRateAvailable ? unrealizedDelta.doubleValue() * 100.0 / periodCapitalBase.doubleValue() : 0.0;
+	double realizedRatePct = componentRateAvailable && realizedProfit != null ? realizedProfit.doubleValue() * 100.0 / periodCapitalBase.doubleValue() : 0.0;
+	double dividendRatePct = componentRateAvailable && totalDividend != null ? totalDividend.doubleValue() * 100.0 / periodCapitalBase.doubleValue() : 0.0;
+	// 보유 전체 기준 보유 기간 · 연평균. 지금 보유하지 않는 종목에는 '보유 기간' 이 없다(자산 현황도 보유 종목만 적는다).
+	boolean holdingReturnShown = holdingReturn != null && holdingReturn.hasPeriod() && holdingQuantity > 0 && holdingFirstBuyDate != null;
+	String holdingPeriodText = !holdingReturnShown ? ""
+		: (holdingReturn.daysOnly()
+			? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.days"), String.valueOf(holdingReturn.holdingDays()))
+			: (holdingReturn.years() == 0
+				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.months"), String.valueOf(holdingReturn.months()))
+				: (holdingReturn.months() == 0
+					? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.years.only"), String.valueOf(holdingReturn.years()))
+					: java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.years"), String.valueOf(holdingReturn.years()), String.valueOf(holdingReturn.months())))));
+	// 카드 값은 비율만 적는다 - 라벨이 이미 '연평균 수익률' 이라 "연 +3.4%" 의 '연' 은 겹치고, 큰 숫자 글꼴 안에서 한 글자만 다른 글꼴로 떠 보였다.
+	String holdingAnnualizedText = !holdingReturnShown || holdingReturn.annualizedPct() == null ? ""
+		: StockFormatUtil.signedPct(holdingReturn.annualizedPct().doubleValue(), 1);
 }
 
 <div id="stockItemDetailFragment" class="space-y-6" data-page-title="${stockItem != null ? (stockItem.name() != null ? stockItem.name() : stockItem.symbol()) : MessageUtil.getMessage("stock.item.detail.notfound.title")}">
@@ -160,17 +194,27 @@
 			@endif
 		</div>
 		<%-- 셋을 그대로 적어 화면에서 더해 볼 수 있게 한다. --%>
-		<p class="mt-1 text-[11px] leading-4 flex flex-wrap items-baseline gap-x-1.5">
+		<p class="mt-1 text-[11px] leading-4 flex flex-wrap items-baseline gap-x-1.5" data-combined-breakdown>
 			<span class="text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.unrealized.delta")}</span>
 			<span class="amount-value ${deltaColor}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(unrealizedDelta))}</span>
+			@if(componentRateAvailable)<span class="${deltaColor}" data-component-rate="unrealized">(${StockFormatUtil.signedPct(unrealizedDeltaRatePct, 2)})</span>@endif
 			<span class="text-base-content/60">+</span>
 			<span class="text-base-content/60">${MessageUtil.getMessage("stock.profit.realized")}</span>
 			<span class="amount-value ${realizedColor}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(realizedProfit))}</span>
+			@if(componentRateAvailable)<span class="${realizedColor}" data-component-rate="realized">(${StockFormatUtil.signedPct(realizedRatePct, 2)})</span>@endif
 			<span class="text-base-content/60">+</span>
 			<span class="text-base-content/60">${MessageUtil.getMessage("stock.item.detail.period.dividend")}</span>
 			<span class="amount-value text-dividend">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalDividend))}</span>
+			@if(componentRateAvailable)<span class="text-dividend" data-component-rate="dividend">(${StockFormatUtil.signedPct(dividendRatePct, 2)})</span>@endif
 		</p>
 		<p class="mt-0.5 text-[11px] leading-4 text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.note")}</p>
+		<%-- 보유 전체 기준 보유 기간 · 연평균은 아래 카드 줄로 옮겼다(사용자 선택 2026-09-17 - 이 자리의 작은 줄은 눈에 띄지 않았다).
+		     배당이 지금 평가손실을 얼마나 덮었는지만 여기 남긴다. --%>
+		@if(holdingReturnShown && holdingReturn.coveragePct() != null && holdingReturn.coveragePct() > 0)
+			<p class="mt-2 border-t border-base-300/60 pt-2 text-[11px] leading-4" data-holding-coverage-line>
+				<span class="text-dividend" data-holding-coverage="${holdingReturn.coveragePct()}">${holdingReturn.coveragePct() >= 100 ? MessageUtil.getMessage("stock.asset.status.cell.coverage.all") : java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.coverage"), String.valueOf(holdingReturn.coveragePct()))}</span>
+			</p>
+		@endif
 	</div>
 
 	<!-- 보유/손익 요약 -->
@@ -180,7 +224,7 @@
 	     1,359,088,500 - 466,248,078 = 892,840,422 이라 맞지 않았고(평가 손익은 보유원가 362,525,079 기준),
 	     기간을 올해로 좁히면 "매수 원가 0원" 옆에 평가 손익 +9.9억이 그대로 섰다. "누적 배당" 도 한 달 기간에서
 	     1,595,632 를 누적이라고 적었다. 값이 아니라 이름을 고친다 - 기간 값이라는 정보를 잃지 않는다. --%>
-	<div class="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3">
+	<div class="grid stat-card-grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3">
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("common.label.quantity"),
 			value = net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(MessageUtil.getMessage("stock.activity.label.shares"))
@@ -225,22 +269,47 @@
 			label = MessageUtil.getMessage("stock.profit.unrealized"),
 			value = StockFormatUtil.signedWon(StockFormatUtil.displayWon(evaluationProfit)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(evaluationProfit)),
-			sub = evalRateKnown ? StockFormatUtil.signedPct(evalProfitRatePct, 1) : "",
+			sub = evalRateKnown ? StockFormatUtil.signedPct(evalProfitRatePct, 1) + " · " + holdingBasisLabel : "",
 			tone = evalColor)
+		<%-- 판 적이 없으면 비율이 없다(0 / 0) - 그 사실을 적고, 0 을 이득처럼 칠하지 않는다. --%>
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.profit.realized"),
 			value = StockFormatUtil.signedWon(StockFormatUtil.displayWon(realizedProfit)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(realizedProfit)),
-			tone = realizedColor)
+			sub = realizedRateKnown
+				? StockFormatUtil.signedPct(realizedCostRatePct, 1) + " · " + MessageUtil.getMessage("stock.item.detail.rate.basis.sold")
+				: MessageUtil.getMessage("stock.item.detail.rate.none.sold"),
+			tone = realizedRateKnown ? realizedColor : "")
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.item.detail.principal"),
 			value = String.format("%,d", StockFormatUtil.displayWon(totalBuyCost)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalBuyCost)))
+		<%-- 배당은 음수가 없어 부호를 붙이지 않는다. 지금 보유하지 않으면 보유 원가가 없어 비율도 없다. --%>
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.item.detail.period.dividend"),
 			value = String.format("%,d", StockFormatUtil.displayWon(totalDividend)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalDividend)),
+			sub = dividendRateKnown
+				? StockFormatUtil.pct(dividendCostRatePct, 1) + " · " + holdingBasisLabel
+				: MessageUtil.getMessage("stock.item.detail.rate.none.holding"),
 			tone = "text-dividend")
+		<%-- 보유 전체 기준 연평균 수익률(XIRR) - 자산 현황 종목 줄과 같은 계산 · 같은 입력. 기간 선택과 무관하다(scopeNote 로 밝힘).
+		     사용자 선택 2026-09-17: 합산 상자 아래 작은 줄은 눈에 띄지 않아 카드로 올렸다. 지금 보유하지 않거나 최초 매수일을 모르면 그리지 않는다.
+		     1 년이 안 된 보유는 확대된 값이라 무엇을 환산했는지 적는다(실측 2026-09-14: 117 일 -6.0% -> 연 -17.5%). --%>
+		@if(holdingReturnShown)
+		<div class="contents" data-holding-return data-short-term="${String.valueOf(holdingReturn.shortTerm())}" data-holding-days="${holdingReturn.holdingDays()}">
+		@template._components.ui.statCard(
+			label = MessageUtil.getMessage("stock.asset.status.cell.annualized.name"),
+			value = holdingAnnualizedText.isEmpty() ? "-" : holdingAnnualizedText,
+			valueTitle = holdingAnnualizedText.isEmpty() ? MessageUtil.getMessage("stock.item.detail.annualized.none") : "",
+			scopeNote = MessageUtil.getMessage("stock.item.detail.holding.basis"),
+			sub = holdingPeriodText + " · " + (holdingReturn.shortTerm()
+				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.annualized.short"), String.valueOf(holdingReturn.holdingDays()))
+				: java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.since"), holdingFirstBuyDate.toString())),
+			tone = holdingReturn.annualizedPct() == null ? "" : (holdingReturn.annualizedPct().signum() >= 0 ? "text-profit" : "text-loss"),
+			amount = false)
+		</div>
+		@endif
 	</div>
 
 	<%-- 기간별 손익 - 고른 기간을 달(또는 해)로 쪼개 언제 벌고 언제 잃었는지 보여준다.

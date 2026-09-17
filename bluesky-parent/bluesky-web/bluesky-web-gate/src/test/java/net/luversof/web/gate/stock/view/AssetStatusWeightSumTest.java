@@ -39,10 +39,11 @@ class AssetStatusWeightSumTest {
     String template = read();
 
     assertThat(count(template, "StockFormatUtil.balancedPct("))
-        .as("종목별 현황 · 계좌 보유 종목 상세")
-        .isEqualTo(2);
+        .as("종목별 현황 · 계좌 보유 종목 상세 · 종목 보유 계좌 상세(2026-09-17)")
+        .isEqualTo(3);
     assertThat(template).contains("stockWeightLabelById.getOrDefault(");
     assertThat(template).contains("holdingWeightLabelById.getOrDefault(");
+    assertThat(template).contains("accountShareShown.get(accountIndex)");
   }
 
   /**

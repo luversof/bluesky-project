@@ -95,11 +95,38 @@ class TableColumnBreakpointTest {
     assertThat(table).as("종목별 자산 현황 표를 찾지 못했다").isGreaterThan(0);
 
     String stockTable = source.substring(table);
-    int endOfTable = stockTable.indexOf("</table>");
+    // 종목 줄은 "보유 계좌 보기" 로 펼칠 표를 안에 품는다(2026-09-17). 그 표는 계좌 표 안의 보유 상세 표처럼 제 분기점을 쓰고
+    // 펼친 줄 안에서 가로로 스크롤되므로, 바깥 표의 열만 센다 - 짝을 세어 바깥 표 끝을 찾고 안쪽 표는 빼고 본다.
+    int depth = 1;
+    int at = 0;
+    StringBuilder outer = new StringBuilder();
+    int copyFrom = 0;
+    int endOfTable = -1;
+    while (depth > 0) {
+      int open = stockTable.indexOf("<table", at);
+      int close = stockTable.indexOf("</table>", at);
+      assertThat(close).as("표의 끝을 찾지 못했다").isGreaterThan(0);
+      if (open >= 0 && open < close) {
+        if (depth == 1) {
+          outer.append(stockTable, copyFrom, open);
+        }
+        depth++;
+        at = open + 1;
+      } else {
+        depth--;
+        at = close + "</table>".length();
+        if (depth == 1) {
+          copyFrom = at;
+        } else if (depth == 0) {
+          outer.append(stockTable, copyFrom, close);
+          endOfTable = close;
+        }
+      }
+    }
 
     assertThat(endOfTable).as("표의 끝을 찾지 못했다").isGreaterThan(0);
 
-    String body = stockTable.substring(0, endOfTable);
+    String body = outer.toString();
 
     assertThat(body.lines().filter(l -> l.contains("xl:table-cell")).count())
         .as("xl(1280px)에서 펴면 본문 열보다 103px 넓어져 가로 스크롤이 생긴다")
@@ -134,8 +161,8 @@ class TableColumnBreakpointTest {
         .as("투자원금 열이 사라지면 그 값을 어디서도 볼 수 없다")
         .isEqualTo(3);
     assertThat(source.lines().filter(l -> l.contains("md:table-cell")).count())
-        .as("안쪽 보유 상세 표의 md 분기점까지 옮기면 넓은 화면에서 괜히 열이 줄어든다")
-        .isEqualTo(2);
+        .as("안쪽 보유 상세 표(계좌 표 · 2026-09-17 종목 표의 보유 계좌 상세)의 md 분기점까지 옮기면 넓은 화면에서 괜히 열이 줄어든다")
+        .isEqualTo(4);
   }
 
   /**

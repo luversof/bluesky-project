@@ -52,6 +52,10 @@
 @param List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory = java.util.List.of()
 @param BigDecimal periodUnrealizedDelta = null
 @param Double periodProfitRatePct = null
+@param BigDecimal periodCapitalBase = null
+@param net.luversof.web.gate.stock.util.StockHoldingReturnUtil.Row holdingReturn = null
+@param BigDecimal realizedCostBasis = java.math.BigDecimal.ZERO
+@param java.time.LocalDate holdingFirstBuyDate = null
 @param String dataFirstDate = ""
 @param String rangeMode = ""
 
@@ -117,7 +121,11 @@
 					stockNavEntries = stockNavEntries,
 					priceHistory = priceHistory,
 					periodUnrealizedDelta = periodUnrealizedDelta,
-					periodProfitRatePct = periodProfitRatePct
+					periodProfitRatePct = periodProfitRatePct,
+					periodCapitalBase = periodCapitalBase,
+					holdingReturn = holdingReturn,
+					holdingFirstBuyDate = holdingFirstBuyDate,
+					realizedCostBasis = realizedCostBasis
 				)
 			@endif
 		</div>

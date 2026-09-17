@@ -196,8 +196,9 @@ public class MonthlyDividendViewSupport {
           case "updated-date" ->
               Comparator.comparing(
                   row -> row.updatedDate() != null ? row.updatedDate() : Instant.EPOCH);
-          case SORT_COMBINED_RETURN ->
-              Comparator.comparing(row -> safe(row.expectedCombinedReturnPct()));
+          // 합산 수익률이 같을 때도 비교 우위 순서를 따른다 - 내림차순으로 정렬한 표가 순위 배지 1, 2, 3 ... 순이 되게
+          // (동률을 종목코드로만 가르면 1 위 배지가 맨 위에 오지 않을 수 있다). 오름차순은 그 역순이다.
+          case SORT_COMBINED_RETURN -> MonthlyDividendCalculator.COMPARISON_ORDER.reversed();
           default -> Comparator.comparing(row -> safe(row.expectedCombinedReturnPct()));
         };
 

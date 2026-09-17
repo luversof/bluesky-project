@@ -338,7 +338,7 @@
 	@endif
 
 	<!-- View Tabs: 캘린더/타임라인/목록 (클라이언트 사이드 전환, localStorage 유지) -->
-	<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-4" id="activityViewTabs">
+	<div role="tablist" class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1 mb-4" id="activityViewTabs">
 		<a role="tab" data-activity-view-tab="calendar" data-view-page-title="${activityTitleBase + calendarTabLabel}" aria-controls="${showCalendarView ? "activityCalendarView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${calendarTabLabel}</a>
 		<a role="tab" data-activity-view-tab="timeline" data-view-page-title="${activityTitleBase + timelineTabLabel}" aria-controls="${showTimelineView ? "activityTimelineView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${timelineTabLabel}</a>
 		<a role="tab" data-activity-view-tab="list" data-view-page-title="${activityTitleBase + listTabLabel}" aria-controls="${showListView ? "activityListView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${listTabLabel}</a>

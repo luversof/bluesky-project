@@ -983,6 +983,8 @@ function simulateScenario(scenario) {
 				const simulation = simulations.get(scenario.id);
 				const summary = simulation ? simulation.summary : null;
 				const active = scenario.id === state.activeScenarioId;
+				// 머리 줄은 자리가 모자라면 '현재 편집' 배지를 아래로 내린다 - 글꼴 200% 의 320px 에서 이름 묶음 + 한 줄 배지가
+				// 카드보다 넓어 페이지를 41px 밀었다(실측 2026-09-17).
 				return `
 					<button type="button"
 						class="w-full rounded-2xl border p-4 text-left transition ${
@@ -991,7 +993,7 @@ function simulateScenario(scenario) {
 								: "border-base-300 bg-base-100 hover:border-base-content/20 hover:bg-base-200/40"
 						}"
 						data-scenario-id="${scenario.id}">
-						<div class="flex items-start justify-between gap-3">
+						<div class="flex flex-wrap items-start justify-between gap-3">
 							<div class="flex items-start gap-3">
 								<span class="mt-1 h-3 w-3 rounded-full ${COLOR_CLASSES[index % COLOR_CLASSES.length]}"></span>
 								<div class="space-y-1">

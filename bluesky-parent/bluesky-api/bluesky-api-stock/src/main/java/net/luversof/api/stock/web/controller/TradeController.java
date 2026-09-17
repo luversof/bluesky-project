@@ -49,4 +49,21 @@ public class TradeController {
     ZoneId zoneId = RequestZoneUtil.parse(timeZone, StockHoldingPeriodService.DEFAULT_ZONE);
     return stockHoldingPeriodService.findFirstBuyDateByStockItem(userId, zoneId, accountIdList);
   }
+
+  /**
+   * 종목별 하루치 순현금흐름(매수 · 매도 · 배당). 자산 현황 · 종목 상세의 연평균 수익률(XIRR)이 쓴다.
+   *
+   * <p>원장 목록(매매 258 행 + 배당)을 다시 받지 않는다. 존 규칙은 최초 매수일과 같다 &mdash; 안 주면 한국 기준, 줬는데 모르는 값이면 400.
+   */
+  @GetMapping("/cashFlowsByStockItem")
+  public Map<UUID, List<net.luversof.api.stock.web.dto.response.StockCashFlowResponse>>
+      findCashFlowsByStockItem(
+          @RequestParam UUID userId,
+          @RequestParam(required = false) String timeZone,
+          @RequestParam(required = false) List<UUID> accountIdList,
+          @RequestParam(required = false) List<UUID> stockItemIdList) {
+    ZoneId zoneId = RequestZoneUtil.parse(timeZone, StockHoldingPeriodService.DEFAULT_ZONE);
+    return stockHoldingPeriodService.findCashFlowsByStockItem(
+        userId, zoneId, accountIdList, stockItemIdList);
+  }
 }

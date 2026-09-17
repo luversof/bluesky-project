@@ -53,8 +53,17 @@ class RowActionNameTest {
     String template = Files.readString(ASSET_STATUS, StandardCharsets.UTF_8);
 
     assertThat(template).contains("accountHoldingsToggleAriaPattern");
-    int toggles = countOf(template, "data-account-detail-toggle=");
-    assertThat(toggles).as("펼침 버튼 수").isEqualTo(1);
+    // 계좌 표의 "보유 종목 보기" 와 종목 표의 "보유 계좌 보기"(2026-09-17). 둘 다 그 줄의 이름을 단다.
+    int toggles =
+        countOf(template, "data-account-detail-toggle=")
+            + countOf(template, "data-stock-detail-toggle=");
+    assertThat(toggles).as("펼침 버튼 수").isEqualTo(2);
+    assertThat(template)
+        .as("종목 표의 펼침은 종목 이름을 단다")
+        .contains(
+            "MessageFormat.format(accountHoldingsToggleAriaPattern, showStockAccountsLabel, stockRowName)")
+        .contains(
+            "MessageFormat.format(accountHoldingsToggleAriaPattern, hideStockAccountsLabel, stockRowName)");
     assertThat(countOf(template, "data-expand-aria=")).as("펼칠 때 이름").isEqualTo(toggles);
     assertThat(countOf(template, "data-collapse-aria=")).as("접을 때 이름").isEqualTo(toggles);
     assertThat(

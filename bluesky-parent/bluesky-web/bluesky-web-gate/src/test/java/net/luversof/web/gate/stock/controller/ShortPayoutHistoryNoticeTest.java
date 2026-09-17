@@ -26,7 +26,8 @@ class ShortPayoutHistoryNoticeTest {
   private static final Path CONTROLLER =
       Path.of("src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java");
 
-  private static final Path TEMPLATE = Path.of("src/main/jte/stock/dividend.jte");
+  private static final Path TEMPLATE =
+      Path.of("src/main/jte/stock/fragments/upcomingDividendSchedule.jte");
 
   private String read(Path path) throws IOException {
     assertThat(path).as("파일이 옮겨졌다: " + path).exists();

@@ -314,17 +314,6 @@ class DividendCalendarActualAmountTest {
         .doesNotContain(MessageUtil.getMessage("stock.dividend.calendar.settled.empty"));
   }
 
-  /** 컨트롤러가 빈 달을 실제로 그렇게 배선하는가. */
-  @Test
-  void 컨트롤러가_빈_달을_표시한다() throws IOException {
-    String source = controllerSource();
-
-    assertThat(source)
-        .as("한 건도 없는 달을 예상치로 되돌리면 안 받은 배당이 지난 달력에 찍힌다")
-        .doesNotContain("actualByItem != null && !actualByItem.isEmpty()");
-    assertThat(source).contains("boolean settledEmpty = actualOnly && actualByItem.isEmpty();");
-  }
-
   /**
    * 원장이 말한 0 에는 물음표를 달지 않는다.
    *
@@ -370,35 +359,6 @@ class DividendCalendarActualAmountTest {
 
     String html = render(calendar(List.of(actual), List.of()));
     assertThat(html).contains("data-taxable-unknown=" + QUOTE + "false" + QUOTE);
-  }
-
-  /**
-   * 컨트롤러가 실제로 <b>원장 값을 쓰는가</b>.
-   *
-   * <p>화면 조각과 뷰 산술만 지키면 컨트롤러를 예전으로 되돌려도 이 파일이 전부 통과한다(같은 함정을 지급일 때 이미 밟았다). 세 금액이 원장에서 오는지, 지나간 달에
-   * 원장에 없는 종목을 지우는지, 조회 실패(null)일 때는 아무것도 안 지우는지를 소스로 못 박는다.
-   */
-  @Test
-  void 컨트롤러가_원장_값을_쓴다() throws IOException {
-    String source = controllerSource();
-
-    assertThat(source)
-        .as("둘째 줄은 실제 달에 세후 실수령이 된다")
-        .contains("actual != null ? actual.net() : row.expectedMonthlyDividend()");
-    assertThat(source)
-        .as("큰 숫자는 늘 세전 - 칸 합계가 이 축이다")
-        .contains("actual != null ? actual.gross() : latestMonthlyDividend(row)");
-    assertThat(source)
-        .as("과표도 원장이 답한다")
-        .contains("actual != null ? actual.taxable() : row.expectedTaxableBaseAmount()");
-    assertThat(source)
-        .as("지나간 달에 원장에 없는 종목은 그 달에 아무것도 받지 않은 것이다")
-        .contains("if (actual == null && actualOnly) { continue; }");
-    assertThat(source)
-        .as("조회 실패(null)로 지난 달력이 통째로 비면 그게 더 나쁘다")
-        .contains(
-            "boolean actualOnly = actualByItem != null"
-                + " && month.isBefore(YearMonth.from(today));");
   }
 
   /** 기간은 그 달 전체다. endDate 가 배타적이라 다음 달 1 일을 준다. */

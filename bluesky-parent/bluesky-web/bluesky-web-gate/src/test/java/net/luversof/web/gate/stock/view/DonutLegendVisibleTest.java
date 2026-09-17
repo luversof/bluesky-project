@@ -19,6 +19,10 @@ import org.junit.jupiter.api.Test;
  *
  * <p>자리가 모자라면 <b>아래 줄로 내려가게</b> 한다({@code flex-wrap} + 범례 최소 폭). 375 · 414px 에서는 카드가 넓어 멀쩡했기 때문에,
  * 폭을 몇 개만 재면 놓친다.
+ *
+ * <p>최소 폭은 카드 안쪽을 넘지 않게 {@code min(10rem, 100%)} 다. {@code 10rem} 만 두면 글꼴을 키울 때 같이 커진다 &mdash; 실측
+ * 2026-09-17(브라우저 기본 글꼴 32px, 320px): 범례 최소 폭이 320px 이 되어 카드 밖으로 65px 삐져 매매 · 배당 · 배당 이번달 페이지가 가로로
+ * 밀렸다.
  */
 class DonutLegendVisibleTest {
 
@@ -41,9 +45,19 @@ class DonutLegendVisibleTest {
           .contains("flex flex-wrap gap-3");
       assertThat(markup)
           .as(shell + ": 범례에 최소 폭이 없으면 줄바꿈 없이 그대로 찌부러진다")
-          .contains("flex flex-col min-w-[10rem] flex-1 h-[200px] overflow-hidden")
-          .doesNotContain("flex flex-col w-0 flex-1 h-[200px]");
+          .contains("flex flex-col min-w-[min(10rem,100%)] flex-1 h-[200px] overflow-hidden")
+          .doesNotContain("flex flex-col w-0 flex-1 h-[200px]")
+          .as(shell + ": 상한 없는 rem 최소 폭은 큰 글꼴에서 카드보다 넓어진다")
+          .doesNotContain("min-w-[10rem]");
     }
+  }
+
+  @Test
+  void 산출물에_상한_있는_최소_폭_규칙이_있다() throws IOException {
+    assertThat(
+            Files.readString(Path.of("src/main/resources/static/main.css"), StandardCharsets.UTF_8))
+        .as("메이븐은 프론트엔드를 빌드하지 않는다 - npm run build 가 클래스를 규칙으로 만든다")
+        .contains(".min-w-\\[min\\(10rem\\,100\\%\\)\\]{min-width:min(10rem,100%)}");
   }
 
   /** 캔버스 쪽 고정 폭은 그대로 둔다 - 그게 줄면 차트가 뭉개진다. 이 검사가 헛돌지 않게 짝을 확인한다. */

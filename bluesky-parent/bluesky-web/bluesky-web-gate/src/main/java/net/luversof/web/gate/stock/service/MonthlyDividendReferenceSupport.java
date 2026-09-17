@@ -104,6 +104,118 @@ public class MonthlyDividendReferenceSupport {
     this.monthlyDividendViewSupport = monthlyDividendViewSupport;
   }
 
+  @org.springframework.beans.factory.annotation.Autowired
+  private net.luversof.web.gate.stock.httpexchange.DividendClient dividendClient;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  private net.luversof.web.gate.stock.httpexchange.AccountClient accountClient;
+
+  public void setDividendClient(
+      net.luversof.web.gate.stock.httpexchange.DividendClient dividendClient) {
+    this.dividendClient = dividendClient;
+  }
+
+  public void setAccountClient(
+      net.luversof.web.gate.stock.httpexchange.AccountClient accountClient) {
+    this.accountClient = accountClient;
+  }
+
+  /**
+   * 한 종목이 최근 1 년 받은 배당을 과세이연 계좌 몫과 그 밖의 계좌 몫으로 나눈 것.
+   *
+   * <p>시뮬레이터의 과세표준 비중은 api-stock 이 원장 최근 1 년의 (과세금액 합 / 세전 합)을 <b>모든 계좌를 합쳐</b> 낸 값이다(2026-08-24
+   * 결정: 계좌별 비과세·분리과세 반영). 과세이연 계좌(ISA · 연금저축)는 과세금액이 0 으로 적혀 비중을 끌어내린다 &mdash; 실측 2026-09-17: PLUS
+   * 고배당주위클리고정커버드콜 · TIGER 코리아배당다우존스위클리커버드콜은 과세이연 계좌에서만 받아 0%, TIGER 리츠부동산인프라는 네 계좌 중 과세 계좌 한 곳만
+   * 100% 라 합쳐서 13.42% 였다. 사용자는 "0% 인데 실제는 100%" 로 읽었다. 계산은 그대로 두고(사용자 결정) 표가 이 나눔을 함께 적는다.
+   *
+   * @param deferredGross 과세이연 계좌에서 받은 세전 합
+   * @param taxableAccountGross 그 밖의 계좌에서 받은 세전 합
+   * @param taxableAccountTaxable 그 밖의 계좌에서 받은 과세금액 합
+   */
+  public record TaxableRatioBasis(
+      BigDecimal deferredGross, BigDecimal taxableAccountGross, BigDecimal taxableAccountTaxable) {
+
+    /** 과세이연 계좌에서만 받았다 &mdash; 비중 0 은 "비과세 종목" 이 아니라 이 뜻이다. */
+    public boolean deferredOnly() {
+      return deferredGross.signum() > 0 && taxableAccountGross.signum() == 0;
+    }
+
+    /** 두 종류 계좌에서 모두 받았다 &mdash; 합친 비중은 과세 계좌만의 비중보다 낮게 나온다. */
+    public boolean mixed() {
+      return deferredGross.signum() > 0 && taxableAccountGross.signum() > 0;
+    }
+
+    /** 과세 계좌만 따진 비중(%). 과세 계좌에서 받은 것이 없으면 {@code null}. */
+    public BigDecimal taxableAccountRatioPct() {
+      return taxableAccountGross.signum() > 0
+          ? taxableAccountTaxable
+              .multiply(BigDecimal.valueOf(100))
+              .divide(taxableAccountGross, 2, java.math.RoundingMode.HALF_UP)
+          : null;
+    }
+  }
+
+  /**
+   * 종목별 {@link TaxableRatioBasis}. 기간은 api-stock 의 비중 계산과 같다(지금으로부터 365 일 전 이후).
+   *
+   * <p>조회에 실패하면 빈 맵 &mdash; 표기는 예전 그대로다(없는 나눔을 지어내지 않는다).
+   */
+  public Map<UUID, TaxableRatioBasis> loadTaxableRatioBasis(UUID userId) {
+    if (userId == null) {
+      return Map.of();
+    }
+    try {
+      java.util.Set<UUID> deferredAccountIds = new java.util.HashSet<>();
+      for (net.luversof.web.gate.stock.domain.Account account :
+          accountClient.getAccountsByUserId(userId)) {
+        if (account != null
+            && account.jsonConfig() != null
+            && Boolean.TRUE.equals(account.jsonConfig().get("isTaxDeferred"))) {
+          deferredAccountIds.add(account.id());
+        }
+      }
+      MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+      params.add("userId", userId.toString());
+      params.add(
+          "startDate", java.time.Instant.now().minus(java.time.Duration.ofDays(365)).toString());
+      return taxableRatioBasis(dividendClient.findDividends(params), deferredAccountIds);
+    } catch (RuntimeException ex) {
+      log.warn("과세표준 비중 나눔 조회 실패: userId={}", userId, ex);
+      return Map.of();
+    }
+  }
+
+  /** 배당 목록을 종목별로 과세이연 / 그 밖 계좌로 나눠 더한다. */
+  public static Map<UUID, TaxableRatioBasis> taxableRatioBasis(
+      List<net.luversof.web.gate.stock.dto.response.DividendResponse> dividends,
+      java.util.Set<UUID> deferredAccountIds) {
+    Map<UUID, BigDecimal[]> sums = new LinkedHashMap<>();
+    if (dividends != null) {
+      for (net.luversof.web.gate.stock.dto.response.DividendResponse dividend : dividends) {
+        if (dividend == null || dividend.stockItemId() == null) {
+          continue;
+        }
+        BigDecimal[] sum =
+            sums.computeIfAbsent(
+                dividend.stockItemId(),
+                id -> new BigDecimal[] {BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO});
+        BigDecimal gross =
+            dividend.grossAmount() != null ? dividend.grossAmount() : BigDecimal.ZERO;
+        if (deferredAccountIds != null && deferredAccountIds.contains(dividend.accountId())) {
+          sum[0] = sum[0].add(gross);
+        } else {
+          sum[1] = sum[1].add(gross);
+          sum[2] =
+              sum[2].add(
+                  dividend.taxableAmount() != null ? dividend.taxableAmount() : BigDecimal.ZERO);
+        }
+      }
+    }
+    Map<UUID, TaxableRatioBasis> result = new LinkedHashMap<>();
+    sums.forEach((id, sum) -> result.put(id, new TaxableRatioBasis(sum[0], sum[1], sum[2])));
+    return result;
+  }
+
   public void populateMonthlyDividendReferenceModel(
       Model model,
       String requestedSymbol,

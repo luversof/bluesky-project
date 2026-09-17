@@ -227,6 +227,13 @@ class StockBaseHtmxControllerTest {
         MultiValueMap<String, String> request) {
       return java.util.Map.of();
     }
+
+    @Override
+    public java.util.Map<
+            java.util.UUID, List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse>>
+        findCashFlowsByStockItem(MultiValueMap<String, String> request) {
+      return java.util.Map.of();
+    }
   }
 
   private static final class StubDividendClient implements DividendClient {

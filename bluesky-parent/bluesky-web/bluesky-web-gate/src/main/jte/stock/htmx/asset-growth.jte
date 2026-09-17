@@ -330,7 +330,7 @@
 
 				@if(panelCount > 1)
 					<%-- 탭이 하나뿐이면 고를 것이 없어 자리만 차지한다. --%>
-					<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-4" data-panel-tab-group="assetGrowthTables">
+					<div role="tablist" class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1 mb-4" data-panel-tab-group="assetGrowthTables">
 						@if(hasBreakdownPanel)
 							<a role="tab" data-panel-tab="breakdown" aria-controls="assetGrowthPanel-breakdown" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${MessageUtil.getMessage("stock.asset.growth.monthly.title")}</a>
 						@endif
@@ -376,9 +376,10 @@
 				<%-- 보유 스냅샷 키보드 경로(실측 2026-09-09): 차트 점 클릭은 마우스 전용이라 같은 조각을 날짜 입력으로도 부른다. --%>
 				<form class="flex flex-wrap items-end gap-2 mt-3" hx-get="/stock/htmx/holdings-snapshot" hx-target="#holdings-snapshot-container" hx-swap="innerHTML" data-holdings-snapshot-form>
 					<input type="hidden" name="timeZone" value="${timeZone != null ? timeZone : ""}">
-					<label class="form-control">
+					<%-- 날짜 칸은 글꼴을 키우면 제 폭(연 · 월 · 일 + 달력 단추)이 카드 안쪽보다 넓어 페이지를 밀었다(320px + 글꼴 200%: 칸 253px / 안쪽 158px, 실측 2026-09-17) - 칸이 줄어들 수 있게 한다. --%>
+					<label class="form-control min-w-0 max-w-full">
 						<span class="label-text text-xs">${MessageUtil.getMessage("stock.holdings.snapshot.date.label")}</span>
-						<input type="date" name="date" required class="input input-sm input-bordered">
+						<input type="date" name="date" required class="input input-sm input-bordered max-w-full">
 					</label>
 					<button type="submit" class="btn btn-sm">${MessageUtil.getMessage("common.button.search")}</button>
 				</form>

@@ -27,6 +27,7 @@
 @param long monthlyDividendStaleQuantityCount = 0L
 @param BigDecimal monthlyDividendCurrentQuantityTotal = java.math.BigDecimal.ZERO
 @param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = java.util.Map.of()
+@param java.util.Map<java.util.UUID, net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport.TaxableRatioBasis> monthlyDividendTaxableRatioBasis = java.util.Map.of()
 @param BigDecimal monthlyDividendReferenceTaxableTotal = null
 @param int monthlyDividendReferenceTaxableStaleCount = 0
 @param MonthlyDividendSimulatorSummaryView monthlyDividendSummary = null
@@ -200,7 +201,7 @@
 			<%-- 이 탭들은 주소를 바꾸는 링크다(역할은 tab 이 아니라 링크). 지금 어느 탭인지 시각 스타일로만
 			     알렸다 - 실측 2026-09-12: role/aria-selected/aria-current 가 모두 없어 낭독기에는 링크 셋으로만
 			     들렸다. 링크형 탭의 표준 표식인 aria-current="page" 를 단다. --%>
-			<div class="tabs tabs-box w-full bg-base-200/70 p-1">
+			<div class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1">
 				<a href="${simulatorTabHrefSustainability}" aria-current="${sustainabilityTab ? "page" : null}" class="${sustainabilityTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${sustainabilityTabLabel}</a>
 				<a href="${simulatorTabHrefMonthlyDividend}" aria-current="${monthlyDividendTab ? "page" : null}" class="${monthlyDividendTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${monthlyDividendTabLabel}</a>
 				<a href="${simulatorTabHrefCompound}" aria-current="${compoundTab ? "page" : null}" class="${compoundTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${compoundTabLabel}</a>
@@ -216,6 +217,7 @@
 					monthlyDividendStaleQuantityCount = monthlyDividendStaleQuantityCount,
 					monthlyDividendCurrentQuantityTotal = monthlyDividendCurrentQuantityTotal,
 					monthlyDividendReferenceTaxableRatios = monthlyDividendReferenceTaxableRatios,
+					monthlyDividendTaxableRatioBasis = monthlyDividendTaxableRatioBasis,
 					monthlyDividendReferenceTaxableTotal = monthlyDividendReferenceTaxableTotal,
 					monthlyDividendReferenceTaxableStaleCount = monthlyDividendReferenceTaxableStaleCount,
 					monthlyDividendSummary = monthlyDividendSummary,

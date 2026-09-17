@@ -176,7 +176,8 @@ export {};
     }
 
     function initializeAssetStatusDetailToggles() {
-        var buttons = document.querySelectorAll<HTMLElement>('[data-account-detail-toggle]');
+        // 계좌 표의 "보유 종목 보기" 와 종목 표의 "보유 계좌 보기"(2026-09-17)가 같은 방식으로 여닫는다.
+        var buttons = document.querySelectorAll<HTMLElement>('[data-account-detail-toggle], [data-stock-detail-toggle]');
         for (var i = 0; i < buttons.length; i++) {
             var button = buttons[i];
             if (button.dataset.detailToggleBound === 'true') {
@@ -185,7 +186,7 @@ export {};
 
             button.dataset.detailToggleBound = 'true';
             button.addEventListener('click', function(this: HTMLElement) {
-                toggleAssetStatusAccountDetail(this, this.dataset.accountDetailToggle!);
+                toggleAssetStatusAccountDetail(this, (this.dataset.accountDetailToggle || this.dataset.stockDetailToggle)!);
             });
         }
     }

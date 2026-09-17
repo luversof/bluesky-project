@@ -35,6 +35,7 @@
 @param String monthlyDividendReferenceResult = ""
 @param String monthlyDividendReferenceResultMessage = ""
 @param boolean monthlyDividendReferenceResultIsError = false
+@param String monthlyDividendReferenceWarningMessage = ""
 
 !{
 	// 두 탭이 브라우저 탭·기록에서 같은 이름("관리")이었다 - 실측 2026-09-12: 13 화면 제목 전수에서
@@ -54,7 +55,7 @@
 		<div class="space-y-6">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.admin.title"))
 			<div class="space-y-6">
-				<div class="tabs tabs-box w-full bg-base-200/70 p-1">
+				<div class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1">
 					<a href="/stock/admin" aria-current="${"data-management".equals(adminTab) ? "page" : null}" class="${"data-management".equals(adminTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.admin.label.data.management")}</a>
 					<a href="/stock/admin?tab=monthly-reference" aria-current="${"monthly-reference".equals(adminTab) ? "page" : null}" class="${"monthly-reference".equals(adminTab) ? "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")}</a>
 				</div>
@@ -80,7 +81,8 @@
 						monthlyDividendReferenceErrorMessage = monthlyDividendReferenceErrorMessage,
 						monthlyDividendReferenceResult = monthlyDividendReferenceResult,
 						monthlyDividendReferenceResultMessage = monthlyDividendReferenceResultMessage,
-						monthlyDividendReferenceResultIsError = monthlyDividendReferenceResultIsError)
+						monthlyDividendReferenceResultIsError = monthlyDividendReferenceResultIsError,
+						monthlyDividendReferenceWarningMessage = monthlyDividendReferenceWarningMessage)
 					<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
 					<script type="module" src="/js/stock/submitOverlay.js"></script>
 				@else

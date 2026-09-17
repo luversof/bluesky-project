@@ -19,6 +19,8 @@
 @param boolean monthlyDividendCurrentHoldingsUnavailable = false
 <%-- 종목 -> 저장된 지급 이력으로 계산한 1년 평균 과세표준 비중(관리 탭과 같은 계산). 저장값과 벌어지면 그 자리에서 알린다. --%>
 @param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = java.util.Map.of()
+<%-- 종목별 최근 1 년 배당을 과세이연 계좌 몫 / 그 밖 계좌 몫으로 나눈 것. 비중 칸 아래 설명에 쓴다. --%>
+@param java.util.Map<java.util.UUID, net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport.TaxableRatioBasis> monthlyDividendTaxableRatioBasis = java.util.Map.of()
 @param BigDecimal monthlyDividendReferenceTaxableTotal = null
 @param int monthlyDividendReferenceTaxableStaleCount = 0
 <%-- 원장의 현재 보유 수량(종목 id -> 수량). 스냅샷 수량과 다르면 표에 함께 적는다. --%>
@@ -50,6 +52,9 @@
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
 	boolean monthlyDividendDisplayOrderSort = "display-order".equals(monthlyDividendSort);
 	MonthlyDividendSnapshotResponse bestChoice = monthlyDividendSummary != null ? monthlyDividendSummary.bestChoice() : null;
+	// 행마다 비교 우위 순위. 1 위 하나만 배지를 달던 표에 순위를 전부 적는다(사용자 요청 2026-09-17).
+	java.util.Map<java.util.UUID, Integer> comparisonRanks = monthlyDividendSummary != null && monthlyDividendSummary.comparisonRanks() != null ? monthlyDividendSummary.comparisonRanks() : java.util.Map.of();
+	String comparisonRankPattern = MessageUtil.getMessage("stock.simulator.compare.rank");
 	BigDecimal totalLatestMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividend() : BigDecimal.ZERO;
 	BigDecimal totalLatestMonthlyDividendMidMonth = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividendMidMonth() : BigDecimal.ZERO;
 	BigDecimal totalLatestMonthlyDividendMonthEnd = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividendMonthEnd() : BigDecimal.ZERO;
@@ -236,8 +241,10 @@
 								<span class="label-text-alt mt-1 text-warning amount-value" data-form-current-average-buy-price>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.current"), amountFormat.format(formCurrentAverageBuyPrice))}</span>
 							@endif
 						</label>
+						<%-- 좁은 폭에서는 단추 글자가 줄을 바꾼다 - 글꼴 200% 에서 "시뮬레이터 반영" 한 줄이 칸보다 넓어 페이지를 밀었다(320px, 실측 2026-09-17).
+						     줄은 띄어쓰기에서 바꾸고(break-keep - 안 주면 "시뮬레 / 이터 반 / 영"), 단어가 칸보다 넓을 때만 그 안에서 끊는다. --%>
 						<div class="flex items-end">
-							<button type="submit" class="btn btn-primary w-full">${MessageUtil.getMessage("stock.simulator.monthly.form.submit")}</button>
+							<button type="submit" class="btn btn-primary w-full max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.simulator.monthly.form.submit")}</button>
 						</div>
 						<p class="text-xs leading-5 text-base-content/60 md:col-span-2 xl:col-span-4">${MessageUtil.getMessage("stock.simulator.monthly.form.hint")}</p>
 					</form>
@@ -294,6 +301,14 @@
 								@endif
 							</span>
 						</div>
+						<%-- 1 위 하나만 말하던 카드다. 무엇으로 순위를 매기는지 적고, 표를 그 순서로 여는 길을 준다(사용자 요청 2026-09-17:
+						     "비교 우위를 최상 1 개만 표시하는데 순위를 확인할 수 있으면"). 합산 수익률 열 정렬이 같은 비교기를 쓴다. --%>
+						<p class="text-[11px] leading-4 text-base-content/60" data-comparison-basis>
+							${MessageUtil.getMessage("stock.simulator.monthly.summary.comparison.basis")}
+							@if(bestChoice != null)
+								<a class="link link-hover whitespace-nowrap" href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=desc#monthlyDividendCompareTable" data-comparison-rank-link>${MessageUtil.getMessage("stock.simulator.monthly.summary.comparison.rank.link")}</a>
+							@endif
+						</p>
 					</div>
 				</div>
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
@@ -344,7 +359,7 @@
 							<div class="text-[11px] text-base-content/60">${totalMonthlyTaxableBaseSummaryLabel}</div>
 							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalExpectedTaxableBaseAmount)}</div>
 							@if(monthlyDividendReferenceTaxableStaleCount > 0 && monthlyDividendReferenceTaxableTotal != null)
-								<div class="mt-1 text-[11px] text-warning amount-value" data-reference-taxable-total="${monthlyDividendReferenceTaxableTotal.toPlainString()}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.summary.taxable.reference"), amountFormat.format(monthlyDividendReferenceTaxableTotal), String.valueOf(monthlyDividendReferenceTaxableStaleCount))}</div>
+								<div class="mt-1 text-[11px] text-base-content/60 amount-value" data-reference-taxable-total="${monthlyDividendReferenceTaxableTotal.toPlainString()}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.summary.taxable.reference"), amountFormat.format(monthlyDividendReferenceTaxableTotal), String.valueOf(monthlyDividendReferenceTaxableStaleCount))}</div>
 							@endif
 						</div>
 						<div>
@@ -362,7 +377,7 @@
 			@template._components.ui.card(bodyClass = "gap-5", body = @`
 					<div class="space-y-2">
 						<div class="space-y-2">
-							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.section.table.title")}</h2>
+							<h2 class="card-title text-lg" id="monthlyDividendCompareTable">${MessageUtil.getMessage("stock.simulator.monthly.section.table.title")}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.section.table.desc")}</p>
 						</div>
 					</div>
@@ -637,8 +652,9 @@
 															<span data-profile-order-value>${rowDisplayOrder != null ? String.valueOf(rowDisplayOrder) : "-"}</span>
 														</span>
 															<span>${row.stockItemSymbol()}</span>
-															@if(bestChoice != null && bestChoice.id() != null && bestChoice.id().equals(row.id()))
-																<span class="badge badge-success badge-xs">${MessageUtil.getMessage("stock.simulator.compare.best.choice")}</span>
+															!{Integer comparisonRank = row.id() != null ? comparisonRanks.get(row.id()) : null;}
+															@if(comparisonRank != null)
+																<span class="badge badge-xs ${comparisonRank == 1 ? "badge-success" : "badge-ghost"}" data-comparison-rank="${comparisonRank}">${java.text.MessageFormat.format(comparisonRankPattern, String.valueOf(comparisonRank))}</span>
 															@endif
 														</div>
 														<%-- 다른 표 17개(476행)는 모두 종목명을 상세로 잇는데 이 표만 링크가 없었다(실측 2026-09-11). --%>
@@ -678,13 +694,23 @@
 											</td>
 											<td class="text-right">
 												<div class="whitespace-nowrap tabular-nums">${percentFormat.format(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO)}%</div>
-												<%-- 저장값과 지급 이력 계산값이 벌어지면 알린다(수량 어긋남 표기와 같은 규칙).
-												     실측 2026-09-11: 8종목 전부 달랐고 최대 13.42% 對 100% 였다 - 세후 예상 배당이 그만큼 달라진다. --%>
+												<%-- 이 비중은 원장 최근 1 년의 (과세금액 / 세전)을 모든 계좌 합쳐 낸 값이다. 과세이연 계좌(ISA · 연금저축)는
+												     과세금액이 0 으로 적혀 비중을 끌어내린다 - 실측 2026-09-17: 과세이연 계좌에서만 받은 두 종목이 0%,
+												     네 계좌 중 과세 계좌 한 곳만 100% 인 종목이 13.42% 였고, 사용자는 "0% 인데 실제는 100%" 로 읽었다.
+												     계산은 두고(사용자 결정) 그 나눔을 적는다. --%>
+												!{var taxableRatioBasis = row.stockItemId() != null ? monthlyDividendTaxableRatioBasis.get(row.stockItemId()) : null;}
+												@if(taxableRatioBasis != null && taxableRatioBasis.deferredOnly())
+													<div class="text-[11px] text-base-content/60 whitespace-nowrap" data-taxable-ratio-basis="deferred-only">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.deferred.only")}</div>
+												@elseif(taxableRatioBasis != null && taxableRatioBasis.mixed())
+													<div class="text-[11px] text-base-content/60 whitespace-nowrap tabular-nums" data-taxable-ratio-basis="taxable-accounts">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.taxable.accounts"), percentFormat.format(taxableRatioBasis.taxableAccountRatioPct()))}</div>
+												@endif
+												<%-- 운용사 지급 이력 기준 비중이 1%p 이상 다르면 함께 적는다. 예전엔 '저장값이 낡았다' 고 보고 경고색과
+												     "저장값을 갱신합니다" 링크를 달았지만, 지급 이력을 가져올 때마다 비중을 원장 실적으로 다시 덮으므로
+												     갱신해도 그대로다(막다른 안내였다) - 차이는 낡은 게 아니라 기준이 다른 것이다. --%>
 												!{BigDecimal referenceTaxableRatio = monthlyDividendReferenceTaxableRatios.get(row.stockItemId());}
 												@if(referenceTaxableRatio != null && referenceTaxableRatio.subtract(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO).abs().compareTo(new BigDecimal("1")) >= 0)
-												<%-- 알리기만 하면 사용자는 어디서 고치는지 모른다 - 그 종목의 기준 데이터 관리로 바로 보낸다
-												     (실측 2026-09-11: 이 표의 행에는 링크가 하나도 없었다). --%>
-												<div class="text-[11px] text-warning whitespace-nowrap tabular-nums" data-reference-taxable-ratio="${referenceTaxableRatio.toPlainString()}">
+												<%-- 링크는 그 종목의 지급 이력을 보러 가는 길이다(실측 2026-09-11: 이 표의 행에는 링크가 하나도 없었다). --%>
+												<div class="text-[11px] text-base-content/60 whitespace-nowrap tabular-nums" data-reference-taxable-ratio="${referenceTaxableRatio.toPlainString()}">
 													<a class="link link-hover" href="/stock/admin?tab=monthly-reference&amp;symbol=${java.net.URLEncoder.encode(row.stockItemSymbol() != null ? row.stockItemSymbol() : "", java.nio.charset.StandardCharsets.UTF_8)}"
 													   title="${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference.link")}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference"), percentFormat.format(referenceTaxableRatio))}<span class="sr-only">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference.link")}</span></a>
 												</div>
@@ -761,6 +787,25 @@
 														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short")}</span>
 														<span>${percentFormat.format(latestMonthlyYieldOnCostPct)}% · ${percentFormat.format(latestAnnualYieldOnCostPct)}%</span>
 													</div>
+													<%-- 평단 기준이 현재가 기준보다 높은지 낮은지(사용자 요청 2026-09-17, 고른 방식: 차이 표시). 두 수익률은 같은 배당을
+													     평단 원가와 현재 평가액으로 나눈 것이라 방향은 '현재가가 평단보다 위인가' 하나로 정해지고 평균 · 최근 두 줄이 늘 같다 -
+													     그래서 한 번만, 연 평균 기준 차이(%p)로 적는다. 색만으로 말하지 않는다(기호 + 부호 + 낭독 문장). --%>
+													!{BigDecimal onCostGap = row.expectedAnnualYieldOnCostPct() != null && row.expectedAnnualYieldPct() != null
+														? row.expectedAnnualYieldOnCostPct().subtract(row.expectedAnnualYieldPct()).setScale(2, RoundingMode.HALF_UP)
+														: null;}
+													@if(onCostGap != null)
+														!{String onCostGapAmount = percentFormat.format(onCostGap.abs());}
+														!{String onCostGapKind = onCostGap.signum() > 0 ? "higher" : (onCostGap.signum() < 0 ? "lower" : "same");}
+														!{String onCostGapNote = onCostGap.signum() == 0
+															? MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.same")
+															: java.text.MessageFormat.format(onCostGap.signum() > 0
+																? MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.higher")
+																: MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.lower"), onCostGapAmount);}
+														!{String onCostGapValue = java.text.MessageFormat.format(
+															MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.value"),
+															(onCostGap.signum() > 0 ? "+" : (onCostGap.signum() < 0 ? "-" : "")) + onCostGapAmount);}
+														<div class="text-[11px] font-medium ${onCostGap.signum() > 0 ? "text-profit" : (onCostGap.signum() < 0 ? "text-loss" : "text-base-content/60")}" data-on-cost-gap="${onCostGapKind}" data-on-cost-gap-pct="${onCostGap.toPlainString()}" title="${onCostGapNote}"><span aria-hidden="true">${onCostGap.signum() > 0 ? "▲ " : (onCostGap.signum() < 0 ? "▼ " : "")}${onCostGapValue}</span><span class="sr-only">${onCostGapNote}</span></div>
+													@endif
 												</div>
 											</td>
 											<td class="align-top text-right">
@@ -788,6 +833,8 @@
 						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.two")}</li>
 						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.three")}</li>
 						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.four")}</li>
+						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.five")}</li>
+						<li>${MessageUtil.getMessage("stock.simulator.monthly.criteria.six")}</li>
 					</ul>
 			`)
 		</div>

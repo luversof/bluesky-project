@@ -14,7 +14,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.util.KodexMonthlyDividendPayoutSourceParser.KodexDividendResponse;
 import net.luversof.web.gate.stock.util.KodexMonthlyDividendPayoutSourceParser.KodexDividendRow;
 import net.luversof.web.gate.stock.util.PlusMonthlyDividendPayoutSourceParser.PlusDividendPage;
@@ -72,7 +71,14 @@ public class MonthlyDividendPayoutSourceImportService {
     this.tigerMonthlyDividendPayoutSourceParser = tigerMonthlyDividendPayoutSourceParser;
   }
 
-  public List<MonthlyDividendPayoutUpsertRequest> fetchImportRequests(
+  /**
+   * 출처 사이트에서 지급 이력을 받아 가져올 행으로 바꾼다.
+   *
+   * <p>표의 잘못된 행은 건너뛰고 사유와 함께 돌려준다({@link MonthlyDividendPayoutImportParser#parseLenient}) &mdash;
+   * 사이트의 오타 한 줄 때문에 가져오기 전체가 실패하던 것을 막는다(실측 2026-09-17: RISE 44J2, 사용자 결정). 사람이 붙여넣는 가져오기는 여전히
+   * 엄격하다.
+   */
+  public MonthlyDividendPayoutImportParser.LenientParseResult fetchImport(
       String symbol, String sourceUrl) {
     if (!StringUtils.hasText(sourceUrl)) {
       throw new IllegalArgumentException(msg("stock.monthly.reference.error.source.url.missing"));
@@ -104,7 +110,7 @@ public class MonthlyDividendPayoutSourceImportService {
       throw new IllegalArgumentException(msg("stock.monthly.reference.error.source.unsupported"));
     }
 
-    return monthlyDividendPayoutImportParser.parse(symbol, bulkInput);
+    return monthlyDividendPayoutImportParser.parseLenient(symbol, bulkInput);
   }
 
   private List<KodexDividendRow> fetchKodexRows(URI sourceUri) {

@@ -230,7 +230,9 @@ class EmptyRowsRenderTest {
     // 실측 2026-08-24: 필수 파라미터가 있는 조각 25 개 전부를 빈 값으로 채울 수 있다.
     // 하한을 두는 이유: 값 생성기가 한 타입을 못 만들면 그 조각이 조용히 대상에서 빠진다.
     // 2026-09-09 tabsPortfolio.jte(죽은 조각) 를 지워 25 -> 24. 바닥값은 스캔이 헛도는 것을 막는 용도라 지운 만큼만 내린다.
-    assertThat(templates).hasSizeGreaterThanOrEqualTo(24);
+    // 2026-09-17 배당 캘린더 탭 통합으로 월 · 연 예상 합계 카드를 빼면서 그 카드 조각(dividendCalendarTotalCard.jte)을 지워 24 ->
+    // 23.
+    assertThat(templates).hasSizeGreaterThanOrEqualTo(23);
 
     TemplateEngine engine = TemplateEngine.createPrecompiled(ContentType.Html);
     List<String> failures = new ArrayList<>();

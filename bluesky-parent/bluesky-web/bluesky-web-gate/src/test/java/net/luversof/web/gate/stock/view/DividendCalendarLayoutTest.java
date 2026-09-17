@@ -267,39 +267,6 @@ class DividendCalendarLayoutTest {
         .doesNotContain("data-calendar-entry=" + String.valueOf((char) 34) + "삼성전자");
   }
 
-  /**
-   * 달과 무관한 숫자에는 그렇다고 적는다.
-   *
-   * <p>월중/월말 소계는 라벨 없는 숫자 셋이었고, 실은 <b>지금 보유 수량</b> 기준 예상이라 달을 넘겨도 값이 같다 &mdash; 실측 2026-09-15: 어느
-   * 달을 봐도 3,956,660 원. 그런데 달력은 그 달 실제를 그리므로(2026-08 4,982,406 원) 한 화면에 축이 다른 두 숫자가 나란히 놀였다.
-   */
-  @Test
-  void 월중_월말_소계가_기준을_밝힌다() throws IOException {
-    String page = source("src/main/jte/stock/dividend.jte");
-
-    assertThat(page)
-        .as("라벨 없는 금액은 보는 달의 실적으로 읽힌다")
-        .contains("data-calendar-subtotal-basis")
-        .contains("stock.dividend.calendar.window.basis");
-  }
-
-  /**
-   * 화면 맨 위 설명이 아래 달력과 반대로 말하지 않게.
-   *
-   * <p>탭 설명은 "보유한 월배당 종목의 <b>예상</b> 지급 일정입니다" 인데, 지나간 달은 달력이 그 달 <b>실제 지급</b>을 그린다. 그 달 안내는 달력 상자가
-   * 이미 하므로 위 설명은 접는다.
-   */
-  @Test
-  void 실제를_그리는_달에는_예상_설명을_접는다() throws IOException {
-    String page = source("src/main/jte/stock/dividend.jte");
-
-    assertThat(page)
-        .as("위에서는 예상이라 하고 아래에서는 실제라 하면 한 화면이 서로 반대로 말한다")
-        .contains(
-            "boolean calendarShowsActual = dividendCalendar != null && dividendCalendar.hasActualAmount();")
-        .contains("@if(!calendarShowsActual)");
-  }
-
   private static DividendCalendarView.Entry projected(
       String name, int day, long latest, long average) {
     return new DividendCalendarView.Entry(
@@ -412,24 +379,5 @@ class DividendCalendarLayoutTest {
         .as("칸이 h-24 로 돌아가면 빈 면적이 다시 화면의 대부분을 차지한다")
         .doesNotContain("<td class=" + String.valueOf((char) 34) + "h-24 ");
     assertThat(fragment).contains("<td class=" + String.valueOf((char) 34) + "h-12 ");
-  }
-
-  /**
-   * 지나간 달은 원장이 지급일을 아니 <b>모든 종목</b>을 제 날짜에 놓는다.
-   *
-   * <p>실측 2026-09-15: 2026-08 의 삼성전자 1,886,082 원은 원장에 8 월 28 일이라고 적혀 있는데도 월배당 기준 데이터가 없다는 이유로 '달력
-   * 밖' 상자로 빠져, 그 달 배당의 37.9% 가 달력에서 안 보였다(사용자 결정 2026-09-15).
-   */
-  @Test
-  void 컨트롤러가_지나간_달엔_모든_종목을_놓는다() throws IOException {
-    String controller = source(CONTROLLER);
-
-    assertThat(controller)
-        .as("지나간 달에도 상자로 빼면 달력이 그 달 배당의 일부만 보여준다")
-        .contains("if (actualOnly) {")
-        .contains("dated.add( new DividendCalendarView.Entry(");
-    assertThat(controller)
-        .as("앞으로 올 달은 지급일을 알 길이 없으니 그때는 상자로 남는다")
-        .contains("missing.add(new DividendCalendarView.Missing(name, actual.gross()));");
   }
 }

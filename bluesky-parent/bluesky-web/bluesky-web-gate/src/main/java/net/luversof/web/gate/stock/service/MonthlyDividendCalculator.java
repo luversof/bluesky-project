@@ -223,8 +223,32 @@ public class MonthlyDividendCalculator {
         totalBuyAmount,
         totalCurrentMarketValue,
         portfolioExpectedAnnualYieldPct,
-        bestChoice);
+        bestChoice,
+        comparisonRanks(rows));
   }
+
+  /**
+   * 비교 우위 순서 &mdash; 앞이 우위다. 예상 합산 수익률이 높은 순, 같으면 평단 기준 연배당 수익률 · 연배당 수익률이 높은 순, 그래도 같으면 과세표준 비중이
+   * 낮은 순, 마지막은 종목코드.
+   *
+   * <p>"우선 검토 종목" 은 이 순서의 첫째고, 표의 순위 배지와 합산 수익률 열 정렬도 같은 순서를 쓴다 &mdash; 셋이 다른 비교기를 쓰면 1 위 배지가 정렬한
+   * 표의 맨 위에 오지 않을 수 있다.
+   */
+  public static final Comparator<MonthlyDividendSnapshotResponse> COMPARISON_ORDER =
+      Comparator.comparing(
+              (MonthlyDividendSnapshotResponse row) -> safe(row.expectedCombinedReturnPct()),
+              Comparator.reverseOrder())
+          .thenComparing(
+              (MonthlyDividendSnapshotResponse row) -> safe(row.expectedAnnualYieldOnCostPct()),
+              Comparator.reverseOrder())
+          .thenComparing(
+              (MonthlyDividendSnapshotResponse row) -> safe(row.expectedAnnualYieldPct()),
+              Comparator.reverseOrder())
+          .thenComparing(
+              (MonthlyDividendSnapshotResponse row) -> safe(row.averageTaxableBaseRatio1y()))
+          .thenComparing(
+              (MonthlyDividendSnapshotResponse row) -> safeString(row.stockItemSymbol()),
+              String.CASE_INSENSITIVE_ORDER);
 
   private MonthlyDividendSnapshotResponse resolveBestChoice(
       List<MonthlyDividendSnapshotResponse> rows) {
@@ -232,18 +256,30 @@ public class MonthlyDividendCalculator {
       return null;
     }
 
-    Comparator<MonthlyDividendSnapshotResponse> comparator =
-        Comparator.comparing(
-                (MonthlyDividendSnapshotResponse row) -> safe(row.expectedCombinedReturnPct()))
-            .thenComparing(row -> safe(row.expectedAnnualYieldOnCostPct()))
-            .thenComparing(row -> safe(row.expectedAnnualYieldPct()))
-            .thenComparing(
-                (MonthlyDividendSnapshotResponse row) -> safe(row.averageTaxableBaseRatio1y()),
-                Comparator.reverseOrder())
-            .thenComparing(
-                row -> safeString(row.stockItemSymbol()), String.CASE_INSENSITIVE_ORDER.reversed());
+    return rows.stream().min(COMPARISON_ORDER).orElse(null);
+  }
 
-    return rows.stream().max(comparator).orElse(null);
+  /**
+   * 스냅샷 id 별 비교 우위 순위(1 부터). 순위를 매기는 행 집합은 "우선 검토 종목" 과 같다(화면의 필터를 거친 행).
+   *
+   * <p>2026-09-17 까지 화면은 1 위 하나만 말했다 &mdash; 사용자 요청: "비교 우위를 최상 1 개만 표시하는데 순위를 확인할 수 있으면".
+   */
+  static java.util.Map<java.util.UUID, Integer> comparisonRanks(
+      List<MonthlyDividendSnapshotResponse> rows) {
+    java.util.Map<java.util.UUID, Integer> ranks = new java.util.LinkedHashMap<>();
+    if (rows == null) {
+      return ranks;
+    }
+    List<MonthlyDividendSnapshotResponse> ordered =
+        rows.stream().filter(java.util.Objects::nonNull).sorted(COMPARISON_ORDER).toList();
+    int rank = 0;
+    for (MonthlyDividendSnapshotResponse row : ordered) {
+      rank++;
+      if (row.id() != null) {
+        ranks.putIfAbsent(row.id(), rank);
+      }
+    }
+    return ranks;
   }
 
   private static BigDecimal safe(BigDecimal value) {

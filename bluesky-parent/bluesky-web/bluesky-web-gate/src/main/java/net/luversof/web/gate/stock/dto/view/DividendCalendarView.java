@@ -293,6 +293,11 @@ public record DividendCalendarView(
 
   /** 달력에 놓인 것 중 <b>실제 수령액</b>으로 적힌 것의 합(세전). 추정으로 적힌 칸은 빼고 센다. */
   public BigDecimal placedActualTotal() {
+    return sumPlacedActual(Entry::latest);
+  }
+
+  /** 보이는 값(원 단위로 반올림한 값)을 더한다 &mdash; 칸 합계와 같은 규칙이라 손으로 더한 값과 맞는다. */
+  private BigDecimal sumPlacedActual(java.util.function.Function<Entry, BigDecimal> value) {
     BigDecimal total = BigDecimal.ZERO;
     if (weeks == null) {
       return total;
@@ -308,7 +313,7 @@ public record DividendCalendarView(
                 total.add(
                     BigDecimal.valueOf(
                         net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
-                            entry.latest())));
+                            value.apply(entry))));
           }
         }
       }

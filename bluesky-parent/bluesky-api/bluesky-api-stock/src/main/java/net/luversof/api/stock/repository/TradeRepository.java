@@ -196,6 +196,50 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
   List<net.luversof.api.stock.domain.StockItemFirstBuy> findFirstBuyDateByStockItem(
       @Param("userId") UUID userId, @Param("accountIds") String accountIds);
 
+  /**
+   * 종목별로 실제로 오간 돈(매수 · 매도 · 배당) &mdash; 자산 현황 · 종목 상세의 연평균 수익률(XIRR) 재료.
+   *
+   * <p>금액은 손익 계산과 같은 재료다. 매매 금액은 가격 x 수량(amount 열은 없다)이고, 매수는 수수료 · 세금을 더해 나가고 매도는 빼고 들어온다. 배당은 종목별
+   * 배당 합계(/api/dividend/totalByStockItem)와 같은 세전 - 세금 - 수수료다. 실측 2026-09-17: 보유 9 종목 모두 이 흐름의 합에 오늘
+   * 평가액을 더한 값이 평가손익(Net) + 실현손익(Net) + 배당 합계와 0 원 차이였다.
+   *
+   * <p>필터 문자열 규칙(쉼표로 이은 id, 널이면 좁히지 않음)은 {@link #findFirstBuyDateByStockItem} 과 같다.
+   */
+  @Query(
+      """
+                SELECT f.stock_item_id, f.flow_at, f.amount
+                FROM (
+                  SELECT t."stockItem_id" AS stock_item_id, t."tradeDate" AS flow_at,
+                         CASE WHEN t."type" = 'BUY'
+                              THEN -(COALESCE(t."price", 0) * t."quantity" + COALESCE(t."fee", 0) + COALESCE(t."tax", 0))
+                              ELSE COALESCE(t."price", 0) * t."quantity" - COALESCE(t."fee", 0) - COALESCE(t."tax", 0)
+                         END AS amount
+                  FROM "Trade" t
+                  JOIN "Account" a ON t."account_id" = a."id"
+                  WHERE a."user_id" = :userId
+                    AND t."tradeDate" IS NOT NULL
+                    AND t."stockItem_id" IS NOT NULL
+                    AND t."type" IN ('BUY', 'SELL')
+                    AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+                    AND (CAST(:stockItemIds AS text) IS NULL OR t."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
+                  UNION ALL
+                  SELECT d."stockItem_id" AS stock_item_id, d."payDate" AS flow_at,
+                         COALESCE(d."grossAmount", 0) - COALESCE(d."tax", 0) - COALESCE(d."fee", 0) AS amount
+                  FROM "Dividend" d
+                  JOIN "Account" a ON d."account_id" = a."id"
+                  WHERE a."user_id" = :userId
+                    AND d."payDate" IS NOT NULL
+                    AND d."stockItem_id" IS NOT NULL
+                    AND (CAST(:accountIds AS text) IS NULL OR d."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+                    AND (CAST(:stockItemIds AS text) IS NULL OR d."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
+                ) f
+                ORDER BY f.stock_item_id, f.flow_at
+            """)
+  List<net.luversof.api.stock.domain.StockItemCashFlow> findCashFlowsByStockItem(
+      @Param("userId") UUID userId,
+      @Param("accountIds") String accountIds,
+      @Param("stockItemIds") String stockItemIds);
+
   @Query(
       """
                                 SELECT "stockItem_id"

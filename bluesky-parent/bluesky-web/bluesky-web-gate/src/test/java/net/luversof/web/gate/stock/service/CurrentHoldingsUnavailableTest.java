@@ -118,9 +118,9 @@ class CurrentHoldingsUnavailableTest {
     assertThat(simulator).contains("@if(monthlyDividendCurrentHoldingsUnavailable)");
     assertThat(simulator).as("시뮬레이터가 그 문구를 낸다").contains(key);
 
-    String dividend = read("src/main/jte/stock/dividend.jte");
-    assertThat(dividend).contains("@param boolean calendarCurrentQuantityUnavailable");
-    assertThat(dividend).contains("@if(calendarCurrentQuantityUnavailable)");
+    String dividend = read("src/main/jte/stock/fragments/upcomingDividendSchedule.jte");
+    assertThat(dividend).contains("@param boolean currentQuantityUnavailable");
+    assertThat(dividend).contains("@if(currentQuantityUnavailable)");
     assertThat(dividend).as("배당 캘린더가 그 문구를 낸다").contains(key);
   }
 

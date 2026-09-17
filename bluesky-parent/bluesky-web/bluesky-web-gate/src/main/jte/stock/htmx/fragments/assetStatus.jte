@@ -5,6 +5,7 @@
 @import net.luversof.web.gate.stock.domain.StockItem
 @import net.luversof.web.gate.stock.domain.TradeProfit
 @import net.luversof.web.gate.stock.dto.response.AssetStatusAccountHoldingView
+@import net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockAssetStatusUtil
@@ -15,6 +16,8 @@
 @param Map<java.util.UUID, BigDecimal> accountProfitBasisMap
 @param java.util.Set<java.util.UUID> manualPrincipalAccountIds = java.util.Set.of()
 @param Map<java.util.UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap
+<%-- 종목마다 그 종목을 가진 계좌 - 종목 줄의 "보유 계좌 보기" 가 펼친다(사용자 요청 2026-09-17). --%>
+@param Map<java.util.UUID, List<AssetStatusStockAccountView>> stockHoldingAccountMap = java.util.Map.of()
 @param List<StockItem> stockItemList = java.util.List.of()
 @param List<TradeProfit> stockAggregated
 @param Map<java.util.UUID, net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown> stockProfitBreakdown = java.util.Map.of()
@@ -28,6 +31,8 @@
 <%-- 종목별 최초 매수일과 '오늘'(요청 존). 보유 기간·연평균 수익률이 쓴다. --%>
 @param Map<java.util.UUID, java.time.LocalDate> firstBuyDateByStockItem = java.util.Map.of()
 @param java.time.LocalDate holdingBasisDate = null
+<%-- 종목별 하루치 순현금흐름 - 연평균 수익률(XIRR)의 재료(사용자 결정 2026-09-17). 없으면 연평균을 비운다. --%>
+@param Map<java.util.UUID, List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse>> cashFlowsByStockItem = java.util.Map.of()
 
 !{
 	String accountSectionTitle = MessageUtil.getMessage("stock.analytics.section.account.status");
@@ -75,6 +80,11 @@
 	// 계좌마다 펼쳐지는 표가 전부 같은 이름이면 낭독기의 표 목록에서 구분이 안 된다
 	// (실측 2026-09-12: "계좌 보유 종목 상세" 다섯 개). 이름에 계좌를 넣는다.
 	String accountHoldingsDetailNamedPattern = MessageUtil.getMessage("stock.analytics.account.holdings.detail.named");
+	String showStockAccountsLabel = MessageUtil.getMessage("stock.analytics.stock.accounts.show");
+	String hideStockAccountsLabel = MessageUtil.getMessage("stock.analytics.stock.accounts.hide");
+	String stockAccountsDetailLabel = MessageUtil.getMessage("stock.analytics.stock.accounts.detail.title");
+	String stockAccountsDetailNamedPattern = MessageUtil.getMessage("stock.analytics.stock.accounts.detail.named");
+	String stockWeightInStockLabel = MessageUtil.getMessage("stock.analytics.stock.accounts.weight.stock");
 	// 펼침 버튼도 줄마다 같은 글자다 - 실측 2026-09-12: "보유 종목 보기 (3) ▼" 2개 · "(4) ▼" 3개가 이름으로 갈리지 않았다.
 	String accountHoldingsToggleAriaPattern = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.action.aria");
 	String accountSelectionHelpLabel = MessageUtil.getMessage("stock.analytics.account.selection.helper");
@@ -653,7 +663,10 @@
 								? stockProfitBreakdown.get(item.stockItemId())
 								: new net.luversof.web.gate.stock.util.StockCombinedProfitUtil.Breakdown(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);}
 							!{java.time.LocalDate firstBuyDate = firstBuyDateByStockItem == null ? null : firstBuyDateByStockItem.get(item.stockItemId());}
-							!{var holdingReturn = StockHoldingReturnUtil.of(firstBuyDate, holdingBasisDate, item.totalBuyCost(), breakdown.combinedProfit(), item.evaluationProfit(), breakdown.dividendTotal());}
+							!{List<AssetStatusStockAccountView> holdingAccounts = stockHoldingAccountMap != null && stockHoldingAccountMap.get(item.stockItemId()) != null ? stockHoldingAccountMap.get(item.stockItemId()) : List.of();}
+							!{String stockDetailRowId = "asset-status-stock-detail-" + (item.stockItemId() != null ? item.stockItemId().toString() : "stock");}
+							!{String stockRowName = item.stockItemName() != null ? item.stockItemName() : "";}
+							!{var holdingReturn = StockHoldingReturnUtil.of(firstBuyDate, holdingBasisDate, cashFlowsByStockItem == null ? null : cashFlowsByStockItem.get(item.stockItemId()), item.evaluationAmount(), item.evaluationProfit(), breakdown.dividendTotal());}
 							!{String holdingPeriodText = !holdingReturn.hasPeriod() ? ""
 								: (holdingReturn.daysOnly()
 									? java.text.MessageFormat.format(holdingDaysPattern, String.valueOf(holdingReturn.holdingDays()))
@@ -688,8 +701,28 @@
 								data-realized-profit="${breakdown.realizedProfit().toPlainString()}"
 								data-dividend-total="${breakdown.dividendTotal().toPlainString()}"
 								data-combined-profit="${breakdown.combinedProfit().toPlainString()}"
-								data-holding-days="${holdingReturn.holdingDays()}">
-								<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
+								data-holding-days="${holdingReturn.holdingDays()}"
+								data-detail-row-id="${stockDetailRowId}">
+								<th scope="row" class="font-semibold">
+									<div><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></div>
+									<%-- 계좌 표의 "보유 종목 보기" 와 같은 모양 · 같은 여닫기(assetStatus.ts). 이름에 종목을 넣는다 - 줄마다 같은 글자면 버튼끼리 갈리지 않는다. --%>
+									@if(!holdingAccounts.isEmpty())
+										<button type="button"
+												class="btn btn-ghost btn-xs h-auto min-h-6 px-1 mt-1 text-xs font-normal text-base-content/60 hover:text-base-content"
+												data-stock-detail-toggle="${stockDetailRowId}"
+												aria-controls="${stockDetailRowId}"
+												aria-expanded="false"
+												aria-label="${java.text.MessageFormat.format(accountHoldingsToggleAriaPattern, showStockAccountsLabel, stockRowName)}"
+												data-expand-label="${showStockAccountsLabel}"
+												data-collapse-label="${hideStockAccountsLabel}"
+												data-expand-aria="${java.text.MessageFormat.format(accountHoldingsToggleAriaPattern, showStockAccountsLabel, stockRowName)}"
+												data-collapse-aria="${java.text.MessageFormat.format(accountHoldingsToggleAriaPattern, hideStockAccountsLabel, stockRowName)}">
+											<span data-label>${showStockAccountsLabel}</span>
+											<span class="text-base-content/60">(${holdingAccounts.size()})</span>
+											<span data-icon class="opacity-60">▼</span>
+										</button>
+									@endif
+								</th>
 								<td class="text-base-content/70" data-holding-period>
 									@if(holdingReturn.hasPeriod())
 										<span title="${java.text.MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}">${holdingPeriodText}</span><span class="sr-only">, ${java.text.MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}</span>
@@ -736,6 +769,59 @@
 								</td>
 								<td class="text-right font-mono text-base-content/70">${stockWeightLabelById.getOrDefault(item.stockItemId(), StockFormatUtil.pct(totalWeightPct.doubleValue(), 1))}</td>
 							</tr>
+							<%-- 이 종목을 가진 계좌들. 계좌 표의 보유 종목 상세와 같은 계좌 x 종목 행이라, 종이에는 계좌 표 쪽만 펼쳐 찍는다(같은 내용이 두 번 찍히지 않게). --%>
+							@if(!holdingAccounts.isEmpty())
+								<tr id="${stockDetailRowId}" class="hidden bg-base-200/40" data-stock-detail-row>
+									<td colspan="12" class="p-0">
+										<div class="px-3 py-3">
+											<div class="text-xs font-semibold text-base-content/60 mb-2">${stockAccountsDetailLabel}</div>
+											<div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
+												<table class="table table-xs w-full" aria-label="${!stockRowName.isBlank() ? java.text.MessageFormat.format(stockAccountsDetailNamedPattern, stockRowName) : stockAccountsDetailLabel}">
+													<thead class="bg-base-200/70">
+														<tr>
+															<th scope="col">${accountLabel}</th>
+															<th scope="col" class="text-right hidden sm:table-cell print:table-cell">${quantityLabel}</th>
+															<th scope="col" class="text-right hidden lg:table-cell print:table-cell">${averageCostLabel}</th>
+															<th scope="col" class="text-right hidden md:table-cell print:table-cell">${buyAmountLabel}</th>
+															<th scope="col" class="text-right">${evaluationAmountLabel}</th>
+															<th scope="col" class="text-right">${evaluationProfitLabel}</th>
+															<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${weightLabel}</th>
+														</tr>
+													</thead>
+													<tbody>
+														<%-- 종목 안 비중은 함께 배분해 합이 100.0% 가 되게 한다(계좌 표 펼침과 같은 이유). --%>
+														!{
+															java.util.List<BigDecimal> accountShareValues = new java.util.ArrayList<>();
+															for (AssetStatusStockAccountView shareAccount : holdingAccounts) {
+																accountShareValues.add(shareAccount.stockWeightPct() != null ? shareAccount.stockWeightPct() : BigDecimal.ZERO);
+															}
+															java.util.List<String> accountShareShown = StockFormatUtil.balancedPct(accountShareValues, 1);
+														}
+														@for(int accountIndex = 0; accountIndex < holdingAccounts.size(); accountIndex++)
+															!{AssetStatusStockAccountView holdingAccount = holdingAccounts.get(accountIndex);}
+															<tr data-stock-detail-account="${holdingAccount.accountId() != null ? holdingAccount.accountId().toString() : ""}">
+																<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.account(holdingAccount.accountId() != null ? holdingAccount.accountId().toString() : "")}" class="link link-hover">${holdingAccount.accountName() != null ? holdingAccount.accountName() : "-"}</a></th>
+																<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value">${String.format("%,d", holdingAccount.holdingQuantity())}</td>
+																<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", holdingAccount.averageBuyPrice() != null ? holdingAccount.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
+																<td class="text-right font-mono hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.buyAmount()))}</td>
+																<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.evaluationAmount()))}</td>
+																<td class="text-right font-mono font-bold amount-value ${holdingAccount.evaluationProfit() != null && holdingAccount.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+																	${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingAccount.evaluationProfit()))}
+																	<span class="text-xs">(${StockFormatUtil.signedPct(holdingAccount.evaluationProfitRatePct() != null ? holdingAccount.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
+																</td>
+																<td class="text-right hidden xl:table-cell print:table-cell">
+																	<div class="text-xs text-base-content/70">${stockWeightInStockLabel} ${accountShareShown.get(accountIndex)}</div>
+																	<div class="text-xs text-base-content/60">${totalWeightLabel} ${StockFormatUtil.pct(holdingAccount.totalWeightPct() != null ? holdingAccount.totalWeightPct().doubleValue() : 0.0, 1)}</div>
+																</td>
+															</tr>
+														@endfor
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</td>
+								</tr>
+							@endif
 						@endfor
 					@endif
 				</tbody>

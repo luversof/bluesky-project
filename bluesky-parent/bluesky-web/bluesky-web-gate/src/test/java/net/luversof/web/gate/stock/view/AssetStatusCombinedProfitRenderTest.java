@@ -99,6 +99,25 @@ class AssetStatusCombinedProfitRenderTest {
       Map<UUID, BigDecimal> dividends,
       Map<UUID, LocalDate> firstBuyDates,
       LocalDate holdingBasisDate) {
+    return render(stocks, dividends, firstBuyDates, holdingBasisDate, Map.of());
+  }
+
+  /** 연평균(XIRR)은 종목별 하루치 순현금흐름에 평가액을 더해 낸다. */
+  private static Map<UUID, List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse>>
+      boughtOnce(String date, String amount) {
+    return Map.of(
+        STOCK,
+        List.of(
+            new net.luversof.web.gate.stock.dto.response.StockCashFlowResponse(
+                LocalDate.parse(date), bd(amount))));
+  }
+
+  private String render(
+      List<TradeProfit> stocks,
+      Map<UUID, BigDecimal> dividends,
+      Map<UUID, LocalDate> firstBuyDates,
+      LocalDate holdingBasisDate,
+      Map<UUID, List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse>> cashFlows) {
     var breakdown = StockCombinedProfitUtil.byStockItem(stocks, dividends);
     Map<String, Object> model = new HashMap<>();
     model.put("accountTotalMap", new LinkedHashMap<UUID, TradeProfit>());
@@ -114,16 +133,36 @@ class AssetStatusCombinedProfitRenderTest {
     model.put("priceBasisDate", LocalDate.parse("2026-09-02"));
     model.put("firstBuyDateByStockItem", firstBuyDates);
     model.put("holdingBasisDate", holdingBasisDate);
+    model.put("cashFlowsByStockItem", cashFlows);
     StringOutput output = new StringOutput();
     TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
     return output.toString();
   }
 
-  /** 종목별 표만 잘라 본다. 계좌별 표에도 비슷한 열이 있어 통째로 세면 헛돈다. */
+  /**
+   * 종목별 표만 잘라 본다. 계좌별 표에도 비슷한 열이 있어 통째로 세면 헛돈다.
+   *
+   * <p>종목 줄은 "보유 계좌 보기" 로 펼칠 표를 안에 품는다(2026-09-17) - 첫 {@code </table>} 에서 자르면 안쪽 표에서 끊긴다. 짝을 세어
+   * 자른다.
+   */
   private String stockTable(String html) {
     int start = html.indexOf("data-asset-status-stock-table");
     assertThat(start).as("종목별 표를 찾지 못했다 - 검사가 무력해진다").isGreaterThan(0);
-    return html.substring(start, html.indexOf("</table>", start));
+    int depth = 1;
+    int at = start;
+    while (depth > 0) {
+      int open = html.indexOf("<table", at);
+      int close = html.indexOf("</table>", at);
+      assertThat(close).as("종목별 표의 끝을 못 찾았다").isGreaterThan(0);
+      if (open >= 0 && open < close) {
+        depth++;
+        at = open + 1;
+      } else {
+        depth--;
+        at = close + 1;
+      }
+    }
+    return html.substring(start, at - 1);
   }
 
   private static int count(String source, String regex) {
@@ -176,7 +215,9 @@ class AssetStatusCombinedProfitRenderTest {
     String table = stockTable(render(List.of(stock()), Map.of(STOCK, bd("5385714"))));
 
     int head = count(table.substring(0, table.indexOf("</thead>")), "<th ");
-    String body = table.substring(table.indexOf("<tbody>"), table.indexOf("</tbody>"));
+    // 종목 줄 하나만 센다 - 펼칠 보유 계좌 줄(안에 표를 품는다)은 colspan 한 칸이다(아래 검사).
+    int rowStart = table.indexOf("<tr class=\"asset-status-stock-row\"");
+    String body = table.substring(rowStart, table.indexOf("</tr>", rowStart));
     // 집계 표는 본문 첫 칸도 th scope="row" 다(2026-09-11) - td 만 세면 한 칸이 빠진다.
     int row = count(body, "<td ") + count(body, "<th ");
     String foot = table.substring(table.indexOf("<tfoot"));
@@ -186,6 +227,52 @@ class AssetStatusCombinedProfitRenderTest {
     assertThat(head).as("열을 더했는데 머리글이 따라오지 않았다").isEqualTo(12);
     assertThat(row).as("본문 칸 수가 머리글과 다르다").isEqualTo(head);
     assertThat(total).as("합계 칸 수가 머리글과 다르다").isEqualTo(head);
+  }
+
+  /** 펼칠 보유 계좌 줄도 표 전체 폭을 덮어야 한다 - colspan 이 열 수보다 작으면 옆 칸이 비어 줄이 어긋나 보인다. */
+  @Test
+  void 보유_계좌_줄은_모든_열에_걸친다() {
+    String html =
+        renderWithAccounts(
+            Map.of(
+                STOCK,
+                List.of(
+                    new net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView(
+                        ACCOUNT,
+                        "위탁",
+                        100,
+                        bd("19000"),
+                        bd("1900000"),
+                        bd("1900000"),
+                        bd("0"),
+                        bd("0"),
+                        bd("100"),
+                        bd("100")))));
+    String table = stockTable(html);
+    int head = count(table.substring(0, table.indexOf("</thead>")), "<th ");
+    int detail = table.indexOf("data-stock-detail-row");
+
+    assertThat(detail).as("보유 계좌 줄이 없다").isGreaterThan(0);
+    assertThat(table.substring(detail)).contains("colspan=\"" + head + "\"");
+  }
+
+  private String renderWithAccounts(
+      Map<UUID, List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView>>
+          accounts) {
+    var stocks = List.of(stock());
+    var breakdown = StockCombinedProfitUtil.byStockItem(stocks, Map.of());
+    Map<String, Object> model = new HashMap<>();
+    model.put("accountTotalMap", new LinkedHashMap<UUID, TradeProfit>());
+    model.put("accountProfitBasisMap", new LinkedHashMap<UUID, BigDecimal>());
+    model.put("accountHoldingMap", new LinkedHashMap<>());
+    model.put("stockAggregated", stocks);
+    model.put("stockProfitBreakdown", breakdown);
+    model.put("totalEvaluationAmount", bd("1900000"));
+    model.put("totalEvaluationProfit", bd("-12444645"));
+    model.put("stockHoldingAccountMap", accounts);
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
+    return output.toString();
   }
 
   /** 보유가 없을 때의 빈 줄도 늘어난 열 수만큼 걸쳐야 한다. */
@@ -345,9 +432,9 @@ class AssetStatusCombinedProfitRenderTest {
   }
 
   /**
-   * 연평균은 복리다. 매수원가 1,000,000 · 합산 +200,000 을 꼬박 1 년 들고 있었으면 연 20.0% 이다.
+   * 연평균은 XIRR 이다(사용자 결정 2026-09-17). 1,000,000 을 한 번 넣어 꼬박 1 년 뒤 평가 1,200,000 이면 연 20.0% 이다.
    *
-   * <p>단순 환산이면 같은 값이 나오므로 이 줄만으로는 두 식을 가를 수 없다 - 아래 짧은 보유 검사가 그 일을 한다.
+   * <p>단순 환산이면 같은 값이 나오므로 이 줄만으로는 식을 가를 수 없다 - 아래 짧은 보유 검사와 유틸 검사(나눠 산 돈)가 그 일을 한다.
    */
   @Test
   void 연평균을_합산_손익_칸에_적는다() {
@@ -357,7 +444,8 @@ class AssetStatusCombinedProfitRenderTest {
                 List.of(steady()),
                 Map.of(),
                 Map.of(STOCK, LocalDate.parse("2025-09-14")),
-                LocalDate.parse("2026-09-14")));
+                LocalDate.parse("2026-09-14"),
+                boughtOnce("2025-09-14", "-1000000")));
 
     assertThat(table).contains("data-annualized-return");
     assertThat(table)
@@ -366,7 +454,7 @@ class AssetStatusCombinedProfitRenderTest {
   }
 
   /**
-   * 보유 117 일짜리 +20.0% 를 복리로 펼치면 연 76.6% 다(단순 환산이면 62.4%). 식을 바꿔 놓으면 이 검사가 깨진다.
+   * 보유 117 일짜리 +20.0% 를 날짜대로 펼치면 연 76.6% 다(단순 환산이면 62.4%). 식을 바꿔 놓으면 이 검사가 깨진다.
    *
    * <p>실측 2026-09-14: 보유 9 종목 중 7 종목이 1 년 미만이라 이 확대가 표의 기본값에 가깝다. 근거를 함께 적는다.
    */
@@ -378,19 +466,20 @@ class AssetStatusCombinedProfitRenderTest {
                 List.of(steady()),
                 Map.of(),
                 Map.of(STOCK, LocalDate.parse("2026-05-20")),
-                LocalDate.parse("2026-09-14")));
+                LocalDate.parse("2026-09-14"),
+                boughtOnce("2026-05-20", "-1000000")));
 
     assertThat(table)
-        .as("복리가 아니면 62.4% 가 나온다")
+        .as("날짜대로 펼치지 않으면 62.4% 가 나온다")
         .contains(MessageFormat.format(message("stock.asset.status.cell.annualized"), "+76.6%"));
     assertThat(table).contains("data-short-term=\"true\"");
     assertThat(table)
         .contains(MessageFormat.format(message("stock.asset.status.cell.annualized.short"), "117"));
   }
 
-  /** 원금보다 더 잃으면 복리로 환산할 수 없다(음수의 분수 거듭제곱). 억지로 -100% 를 적으면 '딱 전액 손실' 로 읽힌다. */
+  /** 흐름을 못 받은 종목(api 가 준 목록에 없음)은 연평균을 비운다 - 기간만 있고 돈이 언제 오갔는지 모르면 XIRR 을 낼 수 없다. */
   @Test
-  void 원금보다_더_잃으면_연평균을_비운다() {
+  void 흐름이_없으면_연평균을_비운다() {
     String table =
         stockTable(
             render(

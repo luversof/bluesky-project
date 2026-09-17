@@ -46,6 +46,21 @@ function fmtDate(d: Date): string {
  * {@code rangeMode=all}·모드 없는 진입·2010 년 이후 시작은 모두 정상이라 화면의 링크로는 닿지 않는다.
  * "이미 전체를 보고 있을 때 프리셋이 무엇을 뜻하는가" 는 제품 결정이라 여기서 바꾸지 않았다.
  */
+/**
+ * 기간 입력칸의 min/max 는 달력에서 고를 수 있는 범위를 좁히는 <b>힌트</b>다 - 제출을 막는 규칙이 아니다.
+ * 그래서 그 칸이 든 폼은 검증을 끈다(브라우저 requestSubmit 도, htmx 도 form.noValidate 를 따른다).
+ *
+ * 실측 2026-09-17: 데이터가 1 년이 안 되는 종목(첫 거래 2026-05-07) 상세에서 '1년' 을 누르면 단추는
+ * 눌린 모양이 되는데 요청이 하나도 안 나갔다 - 시작일 2025-09-18 이 min(2026-05-07) 보다 앞서
+ * "값은 2026-05-07 이후여야 합니다." 로 제출이 막혔다. 원장 기준 종목 44 개 중 '3년' 12 · '1년' 7 ·
+ * '올해' 6 · '6개월' 4, 계좌 6 개 중 '3년' 4 · '1년' 1 이 이 상태였다. 저장된 기간으로 처음 들어가도 칸이
+ * 검증 실패로 남아 그다음 제출(프리셋·상세 조회)까지 막혔다. 데이터 앞쪽 날짜는 서버가 빈 구간으로 답한다.
+ * 같은 선택기의 '이전'·'처음으로' 는 이미 min 을 넘지 않게 스스로 막는다 - 검증에 기댈 이유가 없다.
+ */
+function relaxRangeFormValidation(input: { form?: { noValidate?: boolean } | null } | null): void {
+	if (input && input.form) input.form.noValidate = true;
+}
+
 function presetAnchorsAtDataStart(
 	curStart: string,
 	curEnd: string,
@@ -595,6 +610,8 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 										end: endStr || "",
 										mode: modeStr || "",
 										timeZone: resolvedTimeZone() || "",
+										// 이 탭의 피커가 보냈다 - 뒤이어 화면 자체를 다시 부른다(받는 쪽이 중복 조회를 건너뛴다).
+										source: "picker",
 									},
 								}),
 							);
@@ -668,6 +685,8 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 											end: endStr || "",
 											mode: modeStr || "",
 											timeZone: resolvedTimeZone() || "",
+											// 이 탭의 피커가 보냈다 - 뒤이어 폼을 제출한다(받는 쪽이 중복 조회를 건너뛴다).
+											source: "picker",
 										},
 									}),
 								);
@@ -1101,6 +1120,8 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 				// 입력 어디를 눌러도 달력이 열리게 한다(기본 동작은 작은 아이콘만 클릭 가능).
 				if (cfg.minDate) inputEl.min = cfg.minDate;
 				inputEl.max = maxDateStr();
+				// 위 두 줄은 달력 힌트다 - 프로그램이 넣은 기간을 검증으로 막지 않게 한다.
+				relaxRangeFormValidation(inputEl);
 				inputEl.addEventListener("click", () => {
 					try {
 						const anyEl = inputEl as any;
@@ -1373,6 +1394,7 @@ const activeClass = () => cfg.activeClass || "btn-primary";
 // 테스트가 계산만 따로 부를 수 있게 노출한다(브라우저 동작에는 영향 없음).
 (globalThis as any).__dateRangePickerInternals = {
 	localDateToInstantIso,
+	relaxRangeFormValidation,
 	fmtDate,
 	restoredRangeAlreadyShown,
 	resolveInitialRange,

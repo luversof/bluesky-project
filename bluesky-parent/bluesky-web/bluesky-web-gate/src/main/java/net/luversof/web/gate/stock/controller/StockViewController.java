@@ -466,6 +466,10 @@ public class StockViewController {
     // (실측 2026-09-11: 8 종목 전부 달랐고 최대 13.42% 對 100%). 같은 화면에서 차이를 알 수 있게 이력 기준 값도 함께 싣는다.
     var referenceRatioFuture =
         stockAsync.supply(() -> monthlyDividendReferenceSupport.referenceTaxableRatioBySymbol());
+    // 표의 과세표준 비중은 원장 최근 1 년을 모든 계좌 합쳐 낸 값이라 과세이연 계좌 몫이 비중을 끌어내린다 - 행마다 그 나눔을 적는다
+    // (실측 2026-09-17: 과세이연 계좌에서만 받은 두 종목이 0%, 사용자 결정: 계산은 두고 표기를 바로잡는다).
+    var taxableRatioBasisFuture =
+        stockAsync.supply(() -> monthlyDividendReferenceSupport.loadTaxableRatioBasis(userId));
     List<MonthlyDividendSnapshotResponse> allRows =
         monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId);
     List<MonthlyDividendProfileResponse> monthlyDividendProfiles =
@@ -526,6 +530,9 @@ public class StockViewController {
     }
     model.addAttribute(
         "monthlyDividendReferenceTaxableRatios", monthlyDividendReferenceTaxableRatios);
+    model.addAttribute(
+        "monthlyDividendTaxableRatioBasis",
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(taxableRatioBasisFuture));
     // 행마다 "지급 이력 기준 N%" 를 알려도 합계 카드는 저장값으로만 계산된다 - 실측 2026-09-11:
     // 총 예상 월 과세표준액이 220,539 인데 지급 이력 기준이면 994,375(4.5 배)였다. 세금은 이 값에 붙는다.
     BigDecimal monthlyDividendReferenceTaxableTotal = BigDecimal.ZERO;

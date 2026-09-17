@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 
+import net.luversof.web.gate.stock.dto.response.StockCashFlowResponse;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
 
 @HttpExchange(
@@ -29,5 +30,14 @@ public interface TradeClient {
    */
   @GetExchange("/firstBuyDateByStockItem")
   Map<UUID, LocalDate> findFirstBuyDateByStockItem(
+      @RequestParam MultiValueMap<String, String> request);
+
+  /**
+   * 종목별 하루치 순현금흐름(매수 · 매도 · 배당). 자산 현황 · 종목 상세의 연평균 수익률(XIRR)이 쓴다.
+   *
+   * <p>최초 매수일과 같은 이유로 원장 목록을 받지 않는다. 조건(계좌 · 종목 필터 · 존)도 최초 매수일과 같게 보낸다.
+   */
+  @GetExchange("/cashFlowsByStockItem")
+  Map<UUID, List<StockCashFlowResponse>> findCashFlowsByStockItem(
       @RequestParam MultiValueMap<String, String> request);
 }

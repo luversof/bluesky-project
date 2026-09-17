@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
  */
 class DividendCalendarEmptyStateTest {
 
-  private static final String PAGE = "src/main/jte/stock/dividend.jte";
+  private static final String PAGE = "src/main/jte/stock/fragments/upcomingDividendSchedule.jte";
 
   private static final String COMPONENT = "src/main/jte/_components/ui/emptyState.jte";
 

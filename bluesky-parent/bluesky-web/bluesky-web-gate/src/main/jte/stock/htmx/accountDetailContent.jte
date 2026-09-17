@@ -28,7 +28,13 @@
 @param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfitOwnBasis = java.math.BigDecimal.ZERO
+<%-- 실현 손익 카드의 수익률 분모 - 카드 금액(기록값) 기준과 '이 계좌 기준' 줄의 기준 둘. 이 기간에 판 적이 없으면 0. --%>
+@param BigDecimal realizedCostBasis = java.math.BigDecimal.ZERO
+@param BigDecimal realizedOwnCostBasis = java.math.BigDecimal.ZERO
 @param BigDecimal totalDividend = java.math.BigDecimal.ZERO
+<%-- 이 계좌 전체 거래의 연평균(XIRR)과 그 시작일(최초 매수). 기간 선택과 무관하다. --%>
+@param net.luversof.web.gate.stock.util.StockHoldingReturnUtil.Row accountReturn = null
+@param LocalDate accountFirstTradeDate = null
 @param List<TradeProfit> holdings = java.util.List.of()
 @param List<TradeResponse> trades = java.util.List.of()
 @param List<DividendResponse> dividends = java.util.List.of()
@@ -60,6 +66,28 @@
 	// 실측 2026-09-13: 보유가 없는 종목 77 개와 계좌 1 개(동양증권 - 매수 2.75 억 · 실현 +3,309 만)가 모두 그랬다.
 	// 금액 0 은 맞지만 비율은 모른다. 모르면 적지 않는다.
 	boolean evalRateKnown = evalCostBasis.signum() != 0;
+	// 카드마다 그 원금 대비 비율 - 종목 상세와 같은 규칙(사용자 선택 2026-09-17: 계좌 상세도 같게). 평가 · 배당은 보유 원가, 실현은 판 주식 원가.
+	String holdingBasisLabel = MessageUtil.getMessage("stock.item.detail.rate.basis.holding");
+	boolean realizedRateKnown = realizedCostBasis != null && realizedCostBasis.signum() > 0;
+	double realizedCostRatePct = realizedRateKnown && realizedProfit != null ? realizedProfit.doubleValue() * 100.0 / realizedCostBasis.doubleValue() : 0.0;
+	// '이 계좌 기준' 줄에는 그 기준의 비율을 붙인다 - 카드 금액은 계좌를 합친 원가라 같은 매도가 두 비율을 갖는다
+	// (실측 2026-09-17 연금저축1: 카드 금액 기준 +5.3%, 이 계좌 매매로는 +33.6%). 비율은 늘 바로 옆 금액과 같은 기준이다.
+	boolean realizedOwnRateKnown = realizedOwnCostBasis != null && realizedOwnCostBasis.signum() > 0;
+	double realizedOwnRatePct = realizedOwnRateKnown && realizedProfitOwnBasis != null ? realizedProfitOwnBasis.doubleValue() * 100.0 / realizedOwnCostBasis.doubleValue() : 0.0;
+	boolean dividendRateKnown = evalCostBasis.signum() > 0 && holdingCount > 0;
+	double dividendCostRatePct = dividendRateKnown && totalDividend != null ? totalDividend.doubleValue() * 100.0 / evalCostBasis.doubleValue() : 0.0;
+	// 이 계좌 전체 거래의 보유 기간 · 연평균. 보유가 없는 계좌에는 적지 않는다(종목 상세와 같다).
+	boolean accountReturnShown = accountReturn != null && accountReturn.hasPeriod() && holdingCount > 0 && accountFirstTradeDate != null;
+	String accountPeriodText = !accountReturnShown ? ""
+		: (accountReturn.daysOnly()
+			? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.days"), String.valueOf(accountReturn.holdingDays()))
+			: (accountReturn.years() == 0
+				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.months"), String.valueOf(accountReturn.months()))
+				: (accountReturn.months() == 0
+					? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.years.only"), String.valueOf(accountReturn.years()))
+					: java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.years"), String.valueOf(accountReturn.years()), String.valueOf(accountReturn.months())))));
+	String accountAnnualizedText = !accountReturnShown || accountReturn.annualizedPct() == null ? ""
+		: StockFormatUtil.signedPct(accountReturn.annualizedPct().doubleValue(), 1);
 	// 세금 0 은 잰 값이지만 표마다 다르게 적혀 있었다 - 배당 이력 · 수익률 표는 이미 "-" 와 사유를 달고,
 	// 상세 두 화면만 "0" 이었다. 실측 2026-09-13: 배당 202 건 중 147 건(72.8%)이 세금 0 이라
 	// 같은 값이 화면마다 달리 보였다. 사유는 title 과 aria-label 에 함께 단다(마우스 전용이 되지 않게).
@@ -121,7 +149,7 @@
 	<!-- 보유/손익 요약 -->
 	<%-- 기간 매수·실현 손익·기간 배당은 고른 기간의 값이고, 평가 금액·평가 손익·보유 종목 수는 지금 보유분이다.
 	     라벨이 축을 말해야 나란히 놓인 값끼리 검산이 된다 - 종목 상세와 같은 이유(실측 2026-09-11). --%>
-	<div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
+	<div class="grid stat-card-grid grid-cols-2 lg:grid-cols-3 gap-3">
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.profit.evaluation.amount"),
 			value = String.format("%,d", StockFormatUtil.displayWon(evaluationAmount)),
@@ -139,7 +167,7 @@
 			label = MessageUtil.getMessage("stock.profit.unrealized"),
 			value = StockFormatUtil.signedWon(StockFormatUtil.displayWon(evaluationProfit)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(evaluationProfit)),
-			sub = evalRateKnown ? StockFormatUtil.signedPct(evalProfitRatePct, 1) : "",
+			sub = evalRateKnown ? StockFormatUtil.signedPct(evalProfitRatePct, 1) + " · " + holdingBasisLabel : "",
 			tone = evalColor)
 		<%-- 기록된 실현손익은 계좌를 합친 원가를 따르므로 이 계좌의 매매와 크게 다를 수 있다
 		     (실측 2026-08-23: 연금저축1 은 그 계좌 매매 기준의 1/5, ISA 는 반대로 104 배).
@@ -155,6 +183,9 @@
 			label = MessageUtil.getMessage("stock.profit.realized"),
 			value = StockFormatUtil.signedWon(StockFormatUtil.displayWon(realizedProfit)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(realizedProfit)),
+			sub = realizedRateKnown
+				? StockFormatUtil.signedPct(realizedCostRatePct, 1) + " · " + MessageUtil.getMessage("stock.item.detail.rate.basis.sold")
+				: MessageUtil.getMessage("stock.item.detail.rate.none.sold"),
 			subBefore = basisGapNotable
 				? net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(basisGapPattern)
 				: "",
@@ -162,14 +193,30 @@
 				? StockFormatUtil.signedWon(StockFormatUtil.displayWon(realizedProfitOwnBasis))
 				: "",
 			subAfter = basisGapNotable
-				? net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(basisGapPattern)
+				? net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(basisGapPattern) + (realizedOwnRateKnown ? " · " + StockFormatUtil.signedPct(realizedOwnRatePct, 1) : "")
 				: "",
-			tone = realizedColor)
+			tone = realizedRateKnown ? realizedColor : "")
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.item.detail.period.dividend"),
 			value = String.format("%,d", StockFormatUtil.displayWon(totalDividend)),
 			valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalDividend)),
+			sub = dividendRateKnown ? StockFormatUtil.pct(dividendCostRatePct, 1) + " · " + holdingBasisLabel : MessageUtil.getMessage("stock.item.detail.rate.none.holding"),
 			tone = "text-dividend")
+		<%-- 연평균은 이 계좌 전체 거래 기준이라 기간 카드들과 범위가 다르다 - 낭독기에는 scopeNote 로, 화면에는 보조줄의 시작일로 밝힌다. --%>
+		@if(accountReturnShown)
+		<div class="contents" data-account-return data-short-term="${String.valueOf(accountReturn.shortTerm())}" data-holding-days="${accountReturn.holdingDays()}">
+		@template._components.ui.statCard(
+			label = MessageUtil.getMessage("stock.asset.status.cell.annualized.name"),
+			value = accountAnnualizedText.isEmpty() ? "-" : accountAnnualizedText,
+			valueTitle = accountAnnualizedText.isEmpty() ? MessageUtil.getMessage("stock.item.detail.annualized.none") : "",
+			scopeNote = MessageUtil.getMessage("stock.account.detail.return.basis"),
+			sub = accountPeriodText + " · " + (accountReturn.shortTerm()
+				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.annualized.short"), String.valueOf(accountReturn.holdingDays()))
+				: java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.since"), accountFirstTradeDate.toString())),
+			tone = accountReturn.annualizedPct() == null ? "" : (accountReturn.annualizedPct().signum() >= 0 ? "text-profit" : "text-loss"),
+			amount = false)
+		</div>
+		@endif
 	</div>
 
 	<!-- 평가액·원가 추이 -->
@@ -184,9 +231,10 @@
 		<%-- 보유 스냅샷 키보드 경로(실측 2026-09-09): 차트 점 클릭은 마우스 전용이라 같은 조각을 날짜 입력으로도 부른다. --%>
 		<form class="flex flex-wrap items-end gap-2 mt-3" hx-get="/stock/htmx/holdings-snapshot" hx-target="#holdings-snapshot-container" hx-swap="innerHTML" data-holdings-snapshot-form>
 			<input type="hidden" name="accountId" value="${account.id() != null ? account.id().toString() : ""}">
-			<label class="form-control">
+			<%-- 날짜 칸은 글꼴을 키우면 제 폭(연 · 월 · 일 + 달력 단추)이 카드 안쪽보다 넓어 페이지를 밀었다(320px + 글꼴 200%: 칸 253px / 안쪽 158px, 실측 2026-09-17) - 칸이 줄어들 수 있게 한다. --%>
+			<label class="form-control min-w-0 max-w-full">
 				<span class="label-text text-xs">${MessageUtil.getMessage("stock.holdings.snapshot.date.label")}</span>
-				<input type="date" name="date" required class="input input-sm input-bordered">
+				<input type="date" name="date" required class="input input-sm input-bordered max-w-full">
 			</label>
 			<button type="submit" class="btn btn-sm">${MessageUtil.getMessage("common.button.search")}</button>
 		</form>

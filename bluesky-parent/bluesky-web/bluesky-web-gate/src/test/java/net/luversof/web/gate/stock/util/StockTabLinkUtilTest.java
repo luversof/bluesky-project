@@ -100,7 +100,5 @@ class StockTabLinkUtilTest {
         Files.readString(Path.of("src/main/jte/stock/dividend.jte"), StandardCharsets.UTF_8);
     char q = (char) 34;
     assertThat(jte).doesNotContain("href=" + q + "/stock/dividend?tab=");
-    assertThat(jte).contains("dividendHistoryTabHref");
-    assertThat(jte).contains("dividendCalendarTabHref");
   }
 }

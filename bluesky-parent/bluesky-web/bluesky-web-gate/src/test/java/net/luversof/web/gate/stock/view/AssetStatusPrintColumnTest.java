@@ -81,6 +81,23 @@ class AssetStatusPrintColumnTest {
     assertThat(css).as("종이에서 뜻이 없는 버튼은 감춘다").contains("[data-account-detail-toggle]");
   }
 
+  /**
+   * 종목 표의 "보유 계좌 보기"(2026-09-17)는 종이에서 펼치지 않는다 &mdash; 같은 계좌 x 종목 행이 계좌 표의 보유 종목 상세로 이미 찍힌다. 버튼만
+   * 감춘다.
+   */
+  @Test
+  void 종목_표의_보유_계좌는_종이에_두_번_찍지_않는다() throws IOException {
+    String template = read(ASSET_STATUS);
+    String css = read(MAIN_CSS);
+
+    assertThat(template).contains("data-stock-detail-row").contains("data-stock-detail-toggle=");
+    assertThat(css)
+        .as("버튼은 감춘다")
+        .contains("[data-stock-detail-toggle] {\n\t\tdisplay: none !important;");
+    assertThat(css).as("펼치지는 않는다").doesNotContain("tr[data-stock-detail-row]");
+    assertThat(read(BUILT_CSS)).as("빌드 산출물에도").contains("data-stock-detail-toggle");
+  }
+
   @Test
   void 빌드된_css_에도_들어가_있다() throws IOException {
     String built = read(BUILT_CSS);

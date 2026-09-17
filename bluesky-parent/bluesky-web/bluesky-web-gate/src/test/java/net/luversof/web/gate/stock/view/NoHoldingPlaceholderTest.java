@@ -47,8 +47,10 @@ class NoHoldingPlaceholderTest {
   /** 모르면 보조줄을 비운다 - statCard 는 빈 sub 를 아예 그리지 않는다. */
   @Test
   void 모르는_비율은_적지_않는다() throws IOException {
+    // 두 상세 카드는 2026-09-17 부터 비율 옆에 기준(보유 원가 대비)을 적는다 - 카드마다 원금이 달라서(사용자 선택, 계좌 상세도 같은 날
+    // 같게). 모르면 비우는 규칙은 같다.
     String expected =
-        "sub = evalRateKnown ? StockFormatUtil.signedPct(evalProfitRatePct, 1) : \"\",";
+        "sub = evalRateKnown ? StockFormatUtil.signedPct(evalProfitRatePct, 1) + \" · \" + holdingBasisLabel : \"\",";
 
     assertThat(read(ITEM)).contains(expected);
     assertThat(read(ACCOUNT)).contains(expected);

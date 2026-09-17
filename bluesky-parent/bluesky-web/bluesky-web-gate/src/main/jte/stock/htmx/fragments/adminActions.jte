@@ -45,7 +45,8 @@
 				${dataManagementLabel}
 		</h2>
 		<%-- 갱신 버튼 라벨이 길어 좁은 화면에서 화면 밖으로 나간다(실측: 320px 에서 16px).
-			 그 폭에서는 줄바꿈을 허용한다. --%>
+			 그 폭에서는 줄바꿈을 허용한다. 글꼴 200% 에서는 "(Dividends)" 같은 영어 한 단어가 버튼 안쪽보다 넓어
+			 페이지를 33px 밀었다 - 그때는 단어 안에서도 끊는다(wrap-anywhere, 실측 2026-09-17). 한글 단어는 띄어쓰기에서만 나눈다(break-keep). --%>
 		<div class="flex flex-wrap gap-4">
 			<button hx-post="/api/stock/admin/stock-items"
 					data-admin-action="stock-items"
@@ -53,7 +54,7 @@
 					hx-indicator="#update-loading"
 					hx-confirm="${updateStockItemsConfirm}"
 					data-reload-after-request="true"
-					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:text-left">
+					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
 				</svg>
@@ -65,7 +66,7 @@
 					hx-indicator="#update-loading"
 					hx-confirm="${updateTradesConfirm}"
 					data-reload-after-request="true"
-					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:text-left">
+					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
 				</svg>
@@ -77,7 +78,7 @@
 					hx-indicator="#update-loading"
 					hx-confirm="${updateDividendsConfirm}"
 					data-reload-after-request="true"
-					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:text-left">
+					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 				</svg>
@@ -89,7 +90,7 @@
 					hx-indicator="#update-loading"
 					hx-confirm="${updatePriceHistoriesConfirm}"
 					data-reload-after-request="true"
-					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:text-left">
+					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
 				</svg>

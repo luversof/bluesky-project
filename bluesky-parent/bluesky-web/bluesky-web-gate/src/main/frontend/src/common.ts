@@ -820,6 +820,28 @@ globalThis.addEventListener("resize", () => {
 	scrollFocusTimer = setTimeout(() => syncScrollableFocus(), 150);
 });
 (globalThis as any).__scrollFocusInternals = { syncScrollableFocus, applyPanelTabs, applyActivityView, restorePanelTabs };
+
+// 가로로 스크롤하는 탭 줄(.tabs-scroll, 글자가 안 들어가면 탭을 줄이지 않고 스크롤 - 2026-09-17)에서 지금 탭이 줄 밖에 있으면
+// 줄만 옆으로 옮겨 보이게 한다. 안 그러면 큰 글꼴 폰 폭에서 '적립식 복리' 탭에 있어도 줄 첫머리만 보여 지금 어느 탭인지 모른다.
+// 문서는 움직이지 않는다(scrollIntoView 는 탭 줄이 화면 아래에 있으면 페이지까지 내린다) - 줄의 scrollLeft 만 바꾼다.
+function tabScrollLeftFor(scrollLeft: number, barWidth: number, tabLeft: number, tabWidth: number): number {
+	if (tabLeft < scrollLeft) return tabLeft;
+	if (tabLeft + tabWidth > scrollLeft + barWidth) return tabLeft + tabWidth - barWidth;
+	return scrollLeft;
+}
+function revealActiveTabs(root: ParentNode = document) {
+	root.querySelectorAll<HTMLElement>(".tabs-scroll").forEach((bar) => {
+		if (bar.scrollWidth <= bar.clientWidth + 1) return;
+		const active = bar.querySelector<HTMLElement>(".tab-active");
+		if (!active) return;
+		// .tabs-scroll 은 position: relative 라 탭의 offsetLeft 가 줄 기준이다.
+		bar.scrollLeft = tabScrollLeftFor(bar.scrollLeft, bar.clientWidth, active.offsetLeft, active.offsetWidth);
+	});
+}
+// 저장된 패널 탭 복원(restorePanelTabs) 뒤에 등록돼 있어 복원된 탭을 기준으로 옮긴다.
+document.addEventListener("DOMContentLoaded", () => revealActiveTabs());
+document.addEventListener("htmx:afterSettle", () => revealActiveTabs());
+(globalThis as any).__tabScrollInternals = { tabScrollLeftFor, revealActiveTabs };
 (globalThis as any).__activityTabInternals = { linkActivityTabToPanel };
 
 // 탭 패널 이름 붙이기(aria-labelledby=탭 id). 실측 2026-09-09: role=tabpanel 8개 중 aria-labelledby 0. 탭에 id 가 없는 그룹이 있어

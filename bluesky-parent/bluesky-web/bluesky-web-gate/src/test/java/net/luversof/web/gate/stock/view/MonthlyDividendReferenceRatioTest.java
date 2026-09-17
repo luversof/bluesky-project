@@ -109,9 +109,10 @@ class MonthlyDividendReferenceRatioTest {
     assertThat(page)
         .as("조각이 인자로 받으므로 전달 줄이 없으면 기본값(0)이라 아무것도 안 뜬다")
         .contains("monthlyDividendReferenceTaxableTotal = monthlyDividendReferenceTaxableTotal,");
+    // 색은 뜻에 따라 바뀐다(2026-09-17: 차이는 낡은 값이 아니라 기준 차이라 경고색을 뺐다) - 지키는 것은 금액 가리기다.
     assertThat(fragment)
         .as("금액이 들어가는 안내라 금액 가리기 대상이어야 한다")
-        .contains("text-warning amount-value" + (char) 34 + " data-reference-taxable-total=");
+        .contains("amount-value" + (char) 34 + " data-reference-taxable-total=");
     assertThat(fragment).contains("stock.simulator.monthly.summary.taxable.reference");
   }
 
