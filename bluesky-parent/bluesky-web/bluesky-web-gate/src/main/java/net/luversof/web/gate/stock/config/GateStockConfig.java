@@ -16,6 +16,7 @@ import net.luversof.web.gate.stock.httpexchange.ActivityFilterIdsClient;
 import net.luversof.web.gate.stock.httpexchange.DataFirstDateClient;
 import net.luversof.web.gate.stock.httpexchange.DataStatusClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
+import net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
@@ -128,6 +129,14 @@ public class GateStockConfig {
       @Qualifier("stockHttpServiceProxyFactory")
           HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(MonthlyDividendSnapshotClient.class);
+  }
+
+  /** 월배당 ETF 목록(종목 단위). 사용자 요청 2026-09-21 로 들어온 화면이 쓴다. */
+  @Bean
+  MonthlyDividendCatalogClient monthlyDividendCatalogClient(
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+    return stockHttpServiceProxyFactory.createClient(MonthlyDividendCatalogClient.class);
   }
 
   @Bean

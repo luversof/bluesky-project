@@ -348,7 +348,39 @@ public class MonthlyDividendReferenceSupport {
     return profiles != null ? profiles : List.of();
   }
 
-  private List<StockItem> mergeMonthlyDividendReferenceStockItems(
+  /**
+   * 종목코드 -> 종목 이름 순(사용자 요청 2026-09-21).
+   *
+   * <p>코드가 같은 종목은 없지만, 이름까지 비교해 두면 순서가 입력 순서에 흔들리지 않는다.
+   */
+  /**
+   * 종목 이름 -> 코드 순(사용자 결정 2026-09-21).
+   *
+   * <p>처음에는 코드 순으로 뒀는데, 코드로는 운용사를 알 수 없어 목록에서 찾기 어려웠다(새 코드 0018C0 과 옛 코드 329200 이 섞인다). 이름 순이면
+   * KODEX · PLUS · RISE · TIGER 가 저절로 묶인다. 표시는 그대로 "코드 · 이름" 이다.
+   *
+   * <p>이름이 같은 종목은 없지만, 코드까지 비교해 두면 순서가 입력 순서에 흔들리지 않는다.
+   */
+  public List<StockItem> sortSelectableStockItems(java.util.Collection<StockItem> stockItems) {
+    if (stockItems == null) {
+      return List.of();
+    }
+
+    return stockItems.stream()
+        .filter(stockItem -> stockItem != null)
+        .sorted(BY_NAME_THEN_SYMBOL)
+        .toList();
+  }
+
+  private static final Comparator<StockItem> BY_NAME_THEN_SYMBOL =
+      Comparator.comparing(
+              (StockItem stockItem) -> StockViewSupport.safeString(stockItem.name()),
+              String.CASE_INSENSITIVE_ORDER)
+          .thenComparing(
+              stockItem -> StockViewSupport.safeString(stockItem.symbol()),
+              String.CASE_INSENSITIVE_ORDER);
+
+  public List<StockItem> mergeMonthlyDividendReferenceStockItems(
       List<StockItem> stockItems, List<MonthlyDividendProfileResponse> profiles) {
     Map<String, StockItem> stockItemsBySymbol = new LinkedHashMap<>();
 
@@ -386,7 +418,8 @@ public class MonthlyDividendReferenceSupport {
               });
     }
 
-    return List.copyOf(stockItemsBySymbol.values());
+    // 붙이는 순서(태그 종목 -> 프로필에만 있는 종목)를 그대로 두면 코드 순이 두 덩이로 끊긴다 - 합친 뒤 한 줄로 정렬한다.
+    return sortSelectableStockItems(stockItemsBySymbol.values());
   }
 
   /**
@@ -597,13 +630,7 @@ public class MonthlyDividendReferenceSupport {
       return List.of();
     }
 
-    return stockItems.stream()
-        .filter(stockItem -> stockItem != null)
-        .sorted(
-            Comparator.comparing(
-                stockItem -> StockViewSupport.safeString(stockItem.symbol()),
-                String.CASE_INSENSITIVE_ORDER))
-        .toList();
+    return sortSelectableStockItems(stockItems);
   }
 
   public String normalizeMonthlyDividendSymbol(String symbol) {

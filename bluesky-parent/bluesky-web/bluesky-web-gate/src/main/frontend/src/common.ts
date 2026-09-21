@@ -825,23 +825,83 @@ globalThis.addEventListener("resize", () => {
 // 줄만 옆으로 옮겨 보이게 한다. 안 그러면 큰 글꼴 폰 폭에서 '적립식 복리' 탭에 있어도 줄 첫머리만 보여 지금 어느 탭인지 모른다.
 // 문서는 움직이지 않는다(scrollIntoView 는 탭 줄이 화면 아래에 있으면 페이지까지 내린다) - 줄의 scrollLeft 만 바꾼다.
 function tabScrollLeftFor(scrollLeft: number, barWidth: number, tabLeft: number, tabWidth: number): number {
+	// 줄보다 넓은 탭은 온전히 보일 수 없다 - 글자가 시작하는 왼쪽 끝을 맞춘다(글꼴 200% 320px 에서 "종목별 기여" 176px / 줄 158px).
+	if (tabWidth >= barWidth) return tabLeft;
 	if (tabLeft < scrollLeft) return tabLeft;
 	if (tabLeft + tabWidth > scrollLeft + barWidth) return tabLeft + tabWidth - barWidth;
 	return scrollLeft;
 }
+function revealTab(bar: HTMLElement, tab: HTMLElement) {
+	if (bar.scrollWidth <= bar.clientWidth + 1) return;
+	// .tabs-scroll 은 position: relative 라 탭의 offsetLeft 가 줄 기준이다.
+	bar.scrollLeft = tabScrollLeftFor(bar.scrollLeft, bar.clientWidth, tab.offsetLeft, tab.offsetWidth);
+}
 function revealActiveTabs(root: ParentNode = document) {
 	root.querySelectorAll<HTMLElement>(".tabs-scroll").forEach((bar) => {
-		if (bar.scrollWidth <= bar.clientWidth + 1) return;
 		const active = bar.querySelector<HTMLElement>(".tab-active");
-		if (!active) return;
-		// .tabs-scroll 은 position: relative 라 탭의 offsetLeft 가 줄 기준이다.
-		bar.scrollLeft = tabScrollLeftFor(bar.scrollLeft, bar.clientWidth, active.offsetLeft, active.offsetWidth);
+		if (active) revealTab(bar, active);
 	});
 }
 // 저장된 패널 탭 복원(restorePanelTabs) 뒤에 등록돼 있어 복원된 탭을 기준으로 옮긴다.
 document.addEventListener("DOMContentLoaded", () => revealActiveTabs());
 document.addEventListener("htmx:afterSettle", () => revealActiveTabs());
-(globalThis as any).__tabScrollInternals = { tabScrollLeftFor, revealActiveTabs };
+// 가로로 스크롤하는 상자(탭 줄 · 표 래퍼) 안에서 키보드 포커스를 받은 요소가 일부만 보이면 그 상자만 옆으로 옮겨 온전히 보이게 한다.
+// 브라우저는 포커스 요소가 조금이라도 보이면 상자를 스크롤하지 않는다 - 실측 2026-09-17: 탭 줄 5 줄(tabs-scroll-keyboard.js, 기본 글꼴 375px
+// 자산 성장 "연도별 세금·비용" 이 절반 잘린 채 포커스), 표 상자 375px 15 개에서 포커스 514 번 중 114 번(table-scroll-keyboard.js - 자산 성장
+// 종목 링크 · 활동 · 관리 월배당 기준 · 자산 현황 정렬 단추, 1024px 에서도 자산 현황 정렬 단추 2).
+// 좁은 화면(< 48rem)의 표는 첫 칸이 왼쪽에 고정(sticky)되어 그 폭은 가려진 자리다 - 빼고 맞춘다. 고정 첫 칸 안의 요소는 늘 보인다.
+// 마우스 클릭으로 받은 포커스(:focus-visible 아님)는 움직이지 않는다 - 누른 자리가 옆으로 튀면 안 된다.
+/** 보이는 폭(inset 을 뺀 자리)에 요소를 온전히 넣는 scrollLeft. 요소 위치는 화면 좌표, 보이는 왼쪽 끝도 화면 좌표. */
+function focusScrollLeftFor(scrollLeft: number, visibleLeft: number, visibleWidth: number, elLeft: number, elWidth: number): number {
+	return tabScrollLeftFor(scrollLeft, visibleWidth, scrollLeft + (elLeft - visibleLeft), elWidth);
+}
+function horizontalScrollBox(el: HTMLElement): HTMLElement | null {
+	for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+		const ox = getComputedStyle(p).overflowX;
+		if ((ox === "auto" || ox === "scroll") && p.scrollWidth > p.clientWidth + 1) return p;
+	}
+	return null;
+}
+/**
+ * 이 행에서 첫 열 자리를 차지한 칸. 위 행의 첫 칸이 rowspan 으로 내려와 있으면 그 칸이고, 이 행의 첫 칸은 둘째 열이다
+ * (실측 2026-09-17: 월배당 시뮬 두 줄 머리 - 둘째 줄 정렬 링크 6개가 고정된 rowspan 첫 칸 밑에 숨었는데 자기 행 첫 칸만 봐서 0 을 뺐다).
+ */
+function firstColumnCell(row: Element): Element | null {
+	const section = row.parentElement;
+	if (!section) return row.firstElementChild;
+	let owner: Element | null = null;
+	let until = 0;
+	let index = 0;
+	for (let r = section.firstElementChild; r; r = r.nextElementSibling, index++) {
+		if (index >= until) {
+			owner = r.firstElementChild;
+			const span = owner ? (owner as HTMLTableCellElement).rowSpan : 1;
+			until = index + (span === 0 ? Infinity : Math.max(1, span || 1));
+		}
+		if (r === row) return owner;
+	}
+	return row.firstElementChild;
+}
+/** 같은 행의 첫 열 칸이 왼쪽 고정이면 그 폭(가려진 자리). 요소가 그 고정 칸 안이면 -1(늘 보인다). */
+function stickyFirstCellInset(el: HTMLElement): number {
+	const cell = el.closest("td, th");
+	const first = cell && cell.parentElement ? (firstColumnCell(cell.parentElement) as HTMLElement | null) : null;
+	if (!first || getComputedStyle(first).position !== "sticky") return 0;
+	return first === cell ? -1 : first.getBoundingClientRect().width;
+}
+function revealFocused(target: EventTarget | null) {
+	if (!(target instanceof HTMLElement) || !target.matches(":focus-visible")) return;
+	const box = horizontalScrollBox(target);
+	if (!box) return;
+	const inset = stickyFirstCellInset(target);
+	if (inset < 0) return;
+	const visibleLeft = box.getBoundingClientRect().left + box.clientLeft + inset;
+	const rect = target.getBoundingClientRect();
+	const next = focusScrollLeftFor(box.scrollLeft, visibleLeft, box.clientWidth - inset, rect.left, rect.width);
+	if (Math.abs(next - box.scrollLeft) >= 1) box.scrollLeft = next;
+}
+document.addEventListener("focusin", (event) => revealFocused(event.target));
+(globalThis as any).__tabScrollInternals = { tabScrollLeftFor, focusScrollLeftFor, revealTab, revealActiveTabs, revealFocused, firstColumnCell, stickyFirstCellInset };
 (globalThis as any).__activityTabInternals = { linkActivityTabToPanel };
 
 // 탭 패널 이름 붙이기(aria-labelledby=탭 id). 실측 2026-09-09: role=tabpanel 8개 중 aria-labelledby 0. 탭에 id 가 없는 그룹이 있어
@@ -1810,9 +1870,13 @@ function markCurrentSection(nav: HTMLElement, sections: Element[]): void {
 	// 칩이 화면보다 넓으면 지금 보고 있는 칩이 밖으로 밀린다 - 실측 2026-09-10(375px, 배당):
 	// 현재 칩이 폭 343px 짜리 막대의 764px 지점에 있어 끝까지 보이지 않았다. 막대만 옆으로 굴린다
 	// (scrollIntoView 는 페이지까지 움직인다).
+	// 키보드로 칩을 고르는 중이면 굴리지 않는다 - 칩에 포커스를 둔 채 ↓·PageDown 으로 페이지가 움직이면 현재 구역 칩으로 되굴러
+	// 포커스한 칩이 줄 밖으로 나갔다(실측 2026-09-17, section-nav-keyscroll.js: 21번 중 21번). 마우스로 누른 칩은 계속 따라간다.
 	const list = nav.querySelector("ul");
 	const currentLink = links[current] as HTMLElement | undefined;
-	if (list && currentLink && list.scrollWidth > list.clientWidth) {
+	const focused = document.activeElement as HTMLElement | null;
+	const choosingByKeyboard = !!focused && nav.contains(focused) && focused.matches(":focus-visible");
+	if (list && currentLink && !choosingByKeyboard && list.scrollWidth > list.clientWidth) {
 		const left = currentLink.offsetLeft;
 		const right = left + currentLink.offsetWidth;
 		const margin = 16;
@@ -1882,5 +1946,25 @@ function startSectionNav(): void {
 	run();
 }
 startSectionNav();
-(globalThis as any).__sectionNavInternals = { sectionLabel, pageSections, sectionAnchorId, buildSectionNav, markCurrentSection, renderSectionNav, sectionsContainer };
+
+/**
+ * 붙박이 상단바의 실제 높이를 --site-header-height 로 알린다. 구역 막대의 top 과 html scroll-padding-top 이 이 값을 따른다.
+ * 상단바는 폭·글꼴에 따라 줄이 접혀 64~320px 가 되는데(실측 2026-09-17) 71px 고정값이던 때는 접힌 만큼 막대가 상단바 밑에 깔렸다.
+ * 인쇄 등으로 상단바가 사라져 높이가 0 이면 이전 값을 둔다.
+ */
+function syncSiteHeaderHeight(header: Element): void {
+	const height = header.getBoundingClientRect().height;
+	if (height > 0) document.documentElement.style.setProperty("--site-header-height", height + "px");
+}
+
+function watchSiteHeaderHeight(): void {
+	const header = document.querySelector("header.navbar");
+	if (!header) return;
+	syncSiteHeaderHeight(header);
+	if (typeof ResizeObserver === "function") new ResizeObserver(() => syncSiteHeaderHeight(header)).observe(header);
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchSiteHeaderHeight, { once: true });
+else watchSiteHeaderHeight();
+(globalThis as any).__stickyHeaderInternals = { syncSiteHeaderHeight, watchSiteHeaderHeight };
+(globalThis as any).__sectionNavInternals ={ sectionLabel, pageSections, sectionAnchorId, buildSectionNav, markCurrentSection, renderSectionNav, sectionsContainer };
 (globalThis as any).__activityViewInternals = { resolveActivityViewForRequest };

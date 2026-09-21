@@ -171,6 +171,41 @@ test("칩이 화면보다 넓으면 지금 보는 칩이 보이도록 막대만 
 	assert.equal(list.scrollLeft, 400 + 80 - 100 + 16, "현재 칩이 보이도록 굴리지 않았다");
 });
 
+test("키보드로 칩을 고르는 중이면 막대를 현재 구역 칩으로 되굴리지 않는다 - 포커스한 칩이 밖으로 나갔다", () => {
+	// 실측 2026-09-17(section-nav-keyscroll.js): 칩에 포커스를 둔 채 ↓·PageDown 으로 페이지가 움직이면 21번 중 21번 포커스 칩이 줄 밖으로 나갔다.
+	const a = section("가", { top: -400 }), b = section("나", { top: -100 }), c = section("다", { top: 600 });
+	scene([a, b, c]);
+	mod.renderSectionNav();
+	const nav = main.querySelector("[data-page-section-nav]");
+	const list = nav.querySelector("ul");
+	list.clientWidth = 100;
+	list.scrollWidth = 900;
+	const links = nav.querySelectorAll("a");
+	links.forEach((l, i) => { l.offsetLeft = i * 400; l.offsetWidth = 80; });
+	try {
+		list.scrollLeft = 780;
+		links[2].setAttribute(":focus-visible", "");
+		document.activeElement = links[2];
+		mod.markCurrentSection(nav, [a, b, c]);
+		assert.equal(list.scrollLeft, 780, "키보드 포커스 칩(세 번째)을 두고 현재 칩(두 번째)으로 굴렸다");
+		assert.equal(links[1].getAttribute("aria-current"), "true", "현재 구역 표시는 그대로 옮긴다");
+
+		links[2].removeAttribute(":focus-visible");
+		mod.markCurrentSection(nav, [a, b, c]);
+		assert.equal(list.scrollLeft, 400 - 16, "마우스로 누른 칩(:focus-visible 아님)이면 계속 현재 칩을 따라간다");
+
+		const outside = new FakeElement("button");
+		outside.setAttribute(":focus-visible", "");
+		main.appendChild(outside);
+		document.activeElement = outside;
+		list.scrollLeft = 780;
+		mod.markCurrentSection(nav, [a, b, c]);
+		assert.equal(list.scrollLeft, 400 - 16, "본문 요소에 키보드 포커스가 있으면 막대는 계속 현재 칩을 따라간다");
+	} finally {
+		delete document.activeElement;
+	}
+});
+
 test("짧은 화면에는 구역이 3개여도 만들지 않는다", () => {
 	const before = document.body.scrollHeight;
 	document.body.scrollHeight = 900; // 뷰포트 800 의 두 배 미만

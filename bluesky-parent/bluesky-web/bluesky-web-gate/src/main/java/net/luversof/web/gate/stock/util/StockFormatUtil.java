@@ -62,6 +62,30 @@ public final class StockFormatUtil {
     return fullKrw(value, org.springframework.context.i18n.LocaleContextHolder.getLocale());
   }
 
+  /**
+   * 소수점이 있는 금액(주당 분배금 · 주당 과세표준액처럼 원 단위보다 작은 값)의 정확한 표기.
+   *
+   * <p>월배당 ETF 목록(2026-09-21)이 쓴다 &mdash; 주당 32.25 원을 원 단위로 반올림하면 비교가 무너진다. 통화 단위는 여기서 로케일에 맞춰 붙인다.
+   *
+   * @param scale 소수 자릿수(0 이면 정수 표기)
+   */
+  public static String fullKrw(java.math.BigDecimal value, int scale) {
+    return fullKrw(value, scale, org.springframework.context.i18n.LocaleContextHolder.getLocale());
+  }
+
+  /** 한국어는 {@code 32.25원}, 그 외에는 {@code KRW 32.25}. 값이 없으면 0 으로 본다. */
+  public static String fullKrw(java.math.BigDecimal value, int scale, java.util.Locale locale) {
+    java.math.BigDecimal safe =
+        (value != null ? value : java.math.BigDecimal.ZERO)
+            .setScale(Math.max(scale, 0), java.math.RoundingMode.HALF_UP);
+    java.util.Locale target = locale != null ? locale : java.util.Locale.KOREA;
+    String amount = String.format(target, "%,." + Math.max(scale, 0) + "f", safe);
+    if (!java.util.Locale.KOREAN.getLanguage().equals(target.getLanguage())) {
+      return "KRW " + amount;
+    }
+    return amount + "원";
+  }
+
   /** 한국어는 {@code 1,234원}, 그 외에는 {@code KRW 1,234}. */
   public static String fullKrw(long value, java.util.Locale locale) {
     java.util.Locale target = locale != null ? locale : java.util.Locale.KOREA;

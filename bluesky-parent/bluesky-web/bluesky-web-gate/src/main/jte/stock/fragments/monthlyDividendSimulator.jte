@@ -15,7 +15,7 @@
 
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
 <%-- 이 표의 '현재가'가 어느 날 종가인지. 배당 기준값(스냅샷 시점)과 시세는 시점이 다르다. --%>
-@param java.time.LocalDate monthlyDividendPriceBasisDate = null
+@param java.time.LocalDate monthlyDividendPriceBasisDate = null
 @param boolean monthlyDividendCurrentHoldingsUnavailable = false
 <%-- 종목 -> 저장된 지급 이력으로 계산한 1년 평균 과세표준 비중(관리 탭과 같은 계산). 저장값과 벌어지면 그 자리에서 알린다. --%>
 @param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = java.util.Map.of()
@@ -381,6 +381,32 @@
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.section.table.desc")}</p>
 						</div>
 					</div>
+
+					<%-- 표 좁히기. 서버는 오래전부터 keyword · minAnnualYield · positiveOnly 를 받았지만 화면에 입력 칸이 없어 주소를 직접 쳐야만
+					     걸렸다(실측 2026-09-21: name="keyword" 입력 요소 0 개). 사용자 선택 2026-09-21: "검색·필터를 화면으로".
+					     이 표는 보유 종목만 다룬다 - 안 가진 종목은 '월배당 ETF' 화면에서 본다. --%>
+					<form method="get" action="/stock/simulator" class="grid gap-3 rounded-box bg-base-200/40 p-3 md:grid-cols-2 xl:grid-cols-4" data-monthly-filter-form>
+						<input type="hidden" name="tab" value="monthly-dividend" />
+						<input type="hidden" name="sort" value="${monthlyDividendSort}" />
+						<input type="hidden" name="direction" value="${monthlyDividendDirection}" />
+						<label class="form-control min-w-0 max-w-full">
+							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.keyword")}</span></div>
+							<input name="keyword" type="search" value="${monthlyDividendKeyword}" placeholder="${MessageUtil.getMessage("stock.simulator.monthly.filter.keyword.placeholder")}" class="input input-bordered input-sm w-full max-w-full" />
+						</label>
+						<label class="form-control min-w-0 max-w-full">
+							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.min.annual.yield")}</span></div>
+							<input name="minAnnualYield" type="number" step="0.01" min="0" value="${minAnnualYieldValue}" class="input input-bordered input-sm w-full max-w-full" />
+						</label>
+						<label class="label cursor-pointer justify-start gap-2 self-end py-2">
+							<input name="positiveOnly" type="checkbox" value="true" class="checkbox checkbox-sm" checked="${monthlyDividendPositiveOnly}" />
+							<span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.positive.only")}</span>
+						</label>
+						<div class="flex items-end gap-2">
+							<button type="submit" class="btn btn-primary btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.simulator.monthly.filter.apply")}</button>
+							<%-- 필터 지우기 링크는 일부러 기준 주소(필터를 싣는 주소)를 쓰지 않는다(SimulatorSortKeepsFilterTest 예외). --%>
+							<a data-filter-reset href="/stock/simulator?tab=monthly-dividend&sort=${monthlyDividendSort}&direction=${monthlyDividendDirection}" class="btn btn-ghost btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.simulator.monthly.filter.reset")}</a>
+						</div>
+					</form>
 
 					@if(monthlyDividendRows == null || monthlyDividendRows.isEmpty())
 						<div class="rounded-2xl border border-dashed border-base-300 bg-base-50 px-6 py-10 text-center">

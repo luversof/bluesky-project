@@ -83,6 +83,10 @@ public class StockDividendViewController {
   @Autowired private MonthlyDividendPayoutImportParser monthlyDividendPayoutImportParser;
 
   @Autowired
+  private net.luversof.web.gate.stock.service.MonthlyDividendLinkRegisterService
+      monthlyDividendLinkRegisterService;
+
+  @Autowired
   private MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService;
 
   @Autowired private MonthlyDividendViewSupport monthlyDividendViewSupport;
@@ -743,6 +747,64 @@ public class StockDividendViewController {
   }
 
   @BlueskyPreAuthorize
+  /**
+   * 운용사 상세 링크만으로 등록한다(사용자 요청 2026-09-21). 여러 줄이면 줄마다 하나씩.
+   *
+   * <p>되는 줄만 등록하고 실패는 사유와 함께 알린다(사용자 결정). 미리보기 없이 바로 등록하고 결과를 요약한다.
+   */
+  @PostMapping("/dividend/monthly-reference/profile/import/links")
+  public String registerMonthlyDividendProfilesFromLinks(
+      HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
+      @RequestParam(required = false) String links) {
+    if (StockViewSupport.isNotAuthenticated()) {
+      return StockViewSupport.loginRedirectView(request);
+    }
+
+    try {
+      var result = monthlyDividendLinkRegisterService.registerLinks(links);
+      String summary =
+          MessageFormat.format(
+              MessageUtil.getMessage("stock.monthly.reference.link.result.summary"),
+              result.successCount(),
+              result.newStockItemCount(),
+              result.payoutCount(),
+              result.failureCount());
+      List<String> notes = new ArrayList<>();
+      if (result.skippedCount() > 0) {
+        notes.add(
+            MessageFormat.format(
+                MessageUtil.getMessage("stock.monthly.reference.link.result.skipped"),
+                result.skippedCount()));
+      }
+      result.results().stream()
+          .filter(one -> !one.succeeded())
+          .forEach(
+              one ->
+                  notes.add(
+                      MessageFormat.format(
+                          MessageUtil.getMessage("stock.monthly.reference.link.result.failure"),
+                          one.sourceUrl(),
+                          one.failureReason())));
+
+      redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultMessage", summary);
+      redirectAttributes.addFlashAttribute(
+          "monthlyDividendReferenceResultIsError", result.successCount() == 0);
+      if (!notes.isEmpty()) {
+        redirectAttributes.addFlashAttribute(
+            "monthlyDividendReferenceWarningMessage", String.join(" / ", notes));
+      }
+    } catch (IllegalArgumentException ex) {
+      redirectAttributes.addFlashAttribute(
+          "monthlyDividendReferenceErrorMessage",
+          StringUtils.hasText(ex.getMessage())
+              ? ex.getMessage()
+              : MessageUtil.getMessage("stock.monthly.reference.error.link.empty"));
+    }
+
+    return buildMonthlyDividendReferenceBulkRedirect(request);
+  }
+
   @PostMapping("/dividend/monthly-reference/payout/import/source/bulk")
   public String importMonthlyDividendPayoutsFromSourceBulk(
       HttpServletRequest request,

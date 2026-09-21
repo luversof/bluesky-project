@@ -114,7 +114,9 @@ class LargeFontTabsAndCardGridTest {
     // 복원 등록이 없으면 indexOf 가 -1 이라 순서 비교가 늘 참이 된다(복사본 변이로 확인) - 먼저 있는지 본다.
     int restore = ts.indexOf("document.addEventListener(\"DOMContentLoaded\", restorePanelTabs);");
     assertThat(restore).as("패널 탭 복원 등록을 못 찾았다 - 순서 검사의 전제").isGreaterThan(0);
-    assertThat(ts.indexOf("document.addEventListener(\"DOMContentLoaded\", () => revealActiveTabs());"))
+    assertThat(
+            ts.indexOf(
+                "document.addEventListener(\"DOMContentLoaded\", () => revealActiveTabs());"))
         .as("저장된 패널 탭을 복원한 뒤에 옮겨야 한다")
         .isGreaterThan(restore);
     assertThat(read("src/main/resources/static/js/common.js"))
@@ -153,5 +155,31 @@ class LargeFontTabsAndCardGridTest {
           .as(grid.getKey())
           .isEqualTo(grid.getValue());
     }
+  }
+
+  /**
+   * 가로로 스크롤하는 상자(탭 줄 · 표 래퍼) 안에서 키보드 포커스를 받은 요소는 상자 안에 온전히 보인다. 브라우저는 포커스 요소가 조금이라도 보이면 상자를 스크롤하지
+   * 않는다 &mdash; 실측 2026-09-17: 탭 줄 5 줄(tabs-scroll-keyboard.js, 기본 글꼴 375px 자산 성장 "연도별 세금·비용" 이 절반
+   * 잘린 채 포커스), 표 상자 375px 15 개에서 포커스 514 번 중 114 번 · 1024px 에서 2 번(table-scroll-keyboard.js). 좁은 화면
+   * 표는 첫 칸이 왼쪽에 고정(sticky)되어 그 폭은 가려진 자리로 빼고, 마우스로 누른 포커스(:focus-visible 아님)는 옮기지 않는다. 계산은
+   * tabScrollReveal.test.mjs 가 산출물로 본다.
+   */
+  @Test
+  void 키보드_포커스가_들어온_요소는_스크롤_상자_안에_온전히_보인다() throws IOException {
+    assertThat(read("src/main/frontend/src/common.ts").replaceAll("\\s+", ""))
+        .contains("document.addEventListener(\"focusin\",(event)=>revealFocused(event.target));")
+        .as("마우스 포커스는 옮기지 않는다")
+        .contains("if(!(targetinstanceofHTMLElement)||!target.matches(\":focus-visible\"))return;")
+        .as("좁은 화면 표의 고정 첫 칸 폭을 뺀다")
+        .contains("getComputedStyle(first).position!==\"sticky\"")
+        .contains("box.clientWidth-inset")
+        .as("상자보다 넓은 요소는 왼쪽 끝 맞춤")
+        .contains("if(tabWidth>=barWidth)returntabLeft;");
+    assertThat(read("src/main/resources/static/js/common.js"))
+        .as("메이븐은 프론트엔드를 빌드하지 않는다 - npm run build 산출물이 배포본이다")
+        .contains("document.addEventListener(\"focusin\",event=>revealFocused(event.target))")
+        .contains("target.matches(\":focus-visible\")")
+        .contains("getComputedStyle(first).position!==\"sticky\"")
+        .contains("return tabWidth>=barWidth||tabLeft<scrollLeft?tabLeft:");
   }
 }

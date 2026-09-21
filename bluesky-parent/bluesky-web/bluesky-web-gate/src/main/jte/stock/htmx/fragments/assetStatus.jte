@@ -175,8 +175,6 @@
 		<style>
 			.asset-status-account-row-selected > td {
 				background-color: color-mix(in oklch, var(--color-secondary) 10%, var(--color-base-100));
-				/* 좁은 화면에서 고정된 첫 칸도 같은 선택 색을 쓰도록 변수로 넘긴다. */
-				--sticky-first-bg: color-mix(in oklch, var(--color-secondary) 10%, var(--color-base-100));
 			}
 
 			.asset-status-account-row-selected > td:first-child {
@@ -503,7 +501,6 @@
 
 			.asset-status-stock-row.asset-status-stock-row-selected > td {
 				background-color: color-mix(in oklch, var(--color-info) 10%, var(--color-base-100));
-				--sticky-first-bg: color-mix(in oklch, var(--color-info) 10%, var(--color-base-100));
 			}
 
 			.asset-status-stock-row.asset-status-stock-row-selected > td:first-child {

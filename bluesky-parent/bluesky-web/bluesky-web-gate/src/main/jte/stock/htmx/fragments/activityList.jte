@@ -480,14 +480,14 @@
 													     "매수 TIGER 리츠부동산인프라 62주" 한 줄이 목록에서는 계좌 3개(연금저축2·연금저축1·+1)였다.
 													     목록 뷰와 같은 표기(최대 2개 + 나머지는 +N 툴팁)를 쓴다. --%>
 													@if(dayDetailActivity.accountIds() != null && !dayDetailActivity.accountIds().isEmpty())
-														<span class="flex items-center gap-1" data-cal-detail-accounts>
+														<span class="flex flex-wrap items-center gap-1 min-w-0" data-cal-detail-accounts>
 															@for(int di = 0; di < Math.min(2, dayDetailActivity.accountIds().size()); di++)
-																<span class="badge badge-xs badge-outline">${accountNames != null ? accountNames.getOrDefault(dayDetailActivity.accountIds().get(di), "") : ""}</span>
+																<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left">${accountNames != null ? accountNames.getOrDefault(dayDetailActivity.accountIds().get(di), "") : ""}</span>
 															@endfor
 															@if(dayDetailActivity.accountIds().size() > 2)
 																!{java.util.List<String> detailAccountLabels = dayDetailActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
 																<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", detailAccountLabels)}" data-tip="${String.join(", ", detailAccountLabels)}">
-																	<span class="badge badge-xs badge-outline opacity-70 cursor-help">+${dayDetailActivity.accountIds().size() - 2}</span>
+																	<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${dayDetailActivity.accountIds().size() - 2}</span>
 																</div>
 															@endif
 														</span>
@@ -586,14 +586,14 @@
 										<%-- 캘린더 날짜 상세와 같은 이유로 계좌를 적는다 - 한 줄이 계좌를 가로질러 묶인 것이라
 										     어느 계좌 것인지 보이지 않으면 목록 뷰와 정보가 어긋난다(실측 2026-09-11: 타임라인 계좌 표기 0개). --%>
 										@if(tlRowActivity.accountIds() != null && !tlRowActivity.accountIds().isEmpty())
-											<span class="flex items-center gap-1" data-timeline-accounts>
+											<span class="flex flex-wrap items-center gap-1 min-w-0" data-timeline-accounts>
 												@for(int ti = 0; ti < Math.min(2, tlRowActivity.accountIds().size()); ti++)
-													<span class="badge badge-xs badge-outline">${accountNames != null ? accountNames.getOrDefault(tlRowActivity.accountIds().get(ti), "") : ""}</span>
+													<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left">${accountNames != null ? accountNames.getOrDefault(tlRowActivity.accountIds().get(ti), "") : ""}</span>
 												@endfor
 												@if(tlRowActivity.accountIds().size() > 2)
 													!{java.util.List<String> tlAccountLabels = tlRowActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
 													<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", tlAccountLabels)}" data-tip="${String.join(", ", tlAccountLabels)}">
-														<span class="badge badge-xs badge-outline opacity-70 cursor-help">+${tlRowActivity.accountIds().size() - 2}</span>
+														<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${tlRowActivity.accountIds().size() - 2}</span>
 													</div>
 												@endif
 											</span>
@@ -657,15 +657,15 @@
 											<%-- 계좌는 id 로 들고 다니고 표시 이름은 accountNames(id -> 이름) 에서 찾는다.
 												 예전에는 이름 목록만 있어 화면에서 이름으로 id 를 되찾았다. --%>
 											@if(activity.accountIds() != null && !activity.accountIds().isEmpty())
-												<span class="flex items-center gap-1">
+												<span class="flex flex-wrap items-center gap-1 min-w-0">
 													@for(int i = 0; i < Math.min(2, activity.accountIds().size()); i++)
-														<a href="${StockDetailLinkUtil.account(activity.accountIds().get(i) != null ? activity.accountIds().get(i).toString() : "")}" class="badge badge-xs badge-outline opacity-70 link link-hover">${accountNames != null ? accountNames.getOrDefault(activity.accountIds().get(i), "") : ""}</a>
+														<a href="${StockDetailLinkUtil.account(activity.accountIds().get(i) != null ? activity.accountIds().get(i).toString() : "")}" class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 link link-hover">${accountNames != null ? accountNames.getOrDefault(activity.accountIds().get(i), "") : ""}</a>
 													@endfor
 
 													@if(activity.accountIds().size() > 2)
 														!{java.util.List<String> allAccountLabels = activity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> !n.isEmpty()).toList();}
 														<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", allAccountLabels)}" data-tip="${String.join(", ", allAccountLabels)}">
-															<span class="badge badge-xs badge-outline opacity-70 cursor-help">+${activity.accountIds().size() - 2}</span>
+															<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${activity.accountIds().size() - 2}</span>
 														</div>
 													@endif
 												</span>

@@ -20,19 +20,26 @@ class FocusNotObscuredTest {
 
   @Test
   void html_에_고정_막대_높이만큼_scroll_padding_이_있다() throws IOException {
-    String css = Files.readString(Path.of("src/main/frontend/main.css"), StandardCharsets.UTF_8);
-    // 상단에 붙는 것이 헤더(실측 71px) + 구역 막대(실측 41px) 둘로 늘었다 - 합이 112px = 7rem 이다.
+    String css =
+        Files.readString(Path.of("src/main/frontend/main.css"), StandardCharsets.UTF_8)
+            .replaceAll("(?s)/\\*.*?\\*/", "")
+            .replaceAll("\\s+", " ");
+    // 상단에 붙는 것이 헤더(실측 71px) + 구역 막대(실측 41px = 2.5625rem) 둘로 늘었다 - 합이 112px = 7rem 이다.
     // 실측 2026-09-10(qa/sectionnav-verify.cjs): 이 값으로 막대에서 마지막 구역을 눌렀을 때 대상 상단이
     // 정확히 112px 에 놓여 헤더에도 막대에도 가리지 않았다.
-    assertThat(css).contains("html { scroll-padding-top: 7rem; }");
+    // 실측 2026-09-17: 헤더는 줄이 접혀 64 ~ 352px 가 된다 - 71px 대신 common.ts 가 알려 주는 실제 높이를 더하고,
+    // 값이 오기 전에는 한 줄 높이 그대로 둔다(StickyBarFocusTest).
+    assertThat(css)
+        .contains(
+            ":root { --sticky-top-stack: calc(var(--site-header-height, 4.4375rem) + 2.5625rem); }")
+        .contains("html { scroll-padding-top: var(--sticky-top-stack); }");
     assertThat(css)
         .as("구역 막대가 헤더 아래에 붙지 않으면 헤더를 파고든다(3.5rem 일 때 15px 겹쳤다)")
-        .contains("position: sticky; top: 4.4375rem;");
-    int narrow = css.indexOf("@media (width < 64rem)");
-    assertThat(narrow).as("lg 미만(독이 보이는 폭) 규칙이 없다").isGreaterThan(0);
-    String block =
-        css.substring(narrow, css.indexOf("}", css.indexOf("scroll-padding-bottom", narrow)));
-    assertThat(block).contains("scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom))");
+        .contains("position: sticky; top: var(--site-header-height, 4.4375rem);");
+    assertThat(css)
+        .as("lg 미만(독이 보이는 폭)에만 아래쪽 여백을 둔다")
+        .contains(
+            "@media (width < 64rem) { html { scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); } }");
   }
 
   @Test

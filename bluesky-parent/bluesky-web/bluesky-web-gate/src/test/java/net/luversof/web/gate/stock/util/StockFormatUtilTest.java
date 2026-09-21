@@ -202,9 +202,11 @@ class StockFormatUtilTest {
         .as("통화 단위는 StockFormatUtil 이 로케일에 맞춰 붙인다 - 직접 붙이면 영어 화면에 한국어 단위가 나간다")
         .isEmpty();
     // 실측 2026-08-23: 99 곳. 줄이는 것은 화면 결정이므로 늘어나는 것만 막는다.
+    // 2026-09-21: 96 곳(월배당 ETF 화면은 StockFormatUtil.fullKrw 로 붙인다). 상한에 여유가 있으면 새로 늘어도 안 잡혀서
+    // 실제로 변이 하나가 통과했다 - 상한을 실측치로 내린다.
     assertThat(wonSignCount)
         .as("원화 기호를 직접 붙이는 곳이 늘었다 - 툴팁(fullKrw)과 표기가 더 갈린다")
-        .isLessThanOrEqualTo(99);
+        .isLessThanOrEqualTo(96);
   }
 
   /**

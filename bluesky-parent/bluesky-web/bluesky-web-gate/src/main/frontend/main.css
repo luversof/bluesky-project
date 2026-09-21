@@ -92,6 +92,17 @@
 		outline: 2px solid var(--color-primary);
 		outline-offset: 1px;
 	}
+	/* 설명문 · 제목 · 단추 · 배지의 한글 단어는 띄어쓰기에서만 나누고, 단어 하나가 자리보다 넓을 때만 그 안에서 끊는다(사용자 선택 2026-09-17).
+	   표 칸은 뺀다 - 단어 단위로 바꾸면 열이 넓어져 상자 안 가로 스크롤이 늘 수 있다. :where 로 우선순위 0 인 데다 base 층이라
+	   컴포넌트 · 유틸리티 규칙(.stat-card-sub, break-all 등)이 그대로 이긴다.
+	   실측(13 화면, 브라우저 기본 글꼴 설정) 표 밖 단어 안 끊김 - 기본 글꼴: 320px 52 -> 7 · 375px 45 -> 4 · 414px 39 -> 5 · 768px 14 -> 0 ·
+	   1440px 15 -> 1, 글꼴 200%: 320px 180 -> 103 · 375px 119 -> 37 · 414px 97 -> 25 · 768px 34 -> 3 · 1440px 11 -> 0.
+	   표 안 끊김 · 세로 글자 · 문서 넘침은 모든 조합에서 그대로, 글자 상자 넘침은 줄거나 그대로(200% 320px 25 -> 19).
+	   남은 것은 대상 밖(div · span)과 한 단어가 줄보다 긴 자리다. */
+	:where(p, h1, h2, h3, h4, h5, h6, li, label, .label-text, .btn, .badge):not(:where(table *)) {
+		word-break: keep-all;
+		overflow-wrap: anywhere;
+	}
 	/* 모션 최소화 선호 시 장식성 "움직임"만 제거.
 	   색상 페이드(hover 트랜지션)와 로딩 스피너는 모션 부담이 아니므로 유지한다. */
 	@media (prefers-reduced-motion: reduce) {
@@ -508,6 +519,13 @@
 	.navbar-start { display: flex; align-items: center; gap: 0.5rem; flex: 1 1 0; justify-content: flex-start; }
 	.navbar-center { display: flex; align-items: center; gap: 0.5rem; }
 	.navbar-end { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; flex: 1 1 0; justify-content: flex-end; }
+	/* lg 미만엔 가운데 메뉴가 없다. 반반(flex-basis 0)으로 나누면 오른쪽 묶음(207px)이 제 반쪽(180px)에서 접혀 375px 기본 글꼴에서도
+	   상단바가 100px(두 줄)이었고, 글꼴 150~200% 에선 제목이 오른쪽 항목을 덮었다(실측 2026-09-17: 84개 조건 중 21개).
+	   내용 폭을 기준으로 두면 들어갈 때는 한 줄(375px 64px), 안 들어가면 묶음째 다음 줄로 간다. 항목에 제 여백이 있어 줄 사이 틈은 없앤다. */
+	@media (width < 64rem) {
+		.navbar { row-gap: 0; }
+		.navbar-start, .navbar-end { flex-basis: auto; }
+	}
 
 	/* ---- dock (mobile bottom nav) ----
 	   메뉴가 많으면 좌우 스와이프로 넘긴다: 항목은 min-width 를 갖고(flex 축소 금지),
@@ -832,14 +850,18 @@
 
 /* 포커스가 고정 막대 뒤로 숨지 않게(WCAG 2.4.11). 실측 2026-09-10(qa/focus-obscured.cjs, 375px, 10화면): Tab 으로 옮긴 포커스
    95개가 하단 독(.dock, 고정 4rem) 뒤에 들어갔다(배당 26·활동 21·매매 19). 브라우저의 포커스 스크롤은 뷰포트 가장자리까지만 보이게 하므로
-   고정 상단바(4rem)·독(lg 미만)만큼 scroll-padding 을 둔다. 1280px 에선 독이 없어 0. */
-html { scroll-padding-top: 7rem; }
+   고정 상단바(4rem)·독(lg 미만)만큼 scroll-padding 을 둔다. 1280px 에선 독이 없어 0.
+   위쪽은 상단바 + 구역 막대(2.5625rem = 41px) 합이다. 상단바는 줄이 접히면 높이가 바뀌므로(실측 2026-09-17: 320px 112px, 글꼴 200% 최대 320px)
+   common.js 가 실제 높이를 --site-header-height 로 알려 준다. 값이 오기 전에는 한 줄 높이(4.4375rem = 71px)로 둔다. */
+:root { --sticky-top-stack: calc(var(--site-header-height, 4.4375rem) + 2.5625rem); }
+html { scroll-padding-top: var(--sticky-top-stack); }
 /* 화면 안 구역 막대. common.js 가 data-page-section 을 모아 본문 맨 앞에 만들어 넣는다
    (실측 2026-09-10: 배당 화면은 마지막 구역이 3,185px 아래라 굴리는 것 말고는 닿을 길이 없었다).
    상단 헤더 바로 아래에 붙어 따라다닌다 - 그래서 기준점 여백도 막대 높이만큼 더 준다. */
 .page-section-nav {
-	/* 실측 2026-09-10: 헤더는 sticky 0~71px 다. 3.5rem(56px) 로 두면 붙었을 때 헤더를 15px 파고들었다. */
-	position: sticky; top: 4.4375rem; z-index: 20; margin-bottom: 0.75rem;
+	/* 실측 2026-09-10: 헤더는 sticky 0~71px 다. 3.5rem(56px) 로 두면 붙었을 때 헤더를 15px 파고들었다.
+	   실측 2026-09-17: 헤더가 접히면 71px 고정값으로는 막대가 헤더 밑에 깔렸다(375px 41px 중 29px, 글꼴 150~200% 전부). */
+	position: sticky; top: var(--site-header-height, 4.4375rem); z-index: 20; margin-bottom: 0.75rem;
 	background-color: color-mix(in oklch, var(--color-base-100) 92%, transparent);
 	backdrop-filter: blur(6px);
 	border-bottom: 1px solid var(--color-base-200);
@@ -859,6 +881,10 @@ html { scroll-padding-top: 7rem; }
 	opacity: 1; font-weight: 600;
 	color: var(--color-primary); background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
 }
+/* 늘 보이는 붙박이 막대(상단바 · 구역 막대) 안 항목에 포커스해도 페이지가 굴러가지 않게 한다. 포커스 스크롤은 요소가 scroll-padding-top
+   안쪽이면 이미 보여도 가운데로 굴려서 Tab 한 번에 수백 px 튀었고(실측 2026-09-17: 상단바 52~90걸음, 구역 막대 18~28걸음), 그 스크롤이
+   구역 막대를 현재 구역 칩으로 되굴려 포커스한 칩이 밖으로 나갔다. 같은 크기의 음수 여백으로 상쇄한다. 고정(fixed) 독·사이드바는 튀지 않는다. */
+header.navbar *, .page-section-nav * { scroll-margin-top: calc(-1 * var(--sticky-top-stack)); }
 
 @media (width < 64rem) {
 	html { scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
@@ -1629,60 +1655,11 @@ thead [data-sort-key] {
 	transform: translateY(-50%);
 }
 
-/* 좁은 화면에서 표를 가로로 밀 때 어느 행인지 놓치지 않도록 첫 칸을 고정한다.
-   (실측 375px: 자산현황 6컬럼 중 2개, 자산성장 7컬럼 중 2개, 시뮬레이터 12컬럼 중 2개만 보임)
-   얼룩(table-zebra) 표는 칸마다 배경이 달라 고정 칸 색을 맞추기 어려워 제외한다.
-   배경색은 변수로 두어 행 선택 하이라이트가 덮어쓸 수 있게 한다. */
-@media (width < 48rem) {
-	.table:not(.table-zebra) > thead > tr > th:first-child,
-	.table:not(.table-zebra) > tbody > tr > td:first-child {
-		position: sticky;
-		left: 0;
-		z-index: 3;
-		background-color: var(--sticky-first-bg, var(--color-base-100));
-		/* 밀려 들어간 칸과 붙어 보이지 않도록 경계선을 둔다. */
-		box-shadow: 1px 0 0 color-mix(in oklab, var(--color-base-content) 12%, transparent);
-	}
-
-	.table:not(.table-zebra) > thead.bg-base-200 > tr > th:first-child {
-		background-color: var(--sticky-first-bg, var(--color-base-200));
-	}
-
-	/* 얼룩(table-zebra) 표. daisyUI 는 얼룩 배경을 tr 에, 단계 틴트는 td 에 칠하므로
-	   고정 칸에 불투명 바탕을 깔고 그 위에 같은 두 겹을 다시 얹어 색을 정확히 맞춘다.
-	   (배경 이미지는 배경색 위에 그려지고, 먼저 쓴 이미지가 위에 온다) */
-	.table-zebra > thead > tr > th:first-child,
-	.table-zebra > tbody > tr > td:first-child {
-		position: sticky;
-		left: 0;
-		z-index: 3;
-		background-color: var(--color-base-100);
-		background-image: linear-gradient(var(--row-tint, transparent), var(--row-tint, transparent)),
-			linear-gradient(var(--row-zebra, transparent), var(--row-zebra, transparent));
-		box-shadow: 1px 0 0 color-mix(in oklab, var(--color-base-content) 12%, transparent);
-	}
-
-	.table-zebra > tbody > tr:nth-child(2n) {
-		--row-zebra: color-mix(in oklab, var(--color-base-200) 55%, transparent);
-	}
-
-	tr.sim-tint-stable {
-		--row-tint: color-mix(in oklab, var(--color-emerald-400) 14%, transparent);
-	}
-
-	tr.sim-tint-deficit {
-		--row-tint: color-mix(in oklab, var(--color-amber-400) 14%, transparent);
-	}
-
-	tr.sim-tint-decline {
-		--row-tint: color-mix(in oklab, var(--color-yellow-400) 18%, transparent);
-	}
-
-	tr.sim-tint-drawdown {
-		--row-tint: color-mix(in oklab, var(--color-orange-400) 18%, transparent);
-	}
-
-	tr.sim-tint-depleted {
-		--row-tint: color-mix(in oklab, var(--color-red-500) 20%, transparent);
-	}
-}
+/* 좁은 화면에서는 표 첫 열을 고정하지 않는다(사용자 결정 2026-09-21).
+   전에는 "가로로 밀 때 어느 행인지 놓치지 않도록" 첫 칸을 고정했다. 그런데 종목이 늘며 고정 첫 열이 표 상자를 통째로 먹었다 -
+   실측 375px: 월배당 시뮬레이터 상자 293px 중 고정 첫 열이 259px 라 뒤 열이 0/10 칸, 375px/200%: 고정 519px > 상자 213px 로
+   대상 표 8개 중 7개가 뒤 열을 한 칸도 못 보여 줬다. 고정을 풀면 100% 는 1개 → 0개, 200% 는 7개 → 0개가 된다.
+   대신 오른쪽으로 민 동안에는 종목명 앵커가 화면 밖으로 나간다(그 쪽을 택했다).
+   다시 고정할 거면 첫 열 폭 상한부터 정할 것 - 상한 120px 만으로는 200% 에서 7개 중 6개가 그대로였다.
+   고정 칸 배경을 맞추던 규칙(--sticky-first-bg · --row-zebra · --row-tint)도 함께 걷어냈다. 줄 색은
+   tr.sim-tint-* > td 가 그대로 칠한다. */

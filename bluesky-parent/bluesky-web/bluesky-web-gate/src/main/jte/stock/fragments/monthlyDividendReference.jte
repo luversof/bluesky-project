@@ -197,6 +197,23 @@
 	     내용의 min-content 만큼 벌어져 화면 밖으로 나간다(실측: 320px 에서 227px). --%>
 	<div class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]">
 		<div class="space-y-6">
+			<%-- 링크만으로 등록(사용자 요청 2026-09-21): 종목 · 월배당 태그 · 프로필 · 지급 이력을 한 번에.
+			     여러 줄을 넣으면 줄마다 하나씩 등록하고, 실패한 줄은 사유와 함께 알린다. --%>
+			@template._components.ui.card(bodyClass = "gap-4", body = @`
+					<div class="space-y-2">
+						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.title")}</h2>
+						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.desc")}</p>
+					</div>
+					<form method="post" action="/stock/dividend/monthly-reference/profile/import/links" class="grid gap-4" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.submit")}">
+						<input type="hidden" name="profileSort" value="${profileSortValue}" />
+						<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+						<label class="form-control min-w-0">
+							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.field")}</span></div>
+							<textarea name="links" rows="4" class="textarea textarea-bordered w-full min-w-0 font-mono text-xs" placeholder="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.placeholder")}" required></textarea>
+						</label>
+						<button type="submit" class="btn btn-primary w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.submit")}</button>
+					</form>
+			`)
 			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<div class="space-y-2">
 						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.title")}</h2>
@@ -205,62 +222,57 @@
 					<form method="post" action="/stock/dividend/monthly-reference/profile" class="grid gap-4">
 						<input type="hidden" name="profileSort" value="${profileSortValue}" />
 						<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input type="hidden" name="symbol" value="${profileSymbolValue}" />
-							<select name="profileSymbolSelection" class="select select-bordered w-full" size="1" data-no-multi="1" required data-sync-hidden-field="symbol">
+							<select name="profileSymbolSelection" class="select select-bordered w-full min-w-0" size="1" data-no-multi="1" required data-sync-hidden-field="symbol">
 								@if(stockItems == null || stockItems.isEmpty())
 									<option value="" selected disabled>${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.symbol.empty")}</option>
 								@endif
+								<%-- 고른 종목을 맨 위로 끌어올리지 않는다 - 그러면 목록이 코드 순이 아니게 된다(사용자 요청 2026-09-21).
+								     selected 를 달면 브라우저가 제자리에서 고른다. --%>
 								@for(StockItem stockItem : stockItems)
-									@if(stockItem.symbol() != null && stockItem.symbol().equalsIgnoreCase(profileSymbolValue))
-										<option value="${stockItem.symbol()}">${stockItem.symbol()} · ${stockItem.name()}</option>
-									@endif
-								@endfor
-								@for(StockItem stockItem : stockItems)
-									@if(stockItem.symbol() == null || !stockItem.symbol().equalsIgnoreCase(profileSymbolValue))
-										<option value="${stockItem.symbol()}">${stockItem.symbol()} · ${stockItem.name()}</option>
-									@endif
+									<option value="${stockItem.symbol()}" selected="${stockItem.symbol() != null && stockItem.symbol().equalsIgnoreCase(profileSymbolValue)}">${stockItem.symbol()} · ${stockItem.name()}</option>
 								@endfor
 							</select>
 							<p class="mt-2 text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.symbol.desc")}</p>
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.source.url")}</span></div>
-							<input name="sourceUrl" type="url" value="${sourceUrlValue}" class="input input-bordered w-full" />
+							<input name="sourceUrl" type="url" value="${sourceUrlValue}" class="input input-bordered w-full min-w-0" />
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window")}</span></div>
-							<select name="payoutWindow" class="select select-bordered w-full" data-no-multi="1">
+							<select name="payoutWindow" class="select select-bordered w-full min-w-0" data-no-multi="1">
 								<option value="MID_MONTH" selected="${"MID_MONTH".equals(payoutWindowValue)}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month")}</option>
 								<option value="MONTH_END" selected="${"MONTH_END".equals(payoutWindowValue)}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end")}</option>
 								<option value="OTHER" selected="${"OTHER".equals(payoutWindowValue)}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.other")}</option>
 								<option value="UNKNOWN" selected="${"UNKNOWN".equals(payoutWindowValue)}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.unknown")}</option>
 							</select>
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active")}</span></div>
-							<select name="active" class="select select-bordered w-full" data-no-multi="1">
+							<select name="active" class="select select-bordered w-full min-w-0" data-no-multi="1">
 								<option value="true" selected="${activeValue}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active.true")}</option>
 								<option value="false" selected="${!activeValue}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active.false")}</option>
 							</select>
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.last.verified.date")}</span></div>
-							<input name="lastVerifiedDate" type="date" value="${lastVerifiedDateValue}" class="input input-bordered w-full" />
+							<input name="lastVerifiedDate" type="date" value="${lastVerifiedDateValue}" class="input input-bordered w-full min-w-0" />
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.note")}</span></div>
-							<textarea name="note" rows="4" class="textarea textarea-bordered w-full">${noteValue}</textarea>
+							<textarea name="note" rows="4" class="textarea textarea-bordered w-full min-w-0">${noteValue}</textarea>
 						</label>
-						<button type="submit" class="btn btn-primary w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.submit")}</button>
+						<button type="submit" class="btn btn-primary w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.submit")}</button>
 					</form>
 					@if(monthlyDividendProfileExists)
 						<form method="post" action="/stock/dividend/monthly-reference/profile/delete">
 							<input type="hidden" name="profileSort" value="${profileSortValue}" />
 							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 							<input type="hidden" name="symbol" value="${profileSymbolValue}" />
-							<button type="submit" class="btn btn-error btn-outline w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
+							<button type="submit" class="btn btn-error btn-outline w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
 						</form>
 					@endif
 			`)
@@ -280,7 +292,7 @@
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
-								<label class="form-control">
+								<label class="form-control min-w-0">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.url")}</span></div>
 									<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content break-all">${sourceImportUrlValue}</div>
 								</label>
@@ -297,17 +309,17 @@
 						<form method="post" action="/stock/dividend/monthly-reference/payout/import" class="mt-4 grid gap-4" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.submit")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.admin.message.please.wait")}">
 							<input type="hidden" name="profileSort" value="${profileSortValue}" />
 							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
-							<label class="form-control">
+							<label class="form-control min-w-0">
 								<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
-								<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content">${payoutSymbolLabel}</div>
+								<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content [overflow-wrap:anywhere]">${payoutSymbolLabel}</div>
 								<p class="mt-2 text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
 							</label>
-							<label class="form-control">
+							<label class="form-control min-w-0">
 								<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.bulk.input")}</span></div>
-								<textarea name="bulkInput" rows="10" class="textarea textarea-bordered w-full font-mono text-xs leading-6" placeholder="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.placeholder")}" required>${payoutBulkInputValue}</textarea>
+								<textarea name="bulkInput" rows="10" class="textarea textarea-bordered w-full min-w-0 font-mono text-xs leading-6" placeholder="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.placeholder")}" required>${payoutBulkInputValue}</textarea>
 							</label>
-							<button type="submit" class="btn btn-primary w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.submit")}</button>
+							<button type="submit" class="btn btn-primary w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.submit")}</button>
 						</form>
 					</div>
 					<div class="divider my-0 text-xs text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.manual.title")}</div>
@@ -315,33 +327,33 @@
 					<form method="post" action="/stock/dividend/monthly-reference/payout" class="grid gap-4">
 						<input type="hidden" name="profileSort" value="${profileSortValue}" />
 						<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input type="hidden" name="symbol" value="${payoutSymbolValue}" />
-							<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content">${payoutSymbolLabel}</div>
+							<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content [overflow-wrap:anywhere]">${payoutSymbolLabel}</div>
 							<p class="mt-2 text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.record.date")}</span></div>
-							<input name="recordDate" type="date" value="${recordDateValue}" class="input input-bordered w-full" required />
+							<input name="recordDate" type="date" value="${recordDateValue}" class="input input-bordered w-full min-w-0" required />
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.pay.date")}</span></div>
-							<input name="payDate" type="date" value="${payDateValue}" class="input input-bordered w-full" required />
+							<input name="payDate" type="date" value="${payDateValue}" class="input input-bordered w-full min-w-0" required />
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.distribution.rate")}</span></div>
-							<input name="distributionRatePct" type="number" min="0" step="0.01" value="${distributionRateValue}" class="input input-bordered w-full" />
+							<input name="distributionRatePct" type="number" min="0" step="0.01" value="${distributionRateValue}" class="input input-bordered w-full min-w-0" />
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.dividend.amount")}</span></div>
-							<input name="dividendAmountPerShare" type="number" min="0" step="0.0001" value="${dividendAmountValue}" class="input input-bordered w-full" required />
+							<input name="dividendAmountPerShare" type="number" min="0" step="0.0001" value="${dividendAmountValue}" class="input input-bordered w-full min-w-0" required />
 						</label>
-						<label class="form-control">
+						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.taxable.base")}</span></div>
-							<input name="taxableBasePerShare" type="number" min="0" step="0.0001" value="${taxableBaseValue}" class="input input-bordered w-full" required />
+							<input name="taxableBasePerShare" type="number" min="0" step="0.0001" value="${taxableBaseValue}" class="input input-bordered w-full min-w-0" required />
 						</label>
-						<button type="submit" class="btn btn-outline w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.submit")}</button>
+						<button type="submit" class="btn btn-outline w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.submit")}</button>
 					</form>
 					@if(monthlyDividendPayoutExists)
 						<form method="post" action="/stock/dividend/monthly-reference/payout/delete">
@@ -350,7 +362,7 @@
 							<input type="hidden" name="symbol" value="${payoutSymbolValue}" />
 							<input type="hidden" name="recordDate" value="${selectedMonthlyDividendPayoutRecordDate}" />
 							<input type="hidden" name="payDate" value="${selectedMonthlyDividendPayoutPayDate}" />
-							<button type="submit" class="btn btn-error btn-outline w-full">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
+							<button type="submit" class="btn btn-error btn-outline w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
 						</form>
 					@endif
 			`)
@@ -368,18 +380,19 @@
 							<h3 class="text-sm font-semibold text-base-content">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.title")}</h3>
 							<p class="text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.desc")}</p>
 						</div>
-						<div class="mt-3 flex flex-wrap gap-2">
+						<%-- 단추 글자가 길어 좁은 폭 + 큰 글꼴에서 줄이 안 접혔다(실측 2026-09-21: 문서 413px). 접히게 두고 한 줄씩 차지하게. --%>
+						<div class="mt-3 flex flex-wrap gap-2 [&>form]:min-w-0 [&>form]:flex-1">
 							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.mid.month")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 								<input type="hidden" name="payoutWindow" value="MID_MONTH" />
-								<button type="submit" class="btn btn-secondary btn-sm">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.mid.month")}</button>
+								<button type="submit" class="btn btn-secondary btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.mid.month")}</button>
 							</form>
 							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.month.end")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 								<input type="hidden" name="payoutWindow" value="MONTH_END" />
-								<button type="submit" class="btn btn-secondary btn-sm">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.month.end")}</button>
+								<button type="submit" class="btn btn-secondary btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.month.end")}</button>
 							</form>
 						</div>
 					</div>
@@ -395,7 +408,7 @@
 											<a href="${referenceListBaseUrl}&profileSort=display-order&profileDirection=${displayOrderSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.display.order")}
 												@if("display-order".equals(profileSortValue))
-													<span class="ml-1 text-xs uppercase text-base-content/60">${profileDirectionValue}</span>
+													<span class="ml-1 text-xs uppercase text-base-content/60" aria-hidden="true">${profileDirectionValue}</span>
 												@endif
 											</a>
 										</th>
@@ -403,7 +416,7 @@
 											<a href="${referenceListBaseUrl}&profileSort=symbol&profileDirection=${symbolSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}
 												@if("symbol".equals(profileSortValue))
-													<span class="ml-1 text-xs uppercase text-base-content/60">${profileDirectionValue}</span>
+													<span class="ml-1 text-xs uppercase text-base-content/60" aria-hidden="true">${profileDirectionValue}</span>
 												@endif
 											</a>
 										</th>
@@ -411,7 +424,7 @@
 											<a href="${referenceListBaseUrl}&profileSort=payout-window&profileDirection=${payoutWindowSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window")}
 												@if("payout-window".equals(profileSortValue))
-													<span class="ml-1 text-xs uppercase text-base-content/60">${profileDirectionValue}</span>
+													<span class="ml-1 text-xs uppercase text-base-content/60" aria-hidden="true">${profileDirectionValue}</span>
 												@endif
 											</a>
 										</th>
@@ -419,7 +432,7 @@
 											<a href="${referenceListBaseUrl}&profileSort=source-url&profileDirection=${sourceUrlSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.source.url")}
 												@if("source-url".equals(profileSortValue))
-													<span class="ml-1 text-xs uppercase text-base-content/60">${profileDirectionValue}</span>
+													<span class="ml-1 text-xs uppercase text-base-content/60" aria-hidden="true">${profileDirectionValue}</span>
 												@endif
 											</a>
 										</th>
@@ -427,15 +440,16 @@
 											<a href="${referenceListBaseUrl}&profileSort=last-verified-date&profileDirection=${lastVerifiedDateSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.last.verified.date")}
 												@if("last-verified-date".equals(profileSortValue))
-													<span class="ml-1 text-xs uppercase text-base-content/60">${profileDirectionValue}</span>
+													<span class="ml-1 text-xs uppercase text-base-content/60" aria-hidden="true">${profileDirectionValue}</span>
 												@endif
 											</a>
 										</th>
-										<th scope="col">
+										<%-- 이 칸만 aria-sort 가 없었다(나머지 다섯은 있음) - 낭독기가 정렬 가능/현재 상태를 못 듣는다(실측 2026-09-21). --%>
+										<th scope="col" aria-sort="${"active".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
 											<a href="${referenceListBaseUrl}&profileSort=active&profileDirection=${activeSortDirection}" class="link link-hover font-medium no-underline">
 												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active")}
 												@if("active".equals(profileSortValue))
-													<span class="ml-1 text-xs uppercase text-base-content/60">${profileDirectionValue}</span>
+													<span class="ml-1 text-xs uppercase text-base-content/60" aria-hidden="true">${profileDirectionValue}</span>
 												@endif
 											</a>
 										</th>
@@ -485,7 +499,11 @@
 
 			@template._components.ui.card(bodyClass = "gap-5", body = @`
 					<div class="space-y-2">
-						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.title")}@if(payoutSymbolLabel != null && !payoutSymbolLabel.isBlank())<span class="badge badge-ghost badge-sm ml-2 align-middle" data-payout-history-symbol>${payoutSymbolLabel}</span>@endif</h2>
+						<%-- 입력칸은 size=20 만큼의 내재 폭을 갖는다 - w-full 로는 안 줄어들어 320px/200% 에서 폼이 280px 바닥을 만든다.
+						     min-w-0 를 함께 줘야 좁은 폭에서 접힌다(실측 2026-09-21). --%>
+						<%-- 배지는 기본이 한 줄(white-space: nowrap)이라 종목명이 길면 문서 폭을 늘린다 - 실측 2026-09-21:
+						     320px/200% 에서 이 배지 하나가 422px 이 되어 문서가 566px(넘침 246px)였다. 접히게 둔다. --%>
+						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.title")}@if(payoutSymbolLabel != null && !payoutSymbolLabel.isBlank())<span class="badge badge-ghost badge-sm ml-2 align-middle h-auto whitespace-normal py-1 text-left" data-payout-history-symbol>${payoutSymbolLabel}</span>@endif</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.desc")}</p>
 					</div>
 					@if(monthlyDividendPayouts == null || monthlyDividendPayouts.isEmpty())

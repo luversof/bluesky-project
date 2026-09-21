@@ -18,6 +18,8 @@
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9h6m-6 3h6" /></svg>
 @elseif(iconKey.endsWith(".trade") || name.contains("매매"))
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+@elseif(iconKey.endsWith(".monthlyEtf") || name.contains("ETF"))
+    <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10" /></svg>
 @elseif(iconKey.endsWith(".dividend") || name.contains("배당"))
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112-2h.5a1.5 1.5 0 001.5 1.5V6a2 2 0 00-2 2m-2 0V4a2 2 0 00-2-2h-.5A1.5 1.5 0 006 3.5V6a2 2 0 002 2M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" /></svg>
 @elseif(iconKey.endsWith(".simulator") || iconKey.endsWith(".poe.sim") || name.contains("시뮬레이터"))

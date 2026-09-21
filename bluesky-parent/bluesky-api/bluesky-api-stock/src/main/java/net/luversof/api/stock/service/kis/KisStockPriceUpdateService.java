@@ -33,6 +33,7 @@ import net.luversof.api.stock.domain.StockItemDateRange;
 import net.luversof.api.stock.domain.StockItemTradeDate;
 import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.repository.DividendRepository;
+import net.luversof.api.stock.repository.MonthlyDividendProfileRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
 import net.luversof.api.stock.repository.TradeRepository;
@@ -47,9 +48,23 @@ public class KisStockPriceUpdateService {
 
   private static final ZoneId MARKET_ZONE_ID = ZoneId.of("Asia/Seoul");
 
+  /**
+   * 월배당 프로필로 등록만 해 둔 종목(매매 · 배당 이력이 없는 종목)을 처음 채울 때 거슬러 갈 날수.
+   *
+   * <p>처음에는 10 영업일만 씨앗으로 받았다 &mdash; 현재가만 있으면 됐기 때문이다. 그런데 화면에 <b>1 · 3 · 6 · 12 개월 수익률</b>을 싣기로
+   * 하면서(사용자 결정 2026-09-21) 그만큼의 이력이 필요해졌다. 실측 당시 18 종목 중 1 년치를 가진 것은 3 개뿐이었다 (1 · 3 개월 14 · 6 개월 6
+   * · 1 년 3).
+   *
+   * <p>KIS 일별시세는 한 호출에 100 행이라 2 년(약 490 영업일)이면 종목당 5 호출이다 &mdash; 처음 한 번만 그렇고, 그 뒤로는 마지막 날 다음부터만
+   * 받으므로 하루치씩이다. 상장이 2 년 안 된 ETF 는 상장 이후만 온다(없는 날은 응답에 없다).
+   */
+  private static final int MONTHLY_DIVIDEND_SEED_DAYS = 365 * 2;
+
   @Autowired private DividendRepository dividendRepository;
 
   @Autowired private TradeRepository tradeRepository;
+
+  @Autowired private MonthlyDividendProfileRepository monthlyDividendProfileRepository;
 
   @Autowired private StockItemRepository stockItemRepository;
 
@@ -89,11 +104,25 @@ public class KisStockPriceUpdateService {
                     StockItemTradeDate::stockItemId,
                     Collectors.mapping(StockItemTradeDate::tradeDate, Collectors.toList())));
 
-    // Trade 또는 Dividend 이력이 있는 종목만 갱신 대상
+    // 월배당 프로필로 등록한 종목(보유 · 매매와 무관). 목록 화면이 "현재가 기준 연배당 수익률" 로 종목을 견주므로 현재가가 있어야
+    // 한다 - 실측 2026-09-21: 등록 12 종목 중 미보유 4 종목이 시세 없음 2 · 171 일 전 1 · 173 일 전 1 이었다(사용자 결정).
+    // 활성 여부로 거르지 않는다 - 목록 화면은 비활성 프로필도 함께 보여 준다.
+    java.util.Set<UUID> monthlyDividendStockItemIds = new HashSet<>();
+    monthlyDividendProfileRepository
+        .findAllByOrderByDisplayOrderAscUpdatedDateDesc()
+        .forEach(
+            profile -> {
+              if (profile.getStockItemId() != null) {
+                monthlyDividendStockItemIds.add(profile.getStockItemId());
+              }
+            });
+
+    // Trade · Dividend 이력이 있거나, 보유 중이거나, 월배당 프로필로 등록한 종목이 갱신 대상
     java.util.Set<UUID> targetStockItemIds = new java.util.HashSet<>();
     targetStockItemIds.addAll(stockItemMinDateMap.keySet());
     targetStockItemIds.addAll(currentlyHeldStockItemIds);
     targetStockItemIds.addAll(historyRefreshTargetDatesByStockItemId.keySet());
+    targetStockItemIds.addAll(monthlyDividendStockItemIds);
 
     List<StockItem> stockItemsAssigned = new ArrayList<>();
     // 대상 종목을 단건 findById 루프(N+1) 대신 한 번의 findAllById로 조회한다.
@@ -108,12 +137,15 @@ public class KisStockPriceUpdateService {
 
     for (StockItem stockItem : stockItemsAssigned) {
       UUID stockItemId = stockItem.getId();
-      LocalDate minDate = stockItemMinDateMap.getOrDefault(stockItemId, today);
-      // 현재 보유 중이면 오늘까지, 더 이상 보유하지 않으면 마지막 거래/배당 날짜까지만 갱신
-      LocalDate maxDate =
-          currentlyHeldStockItemIds.contains(stockItemId)
-              ? today
-              : stockItemMaxDateMap.getOrDefault(stockItemId, today);
+      DateRange window =
+          resolvePriceWindow(
+              today,
+              stockItemMinDateMap.get(stockItemId),
+              stockItemMaxDateMap.get(stockItemId),
+              currentlyHeldStockItemIds.contains(stockItemId),
+              monthlyDividendStockItemIds.contains(stockItemId));
+      LocalDate minDate = window.start();
+      LocalDate maxDate = window.end();
       List<LocalDate> refreshTargetDates = historyRefreshTargetDatesByStockItemId.get(stockItemId);
 
       if (stockItem.getSymbol() == null
@@ -184,7 +216,39 @@ public class KisStockPriceUpdateService {
   }
 
   /** 조회 구간 [start, end] (양끝 포함). */
-  private record DateRange(LocalDate start, LocalDate end) {}
+  record DateRange(LocalDate start, LocalDate end) {}
+
+  /**
+   * 종목 하나를 어느 구간으로 받을지 정한다.
+   *
+   * <ul>
+   *   <li>시작: 원장(매매 · 배당) 이력이 있으면 그 첫날. 없으면 오늘 &mdash; 단 월배당 프로필 종목은 10 영업일 전부터(휴장일 빈손 방지).
+   *   <li>끝: 보유 중이거나 월배당 프로필 종목이면 오늘. 둘 다 아니면 마지막 거래 · 배당일까지만(예전 그대로).
+   * </ul>
+   *
+   * <p>미보유인데 프로필인 종목은 끝이 오늘이 되므로, 이력이 끊긴 날부터 오늘까지 한 번에 메워진다(그 뒤로는 하루치씩).
+   */
+  static DateRange resolvePriceWindow(
+      LocalDate today,
+      LocalDate ledgerMinDate,
+      LocalDate ledgerMaxDate,
+      boolean currentlyHeld,
+      boolean monthlyDividendProfile) {
+    // 프로필 종목은 "원장 첫날" 과 "2 년 전" 중 이른 날부터 받는다 - 내가 산 날부터만 받으면 기간 수익률의 기준이
+    // 종목마다 달라진다(실측 2026-09-21: 2 년 씨앗을 넣고도 원장이 2026-03-25 부터인 종목들 탓에 6 개월이 10/18 이었다).
+    LocalDate seed = today.minusDays(MONTHLY_DIVIDEND_SEED_DAYS);
+    LocalDate start;
+    if (monthlyDividendProfile) {
+      start = ledgerMinDate != null && ledgerMinDate.isBefore(seed) ? ledgerMinDate : seed;
+    } else {
+      start = ledgerMinDate != null ? ledgerMinDate : today;
+    }
+    LocalDate end =
+        currentlyHeld || monthlyDividendProfile
+            ? today
+            : (ledgerMaxDate != null ? ledgerMaxDate : today);
+    return new DateRange(start, end);
+  }
 
   /** 정렬된 날짜 목록을 연속 구간으로 묶는다. 주말/휴장일 간격(1~3일)은 같은 조회 구간으로 묶어 API 호출 수를 줄인다. */
   private List<DateRange> toContiguousRanges(List<LocalDate> tradeDates) {

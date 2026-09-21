@@ -73,6 +73,10 @@ class SimulatorSortKeepsFilterTest {
       String line = source.substring(lineStart, at);
       if (line.contains("${monthlyDividendTableBaseUrl}")) {
         viaBase++;
+      } else if (line.contains("data-filter-reset")) {
+        // 필터 지우기 링크는 필터를 일부러 버린다(2026-09-21 표 좁히기 폼과 함께 들어왔다). 세지 않는다.
+        // (여기서 continue 하면 아래 다음 자리 찾기를 건너뛰어 멈추지 않는다.)
+        direct += 0;
       } else if (line.contains("href=")) {
         direct++;
       }

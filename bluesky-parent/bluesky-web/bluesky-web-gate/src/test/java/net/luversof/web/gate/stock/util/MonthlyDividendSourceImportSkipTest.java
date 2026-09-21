@@ -179,9 +179,10 @@ class MonthlyDividendSourceImportSkipTest {
     assertThat(controller.split("monthlyDividendPayoutSourceImportService.fetchImport\\(", -1))
         .as("단건 + 일괄")
         .hasSize(3);
+    // 2026-09-21 링크 등록이 세 번째 경로가 됐다(건너뛴 행 수를 같은 자리로 알린다).
     assertThat(controller.split("\"monthlyDividendReferenceWarningMessage\"", -1))
-        .as("단건 + 일괄 모두 경고를 넘긴다")
-        .hasSize(3);
+        .as("단건 · 일괄 · 링크 등록 모두 경고를 넘긴다")
+        .hasSize(4);
     assertThat(controller).contains("stock.monthly.reference.import.skipped.rows");
     assertThat(controller).contains("stock.monthly.reference.import.skipped.bulk");
 

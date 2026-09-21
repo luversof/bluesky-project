@@ -165,7 +165,10 @@ public class MonthlyDividendSnapshotService {
             : stockPriceService.getCurrentPrice(snapshot.getStockItemId());
     BigDecimal currentMarketValue = currentPrice.multiply(quantity);
     BigDecimal expectedMonthlyDividend = averageMonthlyDividendPerShare1y.multiply(quantity);
-    BigDecimal expectedMonthlyYieldPct = percent(expectedMonthlyDividend, currentMarketValue);
+    // 현재가 기준 수익률은 종목 속성이다 - 주당 배당 ÷ 현재가. 예상 배당금 ÷ 평가액으로 내면 수량이 약분돼 값은 같지만,
+    // 수량이 0 이면 0 ÷ 0 이 되어 "수익률 0%" 라는 거짓이 나온다(2026-09-21). 미보유 월배당 ETF 비교는 monthlyDividendCatalog 가
+    // 맡는다.
+    BigDecimal expectedMonthlyYieldPct = percent(averageMonthlyDividendPerShare1y, currentPrice);
     BigDecimal expectedAnnualYieldPct = annualize(expectedMonthlyYieldPct);
     BigDecimal totalCost = averageBuyPrice.multiply(quantity);
     BigDecimal expectedMonthlyYieldOnCostPct = percent(expectedMonthlyDividend, totalCost);
