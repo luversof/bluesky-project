@@ -22,9 +22,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import net.luversof.api.stock.domain.OpenApiConfig;
@@ -60,6 +63,33 @@ public class KisStockPriceUpdateService {
    */
   private static final int MONTHLY_DIVIDEND_SEED_DAYS = 365 * 2;
 
+  /**
+   * KIS 호출 사이 간격(ms). <b>0.2 초에서 줄이지 말 것.</b>
+   *
+   * <p>실측 2026-09-23: 0.1 초로 줄였더니 KIS 가 "초당 거래건수 초과" 로 거절해 54 종목 중 4 · 2 종목이 실패했다(0.2 초는 실패 0). 속도는
+   * 간격이 아니라 헛호출을 없애서 얻는다 - {@link #noHistoryBefore} 참고.
+   */
+  static final long KIS_CALL_INTERVAL_MS = 200;
+
+  /**
+   * 종목별 "이 날 이전에는 시세가 없다" (상장 전). 과거 구간을 받아 봤는데 한 행도 안 늘면 그 종목의 첫 시세일을 적어 둔다.
+   *
+   * <p>월배당 프로필 종목은 2 년 전부터 받는데, 상장이 늦은 ETF 는 그 앞 시세가 원래 없다 &mdash; 실측 2026-09-23: 호출 75 회 중 52 회가
+   * 매번 같은 상장 전 빈 구간을 100 일씩 다시 부른 것이었다(0219E0 는 8 회 중 7 회). 서버 메모리라 재기동 뒤 첫 갱신은 한 번 더 확인한다 &mdash;
+   * 상장일을 모으면 그때 영구 저장으로 바꾼다.
+   */
+  private final Map<UUID, LocalDate> noHistoryBefore =
+      new java.util.concurrent.ConcurrentHashMap<>();
+
+  /**
+   * 과거 구간을 받아야 하는가. 원하는 시작일이 저장된 첫날보다 이르고, 그 첫날이 "이 앞엔 없다" 고 이미 확인된 날이 아니면 받는다. 저장된 첫날이 바뀌면(행이 지워지는
+   * 등) 다시 확인한다.
+   */
+  static boolean shouldBackfill(
+      LocalDate wantedStart, LocalDate storedFirst, LocalDate knownNoHistoryBefore) {
+    return wantedStart.isBefore(storedFirst) && !storedFirst.equals(knownNoHistoryBefore);
+  }
+
   @Autowired private DividendRepository dividendRepository;
 
   @Autowired private TradeRepository tradeRepository;
@@ -77,7 +107,46 @@ public class KisStockPriceUpdateService {
   @Value("${kis.api.base-url:https://openapi.koreainvestment.com:9443}")
   private String baseUrl;
 
+  /**
+   * 종목 하나만 갱신한다(사용자 요청 2026-09-22).
+   *
+   * <p>전체 갱신은 53 종목에 18~22 초가 걸려 게이트의 읽기 제한(10 초)에 매번 끊겼다(실측 2026-09-22). 프로필을 새로 넣은 종목 하나 때문에 전체를
+   * 돌릴 까닭이 없다 &mdash; 한 종목이면 1 초 안쪽이다.
+   *
+   * <p>대상을 고르는 규칙(보유 · 매매 이력 · 월배당 프로필)은 전체 갱신과 같은 코드를 쓴다. 여기서는 고를 종목만 좁힌다.
+   *
+   * @param symbol 종목 코드. 모르는 코드면 404.
+   */
+  public PriceHistoryUpdateResult updatePriceHistory(UUID userId, String symbol) {
+    if (!StringUtils.hasText(symbol)) {
+      return updatePriceHistory(userId);
+    }
+
+    StockItem stockItem = stockItemRepository.findBySymbol(symbol.trim());
+    if (stockItem == null) {
+      throw new ResponseStatusException(
+          HttpStatus.NOT_FOUND, "unknown stock item symbol: " + symbol);
+    }
+    return updatePriceHistory(userId, java.util.Set.of(stockItem.getId()), null);
+  }
+
+  /** 종목 하나를 끝낼 때마다 불린다. 백그라운드 작업이 "몇 / 몇" 을 말할 수 있게 하는 유일한 통로다. */
+  @FunctionalInterface
+  public interface ProgressListener {
+    void onProgress(int processedSymbolCount, int targetSymbolCount);
+  }
+
+  public PriceHistoryUpdateResult updatePriceHistory(UUID userId, ProgressListener listener) {
+    return updatePriceHistory(userId, (java.util.Set<UUID>) null, listener);
+  }
+
   public PriceHistoryUpdateResult updatePriceHistory(UUID userId) {
+    return updatePriceHistory(userId, (java.util.Set<UUID>) null, null);
+  }
+
+  /** onlyStockItemIds 가 null 이면 대상 전체, 아니면 그 종목만. */
+  private PriceHistoryUpdateResult updatePriceHistory(
+      UUID userId, java.util.Set<UUID> onlyStockItemIds, ProgressListener listener) {
     Map<UUID, LocalDate> stockItemMinDateMap = new HashMap<>();
     Map<UUID, LocalDate> stockItemMaxDateMap = new HashMap<>();
 
@@ -124,6 +193,12 @@ public class KisStockPriceUpdateService {
     targetStockItemIds.addAll(historyRefreshTargetDatesByStockItemId.keySet());
     targetStockItemIds.addAll(monthlyDividendStockItemIds);
 
+    // 한 종목만 고르라고 했으면 여기서 좁힌다 - 창(window) 을 정하는 규칙은 그대로 쓴다.
+    if (onlyStockItemIds != null) {
+      targetStockItemIds.clear();
+      targetStockItemIds.addAll(onlyStockItemIds);
+    }
+
     List<StockItem> stockItemsAssigned = new ArrayList<>();
     // 대상 종목을 단건 findById 루프(N+1) 대신 한 번의 findAllById로 조회한다.
     stockItemRepository.findAllById(targetStockItemIds).forEach(stockItemsAssigned::add);
@@ -132,6 +207,13 @@ public class KisStockPriceUpdateService {
 
     // 종목별 실패를 세어 호출자에게 알린다. 예전에는 실패해도 경고 한 줄만 남기고 넘어가
     // 이 작업이 늘 성공으로 보였고, 가격에 구멍이 생겨도 화면에서 간접적으로만 드러났다.
+    // 진행 상황의 분모는 처음부터 맞아야 한다 - 루프를 돌며 세면 "3/0" 같은 수가 나간다.
+    // 루프 안 판정과 같은 메서드를 쓴다(따로 적으면 둘이 어긋난다).
+    int plannedSymbolCount = (int) stockItemsAssigned.stream().filter(this::fetchable).count();
+    if (listener != null) {
+      listener.onProgress(0, plannedSymbolCount);
+    }
+
     int targetSymbolCount = 0;
     List<String> failedSymbols = new ArrayList<>();
 
@@ -148,10 +230,7 @@ public class KisStockPriceUpdateService {
       LocalDate maxDate = window.end();
       List<LocalDate> refreshTargetDates = historyRefreshTargetDatesByStockItemId.get(stockItemId);
 
-      if (stockItem.getSymbol() == null
-          || (!"KRX".equalsIgnoreCase(stockItem.getMarket())
-              && !"KOSPI".equalsIgnoreCase(stockItem.getMarket())
-              && !"KOSDAQ".equalsIgnoreCase(stockItem.getMarket()))) {
+      if (!fetchable(stockItem)) {
         continue;
       }
 
@@ -166,11 +245,22 @@ public class KisStockPriceUpdateService {
         LocalDate dbMin = topAsc.get().getTradeDate();
         LocalDate dbMax = topDesc.get().getTradeDate();
 
-        // dbMin 이전에 가져와야할 과거 데이터가 있는 경우
-        if (minDate.isBefore(dbMin)
-            && !fetchRangesInBlocks(
-                userId, stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1))) {
-          symbolSucceeded = false;
+        // dbMin 이전에 가져와야할 과거 데이터가 있는 경우 - 상장 전이라 없다고 확인된 구간은 다시 부르지 않는다.
+        if (shouldBackfill(minDate, dbMin, noHistoryBefore.get(stockItemId))) {
+          if (!fetchRangesInBlocks(
+              userId, stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1))) {
+            symbolSucceeded = false;
+          } else {
+            LocalDate firstAfter =
+                stockPriceHistoryRepository
+                    .findTopByStockItemIdOrderByTradeDateAsc(stockItemId)
+                    .map(StockPriceHistory::getTradeDate)
+                    .orElse(dbMin);
+            // 모두 성공했는데 첫날이 그대로면 그 앞에는 시세가 없다(실패한 호출로는 적지 않는다 - 일시 오류를 "없다" 로 굳히면 안 된다).
+            if (firstAfter.equals(dbMin)) {
+              noHistoryBefore.put(stockItemId, dbMin);
+            }
+          }
         }
 
         // 과거 보정(refreshTargetDates)과 전진 갱신(dbMax+1 ~ today)을 하나의 구간 집합으로 모은다.
@@ -200,6 +290,10 @@ public class KisStockPriceUpdateService {
       if (!symbolSucceeded) {
         failedSymbols.add(stockItem.getSymbol());
       }
+
+      if (listener != null) {
+        listener.onProgress(targetSymbolCount, plannedSymbolCount);
+      }
     }
 
     // 흩어진 종목별 경고와 별개로, 한 줄로 결과를 남긴다. 실패가 몇 개인지 로그를 뒤지지 않고 알 수 있다.
@@ -228,6 +322,19 @@ public class KisStockPriceUpdateService {
    *
    * <p>미보유인데 프로필인 종목은 끝이 오늘이 되므로, 이력이 끊긴 날부터 오늘까지 한 번에 메워진다(그 뒤로는 하루치씩).
    */
+  /**
+   * 시세를 받아 올 수 있는 종목인가. KIS 로 조회되는 시장만 대상이다.
+   *
+   * <p>진행 상황의 분모를 미리 세는 곳과 루프 안에서 거르는 곳이 <b>같은 판정</b>을 쓰게 한 메서드다. 둘을 따로 적으면 분모와 분자가 어긋나 "51 / 53
+   * 완료" 로 멈춘 것처럼 보인다.
+   */
+  private boolean fetchable(StockItem stockItem) {
+    return stockItem.getSymbol() != null
+        && ("KRX".equalsIgnoreCase(stockItem.getMarket())
+            || "KOSPI".equalsIgnoreCase(stockItem.getMarket())
+            || "KOSDAQ".equalsIgnoreCase(stockItem.getMarket()));
+  }
+
   static DateRange resolvePriceWindow(
       LocalDate today,
       LocalDate ledgerMinDate,
@@ -322,7 +429,7 @@ public class KisStockPriceUpdateService {
       currentStartDate = currentEndDate.plusDays(1);
 
       try {
-        Thread.sleep(200);
+        Thread.sleep(KIS_CALL_INTERVAL_MS);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
@@ -412,8 +519,7 @@ public class KisStockPriceUpdateService {
 
     try {
       HttpEntity<?> entity = new HttpEntity<>(headers);
-      ResponseEntity<KisDailyPriceResponse> response =
-          kisRestTemplate.exchange(url, HttpMethod.GET, entity, KisDailyPriceResponse.class);
+      ResponseEntity<KisDailyPriceResponse> response = exchangeWithRateLimitRetry(url, entity);
 
       // 응답이 비었다는 건 그 구간에 시세가 없다는 뜻(휴장 등)이지 실패가 아니다.
       if (response.getBody() == null || response.getBody().getOutput2() == null) {
@@ -564,6 +670,45 @@ public class KisStockPriceUpdateService {
           "Failed to fetch history for symbol {} range {} to {}", symbol, startDate, endDate, e);
       return false;
     }
+  }
+
+  /** KIS 가 "초당 거래건수 초과" 로 거절했을 때 기다리는 시간(ms)과 다시 부르는 횟수. */
+  static final long KIS_RATE_LIMIT_WAIT_MS = 1000;
+
+  static final int KIS_RATE_LIMIT_RETRIES = 2;
+
+  /**
+   * 초당 한도 거절(EGW00201)만 쉬었다 다시 부른다. 다른 오류는 그대로 던진다(호출자가 실패로 센다).
+   *
+   * <p>실측 2026-09-23: 간격 0.2 초에서도 호출 75 회 중 1 회 · 28 회 중 1 회가 이 이유로 거절돼 종목이 "실패" 로 남았다. 잠깐 뒤 다시 부르면
+   * 되는 일시 거절이라, 실패로 세면 사용자는 매번 다시 갱신해야 한다.
+   */
+  ResponseEntity<KisDailyPriceResponse> exchangeWithRateLimitRetry(
+      String url, HttpEntity<?> entity) {
+    for (int attempt = 0; ; attempt++) {
+      try {
+        return kisRestTemplate.exchange(url, HttpMethod.GET, entity, KisDailyPriceResponse.class);
+      } catch (org.springframework.web.client.RestClientResponseException e) {
+        if (attempt >= KIS_RATE_LIMIT_RETRIES || !isRateLimited(e.getResponseBodyAsString())) {
+          throw e;
+        }
+        log.info(
+            "KIS rate limited (EGW00201), retry {} after {}ms",
+            attempt + 1,
+            KIS_RATE_LIMIT_WAIT_MS);
+        try {
+          Thread.sleep(KIS_RATE_LIMIT_WAIT_MS);
+        } catch (InterruptedException interrupted) {
+          Thread.currentThread().interrupt();
+          throw e;
+        }
+      }
+    }
+  }
+
+  /** 응답 본문이 KIS 초당 한도 거절인가. */
+  static boolean isRateLimited(String body) {
+    return body != null && body.contains("EGW00201");
   }
 
   private boolean hasMeaningfulHistoryChange(

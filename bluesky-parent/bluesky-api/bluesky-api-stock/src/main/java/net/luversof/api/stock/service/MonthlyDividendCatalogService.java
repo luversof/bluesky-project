@@ -122,8 +122,17 @@ public class MonthlyDividendCatalogService {
                   computed.totalReturnPct()));
         }
       }
+      // 위험 지표는 1 년 기준이다(사용자 결정 2026-09-22). 추천 점수에는 안 섞고 표에 보여 주기만 한다.
+      RiskMetricsCalculator.RiskMetrics risk =
+          RiskMetricsCalculator.compute(priceHistory, today, RISK_MONTHS);
+
       LocalDate priceHistoryStartDate =
           priceHistory.isEmpty() ? null : priceHistory.get(0).tradeDate();
+
+      // 분배금 추세는 지급 이력만으로 난다. null 은 여기서 0 으로 맞춰 평균이 computeSnapshotStats 와 같게 나오게 한다.
+      PayoutTrendCalculator.PayoutTrend payoutTrend =
+          PayoutTrendCalculator.compute(
+              payouts.stream().map(payout -> safe(payout.getDividendAmountPerShare())).toList());
 
       BigDecimal currentPrice = price != null ? safe(price.closePrice()) : BigDecimal.ZERO;
       BigDecimal averagePerShare =
@@ -155,10 +164,18 @@ public class MonthlyDividendCatalogService {
               monthlyYieldPct,
               monthlyYieldPct.multiply(BigDecimal.valueOf(12)).setScale(2, RoundingMode.HALF_UP),
               priceHistoryStartDate,
-              List.copyOf(periodReturns)));
+              List.copyOf(periodReturns),
+              payoutTrend != null ? payoutTrend.recentAveragePerShare() : null,
+              payoutTrend != null ? payoutTrend.changePct() : null,
+              risk != null ? risk.maxDrawdownPct() : null,
+              risk != null ? risk.volatilityPct() : null,
+              risk != null ? risk.fromDate() : null));
     }
     return rows;
   }
+
+  /** 위험 지표를 내는 기간(개월). 사용자 결정 2026-09-22. */
+  private static final int RISK_MONTHS = 12;
 
   private BigDecimal safe(BigDecimal value) {
     return value != null ? value : BigDecimal.ZERO;

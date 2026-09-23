@@ -26,6 +26,9 @@
 	String importOkTemplate = MessageUtil.getMessage("stock.admin.import.result.ok");
 	String importDroppedTemplate = MessageUtil.getMessage("stock.admin.import.result.dropped");
 	String priceFailedTemplate = MessageUtil.getMessage("stock.admin.import.result.price.failed");
+	String priceProgressTemplate = MessageUtil.getMessage("stock.admin.price.progress");
+	String priceProgressDoneTemplate = MessageUtil.getMessage("stock.admin.price.progress.done");
+	String priceProgressFailedTemplate = MessageUtil.getMessage("stock.admin.price.progress.failed");
 
 	String countSuffix = MessageUtil.getMessage("common.count");
 	java.util.function.Function<java.time.Instant, String> asDate = instant ->
@@ -87,9 +90,8 @@
 			<button hx-post="/api/stock/admin/price-histories"
 					data-admin-action="price-histories"
 					hx-swap="none"
-					hx-indicator="#update-loading"
 					hx-confirm="${updatePriceHistoriesConfirm}"
-					data-reload-after-request="true"
+					<%-- 이 단추는 작업을 시작만 한다 - 끝나는 건 아래 진행 표시가 보고 새로고침한다. 덮개(hx-indicator)도 안 쓴다(18~22 초 동안 화면을 가린다). --%>
 					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
 				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -335,6 +337,16 @@
 		 data-import-dropped-template="${importDroppedTemplate}"
 		 data-price-failed-template="${priceFailedTemplate}"></div>
 
+	<%-- 전체 갱신 진행 상황(사용자 결정 2026-09-22). 53 종목에 18~22 초라 게이트 읽기 제한(10 초)을 넘겨,
+	     누를 때마다 500 이 났고 데이터는 정작 갱신돼 있었다. 이제 시작만 하고 여기서 진행을 물어본다. --%>
+	<div id="price-history-progress" class="alert mt-3 hidden" role="status" aria-live="polite"
+		 data-progress-template="${priceProgressTemplate}"
+		 data-progress-done-template="${priceProgressDoneTemplate}"
+		 data-progress-failed-template="${priceProgressFailedTemplate}">
+		<span class="loading loading-spinner loading-sm" data-progress-spinner></span>
+		<span data-progress-text></span>
+	</div>
+
 	<div id="update-loading" class="htmx-indicator fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
 		<div class="bg-base-100 p-8 rounded-box shadow-xl flex flex-col items-center gap-4">
 			<span class="loading loading-spinner loading-lg text-primary"></span>
@@ -368,13 +380,76 @@
 			});
 		}
 
+		// 전체 시세 갱신은 뒤에서 돈다 - 시작 응답을 받은 뒤 진행 상황을 물어보고, 끝나면 새로고침한다.
+		var progressBox = document.getElementById("price-history-progress");
+		var progressTimer = null;
+		// 이 화면에서 시작한 작업인가. 지난 실행의 DONE 을 지금 끝난 것으로 알리면 안 된다
+		// (실측 2026-09-22: 화면을 열 때마다 2 분 전 결과를 띄우고 새로고침해 되풀이됐다).
+		var watchingOurRun = false;
+
+		function showProgress(kind, values) {
+			if (!progressBox) return;
+			var attr = kind === "done" ? "data-progress-done-template"
+				: (kind === "failed" ? "data-progress-failed-template" : "data-progress-template");
+			progressBox.classList.remove("hidden", "alert-success", "alert-error", "alert-info");
+			progressBox.classList.add(kind === "done" ? "alert-success"
+				: (kind === "failed" ? "alert-error" : "alert-info"));
+			var spinner = progressBox.querySelector("[data-progress-spinner]");
+			if (spinner) spinner.classList.toggle("hidden", kind !== "running");
+			var slot = progressBox.querySelector("[data-progress-text]");
+			if (slot) slot.textContent = format(progressBox.getAttribute(attr), values);
+		}
+
+		function stopWatching() {
+			if (progressTimer) clearInterval(progressTimer);
+			progressTimer = null;
+		}
+
+		function pollPriceHistoryJob() {
+			fetch("/api/stock/admin/price-histories/status", { headers: { "Accept": "application/json" } })
+				.then(function(res) { return res.ok ? res.json() : null; })
+				.then(function(body) {
+					if (!body) return;
+					if (body.status === "RUNNING") {
+						// 다른 탭에서 시작했거나 새로고침 중이던 작업도 여기서 이어 본다.
+						watchingOurRun = true;
+						if (!progressTimer) progressTimer = setInterval(pollPriceHistoryJob, 1500);
+						showProgress("running", [body.processedSymbolCount, body.targetSymbolCount]);
+						return;
+					}
+					stopWatching();
+					if (!watchingOurRun) {
+						// 지난 실행의 결과다 - 지금 일이 아니므로 아무 말도 하지 않는다.
+						return;
+					}
+					watchingOurRun = false;
+					if (body.status === "FAILED") {
+						showProgress("failed", [body.failureReason || ""]);
+						return;
+					}
+					showProgress("done", [body.targetSymbolCount, (body.failedSymbols || []).length]);
+					// 값이 실제로 바뀌었으니 화면을 다시 그린다(기준일 · 종목 수가 여기 걸려 있다).
+					setTimeout(function() { location.reload(); }, 1500);
+				})
+				.catch(function() { /* 다음 물음에서 다시 본다 */ });
+		}
+
+		function watchPriceHistoryJob() {
+			watchingOurRun = true;
+			showProgress("running", [0, 0]);
+			if (!progressTimer) progressTimer = setInterval(pollPriceHistoryJob, 1500);
+			pollPriceHistoryJob();
+		}
+
+		// 화면을 열 때 한 번 본다 - 돌고 있으면 이어 보고, 이미 끝난 지난 실행이면 잠자코 둔다.
+		if (progressBox) pollPriceHistoryJob();
+
 		// 응답에서 "사용자가 알아야 할 것"만 뽑는다. 알릴 게 없으면 null.
 		function summarize(action, body) {
 			if (!body || typeof body !== 'object') return null;
 			if (action === 'price-histories') {
-				var failed = (body.failedSymbols || []).length;
-				if (!failed) return null;
-				return { level: 'warning', args: [failed, body.targetSymbolCount, (body.failedSymbols || []).join(', ')], kind: 'price' };
+				// 이 응답은 "시작했다" 일 뿐이라 알릴 결과가 없다 - 결과는 진행 표시가 말한다.
+				return null;
 			}
 			if (action === 'trades' || action === 'dividends') {
 				var source = body.sourceRowCount;
@@ -392,6 +467,10 @@
 			var btn = evt.target && evt.target.closest ? evt.target.closest('[data-admin-action]') : null;
 			if (!btn || !evt.detail || !evt.detail.successful) return;
 			var action = btn.getAttribute('data-admin-action');
+			if (action === 'price-histories') {
+				// 작업은 이제 막 시작됐다. 여기서 성공이라 적으면 아직 안 끝난 일을 끝났다고 말하는 셈이다.
+				watchPriceHistoryJob();
+			}
 			var map = readMap();
 			map[action] = Date.now();
 			try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (e) {}

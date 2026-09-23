@@ -456,7 +456,7 @@
 			@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.item.detail.empty.trades"), boxed = true, padding = "py-6", widenRangeAction = !"all".equals(rangeMode))
 		@else
 			@template._components.ui.tableCard(body = @`
-				<div class="overflow-x-auto">
+				<div class="overflow-x-auto table-head-sticky-xl">
 				<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable aria-label="${MessageUtil.getMessage("stock.page.trade.title")}">
 					<thead class="bg-base-200">
 						<tr>
@@ -499,7 +499,7 @@
 			@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.item.detail.empty.dividends"), boxed = true, padding = "py-6", widenRangeAction = !"all".equals(rangeMode))
 		@else
 			@template._components.ui.tableCard(body = @`
-				<div class="overflow-x-auto">
+				<div class="overflow-x-auto table-head-sticky-xl">
 				<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable aria-label="${MessageUtil.getMessage("stock.page.dividend.title")}">
 					<thead class="bg-base-200">
 						<tr>

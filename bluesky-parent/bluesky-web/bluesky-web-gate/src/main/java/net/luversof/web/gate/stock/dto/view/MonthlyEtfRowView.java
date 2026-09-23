@@ -37,5 +37,15 @@ public record MonthlyEtfRowView(
     BigDecimal periodTotalReturnPct,
     /** 그 기간 수익률의 기초 날짜(무엇과 견줬는지). */
     LocalDate periodBaseDate,
+    /** 최근 3 회 평균 주당 분배금. 지급 이력이 모자라면 null. */
+    BigDecimal averageDividendPerShare3m,
+    /** 최근 3 회 평균이 최근 12 회 평균보다 얼마나 늘거나 줄었는가(%). 이력이 모자라면 null. */
+    BigDecimal payoutTrendPct,
+    /** 최근 1 년 전고점 대비 최대 낙폭(%). 이력이 모자라면 null. */
+    BigDecimal maxDrawdownPct,
+    /** 최근 1 년 연환산 변동성(%). 표본이 모자라면 null. */
+    BigDecimal volatilityPct,
+    /** 위험 지표를 실제로 센 첫 거래일(1 년을 못 덮으면 그 날부터다). */
+    LocalDate riskFromDate,
     /** 내 원장에 지금 보유 수량이 있는 종목인가(수량 · 금액은 적지 않는다). */
     boolean held) {}

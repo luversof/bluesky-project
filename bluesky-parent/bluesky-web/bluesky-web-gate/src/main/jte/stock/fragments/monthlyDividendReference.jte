@@ -120,6 +120,8 @@
 		successMessage = MessageUtil.getMessage("stock.page.dividend.monthly.reference.imported.payout.source");
 	} else if ("profile-deleted".equals(monthlyDividendReferenceResult)) {
 		successMessage = MessageUtil.getMessage("stock.page.dividend.monthly.reference.deleted.profile");
+	} else if ("price-refreshed".equals(monthlyDividendReferenceResult)) {
+		successMessage = MessageUtil.getMessage("stock.page.dividend.monthly.reference.refreshed.price");
 	} else if ("payout-deleted".equals(monthlyDividendReferenceResult)) {
 		successMessage = MessageUtil.getMessage("stock.page.dividend.monthly.reference.deleted.payout");
 	}
@@ -268,6 +270,14 @@
 						<button type="submit" class="btn btn-primary w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.submit")}</button>
 					</form>
 					@if(monthlyDividendProfileExists)
+						<%-- 이 종목 시세만 다시 받는다(사용자 요청 2026-09-22). 전체 갱신은 53 종목에 18~22 초가 걸려
+						     게이트 읽기 제한(10 초)에 끊긴다 - 한 종목이면 1 초 안쪽이다. --%>
+						<form method="post" action="/stock/dividend/monthly-reference/profile/refresh-price" class="mb-2">
+							<input type="hidden" name="profileSort" value="${profileSortValue}" />
+							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+							<input type="hidden" name="symbol" value="${profileSymbolValue}" />
+							<button type="submit" data-refresh-price class="btn btn-outline w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.refresh.price")}</button>
+						</form>
 						<form method="post" action="/stock/dividend/monthly-reference/profile/delete">
 							<input type="hidden" name="profileSort" value="${profileSortValue}" />
 							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />

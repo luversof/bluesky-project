@@ -62,7 +62,7 @@
 		</summary>
 
 		<div id="tradeListContainer" class="flex flex-col relative mt-2">
-			<div class="flex-1 min-h-0 overflow-x-auto">
+			<div class="flex-1 min-h-0 overflow-x-auto table-head-sticky-xl">
 				<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${detailListLabel}">
 					<thead>
 					<tr class="bg-base-200">

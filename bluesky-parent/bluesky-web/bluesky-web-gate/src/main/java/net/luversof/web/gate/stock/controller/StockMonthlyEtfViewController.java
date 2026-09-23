@@ -6,12 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,6 +23,7 @@ import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse;
 import net.luversof.web.gate.stock.dto.view.MonthlyEtfRowView;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient;
+import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport;
 import net.luversof.web.gate.stock.service.MonthlyEtfViewSupport;
 import net.luversof.web.gate.stock.support.StockViewSupport;
@@ -38,11 +40,15 @@ import net.luversof.web.gate.stock.support.StockViewSupport;
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
 public class StockMonthlyEtfViewController {
 
+  private static final Logger log = LoggerFactory.getLogger(StockMonthlyEtfViewController.class);
+
   @Autowired private MonthlyDividendCatalogClient monthlyDividendCatalogClient;
 
   @Autowired private MonthlyDividendReferenceSupport monthlyDividendReferenceSupport;
 
   @Autowired private MonthlyEtfViewSupport monthlyEtfViewSupport;
+
+  @Autowired private MonthlyContributionPickSupport monthlyContributionPickSupport;
 
   @BlueskyPreAuthorize
   @GetMapping("/monthly-etf")
@@ -55,6 +61,8 @@ public class StockMonthlyEtfViewController {
       @RequestParam(required = false) BigDecimal minAnnualYield,
       @RequestParam(required = false) String payoutWindow,
       @RequestParam(required = false) String holding,
+      @RequestParam(required = false) String account,
+      @RequestParam(required = false) String view,
       @RequestParam(required = false) Integer period) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
@@ -65,18 +73,38 @@ public class StockMonthlyEtfViewController {
     String resolvedDirection = monthlyEtfViewSupport.resolveDirection(resolvedSort, direction);
     String resolvedHolding = monthlyEtfViewSupport.resolveHolding(holding);
     String resolvedPayoutWindow = monthlyEtfViewSupport.resolvePayoutWindow(payoutWindow);
+    String resolvedAccount = monthlyEtfViewSupport.resolveAccount(account);
     String resolvedKeyword = keyword != null ? keyword.trim() : "";
 
     int resolvedPeriod = monthlyEtfViewSupport.resolvePeriod(period);
-    List<MonthlyEtfRowView> allRows = loadRows(userId, resolvedPeriod);
+    List<MonthlyDividendCatalogResponse> catalog =
+        monthlyDividendCatalogClient.findCatalog(new LinkedMultiValueMap<>());
+    List<MonthlyEtfRowView> allRows = loadRows(userId, resolvedPeriod, catalog);
+    // "이번 적립" 배지 - 시뮬레이터 월배당 탭(필터 없는 기본 화면)과 같은 답을 내야 한다(사용자 요청 2026-09-22 의 잇기).
+    // 거르기 전에 낸다 - "이번 적립만 보기" 가 이것으로 거른다(사용자 요청 2026-09-23).
+    Map<String, MonthlyContributionPickSupport.ContributionPick> contributionPicks =
+        loadContributionPicks(userId, catalog);
+    String resolvedView = monthlyEtfViewSupport.resolveView(view);
     List<MonthlyEtfRowView> rows =
         monthlyEtfViewSupport.sortRows(
-            monthlyEtfViewSupport.filterRows(
-                allRows, resolvedKeyword, minAnnualYield, resolvedPayoutWindow, resolvedHolding),
+            monthlyEtfViewSupport.filterContribution(
+                monthlyEtfViewSupport.filterRows(
+                    allRows,
+                    resolvedKeyword,
+                    minAnnualYield,
+                    resolvedPayoutWindow,
+                    resolvedHolding,
+                    resolvedAccount),
+                contributionPicks.keySet(),
+                resolvedView),
             resolvedSort,
             resolvedDirection);
 
     model.addAttribute("monthlyEtfRows", rows);
+    model.addAttribute("monthlyEtfContributionPicks", contributionPicks);
+    model.addAttribute("monthlyEtfView", resolvedView);
+    // 추천은 걸러 놓은 목록 안에서 고른다 - 화면에 안 보이는 종목을 추천하면 안 된다.
+    model.addAttribute("monthlyEtfPicks", monthlyEtfViewSupport.pickRows(rows));
     model.addAttribute("monthlyEtfTotalCount", allRows.size());
     model.addAttribute(
         "monthlyEtfHeldCount", allRows.stream().filter(MonthlyEtfRowView::held).count());
@@ -89,16 +117,41 @@ public class StockMonthlyEtfViewController {
     model.addAttribute("monthlyEtfMinAnnualYield", minAnnualYield);
     model.addAttribute("monthlyEtfPayoutWindow", resolvedPayoutWindow);
     model.addAttribute("monthlyEtfHolding", resolvedHolding);
+    model.addAttribute("monthlyEtfAccount", resolvedAccount);
     model.addAttribute("monthlyEtfPeriod", resolvedPeriod);
     model.addAttribute("monthlyEtfPeriods", MonthlyEtfViewSupport.PERIODS);
     model.addAttribute("pageTitle", StockViewSupport.msg("stock.page.monthly.etf.title"));
     return "stock/monthlyEtf";
   }
 
+  /**
+   * 종목코드 -> 이번 적립 자리. 보유 출처는 시뮬레이터와 같은 스냅샷이다(이 화면의 "보유" 는 원장 수량이라 갈릴 수 있다). 원격 호출이 실패해도 목록은 살린다 -
+   * 배지는 덧붙인 것이고, 실패는 로그로 남긴다.
+   */
+  private Map<String, MonthlyContributionPickSupport.ContributionPick> loadContributionPicks(
+      UUID userId, List<MonthlyDividendCatalogResponse> catalog) {
+    try {
+      List<String> held =
+          monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId).stream()
+              .map(
+                  net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
+                      ::stockItemSymbol)
+              .toList();
+      Map<String, MonthlyContributionPickSupport.ContributionPick> bySymbol =
+          new java.util.LinkedHashMap<>();
+      for (var pick : monthlyContributionPickSupport.pickHeld(held, catalog)) {
+        bySymbol.putIfAbsent(pick.symbol(), pick);
+      }
+      return bySymbol;
+    } catch (Exception ex) {
+      log.warn("이번 적립 배지를 못 냈다(목록은 그대로 둔다)", ex);
+      return Map.of();
+    }
+  }
+
   /** 등록된 프로필 전부 + 내 원장의 보유 여부. 보유 수량 · 금액은 화면에 싣지 않는다. */
-  private List<MonthlyEtfRowView> loadRows(UUID userId, int period) {
-    MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-    List<MonthlyDividendCatalogResponse> catalog = monthlyDividendCatalogClient.findCatalog(params);
+  private List<MonthlyEtfRowView> loadRows(
+      UUID userId, int period, List<MonthlyDividendCatalogResponse> catalog) {
     Map<UUID, Integer> heldQuantities =
         monthlyDividendReferenceSupport.loadCurrentHoldings(userId).quantities();
 
@@ -138,6 +191,11 @@ public class StockMonthlyEtfViewController {
               periodReturn != null ? periodReturn.priceReturnPct() : null,
               periodReturn != null ? periodReturn.totalReturnPct() : null,
               periodReturn != null ? periodReturn.baseDate() : null,
+              row.averageDividendPerShare3m(),
+              row.payoutTrendPct(),
+              row.maxDrawdownPct(),
+              row.volatilityPct(),
+              row.riskFromDate(),
               quantity != null && quantity > 0));
     }
     return rows;

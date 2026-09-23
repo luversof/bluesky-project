@@ -77,7 +77,7 @@
 		</summary>
 
 		<div id="dividendListContainer" class="flex flex-col relative mt-2">
-			<div class="flex-1 min-h-0 overflow-x-auto">
+			<div class="flex-1 min-h-0 overflow-x-auto table-head-sticky-xl">
 				<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${detailSummaryLabel}">
 					<%-- 정렬 머리는 <th> 에 hx-get 만 있어 마우스 전용이었다(실측 2026-09-09: 포커스 불가). tabindex 로 닿게 하고(Enter/Space 는 common.ts),
 					     정렬 상태는 ▲▼ 글자 외에 aria-sort 로도 알린다. --%>

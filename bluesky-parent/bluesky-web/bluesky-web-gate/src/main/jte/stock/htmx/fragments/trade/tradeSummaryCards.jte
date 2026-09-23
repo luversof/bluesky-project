@@ -40,11 +40,11 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${periodStatusLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
-					<span class="text-xl font-bold text-error amount-value">&#8361; ${decimalFormat.format(safeBuy)}</span>
+					<span class="text-xl font-bold amount-value">&#8361; ${decimalFormat.format(safeBuy)}</span>
 					<span class="text-xs text-base-content/60">${buyLabel}</span>
 				</div>
 				<div class="flex gap-4 text-xs text-base-content/60">
-					<span>${sellLabel} <span class="font-medium text-info amount-value">&#8361; ${decimalFormat.format(safeSell)}</span></span>
+					<span>${sellLabel} <span class="font-medium amount-value">&#8361; ${decimalFormat.format(safeSell)}</span></span>
 					<%-- 라벨을 붙인다. 이 수는 매수+매도 전체 건수인데 같은 줄 왼쪽이 "매도" 라, 라벨이 없으면
 						 매도 건수로 읽힌다 - 실측 2026-09-12(올해): 이 자리가 98건(매수 91 + 매도 7)인데
 						 바로 옆 실현손익 카드는 "매도 7건" 이라, 한 화면이 매도를 98건과 7건 둘로 말했다.

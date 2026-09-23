@@ -78,6 +78,15 @@ public class StockViewController {
 
   private MonthlyDividendProfileClient monthlyDividendProfileClient;
 
+  /** 적립 추천에 쓰는 종목 단위 정보(연배당 수익률 · 분배금 추세)는 이 창구에만 있다. */
+  @org.springframework.beans.factory.annotation.Autowired
+  private net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient
+      monthlyDividendCatalogClient;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  private net.luversof.web.gate.stock.service.MonthlyContributionPickSupport
+      monthlyContributionPickSupport;
+
   private MonthlyDividendSnapshotClient monthlyDividendSnapshotClient;
 
   private StockItemClient stockItemClient;
@@ -267,6 +276,8 @@ public class StockViewController {
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) BigDecimal minAnnualYield,
       @RequestParam(defaultValue = "false") boolean positiveOnly,
+      @RequestParam(required = false) String payoutWindow,
+      @RequestParam(required = false) String account,
       @RequestParam(required = false) String symbol) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
@@ -289,7 +300,16 @@ public class StockViewController {
       // 결과 코드/저장건수는 POST 후 flash 로만 전달된다 (URL 쿼리로 받으면
       // 새로고침마다 이전 결과 메시지가 재표시되는 버그가 있어 제거 — 관리 페이지와 동일 패턴).
       populateMonthlyDividendModel(
-          model, userId, sort, direction, keyword, minAnnualYield, positiveOnly, symbol);
+          model,
+          userId,
+          sort,
+          direction,
+          keyword,
+          minAnnualYield,
+          positiveOnly,
+          payoutWindow,
+          account,
+          symbol);
     }
 
     return "stock/simulator";
@@ -453,6 +473,8 @@ public class StockViewController {
       String keyword,
       BigDecimal minAnnualYield,
       boolean positiveOnly,
+      String payoutWindow,
+      String account,
       String prefillSymbol) {
     String monthlyDividendSort = monthlyDividendViewSupport.resolveRowSort(sort);
     String monthlyDividendDirection =
@@ -470,6 +492,8 @@ public class StockViewController {
     // (실측 2026-09-17: 과세이연 계좌에서만 받은 두 종목이 0%, 사용자 결정: 계산은 두고 표기를 바로잡는다).
     var taxableRatioBasisFuture =
         stockAsync.supply(() -> monthlyDividendReferenceSupport.loadTaxableRatioBasis(userId));
+    // 지급 시기 · 계좌 필터와 적립 추천이 같은 카탈로그를 쓴다 - 한 번만 받아 둘 다 같은 답을 내게 한다(사용자 요청 2026-09-23).
+    var catalogFuture = stockAsync.supply(this::loadMonthlyDividendCatalog);
     List<MonthlyDividendSnapshotResponse> allRows =
         monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId);
     List<MonthlyDividendProfileResponse> monthlyDividendProfiles =
@@ -479,10 +503,34 @@ public class StockViewController {
             "asc");
     Map<String, Integer> monthlyDividendProfileDisplayOrders =
         monthlyDividendViewSupport.buildProfileDisplayOrderMap(monthlyDividendProfiles);
+    // 지급 시기(월중 · 월말) · 계좌(위탁 · ISA/연금) 자리로 좁힌다(사용자 요청 2026-09-23, 결정: 적립 추천과 같은 규칙).
+    String monthlyDividendPayoutWindowFilter =
+        net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.resolveSlotWindow(
+            payoutWindow);
+    String monthlyDividendAccountFilter =
+        net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.resolveSlotAccount(
+            account);
+    List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse>
+        monthlyDividendCatalog =
+            net.luversof.web.gate.stock.support.StockAsyncSupport.join(catalogFuture);
+    boolean slotFilterRequested =
+        !monthlyDividendPayoutWindowFilter.isEmpty() || !monthlyDividendAccountFilter.isEmpty();
+    // 카탈로그를 못 받으면 자리를 못 정한다 - 조용히 전체를 보이면 걸린 줄로 읽히므로 화면에 알린다.
+    boolean monthlyDividendSlotFilterUnavailable =
+        slotFilterRequested && monthlyDividendCatalog == null;
+    java.util.Set<String> slotSymbols =
+        slotFilterRequested && monthlyDividendCatalog != null
+            ? monthlyContributionPickSupport.symbolsInSlot(
+                monthlyDividendPayoutWindowFilter,
+                monthlyDividendAccountFilter,
+                monthlyDividendCatalog)
+            : null;
     List<MonthlyDividendSnapshotResponse> filteredRows =
         monthlyDividendViewSupport.sortRows(
-            monthlyDividendViewSupport.filterRows(
-                allRows, monthlyDividendKeyword, minAnnualYield, positiveOnly),
+            keepSlotRows(
+                monthlyDividendViewSupport.filterRows(
+                    allRows, monthlyDividendKeyword, minAnnualYield, positiveOnly),
+                slotSymbols),
             monthlyDividendSort,
             monthlyDividendDirection,
             monthlyDividendProfileDisplayOrders);
@@ -569,6 +617,11 @@ public class StockViewController {
         "monthlyDividendReferenceTaxableTotal", monthlyDividendReferenceTaxableTotal);
     model.addAttribute(
         "monthlyDividendReferenceTaxableStaleCount", monthlyDividendReferenceTaxableStaleCount);
+    // 이번에 무엇을 적립할까(사용자 요청 2026-09-22). 자리는 지급 시기 x 계좌(과세표준 10% 경계)로 갈리고,
+    // 점수는 연배당 수익률 + min(분배금 추세, 0) 이다. 연배당 수익률과 추세는 종목 단위 정보라 카탈로그에서만 온다.
+    // 원격 호출이 실패해도 화면은 살린다 - 추천은 덧붙인 것이고, 실패는 로그로 남긴다.
+    model.addAttribute(
+        "monthlyContributionPicks", loadContributionPicks(filteredRows, monthlyDividendCatalog));
     model.addAttribute("monthlyDividendRows", filteredRows);
     model.addAttribute(
         "monthlyDividendSummary",
@@ -606,6 +659,10 @@ public class StockViewController {
     model.addAttribute("monthlyDividendKeyword", monthlyDividendKeyword);
     model.addAttribute("monthlyDividendMinAnnualYield", minAnnualYield);
     model.addAttribute("monthlyDividendPositiveOnly", positiveOnly);
+    model.addAttribute("monthlyDividendPayoutWindowFilter", monthlyDividendPayoutWindowFilter);
+    model.addAttribute("monthlyDividendAccountFilter", monthlyDividendAccountFilter);
+    model.addAttribute(
+        "monthlyDividendSlotFilterUnavailable", monthlyDividendSlotFilterUnavailable);
     model.addAttribute("monthlyDividendHasSavedRows", !allRows.isEmpty());
 
     if (!model.containsAttribute("monthlyDividendForm")) {
@@ -670,7 +727,7 @@ public class StockViewController {
     model.addAttribute("monthlyDividendResult", "");
     model.addAttribute("monthlyDividendSavedCount", null);
     populateMonthlyDividendModel(
-        model, userId, sort, direction, keyword, minAnnualYield, positiveOnly, null);
+        model, userId, sort, direction, keyword, minAnnualYield, positiveOnly, null, null, null);
     return "stock/simulator";
   }
 
@@ -872,6 +929,60 @@ public class StockViewController {
       columns.add(rawColumn != null ? rawColumn.trim() : "");
     }
     return columns.toArray(String[]::new);
+  }
+
+  /**
+   * 보유 중인 월배당 종목으로 자리마다 하나씩 고른다(사용자 요청 2026-09-22).
+   *
+   * <p>보유 여부는 시뮬레이터가 이미 걸러 준 행으로 정한다 &mdash; 그 탭은 "내가 받을 배당" 이라 보유 종목만 다룬다. 연배당 수익률과 분배금 추세는 종목 단위
+   * 정보라 카탈로그에서 가져온다.
+   */
+  private java.util.List<
+          net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick>
+      loadContributionPicks(
+          java.util.List<MonthlyDividendSnapshotResponse> heldRows,
+          java.util.List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse>
+              catalog) {
+    // 카탈로그를 못 받은 까닭은 loadMonthlyDividendCatalog 가 이미 남겼다.
+    if (heldRows == null || heldRows.isEmpty() || catalog == null) {
+      return java.util.List.of();
+    }
+
+    try {
+      // 후보 만드는 규칙은 월배당 ETF 목록의 "이번 적립" 배지와 같이 쓴다(pickHeld).
+      return monthlyContributionPickSupport.pickHeld(
+          heldRows.stream().map(MonthlyDividendSnapshotResponse::stockItemSymbol).toList(),
+          catalog);
+    } catch (Exception ex) {
+      // 조용히 삼키면 추천이 사라진 까닭을 못 찾는다.
+      log.warn("적립 추천을 못 냈다(화면은 그대로 둔다)", ex);
+      return java.util.List.of();
+    }
+  }
+
+  /** 월배당 카탈로그. 실패하면 null - 적립 추천과 지급 시기 · 계좌 필터가 함께 쉬고, 까닭은 여기서 남긴다. */
+  private java.util.List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse>
+      loadMonthlyDividendCatalog() {
+    try {
+      return monthlyDividendCatalogClient.findCatalog(
+          new org.springframework.util.LinkedMultiValueMap<>());
+    } catch (Exception ex) {
+      log.warn("월배당 카탈로그를 못 받았다 - 적립 추천 · 지급 시기/계좌 필터를 건너뛴다", ex);
+      return null;
+    }
+  }
+
+  /** 지급 시기 · 계좌 자리에 드는 행만 남긴다. 자리 조건이 없으면(null) 그대로. */
+  static java.util.List<MonthlyDividendSnapshotResponse> keepSlotRows(
+      java.util.List<MonthlyDividendSnapshotResponse> rows, java.util.Set<String> slotSymbols) {
+    if (slotSymbols == null) {
+      return rows;
+    }
+    return rows.stream()
+        .filter(
+            row ->
+                row.stockItemSymbol() != null && slotSymbols.contains(row.stockItemSymbol().trim()))
+        .toList();
   }
 
   private boolean isMonthlyDividendHeader(String firstColumn) {

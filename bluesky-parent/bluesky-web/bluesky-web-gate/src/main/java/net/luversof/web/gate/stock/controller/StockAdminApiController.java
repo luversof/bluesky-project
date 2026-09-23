@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -63,9 +64,37 @@ public class StockAdminApiController {
    * <p>예전에는 본문이 비어 있어, 몇 종목이 실패하든 화면에는 늘 성공으로 보였다(실측: 평일인데 가격이 아예 없는 날이 2일 있었고 화면에서는 "기준일이 오래됐다" 로만
    * 간접적으로 드러났다).
    */
+  /**
+   * 종목 하나만 갱신한다(사용자 요청 2026-09-22).
+   *
+   * <p>전체 갱신은 53 종목에 18~22 초가 걸려 이 게이트의 읽기 제한(10 초)에 매번 끊겼다(실측 2026-09-22: 08:17:06 시작 → 08:17:28
+   * 완료). 한 종목이면 1 초 안쪽이라 그 자리에서 끝난다.
+   */
+  @BlueskyPreAuthorize
+  @PostMapping("/price-histories/{symbol}")
+  public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateResult>
+      priceHistoryUpdateOne(@PathVariable String symbol) {
+    UUID userId = UserUtil.getUserId();
+    if (userId == null) {
+      return ResponseEntity.status(401).build();
+    }
+    return ResponseEntity.ok(stockAdminClient.priceHistoryUpdateOne(symbol, userId));
+  }
+
+  /** 전체 갱신 작업의 진행 상황. 화면이 주기적으로 물어본다. */
+  @BlueskyPreAuthorize
+  @org.springframework.web.bind.annotation.GetMapping("/price-histories/status")
+  public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus>
+      priceHistoryUpdateStatus() {
+    if (UserUtil.getUserId() == null) {
+      return ResponseEntity.status(401).build();
+    }
+    return ResponseEntity.ok(stockAdminClient.priceHistoryUpdateStatus());
+  }
+
   @BlueskyPreAuthorize
   @PostMapping("/price-histories")
-  public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateResult>
+  public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus>
       priceHistoriesUpdate() {
     UUID userId = UserUtil.getUserId();
     if (userId == null) {

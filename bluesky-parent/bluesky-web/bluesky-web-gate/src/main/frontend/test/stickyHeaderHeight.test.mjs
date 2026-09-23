@@ -73,3 +73,34 @@ test("상단바가 사라져 높이가 0 이면(인쇄 등) 이전 값을 둔다
 	mod.syncSiteHeaderHeight(header);
 	assert.equal(rootStyle["--site-header-height"], "71px");
 });
+
+// 머리글이 붙는 표의 본문 칸에 포커스가 가면 필터 줄 · 머리 줄 아래로 굴려야 한다(2026-09-23, 1440px 월배당 ETF 21 개 가림).
+// 표 상자마다 머리 줄 높이를 알리고, main.css 가 그만큼 scroll-margin-top 을 늘린다.
+test("머리글이 붙는 표 상자마다 머리 줄 높이를 알린다", () => {
+	assert.equal(typeof mod.syncStickyTheadHeights, "function", "npm run build");
+	const box = (height) => {
+		const style = {};
+		return {
+			style: { setProperty: (name, value) => { style[name] = value; } }, set: style,
+			querySelector: (sel) => (sel === ":scope > table > thead" && height !== null
+				? { getBoundingClientRect: () => ({ height }) } : null),
+		};
+	};
+	const etf = box(96);
+	const detail = box(41);
+	const noHead = box(null);
+	const collapsed = box(0);
+	const original = document.querySelectorAll;
+	let asked = null;
+	document.querySelectorAll = (sel) => { asked = sel; return [etf, detail, noHead, collapsed]; };
+	try {
+		mod.syncStickyTheadHeights();
+	} finally {
+		document.querySelectorAll = original;
+	}
+	assert.equal(asked, ".table-head-sticky, .table-head-sticky-xl", "두 종류 상자 모두");
+	assert.equal(etf.set["--sticky-thead-height"], "96px");
+	assert.equal(detail.set["--sticky-thead-height"], "41px");
+	assert.equal(noHead.set["--sticky-thead-height"], undefined, "머리 줄 없는 표는 건드리지 않는다");
+	assert.equal(collapsed.set["--sticky-thead-height"], undefined, "안 보이는(높이 0) 머리 줄은 이전 값을 둔다");
+});

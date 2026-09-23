@@ -41,7 +41,23 @@ public record MonthlyDividendCatalogResponse(
     /** 시세 이력의 첫 날. 기간 수익률이 비어 있을 때 화면이 "언제부터 있는지" 를 말할 수 있게 함께 보낸다. */
     LocalDate priceHistoryStartDate,
     /** 1 · 3 · 6 · 12 개월 수익률. 이력이 그 기간을 못 덮으면 그 기간은 목록에서 빠진다(지어내지 않는다). */
-    List<PeriodReturnView> periodReturns) {
+    List<PeriodReturnView> periodReturns,
+    /**
+     * 분배금 추세: 최근 3 회 평균 주당 분배금과, 그것이 최근 12 회 평균보다 얼마나 늘거나 줄었는지(%).
+     *
+     * <p>지급 이력이 모자라면 둘 다 {@code null} 이다 &mdash; 0 을 보내면 "안정적" 으로 읽힌다.
+     */
+    BigDecimal averageDividendPerShare3m,
+    BigDecimal payoutTrendPct,
+    /**
+     * 최근 1 년 위험 지표: 전고점 대비 최대 낙폭(%) · 연환산 변동성(%) · 실제로 센 첫 거래일.
+     *
+     * <p>합산 수익률만으로는 "어떻게 벌었는지" 를 못 본다(실측 2026-09-22: 합산 +165% 인 종목이 그 사이 43.1% 빠졌다). 이력이 1 년을 못 덮으면
+     * 있는 만큼으로 내고 {@code riskFromDate} 가 언제부터인지 말한다.
+     */
+    BigDecimal maxDrawdownPct,
+    BigDecimal volatilityPct,
+    LocalDate riskFromDate) {
 
   /** 한 기간의 가격 · 합산 수익률(사용자 결정 2026-09-21). */
   public record PeriodReturnView(

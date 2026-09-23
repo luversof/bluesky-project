@@ -383,8 +383,9 @@
 														<td class="text-right font-mono hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holding.buyAmount()))}</td>
 														<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice()))}</td>
 														<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
-														<td class="text-right font-mono font-bold amount-value ${holding.evaluationProfit() != null && holding.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-															${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holding.evaluationProfit()))}
+														<%-- 금액만 가린다 - 수익률(%)은 금액 숨김에도 보여야 한다(사용자 요청 2026-09-23). --%>
+														<td class="text-right font-mono font-bold ${holding.evaluationProfit() != null && holding.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+															<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holding.evaluationProfit()))}</span>
 															<span class="text-xs">(${StockFormatUtil.signedPct(holding.evaluationProfitRatePct() != null ? holding.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
 														</td>
 														<td class="text-right hidden xl:table-cell print:table-cell">
@@ -487,7 +488,8 @@
 						</div>
 						<div class="rounded-box bg-base-100/80 px-3 py-2">
 							<div class="text-xs text-base-content/60">${stockSelectionWeightLabel}</div>
-							<div class="mt-1 font-mono font-semibold amount-value" data-selection-weight>0.0%</div>
+							<%-- 비중은 금액이 아니라 비율이다 - 금액 숨김에도 보인다(사용자 결정 2026-09-23, 계좌 쪽 선택 합산과 같게). --%>
+							<div class="mt-1 font-mono font-semibold" data-selection-weight>0.0%</div>
 						</div>
 					</div>
 				</div>
@@ -802,8 +804,9 @@
 																<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", holdingAccount.averageBuyPrice() != null ? holdingAccount.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
 																<td class="text-right font-mono hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.buyAmount()))}</td>
 																<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.evaluationAmount()))}</td>
-																<td class="text-right font-mono font-bold amount-value ${holdingAccount.evaluationProfit() != null && holdingAccount.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
-																	${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingAccount.evaluationProfit()))}
+																<%-- 금액만 가린다 - 수익률(%)은 금액 숨김에도 보여야 한다(사용자 요청 2026-09-23). --%>
+																<td class="text-right font-mono font-bold ${holdingAccount.evaluationProfit() != null && holdingAccount.evaluationProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+																	<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingAccount.evaluationProfit()))}</span>
 																	<span class="text-xs">(${StockFormatUtil.signedPct(holdingAccount.evaluationProfitRatePct() != null ? holdingAccount.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
 																</td>
 																<td class="text-right hidden xl:table-cell print:table-cell">

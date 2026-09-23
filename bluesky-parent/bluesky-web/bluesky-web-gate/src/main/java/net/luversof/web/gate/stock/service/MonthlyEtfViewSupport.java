@@ -20,6 +20,13 @@ import net.luversof.web.gate.stock.dto.view.MonthlyEtfRowView;
 @Component
 public class MonthlyEtfViewSupport {
 
+  /** 계좌를 가르는 규칙은 적립 추천이 쓰는 것을 그대로 쓴다 - 두 곳에 적으면 한쪽만 고쳐진다. */
+  private final MonthlyContributionPickSupport monthlyContributionPickSupport;
+
+  public MonthlyEtfViewSupport(MonthlyContributionPickSupport monthlyContributionPickSupport) {
+    this.monthlyContributionPickSupport = monthlyContributionPickSupport;
+  }
+
   /** 시세 기준일이 이보다 오래되면 화면에 "(오래됨)" 을 붙인다. */
   public static final int PRICE_STALE_DAYS = 30;
 
@@ -33,6 +40,11 @@ public class MonthlyEtfViewSupport {
   public static final String SORT_PAYOUT_COUNT = "payout-count";
 
   /** 고른 기간의 가격 수익률 · 합산 수익률로도 정렬한다(사용자 결정 2026-09-21). */
+  /** 최근 1 년 위험 지표로도 정렬한다(사용자 결정 2026-09-22). */
+  public static final String SORT_MAX_DRAWDOWN = "max-drawdown";
+
+  public static final String SORT_VOLATILITY = "volatility";
+
   public static final String SORT_PERIOD_PRICE = "period-price";
 
   public static final String SORT_PERIOD_TOTAL = "period-total";
@@ -42,6 +54,7 @@ public class MonthlyEtfViewSupport {
 
   /** 기본 기간. 한 해를 보면 분배금이 한 바퀴 돌아 합산이 뜻을 갖는다. */
   public static final int DEFAULT_PERIOD = 12;
+
   public static final String SORT_LATEST_PAY_DATE = "latest-pay-date";
 
   /** 보유 구분 - 전체 · 보유 중 · 미보유. */
@@ -50,6 +63,54 @@ public class MonthlyEtfViewSupport {
   public static final String HOLDING_HELD = "held";
 
   public static final String HOLDING_NOT_HELD = "not-held";
+
+  /**
+   * 계좌 대상 - 전체(빈 값) · 위탁 · 연금 &middot; ISA.
+   *
+   * <p>가르는 규칙은 적립 추천과 같은 곳을 쓴다({@link MonthlyContributionPickSupport#accountOf}): 과세표준 비중이 {@value
+   * MonthlyContributionPickSupport#TAXABLE_LIMIT_PCT}% 이내면 위탁, 그보다 크면 연금 &middot; ISA 다. 두 곳에 따로
+   * 적으면 한쪽만 고쳐질 수 있다.
+   */
+  public static final String ACCOUNT_ALL = "";
+
+  /** 화면 위에 띄우는 추천은 셋까지. 더 늘리면 "골랐다" 는 뜻이 옅어진다. */
+  public static final int PICK_LIMIT = 3;
+
+  /**
+   * 추천 한 줄 &mdash; 행과 그 점수.
+   *
+   * @param row 추천된 종목의 행(이름 · 연배당 · 추세를 화면이 그대로 쓴다)
+   * @param score 적립 추천과 같은 셈으로 낸 점수
+   */
+  public record MonthlyEtfPick(MonthlyEtfRowView row, BigDecimal score) {}
+
+  /**
+   * 지금 화면에 걸린 조건 안에서 눈여겨볼 종목을 고른다(사용자 결정 2026-09-22).
+   *
+   * <p>셈은 적립 추천과 같은 것을 쓴다({@link MonthlyContributionPickSupport#scoreOf}) &mdash; 두 화면이 다른 말을 하면 어느
+   * 쪽을 믿어야 할지 알 수 없다. <b>분배금 추세를 아직 모르는 종목은 뺀다</b>: 감점이 0 이라 이력이 짧은 종목이 연배당만으로 위로 올라온다(실측
+   * 2026-09-22: 추세를 모르는 두 종목이 2 · 3 위를 차지했다).
+   *
+   * @param rows 이미 걸러 놓은 행들(검색어 · 계좌 · 지급 시기가 이미 반영된 것)
+   * @return 점수 높은 차례, 같으면 종목코드 차례. 고를 것이 없으면 빈 목록
+   */
+  public List<MonthlyEtfPick> pickRows(List<MonthlyEtfRowView> rows) {
+    return rows.stream()
+        .filter(row -> row.annualYieldPct() != null && row.payoutTrendPct() != null)
+        .map(
+            row ->
+                new MonthlyEtfPick(
+                    row,
+                    monthlyContributionPickSupport.scoreOf(
+                        row.annualYieldPct(), row.payoutTrendPct())))
+        .filter(pick -> pick.score() != null)
+        .sorted(
+            Comparator.comparing(MonthlyEtfPick::score)
+                .reversed()
+                .thenComparing(pick -> safeText(pick.row().stockItemSymbol())))
+        .limit(PICK_LIMIT)
+        .toList();
+  }
 
   /** 정렬 키 검증(모르는 값은 표시 순서). */
   public String resolveSort(String sort) {
@@ -68,7 +129,9 @@ public class MonthlyEtfViewSupport {
           SORT_PAYOUT_COUNT,
           SORT_LATEST_PAY_DATE,
           SORT_PERIOD_PRICE,
-          SORT_PERIOD_TOTAL ->
+          SORT_PERIOD_TOTAL,
+          SORT_MAX_DRAWDOWN,
+          SORT_VOLATILITY ->
           sort;
       default -> SORT_DISPLAY_ORDER;
     };
@@ -91,7 +154,9 @@ public class MonthlyEtfViewSupport {
           SORT_PAYOUT_COUNT,
           SORT_LATEST_PAY_DATE,
           SORT_PERIOD_PRICE,
-          SORT_PERIOD_TOTAL ->
+          SORT_PERIOD_TOTAL,
+          // 낙폭은 음수다 - 큰 값(0 에 가까운 쪽)이 덜 빠진 것이므로 좋은 것부터 보려면 내림차순이다.
+          SORT_MAX_DRAWDOWN ->
           "desc";
       default -> "asc";
     };
@@ -100,6 +165,43 @@ public class MonthlyEtfViewSupport {
   /** 보유 구분 값 검증(모르는 값은 전체). */
   public String resolveHolding(String holding) {
     return HOLDING_HELD.equals(holding) || HOLDING_NOT_HELD.equals(holding) ? holding : HOLDING_ALL;
+  }
+
+  /** "이번 적립만 보기" (사용자 요청 2026-09-23). 빈 값은 전체 보기다. */
+  public static final String VIEW_CONTRIBUTION = "contribution";
+
+  /** 보기 값 검증(모르는 값은 전체 - 빈 문자열). */
+  public String resolveView(String view) {
+    return VIEW_CONTRIBUTION.equals(view) ? VIEW_CONTRIBUTION : "";
+  }
+
+  /**
+   * 이번 적립 보기면 적립 자리에 든 종목만 남긴다 &mdash; ETF 가 많아지면 네 자리만 보고 싶다(사용자 요청).
+   *
+   * @param pickedSymbols 시뮬레이터와 같은 답으로 낸 이번 적립 종목코드
+   */
+  public List<MonthlyEtfRowView> filterContribution(
+      List<MonthlyEtfRowView> rows, java.util.Set<String> pickedSymbols, String view) {
+    if (!VIEW_CONTRIBUTION.equals(view)) {
+      return rows;
+    }
+    return rows.stream()
+        .filter(row -> pickedSymbols.contains(safeText(row.stockItemSymbol())))
+        .toList();
+  }
+
+  /** 계좌 대상 필터 값 검증(모르는 값은 전체 - 빈 문자열). */
+  public String resolveAccount(String account) {
+    if (!StringUtils.hasText(account)) {
+      return ACCOUNT_ALL;
+    }
+
+    return switch (account) {
+      case MonthlyContributionPickSupport.ACCOUNT_BROKERAGE,
+          MonthlyContributionPickSupport.ACCOUNT_PENSION ->
+          account;
+      default -> ACCOUNT_ALL;
+    };
   }
 
   /** 지급 시기 필터 값 검증(모르는 값은 전체 - 빈 문자열). */
@@ -114,15 +216,17 @@ public class MonthlyEtfViewSupport {
     };
   }
 
-  /** 검색어(종목코드 · 종목명) · 최소 연배당 수익률 · 지급 시기 · 보유 구분 필터. */
+  /** 검색어(종목코드 · 종목명) · 최소 연배당 수익률 · 지급 시기 · 보유 구분 · 계좌 대상 필터. */
   public List<MonthlyEtfRowView> filterRows(
       List<MonthlyEtfRowView> rows,
       String keyword,
       BigDecimal minAnnualYield,
       String payoutWindow,
-      String holding) {
+      String holding,
+      String account) {
     String resolvedHolding = resolveHolding(holding);
     String resolvedWindow = resolvePayoutWindow(payoutWindow);
+    String resolvedAccount = resolveAccount(account);
     return rows.stream()
         .filter(row -> matchesKeyword(row, keyword))
         .filter(
@@ -130,6 +234,7 @@ public class MonthlyEtfViewSupport {
                 minAnnualYield == null || safe(row.annualYieldPct()).compareTo(minAnnualYield) >= 0)
         .filter(row -> resolvedWindow.isEmpty() || resolvedWindow.equals(row.payoutWindow()))
         .filter(row -> matchesHolding(row, resolvedHolding))
+        .filter(row -> matchesAccount(row, resolvedAccount))
         .toList();
   }
 
@@ -154,6 +259,8 @@ public class MonthlyEtfViewSupport {
           case SORT_ANNUAL_YIELD -> Comparator.comparing(row -> safe(row.annualYieldPct()));
           // 이력이 모자라 값이 없는 종목은 늘 뒤로 보낸다(빈 칸이 "가장 낮은 수익률" 로 읽히면 안 된다).
           case SORT_PERIOD_PRICE -> nullsLast(MonthlyEtfRowView::periodPriceReturnPct);
+          case SORT_MAX_DRAWDOWN -> nullsLast(MonthlyEtfRowView::maxDrawdownPct);
+          case SORT_VOLATILITY -> nullsLast(MonthlyEtfRowView::volatilityPct);
           case SORT_PERIOD_TOTAL -> nullsLast(MonthlyEtfRowView::periodTotalReturnPct);
           case SORT_PAYOUT_COUNT -> Comparator.comparing(MonthlyEtfRowView::payoutCount);
           case SORT_LATEST_PAY_DATE ->
@@ -190,6 +297,12 @@ public class MonthlyEtfViewSupport {
     if (SORT_PERIOD_TOTAL.equals(sort)) {
       return row.periodTotalReturnPct() == null;
     }
+    if (SORT_MAX_DRAWDOWN.equals(sort)) {
+      return row.maxDrawdownPct() == null;
+    }
+    if (SORT_VOLATILITY.equals(sort)) {
+      return row.volatilityPct() == null;
+    }
 
     return false;
   }
@@ -210,6 +323,20 @@ public class MonthlyEtfViewSupport {
     }
 
     return HOLDING_HELD.equals(holding) == row.held();
+  }
+
+  /**
+   * 계좌 대상이 맞는가.
+   *
+   * <p>과세표준 비중을 모르는 종목은 어느 계좌인지도 모른다 - 전체로 볼 때만 남긴다. 모르는 것을 위탁으로 치면 "10% 이내" 라는 근거 없이 목록에 섞인다.
+   */
+  private boolean matchesAccount(MonthlyEtfRowView row, String account) {
+    if (ACCOUNT_ALL.equals(account)) {
+      return true;
+    }
+
+    return account.equals(
+        monthlyContributionPickSupport.accountOf(row.averageTaxableBaseRatio1y()));
   }
 
   /**

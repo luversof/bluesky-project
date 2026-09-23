@@ -7,10 +7,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertRequest;
@@ -54,15 +56,20 @@ public class MonthlyDividendLinkRegisterService {
 
   private final MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService;
 
+  /** 시세 갱신은 관리 쪽 창구를 쓴다 - 종목 하나만 고르는 입구가 여기 있다. */
+  private final net.luversof.web.gate.stock.httpexchange.StockAdminClient stockAdminClient;
+
   public MonthlyDividendLinkRegisterService(
       StockItemClient stockItemClient,
       MonthlyDividendProfileClient monthlyDividendProfileClient,
       MonthlyDividendPayoutClient monthlyDividendPayoutClient,
-      MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService) {
+      MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService,
+      net.luversof.web.gate.stock.httpexchange.StockAdminClient stockAdminClient) {
     this.stockItemClient = stockItemClient;
     this.monthlyDividendProfileClient = monthlyDividendProfileClient;
     this.monthlyDividendPayoutClient = monthlyDividendPayoutClient;
     this.monthlyDividendPayoutSourceImportService = monthlyDividendPayoutSourceImportService;
+    this.stockAdminClient = stockAdminClient;
   }
 
   /** 한 줄(링크 하나)의 결과. 실패해도 나머지 줄은 그대로 간다. */
@@ -76,6 +83,8 @@ public class MonthlyDividendLinkRegisterService {
       boolean tagAdded,
       int payoutCount,
       int skippedCount,
+      /** 그 종목 시세를 바로 받아 왔는가. 못 받아도 등록은 남는다. */
+      boolean priceSeeded,
       String failureReason) {}
 
   public record LinkRegisterResult(List<LinkResult> results) {
@@ -157,6 +166,30 @@ public class MonthlyDividendLinkRegisterService {
     return hasMonthlyDividendTag(matched) ? StockItemAction.KEEP : StockItemAction.ADD_TAG;
   }
 
+  /**
+   * 그 종목 시세를 바로 받아 둔다(사용자 결정 2026-09-22).
+   *
+   * <p>등록만 하고 시세가 없으면 월배당 ETF 목록에서 현재가 · 연배당 수익률 · 기간 수익률이 모두 빈 줄로 남는다. 신규 한 종목의 2 년치 시드는 실측 약 1.1
+   * 초다.
+   *
+   * <p><b>실패해도 등록은 살린다.</b> 시세는 나중에 종목별 갱신으로 채울 수 있지만, 여기서 예외를 올리면 이미 저장한 종목 · 태그 · 프로필 · 지급 이력이
+   * "등록 실패" 로 보고돼 사용자가 다시 넣게 된다. 실패는 반드시 로그로 남긴다.
+   */
+  private boolean seedPriceHistory(String symbol) {
+    UUID userId = UserUtil.getUserId();
+    if (userId == null || !StringUtils.hasText(symbol)) {
+      return false;
+    }
+
+    try {
+      stockAdminClient.priceHistoryUpdateOne(symbol, userId);
+      return true;
+    } catch (Exception ex) {
+      log.warn("등록한 종목의 시세를 못 받았다(등록은 유지): {}", symbol, ex);
+      return false;
+    }
+  }
+
   private LinkResult registerOne(String link) {
     try {
       URI sourceUri = URI.create(link);
@@ -197,6 +230,11 @@ public class MonthlyDividendLinkRegisterService {
         monthlyDividendPayoutClient.upsertPayout(payout);
       }
 
+      // 등록만 하고 시세가 없으면 목록에서 현재가 · 수익률이 빈 줄로 남는다(사용자 결정 2026-09-22:
+      // 등록하면서 바로 받는다). 신규 한 종목의 2 년치 시드는 실측 약 1.1 초다.
+      // 시세를 못 받아도 등록 자체는 살린다 - 시세는 나중에 종목별 갱신으로 채울 수 있다.
+      boolean priceSeeded = seedPriceHistory(meta.symbol());
+
       return new LinkResult(
           link,
           true,
@@ -207,11 +245,12 @@ public class MonthlyDividendLinkRegisterService {
           tagAdded,
           imported.requests().size(),
           imported.skipped().size(),
+          priceSeeded,
           "");
     } catch (Exception ex) {
       log.warn("링크 등록 실패: {}", link, ex);
       String reason = StringUtils.hasText(ex.getMessage()) ? ex.getMessage() : ex.toString();
-      return new LinkResult(link, false, "", "", "", false, false, 0, 0, reason);
+      return new LinkResult(link, false, "", "", "", false, false, 0, 0, false, reason);
     }
   }
 

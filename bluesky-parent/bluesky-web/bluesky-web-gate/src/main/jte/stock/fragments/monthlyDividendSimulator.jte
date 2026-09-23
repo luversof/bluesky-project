@@ -14,6 +14,7 @@
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
+@param java.util.List<net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick> monthlyContributionPicks = java.util.List.of()
 <%-- 이 표의 '현재가'가 어느 날 종가인지. 배당 기준값(스냅샷 시점)과 시세는 시점이 다르다. --%>
 @param java.time.LocalDate monthlyDividendPriceBasisDate = null
 @param boolean monthlyDividendCurrentHoldingsUnavailable = false
@@ -41,6 +42,9 @@
 @param String monthlyDividendKeyword = ""
 @param BigDecimal monthlyDividendMinAnnualYield = null
 @param boolean monthlyDividendPositiveOnly = false
+@param String monthlyDividendPayoutWindowFilter = ""
+@param String monthlyDividendAccountFilter = ""
+@param boolean monthlyDividendSlotFilterUnavailable = false
 @param boolean monthlyDividendHasSavedRows = false
 @param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
 @param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
@@ -145,7 +149,10 @@
 			: "&keyword=" + java.net.URLEncoder.encode(monthlyDividendKeyword, java.nio.charset.StandardCharsets.UTF_8))
 		+ (monthlyDividendMinAnnualYield == null ? ""
 			: "&minAnnualYield=" + monthlyDividendMinAnnualYield.toPlainString())
-		+ (monthlyDividendPositiveOnly ? "&positiveOnly=true" : "");
+		+ (monthlyDividendPositiveOnly ? "&positiveOnly=true" : "")
+		// 지급 시기 · 계좌 자리(사용자 요청 2026-09-23). 값은 컨트롤러가 정해진 넷 중 하나로 걸러 준다.
+		+ (monthlyDividendPayoutWindowFilter.isBlank() ? "" : "&payoutWindow=" + monthlyDividendPayoutWindowFilter)
+		+ (monthlyDividendAccountFilter.isBlank() ? "" : "&account=" + monthlyDividendAccountFilter);
 	String currentDirectionIndicator = "asc".equals(monthlyDividendDirection) ? "↑" : "↓";
 	String displayOrderDirection = "display-order".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
 	String symbolDirectionToggle = "symbol".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
@@ -374,6 +381,45 @@
 				</div>
 			</div>
 
+			<%-- 이번에 무엇을 적립할까(사용자 요청 2026-09-22). 같은 자리를 두고 겹치는 종목이 둘씩 있어 매번 고민하게 된다.
+			     자리 = 지급 시기 x 계좌(과세표준 비중 10% 경계 - 사용자가 실제로 그렇게 운영한다).
+			     점수 = 연배당 수익률 + min(분배금 추세, 0) - 줄고 있으면 그만큼 깎는다(사용자 결정).
+			     무엇을 제치고 뽑혔는지 함께 적는다 - 근거 없이 "이걸 사라" 고만 하면 따를 수 없다. --%>
+			@if(!monthlyContributionPicks.isEmpty())
+				@template._components.ui.card(bodyClass = "gap-4", body = @`
+					<div class="space-y-2">
+						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.contribution.title")}</h2>
+						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.contribution.desc")}</p>
+					</div>
+					<ul class="grid gap-3 sm:grid-cols-2" data-contribution-picks>
+						@for(var pick : monthlyContributionPicks)
+							!{String windowLabel = "MID_MONTH".equals(pick.payoutWindow())
+							    ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month")
+							    : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end");}
+							!{String accountLabel = "BROKERAGE".equals(pick.account())
+							    ? MessageUtil.getMessage("stock.simulator.monthly.contribution.account.brokerage")
+							    : MessageUtil.getMessage("stock.simulator.monthly.contribution.account.pension");}
+							<li class="rounded-box border border-base-200 bg-base-200/30 p-3" data-contribution-pick="${pick.symbol()}">
+								<div class="text-xs font-medium text-base-content/60">${windowLabel} · ${accountLabel}</div>
+								<div class="mt-1 flex flex-wrap items-baseline gap-2">
+									<span class="font-mono font-semibold">${pick.symbol()}</span>
+									<span class="text-sm leading-tight">${pick.name()}</span>
+								</div>
+								<%-- 점수만 보여 주면 무슨 수인지 알 수 없다 - 연배당과 추세를 함께 적는다. --%>
+								<div class="mt-2 text-xs text-base-content/70">
+									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.basis"), percentFormat.format(pick.annualYieldPct()), pick.payoutTrendPct() == null ? MessageUtil.getMessage("stock.simulator.monthly.contribution.trend.unknown") : (pick.payoutTrendPct().signum() > 0 ? "+" : "") + percentFormat.format(pick.payoutTrendPct()) + "%")}
+								</div>
+								@if(pick.tied())
+									<div class="mt-1 text-xs text-base-content/60" data-contribution-tied>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.tied"), pick.runnerUpSymbol())}</div>
+								@elseif(pick.runnerUpSymbol() != null)
+									<div class="mt-1 text-xs text-base-content/60" data-contribution-runner-up>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.runner.up"), pick.runnerUpSymbol(), percentFormat.format(pick.runnerUpScore()))}</div>
+								@endif
+							</li>
+						@endfor
+					</ul>
+				`)
+			@endif
+
 			@template._components.ui.card(bodyClass = "gap-5", body = @`
 					<div class="space-y-2">
 						<div class="space-y-2">
@@ -397,6 +443,24 @@
 							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.min.annual.yield")}</span></div>
 							<input name="minAnnualYield" type="number" step="0.01" min="0" value="${minAnnualYieldValue}" class="input input-bordered input-sm w-full max-w-full" />
 						</label>
+						<%-- 지급 시기 · 계좌 자리로 좁힌다(사용자 요청 2026-09-23). 계좌는 적립 추천 카드와 같은 규칙이다(사용자 결정) -
+						     과세표준 비중 10% 이내면 위탁, 넘으면 ISA/연금. 월배당 ETF 화면의 같은 필터와 문구를 같이 쓴다. --%>
+						<label class="form-control min-w-0 max-w-full">
+							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.monthly.etf.filter.payout.window")}</span></div>
+							<select name="payoutWindow" class="select select-bordered select-sm w-full max-w-full" data-monthly-slot-window>
+								<option value="" selected="${monthlyDividendPayoutWindowFilter.isBlank()}">${MessageUtil.getMessage("stock.monthly.etf.filter.payout.window.all")}</option>
+								<option value="MID_MONTH" selected="${"MID_MONTH".equals(monthlyDividendPayoutWindowFilter)}">${payoutWindowMidMonthLabel}</option>
+								<option value="MONTH_END" selected="${"MONTH_END".equals(monthlyDividendPayoutWindowFilter)}">${payoutWindowMonthEndLabel}</option>
+							</select>
+						</label>
+						<label class="form-control min-w-0 max-w-full">
+							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.monthly.etf.filter.account")}</span></div>
+							<select name="account" class="select select-bordered select-sm w-full max-w-full" data-monthly-slot-account>
+								<option value="" selected="${monthlyDividendAccountFilter.isBlank()}">${MessageUtil.getMessage("stock.monthly.etf.filter.account.all")}</option>
+								<option value="BROKERAGE" selected="${"BROKERAGE".equals(monthlyDividendAccountFilter)}">${MessageUtil.getMessage("stock.monthly.etf.filter.account.brokerage")}</option>
+								<option value="PENSION" selected="${"PENSION".equals(monthlyDividendAccountFilter)}">${MessageUtil.getMessage("stock.monthly.etf.filter.account.pension")}</option>
+							</select>
+						</label>
 						<label class="label cursor-pointer justify-start gap-2 self-end py-2">
 							<input name="positiveOnly" type="checkbox" value="true" class="checkbox checkbox-sm" checked="${monthlyDividendPositiveOnly}" />
 							<span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.simulator.monthly.filter.positive.only")}</span>
@@ -407,6 +471,9 @@
 							<a data-filter-reset href="/stock/simulator?tab=monthly-dividend&sort=${monthlyDividendSort}&direction=${monthlyDividendDirection}" class="btn btn-ghost btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.simulator.monthly.filter.reset")}</a>
 						</div>
 					</form>
+					@if(monthlyDividendSlotFilterUnavailable)
+						<p role="status" class="text-xs text-warning" data-monthly-slot-unavailable>${MessageUtil.getMessage("stock.simulator.monthly.filter.slot.unavailable")}</p>
+					@endif
 
 					@if(monthlyDividendRows == null || monthlyDividendRows.isEmpty())
 						<div class="rounded-2xl border border-dashed border-base-300 bg-base-50 px-6 py-10 text-center">

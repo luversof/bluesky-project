@@ -214,12 +214,12 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${tradeStatusLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
-					<span class="text-xl font-bold text-error amount-value" data-activity-kind="buy-amount">₩ ${df.format(safeBuy)}</span>
+					<span class="text-xl font-bold amount-value" data-activity-kind="buy-amount">₩ ${df.format(safeBuy)}</span>
 					<span class="text-xs text-base-content/60">${buyLabel}</span>
 				</div>
 				<div class="flex gap-4 text-xs text-base-content/60">
 					<span>${buyLabel} <span class="font-medium text-base-content/70" data-activity-kind="buy-count">${countMessage.apply(buyCount)}</span></span>
-					<span>${sellLabel} <span class="font-medium text-info amount-value" data-activity-kind="sell-amount">₩ ${df.format(safeSell)}</span> <span class="text-base-content/70" data-activity-kind="sell-count">${countMessage.apply(sellCount)}</span></span>
+					<span>${sellLabel} <span class="font-medium amount-value" data-activity-kind="sell-amount">₩ ${df.format(safeSell)}</span> <span class="text-base-content/70" data-activity-kind="sell-count">${countMessage.apply(sellCount)}</span></span>
 				</div>
 		`)
 
@@ -618,7 +618,7 @@
 			@if(activities == null || activities.isEmpty())
 				@template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
 			@else
-				<div class="overflow-x-auto">
+				<div class="overflow-x-auto table-head-sticky-xl">
 					<table class="table w-full table-sm table-pin-rows pin-top-nav" data-activity-list-table aria-label="${listTabLabel}">
 						<thead>
 							<tr class="bg-base-200">

@@ -58,6 +58,8 @@ public class MonthlyDividendPayoutSourceImportService {
 
   private final SolMonthlyDividendPayoutSourceParser solMonthlyDividendPayoutSourceParser;
 
+  private final TimeMonthlyDividendPayoutSourceParser timeMonthlyDividendPayoutSourceParser;
+
   private final KodexMonthlyDividendPayoutSourceParser kodexMonthlyDividendPayoutSourceParser;
 
   private final TigerMonthlyDividendPayoutSourceParser tigerMonthlyDividendPayoutSourceParser;
@@ -70,6 +72,7 @@ public class MonthlyDividendPayoutSourceImportService {
       PlusMonthlyDividendPayoutSourceParser plusMonthlyDividendPayoutSourceParser,
       RiseMonthlyDividendPayoutSourceParser riseMonthlyDividendPayoutSourceParser,
       SolMonthlyDividendPayoutSourceParser solMonthlyDividendPayoutSourceParser,
+      TimeMonthlyDividendPayoutSourceParser timeMonthlyDividendPayoutSourceParser,
       TigerMonthlyDividendPayoutSourceParser tigerMonthlyDividendPayoutSourceParser) {
     // 요청 팩터리를 갈아 끼우지 않는다. localdev 는 GateRestClientConfig 가 "모든 인증서 신뢰" 팩터리를 얹어 두는데
     // (로컬 서비스가 자체 서명), requestFactory(...) 로 덮으면 그 신뢰가 사라져 공개 사이트 인증서까지 못 믿는다
@@ -81,6 +84,7 @@ public class MonthlyDividendPayoutSourceImportService {
                 HttpHeaders.USER_AGENT,
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0 Safari/537.36")
             .build();
+    this.timeMonthlyDividendPayoutSourceParser = timeMonthlyDividendPayoutSourceParser;
     this.monthlyDividendPayoutImportParser = monthlyDividendPayoutImportParser;
     this.monthlyDividendSourceMetaParser = monthlyDividendSourceMetaParser;
     this.kodexMonthlyDividendPayoutSourceParser = kodexMonthlyDividendPayoutSourceParser;
@@ -115,6 +119,12 @@ public class MonthlyDividendPayoutSourceImportService {
     String bulkInput;
     if (RiseMonthlyDividendPayoutSourceParser.supportsHost(host)) {
       bulkInput = riseMonthlyDividendPayoutSourceParser.toBulkInput(fetchRiseRows(sourceUri));
+    } else if (TimeMonthlyDividendPayoutSourceParser.supportsHost(host)) {
+      // TIME 은 지급 이력이 상세 HTML 안에 이미 들어 있다 - 따로 부를 것이 없다.
+      bulkInput =
+          timeMonthlyDividendPayoutSourceParser.toBulkInput(
+              timeMonthlyDividendPayoutSourceParser.parseRows(
+                  fetchBody(sourceUri, msg("stock.monthly.reference.error.source.fetch.failed"))));
     } else if (SolMonthlyDividendPayoutSourceParser.supportsHost(host)) {
       bulkInput = solMonthlyDividendPayoutSourceParser.toBulkInput(fetchSolRows(sourceUri));
     } else if (host.contains("plusetf.co.kr")) {
@@ -307,6 +317,9 @@ public class MonthlyDividendPayoutSourceImportService {
     }
 
     String html = fetchBody(sourceUri, msg("stock.monthly.reference.error.source.fetch.failed"));
+    if (TimeMonthlyDividendPayoutSourceParser.supportsHost(host)) {
+      return monthlyDividendSourceMetaParser.fromTimeHtml(html);
+    }
     if (SolMonthlyDividendPayoutSourceParser.supportsHost(host)) {
       return monthlyDividendSourceMetaParser.fromSolHtml(html);
     }

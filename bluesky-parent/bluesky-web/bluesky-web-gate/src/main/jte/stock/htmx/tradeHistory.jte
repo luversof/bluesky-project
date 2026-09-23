@@ -104,11 +104,11 @@ ${historyTitle}
 @template._components.ui.card(body = @`
 <div class="text-xs text-base-content/60 mb-1">${periodStatusLabel}</div>
 <div class="flex items-baseline gap-1 mb-2">
-<span class="text-xl font-bold text-error amount-value">&#x20A9;${df.format(safeBuy)}</span>
+<span class="text-xl font-bold amount-value">&#x20A9;${df.format(safeBuy)}</span>
 <span class="text-xs text-base-content/60">${buyLabel}</span>
 </div>
 <div class="flex gap-4 text-xs text-base-content/60">
-<span>${sellLabel} <span class="font-medium text-info amount-value">&#x20A9;${df.format(safeSell)}</span></span>
+<span>${sellLabel} <span class="font-medium amount-value">&#x20A9;${df.format(safeSell)}</span></span>
 <%-- 매수+매도 전체 건수다. 라벨이 없으면 왼쪽의 "매도" 건수로 읽힌다(실측 2026-09-12: 98건 = 매수 91 + 매도 7). --%>
 <span class="ml-auto">${MessageUtil.getMessage("stock.activity.label.trade")} ${countMessage.apply(totalItems)}</span>
 </div>

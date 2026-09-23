@@ -220,7 +220,7 @@
 			</div>
 		</div>
 		</div></div>
-		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
+		@template._components.ui.tableCard(cssClass = "overflow-x-auto table-head-sticky-xl", body = @`
 			<table class="table table-sm w-full" aria-label="${byStockSectionLabel}">
 				<thead class="bg-base-200">
 					<tr>

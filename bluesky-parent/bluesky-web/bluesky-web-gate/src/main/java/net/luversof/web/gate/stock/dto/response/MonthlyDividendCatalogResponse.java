@@ -36,7 +36,14 @@ public record MonthlyDividendCatalogResponse(
     /** 시세 이력의 첫 날. 기간 수익률이 비어 있을 때 "언제부터 있는지" 를 적기 위해 쓴다. */
     LocalDate priceHistoryStartDate,
     /** 1 · 3 · 6 · 12 개월 수익률. 이력이 그 기간을 못 덮으면 그 기간은 빠진다. */
-    List<PeriodReturnView> periodReturns) {
+    List<PeriodReturnView> periodReturns,
+    /** 분배금 추세: 최근 3 회 평균과 최근 12 회 평균 대비 증감(%). 이력이 모자라면 둘 다 null 이다. */
+    BigDecimal averageDividendPerShare3m,
+    BigDecimal payoutTrendPct,
+    /** 최근 1 년 위험 지표: 최대 낙폭(%) · 연환산 변동성(%) · 실제로 센 첫 거래일. */
+    BigDecimal maxDrawdownPct,
+    BigDecimal volatilityPct,
+    LocalDate riskFromDate) {
 
   /** 한 기간의 가격 · 합산 수익률. */
   @JsonIgnoreProperties(ignoreUnknown = true)

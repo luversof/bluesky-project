@@ -47,6 +47,7 @@ import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 import net.luversof.web.gate.stock.dto.view.DividendCalendarView;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
+import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 import net.luversof.web.gate.stock.service.MonthlyDividendViewSupport;
 import net.luversof.web.gate.stock.support.StockViewSupport;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil;
@@ -74,6 +75,9 @@ public class StockDividendViewController {
   private static final int MONTHLY_DIVIDEND_AVERAGE_WINDOW = 12;
 
   @Autowired private MonthlyDividendProfileClient monthlyDividendProfileClient;
+
+  /** 종목별 시세 갱신은 관리 쪽 창구를 쓴다. */
+  @Autowired private StockAdminClient stockAdminClient;
 
   @Autowired private MonthlyDividendPayoutClient monthlyDividendPayoutClient;
 
@@ -497,6 +501,41 @@ public class StockDividendViewController {
   }
 
   @BlueskyPreAuthorize
+  /**
+   * 고른 종목 시세만 다시 받는다(사용자 요청 2026-09-22).
+   *
+   * <p>전체 갱신은 53 종목에 18~22 초가 걸려 게이트의 읽기 제한(10 초)에 매번 끊겼다(실측). 한 종목이면 1 초 안쪽이라 그 자리에서 끝난다. 실패하면 까닭을
+   * 그대로 화면에 띄운다 &mdash; 원격 사정을 "입력값을 확인하세요" 로 덮지 않는다.
+   */
+  @PostMapping("/dividend/monthly-reference/profile/refresh-price")
+  public String refreshMonthlyDividendProfilePrice(
+      HttpServletRequest request,
+      RedirectAttributes redirectAttributes,
+      Model model,
+      @RequestParam String symbol) {
+    if (StockViewSupport.isNotAuthenticated()) {
+      return StockViewSupport.loginRedirectView(request);
+    }
+
+    String normalizedSymbol =
+        monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(symbol);
+    UUID userId = UserUtil.getUserId();
+    try {
+      monthlyDividendReferenceSupport.validateMonthlyDividendSymbol(normalizedSymbol);
+      stockAdminClient.priceHistoryUpdateOne(normalizedSymbol, userId);
+      return buildMonthlyDividendReferenceRedirect(
+          request, redirectAttributes, normalizedSymbol, "price-refreshed");
+    } catch (IllegalArgumentException ex) {
+      return renderMonthlyDividendReferenceError(
+          request, model, normalizedSymbol, ex.getMessage(), null, null);
+    } catch (Exception ex) {
+      // 원격 호출 실패는 반드시 남긴다 - 조용히 삼키면 화면만 "안 됨" 이 되고 까닭을 못 찾는다.
+      log.warn("종목 시세 갱신 실패: {}", normalizedSymbol, ex);
+      return renderMonthlyDividendReferenceError(
+          request, model, normalizedSymbol, ex.getMessage(), null, null);
+    }
+  }
+
   @PostMapping("/dividend/monthly-reference/profile/delete")
   public String deleteMonthlyDividendProfile(
       HttpServletRequest request,

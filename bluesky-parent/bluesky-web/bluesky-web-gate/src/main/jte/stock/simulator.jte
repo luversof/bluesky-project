@@ -17,6 +17,7 @@
 @param String simulatorTabHrefMonthlyDividend = "/stock/simulator?tab=monthly-dividend"
 @param String simulatorTabHrefCompound = "/stock/simulator?tab=compound"
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
+@param java.util.List<net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick> monthlyContributionPicks = java.util.List.of()
 @param java.util.Map<java.util.UUID, Integer> monthlyDividendCurrentQuantities = java.util.Map.of()
 @param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = java.util.Map.of()
 @param java.time.LocalDate monthlyDividendPriceBasisDate = null
@@ -42,6 +43,9 @@
 @param String monthlyDividendKeyword = ""
 @param BigDecimal monthlyDividendMinAnnualYield = null
 @param boolean monthlyDividendPositiveOnly = false
+@param String monthlyDividendPayoutWindowFilter = ""
+@param String monthlyDividendAccountFilter = ""
+@param boolean monthlyDividendSlotFilterUnavailable = false
 @param boolean monthlyDividendHasSavedRows = false
 @param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
 @param Map<String, String> monthlyDividendPayoutWindowBySymbol = java.util.Map.of()
@@ -210,6 +214,7 @@
 			@if(monthlyDividendTab)
 				@template.stock.fragments.monthlyDividendSimulator(
 					monthlyDividendRows = monthlyDividendRows,
+					monthlyContributionPicks = monthlyContributionPicks,
 					monthlyDividendCurrentQuantities = monthlyDividendCurrentQuantities,
 					monthlyDividendCurrentAverageBuyPrices = monthlyDividendCurrentAverageBuyPrices,
 					monthlyDividendPriceBasisDate = monthlyDividendPriceBasisDate,
@@ -232,6 +237,9 @@
 					monthlyDividendKeyword = monthlyDividendKeyword,
 					monthlyDividendMinAnnualYield = monthlyDividendMinAnnualYield,
 					monthlyDividendPositiveOnly = monthlyDividendPositiveOnly,
+					monthlyDividendPayoutWindowFilter = monthlyDividendPayoutWindowFilter,
+					monthlyDividendAccountFilter = monthlyDividendAccountFilter,
+					monthlyDividendSlotFilterUnavailable = monthlyDividendSlotFilterUnavailable,
 					monthlyDividendHasSavedRows = monthlyDividendHasSavedRows,
 					monthlyDividendProfileDisplayOrders = monthlyDividendProfileDisplayOrders,
 					monthlyDividendPayoutWindowBySymbol = monthlyDividendPayoutWindowBySymbol,

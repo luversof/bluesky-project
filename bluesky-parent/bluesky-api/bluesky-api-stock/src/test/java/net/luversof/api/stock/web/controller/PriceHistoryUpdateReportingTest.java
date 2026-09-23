@@ -32,9 +32,15 @@ class PriceHistoryUpdateReportingTest {
     assertThat(read(SERVICE))
         .as("updatePriceHistory 가 void 로 돌아가면 실패 건수가 사라진다")
         .contains("public PriceHistoryUpdateResult updatePriceHistory(UUID userId)");
-    assertThat(read(CONTROLLER))
-        .as("엔드포인트가 결과를 돌려주지 않으면 호출자는 실패를 알 수 없다")
-        .contains("PriceHistoryUpdateResult priceHistoryUpdate(");
+    // 사용자 결정 2026-09-22 로 전체 갱신은 뒤에서 돌게 바뀌었다 - 이제 POST 는 "시작했다" 를 돌려주고
+    // 실패 종목은 상태 조회로 간다. 둔 길이 바뀌었을 뿐, "호출자가 실패를 알 수 있어야 한다" 는 그대로다.
+    String controller = read(CONTROLLER);
+    assertThat(controller)
+        .as("시작 응답이 작업 상태가 아니면 화면이 진행을 그릴 수 없다")
+        .contains("PriceHistoryUpdateJobStatus priceHistoryUpdate(");
+    assertThat(controller)
+        .as("상태 조회가 없으면 실패 종목이 어느 곳에도 안 닿는다")
+        .contains("@GetMapping(\"/price-histories/status\")");
   }
 
   @Test

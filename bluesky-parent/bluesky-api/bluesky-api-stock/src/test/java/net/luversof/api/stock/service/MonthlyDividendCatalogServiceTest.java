@@ -153,6 +153,119 @@ class MonthlyDividendCatalogServiceTest {
     return profile;
   }
 
+  @Test
+  void 분배금_추세가_응답에_실린다() {
+    // 최근 3 회 100 원, 그 앞 9 회 200 원 => 12 회 평균 175 원, 최근은 그보다 42.86% 적다.
+    UUID stockItemId = UUID.randomUUID();
+    StockItem stockItem = stockItem(stockItemId, "489030", "PLUS 고배당주위클리커버드콜");
+
+    when(monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc())
+        .thenReturn(List.of(profile(stockItemId, "MONTH_END", 3)));
+    when(stockItemRepository.findAllById(any())).thenReturn(List.of(stockItem));
+    when(monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
+            stockItemId))
+        .thenReturn(payouts(stockItemId));
+
+    List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
+
+    assertThat(rows).hasSize(1);
+    MonthlyDividendCatalogResponse row = rows.get(0);
+    assertThat(row.averageDividendPerShare3m())
+        .as("최근 3 회 평균 - 두 값이 뒤바뀌면 여기서 걸린다")
+        .isEqualByComparingTo("100.00");
+    assertThat(row.payoutTrendPct()).isEqualByComparingTo("-42.86");
+  }
+
+  @Test
+  void 지급이_모자란_종목은_추세가_비어_있다() {
+    // 0 을 실어 보내면 화면이 "분배금이 그대로다" 로 적는다 - 실제로는 견줄 이력이 없는 것이다.
+    UUID stockItemId = UUID.randomUUID();
+
+    when(monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc())
+        .thenReturn(List.of(profile(stockItemId, "MONTH_END", 3)));
+    when(stockItemRepository.findAllById(any()))
+        .thenReturn(List.of(stockItem(stockItemId, "0219E0", "KODEX 200커버드콜액티브")));
+    when(monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
+            stockItemId))
+        .thenReturn(
+            List.of(
+                payout(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 17)),
+                payout(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 17))));
+
+    List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
+
+    assertThat(rows).hasSize(1);
+    assertThat(rows.get(0).payoutTrendPct()).isNull();
+    assertThat(rows.get(0).averageDividendPerShare3m()).isNull();
+  }
+
+  /**
+   * 위험 지표는 1 년 기준이다(사용자 결정 2026-09-22).
+   *
+   * <p>짧게 잡으면 "작년에 많이 빠졌다" 를 놓치고, 실어 세면 지금 위험이 아니다. 그래서 기간 밖 하락을 넣어 두고 그것이 안 세지는지까지 본다.
+   */
+  @Test
+  void 위험_지표가_1년_기준으로_응답에_실린다() {
+    UUID stockItemId = UUID.randomUUID();
+    LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+
+    when(monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc())
+        .thenReturn(List.of(profile(stockItemId, "MONTH_END", 3)));
+    when(stockItemRepository.findAllById(any()))
+        .thenReturn(List.of(stockItem(stockItemId, "489030", "PLUS 고배당주위클리커버드콜")));
+    when(monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
+            stockItemId))
+        .thenReturn(List.of(payout(today.minusDays(5), today.minusDays(1))));
+    when(stockPriceHistoryRepository.findDailyClosePrices(stockItemId, null, null))
+        .thenReturn(priceHistory(stockItemId, today));
+
+    List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
+
+    assertThat(rows).hasSize(1);
+    MonthlyDividendCatalogResponse row = rows.get(0);
+    assertThat(row.maxDrawdownPct())
+        .as("1 년 안에서 100 -> 60 이 있었다 - 40% 빠졌다")
+        .isEqualByComparingTo("-40.00");
+    assertThat(row.volatilityPct()).as("표본은 넘치게 있다").isNotNull();
+    assertThat(row.riskFromDate())
+        .as("1 년을 다 덮으면 기간 안의 첫 거래일을 알린다 - 2 년 전이 아니다")
+        .isAfter(today.minusMonths(12).minusDays(1));
+  }
+
+  /**
+   * 2 년치 일별 종가. 1 년 밖(오래된 쪽)에만 100 -> 20 의 큰 하락을 두었고, 1 년 안에는 100 -> 60 이 한 번 있다. 기간을 잘못 잡으면 -80% 가
+   * 나온다.
+   */
+  private static List<StockDailyClosePrice> priceHistory(UUID stockItemId, LocalDate today) {
+    List<StockDailyClosePrice> rows = new java.util.ArrayList<>();
+    LocalDate date = today.minusDays(730);
+    while (!date.isAfter(today)) {
+      long ago = java.time.temporal.ChronoUnit.DAYS.between(date, today);
+      String close;
+      if (ago > 365) {
+        close = ago == 500 ? "20" : "100";
+      } else {
+        close = ago == 100 ? "60" : "100";
+      }
+      rows.add(new StockDailyClosePrice(stockItemId, date, new BigDecimal(close)));
+      date = date.plusDays(1);
+    }
+    return rows;
+  }
+
+  /** 최근 3 회 100 원 + 그 앞 9 회 200 원(지급일 내림차순). */
+  private static List<MonthlyDividendPayout> payouts(UUID stockItemId) {
+    List<MonthlyDividendPayout> rows = new java.util.ArrayList<>();
+    for (int index = 0; index < 12; index++) {
+      LocalDate recordDate = LocalDate.of(2026, 9, 1).minusMonths(index);
+      MonthlyDividendPayout row = payout(recordDate, recordDate.plusDays(16));
+      row.setStockItemId(stockItemId);
+      row.setDividendAmountPerShare(new BigDecimal(index < 3 ? "100" : "200"));
+      rows.add(row);
+    }
+    return rows;
+  }
+
   private static MonthlyDividendPayout payout(LocalDate recordDate, LocalDate payDate) {
     MonthlyDividendPayout payout = new MonthlyDividendPayout();
     payout.setRecordDate(recordDate);

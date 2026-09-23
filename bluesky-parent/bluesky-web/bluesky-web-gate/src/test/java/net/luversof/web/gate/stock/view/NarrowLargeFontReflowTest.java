@@ -110,6 +110,30 @@ class NarrowLargeFontReflowTest {
             "class=\"btn btn-primary w-full max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere\"");
   }
 
+  /**
+   * 월배당 ETF 의 "지금 눈여겨볼 종목" 카드 · "이번 적립만 보기" 단추(2026-09-22 · 23 에 넣음).
+   *
+   * <p>실측 2026-09-23(320px + 글꼴 32px): 문서가 47px 넘쳤다. 상자 넷(화면 · 카드 본문 · 추천 상자 · 추천 카드)의 안쪽 여백이 겹쳐 카드
+   * 자리가 92px 뿐인데 카드는 253px 이 필요했고, 단추는 한 줄 고정이라 262px 이었다. 좁은 폭에서 여백을 줄이고 줄을 바꾸게 해 0px.
+   */
+  @Test
+  void 월배당_ETF_추천_카드와_이번_적립_단추가_좁은_폭에서_줄어든다() throws IOException {
+    String etf = squash(read("src/main/jte/stock/monthlyEtf.jte"));
+
+    assertThat(etf)
+        .contains(
+            "<div class=\"rounded-box border border-base-300 bg-base-200/40 p-2 sm:p-4 space-y-3\" data-etf-picks>")
+        .contains("<div class=\"rounded-box bg-base-100 p-2 sm:p-3 space-y-1\" data-etf-pick ")
+        .contains(
+            "<div class=\"flex flex-wrap items-baseline gap-2\"> <span class=\"badge badge-sm badge-neutral\" data-pick-rank>")
+        .contains(
+            "<div class=\"flex flex-wrap items-baseline gap-1\"> <span class=\"text-lg font-semibold tabular-nums\" data-pick-score>")
+        .contains(
+            "\"btn-primary\" : \"btn-outline\"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere\" aria-current=\"${\"contribution\".equals(monthlyEtfView) ? \"page\" : null}\" data-contribution-view-link=\"contribution\"")
+        .contains(
+            "\"btn-outline\" : \"btn-primary\"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere\" aria-current=\"${\"contribution\".equals(monthlyEtfView) ? null : \"page\"}\" data-contribution-view-link=\"all\"");
+  }
+
   /** 시나리오 카드 머리는 배지를 아래로 내릴 수 있다. 브라우저가 읽는 것은 빌드한 스크립트다. */
   @Test
   void 시나리오_카드_머리가_줄을_바꾼다() throws IOException {

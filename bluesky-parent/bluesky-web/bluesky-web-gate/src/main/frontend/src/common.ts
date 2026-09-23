@@ -511,7 +511,7 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 });
 
 // [data-sync-url="<fragment 경로>"]: 화면 래퍼에 지정한 목록 엔드포인트로의 GET 이 성공하면
-// 그 조회 조건을 페이지 URL 에 반영한다(replaceState — 히스토리 오염 없음).
+// 그 조회 조건을 페이지 URL 에 반영한다(첫 사용자 변경만 pushState, 나머지는 replaceState).
 // 요청 주체(elt)는 스왑 대상 div 일 수 있으므로, 스왑에서 살아남는 래퍼에서 경로를 대조한다.
 document.addEventListener("htmx:afterRequest", (event: any) => {
 	const el = event.detail?.elt as HTMLElement | undefined;
@@ -530,11 +530,56 @@ document.addEventListener("htmx:afterRequest", (event: any) => {
 		return;
 	}
 	if (pathname !== syncRoot.getAttribute("data-sync-url")) return;
+	const nextUrl = globalThis.location.pathname + query;
+	// 사용자가 조건을 처음 바꿀 때만 히스토리를 한 칸 쌓는다(사용자 결정 2026-09-23: "들어올 때 기간으로 한 번").
+	// 뒤로 1번 = 이 화면에 들어올 때의 기간, 2번 = 이전 화면. 그 뒤의 변경은 덮어쓴다 - 프리셋을 여러 번
+	// 눌러 봐도 화면을 뜨는 데 뒤로를 그만큼 누르지 않게.
+	// "사용자가 바꿨다" 는 요청에서 알 수 없다 - 기간 변경은 스크립트가 htmx.ajax 로 여러 요청을 내보내고,
+	// 화면을 열 때의 기간 복원도 같은 길을 지난다(실측 2026-09-23: 요청의 triggeringEvent 로 가르면 한 번도 안 쌓였다).
+	// 그래서 사람이 실제로 기간 선택기([data-picker])를 누른 직후에 **보낸** 요청인지로 가른다(아래 htmx:beforeRequest 가 적는다).
+	const userChange = event.detail.xhr?.[RANGE_USER_CHANGE_FLAG] === true;
+	if (userChange && !rangeHistoryPushed && nextUrl !== globalThis.location.pathname + globalThis.location.search) {
+		rangeHistoryPushed = true;
+		globalThis.history.pushState({ gateSyncUrl: true }, "", nextUrl);
+		return;
+	}
 	globalThis.history.replaceState(
-		null,
+		globalThis.history.state,
 		"",
-		globalThis.location.pathname + query,
+		nextUrl,
 	);
+});
+
+// 쌓은 칸과 들어올 때의 칸은 같은 문서라 뒤로/앞으로가 페이지를 다시 그리지 않는다 - 주소만 바뀌고
+// 화면은 마지막 기간 그대로 남는다. 그래서 이 문서가 한 칸을 쌓은 뒤의 이동은 다시 불러 주소대로 그린다.
+let rangeHistoryPushed = false;
+let rangePickerTouchedAt = 0;
+// 선택기를 누른 뒤 조각 요청을 보내기까지의 여유(보내는 것은 거의 즉시다).
+const RANGE_PICKER_INTENT_MS = 8000;
+for (const type of ["click", "change"]) {
+	document.addEventListener(
+		type,
+		(ev: Event) => {
+			// isTrusted: 스크립트가 흉내 낸 클릭(기간 복원 등)은 사람의 변경이 아니다.
+			const target = ev.target as HTMLElement | null;
+			if (ev.isTrusted && target?.closest?.("[data-picker]")) {
+				rangePickerTouchedAt = Date.now();
+			}
+		},
+		true,
+	);
+}
+// 사람의 변경인지는 **요청을 보낼 때** 가른다. 받을 때 재면 느린 응답이 창을 넘긴다 - 실측 2026-09-23: 조각 응답을 9 초 늦추자
+// 첫 변경이 pushState 가 아니라 replaceState 로 끝나 뒤로가 들어올 때 기간이 아니라 이전 화면으로 나갔다(재기동 직후 한 번 난 것과 같은 모양).
+const RANGE_USER_CHANGE_FLAG = "__gateRangeUserChange";
+document.addEventListener("htmx:beforeRequest", (event: any) => {
+	const xhr = event.detail?.xhr;
+	if (xhr) xhr[RANGE_USER_CHANGE_FLAG] = Date.now() - rangePickerTouchedAt < RANGE_PICKER_INTENT_MS;
+});
+globalThis.addEventListener("popstate", () => {
+	if (rangeHistoryPushed) {
+		globalThis.location.reload();
+	}
 });
 
 // [data-page-param-from-query="page"]: 현재 URL 쿼리의 페이지 번호를 요청 파라미터로 전달 (없으면 1)
@@ -1957,6 +2002,55 @@ function syncSiteHeaderHeight(header: Element): void {
 	if (height > 0) document.documentElement.style.setProperty("--site-header-height", height + "px");
 }
 
+/**
+ * 붙박이 필터 줄(.table-filter-sticky)까지 더한 높이를 --table-head-sticky-top 으로 알린다.
+ * 표 머리글이 그 아래에 붙어야 겹치지 않는데, 필터 줄 높이는 글월 길이 · 로케일 · 폭에 따라 달라져
+ * CSS 로는 알 수 없다(실측 2026-09-22: 1440px 216px, 1024px 336px, 390px 515px).
+ * 필터 줄이 없는 화면에서는 상단바 높이만 쓴다.
+ */
+function syncStickyStackTop(): void {
+	const header = document.querySelector("header.navbar");
+	const headerHeight = header ? header.getBoundingClientRect().height : 0;
+	const holder = document.querySelector(".table-filter-sticky");
+	// 붙지 않는 폭(좁은 화면)에서는 그 줄이 자리를 차지하지 않는다 - position 으로 가린다.
+	const stuck = holder != null && getComputedStyle(holder).position === "sticky";
+	const holderHeight = stuck ? holder!.getBoundingClientRect().height : 0;
+	const top = headerHeight + holderHeight;
+	if (top > 0) document.documentElement.style.setProperty("--table-head-sticky-top", top + "px");
+	syncStickyTheadHeights();
+}
+
+/**
+ * 머리글이 붙는 표마다 머리 줄 높이를 --sticky-thead-height 로 알린다(표 상자에 걸어 본문이 물려받는다).
+ * 본문 칸에 포커스가 가면 브라우저는 scroll-padding-top(상단바 + 구역 막대)만큼만 비우고 굴린다 - 그 아래 붙은
+ * 필터 줄 · 머리 줄 밑으로 들어간다. 실측 2026-09-23(1440px, 월배당 ETF): Shift+Tab 으로 되짚은 종목 링크 21 개가
+ * 필터 줄(216px) · 머리 줄 뒤에 전부 가렸다. main.css 가 이 높이로 본문 칸의 scroll-margin-top 을 늘린다.
+ */
+function syncStickyTheadHeights(): void {
+	document.querySelectorAll<HTMLElement>(".table-head-sticky, .table-head-sticky-xl").forEach((box) => {
+		const head = box.querySelector(":scope > table > thead");
+		const height = head ? head.getBoundingClientRect().height : 0;
+		if (height > 0) box.style.setProperty("--sticky-thead-height", height + "px");
+	});
+}
+
+function watchStickyStackTop(): void {
+	syncStickyStackTop();
+	if (typeof ResizeObserver !== "function") return;
+	const observer = new ResizeObserver(() => syncStickyStackTop());
+	const header = document.querySelector("header.navbar");
+	if (header) observer.observe(header);
+	const holder = document.querySelector(".table-filter-sticky");
+	if (holder) observer.observe(holder);
+	// 머리 줄은 폭 · 글꼴에 따라 줄이 접혀 높이가 바뀐다.
+	document.querySelectorAll(":is(.table-head-sticky, .table-head-sticky-xl) > table > thead").forEach((head) => observer.observe(head));
+}
+if (document.readyState === "loading") {
+	document.addEventListener("DOMContentLoaded", watchStickyStackTop, { once: true });
+} else {
+	watchStickyStackTop();
+}
+
 function watchSiteHeaderHeight(): void {
 	const header = document.querySelector("header.navbar");
 	if (!header) return;
@@ -1965,6 +2059,6 @@ function watchSiteHeaderHeight(): void {
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchSiteHeaderHeight, { once: true });
 else watchSiteHeaderHeight();
-(globalThis as any).__stickyHeaderInternals = { syncSiteHeaderHeight, watchSiteHeaderHeight };
+(globalThis as any).__stickyHeaderInternals = { syncSiteHeaderHeight, watchSiteHeaderHeight, syncStickyStackTop, watchStickyStackTop, syncStickyTheadHeights };
 (globalThis as any).__sectionNavInternals ={ sectionLabel, pageSections, sectionAnchorId, buildSectionNav, markCurrentSection, renderSectionNav, sectionsContainer };
 (globalThis as any).__activityViewInternals = { resolveActivityViewForRequest };

@@ -32,6 +32,14 @@ class AdminResultBannerTest {
       Path.of(
           "src/main/java/net/luversof/web/gate/stock/dto/response/PriceHistoryUpdateResult.java");
 
+  /**
+   * 전체 갱신이 뒤에서 돌게 되면서(사용자 결정 2026-09-22) 스크립트가 진행 상황도 읽는다. 이 목록에 안 넣으면 "진행 12/53" 이 조용히 빈칸으로 나간다.
+   */
+  private static final Path JOB_DTO =
+      Path.of(
+          "src/main/java/net/luversof/web/gate/stock/dto/response/"
+              + "PriceHistoryUpdateJobStatus.java");
+
   /** 스크립트가 응답에서 읽는 필드 이름({@code body.xxx}). */
   private static final Pattern BODY_FIELD = Pattern.compile("body\\.(\\w+)");
 
@@ -54,7 +62,7 @@ class AdminResultBannerTest {
     Set<String> referenced = referencedFields();
     assertThat(referenced).as("응답 필드를 하나도 읽지 않는다면 배너가 죽은 것이다").isNotEmpty();
 
-    String dtoSource = read(LEDGER_DTO) + read(PRICE_DTO);
+    String dtoSource = read(LEDGER_DTO) + read(PRICE_DTO) + read(JOB_DTO);
     List<String> missing = new ArrayList<>();
     for (String field : referenced) {
       if (!dtoSource.contains(field)) {
