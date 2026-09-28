@@ -50,7 +50,9 @@ class RangeHistoryPushOnceTest {
     assertThat(source)
         .as("보낼 때 적은 표시로 가른다")
         // 파일에 htmx:beforeRequest 듣는 곳이 여럿이다 - 표시를 적는 줄과 한 덩이로 본다(첫 줄만 보면 다른 이벤트로 옮겨도 통과했다).
-        .contains(squash("document.addEventListener(\"htmx:beforeRequest\", (event: any) => { const xhr = event.detail?.xhr; if (xhr) xhr[RANGE_USER_CHANGE_FLAG] = Date.now() - rangePickerTouchedAt < RANGE_PICKER_INTENT_MS;"))
+        .contains(
+            squash(
+                "document.addEventListener(\"htmx:beforeRequest\", (event: any) => { const xhr = event.detail?.xhr; if (xhr) xhr[RANGE_USER_CHANGE_FLAG] = Date.now() - rangePickerTouchedAt < RANGE_PICKER_INTENT_MS;"))
         .contains(squash("const userChange = event.detail.xhr?.[RANGE_USER_CHANGE_FLAG] === true;"))
         .doesNotContain(squash("const userChange = Date.now() - rangePickerTouchedAt"));
   }
@@ -71,6 +73,7 @@ class RangeHistoryPushOnceTest {
         .contains("popstate\",()=>{rangeHistoryPushed&&globalThis.location.reload()")
         .contains("isTrusted&&")
         .contains("[RANGE_USER_CHANGE_FLAG])===!0&&!rangeHistoryPushed")
-        .contains("xhr[RANGE_USER_CHANGE_FLAG]=Date.now()-rangePickerTouchedAt<RANGE_PICKER_INTENT_MS");
+        .contains(
+            "xhr[RANGE_USER_CHANGE_FLAG]=Date.now()-rangePickerTouchedAt<RANGE_PICKER_INTENT_MS");
   }
 }

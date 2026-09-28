@@ -13,6 +13,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.frontend.TsSource;
+
 /**
  * 붙박이 막대(상단바 · 구역 막대)와 표의 고정 머리가 키보드 포커스를 가리거나 페이지를 튀게 하지 않는다(WCAG 2.4.11, 2026-09-17).
  *
@@ -121,14 +123,17 @@ class StickyBarFocusTest {
             ":root { --sticky-top-stack: calc(var(--site-header-height, 4.4375rem) + 2.5625rem); }")
         .contains("position: sticky; top: var(--site-header-height, 4.4375rem);");
 
-    assertThat(tsSquashed())
+    assertThat(TsSource.n(tsSquashed()))
         .contains(
-            "if(height>0)document.documentElement.style.setProperty(\"--site-header-height\",height+\"px\");")
-        .contains("constheader=document.querySelector(\"header.navbar\");")
+            TsSource.n(
+                "if(height>0)document.documentElement.style.setProperty(\"--site-header-height\",height+\"px\");"))
+        .contains(TsSource.n("constheader=document.querySelector(\"header.navbar\");"))
         .as("글꼴 · 폭이 바뀌어 줄이 접히면 다시 알린다")
-        .contains("newResizeObserver(()=>syncSiteHeaderHeight(header)).observe(header);")
         .contains(
-            "if(document.readyState===\"loading\")document.addEventListener(\"DOMContentLoaded\",watchSiteHeaderHeight,{once:true});elsewatchSiteHeaderHeight();");
+            TsSource.n("newResizeObserver(()=>syncSiteHeaderHeight(header)).observe(header);"))
+        .contains(
+            TsSource.n(
+                "if(document.readyState===\"loading\")document.addEventListener(\"DOMContentLoaded\",watchSiteHeaderHeight,{once:true});elsewatchSiteHeaderHeight();"));
     assertThat(jsBuilt())
         .as("메이븐은 프론트엔드를 빌드하지 않는다 - npm run build 산출물이 배포본이다")
         .contains(
@@ -143,10 +148,13 @@ class StickyBarFocusTest {
 
   @Test
   void 키보드로_칩을_고르는_중에는_구역_막대를_되굴리지_않는다() throws IOException {
-    assertThat(tsSquashed())
+    assertThat(TsSource.n(tsSquashed()))
         .contains(
-            "constchoosingByKeyboard=!!focused&&nav.contains(focused)&&focused.matches(\":focus-visible\");")
-        .contains("if(list&&currentLink&&!choosingByKeyboard&&list.scrollWidth>list.clientWidth){");
+            TsSource.n(
+                "constchoosingByKeyboard=!!focused&&nav.contains(focused)&&focused.matches(\":focus-visible\");"))
+        .contains(
+            TsSource.n(
+                "if(list&&currentLink&&!choosingByKeyboard&&list.scrollWidth>list.clientWidth){"));
     assertThat(jsBuilt())
         .contains(
             "choosingByKeyboard=!!focused&&nav.contains(focused)&&focused.matches(\":focus-visible\")")
@@ -228,8 +236,8 @@ class StickyBarFocusTest {
 
     // 포커스 보이기는 첫 칸이 '고정일 때만' 그 폭을 뺀다. 이 확인이 빠지면 고정을 푼 표에서도 첫 칸 폭만큼 더 밀어
     // 포커스한 칸을 상자 밖으로 보낸다(고정을 푼 뒤 이 줄이 유일한 방어다).
-    assertThat(tsSquashed())
-        .contains("if(!first||getComputedStyle(first).position!==\"sticky\")return0;");
+    assertThat(TsSource.n(tsSquashed()))
+        .contains(TsSource.n("if(!first||getComputedStyle(first).position!==\"sticky\")return0;"));
     assertThat(jsBuilt())
         .contains("return!first||getComputedStyle(first).position!==\"sticky\"?0:");
   }

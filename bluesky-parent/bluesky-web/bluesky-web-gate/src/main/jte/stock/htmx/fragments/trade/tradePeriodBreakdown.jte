@@ -12,7 +12,7 @@
 	// 판 것이 없어 비는 자리에도 까닭을 적는다 - 실측 2026-09-12: 이 표의 "-" 세 칸(2024·2017·2009)에는
 	// title 도 sr-only 도 없어 마우스로도 낭독기로도 왜 비었는지 알 수 없었다. 같은 줄의 다른 칸은 "0원" 을 달고 있었다.
 	String noSaleTitle = MessageUtil.getMessage("stock.trade.breakdown.realized.none");
-	DecimalFormat amountFormat = new DecimalFormat("#,##0");
+	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	String unit = tradePeriods != null && !tradePeriods.isEmpty() ? tradePeriods.get(0).unit() : "MONTH";
 	// 이 표는 '성과' 가 아니라 거래 집계다(건수·매수·매도·수수료·거래세). 자산 성장의 성과 표와
 	// 같은 이름을 쓰면 화면에 '연도별 성과' 라는 제목으로 전혀 다른 열이 뜬다(실측 2026-09-07:

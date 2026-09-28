@@ -128,9 +128,11 @@ class SolMonthlyDividendPayoutSourceParserTest {
     String squashed = service.replaceAll("\\s+", " ");
     assertThat(squashed)
         .as("메타는 SOL 판정 뒤에 SOL 파서를 불러야 한다")
+        // 2026-09-28 총보수 · 상장일을 같은 HTML 에서 읽게 뒤에 withFacts 를 이었다 - 짝(SOL 판정 → SOL 파서)은 그대로다.
         .contains(
             "if (SolMonthlyDividendPayoutSourceParser.supportsHost(host)) {"
-                + " return monthlyDividendSourceMetaParser.fromSolHtml(html); }");
+                + " return monthlyDividendSourceMetaParser .fromSolHtml(html)"
+                + " .withFacts(monthlyDividendSourceFactsParser.fromDetailHtml(html)); }");
     assertThat(squashed)
         .as("이력도 마찬가지")
         .contains(

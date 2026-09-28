@@ -261,70 +261,68 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       }
     }
 
+    // 최근 1 년 창에서도 같은 변환을 쓰므로 함수로 둔다(2026-09-28).
+    java.util.function.Function<DividendResponse, DividendView> toDividendView =
+        dividend -> {
+          String accountName =
+              accountNames.getOrDefault(dividend.accountId(), msg("stock.label.unknown"));
+          String stockItemName =
+              Optional.ofNullable(dividend.stockItemName())
+                  .orElse(
+                      Optional.ofNullable(dividend.stockItemId())
+                          .map(id -> stockItemNames.getOrDefault(id, msg("stock.label.unknown")))
+                          .orElse(msg("stock.label.unknown")));
+
+          boolean isDeferred = taxDeferredMap.getOrDefault(dividend.accountId(), false);
+
+          BigDecimal grossAmount =
+              Optional.ofNullable(dividend.grossAmount()).orElse(BigDecimal.ZERO);
+          BigDecimal tax =
+              isDeferred
+                  ? BigDecimal.ZERO
+                  : Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
+          BigDecimal netAmount =
+              isDeferred
+                  ? grossAmount
+                  : Optional.ofNullable(dividend.netAmount()).orElse(grossAmount.subtract(tax));
+
+          BigDecimal taxableAmount = BigDecimal.ZERO;
+          if (!isDeferred) {
+            if (dividend.taxableAmount() != null) {
+              taxableAmount = dividend.taxableAmount();
+            } else if (dividend.taxPerShare() != null && dividend.quantity() != null) {
+              taxableAmount =
+                  dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
+            }
+          }
+
+          return new DividendView(
+              dividend.id(),
+              dividend.accountId(),
+              accountName,
+              dividend.stockItemId(),
+              stockItemName,
+              dividend.quantity(),
+              dividend.amountPerShare(),
+              grossAmount,
+              tax,
+              taxableAmount,
+              dividend.taxPerShare(),
+              netAmount,
+              dividend.recordDate(),
+              dividend.payDate(),
+              null,
+              null,
+              null,
+              null,
+              null,
+              null);
+        };
     List<DividendView> viewList =
         dividends.stream()
             .filter(d -> matchesFilter(effectiveAccountIdList, d.accountId()))
             .filter(d -> matchesFilter(effectiveStockItemIdList, d.stockItemId()))
-            .map(
-                dividend -> {
-                  String accountName =
-                      accountNames.getOrDefault(dividend.accountId(), msg("stock.label.unknown"));
-                  String stockItemName =
-                      Optional.ofNullable(dividend.stockItemName())
-                          .orElse(
-                              Optional.ofNullable(dividend.stockItemId())
-                                  .map(
-                                      id ->
-                                          stockItemNames.getOrDefault(
-                                              id, msg("stock.label.unknown")))
-                                  .orElse(msg("stock.label.unknown")));
-
-                  boolean isDeferred = taxDeferredMap.getOrDefault(dividend.accountId(), false);
-
-                  BigDecimal grossAmount =
-                      Optional.ofNullable(dividend.grossAmount()).orElse(BigDecimal.ZERO);
-                  BigDecimal tax =
-                      isDeferred
-                          ? BigDecimal.ZERO
-                          : Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
-                  BigDecimal netAmount =
-                      isDeferred
-                          ? grossAmount
-                          : Optional.ofNullable(dividend.netAmount())
-                              .orElse(grossAmount.subtract(tax));
-
-                  BigDecimal taxableAmount = BigDecimal.ZERO;
-                  if (!isDeferred) {
-                    if (dividend.taxableAmount() != null) {
-                      taxableAmount = dividend.taxableAmount();
-                    } else if (dividend.taxPerShare() != null && dividend.quantity() != null) {
-                      taxableAmount =
-                          dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
-                    }
-                  }
-
-                  return new DividendView(
-                      dividend.id(),
-                      dividend.accountId(),
-                      accountName,
-                      dividend.stockItemId(),
-                      stockItemName,
-                      dividend.quantity(),
-                      dividend.amountPerShare(),
-                      grossAmount,
-                      tax,
-                      taxableAmount,
-                      dividend.taxPerShare(),
-                      netAmount,
-                      dividend.recordDate(),
-                      dividend.payDate(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      null,
-                      null);
-                })
+            .map(toDividendView)
             .collect(Collectors.toCollection(ArrayList::new));
 
     DividendAnalyticsResult analyticsResult =
@@ -335,8 +333,132 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             effectiveStockItemIdList,
             startInstant,
             endInstant,
-            zone);
+            zone,
+            true);
     viewList = analyticsResult.dividendViews();
+
+    // 현재 평가금액(사용자 요청 2026-09-28: "평균 투입원금은 기간 평균이라, 표를 보며 지금 평가 금액이 얼마인지 알고 싶다").
+    // 자산현황과 같은 조회다 - 기간을 보내면 api-stock 이 평가를 계산하지 않으므로 기간 없이, 계좌 · 종목 필터만 싣는다.
+    // 필터가 '해당 없음'(빈 목록)이면 부르지 않는다(빈 목록을 보내면 필터 없음으로 읽혀 전체가 온다).
+    boolean noCurrentHoldings =
+        (effectiveAccountIdList != null && effectiveAccountIdList.isEmpty())
+            || (effectiveStockItemIdList != null && effectiveStockItemIdList.isEmpty());
+    var currentHoldingsRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    currentHoldingsRequest.setUserId(userId);
+    currentHoldingsRequest.setAccountIdList(effectiveAccountIdList);
+    currentHoldingsRequest.setStockItemIdList(effectiveStockItemIdList);
+    currentHoldingsRequest.setTimeZone(zone.getId());
+    var currentHoldingsParams = currentHoldingsRequest.toParams();
+    // 실현 손익은 표의 배당금과 같은 기간(그 기간에 판 것)으로 센다 - 기간이 있으면 기간을 실어 한 번 더 부른다(평가 손익은 늘 '지금').
+    boolean hasPeriod = startInstant != null || endInstant != null;
+    var periodProfitRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    periodProfitRequest.setUserId(userId);
+    periodProfitRequest.setAccountIdList(effectiveAccountIdList);
+    periodProfitRequest.setStockItemIdList(effectiveStockItemIdList);
+    periodProfitRequest.setTimeZone(zone.getId());
+    periodProfitRequest.setStartDate(startInstant);
+    periodProfitRequest.setEndDate(endInstant);
+    var periodProfitParams = periodProfitRequest.toParams();
+    var periodProfitFuture =
+        noCurrentHoldings || !hasPeriod
+            ? null
+            : async.supply(
+                () -> emptyIfNull(tradeProfitClient.calculateProfit(periodProfitParams)));
+    var currentHoldingsFuture =
+        noCurrentHoldings
+            ? java.util.concurrent.CompletableFuture.completedFuture(
+                List.<net.luversof.web.gate.stock.domain.TradeProfit>of())
+            : async.supply(
+                () -> emptyIfNull(tradeProfitClient.calculateProfit(currentHoldingsParams)));
+
+    // 머리 숫자 = 최근 1 년 배당수익률(사용자 요청 2026-09-28: "다양한 수익률이 잘 눈에 안 들어온다").
+    // 고른 기간이 아니라 그 기간 끝(없으면 오늘)에서 거꾸로 365 일이다 - 기간이 한 달이든 전체든 "1 년에 몇 %" 로 읽힌다.
+    // 계좌 · 종목 필터는 그대로 따른다. 시가 수익률을 쓰지 않으므로 보유 스냅샷은 부르지 않는다.
+    LocalDate today = LocalDate.now(zone);
+    LocalDate ttmEndDate = resolvePeriodEndDate(endInstant, today, zone);
+    if (ttmEndDate.isAfter(today)) {
+      ttmEndDate = today;
+    }
+    LocalDate ttmStartDate = ttmEndDate.minusDays(364);
+    Instant ttmStartInstant = ttmStartDate.atStartOfDay(zone).toInstant();
+    Instant ttmEndInstant = ttmEndDate.plusDays(1).atStartOfDay(zone).toInstant();
+    List<DividendView> ttmViewList =
+        inPayDateRange(allDividends, ttmStartInstant, ttmEndInstant).stream()
+            .filter(d -> matchesFilter(effectiveAccountIdList, d.accountId()))
+            .filter(d -> matchesFilter(effectiveStockItemIdList, d.stockItemId()))
+            .map(toDividendView)
+            .collect(Collectors.toCollection(ArrayList::new));
+    DividendAnalyticsResult ttmAnalytics =
+        buildDividendAnalytics(
+            userId,
+            ttmViewList,
+            effectiveAccountIdList,
+            effectiveStockItemIdList,
+            ttmStartInstant,
+            ttmEndInstant,
+            zone,
+            false);
+    DividendYieldGroupView ttmYield = ttmAnalytics.portfolioYield();
+    model.addAttribute("ttmStartDate", ttmStartDate);
+    model.addAttribute("ttmEndDate", ttmEndDate);
+    TtmHeadline ttmHeadline = ttmHeadline(ttmYield);
+    model.addAttribute("ttmYieldPct", ttmHeadline.yieldPct());
+    model.addAttribute("ttmAverageDailyPrincipalCost", ttmHeadline.averageDailyPrincipalCost());
+    model.addAttribute("ttmNetWithPrincipalCost", ttmHeadline.netWithPrincipalCost());
+    model.addAttribute("ttmNetAmount", ttmHeadline.netAmount());
+
+    List<net.luversof.web.gate.stock.domain.TradeProfit> currentHoldings =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(currentHoldingsFuture);
+    model.addAttribute(
+        "currentValueByStock",
+        sumCurrentValue(
+            currentHoldings, net.luversof.web.gate.stock.domain.TradeProfit::stockItemId));
+    model.addAttribute(
+        "currentValueByAccount",
+        sumCurrentValue(
+            currentHoldings, net.luversof.web.gate.stock.domain.TradeProfit::accountId));
+    // 원금 대비 이익 · 손해(사용자 요청 2026-09-28: "평가금액이 원금에 대해 수익인지 손해인지", "합산 수익률도") - 같은 행들의 평가 손익.
+    model.addAttribute(
+        "evaluationProfitByStock",
+        sumHeld(
+            currentHoldings,
+            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
+            net.luversof.web.gate.stock.domain.TradeProfit::evaluationProfit));
+    model.addAttribute(
+        "evaluationProfitByAccount",
+        sumHeld(
+            currentHoldings,
+            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
+            net.luversof.web.gate.stock.domain.TradeProfit::evaluationProfit));
+    // 실현 손익(a + b + c = d 의 b, 사용자 승인 2026-09-28)과 합산 수익률의 분모(지금까지 산 총액) - 다 판 종목도 포함.
+    List<net.luversof.web.gate.stock.domain.TradeProfit> realizedSource =
+        periodProfitFuture == null
+            ? currentHoldings
+            : net.luversof.web.gate.stock.support.StockAsyncSupport.join(periodProfitFuture);
+    model.addAttribute(
+        "realizedProfitByStock",
+        sumAll(
+            realizedSource,
+            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
+            net.luversof.web.gate.stock.domain.TradeProfit::realizedProfit));
+    model.addAttribute(
+        "realizedProfitByAccount",
+        sumAll(
+            realizedSource,
+            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
+            net.luversof.web.gate.stock.domain.TradeProfit::realizedProfit));
+    model.addAttribute(
+        "totalBuyCostByStock",
+        sumAll(
+            currentHoldings,
+            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
+            net.luversof.web.gate.stock.domain.TradeProfit::totalBuyCost));
+    model.addAttribute(
+        "totalBuyCostByAccount",
+        sumAll(
+            currentHoldings,
+            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
+            net.luversof.web.gate.stock.domain.TradeProfit::totalBuyCost));
 
     if (sort != null && !sort.isEmpty()) {
       String field = net.luversof.web.gate.stock.util.StockSortUtil.field(sort);
@@ -661,16 +783,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     }
     model.addAttribute("periodPrincipalDelta", principalDelta);
     model.addAttribute("periodPrincipalDeltaPct", principalDeltaPct);
-    model.addAttribute(
-        "bestYieldStock",
-        analyticsResult.stockYieldRows().isEmpty()
-            ? null
-            : analyticsResult.stockYieldRows().get(0));
-    model.addAttribute(
-        "bestYieldAccount",
-        analyticsResult.accountYieldRows().isEmpty()
-            ? null
-            : analyticsResult.accountYieldRows().get(0));
+    model.addAttribute("bestYieldStock", bestYieldRow(analyticsResult.stockYieldRows()));
+    model.addAttribute("bestYieldAccount", bestYieldRow(analyticsResult.accountYieldRows()));
+    model.addAttribute("portfolioYield", analyticsResult.portfolioYield());
     model.addAttribute("stockYieldRows", analyticsResult.stockYieldRows());
     model.addAttribute("accountYieldRows", analyticsResult.accountYieldRows());
     model.addAttribute("yearlyYieldRows", analyticsResult.yearlyYieldRows());
@@ -760,7 +875,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       List<UUID> stockItemIdList,
       Instant startInstant,
       Instant endInstant,
-      ZoneId zone) {
+      ZoneId zone,
+      boolean includeMarketValue) {
     if (dividendViews == null || dividendViews.isEmpty()) {
       return DividendAnalyticsResult.empty(
           dividendViews != null ? dividendViews : new ArrayList<>());
@@ -774,7 +890,11 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
     // 보유 스냅샷 배치(81ms)와 거래 조회(22ms)는 둘 다 basisDates 에서 파생된 값만 쓰고
     // 서로 의존하지 않는다. 날짜 계산을 먼저 끝낸 뒤 두 호출을 함께 던진다.
-    var snapshotFuture = async.supply(() -> loadSnapshotsByDate(userId, basisDates, zone));
+    var snapshotFuture =
+        includeMarketValue
+            ? async.supply(() -> loadSnapshotsByDate(userId, basisDates, zone))
+            : java.util.concurrent.CompletableFuture.completedFuture(
+                Map.<LocalDate, Map<UUID, HoldingsSnapshotItem>>of());
     LocalDate maxBasisDate = basisDates.stream().max(Comparator.naturalOrder()).orElse(null);
     LocalDate minBasisDate = basisDates.stream().min(Comparator.naturalOrder()).orElse(null);
     // 전체(all) 모드는 startInstant 이 없다. 이때 시작일을 maxBasisDate 로 잡으면 기간이
@@ -806,33 +926,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     List<TradeResponse> trades =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(tradesFuture);
 
-    Map<PositionKey, List<TradeResponse>> tradesByKey =
-        trades.stream()
-            .filter(
-                trade ->
-                    trade.accountId() != null
-                        && trade.stockItemId() != null
-                        && trade.tradeDate() != null)
-            .collect(
-                Collectors.groupingBy(
-                    trade -> new PositionKey(trade.accountId(), trade.stockItemId()),
-                    Collectors.collectingAndThen(
-                        Collectors.toCollection(ArrayList::new),
-                        list -> {
-                          list.sort(
-                              Comparator.comparing(
-                                      (TradeResponse trade) ->
-                                          trade.tradeDate().atZone(zone).toLocalDate())
-                                  .thenComparing(
-                                      trade ->
-                                          trade.type()
-                                                  == net.luversof.web.gate.stock.constant.TradeType
-                                                      .BUY
-                                              ? 0
-                                              : 1)
-                                  .thenComparing(TradeResponse::tradeDate));
-                          return list;
-                        })));
+    Map<PositionKey, List<TradeResponse>> tradesByKey = groupTradesByPosition(trades, zone);
 
     Map<PositionKey, List<DividendView>> dividendsByKey =
         dividendViews.stream()
@@ -966,6 +1060,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                       key.stockItemId(),
                       totalPeriodDayCount))
           .acceptDailyPrincipalCostSum(periodPrincipalSummary.principalCostSum());
+      stockAccumulators.get(key.stockItemId()).acceptHeldDays(periodPrincipalSummary.heldDays());
       accountAccumulators
           .computeIfAbsent(
               key.accountId(),
@@ -973,7 +1068,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                   new YieldAccumulator(
                       entry.getValue().get(0).accountName(), key.accountId(), totalPeriodDayCount))
           .acceptDailyPrincipalCostSum(periodPrincipalSummary.principalCostSum());
+      accountAccumulators.get(key.accountId()).acceptHeldDays(periodPrincipalSummary.heldDays());
       portfolioAccumulator.acceptDailyPrincipalCostSum(periodPrincipalSummary.principalCostSum());
+      portfolioAccumulator.acceptHeldDays(periodPrincipalSummary.heldDays());
       periodPrincipalSummary
           .principalCostSumByYear()
           .forEach(
@@ -992,6 +1089,18 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         dividendViews.stream()
             .map(dividend -> enrichedById.getOrDefault(dividend.id(), dividend))
             .collect(Collectors.toCollection(ArrayList::new));
+
+    // 연도 행은 모든 포지션을 합친 행이라 들고 있던 날도 전체(포트폴리오)의 날 중 그 해 칸이다.
+    if (periodStartDate != null) {
+      for (Map.Entry<Integer, YieldAccumulator> yearly : yearlyAccumulators.entrySet()) {
+        LocalDate yearStart = LocalDate.of(yearly.getKey(), 1, 1);
+        LocalDate yearEnd = LocalDate.of(yearly.getKey(), 12, 31);
+        int from = (int) java.time.temporal.ChronoUnit.DAYS.between(periodStartDate, yearStart);
+        int to = (int) java.time.temporal.ChronoUnit.DAYS.between(periodStartDate, yearEnd) + 1;
+        yearly.getValue().acceptHeldDays(portfolioAccumulator.heldDays);
+        yearly.getValue().restrictHeldDays(from, to);
+      }
+    }
 
     List<DividendYieldGroupView> stockYieldRows = sortYieldRows(stockAccumulators.values());
     List<DividendYieldGroupView> accountYieldRows = sortYieldRows(accountAccumulators.values());
@@ -1051,15 +1160,169 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return result;
   }
 
-  private List<DividendYieldGroupView> sortYieldRows(Iterable<YieldAccumulator> accumulators) {
+  /**
+   * 머리 숫자(최근 1 년) 모델. "평균 A 원을 넣어 두고 B 원을 받았다" 가 머리 숫자와 맞아떨어지도록 A 는 365 일 달력 평균, B 는 수익률의 분자(기준일
+   * 원금이 있는 배당)다 - B 에 세후 전체를 넣으면 문장으로 되짚은 값과 머리 숫자가 어긋난다. 월 평균은 받은 돈 전체(ttmNetAmount)로 낸다.
+   */
+  /**
+   * 지금 들고 있는 것의 평가금액을 종목별 · 계좌별로 더한다. 수량 0(다 판 것)과 평가금액이 없는 행은 뺀다 - 표는 그 종목을 "지금 보유하지 않음" 으로 적는다(0
+   * 원으로 적으면 값이 0 인 것처럼 읽힌다).
+   */
+  static Map<UUID, BigDecimal> sumCurrentValue(
+      List<net.luversof.web.gate.stock.domain.TradeProfit> holdings,
+      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, UUID> key) {
+    return sumHeld(holdings, key, net.luversof.web.gate.stock.domain.TradeProfit::evaluationAmount);
+  }
+
+  /**
+   * 지금 들고 있는 행(수량 &gt; 0, 평가금액 &gt; 0)만 골라 {@code value} 를 더한다 - 평가금액 합과 평가 손익 합이 같은 행들에서 나와야 원금(=
+   * 둘의 차)이 맞는다.
+   */
+  static Map<UUID, BigDecimal> sumHeld(
+      List<net.luversof.web.gate.stock.domain.TradeProfit> holdings,
+      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, UUID> key,
+      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, BigDecimal>
+          value) {
+    Map<UUID, BigDecimal> sums = new LinkedHashMap<>();
+    if (holdings == null) {
+      return sums;
+    }
+    for (var holding : holdings) {
+      UUID id = key.apply(holding);
+      if (id == null
+          || holding.holdingQuantity() <= 0
+          || holding.evaluationAmount() == null
+          || holding.evaluationAmount().signum() <= 0) {
+        continue;
+      }
+      BigDecimal amount = value.apply(holding);
+      sums.merge(id, amount != null ? amount : BigDecimal.ZERO, BigDecimal::add);
+    }
+    return sums;
+  }
+
+  /** 모든 행(다 판 것 포함)의 {@code value} 를 더한다 - 실현 손익 · 지금까지 산 총액. 값이 없거나 0 인 행은 건너뛴다. */
+  static Map<UUID, BigDecimal> sumAll(
+      List<net.luversof.web.gate.stock.domain.TradeProfit> rows,
+      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, UUID> key,
+      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, BigDecimal>
+          value) {
+    Map<UUID, BigDecimal> sums = new LinkedHashMap<>();
+    if (rows == null) {
+      return sums;
+    }
+    for (var row : rows) {
+      UUID id = key.apply(row);
+      BigDecimal amount = value.apply(row);
+      if (id == null || amount == null || amount.signum() == 0) {
+        continue;
+      }
+      sums.merge(id, amount, BigDecimal::add);
+    }
+    return sums;
+  }
+
+  record TtmHeadline(
+      BigDecimal yieldPct,
+      BigDecimal averageDailyPrincipalCost,
+      BigDecimal netWithPrincipalCost,
+      BigDecimal netAmount) {}
+
+  static TtmHeadline ttmHeadline(DividendYieldGroupView ttmYield) {
+    if (ttmYield == null) {
+      return new TtmHeadline(null, null, null, null);
+    }
+    return new TtmHeadline(
+        ttmYield.annualizedYieldPct(),
+        ttmYield.averageDailyPrincipalCost(),
+        ttmYield.netAmountWithPrincipalCost(),
+        ttmYield.totalNetAmount());
+  }
+
+  /** 거래를 포지션(계좌 x 종목)별로 묶어 날짜 · 매수 먼저 · 시각 순으로 둔다(같은 날 사고팔면 산 뒤에 판다). */
+  static Map<PositionKey, List<TradeResponse>> groupTradesByPosition(
+      List<TradeResponse> trades, ZoneId zone) {
+    return trades.stream()
+        .filter(
+            trade ->
+                trade.accountId() != null
+                    && trade.stockItemId() != null
+                    && trade.tradeDate() != null)
+        .collect(
+            Collectors.groupingBy(
+                trade -> new PositionKey(trade.accountId(), trade.stockItemId()),
+                Collectors.collectingAndThen(
+                    Collectors.toCollection(ArrayList::new),
+                    list -> {
+                      list.sort(
+                          Comparator.comparing(
+                                  (TradeResponse trade) ->
+                                      trade.tradeDate().atZone(zone).toLocalDate())
+                              .thenComparing(
+                                  trade ->
+                                      trade.type()
+                                              == net.luversof.web.gate.stock.constant.TradeType.BUY
+                                          ? 0
+                                          : 1)
+                              .thenComparing(TradeResponse::tradeDate));
+                      return list;
+                    })));
+  }
+
+  /**
+   * 종목별 "날마다 들고 있던 원금의 합"(원 x 일) - 포지션마다 첫 거래일부터 {@code endDate} 까지 배당 탭과 같은
+   * 방식(summarizePeriodPrincipalCosts)으로 세어 종목으로 더한다. 자산현황의 누적 배당 연 수익률(사용자 요청 2026-09-28)이 배당 탭과 같은
+   * 잣대를 쓰게 한다.
+   */
+  static Map<UUID, BigDecimal> principalCostDaySumByStock(
+      List<TradeResponse> trades, LocalDate endDate, ZoneId zone) {
+    Map<UUID, BigDecimal> sums = new LinkedHashMap<>();
+    if (trades == null || endDate == null) {
+      return sums;
+    }
+    for (Map.Entry<PositionKey, List<TradeResponse>> entry :
+        groupTradesByPosition(trades, zone).entrySet()) {
+      List<TradeResponse> positionTrades = entry.getValue();
+      LocalDate firstTradeDate = positionTrades.get(0).tradeDate().atZone(zone).toLocalDate();
+      if (firstTradeDate.isAfter(endDate)) {
+        continue;
+      }
+      BigDecimal sum =
+          summarizePeriodPrincipalCosts(positionTrades, firstTradeDate, endDate, zone)
+              .principalCostSum();
+      if (sum.signum() > 0) {
+        sums.merge(entry.getKey().stockItemId(), sum, BigDecimal::add);
+      }
+    }
+    return sums;
+  }
+
+  /** 최고 효율 카드: 순위 첫 행이되 보유가 짧아 흔들리는 행은 건너뛴다(모두 짧으면 첫 행). */
+  static DividendYieldGroupView bestYieldRow(List<DividendYieldGroupView> rows) {
+    if (rows == null || rows.isEmpty()) {
+      return null;
+    }
+    return rows.stream()
+        .filter(row -> !row.shortHeld() && row.annualizedYieldPct() != null)
+        .findFirst()
+        .orElse(rows.get(0));
+  }
+
+  static List<DividendYieldGroupView> sortYieldRows(Iterable<YieldAccumulator> accumulators) {
     List<DividendYieldGroupView> rows = new ArrayList<>();
     for (YieldAccumulator accumulator : accumulators) {
       if (accumulator.hasData()) {
         rows.add(accumulator.toView());
       }
     }
+    // 2026-09-28: 순위는 연 수익률(들고 있던 날 기준)로 매기고, 보유가 짧아 크게 흔들리는 행은 뒤로 보낸다.
+    // 예전 기준(기간 일평균 투입원금 수익률)은 기간 안에서는 연 수익률과 순서가 같아(상수 365/기간일수 배) 최근 산 종목이 늘 위였다.
     rows.sort(
-        Comparator.comparing(
+        Comparator.comparing(DividendYieldGroupView::shortHeld)
+            .thenComparing(
+                DividendYieldGroupView::annualizedYieldPct,
+                Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(
                 DividendYieldGroupView::yieldOnDailyAverageCostPct,
                 Comparator.nullsLast(Comparator.reverseOrder()))
             .thenComparing(
@@ -1102,7 +1365,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return dayCountsByYear;
   }
 
-  private static PeriodPrincipalSummary summarizePeriodPrincipalCosts(
+  static PeriodPrincipalSummary summarizePeriodPrincipalCosts(
       List<TradeResponse> tradeList,
       LocalDate periodStartDate,
       LocalDate periodEndDate,
@@ -1137,6 +1400,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     Map<Integer, BigDecimal> principalCostSumByYear = new LinkedHashMap<>();
     BigDecimal startPrincipalCost = null;
     BigDecimal endPrincipalCost = null;
+    java.util.BitSet heldDays = new java.util.BitSet();
+    int dayIndex = 0;
     LocalDate currentDate = periodStartDate;
     while (!currentDate.isAfter(periodEndDate)) {
       while (tradeIndex < tradeList.size()) {
@@ -1155,6 +1420,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       if (principalCost != null && principalCost.compareTo(BigDecimal.ZERO) > 0) {
         principalCostSum = principalCostSum.add(principalCost);
         principalCostSumByYear.merge(currentDate.getYear(), principalCost, BigDecimal::add);
+        heldDays.set(dayIndex);
       }
       // 기간 중 원금 변동 표시용: 첫날/마지막날 시점의 투입원금.
       BigDecimal dayPrincipal = principalCost != null ? principalCost : BigDecimal.ZERO;
@@ -1164,10 +1430,11 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       endPrincipalCost = dayPrincipal;
 
       currentDate = currentDate.plusDays(1);
+      dayIndex++;
     }
 
     return new PeriodPrincipalSummary(
-        principalCostSum, principalCostSumByYear, startPrincipalCost, endPrincipalCost);
+        principalCostSum, principalCostSumByYear, startPrincipalCost, endPrincipalCost, heldDays);
   }
 
   /** 배당의 기준일. 기준일이 없으면 지급일로 본다. */
@@ -1246,7 +1513,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return value != null ? value : BigDecimal.ZERO;
   }
 
-  private record PositionKey(UUID accountId, UUID stockItemId) {}
+  record PositionKey(UUID accountId, UUID stockItemId) {}
 
   /** 전기 대비 종목별 배당 증감(변동 요인 분해)용. */
   public record DividendChange(
@@ -1262,14 +1529,17 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
    * <p>principalCostSum 은 일별 투입원금의 합(시간가중 평균의 분자). startPrincipalCost/endPrincipalCost 는 기간
    * 첫날/마지막날의 투입원금으로, 기간 중 원금이 얼마나 변했는지 보여주는 용도다.
    */
-  private record PeriodPrincipalSummary(
+  record PeriodPrincipalSummary(
       BigDecimal principalCostSum,
       Map<Integer, BigDecimal> principalCostSumByYear,
       BigDecimal startPrincipalCost,
-      BigDecimal endPrincipalCost) {
+      BigDecimal endPrincipalCost,
+      /** 원금이 있던 날(기간 첫날 = 0). 들고 있던 날 수와 그 평균 원금을 낸다. */
+      java.util.BitSet heldDays) {
 
     private static PeriodPrincipalSummary empty() {
-      return new PeriodPrincipalSummary(BigDecimal.ZERO, Map.of(), null, null);
+      return new PeriodPrincipalSummary(
+          BigDecimal.ZERO, Map.of(), null, null, new java.util.BitSet());
     }
   }
 
@@ -1367,6 +1637,12 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         new LinkedHashMap<>();
     private long dividendCount;
     private Instant lastDividendDate;
+
+    /** 기간 첫날을 0 으로 하는 날 칸. 원금이 있던 날에 켠다. */
+    private final java.util.BitSet heldDays = new java.util.BitSet();
+
+    private int heldDayFrom = 0;
+    private int heldDayTo = Integer.MAX_VALUE;
 
     YieldAccumulator(String label, long periodDayCount) {
       this(label, null, periodDayCount);
@@ -1485,7 +1761,47 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
           yieldOnCostPct,
           yieldOnMarketPct,
           dividendCount,
-          lastDividendDate);
+          lastDividendDate,
+          dailyPrincipalCostSum.signum() > 0 ? dailyPrincipalCostSum : null,
+          heldDayCount(),
+          heldAverageDailyPrincipalCost(),
+          annualizedYieldPct(),
+          DividendYieldGroupView.isShortHeld(heldDayCount(), periodDayCount),
+          periodDayCount);
+    }
+
+    /** 들고 있던 날 = 기간 안에서 하나라도 원금이 있던 날(겹친 날은 한 번). 연도 행은 그 해 칸만 센다. */
+    long heldDayCount() {
+      if (heldDayTo <= heldDayFrom) {
+        return 0L;
+      }
+      return heldDays.get(heldDayFrom, heldDayTo).cardinality();
+    }
+
+    BigDecimal heldAverageDailyPrincipalCost() {
+      long held = heldDayCount();
+      if (held <= 0 || dailyPrincipalCostSum.signum() <= 0) {
+        return null;
+      }
+      return dailyPrincipalCostSum.divide(BigDecimal.valueOf(held), 2, RoundingMode.HALF_UP);
+    }
+
+    /** 세후 배당 x 365 / (날마다 들고 있던 원금의 합). 분자는 다른 수익률과 같이 기준일 원금이 있는 배당만이다. */
+    BigDecimal annualizedYieldPct() {
+      return net.luversof.web.gate.stock.util.StockYieldUtil.annualizedPctOnHeldDays(
+          netAmountWithPrincipalCost, dailyPrincipalCostSum);
+    }
+
+    void acceptHeldDays(java.util.BitSet positionHeldDays) {
+      if (positionHeldDays != null) {
+        heldDays.or(positionHeldDays);
+      }
+    }
+
+    /** 연도 행은 기간 전체의 보유 날 중 그 해 칸 [from, to) 만 센다. */
+    void restrictHeldDays(int from, int to) {
+      this.heldDayFrom = Math.max(0, from);
+      this.heldDayTo = Math.max(this.heldDayFrom, to);
     }
   }
 

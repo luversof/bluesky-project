@@ -1632,7 +1632,7 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 		text-underline-offset: 3px;
 	}
 	/* 선택된 표 행(배당 수익률·자산 현황)은 배경색만 달라 고대비에서 구분되지 않았다(실측 2026-09-09). 첫 칸 앞에 표식을 둔다. */
-	tr[aria-selected="true"] > td:first-child::before {
+	tr[aria-selected="true"] > :first-child::before {
 		content: "\25B8\00A0";
 	}
 }
@@ -1755,6 +1755,33 @@ thead [data-sort-key] {
 	top: 50%;
 	height: 24px;
 	transform: translateY(-50%);
+}
+
+/* 위 ::after 띠는 단추 전체를 덮어 안쪽 요소가 마우스를 못 받는다. 정렬 머리글 안의 용어 밑줄(termHint)은
+   마우스를 올리면 뜻 풍선을 띄워야 하므로 띠 위로 올린다 - 사용자 제보 2026-09-28: 카드의 밑줄은 뜨는데
+   랭킹 표 머리글 6곳은 안 떴다(커서 아래 요소가 span 이 아니라 button). 단추 안이라 눌러서 정렬하는 것은 그대로다. */
+[data-sort-key] [data-term-hint] {
+	position: relative;
+	z-index: 1;
+}
+
+/* 배당 수익률 표의 예전 열(세전 · 세금 · 과세 · 기간 일평균 투입원금 · 기준일 지표). 사용자 요청 2026-09-28:
+   "다양한 수익률과 투입원금이 잘 눈에 안 들어온다" - 기본은 세후 배당 · 평균 투입원금 · 연 수익률 · 건수만 보이고,
+   표 위 "열 더 보기" 를 켜면 같은 범위([data-yield-extra-scope]) 안의 열이 모두 나온다. 인쇄에서는 늘 모두. */
+.yield-extra-col {
+	display: none;
+}
+[data-yield-extra-scope]:has([data-yield-extra-toggle]:checked) .yield-extra-col {
+	display: table-cell;
+}
+@media print {
+	.yield-extra-col {
+		display: table-cell;
+	}
+}
+/* 연도별 연 수익률 옆 막대. 채움은 배당 글자색(text-dividend - 라이트/다크 각각 정의됨)을 그대로 쓴다. */
+.yield-bar-fill {
+	background-color: currentColor;
 }
 
 /* 좁은 화면에서는 표 첫 열을 고정하지 않는다(사용자 결정 2026-09-21).

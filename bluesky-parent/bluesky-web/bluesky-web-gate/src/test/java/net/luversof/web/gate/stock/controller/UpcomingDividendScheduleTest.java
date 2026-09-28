@@ -344,4 +344,43 @@ class UpcomingDividendScheduleTest {
     String dashboardCard = flatten("src/main/jte/stock/htmx/fragments/upcomingDividends.jte");
     assertThat(dashboardCard).contains("href=\"/stock/dividend\"").doesNotContain("tab=calendar");
   }
+
+  /**
+   * 배당 내역 본문은 서로 기대지 않는 세 조회를 동시에 던진다(원장 수량 · 지급 이력 · 이번 달 받은 배당).
+   *
+   * <p>실측 2026-09-23: 차례로 28 · 34 · 16ms 를 기다려 본문 104ms 중 78ms 였다. 하나라도 다시 순서대로 부르면 그만큼 느려진다. 소스는
+   * 공백을 전부 지우고 본다(서식 정리로 줄이 접힌다).
+   */
+  @Test
+  void 본문의_세_조회를_동시에_던진다() throws java.io.IOException {
+    String source =
+        java.nio.file.Files.readString(
+                java.nio.file.Path.of(
+                    "src/main/java/net/luversof/web/gate/stock/controller/StockDividendViewController.java"),
+                java.nio.charset.StandardCharsets.UTF_8)
+            .replaceAll("\\s+", "");
+    int start = source.indexOf("privatevoidpopulateUpcomingDividendModel(");
+    int end = source.indexOf("UpcomingDividendScheduleViewbuildUpcomingSchedule(", start);
+    String body = source.substring(start, end);
+
+    int holdings =
+        body.indexOf(
+            "stockAsync.supply(()->monthlyDividendReferenceSupport.loadCurrentHoldings(userId))");
+    int payouts = body.indexOf("stockAsync.supply(this::loadPayoutsQuietly)");
+    int received =
+        body.indexOf(
+            "stockAsync.supply(()->loadReceivedStockItemIdsQuietly(userId,YearMonth.from(today)))");
+    int firstJoin = body.indexOf("StockAsyncSupport.join(");
+    assertThat(holdings).as("원장 수량을 동시에").isGreaterThan(0);
+    assertThat(payouts).as("지급 이력을 동시에").isGreaterThan(0);
+    assertThat(received).as("이번 달 받은 배당을 동시에").isGreaterThan(0);
+    assertThat(firstJoin)
+        .as("셋을 다 던진 뒤에 기다린다 - 하나를 기다리고 다음을 던지면 순서대로와 같다")
+        .isGreaterThan(Math.max(holdings, Math.max(payouts, received)));
+    assertThat(body)
+        .as("미리 읽은 받은 배당을 넘긴다 - 안 넘기면 안에서 또 읽는다")
+        .contains("StockAsyncSupport.join(receivedFuture)")
+        .doesNotContain("=loadPayoutsQuietly();")
+        .doesNotContain("monthlyDividendReferenceSupport.loadCurrentHoldings(userId);");
+  }
 }

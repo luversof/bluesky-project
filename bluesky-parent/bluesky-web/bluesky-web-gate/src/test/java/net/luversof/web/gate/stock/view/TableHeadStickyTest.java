@@ -9,6 +9,8 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.frontend.TsSource;
+
 /**
  * 표 머리글 고정은 <b>세 가지가 맞아야</b> 먹는다(사용자 요청 2026-09-22: 스크롤을 올리면 열 이름이 올라가 버린다).
  *
@@ -165,13 +167,13 @@ class TableHeadStickyTest {
         .as("상단바 높이만 쓰면 머리글이 고정 줄에 깔린다")
         .contains("var(--table-head-sticky-top");
     // 이름은 주석에도 있다 - 실제로 넣는 줄을 본다.
-    assertThat(read(COMMON_TS))
+    assertThat(TsSource.n(read(COMMON_TS)))
         .as("변수를 아무도 안 채우면 기본값(상단바 높이)만 쓰여 겹친다")
-        .contains("setProperty(\"--table-head-sticky-top\", top + \"px\")")
-        .contains(".table-filter-sticky");
-    assertThat(read(COMMON_TS))
+        .contains(TsSource.n("setProperty(\"--table-head-sticky-top\", top + \"px\")"))
+        .contains(TsSource.n(".table-filter-sticky"));
+    assertThat(TsSource.n(read(COMMON_TS)))
         .as("붙지 않는 폭에서는 그 줄이 자리를 차지하지 않는다 - position 으로 가려야 한다")
-        .contains("getComputedStyle(holder).position");
+        .contains(TsSource.n("getComputedStyle(holder).position"));
   }
 
   @Test
@@ -344,10 +346,11 @@ class TableHeadStickyTest {
             ts.indexOf("function syncStickyStackTop(): void {"),
             ts.indexOf("function syncStickyTheadHeights(): void {"));
     assertThat(sync).as("고정 줄 높이를 다시 잴 때 머리 줄 높이도 다시 잰다").contains("syncStickyTheadHeights();");
-    assertThat(ts)
-        .contains("box.style.setProperty(\"--sticky-thead-height\", height + \"px\");")
+    assertThat(TsSource.n(ts))
+        .contains(TsSource.n("box.style.setProperty(\"--sticky-thead-height\", height + \"px\");"))
         .contains(
-            "document.querySelectorAll(\":is(.table-head-sticky, .table-head-sticky-xl) > table > thead\").forEach((head) => observer.observe(head));");
+            TsSource.n(
+                "document.querySelectorAll(\":is(.table-head-sticky, .table-head-sticky-xl) > table > thead\").forEach((head) => observer.observe(head));"));
 
     assertThat(read(BUILT_CSS))
         .as("npm run build")

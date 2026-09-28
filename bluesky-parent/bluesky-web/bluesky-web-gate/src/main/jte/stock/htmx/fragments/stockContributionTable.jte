@@ -16,7 +16,7 @@
 	String zeroAmountTitle = MessageUtil.getMessage("common.amount.zero.title");
 	String shareNoneTitle = MessageUtil.getMessage("stock.contribution.share.none");
 	// A share needs a total to divide by - a bare dash says nothing about why it is missing.
-	DecimalFormat amountFormat = new DecimalFormat("#,##0");
+	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	String title = MessageUtil.getMessage("stock.asset.growth.contribution.title");
 	String description = MessageUtil.getMessage("stock.asset.growth.contribution.desc");
 	String stockLabel = MessageUtil.getMessage("common.label.stock");

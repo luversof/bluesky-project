@@ -49,6 +49,9 @@ public class MonthlyEtfViewSupport {
 
   public static final String SORT_PERIOD_TOTAL = "period-total";
 
+  /** 총보수(연)로도 정렬한다 - 싼 것부터가 기본(2026-09-28). */
+  public static final String SORT_EXPENSE_RATIO = "expense-ratio";
+
   /** 화면이 고를 수 있는 기간(개월). api-stock 이 내려보내는 기간과 같아야 한다. */
   public static final java.util.List<Integer> PERIODS = java.util.List.of(1, 3, 6, 12);
 
@@ -131,7 +134,8 @@ public class MonthlyEtfViewSupport {
           SORT_PERIOD_PRICE,
           SORT_PERIOD_TOTAL,
           SORT_MAX_DRAWDOWN,
-          SORT_VOLATILITY ->
+          SORT_VOLATILITY,
+          SORT_EXPENSE_RATIO ->
           sort;
       default -> SORT_DISPLAY_ORDER;
     };
@@ -262,6 +266,7 @@ public class MonthlyEtfViewSupport {
           case SORT_MAX_DRAWDOWN -> nullsLast(MonthlyEtfRowView::maxDrawdownPct);
           case SORT_VOLATILITY -> nullsLast(MonthlyEtfRowView::volatilityPct);
           case SORT_PERIOD_TOTAL -> nullsLast(MonthlyEtfRowView::periodTotalReturnPct);
+          case SORT_EXPENSE_RATIO -> nullsLast(MonthlyEtfRowView::totalExpenseRatioPct);
           case SORT_PAYOUT_COUNT -> Comparator.comparing(MonthlyEtfRowView::payoutCount);
           case SORT_LATEST_PAY_DATE ->
               Comparator.comparing(
@@ -302,6 +307,10 @@ public class MonthlyEtfViewSupport {
     }
     if (SORT_VOLATILITY.equals(sort)) {
       return row.volatilityPct() == null;
+    }
+    // 총보수를 모르는 종목이 "가장 싼(0%)" 으로 맨 위에 오면 안 된다 - 방향과 무관하게 뒤로.
+    if (SORT_EXPENSE_RATIO.equals(sort)) {
+      return row.totalExpenseRatioPct() == null;
     }
 
     return false;

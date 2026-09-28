@@ -1,5 +1,7 @@
 package net.luversof.api.stock.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,9 +97,28 @@ public class MonthlyDividendProfileService {
     profile.setActive(request.getActive() != null ? request.getActive() : true);
     profile.setNote(trimToNull(request.getNote()));
     profile.setLastVerifiedDate(request.getLastVerifiedDate());
+    profile.setTotalExpenseRatioPct(
+        normalizeTotalExpenseRatioPct(request.getTotalExpenseRatioPct()));
+    profile.setListingDate(request.getListingDate());
     profile.setUpdatedDate(now);
 
     return toResponse(monthlyDividendProfileRepository.save(profile), stockItem);
+  }
+
+  /**
+   * 총보수(연, %)를 열 {@code NUMERIC(6,4)} 에 맞춘다. 범위를 벗어나면 DB 오류(500)가 나기 전에 400 으로 막는다 &mdash; 음수 보수는
+   * 없고, 100% 이상은 단위를 잘못 넣은 것이다(예: 0.09% 를 9 로).
+   */
+  static BigDecimal normalizeTotalExpenseRatioPct(BigDecimal totalExpenseRatioPct) {
+    if (totalExpenseRatioPct == null) {
+      return null;
+    }
+    if (totalExpenseRatioPct.signum() < 0
+        || totalExpenseRatioPct.compareTo(BigDecimal.valueOf(100)) >= 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "totalExpenseRatioPct must be between 0 and 100");
+    }
+    return totalExpenseRatioPct.setScale(4, RoundingMode.HALF_UP);
   }
 
   public void reorder(MonthlyDividendProfileReorderRequest request) {
@@ -174,7 +195,9 @@ public class MonthlyDividendProfileService {
         Boolean.TRUE.equals(profile.getActive()),
         profile.getNote(),
         profile.getLastVerifiedDate(),
-        profile.getUpdatedDate());
+        profile.getUpdatedDate(),
+        profile.getTotalExpenseRatioPct(),
+        profile.getListingDate());
   }
 
   private UUID resolveStockItemId(UUID stockItemId, String symbol) {

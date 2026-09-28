@@ -84,6 +84,9 @@ public class StockDividendViewController {
   /** 지나간 달의 <b>실제 수령액</b>은 기준 데이터가 아니라 원장에 있다. */
   @Autowired private net.luversof.web.gate.stock.httpexchange.DividendClient dividendClient;
 
+  /** 본문의 서로 기대지 않는 api-stock 조회를 동시에 던지는 실행기(StockViewController 와 같은 것). */
+  @Autowired private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
+
   @Autowired private MonthlyDividendPayoutImportParser monthlyDividendPayoutImportParser;
 
   @Autowired
@@ -228,9 +231,19 @@ public class StockDividendViewController {
       return;
     }
 
+    // 서로 기대지 않는 세 조회(원장 수량 · 지급 이력 · 이번 달 받은 배당)를 동시에 던진다. 실측 2026-09-23: 차례로 28 · 34 · 16ms 를
+    // 기다려 배당 내역 본문 104ms 중 78ms 였다. 스냅샷은 비었을 때 일찍 끝내려고 먼저 읽는다.
+    LocalDate today = LocalDate.now();
+    var holdingsFuture =
+        stockAsync.supply(() -> monthlyDividendReferenceSupport.loadCurrentHoldings(userId));
+    var payoutsFuture = stockAsync.supply(this::loadPayoutsQuietly);
+    var receivedFuture =
+        stockAsync.supply(() -> loadReceivedStockItemIdsQuietly(userId, YearMonth.from(today)));
+
     // 스냅샷 수량은 사람이 갱신한 시점의 값이라 원장과 어긋난다(실측 2026-08-23: 8 종목 중 7 종목, 1.66% 낮다).
     // 요약 카드 · 월배당 시뮬레이터와 같은 계산 · 같은 문구를 쓴다.
-    var currentHoldings = monthlyDividendReferenceSupport.loadCurrentHoldings(userId);
+    var currentHoldings =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(holdingsFuture);
     var quantityBasis =
         net.luversof.web.gate.stock.service.MonthlyDividendCalculator.currentQuantitySummary(
             rows, currentHoldings.quantities());
@@ -256,10 +269,17 @@ public class StockDividendViewController {
 
     // "평균" 기준은 최근 12 건의 주당 배당을 평균한다(건수 기준). 이력이 12 건에 못 미치는 종목은 그만큼 짧은 평균이다
     // (실측 2026-08-23: 8 종목 중 2 종목이 10 건). 지급이력은 한 번만 읽어 이 안내와 예정일 추정 두 곳에 쓴다.
-    List<MonthlyDividendPayoutResponse> payouts = loadPayoutsQuietly();
+    List<MonthlyDividendPayoutResponse> payouts =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(payoutsFuture);
     model.addAttribute("shortHistorySymbols", shortHistoryLabels(rows, payouts));
     model.addAttribute(
-        "upcomingSchedule", buildUpcomingSchedule(userId, rows, payouts, LocalDate.now()));
+        "upcomingSchedule",
+        buildUpcomingSchedule(
+            userId,
+            rows,
+            payouts,
+            today,
+            net.luversof.web.gate.stock.support.StockAsyncSupport.join(receivedFuture)));
   }
 
   /**
@@ -279,6 +299,21 @@ public class StockDividendViewController {
       List<MonthlyDividendSnapshotResponse> rows,
       List<MonthlyDividendPayoutResponse> payouts,
       LocalDate today) {
+    return buildUpcomingSchedule(
+        userId,
+        rows,
+        payouts,
+        today,
+        loadReceivedStockItemIdsQuietly(userId, YearMonth.from(today)));
+  }
+
+  /** 이번 달 받은 종목을 미리 읽어 둔 경우(본문이 다른 조회와 동시에 던진다). null 이면 원장을 못 읽은 것이다. */
+  net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView buildUpcomingSchedule(
+      UUID userId,
+      List<MonthlyDividendSnapshotResponse> rows,
+      List<MonthlyDividendPayoutResponse> payouts,
+      LocalDate today,
+      java.util.Set<UUID> receivedThisMonth) {
     List<MonthlyDividendPayDayUtil.Payout> payDayInput = new ArrayList<>();
     for (MonthlyDividendPayoutResponse payout : payouts) {
       if (payout != null) {
@@ -297,7 +332,6 @@ public class StockDividendViewController {
     // 저장된 과세표준이 0 인 종목이 비과세인지 미등록인지는 지급이력이 말해 준다.
     Map<String, BigDecimal> historyTaxableRatioBySymbol =
         monthlyDividendReferenceSupport.referenceTaxableRatioBySymbol(payouts);
-    java.util.Set<UUID> receivedThisMonth = loadReceivedStockItemIdsQuietly(userId, thisMonth);
 
     java.util.TreeMap<LocalDate, List<DividendCalendarView.Entry>> byDate =
         new java.util.TreeMap<>();
@@ -841,6 +875,33 @@ public class StockDividendViewController {
               : MessageUtil.getMessage("stock.monthly.reference.error.link.empty"));
     }
 
+    return buildMonthlyDividendReferenceBulkRedirect(request);
+  }
+
+  @BlueskyPreAuthorize
+  /** 등록된 월배당 프로필의 총보수 · 상장일을 운용사에서 다시 읽는다(사용자 승인 2026-09-28). 바뀐 것만 저장하고, 못 읽은 값은 지우지 않는다. */
+  @PostMapping("/dividend/monthly-reference/profile/facts/refresh")
+  public String refreshMonthlyDividendProfileFacts(
+      HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    if (StockViewSupport.isNotAuthenticated()) {
+      return StockViewSupport.loginRedirectView(request);
+    }
+
+    var result = monthlyDividendLinkRegisterService.refreshFacts();
+    redirectAttributes.addFlashAttribute(
+        "monthlyDividendReferenceResultMessage",
+        MessageFormat.format(
+            MessageUtil.getMessage("stock.monthly.reference.facts.refresh.summary"),
+            result.updatedCount(),
+            result.unchangedCount(),
+            result.failures().size()));
+    redirectAttributes.addFlashAttribute(
+        "monthlyDividendReferenceResultIsError",
+        result.updatedCount() == 0 && result.unchangedCount() == 0 && !result.failures().isEmpty());
+    if (!result.failures().isEmpty()) {
+      redirectAttributes.addFlashAttribute(
+          "monthlyDividendReferenceWarningMessage", String.join(" / ", result.failures()));
+    }
     return buildMonthlyDividendReferenceBulkRedirect(request);
   }
 

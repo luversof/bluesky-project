@@ -570,6 +570,9 @@ public class MonthlyDividendReferenceSupport {
     request.setActive(profile.active());
     request.setNote(profile.note());
     request.setLastVerifiedDate(profile.lastVerifiedDate());
+    // 저장은 전체 덮어쓰기다 - 폼에 안 실으면 저장할 때마다 지워진다.
+    request.setTotalExpenseRatioPct(profile.totalExpenseRatioPct());
+    request.setListingDate(profile.listingDate());
     return request;
   }
 

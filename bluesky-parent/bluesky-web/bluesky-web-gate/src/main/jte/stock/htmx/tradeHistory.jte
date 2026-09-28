@@ -37,7 +37,7 @@
 
 !{
 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zone);
-DecimalFormat df = new DecimalFormat("#,##0");
+DecimalFormat df = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 // 이 표는 매매 화면의 tradeDetailList 와 같은 표인데 두 규칙이 이쪽만 빠져 있었다 -
 // 실측 2026-09-13(258 행): 거래세 228 행 · 수수료 51 행이 "0", 매수 203 행의 실현 손익은 빈 칸,
 // 그리고 실현 손익 55 개 중 부호가 붙은 것은 음수 6 개뿐이고 양수 49 개는 맨 숫자였다.

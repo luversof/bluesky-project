@@ -109,8 +109,11 @@ class MonthlyDividendImportOverlayRenderTest {
     assertThat(singleImport)
         .contains("data-submit-overlay=\"true\"")
         .contains("data-submit-overlay-desc=\"" + sourceNote + "\"");
-    // 일괄 두 건까지 세 곳이다.
-    assertThat(html.split(java.util.regex.Pattern.quote(sourceNote), -1)).hasSize(3 + 1);
+    // 2026-09-28 총보수 · 상장일 새로 가져오기도 운용사 페이지를 내려받는다 - 같은 안내가 맞다.
+    assertThat(formTag(html, "/stock/dividend/monthly-reference/profile/facts/refresh"))
+        .contains("data-submit-overlay-desc=\"" + sourceNote + "\"");
+    // 단건 · 일괄 두 건 · 총보수 새로 가져오기까지 네 곳이다.
+    assertThat(html.split(java.util.regex.Pattern.quote(sourceNote), -1)).hasSize(4 + 1);
   }
 
   /** 붙여넣기는 외부를 부르지 않으므로 출처 안내를 달면 거짓말이 된다. */

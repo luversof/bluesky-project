@@ -64,6 +64,8 @@ public class MonthlyDividendPayoutSourceImportService {
 
   private final TigerMonthlyDividendPayoutSourceParser tigerMonthlyDividendPayoutSourceParser;
 
+  private final MonthlyDividendSourceFactsParser monthlyDividendSourceFactsParser;
+
   public MonthlyDividendPayoutSourceImportService(
       RestClient.Builder restClientBuilder,
       MonthlyDividendPayoutImportParser monthlyDividendPayoutImportParser,
@@ -73,7 +75,9 @@ public class MonthlyDividendPayoutSourceImportService {
       RiseMonthlyDividendPayoutSourceParser riseMonthlyDividendPayoutSourceParser,
       SolMonthlyDividendPayoutSourceParser solMonthlyDividendPayoutSourceParser,
       TimeMonthlyDividendPayoutSourceParser timeMonthlyDividendPayoutSourceParser,
-      TigerMonthlyDividendPayoutSourceParser tigerMonthlyDividendPayoutSourceParser) {
+      TigerMonthlyDividendPayoutSourceParser tigerMonthlyDividendPayoutSourceParser,
+      MonthlyDividendSourceFactsParser monthlyDividendSourceFactsParser) {
+    this.monthlyDividendSourceFactsParser = monthlyDividendSourceFactsParser;
     // 요청 팩터리를 갈아 끼우지 않는다. localdev 는 GateRestClientConfig 가 "모든 인증서 신뢰" 팩터리를 얹어 두는데
     // (로컬 서비스가 자체 서명), requestFactory(...) 로 덮으면 그 신뢰가 사라져 공개 사이트 인증서까지 못 믿는다
     // - 실측 2026-09-21: 삼성자산운용에서 PKIX path building failed 로 링크 등록이 실패했다(사용자 보고).
@@ -311,29 +315,85 @@ public class MonthlyDividendPayoutSourceImportService {
           UriComponentsBuilder.fromUriString("https://kbam.co.kr")
               .path("/api/products/etfs/{fundCode}/header")
               .build(fundCode);
-      return monthlyDividendSourceMetaParser.fromRiseHeaderJson(
-          fetchJsonBody(
-              headerUri, msg("stock.monthly.reference.error.source.data.fetch.failed", "RISE")));
+      MonthlyDividendSourceMetaParser.SourceMeta meta =
+          monthlyDividendSourceMetaParser.fromRiseHeaderJson(
+              fetchJsonBody(
+                  headerUri,
+                  msg("stock.monthly.reference.error.source.data.fetch.failed", "RISE")));
+      // 총보수 · 상장일은 header 에 없고 basic-info 에 있다(실측 2026-09-28).
+      URI basicInfoUri =
+          UriComponentsBuilder.fromUriString("https://kbam.co.kr")
+              .path("/api/products/etfs/{fundCode}/basic-info")
+              .build(fundCode);
+      return meta.withFacts(
+          factsOrNone(basicInfoUri, true, monthlyDividendSourceFactsParser::fromRiseBasicInfoJson));
     }
 
     String html = fetchBody(sourceUri, msg("stock.monthly.reference.error.source.fetch.failed"));
     if (TimeMonthlyDividendPayoutSourceParser.supportsHost(host)) {
-      return monthlyDividendSourceMetaParser.fromTimeHtml(html);
+      return monthlyDividendSourceMetaParser
+          .fromTimeHtml(html)
+          .withFacts(monthlyDividendSourceFactsParser.fromDetailHtml(html));
     }
     if (SolMonthlyDividendPayoutSourceParser.supportsHost(host)) {
-      return monthlyDividendSourceMetaParser.fromSolHtml(html);
+      return monthlyDividendSourceMetaParser
+          .fromSolHtml(html)
+          .withFacts(monthlyDividendSourceFactsParser.fromDetailHtml(html));
     }
     if (host.contains("plusetf.co.kr")) {
-      return monthlyDividendSourceMetaParser.fromPlusHtml(html);
+      return monthlyDividendSourceMetaParser
+          .fromPlusHtml(html)
+          .withFacts(monthlyDividendSourceFactsParser.fromDetailHtml(html));
     }
     if (host.contains("samsungfund.com")) {
-      return monthlyDividendSourceMetaParser.fromKodexHtml(html);
+      MonthlyDividendSourceMetaParser.SourceMeta meta =
+          monthlyDividendSourceMetaParser.fromKodexHtml(html);
+      // 상장일은 상세 HTML 에 없다 - 화면이 부르는 상품 API 에 총보수와 함께 있다(실측 2026-09-28).
+      String productId =
+          UriComponentsBuilder.fromUri(sourceUri).build().getQueryParams().getFirst("id");
+      if (!StringUtils.hasText(productId)) {
+        return meta;
+      }
+      URI productUri =
+          UriComponentsBuilder.fromUri(sourceUri)
+              .replacePath("/api/v1/kodex/product/{id}.do")
+              .replaceQuery(null)
+              .build(productId);
+      return meta.withFacts(
+          factsOrNone(productUri, true, monthlyDividendSourceFactsParser::fromKodexProductJson));
     }
     if (host.contains("investments.miraeasset.com")) {
-      return monthlyDividendSourceMetaParser.fromTiger(sourceUri, html);
+      return monthlyDividendSourceMetaParser
+          .fromTiger(sourceUri, html)
+          .withFacts(monthlyDividendSourceFactsParser.fromDetailHtml(html));
     }
 
     throw new IllegalArgumentException(msg("stock.monthly.reference.error.source.unsupported"));
+  }
+
+  /**
+   * 총보수 · 상장일을 위해 한 번 더 부른다. <b>실패해도 등록을 막지 않는다</b> &mdash; 값이 비어 있을 뿐이다. 까닭은 반드시 로그로 남긴다(원격 호출 실패
+   * 규칙).
+   */
+  private MonthlyDividendSourceFactsParser.SourceFacts factsOrNone(
+      URI uri,
+      boolean json,
+      java.util.function.Function<String, MonthlyDividendSourceFactsParser.SourceFacts> parse) {
+    try {
+      String body =
+          json
+              ? restClient
+                  .get()
+                  .uri(uri)
+                  .accept(MediaType.APPLICATION_JSON)
+                  .retrieve()
+                  .body(String.class)
+              : restClient.get().uri(uri).retrieve().body(String.class);
+      return parse.apply(body);
+    } catch (Exception ex) {
+      log.warn("총보수 · 상장일을 못 받았다(등록은 계속): {}", uri, ex);
+      return MonthlyDividendSourceFactsParser.SourceFacts.NONE;
+    }
   }
 
   private String fetchBody(URI uri, String errorMessage) {

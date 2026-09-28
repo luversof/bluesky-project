@@ -36,6 +36,9 @@ CREATE TABLE "MonthlyDividendProfile" (
 	"active" BOOLEAN NOT NULL,
 	"note" VARCHAR(1000),
 	"lastVerifiedDate" DATE,
+	-- 총보수(연, %) · 상장일 - 운용사 상세 화면에서 채운다. 모르면 NULL(2026-09-28 추가)
+	"totalExpenseRatioPct" NUMERIC(6,4),
+	"listingDate" DATE,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
 	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
@@ -132,6 +135,8 @@ CREATE TABLE "StockPriceHistory" (
 );
 
 CREATE UNIQUE INDEX uk_stockPriceHistory_stockItemId_tradeDate ON "StockPriceHistory" ("stockItem_id", "tradeDate");
+-- 종목별 일자 범위의 종가 조회(데이터 상태 · 카탈로그 · 시계열)를 테이블을 읽지 않고 인덱스만으로 끝내기 위한 커버링 인덱스(2026-09-28 추가)
+CREATE INDEX idx_stockPriceHistory_item_date_close ON "StockPriceHistory" ("stockItem_id", "tradeDate") INCLUDE ("closePrice");
 
 CREATE TABLE "OpenApiConfig" (
 	"id" UUID NOT NULL PRIMARY KEY,

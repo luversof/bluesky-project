@@ -7,7 +7,7 @@
 
 @param List<DividendPeriodBreakdown.Row> yearlyRows = java.util.List.of()
 @param List<DividendPeriodBreakdown.Row> monthlyRows = java.util.List.of()
-@param DecimalFormat decimalFormat = new DecimalFormat("#,##0")
+@param DecimalFormat decimalFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat()
 
 !{
 	// 배당 화면에는 월별 막대 차트만 있어 "그 해에 얼마 받았나" 를 숫자로 읽을 수 없었다(사용자 요청 2026-09-10).

@@ -37,10 +37,16 @@ class ChartResizeGuardTest {
         for (Path p :
             walk.filter(x -> x.toString().endsWith(".jte") || x.toString().endsWith(".ts"))
                 .toList()) {
+          String previous = "";
           for (String line : Files.readAllLines(p, StandardCharsets.UTF_8)) {
             String code = line.replaceAll("//.*$", "");
             if (code.contains("resizeIfChanged(")) guarded++;
-            if (code.contains("resizeIfChanged")) continue; // 폴백 분기(else c.resize())는 헬퍼가 없을 때만 돈다
+            // 폴백 분기(else c.resize())는 헬퍼가 없을 때만 돈다. prettier 가 else 를 다음 줄로 내리면 앞 줄의 헬퍼 조건과 떨어진다
+            // (실측 2026-09-23: 서식만 바꿨는데 2 곳이 걸렸다) - else 로 시작하는 줄은 앞 줄과 한 문장으로 본다.
+            boolean elseOfGuarded =
+                code.trim().startsWith("else") && previous.contains("resizeIfChanged");
+            if (!code.isBlank()) previous = code;
+            if (code.contains("resizeIfChanged") || elseOfGuarded) continue;
             Matcher m = BARE_RESIZE.matcher(code);
             while (m.find()) offenders.add(p.getFileName() + ": " + m.group());
           }

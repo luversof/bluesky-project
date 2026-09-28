@@ -43,7 +43,9 @@ class MonthlyDividendProfileSortTest {
         active,
         "",
         lastVerifiedDate == null ? null : LocalDate.parse(lastVerifiedDate),
-        Instant.parse("2026-09-01T00:00:00Z"));
+        Instant.parse("2026-09-01T00:00:00Z"),
+        null,
+        null);
   }
 
   private List<String> symbolsOf(List<MonthlyDividendProfileResponse> rows) {

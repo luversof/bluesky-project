@@ -50,6 +50,8 @@ public class StockMonthlyEtfViewController {
 
   @Autowired private MonthlyContributionPickSupport monthlyContributionPickSupport;
 
+  @Autowired private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
+
   @BlueskyPreAuthorize
   @GetMapping("/monthly-etf")
   public String monthlyEtfPage(
@@ -77,13 +79,26 @@ public class StockMonthlyEtfViewController {
     String resolvedKeyword = keyword != null ? keyword.trim() : "";
 
     int resolvedPeriod = monthlyEtfViewSupport.resolvePeriod(period);
+    // 서로 의존이 없는 원격 호출 셋을 먼저 다 던지고 받는다. 예전에는 카탈로그 -> 원장 보유 -> 월배당 스냅샷을 차례로
+    // 불러 카탈로그(~30ms)가 끝나야 다음이 나갔다(실측 2026-09-23: 둘째 호출이 +101ms 에 출발).
+    var catalogFuture =
+        stockAsync.supply(
+            () -> monthlyDividendCatalogClient.findCatalog(new LinkedMultiValueMap<>()));
+    var holdingsFuture =
+        stockAsync.supply(() -> monthlyDividendReferenceSupport.loadCurrentHoldings(userId));
+    var heldSnapshotFuture =
+        stockAsync.supply(() -> monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId));
     List<MonthlyDividendCatalogResponse> catalog =
-        monthlyDividendCatalogClient.findCatalog(new LinkedMultiValueMap<>());
-    List<MonthlyEtfRowView> allRows = loadRows(userId, resolvedPeriod, catalog);
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(catalogFuture);
+    List<MonthlyEtfRowView> allRows =
+        loadRows(
+            resolvedPeriod,
+            catalog,
+            net.luversof.web.gate.stock.support.StockAsyncSupport.join(holdingsFuture));
     // "이번 적립" 배지 - 시뮬레이터 월배당 탭(필터 없는 기본 화면)과 같은 답을 내야 한다(사용자 요청 2026-09-22 의 잇기).
     // 거르기 전에 낸다 - "이번 적립만 보기" 가 이것으로 거른다(사용자 요청 2026-09-23).
     Map<String, MonthlyContributionPickSupport.ContributionPick> contributionPicks =
-        loadContributionPicks(userId, catalog);
+        loadContributionPicks(heldSnapshotFuture, catalog);
     String resolvedView = monthlyEtfViewSupport.resolveView(view);
     List<MonthlyEtfRowView> rows =
         monthlyEtfViewSupport.sortRows(
@@ -129,10 +144,14 @@ public class StockMonthlyEtfViewController {
    * 배지는 덧붙인 것이고, 실패는 로그로 남긴다.
    */
   private Map<String, MonthlyContributionPickSupport.ContributionPick> loadContributionPicks(
-      UUID userId, List<MonthlyDividendCatalogResponse> catalog) {
+      java.util.concurrent.CompletableFuture<
+              List<net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse>>
+          heldSnapshotFuture,
+      List<MonthlyDividendCatalogResponse> catalog) {
     try {
+      // 스냅샷 호출이 실패하면 join 이 그 예외를 그대로 던진다 - 아래 catch 가 예전처럼 받아 목록은 살린다.
       List<String> held =
-          monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId).stream()
+          net.luversof.web.gate.stock.support.StockAsyncSupport.join(heldSnapshotFuture).stream()
               .map(
                   net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
                       ::stockItemSymbol)
@@ -151,9 +170,10 @@ public class StockMonthlyEtfViewController {
 
   /** 등록된 프로필 전부 + 내 원장의 보유 여부. 보유 수량 · 금액은 화면에 싣지 않는다. */
   private List<MonthlyEtfRowView> loadRows(
-      UUID userId, int period, List<MonthlyDividendCatalogResponse> catalog) {
-    Map<UUID, Integer> heldQuantities =
-        monthlyDividendReferenceSupport.loadCurrentHoldings(userId).quantities();
+      int period,
+      List<MonthlyDividendCatalogResponse> catalog,
+      MonthlyDividendReferenceSupport.CurrentHoldings holdings) {
+    Map<UUID, Integer> heldQuantities = holdings.quantities();
 
     List<MonthlyEtfRowView> rows = new ArrayList<>();
     for (MonthlyDividendCatalogResponse row : catalog) {
@@ -196,7 +216,9 @@ public class StockMonthlyEtfViewController {
               row.maxDrawdownPct(),
               row.volatilityPct(),
               row.riskFromDate(),
-              quantity != null && quantity > 0));
+              quantity != null && quantity > 0,
+              row.totalExpenseRatioPct(),
+              row.listingDate()));
     }
     return rows;
   }

@@ -9,6 +9,8 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.frontend.TsSource;
+
 /**
  * 줄마다 서 있는 링크·버튼은 어느 줄의 것인지 이름으로 말한다.
  *
@@ -81,10 +83,12 @@ class RowActionNameTest {
         Files.readString(
             Path.of("src/main/frontend/src/stock/assetStatus.ts"), StandardCharsets.UTF_8);
 
-    assertThat(script)
+    assertThat(TsSource.n(script))
         .contains(
-            "var nextAria = nextExpanded ? button.dataset.collapseAria : button.dataset.expandAria;");
-    assertThat(script).contains("button.setAttribute('aria-label', nextAria);");
+            TsSource.n(
+                "var nextAria = nextExpanded ? button.dataset.collapseAria : button.dataset.expandAria;"));
+    assertThat(TsSource.n(script))
+        .contains(TsSource.n("button.setAttribute('aria-label', nextAria);"));
   }
 
   @Test

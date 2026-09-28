@@ -42,6 +42,11 @@ class DividendYieldSelectionConsistencyTest {
   @Test
   void 행이_걸러진_분자를_내보낸다() throws IOException {
     String rows = read(ROWS);
+    assertThat(rows)
+        .as("합계행 연 수익률도 걸러진 세후액을 분자로 쓴다")
+        .contains(
+            "sumDividendYieldValue.apply(rows, DividendYieldGroupView::netAmountWithPrincipalCost)")
+        .contains("StockYieldUtil.annualizedPctOnHeldDays(usedNet, daySum)");
     // 종목별 표와 계좌별 표 두 곳 모두 필요하다.
     int count = rows.split("data-net-with-principal-cost=", -1).length - 1;
     assertThat(count).as("종목별/계좌별 두 표 모두 값을 내보내야 한다").isEqualTo(2);
@@ -74,11 +79,13 @@ class DividendYieldSelectionConsistencyTest {
   @Test
   void 일평균_원가_수익률도_걸러진_분자를_쓴다() throws IOException {
     String selection = read(SELECTION);
+    // 2026-09-28: 선택 합계의 수익률은 연 수익률(원금 x 일 합 분모)이 됐다 - 분자 규칙(걸러진 세후액)은 그대로 지킨다.
     assertThat(selection)
-        .as("선택 합계의 일평균원가 수익률 분자가 행·합계행과 다르다")
-        .contains("(totalNetWithPrincipalCost / totalDailyPrincipalCost) * 100");
+        .as("선택 합계의 연 수익률 분자가 행·합계행과 다르다")
+        .contains("(totalNetWithPrincipalCost * 365 / totalPrincipalCostDaySum) * 100");
     assertThat(selection)
         .as("걸러지지 않은 세후액을 그 분자로 되돌리면 안 된다")
+        .doesNotContain("(totalNetAmount * 365 / totalPrincipalCostDaySum) * 100")
         .doesNotContain("(totalNetAmount / totalDailyPrincipalCost) * 100");
 
     String rows = read(ROWS);

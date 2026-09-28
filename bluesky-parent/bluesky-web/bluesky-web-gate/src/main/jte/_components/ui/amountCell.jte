@@ -25,7 +25,7 @@
       zeroAsDash    합계처럼 0 자체가 답인 자리에서는 꺼서 ₩0 을 적을 수 있다
 --%>
 !{
-    DecimalFormat amountCellFormat = new DecimalFormat("#,##0");
+    DecimalFormat amountCellFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
     BigDecimal amountCellValue = value != null ? value : BigDecimal.ZERO;
     boolean amountCellUp = amountCellValue.signum() >= 0;
     boolean amountCellBlank = zeroAsDash && amountCellValue.signum() == 0;

@@ -33,6 +33,9 @@ class MonthlyDividendPayoutServiceTest {
 
   @Mock private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
+  @Mock
+  private net.luversof.api.stock.repository.MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
+
   @Mock private MonthlyDividendSnapshotRepository monthlyDividendSnapshotRepository;
 
   @Mock private StockItemRepository stockItemRepository;

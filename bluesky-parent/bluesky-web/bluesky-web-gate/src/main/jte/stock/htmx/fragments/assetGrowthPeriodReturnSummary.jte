@@ -29,7 +29,7 @@
 @param boolean closingIsToday = true
 
 !{
-	DecimalFormat amountFormat = new DecimalFormat("#,##0");
+	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	String unrealizedLabel = MessageUtil.getMessage("stock.profit.unrealized");
 	String growthTitle = MessageUtil.getMessage("stock.asset.growth.summary.period.growth");
 	String growthDescription = MessageUtil.getMessage("stock.asset.growth.summary.period.growth.desc");

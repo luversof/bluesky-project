@@ -48,4 +48,8 @@ public record MonthlyEtfRowView(
     /** 위험 지표를 실제로 센 첫 거래일(1 년을 못 덮으면 그 날부터다). */
     LocalDate riskFromDate,
     /** 내 원장에 지금 보유 수량이 있는 종목인가(수량 · 금액은 적지 않는다). */
-    boolean held) {}
+    boolean held,
+    /** 총보수(연, %). 운용사에서 못 가져왔으면 null(2026-09-28). */
+    BigDecimal totalExpenseRatioPct,
+    /** 상장일. 못 가져왔으면 null(2026-09-28). */
+    LocalDate listingDate) {}

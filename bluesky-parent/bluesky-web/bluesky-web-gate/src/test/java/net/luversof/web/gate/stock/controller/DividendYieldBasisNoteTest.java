@@ -72,13 +72,24 @@ class DividendYieldBasisNoteTest {
 
     // 연도별·종목별·계좌별 세 표의 본문과 합계 = 6 칸.
     // 2026-09-12 부터 같은 칸에 data-amount-basis 가 먼저 붙는다(금액 가리기가 이 문구도 가려야 해서다).
-    assertThat(
-            count(template, "text-right text-dividend font-medium" + '"' + " data-amount-basis="))
-        .as("항상 보이는 수익률 칸 중 근거가 붙은 수")
-        .isEqualTo(6);
-    assertThat(count(template, "text-right text-dividend font-medium" + '"' + ">"))
-        .as("근거 없이 남은 수익률 칸이 있으면 안 된다")
+    // 2026-09-28 부터 항상 보이는 수익률 칸은 연 수익률이다(예전 기본 수익률 칸은 "열 더 보기" 로 갔고 근거는 그대로 달고 간다).
+    assertThat(count(template, "data-annualized-cell data-amount-basis="))
+        .as("항상 보이는 연 수익률 본문 칸 중 근거가 붙은 수")
+        .isEqualTo(3);
+    assertThat(count(template, "data-annualized-total data-amount-basis="))
+        .as("항상 보이는 연 수익률 합계 칸 중 근거가 붙은 수")
+        .isEqualTo(3);
+    assertThat(count(template, "data-annualized-cell>") + count(template, "data-annualized-total>"))
+        .as("근거 없이 남은 연 수익률 칸이 있으면 안 된다")
         .isZero();
+    assertThat(
+            count(
+                template,
+                "text-right text-dividend font-medium yield-extra-col"
+                    + '"'
+                    + " data-amount-basis="))
+        .as("열 더 보기로 간 예전 기본 수익률 칸도 근거를 그대로 단다")
+        .isEqualTo(6);
   }
 
   @Test
@@ -101,7 +112,10 @@ class DividendYieldBasisNoteTest {
                 + " yieldBasisTitle.apply(");
     // 2026-09-15: '기준일 평균시가 수익률' 4 칸이 이 집계에서 빠졌다 — 그 칸은 이제
     // 분자만 말하던 공용 문구 대신 제 분모까지 담은 marketBasisTitle 을 쓴다(아래 따로 본다).
-    assertThat(plainTitles + forkedTitles).as("숨는 열 6 칸 + 보이는 열 6 칸").isEqualTo(12);
+    // 2026-09-28: 보이는 연 수익률 6 칸(세 표 본문 · 합계)이 더해졌다 - 예전 기본 수익률 6 칸은 열 더 보기로 가면서 근거를 그대로 달고 갔다.
+    assertThat(plainTitles + forkedTitles)
+        .as("예전 숨는 열 6 칸 + 예전 기본 수익률 6 칸 + 연 수익률 6 칸")
+        .isEqualTo(18);
     assertThat(forkedTitles).as("기준일 원금이 없을 때 까닭이 갈리는 칸").isEqualTo(3);
     // 금액 칸('배당 기준일 평균원금') 의 "-" 에도 같은 까닭이 붙는다 - 세 표 각각 하나씩.
     assertThat(
@@ -114,17 +128,20 @@ class DividendYieldBasisNoteTest {
     assertThat(
             count(template, "data-amount-basis=" + '"' + "${yieldBasisTitle.apply(")
                 + count(template, "data-amount-basis=" + '"' + "${basisNoneOrNull.apply("))
-        .as("가리기 대상 표식도 칸마다 하나")
-        .isEqualTo(12);
+        .as("가리기 대상 표식도 칸마다 하나(연 수익률 6 칸 포함)")
+        .isEqualTo(18);
     assertThat(count(template, "yieldBasisTitle.apply("))
-        .as("툴팁 12 + 가리기 표식 12 + 보이는 6 칸의 sr-only(조건 + 본문) 12")
-        .isEqualTo(36);
+        // 2026-09-28: 툴팁 · 가리기 표식이 연 수익률 6 칸만큼 늘고(18 · 18), sr-only 는 여전히 보이는 6 칸(이제 연 수익률)에만 있다.
+        .as("툴팁 18 + 가리기 표식 18 + 보이는 6 칸의 sr-only(조건 + 본문) 12")
+        .isEqualTo(48);
     // 2026-09-12: 숨는 열에도 sr-only 를 달아 봤다가 되돌렸다. 실측(배당 화면, 근거가 둘 이상 붙은 11 줄):
     // 한 줄 안의 근거 문장이 <b>모두 같았다</b>(문장이 갈리는 줄 0). 숨는 열에 또 달면 같은 문장을 줄마다
     // 두세 번 읽게 되므로, 근거는 '항상 보이는 칸' 한 곳에만 싣는다.
     assertThat(countCellsWithTitleButNoScreenReaderText(template))
+        // 2026-09-28: 예전 기본 수익률 6 칸도 열 더 보기(숨는 열)로 가며 sr-only 를 떼었다 - 6 + 6.
+        // 같은 날 평균 투입원금 3 칸도 열 더 보기로 갔다(까닭은 보이는 연 수익률 칸이 말한다) - + 3.
         .as("숨는 열은 title 만 - 늘어나면 같은 문장을 두 번 읽는다")
-        .isEqualTo(6);
+        .isEqualTo(15);
   }
 
   @Test

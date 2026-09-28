@@ -9,7 +9,7 @@
 @param String periodBreakdownNote = ""
 
 !{
-	DecimalFormat amountFormat = new DecimalFormat("#,##0");
+	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	String unit = periodBreakdown != null && !periodBreakdown.isEmpty()
 			? periodBreakdown.get(0).unit() : "MONTH";
 	// 아래 '연도별 성과' 와 같은 키를 쓴다 - 두 표의 이름이 갈라지지 않는다.

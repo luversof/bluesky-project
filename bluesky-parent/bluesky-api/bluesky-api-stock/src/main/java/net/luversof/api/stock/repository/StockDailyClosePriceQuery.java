@@ -66,6 +66,18 @@ public class StockDailyClosePriceQuery {
        AND h."volume" > 0
       """;
 
+  private static final String ITEMS_FROM_SQL =
+      """
+      SELECT h."stockItem_id" AS stock_item_id,
+             h."tradeDate"    AS trade_date,
+             h."closePrice"   AS close_price
+      FROM "StockPriceHistory" h
+      WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
+        AND h."volume" > 0
+        AND h."tradeDate" >= CAST(:fromDate AS date)
+      ORDER BY h."stockItem_id", h."tradeDate"
+      """;
+
   private static final RowMapper<StockDailyClosePrice> MAPPER =
       (rs, rowNum) ->
           new StockDailyClosePrice(
@@ -79,13 +91,30 @@ public class StockDailyClosePriceQuery {
       FROM unnest(string_to_array(:ids, ',')::uuid[],
                   string_to_array(:days, ',')::date[]) AS p(id, day)
       CROSS JOIN LATERAL (
-        SELECT h."tradeDate", h."closePrice"
-        FROM "StockPriceHistory" h
-        WHERE h."stockItem_id" = p.id
-          AND h."tradeDate" <= p.day
-        -- 거래가 있던 날을 먼저 고른다. 그런 행이 하나도 없는 종목은 값이 사라지면 안 되므로
-        -- 정렬 우선순위로만 두고 폴백을 남긴다.
-        ORDER BY (h."volume" > 0) DESC, h."tradeDate" DESC
+        -- 거래가 있던 날(거래량 > 0)의 최근 행을 먼저 고르고, 그런 행이 하나도 없는 종목은 값이 사라지면 안 되므로
+        -- 그냥 최근 행으로 물러선다. 두 갈래 모두 (종목, 일자) 인덱스를 거꾸로 훑다가 첫 행에서 멈춘다.
+        -- 예전에는 '거래량이 있는가' 라는 식을 첫 정렬 키로 둔 한 줄 정렬이었는데, 식이 앞에 있으니 인덱스 순서를
+        -- 못 타고 쌍마다 그 종목의 기준일 이전 이력 전체를 정렬했다(실측 2026-09-23: holdingsSnapshotBatch
+        -- 요청 표본의 51%). 결과는 같다 - 단, 그 정렬은 내림차순이라 거래량 NULL 행을 맨 앞에 두었는데 여기서는
+        -- NULL 을 '거래 없음' 으로 본다(앱은 원시형 long 으로만 써서 NULL 을 만들지 않는다).
+        SELECT y."tradeDate", y."closePrice"
+        FROM (
+          (SELECT h."tradeDate", h."closePrice", 0 AS pick
+           FROM "StockPriceHistory" h
+           WHERE h."stockItem_id" = p.id
+             AND h."tradeDate" <= p.day
+             AND h."volume" > 0
+           ORDER BY h."tradeDate" DESC
+           LIMIT 1)
+          UNION ALL
+          (SELECT h."tradeDate", h."closePrice", 1 AS pick
+           FROM "StockPriceHistory" h
+           WHERE h."stockItem_id" = p.id
+             AND h."tradeDate" <= p.day
+           ORDER BY h."tradeDate" DESC
+           LIMIT 1)
+        ) AS y
+        ORDER BY y.pick
         LIMIT 1
       ) AS x
       """;
@@ -96,6 +125,19 @@ public class StockDailyClosePriceQuery {
    */
   public List<StockDailyClosePrice> findLatestClosePricesForPairs(String ids, String days) {
     return namedParameterJdbcTemplate.query(PAIRS_SQL, Map.of("ids", ids, "days", days), MAPPER);
+  }
+
+  /**
+   * 여러 종목의 일별 종가를 한 번에(종목 &rarr; 거래일 순), 거래량 0 행은 뺀다. 월배당 카탈로그가 계산 창(15 개월)만큼 읽는다.
+   *
+   * <p>예전에는 StockPriceHistoryRepository 의 {@code @Query} 였다. SQL 은 그대로인데 Spring Data 의 행 변환이 약
+   * 6,700 행을 지나며 카탈로그 응답 시간의 대부분을 먹었다 &mdash; 실측 2026-09-23: findCatalog 표본의 71% 가 이 호출이었고 그중 DB 는
+   * 일부, 나머지는 {@code Lazy.get} &middot; {@code ResolvableType.forType} &middot; {@code
+   * SqlIdentifier} 같은 변환 기계였다. 위의 다른 조회와 같은 까닭으로 위치 RowMapper 로 읽는다.
+   */
+  public List<StockDailyClosePrice> findDailyClosePricesForItems(String ids, LocalDate fromDate) {
+    return namedParameterJdbcTemplate.query(
+        ITEMS_FROM_SQL, Map.of("ids", ids, "fromDate", fromDate), MAPPER);
   }
 
   /**

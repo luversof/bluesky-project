@@ -25,6 +25,7 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 import io.github.luversof.boot.context.support.MessageUtil;
+import net.luversof.web.gate.frontend.TsSource;
 import net.luversof.web.gate.stock.controller.StockPortfolioHtmxControllerAccess;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView;
@@ -269,10 +270,11 @@ class AssetStatusStockAccountsTest {
         Files.readString(
                 Path.of("src/main/frontend/src/stock/assetStatus.ts"), StandardCharsets.UTF_8)
             .replaceAll("\\s+", "");
-    assertThat(source)
+    assertThat(TsSource.n(source))
         .contains(
-            "querySelectorAll<HTMLElement>('[data-account-detail-toggle],[data-stock-detail-toggle]')")
-        .contains("(this.dataset.accountDetailToggle||this.dataset.stockDetailToggle)");
+            TsSource.n(
+                "querySelectorAll<HTMLElement>('[data-account-detail-toggle],[data-stock-detail-toggle]')"))
+        .contains(TsSource.n("(this.dataset.accountDetailToggle||this.dataset.stockDetailToggle)"));
     String built =
         Files.readString(
                 Path.of("src/main/resources/static/js/stock/assetStatus.js"),

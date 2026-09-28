@@ -57,7 +57,13 @@ public record MonthlyDividendCatalogResponse(
      */
     BigDecimal maxDrawdownPct,
     BigDecimal volatilityPct,
-    LocalDate riskFromDate) {
+    LocalDate riskFromDate,
+    /**
+     * 프로필의 총보수(연, %) · 상장일(2026-09-28). 운용사에서 못 가져온 종목은 {@code null} 이다 &mdash; 0 을 보내면 "보수 없음" 으로
+     * 읽힌다.
+     */
+    BigDecimal totalExpenseRatioPct,
+    LocalDate listingDate) {
 
   /** 한 기간의 가격 · 합산 수익률(사용자 결정 2026-09-21). */
   public record PeriodReturnView(

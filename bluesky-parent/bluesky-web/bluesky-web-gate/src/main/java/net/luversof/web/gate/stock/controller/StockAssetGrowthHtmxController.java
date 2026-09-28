@@ -398,12 +398,18 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     stockRealizedRequest.setGroupBy(
         net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
     var stockRealizedParams = stockRealizedRequest.toParams();
+    // 기간이 없으면(전체) 위 기준일 요청과 조건이 같다 - 실측 2026-09-23: 같은 calculateProfit?groupBy=STOCKITEM 을 두 번
+    // 던졌다(각 18ms).
+    // 조건이 같으면 한 번만 던지고 결과를 같이 쓴다(두 쪽 다 읽기만 한다).
+    boolean sameAsPriceBasis = stockRealizedParams.equals(priceBasisParams);
     var stockRealizedFuture =
         emptySelection
             ? null
-            : java.util.concurrent.CompletableFuture.supplyAsync(
-                () -> tradeProfitClient.calculateProfit(stockRealizedParams),
-                stockRemoteCallExecutor);
+            : sameAsPriceBasis
+                ? priceBasisFuture
+                : java.util.concurrent.CompletableFuture.supplyAsync(
+                    () -> tradeProfitClient.calculateProfit(stockRealizedParams),
+                    stockRemoteCallExecutor);
 
     var contributionDividendParams = request.toParams();
     var contributionDividendFuture =

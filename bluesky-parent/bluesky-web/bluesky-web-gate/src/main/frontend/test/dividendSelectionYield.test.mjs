@@ -11,6 +11,9 @@
 //    뿐이고 2021-01-18 에 전량 매도한 뒤 2021-04-08 에 지급됐다. 서버 행은 0.00% 인데 선택 합계는
 //    0 이 아닌 값을 냈다.
 //
+// 2026-09-28: 선택 합계의 수익률은 표의 기본 열과 같은 "연 수익률" 이다 - 세후 배당(원금 있는 것) x 365 / 원금 x 일 합(principalCostDaySum).
+// 분자 규칙(걸러진 세후액)은 그대로다. 아래 예시의 원금 x 일 합은 "평균 원금 x 365 일" 로 잡아 예전 기대값(8% · 4%)이 그대로 성립한다.
+//
 // 문자열을 찾는 대신 JTE 에 박힌 함수를 그대로 꺼내 가짜 DOM 위에서 돌린다 - 식을 바꿔 적어도
 // 결과로 잡힌다.
 import assert from "node:assert/strict";
@@ -110,6 +113,7 @@ test("일평균원금 기준 수익률은 기준일 원금이 있는 배당만 �
 				averageDailyPrincipalCost: "10000",
 				averagePrincipalCost: "10000",
 				netWithPrincipalCost: "800",
+				principalCostDaySum: "3650000",
 			},
 			{
 				grossAmount: "220",
@@ -119,12 +123,13 @@ test("일평균원금 기준 수익률은 기준일 원금이 있는 배당만 �
 				averageDailyPrincipalCost: "0",
 				averagePrincipalCost: "0",
 				netWithPrincipalCost: "0",
+				principalCostDaySum: "0",
 			},
 		],
 		SUMMARY_DATASET,
 	);
 
-	// 분자 800 / 분모 10,000 = 8.00%. 전부(1,000)를 넣으면 10.00% 가 된다.
+	// 분자 800 x 365 / 원금 x 일 3,650,000 = 8.00%. 전부(1,000)를 넣으면 10.00% 가 된다.
 	assert.equal(written.yield, "8.00%");
 	// 세후 합계 자체는 고른 행 전부를 더한다(수익률 분자와 다른 값이다).
 	assert.equal(written.net, "1000");
@@ -144,6 +149,7 @@ test("기준일 원금이 없던 배당만 고르면 수익률이 0 이다", () 
 				averageDailyPrincipalCost: "5000000",
 				averagePrincipalCost: "0",
 				netWithPrincipalCost: "0",
+				principalCostDaySum: "1825000000",
 			},
 		],
 		SUMMARY_DATASET,
@@ -165,6 +171,7 @@ test("두 수익률이 같은 분자를 쓴다", () => {
 				averageDailyPrincipalCost: "20000",
 				averagePrincipalCost: "20000",
 				netWithPrincipalCost: "800",
+				principalCostDaySum: "7300000",
 			},
 		],
 		SUMMARY_DATASET,
@@ -172,4 +179,26 @@ test("두 수익률이 같은 분자를 쓴다", () => {
 
 	assert.equal(written.yield, "4.00%");
 	assert.equal(written["basis-yield"], "기준 4.00%");
+});
+
+test("연 수익률은 원금 x 일 합으로 1 년 기준을 낸다 - 기간 일평균 투입원금은 쓰지 않는다", () => {
+	// 30 일 동안 10 만 원을 들고 세후 100 원: 100 x 365 / 3,000,000 = 1.2167%.
+	// 기간 일평균 투입원금(예전 분모)은 일부러 엉뚱한 값(1)을 둔다 - 그것으로 나누면 10,000% 가 나온다.
+	const written = runSummary(
+		[
+			{
+				grossAmount: "100",
+				netAmount: "100",
+				taxAmount: "0",
+				taxableAmount: "0",
+				averageDailyPrincipalCost: "1",
+				averagePrincipalCost: "100000",
+				netWithPrincipalCost: "100",
+				principalCostDaySum: "3000000",
+			},
+		],
+		SUMMARY_DATASET,
+	);
+
+	assert.equal(written.yield, "1.22%");
 });

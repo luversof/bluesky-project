@@ -3,6 +3,11 @@ package net.luversof.api.stock.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -40,6 +45,9 @@ class MonthlyDividendCatalogServiceTest {
 
   @Mock private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
+  @Mock
+  private net.luversof.api.stock.repository.MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
+
   @Mock private MonthlyDividendPayoutService monthlyDividendPayoutService;
 
   @Mock private StockItemRepository stockItemRepository;
@@ -48,6 +56,9 @@ class MonthlyDividendCatalogServiceTest {
 
   @Mock
   private net.luversof.api.stock.repository.StockPriceHistoryRepository stockPriceHistoryRepository;
+
+  @Mock
+  private net.luversof.api.stock.repository.StockDailyClosePriceQuery stockDailyClosePriceQuery;
 
   @InjectMocks private MonthlyDividendCatalogService monthlyDividendCatalogService;
 
@@ -66,16 +77,18 @@ class MonthlyDividendCatalogServiceTest {
                 stockItemId,
                 new StockDailyClosePrice(
                     stockItemId, LocalDate.of(2026, 9, 18), new BigDecimal("8520"))));
-    when(monthlyDividendPayoutService.computeSnapshotStats(stockItemId))
+    when(monthlyDividendPayoutService.computeSnapshotStatsFrom(anyList()))
         .thenReturn(
             new SnapshotStats(
                 LocalDate.of(2026, 9, 17),
                 new BigDecimal("300"),
                 new BigDecimal("280"),
                 new BigDecimal("12.50")));
-    when(monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
-            stockItemId))
-        .thenReturn(List.of(payout(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 17))));
+    when(monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
+            anyCollection()))
+        .thenReturn(
+            withItem(
+                stockItemId, List.of(payout(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 17)))));
 
     List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
 
@@ -107,10 +120,10 @@ class MonthlyDividendCatalogServiceTest {
         .thenReturn(List.of(profile(stockItemId, "UNKNOWN", 9)));
     when(stockItemRepository.findAllById(any())).thenReturn(List.of(stockItem));
     when(stockPriceService.getLatestPrices(anyCollection())).thenReturn(Map.of());
-    when(monthlyDividendPayoutService.computeSnapshotStats(stockItemId)).thenReturn(null);
-    when(monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
-            stockItemId))
-        .thenReturn(List.of());
+    when(monthlyDividendPayoutService.computeSnapshotStatsFrom(anyList())).thenReturn(null);
+    when(monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
+            anyCollection()))
+        .thenReturn(withItem(stockItemId, List.of()));
 
     List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
 
@@ -122,6 +135,37 @@ class MonthlyDividendCatalogServiceTest {
     // 현재가가 없으면 수익률을 지어내지 않는다(0 ÷ 0 은 0 이 아니라 '모름'에 가깝지만, 화면은 0 으로 적고 이력 없음을 함께 보여 준다).
     assertThat(row.annualYieldPct()).isEqualByComparingTo("0");
     assertThat(row.latestPayDate()).isNull();
+  }
+
+  /** 프로필의 총보수 · 상장일이 그대로 실리고, 모르는 종목은 0 이 아니라 null 이다(0 은 "보수 없음" 으로 읽힌다). 2026-09-28. */
+  @Test
+  void 총보수와_상장일이_실리고_모르면_null_이다() {
+    UUID knownId = UUID.randomUUID();
+    UUID unknownId = UUID.randomUUID();
+    MonthlyDividendProfile known = profile(knownId, "MID_MONTH", 1);
+    known.setTotalExpenseRatioPct(new java.math.BigDecimal("0.0900"));
+    known.setListingDate(LocalDate.of(2024, 3, 5));
+
+    when(monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc())
+        .thenReturn(List.of(known, profile(unknownId, "MONTH_END", 2)));
+    when(stockItemRepository.findAllById(any()))
+        .thenReturn(
+            List.of(
+                stockItem(knownId, "476800", "KODEX 한국부동산리츠인프라"),
+                stockItem(unknownId, "466940", "TIGER 은행고배당플러스TOP10")));
+    when(stockPriceService.getLatestPrices(anyCollection())).thenReturn(Map.of());
+    when(monthlyDividendPayoutService.computeSnapshotStatsFrom(anyList())).thenReturn(null);
+    when(monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
+            anyCollection()))
+        .thenReturn(List.of());
+
+    List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
+
+    assertThat(rows).hasSize(2);
+    assertThat(rows.get(0).totalExpenseRatioPct()).isEqualByComparingTo("0.09");
+    assertThat(rows.get(0).listingDate()).isEqualTo(LocalDate.of(2024, 3, 5));
+    assertThat(rows.get(1).totalExpenseRatioPct()).isNull();
+    assertThat(rows.get(1).listingDate()).isNull();
   }
 
   @Test
@@ -162,9 +206,9 @@ class MonthlyDividendCatalogServiceTest {
     when(monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc())
         .thenReturn(List.of(profile(stockItemId, "MONTH_END", 3)));
     when(stockItemRepository.findAllById(any())).thenReturn(List.of(stockItem));
-    when(monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
-            stockItemId))
-        .thenReturn(payouts(stockItemId));
+    when(monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
+            anyCollection()))
+        .thenReturn(withItem(stockItemId, payouts(stockItemId)));
 
     List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
 
@@ -185,12 +229,14 @@ class MonthlyDividendCatalogServiceTest {
         .thenReturn(List.of(profile(stockItemId, "MONTH_END", 3)));
     when(stockItemRepository.findAllById(any()))
         .thenReturn(List.of(stockItem(stockItemId, "0219E0", "KODEX 200커버드콜액티브")));
-    when(monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
-            stockItemId))
+    when(monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
+            anyCollection()))
         .thenReturn(
-            List.of(
-                payout(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 17)),
-                payout(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 17))));
+            withItem(
+                stockItemId,
+                List.of(
+                    payout(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 17)),
+                    payout(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 17)))));
 
     List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
 
@@ -213,10 +259,10 @@ class MonthlyDividendCatalogServiceTest {
         .thenReturn(List.of(profile(stockItemId, "MONTH_END", 3)));
     when(stockItemRepository.findAllById(any()))
         .thenReturn(List.of(stockItem(stockItemId, "489030", "PLUS 고배당주위클리커버드콜")));
-    when(monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
-            stockItemId))
-        .thenReturn(List.of(payout(today.minusDays(5), today.minusDays(1))));
-    when(stockPriceHistoryRepository.findDailyClosePrices(stockItemId, null, null))
+    when(monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
+            anyCollection()))
+        .thenReturn(withItem(stockItemId, List.of(payout(today.minusDays(5), today.minusDays(1)))));
+    when(stockDailyClosePriceQuery.findDailyClosePricesForItems(anyString(), any()))
         .thenReturn(priceHistory(stockItemId, today));
 
     List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
@@ -273,5 +319,85 @@ class MonthlyDividendCatalogServiceTest {
     payout.setDividendAmountPerShare(new BigDecimal("300"));
     payout.setTaxableBasePerShare(new BigDecimal("37.5"));
     return payout;
+  }
+
+  /** 한 번에 읽는 질의가 돌려준 이력은 종목 id 로 나뉜다 - 흉내에도 id 를 붙인다. */
+  private static List<MonthlyDividendPayout> withItem(
+      UUID stockItemId, List<MonthlyDividendPayout> rows) {
+    rows.forEach(row -> row.setStockItemId(stockItemId));
+    return rows;
+  }
+
+  /**
+   * 종목이 늘어도 지급 이력 &middot; 시세 이력은 표 전체에 한 번씩만 읽는다.
+   *
+   * <p>실측 2026-09-23: 종목 21 개에 지급 이력 두 번 &middot; 시세 한 번씩 63 번 왕복해 응답이 190~230ms 였다. 종목마다 부르는 옛 질의로
+   * 돌아가면 여기서 걸린다.
+   */
+  @Test
+  void 종목이_여럿이어도_이력은_한_번씩만_읽는다() {
+    UUID first = UUID.randomUUID();
+    UUID second = UUID.randomUUID();
+    when(monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc())
+        .thenReturn(List.of(profile(first, "MONTH_END", 1), profile(second, "MID_MONTH", 2)));
+    when(stockItemRepository.findAllById(any()))
+        .thenReturn(List.of(stockItem(first, "489030", "A"), stockItem(second, "498400", "B")));
+    List<MonthlyDividendPayout> mixed = new java.util.ArrayList<>();
+    mixed.addAll(withItem(first, new java.util.ArrayList<>(payouts(first))));
+    mixed.addAll(
+        withItem(
+            second,
+            new java.util.ArrayList<>(
+                List.of(payout(LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 15))))));
+    when(monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
+            anyCollection()))
+        .thenReturn(mixed);
+
+    List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
+
+    assertThat(rows).hasSize(2);
+    assertThat(rows.get(0).payoutCount()).as("첫 종목 이력 12 회만 - 섞이면 13").isEqualTo(12);
+    assertThat(rows.get(1).payoutCount()).as("둘째 종목 이력 1 회").isEqualTo(1);
+    verify(monthlyDividendPayoutQuery, times(1))
+        .findByStockItemIdInOrderByPayDateDescRecordDateDesc(anyCollection());
+    verify(stockDailyClosePriceQuery, times(1)).findDailyClosePricesForItems(anyString(), any());
+    verify(monthlyDividendPayoutRepository, never())
+        .findByStockItemIdOrderByPayDateDescRecordDateDesc(any());
+    verify(stockPriceHistoryRepository, never()).findDailyClosePrices(any(), any(), any());
+    verify(monthlyDividendPayoutService, never()).computeSnapshotStats(any(UUID.class));
+  }
+
+  /**
+   * 시세는 계산에 쓰는 창(15 개월)만 읽지만, "이력이 언제부터 있나" 는 창과 무관한 실제 첫 거래일이다.
+   *
+   * <p>실측 2026-09-23: 2 년치를 다 읽던 것을 창으로 줄여 응답 가운데 값 143 &rarr; 123ms, 응답 바이트는 전과 같다. 창의 첫 날을 시작일로
+   * 쓰면 화면이 "1 년 전부터 있음" 으로 거짓을 말한다.
+   */
+  @Test
+  void 시세는_창만_읽고_이력_시작일은_실제_첫_거래일이다() {
+    UUID stockItemId = UUID.randomUUID();
+    LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+    when(monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc())
+        .thenReturn(List.of(profile(stockItemId, "MONTH_END", 1)));
+    when(stockItemRepository.findAllById(any()))
+        .thenReturn(List.of(stockItem(stockItemId, "489030", "A")));
+    List<StockDailyClosePrice> window = new java.util.ArrayList<>();
+    for (int ago = 400; ago >= 0; ago--) {
+      window.add(
+          new StockDailyClosePrice(stockItemId, today.minusDays(ago), new BigDecimal("100")));
+    }
+    org.mockito.ArgumentCaptor<LocalDate> from =
+        org.mockito.ArgumentCaptor.forClass(LocalDate.class);
+    when(stockDailyClosePriceQuery.findDailyClosePricesForItems(anyString(), from.capture()))
+        .thenReturn(window);
+    when(stockPriceHistoryRepository.findFirstTradeDatesForItems(anyString()))
+        .thenReturn(List.of(new StockDailyClosePrice(stockItemId, today.minusDays(700), null)));
+
+    List<MonthlyDividendCatalogResponse> rows = monthlyDividendCatalogService.findCatalog(null);
+
+    assertThat(from.getValue()).as("가장 긴 기간 12 개월 + 여유 3 개월").isEqualTo(today.minusMonths(15));
+    assertThat(rows.get(0).priceHistoryStartDate())
+        .as("창의 첫 날(400 일 전)이 아니라 실제 첫 거래일(700 일 전)")
+        .isEqualTo(today.minusDays(700));
   }
 }

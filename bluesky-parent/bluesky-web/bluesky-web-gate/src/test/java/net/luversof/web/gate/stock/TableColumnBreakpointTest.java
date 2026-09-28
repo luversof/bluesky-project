@@ -48,17 +48,32 @@ class TableColumnBreakpointTest {
     assertThat(tooEarly).as("11열 랭킹 표의 열을 2xl(1536px)에서 펴면 본문 열보다 134px 넓어져 가로 스크롤이 생긴다").isZero();
   }
 
+  /**
+   * 2026-09-28 사용자 요청("다양한 수익률과 투입원금이 잘 눈에 안 들어온다")으로 랭킹 표의 예전 열(세전 · 세금 · 과세 · 기간 일평균 투입원금 · 기준일
+   * 지표 8 열)은 폭에 따라 펴는 대신 "열 더 보기" 를 켜야 나온다. 그 열들이 사라지면 값을 어디서도 볼 수 없으므로 여전히 지킨다 - 열 표시가 남아 있고, 표마다
+   * 토글이 있고, 토글과 인쇄가 그 열을 펴는 규칙이 빌드 산출물에 있어야 한다.
+   */
   @Test
   void rankingTablesStillHaveTheWideOnlyColumns() throws IOException {
     String source = Files.readString(YIELD_ANALYTICS, StandardCharsets.UTF_8);
     int firstRanking = source.indexOf(SORTABLE_TABLE);
 
-    long wide =
-        linesFrom(source, firstRanking).stream()
-            .filter(l -> l.contains("min-[1150px]:table-cell"))
-            .count();
+    long extra =
+        linesFrom(source, firstRanking).stream().filter(l -> l.contains("yield-extra-col")).count();
+    assertThat(extra).as("랭킹 표 두 개의 머리 · 본문 · 합계 x 8 열").isGreaterThanOrEqualTo(40);
+    assertThat(source.split("data-yield-extra-toggle>", -1)).as("표 세 개에 토글 하나씩").hasSize(3 + 1);
+    assertThat(source.split("data-yield-extra-scope", -1)).as("토글이 켜는 범위 세 개").hasSize(3 + 1);
 
-    assertThat(wide).as("넓은 화면에서만 펴는 열이 사라지면 그 값들을 어디서도 볼 수 없다").isGreaterThanOrEqualTo(20);
+    String built =
+        Files.readString(Path.of("src/main/resources/static/main.css"), StandardCharsets.UTF_8);
+    assertThat(built)
+        .contains(
+            "[data-yield-extra-scope]:has([data-yield-extra-toggle]:checked) .yield-extra-col{display:table-cell}")
+        .contains(".yield-extra-col{display:none}");
+    int print = built.indexOf("@media print");
+    assertThat(built.indexOf(".yield-extra-col{display:table-cell}", print))
+        .as("인쇄에서는 모든 열")
+        .isGreaterThan(print);
   }
 
   /**
@@ -195,10 +210,9 @@ class TableColumnBreakpointTest {
     int firstRanking = source.indexOf(SORTABLE_TABLE);
     String before = source.substring(0, firstRanking);
 
-    long yearly = before.lines().filter(l -> l.contains("md:table-cell")).count();
+    // 2026-09-28 부터 연도별 표도 예전 열은 "열 더 보기" 로 편다(분기점 대신). 열 표시가 남아 있는지만 지킨다.
+    long yearly = before.lines().filter(l -> l.contains("yield-extra-col")).count();
 
-    assertThat(yearly)
-        .as("10열인 연도별 표는 헤더 접기 뒤 768px 부터 들어간다 - 랭킹 표와 같은 분기점으로 묶으면 괜히 열이 줄어든다")
-        .isGreaterThan(0);
+    assertThat(yearly).as("연도별 표의 예전 열(머리 · 본문 · 합계)").isGreaterThanOrEqualTo(15);
   }
 }

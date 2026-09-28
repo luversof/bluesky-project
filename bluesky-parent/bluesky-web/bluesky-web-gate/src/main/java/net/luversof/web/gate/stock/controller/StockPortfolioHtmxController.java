@@ -115,6 +115,17 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         emptyAccountSelection
             ? null
             : async.supply(() -> tradeClient.findCashFlowsByStockItem(profitParams));
+    // 종목별 누적 배당의 연 수익률(사용자 요청 2026-09-28) - 배당 탭과 같은 잣대(날마다 들고 있던 원금의 합)를 내려면 거래 원장이 필요하다.
+    var tradesForYieldFuture =
+        emptyAccountSelection
+            ? null
+            : async.supply(
+                () ->
+                    emptyIfNull(
+                        tradeClient.findTrades(
+                            new net.luversof.web.gate.stock.dto.request.TradeSearchRequest(
+                                    userId, request.getAccountIdList(), null, null, null)
+                                .toParams())));
     var firstBuyDateFuture =
         emptyAccountSelection
             ? null
@@ -329,6 +340,15 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     java.time.ZoneId holdingZone = resolveZoneIdOrDefault(request.getTimeZone());
     model.addAttribute("holdingBasisDate", java.time.LocalDate.now(holdingZone));
     model.addAttribute(
+        "dividendAnnualizedByStockItem",
+        dividendAnnualizedByStockItem(
+            dividendByStockItem,
+            tradesForYieldFuture == null
+                ? List.of()
+                : net.luversof.web.gate.stock.support.StockAsyncSupport.join(tradesForYieldFuture),
+            java.time.LocalDate.now(holdingZone),
+            holdingZone));
+    model.addAttribute(
         "firstBuyDateByStockItem",
         firstBuyDateFuture == null
             ? java.util.Map.<UUID, java.time.LocalDate>of()
@@ -342,6 +362,33 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             : emptyIfNullMap(
                 net.luversof.web.gate.stock.support.StockAsyncSupport.join(cashFlowFuture)));
     return "stock/htmx/fragments/assetStatus";
+  }
+
+  /**
+   * 종목별 누적 배당 연 수익률 = 누적 배당(세후) x 365 / (첫 매수일부터 오늘까지 날마다 들고 있던 원금의 합). 배당 탭의 연 수익률과 같은 식이다 - 다만 배당
+   * 탭 "전체" 는 첫 배당 기준일부터 세므로, 첫 배당 전 보유 기간이 긴 종목은 여기가 조금 낮다. 원금 기록이 없으면(배당만 있는 종목) 넣지 않는다.
+   */
+  static java.util.Map<UUID, BigDecimal> dividendAnnualizedByStockItem(
+      java.util.Map<UUID, BigDecimal> dividendByStockItem,
+      List<net.luversof.web.gate.stock.dto.response.TradeResponse> trades,
+      java.time.LocalDate today,
+      java.time.ZoneId zone) {
+    java.util.Map<UUID, BigDecimal> result = new java.util.LinkedHashMap<>();
+    if (dividendByStockItem == null || dividendByStockItem.isEmpty()) {
+      return result;
+    }
+    java.util.Map<UUID, BigDecimal> daySums =
+        StockDividendHtmxController.principalCostDaySumByStock(trades, today, zone);
+    dividendByStockItem.forEach(
+        (stockItemId, dividend) -> {
+          BigDecimal pct =
+              net.luversof.web.gate.stock.util.StockYieldUtil.annualizedPctOnHeldDays(
+                  dividend, daySums.get(stockItemId));
+          if (pct != null && dividend != null && dividend.signum() > 0) {
+            result.put(stockItemId, pct);
+          }
+        });
+    return result;
   }
 
   private List<AssetStatusAccountHoldingView> buildAccountHoldingViews(

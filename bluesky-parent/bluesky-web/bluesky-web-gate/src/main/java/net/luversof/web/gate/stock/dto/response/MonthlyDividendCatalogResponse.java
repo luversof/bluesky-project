@@ -43,7 +43,10 @@ public record MonthlyDividendCatalogResponse(
     /** 최근 1 년 위험 지표: 최대 낙폭(%) · 연환산 변동성(%) · 실제로 센 첫 거래일. */
     BigDecimal maxDrawdownPct,
     BigDecimal volatilityPct,
-    LocalDate riskFromDate) {
+    LocalDate riskFromDate,
+    /** 프로필의 총보수(연, %) · 상장일(2026-09-28). 모르면 null. */
+    BigDecimal totalExpenseRatioPct,
+    LocalDate listingDate) {
 
   /** 한 기간의 가격 · 합산 수익률. */
   @JsonIgnoreProperties(ignoreUnknown = true)

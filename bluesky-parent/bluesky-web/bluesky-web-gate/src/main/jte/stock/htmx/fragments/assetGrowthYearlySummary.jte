@@ -7,7 +7,7 @@
 @param List<TradeProfitYearlySummary> yearlySummaries = java.util.List.of()
 
 !{
-	DecimalFormat amountFormat = new DecimalFormat("#,##0");
+	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	String title = MessageUtil.getMessage("stock.asset.growth.yearly.title");
 	String description = MessageUtil.getMessage("stock.asset.growth.yearly.desc");
 	String yearLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.year");

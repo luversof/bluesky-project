@@ -151,6 +151,9 @@ interface MonthRange {
             // '행'과 어긋나 있었다(행은 서버가 걸러서 계산한 값을 그대로 그린다). 합계행을 행에 맞추면서
             // 여기도 함께 맞췄다.
             let totalNetWithPrincipalCost = 0;
+            // 2026-09-28: 선택 요약의 수익률도 표의 기본 열(연 수익률)과 같은 규칙 - 세후 배당 x 365 / (날마다 들고 있던 원금의 합).
+            // 들고 있던 날 평균 원금은 행끼리 더할 수 없지만(겹친 날) 원금 x 일 합은 더할 수 있어 합계행 · 서버와 같은 값이 나온다.
+            let totalPrincipalCostDaySum = 0;
 
             for (let i = 0; i < selectedRows.length; i++) {
                 const row = selectedRows[i];
@@ -161,14 +164,15 @@ interface MonthRange {
                 totalDailyPrincipalCost += Number(row.dataset.averageDailyPrincipalCost || '0');
                 totalAveragePrincipalCost += Number(row.dataset.averagePrincipalCost || '0');
                 totalNetWithPrincipalCost += Number(row.dataset.netWithPrincipalCost || '0');
+                totalPrincipalCostDaySum += Number(row.dataset.principalCostDaySum || '0');
             }
 
             const totalNetReference = Number(summary.dataset.totalNetAmount || '0');
             const selectionWeight = totalNetReference > 0
                 ? (totalNetAmount / totalNetReference) * 100
                 : 0;
-            const yieldOnDailyAverageCost = totalDailyPrincipalCost > 0
-                ? (totalNetWithPrincipalCost / totalDailyPrincipalCost) * 100
+            const annualizedYield = totalPrincipalCostDaySum > 0
+                ? (totalNetWithPrincipalCost * 365 / totalPrincipalCostDaySum) * 100
                 : 0;
             const yieldOnBasisAverageCost = totalAveragePrincipalCost > 0
                 ? (totalNetWithPrincipalCost / totalAveragePrincipalCost) * 100
@@ -211,7 +215,7 @@ interface MonthRange {
 
             const yieldLabel = summary.querySelector<HTMLElement>('[data-dividend-yield-selection-yield]');
             if (yieldLabel) {
-                yieldLabel.textContent = formatFixedNumber(yieldOnDailyAverageCost, 2) + '%';
+                yieldLabel.textContent = formatFixedNumber(annualizedYield, 2) + '%';
             }
 
             const basisYieldLabel = summary.querySelector<HTMLElement>('[data-dividend-yield-selection-basis-yield]');

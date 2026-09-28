@@ -37,7 +37,7 @@
 @param java.util.Map<UUID, String> accountNames = java.util.Map.of()
 
 !{
-	DecimalFormat df = new DecimalFormat("#,##0");
+	DecimalFormat df = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	BigDecimal safeBuy = buyAmount != null ? buyAmount : BigDecimal.ZERO;
 	BigDecimal safeSell = sellAmount != null ? sellAmount : BigDecimal.ZERO;
 	BigDecimal safeDividend = dividendAmount != null ? dividendAmount : BigDecimal.ZERO;

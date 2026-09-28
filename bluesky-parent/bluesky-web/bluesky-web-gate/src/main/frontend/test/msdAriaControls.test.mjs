@@ -13,6 +13,7 @@ test("패널 생성 지점마다 id 를 주고 토글에 aria-controls 를 붙�
 	assert.ok(panels >= 2, "패널 생성 지점이 줄었다(" + panels + ")");
 	const wired = src.split('toggle.setAttribute("aria-controls", panel.id);').length - 1;
 	assert.equal(wired, panels, "aria-controls 가 빠진 생성 지점이 있다");
-	assert.ok(src.includes('panel.id = "msd-panel-" + (++msdPanelSeq);'), "패널 id 를 일련번호로 만들지 않는다");
+	// prettier 는 (++msdPanelSeq) 의 괄호를 뗀다(2026-09-23 복사본 실측) - 둘 다 같은 식이다.
+	assert.match(src, /panel\.id = "msd-panel-" \+ \(?\+\+msdPanelSeq\)?;/, "패널 id 를 일련번호로 만들지 않는다");
 	assert.ok(src.includes("var msdPanelSeq = 0;"), "일련번호 카운터가 없다 - 조각 교체 뒤 id 가 겹친다");
 });

@@ -100,6 +100,8 @@ class MonthlyProfileSymbolOrderTest {
         true,
         null,
         null,
+        null,
+        null,
         null);
   }
 

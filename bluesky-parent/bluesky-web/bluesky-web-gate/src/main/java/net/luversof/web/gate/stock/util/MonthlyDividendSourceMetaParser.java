@@ -2,7 +2,9 @@ package net.luversof.web.gate.stock.util;
 
 import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 
+import java.math.BigDecimal;
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -71,8 +73,26 @@ public class MonthlyDividendSourceMetaParser {
     this.objectMapper = objectMapper;
   }
 
-  /** 종목코드와 이름. 둘 중 하나라도 비면 등록하지 않는다. */
-  public record SourceMeta(String symbol, String name) {}
+  /**
+   * 종목코드와 이름. 둘 중 하나라도 비면 등록하지 않는다.
+   *
+   * <p>총보수(연, %) · 상장일은 2026-09-28 에 붙였다 &mdash; 못 읽으면 null 이고 등록을 막지 않는다({@link
+   * MonthlyDividendSourceFactsParser}).
+   */
+  public record SourceMeta(
+      String symbol, String name, BigDecimal totalExpenseRatioPct, LocalDate listingDate) {
+
+    public SourceMeta(String symbol, String name) {
+      this(symbol, name, null, null);
+    }
+
+    public SourceMeta withFacts(MonthlyDividendSourceFactsParser.SourceFacts facts) {
+      if (facts == null) {
+        return this;
+      }
+      return new SourceMeta(symbol, name, facts.totalExpenseRatioPct(), facts.listingDate());
+    }
+  }
 
   public SourceMeta fromKodexHtml(String html) {
     String symbol = first(KODEX_IDENTIFIER, html);

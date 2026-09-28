@@ -70,6 +70,8 @@
 	String noteValue = profileForm.getNote() != null ? profileForm.getNote() : "";
 	String payoutBulkInputValue = payoutImportForm.getBulkInput() != null ? payoutImportForm.getBulkInput() : "";
 	String lastVerifiedDateValue = profileForm.getLastVerifiedDate() != null ? String.valueOf(profileForm.getLastVerifiedDate()) : "";
+	String totalExpenseRatioValue = profileForm.getTotalExpenseRatioPct() != null ? profileForm.getTotalExpenseRatioPct().stripTrailingZeros().toPlainString() : "";
+	String listingDateValue = profileForm.getListingDate() != null ? String.valueOf(profileForm.getListingDate()) : "";
 	boolean activeValue = profileForm.getActive() == null || profileForm.getActive();
 	String profileSortValue = monthlyDividendProfileSort != null ? monthlyDividendProfileSort : "display-order";
 	String profileDirectionValue = monthlyDividendProfileDirection != null ? monthlyDividendProfileDirection : "asc";
@@ -263,6 +265,15 @@
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.last.verified.date")}</span></div>
 							<input name="lastVerifiedDate" type="date" value="${lastVerifiedDateValue}" class="input input-bordered w-full min-w-0" />
 						</label>
+						<%-- 총보수 · 상장일(2026-09-28). 저장이 전체 덮어쓰기라 폼에 실어야 저장할 때 안 지워진다. 보통은 "새로 가져오기" 가 채운다. --%>
+						<label class="form-control min-w-0">
+							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.total.expense.ratio")}</span></div>
+							<input name="totalExpenseRatioPct" type="number" step="0.0001" min="0" max="99.9999" inputmode="decimal" value="${totalExpenseRatioValue}" class="input input-bordered w-full min-w-0" />
+						</label>
+						<label class="form-control min-w-0">
+							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.listing.date")}</span></div>
+							<input name="listingDate" type="date" value="${listingDateValue}" class="input input-bordered w-full min-w-0" />
+						</label>
 						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.note")}</span></div>
 							<textarea name="note" rows="4" class="textarea textarea-bordered w-full min-w-0">${noteValue}</textarea>
@@ -403,6 +414,19 @@
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 								<input type="hidden" name="payoutWindow" value="MONTH_END" />
 								<button type="submit" class="btn btn-secondary btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.month.end")}</button>
+							</form>
+						</div>
+					</div>
+					<div class="rounded-2xl border border-base-300 bg-base-50/70 p-4" data-profile-facts-refresh>
+						<div class="space-y-1">
+							<h3 class="text-sm font-semibold text-base-content">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.facts.refresh.title")}</h3>
+							<p class="text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.facts.refresh.desc")}</p>
+						</div>
+						<div class="mt-3 flex flex-wrap gap-2 [&>form]:min-w-0 [&>form]:flex-1">
+							<form method="post" action="/stock/dividend/monthly-reference/profile/facts/refresh" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.facts.refresh.button")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
+								<input type="hidden" name="profileSort" value="${profileSortValue}" />
+								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+								<button type="submit" class="btn btn-secondary btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.facts.refresh.button")}</button>
 							</form>
 						</div>
 					</div>
