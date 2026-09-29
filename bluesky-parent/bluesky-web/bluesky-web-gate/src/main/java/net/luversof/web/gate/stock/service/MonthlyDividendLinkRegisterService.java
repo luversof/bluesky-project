@@ -16,6 +16,7 @@ import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertRequest;
+import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
@@ -219,12 +220,8 @@ public class MonthlyDividendLinkRegisterService {
                   .map(MonthlyDividendPayoutUpsertRequest::getRecordDate)
                   .toList());
 
-      MonthlyDividendProfileUpsertRequest profile = new MonthlyDividendProfileUpsertRequest();
-      profile.setSymbol(meta.symbol());
-      profile.setSourceUrl(link);
-      profile.setPayoutWindow(payoutWindow);
-      profile.setActive(Boolean.TRUE);
-      monthlyDividendProfileClient.upsertProfile(profile);
+      monthlyDividendProfileClient.upsertProfile(
+          buildProfileRequest(meta, link, payoutWindow, findExistingProfile(meta.symbol())));
 
       for (MonthlyDividendPayoutUpsertRequest payout : imported.requests()) {
         monthlyDividendPayoutClient.upsertPayout(payout);
@@ -252,6 +249,131 @@ public class MonthlyDividendLinkRegisterService {
       String reason = StringUtils.hasText(ex.getMessage()) ? ex.getMessage() : ex.toString();
       return new LinkResult(link, false, "", "", "", false, false, 0, 0, false, reason);
     }
+  }
+
+  /** 총보수 · 상장일 새로 가져오기 결과(2026-09-28). 실패는 "종목: 사유" 한 줄씩. */
+  public record FactsRefreshResult(int updatedCount, int unchangedCount, List<String> failures) {}
+
+  /**
+   * 등록된 월배당 프로필마다 운용사에서 총보수 · 상장일을 다시 읽어 바뀐 것만 저장한다(사용자 승인 2026-09-28).
+   *
+   * <p>다른 값은 기존 프로필 그대로 돌려보낸다(저장이 전체 덮어쓰기). 못 읽은 값은 지우지 않는다 &mdash; 사이트가 잠깐 바뀌어 한 번 못 읽었다고 알던 값을
+   * 잃으면 안 된다. 링크가 없는 프로필은 건너뛴다.
+   */
+  public FactsRefreshResult refreshFacts() {
+    List<MonthlyDividendProfileResponse> profiles =
+        monthlyDividendProfileClient.findProfiles(
+            new org.springframework.util.LinkedMultiValueMap<>());
+    int updated = 0;
+    int unchanged = 0;
+    List<String> failures = new ArrayList<>();
+    for (MonthlyDividendProfileResponse existing :
+        profiles != null ? profiles : List.<MonthlyDividendProfileResponse>of()) {
+      if (existing == null || !StringUtils.hasText(existing.sourceUrl())) {
+        continue;
+      }
+      try {
+        SourceMeta meta =
+            monthlyDividendPayoutSourceImportService.fetchMeta(
+                URI.create(existing.sourceUrl().trim()));
+        if (meta.totalExpenseRatioPct() == null && meta.listingDate() == null) {
+          failures.add(
+              existing.stockItemSymbol()
+                  + ": "
+                  + msg("stock.monthly.reference.facts.refresh.missing"));
+          continue;
+        }
+        MonthlyDividendProfileUpsertRequest request = withFacts(existing, meta);
+        if (sameFacts(existing, request)) {
+          unchanged++;
+          continue;
+        }
+        monthlyDividendProfileClient.upsertProfile(request);
+        updated++;
+      } catch (Exception ex) {
+        log.warn("총보수 새로 가져오기 실패: {}", existing.sourceUrl(), ex);
+        String reason = StringUtils.hasText(ex.getMessage()) ? ex.getMessage() : ex.toString();
+        failures.add(existing.stockItemSymbol() + ": " + reason);
+      }
+    }
+    return new FactsRefreshResult(updated, unchanged, List.copyOf(failures));
+  }
+
+  /** 기존 프로필을 그대로 옮기고 이번에 읽은 총보수 · 상장일만 얹는다(읽은 값이 있을 때만). */
+  public static MonthlyDividendProfileUpsertRequest withFacts(
+      MonthlyDividendProfileResponse existing, SourceMeta meta) {
+    MonthlyDividendProfileUpsertRequest request = new MonthlyDividendProfileUpsertRequest();
+    request.setSymbol(existing.stockItemSymbol());
+    // 새로 가져오기를 한 번 돌리면 옛 RISE 주소도 새 주소로 바뀐다(2026-09-29).
+    request.setSourceUrl(
+        net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+            existing.sourceUrl()));
+    request.setPayoutWindow(existing.payoutWindow());
+    request.setDisplayOrder(existing.displayOrder());
+    request.setActive(existing.active());
+    request.setNote(existing.note());
+    request.setLastVerifiedDate(existing.lastVerifiedDate());
+    request.setTotalExpenseRatioPct(
+        meta.totalExpenseRatioPct() != null
+            ? meta.totalExpenseRatioPct()
+            : existing.totalExpenseRatioPct());
+    request.setListingDate(
+        meta.listingDate() != null ? meta.listingDate() : existing.listingDate());
+    return request;
+  }
+
+  private static boolean sameFacts(
+      MonthlyDividendProfileResponse existing, MonthlyDividendProfileUpsertRequest request) {
+    boolean sameExpense =
+        existing.totalExpenseRatioPct() == null
+            ? request.getTotalExpenseRatioPct() == null
+            : request.getTotalExpenseRatioPct() != null
+                && existing.totalExpenseRatioPct().compareTo(request.getTotalExpenseRatioPct())
+                    == 0;
+    return sameExpense
+        && java.util.Objects.equals(existing.listingDate(), request.getListingDate());
+  }
+
+  /**
+   * 이미 등록된 종목이면 그 프로필. 저장이 전체 덮어쓰기라, 이것을 안 보고 새 요청을 만들면 다시 등록할 때마다 사람이 넣은 메모 · 최종 검증일이 지워졌다(발견
+   * 2026-09-28). 조회가 실패하면 등록도 실패로 돌린다 &mdash; 모르는 채로 저장하면 지운다.
+   */
+  private MonthlyDividendProfileResponse findExistingProfile(String symbol) {
+    org.springframework.util.LinkedMultiValueMap<String, String> params =
+        new org.springframework.util.LinkedMultiValueMap<>();
+    params.add("symbol", symbol);
+    List<MonthlyDividendProfileResponse> found = monthlyDividendProfileClient.findProfiles(params);
+    return found == null || found.isEmpty() ? null : found.get(0);
+  }
+
+  /**
+   * 링크 등록의 프로필 저장 요청. 기존 프로필이 있으면 그 값을 바탕으로 하고 링크 · 지급 시기 · 활성만 새로 쓴다. 총보수 · 상장일은 이번에 읽은 값이 있을 때만
+   * 바꾼다(못 읽었다고 알던 값을 지우지 않는다).
+   */
+  public static MonthlyDividendProfileUpsertRequest buildProfileRequest(
+      SourceMeta meta, String link, String payoutWindow, MonthlyDividendProfileResponse existing) {
+    MonthlyDividendProfileUpsertRequest profile = new MonthlyDividendProfileUpsertRequest();
+    if (existing != null) {
+      profile.setDisplayOrder(existing.displayOrder());
+      profile.setNote(existing.note());
+      profile.setLastVerifiedDate(existing.lastVerifiedDate());
+      profile.setTotalExpenseRatioPct(existing.totalExpenseRatioPct());
+      profile.setListingDate(existing.listingDate());
+    }
+    profile.setSymbol(meta.symbol());
+    // RISE 옛 주소(riseetf.co.kr)로 넣어도 새 주소(kbam.co.kr/products/…)로 저장한다(2026-09-29).
+    profile.setSourceUrl(
+        net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+            link));
+    profile.setPayoutWindow(payoutWindow);
+    profile.setActive(Boolean.TRUE);
+    if (meta.totalExpenseRatioPct() != null) {
+      profile.setTotalExpenseRatioPct(meta.totalExpenseRatioPct());
+    }
+    if (meta.listingDate() != null) {
+      profile.setListingDate(meta.listingDate());
+    }
+    return profile;
   }
 
   private StockItem findBySymbol(List<StockItem> stockItems, String symbol) {

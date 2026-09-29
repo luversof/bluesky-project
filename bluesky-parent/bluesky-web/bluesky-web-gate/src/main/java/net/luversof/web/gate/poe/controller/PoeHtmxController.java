@@ -15,11 +15,13 @@ import net.luversof.web.gate.poe.dto.PoeBaseItem;
 import net.luversof.web.gate.poe.dto.PoeGem;
 import net.luversof.web.gate.poe.dto.PoeJobStatus;
 import net.luversof.web.gate.poe.dto.PoeUniqueItem;
+import net.luversof.web.gate.poe.dto.PoeUpgradeGuide;
 import net.luversof.web.gate.poe.httpexchange.PoeBuildClient;
 import net.luversof.web.gate.poe.httpexchange.PoeDataClient;
 import net.luversof.web.gate.poe.httpexchange.PoeExtractClient;
 import net.luversof.web.gate.poe.httpexchange.PoeOptimizeClient;
 import net.luversof.web.gate.poe.httpexchange.PoeSimClient;
+import net.luversof.web.gate.poe.httpexchange.PoeUpgradeGuideClient;
 
 /**
  * PoE htmx fragment 컨트롤러 — 데이터/잡은 bluesky-api-poe 로 위임하고 여기선 로그인 게이팅 + fragment 렌더만 담당한다. 잡 시작은
@@ -29,9 +31,13 @@ import net.luversof.web.gate.poe.httpexchange.PoeSimClient;
 @RequestMapping(value = "/poe/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class PoeHtmxController {
 
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(PoeHtmxController.class);
+
   private final PoeDataClient poeDataClient;
   private final PoeBuildClient poeBuildClient;
   private final PoeOptimizeClient poeOptimizeClient;
+  private final PoeUpgradeGuideClient poeUpgradeGuideClient;
   private final PoeSimClient poeSimClient;
   private final PoeExtractClient poeExtractClient;
   private final PoeIconVersion poeIconVersion;
@@ -40,12 +46,14 @@ public class PoeHtmxController {
       PoeDataClient poeDataClient,
       PoeBuildClient poeBuildClient,
       PoeOptimizeClient poeOptimizeClient,
+      PoeUpgradeGuideClient poeUpgradeGuideClient,
       PoeSimClient poeSimClient,
       PoeExtractClient poeExtractClient,
       PoeIconVersion poeIconVersion) {
     this.poeDataClient = poeDataClient;
     this.poeBuildClient = poeBuildClient;
     this.poeOptimizeClient = poeOptimizeClient;
+    this.poeUpgradeGuideClient = poeUpgradeGuideClient;
     this.poeSimClient = poeSimClient;
     this.poeExtractClient = poeExtractClient;
     this.poeIconVersion = poeIconVersion;
@@ -251,6 +259,7 @@ public class PoeHtmxController {
       @RequestParam(required = false, defaultValue = "auto") String objective,
       @RequestParam(required = false, defaultValue = "Pinnacle") String scenario,
       @RequestParam(required = false, defaultValue = "false") boolean buffs,
+      @RequestParam(required = false, defaultValue = "false") boolean thorough,
       @RequestParam(required = false, defaultValue = "") String className,
       @RequestParam(required = false, defaultValue = "") String ascendancy,
       @RequestParam(required = false) java.util.List<String> uniques,
@@ -267,9 +276,13 @@ public class PoeHtmxController {
       @RequestParam(required = false, defaultValue = "") String tattoos,
       // 트리에서 고른 도유 노터블 id — 없으면 최적화기가 자동 전수 스윕으로 고른다
       @RequestParam(required = false, defaultValue = "") String anoint,
-      java.security.Principal principal) {
+      // 루미너리 용병 빌드 PoB 코드(선택)
+      @RequestParam(required = false) String mercCode,
+      java.security.Principal principal,
+      Model model) {
     if (principal != null) {
       // 멀티셀렉트(반복 파라미터) 또는 콤마 텍스트 둘 다 수용 → 콤마 문자열로 합쳐 API 로 전달
+      try {
       poeOptimizeClient.start(
           slug,
           objective,
@@ -284,7 +297,17 @@ public class PoeHtmxController {
           jewels,
           clusters,
           tattoos,
-          anoint);
+          anoint,
+          thorough,
+          blankToNull(mercCode));
+      } catch (RuntimeException e) {
+        // 시작 자체가 거부됨(용병 코드를 못 읽는 등) — 폴링 대신 사유를 보인다. 원격 오류는 반드시 로그로 남긴다.
+        log.warn("최적화 시작 실패(용병 코드 {}): {}", blankToNull(mercCode) != null ? "있음" : "없음", e.toString());
+        model.addAttribute(
+            "startError",
+            io.github.luversof.boot.context.support.MessageUtil.getMessage(
+                blankToNull(mercCode) != null ? "poe.sim.opt.start.error.merc" : "poe.sim.opt.start.error"));
+      }
     }
     return "poe/htmx/simOptimizeWrap";
   }
@@ -345,21 +368,82 @@ public class PoeHtmxController {
     try {
       model.addAttribute("build", poeBuildClient.importBuild(code));
       model.addAttribute("engineAvailable", poeBuildClient.available());
-    } catch (RestClientException | BlueskyException e) {
+    } catch (RuntimeException e) {
+      // RuntimeException 까지 — API 가 JSON 이 아닌 응답(예: 톰캣 오류 HTML)을 주면 Jackson 3 의 StreamReadException
+      // 이
+      // RestClientException 이 아니라 그대로 빠져나가, 사용자 화면에 날 JSON 오류가 떴다(2026-09-29 제보).
+      log.warn("PoB 임포트 실패(코드 {}자): {}", code.length(), e.toString());
       model.addAttribute("importError", true);
     }
     return "poe/htmx/buildSummary";
   }
 
+  /**
+   * 업그레이드 가이드 시작 — 빌드 화면에 붙여넣은 PoB 코드를 그대로 받아 잡을 띄우고, 상태를 3초마다 폴링하는 래퍼를 돌려준다. 엔진 평가를 수십 번 하므로 로그인
+   * 사용자만 실행한다(비로그인이면 안내만 보여준다).
+   */
+  @PostMapping("/build/guide/start")
+  public String startGuide(
+      @RequestParam String code,
+      @RequestParam(required = false) String mercCode,
+      java.security.Principal principal,
+      Model model) {
+    if (principal == null) {
+      model.addAttribute("loginRequired", true);
+      return "poe/htmx/buildGuideStatus";
+    }
+    boolean started;
+    try {
+      started = poeUpgradeGuideClient.start(code, blankToNull(mercCode));
+    } catch (RuntimeException e) {
+      log.warn("업그레이드 가이드 시작 실패(코드 {}자): {}", code.length(), e.toString());
+      started = false;
+    }
+    if (!started) {
+      // 이미 돌고 있거나 코드를 못 읽은 경우 — 사유는 상태의 error 에 들어 있다(그대로 보여준다).
+      model.addAttribute("status", safeGuideStatus());
+      return "poe/htmx/buildGuideStatus";
+    }
+    return "poe/htmx/buildGuideWrap";
+  }
+
+  /** 업그레이드 가이드 상태 fragment — 진행 중이 아니면 HTTP 286 으로 htmx 폴링을 멈춘다. */
+  @GetMapping("/build/guide/status")
+  public String guideStatus(Model model, jakarta.servlet.http.HttpServletResponse response) {
+    PoeUpgradeGuide.Status status = safeGuideStatus();
+    model.addAttribute("status", status);
+    if (status == null || !Boolean.TRUE.equals(status.running())) {
+      response.setStatus(286); // htmx: 폴링 중단
+    }
+    return "poe/htmx/buildGuideStatus";
+  }
+
+  private PoeUpgradeGuide.Status safeGuideStatus() {
+    try {
+      return poeUpgradeGuideClient.status();
+    } catch (RuntimeException e) {
+      log.warn("업그레이드 가이드 상태 조회 실패: {}", e.toString());
+      return null;
+    }
+  }
+
   /** PoB 계산 엔진(헤드리스)으로 빌드 스탯 재계산 → 결과 fragment */
   @PostMapping("/build/recalc")
-  public String recalcBuild(@RequestParam String code, Model model) {
+  public String recalcBuild(
+      @RequestParam String code, @RequestParam(required = false) String mercCode, Model model) {
     try {
-      model.addAttribute("engineResult", poeBuildClient.recalculate(code));
-    } catch (RestClientException | BlueskyException e) {
+      model.addAttribute("engineResult", poeBuildClient.recalculate(code, blankToNull(mercCode)));
+      model.addAttribute("withMerc", blankToNull(mercCode) != null);
+    } catch (RuntimeException e) {
+      log.warn("PoB 재계산 실패(코드 {}자): {}", code.length(), e.toString());
       model.addAttribute("engineError", true);
     }
     return "poe/htmx/buildEngineResult";
+  }
+
+  /** 빈 칸(용병 코드 미입력)은 보내지 않는다 — API 가 "없음"으로 받게. */
+  private static String blankToNull(String s) {
+    return s == null || s.isBlank() ? null : s.trim();
   }
 
   /** 트리 에디터에서 찍은 트리를 PoB 엔진으로 실계산 — 순수 트리 기여분(장비/보조젬 없음). */

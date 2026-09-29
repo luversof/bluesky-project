@@ -71,7 +71,14 @@ class PartialUpdateDataLossGuardTest {
 
     List<String> overwritten = new ArrayList<>();
     for (String setter :
-        List.of("setSourceUrl", "setNote", "setPayoutWindow", "setActive", "setLastVerifiedDate")) {
+        List.of(
+            "setSourceUrl",
+            "setNote",
+            "setPayoutWindow",
+            "setActive",
+            "setLastVerifiedDate",
+            "setTotalExpenseRatioPct",
+            "setListingDate")) {
       if (body.contains(setter)) {
         overwritten.add(setter);
       }

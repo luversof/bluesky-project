@@ -9,6 +9,8 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.frontend.TsSource;
+
 /**
  * 차트 범례의 ■ 는 그 선과 같은 색이라야 한다.
  *
@@ -36,8 +38,12 @@ class ChartLegendSwatchTest {
 
     assertThat(template).contains("String assetGrowthRealizedSwatch = \"rgb(99, 102, 241)\";");
     assertThat(template).contains("String assetGrowthDividendSwatch = \"rgb(29, 167, 80)\";");
-    assertThat(script).as("누적 결산 손익 선").contains("borderColor: 'rgba(99, 102, 241, 1)'");
-    assertThat(script).as("수익 합산 선").contains("borderColor: 'rgba(29, 167, 80, 1)'");
+    assertThat(TsSource.n(script))
+        .as("누적 결산 손익 선")
+        .contains(TsSource.n("borderColor: 'rgba(99, 102, 241, 1)'"));
+    assertThat(TsSource.n(script))
+        .as("수익 합산 선")
+        .contains(TsSource.n("borderColor: 'rgba(29, 167, 80, 1)'"));
     assertThat(template)
         .as("tailwind -400 계열로 돌아가면 선 색과 어긋난다")
         .doesNotContain("text-indigo-400")

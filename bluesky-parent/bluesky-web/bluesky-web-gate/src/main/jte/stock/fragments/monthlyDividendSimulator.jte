@@ -52,7 +52,7 @@
 @param Map<String, String> monthlyDividendPayoutWindowBySymbol = java.util.Map.of()
 
 !{
-	DecimalFormat amountFormat = new DecimalFormat("#,##0");
+	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
 	boolean monthlyDividendDisplayOrderSort = "display-order".equals(monthlyDividendSort);
 	MonthlyDividendSnapshotResponse bestChoice = monthlyDividendSummary != null ? monthlyDividendSummary.bestChoice() : null;
@@ -286,11 +286,12 @@
 						     경고색으로 알리는데 합계만 조용하면 사용자는 현재 기준으로 읽는다. 요약 화면의 다가오는 배당 카드와
 						     같은 문구를 쓴다. --%>
 						@if(monthlyDividendStaleQuantityCount > 0)
-						<div class="text-[11px] text-warning">
+						<%-- 금액이 든 안내라 금액 가리기 대상이다(amount-value) - 2026-09-29 보유가 바뀌어 처음 나타나자 가리기를 켜도 금액이 보였다. --%>
+						<div class="text-[11px] text-warning amount-value" data-stale-quantity-notice>
 							${java.text.MessageFormat.format(
 								MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
 								String.valueOf(monthlyDividendStaleQuantityCount),
-								"₩" + String.format("%,d", StockFormatUtil.displayWon(monthlyDividendCurrentQuantityTotal)))}
+								StockFormatUtil.fullKrw(StockFormatUtil.displayWon(monthlyDividendCurrentQuantityTotal)))}
 						</div>
 						@endif
 						<div class="flex items-start justify-between gap-3 text-sm">

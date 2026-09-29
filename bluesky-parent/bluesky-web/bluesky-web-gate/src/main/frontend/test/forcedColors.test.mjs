@@ -22,7 +22,9 @@ test("forced-colors 블록이 상태 셀렉터에 밑줄을 준다", () => {
 		assert.ok(block.includes(sel), "고대비 상태 단서 대상에서 빠짐: " + sel);
 	}
 	assert.match(block, /text-decoration:\s*underline/, "색 외의 단서(밑줄)가 없다");
-	assert.ok(block.includes('tr[aria-selected="true"] > td:first-child::before'), "선택 행은 배경색만 달라 고대비에서 사라진다 - 표식 필요");
+	// 2026-09-28: 선택 행의 첫 칸은 th(scope=row)라 td:first-child 는 어느 칸에도 걸리지 않았다 - 첫 칸이면 th 든 td 든.
+	assert.ok(block.includes('tr[aria-selected="true"] > :first-child::before'), "선택 행은 배경색만 달라 고대비에서 사라진다 - 표식 필요");
+	assert.ok(!block.includes('tr[aria-selected="true"] > td:first-child::before'), "첫 칸이 th 인 행에는 표식이 안 붙는다");
 	// 정규식 안의 \2 는 8진 이스케이프로 읽히므로 백슬래시를 이스케이프해 CSS 원문의 "\25B8" 을 찾는다.
 	assert.match(block, /content:\s*"\\25B8/, "선택 행 표식 글리프가 없다");
 	assert.doesNotMatch(block, /\boutline\s*:/, "외곽선은 포커스 링과 겹친다");

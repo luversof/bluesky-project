@@ -142,7 +142,11 @@ public record PoeOptimizeResult(
    * @param unmodeled 스탯 노드 중 엔진이 문장을 해석조차 못 하는 노드 수
    * @param total 스탯을 가진 전직 노드 수
    */
-  public record UnmodeledAscendancy(String ascendancy, int unmodeled, int total) {}
+  /**
+   * @param mercenary 루미너리에 용병 코드를 넣었으면 반영한 용병 버프 요약("분노 150% · …"), 아니면 null
+   */
+  public record UnmodeledAscendancy(
+      String ascendancy, int unmodeled, int total, String mercenary) {}
 
   /** 미니언이 장착한 장비 한 점(수호자 기동). */
   public record MinionItem(String slot, String slotKo, String baseType, List<String> modLines) {}

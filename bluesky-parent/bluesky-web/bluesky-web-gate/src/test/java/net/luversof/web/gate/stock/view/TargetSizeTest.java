@@ -64,4 +64,24 @@ class TargetSizeTest {
     assertThat(links).as("쌓인 정렬 링크를 찾지 못했다").isGreaterThanOrEqualTo(4);
     assertThat(flat).as("16px 링크가 4px 간격으로 쌓이면 중심 거리 20px 다").isEmpty();
   }
+
+  /**
+   * 묶은 줄 배지(포커스 · 탭으로 설명을 여는 자리)는 24px 높이를 가진다.
+   *
+   * <p>실측 2026-09-24(target-size-sweep.js, 1280px): 대시보드 최근 활동에서 배지가 31x17 이라 옆 링크와 24px 원이 겹쳐 간격
+   * 예외도 못 받았다. 감싸는 칸만 min-h-6 으로 올린다. tap-target-24(::after 확장)는 daisyUI 툴팁의 ::after 와 겹쳐 쓰지 않는다.
+   */
+  @Test
+  void 묶은_줄_배지는_누르는_높이_24px() throws IOException {
+    String html =
+        Files.readString(
+            JTE.resolve("htmx/fragments/components/mergedRecordBadge.jte"), StandardCharsets.UTF_8);
+    Matcher m =
+        Pattern.compile("<div class=\"([^\"]*)\" role=\"note\" tabindex=\"0\"").matcher(html);
+    assertThat(m.find()).as("묶은 줄 배지의 설명 칸을 찾지 못했다").isTrue();
+    assertThat(m.group(1).split(" "))
+        .as("24px 높이")
+        .contains("min-h-6", "inline-flex", "items-center");
+    assertThat(m.group(1)).as("::after 확장은 툴팁 화살표와 겹친다").doesNotContain("tap-target-24");
+  }
 }

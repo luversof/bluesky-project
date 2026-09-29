@@ -206,6 +206,8 @@ class MonthlyDividendViewSupportTest {
         true, // active
         null, // note
         (LocalDate) null, // lastVerifiedDate
+        null,
+        null,
         null); // updatedDate
   }
 }

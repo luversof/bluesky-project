@@ -9,6 +9,8 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.frontend.TsSource;
+
 /**
  * 자료가 한 점도 없는 기간에서 도넛은 캔버스를 감추고 안내를 띄우는데 월별 막대는 빈 캔버스만 남겼다.
  *
@@ -33,8 +35,9 @@ class ChartEmptyNoteTest {
   @Test
   void 규칙은_한_곳에만_있다() throws IOException {
     String charts = read(CHARTS_TS);
-    assertThat(charts).contains("function renderChartEmptyNote");
-    assertThat(charts).contains("StockCharts.renderChartEmptyNote = renderChartEmptyNote;");
+    assertThat(TsSource.n(charts)).contains(TsSource.n("function renderChartEmptyNote"));
+    assertThat(TsSource.n(charts))
+        .contains(TsSource.n("StockCharts.renderChartEmptyNote = renderChartEmptyNote;"));
     // 감추기만 하고 안내를 안 넣으면 카드가 텅 빈다.
     int at = charts.indexOf("function renderChartEmptyNote");
     String body = charts.substring(at, charts.indexOf("StockCharts.renderChartEmptyNote", at));
@@ -45,22 +48,27 @@ class ChartEmptyNoteTest {
 
   @Test
   void 두_월별_막대가_모두_그_규칙을_쓴다() throws IOException {
-    assertThat(read(CHARTS_TS)).as("매매 월별 막대").contains("renderChartEmptyNote(");
-    assertThat(read(DIVIDEND_TS))
+    assertThat(TsSource.n(read(CHARTS_TS)))
+        .as("매매 월별 막대")
+        .contains(TsSource.n("renderChartEmptyNote("));
+    assertThat(TsSource.n(read(DIVIDEND_TS)))
         .as("배당 월별 막대")
-        .contains("renderChartEmptyNote(canvasId, monthlyPointCount === 0, noPeriodHistoryLabel)");
+        .contains(
+            TsSource.n(
+                "renderChartEmptyNote(canvasId, monthlyPointCount === 0, noPeriodHistoryLabel)"));
     // StockCharts 는 ensureStockCharts 콜백 안에서만 보장된다 - 그 밖에서 부르면 조용히 건너뛰어
     // 안내가 안 뜬다(실측 2026-09-11: 배당 월별 막대가 그 바람에 빈 캔버스 그대로였다).
-    String dividend = read(DIVIDEND_TS);
-    int noteAt = dividend.indexOf("renderChartEmptyNote(canvasId, monthlyPointCount");
-    int ensureAt = dividend.lastIndexOf("win.ensureStockCharts", noteAt);
-    int createAt = dividend.indexOf("createChart(canvasId", ensureAt);
+    // 순서만 본다 - prettier 가 줄을 접어도 같게(TsSource).
+    String dividend = TsSource.n(read(DIVIDEND_TS));
+    int noteAt = dividend.indexOf(TsSource.n("renderChartEmptyNote(canvasId, monthlyPointCount"));
+    int ensureAt = dividend.lastIndexOf(TsSource.n("win.ensureStockCharts"), noteAt);
+    int createAt = dividend.indexOf(TsSource.n("createChart(canvasId"), ensureAt);
     assertThat(ensureAt).isGreaterThan(0);
     assertThat(noteAt).as("ensureStockCharts 콜백 안에서 불러야 한다").isGreaterThan(ensureAt);
     assertThat(noteAt).as("차트를 만들기 전에 판정해야 한다").isLessThan(createAt);
     // 라벨은 자료가 0건이어도 기간에서 만들어진다(실측: 라벨 1 · 점 0) - 라벨 수로 판정하면 안내가 안 뜬다.
-    assertThat(read(DIVIDEND_TS))
-        .doesNotContain("renderChartEmptyNote(canvasId, m.labels.length === 0");
+    assertThat(TsSource.n(read(DIVIDEND_TS)))
+        .doesNotContain(TsSource.n("renderChartEmptyNote(canvasId, m.labels.length === 0"));
   }
 
   @Test

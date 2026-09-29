@@ -1,0 +1,105 @@
+@import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.poe.dto.PoeUpgradeGuide
+
+@param PoeUpgradeGuide.Status status = null
+@param boolean loginRequired = false
+
+<%-- 업그레이드 가이드 상태/결과. 제안마다 측정한 증감(%)을 DPS · EHP 로 나눠 보여준다 —
+     합성 목표값 하나만 보이면 "목표값은 올랐는데 DPS 는 내려가 고장처럼 보이는" 일이 생긴다. --%>
+@if(loginRequired)
+	<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe.build.guide.login")}</div>
+@elseif(status == null)
+	<div class="text-sm text-error">${MessageUtil.getMessage("poe.build.guide.unavailable")}</div>
+@elseif(Boolean.TRUE.equals(status.running()))
+	<div class="flex flex-wrap items-center gap-2 text-sm">
+		<span class="loading loading-spinner loading-xs text-primary"></span>
+		<span class="font-semibold">${status.phase()}</span>
+		@if(status.total() != null && status.total() > 0)
+			<span class="font-mono text-base-content/60">${status.done()}/${status.total()}</span>
+		@endif
+		<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.running.hint")}</span>
+	</div>
+@elseif(status.error() != null)
+	<div class="text-sm text-error">${status.error()}</div>
+@elseif(status.result() != null)
+	!{ PoeUpgradeGuide.Result result = status.result(); }
+	<div class="space-y-3">
+		<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+			<span class="font-semibold">${MessageUtil.getMessage("poe.build.guide.title")}</span>
+			<span class="text-base-content/60">${result.mainSkill()}</span>
+			@if(result.baseline() != null)
+				<span class="font-mono text-xs text-base-content/60">DPS ${String.format("%,.0f", result.baseline().dps())} · EHP ${String.format("%,.0f", result.baseline().ehp())}</span>
+			@endif
+		</div>
+		@if(result.suggestions() == null || result.suggestions().isEmpty())
+			<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe.build.guide.none")}</div>
+		@else
+			<ol class="space-y-2">
+				@for(PoeUpgradeGuide.Suggestion s : result.suggestions())
+					<li class="rounded border border-base-300 px-3 py-2 text-sm">
+						<div class="flex flex-wrap items-center gap-2">
+							@if("merc".equals(s.kind()))
+								<span class="badge badge-info badge-outline badge-sm">${MessageUtil.getMessage("poe.build.guide.kind.merc")}</span>
+							@elseif("free".equals(s.kind()))
+								<span class="badge badge-success badge-outline badge-sm">${MessageUtil.getMessage("poe.build.guide.kind.free")}</span>
+							@elseif("support".equals(s.kind()))
+								<span class="badge badge-primary badge-outline badge-sm">${MessageUtil.getMessage("poe.build.guide.kind.support")}</span>
+							@else
+								<span class="badge badge-ghost badge-sm">${MessageUtil.getMessage("poe.build.guide.kind.item")}</span>
+							@endif
+							<span class="font-semibold">${s.title()}</span>
+							@template.poe.htmx.buildGuideDelta(label = "DPS", pct = s.dpsPct())
+							@template.poe.htmx.buildGuideDelta(label = "EHP", pct = s.ehpPct())
+						</div>
+						<div class="mt-1 text-xs text-base-content/70">${s.detail()}</div>
+						<%-- 이 칸에 끼워 재 본 고유 아이템 — 이름은 인게임 고유 색 + 호버 툴팁(빌드 요약과 같은 레이어).
+						     새 탭으로 여는 까닭: 같은 탭으로 가면 몇 분 걸린 분석 결과가 화면에서 사라진다. --%>
+						@if(s.picks() != null && !s.picks().isEmpty())
+							<ul class="mt-2 space-y-1">
+								@for(PoeUpgradeGuide.ItemPick p : s.picks())
+									<li>
+										<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+											<span class="text-xs text-base-content/50" aria-hidden="true">→</span>
+											@if("RARE".equals(p.rarity()))
+												<%-- 레어 목표 — 지금 아이템과 같은 베이스에 2티어 옵션을 얹은 것. 이름은 인게임 레어 색, 옵션은 아래 줄에. --%>
+												<span class="badge badge-outline badge-sm">${MessageUtil.getMessage("poe.build.guide.rare")}</span>
+												<span class="font-semibold poe-name-rare">${net.luversof.web.gate.poe.PoeText.name(p.baseTypeKo(), p.baseType())}</span>
+											@else
+												<a class="poe-hover font-semibold poe-name-unique link-hover cursor-pointer"
+												   href="/poe/uniques/${p.slug()}" target="_blank" rel="noopener"
+												   hx-get="/poe/htmx/uniques/detail?slug=${p.slug()}"
+												   hx-target="#poePreview"
+												   hx-trigger="mouseenter delay:100ms"
+												   hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(p.nameKo(), p.name())}</a>
+											@endif
+											@template.poe.htmx.buildGuideDelta(label = "DPS", pct = p.dpsPct())
+											@template.poe.htmx.buildGuideDelta(label = "EHP", pct = p.ehpPct())
+											@if(p.metaPercent() != null)
+												<span class="badge badge-ghost badge-sm">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.guide.meta"), p.metaPercent())}</span>
+											@endif
+											@if(p.needs() != null)
+												<%-- 그대로는 못 끼는 추천 — 요구 능력치를 다른 곳(트리·주얼·다른 장비)에서 채워야 한다. --%>
+												<span class="badge badge-warning badge-outline badge-sm">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.guide.needs"), p.needs())}</span>
+											@endif
+										</div>
+										@if(p.mods() != null && !p.mods().isEmpty())
+											<div class="mt-0.5 pl-5 text-xs leading-5 text-base-content/60">${String.join(" · ", p.mods())}</div>
+										@endif
+									</li>
+								@endfor
+							</ul>
+						@endif
+					</li>
+				@endfor
+			</ol>
+		@endif
+		!{
+			boolean anyMeta = result.suggestions() != null && result.suggestions().stream()
+				.anyMatch(x -> x.picks() != null && x.picks().stream().anyMatch(p -> p.metaPercent() != null));
+		}
+		<div class="text-xs text-base-content/50">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.guide.footer"), result.evaluations(), Math.round(result.durationMs() / 1000.0))}</div>
+		@if(anyMeta)
+			<div class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.meta.note")}</div>
+		@endif
+	</div>
+@endif

@@ -54,6 +54,21 @@
 @param BigDecimal portfolioYieldOnCostPct = null
 @param BigDecimal portfolioYieldOnMarketPct = null
 @param BigDecimal portfolioYieldAnnualizedPct = null
+@param net.luversof.web.gate.stock.dto.view.DividendYieldGroupView portfolioYield = null
+@param java.util.Map<java.util.UUID, BigDecimal> currentValueByStock = null
+@param java.util.Map<java.util.UUID, BigDecimal> currentValueByAccount = null
+@param java.util.Map<java.util.UUID, BigDecimal> evaluationProfitByStock = null
+@param java.util.Map<java.util.UUID, BigDecimal> evaluationProfitByAccount = null
+@param java.util.Map<java.util.UUID, BigDecimal> realizedProfitByStock = null
+@param java.util.Map<java.util.UUID, BigDecimal> realizedProfitByAccount = null
+@param java.util.Map<java.util.UUID, BigDecimal> totalBuyCostByStock = null
+@param java.util.Map<java.util.UUID, BigDecimal> totalBuyCostByAccount = null
+@param BigDecimal ttmYieldPct = null
+@param BigDecimal ttmAverageDailyPrincipalCost = null
+@param BigDecimal ttmNetWithPrincipalCost = null
+@param BigDecimal ttmNetAmount = null
+@param java.time.LocalDate ttmStartDate = null
+@param java.time.LocalDate ttmEndDate = null
 @param long periodDayCount = 0L
 @param BigDecimal periodStartPrincipal = null
 @param BigDecimal periodEndPrincipal = null
@@ -72,7 +87,7 @@
 @param net.luversof.web.gate.stock.dto.view.DividendCalendarView dividendMonthCalendar = null
 
 !{
-	DecimalFormat decimalFormat = new DecimalFormat("#,##0");
+	DecimalFormat decimalFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 
 	// Safe nulls
 	BigDecimal safeAllNet = totalAllNetAmount != null ? totalAllNetAmount : BigDecimal.ZERO;
@@ -273,6 +288,21 @@
 		portfolioYieldOnCostPct = portfolioYieldOnCostPct,
 		portfolioYieldOnMarketPct = portfolioYieldOnMarketPct,
 		portfolioYieldAnnualizedPct = portfolioYieldAnnualizedPct,
+		portfolioYield = portfolioYield,
+		currentValueByStock = currentValueByStock,
+		currentValueByAccount = currentValueByAccount,
+		evaluationProfitByStock = evaluationProfitByStock,
+		evaluationProfitByAccount = evaluationProfitByAccount,
+		realizedProfitByStock = realizedProfitByStock,
+		realizedProfitByAccount = realizedProfitByAccount,
+		totalBuyCostByStock = totalBuyCostByStock,
+		totalBuyCostByAccount = totalBuyCostByAccount,
+		ttmYieldPct = ttmYieldPct,
+		ttmAverageDailyPrincipalCost = ttmAverageDailyPrincipalCost,
+		ttmNetWithPrincipalCost = ttmNetWithPrincipalCost,
+		ttmNetAmount = ttmNetAmount,
+		ttmStartDate = ttmStartDate,
+		ttmEndDate = ttmEndDate,
 		periodDayCount = periodDayCount,
 		periodStartPrincipal = periodStartPrincipal,
 		periodEndPrincipal = periodEndPrincipal,

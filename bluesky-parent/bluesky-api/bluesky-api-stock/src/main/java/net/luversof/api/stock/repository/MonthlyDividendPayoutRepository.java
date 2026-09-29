@@ -15,7 +15,5 @@ public interface MonthlyDividendPayoutRepository
   Optional<MonthlyDividendPayout> findByStockItemIdAndRecordDateAndPayDate(
       UUID stockItemId, LocalDate recordDate, LocalDate payDate);
 
-  List<MonthlyDividendPayout> findAllByOrderByPayDateDescRecordDateDesc();
-
   List<MonthlyDividendPayout> findByStockItemIdOrderByPayDateDescRecordDateDesc(UUID stockItemId);
 }

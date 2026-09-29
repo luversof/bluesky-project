@@ -68,7 +68,8 @@ class SimulatorStaleQuantityWarningTest {
         java.text.MessageFormat.format(
             MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
             "7",
-            "₩3,105,136");
+            // 2026-09-29: 세 곳의 표기를 로케일을 따르는 fullKrw 하나로 맞췄다(예전 여기만 "₩3,105,136").
+            net.luversof.web.gate.stock.util.StockFormatUtil.fullKrw(3105136L));
 
     assertThat(html).as("전달이 빠지면 조각이 기본값 0 을 써서 경고가 통째로 사라진다").contains(expected);
   }
@@ -79,7 +80,9 @@ class SimulatorStaleQuantityWarningTest {
 
     String expected =
         java.text.MessageFormat.format(
-            MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"), "0", "₩0");
+            MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
+            "0",
+            net.luversof.web.gate.stock.util.StockFormatUtil.fullKrw(0L));
 
     assertThat(html).as("어긋난 종목이 없는데 경고를 띄우면 늘 켜져 있는 경고가 된다").doesNotContain(expected);
   }

@@ -24,7 +24,7 @@ import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.repository.AccountRepository;
-import net.luversof.api.stock.repository.MonthlyDividendPayoutRepository;
+import net.luversof.api.stock.repository.MonthlyDividendPayoutQuery;
 import net.luversof.api.stock.repository.MonthlyDividendSnapshotRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
@@ -116,7 +116,7 @@ public class LedgerIntegrityService {
   private final DividendService dividendService;
   private final StockItemRepository stockItemRepository;
   private final AccountRepository accountRepository;
-  private final MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
+  private final MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
   private final MonthlyDividendSnapshotRepository monthlyDividendSnapshotRepository;
 
   public LedgerIntegrityService(
@@ -124,13 +124,13 @@ public class LedgerIntegrityService {
       DividendService dividendService,
       StockItemRepository stockItemRepository,
       AccountRepository accountRepository,
-      MonthlyDividendPayoutRepository monthlyDividendPayoutRepository,
+      MonthlyDividendPayoutQuery monthlyDividendPayoutQuery,
       MonthlyDividendSnapshotRepository monthlyDividendSnapshotRepository) {
     this.tradeService = tradeService;
     this.dividendService = dividendService;
     this.stockItemRepository = stockItemRepository;
     this.accountRepository = accountRepository;
-    this.monthlyDividendPayoutRepository = monthlyDividendPayoutRepository;
+    this.monthlyDividendPayoutQuery = monthlyDividendPayoutQuery;
     this.monthlyDividendSnapshotRepository = monthlyDividendSnapshotRepository;
   }
 
@@ -410,7 +410,7 @@ public class LedgerIntegrityService {
     // 2026-08 이다(넷 다 참조 마지막이 2026-07-20). 참조가 있는 8 종목 중 나머지 4 종목은 빠진 달이 없다.
     Set<String> referencedMonths = new java.util.HashSet<>();
     Set<UUID> referencedStockItemIds = new java.util.HashSet<>();
-    for (var payout : monthlyDividendPayoutRepository.findAllByOrderByPayDateDescRecordDateDesc()) {
+    for (var payout : monthlyDividendPayoutQuery.findAllByOrderByPayDateDescRecordDateDesc()) {
       if (payout.getStockItemId() == null || payout.getPayDate() == null) {
         continue;
       }

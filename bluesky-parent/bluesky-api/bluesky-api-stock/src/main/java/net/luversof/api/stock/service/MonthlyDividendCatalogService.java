@@ -19,8 +19,10 @@ import net.luversof.api.stock.domain.MonthlyDividendPayout;
 import net.luversof.api.stock.domain.MonthlyDividendProfile;
 import net.luversof.api.stock.domain.StockDailyClosePrice;
 import net.luversof.api.stock.domain.StockItem;
+import net.luversof.api.stock.repository.MonthlyDividendPayoutQuery;
 import net.luversof.api.stock.repository.MonthlyDividendPayoutRepository;
 import net.luversof.api.stock.repository.MonthlyDividendProfileRepository;
+import net.luversof.api.stock.repository.StockDailyClosePriceQuery;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
 import net.luversof.api.stock.service.MonthlyDividendPayoutService.SnapshotStats;
@@ -47,6 +49,8 @@ public class MonthlyDividendCatalogService {
 
   @Autowired private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
+  @Autowired private MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
+
   @Autowired private MonthlyDividendPayoutService monthlyDividendPayoutService;
 
   @Autowired private StockItemRepository stockItemRepository;
@@ -54,6 +58,11 @@ public class MonthlyDividendCatalogService {
   @Autowired private StockPriceService stockPriceService;
 
   @Autowired private StockPriceHistoryRepository stockPriceHistoryRepository;
+
+  @Autowired private StockDailyClosePriceQuery stockDailyClosePriceQuery;
+
+  /** 카탈로그가 읽는 시세 창(개월) - 가장 긴 계산 기간 12 개월 + 휴장 · 거래 공백 여유 3 개월. */
+  static final int CALCULATION_WINDOW_MONTHS = 15;
 
   /** 등록된 프로필 전부(표시 순서대로). activeOnly 면 활성 프로필만. */
   public List<MonthlyDividendCatalogResponse> findCatalog(Boolean activeOnly) {
@@ -79,28 +88,50 @@ public class MonthlyDividendCatalogService {
         .findAllById(stockItemIds)
         .forEach(item -> stockItemById.put(item.getId(), item));
     Map<UUID, StockDailyClosePrice> priceById = stockPriceService.getLatestPrices(stockItemIds);
+    // 지급 이력 · 시세 이력도 한 번에 읽는다. 실측 2026-09-23: 종목(21)마다 지급 이력 두 번(통계 · 추세) · 시세 한 번씩 63 번 왕복해
+    // 이 응답이 190~230ms 였고, 월배당 ETF 화면 본문 280ms · 시뮬레이터 월배당 216ms 의 대부분이었다.
+    Map<UUID, List<MonthlyDividendPayout>> payoutsById = new HashMap<>();
+    Map<UUID, List<StockDailyClosePrice>> priceHistoryById = new HashMap<>();
+    Map<UUID, LocalDate> firstTradeDateById = new HashMap<>();
+    if (!stockItemIds.isEmpty()) {
+      for (MonthlyDividendPayout payout :
+          monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
+              stockItemIds)) {
+        payoutsById.computeIfAbsent(payout.getStockItemId(), id -> new ArrayList<>()).add(payout);
+      }
+      String ids =
+          stockItemIds.stream()
+              .map(UUID::toString)
+              .collect(java.util.stream.Collectors.joining(","));
+      // 기간 수익률 · 위험 지표는 최근 12 개월만 쓴다 - 2 년치를 다 읽으면 행이 두 배다(실측 2026-09-23: 약 1 만 행).
+      // 기초일이 휴장이면 그 전 거래일을 찾으므로 3 개월 여유를 둔다.
+      LocalDate fromDate = LocalDate.now(MARKET_ZONE_ID).minusMonths(CALCULATION_WINDOW_MONTHS);
+      for (StockDailyClosePrice row :
+          stockDailyClosePriceQuery.findDailyClosePricesForItems(ids, fromDate)) {
+        priceHistoryById.computeIfAbsent(row.stockItemId(), id -> new ArrayList<>()).add(row);
+      }
+      for (StockDailyClosePrice row :
+          stockPriceHistoryRepository.findFirstTradeDatesForItems(ids)) {
+        firstTradeDateById.put(row.stockItemId(), row.tradeDate());
+      }
+    }
 
     List<MonthlyDividendCatalogResponse> rows = new ArrayList<>();
     for (MonthlyDividendProfile profile : profiles) {
       UUID stockItemId = profile.getStockItemId();
       StockItem stockItem = stockItemId != null ? stockItemById.get(stockItemId) : null;
+      List<MonthlyDividendPayout> payouts =
+          stockItemId != null ? payoutsById.getOrDefault(stockItemId, List.of()) : List.of();
       SnapshotStats stats =
           stockItemId != null
-              ? monthlyDividendPayoutService.computeSnapshotStats(stockItemId)
+              ? monthlyDividendPayoutService.computeSnapshotStatsFrom(payouts)
               : null;
-      List<MonthlyDividendPayout> payouts =
-          stockItemId != null
-              ? monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
-                  stockItemId)
-              : List.of();
       MonthlyDividendPayout latestPayout = payouts.isEmpty() ? null : payouts.get(0);
       StockDailyClosePrice price = stockItemId != null ? priceById.get(stockItemId) : null;
 
       // 기간 수익률은 시세 이력으로 낸다(저장하지 않는다 - 매일 바뀌는 계산값이다).
       List<StockDailyClosePrice> priceHistory =
-          stockItemId != null
-              ? stockPriceHistoryRepository.findDailyClosePrices(stockItemId, null, null)
-              : List.of();
+          stockItemId != null ? priceHistoryById.getOrDefault(stockItemId, List.of()) : List.of();
       List<PeriodReturnCalculator.PayoutPoint> payoutPoints =
           payouts.stream()
               .map(
@@ -126,8 +157,9 @@ public class MonthlyDividendCatalogService {
       RiskMetricsCalculator.RiskMetrics risk =
           RiskMetricsCalculator.compute(priceHistory, today, RISK_MONTHS);
 
+      // 이력 시작일은 창과 무관하게 실제 첫 거래일이다(화면의 "YYYY-MM-DD 부터").
       LocalDate priceHistoryStartDate =
-          priceHistory.isEmpty() ? null : priceHistory.get(0).tradeDate();
+          stockItemId != null ? firstTradeDateById.get(stockItemId) : null;
 
       // 분배금 추세는 지급 이력만으로 난다. null 은 여기서 0 으로 맞춰 평균이 computeSnapshotStats 와 같게 나오게 한다.
       PayoutTrendCalculator.PayoutTrend payoutTrend =
@@ -169,7 +201,9 @@ public class MonthlyDividendCatalogService {
               payoutTrend != null ? payoutTrend.changePct() : null,
               risk != null ? risk.maxDrawdownPct() : null,
               risk != null ? risk.volatilityPct() : null,
-              risk != null ? risk.fromDate() : null));
+              risk != null ? risk.fromDate() : null,
+              profile.getTotalExpenseRatioPct(),
+              profile.getListingDate()));
     }
     return rows;
   }

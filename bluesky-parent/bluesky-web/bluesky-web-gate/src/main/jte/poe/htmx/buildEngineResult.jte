@@ -4,6 +4,7 @@
 
 @param EngineResult engineResult = null
 @param boolean engineError = false
+@param boolean withMerc = false
 
 @if(engineError)
 	<div class="alert alert-error text-sm">${MessageUtil.getMessage("poe.build.engine.error")}</div>
@@ -12,6 +13,9 @@
 		<div class="flex items-center gap-2">
 			<span class="text-xs font-bold text-primary">${MessageUtil.getMessage("poe.build.engine.title")}</span>
 			<span class="badge badge-ghost badge-sm font-mono">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.engine.duration"), engineResult.durationMs())}</span>
+			@if(withMerc)
+				<span class="badge badge-outline badge-sm">${MessageUtil.getMessage("poe.build.engine.withmerc")}</span>
+			@endif
 		</div>
 		<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
 			@for(PoeBuild.PlayerStat stat : engineResult.stats())

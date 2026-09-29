@@ -335,6 +335,13 @@ public class StockDetailViewController {
     var timeSeriesFuture =
         stockAsync.supply(() -> tradeProfitClient.timeSeriesWithSummary(seriesParamsPre));
     var accountsFuture = stockAsync.supply(() -> accountClient.getAccountsByUserId(userId));
+    // 기간 필터 존. 바꾸는 규칙은 StockZoneUtil.resolve 한 곳에만 둔다(잘못된 값이면 서버 기본 존).
+    // 최초 데이터 일자 조회가 이 존을 쓰므로 조회를 던지기 전에 정한다.
+    java.time.ZoneId filterZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+    // 이 화면의 최초 데이터 일자(날짜 선택기 하한). 다른 조회와 의존이 없는데 전부 받은 뒤 따로 불러 한 왕복이 더해졌다
+    // (실측 2026-09-23: 계좌 상세 조각에서 다른 조회가 끝난 +35ms 에 출발). 함께 던진다 - 실패는 도우미가 삼키고 로그로 남긴다.
+    var firstDateFuture =
+        stockAsync.supply(() -> detailDataFirstDate(userId, resolvedId, null, filterZone));
     // 보유 기간 · 연평균 수익률 - 자산 현황과 같은 입력(최초 매수일 · 종목별 누적 배당 · 하루치 순현금흐름)을 같은 API 로 받는다.
     // 기간 선택과 무관한 '보유 전체' 값이라 기간을 싣지 않는다(사용자 요청 2026-09-17). 존은 '오늘' 을 정하는 존과 같게 싣는다 -
     // 흐름의 날짜와 오늘이 다른 존이면 하루가 어긋난다.
@@ -548,9 +555,7 @@ public class StockDetailViewController {
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
             .withZone(java.time.ZoneId.systemDefault()));
 
-    // 기간 필터 모델 (날짜 필터 바)
-    // 바꾸는 규칙은 StockZoneUtil.resolve 한 곳에만 둔다(잘못된 값이면 서버 기본 존).
-    java.time.ZoneId filterZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+    // 기간 필터 모델 (날짜 필터 바) - 존(filterZone)은 최초 데이터 일자 조회가 쓰므로 조회를 던질 때 앞에서 정했다.
     model.addAttribute(
         "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
     model.addAttribute(
@@ -567,7 +572,8 @@ public class StockDetailViewController {
             timeSeries,
             net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
             filterZone);
-    String detailFirstDate = detailDataFirstDate(userId, resolvedId, null, filterZone);
+    String detailFirstDate =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture);
     // 배지의 시작은 시계열의 첫 점과 이 화면 데이터의 최초일 중 이른 쪽이다 - 시계열은 평가액이
     // 잡히는 날부터라 첫 거래보다 늦게 시작할 수 있다(실측 2026-09-13: 삼성전자 19 일 · 한투 위탁 13 일).
     model.addAttribute(
@@ -754,10 +760,15 @@ public class StockDetailViewController {
     }
     model.addAttribute("account", account);
     UUID resolvedId = account.id();
-    model.addAttribute(
-        "accountNavEntries",
-        accountNavEntries(
-            accountClient.getAccountsByUserId(userId), resolvedId, request.getQueryString()));
+    // 계좌 이동 목록 - 계좌가 정해지면 다른 조회와 의존이 없다. 예전에는 여기서 동기로 불러 다섯 조회가 그만큼 늦게 나갔다(2026-09-23).
+    var accountNavFuture = stockAsync.supply(() -> accountClient.getAccountsByUserId(userId));
+    // 기간 필터 존. 바꾸는 규칙은 StockZoneUtil.resolve 한 곳에만 둔다(잘못된 값이면 서버 기본 존).
+    // 최초 데이터 일자 조회가 이 존을 쓰므로 조회를 던지기 전에 정한다.
+    java.time.ZoneId filterZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+    // 이 화면의 최초 데이터 일자(날짜 선택기 하한). 다른 조회와 의존이 없는데 전부 받은 뒤 따로 불러 한 왕복이 더해졌다
+    // (실측 2026-09-23: 계좌 상세 조각에서 다른 조회가 끝난 +35ms 에 출발). 함께 던진다 - 실패는 도우미가 삼키고 로그로 남긴다.
+    var firstDateFuture =
+        stockAsync.supply(() -> detailDataFirstDate(userId, null, resolvedId, filterZone));
 
     // 계좌가 정해진 뒤의 다섯 조회는 서로 의존이 없다. 순차로 던지면 왕복이 줄줄이 이어진다
     // (실측: 백엔드 7회 27.3ms 인데 화면은 75.3ms). 파라미터를 먼저 만들고 한꺼번에 던진다.
@@ -912,9 +923,7 @@ public class StockDetailViewController {
       timeSeries = List.of();
     }
 
-    // 기간 필터 모델 (날짜 필터 바)
-    // 바꾸는 규칙은 StockZoneUtil.resolve 한 곳에만 둔다(잘못된 값이면 서버 기본 존).
-    java.time.ZoneId filterZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+    // 기간 필터 모델 (날짜 필터 바) - 존(filterZone)은 최초 데이터 일자 조회가 쓰므로 조회를 던질 때 앞에서 정했다.
     model.addAttribute(
         "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
     model.addAttribute(
@@ -931,7 +940,14 @@ public class StockDetailViewController {
             timeSeries,
             net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
             filterZone);
-    String detailFirstDate = detailDataFirstDate(userId, null, resolvedId, filterZone);
+    String detailFirstDate =
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture);
+    model.addAttribute(
+        "accountNavEntries",
+        accountNavEntries(
+            net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountNavFuture),
+            resolvedId,
+            request.getQueryString()));
     // 배지의 시작은 시계열의 첫 점과 이 화면 데이터의 최초일 중 이른 쪽이다 - 시계열은 평가액이
     // 잡히는 날부터라 첫 거래보다 늦게 시작할 수 있다(실측 2026-09-13: 삼성전자 19 일 · 한투 위탁 13 일).
     model.addAttribute(

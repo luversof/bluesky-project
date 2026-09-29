@@ -7,7 +7,7 @@
 @param List<YearlyCostSummary> yearlyCosts = java.util.List.of()
 
 !{
-	DecimalFormat amountFormat = new DecimalFormat("#,##0");
+	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	String title = MessageUtil.getMessage("stock.asset.growth.cost.title");
 	String description = MessageUtil.getMessage("stock.asset.growth.cost.desc");
 	String yearLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.year");

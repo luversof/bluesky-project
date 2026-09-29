@@ -47,7 +47,7 @@
 @param int realizedStockCount = 0
 
 !{
-	DecimalFormat decimalFormat = new DecimalFormat("#,##0");
+	DecimalFormat decimalFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
 
 	// 여러 섹션이 공유하는 라벨 (하위 컴포넌트에 param 으로 전달)

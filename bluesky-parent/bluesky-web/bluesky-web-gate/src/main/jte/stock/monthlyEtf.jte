@@ -32,7 +32,7 @@
 @param java.util.List<Integer> monthlyEtfPeriods = java.util.List.of(1, 3, 6, 12)
 
 !{
-	DecimalFormat amountFormat = new DecimalFormat("#,##0");
+	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
 	String referenceManageUrl = "/stock/admin?tab=monthly-reference";
 	String simulatorUrl = "/stock/simulator?tab=monthly-dividend";
@@ -51,6 +51,11 @@
 	String periodQuery = baseUrl.substring("/stock/monthly-etf?".length())
 		.replaceAll("period=[0-9]+&", "")
 		+ "sort=" + monthlyEtfSort + "&direction=" + monthlyEtfDirection + "&";
+	// 초기화는 보이는 필터만 비운다 - 폼 밖에서 고른 보기(이번 적립) · 기간 · 정렬은 지킨다
+	// (실측 2026-09-24: 이번 적립 보기에서 초기화를 누르면 전체 보기 · 기간 1년으로 튕겼다).
+	String resetUrl = "/stock/monthly-etf?"
+		+ (monthlyEtfView == null || monthlyEtfView.isBlank() ? "" : "view=" + monthlyEtfView + "&")
+		+ "period=" + monthlyEtfPeriod + "&sort=" + monthlyEtfSort + "&direction=" + monthlyEtfDirection;
 	String minAnnualYieldValue = monthlyEtfMinAnnualYield != null ? monthlyEtfMinAnnualYield.stripTrailingZeros().toPlainString() : "";
 	String directionIndicator = "asc".equals(monthlyEtfDirection) ? "↑" : "↓";
 	String midMonthLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month");
@@ -104,6 +109,8 @@
 						<input type="hidden" name="direction" value="${monthlyEtfDirection}" />
 						<%-- 필터를 적용해도 "이번 적립만 보기" 는 이어진다. --%>
 						@if(monthlyEtfView != null && !monthlyEtfView.isBlank())<input type="hidden" name="view" value="${monthlyEtfView}" />@endif
+						<%-- 기간도 이어진다 - 정렬 링크처럼(없으면 필터를 적용할 때마다 기간이 기본값으로 풀렸다, 2026-09-24). --%>
+						<input type="hidden" name="period" value="${monthlyEtfPeriod}" />
 						<label class="form-control min-w-0 max-w-full">
 							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.monthly.etf.filter.keyword")}</span></div>
 							<input name="keyword" type="search" value="${monthlyEtfKeyword}" placeholder="${MessageUtil.getMessage("stock.monthly.etf.filter.keyword.placeholder")}" class="input input-bordered input-sm w-full max-w-full" />
@@ -142,7 +149,7 @@
 						<div class="flex items-end gap-2">
 							<button type="submit" class="btn btn-primary btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.monthly.etf.filter.apply")}</button>
 							<%-- 필터 지우기 링크는 일부러 기준 주소(필터를 싣는 주소)를 쓰지 않는다. --%>
-							<a data-filter-reset href="/stock/monthly-etf?sort=${monthlyEtfSort}&direction=${monthlyEtfDirection}" class="btn btn-ghost btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.monthly.etf.filter.reset")}</a>
+							<a data-filter-reset href="${resetUrl}" class="btn btn-ghost btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.monthly.etf.filter.reset")}</a>
 						</div>
 					</form>
 
@@ -246,6 +253,13 @@
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.taxable")}</span>
 										</a>
 									</th>
+									<th scope="col" class="align-bottom text-right" aria-sort="${"expense-ratio".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
+										<a href="${baseUrl}sort=expense-ratio&direction=${"expense-ratio".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover no-underline">
+											@if("expense-ratio".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
+											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.expense.ratio")}</span>
+											<div class="text-[11px] font-normal text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.header.expense.ratio.desc")}</div>
+										</a>
+									</th>
 									<th scope="col" class="align-bottom text-right">${MessageUtil.getMessage("stock.monthly.etf.table.header.price")}</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"max-drawdown".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
 										<a href="${baseUrl}sort=max-drawdown&direction=${"max-drawdown".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover no-underline">
@@ -296,7 +310,7 @@
 											<div class="flex items-center gap-2 whitespace-nowrap">
 												<span>${row.stockItemSymbol()}</span>
 												@if(row.held())
-													<span class="badge badge-xs badge-primary" data-held-badge title="${MessageUtil.getMessage("stock.monthly.etf.table.cell.held.title")}">${MessageUtil.getMessage("stock.monthly.etf.table.cell.held")}</span>
+													<span class="badge badge-xs badge-primary" data-held-badge title="${MessageUtil.getMessage("stock.monthly.etf.table.cell.held.title")}">${MessageUtil.getMessage("stock.monthly.etf.table.cell.held")}<span class="sr-only"> ${MessageUtil.getMessage("stock.monthly.etf.table.cell.held.title")}</span></span>
 												@endif
 												@if(!row.active())
 													<span class="badge badge-xs badge-ghost" data-inactive-badge>${MessageUtil.getMessage("stock.monthly.etf.table.cell.inactive")}</span>
@@ -324,7 +338,7 @@
 													@if(row.payoutTrendPct() != null && row.averageDividendPerShare3m() != null)
 														!{String trendBasis = java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.trend.title"), StockFormatUtil.fullKrw(row.averageDividendPerShare3m(), 2), StockFormatUtil.fullKrw(row.averageDividendPerShare1y(), 2));}
 														<span class="amount-value" title="${trendBasis}">${StockFormatUtil.fullKrw(row.averageDividendPerShare3m(), 2)}</span>
-														<span class="block font-medium ${row.payoutTrendPct().signum() > 0 ? "text-profit" : (row.payoutTrendPct().signum() < 0 ? "text-loss" : "text-base-content/60")}" data-payout-trend title="${trendBasis}">(${row.payoutTrendPct().signum() > 0 ? "+" : ""}${percentFormat.format(row.payoutTrendPct())}%)</span>
+														<span class="block font-medium ${row.payoutTrendPct().signum() > 0 ? "text-profit" : (row.payoutTrendPct().signum() < 0 ? "text-loss" : "text-base-content/60")}" data-payout-trend title="${trendBasis}">(${row.payoutTrendPct().signum() > 0 ? "+" : ""}${percentFormat.format(row.payoutTrendPct())}%)<span class="sr-only"> ${trendBasis}</span></span>
 													@else
 														<span class="text-base-content/60" data-payout-trend-missing>${trendUnknownLabel}</span>
 													@endif
@@ -335,6 +349,20 @@
 											<div class="space-y-1 tabular-nums">
 												<div>${percentFormat.format(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO)}%</div>
 												<div class="text-sm text-base-content/60"><span class="mr-1 text-[11px]">${MessageUtil.getMessage("stock.monthly.etf.table.cell.taxable.per.share")}</span><span class="amount-value">${StockFormatUtil.fullKrw(row.averageTaxableBasePerShare1y(), 2)}</span></div>
+											</div>
+										</td>
+										<%-- 총보수(연) · 상장일(2026-09-28). 운용사가 적은 자릿수 그대로(0.09% · 0.0795%) - 두 자리로 자르면 서로 다른 보수가 같아 보인다.
+										     모르면 0% 가 아니라 "미확인" 이다(0 은 보수 없음으로 읽힌다). --%>
+										<td class="align-top text-right">
+											<div class="space-y-1 tabular-nums">
+												@if(row.totalExpenseRatioPct() != null)
+													<div data-expense-ratio>${row.totalExpenseRatioPct().stripTrailingZeros().toPlainString()}%</div>
+												@else
+													<div class="text-base-content/60" data-expense-missing>${MessageUtil.getMessage("stock.monthly.etf.table.cell.expense.unknown")}</div>
+												@endif
+												@if(row.listingDate() != null)
+													<div class="text-[11px] text-base-content/60" data-listing-date>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.listing.date"), String.valueOf(row.listingDate()))}</div>
+												@endif
 											</div>
 										</td>
 										<%-- 시세가 없는 종목은 현재가 0 원이다. 그대로 두면 "수익률 0.00%" 가 사실처럼 읽힌다(실측 2026-09-21:

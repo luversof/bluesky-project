@@ -494,6 +494,10 @@ public class StockViewController {
         stockAsync.supply(() -> monthlyDividendReferenceSupport.loadTaxableRatioBasis(userId));
     // 지급 시기 · 계좌 필터와 적립 추천이 같은 카탈로그를 쓴다 - 한 번만 받아 둘 다 같은 답을 내게 한다(사용자 요청 2026-09-23).
     var catalogFuture = stockAsync.supply(this::loadMonthlyDividendCatalog);
+    // 입력 폼의 종목 목록(월배당 태그). 다른 조회와 의존이 없는데 맨 끝에서 따로 불러 카탈로그가 끝난 뒤에야 출발했다
+    // (실측 2026-09-23: 카탈로그 완료 +30~37ms 뒤). 함께 던진다.
+    var monthlyDividendStockItemsFuture =
+        stockAsync.supply(monthlyDividendReferenceSupport::loadMonthlyDividendStockItems);
     List<MonthlyDividendSnapshotResponse> allRows =
         monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId);
     List<MonthlyDividendProfileResponse> monthlyDividendProfiles =
@@ -653,7 +657,9 @@ public class StockViewController {
         MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER.equals(monthlyDividendSort)
             && "asc".equals(monthlyDividendDirection));
     model.addAttribute(
-        "stockItems", monthlyDividendReferenceSupport.loadMonthlyDividendStockItems());
+        "stockItems",
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(
+            monthlyDividendStockItemsFuture));
     model.addAttribute("monthlyDividendSort", monthlyDividendSort);
     model.addAttribute("monthlyDividendDirection", monthlyDividendDirection);
     model.addAttribute("monthlyDividendKeyword", monthlyDividendKeyword);

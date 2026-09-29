@@ -153,6 +153,20 @@ public final class StockFormatUtil {
   }
 
   /**
+   * 원 단위 천 자리 표기 서식 &mdash; {@link #displayWon} 과 같은 반올림(HALF_UP)이다.
+   *
+   * <p>{@code new DecimalFormat("#,##0")} 의 기본 반올림은 HALF_EVEN 이라 x.5 원에서 짝수 쪽으로 내린다. 화면의 합계 · 연 값은
+   * {@link #displayWon} 으로 내므로, 같은 값이 칸에서는 258,054 로, 합계 쪽에서는 258,055 로 갈렸다 &mdash; 실측 2026-09-24:
+   * 시뮬레이터 월배당은 행마다 주당 260.5 원 같은 값에 수량을 곱해 x.5 원이 흔하고, 카드의 월 값(HALF_EVEN) x 12 가 연 값(HALF_UP x 12)과
+   * 12 원 어긋날 수 있었다. 원 표기는 이 서식 하나로 쓴다.
+   */
+  public static java.text.DecimalFormat wonFormat() {
+    java.text.DecimalFormat format = new java.text.DecimalFormat("#,##0");
+    format.setRoundingMode(java.math.RoundingMode.HALF_UP);
+    return format;
+  }
+
+  /**
    * 비율(%) 표기. 반올림한 뒤 음의 영을 0 으로 고쳐 "-0.0%" 가 나가지 않게 한다.
    *
    * <p>실측 2026-09-10: {@code String.format("%+.1f%%", -0.04)} 는 "-0.0%" 다. 2년 평가액 시계열 3,978 구간 중

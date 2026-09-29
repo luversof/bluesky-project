@@ -57,11 +57,11 @@
 	</div>
 	@endif
 	@if(staleQuantityCount > 0)
-	<div data-stale-quantity="${staleQuantityCount}" class="text-[11px] text-warning mb-2">
+	<div data-stale-quantity="${staleQuantityCount}" class="text-[11px] text-warning mb-2 amount-value" data-stale-quantity-notice>
 		${java.text.MessageFormat.format(
 			MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
 			String.valueOf(staleQuantityCount),
-			String.format("%,d", StockFormatUtil.displayWon(currentQuantityTotal)))}
+			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}
 	</div>
 	@endif
 	@if(hasSnapshots)

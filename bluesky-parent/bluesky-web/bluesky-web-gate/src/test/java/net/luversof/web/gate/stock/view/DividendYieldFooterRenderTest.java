@@ -176,6 +176,23 @@ class DividendYieldFooterRenderTest {
     return cell.replaceAll("<[^>]*>", "").replace("&nbsp;", " ").trim();
   }
 
+  /**
+   * 합계 줄의 배당금(세후) 금액들 - 2026-09-28 부터 배당금 칸은 금액 아래 "연 X% · 보유 N일" 을 함께 적는다(사용자: "배당금에 연수익률도 같이
+   * 표기"). 칸 글자 전체가 아니라 금액 표시(amount-value)만 읽는다. 표 순서대로(연도별 → 종목별 → 계좌별).
+   */
+  private static List<String> dividendTotalAmounts(String html) {
+    List<String> amounts = new ArrayList<>();
+    Matcher matcher =
+        Pattern.compile(
+                "data-annualized-total[^>]*>.*?<div class=\"font-mono amount-value\">([^<]*)</div>",
+                Pattern.DOTALL)
+            .matcher(html);
+    while (matcher.find()) {
+      amounts.add(matcher.group(1).trim());
+    }
+    return amounts;
+  }
+
   /** tfoot 안의 셀 글자들. */
   private List<String> footerCells(String html) {
     List<String> cells = new ArrayList<>();
@@ -205,11 +222,12 @@ class DividendYieldFooterRenderTest {
             // 이 행은 기준일 원금이 없는 배당이 섞여 있어 걸러진 세후액이 더 작다.
             row("나", "600000", "500000", "400000", "300000", "5000000", "5000000"));
 
-    List<String> cells = footerCells(render(rows));
+    String html = render(rows);
+    List<String> cells = footerCells(html);
 
     assertThat(cells).as("합계행 셀을 찾지 못했다 - 검사가 무력해진다").isNotEmpty();
     assertThat(cells).contains("1,800,000"); // 총액 1,200,000 + 600,000
-    assertThat(cells).contains("1,500,000"); // 세후 1,000,000 + 500,000
+    assertThat(dividendTotalAmounts(html)).contains("1,500,000"); // 세후 1,000,000 + 500,000
     assertThat(cells).contains("300,000"); // 세금 = 총액 - 세후
     assertThat(cells).contains("1,300,000"); // 과세표준 900,000 + 400,000
     assertThat(cells).contains("15,000,000"); // 일평균원금 10,000,000 + 5,000,000
@@ -262,15 +280,22 @@ class DividendYieldFooterRenderTest {
             row("2025", "600000", "507600", "600000", "507600", "9000000", "11000000"),
             row("2026", "400000", "338400", "400000", "338400", "11000000", "13000000"));
 
-    List<String> cells = yearlyTotalCells(renderWithYearly(rows, yearly));
+    String yearlyHtml = renderWithYearly(rows, yearly);
+    List<String> cells = yearlyTotalCells(yearlyHtml);
 
     assertThat(cells).as("전체 기간 줄이 없다").isNotEmpty();
+    // 2026-09-28 열: 연도 · 세전(더 보기) · 배당금(세후 + 연 수익률) · 평균 투입원금(더 보기) · 세금 · 과세 · 일평균 · 그 수익률 · 기준일
+    // 원금 · 그 수익률 · 건수
     assertThat(cells.get(1)).as("세전 = 연도 합").isEqualTo("1,000,000");
-    assertThat(cells.get(2)).as("세후 = 연도 합").isEqualTo("846,000");
-    assertThat(cells.get(3)).as("세금 = 세전 − 세후").isEqualTo("154,000");
-    assertThat(cells.get(9)).as("건수 = 연도 합").isEqualTo("2");
-    assertThat(cells.get(5)).as("원금은 연도 합이 아니라 전체 기간 값(종목별 표 합계행과 같다)").isEqualTo("10,000,000");
-    assertThat(cells.get(6)).as("수익률도 전체 기간 값").isEqualTo(footerCells(render(rows)).get(6));
+    assertThat(dividendTotalAmounts(yearlyHtml).get(0)).as("세후 = 연도 합").isEqualTo("846,000");
+    assertThat(cells.get(4)).as("세금 = 세전 − 세후").isEqualTo("154,000");
+    assertThat(cells.get(10)).as("건수 = 연도 합").isEqualTo("2");
+    assertThat(cells.get(6)).as("원금은 연도 합이 아니라 전체 기간 값(종목별 표 합계행과 같다)").isEqualTo("10,000,000");
+    // 종목 표 합계: 합계 · 세전 · 현재 평가금액 · 평가 손익 · 배당금 · 합산 손익 · 평균 투입원금 · 세금 · 과세 · 일평균 · 그 수익률 …
+    List<String> stockCells = footerCells(render(rows));
+    // 12 번: 평가 손익 뒤에 실현 손익 칸이 더해져 종목 표 쪽이 하나 더 밀린다.
+    assertThat(cells.get(7)).as("수익률도 전체 기간 값").isEqualTo(stockCells.get(11));
+    assertThat(cells.get(2)).as("배당금 칸(연 수익률 포함)도 전체 기간 값").isEqualTo(stockCells.get(5));
   }
 
   /** 한 해뿐이면 그 줄이 곧 전체다. 연도별 성과 표와 같은 규칙. */
@@ -302,9 +327,12 @@ class DividendYieldFooterRenderTest {
       cells.add(text(matcher.group(1)));
     }
 
-    assertThat(cells.get(3)).as("세금 0").isEqualTo("-");
-    assertThat(cells.get(4)).as("과세금액 0").isEqualTo("-");
-    assertThat(cells.get(2)).as("세후액은 값 그대로").isEqualTo("500,000");
+    // 2026-09-28: 세후 뒤에 현재 평가금액 · 평균 투입원금 · 연 수익률 - 세금은 6 번째.
+    // 2026-09-28 열: 종목 · 세전 · 현재 평가금액 · 평가 손익 · 배당금(+연 수익률) · 합산 손익 · 평균 투입원금 · 세금 · 과세 …
+    // 12 번: 평가 손익 · 실현 손익 · 배당금 · 합산 손익 - 세금은 9 번째.
+    assertThat(cells.get(8)).as("세금 0").isEqualTo("-");
+    assertThat(cells.get(9)).as("과세금액 0").isEqualTo("-");
+    assertThat(cells.get(5)).as("세후액은 값 그대로").contains("500,000");
   }
 
   /** 분모(일평균 투입원금)가 없으면 수익률은 0.00% 가 아니라 '-' 다. 0% 는 '못 벌었다' 로 읽힌다. */
@@ -318,7 +346,11 @@ class DividendYieldFooterRenderTest {
       cells.add(text(matcher.group(1)));
     }
 
-    assertThat(cells.get(6)).isEqualTo("-");
+    assertThat(cells.get(11)).as("예전 기본 수익률(열 더 보기)").isEqualTo("-");
+    assertThat(cells.get(5))
+        .as("배당금 칸의 연 수익률은 대시와 그 까닭")
+        .contains("-")
+        .contains(MessageUtil.getMessage("stock.dividend.yield.daily.basis.none"));
   }
 
   /** 배당 내역 목록도 같은 규칙이다. 그 조각은 파라미터가 많아 소스로 본다. */

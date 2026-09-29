@@ -125,6 +125,11 @@
 							<input type="checkbox" name="buffs" value="true" checked class="checkbox checkbox-sm">
 							<span>${MessageUtil.getMessage("poe.sim.opt.buffs")}</span>
 						</label>
+						<%-- 완주 모드(opt-in) — 혈맹 top-3 을 각각 끝까지 완주해 최선만 쓴다. 대부분 결과가 같고 최대 4 배 걸려 기본 끔. --%>
+						<label class="flex items-center gap-1.5 text-sm cursor-pointer" title="${MessageUtil.getMessage("poe.sim.opt.thorough.hint")}">
+							<input type="checkbox" name="thorough" value="true" class="checkbox checkbox-sm">
+							<span>${MessageUtil.getMessage("poe.sim.opt.thorough")}</span>
+						</label>
 						@if(isAuthenticated)
 							<button type="submit" class="btn btn-primary btn-sm">${optimizeRun}</button>
 						@else
@@ -134,6 +139,16 @@
 						@endif
 						</div>
 					</div>
+					<%-- 루미너리 용병 — 후보가 루미너리면 용병 오라·저주를 PoB 파티 탭으로 넣는다(가이드·재계산과 같은 API PoeMercenaryService). --%>
+					<details class="rounded-box bg-base-200/40 px-3 py-2">
+						<summary class="cursor-pointer text-sm font-semibold">${MessageUtil.getMessage("poe.build.merc.title")}</summary>
+						<div class="mt-2 space-y-1">
+							<div class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.merc.desc")}</div>
+							<textarea name="mercCode" rows="2"
+							          class="textarea textarea-bordered w-full font-mono text-xs leading-5"
+							          placeholder="${MessageUtil.getMessage("poe.build.merc.placeholder")}" autocomplete="off" spellcheck="false"></textarea>
+						</div>
+					</details>
 					<%-- 실시간 성향 미리보기 — 선택한 스킬×전직의 poe.ninja 실빌드 성향/프로파일(실행 전). 스킬/전직 변경 시 갱신. --%>
 					<div id="poeArchetypeHint"
 					     hx-get="/poe/htmx/sim/archetype"

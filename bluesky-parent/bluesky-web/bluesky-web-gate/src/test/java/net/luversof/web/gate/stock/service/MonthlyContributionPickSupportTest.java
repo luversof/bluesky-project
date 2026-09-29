@@ -62,6 +62,8 @@ class MonthlyContributionPickSupportTest {
         trend == null ? null : new BigDecimal(trend),
         null,
         null,
+        null,
+        null,
         null);
   }
 

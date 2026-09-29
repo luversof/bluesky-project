@@ -10,6 +10,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.frontend.TsSource;
+
 /**
  * 차트 텍스트 대안 플러그인(common.ts {@code chartSummaryPlugin})은 Chart.js 를 쓰는 모든 진입점에서 등록된다.
  *
@@ -43,11 +45,12 @@ class ChartSummaryRegistrationTest {
   void Chart_를_만드는_모듈은_전부_플러그인을_등록한다() throws IOException {
     for (String rel :
         List.of("stock-charts.ts", "stock/compoundSimulator.ts", "stock/stockSimulator.ts")) {
-      String ts = Files.readString(SRC.resolve(rel), StandardCharsets.UTF_8);
-      assertThat(ts).as(rel + " 는 new Chart 를 쓴다").contains("new Chart(");
-      int reg = ts.indexOf(PLUGIN_REF);
+      // prettier 가 줄을 접고 따옴표를 바꿔도 같게 본다(TsSource).
+      String ts = TsSource.n(Files.readString(SRC.resolve(rel), StandardCharsets.UTF_8));
+      assertThat(ts).as(rel + " 는 new Chart 를 쓴다").contains(TsSource.n("new Chart("));
+      int reg = ts.indexOf(TsSource.n(PLUGIN_REF));
       assertThat(reg).as(rel + " 에 요약 플러그인 등록이 없다").isGreaterThan(0);
-      assertThat(ts.indexOf("Chart.register(summaryPlugin)", reg))
+      assertThat(ts.indexOf(TsSource.n("Chart.register(summaryPlugin)"), reg))
           .as(rel + " 는 참조만 하고 등록하지 않는다")
           .isGreaterThan(reg);
     }

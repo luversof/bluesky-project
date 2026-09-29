@@ -97,8 +97,31 @@ public class PoeModDataService {
   private final Path dataFile;
   private volatile ModData data = new ModData("", List.of(), Map.of(), Map.of());
 
+  /**
+   * 한 풀에서 티어 사다리 하나 — 게임의 ModTypeKey 하나. 티어 Id 는 상위 먼저.
+   *
+   * @param key 사람이 읽는 이름(구성 티어의 패밀리 키 중 가장 많은 것)
+   * @param gen prefix | suffix
+   * @param families 게임 ModFamily 값 — 둘이 겹치면 한 아이템에 같이 못 붙는다
+   */
+  public record PoolGroup(
+      String key, String gen, int modType, List<Integer> families, List<String> tiers) {}
+
+  /** 한 풀 안에서 태그 서명이 같은 베이스들과 그 베이스들에 붙는 사다리 — 같은 클래스라도 베이스마다 붙는 모드가 다르다(소환수 피해는 뼈 반지·황혼 반지에만). */
+  public record PoolSig(List<String> bases, List<PoolGroup> groups) {}
+
+  /** mod-pool-tiers.json — (클래스|변형|) 풀 → 서명별 베이스·사다리. */
+  private record PoolTierData(String patch, Map<String, List<PoolSig>> pools) {}
+
+  private final Path tiersFile;
+  private volatile Map<String, List<PoolSig>> poolTiers = Map.of();
+
+  /** 티어 Id → 티어(모든 패밀리). 풀 묶음이 가리키는 티어의 문장을 찾을 때 쓴다. */
+  private volatile Map<String, ModTier> tierIndex = Map.of();
+
   public PoeModDataService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
     this.dataFile = Path.of(dataDir, "mods.json");
+    this.tiersFile = Path.of(dataDir, "mod-pool-tiers.json");
     reload();
   }
 
@@ -120,6 +143,52 @@ public class PoeModDataService {
       logger.warn("PoE 전체 모드 없음: {} — parse-mods-full.mjs 실행 필요", dataFile);
     }
     this.data = loaded;
+    Map<String, ModTier> index = new java.util.HashMap<>();
+    for (ModFamily family : loaded.families().values()) {
+      for (ModTier tier : family.tiers()) {
+        index.putIfAbsent(tier.id(), tier);
+      }
+    }
+    this.tierIndex = index;
+    Map<String, List<PoolSig>> tiers = Map.of();
+    if (Files.exists(tiersFile)) {
+      try (InputStream inputStream = Files.newInputStream(tiersFile)) {
+        PoolTierData t = JsonMapper.builder().build().readValue(inputStream, PoolTierData.class);
+        tiers = t.pools() == null ? Map.of() : t.pools();
+        logger.info("PoE 풀별 티어 로드: {} (풀 {}개)", tiersFile, tiers.size());
+      } catch (Exception e) {
+        logger.warn("PoE 풀별 티어 로드 실패: {}", tiersFile, e);
+      }
+    } else {
+      logger.warn("PoE 풀별 티어 없음: {} — parse-mods-full.mjs 실행 필요", tiersFile);
+    }
+    this.poolTiers = tiers;
+  }
+
+  /**
+   * 이 (아이템 클래스 × 속성 변형) 풀의 티어 사다리들 — 풀을 모르면 빈 목록.
+   *
+   * <p>families 의 티어 사다리는 같은 그룹을 <b>모든 클래스에서 합친 것</b>이라(생명력 +175~189 는 갑옷 전용인데 장화 패밀리에도 들어 있다) "이
+   * 베이스에서 몇 티어"를 말하려면 이 목록을 써야 한다. 사다리는 게임 ModTypeKey 로 묶여 있어, Id 이름 규칙으로 쪼개진 최상위 티어(억제
+   * ChanceToSuppressSpells5__)도 제자리에 들어 있다.
+   */
+  public List<PoolGroup> poolGroups(String itemClass, String variant, String baseName) {
+    List<PoolSig> sigs = poolTiers.get(itemClass + "|" + (variant == null ? "" : variant) + "|");
+    if (sigs == null || sigs.isEmpty()) {
+      return List.of();
+    }
+    // 그 베이스의 서명 — 합집합을 쓰면 뼈 반지 전용 소환수 피해가 산호 반지에도 붙은 것으로 나온다(2026-09-29 가이드 레어 목표에서 실제로 그랬다)
+    for (PoolSig sig : sigs) {
+      if (sig.bases() != null && sig.bases().contains(baseName)) {
+        return sig.groups() == null ? List.of() : sig.groups();
+      }
+    }
+    return List.of(); // 모르는 베이스면 추측하지 않는다(레어 목표를 건너뛴다)
+  }
+
+  /** 티어 Id 로 티어(문장 포함)를 찾는다. 없으면 null. */
+  public ModTier tier(String tierId) {
+    return tierIndex.get(tierId);
   }
 
   public boolean hasData() {

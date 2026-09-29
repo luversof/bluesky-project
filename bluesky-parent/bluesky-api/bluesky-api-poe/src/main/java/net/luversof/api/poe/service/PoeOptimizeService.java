@@ -444,6 +444,7 @@ public class PoeOptimizeService {
       PoeTradeStatDataService poeTradeStatDataService,
       PoeEngineUnmodeledDataService poeEngineUnmodeledDataService,
       PoeSpectreDataService poeSpectreDataService,
+      PoeMercenaryService poeMercenaryService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
       @Value("${poe.sim.tree-version:3_29}") String treeVersion,
       @Value("${poe.sim.parallelism:0}") int parallelism,
@@ -465,6 +466,7 @@ public class PoeOptimizeService {
     this.poeTradeStatDataService = poeTradeStatDataService;
     this.poeEngineUnmodeledDataService = poeEngineUnmodeledDataService;
     this.poeSpectreDataService = poeSpectreDataService;
+    this.poeMercenaryService = poeMercenaryService;
     this.resultFile = Path.of(dataDir, "sim", "optimize-last.json");
     this.atlasTreeFile = Path.of(dataDir, "atlas-tree.json");
     this.historyDir = Path.of(dataDir, "sim", "history");
@@ -1901,6 +1903,58 @@ public class PoeOptimizeService {
    */
   private volatile String currentSpectre = null;
 
+  /**
+   * 완주 모드(opt-in, 사용자 판정 2026-09-10) — 혈맹 키워드 점수 top-3 을 <b>각각 끝까지 완주</b>시켜 최선만 발행한다.
+   *
+   * <p>근거: 초반 프로브는 혈맹 후보가 거의 항상 동점이라(젬 단독 빌드) 선택이 사실상 임의다. 회오리 사격 전수 실측에서 임의 선택 Lycia 3,670,338 vs
+   * Breachlord 4,422,032(+20.5%). 다만 5 축 평균 +4.6% · 중앙값 0% 이고 비용이 최대 4 배라 기본값이 아닌 opt-in 이다.
+   */
+  private volatile boolean thoroughBloodline = false;
+
+  private final PoeMercenaryService poeMercenaryService;
+
+  /**
+   * 루미너리 용병 빌드 PoB 코드(요청마다 설정, 없으면 null) — 후보가 루미너리면 용병 오라·저주를 PoB 파티 탭으로 넣는다({@link #withMercenary}).
+   * 가이드·재계산과 같은 {@link PoeMercenaryService} 를 쓴다(사용자 요청 2026-09-29).
+   */
+  private volatile String mercenaryCode;
+
+  /**
+   * 요청의 용병 코드 — 잘못된 코드면 잡을 시작하기 전에 예외(여기서 한 번 계산해 캐시도 데운다). 매 요청마다 불러야 한다(없으면 null 로 비운다) — 안 그러면 앞
+   * 요청의 용병이 다음 잡에 남는다.
+   *
+   * @throws IllegalArgumentException 코드를 못 읽을 때
+   * @throws IllegalStateException 용병 빌드 계산 실패
+   */
+  public void setMercenaryCode(String code) {
+    this.mercenaryCode = null;
+    String c = code == null || code.isBlank() ? null : code.trim();
+    if (c != null) {
+      poeMercenaryService.export(c, false);
+      poeMercenaryService.export(c, true);
+    }
+    this.mercenaryCode = c;
+  }
+
+  public void setThoroughBloodline(boolean enabled) {
+    this.thoroughBloodline = enabled;
+  }
+
+  /** 완주 모드가 이번 패스에 강제하는 혈맹 — POE_BLOODLINE 환경변수보다 우선(재기동 없이 패스마다 바꾸려고). */
+  private volatile String forcedBloodlineOverride = null;
+
+  /** 이번 잡에서 혈맹 키워드 점수 상위 3 개 — 첫 패스가 채운다. */
+  private volatile List<String> bloodlineKeywordTop = List.of();
+
+  /** 이번 패스가 실제로 고른 혈맹. */
+  private volatile String chosenBloodline = null;
+
+  /** 완주 모드 진행 중 여부 / 지금까지의 최선 목표값 / 최선 결과 JSON(이력은 끝에 한 번만 남긴다). */
+  private volatile boolean thoroughRun = false;
+
+  private volatile double thoroughBestObjective = Double.NEGATIVE_INFINITY;
+  private volatile String thoroughBestJson = null;
+
   // 예약 초과로 제외된 오라(이름 → 부족 마나) — 결과 화면에서 "왜 오라가 이것뿐인지" 설명용
   private volatile Map<PoeGem, Integer> blockedAuraShortfall = new LinkedHashMap<>();
 
@@ -2742,6 +2796,51 @@ public class PoeOptimizeService {
   }
 
   /**
+   * 요청으로 들어온 고정 입력의 스냅샷 — 완주 모드가 패스마다 <b>요청 시점 값으로</b> 되돌리려고 쓴다.
+   *
+   * <p>파이프라인은 자기가 고른 마스터리·클러스터 주얼·문신을 이 "고정 입력" 필드에 그대로 써 넣는다(예: {@code fixedMasteries = merged}).
+   * 평소엔 start() 가 잡마다 요청값으로 되돌려 문제가 없지만, 완주 모드의 패스 사이엔 start() 가 돌지 않아 <b>2 패스가 1 패스의 선택에 묶인 채</b>
+   * 시작했다. 실측(2026-09-29): 단독 Breachlord 4,678,583(2 회 반복 일치) vs 완주 모드 2 패스 Breachlord 3,609,111 =
+   * -23%. 원인 추적 순서: 환경변수 직접 읽기(1 곳뿐) → 리셋 안 되는 필드 전수(값 영향 없음) → lastResult 재사용(없음) → 잡 간 결정성(멀쩡) →
+   * <b>start() 에서만 되돌리는 필드가 파이프라인 도중에 바뀌는가</b>(여기서 걸렸다 — 앞선 조사가 start() 를 리셋으로 셌던 게 구멍이었다).
+   */
+  private record RequestInputs(
+      Set<Integer> fixedTree,
+      Integer fixedAnoint,
+      Map<Integer, String> fixedJewels,
+      Map<Integer, Integer> fixedMasteries,
+      List<ClusterSpec> fixedClusters,
+      Map<Integer, String> fixedTattoos,
+      Map<Integer, String> userTattoos,
+      List<PoeUniqueItem> fixedUniques,
+      List<PoeGem> additionalSkills) {}
+
+  private RequestInputs snapshotRequestInputs() {
+    return new RequestInputs(
+        fixedTree,
+        fixedAnoint,
+        fixedJewels,
+        fixedMasteries,
+        fixedClusters,
+        fixedTattoos,
+        userTattoos,
+        new ArrayList<>(fixedUniques),
+        new ArrayList<>(additionalSkills));
+  }
+
+  private void restoreRequestInputs(RequestInputs in) {
+    this.fixedTree = in.fixedTree();
+    this.fixedAnoint = in.fixedAnoint();
+    this.fixedJewels = in.fixedJewels();
+    this.fixedMasteries = in.fixedMasteries();
+    this.fixedClusters = in.fixedClusters();
+    this.fixedTattoos = in.fixedTattoos();
+    this.userTattoos = in.userTattoos();
+    this.fixedUniques = new ArrayList<>(in.fixedUniques());
+    this.additionalSkills = new ArrayList<>(in.additionalSkills());
+  }
+
+  /**
    * 잡마다 초기화해야 하는 <b>순수 상태</b> — 요청 파라미터 유래(fixedClass 등)나 로그·카운터는 포함하지 않는다.
    *
    * <p>추출 이유(2026-09-10): 완주 모드(top-K 전 파이프라인)는 패스마다 이걸 다시 돌려야 하는데, start() 안에 묻혀 있으면 재진입이 불가능하다. 이
@@ -2793,7 +2892,60 @@ public class PoeOptimizeService {
     this.blockedAuraShortfall = new LinkedHashMap<>(); // 제외 오라 초기화(잡마다)
   }
 
+  /**
+   * 잡 실행 래퍼 — 파이프라인이 끝나야 {@code running} 을 내린다.
+   *
+   * <p>분리 이유(2026-09-29): 완주 모드는 파이프라인을 후보마다 여러 번 돌린다. 종전처럼 파이프라인의 finally 가 {@code
+   * running.set(false)} 를 하면 <b>첫 패스 뒤 잡이 끝난 것처럼 보여</b> 상태를 폴링하는 쪽(QA 의 runOptimizeJob 등)이 부분 결과를
+   * 읽는다. 그래서 그 한 줄만 여기로 옮겼다.
+   */
   private void runJob(PoeGem gemArg, String objective) {
+    try {
+      if (!thoroughBloodline) {
+        runPipeline(gemArg, objective);
+        return;
+      }
+      // 완주 모드: 첫 패스는 기본 선택 그대로 돌려 키워드 점수 top-3 을 얻고, 나머지 후보를 하나씩 끝까지 완주한다.
+      thoroughRun = true;
+      thoroughBestObjective = Double.NEGATIVE_INFINITY;
+      thoroughBestJson = null;
+      forcedBloodlineOverride = null;
+      RequestInputs requestInputs = snapshotRequestInputs();
+      log("완주 모드(혈맹 top-3): 패스 1 — 기본 선택");
+      runPipeline(gemArg, objective);
+      List<String> candidates = bloodlineKeywordTop;
+      String firstChoice = chosenBloodline;
+      int pass = 1;
+      for (String bloodline : candidates) {
+        if (cancelRequested || bloodline == null || bloodline.equals(firstChoice)) {
+          continue;
+        }
+        pass++;
+        // ⚠ 패스마다 잡 상태를 다시 초기화한다 — 이 블록은 누출 사고가 반복된 자리다(resetJobState 주석).
+        resetJobState();
+        restoreRequestInputs(requestInputs); // 1 패스가 고정 입력 필드에 써 넣은 선택을 걷어낸다
+        forcedBloodlineOverride = bloodline;
+        log("완주 모드(혈맹 top-3): 패스 " + pass + " — 혈맹 " + bloodline + " 강제");
+        runPipeline(gemArg, objective);
+      }
+      // 최선 결과가 있으면 성공으로 마감하고 이력에 **한 번만** 남긴다(중간 패스의 실패 상태가 덮어쓰지 않게).
+      if (thoroughBestJson != null && !cancelRequested) {
+        lastStatus = Status.SUCCESS;
+        if (saveHistoryForRun) {
+          saveHistory(thoroughBestJson);
+        }
+        log("완주 모드 종료: 패스 " + pass + "회 · 최선 목표값 " + format(thoroughBestObjective));
+      }
+    } catch (Exception e) {
+      logger.warn("완주 모드 이력 저장 실패", e);
+    } finally {
+      thoroughRun = false;
+      forcedBloodlineOverride = null;
+      running.set(false);
+    }
+  }
+
+  private void runPipeline(PoeGem gemArg, String objective) {
     long startedAt = System.currentTimeMillis();
     ExecutorService executor = Executors.newFixedThreadPool(parallelism);
     try {
@@ -3276,6 +3428,12 @@ public class PoeOptimizeService {
                     .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                     .map(e -> e.getKey() + " " + String.format("%.1f", e.getValue()))
                     .collect(java.util.stream.Collectors.joining(" · ")));
+        this.bloodlineKeywordTop =
+            blHeuristic.entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .limit(3)
+                .map(Map.Entry::getKey)
+                .toList();
         if (!blProbes.isEmpty()) {
           Map<BloodlineProbe, Double> results =
               evalBatch(
@@ -3288,7 +3446,10 @@ public class PoeOptimizeService {
                   },
                   objectiveKey);
           // 강제 지정(POE_BLOODLINE) — 선택 타당성 A/B 측정용. 미설정이면 기존 동작(최고점 채택).
-          String forcedBloodline = System.getenv("POE_BLOODLINE");
+          String forcedBloodline =
+              forcedBloodlineOverride != null
+                  ? forcedBloodlineOverride
+                  : System.getenv("POE_BLOODLINE");
           Map.Entry<BloodlineProbe, Double> best =
               (forcedBloodline != null && !forcedBloodline.isBlank())
                   ? results.entrySet().stream()
@@ -3296,6 +3457,7 @@ public class PoeOptimizeService {
                       .findFirst()
                       .orElse(null)
                   : results.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
+          this.chosenBloodline = best != null ? best.getKey().id() : null;
           // 프로브 전체 점수를 남긴다 — 선택이 "후보 하나짜리 최댓값"이 아닌지, 2등과 얼마나 붙는지
           //   로그로 보여야 판정할 수 있다(승급 전수 프로브에서 같은 함정을 겪었다).
           //   ⚠ 이 시점 빌드는 젬 단독이라 후보가 **거의 항상 동점**이다(실측: 전 후보 0 또는 1).
@@ -10472,7 +10634,7 @@ public class PoeOptimizeService {
                           new PoeOptimizeResult.UnmodeledNode(
                               node.id(), node.name(), node.nameKo(), node.ascendancy()))
                   .toList(),
-              unmodeledAscendancyWarning(ascendancy),
+              unmodeledAscendancyWarning(ascendancy, ascendancyNodes),
               guardianItemPicks(gem),
               tierComparisons,
               scenarioMatrix,
@@ -10520,14 +10682,42 @@ public class PoeOptimizeService {
                                               s.slug(), s.name(), koName(s)))
                                   .toList())));
 
-      Files.createDirectories(resultFile.getParent());
       JsonMapper jsonMapper = JsonMapper.builder().build();
       String resultJson = jsonMapper.writeValueAsString(result);
-      Files.writeString(resultFile, resultJson, StandardCharsets.UTF_8);
-      this.lastResult = result;
-      // 사용자 실행이면 최근 결과 이력에도 남긴다(QA 배터리는 saveHistoryForRun=false 로 제외)
-      if (saveHistoryForRun) {
-        saveHistory(resultJson);
+      // 완주 모드는 패스마다 여기 도달한다 — **이번 패스가 최선일 때만** 발행한다(안 그러면 마지막 패스가 이긴다).
+      //   이력은 패스마다 남기지 않고 잡이 끝날 때 최선 하나만 남긴다(runJob 래퍼).
+      double passObjective = objectiveOf(finalValues, objective);
+      if (!thoroughRun || passObjective > thoroughBestObjective) {
+        if (thoroughRun) {
+          thoroughBestObjective = passObjective;
+          thoroughBestJson = resultJson;
+          log(
+              "완주 모드: 혈맹 "
+                  + chosenBloodline
+                  + " 패스가 현재 최선 → 발행 (목표값 "
+                  + format(passObjective)
+                  + " · 표시 "
+                  + result.finalValue()
+                  + ")");
+        }
+        Files.createDirectories(resultFile.getParent());
+        Files.writeString(resultFile, resultJson, StandardCharsets.UTF_8);
+        this.lastResult = result;
+        // 사용자 실행이면 최근 결과 이력에도 남긴다(QA 배터리는 saveHistoryForRun=false 로 제외)
+        if (saveHistoryForRun && !thoroughRun) {
+          saveHistory(resultJson);
+        }
+      } else {
+        log(
+            "완주 모드: 혈맹 "
+                + chosenBloodline
+                + " 패스 목표값 "
+                + format(passObjective)
+                + " (표시 "
+                + result.finalValue()
+                + ") < 최선 "
+                + format(thoroughBestObjective)
+                + " — 발행하지 않음");
       }
       // 생존 계수 내역 — "balanced 인데 왜 실빌드보다 물러터졌나"를 로그만으로 판정할 수 있게. 목표치는
       //   해당 아키타입 ninja 실측 중앙값(setSurvivalTargets)이고, s 가 곧 DPS 에 곱해지는 값이다.
@@ -10588,7 +10778,7 @@ public class PoeOptimizeService {
         logger.warn("PoE 최적화 잡 실패", e);
       }
     } finally {
-      running.set(false);
+      // running 해제는 runJob 래퍼로 옮겼다(완주 모드의 여러 패스 사이에 잡이 끝난 것처럼 보이지 않게).
       Thread.interrupted(); // 인터럽트 상태 클리어(다음 잡 오염 방지)
       executor.shutdownNow(); // 취소 시 진행 중 평가 태스크도 즉시 중단
 
@@ -11794,7 +11984,8 @@ public class PoeOptimizeService {
    * Scion/Luminary 강제 완주: 할당된 루미너리 노드 0 개 · 전직 8pt 통째로 미사용 · 최종 2,905,289. 화면엔 아무 설명이 없어 사용자는 그 전직이
    * 제 몫을 한 수치라고 믿게 된다.
    */
-  private PoeOptimizeResult.UnmodeledAscendancy unmodeledAscendancyWarning(String ascendancy) {
+  private PoeOptimizeResult.UnmodeledAscendancy unmodeledAscendancyWarning(
+      String ascendancy, Set<Integer> ascendancyNodes) {
     if (ascendancy == null) {
       return null;
     }
@@ -11806,8 +11997,22 @@ public class PoeOptimizeService {
     if ((double) summary.unmodeled() / summary.total() < 0.4d) {
       return null;
     }
+    // 루미너리 + 용병 코드 — 용병이 나에게 거는 오라·저주는 반영됐다는 것을 함께 알린다(용병 자신의 딜·생존은 여전히 빠진다)
+    String merc = null;
+    String code = mercenaryCode;
+    if (code != null && "Luminary".equals(ascendancy)) {
+      try {
+        boolean knight =
+            ascendancyNodes != null
+                && ascendancyNodes.contains(PoeMercenaryService.BESTOWED_KNIGHTHOOD);
+        PoeMercenaryService.MercBuffs buffs = poeMercenaryService.export(code, knight);
+        merc = buffs.summary() + (knight ? " (수여된 기사 작위 +50%)" : "");
+      } catch (RuntimeException e) {
+        merc = null;
+      }
+    }
     return new PoeOptimizeResult.UnmodeledAscendancy(
-        ascendancy, summary.unmodeled(), summary.total());
+        ascendancy, summary.unmodeled(), summary.total(), merc);
   }
 
   /**
@@ -13830,7 +14035,8 @@ public class PoeOptimizeService {
             enemyScenario,
             combatBuffs,
             additionalSkills,
-            secondaryAscendId),
+            secondaryAscendId,
+            mercenaryCode),
         treeNodes);
   }
 
@@ -13863,7 +14069,8 @@ public class PoeOptimizeService {
             enemyScenario,
             combatBuffs,
             additionalSkills,
-            candidateSecondaryAscendId),
+            candidateSecondaryAscendId,
+            mercenaryCode),
         treeNodes);
   }
 
@@ -13960,7 +14167,8 @@ public class PoeOptimizeService {
         enemyScenario,
         combatBuffs,
         additionalSkills,
-        secondaryAscendId);
+        secondaryAscendId,
+        mercenaryCode);
   }
 
   /**
@@ -13981,7 +14189,8 @@ public class PoeOptimizeService {
       String enemyScenario,
       boolean combatBuffs,
       List<PoeGem> additionalSkills,
-      int secondaryAscendId) {
+      int secondaryAscendId,
+      String mercCode) {
     Set<Integer> specNodes = new LinkedHashSet<>(ascendancyNodes);
     specNodes.addAll(treeNodes);
     StringBuilder xml = new StringBuilder();
@@ -14264,7 +14473,27 @@ public class PoeOptimizeService {
     // 적 시나리오 (DPS/EHP 계산에 반영) + 전투 버프 가정(충전+돌격)
     xml.append(configBlock(enemyScenario, combatBuffs));
     xml.append("</PathOfBuilding>");
-    return xml.toString();
+    return withMercenary(xml.toString(), ascendancy, ascendancyNodes, mercCode);
+  }
+
+  /**
+   * 루미너리 용병 — 용병 코드가 있고 이 후보가 루미너리면 용병 오라·저주를 PoB 파티 탭으로 넣는다. 수여된 기사 작위는 <b>후보의 전직 노드</b>에 그 노드가 있을 때만
+   * (후보마다 다르다 — 그래서 전직 노드 단계가 그 값어치를 잴 수 있다. 전엔 엔진이 값을 못 매겨 루미너리 노드를 통째로 피했다).
+   */
+  private String withMercenary(
+      String xml, String ascendancy, Set<Integer> ascendancyNodes, String mercCode) {
+    if (mercCode == null || !"Luminary".equals(ascendancy)) {
+      return xml;
+    }
+    try {
+      return PoeMercenaryService.withParty(
+          xml,
+          poeMercenaryService.export(
+              mercCode, ascendancyNodes.contains(PoeMercenaryService.BESTOWED_KNIGHTHOOD)));
+    } catch (RuntimeException e) {
+      logger.warn("용병 버프 주입 실패 — 용병 없이 계산: {}", e.getMessage());
+      return xml;
+    }
   }
 
   /** PoB {@code <Config>} 블록 — 적 시나리오/전투 버프 가정을 반영. 가정별 매트릭스 재평가에서 재사용. */
@@ -16779,7 +17008,8 @@ public class PoeOptimizeService {
             "Pinnacle",
             true,
             List.of(),
-            0);
+            0,
+            null); // 용병도 잡 설정이라 넘기지 않는다(공유 필드를 읽으면 직전 잡의 용병이 섞인다)
     // 클러스터 주얼은 XML 조립 후 삽입한다 — PoB 는 주얼 아이템 문구로 서브트리를 만들므로
     // 생성 노드 id 가 nodes 에 있어도 주얼이 없으면 그 노드는 존재하지 않는 것으로 취급된다.
     xml = withClusterJewels(xml, clusterSpecs, nodes);

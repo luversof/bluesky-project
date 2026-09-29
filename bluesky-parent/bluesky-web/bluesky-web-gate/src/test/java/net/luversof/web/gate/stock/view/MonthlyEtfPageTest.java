@@ -646,7 +646,9 @@ class MonthlyEtfPageTest {
         base.maxDrawdownPct(),
         base.volatilityPct(),
         base.riskFromDate(),
-        base.held());
+        base.held(),
+        null,
+        null);
   }
 
   /** 과세표준 비중만 다른 행. null 은 "아직 모른다" 를 뜻한다. */
@@ -681,7 +683,9 @@ class MonthlyEtfPageTest {
         base.maxDrawdownPct(),
         base.volatilityPct(),
         base.riskFromDate(),
-        base.held());
+        base.held(),
+        null,
+        null);
   }
 
   /** 위험 지표만 다른 행. null 은 "이력 부족" 을 뜻한다. */
@@ -717,7 +721,9 @@ class MonthlyEtfPageTest {
         maxDrawdownPct,
         volatilityPct,
         base.riskFromDate(),
-        base.held());
+        base.held(),
+        null,
+        null);
   }
 
   private static MonthlyEtfRowView rowWithPeriod(String symbol, BigDecimal periodTotal) {
@@ -751,7 +757,9 @@ class MonthlyEtfPageTest {
         base.maxDrawdownPct(),
         base.volatilityPct(),
         base.riskFromDate(),
-        base.held());
+        base.held(),
+        null,
+        null);
   }
 
   private static boolean isSortKeyChar(char c) {
@@ -795,6 +803,8 @@ class MonthlyEtfPageTest {
         new BigDecimal("-12.34"),
         new BigDecimal("45.67"),
         LocalDate.of(2025, 9, 22),
-        held);
+        held,
+        null,
+        null);
   }
 }

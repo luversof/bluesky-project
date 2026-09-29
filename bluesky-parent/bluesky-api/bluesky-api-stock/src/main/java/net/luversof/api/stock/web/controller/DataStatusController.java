@@ -36,12 +36,11 @@ public class DataStatusController {
   @Autowired private StockItemRepository stockItemRepository;
 
   @Autowired
-  private net.luversof.api.stock.repository.MonthlyDividendPayoutRepository
-      monthlyDividendPayoutRepository;
+  private net.luversof.api.stock.repository.MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
 
   @GetMapping
   public DataStatusResponse findDataStatus(@RequestParam UUID userId) {
-    var payouts = monthlyDividendPayoutRepository.findAllByOrderByPayDateDescRecordDateDesc();
+    var payouts = monthlyDividendPayoutQuery.findAllByOrderByPayDateDescRecordDateDesc();
     // 원장별로 '마지막 일자'와 '건수'를 따로 물으면 같은 조인을 두 번 훑는다. 한 번에 읽는다.
     var tradeSummary = tradeRepository.findLedgerSummaryByUserId(userId);
     var dividendSummary = dividendRepository.findLedgerSummaryByUserId(userId);

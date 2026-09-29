@@ -1,5 +1,6 @@
 package net.luversof.api.stock.domain;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -35,6 +36,14 @@ public class MonthlyDividendProfile {
 
   @Column("lastVerifiedDate")
   private LocalDate lastVerifiedDate;
+
+  /** 총보수(연, %). 예: 0.09 = 연 0.09%. 운용사 상세 화면에서 가져오며 모르면 null. */
+  @Column("totalExpenseRatioPct")
+  private BigDecimal totalExpenseRatioPct;
+
+  /** 상장일. 운용사 상세 화면에서 가져오며 모르면 null. */
+  @Column("listingDate")
+  private LocalDate listingDate;
 
   @Column("createdDate")
   private Instant createdDate;
@@ -104,6 +113,22 @@ public class MonthlyDividendProfile {
 
   public void setLastVerifiedDate(LocalDate lastVerifiedDate) {
     this.lastVerifiedDate = lastVerifiedDate;
+  }
+
+  public BigDecimal getTotalExpenseRatioPct() {
+    return totalExpenseRatioPct;
+  }
+
+  public void setTotalExpenseRatioPct(BigDecimal totalExpenseRatioPct) {
+    this.totalExpenseRatioPct = totalExpenseRatioPct;
+  }
+
+  public LocalDate getListingDate() {
+    return listingDate;
+  }
+
+  public void setListingDate(LocalDate listingDate) {
+    this.listingDate = listingDate;
   }
 
   public Instant getCreatedDate() {

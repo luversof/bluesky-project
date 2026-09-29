@@ -34,6 +34,9 @@ public class MonthlyDividendPayoutService {
 
   @Autowired private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
+  @Autowired
+  private net.luversof.api.stock.repository.MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
+
   @Autowired private MonthlyDividendSnapshotRepository monthlyDividendSnapshotRepository;
 
   @Autowired private StockItemRepository stockItemRepository;
@@ -59,7 +62,7 @@ public class MonthlyDividendPayoutService {
         stockItemId != null
             ? monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
                 stockItemId)
-            : monthlyDividendPayoutRepository.findAllByOrderByPayDateDescRecordDateDesc();
+            : monthlyDividendPayoutQuery.findAllByOrderByPayDateDescRecordDateDesc();
 
     List<MonthlyDividendPayout> filtered =
         payouts.stream()
@@ -250,10 +253,17 @@ public class MonthlyDividendPayoutService {
       return null;
     }
 
-    List<MonthlyDividendPayout> payouts =
+    return computeSnapshotStatsFrom(
         monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
-            stockItemId);
-    if (payouts.isEmpty()) {
+            stockItemId));
+  }
+
+  /**
+   * 이미 읽은 지급 이력(한 종목, 지급일 &middot; 기준일 내림차순)으로 낸다. 월배당 카탈로그가 같은 이력을 두 번 읽지 않게 나눴다(2026-09-23)
+   * &mdash; 셈은 {@link #computeSnapshotStats(UUID)} 와 똑같다.
+   */
+  public SnapshotStats computeSnapshotStatsFrom(List<MonthlyDividendPayout> payouts) {
+    if (payouts == null || payouts.isEmpty()) {
       return null;
     }
 

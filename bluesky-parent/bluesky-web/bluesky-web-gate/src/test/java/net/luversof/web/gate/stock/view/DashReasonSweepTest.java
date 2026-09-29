@@ -100,9 +100,21 @@ class DashReasonSweepTest {
                     + Q))
         .as("세 표의 기간 일평균 투입원금 칸")
         .isEqualTo(3);
-    assertThat(countOf(template, "<span class=\"sr-only\">${dailyBasisNoneTitle}</span>"))
-        .as("낭독기에도 닿아야 한다")
+    // 2026-09-28: 세 표에 기본 열 "평균 투입원금(들고 있던 날)" 이 생겼다 - 원금 기록이 없으면 같은 까닭으로 빈다.
+    // 옆 연 수익률 칸도 그때 비지만 까닭은 한 행에 한 번(평균 투입원금 칸)만 단다.
+    assertThat(
+            countOf(
+                template,
+                "title="
+                    + Q
+                    + "${row.heldAverageDailyPrincipalCost() == null ? dailyBasisNoneTitle :"
+                    + " null}"
+                    + Q))
+        .as("세 표의 평균 투입원금 칸")
         .isEqualTo(3);
+    assertThat(countOf(template, "<span class=\"sr-only\">${dailyBasisNoneTitle}</span>"))
+        .as("낭독기에도 닿아야 한다(예전 열 3 + 평균 투입원금 3)")
+        .isEqualTo(6);
     for (String bundle : new String[] {"uiMessage.properties", "uiMessage_ko.properties"}) {
       assertThat(
               Files.readString(

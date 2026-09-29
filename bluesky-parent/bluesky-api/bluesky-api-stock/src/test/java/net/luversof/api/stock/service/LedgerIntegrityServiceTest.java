@@ -44,7 +44,7 @@ class LedgerIntegrityServiceTest {
   @Mock private DividendService dividendService;
   @Mock private StockItemRepository stockItemRepository;
   @Mock private AccountRepository accountRepository;
-  @Mock private net.luversof.api.stock.repository.MonthlyDividendPayoutRepository payoutRepository;
+  @Mock private net.luversof.api.stock.repository.MonthlyDividendPayoutQuery payoutRepository;
 
   @Mock
   private net.luversof.api.stock.repository.MonthlyDividendSnapshotRepository snapshotRepository;

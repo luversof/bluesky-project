@@ -10,6 +10,13 @@ import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
 const OUT = path.join(DATA_DIR, "mods.json");
+// 풀(클래스|변형)별로 **실제 붙는 티어** — families 는 같은 그룹의 티어를 모든 클래스에서 합쳐 담으므로(생명력 +175~189 는 갑옷 전용인데
+// 장화 패밀리에도 들어 있다) "이 장화에서 2티어" 를 알려면 풀별 목록이 따로 있어야 한다. mods.json 스키마를 건드리지 않으려고 별도 파일로 쓴다
+// (PoeModDataService 가 레코드로 읽는다). 소비자: 업그레이드 가이드의 레어 목표(2티어) 추천.
+// ⚠ 티어 사다리는 게임의 **ModTypeKey** 로 묶는다 — familyKey(Id 꼬리 숫자 떼기)는 "ChanceToSuppressSpells5__" 처럼 밑줄이 둘인 최상위
+//   티어를 따로 떼어 내, 2티어를 잘못 세고(억제 +9~10% 를 2티어로) 같은 계열을 한 아이템에 두 번 얹었다(2026-09-29). 한 아이템에 같이 못 붙는지는
+//   게임의 **Families** 로 판정한다(생명력[0] 과 방어도+생명력 복합[2605] 은 같이 붙는다).
+const OUT_TIERS = path.join(DATA_DIR, "mod-pool-tiers.json");
 
 const mods = loadTable("English", "Mods");
 const modsKo = loadTable("Korean", "Mods");
@@ -106,6 +113,9 @@ const influenceSlotTag = (itemClass) => (CLASS_TAGS[itemClass] || [])[0];
 
 // (아이템 클래스 × 속성 변형 × 영향력)별 태그 집합. 무기/장신구는 변형이 없어 변형 키 "", 영향력 없음도 "".
 const tagSetsByPool = new Map(); // "itemClass|variant|influence" → [{sig,tagSet}]
+// 영향력 없는 풀의 태그 서명 → 그 서명을 가진 베이스 이름들. 같은 클래스라도 베이스마다 붙는 모드가 다르다
+// (소환수 피해는 ring_can_roll_minion_modifiers 태그가 있는 반지에만 — 산호 반지엔 안 붙는다). 가이드 레어 목표용.
+const basesBySig = new Map(); // "itemClass|variant|" → Map<sig, Set<baseName>>
 const classLabel = new Map(); // itemClass명 → {name, nameKo}
 const variantsByClass = new Map(); // itemClass명 → Map<variantKey, label>
 for (const b of baseItems) {
@@ -146,6 +156,12 @@ for (const b of baseItems) {
 		// 같은 태그 집합은 한 번만
 		const sig = [...finalTags].sort().join(",");
 		if (!list.some((e) => e.sig === sig)) list.push({ sig, tagSet: finalTags });
+		if (!influence) {
+			if (!basesBySig.has(poolKey)) basesBySig.set(poolKey, new Map());
+			const bySig = basesBySig.get(poolKey);
+			if (!bySig.has(sig)) bySig.set(sig, new Set());
+			bySig.get(sig).add(b.name);
+		}
 	}
 }
 
@@ -217,6 +233,7 @@ mods.forEach((mod, index) => {
 // 2) (클래스×변형) 풀별 매칭 + 패밀리 구성
 const families = new Map(); // famKey → {gen, essence, tiers: Map<index, tier>}
 const perPool = new Map(); // "itemClass|variant" → Map<famKey, weight>
+const perPoolTiers = new Map(); // "itemClass|variant|" → Map<sig, Map<modType, {gen, families:Set, mods:[{id, ilvl, fam}]}>> (영향력 없는 풀만)
 const corruptedPerPool = new Map(); // "itemClass|variant|" → Set<famKey>
 const enchantPerPool = new Map(); // 플라스크 클래스 풀 → Set<famKey> (주입/점화 인챈트)
 for (const [poolKey, tagSets] of tagSetsByPool) {
@@ -293,6 +310,22 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 		if (weight <= 0) continue;
 		const key = familyKey(mod);
 		famWeights.set(key, Math.max(famWeights.get(key) || 0, weight));
+		// Royale(PvP 전용) 모드는 일반 모드와 ModTypeKey 가 같아 사다리에 섞인다(46곳) — 일반 레어엔 안 붙으므로 뺀다
+		if (poolKey.endsWith("|") && !/Royale/.test(mod.Id)) {
+			if (!perPoolTiers.has(poolKey)) perPoolTiers.set(poolKey, new Map());
+			const bySig = perPoolTiers.get(poolKey);
+			// 합집합(max) 말고 **서명마다** 판정한다 — 베이스별로 붙는 모드가 다르다
+			for (const { sig, tagSet } of tagSets) {
+				if (spawnWeight(mod, tagSet) <= 0) continue;
+				if (!bySig.has(sig)) bySig.set(sig, new Map());
+				const byType = bySig.get(sig);
+				const type = mod.ModTypeKey;
+				if (!byType.has(type)) byType.set(type, { gen: GEN[mod.GenerationType], families: new Set(), mods: [] });
+				const g = byType.get(type);
+				for (const f of mod.Families || []) g.families.add(f);
+				if (!g.mods.some((x) => x.id === mod.Id)) g.mods.push({ id: mod.Id, ilvl: mod.Level, fam: key });
+			}
+		}
 		let fam = families.get(key);
 		if (!fam) {
 			fam = { gen: GEN[mod.GenerationType], essence: !!mod.IsEssenceOnlyModifier, tiers: new Map() };
@@ -375,6 +408,30 @@ const outClasses = [...classLabel.keys()]
 
 const result = { patch: loadConfig().patch, itemClasses: outClasses, pools: outPools, families: outFamilies };
 fs.writeFileSync(OUT, JSON.stringify(result));
+// 풀별 묶음 — ModTypeKey 하나 = 티어 사다리 하나(ilvl 내림차순, 상위 먼저). 서술이 없어 families 에서 빠진 티어는 뺀다.
+// key 는 사람이 읽는 이름(구성 티어의 familyKey 중 가장 많은 것 — 억제는 ChanceToSuppressSpells), families 는 동시 부착 판정용 게임 값.
+const outPoolTiers = {};
+const hasText = (m) => (outFamilies[m.fam]?.tiers || []).some((t) => t.id === m.id);
+for (const [poolKey, bySig] of perPoolTiers) {
+	const sigs = [];
+	for (const [sig, byType] of bySig) {
+		const groups = [];
+		for (const [type, g] of byType) {
+			if (g.gen !== "prefix" && g.gen !== "suffix") continue;
+			const mods2 = g.mods.filter(hasText).sort((a, b) => b.ilvl - a.ilvl);
+			if (!mods2.length) continue;
+			const counts = new Map();
+			for (const m of mods2) counts.set(m.fam, (counts.get(m.fam) || 0) + 1);
+			const key = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
+			groups.push({ key, gen: g.gen, modType: type, families: [...g.families].sort((a, b) => a - b), tiers: mods2.map((m) => m.id) });
+		}
+		groups.sort((a, b) => a.key.localeCompare(b.key));
+		sigs.push({ bases: [...(basesBySig.get(poolKey)?.get(sig) || [])].sort(), groups });
+	}
+	outPoolTiers[poolKey] = sigs;
+}
+fs.writeFileSync(OUT_TIERS, JSON.stringify({ patch: loadConfig().patch, pools: outPoolTiers }));
+console.log(`mod-pool-tiers.json: 풀 ${Object.keys(outPoolTiers).length}개 → ${OUT_TIERS}`);
 const famCount = Object.keys(outFamilies).length;
 const tierCount = Object.values(outFamilies).reduce((n, f) => n + f.tiers.length, 0);
 console.log(`mods.json: 클래스 ${outClasses.length}개(풀 ${Object.keys(outPools).length}), 패밀리 ${famCount}개, 티어 ${tierCount}개 → ${OUT}`);

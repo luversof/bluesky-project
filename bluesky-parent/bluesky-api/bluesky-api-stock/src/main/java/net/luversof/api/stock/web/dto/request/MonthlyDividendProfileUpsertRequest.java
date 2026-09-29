@@ -1,5 +1,6 @@
 package net.luversof.api.stock.web.dto.request;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class MonthlyDividendProfileUpsertRequest {
@@ -17,6 +18,11 @@ public class MonthlyDividendProfileUpsertRequest {
   private String note;
 
   private LocalDate lastVerifiedDate;
+
+  /** 총보수(연, %). 저장은 전체 덮어쓰기라 호출하는 쪽이 기존 값을 돌려보내야 한다(다른 필드와 같다). */
+  private BigDecimal totalExpenseRatioPct;
+
+  private LocalDate listingDate;
 
   public String getSymbol() {
     return symbol;
@@ -72,5 +78,21 @@ public class MonthlyDividendProfileUpsertRequest {
 
   public void setLastVerifiedDate(LocalDate lastVerifiedDate) {
     this.lastVerifiedDate = lastVerifiedDate;
+  }
+
+  public BigDecimal getTotalExpenseRatioPct() {
+    return totalExpenseRatioPct;
+  }
+
+  public void setTotalExpenseRatioPct(BigDecimal totalExpenseRatioPct) {
+    this.totalExpenseRatioPct = totalExpenseRatioPct;
+  }
+
+  public LocalDate getListingDate() {
+    return listingDate;
+  }
+
+  public void setListingDate(LocalDate listingDate) {
+    this.listingDate = listingDate;
   }
 }

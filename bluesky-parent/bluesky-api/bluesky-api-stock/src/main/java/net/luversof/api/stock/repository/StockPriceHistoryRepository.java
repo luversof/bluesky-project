@@ -53,10 +53,24 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                                  x."closePrice" AS close_price
                     FROM unnest(string_to_array(:ids, ',')::uuid[]) AS i(id)
                     CROSS JOIN LATERAL (
-                            SELECT h."tradeDate", h."closePrice"
-                            FROM "StockPriceHistory" h
-                            WHERE h."stockItem_id" = i.id
-                            ORDER BY (h."volume" > 0) DESC, h."tradeDate" DESC
+                            -- 거래가 있던 날의 최근 행, 없으면 그냥 최근 행. 두 갈래 모두 인덱스를 거꾸로 훑다
+                            -- 첫 행에서 멈춘다(예전 식 정렬은 종목 이력 전체를 정렬했다 - StockDailyClosePriceQuery 참고).
+                            SELECT y."tradeDate", y."closePrice"
+                            FROM (
+                                    (SELECT h."tradeDate", h."closePrice", 0 AS pick
+                                     FROM "StockPriceHistory" h
+                                     WHERE h."stockItem_id" = i.id
+                                       AND h."volume" > 0
+                                     ORDER BY h."tradeDate" DESC
+                                     LIMIT 1)
+                                    UNION ALL
+                                    (SELECT h."tradeDate", h."closePrice", 1 AS pick
+                                     FROM "StockPriceHistory" h
+                                     WHERE h."stockItem_id" = i.id
+                                     ORDER BY h."tradeDate" DESC
+                                     LIMIT 1)
+                            ) AS y
+                            ORDER BY y.pick
                             LIMIT 1
                     ) AS x
                 """)
@@ -87,6 +101,22 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
       @Param("stockItemId") UUID stockItemId,
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate);
+
+  /**
+   * 여러 종목의 첫 거래일(거래량 0 행 제외) - 종가 자리는 비운다. 카탈로그는 계산에 필요한 창만 읽으므로 "언제부터 이력이 있나" 는 따로
+   * 묻는다(2026-09-23).
+   */
+  @Query(
+      """
+                    SELECT h."stockItem_id"        AS stock_item_id,
+                           MIN(h."tradeDate")      AS trade_date,
+                           CAST(NULL AS numeric)   AS close_price
+                    FROM "StockPriceHistory" h
+                    WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
+                      AND h."volume" > 0
+                    GROUP BY h."stockItem_id"
+                """)
+  List<StockDailyClosePrice> findFirstTradeDatesForItems(@Param("ids") String ids);
 
   Optional<StockPriceHistory> findByStockItemIdAndTradeDate(UUID stockItemId, LocalDate tradeDate);
 

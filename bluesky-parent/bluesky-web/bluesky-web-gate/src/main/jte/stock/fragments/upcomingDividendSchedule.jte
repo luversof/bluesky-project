@@ -46,7 +46,7 @@
 			<div class="mt-1 text-[11px] text-warning" data-ledger-unavailable="true">${MessageUtil.getMessage("stock.holdings.ledger.unavailable")}</div>
 		@endif
 		@if(staleQuantityCount > 0)
-			<div class="mt-1 text-[11px] text-warning" data-upcoming-stale-quantity="${staleQuantityCount}">
+			<div class="mt-1 text-[11px] text-warning amount-value" data-upcoming-stale-quantity="${staleQuantityCount}" data-stale-quantity-notice>
 				${java.text.MessageFormat.format(
 					MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
 					String.valueOf(staleQuantityCount),

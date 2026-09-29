@@ -162,7 +162,8 @@ while true do
 					local unapplied = 0
 					for _, gi in ipairs(group2.gemList or {}) do
 						local ge = gi.gemData and gi.gemData.grantedEffect
-						if ge and ge.support and not calcLib.canGrantedEffectSupportActiveSkill(ge, ms2) then
+						if ge and ge.support and gi.enabled ~= false
+							and not calcLib.canGrantedEffectSupportActiveSkill(ge, ms2) then
 							unapplied = unapplied + 1
 						end
 					end

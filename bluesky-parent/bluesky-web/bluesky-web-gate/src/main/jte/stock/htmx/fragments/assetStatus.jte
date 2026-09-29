@@ -33,6 +33,7 @@
 @param java.time.LocalDate holdingBasisDate = null
 <%-- 종목별 하루치 순현금흐름 - 연평균 수익률(XIRR)의 재료(사용자 결정 2026-09-17). 없으면 연평균을 비운다. --%>
 @param Map<java.util.UUID, List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse>> cashFlowsByStockItem = java.util.Map.of()
+@param Map<java.util.UUID, BigDecimal> dividendAnnualizedByStockItem = java.util.Map.of()
 
 !{
 	String accountSectionTitle = MessageUtil.getMessage("stock.analytics.section.account.status");
@@ -173,11 +174,12 @@
 			</div>
 		@endif
 		<style>
-			.asset-status-account-row-selected > td {
+			/* 행의 첫 칸은 th(scope=row)다 - td 만 칠하면 체크박스 · 이름 칸만 선택 배경이 빠지고 왼쪽 선택 막대(td:first-child)는 아예 안 그려진다(사용자 제보 2026-09-28). */
+			.asset-status-account-row-selected > :is(th, td) {
 				background-color: color-mix(in oklch, var(--color-secondary) 10%, var(--color-base-100));
 			}
 
-			.asset-status-account-row-selected > td:first-child {
+			.asset-status-account-row-selected > :first-child {
 				box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-secondary) 65%, transparent);
 			}
 		</style>
@@ -501,11 +503,12 @@
 				cursor: pointer;
 			}
 
-			.asset-status-stock-row.asset-status-stock-row-selected > td {
+			/* 행의 첫 칸은 th(scope=row)다 - td 만 칠하면 체크박스 · 이름 칸만 선택 배경이 빠지고 왼쪽 선택 막대(td:first-child)는 아예 안 그려진다(사용자 제보 2026-09-28). */
+			.asset-status-stock-row.asset-status-stock-row-selected > :is(th, td) {
 				background-color: color-mix(in oklch, var(--color-info) 10%, var(--color-base-100));
 			}
 
-			.asset-status-stock-row.asset-status-stock-row-selected > td:first-child {
+			.asset-status-stock-row.asset-status-stock-row-selected > :first-child {
 				box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-info) 65%, transparent);
 			}
 
@@ -754,6 +757,10 @@
 								<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell">
 									@if(breakdown.dividendTotal().signum() != 0)
 										<span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(breakdown.dividendTotal()))}</span>
+										<%-- 누적 배당의 연 수익률(사용자 요청 2026-09-28) - 배당 탭 연 수익률과 같은 잣대: 누적 배당 x 365 / 첫 매수일부터 날마다 들고 있던 원금의 합. --%>
+										@if(dividendAnnualizedByStockItem != null && dividendAnnualizedByStockItem.get(item.stockItemId()) != null)
+											<div class="text-xs font-normal text-dividend" data-dividend-annualized title="${MessageUtil.getMessage("stock.asset.status.dividend.annualized.desc")}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.ttm.value"), StockFormatUtil.pct(dividendAnnualizedByStockItem.get(item.stockItemId()).doubleValue(), 2))}</div>
+										@endif
 									@else
 										<span class="text-base-content/60" aria-hidden="true" title="${MessageUtil.getMessage("stock.dividend.received.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.dividend.received.none")}</span>
 									@endif

@@ -84,10 +84,21 @@ public class PoeOptimizeController {
       @RequestParam(required = false, defaultValue = "true") boolean excludeLegacy,
       // 금단 페어(주얼 2칸 사용) 편입 여부 — 기본 켬. A/B 로 "그 2칸 값어치"를 재려면 끌 수 있어야 한다.
       @RequestParam(required = false, defaultValue = "true") boolean forbidden,
-      @RequestParam(required = false, defaultValue = "true") boolean saveHistory) {
+      // 완주 모드(opt-in) — 혈맹 키워드 점수 top-3 을 각각 끝까지 완주시켜 최선만 발행. 최대 4 배 소요라 기본 끔.
+      @RequestParam(required = false, defaultValue = "false") boolean thorough,
+      @RequestParam(required = false, defaultValue = "true") boolean saveHistory,
+      // 루미너리 용병 빌드 PoB 코드(선택) — 후보가 루미너리면 용병 오라·저주를 파티 탭으로 넣는다. 잘못된 코드는 잡 시작 전에 400.
+      @RequestParam(required = false) String mercCode) {
     poeOptimizeService.setFoulbornEnabled(foulborn);
     poeOptimizeService.setExcludeLegacyUniques(excludeLegacy);
     poeOptimizeService.setForbiddenEnabled(forbidden);
+    poeOptimizeService.setThoroughBloodline(thorough);
+    try {
+      poeOptimizeService.setMercenaryCode(mercCode);
+    } catch (IllegalArgumentException | IllegalStateException e) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage());
+    }
     return poeOptimizeService.start(
         slug,
         objective,

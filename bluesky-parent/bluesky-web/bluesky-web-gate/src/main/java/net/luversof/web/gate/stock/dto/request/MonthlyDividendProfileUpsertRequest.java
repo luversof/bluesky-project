@@ -1,8 +1,30 @@
 package net.luversof.web.gate.stock.dto.request;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class MonthlyDividendProfileUpsertRequest {
+
+  /** 총보수(연, %) · 상장일(2026-09-28). 저장이 전체 덮어쓰기라 폼 · 링크 등록이 기존 값을 채워 보내야 한다. */
+  private BigDecimal totalExpenseRatioPct;
+
+  private LocalDate listingDate;
+
+  public BigDecimal getTotalExpenseRatioPct() {
+    return totalExpenseRatioPct;
+  }
+
+  public void setTotalExpenseRatioPct(BigDecimal totalExpenseRatioPct) {
+    this.totalExpenseRatioPct = totalExpenseRatioPct;
+  }
+
+  public LocalDate getListingDate() {
+    return listingDate;
+  }
+
+  public void setListingDate(LocalDate listingDate) {
+    this.listingDate = listingDate;
+  }
 
   private String symbol;
 

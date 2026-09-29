@@ -146,12 +146,32 @@ end
 			local unapplied = 0
 			for _, gi in ipairs(group2.gemList or {}) do
 				local ge = gi.gemData and gi.gemData.grantedEffect
-				if ge and ge.support and not calcLib.canGrantedEffectSupportActiveSkill(ge, ms2) then
+				if ge and ge.support and gi.enabled ~= false
+					and not calcLib.canGrantedEffectSupportActiveSkill(ge, ms2) then
 					unapplied = unapplied + 1
 				end
 			end
 			result.UnappliedSupportCount = unapplied
 		end
+	end
+
+	-- 자원이 모자라 **인게임에선 못 쓰는** 스킬 — PoB 는 사이드바 경고("You do not have enough Mana to use: …")만 띄우고
+	--   계산은 그대로 해서 수치만 보면 멀쩡해 보인다(Calcs.lua 의 *CostWarning / *CostWarningList).
+	--   MainSkillCostWarning = 주 스킬이 비용을 못 치름(1/0), CostWarningCount = 비용을 못 치르는 스킬 수(주 스킬 포함).
+	--   발단(2026-09-29): 업그레이드 가이드가 실빌드(족장)의 생명력 전환을 잔혹으로 바꾸라고 했다(DPS +17%) —
+	--   마나를 오라에 묶어 둔 빌드면 그 교체로 주 스킬을 못 쓴다. ⚠ worker.lua(최적화기 상주 워커)엔 아직 없다 — 가이드·재계산 전용.
+	do
+		local mainWarn = 0
+		for _, key in ipairs({ "LifeCostWarning", "ManaCostWarning", "RageCostWarning", "ESCostWarning" }) do
+			if output[key] == true then mainWarn = 1 end
+		end
+		local count = 0
+		for _, key in ipairs({ "LifeCostWarningList", "ManaCostWarningList", "RageCostWarningList", "ESCostWarningList",
+				"LifePercentCostPercentCostWarningList", "ManaPercentCostPercentCostWarningList" }) do
+			if type(output[key]) == "table" then count = count + #output[key] end
+		end
+		result.MainSkillCostWarning = mainWarn
+		result.CostWarningCount = count
 	end
 
 	local dkjson = require("dkjson")
