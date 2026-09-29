@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.ToDoubleFunction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,8 +120,11 @@ public class PoeUpgradeGuideService {
       List.of(
           "maximum life", "energy shield", "resistance", "armour", "evasion", "block", "suppress");
 
-  /** 기준선 지표. maxHit = 다섯 피해 유형 최대피격 중 최솟값(가장 약한 곳). */
-  public record Metrics(double dps, double ehp, double maxHit) {}
+  /**
+   * 기준선 지표. maxHit = 다섯 피해 유형 최대피격 중 최솟값(가장 약한 곳). minionEhp = 주 스킬 소환수의 EHP(calc.lua 의
+   * MinionTotalEHP) — 소환수 빌드가 아니면 0 이고, 그러면 소환수 축은 어디에도 끼지 않는다.
+   */
+  public record Metrics(double dps, double ehp, double maxHit, double minionEhp) {}
 
   /**
    * 약한 칸에 끼워 재 본 교체 후보 한 개 — 고유(보통 롤) 또는 같은 베이스의 2티어 레어 목표.
@@ -130,6 +134,7 @@ public class PoeUpgradeGuideService {
    * @param name 고유 아이템 영문 이름(레어면 null)
    * @param baseType 베이스 영문 이름
    * @param mods 레어 목표에 붙인 옵션(표시용 한국어, 2티어 범위) — 고유면 null
+   * @param minionPct 소환수 EHP 증감(%) — 소환수 빌드가 아니면 null
    * @param metaCount 이 전직·주 스킬 조합의 poe.ninja 캐릭터 중 이 아이템을 쓰는 수(모르면 0)
    * @param metaTotal 그 조합의 캐릭터 수(모르면 0)
    * @param needs 이 교체로 새로 모자라게 되는 요구 능력치("힘 25 · 민첩 34") — 다른 곳에서 채워야 끼울 수 있다. 그대로 끼울 수 있으면 null
@@ -145,6 +150,7 @@ public class PoeUpgradeGuideService {
       double dpsPct,
       double ehpPct,
       double maxHitPct,
+      Double minionPct,
       int metaCount,
       int metaTotal,
       String needs) {}
@@ -154,6 +160,7 @@ public class PoeUpgradeGuideService {
    *
    * @param kind free(측정 없이 확정되는 공짜 수정) · support(보조젬 교체) · item(약한 장비 칸)
    * @param dpsPct 측정한 DPS 증감(%) — 측정 없는 제안이면 null
+   * @param minionPct 측정한 소환수 EHP 증감(%) — 측정 없는 제안이거나 소환수 빌드가 아니면 null
    * @param picks item 제안일 때 그 칸에 끼워 재 본 고유 아이템 추천(없으면 빈 목록, 다른 종류면 null)
    */
   public record Suggestion(
@@ -163,6 +170,7 @@ public class PoeUpgradeGuideService {
       Double dpsPct,
       Double ehpPct,
       Double maxHitPct,
+      Double minionPct,
       List<ItemPick> picks) {}
 
   public record GuideResult(
@@ -181,7 +189,8 @@ public class PoeUpgradeGuideService {
   /** 주 스킬 그룹 안의 젬 하나 — 원문 위치(start/end)를 들고 다니며 그 자리만 바꾼다. */
   private record GemRef(int start, int end, String nameSpec, boolean enabled, PoeGem gem) {}
 
-  private record SlotShare(String slot, double dpsShare, double ehpShare) {}
+  /** 칸을 빼면 줄어드는 몫(%) — minionShare 는 소환수 빌드가 아니면 null. */
+  private record SlotShare(String slot, double dpsShare, double ehpShare, Double minionShare) {}
 
   private record Trial(PoeUniqueItem item, Future<Map<String, Double>> result) {}
 
@@ -309,8 +318,7 @@ public class PoeUpgradeGuideService {
     return true;
   }
 
-  private GuideResult analyze(String rawXml, PoeMercenaryService.MercBuffs merc)
-      throws Exception {
+  private GuideResult analyze(String rawXml, PoeMercenaryService.MercBuffs merc) throws Exception {
     long startedAt = System.currentTimeMillis();
     ExecutorService pool = Executors.newFixedThreadPool(PARALLEL);
     try {
@@ -362,6 +370,7 @@ public class PoeUpgradeGuideService {
                 pct(without.dps(), base.dps()),
                 pct(without.ehp(), base.ehp()),
                 pct(without.maxHit(), base.maxHit()),
+                minionPct(without, base),
                 null));
       }
 
@@ -387,6 +396,7 @@ public class PoeUpgradeGuideService {
                     null,
                     null,
                     null,
+                    null,
                     null));
           }
         }
@@ -405,6 +415,7 @@ public class PoeUpgradeGuideService {
                     null,
                     null,
                     null,
+                    null,
                     null));
           }
         }
@@ -420,6 +431,7 @@ public class PoeUpgradeGuideService {
                   "free",
                   "빈 플라스크 칸 " + (5 - flasks) + "개",
                   "플라스크 " + flasks + "/5 개만 착용 중입니다.",
+                  null,
                   null,
                   null,
                   null,
@@ -451,6 +463,7 @@ public class PoeUpgradeGuideService {
                   null,
                   null,
                   null,
+                  null,
                   null));
         }
       }
@@ -472,6 +485,7 @@ public class PoeUpgradeGuideService {
                 null,
                 null,
                 null,
+                null,
                 null));
       }
 
@@ -483,6 +497,7 @@ public class PoeUpgradeGuideService {
                 "free",
                 "스킬 비용 부족: " + mainSkill,
                 "남은 마나(또는 생명력)로 이 스킬의 비용을 치를 수 없어 인게임에선 쓸 수 없습니다. 예약을 줄이거나 비용을 생명력으로 돌리세요. PoB 는 경고만 하고 계산하므로 아래 수치는 쓸 수 있다고 본 값입니다.",
+                null,
                 null,
                 null,
                 null,
@@ -500,6 +515,8 @@ public class PoeUpgradeGuideService {
         }
         GemRef weakest = null;
         double weakestLoss = Double.MAX_VALUE;
+        double weakestDpsLoss = 0;
+        double weakestMinionLoss = 0;
         int essential = 0;
         for (int i = 0; i < supports.size(); i++) {
           Map<String, Double> v = removal.get(i).get();
@@ -510,9 +527,23 @@ public class PoeUpgradeGuideService {
             continue;
           }
           Metrics without = metricsOf(v);
-          double loss = base.dps() > 0 ? (base.dps() - without.dps()) / base.dps() : 0;
+          // 소환수 빌드는 소환수가 버티는 몫까지 기여로 센다 — DPS 만 보면 소환수 생명력 보조가 '기여 0%' 로 잡혀
+          // 가장 먼저 빼라는 추천이 나온다(소환수가 죽으면 DPS 도 없다).
+          //   두 몫은 더하지 않고 DPS × 소환수 EHP(소환수가 버티는 동안 넣는 피해)로 곱한다. 소환수 피해 보조는 피해 41% 더와
+          //   소환수 생명력 25% 덜을 함께 준다(PoB support_minion_damage_minion_life_+%_final) — 기준선 대비로 더하면
+          //   29.1% + (-33.3%) 로 생명력 쪽이 부풀려 순손해처럼 보이지만, 곱하면 1.41 × 0.75 = 약 +6% 로 제대로 잡힌다(망령 실측
+          // 2026-09-30).
+          //   소환수 빌드가 아니면 minionLoss 가 0 이라 예전(DPS 만)과 같다.
+          double dpsLoss = base.dps() > 0 ? (base.dps() - without.dps()) / base.dps() : 0;
+          double minionLoss =
+              base.minionEhp() > 0
+                  ? (base.minionEhp() - without.minionEhp()) / base.minionEhp()
+                  : 0;
+          double loss = 1 - (1 - dpsLoss) * (1 - minionLoss);
           if (loss < weakestLoss) {
             weakestLoss = loss;
+            weakestDpsLoss = dpsLoss;
+            weakestMinionLoss = minionLoss;
             weakest = supports.get(i);
           }
         }
@@ -528,6 +559,9 @@ public class PoeUpgradeGuideService {
           }
           PoeGem best = null;
           Metrics bestMetrics = null;
+          double bestGain = Double.NEGATIVE_INFINITY;
+          int minionCut = 0;
+          int dpsCut = 0;
           for (int i = 0; i < candidates.size(); i++) {
             Map<String, Double> v = swaps.get(i).get();
             if (v.getOrDefault("UnappliedSupportCount", 0d) > baseUnapplied) {
@@ -540,26 +574,61 @@ public class PoeUpgradeGuideService {
               continue; // 스킬 비용을 못 치르게 되는 교체 — 인게임에선 주 스킬을 못 쓴다
             }
             Metrics m = metricsOf(v);
-            if (bestMetrics == null || m.dps() > bestMetrics.dps()) {
+            double dpsGain = pct(base.dps(), m.dps());
+            Double minion = minionPct(base, m);
+            if (minion != null) {
+              // 소환수 빌드에서 한 축을 허용치 넘게 깎는 교체는 업그레이드가 아니라 맞바꿈이다(장비 추천과 같은 기준)
+              if (minion < -TRADE_TOLERANCE_PCT) {
+                minionCut++;
+                continue;
+              }
+              if (dpsGain < -TRADE_TOLERANCE_PCT) {
+                dpsCut++;
+                continue;
+              }
+            }
+            // 소환수 빌드는 약한 보조를 고른 기준(DPS × 소환수 EHP)과 같은 곱으로 가장 나은 후보를 고른다. 아니면 DPS 만.
+            double gain =
+                minion == null ? dpsGain : ((1 + dpsGain / 100) * (1 + minion / 100) - 1) * 100;
+            if (bestMetrics == null || gain > bestGain) {
               bestMetrics = m;
+              bestGain = gain;
               best = candidates.get(i);
             }
           }
-          if (best != null && pct(base.dps(), bestMetrics.dps()) >= MIN_GAIN_PCT) {
+          if (best != null && bestGain >= MIN_GAIN_PCT) {
+            boolean minionBuild = base.minionEhp() > 0;
+            List<String> cut = new ArrayList<>();
+            if (minionCut > 0) {
+              cut.add("소환수 EHP 를 " + (int) TRADE_TOLERANCE_PCT + "% 넘게 깎는 후보 " + minionCut + "개");
+            }
+            if (dpsCut > 0) {
+              cut.add("DPS 를 " + (int) TRADE_TOLERANCE_PCT + "% 넘게 깎는 후보 " + dpsCut + "개");
+            }
             suggestions.add(
                 new Suggestion(
                     "support",
                     "보조젬 교체: " + label(target.gem()) + " → " + label(best),
                     // 변수 뒤에 조사를 붙이면 받침에 따라 틀리고 공백이 끼어 어색해진다(화면 실측 2026-09-29) — 콜론으로 끊는다.
                     label(target.gem())
-                        + ": 지금 DPS 기여 "
-                        + String.format("%.1f", weakestLoss * 100)
-                        + "%로 주 스킬 보조젬 가운데 가장 적습니다"
+                        + (minionBuild
+                            ? ": 지금 기여 DPS "
+                                + String.format("%.1f", weakestDpsLoss * 100)
+                                + "% · 소환수 EHP "
+                                + String.format("%.1f", weakestMinionLoss * 100)
+                                + "% — 딜과 소환수 생존을 곱하면 "
+                                + String.format("%.1f", weakestLoss * 100)
+                                + "%로 주 스킬 보조젬 가운데 가장 적습니다"
+                            : ": 지금 DPS 기여 "
+                                + String.format("%.1f", weakestLoss * 100)
+                                + "%로 주 스킬 보조젬 가운데 가장 적습니다")
                         + (essential > 0 ? "(빼면 스킬 비용을 못 치르는 젬 " + essential + "개는 제외)" : "")
-                        + ".",
+                        + "."
+                        + (cut.isEmpty() ? "" : " " + String.join(" · ", cut) + "는 맞바꿈이라 뺐습니다."),
                     pct(base.dps(), bestMetrics.dps()),
                     pct(base.ehp(), bestMetrics.ehp()),
                     pct(base.maxHit(), bestMetrics.maxHit()),
+                    minionPct(base, bestMetrics),
                     null));
           }
         }
@@ -621,9 +690,16 @@ public class PoeUpgradeGuideService {
       Metrics without = metricsOf(itemProbes.get(i).get());
       double dpsShare = base.dps() > 0 ? (base.dps() - without.dps()) / base.dps() * 100 : 0;
       double ehpShare = base.ehp() > 0 ? (base.ehp() - without.ehp()) / base.ehp() * 100 : 0;
-      shares.add(new SlotShare(equippedSlots.get(i), dpsShare, ehpShare));
+      Double minionShare =
+          base.minionEhp() > 0
+              ? (base.minionEhp() - without.minionEhp()) / base.minionEhp() * 100
+              : null;
+      shares.add(new SlotShare(equippedSlots.get(i), dpsShare, ehpShare, minionShare));
     }
-    shares.sort(Comparator.comparingDouble(s -> s.dpsShare() + s.ehpShare()));
+    // 약한 칸 = 세 몫의 합이 작은 칸 — 소환수 빌드면 소환수 생존을 받치는 칸(소환수 저항 반지 등)이 '약한 칸'으로 잘못 뽑히지 않는다
+    shares.sort(
+        Comparator.comparingDouble(
+            s -> s.dpsShare() + s.ehpShare() + (s.minionShare() == null ? 0 : s.minionShare())));
 
     // ② 약한 칸에 고유 아이템 후보와 ③ 레어 목표(빈 레어 + 옵션 하나씩)를 한꺼번에 제출한다 — 평가가 모두 독립이라 병렬로 돈다
     phase = "교체 후보 측정";
@@ -674,9 +750,14 @@ public class PoeUpgradeGuideService {
       List<ScoredAffix> scored = new ArrayList<>();
       for (int i = 0; i < rt.plan().candidates().size(); i++) {
         Metrics m = metricsOf(rt.singles().get(i).get());
+        // 소환수 빌드는 소환수 EHP 몫도 더한다(추천 판정과 같은 세 축) — 안 더하면 소환수 저항 같은 옵션을 못 고르고,
+        // 그 옵션이 있던 지금 아이템보다 소환수 생존이 떨어져 레어 목표가 통째로 맞바꿈이 된다.
         double gain =
             (base.dps() > 0 ? (m.dps() - blankM.dps()) / base.dps() * 100 : 0)
-                + (base.ehp() > 0 ? (m.ehp() - blankM.ehp()) / base.ehp() * 100 : 0);
+                + (base.ehp() > 0 ? (m.ehp() - blankM.ehp()) / base.ehp() * 100 : 0)
+                + (base.minionEhp() > 0
+                    ? (m.minionEhp() - blankM.minionEhp()) / base.minionEhp() * 100
+                    : 0);
         scored.add(new ScoredAffix(rt.plan().candidates().get(i), gain));
       }
       List<PoeRareTargetService.Affix> chosen = chooseAffixes(scored, rt.plan());
@@ -744,17 +825,17 @@ public class PoeUpgradeGuideService {
               pct(base.dps(), m.dps()),
               pct(base.ehp(), m.ehp()),
               pct(base.maxHit(), m.maxHit()),
+              minionPct(base, m),
               0,
               0,
               needsText(baseValues, v));
       rarePicks.put(e.getKey(), pick);
       logger.info(
-          "업그레이드 가이드 — {}: 레어 목표 {} [{}] DPS {} EHP {} 보충 {} (옵션 후보 {}개 실측)",
+          "업그레이드 가이드 — {}: 레어 목표 {} [{}] {} 보충 {} (옵션 후보 {}개 실측)",
           e.getKey(),
           c.plan().base().name(),
           String.join(" / ", modsKo),
-          String.format("%+.1f%%", pick.dpsPct()),
-          String.format("%+.1f%%", pick.ehpPct()),
+          deltasText(pick),
           pick.needs(),
           c.scored().size());
     }
@@ -788,19 +869,14 @@ public class PoeUpgradeGuideService {
                 pct(base.dps(), m.dps()),
                 pct(base.ehp(), m.ehp()),
                 pct(base.maxHit(), m.maxHit()),
+                minionPct(base, m),
                 usage.counts().getOrDefault(u.name(), 0),
                 usage.total(),
                 needs);
         (needs == null ? fits : needy).add(pick);
-        logger.debug(
-            "업그레이드 가이드 — {} 후보 {}: DPS {} EHP {} 보충 {}",
-            s.slot(),
-            u.name(),
-            String.format("%+.1f%%", pick.dpsPct()),
-            String.format("%+.1f%%", pick.ehpPct()),
-            needs);
+        logger.debug("업그레이드 가이드 — {} 후보 {}: {} 보충 {}", s.slot(), u.name(), deltasText(pick), needs);
       }
-      // 그대로 끼울 수 있는 추천 = 고유(DPS·EHP 최고) + 2티어 레어 목표(고유와 같은 기준: 한 축 +1% 이상, 다른 축 -5% 이내)
+      // 그대로 끼울 수 있는 추천 = 고유(DPS·EHP·소환수 EHP 최고) + 2티어 레어 목표(고유와 같은 기준: 한 축 +1% 이상, 다른 축 -5% 이내)
       ItemPick rare = rarePicks.get(s.slot());
       boolean rareUpgrade = rare != null && isUpgrade(rare);
       List<ItemPick> picks = new ArrayList<>(choosePicks(fits));
@@ -811,16 +887,16 @@ public class PoeUpgradeGuideService {
       //   레어를 넣기 전에 비교하면 보충이 필요한 고유(+18.1%)가 보충 없는 레어(+20.7%)보다 못한데도 보였다(자가검사 2026-09-29).
       double bestAsIs = bestGain(picks);
       ItemPick bestNeedy = choosePicks(needy).stream().findFirst().orElse(null);
-      if (bestNeedy != null && bestNeedy.dpsPct() + bestNeedy.ehpPct() > bestAsIs) {
+      if (bestNeedy != null && gainOf(bestNeedy) > bestAsIs) {
         picks.add(bestNeedy);
       }
-      if (rareUpgrade && rare.needs() != null && rare.dpsPct() + rare.ehpPct() > bestAsIs) {
+      if (rareUpgrade && rare.needs() != null && gainOf(rare) > bestAsIs) {
         picks.add(rare);
       }
       boolean rareShown = rare != null && picks.contains(rare);
       picks.sort(
           Comparator.comparing((ItemPick p) -> p.needs() != null)
-              .thenComparingDouble(p -> -(p.dpsPct() + p.ehpPct())));
+              .thenComparingDouble(p -> -gainOf(p)));
       logger.info(
           "업그레이드 가이드 — {}: 고유 후보 {}개 · 보충 필요 {}개 · 막힘(보조젬 미적용/비용 부족) {}개 · 추천 {}",
           s.slot(),
@@ -831,7 +907,9 @@ public class PoeUpgradeGuideService {
               .map(
                   p ->
                       (p.name() == null ? "레어(" + p.baseType() + ")" : p.name())
-                          + String.format("(DPS %+.1f%% EHP %+.1f%%)", p.dpsPct(), p.ehpPct())
+                          + "("
+                          + deltasText(p)
+                          + ")"
                           + (p.needs() == null ? "" : "[보충 " + p.needs() + "]"))
               .toList());
       measured.add(new SlotPicks(s, List.copyOf(picks), list.size(), blocked, rare, rareShown));
@@ -863,41 +941,29 @@ public class PoeUpgradeGuideService {
         rareNote = "";
       } else if (isUpgrade(p.rare())) {
         rareNote =
-            " 같은 베이스 2티어 레어(DPS "
-                + signed(p.rare().dpsPct())
-                + " · EHP "
-                + signed(p.rare().ehpPct())
+            " 같은 베이스 2티어 레어("
+                + deltasText(p.rare())
                 + ")는 "
                 + p.rare().needs()
                 + " 보충이 필요한 데다 위 추천보다 이득이 작아 뺐습니다.";
-      } else if (p.rare().dpsPct() >= MIN_GAIN_PCT || p.rare().ehpPct() >= MIN_GAIN_PCT) {
+      } else if (gainsOnSomeAxis(p.rare())) {
         // 한 축은 오르는데 다른 축을 허용치 넘게 잃는 경우 — "지금 것이 낫다"가 아니라 맞바꿈이다
         //   (반지 DPS -8.6% · EHP +24.7% 를 "지금 아이템이 더 낫다"고 적었던 것을 화면 판독에서 잡았다, 2026-09-29)
-        boolean moreEhp = p.rare().ehpPct() > p.rare().dpsPct();
+        //   소환수 빌드는 세 축 중 가장 크게 잃는 축과 가장 크게 얻는 축을 적는다.
         rareNote =
-            " 같은 베이스 2티어 레어는 DPS "
-                + signed(p.rare().dpsPct())
-                + " · EHP "
-                + signed(p.rare().ehpPct())
+            " 같은 베이스 2티어 레어는 "
+                + deltasText(p.rare())
                 + "로 "
-                + (moreEhp ? "딜을" : "생존을")
-                + " 크게 내주는 맞바꿈이라 추천에서 뺐습니다("
-                + (moreEhp ? "생존" : "딜")
+                + axisName(p.rare(), false)
+                + "을 크게 내주는 맞바꿈이라 추천에서 뺐습니다("
+                + axisName(p.rare(), true)
                 + "이 더 급하면 고려할 만합니다).";
       } else {
-        rareNote =
-            " 같은 베이스 2티어 레어는 DPS "
-                + signed(p.rare().dpsPct())
-                + " · EHP "
-                + signed(p.rare().ehpPct())
-                + "라 지금 아이템이 더 낫거나 비슷합니다.";
+        rareNote = " 같은 베이스 2티어 레어는 " + deltasText(p.rare()) + "라 지금 아이템이 더 낫거나 비슷합니다.";
       }
       // 맞바꿈이 있는 칸은 "뒤로 미뤄도 된다"고 하지 않는다
       boolean tradeOff =
-          p.rare() != null
-              && !p.rareShown()
-              && !isUpgrade(p.rare())
-              && (p.rare().dpsPct() >= MIN_GAIN_PCT || p.rare().ehpPct() >= MIN_GAIN_PCT);
+          p.rare() != null && !p.rareShown() && !isUpgrade(p.rare()) && gainsOnSomeAxis(p.rare());
       if (!p.picks().isEmpty()) {
         rank++;
         out.add(
@@ -905,6 +971,7 @@ public class PoeUpgradeGuideService {
                 "item",
                 "업그레이드 " + rank + "순위: " + slotKo,
                 share + tried + rareNote,
+                null,
                 null,
                 null,
                 null,
@@ -919,6 +986,7 @@ public class PoeUpgradeGuideService {
                     + " 지금보다 뚜렷이 나은 것이 없었습니다."
                     + rareNote
                     + (p.rare() != null && !tradeOff ? " 이 칸은 뒤로 미뤄도 됩니다." : ""),
+                null,
                 null,
                 null,
                 null,
@@ -937,16 +1005,58 @@ public class PoeUpgradeGuideService {
                 null,
                 null,
                 null,
+                null,
                 List.of()));
       }
     }
     return out;
   }
 
-  /** 고유 추천과 같은 기준 — 한 축이 +1% 이상 오르고 다른 축이 -5% 넘게 깎이지 않는다. */
-  private static boolean isUpgrade(ItemPick p) {
-    return (p.dpsPct() >= MIN_GAIN_PCT && p.ehpPct() >= -TRADE_TOLERANCE_PCT)
-        || (p.ehpPct() >= MIN_GAIN_PCT && p.dpsPct() >= -TRADE_TOLERANCE_PCT);
+  /** 고유 추천과 같은 기준 — 한 축이 +1% 이상 오르고 다른 축이 -5% 넘게 깎이지 않는다. 축 = DPS · EHP · 소환수 EHP(소환수 빌드일 때만). */
+  static boolean isUpgrade(ItemPick p) {
+    return withinTolerance(p) && gainsOnSomeAxis(p);
+  }
+
+  /** 어느 축도 {@link #TRADE_TOLERANCE_PCT} 넘게 깎이지 않는다. */
+  private static boolean withinTolerance(ItemPick p) {
+    return p.dpsPct() >= -TRADE_TOLERANCE_PCT
+        && p.ehpPct() >= -TRADE_TOLERANCE_PCT
+        && (p.minionPct() == null || p.minionPct() >= -TRADE_TOLERANCE_PCT);
+  }
+
+  /** 한 축이라도 {@link #MIN_GAIN_PCT} 이상 오른다. */
+  private static boolean gainsOnSomeAxis(ItemPick p) {
+    return p.dpsPct() >= MIN_GAIN_PCT
+        || p.ehpPct() >= MIN_GAIN_PCT
+        || (p.minionPct() != null && p.minionPct() >= MIN_GAIN_PCT);
+  }
+
+  /** 추천 순위에 쓰는 이득 — 축 증감(%)의 합. 소환수 빌드가 아니면 DPS + EHP. */
+  static double gainOf(ItemPick p) {
+    return p.dpsPct() + p.ehpPct() + (p.minionPct() == null ? 0 : p.minionPct());
+  }
+
+  /** "DPS +3.0% · EHP -1.2%" — 소환수 빌드면 " · 소환수 EHP +0.4%" 가 붙는다. */
+  static String deltasText(ItemPick p) {
+    return "DPS "
+        + signed(p.dpsPct())
+        + " · EHP "
+        + signed(p.ehpPct())
+        + (p.minionPct() == null ? "" : " · 소환수 EHP " + signed(p.minionPct()));
+  }
+
+  /** 맞바꿈 문구의 축 이름 — gained 면 가장 크게 오른 축, 아니면 가장 크게 깎인 축(딜 · 생존 · 소환수 생존). */
+  static String axisName(ItemPick p, boolean gained) {
+    String name = "딜";
+    double value = p.dpsPct();
+    if (gained ? p.ehpPct() > value : p.ehpPct() <= value) {
+      name = "생존";
+      value = p.ehpPct();
+    }
+    if (p.minionPct() != null && (gained ? p.minionPct() > value : p.minionPct() < value)) {
+      name = "소환수 생존";
+    }
+    return name;
   }
 
   private static String signed(double pct) {
@@ -1079,43 +1189,61 @@ public class PoeUpgradeGuideService {
         + " 증감은 용병이 더하는 몫이고, 아래 수치는 모두 용병 버프를 포함합니다. 용병 자신의 딜·생존과 충직한 호위병(피해 분담)은 계산에 없습니다.";
   }
 
+  /**
+   * "이 칸을 빼면 DPS 17.7% · EHP 5.4% 줄어들고 소환수 EHP 12.1% 늘어납니다." — 빼면 오히려 느는 몫(소환수 생명력을 깎는 고유 투구 고대의 해골
+   * 등)을 "-12.1% 줄어듭니다"로 적으면 이중 부정으로 읽혀 따로 적는다(망령 표본 화면 판독 2026-09-30).
+   */
   private static String shareText(SlotShare s) {
-    return "이 칸을 빼면 DPS "
-        + String.format("%.1f", s.dpsShare())
-        + "% · EHP "
-        + String.format("%.1f", s.ehpShare())
-        + "% 줄어듭니다.";
+    List<String> less = new ArrayList<>();
+    List<String> more = new ArrayList<>();
+    shareInto("DPS", s.dpsShare(), less, more);
+    shareInto("EHP", s.ehpShare(), less, more);
+    if (s.minionShare() != null) {
+      shareInto("소환수 EHP", s.minionShare(), less, more);
+    }
+    StringBuilder text = new StringBuilder("이 칸을 빼면 ");
+    if (!less.isEmpty()) {
+      text.append(String.join(" · ", less)).append(more.isEmpty() ? " 줄어듭니다." : " 줄어들고 ");
+    }
+    if (!more.isEmpty()) {
+      text.append(String.join(" · ", more)).append(" 늘어납니다.");
+    }
+    return text.toString();
+  }
+
+  /** 몫 하나를 줄어드는 쪽/느는 쪽에 나눠 담는다 — 0.05% 미만의 음수는 부호 없는 0.0%(부호 붙은 0 금지). */
+  private static void shareInto(String label, double share, List<String> less, List<String> more) {
+    if (share <= -0.05) {
+      more.add(label + " " + String.format("%.1f", -share) + "%");
+    } else {
+      less.add(label + " " + String.format("%.1f", Math.max(0, share)) + "%");
+    }
   }
 
   /**
-   * 한 칸의 추천 — DPS 쪽 최고와 EHP 쪽 최고(같은 아이템이면 하나). 다른 축을 {@link #TRADE_TOLERANCE_PCT} 넘게 깎는 교체는 맞바꿈이라
-   * 뺀다. 순서는 두 축 합이 큰 쪽 먼저.
+   * 한 칸의 추천 — DPS 쪽 최고와 EHP 쪽 최고, 소환수 빌드면 소환수 EHP 쪽 최고까지(같은 아이템이면 하나). 다른 축을 {@link
+   * #TRADE_TOLERANCE_PCT} 넘게 깎는 교체는 맞바꿈이라 뺀다. 순서는 축 합이 큰 쪽 먼저.
    */
   static List<ItemPick> choosePicks(List<ItemPick> fits) {
-    ItemPick dps =
-        fits.stream()
-            .filter(p -> p.dpsPct() >= MIN_GAIN_PCT && p.ehpPct() >= -TRADE_TOLERANCE_PCT)
-            .max(Comparator.comparingDouble(ItemPick::dpsPct).thenComparing(ItemPick::slug))
-            .orElse(null);
-    ItemPick ehp =
-        fits.stream()
-            .filter(p -> p.ehpPct() >= MIN_GAIN_PCT && p.dpsPct() >= -TRADE_TOLERANCE_PCT)
-            .max(Comparator.comparingDouble(ItemPick::ehpPct).thenComparing(ItemPick::slug))
-            .orElse(null);
     List<ItemPick> out = new ArrayList<>();
-    if (dps != null) {
-      out.add(dps);
+    for (ToDoubleFunction<ItemPick> axis :
+        List.<ToDoubleFunction<ItemPick>>of(
+            ItemPick::dpsPct,
+            ItemPick::ehpPct,
+            p -> p.minionPct() == null ? Double.NEGATIVE_INFINITY : p.minionPct())) {
+      fits.stream()
+          .filter(p -> axis.applyAsDouble(p) >= MIN_GAIN_PCT && withinTolerance(p))
+          .max(Comparator.comparingDouble(axis).thenComparing(ItemPick::slug))
+          .filter(best -> !out.contains(best))
+          .ifPresent(out::add);
     }
-    if (ehp != null && !ehp.equals(dps)) {
-      out.add(ehp);
-    }
-    out.sort(Comparator.comparingDouble((ItemPick p) -> -(p.dpsPct() + p.ehpPct())));
+    out.sort(Comparator.comparingDouble((ItemPick p) -> -gainOf(p)));
     return List.copyOf(out);
   }
 
   private static double bestGain(List<ItemPick> picks) {
     return picks.stream()
-        .mapToDouble(p -> p.dpsPct() + p.ehpPct())
+        .mapToDouble(PoeUpgradeGuideService::gainOf)
         .max()
         .orElse(Double.NEGATIVE_INFINITY);
   }
@@ -1155,7 +1283,16 @@ public class PoeUpgradeGuideService {
         any = true;
       }
     }
-    return new Metrics(dps, v.getOrDefault("TotalEHP", 0d), any ? maxHit : 0d);
+    return new Metrics(
+        dps,
+        v.getOrDefault("TotalEHP", 0d),
+        any ? maxHit : 0d,
+        v.getOrDefault("MinionTotalEHP", 0d));
+  }
+
+  /** 소환수 EHP 증감(%) — from 에 소환수가 없으면(소환수 빌드가 아니면) null 이라 화면·판정에서 이 축이 빠진다. */
+  private static Double minionPct(Metrics from, Metrics to) {
+    return from.minionEhp() > 0 ? pct(from.minionEhp(), to.minionEhp()) : null;
   }
 
   private static final String[][] ATTRIBUTES = {{"Str", "힘"}, {"Dex", "민첩"}, {"Int", "지능"}};

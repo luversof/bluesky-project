@@ -283,30 +283,33 @@ public class PoeHtmxController {
     if (principal != null) {
       // 멀티셀렉트(반복 파라미터) 또는 콤마 텍스트 둘 다 수용 → 콤마 문자열로 합쳐 API 로 전달
       try {
-      poeOptimizeClient.start(
-          slug,
-          objective,
-          scenario,
-          buffs,
-          className,
-          ascendancy,
-          joinCsv(uniques),
-          joinCsv(skills),
-          treeNodes,
-          masteries,
-          jewels,
-          clusters,
-          tattoos,
-          anoint,
-          thorough,
-          blankToNull(mercCode));
+        poeOptimizeClient.start(
+            slug,
+            objective,
+            scenario,
+            buffs,
+            className,
+            ascendancy,
+            joinCsv(uniques),
+            joinCsv(skills),
+            treeNodes,
+            masteries,
+            jewels,
+            clusters,
+            tattoos,
+            anoint,
+            thorough,
+            blankToNull(mercCode));
       } catch (RuntimeException e) {
         // 시작 자체가 거부됨(용병 코드를 못 읽는 등) — 폴링 대신 사유를 보인다. 원격 오류는 반드시 로그로 남긴다.
-        log.warn("최적화 시작 실패(용병 코드 {}): {}", blankToNull(mercCode) != null ? "있음" : "없음", e.toString());
+        log.warn(
+            "최적화 시작 실패(용병 코드 {}): {}", blankToNull(mercCode) != null ? "있음" : "없음", e.toString());
         model.addAttribute(
             "startError",
             io.github.luversof.boot.context.support.MessageUtil.getMessage(
-                blankToNull(mercCode) != null ? "poe.sim.opt.start.error.merc" : "poe.sim.opt.start.error"));
+                blankToNull(mercCode) != null
+                    ? "poe.sim.opt.start.error.merc"
+                    : "poe.sim.opt.start.error"));
       }
     }
     return "poe/htmx/simOptimizeWrap";

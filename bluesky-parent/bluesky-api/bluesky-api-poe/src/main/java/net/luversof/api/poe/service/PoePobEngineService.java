@@ -119,6 +119,7 @@ public class PoePobEngineService {
 
   /** 파티원(루미너리 용병) 빌드의 버프를 PoB 파티 탭 형식으로 내보내는 스크립트 — {@link #exportPartyBuffs}. */
   private final Path partyExportScript;
+
   private final String luajitPath;
   private final int poolSize;
   private final long evalTimeoutMs;
@@ -494,8 +495,8 @@ public class PoePobEngineService {
   }
 
   /**
-   * 파티원 빌드(루미너리 용병 등)의 버프를 PoB 파티 탭 형식으로 내보낸다 — 결과 JSON 문자열(party-export.lua 출력). 격리 경로(프로세스-per-실행)라
-   * 상주 워커 상태와 무관하다.
+   * 파티원 빌드(루미너리 용병 등)의 버프를 PoB 파티 탭 형식으로 내보낸다 — 결과 JSON 문자열(party-export.lua 출력). 격리
+   * 경로(프로세스-per-실행)라 상주 워커 상태와 무관하다.
    *
    * @throws IllegalStateException 엔진 실행 실패/시간 초과/결과 누락
    */

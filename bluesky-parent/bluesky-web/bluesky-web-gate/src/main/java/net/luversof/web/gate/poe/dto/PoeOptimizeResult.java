@@ -92,7 +92,11 @@ public record PoeOptimizeResult(
   public record UnmodeledNode(int id, String name, String nameKo, String ascendancy) {}
 
   /** 엔진이 모델링하지 않는 기제에 기대는 전직 — 그 전직을 골라도 포인트를 쓸 곳이 없다. */
-  public record UnmodeledAscendancy(String ascendancy, int unmodeled, int total) {}
+  /**
+   * @param mercenary 루미너리에 용병 코드를 넣었으면 반영한 용병 버프 요약, 아니면 null
+   */
+  public record UnmodeledAscendancy(
+      String ascendancy, int unmodeled, int total, String mercenary) {}
 
   /** 미니언이 직접 장착한 장비 한 점(수호자 기동). */
   public record MinionItem(String slot, String slotKo, String baseType, List<String> modLines) {}

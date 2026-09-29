@@ -123,13 +123,26 @@ public class MonthlyContributionPickSupport {
 
   /** 점수. 분배금이 줄고 있으면 그만큼 깎는다(늘고 있으면 더 주지 않는다). */
   public BigDecimal scoreOf(BigDecimal annualYieldPct, BigDecimal payoutTrendPct) {
+    return score(annualYieldPct, payoutTrendPct);
+  }
+
+  /** 같은 점수 - 화면(월배당 ETF 표의 점수 열 · 정렬)이 인스턴스 없이 쓴다. 셈은 여기 하나다. */
+  public static BigDecimal score(BigDecimal annualYieldPct, BigDecimal payoutTrendPct) {
     if (annualYieldPct == null) {
       return null;
     }
 
-    BigDecimal penalty =
-        payoutTrendPct != null && payoutTrendPct.signum() < 0 ? payoutTrendPct : BigDecimal.ZERO;
-    return annualYieldPct.add(penalty).setScale(2, RoundingMode.HALF_UP);
+    // 두 수를 먼저 소수 둘째 자리로 맞추고 뺀다 - 화면이 "연배당 − 감소 = 점수" 를 적는데, 합친 뒤 반올림하면 0.01 어긋날 수 있다.
+    return annualYieldPct.setScale(2, RoundingMode.HALF_UP).subtract(cutOf(payoutTrendPct));
+  }
+
+  /** 감점(0 이상). 분배금 추세가 음수일 때만 그 크기, 아니면 0. 소수 둘째 자리. */
+  public static BigDecimal cutOf(BigDecimal payoutTrendPct) {
+    BigDecimal cut =
+        payoutTrendPct != null && payoutTrendPct.signum() < 0
+            ? payoutTrendPct.negate()
+            : BigDecimal.ZERO;
+    return cut.setScale(2, RoundingMode.HALF_UP);
   }
 
   /**

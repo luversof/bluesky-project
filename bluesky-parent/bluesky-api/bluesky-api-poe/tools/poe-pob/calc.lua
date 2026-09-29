@@ -131,6 +131,20 @@ end
 		end
 	end
 
+	-- 소환수 생존 — 주 스킬 소환수의 방어(PoB 가 calcs.defence + buildDefenceEstimations 로 소환수에게도 계산한다).
+	--   "Minion" 접두 키로 따로 싣는다(플레이어 값과 섞지 않는다). 발단(2026-09-29): 업그레이드 가이드가 수호자 빌드의
+	--   소환수 생명력 보조를 "DPS 기여 0%" 로 보고 교체를 권했다 — 플레이어 EHP 만 봐서 소환수가 버티는 몫이 안 보였다.
+	--   ⚠ worker.lua(최적화기 상주 워커)엔 아직 없다 — 가이드·재계산 전용.
+	if minionOut then
+		for _, key in ipairs({ "Life", "EnergyShield", "TotalEHP", "PhysicalMaximumHitTaken", "FireMaximumHitTaken",
+				"ColdMaximumHitTaken", "LightningMaximumHitTaken", "ChaosMaximumHitTaken" }) do
+			local v = minionOut[key]
+			if type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge then
+				result["Minion" .. key] = v
+			end
+		end
+	end
+
 
 	-- 인게임에서 **실제로는 적용되지 않는** 보조젬 수 — 판정은 PoB 자신의 함수를 그대로 쓴다
 	--   (규칙이 소환수 타입·아이템 부여·imbued 까지 얽혀 있어 재구현하면 틀린다).

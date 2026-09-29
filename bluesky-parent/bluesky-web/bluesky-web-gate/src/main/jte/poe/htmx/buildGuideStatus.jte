@@ -28,7 +28,7 @@
 			<span class="font-semibold">${MessageUtil.getMessage("poe.build.guide.title")}</span>
 			<span class="text-base-content/60">${result.mainSkill()}</span>
 			@if(result.baseline() != null)
-				<span class="font-mono text-xs text-base-content/60">DPS ${String.format("%,.0f", result.baseline().dps())} · EHP ${String.format("%,.0f", result.baseline().ehp())}</span>
+				<span class="font-mono text-xs text-base-content/60">DPS ${String.format("%,.0f", result.baseline().dps())} · EHP ${String.format("%,.0f", result.baseline().ehp())}@if(result.baseline().hasMinion()) · <span class="whitespace-nowrap">${MessageUtil.getMessage("poe.build.guide.minion")} ${String.format("%,.0f", result.baseline().minionEhp())}</span>@endif</span>
 			@endif
 		</div>
 		@if(result.suggestions() == null || result.suggestions().isEmpty())
@@ -50,6 +50,7 @@
 							<span class="font-semibold">${s.title()}</span>
 							@template.poe.htmx.buildGuideDelta(label = "DPS", pct = s.dpsPct())
 							@template.poe.htmx.buildGuideDelta(label = "EHP", pct = s.ehpPct())
+							@template.poe.htmx.buildGuideDelta(label = MessageUtil.getMessage("poe.build.guide.minion"), pct = s.minionPct())
 						</div>
 						<div class="mt-1 text-xs text-base-content/70">${s.detail()}</div>
 						<%-- 이 칸에 끼워 재 본 고유 아이템 — 이름은 인게임 고유 색 + 호버 툴팁(빌드 요약과 같은 레이어).
@@ -74,6 +75,7 @@
 											@endif
 											@template.poe.htmx.buildGuideDelta(label = "DPS", pct = p.dpsPct())
 											@template.poe.htmx.buildGuideDelta(label = "EHP", pct = p.ehpPct())
+											@template.poe.htmx.buildGuideDelta(label = MessageUtil.getMessage("poe.build.guide.minion"), pct = p.minionPct())
 											@if(p.metaPercent() != null)
 												<span class="badge badge-ghost badge-sm">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.guide.meta"), p.metaPercent())}</span>
 											@endif
@@ -100,6 +102,9 @@
 		<div class="text-xs text-base-content/50">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.guide.footer"), result.evaluations(), Math.round(result.durationMs() / 1000.0))}</div>
 		@if(anyMeta)
 			<div class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.meta.note")}</div>
+		@endif
+		@if(result.baseline() != null && result.baseline().hasMinion())
+			<div class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.minion.note")}</div>
 		@endif
 	</div>
 @endif

@@ -11,14 +11,21 @@ public final class PoeUpgradeGuide {
 
   private PoeUpgradeGuide() {}
 
-  /** 기준선 지표. maxHit = 다섯 피해 유형 최대피격 중 최솟값(가장 약한 곳). */
-  public record Metrics(Double dps, Double ehp, Double maxHit) {}
+  /** 기준선 지표. maxHit = 다섯 피해 유형 최대피격 중 최솟값(가장 약한 곳). minionEhp = 주 스킬 소환수의 EHP(소환수 빌드가 아니면 0). */
+  public record Metrics(Double dps, Double ehp, Double maxHit, Double minionEhp) {
+
+    /** 소환수 빌드인지 — 소환수 EHP 를 머리에 보일지 가른다. */
+    public boolean hasMinion() {
+      return minionEhp != null && minionEhp > 0;
+    }
+  }
 
   /**
    * 약한 칸에 끼워 재 본 교체 후보 한 개 — 고유(보통 롤) 또는 같은 베이스의 2티어 레어 목표.
    *
    * @param rarity UNIQUE | RARE
    * @param mods 레어 목표에 붙인 옵션(표시용 한국어, 2티어 범위) — 고유면 null
+   * @param minionPct 소환수 EHP 증감(%) — 소환수 빌드가 아니면 null
    * @param metaCount 이 전직·주 스킬 조합의 poe.ninja 캐릭터 중 이 아이템을 쓰는 수(모르면 0)
    * @param metaTotal 그 조합의 캐릭터 수(모르면 0)
    * @param needs 이 교체로 새로 모자라게 되는 요구 능력치("힘 25 · 민첩 34") — 그대로 끼울 수 있으면 null
@@ -34,6 +41,7 @@ public final class PoeUpgradeGuide {
       Double dpsPct,
       Double ehpPct,
       Double maxHitPct,
+      Double minionPct,
       Integer metaCount,
       Integer metaTotal,
       String needs) {
@@ -52,6 +60,7 @@ public final class PoeUpgradeGuide {
    *
    * @param kind free(측정 없이 확정되는 공짜 수정) · support(보조젬 교체) · item(약한 장비 칸)
    * @param dpsPct 측정한 DPS 증감(%) — 측정 없는 제안이면 null
+   * @param minionPct 측정한 소환수 EHP 증감(%) — 측정 없는 제안이거나 소환수 빌드가 아니면 null
    * @param picks item 제안일 때 그 칸에 끼워 재 본 고유 아이템 추천(없으면 빈 목록, 다른 종류면 null)
    */
   public record Suggestion(
@@ -61,6 +70,7 @@ public final class PoeUpgradeGuide {
       Double dpsPct,
       Double ehpPct,
       Double maxHitPct,
+      Double minionPct,
       List<ItemPick> picks) {}
 
   public record Result(

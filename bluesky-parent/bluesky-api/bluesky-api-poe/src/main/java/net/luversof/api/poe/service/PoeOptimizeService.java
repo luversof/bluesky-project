@@ -1914,8 +1914,8 @@ public class PoeOptimizeService {
   private final PoeMercenaryService poeMercenaryService;
 
   /**
-   * 루미너리 용병 빌드 PoB 코드(요청마다 설정, 없으면 null) — 후보가 루미너리면 용병 오라·저주를 PoB 파티 탭으로 넣는다({@link #withMercenary}).
-   * 가이드·재계산과 같은 {@link PoeMercenaryService} 를 쓴다(사용자 요청 2026-09-29).
+   * 루미너리 용병 빌드 PoB 코드(요청마다 설정, 없으면 null) — 후보가 루미너리면 용병 오라·저주를 PoB 파티 탭으로 넣는다({@link
+   * #withMercenary}). 가이드·재계산과 같은 {@link PoeMercenaryService} 를 쓴다(사용자 요청 2026-09-29).
    */
   private volatile String mercenaryCode;
 
@@ -14477,8 +14477,8 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 루미너리 용병 — 용병 코드가 있고 이 후보가 루미너리면 용병 오라·저주를 PoB 파티 탭으로 넣는다. 수여된 기사 작위는 <b>후보의 전직 노드</b>에 그 노드가 있을 때만
-   * (후보마다 다르다 — 그래서 전직 노드 단계가 그 값어치를 잴 수 있다. 전엔 엔진이 값을 못 매겨 루미너리 노드를 통째로 피했다).
+   * 루미너리 용병 — 용병 코드가 있고 이 후보가 루미너리면 용병 오라·저주를 PoB 파티 탭으로 넣는다. 수여된 기사 작위는 <b>후보의 전직 노드</b>에 그 노드가 있을
+   * 때만 (후보마다 다르다 — 그래서 전직 노드 단계가 그 값어치를 잴 수 있다. 전엔 엔진이 값을 못 매겨 루미너리 노드를 통째로 피했다).
    */
   private String withMercenary(
       String xml, String ascendancy, Set<Integer> ascendancyNodes, String mercCode) {

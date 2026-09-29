@@ -62,9 +62,9 @@ class TableHeadStickyTest {
     return Files.readString(path, StandardCharsets.UTF_8);
   }
 
-  /** {@code @media (min-width: 1440px)} 블록 안쪽만 떠서 돌려준다. */
+  /** {@code @media (min-width: 90rem)}(글꼴 100% 에서 1440px) 블록 안쪽만 떠서 돌려준다. */
   private String stickyMedia(String css) {
-    int media = css.indexOf("@media (min-width: 1440px) {");
+    int media = css.indexOf("@media (min-width: 90rem) {");
     if (media < 0) {
       return "";
     }
@@ -157,6 +157,27 @@ class TableHeadStickyTest {
 
     assertThat(block).as("종목명이 낱말 가운데서 끊긴다").contains("word-break: keep-all");
     assertThat(block).as("더 못 줄일 때만 끊게 해야 자리 안에 들어온다").contains("overflow-wrap: anywhere");
+  }
+
+  /**
+   * 숫자는 자릿수 가운데서 끊지 않는다(2026-09-30). anywhere 만 두면 열이 는 뒤 1440px 에서 숫자 58 곳이 "31.6 / 6%" 처럼 갈렸다.
+   * 그리고 px 이 아니라 rem 으로 끊는다 - 1440px 로 두면 글꼴 200% 에서도 상자가 걷혀 창이 가로로 굴렀다(문서 1483 / 창 1440).
+   */
+  @Test
+  void 숫자_칸은_자릿수_가운데서_끊지_않고_큰_글꼴에서는_상자가_돌아온다() throws IOException {
+    String css = read(CSS);
+    String block = stickyMedia(css);
+
+    assertThat(rule(block, ".table-head-sticky > table td.text-right *"))
+        .as("오른쪽 정렬 숫자 칸은 anywhere 를 푼다")
+        .contains("overflow-wrap: normal");
+    assertThat(rule(block, ".table-head-sticky > table td[data-keep-line]"))
+        .as("지급 시기 두 글자가 세로로 흐르지 않게")
+        .contains("white-space: nowrap");
+    assertThat(read(ETF)).contains("<td class=\"align-top\" data-keep-line>${windowLabel}</td>");
+    assertThat(css)
+        .as("px 로 끊으면 글꼴을 키워도 상자가 걷힌 채라 창이 가로로 구른다")
+        .doesNotContain("@media (min-width: 1440px) {");
   }
 
   @Test
@@ -320,7 +341,7 @@ class TableHeadStickyTest {
         .as("긴 목록 · 상세 표(80rem 부터 붙음) - 붙지 않는 좁은 폭에서 여백을 더하면 쓸데없이 더 굴린다")
         .contains(
             "scroll-margin-top: calc(var(--table-head-sticky-top, var(--site-header-height, 4.4375rem)) + var(--sticky-thead-height, 0px) + 0.5rem - var(--sticky-top-stack));");
-    assertThat(css.substring(0, css.indexOf("@media (min-width: 1440px) {")))
+    assertThat(css.substring(0, css.indexOf("@media (min-width: 90rem) {")))
         .as("미디어 쿼리 밖에 두면 머리글이 안 붙는 폭에서도 여백이 생긴다")
         .doesNotContain("tbody * {");
 

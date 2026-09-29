@@ -19,16 +19,16 @@ import tools.jackson.databind.json.JsonMapper;
  * 루미너리 용병 — 용병을 따로 만든 PoB 빌드(오라·저주 젬, 장비)로 계산해, 그 오라·저주·링크·전투 함성 버프를 사용자 빌드의 PoB 파티 탭({@code
  * <Party>})에 넣는다. 가이드·재계산·최적화기가 같은 변환을 쓴다(사용자 요청 2026-09-29 "가이드에서 해결되면 최적화기에도").
  *
- * <p>PoB 엔진엔 용병이 없다 — 계산 모듈(Calc*.lua)에 용병 개념이 없고, 계산되는 아이템은 플레이어 활성 세트와 장비 입는 소환수 전용 세트뿐이다. 대신
- * PoB 파티 기능이 "동료 빌드의 버프"를 받는 통로라 그걸 쓴다. 용병 장비의 오라 효과 옵션·젬 레벨·품질은 용병 빌드 계산에 들어가 효과 배율에 반영된다.
- * 용병 <b>자신의 딜·생존</b>은 계산하지 않는다(기본 능력치 데이터가 없다).
+ * <p>PoB 엔진엔 용병이 없다 — 계산 모듈(Calc*.lua)에 용병 개념이 없고, 계산되는 아이템은 플레이어 활성 세트와 장비 입는 소환수 전용 세트뿐이다. 대신 PoB
+ * 파티 기능이 "동료 빌드의 버프"를 받는 통로라 그걸 쓴다. 용병 장비의 오라 효과 옵션·젬 레벨·품질은 용병 빌드 계산에 들어가 효과 배율에 반영된다. 용병 <b>자신의
+ * 딜·생존</b>은 계산하지 않는다(기본 능력치 데이터가 없다).
  *
- * <p>수여된 기사 작위(노드 {@value #BESTOWED_KNIGHTHOOD}, 게임 데이터 3.29 "Your Mercenary has 50% increased effect of Non-Curse
- * Auras from Skills")가 사용자 트리에 있으면 용병 빌드에 같은 효과의 사용자 정의 모드를 넣는다. 용병 빌드에 이미 그 줄이 있으면 넣지 않는다(이중
- * 적용 방지). ⚠ PoB 트리 폴더 중 3_29_ruthless 는 이 노드가 30% 라 값을 거기서 읽으면 틀린다.
+ * <p>수여된 기사 작위(노드 {@value #BESTOWED_KNIGHTHOOD}, 게임 데이터 3.29 "Your Mercenary has 50% increased
+ * effect of Non-Curse Auras from Skills")가 사용자 트리에 있으면 용병 빌드에 같은 효과의 사용자 정의 모드를 넣는다. 용병 빌드에 이미 그 줄이
+ * 있으면 넣지 않는다(이중 적용 방지). ⚠ PoB 트리 폴더 중 3_29_ruthless 는 이 노드가 30% 라 값을 거기서 읽으면 틀린다.
  *
- * <p>적 상태·적 모드 내보내기(EnemyConditions/EnemyMods)는 받지 않는다 — 파티원 빌드의 <b>설정 탭 기본값</b>(중독·감전, 광기 15중첩 "받는 피해 60%
- * 증가" 등)이 그대로 실려 와 DPS 를 엉뚱하게 부풀린다(실측 2026-09-29). 용병 스킬이 적에게 거는 효과는 오라(디버프형)·저주 항목으로 들어온다.
+ * <p>적 상태·적 모드 내보내기(EnemyConditions/EnemyMods)는 받지 않는다 — 파티원 빌드의 <b>설정 탭 기본값</b>(중독·감전, 광기 15중첩 "받는
+ * 피해 60% 증가" 등)이 그대로 실려 와 DPS 를 엉뚱하게 부풀린다(실측 2026-09-29). 용병 스킬이 적에게 거는 효과는 오라(디버프형)·저주 항목으로 들어온다.
  */
 @Service
 public class PoeMercenaryService {
@@ -109,8 +109,10 @@ public class PoeMercenaryService {
     } catch (RuntimeException e) {
       throw new IllegalArgumentException("용병 PoB 코드를 읽지 못했습니다: " + e.getMessage(), e);
     }
-    boolean alreadyInMerc = mercXml.contains("increased effect of Non-Curse Auras from your Skills");
-    String prepared = knighthood && !alreadyInMerc ? withCustomMod(mercXml, KNIGHTHOOD_MOD) : mercXml;
+    boolean alreadyInMerc =
+        mercXml.contains("increased effect of Non-Curse Auras from your Skills");
+    String prepared =
+        knighthood && !alreadyInMerc ? withCustomMod(mercXml, KNIGHTHOOD_MOD) : mercXml;
     String key = sha256(prepared);
     MercBuffs cached = cache.get(key);
     if (cached != null) {
@@ -118,7 +120,10 @@ public class PoeMercenaryService {
     }
     ExportResult r;
     try {
-      r = JsonMapper.builder().build().readValue(engine.exportPartyBuffs(prepared), ExportResult.class);
+      r =
+          JsonMapper.builder()
+              .build()
+              .readValue(engine.exportPartyBuffs(prepared), ExportResult.class);
     } catch (IllegalStateException e) {
       throw e;
     } catch (Exception e) {
@@ -152,12 +157,13 @@ public class PoeMercenaryService {
   }
 
   /**
-   * 사용자 빌드에 용병 버프를 넣은 XML — 기존 {@code <Party>}(자식 없는 것 포함)는 바꾼다. 사용자가 PoB 파티 탭에 이미 넣어 둔 버프와 겹쳐 두 번 적용되는 것을
-   * 막는다.
+   * 사용자 빌드에 용병 버프를 넣은 XML — 기존 {@code <Party>}(자식 없는 것 포함)는 바꾼다. 사용자가 PoB 파티 탭에 이미 넣어 둔 버프와 겹쳐 두 번
+   * 적용되는 것을 막는다.
    */
   public static String withParty(String playerXml, MercBuffs buffs) {
     StringBuilder party =
-        new StringBuilder("<Party destination=\"All\" append=\"false\" ShowAdvanceTools=\"false\">\n");
+        new StringBuilder(
+            "<Party destination=\"All\" append=\"false\" ShowAdvanceTools=\"false\">\n");
     for (String name : SECTIONS) {
       String text = buffs.sections().get(name);
       if (text == null || text.isBlank()) {
@@ -217,14 +223,21 @@ public class PoeMercenaryService {
         return -1;
       }
       char next = xml.charAt(a + open.length());
-      if (next == ' ' || next == '>' || next == '/' || next == '\t' || next == '\n' || next == '\r') {
+      if (next == ' '
+          || next == '>'
+          || next == '/'
+          || next == '\t'
+          || next == '\n'
+          || next == '\r') {
         return a;
       }
       from = a + 1;
     }
   }
 
-  /** 활성 트리 스펙에 수여된 기사 작위가 찍혀 있는지 — {@code <Tree activeSpec="n">} 의 n 번째 {@code <Spec nodes="…">}. */
+  /**
+   * 활성 트리 스펙에 수여된 기사 작위가 찍혀 있는지 — {@code <Tree activeSpec="n">} 의 n 번째 {@code <Spec nodes="…">}.
+   */
   public static boolean hasBestowedKnighthood(String playerXml) {
     String treeTag = tagAt(playerXml, playerXml.indexOf("<Tree"));
     int active = parseInt(attr(treeTag, "activeSpec"), 1);
@@ -254,8 +267,9 @@ public class PoeMercenaryService {
   }
 
   /**
-   * 용병 빌드에 사용자 정의 모드를 넣은 XML — 활성 설정 묶음({@code <ConfigSet id=활성>}) 안에 {@code <CustomModifierBlock>} 으로, 설정 묶음이
-   * 없는 옛 형식이면 {@code <Config>} 바로 아래에(ConfigTab:Load 의 옛 형식 분기가 첫 설정 묶음에 넣는다), {@code <Config>} 가 없으면 만든다.
+   * 용병 빌드에 사용자 정의 모드를 넣은 XML — 활성 설정 묶음({@code <ConfigSet id=활성>}) 안에 {@code <CustomModifierBlock>}
+   * 으로, 설정 묶음이 없는 옛 형식이면 {@code <Config>} 바로 아래에(ConfigTab:Load 의 옛 형식 분기가 첫 설정 묶음에 넣는다), {@code
+   * <Config>} 가 없으면 만든다.
    */
   static String withCustomMod(String xml, String modLine) {
     String block =
@@ -265,7 +279,9 @@ public class PoeMercenaryService {
     int configAt = indexOfTag(xml, "<Config");
     if (configAt < 0) {
       int end = xml.lastIndexOf("</PathOfBuilding>");
-      return end < 0 ? xml : xml.substring(0, end) + "<Config>" + block + "</Config>\n" + xml.substring(end);
+      return end < 0
+          ? xml
+          : xml.substring(0, end) + "<Config>" + block + "</Config>\n" + xml.substring(end);
     }
     String configTag = tagAt(xml, configAt);
     String active = attr(configTag, "activeConfigSet");

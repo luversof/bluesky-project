@@ -150,8 +150,8 @@ public class PoeBuildController {
 
   /** PoB 코드 → 헤드리스 엔진 실계산 스탯. */
   /**
-   * PoB 코드 재계산. mercCode(루미너리 용병 빌드 PoB 코드)가 있으면 용병의 오라·저주를 파티 탭으로 넣고 계산한다(수여된 기사 작위는 사용자 트리에서
-   * 자동 반영).
+   * PoB 코드 재계산. mercCode(루미너리 용병 빌드 PoB 코드)가 있으면 용병의 오라·저주를 파티 탭으로 넣고 계산한다(수여된 기사 작위는 사용자 트리에서 자동
+   * 반영).
    */
   @PostMapping("/recalculate")
   public PoePobEngineService.EngineResult recalculate(
@@ -164,7 +164,8 @@ public class PoeBuildController {
                 buildXml,
                 poeMercenaryService.export(
                     mercCode,
-                    net.luversof.api.poe.service.PoeMercenaryService.hasBestowedKnighthood(buildXml)));
+                    net.luversof.api.poe.service.PoeMercenaryService.hasBestowedKnighthood(
+                        buildXml)));
       }
       return poePobEngineService.recalculate(buildXml);
     } catch (IllegalArgumentException | IllegalStateException e) {

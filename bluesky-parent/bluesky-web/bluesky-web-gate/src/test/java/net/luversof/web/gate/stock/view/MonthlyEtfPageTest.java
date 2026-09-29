@@ -417,6 +417,126 @@ class MonthlyEtfPageTest {
     assertThat(support.pickRows(List.of())).isEmpty();
   }
 
+  /**
+   * 점수순 정렬(사용자 요청 2026-09-30: "점수 기준으로 정렬해서 볼 수 있으면"). 점수가 없는 종목(추세를 모르는 종목)은 방향과 무관하게 뒤다 - 빈 칸이
+   * "가장 낮은 점수" 나 "가장 높은 점수" 로 읽히면 안 된다.
+   */
+  @Test
+  void 점수순_정렬은_추천과_같은_셈이고_점수_없는_종목은_늘_뒤다() {
+    List<MonthlyEtfRowView> rows =
+        List.of(
+            rowWithScore("A00001", "10.00", "5.00"),
+            rowWithScore("B00002", "20.00", "-12.00"),
+            rowWithScore("C00003", "9.00", "1.00"),
+            rowWithScore("D00004", "30.00", null),
+            rowWithScore("E00005", "8.50", "0.00"));
+
+    assertThat(support.resolveSort("score")).isEqualTo(MonthlyEtfViewSupport.SORT_SCORE);
+    assertThat(support.resolveDirection("score", null)).as("높은 점수부터가 기본").isEqualTo("desc");
+    assertThat(support.sortRows(rows, "score", "desc"))
+        .extracting(MonthlyEtfRowView::stockItemSymbol)
+        .as("A 10 · C 9 · E 8.5 · B 20-12=8 · D 는 추세를 몰라 점수 없음")
+        .containsExactly("A00001", "C00003", "E00005", "B00002", "D00004");
+    assertThat(support.sortRows(rows, "score", "asc"))
+        .extracting(MonthlyEtfRowView::stockItemSymbol)
+        .as("오름차순이어도 점수 없는 D 는 맨 뒤")
+        .containsExactly("B00002", "E00005", "C00003", "A00001", "D00004");
+    assertThat(support.pickRows(rows).stream().map(pick -> pick.row().stockItemSymbol()).toList())
+        .as("표의 점수순 앞 셋 = 카드 셋 - 두 곳이 다른 말을 하면 안 된다")
+        .containsExactly("A00001", "C00003", "E00005");
+    assertThat(MonthlyEtfViewSupport.scoreOf(rows.get(3))).isNull();
+  }
+
+  /** 화면이 "연배당 − 감소 = 점수" 를 적는다. 합친 뒤 반올림하면 적힌 뺄셈이 0.01 어긋난다 - 두 수를 먼저 맞추고 뺀다. */
+  @Test
+  void 점수는_반올림한_두_수의_뺄셈이라_적힌_셈이_맞는다() {
+    // 7.205 → 7.21, -0.804 → 감점 0.80. 합친 뒤 반올림이면 6.401 → 6.40 이 되어 "7.21 − 0.80 = 6.40" 이 적힌다.
+    BigDecimal score =
+        MonthlyContributionPickSupport.score(new BigDecimal("7.205"), new BigDecimal("-0.804"));
+    assertThat(score).isEqualByComparingTo("6.41");
+    assertThat(MonthlyContributionPickSupport.cutOf(new BigDecimal("-0.804")))
+        .isEqualByComparingTo("0.80");
+    assertThat(MonthlyContributionPickSupport.cutOf(new BigDecimal("3.10")))
+        .as("분배금이 늘면 감점 0 - 늘어난 만큼 더해 주지 않는다")
+        .isEqualByComparingTo("0");
+    assertThat(MonthlyContributionPickSupport.cutOf(null)).isEqualByComparingTo("0");
+  }
+
+  /** 점수 열 · 칸 · 카드 설명이 화면에 있다(사용자 요청 2026-09-30). */
+  @Test
+  void 점수_열과_계산_방법이_화면에_있다() throws IOException {
+    String template = squash(Files.readString(Path.of(TEMPLATE_PATH), StandardCharsets.UTF_8));
+
+    assertThat(template)
+        .as("머리글에서 점수순으로 정렬할 수 있다")
+        .contains(squash("<a href=\"${baseUrl}sort=score&direction="))
+        .contains(
+            squash("${MessageUtil.getMessage(\"stock.monthly.etf.table.header.score.desc\")}"));
+    assertThat(template)
+        .as("점수 칸은 추천과 같은 함수로 낸다")
+        .contains(squash("!{BigDecimal rowScore = MonthlyEtfViewSupport.scoreOf(row);}"));
+    assertThat(template)
+        .as("칸 안에 뺄셈을 적고, 낭독기에는 무엇에서 무엇을 뺐는지 말한다")
+        .contains(
+            squash(
+                "data-score-basis>${rowYield} − ${percentFormat.format(rowCut)}<span class=\"sr-only\">"));
+    assertThat(template)
+        .as("점수가 없으면 까닭을 적는다 - 시세가 없는 때와 이력이 짧은 때")
+        .contains(
+            squash(
+                "data-score-missing>${MessageUtil.getMessage(\"stock.monthly.etf.table.cell.yield.unknown\")}"))
+        .contains(
+            squash(
+                "data-score-missing>${MessageUtil.getMessage(\"stock.monthly.etf.table.cell.score.unknown\")}"));
+    assertThat(template)
+        .as("카드도 뺄셈을 적는다 - 추세 % 를 그대로 적으면 점수와 이어지지 않는다")
+        .contains(
+            squash(
+                "MessageUtil.getMessage(\"stock.monthly.etf.pick.basis\"), pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()))"));
+    assertThat(template)
+        .as("계산 방법 · 예 · 점수순 보기 링크")
+        .contains(squash("data-score-how"))
+        .contains(squash("MessageUtil.getMessage(\"stock.monthly.etf.pick.how.formula\")"))
+        .contains(squash("MessageUtil.getMessage(\"stock.monthly.etf.pick.how.example\")"))
+        .contains(squash("<a href=\"${baseUrl}sort=score&direction=desc\""));
+
+    // 머리글과 본문 칸 수가 같아야 열이 밀리지 않는다 - 점수 칸은 연배당 칸 바로 뒤.
+    int header = template.indexOf(squash("data-score-header"));
+    int yieldHeader =
+        template.indexOf(
+            squash("MessageUtil.getMessage(\"stock.monthly.etf.table.header.yield\")"));
+    int periodHeader = template.indexOf(squash("sort=period-price&direction"));
+    assertThat(yieldHeader).isLessThan(header);
+    assertThat(header).isLessThan(periodHeader);
+    int cell = template.indexOf(squash("data-score-cell"));
+    assertThat(template.indexOf(squash("data-annual-yield"))).isLessThan(cell);
+    assertThat(cell).isLessThan(template.indexOf(squash("data-period-price")));
+  }
+
+  /** 새 메시지는 ko · en 모두 있고 ko 는 \\u 이스케이프다(편집기 코드페이지로 깨지지 않게). */
+  @Test
+  void 점수_메시지는_두_언어에_있다() throws IOException {
+    String korean =
+        Files.readString(
+            Path.of("src/main/resources/uiMessage_ko.properties"), StandardCharsets.UTF_8);
+    String english =
+        Files.readString(
+            Path.of("src/main/resources/uiMessage.properties"), StandardCharsets.UTF_8);
+    for (String key :
+        List.of(
+            "stock.monthly.etf.pick.basis.nocut",
+            "stock.monthly.etf.pick.how.title",
+            "stock.monthly.etf.pick.how.formula",
+            "stock.monthly.etf.pick.how.example",
+            "stock.monthly.etf.pick.how.sort",
+            "stock.monthly.etf.table.header.score",
+            "stock.monthly.etf.table.cell.score.basis",
+            "stock.monthly.etf.table.cell.score.unknown")) {
+      assertThat(korean).contains(key + " = \\u");
+      assertThat(english).contains(key + " = ");
+    }
+  }
+
   /** 화면에도 카드가 있고, 까닭(연배당 · 추세)을 함께 적어야 근거가 된다. */
   @Test
   void 추천_카드가_화면에_있다() throws IOException {
@@ -475,6 +595,78 @@ class MonthlyEtfPageTest {
         .contains(squash("<input type=\"hidden\" name=\"view\" value=\"${monthlyEtfView}\" />"))
         .contains(squash("data-contribution-view-link=\"contribution\""))
         .contains(squash("data-contribution-view-link=\"all\""));
+  }
+
+  /**
+   * 자리별 적립 추천(사용자 요청 2026-09-30: "이번적립으로 보기하면 그냥 월중 월말 섞어서 나오는데 기준이 뭐야?"). 다음 지급일이 아니라 자리(지급 시기 x
+   * 계좌)마다 하나다 - 그래서 자리 차례로 놓고, 무슨 자리인지 적고, 규칙을 보기 안에 적는다.
+   */
+  @Test
+  void 자리별_적립_추천은_자리_차례로_놓고_규칙을_적는다() throws IOException {
+    List<MonthlyEtfRowView> rows =
+        List.of(
+            rowWithTaxable("A00001", new BigDecimal("4.00")),
+            rowWithTaxable("B00002", new BigDecimal("40.00")),
+            rowWithTaxable("C00003", new BigDecimal("4.00")));
+
+    assertThat(support.sortRows(rows, "slot", "desc", List.of("C00003", "A00001")))
+        .extracting(MonthlyEtfRowView::stockItemSymbol)
+        .as("자리 차례대로, 추천에 없는 종목은 뒤 - 방향은 없다")
+        .containsExactly("C00003", "A00001", "B00002");
+    assertThat(support.resolveSort("slot")).isEqualTo(MonthlyEtfViewSupport.SORT_SLOT);
+    assertThat(support.resolveSortForView("slot", "contribution")).isEqualTo("slot");
+    assertThat(support.resolveSortForView("slot", ""))
+        .as("전체 보기에는 자리가 없다 - 표시 순서로")
+        .isEqualTo("display-order");
+    assertThat(support.resolveSortForView("score", "")).isEqualTo("score");
+
+    String controller = squash(Files.readString(Path.of(CONTROLLER_PATH), StandardCharsets.UTF_8));
+    assertThat(controller)
+        .contains(squash("monthlyEtfViewSupport.resolveSortForView(resolvedSort, resolvedView)"))
+        .contains(squash("viewSort, resolvedDirection, List.copyOf(contributionPicks.keySet()));"))
+        .as("머리글 aria-sort 가 실제 차례를 말해야 한다")
+        .contains(squash("model.addAttribute(\"monthlyEtfSort\", viewSort);"));
+
+    String template = squash(Files.readString(Path.of(TEMPLATE_PATH), StandardCharsets.UTF_8));
+    assertThat(template)
+        .as("보기 단추는 자리 차례로 연다")
+        .contains(squash("+ \"sort=slot&direction=asc\"}\""))
+        .as("보기 안에 규칙(자리마다 하나 · 자리 차례 · 계좌 경계)을 적는다")
+        .contains(
+            squash(
+                "data-contribution-view-desc>${MessageUtil.getMessage(\"stock.monthly.etf.view.contribution.desc\")}"));
+
+    String korean =
+        Files.readString(
+            Path.of("src/main/resources/uiMessage_ko.properties"), StandardCharsets.UTF_8);
+    for (String key :
+        List.of(
+            "stock.monthly.etf.table.cell.contribution",
+            "stock.monthly.etf.view.contribution",
+            "stock.simulator.monthly.contribution.title")) {
+      String line = korean.substring(korean.indexOf(key + " = "));
+      line = line.substring(0, line.indexOf((char) 10));
+      assertThat(unescape(line))
+          .as(key + " - 이번 적립이 아니라 자리별 추천이다")
+          .contains("자리")
+          .doesNotContain("이번");
+    }
+  }
+
+  /** properties 의 역슬래시-u 네 자리 이스케이프를 글자로 푼다(백슬래시를 문자 코드로 적어 소스의 유니코드 이스케이프를 피한다). */
+  private static String unescape(String value) {
+    char slash = (char) 92;
+    StringBuilder builder = new StringBuilder();
+    for (int index = 0; index < value.length(); index++) {
+      char c = value.charAt(index);
+      if (c == slash && index + 5 < value.length() && value.charAt(index + 1) == 'u') {
+        builder.append((char) Integer.parseInt(value.substring(index + 2, index + 6), 16));
+        index += 5;
+      } else {
+        builder.append(c);
+      }
+    }
+    return builder.toString();
   }
 
   /** 메뉴에 들어가 있어야 찾아갈 수 있다 - 주소 · 활성 패턴 · 이름까지. */

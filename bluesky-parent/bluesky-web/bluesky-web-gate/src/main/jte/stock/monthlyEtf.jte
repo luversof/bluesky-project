@@ -3,6 +3,7 @@
 @import java.text.DecimalFormat
 @import java.util.List
 @import net.luversof.web.gate.stock.dto.view.MonthlyEtfRowView
+@import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport
 @import net.luversof.web.gate.stock.service.MonthlyEtfViewSupport
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
@@ -206,23 +207,48 @@
 										<span class="text-lg font-semibold tabular-nums" data-pick-score>${percentFormat.format(pick.score())}</span>
 										<span class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.pick.score")}</span>
 									</div>
-									<div class="text-xs text-base-content/60" data-pick-basis>
-										${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis"), percentFormat.format(pick.row().annualYieldPct()), percentFormat.format(pick.row().payoutTrendPct()))}
+									<%-- 점수가 어떻게 나왔는지 뺄셈으로 적는다(사용자 요청 2026-09-30). 두 수는 점수를 낼 때와 똑같이 반올림한다. --%>
+									!{BigDecimal pickCut = MonthlyContributionPickSupport.cutOf(pick.row().payoutTrendPct());}
+									!{String pickYield = percentFormat.format(pick.row().annualYieldPct().setScale(2, java.math.RoundingMode.HALF_UP));}
+									<div class="text-xs text-base-content/60 tabular-nums" data-pick-basis>
+										@if(pickCut.signum() > 0)
+											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis"), pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()))}
+										@else
+											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis.nocut"), pickYield, percentFormat.format(pick.score()))}
+										@endif
 									</div>
 								</div>
 							@endfor
 							</div>
+							<%-- 점수 계산 방법(사용자 요청 2026-09-30). 카드마다 뺄셈이 적혀 있으니 여기서는 규칙과 예만 - 접어 둔다. --%>
+							<details class="text-xs leading-5 text-base-content/70" data-score-how>
+								<summary class="cursor-pointer font-medium text-base-content/80">${MessageUtil.getMessage("stock.monthly.etf.pick.how.title")}</summary>
+								<div class="mt-2 space-y-1">
+									<p class="font-medium text-base-content/80" data-score-formula>${MessageUtil.getMessage("stock.monthly.etf.pick.how.formula")}</p>
+									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.cut")}</p>
+									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.why")}</p>
+									<p class="tabular-nums">${MessageUtil.getMessage("stock.monthly.etf.pick.how.example")}</p>
+									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.missing")}</p>
+									<p><a href="${baseUrl}sort=score&direction=desc" class="link link-primary" data-score-sort-link>${MessageUtil.getMessage("stock.monthly.etf.pick.how.sort")}</a></p>
+								</div>
+							</details>
 						</div>
 					@endif
 
-					<%-- 이번 적립만 보기(사용자 요청 2026-09-23: ETF 가 많아지면 네 자리만 보고 싶다. 결정: 한 번 누르는 단추).
-					     다른 조건 · 정렬은 그대로 들고 간다. 추천이 하나도 없으면 단추를 내지 않는다(0 을 누르면 빈 표뿐이다). --%>
-					!{String viewlessQuery = baseUrl.replace("view=" + monthlyEtfView + "&", "") + "sort=" + monthlyEtfSort + "&direction=" + monthlyEtfDirection;}
+					<%-- 자리별 적립 추천만 보기(사용자 요청 2026-09-23: ETF 가 많아지면 네 자리만 보고 싶다. 결정: 한 번 누르는 단추).
+					     2026-09-30 "이번 적립" 에서 이름을 바꿨다 - "월중 월말 섞어서 나오는데 기준이 뭐야? 다음 월말이나 다음 월중을 보여주는게 아닌거 같은데".
+					     다음 지급일이 아니라 자리(지급 시기 x 계좌)마다 하나다. 그래서 자리 차례로 놓고(sort=slot), 무슨 자리인지 배지에 적는다.
+					     다른 조건은 그대로 들고 간다. 추천이 하나도 없으면 단추를 내지 않는다(0 을 누르면 빈 표뿐이다). --%>
+					!{String viewlessBase = baseUrl.replace("view=" + monthlyEtfView + "&", "");}
+					!{String viewlessQuery = viewlessBase + "sort=" + ("slot".equals(monthlyEtfSort) ? "display-order" : monthlyEtfSort) + "&direction=" + monthlyEtfDirection;}
 					@if(!monthlyEtfContributionPicks.isEmpty() || !monthlyEtfView.isBlank())
 						<div class="flex flex-wrap gap-2" data-contribution-view>
-							<a href="${viewlessQuery.replace("/stock/monthly-etf?", "/stock/monthly-etf?view=contribution&")}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-primary" : "btn-outline"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? "page" : null}" data-contribution-view-link="contribution">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.view.contribution"), monthlyEtfContributionPicks.size())}</a>
+							<a href="${viewlessBase.replace("/stock/monthly-etf?", "/stock/monthly-etf?view=contribution&") + "sort=slot&direction=asc"}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-primary" : "btn-outline"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? "page" : null}" data-contribution-view-link="contribution">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.view.contribution"), monthlyEtfContributionPicks.size())}</a>
 							<a href="${viewlessQuery}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-outline" : "btn-primary"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? null : "page"}" data-contribution-view-link="all">${MessageUtil.getMessage("stock.monthly.etf.view.all")}</a>
 						</div>
+						@if("contribution".equals(monthlyEtfView))
+							<p class="text-xs leading-5 text-base-content/70" data-contribution-view-desc>${MessageUtil.getMessage("stock.monthly.etf.view.contribution.desc")}</p>
+						@endif
 					@endif
 
 					<div class="overflow-x-auto table-head-sticky">
@@ -281,6 +307,15 @@
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.yield")}</span>
 										</a>
 									</th>
+									<%-- 점수 열(사용자 요청 2026-09-30: "점수 기준에 대한 설명도 추가해주고 점수 기준으로 정렬해서 볼 수 있으면").
+									     "지금 눈여겨볼 종목" 과 같은 셈 - 바로 왼쪽 연배당에서 분배금이 줄어든 만큼 뺀다. 칸 안에 그 뺄셈을 적는다. --%>
+									<th scope="col" class="align-bottom text-right" aria-sort="${"score".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}" data-score-header>
+										<a href="${baseUrl}sort=score&direction=${"score".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover no-underline">
+											@if("score".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
+											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.score")}</span>
+											<div class="text-[11px] font-normal text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.header.score.desc")}</div>
+										</a>
+									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"period-price".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
 										<a href="${baseUrl}sort=period-price&direction=${"period-price".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover no-underline">
 											@if("period-price".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
@@ -323,7 +358,7 @@
 												<div class="mt-1"><span class="badge badge-sm badge-primary whitespace-normal h-auto" data-contribution-pick="${contributionPick.payoutWindow()}|${contributionPick.account()}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.contribution"), "MID_MONTH".equals(contributionPick.payoutWindow()) ? midMonthLabel : monthEndLabel, "BROKERAGE".equals(contributionPick.account()) ? MessageUtil.getMessage("stock.simulator.monthly.contribution.account.brokerage") : MessageUtil.getMessage("stock.simulator.monthly.contribution.account.pension"))}</span></div>
 											@endif
 										</th>
-										<td class="align-top">${windowLabel}</td>
+										<td class="align-top" data-keep-line>${windowLabel}</td>
 										<td class="align-top text-right">
 											<div class="space-y-1 tabular-nums">
 												<div><span class="mr-1 text-[11px] text-base-content/60">${averageLabel}</span><span class="amount-value">${StockFormatUtil.fullKrw(row.averageDividendPerShare1y(), 2)}</span></div>
@@ -410,6 +445,25 @@
 													<div class="text-base-content/60" data-yield-unknown>${MessageUtil.getMessage("stock.monthly.etf.table.cell.yield.unknown")}</div>
 												@endif
 											</div>
+										</td>
+										<%-- 점수 = 연배당 - 분배금 감소. 두 수를 따로 반올림해 빼므로 적힌 뺄셈이 그대로 맞는다.
+										     못 내면 0 이 아니라 까닭(시세 없음 · 지급 6 회 미만)을 적는다 - 빈 칸이 "가장 낮은 점수" 로 읽히면 안 된다. --%>
+										!{BigDecimal rowScore = MonthlyEtfViewSupport.scoreOf(row);}
+										<td class="align-top text-right" data-score-cell>
+											@if(rowScore != null)
+												!{BigDecimal rowCut = MonthlyContributionPickSupport.cutOf(row.payoutTrendPct());}
+												!{String rowYield = percentFormat.format(row.annualYieldPct().setScale(2, java.math.RoundingMode.HALF_UP));}
+												<div class="font-semibold tabular-nums" data-score>${percentFormat.format(rowScore)}</div>
+												@if(rowCut.signum() > 0)
+													<div class="text-[11px] tabular-nums text-base-content/60" data-score-basis>${rowYield} − ${percentFormat.format(rowCut)}<span class="sr-only"> ${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.score.basis"), rowYield, percentFormat.format(rowCut))}</span></div>
+												@else
+													<div class="text-[11px] text-base-content/60" data-score-no-cut>${MessageUtil.getMessage("stock.monthly.etf.table.cell.score.no.cut")}</div>
+												@endif
+											@elseif(!priceKnown)
+												<div class="text-base-content/60" data-score-missing>${MessageUtil.getMessage("stock.monthly.etf.table.cell.yield.unknown")}</div>
+											@else
+												<div class="text-base-content/60" data-score-missing>${MessageUtil.getMessage("stock.monthly.etf.table.cell.score.unknown")}</div>
+											@endif
 										</td>
 										<%-- 고른 기간의 수익률. 이력이 그 기간을 못 덮으면 값이 없다 - 그때는 언제부터 있는지 적는다. --%>
 										!{boolean periodKnown = row.periodPriceReturnPct() != null && row.periodTotalReturnPct() != null;}

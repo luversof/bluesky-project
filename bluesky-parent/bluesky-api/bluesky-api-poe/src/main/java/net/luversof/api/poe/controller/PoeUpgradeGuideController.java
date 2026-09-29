@@ -24,8 +24,8 @@ public class PoeUpgradeGuideController {
   }
 
   /**
-   * 분석 시작 — 이미 돌고 있거나 코드를 못 읽으면 false(사유는 status 의 error). mercCode = 루미너리 용병 빌드 PoB 코드(선택) — 있으면 모든 측정에
-   * 용병 오라·저주가 들어간다.
+   * 분석 시작 — 이미 돌고 있거나 코드를 못 읽으면 false(사유는 status 의 error). mercCode = 루미너리 용병 빌드 PoB 코드(선택) — 있으면
+   * 모든 측정에 용병 오라·저주가 들어간다.
    */
   @PostMapping("/start")
   public boolean start(@RequestParam String code, @RequestParam(required = false) String mercCode) {

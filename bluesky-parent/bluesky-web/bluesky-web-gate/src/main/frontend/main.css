@@ -903,8 +903,12 @@ html { scroll-padding-top: var(--sticky-top-stack); }
    그래서 넓은 화면에서는 가로 스크롤 상자를 아예 걷어낸다. 대신 글자가 줄바꿈되게 풀어 줘야 표가
    자리 안에 들어온다(실측 1440px: 표 1169 -> 1134 = 들어갈 자리와 같아짐, 가로 스크롤 35px -> 0).
    1440px 부터만 한다 - 실측(높이 900px): 1920 에서 보이는 줄 5 -> 5(손해 없음), 1440 에서 5 -> 4,
-   1280 에서는 글자가 더 접혀 행이 101 -> 121px 가 되고 5 -> 3 으로 준다. 좁은 화면은 그대로 둔다. */
-@media (min-width: 1440px) {
+   1280 에서는 글자가 더 접혀 행이 101 -> 121px 가 되고 5 -> 3 으로 준다. 좁은 화면은 그대로 둔다.
+
+   px 이 아니라 rem 으로 끊는다(2026-09-30, 90rem = 글꼴 100% 에서 1440px). 1440px 로 두었더니 글꼴 200% 에서도
+   상자가 걷힌 채라 표가 자리를 넘어 창이 통째로 가로 스크롤됐다(실측: 문서 1483px / 창 1440px). 90rem 이면
+   글꼴 200% 에서 2880px 이 되어 그 폭까지는 상자가 다시 표를 감싼다 - 아래 .table-head-sticky-xl(80rem)과 같은 까닭. */
+@media (min-width: 90rem) {
 	.table-head-sticky {
 		overflow-x: visible;
 		overflow-y: visible;
@@ -917,6 +921,17 @@ html { scroll-padding-top: var(--sticky-top-stack); }
 		white-space: normal;
 		word-break: keep-all;
 		overflow-wrap: anywhere;
+	}
+	/* 숫자 칸(오른쪽 정렬)은 자릿수 가운데서 끊지 않는다(2026-09-30). anywhere 는 더 못 줄일 때 아무 데서나 자르는데,
+	   열이 늘면서(낙폭 · 변동성 · 총보수 · 점수) 1440px 에서 "31.6 / 6%" · "-16.39 / %" 처럼 숫자 58 곳이 갈렸다(실측).
+	   숫자를 통째로 두어도 표는 1134px 자리에 그대로 들어간다 - 줄어드는 몫은 종목명 칸이 진다. */
+	.table-head-sticky > table td.text-right,
+	.table-head-sticky > table td.text-right * {
+		overflow-wrap: normal;
+	}
+	/* 두 글자 칸(지급 시기 "월중")은 위 규칙을 풀어도 anywhere 로 한 글자씩 세로로 흘렀다 - 한 줄로 묶는다. */
+	.table-head-sticky > table td[data-keep-line] {
+		white-space: nowrap;
 	}
 	/* sticky 는 tr 이 아니라 th 에 걸어야 한다(실측: tr 은 붙지 않았다).
 	   고정 줄(제목·검색·기간) 아래에 놓아야 겹치지 않는다 - 그 높이는 common.js 가 알려 준다. */

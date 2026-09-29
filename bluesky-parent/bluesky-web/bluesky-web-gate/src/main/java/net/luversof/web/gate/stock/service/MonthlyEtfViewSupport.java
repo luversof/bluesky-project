@@ -52,6 +52,15 @@ public class MonthlyEtfViewSupport {
   /** 총보수(연)로도 정렬한다 - 싼 것부터가 기본(2026-09-28). */
   public static final String SORT_EXPENSE_RATIO = "expense-ratio";
 
+  /** 점수(연배당 수익률 + 분배금이 줄어든 만큼 감점) - 사용자 요청 2026-09-30: "점수 기준으로 정렬해서 볼 수 있으면". */
+  public static final String SORT_SCORE = "score";
+
+  /**
+   * 자리 차례(월중 → 월말, 그 안에서 위탁 → ISA/연금) - 자리별 적립 추천 보기에서만 뜻이 있다(사용자 요청 2026-09-30: "월중 월말 섞어서 나오는데
+   * 기준이 뭐야?"). 전체 보기에서는 표시 순서로 되돌린다({@link #resolveSortForView}).
+   */
+  public static final String SORT_SLOT = "slot";
+
   /** 화면이 고를 수 있는 기간(개월). api-stock 이 내려보내는 기간과 같아야 한다. */
   public static final java.util.List<Integer> PERIODS = java.util.List.of(1, 3, 6, 12);
 
@@ -135,7 +144,9 @@ public class MonthlyEtfViewSupport {
           SORT_PERIOD_TOTAL,
           SORT_MAX_DRAWDOWN,
           SORT_VOLATILITY,
-          SORT_EXPENSE_RATIO ->
+          SORT_EXPENSE_RATIO,
+          SORT_SCORE,
+          SORT_SLOT ->
           sort;
       default -> SORT_DISPLAY_ORDER;
     };
@@ -159,6 +170,7 @@ public class MonthlyEtfViewSupport {
           SORT_LATEST_PAY_DATE,
           SORT_PERIOD_PRICE,
           SORT_PERIOD_TOTAL,
+          SORT_SCORE,
           // 낙폭은 음수다 - 큰 값(0 에 가까운 쪽)이 덜 빠진 것이므로 좋은 것부터 보려면 내림차순이다.
           SORT_MAX_DRAWDOWN ->
           "desc";
@@ -242,6 +254,34 @@ public class MonthlyEtfViewSupport {
         .toList();
   }
 
+  /** 자리 차례는 자리별 적립 추천 보기에서만 쓴다 - 전체 보기면 표시 순서. */
+  public String resolveSortForView(String sort, String view) {
+    return SORT_SLOT.equals(sort) && !VIEW_CONTRIBUTION.equals(view) ? SORT_DISPLAY_ORDER : sort;
+  }
+
+  /**
+   * 자리 차례 정렬. 추천은 자리마다 하나라 자리 차례가 곧 추천 차례다({@link MonthlyContributionPickSupport#pickHeld} 가 월중 먼저,
+   * 그 안에서 위탁 먼저로 낸다). 방향은 없다 - 자리 차례를 거꾸로 볼 까닭이 없다.
+   *
+   * @param slotOrder 자리 차례대로 놓인 추천 종목코드
+   */
+  public List<MonthlyEtfRowView> sortRows(
+      List<MonthlyEtfRowView> rows, String sort, String direction, List<String> slotOrder) {
+    if (!SORT_SLOT.equals(sort)) {
+      return sortRows(rows, sort, direction);
+    }
+    return rows.stream()
+        .sorted(
+            Comparator.comparingInt(
+                    (MonthlyEtfRowView row) -> {
+                      int index = slotOrder.indexOf(safeText(row.stockItemSymbol()));
+                      return index < 0 ? Integer.MAX_VALUE : index;
+                    })
+                .thenComparing(
+                    row -> safeText(row.stockItemSymbol()), String.CASE_INSENSITIVE_ORDER))
+        .toList();
+  }
+
   /** 정렬(동률이면 종목코드 오름차순). */
   public List<MonthlyEtfRowView> sortRows(
       List<MonthlyEtfRowView> rows, String sort, String direction) {
@@ -267,6 +307,7 @@ public class MonthlyEtfViewSupport {
           case SORT_VOLATILITY -> nullsLast(MonthlyEtfRowView::volatilityPct);
           case SORT_PERIOD_TOTAL -> nullsLast(MonthlyEtfRowView::periodTotalReturnPct);
           case SORT_EXPENSE_RATIO -> nullsLast(MonthlyEtfRowView::totalExpenseRatioPct);
+          case SORT_SCORE -> nullsLast(MonthlyEtfViewSupport::scoreOf);
           case SORT_PAYOUT_COUNT -> Comparator.comparing(MonthlyEtfRowView::payoutCount);
           case SORT_LATEST_PAY_DATE ->
               Comparator.comparing(
@@ -294,6 +335,17 @@ public class MonthlyEtfViewSupport {
         .toList();
   }
 
+  /**
+   * 한 행의 점수 = 연배당 수익률 + min(분배금 추세, 0). "지금 눈여겨볼 종목" 과 같은 규칙이라 추세를 모르는 종목(지급 이력 6 회 미만)은 점수를 내지
+   * 않는다(null) - 추세를 모르면 감점할 수 없어 삭감 중인 종목이 높게 나온다.
+   */
+  public static BigDecimal scoreOf(MonthlyEtfRowView row) {
+    if (row == null || row.annualYieldPct() == null || row.payoutTrendPct() == null) {
+      return null;
+    }
+    return MonthlyContributionPickSupport.score(row.annualYieldPct(), row.payoutTrendPct());
+  }
+
   /** 고른 기간의 값이 없는가(이력이 모자란 종목). 기간 정렬에서만 뜻이 있다. */
   private boolean periodValueMissing(MonthlyEtfRowView row, String sort) {
     if (SORT_PERIOD_PRICE.equals(sort)) {
@@ -307,6 +359,10 @@ public class MonthlyEtfViewSupport {
     }
     if (SORT_VOLATILITY.equals(sort)) {
       return row.volatilityPct() == null;
+    }
+    // 점수를 못 내는 종목(지급 이력 6 회 미만이라 추세가 없거나 시세가 없는 종목)은 방향과 무관하게 뒤로.
+    if (SORT_SCORE.equals(sort)) {
+      return scoreOf(row) == null;
     }
     // 총보수를 모르는 종목이 "가장 싼(0%)" 으로 맨 위에 오면 안 된다 - 방향과 무관하게 뒤로.
     if (SORT_EXPENSE_RATIO.equals(sort)) {

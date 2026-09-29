@@ -555,6 +555,10 @@
 			<div class="rounded border border-warning/40 bg-warning/10 px-3 py-2 text-xs space-y-1">
 				<div class="font-semibold text-warning">${MessageUtil.getMessage("poe.sim.opt.result.unmodeled.asc")}</div>
 				<div class="text-base-content/70">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.unmodeled.asc.detail"), result.ascendancyKo() != null ? result.ascendancyKo() : result.unmodeledAscendancy().ascendancy(), result.unmodeledAscendancy().unmodeled(), result.unmodeledAscendancy().total())}</div>
+				@if(result.unmodeledAscendancy().mercenary() != null)
+					<%-- 용병 코드를 넣었으면 용병이 거는 오라·저주는 반영됐다(용병 자신의 딜·생존은 여전히 빠진다) --%>
+					<div class="text-base-content/80">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.merc"), result.unmodeledAscendancy().mercenary())}</div>
+				@endif
 			</div>
 		@endif
 

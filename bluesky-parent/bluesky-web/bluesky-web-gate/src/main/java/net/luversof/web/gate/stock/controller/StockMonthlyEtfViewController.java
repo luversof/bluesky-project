@@ -100,6 +100,8 @@ public class StockMonthlyEtfViewController {
     Map<String, MonthlyContributionPickSupport.ContributionPick> contributionPicks =
         loadContributionPicks(heldSnapshotFuture, catalog);
     String resolvedView = monthlyEtfViewSupport.resolveView(view);
+    // 자리별 적립 추천 보기는 자리 차례(월중 → 월말, 위탁 → ISA/연금)로 놓는다(사용자 요청 2026-09-30). 전체 보기면 표시 순서.
+    String viewSort = monthlyEtfViewSupport.resolveSortForView(resolvedSort, resolvedView);
     List<MonthlyEtfRowView> rows =
         monthlyEtfViewSupport.sortRows(
             monthlyEtfViewSupport.filterContribution(
@@ -112,8 +114,9 @@ public class StockMonthlyEtfViewController {
                     resolvedAccount),
                 contributionPicks.keySet(),
                 resolvedView),
-            resolvedSort,
-            resolvedDirection);
+            viewSort,
+            resolvedDirection,
+            List.copyOf(contributionPicks.keySet()));
 
     model.addAttribute("monthlyEtfRows", rows);
     model.addAttribute("monthlyEtfContributionPicks", contributionPicks);
@@ -126,7 +129,7 @@ public class StockMonthlyEtfViewController {
     model.addAttribute(
         "monthlyEtfMissingPayoutCount",
         allRows.stream().filter(row -> row.payoutCount() <= 0).count());
-    model.addAttribute("monthlyEtfSort", resolvedSort);
+    model.addAttribute("monthlyEtfSort", viewSort);
     model.addAttribute("monthlyEtfDirection", resolvedDirection);
     model.addAttribute("monthlyEtfKeyword", resolvedKeyword);
     model.addAttribute("monthlyEtfMinAnnualYield", minAnnualYield);
