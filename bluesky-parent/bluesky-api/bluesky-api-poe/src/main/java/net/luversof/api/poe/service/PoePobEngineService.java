@@ -116,6 +116,9 @@ public class PoePobEngineService {
   private final Path sourceDir;
   private final Path runnerScript;
   private final Path workerScript;
+
+  /** 파티원(루미너리 용병) 빌드의 버프를 PoB 파티 탭 형식으로 내보내는 스크립트 — {@link #exportPartyBuffs}. */
+  private final Path partyExportScript;
   private final String luajitPath;
   private final int poolSize;
   private final long evalTimeoutMs;
@@ -163,6 +166,8 @@ public class PoePobEngineService {
     this.sourceDir = Path.of(sourceDir);
     this.runnerScript = Path.of(runnerScript).toAbsolutePath();
     this.workerScript = Path.of(workerScript).toAbsolutePath();
+    // calc.lua 옆의 party-export.lua — 러너 경로를 바꾸면 함께 따라간다
+    this.partyExportScript = this.runnerScript.resolveSibling("party-export.lua");
     this.poolSize = autoPoolSize(poolSize);
     this.evalTimeoutMs = evalTimeoutMs;
     this.workerRecycleAfter = workerRecycleAfter;
@@ -288,6 +293,17 @@ public class PoePobEngineService {
    */
   public Map<String, Double> calculateValues(String buildXml) {
     return runRaw(buildXml);
+  }
+
+  /**
+   * <b>남의 빌드</b>(사용자가 붙여넣은 PoB 코드) 전용 원시 값 계산 — 상주 워커 대신 프로세스-per-평가.
+   *
+   * <p>calculateValues 는 상주 워커를 쓰는데, 무궁한 주얼·클러스터가 잔뜩 붙은 외부 빌드를 워커에 실으면 PoB 내부 상태가 무너져 <b>다음 빌드의 스펙
+   * 임포트가 조용히 실패</b>한다(recalculate 주석의 실측). 업그레이드 가이드는 사용자 빌드를 수십 번 변형해 재므로 반드시 이 격리 경로를 쓴다 — 안 그러면
+   * 최적화기의 워커까지 오염된다. 호출마다 임시 파일·프로세스가 따로라 병렬 호출해도 된다.
+   */
+  public Map<String, Double> calculateValuesIsolated(String buildXml) {
+    return runRawOnce(buildXml);
   }
 
   /**
@@ -474,13 +490,28 @@ public class PoePobEngineService {
   }
 
   private Map<String, Double> runRawOnce(String buildXml) {
+    return parseValues(runOnce(runnerScript, buildXml));
+  }
+
+  /**
+   * 파티원 빌드(루미너리 용병 등)의 버프를 PoB 파티 탭 형식으로 내보낸다 — 결과 JSON 문자열(party-export.lua 출력). 격리 경로(프로세스-per-실행)라
+   * 상주 워커 상태와 무관하다.
+   *
+   * @throws IllegalStateException 엔진 실행 실패/시간 초과/결과 누락
+   */
+  public String exportPartyBuffs(String buildXml) {
+    return runOnce(partyExportScript, buildXml);
+  }
+
+  /** 스크립트 하나를 프로세스-per-실행으로 돌려 결과 마커 뒤 JSON 문자열을 돌려준다(calc.lua · party-export.lua 공용). */
+  private String runOnce(Path script, String buildXml) {
     Path xmlFile = null;
     try {
       xmlFile = Files.createTempFile("pob-build", ".xml");
       Files.writeString(xmlFile, buildXml, StandardCharsets.UTF_8);
 
       ProcessBuilder processBuilder =
-          new ProcessBuilder(luajitPath, runnerScript.toString(), xmlFile.toString());
+          new ProcessBuilder(luajitPath, script.toString(), xmlFile.toString());
       processBuilder.directory(sourceDir.resolve("src").toFile());
       processBuilder.redirectErrorStream(true);
       Process process = processBuilder.start();
@@ -548,7 +579,7 @@ public class PoePobEngineService {
                 + ")"
                 + (diag.isEmpty() ? "" : " · " + diag));
       }
-      return parseValues(resultJson);
+      return resultJson;
     } catch (IllegalStateException e) {
       throw e;
     } catch (InterruptedException e) {

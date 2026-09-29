@@ -15,7 +15,8 @@ import net.luversof.web.gate.poe.dto.PoeOptimizeResult;
 @HttpExchange(url = "/api/poe/optimize", accept = MediaType.APPLICATION_JSON_VALUE)
 public interface PoeOptimizeClient {
 
-  @PostExchange("/start")
+  /** 폼 본문으로 보낸다 — 확정 트리·용병 코드처럼 긴 값이 URL 쿼리에 실리면 API 헤더 한도(8KB)에 걸린다(PoeBuildClient 주석). */
+  @PostExchange(value = "/start", contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   boolean start(
       @RequestParam String slug,
       @RequestParam(required = false) String objective,
@@ -30,7 +31,11 @@ public interface PoeOptimizeClient {
       @RequestParam(required = false) String jewels,
       @RequestParam(required = false) String clusters,
       @RequestParam(required = false) String tattoos,
-      @RequestParam(required = false) String anoint);
+      @RequestParam(required = false) String anoint,
+      // 완주 모드(opt-in) — 혈맹 top-3 을 각각 끝까지 완주시켜 최선만 발행(최대 4 배 소요)
+      @RequestParam(required = false) Boolean thorough,
+      // 루미너리 용병 빌드 PoB 코드(선택) — 후보가 루미너리면 용병 오라·저주를 파티 탭으로 넣는다
+      @RequestParam(required = false) String mercCode);
 
   @GetExchange("/status")
   PoeJobStatus.Optimize status();

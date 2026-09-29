@@ -116,6 +116,15 @@ class MonthlyEtfExpenseListingTest {
     assertThat(withFacts.getTotalExpenseRatioPct()).isEqualByComparingTo("0.25");
     assertThat(withFacts.getListingDate()).isEqualTo(LocalDate.of(2025, 9, 3));
     assertThat(withFacts.getNote()).isEqualTo("사람이 적은 메모");
+
+    // RISE 옛 주소로 링크를 넣어도 새 주소로 저장한다(2026-09-29 주소 이전).
+    var rise =
+        MonthlyDividendLinkRegisterService.buildProfileRequest(
+            new SourceMeta("475720", "RISE 200위클리커버드콜"),
+            "https://www.riseetf.co.kr/prod/finderDetail/44G3",
+            "MID_MONTH",
+            existing);
+    assertThat(rise.getSourceUrl()).isEqualTo("https://kbam.co.kr/products/44G3");
   }
 
   /** 새로 가져오기는 지급 시기 · 활성 · 링크까지 기존 그대로 두고 두 값만 얹는다. 못 읽은 값은 지우지 않는다. */

@@ -541,6 +541,42 @@ public class StockDividendViewController {
    * <p>전체 갱신은 53 종목에 18~22 초가 걸려 게이트의 읽기 제한(10 초)에 매번 끊겼다(실측). 한 종목이면 1 초 안쪽이라 그 자리에서 끝난다. 실패하면 까닭을
    * 그대로 화면에 띄운다 &mdash; 원격 사정을 "입력값을 확인하세요" 로 덮지 않는다.
    */
+  /**
+   * 관리 &gt; 월배당 기준: 프로필 행 안에서 펼치는 그 종목의 지급 이력(사용자 요청 2026-09-29, A안).
+   *
+   * <p>예전에는 "이 종목 보기" 가 페이지를 통째로 다시 불러 맨 위로 돌아갔고, 지급 이력은 프로필 목록 전체 아래에 있었다(실측: 프로필 21 개일 때 1440px
+   * 에서 2,019px · 휴대폰에서 2,542px 아래). 이 조각은 누른 행 바로 아래에 최근 이력만 싣는다 - 전체와 편집은 기존 목록(종목 선택)으로 잇는다.
+   */
+  @GetMapping("/dividend/monthly-reference/payout/peek")
+  public String monthlyDividendPayoutPeek(
+      HttpServletRequest request, Model model, @RequestParam String symbol) {
+    if (StockViewSupport.isNotAuthenticated()) {
+      return StockViewSupport.loginRedirectView(request);
+    }
+    String normalizedSymbol =
+        monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(symbol);
+    List<MonthlyDividendPayoutResponse> payouts = List.of();
+    boolean failed = false;
+    try {
+      payouts = monthlyDividendReferenceSupport.loadMonthlyDividendPayouts(normalizedSymbol);
+    } catch (Exception ex) {
+      // 원격 호출 실패는 반드시 남긴다 - 조각은 "불러오지 못했다" 만 말한다.
+      log.warn("지급 이력 펼치기 조회 실패: {}", normalizedSymbol, ex);
+      failed = true;
+    }
+    model.addAttribute("peekSymbol", normalizedSymbol);
+    model.addAttribute(
+        "peekPayouts",
+        net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport.recentPayouts(
+            payouts, PAYOUT_PEEK_LIMIT));
+    model.addAttribute("peekTotalCount", payouts == null ? 0 : payouts.size());
+    model.addAttribute("peekFailed", failed);
+    return "stock/fragments/monthlyDividendPayoutPeek";
+  }
+
+  /** 행 안에서 펼칠 때 보이는 지급 이력 수(월배당이면 1 년치). 전체는 종목을 골라 아래 목록에서 본다. */
+  static final int PAYOUT_PEEK_LIMIT = 12;
+
   @PostMapping("/dividend/monthly-reference/profile/refresh-price")
   public String refreshMonthlyDividendProfilePrice(
       HttpServletRequest request,
@@ -1226,7 +1262,10 @@ public class StockDividendViewController {
   private void normalizeMonthlyDividendProfileRequest(MonthlyDividendProfileUpsertRequest request) {
     request.setSymbol(
         monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(request.getSymbol()));
-    request.setSourceUrl(trimToNull(request.getSourceUrl()));
+    // RISE 옛 주소(riseetf.co.kr)는 새 주소(kbam.co.kr/products/…)로 맞춰 저장한다(2026-09-29).
+    request.setSourceUrl(
+        net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+            trimToNull(request.getSourceUrl())));
     request.setNote(trimToNull(request.getNote()));
   }
 

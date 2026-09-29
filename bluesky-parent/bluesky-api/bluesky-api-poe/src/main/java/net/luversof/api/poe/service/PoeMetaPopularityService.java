@@ -49,6 +49,9 @@ public class PoeMetaPopularityService {
   /** "전직|스킬" → (아이템 이름 → 사용 수). 전직만/스킬만인 키도 함께 담아 부분 선택에도 답한다. */
   private volatile Map<String, Map<String, Integer>> itemsByKey = Map.of();
 
+  /** "전직|스킬" → 그 아키타입 패싯의 캐릭터 수(facets.total) — 아이템 사용 수의 분모. */
+  private volatile Map<String, Integer> facetTotals = Map.of();
+
   public PoeMetaPopularityService(
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
     this.seedFile = Path.of(dataDir, "ninja", "ninja-archetypes.json");
@@ -59,6 +62,7 @@ public class PoeMetaPopularityService {
     Map<String, Map<String, Integer>> bySkillOfAsc = new LinkedHashMap<>();
     Map<String, Map<String, Integer>> byAscOfSkill = new LinkedHashMap<>();
     Map<String, Map<String, Integer>> items = new LinkedHashMap<>();
+    Map<String, Integer> totals = new LinkedHashMap<>();
     if (!Files.exists(seedFile)) {
       logger.warn("poe.ninja 아키타입 시드 없음: {} — 목록은 기본 순서로 나갑니다", seedFile);
       return;
@@ -83,6 +87,10 @@ public class PoeMetaPopularityService {
             .computeIfAbsent(skill, k -> new LinkedHashMap<>())
             .merge(asc, sample, Integer::sum);
         JsonNode facetItems = a.path("facets").path("groups").path("items");
+        int facetTotal = a.path("facets").path("total").asInt(0);
+        if (facetTotal > 0) {
+          totals.put(asc + "|" + skill, facetTotal);
+        }
         if (facetItems.isArray()) {
           for (String key : List.of(asc + "|" + skill, asc + "|", "|" + skill, "|")) {
             Map<String, Integer> bucket = items.computeIfAbsent(key, k -> new LinkedHashMap<>());
@@ -99,6 +107,7 @@ public class PoeMetaPopularityService {
       this.skillsByAscendancy = bySkillOfAsc;
       this.ascendanciesBySkill = byAscOfSkill;
       this.itemsByKey = items;
+      this.facetTotals = totals;
       logger.info(
           "PoE 실빌드 인기도 로드: 전직 {} · 스킬 {} · 아이템 키 {}",
           bySkillOfAsc.size(),
@@ -176,6 +185,35 @@ public class PoeMetaPopularityService {
       }
     }
     return ordered(merged);
+  }
+
+  /**
+   * 한 아키타입의 아이템 사용 수.
+   *
+   * @param total 그 아키타입 패싯의 캐릭터 수(분모)
+   * @param counts 아이템 영문 이름 → 쓰는 캐릭터 수. 패싯은 상위 12개로 잘려 있어 여기 없다고 안 쓰는 건 아니다.
+   */
+  public record ItemUsage(int total, Map<String, Integer> counts) {
+    public static final ItemUsage EMPTY = new ItemUsage(0, Map.of());
+  }
+
+  /**
+   * <b>정확히 이 전직·주 스킬</b> 아키타입의 아이템 사용 수 — 없으면 {@link ItemUsage#EMPTY}.
+   *
+   * <p>{@link #itemOrder} 처럼 전직만·스킬만으로 넓혀 합산하지 않는다. 표본이 적은 아키타입엔 페처가 스킬 통합 패싯을
+   * 붙이므로(fetch-ninja-builds 폴백), 넓힌 합은 같은 패싯을 여러 번 더해 "몇 명이 쓰나"라는 숫자로 쓸 수 없다.
+   */
+  public ItemUsage itemUsage(String ascendancy, String skill) {
+    if (ascendancy == null || ascendancy.isEmpty() || skill == null || skill.isEmpty()) {
+      return ItemUsage.EMPTY;
+    }
+    String key = ascendancy + "|" + skill;
+    Map<String, Integer> counts = itemsByKey.get(key);
+    Integer total = facetTotals.get(key);
+    if (counts == null || total == null || total <= 0) {
+      return ItemUsage.EMPTY;
+    }
+    return new ItemUsage(total, Map.copyOf(counts));
   }
 
   /** 정렬 결과 묶음 — 폼이 한 번에 받아 세 목록을 재배치한다. */

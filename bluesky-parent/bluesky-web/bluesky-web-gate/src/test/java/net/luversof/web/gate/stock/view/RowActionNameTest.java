@@ -39,8 +39,9 @@ class RowActionNameTest {
             countOf(
                 template,
                 "aria-label=\"${java.text.MessageFormat.format(profileActionAriaPattern,"))
-        .as("이 종목 보기 · 시뮬레이터 채우기 · 링크 열기")
-        .isEqualTo(3);
+        // 2026-09-29: "이 종목 보기" 는 "편집" 이 되고 "지급 이력" 펼치기 단추가 더해졌다(A안) - 넷 다 종목 이름을 단다.
+        .as("지급 이력 펼치기 · 편집 · 시뮬레이터 채우기 · 링크 열기")
+        .isEqualTo(4);
     assertThat(template)
         .as("이름이 비면 종목 대신 심볼이라도 들어가야 한다")
         .contains(

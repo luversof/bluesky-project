@@ -304,7 +304,10 @@ public class MonthlyDividendLinkRegisterService {
       MonthlyDividendProfileResponse existing, SourceMeta meta) {
     MonthlyDividendProfileUpsertRequest request = new MonthlyDividendProfileUpsertRequest();
     request.setSymbol(existing.stockItemSymbol());
-    request.setSourceUrl(existing.sourceUrl());
+    // 새로 가져오기를 한 번 돌리면 옛 RISE 주소도 새 주소로 바뀐다(2026-09-29).
+    request.setSourceUrl(
+        net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+            existing.sourceUrl()));
     request.setPayoutWindow(existing.payoutWindow());
     request.setDisplayOrder(existing.displayOrder());
     request.setActive(existing.active());
@@ -358,7 +361,10 @@ public class MonthlyDividendLinkRegisterService {
       profile.setListingDate(existing.listingDate());
     }
     profile.setSymbol(meta.symbol());
-    profile.setSourceUrl(link);
+    // RISE 옛 주소(riseetf.co.kr)로 넣어도 새 주소(kbam.co.kr/products/…)로 저장한다(2026-09-29).
+    profile.setSourceUrl(
+        net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+            link));
     profile.setPayoutWindow(payoutWindow);
     profile.setActive(Boolean.TRUE);
     if (meta.totalExpenseRatioPct() != null) {

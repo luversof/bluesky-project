@@ -50,6 +50,17 @@
 						<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.engine.hint")}</span>
 					</div>
 					<div id="poeEngineResult"></div>
+					<%-- 업그레이드 가이드 — 같은 PoB 코드를 기준선으로 "무엇을 바꾸면 얼마나 좋아지는가"를 측정한다(약 1분). --%>
+					<div class="flex items-center gap-2">
+						<button type="button" class="btn btn-sm btn-outline"
+						        hx-post="/poe/htmx/build/guide/start"
+						        hx-include="#poeBuildImport textarea"
+						        hx-target="#poeUpgradeGuide"
+						        hx-swap="innerHTML"
+						        hx-disabled-elt="this">${MessageUtil.getMessage("poe.build.guide.run")}</button>
+						<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.hint")}</span>
+					</div>
+					<div id="poeUpgradeGuide"></div>
 				@endif
 		`)
 

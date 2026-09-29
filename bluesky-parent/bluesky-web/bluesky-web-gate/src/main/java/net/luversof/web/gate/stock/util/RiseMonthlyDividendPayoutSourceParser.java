@@ -90,6 +90,36 @@ public class RiseMonthlyDividendPayoutSourceParser {
   }
 
   /**
+   * RISE 상세 주소의 두 모양 - 옛 riseetf.co.kr {@code /prod/finderDetail/44G3} 과 새 kbam.co.kr {@code
+   * /products/44G3}.
+   */
+  private static final java.util.regex.Pattern DETAIL_PATH =
+      java.util.regex.Pattern.compile("^/(?:prod/finderDetail|products)/([A-Za-z0-9]+)/?$");
+
+  /**
+   * 저장할 RISE 주소를 새 주소 {@code https://kbam.co.kr/products/{펀드 코드}} 로 맞춘다(사용자 승인 2026-09-29).
+   *
+   * <p>RISE 는 riseetf.co.kr 에서 kbam.co.kr 로 옮겼다. 옛 주소는 아직 새 주소로 넘겨 주지만(실측 2026-09-29: 302 두 번) 언젠가
+   * 끊긴다. 가져오기는 주소가 아니라 펀드 코드로 kbam API 를 불러 영향이 없고, 끊기면 죽는 것은 저장된 주소를 여는 링크(관리 "링크 열기" · 월배당 ETF
+   * 출처)다 - 그래서 저장할 때 새 주소로 맞춘다. 옛 모양 입력은 계속 받는다. 상세 주소 두 모양이 아니면(다른 운용사 · kbam 의 다른 쪽) 손대지 않는다.
+   */
+  public static String canonicalSourceUrl(String url) {
+    if (!StringUtils.hasText(url)) {
+      return url;
+    }
+    try {
+      java.net.URI uri = java.net.URI.create(url.trim());
+      if (!supportsHost(uri.getHost()) || uri.getPath() == null) {
+        return url;
+      }
+      java.util.regex.Matcher matcher = DETAIL_PATH.matcher(uri.getPath());
+      return matcher.matches() ? "https://kbam.co.kr/products/" + matcher.group(1) : url;
+    } catch (IllegalArgumentException ex) {
+      return url;
+    }
+  }
+
+  /**
    * 상세 주소에서 펀드 코드를 뽑는다(경로 마지막 조각). {@code /prod/finderDetail/44J2} · {@code /products/44J2} 둘 다 쓴다.
    */
   public static String fundCodeFrom(String path) {

@@ -148,4 +148,45 @@ class RiseMonthlyDividendPayoutSourceParserTest {
         .as("과세표준이 없으면 0 으로 싣는다(가져오기 파서가 빈 칸을 거부한다)")
         .isEqualByComparingTo("0");
   }
+
+  /**
+   * RISE 주소 이전(riseetf.co.kr -> kbam.co.kr, 사용자 승인 2026-09-29): 저장할 때 상세 주소 두 모양을 새 주소로 맞춘다. 옛 주소는
+   * 아직 302 로 새 주소에 닿지만 언젠가 끊기고, 끊기면 죽는 것은 저장된 주소를 여는 링크다(가져오기는 펀드 코드로 kbam API 를 부른다).
+   */
+  @Test
+  void 저장할_주소는_새_RISE_주소로_맞춘다() {
+    assertThat(
+            RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+                "https://www.riseetf.co.kr/prod/finderDetail/44G3"))
+        .isEqualTo("https://kbam.co.kr/products/44G3");
+    assertThat(
+            RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+                "https://kbam.co.kr/prod/finderDetail/44J2/"))
+        .isEqualTo("https://kbam.co.kr/products/44J2");
+    assertThat(
+            RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+                " https://kbam.co.kr/products/44G3?tab=dividend "))
+        .as("질의는 떼고 새 모양 그대로")
+        .isEqualTo("https://kbam.co.kr/products/44G3");
+  }
+
+  @Test
+  void 상세_주소가_아니면_손대지_않는다() {
+    for (String url :
+        new String[] {
+          "https://kbam.co.kr/company/intro",
+          // 경로 모양이 같아도 RISE 가 아니면 그대로(주소 주인을 먼저 본다).
+          "https://www.example.com/products/ABC1",
+          "https://www.riseetf.co.kr/",
+          "https://www.samsungfund.com/etf/product/view.do?id=2ETFM4",
+          "https://investments.miraeasset.com/tigeretf/ko/product/search/detail/index.do?ksdFund=KR7329200000",
+          "not a url %%"
+        }) {
+      assertThat(RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(url))
+          .as(url)
+          .isEqualTo(url);
+    }
+    assertThat(RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(null)).isNull();
+    assertThat(RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(" ")).isEqualTo(" ");
+  }
 }

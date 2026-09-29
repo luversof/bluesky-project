@@ -469,6 +469,25 @@ public class MonthlyDividendReferenceSupport {
     return result;
   }
 
+  /** 최근 지급 이력 {@code limit} 건 - 기준일 · 지급일 최근순(날짜가 없는 행은 뒤). 원본 목록 순서에 기대지 않는다. */
+  public static List<MonthlyDividendPayoutResponse> recentPayouts(
+      List<MonthlyDividendPayoutResponse> payouts, int limit) {
+    if (payouts == null || payouts.isEmpty() || limit <= 0) {
+      return List.of();
+    }
+    return payouts.stream()
+        .filter(java.util.Objects::nonNull)
+        .sorted(
+            Comparator.comparing(
+                    MonthlyDividendPayoutResponse::recordDate,
+                    Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(
+                    MonthlyDividendPayoutResponse::payDate,
+                    Comparator.nullsLast(Comparator.reverseOrder())))
+        .limit(limit)
+        .toList();
+  }
+
   public List<MonthlyDividendPayoutResponse> loadMonthlyDividendPayouts(String symbol) {
     if (!StringUtils.hasText(symbol)) {
       return List.of();

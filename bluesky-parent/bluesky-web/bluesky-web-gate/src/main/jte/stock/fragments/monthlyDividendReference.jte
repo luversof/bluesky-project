@@ -103,6 +103,12 @@
 	// "이 종목 보기" 8개, "링크 열기 (새 창에서 열림)" 8개가 이름만으로는 구분되지 않았다(목적지는 전부 다르다).
 	String profileActionAriaPattern = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.action.aria");
 	String openLinkLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.open.link");
+	// 행 안에서 지급 이력 펼치기(사용자 요청 2026-09-29 A안) - 예전 "이 종목 보기" 는 페이지를 다시 불러 맨 위로 돌아가 지급 이력까지 2,019px 을 내려가야 했다.
+	// "이 종목 보기" 는 하는 일(왼쪽 폼에 불러오기)대로 "편집" 이라 부르고 폼 자리로 곧장 간다.
+	String payoutPeekLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.peek.toggle");
+	String payoutPeekLoading = MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.peek.loading");
+	String payoutPeekFailed = MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.peek.failed");
+	String profileEditLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.edit");
 	String opensNewWindowLabel = MessageUtil.getMessage("common.label.opens.new.window");
 	String lastVerifiedDateSortDirection = "last-verified-date".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String activeSortDirection = "active".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
@@ -220,7 +226,7 @@
 			`)
 			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<div class="space-y-2">
-						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.title")}</h2>
+						<h2 id="monthly-reference-editor" class="card-title text-lg scroll-mt-24">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.title")}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.desc")}</p>
 					</div>
 					<form method="post" action="/stock/dividend/monthly-reference/profile" class="grid gap-4">
@@ -501,10 +507,11 @@
 												</div>
 											</td>
 											<td>
-												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
+												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}#monthly-reference-editor" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
 												<div class="text-xs text-base-content/60">${row.stockItemName()}</div>
 												<div class="mt-2 flex flex-wrap gap-2">
-													<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.select")}</a>
+													<button type="button" class="btn btn-xs btn-outline h-auto min-h-6 whitespace-normal" data-payout-peek-toggle data-peek-url="/stock/dividend/monthly-reference/payout/peek?symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}" data-peek-loading="${payoutPeekLoading}" data-peek-failed="${payoutPeekFailed}" aria-expanded="false" aria-controls="payout-peek-${row.stockItemSymbol()}" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, payoutPeekLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${payoutPeekLabel} <span aria-hidden="true" data-payout-peek-icon>▾</span></button>
+													<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}#monthly-reference-editor" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, profileEditLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${profileEditLabel}</a>
 													<a href="/stock/simulator?tab=monthly-dividend&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&sort=display-order&direction=asc" class="btn btn-xs btn-primary" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 												</div>
 											</td>
@@ -537,7 +544,7 @@
 						     min-w-0 를 함께 줘야 좁은 폭에서 접힌다(실측 2026-09-21). --%>
 						<%-- 배지는 기본이 한 줄(white-space: nowrap)이라 종목명이 길면 문서 폭을 늘린다 - 실측 2026-09-21:
 						     320px/200% 에서 이 배지 하나가 422px 이 되어 문서가 566px(넘침 246px)였다. 접히게 둔다. --%>
-						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.title")}@if(payoutSymbolLabel != null && !payoutSymbolLabel.isBlank())<span class="badge badge-ghost badge-sm ml-2 align-middle h-auto whitespace-normal py-1 text-left" data-payout-history-symbol>${payoutSymbolLabel}</span>@endif</h2>
+						<h2 id="monthly-payout-list" class="card-title text-lg scroll-mt-24">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.title")}@if(payoutSymbolLabel != null && !payoutSymbolLabel.isBlank())<span class="badge badge-ghost badge-sm ml-2 align-middle h-auto whitespace-normal py-1 text-left" data-payout-history-symbol>${payoutSymbolLabel}</span>@endif</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.list.desc")}</p>
 					</div>
 					@if(monthlyDividendPayouts == null || monthlyDividendPayouts.isEmpty())
