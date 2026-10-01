@@ -39,8 +39,15 @@
 				<span class="badge badge-ghost">${patchLabel}</span>
 			</div>
 
-			<%-- 상세 레이어(게임 툴팁)를 그대로 바닥에. 모드 티어표는 아래 "전체 제작 모드" 섹션에서 제공. --%>
-			@template.poe.htmx.itemDetail(item = item)
+			<%-- 아이템 그림 + 상세 레이어(게임 툴팁) — 그림은 PoE2 베이스 상세와 같은 자리(10-01: PoE2 에만 있었다). 모드 티어표는 아래 "전체 제작 모드". --%>
+			<div class="flex flex-wrap items-start gap-6">
+				<img src="/poe-assets/items/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}"
+				     class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${item.name()}" data-base-art
+				     onerror="this.remove()">
+				<div>
+					@template.poe.htmx.itemDetail(item = item)
+				</div>
+			</div>
 
 			<%-- poedb 식 — 이 베이스를 쓰는 고유 아이템(호버 툴팁 + 상세 링크) --%>
 			@if(baseUniques != null && !baseUniques.isEmpty())

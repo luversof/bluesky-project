@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR } from "./paths.mjs";
+import { alignMainGroup, decodePob, encodePob, mergeConfig } from "./ninja-normalize.mjs";
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; // 로컬 api 자가서명 인증서
 
@@ -104,7 +105,9 @@ for (const { key, rep } of targets) {
 	if (bench[key]
 		&& bench[key].snapshot === snapshot
 		&& bench[key].account === rep.account
-		&& bench[key].name === rep.name) { skip++; continue; }
+		&& bench[key].name === rep.name
+		&& bench[key].configMerged
+		&& bench[key].alignV2) { skip++; continue; } // 교체 방식·옛 메인 규칙으로 잰 벤치는 다시 잰다
 	if (stopped) continue;
 	try {
 		const cu = `${NINJA}/api/builds/${snapshot}/character?account=${encodeURIComponent(rep.account)}&name=${encodeURIComponent(rep.name)}&overview=${league}&type=0&timeMachine=`;
@@ -123,53 +126,17 @@ for (const { key, rep } of targets) {
 		const cj = await cr.json();
 		const code = cj.pathOfBuildingExport;
 		if (!code) { fail++; console.warn(`[calibrate] ${key} 실패: export 없음`); continue; }
-		// ⚠ Config 공정화 — 실빌드 export 의 Config 는 대개 **비어 있다**(비보스·무버프 PoB 기본값).
-		// 우리 잡은 Pinnacle+충전+전투버프 가정이라 그대로 비교하면 벤치가 부풀거나(비보스 적 저항)
-		// 꺼진다. 우리 buildXml 의 표준 가정과 동일한 Config 를 주입해 같은 조건으로 재계산한다
-		// (판테온은 대표 것이 있으면 유지 — Config 전체 교체라 함께 소실되지만 영향 미미).
-		const NORM_CONFIG = '<Config><Input name="enemyIsBoss" string="Pinnacle"/>'
-			+ '<Input name="usePowerCharges" boolean="true"/><Input name="useFrenzyCharges" boolean="true"/>'
-			+ '<Input name="useEnduranceCharges" boolean="true"/><Input name="buffOnslaught" boolean="true"/>'
-			+ '<Input name="multiplierRage" number="30"/><Input name="buffFortify" boolean="true"/>'
-			+ '<Input name="conditionEnemyShocked" boolean="true"/><Input name="conditionEnemyChilled" boolean="true"/>'
-			+ '<Input name="conditionEnemyIgnited" boolean="true"/><Input name="conditionEnemyPoisoned" boolean="true"/>'
-			+ '<Input name="conditionEnemyBleeding" boolean="true"/></Config>';
-		const zlib = await import("node:zlib");
-		let xml = zlib.inflateSync(Buffer.from(code.replace(/-/g, "+").replace(/_/g, "/"), "base64")).toString("utf8");
-		if (/<Config>[\s\S]*?<\/Config>/.test(xml)) xml = xml.replace(/<Config>[\s\S]*?<\/Config>/, NORM_CONFIG);
-		else if (/<Config\s*\/>/.test(xml)) xml = xml.replace(/<Config\s*\/>/, NORM_CONFIG);
-		else xml = xml.replace("</PathOfBuilding>", NORM_CONFIG + "</PathOfBuilding>");
-		// 메인 소켓 그룹을 **그 아키타입의 스킬**로 맞춘다.
-		//   빌드가 저장해 둔 mainSocketGroup 은 오라·이동기 그룹인 경우가 흔하다(실측: RF 대표의 메인 그룹은
-		//   Eternal Blessing+Malevolence 오라 그룹). 그대로 재계산하면 "대표 실빌드의 정의의 화염 DPS" 가 아니라
-		//   엉뚱한 그룹 값이 벤치가 되어, 우리 결과와의 비교가 통째로 의미를 잃는다(아키타입별 0.06~19x 편차의 정체).
-		//   같은 스킬을 담은 그룹 중 **발라(Vaal) 아닌** 것을 고른다(발라는 버스트라 지속 DPS 와 다른 축).
+		// 정규화(Config 는 표준 가정만 덮는 **병합** + 메인 그룹을 그 아키타입 스킬로) — ninja-normalize.mjs 공용(시드 페처와 같은 규칙).
+		//   병합 이유: 통째 교체는 플레이어 운용 설정(삼위일체 공명·낙인 부착·시듦 중첩·판테온)까지 지워 그 기제를 쓰는 빌드를 과소평가했다(09-30).
+		//   실빌드 Config 는 비보스·무버프·개인 설정이라 그대로 견주면 벤치가 부풀거나 꺼지고, 저장된 메인 그룹은 오라·이동기인 경우가 흔하다
+		//   (실측: RF 대표의 메인 그룹 = 오라 그룹 → 아키타입별 0.06~19x 편차의 정체).
 		const skillName = key.split("|")[1];
-		const groups = [...xml.matchAll(/<Skill[^>]*>[\s\S]*?<\/Skill>/g)].map((m) => m[0]);
-		// 이름이 딱 맞지 않는 경우가 흔하다: 발라 변종("Vaal Righteous Fire"), 변형젬("Reap of Butchery").
-		//   그래서 ① 완전 일치 → ② 발라 아닌 포함 → ③ 포함 순으로 찾는다.
-		let exactIdx = -1;
-		let containsIdx = -1;
-		let vaalIdx = -1;
-		groups.forEach((g, i) => {
-			const gems = [...g.matchAll(/nameSpec="([^"]+)"/g)].map((m) => m[1]);
-			if (exactIdx < 0 && gems.some((n) => n === skillName)) exactIdx = i;
-			for (const n of gems) {
-				if (!n.includes(skillName)) continue;
-				if (/^Vaal /.test(n)) {
-					if (vaalIdx < 0) vaalIdx = i;
-				} else if (containsIdx < 0) {
-					containsIdx = i;
-				}
-			}
-		});
-		const mainIdx = exactIdx >= 0 ? exactIdx : containsIdx >= 0 ? containsIdx : vaalIdx;
-		if (mainIdx >= 0) {
-			xml = xml.replace(/(<Build[^>]*?)mainSocketGroup="\d+"/, `$1mainSocketGroup="${mainIdx + 1}"`);
-		} else {
+		// 메인 그룹은 저장 메인 우선(preferSavedMain) — 옛 규칙("처음 든 그룹")은 자동 시전 보조 그룹을 잡았다(09-30 비술사 겨울 구슬: Automation 그룹 3 ↔ 6링크 8)
+		const { xml, mainIdx } = alignMainGroup(mergeConfig(decodePob(code)), skillName, { preferSavedMain: true });
+		if (mainIdx < 0) {
 			console.warn(`[calibrate] ${key}: 스킬 그룹을 못 찾음 — 빌드 기본 메인 그룹으로 계산(비교 신뢰도 낮음)`);
 		}
-		const normCode = zlib.deflateSync(Buffer.from(xml, "utf8"), { level: 9 }).toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
+		const normCode = encodePob(xml);
 		const rr = await fetch(`${API}/api/poe/build/recalculate`, {
 			method: "POST",
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -188,6 +155,8 @@ for (const { key, rep } of targets) {
 			netRegen: statOf(er.stats, "netliferegen"),
 			life: statOf(er.stats, "life"),
 			skillAligned: mainIdx >= 0, // 아키타입 스킬 그룹으로 맞춰 계산했는가
+			configMerged: true, // Config 병합 방식으로 잰 값
+			alignV2: true, // 메인 그룹 = 저장 메인 우선
 		};
 		// 신뢰도 — 재계산값이 그 아키타입의 ninja 표기 중앙값과 자릿수가 맞는가.
 		//   대표 1인의 빌드는 발라 버스트가 메인이거나(RF: Vaal RF 만 보유) 트리거 그룹이 잡히는 등
@@ -219,6 +188,15 @@ for (const { key, rep } of targets) {
 		done++;
 		console.log(`[calibrate] ${key}: dps=${entry.dps} ehp=${entry.ehp} netRegen=${entry.netRegen} (${rep.name})`);
 	} catch (e) { fail++; console.warn(`[calibrate] ${key} 실패:`, e.message); }
+}
+// 옛 방식(Config 통째 교체)으로 잰 항목 중 이번에 다시 재지 못한 것(대상 밖)은 버린다 — 남기면 방식이 섞인 벤치로 판정한다(병합 값은 DPS 가
+//   1.3~2.6배 높다, 09-30 실측). 버린 아키타입은 belowMeta 가 ninja 표기 중앙값 경로로 폴백한다. 레이트리밋으로 중단된 실행이면 남긴다(다음 갱신에서 이어서).
+if (!stopped) {
+	let dropped = 0;
+	for (const [k, v] of Object.entries(bench)) {
+		if (!v.configMerged || !v.alignV2) { delete bench[k]; dropped++; }
+	}
+	if (dropped) console.log(`[calibrate] 옛 방식(Config 교체) 항목 ${dropped}개 제외`);
 }
 fs.writeFileSync(outPath, JSON.stringify(bench, null, 1));
 console.log(`[calibrate] 완료: 신규 ${done}, 캐시 ${skip}, 실패 ${fail} → ${outPath} (총 ${Object.keys(bench).length} 아키타입)`);

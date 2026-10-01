@@ -28,25 +28,39 @@ class RecentActivityNarrowWrapTest {
         .replaceAll("[ \t\r\n]+", " ");
   }
 
+  /**
+   * 2026-10-01: 기준을 카드 폭(@container 480px)으로 바꿨다. 목록 최소 폭 11rem 으로 줄바꿈을 기다렸더니 1440px 대시보드 카드(약
+   * 385px)에서는 요약 열이 옆에 남아 종목명 자리가 110px 뿐이었다("TIGER 배…" - 같은 운용사 종목끼리 구별이 안 됨). 좁은 카드에서는 늘 아래로.
+   */
   @Test
   void 자리가_모자라면_요약이_아래_줄로_내려간다() throws IOException {
+    String q = String.valueOf((char) 34);
     String markup = read();
 
     assertThat(markup)
-        .as("요약이 폭을 고수하는데 줄바꿈까지 막으면 목록이 눌려 종목명이 0px 이 된다")
-        .contains("<div class=" + String.valueOf((char) 34) + "flex flex-wrap gap-4");
-    assertThat(markup)
-        .as("목록 칸에 최소 폭이 없으면 줄바꿈 없이 그대로 찌부러진다")
+        .as("카드 폭을 재는 상자 안에서, 좁으면 세로로 쌓고 넓을 때만 나란히")
         .contains(
             "<div class="
-                + String.valueOf((char) 34)
-                + "flex-1 min-w-[11rem]"
-                + String.valueOf((char) 34));
+                + q
+                + "@container"
+                + q
+                + "> <div class="
+                + q
+                + "flex flex-col gap-4 @[30rem]:flex-row"
+                + q
+                + ">");
+    assertThat(markup)
+        .as("목록 칸은 남은 폭을 다 쓴다")
+        .contains("<div class=" + q + "flex-1 min-w-0" + q + ">");
   }
 
-  /** 요약 쪽 고정 폭은 그대로 둔다 - 이 검사의 전제라 함께 못 박는다. */
+  /** 요약의 고정 폭(144px)은 나란히 놓일 때만 - 쌓일 때 고정 폭이면 목록 아래에서 오른쪽이 빈다. */
   @Test
-  void 요약은_여전히_고정_폭이다() throws IOException {
-    assertThat(read()).as("요약이 안 줄어든다는 전제가 사라지면 위 검사도 뜻을 잃는다").contains("w-36 shrink-0 border-l");
+  void 요약은_나란히_놓일_때만_고정_폭이다() throws IOException {
+    assertThat(read())
+        .contains("@[30rem]:w-36 @[30rem]:shrink-0 @[30rem]:border-t-0 @[30rem]:border-l")
+        .doesNotContain("w-36 shrink-0 border-l border-base-200 pl-3")
+        .as("쌓였을 때 요약 세 줄은 한 줄 세 칸 - 세로로 늘어놓으면 카드만 길어진다")
+        .contains("grid grid-cols-3 gap-3 @[30rem]:block @[30rem]:space-y-2");
   }
 }

@@ -21,4 +21,11 @@ public interface PoeUpgradeGuideClient {
 
   @GetExchange("/status")
   PoeUpgradeGuide.Status status();
+
+  /** 자동 다듬기 시작 — 가이드 교체안 중 가장 이득이 큰 것을 실제로 적용하고 다시 재기를 반복한다. 코드는 폼 본문으로. */
+  @PostExchange(value = "/refine/start", contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+  boolean startRefine(@RequestParam String code);
+
+  @GetExchange("/refine/status")
+  PoeUpgradeGuide.RefineStatus refineStatus();
 }

@@ -38,6 +38,7 @@
 	String label = "text-[#7f7f7f]";
 	String value = "text-[#e0e0e0]";
 	String aug = "text-[#8888ff]";
+	java.util.List<String> flavourLines = PoeText.lines(item.flavourKo(), item.flavour());
 }
 
 <%-- PoE 게임 아이템 툴팁 (고유/주황) — 호버 시 #poePreview 에 떠서 표시(플로팅) --%>
@@ -132,6 +133,16 @@
 			<div class="px-4 py-2 text-center space-y-0.5">
 				@for(String line : displayExplicits)
 					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(line)}</div>
+				@endfor
+			</div>
+		@endif
+
+		<%-- 로어(플레이버) — 인게임 고유 툴팁 맨 아래 주황 기울임(10-01, 위키 + 게임 FlavourText 원문) --%>
+		@if(flavourLines != null && !flavourLines.isEmpty())
+			<div class="poe-tt-sepimg"></div>
+			<div class="px-4 py-2 text-center space-y-0.5" data-tt-flavour>
+				@for(String line : flavourLines)
+					<div class="text-[12px] leading-snug italic text-[#af6025]">${line}</div>
 				@endfor
 			</div>
 		@endif

@@ -85,4 +85,26 @@ public final class PoeUpgradeGuide {
 
   public record Status(
       Boolean running, Integer done, Integer total, String phase, Result result, String error) {}
+
+  /** 자동 다듬기 한 단계 — 적용한 교체와 그 단계에서 오른 폭(직전 빌드 대비 %). */
+  public record RefineStep(String label, Double dpsPct, Double ehpPct, Double maxHitPct) {}
+
+  /** 자동 다듬기 결과 — code 는 다듬은 빌드 PoB 코드(저장 스탯 = 엔진 최종 값). */
+  public record RefineResult(
+      Metrics before,
+      Metrics after,
+      List<RefineStep> steps,
+      String code,
+      Integer evaluations,
+      Long durationMs) {}
+
+  public record RefineStatus(
+      Boolean running,
+      Integer round,
+      Integer rounds,
+      String phase,
+      Integer done,
+      Integer total,
+      RefineResult result,
+      String error) {}
 }

@@ -85,7 +85,7 @@ String sellCountPageLabel = sellCountIsPeriod
 }
 
 @template._components.ui.card(cssClass = "mt-4", id = "trade-history-panel", body = @`
-<div class="flex items-center justify-between mb-3">
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
 <h3 class="card-title text-base">
 ${historyTitle}
 <span class="text-sm font-normal text-base-content/60 ml-2">${tradePeriod}</span>
@@ -100,7 +100,9 @@ ${historyTitle}
      그래서 다음 행동(기간 넓히기)도 이 자리에 둔다. 공용 컴포넌트를 쓰면 아이콘 · 여백도 형제 화면과 같아진다. --%>
 @template._components.ui.emptyState(message = noTradeInPeriodLabel, padding = "py-6", widenRangeAction = !safeFrom.isEmpty() || !safeTo.isEmpty())
 @else
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+<%-- 세 칸은 화면 폭이 아니라 자리 폭(@3xl = 48rem, 글꼴을 키우면 같이 커진다)으로 정한다(2026-09-30 실측: 1280px · 글꼴 200% 에서
+     sm:grid-cols-3 가 세 칸으로 눌러 "1,815,470|,942" 처럼 금액이 갈렸다). 카드 금액은 15 글자까지 들어간다. --%>
+<div class="@container mb-4"><div class="grid grid-cols-1 @3xl:grid-cols-3 gap-3">
 @template._components.ui.card(body = @`
 <div class="text-xs text-base-content/60 mb-1">${periodStatusLabel}</div>
 <div class="flex items-baseline gap-1 mb-2">
@@ -128,7 +130,7 @@ ${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#x20A9;${df.format(safeRp)}
 <span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeTax)}</span></span>
 </div>
 `)
-</div>
+</div></div>
 
 <div class="overflow-x-auto">
 <table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${historyTitle}">

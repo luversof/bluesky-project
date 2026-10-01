@@ -143,7 +143,9 @@ public class PoeUniqueDataService {
         base != null ? base.reqStr() : null,
         base != null ? base.reqDex() : null,
         base != null ? base.reqInt() : null,
-        base != null ? base.slug() : null);
+        base != null ? base.slug() : null,
+        it.flavour(),
+        it.flavourKo());
   }
 
   public int totalCount() {

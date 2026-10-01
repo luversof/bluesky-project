@@ -139,13 +139,15 @@
 		<span class="text-sm font-semibold text-base-content/70">${profitTitle}</span>
 		@if(!fromDate.isBlank() && !toDate.isBlank())
 			<span class="inline-flex items-center rounded-full bg-base-200/80 px-2 py-0.5 text-[11px] font-medium text-base-content/60">
-				${fromDate} ~ ${toDate}
+				<span class="min-w-0"><span class="whitespace-nowrap date-whole">${fromDate}</span> ~ <span class="whitespace-nowrap date-whole">${toDate}</span></span>
 			</span>
 		@endif
 	</div>
 	<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
 		@if(profitAvailable)
-			<span class="text-3xl min-[360px]:text-4xl font-bold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
+			<%-- 글자 크기는 금액이 한 줄에 들어가는 폭부터 키운다(2026-09-30 실측: 36px 에서 "+13 억" 금액이 289px 인데 390px 화면 자리는 274px 라
+			     부호만 윗줄에 남았다 - 360~390px 에서 2~3 줄). 30px 는 241px, 24px 는 193px. 한 자리 늘어날 몫까지 두고 480px 부터 36px. --%>
+			<span class="text-2xl min-[360px]:text-3xl min-[480px]:text-4xl font-bold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
 				${periodProfit.signum() == 0 ? "" : (profitPositive ? "+" : "-")}₩${amountFormat.format(periodProfit.abs())}
 			</span>
 			@if(profitRateAvailable)
@@ -286,7 +288,7 @@
 							@if(drawdownRangeAvailable)
 								<%-- 두 날짜 사이 화살표는 눈으로만 읽는다. 낭독기에는 '부터 ~ 까지' 를 준다 -
 								     기호를 그냥 두면 '오른쪽 화살표' 로 읽히고, 빼기만 하면 두 날짜가 나열될 뿐이다. --%>
-								<span class="text-base-content/60"><span aria-hidden="true">(${maxDrawdownPeakDate.toString()} &#8594; ${maxDrawdownTroughDate.toString()})</span><span class="sr-only">${java.text.MessageFormat.format(MessageUtil.getMessage("common.range.from.to"), maxDrawdownPeakDate.toString(), maxDrawdownTroughDate.toString())}</span></span>
+								<span class="text-base-content/60"><span aria-hidden="true">(<span class="whitespace-nowrap date-whole">${maxDrawdownPeakDate.toString()}</span> &#8594; <span class="whitespace-nowrap date-whole">${maxDrawdownTroughDate.toString()}</span>)</span><span class="sr-only">${java.text.MessageFormat.format(MessageUtil.getMessage("common.range.from.to"), maxDrawdownPeakDate.toString(), maxDrawdownTroughDate.toString())}</span></span>
 							@endif
 						</p>
 					@else

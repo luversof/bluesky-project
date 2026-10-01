@@ -105,9 +105,9 @@
 		@if(dataStatus != null)
 			<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-base-content/70 mb-2">
 				<h3 class="font-semibold" data-page-section>${dataCoverageLabel}</h3>
-				<span>${updateTradesLabel}: ${withCount.apply(asDate.apply(dataStatus.tradeLastDate()), dataStatus.tradeCount())}</span>
-				<span>${updateDividendsLabel}: ${withCount.apply(asDate.apply(dataStatus.dividendLastDate()), dataStatus.dividendCount())}</span>
-				<span>${updatePriceHistoriesLabel}: ${dataStatus.priceHistoryLastDate() != null ? dataStatus.priceHistoryLastDate().toString() : "-"}</span>
+				<span>${updateTradesLabel}: <span class="whitespace-nowrap date-whole">${asDate.apply(dataStatus.tradeLastDate())}</span>${withCount.apply("", dataStatus.tradeCount())}</span>
+				<span>${updateDividendsLabel}: <span class="whitespace-nowrap date-whole">${asDate.apply(dataStatus.dividendLastDate())}</span>${withCount.apply("", dataStatus.dividendCount())}</span>
+				<span>${updatePriceHistoriesLabel}: <span class="whitespace-nowrap date-whole">${dataStatus.priceHistoryLastDate() != null ? dataStatus.priceHistoryLastDate().toString() : "-"}</span></span>
 				<span>${updateStockItemsLabel}: ${java.text.MessageFormat.format(countSuffix, dataStatus.stockItemCount())}</span>
 			</div>
 			<%-- 최신 시세 일자 한 줄만 적으면 전 종목이 그 날까지 최신인 것으로 읽힌다. 바로 위에 "종목 86건" 이

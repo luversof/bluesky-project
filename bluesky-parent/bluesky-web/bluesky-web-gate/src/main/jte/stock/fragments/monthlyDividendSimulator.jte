@@ -268,9 +268,11 @@
 							<span class="font-mono font-semibold">${amountFormat.format(itemCount)}</span>
 						</div>
 						@if(oldestAsOfDate != null)
-						<div class="flex items-center justify-between gap-3 text-sm">
+						<%-- 날짜를 한 덩어리로 묶자(2026-09-30) 영어 "Reference as of" + 날짜가 한 줄 최소 폭이 되어 320px · 글꼴 200% 에서 카드가 50px 넘쳤다 -
+						     자리가 모자라면 값이 다음 줄로 내려가게 한다. --%>
+						<div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm" data-as-of-row>
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.as.of.date")}</span>
-							<span class="font-mono">${oldestAsOfDate.toString()}${newestAsOfDate != null && !newestAsOfDate.equals(oldestAsOfDate) ? " ~ " + newestAsOfDate.toString() : ""}</span>
+							<span class="font-mono"><span class="whitespace-nowrap date-whole">${oldestAsOfDate.toString()}</span>@if(newestAsOfDate != null && !newestAsOfDate.equals(oldestAsOfDate)) ~ <span class="whitespace-nowrap date-whole">${newestAsOfDate.toString()}</span>@endif</span>
 						</div>
 						@endif
 						<%-- 시세 기준일은 스냅샷 기준일과 다르다 - 실측 2026-09-11: 스냅샷 2026-08-19 인데 현재가는 2026-09-09 종가였다. --%>
@@ -294,7 +296,7 @@
 								StockFormatUtil.fullKrw(StockFormatUtil.displayWon(monthlyDividendCurrentQuantityTotal)))}
 						</div>
 						@endif
-						<div class="flex items-start justify-between gap-3 text-sm">
+						<div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 text-sm">
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.best.choice")}</span>
 							<%-- 이 카드는 화면의 결론이다 - 실측 2026-09-12: 종목코드만 적혀 "498400" 이었는데, 같은 화면의 표는
 								 줄마다 "498400 KODEX 200타겟위클리커버드콜" 처럼 코드와 이름을 함께 적는다. 코드만으로는 어느 종목인지 모른다. --%>
@@ -411,9 +413,9 @@
 									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.basis"), percentFormat.format(pick.annualYieldPct()), pick.payoutTrendPct() == null ? MessageUtil.getMessage("stock.simulator.monthly.contribution.trend.unknown") : (pick.payoutTrendPct().signum() > 0 ? "+" : "") + percentFormat.format(pick.payoutTrendPct()) + "%")}
 								</div>
 								@if(pick.tied())
-									<div class="mt-1 text-xs text-base-content/60" data-contribution-tied>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.tied"), pick.runnerUpSymbol())}</div>
+									<div class="mt-1 text-xs text-base-content/60" data-contribution-tied>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.tied"), pick.runnerUpName(), pick.runnerUpSymbol())}</div>
 								@elseif(pick.runnerUpSymbol() != null)
-									<div class="mt-1 text-xs text-base-content/60" data-contribution-runner-up>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.runner.up"), pick.runnerUpSymbol(), percentFormat.format(pick.runnerUpScore()))}</div>
+									<div class="mt-1 text-xs text-base-content/60" data-contribution-runner-up>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.runner.up"), pick.runnerUpName(), pick.runnerUpSymbol(), percentFormat.format(pick.runnerUpScore()))}</div>
 								@endif
 							</li>
 						@endfor

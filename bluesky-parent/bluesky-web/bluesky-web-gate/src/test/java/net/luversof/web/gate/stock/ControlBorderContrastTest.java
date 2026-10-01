@@ -32,8 +32,67 @@ class ControlBorderContrastTest {
     long definitions = css.lines().filter(l -> l.contains("--color-control-line:")).count();
 
     assertThat(definitions)
-        .as("라이트·다크·인쇄 세 팔레트 모두에 있어야 한다 - 하나라도 빠지면 그 모드에서 경계가 사라진다")
-        .isEqualTo(3);
+        .as(
+            "라이트·다크·인쇄·PoE 인게임(html.poe-theme, 10-01) 네 팔레트 모두에 있어야 한다 - 하나라도 빠지면 그 모드에서 경계가"
+                + " 사라진다")
+        .isEqualTo(4);
+  }
+
+  /**
+   * 정의 개수만 세면 값이 틀려도 통과한다 - 경계색과 배경색을 함께 정의한 팔레트마다 실제 대비(WCAG, 3:1 이상)를 잰다. 배경은 컨트롤이 놓이는 두 면
+   * (base-100 · base-200).
+   */
+  @Test
+  void controlLineMeetsThreeToOneInEveryPaletteWithBackgrounds() throws IOException {
+    String css = Files.readString(MAIN_CSS, StandardCharsets.UTF_8);
+    java.util.regex.Matcher block =
+        java.util.regex.Pattern.compile("([^{}]+)\\{([^{}]*)\\}").matcher(css);
+    java.util.List<String> measured = new java.util.ArrayList<>();
+    while (block.find()) {
+      String body = block.group(2);
+      String line = hexOf(body, "--color-control-line");
+      String b100 = hexOf(body, "--color-base-100");
+      String b200 = hexOf(body, "--color-base-200");
+      if (line == null || b100 == null || b200 == null) {
+        continue;
+      }
+      String selector = block.group(1).trim();
+      selector = selector.substring(selector.lastIndexOf('\n') + 1).trim();
+      measured.add(selector);
+      assertThat(contrast(line, b100))
+          .as(selector + " 경계 " + line + " vs base-100 " + b100)
+          .isGreaterThanOrEqualTo(3.0);
+      assertThat(contrast(line, b200))
+          .as(selector + " 경계 " + line + " vs base-200 " + b200)
+          .isGreaterThanOrEqualTo(3.0);
+    }
+    // 인쇄 팔레트도 다크 블록 안에서 배경을 정의해 함께 잰다(실측 4개: @theme · 다크 · PoE · 인쇄 다크)
+    assertThat(measured)
+        .as("라이트(@theme)·다크·PoE 인게임 팔레트는 반드시 쟀어야 한다 - 빠지면 이 시험이 그 팔레트를 못 본다")
+        .contains("@theme", "[data-theme=\"dark\"]", "html.poe-theme");
+  }
+
+  private static String hexOf(String body, String name) {
+    java.util.regex.Matcher m =
+        java.util.regex.Pattern.compile(
+                java.util.regex.Pattern.quote(name) + ":\\s*(#[0-9a-fA-F]{6})")
+            .matcher(body);
+    return m.find() ? m.group(1) : null;
+  }
+
+  private static double contrast(String a, String b) {
+    double la = luminance(a);
+    double lb = luminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+
+  private static double luminance(String hex) {
+    double[] c = new double[3];
+    for (int i = 0; i < 3; i++) {
+      double v = Integer.parseInt(hex.substring(1 + i * 2, 3 + i * 2), 16) / 255.0;
+      c[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
   }
 
   @Test

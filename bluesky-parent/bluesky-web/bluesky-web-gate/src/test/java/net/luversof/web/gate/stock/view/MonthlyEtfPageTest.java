@@ -87,7 +87,10 @@ class MonthlyEtfPageTest {
         .contains(squash("data-risk-from"))
         .contains(
             squash(
-                "data-risk-from>${java.text.MessageFormat.format(MessageUtil.getMessage(\"stock.monthly.etf.table.cell.risk.from\")"));
+                "String[] riskFromParts = aroundDate.apply(\"stock.monthly.etf.table.cell.risk.from\");"))
+        .contains(
+            squash(
+                "data-risk-from>${riskFromParts[0]}<span class=\"whitespace-nowrap date-whole\">${String.valueOf(row.riskFromDate())}</span><wbr>${riskFromParts[1]}"));
     assertThat(template)
         .as("몇일 어긋나는 것까지 적으면 거의 모든 줄에 붙는다 - 한 달 넘게 모자랄 때만")
         .contains(squash("riskPartial.test(row.riskFromDate())"));
@@ -667,6 +670,39 @@ class MonthlyEtfPageTest {
       }
     }
     return builder.toString();
+  }
+
+  /**
+   * 날짜는 한 덩어리(사용자 요청 2026-09-30: "날짜 줄바꿈도 날짜만 묶어서"). 1440px 에서 "2024-12-/03" 처럼 하이픈에서 갈렸다. 날짜 줄 전체를
+   * 묶으면 표가 1134 → 1245px 로 넘쳐(실측) 날짜만 묶는다.
+   */
+  @Test
+  void 표의_날짜는_날짜만_한_줄로_묶는다() throws IOException {
+    String template = squash(Files.readString(Path.of(TEMPLATE_PATH), StandardCharsets.UTF_8));
+    String nowrap = "<span class=\"whitespace-nowrap date-whole\">";
+
+    for (String date :
+        List.of(
+            "${String.valueOf(row.listingDate())}",
+            "${row.currentPriceDate().toString()}",
+            "${String.valueOf(row.riskFromDate())}",
+            "${String.valueOf(row.periodBaseDate())}",
+            "${String.valueOf(row.priceHistoryStartDate())}",
+            "${row.latestPayDate().toString()}",
+            "${row.lastVerifiedDate().toString()}")) {
+      assertThat(template).as(date + " 가 한 덩어리가 아니다").contains(squash(nowrap + date + "</span>"));
+    }
+    // 날짜 바로 뒤 "부터" 는 빈칸 없이 붙어 "2026-06-23부터" 가 한 덩어리(118px)가 됐다 - 1440px 표가 상자를 36px
+    // 넘쳤다(2026-09-30).
+    // 날짜 뒤에 줄바꿈 자리(wbr)를 둔다. 날짜는 그대로 한 덩어리.
+    for (String parts :
+        List.of("listingDateParts", "riskFromParts", "periodBaseParts", "periodMissingParts")) {
+      assertThat(template).as(parts).contains(squash("</span><wbr>${" + parts + "[1]}"));
+    }
+    assertThat(template)
+        .as("날짜 앞뒤 낱말은 흘러야 표가 자리에 들어온다 - 문장을 표식으로 갈라 날짜만 묶는다")
+        .contains(squash("return parts.length == 2 ? parts : new String[] { parts[0], \"\" };"))
+        .doesNotContain(squash("<div class=\"whitespace-nowrap"));
   }
 
   /** 메뉴에 들어가 있어야 찾아갈 수 있다 - 주소 · 활성 패턴 · 이름까지. */

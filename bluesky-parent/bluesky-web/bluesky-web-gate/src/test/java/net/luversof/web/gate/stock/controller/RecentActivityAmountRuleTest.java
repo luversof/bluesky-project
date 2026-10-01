@@ -74,7 +74,8 @@ class RecentActivityAmountRuleTest {
 
     // 배지를 종목명 줄에 두면 이름이 밀린다 - 실측 2026-09-11: 375px 에서 이름 폭이 48px 에서 11px 로 줄어
     // 한 글자도 못 읽었다(이름 전체는 196px). 수량/설명 줄에 두어야 이름 폭이 그대로다.
-    int nameLine = card.indexOf("truncate link link-hover");
+    // 2026-10-01: 종목명은 한 줄 잘림(truncate) 대신 두 줄까지(line-clamp-2) - 같은 운용사 종목끼리 구별이 안 됐다.
+    int nameLine = card.indexOf("line-clamp-2 wrap-anywhere link link-hover");
     int subLine = card.indexOf("text-xs text-base-content/60 flex items-center gap-1");
     int badge = card.indexOf("components.mergedRecordBadge(");
     assertThat(nameLine).as("종목명 줄").isGreaterThan(0);

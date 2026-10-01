@@ -64,9 +64,9 @@ class TableAmountKeepsDigitsTogetherTest {
     assertThat(built)
         .as("메이븐은 프론트엔드를 빌드하지 않는다 - npm run build 산출물이 배포본이다")
         .contains("table .amount-value{overflow-wrap:normal}")
-        .contains(".amount-value{overflow-wrap:anywhere}");
+        .contains(".amount-value{overflow-wrap:anywhere;word-break:keep-all}");
     assertThat(built.indexOf("table .amount-value{overflow-wrap:normal}"))
         .as("명시도가 더 높지만, 뒤에 와야 같은 명시도의 규칙이 끼어들어도 표 쪽이 이긴다")
-        .isGreaterThan(built.indexOf(".amount-value{overflow-wrap:anywhere}"));
+        .isGreaterThan(built.indexOf(".amount-value{overflow-wrap:anywhere;word-break:keep-all}"));
   }
 }

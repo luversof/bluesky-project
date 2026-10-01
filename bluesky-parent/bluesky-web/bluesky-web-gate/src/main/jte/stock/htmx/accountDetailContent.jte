@@ -204,6 +204,7 @@
 			tone = "text-dividend")
 		<%-- 연평균은 이 계좌 전체 거래 기준이라 기간 카드들과 범위가 다르다 - 낭독기에는 scopeNote 로, 화면에는 보조줄의 시작일로 밝힌다. --%>
 		@if(accountReturnShown)
+		!{String accountSinceMessage = MessageUtil.getMessage("stock.asset.status.cell.holding.since"); int accountSinceAt = accountSinceMessage.indexOf("{0}");}
 		<div class="contents" data-account-return data-short-term="${String.valueOf(accountReturn.shortTerm())}" data-holding-days="${accountReturn.holdingDays()}">
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.asset.status.cell.annualized.name"),
@@ -212,7 +213,9 @@
 			scopeNote = MessageUtil.getMessage("stock.account.detail.return.basis"),
 			sub = accountPeriodText + " · " + (accountReturn.shortTerm()
 				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.annualized.short"), String.valueOf(accountReturn.holdingDays()))
-				: java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.since"), accountFirstTradeDate.toString())),
+				: (accountSinceAt >= 0 ? accountSinceMessage.substring(0, accountSinceAt) : accountSinceMessage + " ")),
+			subDate = accountReturn.shortTerm() ? "" : accountFirstTradeDate.toString(),
+			subDateAfter = accountReturn.shortTerm() || accountSinceAt < 0 ? "" : accountSinceMessage.substring(accountSinceAt + 3),
 			tone = accountReturn.annualizedPct() == null ? "" : (accountReturn.annualizedPct().signum() >= 0 ? "text-profit" : "text-loss"),
 			amount = false)
 		</div>
@@ -348,7 +351,7 @@
 							!{boolean isBuy = trade.type() == TradeType.BUY;}
 							!{String tName = trade.stockItemName() != null ? trade.stockItemName() : stockNameById.getOrDefault(trade.stockItemId(), "-");}
 							<tr>
-								<td class="tabular-nums">${trade.tradeDate() != null ? trade.tradeDate().atZone(zone).toLocalDate().toString() : "-"}</td>
+								<td class="tabular-nums whitespace-nowrap date-whole">${trade.tradeDate() != null ? trade.tradeDate().atZone(zone).toLocalDate().toString() : "-"}</td>
 								<td class="font-semibold"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${tName}</a></td>
 								<td><span class="badge badge-sm ${isBuy ? "badge-error badge-outline" : "badge-info badge-outline"}">${isBuy ? MessageUtil.getMessage("stock.trade.label.buy") : MessageUtil.getMessage("stock.trade.label.sell")}</span></td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", trade.quantity())}</td>
@@ -388,7 +391,7 @@
 							!{String dName = dividend.stockItemName() != null ? dividend.stockItemName() : stockNameById.getOrDefault(dividend.stockItemId(), "-");}
 							!{ boolean dividendTaxZero = dividend.tax() == null || dividend.tax().signum() == 0; }
 							<tr>
-								<td class="tabular-nums">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
+								<td class="tabular-nums whitespace-nowrap date-whole">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
 								<td class="font-semibold"><a href="${StockDetailLinkUtil.item(dividend.stockItemId() != null ? dividend.stockItemId().toString() : "")}" class="link link-hover">${dName}</a></td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60" title="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>

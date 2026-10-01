@@ -71,6 +71,18 @@
 	java.time.LocalDate riskFullFrom = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusMonths(12).plusMonths(1);
 	java.util.function.Predicate<java.time.LocalDate> riskPartial = from -> from.isAfter(riskFullFrom);
 	String trendUnknownLabel = MessageUtil.getMessage("stock.monthly.etf.table.cell.trend.unknown");
+	// 날짜는 한 덩어리로 둔다(사용자 요청 2026-09-30: "날짜 줄바꿈도 날짜만 묶어서"). 칸이 좁으면 "2024-12-/03" 처럼 하이픈에서 갈렸다.
+	// 날짜 줄 전체를 묶으면 표가 1134 -> 1245px 로 넘친다(실측) - 날짜만 묶고 앞뒤 낱말은 흐르게 둔다.
+	// 문장 속 날짜 자리({0})에 표식을 넣어 앞뒤를 가른다. 표식은 제어 문자라 메시지에 나올 일이 없다.
+	String dateMark = String.valueOf((char) 1);
+	java.util.function.Function<String, String[]> aroundDate = key -> {
+		String[] parts = java.text.MessageFormat.format(MessageUtil.getMessage(key), dateMark).split(java.util.regex.Pattern.quote(dateMark), -1);
+		return parts.length == 2 ? parts : new String[] { parts[0], "" };
+	};
+	String[] listingDateParts = aroundDate.apply("stock.monthly.etf.table.cell.listing.date");
+	String[] riskFromParts = aroundDate.apply("stock.monthly.etf.table.cell.risk.from");
+	String[] periodBaseParts = aroundDate.apply("stock.monthly.etf.table.cell.period.base");
+	String[] periodMissingParts = aroundDate.apply("stock.monthly.etf.table.cell.period.missing");
 }
 
 @template._layout.stockLayout(
@@ -255,13 +267,14 @@
 						<table class="table table-zebra table-sm whitespace-nowrap print-dense" aria-label="${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}">
 							<thead>
 								<tr>
-									<th scope="col" class="min-w-[9rem] align-bottom" aria-sort="${"symbol".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
+									<%-- 종목 열 최소 폭 9rem -> 8rem(2026-09-30): 영어 1440px 표가 상자를 5px 넘었다(열 최소 폭 합 1,139 / 상자 1,134). 긴 종목명은 원래 줄을 바꾼다. --%>
+									<th scope="col" class="min-w-[8rem] align-bottom" aria-sort="${"symbol".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
 										<a href="${baseUrl}sort=symbol&direction=${"symbol".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center gap-1 font-medium no-underline">
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.item")}</span>
 											@if("symbol".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 										</a>
 									</th>
-									<th scope="col" class="align-bottom" aria-sort="${"payout-window".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
+									<th scope="col" data-keep-words class="align-bottom" aria-sort="${"payout-window".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
 										<a href="${baseUrl}sort=payout-window&direction=${"payout-window".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center gap-1 font-medium no-underline">
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.payout.window")}</span>
 											@if("payout-window".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
@@ -396,7 +409,7 @@
 													<div class="text-base-content/60" data-expense-missing>${MessageUtil.getMessage("stock.monthly.etf.table.cell.expense.unknown")}</div>
 												@endif
 												@if(row.listingDate() != null)
-													<div class="text-[11px] text-base-content/60" data-listing-date>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.listing.date"), String.valueOf(row.listingDate()))}</div>
+													<div class="text-[11px] text-base-content/60" data-listing-date>${listingDateParts[0]}<span class="whitespace-nowrap date-whole">${String.valueOf(row.listingDate())}</span><wbr>${listingDateParts[1]}</div>
 												@endif
 											</div>
 										</td>
@@ -409,7 +422,7 @@
 												@if(priceKnown)
 													<div class="amount-value">${StockFormatUtil.fullKrw(row.currentPrice(), 0)}</div>
 													@if(row.currentPriceDate() != null)
-														<div class="text-[11px] ${priceStale ? "text-warning" : "text-base-content/60"}" data-price-date>${row.currentPriceDate().toString()}@if(priceStale) ${MessageUtil.getMessage("stock.monthly.etf.table.cell.price.stale")}@endif</div>
+														<div class="text-[11px] ${priceStale ? "text-warning" : "text-base-content/60"}" data-price-date><span class="whitespace-nowrap date-whole">${row.currentPriceDate().toString()}</span>@if(priceStale) ${MessageUtil.getMessage("stock.monthly.etf.table.cell.price.stale")}@endif</div>
 													@endif
 												@else
 													<div class="text-base-content/60" data-price-missing>${MessageUtil.getMessage("stock.monthly.etf.table.cell.price.missing")}</div>
@@ -422,7 +435,7 @@
 											@if(row.maxDrawdownPct() != null)
 												<div class="font-semibold ${row.maxDrawdownPct().signum() < 0 ? "text-loss" : "text-base-content/60"}" data-max-drawdown>${percentFormat.format(row.maxDrawdownPct())}%</div>
 												@if(row.riskFromDate() != null && riskPartial.test(row.riskFromDate()))
-													<div class="text-[11px] text-base-content/60" data-risk-from>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.risk.from"), String.valueOf(row.riskFromDate()))}</div>
+													<div class="text-[11px] text-base-content/60" data-risk-from>${riskFromParts[0]}<span class="whitespace-nowrap date-whole">${String.valueOf(row.riskFromDate())}</span><wbr>${riskFromParts[1]}</div>
 												@endif
 											@else
 												<div class="text-base-content/60" data-risk-missing>${MessageUtil.getMessage("stock.monthly.etf.table.cell.risk.unknown")}</div>
@@ -472,10 +485,10 @@
 												<div class="font-semibold ${row.periodPriceReturnPct().signum() > 0 ? "text-profit" : (row.periodPriceReturnPct().signum() < 0 ? "text-loss" : "text-base-content/60")}" data-period-price>${percentFormat.format(row.periodPriceReturnPct())}%</div>
 												@if(row.periodBaseDate() != null)
 													
-													<div class="text-[11px] text-base-content/60" data-period-base>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.period.base"), String.valueOf(row.periodBaseDate()))}</div>
+													<div class="text-[11px] text-base-content/60" data-period-base>${periodBaseParts[0]}<span class="whitespace-nowrap date-whole">${String.valueOf(row.periodBaseDate())}</span><wbr>${periodBaseParts[1]}</div>
 												@endif
 											@else
-												<div class="text-base-content/60" data-period-missing>${row.priceHistoryStartDate() != null ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.period.missing"), String.valueOf(row.priceHistoryStartDate())) : MessageUtil.getMessage("stock.monthly.etf.table.cell.yield.unknown")}</div>
+												<div class="text-base-content/60" data-period-missing>@if(row.priceHistoryStartDate() != null)${periodMissingParts[0]}<span class="whitespace-nowrap date-whole">${String.valueOf(row.priceHistoryStartDate())}</span><wbr>${periodMissingParts[1]}@else${MessageUtil.getMessage("stock.monthly.etf.table.cell.yield.unknown")}@endif</div>
 											@endif
 										</td>
 										<td class="align-top text-right">
@@ -489,10 +502,10 @@
 											<div class="space-y-1 tabular-nums">
 												<div>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.payout.count"), amountFormat.format(row.payoutCount()))}</div>
 												@if(row.latestPayDate() != null)
-													<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.cell.latest.pay.date")} ${row.latestPayDate().toString()}</div>
+													<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.cell.latest.pay.date")} <span class="whitespace-nowrap date-whole">${row.latestPayDate().toString()}</span></div>
 												@endif
 												@if(row.lastVerifiedDate() != null)
-													<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.cell.verified")} ${row.lastVerifiedDate().toString()}</div>
+													<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.cell.verified")} <span class="whitespace-nowrap date-whole">${row.lastVerifiedDate().toString()}</span></div>
 												@endif
 												@if(row.sourceUrl() != null && !row.sourceUrl().isBlank())
 													<div class="text-[11px]"><a class="link link-hover" href="${row.sourceUrl()}" target="_blank" rel="noopener noreferrer" aria-label="${row.stockItemName() + " " + MessageUtil.getMessage("stock.monthly.etf.table.cell.source") + " (" + MessageUtil.getMessage("common.label.opens.new.window") + ")"}">${MessageUtil.getMessage("stock.monthly.etf.table.cell.source")}</a></div>

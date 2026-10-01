@@ -34,7 +34,9 @@
 }
 
 	<!-- Summary Cards -->
-	<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+	<%-- 세 칸은 화면 폭이 아니라 자리 폭(@3xl = 48rem, 글꼴을 키우면 같이 커진다)으로 정한다(2026-09-30 실측: 1280px · 글꼴 200% 에서
+     sm:grid-cols-3 가 세 칸으로 눌러 "1,815,470|,942" 처럼 금액이 갈렸다). 카드 금액은 15 글자까지 들어간다. --%>
+	<div class="@container mb-4"><div class="grid grid-cols-1 @3xl:grid-cols-3 gap-3">
 
 		<!-- Card 1: 매수/매도 금액 -->
 		@template._components.ui.card(body = @`
@@ -87,4 +89,4 @@
 				</div>
 		`)
 
-	</div>
+	</div></div>

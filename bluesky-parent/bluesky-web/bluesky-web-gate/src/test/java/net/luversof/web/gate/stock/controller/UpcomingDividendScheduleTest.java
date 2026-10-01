@@ -260,7 +260,8 @@ class UpcomingDividendScheduleTest {
         .contains("data-upcoming-stale-quantity=\"7\"")
         .contains("data-ledger-unavailable")
         .contains("data-short-history-count=\"1\"")
-        .contains("2026-09-02 ~ 2026-09-17")
+        .contains(
+            "<span class=\"whitespace-nowrap date-whole\">2026-09-02</span> ~ <span class=\"whitespace-nowrap date-whole\">2026-09-17</span>")
         .contains(StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.thisMonthTotal())))
         .contains(MessageUtil.getMessage("stock.dividend.upcoming.desc"));
   }

@@ -660,6 +660,13 @@ function aggregateBySkill(builds) {
 // ---------- 메인 ----------
 async function main() {
 	const LEAGUES = LEAGUE_ARGS.length ? LEAGUE_ARGS : await resolveCurrentLeagues();
+	// 버전 확인만(NINJA_CHECK=1) — API 의 스냅샷 동기(PoeNinjaSyncService)가 저장본(ninja-archetypes.json snapshots)과 비교해
+	// 바뀐 때만 전체 수집을 돌린다. 리그·스냅샷 해석은 전체 수집과 같은 함수를 쓴다(판정이 갈리지 않게).
+	if (process.env.NINJA_CHECK) {
+		const snapshot = await resolveSnapshot(LEAGUES[0]);
+		console.log(`@@NINJA_VERSION@@ ${JSON.stringify({ league: LEAGUES[0], snapshot })}`);
+		return;
+	}
 	console.log(`[ninja] leagues=${LEAGUES.join(", ")}${LEAGUE_ARGS.length ? "" : " (자동 감지)"}`);
 	fs.mkdirSync(OUT_DIR, { recursive: true });
 	const all = [];

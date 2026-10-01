@@ -9,7 +9,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { WORK_DIR } from "./paths.mjs";
 
-const SRC = path.join(WORK_DIR, "pob-src", "src");
+// POB_SRC: 다른 PoB 소스(PoE2 = ~/.poe-gamedata/poe2/work/pob2-src/src)에도 같은 패치를 입힐 때 — poe2-extract/pob2-engine.mjs 가 쓴다
+const SRC = process.env.POB_SRC || path.join(WORK_DIR, "pob-src", "src");
 if (!fs.existsSync(SRC)) {
 	console.warn("PoB 소스 없음 — 패치 건너뜀:", SRC);
 	process.exit(0);

@@ -2,6 +2,8 @@
 //  - 원래 <select multiple> 은 폼 제출 호환을 위해 숨겨서 유지하고, 칩 ↔ option.selected 를 동기화.
 //  - 입력창에 타이핑하면 매칭 옵션 드롭다운이 뜨고, 클릭하면 칩으로 추가된다. 칩의 × 로 제거.
 //  - 항목이 많아(젬 600+, 유니크 1000+) 검색 필수. tailwind 가 ./src 를 스캔하므로 여기 클래스도 빌드에 포함.
+//  - 단일 선택(<select data-poe-multi> 에 multiple 이 없을 때 — PoE2 시뮬 메인 스킬, 10-01): 칩은 하나, 고르면 교체하고 패널을 닫는다.
+//    필수 값이라 × 와 백스페이스 삭제는 없다. 같은 모양·같은 검색을 쓰려고 별도 위젯을 만들지 않았다(PoE1 과 같은 조작감).
 (function () {
 	function lang(): string {
 		try {
@@ -21,6 +23,7 @@
 			return;
 		}
 		select.dataset.poeMsd = "1";
+		var single = !select.multiple;
 
 		var options = Array.prototype.slice.call(select.options) as HTMLOptionElement[];
 		var realOpts: HTMLOptionElement[] = options.filter(function (o) {
@@ -65,6 +68,11 @@
 				setSelected(opt, true);
 				search.value = "";
 				filter();
+				if (single) {
+					// 하나만 고르는 칸 — 골랐으면 끝이다(다중은 이어서 더 고르도록 열어 둔다)
+					panel.hidden = true;
+					return;
+				}
 				try {
 					search.focus();
 				} catch (err) {}
@@ -102,14 +110,23 @@
 					setSelected(opt, false);
 				});
 				chip.appendChild(label);
-				chip.appendChild(x);
+				if (!single) chip.appendChild(x);
 				control.insertBefore(chip, search);
 			});
 			// 선택 없으면 placeholder 보이게(검색창이 곧 placeholder 표시)
-			search.placeholder = selected.length ? t("추가…", "Add…") : placeholder;
+			var more = single ? t("바꾸기…", "Change…") : t("추가…", "Add…");
+			search.placeholder = selected.length ? more : placeholder;
 		}
 
 		function setSelected(opt: HTMLOptionElement, sel: boolean) {
+			if (single) {
+				if (!sel || opt.selected) return; // 필수 단일 값 — 해제 없음, 같은 값이면 변경 이벤트도 없음
+				select.value = opt.value;
+				select.dispatchEvent(new Event("change", { bubbles: true }));
+				renderChips();
+				filter();
+				return;
+			}
 			opt.selected = sel;
 			select.dispatchEvent(new Event("change", { bubbles: true }));
 			renderChips();
@@ -146,7 +163,7 @@
 		});
 		// 빈 검색창에서 백스페이스 → 마지막 칩 제거
 		search.addEventListener("keydown", function (e) {
-			if ((e as KeyboardEvent).key === "Backspace" && search.value === "") {
+			if (!single && (e as KeyboardEvent).key === "Backspace" && search.value === "") {
 				var selected = realOpts.filter(function (o) {
 					return o.selected;
 				});
@@ -183,7 +200,7 @@
 
 	function enhanceAll() {
 		Array.prototype.slice
-			.call(document.querySelectorAll("select[multiple][data-poe-multi]"))
+			.call(document.querySelectorAll("select[data-poe-multi]"))
 			.forEach(function (s: HTMLSelectElement) {
 				enhance(s);
 			});

@@ -11,6 +11,25 @@
 	if (!root) return;
 	const uiKo = (root.getAttribute("data-locale") || "ko") === "ko";
 	const authenticated = root.getAttribute("data-authenticated") === "true";
+	// 게임별 차이는 페이지 속성과 데이터 파일로 받는다 — PoE1 지도(/poe/regex)와 PoE2 경로석(/poe2/regex)이 이 생성기를 같이 쓴다.
+	//   데이터 파일에 headers·thresholds·rewardDefs·specialDefs 가 있으면 아래 PoE1 기본값을 덮는다.
+	const modsUrl = root.getAttribute("data-mods-url") || "/poe-data/map-mods.json";
+	const presetsUrl = root.getAttribute("data-presets-url") || "/poe/api/regex/presets";
+	const quantShort = root.getAttribute("data-quant-short") || (uiKo ? "수량" : "quant");
+
+	interface RewardDef {
+		key: string;
+		ko: string;
+		en: string;
+		title: string[]; // [ko, en]
+	}
+	interface SpecialDef {
+		ko: string;
+		en: string;
+		title: string[];
+	}
+	let rewardDefs: RewardDef[] | null = null;
+	let specialDefs: { [key: string]: SpecialDef } = {};
 
 	interface MapMod {
 		id: string;
@@ -24,6 +43,10 @@
 		packSize: number;
 		en: string[];
 		ko: string[];
+		// PoE2 경로석 전용 — 처음 붙는 등급, 특수 분류(심연), 보상(키 → 최대 롤 %)
+		minTier?: number;
+		special?: string;
+		rewards?: { [key: string]: number };
 	}
 
 	type Pick = "exclude" | "include";
@@ -90,7 +113,7 @@
 	// ---------- 정규식 생성 ----------
 
 	// 맵 아이템에 항상 있을 수 있는 헤더 문구 — 후보가 이 문구에 걸리면 무효(모든 맵이 걸러진다)
-	const HEADER_KO = [
+	let HEADER_KO = [
 		"아이템 수량: +99% (증강됨)",
 		"아이템 희귀도: +99% (증강됨)",
 		"몬스터 무리 규모: +99% (증강됨)",
@@ -99,7 +122,7 @@
 		"타락함",
 		"미러티어",
 	];
-	const HEADER_EN = [
+	let HEADER_EN = [
 		"Item Quantity: +99% (augmented)",
 		"Item Rarity: +99% (augmented)",
 		"Monster Pack Size: +99% (augmented)",
@@ -107,6 +130,18 @@
 		"Map Tier: 17",
 		"Corrupted",
 	];
+
+	// 임계값 두 칸의 머리글 앵커 — quant 칸(PoE1 아이템 수량 / PoE2 아이템 희귀도)과 pack 칸(무리 규모).
+	//   key 는 가져오기가 임계값 항을 알아보는 핵심 낱말.
+	interface Threshold {
+		ko: string;
+		en: string;
+		key: RegExp;
+	}
+	const thresholds: { quant: Threshold; pack: Threshold } = {
+		quant: { ko: "수량.*", en: "tity.*", key: /수량|tity|Quantity/i },
+		pack: { ko: "규모.*", en: "Size.*", key: /규모|무리|Pack ?Size|\bSize/i },
+	};
 
 	/** 라인 → 숫자 없는 구간들. "(a-b)" 범위 표기는 실제 아이템에선 단일 수치라 먼저 한 자리로 치환. */
 	function segmentsOf(lines: string[]): string[] {
@@ -125,9 +160,13 @@
 		return english ? m.en : m.ko;
 	}
 
-	/** 후보가 어떤 모드(구간 집합)에 매치되는가 */
+	/**
+	 * 후보가 어떤 모드(구간 집합)에 매치되는가 — segs 는 **소문자로 낮춘 것**을 넘긴다(lower()).
+	 * 인게임 검색은 대소문자를 안 가린다: 영문 "el" 이 Shield 만 노려도 Elemental 에 걸린다(PoE2 경로석 탐침이 잡음).
+	 */
 	function hits(cand: string, segs: string[]): boolean {
-		for (const s of segs) if (s.indexOf(cand) !== -1) return true;
+		const c = cand.toLowerCase();
+		for (const s of segs) if (s.indexOf(c) !== -1) return true;
 		return false;
 	}
 
@@ -172,16 +211,17 @@
 		if (selected.length === 0) return [];
 		const selectedIds = new Set(selected.map((m) => m.id));
 		const negative: string[][] = [];
-		for (const m of mods) if (!selectedIds.has(m.id)) negative.push(segmentsOf(linesOf(m, english)));
-		negative.push(segmentsOf(english ? HEADER_EN : HEADER_KO));
+		const lower = (a: string[]) => a.map((s) => s.toLowerCase());
+		for (const m of mods) if (!selectedIds.has(m.id)) negative.push(lower(segmentsOf(linesOf(m, english))));
+		negative.push(lower(segmentsOf(english ? HEADER_EN : HEADER_KO)));
 		// 지도 이름(527종)도 "걸리면 안 되는 말뭉치" — 이름에 든 낱말을 항으로 뽑으면 그 지도가 전부 걸린다
-		negative.push(segmentsOf(english ? mapNames.en : mapNames.ko));
+		negative.push(lower(segmentsOf(english ? mapNames.en : mapNames.ko)));
 
 		const segsById: { [id: string]: string[] } = {};
 		const candsById: { [id: string]: string[] } = {};
 		for (const m of selected) {
 			const segs = segmentsOf(linesOf(m, english));
-			segsById[m.id] = segs;
+			segsById[m.id] = lower(segs);
 			const seen = new Set<string>();
 			for (const seg of segs) {
 				for (let len = 2; len <= Math.min(14, seg.length); len++) {
@@ -203,7 +243,7 @@
 			candsById[m.id] = candsById[m.id].filter((c) => {
 				if (!/\s/.test(c)) return true;
 				try {
-					return !new RegExp(termize(c)).test(negativeCorpus);
+					return !new RegExp(termize(c), "i").test(negativeCorpus);
 				} catch (e) {
 					return false;
 				}
@@ -240,7 +280,7 @@
 				const lineTerm = lineRegexTerm(mod, english, selectedIds);
 				if (lineTerm !== null) {
 					terms.push(lineTerm);
-					const re = new RegExp(lineTerm);
+					const re = new RegExp(lineTerm, "i");
 					for (const u of [...uncovered]) {
 						const other = selected.filter((m) => m.id === u)[0];
 						if (re.test(runtimeText(other, english))) uncovered.delete(u);
@@ -296,7 +336,7 @@
 		for (const pat of patterns) {
 			let re: RegExp;
 			try {
-				re = new RegExp(pat);
+				re = new RegExp(pat, "i");
 			} catch (e) {
 				continue;
 			}
@@ -388,9 +428,9 @@
 		// 맵 헤더: "아이템 수량: +N%" / "Item Quantity: +N%" — 희귀도(Rarity)와 안 겹치는 최단 앵커 사용.
 		// ⚠ ": \+" 처럼 **공백을 넣으면 인게임에서 항이 쪼개져** 조건이 통째로 깨진다 → `.*` 로 잇는다.
 		if (state.quant != null && state.quant > 0)
-			terms.push((english ? "tity.*" : "수량.*") + numberGte(state.quant) + "%");
+			terms.push((english ? thresholds.quant.en : thresholds.quant.ko) + numberGte(state.quant) + "%");
 		if (state.pack != null && state.pack > 0)
-			terms.push((english ? "Size.*" : "규모.*") + numberGte(state.pack) + "%");
+			terms.push((english ? thresholds.pack.en : thresholds.pack.ko) + numberGte(state.pack) + "%");
 		return terms;
 	}
 
@@ -626,8 +666,8 @@
 		// 언어 감지 — 임계값 아닌 대안들을 한/영 코퍼스에 각각 대 보고 매치가 많은 쪽
 		// 앵커 형태는 생성기마다 다르다(우리 옛 형식 "량: \+", 새 형식/커뮤니티 "수량.*", 영문 "tity.*").
 		// 어느 쪽이든 가져오기가 임계값으로 알아보게 **핵심 낱말만** 본다.
-		const QUANT_KEY = /수량|tity|Quantity/i;
-		const PACK_KEY = /규모|무리|Pack ?Size|\bSize/i;
+		const QUANT_KEY = thresholds.quant.key;
+		const PACK_KEY = thresholds.pack.key;
 		const plainAlts: string[] = [];
 		for (const g of groups)
 			for (const alt of g.alts) if (!QUANT_KEY.test(alt) && !PACK_KEY.test(alt)) plainAlts.push(alt);
@@ -710,7 +750,7 @@
 		const incCount = Object.keys(state.picks).filter((id) => state.picks[id] === "include").length;
 		if (exCount) parts.push((uiKo ? "제외 " : "exclude ") + exCount);
 		if (incCount) parts.push((uiKo ? "포함 " : "include ") + incCount);
-		if (state.quant != null) parts.push((uiKo ? "수량 ≥" : "quant ≥") + state.quant);
+		if (state.quant != null) parts.push(quantShort + " ≥" + state.quant);
 		if (state.pack != null) parts.push((uiKo ? "무리 ≥" : "pack ≥") + state.pack);
 		if (customCount) parts.push((uiKo ? "수동 항 " : "custom ") + customCount);
 		// 왜 체크가 안 켜졌는지 말해준다 — 침묵하면 "가져오기가 고장났다"로 보인다
@@ -806,17 +846,46 @@
 			//   예전엔 수량만, 그것도 일반 탭에서만 보여줬다. 희귀도는 107종·무리 크기는 112종 전부 데이터가
 			//   있는데 화면에 없었고, T17 전용 36종도 세 값이 다 있어 탭으로 가릴 이유가 없다.
 			//   모드를 고르는 기준 자체가 이 셋의 trade-off 다(위험 ↔ 보상).
+			// PoE2 경로석: 심연 옵션 배지 · 처음 붙는 등급(6등급부터 등) 배지
+			const special = m.special ? specialDefs[m.special] : undefined;
+			if (special) {
+				const sb = document.createElement("span");
+				sb.className = "badge badge-secondary badge-xs whitespace-nowrap";
+				sb.textContent = uiKo ? special.ko : special.en;
+				sb.title = special.title[uiKo ? 0 : 1] || "";
+				badges.appendChild(sb);
+			}
+			if (m.minTier != null && m.minTier > 1) {
+				const tb = document.createElement("span");
+				tb.className = "badge badge-warning badge-xs whitespace-nowrap";
+				tb.textContent = uiKo ? m.minTier + "등급+" : "T" + m.minTier + "+";
+				tb.title = uiKo ? m.minTier + "등급 이상 경로석에만 붙습니다" : "Only on tier " + m.minTier + "+ waystones";
+				badges.appendChild(tb);
+			}
 			const reward: string[] = [];
-			if (m.quant > 0) reward.push((uiKo ? "수량 +" : "Q +") + m.quant + "%");
-			if (m.rarity > 0) reward.push((uiKo ? "희귀 +" : "R +") + m.rarity + "%");
-			if (m.packSize > 0) reward.push((uiKo ? "무리 +" : "P +") + m.packSize + "%");
+			const rewardTitle: string[] = [];
+			if (rewardDefs) {
+				for (const d of rewardDefs) {
+					const v = m.rewards ? m.rewards[d.key] : undefined;
+					if (v != null && v > 0) {
+						reward.push((uiKo ? d.ko : d.en) + " +" + v + "%");
+						rewardTitle.push(d.title[uiKo ? 0 : 1] || d.key);
+					}
+				}
+			} else {
+				if (m.quant > 0) reward.push((uiKo ? "수량 +" : "Q +") + m.quant + "%");
+				if (m.rarity > 0) reward.push((uiKo ? "희귀 +" : "R +") + m.rarity + "%");
+				if (m.packSize > 0) reward.push((uiKo ? "무리 +" : "P +") + m.packSize + "%");
+			}
 			if (reward.length) {
 				const rb = document.createElement("span");
 				rb.className = "badge badge-ghost badge-xs font-mono whitespace-nowrap";
 				rb.textContent = reward.join(" · ");
-				rb.title = uiKo
-					? "지도 보상(최대 롤) — 아이템 수량 / 아이템 희귀도 / 몬스터 무리 크기"
-					: "Map reward (max roll) — item quantity / item rarity / monster pack size";
+				rb.title = rewardDefs
+					? (uiKo ? "경로석 보상(최대 롤) — " : "Waystone reward (max roll) — ") + rewardTitle.join(" / ")
+					: uiKo
+						? "지도 보상(최대 롤) — 아이템 수량 / 아이템 희귀도 / 몬스터 무리 크기"
+						: "Map reward (max roll) — item quantity / item rarity / monster pack size";
 				badges.appendChild(rb);
 			}
 			// 선택된 모드의 제외↔포함 전환은 **이 배지에서만** — 본문 클릭은 선택/해제라 오조작이 없다.
@@ -910,7 +979,7 @@
 
 	async function refreshPresets(): Promise<void> {
 		try {
-			const res = await fetch("/poe/api/regex/presets", { headers: { Accept: "application/json" } });
+			const res = await fetch(presetsUrl, { headers: { Accept: "application/json" } });
 			if (!res.ok) return;
 			const list: { id: number; name: string; updatedMs: number; regex: string }[] = await res.json();
 			presetsEl.textContent = "";
@@ -946,7 +1015,7 @@
 				delBtn.textContent = uiKo ? "삭제" : "Del";
 				delBtn.addEventListener("click", async () => {
 					if (!confirm(uiKo ? '"' + p.name + '" 프리셋을 삭제할까요?' : "Delete preset?")) return;
-					const r = await fetch("/poe/api/regex/presets/" + p.id, { method: "DELETE" });
+					const r = await fetch(presetsUrl + "/" + p.id, { method: "DELETE" });
 					if (r.status === 401) return loginWarn();
 					if (editingId === p.id) clearEditing();
 					refreshPresets();
@@ -996,7 +1065,7 @@
 	}
 
 	async function loadPreset(id: number): Promise<void> {
-		const res = await fetch("/poe/api/regex/presets/" + id, { headers: { Accept: "application/json" } });
+		const res = await fetch(presetsUrl + "/" + id, { headers: { Accept: "application/json" } });
 		if (!res.ok) return;
 		const text = await res.text();
 		if (!text) return;
@@ -1023,7 +1092,7 @@
 			customExclude: state.customExclude,
 			customInclude: state.customInclude,
 		};
-		const res = await fetch("/poe/api/regex/presets", {
+		const res = await fetch(presetsUrl, {
 			method: "POST",
 			headers: { "Content-Type": "application/json", Accept: "application/json" },
 			body: JSON.stringify({ id: editingId, name: name, regex: text, data: data }),
@@ -1138,11 +1207,21 @@
 
 	// ---------- 초기화 ----------
 
-	fetch("/poe-data/map-mods.json", { cache: "no-cache" })
+	fetch(modsUrl, { cache: "no-cache" })
 		.then((r) => r.json())
 		.then((d) => {
 			mods = d.mods || [];
 			mapNames = d.names || { en: [], ko: [] };
+			if (d.headers && d.headers.ko && d.headers.en) {
+				HEADER_KO = d.headers.ko;
+				HEADER_EN = d.headers.en;
+			}
+			for (const k of ["quant", "pack"] as const) {
+				const t = d.thresholds && d.thresholds[k];
+				if (t && t.ko && t.en && t.key) thresholds[k] = { ko: t.ko, en: t.en, key: new RegExp(t.key, "i") };
+			}
+			rewardDefs = Array.isArray(d.rewardDefs) ? d.rewardDefs : null;
+			specialDefs = d.specialDefs || {};
 			computeImplied();
 			const initQ = new URLSearchParams(location.search).get("q");
 			if (initQ) searchEl.value = initQ;

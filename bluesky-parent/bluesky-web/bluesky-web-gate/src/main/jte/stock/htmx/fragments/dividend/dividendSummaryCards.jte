@@ -141,12 +141,12 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${previousComparisonLabel}
 					@if(prevStartDate != null && prevEndDate != null)
-					<span class="text-base-content/60">(${prevStartDate.toString()} ~ ${prevEndDate.toString()})</span>
+					<span class="text-base-content/60">(<span class="whitespace-nowrap date-whole">${prevStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${prevEndDate.toString()}</span>)</span>
 					@endif
 				</div>
 				<div class="flex items-baseline gap-2 mb-1">
 					<%-- 변화가 0 이면 오르내림 화살표도 손익 색도 붙이지 않는다(전기 0·이번 0 인데 "▲ ∞%" 가 나왔다). --%>
-					<span class="text-xl font-bold ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">${diffZero ? "-" : (diffPositive ? "▲" : "▼")} ${diffPct}%</span>
+					<span class="text-xl font-bold ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">@if(diffZero)-@else<span aria-hidden="true">${diffPositive ? "▲" : "▼"}</span>@endif ${diffPct}%</span>
 					<span class="text-xs amount-value ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">${diffZero ? "" : (diffPositive ? "+" : "-")}₩${decimalFormat.format(diffAmount.abs())}</span>
 				</div>
 				<div class="text-xs text-base-content/60">${previousPeriodLabel} <span class="amount-value">₩ ${decimalFormat.format(safePrevNet)}</span></div>
@@ -173,7 +173,7 @@
 			<div class="flex items-baseline justify-between gap-2 mb-2">
 				<h2 class="font-bold text-sm" data-page-section>${changeTitleLabel}</h2>
 				@if(prevStartDate != null && prevEndDate != null)
-				<span class="text-xs text-base-content/60">vs ${prevStartDate.toString()} ~ ${prevEndDate.toString()}</span>
+				<span class="text-xs text-base-content/60">vs <span class="whitespace-nowrap date-whole">${prevStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${prevEndDate.toString()}</span></span>
 				@endif
 			</div>
 			<!-- 선택 합산 패널: 수익률 랭킹(data-dividend-yield-selection-summary)과 동일한 UX -->

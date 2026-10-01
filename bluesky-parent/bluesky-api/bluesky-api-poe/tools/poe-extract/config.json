@@ -377,6 +377,13 @@
         "BaseItemTypesKey",
         "Block"
       ]
+    },
+    {
+      "name": "FlavourText",
+      "columns": [
+        "Id",
+        "Text"
+      ]
     }
   ],
   "files": [

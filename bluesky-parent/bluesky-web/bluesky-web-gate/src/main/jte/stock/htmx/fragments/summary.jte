@@ -251,7 +251,7 @@
 			<div class="mb-2 flex items-baseline gap-2">
 				<h2 class="text-sm font-bold" data-page-section>${periodTitleLabel}</h2>
 				@if(periodSummaryFrom != null && periodSummaryTo != null)
-					<span class="text-xs text-base-content/60">${periodSummaryFrom.toString()} ~ ${periodSummaryTo.toString()}</span>
+					<span class="text-xs text-base-content/60"><span class="whitespace-nowrap date-whole">${periodSummaryFrom.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${periodSummaryTo.toString()}</span></span>
 				@endif
 			</div>
 			<div class="grid stat-card-grid grid-cols-2 lg:grid-cols-4 gap-3">

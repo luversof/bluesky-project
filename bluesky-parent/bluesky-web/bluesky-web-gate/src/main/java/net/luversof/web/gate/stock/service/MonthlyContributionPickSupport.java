@@ -47,6 +47,7 @@ public class MonthlyContributionPickSupport {
    * 한 자리의 결과.
    *
    * @param runnerUpSymbol 같은 자리의 다음 후보. 화면이 "무엇을 제치고 뽑혔는지" 를 말할 수 있게 함께 준다
+   * @param runnerUpName 다음 후보의 종목명. 코드만 적으면 무슨 종목인지 알 수 없다(사용자 요청 2026-09-30) - 이름이 없으면 코드
    * @param tied 점수가 같은 후보가 있는가. 그러면 화면이 "고를 것이 갈리지 않는다" 를 알려야 한다
    */
   public record ContributionPick(
@@ -58,6 +59,7 @@ public class MonthlyContributionPickSupport {
       BigDecimal annualYieldPct,
       BigDecimal payoutTrendPct,
       String runnerUpSymbol,
+      String runnerUpName,
       BigDecimal runnerUpScore,
       boolean tied) {}
 
@@ -199,7 +201,10 @@ public class MonthlyContributionPickSupport {
         continue;
       }
       String account = accountOf(candidate.taxableRatioPct());
+      // 분배금 추세를 모르는 종목(지급 이력 6 회 미만)은 뺀다(사용자 결정 2026-10-01). 추세를 모르면 감점할 수 없어, 삭감 중인지 모르는
+      // 종목이 연배당만으로 자리 1위가 될 수 있었다 - "지금 눈여겨볼 종목" · 표 점수 열은 이미 이 종목에 점수를 안 낸다(두 곳이 같은 말).
       if (account == null
+          || candidate.payoutTrendPct() == null
           || scoreOf(candidate.annualYieldPct(), candidate.payoutTrendPct()) == null) {
         continue;
       }
@@ -235,6 +240,9 @@ public class MonthlyContributionPickSupport {
               best.annualYieldPct(),
               best.payoutTrendPct(),
               next != null ? next.symbol() : null,
+              next == null
+                  ? null
+                  : (next.name() != null && !next.name().isBlank() ? next.name() : next.symbol()),
               nextScore,
               nextScore != null && nextScore.compareTo(bestScore) == 0));
     }

@@ -60,6 +60,11 @@ public interface PoeOptimizeClient {
   net.luversof.web.gate.poe.dto.ArchetypeBenchmark archetype(
       @RequestParam String skill, @RequestParam String ascendancy);
 
+  /** poe.ninja 실빌드 출발점(대표 실빌드의 정규화 PoB 코드 포함) — 데이터 없으면 null. */
+  @GetExchange("/real-start")
+  net.luversof.web.gate.poe.dto.RealStart realStart(
+      @RequestParam String skill, @RequestParam String ascendancy);
+
   /** 멀티스킬 조합 벤치마크 — skills=콤마 젬 이름 목록, 그 스킬 전부 쓰는 캐릭터만 집계. 데이터 없으면 null. */
   @GetExchange("/archetype")
   net.luversof.web.gate.poe.dto.ArchetypeBenchmark archetypeCombo(

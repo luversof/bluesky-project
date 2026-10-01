@@ -162,7 +162,9 @@ class DividendYieldHeadlineRenderTest {
         .contains("30,000,000")
         .doesNotContain("{0}");
     assertThat(text(html, "data-ttm-monthly")).contains("2,600,000");
-    assertThat(html).contains("(2025-09-29 ~ 2026-09-28)");
+    assertThat(html)
+        .contains(
+            "(<span class=\"whitespace-nowrap date-whole\">2025-09-29</span> ~ <span class=\"whitespace-nowrap date-whole\">2026-09-28</span>)");
     // 예전 지표는 사라지지 않고 접힌 곳에 있다.
     int other = html.indexOf("data-yield-other-basis");
     assertThat(other).isPositive();

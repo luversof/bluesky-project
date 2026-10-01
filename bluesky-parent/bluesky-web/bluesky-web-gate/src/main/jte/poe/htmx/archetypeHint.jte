@@ -4,6 +4,7 @@
 <%-- 시뮬 폼 실시간 성향 미리보기 — 선택한 스킬×전직의 poe.ninja 실빌드 성향/프로파일을 실행 전에 보여준다.
      매칭 없으면 빈 출력(폼 레이아웃 영향 없음). --%>
 @param ArchetypeBenchmark ninjaBenchmark = null
+@param net.luversof.web.gate.poe.dto.RealStart realStart = null
 
 @if(ninjaBenchmark != null && ninjaBenchmark.sample() > 0)
 	!{
@@ -124,6 +125,13 @@
 		@endif
 		<%-- 패싯(사이드바 집계) — 마스터리/룬크래프트/문신/무기/판테온/아틀라스 등 전체 모집단 사용률(실행 전 미리보기는 3줄) --%>
 		@template.poe.htmx.benchFacets(bench = ninjaBenchmark, rows = 3)
+		<%-- 실빌드 출발점 바로가기 — 최적화(약 5분)를 돌리지 않고도 이 아키타입의 대표 실빌드를 빌드 화면에서 열어 가이드·자동 다듬기로 다듬는다 --%>
+		@if(realStart != null)
+			<div class="flex flex-wrap items-center gap-2 pt-1" data-real-start-hint>
+				<a class="btn btn-outline btn-xs" href="/poe/build?ascendancy=${java.net.URLEncoder.encode(realStart.ascendancy(), java.nio.charset.StandardCharsets.UTF_8)}&skill=${java.net.URLEncoder.encode(realStart.mainSkill(), java.nio.charset.StandardCharsets.UTF_8)}">${ko ? "실빌드에서 출발하기" : "Start from a real build"}</a>
+				<span class="text-[11px] text-base-content/50">${ko ? "대표 실빌드(" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — 빌드 화면에서 가이드·자동 다듬기" : "Representative build (" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — refine it in the build view"}</span>
+			</div>
+		@endif
 		<div class="text-[10px] text-base-content/40">${ko ? "poe.ninja 96레벨+ 실빌드 전 컬럼 — 이상치 캐릭터 제외 후 중앙값. 이 성향에 맞춰 시뮬이 강점 축을 밉니다" : "poe.ninja lv96+ all columns — median after dropping outlier characters; sim pushes this build's strong axis"}</div>
 	</div>
 @endif

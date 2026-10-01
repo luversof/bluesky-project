@@ -36,6 +36,10 @@
 			</div>
 
 			<div class="flex flex-wrap gap-6 items-start">
+				<%-- 아이템 그림 — PoE2 고유 상세와 같은 자리(10-01: PoE2 에만 있었다). 고유 그림이 없으면 베이스 그림(목록과 같은 폴백) --%>
+				<img src="/poe-assets/uniques/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}"
+				     onerror="this.onerror=null;this.src='/poe-assets/items/${item.iconKey()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}'"
+				     class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${item.name()}" data-unique-art>
 				<%-- 호버 레이어(툴팁)를 그대로 바닥에 --%>
 				@template.poe.htmx.uniqueVariants(item = item, base = base, variant = variant)
 
@@ -56,7 +60,8 @@
 									<tr><td class="text-base-content/50">${ko ? "아이템 클래스" : "Item class"}</td><td>${PoeText.name(base.itemClassKo(), base.itemClass())}</td></tr>
 								@endif
 								@if(item.category() != null)
-									<tr><td class="text-base-content/50">${ko ? "분류" : "Category"}</td><td>${item.category()}</td></tr>
+									<%-- 분류는 목록 칩과 같은 문구로(예전엔 "boots" 원문이 그대로 나왔다 — 10-01) --%>
+									<tr><td class="text-base-content/50">${ko ? "분류" : "Category"}</td><td>${MessageUtil.getMessage("poe.uniques.category." + item.category(), item.category())}</td></tr>
 								@endif
 								<%-- 리그 출처 — 이 아이템을 얻으려면 해당 리그 기제를 돌려야 한다(목록 배지와 같은 정보) --%>
 								@if(item.league() != null && !item.league().isBlank())

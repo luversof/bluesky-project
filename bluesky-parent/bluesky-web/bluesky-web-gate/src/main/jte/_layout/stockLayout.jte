@@ -15,6 +15,7 @@
 	loginUrl = loginUrl,
 	profile = profile,
 	hideHamburger = true,
+	showHideAmounts = true,
 	content = @`
 		<!-- stock 전용 스크립트: 페이지·프래그먼트 스크립트보다 먼저 1회만 로드 (defaultLayout 에서 이관) -->
 		<script src="/js/date-range-picker.js"></script>

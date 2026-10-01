@@ -50,6 +50,15 @@ try {
 	console.warn("거래소 스탯 사전 갱신 실패 — 기존 파일로 계속:", e.message);
 }
 
+// 고유 로어(플레이버)·요구 레벨 — 위키(poewiki.net) + 게임 FlavourText(영·한) 매칭. 고유 JSON 을 다시 쓰는 단계(parse-uniques·unique-icons)
+//   **뒤**여야 덮이지 않는다. 네트워크 단계라 비치명 — 실패하면 위키 캐시(work/wiki-uniques-cache.json)로, 그것도 없으면 로어 없이 계속.
+console.log("\n===== wiki-uniques.mjs (고유 로어·요구 레벨, 비치명) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "wiki-uniques.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("고유 로어·요구 레벨 채우기 실패 — 로어 없이 계속:", e.message);
+}
+
 // poe.ninja 실빌드 시드 (최적화기 balanced 목표치의 아키타입 근거) — **네트워크 단계**라 비치명 처리.
 //   인자 없이 호출하면 현재 빌드 리그를 자동 감지한다. 사이트 불가/리그 변경 시에도 데이터 파이프라인은 계속.
 console.log("\n===== fetch-ninja-builds.mjs (poe.ninja 시드, 비치명) =====");
@@ -151,6 +160,16 @@ try {
 	execSync(`"${process.execPath}" "${path.join(here, "calibrate-archetypes.mjs")}"`, { stdio: "inherit", cwd: here });
 } catch (e) {
 	console.warn("엔진 벤치 캘리브레이션 실패 — 기존 벤치/ninja 표기 폴백으로 계속(api 미가동·레이트리밋?):", e.message);
+}
+
+// 실빌드 출발점 — 아키타입마다 실빌드 여러 명을 같은 가정으로 재계산해 중앙값에 가장 가까운 한 명의 코드(ninja-start-builds.json).
+//   시뮬레이터 결과의 "실빌드에서 출발한 빌드" 카드·빌드 화면 바로 열기가 쓴다. 같은 이유(네트워크·엔진 의존)로 비치명,
+//   레이트리밋으로 끊기면 다음 갱신이 이어서 채운다(아키타입마다 저장).
+console.log("\n===== fetch-ninja-seeds.mjs (실빌드 출발점, 비치명) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "fetch-ninja-seeds.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("실빌드 출발점 수집 실패 — 기존 파일로 계속(api 미가동·레이트리밋?):", e.message);
 }
 
 console.log("\n===== 완료 =====");

@@ -219,7 +219,10 @@ class AccountDetailCardRatesTest {
         .as("1 년이 넘었으니 환산 안내 대신 시작일")
         .contains(
             java.text.MessageFormat.format(
-                message("stock.asset.status.cell.holding.since"), FIRST_TRADE.toString()))
+                message("stock.asset.status.cell.holding.since"),
+                "<span class=\"whitespace-nowrap date-whole\">"
+                    + FIRST_TRADE.toString()
+                    + "</span>"))
         .contains(
             java.text.MessageFormat.format(
                 message("stock.asset.status.cell.holding.years"), "1", "5"));

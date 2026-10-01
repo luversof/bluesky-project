@@ -434,8 +434,14 @@ public class PoeViewController {
   }
 
   @GetMapping("/build")
-  public String build(Model model) {
+  public String build(
+      // 시뮬레이터 결과의 "실빌드에서 출발" 바로가기 — 그 (전직×스킬)의 대표 실빌드 코드를 채워 바로 불러온다
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      @RequestParam(required = false, defaultValue = "") String skill,
+      Model model) {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
+    model.addAttribute("startAscendancy", ascendancy);
+    model.addAttribute("startSkill", skill);
     return "poe/build";
   }
 
@@ -485,6 +491,9 @@ public class PoeViewController {
     model.addAttribute("skillOrder", order.skills());
     model.addAttribute("ascendancyOrder", order.ascendancies());
     model.addAttribute("itemOrder", order.items());
+    model.addAttribute("ninjaLeague", order.league() == null ? "" : order.league());
+    model.addAttribute("ninjaSnapshot", order.snapshot() == null ? "" : order.snapshot());
+    model.addAttribute("ninjaFetchedAt", order.fetchedAt() == null ? "" : order.fetchedAt());
     return "poe/sim";
   }
 

@@ -60,14 +60,16 @@
 	<button type="button" class="btn btn-xs btn-ghost date-range-next${!canNext ? " btn-disabled opacity-40" : ""}" $unsafe{!canNext ? "disabled" : ""} title="${jumpLatestLabel}" aria-label="${jumpLatestLabel}" data-picker="${pickerName}" data-picker-action="jump" data-picker-arg="end"><span aria-hidden="true">»</span></button>
 	@if(showRangeText && (startDate != null || endDate != null))
 		<span class="badge badge-ghost badge-sm font-medium text-base-content/80 ml-1" data-range-text>
-			${startDate != null ? startDate.toString() : "?"} ~ ${endDate != null ? endDate.minusDays(1).toString() : "?"}
+			<%-- 배지는 flex 라 글자 · 날짜 상자가 따로 놓이면 줄을 못 바꾼다(실측 2026-09-30 320px/200%: 391px 로 문서 111px 넘침).
+			     한 상자에 담아 flex 칸을 하나로 - 그 안에서 물결표 앞뒤로 줄이 바뀌고 날짜는 한 덩어리로 남는다. --%>
+			<span class="min-w-0"><span class="whitespace-nowrap date-whole">${startDate != null ? startDate.toString() : "?"}</span> ~ <span class="whitespace-nowrap date-whole">${endDate != null ? endDate.minusDays(1).toString() : "?"}</span></span>
 		</span>
 	@elseif(showRangeText && (coveredStartDate != null || coveredEndDate != null))
 		<%-- '전체' 는 날짜를 안 보내므로 위 배지가 그릴 값이 없다. 그렇다고 비워 두면 그 구간이 몇 년치인지
 			 화면 어디에서도 알 수 없다(종목마다 첫 거래일이 다르다). 조회된 자료의 구간을 대신 적되,
 			 기간 필터로 오해하지 않게 '전체' 라고 앞에 붙인다. --%>
 		<span class="badge badge-ghost badge-sm font-medium text-base-content/60 ml-1" data-covered-range>
-			${allLabel} · ${coveredStartDate != null ? coveredStartDate.toString() : "?"} ~ ${coveredEndDate != null ? coveredEndDate.toString() : "?"}
+			<span class="min-w-0">${allLabel} · <span class="whitespace-nowrap date-whole">${coveredStartDate != null ? coveredStartDate.toString() : "?"}</span> ~ <span class="whitespace-nowrap date-whole">${coveredEndDate != null ? coveredEndDate.toString() : "?"}</span></span>
 		</span>
 	@endif
 </div>

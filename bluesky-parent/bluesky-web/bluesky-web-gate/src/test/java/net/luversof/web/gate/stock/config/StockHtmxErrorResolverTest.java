@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -159,6 +160,31 @@ class StockHtmxErrorResolverTest {
     assertThat(response.getStatus()).isEqualTo(404);
     assertThat(view).isNotNull();
     assertThat(view.getViewName()).isEqualTo("stock/pageError");
+  }
+
+  /**
+   * 오류 화면도 상단 환경 badge 는 실제 프로파일이다. 예외 경로에는 전역 어드바이스가 돌지 않아 템플릿 기본값 "local" 이 찍혔다(실측 2026-10-01:
+   * localdev 로 떠 있는데 없는 주소 화면만 "local").
+   */
+  @Test
+  void 오류_화면의_환경_badge_는_실제_프로파일이다() {
+    var withEnv = new StockHtmxErrorResolver();
+    var environment = new MockEnvironment();
+    environment.setActiveProfiles("localdev");
+    withEnv.setEnvironment(environment);
+    for (Exception ex :
+        new Exception[] {
+          new NoResourceFoundException(HttpMethod.GET, "/stock/없는주소", "static"),
+          new IllegalStateException("boom")
+        }) {
+      var view =
+          withEnv.resolveException(
+              request("/stock/없는주소", false, "text/html"), new MockHttpServletResponse(), null, ex);
+      assertThat(view).isNotNull();
+      assertThat(view.getModel())
+          .as(ex.getClass().getSimpleName())
+          .containsEntry("profile", "localdev");
+    }
   }
 
   /** 없는 주소라도 htmx·JSON 요청은 각자의 규격(problem detail)을 그대로 둔다. */

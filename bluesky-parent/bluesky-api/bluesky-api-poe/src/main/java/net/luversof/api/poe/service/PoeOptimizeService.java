@@ -2142,6 +2142,22 @@ public class PoeOptimizeService {
   private static final boolean SEED_WEAPON_ENABLED =
       !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_SEED_WEAPON", "on"));
 
+  /**
+   * 메타 고유 후보 우선 on/off — 기본 off(동작 무변화, A/B 실측 뒤 승격 판단).
+   *
+   * <p>발단(2026-09-30 poe.ninja 실빌드 대조): balanced 결과 EHP 가 실빌드의 0.17~0.55배. 실빌드 생존력은 사용률 80~99% 인 고유
+   * 조합(저거넛 강타: Replica Alberon's Warpath 99% · Iron Fortress 82%)에서 나오는데, 고유 후보는 키워드 점수로만 골라(0점이면
+   * 아예 빠짐) 그 고유가 후보에 없었다. 켜면 그 전직×스킬 실빌드의 {@link #META_UNIQUE_MIN_SHARE} 이상이 쓰는 고유(레어·마법 제외)를 키워드
+   * 점수와 무관하게 후보 맨 앞에 둔다 — 채택은 여전히 엔진 실측 이득 기준("후보를 더하는" 쪽 개선 — 점수식 성형은 하지 않는다).
+   */
+  private static final boolean META_UNIQUE_ENABLED =
+      "on".equalsIgnoreCase(System.getenv().getOrDefault("POE_META_UNIQUE", "off"));
+
+  private static final double META_UNIQUE_MIN_SHARE = 0.3;
+
+  /** 이번 잡의 메타 고유 이름(영문) — {@link #META_UNIQUE_ENABLED} 이고 balanced 일 때만 채운다. */
+  private volatile Set<String> metaUniqueNames = Set.of();
+
   private static final boolean SEED_KEYSTONES_ENABLED =
       "on".equalsIgnoreCase(System.getenv().getOrDefault("POE_SEED_KEYSTONES", "off"));
 
@@ -3005,6 +3021,13 @@ public class PoeOptimizeService {
           }
         }
         setSurvivalTargets(fixedAscendancy, gem.name(), comboNames);
+      }
+      metaUniqueNames =
+          META_UNIQUE_ENABLED && "balanced".equals(objectiveKey)
+              ? metaUniquesOf(fixedAscendancy, gem.name())
+              : Set.of();
+      if (!metaUniqueNames.isEmpty()) {
+        log("메타 고유 후보 우선: " + String.join(", ", metaUniqueNames));
       }
       log(gem.name() + " / 목표 " + objectiveKey + " / 키워드 " + keywords);
 
@@ -11144,6 +11167,8 @@ public class PoeOptimizeService {
         null,
         null,
         null,
+        null,
+        null,
         null);
   }
 
@@ -11169,6 +11194,8 @@ public class PoeOptimizeService {
         List.of("최대 에너지 보호막 (4-6)% 증가", "최대 생명력 (4-6)% 증가", "최대 마나 (4-6)% 증가"),
         mods.stream().map(WatchersEyeMod::en).toList(),
         mods.stream().map(WatchersEyeMod::ko).toList(),
+        null,
+        null,
         null,
         null,
         null,
@@ -13565,7 +13592,9 @@ public class PoeOptimizeService {
                 item.reqStr(),
                 item.reqDex(),
                 item.reqInt(),
-                item.iconKey()));
+                item.iconKey(),
+                item.flavour(),
+                item.flavourKo()));
       }
     }
     return out;
@@ -13612,7 +13641,9 @@ public class PoeOptimizeService {
               item.reqStr(),
               item.reqDex(),
               item.reqInt(),
-              item.iconKey()));
+              item.iconKey(),
+              item.flavour(),
+              item.flavourKo()));
     }
     return out;
   }
@@ -13732,7 +13763,9 @@ public class PoeOptimizeService {
         item.reqStr(),
         item.reqDex(),
         item.reqInt(),
-        item.iconKey());
+        item.iconKey(),
+        item.flavour(),
+        item.flavourKo());
   }
 
   /** 타임리스 주얼이면 PoB 가 반경 변환을 계산하도록 문구 3종을 붙인다(없으면 조용히 무시). 첫 정복자·중앙 시드 기본값. */
@@ -13909,6 +13942,7 @@ public class PoeOptimizeService {
                 .collect(java.util.stream.Collectors.toSet())
             : Set.of();
     record Scored(PoeUniqueItem item, int score) {}
+    Set<String> meta = metaUniqueNames;
     return poeUniqueDataService.search(null, "all", null).stream()
         // 지금 리그에서 못 얻는 고유는 추천하지 않는다(명예로운 문신 제외와 같은 이유).
         // 판정 근거는 게임의 고유 수집 탭 표시 플래그 — 실빌드 패싯은 상위 12개로 잘려 근거가 못 된다.
@@ -13933,7 +13967,9 @@ public class PoeOptimizeService {
             item -> {
               List<String> lines = new ArrayList<>(item.implicits());
               lines.addAll(item.explicits());
-              return new Scored(item, score(lines, keywords));
+              // 메타 고유는 키워드 점수와 무관하게 맨 앞(점수 0 이어도 후보에 남는다)
+              int bonus = meta.contains(item.name()) ? 1_000_000 : 0;
+              return new Scored(item, score(lines, keywords) + bonus);
             })
         .filter(scored -> scored.score() > 0)
         .sorted(Comparator.comparingInt(Scored::score).reversed())
@@ -13943,6 +13979,38 @@ public class PoeOptimizeService {
             java.util.stream.Collectors.collectingAndThen(
                 java.util.stream.Collectors.toList(),
                 list -> withFoulbornVariants(withUniqueVariants(list, keywords), keywords)));
+  }
+
+  /**
+   * 그 전직×스킬 실빌드 패싯(아이템 사용 수, 전체 모집단)에서 {@link #META_UNIQUE_MIN_SHARE} 이상이 쓰는 고유 이름. 레어·마법·일반
+   * 묶음("Rare Jewel" 등)은 뺀다. 정확 키가 없으면 스킬 폴백.
+   */
+  private Set<String> metaUniquesOf(String ascendancy, String skill) {
+    JsonNode facets = ninjaFacetNodeByKey.get((ascendancy == null ? "" : ascendancy) + "|" + skill);
+    if (facets == null) {
+      facets = ninjaFacetNodeBySkill.get(skill);
+    }
+    if (facets == null) {
+      return Set.of();
+    }
+    double total = facets.path("total").asDouble(0);
+    if (total <= 0) {
+      return Set.of();
+    }
+    Set<String> out = new LinkedHashSet<>();
+    for (JsonNode it : facets.path("groups").path("items")) {
+      String name = it.path("name").asText("");
+      if (name.isEmpty()
+          || name.startsWith("Rare ")
+          || name.startsWith("Magic ")
+          || name.startsWith("Normal ")) {
+        continue;
+      }
+      if (it.path("count").asDouble(0) / total >= META_UNIQUE_MIN_SHARE) {
+        out.add(name);
+      }
+    }
+    return out;
   }
 
   /**

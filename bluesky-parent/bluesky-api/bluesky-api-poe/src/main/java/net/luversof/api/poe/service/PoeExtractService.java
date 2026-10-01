@@ -70,6 +70,7 @@ public class PoeExtractService {
   private final PoeOptimizeService poeOptimizeService;
   private final PoePobEngineService poePobEngineService;
   private final PoeDataLoadStamp poeDataLoadStamp;
+  private final PoeMetaPopularityService poeMetaPopularityService;
 
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final Deque<String> logLines = new ArrayDeque<>();
@@ -98,7 +99,8 @@ public class PoeExtractService {
       PoeSpectreDataService poeSpectreDataService,
       PoeOptimizeService poeOptimizeService,
       PoePobEngineService poePobEngineService,
-      PoeDataLoadStamp poeDataLoadStamp) {
+      PoeDataLoadStamp poeDataLoadStamp,
+      PoeMetaPopularityService poeMetaPopularityService) {
     this.extractDir = Path.of(extractDir).toAbsolutePath();
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
@@ -119,6 +121,7 @@ public class PoeExtractService {
     this.poeOptimizeService = poeOptimizeService;
     this.poePobEngineService = poePobEngineService;
     this.poeDataLoadStamp = poeDataLoadStamp;
+    this.poeMetaPopularityService = poeMetaPopularityService;
   }
 
   /** 파이프라인 스크립트가 서버 로컬에 존재하는가 (k8s 파드에서는 false) */
@@ -310,6 +313,8 @@ public class PoeExtractService {
                   poeEngineUnmodeledDataService.reload();
                   poeSpectreDataService.reload();
                   poeOptimizeService.reloadNinja();
+                  // 시뮬레이터 선택지 순서(같은 ninja-archetypes.json) — 빠져 있어 갱신해도 재시작 전까지 옛 순서였다(10-01)
+                  poeMetaPopularityService.reload();
                   // 화면이 "파일은 새것인데 API 는 옛것"을 구분할 수 있게 로드 시각을 남긴다
                   poeDataLoadStamp.markReloaded();
                   if (engineUnhealthy) {

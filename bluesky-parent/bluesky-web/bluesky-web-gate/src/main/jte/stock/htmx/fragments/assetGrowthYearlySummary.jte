@@ -72,7 +72,7 @@
 									@if(!row.fullYear() && row.fromDate() != null && row.toDate() != null)
 										<%-- 조회 기간에 잘린 해. 구간을 밝히지 않으면 그 해 전체 성과로 오해한다. --%>
 										<div class="text-[11px] font-normal leading-4 text-base-content/60">
-											${partialLabel} ${row.fromDate().toString().substring(5)} ~ ${row.toDate().toString().substring(5)}
+											${partialLabel} <span class="whitespace-nowrap date-whole">${row.fromDate().toString().substring(5)}</span> ~ <span class="whitespace-nowrap date-whole">${row.toDate().toString().substring(5)}</span>
 										</div>
 									@endif
 								</th>

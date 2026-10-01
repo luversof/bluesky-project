@@ -5,6 +5,9 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param boolean hideHamburger = false
+<%-- 금액 숨김 토글은 금액을 가리는 화면(주식)에만 낸다(사용자 요청 2026-10-01: "상단 메뉴의 금액 숨김은 stock일 때 보이면 좋을 것 같아").
+     게시판 · 가계부 · PoE 에는 가릴 금액(amount-value)이 없어 눌러도 아무 일이 없었다. --%>
+@param boolean showHideAmounts = false
 
 <%-- 오른쪽 영역의 글자 라벨(금액 숨김/로케일/사용자명)은 xl 부터 보인다.
      이 라벨들이 일찍 나오면 좌우 영역 합이 화면보다 넓어져 모든 페이지에 가로 스크롤이 생긴다
@@ -52,6 +55,7 @@
 		</ul>
 	</div>
 	<div class="navbar-end gap-1">
+		@if(showHideAmounts)
 		<!-- 금액 숨김 토글 -->
 		<label id="hideAmountsLabel" class="label cursor-pointer gap-1.5 px-2 py-1.5 rounded-full hover:bg-base-200 transition-colors" title="${MessageUtil.getMessage("layout.navbar.hideamounts.title")}">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-base-content/60" id="hideAmountsIcon">
@@ -63,6 +67,7 @@
 			<%-- 라벨 글자(#hideAmountsText)가 xl 아래에서 숨어 체크박스 이름이 사라진다(axe label, 375px 실측 2026-09-09) - 이름은 항상 준다. --%>
 			<input type="checkbox" class="toggle toggle-xs toggle-primary" id="hideAmountsToggle" aria-label="${MessageUtil.getMessage("layout.navbar.hideamounts")}" />
 		</label>
+		@endif
 		@template._components.body.navbar.end.profileArea(isAuthenticated = isAuthenticated, username = username, loginUrl = loginUrl)
 		@template._components.body.navbar.end.locale()
 		@template._components.body.navbar.end.theme()

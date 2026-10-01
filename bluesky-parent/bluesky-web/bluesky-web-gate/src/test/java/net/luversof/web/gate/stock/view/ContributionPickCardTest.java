@@ -58,6 +58,12 @@ class ContributionPickCardTest {
         .as("무엇을 제쳤는지 알려야 따를 수 있다")
         .contains("stock.simulator.monthly.contribution.runner.up");
     assertThat(fragment)
+        .as("제친 종목 · 같은 점수 종목은 이름부터 적는다 - 코드만으로는 무슨 종목인지 모른다(사용자 요청 2026-09-30)")
+        .contains(
+            "MessageUtil.getMessage(\"stock.simulator.monthly.contribution.runner.up\"), pick.runnerUpName(), pick.runnerUpSymbol(),")
+        .contains(
+            "MessageUtil.getMessage(\"stock.simulator.monthly.contribution.tied\"), pick.runnerUpName(), pick.runnerUpSymbol())");
+    assertThat(fragment)
         .as("점수가 같으면 갈리지 않는다고 말해야 한다")
         .contains("stock.simulator.monthly.contribution.tied");
     assertThat(fragment)

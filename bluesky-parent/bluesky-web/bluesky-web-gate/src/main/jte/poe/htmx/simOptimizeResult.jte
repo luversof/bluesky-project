@@ -5,6 +5,7 @@
 @param PoeOptimizeResult result = null
 @param java.util.Map<String, String> tattooIcons = null
 @param net.luversof.web.gate.poe.dto.ArchetypeBenchmark ninjaBenchmark = null
+@param net.luversof.web.gate.poe.dto.RealStart realStart = null
 @param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> rareBases = null
 
 !{
@@ -434,6 +435,56 @@
 				@endif
 				<%-- 패싯(사이드바 집계) — 마스터리/룬크래프트/문신/무기/판테온/아틀라스 등 전체 모집단 사용률 --%>
 				@template.poe.htmx.benchFacets(bench = ninjaBenchmark, rows = 5)
+			</div>
+		@endif
+
+		<%-- 실빌드에서 출발한 빌드 — 이 (전직×스킬)의 대표 실빌드(여러 명 중 DPS·EHP 중앙값에 가장 가까운 사람)를 이 결과와 같은 가정으로 재계산한 값.
+		     자동 최적화(빈 빌드에서 하나씩 탐욕 선택)는 실빌드 생존력의 원천인 주얼·고유 조합(타임리스·Split Personality·블록 체계 등)에 닿지 못한다
+		     (2026-09-30 실측: balanced EHP 가 실빌드의 0.17~0.55배). 그 빌드를 빌드 화면에서 바로 열어 업그레이드 가이드로 다듬게 한다. --%>
+		@if(realStart != null && realStart.code() != null && !realStart.code().isBlank())
+			!{
+				boolean koRs = net.luversof.web.gate.poe.PoeText.isKorean();
+				java.util.function.Function<Number, String> fmtRs = v -> {
+					if (v == null) return "-";
+					double n = v.doubleValue();
+					if (n >= 1_000_000_000d) return String.format("%.1fB", n / 1_000_000_000d);
+					if (n >= 1_000_000d) return String.format("%.1fM", n / 1_000_000d);
+					if (n >= 10_000d) return String.format("%.0fk", n / 1_000d);
+					return String.format("%,.0f", n);
+				};
+				String rsHref = "/poe/build?ascendancy=" + java.net.URLEncoder.encode(realStart.ascendancy(), java.nio.charset.StandardCharsets.UTF_8)
+					+ "&skill=" + java.net.URLEncoder.encode(realStart.mainSkill(), java.nio.charset.StandardCharsets.UTF_8);
+				Object[][] rsRows = new Object[][] {
+					{"DPS", statInt.apply("combineddps"), realStart.dps()},
+					{"EHP", statInt.apply("totalehp"), realStart.ehp()},
+					{koRs ? "생명" : "Life", statInt.apply("life"), realStart.life()},
+					{koRs ? "에너지 보호막" : "Energy shield", statInt.apply("energyshield"), realStart.energyShield()},
+				};
+			}
+			<div class="space-y-2 rounded-box bg-base-100 px-3 py-2 text-sm" data-real-start>
+				<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+					<span class="font-semibold">${koRs ? "실빌드에서 출발한 빌드" : "Start from a real build"}</span>
+					<span class="badge badge-ghost badge-xs">poe.ninja${realStart.level() != null ? " · Lv" + realStart.level() : ""}</span>
+					<span class="text-[11px] text-base-content/50">${koRs ? "같은 스킬·전직 " + realStart.sample() + "명 중 중앙값에 가장 가까운 빌드 · 이 결과와 같은 가정(보스·충전·전투 버프)에 그 빌드의 운용 설정(공명·낙인 부착 등)을 더해 다시 계산" : "closest to the median of " + realStart.sample() + " real builds · recalculated under the same assumptions (boss, charges, combat buffs) plus the build's own settings (resonance, attached brands, …)"}</span>
+				</div>
+				<table class="table table-xs w-auto">
+					<thead>
+						<tr><th></th><th class="text-right">${koRs ? "이 결과" : "This result"}</th><th class="text-right">${koRs ? "실빌드 출발" : "Real build"}</th></tr>
+					</thead>
+					<tbody>
+						@for(Object[] row : rsRows)
+							<tr>
+								<td>${(String) row[0]}</td>
+								<td class="text-right font-mono">${fmtRs.apply((Number) row[1])}</td>
+								<td class="text-right font-mono">${fmtRs.apply((Number) row[2])}</td>
+							</tr>
+						@endfor
+					</tbody>
+				</table>
+				<div class="text-xs text-base-content/60">${koRs
+					? "자동 최적화는 빈 빌드에서 하나씩 고르기 때문에, 실빌드 생존력의 원천인 주얼·고유 조합(타임리스 주얼 등)에 닿지 못할 수 있습니다. 실빌드에서 출발해 업그레이드 가이드로 다듬으면 그 조합을 유지한 채 개선할 수 있습니다."
+					: "The optimizer picks items one at a time from an empty build, so it can miss the jewel/unique combinations (e.g. timeless jewels) real builds rely on for survivability. Starting from a real build and refining it with the upgrade guide keeps those combinations."}</div>
+				<a class="btn btn-outline btn-sm" href="${rsHref}">${koRs ? "빌드 화면에서 열기 · 업그레이드 가이드" : "Open in build view · upgrade guide"}</a>
 			</div>
 		@endif
 

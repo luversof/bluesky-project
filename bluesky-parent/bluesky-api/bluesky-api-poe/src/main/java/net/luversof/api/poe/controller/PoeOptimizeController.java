@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.api.poe.service.PoeOptimizeResult;
 import net.luversof.api.poe.service.PoeOptimizeService;
+import net.luversof.api.poe.service.PoeRealStartService;
 
 /** 최적 조합 탐색 잡 API — 시작/상태/결과. 로그인 게이팅은 게이트가 담당(여긴 잡만 구동). */
 @RestController
@@ -20,9 +21,23 @@ import net.luversof.api.poe.service.PoeOptimizeService;
 public class PoeOptimizeController {
 
   private final PoeOptimizeService poeOptimizeService;
+  private final PoeRealStartService poeRealStartService;
 
-  public PoeOptimizeController(PoeOptimizeService poeOptimizeService) {
+  public PoeOptimizeController(
+      PoeOptimizeService poeOptimizeService, PoeRealStartService poeRealStartService) {
     this.poeOptimizeService = poeOptimizeService;
+    this.poeRealStartService = poeRealStartService;
+  }
+
+  /**
+   * poe.ninja 실빌드 출발점 — 이 (전직×스킬)의 대표 실빌드(표준 가정으로 재계산한 정규화 PoB 코드 포함). 시뮬레이터 결과 옆 "실빌드에서 출발" 카드와 빌드
+   * 화면 바로 열기에 쓴다. 데이터 없으면 null.
+   */
+  @GetMapping("/real-start")
+  public PoeRealStartService.RealStart realStart(
+      @RequestParam(required = false, defaultValue = "") String skill,
+      @RequestParam(required = false, defaultValue = "") String ascendancy) {
+    return poeRealStartService.find(ascendancy, skill);
   }
 
   /**

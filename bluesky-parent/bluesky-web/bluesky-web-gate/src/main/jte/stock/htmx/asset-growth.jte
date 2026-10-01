@@ -272,7 +272,7 @@
 				<p class="min-w-0 text-xs text-base-content/60">
 					<span>📈 ${chartDescriptionLabel} &bull;</span>
 					@if(priceBasisDate != null)
-					<span>${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())} &bull;</span>
+					!{String priceBasisMessage = MessageUtil.getMessage("stock.asset.status.price.basis"); int priceBasisAt = priceBasisMessage.indexOf("{0}");}<span>${priceBasisAt >= 0 ? priceBasisMessage.substring(0, priceBasisAt) : priceBasisMessage + " "}<span class="whitespace-nowrap date-whole">${priceBasisDate.toString()}</span>${priceBasisAt >= 0 ? priceBasisMessage.substring(priceBasisAt + 3) : ""} &bull;</span>
 					@endif
 					<span class="inline-block text-info">${clickDateHoldingsLabel}</span>
 				</p>

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathOfBuilding2>
+	<Build level="91" targetVersion="0_1" className="Warrior" ascendClassName="Titan" mainSocketGroup="1" characterLevelAutoMode="false">
+		<PlayerStat stat="Life" value="4215"/>
+		<PlayerStat stat="EnergyShield" value="0"/>
+		<PlayerStat stat="Mana" value="512"/>
+		<PlayerStat stat="Spirit" value="100"/>
+		<PlayerStat stat="Armour" value="18450"/>
+		<PlayerStat stat="Evasion" value="1204"/>
+		<PlayerStat stat="TotalEHP" value="61234.5"/>
+		<PlayerStat stat="CombinedDPS" value="1834567.8"/>
+		<PlayerStat stat="FireResist" value="75"/>
+		<PlayerStat stat="ColdResist" value="75"/>
+		<PlayerStat stat="LightningResist" value="75"/>
+		<PlayerStat stat="ChaosResist" value="-3"/>
+		<PlayerStat stat="Str" value="312"/>
+		<PlayerStat stat="Dex" value="88"/>
+		<PlayerStat stat="Int" value="60"/>
+		<PlayerStat stat="EffectiveMovementSpeedMod" value="1.08"/>
+	</Build>
+	<Skills sortGemsByDPSField="CombinedDPS" activeSkillSet="1" sortGemsByDPS="true" defaultGemQuality="0" defaultGemLevel="normalMaximum" showSupportGemTypes="ALL" showAltQualityGems="false">
+		<SkillSet id="1">
+			<Skill mainActiveSkillCalcs="1" includeInFullDPS="false" label="" enabled="true" slot="Weapon 1" mainActiveSkill="1">
+				<Gem enableGlobal2="false" level="20" nameSpec="Earthquake" gemId="Metadata/Items/Gems/SkillGemEarthquake" enabled="true" quality="0" count="1" enableGlobal1="true"/>
+				<Gem enableGlobal2="false" level="1" nameSpec="Aftershock I" gemId="Metadata/Items/Gems/SupportGemAftershock" enabled="true" quality="0" count="1" enableGlobal1="true"/>
+				<Gem enableGlobal2="false" level="1" nameSpec="Aftershock II" gemId="Metadata/Items/Gems/SupportGemAftershockTwo" enabled="true" quality="0" count="1" enableGlobal1="true"/>
+				<Gem enableGlobal2="false" level="1" nameSpec="Ancestral Aid" gemId="Metadata/Items/Gem/SupportGemAncestralAid" enabled="true" quality="0" count="1" enableGlobal1="true"/>
+			</Skill>
+			<Skill enabled="false" slot="Body Armour" label="">
+				<Gem enableGlobal2="false" level="15" nameSpec="Ancestral Cry" gemId="Metadata/Items/Gem/SkillGemAncestralCry" enabled="true" quality="0" count="1" enableGlobal1="true"/>
+			</Skill>
+		</SkillSet>
+	</Skills>
+	<Tree activeSpec="1">
+		<Spec ascendClassId="1" treeVersion="0_5" classId="6" nodes="47175,32534,14540,31903,35265,51299,48670,53589,25374,16168,54232,41031,23570,38646,7721,48006,55478,42275,35453,60634,19424" masteryEffects="">
+			<URL>https://www.pathofexile.com/passive-skill-tree/</URL>
+		</Spec>
+	</Tree>
+	<Items activeItemSet="1" useSecondWeaponSet="false">
+		<Item id="1">
+Rarity: UNIQUE
+Apron of Emiran
+Hermit Garb
+Unique ID: 0000
+Item Level: 80
+LevelReq: 60
+Implicits: 0
+50% increased Evasion and Energy Shield
++20 to Dexterity
+Bleeding you inflict is Aggravated
+60% reduced Duration of Bleeding on You
+		</Item>
+		<Item id="2">
+Rarity: RARE
+Doom Crusher
+Runeforged Cultist Greathammer
+Item Level: 82
+Quality: 20
+Implicits: 0
+{prefix}120% increased Physical Damage
+{suffix}+25% to Fire Resistance
+{suffix}12% increased Attack Speed
+		</Item>
+		<Item id="3">
+Rarity: MAGIC
+Vivid Dusk Ring of the Whelpling
+Item Level: 70
+Implicits: 2
++1 Prefix Modifier allowed
+-1 Suffix Modifier allowed
++40 to maximum Life
++12% to Fire Resistance
+		</Item>
+		<Item id="4">
+Rarity: NORMAL
+Feathered Sandals
+Item Level: 50
+Implicits: 0
+		</Item>
+		<ItemSet useSecondWeaponSet="false" id="1">
+			<Slot itemId="2" name="Weapon 1"/>
+			<Slot itemId="1" name="Body Armour"/>
+			<Slot itemId="3" name="Ring 1"/>
+			<Slot itemId="4" name="Boots"/>
+			<Slot itemId="0" name="Helmet"/>
+		</ItemSet>
+	</Items>
+</PathOfBuilding2>

@@ -178,6 +178,9 @@ class MonthlyContributionPickSupportTest {
     ContributionPick midPension = picks.get(1);
     assertThat(midPension.score()).isEqualByComparingTo("9.24");
     assertThat(midPension.runnerUpSymbol()).isEqualTo("0018C0");
+    assertThat(midPension.runnerUpName())
+        .as("코드만 적으면 무슨 종목인지 알 수 없다(사용자 요청 2026-09-30)")
+        .isEqualTo("이름 0018C0");
     assertThat(midPension.runnerUpScore()).isEqualByComparingTo("8.59");
     assertThat(midPension.tied()).isFalse();
   }
@@ -195,6 +198,27 @@ class MonthlyContributionPickSupportTest {
                 candidate("EEEEEE", "MID_MONTH", "4.00", "10.00", "1.00")));
 
     assertThat(picks).extracting(ContributionPick::symbol).containsExactly("EEEEEE");
+  }
+
+  /**
+   * 분배금 추세를 모르는 종목(지급 이력 6 회 미만)은 자리 후보에서 뺀다(사용자 결정 2026-10-01). 예전에는 감점 없이 연배당만으로 점수를 매겨, 삭감 중인지
+   * 모르는 종목이 자리 1위가 될 수 있었다 - "지금 눈여겨볼 종목" · 월배당 ETF 점수 열과 같은 규칙.
+   */
+  @Test
+  void 추세를_모르는_종목은_자리_후보에서_뺀다() {
+    List<ContributionPick> picks =
+        support.pick(
+            List.of(
+                candidate("NEW001", "MID_MONTH", "4.00", "30.00", null),
+                candidate("OLD001", "MID_MONTH", "4.00", "12.00", "-1.00"),
+                candidate("OLD002", "MID_MONTH", "4.00", "10.00", "0.00"),
+                candidate("NEW002", "MONTH_END", "4.00", "25.00", null)));
+
+    assertThat(picks)
+        .extracting(ContributionPick::symbol)
+        .as("연배당 30% 여도 추세를 모르면 1위가 될 수 없다 · 추세 모르는 종목뿐인 월말 자리는 비운다")
+        .containsExactly("OLD001");
+    assertThat(picks.get(0).runnerUpSymbol()).as("차점에서도 뺀다").isEqualTo("OLD002");
   }
 
   @Test
@@ -223,6 +247,7 @@ class MonthlyContributionPickSupportTest {
     assertThat(picks).hasSize(1);
     assertThat(picks.get(0).account()).isEqualTo(MonthlyContributionPickSupport.ACCOUNT_PENSION);
     assertThat(picks.get(0).runnerUpSymbol()).isNull();
+    assertThat(picks.get(0).runnerUpName()).isNull();
     assertThat(picks.get(0).tied()).isFalse();
   }
 

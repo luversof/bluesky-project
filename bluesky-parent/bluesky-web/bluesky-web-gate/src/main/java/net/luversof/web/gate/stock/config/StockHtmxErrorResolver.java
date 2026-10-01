@@ -3,8 +3,10 @@ package net.luversof.web.gate.stock.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.context.EnvironmentAware;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -19,6 +21,7 @@ import io.github.luversof.boot.exception.BlueskyException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.advice.GlobalModelAttributeAdvice;
 
 /**
  * 주식 화면 요청이 실패하면 화면에 보이는 오류로 응답한다(조각 요청은 조각, 페이지 요청은 전체 화면).
@@ -31,9 +34,16 @@ import net.luversof.client.user.util.UserUtil;
  */
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @Component
-public class StockHtmxErrorResolver implements HandlerExceptionResolver {
+public class StockHtmxErrorResolver implements HandlerExceptionResolver, EnvironmentAware {
 
   private static final Logger log = LoggerFactory.getLogger(StockHtmxErrorResolver.class);
+
+  private Environment environment;
+
+  @Override
+  public void setEnvironment(Environment environment) {
+    this.environment = environment;
+  }
 
   @Override
   public ModelAndView resolveException(
@@ -237,12 +247,17 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver {
   /**
    * 전체 화면은 레이아웃을 그리므로 로그인 표시에 필요한 값을 직접 채운다.
    *
-   * <p>예외 경로에서는 {@code @ModelAttribute} 전역 어드바이스가 돌지 않아, 두지 않으면 로그인 상태인데도 상단에 "로그인" 버튼이 뜬다.
+   * <p>예외 경로에서는 {@code @ModelAttribute} 전역 어드바이스가 돌지 않아, 두지 않으면 로그인 상태인데도 상단에 "로그인" 버튼이 뜬다. 상단 환경
+   * badge 도 같다 - 2026-10-01 실측: localdev 로 떠 있는데 없는 주소(404) 화면만 템플릿 기본값 "local" 이었다(운영이면 운영 화면에
+   * "local" 이 찍힌다).
    */
   private ModelAndView pageErrorView(String titleKey, String descKey) {
     ModelAndView modelAndView = new ModelAndView("stock/pageError");
     modelAndView.addObject("isAuthenticated", UserUtil.getUserId() != null);
     modelAndView.addObject("username", UserUtil.getUsername());
+    if (environment != null) {
+      modelAndView.addObject("profile", GlobalModelAttributeAdvice.profileOf(environment));
+    }
     modelAndView.addObject("titleKey", titleKey);
     modelAndView.addObject("descKey", descKey);
     return modelAndView;

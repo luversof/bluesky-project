@@ -38,10 +38,13 @@
 		<a href="/stock/activity" class="link link-hover text-xs">${viewAllLabel} <span aria-hidden="true">→</span></a>
 	</div>
 	<%-- 자리가 모자라면 요약이 아래 줄로 내려간다. 예전에는 요약이 폭을 고수해 왼쪽 목록이
-	     94px 까지 눌리고 종목명이 0px 로 사라졌다(실측 2026-09-15, 320px). --%>
-	<div class="flex flex-wrap gap-4">
+	     94px 까지 눌리고 종목명이 0px 로 사라졌다(실측 2026-09-15, 320px).
+	     2026-10-01: 기준을 카드 폭(480px, @container)으로 - 1440px 대시보드 카드(약 385px)에서 요약 열(144px)이 옆에 남아
+	     종목명 자리가 110px 뿐이라 "TIGER 배…" 처럼 같은 운용사 종목끼리 구별이 안 됐다. 좁으면 요약을 목록 아래에 놓는다. --%>
+	<div class="@container">
+	<div class="flex flex-col gap-4 @[30rem]:flex-row">
 		<%-- 좌: 활동 목록 --%>
-		<div class="flex-1 min-w-[11rem]">
+		<div class="flex-1 min-w-0">
 			@if(activities == null || activities.isEmpty())
 				<div class="text-center text-base-content/60 py-4">${noActivityLabel}</div>
 			@else
@@ -72,9 +75,11 @@
 						}
 						<li class="flex items-start gap-2 py-1.5 border-b border-base-200 last:border-0">
 							<div class="flex-1 min-w-0">
-								<div class="flex items-center gap-1.5 mb-0.5">
-									<span class="badge badge-xs ${badgeClass}">${badgeText}</span>
-									<a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="font-bold text-sm truncate link link-hover" title="${activity.stockItemName()}">${activity.stockItemName()}</a>
+								<%-- 종목명은 두 줄까지(2026-10-01 자율 점검). 한 줄 잘림이면 1440px 에서 "TIGER 배…" · "TIGER 코리…" 처럼 같은 운용사 종목끼리
+								     구별이 안 됐다. 한국어 종목명은 빈칸 없는 긴 낱말이라 낱말 안에서도 줄을 바꾼다. --%>
+								<div class="flex items-start gap-1.5 mb-0.5">
+									<span class="badge badge-xs ${badgeClass} mt-0.5 shrink-0">${badgeText}</span>
+									<a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="font-bold text-sm line-clamp-2 wrap-anywhere link link-hover" title="${activity.stockItemName()}">${activity.stockItemName()}</a>
 								</div>
 								<%-- 이 카드는 계좌를 아예 보여주지 않으므로(폭이 없다) 묶인 줄은 건수로만 드러난다.
 								     그래서 accountCount 는 0 이다 - 배지 규칙은 "화면이 보여 주는 것으로 설명되지 않으면 건수를 적는다".
@@ -106,9 +111,9 @@
 			@endif
 		</div>
 		<%-- 우: 이번 달 요약 --%>
-		<div class="w-36 shrink-0 border-l border-base-200 pl-3">
+		<div class="border-t border-base-200 pt-3 @[30rem]:w-36 @[30rem]:shrink-0 @[30rem]:border-t-0 @[30rem]:border-l @[30rem]:pt-0 @[30rem]:pl-3" data-month-summary>
 			<div class="text-xs font-semibold text-base-content/60 mb-2">${monthSummaryLabel}</div>
-			<div class="space-y-2">
+			<div class="grid grid-cols-3 gap-3 @[30rem]:block @[30rem]:space-y-2" data-month-summary-rows>
 				<div class="flex justify-between items-center">
 					<span class="badge badge-xs badge-error badge-outline">${buyLabel}</span>
 					<div class="text-right">
@@ -138,5 +143,6 @@
 				</div>
 			</div>
 		</div>
+	</div>
 	</div>
 `)

@@ -172,7 +172,8 @@ class ItemDetailHoldingReturnTest {
                 MessageUtil.getMessage("stock.asset.status.cell.holding.years"), "6", "6"))
         .contains(
             java.text.MessageFormat.format(
-                MessageUtil.getMessage("stock.asset.status.cell.holding.since"), "2020-03-04"))
+                MessageUtil.getMessage("stock.asset.status.cell.holding.since"),
+                "<span class=\"whitespace-nowrap date-whole\">" + "2020-03-04" + "</span>"))
         .as("카드 값은 비율만 적는다(라벨이 연평균 수익률)")
         .contains(">" + StockFormatUtil.signedPct(row.annualizedPct().doubleValue(), 1) + "</div>")
         .contains(MessageUtil.getMessage("stock.item.detail.holding.basis"));

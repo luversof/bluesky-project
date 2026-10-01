@@ -295,14 +295,14 @@
 									<input id="stockSimulatorName" name="name" type="text" maxlength="40" class="input input-bordered w-full" />
 								</label>
 								<label class="form-control">
-									<div class="label justify-between gap-3">
+									<div class="label flex-wrap justify-between gap-x-3 gap-y-0">
 										<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.principal")}</span>
 										<span id="stockSimulatorPrincipalPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 									</div>
 									<input id="stockSimulatorPrincipal" name="principal" type="number" min="10000" step="10000" class="input input-bordered w-full" />
 								</label>
 								<label class="form-control">
-									<div class="label justify-between gap-3">
+									<div class="label flex-wrap justify-between gap-x-3 gap-y-0">
 										<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.current.price")}</span>
 										<span id="stockSimulatorCurrentPricePreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 									</div>
@@ -321,7 +321,7 @@
 									<input id="stockSimulatorAnnualDividendGrowthPct" name="annualDividendGrowthPct" type="number" min="-100" max="200" step="0.1" class="input input-bordered w-full" />
 								</label>
 												<label class="form-control">
-													<div class="label justify-between gap-3">
+													<div class="label flex-wrap justify-between gap-x-3 gap-y-0">
 														<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.annual.spending")}</span>
 														<span id="stockSimulatorAnnualSpendingPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 													</div>
@@ -387,11 +387,11 @@
 							<p class="text-sm leading-6 text-base-content/60">${compareDescription}</p>
 						</div>
 						<div class="flex flex-wrap gap-2 text-xs text-base-content/70">
-							<span class="badge border-emerald-500 sim-tint-stable text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}</span>
-							<span class="badge border-amber-500 sim-tint-deficit text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}</span>
-							<span class="badge border-orange-500 sim-tint-drawdown text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}</span>
-							<span class="badge border-yellow-500 sim-tint-decline text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
-							<span class="badge border-red-500 sim-tint-depleted text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-emerald-500 sim-tint-stable text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-amber-500 sim-tint-deficit text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-orange-500 sim-tint-drawdown text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-yellow-500 sim-tint-decline text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-red-500 sim-tint-depleted text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
 						</div>
 						<div id="stockSimulatorTimelineList" class="space-y-3"></div>
 				`)

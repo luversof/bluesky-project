@@ -8,9 +8,18 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param boolean hideHamburger = false
+<%-- 금액 숨김 토글을 머리 막대에 낼지(주식 화면만, 사용자 요청 2026-10-01). 토글이 없는 화면에서는 숨김 상태도 걸지 않는다 -
+     끌 단추가 없는데 금액만 흐려지면 안 된다. --%>
+@param boolean showHideAmounts = false
+<%-- 메뉴 전용 고정 테마(10-01, PoE 화면 = 인게임 다크) — 비면 사이트 라이트/다크 전환을 따른다.
+     htmlClass 는 <html> 에 붙는 클래스(테마 토큰을 덮어쓰는 범위, 예: poe-theme). --%>
+@param String fixedTheme = ""
+@param String htmlClass = ""
+<%-- 메뉴 전용 추가 글꼴 CSS(10-01, PoE 화면 = 인게임 한글 글꼴 Spoqa Han Sans Neo) — Pretendard 와 같은 비차단 로드(data-font-css). --%>
+@param String extraFontCss = ""
 
 <!DOCTYPE html>
-<html lang="${org.springframework.context.i18n.LocaleContextHolder.getLocale().toLanguageTag()}" data-theme="light">
+<html lang="${org.springframework.context.i18n.LocaleContextHolder.getLocale().toLanguageTag()}" data-theme="${fixedTheme.isBlank() ? "light" : fixedTheme}" class="${htmlClass}">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -23,8 +32,12 @@
 	<title>${title}</title>
 	<script nonce="${CspNonceHolder.getNonce()}">
 		(function() {
+			@if(fixedTheme.isBlank())
 			var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t);
+			@endif
+			@if(showHideAmounts)
 			if (localStorage.getItem('hideAmounts') === 'true') document.documentElement.classList.add('hide-amounts');
+			@endif
 			if (localStorage.getItem('sidebarCollapsed') === 'true') document.documentElement.classList.add('sidebar-collapsed');
 		})();
 	</script>
@@ -38,6 +51,9 @@
 	     5,296ms 동안 보이지 않았다(즉시 실패 291ms · 정상 540ms). 글꼴은 늦게 와도 글자는 먼저 보여야 한다. --%>
 	<link rel="stylesheet" media="print" data-font-css crossorigin
 		href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+	@if(!extraFontCss.isBlank())
+		<link rel="stylesheet" media="print" data-font-css crossorigin href="${extraFontCss}" />
+	@endif
 	<link href="/main.css" rel="stylesheet" />
 	<script src="/js/vendor/htmx.min.js"></script>
 	<script src="/js/vendor/json-enc.js"></script>
@@ -49,12 +65,13 @@
 		// 본문 폰트 CSS 를 화면용으로 되돌린다(위 link 는 렌더를 막지 않으려고 media="print" 로 받는다).
 		// 인라인 on* 속성은 CSP(script-src 'self' nonce) 에 걸리므로 여기서 붙인다.
 		(function() {
-			var fontCss = document.querySelector('link[data-font-css]');
-			if (!fontCss) { return; }
-			function activate() { fontCss.media = 'all'; }
-			if (fontCss.sheet) { activate(); return; }
-			fontCss.addEventListener('load', activate);
-			fontCss.addEventListener('error', function() { /* CDN 이 막혀도 화면은 기본 글꼴로 그대로 뜬다 */ });
+			// 글꼴 CSS 가 여럿일 수 있다(PoE 화면은 한글 게임 글꼴을 하나 더) - 첫 것만 바꾸면 나머지는 print 에 머문다
+			document.querySelectorAll('link[data-font-css]').forEach(function (fontCss) {
+				function activate() { fontCss.media = 'all'; }
+				if (fontCss.sheet) { activate(); return; }
+				fontCss.addEventListener('load', activate);
+				fontCss.addEventListener('error', function() { /* CDN 이 막혀도 화면은 기본 글꼴로 그대로 뜬다 */ });
+			});
 		})();
 
 		// 차트가 필요한 시점에만 Chart.js + stock-charts 헬퍼를 순서대로 로드한다.
@@ -124,7 +141,7 @@
 	<a href="#mainContent"
 	   class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-box focus:bg-primary focus:text-primary-content focus:shadow-lg">${MessageUtil.getMessage("common.label.skip.to.content")}</a>
 
-	@template._components.body.navbar.navbar(isAuthenticated = isAuthenticated, username = username, loginUrl = loginUrl, profile = profile, hideHamburger = hideHamburger)
+	@template._components.body.navbar.navbar(isAuthenticated = isAuthenticated, username = username, loginUrl = loginUrl, profile = profile, hideHamburger = hideHamburger, showHideAmounts = showHideAmounts)
 
 	<%-- 본문 랜드마크. 없으면 화면 낭독기에서 "본문으로 건너뛰기"가 동작하지 않는다
 	     (실측: 주식 8개 화면 모두 main 랜드마크 0개). --%>
@@ -208,6 +225,9 @@
 		document.body.addEventListener('htmx:beforeSend', function(evt) {
 			var verb = evt.detail && evt.detail.requestConfig && evt.detail.requestConfig.verb;
 			if (!verb || verb === 'get') return;
+			// 본문이 커서 POST 로 보내는 **조회**(PoE2 빌드 요약·엔진 재계산 — 코드 13KB 가 URL 한도를 넘는다)는 쓰기가 아니다 → data-no-success-toast 로 뺀다
+			var elt = evt.detail.elt;
+			if (elt && elt.closest && elt.closest('[data-no-success-toast]')) return;
 			var xhr = evt.detail.xhr;
 			if (!xhr || !xhr.addEventListener) return;
 			xhr.addEventListener('loadend', function() {

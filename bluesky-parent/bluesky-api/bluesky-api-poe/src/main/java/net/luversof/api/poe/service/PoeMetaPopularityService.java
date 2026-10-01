@@ -58,6 +58,12 @@ public class PoeMetaPopularityService {
     reload();
   }
 
+  /** 순서의 근거 — ninja-archetypes.json 의 리그·poe.ninja 스냅샷 버전과 받은 시각(파일 수정 시각). 화면 표시용. */
+  private volatile String league;
+
+  private volatile String snapshot;
+  private volatile String fetchedAt;
+
   public synchronized void reload() {
     Map<String, Map<String, Integer>> bySkillOfAsc = new LinkedHashMap<>();
     Map<String, Map<String, Integer>> byAscOfSkill = new LinkedHashMap<>();
@@ -69,6 +75,17 @@ public class PoeMetaPopularityService {
     }
     try (InputStream in = Files.newInputStream(seedFile)) {
       JsonNode root = JsonMapper.builder().build().readTree(in);
+      // 스냅샷 동기(PoeNinjaSyncService)가 새 버전을 받으면 이 파일이 바뀐다 — snapshots = {리그: 버전}, 첫 리그 기준
+      String lg = null;
+      String snap = null;
+      for (var e : root.path("snapshots").properties()) {
+        lg = e.getKey();
+        snap = e.getValue().asString(null);
+        break;
+      }
+      this.league = lg;
+      this.snapshot = snap;
+      this.fetchedAt = Files.getLastModifiedTime(seedFile).toInstant().toString();
       JsonNode arr = root.get("archetypes");
       if (arr == null || !arr.isArray()) {
         return;
@@ -217,11 +234,23 @@ public class PoeMetaPopularityService {
   }
 
   /** 정렬 결과 묶음 — 폼이 한 번에 받아 세 목록을 재배치한다. */
-  public record MetaOrder(List<String> skills, List<String> ascendancies, List<String> items) {}
+  /** league·snapshot·fetchedAt = 순서의 근거(poe.ninja 리그·스냅샷 버전·받은 시각) — 시뮬 화면에 표시한다. */
+  public record MetaOrder(
+      List<String> skills,
+      List<String> ascendancies,
+      List<String> items,
+      String league,
+      String snapshot,
+      String fetchedAt) {}
 
   public MetaOrder order(String ascendancy, List<String> skillNames) {
     return new MetaOrder(
-        skillOrder(ascendancy), ascendancyOrder(skillNames), itemOrder(ascendancy, skillNames));
+        skillOrder(ascendancy),
+        ascendancyOrder(skillNames),
+        itemOrder(ascendancy, skillNames),
+        league,
+        snapshot,
+        fetchedAt);
   }
 
   /** 영문 이름 비교용 키(대소문자·공백 무시) — 젬/유니크 이름 대조에 쓴다. */

@@ -8,6 +8,10 @@
 @param String subBefore = ""
 @param String subAmount = ""
 @param String subAfter = ""
+<%-- 보조줄 끝에 날짜가 붙을 때 쓴다 - 날짜만 한 덩어리로 묶어 "2025-09-/18" 처럼 하이픈에서 갈리지 않게(사용자 요청 2026-09-30
+     "날짜 줄바꿈도 날짜만 묶어서"). sub 뒤에 subDate · subDateAfter 가 이어 붙는다. --%>
+@param String subDate = ""
+@param String subDateAfter = ""
 @param String tone = ""
 @param boolean amount = true
 @param String href = null
@@ -44,8 +48,8 @@
 	<div class="stat-card-value ${amount ? "amount-value" : ""} ${toneClass}" title="${valueTitle}">${value}@template._components.ui.srExact(text = valueTitle, visible = value)</div>
 	<%-- sub 와 금액 줄을 함께 넘기면 두 줄이다 - 계좌 상세 실현 손익이 "+5.3% · 판 주식 원가 대비" 와 "이 계좌 기준 +2,063,739 · +33.6%" 를
 	     함께 적는다(사용자 선택 2026-09-17). 한 알약에 이으면 두 비율이 어느 금액의 것인지 갈리지 않는다. 하나만 넘기면 예전과 같다. --%>
-	@if(sub != null && !sub.isEmpty())
-	<div class="stat-card-sub ${subClass}">${sub}</div>
+	@if((sub != null && !sub.isEmpty()) || (subDate != null && !subDate.isEmpty()))
+	<div class="stat-card-sub ${subClass}">${sub}@if(subDate != null && !subDate.isEmpty())<span class="whitespace-nowrap date-whole">${subDate}</span>${subDateAfter}@endif</div>
 	@endif
 	@if(subAmount != null && !subAmount.isEmpty())
 	<div class="stat-card-sub ${subClass}">${subBefore}<span class="amount-value">${subAmount}</span>${subAfter}</div>

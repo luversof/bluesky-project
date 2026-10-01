@@ -738,7 +738,10 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 	document.addEventListener("htmx:beforeSwap", (event: any) => {
 		if (event.target?.id !== "poePreview") return;
 		const elt = event.detail?.requestConfig?.elt;
-		if (elt && active && elt !== active) {
+		// 레이어 **안의** 단추(젬 레벨 1·5·10… 등)가 부른 응답은 버리지 않는다 — 예전엔 "활성 트리거가 아니면 폐기"에 같이 걸려
+		//   PoE1·PoE2 젬 툴팁의 레벨 단추를 눌러도 아무 일이 없었다(10-01 탐침으로 발견).
+		const fromLayer = !!elt && !!host && host.contains(elt);
+		if (elt && active && elt !== active && !fromLayer) {
 			event.detail.shouldSwap = false; // 낡은 응답 폐기 — 활성 트리거 응답만 반영
 		}
 	});

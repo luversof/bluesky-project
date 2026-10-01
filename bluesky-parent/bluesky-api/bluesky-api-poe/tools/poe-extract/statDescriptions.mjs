@@ -129,6 +129,19 @@ function parseFile(text, blocks) {
 	}
 }
 
+// 파일 단위 파싱 캐시 — 같은 파일을 여러 서술기가 쓰면(PoE2 젬: 스킬마다 공용 파일 + 스킬 전용 파일) 매번 다시 파싱하지 않는다.
+// 블록 배열은 서술기가 읽기만 하므로 공유해도 결과는 같다. 파일이 바뀌면(mtime) 다시 파싱한다.
+const parsedCache = new Map();
+function parsedBlocks(path) {
+	const mtime = fs.statSync(path).mtimeMs;
+	const hit = parsedCache.get(path);
+	if (hit && hit.mtime === mtime) return hit.blocks;
+	const blocks = [];
+	parseFile(decode(path), blocks);
+	parsedCache.set(path, { mtime, blocks });
+	return blocks;
+}
+
 function conditionMatches(condition, value) {
 	if (condition === "#") return true;
 	if (condition.includes("|")) {
@@ -158,7 +171,7 @@ export function createStatDescriber(fileDir, extraFiles = []) {
 		...extraFiles,
 	]) {
 		const path = fileDir + "/" + name;
-		if (fs.existsSync(path)) parseFile(decode(path), blocks);
+		if (fs.existsSync(path)) for (const b of parsedBlocks(path)) blocks.push(b);
 	}
 	// stat id → 블록 (뒤에 파싱된 블록이 우선)
 	const blockByStat = new Map();
@@ -226,7 +239,7 @@ export function createModTranslator(fileDir, extraFiles = []) {
 		...extraFiles,
 	]) {
 		const path = fileDir + "/" + name;
-		if (fs.existsSync(path)) parseFile(decode(path), blocks);
+		if (fs.existsSync(path)) for (const b of parsedBlocks(path)) blocks.push(b);
 	}
 
 	// 토큰 = 플레이스홀더({..}) 또는 숫자/범위(선행 +, 감싸는 괄호 포함). 둘 다 스켈레톤에서 sentinel 로 바꿔

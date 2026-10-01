@@ -28,11 +28,11 @@
 			<!-- 월배당 도구: 별도 페이지로 이동(링크). -->
 			<div class="flex flex-wrap items-center gap-2 text-sm">
 				<span class="text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.tools")}</span>
-				<a href="/stock/admin?tab=monthly-reference" class="btn btn-sm btn-outline gap-1">
+				<a href="/stock/admin?tab=monthly-reference" class="btn btn-sm btn-outline gap-1 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">
 					${MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")}
 					<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
 				</a>
-				<a href="/stock/simulator?tab=monthly-dividend" class="btn btn-sm btn-outline gap-1">
+				<a href="/stock/simulator?tab=monthly-dividend" class="btn btn-sm btn-outline gap-1 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">
 					${MessageUtil.getMessage("stock.page.dividend.tab.simulator")}
 					<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
 				</a>

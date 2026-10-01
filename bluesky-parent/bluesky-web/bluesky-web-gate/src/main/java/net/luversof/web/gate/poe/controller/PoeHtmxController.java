@@ -82,6 +82,7 @@ public class PoeHtmxController {
     model.addAttribute("tattooIcons", tattooIcons(status.result()));
     model.addAttribute("rareBases", rareBases(status.result()));
     model.addAttribute("ninjaBenchmark", benchmark(status.result()));
+    model.addAttribute("realStart", realStart(status.result()));
     if (!status.running()) {
       response.setStatus(286); // htmx: 폴링 중단
     }
@@ -124,6 +125,16 @@ public class PoeHtmxController {
       }
     }
     model.addAttribute("ninjaBenchmark", bench);
+    // 단일 스킬이면 실빌드 출발점도 — 조합(여러 스킬)은 대표 실빌드가 그 조합을 다 쓴다는 보장이 없어 뺀다
+    if (bench != null && skills != null && skills.size() == 1 && bench.mainSkill() != null) {
+      try {
+        model.addAttribute(
+            "realStart",
+            poeOptimizeClient.realStart(bench.mainSkill(), ascendancy != null ? ascendancy : ""));
+      } catch (RuntimeException e) {
+        log.warn("실빌드 출발점 조회 실패({}): {}", bench.mainSkill(), e.toString());
+      }
+    }
     return "poe/htmx/archetypeHint";
   }
 
@@ -232,6 +243,7 @@ public class PoeHtmxController {
     model.addAttribute("tattooIcons", tattooIcons(result));
     model.addAttribute("rareBases", rareBases(result));
     model.addAttribute("ninjaBenchmark", benchmark(result));
+    model.addAttribute("realStart", realStart(result));
     return "poe/htmx/simOptimizeResult";
   }
 
@@ -365,6 +377,51 @@ public class PoeHtmxController {
     return "poe/htmx/simRanking";
   }
 
+  /** 결과의 (전직×메인스킬) 실빌드 출발점 — 대표 실빌드를 우리 엔진·표준 가정으로 재계산한 값과 코드. api-poe 미가동/데이터 없음이면 null(미표시). */
+  private net.luversof.web.gate.poe.dto.RealStart realStart(
+      net.luversof.web.gate.poe.dto.PoeOptimizeResult result) {
+    if (result == null || result.gemName() == null || result.gemName().isBlank()) {
+      return null;
+    }
+    try {
+      return poeOptimizeClient.realStart(
+          result.gemName(), result.ascendancy() != null ? result.ascendancy() : "");
+    } catch (RuntimeException e) {
+      log.warn("실빌드 출발점 조회 실패({} / {}): {}", result.ascendancy(), result.gemName(), e.toString());
+      return null;
+    }
+  }
+
+  /**
+   * 빌드 화면 "실빌드에서 출발" — 대표 실빌드 코드를 서버에서 받아 임포트한 요약 fragment 와, 코드 입력칸을 그 코드로 채우는 OOB 조각을 함께
+   * 돌려준다(재계산·가이드 버튼이 입력칸을 hx-include 로 보내므로 칸이 채워져 있어야 이어서 쓸 수 있다).
+   */
+  @GetMapping("/build/real-start")
+  public String importRealStart(
+      @RequestParam(required = false, defaultValue = "") String ascendancy,
+      @RequestParam String skill,
+      Model model) {
+    net.luversof.web.gate.poe.dto.RealStart start = null;
+    try {
+      start = poeOptimizeClient.realStart(skill, ascendancy);
+    } catch (RuntimeException e) {
+      log.warn("실빌드 출발점 조회 실패({} / {}): {}", ascendancy, skill, e.toString());
+    }
+    model.addAttribute("realStart", start);
+    if (start == null || start.code() == null) {
+      model.addAttribute("importError", true);
+      return "poe/htmx/buildSummary";
+    }
+    try {
+      model.addAttribute("build", poeBuildClient.importBuild(start.code()));
+      model.addAttribute("engineAvailable", poeBuildClient.available());
+    } catch (RuntimeException e) {
+      log.warn("실빌드 출발점 임포트 실패({} / {}): {}", ascendancy, skill, e.toString());
+      model.addAttribute("importError", true);
+    }
+    return "poe/htmx/buildRealStart";
+  }
+
   /** PoB 공유 코드 임포트 → 빌드 요약 fragment. 형식 오류는 같은 fragment 의 오류 상태로 표시한다. */
   @PostMapping("/build/import")
   public String importBuild(@RequestParam String code, Model model) {
@@ -428,6 +485,70 @@ public class PoeHtmxController {
       log.warn("업그레이드 가이드 상태 조회 실패: {}", e.toString());
       return null;
     }
+  }
+
+  /**
+   * 자동 다듬기 시작 — 코드 칸의 빌드(보통 poe.ninja 실빌드 출발점)에 가이드 교체안을 하나씩 실제로 적용하며 다시 잰다(약 3~5분). 가이드와 같은 이유로
+   * 로그인 사용자만.
+   */
+  @PostMapping("/build/refine/start")
+  public String startRefine(
+      @RequestParam String code, java.security.Principal principal, Model model) {
+    if (principal == null) {
+      model.addAttribute("loginRequired", true);
+      return "poe/htmx/buildRefineStatus";
+    }
+    boolean started;
+    try {
+      started = poeUpgradeGuideClient.startRefine(code);
+    } catch (RuntimeException e) {
+      log.warn("자동 다듬기 시작 실패(코드 {}자): {}", code.length(), e.toString());
+      started = false;
+    }
+    if (!started) {
+      // 가이드·다듬기가 이미 돌고 있거나 코드를 못 읽은 경우 — 사유는 상태의 error(없으면 "다른 작업 중" 안내)
+      model.addAttribute("status", safeRefineStatus());
+      model.addAttribute("notStarted", true);
+      return "poe/htmx/buildRefineStatus";
+    }
+    return "poe/htmx/buildRefineWrap";
+  }
+
+  /** 자동 다듬기 상태 fragment — 진행 중이 아니면 HTTP 286 으로 htmx 폴링을 멈춘다. */
+  @GetMapping("/build/refine/status")
+  public String refineStatus(Model model, jakarta.servlet.http.HttpServletResponse response) {
+    PoeUpgradeGuide.RefineStatus status = safeRefineStatus();
+    model.addAttribute("status", status);
+    if (status == null || !Boolean.TRUE.equals(status.running())) {
+      response.setStatus(286);
+    }
+    return "poe/htmx/buildRefineStatus";
+  }
+
+  private PoeUpgradeGuide.RefineStatus safeRefineStatus() {
+    try {
+      return poeUpgradeGuideClient.refineStatus();
+    } catch (RuntimeException e) {
+      log.warn("자동 다듬기 상태 조회 실패: {}", e.toString());
+      return null;
+    }
+  }
+
+  /**
+   * 코드를 불러오면서 코드 칸도 그 코드로 채운다(OOB) — 다듬은 빌드 "불러오기"용. 일반 임포트는 칸이 이미 그 코드라 필요 없지만, 여기선 서버가 준 코드라 칸을
+   * 바꿔야 재계산·가이드 버튼이 새 빌드로 돈다.
+   */
+  @PostMapping("/build/import-replace")
+  public String importReplace(@RequestParam String code, Model model) {
+    model.addAttribute("oobCode", code);
+    try {
+      model.addAttribute("build", poeBuildClient.importBuild(code));
+      model.addAttribute("engineAvailable", poeBuildClient.available());
+    } catch (RuntimeException e) {
+      log.warn("PoB 임포트 실패(코드 {}자): {}", code.length(), e.toString());
+      model.addAttribute("importError", true);
+    }
+    return "poe/htmx/buildRealStart";
   }
 
   /** PoB 계산 엔진(헤드리스)으로 빌드 스탯 재계산 → 결과 fragment */

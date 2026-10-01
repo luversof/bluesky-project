@@ -27,4 +27,7 @@ public record PoeUniqueItem(
     Integer reqStr,
     Integer reqDex,
     Integer reqInt,
-    String iconKey) {}
+    String iconKey,
+    // 로어(플레이버) 텍스트 줄 — 인게임 툴팁 맨 아래 주황 기울임(API PoeUniqueItem 과 쌍)
+    List<String> flavour,
+    List<String> flavourKo) {}

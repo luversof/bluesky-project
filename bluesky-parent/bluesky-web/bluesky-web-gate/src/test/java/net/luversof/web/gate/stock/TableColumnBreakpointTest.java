@@ -70,10 +70,12 @@ class TableColumnBreakpointTest {
         .contains(
             "[data-yield-extra-scope]:has([data-yield-extra-toggle]:checked) .yield-extra-col{display:table-cell}")
         .contains(".yield-extra-col{display:none}");
-    int print = built.indexOf("@media print");
-    assertThat(built.indexOf(".yield-extra-col{display:table-cell}", print))
-        .as("인쇄에서는 모든 열")
-        .isGreaterThan(print);
+    // 2026-09-30: 인쇄도 화면과 같다. "인쇄에서는 모든 열" 이던 때 16 열이 1,162px 로 지면(750px)을 넘어 오른쪽 열이 잘렸다 -
+    // 켜는 규칙(:has 토글) 하나만 남아야 한다.
+    assertThat(
+            built.split(java.util.regex.Pattern.quote(".yield-extra-col{display:table-cell}"), -1))
+        .as("추가 열을 켜는 규칙은 토글 하나뿐(인쇄에서 늘 켜면 표가 지면 밖으로 잘린다)")
+        .hasSize(2);
   }
 
   /**

@@ -31,4 +31,8 @@ public record PoeUniqueItem(
     Integer reqStr,
     Integer reqDex,
     Integer reqInt,
-    String iconKey) {}
+    String iconKey,
+    // 로어(플레이버) 텍스트 줄 — 위키 + 게임 FlavourText 매칭(tools/poe-extract/wiki-uniques.mjs, 10-01). 인게임 툴팁 맨
+    // 아래 주황 기울임.
+    List<String> flavour,
+    List<String> flavourKo) {}

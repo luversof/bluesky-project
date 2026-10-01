@@ -38,7 +38,7 @@
 		@if(asOfOldest != null)
 			<div class="mt-1 text-xs text-base-content/60">
 				${MessageUtil.getMessage("stock.simulator.monthly.summary.as.of.date")}
-				<span class="font-mono">${asOfOldest.toString()}${asOfNewest != null && !asOfNewest.equals(asOfOldest) ? " ~ " + asOfNewest.toString() : ""}</span>
+				<span class="font-mono"><span class="whitespace-nowrap date-whole">${asOfOldest.toString()}</span>@if(asOfNewest != null && !asOfNewest.equals(asOfOldest)) ~ <span class="whitespace-nowrap date-whole">${asOfNewest.toString()}</span>@endif</span>
 			</div>
 		@endif
 		<%-- 조회가 실패하면 어긋난 줄이 0 이라 아래 안내가 사라진다 - 안내 없는 화면은 "원장과 같다" 로 읽힌다. --%>

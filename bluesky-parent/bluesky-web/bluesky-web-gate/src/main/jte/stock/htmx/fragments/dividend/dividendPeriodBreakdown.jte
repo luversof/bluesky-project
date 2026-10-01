@@ -72,7 +72,7 @@
 											<div class="text-[11px] font-normal leading-4 text-base-content/60">
 												${partialLabel}
 												@if(row.coveredFrom() != null && row.coveredTo() != null)
-													${row.coveredFrom().toString().substring(5)} ~ ${row.coveredTo().toString().substring(5)}
+													<span class="whitespace-nowrap date-whole">${row.coveredFrom().toString().substring(5)}</span> ~ <span class="whitespace-nowrap date-whole">${row.coveredTo().toString().substring(5)}</span>
 												@endif
 											</div>
 										@endif
@@ -121,7 +121,7 @@
 						<tbody>
 							@for(DividendPeriodBreakdown.Row row : monthlyRows)
 								<tr>
-									<th scope="row" class="font-medium">${row.label()}</th>
+									<th scope="row" class="font-medium whitespace-nowrap date-whole">${row.label()}</th>
 									<td class="text-right tabular-nums">${decimalFormat.format(row.count())}</td>
 									<td class="text-right font-mono amount-value">${decimalFormat.format(StockFormatUtil.displayWon(row.grossAmount()))}</td>
 									<td class="text-right font-mono amount-value">@if(row.tax() == null || row.tax().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(row.tax()))}@endif</td>

@@ -85,23 +85,23 @@
 					<tr class="bg-base-200">
 						<th scope="col" class="cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("payDate") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 							hx-vals='{"sort": "payDate,${sortField.equals("payDate") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${dateLabel} @if(sortField.equals("payDate"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+							${dateLabel} @if(sortField.equals("payDate"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
 						<th scope="col" class="cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("stockItemName") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 							hx-vals='{"sort": "stockItemName,${sortField.equals("stockItemName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${stockNameLabel} @if(sortField.equals("stockItemName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+							${stockNameLabel} @if(sortField.equals("stockItemName"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
 						<th scope="col" class="cursor-pointer hover:bg-base-300 hidden sm:table-cell" tabindex="0" aria-sort="${sortField.equals("accountName") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 							hx-vals='{"sort": "accountName,${sortField.equals("accountName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${accountLabel} @if(sortField.equals("accountName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+							${accountLabel} @if(sortField.equals("accountName"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
 						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("grossAmount") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 							hx-vals='{"sort": "grossAmount,${sortField.equals("grossAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${grossAmountLabel} @if(sortField.equals("grossAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+							${grossAmountLabel} @if(sortField.equals("grossAmount"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
 						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("netAmount") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 							hx-vals='{"sort": "netAmount,${sortField.equals("netAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${netAmountLabel} @if(sortField.equals("netAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+							${netAmountLabel} @if(sortField.equals("netAmount"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
 						<th scope="col" class="text-right hidden md:table-cell">${quantityLabel}</th>
 						<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${referencePriceLabel}</th>
@@ -109,18 +109,18 @@
 						<th scope="col" class="text-right">${yieldOnBasisCostLabel}</th>
 						<th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell print:table-cell" tabindex="0" aria-sort="${sortField.equals("tax") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 							hx-vals='{"sort": "tax,${sortField.equals("tax") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${taxLabel} @if(sortField.equals("tax"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+							${taxLabel} @if(sortField.equals("tax"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
 						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("taxableAmount") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
 							hx-vals='{"sort": "taxableAmount,${sortField.equals("taxableAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${taxableAmountLabel} @if(sortField.equals("taxableAmount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
+							${taxableAmountLabel} @if(sortField.equals("taxableAmount"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
 						</th>
 					</tr>
 					</thead>
 					<tbody>
 					@for(DividendView item : dividendList)
 					<tr>
-						<td>${item.payDate() != null ? dateFormatter.format(item.payDate().atZone(zone)) : ""}</td>
+						<td class="whitespace-nowrap date-whole">${item.payDate() != null ? dateFormatter.format(item.payDate().atZone(zone)) : ""}</td>
 						<td class="font-bold"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName()}</a></td>
 						<td class="hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(item.accountId() != null ? item.accountId().toString() : "")}" class="link link-hover">${item.accountName()}</a></td>
 						<td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>

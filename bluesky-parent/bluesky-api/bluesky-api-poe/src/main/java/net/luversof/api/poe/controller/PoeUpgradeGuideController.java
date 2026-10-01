@@ -36,4 +36,18 @@ public class PoeUpgradeGuideController {
   public PoeUpgradeGuideService.GuideStatus status() {
     return poeUpgradeGuideService.status();
   }
+
+  /**
+   * 자동 다듬기 시작 — 가이드가 실측한 교체안 중 가장 이득이 큰 것을 실제로 적용하고 다시 재기를 반복한다(보통 poe.ninja 실빌드 출발점에). 가이드 잡과 동시에
+   * 돌지 않는다(이미 돌고 있으면 false).
+   */
+  @PostMapping("/refine/start")
+  public boolean startRefine(@RequestParam String code) {
+    return poeUpgradeGuideService.startRefine(code);
+  }
+
+  @GetMapping("/refine/status")
+  public PoeUpgradeGuideService.RefineStatus refineStatus() {
+    return poeUpgradeGuideService.refineStatus();
+  }
 }

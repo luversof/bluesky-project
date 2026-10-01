@@ -3,6 +3,10 @@
 @source "../jte";
 @source "./src";
 @plugin "@tailwindcss/typography";
+/* dark: 유틸을 OS 설정(prefers-color-scheme)이 아니라 사이트 테마([data-theme="dark"])에 묶는다.
+   기본값이면 테마를 다크로 골라도 OS 가 라이트인 PC 에선 dark:text-purple-300 이 안 먹어 어두운 바탕에 보라 700 이 남았다
+   (10-01 PoE 대비 감사 2.57:1 발견 — PoE 화면은 인게임 다크 고정이라 항상 해당). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* 디자인 토큰 (daisyUI 대체). light 기본, dark 는 [data-theme="dark"].
    Tailwind @theme 이 bg-base 계열 색 유틸을 자동 생성한다. */
@@ -79,6 +83,48 @@
 	--color-error: #f87171;
 	--color-error-content: #1a0606;
 }
+
+/* PoE 화면 전용 인게임 테마(10-01 사용자 결정: PoE1·PoE2 화면은 인게임 다크 고정) — poeLayout 이 <html data-theme="dark" class="poe-theme">.
+   html.poe-theme 이 [data-theme="dark"] 보다 구체적이라 토큰만 덮어쓴다(헤더까지 같은 색). 대비 계산(감마 sRGB 합성):
+   본문색은 옛 다크(#e6eaf2) 이상 밝기 - /50 4.64(옛 4.57) · /40 3.37(옛 3.38), 첫 값 #e8dabb 는 반투명 글자가 옛 다크보다 나빠졌다(실측 랭킹 +729 미달), 강조색 글자 4.5 이상, 컨트롤 경계 3 이상.
+   등급색(.poe-name-*)은 인게임 공식 값 그대로 기존 규칙이 맡는다. */
+html.poe-theme {
+	--color-base-100: #0e0c0a;
+	--color-base-200: #1a1611;
+	--color-base-300: #2b2419;
+	--color-base-content: #f4ead2;
+	--color-primary: #c79a4a;
+	--color-primary-content: #140f08;
+	--color-secondary: #a89676;
+	--color-secondary-content: #140f08;
+	--color-accent: #3fb8af;
+	--color-accent-content: #06120f;
+	--color-neutral: #d8c9a6;
+	--color-neutral-content: #140f08;
+	--color-info: #8fa9e6;
+	--color-info-content: #0b0f1c;
+	--color-success: #7cc47a;
+	--color-success-content: #08130a;
+	--color-warning: #e6b450;
+	--color-warning-content: #1a1203;
+	--color-error: #e86a5c;
+	--color-error-content: #1a0606;
+	--color-control-line: #7a6a50;
+	--color-surface-line: rgba(199, 154, 74, 0.16);
+	--shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 12px -4px rgba(0, 0, 0, 0.6);
+	--shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.6), 0 14px 28px -10px rgba(0, 0, 0, 0.7);
+}
+/* 인게임 제목은 금색 — 화면 제목만(본문 위계는 그대로) */
+html.poe-theme .poe-scope h1,
+html.poe-theme .poe-scope h2 { color: #e2c98f; }
+/* 글꼴도 인게임(10-01): 헤더·메뉴까지 PoE 화면 전체를 게임 글꼴로, 제목·탭·버튼은 게임처럼 Fontin SmallCaps(영문만 작은 대문자 — 한글은 그대로) */
+html.poe-theme body { font-family: var(--poe-font); }
+html.poe-theme .poe-scope h1,
+html.poe-theme .poe-scope h2,
+html.poe-theme .poe-scope .tab,
+html.poe-theme .poe-scope .btn { font-family: var(--poe-font-sc); }
+/* 테마가 고정이라 전환 버튼은 숨긴다(눌러도 바뀌지 않으면 고장처럼 보인다) */
+html.poe-theme [data-theme-toggle] { display: none; }
 
 @layer base {
 	html { color-scheme: light; }
@@ -553,8 +599,17 @@
 	.tooltip { position: relative; display: inline-block; }
 	.tooltip > .tooltip-content, .tooltip:before {
 		/* visibility 는 0.2s 뒤에 숨긴다: 트리거와 말풍선 사이 0.25rem 틈을 포인터가 건널 시간(WCAG 1.4.13 hoverable). */
-		position: absolute; z-index: 40; opacity: 0; visibility: hidden; transition: opacity .12s, visibility 0s linear .2s;
-		pointer-events: none; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-0.25rem);
+		position: absolute; z-index: 40; opacity: 0; visibility: hidden; transition: opacity .12s, visibility 0s linear .2s, scale 0s linear .2s;
+		bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-0.25rem);
+		/* pointer-events: none 을 두지 않는다(2026-09-30). hover 가 풀리는 순간 바로 걸려서, 0.25rem 틈을 건너는 동안 말풍선이
+		   포인터를 못 받아 다시 올라가도 hover 가 안 살아났다(실측: 트리거에서 곧장 아래로 옮기면 400ms 뒤 hidden - 1.4.13 hoverable 위반).
+		   숨김은 visibility 가 0.2s 뒤에 맡는다(visibility:hidden 은 포인터를 안 받는다). */
+		/* 숨은 말풍선도 자리를 차지해 문서 가로 폭을 넓혔다(실측 2026-09-30: 영어 320px · 글꼴 200% 배당 화면 48px - 긴 영어 제목이
+		   도움말 단추를 오른쪽으로 밀어 가운데 정렬 말풍선이 화면 밖으로). 숨어 있는 동안은 점으로 줄인다. scale 은 transform 과
+		   따로 합쳐져 위치 규칙을 건드리지 않고, visibility 와 같이 0.2s 뒤에 줄어 포인터가 틈을 건너는 동안은 그대로다.
+		   값을 변수로 둔다: 그냥 "scale: 0" 이면 빌드(최소화)가 같은 규칙의 transform 에 scale(0) 으로 합쳐 버려, 위치 변형 규칙
+		   (tooltip-bottom 등)이 transform 을 덮는 순간 줄이기가 사라졌다(실측: 숨은 말풍선 288x176 그대로). */
+		scale: var(--tooltip-hidden-scale, 0);
 	}
 	.tooltip:before {
 		content: attr(data-tip); white-space: nowrap; padding: 0.25rem 0.5rem; font-size: 0.75rem;
@@ -564,10 +619,10 @@
 	   :focus-visible 이라 마우스 클릭으로 받은 포커스는 열지 않는다(hover 가 대신 연다). */
 	.tooltip:is(:hover, :focus-visible) > .tooltip-content, .tooltip:is(:hover, :focus-visible):before {
 		/* pointer-events 를 되살려 말풍선 위에서도 .tooltip:hover 가 유지된다(실측: none 이면 4/4 가 포인터를 옮기는 순간 hidden). */
-		opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s;
+		opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; scale: 1;
 	}
 	/* Escape 로 닫은 툴팁(common.ts 가 붙임) - 포커스·hover 가 남아 있어도 숨긴다(WCAG 1.4.13 dismissable). 표시 규칙 뒤에 둬야 이긴다. */
-	.tooltip.tooltip-dismissed > .tooltip-content, .tooltip.tooltip-dismissed:before { opacity: 0; visibility: hidden; pointer-events: none; }
+	.tooltip.tooltip-dismissed > .tooltip-content, .tooltip.tooltip-dismissed:before { opacity: 0; visibility: hidden; pointer-events: none; scale: 0; }
 	/* .tooltip:before(짧은 말풍선)와 달리 .tooltip-content 는 블록 내용을 담으므로
 	   자체 안쪽 여백을 준다. (0 이면 텍스트가 박스 가장자리에 붙어 답답해 보인다.) */
 	.tooltip-content { padding: 0.75rem; }
@@ -768,6 +823,16 @@
 	.whitespace-nowrap, table .whitespace-nowrap {
 		white-space: normal !important;
 	}
+	/* 다만 날짜는 종이에서도 한 덩어리다(2026-09-30). 위 해제가 화면용 날짜 상자까지 풀어 "2026-09-/30" 이 인쇄에서 두 줄이 됐다
+	   (실측: 배당 내역 42 · 배당 캘린더 28 곳이 종이에서 2 줄). 날짜 상자에만 date-whole 을 붙여 되살린다 - 10 글자라 열을 밀지 않는다. */
+	.date-whole {
+		white-space: nowrap !important;
+	}
+	/* 표 금액은 화면에서 부호까지 한 줄로 묶었지만(가로 스크롤 상자 안이라 문서는 안 넘친다) 종이에는 스크롤이 없다 -
+	   지속가능성 연도별 표가 지면을 2px 넘어 끝 열이 잘렸다(실측 2026-09-30). 종이에서는 부호 뒤 줄바꿈을 허용한다. */
+	table .amount-value {
+		white-space: normal !important;
+	}
 	/* width:100% 로도 못 줄이는 표가 있다(실측: 자산 현황 '계좌별 현황' 은 열들의 최소 폭 합이 842px > 760px).
 	   종이에서는 글자와 여백을 한 단계 줄여 열을 살린다. */
 	table {
@@ -929,9 +994,17 @@ html { scroll-padding-top: var(--sticky-top-stack); }
 	.table-head-sticky > table td.text-right * {
 		overflow-wrap: normal;
 	}
-	/* 두 글자 칸(지급 시기 "월중")은 위 규칙을 풀어도 anywhere 로 한 글자씩 세로로 흘렀다 - 한 줄로 묶는다. */
+	/* 두 글자 칸(지급 시기 "월중")은 위 규칙을 풀어도 anywhere 로 한 글자씩 세로로 흘렀다 - 낱말 안에서는 끊지 않는다.
+	   nowrap 으로 묶었더니 영어 "Month-end" 가 80px 로 열을 밀어 1440px 표가 상자를 27px 넘었다(2026-09-30) - 한국어는 keep-all 로
+	   한 낱말이 그대로 한 줄이고, 영어는 하이픈 자리("Month-/end")에서만 바뀐다. */
 	.table-head-sticky > table td[data-keep-line] {
-		white-space: nowrap;
+		overflow-wrap: normal;
+	}
+	/* 그 열의 머리칸("지급 시기")은 칸이 두 글자 폭이라 anywhere 로 "지/급/시/기" 한 글자씩 세로로 흘렀다(2026-09-30 1440px).
+	   한국어에서만 빈칸에서 끊는다 - 영어 "Payout timing" 은 낱말이 길어 같은 규칙이면 표가 상자를 27px 넘는다(실측). */
+	:lang(ko) .table-head-sticky > table th[data-keep-words],
+	:lang(ko) .table-head-sticky > table th[data-keep-words] * {
+		overflow-wrap: normal;
 	}
 	/* sticky 는 tr 이 아니라 th 에 걸어야 한다(실측: tr 은 붙지 않았다).
 	   고정 줄(제목·검색·기간) 아래에 놓아야 겹치지 않는다 - 그 높이는 common.js 가 알려 준다. */
@@ -1062,13 +1135,20 @@ html.hide-amounts .amount-value { filter: blur(10px); opacity: 0.6; user-select:
 /* 금액은 공백 없는 한 덩어리라 자리가 모자라도 안 끊긴다 - 실측 2026-09-16(320px·글꼴 200%):
    자산 성장 기간 손익이 226px, 배당 캘린더 총액이 146px 문서 밖으로 나갔다.
    카드 · 요약처럼 자리가 넉넉하면 아무 일도 일어나지 않는다 - 표는 다르다(아래). */
-.amount-value { overflow-wrap: anywhere; }
+/* 숫자와 한글 단위 사이("2,343,989 / 원")에서도 줄을 바꾸지 않는다(2026-09-30 실측: 대시보드 1280px 안내 문장) - 낱말 사이 빈칸에서 바꾸게.
+   자리가 정말 모자라면 anywhere 가 그대로 받아 준다(넘침 없음). */
+.amount-value { overflow-wrap: anywhere; word-break: keep-all; }
 /* 표 안 금액은 자릿수 중간에서 끊지 않는다. anywhere 는 줄만 바꾸는 게 아니라 칸의 최소 폭을 한 글자로 만들고,
    표는 그 최소 폭까지 칸을 누른다 - 자리가 넉넉한 넓은 화면에서도 "362,525,/079" 로 끊겼다
    (실측 2026-09-17: 9 화면 x 6 폭에서 7,534 곳, 지속가능성 1440px 243 · 배당 내역 1280px 523 · 자산 현황 1340px 41).
    표는 가로 스크롤 상자 안에 있어 안 끊겨도 문서는 넘치지 않는다(같은 실측, 문서 넘침 0 - 대신 상자 안 스크롤이 는다).
    사용자 결정 2026-09-17: 표 안 금액만 안 끊기. */
 table .amount-value { overflow-wrap: normal; }
+/* 부호와 ₩ 사이도 끊지 않는다(2026-09-30). 유니코드 줄 나눔 규칙상 "-" 뒤 "₩" 앞은 줄을 바꿔도 되는 자리라, 위 규칙만으로는
+   넓은 화면에서도 부호만 윗줄에 남았다(실측: 시뮬 지속가능성 표 15 칸 "-" / "₩104,260,941", 1024~1920px 모두).
+   줄바꿈 자체를 막는 것은 가로 스크롤 상자 안 표만 - 넓은 화면에서 상자를 걷는 두 표(.table-head-sticky · -xl)는 칸이 넓어지면
+   문서가 넘치므로 뺀다. */
+.overflow-x-auto:not(.table-head-sticky, .table-head-sticky-xl) > table .amount-value { white-space: nowrap; }
 html.hide-amounts .amount-chart { filter: blur(15px); opacity: 0.3; user-select: none; pointer-events: none; }
 
 /* 클라이언트 정렬 테이블 */
@@ -1096,7 +1176,9 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
    테마와 무관하게 항상 게임처럼 어둡게 고정. 희귀도 색은 인라인 border-color / --rarity 로 주입. */
 /* 인게임 폰트(Fontin) self-host — PoE 클라이언트가 쓰는 실제 폰트. Latin/숫자는 Fontin,
    한글 글리프는 없으므로 한글 폰트로 폴백(맑은 고딕 등). SmallCaps 는 아이템명/헤더 전용.
-   파일 출처: awakened-poe-trade 의 게임 추출 Fontin(자체 호스팅, 런타임 CDN 미사용). */
+   파일 출처: awakened-poe-trade 의 게임 추출 Fontin(자체 호스팅, 런타임 CDN 미사용).
+   라이선스(exljbris Free Font EULA): @font-face 임베딩은 CSS 에 아래 고지를 남기는 조건 — 압축 뒤에도 남도록 /*! 로 쓴다(10-01 누락 발견). */
+/*! A font by Jos Buivenga (exljbris) -> www.exljbris.com */
 @font-face {
 	font-family: "Fontin";
 	src: url("/fonts/Fontin-Regular-Hinted.ttf") format("truetype");
@@ -1117,10 +1199,11 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	src: url("/fonts/Fontin-SmallCaps-Hinted.ttf") format("truetype");
 	font-weight: 400; font-style: normal; font-display: swap;
 }
-/* PoE 폰트 스택 — Fontin 우선, 한글은 시스템 한글 폰트 폴백. 공용 변수로 재사용. */
+/* PoE 폰트 스택 — Fontin 우선(영문·숫자), 한글은 한국 게임 클라이언트 글꼴 Spoqa Han Sans Neo(OFL, poeLayout 이 jsDelivr 에서 비차단 로드 — 10-01),
+   못 받으면 시스템 한글 폰트. 공용 변수로 재사용. */
 :root {
-	--poe-font: "Fontin", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
-	--poe-font-sc: "Fontin SmallCaps", "Fontin", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+	--poe-font: "Fontin", "Spoqa Han Sans Neo", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+	--poe-font-sc: "Fontin SmallCaps", "Fontin", "Spoqa Han Sans Neo", "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
 }
 /* PoE 섹션 전체를 인게임 폰트로(숫자/영문=Fontin, 한글=폴백). poeLayout 래퍼에 부여. */
 .poe-scope { font-family: var(--poe-font); }
@@ -1148,7 +1231,8 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 .poe-item-slot-tall { width: 56px; height: 96px; }
 
 .poe-tooltip {
-	background: rgba(0, 0, 0, 0.92);
+	/* 0.92 였을 때 인게임 테마의 밝은 본문 글자가 툴팁 뒤로 비쳐 읽기 방해(10-01 실측) — 거의 불투명하게 */
+	background: rgba(0, 0, 0, 0.95);
 	border: 1px solid;               /* border-color 는 인라인(희귀도) */
 	border-radius: 2px;
 	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
@@ -1157,6 +1241,8 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 }
 /* 아이템/젬/문신 툴팁의 이름·헤더 밴드는 인게임처럼 SmallCaps(Fontin SmallCaps). */
 .poe-tt-band, .poe-tt-band-2, .poe-psheader { font-family: var(--poe-font-sc); }
+/* 인게임 툴팁은 본문 줄(속성·요구·모드·설명)까지 전부 Fontin SmallCaps 다(10-01) — 영문·숫자만 작은 대문자, 한글은 그대로 */
+.poe-tooltip, .poe-node-popup { font-family: var(--poe-font-sc); }
 /* 젬/아이템 툴팁 고정 폭 — Tailwind 임의값(w-[25rem])이 이 프로젝트 빌드에서 누락돼
    툴팁 폭이 안 잡히고 긴 설명이 한 줄로 늘어나는 문제가 있어 커스텀 CSS 로 고정한다. */
 .poe-tt-w-gem { width: 25rem; max-width: 92vw; }
@@ -1441,6 +1527,7 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 
 /* 트리 전체화면 — 셸 배경을 캔버스와 같은 다크로(남는 틈이 흰 띠로 보이는 것 방지) */
 #poeTreeShell:fullscreen { background: #0e1116; }
+#poe2TreeShell:fullscreen { background: #0e1116; padding: 0.5rem; }
 
 .poe-val { color: var(--color-base-content, inherit); font-weight: 600; }
 /* 파생 섹션 강조색(에센스/작업대 요약줄·문신 이름) — 라이트 모드에선 -400 계열이 흰 바탕에서 옅다(#79/#81 계열).
@@ -1782,17 +1869,14 @@ thead [data-sort-key] {
 
 /* 배당 수익률 표의 예전 열(세전 · 세금 · 과세 · 기간 일평균 투입원금 · 기준일 지표). 사용자 요청 2026-09-28:
    "다양한 수익률과 투입원금이 잘 눈에 안 들어온다" - 기본은 세후 배당 · 평균 투입원금 · 연 수익률 · 건수만 보이고,
-   표 위 "열 더 보기" 를 켜면 같은 범위([data-yield-extra-scope]) 안의 열이 모두 나온다. 인쇄에서는 늘 모두. */
+   표 위 "열 더 보기" 를 켜면 같은 범위([data-yield-extra-scope]) 안의 열이 모두 나온다.
+   인쇄도 화면과 같다(2026-09-30). 예전에는 "인쇄에서는 늘 모두" 였는데 16 열이 1,162px 라 지면(750px)을 넘어 오른쪽 열이 통째로
+   잘렸다(실측: 종목별 · 계좌별 랭킹) - 모두 싣겠다던 것이 오히려 잃었다. 기본 7 열은 543px 로 들어간다. */
 .yield-extra-col {
 	display: none;
 }
 [data-yield-extra-scope]:has([data-yield-extra-toggle]:checked) .yield-extra-col {
 	display: table-cell;
-}
-@media print {
-	.yield-extra-col {
-		display: table-cell;
-	}
 }
 /* 연도별 연 수익률 옆 막대. 채움은 배당 글자색(text-dividend - 라이트/다크 각각 정의됨)을 그대로 쓴다. */
 .yield-bar-fill {

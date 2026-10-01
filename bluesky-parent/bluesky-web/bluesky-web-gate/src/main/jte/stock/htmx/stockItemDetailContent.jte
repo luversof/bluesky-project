@@ -297,6 +297,7 @@
 		     사용자 선택 2026-09-17: 합산 상자 아래 작은 줄은 눈에 띄지 않아 카드로 올렸다. 지금 보유하지 않거나 최초 매수일을 모르면 그리지 않는다.
 		     1 년이 안 된 보유는 확대된 값이라 무엇을 환산했는지 적는다(실측 2026-09-14: 117 일 -6.0% -> 연 -17.5%). --%>
 		@if(holdingReturnShown)
+		!{String holdingSinceMessage = MessageUtil.getMessage("stock.asset.status.cell.holding.since"); int holdingSinceAt = holdingSinceMessage.indexOf("{0}");}
 		<div class="contents" data-holding-return data-short-term="${String.valueOf(holdingReturn.shortTerm())}" data-holding-days="${holdingReturn.holdingDays()}">
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.asset.status.cell.annualized.name"),
@@ -305,7 +306,9 @@
 			scopeNote = MessageUtil.getMessage("stock.item.detail.holding.basis"),
 			sub = holdingPeriodText + " · " + (holdingReturn.shortTerm()
 				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.annualized.short"), String.valueOf(holdingReturn.holdingDays()))
-				: java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.since"), holdingFirstBuyDate.toString())),
+				: (holdingSinceAt >= 0 ? holdingSinceMessage.substring(0, holdingSinceAt) : holdingSinceMessage + " ")),
+			subDate = holdingReturn.shortTerm() ? "" : holdingFirstBuyDate.toString(),
+			subDateAfter = holdingReturn.shortTerm() || holdingSinceAt < 0 ? "" : holdingSinceMessage.substring(holdingSinceAt + 3),
 			tone = holdingReturn.annualizedPct() == null ? "" : (holdingReturn.annualizedPct().signum() >= 0 ? "text-profit" : "text-loss"),
 			amount = false)
 		</div>
@@ -474,7 +477,7 @@
 							!{boolean isBuy = trade.type() == TradeType.BUY;}
 							!{long fees = (trade.fee() != null ? trade.fee().longValue() : 0) + (trade.tax() != null ? trade.tax().longValue() : 0);}
 							<tr>
-								<td class="tabular-nums">${trade.tradeDate() != null ? trade.tradeDate().atZone(zone).toLocalDate().toString() : "-"}</td>
+								<td class="tabular-nums whitespace-nowrap date-whole">${trade.tradeDate() != null ? trade.tradeDate().atZone(zone).toLocalDate().toString() : "-"}</td>
 								<td><span class="badge badge-sm ${isBuy ? "badge-error badge-outline" : "badge-info badge-outline"}">${isBuy ? MessageUtil.getMessage("stock.trade.label.buy") : MessageUtil.getMessage("stock.trade.label.sell")}</span></td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", trade.quantity())}</td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(trade.price()))}</td>
@@ -513,7 +516,7 @@
 						@for(DividendResponse dividend : dividends)
 							!{ boolean dividendTaxZero = dividend.tax() == null || dividend.tax().signum() == 0; }
 							<tr>
-								<td class="tabular-nums">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
+								<td class="tabular-nums whitespace-nowrap date-whole">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60" title="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
 								<td class="text-right font-mono font-bold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>

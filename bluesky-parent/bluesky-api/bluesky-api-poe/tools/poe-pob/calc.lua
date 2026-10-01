@@ -96,6 +96,8 @@ end
 	local keys = {
 		"CombinedDPS", "TotalDPS", "FullDPS", "AverageDamage", "Speed",
 		"Life", "LifeUnreserved", "EnergyShield", "Mana", "Ward",
+		-- PoE2(PoB-PoE2 엔진 공용) — 정신력. PoE1 엔 없는 키라 그쪽 결과엔 생략된다
+		"Spirit", "SpiritUnreserved",
 		-- 속성: 장비 요구치(힘/민첩/지능) 충족 여부 판정에 쓴다
 		"Str", "Dex", "Int",
 		-- 총 요구 속성(장비+젬 합산, PoB 집계) — 젬 요구치까지 포함한 실현 가능성 판정에 쓴다

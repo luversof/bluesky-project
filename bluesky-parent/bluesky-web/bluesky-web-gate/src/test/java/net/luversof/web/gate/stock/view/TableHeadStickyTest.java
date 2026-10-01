@@ -172,8 +172,8 @@ class TableHeadStickyTest {
         .as("오른쪽 정렬 숫자 칸은 anywhere 를 푼다")
         .contains("overflow-wrap: normal");
     assertThat(rule(block, ".table-head-sticky > table td[data-keep-line]"))
-        .as("지급 시기 두 글자가 세로로 흐르지 않게")
-        .contains("white-space: nowrap");
+        .as("지급 시기 두 글자가 세로로 흐르지 않게 - nowrap 은 영어 Month-end 가 열을 민다")
+        .contains("overflow-wrap: normal");
     assertThat(read(ETF)).contains("<td class=\"align-top\" data-keep-line>${windowLabel}</td>");
     assertThat(css)
         .as("px 로 끊으면 글꼴을 키워도 상자가 걷힌 채라 창이 가로로 구른다")
@@ -395,5 +395,21 @@ class TableHeadStickyTest {
     assertThat(read(BUILT_JS))
         .as("스크립트를 안 빌드하면 고정 줄 높이가 안 들어와 머리글이 겹친다")
         .contains("\"--table-head-sticky-top\",top");
+  }
+
+  /**
+   * 1440px 월배당 ETF 표가 상자를 36px 넘었다(2026-09-30): 숫자 · 날짜를 한 덩어리로 묶고 점수 열을 더한 뒤 열 최소 폭 합이 1,170px. 날짜
+   * 바로 뒤 "부터" 가 붙어 "2026-06-23부터"(118px)가 한 덩어리였다 - 날짜 뒤에 wbr. 그리고 "지급 시기" 머리칸이 두 글자 칸 폭에 눌려 한 글자씩
+   * 세로로 흘렀다 - 한국어에서만 빈칸에서 끊는다(영어 "Payout timing" 은 같은 규칙이면 27px 넘침).
+   */
+  @Test
+  void 월배당_ETF_표는_1440px_상자_안에_들어간다() throws IOException {
+    String block = stickyMedia(read(CSS));
+    assertThat(block)
+        .contains(":lang(ko) .table-head-sticky > table th[data-keep-words]")
+        .contains("overflow-wrap: normal;");
+    assertThat(read(ETF))
+        .contains(
+            "<th scope=\"col\" data-keep-words class=\"align-bottom\" aria-sort=\"${\"payout-window\"");
   }
 }

@@ -24,15 +24,14 @@
 !{
 	String titleLabel = MessageUtil.getMessage("stock.dashboard.upcoming.dividend");
 	String avgLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");
-	String perMonthLabel = MessageUtil.getMessage("stock.dividend.calendar.per.month");
 	String dividendMenuLabel = MessageUtil.getMessage("layout.menu.stock.dividend");
 	boolean hasWindow = nextWindowLabel != null && !nextWindowLabel.isEmpty();
 }
 <%-- outerHTML 스왑 대상이므로 데이터 유무와 무관하게 항상 최상위 요소(카드)를 출력한다 --%>
 @template._components.ui.card(cssClass = "h-full", body = @`
-	<div class="flex justify-between items-center gap-2 mb-2">
-		<div class="flex items-center gap-2 min-w-0">
-			<h2 class="card-title text-base m-0 shrink-0">${titleLabel}</h2>
+	<div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+		<div class="flex flex-wrap items-center gap-2 min-w-0">
+			<h2 class="card-title text-base m-0 shrink-0 max-sm:shrink max-sm:min-w-0 max-sm:break-keep">${titleLabel}</h2>
 			@if(hasWindow)
 			<%-- 아주 좁은 화면에서는 줄바꿈을 허용한다. nowrap + shrink-0 이면 이 배지가 카드의 최소 폭을
 				 라벨 길이만큼 밀어 화면 밖으로 나간다(실측: 영어 320px 에서 29px). --%>
@@ -53,7 +52,7 @@
 	@endif
 	<div class="text-[11px] text-base-content/60 mb-2">
 		${MessageUtil.getMessage("stock.simulator.monthly.summary.as.of.date")}
-		<span class="font-mono">${dividendAsOfOldest.toString()}${dividendAsOfNewest != null && !dividendAsOfNewest.equals(dividendAsOfOldest) ? " ~ " + dividendAsOfNewest.toString() : ""}</span>
+		<span class="font-mono"><span class="whitespace-nowrap date-whole">${dividendAsOfOldest.toString()}</span>@if(dividendAsOfNewest != null && !dividendAsOfNewest.equals(dividendAsOfOldest)) ~ <span class="whitespace-nowrap date-whole">${dividendAsOfNewest.toString()}</span>@endif</span>
 	</div>
 	@endif
 	@if(staleQuantityCount > 0)
@@ -64,9 +63,11 @@
 			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}
 	</div>
 	@endif
+	<%-- 합계는 다음 지급일 하루(예: 월말 · 10월 2일)에 받을 종목들의 평균이다. "평균 2,220,074 / 월" 이라 적었더니 한 달 전체 배당(배당 내역의 이번 달
+	     예정 3,973,543)으로 읽혔다(2026-10-01 자율 점검) - 어느 날 몫인지 적고 "/ 월" 은 뺀다. --%>
 	@if(hasSnapshots)
 	<div class="text-right leading-tight tabular-nums mb-2">
-		<div class="font-mono font-bold text-dividend amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60">${avgLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}<span class="text-xs font-normal text-base-content/60 ml-0.5">${perMonthLabel}</span>@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
+		<div class="font-mono font-bold text-dividend amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60" data-window-average-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.window.average"), nextPayDateLabel) : avgLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
 	</div>
 	<div class="space-y-1">
 		!{int upcomingRank = 1;}

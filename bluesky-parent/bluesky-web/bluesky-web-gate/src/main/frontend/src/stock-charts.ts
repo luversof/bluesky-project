@@ -36,6 +36,7 @@ interface StockChartsAPI {
 	formatNumber?: (value: any) => string;
 	formatCurrency?: (value: any) => string;
 	formatCompactNumber?: (value: any) => string;
+	extremeGapText?: (lastV: number, extreme: number) => string;
 	resizeIfChanged?: (chart: any) => boolean;
 }
 
@@ -221,6 +222,22 @@ StockCharts.formatCurrency = function (value: any) {
 	const numeric = Math.round(Number(value) || 0);
 	return "₩" + StockCharts.formatNumber!(numeric);
 };
+
+/**
+ * 차트의 최고 · 최저 표시 옆 "지금 대비" 글자. 1,000% 이상이면 배수로 적는다 - 위 요약 카드(assetGrowthPeriodReturnSummary)와
+ * 같은 규칙이다. 예전에는 차트만 "+418794.23%" 로 적어 같은 화면의 카드("x4,189")와 읽기가 갈렸다(실측 2026-10-01 '전체').
+ */
+function extremeGapText(lastV: number, extreme: number): string {
+	if (!extreme || isNaN(lastV)) return "";
+	const raw = ((lastV - extreme) / Math.abs(extreme)) * 100;
+	if (Math.abs(raw) >= 1000) {
+		return "x" + StockCharts.formatNumber!(Math.round(lastV / extreme));
+	}
+	// 표시 자릿수(2)로 먼저 반올림한다 - 0 에는 방향이 없고 -0.004 는 '0.00%' 다.
+	const pct = Number(raw.toFixed(2));
+	return (pct > 0 ? "+" : "") + pct.toFixed(2) + "%";
+}
+StockCharts.extremeGapText = extremeGapText;
 
 StockCharts.formatCompactNumber = function (value: any) {
 	return compactNumber(value);
@@ -988,11 +1005,16 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 				if (cv) baseColor = cv;
 			} catch (e) {}
 			function pctText(extreme: number) {
-				if (extreme === 0) return "";
-				// 표시 자릿수(2)로 먼저 반올림한다 - 0 에는 방향이 없고 -0.004 는 '0.00%' 다.
-				const pct = Number((((lastV - extreme) / Math.abs(extreme)) * 100).toFixed(2));
-				return " (" + (pct > 0 ? "+" : "") + pct.toFixed(2) + "%)";
+				const gap = extremeGapText(lastV, extreme);
+				return gap ? " (" + gap + ")" : "";
 			}
+			let backColor = "#ffffff";
+			try {
+				const bv = getComputedStyle(document.documentElement)
+					.getPropertyValue("--color-base-100")
+					.trim();
+				if (bv) backColor = bv;
+			} catch (e) {}
 			function drawExtreme(idx: number, v: number, isMax: boolean, label: string) {
 				const px = xAxis.getPixelForValue(idx);
 				if (px < area.left || px > area.right) return;
@@ -1017,6 +1039,13 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 				ctx.beginPath();
 				ctx.arc(px, py, 2.5, 0, Math.PI * 2);
 				ctx.fill();
+				// 글자 뒤에 바탕색을 깐다 - 매매 표시(▲▼)가 먼저 그려져 그 위에 글자가 얹히면 읽을 수 없다
+				// (실측 2026-10-01 자산 성장 '전체': "최저" 가 첫 매도 표시 셋에 덮였다).
+				ctx.fillStyle = backColor;
+				ctx.globalAlpha = 0.85;
+				ctx.fillRect(tx - 2, ty - 10, w + 4, 13);
+				ctx.fillStyle = baseColor;
+				ctx.globalAlpha = 0.95;
 				ctx.fillText(text, tx, ty);
 				ctx.restore();
 			}

@@ -1,6 +1,10 @@
 package net.luversof.api.poe.service;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,6 +19,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ToDoubleFunction;
+import java.util.zip.Deflater;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,6 +191,36 @@ public class PoeUpgradeGuideService {
   public record GuideStatus(
       boolean running, int done, int total, String phase, GuideResult result, String error) {}
 
+  /** 자동 다듬기 한 단계 — 적용한 교체와 그 단계에서 오른 폭(직전 빌드 대비 %). */
+  public record RefineStep(String label, double dpsPct, double ehpPct, double maxHitPct) {}
+
+  /**
+   * 자동 다듬기 결과 — 빌드(보통 poe.ninja 실빌드 출발점)에 가이드가 실측한 교체안을 한 번에 하나씩 실제로 적용하고 다시 재기를 반복한 것.
+   *
+   * @param code 다듬은 빌드 PoB 코드(저장 스탯은 엔진 최종 값 — 빌드 화면 요약이 저장 스탯을 읽는다)
+   */
+  public record RefineResult(
+      Metrics before,
+      Metrics after,
+      List<RefineStep> steps,
+      String code,
+      int evaluations,
+      long durationMs) {}
+
+  public record RefineStatus(
+      boolean running,
+      int round,
+      int rounds,
+      String phase,
+      int done,
+      int total,
+      RefineResult result,
+      String error) {}
+
+  /** 가이드가 실측한 교체안 중 그대로 적용할 수 있는 것(교체한 빌드 XML 포함) — 자동 다듬기 중에만 모은다. */
+  private record Applicable(
+      String label, String xml, double dpsPct, double ehpPct, double maxHitPct) {}
+
   /** 주 스킬 그룹 안의 젬 하나 — 원문 위치(start/end)를 들고 다니며 그 자리만 바꾼다. */
   private record GemRef(int start, int end, String nameSpec, boolean enabled, PoeGem gem) {}
 
@@ -236,6 +271,26 @@ public class PoeUpgradeGuideService {
   private volatile String phase = "";
   private volatile GuideResult lastResult;
   private volatile String lastError;
+
+  /**
+   * 자동 다듬기 최대 단계 — 가이드 1회가 75~95초라 3단계면 약 5분(최적화 잡과 비슷한 체감). 단계마다 가장 이득이 큰 교체 하나만 적용하고 다시 잰다(한꺼번에
+   * 적용하면 서로의 문맥을 바꿔 합이 예측과 달라진다).
+   */
+  static final int REFINE_ROUNDS = 3;
+
+  /**
+   * 자동 다듬기가 받아들이는 한 축 손해 한도(%). 가이드 추천(맞바꿈 5%)보다 엄격하다 — 사람이 고르는 추천과 달리 자동 적용은 되돌리는 사람이 없고, 실빌드 출발점의
+   * 강점(생존)을 조금씩 깎아 DPS 로 바꾸는 표류를 막아야 한다.
+   */
+  static final double REFINE_TOLERANCE_PCT = 2.0;
+
+  /** 자동 다듬기 중에만 non-null — 가이드 측정 루프가 적용 가능한 교체안을 여기 넣는다(일반 가이드 실행은 동작 무변화). */
+  private volatile List<Applicable> collector;
+
+  private volatile boolean refining;
+  private volatile int refineRound;
+  private volatile RefineResult lastRefine;
+  private volatile String lastRefineError;
 
   public PoeUpgradeGuideService(
       PoePobImportService importService,
@@ -518,12 +573,24 @@ public class PoeUpgradeGuideService {
         double weakestDpsLoss = 0;
         double weakestMinionLoss = 0;
         int essential = 0;
+        int assumed = 0;
+        int party = 0;
         for (int i = 0; i < supports.size(); i++) {
           Map<String, Double> v = removal.get(i).get();
           if (breaksCost(baseValues, v, castOnce)) {
             essential++;
             // 빼면 스킬 비용을 못 치르게 되는 보조(예: 마나를 오라에 다 묶은 빌드의 생명력 전환) — PoB DPS 로는 16% 짜리로 보여도
             // 인게임에선 없으면 스킬을 못 쓰는 필수 젬이다(실빌드 족장 실측: 빼면 MainSkillCostWarning 0→1).
+            continue;
+          }
+          if (suppliesAssumedBuff(xml, supports.get(i).gem())) {
+            assumed++;
+            continue;
+          }
+          if (isPartySupport(supports.get(i).gem())) {
+            // 관대함 = 오라가 나에게는 안 걸리고 아군에게 더 세게 — 파티 지원 빌드다. 빼면 내 DPS 가 오르지만(PoB 가 나에게 오라를 건다)
+            //   그건 업그레이드가 아니라 역할을 바꾸는 것(09-30 일괄: 성전사 모독 +7,067% · 사이온 강타 +2,137% · 투사 강타 +1,612%)
+            party++;
             continue;
           }
           Metrics without = metricsOf(v);
@@ -567,6 +634,11 @@ public class PoeUpgradeGuideService {
             if (v.getOrDefault("UnappliedSupportCount", 0d) > baseUnapplied) {
               continue; // 인게임에서 적용 안 되는 교체는 버린다
             }
+            if (sameFamilyLinked(candidates.get(i), supports, target)) {
+              // 같은 계열(일반·상위·각성)이 이미 링크돼 있으면 인게임에선 함께 적용되지 않는다 — PoB 는 둘 다 적용해 부풀렸다
+              //   (09-30 자동 다듬기: 데드아이 에테르 칼날에 상위 주문 메아리 + 각성한 주문 메아리가 차례로 붙음)
+              continue;
+            }
             if (needsText(baseValues, v) != null) {
               continue; // 요구 능력치를 못 맞추는 젬은 인게임에서 효과가 없다
             }
@@ -590,6 +662,13 @@ public class PoeUpgradeGuideService {
             // 소환수 빌드는 약한 보조를 고른 기준(DPS × 소환수 EHP)과 같은 곱으로 가장 나은 후보를 고른다. 아니면 DPS 만.
             double gain =
                 minion == null ? dpsGain : ((1 + dpsGain / 100) * (1 + minion / 100) - 1) * 100;
+            if (minion == null) {
+              offer(
+                  "보조젬 교체: " + label(target.gem()) + " → " + label(candidates.get(i)),
+                  replaceGem(xml, target, pobName(candidates.get(i))),
+                  base,
+                  m);
+            }
             if (bestMetrics == null || gain > bestGain) {
               bestMetrics = m;
               bestGain = gain;
@@ -623,6 +702,12 @@ public class PoeUpgradeGuideService {
                                 + String.format("%.1f", weakestLoss * 100)
                                 + "%로 주 스킬 보조젬 가운데 가장 적습니다")
                         + (essential > 0 ? "(빼면 스킬 비용을 못 치르는 젬 " + essential + "개는 제외)" : "")
+                        + (assumed > 0
+                            ? "(설정에 켜 둔 버프·충전을 이 빌드에서 공급하는 젬 "
+                                + assumed
+                                + "개는 제외 — 빼면 인게임에선 그 버프가 사라진다)"
+                            : "")
+                        + (party > 0 ? "(파티 지원용 관대함 보조는 제외)" : "")
                         + "."
                         + (cut.isEmpty() ? "" : " " + String.join(" · ", cut) + "는 맞바꿈이라 뺐습니다."),
                     pct(base.dps(), bestMetrics.dps()),
@@ -830,6 +915,19 @@ public class PoeUpgradeGuideService {
               0,
               needsText(baseValues, v));
       rarePicks.put(e.getKey(), pick);
+      if (pick.needs() == null && pick.minionPct() == null) {
+        offer(
+            "레어 목표: "
+                + SLOT_KO.getOrDefault(e.getKey(), e.getKey())
+                + " "
+                + c.plan().base().name()
+                + " ["
+                + String.join(" / ", modsKo.stream().filter(t -> !t.startsWith("남은 칸")).toList())
+                + "]",
+            equipItem(xml, e.getKey(), rareTargets.itemText(c.plan(), chosen)),
+            base,
+            m);
+      }
       logger.info(
           "업그레이드 가이드 — {}: 레어 목표 {} [{}] {} 보충 {} (옵션 후보 {}개 실측)",
           e.getKey(),
@@ -874,6 +972,13 @@ public class PoeUpgradeGuideService {
                 usage.total(),
                 needs);
         (needs == null ? fits : needy).add(pick);
+        if (needs == null && pick.minionPct() == null) {
+          offer(
+              "고유 교체: " + SLOT_KO.getOrDefault(s.slot(), s.slot()) + " ← " + u.name(),
+              equipItem(xml, s.slot(), uniqueItemText(u)),
+              base,
+              m);
+        }
         logger.debug("업그레이드 가이드 — {} 후보 {}: {} 보충 {}", s.slot(), u.name(), deltasText(pick), needs);
       }
       // 그대로 끼울 수 있는 추천 = 고유(DPS·EHP·소환수 EHP 최고) + 2티어 레어 목표(고유와 같은 기준: 한 축 +1% 이상, 다른 축 -5% 이내)
@@ -1255,6 +1360,277 @@ public class PoeUpgradeGuideService {
 
   // ─────────────────────────── 평가 · 지표 ───────────────────────────
 
+  public RefineStatus refineStatus() {
+    return new RefineStatus(
+        refining,
+        refineRound,
+        REFINE_ROUNDS,
+        phase,
+        done.get(),
+        total,
+        lastRefine,
+        lastRefineError);
+  }
+
+  /**
+   * 자동 다듬기 시작 — 가이드를 돌려 적용 가능한 교체안(보조젬·고유·2티어 레어 목표) 중 두 축 모두 {@link #REFINE_TOLERANCE_PCT} 넘게 깎지
+   * 않으면서 DPS%+EHP% 가 가장 큰 것 하나를 실제로 적용하고, 다시 잰다({@link #REFINE_ROUNDS} 회). 가이드와 엔진을 함께 쓰므로 가이드 잡과
+   * 동시에 돌지 않는다.
+   *
+   * <p>왜: 최적화기(빈 빌드 탐욕 선택)는 실빌드 생존력의 원천인 주얼·고유 조합에 닿지 못한다(2026-09-30 실측 EHP 0.17~0.55x). 실빌드에서 출발해
+   * 그 조합을 유지한 채 다듬으면 두 축을 함께 가져갈 수 있다. 소환수 빌드는 축이 하나 더 있어(소환수 EHP) 이 합 기준이 맞지 않아 교체안을 모으지 않는다.
+   *
+   * @return 이미 돌고 있거나 코드를 못 읽으면 false(사유는 refineStatus().error)
+   */
+  public boolean startRefine(String code) {
+    if (!running.compareAndSet(false, true)) {
+      return false;
+    }
+    String xml;
+    try {
+      xml = importService.decodeToXml(code);
+    } catch (RuntimeException e) {
+      lastRefineError = "PoB 코드를 읽지 못했습니다: " + e.getMessage();
+      lastRefine = null;
+      running.set(false);
+      return false;
+    }
+    lastRefineError = null;
+    lastRefine = null;
+    refining = true;
+    refineRound = 0;
+    done.set(0);
+    total = 1;
+    phase = "기준선";
+    Thread thread =
+        new Thread(
+            () -> {
+              try {
+                lastRefine = refine(xml);
+              } catch (Throwable e) {
+                logger.warn("자동 다듬기 실패", e);
+                lastRefineError = "다듬기 실패: " + e.getMessage();
+              } finally {
+                collector = null;
+                phase = "";
+                refining = false;
+                running.set(false);
+              }
+            },
+            "poe-guide-refine");
+    thread.setDaemon(true);
+    thread.start();
+    return true;
+  }
+
+  private RefineResult refine(String startXml) throws Exception {
+    long startedAt = System.currentTimeMillis();
+    String xml = startXml;
+    Metrics before = metricsOf(eval(xml));
+    List<RefineStep> steps = new ArrayList<>();
+    for (int round = 1; round <= REFINE_ROUNDS; round++) {
+      refineRound = round;
+      List<Applicable> found = Collections.synchronizedList(new ArrayList<>());
+      collector = found;
+      try {
+        analyze(xml, null);
+      } finally {
+        collector = null;
+      }
+      Applicable best = pickRefinement(found);
+      if (best == null) {
+        logger.info("자동 다듬기 {}단계: 적용할 교체 없음(후보 {}개) — 종료", round, found.size());
+        break;
+      }
+      logger.info(
+          "자동 다듬기 {}단계: {} (DPS {} · EHP {}, 후보 {}개)",
+          round,
+          best.label(),
+          signed(best.dpsPct()),
+          signed(best.ehpPct()),
+          found.size());
+      xml = best.xml();
+      steps.add(new RefineStep(best.label(), best.dpsPct(), best.ehpPct(), best.maxHitPct()));
+    }
+    phase = "최종 계산";
+    Map<String, Double> finalValues = eval(xml);
+    return new RefineResult(
+        before,
+        metricsOf(finalValues),
+        List.copyOf(steps),
+        encodePobCode(withPlayerStats(xml, finalValues)),
+        done.get(),
+        System.currentTimeMillis() - startedAt);
+  }
+
+  /** 두 축 모두 한도 안에서 DPS%+EHP% 가 가장 큰 교체 — 최소 {@link #MIN_GAIN_PCT} 넘게 올라야 한다. 없으면 null. */
+  static Applicable pickRefinement(List<Applicable> found) {
+    Applicable best = null;
+    double bestGain = MIN_GAIN_PCT;
+    for (Applicable a : found) {
+      if (a.dpsPct() < -REFINE_TOLERANCE_PCT || a.ehpPct() < -REFINE_TOLERANCE_PCT) {
+        continue;
+      }
+      double gain = a.dpsPct() + a.ehpPct();
+      if (gain > bestGain) {
+        best = a;
+        bestGain = gain;
+      }
+    }
+    return best;
+  }
+
+  private void offer(String label, String xml, Metrics base, Metrics m) {
+    List<Applicable> c = collector;
+    if (c != null) {
+      c.add(
+          new Applicable(
+              label,
+              xml,
+              pct(base.dps(), m.dps()),
+              pct(base.ehp(), m.ehp()),
+              pct(base.maxHit(), m.maxHit())));
+    }
+  }
+
+  /**
+   * Config 체크만으로 켜지는 버프·충전을 실제로 공급하는 보조젬 → 그 Config 변수. PoB 는 이 버프를 공급원 없이도 체크만 보고 적용하므로, 체크가 켜진
+   * 빌드에서 이 젬을 빼 보면 손실이 0으로 잰다 — 실빌드 저거넛(표준 가정 buffFortify=true)에서 방어 상승 보조가 "가장 약한 보조"로 잡혀 무자비와 교체
+   * 추천이 나왔다(2026-09-30 자동 다듬기 실측). 인게임에선 이 젬이 그 버프의 출처라 빼면 사라진다. 분노 보조는 PoB 가 '분노를 얻을 수 있음' 조건을 따로
+   * 봐서 빼면 제대로 사라지므로 넣지 않는다.
+   */
+  private static final Map<String, String> SUPPORT_SUPPLIES_CONFIG =
+      Map.of(
+          "Fortify Support", "buffFortify",
+          "Endurance Charge on Melee Stun Support", "useEnduranceCharges",
+          "Power Charge On Critical Support", "usePowerCharges");
+
+  /**
+   * 보조젬 계열 — "Awakened "·"Greater "·"Lesser " 접두와 " Support" 접미를 뗀 이름(Spell Echo · Greater Spell
+   * Echo · Awakened Spell Echo = 한 계열).
+   */
+  static String supportFamily(String name) {
+    if (name == null) {
+      return "";
+    }
+    String n = name.replaceFirst(" Support$", "");
+    for (String prefix : List.of("Awakened ", "Greater ", "Lesser ")) {
+      if (n.startsWith(prefix)) {
+        n = n.substring(prefix.length());
+      }
+    }
+    return n;
+  }
+
+  /** 후보가 (바꿀 대상 말고) 이미 링크된 보조젬과 같은 계열인가. */
+  static boolean sameFamilyLinked(PoeGem candidate, List<GemRef> linked, GemRef target) {
+    String fam = supportFamily(candidate == null ? null : candidate.name());
+    if (fam.isEmpty()) {
+      return false;
+    }
+    for (GemRef g : linked) {
+      if (g != target && g.gem() != null && fam.equals(supportFamily(g.gem().name()))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** 주 스킬을 발동형으로 바꾸는 보조("Cast when Stunned", "Awakened Cast On Critical Strike" …). */
+  static boolean isTriggerConversion(PoeGem gem) {
+    String n = gem == null || gem.name() == null ? "" : gem.name();
+    return n.startsWith("Cast ") || n.startsWith("Awakened Cast ");
+  }
+
+  /** 파티 지원 보조(관대함) — 빼면 오라가 나에게 걸려 DPS 가 오르지만 역할을 바꾸는 것이라 "약한 보조" 후보에서 뺀다. */
+  static boolean isPartySupport(PoeGem gem) {
+    return gem != null && gem.name() != null && gem.name().startsWith("Generosity");
+  }
+
+  /** 이 보조젬이 Config 가 켜 둔 버프·충전의 공급원인가 — 켜져 있을 때만 참(꺼져 있으면 빼 본 손실이 제대로 잰다). */
+  static boolean suppliesAssumedBuff(String xml, PoeGem gem) {
+    String var = gem == null ? null : SUPPORT_SUPPLIES_CONFIG.get(gem.name());
+    if (var == null) {
+      return false;
+    }
+    // 속성 순서는 PoB 저장이 해시 순이라 고정돼 있지 않다 — 태그를 통째로 잡아 두 속성을 따로 본다
+    java.util.regex.Matcher m =
+        java.util.regex.Pattern.compile("<Input\\b[^>]*\\bname=\"" + var + "\"[^>]*>").matcher(xml);
+    while (m.find()) {
+      if (m.group().contains("boolean=\"true\"")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** 빌드 요약(PoePobImportService.STAT_KEYS)이 읽는 저장 스탯 이름 → 엔진 값 키. */
+  private static final Map<String, String> PLAYER_STAT_FROM_ENGINE = new LinkedHashMap<>();
+
+  static {
+    for (String k :
+        List.of(
+            "CombinedDPS",
+            "TotalDPS",
+            "AverageDamage",
+            "Life",
+            "EnergyShield",
+            "Mana",
+            "Armour",
+            "Evasion",
+            "TotalEHP",
+            "FireResist",
+            "ColdResist",
+            "LightningResist",
+            "ChaosResist",
+            "CritChance")) {
+      PLAYER_STAT_FROM_ENGINE.put(k, k);
+    }
+    PLAYER_STAT_FROM_ENGINE.put("EffectiveSpellSuppressionChance", "SpellSuppressionChance");
+    PLAYER_STAT_FROM_ENGINE.put("EffectiveBlockChance", "BlockChance");
+    PLAYER_STAT_FROM_ENGINE.put("EffectiveSpellBlockChance", "SpellBlockChance");
+  }
+
+  /** 저장 스탯(PlayerStat)을 엔진 값으로 교체 — 옛 값은 전부 지우고 엔진에 있는 키만 넣는다(일부만 옛 값이 섞이지 않게). */
+  static String withPlayerStats(String xml, Map<String, Double> values) {
+    StringBuilder lines = new StringBuilder();
+    for (Map.Entry<String, String> e : PLAYER_STAT_FROM_ENGINE.entrySet()) {
+      Double v = values.get(e.getValue());
+      if (v != null && !v.isNaN() && !v.isInfinite()) {
+        lines
+            .append("\n<PlayerStat stat=\"")
+            .append(e.getKey())
+            .append("\" value=\"")
+            .append(v)
+            .append("\"/>");
+      }
+    }
+    String stripped = xml.replaceAll("\\s*<PlayerStat\\b[^>]*/>", "");
+    java.util.regex.Matcher m =
+        java.util.regex.Pattern.compile("<Build\\b[^>]*>").matcher(stripped);
+    if (!m.find()) {
+      return stripped;
+    }
+    return stripped.substring(0, m.end()) + lines + stripped.substring(m.end());
+  }
+
+  /** PoB 공유 코드 인코딩(zlib deflate → base64url) — PoeOptimizeService.encodePobCode 와 같은 규칙. */
+  private static String encodePobCode(String xml) {
+    Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
+    deflater.setInput(xml.getBytes(StandardCharsets.UTF_8));
+    deflater.finish();
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    byte[] buffer = new byte[8 * 1024];
+    while (!deflater.finished()) {
+      output.write(buffer, 0, deflater.deflate(buffer));
+    }
+    deflater.end();
+    return Base64.getEncoder()
+        .encodeToString(output.toByteArray())
+        .replace('+', '-')
+        .replace('/', '_');
+  }
+
   private Map<String, Double> eval(String xml) {
     try {
       return engine.calculateValuesIsolated(xml);
@@ -1365,6 +1741,10 @@ public class PoeUpgradeGuideService {
     return gemData.search(null, "support", "all", null).stream()
         .filter(g -> g.levels() != null && !g.levels().isEmpty())
         .filter(g -> !present.contains(g.slug()))
+        // 주 스킬을 발동형으로 바꾸는 보조("Cast when Stunned" 등)는 스킬 사용 방식을 통째로 바꾸고, PoB 는 발동 빈도 가정에 따라 수치가 크게
+        // 달라진다 —
+        //   같은 저울의 "보조젬 교체"가 아니다(2026-09-30 자동 다듬기 59빌드 일괄: 데드아이 에테르 칼날에 '기절 시 시전' +476%).
+        .filter(g -> !isTriggerConversion(g))
         .filter(g -> compatible(skillTags, g.tags() == null ? List.of() : g.tags()))
         .sorted(
             Comparator.comparingLong((PoeGem g) -> -overlap(skillTags, g.tags()))

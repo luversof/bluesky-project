@@ -41,9 +41,14 @@ for (const row of layout) {
 	const word = words[row.WordsKey];
 	const art = visual[row.ItemVisualIdentityKey];
 	if (!word?.Text || !art?.DDSFile) continue;
-	const list = rowsByName.get(word.Text) || [];
-	list.push({ id: art.Id || "", dds: art.DDSFile.toLowerCase() });
-	rowsByName.set(word.Text, list);
+	// 이름은 Text 와 Text2 둘 다로 건다 — 우리 고유 이름(parse-uniques)은 Text2(표시용 정규화) 쪽과 같은 경우가 있다:
+	//   "Tasalio’s Sign"(굽은 따옴표)/"Tasalio's Sign", "Jack, The Axe"/"Jack, the Axe", "Broken Elegy"/"The Broken Elegy".
+	//   Text 로만 걸었을 때 이런 19개가 아이콘 없이 빠져 화면에서 404 가 났다(10-01 발견).
+	for (const name of new Set([word.Text, word.Text2].filter(Boolean))) {
+		const list = rowsByName.get(name) || [];
+		list.push({ id: art.Id || "", dds: art.DDSFile.toLowerCase() });
+		rowsByName.set(name, list);
+	}
 }
 const ddsByName = new Map();
 let skinSkipped = 0;

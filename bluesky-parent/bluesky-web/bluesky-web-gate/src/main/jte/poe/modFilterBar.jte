@@ -1,8 +1,12 @@
 @import net.luversof.web.gate.poe.PoeText
 @import net.luversof.web.gate.util.CspNonceHolder
 
-<%-- 모드 검색 + 아이템 레벨 필터 (모디파이어 페이지 / 아이템 상세 공용).
-     scope 안의 [data-mod-family] 카드를 대상으로 하며, htmx 로 scope 내용이 바뀌어도 조건을 다시 적용한다. --%>
+<%-- 모드 검색 + 아이템 레벨 필터 (모디파이어 페이지 / 아이템 상세 공용 — PoE2 옵션 풀도 같은 막대, 10-01).
+     scope 안의 [data-mod-family] 카드를 대상으로 하며, htmx 로 scope 내용이 바뀌어도 조건을 다시 적용한다.
+     카드 요약 갱신 위치는 선택 표식으로 고를 수 있다(없으면 PoE1 마크업 기준):
+       [data-family-stats]  요약 스탯 자리(data-join 이 있으면 줄을 그 문자열로 이어 글자로)
+       [data-family-tiers]  티어 수 배지(data-tiers-format 의 {0} 에 개수, 없으면 "NT")
+       [data-tier-lines]    티어 행 안의 스탯 줄 묶음(없으면 3번째 칸 div 중 첫째=모드명을 뺀 나머지) --%>
 @param String scope
 @param String idPrefix
 
@@ -30,8 +34,8 @@
 		if (!input) return;
 		/** 카드 요약(스탯줄 + NT 배지)을 가용 최상위 티어 기준으로 갱신. filtered=false 면 원래대로 복원. */
 		function updateSummary(card, filtered) {
-			var statBox = card.querySelector("summary .min-w-0");
-			var badge = card.querySelector("summary span");
+			var statBox = card.querySelector("[data-family-stats]") || card.querySelector("summary .min-w-0");
+			var badge = card.querySelector("[data-family-tiers]") || card.querySelector("summary span");
 			var ilvlBadge = card.querySelector("summary [data-top-ilvl]");
 			if (!statBox || !badge) return;
 			// 티어 행이 아예 없는 카드(엘드리치 등)는 요약 갱신 대상이 아니다 — 방치하면
@@ -51,12 +55,17 @@
 			var rows = [].filter.call(card.querySelectorAll("tr[data-tier-ilvl]"), function (r) {
 				return r.style.display !== "none";
 			});
-			badge.textContent = rows.length + "T";
+			badge.textContent = badge.dataset.tiersFormat ? badge.dataset.tiersFormat.replace("{0}", rows.length) : rows.length + "T";
 			if (!rows.length) return;
 			// 요구 ilvl 배지도 가용 최상위 티어 기준으로 — 원래 값(T1)을 두면 레벨 필터와 모순돼 보인다
 			if (ilvlBadge) ilvlBadge.textContent = "i" + rows[0].getAttribute("data-tier-ilvl");
-			// 효과 칸(3번째 td)의 div 중 첫째는 모드명, 나머지가 스탯 줄
-			var divs = [].slice.call(rows[0].querySelectorAll("td")[2].querySelectorAll("div"), 1);
+			// 효과 칸(3번째 td)의 div 중 첫째는 모드명, 나머지가 스탯 줄 — [data-tier-lines] 가 있으면 그 자식들이 스탯 줄
+			var lineBox = rows[0].querySelector("[data-tier-lines]");
+			var divs = lineBox ? [].slice.call(lineBox.children) : [].slice.call(rows[0].querySelectorAll("td")[2].querySelectorAll("div"), 1);
+			if (statBox.hasAttribute("data-join")) {
+				statBox.textContent = divs.map(function (d) { return d.textContent.trim(); }).join(statBox.getAttribute("data-join"));
+				return;
+			}
 			statBox.innerHTML = divs
 				.map(function (d) {
 					return '<span class="text-[13px] text-[#8888ff] block truncate">' + d.innerHTML + "</span>";

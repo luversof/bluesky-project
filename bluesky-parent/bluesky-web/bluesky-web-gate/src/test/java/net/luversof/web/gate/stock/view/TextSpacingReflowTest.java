@@ -75,10 +75,13 @@ class TextSpacingReflowTest {
             .matcher(read("stock/htmx/fragments/assetGrowthPeriodReturnSummary.jte"));
     assertThat(m.find()).as("기간 수익 요약 금액을 찾지 못했다").isTrue();
     String tag = m.group();
+    // 2026-09-30: 36px 에서 "+13 억" 금액(289px)이 360~390px 화면 자리(244~274px)를 넘어 부호만 윗줄에 남았다 - 한 단계씩
+    // 늦춘다.
     assertThat(tag)
-        .contains("text-3xl")
-        .contains("min-[360px]:text-4xl")
-        .doesNotContain("\"text-4xl");
+        .contains("\"text-2xl")
+        .contains("min-[360px]:text-3xl")
+        .contains("min-[480px]:text-4xl")
+        .doesNotContain("min-[360px]:text-4xl");
   }
 
   // 3차 실측(qa/ag-join.cjs): 시작/종료 date 입력의 고유 폭(125px, 간격 덧입히면 141px)이 1열 필터 트랙을 253~285px 로 키워 자산성장

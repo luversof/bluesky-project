@@ -82,12 +82,21 @@ class DateRangeBadgeBoundaryTest {
     return output.toString();
   }
 
-  /** 배지 텍스트(공백 정리 후)만 뽑는다. */
+  /**
+   * 배지 텍스트(공백 정리 후)만 뽑는다. 날짜는 배지 안 nowrap 상자에 들어 있다(2026-09-30 "날짜만 묶어서") - 안쪽 상자를 건너 배지를 닫는 태그까지
+   * 읽고 태그를 걷는다. 날짜가 상자에 안 들어 있으면 그것도 실패로 본다.
+   */
   private String badge(String html) {
     java.util.regex.Matcher matcher =
-        java.util.regex.Pattern.compile("badge badge-ghost[^>]*>(.*?)</span>", 32).matcher(html);
+        java.util.regex.Pattern.compile(
+                "badge badge-ghost[^>]*>\\s*<span class=\"min-w-0\">((?:[^<]|<span class=\"whitespace-nowrap date-whole\">[^<]*</span>)*)</span>\\s*</span>",
+                32)
+            .matcher(html);
     assertThat(matcher.find()).as("기간 배지를 찾지 못했다").isTrue();
-    return matcher.group(1).replaceAll("\s+", " ").trim();
+    assertThat(matcher.group(1))
+        .as("날짜는 한 덩어리 상자에 담는다 - 하이픈에서 갈리지 않게")
+        .contains("<span class=\"whitespace-nowrap date-whole\">");
+    return matcher.group(1).replaceAll("<[^>]+>", "").replaceAll("\s+", " ").trim();
   }
 
   @Test
