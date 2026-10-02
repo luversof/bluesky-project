@@ -677,6 +677,170 @@ public class KisStockPriceUpdateService {
 
   static final int KIS_RATE_LIMIT_RETRIES = 2;
 
+  /** 원주가 채우기 결과. 열이 없으면 columnAvailable=false 로 아무것도 안 한다. */
+  public record RawClosePriceFillResult(
+      boolean columnAvailable,
+      int targetDays,
+      int filledRows,
+      int apiCalls,
+      List<String> failedSymbols) {}
+
+  /**
+   * 모든 시세 행의 원주가(수정 전 종가)를 KIS 에서 받아 채운다(2026-10-02).
+   *
+   * <p>수정 종가는 받은 때마다 기준이 다르다(KIS 는 분배금까지 수정한다) - 처음 한꺼번에 받은 옛 구간은 깎여 있고 매일 이어 받은 최근 구간은 그대로라, 한 종목
+   * 안에서도 이어지지 않는다. 그 경계에 가짜 하루 변동이 생기고(0094M0 2026-03-25 수정 +18.65% / 실제 +1.92%), 수정 종가로 평가하면 분배락
+   * 하락이 지워진 채 지급일에 분배금을 또 더해 두 번 셌다. 평가(TradeProfitService) · 기간 수익률 · 위험 지표 · 가격 차트를 원주가로 내려면 행마다
+   * 원주가가 있어야 한다.
+   *
+   * <p>처음에는 매매일만, 다음엔 보유 기간 · 카탈로그 창만 받았다. 차트는 사용자가 고른 기간 전체를 그려 결국 모든 행이 필요하다. 이미 채운 날은 건너뛰어 두
+   * 번째부터는 새 날만 부른다 - 단 최근 7 일은 늘 다시 받는다(장중 갱신으로 들어간 원주가를 확정 종가로 덮으려고). 연속한 날은 묶어 100 일 단위로 부른다(KIS
+   * 한 호출 100 행, 호출 간격은 시세 갱신과 같은 0.2 초).
+   *
+   * <p>열이 없는 DB(schema-alter 2026-10-02 묶음 미적용)면 아무것도 하지 않는다.
+   *
+   * @param userId KIS 인증 설정을 쓸 사용자(대상 종목은 사용자와 무관하게 시세가 있는 전부다)
+   */
+  public RawClosePriceFillResult fillRawClosePrices(UUID userId) {
+    if (stockPriceHistoryRepository.countRawClosePriceColumn() == 0) {
+      log.info("rawClosePrice column is missing - skip raw close fill");
+      return new RawClosePriceFillResult(false, 0, 0, 0, List.of());
+    }
+    java.util.Set<UUID> idSet = new HashSet<>();
+    stockItemRepository.findAll().forEach(item -> idSet.add(item.getId()));
+    if (idSet.isEmpty()) {
+      return new RawClosePriceFillResult(true, 0, 0, 0, List.of());
+    }
+    String ids = idSet.stream().map(UUID::toString).collect(Collectors.joining(","));
+    Map<UUID, java.util.TreeSet<LocalDate>> tradeDays = new HashMap<>();
+    // 최근 7 일은 채워져 있어도 다시 받는다(장중 갱신으로 들어간 원주가를 확정 종가로) - 같은 구간이라 호출 수는 그대로다.
+    LocalDate recentFrom = LocalDate.now(MARKET_ZONE_ID).minusDays(7);
+    for (var row : stockPriceHistoryRepository.findRawCloseDaysToFill(ids, recentFrom)) {
+      tradeDays
+          .computeIfAbsent(row.stockItemId(), key -> new java.util.TreeSet<>())
+          .add(row.tradeDate());
+    }
+    Map<UUID, StockItem> items = new HashMap<>();
+    stockItemRepository
+        .findAllById(tradeDays.keySet())
+        .forEach(item -> items.put(item.getId(), item));
+
+    OpenApiConfig config;
+    try {
+      config = kisAuthService.getValidConfig(userId);
+    } catch (Exception e) {
+      log.warn("KIS API Auth is not configured: {}", e.getMessage());
+      return new RawClosePriceFillResult(true, 0, 0, 0, List.of("auth"));
+    }
+    int targetDays = 0;
+    int filledRows = 0;
+    int apiCalls = 0;
+    List<String> failed = new ArrayList<>();
+    for (var entry : tradeDays.entrySet()) {
+      StockItem item = items.get(entry.getKey());
+      if (item == null || !fetchable(item)) {
+        continue;
+      }
+      List<LocalDate> needed = List.copyOf(entry.getValue());
+      if (needed.isEmpty()) {
+        continue;
+      }
+      targetDays += needed.size();
+      java.util.Set<LocalDate> neededSet = new HashSet<>(needed);
+      for (DateRange range : splitIntoBlocks(toContiguousRanges(needed))) {
+        try {
+          if (apiCalls > 0) {
+            Thread.sleep(KIS_CALL_INTERVAL_MS);
+          }
+          apiCalls++;
+          for (KisDailyPriceItem day :
+              fetchDailyPrices(config, item.getSymbol(), range.start(), range.end(), "1")) {
+            if (day.getStck_bsop_date() == null
+                || day.getStck_bsop_date().isEmpty()
+                || day.getStck_clpr() == null) {
+              continue;
+            }
+            LocalDate date =
+                LocalDate.parse(day.getStck_bsop_date(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+            if (neededSet.contains(date)) {
+              filledRows +=
+                  stockPriceHistoryRepository.updateRawClosePrice(
+                      entry.getKey(), date, new BigDecimal(day.getStck_clpr()));
+            }
+          }
+        } catch (InterruptedException interrupted) {
+          Thread.currentThread().interrupt();
+          failed.add(item.getSymbol());
+          break;
+        } catch (RuntimeException e) {
+          log.warn(
+              "raw close fetch failed: {} {}~{} - {}",
+              item.getSymbol(),
+              range.start(),
+              range.end(),
+              e.getMessage());
+          failed.add(item.getSymbol());
+        }
+      }
+    }
+    log.info(
+        "raw close fill: target days {}, filled rows {}, api calls {}, failed {}",
+        targetDays,
+        filledRows,
+        apiCalls,
+        failed);
+    return new RawClosePriceFillResult(true, targetDays, filledRows, apiCalls, List.copyOf(failed));
+  }
+
+  /** 구간을 100 일 이하로 쪼갠다 - KIS 일별시세는 한 호출에 100 행까지라 더 긴 구간은 앞쪽이 잘린다(fetchRangesInBlocks 와 같은 폭). */
+  static List<DateRange> splitIntoBlocks(List<DateRange> ranges) {
+    List<DateRange> blocks = new ArrayList<>();
+    for (DateRange range : ranges) {
+      LocalDate start = range.start();
+      while (!start.isAfter(range.end())) {
+        LocalDate end = start.plusDays(99);
+        if (end.isAfter(range.end())) {
+          end = range.end();
+        }
+        blocks.add(new DateRange(start, end));
+        start = end.plusDays(1);
+      }
+    }
+    return blocks;
+  }
+
+  /** 기간 일별 시세 한 번 조회. adjusted "0" = 수정주가, "1" = 원주가. */
+  private List<KisDailyPriceItem> fetchDailyPrices(
+      OpenApiConfig config,
+      String symbol,
+      LocalDate startDate,
+      LocalDate endDate,
+      String adjusted) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("authorization", "Bearer " + config.getAccessToken());
+    headers.set("appkey", config.getAppKey());
+    headers.set("appsecret", config.getAppSecret());
+    headers.set("tr_id", "FHKST03010100");
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+    String url =
+        UriComponentsBuilder.fromUriString(
+                baseUrl + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice")
+            .queryParam("FID_COND_MRKT_DIV_CODE", "J")
+            .queryParam("FID_INPUT_ISCD", symbol)
+            .queryParam("FID_INPUT_DATE_1", startDate.format(formatter))
+            .queryParam("FID_INPUT_DATE_2", endDate.format(formatter))
+            .queryParam("FID_PERIOD_DIV_CODE", "D")
+            .queryParam("FID_ORG_ADJ_PRC", adjusted)
+            .build()
+            .toUriString();
+    ResponseEntity<KisDailyPriceResponse> response =
+        exchangeWithRateLimitRetry(url, new HttpEntity<>(headers));
+    if (response.getBody() == null || response.getBody().getOutput2() == null) {
+      return List.of();
+    }
+    return response.getBody().getOutput2();
+  }
+
   /**
    * 초당 한도 거절(EGW00201)만 쉬었다 다시 부른다. 다른 오류는 그대로 던진다(호출자가 실패로 센다).
    *

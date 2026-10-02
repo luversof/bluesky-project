@@ -534,14 +534,15 @@ public class Poe2DataService {
             new Poe2.ItemClass(
                 u.itemClass(),
                 u.itemClassKo() == null ? u.itemClass() : u.itemClassKo(),
-                u.category()));
+                u.category(),
+                null));
       }
     }
     List<Poe2.ItemClass> out = new java.util.ArrayList<>();
     for (Poe2.ItemClass c : bases.classes()) {
       Poe2.ItemClass u = fromUniques.remove(c.key());
       if (u != null) {
-        out.add(new Poe2.ItemClass(c.key(), u.ko(), c.category()));
+        out.add(new Poe2.ItemClass(c.key(), u.ko(), c.category(), c.en()));
       }
     }
     out.addAll(fromUniques.values());

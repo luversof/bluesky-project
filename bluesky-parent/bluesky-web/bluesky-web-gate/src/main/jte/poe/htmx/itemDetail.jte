@@ -20,7 +20,7 @@
 	boolean showWeaponRange = item.weapon() != null && item.weapon().range() > 0 && item.weapon().range() < 100;
 	String strLabel = MessageUtil.getMessage("poe.build.stat.armour");
 	String displayName = PoeText.name(item.nameKo(), item.name());
-	String displayClass = PoeText.name(item.itemClassKo(), item.itemClass());
+	String displayClass = net.luversof.web.gate.poe.PoeClassNames.poe1(item.itemClassKo(), item.itemClass());
 
 	// 요구 사항은 인게임처럼 한 줄(값-라벨 순): "요구 사항 레벨 X, N 힘, M 민첩". 베이스는 dropLevel=요구 레벨.
 	String levelLabel = MessageUtil.getMessage("poe.items.detail.level");

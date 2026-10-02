@@ -141,6 +141,30 @@ public class StockDailyClosePriceQuery {
   }
 
   /**
+   * 위와 같은 범위의 원주가(수정 전 종가) - 월배당 카탈로그 기간 수익률용(2026-10-02). 원주가가 빈 날은 뺀다. 결과의 종가 자리가 원주가다.
+   *
+   * <p>수정 종가는 처음에 한꺼번에 받은 날이면 분배금만큼 깎여 있어(0094M0 12 개월 전 원주가 11,285 / 수정 8,840) 가격 수익률이 부풀고 합산 수익률은
+   * 분배금을 두 번 센다.
+   */
+  private static final String ITEMS_RAW_FROM_SQL =
+      """
+      SELECT h."stockItem_id" AS stock_item_id,
+             h."tradeDate"    AS trade_date,
+             h."rawClosePrice" AS close_price
+      FROM "StockPriceHistory" h
+      WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
+        AND h."volume" > 0
+        AND h."rawClosePrice" IS NOT NULL
+        AND h."tradeDate" >= CAST(:fromDate AS date)
+      ORDER BY h."stockItem_id", h."tradeDate"
+      """;
+
+  public List<StockDailyClosePrice> findRawClosePricesForItems(String ids, LocalDate fromDate) {
+    return namedParameterJdbcTemplate.query(
+        ITEMS_RAW_FROM_SQL, Map.of("ids", ids, "fromDate", fromDate), MAPPER);
+  }
+
+  /**
    * 위 조회를 (일자 -> (종목 -> 종가)) 형태로 바로 채워 돌려준다.
    *
    * <p>호출부는 어차피 이 중첩 맵만 쓴다. 예전에는 행마다 {@link StockDailyClosePrice} 를 만들어 87,465 개짜리 리스트에 담은 뒤 다시 전체를
@@ -163,5 +187,85 @@ public class StockDailyClosePriceQuery {
               .put(stockItemId, rs.getBigDecimal(3));
         });
     return grouped;
+  }
+
+  /**
+   * 종목마다 [from, to] 구간의 원주가와 수정 종가(원주가 평가 - TradeProfitService.RawValuation), 종목 &rarr; 거래일 순.
+   *
+   * <p>처음(2026-10-02)에는 Spring Data {@code @Query} 로 읽어 보유 기간 1.4 만 행이 위의 행 변환 리플렉션을 그대로 통과했다 - 시계열
+   * 응답이 25ms 에서 254ms 로 늘었다(api-perf.js). 같은 이유로 위치로 읽고 종목 UUID 는 순번으로 재사용한다.
+   */
+  private static final String RAW_RANGES_ORDINALITY_SQL =
+      """
+      SELECT f.ord, h."tradeDate", h."rawClosePrice", h."closePrice"
+      FROM unnest(string_to_array(:ids, ',')::uuid[],
+                  string_to_array(:froms, ',')::date[],
+                  string_to_array(:tos, ',')::date[]) WITH ORDINALITY AS f(id, from_date, to_date, ord)
+      JOIN "StockPriceHistory" h
+        ON h."stockItem_id" = f.id
+       AND h."tradeDate" >= f.from_date
+       AND h."tradeDate" <= f.to_date
+       -- 다른 종가 조회와 같은 규칙: 거래량 0 인 날(거래정지 - 종가 자리에 직전 값)은 뺀다.
+       AND h."volume" > 0
+      ORDER BY f.ord, h."tradeDate"
+      """;
+
+  public Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> findRawClosesGrouped(
+      String ids, String froms, String tos, List<UUID> idOrder) {
+    Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> grouped = new HashMap<>();
+    namedParameterJdbcTemplate.query(
+        RAW_RANGES_ORDINALITY_SQL,
+        Map.of("ids", ids, "froms", froms, "tos", tos),
+        rs -> {
+          UUID stockItemId = idOrder.get(rs.getInt(1) - 1);
+          grouped
+              .computeIfAbsent(stockItemId, k -> new java.util.ArrayList<>())
+              .add(
+                  new net.luversof.api.stock.domain.StockRawClose(
+                      stockItemId,
+                      rs.getObject(2, LocalDate.class),
+                      rs.getBigDecimal(3),
+                      rs.getBigDecimal(4)));
+        });
+    return grouped;
+  }
+
+  /**
+   * 한 종목의 일별 시가 · 고가 · 저가 · 종가(수정 주가)와 원주가, 날짜순 - 종목 상세 캔들 차트(2026-10-02). 거래량 0 인 날은 뺀다(다른 종가 조회와
+   * 같은 규칙). withRaw=false 면 원주가 열을 읽지 않는다(열이 없는 DB).
+   */
+  private static final String OHLC_SQL =
+      """
+      SELECT h."tradeDate", h."openPrice", h."highPrice", h."lowPrice", h."closePrice", h."rawClosePrice"
+      FROM "StockPriceHistory" h
+      WHERE h."stockItem_id" = :id
+        AND h."tradeDate" >= CAST(:fromDate AS date)
+        AND h."volume" > 0
+      ORDER BY h."tradeDate"
+      """;
+
+  private static final String OHLC_NO_RAW_SQL =
+      """
+      SELECT h."tradeDate", h."openPrice", h."highPrice", h."lowPrice", h."closePrice", NULL
+      FROM "StockPriceHistory" h
+      WHERE h."stockItem_id" = :id
+        AND h."tradeDate" >= CAST(:fromDate AS date)
+        AND h."volume" > 0
+      ORDER BY h."tradeDate"
+      """;
+
+  public List<net.luversof.api.stock.domain.StockOhlcRow> findOhlc(
+      UUID id, LocalDate fromDate, boolean withRaw) {
+    return namedParameterJdbcTemplate.query(
+        withRaw ? OHLC_SQL : OHLC_NO_RAW_SQL,
+        Map.of("id", id, "fromDate", fromDate),
+        (rs, rowNum) ->
+            new net.luversof.api.stock.domain.StockOhlcRow(
+                rs.getObject(1, LocalDate.class),
+                rs.getBigDecimal(2),
+                rs.getBigDecimal(3),
+                rs.getBigDecimal(4),
+                rs.getBigDecimal(5),
+                rs.getBigDecimal(6)));
   }
 }

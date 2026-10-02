@@ -37,6 +37,10 @@ interface StockChartsAPI {
 	formatCurrency?: (value: any) => string;
 	formatCompactNumber?: (value: any) => string;
 	extremeGapText?: (lastV: number, extreme: number) => string;
+	candleBuckets?: (series: any, maxCandles?: number) => any;
+	candleYRange?: (candles: any[]) => any;
+	candleChartConfig?: (series: any, texts: any) => any;
+	createCandleChart?: (canvasId: string, series: any, texts: any, existingInstance?: any) => any;
 	resizeIfChanged?: (chart: any) => boolean;
 }
 
@@ -1195,6 +1199,289 @@ StockCharts.createHoldingsChart = function (
 		StockCharts.holdingsChartConfig!(series, texts, opts),
 		existingInstance,
 	);
+};
+
+// 종목 상세 주가 추이 캔들(사용자 요청 2026-10-02: "일반적인 주식 막대 그래프(시가 · 종가 · 고가 · 저가)").
+// 서버는 일봉(시 · 고 · 저 · 종 · 그 날 평균 단가)을 준다. 봉이 너무 많으면(전체 기간 삼성전자 1,600 일) 뭉개지므로 증권사 앱처럼
+// 일봉 -> 주봉 -> 월봉으로 묶는다: 시가 = 첫날 시가, 종가 = 마지막 날 종가, 고가 = 최고, 저가 = 최저, 평단 = 마지막 날 평단(그 봉이 끝날 때).
+// 순수 계산이라 시험에서 직접 부른다.
+function candleBuckets(series: any, maxCandles?: number) {
+	const limit = maxCandles && maxCandles > 0 ? maxCandles : 130;
+	const labels: string[] = (series && series.labels) || [];
+	const num = (v: any) => (v === null || v === undefined || v === "" ? null : Number(v));
+	const days = labels.map((label: string, i: number) => ({
+		date: String(label),
+		open: num(series.open[i]),
+		high: num(series.high[i]),
+		low: num(series.low[i]),
+		close: num(series.close[i]),
+		avg: series.avg ? num(series.avg[i]) : null,
+		buy: series.buy ? Number(series.buy[i]) || 0 : 0,
+		sell: series.sell ? Number(series.sell[i]) || 0 : 0,
+		dist: series.dist ? Number(series.dist[i]) || 0 : 0,
+	})).filter((d: any) => d.close !== null);
+	function weekKey(date: string): string {
+		// 월요일 시작 주. 시간대와 무관하게 날짜만으로 센다(UTC 자정으로 만들어 요일을 읽는다).
+		const d = new Date(date + "T00:00:00Z");
+		const back = (d.getUTCDay() + 6) % 7;
+		d.setUTCDate(d.getUTCDate() - back);
+		return d.toISOString().slice(0, 10);
+	}
+	function group(keyOf: (date: string) => string) {
+		const out: any[] = [];
+		days.forEach((d: any) => {
+			const key = keyOf(d.date);
+			const last = out.length ? out[out.length - 1] : null;
+			if (last && last.key === key) {
+				last.label = d.date;
+				if (d.high !== null) last.high = last.high === null ? d.high : Math.max(last.high, d.high);
+				if (d.low !== null) last.low = last.low === null ? d.low : Math.min(last.low, d.low);
+				last.close = d.close;
+				last.avg = d.avg;
+				last.buy += d.buy;
+				last.sell += d.sell;
+				last.dist += d.dist;
+			} else {
+				out.push({ key: key, label: d.date, open: d.open, high: d.high, low: d.low, close: d.close, avg: d.avg, buy: d.buy, sell: d.sell, dist: d.dist });
+			}
+		});
+		return out;
+	}
+	let unit = "day";
+	let candles: any[] = days.map((d: any) => ({ key: d.date, label: d.date, open: d.open, high: d.high, low: d.low, close: d.close, avg: d.avg, buy: d.buy, sell: d.sell, dist: d.dist }));
+	if (candles.length > limit) {
+		unit = "week";
+		candles = group(weekKey);
+	}
+	if (candles.length > limit) {
+		unit = "month";
+		candles = group((date: string) => date.slice(0, 7));
+	}
+	return { unit: unit, candles: candles };
+}
+StockCharts.candleBuckets = candleBuckets;
+
+// 세로축 범위(사용자 요청 2026-10-02: "평단이 너무 낮으면 세로축은 캔들 기준으로"). 평단을 넣으면 축이 캔들 범위(저가~고가)의 30% 넘게
+// 늘어나는 경우 축을 캔들에 맞추고(위아래 5% 여유) 평단 선은 축 밖에서 잘린다 - 그때는 범례에 축 위/아래와 마지막 평단 값을 적는다.
+// 실측: 삼성전자 최근 3 개월 캔들 25~30 만인데 평단 7.2 만이라 축이 5 만까지 내려가 캔들이 위쪽에 몰렸다. 아니면 null(Chart.js 자동).
+function candleYRange(candles: any[]) {
+	let low = Infinity;
+	let high = -Infinity;
+	let avgLow = Infinity;
+	let avgHigh = -Infinity;
+	let lastAvg: number | null = null;
+	candles.forEach((c: any) => {
+		const l = c.low === null || c.low === undefined ? c.close : c.low;
+		const h = c.high === null || c.high === undefined ? c.close : c.high;
+		if (l !== null && l !== undefined) low = Math.min(low, l);
+		if (h !== null && h !== undefined) high = Math.max(high, h);
+		if (c.avg !== null && c.avg !== undefined) {
+			avgLow = Math.min(avgLow, c.avg);
+			avgHigh = Math.max(avgHigh, c.avg);
+			lastAvg = c.avg;
+		}
+	});
+	if (!isFinite(low) || !isFinite(high) || !isFinite(avgLow)) return null;
+	const span = Math.max(high - low, Math.abs(high) * 0.01);
+	const below = low - avgLow > span * 0.3;
+	const above = avgHigh - high > span * 0.3;
+	if (!below && !above) return null;
+	// 축 끝은 보기 좋은 단위로 내림 · 올림한다(18.2 만 · 33.2 만 대신 18 만 · 34 만) - 끝 눈금이 그 값으로 찍힌다.
+	const step = Math.pow(10, Math.floor(Math.log10(span / 5)));
+	return {
+		min: Math.floor((low - span * 0.05) / step) * step,
+		max: Math.ceil((high + span * 0.05) / step) * step,
+		side: lastAvg !== null && lastAvg > high ? "above" : "below",
+		lastAvg: lastAvg,
+	};
+}
+StockCharts.candleYRange = candleYRange;
+
+StockCharts.candleChartConfig = function (series: any, texts: any) {
+	const t = texts || {};
+	const buckets = StockCharts.candleBuckets!(series);
+	const candles: any[] = buckets.candles;
+	// 한국 관례: 오르면 빨강, 내리면 파랑(손익 색과 같다). 시가 = 종가면 회색.
+	const UP = "rgba(220,38,38,0.9)";
+	const DOWN = "rgba(37,99,235,0.9)";
+	const FLAT = "rgba(128,128,128,0.9)";
+	const colorOf = (c: any) =>
+		c.open === null || c.close === null || c.close === c.open ? FLAT : c.close > c.open ? UP : DOWN;
+	const colors = candles.map(colorOf);
+	const labels = candles.map((c: any) => (buckets.unit === "month" ? c.label.slice(0, 7) : c.label));
+	// 시가 = 종가인 봉은 몸통 높이가 0 이라 안 보인다 - 아주 얇게라도 남긴다(가격의 0.05%).
+	const body = candles.map((c: any) => {
+		const o = c.open === null ? c.close : c.open;
+		if (o === c.close) {
+			const e = Math.max(Math.abs(c.close) * 0.0005, 0.5);
+			return [c.close - e, c.close + e];
+		}
+		return [o, c.close];
+	});
+	const wick = candles.map((c: any) => [c.low === null ? c.close : c.low, c.high === null ? c.close : c.high]);
+	const hasAvg = candles.some((c: any) => c.avg !== null && c.avg !== undefined);
+	const fmt = (v: any) => (StockCharts.formatCurrency ? StockCharts.formatCurrency(v) : String(v));
+	const yRange = hasAvg ? candleYRange(candles) : null;
+	// "{0}주" / "{0} shares"(1 이면 "{0} share") - 서버 메시지 패턴을 받아 숫자만 채운다.
+	const shareText = (n: number) => {
+		const pattern = n === 1 && t.shareOnePattern ? t.shareOnePattern : t.sharePattern || "{0}";
+		return String(pattern).replace("{0}", n.toLocaleString(StockCharts.getLocale ? StockCharts.getLocale() : undefined));
+	};
+	// 내 매수 ▲(저가 아래) · 매도 ▼(고가 위). 보유 평가액 차트의 표시와 같은 색 · 모양(2026-10-02, "어느 가격대에서 샀는지").
+	const tradeMarkers = {
+		id: "candleTradeMarkers",
+		afterDatasetsDraw: function (chart: any) {
+			const ctx = chart.ctx;
+			const xAxis = chart.scales["x"];
+			const yAxis = chart.scales["y"];
+			if (!xAxis || !yAxis) return;
+			const size = 5;
+			const area = chart.chartArea;
+			candles.forEach((c: any, i: number) => {
+				const px = xAxis.getPixelForValue(i);
+				if (px < area.left || px > area.right) return;
+				if (c.buy > 0) {
+					const py = Math.min(yAxis.getPixelForValue(c.low === null ? c.close : c.low) + 4, area.bottom - size * 1.4);
+					ctx.save();
+					ctx.fillStyle = "rgba(255, 99, 132, 0.95)";
+					ctx.beginPath();
+					ctx.moveTo(px, py);
+					ctx.lineTo(px + size, py + size * 1.4);
+					ctx.lineTo(px - size, py + size * 1.4);
+					ctx.closePath();
+					ctx.fill();
+					ctx.restore();
+				}
+				// 분배락(◆, 2026-10-02): 원주가 차트라 매달 분배금만큼 떨어지는 날이 있다 - 왜 떨어졌는지 보이게 x 축 바로 위에 작은 마름모.
+				if (c.dist > 0) {
+					const py = area.bottom - 4;
+					ctx.save();
+					ctx.fillStyle = "rgba(217, 119, 6, 0.95)";
+					ctx.beginPath();
+					ctx.moveTo(px, py - 4);
+					ctx.lineTo(px + 3, py);
+					ctx.lineTo(px, py + 4);
+					ctx.lineTo(px - 3, py);
+					ctx.closePath();
+					ctx.fill();
+					ctx.restore();
+				}
+				if (c.sell > 0) {
+					const py = Math.max(yAxis.getPixelForValue(c.high === null ? c.close : c.high) - 4, area.top + size * 1.4);
+					ctx.save();
+					ctx.fillStyle = "rgba(54, 162, 235, 0.95)";
+					ctx.beginPath();
+					ctx.moveTo(px, py);
+					ctx.lineTo(px + size, py - size * 1.4);
+					ctx.lineTo(px - size, py - size * 1.4);
+					ctx.closePath();
+					ctx.fill();
+					ctx.restore();
+				}
+			});
+		},
+	};
+	const avgLegend =
+		(t.avgLabel || "Average cost") +
+		(yRange
+			? " (" + (yRange.side === "above" ? t.avgAboveLabel || "above the axis" : t.avgBelowLabel || "below the axis") + " " + fmt(yRange.lastAvg) + ")"
+			: "");
+	const datasets: any[] = [
+		{
+			type: "bar",
+			label: t.rangeLabel || "High-Low",
+			// 화면 낭독 요약에서 뺀다 - 몸통(종가)이 그 날을 말한다(common.ts chartSummaryText).
+			summaryHidden: true,
+			data: wick,
+			backgroundColor: colors,
+			borderWidth: 0,
+			barPercentage: 0.12,
+			categoryPercentage: 1,
+			grouped: false,
+			order: 2,
+		},
+		{
+			type: "bar",
+			// 요약이 "종가: 62개 지점, 처음 … 최고 … 최저 …" 로 읽히게 이름은 종가(값은 [시가, 종가] 의 끝).
+			label: t.closeLabel || "Close",
+			data: body,
+			backgroundColor: colors,
+			borderWidth: 0,
+			barPercentage: 0.7,
+			categoryPercentage: 0.9,
+			grouped: false,
+			order: 1,
+		},
+	];
+	if (hasAvg) {
+		datasets.push({
+			type: "line",
+			label: avgLegend,
+			data: candles.map((c: any) => (c.avg === null || c.avg === undefined ? null : c.avg)),
+			borderColor: "rgba(120,120,120,0.9)",
+			backgroundColor: "rgba(120,120,120,0.9)",
+			borderDash: [5, 4],
+			borderWidth: 1.5,
+			pointRadius: 0,
+			pointHoverRadius: 3,
+			spanGaps: false,
+			stepped: "after",
+			order: 0,
+		});
+	}
+	return {
+		unit: buckets.unit,
+		config: {
+			type: "bar",
+			data: { labels: labels, datasets: datasets },
+			plugins: [tradeMarkers],
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				interaction: { mode: "index", intersect: false },
+				plugins: {
+					legend: { display: hasAvg, labels: { filter: (item: any) => item.datasetIndex === 2, boxWidth: 14, font: { size: 10 } } },
+					tooltip: {
+						callbacks: {
+							title: (items: any[]) => (items.length ? labels[items[0].dataIndex] : ""),
+							label: (ctx: any) => {
+								const c = candles[ctx.dataIndex];
+								if (ctx.datasetIndex === 0) return null;
+								if (ctx.datasetIndex === 2) return c.avg === null || c.avg === undefined ? null : (t.avgLabel || "Average cost") + ": " + fmt(c.avg);
+								const lines = [
+									(t.openLabel || "Open") + ": " + fmt(c.open),
+									(t.highLabel || "High") + ": " + fmt(c.high),
+									(t.lowLabel || "Low") + ": " + fmt(c.low),
+									(t.closeLabel || "Close") + ": " + fmt(c.close),
+								];
+								if (c.buy > 0) lines.push("▲ " + (t.buyLabel || "Buy") + " " + shareText(c.buy));
+								if (c.sell > 0) lines.push("▼ " + (t.sellLabel || "Sell") + " " + shareText(c.sell));
+								if (c.dist > 0) lines.push("◆ " + (t.distLabel || "Ex-distribution") + " " + fmt(c.dist));
+								return lines;
+							},
+						},
+					},
+				},
+				scales: {
+					x: { stacked: false, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } },
+					y: {
+						beginAtZero: false,
+						min: yRange ? yRange.min : undefined,
+						max: yRange ? yRange.max : undefined,
+						grid: { color: "rgba(128,128,128,0.14)" },
+						ticks: { callback: (v: any) => (StockCharts.formatCompactNumber ? StockCharts.formatCompactNumber(v) : v), font: { size: 10 } },
+					},
+				},
+			},
+		},
+	};
+};
+
+StockCharts.createCandleChart = function (canvasId: string, series: any, texts: any, existingInstance?: any) {
+	const built = StockCharts.candleChartConfig!(series, texts);
+	const chart = StockCharts.createChart!(canvasId, built.config, existingInstance);
+	if (chart) (chart as any).$candleUnit = built.unit;
+	return chart;
 };
 
 // 축 눈금·범례 글자색을 테마 본문색에 맞춘다. 실측 2026-09-09(qa/chart-tick-contrast.cjs): Chart.js 기본 #666 은 다크 카드 배경

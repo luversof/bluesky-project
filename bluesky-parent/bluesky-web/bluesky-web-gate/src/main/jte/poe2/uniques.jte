@@ -33,8 +33,8 @@
 				<form id="poe2UniqueFilter" class="flex flex-wrap gap-2 items-center"
 				      hx-get="/poe2/htmx/uniques" hx-target="#poe2UniqueList" hx-swap="innerHTML"
 				      hx-trigger="input changed delay:300ms, change" data-url-sync="true">
-					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72"
-					       placeholder="${MessageUtil.getMessage("poe2.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
+					<input type="search" name="q" value="${initialQ}" autofocus class="input input-sm input-bordered w-full sm:w-72"
+					       placeholder="${MessageUtil.getMessage("poe.uniques.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
 					<input type="hidden" name="itemClass" value="${activeClass}">
 				</form>
 				<%-- 분류별 줄 + 줄 이름 — PoE1 고유 목록과 같은 모양(10-01: 한 줄에 전부 늘어놓았다) --%>

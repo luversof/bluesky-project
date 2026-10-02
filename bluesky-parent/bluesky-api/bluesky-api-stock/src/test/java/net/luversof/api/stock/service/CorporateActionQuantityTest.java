@@ -16,6 +16,10 @@ import org.junit.jupiter.api.Test;
  * <p>실측(사용자 거래 250건 전수): 환산이 켜지는 거래는 0건이고, 공모주 매수 2건이 임계값 바로 옆에 있다 — 카카오게임즈 24,000원(상장일 종가 62,400)과
  * SK바이오사이언스 65,000원(종가 169,000)은 비율 0.3846 으로 1/3(0.3333) 대비 편차 15.4% 라 15% 기준을 0.4%p 차이로 벗어난다.
  * 공모가는 시장가가 아니므로 환산 대상이 아니며, 이 경계가 흔들리면 그 매수분 수량이 1/3 로 줄어든다.
+ *
+ * <p>정정(2026-10-01): "켜지는 거래 0건" 은 1/3 쪽만 본 결론이었다. 1/2 근처 공모주 셋(하이브 0.53 · HD현대중공업 0.54 · 나노팀)은 15%
+ * 안이라 지금도 1/2 병합으로 잡혀 평가 수량이 절반이다. 시세 이력이 상장일이 아니라 첫 거래일부터라 "상장일이면 끈다" 로는 못 가르고(진짜 분할 카카오까지 꺼진다),
+ * 상장일 데이터가 있어야 고칠 수 있다. 감사 ~/.bluesky-qa/twr-trade-day-outliers.py 가 알려진 예외로 들고 있다.
  */
 class CorporateActionQuantityTest {
 
@@ -98,5 +102,105 @@ class CorporateActionQuantityTest {
                 TradeProfitService.resolveEvaluationQuantity(
                     10, new BigDecimal("100"), BigDecimal.ZERO)));
     assertNull(TradeProfitService.detectLikelyCorporateActionFactor(BigDecimal.ZERO));
+  }
+
+  /**
+   * 원주가가 있으면 계수 = 원주가 / 수정 종가로 정확히(2026-10-02). 정수배 추정이 틀리던 세 꼴을 실측 값으로 고정한다 - 공모주(하이브 135,000 /
+   * 상장일 종가 255,420 = 0.53 -> 예전엔 1/2 병합), 비정수 계수(한화오션 2009: 수정 종가 77,292 · 원주가 17,353 근처 -> 예전엔
+   * 1/4), 기업행위 없는 날(원주가 = 수정 종가 -> 계수 1).
+   */
+  @Test
+  void 원주가가_있으면_계수를_정확히_쓴다() {
+    // 공모주: 상장일 원주가 = 수정 종가(그 뒤 기업행위 없음) -> 계수 1, 2 주 그대로(예전 추정은 1 주)
+    assertEquals(
+        0,
+        new BigDecimal("2")
+            .compareTo(
+                TradeProfitService.evaluationQuantity(
+                    2,
+                    new BigDecimal("135000"),
+                    new BigDecimal("255420"),
+                    new BigDecimal("255420"),
+                    new BigDecimal("255420"))));
+    assertEquals(
+        0,
+        new BigDecimal("1")
+            .compareTo(
+                TradeProfitService.resolveEvaluationQuantity(
+                    2, new BigDecimal("135000"), new BigDecimal("255420"))),
+        "원주가 없을 때의 정수배 추정은 그대로(1/2 오판) - 비교 기준");
+    // 비정수 계수: 원주가 17,400 / 수정 종가 77,292 = 0.22512... -> 20 주 x 0.22512 = 4.5024 주(예전 추정 1/4 = 5 주)
+    BigDecimal q =
+        TradeProfitService.evaluationQuantity(
+            20,
+            new BigDecimal("17353"),
+            new BigDecimal("77292"),
+            new BigDecimal("17400"),
+            new BigDecimal("77292"));
+    assertEquals(
+        0, new BigDecimal("4.5024").compareTo(q.setScale(4, java.math.RoundingMode.HALF_UP)));
+  }
+
+  /** 원주가나 그 날 수정 종가가 없으면 예전 정수배 추정 - 열이 없는 DB · 아직 안 채운 날. */
+  @Test
+  void 원주가가_없으면_정수배_추정으로_돌아간다() {
+    // 카카오 5:1 분할 전 체결(134,500 / 수정 종가 27,197 = 4.95 -> 5 배)
+    assertEquals(
+        0,
+        new BigDecimal("1105")
+            .compareTo(
+                TradeProfitService.evaluationQuantity(
+                    221,
+                    new BigDecimal("134500"),
+                    new BigDecimal("27197"),
+                    null,
+                    new BigDecimal("27197"))));
+    // 그 날 수정 종가가 없으면(직전 값으로 대신한 날) 원주가가 있어도 쓰지 않는다 - 다른 날 값으로 나누면 계수가 틀린다
+    assertEquals(
+        0,
+        new BigDecimal("1105")
+            .compareTo(
+                TradeProfitService.evaluationQuantity(
+                    221,
+                    new BigDecimal("134500"),
+                    null,
+                    new BigDecimal("134500"),
+                    new BigDecimal("27197"))));
+  }
+
+  /**
+   * 원장이 이미 수정 단위로 적힌 매매는 환산하지 않는다(실측 2026-10-02 NAVER: 2018 년 5:1 분할 전 매수가 220 주 · 156,400 원으로 적혀
+   * 있었다 - 원주가 782,000 / 수정 종가 156,400 = 5 를 곱하자 수익률 99% -> -60%).
+   */
+  @Test
+  void 원장이_수정_단위면_원주가가_있어도_그대로() {
+    assertEquals(
+        0,
+        new BigDecimal("220")
+            .compareTo(
+                TradeProfitService.evaluationQuantity(
+                    220,
+                    new BigDecimal("156400"),
+                    new BigDecimal("156400"),
+                    new BigDecimal("782000"),
+                    new BigDecimal("156400"))));
+  }
+
+  /**
+   * 분배금 · 배당 수정(배율 1.02~1.03)은 수량이 아니다(실측 2026-10-02: ETF 들이 원주가 / 수정 종가 1.02~1.03 이라 그대로 곱하자 평가액이
+   * 2~3% 부풀었다 - 분배금은 배당으로 따로 센다).
+   */
+  @Test
+  void 분배금_수정_배율은_수량을_바꾸지_않는다() {
+    assertEquals(
+        0,
+        new BigDecimal("100")
+            .compareTo(
+                TradeProfitService.evaluationQuantity(
+                    100,
+                    new BigDecimal("12450"),
+                    new BigDecimal("12100"),
+                    new BigDecimal("12460"),
+                    new BigDecimal("12100"))));
   }
 }

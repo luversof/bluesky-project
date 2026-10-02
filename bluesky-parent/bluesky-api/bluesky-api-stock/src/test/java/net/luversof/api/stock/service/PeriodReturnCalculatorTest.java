@@ -120,4 +120,29 @@ class PeriodReturnCalculatorTest {
                 0))
         .isNull();
   }
+
+  /**
+   * 원주가가 오늘까지 있으면 원주가로 잰다(2026-10-02). 실측 0094M0 12 개월: 기초 원주가 11,285 · 수정 8,840, 오늘 17,410. 수정
+   * 종가로는 가격 +96.95% 에 분배금까지 더해 두 번 센 합산, 원주가로는 가격 +54.28%.
+   */
+  @Test
+  void 원주가가_오늘까지_있으면_원주가로_잰다() {
+    List<StockDailyClosePrice> adjusted =
+        List.of(price("2025-09-19", "8840"), price("2026-09-21", "17410"));
+    List<StockDailyClosePrice> raw =
+        List.of(price("2025-09-19", "11285"), price("2026-09-21", "17410"));
+    List<PayoutPoint> payouts = List.of(payout("2026-03-15", "2700"));
+
+    PeriodReturn byRaw =
+        PeriodReturnCalculator.compute(
+            PeriodReturnCalculator.preferRaw(raw, adjusted), payouts, TODAY, 12);
+    assertThat(byRaw.priceReturnPct()).isEqualByComparingTo("54.28");
+    // (17,410 - 11,285 + 2,700) / 11,285 = 78.20%
+    assertThat(byRaw.totalReturnPct()).isEqualByComparingTo("78.20");
+
+    // 원주가에 오늘이 없으면(아직 안 받았다) 기말이 어긋나므로 예전대로 수정 종가
+    List<StockDailyClosePrice> rawWithoutToday = List.of(price("2025-09-19", "11285"));
+    assertThat(PeriodReturnCalculator.preferRaw(rawWithoutToday, adjusted)).isSameAs(adjusted);
+    assertThat(PeriodReturnCalculator.preferRaw(List.of(), adjusted)).isSameAs(adjusted);
+  }
 }

@@ -20,7 +20,7 @@
 @param java.util.List<net.luversof.web.gate.poe.dto.PoeBenchEntry> bench = null
 
 !{
-	String pageTitle = MessageUtil.getMessage("layout.menu.poe.mods");
+	String pageTitle = MessageUtil.getMessage("poe.mods.title");
 	String patchLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.patch"), patch);
 	boolean ko = PoeText.isKorean();
 }

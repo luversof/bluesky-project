@@ -68,29 +68,25 @@ class MonthlyContributionPickSupportTest {
   }
 
   /**
-   * 보유 종목만 후보가 된다 - 시뮬레이터 카드와 월배당 ETF 목록의 "이번 적립" 배지가 이 한 곳을 같이 쓴다(2026-09-23). 보유하지 않은 종목이 끜면 두
-   * 화면이 다른 답을 내거나, 사지도 않은 종목에 "적립" 을 권한다.
+   * 보유 여부와 상관없이 등록된 종목 전부가 후보다(사용자 요청 2026-10-02: "보유 여부와 상관없이 추천하는게 좋을거 같아"). 예전(2026-09-23)에는 보유
+   * 종목만 후보라 점수가 더 높은 종목을 아직 안 샀다는 이유로 못 권했다.
    */
   @Test
-  void 보유_종목만_후보가_된다() {
+  void 보유_여부와_상관없이_전_종목이_후보다() {
     var picks =
-        support.pickHeld(
-            java.util.List.of(" A00001 ", "B00002", ""),
+        support.pickFromCatalog(
             java.util.List.of(
                 catalog("A00001", "MID_MONTH", "4.00", "10.00", "0.00"),
                 catalog("B00002", "MID_MONTH", "4.00", "8.00", "0.00"),
                 catalog("C00003", "MID_MONTH", "4.00", "30.00", "0.00")));
 
     assertThat(picks)
-        .as("C00003 은 점수가 가장 높지만 보유하지 않아 빠진다 · 앞뒤 공백은 걷어 맞춘다")
+        .as("점수가 가장 높은 C00003 이 고른 종목 - 보유 목록을 묻지 않는다")
         .extracting(ContributionPick::symbol)
-        .containsExactly("A00001");
-    assertThat(
-            support.pickHeld(
-                java.util.List.of(),
-                java.util.List.of(catalog("A00001", "MID_MONTH", "4.00", "10.00", "0.00"))))
-        .isEmpty();
-    assertThat(support.pickHeld(java.util.List.of("A00001"), null)).isEmpty();
+        .containsExactly("C00003");
+    assertThat(picks.get(0).runnerUpSymbol()).as("차점은 A00001").isEqualTo("A00001");
+    assertThat(support.pickFromCatalog(null)).isEmpty();
+    assertThat(support.pickFromCatalog(java.util.List.of())).isEmpty();
   }
 
   /** 두 화면이 같은 메서드를 써야 같은 답이 나온다 - 후보를 따로 만들면 언젠가 갈린다. */
@@ -104,13 +100,13 @@ class MonthlyContributionPickSupportTest {
             java.nio.file.Path.of(base + "StockMonthlyEtfViewController.java"));
 
     assertThat(simulator)
-        .contains("monthlyContributionPickSupport.pickHeld(")
+        .contains("monthlyContributionPickSupport.pickFromCatalog(catalog)")
         .as("시뮬레이터가 후보를 따로 만들면 두 화면이 갈린다")
         .doesNotContain("ContributionCandidate(");
     assertThat(etf)
-        .contains("monthlyContributionPickSupport.pickHeld(held, catalog)")
-        .as("보유 출처는 시뮬레이터와 같은 스냅샷이어야 한다(목록의 보유는 원장 수량이라 갈릴 수 있다)")
-        .contains("monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId)")
+        .contains("monthlyContributionPickSupport.pickFromCatalog(catalog)")
+        .as("후보에 보유 여부를 묻지 않는다 - 보유 스냅샷을 이 추천 때문에 부르지 않는다(2026-10-02)")
+        .doesNotContain("heldSnapshotFuture")
         .contains("model.addAttribute(" + (char) 34 + "monthlyEtfContributionPicks" + (char) 34);
     String template =
         java.nio.file.Files.readString(java.nio.file.Path.of("src/main/jte/stock/monthlyEtf.jte"));
@@ -290,7 +286,7 @@ class MonthlyContributionPickSupportTest {
         .containsExactly("472150");
 
     // 카드가 고른 종목은 반드시 그 자리의 필터 결과 안에 있다.
-    var picks = support.pickHeld(items.stream().map(i -> i.stockItemSymbol()).toList(), items);
+    var picks = support.pickFromCatalog(items);
     assertThat(picks).isNotEmpty();
     for (var pick : picks) {
       assertThat(support.symbolsInSlot(pick.payoutWindow(), pick.account(), items))

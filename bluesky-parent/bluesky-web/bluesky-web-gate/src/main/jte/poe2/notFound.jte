@@ -1,5 +1,6 @@
 @import net.luversof.web.gate.poe2.dto.Poe2
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.poe.PoeText
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -23,7 +24,8 @@
 			@template._components.ui.emptyState(
 				boxed = true,
 				message = java.text.MessageFormat.format(MessageUtil.getMessage("poe2.notfound"), slug),
-				actionLabel = MessageUtil.getMessage("poe2.notfound.back"),
+				hint = PoeText.isKorean() ? "주소가 바뀌었거나 데이터 갱신으로 이름이 달라졌을 수 있습니다 — 목록에서 다시 찾아 보세요." : "The address may have changed or the data was updated — search the list again.",
+				actionLabel = "← " + MessageUtil.getMessage(listUrl.startsWith("/poe2/uniques") ? "poe2.uniques.title" : listUrl.startsWith("/poe2/items") ? "poe2.items.title" : "poe2.gems.title"),
 				actionHref = listUrl)
 		</div>
 	`)

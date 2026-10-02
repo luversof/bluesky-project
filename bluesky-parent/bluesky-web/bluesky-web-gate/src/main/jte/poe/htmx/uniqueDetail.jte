@@ -20,7 +20,7 @@
 	}
 	String displayName = PoeText.name(item.nameKo(), item.name());
 	String displayBase = PoeText.name(item.baseTypeKo(), item.baseType());
-	String displayClass = base != null ? PoeText.name(base.itemClassKo(), base.itemClass()) : null;
+	String displayClass = base != null ? net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass()) : null;
 	java.util.List<String> displayImplicits = picked != null ? PoeText.lines(picked.implicitsKo(), picked.implicits()) : PoeText.lines(item.implicitsKo(), item.implicits());
 	java.util.List<String> displayExplicits = picked != null ? PoeText.lines(picked.explicitsKo(), picked.explicits()) : PoeText.lines(item.explicitsKo(), item.explicits());
 	// PoE 고유(주황) 색

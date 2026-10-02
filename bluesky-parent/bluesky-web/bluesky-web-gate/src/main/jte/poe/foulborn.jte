@@ -14,7 +14,7 @@
 @param String query = ""
 
 !{
-	String pageTitle = MessageUtil.getMessage("layout.menu.poe.foulborn");
+	String pageTitle = MessageUtil.getMessage("poe.foulborn.title");
 	String patchLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.patch"), patch);
 	boolean ko = PoeText.isKorean();
 	int modCount = groups.stream().mapToInt(g -> g.mods().size()).sum();

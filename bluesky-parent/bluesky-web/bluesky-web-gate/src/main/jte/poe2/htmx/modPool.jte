@@ -16,7 +16,7 @@
      data-mod-family · data-tier-ilvl 등은 PoE1 모드 검색 + 아이템 레벨 막대(poe/modFilterBar.jte)가 읽는다(10-01). --%>
 <div class="space-y-2">
 	<div class="flex flex-wrap items-baseline gap-2 text-sm">
-		<span class="font-semibold">${PoeText.name(pool.itemClassKo(), pool.itemClass())}@if(pool.variant() != null) · ${PoeText.name(pool.variantKo(), pool.variant())}@endif</span>
+		<span class="font-semibold">${net.luversof.web.gate.poe.PoeClassNames.poe2(pool.itemClassKo(), pool.itemClass())}@if(pool.variant() != null) · ${PoeText.name(pool.variantKo(), pool.variant())}@endif</span>
 		<span class="text-xs text-base-content/50">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.bases"), pool.bases() == null ? 0 : pool.bases().size())}</span>
 	</div>
 	<div class="text-xs text-base-content/50">${MessageUtil.getMessage("poe2.mods.hint")}</div>

@@ -72,7 +72,21 @@ public class Poe2SimService {
       List<Poe2RefineService.SetMetrics> sets,
       // 고정 고유(영문 이름 · 한국어) — 없으면 null(10-01, 옛 이력엔 없다)
       String forcedUnique,
-      String forcedUniqueKo) {}
+      String forcedUniqueKo,
+      // "내 트리에서 출발"이면 그 트리의 노드 수(10-02) — 아니면 null
+      Integer fromTreeNodes) {}
+
+  /**
+   * 내 트리(10-02, PoE1 /poe/sim?treeNodes= 의 짝) — 트리 화면에서 넘어온 직업·전직·노드·능력치 선택. 시뮬은 같은 직업의 실빌드에서 장비·젬을
+   * 가져오고 트리만 이것으로 바꾼 뒤 다듬는다(다듬기는 고유·보조젬만 바꾸므로 트리는 그대로 남는다).
+   */
+  public record UserTree(
+      String className,
+      String ascendancy,
+      List<Integer> nodes,
+      java.util.Map<Integer, Integer> attrs,
+      // 무기 세트 전용 노드(노드 → 1·2) — 10-02
+      java.util.Map<Integer, Integer> sets) {}
 
   public record SimStatus(
       boolean running, String phase, int round, int rounds, SimResult result, String error) {}
@@ -98,6 +112,7 @@ public class Poe2SimService {
   private final Poe2RefineService refine;
   private final Poe2DataService data;
   private final PoePobImportService decoder;
+  private final Poe2BuildService builds;
   private final Path historyDir;
   private final JsonMapper json = JsonMapper.builder().build();
   private volatile boolean running;
@@ -110,7 +125,9 @@ public class Poe2SimService {
       Poe2RefineService refine,
       Poe2DataService data,
       PoePobImportService decoder,
+      Poe2BuildService builds,
       @Value("${poe2.data-dir:${user.home}/.poe-gamedata/poe2}") String dataDir) {
+    this.builds = builds;
     this.ninja = ninja;
     this.refine = refine;
     this.data = data;
@@ -234,6 +251,30 @@ public class Poe2SimService {
 
   /** uniqueSlug = 고정할 고유(방어구·장신구, {@link Poe2RefineService#FORCE_SLOTS}) — 고정할 수 없는 고유면 false. */
   public boolean start(String skill, String ascendancy, String scenario, String uniqueSlug) {
+    return start(skill, ascendancy, scenario, uniqueSlug, null);
+  }
+
+  /** tree = 내 트리에서 출발(없으면 null). 전직은 트리의 전직을 쓴다. */
+  public boolean start(
+      String skill, String ascendancy, String scenario, String uniqueSlug, UserTree tree) {
+    if (tree != null) {
+      if (tree.className() == null
+          || !data.treeIndex().classIntegerId().containsKey(tree.className())) {
+        lastError = "알 수 없는 직업의 트리입니다: " + tree.className();
+        return false;
+      }
+      ascendancy = tree.ascendancy() == null ? "" : tree.ascendancy();
+      // 다른 직업의 전직을 고르면 후보마다 트리 교체가 실패한다 — 시작 전에 거절
+      if (!ascendancy.isEmpty()
+          && !data.treeIndex()
+              .classAscendancies()
+              .getOrDefault(tree.className(), List.of())
+              .contains(ascendancy)) {
+        lastError = "트리 직업(" + tree.className() + ")의 전직이 아닙니다: " + ascendancy;
+        return false;
+      }
+    }
+    final UserTree userTree = tree;
     Poe2RefineService.Forced forced = null;
     if (uniqueSlug != null && !uniqueSlug.isBlank()) {
       Poe2.Unique u = data.unique(uniqueSlug.trim()).orElse(null);
@@ -261,7 +302,7 @@ public class Poe2SimService {
         new Thread(
             () -> {
               try {
-                lastResult = run(skill.trim(), asc, scen, lockedUnique);
+                lastResult = run(skill.trim(), asc, scen, lockedUnique, userTree);
                 saveHistory(lastResult);
               } catch (Throwable e) {
                 logger.warn("PoE2 시뮬레이션 실패", e);
@@ -279,7 +320,17 @@ public class Poe2SimService {
   }
 
   private SimResult run(
-      String skill, String ascendancy, String scenario, Poe2RefineService.Forced forced) {
+      String skill,
+      String ascendancy,
+      String scenario,
+      Poe2RefineService.Forced forced,
+      UserTree tree) {
+    // 내 트리면 같은 직업의 실빌드만 후보로(다른 직업 장비·젬에 트리만 바꾸면 시작점이 달라 트리가 끊긴다)
+    java.util.Set<String> treeClassAscs =
+        tree == null
+            ? null
+            : new java.util.HashSet<>(
+                data.treeIndex().classAscendancies().getOrDefault(tree.className(), List.of()));
     long startedAt = System.currentTimeMillis();
     // 후보·성향은 poe.ninja 스냅샷(새 버전이 나오면 Poe2NinjaSyncService 가 다시 받는다)의 캐릭터에서 — 메인 스킬 기준
     Poe2NinjaService.Archetype bench = ninja.findOrSkill(ascendancy, skill);
@@ -289,6 +340,7 @@ public class Poe2SimService {
         ninja.builds().stream()
             .filter(b -> skill.equals(b.mainSkill()))
             .filter(b -> ascendancy.isEmpty() || ascendancy.equals(b.ascendancy()))
+            .filter(b -> treeClassAscs == null || treeClassAscs.contains(b.ascendancy()))
             .filter(b -> b.account() != null && b.name() != null)
             .sorted(
                 Comparator.comparing(
@@ -320,6 +372,16 @@ public class Poe2SimService {
       try {
         String code = ninja.characterCode(b);
         xml = withScenario(alignMainGroup(decoder.decodeToXml(code), skill), scenario);
+        if (tree != null) {
+          xml =
+              builds.withTree(
+                  xml,
+                  tree.className(),
+                  tree.ascendancy(),
+                  tree.nodes(),
+                  tree.attrs(),
+                  tree.sets());
+        }
         // 무기 세트를 나눠 쓰는 빌드는 두 세트를 재고 DPS 가 큰 쪽으로 견준다(저장 당시 켜진 세트가 주 세트가 아닐 수 있다)
         Poe2RefineService.Best best = refine.measureBest(xml);
         m = best == null ? null : best.metrics();
@@ -400,7 +462,8 @@ public class Poe2SimService {
         r.mainSet(),
         r.sets(),
         forced == null ? null : forced.name(),
-        forced == null ? null : forced.label());
+        forced == null ? null : forced.label(),
+        tree == null ? null : tree.nodes().size());
   }
 
   /** 후보 정렬용 ninja 표기값 점수 — 같은 레벨 안에서 목표 축이 큰 사람부터. */

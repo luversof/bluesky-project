@@ -220,6 +220,18 @@
 					@endif
 				</div>
 			@endif
+			<%-- 평가액은 원주가(수정 전 종가) x 실제 주식 수다(2026-10-02). 수정 종가는 받은 때마다 기준이 달라 같은 종목 안에서도
+				 이어지지 않았고 분배금을 두 번 셌다. 원주가가 빈 날은 직전 날 배율로 메운 추정값이 평가에 쓰이므로 몇 날인지 밝힌다. --%>
+			@if(dataStatus.rawClosePriceDayCount() != null && dataStatus.rawClosePriceDayCount() > 0)
+				<div class="text-[11px] text-base-content/60 mb-2" data-raw-close-missing="${dataStatus.rawClosePriceMissingDayCount()}">
+					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.raw.coverage"),
+						String.format("%,d", dataStatus.rawClosePriceDayCount()),
+						String.format("%,d", dataStatus.rawClosePriceMissingDayCount()))}
+					@if(dataStatus.rawClosePriceMissingDayCount() != null && dataStatus.rawClosePriceMissingDayCount() > 0)
+						&middot; ${MessageUtil.getMessage("stock.admin.price.raw.missing")}
+					@endif
+				</div>
+			@endif
 			<%-- 월배당 지급 이력도 사람이 가져와야 하는 참조 데이터인데, 위 줄들은 매매·배당·시세만 알려 준다.
 				 한 달 치가 비면 예상 월배당의 기준(최신 1개월)·12개월 평균의 창·"다가올 배당"의 예상 지급일이
 				 함께 어긋나므로 여기서 밝힌다. 밀림 판정은 종목 자신의 과거 최대 간격으로 한다. --%>

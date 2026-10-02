@@ -86,6 +86,8 @@ function runSummary(rows, summaryDataset) {
 	const sandbox = {
 		formatNumber: (value) => String(value),
 		formatFixedNumber: (value, digits) => Number(value).toFixed(digits),
+		// 선택 건수 문구의 단수/복수 고르기(common.js 의 applyCountChoice 를 감싼 것) - 이 시험은 수익률만 보므로 문구 그대로.
+		countChoice: (pattern) => pattern,
 	};
 	vm.createContext(sandbox);
 	vm.runInContext(body + ";this.__run = " + FUNCTION_NAME + ";", sandbox);

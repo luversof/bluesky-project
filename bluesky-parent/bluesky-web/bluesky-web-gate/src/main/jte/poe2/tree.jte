@@ -32,7 +32,13 @@
 					<button id="poe2TreeZoomIn" type="button" class="btn btn-sm btn-ghost" aria-label="${PoeText.isKorean() ? "확대" : "Zoom in"}">＋</button>
 					<button id="poe2TreeZoomOut" type="button" class="btn btn-sm btn-ghost" aria-label="${PoeText.isKorean() ? "축소" : "Zoom out"}">－</button>
 					<button id="poe2TreeFit" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe2.tree.reset")}</button>
-					<button id="poe2TreeClear" type="button" class="btn btn-sm btn-ghost">${PoeText.isKorean() ? "할당 초기화" : "Clear points"}</button>
+					<button id="poe2TreeClear" type="button" class="btn btn-sm btn-ghost">${PoeText.isKorean() ? "트리 초기화" : "Reset"}</button>
+				</div>
+				<%-- 찍기 모드 — 무기 세트 전용 패시브(10-02, 인게임 무기 세트 패시브 포인트 · PoB allocMode). 세트 노드는 세트 색 테두리 --%>
+				<div class="join" role="group" aria-label="${PoeText.isKorean() ? "찍기 모드" : "Allocation mode"}">
+					<button type="button" class="btn btn-sm join-item" data-tree-set="0">${PoeText.isKorean() ? "공용" : "Shared"}</button>
+					<button type="button" class="btn btn-sm join-item" data-tree-set="1" title="${PoeText.isKorean() ? "무기 세트 I 전용 패시브" : "Weapon Set I passives"}"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#e0803a"></span>${PoeText.isKorean() ? "세트 I" : "Set I"}</button>
+					<button type="button" class="btn btn-sm join-item" data-tree-set="2" title="${PoeText.isKorean() ? "무기 세트 II 전용 패시브" : "Weapon Set II passives"}"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#4aa3df"></span>${PoeText.isKorean() ? "세트 II" : "Set II"}</button>
 				</div>
 				<%-- PoE1 트리와 같은 도구(10-01): 실행취소/다시실행 · 스탯 요약 · 링크 복사 · 전체 화면 --%>
 				<div class="flex flex-wrap items-center gap-1">
@@ -49,15 +55,18 @@
 					<input type="hidden" name="ascendancy" value="">
 					<input type="hidden" name="nodes" value="">
 					<input type="hidden" name="attrs" value="">
+					<input type="hidden" name="sets" value="">
 					<div class="w-52">
-						<select name="skill" data-poe-multi data-placeholder="${PoeText.isKorean() ? "메인 스킬(선택)…" : "Main skill (optional)…"}" class="select select-sm select-bordered w-full" title="${PoeText.isKorean() ? "메인 스킬" : "Main skill"}">
+						<select name="skill" data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.tree.eval.gem")}…" class="select select-sm select-bordered w-full" title="${PoeText.isKorean() ? "메인 스킬" : "Main skill"}">
 							<option value="">${PoeText.isKorean() ? "스킬 없이(방어·능력치)" : "No skill (defence only)"}</option>
 							@for(Poe2.SimChoice c : evalSkills)
 								<option value="${c.name()}">${PoeText.name(c.nameKo(), c.name())}</option>
 							@endfor
 						</select>
 					</div>
-					<button id="poe2TreeEval" type="submit" class="btn btn-sm btn-primary btn-outline">${PoeText.isKorean() ? "트리 계산" : "Evaluate"}</button>
+					<button id="poe2TreeEval" type="submit" class="btn btn-sm btn-primary btn-outline">${MessageUtil.getMessage("poe.tree.eval")}</button>
+					<%-- PoE1 트리의 "→ 시뮬"과 같은 자리(10-02) — 이 트리로 시뮬레이터를 연다(tree2.js) --%>
+					<button id="poe2TreeToSim" type="button" class="btn btn-sm btn-secondary btn-outline">${PoeText.isKorean() ? "이 트리로 최적화" : "Optimize with this tree"}</button>
 				</form>
 				<span id="poe2TreePoints" class="ml-auto text-sm text-base-content/70" aria-live="polite"></span>
 			</div>
@@ -76,6 +85,11 @@
 				</div>
 				<div id="poe2TreeStats" class="hidden absolute right-2 top-2 z-10 w-72 max-h-[60%] overflow-y-auto poe-node-popup">
 					<div class="sticky top-0 poe-popup-head text-xs">${PoeText.isKorean() ? "할당 스탯 합계" : "Allocated stats"}</div>
+					<%-- 기준 세트(10-02) — 인게임은 켜진 무기 세트 전용 패시브만 적용. 세트 노드가 있을 때만 보인다(tree2.js) --%>
+					<div id="poe2TreeStatsSet" class="hidden flex justify-center gap-3 border-b border-white/10 px-3 py-1 text-[11px]" role="group" aria-label="${PoeText.isKorean() ? "기준 무기 세트" : "Weapon set"}">
+						<button type="button" data-summary-set="1"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#e0803a"></span>${PoeText.isKorean() ? "세트 I 기준" : "Set I"}</button>
+						<button type="button" data-summary-set="2"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#4aa3df"></span>${PoeText.isKorean() ? "세트 II 기준" : "Set II"}</button>
+					</div>
 					<div id="poe2TreeStatsBody" class="py-1"></div>
 				</div>
 				<div id="poe2TreeStatus" class="absolute left-3 top-3 text-sm text-warning" aria-live="polite">${MessageUtil.getMessage("poe2.tree.loading")}</div>

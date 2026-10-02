@@ -12,7 +12,7 @@
 @param List<PoeTattoo> tattoos = java.util.List.of()
 
 !{
-	String pageTitle = MessageUtil.getMessage("layout.menu.poe.tattoos");
+	String pageTitle = MessageUtil.getMessage("poe.tattoos.title");
 	String patchLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.patch"), patch);
 	boolean ko = PoeText.isKorean();
 	// 대상 타입 → 한글 라벨 + 표시 순서(키스톤 → 노터블 → 마스터리 → 소형)

@@ -19,4 +19,13 @@ public interface PoeSimClient {
 
   @GetExchange("/ranking")
   PoeJobStatus.SimRanking ranking();
+
+  /** 그 시즌 보관 랭킹(10-02) — 없으면 빈 목록. */
+  @GetExchange("/ranking")
+  PoeJobStatus.SimRanking ranking(
+      @org.springframework.web.bind.annotation.RequestParam String season);
+
+  /** 보관된 랭킹 시즌(새 것 먼저). */
+  @GetExchange("/ranking/seasons")
+  java.util.List<String> rankingSeasons();
 }

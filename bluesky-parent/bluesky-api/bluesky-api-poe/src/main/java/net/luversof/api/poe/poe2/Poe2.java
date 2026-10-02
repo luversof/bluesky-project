@@ -109,7 +109,9 @@ public final class Poe2 {
       int nodes,
       List<TreeEvalRow> rows,
       String error,
-      long elapsedMs) {}
+      long elapsedMs,
+      // 무기 세트 전용 노드가 있으면 세트 II 를 켠 계산(rows = 세트 I) — 10-02, 없으면 null
+      List<TreeEvalRow> rowsSet2) {}
 
   // ─────────────────────────── 베이스 아이템 ───────────────────────────
 
@@ -159,7 +161,8 @@ public final class Poe2 {
       String icon,
       String image) {}
 
-  public record ItemClass(String key, String ko, String category) {}
+  /** en = 게임 영어 분류 이름(옛 데이터면 null — 화면은 key 로 대신). */
+  public record ItemClass(String key, String ko, String category, String en) {}
 
   public record BaseItemData(String patch, List<ItemClass> classes, List<BaseItem> items) {}
 
@@ -389,7 +392,37 @@ public final class Poe2 {
       Integer nextTried,
       // 무기 세트를 나눠 쓰는 빌드면 이 가이드를 계산한 세트(1·2)와 주 세트(DPS 큰 쪽, 세트를 지정해 부르면 null), 아니면 둘 다 null(10-01)
       Integer weaponSet,
-      Integer mainSet) {}
+      Integer mainSet,
+      // 레어 목표 — 칸마다 같은 베이스의 좋은 레어(2티어 중간 롤 접두3·접미3)로 바꾸면(10-02 사용자 요청)
+      List<GuideRareTarget> rareTargets) {}
+
+  /** 레어 목표만(10-02) — 가이드 뒤에 따로 불러온다(본 가이드가 4~6초 느려지지 않게). */
+  public record GuideRares(
+      Boolean available,
+      String error,
+      Long elapsedMs,
+      Integer weaponSet,
+      List<GuideRareTarget> rareTargets) {}
+
+  /** 레어 목표 한 칸 — item/rarity = 지금 낀 것, dps/ehp = 그 축에 맞춰 고른 레어(없으면 null). */
+  public record GuideRareTarget(
+      String slot,
+      String item,
+      String itemKo,
+      String rarity,
+      String base,
+      String baseKo,
+      Integer tried,
+      GuideRare dps,
+      GuideRare ehp) {}
+
+  /** 고른 레어 — 옵션 줄(영문 PoB 모양 · 한국어 화면용)과 지금 아이템 대비 증감(%). */
+  /**
+   * itemText = PoB 아이템 텍스트(영어, 엔진이 잰 것과 같은 모양 — 희귀도 · 이름 · 베이스 · 암시 · 옵션). PoB "Create custom" 에
+   * 그대로 붙여 넣는다(10-02).
+   */
+  public record GuideRare(
+      Double dps, Double ehp, List<String> lines, List<String> linesKo, String itemText) {}
 
   /**
    * 엔진 재계산 한 줄 — PoB 가 저장해 둔 값(saved) · PoB-PoE2 엔진으로 다시 계산한 값(computed). set1·set2 = 무기 세트를 나눠 쓰는

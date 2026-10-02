@@ -31,7 +31,7 @@ public class PoeBaseItemDataService {
    * 그룹 칩 UI용 — 한 아이템 클래스(key=id, ko=한국어, slot=고유 카테고리와 공유하는 정규 슬롯 토큰). slot 은 탭 전환(일반↔고유) 시 필터 유지를
    * 위한 공통 키 — 예: One/Two Hand Sword 모두 slot="sword".
    */
-  public record ClassEntry(String key, String ko, String slot) {}
+  public record ClassEntry(String key, String ko, String slot, String en) {}
 
   /** 아이템 클래스 그룹(key=그룹 id, 라벨은 게이트가 메시지로 해석) */
   public record ClassGroup(String key, List<ClassEntry> classes) {}
@@ -135,6 +135,21 @@ public class PoeBaseItemDataService {
     return classes;
   }
 
+  /** 베이스 데이터엔 없고 고유에만 있는 분류의 게임 영어 이름(ItemClasses.Name) — PoeUniqueDataService.EXTRA_KO 의 짝. */
+  private static final Map<String, String> UNIQUE_ONLY_EN =
+      Map.of("Tincture", "Tinctures", "Fishing Rod", "Fishing Rods");
+
+  /** itemClass → 게임 영어 분류 이름(데이터에 없으면 빠짐 — 게이트는 key 로 대신). */
+  public Map<String, String> itemClassNames() {
+    Map<String, String> names = new LinkedHashMap<>();
+    for (PoeBaseItem item : data.items()) {
+      if (item.itemClassName() != null) {
+        names.putIfAbsent(item.itemClass(), item.itemClassName());
+      }
+    }
+    return names;
+  }
+
   /** 아이템 클래스를 PoB식 그룹으로 묶어 반환(데이터에 존재하는 클래스만, 미분류는 other 그룹). */
   public List<ClassGroup> itemClassGroups() {
     Map<String, String> classKo = itemClasses();
@@ -150,13 +165,17 @@ public class PoeBaseItemDataService {
   public List<ClassGroup> groupsFor(
       java.util.Collection<String> present, java.util.function.Function<String, String> koLookup) {
     Set<String> presentSet = new LinkedHashSet<>(present);
+    Map<String, String> classEn = new LinkedHashMap<>(UNIQUE_ONLY_EN);
+    classEn.putAll(itemClassNames());
     List<ClassGroup> groups = new ArrayList<>();
     Set<String> placed = new LinkedHashSet<>();
     for (Map.Entry<String, List<String>> group : CLASS_GROUPS) {
       List<ClassEntry> entries = new ArrayList<>();
       for (String cls : group.getValue()) {
         if (presentSet.contains(cls)) {
-          entries.add(new ClassEntry(cls, koLookup.apply(cls), CLASS_SLOT.getOrDefault(cls, cls)));
+          entries.add(
+              new ClassEntry(
+                  cls, koLookup.apply(cls), CLASS_SLOT.getOrDefault(cls, cls), classEn.get(cls)));
           placed.add(cls);
         }
       }
@@ -167,7 +186,9 @@ public class PoeBaseItemDataService {
     List<ClassEntry> others = new ArrayList<>();
     for (String cls : presentSet) {
       if (!placed.contains(cls)) {
-        others.add(new ClassEntry(cls, koLookup.apply(cls), CLASS_SLOT.getOrDefault(cls, cls)));
+        others.add(
+            new ClassEntry(
+                cls, koLookup.apply(cls), CLASS_SLOT.getOrDefault(cls, cls), classEn.get(cls)));
       }
     }
     if (!others.isEmpty()) {

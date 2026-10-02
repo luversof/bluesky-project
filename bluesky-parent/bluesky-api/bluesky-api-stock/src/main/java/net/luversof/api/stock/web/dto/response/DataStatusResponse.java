@@ -75,7 +75,16 @@ public record DataStatusResponse(
      * 시세 이력이 한 행도 없는 종목(최대 50). 개수만 알려 주면 무엇을 고쳐야 할지 알 수 없다 - 실측 2026-09-13: 화면이 "(시세 이력이 없는 종목
      * 4개)" 라고만 적었다.
      */
-    List<NoHistoryItemRow> priceHistoryNoHistoryItemRows) {
+    List<NoHistoryItemRow> priceHistoryNoHistoryItemRows,
+    /**
+     * 보유 기간에 시세가 있는 날 수(거래가 있던 날만) - 원주가 평가의 대상(2026-10-02). 원주가 열이 없는 DB 면 null.
+     *
+     * <p>평가액은 원주가 x 실제 주식 수다. 빈 날은 직전 날 배율로 메우므로 화면이 깨지지는 않지만, 메운 값은 추정이다 - 몇 날이 비었는지 보여야 다시 채울지 정할
+     * 수 있다.
+     */
+    Long rawClosePriceDayCount,
+    /** 그중 원주가가 아직 빈 날 수(시세 갱신 뒤 채우기가 실패했거나 아직 안 돈 날). 원주가 열이 없는 DB 면 null. */
+    Long rawClosePriceMissingDayCount) {
 
   /** 지급 이력이 제 주기를 넘겨 밀린 종목. */
   public record MonthlyDividendPayoutOverdueRow(

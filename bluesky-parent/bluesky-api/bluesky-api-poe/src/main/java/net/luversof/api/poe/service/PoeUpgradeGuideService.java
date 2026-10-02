@@ -54,7 +54,11 @@ public class PoeUpgradeGuideService {
    * 동시 평가 수 — 격리 경로는 호출마다 luajit 프로세스(단일 스레드)를 띄운다. 이 서버는 논리 코어 28개·메모리 64GB 라 8 로 둔다(레어 목표까지 재면
    * 평가가 200회 안팎이라 4 로는 3분을 넘었다).
    */
-  private static final int PARALLEL = 8;
+  /**
+   * 평가 동시 수 — 평가마다 엔진 프로세스를 새로 띄워(calculateValuesIsolated) CPU 가 병목이다. 코어 수 - 4(최소 8, 예전 고정값).
+   * 10-02 실빌드 표본(평가 197회): 8 → 93초, 16 → 75초, 24(28 코어) → 60초, 결과 JSON 은 셋 다 같다(평가가 서로 독립).
+   */
+  private static final int PARALLEL = Math.max(8, Runtime.getRuntime().availableProcessors() - 4);
 
   /** 보조젬 교체 후보 상한 — 태그로 추린 뒤 주 스킬과 태그가 많이 겹치는 순으로 자른다(잡 1회를 수 분 안에). */
   private static final int SWAP_CANDIDATES = 48;
@@ -143,6 +147,7 @@ public class PoeUpgradeGuideService {
    * @param metaCount 이 전직·주 스킬 조합의 poe.ninja 캐릭터 중 이 아이템을 쓰는 수(모르면 0)
    * @param metaTotal 그 조합의 캐릭터 수(모르면 0)
    * @param needs 이 교체로 새로 모자라게 되는 요구 능력치("힘 25 · 민첩 34") — 다른 곳에서 채워야 끼울 수 있다. 그대로 끼울 수 있으면 null
+   * @param itemText 레어 목표의 PoB 아이템 텍스트(엔진이 잰 그 아이템 — PoB "Create custom" 에 붙여 넣기, 10-02) — 고유면 null
    */
   public record ItemPick(
       String rarity,
@@ -158,7 +163,8 @@ public class PoeUpgradeGuideService {
       Double minionPct,
       int metaCount,
       int metaTotal,
-      String needs) {}
+      String needs,
+      String itemText) {}
 
   /**
    * 제안 한 건.
@@ -913,7 +919,8 @@ public class PoeUpgradeGuideService {
               minionPct(base, m),
               0,
               0,
-              needsText(baseValues, v));
+              needsText(baseValues, v),
+              rareTargets.itemText(c.plan(), chosen));
       rarePicks.put(e.getKey(), pick);
       if (pick.needs() == null && pick.minionPct() == null) {
         offer(
@@ -970,7 +977,8 @@ public class PoeUpgradeGuideService {
                 minionPct(base, m),
                 usage.counts().getOrDefault(u.name(), 0),
                 usage.total(),
-                needs);
+                needs,
+                null);
         (needs == null ? fits : needy).add(pick);
         if (needs == null && pick.minionPct() == null) {
           offer(

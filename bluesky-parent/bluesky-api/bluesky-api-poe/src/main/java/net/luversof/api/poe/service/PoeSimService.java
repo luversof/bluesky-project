@@ -47,6 +47,7 @@ public class PoeSimService {
   private final PoeGemDataService poeGemDataService;
   private final PoePobEngineService poePobEngineService;
   private final Path rankingFile;
+  private final PoeRankingSeasons seasons;
   private final String treeVersion;
   private final int parallelism;
 
@@ -67,6 +68,8 @@ public class PoeSimService {
     this.poeGemDataService = poeGemDataService;
     this.poePobEngineService = poePobEngineService;
     this.rankingFile = Path.of(dataDir, "sim", "gem-ranking.json");
+    // 시즌 보관(10-02) — 시즌이 바뀌어도 이전 시즌 랭킹이 남아 비교할 수 있게
+    this.seasons = new PoeRankingSeasons(Path.of(dataDir, "sim", "ranking-seasons"));
     this.treeVersion = treeVersion;
     // 병렬성 미지정(≤0)이면 엔진 워커 풀 크기와 일치시킨다 — 설정 기본값이 0(자동)이라
     // 그대로 쓰면 newFixedThreadPool(0) 이 "maximumPoolSize must be positive" 로 터진다(실측: 타 PC 젬 랭킹 전건 실패).
@@ -88,7 +91,33 @@ public class PoeSimService {
       }
     }
     this.data = loaded;
+    seasons.seedFrom(rankingFile, loaded.patch());
   }
+
+  /** 보관된 시즌(새 것 먼저) — 10-02. */
+  public List<String> rankingSeasons() {
+    return seasons.seasons();
+  }
+
+  /** 그 시즌의 랭킹(패치 · 목록). 없으면 빈 값. */
+  public java.util.Optional<PoeGemRankingSnapshot> rankingOf(String season) {
+    return seasons
+        .read(season)
+        .map(
+            json -> {
+              try {
+                PoeGemRankingData d =
+                    JsonMapper.builder().build().readValue(json, PoeGemRankingData.class);
+                return new PoeGemRankingSnapshot(d.patch(), d.ranking());
+              } catch (RuntimeException e) {
+                logger.warn("PoE 젬 랭킹 시즌 해석 실패: {}", season, e);
+                return null;
+              }
+            });
+  }
+
+  /** 시즌 랭킹 한 벌(밖으로 내보내는 모양). */
+  public record PoeGemRankingSnapshot(String patch, List<PoeGemRank> ranking) {}
 
   public boolean isAvailable() {
     return poePobEngineService.isAvailable() && poeGemDataService.hasData();
@@ -181,10 +210,10 @@ public class PoeSimService {
       ranking.sort(Comparator.comparingDouble(PoeGemRank::dps).reversed());
       Files.createDirectories(rankingFile.getParent());
       JsonMapper jsonMapper = JsonMapper.builder().build();
-      Files.writeString(
-          rankingFile,
-          jsonMapper.writeValueAsString(new PoeGemRankingData(poeGemDataService.patch(), ranking)),
-          StandardCharsets.UTF_8);
+      String rankingJson =
+          jsonMapper.writeValueAsString(new PoeGemRankingData(poeGemDataService.patch(), ranking));
+      Files.writeString(rankingFile, rankingJson, StandardCharsets.UTF_8);
+      seasons.archive(poeGemDataService.patch(), rankingJson);
       reload();
       log(
           "완료: "

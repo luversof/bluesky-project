@@ -1,5 +1,6 @@
 @import net.luversof.web.gate.poe2.dto.Poe2
 @import net.luversof.web.gate.poe.PoeText
+@import io.github.luversof.boot.context.support.MessageUtil
 
 @param Poe2.SimResult result = null
 @param Long historyId = null
@@ -38,6 +39,9 @@
 		<span class="badge badge-outline">${r.ascendancy()}</span>
 		<span class="badge badge-ghost">${ko ? "목표" : "Objective"}: ${objLabel.apply(r.objective())}</span>
 		<span class="badge badge-ghost">${scenLabel.apply(r.scenario())}</span>
+		@if(r.fromTreeNodes() != null)
+			<span class="badge badge-outline border-primary/60" data-from-tree>${ko ? "내 트리 · 노드 " + r.fromTreeNodes() + "개" : "My tree · " + r.fromTreeNodes() + " nodes"}</span>
+		@endif
 		@if(r.forcedUnique() != null)
 			<span class="badge badge-outline border-orange-400/60 poe-name-unique" data-forced-unique>${ko ? "고정: " : "Locked: "}${ko && r.forcedUniqueKo() != null ? r.forcedUniqueKo() : r.forcedUnique()}</span>
 		@endif
@@ -97,6 +101,16 @@
 		</div>
 		<div class="text-[11px] text-base-content/50">${ko ? "같은 시나리오로 우리 엔진에서 다시 계산해 목표에 가장 맞는 한 명을 골랐습니다(균형은 DPS·EHP 로그 합)." : "Recalculated under the same scenario; picked the best fit for the objective (balanced = log DPS + log EHP)."}</div>
 	</details>
+	<%-- 결과 PoB 코드 + 복사 — PoE1 시뮬 결과와 같은 자리(10-01: PoE2 엔 "빌드 화면에서 열기"만 있었다). PoB 에 붙여넣는 게 용도라 원클릭 복사 --%>
+	@if(r.code() != null && !r.code().isBlank())
+		<div class="space-y-1">
+			<div class="flex items-center gap-2">
+				<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.code")}</div>
+				<button type="button" class="btn btn-ghost btn-xs" data-copy-target="#poe2SimCode" data-copied-label="${ko ? "복사됨 ✓" : "Copied ✓"}">${ko ? "복사" : "Copy"}</button>
+			</div>
+			<textarea id="poe2SimCode" readonly rows="3" class="textarea textarea-bordered w-full font-mono text-xs leading-5" aria-label="${MessageUtil.getMessage("poe.sim.opt.result.code")}">${r.code()}</textarea>
+		</div>
+	@endif
 	<div class="flex flex-wrap items-center gap-2">
 		<a class="btn btn-primary btn-sm" href="/poe2/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${ko ? "빌드 화면에서 열기" : "Open in build view"}</a>
 		<span class="text-xs text-base-content/50">${ko ? "고유 아이템은 품질 20% 기준 · 단계 증감은 적용 뒤 엔진 실측 · 계보 젬은 드물게 얻는 젬" : "Uniques at 20% quality · step changes are engine-measured · lineage gems are rare"}</span>

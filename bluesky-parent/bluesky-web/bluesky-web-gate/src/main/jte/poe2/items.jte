@@ -34,8 +34,8 @@
 				<form id="poe2ItemFilter" class="flex flex-wrap gap-2 items-center"
 				      hx-get="/poe2/htmx/items" hx-target="#poe2ItemList" hx-swap="innerHTML"
 				      hx-trigger="input changed delay:300ms, change" data-url-sync="true">
-					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72"
-					       placeholder="${MessageUtil.getMessage("poe2.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
+					<input type="search" name="q" value="${initialQ}" autofocus class="input input-sm input-bordered w-full sm:w-72"
+					       placeholder="${MessageUtil.getMessage("poe.items.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
 					<input type="hidden" name="itemClass" value="${activeClass}">
 					<input type="hidden" name="attr" value="all">
 				</form>

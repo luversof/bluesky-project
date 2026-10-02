@@ -306,8 +306,21 @@ public class Poe2ViewController {
       @RequestParam(required = false, defaultValue = "") String skill,
       // 고유 상세 "이 고유로 최적화 →" — 그 고유를 고정한 채 연다(PoE1 /poe/sim?uniques= 와 같은 흐름, 10-01)
       @RequestParam(required = false, defaultValue = "") String unique,
+      // 트리 화면 "→ 시뮬"(10-02, PoE1 /poe/sim?treeNodes= 의 짝) — c=직업 a=전직 n=노드 s=능력치 선택(트리 주소와 같은 이름)
+      @RequestParam(required = false, defaultValue = "") String c,
+      @RequestParam(required = false, defaultValue = "") String a,
+      @RequestParam(required = false, defaultValue = "") String n,
+      @RequestParam(required = false, defaultValue = "") String s,
+      // 무기 세트 전용 노드 "노드:1|2,…"(10-02)
+      @RequestParam(required = false, defaultValue = "") String w,
       Model model) {
     model.addAttribute("meta", meta());
+    boolean fromTree = !c.isBlank() && !n.isBlank();
+    model.addAttribute("treeSets", fromTree ? w : "");
+    model.addAttribute("treeClass", fromTree ? c : "");
+    model.addAttribute("treeAsc", fromTree ? a : "");
+    model.addAttribute("treeNodes", fromTree ? n : "");
+    model.addAttribute("treeAttrs", fromTree ? s : "");
     List<Poe2.Unique> forceable = List.of();
     try {
       forceable =
@@ -339,7 +352,7 @@ public class Poe2ViewController {
         "preSkill",
         opts != null
                 && opts.skills() != null
-                && opts.skills().stream().anyMatch(c -> c.name().equals(skill))
+                && opts.skills().stream().anyMatch(choice -> choice.name().equals(skill))
             ? skill
             : "");
     return "poe2/sim";

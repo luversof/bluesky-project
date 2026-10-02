@@ -46,6 +46,8 @@
 	String typeLabel = MessageUtil.getMessage("common.label.type");
 	String unitPriceLabel = MessageUtil.getMessage("stock.trade.column.unit.price");
 	String quantityLabel = MessageUtil.getMessage("common.label.quantity");
+	// 머리글은 짧게(영어 "Qty") - 영어 1280px 에서 표가 상자보다 16px 넓어 가로 스크롤이 생겼다(2026-10-02). 낭독기 · 툴팁에는 원래 이름.
+	String quantityShortLabel = MessageUtil.getMessage("stock.trade.col.quantity.short");
 	String amountLabel = MessageUtil.getMessage("common.label.amount");
 	String noTradeDataLabel = MessageUtil.getMessage("stock.trade.message.no.data");
 	String totalLabelText = MessageUtil.getMessage("common.label.total");
@@ -82,7 +84,7 @@
 						     (1100px 189 · 1200px 89 · 1280px 9 · 1300px 0). 넓혔는데 더 나빠지는 구간이라 실제로 들어가는 폭에서 편다. --%>
 						<th scope="col" class="hidden sm:table-cell">${accountLabel}</th>
 						<th scope="col" class="text-right">${unitPriceLabel}</th>
-						<th scope="col" class="text-right">${quantityLabel}</th>
+						<th scope="col" class="text-right" aria-label="${quantityLabel}"><abbr title="${quantityLabel}" class="no-underline">${quantityShortLabel}</abbr></th>
 						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("amount") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}"
 							hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
 							hx-vals='{"sort": "amount,${sortField.equals("amount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>

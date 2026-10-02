@@ -24,7 +24,7 @@
 		classStart: string[] | null;
 		flavour?: string;
 		flavourKo?: string;
-		options?: { id: number; name: string; nameKo?: string; stats: string[]; statsKo?: string[] }[];
+		options?: { id: number; name: string; nameKo?: string; stats: string[]; statsKo?: string[]; icon?: string }[];
 		tree?: string; // 아틀라스 하위 트리 키
 		adj: number[];
 	};
@@ -67,6 +67,13 @@
 	let klass: Klass | null = null;
 	let asc: Asc | null = null;
 	const allocated = new Set<number>();
+	// 무기 세트 전용 패시브(10-02, PoB-PoE2 allocMode) — 노드 id → 1·2(없으면 공용 0). 지금 찍는 모드는 curSet.
+	//   규칙(PoB PassiveSpec): 핵심·주얼 칸·전직 노드는 늘 공용, 경로는 공용 노드나 같은 세트 노드만 지나간다.
+	const setMode = new Map<number, number>();
+	let curSet = 0;
+	const SET_COLOR = ["", "#e0803a", "#4aa3df"];
+	const modeOf = (id: number) => setMode.get(id) || 0;
+	const forcedShared = (n: TreeNode) => n.kind === "keystone" || n.kind === "jewel" || !!n.ascendancy;
 	// 능력치 노드("+5 아무 능력치") 선택 — 1 힘 · 2 민첩 · 3 지능(PoB AttributeOverride 와 같은 번호). 인게임도 찍을 때 고른다(10-01)
 	const attrPick = new Map<number, number>();
 	const ATTR_COLOR = ["", "#e05a4a", "#5fbf5f", "#5a8ee0"];
@@ -196,7 +203,10 @@
 			ctx.globalAlpha = searching && !hit && !on ? 0.3 : 1;
 			ctx.fill();
 			// 충분히 크게 보일 때만 아이콘(원 안에 잘라서) — 할당 안 된 노드는 인게임처럼 어둡게
-			const sp = (n as any).icon ? sprites[(n as any).icon] : undefined;
+			// 능력치를 고른 노드는 인게임처럼 그 능력치 아이콘(힘/민첩/지능)으로 그린다(10-01)
+			const pickedOpt = on && attrPick.get(n.id) && n.options ? n.options[attrPick.get(n.id)! - 1] : undefined;
+			const iconKey = pickedOpt?.icon || (n as any).icon;
+			const sp = iconKey ? sprites[iconKey] : undefined;
 			const img = sp ? sheets.get(sp.s) : undefined;
 			if (sp && img && img.complete && img.naturalWidth && r >= 7 * dpr) {
 				ctx.save();
@@ -211,6 +221,15 @@
 			if (n.kind === "keystone" || n.kind === "notable" || n.kind === "classStart" || n.kind === "jewel") {
 				ctx.lineWidth = Math.max(dpr, 6 * scale);
 				ctx.strokeStyle = on ? "#fff3c4" : "rgba(0,0,0,0.6)";
+				ctx.stroke();
+			}
+			const setColor = on ? SET_COLOR[modeOf(n.id)] : "";
+			if (setColor) {
+				// 세트 전용 노드 — 인게임처럼 세트 색 테두리(세트 I 주황 · 세트 II 하늘)
+				ctx.beginPath();
+				ctx.arc(sx, sy, r + 5 * dpr, 0, Math.PI * 2);
+				ctx.lineWidth = 2.5 * dpr;
+				ctx.strokeStyle = setColor;
 				ctx.stroke();
 			}
 			const pickColor = on ? ATTR_COLOR[attrPick.get(n.id) || 0] : "";
@@ -263,17 +282,52 @@
 		if (isAtlas()) return (data?.trees || []).map((s) => s.rootId);
 		if (klass) out.push(klass.startNodeId);
 		if (asc && asc.startNodeId) out.push(asc.startNodeId);
+		// 다른 직업 시작점(10-02) — 패스파인더 "소서리스의 길"(Can Allocate Passive Skills from the Sorceress's starting point)을 찍으면
+		//   그 직업 시작점에서도 찍는다(인게임 규칙). PoB-PoE2 는 같은 문구를 주얼에서만 출발점으로 쓰지만, 불러온 노드는 연결과 무관하게 계산하므로 엔진 수치와 어긋나지 않는다.
+		for (const id of allocated) {
+			const n = nodes.get(id);
+			if (!n?.ascendancy) continue;
+			for (const t of n.stats || []) {
+				const m = ALT_START_RE.exec(t);
+				const other = m && data?.classes.find((c) => c.name.toLowerCase() === m[1].toLowerCase());
+				if (other && !out.includes(other.startNodeId)) out.push(other.startNodeId);
+			}
+		}
 		return out;
 	}
+	const ALT_START_RE = /Can Allocate Passive(?: Skill)?s from the (\w+)'s starting point/i;
 	function allocatable(n: TreeNode): boolean {
 		if (!visible(n)) return false;
 		if (n.kind === "classStart") return false; // 시작점은 공짜(점수 없음) — 다른 직업 시작점은 지나갈 수 없다
 		return true;
 	}
 	/** 할당된 집합(+시작점)에서 target 까지 가장 짧은 경로(BFS). 없으면 null. */
+	// 연결 없이 찍기(10-02) — 오라클 "뒤얽힌 현실": 할당한 핵심 노드의 중간 반경 안 비-핵심 노드는 트리와 이어지지 않아도 찍힌다.
+	//   PoB-PoE2 PassiveSpec(intuitiveLeapLikeNodes · AllocateFromNodeRadius { from = Keystone, radiusIndex = 2, to = Notable · Normal }) —
+	//   반경 2 = "Medium" 바깥 1150(data.jewelRadius), 대상 = 주요 · 일반(능력치 노드도 Normal). 전직 · 주얼 칸 · 핵심은 아님.
+	const LEAP_RE = /Medium Radius of allocated Keystone Passive Skills can be allocated without being connected/i;
+	const LEAP_RADIUS = 1150;
+	function leapRoots(): Set<number> {
+		const out = new Set<number>();
+		if (isAtlas()) return out;
+		const on = [...allocated].some((id) => {
+			const n = nodes.get(id);
+			return !!n?.ascendancy && (n.stats || []).some((t) => LEAP_RE.test(t));
+		});
+		if (!on) return out;
+		const keys = [...allocated].map((id) => nodes.get(id)).filter((n): n is TreeNode => !!n && n.kind === "keystone");
+		for (const n of nodes.values()) {
+			if (n.ascendancy || !(n.kind === "normal" || n.kind === "notable" || n.kind === "attribute")) continue;
+			if (keys.some((k) => (n.x - k.x) ** 2 + (n.y - k.y) ** 2 <= LEAP_RADIUS * LEAP_RADIUS)) out.add(n.id);
+		}
+		return out;
+	}
 	function pathTo(target: number): number[] | null {
-		const from = new Set<number>([...startIds(), ...allocated]);
+		// 지금 모드로 지나갈 수 있는 할당 노드만 출발점 — 다른 세트 노드는 막힌 길
+		const passable = (id: number) => modeOf(id) === 0 || (curSet > 0 && modeOf(id) === curSet);
+		const from = new Set<number>([...startIds(), ...[...allocated].filter(passable)]);
 		if (from.has(target)) return [];
+		if (leapRoots().has(target)) return [target]; // 핵심 노드 반경 안 — 그 노드만
 		const prev = new Map<number, number>();
 		const queue: number[] = [];
 		for (const s of from) {
@@ -288,6 +342,7 @@
 				if (prev.has(nb)) continue;
 				const m = nodes.get(nb);
 				if (!m || !allocatable(m)) continue;
+				if (allocated.has(nb) && !passable(nb)) continue;
 				prev.set(nb, cur);
 				if (nb === target) {
 					const path: number[] = [];
@@ -305,18 +360,39 @@
 	}
 	/** 시작점에서 더는 닿지 않는 할당 노드를 걷어 낸다(노드 해제 뒤). */
 	function prune() {
-		const reach = new Set<number>(startIds());
-		const queue = [...reach];
-		while (queue.length) {
-			const cur = queue.shift()!;
-			for (const nb of nodes.get(cur)?.adj || []) {
-				if (allocated.has(nb) && !reach.has(nb)) {
-					reach.add(nb);
-					queue.push(nb);
+		// 공용 노드는 시작점에서 공용 노드로만, 세트 k 노드는 공용 + 세트 k 노드로 이어져야 남는다(PoB FindStartFromNode 와 같은 규칙)
+		const walk = (seed: Set<number>, ok: (id: number) => boolean) => {
+			const reach = new Set<number>(seed);
+			const queue = [...reach];
+			while (queue.length) {
+				const cur = queue.shift()!;
+				for (const nb of nodes.get(cur)?.adj || []) {
+					if (allocated.has(nb) && !reach.has(nb) && ok(nb)) {
+						reach.add(nb);
+						queue.push(nb);
+					}
+				}
+			}
+			return reach;
+		};
+		// 연결 없이 찍힌 노드(뒤얽힌 현실)는 그 자체가 출발점 — 핵심 노드나 전직 노드를 빼면 그 반경이 사라지니, 바뀌지 않을 때까지 되풀이
+		for (let changed = true; changed; ) {
+			changed = false;
+			const leap = [...leapRoots()].filter((id) => allocated.has(id));
+			const seedOf = (k: number) => new Set<number>([...startIds(), ...leap.filter((id) => modeOf(id) === k)]);
+			const reach0 = walk(seedOf(0), (id) => modeOf(id) === 0);
+			const reach1 = walk(new Set<number>([...reach0, ...seedOf(1)]), (id) => modeOf(id) === 0 || modeOf(id) === 1);
+			const reach2 = walk(new Set<number>([...reach0, ...seedOf(2)]), (id) => modeOf(id) === 0 || modeOf(id) === 2);
+			for (const id of [...allocated]) {
+				const m = modeOf(id);
+				const keep = m === 0 ? reach0.has(id) : m === 1 ? reach1.has(id) : reach2.has(id);
+				if (!keep) {
+					allocated.delete(id);
+					setMode.delete(id);
+					changed = true;
 				}
 			}
 		}
-		for (const id of [...allocated]) if (!reach.has(id)) allocated.delete(id);
 	}
 	function toggle(n: TreeNode) {
 		if (!klass && !isAtlas()) {
@@ -327,6 +403,7 @@
 		const before = snapshot();
 		if (allocated.has(n.id)) {
 			allocated.delete(n.id);
+			setMode.delete(n.id);
 			prune();
 		} else {
 			const path = pathTo(n.id);
@@ -334,7 +411,11 @@
 				flash(t("시작점에서 이어지지 않는 노드입니다", "Not connected to your start"));
 				return;
 			}
-			for (const id of path) allocated.add(id);
+			for (const id of path) {
+				allocated.add(id);
+				const pn = nodes.get(id);
+				if (curSet > 0 && pn && !forcedShared(pn)) setMode.set(id, curSet);
+			}
 		}
 		afterChange();
 		record(before);
@@ -355,15 +436,19 @@
 			updateStatsPanel();
 			return;
 		}
+		for (const id of [...setMode.keys()]) if (!allocated.has(id)) setMode.delete(id);
 		let main = 0, ascPts = 0;
+		const setPts = [0, 0, 0];
 		for (const id of allocated) {
 			const n = nodes.get(id);
 			if (!n) continue;
 			if (n.ascendancy) {
 				if (n.kind !== "ascendancyStart") ascPts++;
-			} else main++;
+			} else if (modeOf(id) > 0) setPts[modeOf(id)]++;
+			else main++;
 		}
-		if (points) points.textContent = t(`패시브 ${main}점 · 전직 ${ascPts}점`, `Passives ${main} · Ascendancy ${ascPts}`);
+		const setText = setPts[1] || setPts[2] ? t(` · 세트 I ${setPts[1]} · 세트 II ${setPts[2]}`, ` · Set I ${setPts[1]} · Set II ${setPts[2]}`) : "";
+		if (points) points.textContent = t(`패시브 ${main}점`, `Passives ${main}`) + setText + t(` · 전직 ${ascPts}점`, ` · Ascendancy ${ascPts}`);
 		writeHash();
 		draw();
 		updateStatsPanel();
@@ -384,6 +469,10 @@
 		if (asc) p.set("a", asc.id);
 		if (allocated.size) p.set("n", [...allocated].sort((a, b) => a - b).join(","));
 		if (attrPick.size) p.set("s", [...attrPick].sort((a, b) => a[0] - b[0]).map(([id, v]) => id + ":" + v).join(","));
+		for (const k of [1, 2]) {
+			const ids = [...setMode].filter(([, v]) => v === k).map(([id]) => id).sort((a, b) => a - b);
+			if (ids.length) p.set("w" + k, ids.join(","));
+		}
 		const h = p.toString();
 		history.replaceState(null, "", location.pathname + location.search + (h ? "#" + h : ""));
 	}
@@ -398,6 +487,14 @@
 			const n = nodes.get(id);
 			// PoB 빌드의 nodes 에는 시작점(직업·전직)도 들어 있다 — 시작점은 점수가 아니라 뺀다
 			if (n && n.kind !== "classStart" && n.kind !== "ascendancyStart") allocated.add(id);
+		}
+		// 세트 전용 노드(w1·w2) — 빌드 주소에 실려 온다. 공용이어야 하는 노드(핵심·주얼 칸·전직)는 무시
+		for (const k of [1, 2]) {
+			for (const s of (p.get("w" + k) || "").split(",")) {
+				const id = Number(s);
+				const n = nodes.get(id);
+				if (n && allocated.has(id) && !forcedShared(n)) setMode.set(id, k);
+			}
 		}
 		prune();
 		for (const s of (p.get("s") || "").split(",")) {
@@ -481,11 +578,23 @@
 				}
 			}
 		}
-		if (searchCount) searchCount.textContent = q ? t(`${matches.size}개 일치`, `${matches.size} matches`) : "";
+		updateSearchCount();
 		draw();
 	}
 
 	// ── 툴팁 ──
+	function updateSearchCount() {
+		if (!searchCount) return;
+		const q = (search?.value || "").trim();
+		if (!q) {
+			searchCount.textContent = "";
+			return;
+		}
+		searchCount.textContent =
+			matchCursor >= 0 && matchOrder.length
+				? `${matchCursor + 1}/${matchOrder.length}`
+				: t(`${matches.size}개 일치`, `${matches.size} matches`);
+	}
 	function kindHeader(n: TreeNode): string {
 		if (n.kind === "keystone" || n.kind === "notable" || n.kind === "jewel") return n.kind;
 		if (n.ascendancy) return "ascendancy";
@@ -498,6 +607,9 @@
 		header.className = "poe-psheader poe-psheader-" + kindHeader(n);
 		const ascName = n.ascendancy ? klass?.ascendancies.find((a) => a.id === n.ascendancy) : undefined;
 		let title = isKorean && n.nameKo ? n.nameKo : n.name;
+		// 능력치를 고른 노드는 인게임처럼 그 능력치 이름으로(예: "+5 아무 능력치" 노드 → "힘")
+		const pickedOpt = attrPick.get(n.id) && n.options ? n.options[attrPick.get(n.id)! - 1] : undefined;
+		if (pickedOpt) title = isKorean && pickedOpt.nameKo ? pickedOpt.nameKo : pickedOpt.name;
 		// 직업 시작점은 게임 데이터에 옛 이름(Marauder …)이 남아 있어 그 자리를 쓰는 직업 이름으로 보인다
 		if (n.kind === "classStart" && n.classStart?.length && data) {
 			title = n.classStart
@@ -513,7 +625,7 @@
 		tooltip.appendChild(header);
 		const body = document.createElement("div");
 		body.className = "poe-popup-body";
-		const lines = nodeLines(n);
+		const lines = effectiveLines(n);
 		for (const s of lines) {
 			const line = document.createElement("div");
 			line.className = "poe-popup-stat";
@@ -689,7 +801,7 @@
 	const undoStack: string[] = [];
 	const redoStack: string[] = [];
 	function snapshot(): string {
-		return JSON.stringify([klass?.name || "", asc?.id || "", [...allocated].sort((a, b) => a - b), [...attrPick].sort((a, b) => a[0] - b[0])]);
+		return JSON.stringify([klass?.name || "", asc?.id || "", [...allocated].sort((a, b) => a - b), [...attrPick].sort((a, b) => a[0] - b[0]), [...setMode].sort((a, b) => a[0] - b[0])]);
 	}
 	function record(before: string) {
 		if (before === snapshot()) return;
@@ -699,7 +811,7 @@
 		updateHistoryButtons();
 	}
 	function restore(s: string) {
-		const [c, a, ids, picks] = JSON.parse(s) as [string, string, number[], [number, number][]];
+		const [c, a, ids, picks, sets] = JSON.parse(s) as [string, string, number[], [number, number][], [number, number][]];
 		klass = data?.classes.find((k) => k.name === c) || null;
 		if (classSel) classSel.value = klass ? klass.name : "";
 		fillAscSelect();
@@ -709,6 +821,8 @@
 		for (const id of ids) allocated.add(id);
 		attrPick.clear();
 		for (const [id, v] of picks || []) attrPick.set(id, v);
+		setMode.clear();
+		for (const [id, v] of sets || []) setMode.set(id, v);
 		afterChange();
 		updateHistoryButtons();
 	}
@@ -731,6 +845,21 @@
 		if (r) r.disabled = redoStack.length === 0;
 	}
 	document.getElementById("poe2TreeUndo")?.addEventListener("click", undo);
+	// 찍기 모드 — 공용 / 세트 I / 세트 II(인게임 무기 세트 패시브 포인트). 바꿔도 이미 찍은 노드는 그대로
+	const setButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-tree-set]"));
+	const markSetButtons = () =>
+		setButtons.forEach((b) => {
+			const on = Number(b.dataset.treeSet) === curSet;
+			b.classList.toggle("btn-active", on);
+			b.setAttribute("aria-pressed", on ? "true" : "false");
+		});
+	setButtons.forEach((b) =>
+		b.addEventListener("click", () => {
+			curSet = Number(b.dataset.treeSet) || 0;
+			markSetButtons();
+		}),
+	);
+	markSetButtons();
 	document.getElementById("poe2TreeRedo")?.addEventListener("click", redo);
 	document.addEventListener("keydown", (e) => {
 		const el = e.target as HTMLElement | null;
@@ -748,12 +877,48 @@
 
 	// 할당 스탯 합계 — PoE1 aggregateStats 와 같은 규칙: 문장을 [고정 조각] + [숫자] 로 쪼개 같은 조각끼리 숫자만 더한다
 	const NUM_RE = /[+\-]?\d+(?:\.\d+)?/g;
+	// 요약 기준 세트(10-02) — 인게임은 켜진 무기 세트의 전용 패시브만 적용된다. 공용 노드는 늘, 다른 세트 노드는 뺀다
+	let summarySet = 1;
+	const countsForSummary = (id: number) => modeOf(id) === 0 || modeOf(id) === summarySet;
+	// 소형 패시브 효과(10-02 사용자 질문 — 타이탄 "육중한 형체" 소형 패시브 스킬 효과 50% 증가) — PoB-PoE2 CalcSetup.buildModListForNode 와 같은 규칙:
+	//   대상 = 일반 노드(kind normal) 중 전직 노드가 아닌 것. 능력치 노드(kind attribute) · 주요 · 핵심은 안 커진다.
+	//   배율 = 1 + (찍은 노드들의 "increased effect of Small Passive Skills" 합) / 100.
+	//   정수는 소수 버림(PoB ModStore.ScaleAddMod — m_modf(round(v × 배율, 2)): +5 → +7, 10% → 15%), 소수 값은 0.01 자리에서 버림.
+	const SMALL_EFFECT_RE = /(\d+(?:\.\d+)?)% increased effect of Small Passive Skills/i;
+	const isSmallPassive = (n: TreeNode) => n.kind === "normal" && !n.ascendancy;
+	function smallPassiveInc(): number {
+		let inc = 0;
+		for (const id of allocated) {
+			if (!countsForSummary(id)) continue;
+			const n = nodes.get(id);
+			for (const s of n?.stats || []) {
+				const m = SMALL_EFFECT_RE.exec(s);
+				if (m) inc += parseFloat(m[1]);
+			}
+		}
+		return inc;
+	}
+	function scaleLine(line: string, scale: number): string {
+		return line.replace(/(\d+(?:\.\d+)?)/g, (num) => {
+			const v = parseFloat(num) * scale;
+			return String(num.includes(".") ? Math.floor(v * 100) / 100 : Math.trunc(Math.round(v * 100) / 100));
+		});
+	}
+	/** 노드 문장 — 소형 패시브 효과가 있으면 그 배율을 먹인 수치(인게임 툴팁 · 합계와 같다). */
+	function effectiveLines(n: TreeNode, inc = smallPassiveInc()): string[] {
+		const lines = nodeLines(n);
+		if (inc <= 0 || !isSmallPassive(n)) return lines;
+		const scale = 1 + inc / 100;
+		return lines.map((l) => scaleLine(l, scale));
+	}
 	function aggregateStats(): { text: string; count: number }[] {
 		const acc = new Map<string, { parts: string[]; nums: number[]; signed: boolean[]; count: number }>();
+		const inc = smallPassiveInc();
 		for (const id of allocated) {
 			const n = nodes.get(id);
 			if (!n || n.kind === "classStart" || n.kind === "ascendancyStart") continue;
-			for (const raw of nodeLines(n)) {
+			if (!countsForSummary(id)) continue;
+			for (const raw of effectiveLines(n, inc)) {
 				const line = raw.trim();
 				if (!line) continue;
 				const nums: number[] = [];
@@ -789,7 +954,18 @@
 		if (!body || !statsPanel || statsPanel.classList.contains("hidden")) return;
 		body.replaceChildren();
 		// 찍은 키스톤 · 주요 노드 — 빌드의 정체성. 누르면 그 노드로 이동(PoE1 과 같다)
-		const keys = [...allocated].map((id) => nodes.get(id)).filter((n): n is TreeNode => !!n && (n.kind === "keystone" || n.kind === "notable"));
+		// 세트 전환 단추 — 세트 노드가 있을 때만 보인다
+		const toggle = document.getElementById("poe2TreeStatsSet");
+		if (toggle) {
+			toggle.classList.toggle("hidden", setMode.size === 0);
+			toggle.querySelectorAll<HTMLButtonElement>("[data-summary-set]").forEach((b) => {
+				const on = Number(b.dataset.summarySet) === summarySet;
+				b.classList.toggle("text-white", on);
+				b.classList.toggle("text-stone-500", !on);
+				b.setAttribute("aria-pressed", on ? "true" : "false");
+			});
+		}
+		const keys = [...allocated].filter(countsForSummary).map((id) => nodes.get(id)).filter((n): n is TreeNode => !!n && (n.kind === "keystone" || n.kind === "notable"));
 		keys.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "keystone" ? -1 : 1));
 		for (const n of keys) {
 			const b = document.createElement("button");
@@ -830,6 +1006,12 @@
 			body.appendChild(line);
 		}
 	}
+	document.querySelectorAll<HTMLButtonElement>("#poe2TreeStatsSet [data-summary-set]").forEach((b) =>
+		b.addEventListener("click", () => {
+			summarySet = Number(b.dataset.summarySet) || 1;
+			updateStatsPanel();
+		}),
+	);
 	document.getElementById("poe2TreeStatsToggle")?.addEventListener("click", () => {
 		statsPanel?.classList.toggle("hidden");
 		updateStatsPanel();
@@ -849,12 +1031,27 @@
 		set("ascendancy", asc?.id || "");
 		set("nodes", [...allocated].sort((a, b) => a - b).join(","));
 		set("attrs", [...attrPick].map(([id, v]) => id + ":" + v).join(","));
+		set("sets", [...setMode].map(([id, v]) => id + ":" + v).join(","));
 	}
 	evalForm?.addEventListener("htmx:beforeRequest", () => {
 		syncEvalForm();
 		evalPanel?.classList.remove("hidden");
 	});
 	document.getElementById("poe2TreeEvalClose")?.addEventListener("click", () => evalPanel?.classList.add("hidden"));
+	// → 시뮬(10-02, PoE1 트리의 "→ 시뮬" 짝) — 트리 주소와 같은 이름(c·a·n·s)으로 시뮬레이터를 연다
+	document.getElementById("poe2TreeToSim")?.addEventListener("click", () => {
+		if (!klass || !allocated.size) {
+			flash(t("먼저 직업을 고르고 노드를 찍으세요", "Pick a class and allocate nodes first"));
+			return;
+		}
+		const p = new URLSearchParams();
+		p.set("c", klass.name);
+		if (asc) p.set("a", asc.id);
+		p.set("n", [...allocated].sort((x, y) => x - y).join(","));
+		if (attrPick.size) p.set("s", [...attrPick].map(([id, v]) => id + ":" + v).join(","));
+		if (setMode.size) p.set("w", [...setMode].map(([id, v]) => id + ":" + v).join(","));
+		location.href = "/poe2/sim?" + p.toString();
+	});
 
 	// 링크 복사 — 할당 상태가 주소(#c=&a=&n=)에 있어 그대로 공유된다
 	const copyBtn = document.getElementById("poe2TreeCopy") as HTMLButtonElement | null;
@@ -886,11 +1083,14 @@
 	});
 
 	search?.addEventListener("input", runSearch);
+	// Enter 다음 · Shift+Enter 이전 + "3/14" 위치 표시 — PoE1 트리 검색과 같다(10-01)
 	search?.addEventListener("keydown", (e) => {
 		if (e.key !== "Enter" || !matchOrder.length) return;
 		e.preventDefault();
-		matchCursor = (matchCursor + 1) % matchOrder.length;
+		const n = matchOrder.length;
+		matchCursor = e.shiftKey ? (matchCursor <= 0 ? n - 1 : matchCursor - 1) : (matchCursor + 1) % n;
 		centerOn(nodes.get(matchOrder[matchCursor]), Math.max(scale / dpr, 0.06));
+		updateSearchCount();
 	});
 	window.addEventListener("resize", resize);
 

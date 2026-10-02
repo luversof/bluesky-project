@@ -23,7 +23,7 @@
 		<div class="flex flex-wrap items-center gap-1.5">
 			<span class="w-16 shrink-0 text-xs font-semibold text-base-content/50">${MessageUtil.getMessage(groupLabelPrefix + group.key())}</span>
 			@for(PoeGroups.Entry entry : group.entries())
-				<button type="button" class="poe-chip ${entry.key().equals(activeValue) ? "poe-chip-active" : ""}" data-chip-value="${entry.key()}" data-slot="${entry.slot() == null ? "" : entry.slot()}">${itemLabelPrefix != null ? MessageUtil.getMessage(itemLabelPrefix + entry.key()) : PoeText.name(entry.ko(), entry.key())}</button>
+				<button type="button" class="poe-chip ${entry.key().equals(activeValue) ? "poe-chip-active" : ""}" data-chip-value="${entry.key()}" data-slot="${entry.slot() == null ? "" : entry.slot()}">${itemLabelPrefix != null ? MessageUtil.getMessage(itemLabelPrefix + entry.key()) : PoeText.name(entry.ko(), entry.enName())}</button>
 			@endfor
 		</div>
 	@endfor

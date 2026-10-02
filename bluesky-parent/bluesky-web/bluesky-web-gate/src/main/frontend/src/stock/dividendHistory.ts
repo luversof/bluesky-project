@@ -30,12 +30,12 @@ interface DividendHistoryConfig {
 	noPeriodHistoryLabel: string;
 	averageNoDataLabel: string;
 	averageDescTemplate: string;
+	/** 딱 1 개월일 때의 문구. 없으면 averageDescTemplate 을 쓴다. */
+	averageDescOneTemplate?: string;
 	netAmountLabel: string;
 	othersLabel: string;
 	minDate: string;
 	/** 달(yyyy-MM) -> 그 달을 끝으로 하는 12 개월 세후 합. 서버가 전체 원장으로 낸다. */
-	ttmByMonth?: Record<string, number>;
-	ttmLabel?: string;
 }
 interface MonthRange {
 	from: string;
@@ -61,6 +61,7 @@ interface MonthRange {
         const noPeriodHistoryLabel: string = cfg.noPeriodHistoryLabel || "";
         const averageNoDataLabel: string = cfg.averageNoDataLabel || "";
         const averageDescTemplate: string = cfg.averageDescTemplate || "";
+        const averageDescOneTemplate: string = cfg.averageDescOneTemplate || averageDescTemplate;
         const netAmountLabel: string = cfg.netAmountLabel || "";
         const othersLabel: string = cfg.othersLabel || "";
 
@@ -89,8 +90,12 @@ interface MonthRange {
             return win.StockCharts ? win.StockCharts.formatCurrency(value) : ('₩' + Math.round(value).toLocaleString(appLocaleOrDefault()));
         }
 
+        // 단수/복수 고르기는 common.ts 의 applyCountChoice(모든 화면 공용) - 없으면 문구 그대로.
+        const countChoice = (pattern: string, value: number): string =>
+            typeof (globalThis as any).applyCountChoice === 'function' ? (globalThis as any).applyCountChoice(pattern, value) : pattern;
+
         function formatCount(value: number) {
-            return countPattern.replace('{0}', formatNumber(value));
+            return countChoice(countPattern, value).replace('{0}', formatNumber(value));
         }
 
         function formatFixedNumber(value: number, fractionDigits: number) {
@@ -180,7 +185,7 @@ interface MonthRange {
 
             const countLabel = summary.querySelector<HTMLElement>('[data-dividend-yield-selection-count]');
             if (countLabel) {
-                countLabel.textContent = summary.dataset.countTemplate!.replace('{0}', formatNumber(selectedCount));
+                countLabel.textContent = countChoice(summary.dataset.countTemplate!, selectedCount).replace('{0}', formatNumber(selectedCount));
             }
 
             const weightBadge = summary.querySelector<HTMLElement>('[data-dividend-yield-selection-weight-badge]');
@@ -672,28 +677,8 @@ interface MonthRange {
             const fmtFull = (v: number) => (win.StockCharts
                 ? win.StockCharts.formatCurrency(v)
                 : '₩' + Math.round(v).toLocaleString(appLocaleOrDefault()));
-            // 최근 12개월 합 선(오른쪽 축). 막대는 '이번 달' 을, 선은 '추세' 를 답한다. 막대 축(수백만)과 선 축(수천만)은
-            // 크기대가 달라 한 축에 두면 막대가 눌린다.
-            const ttmByMonth: Record<string, number> = cfg.ttmByMonth || {};
+            // "최근 12개월 합" 선(오른쪽 축)은 뺐다(사용자 요청 2026-10-02) - 막대와 크기대가 다른 금액이 따로 붙어 헷갈렸다.
             const chartDatasets: any[] = m.datasets.slice();
-            const hasTtm = m.labels.some((label: string) => ttmByMonth[label] !== undefined);
-            if (hasTtm) {
-                chartDatasets.push({
-                    type: 'line',
-                    label: cfg.ttmLabel || 'TTM',
-                    data: m.labels.map((label: string) => (ttmByMonth[label] !== undefined ? ttmByMonth[label] : null)),
-                    yAxisID: 'y1',
-                    order: 0,
-                    borderColor: 'rgba(20,116,73,1)',
-                    backgroundColor: 'rgba(20,116,73,1)',
-                    borderWidth: 2,
-                    pointRadius: 2,
-                    pointHoverRadius: 4,
-                    tension: 0.2,
-                    fill: false,
-                    spanGaps: true
-                });
-            }
             var config = {
                 type: 'bar',
                 data: { labels: m.labels, datasets: chartDatasets },
@@ -710,8 +695,7 @@ interface MonthRange {
                             callbacks: {
                                 label: (ctx: any) => ctx.parsed.y ? (ctx.dataset.label + ': ' + fmtFull(ctx.parsed.y)) : null,
                                 footer: (items: any) => {
-                                    // 합계는 막대(그 달 배당)만 - 선(12개월 합)을 더하면 이중 계산이다.
-                                    let sum = 0; items.forEach((it: any) => { if (it.dataset.type !== 'line') sum += it.parsed.y; });
+                                    let sum = 0; items.forEach((it: any) => { sum += it.parsed.y; });
                                     return netAmountLabel + ': ' + fmtFull(sum);
                                 }
                             }
@@ -719,8 +703,7 @@ interface MonthRange {
                     },
                     scales: {
                         x: { stacked: true, grid: { color: gridColor }, ticks: { maxRotation: 45, font: { size: 11 } } },
-                        y: { stacked: true, beginAtZero: true, grid: { color: gridColor }, ticks: { callback: (v: any) => win.StockCharts ? win.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(appLocaleOrDefault()), font: { size: 11 } } },
-                        y1: { display: hasTtm, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { callback: (v: any) => win.StockCharts ? win.StockCharts.formatCompactNumber(v) : v, font: { size: 10 } } }
+                        y: { stacked: true, beginAtZero: true, grid: { color: gridColor }, ticks: { callback: (v: any) => win.StockCharts ? win.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(appLocaleOrDefault()), font: { size: 11 } } }
                     }
                 }
             };
@@ -804,13 +787,15 @@ interface MonthRange {
             if (descEl) {
                 // 총액은 실제 배당 합계라 '금액 숨김' 대상이다. amount-value 로 감싸지 않으면
                 // 숨김을 켜도 이 줄만 그대로 보인다(실측: 배당내역에서 유일한 누락).
-                descEl.innerHTML = averageDescTemplate
-                    // 표시한 개월수로 나누면 화면의 월평균이 다시 나와야 한다. 정수로 반올림하면 재현이 깨진다
-                    // (실측 2026-09-11: 전체 기간 76.83개월을 '77개월' 로 적으면 65,652,134/77 = 852,625 로 화면값 854,475 와 다르다).
-                    // 정수에 가까우면 정수로, 아니면 소수 한 자리로 적고, 정확한 구간과 개월수는 툴팁에 남긴다.
-                    .replace('{0}', Math.abs(monthCount - Math.round(monthCount)) < 0.05
-                        ? formatNumber(Math.round(monthCount))
-                        : String(Math.round(monthCount * 10) / 10))
+                // 표시한 개월수로 나누면 화면의 월평균이 다시 나와야 한다. 정수로 반올림하면 재현이 깨진다
+                // (실측 2026-09-11: 전체 기간 76.83개월을 '77개월' 로 적으면 65,652,134/77 = 852,625 로 화면값 854,475 와 다르다).
+                // 정수에 가까우면 정수로, 아니면 소수 한 자리로 적고, 정확한 구간과 개월수는 툴팁에 남긴다.
+                const monthText = Math.abs(monthCount - Math.round(monthCount)) < 0.05
+                    ? formatNumber(Math.round(monthCount))
+                    : String(Math.round(monthCount * 10) / 10);
+                // 딱 1 개월이면 단수 문구("Average for 1 month") - 2026-10-01 영어 점검.
+                descEl.innerHTML = (monthText === "1" ? averageDescOneTemplate : averageDescTemplate)
+                    .replace('{0}', monthText)
                     .replace('{1}', '<span class="amount-value">' + formatCurrency(Math.round(totalNet)) + '</span>')
                     .replace('{2}', formatCount(dividendData.length));
                 const spanFrom = filterStartDay || (dividendData.map((d: DividendRow) => d.payDate).filter(Boolean).sort()[0] || "");

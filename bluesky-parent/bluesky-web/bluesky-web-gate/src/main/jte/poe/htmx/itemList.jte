@@ -33,7 +33,7 @@
 			!{
 				String displayName = net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name());
 				// ⚠ 로케일 무시하고 itemClassKo 를 쓰면 EN 화면에도 "투구"가 그대로 나온다(실측 86건).
-				String displayClass = net.luversof.web.gate.poe.PoeText.name(item.itemClassKo(), item.itemClass());
+				String displayClass = net.luversof.web.gate.poe.PoeClassNames.poe1(item.itemClassKo(), item.itemClass());
 				// 카드 요약 수치: 방어구는 방어 스탯, 무기는 피해/공속
 				StringBuilder summary = new StringBuilder();
 				if (item.armour() != null) {

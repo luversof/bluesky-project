@@ -63,7 +63,9 @@
 				<path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0115.75 12zM12.53 15.713l-4.243-4.244a3.75 3.75 0 004.243 4.243z" />
 				<path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 00-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 016.75 12z" />
 			</svg>
-			<span class="text-xs font-medium hidden xl:inline text-base-content/60" id="hideAmountsText">${MessageUtil.getMessage("layout.navbar.hideamounts")}</span>
+			<%-- 글자는 2xl(1536px)부터. xl 부터 보이면 주식 화면 머리 막대가 1280px(한국어) · 1280~1440px(영어)에서 두 줄(71 -> 116px)이 되어
+			     왼쪽 메뉴 첫 항목을 덮었다(실측 2026-10-01). 아이콘 · 토글 · 이름(aria-label) · title 은 그대로다. --%>
+			<span class="text-xs font-medium hidden 2xl:inline text-base-content/60" id="hideAmountsText">${MessageUtil.getMessage("layout.navbar.hideamounts")}</span>
 			<%-- 라벨 글자(#hideAmountsText)가 xl 아래에서 숨어 체크박스 이름이 사라진다(axe label, 375px 실측 2026-09-09) - 이름은 항상 준다. --%>
 			<input type="checkbox" class="toggle toggle-xs toggle-primary" id="hideAmountsToggle" aria-label="${MessageUtil.getMessage("layout.navbar.hideamounts")}" />
 		</label>

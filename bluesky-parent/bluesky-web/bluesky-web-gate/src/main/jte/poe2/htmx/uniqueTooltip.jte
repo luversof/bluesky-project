@@ -17,7 +17,7 @@
 	java.util.List<String> explicits = picked != null ? PoeText.lines(picked.explicitsKo(), picked.explicits()) : PoeText.lines(item.explicitsKo(), item.explicits());
 	// PoE 고유(주황) 색 — PoE1 과 같은 인게임 색
 	String rarity = "#af6025";
-	String itemClass = PoeText.name(item.itemClassKo(), item.itemClass());
+	String itemClass = net.luversof.web.gate.poe.PoeClassNames.poe2(item.itemClassKo(), item.itemClass());
 	java.util.List<String> flavourLines = PoeText.lines(item.flavourKo(), item.flavour());
 }
 

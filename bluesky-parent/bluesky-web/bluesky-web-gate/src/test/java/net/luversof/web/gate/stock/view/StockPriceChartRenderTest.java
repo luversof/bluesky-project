@@ -126,4 +126,62 @@ class StockPriceChartRenderTest {
         .contains(MessageUtil.getMessage("stock.item.detail.price.chart.title"))
         .contains(MessageUtil.getMessage("stock.item.detail.empty.price.history"));
   }
+
+  private String renderCandle(boolean withAverage) {
+    Map<String, Object> model = model(prices());
+    model.put(
+        "priceChart",
+        List.of(
+            new net.luversof.web.gate.stock.dto.response.StockPriceChartPoint(
+                LocalDate.parse("2026-08-27"),
+                new BigDecimal("57000"),
+                new BigDecimal("58100"),
+                new BigDecimal("56500"),
+                new BigDecimal("57400"),
+                withAverage ? new BigDecimal("55123.4") : null),
+            new net.luversof.web.gate.stock.dto.response.StockPriceChartPoint(
+                LocalDate.parse("2026-08-28"),
+                new BigDecimal("57500"),
+                new BigDecimal("61500"),
+                new BigDecimal("57300"),
+                new BigDecimal("61200"),
+                withAverage ? new BigDecimal("56000") : null)));
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
+    return output.toString();
+  }
+
+  /**
+   * 캔들(시가 · 고가 · 저가 · 종가) + 그 날의 평균 단가(사용자 요청 2026-10-02). 차트 응답이 있으면 예전 선 차트(지금 평단 고정선) 대신 이것을
+   * 그린다.
+   */
+  @Test
+  void 차트_응답이_있으면_캔들과_그_시점_평단을_그린다() {
+    String html = renderCandle(true);
+    assertThat(html)
+        .contains("createCandleChart")
+        .contains("open:[57000,57500]")
+        .contains("high:[58100,61500]")
+        .contains("low:[56500,57300]")
+        .contains("avg:[55123,56000]")
+        .contains(MessageUtil.getMessage("stock.item.detail.price.chart.candle.desc"))
+        .contains("data-candle-unit")
+        // 평단이 축 밖이면(축을 캔들에 맞춤, 2026-10-02) 범례가 쓸 문구
+        .contains("avgBelowLabel")
+        .contains("avgAboveLabel");
+    assertThat(html)
+        .as("지금 평단 고정선(예전 선 차트)은 그리지 않는다")
+        .doesNotContain("cost:new Array(2).fill(71887)")
+        .doesNotContain(MessageUtil.getMessage("stock.item.detail.price.chart.desc"));
+  }
+
+  /** 그 기간에 보유가 한 번도 없으면 평단 점선을 설명하지 않는다 - 없는 선을 찾게 된다. */
+  @Test
+  void 보유가_없던_기간이면_평단_설명을_빼고_null_로_넘긴다() {
+    String html = renderCandle(false);
+    assertThat(html)
+        .contains("avg:[null,null]")
+        .contains(MessageUtil.getMessage("stock.item.detail.price.chart.candle.desc.nocost"))
+        .doesNotContain(MessageUtil.getMessage("stock.item.detail.price.chart.candle.desc") + "<");
+  }
 }

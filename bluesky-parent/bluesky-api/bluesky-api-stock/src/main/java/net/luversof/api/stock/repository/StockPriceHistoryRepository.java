@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.jdbc.repository.query.Modifying;
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -307,4 +308,69 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                     LIMIT 5
                 """)
   List<PriceLimitBreachRow> findPriceLimitBreachRows();
+
+  /**
+   * 원주가(수정 전 종가) 열이 있는가. 2026-10-02 schema-alter 묶음으로 생긴 열이라 아직 적용 안 한 DB 도 있다 - 엔티티에 넣지 않고 이 확인
+   * 뒤에만 아래 두 질의를 쓴다(열이 없으면 앱은 정수배 추정 그대로).
+   */
+  @Query(
+      """
+                    SELECT COUNT(*) FROM information_schema.columns
+                    WHERE table_name = 'StockPriceHistory' AND column_name = 'rawClosePrice'
+                """)
+  long countRawClosePriceColumn();
+
+  /**
+   * 원주가를 (다시) 받을 시세 날짜(종가 자리에는 수정 종가): 아직 빈 날 + recentFrom 이후의 날. 최근 날은 채워져 있어도 다시 받는다 - 장중에 시세를
+   * 갱신하면 그 날 원주가가 장중 가격으로 들어가는데, 수정 종가는 다음 갱신 때 확정 종가로 덮여도 원주가는 "빈 날만" 채우면 그대로 남는다(2026-10-02).
+   */
+  @Query(
+      """
+                    SELECT h."stockItem_id" AS stock_item_id,
+                           h."tradeDate"     AS trade_date,
+                           h."closePrice"    AS close_price
+                    FROM "StockPriceHistory" h
+                    WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
+                      AND (h."rawClosePrice" IS NULL OR h."tradeDate" >= CAST(:recentFrom AS date))
+                      AND h."volume" > 0
+                """)
+  List<StockDailyClosePrice> findRawCloseDaysToFill(
+      @Param("ids") String ids, @Param("recentFrom") LocalDate recentFrom);
+
+  /**
+   * 이 사용자의 보유 기간 원주가가 채워진 정도(거래가 있던 날만). 보유 기간 = 종목별 첫 매매일부터, 순수량이 0 이하면 마지막 매매일까지 -
+   * KisStockPriceUpdateService.fillRawClosePrices 와 같은 범위다.
+   */
+  @Query(
+      """
+                    WITH t AS (
+                        SELECT tr."stockItem_id" AS sid,
+                               MIN((tr."tradeDate" AT TIME ZONE 'UTC')::date) AS f,
+                               MAX((tr."tradeDate" AT TIME ZONE 'UTC')::date) AS l,
+                               SUM(CASE WHEN tr."type" = 'BUY' THEN tr."quantity" ELSE -tr."quantity" END) AS net
+                        FROM "Trade" tr
+                        JOIN "Account" a ON tr."account_id" = a."id"
+                        WHERE a."user_id" = :userId AND tr."stockItem_id" IS NOT NULL
+                        GROUP BY tr."stockItem_id")
+                    SELECT COUNT(*) AS day_count,
+                           COUNT(*) FILTER (WHERE h."rawClosePrice" IS NULL) AS missing_day_count
+                    FROM "StockPriceHistory" h
+                    JOIN t ON t.sid = h."stockItem_id"
+                    WHERE h."tradeDate" >= t.f
+                      AND (t.net > 0 OR h."tradeDate" <= t.l)
+                      AND h."volume" > 0
+                """)
+  net.luversof.api.stock.domain.RawCloseCoverage findRawCloseCoverage(@Param("userId") UUID userId);
+
+  /** 한 행의 원주가만 바꾼다(엔티티 저장은 이 열을 모른다 - 다른 열은 건드리지 않는다). 바뀐 행 수(0 이면 그 날 시세 행이 없다). */
+  @Modifying
+  @Query(
+      """
+                    UPDATE "StockPriceHistory" SET "rawClosePrice" = :rawClose
+                    WHERE "stockItem_id" = :stockItemId AND "tradeDate" = :tradeDate
+                """)
+  int updateRawClosePrice(
+      @Param("stockItemId") UUID stockItemId,
+      @Param("tradeDate") LocalDate tradeDate,
+      @Param("rawClose") java.math.BigDecimal rawClose);
 }

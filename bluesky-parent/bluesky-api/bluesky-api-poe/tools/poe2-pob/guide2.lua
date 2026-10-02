@@ -9,7 +9,8 @@
 -- 출력: "@@POB_GUIDE@@{json}" 한 줄, 실패 "@@POB_ERROR@@메시지"
 -- 인자: <build.xml> [옵션 후보 json | -] [조각 i/n]
 --   조각: 실빌드(레벨 100)에선 계산 한 번이 ~45ms 라 한 프로세스로 20초가 넘었다 → API 가 n 개를 나란히 돌려 합친다(Poe2PobEngineService).
---   ①② 는 모든 조각(가볍고 ④⑤ 가 쓴다), ⑤⑥ = 조각 0, ③ = 조각 1%n, ⑦ = 조각 2%n, ④ 고유 후보는 번호 % n 으로 나눈다.
+--   ①② 는 모든 조각(가볍고 ④⑤ 가 쓴다), ⑥ = 조각 0, ③ = 조각 1%n, ④ 고유 후보 · ⑦ 다음 패시브 후보는 번호 % n 으로 나눈다
+--   (⑦ 은 예전엔 조각 2 혼자 6~7초를 더 써 가이드 전체가 그 조각을 기다렸다 — 10-02 나눔, 조각마다 상위 8 → API 가 같은 기준으로 다시 상위 8).
 --   맡지 않은 단계의 목록은 싣지 않는다(nil) — 합치는 쪽이 "있는 조각"에서 가져간다.
 local xmlPath, candArg, shardArg = ...
 if candArg == "-" then candArg = nil end
@@ -62,6 +63,96 @@ local ok, err = pcall(function()
 		return (o.ReqStr or 0) > (o.Str or 0) or (o.ReqDex or 0) > (o.Dex or 0) or (o.ReqInt or 0) > (o.Int or 0)
 	end
 	local baseShort = shortfall(out)
+
+	local function makeItem(text)
+		local ok1, it = pcall(new, "Item", text)
+		if ok1 and it and it.name then return it end
+		return new("Item"):Item(text)
+	end
+	local modErrors = 0
+	-- 후보 JSON — { mods = {칸: [[줄…]…]}, rares = {칸: {base, implicits, cands = [{gen, fam, lines}]}}, onlyRares = true? }(10-02).
+	--   옛 모양(칸: [[줄…]…])도 받는다. onlyRares 면 ⑧ 만 하고 끝낸다(레어 목표는 가이드 뒤에 따로 불러온다 — 본 가이드가 4~6초 느려지지 않게).
+	local candDoc = nil
+	if candArg then
+		local cf = io.open(candArg, "rb")
+		candDoc = cf and require("dkjson").decode(cf:read("*a")) or nil
+		if cf then cf:close() end
+	end
+
+	lap("⑧")
+	-- ⑧ 레어 목표(10-02 사용자 요청 "고유 아이템만 보지 말고 레어로도") — PoE1 가이드 "레어 목표"와 같은 방식(사용자 기준 "최상위는 못 사니 2티어"):
+	--    칸마다 지금 베이스 그대로 빈 레어(베이스 암시만)를 만들고, 후보 옵션(그 베이스 풀의 계열별 2티어 중간 롤)을 하나씩 끼워 잰다.
+	--    DPS·EHP 축마다 빈 레어보다 오르는 옵션을 큰 순으로 접두 3·접미 3(같은 계열 하나)까지 골라 완성품을 한 번 더 잰다 — 지금 아이템 대비 증감.
+	--    고유를 낀 칸도 잰다(그 고유를 좋은 레어로 바꾸면 어떤가). 칸은 조각마다 나눈다.
+	local rareTargets = {}
+	local rareCands = candDoc and candDoc.rares or nil
+	if rareCands then
+		local rareSlots = {}
+		for slotName in pairs(rareCands) do rareSlots[#rareSlots + 1] = slotName end
+		table.sort(rareSlots)
+		for k, slotName in ipairs(rareSlots) do
+			if mine(k) then
+				local spec = rareCands[slotName]
+				local slot = build.itemsTab.slots[slotName]
+				local cur = slot and slot.selItemId and slot.selItemId > 0 and build.itemsTab.items[slot.selItemId]
+				local impl = spec.implicits or {}
+				local head = "Rarity: RARE\nGuide Rare\n" .. spec.base .. "\nItem Level: 82\nImplicits: " .. #impl
+				if #impl > 0 then head = head .. "\n" .. table.concat(impl, "\n") end
+				local function measure(lines)
+					local text = head
+					if #lines > 0 then text = text .. "\n" .. table.concat(lines, "\n") end
+					local okI, item2 = pcall(makeItem, text)
+					if not okI or not item2 then modErrors = modErrors + 1; return nil end
+					local okC, o = pcall(calcFunc, { repSlotName = slotName, repItem = item2 })
+					if okC and o then return delta(o) end
+					return nil
+				end
+				local bare = measure({})
+				if bare then
+					local singles = {}
+					for i, c in ipairs(spec.cands or {}) do
+						local d = measure(c.lines)
+						if d then
+							singles[#singles + 1] = { i = i - 1, gen = c.gen, fam = c.fam, lines = c.lines, dps = d.dps - bare.dps, ehp = d.ehp - bare.ehp }
+						end
+					end
+					local function assemble(key)
+						local sorted = {}
+						for _, x in ipairs(singles) do if x[key] > 0.05 then sorted[#sorted + 1] = x end end
+						table.sort(sorted, function(a, b) if a[key] ~= b[key] then return a[key] > b[key] end return a.i < b.i end)
+						local nPre, nSuf, fams, picks, lines = 0, 0, {}, {}, {}
+						for _, x in ipairs(sorted) do
+							local isPre = x.gen == "prefix"
+							if not fams[x.fam] and ((isPre and nPre < 3) or (not isPre and nSuf < 3)) then
+								fams[x.fam] = true
+								if isPre then nPre = nPre + 1 else nSuf = nSuf + 1 end
+								picks[#picks + 1] = x.i
+								for _, l in ipairs(x.lines) do lines[#lines + 1] = l end
+							end
+						end
+						if #picks == 0 then return nil end
+						local final = measure(lines)
+						if not final then return nil end
+						return { picks = picks, dps = final.dps, ehp = final.ehp }
+					end
+					rareTargets[#rareTargets + 1] = {
+						slot = slotName,
+						item = cur and cur.name or nil,
+						rarity = cur and cur.rarity or nil,
+						tried = #singles,
+						dps = assemble("dps"),
+						ehp = assemble("ehp"),
+					}
+				end
+			end
+		end
+	end
+
+	if candDoc and candDoc.onlyRares then
+		lap("end")
+		print("@@POB_GUIDE@@" .. require("dkjson").encode({ shard = shard, shards = shards, base = base, rareTargets = rareTargets, modErrors = modErrors, timing = timing }))
+		return
+	end
 
 	lap("①")
 	-- ① 칸 기여
@@ -301,18 +392,10 @@ local ok, err = pcall(function()
 	--    이미 같은 틀(숫자만 다른) 줄이 있는 옵션은 건너뛴다.
 	-- 아이템 생성 방식이 PoB 판마다 다르다: 릴리스(v0.23) = new("Item", raw), dev = new("Item"):Item(raw)(여분 인자는 오류).
 	--   dev 방식만 쓰다가 엔진을 릴리스로 바꾼 뒤 옵션 목표가 전부 조용히 실패했다(pcall 이 삼킴, 09-30). 둘 다 받고, 실패 수는 modErrors 로 싣는다.
-	local function makeItem(text)
-		local ok1, it = pcall(new, "Item", text)
-		if ok1 and it and it.name then return it end
-		return new("Item"):Item(text)
-	end
 	local modTargets = {}
-	local modErrors = 0
-	local candPath = candArg
-	if candPath and mine(0) then
-		local cf = io.open(candPath, "rb")
-		local cands = cf and require("dkjson").decode(cf:read("*a")) or {}
-		if cf then cf:close() end
+	-- (makeItem · modErrors · candDoc 는 ⑧ 이 먼저 쓰려고 ① 앞으로 옮겼다 — 10-02)
+	if candDoc and mine(0) then
+		local cands = candDoc.mods or (candDoc.rares == nil and candDoc) or {}
 		local function tmpl(s) return (s:gsub("[%d%.]+", "#")) end
 		local slotNames = {}
 		for slotName in pairs(cands) do slotNames[#slotNames + 1] = slotName end
@@ -373,17 +456,20 @@ local ok, err = pcall(function()
 	local nextNodes = {}
 	local nextWeaponSet = 0
 	local nodeIds = {}
-	local doNext = mine(2)
+	local doNext = mine(2) -- 무기 세트로 건너뛴 수는 한 조각만 센다(후보 자체는 조각마다 번호로 나눈다)
+	local nextK = 0
 	for id in pairs(build.spec.nodes) do nodeIds[#nodeIds + 1] = id end
 	table.sort(nodeIds)
-	for _, id in ipairs(doNext and nodeIds or {}) do
+	for _, id in ipairs(nodeIds) do
 		local node = build.spec.nodes[id]
 		-- 경로가 **무기 세트 전용으로 찍힌 노드**에서 출발하면(pathRoot.allocMode ≠ 0) 본 트리 점수로는 못 찍는다 — PoB 도 본 트리로 찍으면
 		-- 끊긴 노드로 보고 풀어 버린다(09-30 실적용 검증: 블러드 메이지 탈출 전략). 그 무기 세트 점수로만 가능한 제안이라 뺀다.
 		local weaponSetPath = node.pathRoot and (node.pathRoot.allocMode or 0) ~= 0
-		if weaponSetPath and not node.alloc then nextWeaponSet = nextWeaponSet + 1 end
-		if not node.alloc and not weaponSetPath and (node.type == "Notable" or node.type == "Keystone") and not node.ascendancyName
-			and node.path and node.pathDist and node.pathDist > 0 and node.pathDist <= 8 then
+		if weaponSetPath and not node.alloc and doNext then nextWeaponSet = nextWeaponSet + 1 end
+		local candidate = not node.alloc and not weaponSetPath and (node.type == "Notable" or node.type == "Keystone") and not node.ascendancyName
+			and node.path and node.pathDist and node.pathDist > 0 and node.pathDist <= 8
+		if candidate then nextK = nextK + 1 end
+		if candidate and mine(nextK) then
 			local add, pathIds = {}, {}
 			for _, n in ipairs(node.path) do if not n.alloc then add[asAllocated(n)] = true; pathIds[#pathIds + 1] = n.id end end
 			local okC, o = pcall(calcFunc, { addNodes = add })
@@ -439,11 +525,12 @@ local ok, err = pcall(function()
 		gemSwaps = top(gemSwaps, "dps", "ehp", 8),
 		gemTried = #gemSwaps,
 		modTargets = zero and modTargets or nil,
+		rareTargets = rareTargets,
 		modErrors = zero and modErrors or nil,
 		timing = timing,
-		nextDps = doNext and topPer(nextNodes, "dps", "ehp", 8) or nil,
-		nextEhp = doNext and topPer(nextNodes, "ehp", "dps", 8) or nil,
-		nextTried = doNext and #nextNodes or nil,
+		nextDps = topPer(nextNodes, "dps", "ehp", 8),
+		nextEhp = topPer(nextNodes, "ehp", "dps", 8),
+		nextTried = #nextNodes,
 		nextWeaponSetSkipped = doNext and nextWeaponSet or nil,
 	}))
 end)

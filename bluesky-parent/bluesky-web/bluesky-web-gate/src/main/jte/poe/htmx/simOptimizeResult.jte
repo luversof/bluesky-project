@@ -1117,10 +1117,10 @@
 			<div class="flex items-center gap-2">
 				<div class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.code")}</div>
 				<%-- 클립보드 복사 — PoB 에 붙여넣는 게 이 코드의 유일한 용도라 원클릭이 맞다 --%>
-				<button type="button" class="btn btn-ghost btn-xs" id="poePobCopy"
-				        onclick="navigator.clipboard.writeText(this.closest('div.space-y-1').querySelector('textarea').value).then(() => { this.textContent = '${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사됨 ✓" : "Copied ✓"}'; setTimeout(() => { this.textContent = '${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사" : "Copy"}'; }, 1500); })">${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사" : "Copy"}</button>
+				<%-- 공용 복사(common.ts [data-copy-target]) — PoE2 시뮬 결과와 같은 동작(10-02: 예전엔 인라인 onclick) --%>
+				<button type="button" class="btn btn-ghost btn-xs" id="poePobCopy" data-copy-target="#poePobCode" data-copied-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사됨 ✓" : "Copied ✓"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사" : "Copy"}</button>
 			</div>
-			<textarea readonly rows="3" class="textarea textarea-bordered w-full font-mono text-xs leading-5">${result.pobCode()}</textarea>
+			<textarea id="poePobCode" readonly rows="3" class="textarea textarea-bordered w-full font-mono text-xs leading-5" aria-label="${MessageUtil.getMessage("poe.sim.opt.result.code")}">${result.pobCode()}</textarea>
 		</div>
 	</div>
 @endif

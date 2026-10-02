@@ -53,6 +53,11 @@ public class DataStatusController {
         stockPriceHistoryRepository.findZeroVolumeRowsWithChangedClose();
     List<net.luversof.api.stock.domain.PriceLimitBreachRow> breachRows =
         stockPriceHistoryRepository.findPriceLimitBreachRows();
+    // 원주가 열(schema-alter 2026-10-02)이 없는 DB 면 묻지 않는다 - 없는 열을 부르면 화면 전체가 실패한다.
+    net.luversof.api.stock.domain.RawCloseCoverage rawCloseCoverage =
+        stockPriceHistoryRepository.countRawClosePriceColumn() == 0
+            ? null
+            : stockPriceHistoryRepository.findRawCloseCoverage(userId);
     return new DataStatusResponse(
         tradeSummary != null ? tradeSummary.lastDate() : null,
         tradeSummary != null ? tradeSummary.totalCount() : 0L,
@@ -81,7 +86,9 @@ public class DataStatusController {
         toBreachRows(breachRows),
         stockPriceHistoryRepository.findItemsWithoutPriceHistory().stream()
             .map(row -> new DataStatusResponse.NoHistoryItemRow(row.symbol(), row.name()))
-            .toList());
+            .toList(),
+        rawCloseCoverage != null ? rawCloseCoverage.dayCount() : null,
+        rawCloseCoverage != null ? rawCloseCoverage.missingDayCount() : null);
   }
 
   /**

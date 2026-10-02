@@ -56,7 +56,9 @@ class SimulatorSlotFilterTest {
         .contains(
             norm(
                 "monthlyContributionPickSupport.symbolsInSlot( monthlyDividendPayoutWindowFilter, monthlyDividendAccountFilter, monthlyDividendCatalog)"))
-        .contains(norm("loadContributionPicks(filteredRows, monthlyDividendCatalog)"))
+        .contains(
+            norm(
+                "loadContributionPicks( monthlyDividendCatalog, monthlyDividendPayoutWindowFilter, monthlyDividendAccountFilter)"))
         .as("카탈로그를 못 받았는데 조건이 걸렸으면 알린다 - 조용히 전체를 보이면 걸린 줄로 읽힌다")
         .contains(
             norm(

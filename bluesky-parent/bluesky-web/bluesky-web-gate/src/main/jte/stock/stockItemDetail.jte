@@ -50,6 +50,7 @@
 @param String periodBreakdownNote = ""
 @param List<net.luversof.web.gate.stock.domain.DetailNavEntry> stockNavEntries = java.util.List.of()
 @param List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory = java.util.List.of()
+@param List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> priceChart = java.util.List.of()
 @param BigDecimal periodUnrealizedDelta = null
 @param Double periodProfitRatePct = null
 @param BigDecimal periodCapitalBase = null
@@ -120,6 +121,7 @@
 					periodBreakdownNote = periodBreakdownNote,
 					stockNavEntries = stockNavEntries,
 					priceHistory = priceHistory,
+					priceChart = priceChart,
 					periodUnrealizedDelta = periodUnrealizedDelta,
 					periodProfitRatePct = periodProfitRatePct,
 					periodCapitalBase = periodCapitalBase,

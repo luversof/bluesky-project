@@ -1,6 +1,5 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 
-@param String storageNote = ""
 
 !{
 	String inputsTitle = MessageUtil.getMessage("stock.simulator.compound.section.inputs.title");
@@ -51,8 +50,7 @@
 					<h2 class="card-title text-lg">${inputsTitle}</h2>
 					<p class="text-sm leading-6 text-base-content/60">${inputsDescription}</p>
 				</div>
-				<%-- 좁은 카드라 한 줄 배지는 넘친다 — 일반 문단으로 표시 --%>
-				<p class="text-xs leading-5 text-base-content/60">${storageNote}</p>
+				<%-- 저장 안내는 위 머리 상자에만 둔다(2026-10-01, 같은 문장이 한 화면에 두 번이었다). --%>
 			</div>
 			<%-- 우측 결과 영역과 높이 균형을 맞추기 위해 md 이상에서 2열 배치 --%>
 			<form id="stockCompoundForm" class="grid gap-4 md:grid-cols-2">

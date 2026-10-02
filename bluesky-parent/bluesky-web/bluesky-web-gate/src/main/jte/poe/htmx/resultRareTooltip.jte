@@ -61,7 +61,7 @@
 			<img src="${rightIco}" style="position:absolute;right:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
 		@endif
 		<div class="text-center font-bold text-[15px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${dName}</div>
-		<div class="text-center text-[13px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">@if(base != null)${PoeText.name(base.itemClassKo(), base.itemClass())}@else${rareLabel}@endif</div>
+		<div class="text-center text-[13px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">@if(base != null)${net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass())}@else${rareLabel}@endif</div>
 	</div>
 
 	<%-- 요구 사항 — 인게임은 **레벨이 먼저**다("요구 능력치 레벨 62, 180 힘"). 방어/무기 수치는 모드 반영값이

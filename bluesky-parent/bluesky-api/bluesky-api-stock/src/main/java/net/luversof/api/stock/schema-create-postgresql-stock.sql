@@ -130,6 +130,8 @@ CREATE TABLE "StockPriceHistory" (
 	"highPrice" NUMERIC,
 	"lowPrice" NUMERIC,
 	"closePrice" NUMERIC,
+	-- 원주가(수정 전 종가). 매매가 있던 날만 채운다 - 평가 수량의 분할 · 병합 계수 = 원주가 / 수정 종가(2026-10-02).
+	"rawClosePrice" NUMERIC,
 	"volume" BIGINT,
 	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );

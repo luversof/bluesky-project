@@ -134,6 +134,8 @@ for (const base of en.base) {
 		slug: base.Id.substring(base.Id.lastIndexOf("/") + 1),
 		itemClass: itemClass.Id,
 		itemClassKo: ko.classes[base.ItemClassesKey]?.Name || null,
+		// 게임 영어 분류 이름 — 영어 화면 칩이 내부 id(HybridFlask · AbyssJewel)로 나오지 않게(10-02 ZZ)
+		itemClassName: itemClass.Name || null,
 		category,
 		dropLevel: base.DropLevel,
 		reqStr: requirement?.ReqStr || 0,

@@ -48,8 +48,22 @@ public class PoeSimController {
         poeSimService.logTail());
   }
 
+  /** season 을 주면 그 시즌 보관본(없으면 빈 목록), 없으면 지금 랭킹 — 10-02 시즌 비교. */
   @GetMapping("/ranking")
-  public SimRanking ranking() {
+  public SimRanking ranking(
+      @org.springframework.web.bind.annotation.RequestParam(required = false) String season) {
+    if (season != null && !season.isBlank()) {
+      return poeSimService
+          .rankingOf(season)
+          .map(s -> new SimRanking(s.patch(), s.ranking()))
+          .orElse(new SimRanking("", List.of()));
+    }
     return new SimRanking(poeSimService.rankingPatch(), poeSimService.ranking());
+  }
+
+  /** 보관된 랭킹 시즌(새 것 먼저, 예: ["3.29", "3.28"]). */
+  @GetMapping("/ranking/seasons")
+  public List<String> rankingSeasons() {
+    return poeSimService.rankingSeasons();
   }
 }

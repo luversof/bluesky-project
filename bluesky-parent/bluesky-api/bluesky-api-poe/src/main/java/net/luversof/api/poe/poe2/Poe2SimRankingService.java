@@ -84,6 +84,7 @@ public class Poe2SimRankingService {
   private final Poe2PobEngineService engine;
   private final Poe2RefineService refine;
   private final Path rankingFile;
+  private final net.luversof.api.poe.service.PoeRankingSeasons seasons;
   private final JsonMapper json = JsonMapper.builder().build();
 
   private final AtomicBoolean running = new AtomicBoolean(false);
@@ -102,6 +103,10 @@ public class Poe2SimRankingService {
     this.engine = engine;
     this.refine = refine;
     this.rankingFile = Path.of(dataDir, "sim", "gem-ranking2.json");
+    // 시즌 보관(10-02, PoE1 PoeSimService 와 같은 PoeRankingSeasons)
+    this.seasons =
+        new net.luversof.api.poe.service.PoeRankingSeasons(
+            Path.of(dataDir, "sim", "ranking-seasons"));
     reload();
   }
 
@@ -114,8 +119,29 @@ public class Poe2SimRankingService {
       } catch (Exception e) {
         logger.warn("PoE2 젬 랭킹 로드 실패: {}", rankingFile, e);
       }
+      seasons.seedFrom(rankingFile, loaded.patch());
     }
     this.ranking = loaded;
+  }
+
+  /** 보관된 시즌(새 것 먼저) — 10-02. */
+  public List<String> seasons() {
+    return seasons.seasons();
+  }
+
+  /** 그 시즌 랭킹. 없거나 못 읽으면 빈 값. */
+  public java.util.Optional<RankingData> rankingOf(String season) {
+    return seasons
+        .read(season)
+        .map(
+            j -> {
+              try {
+                return json.readValue(j, RankingData.class);
+              } catch (RuntimeException e) {
+                logger.warn("PoE2 젬 랭킹 시즌 해석 실패: {}", season, e);
+                return null;
+              }
+            });
   }
 
   public RankingData ranking() {
@@ -207,10 +233,9 @@ public class Poe2SimRankingService {
       }
       result.sort(Comparator.comparingDouble(GemRank::dps).reversed());
       Files.createDirectories(rankingFile.getParent());
-      Files.writeString(
-          rankingFile,
-          json.writeValueAsString(new RankingData(data.patch(), result)),
-          StandardCharsets.UTF_8);
+      String rankingJson = json.writeValueAsString(new RankingData(data.patch(), result));
+      Files.writeString(rankingFile, rankingJson, StandardCharsets.UTF_8);
+      seasons.archive(data.patch(), rankingJson);
       reload();
       log(
           "완료: "

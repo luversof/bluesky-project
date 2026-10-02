@@ -29,6 +29,8 @@ public class StockItemService {
 
   @Autowired private StockItemRepository stockItemRepository;
 
+  @Autowired private StockPriceService stockPriceService;
+
   @Autowired private StockItemTagRepository stockItemTagRepository;
 
   @Autowired
@@ -52,6 +54,25 @@ public class StockItemService {
           java.util.UUID stockItemId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
     if (stockItemId == null) {
       return java.util.List.of();
+    }
+    // 원주가를 분할만 맞춘 가격으로(2026-10-02, TradeProfitService.splitAdjustedCloses). 배율은 고른 기간 뒤의 분할까지 알아야
+    // 하므로 끝은
+    // 늘 오늘까지 읽고 자른다. 원주가 열이 없거나 원주가로 이을 수 없는 종목이면 아래 예전 수정 종가로.
+    var rawRows =
+        stockPriceService
+            .getRawCloses(
+                java.util.Map.of(
+                    stockItemId,
+                    new java.time.LocalDate[] {
+                      startDate != null ? startDate : java.time.LocalDate.of(1900, 1, 1),
+                      java.time.LocalDate.of(9999, 12, 31)
+                    }))
+            .get(stockItemId);
+    var splitAdjusted = TradeProfitService.splitAdjustedCloses(rawRows);
+    if (splitAdjusted != null) {
+      return splitAdjusted.stream()
+          .filter(point -> endDate == null || !point.tradeDate().isAfter(endDate))
+          .toList();
     }
     java.util.List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint> points =
         new java.util.ArrayList<>();

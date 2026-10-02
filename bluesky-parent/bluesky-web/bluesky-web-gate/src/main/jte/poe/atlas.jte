@@ -68,7 +68,7 @@
 					<span id="poeTreeNotice" class="text-xs font-mono text-warning"></span>
 						<button id="poeTreeUndo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실행취소" : "Undo"}</button>
 					<button id="poeTreeRedo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Shift+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "다시실행" : "Redo"}</button>
-					<button id="poeTreeReset" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "초기화" : "Reset"}</button>
+					<button id="poeTreeReset" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "트리 초기화" : "Reset"}</button>
 					<input id="poeTreeImport" type="text" class="input input-sm input-bordered w-full sm:w-56" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "아틀라스 링크 붙여넣기" : "Paste atlas link"}">
 					<button id="poeTreeImportGo" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "가져오기" : "Import"}</button>
 					<button id="poeTreeCopy" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "링크 복사" : "Copy link"}</button>

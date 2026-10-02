@@ -77,6 +77,8 @@ String accountLabel = MessageUtil.getMessage("common.label.account");
 String typeLabel = MessageUtil.getMessage("common.label.type");
 String unitPriceLabel = MessageUtil.getMessage("stock.trade.column.unit.price");
 String quantityLabel = MessageUtil.getMessage("common.label.quantity");
+// 머리글은 짧게(영어 "Qty") - 자산 성장 매매 내역 표가 영어 1280px 에서 상자보다 16px 넓었다(2026-10-02). 낭독기 · 툴팁에는 원래 이름.
+String quantityShortLabel = MessageUtil.getMessage("stock.trade.col.quantity.short");
 String amountLabel = MessageUtil.getMessage("common.label.amount");
 String noTradeDataLabel = MessageUtil.getMessage("stock.trade.message.no.data");
 String sellCountPageLabel = sellCountIsPeriod
@@ -141,7 +143,7 @@ ${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#x20A9;${df.format(safeRp)}
 <th scope="col">${stockLabel}</th>
 <th scope="col" class="hidden sm:table-cell">${accountLabel}</th>
 <th scope="col" class="text-right">${unitPriceLabel}</th>
-<th scope="col" class="text-right">${quantityLabel}</th>
+<th scope="col" class="text-right" aria-label="${quantityLabel}"><abbr title="${quantityLabel}" class="no-underline">${quantityShortLabel}</abbr></th>
 <th scope="col" class="text-right">${amountLabel}</th>
 <th scope="col" class="text-right hidden lg:table-cell print:table-cell">${feeLabel}</th>
 <th scope="col" class="text-right hidden lg:table-cell print:table-cell">${tradingTaxLabel}</th>

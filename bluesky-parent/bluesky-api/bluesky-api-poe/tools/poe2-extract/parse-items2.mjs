@@ -133,7 +133,8 @@ for (const file of FILES) {
 			icon: b.ItemVisualIdentity != null ? visuals[b.ItemVisualIdentity]?.DDSFile || null : null,
 		};
 		items.push(item);
-		classUse.set(cls.Id, { key: cls.Id, ko: item.itemClassKo, category: item.category });
+		// en = 게임 영어 분류 이름(ItemClasses.Name — "Fishing Rods" · "Traps") — 영어 화면 칩이 내부 id(FishingRod · TrapTool)로 나오지 않게(10-02 ZZ)
+		classUse.set(cls.Id, { key: cls.Id, ko: item.itemClassKo, en: cls.Name || cls.Id, category: item.category });
 	}
 }
 items.sort((a, b) => a.itemClass.localeCompare(b.itemClass) || a.reqLevel - b.reqLevel || a.name.localeCompare(b.name));

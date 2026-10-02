@@ -57,7 +57,7 @@
 									@endif
 								</td></tr>
 								@if(base != null)
-									<tr><td class="text-base-content/50">${ko ? "아이템 클래스" : "Item class"}</td><td>${PoeText.name(base.itemClassKo(), base.itemClass())}</td></tr>
+									<tr><td class="text-base-content/50">${ko ? "아이템 클래스" : "Item class"}</td><td>${net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass())}</td></tr>
 								@endif
 								@if(item.category() != null)
 									<%-- 분류는 목록 칩과 같은 문구로(예전엔 "boots" 원문이 그대로 나왔다 — 10-01) --%>

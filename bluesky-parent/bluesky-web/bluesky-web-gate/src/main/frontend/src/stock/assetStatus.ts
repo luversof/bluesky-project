@@ -214,7 +214,9 @@ export {};
     }
 
     function formatAssetStatusMessage(template: string, value: string | number) {
-        return String(template || '').replace('{0}', String(value));
+        const choose = (globalThis as any).applyCountChoice;
+        const picked = typeof value === 'number' && typeof choose === 'function' ? choose(String(template || ''), value) : String(template || '');
+        return picked.replace('{0}', String(value));
     }
 
     function getAssetStatusLocale() {

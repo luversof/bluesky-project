@@ -12,7 +12,12 @@ public final class PoeGroups {
   private PoeGroups() {}
 
   /** 한 항목(태그/아이템클래스/카테고리) — key=영문 id(필터값), ko=한국어 라벨, slot=탭 전환 시 필터 유지용 정규 슬롯(젬 태그는 null). */
-  public record Entry(String key, String ko, String slot) {}
+  public record Entry(String key, String ko, String slot, String en) {
+    /** 영어 화면 글자 — 게임 영어 분류 이름(en), 없으면(젬 태그 · 옛 데이터) key(10-02 ZZ). */
+    public String enName() {
+      return en == null || en.isBlank() ? key : en;
+    }
+  }
 
   /** 그룹 칩 템플릿 공통 뷰 */
   public interface Group {

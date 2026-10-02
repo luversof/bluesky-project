@@ -359,8 +359,30 @@ public class TradeProfitService {
     private BigDecimal totalCostNet = BigDecimal.ZERO;
     private UUID stockItemId;
 
+    /** 그날의 실제 주식 수(원주가 평가용). 분할 · 병합이 있던 날 배율을 곱한다 - RawValuation. */
+    private BigDecimal rawShares = BigDecimal.ZERO;
+
+    /** 스냅샷 캡처 때만: 그 날 평가에 쓴 원주가(원주가로 평가하지 않는 종목은 null). 시계열과 스냅샷이 같은 값을 내게 한다. */
+    private BigDecimal capturedRawClose;
+
     public BigDecimal getQuantity() {
       return quantity;
+    }
+
+    public BigDecimal getRawShares() {
+      return rawShares;
+    }
+
+    public void setRawShares(BigDecimal rawShares) {
+      this.rawShares = rawShares;
+    }
+
+    public BigDecimal getCapturedRawClose() {
+      return capturedRawClose;
+    }
+
+    public void setCapturedRawClose(BigDecimal capturedRawClose) {
+      this.capturedRawClose = capturedRawClose;
     }
 
     public void setQuantity(BigDecimal quantity) {
@@ -407,6 +429,8 @@ public class TradeProfitService {
       c.totalCost = this.totalCost;
       c.totalCostNet = this.totalCostNet;
       c.stockItemId = this.stockItemId;
+      c.rawShares = this.rawShares;
+      c.capturedRawClose = this.capturedRawClose;
       return c;
     }
   }
@@ -726,6 +750,10 @@ public class TradeProfitService {
 
     BigDecimal globalCumulativeRealized = BigDecimal.ZERO;
     BigDecimal globalCumulativeDividend = BigDecimal.ZERO;
+    // 누적 순현금흐름: 산 돈 + 수수료 - (판 돈 - 세금 - 수수료). 시간가중 수익률이 원가 기준과 무관하게 하루 손익을 잰다.
+    BigDecimal globalCumulativeNetCash = BigDecimal.ZERO;
+    // 누적 총 매수액(산 돈 + 수수료). 보유가 없던 날 사고판 돈이 그날의 운용 원금이다 - summarizeSeries.
+    BigDecimal globalCumulativeGrossInflow = BigDecimal.ZERO;
 
     // 5) 시뮬레이션 루프
     // 시작일: 데이터가 있는 첫 로컬 거래일부터 시작 (Cost Basis 구축을 위해)
@@ -796,8 +824,35 @@ public class TradeProfitService {
 
     // 조회하면서 바로 (일자 -> (종목 -> 종가)) 로 담는다. 예전에는 87,465 행짜리 리스트를 만든 뒤
     // 아래에서 다시 전체를 훑어 같은 맵으로 옮겼다(레코드 8.7만 개 + 두 번째 순회가 통째로 낭비).
+    // 원주가(수정 전 종가) - 보유 기간(첫 매매일 ~ 다 판 날, 아직 들고 있으면 끝날) 전부. 보유 기간에 빈 날이 없는 종목은 평가를 원주가 x 실제
+    // 주식 수로 한다(RawValuation). 매매일 값은 수정 단위 평가 수량의 계수에도 쓴다(evaluationQuantity).
+    Map<UUID, LocalDate[]> rawRangeByStockItem = new HashMap<>();
+    for (Map.Entry<UUID, LocalDate> entry : firstTradeDayByStockItem.entrySet()) {
+      String groupKey = groupByStockItem.get(entry.getKey());
+      LocalDate to = endLocalDate;
+      Long net = netQuantityByGroup.get(groupKey);
+      if (net != null && net <= 0L) {
+        LocalDate closedOn = lastTradeDayByGroup.get(groupKey);
+        if (closedOn != null && closedOn.isBefore(to)) {
+          to = closedOn;
+        }
+      }
+      if (!to.isBefore(entry.getValue())) {
+        rawRangeByStockItem.put(entry.getKey(), new LocalDate[] {entry.getValue(), to});
+      }
+    }
+    Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> rawRows =
+        stockPriceService.getRawCloses(rawRangeByStockItem);
+    // 일별 종가(수정 종가)도 같은 행에서 꺼낸다 - 원주가 범위(첫 매매일부터)가 종가 범위(출력 시작일부터)를 늘 감싸고, 거래량 0 제외도 같다.
+    // 따로 한 번 더 읽으면 같은 행을 두 번 훑는다(실측 2026-10-02 JFR: 두 조회가 요청의 30%, 시계열 25 -> 50ms).
+    // 원주가 열이 없는 DB 면 행이 없으므로 예전 조회로.
     Map<LocalDate, Map<UUID, BigDecimal>> dailyPriceMap =
-        stockPriceService.getDailyClosePricesGrouped(priceRangeByStockItem);
+        rawRows.isEmpty()
+            ? stockPriceService.getDailyClosePricesGrouped(priceRangeByStockItem)
+            : dailyClosesFromRawRows(rawRows, priceRangeByStockItem);
+    RawValuation rawValuation = RawValuation.of(rawRows);
+    Map<UUID, Map<LocalDate, BigDecimal>> rawCloseByStockItem = rawValuation.rawCloseByStockItem();
+    Map<UUID, BigDecimal> lastKnownRawCloses = new HashMap<>();
 
     // 폴백 시드(직전 최근 종가). 예전에는 (outputStart 이전 거래일 전체) x (전 종목) 을 다 조회했는데
     // 실제로 쓰이는 값은 '각 종목이 자기 거래일에 갖는 가격'과 '구간 첫날 값'뿐이다
@@ -864,6 +919,17 @@ public class TradeProfitService {
       long dailyVolume = 0;
       BigDecimal dailyRealizedGain = BigDecimal.ZERO;
 
+      // 분할 · 병합(원주가 평가 종목): 주식 수는 그날 장 시작 전에 바뀐다 - 그날 매매는 이미 바뀐 단위로 적혀 있다.
+      Map<UUID, BigDecimal> shareEvents = rawValuation.shareEventsByDay().get(currentDay);
+      if (shareEvents != null) {
+        for (WmaState state : stateMap.values()) {
+          BigDecimal multiplier = shareEvents.get(state.getStockItemId());
+          if (multiplier != null && state.getRawShares().signum() > 0) {
+            state.setRawShares(state.getRawShares().multiply(multiplier));
+          }
+        }
+      }
+
       // nextTrade가 currentDay의 끝(inclusive)까지인지 확인
       // tradeDate는 시분초를 포함하므로 로컬 거래일로 변환해 비교한다.
       while (nextTrade != null) {
@@ -913,11 +979,32 @@ public class TradeProfitService {
 
         if (trade.getType() == TradeType.BUY) {
           if (q > 0) {
-            BigDecimal adjustedQty = resolveEvaluationQuantity(q, tradePrice, adjustedClose);
+            BigDecimal adjustedQty =
+                evaluationQuantity(
+                    q,
+                    tradePrice,
+                    tradeDayPrices.get(trade.getStockItemId()),
+                    rawCloseOn(rawCloseByStockItem, trade.getStockItemId(), tradeDay),
+                    adjustedClose);
             state.setQuantity(state.getQuantity().add(adjustedQty));
+            // 무상증자 신주 입고(0 원 매수)는 권리락 날 배율로 이미 셌다 - 또 더하면 두 번 센다.
+            if (!(tradePrice.signum() == 0
+                && rawValuation.isListingOfPriorShareEvent(trade.getStockItemId(), tradeDay))) {
+              state.setRawShares(
+                  state
+                      .getRawShares()
+                      .add(
+                          rawShareQuantity(
+                              q,
+                              tradePrice,
+                              rawCloseOn(rawCloseByStockItem, trade.getStockItemId(), tradeDay),
+                              rawValuation.adjustedCloseOn(trade.getStockItemId(), tradeDay))));
+            }
             state.setRawQuantity(state.getRawQuantity() + q);
             state.setTotalCost(state.getTotalCost().add(amount));
             state.setTotalCostNet(state.getTotalCostNet().add(amount).add(fee));
+            globalCumulativeNetCash = globalCumulativeNetCash.add(amount).add(fee);
+            globalCumulativeGrossInflow = globalCumulativeGrossInflow.add(amount).add(fee);
             dailyTradeCount++;
             dailyBuyCount++;
           }
@@ -928,7 +1015,16 @@ public class TradeProfitService {
           BigDecimal cogs = costOfGoodsSold(tradeSellAmount, tax, realProfit);
 
           if (state.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal adjustedSellQty = resolveEvaluationQuantity(q, tradePrice, adjustedClose);
+            // 평가액에 들어 있던 주식을 판 것만 현금으로 센다(보유 없이 들어온 매도는 평가액에도 없었다).
+            globalCumulativeNetCash =
+                globalCumulativeNetCash.subtract(tradeSellAmount.subtract(tax).subtract(fee));
+            BigDecimal adjustedSellQty =
+                evaluationQuantity(
+                    q,
+                    tradePrice,
+                    tradeDayPrices.get(trade.getStockItemId()),
+                    rawCloseOn(rawCloseByStockItem, trade.getStockItemId(), tradeDay),
+                    adjustedClose);
             if (state.getQuantity().compareTo(adjustedSellQty) >= 0) {
               state.setQuantity(state.getQuantity().subtract(adjustedSellQty));
               state.setTotalCost(state.getTotalCost().subtract(cogs));
@@ -936,11 +1032,19 @@ public class TradeProfitService {
               state.setQuantity(BigDecimal.ZERO);
               state.setTotalCost(BigDecimal.ZERO);
             }
+            BigDecimal soldShares =
+                rawShareQuantity(
+                    q,
+                    tradePrice,
+                    rawCloseOn(rawCloseByStockItem, trade.getStockItemId(), tradeDay),
+                    rawValuation.adjustedCloseOn(trade.getStockItemId(), tradeDay));
+            state.setRawShares(state.getRawShares().subtract(soldShares).max(BigDecimal.ZERO));
 
             state.setRawQuantity(state.getRawQuantity() - q);
             // rawQuantity가 0 이하이면 전량 매도: adjustedQty 반올림 오차 강제 제거
             if (state.getRawQuantity() <= 0) {
               state.setQuantity(BigDecimal.ZERO);
+              state.setRawShares(BigDecimal.ZERO);
               state.setTotalCost(BigDecimal.ZERO);
               state.setRawQuantity(0);
             } else if (state.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
@@ -986,6 +1090,10 @@ public class TradeProfitService {
       for (UUID pricedItemId : dayPricesForLastKnown.keySet()) {
         lastKnownPriceDates.put(pricedItemId, currentDay);
       }
+      Map<UUID, BigDecimal> rawClosesToday = rawValuation.rawClosesByDay().get(currentDay);
+      if (rawClosesToday != null) {
+        lastKnownRawCloses.putAll(rawClosesToday);
+      }
 
       // 출력 범위 내인지 확인 후 추가
       if (!currentDay.isBefore(outputStart)) {
@@ -1000,8 +1108,15 @@ public class TradeProfitService {
             BigDecimal price = lastKnownPrices.get(state.getStockItemId());
             if (price == null) price = BigDecimal.ZERO;
 
-            // quantity는 수정주가 기준 환산 수량이므로 수정주가 × 환산수량 = 올바른 평가액
-            BigDecimal value = price.multiply(state.getQuantity());
+            // 보유 기간 원주가가 다 있으면 원주가 x 실제 주식 수(RawValuation). 아니면 예전처럼 수정주가 x 환산 수량.
+            BigDecimal rawPrice =
+                rawValuation.covers(state.getStockItemId())
+                    ? lastKnownRawCloses.get(state.getStockItemId())
+                    : null;
+            BigDecimal value =
+                rawPrice != null
+                    ? rawPrice.multiply(state.getRawShares())
+                    : price.multiply(state.getQuantity());
             totalHoldingsValue = totalHoldingsValue.add(value);
           }
         }
@@ -1021,12 +1136,23 @@ public class TradeProfitService {
                 totalHoldingsCost,
                 cumulativeTotalProfit,
                 globalCumulativeDividend,
-                currentDay));
+                currentDay,
+                globalCumulativeNetCash,
+                globalCumulativeGrossInflow));
         // 보유 스냅샷 조회용 캡처: 요청된 날짜의 보유 상태를 그 시점 그대로 복사해 둔다.
         // (DB 캐시 대신 이 캡처를 쓰므로 시계열과 스냅샷이 어긋날 수 없다.)
         if (captureDates != null && capturedStates != null && captureDates.contains(currentDay)) {
           Map<String, WmaState> copied = new HashMap<>();
-          stateMap.forEach((stateKey, stateValue) -> copied.put(stateKey, stateValue.copy()));
+          stateMap.forEach(
+              (stateKey, stateValue) -> {
+                WmaState copy = stateValue.copy();
+                // 시계열 평가액과 같은 값(원주가 x 실제 주식 수)을 스냅샷도 내도록 그 날 쓴 원주가를 붙인다.
+                copy.setCapturedRawClose(
+                    rawValuation.covers(stateValue.getStockItemId())
+                        ? lastKnownRawCloses.get(stateValue.getStockItemId())
+                        : null);
+                copied.put(stateKey, copy);
+              });
           capturedStates.put(currentDay, copied);
           // 그 날 시점의 최근 종가도 함께 남긴다. 스냅샷 표시가격을 종목마다 다시 조회하면
           // (날짜 x 종목) 만큼 단건 쿼리가 나가는데, 여기 값이 그 조회 결과와 같다.
@@ -1048,6 +1174,23 @@ public class TradeProfitService {
 
   /** 일별 시리즈로부터 기간 요약(성장률/TWR/손익 분해)을 계산한다. */
   // 인스턴스 상태를 쓰지 않아 static 이며, 같은 패키지의 테스트가 직접 부를 수 있게 package-private 이다.
+  /** 이력 맨 앞의 전날 - 평가액 · 원가 · 실현 · 배당 · 현금흐름 모두 0. 값만 읽는다(날짜는 쓰지 않는다). */
+  private static final TradeProfitTimeSeriesPoint ZERO_POINT =
+      new TradeProfitTimeSeriesPoint(
+          java.time.Instant.EPOCH,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          0L,
+          0L,
+          0L,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO,
+          null,
+          BigDecimal.ZERO,
+          BigDecimal.ZERO);
+
   static TradeProfitTimeSeriesSummary summarizeSeries(
       List<TradeProfitTimeSeriesPoint> series, ZoneId zoneId, boolean zeroOpening) {
     if (series == null || series.isEmpty()) {
@@ -1056,7 +1199,9 @@ public class TradeProfitService {
 
     TradeProfitTimeSeriesPoint firstPoint = null;
     TradeProfitTimeSeriesPoint lastPoint = null;
-    TradeProfitTimeSeriesPoint previousPoint = null;
+    // 이력 맨 앞부터면 첫 점 앞은 아무것도 없던 날이다 - 그 날을 0 으로 두어야 첫 매수일 손익도 센다. 실측 2026-10-02 하이브: 종목 하나의
+    // 시계열은 매수일(공모주 135,000 x 2, 상장일 종가 평가 516,000)이 첫 점이라 그 날이 빠져 -33.3%(실제 +27.8%).
+    TradeProfitTimeSeriesPoint previousPoint = zeroOpening ? ZERO_POINT : null;
     // TWR(시간가중수익률): 일별로 입출금(원금 변동)을 제거한 수익률을 곱해 누적한다.
     // 평가액 성장률은 입금까지 성과로 잡히므로, 순수 운용 성과는 이 값으로 본다.
     double timeWeightedFactor = 1.0d;
@@ -1107,7 +1252,26 @@ public class TradeProfitService {
 
       if (previousPoint != null) {
         BigDecimal previousValue = nz(previousPoint.totalHoldingsValue());
-        if (previousValue.compareTo(BigDecimal.ZERO) > 0) {
+        // 보유가 없던 다음 날의 첫 매수도 센다(현금흐름을 알 때) - 분모 = 그날 들어간 돈, 손익 = 그날 종가 평가액 - 들어간 돈.
+        // 예전에는 전날 평가액이 0 이면 그날을 건너뛰어 공모주의 상장일 상승분이 통째로 빠졌다(실측 2026-10-02 하이브: 135,000 에 사
+        // 172,500 에 팔았는데 상장일 종가 255,420 부터만 세어 -32.63% - 실제 +27.8%).
+        // 그날 산 돈(총 매수액). 보유가 없던 날은 이것이 그날 운용한 돈이다 - 같은 날 사고팔아 번 날은 순현금흐름이 음수라 0 으로 읽혔다.
+        BigDecimal grossInflow =
+            point.cumulativeGrossInflow() != null && previousPoint.cumulativeGrossInflow() != null
+                ? point.cumulativeGrossInflow().subtract(previousPoint.cumulativeGrossInflow())
+                : null;
+        boolean firstBuyDay =
+            previousValue.signum() == 0 && grossInflow != null
+                ? grossInflow.signum() > 0
+                : previousValue.signum() == 0
+                    && point.cumulativeNetCashFlow() != null
+                    && previousPoint.cumulativeNetCashFlow() != null
+                    && point
+                            .cumulativeNetCashFlow()
+                            .subtract(previousPoint.cumulativeNetCashFlow())
+                            .signum()
+                        > 0;
+        if (previousValue.compareTo(BigDecimal.ZERO) > 0 || firstBuyDay) {
           // 당일 순수 손익 = (평가액 증가 - 원금 유입) + 실현손익 증가 + 배당 증가
           BigDecimal cashFlow =
               nz(point.totalHoldingsCost()).subtract(nz(previousPoint.totalHoldingsCost()));
@@ -1122,8 +1286,30 @@ public class TradeProfitService {
                   .subtract(cashFlow)
                   .add(realizedGain)
                   .add(dividendGain);
+          // 현금흐름을 알면 그것으로 잰다: 하루 손익 = 평가액 변화 - 순현금흐름 + 배당. 원가 변동 + 실현손익은 실현손익이
+          // 증권사 기록값이라 장부 원가와 어긋나면 그 차가 판 날 손익으로 튄다(실측 2026-10-01 PLUS 고배당주 2025-10-22:
+          // 장부 원가 5,966,415 인 403 주를 증권사는 실현 +405,412 로 기록 -> 하루 -19.23%, 현금 기준 +1.47%).
+          if (point.cumulativeNetCashFlow() != null
+              && previousPoint.cumulativeNetCashFlow() != null) {
+            cashFlow =
+                point.cumulativeNetCashFlow().subtract(previousPoint.cumulativeNetCashFlow());
+            dailyGain =
+                nz(point.totalHoldingsValue())
+                    .subtract(previousValue)
+                    .subtract(cashFlow)
+                    .add(dividendGain);
+          }
+          // 그날 들어온 돈(매수)은 그날 처음부터 운용된 것으로 본다 - 분모에 더한다. 나간 돈(매도)은 그날 끝까지
+          // 운용됐으므로 분모는 전날 평가액 그대로다. 예전에는 유입도 그날 끝에 들어온 것으로 봐 분모가 전날 평가액뿐이었다:
+          // 작은 보유 위에 크게 산 날, 체결가와 종가 차(보통 1% 안쪽)가 작은 분모로 나뉘어 하루 수익률이 폭증했다
+          // (실측 2026-10-01 KODEX 한국부동산리츠인프라: 1/5 보유 2,050,200 위 25,865,180 매수, 그날 -318,074 ->
+          // 하루 -15.51%, 1월 -16.90% - 가격은 한 달 1% 안쪽. 포트폴리오 '전체' 투자 수익률도 1561% 로 부풀었다 -> 804%).
+          BigDecimal base =
+              previousValue.signum() == 0 && grossInflow != null
+                  ? grossInflow
+                  : previousValue.add(cashFlow.max(BigDecimal.ZERO));
           timeWeightedFactor *=
-              1.0d + dailyGain.divide(previousValue, 10, RoundingMode.HALF_UP).doubleValue();
+              1.0d + dailyGain.divide(base, 10, RoundingMode.HALF_UP).doubleValue();
           compoundedDays++;
 
           if (timeWeightedFactor > peakFactor) {
@@ -1329,6 +1515,356 @@ public class TradeProfitService {
         : rawQuantityValue;
   }
 
+  /**
+   * 평가 수량(수정주가 기준). 그 날의 원주가와 수정 종가가 둘 다 있으면 계수 = 원주가 / 수정 종가로 정확히 환산하고, 없으면 거래가 / 수정 종가를 정수배로
+   * 추정한다(resolveEvaluationQuantity).
+   *
+   * <p>정수배 추정은 공모주(상장일 종가가 공모가 2 배 안팎 = 1/2 병합으로 오판)와 비정수 계수(감자 · 유상증자 조정 - 한화오션 4.45 · 쌍방울
+   * 1/40~48)를 못 맞췄다(실측 2026-10-01: 43 종목 중 14 종목). 원주가는 그 날 이후의 기업행위를 모두 반영한 정확한 배율이다 - 기업행위가 없던 날은
+   * 원주가 = 수정 종가라 계수 1.
+   *
+   * @param dayAdjustedClose 그 거래일의 수정 종가(다른 날 값이면 계수가 틀리므로 그 날 값만)
+   * @param dayRawClose 그 거래일의 원주가(없으면 null)
+   * @param fallbackClose 정수배 추정에 쓸 종가(그 날 값이 없으면 직전 값)
+   */
+  static BigDecimal evaluationQuantity(
+      int rawQuantity,
+      BigDecimal tradePrice,
+      BigDecimal dayAdjustedClose,
+      BigDecimal dayRawClose,
+      BigDecimal fallbackClose) {
+    if (rawQuantity > 0
+        && dayRawClose != null
+        && dayRawClose.signum() > 0
+        && dayAdjustedClose != null
+        && dayAdjustedClose.signum() > 0
+        && tradePrice != null
+        && tradePrice.signum() > 0) {
+      // (1) 원장이 이미 수정 단위로 적혀 있으면(거래가가 원주가보다 수정 종가에 가깝다) 환산하지 않는다.
+      //     실측 2026-10-02: NAVER 2018 년 5:1 분할 전 매수가 원장에 분할 뒤 수량 · 가격(220 주 · 156,400 원)으로 적혀 있어
+      //     원주가 / 수정 종가(5)를 곱하자 수량이 5 배로 부풀었다(수익률 99% -> -60%).
+      double toRaw = Math.abs(Math.log(tradePrice.doubleValue() / dayRawClose.doubleValue()));
+      double toAdjusted =
+          Math.abs(Math.log(tradePrice.doubleValue() / dayAdjustedClose.doubleValue()));
+      if (toAdjusted <= toRaw) {
+        return BigDecimal.valueOf(rawQuantity);
+      }
+      // (2) 수량이 바뀌는 기업행위만 - 수정주가는 분배금 · 배당도 조정해(ETF 1.02~1.03) 그대로 곱하면 배당을 수량으로 한 번 더 센다.
+      //     배율이 1 에서 15% 안이면(정수배 추정의 허용 폭과 같다) 수량 그대로.
+      BigDecimal factor = dayRawClose.divide(dayAdjustedClose, 10, RoundingMode.HALF_UP);
+      if (Math.abs(Math.log(factor.doubleValue())) < Math.log(1.15d)) {
+        return BigDecimal.valueOf(rawQuantity);
+      }
+      return BigDecimal.valueOf(rawQuantity)
+          .multiply(dayRawClose)
+          .divide(dayAdjustedClose, 10, RoundingMode.HALF_UP);
+    }
+    return resolveEvaluationQuantity(rawQuantity, tradePrice, fallbackClose);
+  }
+
+  /**
+   * 원주가 행에서 (일자 -> (종목 -> 수정 종가)) 를 만든다 - 종목마다 종가 범위(priceRange) 안의 날만. 따로 조회하던
+   * getDailyClosePricesGrouped 와 같은 결과다(같은 표, 같은 거래량 0 제외, 원주가 범위가 종가 범위를 감싼다).
+   */
+  static Map<LocalDate, Map<UUID, BigDecimal>> dailyClosesFromRawRows(
+      Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> rawRows,
+      Map<UUID, LocalDate[]> priceRangeByStockItem) {
+    Map<LocalDate, Map<UUID, BigDecimal>> daily = new HashMap<>();
+    for (Map.Entry<UUID, LocalDate[]> range : priceRangeByStockItem.entrySet()) {
+      List<net.luversof.api.stock.domain.StockRawClose> rows = rawRows.get(range.getKey());
+      if (rows == null) {
+        continue;
+      }
+      LocalDate from = range.getValue()[0];
+      LocalDate to = range.getValue()[1];
+      for (var row : rows) {
+        if (row.adjustedClose() == null
+            || row.tradeDate().isBefore(from)
+            || row.tradeDate().isAfter(to)) {
+          continue;
+        }
+        daily
+            .computeIfAbsent(row.tradeDate(), k -> new HashMap<>())
+            .put(range.getKey(), row.adjustedClose());
+      }
+    }
+    return daily;
+  }
+
+  /**
+   * 가격 차트용 종가 - 원주가를 분할 · 병합 배율로만 맞춘 값(2026-10-02). 그 날 이후에 있었던 배율로 나눈다(NAVER 2018-10-11 원주가
+   * 704,000 은 5:1 분할 뒤 단위로 140,800).
+   *
+   * <p>수정 종가는 분배금까지 깎는데 그 수정이 받은 때마다 달라, 처음 한꺼번에 받은 옛 구간만 깎인 채 매일 이어 받은 최근 구간과 붙어 있었다 - 경계에 가짜 하루
+   * 변동이 생겼다(0094M0 2026-03-25 수정 +18.65% / 실제 +1.92%). 실제 거래 가격에 분할만 맞추면 어디서나 같은 기준이다. 배율을 정하는 규칙은
+   * 평가와 같다(RawValuation · shareMultiplier). 원주가로 이을 수 없는 종목이면 null - 호출부가 수정 종가로 돌아간다.
+   *
+   * @param rowsAsc 한 종목의 원주가 · 수정 종가, 날짜순(거래량 0 인 날은 빠져 있다)
+   */
+  static List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint> splitAdjustedCloses(
+      List<net.luversof.api.stock.domain.StockRawClose> rowsAsc) {
+    if (rowsAsc == null || rowsAsc.isEmpty()) {
+      return null;
+    }
+    UUID id = rowsAsc.get(0).stockItemId();
+    RawValuation valuation = RawValuation.of(Map.of(id, rowsAsc));
+    if (!valuation.covers(id)) {
+      return null;
+    }
+    Map<LocalDate, BigDecimal> raw = valuation.rawCloseByStockItem().getOrDefault(id, Map.of());
+    List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint> descending =
+        new ArrayList<>();
+    BigDecimal factor = BigDecimal.ONE;
+    for (int index = rowsAsc.size() - 1; index >= 0; index--) {
+      LocalDate day = rowsAsc.get(index).tradeDate();
+      BigDecimal close = raw.get(day);
+      if (close == null) {
+        continue;
+      }
+      if (factor.compareTo(BigDecimal.ONE) != 0) {
+        close = close.divide(factor, 2, RoundingMode.HALF_UP);
+        if (close.stripTrailingZeros().scale() <= 0) {
+          close = close.setScale(0, RoundingMode.UNNECESSARY);
+        }
+      }
+      descending.add(
+          new net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint(day, close));
+      Map<UUID, BigDecimal> events = valuation.shareEventsByDay().get(day);
+      BigDecimal multiplier = events != null ? events.get(id) : null;
+      if (multiplier != null) {
+        // 그 날 장 시작 전에 주식 수가 배율만큼 바뀌었다 - 그 앞날들의 가격은 배율로 나눠야 같은 단위다.
+        factor = factor.multiply(multiplier);
+      }
+    }
+    java.util.Collections.reverse(descending);
+    return descending;
+  }
+
+  /** 하루 원주가 변화가 이 밖이면 시장 움직임이 아니다(가격제한폭 ±30%, 2015-06 이전은 ±15% 라 더 안쪽). */
+  private static final double PRICE_LIMIT_UP = 1.3d;
+
+  private static final double PRICE_LIMIT_DOWN = 0.7d;
+
+  /**
+   * 원주가 평가(2026-10-02). 수정 종가는 받은 때마다 기준이 달라(KIS 는 분배금까지 수정한다) 같은 종목 안에서도 이어지지 않았고, 분배락 하락을 지운 채
+   * 지급일에 분배금을 또 더해 두 번 셌다. 원주가 x 그날의 실제 주식 수는 실제 평가액 그대로다.
+   *
+   * <p>실제 주식 수는 매매로만 바뀌지 않는다 - 분할 · 병합 · 무상증자 날 배율을 곱한다(shareMultiplier). 원주가가 빈 날은 직전 날 배율로 메운다.
+   * 보유 첫날부터 원주가가 없거나 배율을 못 정한 날이 있는 종목은 covers=false - 예전처럼 수정 종가로 평가한다.
+   *
+   * @param rawCloseByStockItem 종목 -> 날짜 -> 원주가(빈 날 제외)
+   * @param adjustedCloseByStockItem 종목 -> 날짜 -> 수정 종가
+   * @param rawClosesByDay 날짜 -> 종목 -> 원주가(원주가로 평가하는 종목만)
+   * @param shareEventsByDay 날짜 -> 종목 -> 주식 수 배율(그날 장 시작 전에 곱한다)
+   * @param covered 원주가로 평가하는 종목
+   */
+  record RawValuation(
+      Map<UUID, Map<LocalDate, BigDecimal>> rawCloseByStockItem,
+      Map<UUID, Map<LocalDate, BigDecimal>> adjustedCloseByStockItem,
+      Map<LocalDate, Map<UUID, BigDecimal>> rawClosesByDay,
+      Map<LocalDate, Map<UUID, BigDecimal>> shareEventsByDay,
+      java.util.Set<UUID> covered) {
+
+    /** 0 원 매수가 이 날수 안에서 배율 뒤에 오면 같은 기업행위다(무상증자 신주 입고 - 원티드랩 권리락 10-08, 입고 10-28). */
+    static final int BONUS_LISTING_DAYS = 60;
+
+    static RawValuation of(Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> rows) {
+      Map<UUID, Map<LocalDate, BigDecimal>> raw = new HashMap<>();
+      Map<UUID, Map<LocalDate, BigDecimal>> adjusted = new HashMap<>();
+      Map<LocalDate, Map<UUID, BigDecimal>> byDay = new HashMap<>();
+      Map<LocalDate, Map<UUID, BigDecimal>> events = new HashMap<>();
+      java.util.Set<UUID> covered = new HashSet<>();
+      for (Map.Entry<UUID, List<net.luversof.api.stock.domain.StockRawClose>> entry :
+          rows.entrySet()) {
+        UUID id = entry.getKey();
+        boolean complete = !entry.getValue().isEmpty();
+        Map<LocalDate, BigDecimal> stockEvents = new HashMap<>();
+        net.luversof.api.stock.domain.StockRawClose previous = null;
+        for (var original : entry.getValue()) {
+          var row = original;
+          if (row.adjustedClose() != null) {
+            adjusted
+                .computeIfAbsent(id, key -> new HashMap<>())
+                .put(row.tradeDate(), row.adjustedClose());
+          }
+          if (row.rawClose() == null || row.rawClose().signum() <= 0) {
+            // 원주가가 빈 날(받기 실패 · 아직 안 받은 오늘)은 직전 날의 원주가 / 수정 종가 배율로 메운다. 이 하루 때문에 종목 전체를 수정 종가
+            // 평가로 되돌리면 지난 수익률이 통째로 바뀐다. 수정 종가와 같이 움직이므로 기업행위로 읽히지 않는다. 앞에 받은 날이 없으면 못 메운다.
+            if (previous == null
+                || row.adjustedClose() == null
+                || row.adjustedClose().signum() <= 0
+                || previous.adjustedClose() == null
+                || previous.adjustedClose().signum() <= 0) {
+              complete = false;
+              continue;
+            }
+            row =
+                new net.luversof.api.stock.domain.StockRawClose(
+                    id,
+                    row.tradeDate(),
+                    row.adjustedClose()
+                        .multiply(previous.rawClose())
+                        .divide(previous.adjustedClose(), 4, RoundingMode.HALF_UP),
+                    row.adjustedClose());
+          }
+          raw.computeIfAbsent(id, key -> new HashMap<>()).put(row.tradeDate(), row.rawClose());
+          if (previous != null) {
+            BigDecimal multiplier =
+                shareMultiplier(
+                    previous.rawClose(),
+                    row.rawClose(),
+                    previous.adjustedClose(),
+                    row.adjustedClose());
+            if (multiplier == null && outsidePriceLimit(previous.rawClose(), row.rawClose())) {
+              // 시장 움직임은 아닌데 배율을 못 정했다(수정 종가도 같이 뛰었다) - 이 종목은 원주가로 평가하지 않는다.
+              log.warn(
+                  "[raw valuation] share multiplier unresolved - stockItemId={}, {} -> {}",
+                  id,
+                  previous.tradeDate(),
+                  row.tradeDate());
+              complete = false;
+            } else if (multiplier != null) {
+              stockEvents.put(row.tradeDate(), multiplier);
+            }
+          }
+          previous = row;
+        }
+        if (complete) {
+          covered.add(id);
+          raw.getOrDefault(id, Map.of())
+              .forEach(
+                  (day, close) ->
+                      byDay.computeIfAbsent(day, key -> new HashMap<>()).put(id, close));
+          stockEvents.forEach(
+              (day, multiplier) ->
+                  events.computeIfAbsent(day, key -> new HashMap<>()).put(id, multiplier));
+        }
+      }
+      return new RawValuation(raw, adjusted, byDay, events, covered);
+    }
+
+    boolean covers(UUID stockItemId) {
+      return covered.contains(stockItemId);
+    }
+
+    BigDecimal adjustedCloseOn(UUID stockItemId, LocalDate day) {
+      Map<LocalDate, BigDecimal> byDay = adjustedCloseByStockItem.get(stockItemId);
+      return byDay == null ? null : byDay.get(day);
+    }
+
+    /** 이 0 원 매수가 바로 앞 배율(무상증자 · 분할)의 신주 입고인가 - 그렇다면 주식 수는 배율로 이미 늘었다. */
+    boolean isListingOfPriorShareEvent(UUID stockItemId, LocalDate day) {
+      if (!covers(stockItemId)) {
+        return false;
+      }
+      for (int back = 0; back <= BONUS_LISTING_DAYS; back++) {
+        Map<UUID, BigDecimal> events = shareEventsByDay.get(day.minusDays(back));
+        if (events != null && events.containsKey(stockItemId)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  private static boolean outsidePriceLimit(BigDecimal previousRaw, BigDecimal raw) {
+    double move = raw.doubleValue() / previousRaw.doubleValue();
+    return move > PRICE_LIMIT_UP || move < PRICE_LIMIT_DOWN;
+  }
+
+  /**
+   * 하루 사이 주식 수 배율(분할 5:1 이면 5, 병합 10:1 이면 0.1). 기업행위가 없으면 null.
+   *
+   * <p>원주가가 가격제한폭 밖으로 움직였을 때만 본다(시장 움직임으로는 못 넘는다). 배율은 (전날 원주가 / 수정 종가) / (그날 원주가 / 수정 종가) - 수정 종가는
+   * 그 기업행위를 지운 값이라 둘의 비가 정확한 배율이다. 단순 비율(snapToSimpleRatio)에 0.5% 안이면 그 비율로 맞춘다(NAVER 4.9929 -> 5).
+   * 배율이 1 에서 15% 안이면(분배금 수정 수준) 주식 수는 그대로다. 수정 종가도 가격제한폭 밖으로 뛰었으면 둘을 가를 수 없어 null - 호출한 쪽이 그 종목을
+   * 원주가 평가에서 뺀다.
+   *
+   * <p>한계: 출자전환 같은 희석(한화오션 2017-10-30 재상장, 배율 2.0)도 수정 종가가 지운 값이라 분할처럼 읽힌다 - 그 날 보유가 없어 지금 결과에는 영향이
+   * 없다.
+   */
+  static BigDecimal shareMultiplier(
+      BigDecimal previousRaw, BigDecimal raw, BigDecimal previousAdjusted, BigDecimal adjusted) {
+    if (previousRaw == null
+        || raw == null
+        || previousAdjusted == null
+        || adjusted == null
+        || previousRaw.signum() <= 0
+        || raw.signum() <= 0
+        || previousAdjusted.signum() <= 0
+        || adjusted.signum() <= 0
+        || !outsidePriceLimit(previousRaw, raw)
+        || outsidePriceLimit(previousAdjusted, adjusted)) {
+      return null;
+    }
+    BigDecimal multiplier =
+        previousRaw
+            .multiply(adjusted)
+            .divide(raw.multiply(previousAdjusted), 10, RoundingMode.HALF_UP);
+    multiplier = snapToSimpleRatio(multiplier);
+    if (Math.abs(Math.log(multiplier.doubleValue())) < Math.log(1.15d)) {
+      return null;
+    }
+    return multiplier;
+  }
+
+  /**
+   * 매매 한 건의 실제 주식 수(원주가 평가용). 원장은 보통 그날의 실제 주식 수로 적혀 있다. 원장이 나중 기업행위 단위로 고쳐 적혀 있으면(거래가가 원주가보다 수정
+   * 종가에 가깝고, 둘의 배율이 1 에서 15% 밖) 수량 x 수정 종가 / 원주가 - NAVER 2018-04 매수가 분할 뒤 단위(220 주 · 156,400 원)로 적혀
+   * 그날 실제로는 44 주였다.
+   */
+  static BigDecimal rawShareQuantity(
+      int quantity, BigDecimal tradePrice, BigDecimal dayRawClose, BigDecimal dayAdjustedClose) {
+    BigDecimal shares = BigDecimal.valueOf(quantity);
+    if (quantity <= 0
+        || tradePrice == null
+        || tradePrice.signum() <= 0
+        || dayRawClose == null
+        || dayRawClose.signum() <= 0
+        || dayAdjustedClose == null
+        || dayAdjustedClose.signum() <= 0) {
+      return shares;
+    }
+    double toRaw = Math.abs(Math.log(tradePrice.doubleValue() / dayRawClose.doubleValue()));
+    double toAdjusted =
+        Math.abs(Math.log(tradePrice.doubleValue() / dayAdjustedClose.doubleValue()));
+    double factor = Math.abs(Math.log(dayRawClose.doubleValue() / dayAdjustedClose.doubleValue()));
+    // 고쳐 적힌 원장은 거래가가 수정 종가와 거의 같다(NAVER 156,400 / 156,400). 공모가는 그날 종가와 멀어 수정 종가 쪽이 "더 가까울" 뿐인
+    // 경우가 있다 - 원티드랩 공모 35,000 · 상장일 원주가 91,000 · 수정 45,500(뒤의 1:1 무상증자) 을 고쳐 적힌 것으로 읽어 4 주를 2 주로
+    // 셌다(2026-10-02). 그래서 수정 종가에서 10% 안일 때만 고쳐 적힌 것으로 본다.
+    if (toAdjusted < toRaw && toAdjusted < Math.log(1.1d) && factor >= Math.log(1.15d)) {
+      // 배율은 단순 비율로 맞춘다 - 수정 종가는 분배금까지 조금 깎여 있어(NAVER 2018-04-12 원주가 / 수정 4.99) 그대로 나누면 주식 수가
+      // 0.1% 남짓 어긋나고 그 시점 평균 단가도 156,400 이 아니라 156,179 로 그려졌다(2026-10-02).
+      BigDecimal splitFactor =
+          snapToSimpleRatio(dayRawClose.divide(dayAdjustedClose, 10, RoundingMode.HALF_UP));
+      return shares.divide(splitFactor, 10, RoundingMode.HALF_UP);
+    }
+    return shares;
+  }
+
+  /**
+   * 분할 · 병합 · 무상증자에 실제로 나오는 비율(정수배, 1/2 · 1/4 · 1/5 · 1/10, 3/2 · 6/5 같은 분모 2 · 4 · 5 · 10)에서 0.5%
+   * 안이면 그 비율로 맞춘다(4.9929 -> 5). 아니면 그대로(4.45 -> 4.45). 분모를 1~10 전부 · 2% 로 두면 거의 아무 값이나 가까운 분수로
+   * 끌려갔다(4.45 -> 4.5, 31/7).
+   */
+  static BigDecimal snapToSimpleRatio(BigDecimal ratio) {
+    double value = ratio.doubleValue();
+    for (int denominator : new int[] {1, 2, 4, 5, 10}) {
+      long numerator = Math.round(value * denominator);
+      if (numerator >= 1 && Math.abs(Math.log(value * denominator / numerator)) < 0.005d) {
+        return BigDecimal.valueOf(numerator)
+            .divide(BigDecimal.valueOf(denominator), 10, RoundingMode.HALF_UP);
+      }
+    }
+    return ratio;
+  }
+
+  private static BigDecimal rawCloseOn(
+      Map<UUID, Map<LocalDate, BigDecimal>> rawCloseByStockItem, UUID stockItemId, LocalDate day) {
+    Map<LocalDate, BigDecimal> byDay = rawCloseByStockItem.get(stockItemId);
+    return byDay == null ? null : byDay.get(day);
+  }
+
   static BigDecimal detectLikelyCorporateActionFactor(BigDecimal priceRatio) {
     if (priceRatio == null || priceRatio.compareTo(BigDecimal.ZERO) <= 0) {
       return null;
@@ -1489,7 +2025,9 @@ public class TradeProfitService {
             opening.totalHoldingsCost(),
             opening.cumulativeTotalProfit(),
             opening.cumulativeDividend(),
-            opening.date()));
+            opening.date(),
+            opening.cumulativeNetCashFlow(),
+            opening.cumulativeGrossInflow()));
     result.sort(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp));
     return result;
   }
@@ -1539,7 +2077,9 @@ public class TradeProfitService {
                 extreme.totalHoldingsCost(),
                 extreme.cumulativeTotalProfit(),
                 extreme.cumulativeDividend(),
-                extreme.date()));
+                extreme.date(),
+                extreme.cumulativeNetCashFlow(),
+                extreme.cumulativeGrossInflow()));
       }
     }
     result.sort(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp));
@@ -1597,7 +2137,9 @@ public class TradeProfitService {
                   last.totalHoldingsCost(),
                   last.cumulativeTotalProfit(),
                   last.cumulativeDividend(),
-                  last.date());
+                  last.date(),
+                  last.cumulativeNetCashFlow(),
+                  last.cumulativeGrossInflow());
             })
         .filter(Objects::nonNull)
         .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
@@ -1646,7 +2188,9 @@ public class TradeProfitService {
                   last.totalHoldingsCost(),
                   last.cumulativeTotalProfit(),
                   last.cumulativeDividend(),
-                  last.date());
+                  last.date(),
+                  last.cumulativeNetCashFlow(),
+                  last.cumulativeGrossInflow());
             })
         .filter(Objects::nonNull)
         .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
@@ -1898,6 +2442,10 @@ public class TradeProfitService {
               });
       merged.setQuantity(merged.getQuantity().add(state.getQuantity()));
       merged.setRawQuantity(merged.getRawQuantity() + state.getRawQuantity());
+      merged.setRawShares(merged.getRawShares().add(state.getRawShares()));
+      if (state.getCapturedRawClose() != null) {
+        merged.setCapturedRawClose(state.getCapturedRawClose());
+      }
       merged.setTotalCost(merged.getTotalCost().add(state.getTotalCost()));
       merged.setTotalCostNet(merged.getTotalCostNet().add(state.getTotalCostNet()));
     }
@@ -1946,6 +2494,18 @@ public class TradeProfitService {
         price = stockPriceService.getPriceAt(state.getStockItemId(), date);
       }
       BigDecimal value = price.multiply(state.getQuantity());
+      // 원주가로 평가한 종목은 시계열과 같은 값으로: 원주가 x 실제 주식 수, 표시도 그 날의 실제 주식 수와 원주가(2026-10-02).
+      // 수정 종가 x 환산 수량으로 내면 같은 날 차트 평가액과 어긋난다(분배금 · 분할 조정만큼).
+      boolean rawValued = state.getCapturedRawClose() != null && state.getRawShares().signum() > 0;
+      if (rawValued) {
+        value = state.getCapturedRawClose().multiply(state.getRawShares());
+        displayQty = state.getRawShares().setScale(0, RoundingMode.HALF_UP).longValue();
+        displayQtyBd = BigDecimal.valueOf(displayQty);
+        avgCost =
+            displayQty > 0
+                ? state.getTotalCost().divide(displayQtyBd, 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+      }
       BigDecimal unrealizedProfit = value.subtract(state.getTotalCost());
 
       // 표시 가격은 표시 수량과 같은 기준이어야 한다.
@@ -1953,8 +2513,8 @@ public class TradeProfitService {
       // (rawQuantity)가 배수만큼 다르다. 이때 내부 가격을 그대로 내보내면 수량 x 가격 != 평가액 이 되고,
       // 게이트의 시가배당률(priceAtDate x 배당 수량)이 그 배수만큼 어긋난다
       // (실측: 047820/329180 의 8개 스냅샷 행에서 최대 13배).
-      BigDecimal displayPrice = price;
-      if (displayQty > 0 && state.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
+      BigDecimal displayPrice = rawValued ? state.getCapturedRawClose() : price;
+      if (!rawValued && displayQty > 0 && state.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
         BigDecimal ratio = state.getQuantity().divide(displayQtyBd, 10, RoundingMode.HALF_UP);
         if (ratio.subtract(BigDecimal.ONE).abs().compareTo(new BigDecimal("0.0001")) > 0) {
           displayPrice = value.divide(displayQtyBd, 2, RoundingMode.HALF_UP);

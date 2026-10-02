@@ -137,7 +137,9 @@ export {};
 
 			const countLabel = summary.querySelector<HTMLElement>('[data-monthly-selection-count]');
 			if (countLabel) {
-				countLabel.textContent = String(summary.dataset.countTemplate || '').replace('{0}', String(selectedCount));
+				const choose = (globalThis as any).applyCountChoice;
+				const template = String(summary.dataset.countTemplate || '');
+				countLabel.textContent = (typeof choose === 'function' ? choose(template, selectedCount) : template).replace('{0}', String(selectedCount));
 			}
 
 			const itemCountLabel = summary.querySelector<HTMLElement>('[data-monthly-selection-item-count]');

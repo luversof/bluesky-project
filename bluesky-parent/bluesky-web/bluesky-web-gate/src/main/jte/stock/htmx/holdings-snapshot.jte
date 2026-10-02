@@ -141,7 +141,7 @@
 							<td class="text-right amount-value">${item.priceAtDate() != null ? "₩" + String.format("%,d", StockFormatUtil.displayWon(item.priceAtDate())) : "-"}</td>
 							<td class="text-right font-medium amount-value">${item.value() != null ? "₩" + String.format("%,d", StockFormatUtil.displayWon(item.value())) : "-"}</td>
 							<td class="text-right font-medium ${colorClass} amount-value">
-								${sign}₩${item.unrealizedProfit() != null ? String.format("%,d", StockFormatUtil.displayWon(item.unrealizedProfit())) : "0"}
+								${sign}${item.unrealizedProfit() != null && StockFormatUtil.displayWon(item.unrealizedProfit()) < 0 ? "-" : ""}₩${item.unrealizedProfit() != null ? String.format("%,d", Math.abs(StockFormatUtil.displayWon(item.unrealizedProfit()))) : "0"}
 							</td>
 							<td class="text-right ${colorClass}">${sign}${pct}%</td>
 						</tr>

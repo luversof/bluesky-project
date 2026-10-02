@@ -29,6 +29,8 @@
 	// so the spacing lives in the message and the template splits it at the placeholder.
 	String sharesBefore = net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(sharesPattern);
 	String sharesAfter = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(sharesPattern);
+	// 1 주일 때의 뒤 꼬리(영어 " share") - 2026-10-01 영어 점검에서 "1 shares". 한국어는 같은 "주".
+	String sharesAfterOne = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares.one"));
 	String monthSummaryLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.recent.activity.month.summary"), thisMonthLabel);
 }
 
@@ -89,7 +91,7 @@
 								<div class="text-xs text-base-content/60 flex items-center gap-1">
 									<span>
 										@if("TRADE".equals(activity.type()))
-											${sharesBefore}<span class="amount-value">${activity.quantity()}</span>${sharesAfter}
+											${sharesBefore}<span class="amount-value">${activity.quantity()}</span>${Integer.valueOf(1).equals(activity.quantity()) ? sharesAfterOne : sharesAfter}
 										@else
 											${activity.description()}
 										@endif

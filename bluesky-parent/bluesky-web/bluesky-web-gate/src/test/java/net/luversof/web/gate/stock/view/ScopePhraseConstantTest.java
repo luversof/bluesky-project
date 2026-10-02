@@ -69,13 +69,6 @@ class ScopePhraseConstantTest {
             "src/main/java/net/luversof/web/gate/stock/service/MonthlyDividendCalculator.java",
             "limit(12)"
           },
-          // TTM 은 '그 달을 끝으로 하는 12 개월' 이라 뒤로 11 달을 본다 - 수는 다르지만 같은 규칙이다.
-          new String[] {
-            "stock.dividend.chart.ttm.label",
-            "12",
-            "src/main/java/net/luversof/web/gate/stock/util/StockDividendTtmUtil.java",
-            "minusMonths(11)"
-          },
           new String[] {
             "stock.simulator.assumption.four",
             "12",

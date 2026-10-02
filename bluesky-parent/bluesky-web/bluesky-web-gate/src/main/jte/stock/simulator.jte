@@ -73,7 +73,8 @@
 		// 모두 "지속가능성 시뮬레이터" 였다(적립식 복리 탭은 자기 제목을 갖고 있었다).
 		pageTitle = MessageUtil.getMessage("stock.page.simulator.monthly.title");
 		description = MessageUtil.getMessage("stock.simulator.monthly.description");
-		storageNote = MessageUtil.getMessage("stock.simulator.monthly.storage.note");
+		// 기준 데이터를 관리하는 곳(관리 > 월배당 기준 데이터)의 이름은 메뉴 · 탭 문구에서 받는다 - 예전에는 "배당 메뉴" 로 박혀 있어 관리로 옮긴 뒤 틀린 안내가 됐다(2026-10-01).
+		storageNote = java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.storage.note"), MessageUtil.getMessage("layout.menu.stock.admin"), MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference"));
 		toolTitle = MessageUtil.getMessage("stock.simulator.monthly.tool.title");
 		toolDescription = MessageUtil.getMessage("stock.simulator.monthly.tool.desc");
 	} else {
@@ -249,7 +250,7 @@
 				<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
 				<script type="module" src="/js/stock/submitOverlay.js"></script>
 			@elseif(compoundTab)
-				@template.stock.fragments.compoundSimulator(storageNote = storageNote)
+				@template.stock.fragments.compoundSimulator()
 				<%-- compoundSimulator.js 는 Chart 를 직접 쓰므로 이 화면에서만 Chart.js 를 먼저 로드한다
 					     (레이아웃 전역 선로드 제거 → 차트 없는 화면은 받지 않음) --%>
 					<script src="/js/vendor/chart.umd.min.js"></script>
@@ -284,9 +285,8 @@
 									<h2 class="card-title text-lg" data-page-section>${inputsTitle}</h2>
 									<p class="text-sm leading-6 text-base-content/60">${inputsDescription}</p>
 								</div>
-								<%-- 배지는 기본이 nowrap 이라 좁은 화면에서 이 줄의 최소 폭을 늘려
-								     카드 전체가 가로로 밀린다. 모바일에선 줄바꿈을 허용한다. --%>
-								<div class="badge badge-outline badge-lg h-auto min-w-0 whitespace-normal text-left">${storageNote}</div>
+								<%-- 저장 안내(localStorage)는 위 머리 상자에만 둔다(2026-10-01) - 여기 배지로 한 번 더 적혀 같은 문장이 한 화면에 두 번이었고,
+								     1440px 에서 두 줄짜리 큰 알약이 되어 설명 옆을 눌렀다. --%>
 							</div>
 
 							<form id="stockSimulatorForm" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

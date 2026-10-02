@@ -8,7 +8,7 @@
 @param String patch = ""
 
 !{
-	String pageTitle = MessageUtil.getMessage("layout.menu.poe.regex");
+	String pageTitle = MessageUtil.getMessage("poe.regex.title");
 	String patchLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.patch"), patch);
 	boolean ko = PoeText.isKorean();
 }
@@ -67,7 +67,7 @@
 						<button class="btn btn-sm join-item" data-regex-tab="normal">${ko ? "일반 맵" : "Normal maps"}</button>
 						<button class="btn btn-sm join-item" data-regex-tab="uber">${ko ? "T17(악몽)" : "T17"}</button>
 					</div>
-					<input id="poeRegexSearch" type="search" class="input input-sm input-bordered w-full sm:w-64" placeholder="${ko ? "맵모드 검색 (예: 반사, 저주)" : "Search map mods"}" autocomplete="off">
+					<input id="poeRegexSearch" type="search" class="input input-sm input-bordered w-full sm:w-64" placeholder="${ko ? "지도 옵션 검색 (예: 반사, 저주)" : "Search map mods"}" autocomplete="off">
 					<span id="poeRegexCount" class="text-xs font-mono text-base-content/50"></span>
 					<label class="label cursor-pointer gap-1.5 py-0">
 						<input id="poeRegexEnglish" type="checkbox" class="checkbox checkbox-xs">

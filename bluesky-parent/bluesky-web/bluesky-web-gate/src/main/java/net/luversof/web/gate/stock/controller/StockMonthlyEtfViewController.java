@@ -86,8 +86,6 @@ public class StockMonthlyEtfViewController {
             () -> monthlyDividendCatalogClient.findCatalog(new LinkedMultiValueMap<>()));
     var holdingsFuture =
         stockAsync.supply(() -> monthlyDividendReferenceSupport.loadCurrentHoldings(userId));
-    var heldSnapshotFuture =
-        stockAsync.supply(() -> monthlyDividendReferenceSupport.loadMonthlyDividendRows(userId));
     List<MonthlyDividendCatalogResponse> catalog =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(catalogFuture);
     List<MonthlyEtfRowView> allRows =
@@ -98,7 +96,7 @@ public class StockMonthlyEtfViewController {
     // "이번 적립" 배지 - 시뮬레이터 월배당 탭(필터 없는 기본 화면)과 같은 답을 내야 한다(사용자 요청 2026-09-22 의 잇기).
     // 거르기 전에 낸다 - "이번 적립만 보기" 가 이것으로 거른다(사용자 요청 2026-09-23).
     Map<String, MonthlyContributionPickSupport.ContributionPick> contributionPicks =
-        loadContributionPicks(heldSnapshotFuture, catalog);
+        loadContributionPicks(catalog);
     String resolvedView = monthlyEtfViewSupport.resolveView(view);
     // 자리별 적립 추천 보기는 자리 차례(월중 → 월말, 위탁 → ISA/연금)로 놓는다(사용자 요청 2026-09-30). 전체 보기면 표시 순서.
     String viewSort = monthlyEtfViewSupport.resolveSortForView(resolvedSort, resolvedView);
@@ -143,25 +141,15 @@ public class StockMonthlyEtfViewController {
   }
 
   /**
-   * 종목코드 -> 이번 적립 자리. 보유 출처는 시뮬레이터와 같은 스냅샷이다(이 화면의 "보유" 는 원장 수량이라 갈릴 수 있다). 원격 호출이 실패해도 목록은 살린다 -
-   * 배지는 덧붙인 것이고, 실패는 로그로 남긴다.
+   * 종목코드 -> 이번 적립 자리. 등록된 종목 전부가 후보다(보유 여부와 상관없이 - 사용자 요청 2026-10-02). 실패해도 목록은 살린다 - 배지는 덧붙인 것이고,
+   * 실패는 로그로 남긴다.
    */
   private Map<String, MonthlyContributionPickSupport.ContributionPick> loadContributionPicks(
-      java.util.concurrent.CompletableFuture<
-              List<net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse>>
-          heldSnapshotFuture,
       List<MonthlyDividendCatalogResponse> catalog) {
     try {
-      // 스냅샷 호출이 실패하면 join 이 그 예외를 그대로 던진다 - 아래 catch 가 예전처럼 받아 목록은 살린다.
-      List<String> held =
-          net.luversof.web.gate.stock.support.StockAsyncSupport.join(heldSnapshotFuture).stream()
-              .map(
-                  net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
-                      ::stockItemSymbol)
-              .toList();
       Map<String, MonthlyContributionPickSupport.ContributionPick> bySymbol =
           new java.util.LinkedHashMap<>();
-      for (var pick : monthlyContributionPickSupport.pickHeld(held, catalog)) {
+      for (var pick : monthlyContributionPickSupport.pickFromCatalog(catalog)) {
         bySymbol.putIfAbsent(pick.symbol(), pick);
       }
       return bySymbol;

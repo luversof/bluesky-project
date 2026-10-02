@@ -1918,7 +1918,9 @@ function renderMonthlyDetailsTable(record) {
 	}
 
 	function formatYearOffset(year) {
-		return i18n.summaryYearsLater.replace(
+		const choose = (globalThis as any).applyCountChoice;
+		const template = typeof choose === "function" ? choose(i18n.summaryYearsLater, year || 0) : i18n.summaryYearsLater;
+		return template.replace(
 			"{0}",
 			currencyFormatter.format(year || 0),
 		);

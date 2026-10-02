@@ -17,14 +17,14 @@
 <div class="space-y-1.5" data-chip-group data-chip-target="${target}" data-chip-field="itemClass">
 	<div class="flex flex-wrap items-center gap-1.5">
 		<span class="w-16 shrink-0"></span>
-		<button type="button" class="poe-chip ${"all".equals(activeClass) ? "poe-chip-active" : ""}" data-chip-value="all">${MessageUtil.getMessage("poe2.all")}</button>
+		<button type="button" class="poe-chip ${"all".equals(activeClass) ? "poe-chip-active" : ""}" data-chip-value="all">${MessageUtil.getMessage("poe.uniques.category.all")}</button>
 	</div>
 	@for(java.util.Map.Entry<String, List<Poe2.ItemClass>> row : byCategory.entrySet())
 		@if(!row.getValue().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5" data-chip-row="${row.getKey()}">
 				<span class="w-16 shrink-0 text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.itemgroup." + row.getKey())}</span>
 				@for(Poe2.ItemClass c : row.getValue())
-					<button type="button" class="poe-chip ${c.key().equals(activeClass) ? "poe-chip-active" : ""}" data-chip-value="${c.key()}" data-slot="${c.key()}">${PoeText.name(c.ko(), c.key())}</button>
+					<button type="button" class="poe-chip ${c.key().equals(activeClass) ? "poe-chip-active" : ""}" data-chip-value="${c.key()}" data-slot="${c.key()}">${PoeText.name(c.ko(), c.enName())}</button>
 				@endfor
 			</div>
 		@endif

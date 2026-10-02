@@ -45,10 +45,13 @@ public class Poe2PobEngineService {
   /**
    * 가이드 조각 수 — 실빌드(레벨 100) 가이드가 한 프로세스로 22초, 3조각 12.8초·4조각 10.8초·6조각 11.0초(09-30 실측, 로드 2~3초가 바닥).
    */
-  private static final int GUIDE_SHARDS = 4;
+  // 6조각(10-02, 4 → 6): ⑦ 나눔 뒤 실빌드 11.5 → 10.2초. 결과는 조각 수와 무관(4·6 조각 가이드 전체 JSON 동일 확인). 동시 실행
+  // 한도(slots)도 8 → 12 —
+  //   본 가이드 6 + 레어 칸 6 이 함께 돈다(28 코어 로컬 기준 — k8s 엔 엔진이 없다).
+  private static final int GUIDE_SHARDS = 6;
 
   /** 동시 프로세스 상한 — 한 사람이 재계산 1 + 가이드 4 를 한꺼번에 띄운다. 프로세스당 PoB 데이터 적재. */
-  private final Semaphore slots = new Semaphore(8);
+  private final Semaphore slots = new Semaphore(12);
 
   private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
@@ -205,7 +208,13 @@ public class Poe2PobEngineService {
         }
         parts.add(jsonMapper.readTree(r.payload()));
       }
-      return new Raw(mergeGuide(parts).toString(), null, System.currentTimeMillis() - t0);
+      long elapsed = System.currentTimeMillis() - t0;
+      // 조각별 단계 시간(guide2.lua lap, 초) — 가장 느린 조각 · 단계를 찾는 근거(10-02 속도 점검)
+      logger.info(
+          "PoE2 가이드 {}ms — 조각별 단계(초) {}",
+          elapsed,
+          parts.stream().map(p -> p.path("timing").toString()).toList());
+      return new Raw(mergeGuide(parts).toString(), null, elapsed);
     } catch (Exception e) {
       logger.warn("PoE2 가이드 조각 합치기 실패", e);
       return new Raw(null, "guide-merge-error", System.currentTimeMillis() - t0);
@@ -215,7 +224,7 @@ public class Poe2PobEngineService {
   static tools.jackson.databind.node.ObjectNode mergeGuide(List<JsonNode> parts) {
     tools.jackson.databind.node.ObjectNode m =
         (tools.jackson.databind.node.ObjectNode) parts.get(0).deepCopy();
-    for (String key : List.of("nodes", "nextDps", "nextEhp", "nextTried", "modTargets")) {
+    for (String key : List.of("nodes", "modTargets", "nextWeaponSetSkipped")) {
       for (JsonNode p : parts) {
         if (p.has(key) && !p.get(key).isNull()) {
           m.set(key, p.get(key));
@@ -225,11 +234,44 @@ public class Poe2PobEngineService {
     }
     m.put("tried", parts.stream().mapToInt(p -> p.path("tried").asInt(0)).sum());
     m.put("gemTried", parts.stream().mapToInt(p -> p.path("gemTried").asInt(0)).sum());
+    // 다음 패시브(⑦)는 후보를 조각마다 나눠 잰다(10-02) — 조각별 상위 8 을 모아 guide2.lua topPer 와 같은 기준으로 다시 상위 8
+    m.put("nextTried", parts.stream().mapToInt(p -> p.path("nextTried").asInt(0)).sum());
+    m.set("nextDps", mergePerPoint(parts, "nextDps", "dps"));
+    m.set("nextEhp", mergePerPoint(parts, "nextEhp", "ehp"));
     m.set("swapsDps", mergeTop(parts, "swapsDps", "dps"));
     m.set("swapsEhp", mergeTop(parts, "swapsEhp", "ehp"));
     m.set("gemSwaps", mergeTop(parts, "gemSwaps", "dps"));
+    // 레어 목표는 칸을 조각마다 나눠 잰다 — 모든 조각 것을 잇는다(10-02)
+    tools.jackson.databind.node.ArrayNode rare =
+        tools.jackson.databind.node.JsonNodeFactory.instance.arrayNode();
+    for (JsonNode p : parts) {
+      p.path("rareTargets").forEach(rare::add);
+    }
+    m.set("rareTargets", rare);
     m.remove("shard");
     return m;
+  }
+
+  /**
+   * 다음 패시브 목록 합치기 — guide2.lua topPer 와 같은 기준: 점수당(key / points) 내림차순, 동점은 노드 id 오름차순, 상위 8. 조각마다
+   * 이미 같은 기준으로 거른(합계 key ≥ 1 · 다른 축 ≥ -5) 상위 8 이라, 모아 다시 줄 세우면 한 프로세스로 잰 상위 8 과 같다.
+   */
+  static tools.jackson.databind.node.ArrayNode mergePerPoint(
+      List<JsonNode> parts, String list, String key) {
+    List<JsonNode> all = new java.util.ArrayList<>();
+    for (JsonNode p : parts) {
+      p.path(list).forEach(all::add);
+    }
+    all.sort(
+        java.util.Comparator.<JsonNode>comparingDouble(
+                n -> -n.path(key).asDouble() / Math.max(1, n.path("points").asDouble(1)))
+            .thenComparingLong(n -> n.path("id").asLong()));
+    tools.jackson.databind.node.ArrayNode out =
+        tools.jackson.databind.node.JsonNodeFactory.instance.arrayNode();
+    for (int i = 0; i < Math.min(8, all.size()); i++) {
+      out.add(all.get(i));
+    }
+    return out;
   }
 
   /**

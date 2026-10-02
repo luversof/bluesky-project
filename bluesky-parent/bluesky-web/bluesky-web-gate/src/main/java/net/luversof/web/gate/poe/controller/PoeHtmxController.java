@@ -370,10 +370,49 @@ public class PoeHtmxController {
 
   /** 젬 DPS 랭킹 목록 fragment */
   @GetMapping("/sim/ranking")
-  public String simRanking(Model model) {
-    PoeJobStatus.SimRanking ranking = poeSimClient.ranking();
+  public String simRanking(
+      // 시즌 비교(10-02 사용자 요청) — season = 볼 시즌(비면 지금), against = 비교할 시즌(비면 바로 이전 시즌)
+      @RequestParam(required = false, defaultValue = "") String season,
+      @RequestParam(required = false, defaultValue = "") String against,
+      Model model) {
+    java.util.List<String> seasons = java.util.List.of();
+    try {
+      seasons = poeSimClient.rankingSeasons();
+    } catch (RuntimeException e) {
+      log.warn("PoE 젬 랭킹 시즌 조회 실패: {}", e.toString());
+    }
+    PoeJobStatus.SimRanking ranking =
+        season.isBlank() ? poeSimClient.ranking() : poeSimClient.ranking(season);
+    String viewed = season.isBlank() && !seasons.isEmpty() ? seasons.get(0) : season;
+    String vs =
+        against.isBlank()
+            ? net.luversof.web.gate.poe.RankCompare.previousSeason(seasons, viewed)
+            : against;
+    PoeJobStatus.SimRanking prev =
+        vs == null || vs.equals(viewed) ? null : poeSimClient.ranking(vs);
     model.addAttribute("ranking", ranking.ranking());
     model.addAttribute("rankingPatch", ranking.patch());
+    model.addAttribute("seasons", seasons);
+    model.addAttribute("season", viewed == null ? "" : viewed);
+    model.addAttribute("against", prev == null ? "" : vs);
+    model.addAttribute("againstPatch", prev == null ? "" : prev.patch());
+    model.addAttribute(
+        "changes",
+        prev == null
+            ? java.util.Map.of()
+            : net.luversof.web.gate.poe.RankCompare.compare(
+                ranking.ranking().stream()
+                    .map(net.luversof.web.gate.poe.dto.PoeGemRank::slug)
+                    .toList(),
+                ranking.ranking().stream()
+                    .map(net.luversof.web.gate.poe.dto.PoeGemRank::dps)
+                    .toList(),
+                prev.ranking().stream()
+                    .map(net.luversof.web.gate.poe.dto.PoeGemRank::slug)
+                    .toList(),
+                prev.ranking().stream()
+                    .map(net.luversof.web.gate.poe.dto.PoeGemRank::dps)
+                    .toList()));
     return "poe/htmx/simRanking";
   }
 
@@ -886,7 +925,7 @@ public class PoeHtmxController {
    * <p>게이트는 API 404 를 BlueskyException 으로 감싸 받으므로 타입만으로는 못 가른다 — 메시지에 실린 상태를 본다. 문자열 의존이라 취약하지만, 못
    * 갈라도 기존 문구로 안전하게 떨어질 뿐이라 손해가 없다.
    */
-  private static boolean isNotFound(Exception e) {
+  public static boolean isNotFound(Exception e) {
     if (e instanceof org.springframework.web.client.HttpClientErrorException.NotFound) {
       return true;
     }

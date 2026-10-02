@@ -9,6 +9,8 @@ public record PoeBaseItem(
     String slug,
     String itemClass,
     String itemClassKo,
+    /** 게임 영어 분류 이름(ItemClasses.Name — "Hybrid Flasks"). 옛 데이터면 null. */
+    String itemClassName,
     String category,
     int dropLevel,
     int reqStr,

@@ -132,6 +132,87 @@ public class StockPriceService {
         ids.toString(), froms.toString(), tos.toString(), idOrder);
   }
 
+  /** 원주가 열이 있다고 확인했는가(한 번 확인되면 다시 묻지 않는다 - 없을 때만 매번 확인). */
+  private volatile boolean rawClosePriceColumnKnown;
+
+  /**
+   * 종목마다 [from, to] 구간의 원주가와 수정 종가, 종목별 날짜순(KisStockPriceUpdateService.fillRawClosePrices 가 보유 기간을
+   * 채운다).
+   *
+   * <p>열이 없는 DB(schema-alter 2026-10-02 미적용)면 빈 맵 - 평가는 수정 종가로 돌아간다.
+   */
+  public Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> getRawCloses(
+      Map<UUID, LocalDate[]> rangeByStockItemId) {
+    Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> result = new HashMap<>();
+    if (rangeByStockItemId == null || rangeByStockItemId.isEmpty()) {
+      return result;
+    }
+    if (!rawClosePriceColumnKnown) {
+      if (stockPriceHistoryRepository.countRawClosePriceColumn() == 0) {
+        return result;
+      }
+      rawClosePriceColumnKnown = true;
+    }
+    StringBuilder ids = new StringBuilder();
+    StringBuilder froms = new StringBuilder();
+    StringBuilder tos = new StringBuilder();
+    List<UUID> idOrder = new ArrayList<>();
+    for (Map.Entry<UUID, LocalDate[]> entry : rangeByStockItemId.entrySet()) {
+      LocalDate[] range = entry.getValue();
+      if (entry.getKey() == null
+          || range == null
+          || range[0] == null
+          || range[1] == null
+          || range[1].isBefore(range[0])) {
+        continue;
+      }
+      if (!ids.isEmpty()) {
+        ids.append(',');
+        froms.append(',');
+        tos.append(',');
+      }
+      ids.append(entry.getKey());
+      froms.append(range[0]);
+      tos.append(range[1]);
+      idOrder.add(entry.getKey());
+    }
+    if (ids.isEmpty()) {
+      return result;
+    }
+    // Spring Data 행 변환을 건너뛰는 빠른 경로(일별 종가와 같은 이유 - StockDailyClosePriceQuery).
+    return stockDailyClosePriceQuery.findRawClosesGrouped(
+        ids.toString(), froms.toString(), tos.toString(), idOrder);
+  }
+
+  /** 종목들의 fromDate 이후 원주가(종가 자리에 원주가, 빈 날 제외), 종목별 날짜순. 원주가 열이 없는 DB 면 빈 맵 - 호출부는 수정 종가로 돌아간다. */
+  public Map<UUID, List<StockDailyClosePrice>> getRawClosePricesForItems(
+      String ids, LocalDate fromDate) {
+    Map<UUID, List<StockDailyClosePrice>> result = new HashMap<>();
+    if (ids == null || ids.isEmpty()) {
+      return result;
+    }
+    if (!rawClosePriceColumnKnown) {
+      if (stockPriceHistoryRepository.countRawClosePriceColumn() == 0) {
+        return result;
+      }
+      rawClosePriceColumnKnown = true;
+    }
+    for (StockDailyClosePrice row :
+        stockDailyClosePriceQuery.findRawClosePricesForItems(ids, fromDate)) {
+      result.computeIfAbsent(row.stockItemId(), key -> new ArrayList<>()).add(row);
+    }
+    return result;
+  }
+
+  /** 한 종목의 일별 시가 · 고가 · 저가 · 종가와 원주가(열이 없는 DB 면 원주가 null) - 종목 상세 캔들 차트. */
+  public List<net.luversof.api.stock.domain.StockOhlcRow> getOhlc(
+      UUID stockItemId, LocalDate fromDate) {
+    if (!rawClosePriceColumnKnown && stockPriceHistoryRepository.countRawClosePriceColumn() > 0) {
+      rawClosePriceColumnKnown = true;
+    }
+    return stockDailyClosePriceQuery.findOhlc(stockItemId, fromDate, rawClosePriceColumnKnown);
+  }
+
   /** 기준일 목록 각각에 대해 종목별 "그 날 이하의 마지막 종가"를 한 행씩 조회한다. */
   /** (종목, 기준일) 쌍 목록으로 최근 종가를 조회한다. 두 리스트는 같은 길이의 병렬 배열이다. */
   public List<StockDailyClosePrice> getLatestClosePricesForPairs(

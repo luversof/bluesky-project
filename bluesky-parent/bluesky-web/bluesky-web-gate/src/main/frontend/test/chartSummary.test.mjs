@@ -59,6 +59,15 @@ test("선 차트: {x,y} 지점·숨긴 데이터셋·빈 데이터셋을 처리�
 	assert.equal(mod.chartSummaryText({ config: { type: "bar" }, data: { labels: [], datasets: [] } }, "ko-KR"), "");
 });
 
+test("캔들: 몸통 [시가, 종가] 는 종가로 읽고, 꼬리(summaryHidden)는 뺀다(2026-10-02)", () => {
+	const chart = { config: { type: "bar" }, data: { labels: ["2026-09-01", "2026-09-02"], datasets: [
+		{ label: "고가-저가", summaryHidden: true, data: [[90, 110], [95, 130]] },
+		{ label: "종가", data: [[100, 105], [105, 125]] },
+		{ type: "line", label: "그 시점 평균 단가", data: [80, 80] },
+	] } };
+	assert.equal(mod.chartSummaryText(chart, "ko-KR"), "종가: 2개 지점, 처음 2026-09-01 105, 끝 2026-09-02 125, 최고 125 (2026-09-02), 최저 105 (2026-09-01). 그 시점 평균 단가: 2개 지점, 처음 2026-09-01 80, 끝 2026-09-02 80, 최고 80 (2026-09-01), 최저 80 (2026-09-01)");
+});
+
 test("도넛: 항목별 값과 비중, 10개 초과는 '외 N개'", () => {
 	const chart = { config: { type: "doughnut" }, data: { labels: ["삼성전자", "KODEX"], datasets: [{ data: [750, 250] }] } };
 	assert.equal(mod.chartSummaryText(chart, "ko-KR"), "항목 2개: 삼성전자 750 (75%), KODEX 250 (25%)");

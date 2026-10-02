@@ -48,7 +48,7 @@
 					     원장으로만 놓은 종목은 심볼이 없다(실측 2024-11: 두 종목 전부 속성이 사라져 QA 탐침이 0 종목으로 읽었다). --%>
 					!{String entryNote = entry.actualAmount() ? "" : ((entry.spread()
 						? java.text.MessageFormat.format(spreadPattern, String.valueOf(entry.earliestDay()), String.valueOf(entry.latestDay())) + " "
-						: "") + java.text.MessageFormat.format(samplePattern, String.valueOf(entry.sampleCount())));}
+						: "") + java.text.MessageFormat.format(samplePattern, entry.sampleCount()));}
 					!{boolean taxableUnknown = entry.taxableLooksUnregistered();}
 					!{String taxableNote = taxableUnknown ? java.text.MessageFormat.format(taxableUnregisteredPattern, StockFormatUtil.pct(entry.historyTaxableRatioPct().doubleValue(), 1)) : "";}
 					<li class="flex flex-col gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-3" data-calendar-entry="${entry.symbol() != null ? entry.symbol() : ""}" data-calendar-entry-name="${entry.name()}" title="${entryNote}">

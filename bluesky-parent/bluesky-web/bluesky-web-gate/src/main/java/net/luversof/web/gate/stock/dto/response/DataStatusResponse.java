@@ -63,7 +63,62 @@ public record DataStatusResponse(
     /** 위 개수에 해당하는 행(최대 5건). */
     List<PriceLimitBreachRow> priceHistoryPriceLimitBreachRows,
     /** 시세 이력이 한 행도 없는 종목. 개수만 알려 주면 무엇을 고쳐야 할지 알 수 없다. */
-    List<NoHistoryItemRow> priceHistoryNoHistoryItemRows) {
+    List<NoHistoryItemRow> priceHistoryNoHistoryItemRows,
+    /** 보유 기간에 시세가 있는 날 수 - 원주가 평가 대상(2026-10-02). 원주가 열이 없는 DB · 옛 API 면 null. */
+    Long rawClosePriceDayCount,
+    /** 그중 원주가가 빈 날 수(직전 날 배율로 메운 추정값이 평가에 쓰인 날). */
+    Long rawClosePriceMissingDayCount) {
+
+  /** 원주가 현황 없이 만든다(그 값을 모르는 옛 API 응답 · 시험). */
+  public DataStatusResponse(
+      Instant tradeLastDate,
+      long tradeCount,
+      Instant dividendLastDate,
+      long dividendCount,
+      LocalDate priceHistoryLastDate,
+      long stockItemCount,
+      LocalDate priceHistoryPreviousDate,
+      long priceHistoryItemCount,
+      long priceHistorySameCloseCount,
+      long priceHistorySameAllCount,
+      long priceHistoryZeroVolumeCount,
+      long priceHistoryRowCount,
+      long priceHistoryZeroVolumeRowCount,
+      long priceHistoryLastDateItemCount,
+      long priceHistoryNoHistoryItemCount,
+      long priceHistoryZeroVolumeChangedCloseCount,
+      List<ZeroVolumeChangedCloseRow> priceHistoryZeroVolumeChangedCloseRows,
+      LocalDate monthlyDividendPayoutLastDate,
+      List<MonthlyDividendPayoutOverdueRow> monthlyDividendPayoutOverdueRows,
+      long priceHistoryPriceLimitBreachCount,
+      List<PriceLimitBreachRow> priceHistoryPriceLimitBreachRows,
+      List<NoHistoryItemRow> priceHistoryNoHistoryItemRows) {
+    this(
+        tradeLastDate,
+        tradeCount,
+        dividendLastDate,
+        dividendCount,
+        priceHistoryLastDate,
+        stockItemCount,
+        priceHistoryPreviousDate,
+        priceHistoryItemCount,
+        priceHistorySameCloseCount,
+        priceHistorySameAllCount,
+        priceHistoryZeroVolumeCount,
+        priceHistoryRowCount,
+        priceHistoryZeroVolumeRowCount,
+        priceHistoryLastDateItemCount,
+        priceHistoryNoHistoryItemCount,
+        priceHistoryZeroVolumeChangedCloseCount,
+        priceHistoryZeroVolumeChangedCloseRows,
+        monthlyDividendPayoutLastDate,
+        monthlyDividendPayoutOverdueRows,
+        priceHistoryPriceLimitBreachCount,
+        priceHistoryPriceLimitBreachRows,
+        priceHistoryNoHistoryItemRows,
+        null,
+        null);
+  }
 
   /** 시세 이력이 없는 종목 한 줄. */
   public record NoHistoryItemRow(String symbol, String stockItemName) {}

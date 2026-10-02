@@ -31,7 +31,11 @@ public interface Poe2DataClient {
       @RequestParam String skill,
       @RequestParam String ascendancy,
       @RequestParam String scenario,
-      @RequestParam(required = false) String unique);
+      @RequestParam(required = false) String unique,
+      @RequestParam(required = false) String treeClass,
+      @RequestParam(required = false) String treeNodes,
+      @RequestParam(required = false) String treeAttrs,
+      @RequestParam(required = false) String treeSets);
 
   @GetExchange("/sim/status")
   Poe2.SimStatus simStatus();
@@ -54,6 +58,14 @@ public interface Poe2DataClient {
 
   @GetExchange("/sim/ranking")
   Poe2.SimRankingData simRanking();
+
+  /** 그 시즌 보관 랭킹(10-02). */
+  @GetExchange("/sim/ranking")
+  Poe2.SimRankingData simRanking(@RequestParam String season);
+
+  /** 보관된 랭킹 시즌(새 것 먼저). */
+  @GetExchange("/sim/ranking/seasons")
+  List<String> simRankingSeasons();
 
   // ── poe.ninja 실빌드 시뮬레이터 ──
   @GetExchange("/ninja/overview")

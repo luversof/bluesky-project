@@ -29,7 +29,15 @@ public interface Poe2EngineClient {
       @RequestParam(required = false) String ascendancy,
       @RequestParam(required = false) String nodes,
       @RequestParam(required = false) String skill,
-      @RequestParam(required = false) String attrs);
+      @RequestParam(required = false) String attrs,
+      @RequestParam(required = false) String sets);
+
+  /** 가이드 레어 목표만(10-02) — 가이드 뒤에 따로. */
+  @PostExchange(
+      url = "/build/guide/rares",
+      contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+  Poe2.GuideRares guideRares(
+      @RequestParam String code, @RequestParam(required = false) Integer set);
 
   /** 무기 세트를 지정한 가이드(세트를 나눠 쓰는 빌드에서 다른 세트 보기) — 10-01. */
   @PostExchange(url = "/build/guide", contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

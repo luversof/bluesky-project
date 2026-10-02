@@ -195,6 +195,13 @@ class StockBaseHtmxControllerTest {
             java.util.UUID id, org.springframework.util.MultiValueMap<String, String> params) {
       return java.util.List.of();
     }
+
+    @Override
+    public java.util.List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint>
+        getPriceChart(
+            java.util.UUID id, org.springframework.util.MultiValueMap<String, String> params) {
+      return java.util.List.of();
+    }
   }
 
   private static final class StubAccountClient implements AccountClient {

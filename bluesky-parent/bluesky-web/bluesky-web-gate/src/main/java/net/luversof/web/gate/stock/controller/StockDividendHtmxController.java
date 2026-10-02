@@ -675,20 +675,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             endInstant != null
                 ? endInstant.atZone(breakdownZone).toLocalDate().minusDays(1)
                 : null));
-    // TTM 선은 표시 기간 <b>밖</b>의 달까지 필요해서 날짜로 자르지 않은 원장을 쓴다. 다만 계좌·종목 필터는
-    // 따라야 한다 - 예전에는 allDividends 를 그대로 넘겨 막대만 필터를 따르고 선은 전체 포트폴리오를 그렸다.
-    // 실측 2026-09-10: 삼성SDI 로 걸면 막대 합은 298,640 인데 TTM 선은 11,427,786(올바른 값 131,130)이었고
-    // 61개 점이 전부 틀렸다. 에스디바이오센서는 20,364 자리에 2,678,912 - 전체 원장의 2022-04 TTM 값 그대로였다.
-    List<DividendResponse> ttmSource =
-        allDividends.stream()
-            .filter(d -> matchesFilter(effectiveAccountIdList, d.accountId()))
-            .filter(d -> matchesFilter(effectiveStockItemIdList, d.stockItemId()))
-            .toList();
-    model.addAttribute(
-        "dividendTtmJs",
-        net.luversof.web.gate.stock.util.StockDividendTtmUtil.toJs(
-            net.luversof.web.gate.stock.util.StockDividendTtmUtil.byMonth(
-                ttmSource, net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone))));
+    // 월별 배당 차트의 "최근 12개월 합" 선은 뺐다(사용자 요청 2026-10-02: "의미없는거 같은데? 괜히 오른쪽에 다른 금액 표시하고
+    // 헷갈리기만"). 막대(그 달 배당)와 크기대가 다른 금액이 오른쪽 축에 따로 붙어 무엇을 읽어야 할지 흐렸다.
     model.addAttribute("totalItems", totalItems);
     model.addAttribute("accountList", finalAccountList);
     model.addAttribute("stockItemList", finalStockItemList);

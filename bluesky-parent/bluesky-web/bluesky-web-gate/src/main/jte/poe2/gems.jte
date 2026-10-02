@@ -38,8 +38,8 @@
 				<form id="poe2GemFilter" class="flex flex-wrap gap-2 items-center"
 				      hx-get="/poe2/htmx/gems" hx-target="#poe2GemList" hx-swap="innerHTML"
 				      hx-trigger="input changed delay:300ms, change" data-url-sync="true">
-					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72"
-					       placeholder="${MessageUtil.getMessage("poe2.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
+					<input type="search" name="q" value="${initialQ}" autofocus class="input input-sm input-bordered w-full sm:w-72"
+					       placeholder="${MessageUtil.getMessage("poe.gems.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
 					<select name="kind" class="select select-sm select-bordered" aria-label="kind">
 						<option value="all" selected="${"all".equals(initialKind)}">${MessageUtil.getMessage("poe2.all")}</option>
 						@for(String k : List.of("skill", "support", "meta"))
@@ -58,7 +58,7 @@
 				<div class="space-y-1.5" data-chip-group data-chip-target="#poe2GemFilter" data-chip-field="tag">
 					<div class="flex flex-wrap items-center gap-1.5">
 						<span class="w-16 shrink-0"></span>
-						<button type="button" class="poe-chip ${"all".equals(activeTag) ? "poe-chip-active" : ""}" data-chip-value="all">${MessageUtil.getMessage("poe2.all")}</button>
+						<button type="button" class="poe-chip ${"all".equals(activeTag) ? "poe-chip-active" : ""}" data-chip-value="all">${MessageUtil.getMessage("poe.gems.tag.all")}</button>
 					</div>
 					@for(Poe2.TagGroup g : tagGroups)
 						<div class="flex flex-wrap items-center gap-1.5" data-chip-row="${g.key()}">

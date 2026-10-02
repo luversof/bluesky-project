@@ -17,7 +17,8 @@
 @if(hasLevel || str > 0 || dex > 0 || intel > 0)
 	<div class="poe-tt-sepimg"></div>
 	<div class="px-4 py-1.5 text-center text-[12px]" data-tt-requirements>
-		<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>
+		<%-- 게임 문구 그대로 "요구 사항: 레벨 65, 23 지능"(PoE2 클라이언트 ItemRequirementsLabel, 10-02 — 예전엔 "요구 능력치 레벨 …") --%>
+		<span class="${label}">${MessageUtil.getMessage("poe2.tt.requires")} </span>
 		@if(hasLevel)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${level}</span>@endif@if(str > 0)<span class="${value}">${hasLevel ? ", " : ""}${str} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(dex > 0)<span class="${value}">${hasLevel || str > 0 ? ", " : ""}${dex} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(intel > 0)<span class="${value}">${hasLevel || str > 0 || dex > 0 ? ", " : ""}${intel} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
 	</div>
 @endif

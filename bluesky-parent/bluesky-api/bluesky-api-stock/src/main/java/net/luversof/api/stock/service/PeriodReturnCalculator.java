@@ -107,6 +107,24 @@ public final class PeriodReturnCalculator {
     return null;
   }
 
+  /**
+   * 기간 수익률에 쓸 종가 시계열 - 원주가가 오늘까지 있으면 원주가, 아니면 수정 종가(2026-10-02).
+   *
+   * <p>수정 종가는 받은 때마다 분배금 수정 기준이 다르다 - 처음 한꺼번에 받은 옛 날은 분배금만큼 깎여 있고 매일 이어 받은 최근 날은 그대로다. 기초 가격이 깎여
+   * 있으면 가격 수익률이 부풀고, 합산 수익률은 거기에 분배금을 또 더해 두 번 센다(0094M0 12 개월 기초 원주가 11,285 / 수정 8,840). 원주가는 실제
+   * 거래 가격이라 분배금은 합산에서 한 번만 들어간다. 원주가의 마지막 날이 수정 종가의 마지막 날과 다르면(오늘 원주가가 아직 없다) 기말이 어긋나므로 예전대로 수정 종가를
+   * 쓴다.
+   */
+  public static List<StockDailyClosePrice> preferRaw(
+      List<StockDailyClosePrice> rawAsc, List<StockDailyClosePrice> adjustedAsc) {
+    if (rawAsc == null || rawAsc.isEmpty() || adjustedAsc == null || adjustedAsc.isEmpty()) {
+      return adjustedAsc;
+    }
+    LocalDate rawLast = rawAsc.get(rawAsc.size() - 1).tradeDate();
+    LocalDate adjustedLast = adjustedAsc.get(adjustedAsc.size() - 1).tradeDate();
+    return rawLast != null && rawLast.equals(adjustedLast) ? rawAsc : adjustedAsc;
+  }
+
   private static BigDecimal percent(BigDecimal numerator, BigDecimal denominator) {
     return numerator.multiply(BigDecimal.valueOf(100)).divide(denominator, 2, RoundingMode.HALF_UP);
   }

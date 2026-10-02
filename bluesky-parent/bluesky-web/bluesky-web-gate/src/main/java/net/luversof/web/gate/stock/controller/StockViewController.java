@@ -625,7 +625,11 @@ public class StockViewController {
     // 점수는 연배당 수익률 + min(분배금 추세, 0) 이다. 연배당 수익률과 추세는 종목 단위 정보라 카탈로그에서만 온다.
     // 원격 호출이 실패해도 화면은 살린다 - 추천은 덧붙인 것이고, 실패는 로그로 남긴다.
     model.addAttribute(
-        "monthlyContributionPicks", loadContributionPicks(filteredRows, monthlyDividendCatalog));
+        "monthlyContributionPicks",
+        loadContributionPicks(
+            monthlyDividendCatalog,
+            monthlyDividendPayoutWindowFilter,
+            monthlyDividendAccountFilter));
     model.addAttribute("monthlyDividendRows", filteredRows);
     model.addAttribute(
         "monthlyDividendSummary",
@@ -938,27 +942,35 @@ public class StockViewController {
   }
 
   /**
-   * 보유 중인 월배당 종목으로 자리마다 하나씩 고른다(사용자 요청 2026-09-22).
+   * 등록된 월배당 종목 전부에서 자리마다 하나씩 고른다(사용자 요청 2026-09-22, 2026-10-02 부터 보유 여부와 상관없이 - "보유 여부와 상관없이 추천하는게
+   * 좋을거 같아"). 연배당 수익률과 분배금 추세는 종목 단위 정보라 카탈로그에서 가져온다.
    *
-   * <p>보유 여부는 시뮬레이터가 이미 걸러 준 행으로 정한다 &mdash; 그 탭은 "내가 받을 배당" 이라 보유 종목만 다룬다. 연배당 수익률과 분배금 추세는 종목 단위
-   * 정보라 카탈로그에서 가져온다.
+   * <p>지급 시기 · 계좌 필터가 걸려 있으면 그 자리의 추천만 남긴다 - 필터는 자리를 고르는 것이라 같은 경계(resolveSlotWindow ·
+   * resolveSlotAccount)로 거른다.
    */
   private java.util.List<
           net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick>
       loadContributionPicks(
-          java.util.List<MonthlyDividendSnapshotResponse> heldRows,
           java.util.List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse>
-              catalog) {
+              catalog,
+          String payoutWindowFilter,
+          String accountFilter) {
     // 카탈로그를 못 받은 까닭은 loadMonthlyDividendCatalog 가 이미 남겼다.
-    if (heldRows == null || heldRows.isEmpty() || catalog == null) {
+    if (catalog == null) {
       return java.util.List.of();
     }
-
     try {
-      // 후보 만드는 규칙은 월배당 ETF 목록의 "이번 적립" 배지와 같이 쓴다(pickHeld).
-      return monthlyContributionPickSupport.pickHeld(
-          heldRows.stream().map(MonthlyDividendSnapshotResponse::stockItemSymbol).toList(),
-          catalog);
+      // 후보 만드는 규칙은 월배당 ETF 목록의 "이번 적립" 배지와 같이 쓴다(pickFromCatalog).
+      return monthlyContributionPickSupport.pickFromCatalog(catalog).stream()
+          .filter(
+              pick ->
+                  (payoutWindowFilter == null
+                          || payoutWindowFilter.isEmpty()
+                          || payoutWindowFilter.equals(pick.payoutWindow()))
+                      && (accountFilter == null
+                          || accountFilter.isEmpty()
+                          || accountFilter.equals(pick.account())))
+          .toList();
     } catch (Exception ex) {
       // 조용히 삼키면 추천이 사라진 까닭을 못 찾는다.
       log.warn("적립 추천을 못 냈다(화면은 그대로 둔다)", ex);

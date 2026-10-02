@@ -125,7 +125,7 @@
 								java.util.List<String> displayMods = net.luversof.web.gate.poe.PoeText.lines(item.modLinesKo(), item.modLines());
 								java.util.List<String> displayImplicits = net.luversof.web.gate.poe.PoeText.lines(item.implicitLinesKo(), item.implicitLines());
 									boolean showMods = !isUnique && displayMods != null && !displayMods.isEmpty();
-								String itemClassLabel = item.base() != null ? net.luversof.web.gate.poe.PoeText.name(item.base().itemClassKo(), item.base().itemClass()) : null;
+								String itemClassLabel = item.base() != null ? net.luversof.web.gate.poe.PoeClassNames.poe1(item.base().itemClassKo(), item.base().itemClass()) : null;
 							}
 							@if(isUnique && item.uniqueSlug() != null)
 								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors"

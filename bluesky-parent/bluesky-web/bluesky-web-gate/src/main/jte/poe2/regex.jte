@@ -63,7 +63,7 @@
 			<%-- 조건: 검색/임계값/옵션 --%>
 			<div class="rounded-2xl bg-base-100 p-3 shadow-sm space-y-3">
 				<div class="flex flex-wrap items-center gap-2">
-					<input id="poeRegexSearch" type="search" class="input input-sm input-bordered w-full sm:w-64" placeholder="${ko ? "옵션 검색 (예: 저항, 심연)" : "Search waystone mods"}" aria-label="${ko ? "옵션 검색" : "Search mods"}" autocomplete="off">
+					<input id="poeRegexSearch" type="search" class="input input-sm input-bordered w-full sm:w-64" placeholder="${ko ? "경로석 옵션 검색 (예: 저항, 심연)" : "Search waystone mods"}" aria-label="${ko ? "옵션 검색" : "Search mods"}" autocomplete="off">
 					<span id="poeRegexCount" class="text-xs font-mono text-base-content/50"></span>
 					<label class="label cursor-pointer gap-1.5 py-0">
 						<input id="poeRegexEnglish" type="checkbox" class="checkbox checkbox-xs">

@@ -18,7 +18,6 @@
 
 @param List<DividendView> dividendList
 @param List<DividendView> allDividendList = java.util.List.of()
-@param String dividendTtmJs = "{}"
 @param int totalItems
 @param List<Account> accountList
 @param List<StockItem> stockItemList
@@ -187,8 +186,9 @@
 	String noPeriodHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.period.history");
 	String averageNoDataLabel = MessageUtil.getMessage("stock.dividend.summary.no.data");
 	String averageDescTemplate = MessageUtil.getMessage("stock.dividend.summary.average.desc");
+	// 딱 1 개월일 때의 문구(영어 "Average for 1 months" 를 막으려고, 2026-10-01). 개월수는 브라우저가 채운다.
+	String averageDescOneTemplate = MessageUtil.getMessage("stock.dividend.summary.average.desc.one");
 	String countPattern = MessageUtil.getMessage("common.count");
-	String ttmLabel = MessageUtil.getMessage("stock.dividend.chart.ttm.label");
 	java.util.function.Function<BigDecimal, String> percentFormat = value -> value != null ? StockFormatUtil.pct(value.doubleValue(), 2) : "-";
 	java.util.function.Function<Long, String> countFormat = count -> java.text.MessageFormat.format(countPattern, count);
 	// '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
@@ -354,8 +354,6 @@
 		$unsafe{dividendDataJs}
 		window.dividendHistoryConfig = {
 			dividendData: dividendData,
-			ttmByMonth: $unsafe{dividendTtmJs},
-			ttmLabel: "${ttmLabel}",
 			filterStartDate: "${startLocal != null ? startLocal.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}",
 			filterEndDate: "${endLocalInclusive != null ? endLocalInclusive.format(DateTimeFormatter.ofPattern("yyyy-MM")) : ""}",
 			<%-- 월평균의 분모는 '걸친 달력 월 수' 가 아니라 기간 길이여야 한다. 그러려면 달이 아니라 날짜가 필요하다
@@ -367,6 +365,7 @@
 			noPeriodHistoryLabel: "${noPeriodHistoryLabel}",
 			averageNoDataLabel: "${averageNoDataLabel}",
 			averageDescTemplate: "${averageDescTemplate}",
+			averageDescOneTemplate: "${averageDescOneTemplate}",
 			netAmountLabel: "${netAmountLabel}",
 			othersLabel: "${othersLabel}",
 			minDate: "${dataFirstDate != null ? dataFirstDate : ""}"

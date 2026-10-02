@@ -75,7 +75,7 @@
 									@endif
 								</td></tr>
 								@if(item.itemClass() != null)
-									<tr><td class="text-base-content/50">${ko ? "아이템 클래스" : "Item class"}</td><td>${PoeText.name(item.itemClassKo(), item.itemClass())}</td></tr>
+									<tr><td class="text-base-content/50">${ko ? "아이템 클래스" : "Item class"}</td><td>${net.luversof.web.gate.poe.PoeClassNames.poe2(item.itemClassKo(), item.itemClass())}</td></tr>
 								@endif
 								@if(item.requiredLevel() != null && item.requiredLevel() > 1)
 									<tr><td class="text-base-content/50">${ko ? "요구 레벨" : "Required level"}</td><td>${item.requiredLevel()}</td></tr>

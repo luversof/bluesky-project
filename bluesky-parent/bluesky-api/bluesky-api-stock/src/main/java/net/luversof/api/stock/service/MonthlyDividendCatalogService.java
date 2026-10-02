@@ -93,6 +93,8 @@ public class MonthlyDividendCatalogService {
     Map<UUID, List<MonthlyDividendPayout>> payoutsById = new HashMap<>();
     Map<UUID, List<StockDailyClosePrice>> priceHistoryById = new HashMap<>();
     Map<UUID, LocalDate> firstTradeDateById = new HashMap<>();
+    // 기간 수익률용 원주가(2026-10-02, PeriodReturnCalculator.preferRaw).
+    Map<UUID, List<StockDailyClosePrice>> rawHistoryById = new HashMap<>();
     if (!stockItemIds.isEmpty()) {
       for (MonthlyDividendPayout payout :
           monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
@@ -110,6 +112,7 @@ public class MonthlyDividendCatalogService {
           stockDailyClosePriceQuery.findDailyClosePricesForItems(ids, fromDate)) {
         priceHistoryById.computeIfAbsent(row.stockItemId(), id -> new ArrayList<>()).add(row);
       }
+      rawHistoryById.putAll(stockPriceService.getRawClosePricesForItems(ids, fromDate));
       for (StockDailyClosePrice row :
           stockPriceHistoryRepository.findFirstTradeDatesForItems(ids)) {
         firstTradeDateById.put(row.stockItemId(), row.tradeDate());
@@ -140,10 +143,14 @@ public class MonthlyDividendCatalogService {
                           payout.getRecordDate(), payout.getDividendAmountPerShare()))
               .toList();
       LocalDate today = LocalDate.now(MARKET_ZONE_ID);
+      List<StockDailyClosePrice> periodHistory =
+          PeriodReturnCalculator.preferRaw(
+              stockItemId != null ? rawHistoryById.getOrDefault(stockItemId, List.of()) : List.of(),
+              priceHistory);
       List<PeriodReturnView> periodReturns = new ArrayList<>();
       for (int months : PERIOD_MONTHS) {
         PeriodReturnCalculator.PeriodReturn computed =
-            PeriodReturnCalculator.compute(priceHistory, payoutPoints, today, months);
+            PeriodReturnCalculator.compute(periodHistory, payoutPoints, today, months);
         if (computed != null) {
           periodReturns.add(
               new PeriodReturnView(
@@ -154,8 +161,11 @@ public class MonthlyDividendCatalogService {
         }
       }
       // 위험 지표는 1 년 기준이다(사용자 결정 2026-09-22). 추천 점수에는 안 섞고 표에 보여 주기만 한다.
+      // 가격만 보는 지표라 기간 수익률과 같은 원주가 우선 시계열을 쓴다(2026-10-02). 수정 종가는 한꺼번에 받은 옛 구간만 분배금이 깎여
+      // 있어 그 경계에 가짜 하루 변동이 끼었다 - 15 개월 창에서 1% 넘게 어긋난 날 160 일, 0094M0 2026-03-25 수정 +18.65% / 실제
+      // +1.92%.
       RiskMetricsCalculator.RiskMetrics risk =
-          RiskMetricsCalculator.compute(priceHistory, today, RISK_MONTHS);
+          RiskMetricsCalculator.compute(periodHistory, today, RISK_MONTHS);
 
       // 이력 시작일은 창과 무관하게 실제 첫 거래일이다(화면의 "YYYY-MM-DD 부터").
       LocalDate priceHistoryStartDate =

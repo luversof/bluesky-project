@@ -129,9 +129,9 @@
 	String periodAnnualizedLabel = MessageUtil.getMessage("stock.dividend.yield.period.annualized");
 	String otherBasisLabel = MessageUtil.getMessage("stock.dividend.yield.other.basis");
 	java.util.function.Function<Long, String> heldDaysText = days -> java.text.MessageFormat.format(
-		MessageUtil.getMessage("stock.dividend.yield.cell.held.days"), String.valueOf(days));
+		MessageUtil.getMessage("stock.dividend.yield.cell.held.days"), days);
 	java.util.function.Function<Long, String> shortHeldDesc = days -> java.text.MessageFormat.format(
-		MessageUtil.getMessage("stock.dividend.yield.cell.short.held.desc"), String.valueOf(days));
+		MessageUtil.getMessage("stock.dividend.yield.cell.short.held.desc"), days);
 	// 올해처럼 기간이 한 해를 다 못 채운 연도 - 연 수익률은 그 날수를 1 년으로 늘린 값이라 밝힌다.
 	java.util.function.Function<DividendYieldGroupView, Long> partialYearDays = row -> {
 		try {
@@ -349,12 +349,12 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 				<div class="mt-2 border-t border-base-200/70 pt-2">
 					<div class="text-xs text-base-content/60">${principalChangeLabel}</div>
 					<div class="text-xs text-base-content/70 mt-0.5">
-						<span class="text-base-content/60">${principalStartLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodStartPrincipal)}</span>
+						<span class="text-base-content/60">${principalStartLabel}</span> <span class="font-mono amount-value">₩${decimalFormat.format(periodStartPrincipal)}</span>
 						<span class="text-base-content/60 mx-1" aria-hidden="true">→</span>
-						<span class="text-base-content/60">${principalEndLabel}</span> <span class="font-mono amount-value">₩ ${decimalFormat.format(periodEndPrincipal)}</span>
+						<span class="text-base-content/60">${principalEndLabel}</span> <span class="font-mono amount-value">₩${decimalFormat.format(periodEndPrincipal)}</span>
 					</div>
 					<div class="text-sm font-semibold mt-0.5 ${periodPrincipalDelta.signum() > 0 ? "text-profit" : periodPrincipalDelta.signum() < 0 ? "text-loss" : "text-base-content/60"}">
-						<span class="font-mono amount-value">${periodPrincipalDelta.signum() == 0 ? "" : (periodPrincipalDelta.signum() > 0 ? "+" : "-")}₩ ${decimalFormat.format(periodPrincipalDelta.abs())}</span>
+						<span class="font-mono amount-value">${periodPrincipalDelta.signum() == 0 ? "" : (periodPrincipalDelta.signum() > 0 ? "+" : "-")}₩${decimalFormat.format(periodPrincipalDelta.abs())}</span>
 						@if(periodPrincipalDeltaPct != null)
 						<span class="text-xs font-normal">(${periodPrincipalDelta.signum() > 0 ? "+" : ""}${percentFormat.apply(periodPrincipalDeltaPct)})</span>
 						@endif
@@ -368,8 +368,8 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 				@if(bestYieldStock != null)
 					<div class="text-sm font-semibold truncate" title="${bestYieldStock.label()}">${bestYieldStock.label()}</div>
 					<div class="text-xl font-bold text-dividend" data-best-annualized>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.ttm.value"), percentFormat.apply(bestYieldStock.annualizedYieldPct()))}</div>
-					<div class="text-xs text-base-content/60 mt-1" data-best-current-value>${currentValueLabel} @if(bestYieldStock.groupId() != null && stockCurrentValues.get(bestYieldStock.groupId()) != null)<span class="font-medium amount-value">₩ ${decimalFormat.format(stockCurrentValues.get(bestYieldStock.groupId()))}</span>@else<span>${currentValueNoneTitle}</span>@endif <span class="text-base-content/60">· ${heldDaysText.apply(bestYieldStock.heldDayCount())}</span></div>
-<div class="text-xs text-base-content/60 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩ ${decimalFormat.format(bestYieldStock.totalNetAmount())}</span></div>
+					<div class="text-xs text-base-content/60 mt-1" data-best-current-value>${currentValueLabel} @if(bestYieldStock.groupId() != null && stockCurrentValues.get(bestYieldStock.groupId()) != null)<span class="font-medium amount-value">₩${decimalFormat.format(stockCurrentValues.get(bestYieldStock.groupId()))}</span>@else<span>${currentValueNoneTitle}</span>@endif <span class="text-base-content/60">· ${heldDaysText.apply(bestYieldStock.heldDayCount())}</span></div>
+<div class="text-xs text-base-content/60 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩${decimalFormat.format(bestYieldStock.totalNetAmount())}</span></div>
 				@else
 					<div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
 				@endif
@@ -380,8 +380,8 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 				@if(bestYieldAccount != null)
 					<div class="text-sm font-semibold truncate" title="${bestYieldAccount.label()}">${bestYieldAccount.label()}</div>
 					<div class="text-xl font-bold text-dividend" data-best-annualized>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.ttm.value"), percentFormat.apply(bestYieldAccount.annualizedYieldPct()))}</div>
-					<div class="text-xs text-base-content/60 mt-1" data-best-current-value>${currentValueLabel} @if(bestYieldAccount.groupId() != null && accountCurrentValues.get(bestYieldAccount.groupId()) != null)<span class="font-medium amount-value">₩ ${decimalFormat.format(accountCurrentValues.get(bestYieldAccount.groupId()))}</span>@else<span>${currentValueNoneTitle}</span>@endif <span class="text-base-content/60">· ${heldDaysText.apply(bestYieldAccount.heldDayCount())}</span></div>
-<div class="text-xs text-base-content/60 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩ ${decimalFormat.format(bestYieldAccount.totalNetAmount())}</span></div>
+					<div class="text-xs text-base-content/60 mt-1" data-best-current-value>${currentValueLabel} @if(bestYieldAccount.groupId() != null && accountCurrentValues.get(bestYieldAccount.groupId()) != null)<span class="font-medium amount-value">₩${decimalFormat.format(accountCurrentValues.get(bestYieldAccount.groupId()))}</span>@else<span>${currentValueNoneTitle}</span>@endif <span class="text-base-content/60">· ${heldDaysText.apply(bestYieldAccount.heldDayCount())}</span></div>
+<div class="text-xs text-base-content/60 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩${decimalFormat.format(bestYieldAccount.totalNetAmount())}</span></div>
 				@else
 					<div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
 				@endif
@@ -404,8 +404,8 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 								<tr class="text-base-content/60">
 									<th scope="col">${yearLabel}</th>
 									<th scope="col" class="text-right yield-extra-col">${grossAmountLabel}</th>
-									<th scope="col" class="text-right">@template._components.ui.termHint(label = netAmountLabel, desc = annualizedTermDesc)</th>
-									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = heldAverageLabel, desc = heldTermDesc)</th>
+									<th scope="col" class="text-right">@template._components.ui.termHint(label = netAmountLabel, desc = annualizedTermDesc)</th>
+									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = heldAverageLabel, desc = heldTermDesc)</th>
 									<th scope="col" class="text-right yield-extra-col">${taxLabel}</th>
 									<th scope="col" class="text-right yield-extra-col">${taxableAmountLabel}</th>
 									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = dailyAverageInvestedCapitalLabel, desc = dailyCapitalTermDesc)</th>
@@ -419,7 +419,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 								@for(DividendYieldGroupView row : yearlyYieldRows)
 									!{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
 									<tr>
-										<th scope="row" class="font-medium">${row.label()}@if(partialYearDays.apply(row) != null) <span class="text-[11px] font-normal text-base-content/60" data-year-partial data-stock-tag-tooltip="${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.year.partial.desc"), String.valueOf(partialYearDays.apply(row)))}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.year.partial"), String.valueOf(partialYearDays.apply(row)))}</span><span class="sr-only">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.year.partial.desc"), String.valueOf(partialYearDays.apply(row)))}</span>@endif</th>
+										<th scope="row" class="font-medium">${row.label()}@if(partialYearDays.apply(row) != null) <span class="text-[11px] font-normal text-base-content/60" data-year-partial data-stock-tag-tooltip="${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.year.partial.desc"), partialYearDays.apply(row))}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.year.partial"), partialYearDays.apply(row))}</span><span class="sr-only">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.year.partial.desc"), partialYearDays.apply(row))}</span>@endif</th>
 										<td class="text-right yield-extra-col amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
 										<td class="text-right" data-annualized-cell data-amount-basis="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">@if(yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount()) != null)<span class="sr-only">${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}</span>@endif<div class="amount-value">${decimalFormat.format(row.totalNetAmount())}</div> <div class="text-[11px] whitespace-nowrap">@if(row.annualizedYieldPct() != null)<span class="font-semibold text-dividend" data-annualized-value>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.ttm.value"), percentFormat.apply(row.annualizedYieldPct()))}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${dailyBasisNoneTitle}">-</span><span class="sr-only">${dailyBasisNoneTitle}</span>@endif@if(row.heldDayCount() > 0)<span class="text-base-content/60" data-held-days> · ${heldDaysText.apply(row.heldDayCount())}</span>@if(row.shortHeld()) <span class="badge badge-outline badge-xs align-middle" data-short-held-badge data-stock-tag-tooltip="${shortHeldDesc.apply(row.heldDayCount())}">${shortHeldLabel}</span><span class="sr-only">${shortHeldDesc.apply(row.heldDayCount())}</span>@endif@endif</div>@if(yearlyMaxAnnualized.signum() > 0 && row.annualizedYieldPct() != null && row.groupId() == null)<div class="ml-auto mt-0.5 h-1 w-16 rounded-full bg-base-200" aria-hidden="true" data-yearly-bar><div class="h-1 rounded-full text-dividend yield-bar-fill" style="width: ${row.annualizedYieldPct().multiply(BigDecimal.valueOf(100)).divide(yearlyMaxAnnualized, 1, RoundingMode.HALF_UP).max(BigDecimal.ZERO).min(BigDecimal.valueOf(100)).toPlainString()}%"></div></div>@endif</td>
 										<td class="text-right amount-value yield-extra-col" data-held-average-cell title="${row.heldAverageDailyPrincipalCost() == null ? dailyBasisNoneTitle : null}">${row.heldAverageDailyPrincipalCost() != null ? decimalFormat.format(row.heldAverageDailyPrincipalCost()) : "-"}</td>

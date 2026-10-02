@@ -44,7 +44,8 @@ public final class PoeUpgradeGuide {
       Double minionPct,
       Integer metaCount,
       Integer metaTotal,
-      String needs) {
+      String needs,
+      String itemText) {
 
     /** 실빌드 사용률(%) — 모르면 null. 1% 미만도 1 로 올려 "쓰는 사람이 있다"는 사실을 0 으로 지우지 않는다. */
     public Integer metaPercent() {

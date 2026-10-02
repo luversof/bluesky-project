@@ -104,7 +104,9 @@ public final class Poe2 {
       int nodes,
       List<TreeEvalRow> rows,
       String error,
-      long elapsedMs) {}
+      long elapsedMs,
+      // 무기 세트 전용 노드가 있으면 세트 II 를 켠 계산(rows = 세트 I) — 10-02
+      List<TreeEvalRow> rowsSet2) {}
 
   // ─────────────────────────── 베이스 아이템 ───────────────────────────
 
@@ -154,7 +156,12 @@ public final class Poe2 {
       String icon,
       String image) {}
 
-  public record ItemClass(String key, String ko, String category) {}
+  /** en = 게임 영어 분류 이름(옛 데이터면 null). 화면 글자는 enName() — 없으면 key. */
+  public record ItemClass(String key, String ko, String category, String en) {
+    public String enName() {
+      return en == null || en.isBlank() ? key : en;
+    }
+  }
 
   public record BaseItemData(String patch, List<ItemClass> classes, List<BaseItem> items) {}
 
@@ -382,6 +389,34 @@ public final class Poe2 {
       Double ehp,
       String treeLink) {}
 
+  /** 레어 목표만(10-02) — API Poe2.GuideRares. */
+  public record GuideRares(
+      Boolean available,
+      String error,
+      Long elapsedMs,
+      Integer weaponSet,
+      List<GuideRareTarget> rareTargets) {}
+
+  /** 레어 목표 한 칸 — item/rarity = 지금 낀 것, dps/ehp = 그 축에 맞춰 고른 레어(없으면 null). */
+  public record GuideRareTarget(
+      String slot,
+      String item,
+      String itemKo,
+      String rarity,
+      String base,
+      String baseKo,
+      Integer tried,
+      GuideRare dps,
+      GuideRare ehp) {}
+
+  /** 고른 레어 — 옵션 줄(영문 · 한국어)과 지금 아이템 대비 증감(%). */
+  /**
+   * itemText = PoB 아이템 텍스트(영어, 엔진이 잰 것과 같은 모양 — 희귀도 · 이름 · 베이스 · 암시 · 옵션). PoB "Create custom" 에
+   * 그대로 붙여 넣는다(10-02).
+   */
+  public record GuideRare(
+      Double dps, Double ehp, List<String> lines, List<String> linesKo, String itemText) {}
+
   public record BuildGuide(
       Boolean available,
       String error,
@@ -405,7 +440,9 @@ public final class Poe2 {
       Integer nextTried,
       // 무기 세트를 나눠 쓰는 빌드면 이 가이드를 계산한 세트(1·2)와 주 세트(DPS 큰 쪽, 세트를 지정해 부르면 null), 아니면 둘 다 null(10-01)
       Integer weaponSet,
-      Integer mainSet) {}
+      Integer mainSet,
+      // 레어 목표 — 칸마다 같은 베이스의 좋은 레어(2티어 중간 롤 접두3·접미3)로 바꾸면(10-02 사용자 요청) — API Poe2.GuideRareTarget
+      List<GuideRareTarget> rareTargets) {}
 
   /** 엔진 재계산 한 줄 — PoB 저장값 · PoB-PoE2 엔진 재계산값. */
   /** set1·set2 = 무기 세트를 나눠 쓰는 빌드일 때 세트별 재계산(아니면 null). computed 는 저장 당시 켜진 세트 값(저장값과 비교용). */
@@ -560,7 +597,9 @@ public final class Poe2 {
       List<RefineSetMetrics> sets,
       // 고정 고유(10-01) — 없으면 null
       String forcedUnique,
-      String forcedUniqueKo) {}
+      String forcedUniqueKo,
+      // 내 트리에서 출발이면 그 노드 수(10-02)
+      Integer fromTreeNodes) {}
 
   /** 결과 이력 한 건(목록용 요약) — API Poe2SimService.HistoryEntry. id = 저장 시각 epochMs. */
   public record SimHistoryEntry(

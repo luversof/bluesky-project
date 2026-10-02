@@ -106,8 +106,39 @@ public class Poe2DataController {
       @RequestParam(required = false, defaultValue = "") String ascendancy,
       @RequestParam(required = false, defaultValue = "Pinnacle") String scenario,
       // 고정 고유 slug(방어구·장신구) — 10-01
-      @RequestParam(required = false) String unique) {
-    return sim.start(skill, ascendancy, scenario, unique);
+      @RequestParam(required = false) String unique,
+      // 내 트리에서 출발(10-02): 직업 · 노드(콤마) · 능력치 선택(노드:1|2|3,…). 전직은 ascendancy 를 쓴다
+      @RequestParam(required = false) String treeClass,
+      @RequestParam(required = false, defaultValue = "") String treeNodes,
+      @RequestParam(required = false, defaultValue = "") String treeAttrs,
+      // 무기 세트 전용 노드 "노드:1|2,…"(10-02)
+      @RequestParam(required = false, defaultValue = "") String treeSets) {
+    Poe2SimService.UserTree tree = null;
+    if (treeClass != null && !treeClass.isBlank()) {
+      java.util.List<Integer> ids = new java.util.ArrayList<>();
+      for (String s : treeNodes.split(",")) {
+        try {
+          if (!s.isBlank()) {
+            ids.add(Integer.valueOf(s.trim()));
+          }
+        } catch (NumberFormatException ignored) {
+          // 숫자가 아닌 조각은 버린다
+        }
+      }
+      java.util.Map<Integer, Integer> picks = new java.util.HashMap<>();
+      for (String s : treeAttrs.split(",")) {
+        String[] kv = s.trim().split(":");
+        try {
+          if (kv.length == 2) {
+            picks.put(Integer.valueOf(kv[0]), Integer.valueOf(kv[1]));
+          }
+        } catch (NumberFormatException ignored) {
+          // 숫자가 아닌 조각은 버린다
+        }
+      }
+      tree = new Poe2SimService.UserTree(treeClass.trim(), ascendancy, ids, picks, pairs(treeSets));
+    }
+    return sim.start(skill, ascendancy, scenario, unique, tree);
   }
 
   @GetMapping("/sim/status")
@@ -151,8 +182,21 @@ public class Poe2DataController {
     return ranking.status();
   }
 
+  /** 보관된 랭킹 시즌(새 것 먼저) — 10-02 시즌 비교. */
+  @GetMapping("/sim/ranking/seasons")
+  public java.util.List<String> rankingSeasons() {
+    return ranking.seasons();
+  }
+
+  /** season 을 주면 그 시즌 보관본(없으면 빈 목록), 없으면 지금 랭킹 — 10-02. */
   @GetMapping("/sim/ranking")
-  public Poe2SimRankingService.RankingData simRanking() {
+  public Poe2SimRankingService.RankingData simRanking(
+      @RequestParam(required = false) String season) {
+    if (season != null && !season.isBlank()) {
+      return ranking
+          .rankingOf(season)
+          .orElse(new Poe2SimRankingService.RankingData("", java.util.List.of()));
+    }
     return ranking.ranking();
   }
 
@@ -236,7 +280,9 @@ public class Poe2DataController {
       @RequestParam(required = false, defaultValue = "") String nodes,
       @RequestParam(required = false) String skill,
       // 능력치 노드 선택 "노드:1|2|3,…"(1 힘 · 2 민첩 · 3 지능)
-      @RequestParam(required = false, defaultValue = "") String attrs) {
+      @RequestParam(required = false, defaultValue = "") String attrs,
+      // 무기 세트 전용 노드 "노드:1|2,…"(10-02)
+      @RequestParam(required = false, defaultValue = "") String sets) {
     java.util.Map<Integer, Integer> picks = new java.util.HashMap<>();
     for (String s : attrs.split(",")) {
       String[] kv = s.trim().split(":");
@@ -259,10 +305,26 @@ public class Poe2DataController {
       }
     }
     try {
-      return build.treeEval(className, ascendancy, ids, skill, picks);
+      return build.treeEval(className, ascendancy, ids, skill, picks, pairs(sets));
     } catch (IllegalArgumentException e) {
       throw new io.github.luversof.boot.exception.BlueskyException("POE2_INVALID_TREE", 400);
     }
+  }
+
+  /** "노드:값,…" → 맵(숫자가 아닌 조각은 버린다) — 능력치 선택·무기 세트 노드가 같이 쓴다. */
+  static java.util.Map<Integer, Integer> pairs(String text) {
+    java.util.Map<Integer, Integer> out = new java.util.HashMap<>();
+    for (String s : (text == null ? "" : text).split(",")) {
+      String[] kv = s.trim().split(":");
+      try {
+        if (kv.length == 2) {
+          out.put(Integer.valueOf(kv[0]), Integer.valueOf(kv[1]));
+        }
+      } catch (NumberFormatException ignored) {
+        // 숫자가 아닌 조각은 버린다
+      }
+    }
+    return out;
   }
 
   /** 엔진 재계산 — PoB-PoE2 로 다시 계산해 저장값과 대조·인게임 경고. 요약과 따로(약 2초라 요약을 먼저 보인다). */
@@ -270,6 +332,17 @@ public class Poe2DataController {
   public Poe2.BuildRecalc recalcBuild(@RequestParam String code) {
     try {
       return build.recalc(code);
+    } catch (IllegalArgumentException e) {
+      throw new io.github.luversof.boot.exception.BlueskyException("POE2_INVALID_BUILD_CODE", 400);
+    }
+  }
+
+  /** 가이드 레어 목표만(10-02) — 가이드 뒤에 따로 부른다. set = 가이드와 같은 무기 세트(없으면 주 세트). */
+  @PostMapping(value = "/build/guide/rares", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+  public Poe2.GuideRares guideRares(
+      @RequestParam String code, @RequestParam(required = false) Integer set) {
+    try {
+      return build.guideRares(code, set);
     } catch (IllegalArgumentException e) {
       throw new io.github.luversof.boot.exception.BlueskyException("POE2_INVALID_BUILD_CODE", 400);
     }

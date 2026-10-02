@@ -52,22 +52,23 @@
 			<div><span class="${label}">${MessageUtil.getMessage("poe2.gems.reservation")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.spirit.value"), lv.reservation())}</span></div>
 		@endif
 		@if(gem.castTimeMs() != null && gem.castTimeMs() > 0 && !"support".equals(gem.kind()))
-			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.label.cast.time")}: </span><span class="${value}">${String.format("%.2f", gem.castTimeMs() / 1000.0)}s</span></div>
+			<div><span class="${label}">${MessageUtil.getMessage("poe2.tt.cast.time")}: </span><span class="${value}">${String.format("%.2f", gem.castTimeMs() / 1000.0)}s</span></div>
 		@endif
 		@if(lv != null && lv.cooldownMs() != null && lv.cooldownMs() > 0)
 			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.cooldown")}: </span><span class="${value}">${String.format("%.2f", lv.cooldownMs() / 1000.0)}s</span></div>
 		@endif
 		@if(lv != null && lv.critChance() != null && lv.critChance() > 0)
-			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.crit.chance")}: </span><span class="${value}">${String.format("%.2f", lv.critChance())}%</span></div>
+			<div><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${value}">${String.format("%.2f", lv.critChance())}%</span></div>
 		@endif
 		@if(gem.weaponRequirements() != null)
 			<div><span class="${label}">${MessageUtil.getMessage("poe2.gems.weapon")}: </span><span class="${value}">${gem.weaponRequirements()}</span></div>
 		@endif
 		<%-- 요구 사항 — PoE1 젬 툴팁과 같은 "요구 레벨 N, 능력치" 줄(10-01: 레벨이 없었다). 요구 레벨 = PoB levelRequirement --%>
 		@if(lv != null && lv.requiredLevel() != null)
-			<div data-gem-req><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.required.level")} </span><span class="${value}">${lv.requiredLevel()}</span>@if(!attrs.isEmpty())<span class="${label}">, </span><span class="${value}">${String.join(", ", attrs)}</span>@endif</div>
+			<%-- 게임 문구 "요구 사항: 레벨 14, 민첩"(PoE2 클라이언트, 10-02 — 예전엔 "요구 레벨 14, 민첩") --%>
+			<div data-gem-req><span class="${label}">${MessageUtil.getMessage("poe2.tt.requires")} ${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${lv.requiredLevel()}</span>@if(!attrs.isEmpty())<span class="${label}">, </span><span class="${value}">${String.join(", ", attrs)}</span>@endif</div>
 		@elseif(!attrs.isEmpty())
-			<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")}: </span><span class="${value}">${String.join(", ", attrs)}</span></div>
+			<div><span class="${label}">${MessageUtil.getMessage("poe2.tt.requires")} </span><span class="${value}">${String.join(", ", attrs)}</span></div>
 		@endif
 	</div>
 	@if(description != null && !description.isBlank())
@@ -114,7 +115,7 @@
 					        hx-target="#poePreview"
 					        hx-swap="innerHTML">${step}</button>
 				@endfor
-				<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border ${"support".equals(gem.kind()) ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${"support".equals(gem.kind()) ? MessageUtil.getMessage("poe.gems.type.support") : MessageUtil.getMessage("poe.gems.type.active")}</span>
+				<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border ${"support".equals(gem.kind()) ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${"support".equals(gem.kind()) ? MessageUtil.getMessage("poe2.gems.type.support") : MessageUtil.getMessage("poe.gems.type.active")}</span>
 			</div>
 		</div>
 	@endif

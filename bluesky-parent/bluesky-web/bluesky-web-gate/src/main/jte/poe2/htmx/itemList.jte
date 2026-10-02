@@ -11,7 +11,7 @@
 	boolean korean = PoeText.isKorean();
 	// 아이템 클래스별로 묶고, 안에서는 요구 레벨 순(게임에서 얻는 순서)
 	java.util.Map<String, List<Poe2.BaseItem>> byClass = new java.util.LinkedHashMap<>();
-	for (Poe2.BaseItem b : items) byClass.computeIfAbsent(PoeText.name(b.itemClassKo(), b.itemClass()), k -> new java.util.ArrayList<>()).add(b);
+	for (Poe2.BaseItem b : items) byClass.computeIfAbsent(net.luversof.web.gate.poe.PoeClassNames.poe2(b.itemClassKo(), b.itemClass()), k -> new java.util.ArrayList<>()).add(b);
 	byClass.values().forEach(l -> l.sort(java.util.Comparator.comparingInt((Poe2.BaseItem b) -> nz(b.reqLevel())).thenComparing(Poe2.BaseItem::name)));
 }
 
@@ -38,7 +38,7 @@
 								</div>
 								<div class="min-w-0 flex-1">
 								<div class="flex items-baseline gap-1.5 min-w-0">
-									<a class="font-semibold truncate link-hover" href="/poe2/items/${b.slug()}">${PoeText.name(b.nameKo(), b.name())}</a>
+									<a class="font-semibold truncate link-hover" href="/poe2/items/${b.slug()}" title="${b.name()}">${PoeText.name(b.nameKo(), b.name())}</a>
 									@if(korean)
 										<span class="text-[11px] text-base-content/35 truncate">${b.name()}</span>
 									@endif

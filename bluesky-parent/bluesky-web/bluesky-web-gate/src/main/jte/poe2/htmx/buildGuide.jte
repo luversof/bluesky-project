@@ -124,6 +124,15 @@
 			@endfor
 		</div>
 
+		<%-- ⑧ 레어 목표 — 가이드가 붙은 뒤 따로 불러온다(10-02: 본 가이드가 4~6초 느려지지 않게). 코드 칸(#poe2BuildImport [name=code] — 본 가이드와 같은 선택자: 시뮬 결과 화면엔 #poe2BuildCode 가 없다, 10-02)과 이 가이드의 세트로 --%>
+		<div data-guide-rares-lazy data-no-success-toast
+		     hx-post="/poe2/htmx/build/guide/rares" hx-trigger="load" hx-swap="outerHTML"
+		     hx-include="#poe2BuildImport [name=code]"
+		     hx-vals='{"set": "${guide.weaponSet() == null ? "" : String.valueOf(guide.weaponSet())}"}'
+		     class="rounded-box border border-base-200 bg-base-100 p-2 text-xs text-base-content/60">
+			<span class="loading loading-spinner loading-xs align-middle mr-1"></span>${korean ? "좋은 레어로 바꾸면 — 계산 중(칸마다 옵션을 하나씩 재 봅니다)…" : "If you swap to a good rare — calculating…"}
+		</div>
+
 		<%-- ⑤ 보조젬 교체 — 가장 약한 보조 자리(미적용 우선)에 이 스킬에 적용되는 보조를 끼워 본 결과 --%>
 		@if(guide.gemWeakest() != null)
 			<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-gemswaps>

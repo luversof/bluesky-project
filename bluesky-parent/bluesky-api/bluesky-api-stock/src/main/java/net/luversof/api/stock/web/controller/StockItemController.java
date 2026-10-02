@@ -18,6 +18,8 @@ import net.luversof.api.stock.service.StockItemService;
 @RequestMapping("/api/stockItem")
 public class StockItemController {
 
+  @Autowired private net.luversof.api.stock.service.StockPriceChartService stockPriceChartService;
+
   @Autowired private StockItemService stockItemService;
 
   public void setStockItemService(StockItemService stockItemService) {
@@ -62,6 +64,26 @@ public class StockItemController {
                   iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
               java.time.LocalDate endDate) {
     return stockItemService.findDailyClosePrices(id, startDate, endDate);
+  }
+
+  /**
+   * 종목 상세 주가 차트(2026-10-02): 날짜마다 시가 · 고가 · 저가 · 종가(원주가를 분할로만 맞춘 값)와, 사용자를 주면 그 날의 평균 단가. 캔들 차트와 "그
+   * 시점 평단" 선이 쓴다(StockPriceChartService).
+   */
+  @GetMapping("/{id}/priceChart")
+  public java.util.List<net.luversof.api.stock.web.dto.response.StockPriceChartPoint> priceChart(
+      @PathVariable UUID id,
+      @org.springframework.web.bind.annotation.RequestParam(required = false)
+          @org.springframework.format.annotation.DateTimeFormat(
+              iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+          java.time.LocalDate startDate,
+      @org.springframework.web.bind.annotation.RequestParam(required = false)
+          @org.springframework.format.annotation.DateTimeFormat(
+              iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+          java.time.LocalDate endDate,
+      @org.springframework.web.bind.annotation.RequestParam(required = false) UUID userId,
+      @org.springframework.web.bind.annotation.RequestParam(required = false) String timeZone) {
+    return stockPriceChartService.chart(id, startDate, endDate, userId, timeZone);
   }
 
   @GetMapping("/search/findAllByTag/{tag}")

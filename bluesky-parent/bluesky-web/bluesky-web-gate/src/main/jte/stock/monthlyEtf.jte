@@ -500,7 +500,7 @@
 										</td>
 										<td class="align-top text-right">
 											<div class="space-y-1 tabular-nums">
-												<div>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.payout.count"), amountFormat.format(row.payoutCount()))}</div>
+												<div>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.payout.count"), row.payoutCount())}</div>
 												@if(row.latestPayDate() != null)
 													<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.cell.latest.pay.date")} <span class="whitespace-nowrap date-whole">${row.latestPayDate().toString()}</span></div>
 												@endif

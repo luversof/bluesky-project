@@ -82,6 +82,14 @@ class MonthlyDividendReferenceContractTest {
           }
 
           @Override
+          public java.util.List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint>
+              getPriceChart(
+                  java.util.UUID id,
+                  org.springframework.util.MultiValueMap<String, String> params) {
+            return java.util.List.of();
+          }
+
+          @Override
           public StockItem createStockItem(StockItem stockItem) {
             return stockItem;
           }

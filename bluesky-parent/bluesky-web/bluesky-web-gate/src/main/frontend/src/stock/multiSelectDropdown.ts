@@ -38,11 +38,23 @@
 		var en = (langCode || "ko").toLowerCase().indexOf("en") === 0;
 		return en ? "No matching items" : "검색 결과 없음";
 	}
+	// "전체" 옆의 "전체 취소" 단추 글자(사용자 요청 2026-10-02).
+	function msdClearAllText(langCode: string): string {
+		var en = (langCode || "ko").toLowerCase().indexOf("en") === 0;
+		return en ? "Clear all" : "전체 취소";
+	}
+	// 토글 단추의 요약. 하나도 안 골랐거나 전부 골랐으면 "전체" - 전부 고른 것을 이름 수십 개로 늘어놓으면 읽을 수 없다.
+	function msdSummaryText(selectedTexts: string[], totalCount: number, allLabel: string): string {
+		if (!selectedTexts.length || (totalCount > 0 && selectedTexts.length >= totalCount)) return allLabel;
+		return selectedTexts.join(", ");
+	}
 	try {
 		(globalThis as any).__msdInternals = {
 			msdSearchLabel: msdSearchLabel,
 			msdSearchStatusText: msdSearchStatusText,
 			msdEmptyText: msdEmptyText,
+			msdClearAllText: msdClearAllText,
+			msdSummaryText: msdSummaryText,
 		};
 	} catch (e) {}
 
@@ -97,12 +109,15 @@
 
 		var panel = document.createElement("div");
 		panel.className =
-			"absolute z-30 left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-64 overflow-auto";
+			"absolute z-30 left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-64 overflow-auto focus:outline-none";
 		panel.setAttribute("data-msd-panel", "1");
 		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
 		panel.id = "msd-panel-" + (++msdPanelSeq);
 		toggle.setAttribute("aria-controls", panel.id);
 		panel.hidden = true;
+		// 패널 안 아무 곳(항목 이름 글자)을 눌러도 포커스가 패널에 머물게 한다. 실측 2026-10-02: 이름을 누르면 마우스를 누르는 순간 포커스가
+		// 패널 밖 <main tabindex="-1"> 로 넘어가 아래 focusin 이 패널을 닫았고, 클릭이 체크박스에 닿지 못했다(체크박스만 눌러야 됐다).
+		panel.tabIndex = -1;
 
 		var search: HTMLInputElement | null = null;
 		var searchStatus: HTMLElement | null = null;
@@ -132,12 +147,25 @@
 			panel.appendChild(searchEmpty);
 		}
 
+		// "전체" = 전부 체크, "전체 취소" = 전부 해제(사용자 요청 2026-10-02). 예전 "전체" 는 해제만 해서 눌러도 아무 일이 없는 것처럼 보였다
+		// (아무것도 안 고른 것이 곧 전체라 화면이 그대로였다).
+		var allRow = document.createElement("div");
+		allRow.className = "flex gap-1 mb-1";
+		var itemButtonClass =
+			"flex-1 text-left text-sm px-2 py-1 rounded hover:bg-base-200 text-base-content/70";
 		var allItem = document.createElement("button");
 		allItem.type = "button";
-		allItem.className =
-			"block w-full text-left text-sm px-2 py-1 rounded hover:bg-base-200 text-base-content/70";
+		allItem.className = itemButtonClass;
 		allItem.textContent = allLabel;
-		panel.appendChild(allItem);
+		allItem.setAttribute("data-msd-select-all", "1");
+		var clearItem = document.createElement("button");
+		clearItem.type = "button";
+		clearItem.className = itemButtonClass;
+		clearItem.textContent = msdClearAllText(lang());
+		clearItem.setAttribute("data-msd-clear-all", "1");
+		allRow.appendChild(allItem);
+		allRow.appendChild(clearItem);
+		panel.appendChild(allRow);
 
 		var list = document.createElement("div");
 		var cbByValue: Record<string, HTMLInputElement> = {};
@@ -170,15 +198,13 @@
 			var sel = realOpts.filter(function (o) {
 				return o.selected;
 			});
-			if (sel.length === 0) {
-				summary.textContent = allLabel;
-			} else {
-				summary.textContent = sel
-					.map(function (o) {
-						return o.text;
-					})
-					.join(", ");
-			}
+			summary.textContent = msdSummaryText(
+				sel.map(function (o) {
+					return o.text;
+				}),
+				realOpts.length,
+				allLabel,
+			);
 			toggle.title = summary.textContent || "";
 			toggle.setAttribute(
 				"aria-label",
@@ -194,7 +220,21 @@
 			updateSummary();
 		}
 
+		// 전부 체크. 검색으로 걸러 둔 상태면 보이는 항목만 - 걸러 낸 뒤 "전체" 를 누르는 뜻은 "이것들 전부" 다.
 		allItem.addEventListener("click", function () {
+			realOpts.forEach(function (o) {
+				var cb = cbByValue[o.value];
+				var row = cb ? (cb.closest("label") as HTMLElement | null) : null;
+				if (row && row.style.display === "none") return;
+				o.selected = true;
+				if (cb) cb.checked = true;
+			});
+			if (emptyOpt) emptyOpt.selected = false;
+			select.dispatchEvent(new Event("change", { bubbles: true }));
+			updateSummary();
+		});
+		// 전부 해제 - 아무것도 안 고른 상태(= 거르지 않음)로 돌아간다.
+		clearItem.addEventListener("click", function () {
 			realOpts.forEach(function (o) {
 				o.selected = false;
 			});
@@ -307,12 +347,14 @@
 
 		var panel = document.createElement("div");
 		panel.className =
-			"absolute z-30 left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-72 overflow-auto";
+			"absolute z-30 left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-72 overflow-auto focus:outline-none";
 		panel.setAttribute("data-msd-panel", "1");
 		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
 		panel.id = "msd-panel-" + (++msdPanelSeq);
 		toggle.setAttribute("aria-controls", panel.id);
 		panel.hidden = true;
+		// 계좌 · 종목 패널과 같은 이유 - 패널 안을 눌러도 포커스가 밖(main)으로 나가 닫히지 않게.
+		panel.tabIndex = -1;
 
 		// 카드 자체 라벨은 컬럼 라벨과 중복 → 숨기고, 카드 외곽 스타일은 평평하게.
 		if (labelEl) labelEl.style.display = "none";

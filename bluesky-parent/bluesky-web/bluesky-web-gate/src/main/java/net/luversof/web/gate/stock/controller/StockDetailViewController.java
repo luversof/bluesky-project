@@ -391,8 +391,14 @@ public class StockDetailViewController {
               .minusDays(1)
               .toString());
     }
-    var priceHistoryFuture =
-        stockAsync.supply(() -> stockItemClient.getPriceHistory(resolvedId, priceHistoryParams));
+    // 주가 차트(사용자 요청 2026-10-02): 캔들(시가 · 고가 · 저가 · 종가) + 그 날의 평균 단가. 같은 응답의 (날짜, 종가) 가 예전
+    // 가격 이력이라(둘 다 원주가를 분할로만 맞춘 값) 호출은 하나다.
+    priceHistoryParams.add("userId", userId.toString());
+    if (timeZone != null && !timeZone.isBlank()) {
+      priceHistoryParams.add("timeZone", timeZone);
+    }
+    var priceChartFuture =
+        stockAsync.supply(() -> stockItemClient.getPriceChart(resolvedId, priceHistoryParams));
 
     List<TradeProfit> profits =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(profitsFuture);
@@ -498,8 +504,17 @@ public class StockDetailViewController {
         "periodBreakdownNote",
         net.luversof.web.gate.stock.util.StockBreakdownNoteUtil.note(
             timeSeriesResult != null ? timeSeriesResult.breakdown() : null, false));
-    var priceHistory =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceHistoryFuture);
+    var priceChart = net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceChartFuture);
+    List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory =
+        priceChart == null
+            ? null
+            : priceChart.stream()
+                .map(
+                    point ->
+                        new net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint(
+                            point.tradeDate(), point.close()))
+                .toList();
+    model.addAttribute("priceChart", priceChart != null ? priceChart : List.of());
     model.addAttribute("priceHistory", priceHistory != null ? priceHistory : List.of());
     // 거래한 적이 없는 종목은 손익 행이 없어 현재가가 0 으로 떨어졌다 - 실측 2026-09-11: 기업은행(024110)
     // 상세가 "현재가 0" 을 찍었지만 가격 이력에는 2026-04-03 종가 21,350 이 있었다. 값이 없는 것과 0 원인 것은

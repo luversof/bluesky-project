@@ -31,7 +31,7 @@
 					<button id="poe2TreeZoomIn" type="button" class="btn btn-sm btn-ghost" aria-label="${PoeText.isKorean() ? "확대" : "Zoom in"}">＋</button>
 					<button id="poe2TreeZoomOut" type="button" class="btn btn-sm btn-ghost" aria-label="${PoeText.isKorean() ? "축소" : "Zoom out"}">－</button>
 					<button id="poe2TreeFit" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe2.tree.reset")}</button>
-					<button id="poe2TreeClear" type="button" class="btn btn-sm btn-ghost">${PoeText.isKorean() ? "할당 초기화" : "Clear points"}</button>
+					<button id="poe2TreeClear" type="button" class="btn btn-sm btn-ghost">${PoeText.isKorean() ? "트리 초기화" : "Reset"}</button>
 				</div>
 				<%-- PoE1 트리와 같은 도구(10-01): 실행취소/다시실행 · 스탯 요약 · 링크 복사 · 전체 화면 --%>
 				<div class="flex flex-wrap items-center gap-1">

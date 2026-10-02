@@ -415,6 +415,8 @@
 	}
 	// 경로 탐색용 인접 — 전직↔메인 간선은 "선택한 전직/혈맹" 으로 들어가는 것만 허용한다.
 	// (Ascendant 의 Path of the X 처럼 메인으로 되돌아오는 간선이 지름길로 악용되는 것도 함께 막힘)
+	// 지금 열린 다른 직업 시작점(어센던트 "Path of the X") — pruneOrphans 가 갱신, 아래 rootNode 근처 설명 참고
+	let altRoots = new Set<number>();
 	function pathNeighbors(id: number): number[] {
 		const from = nodeById.get(id);
 		if (!from) return [];
@@ -425,7 +427,7 @@
 			// 다른 직업의 시작 노드는 통과할 수 없다 — 게임에서 남의 클래스 시작점은 찍히지 않는데,
 			// 막지 않으면 경로 자동할당이 그 노드를 함께 찍어 "남의 시작점을 다리로 쓴" 불법 트리가 된다
 			// (실측: 위치 트리에 RANGER 시작 노드가 끼어 연결성이 왜곡됨).
-			if (to.type === "class" && nb !== rootNode()) continue;
+			if (to.type === "class" && nb !== rootNode() && !altRoots.has(nb)) continue;
 			if ((from.ascendancy || null) === (to.ascendancy || null)) {
 				out.push(nb);
 			} else if (to.ascendancyStart || from.ascendancyStart) {
@@ -681,15 +683,51 @@
 	function rootNode(): number | undefined {
 		return isAtlas ? (atlasRoot ?? undefined) : classStartByClassId.get(currentClassId);
 	}
+	// 다른 직업 시작점(10-02) — 어센던트 "Path of the X"(Can Allocate Passives from the X's starting point)를 찍으면
+	//   그 직업 시작점에서도 찍는다(인게임 규칙, PoE2 패스파인더 "소서리스의 길"과 같은 문구). 시작점 노드는 저장 · 점수에서 빠지므로
+	//   할당 집합(highlighted)에 넣어 출발점으로 쓴다. altRoots = 지금 열린 다른 시작점(경로 이웃 판정용 캐시, pruneOrphans 가 갱신).
+	const CLASS_NAME_ID: Record<string, number> = { scion: 0, marauder: 1, ranger: 2, witch: 3, duelist: 4, templar: 5, shadow: 6 };
+	const ALT_START_RE = /Can Allocate Passive(?: Skill)?s from the (\w+)'s starting point/i;
+	function extraRoots(excluded = -1): number[] {
+		if (isAtlas) return [];
+		const out: number[] = [];
+		for (const id of highlighted) {
+			if (id === excluded) continue;
+			const n = nodeById.get(id);
+			if (!n?.ascendancy) continue;
+			for (const t of n.stats || []) {
+				const m = ALT_START_RE.exec(t);
+				const cid = m ? CLASS_NAME_ID[m[1].toLowerCase()] : undefined;
+				const sid = cid === undefined ? undefined : classStartByClassId.get(cid);
+				if (sid !== undefined && sid !== rootNode() && !out.includes(sid)) out.push(sid);
+			}
+		}
+		return out;
+	}
 
 	// ---- 클릭 할당(연결성 검증) ----
 	// 루트(클래스 시작노드)에서 할당 노드만 따라 BFS → 도달 못하는 할당노드(고아) 제거.
 	function pruneOrphans() {
 		const root = rootNode();
 		if (root === undefined) return;
-		const reach = reachableSet(root, -1);
-		for (const id of Array.from(highlighted)) if (!reach.has(id)) highlighted.delete(id);
-		highlighted.add(root);
+		// 다른 시작점은 "Path of the X" 가 남아 있는 동안만 — 그 노드가 떨어져 나가면 거기서 이어진 노드도 같이(바뀌지 않을 때까지 되풀이)
+		for (let changed = true; changed; ) {
+			changed = false;
+			altRoots = new Set(extraRoots());
+			for (const id of Array.from(highlighted)) {
+				if (id !== root && !altRoots.has(id) && nodeById.get(id)?.type === "class") highlighted.delete(id);
+			}
+			altRoots.forEach((id) => highlighted.add(id));
+			const reach = new Set<number>();
+			for (const r of [root, ...altRoots]) reachableSet(r, -1).forEach((x) => reach.add(x));
+			for (const id of Array.from(highlighted)) {
+				if (!reach.has(id)) {
+					highlighted.delete(id);
+					changed = true;
+				}
+			}
+			highlighted.add(root);
+		}
 	}
 	// 루트에서 할당 노드만 따라 도달 가능한 집합(제외 노드 하나를 끊어 볼 수 있다).
 	function reachableSet(root: number, excluded: number): Set<number> {
@@ -719,7 +757,9 @@
 		if (!node || node.type === "class") return [];
 		const root = rootNode();
 		if (root === undefined) return [targetId];
-		const reach = reachableSet(root, targetId);
+		// 해제하는 노드가 다른 시작점을 연 "Path of the X" 면 그 시작점은 출발점에서 빠진다
+		const reach = new Set<number>();
+		for (const r of [root, ...extraRoots(targetId)]) reachableSet(r, targetId).forEach((x) => reach.add(x));
 		const out = [targetId];
 		for (const id of highlighted) if (id !== targetId && !reach.has(id)) out.push(id);
 		return out;
@@ -746,6 +786,7 @@
 			if (path.length < 2) return; // 도달 불가
 			for (const id of path) highlighted.add(id);
 		}
+		if (node.ascendancy) pruneOrphans(); // "Path of the X" 를 찍었으면 그 직업 시작점을 연다
 		commit(before);
 		refreshHoverState(); // 커서가 그대로 노드 위에 있으므로 경로/해제 미리보기를 다시 계산
 		updatePoints();
@@ -1985,6 +2026,8 @@
 			highlighted.add(root);
 			centerOnNode(root);
 		}
+		altRoots = new Set(extraRoots()); // 가져온 트리의 "Path of the X" 시작점(위 불러오기와 같은 이유)
+		altRoots.forEach((id) => highlighted.add(id));
 		commit(before);
 		updatePoints();
 		syncUrl();
@@ -4182,6 +4225,9 @@
 					if (interactive) {
 						const root = rootNode();
 						if (root !== undefined) highlighted.add(root);
+						// 불러온 트리에 "Path of the X" 가 있으면 그 시작점도 바로 연다 — 불러오기는 정리를 안 돌려서, 안 하면 첫 편집 전까지 그쪽 경로 미리보기가 안 나온다(10-02)
+						altRoots = new Set(extraRoots());
+						altRoots.forEach((id) => highlighted.add(id));
 					}
 					let bounds = data.bounds;
 					// 할당 영역에 맞춰 확대하는 건 "실제 트리를 불러왔을 때"만. 시작 노드 하나뿐이면

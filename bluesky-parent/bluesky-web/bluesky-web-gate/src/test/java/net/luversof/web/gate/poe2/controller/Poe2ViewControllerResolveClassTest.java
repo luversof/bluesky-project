@@ -13,7 +13,8 @@ class Poe2ViewControllerResolveClassTest {
 
   private static final List<Poe2.ItemClass> UNIQUE_CLASSES =
       List.of(
-          new Poe2.ItemClass("Helmet", "투구", "armour"), new Poe2.ItemClass("Bow", "활", "weapon"));
+          new Poe2.ItemClass("Helmet", "투구", "armour", "Helmets"),
+          new Poe2.ItemClass("Bow", "활", "weapon", "Bows"));
 
   @Test
   void slotCarriedWhenThisListHasTheClass() {

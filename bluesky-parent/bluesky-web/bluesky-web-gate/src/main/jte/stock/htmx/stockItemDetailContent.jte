@@ -47,6 +47,7 @@
 @param String periodBreakdownNote = ""
 @param List<net.luversof.web.gate.stock.domain.DetailNavEntry> stockNavEntries = java.util.List.of()
 @param List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory = java.util.List.of()
+@param List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> priceChart = java.util.List.of()
 @param BigDecimal periodUnrealizedDelta = null
 @param Double periodProfitRatePct = null
 <%-- 합산 비율의 분모(넣어 둔 돈 = 기초 평가액 + max(기간 순유입, 0)). 세 몫의 비율도 이 분모로 낸다. --%>
@@ -229,7 +230,9 @@
 			label = MessageUtil.getMessage("common.label.quantity"),
 			value = net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(MessageUtil.getMessage("stock.activity.label.shares"))
 				+ String.format("%,d", holdingQuantity)
-				+ net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares")))
+				+ (holdingQuantity == 1
+					? net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares.one"))
+					: net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares"))))
 		<%-- 수량도 금액 숨김 대상이다 - 활동 목록·자산 현황은 수량을 amount-value 로 감싼다(공개 가격 x 수량 = 평가금액).
 		     실측 2026-09-11: 이 카드만 amount = false 라 숨김을 켜도 "5,043주" 가 그대로 보였다. --%>
 		<%-- 보유가 없으면 평균 단가라는 값 자체가 없다 - 컨트롤러가 0 으로 떨어뜨린다. 실측 2026-09-13: 86 종목 중 77 개가
@@ -329,6 +332,43 @@
 			<div class="bg-base-100 rounded-box border border-base-200 p-4">
 				<div class="h-64"><canvas id="stockPriceChart" role="img" aria-label="${MessageUtil.getMessage("stock.item.detail.price.chart.title")}" class="amount-chart"></canvas></div>
 			</div>
+			@if(priceChart != null && !priceChart.isEmpty())
+			<%-- 캔들 + 그 시점 평균 단가(사용자 요청 2026-10-02). 점선은 그 날 보유분의 평단이라 보유가 없던 기간에는 끊긴다 -
+			     이 기간에 보유가 한 번도 없었으면 점선을 설명하지 않는다(없는 선을 찾게 된다). 봉 단위(일 · 주 · 월)는 브라우저가 정해 앞에 적는다. --%>
+			!{boolean candleHasAverage = priceChart.stream().anyMatch(p -> p.averageCost() != null && p.averageCost().signum() != 0);}
+			<p class="text-xs text-base-content/60 mt-1"><span data-candle-unit></span>${MessageUtil.getMessage(candleHasAverage ? "stock.item.detail.price.chart.candle.desc" : "stock.item.detail.price.chart.candle.desc.nocost")}</p>
+		</div>
+		<script nonce="${CspNonceHolder.getNonce()}">
+		(function() {
+			if (typeof window.ensureStockCharts !== 'function') return;
+			var series = $unsafe{ChartSeriesJs.candleSeries(priceChart, trades, zone)};
+			window.ensureStockCharts(function() {
+				if (!window.StockCharts || !window.StockCharts.createCandleChart) return;
+				var __priceChart = window.StockCharts.createCandleChart('stockPriceChart', series, {
+					openLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.open")}',
+					highLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.high")}',
+					lowLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.low")}',
+					closeLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.close")}',
+					avgLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average.at")}',
+					avgBelowLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average.below")}',
+					avgAboveLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average.above")}',
+					buyLabel: '${MessageUtil.getMessage("stock.trade.label.buy")}',
+					sellLabel: '${MessageUtil.getMessage("stock.trade.label.sell")}',
+					sharePattern: '${MessageUtil.getMessage("stock.activity.label.shares")}',
+					shareOnePattern: '${MessageUtil.getMessage("stock.activity.label.shares.one")}'
+				});
+				var unitEl = document.querySelector('[data-candle-unit]');
+				var unitText = {
+					day: '${MessageUtil.getMessage("stock.item.detail.price.chart.unit.day")}',
+					week: '${MessageUtil.getMessage("stock.item.detail.price.chart.unit.week")}',
+					month: '${MessageUtil.getMessage("stock.item.detail.price.chart.unit.month")}'
+				};
+				if (unitEl && __priceChart && unitText[__priceChart.$candleUnit]) unitEl.textContent = unitText[__priceChart.$candleUnit] + ' · ';
+				setTimeout(function() { try { if (__priceChart) window.StockCharts.resizeIfChanged(__priceChart); } catch (e) {} }, 60);
+			});
+		})();
+		</script>
+			@else
 			<%-- 점선을 안 그은 경우에는 점선을 설명하면 안 된다 - 없는 선을 찾게 된다. --%>
 			!{String priceChartDescKey = averageBuyPrice != null && averageBuyPrice.signum() != 0
 				? "stock.item.detail.price.chart.desc"
@@ -351,6 +391,7 @@
 			});
 		})();
 		</script>
+			@endif
 	@else
 		<%-- 자료가 없으면 구역째 사라지고 있었다. 실측 2026-09-12: 이 종목은 시세가 2026-04-01 에 끝나
 		     최근 3개월 점이 0 인데, 같은 화면의 매매·배당은 "없습니다" 라고 말하는 반면 주가 추이만 말없이 빠졌다

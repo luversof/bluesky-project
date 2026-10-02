@@ -11,7 +11,7 @@
 
 <%-- 아이템 세부 메뉴: 고유 | 일반 (좌측 서브메뉴 '아이템' 하위의 상단 탭)
      data-poe-item-tab: common.ts 가 클릭 시 현재 활성 칩 slot + 검색어를 ?slot&q 로 넘겨 탭 전환 후에도 필터 유지 --%>
-<div class="tabs tabs-box w-full bg-base-200/70 p-1">
-	<a href="/poe/uniques" data-poe-item-tab class="${"uniques".equals(activeTab) ? activeClass : inactiveClass}">${uniquesTabLabel}</a>
-	<a href="/poe/items" data-poe-item-tab class="${"items".equals(activeTab) ? activeClass : inactiveClass}">${baseItemsTabLabel}</a>
+<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1">
+	<a role="tab" href="/poe/uniques" data-poe-item-tab class="${"uniques".equals(activeTab) ? activeClass : inactiveClass}" aria-selected="${"uniques".equals(activeTab)}">${uniquesTabLabel}</a>
+	<a role="tab" href="/poe/items" data-poe-item-tab class="${"items".equals(activeTab) ? activeClass : inactiveClass}" aria-selected="${"items".equals(activeTab)}">${baseItemsTabLabel}</a>
 </div>

@@ -87,6 +87,15 @@
 										@if(p.mods() != null && !p.mods().isEmpty())
 											<div class="mt-0.5 pl-5 text-xs leading-5 text-base-content/60">${String.join(" · ", p.mods())}</div>
 										@endif
+										@if(p.itemText() != null)
+											<%-- PoB 아이템 텍스트 복사(10-02, PoE2 가이드와 짝) — 엔진이 잰 그 아이템. PoB "Create custom" 에 붙여 넣는다(common.ts [data-copy-target]) --%>
+											!{ String copyId = "poeRareText-" + Integer.toHexString(System.identityHashCode(p)); boolean ko = net.luversof.web.gate.poe.PoeText.isKorean(); }
+											<div class="mt-0.5 pl-5 flex items-center gap-2 text-xs">
+												<textarea id="${copyId}" class="sr-only" readonly tabindex="-1" aria-hidden="true" data-rare-item-text>${p.itemText()}</textarea>
+												<button type="button" class="btn btn-ghost btn-xs" data-copy-target="#${copyId}" data-copied-label="${ko ? "복사됨 ✓" : "Copied ✓"}">${ko ? "아이템 텍스트 복사" : "Copy item text"}</button>
+												<span class="text-base-content/50">${ko ? "PoB 아이템 탭 “Create custom” 에 붙여 넣기" : "paste into PoB Items → Create custom"}</span>
+											</div>
+										@endif
 									</li>
 								@endfor
 							</ul>

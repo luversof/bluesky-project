@@ -40,7 +40,7 @@ class DividendBreakdownRangeTest {
     String flat = source.replaceAll("\\s+", " ");
     int at = flat.indexOf("DividendPeriodBreakdown.byYear(");
     assertThat(at).as("연도별 집계 호출을 찾지 못했다").isGreaterThan(0);
-    int end = flat.indexOf("StockDividendTtmUtil", at);
+    int end = flat.indexOf("model.addAttribute(\"totalItems\"", at);
     String block = flat.substring(at, end > at ? end : flat.length());
 
     assertThat(countOf(block, "startInstant != null ? startInstant.atZone(breakdownZone)"))

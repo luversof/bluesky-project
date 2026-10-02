@@ -77,19 +77,19 @@
 					<div class="min-w-0">
 						<div class="text-xs text-base-content/60 mb-1">${periodDividendLabel}</div>
 						<div class="flex items-baseline gap-1">
-							<span class="text-xl font-bold text-dividend amount-value">₩ ${decimalFormat.format(safeAllNet)}</span>
+							<span class="text-xl font-bold text-dividend amount-value">₩${decimalFormat.format(safeAllNet)}</span>
 							<span class="text-xs text-base-content/60">${netLabel}</span>
 						</div>
 					</div>
 					<div class="min-w-0">
 						<div class="text-xs text-base-content/60 mb-1">${taxableAmountLabel}</div>
-						<div class="text-xl font-bold text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllTaxable)}</div>
+						<div class="text-xl font-bold text-base-content/70 amount-value">₩${decimalFormat.format(safeAllTaxable)}</div>
 						<div class="text-[11px] leading-4 text-base-content/60">${taxableNoteLabel}</div>
 					</div>
 				</div>
 				<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-base-content/60">
-					<span>${grossLabel} <span class="font-medium text-base-content/70 amount-value">₩ ${decimalFormat.format(safeAllGross)}</span></span>
-					<span>${deductionLabel} <span class="font-medium text-base-content/70 amount-value">${StockFormatUtil.displayWon(allDeduction) > 0 ? "-" : ""}₩ ${decimalFormat.format(allDeduction)}</span></span>
+					<span>${grossLabel} <span class="font-medium text-base-content/70 amount-value">₩${decimalFormat.format(safeAllGross)}</span></span>
+					<span>${deductionLabel} <span class="font-medium text-base-content/70 amount-value">${StockFormatUtil.displayWon(allDeduction) > 0 ? "-" : ""}₩${decimalFormat.format(allDeduction)}</span></span>
 					<%-- 라벨을 붙인다. 이 수는 배당 기록 건수인데 같은 줄 왼쪽이 차감 금액이라, 라벨이 없으면
 						 차감 건수로 읽힌다 - 실측 2026-09-12(올해): 이 자리가 116건이고 바로 아래 줄은
 						 월중 56건 · 월말 57건 · 기타 3건 으로 모두 라벨이 있다(합이 116). 한 카드 안에서 윗줄만 비어 있었다.
@@ -115,20 +115,20 @@
 					<span class="inline-flex items-baseline gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-info"></span>
 						<span class="text-base-content/60">${midMonthLabel}</span>
-						<span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(midMonthNetAmount)}</span>
+						<span class="font-semibold text-base-content/80 amount-value">₩${decimalFormat.format(midMonthNetAmount)}</span>
 						<span class="text-base-content/60">${windowCount.apply(midMonthCount)}</span>
 					</span>
 					<span class="inline-flex items-baseline gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary"></span>
 						<span class="text-base-content/60">${monthEndLabel}</span>
-						<span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(monthEndNetAmount)}</span>
+						<span class="font-semibold text-base-content/80 amount-value">₩${decimalFormat.format(monthEndNetAmount)}</span>
 						<span class="text-base-content/60">${windowCount.apply(monthEndCount)}</span>
 					</span>
 					@if(otherWindowCount > 0)
 					<span class="inline-flex items-baseline gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-base-content/25"></span>
 						<span class="text-base-content/60">${otherWindowLabel}</span>
-						<span class="font-semibold text-base-content/80 amount-value">₩ ${decimalFormat.format(otherWindowNetAmount)}</span>
+						<span class="font-semibold text-base-content/80 amount-value">₩${decimalFormat.format(otherWindowNetAmount)}</span>
 						<span class="text-base-content/60">${windowCount.apply(otherWindowCount)}</span>
 					</span>
 					@endif
@@ -149,7 +149,7 @@
 					<span class="text-xl font-bold ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">@if(diffZero)-@else<span aria-hidden="true">${diffPositive ? "▲" : "▼"}</span>@endif ${diffPct}%</span>
 					<span class="text-xs amount-value ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">${diffZero ? "" : (diffPositive ? "+" : "-")}₩${decimalFormat.format(diffAmount.abs())}</span>
 				</div>
-				<div class="text-xs text-base-content/60">${previousPeriodLabel} <span class="amount-value">₩ ${decimalFormat.format(safePrevNet)}</span></div>
+				<div class="text-xs text-base-content/60">${previousPeriodLabel} <span class="amount-value">₩${decimalFormat.format(safePrevNet)}</span></div>
 				<%-- 이번 달/올해는 아직 끝나지 않았는데 전기는 완전한 전월/전년이라, 증감률이 실제 추세와
 					 반대로 읽힌다. 비교가 불공평하다는 사실만 밝힌다(수치는 그대로 둔다). --%>
 				@if(currentPeriodElapsedDays > 0 && currentPeriodTotalDays > currentPeriodElapsedDays)

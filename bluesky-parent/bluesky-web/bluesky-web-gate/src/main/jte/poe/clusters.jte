@@ -12,7 +12,7 @@
 @param List<PoeClusterNotable> notables = java.util.List.of()
 
 !{
-	String pageTitle = MessageUtil.getMessage("layout.menu.poe.clusters");
+	String pageTitle = MessageUtil.getMessage("poe.clusters.title");
 	String patchLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.patch"), patch);
 	boolean ko = PoeText.isKorean();
 }

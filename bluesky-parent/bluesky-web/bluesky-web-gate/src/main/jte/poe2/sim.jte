@@ -12,13 +12,18 @@
 @param String preSkill = ""
 @param java.util.List<Poe2.Unique> forceUniques = java.util.List.of()
 @param String preUnique = ""
+@param String treeClass = ""
+@param String treeAsc = ""
+@param String treeNodes = ""
+@param String treeAttrs = ""
+@param String treeSets = ""
 
 <%-- PoE2 시뮬레이터 — PoE1 시뮬(/poe/sim)과 같은 화면: 탭(시뮬레이션 / 젬 DPS 랭킹) · 전직·메인 스킬(검색형)·적 시나리오 → 실행 → 결과 ·
      최근 결과 이력과 지난-결과 뷰어(10-01 "PoE1 에 맞춰"). 탭 스크립트·이력 뷰어·랭킹 조각은 PoE1 sim.jte 를 그대로 옮기고 id/URL 만 poe2.
      목표는 PoE1 처럼 실빌드 성향으로 자동(미리보기에 표시). 결과는 빈 빌드에서 고르지 않고 poe.ninja 실빌드 후보에서 출발해 목표에 맞춰 다듬는다
      (PoE1 검증에서 빈 빌드 최적화는 생존력이 실빌드의 0.17~0.55배, 2026-09-30). --%>
 !{
-	String pageTitle = MessageUtil.getMessage("layout.menu.poe2.sim");
+	String pageTitle = MessageUtil.getMessage("poe2.sim.title");
 	boolean ko = PoeText.isKorean();
 	java.util.List<Poe2.SimChoice> skills = options == null || options.skills() == null ? java.util.List.of() : options.skills();
 	java.util.List<Poe2.SimChoice> ascs = options == null || options.ascendancies() == null ? java.util.List.of() : options.ascendancies();
@@ -40,7 +45,7 @@
 			<%-- 시뮬레이션 / 젬 DPS 랭킹 탭 — PoE1 과 같다. 패널은 둘 다 DOM 에 남긴다(진행 중 폴링 유지). --%>
 			<div id="poe2SimTabs" class="tabs tabs-box w-full bg-base-200/70 p-1" role="tablist"
 			     data-tab-active="${tabActive}" data-tab-inactive="${tabInactive}">
-				<button type="button" role="tab" data-poe2-sim-tab="sim" class="${tabActive}">${pageTitle}</button>
+				<button type="button" role="tab" data-poe2-sim-tab="sim" class="${tabActive}">${MessageUtil.getMessage("poe.sim.opt.title")}</button>
 				<button type="button" role="tab" data-poe2-sim-tab="ranking" class="${tabInactive}">${MessageUtil.getMessage("poe.sim.ranking.title")}</button>
 			</div>
 			<div data-poe2-sim-panel="sim" class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
@@ -62,17 +67,30 @@
 							     hx-trigger="change[target.name==='skill'||target.name==='ascendancy']"
 							     hx-include="#poe2SimSelects select"
 							     hx-target="this" hx-swap="innerHTML">
-								@template.poe2.htmx.simSelects(skills = skills, ascendancies = ascs, popularAscendancies = options.popularAscendancies() == null ? java.util.List.of() : options.popularAscendancies(), classes = options.classes() == null ? java.util.List.of() : options.classes(), skill = preSkill, ascendancy = "")
+								@template.poe2.htmx.simSelects(skills = skills, ascendancies = ascs, popularAscendancies = options.popularAscendancies() == null ? java.util.List.of() : options.popularAscendancies(), classes = options.classes() == null ? java.util.List.of() : options.classes(), skill = preSkill, ascendancy = treeAsc)
 							</div>
 							<div class="flex min-w-0 flex-wrap items-center gap-2">
 								<span class="self-center whitespace-nowrap text-xs text-base-content/60" title="${ko ? "선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정" : "Objective follows the real-build lean"}">${ko ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
 								<%-- 시나리오 문구는 PoE1 과 같은 메시지 키. "플레이어 설정 그대로"는 PoE2 만(실빌드에서 출발하므로 그 사람의 설정이 있다) --%>
+								<%-- 내 트리에서 출발(10-02) — 트리 화면 "→ 시뮬"로 왔을 때만. 같은 직업 실빌드의 장비·젬에 이 트리를 끼우고 다듬는다(트리는 안 바뀐다) --%>
+								@if(!treeNodes.isBlank())
+									!{ int treeCount = treeNodes.split(",").length; }
+									<div class="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2 py-1 text-xs" data-sim-tree>
+										<span class="font-semibold">${ko ? "내 트리에서 출발" : "From my tree"}</span>
+										<span class="text-base-content/70">${treeClass}@if(!treeAsc.isBlank()) · ${treeAsc}@endif · ${ko ? "노드 " + treeCount + "개" : treeCount + " nodes"}</span>
+										<a class="link link-hover text-base-content/50" href="/poe2/sim" title="${ko ? "트리 없이" : "Without tree"}" aria-label="${ko ? "내 트리 빼기" : "Remove my tree"}">✕</a>
+										<input type="hidden" name="treeClass" value="${treeClass}">
+										<input type="hidden" name="treeNodes" value="${treeNodes}">
+										<input type="hidden" name="treeAttrs" value="${treeAttrs}">
+										<input type="hidden" name="treeSets" value="${treeSets}">
+									</div>
+								@endif
 								<%-- 고정 고유 — PoE1 시뮬 "고유 고정"의 짝(10-01). 다듬기 전에 끼우고 그 칸은 다시 안 바꾼다. 방어구·장신구만(무기는 스킬 요구와 얽힌다) --%>
 								<div class="w-56" data-sim-unique>
-									<select name="unique" data-poe-multi data-placeholder="${ko ? "고정 고유(선택)…" : "Lock a unique (optional)…"}" class="select select-sm select-bordered w-full" title="${ko ? "고정 고유" : "Locked unique"}">
-										<option value="" selected="${preUnique.isEmpty()}">${ko ? "고정 고유 없음" : "No locked unique"}</option>
+									<select name="unique" data-poe-multi data-placeholder="${ko ? "고정 고유템 (선택)…" : "Lock a unique (optional)…"}" class="select select-sm select-bordered w-full" title="${ko ? "고정 고유템" : "Locked unique"}">
+										<option value="" selected="${preUnique.isEmpty()}">${ko ? "고정 고유템 없음" : "No locked unique"}</option>
 										@for(Poe2.Unique u : forceUniques)
-											<option value="${u.slug()}" selected="${u.slug().equals(preUnique)}">${PoeText.name(u.nameKo(), u.name())} · ${PoeText.name(u.itemClassKo(), u.itemClass())}</option>
+											<option value="${u.slug()}" selected="${u.slug().equals(preUnique)}">${PoeText.name(u.nameKo(), u.name())} · ${net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass())}</option>
 										@endfor
 									</select>
 								</div>
@@ -84,9 +102,9 @@
 									<option value="keep">${ko ? "플레이어 설정 그대로" : "Keep player setting"}</option>
 								</select>
 								@if(isAuthenticated)
-									<button type="submit" class="btn btn-primary btn-sm" data-sim-run>${ko ? "시뮬레이션 실행" : "Run simulation"}</button>
+									<button type="submit" class="btn btn-primary btn-sm" data-sim-run>${MessageUtil.getMessage("poe.sim.opt.run")}</button>
 								@else
-									<button type="button" class="btn btn-primary btn-sm btn-disabled" disabled>${ko ? "시뮬레이션 실행" : "Run simulation"}</button>
+									<button type="button" class="btn btn-primary btn-sm btn-disabled" disabled>${MessageUtil.getMessage("poe.sim.opt.run")}</button>
 									<a class="link link-primary text-xs" href="${loginUrl}">${ko ? "로그인하면 실행할 수 있습니다" : "Sign in to run"}</a>
 								@endif
 							</div>
@@ -121,7 +139,7 @@
 				<div id="poe2HistoryResultViewWrap" class="mt-3 hidden">
 					<div class="flex items-center justify-between mb-1.5">
 						<div class="text-xs font-semibold text-base-content/60">${ko ? "지난 결과 보기" : "Saved result"}</div>
-						<button type="button" class="btn btn-ghost btn-xs" data-poe2-hist-close>✕ ${ko ? "닫기" : "Close"}</button>
+						<button type="button" class="btn btn-ghost btn-xs" data-poe2-hist-close>${ko ? "닫기" : "Close"} ✕</button>
 					</div>
 					<div id="poe2HistoryResultView"></div>
 				</div>

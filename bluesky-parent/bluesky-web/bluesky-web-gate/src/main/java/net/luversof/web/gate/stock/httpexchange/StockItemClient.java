@@ -43,4 +43,14 @@ public interface StockItemClient {
       @PathVariable UUID id,
       @org.springframework.web.bind.annotation.RequestParam
           org.springframework.util.MultiValueMap<String, String> params);
+
+  /**
+   * 종목 상세 주가 차트(2026-10-02): 날짜마다 시가 · 고가 · 저가 · 종가와, userId 를 주면 그 날의 평균 단가. 질의: startDate ·
+   * endDate (ISO 날짜) · userId · timeZone.
+   */
+  @GetExchange("/{id}/priceChart")
+  java.util.List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> getPriceChart(
+      @PathVariable UUID id,
+      @org.springframework.web.bind.annotation.RequestParam
+          org.springframework.util.MultiValueMap<String, String> params);
 }

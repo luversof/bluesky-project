@@ -9,7 +9,7 @@
 !{
 	boolean korean = PoeText.isKorean();
 	List<Poe2.Unique> sorted = new java.util.ArrayList<>(items);
-	sorted.sort(java.util.Comparator.comparing((Poe2.Unique u) -> PoeText.name(u.itemClassKo(), u.itemClass()) == null ? "" : PoeText.name(u.itemClassKo(), u.itemClass()))
+	sorted.sort(java.util.Comparator.comparing((Poe2.Unique u) -> net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass()) == null ? "" : net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass()))
 		.thenComparing(u -> PoeText.name(u.nameKo(), u.name())));
 }
 
@@ -53,7 +53,7 @@
 								@endif
 							</div>
 							<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/55">
-								<span class="truncate">${PoeText.name(u.baseTypeKo(), u.baseType())} · ${PoeText.name(u.itemClassKo(), u.itemClass())}</span>
+								<span class="truncate">${PoeText.name(u.baseTypeKo(), u.baseType())} · ${net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass())}</span>
 								@if(u.requiredLevel() != null && u.requiredLevel() > 1)
 									<span class="text-base-content/40" data-req-level>${MessageUtil.getMessage("poe.gems.detail.required.level")} ${u.requiredLevel()}</span>
 								@endif

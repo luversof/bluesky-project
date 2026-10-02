@@ -92,7 +92,10 @@ class ActivitySharesUnitTest {
           .as(template + " must not keep the old plain label")
           .doesNotContain("${sharesLabel}");
       int opens = count(jte, "${sharesBefore}<span class=" + Q + "amount-value" + Q + ">");
-      int closes = count(jte, "</span>${sharesAfter}");
+      // 2026-10-01: 1 주면 단수 꼬리(" share") - 뒤 조각은 수량마다 sharesAfterOne/sharesAfter 중에서 고른다.
+      int closes =
+          count(jte, "</span>${sharesAfter}")
+              + count(jte, ".quantity()) ? sharesAfterOne : sharesAfter}");
       assertThat(opens).as(template + " front half on the quantity").isGreaterThan(0);
       assertThat(closes).as(template + " back half count, front was " + opens).isEqualTo(opens);
       // 단위를 손으로 띄운 자리가 남아 있으면 영어에서 두 칸이 된다.
@@ -113,7 +116,16 @@ class ActivitySharesUnitTest {
                 + Q
                 + ")) + String.format(");
     assertThat(jte)
-        .contains("+ " + UTIL + ".afterPlaceholder(MessageUtil.getMessage(" + Q + KEY + Q + "))");
+        .contains(": " + UTIL + ".afterPlaceholder(MessageUtil.getMessage(" + Q + KEY + Q + "))")
+        .contains(
+            "? "
+                + UTIL
+                + ".afterPlaceholder(MessageUtil.getMessage("
+                + Q
+                + KEY
+                + ".one"
+                + Q
+                + "))");
   }
 
   private String valueOf(String bundle, String key) {

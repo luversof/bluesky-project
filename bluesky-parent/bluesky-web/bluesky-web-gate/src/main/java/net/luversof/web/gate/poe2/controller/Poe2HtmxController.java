@@ -67,8 +67,19 @@ public class Poe2HtmxController {
   /** API 오류는 조각 자리에 안내로 — 화면 전체가 깨지지 않게. 원인은 로그에 남긴다. */
   @ExceptionHandler(RuntimeException.class)
   public String apiError(RuntimeException e, Model model) {
-    logger.warn("PoE2 조각 요청 실패", e);
+    // 없는 항목(404)과 일시 장애를 가른다 — PoE1 조각(poe/htmx/apiError.jte)과 같은 구분(10-01). 404 는 재시도를 권하면 영영 안 되는
+    // 걸 누르게 된다
+    boolean notFound =
+        (e instanceof io.github.luversof.boot.exception.BlueskyException be
+                && be.getStatus() == 404)
+            || net.luversof.web.gate.poe.controller.PoeHtmxController.isNotFound(e);
+    if (notFound) {
+      logger.info("PoE2 조각 요청 — 없는 항목: {}", e.toString());
+    } else {
+      logger.warn("PoE2 조각 요청 실패", e);
+    }
     model.addAttribute("message", e.getMessage());
+    model.addAttribute("notFound", notFound);
     return "poe2/htmx/error";
   }
 
@@ -268,6 +279,11 @@ public class Poe2HtmxController {
       @RequestParam(required = false, defaultValue = "Pinnacle") String scenario,
       // 고정 고유 slug — PoE1 시뮬 "고유 고정"의 짝(10-01, 방어구·장신구만)
       @RequestParam(required = false, defaultValue = "") String unique,
+      // 내 트리에서 출발(10-02) — 트리 화면 "→ 시뮬"이 넘긴 직업·노드·능력치 선택(시뮬 폼 숨은 칸)
+      @RequestParam(required = false, defaultValue = "") String treeClass,
+      @RequestParam(required = false, defaultValue = "") String treeNodes,
+      @RequestParam(required = false, defaultValue = "") String treeAttrs,
+      @RequestParam(required = false, defaultValue = "") String treeSets,
       java.security.Principal principal,
       Model model) {
     if (principal == null) {
@@ -277,7 +293,16 @@ public class Poe2HtmxController {
     boolean started = false;
     try {
       started =
-          !skill.isBlank() && client.simStart(skill, ascendancy, scenario, blankToNull(unique));
+          !skill.isBlank()
+              && client.simStart(
+                  skill,
+                  ascendancy,
+                  scenario,
+                  blankToNull(unique),
+                  blankToNull(treeClass),
+                  blankToNull(treeNodes),
+                  blankToNull(treeAttrs),
+                  blankToNull(treeSets));
     } catch (RuntimeException e) {
       logger.warn("PoE2 시뮬레이션 시작 실패({} / {}): {}", ascendancy, skill, e.toString());
     }
@@ -390,16 +415,49 @@ public class Poe2HtmxController {
   }
 
   @GetMapping("/sim/ranking")
-  public String simRanking(Model model) {
+  public String simRanking(
+      // 시즌 비교(10-02 사용자 요청, PoE1 과 같은 규칙) — season 비면 지금, against 비면 바로 이전 시즌
+      @RequestParam(required = false, defaultValue = "") String season,
+      @RequestParam(required = false, defaultValue = "") String against,
+      Model model) {
     Poe2.SimRankingData data = null;
+    java.util.List<String> seasons = java.util.List.of();
     try {
-      data = client.simRanking();
+      seasons = client.simRankingSeasons();
+      data = season.isBlank() ? client.simRanking() : client.simRanking(season);
     } catch (RuntimeException e) {
       logger.warn("PoE2 젬 랭킹 조회 실패: {}", e.toString());
     }
-    model.addAttribute(
-        "ranking", data == null || data.ranking() == null ? java.util.List.of() : data.ranking());
+    java.util.List<Poe2.SimGemRank> rows =
+        data == null || data.ranking() == null ? java.util.List.of() : data.ranking();
+    String viewed = season.isBlank() && !seasons.isEmpty() ? seasons.get(0) : season;
+    String vs =
+        against.isBlank()
+            ? net.luversof.web.gate.poe.RankCompare.previousSeason(seasons, viewed)
+            : against;
+    Poe2.SimRankingData prev = null;
+    if (vs != null && !vs.equals(viewed)) {
+      try {
+        prev = client.simRanking(vs);
+      } catch (RuntimeException e) {
+        logger.warn("PoE2 젬 랭킹 비교 시즌 조회 실패 {}: {}", vs, e.toString());
+      }
+    }
+    java.util.List<Poe2.SimGemRank> prevRows =
+        prev == null || prev.ranking() == null ? java.util.List.of() : prev.ranking();
+    model.addAttribute("ranking", rows);
     model.addAttribute("rankingPatch", data == null || data.patch() == null ? "" : data.patch());
+    model.addAttribute("seasons", seasons);
+    model.addAttribute("season", viewed == null ? "" : viewed);
+    model.addAttribute("against", prevRows.isEmpty() ? "" : vs);
+    model.addAttribute("againstPatch", prev == null || prev.patch() == null ? "" : prev.patch());
+    model.addAttribute(
+        "changes",
+        net.luversof.web.gate.poe.RankCompare.compare(
+            rows.stream().map(Poe2.SimGemRank::slug).toList(),
+            rows.stream().map(Poe2.SimGemRank::dps).toList(),
+            prevRows.stream().map(Poe2.SimGemRank::slug).toList(),
+            prevRows.stream().map(Poe2.SimGemRank::dps).toList()));
     return "poe2/htmx/ranking";
   }
 
@@ -506,6 +564,7 @@ public class Poe2HtmxController {
       @RequestParam(required = false, defaultValue = "") String nodes,
       @RequestParam(required = false) String skill,
       @RequestParam(required = false, defaultValue = "") String attrs,
+      @RequestParam(required = false, defaultValue = "") String sets,
       Model model) {
     if (className.isBlank()) {
       model.addAttribute("error", "noclass");
@@ -514,7 +573,8 @@ public class Poe2HtmxController {
     try {
       model.addAttribute(
           "eval",
-          engine.treeEval(className, blankToNull(ascendancy), nodes, blankToNull(skill), attrs));
+          engine.treeEval(
+              className, blankToNull(ascendancy), nodes, blankToNull(skill), attrs, sets));
     } catch (io.github.luversof.boot.exception.BlueskyException e) {
       if (e.getStatus() >= 500) {
         throw e;
@@ -566,6 +626,25 @@ public class Poe2HtmxController {
       model.addAttribute("error", "invalid");
     }
     return "poe2/htmx/buildGuide";
+  }
+
+  /** 가이드 "좋은 레어로 바꾸면" 조각 — 가이드가 붙은 뒤 hx-trigger=load 로 따로(10-02, 본 가이드가 4~6초 느려지지 않게). */
+  @PostMapping("/build/guide/rares")
+  public String guideRares(
+      @RequestParam(required = false) String code,
+      @RequestParam(required = false) Integer set,
+      Model model) {
+    if (code == null || code.isBlank()) {
+      return "poe2/htmx/guideRares";
+    }
+    try {
+      model.addAttribute("rares", engine.guideRares(code.trim(), set));
+    } catch (io.github.luversof.boot.exception.BlueskyException e) {
+      if (e.getStatus() >= 500) {
+        throw e;
+      }
+    }
+    return "poe2/htmx/guideRares";
   }
 
   @GetMapping("/admin/status")

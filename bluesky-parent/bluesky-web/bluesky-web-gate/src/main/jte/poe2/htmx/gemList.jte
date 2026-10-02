@@ -49,7 +49,7 @@
 								@endif
 								<div class="min-w-0 flex-1">
 								<div class="flex items-baseline gap-1.5 min-w-0">
-									<a class="font-semibold truncate link-hover ${nameColor}" href="/poe2/gems/${gem.slug()}">${PoeText.name(gem.nameKo(), gem.name())}</a>
+									<a class="font-semibold truncate link-hover ${nameColor}" href="/poe2/gems/${gem.slug()}" title="${gem.name()}">${PoeText.name(gem.nameKo(), gem.name())}</a>
 									@if(!"skill".equals(gem.kind()))
 										<span class="shrink-0 badge badge-xs badge-outline">${MessageUtil.getMessage("poe2.gems.kind." + gem.kind())}</span>
 									@endif

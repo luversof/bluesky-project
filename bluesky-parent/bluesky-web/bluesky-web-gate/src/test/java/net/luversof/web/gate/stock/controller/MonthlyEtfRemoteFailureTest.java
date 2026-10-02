@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,9 +36,10 @@ import net.luversof.web.gate.stock.support.StockAsyncSupport;
 /**
  * 월배당 ETF 화면의 원격 호출 셋을 동시에 던지게 바꾼 뒤(2026-09-23)에도 실패했을 때의 결과는 예전과 같아야 한다.
  *
- * <p>예전 순차 코드의 약속: 카탈로그 · 원장 보유가 실패하면 그 예외가 그대로 올라가 오류 화면이 되고, 월배당 스냅샷(이번 적립 배지 출처)이 실패하면 배지만 비고
- * 목록은 그린다. 동시화하면 예외가 다른 스레드에서 나서 {@code CompletionException} 으로 감싸이거나, 받는 자리(join)가 try 밖으로 빠지면 배지
- * 실패가 화면 전체 실패로 번진다 &mdash; 그 둘을 소스 모양이 아니라 실제로 불러서 본다.
+ * <p>예전 순차 코드의 약속: 카탈로그 · 원장 보유가 실패하면 그 예외가 그대로 올라가 오류 화면이 되고, 이번 적립 배지가 실패하면 배지만 비고 목록은 그린다.
+ * 2026-10-02 부터 배지는 보유 여부와 상관없이 카탈로그 전체에서 고른다 - 월배당 스냅샷(예전 배지 출처)은 더 부르지 않는다. 동시화하면 예외가 다른 스레드에서 나서
+ * {@code CompletionException} 으로 감싸이거나, 받는 자리(join)가 try 밖으로 빠지면 배지 실패가 화면 전체 실패로 번진다 &mdash; 그 둘을
+ * 소스 모양이 아니라 실제로 불러서 본다.
  */
 class MonthlyEtfRemoteFailureTest {
 
@@ -74,7 +76,6 @@ class MonthlyEtfRemoteFailureTest {
     when(referenceSupport.loadCurrentHoldings(eq(USER_ID)))
         .thenReturn(
             new MonthlyDividendReferenceSupport.CurrentHoldings(Map.of(), Map.of(), null, false));
-    when(referenceSupport.loadMonthlyDividendRows(eq(USER_ID))).thenReturn(List.of());
   }
 
   @AfterEach
@@ -89,23 +90,27 @@ class MonthlyEtfRemoteFailureTest {
   }
 
   @Test
-  void 정상이면_세_호출을_한_번씩_하고_화면을_그린다() {
+  void 정상이면_두_호출을_한_번씩_하고_화면을_그린다() {
     var model = new ExtendedModelMap();
     assertThat(open(model)).isEqualTo("stock/monthlyEtf");
     verify(catalogClient, times(1)).findCatalog(any());
     verify(referenceSupport, times(1)).loadCurrentHoldings(USER_ID);
-    verify(referenceSupport, times(1)).loadMonthlyDividendRows(USER_ID);
+    verify(referenceSupport, never()).loadMonthlyDividendRows(any());
   }
 
   @Test
-  void 스냅샷이_실패해도_목록은_그리고_배지만_빈다() {
-    when(referenceSupport.loadMonthlyDividendRows(eq(USER_ID)))
+  void 스냅샷이_실패해도_배지는_카탈로그에서_낸다() {
+    // 보유 스냅샷은 더 배지 출처가 아니다 - 실패하든 말든 화면 · 배지와 무관해야 한다.
+    when(referenceSupport.loadMonthlyDividendRows(any()))
         .thenThrow(new IllegalStateException("스냅샷 실패"));
     var model = new ExtendedModelMap();
 
-    assertThat(open(model)).as("배지 실패가 화면 전체로 번지지 않는다").isEqualTo("stock/monthlyEtf");
-    assertThat(model.getAttribute("monthlyEtfContributionPicks")).isEqualTo(Map.of());
+    assertThat(open(model)).isEqualTo("stock/monthlyEtf");
+    assertThat(model.getAttribute("monthlyEtfContributionPicks"))
+        .as("빈 카탈로그면 빈 배지")
+        .isEqualTo(Map.of());
     assertThat(model.getAttribute("monthlyEtfRows")).as("목록은 그린다").isNotNull();
+    verify(referenceSupport, never()).loadMonthlyDividendRows(any());
   }
 
   /** 카탈로그의 총보수 · 상장일이 목록 행까지 실린다(2026-09-28) - 옮기는 줄이 빠지면 화면이 늘 "미확인" 이다. */

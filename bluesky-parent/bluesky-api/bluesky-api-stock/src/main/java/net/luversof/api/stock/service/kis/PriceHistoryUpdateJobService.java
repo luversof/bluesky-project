@@ -83,6 +83,13 @@ public class PriceHistoryUpdateJobService {
     try {
       PriceHistoryUpdateResult result =
           kisStockPriceUpdateService.updatePriceHistory(userId, this::publishProgress);
+      // 새 날의 원주가도 채운다(2026-10-02, 평가 = 원주가 x 실제 주식 수). 이미 채운 날은 건너뛰어 보통 보유 종목마다 한 번.
+      // 실패해도 시세 갱신 결과는 그대로 둔다 - 빈 날은 평가가 직전 날 배율로 메운다(TradeProfitService.RawValuation).
+      try {
+        kisStockPriceUpdateService.fillRawClosePrices(userId);
+      } catch (RuntimeException rawCloseFailure) {
+        log.warn("raw close fill after price update failed", rawCloseFailure);
+      }
       state.set(
           new PriceHistoryUpdateJobStatus(
               PriceHistoryUpdateJobStatus.DONE,

@@ -52,7 +52,7 @@
 					<span class="text-xs font-semibold text-base-content/50 mr-1" title="${MessageUtil.getMessage("poe2.augments.class.hint")}">${MessageUtil.getMessage("poe2.augments.target")}</span>
 					<button type="button" class="poe-chip ${"all".equals(activeClass) ? "poe-chip-active" : ""}" data-chip-value="all">${MessageUtil.getMessage("poe2.all")}</button>
 					@for(Poe2.ItemClass c : socketable)
-						<button type="button" class="poe-chip ${c.key().equals(activeClass) ? "poe-chip-active" : ""}" data-chip-value="${c.key()}">${PoeText.name(c.ko(), c.key())}</button>
+						<button type="button" class="poe-chip ${c.key().equals(activeClass) ? "poe-chip-active" : ""}" data-chip-value="${c.key()}">${PoeText.name(c.ko(), c.enName())}</button>
 					@endfor
 				</div>
 			</div>

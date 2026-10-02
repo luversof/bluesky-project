@@ -75,6 +75,16 @@ public class StockAdminController {
     return kisStockPriceUpdateService.updatePriceHistory(userId, symbol);
   }
 
+  /**
+   * 매매가 있던 날의 원주가(수정 전 종가)를 채운다(2026-10-02). 평가 수량의 분할 · 병합 계수 = 원주가 / 수정 종가. 이미 채운 날은 건너뛴다. 전체 시세
+   * 갱신 작업도 끝에 이것을 부른다. 원주가 열이 없는 DB 면 아무것도 안 하고 columnAvailable=false.
+   */
+  @PostMapping("/raw-close-prices")
+  public net.luversof.api.stock.service.kis.KisStockPriceUpdateService.RawClosePriceFillResult
+      rawClosePriceFill(@RequestParam UUID userId) {
+    return kisStockPriceUpdateService.fillRawClosePrices(userId);
+  }
+
   /** "배당주 검색" 시트의 보유/평단가를 월배당 기준 등록 종목에 한해 월배당 스냅샷에 추가/갱신한다. */
   @PostMapping("/monthly-dividend-snapshots/import-from-sheet")
   public int monthlyDividendSnapshotImportFromSheet(@RequestParam UUID userId) {

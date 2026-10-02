@@ -80,6 +80,93 @@ public final class ChartSeriesJs {
         + "]}";
   }
 
+  /**
+   * 주가 캔들 시리즈(2026-10-02): labels · open · high · low · close · avg(그 날 평균 단가, 보유가 없던 날 null). 봉
+   * 묶기(주봉 · 월봉)는 브라우저(StockCharts.candleBuckets)가 한다 - 툴팁이 날짜별 원값을 알아야 해서 서버는 일봉을 그대로 준다.
+   */
+  public static String candleSeries(
+      List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> points) {
+    return candleSeries(points, List.of(), java.time.ZoneOffset.UTC);
+  }
+
+  /**
+   * 캔들 시리즈 + 날짜별 내 매수 · 매도 수량(buy · sell, 2026-10-02 - 캔들 위 ▲ · ▼). 시세가 없는 날의 매매(공모주 청약일 · 휴장일 기록)는
+   * 그 다음 시세일 봉에 붙인다 - 버리면 첫 매수 표시가 사라진다. 기간 밖 매매는 뺀다.
+   */
+  public static String candleSeries(
+      List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> points,
+      List<net.luversof.web.gate.stock.dto.response.TradeResponse> trades,
+      java.time.ZoneId zone) {
+    List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> safe =
+        points == null ? List.of() : points;
+    java.util.TreeMap<java.time.LocalDate, Integer> indexByDate = new java.util.TreeMap<>();
+    for (int i = 0; i < safe.size(); i++) {
+      if (safe.get(i).tradeDate() != null) {
+        indexByDate.put(safe.get(i).tradeDate(), i);
+      }
+    }
+    long[] buyQty = new long[safe.size()];
+    long[] sellQty = new long[safe.size()];
+    if (trades != null && !indexByDate.isEmpty()) {
+      for (var trade : trades) {
+        if (trade == null || trade.tradeDate() == null || trade.type() == null) {
+          continue;
+        }
+        var at = indexByDate.ceilingEntry(trade.tradeDate().atZone(zone).toLocalDate());
+        if (at == null) {
+          continue;
+        }
+        if (trade.type() == net.luversof.web.gate.stock.constant.TradeType.BUY) {
+          buyQty[at.getValue()] += trade.quantity();
+        } else if (trade.type() == net.luversof.web.gate.stock.constant.TradeType.SELL) {
+          sellQty[at.getValue()] += trade.quantity();
+        }
+      }
+    }
+    StringBuilder buy = new StringBuilder();
+    StringBuilder sell = new StringBuilder();
+    for (int i = 0; i < safe.size(); i++) {
+      sep(buy).append(buyQty[i]);
+      sep(sell).append(sellQty[i]);
+    }
+    StringBuilder labels = new StringBuilder();
+    StringBuilder open = new StringBuilder();
+    StringBuilder high = new StringBuilder();
+    StringBuilder low = new StringBuilder();
+    StringBuilder close = new StringBuilder();
+    StringBuilder avg = new StringBuilder();
+    for (var pt : safe) {
+      sep(labels).append(jsString(pt.tradeDate() != null ? pt.tradeDate().toString() : ""));
+      sep(open).append(pt.open() != null ? won(pt.open()) : "null");
+      sep(high).append(pt.high() != null ? won(pt.high()) : "null");
+      sep(low).append(pt.low() != null ? won(pt.low()) : "null");
+      sep(close).append(won(pt.close()));
+      // 보유가 없던 날은 0 이 아니라 null - 0 이면 선이 바닥으로 떨어져 공짜로 산 것처럼 읽힌다(priceSeries 와 같은 이유).
+      sep(avg)
+          .append(
+              pt.averageCost() != null && pt.averageCost().signum() != 0
+                  ? won(pt.averageCost())
+                  : "null");
+    }
+    return "{labels:["
+        + labels
+        + "],open:["
+        + open
+        + "],high:["
+        + high
+        + "],low:["
+        + low
+        + "],close:["
+        + close
+        + "],avg:["
+        + avg
+        + "],buy:["
+        + buy
+        + "],sell:["
+        + sell
+        + "]}";
+  }
+
   static String won(BigDecimal amount) {
     return amount == null ? "0" : amount.setScale(0, RoundingMode.HALF_UP).toPlainString();
   }

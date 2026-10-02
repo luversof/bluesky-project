@@ -43,6 +43,8 @@
 	String buyAmountLabel = MessageUtil.getMessage("stock.trade.label.buy.amount");
 	String stockNameLabel = MessageUtil.getMessage("stock.activity.label.stock.name");
 	String quantityLabel = MessageUtil.getMessage("common.label.quantity");
+	// 종목 표 머리글만 짧은 이름(영어 "Shares") - 영어 1440px 에서 표가 상자보다 28px 넓어 비중 열이 잘렸다(2026-10-01). 공통 "수량" 키는 다른 화면이 쓴다.
+	String stockTableQuantityLabel = MessageUtil.getMessage("stock.asset.status.col.quantity");
 	String averageCostLabel = MessageUtil.getMessage("stock.column.average.cost");
 	String currentPriceLabel = MessageUtil.getMessage("stock.column.current.price");
 	String weightLabel = MessageUtil.getMessage("stock.analytics.account.holdings.weight");
@@ -549,7 +551,7 @@
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="quantity"
 									data-sort-type="number">
-								<span>${quantityLabel}</span>
+								<span>${stockTableQuantityLabel}</span>
 								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>

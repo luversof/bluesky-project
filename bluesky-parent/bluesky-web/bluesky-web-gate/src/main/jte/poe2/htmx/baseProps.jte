@@ -20,7 +20,7 @@
 	<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
 		@if(hasWeapon)
 			<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${value}">${w.damageMin()}–${w.damageMax()}</span></div>
-			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.crit.chance")}: </span><span class="${value}">${String.format("%.2f", w.critChance())}%</span></div>
+			<div><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${value}">${String.format("%.2f", w.critChance())}%</span></div>
 			<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.attacks.per.second")}: </span><span class="${value}">${String.format("%.2f", w.attacksPerSecond())}</span></div>
 			@if(nz(w.reloadTime()) > 0)
 				<div><span class="${label}">${MessageUtil.getMessage("poe2.items.reload")}: </span><span class="${value}">${String.format("%.2f", w.reloadTime() / 1000.0)}s</span></div>

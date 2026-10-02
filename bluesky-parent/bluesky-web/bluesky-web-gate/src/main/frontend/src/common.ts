@@ -799,6 +799,25 @@ document.addEventListener("click", (event) => {
 	}
 });
 
+// [data-copy-target]: 대상(textarea/input)의 값을 클립보드로 — 누른 단추 글자를 잠깐 data-copied-label 로 바꾼다(10-01, PoE2 시뮬 결과 PoB 코드).
+//   PoE1 시뮬은 인라인 onclick 이었는데, 조각마다 같은 코드를 되풀이하지 않게 공용으로 둔다.
+document.addEventListener("click", (event) => {
+	const btn = (event.target as HTMLElement)?.closest?.("[data-copy-target]") as HTMLElement | null;
+	if (!btn) return;
+	const target = document.querySelector(btn.getAttribute("data-copy-target") || "") as HTMLInputElement | HTMLTextAreaElement | null;
+	if (!target) return;
+	const label = btn.textContent || "";
+	navigator.clipboard
+		.writeText(target.value)
+		.then(() => {
+			btn.textContent = btn.getAttribute("data-copied-label") || label;
+			setTimeout(() => (btn.textContent = label), 1500);
+		})
+		.catch(() => {
+			target.select();
+		});
+});
+
 // [data-empty-widen-range]: 빈 상태 CTA — 같은 화면의 기간 프리셋 '전체' 버튼을 눌러 기간을 넓힌다
 document.addEventListener("click", (event) => {
 	const cta = (event.target as HTMLElement).closest?.(
@@ -1470,6 +1489,9 @@ function chartSummaryLabel(raw: unknown, locale: string): string {
 	return String(raw);
 }
 function chartSummaryValue(point: unknown): number | null {
+	// 떠 있는 막대([시작, 끝])는 끝값으로 읽는다 - 캔들 몸통 [시가, 종가] 면 종가(2026-10-02). 예전에는 배열이라 숫자로 못 읽고 빠져, 주가
+	// 캔들 차트의 요약이 평단 선만 말했다.
+	if (Array.isArray(point)) return chartSummaryValue(point[point.length - 1]);
 	const v = point !== null && typeof point === "object" ? (point as any).y : point;
 	const n = typeof v === "string" ? Number(v) : v;
 	return typeof n === "number" && Number.isFinite(n) ? n : null;
@@ -1493,7 +1515,8 @@ function chartSummaryText(chart: any, lang: string = document.documentElement.la
 	const hidden = chartSummaryAmountsHidden();
 	const type = chart?.config?.type || chart?.config?._config?.type || "";
 	const labels: unknown[] = chart?.data?.labels || [];
-	const datasets: any[] = (chart?.data?.datasets || []).filter((ds: any, i: number) => ds && Array.isArray(ds.data) && ds.data.length && (typeof chart.isDatasetVisible !== "function" || chart.isDatasetVisible(i)));
+	// summaryHidden: 요약에서 뺄 보조 계열(캔들 꼬리 [저가, 고가] - 몸통의 종가가 이미 그 날을 말한다).
+	const datasets: any[] = (chart?.data?.datasets || []).filter((ds: any, i: number) => ds && !ds.summaryHidden && Array.isArray(ds.data) && ds.data.length && (typeof chart.isDatasetVisible !== "function" || chart.isDatasetVisible(i)));
 	if (!datasets.length) return "";
 	if (type === "doughnut" || type === "pie" || type === "polarArea") {
 		const values = datasets[0].data.map(chartSummaryValue);
@@ -2065,3 +2088,27 @@ else watchSiteHeaderHeight();
 (globalThis as any).__stickyHeaderInternals = { syncSiteHeaderHeight, watchSiteHeaderHeight, syncStickyStackTop, watchStickyStackTop, syncStickyTheadHeights };
 (globalThis as any).__sectionNavInternals ={ sectionLabel, pageSections, sectionAnchorId, buildSectionNav, markCurrentSection, renderSectionNav, sectionsContainer };
 (globalThis as any).__activityViewInternals = { resolveActivityViewForRequest };
+
+// 서버의 MessageFormat 은 "{0,choice,0#{0} items|1#{0} item|1<{0} items}" 를 수에 맞춰 고르지만 브라우저의 replace 는 그 꼴을 모른다.
+// 영어 "1 items" · "1 stocks selected" 를 막으려고(2026-10-01) 같은 꼴만 여기서 골라 준다 - 화면마다 쓰도록 common 에 둔다 - 1 이면 1# 쪽, 그 밖(0 · 소수 · 2 이상)은 1< 쪽. 다른 꼴은 그대로 둔다.
+function applyCountChoice(pattern: string, value: number): string {
+    // 중괄호는 글자 코드(123 · 125)로 센다 - 문자열 속 중괄호는 최소화기가 그대로 남겨 시험의 함수 추출기가 짝으로 센다.
+    const marker = "0,choice,";
+    const at = pattern.indexOf(marker);
+    if (at < 1 || pattern.charCodeAt(at - 1) !== 123) return pattern;
+    const start = at - 1;
+    let depth = 1;
+    let end = at + marker.length;
+    for (; end < pattern.length && depth > 0; end++) {
+        const code = pattern.charCodeAt(end);
+        if (code === 123) depth++;
+        else if (code === 125) depth--;
+    }
+    if (depth !== 0) return pattern;
+    const parts = pattern.slice(at + marker.length, end - 1).split("|");
+    const one = parts.find((part) => part.startsWith("1#"));
+    const many = parts.find((part) => part.startsWith("1<"));
+    if (!one || !many) return pattern;
+    return pattern.slice(0, start) + (value === 1 ? one.slice(2) : many.slice(2)) + pattern.slice(end);
+}
+(globalThis as any).applyCountChoice = applyCountChoice;

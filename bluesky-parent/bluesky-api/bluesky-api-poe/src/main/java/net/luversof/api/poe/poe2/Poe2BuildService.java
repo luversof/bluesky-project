@@ -67,6 +67,39 @@ public class Poe2BuildService {
   }
 
   /**
+   * 레어 목표만(10-02 사용자 요청 + 같은 날 속도 — 가이드 뒤에 따로). 세트를 나눠 쓰는 빌드면 가이드와 같은 세트(set, 없으면 주 세트)를 켠 채.
+   * guide2.lua 를 "레어만" 모드로(⑧ 만 하고 끝).
+   */
+  public Poe2.GuideRares guideRares(String code, Integer set) {
+    String decoded = decoder.decodeToXml(code.trim());
+    Integer weaponSet = null;
+    if (Poe2WeaponSets.uses(decoded)) {
+      weaponSet = set != null && (set == 1 || set == 2) ? set : mainSetOf(decoded);
+      decoded = Poe2WeaponSets.withSet(decoded, weaponSet);
+    }
+    if (first(parse(decoded).getDocumentElement(), "Build") == null) {
+      throw new IllegalArgumentException("PoB 빌드 형식이 아닙니다(<Build> 없음)");
+    }
+    if (!engine.available()) {
+      return new Poe2.GuideRares(false, null, 0L, weaponSet, List.of());
+    }
+    Map<String, RareSpec> rares = rareCandidates(summarize(code));
+    if (rares.isEmpty()) {
+      return new Poe2.GuideRares(true, null, 0L, weaponSet, List.of());
+    }
+    Map<String, Object> doc = new LinkedHashMap<>();
+    doc.put("onlyRares", true);
+    doc.put("rares", rareJson(rares));
+    Poe2PobEngineService.Raw raw = engine.guide(decoded, GUIDE_JSON.writeValueAsString(doc));
+    if (raw.error() != null) {
+      return new Poe2.GuideRares(true, raw.error(), raw.elapsedMs(), weaponSet, List.of());
+    }
+    tools.jackson.databind.JsonNode g = GUIDE_JSON.readTree(raw.payload());
+    return new Poe2.GuideRares(
+        true, null, raw.elapsedMs(), weaponSet, rareTargets(g.path("rareTargets"), rares));
+  }
+
+  /**
    * 무기 세트별 가이드(10-01) — 세트를 나눠 쓰는 빌드면 그 세트를 켠 채 계산한다(엔진은 켜진 세트 하나로만 계산 — Poe2WeaponSets). set 이
    * null 이면 주 세트(두 세트를 병렬로 재 DPS 큰 쪽)로. 세트를 안 나누는 빌드는 set 을 무시하고 저장된 그대로.
    */
@@ -90,12 +123,15 @@ public class Poe2BuildService {
     if (!engine.available()) {
       return new Poe2.BuildGuide(
           false, null, 0L, null, null, null, List.of(), List.of(), List.of(), List.of(), List.of(),
-          0, null, null, List.of(), 0, List.of(), List.of(), List.of(), 0, weaponSet, mainSet);
+          0, null, null, List.of(), 0, List.of(), List.of(), List.of(), 0, weaponSet, mainSet,
+          List.of());
     }
     // 옵션 목표 후보 — 희귀·마법·일반 장비 칸마다 그 베이스 옵션 풀의 계열별 최고 등급(최대 롤)
     Poe2.BuildSummary summary = summarize(code);
     Map<String, List<ModCandidate>> cands = modCandidates(summary);
-    Poe2PobEngineService.Raw raw = engine.guide(xml, candidatesJson(cands));
+    // 레어 목표는 본 가이드에서 빼고 guideRares 로 따로(본 가이드가 4~6초 느려지지 않게, 10-02)
+    Map<String, RareSpec> rares = Map.of();
+    Poe2PobEngineService.Raw raw = engine.guide(xml, candidatesJson(cands, rares));
     if (raw.error() != null) {
       return new Poe2.BuildGuide(
           true,
@@ -119,7 +155,8 @@ public class Poe2BuildService {
           List.of(),
           0,
           weaponSet,
-          mainSet);
+          mainSet,
+          List.of());
     }
     tools.jackson.databind.JsonNode g = GUIDE_JSON.readTree(raw.payload());
     tools.jackson.databind.JsonNode b = g.path("base");
@@ -205,7 +242,8 @@ public class Poe2BuildService {
         nextNodes(g.path("nextEhp"), tree, summary.treeLink()),
         g.path("nextTried").asInt(0),
         weaponSet,
-        mainSet);
+        mainSet,
+        rareTargets(g.path("rareTargets"), rares));
   }
 
   /** 옵션 목표 후보 한 줄(계열 하나의 최고 등급) — lines 는 최대 롤로 채운 영문(PoB 가 읽는 모양), linesKo 는 화면용. */
@@ -267,14 +305,238 @@ public class Poe2BuildService {
     return out;
   }
 
-  /** 러너에 넘길 후보 JSON — { 칸: [[줄, …], …] } (칸 안 순서 = 후보 번호). */
-  private static String candidatesJson(Map<String, List<ModCandidate>> cands) {
-    if (cands.isEmpty()) {
+  /**
+   * 러너에 넘길 후보 JSON — { mods: { 칸: [[줄, …], …] }, rares: { 칸: { base, implicits, cands: [{gen, fam,
+   * lines}] } } }(칸 안 순서 = 후보 번호). 둘 다 비면 null.
+   */
+  private static String candidatesJson(
+      Map<String, List<ModCandidate>> cands, Map<String, RareSpec> rares) {
+    if (cands.isEmpty() && rares.isEmpty()) {
       return null;
     }
     Map<String, List<List<String>>> plain = new LinkedHashMap<>();
     cands.forEach((slot, list) -> plain.put(slot, list.stream().map(ModCandidate::lines).toList()));
-    return GUIDE_JSON.writeValueAsString(plain);
+    Map<String, Object> doc = new LinkedHashMap<>();
+    doc.put("mods", plain);
+    doc.put("rares", rareJson(rares));
+    return GUIDE_JSON.writeValueAsString(doc);
+  }
+
+  private static Map<String, Object> rareJson(Map<String, RareSpec> rares) {
+    Map<String, Object> rareJson = new LinkedHashMap<>();
+    rares.forEach(
+        (slot, spec) ->
+            rareJson.put(
+                slot,
+                Map.of(
+                    "base",
+                    spec.base(),
+                    "implicits",
+                    spec.implicits(),
+                    "cands",
+                    spec.cands().stream()
+                        .map(c -> Map.of("gen", c.gen(), "fam", c.modType(), "lines", c.lines()))
+                        .toList())));
+    return rareJson;
+  }
+
+  /** 레어 목표 한 칸의 재료 — 베이스 이름 · 베이스 암시(중간 롤) · 후보 옵션(계열별 2티어 중간 롤). */
+  record RareSpec(String base, String baseKo, List<String> implicits, List<ModCandidate> cands) {}
+
+  private static final java.util.Set<String> RARE_SLOTS =
+      java.util.Set.of(
+          "Weapon 1",
+          "Weapon 2",
+          "Helmet",
+          "Body Armour",
+          "Gloves",
+          "Boots",
+          "Amulet",
+          "Ring 1",
+          "Ring 2",
+          "Belt");
+
+  /** 범위 → 중간 롤(반올림, 소수 범위는 한 자리). "(45-50)% increased Armour" → "48% increased Armour". */
+  static String midRoll(String line) {
+    if (line == null) {
+      return null;
+    }
+    java.util.regex.Matcher m = EN_RANGE.matcher(line);
+    StringBuilder sb = new StringBuilder();
+    while (m.find()) {
+      double a = Double.parseDouble(m.group(1));
+      double b = Double.parseDouble(m.group(2));
+      double mid = (a + b) / 2.0;
+      boolean decimal = m.group(1).contains(".") || m.group(2).contains(".");
+      String v =
+          decimal
+              ? String.format(java.util.Locale.ROOT, "%.1f", mid)
+              : String.valueOf(Math.round(mid));
+      m.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(v));
+    }
+    m.appendTail(sb);
+    return sb.toString();
+  }
+
+  /** 한국어 범위("(20~24)" · "20~24") → 중간 롤 — 화면용(영문 midRoll 과 같은 값). */
+  static String midRollKo(String line) {
+    if (line == null) {
+      return null;
+    }
+    java.util.regex.Matcher m = KO_RANGE.matcher(line);
+    StringBuilder sb = new StringBuilder();
+    while (m.find()) {
+      double a = Double.parseDouble(m.group(1));
+      double b = Double.parseDouble(m.group(2));
+      double mid = (a + b) / 2.0;
+      boolean decimal = m.group(1).contains(".") || m.group(2).contains(".");
+      String v =
+          decimal
+              ? String.format(java.util.Locale.ROOT, "%.1f", mid)
+              : String.valueOf(Math.round(mid));
+      m.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(v));
+    }
+    m.appendTail(sb);
+    return sb.toString();
+  }
+
+  /**
+   * 레어 목표 후보(10-02 사용자 요청 "고유만 보지 말고 레어로도") — PoE1 가이드 "레어 목표"(최상위는 못 사니 2티어 중간 롤)와 같은 기준. 고유를 낀 칸도
+   * 포함(그 고유 대신 좋은 레어). 옵션 풀이 없는 베이스는 뺀다.
+   */
+  private Map<String, RareSpec> rareCandidates(Poe2.BuildSummary summary) {
+    Map<String, RareSpec> out = new LinkedHashMap<>();
+    for (Poe2.BuildItem it : summary.items()) {
+      if (it.slot() == null || !RARE_SLOTS.contains(it.slot()) || it.baseType() == null) {
+        continue;
+      }
+      Optional<Poe2.ModPool> pool = data.modPoolForBase(it.baseType());
+      if (pool.isEmpty()) {
+        continue;
+      }
+      List<ModCandidate> list = new ArrayList<>();
+      for (Poe2.ModGroup g : pool.get().groups()) {
+        if (g.tiers() == null || g.tiers().isEmpty()) {
+          continue;
+        }
+        Poe2.ModTier t = g.tiers().size() > 1 ? g.tiers().get(1) : g.tiers().get(0);
+        if (t.text() == null || t.text().isEmpty()) {
+          continue;
+        }
+        list.add(
+            new ModCandidate(
+                g.modType(),
+                g.gen(),
+                t.name(),
+                t.nameKo(),
+                t.text().stream().map(Poe2BuildService::midRoll).toList(),
+                t.textKo() == null
+                    ? List.of()
+                    : t.textKo().stream().map(Poe2BuildService::midRollKo).toList()));
+      }
+      if (list.isEmpty()) {
+        continue;
+      }
+      Optional<Poe2.BaseItem> base = data.baseByName(it.baseType());
+      List<String> implicits =
+          base.map(
+                  b ->
+                      b.implicits() == null
+                          ? List.<String>of()
+                          : b.implicits().stream()
+                              .map(l -> midRoll(l.en()))
+                              .filter(java.util.Objects::nonNull)
+                              .toList())
+              .orElse(List.of());
+      out.put(
+          it.slot(),
+          new RareSpec(
+              it.baseType(), base.map(Poe2.BaseItem::nameKo).orElse(null), implicits, list));
+    }
+    return out;
+  }
+
+  private List<Poe2.GuideRareTarget> rareTargets(
+      tools.jackson.databind.JsonNode list, Map<String, RareSpec> rares) {
+    List<Poe2.GuideRareTarget> out = new ArrayList<>();
+    for (tools.jackson.databind.JsonNode n : list) {
+      String slot = n.path("slot").asString(null);
+      RareSpec spec = rares.get(slot);
+      if (spec == null) {
+        continue;
+      }
+      String item = n.path("item").asString(null);
+      out.add(
+          new Poe2.GuideRareTarget(
+              slot,
+              item,
+              data.uniqueByName(item).map(Poe2.Unique::nameKo).orElse(null),
+              n.path("rarity").asString(null),
+              spec.base(),
+              spec.baseKo(),
+              n.path("tried").asInt(0),
+              upgradeOrNull(rareOf(n.path("dps"), spec)),
+              upgradeOrNull(rareOf(n.path("ehp"), spec))));
+    }
+    // 오르는 폭이 큰 칸부터(DPS·EHP 중 큰 쪽)
+    out.sort(
+        java.util.Comparator.comparingDouble(
+                (Poe2.GuideRareTarget r) ->
+                    -Math.max(
+                        r.dps() == null || r.dps().dps() == null ? -1e9 : r.dps().dps(),
+                        r.ehp() == null || r.ehp().ehp() == null ? -1e9 : r.ehp().ehp()))
+            .thenComparing(Poe2.GuideRareTarget::slot));
+    return out;
+  }
+
+  /** 레어 목표를 보일 만한가 — PoE1 가이드 isUpgrade 와 같은 기준(한 축 +1% 이상, 어느 축도 -5% 넘게 안 깎임). */
+  static final double RARE_MIN_GAIN_PCT = 1.0;
+
+  static final double RARE_TRADE_TOLERANCE_PCT = 5.0;
+
+  /**
+   * 바꿀 이유가 없는 레어는 지운다(10-02 UU) — "피해용 레어 DPS -9.6%" 처럼 제 축이 내려가는 걸 보이면 헷갈린다. 둘 다 지워지면 화면은 "지금 아이템이
+   * 더 좋음". 측정이 없는 축(null)은 0 으로 본다.
+   */
+  static Poe2.GuideRare upgradeOrNull(Poe2.GuideRare r) {
+    if (r == null) {
+      return null;
+    }
+    double dps = r.dps() == null ? 0 : r.dps();
+    double ehp = r.ehp() == null ? 0 : r.ehp();
+    boolean gains = dps >= RARE_MIN_GAIN_PCT || ehp >= RARE_MIN_GAIN_PCT;
+    boolean within = dps >= -RARE_TRADE_TOLERANCE_PCT && ehp >= -RARE_TRADE_TOLERANCE_PCT;
+    return gains && within ? r : null;
+  }
+
+  private static Poe2.GuideRare rareOf(tools.jackson.databind.JsonNode n, RareSpec spec) {
+    if (n == null || n.isMissingNode() || n.isNull() || !n.has("picks")) {
+      return null;
+    }
+    List<String> en = new ArrayList<>();
+    List<String> ko = new ArrayList<>();
+    for (tools.jackson.databind.JsonNode p : n.path("picks")) {
+      int i = p.asInt(-1);
+      if (i >= 0 && i < spec.cands().size()) {
+        ModCandidate c = spec.cands().get(i);
+        en.addAll(c.lines());
+        ko.addAll(c.linesKo() == null || c.linesKo().isEmpty() ? c.lines() : c.linesKo());
+      }
+    }
+    return new Poe2.GuideRare(num(n, "dps"), num(n, "ehp"), en, ko, rareItemText(spec, en));
+  }
+
+  /** guide2.lua ⑧ 이 재는 아이템과 같은 텍스트(머리 줄 · 암시 개수 · 암시 · 옵션) — 붙여 넣으면 엔진이 잰 그 아이템이 된다. */
+  static String rareItemText(RareSpec spec, List<String> lines) {
+    List<String> impl = spec.implicits() == null ? List.of() : spec.implicits();
+    StringBuilder sb =
+        new StringBuilder("Rarity: RARE\nGuide Rare\n")
+            .append(spec.base())
+            .append("\nItem Level: 82\nImplicits: ")
+            .append(impl.size());
+    impl.forEach(l -> sb.append('\n').append(l));
+    lines.forEach(l -> sb.append('\n').append(l));
+    return sb.toString();
   }
 
   private static List<Poe2.GuideNextNode> nextNodes(
@@ -418,6 +680,126 @@ public class Poe2BuildService {
       List<Integer> nodes,
       String skill,
       Map<Integer, Integer> attrs) {
+    return treeEval(className, ascendancy, nodes, skill, attrs, Map.of());
+  }
+
+  /**
+   * sets = 무기 세트 전용 노드(노드 → 1·2, 10-02) — Spec 의 WeaponSet1/2 로 넣는다(엔진은 켜진 세트 하나로 계산: 저장 세트 = 1).
+   */
+  public Poe2.TreeEval treeEval(
+      String className,
+      String ascendancy,
+      List<Integer> nodes,
+      String skill,
+      Map<Integer, Integer> attrs,
+      Map<Integer, Integer> sets) {
+    Poe2.Gem gem = skill == null || skill.isBlank() ? null : data.gemByName(skill).orElse(null);
+    String xml =
+        gem != null
+            ? Poe2SimRankingService.templateXml(
+                gem, Poe2SimRankingService.weaponFor(gem.weaponRequirements()))
+            : "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<PathOfBuilding2>\n"
+                + "<Build level=\"90\" targetVersion=\"0_1\" className=\"Warrior\" ascendClassName=\"None\""
+                + " mainSocketGroup=\"1\" characterLevelAutoMode=\"false\"/>\n"
+                + "<Tree activeSpec=\"1\"><Spec ascendClassId=\"0\" treeVersion=\"0_5\" classId=\"6\" nodes=\"\"/></Tree>\n"
+                + "</PathOfBuilding2>\n";
+    xml = withTree(xml, className, ascendancy, nodes, attrs, sets);
+    Poe2DataService.TreeIndex idx = data.treeIndex();
+    Integer start = idx.classStartNode().get(className);
+    java.util.Set<Integer> ids = new java.util.HashSet<>();
+    for (Integer n : nodes) {
+      if (n != null && idx.nodes().containsKey(n)) {
+        ids.add(n);
+      }
+    }
+    int allocated = (int) ids.stream().filter(i -> !i.equals(start)).count();
+    if (!engine.available()) {
+      return new Poe2.TreeEval(
+          className,
+          ascendancy,
+          gem == null ? null : gem.name(),
+          allocated,
+          List.of(),
+          "engine unavailable",
+          0L,
+          null);
+    }
+    // 세트 전용 노드가 있으면 세트 I · II 를 켠 계산을 따로(병렬) — 엔진은 켜진 세트 하나로만 계산한다(Poe2WeaponSets 머리말, 10-02)
+    boolean split =
+        sets != null && sets.values().stream().anyMatch(v -> v != null && (v == 1 || v == 2));
+    final String base = withItemsBlock(xml);
+    Poe2PobEngineService.Result r;
+    Poe2PobEngineService.Result r2 = null;
+    if (split) {
+      java.util.concurrent.CompletableFuture<Poe2PobEngineService.Result> f2 =
+          java.util.concurrent.CompletableFuture.supplyAsync(
+              () -> engine.calc(Poe2WeaponSets.withSet(base, 2)));
+      r = engine.calc(Poe2WeaponSets.withSet(base, 1));
+      r2 = f2.join();
+    } else {
+      r = engine.calc(xml);
+    }
+    List<Poe2.TreeEvalRow> rows = rowsOf(r);
+    List<Poe2.TreeEvalRow> rows2 = r2 == null ? null : rowsOf(r2);
+    return new Poe2.TreeEval(
+        className,
+        ascendancy,
+        gem == null ? null : gem.name(),
+        allocated,
+        rows,
+        r.error(),
+        r.elapsedMs(),
+        rows2);
+  }
+
+  private static List<Poe2.TreeEvalRow> rowsOf(Poe2PobEngineService.Result r) {
+    List<Poe2.TreeEvalRow> rows = new ArrayList<>();
+    if (r != null && r.error() == null) {
+      for (String key : STAT_KEYS) {
+        Double v = r.values().get(key);
+        if (v != null) {
+          rows.add(new Poe2.TreeEvalRow(key, v));
+        }
+      }
+    }
+    return rows;
+  }
+
+  /** 세트를 켜려면 Items·ItemSet 의 useSecondWeaponSet 이 있어야 한다 — 스킬 없는 평가 XML 엔 Items 가 없어 빈 것을 넣는다. */
+  static String withItemsBlock(String xml) {
+    if (xml.contains("<Items")) {
+      return xml;
+    }
+    return xml.replace(
+        "</PathOfBuilding2>",
+        "<Items activeItemSet=\"1\" useSecondWeaponSet=\"false\"><ItemSet useSecondWeaponSet=\"false\" id=\"1\"/></Items>\n</PathOfBuilding2>");
+  }
+
+  /**
+   * 빌드 XML 의 트리를 이 직업·전직·노드·능력치 선택으로 갈아 끼운다(10-01) — 트리 평가와 시뮬 "내 트리에서 출발"이 같이 쓴다. &lt;Tree&gt; 전체를
+   * 새 Spec 하나로 바꾸고 Build 의 className·ascendClassName 도 맞춘다. classId = 트리 integerId, ascendClassId =
+   * 그 직업 전직 순번(1부터), 능력치 선택 = &lt;Overrides&gt;&lt;AttributeOverride&gt;(PoB 저장 형식). 잘못된 직업·전직이면
+   * IllegalArgumentException.
+   */
+  public String withTree(
+      String xml,
+      String className,
+      String ascendancy,
+      java.util.Collection<Integer> nodes,
+      Map<Integer, Integer> attrs) {
+    return withTree(xml, className, ascendancy, nodes, attrs, Map.of());
+  }
+
+  /**
+   * sets = 무기 세트 전용 노드(노드 → 1·2) — &lt;WeaponSet1/2 nodes&gt; 로(PoB 저장 형식, 10-02). 할당 노드에 없는 건 버린다.
+   */
+  public String withTree(
+      String xml,
+      String className,
+      String ascendancy,
+      java.util.Collection<Integer> nodes,
+      Map<Integer, Integer> attrs,
+      Map<Integer, Integer> sets) {
     Poe2DataService.TreeIndex idx = data.treeIndex();
     Integer classId = idx.classIntegerId().get(className);
     if (classId == null) {
@@ -439,18 +821,9 @@ public class Poe2BuildService {
     if (start != null) {
       ids.add(start);
     }
-    Poe2.Gem gem = skill == null || skill.isBlank() ? null : data.gemByName(skill).orElse(null);
-    String xml =
-        gem != null
-            ? Poe2SimRankingService.templateXml(
-                gem, Poe2SimRankingService.weaponFor(gem.weaponRequirements()))
-            : "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<PathOfBuilding2>\n"
-                + "<Build level=\"90\" targetVersion=\"0_1\" className=\"Warrior\" ascendClassName=\"None\""
-                + " mainSocketGroup=\"1\" characterLevelAutoMode=\"false\"/>\n"
-                + "<Tree activeSpec=\"1\"><Spec ascendClassId=\"0\" treeVersion=\"0_5\" classId=\"6\" nodes=\"\"/></Tree>\n"
-                + "</PathOfBuilding2>\n";
     StringBuilder[] byAttr = {new StringBuilder(), new StringBuilder(), new StringBuilder()};
-    for (Map.Entry<Integer, Integer> a : new java.util.TreeMap<>(attrs).entrySet()) {
+    for (Map.Entry<Integer, Integer> a :
+        new java.util.TreeMap<>(attrs == null ? Map.<Integer, Integer>of() : attrs).entrySet()) {
       int v = a.getValue() == null ? 0 : a.getValue();
       if (v >= 1 && v <= 3 && ids.contains(a.getKey())) {
         StringBuilder sb = byAttr[v - 1];
@@ -460,8 +833,8 @@ public class Poe2BuildService {
         sb.append(a.getKey());
       }
     }
-    String spec =
-        "<Spec ascendClassId=\""
+    String tree =
+        "<Tree activeSpec=\"1\"><Spec ascendClassId=\""
             + ascId
             + "\" treeVersion=\"0_5\" classId=\""
             + classId
@@ -473,46 +846,44 @@ public class Poe2BuildService {
             + byAttr[1]
             + "\" intNodes=\""
             + byAttr[2]
-            + "\"/></Overrides></Spec>";
-    xml =
-        xml.replaceFirst("<Spec [^>]*/>", java.util.regex.Matcher.quoteReplacement(spec))
-            .replaceFirst(
-                "className=\"[^\"]*\"",
-                "className=\"" + java.util.regex.Matcher.quoteReplacement(className) + "\"")
-            .replaceFirst(
-                "ascendClassName=\"[^\"]*\"",
-                "ascendClassName=\""
-                    + java.util.regex.Matcher.quoteReplacement(ascId == 0 ? "None" : ascendancy)
-                    + "\"");
-    int allocated = (int) ids.stream().filter(i -> !i.equals(start)).count();
-    if (!engine.available()) {
-      return new Poe2.TreeEval(
-          className,
-          ascendancy,
-          gem == null ? null : gem.name(),
-          allocated,
-          List.of(),
-          "engine unavailable",
-          0L);
+            + "\"/></Overrides>"
+            + weaponSetsXml(ids, sets)
+            + "</Spec></Tree>";
+    String out =
+        xml.replaceFirst("(?s)<Tree\\b.*?</Tree>", java.util.regex.Matcher.quoteReplacement(tree));
+    if (out.equals(xml)) {
+      // 트리가 없는 빌드(드묾) — Build 뒤에 붙인다
+      out =
+          xml.replaceFirst(
+              "(<Build\\b[^>]*?)(/?>)", "$1$2" + java.util.regex.Matcher.quoteReplacement(tree));
     }
-    Poe2PobEngineService.Result r = engine.calc(xml);
-    List<Poe2.TreeEvalRow> rows = new ArrayList<>();
-    if (r.error() == null) {
-      for (String key : STAT_KEYS) {
-        Double v = r.values().get(key);
-        if (v != null) {
-          rows.add(new Poe2.TreeEvalRow(key, v));
-        }
-      }
+    return out.replaceFirst(
+            "(<Build\\b[^>]*?\\s)className=\"[^\"]*\"",
+            "$1className=\"" + java.util.regex.Matcher.quoteReplacement(className) + "\"")
+        .replaceFirst(
+            "(<Build\\b[^>]*?\\s)ascendClassName=\"[^\"]*\"",
+            "$1ascendClassName=\""
+                + java.util.regex.Matcher.quoteReplacement(ascId == 0 ? "None" : ascendancy)
+                + "\"");
+  }
+
+  private static String weaponSetsXml(java.util.Set<Integer> ids, Map<Integer, Integer> sets) {
+    if (sets == null || sets.isEmpty()) {
+      return "";
     }
-    return new Poe2.TreeEval(
-        className,
-        ascendancy,
-        gem == null ? null : gem.name(),
-        allocated,
-        rows,
-        r.error(),
-        r.elapsedMs());
+    StringBuilder out = new StringBuilder();
+    for (int k = 1; k <= 2; k++) {
+      final int set = k;
+      String list =
+          new java.util.TreeMap<>(sets)
+              .entrySet().stream()
+                  .filter(
+                      e -> e.getValue() != null && e.getValue() == set && ids.contains(e.getKey()))
+                  .map(e -> String.valueOf(e.getKey()))
+                  .collect(java.util.stream.Collectors.joining(","));
+      out.append("<WeaponSet").append(k).append(" nodes=\"").append(list).append("\"/>");
+    }
+    return out.toString();
   }
 
   public Poe2.BuildRecalc recalc(String code) {
@@ -703,6 +1074,12 @@ public class Poe2BuildService {
     Element treeEl = first(root, "Tree");
     String treeVersion = null;
     List<Integer> allocated = new ArrayList<>();
+    // 능력치 노드 선택(PoB <Overrides><AttributeOverride strNodes dexNodes intNodes>) — 트리 뷰어 주소
+    // s=id:1|2|3 으로 넘긴다(10-01).
+    //   안 넘기면 빌드에서 트리를 열었을 때 "+5 아무 능력치"만 보이고 스탯 요약·트리 계산이 빌드와 달라진다
+    List<String> attrPicks = new ArrayList<>();
+    // 무기 세트 전용 노드(<WeaponSet1/2 nodes>) — 트리 뷰어 주소 w1=·w2= 로(10-02, 뷰어가 세트 색으로 보이고 계산·시뮬에 실린다)
+    List<List<String>> setNodes = List.of(new ArrayList<>(), new ArrayList<>());
     if (treeEl != null) {
       Element spec = activeSet(treeEl, "Spec", "activeSpec");
       if (spec != null) {
@@ -711,6 +1088,50 @@ public class Poe2BuildService {
           Integer id = intOrNull(s.trim());
           if (id != null) {
             allocated.add(id);
+          }
+        }
+        // 세트 전용 노드(<WeaponSet1/2 nodes>)는 Spec nodes 에 없다 — 저장 당시 켜진 세트의 것을 합쳐야 트리가 이어진다(10-02:
+        // 빠뜨리면
+        //   그 노드로만 이어지는 특화 9개가 트리 보기·내 트리 시뮬에서 끊겨 떨어졌다. 트리 뷰어는 아직 세트를 모르니 켜진 세트 하나만)
+        Element setEl = first(spec, "WeaponSet" + Poe2WeaponSets.saved(xml));
+        if (setEl == null) {
+          Element sets = first(spec, "WeaponSets");
+          setEl = sets == null ? null : first(sets, "WeaponSet" + Poe2WeaponSets.saved(xml));
+        }
+        if (setEl != null) {
+          for (String s : setEl.getAttribute("nodes").split(",")) {
+            Integer id = intOrNull(s.trim());
+            if (id != null && !allocated.contains(id)) {
+              allocated.add(id);
+            }
+          }
+        }
+        for (int k = 1; k <= 2; k++) {
+          Element ws = first(spec, "WeaponSet" + k);
+          if (ws == null) {
+            Element wsAll = first(spec, "WeaponSets");
+            ws = wsAll == null ? null : first(wsAll, "WeaponSet" + k);
+          }
+          if (ws != null) {
+            for (String s2 : ws.getAttribute("nodes").split(",")) {
+              Integer id = intOrNull(s2.trim());
+              if (id != null) {
+                setNodes.get(k - 1).add(String.valueOf(id));
+              }
+            }
+          }
+        }
+        Element overrides = first(spec, "Overrides");
+        Element attr = overrides == null ? null : first(overrides, "AttributeOverride");
+        if (attr != null) {
+          String[] keys = {"strNodes", "dexNodes", "intNodes"};
+          for (int k = 0; k < keys.length; k++) {
+            for (String s : attr.getAttribute(keys[k]).split(",")) {
+              Integer id = intOrNull(s.trim());
+              if (id != null && allocated.contains(id)) {
+                attrPicks.add(id + ":" + (k + 1));
+              }
+            }
           }
         }
       }
@@ -756,6 +1177,14 @@ public class Poe2BuildService {
       if (!allocated.isEmpty()) {
         link.append("&n=")
             .append(String.join(",", allocated.stream().map(String::valueOf).toList()));
+      }
+      if (!attrPicks.isEmpty()) {
+        link.append("&s=").append(String.join(",", attrPicks));
+      }
+      for (int k = 1; k <= 2; k++) {
+        if (!setNodes.get(k - 1).isEmpty()) {
+          link.append("&w").append(k).append('=').append(String.join(",", setNodes.get(k - 1)));
+        }
       }
       treeLink = link.toString();
     }

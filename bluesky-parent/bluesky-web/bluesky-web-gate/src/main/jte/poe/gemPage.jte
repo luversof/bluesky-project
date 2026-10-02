@@ -53,7 +53,7 @@
 								<thead>
 									<tr>
 										<th>${ko ? "레벨" : "Level"}</th>
-										<th>${ko ? "요구 레벨" : "Req. level"}</th>
+										<th>${MessageUtil.getMessage("poe.gems.detail.required.level")}</th>
 										<th>${ko ? "소모" : "Cost"}</th>
 										<th>${ko ? "피해 배율" : "Multiplier"}</th>
 										<th>${ko ? "치명타" : "Crit"}</th>

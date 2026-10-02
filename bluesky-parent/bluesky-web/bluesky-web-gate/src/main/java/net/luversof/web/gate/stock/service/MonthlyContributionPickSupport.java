@@ -83,7 +83,7 @@ public class MonthlyContributionPickSupport {
   /**
    * 시뮬레이터 월배당 표를 지급 시기 &middot; 계좌 자리로 좁힐 때 남길 종목코드(사용자 요청 2026-09-23, 결정: 적립 추천과 같은 규칙).
    *
-   * <p>적립 추천({@link #pickHeld})과 같은 출처(카탈로그의 지급 시기 &middot; 1 년 과세표준 비중)와 같은 경계({@link
+   * <p>적립 추천({@link #pickFromCatalog})과 같은 출처(카탈로그의 지급 시기 &middot; 1 년 과세표준 비중)와 같은 경계({@link
    * #accountOf})로 가른다 &mdash; 표에 적힌 저장 비중으로 가르면 카드와 다른 답이 나온다(실측 2026-09-23: 0018C0 은 표 0% 인데 카탈로그
    * 25.05% 라 카드는 ISA/연금 자리에 둔다). 빈 값은 그 조건을 걸지 않는다. 계좌 조건이 걸렸는데 비중을 모르는 종목은 자리를 못 정하므로 뺀다.
    */
@@ -148,36 +148,23 @@ public class MonthlyContributionPickSupport {
   }
 
   /**
-   * 자리마다 하나씩 고른다.
+   * 등록된 월배당 종목 전부를 후보로 삼아 고른다 &mdash; 시뮬레이터 월배당 탭과 월배당 ETF 목록의 "이번 적립" 배지가 같이 쓴다.
    *
-   * <p>지급 시기나 과세표준 비중을 모르는 종목은 <b>자리를 못 정하므로 뺀다</b> &mdash; 아무 자리에나 넣으면 엉뚱한 계좌를 권하게 된다. 점수를 못 내는
-   * 종목(연배당 수익률이 없는 종목)도 뺀다.
+   * <p>보유 여부는 묻지 않는다(사용자 요청 2026-10-02: "보유 여부와 상관없이 추천하는게 좋을거 같아"). 예전에는 보유 종목만 후보였다 - 그러면 점수가 더
+   * 높은 종목을 아직 안 샀다는 이유로 권하지 못했다.
    *
-   * @return 지급 시기 &rarr; 계좌 순서로 정렬된 결과. 후보가 하나뿐인 자리도 그대로 넣는다(그 자리에서는 고민할 것이 없다는 뜻)
-   */
-  /**
-   * 보유 종목만 후보로 삼아 고른다 &mdash; 시뮬레이터 월배당 탭과 월배당 ETF 목록의 "이번 적립" 배지가 같이 쓴다.
+   * <p>두 화면이 후보를 따로 만들면 언젠가 다른 답을 낸다. 그래서 여기 하나만 둔다.
    *
-   * <p>두 화면이 후보를 따로 만들면 언젠가 다른 답을 낸다(보유 출처 · 거르는 조건이 조금만 달라져도). 그래서 여기 하나만 둔다.
-   *
-   * @param heldSymbols 지금 보유한 종목코드(시뮬레이터 스냅샷 기준)
    * @param catalog 월배당 카탈로그(연배당 수익률 · 추세 · 과세표준 비중이 종목 단위로 들어 있다)
    */
-  public List<ContributionPick> pickHeld(
-      java.util.Collection<String> heldSymbols,
+  public List<ContributionPick> pickFromCatalog(
       List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse> catalog) {
-    if (heldSymbols == null || heldSymbols.isEmpty() || catalog == null) {
+    if (catalog == null) {
       return List.of();
-    }
-    java.util.Set<String> held = new java.util.HashSet<>();
-    for (String symbol : heldSymbols) {
-      if (symbol != null && !symbol.isBlank()) {
-        held.add(symbol.trim());
-      }
     }
     return pick(
         catalog.stream()
-            .filter(item -> held.contains(item.stockItemSymbol()))
+            .filter(item -> item != null && item.stockItemSymbol() != null)
             .map(
                 item ->
                     new ContributionCandidate(
@@ -190,6 +177,14 @@ public class MonthlyContributionPickSupport {
             .toList());
   }
 
+  /**
+   * 자리마다 하나씩 고른다.
+   *
+   * <p>지급 시기나 과세표준 비중을 모르는 종목은 <b>자리를 못 정하므로 뺀다</b> &mdash; 아무 자리에나 넣으면 엉뚱한 계좌를 권하게 된다. 점수를 못 내는
+   * 종목(연배당 수익률이 없는 종목)도 뺀다.
+   *
+   * @return 지급 시기 &rarr; 계좌 순서로 정렬된 결과. 후보가 하나뿐인 자리도 그대로 넣는다(그 자리에서는 고민할 것이 없다는 뜻)
+   */
   public List<ContributionPick> pick(List<ContributionCandidate> candidates) {
     if (candidates == null || candidates.isEmpty()) {
       return List.of();
