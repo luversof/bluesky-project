@@ -150,11 +150,13 @@ public class StockDailyClosePriceQuery {
       """
       SELECT h."stockItem_id" AS stock_item_id,
              h."tradeDate"    AS trade_date,
-             h."rawClosePrice" AS close_price
-      FROM "StockPriceHistory" h
-      WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
+             CASE WHEN h."tradeDate" = l.latest
+                  THEN h."closePrice" ELSE h."rawClosePrice" END AS close_price
+      FROM (SELECT DISTINCT unnest(string_to_array(:ids, ',')::uuid[]) AS id) s
+      CROSS JOIN LATERAL (SELECT max(x."tradeDate") AS latest FROM "StockPriceHistory" x WHERE x."stockItem_id" = s.id AND x."volume" > 0) l
+      JOIN "StockPriceHistory" h ON h."stockItem_id" = s.id
+      WHERE (h."rawClosePrice" IS NOT NULL OR h."tradeDate" = l.latest)
         AND h."volume" > 0
-        AND h."rawClosePrice" IS NOT NULL
         AND h."tradeDate" >= CAST(:fromDate AS date)
       ORDER BY h."stockItem_id", h."tradeDate"
       """;
@@ -194,13 +196,26 @@ public class StockDailyClosePriceQuery {
    *
    * <p>처음(2026-10-02)에는 Spring Data {@code @Query} 로 읽어 보유 기간 1.4 만 행이 위의 행 변환 리플렉션을 그대로 통과했다 - 시계열
    * 응답이 25ms 에서 254ms 로 늘었다(api-perf.js). 같은 이유로 위치로 읽고 종목 UUID 는 순번으로 재사용한다.
+   *
+   * <p><b>종목의 가장 최근 거래일은 원주가 자리에 수정 종가를 쓴다</b>(이 클래스의 원주가 조회 셋 모두, 2026-10-02). 마지막 날은 수정할 과거가 없어
+   * 둘이 같은 가격인데, 시세 갱신(시가 &middot; 고가 &middot; 저가 &middot; 종가)과 원주가 채우기가 장중의 다른 시각에 받으면 값이 갈린다 - 실측:
+   * 오늘 행이 10:16 시세 그대로인데 원주가는 나중에 다시 받아 20 종목이 달랐고, 계좌 카드 평가액(수정 종가)과 시계열 끝점(원주가)이 0.04~0.18% 어긋났으며
+   * 캔들은 종가가 고가 &middot; 저가 밖으로 나갈 수 있었다. 다음 시세 갱신이 둘을 함께 새로 받는다.
+   *
+   * <p>최근 거래일은 <b>종목마다 한 번</b> 구한다(LATERAL). 처음에는 행마다 상관 부분 조회로 구해 보유 기간 1.4 만 행이 인덱스를 1.4 만 번 탔다
+   * &mdash; 시계열 응답이 38ms 에서 78ms 로 늘었다(api-perf.js). 최근 거래일은 거래량이 있던 날이다(2026-10-03 검토) - 조회가 거래량 0
+   * 행을 빼므로 마지막 행이 거래량 0 이면 규칙이 어느 행에도 안 걸려, 카드(거래가 있던 최근 행)와 다시 갈렸다.
    */
   private static final String RAW_RANGES_ORDINALITY_SQL =
       """
-      SELECT f.ord, h."tradeDate", h."rawClosePrice", h."closePrice"
+      SELECT f.ord, h."tradeDate",
+             CASE WHEN h."tradeDate" = l.latest
+                  THEN h."closePrice" ELSE h."rawClosePrice" END,
+             h."closePrice"
       FROM unnest(string_to_array(:ids, ',')::uuid[],
                   string_to_array(:froms, ',')::date[],
                   string_to_array(:tos, ',')::date[]) WITH ORDINALITY AS f(id, from_date, to_date, ord)
+      CROSS JOIN LATERAL (SELECT max(x."tradeDate") AS latest FROM "StockPriceHistory" x WHERE x."stockItem_id" = f.id AND x."volume" > 0) l
       JOIN "StockPriceHistory" h
         ON h."stockItem_id" = f.id
        AND h."tradeDate" >= f.from_date
@@ -236,8 +251,11 @@ public class StockDailyClosePriceQuery {
    */
   private static final String OHLC_SQL =
       """
-      SELECT h."tradeDate", h."openPrice", h."highPrice", h."lowPrice", h."closePrice", h."rawClosePrice"
+      SELECT h."tradeDate", h."openPrice", h."highPrice", h."lowPrice", h."closePrice",
+             CASE WHEN h."tradeDate" = l.latest
+                  THEN h."closePrice" ELSE h."rawClosePrice" END
       FROM "StockPriceHistory" h
+      CROSS JOIN (SELECT max(x."tradeDate") AS latest FROM "StockPriceHistory" x WHERE x."stockItem_id" = :id AND x."volume" > 0) l
       WHERE h."stockItem_id" = :id
         AND h."tradeDate" >= CAST(:fromDate AS date)
         AND h."volume" > 0

@@ -67,7 +67,7 @@ class MonthlyEtfParallelCallTest {
             "Map<String,MonthlyContributionPickSupport.ContributionPick>loadContributionPicks(");
     assertThat(method).as("배지 메서드가 사라졌다").isGreaterThan(0);
     int tryAt = source.indexOf("try{", method);
-    int joinAt = source.indexOf("monthlyContributionPickSupport.pickFromCatalog(catalog)", method);
+    int joinAt = source.indexOf("monthlyContributionPickSupport.pickFromCatalog(catalog", method);
     int catchAt = source.indexOf("}catch(Exceptionex){", method);
     assertThat(tryAt).as("try").isGreaterThan(method);
     assertThat(joinAt).as("카탈로그 전체에서 고르는 자리가 try 안").isGreaterThan(tryAt).isLessThan(catchAt);

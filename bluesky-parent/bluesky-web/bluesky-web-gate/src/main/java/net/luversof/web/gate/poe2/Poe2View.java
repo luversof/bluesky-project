@@ -14,6 +14,49 @@ public final class Poe2View {
     return v == null ? 0 : v;
   }
 
+  /**
+   * 키워드 정의 → data 속성용 JSON [{"t":용어,"d":정의}] — 로케일에 맞는 말로(10-04 C126, 트리 꽂은 주얼 칸 Alt 설명). 없으면 빈
+   * 문자열(null 은 "고유 것을 쓴다"는 뜻이라 변형 칸에선 빈 문자열과 구분해 그대로 둔다).
+   */
+  public static String keywordData(List<Poe2.Keyword> keywords) {
+    if (keywords == null) {
+      return "";
+    }
+    StringBuilder out = new StringBuilder("[");
+    for (Poe2.Keyword k : keywords) {
+      if (out.length() > 1) {
+        out.append(',');
+      }
+      out.append("{\"t\":");
+      jsonString(out, net.luversof.web.gate.poe.PoeText.name(k.termKo(), k.term()));
+      out.append(",\"d\":");
+      jsonString(out, net.luversof.web.gate.poe.PoeText.name(k.defKo(), k.def()));
+      out.append('}');
+    }
+    return out.append(']').toString();
+  }
+
+  private static void jsonString(StringBuilder out, String s) {
+    out.append('"');
+    for (char c : (s == null ? "" : s).toCharArray()) {
+      switch (c) {
+        case '"' -> out.append("\\\"");
+        case '\\' -> out.append("\\\\");
+        case '\n' -> out.append("\\n");
+        case '\r' -> out.append("\\r");
+        case '\t' -> out.append("\\t");
+        default -> {
+          if (c < 0x20) {
+            out.append(String.format("\\u%04x", (int) c));
+          } else {
+            out.append(c);
+          }
+        }
+      }
+    }
+    out.append('"');
+  }
+
   /** 베이스 암시 옵션 → 표시 줄(한국어 화면이면 한국어, 없으면 영문). */
   public static List<String> implicitLines(Poe2.BaseItem base) {
     if (base == null || base.implicits() == null) {

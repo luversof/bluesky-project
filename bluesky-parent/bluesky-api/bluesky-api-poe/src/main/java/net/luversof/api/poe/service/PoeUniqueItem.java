@@ -35,4 +35,137 @@ public record PoeUniqueItem(
     // 로어(플레이버) 텍스트 줄 — 위키 + 게임 FlavourText 매칭(tools/poe-extract/wiki-uniques.mjs, 10-01). 인게임 툴팁 맨
     // 아래 주황 기울임.
     List<String> flavour,
-    List<String> flavourKo) {}
+    List<String> flavourKo,
+    // 옵션 줄별 인게임 리마인더(회색 부연 — "최근"은 지난 4초 …), explicits 와 같은 길이(10-04 C114). 없으면 null
+    List<List<String>> explicitsReminders,
+    List<List<String>> explicitsRemindersKo) {
+
+  /** 이름만 — 시뮬 강제 장착 셀렉트처럼 slug · 이름 · 분류 · 변형 이름만 쓰는 곳(10-04 C124: 전체 3MB 대신). */
+  public PoeUniqueItem namesOnly() {
+    List<PoeUniqueVariant> vs =
+        variants == null
+            ? null
+            : variants.stream()
+                .map(
+                    v ->
+                        new PoeUniqueVariant(
+                            v.index(), v.name(), v.nameKo(), null, null, null, null))
+                .toList();
+    return new PoeUniqueItem(
+        name,
+        nameKo,
+        slug,
+        baseType,
+        baseTypeKo,
+        category,
+        requiredLevel,
+        league,
+        legacy,
+        radius,
+        null,
+        null,
+        null,
+        null,
+        vs,
+        defaultVariant,
+        null,
+        null,
+        null,
+        iconKey,
+        null,
+        null);
+  }
+
+  /** 목록용 — 리마인더(고유 · 변형)를 뺀 사본(10-04 C119). */
+  public PoeUniqueItem withoutReminders() {
+    List<PoeUniqueVariant> vs =
+        variants == null
+            ? null
+            : variants.stream()
+                .map(
+                    v ->
+                        new PoeUniqueVariant(
+                            v.index(),
+                            v.name(),
+                            v.nameKo(),
+                            v.implicits(),
+                            v.implicitsKo(),
+                            v.explicits(),
+                            v.explicitsKo()))
+                .toList();
+    return new PoeUniqueItem(
+        name,
+        nameKo,
+        slug,
+        baseType,
+        baseTypeKo,
+        category,
+        requiredLevel,
+        league,
+        legacy,
+        radius,
+        implicits,
+        implicitsKo,
+        explicits,
+        explicitsKo,
+        vs,
+        defaultVariant,
+        reqStr,
+        reqDex,
+        reqInt,
+        iconKey,
+        flavour,
+        flavourKo);
+  }
+
+  /** 리마인더 없는 옛 모양 — 최적화기 · 가이드처럼 표시와 무관하게 고유를 다시 짓는 곳이 그대로 쓴다. */
+  public PoeUniqueItem(
+      String name,
+      String nameKo,
+      String slug,
+      String baseType,
+      String baseTypeKo,
+      String category,
+      Integer requiredLevel,
+      String league,
+      boolean legacy,
+      String radius,
+      List<String> implicits,
+      List<String> implicitsKo,
+      List<String> explicits,
+      List<String> explicitsKo,
+      List<PoeUniqueVariant> variants,
+      Integer defaultVariant,
+      Integer reqStr,
+      Integer reqDex,
+      Integer reqInt,
+      String iconKey,
+      List<String> flavour,
+      List<String> flavourKo) {
+    this(
+        name,
+        nameKo,
+        slug,
+        baseType,
+        baseTypeKo,
+        category,
+        requiredLevel,
+        league,
+        legacy,
+        radius,
+        implicits,
+        implicitsKo,
+        explicits,
+        explicitsKo,
+        variants,
+        defaultVariant,
+        reqStr,
+        reqDex,
+        reqInt,
+        iconKey,
+        flavour,
+        flavourKo,
+        null,
+        null);
+  }
+}

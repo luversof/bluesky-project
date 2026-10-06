@@ -40,7 +40,7 @@
 		@if(status.round() != null && status.round() > 0)
 			<span class="font-mono text-base-content/60">${status.round()}/${status.rounds()}</span>
 		@endif
-		<span class="text-xs text-base-content/50">${ko ? "실빌드 후보 받기·재계산 → 목표에 맞춰 다듬기(보통 1~2분)" : "Fetching real-build candidates → refining toward the objective (usually 1-2 min)"}</span>
+		<span class="text-xs text-base-content/60">${ko ? "실빌드 후보 받기·재계산 → 목표에 맞춰 다듬기(보통 1~2분)" : "Fetching real-build candidates → refining toward the objective (usually 1-2 min)"}</span>
 	</div>
 @elseif(status.error() != null)
 	<div class="alert alert-warning text-sm">${status.error()}</div>

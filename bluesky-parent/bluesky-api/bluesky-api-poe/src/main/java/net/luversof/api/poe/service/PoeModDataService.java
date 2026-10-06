@@ -33,7 +33,9 @@ public class PoeModDataService {
       List<String> en,
       List<String> enMin,
       List<String> ko,
-      List<String> koMin) {}
+      List<String> koMin,
+      // en(최대롤) 줄별 리마인더 Id(인게임 회색 부연, mods.json reminderText 사전 키 — 10-04 C131). 없으면 null
+      List<List<String>> rem) {}
 
   /** 패밀리 = 같은 그룹의 티어 사다리. gen = prefix|suffix. */
   public record ModFamily(String gen, Boolean essence, List<ModTier> tiers) {}
@@ -66,7 +68,21 @@ public class PoeModDataService {
       String patch,
       List<ModItemClass> itemClasses,
       Map<String, Pool> pools,
-      Map<String, ModFamily> families) {}
+      Map<String, ModFamily> families,
+      Map<String, PoeReminderText> reminderText,
+      // 풀 밖 옵션의 영 · 한 쌍(플라스크 · 제작대 · 엘드리치 …) — 빌드 화면 번역 사전 보강(10-04 C135)
+      List<ExtraPair> extra,
+      // 옵션 이름 영 → 한 전부(접두 · 접미) — 마법 아이템 이름(10-04 C146)
+      Map<String, String> affixNames) {}
+
+  /** 풀 밖 옵션 한 개의 영 · 한 문장(최대 · 최소롤). */
+  public record ExtraPair(
+      List<String> en,
+      List<String> ko,
+      List<String> enMin,
+      List<String> koMin,
+      // en 줄별 리마인더 Id(10-04 C141). 없으면 null
+      List<List<String>> rem) {}
 
   /** 한 (아이템 클래스 × 변형)의 완전한 모드 풀 — 패밀리 키를 실제 패밀리로 해석해 접두/접미로 나눠 담는다. */
   public record ClassMods(
@@ -95,7 +111,8 @@ public class PoeModDataService {
   }
 
   private final Path dataFile;
-  private volatile ModData data = new ModData("", List.of(), Map.of(), Map.of());
+  private volatile ModData data =
+      new ModData("", List.of(), Map.of(), Map.of(), Map.of(), List.of(), Map.of());
 
   /**
    * 한 풀에서 티어 사다리 하나 — 게임의 ModTypeKey 하나. 티어 Id 는 상위 먼저.
@@ -126,7 +143,7 @@ public class PoeModDataService {
   }
 
   public synchronized void reload() {
-    ModData loaded = new ModData("", List.of(), Map.of(), Map.of());
+    ModData loaded = new ModData("", List.of(), Map.of(), Map.of(), Map.of(), List.of(), Map.of());
     if (Files.exists(dataFile)) {
       JsonMapper jsonMapper = JsonMapper.builder().build();
       try (InputStream inputStream = Files.newInputStream(dataFile)) {
@@ -143,6 +160,7 @@ public class PoeModDataService {
       logger.warn("PoE 전체 모드 없음: {} — parse-mods-full.mjs 실행 필요", dataFile);
     }
     this.data = loaded;
+    this.affixNameKo = null; // 다시 읽으면 옵션 이름 색인도 새로(C145)
     Map<String, ModTier> index = new java.util.HashMap<>();
     for (ModFamily family : loaded.families().values()) {
       for (ModTier tier : family.tiers()) {
@@ -193,6 +211,43 @@ public class PoeModDataService {
 
   public boolean hasData() {
     return !data.itemClasses().isEmpty();
+  }
+
+  private volatile Map<String, String> affixNameKo;
+
+  /**
+   * 옵션 이름(접두 "Vivid" · 접미 "of the Whelpling") → 한국어("선명한" · "- 새끼용"), 없으면 null — 마법 아이템 이름(10-04
+   * C145).
+   */
+  public String affixNameKo(String en) {
+    Map<String, String> m = affixNameKo;
+    if (m == null) {
+      Map<String, String> built = new java.util.HashMap<>();
+      for (ModFamily f : data.families().values()) {
+        for (ModTier t : f.tiers()) {
+          if (t.name() != null && t.nameKo() != null && !t.nameKo().isBlank()) {
+            built.putIfAbsent(t.name(), t.nameKo());
+          }
+        }
+      }
+      // 티어 이름에 없는 것(제작대 접미 "of Craft" 등)은 옵션 이름 전부 표에서(C146)
+      if (data.affixNames() != null) {
+        data.affixNames().forEach(built::putIfAbsent);
+      }
+      m = Map.copyOf(built);
+      affixNameKo = m;
+    }
+    return en == null ? null : m.get(en);
+  }
+
+  /** 풀 밖 옵션 쌍(10-04 C135). 옛 데이터면 빈 목록. */
+  public List<ExtraPair> extraPairs() {
+    return data.extra() == null ? List.of() : data.extra();
+  }
+
+  /** 리마인더 Id → 영 · 한 문구(10-04 C131). 옛 데이터면 빈 맵. */
+  public Map<String, PoeReminderText> reminderText() {
+    return data.reminderText() == null ? Map.of() : data.reminderText();
   }
 
   public String patch() {

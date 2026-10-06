@@ -373,9 +373,14 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
     // 총자산은 마지막으로 수집된 종가로 계산된 값이다. 시세 수집이 자동이 아니라서 며칠 전 값일 수 있는데,
     // 요약 화면만 그 사실을 밝히지 않고 있었다(자산 현황·포트폴리오·종목/계좌 상세에는 이미 있다).
+    java.time.LocalDate summaryPriceBasisDate =
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.latestPriceBasisDate(profitList);
+    model.addAttribute("priceBasisDate", summaryPriceBasisDate);
+    // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
     model.addAttribute(
-        "priceBasisDate",
-        net.luversof.web.gate.stock.util.StockPriceBasisUtil.latestPriceBasisDate(profitList));
+        "priceBasisIntradayTime",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
+            profitList, summaryPriceBasisDate));
     model.addAttribute("totalAsset", totalAsset);
     model.addAttribute("totalRealizedProfit", totalRealizedVal);
     model.addAttribute("totalUnrealizedProfit", totalUnrealizedVal);

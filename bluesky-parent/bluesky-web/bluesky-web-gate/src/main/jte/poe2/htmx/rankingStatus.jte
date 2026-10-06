@@ -52,7 +52,7 @@
 				<progress class="progress progress-primary w-full" value="${progressDone}" max="${progressTotal}"></progress>
 			@endif
 			@if(!logLines.isEmpty() && (running || "FAILED".equals(status)))
-				<pre class="max-h-52 overflow-y-auto rounded-box bg-neutral text-neutral-content/80 p-3 text-xs leading-5 whitespace-pre-wrap">@for(String logLine : logLines)${logLine}
+				<%-- 진행 로그는 한국어로만 쓴다 — lang 으로 언어를 밝힌다(WCAG 3.1.2, 10-03) --%><pre lang="ko" class="max-h-52 overflow-y-auto rounded-box bg-neutral text-neutral-content/80 p-3 text-xs leading-5 whitespace-pre-wrap">@for(String logLine : logLines)${logLine}
 @endfor</pre>
 			@endif
 	`)

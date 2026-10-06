@@ -45,7 +45,7 @@
 				      hx-swap="innerHTML"
 				      hx-trigger="input changed delay:300ms, change"
 				      data-url-sync data-url-map="itemClass:slot">
-					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus>
+					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus aria-label="${searchPlaceholder}">
 					<input type="hidden" name="itemClass" value="${activeValue}">
 					<input type="hidden" name="attr" value="all">
 				</form>
@@ -53,7 +53,7 @@
 				<%-- 방어구 속성 베이스 필터(힘=방어도/민첩=회피/지능=에너지보호막). 방어구 부위 선택 시에만 표시(아래 스크립트). --%>
 				!{ boolean itemsKo = net.luversof.web.gate.poe.PoeText.isKorean(); String[][] attrChips = {{"all", "전체", "All"}, {"str", "힘", "STR"}, {"dex", "민첩", "DEX"}, {"int", "지능", "INT"}, {"strdex", "힘·민첩", "STR/DEX"}, {"strint", "힘·지능", "STR/INT"}, {"dexint", "민첩·지능", "DEX/INT"}, {"strdexint", "힘·민첩·지능", "STR/DEX/INT"}}; }
 				<div id="poeItemAttrRow" class="flex flex-wrap gap-1.5 items-center border-t border-base-200 pt-2" style="display:none">
-					<span class="text-xs font-semibold text-base-content/50 mr-1">${itemsKo ? "방어구 속성" : "Defence base"}</span>
+					<span class="text-xs font-semibold text-base-content/60 mr-1">${itemsKo ? "방어구 속성" : "Defence base"}</span>
 					@for(String[] a : attrChips)
 						<button type="button" data-attr="${a[0]}"
 						        class="btn btn-xs ${"all".equals(a[0]) ? "btn-primary" : "btn-outline"}"

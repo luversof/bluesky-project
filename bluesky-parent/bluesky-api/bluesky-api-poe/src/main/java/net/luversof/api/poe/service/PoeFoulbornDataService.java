@@ -141,7 +141,9 @@ public class PoeFoulbornDataService {
    * @param query 모드 문구/토큰 부분 일치(한글·영문 모두). 비면 전체.
    */
   public List<FoulbornGroup> search(String categoryKo, String query) {
-    String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+    // 대소문자 · 띄어쓰기 무시(10-02 C25, 목록 검색 PoeSearchText 와 같은 규칙)
+    String normalized = PoeSearchText.query(query);
+    String q = normalized == null ? "" : normalized;
     List<FoulbornGroup> out = new ArrayList<>();
     for (FoulbornGroup group : all()) {
       if (categoryKo != null && !categoryKo.isBlank() && !categoryKo.equals(group.categoryKo())) {
@@ -157,7 +159,7 @@ public class PoeFoulbornDataService {
               || contains(group.uniqueName(), q)
               || contains(group.categoryKo(), q)
               || contains(group.category(), q)
-              || group.token().toLowerCase(Locale.ROOT).contains(q);
+              || contains(group.token(), q);
       if (!hit) {
         for (FoulbornMod mod : group.mods()) {
           if (matches(mod.ko(), q) || matches(mod.en(), q)) {
@@ -182,7 +184,7 @@ public class PoeFoulbornDataService {
   }
 
   private static boolean contains(String value, String q) {
-    return value != null && value.toLowerCase(Locale.ROOT).contains(q);
+    return value != null && PoeSearchText.norm(value).contains(q);
   }
 
   private static boolean matches(List<String> lines, String q) {
@@ -190,7 +192,7 @@ public class PoeFoulbornDataService {
       return false;
     }
     for (String line : lines) {
-      if (line != null && line.toLowerCase(Locale.ROOT).contains(q)) {
+      if (line != null && PoeSearchText.norm(line).contains(q)) {
         return true;
       }
     }

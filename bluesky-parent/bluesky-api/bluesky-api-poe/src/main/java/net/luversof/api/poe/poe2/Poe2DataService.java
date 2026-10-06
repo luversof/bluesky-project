@@ -6,8 +6,10 @@ import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -38,13 +40,26 @@ public class Poe2DataService {
 
   private volatile Poe2.GemData gems = new Poe2.GemData("", List.of());
   private volatile Poe2.BaseItemData bases = new Poe2.BaseItemData("", List.of(), List.of());
-  private volatile Poe2.ModData mods = new Poe2.ModData("", List.of());
+  private volatile Poe2.ModData mods = new Poe2.ModData("", List.of(), Map.of(), List.of());
   private volatile Poe2.AugmentData augments = new Poe2.AugmentData("", List.of());
   private volatile Poe2.UniqueData uniques = new Poe2.UniqueData("", List.of());
   private volatile String loadedAt = "";
 
   /** 패시브 트리 색인(빌드 요약용) — 노드 id → 이름·종류, 직업·전직 한국어. 트리 JSON 은 2MB 라 처음 쓸 때 읽는다. */
-  public record TreeNodeLite(String name, String nameKo, String kind, String ascendancy) {}
+  /**
+   * multipleChoiceOption = 전직 선택지(PoB isMultipleChoiceOption) — 전직 포인트로 안 센다(10-03 C38).
+   * freeAllocate = 공짜 노드(PoB 트리 isFreeAllocate — 블러드 메이지 Sanguimancy · 스피릿 워커 Sacred Unity · 키타바의
+   * 대장장이 Smith's Masterwork) — CountAllocNodes 가 세지 않는다(10-03 C49: 실빌드 4개가 "전직 9 / 8").
+   * sinisterSlot = 심연 주얼 홈 순번 1..5(목소리가 1..N 을 공짜로 준다, 0 = 아님, C39).
+   */
+  public record TreeNodeLite(
+      String name,
+      String nameKo,
+      String kind,
+      String ascendancy,
+      boolean multipleChoiceOption,
+      boolean freeAllocate,
+      int sinisterSlot) {}
 
   /** classAscendancies = 직업 → 전직 id 목록(트리 JSON 순서 — 시뮬 전직 셀렉트의 직업별 묶음). */
   public record TreeIndex(
@@ -61,6 +76,59 @@ public class Poe2DataService {
   /** 옵션 번역 사전(빌드 요약용) — 처음 쓸 때 만들고 reload 때 버린다. */
   private volatile Poe2ModTranslator modTranslator;
 
+  /**
+   * PoB 고유 아이템 원문(work/pob-unique-db.json — 첫 줄 = 이름) — 엔진에 아이템으로 넣을 때 쓴다. 트리 평가(주얼 끼우기, 10-03
+   * C73)와 다듬기(고유 고정)가 같이 쓴다. 없으면 null.
+   */
+  private volatile java.util.Map<String, String> uniqueRawByTitle;
+
+  // 같은 이름의 고유가 여럿(Grand Spectrum 생명력 · 정신력 · 저항) — 이름별 원문 전부(C73: 이름 하나로만 찾으면 마지막 것만 나왔다)
+  private volatile java.util.Map<String, java.util.List<String>> uniqueRawsByTitle =
+      java.util.Map.of();
+
+  /** 고유 하나의 원문 — 같은 이름이 여럿이면 그 고유의 첫 옵션 줄(숫자 빼고)을 담은 것. 없으면 이름으로 찾은 것. */
+  public String uniqueRaw(Poe2.Unique u) {
+    if (u == null) {
+      return null;
+    }
+    String first = uniqueRaw(u.name()); // 캐시를 채운다
+    java.util.List<String> all = uniqueRawsByTitle.getOrDefault(u.name(), java.util.List.of());
+    if (all.size() > 1 && u.explicits() != null && !u.explicits().isEmpty()) {
+      String want = u.explicits().get(0).replaceAll("[0-9().+-]", "").trim();
+      for (String raw : all) {
+        if (raw.replaceAll("[0-9().+-]", "").contains(want)) {
+          return raw;
+        }
+      }
+    }
+    return first;
+  }
+
+  public String uniqueRaw(String title) {
+    java.util.Map<String, String> map = uniqueRawByTitle;
+    if (map == null) {
+      map = new java.util.HashMap<>();
+      java.util.Map<String, java.util.List<String>> all = new java.util.HashMap<>();
+      Path file = dataDir.resolve("work").resolve("pob-unique-db.json");
+      try {
+        for (tools.jackson.databind.JsonNode u :
+            jsonMapper.readTree(java.nio.file.Files.readString(file))) {
+          String raw = u.path("raw").asString("");
+          String first = raw.replace("\r\n", "\n").split("\n", 2)[0].trim();
+          if (!first.isEmpty()) {
+            map.put(first, raw);
+            all.computeIfAbsent(first, k -> new java.util.ArrayList<>()).add(raw);
+          }
+        }
+      } catch (Exception e) {
+        logger.warn("PoE2 고유 DB 로드 실패: {}", file, e);
+      }
+      uniqueRawsByTitle = all;
+      uniqueRawByTitle = map;
+    }
+    return title == null ? null : map.get(title);
+  }
+
   public Poe2DataService(
       @Value("${poe2.data-dir:${user.home}/.poe-gamedata/poe2}") String dataDir) {
     this.dataDir = Path.of(dataDir);
@@ -75,11 +143,15 @@ public class Poe2DataService {
             "base-items.json",
             Poe2.BaseItemData.class,
             new Poe2.BaseItemData("", List.of(), List.of()));
-    mods = read("mods.json", Poe2.ModData.class, new Poe2.ModData("", List.of()));
+    mods =
+        read("mods.json", Poe2.ModData.class, new Poe2.ModData("", List.of(), Map.of(), List.of()));
     augments = read("augments.json", Poe2.AugmentData.class, new Poe2.AugmentData("", List.of()));
+    rareWords = read("rare-name-words.json", RareWords.class, new RareWords(Map.of(), Map.of()));
     uniques = read("uniques.json", Poe2.UniqueData.class, new Poe2.UniqueData("", List.of()));
     treeIndex = null;
     modTranslator = null;
+    keywordIdsByTemplate = null;
+    affixNameKo = null;
     loadedAt = OffsetDateTime.now().withNano(0).toString();
     logger.info(
         "PoE2 데이터 로드: {} (젬 {} · 베이스 {} · 옵션 풀 {} · 증강물 {} · 고유 {}, patch {})",
@@ -407,12 +479,90 @@ public class Poe2DataService {
     return uniques.items().stream().filter(u -> u.name().equalsIgnoreCase(name)).findFirst();
   }
 
+  // 레어 이름 낱말(tools/poe2-extract/rare-names2.mjs — 게임 Words 접두 · 접미, 10-04 C144)
+  private record RareWords(Map<String, String> prefix, Map<String, String> suffix) {}
+
+  private volatile RareWords rareWords = new RareWords(Map.of(), Map.of());
+
+  private volatile Map<String, String> affixNameKo;
+
+  /** 옵션 이름(접두 · 접미) → 한국어, 없으면 null — 마법 아이템 이름(10-04 C145, PoE1 짝). */
+  public String affixNameKo(String en) {
+    Map<String, String> m = affixNameKo;
+    if (m == null) {
+      Map<String, String> built = new HashMap<>();
+      for (Poe2.ModPool pool : mods.pools()) {
+        for (Poe2.ModGroup g : pool.groups()) {
+          for (Poe2.ModTier t : g.tiers()) {
+            if (t.name() != null && t.nameKo() != null && !t.nameKo().isBlank()) {
+              built.putIfAbsent(t.name(), t.nameKo());
+            }
+          }
+        }
+      }
+      m = Map.copyOf(built);
+      affixNameKo = m;
+    }
+    return en == null ? null : m.get(en);
+  }
+
+  /** 레어 이름 "Mind Reach" → "마음의 역량"(두 낱말 모두 표에 있을 때만, 아니면 null). */
+  public String rareNameKo(String name) {
+    if (name == null) {
+      return null;
+    }
+    int space = name.indexOf(' ');
+    if (space <= 0 || space != name.lastIndexOf(' ')) {
+      return null;
+    }
+    RareWords w = rareWords;
+    String p = w.prefix() == null ? null : w.prefix().get(name.substring(0, space));
+    String s = w.suffix() == null ? null : w.suffix().get(name.substring(space + 1));
+    return p != null && s != null ? p + " " + s : null;
+  }
+
   public Optional<Poe2.Gem> gemByName(String name) {
     return gems.gems().stream().filter(g -> g.name().equalsIgnoreCase(name)).findFirst();
   }
 
   /** 옵션 번역 사전 — 옵션 풀 티어를 먼저(검증된 풀 문구가 이긴다), 이어서 베이스 암시·고유(변형 포함)·증강물 효과. */
   @SuppressWarnings("unchecked")
+  // 옵션 틀(§ 정규화, 번역과 같은 규칙) → 강조 용어 Id — 빌드 요약 레어 툴팁의 Alt 설명(10-04 C132)
+  private volatile Map<String, List<String>> keywordIdsByTemplate;
+
+  /** 영문 옵션 줄들의 강조 용어 정의(등장 순 · 중복 제거). 옵션 풀 티어에서 찾고, 없으면 빈 목록. */
+  public List<Poe2.Keyword> keywordsFor(List<String> lines) {
+    Map<String, List<String>> index = keywordIdsByTemplate;
+    if (index == null) {
+      Map<String, List<String>> map = new HashMap<>();
+      for (Poe2.ModPool pool : mods.pools()) {
+        for (Poe2.ModGroup g : pool.groups()) {
+          for (Poe2.ModTier tier : g.tiers()) {
+            if (tier.kw() == null || tier.text() == null) {
+              continue;
+            }
+            for (int i = 0; i < tier.text().size() && i < tier.kw().size(); i++) {
+              if (tier.kw().get(i) != null && !tier.kw().get(i).isEmpty()) {
+                map.putIfAbsent(Poe2ModTranslator.template(tier.text().get(i)), tier.kw().get(i));
+              }
+            }
+          }
+        }
+      }
+      index = Map.copyOf(map);
+      keywordIdsByTemplate = index;
+    }
+    Map<String, Poe2.Keyword> dict = mods.keywords() == null ? Map.of() : mods.keywords();
+    java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>();
+    for (String line : lines) {
+      List<String> found = line == null ? null : index.get(Poe2ModTranslator.template(line));
+      if (found != null) {
+        ids.addAll(found);
+      }
+    }
+    return ids.stream().map(dict::get).filter(java.util.Objects::nonNull).toList();
+  }
+
   public Poe2ModTranslator modTranslator() {
     Poe2ModTranslator t = modTranslator;
     if (t != null) {
@@ -450,6 +600,12 @@ public class Poe2DataService {
         for (Poe2.AugmentEffect e : a.effects()) {
           pairs.add(new List[] {e.lines(), e.linesKo()});
         }
+      }
+    }
+    // 풀 밖 옵션(타락 · 에센스 · 영혼 핵 · 무기 국소 …) — 맨 마지막(먼저 넣은 쌍이 이긴다, 10-04 C133)
+    if (mods.extra() != null) {
+      for (Poe2.ModPair p : mods.extra()) {
+        pairs.add(new List[] {p.text(), p.textKo()});
       }
     }
     t = Poe2ModTranslator.of(pairs);
@@ -504,7 +660,10 @@ public class Poe2DataService {
                     n.path("name").asString(),
                     n.path("nameKo").isNull() ? null : n.path("nameKo").asString(null),
                     n.path("kind").asString(),
-                    n.path("ascendancy").isNull() ? null : n.path("ascendancy").asString(null)));
+                    n.path("ascendancy").isNull() ? null : n.path("ascendancy").asString(null),
+                    n.path("multipleChoiceOption").asBoolean(false),
+                    n.path("freeAllocate").asBoolean(false),
+                    n.path("sinisterSlot").asInt(0)));
           }
         } catch (Exception e) {
           logger.warn("PoE2 트리 색인 로드 실패: {}", path, e);

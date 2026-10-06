@@ -956,11 +956,11 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 				if (px < left || px > right) continue;
 				const py = yAxis.getPixelForValue(cost);
 				if (Number(buyCountData[i]) > 0) {
-					drawArrow(px, py + 2, true, "rgba(255, 99, 132, 0.9)");
+					drawArrow(px, py + 2, true, chartMarkerColors().buy);
 					drawn.push({ px: px, py: py + 2 + arrow * 0.7, date: labels[i] });
 				}
 				if (parseFloat(dailyRealizedData[i]) > 0) {
-					drawArrow(px, py - 2, false, "rgba(54, 162, 235, 0.9)");
+					drawArrow(px, py - 2, false, chartMarkerColors().sell);
 					drawn.push({ px: px, py: py - 2 - arrow * 0.7, date: labels[i] });
 				}
 			}
@@ -1297,6 +1297,18 @@ function candleYRange(candles: any[]) {
 }
 StockCharts.candleYRange = candleYRange;
 
+/**
+ * 차트 위 표시(매수 ▲ · 매도 ▼ · 분배락 ◆) 색 - 그릴 때마다 그때 테마로 고른다(테마 전환 · 인쇄 중 라이트 전환에도 맞는다).
+ *
+ * 실측 2026-10-03(WCAG 1.4.11 비텍스트 대비 3:1, 흰 카드 배경): 옛 색 분홍 ▲ 2.72 · 파랑 ▼ 2.65 · 주황 ◆ 3.00 으로 라이트에서 모자랐다
+ * (다크 rgb(15,22,35) 에서는 5.2~6.0 으로 충분). 라이트만 한 단계 진한 색(4.6 · 5.2 · 5.0)으로 바꾼다.
+ */
+function chartMarkerColors(): { buy: string; sell: string; dist: string } {
+	const dark = typeof document !== "undefined" && !!document.documentElement && document.documentElement.getAttribute("data-theme") === "dark";
+	return dark
+		? { buy: "rgba(255, 99, 132, 0.95)", sell: "rgba(54, 162, 235, 0.95)", dist: "rgba(217, 119, 6, 0.95)" }
+		: { buy: "rgb(219, 39, 119)", sell: "rgb(37, 99, 235)", dist: "rgb(180, 83, 9)" };
+}
 StockCharts.candleChartConfig = function (series: any, texts: any) {
 	const t = texts || {};
 	const buckets = StockCharts.candleBuckets!(series);
@@ -1343,7 +1355,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 				if (c.buy > 0) {
 					const py = Math.min(yAxis.getPixelForValue(c.low === null ? c.close : c.low) + 4, area.bottom - size * 1.4);
 					ctx.save();
-					ctx.fillStyle = "rgba(255, 99, 132, 0.95)";
+					ctx.fillStyle = chartMarkerColors().buy;
 					ctx.beginPath();
 					ctx.moveTo(px, py);
 					ctx.lineTo(px + size, py + size * 1.4);
@@ -1356,7 +1368,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 				if (c.dist > 0) {
 					const py = area.bottom - 4;
 					ctx.save();
-					ctx.fillStyle = "rgba(217, 119, 6, 0.95)";
+					ctx.fillStyle = chartMarkerColors().dist;
 					ctx.beginPath();
 					ctx.moveTo(px, py - 4);
 					ctx.lineTo(px + 3, py);
@@ -1369,7 +1381,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 				if (c.sell > 0) {
 					const py = Math.max(yAxis.getPixelForValue(c.high === null ? c.close : c.high) - 4, area.top + size * 1.4);
 					ctx.save();
-					ctx.fillStyle = "rgba(54, 162, 235, 0.95)";
+					ctx.fillStyle = chartMarkerColors().sell;
 					ctx.beginPath();
 					ctx.moveTo(px, py);
 					ctx.lineTo(px + size, py - size * 1.4);
@@ -1395,6 +1407,8 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 			data: wick,
 			backgroundColor: colors,
 			borderWidth: 0,
+			// 테마 전환이 막대 테두리를 테마 회색으로 덮지 않게(applyChartTheme) - 덮으면 빨강 · 파랑 봉이 회색이 된다(2026-10-02).
+			keepEdge: true,
 			barPercentage: 0.12,
 			categoryPercentage: 1,
 			grouped: false,
@@ -1407,6 +1421,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 			data: body,
 			backgroundColor: colors,
 			borderWidth: 0,
+			keepEdge: true,
 			barPercentage: 0.7,
 			categoryPercentage: 0.9,
 			grouped: false,
@@ -1440,6 +1455,14 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 				maintainAspectRatio: false,
 				interaction: { mode: "index", intersect: false },
 				plugins: {
+					// 텍스트 대안에 표시 개수(▲▼◆ 는 모양뿐이라 요약문에 없으면 낭독기 사용자는 모른다, 2026-10-02).
+					a11ySummary: {
+						counts: [
+							{ label: t.buyLabel || "Buy", count: candles.filter((c: any) => c.buy > 0).length },
+							{ label: t.sellLabel || "Sell", count: candles.filter((c: any) => c.sell > 0).length },
+							{ label: t.distLabel || "Ex-distribution", count: candles.filter((c: any) => c.dist > 0).length },
+						],
+					},
 					legend: { display: hasAvg, labels: { filter: (item: any) => item.datasetIndex === 2, boxWidth: 14, font: { size: 10 } } },
 					tooltip: {
 						callbacks: {
@@ -1637,10 +1660,25 @@ function applyChartTheme(chartLib: any = (globalThis as any).Chart): string | nu
 			for (const ds of (chart.data && chart.data.datasets) || []) {
 				const type = ds.type || (chart.config && (chart.config.type || (chart.config._config && chart.config._config.type)));
 				if (!EDGE_TYPES.includes(type)) continue;
+				// 색이 곧 뜻인 막대(캔들 몸통 · 꼬리)는 건드리지 않는다 - 실측 2026-10-02: 테마를 바꾸면 봉 테두리가 회색 1px 로 덮여
+				// 오름(빨강) · 내림(파랑)이 모두 회색으로 보였다.
+				if (ds.keepEdge) continue;
 				ds.borderColor = edge;
 				if (!ds.borderWidth) ds.borderWidth = 1;
 			}
-			chart.update("none");
+			// "none" 으로 다시 그리면 막대들이 함께 쓰는 옵션(테두리색)이 갱신되지 않는다(Chart.js 의 direct 갱신은 shared options 를 건너뛴다) -
+			// 실측 2026-10-02: 라이트 -> 다크 전환 뒤 막대 테두리가 라이트 회색(#868fa1) 그대로라 처음부터 다크로 연 화면(#5e6a84)과 달랐다.
+			// 기본 갱신으로 옵션을 다시 풀되, 애니메이션은 잠시 꺼서 깜빡이지 않게 한다.
+			// 원래 값은 사용자 옵션(config.options)에서 - chart.options 는 해석된 프록시라 그것을 되써 넣으면 겹겹이 쌓인다.
+			// update 가 던져도 애니메이션이 꺼진 채 남지 않게 finally 로 되돌린다(2026-10-03 검토).
+			const userOptions = chart.config && chart.config.options ? chart.config.options : chart.options;
+			const animation = userOptions.animation;
+			userOptions.animation = false;
+			try {
+				chart.update("default");
+			} finally {
+				userOptions.animation = animation;
+			}
 		} catch (e) {}
 	}
 	return c;
@@ -1666,9 +1704,27 @@ try {
 // 다크 테마로 인쇄하면 축·범례 글자가 rgb(240,240,240) 로 흰 종이 대비 1.14 였다(자산성장 1,053px · 배당 5,966px).
 // 인쇄 직전에 다시 칠하면 라이트와 같은 rgb(24,24,24)·대비 17.76 이 된다. 끝나면 화면 색으로 되돌린다.
 try {
+	// 실측 2026-10-02(page.pdf 로 실제 인쇄): beforeprint 때는 아직 print 미디어가 아니다(matchMedia("print") false) - CSS 변수가
+	// 다크 값 그대로라 위 방식으로 다시 칠해도 다크 글자색(#e6eaf2)이 흰 종이에 찍혔다(9-11 측정은 print 미디어를 먼저 켠 뒤라 통과했다).
+	// 그래서 인쇄 동안만 사이트 테마를 라이트로 바꿔(인쇄 CSS 도 어차피 라이트 팔레트다) 그 색으로 칠하고, 끝나면 되돌린다.
+	// PoE 화면(html.poe-theme)은 인게임 다크 고정이라 건드리지 않는다.
+	let printRestoreTheme: string | null = null;
 	if (typeof globalThis.addEventListener === "function") {
-		globalThis.addEventListener("beforeprint", () => applyChartTheme());
-		globalThis.addEventListener("afterprint", () => applyChartTheme());
+		globalThis.addEventListener("beforeprint", () => {
+			const html = document.documentElement;
+			if (html && html.getAttribute("data-theme") === "dark" && !(html.classList && html.classList.contains("poe-theme"))) {
+				printRestoreTheme = "dark";
+				html.setAttribute("data-theme", "light");
+			}
+			applyChartTheme();
+		});
+		globalThis.addEventListener("afterprint", () => {
+			if (printRestoreTheme) {
+				document.documentElement.setAttribute("data-theme", printRestoreTheme);
+				printRestoreTheme = null;
+			}
+			applyChartTheme();
+		});
 	}
 } catch (e) {}
 (window as any).__chartThemeInternals = { resolveCssColor, chartTextColor, applyChartTheme , applyChartAnimationDefaults, applyChartLocaleDefault, CHART_ANIMATION_MS };

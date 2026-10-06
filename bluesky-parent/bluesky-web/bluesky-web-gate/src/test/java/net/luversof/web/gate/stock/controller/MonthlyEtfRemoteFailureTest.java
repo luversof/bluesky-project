@@ -86,7 +86,18 @@ class MonthlyEtfRemoteFailureTest {
 
   private String open(ExtendedModelMap model) {
     return controller.monthlyEtfPage(
-        new MockHttpServletRequest(), model, null, null, null, null, null, null, null, null, null);
+        new MockHttpServletRequest(),
+        model,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
   }
 
   @Test
@@ -148,7 +159,9 @@ class MonthlyEtfRemoteFailureTest {
                     null,
                     null,
                     new java.math.BigDecimal("0.0900"),
-                    java.time.LocalDate.of(2024, 3, 5))));
+                    java.time.LocalDate.of(2024, 3, 5),
+                    null,
+                    null)));
     var model = new ExtendedModelMap();
 
     open(model);

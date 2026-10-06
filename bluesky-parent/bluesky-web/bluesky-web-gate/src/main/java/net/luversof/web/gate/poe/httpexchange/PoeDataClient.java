@@ -24,6 +24,20 @@ import net.luversof.web.gate.poe.dto.PoeUniqueItem;
 public interface PoeDataClient {
 
   // ── 스킬젬 ──
+  /** 레벨별 데이터를 뺀 젬 목록(API lite=true) — 이름 · slug 만 쓰는 고르기 목록용(10-02, 액티브 전체 15.6MB → 가볍게). */
+  /** 목록 카드용 — 검색어 · 필터 그대로, 레벨별 데이터 없이(10-02: 젬 목록 조각 1.09초였다). */
+  @GetExchange("/gems/search")
+  List<PoeGem> searchGemsForList(
+      @RequestParam(required = false) String q,
+      @RequestParam String type,
+      @RequestParam String color,
+      @RequestParam String tag,
+      @RequestParam boolean lite);
+
+  @GetExchange("/gems/search")
+  List<PoeGem> searchGemsLite(
+      @RequestParam String type, @RequestParam String color, @RequestParam boolean lite);
+
   @GetExchange("/gems/search")
   List<PoeGem> searchGems(
       @RequestParam(required = false) String q,
@@ -51,6 +65,14 @@ public interface PoeDataClient {
   @GetExchange("/uniques/search")
   List<PoeUniqueItem> searchUniques(
       @RequestParam(required = false) String q, @RequestParam(required = false) String itemClass);
+
+  /** 이름만(slug · 이름 · 분류 · 변형 이름) — 시뮬 강제 장착 셀렉트(10-04 C124, 전체 3MB 대신). */
+  @GetExchange("/uniques/names")
+  List<PoeUniqueItem> uniqueNames();
+
+  /** 대분류(jewel · body …)만 — 트리 화면 주얼 목록(10-04 C122, 전체 3MB 대신). */
+  @GetExchange("/uniques/search")
+  List<PoeUniqueItem> searchUniquesInCategory(@RequestParam String category);
 
   @GetExchange("/uniques/{slug}")
   PoeUniqueItem unique(@PathVariable String slug);

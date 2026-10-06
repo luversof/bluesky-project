@@ -187,6 +187,7 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
     BigDecimal evaluationProfitNet = BigDecimal.ZERO; // Net
 
     java.time.LocalDate currentPriceDate = null;
+    java.time.Instant currentPriceUpdatedAt = null;
     if (!request.hasDateRange()) {
       // 가격과 그 가격의 거래일을 함께 받는다. 상위에서 일괄 조회해 넘겨준 맵이 있으면 그것을 쓰고,
       // 없을 때만 개별 조회로 떨어진다(종목마다 조회하면 종목 수만큼 DB 왕복이 생긴다).
@@ -194,10 +195,12 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
       if (preloaded != null) {
         currentPrice = preloaded.closePrice() != null ? preloaded.closePrice() : BigDecimal.ZERO;
         currentPriceDate = preloaded.tradeDate();
+        currentPriceUpdatedAt = preloaded.updatedDate();
       } else {
         var latest = stockPriceService.getCurrentPriceHistory(stockItemId);
         currentPrice = latest.map(h -> h.getClosePrice()).orElse(BigDecimal.ZERO);
         currentPriceDate = latest.map(h -> h.getTradeDate()).orElse(null);
+        currentPriceUpdatedAt = latest.map(h -> h.getUpdatedDate()).orElse(null);
       }
       evaluationAmount = currentPrice.multiply(BigDecimal.valueOf(holdingQuantity));
 
@@ -246,6 +249,7 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
     profit.setHoldingQuantity(holdingQuantity);
     profit.setCurrentPrice(currentPrice);
     profit.setCurrentPriceDate(currentPriceDate);
+    profit.setCurrentPriceUpdatedAt(currentPriceUpdatedAt);
     profit.setEvaluationAmount(evaluationAmount);
     profit.setEvaluationProfit(evaluationProfit);
     profit.setTotalProfit(totalProfit);

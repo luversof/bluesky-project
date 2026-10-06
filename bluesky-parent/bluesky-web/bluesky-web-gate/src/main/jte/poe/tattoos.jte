@@ -37,8 +37,8 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-sm text-base-content/50">${ko ? "패시브 노드를 대체하는 카루이 문신 — " : "Karui tattoos replace passive nodes — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터에서 우클릭으로 적용 →" : "apply in tree editor →"}</a></span>
-				<span class="text-xs font-mono text-base-content/40">${tattoos.size()}</span>
+				<span class="text-sm text-base-content/60">${ko ? "패시브 노드를 대체하는 카루이 문신 — " : "Karui tattoos replace passive nodes — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터에서 우클릭으로 적용 →" : "apply in tree editor →"}</a></span>
+				<span class="text-xs font-mono text-base-content/60">${tattoos.size()}</span>
 			</div>
 
 			<%-- 타입 칩 + 검색 — 클라이언트 필터(데이터 169건이라 서버 왕복 불필요) --%>
@@ -49,7 +49,7 @@
 				@endfor
 				<input id="poeTattooSearch" type="search" class="input input-sm input-bordered w-full sm:w-64 sm:ml-2"
 				       placeholder="${ko ? "문신 검색 (예: 화염, 토템)" : "Search tattoos"}" autocomplete="off">
-				<span id="poeTattooCount" class="text-xs font-mono text-base-content/50"></span>
+				<span id="poeTattooCount" class="text-xs font-mono text-base-content/60"></span>
 			</div>
 
 			<div class="grid gap-2 md:grid-cols-2 [&>*]:min-w-0" id="poeTattooList">
@@ -61,14 +61,14 @@
 							: null;
 					}
 					<div class="rounded-lg border border-base-200 bg-base-100 px-3 py-2" data-tattoo-type="${t.targetType()}">
-						<div class="flex items-center gap-2">
+						<div class="flex flex-wrap items-center gap-2">
 							@if(tattooIcon != null)
 								<img src="/poe-assets/${tattooIcon}" class="w-7 h-7 object-contain shrink-0" alt="" loading="lazy" onerror="this.style.display='none'">
 							@endif
 							<span class="font-semibold poe-entry-name">${PoeText.name(t.nameKo(), t.name())}</span>
 							<span class="badge badge-ghost badge-xs">${typeLabels.getOrDefault(t.targetType(), t.targetType())}</span>
 							@if(t.minConnected() > 0)
-								<span class="text-[10px] text-base-content/40" title="${ko ? "연결된 할당 노드 수 조건" : "Connected allocation requirement"}">${ko ? "연결" : "adj"} ${t.minConnected()}@if(t.maxConnected() > t.minConnected())–${t.maxConnected()}@endif</span>
+								<span class="text-[10px] text-base-content/60" title="${ko ? "연결된 할당 노드 수 조건" : "Connected allocation requirement"}">${ko ? "연결" : "adj"} ${t.minConnected()}@if(t.maxConnected() > t.minConnected())–${t.maxConnected()}@endif</span>
 							@endif
 						</div>
 						!{List<String> tattooLines = ko && t.statsKo() != null && !t.statsKo().isEmpty() ? t.statsKo() : t.stats();}
@@ -84,12 +84,12 @@
 					var count = document.getElementById("poeTattooCount");
 					var activeType = "";
 					function apply() {
-						var q = (search.value || "").trim().toLowerCase();
+						var q = (search.value || "").trim().toLowerCase().replace(/[ \t\u00a0]+/g, ""); // 띄어쓰기 무시(10-02 C25)
 						var rows = document.querySelectorAll("#poeTattooList [data-tattoo-type]");
 						var shown = 0;
 						rows.forEach(function (r) {
 							var hit = (!activeType || r.getAttribute("data-tattoo-type") === activeType)
-								&& (!q || r.textContent.toLowerCase().indexOf(q) !== -1);
+								&& (!q || r.textContent.toLowerCase().replace(/[ \t\u00a0]+/g, "").indexOf(q) !== -1);
 							r.style.display = hit ? "" : "none";
 							if (hit) shown++;
 						});

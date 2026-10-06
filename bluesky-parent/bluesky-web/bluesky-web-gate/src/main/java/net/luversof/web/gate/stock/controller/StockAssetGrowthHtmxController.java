@@ -516,10 +516,15 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         priceBasisFuture == null
             ? List.<net.luversof.web.gate.stock.domain.TradeProfit>of()
             : net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceBasisFuture);
-    model.addAttribute(
-        "priceBasisDate",
+    java.time.LocalDate growthPriceBasisDate =
         net.luversof.web.gate.stock.util.StockPriceBasisUtil.priceBasisDateWithFallback(
-            priceBasisHoldings));
+            priceBasisHoldings);
+    model.addAttribute("priceBasisDate", growthPriceBasisDate);
+    // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
+    model.addAttribute(
+        "priceBasisIntradayTime",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
+            priceBasisHoldings, growthPriceBasisDate));
     var contributions =
         net.luversof.web.gate.stock.util.StockContributionUtil.of(
             contributionStart != null ? snapshots.get(contributionStart.toString()) : null,

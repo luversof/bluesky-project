@@ -74,9 +74,12 @@ class StockPriceChartServiceTest {
     // 0094M0 2026-09-15 기준일 540 원 - 9-12 · 9-13 은 주말이라 시세가 없고 분배락일은 9-14(기준일 전 마지막 거래일)
     var rows =
         java.util.List.of(
-            new net.luversof.api.stock.domain.StockOhlcRow(LocalDate.of(2026, 9, 11), d("1"), d("1"), d("1"), d("18085"), d("18085")),
-            new net.luversof.api.stock.domain.StockOhlcRow(LocalDate.of(2026, 9, 14), d("1"), d("1"), d("1"), d("16995"), d("16995")),
-            new net.luversof.api.stock.domain.StockOhlcRow(LocalDate.of(2026, 9, 15), d("1"), d("1"), d("1"), d("16770"), d("16770")));
+            new net.luversof.api.stock.domain.StockOhlcRow(
+                LocalDate.of(2026, 9, 11), d("1"), d("1"), d("1"), d("18085"), d("18085")),
+            new net.luversof.api.stock.domain.StockOhlcRow(
+                LocalDate.of(2026, 9, 14), d("1"), d("1"), d("1"), d("16995"), d("16995")),
+            new net.luversof.api.stock.domain.StockOhlcRow(
+                LocalDate.of(2026, 9, 15), d("1"), d("1"), d("1"), d("16770"), d("16770")));
     var payout = new net.luversof.api.stock.domain.MonthlyDividendPayout();
     payout.setRecordDate(LocalDate.of(2026, 9, 15));
     payout.setDividendAmountPerShare(d("540"));
@@ -84,8 +87,49 @@ class StockPriceChartServiceTest {
     assertEquals(1, byExDate.size());
     assertEquals(0, d("540").compareTo(byExDate.get(LocalDate.of(2026, 9, 14))));
     // 분할 단위: 원주가 704,000 · 차트 종가 140,800 (5:1 뒤 단위) -> 주당 1,000 원은 200 원
-    var row = new net.luversof.api.stock.domain.StockOhlcRow(LocalDate.of(2018, 10, 11), d("1"), d("1"), d("1"), d("140999"), d("704000"));
-    assertEquals(0, d("200").compareTo(StockPriceChartService.distribution(d("1000"), d("140800"), row)));
+    var row =
+        new net.luversof.api.stock.domain.StockOhlcRow(
+            LocalDate.of(2018, 10, 11), d("1"), d("1"), d("1"), d("140999"), d("704000"));
+    assertEquals(
+        0, d("200").compareTo(StockPriceChartService.distribution(d("1000"), d("140800"), row)));
     assertNull(StockPriceChartService.distribution(null, d("1"), row));
+  }
+
+  @Test
+  void 시세_끝보다_뒤의_기준일은_오늘_봉에_싣지_않는다() {
+    // 시세 끝 2026-10-02(금). 10-15 기준일(미리 공시)은 분배락일이 아직 없다 - 옛 규칙은 "기준일 전 마지막 시세 날" 이라 10-02 에 실었다.
+    // 10-05(월) 기준일이면 10-02 가 바로 직전 평일이라 분배락일이 맞다(그 사이 평일 없음).
+    var rows =
+        java.util.List.of(
+            new net.luversof.api.stock.domain.StockOhlcRow(
+                LocalDate.of(2026, 10, 1), d("1"), d("1"), d("1"), d("100"), d("100")),
+            new net.luversof.api.stock.domain.StockOhlcRow(
+                LocalDate.of(2026, 10, 2), d("1"), d("1"), d("1"), d("100"), d("100")));
+    var future = new net.luversof.api.stock.domain.MonthlyDividendPayout();
+    future.setRecordDate(LocalDate.of(2026, 10, 15));
+    future.setDividendAmountPerShare(d("50"));
+    var nextMonday = new net.luversof.api.stock.domain.MonthlyDividendPayout();
+    nextMonday.setRecordDate(LocalDate.of(2026, 10, 5));
+    nextMonday.setDividendAmountPerShare(d("30"));
+    assertEquals(
+        0, StockPriceChartService.exDateDistributions(rows, java.util.List.of(future)).size());
+    var byExDate = StockPriceChartService.exDateDistributions(rows, java.util.List.of(nextMonday));
+    assertEquals(0, d("30").compareTo(byExDate.get(LocalDate.of(2026, 10, 2))));
+  }
+
+  @Test
+  void 시세_안쪽의_빈_평일은_휴장일로_보고_싣는다() {
+    // 2026-09-24(목)~09-28(월) 추석 연휴로 시세가 없고 기준일 09-29(화) - 분배락일은 연휴 전 마지막 거래일 09-23.
+    var rows =
+        java.util.List.of(
+            new net.luversof.api.stock.domain.StockOhlcRow(
+                LocalDate.of(2026, 9, 23), d("1"), d("1"), d("1"), d("100"), d("100")),
+            new net.luversof.api.stock.domain.StockOhlcRow(
+                LocalDate.of(2026, 9, 29), d("1"), d("1"), d("1"), d("100"), d("100")));
+    var payout = new net.luversof.api.stock.domain.MonthlyDividendPayout();
+    payout.setRecordDate(LocalDate.of(2026, 9, 29));
+    payout.setDividendAmountPerShare(d("40"));
+    var byExDate = StockPriceChartService.exDateDistributions(rows, java.util.List.of(payout));
+    assertEquals(0, d("40").compareTo(byExDate.get(LocalDate.of(2026, 9, 23))));
   }
 }

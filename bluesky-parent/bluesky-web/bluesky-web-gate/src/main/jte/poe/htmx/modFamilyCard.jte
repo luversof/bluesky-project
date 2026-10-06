@@ -30,10 +30,10 @@
 			<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" onclick="event.stopPropagation()" title="${ko ? "동시 확률 계산에 포함" : "Include in combined odds"}">
 		@endif
 		<%-- 티어 "개수"(펼치면 T1..Tn). 접힌 배지가 "티어5"로 오해되지 않게 title 로 명시. --%>
-		<span class="text-xs text-base-content/30 font-mono shrink-0" title="${ko ? "사용 가능 티어 수" : "Number of tiers"}">${tiers.size()}T</span>
+		<span class="text-xs text-base-content/60 font-mono shrink-0" title="${ko ? "사용 가능 티어 수" : "Number of tiers"}">${tiers.size()}T</span>
 		<%-- 최상위 티어 요구 아이템 레벨 — 접힌 상태에서도 "이 옵션 T1 을 뜨게 하려면 몇 렙 아이템이 필요한지" 바로 보이게 --%>
 		@if(top != null)
-			<span class="text-[10px] font-mono text-base-content/40 shrink-0" data-top-ilvl title="${ko ? "최상위 티어 요구 아이템 레벨" : "Top tier required item level"}">i${top.ilvl()}</span>
+			<span class="text-[10px] font-mono text-base-content/60 shrink-0" data-top-ilvl title="${ko ? "최상위 티어 요구 아이템 레벨" : "Top tier required item level"}">i${top.ilvl()}</span>
 		@endif
 		<span class="min-w-0 flex-1">
 			@if(top != null)
@@ -42,14 +42,15 @@
 				@endfor
 			@endif
 		</span>
-		<span class="text-[10px] text-base-content/25 shrink-0">${key}</span>
+		<span class="text-[10px] text-base-content/60 shrink-0">${key}</span>
 	</summary>
 	<div class="border-t border-base-200 overflow-x-auto">
 		<table class="table table-xs w-full">
 			<thead>
-				<tr class="text-base-content/40">
-					<th class="w-10">T</th>
-					<th class="w-12">iLvl</th>
+				<tr class="text-base-content/60">
+					<%-- 머리글은 PoE2 옵션 풀(poe2.mods.tier/level "티어 · 레벨")과 같은 말 — 한국어 화면에 "T · iLvl" 이 남아 있었다(10-02 C30) --%>
+					<th class="w-10">${ko ? "티어" : "Tier"}</th>
+					<th class="w-12">${ko ? "레벨" : "Level"}</th>
 					<th>${ko ? "효과 (범위)" : "Effect (range)"}</th>
 					<th class="w-16 text-right">${ko ? "가중치" : "Weight"}</th>
 					@if(poolWeight > 0)
@@ -62,10 +63,10 @@
 				@for(PoeModTier t : tiers)
 					!{idx++;}
 					<tr data-tier-ilvl="${t.ilvl()}">
-						<td class="font-mono text-base-content/50">T${idx}</td>
-						<td class="font-mono text-base-content/50">${t.ilvl()}</td>
+						<td class="font-mono text-base-content/60">T${idx}</td>
+						<td class="font-mono text-base-content/60">${t.ilvl()}</td>
 						<td>
-							<div class="text-[11px] text-base-content/40">${ko ? t.nameKo() : t.name()}</div>
+							<div class="text-[11px] text-base-content/60">${ko ? t.nameKo() : t.name()}</div>
 							!{java.util.List<String> mx = ko ? t.ko() : t.en();}
 							!{java.util.List<String> mn = ko ? t.koMin() : t.enMin();}
 							@for(int i = 0; i < mx.size(); i++)
@@ -74,7 +75,7 @@
 								</div>
 							@endfor
 						</td>
-						<td class="text-right font-mono text-[11px] text-base-content/40">${t.weight()}</td>
+						<td class="text-right font-mono text-[11px] text-base-content/60">${t.weight()}</td>
 						@if(poolWeight > 0)
 							!{double pct = t.weight() * 100.0 / poolWeight;}
 							<td class="text-right font-mono text-[11px] text-base-content/60"

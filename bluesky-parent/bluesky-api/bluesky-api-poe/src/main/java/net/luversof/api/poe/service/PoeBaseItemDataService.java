@@ -256,15 +256,10 @@ public class PoeBaseItemDataService {
 
   /** query: 이름 부분 일치(한/영), itemClass: all 또는 클래스 id */
   public List<PoeBaseItem> search(String query, String itemClass) {
-    String normalizedQuery =
-        query != null && !query.isBlank() ? query.trim().toLowerCase(Locale.ROOT) : null;
+    String normalizedQuery = PoeSearchText.query(query);
 
     return data.items().stream()
-        .filter(
-            item ->
-                normalizedQuery == null
-                    || item.name().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                    || (item.nameKo() != null && item.nameKo().contains(normalizedQuery)))
+        .filter(item -> PoeSearchText.matches(normalizedQuery, item.name(), item.nameKo()))
         .filter(
             item ->
                 itemClass == null || "all".equals(itemClass) || itemClass.equals(item.itemClass()))

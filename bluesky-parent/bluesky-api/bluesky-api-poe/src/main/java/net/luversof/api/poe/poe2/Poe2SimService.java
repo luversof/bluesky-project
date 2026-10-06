@@ -106,7 +106,9 @@ public class Poe2SimService {
       Double startEhp,
       Double refinedDps,
       Double refinedEhp,
-      long durationMs) {}
+      long durationMs,
+      // 전직 한국어 이름 — 목록 배지가 한국어 화면에서도 "Deadeye" 로 보였다(10-03 C57, PoE1 ascendancyKo 와 같다)
+      String ascendancyKo) {}
 
   private final Poe2NinjaService ninja;
   private final Poe2RefineService refine;
@@ -190,7 +192,10 @@ public class Poe2SimService {
                       r.start() == null ? null : r.start().ehp(),
                       r.refined() == null ? null : r.refined().dps(),
                       r.refined() == null ? null : r.refined().ehp(),
-                      r.durationMs());
+                      r.durationMs(),
+                      r.ascendancy() == null
+                          ? null
+                          : data.treeIndex().ascendancyKo().get(r.ascendancy()));
                 } catch (Exception e) {
                   return null; // 깨진 파일 한 건이 목록 전체를 막지 않게
                 }
@@ -277,16 +282,39 @@ public class Poe2SimService {
     final UserTree userTree = tree;
     Poe2RefineService.Forced forced = null;
     if (uniqueSlug != null && !uniqueSlug.isBlank()) {
-      Poe2.Unique u = data.unique(uniqueSlug.trim()).orElse(null);
+      // "slug:변형번호" — 고유 상세에서 고른 변형(10-04 C96, PoE1 C95 짝). 변형이면 그 변형 줄로 원문을
+      // 짠다(Poe2BuildService.variantText)
+      String us = uniqueSlug.trim();
+      Integer variantIndex =
+          us.matches(".+:[0-9]+") ? Integer.valueOf(us.substring(us.lastIndexOf(':') + 1)) : null;
+      Poe2.Unique u =
+          data.unique(variantIndex != null ? us.substring(0, us.lastIndexOf(':')) : us)
+              .orElse(null);
+      Poe2.UniqueVariant variant =
+          u == null || variantIndex == null || u.variants() == null
+              ? null
+              : u.variants().stream()
+                  .filter(v -> variantIndex.equals(v.index()))
+                  .findFirst()
+                  .orElse(null);
       List<String> slots = u == null ? null : Poe2RefineService.FORCE_SLOTS.get(u.itemClass());
-      String raw = u == null || slots == null ? null : refine.uniqueRaw(u.name());
+      // 같은 이름 고유가 여럿이면 이 고유의 원문을(C73 — 이름만으로는 마지막 변형이 나왔다)
+      String raw =
+          u == null || slots == null
+              ? null
+              : variant != null ? Poe2BuildService.variantText(u, variant) : data.uniqueRaw(u);
       if (raw == null) {
         lastError = "고정할 수 없는 고유입니다(방어구·장신구만): " + uniqueSlug;
         return false;
       }
+      String label = variant == null ? "" : " (" + variant.name() + ")";
+      String labelKo =
+          variant == null
+              ? ""
+              : " (" + (variant.nameKo() != null ? variant.nameKo() : variant.name()) + ")";
       forced =
           new Poe2RefineService.Forced(
-              u.name(), u.nameKo() != null ? u.nameKo() : u.name(), slots, raw);
+              u.name() + label, (u.nameKo() != null ? u.nameKo() : u.name()) + labelKo, slots, raw);
     }
     if (skill == null || skill.isBlank() || !refine.tryLock()) {
       return false;

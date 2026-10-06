@@ -31,10 +31,10 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-sm text-base-content/50">${ko
+				<span class="text-sm text-base-content/60">${ko
 					? "삿된 오브로 유니크의 기존 모드를 대체할 때 붙는 모드"
 					: "Mods that replace a unique's existing mod when using Foulborn currency"}</span>
-				<span class="text-xs font-mono text-base-content/40">${groups.size()} / ${modCount}</span>
+				<span class="text-xs font-mono text-base-content/60">${groups.size()} / ${modCount}</span>
 			</div>
 
 			<%-- ⚠ 이름이 아니라 토큰을 보여준다. 원본 데이터에 "이 토큰이 어느 유니크인지" 매핑이 없어서
@@ -51,7 +51,7 @@
 				       class="input input-sm input-bordered w-full sm:w-72"
 				       placeholder="${ko ? "아이템명·모드 검색 (예: 붉은 꿈, 생명력)" : "Search item name or mod text"}" autocomplete="off">
 				<button class="btn btn-sm btn-primary" type="submit">${ko ? "검색" : "Search"}</button>
-				<span class="text-xs font-mono text-base-content/50">${groups.size()}</span>
+				<span class="text-xs font-mono text-base-content/60">${groups.size()}</span>
 			</form>
 
 			<%-- 분류 칩 — 모드 페이지 클래스 칩과 같은 관례(선택 표시 + 개수 소자) --%>
@@ -61,7 +61,7 @@
 				@for(java.util.Map.Entry<String, Integer> entry : categories.entrySet())
 					<a class="badge ${entry.getKey().equals(activeCategory) ? "badge-primary" : "badge-ghost"} badge-sm"
 					   href="/poe/foulborn?category=${entry.getKey()}${query == null || query.isBlank() ? "" : "&q=" + query}">
-						${entry.getKey()}<span class="ml-1 opacity-60">${entry.getValue()}</span></a>
+						${net.luversof.web.gate.poe.PoeFoulbornCategories.label(entry.getKey())}<span class="ml-1 opacity-60">${entry.getValue()}</span></a>
 				@endfor
 			</div>
 
@@ -74,7 +74,7 @@
 					@for(PoeFoulbornGroup group : groups)
 						<div class="rounded-2xl bg-base-100 p-3 shadow-sm">
 							<div class="mb-1 flex flex-wrap items-baseline gap-2">
-								<span class="badge badge-outline badge-sm border-fuchsia-500/40 text-fuchsia-500">${group.categoryKo()}</span>
+								<span class="badge badge-outline badge-sm border-fuchsia-500/40 text-fuchsia-500">${net.luversof.web.gate.poe.PoeFoulbornCategories.label(group.categoryKo())}</span>
 								<%-- 이름이 있으면 그 유니크 상세로 — 삿된은 결국 "그 아이템" 이야기다 --%>
 								@if(group.uniqueName() != null)
 									<%-- 이름에 호버하면 **원본 유니크의 인게임 아이템 레이어**가 뜬다(젬·고유 목록과 같은 관례).
@@ -86,11 +86,11 @@
 									   hx-target="${group.uniqueSlug() != null ? "#poePreview" : null}"
 									   hx-trigger="${group.uniqueSlug() != null ? "mouseenter delay:100ms" : null}"
 									   hx-swap="${group.uniqueSlug() != null ? "innerHTML" : null}">${PoeText.name(group.uniqueNameKo(), group.uniqueName())}</a>
-									@if(ko && group.uniqueNameKo() != null)<span class="text-xs text-base-content/40">${group.uniqueName()}</span>@endif
+									@if(ko && group.uniqueNameKo() != null)<span class="text-xs text-base-content/60">${group.uniqueName()}</span>@endif
 								@else
 									<span class="font-mono text-sm text-base-content/60">${group.token()}</span>
 								@endif
-								<span class="ml-auto text-xs font-mono text-base-content/40">${group.mods().size()}</span>
+								<span class="ml-auto text-xs font-mono text-base-content/60">${group.mods().size()}</span>
 							</div>
 							@template.poe.htmx.foulbornOptions(mods = group.mods())
 						</div>

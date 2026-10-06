@@ -480,7 +480,7 @@
 		customEl.classList.toggle("hidden", chips.length === 0);
 		if (chips.length === 0) return;
 		const label = document.createElement("span");
-		label.className = "text-[11px] text-base-content/50";
+		label.className = "text-[11px] text-base-content/60";
 		label.textContent = uiKo ? "수동 항:" : "Custom terms:";
 		customEl.appendChild(label);
 		for (const chip of chips) {
@@ -794,7 +794,7 @@
 	}
 
 	function renderList(): void {
-		const q = (searchEl.value || "").trim().toLowerCase();
+		const q = (searchEl.value || "").trim().toLowerCase().replace(/[ \t\u00a0]+/g, ""); // 띄어쓰기 무시(10-02 C25)
 		listEl.textContent = "";
 		// 접두=왼쪽, 접미=오른쪽 열로 분리 (모바일은 접두→접미 순 세로).
 		// 제목은 /poe/mods 접두·접미 섹션과 같은 인게임 모드 파랑 굵은 글씨 + 개수 소자.
@@ -811,7 +811,7 @@
 				),
 			);
 			const cnt = document.createElement("span");
-			cnt.className = "text-xs font-normal text-base-content/40";
+			cnt.className = "text-xs font-normal text-base-content/60";
 			head.appendChild(cnt);
 			counts[gen] = cnt;
 			col.appendChild(head);
@@ -823,7 +823,7 @@
 		for (const m of mods) {
 			if (state.tab === "normal" ? !m.normal : !m.uber) continue;
 			const displayLines = uiKo ? m.ko : m.en;
-			const hay = (m.ko.join("\n") + "\n" + m.en.join("\n") + "\n" + m.nameKo + "\n" + m.name).toLowerCase();
+			const hay = (m.ko.join("\n") + "\n" + m.en.join("\n") + "\n" + m.nameKo + "\n" + m.name).toLowerCase().replace(/[ \t\u00a0]+/g, "");
 			if (q && hay.indexOf(q) === -1) continue;
 			shown++;
 			const pick = state.picks[m.id];
@@ -985,7 +985,7 @@
 			presetsEl.textContent = "";
 			if (list.length === 0) {
 				const empty = document.createElement("div");
-				empty.className = "text-xs text-base-content/40";
+				empty.className = "text-xs text-base-content/60";
 				empty.textContent = uiKo ? "저장된 정규식이 없습니다" : "No saved presets";
 				presetsEl.appendChild(empty);
 				return;
@@ -997,7 +997,7 @@
 				name.className = "text-sm font-semibold";
 				name.textContent = p.name;
 				const date = document.createElement("span");
-				date.className = "text-[11px] text-base-content/40 font-mono";
+				date.className = "text-[11px] text-base-content/60 font-mono";
 				date.textContent = fmtDate(p.updatedMs);
 				const preview = document.createElement("code");
 				preview.className = "flex-1 min-w-[8rem] truncate text-[11px] font-mono text-base-content/60";

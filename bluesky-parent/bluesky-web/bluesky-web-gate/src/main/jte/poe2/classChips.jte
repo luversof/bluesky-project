@@ -22,7 +22,7 @@
 	@for(java.util.Map.Entry<String, List<Poe2.ItemClass>> row : byCategory.entrySet())
 		@if(!row.getValue().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5" data-chip-row="${row.getKey()}">
-				<span class="w-16 shrink-0 text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.itemgroup." + row.getKey())}</span>
+				<span class="w-16 shrink-0 text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.itemgroup." + row.getKey())}</span>
 				@for(Poe2.ItemClass c : row.getValue())
 					<button type="button" class="poe-chip ${c.key().equals(activeClass) ? "poe-chip-active" : ""}" data-chip-value="${c.key()}" data-slot="${c.key()}">${PoeText.name(c.ko(), c.enName())}</button>
 				@endfor

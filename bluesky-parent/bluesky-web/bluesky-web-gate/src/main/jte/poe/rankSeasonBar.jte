@@ -34,8 +34,8 @@
 		</select>
 	</label>
 	@if(against.isBlank())
-		<span class="text-base-content/50" data-rank-no-compare>${ko ? "이전 시즌 랭킹이 아직 없습니다 — 다음 시즌에 랭킹을 돌리면 순위 변화가 나옵니다." : "No previous season yet — rankings run next season will show changes."}</span>
+		<span class="text-base-content/60" data-rank-no-compare>${ko ? "이전 시즌 랭킹이 아직 없습니다 — 다음 시즌에 랭킹을 돌리면 순위 변화가 나옵니다." : "No previous season yet — rankings run next season will show changes."}</span>
 	@else
-		<span class="text-base-content/50">${ko ? "비교 기준 " : "Compared with "}${againstPatch}</span>
+		<span class="text-base-content/60">${ko ? "비교 기준 " : "Compared with "}${againstPatch}</span>
 	@endif
 </form>

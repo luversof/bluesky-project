@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -144,16 +143,11 @@ public class PoeGemDataService {
    * @param color all | red | green | blue | white
    */
   public List<PoeGem> search(String query, String type, String color, String tag) {
-    String normalizedQuery =
-        query != null && !query.isBlank() ? query.trim().toLowerCase(Locale.ROOT) : null;
+    String normalizedQuery = PoeSearchText.query(query);
     String tagFilter = tag != null && !tag.isBlank() && !"all".equals(tag) ? tag : null;
 
     return data.gems().stream()
-        .filter(
-            gem ->
-                normalizedQuery == null
-                    || gem.name().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                    || (gem.nameKo() != null && gem.nameKo().contains(normalizedQuery)))
+        .filter(gem -> PoeSearchText.matches(normalizedQuery, gem.name(), gem.nameKo()))
         .filter(
             gem ->
                 type == null

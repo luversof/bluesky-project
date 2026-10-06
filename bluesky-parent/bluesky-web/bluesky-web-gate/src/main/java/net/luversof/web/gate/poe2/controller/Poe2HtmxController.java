@@ -565,6 +565,7 @@ public class Poe2HtmxController {
       @RequestParam(required = false) String skill,
       @RequestParam(required = false, defaultValue = "") String attrs,
       @RequestParam(required = false, defaultValue = "") String sets,
+      @RequestParam(required = false, defaultValue = "") String jewels,
       Model model) {
     if (className.isBlank()) {
       model.addAttribute("error", "noclass");
@@ -574,7 +575,13 @@ public class Poe2HtmxController {
       model.addAttribute(
           "eval",
           engine.treeEval(
-              className, blankToNull(ascendancy), nodes, blankToNull(skill), attrs, sets));
+              className,
+              blankToNull(ascendancy),
+              nodes,
+              blankToNull(skill),
+              attrs,
+              sets,
+              blankToNull(jewels)));
     } catch (io.github.luversof.boot.exception.BlueskyException e) {
       if (e.getStatus() >= 500) {
         throw e;

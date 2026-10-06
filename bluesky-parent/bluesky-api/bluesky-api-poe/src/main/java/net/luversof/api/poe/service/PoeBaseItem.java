@@ -45,5 +45,6 @@ public record PoeBaseItem(
       int perCharge,
       List<ModLine> buffLines) {}
 
-  public record ModLine(String en, String ko) {}
+  /** 암시 줄 하나 — reminders(Ko) 는 그 줄 밑 인게임 회색 부연(10-04 C116), 없으면 null. */
+  public record ModLine(String en, String ko, List<String> reminders, List<String> remindersKo) {}
 }

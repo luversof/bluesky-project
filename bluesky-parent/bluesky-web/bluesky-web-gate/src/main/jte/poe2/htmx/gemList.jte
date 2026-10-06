@@ -21,7 +21,7 @@
 @if(total == null || total == 0)
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"))
 @else
-	<div class="text-xs text-base-content/50 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), gems.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), gems.size(), total)}</div>
 	@if(gems.isEmpty())
 		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.empty"))
 	@else
@@ -38,7 +38,7 @@
 						<div class="flex items-center gap-2 sticky top-0 bg-base-200/85 backdrop-blur py-1.5 z-[1] rounded">
 							<span class="w-3 h-3 rounded-full ${dot}"></span>
 							<span class="font-semibold text-sm">${MessageUtil.getMessage("poe2.gems.color." + color)}</span>
-							<span class="text-xs text-base-content/40">${group.getValue().size()}</span>
+							<span class="text-xs text-base-content/60">${group.getValue().size()}</span>
 						</div>
 						@for(Poe2.Gem gem : group.getValue())
 							!{ List<String> shownTags = PoeText.lines(gem.tagsKo(), gem.tags()); }
@@ -54,11 +54,11 @@
 										<span class="shrink-0 badge badge-xs badge-outline">${MessageUtil.getMessage("poe2.gems.kind." + gem.kind())}</span>
 									@endif
 									@if(gem.tier() != null && gem.tier() > 0)
-										<span class="ml-auto shrink-0 text-[10px] text-base-content/40">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.tier"), gem.tier())}</span>
+										<span class="ml-auto shrink-0 text-[10px] text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.tier"), gem.tier())}</span>
 									@endif
 								</div>
 								@if(korean)
-									<div class="text-[11px] text-base-content/40 truncate">${gem.name()}</div>
+									<div class="text-[11px] text-base-content/60 truncate">${gem.name()}</div>
 								@endif
 								@if(shownTags != null && !shownTags.isEmpty())
 									<div class="flex flex-wrap gap-1 mt-1">

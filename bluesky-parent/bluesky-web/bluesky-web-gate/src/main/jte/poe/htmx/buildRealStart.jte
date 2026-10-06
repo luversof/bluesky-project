@@ -20,7 +20,7 @@
 				? "poe.ninja 실빌드에서 출발" + (realStart.level() != null ? " (Lv" + realStart.level() + ")" : "") + " — " + realStart.ascendancy() + " · " + realStart.mainSkill() + ", 실빌드 " + realStart.sample() + "명 중 DPS·EHP 중앙값에 가장 가까운 빌드입니다. 시뮬레이터와 같은 가정(보스·충전·전투 버프)에 그 빌드의 운용 설정(공명·낙인 부착 등)을 더해 불러왔습니다. 아래 업그레이드 가이드로 다듬거나, 자동으로 다듬어 보세요."
 				: "Starting from a poe.ninja real build" + (realStart.level() != null ? " (Lv" + realStart.level() + ")" : "") + " — " + realStart.ascendancy() + " · " + realStart.mainSkill() + ", closest to the median of " + realStart.sample() + " real builds, loaded under the simulator's assumptions plus the build's own settings. Refine it with the upgrade guide below, or automatically."}</span>
 			<div class="flex flex-wrap items-center gap-2">
-				<button type="button" class="btn btn-primary btn-sm" data-refine-start
+				<button type="button" class="btn btn-primary btn-sm" data-refine-start data-no-success-toast
 				        hx-post="/poe/htmx/build/refine/start" hx-include="#poeBuildCode" hx-target="#poeRefineArea" hx-swap="innerHTML">
 					${ko ? "자동으로 다듬기" : "Refine automatically"}
 				</button>

@@ -116,20 +116,20 @@
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-info"></span>
 						<span class="text-base-content/60">${midMonthLabel}</span>
 						<span class="font-semibold text-base-content/80 amount-value">₩${decimalFormat.format(midMonthNetAmount)}</span>
-						<span class="text-base-content/60">${windowCount.apply(midMonthCount)}</span>
+						<span class="text-base-content/60 whitespace-nowrap">${windowCount.apply(midMonthCount)}</span>
 					</span>
 					<span class="inline-flex items-baseline gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary"></span>
 						<span class="text-base-content/60">${monthEndLabel}</span>
 						<span class="font-semibold text-base-content/80 amount-value">₩${decimalFormat.format(monthEndNetAmount)}</span>
-						<span class="text-base-content/60">${windowCount.apply(monthEndCount)}</span>
+						<span class="text-base-content/60 whitespace-nowrap">${windowCount.apply(monthEndCount)}</span>
 					</span>
 					@if(otherWindowCount > 0)
 					<span class="inline-flex items-baseline gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-base-content/25"></span>
 						<span class="text-base-content/60">${otherWindowLabel}</span>
 						<span class="font-semibold text-base-content/80 amount-value">₩${decimalFormat.format(otherWindowNetAmount)}</span>
-						<span class="text-base-content/60">${windowCount.apply(otherWindowCount)}</span>
+						<span class="text-base-content/60 whitespace-nowrap">${windowCount.apply(otherWindowCount)}</span>
 					</span>
 					@endif
 				</div>

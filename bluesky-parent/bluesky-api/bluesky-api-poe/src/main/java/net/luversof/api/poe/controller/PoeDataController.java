@@ -81,8 +81,11 @@ public class PoeDataController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false, defaultValue = "all") String type,
       @RequestParam(required = false, defaultValue = "all") String color,
-      @RequestParam(required = false, defaultValue = "all") String tag) {
-    return poeGemDataService.search(q, type, color, tag);
+      @RequestParam(required = false, defaultValue = "all") String tag,
+      @RequestParam(required = false, defaultValue = "false") boolean lite) {
+    List<PoeGem> gems = poeGemDataService.search(q, type, color, tag);
+    // lite: 레벨별 데이터 없이(고르기 목록 — 게이트 트리 · 시뮬 화면은 이름 · slug 만 쓴다)
+    return lite ? gems.stream().map(PoeGem::withoutLevels).toList() : gems;
   }
 
   /** 태그 그룹(유형/원소·피해/전달/특성) — 그룹 칩 UI용 */
@@ -114,8 +117,22 @@ public class PoeDataController {
   @GetMapping("/uniques/search")
   public List<PoeUniqueItem> searchUniques(
       @RequestParam(required = false) String q,
-      @RequestParam(required = false, defaultValue = "all") String itemClass) {
-    return poeUniqueDataService.search(q, null, itemClass);
+      @RequestParam(required = false, defaultValue = "all") String itemClass,
+      // 대분류(jewel · body …) — 트리 화면이 주얼만 받게(10-04 C122: 전체 3MB 를 받아 게이트에서 거르던 것)
+      @RequestParam(required = false) String category) {
+    // 목록엔 리마인더를 싣지 않는다 — 툴팁은 상세 응답으로 그린다(10-04 C119: 목록 2.86MB 중 415KB 였다)
+    //   대분류를 지정한 작은 목록(트리 주얼 184종)은 남긴다 — 트리 주얼 칸 툴팁이 그 줄 밑 부연을 그린다(10-04 C125)
+    return poeUniqueDataService.search(q, category, itemClass).stream()
+        .map(u -> category == null ? u.withoutReminders() : u)
+        .toList();
+  }
+
+  /** 이름만 담은 전체 목록 — 시뮬 강제 장착 셀렉트(10-04 C124). */
+  @GetMapping("/uniques/names")
+  public List<PoeUniqueItem> uniqueNames() {
+    return poeUniqueDataService.search(null, null, "all").stream()
+        .map(PoeUniqueItem::namesOnly)
+        .toList();
   }
 
   @GetMapping("/uniques/{slug}")

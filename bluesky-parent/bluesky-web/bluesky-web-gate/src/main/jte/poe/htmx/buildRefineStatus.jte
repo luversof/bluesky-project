@@ -47,12 +47,12 @@
 					<li><span>${st.label()}</span> <span class="font-mono text-xs text-base-content/60">DPS ${sgn.apply(st.dpsPct())} · EHP ${sgn.apply(st.ehpPct())}</span></li>
 				@endfor
 			</ol>
-			<form hx-post="/poe/htmx/build/import-replace" hx-target="#poeBuildSummary" hx-swap="innerHTML">
+			<form hx-post="/poe/htmx/build/import-replace" hx-target="#poeBuildSummary" hx-swap="innerHTML" data-no-success-toast>
 				<input type="hidden" name="code" value="${r.code()}">
 				<button type="submit" class="btn btn-primary btn-sm" data-refine-load>${ko ? "다듬은 빌드 불러오기" : "Load refined build"}</button>
 			</form>
 		@endif
-		<div class="text-[11px] text-base-content/50">${ko ? "각 단계의 증감은 직전 빌드 대비이며, 적용 후 PoB 엔진으로 다시 계산한 값입니다. 보스 단일 대상(최종 보스) 기준이라, 효과 범위·투사체 수 보조를 바꾸는 단계는 사냥 속도를 줄일 수 있습니다." : "Each step's change is vs. the previous build, re-measured with the PoB engine after applying. Measured against a single pinnacle boss — steps that swap out area or projectile-count supports can slow down clearing."}</div>
+		<div class="text-[11px] text-base-content/60">${ko ? "각 단계의 증감은 직전 빌드 대비이며, 적용 후 PoB 엔진으로 다시 계산한 값입니다. 보스 단일 대상(최종 보스) 기준이라, 효과 범위·투사체 수 보조를 바꾸는 단계는 사냥 속도를 줄일 수 있습니다." : "Each step's change is vs. the previous build, re-measured with the PoB engine after applying. Measured against a single pinnacle boss — steps that swap out area or projectile-count supports can slow down clearing."}</div>
 	</div>
 @endif
 </div>

@@ -2,12 +2,9 @@ package net.luversof.api.poe.poe2;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +18,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import net.luversof.api.poe.service.PoePobImportService;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -130,14 +126,12 @@ public class Poe2RefineService {
   private final Poe2DataService data;
   private final Poe2PobEngineService engine;
   private final PoePobImportService decoder;
-  private final Path uniqueDbFile;
   private final JsonMapper json = JsonMapper.builder().build();
   private final AtomicBoolean running = new AtomicBoolean();
   private volatile int round;
   private volatile String phase = "";
   private volatile Result lastResult;
   private volatile String lastError;
-  private volatile Map<String, String> uniqueRawByTitle;
 
   public Poe2RefineService(
       Poe2BuildService builds,
@@ -149,7 +143,6 @@ public class Poe2RefineService {
     this.data = data;
     this.engine = engine;
     this.decoder = decoder;
-    this.uniqueDbFile = Path.of(dataDir, "work", "pob-unique-db.json");
   }
 
   public Status status() {
@@ -463,25 +456,11 @@ public class Poe2RefineService {
         v.getOrDefault("EnergyShield", 0d));
   }
 
+  /**
+   * PoB 고유 원문 — 읽기는 Poe2DataService 로 옮겼다(트리 평가의 주얼 끼우기도 쓴다 · Build 가 Refine 을 부르면 순환, 10-03 C73).
+   */
   String uniqueRaw(String title) {
-    Map<String, String> map = uniqueRawByTitle;
-    if (map == null) {
-      map = new HashMap<>();
-      try {
-        JsonNode arr = json.readTree(Files.readString(uniqueDbFile));
-        for (JsonNode u : arr) {
-          String raw = u.path("raw").asText("");
-          String first = raw.replace("\r\n", "\n").split("\n", 2)[0].trim();
-          if (!first.isEmpty()) {
-            map.put(first, raw);
-          }
-        }
-      } catch (Exception e) {
-        logger.warn("PoE2 고유 DB 로드 실패(고유 교체 제외): {}", uniqueDbFile, e);
-      }
-      uniqueRawByTitle = map;
-    }
-    return title == null ? null : map.get(title);
+    return data.uniqueRaw(title);
   }
 
   private static double nz(Double v) {

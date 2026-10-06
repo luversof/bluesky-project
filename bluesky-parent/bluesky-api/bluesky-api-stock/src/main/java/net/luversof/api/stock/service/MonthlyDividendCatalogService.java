@@ -176,6 +176,10 @@ public class MonthlyDividendCatalogService {
           PayoutTrendCalculator.compute(
               payouts.stream().map(payout -> safe(payout.getDividendAmountPerShare())).toList());
 
+      PayoutTrendCalculator.PayoutCuts payoutCuts =
+          PayoutTrendCalculator.countCuts(
+              payouts.stream().map(payout -> safe(payout.getDividendAmountPerShare())).toList());
+
       BigDecimal currentPrice = price != null ? safe(price.closePrice()) : BigDecimal.ZERO;
       BigDecimal averagePerShare =
           stats != null ? safe(stats.averagePerShare1y()) : BigDecimal.ZERO;
@@ -213,7 +217,9 @@ public class MonthlyDividendCatalogService {
               risk != null ? risk.volatilityPct() : null,
               risk != null ? risk.fromDate() : null,
               profile.getTotalExpenseRatioPct(),
-              profile.getListingDate()));
+              profile.getListingDate(),
+              payoutCuts != null ? payoutCuts.cutCount() : null,
+              payoutCuts != null ? payoutCuts.pairCount() : null));
     }
     return rows;
   }

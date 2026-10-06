@@ -19,6 +19,7 @@
 @param java.time.Instant endDate = null
 @param String timeZone = null
 @param java.time.LocalDate priceBasisDate = null
+@param String priceBasisIntradayTime = null
 @param java.util.List<net.luversof.web.gate.stock.domain.Account> accountList = null
 @param java.util.List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = null
 @param java.util.List<String> stockTagList = java.util.List.of()
@@ -272,7 +273,7 @@
 				<p class="min-w-0 text-xs text-base-content/60">
 					<span>📈 ${chartDescriptionLabel} &bull;</span>
 					@if(priceBasisDate != null)
-					!{String priceBasisMessage = MessageUtil.getMessage("stock.asset.status.price.basis"); int priceBasisAt = priceBasisMessage.indexOf("{0}");}<span>${priceBasisAt >= 0 ? priceBasisMessage.substring(0, priceBasisAt) : priceBasisMessage + " "}<span class="whitespace-nowrap date-whole">${priceBasisDate.toString()}</span>${priceBasisAt >= 0 ? priceBasisMessage.substring(priceBasisAt + 3) : ""} &bull;</span>
+					!{String priceBasisMessage = net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime); int priceBasisAt = priceBasisMessage.indexOf("{0}");}<span>${priceBasisAt >= 0 ? priceBasisMessage.substring(0, priceBasisAt) : priceBasisMessage + " "}<span class="whitespace-nowrap date-whole">${priceBasisDate.toString()}</span>${priceBasisAt >= 0 ? priceBasisMessage.substring(priceBasisAt + 3) : ""} &bull;</span>
 					@endif
 					<span class="inline-block text-info">${clickDateHoldingsLabel}</span>
 				</p>

@@ -109,7 +109,7 @@
 
 		var panel = document.createElement("div");
 		panel.className =
-			"absolute z-30 left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-64 overflow-auto focus:outline-none";
+			"absolute z-30 left-0 top-full mt-1 min-w-full w-max max-w-[calc(100vw-2rem)] sm:max-w-sm bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-64 overflow-auto focus:outline-none";
 		panel.setAttribute("data-msd-panel", "1");
 		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
 		panel.id = "msd-panel-" + (++msdPanelSeq);
@@ -347,7 +347,7 @@
 
 		var panel = document.createElement("div");
 		panel.className =
-			"absolute z-30 left-0 right-0 top-full mt-1 bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-72 overflow-auto focus:outline-none";
+			"absolute z-30 left-0 top-full mt-1 min-w-full w-max max-w-[calc(100vw-2rem)] sm:max-w-sm bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-72 overflow-auto focus:outline-none";
 		panel.setAttribute("data-msd-panel", "1");
 		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
 		panel.id = "msd-panel-" + (++msdPanelSeq);
@@ -410,6 +410,21 @@
 	// 실측 2026-09-09: 토글에 펼침 상태가 없어 스크린리더는 눌러도 무슨 일이 났는지 알 수 없었고, Escape 로 닫을 수도 없었다.
 	function setPanelOpen(panel: HTMLElement, open: boolean) {
 		panel.hidden = !open;
+		// 패널은 칸보다 넓어질 수 있다(min-w-full w-max - 실측 2026-10-02: 1280px 에서 종목 칸이 145px 라 이름이 "KODEX 200..." 로
+		// 잘리고 "전체 취소" 가 두 줄이 됐다). 넓어진 패널이 화면 오른쪽을 넘으면 칸의 오른쪽 끝에 맞춰 왼쪽으로 펼친다.
+		// 오른쪽 끝에 그냥 맞추면 칸이 화면 왼쪽 끝에서 시작하지 않을 때 이번엔 왼쪽으로 넘친다(S41 실측: 자산 성장 375px 태그 패널 left -21px).
+		// 넘친 만큼만 왼쪽으로 옮기되 화면 왼쪽 여백(8px)을 넘지 않는다.
+		if (open) {
+			panel.style.left = "";
+			panel.style.right = "";
+			var rect = panel.getBoundingClientRect();
+			var viewport = document.documentElement.clientWidth || window.innerWidth;
+			if (rect.right > viewport - 8) {
+				var wrapLeft = panel.parentElement ? panel.parentElement.getBoundingClientRect().left : rect.left;
+				var shift = Math.min(rect.right - (viewport - 8), Math.max(0, wrapLeft - 8));
+				panel.style.left = -shift + "px";
+			}
+		}
 		var wrap = panel.parentElement;
 		var toggle = wrap ? (wrap.querySelector("[data-msd-toggle]") as HTMLElement | null) : null;
 		if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");

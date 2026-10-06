@@ -49,6 +49,22 @@ class ChartSeriesJsCandleTest {
   }
 
   @Test
+  void 분배락일_주당_분배금을_싣고_없으면_0() {
+    BigDecimal p = new BigDecimal("100");
+    String js =
+        ChartSeriesJs.candleSeries(
+            List.of(
+                new StockPriceChartPoint(LocalDate.parse("2026-09-11"), p, p, p, p, null, null),
+                new StockPriceChartPoint(
+                    LocalDate.parse("2026-09-14"), p, p, p, p, null, new BigDecimal("540")),
+                new StockPriceChartPoint(
+                    LocalDate.parse("2026-09-15"), p, p, p, p, null, new BigDecimal("12.50"))),
+            List.of(),
+            KST);
+    assertThat(js).contains("dist:[0,540,12.5]");
+  }
+
+  @Test
   void 매매가_없으면_0_으로_채운다() {
     assertThat(ChartSeriesJs.candleSeries(List.of(day("2026-09-21"))))
         .contains("buy:[0]")

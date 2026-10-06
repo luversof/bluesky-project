@@ -39,7 +39,7 @@
 }
 
 <%-- PoE 게임 아이템 툴팁 (일반/흰색) --%>
-	<div class="poe-tooltip poe-rar-white w-80 max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
+	<div class="poe-tooltip poe-rar-white w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
 		<div class="poe-tt-band">
 			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#e6e6e6">${displayName}</div>
 			<div class="text-center text-[12px] leading-tight text-[#c8c8c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${displayClass}</div>
@@ -113,6 +113,10 @@
 			<div class="px-4 py-2 text-center space-y-0.5">
 				@for(var implicitLine : item.implicits())
 					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(PoeText.name(implicitLine.ko(), implicitLine.en()))}</div>
+					<%-- 줄 밑 리마인더(인게임 회색 부연, 10-04 C116) --%>
+					@for(String rem : PoeText.lines(implicitLine.remindersKo(), implicitLine.reminders()) == null ? java.util.List.<String>of() : PoeText.lines(implicitLine.remindersKo(), implicitLine.reminders()))
+						<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+					@endfor
 				@endfor
 			</div>
 		@endif

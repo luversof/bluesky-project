@@ -41,9 +41,10 @@ for (const v of TREE_VERSIONS) {
 // 2) 타임리스 .bin 신선도
 const tj = path.join(POB, "Data", "TimelessJewelData");
 if (fs.existsSync(tj)) {
-	// ⚠ 폴더의 .zip 을 전부 요구하면 안 된다 — Abyss*.zip 처럼 추출 대상이 아닌 것이 섞여 있어
-	//    "5개 없음" 같은 오탐이 난다(첫 구현에서 실제로 그랬다). **timeless-bin.mjs 와 같은 목록**만 본다.
-	const NAMES = ["BrutalRestraint", "LethalPride", "MilitantFaith", "ElegantHubris", "HeroicTragedy", "GloriousVanity"];
+	// ⚠ 폴더의 .zip 을 전부 요구하면 안 된다 — 추출 대상이 아닌 것이 섞이면 "N개 없음" 오탐이 난다(첫 구현에서 실제로 그랬다).
+	//    **timeless-bin.mjs 와 같은 목록**만 본다. Abyss 5종은 10-05 C166 부터 대상(러너의 Inflate 대체가 이 .bin 을 쓴다 — 없으면
+	//    "Invalid Abyss timeless jewel header" 로 그 주얼 빌드의 스펙 임포트가 실패).
+	const NAMES = ["BrutalRestraint", "LethalPride", "MilitantFaith", "ElegantHubris", "HeroicTragedy", "GloriousVanity", "AbyssAmanamu", "AbyssKurgal", "AbyssTecrod", "AbyssUlaman", "AbyssZorath"];
 	let stale = 0;
 	let missing = 0;
 	let checked = 0;

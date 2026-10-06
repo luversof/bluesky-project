@@ -715,6 +715,11 @@ public class StockDetailViewController {
       priceBasisDate = lastPricePoint.tradeDate();
     }
     model.addAttribute("priceBasisDate", priceBasisDate);
+    // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
+    model.addAttribute(
+        "priceBasisIntradayTime",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
+            snapshotProfits, priceBasisDate));
 
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);
@@ -998,6 +1003,10 @@ public class StockDetailViewController {
     // 실시간 시세로 오해할 수 있다(실측: 오늘이 2026-08-22 인데 보유 15종목의 currentPriceDate 가
     // 모두 2026-08-20 이었다). 자산현황·포트폴리오와 같은 표기를 쓴다.
     model.addAttribute("priceBasisDate", latestPriceBasisDate(holdings));
+    model.addAttribute(
+        "priceBasisIntradayTime",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
+            holdings, latestPriceBasisDate(holdings)));
     model.addAttribute("evaluationAmount", evaluationAmount);
     model.addAttribute("totalBuyCost", totalBuyCost);
     model.addAttribute("evaluationProfit", evaluationProfit);

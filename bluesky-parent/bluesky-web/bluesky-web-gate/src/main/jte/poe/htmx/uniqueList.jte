@@ -25,7 +25,7 @@
 @if(totalCount == 0)
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), hint = "tools/poe-extract: node parse-uniques.mjs")
 @else
-<div class="text-xs text-base-content/50 mb-2">${capped ? cappedLabel : countLabel}</div>
+<div class="text-xs text-base-content/60 mb-2">${capped ? cappedLabel : countLabel}</div>
 @if(items.isEmpty())
 	@template._components.ui.emptyState(message = emptyLabel)
 @else
@@ -62,14 +62,14 @@
 						<%-- 이름 클릭 → 상세 페이지 --%>
 						<a class="font-bold poe-name-unique truncate link-hover" href="/poe/uniques/${item.slug()}" title="${item.name()}">${displayName}</a>
 						@if(PoeText.isKorean())
-							<span class="text-xs text-base-content/40 truncate">${item.name()}</span>
+							<span class="text-xs text-base-content/60 truncate">${item.name()}</span>
 						@endif
 					</div>
 					<%-- 베이스 + 요구조건(레벨·힘·민첩·지능, 0 은 생략) --%>
-					<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/55">
+					<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/60">
 						<span class="truncate">${displayBase}</span>
 						@if(item.requiredLevel() != null)
-							<span class="text-base-content/40">${levelLabel} ${item.requiredLevel()}</span>
+							<span class="text-base-content/60">${levelLabel} ${item.requiredLevel()}</span>
 						@endif
 						@if(item.reqStr() != null && item.reqStr() > 0)
 							<span class="poe-gem-red">${strLabel} ${item.reqStr()}</span>

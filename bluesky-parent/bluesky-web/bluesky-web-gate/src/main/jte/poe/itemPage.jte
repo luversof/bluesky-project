@@ -35,7 +35,7 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<a href="/poe/items" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe.items.title")}</a>
 				<h1 class="text-2xl font-bold">${displayName}</h1>
-				@if(ko)<span class="text-base-content/40 text-sm">${item.name()}</span>@endif
+				@if(ko)<span class="text-base-content/60 text-sm">${item.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
 			</div>
 
@@ -54,7 +54,7 @@
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
 						<h2 class="font-bold text-orange-500">${ko ? "이 베이스의 고유 아이템" : "Uniques on this base"}</h2>
-						<span class="text-xs font-mono text-base-content/40">${baseUniques.size()}</span>
+						<span class="text-xs font-mono text-base-content/60">${baseUniques.size()}</span>
 					</div>
 					<div class="flex flex-wrap gap-x-4 gap-y-1">
 						@for(var u : baseUniques)
@@ -81,7 +81,7 @@
 								if (v.key().equals(fullMods.variant())) variantLabel = ko ? v.nameKo() : v.name();
 							}
 						}
-						<span class="text-sm text-base-content/50">${ko ? PoeText.name(fullMods.nameKo(), fullMods.name()) + (variantLabel.isEmpty() ? "" : " · " + variantLabel + " 변형") + " · 접두 " + fullMods.prefixes().size() + " · 접미 " + fullMods.suffixes().size() : fullMods.name() + (variantLabel.isEmpty() ? "" : " · " + variantLabel) + " · " + fullMods.prefixes().size() + " prefixes · " + fullMods.suffixes().size() + " suffixes"}</span>
+						<span class="text-sm text-base-content/60">${ko ? PoeText.name(fullMods.nameKo(), fullMods.name()) + (variantLabel.isEmpty() ? "" : " · " + variantLabel + " 변형") + " · 접두 " + fullMods.prefixes().size() + " · 접미 " + fullMods.suffixes().size() : fullMods.name() + (variantLabel.isEmpty() ? "" : " · " + variantLabel) + " · " + fullMods.prefixes().size() + " prefixes · " + fullMods.suffixes().size() + " suffixes"}</span>
 						<a class="link link-hover text-sm text-primary ml-auto" href="/poe/mods?itemClass=${java.net.URLEncoder.encode(fullMods.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}">${ko ? "모드 페이지에서 보기 →" : "Open in Modifiers →"}</a>
 					</div>
 					@template.poe.modFilterBar(scope = "#poeItemModBody", idPrefix = "poeItemMod")
@@ -96,7 +96,7 @@
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
 						<h2 class="font-bold">${ko ? "엘드리치 임플리싯" : "Eldritch implicits"}</h2>
-						<span class="text-sm text-base-content/50">${ko ? "총주교·포식자 화폐로 부여 — 팩션당 1개씩 최대 2개" : "Exarch + Eater — up to one each"}</span>
+						<span class="text-sm text-base-content/60">${ko ? "총주교·포식자 화폐로 부여 — 팩션당 1개씩 최대 2개" : "Exarch + Eater — up to one each"}</span>
 					</div>
 					@template.poe.htmx.eldritchPools(eldritch = eldritch, ko = ko)
 				</div>

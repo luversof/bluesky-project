@@ -83,6 +83,23 @@ class SummaryPriceBasisRenderTest {
         .containsPattern("(Valued at 2026-08-20 close|평가 기준 2026-08-20 종가)");
   }
 
+  /** 그 날 시세를 장중에 받았으면 "종가" 라고 부르지 않고 받은 시각을 적는다(2026-10-02 - 10:16 에 받은 행이 장 마감 뒤까지 "종가" 로 보였다). */
+  @Test
+  void 장중에_받은_시세는_종가라고_부르지_않는다() {
+    Map<String, Object> params = params(LocalDate.parse("2026-08-20"));
+    params.put("priceBasisIntradayTime", "10:16");
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, params, output);
+    String html = output.toString();
+
+    assertThat(html)
+        .containsPattern(
+            "(Valued at 2026-08-20 10:16 intraday price|평가 기준 2026-08-20 10:16 장중 시세)");
+    assertThat(html)
+        .as("장중 값을 종가라고 부른다")
+        .doesNotContainPattern("(Valued at 2026-08-20 close|평가 기준 2026-08-20 종가)");
+  }
+
   /** 근거가 없는데 날짜를 지어내면 오히려 더 나쁘다. */
   @Test
   void 기준일이_없으면_아무_날짜도_적지_않는다() {

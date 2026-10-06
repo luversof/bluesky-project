@@ -33,10 +33,11 @@ class PriceBasisNoticeTest {
     // 줄바꿈·들여쓰기에 묶지 않는다 - 이 규칙은 CR LF 와 여덟 칸 들여쓰기까지 고정하고 있어서,
     // 같은 파일 위쪽에 줄을 몇 줄 더한 것만으로 깨졌다(실측 2026-09-12). 확인하려는 것은 서식이 아니라
     // "이 모델 속성을 담는다" 이므로 공백을 눌러서 본다.
-    assertThat(flatten(controller))
-        .contains("model.addAttribute( " + (char) 34 + "priceBasisDate" + (char) 34);
+    assertThat(flatten(controller).replace("( ", "("))
+        .contains("model.addAttribute(" + (char) 34 + "priceBasisDate" + (char) 34);
     assertThat(template).contains("@param java.time.LocalDate priceBasisDate");
-    assertThat(template).contains("stock.asset.status.price.basis");
+    // 문구 틀은 StockPriceBasisUtil.basisMessage 가 고른다(종가 / 장중 시세, 2026-10-02).
+    assertThat(template).contains("StockPriceBasisUtil.basisMessage(priceBasisIntradayTime)");
   }
 
   @Test
@@ -50,7 +51,9 @@ class PriceBasisNoticeTest {
     assertThat(support).as("현재 보유 조회가 이미 종가 일자를 갖고 있다").contains("priceBasisDate");
     assertThat(page).contains("monthlyDividendPriceBasisDate = monthlyDividendPriceBasisDate");
     assertThat(fragment).contains("@param java.time.LocalDate monthlyDividendPriceBasisDate");
-    assertThat(fragment).contains("stock.asset.status.price.basis");
+    // 문구 틀은 StockPriceBasisUtil.basisMessage 가 고른다(종가 / 장중 시세, 2026-10-02).
+    assertThat(fragment)
+        .contains("StockPriceBasisUtil.basisMessage(monthlyDividendPriceBasisIntradayTime)");
   }
 
   /** 공백을 한 칸으로 눌러 서식 차이를 지운다. */

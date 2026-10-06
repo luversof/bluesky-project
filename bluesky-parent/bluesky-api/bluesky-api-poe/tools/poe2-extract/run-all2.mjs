@@ -54,6 +54,7 @@ step("스탯 설명 파일", "export-files.mjs");
 step("스킬 전용 스탯 설명", "export-skill-desc.mjs");
 step("베이스 아이템", "parse-items2.mjs");
 step("젬", "parse-gems2.mjs");
+step("레어 이름 낱말", "rare-names2.mjs"); // 빌드 요약 레어 이름 한국어(10-04 C144)
 step("옵션", "parse-mods2.mjs");
 step("경로석 옵션", "parse-waystone-mods2.mjs");
 step("증강물(룬·영혼 핵)", "parse-augments2.mjs");

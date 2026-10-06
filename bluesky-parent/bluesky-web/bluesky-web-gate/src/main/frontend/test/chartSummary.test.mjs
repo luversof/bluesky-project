@@ -215,3 +215,17 @@ test("가리기를 켜면 근거 문구의 금액만 가려지고 백분율은 �
 	assert.equal(sr.textContent, original);
 	document.querySelectorAll = () => [];
 });
+
+test("차트가 넘긴 표시 개수를 요약 끝에 붙인다(0 은 뺀다, ko/en)", () => {
+	// 실측 2026-10-02: 종목 상세 캔들의 매수 ▲ · 분배락 ◆ 가 화면에만 있고 요약문엔 없었다.
+	const chart = {
+		config: { type: "bar" },
+		data: { labels: ["2026-09-11", "2026-09-14"], datasets: [{ label: "종가", data: [100, 90] }] },
+		options: { plugins: { a11ySummary: { counts: [{ label: "매수", count: 2 }, { label: "매도", count: 0 }, { label: "분배락(주당 분배금)", count: 1 }] } } },
+	};
+	assert.match(mod.chartSummaryText(chart, "ko-KR"), /\. 표시: 매수 2개, 분배락\(주당 분배금\) 1개$/);
+	assert.doesNotMatch(mod.chartSummaryText(chart, "ko-KR"), /매도/);
+	assert.match(mod.chartSummaryText(chart, "en-US"), /\. Markers: 매수 2, 분배락\(주당 분배금\) 1$/);
+	chart.options.plugins.a11ySummary.counts = [{ label: "매수", count: 0 }];
+	assert.doesNotMatch(mod.chartSummaryText(chart, "ko-KR"), /표시:/, "모두 0 이면 문장을 붙이지 않는다");
+});

@@ -290,14 +290,14 @@ public class PoeViewController {
     model.addAttribute("treeSrc", src[0]);
     model.addAttribute("spritesSrc", src[1]);
     // 트리 계산에 쓸 주 스킬 후보 — datalist 로 넘겨 브라우저 기본 검색을 그대로 쓴다
-    model.addAttribute("activeGems", poeDataClient.searchGems(null, "active", "all", null));
+    model.addAttribute("activeGems", poeDataClient.searchGemsLite("active", "all", true));
     // 주얼 슬롯에 끼울 유니크 주얼 목록.
     // 타임리스(무궁한)는 **포함**한다 — 정복자·시드를 고르면 PoB 가 반경 변환을 실제로 계산한다(사이클 확인).
     // 클러스터는 전용 소켓·전용 UI(우클릭 → 클러스터 주얼 장착)로 다루므로 여기선 제외.
     model.addAttribute(
         "jewelUniques",
-        // searchUniques 의 2번째 인자는 itemClass(세분류)라 "jewel" 로는 안 잡힌다 → 전체를 받아 category 로 거른다
-        poeDataClient.searchUniques(null, "all").stream()
+        // 대분류 jewel 만 받는다(10-04 C122 — 예전엔 고유 전체 3MB 를 받아 여기서 걸렀다)
+        poeDataClient.searchUniquesInCategory("jewel").stream()
             .filter(u -> "jewel".equals(u.category()))
             .filter(u -> u.baseType() == null || !u.baseType().contains("Cluster"))
             .toList());
@@ -473,7 +473,7 @@ public class PoeViewController {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute(
         "activeGems",
-        poeDataClient.searchGems(null, "active", "all", null).stream()
+        poeDataClient.searchGemsLite("active", "all", true).stream()
             .sorted(
                 java.util.Comparator.comparing(
                     gem -> gem.nameKo() != null ? gem.nameKo() : gem.name()))
@@ -482,7 +482,8 @@ public class PoeViewController {
     java.util.Set<String> nonEquip = java.util.Set.of("jewel", "tincture", "fishing");
     model.addAttribute(
         "uniqueItems",
-        poeDataClient.searchUniques(null, "all").stream()
+        // 셀렉트는 slug · 이름 · 분류 · 변형 이름만 쓴다 — 이름만 담은 목록(10-04 C124)
+        poeDataClient.uniqueNames().stream()
             .filter(u -> u.category() == null || !nonEquip.contains(u.category()))
             .sorted(java.util.Comparator.comparing(u -> u.nameKo() != null ? u.nameKo() : u.name()))
             .toList());

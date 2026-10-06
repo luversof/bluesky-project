@@ -27,19 +27,33 @@
 	profile = profile,
 	menu = "poe2",
 	contentPoe = @`
-		<div class="space-y-4">
+		<div id="poe2UniquePage" class="space-y-4">
 			<a href="/poe2/uniques" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe2.uniques.title")}</a>
 			@template.poe2.header(title = title, meta = meta)
 			@if(forceable)
 				<%-- PoE1 고유 상세와 같은 바로가기 — 시뮬레이터가 이 고유를 고정한 채 열린다(10-01, 방어구·장신구만) --%>
-				<a class="btn btn-sm btn-primary btn-outline" href="/poe2/sim?unique=${item.slug()}" data-optimize-unique>${PoeText.isKorean() ? "이 고유로 최적화 →" : "Optimize with this unique →"}</a>
+				<a class="btn btn-sm btn-primary btn-outline" href="/poe2/sim?unique=${item.slug()}${variant != null && item.variants() != null && item.variants().size() > 1 ? ":" + variant : ""}" data-optimize-unique>${PoeText.isKorean() ? "이 고유로 최적화 →" : "Optimize with this unique →"}</a>
 			@endif
 			@if(PoeText.isKorean())
-				<div class="text-sm text-base-content/50">${MessageUtil.getMessage("poe2.english")}: ${item.name()} · ${item.baseType()}</div>
+				<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.english")}: ${item.name()} · ${item.baseType()}</div>
 			@endif
-			@if(item.variants() != null && !item.variants().isEmpty())
+			@if(item.variants() != null && item.variants().size() > 24)
+				<%-- 변형이 많은 고유(메갈로매니악 874 · 신념의 프리즘 261 — PoB 생성 고유)는 칩 벽 대신 select(10-04 C80, PoE1 uniqueVariants 의 짝).
+				     스크립트가 없으면 폼 제출, htmx 가 있으면 고르는 즉시 이 화면을 다시 받아 본문(#poe2UniquePage)만 바꾸고 주소를 민다.
+				     hx-select="body" 는 안 된다 — htmx 가 응답을 조각으로 파싱하며 body 를 벗겨 빈 것을 붙였다(탐침이 잡음). --%>
+				<form class="flex w-80 max-w-full flex-wrap items-center gap-1.5" method="get" action="/poe2/uniques/${item.slug()}"
+				      hx-get="/poe2/uniques/${item.slug()}" hx-trigger="change" hx-target="#poe2UniquePage" hx-select="#poe2UniquePage" hx-swap="outerHTML" hx-push-url="true">
+					<label class="text-xs font-semibold text-base-content/60" for="poe2UniqueVariantSelect">${MessageUtil.getMessage("poe2.uniques.variant")} ${item.variants().size()}</label>
+					<select id="poe2UniqueVariantSelect" name="variant" class="select select-bordered select-sm min-w-0 flex-1">
+						@for(Poe2.UniqueVariant v : item.variants())
+							<option value="${v.index()}" selected="${v.index() != null && v.index().equals(active)}">${PoeText.name(v.nameKo(), v.name())}</option>
+						@endfor
+					</select>
+					<noscript><button type="submit" class="btn btn-sm">${PoeText.isKorean() ? "보기" : "Show"}</button></noscript>
+				</form>
+			@elseif(item.variants() != null && !item.variants().isEmpty())
 				<div class="flex flex-wrap items-center gap-1.5" aria-label="${MessageUtil.getMessage("poe2.uniques.variant")}">
-					<span class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe2.uniques.variant")}</span>
+					<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe2.uniques.variant")}</span>
 					@for(Poe2.UniqueVariant v : item.variants())
 						<a class="poe-chip ${v.index() != null && v.index().equals(active) ? "poe-chip-active" : ""}" href="/poe2/uniques/${item.slug()}?variant=${v.index()}">${PoeText.name(v.nameKo(), v.name())}</a>
 					@endfor
@@ -61,13 +75,13 @@
 						}
 					}
 				}
-				<div class="flex-1 min-w-[20rem] space-y-4">
+				<div class="flex-1 min-w-0 sm:min-w-[20rem] space-y-4">
 					<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-unique-info>
 						<h2 class="font-bold mb-2">${ko ? "정보" : "Info"}</h2>
-						<table class="table table-xs">
+						<table class="table table-xs [overflow-wrap:anywhere]">
 							<tbody>
-								<tr><td class="text-base-content/50">${ko ? "영문명" : "Name"}</td><td>${item.name()}</td></tr>
-								<tr><td class="text-base-content/50">${ko ? "베이스" : "Base"}</td><td>
+								<tr><td class="text-base-content/60">${ko ? "영문명" : "Name"}</td><td>${item.name()}</td></tr>
+								<tr><td class="text-base-content/60">${ko ? "베이스" : "Base"}</td><td>
 									@if(base != null && base.slug() != null)
 										<a class="link link-hover" href="/poe2/items/${base.slug()}">${PoeText.name(item.baseTypeKo(), item.baseType())}</a>
 									@else
@@ -75,13 +89,13 @@
 									@endif
 								</td></tr>
 								@if(item.itemClass() != null)
-									<tr><td class="text-base-content/50">${ko ? "아이템 클래스" : "Item class"}</td><td>${net.luversof.web.gate.poe.PoeClassNames.poe2(item.itemClassKo(), item.itemClass())}</td></tr>
+									<tr><td class="text-base-content/60">${ko ? "아이템 클래스" : "Item class"}</td><td>${net.luversof.web.gate.poe.PoeClassNames.poe2(item.itemClassKo(), item.itemClass())}</td></tr>
 								@endif
 								@if(item.requiredLevel() != null && item.requiredLevel() > 1)
-									<tr><td class="text-base-content/50">${ko ? "요구 레벨" : "Required level"}</td><td>${item.requiredLevel()}</td></tr>
+									<tr><td class="text-base-content/60">${ko ? "요구 레벨" : "Required level"}</td><td>${item.requiredLevel()}</td></tr>
 								@endif
 								@if(item.league() != null && !item.league().isBlank())
-									<tr><td class="text-base-content/50">${ko ? "리그 출처" : "League"}</td><td>${item.league()}</td></tr>
+									<tr><td class="text-base-content/60">${ko ? "리그 출처" : "League"}</td><td>${item.league()}</td></tr>
 								@endif
 							</tbody>
 						</table>

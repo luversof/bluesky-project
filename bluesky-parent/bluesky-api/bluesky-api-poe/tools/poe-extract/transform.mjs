@@ -29,6 +29,15 @@ const en = {
 };
 
 const describe = createStatDescriber(FILES_DIR);
+// 리마인더(인게임 회색 부연, 10-04 C115) — 레벨 문장마다 고른 템플릿의 reminderstring Id(describe.reminders)를 statReminders 로,
+//   그 젬이 쓰는 Id 의 영 · 한 문구는 젬마다 한 번 reminderText 로(레벨마다 문구를 넣으면 25MB 파일이 부푼다)
+const remEn = load("English", "ReminderText");
+const remKo = load("Korean", "ReminderText");
+const reminderTextById = new Map();
+remEn.forEach((r, i) => {
+	if (r.Text) reminderTextById.set(r.Id, { en: r.Text, ko: remKo[i]?.Id === r.Id && remKo[i]?.Text ? remKo[i].Text : r.Text });
+});
+let reminderLineCount = 0;
 
 // GrantedEffect 인덱스 → 레벨별 행 묶음 (조회 성능용 사전 구축)
 const perLevelByEffect = new Map();
@@ -129,9 +138,18 @@ for (const gem of en.gems) {
 			damageEffectiveness: stat && stat.DamageEffectiveness > 0 ? stat.DamageEffectiveness / 100 : null,
 			baseMultiplier: stat && stat.BaseMultiplier > 0 ? stat.BaseMultiplier / 100 : null,
 			statLines: describe(statValues, "English"),
+			// 바로 위 영어 호출의 고른 변형 기준(한국어 호출 전에 읽어야 한다)
+			statReminders: describe.reminders.map((ids) => ids.filter((id) => reminderTextById.has(id))),
 			statLinesKo: describe(statValues, "Korean"),
 		};
 	});
+	const usedReminderIds = new Set();
+	for (const lv of levels) {
+		if (lv.statReminders.some((ids) => ids.length)) {
+			lv.statReminders.flat().forEach((id) => usedReminderIds.add(id));
+			reminderLineCount += lv.statReminders.filter((ids) => ids.length).length;
+		} else delete lv.statReminders;
+	}
 
 		// 퀄리티(20%)로 인한 추가 효과 — 젬 단위(레벨 무관). permille/1000 × 20 = 20% 퀄리티 값
 		const qualityRow = qualityByEffect.get(effect.GrantedEffect);
@@ -143,7 +161,13 @@ for (const gem of en.gems) {
 			});
 		}
 		const qualityStatLines = qualityValues.size ? describe(qualityValues, "English") : [];
+		// 퀄리티 줄 리마인더(10-04 C120, 레벨 statReminders 와 같은 규칙 — 영어 호출 직후에 읽는다)
+		const qualityReminders = qualityValues.size ? describe.reminders.map((ids) => ids.filter((id) => reminderTextById.has(id))) : [];
 		const qualityStatLinesKo = qualityValues.size ? describe(qualityValues, "Korean") : [];
+		if (qualityReminders.some((ids) => ids.length)) {
+			qualityReminders.flat().forEach((id) => usedReminderIds.add(id));
+			reminderLineCount += qualityReminders.filter((ids) => ids.length).length;
+		}
 
 		// 바알 스킬 영혼 정보(인게임 툴팁): 영혼 획득 방지 시간(ms→초)·저장 사용 횟수. 스킬 단위로 사실상 일정하므로
 		// GEPL 레벨행 중 값이 있는 첫 행에서 취한다(non-vaal 은 null).
@@ -191,7 +215,9 @@ for (const gem of en.gems) {
 		tagsKo: tagNamesKo,
 		qualityStatLines,
 		qualityStatLinesKo,
+		...(qualityReminders.some((ids) => ids.length) ? { qualityReminders } : {}),
 		levels,
+		...(usedReminderIds.size ? { reminderText: Object.fromEntries([...usedReminderIds].sort().map((id) => [id, reminderTextById.get(id)])) } : {}),
 	});
 	} // 변형 루프
 }
@@ -223,6 +249,7 @@ fs.writeFileSync(
 	JSON.stringify({ patch: PATCH, gems }, null, 1),
 );
 console.log(`patch ${PATCH}: ${gems.length} gems → ${OUT}`);
+console.log(`리마인더: 젬 ${gems.filter((g) => g.reminderText).length}개 · 레벨 줄 ${reminderLineCount}`);
 const support = gems.filter((g) => g.isSupport).length;
 console.log(`  active ${gems.length - support} / support ${support}`);
 const unknown = reportUnknownHandlers();

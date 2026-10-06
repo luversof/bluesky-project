@@ -68,8 +68,19 @@ export function runExtractor(configOverride, { partial = false } = {}) {
 	}
 
 	const cli = path.join(REPO_DIR, "node_modules", "pathofexile-dat", "dist", "cli", "run.js");
-	// PATH 의존 없이 현재 node 바이너리로 실행
-	execSync(`"${process.execPath}" "${cli}"`, { stdio: "inherit", cwd: WORK_DIR, env });
+	// PATH 의존 없이 현재 node 바이너리로 실행.
+	// 추출기는 시작할 때 스키마를 github 에서 받는데 다시 시도하지 않는다 — 한 번 끊기면(10-03 실측: 3번에 1번 연결 시간 초과)
+	//   파이프라인이 중간(고유 아이템 JSON 을 반쯤 쓴 뒤)에 멈춰 아이콘 · 로어 빠진 데이터가 나간다. 그래서 3번까지 다시 한다(C53).
+	for (let attempt = 1; ; attempt++) {
+		try {
+			execSync(`"${process.execPath}" "${cli}"`, { stdio: "inherit", cwd: WORK_DIR, env });
+			return;
+		} catch (e) {
+			if (attempt >= 3) throw e;
+			console.warn(`추출기 실패(${attempt}/3) — 15초 뒤 다시: ${e.message.split(String.fromCharCode(10))[0]}`);
+			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15000);
+		}
+	}
 }
 
 /** luajit 실행 파일 경로 — winget 설치 위치 우선, 없으면 PATH, 둘 다 없으면 null.

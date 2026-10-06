@@ -113,32 +113,34 @@
 			@endif
 		</div>
 		<%-- 우: 이번 달 요약 --%>
+		<%-- 금액은 가르지 않는다(whitespace-nowrap) - 칸(9rem)이 모자라면 금액 덩어리가 배지 아래로 통째로 내려간다(flex-wrap).
+		     실측 2026-10-02 1280px: 이번 달 배당 금액(2,570,932)이 "2,570," / "932" 로 갈렸다(token-break-sweep). --%>
 		<div class="border-t border-base-200 pt-3 @[30rem]:w-36 @[30rem]:shrink-0 @[30rem]:border-t-0 @[30rem]:border-l @[30rem]:pt-0 @[30rem]:pl-3" data-month-summary>
 			<div class="text-xs font-semibold text-base-content/60 mb-2">${monthSummaryLabel}</div>
 			<div class="grid grid-cols-3 gap-3 @[30rem]:block @[30rem]:space-y-2" data-month-summary-rows>
-				<div class="flex justify-between items-center">
+				<div class="flex flex-wrap justify-between items-center gap-x-2">
 					<span class="badge badge-xs badge-error badge-outline">${buyLabel}</span>
-					<div class="text-right">
+					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(buyCount)}</div>
-						<div class="font-mono text-xs font-bold amount-value text-base-content">
+						<div class="font-mono text-xs font-bold amount-value text-base-content whitespace-nowrap">
 							₩${String.format("%,d", StockFormatUtil.displayWon(buyAmount))}
 						</div>
 					</div>
 				</div>
-				<div class="flex justify-between items-center">
+				<div class="flex flex-wrap justify-between items-center gap-x-2">
 					<span class="badge badge-xs badge-info badge-outline">${sellLabel}</span>
-					<div class="text-right">
+					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(sellCount)}</div>
-						<div class="font-mono text-xs font-bold amount-value text-base-content">
+						<div class="font-mono text-xs font-bold amount-value text-base-content whitespace-nowrap">
 							₩${String.format("%,d", StockFormatUtil.displayWon(sellAmount))}
 						</div>
 					</div>
 				</div>
-				<div class="flex justify-between items-center">
+				<div class="flex flex-wrap justify-between items-center gap-x-2">
 					<span class="badge badge-xs badge-success badge-outline">${dividendLabel}</span>
-					<div class="text-right">
+					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(dividendCount)}</div>
-						<div class="font-mono text-xs font-bold amount-value text-dividend">
+						<div class="font-mono text-xs font-bold amount-value text-dividend whitespace-nowrap">
 							₩${String.format("%,d", StockFormatUtil.displayWon(dividendAmount))}
 						</div>
 					</div>

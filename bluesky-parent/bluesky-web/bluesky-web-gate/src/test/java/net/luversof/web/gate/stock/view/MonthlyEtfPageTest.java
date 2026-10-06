@@ -564,7 +564,7 @@ class MonthlyEtfPageTest {
         .as("컨트롤러가 안 넘기면 카드는 그려지지 않는다 - 거른 목록을 넘겨야 한다")
         .contains(
             squash(
-                "model.addAttribute(\"monthlyEtfPicks\", monthlyEtfViewSupport.pickRows(rows))"));
+                "model.addAttribute(\"monthlyEtfPicks\", monthlyEtfViewSupport.pickRows(rows, resolvedBasis, candidateBySymbol))"));
   }
 
   /** "이번 적립만 보기" - ETF 가 많아지면 네 자리만 보고 싶다(사용자 요청 2026-09-23). */

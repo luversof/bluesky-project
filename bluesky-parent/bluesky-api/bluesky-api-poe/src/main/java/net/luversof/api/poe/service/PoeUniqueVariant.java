@@ -19,4 +19,20 @@ public record PoeUniqueVariant(
     List<String> implicits,
     List<String> implicitsKo,
     List<String> explicits,
-    List<String> explicitsKo) {}
+    List<String> explicitsKo,
+    // 옵션 줄별 인게임 리마인더(10-04 C114, PoeUniqueItem 과 같은 모양). 없으면 null
+    List<List<String>> explicitsReminders,
+    List<List<String>> explicitsRemindersKo) {
+
+  /** 리마인더 없는 옛 모양(시험 · 변형을 새로 짓는 곳). */
+  public PoeUniqueVariant(
+      int index,
+      String name,
+      String nameKo,
+      List<String> implicits,
+      List<String> implicitsKo,
+      List<String> explicits,
+      List<String> explicitsKo) {
+    this(index, name, nameKo, implicits, implicitsKo, explicits, explicitsKo, null, null);
+  }
+}

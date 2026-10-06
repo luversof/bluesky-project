@@ -55,10 +55,15 @@ class PriceBasisDisclosureTest {
       assertThat(source)
           .as(template + " 이 기준일 파라미터를 받지 않는다. 컨트롤러가 넘겨도 쓰이지 않는다")
           .contains("@param java.time.LocalDate priceBasisDate");
+      // 문구는 StockPriceBasisUtil.basisMessage 가 고른다(종가 / 장중 시세, 2026-10-02) - 키를 직접 부르면 장중 값도 "종가"
+      // 라고 부른다.
       assertThat(source)
-          .as(template + " 이 기준일을 화면에 그리지 않는다")
-          .contains(KEY)
+          .as(template + " 이 기준일을 화면에 그리지 않는다(장중 시각을 함께 넘겨야 한다)")
+          .contains("StockPriceBasisUtil.basisMessage(priceBasisIntradayTime)")
           .contains("priceBasisDate.toString()");
+      assertThat(source)
+          .as(template + " 이 종가 문구 키를 직접 부른다 - 장중 값도 종가라고 부르게 된다")
+          .doesNotContain("MessageUtil.getMessage(" + (char) 34 + KEY + (char) 34 + ")");
       assertThat(source)
           .as(template + " 이 기준일이 없을 때도 안내를 그린다. 근거가 없으면 감춰야 한다")
           .contains("priceBasisDate != null");

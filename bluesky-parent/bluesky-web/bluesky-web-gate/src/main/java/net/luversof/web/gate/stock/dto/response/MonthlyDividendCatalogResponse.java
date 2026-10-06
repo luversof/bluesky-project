@@ -46,7 +46,10 @@ public record MonthlyDividendCatalogResponse(
     LocalDate riskFromDate,
     /** 프로필의 총보수(연, %) · 상장일(2026-09-28). 모르면 null. */
     BigDecimal totalExpenseRatioPct,
-    LocalDate listingDate) {
+    LocalDate listingDate,
+    /** 최근 12 회 안에서 분배금이 직전 회보다 줄어든 횟수 · 견준 쌍의 수(추천 기준 "꾸준함"). 이력이 모자라면 null. */
+    Integer payoutCutCount,
+    Integer payoutCutPairs) {
 
   /** 한 기간의 가격 · 합산 수익률. */
   @JsonIgnoreProperties(ignoreUnknown = true)

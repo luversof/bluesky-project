@@ -30,6 +30,21 @@ public final class PoeText {
    *
    * <p>모르는 값이 오면 원문을 그대로 돌려준다 — 새 자원이 추가돼도 화면이 비지 않는다.
    */
+  private static final java.util.regex.Pattern GEM_LEVEL_SUFFIX =
+      java.util.regex.Pattern.compile(" \\(Lv(\\d+)\\)$");
+
+  /**
+   * 최적화 결과 보조젬 이름 꼬리 "(Lv16)"(속성 요구치로 낮춘 계산 레벨) → 젬 상세 주소의 "&level=16". 꼬리가 없으면 빈 문자열(상세 기본 20레벨 =
+   * 계산과 같음). 예전엔 툴팁이 늘 20레벨이라 낮춘 레벨의 계산과 달랐다(10-05 C155).
+   */
+  public static String gemLevelParam(String name) {
+    if (name == null) {
+      return "";
+    }
+    java.util.regex.Matcher m = GEM_LEVEL_SUFFIX.matcher(name);
+    return m.find() ? "&level=" + m.group(1) : "";
+  }
+
   public static String costType(String raw) {
     if (raw == null || raw.isBlank()) {
       return "";
@@ -46,9 +61,47 @@ public final class PoeText {
     return key == null ? raw : MessageUtil.getMessage(key);
   }
 
+  /**
+   * 옵션 줄 종류 → 인게임 툴팁 글자색 클래스(10-04 C138): 제작(crafted) 연보라 · 분열(fractured) 금색 · 인챈트(enchant) 하늘색, 그
+   * 밖엔 마법 파랑. 종류 목록이 줄 수와 다르면(옛 응답) 모두 파랑.
+   */
+  public static String modKindClass(List<String> kinds, int lineCount, int index) {
+    String kind = kinds != null && kinds.size() == lineCount ? kinds.get(index) : "";
+    return switch (kind == null ? "" : kind) {
+      case "crafted" -> "text-[#b4b4ff]";
+      case "fractured" -> "text-[#a29162]";
+      case "enchant" -> "text-[#b8daf2]";
+      default -> "text-[#8888ff]";
+    };
+  }
+
   /** 로케일에 맞는 라인 목록 (한국어면 ko, 없으면 en 폴백) */
   public static List<String> lines(List<String> ko, List<String> en) {
     return isKorean() && ko != null && !ko.isEmpty() ? ko : en;
+  }
+
+  /**
+   * 줄별 리마인더(인게임 회색 부연)를 data 속성 문자열로 — 줄은 줄바꿈, 한 줄 안 여러 개는 탭, 없는 줄은 빈 칸(10-04 C125, 트리 주얼 칸 툴팁).
+   * 없으면 빈 문자열.
+   */
+  public static String reminderData(List<List<String>> ko, List<List<String>> en) {
+    List<List<String>> r = isKorean() && ko != null ? ko : en;
+    if (r == null) {
+      return "";
+    }
+    StringBuilder out = new StringBuilder();
+    for (int i = 0; i < r.size(); i++) {
+      if (i > 0) {
+        out.append('\n');
+      }
+      if (r.get(i) != null) {
+        // 문구 안 줄바꿈은 공백으로 — 줄 구분자와 겹치면 줄 수가 어긋난다(10-04 C127 검토: 문구 34개가 줄바꿈을 품음)
+        out.append(
+            String.join(
+                "\t", r.get(i).stream().map(x -> x == null ? "" : x.replace('\n', ' ')).toList()));
+      }
+    }
+    return out.toString();
   }
 
   /**

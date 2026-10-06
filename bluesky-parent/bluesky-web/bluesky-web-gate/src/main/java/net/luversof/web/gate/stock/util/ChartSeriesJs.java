@@ -125,9 +125,17 @@ public final class ChartSeriesJs {
     }
     StringBuilder buy = new StringBuilder();
     StringBuilder sell = new StringBuilder();
+    // 분배락일의 주당 분배금(없으면 0) - 원주가 차트에서 매달 분배금만큼 떨어지는 날을 ◆ 로 표시한다.
+    StringBuilder dist = new StringBuilder();
     for (int i = 0; i < safe.size(); i++) {
       sep(buy).append(buyQty[i]);
       sep(sell).append(sellQty[i]);
+      var amount = safe.get(i).distribution();
+      sep(dist)
+          .append(
+              amount != null && amount.signum() > 0
+                  ? amount.stripTrailingZeros().toPlainString()
+                  : "0");
     }
     StringBuilder labels = new StringBuilder();
     StringBuilder open = new StringBuilder();
@@ -164,6 +172,8 @@ public final class ChartSeriesJs {
         + buy
         + "],sell:["
         + sell
+        + "],dist:["
+        + dist
         + "]}";
   }
 

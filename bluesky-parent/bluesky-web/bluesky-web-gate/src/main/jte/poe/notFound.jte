@@ -22,8 +22,8 @@
 			@template._components.ui.emptyState(
 				boxed = true,
 				message = MessageUtil.getMessage(notFoundMessageKey),
-				hint = notFoundSlug,
-				actionLabel = MessageUtil.getMessage(notFoundListLabelKey),
+				hint = notFoundSlug + " — " + (net.luversof.web.gate.poe.PoeText.isKorean() ? "주소가 바뀌었거나 데이터 갱신으로 이름이 달라졌을 수 있습니다 — 목록에서 다시 찾아 보세요." : "The address may have changed or the data was updated — search the list again."),
+				actionLabel = "← " + MessageUtil.getMessage(notFoundListLabelKey),
 				actionHref = notFoundListUrl)
 		</div>
 	`)

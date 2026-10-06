@@ -30,7 +30,7 @@
 @else
 	!{ boolean comparing = !against.isBlank(); boolean ko = net.luversof.web.gate.poe.PoeText.isKorean(); }
 	<div class="space-y-2">
-		<div class="text-xs text-base-content/50">${basisLabel}</div>
+		<div class="text-xs text-base-content/60">${basisLabel}</div>
 		<div class="overflow-x-auto rounded-2xl bg-base-100 shadow-sm">
 			<table class="table table-sm">
 				<thead>
@@ -58,14 +58,14 @@
 						    hx-get="/poe/htmx/gems/detail?slug=${rankEntry.slug()}"
 						    hx-target="#poeGemDetail"
 						    hx-swap="innerHTML">
-							<td class="text-right font-mono text-base-content/50">${rankIndex}</td>
+							<td class="text-right font-mono text-base-content/60">${rankIndex}</td>
 							@template.poe.rankChangeCells(change = changes.get(rankEntry.slug()), comparing = comparing)
 							<td>
 								<span class="inline-block w-2 h-2 rounded-full align-middle mr-1.5" style="background:${gemColor}"></span>
 								<span class="font-semibold">${net.luversof.web.gate.poe.PoeText.name(rankEntry.nameKo(), rankEntry.name())}</span>
-								<span class="text-xs text-base-content/40 ml-1">${rankEntry.name()}</span>
+								<span class="text-xs text-base-content/60 ml-1">${rankEntry.name()}</span>
 							</td>
-							<td class="hidden sm:table-cell text-xs text-base-content/50">${rankEntry.weapon() != null ? rankEntry.weapon() : "-"}</td>
+							<td class="hidden sm:table-cell text-xs text-base-content/60">${rankEntry.weapon() != null ? rankEntry.weapon() : "-"}</td>
 							<td class="text-right font-mono font-bold">${String.format("%,.0f", rankEntry.dps())}</td>
 							<td class="text-right font-mono hidden md:table-cell">${String.format("%,.0f", rankEntry.averageDamage())}</td>
 							<td class="text-right font-mono hidden md:table-cell">${String.format("%.2f", rankEntry.speed())}</td>

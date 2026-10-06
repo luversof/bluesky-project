@@ -1,6 +1,7 @@
 package net.luversof.api.poe.poe2;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * PoE2 표시용 레코드 — tools/poe2-extract 파서가 만든 ~/.poe-gamedata/poe2/*.json 과 필드 이름을 맞춘다.
@@ -44,6 +45,8 @@ public final class Poe2 {
       String icon,
       String image,
       Integer castTimeMs,
+      // 설명 · 레벨 문장의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C111). 목록 사본엔 없다
+      List<Keyword> keywords,
       List<GemLevel> levels) {
 
     /** 목록용 — 레벨별 수치를 뺀 사본(전체 젬 목록 응답이 수 MB 가 되지 않게). */
@@ -74,9 +77,13 @@ public final class Poe2 {
           icon,
           image,
           castTimeMs,
+          null,
           null);
     }
   }
+
+  /** 강조 용어 하나 — 인게임 툴팁에서 Alt 로 보는 용어 · 정의(PoE2 KeywordPopups, 영 · 한). */
+  public record Keyword(String term, String termKo, String def, String defKo) {}
 
   /** 젬 한 레벨 — 비용(costType: Mana 등) · 정신력 예약 · 재사용 대기 · 치명타 확률(%) · 스탯 문장(영/한). */
   public record GemLevel(
@@ -159,7 +166,37 @@ public final class Poe2 {
       List<String> tags,
       String subType,
       String icon,
-      String image) {}
+      String image,
+      // 암시 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C113)
+      List<Keyword> keywords) {
+
+    /** 목록용 — 키워드 정의를 뺀 사본(10-04 C117). */
+    public BaseItem withoutKeywords() {
+      return new BaseItem(
+          name,
+          nameKo,
+          slug,
+          itemClass,
+          itemClassKo,
+          category,
+          dropLevel,
+          reqLevel,
+          reqStr,
+          reqDex,
+          reqInt,
+          width,
+          height,
+          armour,
+          weapon,
+          flask,
+          implicits,
+          tags,
+          subType,
+          icon,
+          image,
+          null);
+    }
+  }
 
   /** en = 게임 영어 분류 이름(옛 데이터면 null — 화면은 key 로 대신). */
   public record ItemClass(String key, String ko, String category, String en) {}
@@ -175,7 +212,9 @@ public final class Poe2 {
       Integer level,
       Integer weight,
       List<String> text,
-      List<String> textKo) {}
+      List<String> textKo,
+      // text 줄별 강조 용어 Id(mods.json keywords 사전 키 — 10-04 C132). 없으면 null
+      List<List<String>> kw) {}
 
   /** 같은 계열(ModType)의 티어 사다리 — tiers[0] 이 1티어(레벨이 가장 높은 것). gen = prefix | suffix. */
   public record ModGroup(String modType, String gen, List<ModTier> tiers) {}
@@ -202,7 +241,14 @@ public final class Poe2 {
       int baseCount,
       int groupCount) {}
 
-  public record ModData(String patch, List<ModPool> pools) {}
+  public record ModData(
+      String patch,
+      List<ModPool> pools,
+      Map<String, Keyword> keywords,
+      // 풀 밖 옵션의 영 · 한 쌍(타락 · 에센스 · 영혼 핵 · 무기 국소 …) — 빌드 요약 번역 사전 보강(10-04 C133)
+      List<ModPair> extra) {}
+
+  public record ModPair(List<String> text, List<String> textKo) {}
 
   // ─────────────────────────── 증강물(룬 · 영혼 핵 · 우상 …) ───────────────────────────
 
@@ -238,7 +284,9 @@ public final class Poe2 {
       List<String> implicits,
       List<String> implicitsKo,
       List<String> explicits,
-      List<String> explicitsKo) {}
+      List<String> explicitsKo,
+      // 기본과 용어가 다른 변형만 자기 키워드 정의(빈 목록 = 없음), null 이면 고유 keywords 그대로(10-04 C117)
+      List<Keyword> keywords) {}
 
   public record Unique(
       String name,
@@ -261,7 +309,54 @@ public final class Poe2 {
       List<String> flavourKo,
       // 리그 출처(해당 리그 기제를 돌려야 얻는다) — 데이터엔 있었는데 레코드에 없어 화면에 못 보였다(10-01, 443개 중 173개)
       String league,
-      String image) {}
+      String image,
+      // 주얼 반경(PoB "Radius: Small") — 트리 화면 꽂은 주얼의 연결 없이 찍기(From Nothing) 반경 · 엔진 아이템 원문(10-03 C74)
+      String radius,
+      // 기본 암시 · 옵션 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C112, 젬 Gem.keywords 와 같은 모양)
+      List<Keyword> keywords) {
+
+    /** 목록용 — 키워드 정의(고유 · 변형)를 뺀 사본. 툴팁은 상세 응답으로 그린다(10-04 C117). */
+    public Unique withoutKeywords() {
+      List<UniqueVariant> vs =
+          variants == null
+              ? null
+              : variants.stream()
+                  .map(
+                      v ->
+                          new UniqueVariant(
+                              v.index(),
+                              v.name(),
+                              v.nameKo(),
+                              v.implicits(),
+                              v.implicitsKo(),
+                              v.explicits(),
+                              v.explicitsKo(),
+                              null))
+                  .toList();
+      return new Unique(
+          name,
+          nameKo,
+          slug,
+          baseType,
+          baseTypeKo,
+          itemClass,
+          itemClassKo,
+          category,
+          requiredLevel,
+          implicits,
+          implicitsKo,
+          explicits,
+          explicitsKo,
+          vs,
+          defaultVariant,
+          flavour,
+          flavourKo,
+          league,
+          image,
+          radius,
+          null);
+    }
+  }
 
   public record UniqueData(String patch, List<Unique> items) {}
 
@@ -471,7 +566,18 @@ public final class Poe2 {
       String baseSlug,
       String image,
       List<String> mods,
-      List<String> modsKo) {}
+      List<String> modsKo,
+      // mods 앞 N줄이 암시(PoB "Implicits: N") — 툴팁이 인게임처럼 구분선으로 가른다(10-04 C132)
+      Integer implicitCount,
+      // 옵션 줄의 강조 용어 정의(Alt 설명) — 고유도(10-04 C140)
+      List<Keyword> keywords,
+      // 고유 로어(플레이버) — 인게임 고유 툴팁 맨 아래(고유만, 10-04 C140)
+      List<String> flavour,
+      List<String> flavourKo,
+      // 베이스(속성 칸 · 요구 사항 — PoE1 빌드 툴팁 짝, 10-04 C147). 키워드는 뺀 사본
+      BaseItem base,
+      // 품질 %(PoB "Quality: N") — 인게임 속성 칸 첫 줄. 0 이면 없음(10-04 C148)
+      Integer quality) {}
 
   public record BuildNode(Integer id, String name, String nameKo) {}
 

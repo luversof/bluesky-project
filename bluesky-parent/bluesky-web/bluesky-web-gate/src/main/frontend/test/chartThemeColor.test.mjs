@@ -27,7 +27,7 @@ globalThis.document = {
 };
 globalThis.getComputedStyle = () => ({ getPropertyValue: () => cssVar });
 globalThis.window = globalThis;
-const instance = { options: { scales: { x: { ticks: {}, title: {} }, y: { ticks: {} } }, plugins: { legend: { labels: {} } } }, updated: null, update(mode) { this.updated = mode; } };
+const instance = { options: { scales: { x: { ticks: {}, title: {} }, y: { ticks: {} } }, plugins: { legend: { labels: {} } } }, updated: null, animationDuringUpdate: "unset", update(mode) { this.updated = mode; this.animationDuringUpdate = this.options.animation; } };
 globalThis.Chart = { defaults: { color: "#666" }, instances: { 1: instance } };
 
 await import("../../resources/static/js/stock-charts.js");
@@ -37,7 +37,10 @@ test("모듈이 뜨면서 Chart.defaults.color 를 테마 본문색으로 바꾼
 	assert.ok(mod, "stock-charts.js 가 __chartThemeInternals 를 노출하지 않는다");
 	assert.equal(globalThis.Chart.defaults.color, "rgba(220,225,235,0.75)");
 	assert.equal(instance.options.color, "rgba(220,225,235,0.75)", "살아 있는 차트에도 적용");
-	assert.equal(instance.updated, "none", "애니메이션 없이 다시 그린다");
+	// "none" 은 막대가 함께 쓰는 옵션(테두리색)을 다시 풀지 않는다(2026-10-02 실측: 전환 뒤 라이트 회색 테두리가 남음) - 기본 갱신 + 애니메이션 끔.
+	assert.equal(instance.updated, "default", "옵션을 다시 푸는 갱신 모드로 다시 그린다");
+	assert.equal(instance.animationDuringUpdate, false, "다시 그릴 때 애니메이션을 끈다(깜빡임 방지)");
+	assert.equal(instance.options.animation, undefined, "끝나면 원래 애니메이션 설정으로 돌린다");
 	assert.equal(instance.options.scales.x.ticks.color, "rgba(220,225,235,0.75)", "눈금은 캐시된 값이 남으니 직접 써 넣는다");
 	assert.equal(instance.options.scales.x.title.color, "rgba(220,225,235,0.75)");
 	assert.equal(instance.options.plugins.legend.labels.color, "rgba(220,225,235,0.75)");
@@ -60,4 +63,17 @@ test("변수가 없으면 Chart.js 기본값, 캔버스가 못 푸는 색이면 
 test("Chart 전역이 없으면 아무 일도 하지 않는다", () => {
 	assert.equal(mod.applyChartTheme(null), null, "undefined 는 기본 인자(전역 Chart)로 떨어지므로 null 로 준다");
 	assert.equal(mod.applyChartTheme({}), null);
+});
+
+test("색이 곧 뜻인 막대(keepEdge)는 테마 테두리로 덮지 않는다", () => {
+	// 실측 2026-10-02: 종목 상세 캔들에서 테마를 바꾸면 봉 테두리가 회색 1px 로 덮여 오름 · 내림 색이 사라졌다.
+	cssVar = "#222";
+	const candle = { type: "bar", borderWidth: 0, keepEdge: true };
+	const plain = { type: "bar", borderWidth: 0 };
+	const chart = { options: { scales: {} }, data: { datasets: [candle, plain] }, update() {} };
+	mod.applyChartTheme({ defaults: { color: "#666" }, instances: { 1: chart } });
+	assert.equal(candle.borderWidth, 0, "캔들 막대 테두리 두께를 올렸다");
+	assert.equal(candle.borderColor, undefined, "캔들 막대에 테마 테두리색을 칠했다");
+	assert.equal(plain.borderWidth, 1, "보통 막대에는 예전처럼 테두리를 얹는다");
+	assert.ok(plain.borderColor, "보통 막대에는 예전처럼 테두리색을 얹는다");
 });

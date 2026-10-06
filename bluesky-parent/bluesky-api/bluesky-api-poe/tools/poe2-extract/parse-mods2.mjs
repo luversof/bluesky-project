@@ -2,7 +2,7 @@
 // 풀 = 같은 아이템 클래스에서 스폰 태그 조합이 같은 베이스 묶음(갑옷은 방어도/회피/에너지 보호막/복합이 서로 다른 풀).
 // 스폰 판정: 모드의 SpawnWeight_Tags 를 순서대로 보며 베이스 태그에 처음 걸린 태그의 가중치(>0 이면 붙는다) — 게임 규칙 그대로.
 // 티어 사다리는 ModType(같은 계열) 단위, 레벨이 높은 것이 1티어(인게임 표기와 같다).
-import { createDescriber, stripMarkup } from "./common2.mjs";
+import { CSD_CHAINS, createDescriber, createKeywordIndex, loadKeywords, stripMarkup } from "./common2.mjs";
 import { loadConfig, loadTable, writeJson } from "./paths.mjs";
 
 const T = (t) => [loadTable("English", t), loadTable("Korean", t)];
@@ -19,6 +19,16 @@ const baseItems = JSON.parse(
 	),
 );
 const describe = createDescriber();
+// 키워드(10-04 C132) — 티어 영어 줄마다 원문 템플릿의 강조 용어 Id(kw), 쓰인 용어만 맨 위 keywords 사전으로. 빌드 요약 레어 툴팁이 API 번역 틀로 찾아 쓴다
+const keywordById = loadKeywords(loadTable);
+const keywordIdsOf = createKeywordIndex(CSD_CHAINS.item);
+const usedKeywords = new Set();
+const kwOf = (lines) => {
+	const ids = lines.map((l) => keywordIdsOf([l]).filter((id) => keywordById.has(id)));
+	if (!ids.some((l) => l.length)) return {};
+	ids.flat().forEach((id) => usedKeywords.add(id));
+	return { kw: ids };
+};
 
 // 모드 도메인 — 1 ITEM · 2 FLASK(플라스크·호신부) · 11 JEWEL. 플라스크 도메인 옵션은 스폰 태그가 default 뿐이라
 //   도메인으로 가르지 않으면 활에 "사용 1회당 충전 소모량" 이 붙는다(2026-09-30 실측).
@@ -120,6 +130,7 @@ for (const pool of pools.values()) {
 			text: rangeText(m, "English"),
 			textKo: rangeText(m, "Korean"),
 		});
+		Object.assign(byType.get(k).tiers[byType.get(k).tiers.length - 1], kwOf(byType.get(k).tiers[byType.get(k).tiers.length - 1].text));
 	}
 	const groups = [...byType.values()]
 		.map((g) => ({ ...g, tiers: g.tiers.sort((a, b) => b.level - a.level || a.id.localeCompare(b.id)) }))
@@ -179,7 +190,26 @@ for (const p of out) {
 	p.key = p.itemClass + "|" + (p.variant || "기본") + (n > 1 ? "|" + n : "");
 }
 out.sort((a, b) => a.itemClass.localeCompare(b.itemClass) || (a.variant || "").localeCompare(b.variant || "") || b.bases.length - a.bases.length);
-const file = writeJson("mods.json", { patch: loadConfig().patch, pools: out });
+// 풀 밖 옵션의 영 · 한 쌍(10-04 C133) — 빌드 요약 번역 사전 보강용. 타락 · 에센스 · 영혼 핵 · 무기 국소처럼 아이템 옵션 풀(스폰 가중치)에 없는 옵션이
+//   실빌드에 붙어 영어로 남았다(ninja 60빌드 레어 줄 129줄). 풀 티어와 같은 rangeText 로 만들고, 영어 틀이 이미 풀에 있으면 뺀다
+const poolTemplates = new Set(out.flatMap((p) => p.groups.flatMap((g) => g.tiers.flatMap((t) => t.text.map((l) => l.replace(/-?\d+(?:\.\d+)?/g, "#"))))));
+const extraSeen = new Set();
+const extra = [];
+mods.forEach((m, mi) => {
+	if (m.Stat1 == null) return; // 스탯 열은 Stat1..Stat6(rangeText 와 같은 규칙)
+	const en = rangeText(m, "English");
+	const ko = rangeText(m, "Korean");
+	if (!en.length || en.length !== ko.length || en.join() === ko.join()) return;
+	const key = en.map((l) => l.replace(/-?\d+(?:\.\d+)?/g, "#")).join("|");
+	if (extraSeen.has(key) || en.every((l) => poolTemplates.has(l.replace(/-?\d+(?:\.\d+)?/g, "#")))) return;
+	extraSeen.add(key);
+	extra.push({ text: en, textKo: ko });
+	void mi;
+});
+console.log(`[poe2 mods] 풀 밖 옵션 쌍 ${extra.length}개`);
+const keywords = Object.fromEntries([...usedKeywords].sort().map((id) => [id, keywordById.get(id)]));
+const file = writeJson("mods.json", { patch: loadConfig().patch, pools: out, keywords, extra });
+console.log(`[poe2 mods] 키워드: 용어 ${usedKeywords.size}종`);
 const tiers = out.reduce((n, p) => n + p.groups.reduce((m, g) => m + g.tiers.length, 0), 0);
 const ko = out.reduce((n, p) => n + p.groups.reduce((m, g) => m + g.tiers.filter((t) => t.textKo.join() !== t.text.join()).length, 0), 0);
 console.log(`[poe2 mods] 풀 ${out.length}개 · 계열 ${out.reduce((n, p) => n + p.groups.length, 0)} · 티어 ${tiers}(한국어 ${ko}) → ${file}`);

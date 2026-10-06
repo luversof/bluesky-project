@@ -98,6 +98,8 @@
 	@if(PoeText.isKorean())
 		<div class="px-4 pb-2 text-center text-[10px] text-white/30">${gem.name()}</div>
 	@endif
+	<%-- 키워드 설명(10-04 C111) — 고유 툴팁과 같은 조각 --%>
+	@template.poe2.htmx.keywordBox(keywords = gem.keywords())
 	<%-- 레벨 단추 + 종류 배지 — PoE1 젬 툴팁(poe/htmx/gemDetail.jte)과 같은 자리·모양(10-01). 호버 레이어는 클릭하면 고정돼 단추를 누를 수 있다.
 	     레벨 1 · 5의 배수 · 최대 레벨. 상세 페이지(pageMode)는 툴팁 밖에 같은 단추가 있어 여기선 뺀다. --%>
 	@if(!pageMode && lv != null && gem.levels().size() > 1)

@@ -55,6 +55,7 @@
 		flavourKo?: string[];
 		ascendancy: string | null;
 		ascendancyStart?: boolean;
+		multipleChoiceOption?: boolean; // 전직 선택지 — 전직 포인트로 안 센다(PoB CountAllocNodes, C51)
 		clusterSize?: number;
 	expansionJewel?: { size: number; index: number; proxy: number | null; parent: number | null };
 	isProxy?: boolean;
@@ -333,6 +334,114 @@
 	const removalSet = new Set<number>(); // 할당 노드 호버 시 함께 해제될 노드(빨강 미리보기)
 	const masteryPicks = new Map<number, number>(); // 마스터리 노드 id → 선택한 효과 id
 	const jewelPicks = new Map<number, string>(); // 주얼 소켓 노드 id → 장착한 유니크 주얼 slug
+	// 주얼 지정 = "slug" · 타임리스 "slug:정복자:시드" · 변형 "slug:v번호"(10-03 C75). 변형 목록은 JTE 숨은 칸(#poeTreeJewelVariants)에서 읽는다.
+	type JewelVariantDef = { index: number; name: string; mods: string; en: string[]; rem: string[][] };
+	// 줄별 리마인더(data-rem: 줄은 줄바꿈, 한 줄 안 여러 개는 탭 — PoeText.reminderData, 10-04 C125)
+	const parseRem = (raw: string | undefined): string[][] => (raw ? raw.split("\n").map((l) => (l ? l.split("\t") : [])) : []);
+	let jewelVariantDefs: Map<string, JewelVariantDef[]> | null = null;
+	function jewelVariantsOf(slug: string): JewelVariantDef[] {
+		if (!jewelVariantDefs) {
+			jewelVariantDefs = new Map();
+			for (const sp of Array.from(document.querySelectorAll<HTMLElement>("#poeTreeJewelVariants span"))) {
+				const key = sp.dataset.slug || "";
+				if (!jewelVariantDefs.has(key)) jewelVariantDefs.set(key, []);
+				jewelVariantDefs.get(key)!.push({ index: Number(sp.dataset.index), name: sp.dataset.name || "", mods: sp.dataset.mods || "", en: (sp.dataset.en || "").split("\n").filter(Boolean), rem: parseRem(sp.dataset.rem) });
+			}
+		}
+		return jewelVariantDefs.get(slug) || [];
+	}
+	function specVariant(spec: string): JewelVariantDef | undefined {
+		const parts = spec.split(":");
+		const m = parts.length === 2 ? /^v(\d+)$/.exec(parts[1]) : null;
+		return m ? jewelVariantsOf(parts[0]).find((v) => v.index === Number(m[1])) : undefined;
+	}
+	function jewelOption(spec: string): HTMLOptionElement | null {
+		return document.querySelector<HTMLOptionElement>('#poeTreeJewelList option[data-slug="' + spec.split(":")[0] + '"]');
+	}
+	/** 꽂은 주얼의 표시 옵션 줄(" / " 구분) — 변형을 골랐으면 그 변형의 줄. 타임리스 지정("slug:정복자:시드")도 slug 로 찾는다(예전엔 지정 전체로 찾아 요약에서 빠졌다). */
+	function jewelMods(spec: string): string {
+		return specVariant(spec)?.mods ?? jewelOption(spec)?.dataset.mods ?? "";
+	}
+	/** 꽂은 주얼의 줄별 리마인더 — 변형을 골랐으면 그 변형 것(10-04 C125) */
+	function jewelRem(spec: string): string[][] {
+		return specVariant(spec)?.rem ?? parseRem(jewelOption(spec)?.dataset.rem);
+	}
+	/** 규칙 판정용 영어 옵션 줄 */
+	function jewelEnLines(spec: string): string[] {
+		return specVariant(spec)?.en ?? (jewelOption(spec)?.dataset.en || "").split("\n").filter(Boolean);
+	}
+	/**
+	 * 금단의 화염 · 살점 짝 상태(10-04 C87) — PoB 는 두 주얼이 **같은 전직 노터블**을 가리키고 직업 제한이 지금 직업일 때만 그 노터블을 켠다(CalcSetup
+	 * GrantedAscendancyNode, C86 에서 트리 계산 확인). 한쪽만 꽂으면 조용히 꺼져 있으니 툴팁에 짝 상태를 보인다. 인게임엔 없는 플래너 안내(툴팁 바깥 줄).
+	 */
+	/** 받침에 따라 조사를 고른다("금단의 살점" + 과, "신성한 인도" + 를) — 한글이 아니면 받침 없음으로 */
+	const josa = (word: string, withBatchim: string, without: string) => {
+		const c = word.charCodeAt(word.length - 1) - 0xac00;
+		return word + (c >= 0 && c <= 11171 && c % 28 !== 0 ? withBatchim : without);
+	};
+	function forbiddenPairStatus(socketId: number, spec: string): { ok: boolean; text: string } | null {
+		const slug = spec.split(":")[0];
+		if (slug !== "forbidden-flame" && slug !== "forbidden-flesh") return null;
+		const read = (sp: string) => {
+			for (const line of jewelEnLines(sp)) {
+				const m = /^Allocates (.+) if you have the matching modifier on Forbidden (Flesh|Flame)$/.exec(line);
+				if (m) return { notable: m[1], other: m[2] === "Flesh" ? "forbidden-flesh" : "forbidden-flame" };
+			}
+			return null;
+		};
+		const mine = read(spec);
+		if (!mine) return null;
+		const node = nodes.find((n) => n.ascendancy && n.name === mine.notable);
+		const notableLabel = node ? (isKorean && node.nameKo) || node.name : mine.notable;
+		const otherName = jewelOption(mine.other)?.value || mine.other;
+		const classIdx = node ? classAsc.findIndex((list) => list.includes(node.ascendancy as string)) : -1;
+		if (classIdx >= 0 && classIdx !== currentClassId) {
+			const clsLabel = document.querySelector<HTMLOptionElement>('#poeTreeClass option[value="' + classIdx + '"]')?.textContent || String(classIdx);
+			return { ok: false, text: isKorean ? `직업 불일치 — ${josa(notableLabel, "은", "는")} ${clsLabel} 전직 노터블이라 켜지지 않습니다` : `Class mismatch — ${notableLabel} is a ${clsLabel} ascendancy notable` };
+		}
+		const partner = [...jewelPicks].some(([id, sp]) => id !== socketId && highlighted.has(id) && sp.split(":")[0] === mine.other && read(sp)?.notable === mine.notable);
+		return partner
+			? { ok: true, text: isKorean ? `짝 맞음 — ${josa(otherName, "과", "와")} 함께 ${notableLabel} 할당` : `Pair matched — allocates ${notableLabel} with ${otherName}` }
+			: { ok: false, text: isKorean ? `짝 없음 — 다른 칸에 ${otherName}(같은 노터블: ${notableLabel}) 짝을 꽂아야 켜집니다` : `No pair — socket ${otherName} with the same notable (${notableLabel}) to enable` };
+	}
+	/** 희망의 실 고리(PoB data.jewelRadii["3_16"] 가변 고리 — 빌드 링크 r= 와 같은 값). 고리 문구가 없으면 null */
+	function jewelRingOf(spec: string): [number, number] | null {
+		const bands: Record<string, [number, number]> = { small: [960, 1320], medium: [1320, 1680], large: [1680, 2040], "very large": [2040, 2400], massive: [2400, 2880] };
+		const m = /Only affects Passives in (.+?) Ring/i.exec(jewelEnLines(spec).join("\n"));
+		return m ? bands[m[1].trim().toLowerCase()] || null : null;
+	}
+	/**
+	 * 꽂은 주얼이 여는 "연결 없이 찍기" 자리(C75, PoB ModParser) — 빌드 링크의 l= · r= 와 같은 규칙.
+	 *   불가능한 탈출: 고른 핵심 노드 둘레 반경(Small 960) / 희망의 실: 소켓 둘레 고리 / 직관의 도약: 소켓 둘레 반경.
+	 *   주얼 칸이 찍혀 있을 때만(꽂힌 주얼 = 찍힌 칸) — 칸을 풀면 그 자리로 찍은 노드도 떨어진다.
+	 */
+	/** 불가능한 탈출처럼 "핵심 노드 반경"을 여는 주얼이면 그 핵심 노드(C90 — 반경 고리도 인게임처럼 그 둘레에 그린다) */
+	function keystoneLeapOf(spec: string): TreeNode | undefined {
+		const ks = /Passive Skills in radius of (.+?) can be allocated without being connected/i.exec(jewelEnLines(spec).join(" "));
+		if (!ks) return undefined;
+		const want = ks[1].trim().toLowerCase();
+		return nodes.find((n) => n.type === "keystone" && n.name.toLowerCase() === want);
+	}
+	function pickedLeap(): { key: string; center: TreeNode | undefined; inner: number; outer: number }[] {
+		const out: { key: string; center: TreeNode | undefined; inner: number; outer: number }[] = [];
+		for (const [socket, spec] of jewelPicks) {
+			if (!highlighted.has(socket)) continue;
+			const lines = jewelEnLines(spec).join("\n");
+			const radius = JEWEL_RADII.find((b) => b.en === (jewelOption(spec)?.dataset.radius || ""))?.r || 0;
+			const ks = /Passive Skills in radius of (.+?) can be allocated without being connected/i.exec(lines);
+			if (ks) {
+				const want = ks[1].trim().toLowerCase();
+				const key = nodes.find((n) => n.type === "keystone" && n.name.toLowerCase() === want);
+				if (key && radius) out.push({ key: "pk" + key.id + ":" + radius, center: key, inner: 0, outer: radius });
+				continue;
+			}
+			if (/Passive Skills in Radius can be Allocated without being connected/i.test(lines)) {
+				const ring = jewelRingOf(spec) || (radius ? ([0, radius] as [number, number]) : null);
+				if (ring) out.push({ key: "pr" + socket + ":" + ring[0] + ":" + ring[1], center: nodeById.get(socket), inner: ring[0], outer: ring[1] });
+			}
+		}
+		return out;
+	}
 	// 아뮬렛 도유로 활성화한 노터블(게임: 아뮬렛 1개 = 도유 1개). 포인트 소모 없음, 연결 불필요 —
 	// 도유 전용 고립 노터블 30개는 이 방법으로만 켤 수 있다. GGG URL 엔 자리가 없어 an= 으로 따로 보존.
 	let anointPick: number | null = null;
@@ -546,6 +655,9 @@
 				socketCount: Number(socketCount) || 0,
 			});
 		}
+		// 연결 없이 찍기(l= · r=, C64)
+		leapKeys = (params.get("l") || "").split(",").map((x) => x.split(":").map(Number)).filter(([id, r]) => id > 0 && r > 0).map(([id, r]) => ({ id, r }));
+		leapRings = (params.get("r") || "").split(",").map((x) => x.split(":").map(Number)).filter(([id, a, b]) => id > 0 && b > 0 && a >= 0).map(([id, inner, outer]) => ({ id, inner, outer }));
 		// 도유(an=노드id) — 도유로 활성화한 노터블 하나
 		const an = Number(params.get("an"));
 		if (Number.isFinite(an) && an > 0) anointPick = an;
@@ -607,6 +719,10 @@
 		pendingBloodline = params.get("bloodline");
 	}
 	// 클러스터는 트리 데이터 로드 후에야 생성할 수 있어 보류했다가 적용한다
+	// 연결 없이 찍기(10-03 C64) — 빌드 링크 l=핵심id:반경(Impossible Escape) · r=주얼칸:안:바깥(Thread of Hope · Intuitive Leap).
+	//   이 노드들은 출발점처럼 남는다. 없으면 불러온 직후엔 멀쩡하다가 첫 편집에서 고아로 걷혔다(실빌드 17/56).
+	let leapKeys: { id: number; r: number }[] = [];
+	let leapRings: { id: number; inner: number; outer: number }[] = [];
 	const pendingClusters: Array<{ socketId: number; sizeName: string; nodeCount: number; skillKey: string; notables: string[]; socketCount: number }> = [];
 	const pendingClusterNodes: number[] = [];
 	let pendingClass: string | null = null;
@@ -635,6 +751,8 @@
 			// 혈맹 노터블 focus 가 "화면에 없음"이 된다(실사고).
 			const idx = bloodlines.findIndex((b) => b.id.toLowerCase() === pendingBloodline!.toLowerCase());
 			if (idx >= 0) currentBloodline = idx + 1;
+			// 숫자도 받는다 = GGG · PoB secondary ascendancy id(빌드 트리 보기 링크는 PoB Spec secondaryAscendClassId 를 그대로 싣는다, 10-03 C44)
+			else if (/^[0-9]+$/.test(pendingBloodline) && Number(pendingBloodline) >= 1 && Number(pendingBloodline) <= bloodlines.length) currentBloodline = Number(pendingBloodline);
 		}
 		pendingClass = null;
 		pendingAscend = null;
@@ -686,8 +804,26 @@
 	// 다른 직업 시작점(10-02) — 어센던트 "Path of the X"(Can Allocate Passives from the X's starting point)를 찍으면
 	//   그 직업 시작점에서도 찍는다(인게임 규칙, PoE2 패스파인더 "소서리스의 길"과 같은 문구). 시작점 노드는 저장 · 점수에서 빠지므로
 	//   할당 집합(highlighted)에 넣어 출발점으로 쓴다. altRoots = 지금 열린 다른 시작점(경로 이웃 판정용 캐시, pruneOrphans 가 갱신).
-	const CLASS_NAME_ID: Record<string, number> = { scion: 0, marauder: 1, ranger: 2, witch: 3, duelist: 4, templar: 5, shadow: 6 };
-	const ALT_START_RE = /Can Allocate Passive(?: Skill)?s from the (\w+)'s starting point/i;
+	/**
+	 * "Can Allocate Passives from the X's starting point" 문장들 → 직업 id(classStartByClassId 키) — 바깥 상태 없는 순수 함수(10-02):
+	 * test/poeTreeAltStart.test.mjs 가 빌드된 js 에서 이름으로 꺼내 시험한다. 모르는 직업 이름은 건너뛴다.
+	 */
+	// 검색 비교 열쇠(10-02 C24) — 소문자 + 띄어쓰기 무시(목록 검색 API PoeSearchText 와 같은 규칙: "피의마법" 이 "피의 마법" 을 찾게).
+	//   줄바꿈은 남긴다 — 이름 · 스탯 줄을 "\n" 으로 이어 붙이므로 한 줄 끝과 다음 줄 처음이 붙어 거짓으로 맞는 일이 없다.
+	function searchKey(text: string): string {
+		return text.toLowerCase().replace(/[ \t\u00a0]+/g, "");
+	}
+
+	function altStartClassIds(lines: string[]): number[] {
+		const ids: Record<string, number> = { scion: 0, marauder: 1, ranger: 2, witch: 3, duelist: 4, templar: 5, shadow: 6 };
+		const out: number[] = [];
+		for (const t of lines) {
+			const m = /Can Allocate Passive(?: Skill)?s from the (\w+)'s starting point/i.exec(t);
+			const id = m ? ids[m[1].toLowerCase()] : undefined;
+			if (id !== undefined && !out.includes(id)) out.push(id);
+		}
+		return out;
+	}
 	function extraRoots(excluded = -1): number[] {
 		if (isAtlas) return [];
 		const out: number[] = [];
@@ -695,13 +831,41 @@
 			if (id === excluded) continue;
 			const n = nodeById.get(id);
 			if (!n?.ascendancy) continue;
-			for (const t of n.stats || []) {
-				const m = ALT_START_RE.exec(t);
-				const cid = m ? CLASS_NAME_ID[m[1].toLowerCase()] : undefined;
-				const sid = cid === undefined ? undefined : classStartByClassId.get(cid);
+			// 혈맹 시작 노드는 직업 시작점과 이어진 간선이 없다 — 출발점으로 넣지 않으면 아무 노드나 편집하는 순간 혈맹 노드가 통째로 걷혔다
+			//   (실빌드 "전직 8 / 8" → 6, 10-03 C61). 혈맹 시작 노드가 찍혀 있으면 그 자체가 출발점
+			if (n.ascendancyStart && bloodlines.some((b) => b.id === n.ascendancy) && !out.includes(id)) out.push(id);
+			for (const cid of altStartClassIds(n.stats || [])) {
+				const sid = classStartByClassId.get(cid);
 				if (sid !== undefined && sid !== rootNode() && !out.includes(sid)) out.push(sid);
 			}
 		}
+		return out;
+	}
+
+	/** 연결 없이 찍히는 자리 안인가 — 중심(핵심 · 주얼 칸)에서 안 ≤ 거리 ≤ 바깥, 직업 · 전직 · 주얼 칸 · 마스터리 · 중심 자신 제외(PoB nodesInRadius, C64). */
+	function inLeapArea(n: { id: number; type: string; ascendancy: string | null; x: number; y: number; isProxy?: boolean }, center: { id: number; x: number; y: number }, inner: number, outer: number): boolean {
+		if (n.id === center.id || n.ascendancy || n.isProxy || n.type === "class" || n.type === "jewel" || n.type === "mastery" || n.id >= 65536) return false;
+		const d = (n.x - center.x) ** 2 + (n.y - center.y) ** 2;
+		return d >= inner * inner && d <= outer * outer;
+	}
+	// 자리별 후보 집합은 할당과 무관하니 한 번만 센다. 고리는 주얼 칸이 찍혀 있을 때만(PoB: 꽂힌 주얼 = 찍힌 칸)
+	const leapAreaCache = new Map<string, Set<number>>();
+	function leapArea(key: string, center: TreeNode | undefined, inner: number, outer: number): Set<number> {
+		let set = leapAreaCache.get(key);
+		if (!set) {
+			set = new Set<number>();
+			// 간선 없는 고립 노터블(도유 전용 30개)은 트리 노드가 아니다 — 반경 안이어도 못 찍는다(10-03 C72, 호버 탐침이 발견)
+			if (center) for (const n of nodeById.values()) if ((adjacency.get(n.id)?.length || 0) > 0 && inLeapArea(n, center, inner, outer)) set.add(n.id);
+			leapAreaCache.set(key, set);
+		}
+		return set;
+	}
+	function leapNodes(): Set<number> {
+		const out = new Set<number>();
+		if (isAtlas) return out;
+		for (const k of leapKeys) leapArea("l" + k.id + ":" + k.r, nodeById.get(k.id), 0, k.r).forEach((id) => out.add(id));
+		for (const g of leapRings) if (highlighted.has(g.id)) leapArea("r" + g.id + ":" + g.inner + ":" + g.outer, nodeById.get(g.id), g.inner, g.outer).forEach((id) => out.add(id));
+		for (const g of pickedLeap()) leapArea(g.key, g.center, g.inner, g.outer).forEach((id) => out.add(id));
 		return out;
 	}
 
@@ -719,7 +883,9 @@
 			}
 			altRoots.forEach((id) => highlighted.add(id));
 			const reach = new Set<number>();
-			for (const r of [root, ...altRoots]) reachableSet(r, -1).forEach((x) => reach.add(x));
+			// 연결 없이 찍힌 노드도 출발점(C64) — 그 반경 · 고리 안에서 찍힌 것
+			const leap = [...leapNodes()].filter((id) => highlighted.has(id));
+			for (const r of [root, ...altRoots, ...leap]) reachableSet(r, -1).forEach((x) => reach.add(x));
 			for (const id of Array.from(highlighted)) {
 				if (!reach.has(id)) {
 					highlighted.delete(id);
@@ -747,6 +913,7 @@
 	// 할당 가능 = 인접에 이미 할당된 노드가 있음(루트까지 사슬 연결).
 	function canAllocate(node: TreeNode): boolean {
 		if (node.type === "class" || !nodeVisible(node)) return false;
+		if (leapNodes().has(node.id)) return true; // 연결 없이 찍히는 자리(C64)
 		for (const nb of pathNeighbors(node.id)) if (highlighted.has(nb)) return true;
 		return false;
 	}
@@ -759,9 +926,17 @@
 		if (root === undefined) return [targetId];
 		// 해제하는 노드가 다른 시작점을 연 "Path of the X" 면 그 시작점은 출발점에서 빠진다
 		const reach = new Set<number>();
-		for (const r of [root, ...extraRoots(targetId)]) reachableSet(r, targetId).forEach((x) => reach.add(x));
+		const leap = [...leapNodes()].filter((id) => id !== targetId && highlighted.has(id));
+		for (const r of [root, ...extraRoots(targetId), ...leap]) reachableSet(r, targetId).forEach((x) => reach.add(x));
 		const out = [targetId];
 		for (const id of highlighted) if (id !== targetId && !reach.has(id)) out.push(id);
+		return out;
+	}
+	/** 같은 진열장(렐리쿼리언)의 다른 선택지 id — 선택지 = multipleChoiceOption, 진열장 = 선택지의 이웃(PoB isMultipleChoice: 하나만, C60). */
+	function choiceSiblings(id: number, adj: Map<number, number[]>, isOption: (id: number) => boolean): number[] {
+		if (!isOption(id)) return [];
+		const out: number[] = [];
+		for (const display of adj.get(id) || []) for (const other of adj.get(display) || []) if (other !== id && isOption(other) && !out.includes(other)) out.push(other);
 		return out;
 	}
 	function toggleNode(node: TreeNode) {
@@ -774,6 +949,8 @@
 			return;
 		}
 		const before = snapshot();
+		// 진열장 선택지는 하나만 — 다른 선택지를 고르면 이미 고른 것과 바꾼다(인게임 · PoB 와 같다, C60)
+		if (!highlighted.has(node.id)) for (const sib of choiceSiblings(node.id, adjacency, (id) => !!nodeById.get(id)?.multipleChoiceOption)) highlighted.delete(sib);
 		if (highlighted.has(node.id)) {
 			highlighted.delete(node.id);
 			masteryPicks.delete(node.id);
@@ -807,19 +984,24 @@
 		panel.style.top = Math.max(4, Math.min(py, host.clientHeight - h - 4)) + "px";
 	}
 	let masteryPicker: HTMLElement | null = null;
+	let masteryOpener: HTMLElement | null = null;
 	function closeMasteryPicker() {
+		restoreFocus(masteryPicker, masteryOpener); // 닫으면 연 요소로(10-04 C109, C105 도유 · 주얼 창과 같은 규칙)
 		masteryPicker?.remove();
 		masteryPicker = null;
 	}
 	function openMasteryPicker(node: TreeNode) {
 		closeMasteryPicker();
+		masteryOpener = document.activeElement as HTMLElement | null;
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
 		panel.className = "absolute z-20 max-h-[60%] w-80 overflow-y-auto poe-node-popup";
+		panel.setAttribute("role", "dialog"); // 낭독기가 창이 열린 걸 알게(10-04 C102, PoE2 고르기 창과 같은 규칙)
 		const head = document.createElement("div");
 		head.className = "sticky top-0 poe-popup-head";
 		head.textContent = (isKorean && node.nameKo ? node.nameKo : node.name) + (isKorean ? " — 효과 선택" : " — pick effect");
 		panel.appendChild(head);
+		panel.setAttribute("aria-label", (head.textContent || "").replace(/\s*사전 ↗$|\s*Dictionary ↗$/, "").trim());
 		// 게임 규칙: 같은 마스터리 효과는 트리 전체에서 한 번만 고를 수 있다.
 		// (효과 353개가 전부 여러 노드에 중복 존재해서, 막지 않으면 같은 효과를 5번까지 찍어 스탯이 부풀려진다)
 		const takenElsewhere = new Set<number>();
@@ -832,13 +1014,13 @@
 			const taken = takenElsewhere.has(eff.id);
 			row.disabled = taken;
 			row.className = taken
-				? "block w-full text-left px-4 py-2 text-xs leading-5 border-b border-stone-800 text-base-content/30 line-through cursor-not-allowed"
+				? "block w-full text-left px-4 py-2 text-xs leading-5 border-b border-stone-800 text-base-content/60 line-through cursor-not-allowed"
 				: "block w-full text-left px-4 py-2 text-xs text-sky-300 leading-5 hover:bg-amber-900/40 border-b border-stone-800";
 			row.textContent = effectLines(eff).join("\n") + (taken ? (isKorean ? "  (이미 선택함)" : "  (already taken)") : "");
 			// 효과 리마인더 — 공홈처럼 회색 부연으로 효과 밑에
 			for (const rem of (isKorean && eff.reminderKo) || eff.reminder || []) {
 				const remLine = document.createElement("div");
-				remLine.className = "text-[10px] text-base-content/50 leading-4";
+				remLine.className = "text-[10px] text-base-content/60 leading-4";
 				remLine.textContent = rem;
 				row.appendChild(remLine);
 			}
@@ -866,6 +1048,8 @@
 		placePanel(panel, host, sx + 20, sy);
 		masteryPicker = panel;
 		hideTooltip();
+		// 키보드로(노드 메뉴 Shift+F10 → 마스터리 효과 선택) 열었을 때 바로 고를 수 있게 — 고르지 않은 첫 효과로(C109)
+		panel.querySelector<HTMLElement>("button:not([disabled])")?.focus();
 	}
 
 	// ---- 유사 노드 강조 (스탯 문구가 같은 노드 = 숫자만 다른 같은 계열) ----
@@ -892,12 +1076,15 @@
 
 	// ---- 노드 우클릭 메뉴 ----
 	let nodeMenu: HTMLElement | null = null;
+	let nodeMenuOpener: HTMLElement | null = null;
 	function closeNodeMenu() {
+		restoreFocus(nodeMenu, nodeMenuOpener); // 키보드로 연 메뉴(C108)는 닫으면 검색칸으로
 		nodeMenu?.remove();
 		nodeMenu = null;
 	}
 	function openNodeMenu(node: TreeNode, clientX: number, clientY: number) {
 		closeNodeMenu();
+		nodeMenuOpener = document.activeElement as HTMLElement | null;
 		closeMasteryPicker();
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
@@ -906,6 +1093,9 @@
 		head.className = "poe-popup-head text-xs";
 		head.textContent = isKorean && node.nameKo ? node.nameKo : node.name;
 		panel.appendChild(head);
+		// 고르기 창들과 같이 대화 상자 + 이름(노드 이름) — Shift+F10 으로 열면 포커스가 이 안으로 들어온다(10-04 C108)
+		panel.setAttribute("role", "dialog");
+		panel.setAttribute("aria-label", head.textContent);
 
 		const item = (label: string, action: () => void, disabled = false) => {
 			const row = document.createElement("button");
@@ -913,7 +1103,7 @@
 			row.disabled = disabled;
 			row.className =
 				"block w-full text-left px-4 py-1.5 text-xs border-b border-stone-800 " +
-				(disabled ? "text-base-content/30 cursor-not-allowed" : "text-sky-300 hover:bg-amber-900/40");
+				(disabled ? "text-base-content/60 cursor-not-allowed" : "text-sky-300 hover:bg-amber-900/40");
 			row.textContent = label;
 			if (!disabled) {
 				row.addEventListener("click", () => {
@@ -1072,6 +1262,15 @@
 	}
 
 	// ---- 포인트 카운터 ----
+	/** 찍은 노드 스탯 줄들 → 추가 패시브 포인트 합("Grants N Passive Skill Point(s)", PoB ModParser ExtraPoints, C51). */
+	function extraPassivePoints(lines: string[]): number {
+		let extra = 0;
+		for (const line of lines) {
+			const m = /^Grants (\d+) Passive Skill Points?$/i.exec(line);
+			if (m) extra += Number(m[1]);
+		}
+		return extra;
+	}
 	// 패시브/전직 포인트를 따로 센다(공식: 패시브 123, 전직 8). 클래스 시작·전직 시작 노드는 무료.
 	function updatePoints() {
 		// 도유한 노드를 트리로도 찍으면 도유가 낭비 — 게임처럼 도유를 비워 다른 노터블에 쓸 수 있게 한다.
@@ -1089,9 +1288,16 @@
 			const node = nodeById.get(id);
 			if (!node || node.type === "class" || node.ascendancyStart) continue;
 			if (id === root) continue; // 시작 노드는 무료(아틀라스 중앙 시작점 포함)
-			if (node.ascendancy) asc++;
-			else passive++;
+			if (node.ascendancy) {
+				if (!node.multipleChoiceOption) asc++;
+			} else passive++;
 		}
+		// 추가 포인트(PoB ModParser "grants N passive skill points" → ExtraPoints, 한도 = 99 + 23 + 추가): 어센던트 · 렐리쿼리언
+		//   "Passive Point" · "Path of the X" 노드. 없으면 실빌드가 "포인트 127 / 123" 빨강(10-03 C51)
+		const statLines: string[] = [];
+		if (!isAtlas) for (const id of highlighted) statLines.push(...(nodeById.get(id)?.stats || []));
+		const extra = extraPassivePoints(statLines); // TS lib 가 ES2019 전이라 flatMap 대신
+		const pointMax = maxPoints + extra;
 		el.replaceChildren();
 		const add = (label: string, used: number, max: number) => {
 			const span = document.createElement("span");
@@ -1099,12 +1305,13 @@
 			span.textContent = label + " " + used + (max > 0 ? " / " + max : "");
 			el.appendChild(span);
 		};
-		add(isKorean ? "포인트" : "Points", passive, maxPoints);
+		add(isKorean ? "포인트" : "Points", passive, pointMax);
 		if (!isAtlas && maxAscPoints > 0) add(isKorean ? "· 전직" : "· Asc", asc, maxAscPoints);
 		// 트리 상한 123 은 만렙(100) 기준인데 평가/최적화는 레벨 90(=퀘스트 24 + 레벨업 89 = 113포인트)이다.
 		// 113 을 넘으면 그 레벨에선 못 찍는 트리라 계산이 과대평가된다 → 필요 레벨을 표시해 알린다.
-		if (!isAtlas && passive > EVAL_POINT_BUDGET) {
-			const needLevel = Math.min(100, passive - QUEST_POINTS + 1);
+		// 추가 포인트만큼은 레벨이 필요 없다(C51)
+		if (!isAtlas && passive - extra > EVAL_POINT_BUDGET) {
+			const needLevel = Math.min(100, passive - extra - QUEST_POINTS + 1);
 			const warn = document.createElement("span");
 			warn.className = "font-mono text-warning";
 			warn.textContent = isKorean
@@ -1165,8 +1372,7 @@
 		// "평가 결과는 올랐는데 스탯 요약은 그대로"라 어디서 온 수치인지 알 수 없다.
 		for (const [nodeId, slug] of jewelPicks) {
 			if (!highlighted.has(nodeId)) continue;
-			const option = document.querySelector<HTMLOptionElement>('#poeTreeJewelList option[data-slug="' + slug + '"]');
-			const mods = option?.dataset.mods;
+			const mods = jewelMods(slug);
 			if (mods) add(mods.split(" / "));
 		}
 		// 도유 노터블 — 포인트 없이 활성화된 트리의 일부(아뮬렛 도유). 트리로도 찍었다면 중복 합산 금지.
@@ -1260,7 +1466,7 @@
 			row.type = "button";
 			row.className = "block w-full text-left px-3 py-0.5 text-xs text-emerald-300 hover:bg-stone-700/60";
 			row.textContent = "◈ " + jewelName(slug);
-			const mods = document.querySelector<HTMLOptionElement>('#poeTreeJewelList option[data-slug="' + slug + '"]')?.dataset.mods;
+			const mods = jewelMods(slug);
 			row.title =
 				(mods ? mods.split(" / ").join("\n") + "\n\n" : "") +
 				(isKorean ? "클릭하면 해당 소켓으로 이동" : "Click to jump to socket");
@@ -1352,6 +1558,22 @@
 		return label;
 	}
 
+	// 혈맹 이름(10-03 C45) — 인게임 이름만: 한국어는 혈맹 시작 노드의 한국어 이름("벨카 혈맹"), 영어는 트리 데이터 이름("Velka Bloodline").
+	//   전직 규칙(ascendancyLabel: 이름이 다르면 "id (한글)")을 그대로 쓰면 내부 id(Brinerot · KingInTheMists · Necromantic)가 드러나 "Brinerot (벨카 혈맹)" 처럼 보였다
+	function bloodlineLabel(bl: { id: string; name: string }): string {
+		if (!isKorean) return bl.name || bl.id;
+		const start = nodes.find((n) => n.ascendancy === bl.id && n.ascendancyStart);
+		if (start?.nameKo && start.name === bl.name) return start.nameKo; // 13개: 시작 노드 = 혈맹 이름("Velka Bloodline" / "벨카 혈맹")
+		// 시작 노드가 이름 앞부분만인 것("Breachlord" ↔ "Breachlord Bloodline") — 다른 혈맹과 같은 "X 혈맹" 꼴로(확실한 두 조각만 잇는다)
+		if (start?.nameKo && bl.name === start.name + " Bloodline") return start.nameKo + " 혈맹";
+		// 시작 노드가 다른 이름인 것(Saresh Bloodline ↔ 시작 노드 Necromantic) — 이름 조각의 게임 한국어를 확인한 것만:
+		//   Saresh = "사레쉬"(Words 3161: "Saresh's Darkness" ↔ "사레쉬의 어둠")
+		const part = /^(.+) Bloodline$/.exec(bl.name || "")?.[1];
+		const BLOODLINE_NAME_KO: Record<string, string> = { Saresh: "사레쉬" };
+		if (part && BLOODLINE_NAME_KO[part]) return BLOODLINE_NAME_KO[part] + " 혈맹";
+		return bl.name || bl.id;
+	}
+
 	// ---- B: 직업/전직/혈맹 선택 ----
 	function centerOnNode(id: number, atScale = 0.11) {
 		const n = nodeById.get(id);
@@ -1383,7 +1605,7 @@
 		bloodlines.forEach((bl, i) => {
 			const o = document.createElement("option");
 			o.value = String(i + 1);
-			o.textContent = ascendancyLabel(bl.id, bl.name);
+			o.textContent = bloodlineLabel(bl);
 			sel.appendChild(o);
 		});
 		sel.value = String(currentBloodline);
@@ -1531,6 +1753,8 @@
 	// ---- D: 호버 최단경로 미리보기 (할당집합 → 호버 노드, 미할당 통과) ----
 	function computeHoverPath(targetId: number): number[] {
 		if (!interactive || highlighted.has(targetId) || highlighted.size === 0) return [];
+		// 연결 없이 찍히는 자리(C64) — 클릭하면 그 노드 하나만 찍힌다(toggleNode). 트리를 따라 돌아가는 긴 경로를 보이면 "+N 포인트" 가 부풀려진다(10-03 C72)
+		if (!pathNeighbors(targetId).some((nb) => highlighted.has(nb)) && leapNodes().has(targetId)) return [targetId, targetId];
 		const prev = new Map<number, number>();
 		const visited = new Set<number>(highlighted);
 		let frontier = Array.from(highlighted);
@@ -1572,7 +1796,7 @@
 		노터블: "notable",
 		notable: "notable",
 		주얼: "jewel",
-		"주얼 슬롯": "jewel",
+		주얼슬롯: "jewel", // 검색어는 띄어쓰기를 지운 뒤 맞댄다(searchKey) — 열쇠도 붙여 쓴다
 		jewel: "jewel",
 		마스터리: "mastery",
 		mastery: "mastery",
@@ -1583,20 +1807,12 @@
 	let searchCountSuffix = "";
 	function applySearch(query: string) {
 		searchHits.clear();
-		const q = query.trim().toLowerCase();
+		const q = searchKey(query.trim());
 		if (q) {
 			let first: TreeNode | null = null;
 			for (const node of nodes) {
 				if (node.type === "class") continue;
-				const hay = (
-					node.name +
-					" " +
-					(node.nameKo || "") +
-					" " +
-					node.stats.join(" ") +
-					" " +
-					(node.statsKo || []).join(" ")
-				).toLowerCase();
+				const hay = searchKey([node.name, node.nameKo || "", ...node.stats, ...(node.statsKo || [])].join("\n"));
 				// 이름/스탯 텍스트 또는 분류어(키스톤·노터블·주얼·마스터리)로 찾는다.
 				// 분류어는 노드 텍스트에 안 들어 있어서 예전엔 "키스톤" 검색이 0건이었다(사용자가 자연히 시도하는 말인데).
 				// "도유"는 타입이 아니라 속성(anoint 보유) — 도유 후보를 한눈에 훑을 때 쓴다.
@@ -1623,7 +1839,7 @@
 			searchCursor = 0; // 검색어가 바뀌면 순환도 처음부터
 			searchCursorPrimed = false;
 			countEl.textContent = q ? (isKorean ? `${visible}개 일치${hiddenText}` : `${visible} match${hiddenText}`) : "";
-			countEl.className = "text-xs font-mono " + (hidden && !visible ? "text-warning" : "text-base-content/50");
+			countEl.className = "text-xs font-mono " + (hidden && !visible ? "text-warning" : "text-base-content/60");
 			// 숨은 매치가 있으면 한 번에 그 전직으로 전환할 수 있게 — 안내만 하고 방법을 안 주면 결국 사용자가 찾아 헤맨다.
 			// 현재 직업의 전직일 때만 제안한다(다른 직업이면 트리를 갈아엎게 되므로 직업명을 알려주기만).
 			countEl.onclick = null;
@@ -1658,11 +1874,42 @@
 			// Enter — 다음 매치로 이동(Shift+Enter 는 이전). 강조만으로는 화면 밖 매치를 찾아갈 수 없다.
 			// 검색어가 바뀌면 커서를 0 으로 되돌린다 — 안 그러면 새 검색인데 엉뚱한 순번부터 시작한다.
 			searchInput.addEventListener("keydown", (event) => {
+				// Shift+F10 · 메뉴 키 — 지금 가운데 둔 검색 노드의 노드 메뉴(마스터리 · 주얼 장착 · 문신 · 도유 · 클러스터)를 연다(10-04 C108).
+				//   예전엔 우클릭으로만 열려 키보드 사용자는 찍기(Ctrl+Enter)까지만 할 수 있었다. 우클릭과 같은 처리를 타도록 그 자리에 contextmenu 를 보낸다
+				if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+					const hits = nodes.filter((n) => searchHits.has(n.id) && nodeVisible(n));
+					if (!hits.length) return;
+					event.preventDefault();
+					hits.sort((a, b) => Number(highlighted.has(b.id)) - Number(highlighted.has(a.id)));
+					const cur = hits[Math.min(Math.max(searchCursor, 0), hits.length - 1)];
+					centerOnNode(cur.id, 0.35);
+					draw();
+					const r = canvas.getBoundingClientRect();
+					canvas.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+					// 방금 연 노드 메뉴 안으로 — 문서의 첫 창을 집으면 이미 열린 도유 · 주얼 창으로 갈 수 있다(10-04 C127 검토)
+					nodeMenu?.querySelector<HTMLElement>("button:not([disabled]), input")?.focus();
+					// Windows 메뉴 키는 contextmenu 를 keyup 때 따로 보낸다 — 검색칸에 브라우저 기본 메뉴가 같이 뜨지 않게 한 번 막는다
+					if (event.key === "ContextMenu") searchInput.addEventListener("contextmenu", (e) => e.preventDefault(), { once: true });
+					return;
+				}
 				if (event.key !== "Enter") return;
 				event.preventDefault();
 				const matches = nodes.filter((n) => searchHits.has(n.id) && nodeVisible(n));
 				if (!matches.length) return;
 				matches.sort((a, b) => Number(highlighted.has(b.id)) - Number(highlighted.has(a.id)));
+				// Ctrl+Enter — 지금 가운데 둔 검색 노드를 찍기/해제(마우스 클릭과 같은 동작 · 필요하면 경로째). 키보드만으로 트리를 쓰게(10-02 접근성)
+				if (event.ctrlKey || event.metaKey) {
+					const cur = matches[Math.min(searchCursor, matches.length - 1)];
+					if (!cur) return;
+					const was = highlighted.has(cur.id);
+					toggleNode(cur);
+					const now = highlighted.has(cur.id);
+					const label = isKorean && cur.nameKo ? cur.nameKo : cur.name;
+					const verdict = now === was ? (isKorean ? "못 찍음" : "Not allocated") : now ? (isKorean ? "찍음" : "Allocated") : isKorean ? "해제" : "Removed";
+					const countEl = document.getElementById("poeTreeSearchCount");
+					if (countEl) countEl.textContent = `${verdict}: ${label} · ${(document.getElementById("poeTreePoints")?.textContent || "").replace(/\s*·\s*/g, " · ").replace(/\s+/g, " ").trim()}`;
+					return;
+				}
 				if (!searchCursorPrimed && !event.shiftKey) {
 					searchCursorPrimed = true; // applySearch 가 이미 1번째로 옮겨 놨다
 				} else {
@@ -2305,6 +2552,7 @@
 				if (socket) ringNodes.push(socket);
 			}
 		}
+		const drawnRings: string[] = []; // 탐침용 — 꽂은 주얼 고리의 "중심 노드:반경"(캔버스라 화면 요소로는 못 본다, C90)
 		for (const ringNode of ringNodes) {
 			const socketed = jewelPicks.has(ringNode.id) && highlighted.has(ringNode.id);
 			const hx = ringNode.x * scale + offsetX;
@@ -2315,13 +2563,18 @@
 			const band = spec ? jewelRadiusOf(spec) : null;
 			if (band) {
 				const ringKey = TIMELESS_RING[spec!.split(":")[0]] || "JewelCircle1";
-				const drawn = blitRing(ringKey, ringNode.x, ringNode.y, band.r, ringNode.id === hovered?.id ? 0.9 : 0.5);
+				// 불가능한 탈출은 고른 핵심 노드 둘레가 반경이다(인게임도 그 둘레를 비춘다) — 주얼 칸 둘레에 그리면 엉뚱한 곳을 가리킨다(C90)
+				const center = keystoneLeapOf(spec!) || ringNode;
+				drawnRings.push(center.id + ":" + band.r);
+				const drawn = blitRing(ringKey, center.x, center.y, band.r, ringNode.id === hovered?.id ? 0.9 : 0.5);
+				// 희망의 실 고리 — 안쪽 경계도 그린다(고리 안만 효과, C75)
+				if (band.inner) blitRing(ringKey, center.x, center.y, band.inner, ringNode.id === hovered?.id ? 0.9 : 0.5);
 				if (!drawn) {
 					context.save();
 					context.strokeStyle = "rgba(110,231,183,0.5)";
 					context.lineWidth = Math.max(1, 10 * scale);
 					context.beginPath();
-					context.arc(hx, hy, band.r * scale, 0, Math.PI * 2);
+					context.arc(center.x * scale + offsetX, center.y * scale + offsetY, band.r * scale, 0, Math.PI * 2);
 					context.stroke();
 					context.restore();
 				}
@@ -2345,6 +2598,7 @@
 			}
 			context.restore();
 		}
+		canvas.dataset.jewelRings = drawnRings.join(",");
 
 		// 2c) 해제 미리보기 — 할당 노드에 마우스를 올리면 함께 사라질 경로를 붉은 점선으로
 		if (removalSet.size > 1) {
@@ -2803,8 +3057,11 @@
 				const skill = clusterDefs?.[`${plan.sizeName} Cluster Jewel`]?.skills?.[plan.skillKey];
 				// 스킬 이름/스탯은 **작은 패시브에만** 붙는다 — 마스터리까지 덮어쓰면 노드 수가 부풀려 보인다
 				// (검색 개수로 발각: 12노드 주얼인데 13개가 잡혔다)
+				// 스킬 없는 작은 패시브 = PoB "Nothingness"(Voices 의 "아무것도 부여하지 않는" 노드, C48)
 				const named =
-					skill && n.type === "normal"
+					!skill && n.type === "normal" && n.name === "Small Passive"
+						? { ...n, name: "Nothingness", nameKo: "무" }
+						: skill && n.type === "normal"
 						? {
 								...n,
 								name: skill.name,
@@ -2970,8 +3227,18 @@
 
 	// ---- 주얼 장착 팝업 (할당한 주얼 슬롯에 유니크 주얼을 꽂는다 → 평가에 반영) ----
 	// 목록은 JTE 가 넘긴 datalist(#poeTreeJewelList)에서 읽는다 — 별도 API 왕복 없음.
+	/**
+	 * 창을 닫을 때 키보드 포커스를 연 요소로 되돌린다(10-04 C105, WCAG 2.4.3) — 예전엔 닫으면 포커스가 body 로 사라져 Tab 이 처음부터였다.
+	 *   포커스가 창 안이나 body 에 있을 때만(다른 곳을 눌러 닫았으면 그쪽 포커스를 빼앗지 않는다)
+	 */
+	function restoreFocus(panel: HTMLElement | null, opener: HTMLElement | null) {
+		const active = document.activeElement;
+		if (panel && opener && document.contains(opener) && (!active || active === document.body || panel.contains(active))) opener.focus();
+	}
 	let jewelPicker: HTMLElement | null = null;
+	let jewelOpener: HTMLElement | null = null;
 	function closeJewelPicker() {
+		restoreFocus(jewelPicker, jewelOpener);
 		jewelPicker?.remove();
 		jewelPicker = null;
 	}
@@ -3015,7 +3282,8 @@
 			if (!node || !tattooTarget(node)) continue;
 			const dx = node.x - socket.x;
 			const dy = node.y - socket.y;
-			if (dx * dx + dy * dy <= band.r * band.r) targets.push(id);
+			const d2 = dx * dx + dy * dy;
+			if (d2 <= band.r * band.r && d2 >= (band.inner || 0) ** 2) targets.push(id);
 		}
 		return targets;
 	}
@@ -3042,7 +3310,9 @@
 			.then(onReady, onReady);
 	}
 	let tattooPicker: HTMLElement | null = null;
+	let tattooOpener: HTMLElement | null = null;
 	function closeTattooPicker() {
+		restoreFocus(tattooPicker, tattooOpener); // 닫으면 연 요소로(10-04 C109)
 		tattooPicker?.remove();
 		tattooPicker = null;
 	}
@@ -3055,6 +3325,7 @@
 	 */
 	function renderTattooPicker(node: TreeNode, targets?: number[]) {
 		closeTattooPicker();
+		tattooOpener = document.activeElement as HTMLElement | null; // 반경 일괄 경로(노드 메뉴에서 바로 render)도 거치게 여기서
 		closeJewelPicker();
 		const bulk = targets && targets.length > 0;
 		// 일괄 모드의 후보는 대상 노드들이 받을 수 있는 문신의 합집합(대상마다 속성이 달라도 한 번에 보여준다)
@@ -3070,6 +3341,7 @@
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
 		panel.className = "absolute z-20 max-h-[60%] w-96 overflow-y-auto poe-node-popup";
+		panel.setAttribute("role", "dialog"); // 낭독기가 창이 열린 걸 알게(10-04 C102, PoE2 고르기 창과 같은 규칙)
 		const head = document.createElement("div");
 		head.className = "sticky top-0 poe-popup-head flex items-center justify-between gap-2";
 		const tattooHeadTitle = document.createElement("span");
@@ -3085,10 +3357,12 @@
 		tattooDictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
 		head.appendChild(tattooDictLink);
 		panel.appendChild(head);
+		panel.setAttribute("aria-label", (head.textContent || "").replace(/\s*사전 ↗$|\s*Dictionary ↗$/, "").trim());
 		const filter = document.createElement("input");
 		filter.type = "text";
 		filter.className = "w-full px-3 py-1.5 text-xs bg-stone-800 text-amber-100 border-b border-stone-700 outline-none";
 		filter.placeholder = isKorean ? "문신 이름/효과 검색" : "Filter by name or mod";
+		filter.setAttribute("aria-label", filter.placeholder); // 고르기 창 검색칸 접근 이름(10-04, PoE2 짝 — placeholder 만으론 낭독기가 못 읽는다)
 		panel.appendChild(filter);
 		const rows = document.createElement("div");
 		panel.appendChild(rows);
@@ -3125,12 +3399,12 @@
 				clear.addEventListener("click", () => apply(null));
 				rows.appendChild(clear);
 			}
-			const q = filter.value.trim().toLowerCase();
+			const q = searchKey(filter.value.trim());
 			let shown = 0;
 			for (const def of list) {
 				const name = (isKorean && def.nameKo) || def.dn;
 				const mods = ((isKorean && def.statsKo?.length ? def.statsKo : def.stats) || []).join(" / ");
-				if (q && !name.toLowerCase().includes(q) && !mods.toLowerCase().includes(q) && !def.dn.toLowerCase().includes(q)) continue;
+				if (q && !searchKey(name).includes(q) && !searchKey(mods).includes(q) && !searchKey(def.dn).includes(q)) continue;
 				if (++shown > 60) break;
 				const row = document.createElement("button");
 				row.type = "button";
@@ -3150,7 +3424,7 @@
 			}
 			if (!shown) {
 				const none = document.createElement("div");
-				none.className = "px-4 py-2 text-xs text-base-content/50";
+				none.className = "px-4 py-2 text-xs text-base-content/60";
 				none.textContent = isKorean ? "새길 수 있는 문신이 없습니다." : "No tattoo fits this passive.";
 				rows.appendChild(none);
 			}
@@ -3166,17 +3440,21 @@
 
 	// ---- 도유 픽커 (PoB 아뮬렛 도유 UX) ----
 	let anointPanel: HTMLElement | null = null;
+	let anointOpener: HTMLElement | null = null;
 	function closeAnointPicker() {
+		restoreFocus(anointPanel, anointOpener);
 		anointPanel?.remove();
 		anointPanel = null;
 	}
 	function openAnointPicker() {
 		closeAnointPicker();
+		anointOpener = document.activeElement as HTMLElement | null;
 		closeJewelPicker();
 		closeNodeMenu();
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
 		panel.className = "absolute z-20 max-h-[60%] w-96 overflow-y-auto poe-node-popup";
+		panel.setAttribute("role", "dialog"); // 낭독기가 창이 열린 걸 알게(10-04 C102, PoE2 고르기 창과 같은 규칙)
 		const head = document.createElement("div");
 		head.className = "sticky top-0 poe-popup-head flex items-center justify-between gap-2";
 		const anointHeadTitle = document.createElement("span");
@@ -3190,10 +3468,12 @@
 		anointDictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
 		head.appendChild(anointDictLink);
 		panel.appendChild(head);
+		panel.setAttribute("aria-label", (head.textContent || "").replace(/\s*사전 ↗$|\s*Dictionary ↗$/, "").trim());
 		const filter = document.createElement("input");
 		filter.type = "text";
 		filter.className = "w-full px-3 py-1.5 text-xs bg-stone-800 text-amber-100 border-b border-stone-700 outline-none";
 		filter.placeholder = isKorean ? "노터블 이름/효과 검색" : "Filter by name or stat";
+		filter.setAttribute("aria-label", filter.placeholder); // 고르기 창 검색칸 접근 이름(10-04, PoE2 짝 — placeholder 만으론 낭독기가 못 읽는다)
 		panel.appendChild(filter);
 		const list = document.createElement("div");
 		panel.appendChild(list);
@@ -3213,7 +3493,7 @@
 		};
 		const render = (query: string) => {
 			list.replaceChildren();
-			const q = query.trim().toLowerCase();
+			const q = searchKey(query.trim());
 			// 해제 행 — 현재 도유가 있을 때만
 			if (anointPick !== null) {
 				const clear = document.createElement("button");
@@ -3225,7 +3505,7 @@
 			}
 			let shown = 0;
 			for (const n of candidates) {
-				const hay = ((n.nameKo || "") + " " + n.name + " " + n.stats.join(" ") + " " + (n.statsKo || []).join(" ")).toLowerCase();
+				const hay = searchKey([n.nameKo || "", n.name, ...n.stats, ...(n.statsKo || [])].join("\n"));
 				if (q && hay.indexOf(q) === -1) continue;
 				if (++shown > 120) break; // 470개 전부 DOM 에 얹으면 필터 타이핑이 굼떠진다
 				const row = document.createElement("button");
@@ -3269,6 +3549,7 @@
 
 	function openJewelPicker(node: TreeNode) {
 		closeJewelPicker();
+		jewelOpener = document.activeElement as HTMLElement | null;
 		const options = Array.from(
 			document.querySelectorAll<HTMLOptionElement>("#poeTreeJewelList option"),
 		);
@@ -3276,14 +3557,17 @@
 		const host = canvas.parentElement as HTMLElement;
 		const panel = document.createElement("div");
 		panel.className = "absolute z-20 max-h-[60%] w-96 overflow-y-auto poe-node-popup";
+		panel.setAttribute("role", "dialog"); // 낭독기가 창이 열린 걸 알게(10-04 C102, PoE2 고르기 창과 같은 규칙)
 		const head = document.createElement("div");
 		head.className = "sticky top-0 poe-popup-head";
 		head.textContent = (isKorean && node.nameKo ? node.nameKo : node.name) + (isKorean ? " — 주얼 장착" : " — socket jewel");
 		panel.appendChild(head);
+		panel.setAttribute("aria-label", (head.textContent || "").replace(/\s*사전 ↗$|\s*Dictionary ↗$/, "").trim());
 		const filter = document.createElement("input");
 		filter.type = "text";
 		filter.className = "w-full px-3 py-1.5 text-xs bg-stone-800 text-amber-100 border-b border-stone-700 outline-none";
 		filter.placeholder = isKorean ? "주얼 이름/효과 검색" : "Filter by name or mod";
+		filter.setAttribute("aria-label", filter.placeholder); // 고르기 창 검색칸 접근 이름(10-04, PoE2 짝 — placeholder 만으론 낭독기가 못 읽는다)
 		panel.appendChild(filter);
 		const list = document.createElement("div");
 		panel.appendChild(list);
@@ -3298,9 +3582,56 @@
 			syncUrl();
 			draw();
 		};
+		// 변형이 여럿인 주얼(불가능한 탈출 · 희망의 실 …)은 고른 뒤 변형을 한 번 더 고른다(C75). 고른 값 = "slug:v번호"
+		let variantStep: string | null = null;
+		const renderVariants = () => {
+			const slug = variantStep!;
+			list.replaceChildren();
+			const title = document.createElement("div");
+			title.className = "px-4 py-1.5 text-xs text-amber-200 font-semibold border-b border-stone-800";
+			title.textContent = jewelName(slug) + (isKorean ? " — 변형 고르기" : " — pick variant");
+			list.appendChild(title);
+			const q = searchKey(filter.value.trim());
+			let shown = 0;
+			for (const v of jewelVariantsOf(slug)) {
+				if (q && !searchKey(v.name).includes(q) && !searchKey(v.mods).includes(q)) continue;
+				if (++shown > 80) break;
+				const row = document.createElement("button");
+				row.type = "button";
+				row.className = "block w-full text-left px-4 py-1.5 hover:bg-amber-900/40 border-b border-stone-800";
+				row.dataset.variant = String(v.index);
+				const name = document.createElement("div");
+				name.className = "text-xs text-amber-200 font-semibold";
+				name.textContent = v.name;
+				row.appendChild(name);
+				if (v.mods) {
+					const sub = document.createElement("div");
+					sub.className = "text-[11px] text-sky-300 leading-4";
+					sub.textContent = v.mods;
+					row.appendChild(sub);
+				}
+				row.addEventListener("click", () => applyPick(slug + ":v" + v.index));
+				list.appendChild(row);
+			}
+			if (!shown) {
+				const none = document.createElement("div");
+				none.className = "px-4 py-2 text-xs text-base-content/60";
+				none.textContent = isKorean ? "검색 결과가 없습니다." : "No matches.";
+				list.appendChild(none);
+			}
+		};
 		// 타임리스는 정복자·시드를 골라야 반경 변환이 정해진다 — 고른 뒤 한 번 더 물어본다.
 		const pick = (slug: string | null) => {
 			const def = slug ? TIMELESS_JEWELS[slug] : null;
+			if (slug && !def && jewelVariantsOf(slug).length > 1) {
+				variantStep = slug;
+				filter.value = "";
+				filter.placeholder = isKorean ? "변형 이름/효과 검색" : "Filter variants";
+				filter.setAttribute("aria-label", filter.placeholder); // 고르기 창 검색칸 접근 이름(10-04, PoE2 짝 — placeholder 만으론 낭독기가 못 읽는다)
+				render();
+				filter.focus();
+				return;
+			}
 			if (!slug || !def) {
 				applyPick(slug);
 				return;
@@ -3313,7 +3644,7 @@
 			title.textContent = jewelName(slug);
 			box.appendChild(title);
 			const hint = document.createElement("div");
-			hint.className = "text-[11px] text-base-content/50 leading-4";
+			hint.className = "text-[11px] text-base-content/60 leading-4";
 			hint.textContent = isKorean
 				? "정복자와 시드에 따라 반경 안 패시브가 다른 스탯으로 바뀝니다."
 				: "Conqueror and seed decide how passives in radius are transformed.";
@@ -3336,7 +3667,7 @@
 			seedInput.title = `${def.min} ~ ${def.max}`;
 			box.appendChild(seedInput);
 			const range = document.createElement("div");
-			range.className = "text-[10px] font-mono text-base-content/40";
+			range.className = "text-[10px] font-mono text-base-content/60";
 			range.textContent = (isKorean ? "시드 범위 " : "seed ") + def.min + " ~ " + def.max;
 			box.appendChild(range);
 			const ok = document.createElement("button");
@@ -3352,6 +3683,10 @@
 			list.appendChild(box);
 		};
 		const render = () => {
+			if (variantStep) {
+				renderVariants();
+				return;
+			}
 			list.replaceChildren();
 			if (jewelPicks.has(node.id)) {
 				const clear = document.createElement("button");
@@ -3361,12 +3696,15 @@
 				clear.addEventListener("click", () => pick(null));
 				list.appendChild(clear);
 			}
-			const q = filter.value.trim().toLowerCase();
+			const q = searchKey(filter.value.trim());
 			let shown = 0;
 			for (const opt of options) {
 				const name = opt.value;
 				const mods = opt.dataset.mods || "";
-				if (q && !name.toLowerCase().includes(q) && !mods.toLowerCase().includes(q)) continue;
+				// 변형 이름 · 옵션으로도 찾는다(10-04 C89) — "곡예"(불가능한 탈출 변형) · "중간 고리"(희망의 실) 처럼 기본 변형에 없는 말
+				const hitBase = !q || searchKey(name).includes(q) || searchKey(mods).includes(q);
+				const hitVariant = !!q && !hitBase && jewelVariantsOf(opt.dataset.slug || "").some((v) => searchKey(v.name).includes(q) || searchKey(v.mods).includes(q));
+				if (!hitBase && !hitVariant) continue;
 				if (++shown > 60) break; // 목록이 길어 렌더 상한 — 검색으로 좁히도록
 				const row = document.createElement("button");
 				row.type = "button";
@@ -3381,12 +3719,27 @@
 					sub.textContent = mods;
 					row.appendChild(sub);
 				}
-				row.addEventListener("click", () => pick(opt.dataset.slug || null));
+				if (hitVariant) {
+					const hint = document.createElement("div");
+					hint.className = "text-[10px] text-emerald-300";
+					hint.textContent = isKorean ? "변형에 일치" : "matches a variant";
+					row.appendChild(hint);
+				}
+				row.dataset.slug = opt.dataset.slug || "";
+				row.addEventListener("click", () => {
+					// 변형으로 찾았으면 변형 단계 검색칸에 같은 말을 채워 둔다(pick 이 filter 를 비우므로 뒤에 다시 넣는다)
+					const keep = hitVariant ? filter.value : "";
+					pick(opt.dataset.slug || null);
+					if (keep && variantStep) {
+						filter.value = keep;
+						render();
+					}
+				});
 				list.appendChild(row);
 			}
 			if (!shown) {
 				const none = document.createElement("div");
-				none.className = "px-4 py-2 text-xs text-base-content/50";
+				none.className = "px-4 py-2 text-xs text-base-content/60";
 				none.textContent = isKorean ? "검색 결과가 없습니다." : "No matches.";
 				list.appendChild(none);
 			}
@@ -3402,7 +3755,9 @@
 	// 주얼 지정 문자열은 "slug" 또는 타임리스 "slug:정복자:시드" — 표시할 땐 slug 부분만 쓴다
 	const jewelName = (spec: string) => {
 		const slug = spec.split(":")[0];
-		const base = document.querySelector<HTMLOptionElement>('#poeTreeJewelList option[data-slug="' + slug + '"]')?.value || slug;
+		const base = jewelOption(spec)?.value || slug;
+		const variant = specVariant(spec);
+		if (variant) return `${base} (${variant.name})`;
 		const parts = spec.split(":");
 		return parts.length > 1 ? `${base} (${parts.slice(1).join(" ")})` : base;
 	};
@@ -3438,6 +3793,7 @@
 
 		const panel = document.createElement("div");
 		panel.className = "absolute z-20 flex max-h-[70%] w-80 flex-col poe-node-popup";
+		panel.setAttribute("role", "dialog"); // 낭독기가 창이 열린 걸 알게(10-04 C102, PoE2 고르기 창과 같은 규칙)
 		const head = document.createElement("div");
 		head.className = "poe-popup-head flex items-center justify-between gap-2";
 		const headTitle = document.createElement("span");
@@ -3451,6 +3807,7 @@
 		dictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
 		head.appendChild(dictLink);
 		panel.appendChild(head);
+		panel.setAttribute("aria-label", (head.textContent || "").replace(/\s*사전 ↗$|\s*Dictionary ↗$/, "").trim());
 		const body = document.createElement("div");
 		body.className = "flex-1 overflow-y-auto";
 		panel.appendChild(body);
@@ -3544,6 +3901,7 @@
 		filter.type = "text";
 		filter.className = "input input-xs w-full bg-stone-950 border-stone-700 text-stone-200";
 		filter.placeholder = isKorean ? "노터블 검색…" : "Search notables…";
+		filter.setAttribute("aria-label", filter.placeholder); // 고르기 창 검색칸 접근 이름(10-04, PoE2 짝 — placeholder 만으론 낭독기가 못 읽는다)
 		notableBox.appendChild(filter);
 		const allToggle = document.createElement("label");
 		allToggle.className = "mt-1 flex items-center gap-1 text-[11px] text-stone-500";
@@ -3664,10 +4022,11 @@
 		"heroic-tragedy": "KalguurJewelCircle1",
 	};
 	/** 슬러그로 그 주얼의 반경(월드 단위). 반경 모드가 없는 주얼은 null. */
-	function jewelRadiusOf(spec: string): { label: string; r: number } | null {
-		const slug = spec.split(":")[0];
-		const option = document.querySelector<HTMLOptionElement>('#poeTreeJewelList option[data-slug="' + slug + '"]');
-		const label = option?.dataset.radius || "";
+	function jewelRadiusOf(spec: string): { label: string; r: number; inner?: number } | null {
+		// 고리 주얼(희망의 실) — 고른 변형(없으면 기본 변형)의 고리
+		const ring = jewelRingOf(spec);
+		if (ring) return { label: specVariant(spec)?.name || "", r: ring[1], inner: ring[0] };
+		const label = jewelOption(spec)?.dataset.radius || "";
 		const band = JEWEL_RADII.find((b) => b.en === label);
 		return band ? { label: isKorean ? band.ko : band.en, r: band.r } : null;
 	}
@@ -3791,7 +4150,7 @@
 				box.appendChild(info);
 			}
 			const todo = document.createElement("div");
-			todo.className = "text-[10px] text-base-content/40 leading-4";
+			todo.className = "text-[10px] text-base-content/60 leading-4";
 			// 클러스터 편집은 완성됐다(우클릭 픽커) — 옛 "미지원" 문구가 남아 오정보였다.
 			// 모바일엔 우클릭이 없어 롱프레스를 병기한다(터치 감지 분기보다 하이브리드 기기에 안전).
 			todo.textContent = isKorean ? "우클릭(길게 누르기)으로 클러스터 주얼 구성" : "Right-click (long-press) to configure cluster jewel";
@@ -3806,12 +4165,64 @@
 				line.className = "text-xs text-amber-200 font-semibold leading-5 mb-1";
 				line.textContent = "◈ " + jewelName(socketed);
 				box.appendChild(line);
+				const pair = forbiddenPairStatus(node.id, socketed);
+				if (pair) {
+					const p = document.createElement("div");
+					p.className = "text-[11px] leading-4 mb-1 " + (pair.ok ? "text-emerald-300" : "text-rose-300");
+					p.dataset.forbiddenPair = pair.ok ? "ok" : "missing";
+					p.textContent = pair.text;
+					box.appendChild(p);
+				}
+				// 꽂은 주얼의 옵션 줄 — 인게임은 꽂은 칸에 올리면 그 주얼의 아이템 툴팁을 보여 준다(10-04 C91). 예전엔 이름 한 줄뿐이었다
+				// 줄 밑 리마인더(인게임 회색 부연, 10-04 C125) — 줄 수가 같으면 그 줄 밑, 한국어가 줄을 합쳐 다르면 끝에 모아서
+				const mods = jewelMods(socketed).split(" / ").filter(Boolean);
+				const rem = jewelRem(socketed);
+				const perLine = rem.length === mods.length;
+				const addRem = (text: string) => {
+					const rl = document.createElement("div");
+					rl.className = "poe-popup-reminder";
+					rl.dataset.jewelReminder = "";
+					rl.textContent = text;
+					box.appendChild(rl);
+				};
+				mods.forEach((mod, i) => {
+					const ml = document.createElement("div");
+					// 타락은 인게임처럼 붉게(고유 툴팁 itemTooltip.jte 와 같은 --poe-corrupt 색)
+					ml.className = mod === "타락" || mod === "Corrupted" ? "text-[12px] font-bold text-[#d20000]" : "poe-popup-stat";
+					ml.dataset.jewelMod = "";
+					ml.textContent = mod;
+					box.appendChild(ml);
+					if (perLine) rem[i].forEach(addRem);
+				});
+				if (!perLine) Array.from(new Set<string>(([] as string[]).concat(...rem))).forEach(addRem);
 			}
-			for (const band of jewelRadiusInfo(node)) {
+			// 반경 — 꽂았으면 **그 주얼의 실제 반경 하나만**(희망의 실은 고리 안 · 불가능한 탈출은 핵심 노드 둘레), 빈 칸이면 계획용 5단계
+			const own = socketed ? jewelRadiusOf(socketed) : null;
+			if (own) {
+				const center = keystoneLeapOf(socketed!) || node;
+				let total = 0;
+				let alloc = 0;
+				for (const n of nodes) {
+					if (n.id === center.id || n.type === "jewel" || n.type === "mastery" || n.type === "class" || n.ascendancy) continue;
+					const d2 = (n.x - center.x) ** 2 + (n.y - center.y) ** 2;
+					if (d2 <= own.r * own.r && d2 >= (own.inner || 0) ** 2) {
+						total++;
+						if (highlighted.has(n.id)) alloc++;
+					}
+				}
 				const line = document.createElement("div");
-				line.className = "text-[11px] font-mono font-semibold text-emerald-200 leading-5";
-				line.textContent = `${band.label} ${band.r} — ${band.alloc}/${band.total}` + (isKorean ? " 패시브" : " passives");
+				line.className = "text-[11px] font-mono font-semibold text-emerald-200 leading-5 mt-1";
+				line.dataset.jewelRadius = "";
+				const where = center !== node ? (isKorean ? `${center.nameKo || center.name} 둘레 ` : `around ${center.name} `) : "";
+				line.textContent = `${where}${own.label ? own.label + " " : ""}${own.inner ? own.inner + "~" : ""}${own.r} — ${alloc}/${total}` + (isKorean ? " 패시브" : " passives");
 				box.appendChild(line);
+			} else if (!socketed) {
+				for (const band of jewelRadiusInfo(node)) {
+					const line = document.createElement("div");
+					line.className = "text-[11px] font-mono font-semibold text-emerald-200 leading-5";
+					line.textContent = `${band.label} ${band.r} — ${band.alloc}/${band.total}` + (isKorean ? " 패시브" : " passives");
+					box.appendChild(line);
+				}
 			}
 			tooltip.appendChild(box);
 		}
@@ -3841,7 +4252,7 @@
 				costClass = "text-amber-300";
 			} else if (highlighted.size > 0) {
 				costText = isKorean ? "연결 불가" : "Unreachable";
-				costClass = "text-base-content/50";
+				costClass = "text-base-content/60";
 			}
 			if (costText) {
 				const foot = document.createElement("div");
@@ -4030,6 +4441,7 @@
 			closeMasteryPicker();
 			closeJewelPicker();
 			closeTattooPicker();
+			closeAnointPicker(); // 도유 고르기 창도(10-04 C104 — 다른 창은 다 닫히는데 이것만 남았다)
 		}
 		// 검색창 등 입력 중에는 브라우저 기본 실행취소를 방해하지 않는다.
 		const tag = (event.target as HTMLElement | null)?.tagName;

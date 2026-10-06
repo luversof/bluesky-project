@@ -30,4 +30,7 @@ public record PoeUniqueItem(
     String iconKey,
     // 로어(플레이버) 텍스트 줄 — 인게임 툴팁 맨 아래 주황 기울임(API PoeUniqueItem 과 쌍)
     List<String> flavour,
-    List<String> flavourKo) {}
+    List<String> flavourKo,
+    // 옵션 줄별 인게임 리마인더(회색 부연), explicits 와 같은 길이(10-04 C114, API 와 쌍). 없으면 null
+    List<List<String>> explicitsReminders,
+    List<List<String>> explicitsRemindersKo) {}

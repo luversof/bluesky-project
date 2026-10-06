@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -107,19 +108,55 @@ public class MonthlyEtfViewSupport {
    * @return 점수 높은 차례, 같으면 종목코드 차례. 고를 것이 없으면 빈 목록
    */
   public List<MonthlyEtfPick> pickRows(List<MonthlyEtfRowView> rows) {
+    return pickRows(rows, MonthlyContributionPickSupport.Basis.DIVIDEND, Map.of());
+  }
+
+  /**
+   * 기준을 골라 고른다(사용자 요청 2026-10-06). 후보 조건(연배당 · 분배금 추세를 아는 종목)은 기준과 상관없이 같고, 셈과 순서는 적립 추천과 같은 {@link
+   * MonthlyContributionPickSupport#valueOf} · {@link MonthlyContributionPickSupport#order} 하나다.
+   *
+   * @param candidateBySymbol 종목코드 &rarr; 카탈로그로 만든 후보({@link
+   *     MonthlyContributionPickSupport#candidateOf}). 행에는 화면에서 고른 기간의 수익률만 실려 있고 감소 횟수도 없어 원값을 따로
+   *     받는다 - 기간 단추를 바꿀 때마다 총수익 기준의 답이 바뀌면 자리 추천과 다른 말을 한다
+   */
+  public List<MonthlyEtfPick> pickRows(
+      List<MonthlyEtfRowView> rows,
+      MonthlyContributionPickSupport.Basis basis,
+      Map<String, MonthlyContributionPickSupport.ContributionCandidate> candidateBySymbol) {
+    MonthlyContributionPickSupport.Basis chosen =
+        basis != null ? basis : MonthlyContributionPickSupport.Basis.DIVIDEND;
+    Map<String, MonthlyContributionPickSupport.ContributionCandidate> candidates =
+        candidateBySymbol != null ? candidateBySymbol : Map.of();
+    record Ranked(
+        MonthlyEtfPick pick, MonthlyContributionPickSupport.ContributionCandidate candidate) {}
     return rows.stream()
         .filter(row -> row.annualYieldPct() != null && row.payoutTrendPct() != null)
         .map(
-            row ->
-                new MonthlyEtfPick(
-                    row,
-                    monthlyContributionPickSupport.scoreOf(
-                        row.annualYieldPct(), row.payoutTrendPct())))
-        .filter(pick -> pick.score() != null)
+            row -> {
+              // 카탈로그 원값이 없으면(배당 기준만 쓰는 옛 호출) 행의 값으로 후보를 만든다 - 총수익 · 꾸준함은 낼 수 없다.
+              MonthlyContributionPickSupport.ContributionCandidate candidate =
+                  row.stockItemSymbol() != null && candidates.containsKey(row.stockItemSymbol())
+                      ? candidates.get(row.stockItemSymbol())
+                      : new MonthlyContributionPickSupport.ContributionCandidate(
+                          safeText(row.stockItemSymbol()),
+                          row.stockItemName(),
+                          row.payoutWindow(),
+                          row.averageTaxableBaseRatio1y(),
+                          row.annualYieldPct(),
+                          row.payoutTrendPct(),
+                          null,
+                          row.volatilityPct(),
+                          null,
+                          null);
+              return new Ranked(
+                  new MonthlyEtfPick(
+                      row, MonthlyContributionPickSupport.valueOf(chosen, candidate)),
+                  candidate);
+            })
+        .filter(ranked -> ranked.pick().score() != null)
         .sorted(
-            Comparator.comparing(MonthlyEtfPick::score)
-                .reversed()
-                .thenComparing(pick -> safeText(pick.row().stockItemSymbol())))
+            Comparator.comparing(Ranked::candidate, MonthlyContributionPickSupport.order(chosen)))
+        .map(Ranked::pick)
         .limit(PICK_LIMIT)
         .toList();
   }

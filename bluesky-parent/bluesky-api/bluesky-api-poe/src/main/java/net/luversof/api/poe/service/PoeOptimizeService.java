@@ -369,6 +369,9 @@ public class PoeOptimizeService {
   /** 아틀라스 패시브 이름(영문→한글) 원본 — 아틀라스 트리는 API 서비스로 안 올라와 파일에서 직접 읽는다. */
   private final Path atlasTreeFile;
 
+  // 판테온 · 산적 이름 사전(tools/poe-extract parse-facet-names.mjs, 10-03 C59)
+  private final Path facetNamesFile;
+
   private final Path resultFile;
   // 완료된 결과를 최근 N건까지 남기는 이력 디렉터리(파일명 = 저장 시각 epochMs). optimize-last.json 은 그대로 "마지막 1건" 용도.
   private final Path historyDir;
@@ -469,6 +472,7 @@ public class PoeOptimizeService {
     this.poeMercenaryService = poeMercenaryService;
     this.resultFile = Path.of(dataDir, "sim", "optimize-last.json");
     this.atlasTreeFile = Path.of(dataDir, "atlas-tree.json");
+    this.facetNamesFile = Path.of(dataDir, "facet-names-ko.json");
     this.historyDir = Path.of(dataDir, "sim", "history");
     this.treeVersion = treeVersion;
     this.pobSourceDir = pobSourceDir;
@@ -721,7 +725,19 @@ public class PoeOptimizeService {
         specializationsOf(a),
         skillDpsOf(a.path("skillDps")),
         a.path("facets").path("total").asLong(),
-        facetsOf(a.path("facets").path("groups")));
+        facetsOf(a.path("facets").path("groups")),
+        poeGemDataService.findByName(a.path("mainSkill").asText()).map(PoeGem::nameKo).orElse(null),
+        ascendancyKoOf(a.path("ascendancy").asText()));
+  }
+
+  /** 전직 영문 → 한국어(시작 노드 한국어 이름, 결과의 ascendancyKo 와 같은 출처). 모르면 null. */
+  private String ascendancyKoOf(String ascendancy) {
+    if (ascendancy == null || ascendancy.isBlank()) {
+      return null;
+    }
+    Integer start = poeTreeGraphService.ascendancyStart(ascendancy);
+    PoeTreeGraphService.TreeNode node = start == null ? null : poeTreeGraphService.node(start);
+    return node == null ? null : node.nameKo();
   }
 
   /** 패싯 이름 사전(영문 → 한글) — 문신 + 트리 노드(키스톤·노터블·마스터리). 최초 1회만 만든다. */
@@ -746,6 +762,18 @@ public class PoeOptimizeService {
     for (PoeTreeGraphService.TreeNode n : treeNodes) {
       if (n.name() != null && n.nameKo() != null && !n.nameKo().isBlank()) {
         map.putIfAbsent(n.name(), n.nameKo());
+      }
+    }
+    // 전직 · 혈맹 노드(렐리쿼리언 "Armour Display" · "Lycia Bloodline" 등)도 키스톤 차원에 이름으로 온다 — 트리에 한글명이 있다(C56)
+    for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.allNodes()) {
+      if (n.name() != null && n.nameKo() != null && !n.nameKo().isBlank()) {
+        map.putIfAbsent(n.name(), n.nameKo());
+      }
+    }
+    // 장비 차원의 고유 아이템 이름("Soulwrest")은 고유 데이터에 한글명이 있다(C56)
+    for (PoeUniqueItem u : poeUniqueDataService.search("", null, null)) {
+      if (u.name() != null && u.nameKo() != null && !u.nameKo().isBlank()) {
+        map.putIfAbsent(u.name(), u.nameKo());
       }
     }
     // 마스터리 패싯은 **노드 이름이 아니라 고른 효과의 스탯 문장**이 항목으로 온다
@@ -784,6 +812,17 @@ public class PoeOptimizeService {
         logger.warn("아틀라스 트리 이름 사전 로드 실패: {}", atlasTreeFile, e);
       }
     }
+    // 판테온 신 · 산적(게임 PantheonPanelLayout · NPCs 테이블) — 다른 데이터엔 한글 원본이 없다(C59)
+    if (Files.exists(facetNamesFile)) {
+      try {
+        JsonNode names = JsonMapper.builder().build().readTree(Files.readString(facetNamesFile));
+        for (Map.Entry<String, JsonNode> e : names.properties()) {
+          map.putIfAbsent(e.getKey(), e.getValue().asText());
+        }
+      } catch (Exception e) {
+        logger.warn("패싯 이름 사전 로드 실패: {}", facetNamesFile, e);
+      }
+    }
     facetNameKoCache = map;
     return map;
   }
@@ -791,7 +830,8 @@ public class PoeOptimizeService {
   /**
    * 패싯 항목의 한국어 표기 — ① 이름 사전(문신·트리 노드) ② 문장형은 모드 번역 사전. 못 찾으면 null(영문 유지).
    *
-   * <p>판테온·산적·무기 구성·장비 등은 우리 데이터에 한글 원본이 없어 영문으로 남는다 — 억지 번역보다 정직하다.
+   * <p>판테온·산적·무기 구성·일반 장비("Rare Boots")는 우리 데이터에 한글 원본이 없어 영문으로 남는다 — 억지 번역보다 정직하다. (고유 아이템 · 전직/혈맹
+   * 노드는 데이터에 있어 10-03 C56 부터 한글.)
    */
   private String facetNameKo(String name) {
     if (name == null || name.isBlank()) {
@@ -2169,7 +2209,9 @@ public class PoeOptimizeService {
 
   /** 모드가 빌드마다 달라지는 유니크 주얼 — 결과에 **고른 모드까지** 실어 보낸다. 나머지 유니크는 모드가 고정이라 상세 페이지 링크로 충분하다(중복 표기 방지). */
   private static final Set<String> BUILD_SPECIFIC_JEWELS =
-      Set.of("watchers-eye", "forbidden-flame", "forbidden-flesh");
+      // slug 는 데이터(고유 상세 · 아이콘)의 것 "watcher-s-eye" — 예전 합성 slug "watchers-eye" 는 결과 링크 404 · 호버 빈
+      // 칸이었다(10-05 C154)
+      Set.of("watcher-s-eye", "forbidden-flame", "forbidden-flesh");
 
   private static final int MIN_SEED_SAMPLE = 5; // 정확키(전직|스킬) 시드 채택 최소 표본(미만은 스킬폴백)
 
@@ -2239,7 +2281,10 @@ public class PoeOptimizeService {
       // masteries/runegrafts/tattoos/weaponmode/pantheon/atlasskills/
       // anointed/secondascendancy/bandit/items/keypassives/shrinebeltbuffs. 구 데이터엔 없어 0/null.
       long facetTotal,
-      Map<String, List<FacetEntry>> facets) {}
+      Map<String, List<FacetEntry>> facets,
+      // 한국어 표기(10-03 C57) — 배지 "Desecrate · Reliquarian" 이 한국어 화면에서도 영문이었다. 없으면 null(영문 유지)
+      String mainSkillKo,
+      String ascendancyKo) {}
 
   /** 조합 벤치 스킬별 전용 DPS — count = 해당 스킬 전용 DPS 를 보유한 표본 수. */
   public record SkillDpsEntry(String name, long dps, int count) {}
@@ -2408,6 +2453,19 @@ public class PoeOptimizeService {
    * 생존항</b>에도 적용하는 실험이다.
    */
   private volatile boolean earlySearchPhase = false;
+
+  /**
+   * 소환수 생존 기준(10-05 C168) — 조기 탐색이 끝난 시점(장비 붙음)의 빌드를 한 번 순차 평가한 주 스킬 소환수 TotalEHP. 0 이면 소환수 항 없음
+   * (비-소환수 스킬 · 조기 탐색 중). 병렬 평가 순서와 무관한 한 번의 값이라 결정성이 유지된다.
+   */
+  private volatile double minionEhpRef = 0d;
+
+  /** 소환수 생존 항 토글(C168) — 기본 on. 전후 대조용으로 POE_MINION_SURV=off(또는 -Dpoe.minionSurv=off). */
+  private static final boolean MINION_SURV_ENABLED =
+      !"off"
+          .equalsIgnoreCase(
+              System.getProperty(
+                  "poe.minionSurv", System.getenv().getOrDefault("POE_MINION_SURV", "on")));
 
   /** 초반 탐색에서 생존 계수 중립화 on/off — 기여도 귀속(A/B) 용. 기본 off. */
   private static final boolean EARLY_DPS_ENABLED =
@@ -2887,6 +2945,7 @@ public class PoeOptimizeService {
     this.targetSpellBlock = 0; // 주문 막기 목표 — 같은 누출 계열
     this.balancedJob = false; // balanced 분기 플래그 — 같은 누출 계열
     this.convexSurvivalPhase = false; // 잡마다 리셋(누출되면 다음 잡의 탐색이 왜곡된다)
+    this.minionEhpRef = 0d; // 소환수 생존 기준 초기화(잡마다, C168)
     this.earlySearchPhase = true; // 잡마다 리셋 — 아이템 단계가 끝나면 false 로 내린다
     this.guardSkill = null; // 잡마다 리셋
     this.guardSupport = null;
@@ -4252,6 +4311,25 @@ public class PoeOptimizeService {
 
       // 초반 탐색 종료 — 여기서부터는 장비가 붙어 생존 계수가 의미를 갖는다(오라·마스터리·문신·전 재대결이 뒤에 남아 적응한다)
       this.earlySearchPhase = false;
+      // 소환수 생존 기준(C168) — 이 시점 빌드를 한 번 평가해 주 스킬 소환수 EHP 를 잡는다(소환수 스킬이 아니면 키가 없어 0 → 항 없음)
+      if (MINION_SURV_ENABLED && "balanced".equals(objectiveKey)) {
+        Map<String, Double> refVals =
+            poePobEngineService.calculateValues(
+                buildXml(
+                    gem,
+                    supports,
+                    className,
+                    ascendancy,
+                    ascendancyNodes,
+                    allocated,
+                    items,
+                    jewels));
+        evalCount.incrementAndGet();
+        this.minionEhpRef = Math.max(0d, refVals.getOrDefault("MinionTotalEHP", 0d));
+        if (minionEhpRef > 0d) {
+          log(String.format("소환수 생존 기준: 소환수 EHP %,.0f (균형 목표에 곱함 — 미달만 비례 감쇠)", minionEhpRef));
+        }
+      }
 
       // ── 4b) 오라/헤럴드 greedy — 예약형 오라를 2번째 스킬 그룹으로 추가(방어+공격 모두 후보) ──
       // greedy 가 현재 목표에 이득 되는 오라만 채택: dps/balanced=데미지 오라, ehp=방어 오라.
@@ -6282,13 +6360,8 @@ public class PoeOptimizeService {
         boolean filled = true;
         while (filled) {
           filled = false;
-          int usedPoints = 0;
-          for (Integer allocatedId : ascendancyNodes) {
-            PoeTreeGraphService.TreeNode info = poeTreeGraphService.node(allocatedId);
-            if (info == null || !Boolean.TRUE.equals(info.ascendancyStart())) {
-              usedPoints++;
-            }
-          }
+          // 선택지(렐리쿼리언 진열장)는 공짜(C52)
+          int usedPoints = poeTreeGraphService.ascendancyPointsUsed(ascendancyNodes);
           int freePoints = ASCENDANCY_POINT_BUDGET - usedPoints;
           if (freePoints <= 0) {
             break;
@@ -6309,7 +6382,9 @@ public class PoeOptimizeService {
               List<Integer> path =
                   poeTreeGraphService.shortestPathInAscendancy(
                       ascendancyNodes, cand.id(), fillTree);
-              if (path == null || path.isEmpty() || path.size() > freePoints) {
+              if (path == null
+                  || path.isEmpty()
+                  || poeTreeGraphService.ascendancyPathCost(path) > freePoints) {
                 continue;
               }
               fills.add(new AscendancyFill(cand.id(), fillTree, path));
@@ -6361,7 +6436,7 @@ public class PoeOptimizeService {
                         ? info.nameKo()
                         : String.valueOf(bestFill.getKey().id()))
                     + " (+"
-                    + bestFill.getKey().path().size()
+                    + poeTreeGraphService.ascendancyPathCost(bestFill.getKey().path())
                     + "pt, "
                     + format(beforeFill)
                     + " → "
@@ -9238,14 +9313,6 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 가정별 성능 매트릭스: 최종 빌드를 적 시나리오 4종 × 버프 off/on 으로 재평가 ──
-      // 완성된 XML 의 <Config> 만 바꿔 병렬 재계산(luajit 프로세스는 서로 독립). EHP 는 적/버프 무관이라 DPS 만.
-      List<PoeOptimizeResult.ScenarioCell> scenarioMatrix =
-          computeScenarioMatrix(finalXml, executor);
-
-      // ── 방어: 유형별 최대 피격 생존(단일 히트) — 빌드가 각 데미지 유형을 얼마까지 버티는지 ──
-      List<PoeOptimizeResult.DefenseHit> defenseHits = defenseHits(finalValues);
-
       // 트리 링크/노터블 목록에는 전직 노드도 포함한다
       Set<Integer> allNodes = new LinkedHashSet<>(ascendancyNodes);
       allNodes.addAll(allocated);
@@ -10245,13 +10312,7 @@ public class PoeOptimizeService {
         boolean leftoverFilled = true;
         while (leftoverFilled) {
           leftoverFilled = false;
-          int usedAscPoints = 0;
-          for (Integer allocatedId : ascendancyNodes) {
-            PoeTreeGraphService.TreeNode allocatedInfo = poeTreeGraphService.node(allocatedId);
-            if (allocatedInfo == null || !Boolean.TRUE.equals(allocatedInfo.ascendancyStart())) {
-              usedAscPoints++;
-            }
-          }
+          int usedAscPoints = poeTreeGraphService.ascendancyPointsUsed(ascendancyNodes);
           int leftoverPoints = ASCENDANCY_POINT_BUDGET - usedAscPoints;
           if (leftoverPoints <= 0) {
             break;
@@ -10272,7 +10333,9 @@ public class PoeOptimizeService {
               List<Integer> path =
                   poeTreeGraphService.shortestPathInAscendancy(
                       ascendancyNodes, cand.id(), leftoverTree);
-              if (path == null || path.isEmpty() || path.size() > leftoverPoints) {
+              if (path == null
+                  || path.isEmpty()
+                  || poeTreeGraphService.ascendancyPathCost(path) > leftoverPoints) {
                 continue;
               }
               leftoverCands.add(new LeftoverFill(cand.id(), path));
@@ -10529,6 +10592,16 @@ public class PoeOptimizeService {
                   + " 해제(다른 반지가 착용을 금지 — PoB 가 이미 무시하던 아이템)");
         }
       }
+      // ── 가정별 성능 매트릭스: 최종 빌드를 적 시나리오 4종 × 버프 off/on 으로 재평가 ──
+      // 완성된 XML 의 <Config> 만 바꿔 병렬 재계산(luajit 프로세스는 서로 독립). EHP 는 적/버프 무관이라 DPS 만.
+      //   ⚠ 반드시 finalXml 을 바꾸는 마지막 단계(도유 재대결 · 주얼 · 회수 · 주얼 정리) **뒤**에서 — 예전엔 그 단계들 앞에서
+      //   계산해 화면의 매트릭스 · 유형별 피격이 중간 빌드 기준이었다(10-04 C121: 회오리바람 셀 24.4M vs 최종 31.8M, 감사 불일치)
+      List<PoeOptimizeResult.ScenarioCell> scenarioMatrix =
+          computeScenarioMatrix(finalXml, executor);
+
+      // ── 방어: 유형별 최대 피격 생존(단일 히트) — 빌드가 각 데미지 유형을 얼마까지 버티는지 ──
+      List<PoeOptimizeResult.DefenseHit> defenseHits = defenseHits(finalValues);
+
       PoeOptimizeResult result =
           new PoeOptimizeResult(
               gem.slug(),
@@ -10627,11 +10700,18 @@ public class PoeOptimizeService {
                                   jewel.unique().slug(),
                                   jewel.unique().name(),
                                   jewel.unique().nameKo(),
+                                  // 표시 = 계산이 쓴 롤(C154, 장비 고유 C153 짝)
                                   BUILD_SPECIFIC_JEWELS.contains(jewel.unique().slug())
-                                      ? jewel.unique().explicitsKo()
+                                      ? rolledLines(
+                                          jewel.unique().explicitsKo(),
+                                          jewel.unique().explicits(),
+                                          true)
                                       : List.of(),
                                   BUILD_SPECIFIC_JEWELS.contains(jewel.unique().slug())
-                                      ? jewel.unique().explicits()
+                                      ? rolledLines(
+                                          jewel.unique().explicitsKo(),
+                                          jewel.unique().explicits(),
+                                          false)
                                       : List.of())
                               // 제작 레어 주얼 — slug 가 없어 상세 링크는 못 걸지만, **붙은 모드는 보여준다**.
                               //   계산에는 jewelLife/jewelFire 같은 접두가 실제로 들어가는데 화면엔 이름만 떠서
@@ -10674,7 +10754,7 @@ public class PoeOptimizeService {
               // 트리 딥링크(j=)는 slug 기반이라 유니크 주얼만 왕복 가능 — 제작 레어 주얼은 제외.
               jewels.entrySet().stream()
                   .filter(entry -> entry.getValue().isUnique())
-                  .map(entry -> entry.getKey() + ":" + entry.getValue().unique().slug())
+                  .map(entry -> entry.getKey() + ":" + treeJewelSpec(entry.getValue().unique()))
                   .collect(java.util.stream.Collectors.joining(",")),
               fixedTattoos.entrySet().stream()
                   .map(entry -> entry.getKey() + ":" + entry.getValue())
@@ -11180,7 +11260,7 @@ public class PoeOptimizeService {
     return new PoeUniqueItem(
         "Watcher's Eye",
         "감시자의 눈",
-        "watchers-eye",
+        "watcher-s-eye",
         "Prismatic Jewel",
         "무지개색 주얼",
         "jewel",
@@ -11243,9 +11323,30 @@ public class PoeOptimizeService {
         //   전 축 하락(730k→580k, 카오스 게이트 무관 — 강도 2종에서 동일 결과로 분리 확인) → 0.5+0.5r 유지.
         surv *= 0.5 + 0.5 * r; // 재생 0 → ×0.5(강한 유도), 목표 도달 → ×1.0
       }
+      surv *= minionSurvival(values); // 소환수 빌드면 소환수 생존도(C168), 아니면 1.0
       return dps * surv * factor;
     }
     return dps * factor;
+  }
+
+  /**
+   * 소환수 생존 계수(10-05 C168) — 주 스킬 소환수 TotalEHP 를 기준(minionEhpRef)과 견준다. 미달은 비례(곱 규칙: 소환수 피해 보조의 DPS
+   * +29% · 소환수 생명력 −25% 를 함께 본다, 하한 0.3), 초과는 보상 없음(1.0). 기준이 없거나(비-소환수 · 조기 탐색) 값이 없으면 1.0 이라 다른
+   * 목표 · 스킬의 기준선은 그대로다.
+   */
+  private double minionSurvival(Map<String, Double> values) {
+    double ref = minionEhpRef;
+    if (ref <= 0d || earlySearchPhase) {
+      return 1.0;
+    }
+    Double m = values.get("MinionTotalEHP");
+    if (m == null || m <= 0d) {
+      return 1.0;
+    }
+    double r = m / ref;
+    // 초과 보상은 두지 않는다 — sqrt 최대 +20% 보상을 뒀더니 좀비 balanced 가 소환수 EHP ×2.1 을 위해 플레이어 EHP −11.4% 를
+    //   내줬다(10-05 실측). 이 항의 목적은 소환수 생존이 깎이는 것(소환수 피해 보조 −25% 등)을 막는 것이지 탱커 소환수로 끄는 게 아니다.
+    return Math.max(0.3, Math.min(1d, r));
   }
 
   /**
@@ -12240,7 +12341,12 @@ public class PoeOptimizeService {
         startCount++;
       }
     }
-    int points = ascendancyNodes.size() - Math.max(1, startCount);
+    // 선택지(렐리쿼리언 진열장의 고유 아이템)는 공짜라 빼고 센다(C52)
+    int choiceOptions =
+        ascendancyNodes.size()
+            - startCount
+            - poeTreeGraphService.ascendancyPointsUsed(ascendancyNodes);
+    int points = ascendancyNodes.size() - Math.max(1, startCount) - Math.max(0, choiceOptions);
     while (points < budget && !remaining.isEmpty()) {
       record AscendancyReachable(PoeTreeGraphService.TreeNode node, List<Integer> path) {}
       List<AscendancyReachable> reachable = new ArrayList<>();
@@ -12248,7 +12354,9 @@ public class PoeOptimizeService {
         List<Integer> path =
             poeTreeGraphService.shortestPathInAscendancy(
                 ascendancyNodes, candidate.id(), ascendancy);
-        if (path == null || path.isEmpty() || points + path.size() > budget) {
+        if (path == null
+            || path.isEmpty()
+            || points + poeTreeGraphService.ascendancyPathCost(path) > budget) {
           continue;
         }
         reachable.add(new AscendancyReachable(candidate, path));
@@ -12272,7 +12380,8 @@ public class PoeOptimizeService {
       double bestGainPerPoint = 0;
       for (Map.Entry<AscendancyReachable, Double> entry : results.entrySet()) {
         double gainPerPoint =
-            (entry.getValue() - currentBeforeRound) / entry.getKey().path().size();
+            (entry.getValue() - currentBeforeRound)
+                / Math.max(1, poeTreeGraphService.ascendancyPathCost(entry.getKey().path()));
         if (gainPerPoint > bestGainPerPoint) {
           bestGainPerPoint = gainPerPoint;
           best = entry.getKey();
@@ -12282,14 +12391,14 @@ public class PoeOptimizeService {
         break;
       }
       ascendancyNodes.addAll(best.path());
-      points += best.path().size();
+      points += poeTreeGraphService.ascendancyPathCost(best.path());
       current = results.get(best);
       remaining.remove(best.node());
       log(
           "전직 할당: "
               + (best.node().nameKo() != null ? best.node().nameKo() : best.node().name())
               + " (+"
-              + best.path().size()
+              + poeTreeGraphService.ascendancyPathCost(best.path()) // 선택지는 공짜(C52)
               + "pt, "
               + points
               + "/"
@@ -12324,10 +12433,11 @@ public class PoeOptimizeService {
       for (PoeTreeGraphService.TreeNode candidate : remaining) {
         List<Integer> path =
             poeTreeGraphService.shortestPathInAscendancy(nodes, candidate.id(), ascendancy);
-        if (path == null || path.isEmpty() || points + path.size() > budget) {
+        int cost = path == null ? 0 : poeTreeGraphService.ascendancyPathCost(path);
+        if (path == null || path.isEmpty() || points + cost > budget) {
           continue;
         }
-        double priority = (score(candidate.stats(), keywords) + 1) / (double) path.size();
+        double priority = (score(candidate.stats(), keywords) + 1) / (double) Math.max(1, cost);
         if (priority > bestPriority) {
           bestPriority = priority;
           best = candidate;
@@ -12338,7 +12448,7 @@ public class PoeOptimizeService {
         break;
       }
       nodes.addAll(bestPath);
-      points += bestPath.size();
+      points += poeTreeGraphService.ascendancyPathCost(bestPath);
       remaining.remove(best);
     }
     return nodes;
@@ -13604,6 +13714,16 @@ public class PoeOptimizeService {
   private static final int VARIANT_CANDIDATES = 8;
 
   /**
+   * 일반 주얼 후보에서 빼는 고유 — 전용 단계가 따로 짝을 맞춰 평가한다(금단 페어 · 감시자의 눈). 홀로 꽂으면 아무 효과가 없거나(금단은 짝 + 전직 일치 필요) 오라
+   * 조합이 따로 정해져야 해서, 일반 후보에 섞이면 평가 예산만 쓴다(C76 에서 PoB 생성 고유로 처음 데이터에 들어왔다).
+   *
+   * <p>실측(10-03 C76): 이 셋이 일반 후보 앞 순번에서 변형 후보 8칸을 선착순으로 다 먹어, 뒤에 있던 의미의 빛(화염 피해)이 빠지고 사이클론 기준선이
+   * 51.1M → 44.8M 으로 떨어졌다. "아이템당 2칸" 상한은 오히려 의미의 빛 화염 변형을 잘랐다(키워드 점수로는 물리 변형들이 앞선다) — 상한 대신 제외로 푼다.
+   */
+  private static final Set<String> DEDICATED_STAGE_JEWELS =
+      Set.of("Watcher's Eye", "Forbidden Flame", "Forbidden Flesh");
+
+  /**
    * 이 유니크의 <b>변형 사본들</b> — 임프레션스 물리/화염/…, 도리아니의 망상 9종처럼 인게임에 동시에 존재하는 서로 다른 아이템.
    *
    * <p>지금까지 최적화기는 <b>기본 변형 하나만</b> 평가했다. 화염 빌드가 "화염 임프레션스"를 못 쓰고 카오스판만 보던 셈이라, 인게임에서 당연히 고르는 선택지가
@@ -13649,6 +13769,24 @@ public class PoeOptimizeService {
   }
 
   /**
+   * 트리 링크 j= 값 — 변형이 여럿인 고유는 "slug:v번호"(10-03 C77). 예전엔 slug 만 남겨 결과가 고른 의미의 빛(화염 피해)이 트리 화면에선 기본
+   * 변형으로 열렸다(결과 수치 ≠ 트리 수치).
+   */
+  static String treeJewelSpec(PoeUniqueItem u) {
+    return u.variants() != null && u.variants().size() > 1 && u.defaultVariant() != null
+        ? u.slug() + ":v" + u.defaultVariant()
+        : u.slug();
+  }
+
+  /** 고른 변형 번호의 사본(트리 화면 꽂은 주얼, C75). 기본 변형이거나 없는 번호면 원본 그대로. */
+  private PoeUniqueItem uniqueVariant(PoeUniqueItem item, int index) {
+    return uniqueVariants(item).stream()
+        .filter(v -> v.defaultVariant() != null && v.defaultVariant() == index)
+        .findFirst()
+        .orElse(item);
+  }
+
+  /**
    * 후보 목록에 <b>다른 변형</b>을 얹는다 — 삿된과 같은 잣대(이번 빌드 키워드 점수)로 거른다.
    *
    * <p>기본 변형보다 이 빌드에 더 맞는 변형만 들어온다. 상한을 두는 이유는 변형이 최대 33개인 아이템이 있어서다.
@@ -13656,6 +13794,8 @@ public class PoeOptimizeService {
   private List<PoeUniqueItem> withUniqueVariants(List<PoeUniqueItem> base, List<String> keywords) {
     List<PoeUniqueItem> out = new ArrayList<>(base);
     int added = 0;
+    // 어느 아이템의 변형이 칸을 받았는지(C76 — 안 보여서 8칸을 누가 먹었는지 잡을 다시 돌려 봐야 했다)
+    List<String> from = new ArrayList<>();
     for (PoeUniqueItem item : base) {
       if (added >= VARIANT_CANDIDATES) {
         break;
@@ -13663,6 +13803,7 @@ public class PoeOptimizeService {
       List<String> baseLines = new ArrayList<>(item.implicits());
       baseLines.addAll(item.explicits());
       int baseScore = score(baseLines, keywords);
+      int before = added;
       for (PoeUniqueItem variant : uniqueVariants(item)) {
         if (added >= VARIANT_CANDIDATES) {
           break;
@@ -13675,10 +13816,13 @@ public class PoeOptimizeService {
           added++;
         }
       }
+      if (added > before) {
+        from.add((item.nameKo() != null ? item.nameKo() : item.name()) + " " + (added - before));
+      }
     }
     // 후보가 늘었는지 **보이게** 한다 — 안 보이면 "왜 변형이 안 뽑혔는지"를 추측하게 된다(실측 0건 사고).
     if (added > 0) {
-      log("변형 후보 추가 " + added + "개 (기본 변형보다 이 빌드에 맞는 것만)");
+      log("변형 후보 추가 " + added + "개 (기본 변형보다 이 빌드에 맞는 것만): " + String.join(" · ", from));
     }
     return out;
   }
@@ -13726,6 +13870,50 @@ public class PoeOptimizeService {
    *
    * <p>시드는 유효 범위로 클램프한다(범위 밖이면 PoB 가 데이터를 못 찾아 계산이 비어 버린다).
    */
+  private static final java.util.regex.Pattern FORBIDDEN_LINE =
+      java.util.regex.Pattern.compile(
+          "^Allocates .+ if you have the matching modifier on Forbidden (Flesh|Flame)$");
+
+  /**
+   * 금단의 화염/살점에 직업 제한 줄을 붙인다(10-04 C86). PoB 는 "Requires Class X" 로 짝을 맞추는데, 데이터의 옵션 줄에서는 C78 이 그 줄을
+   * 메타로 뺐다(인게임 옵션이 아니라 요구 사항) — 그 뒤 트리 계산에 짝을 꽂아도 노터블이 할당되지 않았다(템플러 신성한 인도 짝: 마나 684 그대로). 최적화기 금단
+   * 단계는 자체 합성(forbiddenJewel)에 이 줄을 넣어 영향이 없었다. 직업은 빌드의 것 — 다른 직업 전직 노터블은 PoB 가 어차피 무시한다.
+   */
+  private static PoeUniqueItem withForbiddenClass(PoeUniqueItem item, String className) {
+    if (className == null
+        || item.explicits() == null
+        || item.explicits().stream().noneMatch(l -> FORBIDDEN_LINE.matcher(l).matches())
+        || item.explicits().stream().anyMatch(l -> l.startsWith("Requires Class "))) {
+      return item;
+    }
+    List<String> lines = new ArrayList<>();
+    lines.add("Requires Class " + className);
+    lines.addAll(item.explicits());
+    return new PoeUniqueItem(
+        item.name(),
+        item.nameKo(),
+        item.slug(),
+        item.baseType(),
+        item.baseTypeKo(),
+        item.category(),
+        item.requiredLevel(),
+        item.league(),
+        item.legacy(),
+        item.radius(),
+        item.implicits(),
+        item.implicitsKo(),
+        lines,
+        item.explicitsKo(),
+        item.variants(),
+        item.defaultVariant(),
+        item.reqStr(),
+        item.reqDex(),
+        item.reqInt(),
+        item.iconKey(),
+        item.flavour(),
+        item.flavourKo());
+  }
+
   private PoeUniqueItem withTimeless(PoeUniqueItem item, String conqueror, String seedText) {
     TimelessJewel def = TIMELESS_JEWELS.get(item.name());
     if (def == null) {
@@ -13792,6 +13980,7 @@ public class PoeOptimizeService {
     return poeUniqueDataService.search(null, "jewel", null).stream()
         .filter(item -> !excludeLegacyUniques || !item.legacy())
         .filter(item -> item.requiredLevel() == null || item.requiredLevel() <= LEVEL)
+        .filter(item -> !DEDICATED_STAGE_JEWELS.contains(item.name()))
         // 트리 소켓에 **꽂을 수 없는** 주얼을 후보에서 뺀다. PoB 는 소켓 종류를 검증하지 않으므로
         // 그냥 두면 게임에서 만들 수 없는 빌드가 더 높은 점수를 받는다(사이클 110 의 클러스터 소켓과 같은 계열).
         //  · Cluster/Timeless : 전용 소켓·전용 취급
@@ -13846,10 +14035,18 @@ public class PoeOptimizeService {
       if (s.isEmpty() || !seen.add(s)) {
         continue;
       }
+      // "slug:v번호" — 고유 상세에서 고른 변형(10-04 C95). 예전엔 slug 만 받아 의미의 빛(화염)을 보고 눌러도 기본 변형이 강제됐다
+      int vAt = s.lastIndexOf(":v");
+      Integer variantIndex =
+          vAt > 0 && s.substring(vAt + 2).matches("[0-9]+")
+              ? Integer.valueOf(s.substring(vAt + 2))
+              : null;
+      String baseSlug = variantIndex != null ? s.substring(0, vAt) : s;
       // 못 찾은 slug 를 조용히 버리지 않는다 — 사용자가 강제 장착을 요청했는데 무시되면 결과가
       //   "그냥 평범한 빌드"로 나와 이유를 알 수 없다(실측: the-bringer-of-rain 이 반영도, 경고도 없이 사라졌다).
       poeUniqueDataService
-          .findBySlug(s)
+          .findBySlug(baseSlug)
+          .map(u -> variantIndex == null ? u : uniqueVariant(u, variantIndex))
           .ifPresentOrElse(resolved::add, () -> log("강제 유니크 미해석(무시됨): " + s));
     }
     return resolved;
@@ -16513,12 +16710,15 @@ public class PoeOptimizeService {
             Slot.WEAPON.ko,
             "RARE",
             null,
-            base + " (시뮬 표준 무기)",
+            // 영문 이름엔 영문 꼬리 — 영어 화면에 "(시뮬 표준 무기)"가 그대로 나왔다(10-05 C163)
+            base + " (sim standard weapon)",
             (nameKo != null ? nameKo : base) + " (시뮬 표준 무기)",
             List.of("물리 피해 60-120 추가", "명중 +2000"),
             List.of("Adds 60-120 Physical Damage", "+2000 Accuracy"),
             // 시뮬 표준 무기는 실제 롤이 아닌 고정 가정 — 티어 없음
             List.of("", ""),
+            null,
+            null,
             null,
             null));
   }
@@ -16533,6 +16733,11 @@ public class PoeOptimizeService {
       // EN 로케일용 병렬 라인 — 결과 페이지가 유일한 ko 전용 표면이었다(다른 페이지는 전부 이중언어)
       List<String> linesEn = new ArrayList<>(anointLineEn(slot));
       linesEn.addAll(uniqueModLinesEn(unique));
+      // 고유 익스플리싯이 시작하는 줄 — 도유 · 임플리싯 뒤(리마인더는 데이터 것을 그대로, C150)
+      int explicitOffset =
+          anointLineEn(slot).size() + (unique.implicits() == null ? 0 : unique.implicits().size());
+      // 표시 = 계산이 쓴 롤(최대 · 해로운 모드는 최소, C153) — 리마인더 조회도 굴린 값 줄이 사전 키와 맞는다
+      resolveRolls(lines, linesEn);
       // 유니크는 롤 가능한 티어가 없다 — 줄 수만큼 빈 티어로 정렬 유지(템플릿 인덱스 정합)
       List<String> tiers = new ArrayList<>();
       for (int k = 0; k < lines.size(); k++) {
@@ -16550,7 +16755,9 @@ public class PoeOptimizeService {
           tiers,
           // 유니크도 원클릭 링크 제공(사용자 요청) — 고유명 검색 + 즉시 구입. 실속형은 티어 개념이 없어 미제공.
           uniqueTradeQuery(unique),
-          null);
+          null,
+          resultReminders(linesEn, uniqueFixedReminders(unique, explicitOffset, false), false),
+          resultReminders(linesEn, uniqueFixedReminders(unique, explicitOffset, true), true));
     }
     RareItem rare = equipped.rare();
     // 레어도 베이스 한글명을 채운다 — 유니크만 한글로 나오고 레어는 영문이라 목록이 뒤죽박죽이었다
@@ -16578,7 +16785,9 @@ public class PoeOptimizeService {
         rareLinesEn,
         rareTiers,
         tradeQueryFor(rare, baseNameKo, false),
-        tradeQueryFor(rare, baseNameKo, true));
+        tradeQueryFor(rare, baseNameKo, true),
+        resultReminders(rareLinesEn, Map.of(), false),
+        resultReminders(rareLinesEn, Map.of(), true));
   }
 
   /**
@@ -16786,8 +16995,18 @@ public class PoeOptimizeService {
     return lines;
   }
 
-  private void mergeLocaleLines(List<String> out, List<String> en, List<String> ko) {
+  static void mergeLocaleLines(List<String> out, List<String> en, List<String> ko) {
     if (en == null) {
+      return;
+    }
+    // 한국어 설명은 영문 두 줄을 한 줄로 합치기도 한다(인게임과 같다 — 빛나는 묘약 "생명력을 1만 남기고 제거 제거된 생명력은 …",
+    //   고유 112종). 줄 수가 다르면 순번 짝짓기가 어긋나 **이미 합쳐진 영문 꼬리 줄**이 한국어 아래 또 붙었다(10-03 C58).
+    //   줄 수가 다르고 한국어가 다 채워져 있으면 한국어 목록을 그대로 쓴다. 같으면 예전처럼 줄마다(빈 한국어 줄만 영문).
+    if (ko != null
+        && !ko.isEmpty()
+        && ko.size() != en.size()
+        && ko.stream().allMatch(k -> k != null && !k.isBlank())) {
+      out.addAll(ko);
       return;
     }
     for (int i = 0; i < en.size(); i++) {
@@ -16814,6 +17033,51 @@ public class PoeOptimizeService {
   }
 
   /** anointLineKo 의 영문판 — EN 로케일 결과 표시용. */
+  private static final java.util.regex.Pattern RESULT_LINE_MARKER =
+      java.util.regex.Pattern.compile("^\\([a-z·]+\\) ");
+
+  /**
+   * 결과 줄별 인게임 리마인더(회색 부연) — 영문 줄의 "(prefix) " 같은 표시용 마커를 떼고 번역 사전과 같은 정규화로 찾는다. fixed 가 주어진 줄(고유
+   * 익스플리싯 — 범위 표기라 사전 키와 안 맞음)은 데이터의 리마인더를 그대로. 하나도 없으면 null(10-04 C150).
+   */
+  private List<List<String>> resultReminders(
+      List<String> linesEn, Map<Integer, List<String>> fixed, boolean ko) {
+    List<List<String>> out = new ArrayList<>();
+    boolean any = false;
+    for (int i = 0; i < linesEn.size(); i++) {
+      List<String> texts = fixed.get(i);
+      if (texts == null) {
+        String line = RESULT_LINE_MARKER.matcher(linesEn.get(i)).replaceFirst("");
+        texts =
+            poeModTranslateService.reminders(line).stream()
+                .map(r -> ko && r.ko() != null ? r.ko() : r.en())
+                .toList();
+      }
+      any |= !texts.isEmpty();
+      out.add(texts);
+    }
+    return any ? List.copyOf(out) : null;
+  }
+
+  /** 고유 익스플리싯 줄 위치(도유 · 임플리싯 뒤) → 데이터의 리마인더. */
+  private static Map<Integer, List<String>> uniqueFixedReminders(
+      PoeUniqueItem unique, int offset, boolean ko) {
+    List<List<String>> rem = ko ? unique.explicitsRemindersKo() : unique.explicitsReminders();
+    if (rem == null) {
+      rem = unique.explicitsReminders();
+    }
+    Map<Integer, List<String>> out = new HashMap<>();
+    if (rem == null) {
+      return out;
+    }
+    for (int i = 0; i < rem.size(); i++) {
+      if (rem.get(i) != null) {
+        out.put(offset + i, rem.get(i));
+      }
+    }
+    return out;
+  }
+
   private List<String> anointLineEn(Slot slot) {
     AnointPick pick = currentAnoint;
     return slot == Slot.AMULET && pick != null
@@ -16893,11 +17157,14 @@ public class PoeOptimizeService {
    */
   private String uniqueItemText(PoeUniqueItem item, List<String> extraImplicits) {
     StringBuilder text = new StringBuilder();
-    text.append("Rarity: UNIQUE\n")
-        .append(item.name())
-        .append("\n")
-        .append(item.baseType())
-        .append("\n");
+    // 제목은 정식 고유 이름으로(10-04 C86) — 변형 · 타임리스 사본은 이름에 꼬리("Forbidden Flame ((Templar) Divine
+    // Guidance)")가 붙는데, PoB 는
+    //   제목으로 조건을 건다(CalcSetup: conditions[item.title 공백 제거] = 직업 제한 → 금단 짝은 "ForbiddenFlame" 키).
+    // 꼬리가 붙으면 짝이 안 맞아
+    //   트리 계산에 금단 짝을 꽂아도 노터블이 안 켜졌다.
+    String canonical = poeUniqueDataService.canonicalName(item.slug());
+    String title = canonical != null ? canonical : item.name();
+    text.append("Rarity: UNIQUE\n").append(title).append("\n").append(item.baseType()).append("\n");
     // 반경 라벨은 implicit 앞 **아이템 속성** 줄이다 — 빠지면 "…in Radius" 모드를 PoB 가 통째로 무시한다
     // (붉은 악몽 실측: 라벨 없이는 반경 내 저항 패시브가 방어 확률로 전혀 바뀌지 않았다)
     if (item.radius() != null && !item.radius().isBlank()) {
@@ -16937,6 +17204,50 @@ public class PoeOptimizeService {
    * 중간롤보다 DPS +7.8%). 21/20 젬·최상위 레어와 같은 엔드게임 전제 계열. {range} 문법 검증: 최소 1,768 < 중간 1,798 < 최대
    * 1,827(단조).
    */
+  private static final java.util.regex.Pattern ROLL_RANGE =
+      java.util.regex.Pattern.compile("\\((\\d+(?:\\.\\d+)?)-(\\d+(?:\\.\\d+)?)\\)");
+
+  /**
+   * 결과 표시용 고유 줄 = 계산이 쓴 롤(withMaxRoll 과 같은 판정, 10-05 C153) — 예전엔 범위 "(20-24)" 그대로라 인게임 툴팁(굴린 값)과도,
+   * 실제 계산(최대롤)과도 달랐다. 판정은 영문 줄로(해로운 모드 = 최소롤), 한국어 줄은 같은 위치의 판정을 따른다. 줄 수가 다르면(한국어가 두 줄을 합친 경우)
+   * 한국어는 범위 그대로.
+   */
+  private static void resolveRolls(List<String> ko, List<String> en) {
+    boolean aligned = ko.size() == en.size();
+    for (int i = 0; i < en.size(); i++) {
+      boolean harmful = HARMFUL_MOD_LINE.matcher(en.get(i)).find();
+      en.set(i, resolveRoll(en.get(i), harmful));
+      if (aligned) {
+        ko.set(i, resolveRoll(ko.get(i), harmful));
+      }
+    }
+  }
+
+  /** resolveRolls 의 한쪽만(사본에서) — ko 가 true 면 한국어 줄, 아니면 영문 줄. null 은 그대로(10-05 C154). */
+  private static List<String> rolledLines(List<String> ko, List<String> en, boolean wantKo) {
+    if (en == null) {
+      return wantKo ? ko : null;
+    }
+    List<String> k = ko == null ? new ArrayList<>() : new ArrayList<>(ko);
+    List<String> e = new ArrayList<>(en);
+    resolveRolls(k, e);
+    return wantKo ? (ko == null ? null : k) : e;
+  }
+
+  private static String resolveRoll(String line, boolean harmful) {
+    if (line == null) {
+      return null;
+    }
+    java.util.regex.Matcher m = ROLL_RANGE.matcher(line);
+    StringBuilder out = new StringBuilder();
+    while (m.find()) {
+      m.appendReplacement(
+          out, java.util.regex.Matcher.quoteReplacement(harmful ? m.group(1) : m.group(2)));
+    }
+    m.appendTail(out);
+    return out.toString();
+  }
+
   private String withMaxRoll(String line) {
     if (line == null || !line.matches(".*\\(\\d+(?:\\.\\d+)?-\\d+(?:\\.\\d+)?\\).*")) {
       return line;
@@ -17045,7 +17356,8 @@ public class PoeOptimizeService {
         if (!nodes.contains(entry.getKey())) {
           continue;
         }
-        // 값은 "slug" 또는 타임리스 지정 "slug:정복자:시드" — 정복자/시드는 반경 변환 결과를 바꾼다
+        // 값은 "slug" · 타임리스 지정 "slug:정복자:시드" · 변형 "slug:v번호"(10-03 C75) — 정복자/시드는 반경 변환, 변형은 옵션 줄을
+        // 바꾼다
         String[] spec = entry.getValue().split(":");
         poeUniqueDataService
             .findBySlug(spec[0].trim())
@@ -17054,10 +17366,17 @@ public class PoeOptimizeService {
                     jewels.put(
                         entry.getKey(),
                         Equipped.ofUnique(
-                            spec.length >= 2
-                                ? withTimeless(
-                                    u, spec[1].trim(), spec.length >= 3 ? spec[2].trim() : null)
-                                : u)));
+                            withForbiddenClass(
+                                spec.length == 2 && spec[1].trim().matches("v\\d+")
+                                    ? uniqueVariant(
+                                        u, Integer.parseInt(spec[1].trim().substring(1)))
+                                    : spec.length >= 2
+                                        ? withTimeless(
+                                            u,
+                                            spec[1].trim(),
+                                            spec.length >= 3 ? spec[2].trim() : null)
+                                        : u,
+                                className))));
       }
     }
     String xml =

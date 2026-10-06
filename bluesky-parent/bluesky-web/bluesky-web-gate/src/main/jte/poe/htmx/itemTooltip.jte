@@ -11,8 +11,21 @@
 @param PoeBaseItem baseItem = null
 @param java.util.List<String> modLines = null
 @param java.util.List<String> implicitLines = null
+<%-- 줄별 인게임 리마인더(회색 부연) — 줄 수가 같을 때만 그 줄 밑에(10-04 C131, 빌드 화면 레어 · 노멀) --%>
+@param java.util.List<java.util.List<String>> modReminders = null
+@param java.util.List<java.util.List<String>> implicitReminders = null
 @param boolean corrupted = false
 @param int quality = 0
+<%-- 무형성 %(3.27 아이템 속성, 10-04 C136) — 품질 다음 속성 줄 --%>
+@param int intangibility = 0
+<%-- 영향력 · 분열 · 합성 심볼 키(10-04 C137) — 인게임 헤더 좌우 모서리: 둘이면 왼쪽 첫째 · 오른쪽 둘째, 하나면 양쪽 같은 아이콘(resultRareTooltip 과 같은 배치) --%>
+@param java.util.List<String> influences = null
+<%-- 줄 종류(crafted · fractured · enchant, 10-04 C138) — PoeText.modKindClass 로 인게임 색.
+     Tailwind 는 Java 를 안 훑으므로 클래스 이름을 여기 적어 둔다: text-[#b4b4ff] text-[#a29162] text-[#b8daf2] --%>
+@param java.util.List<String> implicitKinds = null
+@param java.util.List<String> modKinds = null
+<%-- 고유 로어(플레이버) 줄 — 옵션 밑, 부패됨 위(10-04 C139, 빌드 화면 고유 툴팁) --%>
+@param java.util.List<String> flavourLines = null
 
 !{
 	// 이름+베이스 2줄이면 인게임 2줄 헤더 아트(레어/유니크에 --band2-* 정의, 그 외 1줄 아트 폴백)
@@ -33,8 +46,16 @@
 }
 
 <%-- 게임 아이템 툴팁 본문 (호버 레이어용) — 헤더 밴드 + 아이템클래스 + 베이스 속성 + 요구 + 롤 모드 --%>
-<div class="poe-tooltip ${rarityClass} w-80 max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarityBorder}">
+<div class="poe-tooltip ${rarityClass} w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarityBorder}">
+	!{
+		String leftInf = influences != null && !influences.isEmpty() ? "/poe-data/ui-assets/influence-" + influences.get(0) + ".png" : null;
+		String rightInf = influences != null && influences.size() > 1 ? "/poe-data/ui-assets/influence-" + influences.get(1) + ".png" : leftInf;
+	}
 	<div class="poe-tt-band${twoLine ? " poe-tt-band-2" : ""}">
+		@if(leftInf != null)
+			<img src="${leftInf}" data-tt-influence style="position:absolute;left:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
+			<img src="${rightInf}" data-tt-influence style="position:absolute;right:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
+		@endif
 		<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${name}</div>
 		@if(twoLine)
 			<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${base}</div>
@@ -44,13 +65,14 @@
 		<div class="px-4 pt-1 text-center text-[11px] text-white/60">${itemClass}</div>
 	@endif
 
-	@if(hasWeapon || hasArmour || quality > 0)
+	@if(hasWeapon || hasArmour || quality > 0 || intangibility > 0)
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
 			<%-- 품질은 인게임 속성 블록의 **첫 줄**이고 값은 매직 파랑이다
 			     (PoB ItemsTab 이 무기/방어구/플라스크 세 분기 모두 같은 순서·색으로 그린다).
 			     PoB 텍스트의 "Quality: N" 을 ITEM_META 로 걸러내기만 해서 임포트하면 품질이 사라졌다. --%>
 			@if(quality > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="text-[#8888ff]">+${quality}%</span></div>@endif
+			@if(intangibility > 0)<div data-tt-intangibility><span class="${label}">${MessageUtil.getMessage("poe.items.detail.intangibility")}: </span><span class="text-[#8888ff]">${intangibility}%</span></div>@endif
 			@if(hasWeapon)
 				<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${value}">${baseItem.weapon().damageMin()}–${baseItem.weapon().damageMax()}</span></div>
 				<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.crit.chance")}: </span><span class="${value}">${String.format("%.2f", baseItem.weapon().critChance())}%</span></div>
@@ -107,8 +129,15 @@
 	@if(implicitLines != null && !implicitLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center space-y-0.5">
-			@for(String line : implicitLines)
-				<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(line)}</div>
+			@for(int ii = 0; ii < implicitLines.size(); ii++)
+				@if(!implicitLines.get(ii).isBlank())
+				<div class="text-[12px] leading-snug ${net.luversof.web.gate.poe.PoeText.modKindClass(implicitKinds, implicitLines.size(), ii)} whitespace-pre-line" data-mod-kind="${implicitKinds != null && implicitKinds.size() == implicitLines.size() ? implicitKinds.get(ii) : ""}">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(implicitLines.get(ii))}</div>
+				@if(implicitReminders != null && implicitReminders.size() == implicitLines.size() && implicitReminders.get(ii) != null)
+					@for(String rem : implicitReminders.get(ii))
+						<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+					@endfor
+				@endif
+				@endif
 			@endfor
 		</div>
 	@endif
@@ -116,8 +145,24 @@
 	@if(modLines != null && !modLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center space-y-0.5">
-			@for(String line : modLines)
-				<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(line)}</div>
+			@for(int mi = 0; mi < modLines.size(); mi++)
+				@if(!modLines.get(mi).isBlank())
+				<div class="text-[12px] leading-snug ${net.luversof.web.gate.poe.PoeText.modKindClass(modKinds, modLines.size(), mi)} whitespace-pre-line" data-mod-kind="${modKinds != null && modKinds.size() == modLines.size() ? modKinds.get(mi) : ""}">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(modLines.get(mi))}</div>
+				@if(modReminders != null && modReminders.size() == modLines.size() && modReminders.get(mi) != null)
+					@for(String rem : modReminders.get(mi))
+						<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+					@endfor
+				@endif
+				@endif
+			@endfor
+		</div>
+	@endif
+
+	@if(flavourLines != null && !flavourLines.isEmpty())
+		<div class="poe-tt-sepimg"></div>
+		<div class="px-4 py-2 text-center space-y-0.5" data-tt-flavour>
+			@for(String fl : flavourLines)
+				<div class="text-[12px] leading-snug italic text-[#af6025]">${fl}</div>
 			@endfor
 		</div>
 	@endif

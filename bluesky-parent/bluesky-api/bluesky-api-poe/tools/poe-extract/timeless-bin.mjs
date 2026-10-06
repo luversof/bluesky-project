@@ -15,7 +15,8 @@ if (!fs.existsSync(DIR)) {
 	process.exit(0);
 }
 
-const names = ["BrutalRestraint", "LethalPride", "MilitantFaith", "ElegantHubris", "HeroicTragedy", "GloriousVanity"];
+// Abyss 5종(3.27+)은 PoB 가 .bin 캐시 없이 늘 Inflate 로 푼다 — 러너의 Inflate 대체가 이 .bin 을 압축본 크기로 짝지어 돌려준다(10-05 C166)
+const names = ["BrutalRestraint", "LethalPride", "MilitantFaith", "ElegantHubris", "HeroicTragedy", "GloriousVanity", "AbyssAmanamu", "AbyssKurgal", "AbyssTecrod", "AbyssUlaman", "AbyssZorath"];
 let done = 0;
 for (const name of names) {
 	const binPath = path.join(DIR, `${name}.bin`);

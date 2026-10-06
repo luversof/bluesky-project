@@ -74,7 +74,8 @@ class ZeroVolumePriceSelectionTest {
              WHERE h."stockItem_id" =""");
     String pickFirst = squash(") AS y ORDER BY y.pick LIMIT 1");
     for (Path path : List.of(REPOSITORY, QUERY)) {
-      String source = squash(read(path));
+      // 저장소 쪽은 갱신 시각도 함께 고른다(장중 시세 표기, 2026-10-02) - 갈래 모양만 보려고 그 열은 지우고 센다.
+      String source = squash(read(path)).replace(squash("h.\"updatedDate\","), "");
       assertThat(count(source, preferTraded)).as(path + " : 거래가 있던 행 갈래").isEqualTo(1);
       assertThat(count(source, fallback)).as(path + " : 폴백 갈래").isEqualTo(1);
       assertThat(count(source, pickFirst)).as(path + " : 앞 갈래를 먼저 고르기").isEqualTo(1);
@@ -130,6 +131,37 @@ class ZeroVolumePriceSelectionTest {
     assertThat(read(REPOSITORY))
         .as("레포지토리에 거르지 않는 구간 조회가 되살아났다")
         .doesNotContain("findByStockItemIdInAndTradeDateBetween");
+  }
+
+  /**
+   * 원주가를 읽는 조회 셋(카탈로그 원주가 · 원주가 평가 구간 · 캔들)은 종목의 가장 최근 거래일에 수정 종가를 쓴다(2026-10-02).
+   *
+   * <p>시세 갱신과 원주가 채우기가 장중 다른 시각에 받으면 그 날만 둘이 갈려, 계좌 카드 평가액(수정 종가)과 시계열 끝점(원주가)이
+   * 어긋났다(account-detail-values 5 계좌). 한 곳이라도 규칙을 잃으면 세는 개수가 줄어 걸린다.
+   */
+  @Test
+  void 원주가_조회는_가장_최근_거래일에_수정_종가를_쓴다() throws IOException {
+    String source = squash(read(QUERY));
+    String latest =
+        squash(
+            "CASE WHEN h.\"tradeDate\" = l.latest THEN h.\"closePrice\" ELSE h.\"rawClosePrice\" END");
+    assertThat(count(source, latest)).as("원주가 조회 셋이 모두 최근 거래일 규칙을 가져야 한다").isEqualTo(3);
+    // 최근 거래일은 종목마다 한 번(LATERAL / 단건 CROSS JOIN) - 행마다 상관 부분 조회로 구하면 시계열이 38 -> 78ms(2026-10-02).
+    assertThat(
+            count(
+                source,
+                squash(
+                    "(SELECT max(x.\"tradeDate\") AS latest FROM \"StockPriceHistory\" x WHERE")))
+        .as("최근 거래일 l.latest 를 정의하는 곳이 셋이어야 한다")
+        .isEqualTo(3);
+    // 최근 거래일은 거래가 있던 날(2026-10-03 검토) - 조회가 거래량 0 행을 빼므로 마지막 행이 거래량 0 이면 규칙이 어느 행에도 안 걸린다.
+    assertThat(count(source, squash("AND x.\"volume\" > 0) l")))
+        .as("최근 거래일 부분 조회 셋 모두 거래량 조건이 있어야 한다")
+        .isEqualTo(3);
+    assertThat(source)
+        .as("행마다 도는 상관 부분 조회가 돌아왔다")
+        .doesNotContain(squash("x.\"stockItem_id\" = h.\"stockItem_id\")"));
+    assertThat(count(source, "h.\"rawClosePrice\"AS")).as("규칙 없이 원주가 열을 그대로 내보내는 조회가 생겼다").isZero();
   }
 
   /** 종목의 모든 행이 거래량 0 이어도 값이 사라지면 안 된다. */

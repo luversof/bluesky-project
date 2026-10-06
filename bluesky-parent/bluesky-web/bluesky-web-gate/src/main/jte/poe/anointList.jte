@@ -8,8 +8,8 @@
 
 <div class="grid gap-1.5">
 	@for(PoeAnointEntry a : anoints)
-		<div class="flex items-start gap-3 rounded-lg border border-base-200 bg-base-100 px-3 py-1.5" data-mod-family="anoint-${a.nodeId()}">
-			<span class="flex items-center gap-0.5 shrink-0 pt-0.5">
+		<div class="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-lg border border-base-200 bg-base-100 px-3 py-1.5" data-mod-family="anoint-${a.nodeId()}">
+			<span class="flex flex-wrap items-center gap-0.5 max-w-full pt-0.5">
 				@for(PoeAnointEntry.OilRef oil : a.oils())
 					@if(oil.icon() != null)
 						<img src="/poe-assets/${oil.icon()}" class="w-6 h-6 object-contain" alt="${ko ? oil.nameKo() : oil.name()}" title="${ko ? oil.nameKo() : oil.name()}" loading="lazy">

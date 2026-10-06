@@ -119,9 +119,21 @@
 		<%-- 레벨별 스탯 라인 (파랑) --%>
 		@if(displayStatLines != null && !displayStatLines.isEmpty())
 			<div class="poe-tt-sepimg"></div>
+			<%-- 줄 밑 리마인더(인게임 회색 부연, 10-04 C115) — 레벨 statReminders(줄별 Id) → 젬 reminderText 사전. 줄 수가 같을 때만 줄 밑에 --%>
+			!{
+				java.util.List<java.util.List<String>> remIds = current.statReminders();
+				boolean remPerLine = remIds != null && gem.reminderText() != null && remIds.size() == displayStatLines.size();
+			}
 			<div class="px-4 py-1.5 text-center space-y-0.5">
-				@for(String statLine : displayStatLines)
-					<div class="text-[12.5px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(statLine)}</div>
+				@for(int si = 0; si < displayStatLines.size(); si++)
+					<div class="text-[12.5px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(displayStatLines.get(si))}</div>
+					@if(remPerLine && remIds.get(si) != null)
+						@for(String rid : remIds.get(si))
+							@if(gem.reminderText().get(rid) != null)
+								<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${PoeText.name(gem.reminderText().get(rid).ko(), gem.reminderText().get(rid).en())}</div>
+							@endif
+						@endfor
+					@endif
 				@endfor
 			</div>
 		@endif
@@ -131,8 +143,17 @@
 		@if(displayQuality != null && !displayQuality.isEmpty())
 			<div class="px-4 pb-1.5 pt-2 text-center space-y-0.5">
 				<div class="text-[12.5px] text-white/60">${qualityLabel}:</div>
-				@for(String qualityLine : displayQuality)
-					<div class="text-[12.5px] leading-snug text-[#8888ff]">$unsafe{PoeText.highlightValues(qualityLine)}</div>
+				<%-- 줄 밑 리마인더(10-04 C120, 레벨 줄과 같은 규칙 — 줄 수가 같을 때만) --%>
+				!{ boolean qRem = gem.qualityReminders() != null && gem.reminderText() != null && gem.qualityReminders().size() == displayQuality.size(); }
+				@for(int qi = 0; qi < displayQuality.size(); qi++)
+					<div class="text-[12.5px] leading-snug text-[#8888ff]">$unsafe{PoeText.highlightValues(displayQuality.get(qi))}</div>
+					@if(qRem && gem.qualityReminders().get(qi) != null)
+						@for(String rid : gem.qualityReminders().get(qi))
+							@if(gem.reminderText().get(rid) != null)
+								<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${PoeText.name(gem.reminderText().get(rid).ko(), gem.reminderText().get(rid).en())}</div>
+							@endif
+						@endfor
+					@endif
 				@endfor
 			</div>
 		@endif
@@ -146,16 +167,21 @@
 		</div>
 
 		<%-- 레벨 내비 + 타입 배지 --%>
+		@if(gem.isVaal())
+			<%-- 바알 젬은 늘 타락 — 인게임 젬 툴팁 맨 아래 붉은 한 줄(10-05 C159, 고유 툴팁 C157 과 같은 모양 · 낱말) --%>
+			<div class="poe-tt-sepimg"></div>
+			<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${PoeText.isKorean() ? "타락" : "Corrupted"}</div>
+		@endif
 		<div class="px-4 py-2 border-t border-white/10">
 			<div class="flex flex-wrap gap-1 items-center">
 				<span class="text-[11px] text-white/40 mr-1">${levelLabel}</span>
 				@for(int step : levelSteps)
 					@if(pageMode)
-						<a class="px-1.5 py-0.5 rounded text-[11px] ${step == displayLevel ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
+						<a class="inline-flex min-w-6 min-h-6 items-center justify-center px-1.5 py-0.5 rounded text-[11px] ${step == displayLevel ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
 						   href="/poe/gems/${gem.slug()}?level=${step}">${step}</a>
 					@else
 						<button type="button"
-						        class="px-1.5 py-0.5 rounded text-[11px] ${step == displayLevel ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
+						        class="inline-flex min-w-6 min-h-6 items-center justify-center px-1.5 py-0.5 rounded text-[11px] ${step == displayLevel ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
 						        hx-get="/poe/htmx/gems/detail?slug=${gem.slug()}&level=${step}"
 						        hx-target="#poePreview"
 						        hx-swap="innerHTML">${step}</button>
@@ -163,7 +189,7 @@
 				@endfor
 				@if(gem.isVaal())
 					<%-- 인게임 부패(corrupted) 관례: 바알 스킬은 붉은색 표식 --%>
-					<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-[#d20000]/50 text-[#d20000]">${PoeText.isKorean() ? "바알 · 부패" : "Vaal · corrupted"}</span>
+					<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border border-[#d20000]/50 text-[#d20000]">${PoeText.isKorean() ? "바알 · 타락" : "Vaal · corrupted"}</span>
 					<span class="text-[10px] px-1.5 py-0.5 rounded border ${gem.isSupport() ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${gem.isSupport() ? supportBadgeLabel : activeBadgeLabel}</span>
 				@else
 					<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border ${gem.isSupport() ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${gem.isSupport() ? supportBadgeLabel : activeBadgeLabel}</span>

@@ -26,14 +26,14 @@
 					@endif
 					@if(!build.passiveNodeIds().isEmpty())
 						<span class="badge badge-ghost">${nodesLabel}</span>
-						<a class="link link-primary text-sm ml-auto" href="/poe/tree?nodes=${nodesParam}">${MessageUtil.getMessage("poe.build.summary.tree.view")}</a>
+						<a class="link link-primary text-sm ml-auto" href="${build.treeLink() != null && !build.treeLink().isBlank() ? build.treeLink() : "/poe/tree?nodes=" + nodesParam}">${MessageUtil.getMessage("poe.build.summary.tree.view")}</a>
 					@endif
 				</div>
 				@if(!build.stats().isEmpty())
-					<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+					<div class="grid grid-cols-[repeat(auto-fit,minmax(min(8rem,100%),1fr))] sm:grid-cols-4 lg:grid-cols-7 gap-2">
 						@for(PoeBuild.PlayerStat stat : build.stats())
 							<div class="rounded-box bg-base-200/60 px-3 py-2">
-								<div class="text-[11px] font-semibold text-base-content/50">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
+								<div class="text-[11px] font-semibold text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
 								<div class="text-sm font-bold font-mono">${stat.value()}</div>
 							</div>
 						@endfor
@@ -47,7 +47,7 @@
 						        hx-target="#poeEngineResult"
 						        hx-swap="innerHTML"
 						        hx-disabled-elt="this">${MessageUtil.getMessage("poe.build.engine.run")}</button>
-						<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.engine.hint")}</span>
+						<span class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.build.engine.hint")}</span>
 					</div>
 					<div id="poeEngineResult"></div>
 					<%-- 업그레이드 가이드 — 같은 PoB 코드를 기준선으로 "무엇을 바꾸면 얼마나 좋아지는가"를 측정한다(약 1분). --%>
@@ -58,7 +58,7 @@
 						        hx-target="#poeUpgradeGuide"
 						        hx-swap="innerHTML"
 						        hx-disabled-elt="this">${MessageUtil.getMessage("poe.build.guide.run")}</button>
-						<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.hint")}</span>
+						<span class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.build.guide.hint")}</span>
 					</div>
 					<div id="poeUpgradeGuide"></div>
 				@endif
@@ -128,11 +128,8 @@
 								String itemClassLabel = item.base() != null ? net.luversof.web.gate.poe.PoeClassNames.poe1(item.base().itemClassKo(), item.base().itemClass()) : null;
 							}
 							@if(isUnique && item.uniqueSlug() != null)
-								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors"
-								     hx-get="/poe/htmx/uniques/detail?slug=${item.uniqueSlug()}"
-								     hx-target="#poePreview"
-								     hx-trigger="mouseenter delay:100ms"
-								     hx-swap="innerHTML">
+								<%-- 고유도 실제 굴림 수치의 인게임 툴팁(10-04 C139) — 예전엔 고유 일반 상세(범위 값)를 띄워 이 빌드가 실제로 굴린 값 · 타락 · 변이 옵션이 안 보였다 --%>
+								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors" data-build-unique="${item.uniqueSlug()}">
 									@if(!item.slot().isEmpty())
 										<span class="badge badge-ghost badge-sm shrink-0 w-20 justify-center mt-0.5">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</span>
 									@endif
@@ -141,8 +138,11 @@
 								<div class="min-w-0 text-sm">
 									<div class="truncate"><span class="font-semibold ${itemColor}">${displayName}</span></div>
 									@if(!item.baseType().equals(item.name()))
-										<div class="truncate text-xs text-base-content/50">${displayBase}</div>
+										<div class="truncate text-xs text-base-content/60">${displayBase}</div>
 									@endif
+								</div>
+								<div data-poe-tip class="hidden">
+									@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = displayName, base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods, implicitLines = displayImplicits, modReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.modLinesKo() != null && !item.modLinesKo().isEmpty() ? item.modRemindersKo() : item.modReminders(), implicitReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.implicitLinesKo() != null && !item.implicitLinesKo().isEmpty() ? item.implicitRemindersKo() : item.implicitReminders(), corrupted = item.corrupted(), quality = item.quality(), intangibility = item.intangibility(), influences = item.influences(), implicitKinds = item.implicitKinds(), modKinds = item.modKinds(), flavourLines = net.luversof.web.gate.poe.PoeText.lines(item.flavourKo(), item.flavour()))
 								</div>
 								</div>
 							@else
@@ -155,14 +155,14 @@
 										     한글 이름이 있는 아이템에서 유니크 행과 표기가 달랐다. --%>
 										<div class="truncate"><span class="font-semibold ${itemColor}">${displayName}</span></div>
 										@if(!item.baseType().equals(item.name()))
-											<div class="truncate text-xs text-base-content/50">${displayBase}</div>
+											<div class="truncate text-xs text-base-content/60">${displayBase}</div>
 										@endif
 										@if(showMods)
 											<div class="text-[11px] leading-4 text-[#8888ff]/80 line-clamp-3">${String.join(" / ", displayMods)}</div>
 										@endif
 									</div>
 									<div data-poe-tip class="hidden">
-										@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = item.name(), base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods, implicitLines = displayImplicits, corrupted = item.corrupted(), quality = item.quality())
+										@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = item.name(), base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods, implicitLines = displayImplicits, modReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.modLinesKo() != null && !item.modLinesKo().isEmpty() ? item.modRemindersKo() : item.modReminders(), implicitReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.implicitLinesKo() != null && !item.implicitLinesKo().isEmpty() ? item.implicitRemindersKo() : item.implicitReminders(), corrupted = item.corrupted(), quality = item.quality(), intangibility = item.intangibility(), influences = item.influences(), implicitKinds = item.implicitKinds(), modKinds = item.modKinds())
 									</div>
 								</div>
 							@endif

@@ -810,7 +810,8 @@ public class PoeUpgradeGuideService {
       total += candidates.size();
       List<Trial> list = new ArrayList<>();
       for (PoeUniqueItem c : candidates) {
-        String swapXml = equipItem(xml, s.slot(), uniqueItemText(c));
+        String swapXml =
+            equipItem(xml, s.slot(), uniqueItemText(c, uniqueData.canonicalName(c.slug())));
         list.add(new Trial(c, pool.submit(() -> eval(swapXml))));
       }
       trials.put(s.slot(), list);
@@ -983,7 +984,7 @@ public class PoeUpgradeGuideService {
         if (needs == null && pick.minionPct() == null) {
           offer(
               "고유 교체: " + SLOT_KO.getOrDefault(s.slot(), s.slot()) + " ← " + u.name(),
-              equipItem(xml, s.slot(), uniqueItemText(u)),
+              equipItem(xml, s.slot(), uniqueItemText(u, uniqueData.canonicalName(u.slug()))),
               base,
               m);
         }
@@ -1823,9 +1824,61 @@ public class PoeUpgradeGuideService {
                 .thenComparing(PoeUniqueItem::slug))
         .limit(META_CANDIDATES)
         .forEach(out::add);
-    out.addAll(topByKeywords(pool, offence, OFFENCE_CANDIDATES));
-    out.addAll(topByKeywords(pool, DEFENCE_KEYWORDS, DEFENCE_CANDIDATES));
+    // 키워드 후보는 고유마다 **그 키워드에 가장 맞는 변형**으로(10-04 C97) — 예전엔 기본 변형만 봐서 화염 빌드에 무존재(화염)를 못 권했다
+    out.addAll(
+        topByKeywords(
+            pool.stream().map(u -> bestVariant(u, offence)).toList(), offence, OFFENCE_CANDIDATES));
+    out.addAll(
+        topByKeywords(
+            pool.stream().map(u -> bestVariant(u, DEFENCE_KEYWORDS)).toList(),
+            DEFENCE_KEYWORDS,
+            DEFENCE_CANDIDATES));
     return List.copyOf(out);
+  }
+
+  /** 변형이 여럿이면 그 키워드 점수가 가장 높은 변형 사본(기본보다 높을 때만). 이름에 변형 꼬리 — 엔진 원문 제목은 uniqueItemText 가 정식 이름으로. */
+  static PoeUniqueItem bestVariant(PoeUniqueItem u, List<String> keywords) {
+    if (u.variants() == null || u.variants().size() < 2) {
+      return u;
+    }
+    PoeUniqueItem best = u;
+    int bestScore = keywordScore(u, keywords);
+    for (PoeUniqueVariant v : u.variants()) {
+      if (u.defaultVariant() != null && v.index() == u.defaultVariant()) {
+        continue;
+      }
+      String label = v.nameKo() != null ? v.nameKo() : v.name();
+      PoeUniqueItem copy =
+          new PoeUniqueItem(
+              u.name() + " (" + v.name() + ")",
+              (u.nameKo() != null ? u.nameKo() : u.name()) + " (" + label + ")",
+              u.slug(),
+              u.baseType(),
+              u.baseTypeKo(),
+              u.category(),
+              u.requiredLevel(),
+              u.league(),
+              u.legacy(),
+              u.radius(),
+              v.implicits() != null ? v.implicits() : u.implicits(),
+              v.implicitsKo() != null ? v.implicitsKo() : u.implicitsKo(),
+              v.explicits() != null ? v.explicits() : u.explicits(),
+              v.explicitsKo() != null ? v.explicitsKo() : u.explicitsKo(),
+              u.variants(),
+              v.index(),
+              u.reqStr(),
+              u.reqDex(),
+              u.reqInt(),
+              u.iconKey(),
+              u.flavour(),
+              u.flavourKo());
+      int sc = keywordScore(copy, keywords);
+      if (sc > bestScore) {
+        best = copy;
+        bestScore = sc;
+      }
+    }
+    return best;
   }
 
   private static List<PoeUniqueItem> topByKeywords(
@@ -1903,9 +1956,16 @@ public class PoeUpgradeGuideService {
    * 최대 롤을 전제하면 이득을 부풀린다.
    */
   static String uniqueItemText(PoeUniqueItem u) {
+    return uniqueItemText(u, null);
+  }
+
+  /**
+   * @param title 엔진 원문 제목(정식 이름) — 변형 사본 이름의 꼬리를 그대로 넘기면 PoB 의 제목 키 조건이 깨진다(C86). null 이면 u.name()
+   */
+  static String uniqueItemText(PoeUniqueItem u, String title) {
     StringBuilder text =
         new StringBuilder("Rarity: UNIQUE\n")
-            .append(u.name())
+            .append(title != null ? title : u.name())
             .append('\n')
             .append(u.baseType())
             .append('\n');

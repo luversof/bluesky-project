@@ -51,7 +51,7 @@
 				<button type="submit" class="btn btn-primary btn-sm" data-refine-load>${ko ? "다듬은 빌드 불러오기" : "Load refined build"}</button>
 			</form>
 		@endif
-		<div class="text-[11px] text-base-content/50">${ko ? "각 단계의 증감은 직전 빌드 대비이며, 적용한 빌드를 PoB-PoE2 엔진으로 다시 계산한 값입니다(가이드 예측이 아니라 실측). 고유 아이템은 품질 20% 기준. DPS 는 주 스킬 한 대상 기준이라, 갈래·연쇄·투사체 수 보조를 바꾸는 단계는 사냥 속도를 줄일 수 있습니다." : "Each step's change is vs. the previous build, measured by recalculating the applied build (not the guide's prediction). Uniques at 20% quality. DPS is single-target for the main skill — steps that swap out fork, chain or projectile-count supports can slow down clearing."}</div>
+		<div class="text-[11px] text-base-content/60">${ko ? "각 단계의 증감은 직전 빌드 대비이며, 적용한 빌드를 PoB-PoE2 엔진으로 다시 계산한 값입니다(가이드 예측이 아니라 실측). 고유 아이템은 품질 20% 기준. DPS 는 주 스킬 한 대상 기준이라, 갈래·연쇄·투사체 수 보조를 바꾸는 단계는 사냥 속도를 줄일 수 있습니다." : "Each step's change is vs. the previous build, measured by recalculating the applied build (not the guide's prediction). Uniques at 20% quality. DPS is single-target for the main skill — steps that swap out fork, chain or projectile-count supports can slow down clearing."}</div>
 	</div>
 @endif
 </div>

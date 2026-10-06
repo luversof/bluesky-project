@@ -50,23 +50,23 @@
 				}
 				<div class="flex items-stretch gap-1">
 				<button type="button"
-				        class="flex flex-1 flex-wrap items-center gap-2 rounded border border-base-300 bg-base-100 px-3 py-1.5 text-left text-xs hover:border-primary hover:bg-primary/5"
+				        class="flex min-w-0 flex-1 flex-wrap items-center gap-2 rounded border border-base-300 bg-base-100 px-3 py-1.5 text-left text-xs hover:border-primary hover:bg-primary/5"
 				        hx-get="/poe2/htmx/sim/result?id=${h.id()}"
 				        hx-target="#poe2HistoryResultView"
 				        hx-swap="innerHTML"
 				        onclick="this.closest('#poe2SimHistory').querySelectorAll('button.poe-hist-active').forEach(function(b){b.classList.remove('poe-hist-active');}); this.classList.add('poe-hist-active');">
 					<span class="font-semibold">${PoeText.name(h.skillKo(), h.skill())}</span>
 					@if(h.ascendancy() != null && !h.ascendancy().isBlank())
-						<span class="badge badge-ghost badge-sm">${h.ascendancy()}</span>
+						<span class="badge badge-ghost badge-sm">${PoeText.name(h.ascendancyKo(), h.ascendancy())}</span>
 					@endif
 					<span class="badge badge-outline badge-sm">${scen}</span>
 					<span class="badge badge-ghost badge-sm">${metric}</span>
 					<span class="font-mono font-semibold text-primary">${finalValue}</span>
-					<span class="ml-auto font-mono text-base-content/40">${when}</span>
+					<span class="ml-auto font-mono text-base-content/60">${when}</span>
 				</button>
 				<%-- 이력 삭제 — 삭제 후 갱신된 목록으로 #poe2SimHistory 교체. 버튼 중첩 불가라 행 밖에 둔다(PoE1 과 같다) --%>
 				<button type="button"
-				        class="btn btn-ghost btn-xs px-2 text-base-content/40 hover:text-error shrink-0"
+				        class="btn btn-ghost btn-xs px-2 text-base-content/60 hover:text-error shrink-0 self-start"
 				        title="${ko ? "이 결과 삭제" : "Delete this result"}"
 				        hx-delete="/poe2/htmx/sim/history/${h.id()}"
 				        hx-target="#poe2SimHistory"

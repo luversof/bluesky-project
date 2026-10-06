@@ -399,6 +399,14 @@
       ]
     },
     {
+      "name": "KeywordPopups",
+      "columns": [
+        "Id",
+        "Term",
+        "Definition"
+      ]
+    },
+    {
       "name": "ClientStrings",
       "columns": [
         "Id",

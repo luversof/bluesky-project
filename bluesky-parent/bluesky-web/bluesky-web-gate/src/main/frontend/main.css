@@ -677,6 +677,18 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	.checkbox-primary:checked { background-color: var(--color-primary); border-color: var(--color-primary); }
 	.toggle-primary:checked { background-color: var(--color-primary); }
 	.badge-neutral { background-color: var(--color-neutral); color: var(--color-neutral-content); border-color: transparent; }
+
+	/* PoE 화면: 배지 · 단추가 칸보다 길면 줄을 바꾼다(10-02 C12). 320px + 글꼴 200%(WCAG 1.4.10)에서 한 줄 고정 배지
+	   ("Mercenaries of Trarthus" +141px) · 단추("Optimize with this unique →" +114px)가 문서를 넓혔다.
+	   높이는 min-height 로 옮겨 기본 글꼴의 한 줄 모양은 그대로(넓은 화면에선 줄이 안 바뀐다). line-height 1.15 는 글자+테두리가 min-height 를
+	   넘지 않게(안 주면 badge-xs 가 16 → 18.5px). 유틸(whitespace-nowrap 등)은 여전히 이긴다. */
+	html.poe-theme .poe-scope .badge { white-space: normal; height: auto; min-height: 1.5rem; max-width: 100%; overflow-wrap: anywhere; line-height: 1.15; }
+	html.poe-theme .poe-scope .badge-sm { min-height: 1.25rem; }
+	html.poe-theme .poe-scope .badge-xs { min-height: 1rem; }
+	html.poe-theme .poe-scope .badge-lg { min-height: 1.75rem; }
+	html.poe-theme .poe-scope .btn { white-space: normal; height: auto; max-width: 100%; overflow-wrap: anywhere; line-height: 1.25; }
+	/* 셀렉트 · 입력칸의 내재 폭(가장 긴 항목 · size=20)도 칸을 넘지 않게 — 혈맹 셀렉트가 +166px */
+	html.poe-theme .poe-scope :is(.select, .input) { max-width: 100%; min-width: 0; }
 }
 
 /* ============================================================
@@ -1245,7 +1257,7 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 .poe-tooltip, .poe-node-popup { font-family: var(--poe-font-sc); }
 /* 젬/아이템 툴팁 고정 폭 — Tailwind 임의값(w-[25rem])이 이 프로젝트 빌드에서 누락돼
    툴팁 폭이 안 잡히고 긴 설명이 한 줄로 늘어나는 문제가 있어 커스텀 CSS 로 고정한다. */
-.poe-tt-w-gem { width: 25rem; max-width: 92vw; }
+.poe-tt-w-gem { width: 25rem; max-width: calc(100vw - 2rem); }
 .poe-tt-header {
 	padding: 0.5rem 1.75rem 0.4rem;
 	/* 희귀도색을 아주 옅게 깐 헤더 밴드 (양끝 어둡게) */
@@ -1430,6 +1442,16 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	white-space: pre-line;
 	margin-top: 0.2rem;
 }
+/* PoE2 키워드 설명(10-04 C111) — 서버가 그린 툴팁(젬 등)은 정의 상자를 숨겨 두고, Alt 를 누르는 동안(common.ts 가 html.poe-alt) 안내 줄 대신 보인다.
+   트리 캔버스 툴팁(tree2.ts)은 스스로 다시 그린다 */
+.poe-kw-box { display: none; }
+html.poe-alt .poe-kw-box,
+.poe-kw-open .poe-kw-box { display: block; }
+html.poe-alt .poe-kw-hint,
+.poe-kw-open .poe-kw-hint { display: none; }
+/* 안내 줄은 단추(10-04 C128 — Alt 가 없는 터치 · 키보드도 눌러서 펼친다). 겉모양은 회색 부연 그대로 */
+.poe-kw-hint { background: none; border: 0; padding: 0; width: 100%; min-height: 24px; cursor: pointer; } /* 2.5.8 대상 크기 24px */
+.poe-kw-hint:focus-visible { outline: 1px solid #7f7f7f; outline-offset: 2px; }
 .poe-popup-flavour {
 	font-size: 0.7rem;
 	line-height: 1.05rem;
@@ -1597,6 +1619,9 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	border-radius: 9999px;
 	border: 1px solid var(--color-base-300, rgba(128,128,128,0.3));
 	cursor: pointer;
+	/* 320px + 글꼴 200%: "Armour/Evasion/Energy Shield (59 bases)" 는 띄어쓸 자리가 없어 칩 하나가 +90px(10-02 C12) */
+	max-width: 100%;
+	overflow-wrap: anywhere;
 }
 /* 배경/글자색은 활성 badge 변형이 아닐 때만 — 무조건 덮으면 badge-secondary/accent(선택 활성)가
    ghost 와 똑같아 보인다(변형/영향력 탭 "선택 안 됨" 사용자 보고의 원인) */
@@ -1650,7 +1675,10 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
    실측 2026-09-11(375px · 320px 모두): 배당 내역 389px · 매매 내역 638px 로 페이지 전체가
    가로 스크롤됐고, 절대 위치 요소를 전부 숨기면 정확히 375px 로 돌아왔다. 원인은 표 안에 넣은
    까닭 설명(sr-only) 60 개 - 스크롤 래퍼 안의 절대 배치는 이것뿐이다(드롭다운 등 없음). */
-:is(.overflow-x-auto, .overflow-auto) { position: relative; }
+/* 단, 스스로 떠 있는 요소(.absolute 등)는 빼야 한다 - 이 규칙은 레이어 밖이라 유틸리티 .absolute 를 이긴다.
+   실측 2026-10-02: 상세 검색 선택 상자 패널(absolute + overflow-auto)이 relative 가 되어 흐름에 끼고 top-full 만큼
+   더 밀려, 종목 패널이 태그 칸 위에 260px 아래로 떠서 열렸다(위 "드롭다운 등 없음" 은 그 뒤에 틀린 말이 됐다). */
+:is(.overflow-x-auto, .overflow-auto):not(.absolute, .fixed, .sticky) { position: relative; }
 
 @keyframes loading-spin { to { transform: rotate(360deg); } }
 @keyframes skeleton-pulse { 50% { opacity: 0.45; } }

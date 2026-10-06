@@ -16,7 +16,7 @@
 @if(total == null || total == 0)
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"))
 @else
-	<div class="text-xs text-base-content/50 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), items.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), items.size(), total)}</div>
 	@if(items.isEmpty())
 		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.empty"))
 	@else
@@ -49,13 +49,13 @@
 							<div class="flex items-baseline gap-2 min-w-0">
 								<a class="font-bold poe-name-unique truncate link-hover" href="/poe2/uniques/${u.slug()}" title="${u.name()}">${PoeText.name(u.nameKo(), u.name())}</a>
 								@if(korean)
-									<span class="text-xs text-base-content/40 truncate">${u.name()}</span>
+									<span class="text-xs text-base-content/60 truncate">${u.name()}</span>
 								@endif
 							</div>
-							<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/55">
+							<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/60">
 								<span class="truncate">${PoeText.name(u.baseTypeKo(), u.baseType())} · ${net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass())}</span>
 								@if(u.requiredLevel() != null && u.requiredLevel() > 1)
-									<span class="text-base-content/40" data-req-level>${MessageUtil.getMessage("poe.gems.detail.required.level")} ${u.requiredLevel()}</span>
+									<span class="text-base-content/60" data-req-level>${MessageUtil.getMessage("poe.gems.detail.required.level")} ${u.requiredLevel()}</span>
 								@endif
 								@if(u.league() != null && !u.league().isBlank())
 									<span class="badge badge-ghost badge-xs" data-league title="${korean ? "이 고유는 해당 리그 콘텐츠에서 나옵니다" : "Drops from this league's content"}">${u.league()}</span>

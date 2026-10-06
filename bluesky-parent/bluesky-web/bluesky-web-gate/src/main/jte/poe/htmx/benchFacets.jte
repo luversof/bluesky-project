@@ -28,7 +28,7 @@
 	<div class="space-y-1">
 		<div class="flex items-baseline gap-2">
 			<span class="text-xs font-bold text-info">${ko ? "실빌드 구성 분포" : "Real-build loadout"}</span>
-			<span class="text-[10px] text-base-content/40">${ko ? "poe.ninja 전체 모집단" : "poe.ninja full population"} n=${String.format("%,d", bench.facetTotal())}</span>
+			<span class="text-[10px] text-base-content/60">${ko ? "poe.ninja 전체 모집단" : "poe.ninja full population"} n=${String.format("%,d", bench.facetTotal())}</span>
 		</div>
 		<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 			@for(String[] o : order)
@@ -40,11 +40,12 @@
 				}
 				@if(shown != null && !shown.isEmpty())
 					<div class="rounded border border-base-200 bg-base-100 px-2 py-1.5 min-w-0">
-						<div class="mb-1 text-[10px] font-bold uppercase tracking-wide text-base-content/40">${ko ? o[1] : o[2]}</div>
+						<div class="mb-1 text-[10px] font-bold uppercase tracking-wide text-base-content/60">${ko ? o[1] : o[2]}</div>
 						@for(ArchetypeBenchmark.FacetEntry e : shown)
 							<div class="flex items-baseline gap-2 text-[11px] leading-5">
-								<span class="truncate text-base-content/70" title="${e.name()}">${PoeText.name(e.nameKo(), e.name())}</span>
-								<span class="ml-auto shrink-0 font-mono text-base-content/50">${Math.round(e.count() * 100.0 / bench.facetTotal())}%</span>
+								<%-- title = 게임 원문 이름(한국어 화면에서 원문 확인 · 검색용 병기). data-poe-orig = 데이터 자리 표시(UI 문구 영어 탐침이 뺀다) --%>
+								<span class="truncate text-base-content/70" title="${e.name()}" data-poe-orig>${PoeText.name(e.nameKo(), e.name())}</span>
+								<span class="ml-auto shrink-0 font-mono text-base-content/60">${Math.round(e.count() * 100.0 / bench.facetTotal())}%</span>
 							</div>
 						@endfor
 					</div>

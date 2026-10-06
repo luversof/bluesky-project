@@ -47,7 +47,7 @@
 					}
 					@if(!inCat.isEmpty())
 						<div class="flex flex-wrap items-center gap-1.5" data-chip-row="${cat}">
-							<span class="w-16 shrink-0 text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.itemgroup." + cat)}</span>
+							<span class="w-16 shrink-0 text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.itemgroup." + cat)}</span>
 							@for(java.util.Map.Entry<String, List<Poe2.ModPoolSummary>> e : inCat)
 								!{
 									// 분류 칩은 베이스가 가장 많은 풀로 간다 — 첫 풀로 가면 투구 · 장화 · 방패가 변형 없는 1~2개짜리(반신 베이스) 풀에 떨어졌다(10-01)

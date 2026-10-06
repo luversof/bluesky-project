@@ -70,7 +70,7 @@
 								@template.poe2.htmx.simSelects(skills = skills, ascendancies = ascs, popularAscendancies = options.popularAscendancies() == null ? java.util.List.of() : options.popularAscendancies(), classes = options.classes() == null ? java.util.List.of() : options.classes(), skill = preSkill, ascendancy = treeAsc)
 							</div>
 							<div class="flex min-w-0 flex-wrap items-center gap-2">
-								<span class="self-center whitespace-nowrap text-xs text-base-content/60" title="${ko ? "선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정" : "Objective follows the real-build lean"}">${ko ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
+								<span class="self-center sm:whitespace-nowrap text-xs text-base-content/60" title="${ko ? "선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정" : "Objective follows the real-build lean"}">${ko ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
 								<%-- 시나리오 문구는 PoE1 과 같은 메시지 키. "플레이어 설정 그대로"는 PoE2 만(실빌드에서 출발하므로 그 사람의 설정이 있다) --%>
 								<%-- 내 트리에서 출발(10-02) — 트리 화면 "→ 시뮬"로 왔을 때만. 같은 직업 실빌드의 장비·젬에 이 트리를 끼우고 다듬는다(트리는 안 바뀐다) --%>
 								@if(!treeNodes.isBlank())
@@ -78,7 +78,7 @@
 									<div class="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2 py-1 text-xs" data-sim-tree>
 										<span class="font-semibold">${ko ? "내 트리에서 출발" : "From my tree"}</span>
 										<span class="text-base-content/70">${treeClass}@if(!treeAsc.isBlank()) · ${treeAsc}@endif · ${ko ? "노드 " + treeCount + "개" : treeCount + " nodes"}</span>
-										<a class="link link-hover text-base-content/50" href="/poe2/sim" title="${ko ? "트리 없이" : "Without tree"}" aria-label="${ko ? "내 트리 빼기" : "Remove my tree"}">✕</a>
+										<a class="link link-hover text-base-content/60" href="/poe2/sim" title="${ko ? "트리 없이" : "Without tree"}" aria-label="${ko ? "내 트리 빼기" : "Remove my tree"}">✕</a>
 										<input type="hidden" name="treeClass" value="${treeClass}">
 										<input type="hidden" name="treeNodes" value="${treeNodes}">
 										<input type="hidden" name="treeAttrs" value="${treeAttrs}">
@@ -86,12 +86,30 @@
 									</div>
 								@endif
 								<%-- 고정 고유 — PoE1 시뮬 "고유 고정"의 짝(10-01). 다듬기 전에 끼우고 그 칸은 다시 안 바꾼다. 방어구·장신구만(무기는 스킬 요구와 얽힌다) --%>
-								<div class="w-56" data-sim-unique>
+								<div class="w-56 max-w-full" data-sim-unique>
 									<select name="unique" data-poe-multi data-placeholder="${ko ? "고정 고유템 (선택)…" : "Lock a unique (optional)…"}" class="select select-sm select-bordered w-full" title="${ko ? "고정 고유템" : "Locked unique"}">
 										<option value="" selected="${preUnique.isEmpty()}">${ko ? "고정 고유템 없음" : "No locked unique"}</option>
 										@for(Poe2.Unique u : forceUniques)
 											<option value="${u.slug()}" selected="${u.slug().equals(preUnique)}">${PoeText.name(u.nameKo(), u.name())} · ${net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass())}</option>
 										@endfor
+										<%-- 고유 상세에서 고른 변형(unique=slug:번호, C96) — 목록엔 고유당 하나라 그 변형 항목을 따로 고른 채로 --%>
+										!{
+											String preVariantLabel = null;
+											if (preUnique.matches(".+:[0-9]+")) {
+												String pvSlug = preUnique.substring(0, preUnique.lastIndexOf(':'));
+												int pvIdx = Integer.parseInt(preUnique.substring(preUnique.lastIndexOf(':') + 1));
+												for (Poe2.Unique u : forceUniques) {
+													if (u.slug().equals(pvSlug) && u.variants() != null) {
+														for (Poe2.UniqueVariant v : u.variants()) {
+															if (v.index() != null && v.index() == pvIdx) preVariantLabel = PoeText.name(u.nameKo(), u.name()) + " (" + PoeText.name(v.nameKo(), v.name()) + ")";
+														}
+													}
+												}
+											}
+										}
+										@if(preVariantLabel != null)
+											<option value="${preUnique}" selected>${preVariantLabel}</option>
+										@endif
 									</select>
 								</div>
 								<select name="scenario" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.scenario")}">
@@ -127,7 +145,7 @@
 						String league = options.league() == null ? "" : options.league();
 						String snap = options.snapshot() == null ? "-" : options.snapshot();
 					}
-					<div class="text-xs text-base-content/50" data-sim-snapshot>${ko
+					<div class="text-xs text-base-content/60" data-sim-snapshot>${ko
 						? "poe.ninja " + league + " 스냅샷 " + snap + (fetched == null ? "" : " (" + fetched + " 받음)") + " · 새 버전이 나오면 자동으로 다시 받습니다"
 						: "poe.ninja " + league + " snapshot " + snap + (fetched == null ? "" : " (fetched " + fetched + ")") + " · refreshed automatically when a new version is published"}</div>
 				@endif

@@ -282,7 +282,20 @@ public class Poe2DataController {
       // 능력치 노드 선택 "노드:1|2|3,…"(1 힘 · 2 민첩 · 3 지능)
       @RequestParam(required = false, defaultValue = "") String attrs,
       // 무기 세트 전용 노드 "노드:1|2,…"(10-02)
-      @RequestParam(required = false, defaultValue = "") String sets) {
+      @RequestParam(required = false, defaultValue = "") String sets,
+      // 꽂은 고유 주얼 "칸:slug,…"(10-03 C73)
+      @RequestParam(required = false, defaultValue = "") String jewels) {
+    java.util.Map<Integer, String> jewelMap = new java.util.LinkedHashMap<>();
+    for (String s : jewels.split(",")) {
+      String[] kv = s.trim().split(":", 2);
+      try {
+        if (kv.length == 2 && !kv[1].isBlank()) {
+          jewelMap.put(Integer.valueOf(kv[0]), kv[1].trim());
+        }
+      } catch (NumberFormatException ignored) {
+        // 숫자가 아닌 조각은 버린다
+      }
+    }
     java.util.Map<Integer, Integer> picks = new java.util.HashMap<>();
     for (String s : attrs.split(",")) {
       String[] kv = s.trim().split(":");
@@ -305,7 +318,7 @@ public class Poe2DataController {
       }
     }
     try {
-      return build.treeEval(className, ascendancy, ids, skill, picks, pairs(sets));
+      return build.treeEval(className, ascendancy, ids, skill, picks, pairs(sets), jewelMap);
     } catch (IllegalArgumentException e) {
       throw new io.github.luversof.boot.exception.BlueskyException("POE2_INVALID_TREE", 400);
     }
@@ -405,7 +418,10 @@ public class Poe2DataController {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) String itemClass,
       @RequestParam(required = false) String category) {
-    return data.searchBases(q, itemClass, category);
+    // 목록엔 키워드 정의를 싣지 않는다 — 툴팁은 상세 응답으로 그린다(10-04 C117: 고유 목록 응답이 0.75→2.6MB 로 늘었었다)
+    return data.searchBases(q, itemClass, category).stream()
+        .map(Poe2.BaseItem::withoutKeywords)
+        .toList();
   }
 
   @GetMapping("/base-items/{slug}")
@@ -452,7 +468,10 @@ public class Poe2DataController {
   @GetMapping("/uniques/search")
   public List<Poe2.Unique> uniques(
       @RequestParam(required = false) String q, @RequestParam(required = false) String itemClass) {
-    return data.searchUniques(q, itemClass);
+    //   분류를 지정한 작은 목록(트리 주얼)은 남긴다 — 트리 꽂은 주얼 칸이 Alt 설명을 그린다(10-04 C126)
+    return data.searchUniques(q, itemClass).stream()
+        .map(u -> itemClass == null || itemClass.isBlank() ? u.withoutKeywords() : u)
+        .toList();
   }
 
   @GetMapping("/uniques/{slug}")

@@ -45,7 +45,7 @@
 		@if(r.forcedUnique() != null)
 			<span class="badge badge-outline border-orange-400/60 poe-name-unique" data-forced-unique>${ko ? "고정: " : "Locked: "}${ko && r.forcedUniqueKo() != null ? r.forcedUniqueKo() : r.forcedUnique()}</span>
 		@endif
-		<span class="text-xs text-base-content/50">${r.durationMs() == null ? "" : Math.round(r.durationMs() / 1000.0) + (ko ? "초" : "s")}</span>
+		<span class="text-xs text-base-content/60">${r.durationMs() == null ? "" : Math.round(r.durationMs() / 1000.0) + (ko ? "초" : "s")}</span>
 	</div>
 	<div class="overflow-x-auto">
 		<table class="table table-sm w-auto" data-sim-compare>
@@ -55,7 +55,7 @@
 					<th class="text-right">${ko ? "출발 실빌드" : "Real-build start"}</th>
 					<th class="text-right">${ko ? "다듬은 뒤" : "Refined"}</th>
 					<th class="text-right">${ko ? "변화" : "Change"}</th>
-					<th class="text-right">${ko ? "poe.ninja 중앙값" : "poe.ninja median"}@if(bm != null && bm.sample() != null)<div class="text-[10px] font-normal text-base-content/50">n=${bm.sample()}</div>@endif</th>
+					<th class="text-right">${ko ? "poe.ninja 중앙값" : "poe.ninja median"}@if(bm != null && bm.sample() != null)<div class="text-[10px] font-normal text-base-content/60">n=${bm.sample()}</div>@endif</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -99,7 +99,7 @@
 				</tbody>
 			</table>
 		</div>
-		<div class="text-[11px] text-base-content/50">${ko ? "같은 시나리오로 우리 엔진에서 다시 계산해 목표에 가장 맞는 한 명을 골랐습니다(균형은 DPS·EHP 로그 합)." : "Recalculated under the same scenario; picked the best fit for the objective (balanced = log DPS + log EHP)."}</div>
+		<div class="text-[11px] text-base-content/60">${ko ? "같은 시나리오로 우리 엔진에서 다시 계산해 목표에 가장 맞는 한 명을 골랐습니다(균형은 DPS·EHP 로그 합)." : "Recalculated under the same scenario; picked the best fit for the objective (balanced = log DPS + log EHP)."}</div>
 	</details>
 	<%-- 결과 PoB 코드 + 복사 — PoE1 시뮬 결과와 같은 자리(10-01: PoE2 엔 "빌드 화면에서 열기"만 있었다). PoB 에 붙여넣는 게 용도라 원클릭 복사 --%>
 	@if(r.code() != null && !r.code().isBlank())
@@ -113,7 +113,7 @@
 	@endif
 	<div class="flex flex-wrap items-center gap-2">
 		<a class="btn btn-primary btn-sm" href="/poe2/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${ko ? "빌드 화면에서 열기" : "Open in build view"}</a>
-		<span class="text-xs text-base-content/50">${ko ? "고유 아이템은 품질 20% 기준 · 단계 증감은 적용 뒤 엔진 실측 · 계보 젬은 드물게 얻는 젬" : "Uniques at 20% quality · step changes are engine-measured · lineage gems are rare"}</span>
+		<span class="text-xs text-base-content/60">${ko ? "고유 아이템은 품질 20% 기준 · 단계 증감은 적용 뒤 엔진 실측 · 계보 젬은 드물게 얻는 젬" : "Uniques at 20% quality · step changes are engine-measured · lineage gems are rare"}</span>
 	</div>
 </div>
 @endif

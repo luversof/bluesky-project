@@ -39,14 +39,17 @@
 
 		// 칩 + 검색 입력을 담는 가짜 인풋(클릭하면 검색 포커스)
 		var control = document.createElement("div");
+		// 포커스는 안쪽 검색칸이 받는데 .input:focus 테두리는 이 상자에 걸려 있어 키보드 포커스가 안 보였다(10-02 C13) — 상자에 focus-within 으로 같은 표시
 		control.className =
-			"flex flex-wrap items-center gap-1 input input-bordered input-sm h-auto min-h-8 py-1 cursor-text";
+			"flex flex-wrap items-center gap-1 input input-bordered input-sm h-auto min-h-8 py-1 cursor-text focus-within:outline-2 focus-within:outline-offset-0 focus-within:outline-primary focus-within:border-primary";
 
 		var search = document.createElement("input");
 		search.type = "text";
 		search.className =
 			"flex-1 min-w-24 bg-transparent border-0 outline-none text-sm p-0 focus:outline-none";
 		search.placeholder = placeholder;
+		// 낭독기 이름(10-02 접근성) — 원래 select 의 aria-label · title, 없으면 처음 placeholder. 고른 뒤 placeholder 가 "더 추가…" 로 바뀌어도 이름은 그대로
+		search.setAttribute("aria-label", select.getAttribute("aria-label") || select.getAttribute("title") || placeholder);
 
 		var panel = document.createElement("div");
 		panel.className =
@@ -134,12 +137,13 @@
 		}
 
 		function filter() {
-			var q = search.value.toLowerCase();
+			// 띄어쓰기 무시(10-02 C25, 목록 · 트리 검색과 같은 규칙)
+			var q = search.value.toLowerCase().replace(/[ \t\u00a0]+/g, "");
 			realOpts.forEach(function (opt) {
 				var row = rowByValue[opt.value];
 				if (!row) return;
 				// 이미 선택된 건 드롭다운에서 숨김(칩으로 표시됨)
-				var match = !opt.selected && opt.text.toLowerCase().indexOf(q) !== -1;
+				var match = !opt.selected && opt.text.toLowerCase().replace(/[ \t\u00a0]+/g, "").indexOf(q) !== -1;
 				row.style.display = match ? "" : "none";
 			});
 		}

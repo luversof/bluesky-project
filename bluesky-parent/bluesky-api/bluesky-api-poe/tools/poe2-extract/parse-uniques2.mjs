@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { FILES_DIR, WORK_DIR, loadConfig, loadTable, writeJson } from "./paths.mjs";
 import { createModTranslator } from "../poe-extract/statDescriptions.mjs";
+import { createKeywordIndex, loadKeywords } from "./common2.mjs";
 
 const PATCH = loadConfig().patch;
 const POB_DIR = path.join(WORK_DIR, "pob-uniques");
@@ -192,6 +193,18 @@ skillsEn.forEach((s, i) => {
 	const ko = skillsKo[i]?.DisplayedName;
 	if (s.DisplayedName && ko && ko !== s.DisplayedName && !skillKoByEn.has(s.DisplayedName)) skillKoByEn.set(s.DisplayedName, ko);
 });
+const skillKoByLower = new Map([...skillKoByEn].map(([en, ko]) => [en.toLowerCase(), ko]));
+// 젬 베이스 이름(BaseItemTypes) — 소환수 젬은 액티브 스킬 표시 이름이 달라("Skeletal Arsonist" 젬 ↔ 스킬 표시 이름 없음) 젬 이름으로 찾는다(C80)
+const gemBaseKoByLower = (() => {
+	const en = loadTable("English", "BaseItemTypes");
+	const ko = loadTable("Korean", "BaseItemTypes");
+	const map = new Map();
+	en.forEach((b, i) => {
+		const k = ko[i]?.Name;
+		if (b.Name && k && k !== b.Name && !/^\[DNT/.test(b.Name) && !map.has(b.Name.toLowerCase())) map.set(b.Name.toLowerCase(), k);
+	});
+	return map;
+})();
 // "Grants Skill: Level {1} {0}" 한국어 틀은 ClientStrings 에 있다("스킬 부여: {1}레벨 {0}")
 const clientTemplate = (id, fallback) => {
 	const en = loadTable("English", "ClientStrings");
@@ -234,9 +247,46 @@ const AUGMENT_KO = (() => {
 	const i = en.findIndex((r) => r.Id === "GambleTabNameAugments");
 	return (i >= 0 && ko[i]?.Text) || "증강물";
 })();
+// 패시브 이름 영→한(게임 PassiveSkills 테이블) — "Allocates X"(메갈로매니악) · "Passives in radius of X"(From Nothing) 의 X(10-02)
+const passiveEnTable = loadTable("English", "PassiveSkills");
+const passiveKoTable = loadTable("Korean", "PassiveSkills");
+const passiveKoByEn = new Map();
+passiveEnTable.forEach((ps, i) => {
+	const ko = passiveKoTable[i]?.Name;
+	// 게임 테이블 영어 이름에 꼬리 공백이 있는 행이 있다("Inherited Strength " — 메갈로매니악 "Allocates Inherited Strength" 가 영어로 남았다, 10-04 C80)
+	const en = ps.Name?.trim();
+	if (en && ko && ko !== en && !passiveKoByEn.has(en)) passiveKoByEn.set(en, ko.trim());
+});
+
 function specialKo(line) {
 	const granted = grantsSkillKo(line);
 	if (granted) return granted;
+	// 게임 스탯 설명 원문(10-02 확인, stat_descriptions.csd):
+	//   mod_granted_passive_hash "allocates {0}" → "할당 {0}"
+	//   local_unique_jewel_disconnected_passives_can_be_allocated_around_keystone_hash → "반경 {} 내 패시브 스킬이 트리와 연결되지 않아도 할당 가능"
+	//   시간 잃은 주얼 "(Small|Notable) Passive Skills in Radius also grant <옵션>" — 게임 파일에 통째 문장이 없어 poe2db kr 표기 틀에
+	//   안쪽 옵션 번역을 끼운다. 안쪽을 못 옮기면 null(영어 유지).
+	// 줄 전체가 패시브 이름(Flesh Crucible 변형 "Resonance" 등) — 정확히 같을 때만
+	if (passiveKoByEn.has(line)) return passiveKoByEn.get(line);
+	const allocates = line.match(/^Allocates (.+)$/);
+	if (allocates) {
+		const ko = passiveKoByEn.get(allocates[1]);
+		return ko ? `할당 ${ko}` : null;
+	}
+	const leap = line.match(/^Passives in radius of (.+) can be Allocated without being connected to your tree$/i);
+	if (leap) {
+		const ko = passiveKoByEn.get(leap[1]);
+		return ko ? `반경 ${ko} 내 패시브 스킬이 트리와 연결되지 않아도 할당 가능` : null;
+	}
+	const radius = line.match(/^(Small|Notable) Passive Skills in Radius also grant (.+)$/);
+	if (radius) {
+		const inner = toKo([radius[2]])[0];
+		if (!inner || !HANGUL.test(inner)) return null;
+		// 인게임(poe2db kr, 시간 잃은 주얼): "반경 내 소형 패시브 스킬이 카오스 저항 +(2—3)%도 부여". 안쪽이 이미 "반경 내 …" 문장이면
+		//   ("할당된 소형 패시브 스킬이 아무것도 부여하지 않음" · "할당되지 않은 … 모든 보너스 적용") 그 문장 그대로(10-02 확인)
+		if (inner.startsWith("반경 내")) return inner;
+		return `반경 내 ${radius[1] === "Small" ? "소형" : "주요"} 패시브 스킬이 ${inner}도 부여`;
+	}
 	if (STATUS_KO[line]) return STATUS_KO[line];
 	const legacy = line.match(/^Legacy of (.+)$/);
 	if (legacy) {
@@ -248,6 +298,14 @@ function specialKo(line) {
 	}
 	const sockets = line.match(/^Has (\S+) Augment Sockets?$/);
 	if (sockets) return `${AUGMENT_KO} 홈 ${sockets[1]}개`;
+	// 신념의 프리즘(PoB 생성 고유 261변형, 10-04 C80): unique_jewel_specific_skill_level_+_skill "+{0} to level of all {1} skills" → "모든 {1} 스킬 레벨 +{0}"
+	//   스킬 이름이 인자라 번역기가 못 맞춘다 — 스킬 표시 이름(ActiveSkills.DisplayedName)을 끼운다
+	const skillLevel = line.match(/^\+(\(\d+-\d+\)|\d+) to Level of all (.+) Skills$/i);
+	if (skillLevel) {
+		// PoB 원문은 낱말마다 대문자("Cull The Weak") — 게임 표시 이름("Cull the Weak")과 대소문자 무시로 맞댄다
+		const ko = skillKoByEn.get(skillLevel[2]) || skillKoByLower.get(skillLevel[2].toLowerCase()) || gemBaseKoByLower.get(skillLevel[2].toLowerCase());
+		return ko ? `모든 ${ko} 스킬 레벨 +${skillLevel[1]}` : null;
+	}
 	return null;
 }
 
@@ -312,11 +370,78 @@ const VARIANT_WORD_KO = {
 	"Evasion": "회피", "Evasion Rating": "회피", "Item Rarity": "아이템 희귀도", "Movement Speed": "이동 속도",
 	"Stun Threshold": "기절 한계치", "Life Regeneration": "생명력 재생",
 	"All Resistances": "모든 저항", "Chaos Resistance": "카오스 저항",
+	// 10-02 추가 — 뜻이 하나뿐인 것만(게임 옵션 낱말 그대로). "Damage As Chaos" · "Percent Strength" 처럼 풀어 쓸 말이 갈리는 PoB 라벨은 넣지 않는다
+	"Cold Resistance": "냉기 저항", "Fire Resistance": "화염 저항", "Lightning Resistance": "번개 저항",
+	"Max Chaos Resistance": "최대 카오스 저항", "Max Cold Resistance": "최대 냉기 저항",
+	"Max Fire Resistance": "최대 화염 저항", "Max Lightning Resistance": "최대 번개 저항",
+	"Increased Life": "생명력 증가", "Increased Mana": "마나 증가",
 	"Helmet": classKoById.get("Helmet"), "Gloves": classKoById.get("Gloves"), "Boots": classKoById.get("Boots"),
 	"Shield": classKoById.get("Shield"), "Body Armour": classKoById.get("Body Armour"),
 };
+// 주얼 반경 이름(10-02) — 변형 라벨 "<반경> Ring"(Sunsplinter 등)을 인게임 툴팁 줄 "적용 반경: <반경>" 꼴로. 반경 낱말은 ClientStrings
+//   JewelRadius* 그대로(작게 · 중간 · 대형 · 매우 좁은 반경 … — 게임 표기가 들쭉날쭉해도 그대로 따른다)
+const RADIUS_IDS = { "Very Small": "JewelRadiusVerySmall", Small: "JewelRadiusSmall", "Medium-Small": "JewelRadiusMediumSmall",
+	Medium: "JewelRadiusMedium", "Medium-Large": "JewelRadiusMediumLarge", Large: "JewelRadiusLarge", "Very Large": "JewelRadiusVeryLarge", Massive: "JewelRadiusMassive" };
+function radiusRingKo(label) {
+	const m = label.match(/^(.+) Ring$/);
+	if (!m || !RADIUS_IDS[m[1]]) return null;
+	const word = popupKo(RADIUS_IDS[m[1]], "");
+	const head = popupKo("JewelRadiusLabel", "");
+	return word && head ? `${head}: ${word}` : null;
+}
+// 변형 이름이 그 변형 모드 줄 안의 고유명사(직업 · 인물 · 신 · 짐승 혼백)이면 **같은 줄의 한국어 번역**에서 떼어 온다(10-02 C16).
+//   게임 문장 틀이 이름 자리를 정해 준다. 이름 사전(패시브 이름)보다 먼저 본다 — "Shadow" 가 패시브 "그림자"로 옮겨졌는데
+//   그 변형 줄은 "쉐도우의 시작 지점에서"(직업)였다. [영어 틀, 한국어 틀, 라벨 = 영어 캡처로 만든 라벨]
+const NAME_SLOT_TEMPLATES = [
+	[/by the line of (.+)$/, /^(.+?)의 핏줄/, (m) => m[1]], // 영웅의 비극(칼구르 가문)
+	[/in tribute to (.+)$/, /^(.+?)에게 바치는/, (m) => m[1]], // 꺼지지 않는 증오(심연 군주)
+	[/from the (.+?)'s starting point$/, /^(.+?)의 시작 지점에서/, (m) => m[1]], // 분열된 인격(직업)
+	[/^Possessed by Spirit Of The (.+?) for/, /동안 (.+?)의 혼백에 사로잡힘/, (m) => m[1]], // 통과 의례(짐승 혼백)
+	[/^Allocates (\d+) Sinister Jewel sockets$/, /^(.+?) 할당$/, (m) => `${m[1]} Sinister Sockets`], // 목소리(홈 수)
+];
+function nameFromOwnLines(label, lines) {
+	for (const line of lines || []) {
+		for (const [reEn, reKo, labelOf] of NAME_SLOT_TEMPLATES) {
+			const m = line.match(reEn);
+			if (!m || labelOf(m) !== label) continue;
+			const k = (toKo([line])[0] || "").match(reKo);
+			if (k && /[가-힣]/.test(k[1])) return k[1];
+		}
+	}
+	return null;
+}
+// 수치 배분 라벨(Sunsplinter "Max Res: 1 Fire, 2 Cold, 3 Lightning" · "Level: 2 Cold, 1 Fire, 3 Lightning") — 원소 낱말과 숫자만 옮긴다
+//   (그 변형 줄: "화염 저항 최대치 +1%" · "모든 냉기 스킬 레벨 +2"). 순서는 라벨 그대로.
+const SPLIT_HEAD_KO = { "Max Res": "최대 저항", Level: "레벨" };
+function splitLabelKo(label) {
+	const m = label.match(/^(Max Res|Level): (.+)$/);
+	if (!m) return null;
+	const parts = m[2].split(", ").map((p) => p.match(/^(\d+) (Fire|Cold|Lightning|Chaos)$/));
+	if (!parts.every(Boolean)) return null;
+	return `${SPLIT_HEAD_KO[m[1]]}: ${parts.map((x) => `${VARIANT_WORD_KO[x[2]]} ${x[1]}`).join(", ")}`;
+}
+/**
+ * 변형 이름 마지막 대안(10-04 C80, PoE1 parse-uniques distinctLinesKo 의 짝) — 그 변형에만 있는 줄(모든 변형 공통 줄 · 타락 제외)이 1~2줄이고 전부 한국어면
+ *   그 줄을 이름으로. 우물의 심장 "Prefix Aggravate Bleed On Attack Hit Chance" · 쿨레막의 손아귀 "Amanamu Abyssal Wasting Hinders" 같은 PoB 내부 라벨을
+ *   옮길 길이 없어서다(인게임엔 변형 이름이 없고 옵션 줄이 곧 아이템).
+ */
+function distinctLinesKo(en, ko, common) {
+	if (!en?.length || !ko || ko.length !== en.length) return null;
+	const picked = [];
+	en.forEach((line, i) => {
+		if (!common.has(line) && line !== "Corrupted") picked.push(ko[i]);
+	});
+	if (!picked.length || picked.length > 2 || picked.some((k) => !HANGUL.test(k) || /[A-Za-z]{3,}/.test(k))) return null;
+	return picked.join(" · ");
+}
+/** 로어위브 변형 "Andvarius 1" · "Andvarius 1 Big Range" — 옵션을 빌려 온 고유 이름 + 번호(넓은 범위는 PoB 가 롤 범위를 넓힌 사본) */
+function borrowedUniqueNameKo(label) {
+	const m = label.match(/^(.+?) (\d+)( Big Range)?$/);
+	const ko = m && nameKoByEn.get(m[1]);
+	return ko ? `${ko} ${m[2]}${m[3] ? " (넓은 범위)" : ""}` : null;
+}
 function variantNameKo(label, lineKo) {
-	const direct = lineKo.get(label.toLowerCase()) || VARIANT_WORD_KO[label] || skillKoByEn.get(label)
+	const direct = splitLabelKo(label) || lineKo.get(label.toLowerCase()) || VARIANT_WORD_KO[label] || skillKoByEn.get(label) || passiveKoByEn.get(label) || radiusRingKo(label)
 		|| baseByEn.get(label)?.nameKo || nameKoByEn.get(label);
 	if (direct) return direct;
 	const paren = label.match(/^(.*?)\s*\((.+)\)$/);
@@ -389,6 +514,8 @@ function parseBlock(block, category) {
 	let requiredLevel = null;
 	let league = null;
 	let source = null;
+	// 주얼 반경(PoB "Radius: Small") — 트리 화면에서 꽂은 주얼의 연결 없이 찍기 반경(From Nothing)에 쓴다(10-03 C74)
+	let radius = null;
 	let implicitCount = 0;
 	const modSection = [];
 
@@ -416,6 +543,7 @@ function parseBlock(block, category) {
 		if (line.startsWith("Has Alt Variant")) { hasAlt = true; return; }
 		if (line.startsWith("League:")) { league = line.slice(7).trim(); return; }
 		if (line.startsWith("Source:")) { source = line.slice(7).trim(); return; }
+		if (line.startsWith("Radius:")) { radius = line.slice(7).trim(); return; }
 		if (line.startsWith("LevelReq:")) { requiredLevel = Number(line.slice(9).trim()) || null; return; }
 		if (line.startsWith("Requires Level")) {
 			const m = line.match(/Requires Level (\d+)/);
@@ -541,7 +669,7 @@ function parseBlock(block, category) {
 				const variant = {
 					index: v.index,
 					name: v.name,
-					nameKo: variantNameKo(v.name, lineKo),
+					nameKo: nameFromOwnLines(v.name, [...set.implicits, ...set.explicits]) || variantNameKo(v.name, lineKo) || borrowedUniqueNameKo(v.name),
 				};
 				// 변형마다 베이스가 다르면(Seeing Stars: Plated → Marching Mace) 그 변형의 베이스를 싣는다
 				if (set.baseType && set.baseType !== baseType) {
@@ -556,6 +684,11 @@ function parseBlock(block, category) {
 				});
 			});
 		if (variants.length < 2) variants = null;
+		// 이름을 못 지은 변형은 그 변형만의 한국어 줄로(C80) — 공통 줄은 모든 변형의 옵션 교집합
+		if (variants) {
+			const common = variants.map((v) => new Set(v.explicits)).reduce((a, b) => new Set([...a].filter((x) => b.has(x))));
+			for (const v of variants) if (!v.nameKo) v.nameKo = distinctLinesKo(v.explicits, v.explicitsKo, common);
+		}
 	}
 	const defaultIndexes = grouped ? [...defaultGroupSel.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v) : [...defaultActive];
 
@@ -580,6 +713,7 @@ function parseBlock(block, category) {
 		flavourKo: null,
 		league,
 	};
+	if (radius) item.radius = radius;
 	// 여러 칸을 동시에 고르는 아이템(그룹/Alt)은 기본 조합 전체를 남긴다
 	if (variants && defaultIndexes.length > 1) item.defaultVariants = defaultIndexes;
 	// 얻을 수 없는 고유 — PoB 가 명시한 경우만 (그 외 판정은 하지 않는다)
@@ -627,6 +761,39 @@ function dropTestVariants(raw) {
 	}
 	return out.join("\n");
 }
+// PoB 생성 고유 원문의 빈 자리표시자 — 쿨레막의 손아귀 "Abyssal Wasting also applies {0:-d}% to Fire Resistance"(PoB 가 스탯 설명 틀을 값 없이 넣었다).
+//   그대로 두면 마크업 제거로 "applies % to" 가 된다(10-04 C84). 게임 Mods 테이블의 그 스탯 값 범위로 채운다(PassageUnique… −15~−10).
+const modRangeByStat = (() => {
+	const stats = loadTable("English", "Stats");
+	const mods = loadTable("English", "Mods");
+	const out = new Map();
+	for (const m of mods) {
+		for (let i = 1; i <= 6; i++) {
+			const st = m["Stat" + i];
+			const v = m["Stat" + i + "Value"];
+			const id = st != null ? stats[st]?.Id : null;
+			if (id && Array.isArray(v) && !out.has(id)) out.set(id, v);
+		}
+	}
+	return out;
+})();
+const PLACEHOLDER_STATS = [
+	[/Abyssal Wasting also applies \{0:-d\}% to (Fire|Cold|Lightning) Resistance/g, (el) => `abyssal_wasting_${el.toLowerCase()}_resistance_%`],
+];
+function fillPobPlaceholders(raw) {
+	let out = raw;
+	for (const [re, statOf] of PLACEHOLDER_STATS) {
+		out = out.replace(re, (m, el) => {
+			const v = modRangeByStat.get(statOf(el));
+			if (!v) return m;
+			const [a, b] = v;
+			// {0:-d} = 음수 그대로 표시 — 범위는 PoE2 표기 "-(15-10)"(절댓값 큰 쪽 먼저, 다른 음수 범위 줄과 같은 꼴)
+			const num = a === b ? String(a) : a < 0 && b < 0 ? `-(${Math.max(-a, -b)}-${Math.min(-a, -b)})` : `(${a}-${b})`;
+			return m.replace("{0:-d}", num);
+		});
+	}
+	return out;
+}
 // PoB 엔진 고유 DB 덤프(tools/poe2-pob/dump-uniques2.lua → work/pob-unique-db.json)로 파일에서 못 읽은 고유를 보탠다.
 //   Special/Generated.lua 는 Lua 코드로 원문을 만들어(로어위브·묠니르·메갈로매니악 등 8종) 위 [[…]] 정규식으로는 안 잡히고,
 //   [[ ]] 가 아닌 문자열로 적힌 블록(쿨레막의 손아귀)도 빠졌다(09-30: PoB 443 vs 우리 435). 덤프가 없으면(엔진 없음) 건너뛴다.
@@ -646,14 +813,10 @@ function dropTestVariants(raw) {
 				const base = baseByEn.get(lines[1]);
 				category = (base && catByClass.get(base.itemClass)) || src;
 			}
-			const item = parseBlock(dropTestVariants(String(raw).replace(/\r\n/g, "\n")), category);
-			// 변형이 수백 개인 생성 고유(메갈로매니악 874 — 특화 조합마다 하나)는 변형 목록을 싣지 않는다(선택 상자가 쓸 수 없고 파일만 커진다)
-			if (item && item.variants && item.variants.length > 60) {
-				item.variantCount = item.variants.length;
-				item.variants = null;
-				item.defaultVariant = null;
-				delete item.defaultVariants;
-			}
+			const item = parseBlock(dropTestVariants(fillPobPlaceholders(String(raw).replace(/\r\n/g, "\n"))), category);
+			// 변형이 수백 개인 생성 고유(메갈로매니악 874 · 신념의 프리즘 261 · 로어위브 96 …)도 변형 목록을 싣는다(10-04 C80, PoE1 C76 과 같은 규칙).
+			//   예전엔 60개 넘으면 버렸다("선택 상자가 쓸 수 없다") — 상세는 select, 트리 주얼 고르기는 검색으로 고를 수 있게 됐고,
+			//   버리면 트리에서 메갈로매니악 노터블을 고를 길이 없다.
 			if (item) {
 				item.pobGenerated = src === "generated" || undefined;
 				items.push(item);
@@ -675,6 +838,20 @@ for (const item of items) {
 	seen.add(slug);
 }
 items.sort((a, b) => a.name.localeCompare(b.name) || a.slug.localeCompare(b.slug));
+// 키워드 설명(10-04 C112, 젬 C111 짝) — 기본 암시 · 옵션 줄의 강조 용어를 원문 템플릿 색인으로 찾아 정의째 싣는다
+const keywordById = loadKeywords(loadTable);
+const keywordIdsOf = createKeywordIndex(CSD_FILES);
+for (const item of items) {
+	const ids = keywordIdsOf([...(item.implicits || []), ...(item.explicits || [])]).filter((id) => keywordById.has(id));
+	if (ids.length) item.keywords = ids.map((id) => keywordById.get(id));
+	// 변형별(10-04 C117) — 기본과 용어가 다른 변형만 자기 keywords(없으면 빈 배열)를 싣고, 같으면 비워 둬 화면이 고유 것을 쓴다(메갈로매니악 874변형이 통째로 부풀지 않게)
+	const baseKey = ids.join("|");
+	for (const v of item.variants || []) {
+		const vIds = keywordIdsOf([...(v.implicits || []), ...(v.explicits || [])]).filter((id) => keywordById.has(id));
+		if (vIds.join("|") !== baseKey) v.keywords = vIds.map((id) => keywordById.get(id));
+	}
+}
+console.log(`키워드 설명: 고유 ${items.filter((i) => i.keywords).length}/${items.length} · 용어 ${new Set(items.flatMap((i) => (i.keywords || []).map((k) => k.term))).size}종 · 기본과 다른 변형 ${items.flatMap((i) => i.variants || []).filter((v) => v.keywords).length}`);
 const out = writeJson("uniques.json", { patch: PATCH, items });
 
 // ─── 보고 ─────────────────────────────────────────────────────────────────────

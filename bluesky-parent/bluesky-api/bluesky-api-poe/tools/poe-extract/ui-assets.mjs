@@ -65,6 +65,14 @@ WANTED_FULL.set("Art/2DArt/UIImages/InGame/ShaperItemSymbol", "influence-shaper"
 WANTED_FULL.set("Art/2DArt/UIImages/InGame/ElderItemSymbol", "influence-elder");
 WANTED_FULL.set("Art/2DArt/UIImages/InGame/CleansingFireItemSymbol", "influence-exarch");
 WANTED_FULL.set("Art/2DArt/UIImages/InGame/TangledItemSymbol", "influence-eater");
+// 정복자 넷(10-04 C137 — 빌드 화면 툴팁 영향력 아이콘). 게임 내부명(art@uiimages1.txt 실측): 사냥꾼=Basilisk · 구원자=Eyrie · 전쟁군주=Judicator
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/CrusaderItemSymbol", "influence-crusader");
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/BasiliskItemSymbol", "influence-hunter");
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/EyrieItemSymbol", "influence-redeemer");
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/JudicatorItemSymbol", "influence-warlord");
+// 분열 · 합성 아이템도 인게임 헤더 모서리에 심볼(C137)
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/FracturedItemSymbol", "influence-fractured");
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/SynthesisedItemSymbol", "influence-synthesised");
 
 // 1) atlas 좌표표 추출 (UTF-16LE)
 const baseConfig = loadConfig();

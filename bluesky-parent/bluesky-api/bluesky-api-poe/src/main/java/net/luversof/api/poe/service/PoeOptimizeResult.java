@@ -173,7 +173,10 @@ public record PoeOptimizeResult(
       // 거래소 검색 쿼리(q JSON, 레어 전용) — 베이스(한글명)+스탯 필터(min=티어 최저 롤). null 이면 링크 없음.
       String tradeQuery,
       // 실속형 쿼리 — 필수(픽 우선순위 상위) 모드만, min=2티어 최저 롤(T2 이상 매물). null 이면 링크 없음.
-      String tradeQueryBudget) {}
+      String tradeQueryBudget,
+      // modLines 와 1:1 정렬된 줄별 인게임 리마인더(회색 부연, 영 · 한) — 하나도 없으면 null(10-04 C150, 빌드 화면 C131 짝).
+      List<List<String>> modReminders,
+      List<List<String>> modRemindersKo) {}
 
   /** 레어 슬롯의 티어별 성능 비교 (T1/중간/하위) */
   public record SlotTierCompare(String slot, String slotKo, List<TierRow> rows) {}

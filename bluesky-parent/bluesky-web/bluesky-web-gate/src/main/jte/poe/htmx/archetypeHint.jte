@@ -20,7 +20,7 @@
 			: "ehp".equals(lean) ? (ko ? "생존 특화 (고EHP)" : "Defense (high EHP)")
 			: (ko ? "균형형" : "Balanced");
 		String leanCls = "dps".equals(lean) ? "badge-error" : "ehp".equals(lean) ? "badge-info" : "badge-ghost";
-		String ascLabel = ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? ninjaBenchmark.ascendancy() : (ko ? "전 전직 통합" : "all ascendancies");
+		String ascLabel = ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.ascendancyKo(), ninjaBenchmark.ascendancy()) : (ko ? "전 전직 통합" : "all ascendancies");
 		java.util.function.Function<String, String> specLabel = k -> switch (k) {
 			case "dps" -> ko ? "공격(DPS)" : "DPS";
 			case "ehp" -> ko ? "생존(EHP)" : "EHP";
@@ -53,14 +53,14 @@
 	}
 	<div class="mt-2 rounded-box bg-base-100 px-3 py-2 text-xs space-y-1 border border-base-200">
 		<div class="flex flex-wrap items-center gap-2">
-			<span class="text-base-content/50">${ko ? "실빌드 성향" : "Real-build lean"}</span>
+			<span class="text-base-content/60">${ko ? "실빌드 성향" : "Real-build lean"}</span>
 			<span class="badge badge-sm ${leanCls}">${leanLabel}</span>
-			<span class="badge badge-ghost badge-xs">${ninjaBenchmark.mainSkill()} · ${ascLabel}</span>
-			<span class="text-base-content/40">n=${ninjaBenchmark.sample()}</span>
+			<span class="badge badge-ghost badge-xs">${net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.mainSkillKo(), ninjaBenchmark.mainSkill())} · ${ascLabel}</span>
+			<span class="text-base-content/60">n=${ninjaBenchmark.sample()}</span>
 		</div>
 		@if(ninjaBenchmark.specializations() != null && !ninjaBenchmark.specializations().isEmpty())
 			<div class="flex flex-wrap items-center gap-1">
-				<span class="text-base-content/50">${ko ? "특화 컬럼" : "Specializes in"}</span>
+				<span class="text-base-content/60">${ko ? "특화 컬럼" : "Specializes in"}</span>
 				@for(String sk : ninjaBenchmark.specializations())
 					<span class="badge badge-xs badge-warning badge-outline">${specLabel.apply(sk)}</span>
 				@endfor
@@ -71,7 +71,7 @@
 			// 셀 하나(라벨/값) — JTE 안에서 반복 마크업을 줄이기 위한 조립 헬퍼
 			java.util.function.BiFunction<String, String, String> cell = (label, value) ->
 				"<div class=\"flex items-baseline justify-between gap-2 rounded bg-base-200/50 px-2 py-0.5\">"
-				+ "<span class=\"text-base-content/50\">" + label + "</span>"
+				+ "<span class=\"text-base-content/60\">" + label + "</span>"
 				+ "<span class=\"font-mono text-base-content/85\">" + value + "</span></div>";
 			String NBSP = " ";
 		}
@@ -91,7 +91,7 @@
 				@endfor
 			</div>
 		@endif
-		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/40">${ko ? "방어층" : "Defences"}</div>
+		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "방어층" : "Defences"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(ko ? "방어도" : "Armour", fmt.apply(ninjaBenchmark.armour()))}
 			$unsafe{cell.apply(ko ? "회피" : "Evasion", fmt.apply(ninjaBenchmark.evasion()))}
@@ -103,7 +103,7 @@
 			$unsafe{cell.apply(ko ? "저항" : "Res", (ko ? "화" : "F") + ninjaBenchmark.fireRes() + NBSP + (ko ? "냉" : "C") + ninjaBenchmark.coldRes() + NBSP + (ko ? "번" : "L") + ninjaBenchmark.lightningRes() + NBSP + (ko ? "카" : "Ch") + ninjaBenchmark.chaosRes())}
 			$unsafe{cell.apply(ko ? "최대피격(최약)" : "Max hit (min)", ninjaBenchmark.lowestMax() > 0 ? fmt.apply(ninjaBenchmark.lowestMax()) : "—")}
 		</div>
-		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/40">${ko ? "자원·속성" : "Resources & attributes"}</div>
+		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "자원·속성" : "Resources & attributes"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(ko ? "수호물" : "Ward", fmt.apply(ninjaBenchmark.ward()))}
 			$unsafe{cell.apply(ko ? "마나" : "Mana", fmt.apply(ninjaBenchmark.mana()))}
@@ -111,7 +111,7 @@
 			$unsafe{cell.apply(ko ? "희귀도" : "Rarity", ninjaBenchmark.itemRarity() + "%")}
 			$unsafe{cell.apply(ko ? "힘·민·지" : "Str·Dex·Int", ninjaBenchmark.str() + NBSP + "·" + NBSP + ninjaBenchmark.dex() + NBSP + "·" + NBSP + ninjaBenchmark.intel())}
 		</div>
-		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/40">${ko ? "구성" : "Setup"}</div>
+		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "구성" : "Setup"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(ko ? "충전(인·격·권)" : "Charges E·F·P", ninjaBenchmark.enduranceCharges() + NBSP + "·" + NBSP + ninjaBenchmark.frenzyCharges() + NBSP + "·" + NBSP + ninjaBenchmark.powerCharges())}
 			$unsafe{cell.apply(ko ? "클러스터(대·중·소)" : "Cluster L·M·S", ninjaBenchmark.largeCluster() + NBSP + "·" + NBSP + ninjaBenchmark.mediumCluster() + NBSP + "·" + NBSP + ninjaBenchmark.smallCluster())}
@@ -121,7 +121,7 @@
 			$unsafe{cell.apply(ko ? "최대피격 냉·번·카" : "Max hit C·L·Ch", fmt.apply(ninjaBenchmark.coldMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.lightningMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.chaosMax()))}
 		</div>
 		@if(ninjaBenchmark.topMasteries() != null && !ninjaBenchmark.topMasteries().isEmpty() && (ninjaBenchmark.facets() == null || !ninjaBenchmark.facets().containsKey("masteries")))
-			<div class="text-base-content/50">${ko ? "실빌드 마스터리" : "Common masteries"}: ${String.join(" · ", ninjaBenchmark.topMasteries())}</div>
+			<div class="text-base-content/60">${ko ? "실빌드 마스터리" : "Common masteries"}: ${String.join(" · ", ninjaBenchmark.topMasteries())}</div>
 		@endif
 		<%-- 패싯(사이드바 집계) — 마스터리/룬크래프트/문신/무기/판테온/아틀라스 등 전체 모집단 사용률(실행 전 미리보기는 3줄) --%>
 		@template.poe.htmx.benchFacets(bench = ninjaBenchmark, rows = 3)
@@ -129,9 +129,9 @@
 		@if(realStart != null)
 			<div class="flex flex-wrap items-center gap-2 pt-1" data-real-start-hint>
 				<a class="btn btn-outline btn-xs" href="/poe/build?ascendancy=${java.net.URLEncoder.encode(realStart.ascendancy(), java.nio.charset.StandardCharsets.UTF_8)}&skill=${java.net.URLEncoder.encode(realStart.mainSkill(), java.nio.charset.StandardCharsets.UTF_8)}">${ko ? "실빌드에서 출발하기" : "Start from a real build"}</a>
-				<span class="text-[11px] text-base-content/50">${ko ? "대표 실빌드(" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — 빌드 화면에서 가이드·자동 다듬기" : "Representative build (" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — refine it in the build view"}</span>
+				<span class="text-[11px] text-base-content/60">${ko ? "대표 실빌드(" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — 빌드 화면에서 가이드·자동 다듬기" : "Representative build (" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — refine it in the build view"}</span>
 			</div>
 		@endif
-		<div class="text-[10px] text-base-content/40">${ko ? "poe.ninja 96레벨+ 실빌드 전 컬럼 — 이상치 캐릭터 제외 후 중앙값. 이 성향에 맞춰 시뮬이 강점 축을 밉니다" : "poe.ninja lv96+ all columns — median after dropping outlier characters; sim pushes this build's strong axis"}</div>
+		<div class="text-[10px] text-base-content/60">${ko ? "poe.ninja 96레벨+ 실빌드 전 컬럼 — 이상치 캐릭터 제외 후 중앙값. 이 성향에 맞춰 시뮬이 강점 축을 밉니다" : "poe.ninja lv96+ all columns — median after dropping outlier characters; sim pushes this build's strong axis"}</div>
 	</div>
 @endif

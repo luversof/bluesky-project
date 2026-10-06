@@ -26,7 +26,7 @@
 			<a href="/poe2/items" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe2.items.title")}</a>
 			@template.poe2.header(title = title, meta = meta)
 			@if(PoeText.isKorean())
-				<div class="text-sm text-base-content/50">${MessageUtil.getMessage("poe2.english")}: ${base.name()}</div>
+				<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.english")}: ${base.name()}</div>
 			@endif
 			<div class="flex flex-wrap items-start gap-6">
 				@if(base.image() != null)
@@ -41,7 +41,7 @@
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-base-uniques>
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
 						<h2 class="font-bold text-orange-500">${PoeText.isKorean() ? "이 베이스의 고유 아이템" : "Uniques on this base"}</h2>
-						<span class="text-xs font-mono text-base-content/40">${baseUniques.size()}</span>
+						<span class="text-xs font-mono text-base-content/60">${baseUniques.size()}</span>
 					</div>
 					<div class="flex flex-wrap gap-x-4 gap-y-1">
 						@for(Poe2.Unique u : baseUniques)
@@ -63,7 +63,7 @@
 				</div>
 				@template.poe.modFilterBar(scope = "#poe2ItemModBody", idPrefix = "poe2ItemMod")
 				<div id="poe2ItemModBody">
-					@template.poe2.htmx.modPool(pool = pool)
+					@template.poe2.htmx.modPool(pool = pool, nested = true)
 				</div>
 			@endif
 		</div>

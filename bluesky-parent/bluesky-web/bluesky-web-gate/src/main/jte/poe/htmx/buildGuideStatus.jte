@@ -17,7 +17,7 @@
 		@if(status.total() != null && status.total() > 0)
 			<span class="font-mono text-base-content/60">${status.done()}/${status.total()}</span>
 		@endif
-		<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.running.hint")}</span>
+		<span class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.build.guide.running.hint")}</span>
 	</div>
 @elseif(status.error() != null)
 	<div class="text-sm text-error">${status.error()}</div>
@@ -60,7 +60,7 @@
 								@for(PoeUpgradeGuide.ItemPick p : s.picks())
 									<li>
 										<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-											<span class="text-xs text-base-content/50" aria-hidden="true">→</span>
+											<span class="text-xs text-base-content/60" aria-hidden="true">→</span>
 											@if("RARE".equals(p.rarity()))
 												<%-- 레어 목표 — 지금 아이템과 같은 베이스에 2티어 옵션을 얹은 것. 이름은 인게임 레어 색, 옵션은 아래 줄에. --%>
 												<span class="badge badge-outline badge-sm">${MessageUtil.getMessage("poe.build.guide.rare")}</span>
@@ -93,7 +93,7 @@
 											<div class="mt-0.5 pl-5 flex items-center gap-2 text-xs">
 												<textarea id="${copyId}" class="sr-only" readonly tabindex="-1" aria-hidden="true" data-rare-item-text>${p.itemText()}</textarea>
 												<button type="button" class="btn btn-ghost btn-xs" data-copy-target="#${copyId}" data-copied-label="${ko ? "복사됨 ✓" : "Copied ✓"}">${ko ? "아이템 텍스트 복사" : "Copy item text"}</button>
-												<span class="text-base-content/50">${ko ? "PoB 아이템 탭 “Create custom” 에 붙여 넣기" : "paste into PoB Items → Create custom"}</span>
+												<span class="text-base-content/60">${ko ? "PoB 아이템 탭 “Create custom” 에 붙여 넣기" : "paste into PoB Items → Create custom"}</span>
 											</div>
 										@endif
 									</li>
@@ -108,12 +108,12 @@
 			boolean anyMeta = result.suggestions() != null && result.suggestions().stream()
 				.anyMatch(x -> x.picks() != null && x.picks().stream().anyMatch(p -> p.metaPercent() != null));
 		}
-		<div class="text-xs text-base-content/50">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.guide.footer"), result.evaluations(), Math.round(result.durationMs() / 1000.0))}</div>
+		<div class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.guide.footer"), result.evaluations(), Math.round(result.durationMs() / 1000.0))}</div>
 		@if(anyMeta)
-			<div class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.meta.note")}</div>
+			<div class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.build.guide.meta.note")}</div>
 		@endif
 		@if(result.baseline() != null && result.baseline().hasMinion())
-			<div class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.build.guide.minion.note")}</div>
+			<div class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.build.guide.minion.note")}</div>
 		@endif
 	</div>
 @endif

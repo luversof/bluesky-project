@@ -21,6 +21,7 @@
 @param java.util.Map<java.util.UUID, Integer> monthlyDividendCurrentQuantities = java.util.Map.of()
 @param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = java.util.Map.of()
 @param java.time.LocalDate monthlyDividendPriceBasisDate = null
+@param String monthlyDividendPriceBasisIntradayTime = null
 @param boolean monthlyDividendCurrentHoldingsUnavailable = false
 <%-- 스냅샷 이후 원장 수량이 바뀐 종목 수와 현재 수량 기준 합계. 조각이 경고로 띄운다.
      컨트롤러는 늘 모델에 넣고 있었는데 이 화면이 조각에 넘기지 않아, 조각이 기본값 0 을 써서
@@ -219,6 +220,7 @@
 					monthlyDividendCurrentQuantities = monthlyDividendCurrentQuantities,
 					monthlyDividendCurrentAverageBuyPrices = monthlyDividendCurrentAverageBuyPrices,
 					monthlyDividendPriceBasisDate = monthlyDividendPriceBasisDate,
+					monthlyDividendPriceBasisIntradayTime = monthlyDividendPriceBasisIntradayTime,
 					monthlyDividendCurrentHoldingsUnavailable = monthlyDividendCurrentHoldingsUnavailable,
 					monthlyDividendStaleQuantityCount = monthlyDividendStaleQuantityCount,
 					monthlyDividendCurrentQuantityTotal = monthlyDividendCurrentQuantityTotal,

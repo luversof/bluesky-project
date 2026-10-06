@@ -82,19 +82,20 @@ function parseVariant(line, statCount) {
 	const conditions = tokens.slice(0, statCount).map((t) => t.raw);
 	const textToken = tokens.slice(statCount).find((t) => t.quoted !== undefined);
 	if (!textToken) return null;
-	// 후행 토큰: 핸들러명 + 스탯 위치(1-base) 쌍 / reminderstring 은 무시
+	// 후행 토큰: 핸들러명 + 스탯 위치(1-base) 쌍 / reminderstring 은 ReminderText Id 로 따로 모은다(인게임 회색 부연 줄 — 10-04 C114, 서술 결과엔 영향 없음)
 	const rest = tokens.slice(tokens.indexOf(textToken) + 1);
 	const handlers = [];
+	const reminders = [];
 	for (let k = 0; k < rest.length; k++) {
 		const name = rest[k].raw ?? "";
-		if (name === "reminderstring") { k++; continue; }
+		if (name === "reminderstring") { if (rest[k + 1]?.raw) reminders.push(rest[k + 1].raw); k++; continue; }
 		const next = rest[k + 1]?.raw;
 		if (next !== undefined && /^\d+$/.test(next)) {
 			handlers.push({ name, statIndex: Number(next) - 1 });
 			k++;
 		}
 	}
-	return { conditions, text: textToken.quoted, handlers };
+	return reminders.length ? { conditions, text: textToken.quoted, handlers, reminders } : { conditions, text: textToken.quoted, handlers };
 }
 
 function parseFile(text, blocks) {
@@ -132,7 +133,8 @@ function parseFile(text, blocks) {
 // 파일 단위 파싱 캐시 — 같은 파일을 여러 서술기가 쓰면(PoE2 젬: 스킬마다 공용 파일 + 스킬 전용 파일) 매번 다시 파싱하지 않는다.
 // 블록 배열은 서술기가 읽기만 하므로 공유해도 결과는 같다. 파일이 바뀌면(mtime) 다시 파싱한다.
 const parsedCache = new Map();
-function parsedBlocks(path) {
+// PoE2 키워드 색인(poe2-extract/common2 createKeywordIndex, 10-04 C112)도 원문 블록을 읽는다
+export function parsedBlocks(path) {
 	const mtime = fs.statSync(path).mtimeMs;
 	const hit = parsedCache.get(path);
 	if (hit && hit.mtime === mtime) return hit.blocks;
@@ -180,9 +182,12 @@ export function createStatDescriber(fileDir, extraFiles = []) {
 	}
 
 	/** statValues: Map<statId, value> (표시 순서 유지) → 언어별 문장 배열 */
-	return function describe(statValues, lang) {
+	//  고른 변형의 reminderstring Id 는 describe.reminders 에 결과와 같은 길이로 남긴다(마지막 호출 기준, 10-04 C115)
+	const describe = function describe(statValues, lang) {
 		const consumed = new Set();
 		const result = [];
+		const reminders = [];
+		describe.reminders = reminders;
 		for (const [statId] of statValues) {
 			if (consumed.has(statId)) continue;
 			const block = blockByStat.get(statId);
@@ -216,9 +221,12 @@ export function createStatDescriber(fileDir, extraFiles = []) {
 				})
 				.replace(/\\n/g, "\n");
 			result.push(text);
+			reminders.push(variant.reminders || []);
 		}
 		return result;
 	};
+	describe.reminders = [];
+	return describe;
 }
 
 export function reportUnknownHandlers() {
@@ -229,7 +237,11 @@ export function reportUnknownHandlers() {
  * 영어 모드 문장 배열 → 한국어 배열 역번역기. 스탯 설명의 영어/한국어 변형 텍스트를 토큰(플레이스홀더+고정숫자) 단위로 정렬해
  * PoB 고유 아이템 explicit 을 옮긴다. PoB 가 쪼갠 멀티라인 모드는 인접 라인을 합쳐 시도. 실패 라인은 영어 원문 유지.
  */
-export function createModTranslator(fileDir, extraFiles = []) {
+/**
+ * @param options.keepLineBreaks 게임 설명이 여러 줄("…tree" + "통로" · 아세나스의 두 모드처럼)이고 PoB 도 같은 수의 줄로 쪼갰으면 한국어도 그 줄 수대로 낸다
+ *   (10-04 C93). 끄면 예전처럼 공백으로 한 줄 — 고유 툴팁에서 두 옵션이 한 줄로 이어 보이고 영어 · 한국어 줄 수가 어긋났다(PoE1 171종).
+ */
+export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 	const blocks = [];
 	for (const name of [
 		"metadata@statdescriptions@stat_descriptions.txt",
@@ -277,14 +289,16 @@ export function createModTranslator(fileDir, extraFiles = []) {
 		});
 		let koSeq = 0;
 		return entry.koText
-			.replace(/\\n/g, " ")
+			.replace(/\\n/g, "\n")
 			.replace(/\+?\(?\{[^}]*\}\)?/g, (token) => {
 				const m = token.match(/\{(\d*)/);
 				const index = m && m[1] !== "" ? Number(m[1]) : koSeq++;
 				return valueByIndex.has(index) ? valueByIndex.get(index) : "";
 			})
-			.replace(/\s+/g, " ")
-			.trim();
+			.split("\n")
+			.map((part) => part.replace(/\s+/g, " ").trim())
+			.filter(Boolean)
+			.join("\n");
 	}
 
 	// 여러 explicit 라인을 한국어로 — PoB 가 한 모드를 여러 라인으로 쪼갠 경우(멀티라인) 합쳐서 시도.
@@ -298,7 +312,10 @@ export function createModTranslator(fileDir, extraFiles = []) {
 				const joined = lines.slice(i, i + window).join(" ");
 				const ko = translateLine(joined);
 				if (ko) {
-					result.push(ko);
+					// 한국어 줄 수가 합친 영어 줄 수와 같을 때만 나눠 낸다(그 밖엔 한 줄 — 줄 맞춤이 깨지지 않게)
+					const parts = ko.split("\n");
+					if (options.keepLineBreaks && parts.length === window) result.push(...parts);
+					else result.push(parts.join(" "));
 					i += window;
 					matched = true;
 					break;
@@ -310,5 +327,51 @@ export function createModTranslator(fileDir, extraFiles = []) {
 			}
 		}
 		return result;
+	};
+}
+
+/**
+ * 옵션 줄 → 인게임 리마인더(회색 부연) Id(10-04 C114). 번역기(createModTranslator)와 같은 영어 뼈대로 템플릿을 찾아
+ * 그 템플릿의 reminderstring Id 를 돌려준다. 여러 줄로 쪼갠 모드(최대 3줄)는 마지막 줄에 붙인다(인게임도 모드 끝에 부연).
+ * 반환: (lines) => lines 와 같은 길이의 Id 배열 배열
+ */
+export function createReminderIndex(fileDir, extraFiles = []) {
+	const blocks = [];
+	for (const name of [
+		"metadata@statdescriptions@stat_descriptions.txt",
+		"metadata@statdescriptions@gem_stat_descriptions.txt",
+		"metadata@statdescriptions@active_skill_gem_stat_descriptions.txt",
+		"metadata@statdescriptions@skill_stat_descriptions.txt",
+		...extraFiles,
+	]) {
+		const path = fileDir + "/" + name;
+		if (fs.existsSync(path)) for (const b of parsedBlocks(path)) blocks.push(b);
+	}
+	const TOKEN = /\+?\(?\{[^}]*\}\)?|\+?\(?-?\d[\d.\-]*\)?/g;
+	// 번역기(createModTranslator)와 같은 뼈대 — 원문의 글자 그대로 "\n"(역슬래시+n) · 토큰 자리표시 \u0001(10-04 C127 검토 지적)
+	const skel = (text) => text.replace(/\\n/g, " ").replace(TOKEN, "\u0001").replace(/\s+/g, " ").trim();
+	const bySkeleton = new Map();
+	for (const block of blocks) {
+		for (const v of block.variants.English || []) {
+			const key = skel(v.text);
+			if (!key || bySkeleton.has(key)) continue;
+			bySkeleton.set(key, v.reminders || []);
+		}
+	}
+	return (lines) => {
+		const out = lines.map(() => []);
+		for (let i = 0; i < lines.length; ) {
+			let step = 1;
+			for (let w = 1; w <= Math.min(3, lines.length - i); w++) {
+				const ids = bySkeleton.get(skel(lines.slice(i, i + w).join(" ")));
+				if (ids !== undefined) {
+					out[i + w - 1] = [...ids];
+					step = w;
+					break;
+				}
+			}
+			i += step;
+		}
+		return out;
 	};
 }

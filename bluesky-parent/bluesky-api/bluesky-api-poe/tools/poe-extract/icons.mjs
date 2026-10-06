@@ -29,6 +29,13 @@ for (const gem of gems) {
 		baseRow != null && baseRow.ItemVisualIdentity != null ? visual[baseRow.ItemVisualIdentity] : null;
 	if (visualRow && visualRow.DDSFile) ddsBySlug.set(gem.slug, visualRow.DDSFile.toLowerCase());
 }
+// 변형 젬(Transfigured, slug "SkillGemArc_ArcAltX") — 게임 데이터 id 가 달라 그림을 못 찾았다(10-02: 215개 404).
+//   인게임에서 변형 젬은 원래 젬과 같은 그림이라 앞부분(원래 젬 slug)의 그림 경로를 쓴다
+for (const gem of gems) {
+	if (ddsBySlug.has(gem.slug) || !gem.slug.includes("_")) continue;
+	const baseDds = ddsBySlug.get(gem.slug.slice(0, gem.slug.indexOf("_")));
+	if (baseDds) ddsBySlug.set(gem.slug, baseDds);
+}
 console.log(`아이콘 대상: ${ddsBySlug.size} / ${gems.length}`);
 
 // repo config 는 그대로 두고, 작업 디렉토리용 config 에만 DDS 목록을 추가해 실행

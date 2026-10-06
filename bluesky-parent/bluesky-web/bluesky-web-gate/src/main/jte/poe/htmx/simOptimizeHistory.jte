@@ -29,7 +29,7 @@
 				}
 				<div class="flex items-stretch gap-1">
 				<button type="button"
-				        class="flex flex-1 flex-wrap items-center gap-2 rounded border border-base-300 bg-base-100 px-3 py-1.5 text-left text-xs hover:border-primary hover:bg-primary/5"
+				        class="flex min-w-0 flex-1 flex-wrap items-center gap-2 rounded border border-base-300 bg-base-100 px-3 py-1.5 text-left text-xs hover:border-primary hover:bg-primary/5"
 				        hx-get="/poe/htmx/sim/optimize/result?id=${h.id()}"
 				        hx-target="#poeHistoryResultView"
 				        hx-swap="innerHTML"
@@ -47,11 +47,11 @@
 						<span class="badge badge-ghost badge-sm">${MessageUtil.getMessage("poe.sim.opt.buffs")}</span>
 					@endif
 					<span class="font-mono font-semibold text-primary">${h.finalValue()}</span>
-					<span class="ml-auto font-mono text-base-content/40">${when}</span>
+					<span class="ml-auto font-mono text-base-content/60">${when}</span>
 				</button>
 				<%-- 이력 삭제(사용자 요청) — 삭제 후 갱신된 목록 fragment 로 #poeOptimizeHistory 교체. 버튼 중첩 불가라 행 밖에 둔다 --%>
 				<button type="button"
-				        class="btn btn-ghost btn-xs px-2 text-base-content/40 hover:text-error shrink-0"
+				        class="btn btn-ghost btn-xs px-2 text-base-content/60 hover:text-error shrink-0 self-start"
 				        title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 결과 삭제" : "Delete this result"}"
 				        hx-delete="/poe/htmx/sim/optimize/history/${h.id()}"
 				        hx-target="#poeOptimizeHistory"

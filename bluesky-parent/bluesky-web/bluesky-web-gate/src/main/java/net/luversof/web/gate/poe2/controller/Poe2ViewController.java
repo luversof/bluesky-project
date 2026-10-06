@@ -275,6 +275,13 @@ public class Poe2ViewController {
     } catch (RuntimeException e) {
       model.addAttribute("evalSkills", List.of());
     }
+    // 주얼 칸에 꽂을 고유 주얼(10-03 C73, PoE1 트리 주얼 장착의 짝) — 없으면 꽂기 메뉴를 감춘다
+    try {
+      List<Poe2.Unique> jewels = client.searchUniques(null, "Jewel");
+      model.addAttribute("treeJewels", jewels == null ? List.of() : jewels);
+    } catch (RuntimeException e) {
+      model.addAttribute("treeJewels", List.of());
+    }
     return "poe2/tree";
   }
 
@@ -335,7 +342,9 @@ public class Poe2ViewController {
       // 목록이 안 와도 시뮬레이터는 연다
     }
     model.addAttribute("forceUniques", forceable);
-    final String uq = unique;
+    // "slug:변형번호" — 고유 상세에서 고른 변형(10-04 C96, PoE1 C95 짝). 목록 판정은 slug 로
+    final String uq =
+        unique.matches(".+:[0-9]+") ? unique.substring(0, unique.lastIndexOf(':')) : unique;
     model.addAttribute(
         "preUnique", forceable.stream().anyMatch(u -> u.slug().equals(uq)) ? unique : "");
     Poe2.SimOptions options = null;

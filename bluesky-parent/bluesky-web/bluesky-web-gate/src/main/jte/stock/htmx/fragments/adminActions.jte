@@ -300,7 +300,7 @@
 			@endif
 			@if(ledgerIntegrity != null && !ledgerIntegrity.isClean())
 				@for(net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse.Finding finding : ledgerIntegrity.findings())
-					<div class="alert alert-warning py-2 px-3 text-xs mt-2 block" role="alert">
+					<div class="alert alert-warning py-2 px-3 text-xs mt-2 block wrap-anywhere" role="alert">
 						<div class="font-medium" data-ledger-count="${finding.count()}">${net.luversof.web.gate.stock.util.StockLedgerRuleLabelUtil.label(finding.code())} (${finding.count()})</div>
 						<%-- 예시를 3건만 보여 주던 시절에는 발견의 절반 이상을 화면에서 볼 수 없었다
 							 (실측 2026-08-23: 45건 중 25건). 조치하려면 어느 행인지 알아야 하므로
