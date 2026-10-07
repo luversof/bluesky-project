@@ -97,6 +97,21 @@ public final class ChartSeriesJs {
       List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> points,
       List<net.luversof.web.gate.stock.dto.response.TradeResponse> trades,
       java.time.ZoneId zone) {
+    return candleSeries(points, trades, zone, null);
+  }
+
+  /**
+   * 캔들 시리즈 + 그 날 보유 평가액 · 원가(hv · hc, 사용자 요청 2026-10-07: "주가 추이에 평균 단가 선을 이어서 보여주고 마우스 오버시 보유 평가액을
+   * 보여주는 식으로 하나의 그래프에서"). 보유 평가액 추이 차트를 따로 두지 않고 캔들 툴팁에 싣는다. 보유가 없던 날 · 시계열에 없는 날은 null(툴팁에 줄을 안 단다
+   * - 0 원이라고 적으면 다 판 것처럼 읽힌다).
+   *
+   * @param holdings 일별 보유 시계열(DAILY). timestamp 를 zone 의 날짜로 맞춰 시세일에 붙인다
+   */
+  public static String candleSeries(
+      List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> points,
+      List<net.luversof.web.gate.stock.dto.response.TradeResponse> trades,
+      java.time.ZoneId zone,
+      List<TradeProfitTimeSeriesPoint> holdings) {
     List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> safe =
         points == null ? List.of() : points;
     java.util.TreeMap<java.time.LocalDate, Integer> indexByDate = new java.util.TreeMap<>();
@@ -137,6 +152,17 @@ public final class ChartSeriesJs {
                   ? amount.stripTrailingZeros().toPlainString()
                   : "0");
     }
+    java.util.Map<java.time.LocalDate, TradeProfitTimeSeriesPoint> holdingByDate =
+        new java.util.HashMap<>();
+    if (holdings != null) {
+      for (TradeProfitTimeSeriesPoint h : holdings) {
+        if (h != null && h.timestamp() != null) {
+          holdingByDate.put(h.timestamp().atZone(zone).toLocalDate(), h);
+        }
+      }
+    }
+    StringBuilder hv = new StringBuilder();
+    StringBuilder hc = new StringBuilder();
     StringBuilder labels = new StringBuilder();
     StringBuilder open = new StringBuilder();
     StringBuilder high = new StringBuilder();
@@ -144,6 +170,12 @@ public final class ChartSeriesJs {
     StringBuilder close = new StringBuilder();
     StringBuilder avg = new StringBuilder();
     for (var pt : safe) {
+      TradeProfitTimeSeriesPoint h =
+          pt.tradeDate() != null ? holdingByDate.get(pt.tradeDate()) : null;
+      boolean held =
+          h != null && h.totalHoldingsValue() != null && h.totalHoldingsValue().signum() > 0;
+      sep(hv).append(held ? won(h.totalHoldingsValue()) : "null");
+      sep(hc).append(held && h.totalHoldingsCost() != null ? won(h.totalHoldingsCost()) : "null");
       sep(labels).append(jsString(pt.tradeDate() != null ? pt.tradeDate().toString() : ""));
       sep(open).append(pt.open() != null ? won(pt.open()) : "null");
       sep(high).append(pt.high() != null ? won(pt.high()) : "null");
@@ -174,6 +206,10 @@ public final class ChartSeriesJs {
         + sell
         + "],dist:["
         + dist
+        + "],hv:["
+        + hv
+        + "],hc:["
+        + hc
         + "]}";
   }
 

@@ -133,7 +133,8 @@ public class MonthlyDividendPayoutService {
     payout.setPayDate(request.getPayDate());
     payout.setDistributionRatePct(request.getDistributionRatePct());
     payout.setDividendAmountPerShare(safe(request.getDividendAmountPerShare()));
-    payout.setTaxableBasePerShare(safe(request.getTaxableBasePerShare()));
+    payout.setTaxableBasePerShare(
+        mergeTaxableBase(payout.getTaxableBasePerShare(), request.getTaxableBasePerShare()));
     payout.setUpdatedDate(now);
 
     MonthlyDividendPayout savedPayout = monthlyDividendPayoutRepository.save(payout);
@@ -200,8 +201,9 @@ public class MonthlyDividendPayoutService {
           // 과세비율은 원장 실적이 우선이다. 계좌별 혜택(비과세·분리과세)이 참조에는 담기지 않는다.
           BigDecimal ledgerRatio =
               ledgerTaxableBaseRatio1y(snapshot.getUserId(), stockItem.getId());
+          // 스냅샷 칸은 NOT NULL 이라 모르면 0 으로 둔다(화면은 카탈로그의 null 로 "확인 안 됨" 을 적는다).
           snapshot.setAverageTaxableBaseRatio1y(
-              ledgerRatio != null ? ledgerRatio : stats.taxableBaseRatio1y());
+              ledgerRatio != null ? ledgerRatio : safe(stats.taxableBaseRatio1y()));
           snapshot.setUpdatedDate(now);
         });
     monthlyDividendSnapshotRepository.saveAll(snapshots);
@@ -282,18 +284,21 @@ public class MonthlyDividendPayoutService {
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .divide(BigDecimal.valueOf(lastYearRows.size()), 4, RoundingMode.HALF_UP);
 
+    // 과세표준을 아는 행만 센다(2026-10-07) - 모르는 행을 0 으로 넣으면 비중이 실제보다 낮게 나오고, 다 모르면 "0%" 가 된다.
     List<BigDecimal> taxableBaseRatios =
         lastYearRows.stream()
             .filter(row -> safe(row.getDividendAmountPerShare()).signum() > 0)
+            .filter(row -> row.getTaxableBasePerShare() != null)
             .map(
                 row ->
-                    safe(row.getTaxableBasePerShare())
+                    row.getTaxableBasePerShare()
                         .multiply(BigDecimal.valueOf(100))
                         .divide(safe(row.getDividendAmountPerShare()), 2, RoundingMode.HALF_UP))
             .toList();
+    // 아는 행이 하나도 없으면 null(모름) - 0 이면 "비과세" 로 읽혀 위탁계좌 자리로 잘못 간다.
     BigDecimal averageTaxableBaseRatio1y =
         taxableBaseRatios.isEmpty()
-            ? BigDecimal.ZERO
+            ? null
             : taxableBaseRatios.stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .divide(BigDecimal.valueOf(taxableBaseRatios.size()), 2, RoundingMode.HALF_UP);
@@ -303,6 +308,18 @@ public class MonthlyDividendPayoutService {
         latestDividendAmountPerShare,
         averageDividendAmountPerShare1y,
         averageTaxableBaseRatio1y);
+  }
+
+  /**
+   * 과세표준 합치기(사용자 요청 2026-10-07: "확인안된 경우 처리를 해야 다음에 갱신 시 ... 갱신처리도 할수 있을거 같네"). 들어온 값이 있으면 그 값(모르던
+   * 행이 이번 갱신에서 채워진다). 들어온 값이 없으면(출처가 "-" · 빈 칸) 이미 아는 양수는 지키고, 0 은 모름(null)으로 되돌린다 - 2026-10-07 전에는
+   * "-" 를 0 으로 저장했으므로 저장된 0 은 진짜 0 인지 모른다.
+   */
+  static BigDecimal mergeTaxableBase(BigDecimal stored, BigDecimal incoming) {
+    if (incoming != null) {
+      return incoming;
+    }
+    return stored != null && stored.signum() > 0 ? stored : null;
   }
 
   /** 월배당 스냅샷 통계 계산 결과(최근 1년 기준). */

@@ -31,6 +31,7 @@ const SCRIPT_CREATED = new Map([
 	["poeTreeEvalStale", "poe/tree.ts 가 만드는 표식"],
 	["data-row-select-checkbox", "common.ts 가 선택 가능한 행(data-row-select)의 첫 칸에 만들어 넣는 체크박스"],
 	["data-page-section-nav", "common.ts 가 만드는 화면 안 구역 막대(구역 표식은 data-page-section)"],
+	["candleTooltipEl", "stock-charts.ts 가 만드는 주가 추이 툴팁(금액 자리수 정렬용 HTML 표, 2026-10-07)"],
 ]);
 
 /**

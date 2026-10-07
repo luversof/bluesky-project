@@ -38,6 +38,7 @@ interface StockChartsAPI {
 	formatCompactNumber?: (value: any) => string;
 	extremeGapText?: (lastV: number, extreme: number) => string;
 	candleBuckets?: (series: any, maxCandles?: number) => any;
+	splitTooltipLine?: (line: string) => string[];
 	candleYRange?: (candles: any[]) => any;
 	candleChartConfig?: (series: any, texts: any) => any;
 	createCandleChart?: (canvasId: string, series: any, texts: any, existingInstance?: any) => any;
@@ -1219,6 +1220,9 @@ function candleBuckets(series: any, maxCandles?: number) {
 		buy: series.buy ? Number(series.buy[i]) || 0 : 0,
 		sell: series.sell ? Number(series.sell[i]) || 0 : 0,
 		dist: series.dist ? Number(series.dist[i]) || 0 : 0,
+		// 그 날 보유 평가액 · 원가(2026-10-07, 보유 평가액 추이 차트를 합쳤다) - 보유가 없던 날은 null.
+		hv: series.hv ? num(series.hv[i]) : null,
+		hc: series.hc ? num(series.hc[i]) : null,
 	})).filter((d: any) => d.close !== null);
 	function weekKey(date: string): string {
 		// 월요일 시작 주. 시간대와 무관하게 날짜만으로 센다(UTC 자정으로 만들어 요일을 읽는다).
@@ -1241,14 +1245,17 @@ function candleBuckets(series: any, maxCandles?: number) {
 				last.buy += d.buy;
 				last.sell += d.sell;
 				last.dist += d.dist;
+				// 평가액 · 원가는 평단처럼 그 봉이 끝날 때 값(합치면 뜻이 없다).
+				last.hv = d.hv;
+				last.hc = d.hc;
 			} else {
-				out.push({ key: key, label: d.date, open: d.open, high: d.high, low: d.low, close: d.close, avg: d.avg, buy: d.buy, sell: d.sell, dist: d.dist });
+				out.push({ key: key, label: d.date, open: d.open, high: d.high, low: d.low, close: d.close, avg: d.avg, buy: d.buy, sell: d.sell, dist: d.dist, hv: d.hv, hc: d.hc });
 			}
 		});
 		return out;
 	}
 	let unit = "day";
-	let candles: any[] = days.map((d: any) => ({ key: d.date, label: d.date, open: d.open, high: d.high, low: d.low, close: d.close, avg: d.avg, buy: d.buy, sell: d.sell, dist: d.dist }));
+	let candles: any[] = days.map((d: any) => ({ key: d.date, label: d.date, open: d.open, high: d.high, low: d.low, close: d.close, avg: d.avg, buy: d.buy, sell: d.sell, dist: d.dist, hv: d.hv, hc: d.hc }));
 	if (candles.length > limit) {
 		unit = "week";
 		candles = group(weekKey);
@@ -1309,6 +1316,82 @@ function chartMarkerColors(): { buy: string; sell: string; dist: string } {
 		? { buy: "rgba(255, 99, 132, 0.95)", sell: "rgba(54, 162, 235, 0.95)", dist: "rgba(217, 119, 6, 0.95)" }
 		: { buy: "rgb(219, 39, 119)", sell: "rgb(37, 99, 235)", dist: "rgb(180, 83, 9)" };
 }
+/**
+ * 툴팁 한 줄을 이름 · 금액 · 덧붙임으로 가른다(2026-10-07, 금액 열을 자리수대로 세우려고). "평가 손익: +₩1,009,170,921 (+278.37%)" ->
+ * ["평가 손익", "+₩1,009,170,921", "(+278.37%)"]. ": " 가 없는 줄(▲ 매수 15주)은 이름 칸에만 둔다. 순수 계산이라 시험에서 직접 부른다.
+ */
+function splitTooltipLine(line: string): string[] {
+	const text = String(line);
+	const at = text.indexOf(": ");
+	if (at < 0) return [text, "", ""];
+	const name = text.slice(0, at);
+	const rest = text.slice(at + 2);
+	const paren = rest.indexOf(" (");
+	return paren < 0 ? [name, rest, ""] : [name, rest.slice(0, paren), rest.slice(paren + 1)];
+}
+StockCharts.splitTooltipLine = splitTooltipLine;
+
+/** 캔들 툴팁(HTML). 금액 칸은 오른쪽 정렬 + 고정폭 숫자(tabular-nums)라 자리수가 세로로 맞는다. 글자는 콜백이 만든 그대로(textContent - 마크업으로 읽지 않는다). */
+function candleTooltipHandler(context: any) {
+	const tooltip = context.tooltip;
+	let el = document.getElementById("candleTooltipEl") as HTMLElement | null;
+	if (!el) {
+		el = document.createElement("div");
+		el.id = "candleTooltipEl";
+		el.setAttribute("aria-hidden", "true");
+		el.style.cssText =
+			"position:fixed;z-index:9999;background:rgba(30,30,30,0.92);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;line-height:1.45;pointer-events:none;white-space:nowrap;transition:opacity .1s;";
+		document.body.appendChild(el);
+	}
+	if (!tooltip || tooltip.opacity === 0) {
+		el.style.opacity = "0";
+		return;
+	}
+	el.textContent = "";
+	const title = document.createElement("div");
+	title.style.cssText = "font-weight:bold;margin-bottom:3px";
+	title.textContent = tooltip.title && tooltip.title.length ? tooltip.title.join(" ") : "";
+	el.appendChild(title);
+	const table = document.createElement("table");
+	table.style.cssText = "border-collapse:collapse;font-variant-numeric:tabular-nums";
+	(tooltip.body || []).forEach((part: any) => {
+		(part.lines || []).forEach((line: string) => {
+			const cells = splitTooltipLine(line);
+			const tr = document.createElement("tr");
+			cells.forEach((cell: string, i: number) => {
+				const td = document.createElement("td");
+				td.textContent = cell;
+				td.style.cssText =
+					i === 0
+						? "padding:0 10px 0 0;text-align:left"
+						: i === 1
+							? "padding:0;text-align:right"
+							: "padding:0 0 0 6px;text-align:left;opacity:.75";
+				if (i === 0 && !cells[1]) td.colSpan = 3;
+				if (i === 0 || cells[1]) tr.appendChild(td);
+			});
+			table.appendChild(tr);
+		});
+	});
+	el.appendChild(table);
+	const rect = context.chart.canvas.getBoundingClientRect();
+	const x = rect.left + tooltip.caretX;
+	const y = rect.top + tooltip.caretY;
+	el.style.opacity = "1";
+	el.style.left = "0px";
+	el.style.top = "0px";
+	const tw = el.offsetWidth;
+	const th = el.offsetHeight;
+	let finalX = x + 12;
+	let finalY = y - th / 2;
+	if (finalX + tw > window.innerWidth - 8) finalX = x - tw - 12;
+	if (finalX < 8) finalX = 8;
+	if (finalY + th > window.innerHeight - 8) finalY = window.innerHeight - th - 8;
+	if (finalY < 8) finalY = 8;
+	el.style.left = finalX + "px";
+	el.style.top = finalY + "px";
+}
+
 StockCharts.candleChartConfig = function (series: any, texts: any) {
 	const t = texts || {};
 	const buckets = StockCharts.candleBuckets!(series);
@@ -1393,6 +1476,98 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 			});
 		},
 	};
+	// 축 밖 평단을 축 끝 바로 안쪽에 붙인다(축 높이의 0.6%) - 축 선과 겹치면 안 보인다.
+	const pinToAxis = (v: number) => {
+		if (!yRange) return v;
+		const pad = (yRange.max - yRange.min) * 0.006;
+		return Math.min(Math.max(v, yRange.min + pad), yRange.max - pad);
+	};
+	// 축 밖 평단의 실제 값을 선 오른끝에 적는다("평균 단가 72,150 ▼") - 범례만으로는 선이 축 끝에 붙은 까닭을 놓친다.
+	const avgEdgeLabel = {
+		id: "candleAvgEdgeLabel",
+		afterDatasetsDraw: function (chart: any) {
+			if (!yRange || yRange.lastAvg === null || yRange.lastAvg === undefined) return;
+			const area = chart.chartArea;
+			const yAxis = chart.scales["y"];
+			if (!area || !yAxis) return;
+			const text = (t.avgLabel || "Average cost") + " " + fmt(yRange.lastAvg) + (yRange.side === "above" ? " \u25b2" : " \u25bc");
+			const ctx = chart.ctx;
+			ctx.save();
+			ctx.font = "10px sans-serif";
+			ctx.textAlign = "right";
+			ctx.textBaseline = yRange.side === "above" ? "top" : "bottom";
+			ctx.fillStyle = "rgba(120,120,120,0.95)";
+			const y = yAxis.getPixelForValue(pinToAxis(yRange.lastAvg)) + (yRange.side === "above" ? 3 : -3);
+			ctx.fillText(text, area.right - 2, y);
+			ctx.restore();
+		},
+	};
+	// 범위 안 최고가 · 최저가(사용자 요청 2026-10-07: "최고 최저 표시도 주가 추이에") - 합치기 전 보유 평가액 차트가 하던 표시를 캔들에.
+	// 최고는 봉의 고가, 최저는 저가 중에서 고른다(종가가 아니다 - 봉이 그리는 끝점이 그 값이어야 표시가 봉 끝에 붙는다). 옆에 마지막 종가가 그 값에서
+	// 얼마나 떨어져 있는지(extremeGapText, 자산 성장 차트와 같은 규칙). 매매 표시(고가 위 ▼ · 저가 아래 ▲)와 겹치면 한 칸 더 띄운다.
+	const candleExtremes = {
+		id: "candleRangeExtremes",
+		afterDatasetsDraw: function (chart: any) {
+			if (!t.maxLabel || !t.minLabel || candles.length < 2) return;
+			const xAxis = chart.scales["x"];
+			const yAxis = chart.scales["y"];
+			if (!xAxis || !yAxis) return;
+			let maxIdx = -1;
+			let minIdx = -1;
+			let maxV = -Infinity;
+			let minV = Infinity;
+			candles.forEach((c: any, i: number) => {
+				const h = c.high === null || c.high === undefined ? c.close : c.high;
+				const l = c.low === null || c.low === undefined ? c.close : c.low;
+				if (h !== null && h > maxV) {
+					maxV = h;
+					maxIdx = i;
+				}
+				if (l !== null && l < minV) {
+					minV = l;
+					minIdx = i;
+				}
+			});
+			const lastClose = candles[candles.length - 1].close;
+			if (maxIdx < 0 || minIdx < 0 || maxV === minV || lastClose === null) return;
+			const area = chart.chartArea;
+			let baseColor = "#6b7280";
+			let backColor = "#ffffff";
+			try {
+				const style = getComputedStyle(document.documentElement);
+				baseColor = style.getPropertyValue("--color-base-content").trim() || baseColor;
+				backColor = style.getPropertyValue("--color-base-100").trim() || backColor;
+			} catch (e) {}
+			const ctx = chart.ctx;
+			const draw = (idx: number, v: number, isMax: boolean, label: string, bump: boolean) => {
+				const px = xAxis.getPixelForValue(idx);
+				if (px < area.left || px > area.right) return;
+				const py = yAxis.getPixelForValue(v);
+				const gap = extremeGapText(lastClose, v);
+				const text = label + " " + fmt(v) + (gap ? " (" + gap + ")" : "");
+				ctx.save();
+				ctx.font = "11px sans-serif";
+				const w = ctx.measureText(text).width;
+				let tx = px - w / 2;
+				if (tx < area.left + 2) tx = area.left + 2;
+				if (tx + w > area.right - 2) tx = area.right - 2 - w;
+				const extra = bump ? 9 : 0;
+				let ty = isMax ? py - 6 - extra : py + 15 + extra;
+				if (ty < area.top + 11) ty = area.top + 11;
+				if (ty > area.bottom - 3) ty = area.bottom - 3;
+				// 글자 뒤에 바탕색을 깐다(봉 · 평단 점선 위에 얹혀도 읽히게 - 보유 평가액 차트와 같은 처리).
+				ctx.fillStyle = backColor;
+				ctx.globalAlpha = 0.85;
+				ctx.fillRect(tx - 2, ty - 10, w + 4, 13);
+				ctx.fillStyle = baseColor;
+				ctx.globalAlpha = 0.95;
+				ctx.fillText(text, tx, ty);
+				ctx.restore();
+			};
+			draw(maxIdx, maxV, true, t.maxLabel, candles[maxIdx].sell > 0);
+			draw(minIdx, minV, false, t.minLabel, candles[minIdx].buy > 0);
+		},
+	};
 	const avgLegend =
 		(t.avgLabel || "Average cost") +
 		(yRange
@@ -1432,7 +1607,9 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 		datasets.push({
 			type: "line",
 			label: avgLegend,
-			data: candles.map((c: any) => (c.avg === null || c.avg === undefined ? null : c.avg)),
+			// 축이 캔들에 맞춰져 평단이 축 밖이면(사용자 요청 2026-10-02) 선을 축 끝에 붙여 그린다(2026-10-07: "평균 단가가 짧은 기간엔 안 보인다" -
+			// 잘려서 아예 없었다). 실제 값은 툴팁 · 범례 · 끝 글자(avgEdgeLabel)가 말한다.
+			data: candles.map((c: any) => (c.avg === null || c.avg === undefined ? null : pinToAxis(c.avg))),
 			borderColor: "rgba(120,120,120,0.9)",
 			backgroundColor: "rgba(120,120,120,0.9)",
 			borderDash: [5, 4],
@@ -1449,7 +1626,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 		config: {
 			type: "bar",
 			data: { labels: labels, datasets: datasets },
-			plugins: [tradeMarkers],
+			plugins: [tradeMarkers, avgEdgeLabel, candleExtremes],
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
@@ -1465,6 +1642,10 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 					},
 					legend: { display: hasAvg, labels: { filter: (item: any) => item.datasetIndex === 2, boxWidth: 14, font: { size: 10 } } },
 					tooltip: {
+						// 금액 자리수를 맞춰 세운다(사용자 요청 2026-10-07) - 캔버스 툴팁은 줄 단위로만 정렬돼 열을 못 맞춘다. 글자는 아래 콜백이 그대로 만들고
+						// (탐침 · 시험이 콜백을 읽는다), 그리기만 HTML 표로 한다(candleTooltipHandler).
+						enabled: false,
+						external: candleTooltipHandler,
 						callbacks: {
 							title: (items: any[]) => (items.length ? labels[items[0].dataIndex] : ""),
 							label: (ctx: any) => {
@@ -1480,6 +1661,19 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 								if (c.buy > 0) lines.push("▲ " + (t.buyLabel || "Buy") + " " + shareText(c.buy));
 								if (c.sell > 0) lines.push("▼ " + (t.sellLabel || "Sell") + " " + shareText(c.sell));
 								if (c.dist > 0) lines.push("◆ " + (t.distLabel || "Ex-distribution") + " " + fmt(c.dist));
+								// 그 날 보유 평가액(2026-10-07: 보유 평가액 추이 차트를 합쳤다). 보유가 없던 날은 줄을 안 단다.
+								// 순서는 매수 원가 -> 평가액 -> 평가 손익(사용자 요청 2026-10-07) - 셈 흐름(평가액 - 원가 = 손익) 그대로 읽힌다.
+								if (c.hv !== null && c.hv !== undefined) {
+									const hasCost = c.hc !== null && c.hc !== undefined && c.hc > 0;
+									if (hasCost) lines.push((t.holdingCostLabel || "Cost") + ": " + fmt(c.hc));
+									lines.push((t.holdingValueLabel || "Holdings value") + ": " + fmt(c.hv));
+									if (hasCost) {
+										const profit = c.hv - c.hc;
+										const pct = (profit / c.hc) * 100;
+										const sign = profit > 0 ? "+" : profit < 0 ? "-" : "";
+										lines.push((t.holdingProfitLabel || "Unrealized") + ": " + sign + fmt(Math.abs(profit)) + " (" + sign + Math.abs(pct).toFixed(2) + "%)");
+									}
+								}
 								return lines;
 							},
 						},

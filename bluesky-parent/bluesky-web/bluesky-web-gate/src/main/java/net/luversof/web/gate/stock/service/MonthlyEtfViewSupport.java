@@ -335,8 +335,8 @@ public class MonthlyEtfViewSupport {
                   row -> safeText(row.payoutWindow()), String.CASE_INSENSITIVE_ORDER);
           case SORT_MONTHLY_DIVIDEND ->
               Comparator.comparing(row -> safe(row.averageDividendPerShare1y()));
-          case SORT_TAXABLE_BASE ->
-              Comparator.comparing(row -> safe(row.averageTaxableBaseRatio1y()));
+          // 과세표준을 모르는 종목(null)은 0% 와 섞지 않고 맨 뒤로(2026-10-07).
+          case SORT_TAXABLE_BASE -> nullsLast(MonthlyEtfRowView::averageTaxableBaseRatio1y);
           case SORT_ANNUAL_YIELD -> Comparator.comparing(row -> safe(row.annualYieldPct()));
           // 이력이 모자라 값이 없는 종목은 늘 뒤로 보낸다(빈 칸이 "가장 낮은 수익률" 로 읽히면 안 된다).
           case SORT_PERIOD_PRICE -> nullsLast(MonthlyEtfRowView::periodPriceReturnPct);

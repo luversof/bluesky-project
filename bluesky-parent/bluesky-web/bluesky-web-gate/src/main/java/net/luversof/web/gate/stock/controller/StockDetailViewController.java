@@ -315,7 +315,9 @@ public class StockDetailViewController {
     seriesRequestPre.setStartDate(startDate);
     seriesRequestPre.setEndDate(endDate);
     var seriesParamsPre = seriesRequestPre.toParams();
-    seriesParamsPre.add("granularity", "AUTO");
+    // 일별로 받는다(2026-10-07) - 보유 평가액 추이 차트를 주가 캔들에 합쳐 툴팁이 그 날 평가액을 보여 준다. AUTO 는 180 점을 넘으면
+    // 주 · 월 마지막 날만 남겨, 캔들(봉 수로 따로 묶는다)의 날짜와 어긋나 툴팁이 비었다. 기간 배지는 첫 · 끝 점만 쓰므로 그대로다.
+    seriesParamsPre.add("granularity", "DAILY");
     // 차트용 시리즈와 '기간별 손익' 표를 한 번의 시뮬레이션으로 함께 받는다. 따로 부르면 같은 이력을
     // 두 번 돌린다. 쪼갬 단위(달/해)는 조회 기간 길이에 따라 api-stock 이 고른다.
     seriesParamsPre.add("breakdown", "AUTO");

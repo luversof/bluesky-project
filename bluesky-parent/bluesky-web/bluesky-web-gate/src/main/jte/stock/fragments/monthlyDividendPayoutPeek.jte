@@ -53,7 +53,7 @@
 								<td class="text-right tabular-nums">@if(row.distributionRatePct() != null)${percentFormat.format(row.distributionRatePct())}%@else-@endif</td>
 							@endif
 							<td class="text-right tabular-nums">${perShare.apply(row.dividendAmountPerShare())}</td>
-							<td class="text-right tabular-nums">${perShare.apply(row.taxableBasePerShare())}</td>
+							<td class="text-right tabular-nums">@if(row.taxableBasePerShare() == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else${perShare.apply(row.taxableBasePerShare())}@endif</td>
 						</tr>
 					@endfor
 				</tbody>

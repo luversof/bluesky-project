@@ -435,8 +435,8 @@
 										</td>
 										<td class="align-top text-right">
 											<div class="space-y-1 tabular-nums">
-												<div>${percentFormat.format(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO)}%</div>
-												<div class="text-sm text-base-content/60"><span class="mr-1 text-[11px]">${MessageUtil.getMessage("stock.monthly.etf.table.cell.taxable.per.share")}</span><span class="amount-value">${StockFormatUtil.fullKrw(row.averageTaxableBasePerShare1y(), 2)}</span></div>
+												@if(row.averageTaxableBaseRatio1y() == null)<div><span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span></div>@else<div>${percentFormat.format(row.averageTaxableBaseRatio1y())}%</div>@endif
+												<div class="text-sm text-base-content/60"><span class="mr-1 text-[11px]">${MessageUtil.getMessage("stock.monthly.etf.table.cell.taxable.per.share")}</span>@if(row.averageTaxableBasePerShare1y() == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else<span class="amount-value">${StockFormatUtil.fullKrw(row.averageTaxableBasePerShare1y(), 2)}</span>@endif</div>
 											</div>
 										</td>
 										<%-- 총보수(연) · 상장일(2026-09-28). 운용사가 적은 자릿수 그대로(0.09% · 0.0795%) - 두 자리로 자르면 서로 다른 보수가 같아 보인다.

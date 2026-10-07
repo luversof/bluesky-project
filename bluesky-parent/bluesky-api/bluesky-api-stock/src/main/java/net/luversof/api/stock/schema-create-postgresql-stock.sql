@@ -55,7 +55,7 @@ CREATE TABLE "MonthlyDividendPayout" (
 	"payDate" DATE NOT NULL,
 	"distributionRatePct" NUMERIC,
 	"dividendAmountPerShare" NUMERIC NOT NULL,
-	"taxableBasePerShare" NUMERIC NOT NULL,
+	"taxableBasePerShare" NUMERIC,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
 	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );

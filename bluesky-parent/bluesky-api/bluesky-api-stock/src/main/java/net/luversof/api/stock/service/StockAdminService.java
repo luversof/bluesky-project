@@ -304,7 +304,11 @@ public class StockAdminService {
         java.math.BigDecimal ledgerRatio =
             monthlyDividendPayoutService.ledgerTaxableBaseRatio1y(userId, stockItem.getId());
         snapshot.setAverageTaxableBaseRatio1y(
-            ledgerRatio != null ? ledgerRatio : stats.taxableBaseRatio1y());
+            ledgerRatio != null
+                ? ledgerRatio
+                : (stats.taxableBaseRatio1y() != null
+                    ? stats.taxableBaseRatio1y()
+                    : java.math.BigDecimal.ZERO));
       } else if (snapshot.getAsOfDate() == null) {
         snapshot.setAsOfDate(LocalDate.now());
       }

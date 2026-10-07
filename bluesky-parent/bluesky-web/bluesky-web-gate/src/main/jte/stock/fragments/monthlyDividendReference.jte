@@ -135,6 +135,7 @@
 	}
 	BigDecimal latestDividend = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.latestDividendAmountPerShare() : BigDecimal.ZERO;
 	BigDecimal averageDividend = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.averageDividendAmountPerShare1y() : BigDecimal.ZERO;
+	// 과세표준을 아는 행이 없으면 null(확인 안 됨, 2026-10-07).
 	BigDecimal averageTaxableRatio = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.averageTaxableBaseRatio1y() : BigDecimal.ZERO;
 	// 문구가 말하는 기준 건수. 두 카드는 서로 다른 행을 쓰므로 각자 자기 수를 말한다.
 	int averageBasisRows = monthlyDividendReferenceSummary != null ? monthlyDividendReferenceSummary.averageBasisRowCount() : 0;
@@ -198,7 +199,7 @@
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.taxable.ratio")}</p>
-			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">${percentFormat.format(averageTaxableRatio)}%</p>
+			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">@if(averageTaxableRatio == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else${percentFormat.format(averageTaxableRatio)}%@endif</p>
 			<p class="mt-2 text-sm text-base-content/60">${java.text.MessageFormat.format(basisRowsTemplate, taxableBasisRows)}</p>
 		</div>
 	</div>
@@ -574,7 +575,7 @@
 												<td class="text-right tabular-nums">@if(row.distributionRatePct() != null)${percentFormat.format(row.distributionRatePct())}%@else-@endif</td>
 											@endif
 											<td class="text-right tabular-nums">₩${amountFormat.format(row.dividendAmountPerShare() != null ? row.dividendAmountPerShare() : BigDecimal.ZERO)}</td>
-											<td class="text-right tabular-nums">₩${amountFormat.format(row.taxableBasePerShare() != null ? row.taxableBasePerShare() : BigDecimal.ZERO)}</td>
+											<td class="text-right tabular-nums">@if(row.taxableBasePerShare() == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else₩${amountFormat.format(row.taxableBasePerShare())}@endif</td>
 										</tr>
 									@endfor
 								</tbody>

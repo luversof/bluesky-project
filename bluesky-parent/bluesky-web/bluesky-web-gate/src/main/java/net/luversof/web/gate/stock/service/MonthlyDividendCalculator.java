@@ -44,18 +44,21 @@ public class MonthlyDividendCalculator {
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .divide(BigDecimal.valueOf(lastYearRows.size()), 4, RoundingMode.HALF_UP);
 
+    // 과세표준을 아는 행만 센다(api-stock MonthlyDividendPayoutService 와 같은 규칙, 2026-10-07).
     List<BigDecimal> taxableBaseRatios =
         lastYearRows.stream()
             .filter(row -> safe(row.dividendAmountPerShare()).signum() > 0)
+            .filter(row -> row.taxableBasePerShare() != null)
             .map(
                 row ->
-                    safe(row.taxableBasePerShare())
+                    row.taxableBasePerShare()
                         .multiply(BigDecimal.valueOf(100))
                         .divide(safe(row.dividendAmountPerShare()), 2, RoundingMode.HALF_UP))
             .toList();
+    // 아는 행이 없으면 null(확인 안 됨) - 0 이면 "비과세" 로 읽힌다.
     BigDecimal averageTaxableBaseRatio1y =
         taxableBaseRatios.isEmpty()
-            ? BigDecimal.ZERO
+            ? null
             : taxableBaseRatios.stream()
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .divide(BigDecimal.valueOf(taxableBaseRatios.size()), 2, RoundingMode.HALF_UP);

@@ -11,7 +11,7 @@
 	"src/poe/regex.ts": "1eabf492d164b93c73f94a3290581948158609ffc51767c290b314b59ee68e19",
 	"src/poe/tree.ts": "f498c36a5ed0ca6fcc922ea23fd8b25adeac2d16c7de0c83214420e6c5559591",
 	"src/poe2/tree2.ts": "ce29554bec1d16c4cf4038fded57d4420e9328f9a628ef4ed3782fb5f4e6aba3",
-	"src/stock-charts.ts": "58afe51858ddb8027cd26946de92e6ee63f65a54494e9f96226e9d3d7938d020",
+	"src/stock-charts.ts": "a696a747d7476d9ae9f29f52a8d3cd730828142ebdde79aa0d5223908f9ad5f7",
 	"src/stock/assetGrowth.ts": "e8374d75a84432bcb3f5edfabc751fb4216bee0ce848277909691bc707cdedcf",
 	"src/stock/assetStatus.ts": "1af7ba52829274b989538097304f1a7ffdeb6eaab6f2465cc8edfdb81e4e55ff",
 	"src/stock/compoundSimulator.ts": "5ea354502b53cd346f7d7d66242fdc02c1fc37df52a71900b4c12ba30f904167",

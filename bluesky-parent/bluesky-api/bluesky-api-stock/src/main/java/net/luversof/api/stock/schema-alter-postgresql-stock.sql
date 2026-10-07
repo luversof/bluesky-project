@@ -40,3 +40,6 @@ ALTER TABLE "StockPriceHistory" ADD COLUMN IF NOT EXISTS "rawClosePrice" NUMERIC
 
 -- 되돌리기(채운 원주가가 사라진다 - 평가는 정수배 추정으로 돌아간다)
 -- ALTER TABLE "StockPriceHistory" DROP COLUMN IF EXISTS "rawClosePrice";
+
+-- 2026-10-07: taxable base per share may be unknown (source shows "-" or blank) - null instead of 0 so a later refresh can fill it.
+ALTER TABLE "MonthlyDividendPayout" ALTER COLUMN "taxableBasePerShare" DROP NOT NULL;

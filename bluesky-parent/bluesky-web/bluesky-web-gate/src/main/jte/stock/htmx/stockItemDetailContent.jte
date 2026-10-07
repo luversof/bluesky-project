@@ -342,7 +342,7 @@
 		<script nonce="${CspNonceHolder.getNonce()}">
 		(function() {
 			if (typeof window.ensureStockCharts !== 'function') return;
-			var series = $unsafe{ChartSeriesJs.candleSeries(priceChart, trades, zone)};
+			var series = $unsafe{ChartSeriesJs.candleSeries(priceChart, trades, zone, timeSeries)};
 			window.ensureStockCharts(function() {
 				if (!window.StockCharts || !window.StockCharts.createCandleChart) return;
 				var __priceChart = window.StockCharts.createCandleChart('stockPriceChart', series, {
@@ -357,7 +357,12 @@
 					sellLabel: '${MessageUtil.getMessage("stock.trade.label.sell")}',
 					sharePattern: '${MessageUtil.getMessage("stock.activity.label.shares")}',
 					shareOnePattern: '${MessageUtil.getMessage("stock.activity.label.shares.one")}',
-					distLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.distribution")}'
+					distLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.distribution")}',
+					holdingValueLabel: '${MessageUtil.getMessage("stock.item.detail.chart.value")}',
+					holdingCostLabel: '${MessageUtil.getMessage("stock.item.detail.chart.cost")}',
+					holdingProfitLabel: '${MessageUtil.getMessage("stock.profit.unrealized")}',
+					maxLabel: '${MessageUtil.getMessage("stock.chart.range.max")}',
+					minLabel: '${MessageUtil.getMessage("stock.chart.range.min")}'
 				});
 				var unitEl = document.querySelector('[data-candle-unit]');
 				var unitText = {
@@ -407,6 +412,10 @@
 	@endif
 
 	<!-- 보유 평가액·원가 추이 -->
+	<%-- 캔들이 있으면 따로 두지 않는다(사용자 요청 2026-10-07: "굳이 2개가 나뉘어있을 필요가 없을거 같아") - 그 날 보유 평가액 · 원가 ·
+	     평가손익은 주가 추이 캔들의 툴팁에 있다. 시세 봉(OHLC)이 없어 선 차트로 그리는 종목에서만 이 차트를 그대로 둔다. --%>
+	!{boolean holdingsMergedIntoCandles = priceChart != null && !priceChart.isEmpty();}
+	@if(!holdingsMergedIntoCandles)
 	@if(timeSeries != null && !timeSeries.isEmpty() && chartFormatter != null)
 		<div>
 			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
@@ -440,6 +449,7 @@
 			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
 			@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.item.detail.empty.valuation.series"), boxed = true, padding = "py-6", widenRangeAction = !"all".equals(rangeMode))
 		</div>
+	@endif
 	@endif
 
 	<!-- 계좌별 보유 현황 -->
