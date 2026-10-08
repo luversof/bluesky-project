@@ -113,7 +113,8 @@
 	@endif
 	<div class="flex flex-wrap items-center gap-2">
 		<a class="btn btn-primary btn-sm" href="/poe2/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${ko ? "빌드 화면에서 열기" : "Open in build view"}</a>
-		<span class="text-xs text-base-content/60">${ko ? "고유 아이템은 품질 20% 기준 · 단계 증감은 적용 뒤 엔진 실측 · 계보 젬은 드물게 얻는 젬" : "Uniques at 20% quality · step changes are engine-measured · lineage gems are rare"}</span>
+		<%-- 안내 첫 문장은 PoE1 시뮬 결과와 같다(10-08) --%>
+		<span class="text-xs text-base-content/60">${ko ? "아이템마다 거래소 링크 · 업그레이드 가이드는 빌드 화면에서 · 고유 아이템은 품질 20% 기준 · 단계 증감은 적용 뒤 엔진 실측 · 계보 젬은 드물게 얻는 젬" : "Trade links per item and the upgrade guide are on the build view · Uniques at 20% quality · step changes are engine-measured · lineage gems are rare"}</span>
 	</div>
 </div>
 @endif

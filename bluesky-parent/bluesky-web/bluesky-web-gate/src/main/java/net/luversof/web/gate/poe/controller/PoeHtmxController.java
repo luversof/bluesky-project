@@ -474,6 +474,7 @@ public class PoeHtmxController {
   public String optimizeHistoryResult(@RequestParam long id, Model model) {
     net.luversof.web.gate.poe.dto.PoeOptimizeResult result = poeOptimizeClient.result(id);
     model.addAttribute("result", result);
+    model.addAttribute("historyId", id); // "빌드 화면에서 열기"가 이 이력 결과로 연다(10-08)
     model.addAttribute("tattooIcons", tattooIcons(result));
     model.addAttribute("rareBases", rareBases(result));
     java.util.Map<String, PoeBaseItem> uniqueOverrideBases = new java.util.HashMap<>();
@@ -698,6 +699,36 @@ public class PoeHtmxController {
       log.warn("실빌드 출발점 임포트 실패({} / {}): {}", ascendancy, skill, e.toString());
       model.addAttribute("importError", true);
     }
+    return "poe/htmx/buildRealStart";
+  }
+
+  /**
+   * 빌드 화면 "시뮬레이터 결과 열기"(10-08, PoE2 /poe2/htmx/build/sim-result 짝) — 마지막 최적화 결과(id 없음) 또는 결과 이력의 그
+   * 결과(id)의 PoB 코드를 불러오고 코드 칸도 채운다(OOB). 거래소 링크 · 업그레이드 가이드는 빌드 화면이 그대로 준다.
+   */
+  @GetMapping("/build/sim-result")
+  public String importSimResult(@RequestParam(required = false) Long id, Model model) {
+    String code = null;
+    try {
+      net.luversof.web.gate.poe.dto.PoeOptimizeResult r =
+          id != null ? poeOptimizeClient.result(id) : poeOptimizeClient.status().result();
+      code = r == null ? null : r.pobCode();
+    } catch (RuntimeException e) {
+      log.warn("시뮬레이터 결과 조회 실패({}): {}", id, e.toString());
+    }
+    if (code == null || code.isBlank()) {
+      model.addAttribute("importError", true);
+      return "poe/htmx/buildSummary";
+    }
+    try {
+      model.addAttribute("build", poeBuildClient.importBuild(code));
+      model.addAttribute("engineAvailable", poeBuildClient.available());
+    } catch (RuntimeException e) {
+      log.warn("시뮬레이터 결과 임포트 실패({}): {}", id, e.toString());
+      model.addAttribute("importError", true);
+    }
+    model.addAttribute("oobCode", code);
+    model.addAttribute("fromSim", true);
     return "poe/htmx/buildRealStart";
   }
 

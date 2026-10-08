@@ -168,7 +168,37 @@ public final class Poe2 {
       String icon,
       String image,
       // 암시 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C113)
-      List<Keyword> keywords) {
+      List<Keyword> keywords,
+      // 거래소가 이 베이스를 아는가(10-08 C174, 상세 응답에만 채운다) — null = 모름
+      Boolean tradable) {
+
+    /** 상세 응답용 — 거래소 사전 대조 결과를 실은 사본. */
+    public BaseItem withTradable(Boolean t) {
+      return new BaseItem(
+          name,
+          nameKo,
+          slug,
+          itemClass,
+          itemClassKo,
+          category,
+          dropLevel,
+          reqLevel,
+          reqStr,
+          reqDex,
+          reqInt,
+          width,
+          height,
+          armour,
+          weapon,
+          flask,
+          implicits,
+          tags,
+          subType,
+          icon,
+          image,
+          keywords,
+          t);
+    }
 
     /** 목록용 — 키워드 정의를 뺀 사본(10-04 C117). */
     public BaseItem withoutKeywords() {
@@ -194,7 +224,8 @@ public final class Poe2 {
           subType,
           icon,
           image,
-          null);
+          null,
+          tradable);
     }
   }
 
@@ -374,7 +405,9 @@ public final class Poe2 {
       List<BuildSkill> skills,
       List<BuildItem> items,
       BuildTree tree,
-      String treeLink) {}
+      String treeLink,
+      // 거래소 주소 경로의 리그(/trade2/search/poe2/<리그>) — 아이템 거래소 링크용(10-08). 사전에 없으면 null(게이트가 Standard)
+      String tradeLeague) {}
 
   public record BuildStat(String key, Double value) {}
 
@@ -431,7 +464,9 @@ public final class Poe2 {
       Double dps,
       Double ehp,
       Double maxHit,
-      Double life) {}
+      Double life,
+      // 거래소 검색 쿼리(고유 이름, 10-08 C172)
+      String tradeQuery) {}
 
   /** 옵션 목표 한 줄 — 그 칸 아이템에 이 계열의 최고 등급(최대 롤)을 더하면. */
   public record GuideMod(
@@ -517,7 +552,13 @@ public final class Poe2 {
    * 그대로 붙여 넣는다(10-02).
    */
   public record GuideRare(
-      Double dps, Double ehp, List<String> lines, List<String> linesKo, String itemText) {}
+      Double dps,
+      Double ehp,
+      List<String> lines,
+      List<String> linesKo,
+      String itemText,
+      // 거래소 검색 쿼리(분류 + 옵션 85% 이상, 10-08 C172). 없으면 null
+      String tradeQuery) {}
 
   /**
    * 엔진 재계산 한 줄 — PoB 가 저장해 둔 값(saved) · PoB-PoE2 엔진으로 다시 계산한 값(computed). set1·set2 = 무기 세트를 나눠 쓰는
@@ -577,7 +618,9 @@ public final class Poe2 {
       // 베이스(속성 칸 · 요구 사항 — PoE1 빌드 툴팁 짝, 10-04 C147). 키워드는 뺀 사본
       BaseItem base,
       // 품질 %(PoB "Quality: N") — 인게임 속성 칸 첫 줄. 0 이면 없음(10-04 C148)
-      Integer quality) {}
+      Integer quality,
+      // 거래소 검색 쿼리(q JSON) — 고유는 이름, 레어 · 마법은 베이스 + 옵션(PoeTradeQueries, 10-08). 만들 수 없으면 null
+      String tradeQuery) {}
 
   public record BuildNode(Integer id, String name, String nameKo) {}
 
@@ -598,5 +641,7 @@ public final class Poe2 {
       int augments,
       int uniques,
       boolean tree,
-      String loadedAt) {}
+      String loadedAt,
+      // 거래소 주소 경로의 리그(10-08 C172 — 가이드 조각이 거래소 링크에 쓴다). 사전에 없으면 null
+      String tradeLeague) {}
 }

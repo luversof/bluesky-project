@@ -3,6 +3,8 @@
 @import net.luversof.web.gate.poe.PoeText
 
 @param Poe2.GuideRares rares = null
+<%-- 거래소 주소 경로의 리그(10-08 C172) --%>
+@param String tradeLeague = null
 
 <%-- 가이드 "좋은 레어로 바꾸면"(10-02 사용자 요청) — buildGuide.jte 에서 따로 불러오는 조각. 같은 기준: PoE1 가이드 "레어 목표"(2티어 중간 롤, 접두 3 · 접미 3). --%>
 !{
@@ -54,6 +56,10 @@
 												<div class="text-[12px] leading-snug text-[#8888ff] text-center">$unsafe{PoeText.highlightValues(line)}</div>
 											@endfor
 										</div>
+										<%-- 거래소(10-08 C172, PoE1 가이드 레어 목표 짝) — 분류 + 옵션, 옵션 5개 이상이면 2개는 빠져도 --%>
+										@if(PoeText.trade2Url(tradeLeague, r.tradeQuery()) != null)
+											<div class="mt-1"><a class="badge badge-xs badge-outline badge-info" target="_blank" rel="noopener" href="${PoeText.trade2Url(tradeLeague, r.tradeQuery())}" data-guide-trade title="${korean ? "분류 + 옵션(이 수치의 85% 이상)으로 거래소 검색(즉시 구입 · 가격순)" : "Search trade — item class + mods at 85%+"}">${korean ? "거래소" : "Trade"}</a></div>
+										@endif
 										@if(r.itemText() != null)
 											<%-- PoB 아이템 텍스트 복사(10-02) — 엔진이 잰 그 아이템. PoB "Create custom" 에 붙여 넣는다(common.ts [data-copy-target]) --%>
 											!{ String copyId = "poe2RareText-" + rt.slot().replaceAll("[^A-Za-z0-9]", "") + "-" + f; }

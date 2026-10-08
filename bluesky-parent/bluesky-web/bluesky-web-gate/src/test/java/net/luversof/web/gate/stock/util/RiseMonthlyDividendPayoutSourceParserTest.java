@@ -70,7 +70,9 @@ class RiseMonthlyDividendPayoutSourceParserTest {
                     "2026-08-14", "2026-08-19", new BigDecimal("1200.0"), null)));
 
     String row = bulkInput.substring(bulkInput.indexOf(chr10()) + 1);
-    assertThat(row).as("과세표준이 없으면 0 이라고 적는다(빈 칸이 아니라)").isEqualTo("2026-08-14	2026-08-19	1200	0");
+    assertThat(row)
+        .as("과세표준이 없으면 모름(-)으로 적는다 - 0 이면 진짜 0 원과 구분되지 않는다(2026-10-08)")
+        .isEqualTo("2026-08-14\t2026-08-19\t1200\t-");
     assertThat(row).as("지수 표기가 섞이면 안 된다").doesNotContain("E");
   }
 
@@ -145,8 +147,8 @@ class RiseMonthlyDividendPayoutSourceParserTest {
     assertThat(requests.get(0).getPayDate()).isEqualTo(LocalDate.of(2026, 9, 17));
     assertThat(requests.get(1).getPayDate()).isEqualTo(LocalDate.of(2026, 8, 19));
     assertThat(requests.get(1).getTaxableBasePerShare())
-        .as("과세표준이 없으면 0 으로 싣는다(가져오기 파서가 빈 칸을 거부한다)")
-        .isEqualByComparingTo("0");
+        .as("과세표준이 없으면 모름(null) - 0 이면 진짜 0 원과 구분되지 않아 다음 갱신이 못 채운다(2026-10-08)")
+        .isNull();
   }
 
   /**

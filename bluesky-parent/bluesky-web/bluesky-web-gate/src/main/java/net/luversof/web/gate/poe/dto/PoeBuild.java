@@ -80,5 +80,7 @@ public record PoeBuild(
       List<String> modKinds,
       // 고유 로어(플레이버) — 인게임 고유 툴팁 맨 아래 주황 기울임(고유만, 10-04 C139)
       List<String> flavour,
-      List<String> flavourKo) {}
+      List<String> flavourKo,
+      // 거래소 검색 쿼리(q JSON, API 와 짝, 10-08) — null 이면 링크 없음
+      String tradeQuery) {}
 }

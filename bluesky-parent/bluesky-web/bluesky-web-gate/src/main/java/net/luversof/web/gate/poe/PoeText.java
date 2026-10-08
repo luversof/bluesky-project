@@ -30,6 +30,61 @@ public final class PoeText {
    *
    * <p>모르는 값이 오면 원문을 그대로 돌려준다 — 새 자원이 추가돼도 화면이 비지 않는다.
    */
+  /** 한국 서버 거래소(옛 poe.game.daum.net 은 poe.kakaogames.com 으로 301, 10-08). */
+  public static final String TRADE_HOST = "https://poe.kakaogames.com";
+
+  /** PoE1 거래소 검색 주소 — 리그는 주소에 없다(지금 리그가 기본). 쿼리가 없으면 null. */
+  public static String tradeUrl(String query) {
+    return query == null || query.isBlank()
+        ? null
+        : TRADE_HOST
+            + "/trade/search?q="
+            + java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8);
+  }
+
+  /**
+   * 고유 이름 거래소 쿼리(10-08 C173, 고유 상세 화면) — API PoeTradeQueries.unique 와 같은 모양(한국 서버라 한국어 이름, 즉시 구입 ·
+   * 가격순). 상세 화면은 API 쿼리를 받지 않아(고유 데이터 레코드에 쿼리를 싣지 않는다) 여기서 같은 모양으로 만든다. 이름이 없으면 null.
+   */
+  public static String uniqueTradeQuery(String nameKo, String name) {
+    String n = nameKo != null && !nameKo.isBlank() ? nameKo : name;
+    if (n == null || n.isBlank()) {
+      return null;
+    }
+    return "{\"query\":{\"status\":{\"option\":\"securable\"},\"name\":\""
+        + n.replace("\\", "").replace("\"", "")
+        + "\",\"stats\":[{\"type\":\"and\",\"filters\":[]}]},\"sort\":{\"price\":\"asc\"}}";
+  }
+
+  /**
+   * 베이스 거래소 쿼리(10-08 C174, 베이스 상세 화면) — 이 베이스의 고유 아닌 아이템(일반 · 마법 · 레어), 즉시 구입 · 가격순. 한국 서버라 한국어 베이스
+   * 이름. 이름이 없으면 null.
+   */
+  public static String baseTradeQuery(String nameKo, String name) {
+    String n = nameKo != null && !nameKo.isBlank() ? nameKo : name;
+    if (n == null || n.isBlank()) {
+      return null;
+    }
+    return "{\"query\":{\"status\":{\"option\":\"securable\"},\"type\":\""
+        + n.replace("\\", "").replace("\"", "")
+        + "\",\"stats\":[{\"type\":\"and\",\"filters\":[]}],"
+        + "\"filters\":{\"type_filters\":{\"filters\":{\"rarity\":{\"option\":\"nonunique\"}}}}},"
+        + "\"sort\":{\"price\":\"asc\"}}";
+  }
+
+  /** PoE2 거래소 검색 주소 — 리그가 경로에 들어간다(없으면 Standard). 쿼리가 없으면 null. */
+  public static String trade2Url(String league, String query) {
+    if (query == null || query.isBlank()) {
+      return null;
+    }
+    String l = league == null || league.isBlank() ? "Standard" : league;
+    return TRADE_HOST
+        + "/trade2/search/poe2/"
+        + java.net.URLEncoder.encode(l, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20")
+        + "?q="
+        + java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8);
+  }
+
   private static final java.util.regex.Pattern GEM_LEVEL_SUFFIX =
       java.util.regex.Pattern.compile(" \\(Lv(\\d+)\\)$");
 

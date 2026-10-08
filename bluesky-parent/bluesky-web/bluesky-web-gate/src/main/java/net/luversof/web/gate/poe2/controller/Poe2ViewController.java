@@ -35,7 +35,7 @@ public class Poe2ViewController {
     try {
       return client.meta();
     } catch (RuntimeException e) {
-      return new Poe2.Meta("", 0, 0, 0, 0, 0, false, "");
+      return new Poe2.Meta("", 0, 0, 0, 0, 0, false, "", null);
     }
   }
 

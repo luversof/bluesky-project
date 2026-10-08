@@ -12,7 +12,8 @@ import { DATA_DIR } from "./paths.mjs";
 
 const norm = (s) => s.replace(/[0-9]+(\.[0-9]+)?/g, "#").replace(/\s+/g, " ").trim();
 
-const res = await fetch("https://poe.game.daum.net/api/trade/data/stats", {
+// 한국 서버는 poe.kakaogames.com 으로 옮겼다(옛 poe.game.daum.net 은 301 — fetch 가 따라가긴 하지만 주소를 바로 쓴다, 10-08)
+const res = await fetch("https://poe.kakaogames.com/api/trade/data/stats", {
 	headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" },
 });
 if (!res.ok) {
@@ -37,6 +38,21 @@ if (!Object.keys(explicit).length) {
 const pseudo = sectionMap("pseudo");
 // implicit — 결합(Synthesis) 유니크(성운 등)의 "빌드 유효 임플리싯 보유" count 필터용
 const implicit = sectionMap("implicit");
+// 거래소가 아는 베이스 이름(10-08 C174) — 베이스 상세 "거래소에서 찾기"는 사전에 없는 베이스(더는 안 떨어지는 옛 베이스 등)면 숨긴다
+//   (없는 type 은 거래소가 "Invalid query" 로 거절한다). 받기 실패면 빈 목록 — 조회 쪽이 "모름"으로 보고 단추를 그대로 둔다.
+const types = await itemTypes("/api/trade/data/items");
 const out = path.join(DATA_DIR, "trade-stats.json");
-fs.writeFileSync(out, JSON.stringify({ explicit, pseudo, implicit }, null, 0));
-console.log(`[trade-stats] explicit ${Object.keys(explicit).length}건 + pseudo ${Object.keys(pseudo).length}건 + implicit ${Object.keys(implicit).length}건 → ${out}`);
+fs.writeFileSync(out, JSON.stringify({ explicit, pseudo, implicit, types }, null, 0));
+console.log(`[trade-stats] explicit ${Object.keys(explicit).length}건 + pseudo ${Object.keys(pseudo).length}건 + implicit ${Object.keys(implicit).length}건 · 베이스 ${types.length}건 → ${out}`);
+
+async function itemTypes(p) {
+	try {
+		const r = await fetch("https://poe.kakaogames.com" + p, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" } });
+		if (!r.ok) throw new Error(`HTTP ${r.status}`);
+		const d = await r.json();
+		return [...new Set((d.result || []).flatMap((g) => (g.entries || []).map((e) => e.type)).filter(Boolean))].sort();
+	} catch (e) {
+		console.warn(`[trade-stats] 베이스 이름 목록 실패(${e.message}) — 빈 목록(단추는 그대로)`);
+		return [];
+	}
+}

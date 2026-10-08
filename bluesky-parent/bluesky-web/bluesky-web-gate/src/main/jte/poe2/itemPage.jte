@@ -25,6 +25,12 @@
 		<div class="space-y-4">
 			<a href="/poe2/items" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe2.items.title")}</a>
 			@template.poe2.header(title = title, meta = meta)
+			<%-- 거래소에서 찾기(10-08 C174, PoE1 베이스 상세 짝 · 고유 상세 C173 과 같은 자리) — 리그가 주소 경로에 들어간다. 거래소 사전에 없는 베이스(룬벼림 · 고유 전용 · 미출시)는 숨긴다 --%>
+			@if(!Boolean.FALSE.equals(base.tradable()))
+			<div class="flex flex-wrap items-center gap-2">
+				<a class="btn btn-sm btn-outline" target="_blank" rel="noopener" data-base-trade href="${PoeText.trade2Url(meta == null ? null : meta.tradeLeague(), PoeText.baseTradeQuery(base.nameKo(), base.name()))}" title="${PoeText.isKorean() ? "이 베이스를 거래소에서 검색(고유 제외 · 즉시 구입 · 가격순, 새 창)" : "Search trade for this base (non-unique, instant buyout, new tab)"}">${PoeText.isKorean() ? "거래소에서 찾기 ↗" : "Find on trade ↗"}</a>
+			</div>
+			@endif
 			@if(PoeText.isKorean())
 				<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.english")}: ${base.name()}</div>
 			@endif

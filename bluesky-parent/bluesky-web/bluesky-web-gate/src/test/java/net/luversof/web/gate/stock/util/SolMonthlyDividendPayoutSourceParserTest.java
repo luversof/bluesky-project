@@ -102,8 +102,8 @@ class SolMonthlyDividendPayoutSourceParserTest {
 
     String row = bulkInput.substring(bulkInput.indexOf((char) 10) + 1);
     assertThat(row)
-        .as("점 찍힌 날짜도 같은 날로, 과세표준이 없으면 0 으로, 지수 표기 없이")
-        .isEqualTo("2026-08-14\t2026-08-18\t1200\t0");
+        .as("점 찍힌 날짜도 같은 날로, 과세표준이 없으면 모름(-)으로, 지수 표기 없이")
+        .isEqualTo("2026-08-14\t2026-08-18\t1200\t-");
   }
 
   @Test

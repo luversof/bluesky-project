@@ -19,7 +19,30 @@ public record PoeBaseItem(
     Armour armour,
     Weapon weapon,
     Flask flask,
-    List<ModLine> implicits) {
+    List<ModLine> implicits,
+    /** 거래소가 이 베이스를 아는가(10-08 C174, 상세 응답에만 채운다) — null = 모름. */
+    Boolean tradable) {
+
+  /** 상세 응답용 — 거래소 사전 대조 결과를 실은 사본. */
+  public PoeBaseItem withTradable(Boolean t) {
+    return new PoeBaseItem(
+        name,
+        nameKo,
+        slug,
+        itemClass,
+        itemClassKo,
+        itemClassName,
+        category,
+        dropLevel,
+        reqStr,
+        reqDex,
+        reqInt,
+        armour,
+        weapon,
+        flask,
+        implicits,
+        t);
+  }
 
   public record Armour(
       int armourMin,

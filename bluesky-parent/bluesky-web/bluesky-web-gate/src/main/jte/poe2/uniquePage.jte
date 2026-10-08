@@ -30,10 +30,14 @@
 		<div id="poe2UniquePage" class="space-y-4">
 			<a href="/poe2/uniques" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe2.uniques.title")}</a>
 			@template.poe2.header(title = title, meta = meta)
-			@if(forceable)
-				<%-- PoE1 고유 상세와 같은 바로가기 — 시뮬레이터가 이 고유를 고정한 채 열린다(10-01, 방어구·장신구만) --%>
-				<a class="btn btn-sm btn-primary btn-outline" href="/poe2/sim?unique=${item.slug()}${variant != null && item.variants() != null && item.variants().size() > 1 ? ":" + variant : ""}" data-optimize-unique>${PoeText.isKorean() ? "이 고유로 최적화 →" : "Optimize with this unique →"}</a>
-			@endif
+			<%-- 거래소에서 찾기(10-08 C173, PoE1 고유 상세 짝) — 리그가 주소 경로에 들어간다 --%>
+			<div class="flex flex-wrap items-center gap-2">
+				@if(forceable)
+					<%-- PoE1 고유 상세와 같은 바로가기 — 시뮬레이터가 이 고유를 고정한 채 열린다(10-01, 방어구·장신구만) --%>
+					<a class="btn btn-sm btn-primary btn-outline" href="/poe2/sim?unique=${item.slug()}${variant != null && item.variants() != null && item.variants().size() > 1 ? ":" + variant : ""}" data-optimize-unique>${PoeText.isKorean() ? "이 고유로 최적화 →" : "Optimize with this unique →"}</a>
+				@endif
+				<a class="btn btn-sm btn-outline" target="_blank" rel="noopener" data-unique-trade href="${PoeText.trade2Url(meta == null ? null : meta.tradeLeague(), PoeText.uniqueTradeQuery(item.nameKo(), item.name()))}" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순, 새 창)" : "Search trade for this unique (instant buyout, new tab)"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소에서 찾기 ↗" : "Find on trade ↗"}</a>
+			</div>
 			@if(PoeText.isKorean())
 				<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.english")}: ${item.name()} · ${item.baseType()}</div>
 			@endif

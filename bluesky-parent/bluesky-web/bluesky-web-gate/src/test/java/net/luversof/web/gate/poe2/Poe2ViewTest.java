@@ -27,7 +27,7 @@ class Poe2ViewTest {
   private static Poe2.BaseItem base(Poe2.Armour a, Poe2.Weapon w, Poe2.Flask f) {
     return new Poe2.BaseItem(
         "n", null, "s", "c", null, null, 1, 1, null, null, null, 1, 1, a, w, f, null, null, null,
-        null, null, null);
+        null, null, null, null);
   }
 
   @Test

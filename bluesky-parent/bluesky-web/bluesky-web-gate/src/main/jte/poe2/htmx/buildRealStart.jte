@@ -6,6 +6,8 @@
 @param Poe2.NinjaArchetype archetype = null
 @param String oobCode = null
 @param boolean refined = false
+<%-- 시뮬레이터 결과를 불러왔을 때(10-08, PoE1 buildRealStart 와 같은 문구) --%>
+@param boolean fromSim = false
 
 <%-- PoE2 빌드 화면 "실빌드에서 출발"(archetype) · 다듬은 빌드 불러오기(refined) — 출처 안내 + 자동 다듬기 버튼 + 코드 칸 채우기(OOB) + 일반 요약.
      코드 칸은 OOB 로 **먼저** 바뀐다(htmx 는 OOB 를 본문보다 먼저 처리) — 요약이 뜨자마자 부르는 재계산·가이드가 그 칸을 보낸다. --%>
@@ -29,6 +31,8 @@
 		</div>
 		<div id="poe2RefineArea" class="w-full"></div>
 	</div>
+@elseif(fromSim)
+	<div class="alert alert-success mb-3 text-sm" data-sim-note>${ko ? "시뮬레이터 결과 빌드를 불러왔습니다. 코드 칸도 이 빌드로 바뀌었습니다 — 아이템마다 거래소 링크가 있습니다." : "Loaded the simulator result build. The code box now holds it — each item has a trade link."}</div>
 @elseif(refined)
 	<div class="alert alert-success mb-3 text-sm" data-refined-note>${ko ? "다듬은 빌드를 불러왔습니다. 코드 칸도 이 빌드로 바뀌었습니다." : "Loaded the refined build. The code box now holds it."}</div>
 @endif

@@ -194,6 +194,16 @@ public class PoeRareTargetService {
    *
    * <p>예: ("+100 to maximum Life", "+114 to maximum Life") → "+(100-114) to maximum Life"
    */
+  /** 이 옵션의 최저 롤 한국어 문장(거래소 최소값용, 10-08 C171) — 최저 롤 문장이 없으면 최고 롤 문장. */
+  public List<String> koMinLines(Affix a) {
+    PoeModDataService.ModTier tier = modData.tier(a.tierId());
+    if (tier == null) {
+      return List.of();
+    }
+    List<String> lines = tier.koMin() != null && !tier.koMin().isEmpty() ? tier.koMin() : tier.ko();
+    return lines == null ? List.of() : lines;
+  }
+
   static String mergeRange(String min, String max, String open, String sep, String close) {
     if (min == null || max == null) {
       return max;

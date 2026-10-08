@@ -32,7 +32,11 @@
 				<h1 class="text-2xl font-bold">${displayName}</h1>
 				@if(ko)<span class="text-base-content/60 text-sm">${item.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
-				@template.poe.htmx.optimizeUniqueLink(item = item, variant = variant)
+				<%-- 거래소에서 찾기(10-08 C173 — 빌드 화면 거래소 링크와 같은 쿼리: 이름 · 즉시 구입 · 가격순) + 최적화 단추. 주얼처럼 최적화 단추가 없는 고유도 거래소는 보인다 --%>
+				<div class="ml-auto flex flex-wrap items-center gap-2">
+					<a class="btn btn-sm btn-outline" target="_blank" rel="noopener" data-unique-trade href="${net.luversof.web.gate.poe.PoeText.tradeUrl(net.luversof.web.gate.poe.PoeText.uniqueTradeQuery(item.nameKo(), item.name()))}" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순, 새 창)" : "Search trade for this unique (instant buyout, new tab)"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소에서 찾기 ↗" : "Find on trade ↗"}</a>
+					@template.poe.htmx.optimizeUniqueLink(item = item, variant = variant)
+				</div>
 			</div>
 
 			<div class="flex flex-wrap gap-6 items-start">

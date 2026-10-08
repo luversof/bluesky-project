@@ -17,7 +17,9 @@ public record PoeBaseItem(
     Armour armour,
     Weapon weapon,
     Flask flask,
-    List<ModLine> implicits) {
+    List<ModLine> implicits,
+    /** 거래소가 이 베이스를 아는가(10-08 C174, 상세 응답만) — false 면 "거래소에서 찾기" 단추를 숨긴다, null = 모름(보인다). */
+    Boolean tradable) {
 
   public record Armour(
       int armourMin,

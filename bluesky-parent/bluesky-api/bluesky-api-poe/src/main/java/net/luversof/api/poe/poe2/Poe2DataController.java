@@ -426,7 +426,9 @@ public class Poe2DataController {
 
   @GetMapping("/base-items/{slug}")
   public Poe2.BaseItem base(@PathVariable String slug) {
-    return found(data.base(slug), "베이스 " + slug);
+    // 거래소가 아는 베이스인가(10-08 C174, PoE1 짝) — 게이트 베이스 상세 "거래소에서 찾기" 단추 여부
+    return found(
+        data.base(slug).map(b -> b.withTradable(data.tradable(b.nameKo()))), "베이스 " + slug);
   }
 
   // 옵션

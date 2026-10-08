@@ -119,6 +119,9 @@ public class PoePobImportService {
   private final PoeRareNameService poeRareNameService;
   private final PoeModDataService poeModDataService;
 
+  // 빌드 화면 아이템 → 거래소 검색 쿼리(10-08)
+  private final PoeTradeStatDataService poeTradeStatDataService;
+
   public PoePobImportService(
       PoeGemDataService poeGemDataService,
       PoeUniqueDataService poeUniqueDataService,
@@ -127,7 +130,9 @@ public class PoePobImportService {
       PoeClusterJewelDataService poeClusterJewelDataService,
       PoeTreeGraphService poeTreeGraphService,
       PoeRareNameService poeRareNameService,
-      PoeModDataService poeModDataService) {
+      PoeModDataService poeModDataService,
+      PoeTradeStatDataService poeTradeStatDataService) {
+    this.poeTradeStatDataService = poeTradeStatDataService;
     this.poeRareNameService = poeRareNameService;
     this.poeModDataService = poeModDataService;
     this.poeClusterJewelDataService = poeClusterJewelDataService;
@@ -499,7 +504,13 @@ public class PoePobImportService {
                     ? base.map(PoeBaseItem::nameKo).orElse(extraBaseKo)
                     // 레어 이름 "Mind Reach" → "마음의 역량"(게임 Words 접두 · 접미, 10-04 C143)
                     : "RARE".equals(rarity)
-                        ? poeRareNameService.translate(name)
+                        // 최적화기가 만든 레어(PoB 이름 "Sim Craft")는 실제 아이템처럼 보이는 이름을 지어내지 않고 정직하게
+                        //   "시뮬 제작"(10-08 C169 — 아이템 종류별 레어 접미 낱말 데이터가 없어 인게임식 이름은 틀리게 된다)
+                        ? ("Sim Craft".equals(name)
+                            ? "시뮬 제작"
+                            : "Sim Weapon".equals(name)
+                                ? "시뮬 표준 무기"
+                                : poeRareNameService.translate(name))
                         : "MAGIC".equals(rarity)
                             ? magicNameKo(
                                 name, baseType, base.map(PoeBaseItem::nameKo).orElse(extraBaseKo))
@@ -557,7 +568,33 @@ public class PoePobImportService {
         List.copyOf(
             kindsAll.subList(Math.min(implicitCount(lines), kindsAll.size()), kindsAll.size())),
         unique.map(PoeUniqueItem::flavour).orElse(null),
-        unique.map(PoeUniqueItem::flavourKo).orElse(null));
+        unique.map(PoeUniqueItem::flavourKo).orElse(null),
+        // 거래소 검색 쿼리(10-08) — 고유는 이름, 레어 · 마법은 베이스(한국어) + 익스플리싯 옵션(제작 줄 제외)
+        "UNIQUE".equals(rarity) || "RELIC".equals(rarity)
+            // 삿된(Foulborn) 고유는 거래소에서 원래 고유 이름으로 찾는다(PoB 이름 "Foulborn X" 는 고유 데이터에 없어 영문으로 남았다)
+            ? PoeTradeQueries.unique(
+                unique
+                    .map(PoeUniqueItem::nameKo)
+                    .orElseGet(
+                        () ->
+                            name.startsWith("Foulborn ")
+                                ? poeUniqueDataService
+                                    .findByName(name.substring("Foulborn ".length()))
+                                    .map(PoeUniqueItem::nameKo)
+                                    .orElse(null)
+                                : null),
+                name.replaceFirst("^Foulborn ", ""))
+            // 시뮬레이터 가정 무기(PoB 이름 "Sim Weapon" — 물리 60~120 · 정확도 +2000 가정)는 실제 아이템이 아니라 거래소 링크
+            // 없음(C170)
+            : ("RARE".equals(rarity) || "MAGIC".equals(rarity)) && !"Sim Weapon".equals(name)
+                ? PoeTradeQueries.rare(
+                    base.map(PoeBaseItem::nameKo).orElse(extraBaseKo),
+                    modLinesKo,
+                    List.copyOf(
+                        kindsAll.subList(
+                            Math.min(implicitCount(lines), kindsAll.size()), kindsAll.size())),
+                    poeTradeStatDataService)
+                : null);
   }
 
   private static final java.util.Map<String, String> INFLUENCE_KEYS =

@@ -60,7 +60,7 @@
 	@elseif("CANCELLED".equals(status))
 		<div class="alert alert-warning text-sm">${MessageUtil.getMessage("poe.sim.opt.cancelled")}</div>
 	@endif
-	@template.poe.htmx.simOptimizeResult(result = result, tattooIcons = tattooIcons, ninjaBenchmark = ninjaBenchmark, rareBases = rareBases, realStart = realStart, uniqueOverrides = uniqueOverrides, uniqueOverrideBases = uniqueOverrideBases, jewelOverrides = jewelOverrides, jewelOverrideBases = jewelOverrideBases)
+	@template.poe.htmx.simOptimizeResult(result = result, tattooIcons = tattooIcons, ninjaBenchmark = ninjaBenchmark, rareBases = rareBases, realStart = realStart, uniqueOverrides = uniqueOverrides, uniqueOverrideBases = uniqueOverrideBases, jewelOverrides = jewelOverrides, jewelOverrideBases = jewelOverrideBases, historyId = null)
 	<%-- 완료 결과가 있으면 최근 결과 목록을 OOB 로 새로 불러온다 — 방금 완료된 실행이 목록에 바로 반영된다. --%>
 	@if(result != null)
 		<div id="poeOptimizeHistory" class="mt-3" hx-swap-oob="true" hx-get="/poe/htmx/sim/optimize/history" hx-trigger="load" hx-swap="innerHTML"></div>

@@ -6,6 +6,8 @@
 @param boolean engineAvailable = false
 @param RealStart realStart = null
 @param String oobCode = null
+<%-- 시뮬레이터 결과를 불러왔을 때(10-08) — 안내 문구만 다르다 --%>
+@param boolean fromSim = false
 
 <%-- 빌드 화면 "실빌드에서 출발"(realStart) · 다듬은 빌드 불러오기(oobCode) — 출처 안내 + 코드 칸 채우기(OOB: 재계산·가이드 버튼이 이 칸을 보낸다)
      + 자동 다듬기 버튼 + 일반 요약 fragment. --%>
@@ -28,6 +30,8 @@
 			</div>
 			<div id="poeRefineArea" class="w-full"></div>
 		</div>
+	@elseif(fromSim)
+		<div class="alert alert-success mb-3 text-sm" data-sim-note>${ko ? "시뮬레이터 결과 빌드를 불러왔습니다. 코드 칸도 이 빌드로 바뀌었습니다 — 아이템마다 거래소 링크가 있습니다." : "Loaded the simulator result build. The code box now holds it — each item has a trade link."}</div>
 	@else
 		<div class="alert alert-success mb-3 text-sm" data-refined-note>${ko ? "다듬은 빌드를 불러왔습니다. 코드 칸도 이 빌드로 바뀌었습니다." : "Loaded the refined build. The code box now holds it."}</div>
 	@endif

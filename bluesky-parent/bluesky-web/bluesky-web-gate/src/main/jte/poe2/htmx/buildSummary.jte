@@ -106,6 +106,9 @@
 						!{
 							String rarityClass = switch (it.rarity() == null ? "" : it.rarity()) { case "UNIQUE" -> "poe-name-unique"; case "RARE" -> "poe-name-rare"; case "MAGIC" -> "poe-name-magic"; default -> "poe-name-normal"; };
 							String shownName = PoeText.name(it.nameKo(), it.name());
+							// 거래소 링크(10-08, PoE1 빌드 화면 짝) — 리그가 주소 경로에 들어간다. 고유 = 이름, 레어 · 마법 = 베이스 + 옵션(이 수치의 85% 이상)
+							String tradeHref = PoeText.trade2Url(build.tradeLeague(), it.tradeQuery());
+							boolean tradeUnique = "UNIQUE".equals(it.rarity());
 						}
 						<div class="flex gap-3 rounded-lg border border-base-200 bg-base-100 px-3 py-2 ${it.mods() != null && !it.mods().isEmpty() ? "poe-hover cursor-help hover:border-primary/40" : ""}">
 							<div class="w-10 h-12 shrink-0 flex items-center justify-center">
@@ -113,12 +116,18 @@
 							</div>
 							<div class="min-w-0 flex-1">
 								<div class="text-xs text-base-content/60">${net.luversof.web.gate.poe2.Poe2View.slotName(it.slot())}</div>
+								<div class="flex items-center gap-1 min-w-0">
 								@if(it.uniqueSlug() != null)
 									<%-- 고유도 카드의 인라인 툴팁(이 빌드가 굴린 값, 10-04 C140) — 링크는 고유 상세 화면으로 --%>
-									<a class="font-semibold ${rarityClass} link-hover" href="/poe2/uniques/${it.uniqueSlug()}" data-build-unique="${it.uniqueSlug()}">${shownName}</a>
+									<a class="font-semibold ${rarityClass} link-hover truncate" href="/poe2/uniques/${it.uniqueSlug()}" data-build-unique="${it.uniqueSlug()}">${shownName}</a>
 								@else
 									<div class="font-semibold ${rarityClass} truncate">${shownName}</div>
 								@endif
+								@if(tradeHref != null)
+									<a class="badge badge-xs badge-outline badge-info shrink-0" target="_blank" rel="noopener" href="${tradeHref}" data-build-trade
+									   title="${korean ? (tradeUnique ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "베이스 + 옵션(이 수치의 85% 이상)으로 거래소 검색(즉시 구입 · 가격순)") : (tradeUnique ? "Search trade for this unique" : "Search trade — base + mods at 85%+ of these values")}">${korean ? "거래소" : "Trade"}</a>
+								@endif
+								</div>
 								@if(!"UNIQUE".equals(it.rarity()) && !"NORMAL".equals(it.rarity()) || it.baseTypeKo() != null && "UNIQUE".equals(it.rarity()))
 									<div class="text-xs text-base-content/60 truncate">
 										@if(it.baseSlug() != null)

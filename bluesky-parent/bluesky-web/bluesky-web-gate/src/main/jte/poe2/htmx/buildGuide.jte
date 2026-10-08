@@ -6,6 +6,8 @@
 @param String error = null
 <%-- 무기 세트별 가이드(10-01) — 주 세트(DPS 큰 쪽). 다른 세트로 바꿔 볼 때도 표시를 유지하려고 게이트가 넘긴다. --%>
 @param Integer mainSet = null
+<%-- 거래소 주소 경로의 리그(10-08 C172) --%>
+@param String tradeLeague = null
 
 <%-- 업그레이드 가이드(PoB-PoE2 비교 계산기 — PoB 아이템 툴팁의 "끼우면/빼면" 과 같은 계산) — PoE1 빌드 화면의 가이드 자리.
      ① 고유 아이템으로 바꾸면(DPS 상위 · 생존 상위) ② 장비 칸 기여(빼면) ③ 보조젬 기여(끄면) ④ 특화·핵심 패시브 기여(빼면, 0 = 재분배 후보).
@@ -106,6 +108,9 @@
 														   hx-target="#poePreview"
 														   hx-trigger="mouseenter delay:100ms"
 														   hx-swap="innerHTML">${korean && s.itemKo() != null ? s.itemKo() : s.item()}</a>
+														@if(PoeText.trade2Url(tradeLeague, s.tradeQuery()) != null)
+															<a class="badge badge-xs badge-outline badge-info" target="_blank" rel="noopener" href="${PoeText.trade2Url(tradeLeague, s.tradeQuery())}" data-guide-trade title="${korean ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "Search trade for this unique"}">${korean ? "거래소" : "Trade"}</a>
+														@endif
 													@else
 														<span class="text-[#af6025]">${s.item()}</span>
 													@endif

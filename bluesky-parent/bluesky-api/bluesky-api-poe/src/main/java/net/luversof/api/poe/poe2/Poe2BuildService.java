@@ -18,6 +18,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import net.luversof.api.poe.service.PoePobImportService;
+import net.luversof.api.poe.service.PoeTradeQueries;
 
 /**
  * PoB(PoE2) 코드 → 빌드 요약. PoB-PoE2 의 저장 형식은 PoE1 과 같은 구조의 XML(루트만 PathOfBuilding2)이라 코드 해독은 PoE1 의
@@ -54,11 +55,17 @@ public class Poe2BuildService {
   private final Poe2DataService data;
   private final Poe2PobEngineService engine;
 
+  private final Poe2TradeStatDataService tradeStats;
+
   public Poe2BuildService(
-      PoePobImportService decoder, Poe2DataService data, Poe2PobEngineService engine) {
+      PoePobImportService decoder,
+      Poe2DataService data,
+      Poe2PobEngineService engine,
+      Poe2TradeStatDataService tradeStats) {
     this.decoder = decoder;
     this.data = data;
     this.engine = engine;
+    this.tradeStats = tradeStats;
   }
 
   /** 코드 → 업그레이드 가이드(칸·보조젬·패시브 기여 + 고유 교체 상위). 이름은 우리 데이터로 한국어를 붙인다. */
@@ -475,8 +482,8 @@ public class Poe2BuildService {
               spec.base(),
               spec.baseKo(),
               n.path("tried").asInt(0),
-              upgradeOrNull(rareOf(n.path("dps"), spec)),
-              upgradeOrNull(rareOf(n.path("ehp"), spec))));
+              withTrade(upgradeOrNull(rareOf(n.path("dps"), spec)), spec),
+              withTrade(upgradeOrNull(rareOf(n.path("ehp"), spec)), spec)));
     }
     // 오르는 폭이 큰 칸부터(DPS·EHP 중 큰 쪽)
     out.sort(
@@ -487,6 +494,22 @@ public class Poe2BuildService {
                         r.ehp() == null || r.ehp().ehp() == null ? -1e9 : r.ehp().ehp()))
             .thenComparing(Poe2.GuideRareTarget::slot));
     return out;
+  }
+
+  /** 레어 목표에 거래소 쿼리를 붙인다(10-08 C172) — 분류(장화 · 반지 …) + 옵션 85% 이상, 옵션 5개 이상이면 n−2. */
+  private Poe2.GuideRare withTrade(Poe2.GuideRare r, RareSpec spec) {
+    if (r == null) {
+      return null;
+    }
+    String itemClass = data.baseByName(spec.base()).map(Poe2.BaseItem::itemClass).orElse(null);
+    return new Poe2.GuideRare(
+        r.dps(),
+        r.ehp(),
+        r.lines(),
+        r.linesKo(),
+        r.itemText(),
+        PoeTradeQueries.rareTarget2(
+            itemClass, spec.baseKo(), r.linesKo(), tradeStats.dictionary()));
   }
 
   /** 레어 목표를 보일 만한가 — PoE1 가이드 isUpgrade 와 같은 기준(한 축 +1% 이상, 어느 축도 -5% 넘게 안 깎임). */
@@ -523,7 +546,7 @@ public class Poe2BuildService {
         ko.addAll(c.linesKo() == null || c.linesKo().isEmpty() ? c.lines() : c.linesKo());
       }
     }
-    return new Poe2.GuideRare(num(n, "dps"), num(n, "ehp"), en, ko, rareItemText(spec, en));
+    return new Poe2.GuideRare(num(n, "dps"), num(n, "ehp"), en, ko, rareItemText(spec, en), null);
   }
 
   /** guide2.lua ⑧ 이 재는 아이템과 같은 텍스트(머리 줄 · 암시 개수 · 암시 · 옵션) — 붙여 넣으면 엔진이 잰 그 아이템이 된다. */
@@ -655,7 +678,8 @@ public class Poe2BuildService {
               num(s, "dps"),
               num(s, "ehp"),
               num(s, "maxHit"),
-              num(s, "life")));
+              num(s, "life"),
+              PoeTradeQueries.unique(u.map(Poe2.Unique::nameKo).orElse(null), item)));
     }
     return out;
   }
@@ -1413,7 +1437,8 @@ public class Poe2BuildService {
             keystones,
             notables,
             ascNodes),
-        treeLink);
+        treeLink,
+        tradeStats.league());
   }
 
   /** PoB 전직 이름 → 트리 JSON 의 전직 id(대부분 같은 영문 이름). */
@@ -1505,7 +1530,32 @@ public class Poe2BuildService {
         unique.map(Poe2.Unique::flavour).orElse(null),
         unique.map(Poe2.Unique::flavourKo).orElse(null),
         base.map(Poe2.BaseItem::withoutKeywords).orElse(null),
-        qualityOf(lines));
+        qualityOf(lines),
+        tradeQuery(
+            rarity, name, unique.orElse(null), base.orElse(null), mods, implicitCountOf(lines)));
+  }
+
+  /** 거래소 검색 쿼리(10-08) — 고유는 이름, 레어 · 마법은 베이스 + 익스플리싯 옵션(암시 줄 제외). */
+  private String tradeQuery(
+      String rarity,
+      String name,
+      Poe2.Unique unique,
+      Poe2.BaseItem base,
+      List<String> mods,
+      Integer implicitCount) {
+    if ("UNIQUE".equals(rarity)) {
+      return PoeTradeQueries.unique(unique == null ? null : unique.nameKo(), name);
+    }
+    if (!"RARE".equals(rarity) && !"MAGIC".equals(rarity)) {
+      return null;
+    }
+    List<String> ko = translateAll(mods);
+    int from = Math.min(implicitCount == null ? 0 : implicitCount, ko.size());
+    return PoeTradeQueries.rare(
+        base == null ? null : base.nameKo(),
+        ko.subList(from, ko.size()),
+        null,
+        tradeStats.dictionary());
   }
 
   /**

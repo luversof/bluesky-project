@@ -470,6 +470,15 @@ public class Poe2HtmxController {
     }
   }
 
+  /** 거래소 리그(PoE2 메타, 10-08 C172) — 못 읽으면 null(주소는 Standard 로). */
+  private String tradeLeague() {
+    try {
+      return client.meta().tradeLeague();
+    } catch (RuntimeException e) {
+      return null;
+    }
+  }
+
   /** 빌드 화면 "시뮬레이션 결과 열기" — 마지막 시뮬레이션 결과 빌드를 불러오고 코드 칸도 채운다(OOB). */
   @GetMapping("/build/sim-result")
   public String simResult(@RequestParam(required = false) Long id, Model model) {
@@ -492,6 +501,7 @@ public class Poe2HtmxController {
     }
     model.addAttribute("oobCode", code);
     model.addAttribute("refined", true);
+    model.addAttribute("fromSim", true); // 안내 문구를 PoE1 과 같게(10-08)
     return importInto(code, model);
   }
 
@@ -619,6 +629,7 @@ public class Poe2HtmxController {
       Model model) {
     if (code == null || code.isBlank()) {
       model.addAttribute("error", "empty");
+      model.addAttribute("tradeLeague", tradeLeague()); // 가이드 제안 거래소 링크의 리그(10-08 C172)
       return "poe2/htmx/buildGuide";
     }
     try {
@@ -632,6 +643,7 @@ public class Poe2HtmxController {
       }
       model.addAttribute("error", "invalid");
     }
+    model.addAttribute("tradeLeague", tradeLeague()); // 가이드 제안 거래소 링크의 리그(10-08 C172)
     return "poe2/htmx/buildGuide";
   }
 
@@ -642,6 +654,7 @@ public class Poe2HtmxController {
       @RequestParam(required = false) Integer set,
       Model model) {
     if (code == null || code.isBlank()) {
+      model.addAttribute("tradeLeague", tradeLeague());
       return "poe2/htmx/guideRares";
     }
     try {
@@ -651,6 +664,7 @@ public class Poe2HtmxController {
         throw e;
       }
     }
+    model.addAttribute("tradeLeague", tradeLeague());
     return "poe2/htmx/guideRares";
   }
 

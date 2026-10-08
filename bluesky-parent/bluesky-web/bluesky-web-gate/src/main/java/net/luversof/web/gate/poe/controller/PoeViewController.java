@@ -438,10 +438,14 @@ public class PoeViewController {
       // 시뮬레이터 결과의 "실빌드에서 출발" 바로가기 — 그 (전직×스킬)의 대표 실빌드 코드를 채워 바로 불러온다
       @RequestParam(required = false, defaultValue = "") String ascendancy,
       @RequestParam(required = false, defaultValue = "") String skill,
+      // 시뮬레이터 결과 "빌드 화면에서 열기"(10-08, PoE2 와 같은 흐름) — 1 = 마지막 결과, 숫자(epochMs) = 결과 이력의 그 결과
+      @RequestParam(required = false, defaultValue = "") String sim,
       Model model) {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("startAscendancy", ascendancy);
     model.addAttribute("startSkill", skill);
+    model.addAttribute("startSim", !sim.isBlank());
+    model.addAttribute("startSimId", sim.matches("[0-9]{10,}") ? sim : "");
     return "poe/build";
   }
 

@@ -39,10 +39,10 @@ public class PlusMonthlyDividendPayoutSourceParser {
 
     StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
     for (PlusDividendRow row : rows) {
+      // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 과세표준만 모름("-")으로 싣는다.
       if (!StringUtils.hasText(row.wkdate())
           || !StringUtils.hasText(row.dkdate())
-          || !StringUtils.hasText(row.dividend())
-          || !StringUtils.hasText(row.taxBase())) {
+          || !StringUtils.hasText(row.dividend())) {
         continue;
       }
 
@@ -54,7 +54,7 @@ public class PlusMonthlyDividendPayoutSourceParser {
           .append('\t')
           .append(row.dividend().trim())
           .append('\t')
-          .append(row.taxBase().trim());
+          .append(StringUtils.hasText(row.taxBase()) ? row.taxBase().trim() : "-");
     }
 
     if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {

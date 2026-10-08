@@ -47,6 +47,10 @@ public class PoeTradeStatDataService {
   private volatile Map<String, String> statIds = Map.of();
   private volatile Map<String, String> pseudoIds = Map.of();
   private volatile Map<String, String> implicitIds = Map.of();
+  // 지금 리그 — PoE2 사전만(trade-stats2.mjs, 거래소 주소 경로에 들어간다). PoE1 은 null(주소에 리그가 없다)
+  private volatile String league;
+  // 거래소가 아는 베이스 이름(10-08 C174) — 비면 "모름"(옛 사전 파일)
+  private volatile java.util.Set<String> types = java.util.Set.of();
 
   public PoeTradeStatDataService(
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
@@ -58,6 +62,8 @@ public class PoeTradeStatDataService {
     Map<String, String> loadedExplicit = Map.of();
     Map<String, String> loadedPseudo = Map.of();
     Map<String, String> loadedImplicit = Map.of();
+    String loadedLeague = null;
+    java.util.Set<String> loadedTypes = java.util.Set.of();
     if (Files.exists(dataFile)) {
       JsonMapper jsonMapper = JsonMapper.builder().build();
       try (InputStream inputStream = Files.newInputStream(dataFile)) {
@@ -67,16 +73,25 @@ public class PoeTradeStatDataService {
           loadedExplicit = castStringMap(raw.get("explicit"));
           loadedPseudo = castStringMap(raw.getOrDefault("pseudo", Map.of()));
           loadedImplicit = castStringMap(raw.getOrDefault("implicit", Map.of()));
+          loadedLeague = raw.get("league") instanceof String l && !l.isBlank() ? l : null;
+          if (raw.get("types") instanceof java.util.List<?> t) {
+            loadedTypes =
+                t.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+          }
         } else {
           // 구 포맷(flat explicit 맵) 하위호환 — pseudo 없이 explicit 만
           loadedExplicit = castStringMap(raw);
         }
         logger.info(
-            "PoE 거래소 스탯 사전 로드: {} (explicit {}건, pseudo {}건, implicit {}건)",
+            "PoE 거래소 스탯 사전 로드: {} (explicit {}건, pseudo {}건, implicit {}건, 베이스 {}건)",
             dataFile,
             loadedExplicit.size(),
             loadedPseudo.size(),
-            loadedImplicit.size());
+            loadedImplicit.size(),
+            loadedTypes.size());
       } catch (Exception e) {
         logger.warn("PoE 거래소 스탯 사전 로드 실패: {}", dataFile, e);
       }
@@ -86,6 +101,24 @@ public class PoeTradeStatDataService {
     this.statIds = loadedExplicit;
     this.pseudoIds = loadedPseudo;
     this.implicitIds = loadedImplicit;
+    this.league = loadedLeague;
+    this.types = loadedTypes;
+  }
+
+  /**
+   * 거래소가 이 베이스 이름(한국어)을 아는가(10-08 C174) — 모르면 거래소가 "Invalid query" 로 거절해 베이스 상세 단추를 숨긴다. 사전에 이름 목록이
+   * 없으면(옛 파일) null = 모름(단추를 그대로 둔다).
+   */
+  public Boolean tradable(String type) {
+    if (types.isEmpty()) {
+      return null;
+    }
+    return type != null && types.contains(type);
+  }
+
+  /** 사전 파일에 적힌 지금 리그(PoE2 만) — 없으면 null. */
+  public String league() {
+    return league;
   }
 
   /**
@@ -128,6 +161,15 @@ public class PoeTradeStatDataService {
   }
 
   private String lookup(String norm) {
+    String id = lookupExact(norm);
+    // PoE2 거래소 문구는 "+" 부호가 없다("생명력 최대치 #") — 우리 옵션 줄은 "+46" 이라 한 번 더(10-08, PoE1 사전엔 영향 없음)
+    if (id == null && norm.contains("+#")) {
+      id = lookupExact(norm.replace("+#", "#"));
+    }
+    return id;
+  }
+
+  private String lookupExact(String norm) {
     String id = statIds.get(norm);
     if (id == null) {
       id = statIds.get(norm + "(특정)");

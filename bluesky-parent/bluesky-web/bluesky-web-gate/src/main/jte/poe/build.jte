@@ -7,6 +7,9 @@
 @param String patch = ""
 @param String startAscendancy = ""
 @param String startSkill = ""
+<%-- 시뮬레이터 결과 "빌드 화면에서 열기"(10-08, PoE2 짝) — startSimId 가 비면 마지막 결과 --%>
+@param boolean startSim = false
+@param String startSimId = ""
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe.build.title");
@@ -57,7 +60,12 @@
 
 			<%-- 시뮬레이터 "실빌드에서 출발" 바로가기(/poe/build?ascendancy=&skill=) — 대표 실빌드 코드를 서버에서 받아 바로 불러오고,
 			     코드 칸도 채운다(OOB). 재계산·업그레이드 가이드 버튼이 그 칸을 보내므로 이어서 쓸 수 있다. --%>
-			@if(!startSkill.isBlank())
+			@if(startSim)
+				<div id="poeBuildSummary" aria-live="polite" data-no-success-toast
+				     hx-get="/poe/htmx/build/sim-result${startSimId.isBlank() ? "" : "?id=" + startSimId}" hx-trigger="load" hx-swap="innerHTML">
+					<span class="loading loading-spinner loading-sm"></span>
+				</div>
+			@elseif(!startSkill.isBlank())
 				<div id="poeBuildSummary" aria-live="polite" data-no-success-toast
 				     hx-get="/poe/htmx/build/real-start?ascendancy=${java.net.URLEncoder.encode(startAscendancy, java.nio.charset.StandardCharsets.UTF_8)}&skill=${java.net.URLEncoder.encode(startSkill, java.nio.charset.StandardCharsets.UTF_8)}"
 				     hx-trigger="load" hx-swap="innerHTML">

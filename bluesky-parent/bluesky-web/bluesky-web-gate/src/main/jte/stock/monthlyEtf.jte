@@ -176,17 +176,29 @@
 
 					<%-- 기간을 고르는 단추 한 줄(사용자 결정 2026-09-21). 열을 여덟 개 더 늘리는 대신 한 번에 한 기준만 본다.
 					     정렬도 이 기간을 따른다 - 주소에 period 를 싣고 다니므로 정렬 링크를 눌러도 기간이 풀리지 않는다. --%>
-					<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${MessageUtil.getMessage("stock.monthly.etf.period.label")}">
-						<span class="text-sm font-medium text-base-content/70">${MessageUtil.getMessage("stock.monthly.etf.period.label")}</span>
-						@for(int periodOption : monthlyEtfPeriods)
-							!{String periodLabel = periodOption == 12
-							    ? MessageUtil.getMessage("stock.monthly.etf.period.year")
-							    : java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.period.month"), periodOption);}
-							!{boolean periodSelected = periodOption == monthlyEtfPeriod;}
-							<a data-period-option href="/stock/monthly-etf?${periodQuery}period=${periodOption}"
-								class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug ${periodSelected ? "btn-primary" : "btn-ghost border border-base-300"}"
-								aria-current="${periodSelected ? "true" : "false"}">${periodLabel}</a>
-						@endfor
+					<%-- 기간 · 추천 기준을 한 줄에(사용자 요청 2026-10-08: "추천 기준도 sticky") - 이 줄이 붙어 있으므로 표를 내려 봐도 기준을 바꿀 수 있다.
+					     넓은 화면(1280px~)에서 한 줄로 접혀 붙은 줄이 높아지지 않는다. 표가 비면 고를 것이 없으니 기준 단추를 내지 않는다. --%>
+					<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+						<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${MessageUtil.getMessage("stock.monthly.etf.period.label")}">
+							<span class="text-sm font-medium text-base-content/70">${MessageUtil.getMessage("stock.monthly.etf.period.label")}</span>
+							@for(int periodOption : monthlyEtfPeriods)
+								!{String periodLabel = periodOption == 12
+								    ? MessageUtil.getMessage("stock.monthly.etf.period.year")
+								    : java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.period.month"), periodOption);}
+								!{boolean periodSelected = periodOption == monthlyEtfPeriod;}
+								<a data-period-option href="/stock/monthly-etf?${periodQuery}period=${periodOption}"
+									class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug ${periodSelected ? "btn-primary" : "btn-ghost border border-base-300"}"
+									aria-current="${periodSelected ? "true" : "false"}">${periodLabel}</a>
+							@endfor
+						</div>
+						@if(monthlyEtfRows != null && !monthlyEtfRows.isEmpty() && (!monthlyEtfPicks.isEmpty() || !monthlyEtfContributionPicks.isEmpty() || !"dividend".equals(monthlyEtfBasis)))
+						<div class="flex flex-wrap items-center gap-2" data-pick-basis="${monthlyEtfBasis}" role="group" aria-label="${MessageUtil.getMessage("stock.pick.basis.label")}">
+							<span class="text-sm font-medium text-base-content/70">${MessageUtil.getMessage("stock.pick.basis.label")}</span>
+							@for(String basisOption : java.util.List.of("dividend", "total", "stable", "steady"))
+								<a href="${basisBase + ("dividend".equals(basisOption) ? "" : "basis=" + basisOption + "&") + basisSortQuery}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${basisOption.equals(monthlyEtfBasis) ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${basisOption.equals(monthlyEtfBasis) ? "true" : null}" data-pick-basis-link="${basisOption}">${net.luversof.web.gate.stock.util.StockPickBasisLabelUtil.label(basisOption)}</a>
+							@endfor
+						</div>
+						@endif
 					</div>
 				</div>
 
@@ -209,15 +221,8 @@
 					<%-- 추천 기준(사용자 요청 2026-10-06: "etf 추천 기준을 다양하게"). 아래 "지금 눈여겨볼 종목" 과 자리별 적립 추천이 같은 기준을 쓴다.
 					     후보는 기준과 상관없이 같고 셈만 바뀐다(MonthlyContributionPickSupport.Basis). --%>
 					@if(!monthlyEtfPicks.isEmpty() || !monthlyEtfContributionPicks.isEmpty() || !"dividend".equals(monthlyEtfBasis))
-						<div class="space-y-1" data-pick-basis="${monthlyEtfBasis}">
-							<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${MessageUtil.getMessage("stock.pick.basis.label")}">
-								<span class="text-xs font-medium text-base-content/70">${MessageUtil.getMessage("stock.pick.basis.label")}</span>
-								@for(String basisOption : java.util.List.of("dividend", "total", "stable", "steady"))
-									<a href="${basisBase + ("dividend".equals(basisOption) ? "" : "basis=" + basisOption + "&") + basisSortQuery}" class="btn btn-xs ${basisOption.equals(monthlyEtfBasis) ? "btn-primary" : "btn-outline"} h-auto min-h-0 py-1 whitespace-normal break-keep" aria-current="${basisOption.equals(monthlyEtfBasis) ? "true" : null}" data-pick-basis-link="${basisOption}">${net.luversof.web.gate.stock.util.StockPickBasisLabelUtil.label(basisOption)}</a>
-								@endfor
-							</div>
-							<p class="text-xs leading-5 text-base-content/60" data-pick-basis-desc>${net.luversof.web.gate.stock.util.StockPickBasisLabelUtil.description(monthlyEtfBasis)}</p>
-						</div>
+						<%-- 기준 단추는 위 고정 줄(기간 옆)로 옮겼다(사용자 요청 2026-10-08) - 설명은 카드 옆에 남긴다. --%>
+						<p class="text-xs leading-5 text-base-content/60" data-pick-basis-desc>${net.luversof.web.gate.stock.util.StockPickBasisLabelUtil.description(monthlyEtfBasis)}</p>
 					@endif
 					@if(!monthlyEtfPicks.isEmpty())
 						<div class="rounded-box border border-base-300 bg-base-200/40 p-2 sm:p-4 space-y-3" data-etf-picks>

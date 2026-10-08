@@ -45,6 +45,7 @@ public class PoeDataController {
   private final PoeTreeGraphService poeTreeGraphService;
   private final PoeTattooDataService poeTattooDataService;
   private final net.luversof.api.poe.service.PoeDataLoadStamp poeDataLoadStamp;
+  private final net.luversof.api.poe.service.PoeTradeStatDataService poeTradeStatDataService;
 
   public PoeDataController(
       PoeGemDataService poeGemDataService,
@@ -59,7 +60,8 @@ public class PoeDataController {
       PoeBenchDataService poeBenchDataService,
       PoeTreeGraphService poeTreeGraphService,
       PoeTattooDataService poeTattooDataService,
-      net.luversof.api.poe.service.PoeDataLoadStamp poeDataLoadStamp) {
+      net.luversof.api.poe.service.PoeDataLoadStamp poeDataLoadStamp,
+      net.luversof.api.poe.service.PoeTradeStatDataService poeTradeStatDataService) {
     this.poeGemDataService = poeGemDataService;
     this.poeMetaPopularityService = poeMetaPopularityService;
     this.poeUniqueDataService = poeUniqueDataService;
@@ -73,6 +75,7 @@ public class PoeDataController {
     this.poeTreeGraphService = poeTreeGraphService;
     this.poeTattooDataService = poeTattooDataService;
     this.poeDataLoadStamp = poeDataLoadStamp;
+    this.poeTradeStatDataService = poeTradeStatDataService;
   }
 
   // ── 스킬젬 ──
@@ -166,7 +169,11 @@ public class PoeDataController {
 
   @GetMapping("/base-items/{slug}")
   public PoeBaseItem baseItem(@PathVariable String slug) {
-    return poeBaseItemDataService.findBySlug(slug).orElseThrow(PoeDataController::notFound);
+    // 거래소가 아는 베이스인가(10-08 C174) — 게이트 베이스 상세가 "거래소에서 찾기" 단추를 보일지 정한다
+    return poeBaseItemDataService
+        .findBySlug(slug)
+        .map(b -> b.withTradable(poeTradeStatDataService.tradable(b.nameKo())))
+        .orElseThrow(PoeDataController::notFound);
   }
 
   /** 조인용 — 없으면 200 + 빈 본문(게이트에서 null 로 받음). */

@@ -39,10 +39,10 @@ public class KodexMonthlyDividendPayoutSourceParser {
 
     StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
     for (KodexDividendRow row : rows) {
+      // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 과세표준만 모름("-")으로 싣는다.
       if (!StringUtils.hasText(row.basicD())
           || !StringUtils.hasText(row.payD())
-          || !StringUtils.hasText(row.dividA())
-          || !StringUtils.hasText(row.taxDividA())) {
+          || !StringUtils.hasText(row.dividA())) {
         continue;
       }
 
@@ -54,7 +54,7 @@ public class KodexMonthlyDividendPayoutSourceParser {
           .append('\t')
           .append(row.dividA().trim())
           .append('\t')
-          .append(row.taxDividA().trim());
+          .append(StringUtils.hasText(row.taxDividA()) ? row.taxDividA().trim() : "-");
     }
 
     if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {

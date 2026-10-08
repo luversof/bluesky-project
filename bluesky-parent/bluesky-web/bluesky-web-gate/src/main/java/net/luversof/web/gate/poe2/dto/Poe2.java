@@ -162,7 +162,9 @@ public final class Poe2 {
       String icon,
       String image,
       // 암시 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C113)
-      List<Keyword> keywords) {}
+      List<Keyword> keywords,
+      // 거래소가 이 베이스를 아는가(10-08 C174, 상세 응답만) — false 면 "거래소에서 찾기" 단추를 숨긴다, null = 모름(보인다)
+      Boolean tradable) {}
 
   /** en = 게임 영어 분류 이름(옛 데이터면 null). 화면 글자는 enName() — 없으면 key. */
   public record ItemClass(String key, String ko, String category, String en) {
@@ -301,7 +303,9 @@ public final class Poe2 {
       List<BuildSkill> skills,
       List<BuildItem> items,
       BuildTree tree,
-      String treeLink) {}
+      String treeLink,
+      // 거래소 주소 경로의 리그(API 와 짝, 10-08) — null 이면 Standard
+      String tradeLeague) {}
 
   public record BuildStat(String key, Double value) {}
 
@@ -339,7 +343,9 @@ public final class Poe2 {
       // 베이스(속성 칸 · 요구 사항, 10-04 C147, API 와 쌍)
       BaseItem base,
       // 품질 %(10-04 C148, API 와 쌍)
-      Integer quality) {}
+      Integer quality,
+      // 거래소 검색 쿼리(q JSON, API 와 짝, 10-08) — null 이면 링크 없음
+      String tradeQuery) {}
 
   public record BuildNode(Integer id, String name, String nameKo) {}
 
@@ -391,7 +397,9 @@ public final class Poe2 {
       Double dps,
       Double ehp,
       Double maxHit,
-      Double life) {}
+      Double life,
+      // 거래소 검색 쿼리(고유 이름, API 와 짝, 10-08 C172)
+      String tradeQuery) {}
 
   public record GuideMod(
       String modType,
@@ -448,7 +456,13 @@ public final class Poe2 {
    * 그대로 붙여 넣는다(10-02).
    */
   public record GuideRare(
-      Double dps, Double ehp, List<String> lines, List<String> linesKo, String itemText) {}
+      Double dps,
+      Double ehp,
+      List<String> lines,
+      List<String> linesKo,
+      String itemText,
+      // 거래소 검색 쿼리(분류 + 옵션, API 와 짝, 10-08 C172)
+      String tradeQuery) {}
 
   public record BuildGuide(
       Boolean available,
@@ -512,7 +526,9 @@ public final class Poe2 {
       Integer augments,
       Integer uniques,
       Boolean tree,
-      String loadedAt) {}
+      String loadedAt,
+      // 거래소 주소 경로의 리그(API 와 짝, 10-08 C172)
+      String tradeLeague) {}
 
   /** 데이터 추출(run-all2.mjs) 상태 — log 는 마지막 200줄. */
   public record ExtractStatus(

@@ -7,6 +7,8 @@
 @param net.luversof.web.gate.poe.dto.ArchetypeBenchmark ninjaBenchmark = null
 @param net.luversof.web.gate.poe.dto.RealStart realStart = null
 @param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> rareBases = null
+<%-- 결과 이력에서 연 결과의 id — "빌드 화면에서 열기"가 그 결과로 연다(없으면 마지막 결과, 10-08) --%>
+@param Long historyId = null
 <%-- 삿된 · 변형 고유의 실제 장착 옵션 사본(슬롯별) + 그 베이스 — 일반 상세(hx-get)는 원래 옵션을 띄워서(10-05 C152) --%>
 @param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeUniqueItem> uniqueOverrides = null
 @param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> uniqueOverrideBases = null
@@ -998,12 +1000,12 @@
 									<%-- 거래소 검색(사용자 요청) — 최상위(전체 모드, 해당 티어 최저 롤)와 실속형(필수 모드만, T2 이상) 두 링크 --%>
 									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
 											<a class="badge badge-xs badge-outline badge-info align-middle ml-1" target="_blank" rel="noopener"
-										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQuery(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   href="${net.luversof.web.gate.poe.PoeText.tradeUrl(item.tradeQuery())}"
 										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "전체 옵션 · 표시 티어 기준으로 거래소 검색" : "Search trade — all mods at shown tier"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소 최상위" : "Trade top"}</a>
 									@endif
 									@if(item.tradeQueryBudget() != null && !item.tradeQueryBudget().isBlank())
 										<a class="badge badge-xs badge-outline badge-success align-middle ml-1" target="_blank" rel="noopener"
-										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQueryBudget(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   href="${net.luversof.web.gate.poe.PoeText.tradeUrl(item.tradeQueryBudget())}"
 										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "중요 옵션만 · 2티어 이상으로 거래소 검색(실속형)" : "Search trade — essential mods at tier 2+"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소 실속" : "Trade budget"}</a>
 									@endif
 									<%-- 목록 행 툴팁도 페이퍼돌과 같은 조각(10-05 C151 — 따로 짜인 사본이라 요구 사항 줄 · 영향력/엘드리치 심볼 · 품목 분류 · 수치 강조가 빠져 있었다) --%>
@@ -1041,7 +1043,7 @@
 									<%-- 유니크 거래소 링크(사용자 요청) — 고유명 검색 + 즉시 구입. 티어 개념이 없어 배지 하나 --%>
 									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
 										<a class="badge badge-xs badge-outline badge-info align-middle ml-1" target="_blank" rel="noopener"
-										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQuery(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   href="${net.luversof.web.gate.poe.PoeText.tradeUrl(item.tradeQuery())}"
 										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색" : "Search trade for this unique"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소" : "Trade"}</a>
 									@endif
 								@if(!shownModLines.isEmpty())
@@ -1116,6 +1118,11 @@
 				<button type="button" class="btn btn-ghost btn-xs" id="poePobCopy" data-copy-target="#poePobCode" data-copied-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사됨 ✓" : "Copied ✓"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사" : "Copy"}</button>
 			</div>
 			<textarea id="poePobCode" readonly rows="3" class="textarea textarea-bordered w-full font-mono text-xs leading-5" aria-label="${MessageUtil.getMessage("poe.sim.opt.result.code")}">${result.pobCode()}</textarea>
+		</div>
+		<%-- 빌드 화면에서 열기(10-08, PoE2 시뮬 결과와 같은 자리 · 문구 — 코드 칸 아래) — 거래소 링크 · 업그레이드 가이드 · 툴팁은 빌드 화면이 준다 --%>
+		<div class="flex flex-wrap items-center gap-2">
+			<a class="btn btn-primary btn-sm" href="/poe/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${net.luversof.web.gate.poe.PoeText.isKorean() ? "빌드 화면에서 열기" : "Open in build view"}</a>
+			<span class="text-xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아이템마다 거래소 링크 · 업그레이드 가이드는 빌드 화면에서" : "Trade links per item and the upgrade guide are on the build view"}</span>
 		</div>
 	</div>
 @else

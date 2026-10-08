@@ -129,9 +129,13 @@ public class Poe2DataService {
     return title == null ? null : map.get(title);
   }
 
+  private final Poe2TradeStatDataService tradeStats;
+
   public Poe2DataService(
-      @Value("${poe2.data-dir:${user.home}/.poe-gamedata/poe2}") String dataDir) {
+      @Value("${poe2.data-dir:${user.home}/.poe-gamedata/poe2}") String dataDir,
+      Poe2TradeStatDataService tradeStats) {
     this.dataDir = Path.of(dataDir);
+    this.tradeStats = tradeStats;
     reload();
   }
 
@@ -197,7 +201,8 @@ public class Poe2DataService {
         augments.items().size(),
         uniques.items().size(),
         Files.exists(dataDir.resolve("passive-tree.json")),
-        loadedAt);
+        loadedAt,
+        tradeStats.league());
   }
 
   // ─────────────────────────── 검색 공용 ───────────────────────────
@@ -364,6 +369,11 @@ public class Poe2DataService {
         .filter(b -> blank(itemClass) || itemClass.equals(b.itemClass()))
         .filter(b -> blank(category) || category.equals(b.category()))
         .toList();
+  }
+
+  /** 거래소가 이 베이스 이름(한국어)을 아는가(10-08 C174) — 사전에 이름 목록이 없으면 null. */
+  public Boolean tradable(String type) {
+    return tradeStats.tradable(type);
   }
 
   public Optional<Poe2.BaseItem> base(String slug) {

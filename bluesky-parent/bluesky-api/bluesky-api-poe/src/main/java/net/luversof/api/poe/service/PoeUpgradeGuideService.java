@@ -164,7 +164,9 @@ public class PoeUpgradeGuideService {
       int metaCount,
       int metaTotal,
       String needs,
-      String itemText) {}
+      String itemText,
+      // 거래소 검색 쿼리(q JSON) — 고유는 이름, 레어 목표는 베이스 + 옵션(그 티어 최저 롤 이상, 10-08 C171). 만들 수 없으면 null
+      String tradeQuery) {}
 
   /**
    * 제안 한 건.
@@ -298,6 +300,8 @@ public class PoeUpgradeGuideService {
   private volatile RefineResult lastRefine;
   private volatile String lastRefineError;
 
+  private final PoeTradeStatDataService tradeStats;
+
   public PoeUpgradeGuideService(
       PoePobImportService importService,
       PoePobEngineService engine,
@@ -306,7 +310,9 @@ public class PoeUpgradeGuideService {
       PoeUniqueDataService uniqueData,
       PoeMetaPopularityService meta,
       PoeRareTargetService rareTargets,
-      PoeMercenaryService mercenary) {
+      PoeMercenaryService mercenary,
+      PoeTradeStatDataService tradeStats) {
+    this.tradeStats = tradeStats;
     this.importService = importService;
     this.engine = engine;
     this.gemData = gemData;
@@ -315,6 +321,22 @@ public class PoeUpgradeGuideService {
     this.meta = meta;
     this.rareTargets = rareTargets;
     this.mercenary = mercenary;
+  }
+
+  /** 레어 목표 → 거래소 쿼리(C171) — 옵션마다 그 티어 최저 롤 문장을 최소값 그대로(비율 1.0). */
+  private String rareTradeQuery(
+      String itemClass,
+      String baseKo,
+      List<PoeRareTargetService.Affix> forced,
+      List<PoeRareTargetService.Affix> chosen) {
+    List<String> lines = new ArrayList<>();
+    for (PoeRareTargetService.Affix a : forced) {
+      lines.addAll(rareTargets.koMinLines(a));
+    }
+    for (PoeRareTargetService.Affix a : chosen) {
+      lines.addAll(rareTargets.koMinLines(a));
+    }
+    return PoeTradeQueries.rareTarget(itemClass, baseKo, lines, tradeStats);
   }
 
   public GuideStatus status() {
@@ -921,7 +943,12 @@ public class PoeUpgradeGuideService {
               0,
               0,
               needsText(baseValues, v),
-              rareTargets.itemText(c.plan(), chosen));
+              rareTargets.itemText(c.plan(), chosen),
+              rareTradeQuery(
+                  c.plan().base().itemClass(),
+                  c.plan().base().nameKo(),
+                  c.plan().forced(),
+                  chosen));
       rarePicks.put(e.getKey(), pick);
       if (pick.needs() == null && pick.minionPct() == null) {
         offer(
@@ -979,7 +1006,8 @@ public class PoeUpgradeGuideService {
                 usage.counts().getOrDefault(u.name(), 0),
                 usage.total(),
                 needs,
-                null);
+                null,
+                PoeTradeQueries.unique(u.nameKo(), u.name()));
         (needs == null ? fits : needy).add(pick);
         if (needs == null && pick.minionPct() == null) {
           offer(
