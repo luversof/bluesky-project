@@ -32,7 +32,7 @@
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${ko ? "자율 개선 현황" : "Improvement loop status"}</h1>
-				<span class="text-sm text-base-content/50">${ko ? "5초마다 스스로 갱신합니다 — 진행이 멈추면 숫자가 안 올라갑니다" : "Refreshes itself every 5s"}</span>
+				<span class="text-sm text-base-content/60">${ko ? "5초마다 스스로 갱신합니다 — 진행이 멈추면 숫자가 안 올라갑니다" : "Refreshes itself every 5s"}</span>
 			</div>
 
 			<%-- 패널만 갈아끼운다: 폴링은 조각(/poe/htmx/loop)이 담당해 화면 전체가 깜빡이지 않게 --%>

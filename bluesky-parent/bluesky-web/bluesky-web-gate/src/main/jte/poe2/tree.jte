@@ -8,6 +8,7 @@
 @param String profile = "local"
 @param Poe2.Meta meta = null
 @param java.util.List<Poe2.SimChoice> evalSkills = java.util.List.of()
+@param java.util.List<Poe2.Unique> treeJewels = java.util.List.of()
 
 !{ String pageTitle = MessageUtil.getMessage("poe2.tree.title"); }
 
@@ -26,16 +27,16 @@
 			<div class="flex flex-wrap items-center gap-2 rounded-2xl bg-base-100 p-3 shadow-sm">
 				<select id="poe2TreeClass" class="select select-sm select-bordered" aria-label="${MessageUtil.getMessage("poe2.tree.class")}"></select>
 				<select id="poe2TreeAsc" class="select select-sm select-bordered" aria-label="${MessageUtil.getMessage("poe2.tree.ascendancy")}" disabled></select>
-				<input id="poe2TreeSearch" type="search" class="input input-sm input-bordered w-full sm:w-56" placeholder="${MessageUtil.getMessage("poe2.tree.search")}" aria-label="${MessageUtil.getMessage("poe2.tree.search")}" autocomplete="off">
-				<span id="poe2TreeSearchCount" class="text-xs font-mono text-base-content/50" aria-live="polite"></span>
-				<div class="flex items-center gap-1">
+				<input id="poe2TreeSearch" type="search" title="${PoeText.isKorean() ? "Enter: 다음 노드로 · Shift+Enter: 이전 · Ctrl+Enter: 그 노드 찍기/해제" : "Enter: next node · Shift+Enter: previous · Ctrl+Enter: allocate/remove it"}" class="input input-sm input-bordered w-full sm:w-56" placeholder="${MessageUtil.getMessage("poe2.tree.search")}" aria-label="${MessageUtil.getMessage("poe2.tree.search")}" autocomplete="off">
+				<span id="poe2TreeSearchCount" class="text-xs font-mono text-base-content/60" aria-live="polite"></span>
+				<div class="flex flex-wrap items-center gap-1">
 					<button id="poe2TreeZoomIn" type="button" class="btn btn-sm btn-ghost" aria-label="${PoeText.isKorean() ? "확대" : "Zoom in"}">＋</button>
 					<button id="poe2TreeZoomOut" type="button" class="btn btn-sm btn-ghost" aria-label="${PoeText.isKorean() ? "축소" : "Zoom out"}">－</button>
 					<button id="poe2TreeFit" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe2.tree.reset")}</button>
 					<button id="poe2TreeClear" type="button" class="btn btn-sm btn-ghost">${PoeText.isKorean() ? "트리 초기화" : "Reset"}</button>
 				</div>
 				<%-- 찍기 모드 — 무기 세트 전용 패시브(10-02, 인게임 무기 세트 패시브 포인트 · PoB allocMode). 세트 노드는 세트 색 테두리 --%>
-				<div class="join" role="group" aria-label="${PoeText.isKorean() ? "찍기 모드" : "Allocation mode"}">
+				<div class="join flex-wrap" role="group" aria-label="${PoeText.isKorean() ? "찍기 모드" : "Allocation mode"}">
 					<button type="button" class="btn btn-sm join-item" data-tree-set="0">${PoeText.isKorean() ? "공용" : "Shared"}</button>
 					<button type="button" class="btn btn-sm join-item" data-tree-set="1" title="${PoeText.isKorean() ? "무기 세트 I 전용 패시브" : "Weapon Set I passives"}"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#e0803a"></span>${PoeText.isKorean() ? "세트 I" : "Set I"}</button>
 					<button type="button" class="btn btn-sm join-item" data-tree-set="2" title="${PoeText.isKorean() ? "무기 세트 II 전용 패시브" : "Weapon Set II passives"}"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#4aa3df"></span>${PoeText.isKorean() ? "세트 II" : "Set II"}</button>
@@ -49,14 +50,15 @@
 					<button id="poe2TreeFullscreen" type="button" class="btn btn-sm btn-ghost">${PoeText.isKorean() ? "전체 화면" : "Fullscreen"}</button>
 				</div>
 				<%-- 트리 계산 — PoE1 트리의 "트리 계산"과 같은 자리(10-01). 직업·전직·노드는 tree2.js 가 숨은 칸에 채운다 --%>
-				<form id="poe2TreeEvalForm" class="flex flex-wrap items-center gap-1" data-no-success-toast
+				<form id="poe2TreeEvalForm" class="flex flex-wrap items-center gap-1 min-w-0 max-w-full" data-no-success-toast
 				      hx-post="/poe2/htmx/tree/eval" hx-target="#poe2TreeEvalBody" hx-swap="innerHTML" hx-indicator="#poe2TreeEvalSpin">
 					<input type="hidden" name="className" value="">
 					<input type="hidden" name="ascendancy" value="">
 					<input type="hidden" name="nodes" value="">
 					<input type="hidden" name="attrs" value="">
 					<input type="hidden" name="sets" value="">
-					<div class="w-52">
+					<input type="hidden" name="jewels" value="">
+					<div class="w-52 max-w-full">
 						<select name="skill" data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.tree.eval.gem")}…" class="select select-sm select-bordered w-full" title="${PoeText.isKorean() ? "메인 스킬" : "Main skill"}">
 							<option value="">${PoeText.isKorean() ? "스킬 없이(방어·능력치)" : "No skill (defence only)"}</option>
 							@for(Poe2.SimChoice c : evalSkills)
@@ -70,9 +72,13 @@
 				</form>
 				<span id="poe2TreePoints" class="ml-auto text-sm text-base-content/70" aria-live="polite"></span>
 			</div>
+			<%-- 주얼 칸에 꽂을 고유 주얼(10-03 C73) — tree2.js 가 주얼 칸 우클릭 메뉴에서 쓴다. 옵션 줄은 연결 없이 찍기 규칙(From Nothing · 고리)에 쓴다 --%>
+			<datalist id="poe2TreeJewelList">@for(Poe2.Unique tj : treeJewels)<option value="${tj.slug()}" data-name="${tj.name()}" data-name-ko="${tj.nameKo() != null ? tj.nameKo() : tj.name()}" data-kw="${net.luversof.web.gate.poe2.Poe2View.keywordData(tj.keywords())}" data-explicits="${tj.explicits() == null ? "" : String.join("\n", tj.explicits())}" data-explicits-ko="${tj.explicitsKo() == null ? "" : String.join("\n", tj.explicitsKo())}" data-radius="${tj.radius() != null ? tj.radius() : ""}"></option>@endfor</datalist>
+			<%-- 변형(From Nothing 핵심 · Controlled Metamorphosis 고리 · 장대한 파장 …) — 고르기 창의 둘째 단계(10-03 C74) --%>
+			<div id="poe2TreeJewelVariants" hidden>@for(Poe2.Unique tj : treeJewels)@if(tj.variants() != null && tj.variants().size() > 1)@for(Poe2.UniqueVariant tv : tj.variants())<span data-slug="${tj.slug()}" data-index="${tv.index()}" data-name="${tv.name()}" data-name-ko="${tv.nameKo() != null ? tv.nameKo() : tv.name()}" data-kw="${net.luversof.web.gate.poe2.Poe2View.keywordData(tv.keywords())}" data-explicits="${tv.explicits() == null ? "" : String.join("\n", tv.explicits())}" data-explicits-ko="${tv.explicitsKo() == null ? "" : String.join("\n", tv.explicitsKo())}"></span>@endfor@endif@endfor</div>
 			<div class="relative">
 				<canvas id="poe2TreeCanvas" class="w-full h-[72vh] rounded-2xl shadow-sm cursor-grab touch-none" style="background:#0e1116"
-				        data-locale="${PoeText.isKorean() ? "ko" : "en"}" data-tree-src="/poe-data/poe2/passive-tree.json"
+				        data-locale="${PoeText.isKorean() ? "ko" : "en"}" data-tree-src="/poe-data/poe2/passive-tree.json${net.luversof.web.gate.poe.config.PoeDataVersion.q("/poe-data/poe2/passive-tree.json")}" data-sprite-base="/poe-data/poe2/tree-sprites/"
 				        role="img" aria-label="${pageTitle}"></canvas>
 				<div id="poe2TreeTooltip" class="pointer-events-none absolute hidden z-10 max-w-xs poe-node-popup overflow-hidden"></div>
 				<div id="poe2TreeEvalPanel" class="hidden absolute left-2 top-2 z-10 w-72 max-h-[70%] overflow-y-auto poe-node-popup">

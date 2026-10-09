@@ -113,12 +113,30 @@ public class PoePobImportService {
   private final PoeUniqueDataService poeUniqueDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
   private final PoeModTranslateService poeModTranslateService;
+  private final PoeClusterJewelDataService poeClusterJewelDataService;
+  private final PoeTreeGraphService poeTreeGraphService;
+
+  private final PoeRareNameService poeRareNameService;
+  private final PoeModDataService poeModDataService;
+
+  // 빌드 화면 아이템 → 거래소 검색 쿼리(10-08)
+  private final PoeTradeStatDataService poeTradeStatDataService;
 
   public PoePobImportService(
       PoeGemDataService poeGemDataService,
       PoeUniqueDataService poeUniqueDataService,
       PoeBaseItemDataService poeBaseItemDataService,
-      PoeModTranslateService poeModTranslateService) {
+      PoeModTranslateService poeModTranslateService,
+      PoeClusterJewelDataService poeClusterJewelDataService,
+      PoeTreeGraphService poeTreeGraphService,
+      PoeRareNameService poeRareNameService,
+      PoeModDataService poeModDataService,
+      PoeTradeStatDataService poeTradeStatDataService) {
+    this.poeTradeStatDataService = poeTradeStatDataService;
+    this.poeRareNameService = poeRareNameService;
+    this.poeModDataService = poeModDataService;
+    this.poeClusterJewelDataService = poeClusterJewelDataService;
+    this.poeTreeGraphService = poeTreeGraphService;
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
@@ -202,7 +220,8 @@ public class PoePobImportService {
         parseStats(build),
         parsePassiveNodes(spec),
         parseSkillGroups(root),
-        parseItems(root));
+        parseItems(root),
+        treeLink(root, build, spec));
   }
 
   // ── 디코딩 ──────────────────────────────────────────────
@@ -467,17 +486,41 @@ public class PoePobImportService {
         baseType = base.get().name();
       }
     }
+    // 장비 베이스 표 밖 베이스(팅크처) — 이름 번역용 영 · 한 표로(10-05 C162). 베이스 링크 · 속성은 없다
+    String extraBaseKo = null;
+    if (base.isEmpty() && !hasBaseLine) {
+      String[] extra = poeRareNameService.extraBaseWithin(name);
+      if (extra != null) {
+        baseType = extra[0];
+        extraBaseKo = extra[1];
+      }
+    }
     // 노멀 아이템은 이름 = 베이스라 베이스 한국어를 이름으로 쓴다
     String nameKo =
         unique
             .map(PoeUniqueItem::nameKo)
-            .orElse(name.equals(baseType) ? base.map(PoeBaseItem::nameKo).orElse(null) : null);
+            .orElse(
+                name.equals(baseType)
+                    ? base.map(PoeBaseItem::nameKo).orElse(extraBaseKo)
+                    // 레어 이름 "Mind Reach" → "마음의 역량"(게임 Words 접두 · 접미, 10-04 C143)
+                    : "RARE".equals(rarity)
+                        // 최적화기가 만든 레어(PoB 이름 "Sim Craft")는 실제 아이템처럼 보이는 이름을 지어내지 않고 정직하게
+                        //   "시뮬 제작"(10-08 C169 — 아이템 종류별 레어 접미 낱말 데이터가 없어 인게임식 이름은 틀리게 된다)
+                        ? ("Sim Craft".equals(name)
+                            ? "시뮬 제작"
+                            : "Sim Weapon".equals(name)
+                                ? "시뮬 표준 무기"
+                                : poeRareNameService.translate(name))
+                        : "MAGIC".equals(rarity)
+                            ? magicNameKo(
+                                name, baseType, base.map(PoeBaseItem::nameKo).orElse(extraBaseKo))
+                            : null);
     // 롤된 모드 라인 추출 (베이스/이름 이후 메타데이터 제외한 실제 능력치 라인) — 비고유(레어/노멀)에서 특히 필요
     int modStart = (hasBaseLine ? rarityIndex + 3 : rarityIndex + 2);
     List<String> modLines = extractModLines(lines, modStart);
-    // 비고유 모드는 모드풀 사전으로 한국어화(실패분은 영문 유지). 고유는 자체 상세로 표시됨.
-    List<String> modLinesKo =
-        unique.isEmpty() ? poeModTranslateService.translate(modLines) : modLines;
+    List<String> kindsAll = extractModEntries(lines, modStart).stream().map(e -> e[1]).toList();
+    // 모드 줄 한국어화(실패분은 영문 유지) — 고유도 옮긴다: 빌드 화면 고유 툴팁이 실제 굴림 수치를 보여 준다(10-04 C139, 예전엔 고유 일반 상세)
+    List<String> modLinesKo = poeModTranslateService.translate(modLines);
     // PoB 는 "Implicits: N" 뒤 N줄을 임플리싯으로 읽는다. 메타 줄은 모드 앞에 몰려 있으므로
     // 추출된 모드 목록의 앞 N줄이 곧 임플리싯이다. 인게임처럼 구분선으로 갈라 보여주려면 여기서 나눠야 한다.
     int implicitCount = implicitCount(lines);
@@ -502,7 +545,7 @@ public class PoePobImportService {
         name,
         nameKo,
         baseType,
-        base.map(PoeBaseItem::nameKo).orElse(null),
+        base.map(PoeBaseItem::nameKo).orElse(extraBaseKo),
         unique.map(PoeUniqueItem::slug).orElse(null),
         base.map(PoeBaseItem::slug).orElse(null),
         modLines,
@@ -511,7 +554,127 @@ public class PoePobImportService {
         implicitLinesKo,
         corrupted,
         quality,
-        base.orElse(null));
+        base.orElse(null),
+        remindersOf(implicitLines, false),
+        remindersOf(implicitLines, true),
+        remindersOf(modLines, false),
+        remindersOf(modLines, true),
+        itemIntangibility(lines),
+        itemInfluences(lines),
+        // PoB 는 인챈트를 암시 칸의 {crafted} 로 적는다 — 인게임은 인챈트 색(하늘색)
+        kindsAll.subList(0, Math.min(implicitCount(lines), kindsAll.size())).stream()
+            .map(k -> "crafted".equals(k) ? "enchant" : k)
+            .toList(),
+        List.copyOf(
+            kindsAll.subList(Math.min(implicitCount(lines), kindsAll.size()), kindsAll.size())),
+        unique.map(PoeUniqueItem::flavour).orElse(null),
+        unique.map(PoeUniqueItem::flavourKo).orElse(null),
+        // 거래소 검색 쿼리(10-08) — 고유는 이름, 레어 · 마법은 베이스(한국어) + 익스플리싯 옵션(제작 줄 제외)
+        "UNIQUE".equals(rarity) || "RELIC".equals(rarity)
+            // 삿된(Foulborn) 고유는 거래소에서 원래 고유 이름으로 찾는다(PoB 이름 "Foulborn X" 는 고유 데이터에 없어 영문으로 남았다)
+            ? PoeTradeQueries.unique(
+                unique
+                    .map(PoeUniqueItem::nameKo)
+                    .orElseGet(
+                        () ->
+                            name.startsWith("Foulborn ")
+                                ? poeUniqueDataService
+                                    .findByName(name.substring("Foulborn ".length()))
+                                    .map(PoeUniqueItem::nameKo)
+                                    .orElse(null)
+                                : null),
+                name.replaceFirst("^Foulborn ", ""))
+            // 시뮬레이터 가정 무기(PoB 이름 "Sim Weapon" — 물리 60~120 · 정확도 +2000 가정)는 실제 아이템이 아니라 거래소 링크
+            // 없음(C170)
+            : ("RARE".equals(rarity) || "MAGIC".equals(rarity)) && !"Sim Weapon".equals(name)
+                ? PoeTradeQueries.rare(
+                    base.map(PoeBaseItem::nameKo).orElse(extraBaseKo),
+                    modLinesKo,
+                    List.copyOf(
+                        kindsAll.subList(
+                            Math.min(implicitCount(lines), kindsAll.size()), kindsAll.size())),
+                    poeTradeStatDataService)
+                : null);
+  }
+
+  private static final java.util.Map<String, String> INFLUENCE_KEYS =
+      java.util.Map.of(
+          "shaper item", "shaper",
+          "elder item", "elder",
+          "crusader item", "crusader",
+          "hunter item", "hunter",
+          "redeemer item", "redeemer",
+          "warlord item", "warlord",
+          "searing exarch item", "exarch",
+          "eater of worlds item", "eater",
+          "fractured item", "fractured",
+          "synthesised item", "synthesised");
+
+  /** PoB 아이템 텍스트의 영향력 · 분열 · 합성 표시 줄 → 심볼 키(등장 순). 인게임은 헤더 좌우 모서리 아이콘(10-04 C137). */
+  private static List<String> itemInfluences(List<String> lines) {
+    List<String> out = new ArrayList<>();
+    for (String line : lines) {
+      String key = INFLUENCE_KEYS.get(line.trim().toLowerCase(Locale.ROOT));
+      if (key != null && !out.contains(key)) {
+        out.add(key);
+      }
+    }
+    return List.copyOf(out);
+  }
+
+  private static final java.util.regex.Pattern ITEM_INTANGIBILITY =
+      java.util.regex.Pattern.compile(
+          "^intangibility:\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+  /** PoB 아이템 텍스트의 "Intangibility: N%"(없으면 0) — 메타 줄로 걸러낸 뒤 속성으로 따로 싣는다(10-04 C136). */
+  private static int itemIntangibility(List<String> lines) {
+    for (String line : lines) {
+      java.util.regex.Matcher m = ITEM_INTANGIBILITY.matcher(line.trim());
+      if (m.find()) {
+        return Integer.parseInt(m.group(1));
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * 마법 아이템 이름 "Vivid Rusted Cuirass of the Whelpling" → "선명한 녹슨 흉갑 - 새끼용". 게임 ClientStrings
+   * MagicNamePrefixSuffix = "{1} {0} {2}" (한국어도 접두 · 베이스 · 접미 순), 옵션 이름은 모드 데이터의 티어 이름(영 · 한). 접두 ·
+   * 접미 중 있는 것은 모두 옮겨져야 하고, 아니면 null(10-04 C145).
+   */
+  private String magicNameKo(String name, String baseType, String baseKo) {
+    if (name == null || baseType == null || baseKo == null) {
+      return null;
+    }
+    int at = name.indexOf(baseType);
+    if (at < 0) {
+      return null;
+    }
+    String prefix = name.substring(0, at).trim();
+    String suffix = name.substring(at + baseType.length()).trim();
+    String prefixKo = prefix.isEmpty() ? "" : poeModDataService.affixNameKo(prefix);
+    String suffixKo = suffix.isEmpty() ? "" : poeModDataService.affixNameKo(suffix);
+    if (prefixKo == null || suffixKo == null) {
+      return null;
+    }
+    return String.join(
+        " ",
+        java.util.stream.Stream.of(prefixKo, baseKo, suffixKo).filter(s -> !s.isEmpty()).toList());
+  }
+
+  /** 줄별 인게임 리마인더 문구(영 · 한) — 모드 번역 사전과 같은 정규화로 찾는다. 하나도 없으면 null(10-04 C131). */
+  private List<List<String>> remindersOf(List<String> lines, boolean ko) {
+    List<List<String>> out = new ArrayList<>();
+    boolean any = false;
+    for (String line : lines) {
+      List<String> texts =
+          poeModTranslateService.reminders(line).stream()
+              .map(r -> ko && r.ko() != null ? r.ko() : r.en())
+              .toList();
+      any |= !texts.isEmpty();
+      out.add(texts);
+    }
+    return any ? List.copyOf(out) : null;
   }
 
   private static final java.util.regex.Pattern IMPLICIT_COUNT =
@@ -557,7 +720,19 @@ public class PoePobImportService {
       java.util.regex.Pattern.compile(
           "^(rarity|item level|quality|sockets|levelreq|implicits|requires|prefix|suffix|unique id"
               + "|selected variant|has alt variant|catalyst|catalystquality|talisman tier|league"
-              + "|source|variant|note|crucible|scourge|influence)\\b.*",
+              + "|source|variant|note|crucible|scourge|influence|foil unique)\\b.*",
+          java.util.regex.Pattern.CASE_INSENSITIVE);
+
+  // PoB 가 아이템 텍스트에 써 넣는 속성 · 메타 줄(Classes/Item.lua BuildRaw) — "이름: 값" 모양일 때만 거른다.
+  //   "Evasion Rating is increased by …" 같은 진짜 옵션이 같은 낱말로 시작하므로 콜론까지 본다(10-04 C134 실측: ninja 59빌드
+  // 레어 줄 3951 중
+  //   Intangibility 263 · Energy Shield/…BasePercentile 104씩 · Armour 61 · Evasion 57 줄이 파란 옵션 줄로
+  // 툴팁에 섞였다)
+  private static final java.util.regex.Pattern ITEM_PROPERTY =
+      java.util.regex.Pattern.compile(
+          "^(armour|evasion|energy shield|ward|\\w*basepercentile|intangibility|unreleased|crafted"
+              + "|cluster jewel skill|cluster jewel node count|memory strands|version|selected version"
+              + "|selected variant group|selected alt variant)\\s*:.*",
           java.util.regex.Pattern.CASE_INSENSITIVE);
 
   private static final java.util.Set<String> ITEM_FLAGS =
@@ -571,23 +746,40 @@ public class PoePobImportService {
           "synthesised item",
           "searing exarch item",
           "eater of worlds item",
+          // 영향력 표시(PoB influenceInfo.display .. " Item") — 빠져 있던 넷(C134)
+          "hunter item",
+          "warlord item",
+          "crusader item",
+          "redeemer item",
           "unidentified");
 
   private List<String> extractModLines(List<String> lines, int start) {
-    List<String> mods = new ArrayList<>();
+    return extractModEntries(lines, start).stream().map(e -> e[0]).toList();
+  }
+
+  /** 옵션 줄과 그 종류([줄, crafted|fractured|""]) — 거르는 규칙은 하나(10-04 C138: 종류를 따로 세면 줄과 어긋난다). */
+  private List<String[]> extractModEntries(List<String> lines, int start) {
+    List<String[]> mods = new ArrayList<>();
     for (int i = start; i < lines.size() && mods.size() < 12; i++) {
       String line = lines.get(i).trim();
       if (line.isEmpty()) {
         continue;
       }
       String lower = line.toLowerCase(Locale.ROOT);
-      if (ITEM_META.matcher(line).matches() || ITEM_FLAGS.contains(lower)) {
+      if (ITEM_META.matcher(line).matches()
+          || ITEM_PROPERTY.matcher(line).matches()
+          || ITEM_FLAGS.contains(lower)) {
         continue;
       }
       // PoB 접두 태그 제거: {crafted}, {fractured}, {range:...} 등
       String cleaned = line.replaceAll("\\{[^}]*\\}", "").trim();
       if (!cleaned.isEmpty()) {
-        mods.add(cleaned);
+        // 종류(제작 · 분열)는 따로 남긴다 — 인게임 툴팁 색(C138)
+        String kind =
+            line.contains("{fractured}")
+                ? "fractured"
+                : line.contains("{crafted}") ? "crafted" : "";
+        mods.add(new String[] {cleaned, kind});
       }
     }
     return mods;
@@ -630,5 +822,430 @@ public class PoePobImportService {
     } catch (RuntimeException e) {
       return defaultValue;
     }
+  }
+
+  // ── 트리 보기 주소(10-03 C41) ──────────────────────────────
+
+  /**
+   * /poe/tree 주소 — nodes= 에 클러스터 주얼 구성(c=소켓:크기:노드수:스킬키:노터블|..:주얼칸수)과 고유 주얼(j=노드:slug)을 붙인다. 트리 뷰어는
+   * c= 로 클러스터 노드(id ≥ 65536)를 다시 만들어야 그 할당이 살고 점수에 든다 — 예전엔 nodes 만 넘겨 실빌드가 "포인트 103 / 123"(실제
+   * 122)으로 보였다.
+   */
+  private String treeLink(Element root, Element build, Element spec) {
+    List<Integer> nodeIds = parsePassiveNodes(spec);
+    StringBuilder link =
+        new StringBuilder("/poe/tree?nodes=")
+            .append(String.join(",", nodeIds.stream().map(String::valueOf).toList()));
+    Element sockets = spec == null ? null : firstChild(spec, "Sockets");
+    Element itemsEl = firstChild(root, "Items");
+    if (sockets == null || itemsEl == null) {
+      appendTreeExtras(link, root, build, spec);
+      return link.toString();
+    }
+    Map<String, String> textById = new java.util.HashMap<>();
+    for (Element item : childElements(itemsEl, "Item")) {
+      textById.put(item.getAttribute("id"), item.getTextContent());
+    }
+    List<String> clusters = new ArrayList<>();
+    List<String> jewels = new ArrayList<>();
+    // 연결 없이 찍기(10-03 C64) — Impossible Escape(l=핵심id:반경) · Thread of Hope · Intuitive
+    // Leap(r=주얼칸:안:바깥).
+    //   예전엔 링크에 없어 불러온 직후엔 멀쩡하다가 첫 편집에서 그 노드들이 고아로 걷혔다(실빌드 17/56).
+    List<String> leapKeys = new ArrayList<>();
+    List<String> leapRings = new ArrayList<>();
+    for (Element socket : childElements(sockets, "Socket")) {
+      String text = textById.get(socket.getAttribute("itemId"));
+      String nodeId = socket.getAttribute("nodeId");
+      if (text == null || nodeId.isBlank()) {
+        continue;
+      }
+      String cluster = clusterEntry(nodeId, text, this::clusterSkillStats);
+      if (cluster != null) {
+        clusters.add(cluster);
+        // 고유 클러스터(Voices · 메갈로매니악)는 j= 에도 — 소켓에 고유 이름이 뜬다
+        if (!text.contains("Rarity: UNIQUE")) {
+          continue;
+        }
+      }
+      String slug = uniqueJewelSpec(text);
+      if (slug != null) {
+        jewels.add(nodeId + ":" + slug);
+      }
+      String key = impossibleEscapeKey(text, this::keystoneIdByName);
+      if (key != null) {
+        leapKeys.add(key);
+      }
+      String ring = leapRing(text);
+      if (ring != null) {
+        leapRings.add(nodeId + ":" + ring);
+      }
+    }
+    if (!leapKeys.isEmpty()) {
+      link.append("&l=").append(String.join(",", leapKeys));
+    }
+    if (!leapRings.isEmpty()) {
+      link.append("&r=").append(String.join(",", leapRings));
+    }
+    if (!clusters.isEmpty()) {
+      link.append("&c=")
+          .append(
+              java.net.URLEncoder.encode(
+                  String.join(",", clusters), java.nio.charset.StandardCharsets.UTF_8));
+    }
+    if (!jewels.isEmpty()) {
+      link.append("&j=")
+          .append(
+              java.net.URLEncoder.encode(
+                  String.join(",", jewels), java.nio.charset.StandardCharsets.UTF_8));
+    }
+    appendTreeExtras(link, root, build, spec);
+    return link.toString();
+  }
+
+  /** 크기("Large") → 스킬 키 → 첫 스탯 줄. 데이터가 없으면 빈 맵. */
+  private Map<String, String> clusterSkillStats(String sizeName) {
+    Map<String, String> out = new java.util.LinkedHashMap<>();
+    poeClusterJewelDataService
+        .def(sizeName)
+        .ifPresent(
+            def ->
+                def.skills()
+                    .forEach(
+                        (key, skill) -> {
+                          if (skill.stats() != null && !skill.stats().isEmpty()) {
+                            out.put(key, skill.stats().get(0));
+                          }
+                        }));
+    return out;
+  }
+
+  private static final java.util.regex.Pattern CLUSTER_BASE =
+      // 매직 · 레어 이름에 베이스가 섞이기도 한다("Notable Large Cluster Jewel of Significance") — 줄 전체가 아니라
+      // 어디든(C42)
+      java.util.regex.Pattern.compile("(Small|Medium|Large) Cluster Jewel");
+  private static final java.util.regex.Pattern CLUSTER_ADDS =
+      java.util.regex.Pattern.compile("(?m)Adds ([0-9]+) Passive Skills");
+  private static final java.util.regex.Pattern CLUSTER_SOCKETS =
+      java.util.regex.Pattern.compile(
+          "(?m)([0-9]+) Added Passive Skills? (?:are|is a) Jewel Sockets?");
+  // Voices — "Adds 3 Jewel Socket Passive Skills" · "Adds 5 Small Passive Skills which grant
+  // nothing"(PoB ModParser
+  // clusterJewelSocketCountOverride · clusterJewelNothingnessCount, C48)
+  private static final java.util.regex.Pattern CLUSTER_SOCKET_OVERRIDE =
+      java.util.regex.Pattern.compile("(?mi)Adds ([0-9]+) Jewel Socket Passive Skills");
+  private static final java.util.regex.Pattern CLUSTER_NOTHINGNESS =
+      java.util.regex.Pattern.compile(
+          "(?mi)Adds ([0-9]+) Small Passive Skills? which grants? nothing");
+  private static final java.util.regex.Pattern CLUSTER_SKILL =
+      java.util.regex.Pattern.compile("(?m)^Cluster Jewel Skill: ([A-Za-z0-9_]+)");
+  private static final java.util.regex.Pattern CLUSTER_GRANT =
+      java.util.regex.Pattern.compile("(?m)Added Small Passive Skills grant: (.+?)\\s*$");
+  private static final java.util.regex.Pattern CLUSTER_NOTABLE =
+      java.util.regex.Pattern.compile("(?m)1 Added Passive Skill is (.+?)\\s*$");
+
+  /**
+   * 클러스터 주얼 원문 → 트리 뷰어 c= 한 항목(소켓:크기:노드수:스킬키:노터블|..:주얼칸수). 클러스터가 아니면 null. 스킬 키는 "Added Small
+   * Passive Skills grant:" 문구를 스킬 첫 스탯과 숫자를 지우고 맞댄다(값은 크기마다 달라도 문구는 같다).
+   */
+  static String clusterEntry(
+      String socketId,
+      String text,
+      java.util.function.Function<String, Map<String, String>> statsBySize) {
+    java.util.regex.Matcher base = CLUSTER_BASE.matcher(text);
+    java.util.regex.Matcher adds = CLUSTER_ADDS.matcher(text);
+    if (!base.find()) {
+      return null;
+    }
+    java.util.regex.Matcher override = CLUSTER_SOCKET_OVERRIDE.matcher(text);
+    java.util.regex.Matcher nothing = CLUSTER_NOTHINGNESS.matcher(text);
+    if (override.find()) {
+      // PoB PassiveSpec:BuildSubgraph — 노드 수 = 소켓 + 노터블(0) + 아무것도 없는 작은 패시브, 스킬 없음(Nothingness)
+      int sockets = Integer.parseInt(override.group(1));
+      int nodes = sockets + (nothing.find() ? Integer.parseInt(nothing.group(1)) : 0);
+      return socketId + ":" + base.group(1) + ":" + nodes + ":::" + sockets;
+    }
+    if (!adds.find()) {
+      return null;
+    }
+    String size = base.group(1);
+    java.util.regex.Matcher sock = CLUSTER_SOCKETS.matcher(text);
+    int socketCount = sock.find() ? Integer.parseInt(sock.group(1)) : 0;
+    String skillKey = "";
+    // PoB 가 적어 둔 스킬 키(Cluster Jewel Skill: affliction_minion_damage)가 있으면 그것 — 문구 맞대기보다 확실하다
+    java.util.regex.Matcher skillLine = CLUSTER_SKILL.matcher(text);
+    java.util.regex.Matcher grant = CLUSTER_GRANT.matcher(text);
+    if (skillLine.find()) {
+      skillKey = skillLine.group(1);
+    } else if (grant.find()) {
+      String want = numberless(grant.group(1));
+      for (Map.Entry<String, String> e : statsBySize.apply(size).entrySet()) {
+        if (numberless(e.getValue()).equalsIgnoreCase(want)) {
+          skillKey = e.getKey();
+          break;
+        }
+      }
+    }
+    List<String> notables = new ArrayList<>();
+    java.util.regex.Matcher nm = CLUSTER_NOTABLE.matcher(text);
+    while (nm.find()) {
+      String name = nm.group(1).trim();
+      if (!name.toLowerCase(Locale.ROOT).startsWith("a jewel socket")) {
+        notables.add(name);
+      }
+    }
+    return socketId
+        + ":"
+        + size
+        + ":"
+        + adds.group(1)
+        + ":"
+        + skillKey
+        + ":"
+        + String.join("|", notables)
+        + ":"
+        + socketCount;
+  }
+
+  private static String numberless(String s) {
+    return s.replaceAll("[+-]?[0-9]+(?:[.][0-9]+)?", "#").replaceAll("[{][^}]*[}]", "").trim();
+  }
+
+  /**
+   * PoB 3_16 jewelRadii — 원 반경(Small … Massive)과 Variable 고리(안 · 바깥). PoE1 은 1.2 배율이 없다(PoE2 와 다름).
+   */
+  private static final Map<String, Integer> JEWEL_RADIUS_1 =
+      Map.of("Small", 960, "Medium", 1440, "Large", 1800, "Very Large", 2400, "Massive", 2880);
+
+  private static final Map<String, int[]> JEWEL_RING_1 =
+      Map.of(
+          "small", new int[] {960, 1320},
+          "medium", new int[] {1320, 1680},
+          "large", new int[] {1680, 2040},
+          "very large", new int[] {2040, 2400},
+          "massive", new int[] {2400, 2880});
+
+  private static String flat(String text) {
+    return text.replaceAll("\\s+", " ");
+  }
+
+  private static Integer jewelRadius(String text) {
+    java.util.regex.Matcher m =
+        java.util.regex.Pattern.compile("(?m)^Radius: (.+?)\\s*$").matcher(text);
+    return m.find() ? JEWEL_RADIUS_1.get(m.group(1).trim()) : null;
+  }
+
+  /**
+   * Impossible Escape — "Passives in radius of <Keystone> can be Allocated without being connected
+   * to your tree" → "핵심id:반경". PoB ModParser impossibleEscapeKeystone + PassiveSpec
+   * NodesInIntuitiveLeapLikeRadius(핵심의 nodesInRadius[jewelRadiusIndex]). 아니면 null.
+   */
+  static String impossibleEscapeKey(
+      String text, java.util.function.Function<String, Integer> keystoneId) {
+    java.util.regex.Matcher m =
+        java.util.regex.Pattern.compile(
+                "(?i)Passives? (?:Skills )?in radius of ([A-Za-z' ]+?) can be Allocated without being connected to your tree")
+            .matcher(flat(text));
+    if (!m.find()) {
+      return null;
+    }
+    Integer id = keystoneId.apply(m.group(1).trim());
+    Integer radius = jewelRadius(text);
+    return id == null || radius == null ? null : id + ":" + radius;
+  }
+
+  /**
+   * Thread of Hope · Intuitive Leap — "Passives in Radius can be Allocated without being connected
+   * to your tree" → "안:바깥"(그 주얼 칸 둘레, PoB intuitiveLeapLike). 고리 줄("Only affects Passives in <X>
+   * Ring")이 있으면 Variable 고리, 없으면 Radius 원. 아니면 null.
+   */
+  static String leapRing(String text) {
+    String f = flat(text);
+    if (!f.matches(
+        "(?i).*Passives? (?:Skills )?in Radius can be Allocated without being connected to your tree.*")) {
+      return null;
+    }
+    java.util.regex.Matcher ring =
+        java.util.regex.Pattern.compile("(?i)affects Passives in ([A-Za-z ]+?) Ring").matcher(f);
+    if (ring.find()) {
+      int[] r = JEWEL_RING_1.get(ring.group(1).trim().toLowerCase(Locale.ROOT));
+      return r == null ? null : r[0] + ":" + r[1];
+    }
+    Integer outer = jewelRadius(text);
+    return outer == null ? null : "0:" + outer;
+  }
+
+  private Integer keystoneIdByName(String name) {
+    for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.allNodes()) {
+      if ("keystone".equals(n.type()) && name.equalsIgnoreCase(n.name())) {
+        return n.id();
+      }
+    }
+    return null;
+  }
+
+  /** 고유 주얼이면 우리 고유 DB slug(트리 뷰어 j= — 주얼 효과 · 반경 표시). 아니면 null. */
+  /**
+   * 고유 주얼 → 트리 주소 j= 값 "slug" 또는 "slug:v번호"(10-03 C77). 변형이 여럿인 주얼(불가능한 탈출 핵심 · 희망의 실 고리 · 이중 인격
+   * …)은 아이템 원문으로 변형을 맞춰 붙인다 — 예전엔 slug 만 넘어가 트리 툴팁 · 트리 계산이 기본 변형(희망의 실 = 거대 고리)으로 돌았다.
+   */
+  private String uniqueJewelSpec(String text) {
+    String[] lines = text.trim().split("[\\r\\n]+");
+    for (int i = 0; i + 1 < lines.length; i++) {
+      if (lines[i].trim().equalsIgnoreCase("Rarity: UNIQUE")) {
+        return poeUniqueDataService
+            .findByName(lines[i + 1].trim())
+            .map(
+                u -> {
+                  Integer variant = matchVariant(u.variants(), text);
+                  return variant == null ? u.slug() : u.slug() + ":v" + variant;
+                })
+            .orElse(null);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 아이템 원문이 어느 변형인가(1-base, 모르면 null). PoB 원문의 "Selected Variant: N" 이 있으면 그것(우리 변형 번호 = PoB 순번),
+   * 없으면(게임에서 복사한 원문 — poe.ninja 실빌드가 이 꼴) 변형마다 옵션 줄이 원문에 몇 줄 있는지 세어 가장 많은 하나. 숫자는 지우고 맞댄다(원문 "-11%"
+   * ↔ 데이터 "-(20-10)%"). 최다가 둘 이상이면 가릴 수 없어 null.
+   */
+  static Integer matchVariant(List<PoeUniqueVariant> variants, String text) {
+    return variants == null
+        ? null
+        : matchVariantLines(
+            variants.stream()
+                .map(
+                    v ->
+                        java.util.Map.entry(
+                            v.index(), v.explicits() == null ? List.<String>of() : v.explicits()))
+                .toList(),
+            text);
+  }
+
+  /** {@link #matchVariant} 의 몸통 — (변형 번호, 옵션 줄) 목록으로 받는다. PoE2 빌드 트리 링크도 쓴다(10-04 C81). */
+  public static Integer matchVariantLines(
+      List<java.util.Map.Entry<Integer, List<String>>> variants, String text) {
+    if (variants == null || variants.size() < 2 || text == null) {
+      return null;
+    }
+    java.util.Set<String> have = new java.util.HashSet<>();
+    for (String line : text.split("[\\r\\n]+")) {
+      String t = line.trim();
+      java.util.regex.Matcher selected =
+          java.util.regex.Pattern.compile("^Selected Variant:\\s*(\\d+)$").matcher(t);
+      if (selected.matches()) {
+        int n = Integer.parseInt(selected.group(1));
+        if (variants.stream().anyMatch(v -> v.getKey() != null && v.getKey() == n)) {
+          return n;
+        }
+      }
+      have.add(variantKey(t));
+    }
+    Integer best = null;
+    int bestScore = 0;
+    boolean tie = false;
+    for (java.util.Map.Entry<Integer, List<String>> v : variants) {
+      int score = 0;
+      for (String line : v.getValue()) {
+        if (have.contains(variantKey(line))) {
+          score++;
+        }
+      }
+      if (score > bestScore) {
+        best = v.getKey();
+        bestScore = score;
+        tie = false;
+      } else if (score == bestScore && score > 0) {
+        tie = true;
+      }
+    }
+    return tie ? null : best;
+  }
+
+  /** 맞대기 열쇠 — 마크업({…}) · 숫자 · 범위를 지운 소문자 */
+  private static String variantKey(String line) {
+    return line.replaceAll("\\{[^}]*\\}", "")
+        .replaceAll("\\([0-9.]+-[0-9.]+\\)|[0-9]+(\\.[0-9]+)?", "#")
+        .trim()
+        .toLowerCase(java.util.Locale.ROOT);
+  }
+
+  /**
+   * 트리 보기 주소의 나머지(10-03 C43) — 시뮬 결과 링크(simOptimizeResult.jte)와 같은 이름들: class · asc(없으면 사이온으로 열려 편집
+   * 때 트리가 날아간다), masteries=노드:효과(PoB Spec masteryEffects "{노드,효과}"), tt=노드:문신명|…(Overrides 의
+   * Tattoo), an=도유 노터블 id(장비 "Allocates X").
+   */
+  private void appendTreeExtras(StringBuilder link, Element root, Element build, Element spec) {
+    java.nio.charset.Charset utf8 = java.nio.charset.StandardCharsets.UTF_8;
+    String className = build == null ? "" : build.getAttribute("className");
+    String ascend = build == null ? "" : build.getAttribute("ascendClassName");
+    if (!className.isBlank()) {
+      link.append("&class=").append(java.net.URLEncoder.encode(className, utf8));
+    }
+    if (!ascend.isBlank() && !"None".equals(ascend)) {
+      link.append("&asc=").append(java.net.URLEncoder.encode(ascend, utf8));
+    }
+    if (spec == null) {
+      return;
+    }
+    // 혈맹(10-03 C44) — PoB Spec secondaryAscendClassId = GGG 대체 전직 번호(뷰어 bloodlines 순번과 같음). 안 실으면
+    // 혈맹 노드가 숨는다
+    String bloodline = spec.getAttribute("secondaryAscendClassId");
+    if (bloodline.matches("[1-9][0-9]*")) {
+      link.append("&bloodline=").append(bloodline);
+    }
+    List<String> masteries = new ArrayList<>();
+    java.util.regex.Matcher mm =
+        java.util.regex.Pattern.compile("[{]([0-9]+),([0-9]+)[}]")
+            .matcher(spec.getAttribute("masteryEffects"));
+    while (mm.find()) {
+      masteries.add(mm.group(1) + ":" + mm.group(2));
+    }
+    if (!masteries.isEmpty()) {
+      link.append("&masteries=")
+          .append(java.net.URLEncoder.encode(String.join(",", masteries), utf8));
+    }
+    Element overrides = firstChild(spec, "Overrides");
+    if (overrides != null) {
+      List<String> tattoos = new ArrayList<>();
+      for (Element ov : childElements(overrides, "Override")) {
+        String dn = ov.getAttribute("dn");
+        if (dn.startsWith("Tattoo") && !ov.getAttribute("nodeId").isBlank()) {
+          tattoos.add(ov.getAttribute("nodeId") + ":" + dn);
+        }
+      }
+      if (!tattoos.isEmpty()) {
+        link.append("&tt=").append(java.net.URLEncoder.encode(String.join("|", tattoos), utf8));
+      }
+    }
+    Integer anoint = anointNode(root);
+    if (anoint != null) {
+      link.append("&an=").append(anoint);
+    }
+  }
+
+  /** 장비 원문의 "Allocates X" 중 도유 가능한 노터블 → 노드 id(처음 하나 — 뷰어 an= 은 하나). */
+  private Integer anointNode(Element root) {
+    Element itemsEl = firstChild(root, "Items");
+    if (itemsEl == null || !poeTreeGraphService.hasData()) {
+      return null;
+    }
+    Map<String, Integer> byName = new java.util.HashMap<>();
+    for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.anointableNotables()) {
+      byName.putIfAbsent(n.name(), n.id());
+    }
+    java.util.regex.Pattern allocates =
+        java.util.regex.Pattern.compile("(?m)^(?:[{][^}]*[}])*Allocates (.+?)\\s*$");
+    for (Element item : childElements(itemsEl, "Item")) {
+      java.util.regex.Matcher m = allocates.matcher(item.getTextContent());
+      while (m.find()) {
+        Integer id = byName.get(m.group(1).trim());
+        if (id != null) {
+          return id;
+        }
+      }
+    }
+    return null;
   }
 }

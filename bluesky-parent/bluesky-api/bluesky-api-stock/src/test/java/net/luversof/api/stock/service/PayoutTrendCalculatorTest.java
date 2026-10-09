@@ -129,4 +129,45 @@ class PayoutTrendCalculatorTest {
     // 반올림 전: (1.3333... - 1.0833...) / 1.0833... = 23.08%. 1.33 과 1.08 로 내면 23.15% 가 된다.
     assertThat(trend.changePct()).isEqualByComparingTo("23.08");
   }
+
+  private static List<BigDecimal> desc(String... values) {
+    return java.util.Arrays.stream(values).map(BigDecimal::new).toList();
+  }
+
+  @Test
+  void 감소_횟수는_직전_회보다_줄어든_것만_센다() {
+    // 최근 것이 앞: 100 <- 90 <- 100 <- 100 <- 110 <- 100 (오래된 것이 뒤)
+    // 오래된 쪽부터: 100 -> 110(증가) -> 100(감소) -> 100 -> 90(감소) -> 100(증가)
+    var cuts = PayoutTrendCalculator.countCuts(desc("100", "90", "100", "100", "110", "100"));
+    assertThat(cuts.cutCount()).isEqualTo(2);
+    assertThat(cuts.pairCount()).isEqualTo(5);
+  }
+
+  @Test
+  void 크게_늘어난_종목은_깎이지_않는다() {
+    // 변동계수로 재면 들쭉날쭉이지만 줄어든 적은 없다(실측 0094M0 같은 증가형)
+    var cuts = PayoutTrendCalculator.countCuts(desc("200", "180", "150", "120", "100", "100"));
+    assertThat(cuts.cutCount()).isZero();
+  }
+
+  @Test
+  void 평균의_1퍼센트_이하로_줄어든_끝수는_세지_않는다() {
+    // 평균 약 100 - 99.5 로 0.5 줄어든 것은 끝수, 98 로 2 줄어든 것은 감소
+    var cuts = PayoutTrendCalculator.countCuts(desc("98", "100", "99.5", "100", "100", "100"));
+    assertThat(cuts.cutCount()).isEqualTo(1);
+  }
+
+  @Test
+  void 최근_12회만_보고_이력이_모자라면_내지_않는다() {
+    assertThat(PayoutTrendCalculator.countCuts(desc("100", "90", "80", "70", "60"))).isNull();
+    assertThat(PayoutTrendCalculator.countCuts(null)).isNull();
+    // 13 회째(가장 오래된 것)의 감소는 창 밖이다: 12 회는 모두 같고, 13 회째 200 -> 100 은 안 센다
+    var cuts =
+        PayoutTrendCalculator.countCuts(
+            desc(
+                "100", "100", "100", "100", "100", "100", "100", "100", "100", "100", "100", "100",
+                "200"));
+    assertThat(cuts.cutCount()).isZero();
+    assertThat(cuts.pairCount()).isEqualTo(11);
+  }
 }

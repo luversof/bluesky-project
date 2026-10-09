@@ -47,6 +47,24 @@ import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult;
 @Service
 public class KisStockPriceUpdateService {
 
+  /** 국내 정규장 마감(KST). 그 거래일 이 시각 전에 받은 값은 장중 값이다. */
+  static final java.time.LocalTime MARKET_CLOSE = java.time.LocalTime.of(15, 30);
+
+  /**
+   * 오늘 행을 장중(마감 전)에 저장했고 지금 갱신이 마감 뒤면 값이 같아도 한 번 저장한다(갱신 시각을 마감 뒤로). 오늘 행이 아니거나 이미 마감 뒤에 저장했으면
+   * false - 한 번 저장한 뒤로는 다시 걸리지 않는다.
+   */
+  static boolean needsAfterCloseStamp(
+      Instant storedUpdatedDate, Instant now, LocalDate tradeDate, LocalDate today, ZoneId zone) {
+    if (storedUpdatedDate == null || now == null || tradeDate == null || !tradeDate.equals(today)) {
+      return false;
+    }
+    var stored = storedUpdatedDate.atZone(zone);
+    return stored.toLocalDate().equals(tradeDate)
+        && stored.toLocalTime().isBefore(MARKET_CLOSE)
+        && !now.atZone(zone).toLocalTime().isBefore(MARKET_CLOSE);
+  }
+
   private static final Logger log = LoggerFactory.getLogger(KisStockPriceUpdateService.class);
 
   private static final ZoneId MARKET_ZONE_ID = ZoneId.of("Asia/Seoul");
@@ -595,11 +613,20 @@ public class KisStockPriceUpdateService {
           // (그렇지 않으면 매 실행마다 재조회·재저장되는 무한 루프가 된다.)
           // 오늘자 레코드는 장중 변동을 계속 반영해야 하므로 여기서 제외 → 값이 바뀔 때만 저장한다.
           boolean needsFinalityConfirmation = updatedOnSameTradeDate && tradeDate.isBefore(today);
+          // 오늘 행도 장중(15:30 전)에 저장된 뒤 마감 뒤 갱신에서 값이 같으면(그 뒤 체결 없음) 한 번 저장해 갱신 시각을 마감 뒤로 -
+          // 안 그러면 화면이 종일 "10:16 장중 시세" 라고 부른다(2026-10-03 검토, StockPriceBasisUtil.intradayTime). 한 번
+          // 저장하면
+          // 갱신 시각이 15:30 뒤라 다시 걸리지 않는다.
+          boolean todayIntradayStampAfterClose =
+              needsAfterCloseStamp(history.getUpdatedDate(), updatedNow, tradeDate, today, zoneId);
 
           // 값이 동일하면 저장하지 않는다. 단, updatedDate가 없는 레거시 레코드와
           // finality 확정이 필요한 과거 장중 레코드는 1회 저장한다.
           shouldSave =
-              history.getUpdatedDate() == null || meaningfulChange || needsFinalityConfirmation;
+              history.getUpdatedDate() == null
+                  || meaningfulChange
+                  || needsFinalityConfirmation
+                  || todayIntradayStampAfterClose;
         }
 
         if (shouldSave) {

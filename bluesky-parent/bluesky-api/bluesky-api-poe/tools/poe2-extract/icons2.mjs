@@ -57,21 +57,45 @@ for (const u of uniqueData.items) jobs.push({ dir: "uniques", slug: u.slug, dds:
 
 // ── DDS 받기(같은 그림은 한 번) → PNG 변환(동시 8개) ──
 const loader = await openLoader();
-const ddsCache = new Map(); // 게임 경로 → 로컬 dds 파일(없으면 null)
-async function localDds(p) {
-	if (!p) return null;
-	if (ddsCache.has(p)) return ddsCache.get(p);
-	const file = path.join(DDS_DIR, crypto.createHash("sha1").update(p).digest("hex").slice(0, 16) + ".dds");
-	let ok = fs.existsSync(file);
-	if (!ok) {
-		const buf = (await loader.get(p)) || (await loader.get(p.toLowerCase()));
-		if (buf) {
-			fs.writeFileSync(file, buf);
-			ok = true;
+// 게임 경로 → 로컬 dds 파일 약속(없으면 null). ⚠ 받는 **중**인 것도 캐시한다 — 예전엔 다 받은 뒤에야 캐시해서, 같은 그림을 쓰는
+//   아이템 둘을 동시 작업자 둘이 각자 받아 같은 파일에 썼다. 한쪽이 ImageMagick 으로 읽는 중에 다른 쪽이 덮어쓰려고 열면 Windows 가
+//   공유 위반으로 막고 Node 는 "UNKNOWN: unknown error, open …dds"(errno -4094)로 추출 전체가 죽었다(10-06 다른 PC 첫 실행 — DDS 를
+//   처음 받는 PC 에서만 난다, 이미 받아 둔 PC 는 재사용이라 안 남).
+const ddsCache = new Map();
+// 일시적 잠금(백신 검사 · 다른 프로세스가 연 파일)은 잠깐 뒤 다시 — 임시 파일에 쓰고 이름을 바꿔 반쯤 쓴 파일을 남기지 않는다
+const TRANSIENT = new Set(["UNKNOWN", "EBUSY", "EPERM", "EACCES"]);
+async function writeAtomic(file, buf) {
+	for (let attempt = 1; ; attempt++) {
+		const tmp = `${file}.${process.pid}.${attempt}.tmp`;
+		try {
+			fs.writeFileSync(tmp, buf);
+			fs.renameSync(tmp, file);
+			return true;
+		} catch (error) {
+			try { fs.rmSync(tmp, { force: true }); } catch {}
+			if (fs.existsSync(file) && fs.statSync(file).size === buf.length) return true; // 다른 쪽이 이미 같은 것을 써 둠
+			if (!TRANSIENT.has(error.code) || attempt >= 5) {
+				console.warn(`[poe2 icons] dds 쓰기 실패(${error.code}) — 이 그림만 건너뜀: ${file}`);
+				return false;
+			}
+			await new Promise((r) => setTimeout(r, 200 * attempt));
 		}
 	}
-	ddsCache.set(p, ok ? file : null);
-	return ok ? file : null;
+}
+function localDds(p) {
+	if (!p) return Promise.resolve(null);
+	if (!ddsCache.has(p)) {
+		ddsCache.set(
+			p,
+			(async () => {
+				const file = path.join(DDS_DIR, crypto.createHash("sha1").update(p).digest("hex").slice(0, 16) + ".dds");
+				if (fs.existsSync(file)) return file;
+				const buf = (await loader.get(p)) || (await loader.get(p.toLowerCase()));
+				return buf && (await writeAtomic(file, buf)) ? file : null;
+			})(),
+		);
+	}
+	return ddsCache.get(p);
 }
 const convert = (src, dst, keepSize) =>
 	new Promise((resolve) => {

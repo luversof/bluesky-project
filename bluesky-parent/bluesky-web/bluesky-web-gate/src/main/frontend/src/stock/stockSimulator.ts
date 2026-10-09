@@ -1158,7 +1158,7 @@ function simulateScenario(scenario) {
 									${buildScenarioConfigurationBadges(scenario)}
 								</div>
 							</div>
-							<div class="text-sm font-medium text-base-content/70">${formatSustainablePeriod(summary, scenario.years)}</div>
+							<div class="text-sm font-medium text-base-content/70 break-keep">${formatSustainablePeriod(summary, scenario.years)}</div>
 						</div>
 						<div class="mt-4 space-y-3">
 							<div class="relative h-4 overflow-hidden rounded-full bg-base-300 ring-1 ring-base-content/10">
@@ -1749,7 +1749,8 @@ function renderMonthlyDetailsTable(record) {
 	}
 
 	function buildTimelineEventBadge(label, year, className) {
-		return `<span class="rounded-full px-2 py-1 ${className}">${escapeHtml(label)} ${escapeHtml(formatYearOffset(year))}</span>`;
+		// "적자 14년 후" 가 좁은 화면 + 큰 글꼴에서 "14 / 년" 으로 갈렸다(2026-10-02 S35) - 띄어쓰기에서만 줄을 바꾼다.
+		return `<span class="rounded-full px-2 py-1 break-keep ${className}">${escapeHtml(label)} ${escapeHtml(formatYearOffset(year))}</span>`;
 	}
 
 	function resolveTimelineStage(record, previousRecord) {

@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
-import { createStatDescriber } from "./statDescriptions.mjs";
+import { createReminderIndex, createStatDescriber } from "./statDescriptions.mjs";
 
 const PATCH = loadConfig().patch;
 const OUT = path.join(DATA_DIR, "base-items.json");
@@ -172,6 +172,28 @@ for (const item of items) {
 	seen.add(item.slug);
 }
 
+// 리마인더(인게임 회색 부연 — 억제 · 기절 한계치 …, 10-04 C116, 고유 C114 짝): 암시 줄마다 reminders / remindersKo(ReminderText 영 · 한)
+{
+	const reminderIdsOf = createReminderIndex(FILES_DIR, []);
+	const remEn = loadTable("English", "ReminderText");
+	const remKo = loadTable("Korean", "ReminderText");
+	const textById = new Map();
+	remEn.forEach((r, i) => {
+		if (r.Text) textById.set(r.Id, { en: r.Text, ko: remKo[i]?.Id === r.Id && remKo[i]?.Text ? remKo[i].Text : r.Text });
+	});
+	let lines = 0;
+	for (const item of items) {
+		const ids = reminderIdsOf((item.implicits || []).map((line) => line.en));
+		ids.forEach((list, i) => {
+			const known = list.filter((id) => textById.has(id));
+			if (!known.length) return;
+			item.implicits[i].reminders = known.map((id) => textById.get(id).en);
+			item.implicits[i].remindersKo = known.map((id) => textById.get(id).ko);
+			lines++;
+		});
+	}
+	console.log(`리마인더: 베이스 암시 ${lines}줄`);
+}
 items.sort((a, b) => a.name.localeCompare(b.name));
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify({ patch: PATCH, items }, null, 1));

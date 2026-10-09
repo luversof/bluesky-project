@@ -28,6 +28,7 @@
 @param BigDecimal totalEvaluationAmount
 @param BigDecimal totalEvaluationProfit
 @param java.time.LocalDate priceBasisDate = null
+@param String priceBasisIntradayTime = null
 <%-- 종목별 최초 매수일과 '오늘'(요청 존). 보유 기간·연평균 수익률이 쓴다. --%>
 @param Map<java.util.UUID, java.time.LocalDate> firstBuyDateByStockItem = java.util.Map.of()
 @param java.time.LocalDate holdingBasisDate = null
@@ -124,7 +125,7 @@
 		<div class="flex flex-wrap items-baseline gap-2 mb-3">
 			<h2 class="text-lg font-semibold text-base-content/70" data-page-section>${accountSectionTitle}</h2>
 			@if(priceBasisDate != null)
-				<span class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())}</span>
+				<span class="text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime).replace("{0}", priceBasisDate.toString())}</span>
 			@endif
 		</div>
 		@if(accountTotalMap != null && !accountTotalMap.isEmpty())
@@ -542,7 +543,8 @@
 									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
 									data-sort-key="holdingDays"
 									data-sort-type="number">
-								<span>${holdingPeriodLabel}</span>
+								<%-- 한국어는 음절 사이에서도 줄을 바꿔 좁은 화면 + 큰 글꼴에서 "보/유/기/간" 한 글자씩 쌓였다(2026-10-02) - 띄어쓰기에서만 바꾼다. --%>
+								<span class="break-keep">${holdingPeriodLabel}</span>
 								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
@@ -727,7 +729,8 @@
 										</button>
 									@endif
 								</th>
-								<td class="text-base-content/70" data-holding-period>
+								<%-- "6년 6개월" 이 "6개 / 월" 로 갈리지 않게 띄어쓰기에서만 줄을 바꾼다(2026-10-02, 375px · 글꼴 200%). --%>
+								<td class="text-base-content/70 break-keep" data-holding-period>
 									@if(holdingReturn.hasPeriod())
 										<span title="${java.text.MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}">${holdingPeriodText}</span><span class="sr-only">, ${java.text.MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}</span>
 									@else

@@ -212,6 +212,7 @@ public class TradeProfitService {
       if (part.getCurrentPrice() != null) {
         merged.setCurrentPrice(part.getCurrentPrice());
         merged.setCurrentPriceDate(part.getCurrentPriceDate());
+        merged.setCurrentPriceUpdatedAt(part.getCurrentPriceUpdatedAt());
         break;
       }
     }

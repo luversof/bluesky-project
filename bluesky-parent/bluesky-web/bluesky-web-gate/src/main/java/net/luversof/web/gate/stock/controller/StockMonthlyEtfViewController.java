@@ -65,13 +65,19 @@ public class StockMonthlyEtfViewController {
       @RequestParam(required = false) String holding,
       @RequestParam(required = false) String account,
       @RequestParam(required = false) String view,
-      @RequestParam(required = false) Integer period) {
+      @RequestParam(required = false) Integer period,
+      @RequestParam(required = false) String basis) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
 
     UUID userId = UserUtil.getUserId();
-    String resolvedSort = monthlyEtfViewSupport.resolveSort(sort);
+    // 자리별 적립 추천 보기를 정렬 없이 열면(시뮬레이터 카드의 "다른 기준이면" 링크) 자리 차례로 - 그 보기의 단추가 거는 정렬과 같다.
+    String resolvedSort =
+        monthlyEtfViewSupport.resolveSort(
+            sort == null && MonthlyEtfViewSupport.VIEW_CONTRIBUTION.equals(view)
+                ? MonthlyEtfViewSupport.SORT_SLOT
+                : sort);
     String resolvedDirection = monthlyEtfViewSupport.resolveDirection(resolvedSort, direction);
     String resolvedHolding = monthlyEtfViewSupport.resolveHolding(holding);
     String resolvedPayoutWindow = monthlyEtfViewSupport.resolvePayoutWindow(payoutWindow);
@@ -95,8 +101,11 @@ public class StockMonthlyEtfViewController {
             net.luversof.web.gate.stock.support.StockAsyncSupport.join(holdingsFuture));
     // "이번 적립" 배지 - 시뮬레이터 월배당 탭(필터 없는 기본 화면)과 같은 답을 내야 한다(사용자 요청 2026-09-22 의 잇기).
     // 거르기 전에 낸다 - "이번 적립만 보기" 가 이것으로 거른다(사용자 요청 2026-09-23).
+    // 추천 기준(사용자 요청 2026-10-06) - 자리 추천과 "지금 눈여겨볼 종목" 이 같은 기준을 쓴다. 모르는 값은 배당.
+    MonthlyContributionPickSupport.Basis resolvedBasis =
+        MonthlyContributionPickSupport.Basis.of(basis);
     Map<String, MonthlyContributionPickSupport.ContributionPick> contributionPicks =
-        loadContributionPicks(catalog);
+        loadContributionPicks(catalog, resolvedBasis);
     String resolvedView = monthlyEtfViewSupport.resolveView(view);
     // 자리별 적립 추천 보기는 자리 차례(월중 → 월말, 위탁 → ISA/연금)로 놓는다(사용자 요청 2026-09-30). 전체 보기면 표시 순서.
     String viewSort = monthlyEtfViewSupport.resolveSortForView(resolvedSort, resolvedView);
@@ -120,7 +129,18 @@ public class StockMonthlyEtfViewController {
     model.addAttribute("monthlyEtfContributionPicks", contributionPicks);
     model.addAttribute("monthlyEtfView", resolvedView);
     // 추천은 걸러 놓은 목록 안에서 고른다 - 화면에 안 보이는 종목을 추천하면 안 된다.
-    model.addAttribute("monthlyEtfPicks", monthlyEtfViewSupport.pickRows(rows));
+    Map<String, MonthlyContributionPickSupport.ContributionCandidate> candidateBySymbol =
+        new java.util.HashMap<>();
+    for (MonthlyDividendCatalogResponse item : catalog) {
+      if (item != null && item.stockItemSymbol() != null) {
+        candidateBySymbol.put(
+            item.stockItemSymbol(), MonthlyContributionPickSupport.candidateOf(item));
+      }
+    }
+    model.addAttribute(
+        "monthlyEtfPicks", monthlyEtfViewSupport.pickRows(rows, resolvedBasis, candidateBySymbol));
+    model.addAttribute("monthlyEtfBasis", resolvedBasis.param());
+    model.addAttribute("monthlyEtfCandidates", candidateBySymbol);
     model.addAttribute("monthlyEtfTotalCount", allRows.size());
     model.addAttribute(
         "monthlyEtfHeldCount", allRows.stream().filter(MonthlyEtfRowView::held).count());
@@ -145,11 +165,11 @@ public class StockMonthlyEtfViewController {
    * 실패는 로그로 남긴다.
    */
   private Map<String, MonthlyContributionPickSupport.ContributionPick> loadContributionPicks(
-      List<MonthlyDividendCatalogResponse> catalog) {
+      List<MonthlyDividendCatalogResponse> catalog, MonthlyContributionPickSupport.Basis basis) {
     try {
       Map<String, MonthlyContributionPickSupport.ContributionPick> bySymbol =
           new java.util.LinkedHashMap<>();
-      for (var pick : monthlyContributionPickSupport.pickFromCatalog(catalog)) {
+      for (var pick : monthlyContributionPickSupport.pickFromCatalog(catalog, basis)) {
         bySymbol.putIfAbsent(pick.symbol(), pick);
       }
       return bySymbol;

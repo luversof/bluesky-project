@@ -30,9 +30,13 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<a href="/poe/uniques" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe.uniques.title")}</a>
 				<h1 class="text-2xl font-bold">${displayName}</h1>
-				@if(ko)<span class="text-base-content/40 text-sm">${item.name()}</span>@endif
+				@if(ko)<span class="text-base-content/60 text-sm">${item.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<a class="btn btn-sm btn-primary btn-outline ml-auto" href="/poe/sim?uniques=${item.slug()}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 유니크로 최적화 →" : "Optimize with this unique →"}</a>
+				<%-- 거래소에서 찾기(10-08 C173 — 빌드 화면 거래소 링크와 같은 쿼리: 이름 · 즉시 구입 · 가격순) + 최적화 단추. 주얼처럼 최적화 단추가 없는 고유도 거래소는 보인다 --%>
+				<div class="ml-auto flex flex-wrap items-center gap-2">
+					<a class="btn btn-sm btn-outline" target="_blank" rel="noopener" data-unique-trade href="${net.luversof.web.gate.poe.PoeText.tradeUrl(net.luversof.web.gate.poe.PoeText.uniqueTradeQuery(item.nameKo(), item.name()))}" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순, 새 창)" : "Search trade for this unique (instant buyout, new tab)"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소에서 찾기 ↗" : "Find on trade ↗"}</a>
+					@template.poe.htmx.optimizeUniqueLink(item = item, variant = variant)
+				</div>
 			</div>
 
 			<div class="flex flex-wrap gap-6 items-start">
@@ -41,15 +45,15 @@
 				     onerror="this.onerror=null;this.src='/poe-assets/items/${item.iconKey()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}'"
 				     class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${item.name()}" data-unique-art>
 				<%-- 호버 레이어(툴팁)를 그대로 바닥에 --%>
-				@template.poe.htmx.uniqueVariants(item = item, base = base, variant = variant)
+				@template.poe.htmx.uniqueVariants(item = item, base = base, variant = variant, oob = false)
 
-				<div class="flex-1 min-w-[20rem] space-y-4">
+				<div class="flex-1 min-w-0 sm:min-w-[20rem] space-y-4">
 					<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 						<h2 class="font-bold mb-2">${ko ? "정보" : "Info"}</h2>
-						<table class="table table-xs">
+						<table class="table table-xs [overflow-wrap:anywhere]">
 							<tbody>
-								<tr><td class="text-base-content/50">${ko ? "영문명" : "Name"}</td><td>${item.name()}</td></tr>
-								<tr><td class="text-base-content/50">${ko ? "베이스" : "Base"}</td><td>
+								<tr><td class="text-base-content/60">${ko ? "영문명" : "Name"}</td><td>${item.name()}</td></tr>
+								<tr><td class="text-base-content/60">${ko ? "베이스" : "Base"}</td><td>
 									@if(base != null)
 										<a class="link link-hover" href="/poe/items/${base.slug()}">${PoeText.name(item.baseTypeKo(), item.baseType())}</a>
 									@else
@@ -57,19 +61,19 @@
 									@endif
 								</td></tr>
 								@if(base != null)
-									<tr><td class="text-base-content/50">${ko ? "아이템 클래스" : "Item class"}</td><td>${net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass())}</td></tr>
+									<tr><td class="text-base-content/60">${ko ? "아이템 클래스" : "Item class"}</td><td>${net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass())}</td></tr>
 								@endif
 								@if(item.category() != null)
 									<%-- 분류는 목록 칩과 같은 문구로(예전엔 "boots" 원문이 그대로 나왔다 — 10-01) --%>
-									<tr><td class="text-base-content/50">${ko ? "분류" : "Category"}</td><td>${MessageUtil.getMessage("poe.uniques.category." + item.category(), item.category())}</td></tr>
+									<tr><td class="text-base-content/60">${ko ? "분류" : "Category"}</td><td>${MessageUtil.getMessage("poe.uniques.category." + item.category(), item.category())}</td></tr>
 								@endif
 								<%-- 리그 출처 — 이 아이템을 얻으려면 해당 리그 기제를 돌려야 한다(목록 배지와 같은 정보) --%>
 								@if(item.league() != null && !item.league().isBlank())
-									<tr><td class="text-base-content/50">${ko ? "리그 출처" : "League"}</td><td>${item.league()}</td></tr>
+									<tr><td class="text-base-content/60">${ko ? "리그 출처" : "League"}</td><td>${item.league()}</td></tr>
 								@endif
 								<%-- 획득 가능 여부 — 지금 리그에서 못 얻는 고유는 그 사실이 스펙만큼 중요하다(시뮬 후보에서도 빠진다) --%>
 								@if(item.legacy())
-									<tr><td class="text-base-content/50">${ko ? "획득" : "Obtainable"}</td><td class="text-warning">${ko ? "현재 리그 획득 불가 (스탠다드 보관분만)" : "Not obtainable in the current league"}</td></tr>
+									<tr><td class="text-base-content/60">${ko ? "획득" : "Obtainable"}</td><td class="text-warning">${ko ? "현재 리그 획득 불가 (스탠다드 보관분만)" : "Not obtainable in the current league"}</td></tr>
 								@endif
 							</tbody>
 						</table>
@@ -90,8 +94,8 @@
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 							<div class="mb-2 flex flex-wrap items-baseline gap-2">
 								<h2 class="font-bold text-fuchsia-500">${ko ? "삿된 옵션" : "Foulborn options"}</h2>
-								<span class="text-xs font-mono text-base-content/40">${foulborn.stream().mapToInt(g -> g.mods().size()).sum()}</span>
-								<span class="text-xs text-base-content/50">${ko ? "삿된 오브로 기존 모드 하나가 아래 중 하나로 바뀝니다" : "Foulborn currency replaces one existing mod with one of these"}</span>
+								<span class="text-xs font-mono text-base-content/60">${foulborn.stream().mapToInt(g -> g.mods().size()).sum()}</span>
+								<span class="text-xs text-base-content/60">${ko ? "삿된 오브로 기존 모드 하나가 아래 중 하나로 바뀝니다" : "Foulborn currency replaces one existing mod with one of these"}</span>
 								<a class="ml-auto link link-hover text-xs text-base-content/60" href="/poe/foulborn?q=${item.name()}">${ko ? "삿된 사전에서 보기 →" : "Open in Foulborn list →"}</a>
 							</div>
 							<%-- 원본 → 삿된 대비. 인게임 색(삿된 #CD2285)과 취소선으로 "무엇이 밀려나는지" 를 그대로 보여준다 --%>

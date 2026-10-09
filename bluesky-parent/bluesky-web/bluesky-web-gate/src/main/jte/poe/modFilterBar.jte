@@ -14,13 +14,13 @@
 
 <div class="flex flex-wrap items-center gap-2">
 	<input id="${idPrefix}Search" type="search" class="input input-sm input-bordered w-full sm:w-72"
-	       placeholder="${ko ? "모드 검색 (예: 저항, 공격 속도)" : "Search mods (e.g. resistance)"}" autocomplete="off">
+	       placeholder="${ko ? "모드 검색 (예: 저항, 공격 속도)" : "Search mods (e.g. resistance)"}" autocomplete="off" aria-label="${ko ? "모드 검색 (예: 저항, 공격 속도)" : "Search mods (e.g. resistance)"}">
 	<label class="flex items-center gap-1.5 text-sm text-base-content/60">
 		${ko ? "아이템 레벨" : "Item level"}
 		<input id="${idPrefix}Ilvl" type="number" min="1" max="100" class="input input-sm input-bordered w-20"
-		       placeholder="${ko ? "전체" : "all"}" autocomplete="off">
+		       placeholder="${ko ? "전체" : "all"}" autocomplete="off" aria-label="${ko ? "전체" : "all"}">
 	</label>
-	<span id="${idPrefix}Count" class="text-xs font-mono text-base-content/50"></span>
+	<span id="${idPrefix}Count" class="text-xs font-mono text-base-content/60"></span>
 </div>
 <script nonce="${CspNonceHolder.getNonce()}">
 	(function () {
@@ -73,7 +73,7 @@
 				.join("");
 		}
 		function applyFilter() {
-			var q = (input.value || "").trim().toLowerCase();
+			var q = (input.value || "").trim().toLowerCase().replace(/[ \t\u00a0]+/g, ""); // 띄어쓰기 무시(10-02 C25)
 			var lvl = parseInt(ilvlInput.value, 10);
 			var hasLvl = !isNaN(lvl) && lvl > 0;
 			var cards = document.querySelectorAll(scope + " [data-mod-family]");
@@ -95,7 +95,7 @@
 				} else {
 					card.querySelectorAll("tr[data-tier-ilvl]").forEach(function (r) { r.style.display = ""; });
 				}
-				var hit = (!q || card.textContent.toLowerCase().indexOf(q) !== -1) && available;
+				var hit = (!q || card.textContent.toLowerCase().replace(/[ \t\u00a0]+/g, "").indexOf(q) !== -1) && available;
 				card.style.display = hit ? "" : "none";
 				if (hit) shown++;
 				// 요약줄은 기본이 **최상위 티어** 수치다. 레벨 필터를 걸면 그 레벨에서 못 뜨는 값을 계속

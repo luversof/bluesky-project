@@ -13,4 +13,6 @@ public record PoeGemLevel(
     Double damageEffectiveness,
     Double baseMultiplier,
     java.util.List<String> statLines,
-    java.util.List<String> statLinesKo) {}
+    java.util.List<String> statLinesKo,
+    // statLines 와 같은 길이의 줄별 리마인더 Id(젬 reminderText 사전 키, 10-04 C115). 없으면 null
+    java.util.List<java.util.List<String>> statReminders) {}

@@ -429,7 +429,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 										<td class="text-right text-dividend font-medium yield-extra-col" data-amount-basis="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${row.averageDailyPrincipalCost() != null && row.averageDailyPrincipalCost().signum() > 0 ? percentFormat.apply(row.yieldOnDailyAverageCostPct()) : "-"}</td>
 										<td class="text-right yield-extra-col amount-value" title="${basisNoneOrNull.apply(row.averagePrincipalCost())}">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}@if(basisNoneOrNull.apply(row.averagePrincipalCost()) != null)<span class="sr-only">${basisNoneTitle}</span>@endif</td>
 										<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
-										<td class="text-right">${countFormat.apply(row.dividendCount())}</td>
+										<td class="text-right whitespace-nowrap">${countFormat.apply(row.dividendCount())}</td>
 									</tr>
 								@endfor
 							</tbody>
@@ -455,7 +455,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 										<td class="text-right text-dividend font-medium yield-extra-col" data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${stockYieldFooterDailyPrincipalCost.signum() > 0 ? percentFormat.apply(stockYieldFooterYieldOnDailyAverageCostPct) : "-"}</td>
 										<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(stockYieldFooterPrincipalCost)}</td>
 										<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${stockYieldFooterPrincipalCost.signum() > 0 ? percentFormat.apply(stockYieldFooterYieldOnCostPct) : "-"}</td>
-										<td class="text-right">${countFormat.apply(yearlyTotalCount)}</td>
+										<td class="text-right whitespace-nowrap">${countFormat.apply(yearlyTotalCount)}</td>
 									</tr>
 								</tfoot>
 							@endif
@@ -724,7 +724,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 										<td class="text-right yield-extra-col amount-value" title="${basisNoneOrNull.apply(row.averagePrincipalCost())}">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}@if(basisNoneOrNull.apply(row.averagePrincipalCost()) != null)<span class="sr-only">${basisNoneTitle}</span>@endif</td>
 										<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
 										<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${marketBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.averagePrincipalMarketValue())}" title="${marketBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.averagePrincipalMarketValue())}">${percentFormat.apply(row.yieldOnMarketPct())}@if(marketBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.averagePrincipalMarketValue()) != null)<span class="sr-only">${marketBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.averagePrincipalMarketValue())}</span>@endif</td>
-										<td class="text-right">${countFormat.apply(row.dividendCount())}</td>
+										<td class="text-right whitespace-nowrap">${countFormat.apply(row.dividendCount())}</td>
 									</tr>
 								@endfor
 							</tbody>
@@ -746,7 +746,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 									<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(stockYieldFooterPrincipalCost)}</td>
 									<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${percentFormat.apply(stockYieldFooterYieldOnCostPct)}</td>
 									<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${marketBasisTitle.apply(stockYieldFooterNetWithPrincipalMarket, stockYieldFooterMarketValue)}" title="${marketBasisTitle.apply(stockYieldFooterNetWithPrincipalMarket, stockYieldFooterMarketValue)}">${percentFormat.apply(stockYieldFooterYieldOnMarketPct)}@if(marketBasisTitle.apply(stockYieldFooterNetWithPrincipalMarket, stockYieldFooterMarketValue) != null)<span class="sr-only">${marketBasisTitle.apply(stockYieldFooterNetWithPrincipalMarket, stockYieldFooterMarketValue)}</span>@endif</td>
-									<td class="text-right">${countFormat.apply(stockYieldFooterDividendCount)}</td>
+									<td class="text-right whitespace-nowrap">${countFormat.apply(stockYieldFooterDividendCount)}</td>
 								</tr>
 							</tfoot>
 						</table>
@@ -1013,7 +1013,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 										<td class="text-right yield-extra-col amount-value" title="${basisNoneOrNull.apply(row.averagePrincipalCost())}">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}@if(basisNoneOrNull.apply(row.averagePrincipalCost()) != null)<span class="sr-only">${basisNoneTitle}</span>@endif</td>
 										<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
 										<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${marketBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.averagePrincipalMarketValue())}" title="${marketBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.averagePrincipalMarketValue())}">${percentFormat.apply(row.yieldOnMarketPct())}@if(marketBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.averagePrincipalMarketValue()) != null)<span class="sr-only">${marketBasisTitle.apply(row.netAmountWithPrincipalMarket(), row.averagePrincipalMarketValue())}</span>@endif</td>
-										<td class="text-right">${countFormat.apply(row.dividendCount())}</td>
+										<td class="text-right whitespace-nowrap">${countFormat.apply(row.dividendCount())}</td>
 									</tr>
 								@endfor
 							</tbody>
@@ -1035,7 +1035,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 									<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(accountYieldFooterPrincipalCost)}</td>
 									<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${yieldBasisTitle.apply(accountYieldFooterNetWithPrincipalCost, accountYieldFooterNetAmount)}" title="${yieldBasisTitle.apply(accountYieldFooterNetWithPrincipalCost, accountYieldFooterNetAmount)}">${percentFormat.apply(accountYieldFooterYieldOnCostPct)}</td>
 									<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${marketBasisTitle.apply(accountYieldFooterNetWithPrincipalMarket, accountYieldFooterMarketValue)}" title="${marketBasisTitle.apply(accountYieldFooterNetWithPrincipalMarket, accountYieldFooterMarketValue)}">${percentFormat.apply(accountYieldFooterYieldOnMarketPct)}@if(marketBasisTitle.apply(accountYieldFooterNetWithPrincipalMarket, accountYieldFooterMarketValue) != null)<span class="sr-only">${marketBasisTitle.apply(accountYieldFooterNetWithPrincipalMarket, accountYieldFooterMarketValue)}</span>@endif</td>
-									<td class="text-right">${countFormat.apply(accountYieldFooterDividendCount)}</td>
+									<td class="text-right whitespace-nowrap">${countFormat.apply(accountYieldFooterDividendCount)}</td>
 								</tr>
 							</tfoot>
 						</table>

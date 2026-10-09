@@ -69,6 +69,62 @@ public final class StockPriceBasisUtil {
         .orElse(null);
   }
 
+  /** 국내 정규장 마감(KST). 그 거래일 이 시각 전에 받은 시세는 종가가 아니다. */
+  static final java.time.LocalTime MARKET_CLOSE = java.time.LocalTime.of(15, 30);
+
+  static final java.time.ZoneId MARKET_ZONE = java.time.ZoneId.of("Asia/Seoul");
+
+  /**
+   * 기준일 시세가 장중 값이면 받은 시각("HH:mm", KST), 종가면 {@code null}(2026-10-02).
+   *
+   * <p>시세 갱신은 관리 화면에서 손으로 돌린다. 장중에 돌리면 그 날 행은 장중 값인 채로 남는데 화면은 "평가 기준 2026-10-02 종가" 라고 불렀다 &mdash;
+   * 실측: 10:16 에 받은 행이 장 마감 뒤까지 남았다. 기준일 행들 중 가장 이르게 받은 시각을 본다(하나라도 장중이면 그 시각).
+   */
+  public static String intradayTime(List<TradeProfit> rows, LocalDate basisDate) {
+    if (rows == null || basisDate == null) {
+      return null;
+    }
+    // 보유 행이 있으면 보유 행만 본다(기준일이 보유 종목에서 나오므로) - 다 판 종목의 같은 날 행이 끼면 엉뚱한 시각이 나온다.
+    boolean anyHeld = rows.stream().anyMatch(row -> row != null && row.holdingQuantity() > 0);
+    return intradayTime(
+        rows.stream()
+            .filter(Objects::nonNull)
+            .filter(row -> !anyHeld || row.holdingQuantity() > 0)
+            .filter(row -> basisDate.equals(row.currentPriceDate()))
+            .map(TradeProfit::currentPriceUpdatedAt)
+            .filter(Objects::nonNull)
+            .min(java.time.Instant::compareTo)
+            .orElse(null),
+        basisDate);
+  }
+
+  /** 받은 시각이 그 거래일(KST) 마감 전이면 "HH:mm", 아니면 {@code null}. 다음 날 이후에 받았으면 종가다. */
+  static String intradayTime(java.time.Instant updatedAt, LocalDate basisDate) {
+    if (updatedAt == null || basisDate == null) {
+      return null;
+    }
+    java.time.ZonedDateTime at = updatedAt.atZone(MARKET_ZONE);
+    if (!at.toLocalDate().equals(basisDate) || !at.toLocalTime().isBefore(MARKET_CLOSE)) {
+      return null;
+    }
+    return at.toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+  }
+
+  /**
+   * 기준일 안내 문구의 틀({0} = 기준일). 장중 값이면 "평가 기준 {0} 10:16 장중 시세", 아니면 "평가 기준 {0} 종가".
+   *
+   * <p>{0} 자리는 그대로 남긴다 &mdash; 자산 성장 화면은 날짜만 줄바꿈 없이 감싸려고 {0} 앞뒤를 잘라 쓴다.
+   */
+  public static String basisMessage(String intradayTime) {
+    if (intradayTime == null) {
+      return io.github.luversof.boot.context.support.MessageUtil.getMessage(
+          "stock.asset.status.price.basis");
+    }
+    return io.github.luversof.boot.context.support.MessageUtil.getMessage(
+            "stock.asset.status.price.basis.intraday")
+        .replace("{1}", intradayTime);
+  }
+
   /** 보유 수량이 남은 종목들의 종가 일자 중 가장 늦은 날. 하나도 없으면 {@code null}. */
   public static LocalDate latestPriceBasisDate(List<TradeProfit> holdings) {
     if (holdings == null) {

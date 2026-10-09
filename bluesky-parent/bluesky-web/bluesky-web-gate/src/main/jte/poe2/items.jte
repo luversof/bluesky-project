@@ -44,7 +44,7 @@
 				     방어구 부위(투구 · 갑옷 · 장갑 · 장화 · 방패)를 골랐을 때만 보인다(아래 스크립트). 거르는 건 서버(Poe2HtmxController.items) --%>
 				!{ boolean itemsKo = PoeText.isKorean(); String[][] attrChips = {{"all", "전체", "All"}, {"str", "힘", "STR"}, {"dex", "민첩", "DEX"}, {"int", "지능", "INT"}, {"strdex", "힘·민첩", "STR/DEX"}, {"strint", "힘·지능", "STR/INT"}, {"dexint", "민첩·지능", "DEX/INT"}, {"strdexint", "힘·민첩·지능", "STR/DEX/INT"}}; }
 				<div id="poe2ItemAttrRow" class="flex flex-wrap gap-1.5 items-center border-t border-base-200 pt-2" style="display:none" data-attr-row>
-					<span class="text-xs font-semibold text-base-content/50 mr-1">${itemsKo ? "방어구 속성" : "Defence base"}</span>
+					<span class="text-xs font-semibold text-base-content/60 mr-1">${itemsKo ? "방어구 속성" : "Defence base"}</span>
 					@for(String[] a : attrChips)
 						<button type="button" data-attr="${a[0]}" class="btn btn-xs ${"all".equals(a[0]) ? "btn-primary" : "btn-outline"}">${itemsKo ? a[1] : a[2]}</button>
 					@endfor

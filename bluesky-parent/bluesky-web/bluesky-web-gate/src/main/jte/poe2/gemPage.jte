@@ -30,7 +30,7 @@
 				<a class="btn btn-sm btn-primary btn-outline" href="/poe2/sim?skill=${java.net.URLEncoder.encode(gem.name(), java.nio.charset.StandardCharsets.UTF_8)}" data-optimize-skill>${PoeText.isKorean() ? "이 스킬로 최적화 →" : "Optimize with this skill →"}</a>
 			@endif
 			@if(PoeText.isKorean())
-				<div class="text-sm text-base-content/50">${MessageUtil.getMessage("poe2.english")}: ${gem.name()}</div>
+				<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.english")}: ${gem.name()}</div>
 			@endif
 			<div class="flex flex-wrap gap-2 text-xs">
 				<span class="badge badge-ghost">${MessageUtil.getMessage("poe2.gems.kind." + gem.kind())}</span>
@@ -49,7 +49,7 @@
 					for (Poe2.GemLevel l : gem.levels()) if (l.level() == 1 || l.level() % 5 == 0 || l.level().equals(gem.maxLevel())) steps.add(l.level());
 				}
 				<nav class="flex flex-wrap items-center gap-1.5" aria-label="${MessageUtil.getMessage("poe.gems.detail.level")}">
-					<span class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.gems.detail.level")}</span>
+					<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.gems.detail.level")}</span>
 					@for(Integer st : steps)
 						<a class="poe-chip ${st.equals(shown) ? "poe-chip-active" : ""}" href="/poe2/gems/${gem.slug()}?level=${st}" aria-current="${st.equals(shown) ? "page" : null}">${st}</a>
 					@endfor

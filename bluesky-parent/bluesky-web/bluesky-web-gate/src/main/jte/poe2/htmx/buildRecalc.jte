@@ -35,7 +35,7 @@
 					<tr>
 						<th>${korean ? "항목" : "Stat"}</th>
 						<th class="text-right">${korean ? "PoB 저장값" : "Saved in PoB"}</th>
-						<th class="text-right">${korean ? "엔진 재계산" : "Recalculated"}@if(split)<div class="text-[10px] font-normal text-base-content/50">${korean ? "저장 세트 " + recalc.savedSet() : "saved set " + recalc.savedSet()}</div>@endif</th>
+						<th class="text-right">${korean ? "엔진 재계산" : "Recalculated"}@if(split)<div class="text-[10px] font-normal text-base-content/60">${korean ? "저장 세트 " + recalc.savedSet() : "saved set " + recalc.savedSet()}</div>@endif</th>
 						<th class="text-right">${korean ? "차이" : "Diff"}</th>
 						@if(split)
 							@for(int ws = 1; ws <= 2; ws++)
@@ -64,7 +64,7 @@
 							<td>${label}</td>
 							<td class="text-right font-mono">${fmt.apply(r.saved())}</td>
 							<td class="text-right font-mono">${fmt.apply(r.computed())}</td>
-							<td class="text-right font-mono ${off ? "text-warning" : "text-base-content/40"}">@if(diff == null)-@elseif(Math.abs(diff) < 0.05)0@elseif(pct)${String.format("%+.0f", diff)}${korean ? "%p" : " pts"}@else${String.format("%+.1f%%", diff)}@endif</td>
+							<td class="text-right font-mono ${off ? "text-warning" : "text-base-content/60"}">@if(diff == null)-@elseif(Math.abs(diff) < 0.05)0@elseif(pct)${String.format("%+.0f", diff)}${korean ? "%p" : " pts"}@else${String.format("%+.1f%%", diff)}@endif</td>
 							@if(split)
 								<td class="text-right font-mono" data-recalc-set1>${fmt.apply(r.set1())}</td>
 								<td class="text-right font-mono" data-recalc-set2>${fmt.apply(r.set2())}</td>
@@ -77,6 +77,6 @@
 		@if(split)
 			<div class="text-xs text-base-content/60" data-recalc-split-note>${korean ? "무기 세트마다 패시브·무기가 달라 세트 1·2 를 따로 계산했습니다(PoB 는 켜진 세트 하나로만 계산). 주 세트 = DPS 가 큰 쪽." : "Passives and weapons differ per weapon set, so sets 1 and 2 are computed separately (PoB computes only the active set). Main set = higher DPS."}</div>
 		@endif
-		<div class="text-xs text-base-content/50">${korean ? "차이가 1% 넘는 줄은 코드를 만든 PoB 버전·설정이 이 서버 엔진과 달라서일 수 있습니다." : "Rows differing by over 1% may come from a different PoB version or configuration."} (${recalc.elapsedMs()}ms)</div>
+		<div class="text-xs text-base-content/60">${korean ? "차이가 1% 넘는 줄은 코드를 만든 PoB 버전·설정이 이 서버 엔진과 달라서일 수 있습니다." : "Rows differing by over 1% may come from a different PoB version or configuration."} (${recalc.elapsedMs()}ms)</div>
 	@endif
 </section>

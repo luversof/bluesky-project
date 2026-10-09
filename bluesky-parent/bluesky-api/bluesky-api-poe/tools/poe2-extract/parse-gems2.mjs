@@ -2,7 +2,7 @@
 // 출시 여부는 PoB-PoE2 Data/Gems.lua(게임 파일에서 생성, 967개)를 기준표로 쓴다 — 게임 테이블엔 [DNT]·미사용 행과 같은 이름 중복(65건)이 섞여 있다.
 // 이름·설명·태그의 한국어는 게임 테이블(Korean) 같은 행에서, 마크업("[Spell|주문]")은 표시 문구만 남긴다.
 import { createStatDescriber } from "../poe-extract/statDescriptions.mjs";
-import { CLEAN_DIR, CSD_CHAINS, cleanCopies, makeSlugger, pobFile, stripMarkup } from "./common2.mjs";
+import { CLEAN_DIR, CSD_CHAINS, cleanCopies, loadKeywords, makeSlugger, markupIds, pobFile, stripMarkup } from "./common2.mjs";
 import { localName } from "./export-skill-desc-name.mjs";
 import { loadConfig, loadTable, writeJson } from "./paths.mjs";
 
@@ -26,6 +26,9 @@ const levelsByEffect = group(effectLevels, (r) => r.GrantedEffect);
 
 // ── 레벨별 문장 — 공용 젬 체인 + 이 스킬 전용 설명 파일(ActiveSkills.StatDescription, 뒤가 이긴다) ──
 const describers = new Map();
+// 키워드 설명(10-04 C111, 트리 C110 짝) — 레벨 문장 · 설명 · 보조 설명 원문의 강조 용어 Id 를 젬마다 모아 정의째 싣는다(목록 응답은 API 가 뺌)
+const keywordById = loadKeywords(loadTable);
+const seenKeywordIds = new Set();
 function describerFor(specific) {
 	const key = specific || "";
 	if (describers.has(key)) return describers.get(key);
@@ -35,7 +38,7 @@ function describerFor(specific) {
 	}
 	cleanCopies(files);
 	const d = createStatDescriber(CLEAN_DIR, files);
-	const fn = (map, lang) => d(map, lang).map((l) => stripMarkup(l).replace(/^([^@\n]+)@([^@\n]+)$/, "$1: $2"));
+	const fn = (map, lang) => d(map, lang).map((l) => (lang === "English" && markupIds(l).forEach((id) => seenKeywordIds.add(id)), l)).map((l) => stripMarkup(l).replace(/^([^@\n]+)@([^@\n]+)$/, "$1: $2"));
 	describers.set(key, fn);
 	return fn;
 }
@@ -151,6 +154,10 @@ for (let i = 0; i < gems.length; i++) {
 	const actKo = ge?.ActiveSkill != null ? activesKo[ge.ActiveSkill] : null;
 	const tagRows = (eff?.GemTags || []).map((t) => [gemTags[t], gemTagsKo[t]]).filter(([t]) => t && t.Name);
 	const sup = supportBySkillGem.get(i);
+	seenKeywordIds.clear();
+	for (const raw of [act?.Description, eff?.SupportText]) markupIds(raw).forEach((id) => seenKeywordIds.add(id));
+	const levels = eff?.GrantedEffect != null ? levelsOf(eff.GrantedEffect, act?.StatDescription || null, info.maxLevel) : [];
+	const keywords = [...seenKeywordIds].filter((id) => keywordById.has(id)).map((id) => keywordById.get(id));
 	out.push({
 		id: base.Id,
 		slug: slug(name),
@@ -176,11 +183,13 @@ for (let i = 0; i < gems.length; i++) {
 		lineage: sup ? !!sup.IsLineage : false,
 		icon: act?.Icon_DDSFile || sup?.Icon || null,
 		castTimeMs: ge?.CastTime || null,
-		levels: eff?.GrantedEffect != null ? levelsOf(eff.GrantedEffect, act?.StatDescription || null, info.maxLevel) : [],
+		keywords: keywords.length ? keywords : null,
+		levels,
 	});
 }
 out.sort((a, b) => a.name.localeCompare(b.name));
 const file = writeJson("gems.json", { patch: loadConfig().patch, gems: out });
 const by = (k) => out.reduce((m, g) => ((m[g[k]] = (m[g[k]] || 0) + 1), m), {});
 console.log(`[poe2 gems] ${out.length}개 → ${file}`, by("kind"), by("color"));
+console.log(`  키워드 설명: 젬 ${out.filter((g) => g.keywords).length}개 · 용어 ${new Set(out.flatMap((g) => (g.keywords || []).map((k) => k.term))).size}종 · 한글 정의 빠진 것 ${out.flatMap((g) => g.keywords || []).filter((k) => !k.defKo).length}`);
 console.log(`  PoB 기준표 ${pob.size}개 중 게임 행과 맞은 것 ${out.length}`);

@@ -10,4 +10,7 @@ public record PoeUniqueVariant(
     List<String> implicits,
     List<String> implicitsKo,
     List<String> explicits,
-    List<String> explicitsKo) {}
+    List<String> explicitsKo,
+    // 옵션 줄별 인게임 리마인더(10-04 C114)
+    List<List<String>> explicitsReminders,
+    List<List<String>> explicitsRemindersKo) {}

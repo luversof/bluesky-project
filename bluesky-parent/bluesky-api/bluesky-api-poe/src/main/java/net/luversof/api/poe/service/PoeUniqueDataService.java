@@ -65,6 +65,8 @@ public class PoeUniqueDataService {
   private final PoeBaseItemDataService poeBaseItemDataService;
   private volatile PoeUniqueData data;
   private volatile Map<String, String> classBySlug = Map.of(); // 고유 slug → 세부 itemClass
+  // 고유 slug → 정식 영문 이름(10-04 C86) — 엔진 아이템 원문 제목용. 최적화 잡이 평가마다 부르므로 선형 탐색 대신 적재 때 만든 색인
+  private volatile Map<String, String> nameBySlug = Map.of();
 
   public PoeUniqueDataService(
       @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
@@ -90,6 +92,16 @@ public class PoeUniqueDataService {
     }
     this.data = loaded;
     this.classBySlug = deriveClasses(loaded);
+    Map<String, String> names = new java.util.HashMap<>();
+    for (PoeUniqueItem item : loaded.items()) {
+      names.putIfAbsent(item.slug(), item.name());
+    }
+    this.nameBySlug = Map.copyOf(names);
+  }
+
+  /** slug 의 정식 영문 이름(변형 · 타임리스 사본의 꼬리 없는 이름). 없으면 null. */
+  public String canonicalName(String slug) {
+    return slug == null ? null : nameBySlug.get(slug);
   }
 
   /** 각 고유의 세부 itemClass 를 baseType→베이스 조인으로 계산(실패 시 category 폴백). */
@@ -145,7 +157,9 @@ public class PoeUniqueDataService {
         base != null ? base.reqInt() : null,
         base != null ? base.slug() : null,
         it.flavour(),
-        it.flavourKo());
+        it.flavourKo(),
+        it.explicitsReminders(),
+        it.explicitsRemindersKo());
   }
 
   public int totalCount() {
@@ -184,8 +198,7 @@ public class PoeUniqueDataService {
    * @param itemClass all|null 또는 세부 itemClass(UI 필터용) — baseType 조인 결과 기준
    */
   public List<PoeUniqueItem> search(String query, String category, String itemClass) {
-    String normalizedQuery =
-        query != null && !query.isBlank() ? query.trim().toLowerCase(Locale.ROOT) : null;
+    String normalizedQuery = PoeSearchText.query(query);
     String categoryFilter =
         category != null && !category.isBlank() && !"all".equals(category) ? category : null;
     String classFilter =
@@ -194,11 +207,12 @@ public class PoeUniqueDataService {
     return data.items().stream()
         .filter(
             item ->
-                normalizedQuery == null
-                    || item.name().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                    || (item.nameKo() != null && item.nameKo().contains(normalizedQuery))
-                    || item.baseType().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                    || (item.baseTypeKo() != null && item.baseTypeKo().contains(normalizedQuery)))
+                PoeSearchText.matches(
+                    normalizedQuery,
+                    item.name(),
+                    item.nameKo(),
+                    item.baseType(),
+                    item.baseTypeKo()))
         .filter(item -> categoryFilter == null || categoryFilter.equals(item.category()))
         .filter(item -> classFilter == null || classFilter.equals(itemClassOf(item)))
         .map(this::withBase)

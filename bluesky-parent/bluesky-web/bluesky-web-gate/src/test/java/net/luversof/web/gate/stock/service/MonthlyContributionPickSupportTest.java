@@ -64,6 +64,8 @@ class MonthlyContributionPickSupportTest {
         null,
         null,
         null,
+        null,
+        null,
         null);
   }
 
@@ -104,7 +106,7 @@ class MonthlyContributionPickSupportTest {
         .as("시뮬레이터가 후보를 따로 만들면 두 화면이 갈린다")
         .doesNotContain("ContributionCandidate(");
     assertThat(etf)
-        .contains("monthlyContributionPickSupport.pickFromCatalog(catalog)")
+        .contains("monthlyContributionPickSupport.pickFromCatalog(catalog")
         .as("후보에 보유 여부를 묻지 않는다 - 보유 스냅샷을 이 추천 때문에 부르지 않는다(2026-10-02)")
         .doesNotContain("heldSnapshotFuture")
         .contains("model.addAttribute(" + (char) 34 + "monthlyEtfContributionPicks" + (char) 34);
@@ -308,5 +310,168 @@ class MonthlyContributionPickSupportTest {
     assertThat(MonthlyContributionPickSupport.resolveSlotAccount("PENSION")).isEqualTo("PENSION");
     assertThat(MonthlyContributionPickSupport.resolveSlotAccount("pension")).isEmpty();
     assertThat(support.symbolsInSlot("MID_MONTH", "", null)).isEmpty();
+  }
+
+  private static ContributionCandidate full(
+      String symbol, String window, String yield, String trend, String total, String vol) {
+    return new ContributionCandidate(
+        symbol,
+        "이름 " + symbol,
+        window,
+        new BigDecimal("5"),
+        new BigDecimal(yield),
+        new BigDecimal(trend),
+        total == null ? null : new BigDecimal(total),
+        vol == null ? null : new BigDecimal(vol),
+        null,
+        null);
+  }
+
+  @Test
+  void 추천_기준마다_같은_자리에서_다른_종목을_고른다() {
+    // 2026-10-06 사용자 요청: 추천 기준을 다양하게. 분배율이 높은 A, 원금을 지킨 B, 덜 흔들리는 C - 같은 자리(월중 · 위탁).
+    var candidates =
+        List.of(
+            full("A", "MID_MONTH", "20", "0", "5", "40"), // 배당 20 · 총수익 5 · 안정성 0.5
+            full("B", "MID_MONTH", "8", "0", "60", "32"), // 배당 8 · 총수익 60 · 안정성 0.25
+            full("C", "MID_MONTH", "12", "-2", "20", "10")); // 배당 10 · 총수익 20 · 안정성 1.0
+
+    var dividend = support.pick(candidates, MonthlyContributionPickSupport.Basis.DIVIDEND);
+    var total = support.pick(candidates, MonthlyContributionPickSupport.Basis.TOTAL_RETURN);
+    var stable = support.pick(candidates, MonthlyContributionPickSupport.Basis.STABILITY);
+
+    assertThat(dividend).singleElement().extracting(ContributionPick::symbol).isEqualTo("A");
+    assertThat(total).singleElement().extracting(ContributionPick::symbol).isEqualTo("B");
+    assertThat(stable).singleElement().extracting(ContributionPick::symbol).isEqualTo("C");
+    assertThat(total.get(0).score()).isEqualByComparingTo("60.00");
+    assertThat(stable.get(0).score())
+        .as("안정성 = 배당 점수(감점 뒤 10) / 변동성 10 - 연배당 12 를 나누면 감점이 사라진다")
+        .isEqualByComparingTo("1.00");
+    assertThat(dividend.get(0).basis()).isEqualTo(MonthlyContributionPickSupport.Basis.DIVIDEND);
+
+    // 다른 기준이면 누가 뽑히는지 함께 준다(기준 차례). 꾸준함은 감소 횟수가 없어 비교표에서도 빠진다
+    assertThat(dividend.get(0).tops())
+        .extracting(MonthlyContributionPickSupport.BasisTop::basis)
+        .containsExactly(
+            MonthlyContributionPickSupport.Basis.DIVIDEND,
+            MonthlyContributionPickSupport.Basis.TOTAL_RETURN,
+            MonthlyContributionPickSupport.Basis.STABILITY);
+    assertThat(dividend.get(0).agreement()).as("A 를 1위로 꼽은 기준은 배당 하나").isEqualTo(1);
+    assertThat(dividend.get(0).alternatives())
+        .extracting(MonthlyContributionPickSupport.Alternative::symbol)
+        .containsExactly("B", "C");
+    assertThat(dividend.get(0).alternatives())
+        .extracting(MonthlyContributionPickSupport.Alternative::basis)
+        .containsExactly(
+            MonthlyContributionPickSupport.Basis.TOTAL_RETURN,
+            MonthlyContributionPickSupport.Basis.STABILITY);
+  }
+
+  @Test
+  void 기준이_같은_종목을_고르면_다른_기준_안내는_비어_있다() {
+    var candidates =
+        List.of(
+            full("A", "MONTH_END", "20", "0", "60", "10"),
+            full("B", "MONTH_END", "8", "0", "5", "40"));
+    assertThat(
+            support
+                .pick(candidates, MonthlyContributionPickSupport.Basis.DIVIDEND)
+                .get(0)
+                .alternatives())
+        .isEmpty();
+  }
+
+  @Test
+  void 기준_값을_못_내는_종목은_그_기준에서만_빠진다() {
+    // 총수익률이 없는 A(이력 1 년 미만)는 총수익 기준에서만 빠지고, 배당 기준에서는 그대로 1위다.
+    var candidates =
+        List.of(
+            full("A", "MID_MONTH", "20", "0", null, "0"),
+            full("B", "MID_MONTH", "8", "0", "10", "20"));
+    assertThat(
+            support.pick(candidates, MonthlyContributionPickSupport.Basis.DIVIDEND).get(0).symbol())
+        .isEqualTo("A");
+    assertThat(
+            support
+                .pick(candidates, MonthlyContributionPickSupport.Basis.TOTAL_RETURN)
+                .get(0)
+                .symbol())
+        .isEqualTo("B");
+    assertThat(support.pick(candidates, MonthlyContributionPickSupport.Basis.STABILITY))
+        .as("변동성 0 은 나눌 수 없어 뺀다")
+        .singleElement()
+        .extracting(ContributionPick::symbol)
+        .isEqualTo("B");
+    // 값을 낼 후보가 하나도 없는 자리는 카드를 내지 않는다
+    assertThat(
+            support.pick(
+                List.of(full("A", "MID_MONTH", "20", "0", null, null)),
+                MonthlyContributionPickSupport.Basis.TOTAL_RETURN))
+        .isEmpty();
+  }
+
+  @Test
+  void 주소의_기준_값은_모르면_배당이다() {
+    assertThat(MonthlyContributionPickSupport.Basis.of("total"))
+        .isEqualTo(MonthlyContributionPickSupport.Basis.TOTAL_RETURN);
+    assertThat(MonthlyContributionPickSupport.Basis.of("stable"))
+        .isEqualTo(MonthlyContributionPickSupport.Basis.STABILITY);
+    assertThat(MonthlyContributionPickSupport.Basis.of(null))
+        .isEqualTo(MonthlyContributionPickSupport.Basis.DIVIDEND);
+    assertThat(MonthlyContributionPickSupport.Basis.of("TOTAL"))
+        .isEqualTo(MonthlyContributionPickSupport.Basis.DIVIDEND);
+  }
+
+  private static ContributionCandidate withCuts(
+      String symbol, String yield, String total, String vol, Integer cuts) {
+    return new ContributionCandidate(
+        symbol,
+        "이름 " + symbol,
+        "MONTH_END",
+        new BigDecimal("30"),
+        new BigDecimal(yield),
+        BigDecimal.ZERO,
+        total == null ? null : new BigDecimal(total),
+        vol == null ? null : new BigDecimal(vol),
+        cuts,
+        cuts == null ? null : 11);
+  }
+
+  @Test
+  void 꾸준함은_감소_횟수가_적은_차례이고_같으면_배당_점수() {
+    // 2026-10-06 사용자 요청 ④: 최근 12 회 중 직전보다 줄어든 횟수. 늘어난 것은 감점하지 않는다(API 가 센다).
+    var candidates =
+        List.of(
+            withCuts("A", "20", "10", "40", 4), // 배당 1위지만 4 번 줄었다
+            withCuts("B", "9", "5", "30", 0), // 한 번도 안 줄었다
+            withCuts("C", "6", "50", "10", 0), // 한 번도 안 줄었지만 배당 점수가 B 보다 낮다
+            withCuts("D", "30", "1", "5", null)); // 이력이 모자라 꾸준함 후보가 못 된다
+    var steady = support.pick(candidates, MonthlyContributionPickSupport.Basis.STEADY);
+    assertThat(steady).singleElement().extracting(ContributionPick::symbol).isEqualTo("B");
+    assertThat(steady.get(0).score()).as("안 줄어든 비율 11/11").isEqualByComparingTo("100.00");
+    assertThat(steady.get(0).runnerUpSymbol()).as("감소 0 회끼리는 배당 점수 차례").isEqualTo("C");
+    assertThat(
+            MonthlyContributionPickSupport.valueOf(
+                MonthlyContributionPickSupport.Basis.STEADY, withCuts("X", "5", null, null, 4)))
+        .as("(11 - 4) / 11")
+        .isEqualByComparingTo("63.64");
+  }
+
+  @Test
+  void 비교표는_기준마다_1위와_합의_수를_준다() {
+    var candidates =
+        List.of(
+            withCuts("A", "20", "10", "40", 4),
+            withCuts("B", "9", "60", "3", 0),
+            withCuts("C", "6", "50", "10", 1));
+    // 배당 A · 총수익 B · 안정성 B(9/3=3.00) · 꾸준함 B
+    var dividend = support.pick(candidates, MonthlyContributionPickSupport.Basis.DIVIDEND).get(0);
+    assertThat(dividend.tops())
+        .extracting(top -> top.basis().param() + "=" + top.candidate().symbol())
+        .containsExactly("dividend=A", "total=B", "stable=B", "steady=B");
+    assertThat(dividend.agreement()).isEqualTo(1);
+    var total = support.pick(candidates, MonthlyContributionPickSupport.Basis.TOTAL_RETURN).get(0);
+    assertThat(total.symbol()).isEqualTo("B");
+    assertThat(total.agreement()).as("B 는 네 기준 중 셋의 1위").isEqualTo(3);
   }
 }

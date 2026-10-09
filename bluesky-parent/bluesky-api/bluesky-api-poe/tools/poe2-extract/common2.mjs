@@ -1,7 +1,7 @@
 // PoE2 파서 공용 도우미 — 마크업 제거·slug·스탯 설명(영/한)·PoB-PoE2 원본 받기.
 import fs from "node:fs";
 import path from "node:path";
-import { createModTranslator, createStatDescriber } from "../poe-extract/statDescriptions.mjs";
+import { createModTranslator, createStatDescriber, parsedBlocks } from "../poe-extract/statDescriptions.mjs";
 import { FILES_DIR, WORK_DIR } from "./paths.mjs";
 
 /** PoE2 문구 마크업 "[Critical|Critical Hit]" → "Critical Hit", "[Spirit]" → "Spirit". 한국어도 같은 규칙. */
@@ -11,6 +11,33 @@ export function stripMarkup(text) {
 }
 
 /** 영문 이름 → 소문자 kebab slug(중복이면 -2, -3 …). */
+// 키워드 설명(10-04 C110 · C111) — PoE2 는 리마인더 대신 서술 원문의 강조 용어 [Id|표시] 를 KeywordPopups(용어 · 정의)로 풀어 준다(인게임 Alt).
+//   markupIds: 원문 한 줄에서 Id 들 / loadKeywords: Id → { term, termKo, def, defKo } (Test · DNT 행 제외, 정의 마크업 제거)
+export const markupIds = (s) => [...String(s ?? "").matchAll(/\[([^\]|]+)(?:\|[^\]]*)?\]/g)].map((m) => m[1].trim());
+export function loadKeywords(loadTable) {
+	const byId = new Map();
+	let en = [], ko = [];
+	try {
+		en = loadTable("English", "KeywordPopups");
+		ko = loadTable("Korean", "KeywordPopups");
+	} catch {
+		return byId; // 테이블 없음(extract 전) → 키워드 생략
+	}
+	const usable = (s) => s && !/^\[DNT/.test(s) && s !== "WIP";
+	const text = (t) => stripMarkup(t).replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+	en.forEach((row, i) => {
+		if (!row.Id || row.Id === "Test" || !usable(row.Term) || !usable(row.Definition)) return;
+		const k = ko[i];
+		byId.set(row.Id, {
+			term: text(row.Term),
+			termKo: usable(k?.Term) ? text(k.Term) : null,
+			def: text(row.Definition),
+			defKo: usable(k?.Definition) ? text(k.Definition) : null,
+		});
+	});
+	return byId;
+}
+
 export function makeSlugger() {
 	const used = new Map();
 	return (name) => {
@@ -103,6 +130,44 @@ export function cleanCopies(files) {
 		flush();
 		fs.writeFileSync(dst, Buffer.from("﻿" + out.join("\r\n"), "utf16le"));
 	}
+}
+
+/**
+ * PoB 영어 옵션 줄(마크업 없음) → 강조 용어 Id(10-04 C112). 고유 · 베이스 옵션은 PoB 문장이라 원문 마크업이 없으므로
+ * 원문 영어 템플릿을 번역기(createModTranslator)와 같은 뼈대(숫자 · 자리표시 제거, 소문자)로 색인해 그 템플릿의 [Id|…] 를 찾는다.
+ * 여러 줄로 쪼갠 모드는 번역기처럼 최대 3줄까지 합쳐 본다. 반환: (lines) => Id 배열(등장 순, 중복 제거)
+ */
+export function createKeywordIndex(files) {
+	cleanCopies(files);
+	const TOKEN = /\+?\(?\{[^}]*\}\)?|\+?\(?-?\d[\d.\-]*\)?/g;
+	const skel = (text) => text.replace(/\\n/g, " ").replace(TOKEN, "").replace(/\s+/g, " ").trim().toLowerCase();
+	const idsByKey = new Map();
+	for (const file of files) {
+		const full = path.join(CLEAN_DIR, file);
+		if (!fs.existsSync(full)) continue;
+		for (const block of parsedBlocks(full)) {
+			for (const v of block.variants.English || []) {
+				const ids = markupIds(v.text);
+				if (!ids.length) continue;
+				const key = skel(stripMarkup(v.text));
+				if (key && !idsByKey.has(key)) idsByKey.set(key, ids);
+			}
+		}
+	}
+	return (lines) => {
+		const out = new Set();
+		for (let i = 0; i < lines.length; i++) {
+			for (let w = 1; w <= Math.min(3, lines.length - i); w++) {
+				const ids = idsByKey.get(skel(lines.slice(i, i + w).join(" ")));
+				if (ids) {
+					ids.forEach((id) => out.add(id));
+					i += w - 1;
+					break;
+				}
+			}
+		}
+		return [...out];
+	};
 }
 
 /** describe(Map<statId, value>, lang) → 마크업을 걷어 낸 문장 배열. chain = item | gem | passive */

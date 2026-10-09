@@ -45,7 +45,9 @@ public final class PoeUpgradeGuide {
       Integer metaCount,
       Integer metaTotal,
       String needs,
-      String itemText) {
+      String itemText,
+      // 거래소 검색 쿼리(q JSON, API 와 짝, 10-08 C171) — null 이면 링크 없음
+      String tradeQuery) {
 
     /** 실빌드 사용률(%) — 모르면 null. 1% 미만도 1 로 올려 "쓰는 사람이 있다"는 사실을 0 으로 지우지 않는다. */
     public Integer metaPercent() {

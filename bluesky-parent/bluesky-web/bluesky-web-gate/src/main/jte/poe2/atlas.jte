@@ -26,8 +26,8 @@
 			<div class="flex flex-wrap items-center gap-2 rounded-2xl bg-base-100 p-3 shadow-sm">
 				<select id="poe2AtlasTree" class="select select-sm select-bordered" aria-label="${MessageUtil.getMessage("poe2.atlas.jump")}"></select>
 				<input id="poe2TreeSearch" type="search" class="input input-sm input-bordered w-full sm:w-56" placeholder="${MessageUtil.getMessage("poe2.tree.search")}" aria-label="${MessageUtil.getMessage("poe2.tree.search")}" autocomplete="off">
-				<span id="poe2TreeSearchCount" class="text-xs font-mono text-base-content/50" aria-live="polite"></span>
-				<div class="flex items-center gap-1">
+				<span id="poe2TreeSearchCount" class="text-xs font-mono text-base-content/60" aria-live="polite"></span>
+				<div class="flex flex-wrap items-center gap-1">
 					<button id="poe2TreeZoomIn" type="button" class="btn btn-sm btn-ghost" aria-label="${PoeText.isKorean() ? "확대" : "Zoom in"}">＋</button>
 					<button id="poe2TreeZoomOut" type="button" class="btn btn-sm btn-ghost" aria-label="${PoeText.isKorean() ? "축소" : "Zoom out"}">－</button>
 					<button id="poe2TreeFit" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe2.tree.reset")}</button>
@@ -45,7 +45,7 @@
 			</div>
 			<div class="relative">
 				<canvas id="poe2TreeCanvas" class="w-full h-[72vh] rounded-2xl shadow-sm cursor-grab touch-none" style="background:#0e1116"
-				        data-locale="${PoeText.isKorean() ? "ko" : "en"}" data-tree-src="/poe-data/poe2/atlas-tree.json" data-sprite-base="/poe-data/poe2/atlas-sprites/"
+				        data-locale="${PoeText.isKorean() ? "ko" : "en"}" data-tree-src="/poe-data/poe2/atlas-tree.json${net.luversof.web.gate.poe.config.PoeDataVersion.q("/poe-data/poe2/atlas-tree.json")}" data-sprite-base="/poe-data/poe2/atlas-sprites/"
 				        role="img" aria-label="${pageTitle}"></canvas>
 				<div id="poe2TreeTooltip" class="pointer-events-none absolute hidden z-10 max-w-xs poe-node-popup overflow-hidden"></div>
 				<div id="poe2TreeStats" class="hidden absolute right-2 top-2 z-10 w-72 max-h-[60%] overflow-y-auto poe-node-popup">

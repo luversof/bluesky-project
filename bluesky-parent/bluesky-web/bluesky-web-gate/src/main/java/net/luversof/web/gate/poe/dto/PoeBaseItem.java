@@ -17,7 +17,9 @@ public record PoeBaseItem(
     Armour armour,
     Weapon weapon,
     Flask flask,
-    List<ModLine> implicits) {
+    List<ModLine> implicits,
+    /** 거래소가 이 베이스를 아는가(10-08 C174, 상세 응답만) — false 면 "거래소에서 찾기" 단추를 숨긴다, null = 모름(보인다). */
+    Boolean tradable) {
 
   public record Armour(
       int armourMin,
@@ -43,5 +45,6 @@ public record PoeBaseItem(
       int perCharge,
       List<ModLine> buffLines) {}
 
-  public record ModLine(String en, String ko) {}
+  /** 암시 줄 하나 — reminders(Ko) 는 그 줄 밑 인게임 회색 부연(10-04 C116), 없으면 null. */
+  public record ModLine(String en, String ko, List<String> reminders, List<String> remindersKo) {}
 }

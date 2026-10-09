@@ -199,9 +199,44 @@ class MonthlyDividendPayoutServiceTest {
     payout.setPayDate(LocalDate.parse(payDate));
     payout.setDistributionRatePct(BigDecimal.ZERO);
     payout.setDividendAmountPerShare(new BigDecimal(dividendAmountPerShare));
-    payout.setTaxableBasePerShare(new BigDecimal(taxableBasePerShare));
+    payout.setTaxableBasePerShare(
+        taxableBasePerShare != null ? new BigDecimal(taxableBasePerShare) : null);
     payout.setCreatedDate(Instant.parse("2026-01-01T00:00:00Z"));
     payout.setUpdatedDate(Instant.parse("2026-01-02T00:00:00Z"));
     return payout;
+  }
+
+  @Test
+  void 과세표준_갱신은_들어온_값을_쓰고_모르면_아는_양수만_지킨다() {
+    // 2026-10-07 사용자 요청: 확인 안 된 과세표준은 다음 갱신에서 채워져야 한다.
+    assertThat(MonthlyDividendPayoutService.mergeTaxableBase(null, new BigDecimal("12")))
+        .as("모르던 행이 이번 갱신에서 채워진다")
+        .isEqualByComparingTo("12");
+    assertThat(MonthlyDividendPayoutService.mergeTaxableBase(new BigDecimal("12"), null))
+        .as("출처가 \"-\" 를 줘도 이미 아는 양수는 지킨다")
+        .isEqualByComparingTo("12");
+    assertThat(MonthlyDividendPayoutService.mergeTaxableBase(BigDecimal.ZERO, null))
+        .as("옛 가져오기는 \"-\" 를 0 으로 저장했다 - 출처가 여전히 모르면 0 을 모름으로 되돌린다")
+        .isNull();
+    assertThat(MonthlyDividendPayoutService.mergeTaxableBase(new BigDecimal("12"), BigDecimal.ZERO))
+        .as("출처가 0 이라고 하면 0")
+        .isEqualByComparingTo("0");
+  }
+
+  @Test
+  void 과세표준_비중은_아는_행만으로_내고_다_모르면_null() {
+    UUID id = UUID.randomUUID();
+    var mixed =
+        monthlyDividendPayoutService.computeSnapshotStatsFrom(
+            List.of(
+                createPayout(id, "2026-09-30", "2026-10-02", "100", "20"),
+                createPayout(id, "2026-08-29", "2026-09-02", "100", null)));
+    assertThat(mixed.taxableBaseRatio1y())
+        .as("모르는 행을 0% 로 넣으면 10% 가 된다")
+        .isEqualByComparingTo("20.00");
+    var unknown =
+        monthlyDividendPayoutService.computeSnapshotStatsFrom(
+            List.of(createPayout(id, "2026-09-30", "2026-10-02", "100", null)));
+    assertThat(unknown.taxableBaseRatio1y()).as("다 모르면 0% 가 아니라 모름").isNull();
   }
 }

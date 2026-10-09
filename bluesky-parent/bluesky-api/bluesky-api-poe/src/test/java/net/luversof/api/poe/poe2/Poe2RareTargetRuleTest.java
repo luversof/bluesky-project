@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 class Poe2RareTargetRuleTest {
 
   private static Poe2.GuideRare rare(Double dps, Double ehp) {
-    return new Poe2.GuideRare(dps, ehp, List.of("x"), List.of("x"), "t");
+    return new Poe2.GuideRare(dps, ehp, List.of("x"), List.of("x"), "t", null);
   }
 
   @Test

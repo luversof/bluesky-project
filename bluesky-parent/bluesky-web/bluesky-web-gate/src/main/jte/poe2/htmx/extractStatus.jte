@@ -23,7 +23,7 @@
 			@endif
 			<div>${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.admin.counts"), meta.gems(), meta.baseItems(), meta.modPools(), meta.augments(), meta.uniques())}</div>
 			@if(meta.loadedAt() != null && !meta.loadedAt().isBlank())
-				<div class="text-xs text-base-content/50">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.admin.loaded"), meta.loadedAt())}</div>
+				<div class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.admin.loaded"), meta.loadedAt())}</div>
 			@endif
 		</div>
 	@endif
@@ -38,7 +38,7 @@
 		@elseif(status.exitCode() != null)
 			<span class="text-sm ${status.exitCode() == 0 ? "text-success" : "text-error"}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.admin.done"), status.exitCode())}</span>
 		@else
-			<span class="text-sm text-base-content/50">${MessageUtil.getMessage("poe2.admin.never")}</span>
+			<span class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.admin.never")}</span>
 		@endif
 	</div>
 	@if(!tail.isEmpty())

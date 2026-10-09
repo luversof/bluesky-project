@@ -176,10 +176,15 @@ public class MonthlyDividendCatalogService {
           PayoutTrendCalculator.compute(
               payouts.stream().map(payout -> safe(payout.getDividendAmountPerShare())).toList());
 
+      PayoutTrendCalculator.PayoutCuts payoutCuts =
+          PayoutTrendCalculator.countCuts(
+              payouts.stream().map(payout -> safe(payout.getDividendAmountPerShare())).toList());
+
       BigDecimal currentPrice = price != null ? safe(price.closePrice()) : BigDecimal.ZERO;
       BigDecimal averagePerShare =
           stats != null ? safe(stats.averagePerShare1y()) : BigDecimal.ZERO;
-      BigDecimal taxableRatio = stats != null ? safe(stats.taxableBaseRatio1y()) : BigDecimal.ZERO;
+      // 모르면 null 그대로 내보낸다(2026-10-07) - 0 이면 화면이 "0%" 로 적고 적립 추천이 위탁계좌 자리에 넣는다.
+      BigDecimal taxableRatio = stats != null ? stats.taxableBaseRatio1y() : null;
       BigDecimal monthlyYieldPct = percent(averagePerShare, currentPrice);
 
       rows.add(
@@ -198,9 +203,11 @@ public class MonthlyDividendCatalogService {
               stats != null ? safe(stats.latestPerShare()) : BigDecimal.ZERO,
               averagePerShare,
               taxableRatio,
-              averagePerShare
-                  .multiply(taxableRatio)
-                  .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP),
+              taxableRatio == null
+                  ? null
+                  : averagePerShare
+                      .multiply(taxableRatio)
+                      .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP),
               currentPrice,
               price != null ? price.tradeDate() : null,
               monthlyYieldPct,
@@ -213,7 +220,9 @@ public class MonthlyDividendCatalogService {
               risk != null ? risk.volatilityPct() : null,
               risk != null ? risk.fromDate() : null,
               profile.getTotalExpenseRatioPct(),
-              profile.getListingDate()));
+              profile.getListingDate(),
+              payoutCuts != null ? payoutCuts.cutCount() : null,
+              payoutCuts != null ? payoutCuts.pairCount() : null));
     }
     return rows;
   }

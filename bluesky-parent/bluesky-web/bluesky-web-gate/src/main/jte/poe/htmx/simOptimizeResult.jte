@@ -7,6 +7,14 @@
 @param net.luversof.web.gate.poe.dto.ArchetypeBenchmark ninjaBenchmark = null
 @param net.luversof.web.gate.poe.dto.RealStart realStart = null
 @param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> rareBases = null
+<%-- 결과 이력에서 연 결과의 id — "빌드 화면에서 열기"가 그 결과로 연다(없으면 마지막 결과, 10-08) --%>
+@param Long historyId = null
+<%-- 삿된 · 변형 고유의 실제 장착 옵션 사본(슬롯별) + 그 베이스 — 일반 상세(hx-get)는 원래 옵션을 띄워서(10-05 C152) --%>
+@param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeUniqueItem> uniqueOverrides = null
+@param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> uniqueOverrideBases = null
+<%-- 감시자의 눈 · 금단 짝 결과 주얼의 고른 옵션 사본(키 = PoeHtmxController.jewelOverrideKey) + 베이스(10-05 C154) --%>
+@param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeUniqueItem> jewelOverrides = null
+@param java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> jewelOverrideBases = null
 
 !{
 	// 결과는 실행 시점 이름으로 저장되므로 API 가 한/영을 함께 싣는다 — 화면은 로케일대로 고르기만 한다.
@@ -14,9 +22,10 @@
 	// 구 히스토리(영문 목록 없음)는 한글로 폴백 — 옛 결과가 빈칸이 되면 안 된다.
 	java.util.function.BiFunction<java.util.List<String>, java.util.List<String>, java.util.List<String>> pickList =
 		(koList, enList) -> !net.luversof.web.gate.poe.PoeText.isKorean() && enList != null && !enList.isEmpty() ? enList : koList;
-	java.util.List<String> dNotables = pickList.apply(result.treeNotables(), result.treeNotablesEn());
-	java.util.List<String> dMasteryLabels = pickList.apply(result.treeMasteryLabels(), result.treeMasteryLabelsEn());
-	java.util.List<String> dTattooLabels = pickList.apply(result.treeTattooLabels(), result.treeTattooLabelsEn());
+	// result 가 null(이력 결과가 지워짐 — API 404)이면 여기서 NPE 로 500 이 났다(10-02 C35). 아래 @else 가 안내한다
+	java.util.List<String> dNotables = result == null ? java.util.List.of() : pickList.apply(result.treeNotables(), result.treeNotablesEn());
+	java.util.List<String> dMasteryLabels = result == null ? java.util.List.of() : pickList.apply(result.treeMasteryLabels(), result.treeMasteryLabelsEn());
+	java.util.List<String> dTattooLabels = result == null ? java.util.List.of() : pickList.apply(result.treeTattooLabels(), result.treeTattooLabelsEn());
 	// 티어 비교 헤더는 T1/중간/하위 **고정 3값**이라 DTO 를 늘리지 않고 여기서 옮긴다(구 히스토리도 함께 해결된다).
 	java.util.Map<String, String> tierLabelEn = java.util.Map.of("T1", "T1", "중간", "Mid", "하위", "Low");
 	java.util.function.Function<String, String> tierLabel =
@@ -109,9 +118,9 @@
 					<span class="font-semibold text-rose-500">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.unsustainable"), netRegen)}</span>
 				@endif
 				@if("dps".equals(result.objective()))
-					<span class="text-base-content/50 ml-auto">${MessageUtil.getMessage("poe.sim.opt.result.fragile.hint")}</span>
+					<span class="text-base-content/60 ml-auto">${MessageUtil.getMessage("poe.sim.opt.result.fragile.hint")}</span>
 				@else
-					<span class="text-base-content/50 ml-auto">${MessageUtil.getMessage("poe.sim.opt.result.fragile.hint.balanced")}</span>
+					<span class="text-base-content/60 ml-auto">${MessageUtil.getMessage("poe.sim.opt.result.fragile.hint.balanced")}</span>
 				@endif
 			</div>
 		@endif
@@ -160,9 +169,9 @@
 		@endif
 
 		<div class="flex flex-wrap items-baseline gap-3">
-			<span class="text-sm text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.baseline")} <span class="font-mono">${result.baselineValue()}</span></span>
+			<span class="text-sm text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.baseline")} <span class="font-mono">${result.baselineValue()}</span></span>
 			<span class="text-lg font-bold font-mono text-primary">→ ${result.finalValue()}</span>
-			<span class="text-[11px] text-base-content/40">${net.luversof.web.gate.poe.PoeText.isKorean() ? "(모든 레어 최상위 티어 가정)" : "(all rares at top tier)"}</span>
+			<span class="text-[11px] text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "(모든 레어 최상위 티어 가정)" : "(all rares at top tier)"}</span>
 		</div>
 
 		<%-- poe.ninja 실빌드 벤치마크 — 이 (전직×스킬)의 실 유저 빌드 중앙값과 비교. 결과가 실데이터에 근거함을 보여준다. --%>
@@ -297,7 +306,7 @@
 					String benchS = cap ? bench + "%" : fmt.apply(bench);
 					String mineS = mine == null ? "—" : (cap ? mine + "%" : fmt.apply(mine));
 					String delta = "";
-					String cls = "text-base-content/40";
+					String cls = "text-base-content/60";
 					if (mine != null && bench > 0) {
 						if (cap) {
 							long d = mine - bench;
@@ -313,7 +322,7 @@
 				};
 				// 실빌드 전용 문자열 행(내 값 개념이 없는 컬럼 — 충전/클러스터 구성 등)
 				java.util.function.BiConsumer<java.util.List<String[]>, String[]> addInfo = (list, a) ->
-					list.add(new String[] {a[0], a[1], "—", "", "text-base-content/40"});
+					list.add(new String[] {a[0], a[1], "—", "", "text-base-content/60"});
 				Long L = null; // 캐스팅 편의
 				// ── 좌: 공격·생존 ──
 				addCmp.accept(cmpL, new Object[] {ko ? "DPS(메인 스킬)" : "DPS (main)", ninjaBenchmark.dps(), myDps == null ? null : Long.valueOf(myDps), false});
@@ -370,14 +379,14 @@
 				}
 			}
 			<div class="rounded-box bg-base-100 px-3 py-2 text-xs space-y-1">
-				<div class="flex items-center gap-2">
+				<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 					<span class="font-bold text-info">${ko ? "poe.ninja 실빌드 중앙값" : "poe.ninja real-build median"}</span>
-					<span class="badge badge-ghost badge-xs">${ninjaBenchmark.mainSkill()}${ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? " · " + ninjaBenchmark.ascendancy() : ""}</span>
+					<span class="badge badge-ghost badge-xs">${net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.mainSkillKo(), ninjaBenchmark.mainSkill())}${ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? " · " + net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.ascendancyKo(), ninjaBenchmark.ascendancy()) : ""}</span>
 					@if(lean != null)
 						<%-- 실빌드 성향 배지 — 이 조합의 실 유저 분포가 공격/생존 어느 쪽인지(시뮬이 미는 방향의 근거) --%>
 						<span class="badge badge-xs ${leanCls}" title="${ko ? "poe.ninja 실빌드 DPS·EHP 중앙값을 전체 아키타입과 비교한 성향" : "Real-build DPS/EHP tendency vs all archetypes"}">${leanLabel}</span>
 					@endif
-					<span class="text-base-content/40">n=${ninjaBenchmark.sample()}</span>
+					<span class="text-base-content/60">n=${ninjaBenchmark.sample()}</span>
 				</div>
 				<%-- 교환 해설 — 수치 대조표만으로는 "낮다=나쁘다"로 읽힌다. 방향이 갈릴 때만 한 줄. --%>
 				@if(tradeMsg != null)
@@ -386,7 +395,7 @@
 				<%-- 전 컬럼 참조 특화 판정 — 이 스킬×전직 실빌드가 두드러진 컬럼(전체 중앙값 대비, 저표본 제외). "어느 컬럼 특화인지"를 명시. --%>
 				@if(ninjaBenchmark.specializations() != null && !ninjaBenchmark.specializations().isEmpty())
 					<div class="flex flex-wrap items-center gap-1">
-						<span class="text-base-content/50">${ko ? "특화 컬럼" : "Specializes in"}</span>
+						<span class="text-base-content/60">${ko ? "특화 컬럼" : "Specializes in"}</span>
 						@for(String sk : ninjaBenchmark.specializations())
 							<span class="badge badge-xs badge-warning badge-outline">${specLabel.apply(sk)}</span>
 						@endfor
@@ -399,7 +408,7 @@
 						<div class="overflow-x-auto">
 							<table class="table table-xs">
 								<thead>
-									<tr class="text-base-content/50">
+									<tr class="text-base-content/60">
 										<th class="font-sans">${ko ? "지표" : "Metric"}</th>
 										<th class="text-right font-sans">${ko ? "실빌드" : "Real"}</th>
 										<th class="text-right font-sans">${ko ? "내 결과" : "Mine"}</th>
@@ -421,17 +430,17 @@
 					@endfor
 				</div>
 				@if(ninjaBenchmark.skillDps() != null && ninjaBenchmark.skillDps().size() > 1)
-					<div class="text-[10px] text-base-content/40">${ko ? "DPS(메인 스킬)·내 DPS 는 메인 스킬 전용 — 추가 스킬 DPS 는 실빌드 참고값(DPS·스킬명 행)" : "Main-skill DPS on both sides; extra-skill rows are real-build reference"}</div>
+					<div class="text-[10px] text-base-content/60">${ko ? "DPS(메인 스킬)·내 DPS 는 메인 스킬 전용 — 추가 스킬 DPS 는 실빌드 참고값(DPS·스킬명 행)" : "Main-skill DPS on both sides; extra-skill rows are real-build reference"}</div>
 				@endif
 				@if(ninjaBenchmark.topKeystones() != null && !ninjaBenchmark.topKeystones().isEmpty())
-					<div class="text-base-content/50">${ko ? "실빌드 키스톤" : "common keystones"}: ${String.join(", ", ninjaBenchmark.topKeystones())}</div>
+					<div class="text-base-content/60">${ko ? "실빌드 키스톤" : "common keystones"}: ${String.join(", ", ninjaBenchmark.topKeystones())}</div>
 				@endif
 				@if(ninjaBenchmark.topCoSkills() != null && !ninjaBenchmark.topCoSkills().isEmpty())
-					<div class="text-base-content/50">${ko ? "함께 쓰는 스킬" : "common co-skills"}: ${String.join(", ", ninjaBenchmark.topCoSkills())}</div>
+					<div class="text-base-content/60">${ko ? "함께 쓰는 스킬" : "common co-skills"}: ${String.join(", ", ninjaBenchmark.topCoSkills())}</div>
 				@endif
 				<%-- 실빌드 마스터리(캐릭터 상세 채집) — 패싯이 없을 때만(패싯 패널이 모집단 기준이라 우선) --%>
 				@if(ninjaBenchmark.topMasteries() != null && !ninjaBenchmark.topMasteries().isEmpty() && (ninjaBenchmark.facets() == null || !ninjaBenchmark.facets().containsKey("masteries")))
-					<div class="text-base-content/50">${ko ? "실빌드 마스터리" : "common masteries"}: ${String.join(" · ", ninjaBenchmark.topMasteries())}</div>
+					<div class="text-base-content/60">${ko ? "실빌드 마스터리" : "common masteries"}: ${String.join(" · ", ninjaBenchmark.topMasteries())}</div>
 				@endif
 				<%-- 패싯(사이드바 집계) — 마스터리/룬크래프트/문신/무기/판테온/아틀라스 등 전체 모집단 사용률 --%>
 				@template.poe.htmx.benchFacets(bench = ninjaBenchmark, rows = 5)
@@ -465,8 +474,10 @@
 				<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
 					<span class="font-semibold">${koRs ? "실빌드에서 출발한 빌드" : "Start from a real build"}</span>
 					<span class="badge badge-ghost badge-xs">poe.ninja${realStart.level() != null ? " · Lv" + realStart.level() : ""}</span>
-					<span class="text-[11px] text-base-content/50">${koRs ? "같은 스킬·전직 " + realStart.sample() + "명 중 중앙값에 가장 가까운 빌드 · 이 결과와 같은 가정(보스·충전·전투 버프)에 그 빌드의 운용 설정(공명·낙인 부착 등)을 더해 다시 계산" : "closest to the median of " + realStart.sample() + " real builds · recalculated under the same assumptions (boss, charges, combat buffs) plus the build's own settings (resonance, attached brands, …)"}</span>
+					<span class="text-[11px] text-base-content/60">${koRs ? "같은 스킬·전직 " + realStart.sample() + "명 중 중앙값에 가장 가까운 빌드 · 이 결과와 같은 가정(보스·충전·전투 버프)에 그 빌드의 운용 설정(공명·낙인 부착 등)을 더해 다시 계산" : "closest to the median of " + realStart.sample() + " real builds · recalculated under the same assumptions (boss, charges, combat buffs) plus the build's own settings (resonance, attached brands, …)"}</span>
 				</div>
+				<%-- 좁은 화면 · 큰 글꼴(320px + 200%)에서 표 최소 폭이 부모를 넓혀 화면이 가로로 넘쳤다(10-03 nightly) — 표만 가로 스크롤 --%>
+				<div class="overflow-x-auto max-w-full">
 				<table class="table table-xs w-auto">
 					<thead>
 						<tr><th></th><th class="text-right">${koRs ? "이 결과" : "This result"}</th><th class="text-right">${koRs ? "실빌드 출발" : "Real build"}</th></tr>
@@ -481,6 +492,7 @@
 						@endfor
 					</tbody>
 				</table>
+				</div>
 				<div class="text-xs text-base-content/60">${koRs
 					? "자동 최적화는 빈 빌드에서 하나씩 고르기 때문에, 실빌드 생존력의 원천인 주얼·고유 조합(타임리스 주얼 등)에 닿지 못할 수 있습니다. 실빌드에서 출발해 업그레이드 가이드로 다듬으면 그 조합을 유지한 채 개선할 수 있습니다."
 					: "The optimizer picks items one at a time from an empty build, so it can miss the jewel/unique combinations (e.g. timeless jewels) real builds rely on for survivability. Starting from a real build and refining it with the upgrade guide keeps those combinations."}</div>
@@ -496,9 +508,10 @@
 			     title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "레어 아이템의 필수 옵션 N개만 최상위 티어로 확보하고 나머지는 중위 티어라고 가정했을 때의 값. 실제 제작 난이도에 가까운 현실적 기대치." : "Value assuming only N essential rare mods reach top tier, the rest are mid-tier"}">
 				<span class="font-semibold text-base-content/70">${net.luversof.web.gate.poe.PoeText.isKorean() ? "어픽스 예산(현실적 제작)" : "Affix budget (realistic)"}</span>
 				@for(var point : result.affixBudget())
-					<span class="flex items-baseline gap-1">
-						<span class="text-[11px] text-base-content/50">${net.luversof.web.gate.poe.PoeText.isKorean() ? "필수 " + point.essentialCount() + "개" : point.essentialCount() + " essential"}</span>
-						<span class="font-mono text-warning">${point.value()}</span>
+					<%-- 칩이 줄바꿈 없는 flex 라 영어 320px + 글꼴 200% 에서 21px 넘쳤다(10-04 야간 점검) — 칩 안에서도 줄바꿈 · 숫자는 어디서든 --%>
+					<span class="flex min-w-0 flex-wrap items-baseline gap-x-1">
+						<span class="text-[11px] text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "필수 " + point.essentialCount() + "개" : point.essentialCount() + " essential"}</span>
+						<span class="min-w-0 font-mono text-warning [overflow-wrap:anywhere]">${point.value()}</span>
 					</span>
 				@endfor
 			</div>
@@ -508,12 +521,12 @@
 			<%-- 오프셋(공격) 스탯이 0이면 숨김 — DoT/RF 빌드에서 총DPS·평균피해·공격속도·치명타 0 등은 노이즈(PoB 도 미표시).
 			     저항·방어·생명·순생명재생 등 방어/유틸 스탯은 0/음수도 중요하므로 항상 표시. --%>
 			!{ java.util.Set<String> hideIfZero = java.util.Set.of("totaldps", "averagedamage", "speed", "energyshield", "mana", "critchance"); }
-			<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+			<div class="grid grid-cols-[repeat(auto-fit,minmax(min(8rem,100%),1fr))] sm:grid-cols-4 lg:grid-cols-7 gap-2">
 				@for(PoeBuild.PlayerStat stat : result.stats())
 					!{ String sv = stat.value() == null ? "" : stat.value().replace(",", "").trim(); boolean isZero = sv.equals("0") || sv.equals("0.0") || sv.equals("0.00"); }
 					@if(!(hideIfZero.contains(stat.key()) && isZero))
 						<div class="rounded-box bg-base-100 px-3 py-2">
-							<div class="text-[11px] font-semibold text-base-content/50">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
+							<div class="text-[11px] font-semibold text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
 							<div class="text-sm font-bold font-mono ${statColor.apply(stat.key(), stat.value())}">${stat.value()}</div>
 						</div>
 					@endif
@@ -531,11 +544,11 @@
 					"chaos", "poe-el-chaos");
 			}
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.defense")}</span>
-				<div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+				<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.defense")}</span>
+				<div class="grid grid-cols-[repeat(auto-fit,minmax(min(5.5rem,100%),1fr))] sm:grid-cols-5 gap-2">
 					@for(PoeOptimizeResult.DefenseHit hit : result.defenseHits())
 						<div class="rounded-box bg-base-100 px-3 py-2">
-							<div class="text-[11px] font-semibold ${defColor.getOrDefault(hit.type(), "text-base-content/50")}">${MessageUtil.getMessage("poe.sim.opt.result.defense." + hit.type())}</div>
+							<div class="text-[11px] font-semibold ${defColor.getOrDefault(hit.type(), "text-base-content/60")}">${MessageUtil.getMessage("poe.sim.opt.result.defense." + hit.type())}</div>
 							<div class="text-sm font-bold font-mono">${hit.value()}</div>
 						</div>
 					@endfor
@@ -546,12 +559,12 @@
 		<%-- 보조젬 스킬 레이어 — 젬 아이콘 + 인게임 호버 툴팁(#poePreview) + 젬 상세 링크(젬 목록/랭킹과 동일 파리티) --%>
 		@if(!result.supports().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.supports")}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.supports")}</span>
 				@for(PoeOptimizeResult.SupportPick support : result.supports())
 					@if(support.slug() != null && !support.slug().isBlank())
 						<a class="poe-hover inline-flex items-center gap-1 badge badge-info badge-outline badge-sm cursor-pointer pl-1"
 						   href="/poe/gems/${support.slug()}"
-						   hx-get="/poe/htmx/gems/detail?slug=${support.slug()}"
+						   hx-get="/poe/htmx/gems/detail?slug=${support.slug()}${net.luversof.web.gate.poe.PoeText.gemLevelParam(support.name())}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
 							<img src="/poe-assets/gems/${support.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</a>
 					@else
@@ -564,7 +577,7 @@
 		<%-- 오라/헤럴드 스킬 레이어 — 보조젬과 동형 --%>
 		@if(result.auras() != null && !result.auras().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.auras")}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.auras")}</span>
 				@for(PoeOptimizeResult.SupportPick aura : result.auras())
 					@if(aura.slug() != null && !aura.slug().isBlank())
 						<a class="poe-hover inline-flex items-center gap-1 badge badge-success badge-outline badge-sm cursor-pointer pl-1"
@@ -581,10 +594,10 @@
 
 		@if(result.blockedAuras() != null && !result.blockedAuras().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1" title="${MessageUtil.getMessage("poe.sim.opt.result.blocked.hint")}">${MessageUtil.getMessage("poe.sim.opt.result.blocked")}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1" title="${MessageUtil.getMessage("poe.sim.opt.result.blocked.hint")}">${MessageUtil.getMessage("poe.sim.opt.result.blocked")}</span>
 				@for(PoeOptimizeResult.BlockedAura blocked : result.blockedAuras())
-					<span class="badge badge-sm badge-ghost text-base-content/50 line-through decoration-base-content/30">${net.luversof.web.gate.poe.PoeText.name(blocked.nameKo(), blocked.name())}</span>
-					<span class="text-[10px] font-mono text-base-content/40 -ml-1">−${blocked.shortfall()}</span>
+					<span class="badge badge-sm badge-ghost text-base-content/60 line-through decoration-base-content/30">${net.luversof.web.gate.poe.PoeText.name(blocked.nameKo(), blocked.name())}</span>
+					<span class="text-[10px] font-mono text-base-content/60 -ml-1">−${blocked.shortfall()}</span>
 				@endfor
 			</div>
 		@endif
@@ -621,7 +634,7 @@
 				<div class="font-semibold">${MessageUtil.getMessage("poe.sim.opt.result.minionitems")}</div>
 				<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.minionitems.hint")}</div>
 				@for(PoeOptimizeResult.MinionItem item : result.minionItems())
-					<div class="font-mono text-base-content/70">${item.slotKo()} — ${item.baseType()}<span class="text-base-content/50"> · ${String.join(" / ", item.modLines())}</span></div>
+					<div class="font-mono text-base-content/70">${item.slotKo()} — ${item.baseType()}<span class="text-base-content/60"> · ${String.join(" / ", item.modLines())}</span></div>
 				@endfor
 			</div>
 		@endif
@@ -630,7 +643,7 @@
 		     (실측: 가드 층 하나로 최약 최대피격 +199%, DPS 비용 0). 추가 스킬과 동형 표기. --%>
 		@if(result.guardGems() != null && !result.guardGems().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "가드 스킬" : "Guard skill"}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "가드 스킬" : "Guard skill"}</span>
 				@for(PoeOptimizeResult.SupportPick g : result.guardGems())
 					@if(g.slug() != null && !g.slug().isBlank())
 						<a class="poe-hover inline-flex items-center gap-1 badge badge-info badge-outline badge-sm cursor-pointer pl-1"
@@ -650,7 +663,7 @@
 		     신성모독 링크(마나 예약)와 장갑 부패 임플리싯(예약 0). --%>
 		@if(result.curseGems() != null && !result.curseGems().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "저주" : "Curse"}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "저주" : "Curse"}</span>
 				@for(PoeOptimizeResult.SupportPick c : result.curseGems())
 					@if(c.slug() != null && !c.slug().isBlank())
 						<a class="poe-hover inline-flex items-center gap-1 badge badge-info badge-outline badge-sm cursor-pointer pl-1"
@@ -666,7 +679,7 @@
 		@endif
 		@if(result.curseOnHit() != null)
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "적중 시 저주" : "Curse on hit"}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "적중 시 저주" : "Curse on hit"}</span>
 				@if(result.curseOnHit().slug() != null && !result.curseOnHit().slug().isBlank())
 					<a class="poe-hover inline-flex items-center gap-1 badge badge-info badge-outline badge-sm cursor-pointer pl-1"
 					   href="/poe/gems/${result.curseOnHit().slug()}"
@@ -676,7 +689,7 @@
 				@else
 					<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(result.curseOnHit().nameKo(), result.curseOnHit().name())}</span>
 				@endif
-				<span class="text-xs text-base-content/50">${net.luversof.web.gate.poe.PoeText.isKorean() ? "장갑 부패 임플리싯 (마나 예약 없음)" : "gloves corrupted implicit (no reservation)"}</span>
+				<span class="text-xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "장갑 타락 임플리싯 (마나 예약 없음)" : "gloves corrupted implicit (no reservation)"}</span>
 			</div>
 		@endif
 
@@ -710,7 +723,7 @@
 		}
 		@if(!pjMajor.isBlank() || !pjMinor.isBlank())
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "판테온(채택)" : "Pantheon (picked)"}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1">${net.luversof.web.gate.poe.PoeText.isKorean() ? "판테온(채택)" : "Pantheon (picked)"}</span>
 				@if(!pjMajor.isBlank())
 					<span class="badge badge-secondary badge-outline badge-sm">${pjMajor}</span>
 				@endif
@@ -723,7 +736,7 @@
 		<%-- 추가 스킬 레이어 — 보조젬/오라와 동형(젬 아이콘 + 인게임 호버 툴팁 #poePreview + 젬 상세 링크) --%>
 		@if(result.additionalSkills() != null && !result.additionalSkills().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.extraskills")}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1">${MessageUtil.getMessage("poe.sim.opt.result.extraskills")}</span>
 				@for(PoeOptimizeResult.SupportPick extra : result.additionalSkills())
 					@if(extra.slug() != null && !extra.slug().isBlank())
 						<a class="poe-hover inline-flex items-center gap-1 badge badge-accent badge-outline badge-sm cursor-pointer pl-1"
@@ -740,12 +753,12 @@
 							result.additionalSkillSupports() != null ? result.additionalSkillSupports().get(extra.slug()) : null;
 					}
 					@if(extraLinks != null && !extraLinks.isEmpty())
-						<span class="text-base-content/40 text-xs">→</span>
+						<span class="text-base-content/60 text-xs">→</span>
 						@for(PoeOptimizeResult.SupportPick linkGem : extraLinks)
 							@if(linkGem.slug() != null && !linkGem.slug().isBlank())
 								<a class="poe-hover inline-flex items-center gap-1 badge badge-outline badge-sm cursor-pointer pl-1"
 								   href="/poe/gems/${linkGem.slug()}"
-								   hx-get="/poe/htmx/gems/detail?slug=${linkGem.slug()}"
+								   hx-get="/poe/htmx/gems/detail?slug=${linkGem.slug()}${net.luversof.web.gate.poe.PoeText.gemLevelParam(linkGem.name())}"
 								   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
 									<img src="/poe-assets/gems/${linkGem.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">${net.luversof.web.gate.poe.PoeText.name(linkGem.nameKo(), linkGem.name())}</a>
 							@else
@@ -760,7 +773,7 @@
 
 		@if(!result.treeNodeIds().isEmpty())
 			<div class="flex flex-wrap items-center gap-1.5">
-				<span class="text-xs font-semibold text-base-content/50 mr-1">${treeLabel}</span>
+				<span class="text-xs font-semibold text-base-content/60 mr-1">${treeLabel}</span>
 				!{java.util.List<Integer> nids = result.treeNotableIds();}
 				@for(int ni = 0; ni < dNotables.size(); ni++)
 					!{int nid = nids != null && ni < nids.size() ? nids.get(ni) : 0;}
@@ -778,12 +791,12 @@
 		<!-- 마스터리 선택 — 자동 채택된 효과("양손 숙련 — 적중 피해 60% 증가")가 안 보이면 어디서 온 수치인지 알 수 없다 -->
 		@if(result.treeMasteryLabels() != null && !result.treeMasteryLabels().isEmpty())
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/50">${net.luversof.web.gate.poe.PoeText.isKorean() ? "마스터리" : "Masteries"}</span>
+				<span class="text-xs font-semibold text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "마스터리" : "Masteries"}</span>
 				<div class="flex flex-col gap-1">
 					@for(String label : dMasteryLabels)
 						<div class="flex items-baseline gap-2 text-sm">
 							<span class="badge badge-outline badge-sm shrink-0 w-16 justify-center border-sky-400 text-sky-700 dark:text-sky-300">◇ ${net.luversof.web.gate.poe.PoeText.isKorean() ? "숙련" : "Mastery"}</span>
-							<span class="text-sky-700 dark:text-sky-300 whitespace-normal">${label}</span>
+							<span class="min-w-0 text-sky-700 dark:text-sky-300 whitespace-normal [overflow-wrap:anywhere]">${label}</span>
 						</div>
 					@endfor
 				</div>
@@ -793,14 +806,14 @@
 		<!-- 문신 구성 — 문신은 패시브를 통째로 교체하므로, 안 보이면 트리 노드 목록과 실제 계산이 어긋나 보인다 -->
 		@if(result.treeTattooLabels() != null && !result.treeTattooLabels().isEmpty())
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/50">${net.luversof.web.gate.poe.PoeText.isKorean() ? "문신" : "Tattoos"}</span>
+				<span class="text-xs font-semibold text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "문신" : "Tattoos"}</span>
 				<div class="flex flex-col gap-1">
 					@for(String label : dTattooLabels)
 						!{
 							String tattooNameKo = label.contains(" ×") ? label.substring(0, label.lastIndexOf(" ×")) : label;
 							String tattooIconPath = tattooIcons != null ? tattooIcons.get(tattooNameKo) : null;
 						}
-						<div class="flex items-center gap-2 text-sm">
+						<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm [overflow-wrap:anywhere]">
 							<span class="badge badge-outline badge-sm shrink-0 w-16 justify-center border-purple-400 text-purple-700 dark:text-purple-300">${net.luversof.web.gate.poe.PoeText.isKorean() ? "문신" : "Tattoo"}</span>
 							@if(tattooIconPath != null)
 								<img src="/poe-assets/${tattooIconPath}" class="w-5 h-5 object-contain shrink-0" alt="" loading="lazy" onerror="this.remove()">
@@ -820,7 +833,7 @@
 		<!-- 클러스터 주얼 구성 — 노터블만 보이면 "어떤 주얼로 얻은 건지"를 알 수 없다 -->
 		@if(result.treeClusters() != null && !result.treeClusters().isBlank())
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/50">${net.luversof.web.gate.poe.PoeText.isKorean() ? "클러스터" : "Clusters"}</span>
+				<span class="text-xs font-semibold text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "클러스터" : "Clusters"}</span>
 				<div class="flex flex-col gap-1">
 					@for(String entry : result.treeClusters().split(","))
 						!{
@@ -829,7 +842,7 @@
 							String sizeLabel = net.luversof.web.gate.poe.PoeText.isKorean() ? sizeKo : (parts.length > 1 ? parts[1] : "");
 							String nodeCount = parts.length > 2 ? parts[2] : "";
 						}
-						<div class="flex items-center gap-2 text-sm">
+						<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm [overflow-wrap:anywhere]">
 							<span class="badge badge-secondary badge-outline badge-sm shrink-0 w-16 justify-center">${sizeLabel}</span>
 							<span class="text-base-content/80">${nodeCount}${net.luversof.web.gate.poe.PoeText.isKorean() ? "노드" : ""}@if(parts.length > 4 && !parts[4].isBlank()) ·
 								@for(String notable : parts[4].split("[|]"))
@@ -844,19 +857,25 @@
 
 		@if(result.jewels() != null && !result.jewels().isEmpty())
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.jewels")}</span>
+				<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.jewels")}</span>
 				<div class="flex flex-col gap-1">
 					@for(PoeOptimizeResult.SupportPick jewel : result.jewels())
-						<div class="flex items-center gap-2 text-sm">
+						<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm [overflow-wrap:anywhere]">
 							<span class="badge badge-outline badge-sm shrink-0 w-16 justify-center border-cyan-500/40 text-cyan-500">${net.luversof.web.gate.poe.PoeText.isKorean() ? "주얼" : "Jewel"}</span>
 							@if(jewel.slug() != null && !jewel.slug().isBlank())
 								<%-- 유니크 주얼 — 장비 유니크와 동일한 인게임 호버 툴팁(#poePreview) + 상세 페이지 링크(아이템 레이어 파리티) --%>
+								!{ String jKey = net.luversof.web.gate.poe.controller.PoeHtmxController.jewelOverrideKey(jewel.slug(), jewel.linesEn()); net.luversof.web.gate.poe.dto.PoeUniqueItem jOv = jewelOverrides == null ? null : jewelOverrides.get(jKey); }
+								@if(jOv != null)
+									<%-- 고른 옵션 툴팁(인라인, C154) — 일반 상세는 감시자의 눈 후보 전부 · 금단 기본 노터블을 띄웠다 --%>
+									<a class="poe-hover font-medium text-cyan-500 link-hover cursor-pointer" href="/poe/uniques/${jewel.slug()}" data-jewel-override>${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}<span data-poe-tip class="hidden">@template.poe.htmx.uniqueDetail(item = jOv, base = jewelOverrideBases == null ? null : jewelOverrideBases.get(jKey), variant = null)</span></a>
+								@else
 								<a class="poe-hover font-medium text-cyan-500 link-hover cursor-pointer"
 								   href="/poe/uniques/${jewel.slug()}"
 								   hx-get="/poe/htmx/uniques/detail?slug=${jewel.slug()}"
 								   hx-target="#poePreview"
 								   hx-trigger="mouseenter delay:100ms"
 								   hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(jewel.nameKo(), jewel.name())}</a>
+								@endif
 								<%-- 감시자의 눈·금단처럼 **모드가 빌드마다 다른** 유니크는 상세 페이지가 일반 정보만 보여준다
 								     — 우리가 고른 모드(오라 모드 쌍 / 부여 노터블)를 그 자리에 함께 적어야 어떤 물건을
 								     구해야 하는지 알 수 있다. --%>
@@ -891,10 +910,10 @@
 		@if(!result.items().isEmpty())
 			!{ boolean resultHasFlask = result.items().stream().anyMatch(i -> i.slot() != null && i.slot().startsWith("Flask")); }
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.items")}</span>
+				<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.items")}</span>
 				<%-- 플라스크 상시 활성은 PoB 빌드 계획의 표준 가정 — 명중 +2000 처럼 가정은 화면에 드러낸다(표시=실제) --%>
 				@if(resultHasFlask)
-					<span class="ml-2 text-[11px] text-base-content/40">${net.luversof.web.gate.poe.PoeText.isKorean() ? "· 플라스크는 상시 활성 가정(PoB 표준)" : "· Flasks assumed permanently active"}</span>
+					<span class="ml-2 text-[11px] text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "· 플라스크는 상시 활성 가정(PoB 표준)" : "· Flasks assumed permanently active"}</span>
 				@endif
 				<%-- 인게임 캐릭터창식 페이퍼돌 — 슬롯을 실제 게임 배치로. 유니크는 slug 아이콘, 레어는 이름(테두리색=레어리티).
 				     호버는 상세 리스트와 동일(유니크=#poePreview, 레어=베이스 상세 링크). 인증 슬롯 프레임 텍스처는 미추출이라 CSS 게임풍 박스로 대체. --%>
@@ -927,7 +946,7 @@
 							!{ boolean dRare = "RARE".equals(di.rarity()); String dName = net.luversof.web.gate.poe.PoeText.name(di.nameKo(), di.name()); String pos = "left:" + ds[1] + "%;top:" + ds[2] + "%;width:" + ds[3] + "%;height:" + ds[4] + "%"; boolean smallSlot = Double.parseDouble(ds[3]) < 10; }
 							@if(dRare)
 								<%-- 레어: 베이스 아이콘 + 인게임 호버 툴팁. data-poe-tip 자식을 common.ts 가 #poePreview 로 복제해 띄운다(슬롯 overflow 클리핑 회피). 유니크와 동일한 레이어 파리티. --%>
-								!{ java.util.List<String> dLines = net.luversof.web.gate.poe.PoeText.isKorean() || di.modLinesEn() == null || di.modLinesEn().isEmpty() ? di.modLines() : di.modLinesEn(); }
+								!{ boolean dKo = net.luversof.web.gate.poe.PoeText.isKorean() || di.modLinesEn() == null || di.modLinesEn().isEmpty(); java.util.List<String> dLines = dKo ? di.modLines() : di.modLinesEn(); }
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="${di.slug() != null ? "/poe/items/" + di.slug() : "#"}" title="${dName}">
 									@if(di.slug() != null)
 										<img src="/poe-assets/items/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
@@ -935,14 +954,24 @@
 									@else
 										<span class="max-h-full overflow-hidden text-[8px] font-semibold poe-name-rare text-center leading-[1.15] drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)]">${dName}</span>
 									@endif
-									<span data-poe-tip class="hidden">@template.poe.htmx.resultRareTooltip(name = di.name(), nameKo = di.nameKo(), modLines = dLines, modTiers = di.modTiers(), base = rareBases == null ? null : rareBases.get(di.slug()))</span>
+									<span data-poe-tip class="hidden">@template.poe.htmx.resultRareTooltip(name = di.name(), nameKo = di.nameKo(), modLines = dLines, modTiers = di.modTiers(), base = rareBases == null ? null : rareBases.get(di.slug()), reminders = dKo ? di.modRemindersKo() : di.modReminders())</span>
 								</a>
 							@else
+								!{ net.luversof.web.gate.poe.dto.PoeUniqueItem dOv = uniqueOverrides == null ? null : uniqueOverrides.get(di.slot()); }
+								@if(dOv != null)
+									<%-- 삿된 · 변형: 실제 장착 옵션 툴팁을 인라인으로(레어 슬롯과 같은 data-poe-tip 복제, C152) --%>
+									<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}" title="${dName}" data-unique-override>
+										<img src="/poe-assets/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
+										<span class="hidden text-[8px] font-semibold poe-name-unique text-center leading-tight">${dName}</span>
+										<span data-poe-tip class="hidden">@template.poe.htmx.uniqueDetail(item = dOv, base = uniqueOverrideBases == null ? null : uniqueOverrideBases.get(di.slot()), variant = null)</span>
+									</a>
+								@else
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}"
 								   hx-get="/poe/htmx/uniques/detail?slug=${di.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML" title="${dName}">
 									<img src="/poe-assets/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden')">
 									<span class="hidden text-[8px] font-semibold poe-name-unique text-center leading-tight">${dName}</span>
 								</a>
+								@endif
 							@endif
 						@endif
 					@endfor
@@ -951,12 +980,14 @@
 					@for(PoeOptimizeResult.ItemPick item : result.items())
 						!{
 							// 로케일별 모드 라인 — 결과 페이지가 유일한 ko 전용 표면이었던 갭 해소(EN 은 modLinesEn, 없으면 ko 폴백)
-							java.util.List<String> shownModLines =
-								net.luversof.web.gate.poe.PoeText.isKorean() || item.modLinesEn() == null || item.modLinesEn().isEmpty()
-									? item.modLines() : item.modLinesEn();
+							boolean shownKo = net.luversof.web.gate.poe.PoeText.isKorean() || item.modLinesEn() == null || item.modLinesEn().isEmpty();
+							java.util.List<String> shownModLines = shownKo ? item.modLines() : item.modLinesEn();
+							// 줄별 리마인더(10-04 C150) — 보이는 줄과 길이가 같을 때만
+							java.util.List<java.util.List<String>> shownRems = shownKo ? item.modRemindersKo() : item.modReminders();
+							if (shownRems != null && shownRems.size() != shownModLines.size()) shownRems = null;
 						}
 						<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
-							<span class="badge badge-ghost badge-sm shrink-0 w-16 justify-center">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</span>
+							<span class="badge badge-ghost badge-sm shrink-0 w-16 justify-center whitespace-nowrap">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</span>
 							@if("RARE".equals(item.rarity()))
 								<%-- 레어의 slug = 베이스 아이템 상세(모드 풀·에센스·작업대) — 결과에서 제작 정보로 바로 이동.
 								     호버 = 인게임식 툴팁(유니크 호버 레이어 파리티) — 데이터가 이미 여기 있어 서버 호출 없이 CSS 로만 띄운다 --%>
@@ -969,61 +1000,27 @@
 									<%-- 거래소 검색(사용자 요청) — 최상위(전체 모드, 해당 티어 최저 롤)와 실속형(필수 모드만, T2 이상) 두 링크 --%>
 									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
 											<a class="badge badge-xs badge-outline badge-info align-middle ml-1" target="_blank" rel="noopener"
-										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQuery(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   href="${net.luversof.web.gate.poe.PoeText.tradeUrl(item.tradeQuery())}"
 										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "전체 옵션 · 표시 티어 기준으로 거래소 검색" : "Search trade — all mods at shown tier"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소 최상위" : "Trade top"}</a>
 									@endif
 									@if(item.tradeQueryBudget() != null && !item.tradeQueryBudget().isBlank())
 										<a class="badge badge-xs badge-outline badge-success align-middle ml-1" target="_blank" rel="noopener"
-										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQueryBudget(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   href="${net.luversof.web.gate.poe.PoeText.tradeUrl(item.tradeQueryBudget())}"
 										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "중요 옵션만 · 2티어 이상으로 거래소 검색(실속형)" : "Search trade — essential mods at tier 2+"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소 실속" : "Trade budget"}</a>
 									@endif
-									<div class="poe-tooltip poe-rar-rare w-80 shadow-2xl hidden group-hover:block absolute left-0 top-full z-30" data-rare-tooltip>
-										<div class="poe-tt-band poe-tt-band-2">
-											<div class="text-center font-bold text-[15px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}</div>
-											<div class="text-center text-[13px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${MessageUtil.getMessage("poe.sim.opt.result.rare")}</div>
-										</div>
-										!{
-											// (엘드리치) 임플리싯은 구분선 위(인게임 배치), 나머지는 아래 — 마커별 인게임 배색. EN 마커도 인식
-											java.util.List<String> rtImplicits = new java.util.ArrayList<>();
-											java.util.List<String> rtExplicits = new java.util.ArrayList<>();
-											java.util.List<String> rtExplicitTiers = new java.util.ArrayList<>();
-											java.util.List<String> itemTiers = item.modTiers();
-											for (int mi = 0; mi < shownModLines.size(); mi++) {
-												String ml = shownModLines.get(mi);
-												String mlTier = itemTiers != null && mi < itemTiers.size() ? itemTiers.get(mi) : null;
-												if (ml.startsWith("(엘드리치)") || ml.startsWith("(eldritch)") || ml.startsWith("(총주교)") || ml.startsWith("(포식자)") || ml.startsWith("(exarch)") || ml.startsWith("(eater)")) rtImplicits.add(ml.substring(ml.indexOf(") ") + 2));
-												else { rtExplicits.add(ml); rtExplicitTiers.add(mlTier); }
-											}
-										}
-										@if(!rtImplicits.isEmpty())
-											<div class="poe-tt-sepimg"></div>
-											<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
-												@for(String ml : rtImplicits)
-													<div class="text-[#d0a2f7]">${ml}</div>
-												@endfor
-											</div>
-										@endif
-										<div class="poe-tt-sepimg"></div>
-										<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
-											@for(int rti = 0; rti < rtExplicits.size(); rti++)
-												!{
-													String ml = rtExplicits.get(rti);
-													int rtEnd = ml.startsWith("(") ? ml.indexOf(") ") : -1;
-													String rtMk = rtEnd > 0 ? ml.substring(1, rtEnd) : null;
-													String rtRest = rtMk != null ? ml.substring(rtEnd + 2) : ml;
-													String rtTier = rti < rtExplicitTiers.size() ? rtExplicitTiers.get(rti) : null;
-												}
-												<div class="text-[#8888ff]">@if(rtMk != null)<span class="text-[10px] text-white/35">(${rtMk})</span> @endif@if(rtTier != null && !rtTier.isEmpty())<span class="text-[10px] font-mono text-white/40 mr-0.5">${rtTier}</span> @endif${rtRest}</div>
-											@endfor
-										</div>
-									</div>
+									<%-- 목록 행 툴팁도 페이퍼돌과 같은 조각(10-05 C151 — 따로 짜인 사본이라 요구 사항 줄 · 영향력/엘드리치 심볼 · 품목 분류 · 수치 강조가 빠져 있었다) --%>
+									@template.poe.htmx.resultRareTooltip(name = item.name(), nameKo = item.nameKo(), modLines = shownModLines, modTiers = item.modTiers(), base = rareBases == null ? null : rareBases.get(item.slug()), reminders = shownRems, rowTip = true)
 								</span>
 								@if(!shownModLines.isEmpty())
 									@template.poe.htmx.resultModLines(modLines = shownModLines, modTiers = item.modTiers())
 								@endif
 							@else
 								<%-- 유니크: 목록과 같은 호버 레이어(인게임 툴팁) + 상세 페이지 링크 — 결과에서 바로 아이템을 확인할 수 있게 --%>
-								@if(item.slug() != null)
+								!{ net.luversof.web.gate.poe.dto.PoeUniqueItem rowOv = uniqueOverrides == null || item.slot() == null ? null : uniqueOverrides.get(item.slot()); }
+								@if(item.slug() != null && rowOv != null)
+									<%-- 삿된 · 변형: 실제 장착 옵션 툴팁(인라인, C152) — 일반 상세는 원래 옵션 · 기본 변형을 띄웠다 --%>
+									<a class="poe-hover font-semibold poe-name-unique link-hover cursor-pointer" href="/poe/uniques/${item.slug()}" data-unique-override>${net.luversof.web.gate.poe.PoeText.name(item.nameKo(), item.name())}<span data-poe-tip class="hidden">@template.poe.htmx.uniqueDetail(item = rowOv, base = uniqueOverrideBases == null ? null : uniqueOverrideBases.get(item.slot()), variant = null)</span></a>
+								@elseif(item.slug() != null)
 									<a class="poe-hover font-semibold poe-name-unique link-hover cursor-pointer"
 									   href="/poe/uniques/${item.slug()}"
 									   hx-get="/poe/htmx/uniques/detail?slug=${item.slug()}"
@@ -1046,7 +1043,7 @@
 									<%-- 유니크 거래소 링크(사용자 요청) — 고유명 검색 + 즉시 구입. 티어 개념이 없어 배지 하나 --%>
 									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
 										<a class="badge badge-xs badge-outline badge-info align-middle ml-1" target="_blank" rel="noopener"
-										   href="https://poe.game.daum.net/trade/search?q=${java.net.URLEncoder.encode(item.tradeQuery(), java.nio.charset.StandardCharsets.UTF_8)}"
+										   href="${net.luversof.web.gate.poe.PoeText.tradeUrl(item.tradeQuery())}"
 										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색" : "Search trade for this unique"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소" : "Trade"}</a>
 									@endif
 								@if(!shownModLines.isEmpty())
@@ -1061,7 +1058,7 @@
 
 		@if(!result.tierComparisons().isEmpty())
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.tiers")}</span>
+				<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.tiers")}</span>
 				<div class="overflow-x-auto rounded-box bg-base-100">
 					<table class="table table-xs">
 						<thead>
@@ -1089,7 +1086,7 @@
 
 		@if(result.scenarioMatrix() != null && !result.scenarioMatrix().isEmpty())
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.matrix")}</span>
+				<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.matrix")}</span>
 				<div class="overflow-x-auto rounded-box bg-base-100">
 					<table class="table table-xs">
 						<thead>
@@ -1115,12 +1112,20 @@
 
 		<div class="space-y-1">
 			<div class="flex items-center gap-2">
-				<div class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.sim.opt.result.code")}</div>
+				<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.code")}</div>
 				<%-- 클립보드 복사 — PoB 에 붙여넣는 게 이 코드의 유일한 용도라 원클릭이 맞다 --%>
 				<%-- 공용 복사(common.ts [data-copy-target]) — PoE2 시뮬 결과와 같은 동작(10-02: 예전엔 인라인 onclick) --%>
 				<button type="button" class="btn btn-ghost btn-xs" id="poePobCopy" data-copy-target="#poePobCode" data-copied-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사됨 ✓" : "Copied ✓"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사" : "Copy"}</button>
 			</div>
 			<textarea id="poePobCode" readonly rows="3" class="textarea textarea-bordered w-full font-mono text-xs leading-5" aria-label="${MessageUtil.getMessage("poe.sim.opt.result.code")}">${result.pobCode()}</textarea>
 		</div>
+		<%-- 빌드 화면에서 열기(10-08, PoE2 시뮬 결과와 같은 자리 · 문구 — 코드 칸 아래) — 거래소 링크 · 업그레이드 가이드 · 툴팁은 빌드 화면이 준다 --%>
+		<div class="flex flex-wrap items-center gap-2">
+			<a class="btn btn-primary btn-sm" href="/poe/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${net.luversof.web.gate.poe.PoeText.isKorean() ? "빌드 화면에서 열기" : "Open in build view"}</a>
+			<span class="text-xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아이템마다 거래소 링크 · 업그레이드 가이드는 빌드 화면에서" : "Trade links per item and the upgrade guide are on the build view"}</span>
+		</div>
 	</div>
+@else
+	<%-- PoE2 시뮬 결과(poe2/htmx/simResult.jte)와 같은 안내 --%>
+	<div class="alert alert-warning text-sm">${net.luversof.web.gate.poe.PoeText.isKorean() ? "결과를 찾지 못했습니다(삭제됐거나 오래돼 정리됐습니다)." : "Result not found (deleted or pruned)."}</div>
 @endif

@@ -28,14 +28,14 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-sm text-base-content/50">${ko ? "클러스터 주얼 노터블 사전 — " : "Cluster jewel notables — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터의 클러스터 소켓에서 구성 →" : "configure in tree editor →"}</a></span>
-				<span class="text-xs font-mono text-base-content/40">${notables.size()}</span>
+				<span class="text-sm text-base-content/60">${ko ? "클러스터 주얼 노터블 사전 — " : "Cluster jewel notables — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터의 클러스터 소켓에서 구성 →" : "configure in tree editor →"}</a></span>
+				<span class="text-xs font-mono text-base-content/60">${notables.size()}</span>
 			</div>
 
 			<div class="flex flex-wrap items-center gap-1.5 rounded-2xl bg-base-100 p-3 shadow-sm">
 				<input id="poeClusterSearch" type="search" class="input input-sm input-bordered w-full sm:w-72"
 				       placeholder="${ko ? "노터블 검색 (예: 생명력, 투사체)" : "Search notables"}" autocomplete="off">
-				<span id="poeClusterCount" class="text-xs font-mono text-base-content/50"></span>
+				<span id="poeClusterCount" class="text-xs font-mono text-base-content/60"></span>
 			</div>
 
 			<div class="grid gap-2 md:grid-cols-2 [&>*]:min-w-0" id="poeClusterList">
@@ -52,7 +52,7 @@
 							@endif
 							<%-- 인게임 색 관례: 노터블 **이름**은 툴팁 제목색(흰색), **스탯 줄**이 모드 파랑(#8888ff).
 							     여기만 반대로 이름이 파랑·스탯이 본문색이라 트리 노드 팝업(.poe-popup-title/.poe-popup-stat)과 어긋났다. --%>
-							<span class="poe-entry-name font-semibold">${PoeText.name(n.nameKo(), n.name())}</span>
+							<span class="poe-entry-name font-semibold min-w-0 [overflow-wrap:anywhere]">${PoeText.name(n.nameKo(), n.name())}</span>
 							<span class="hidden">${n.name()}</span>
 						</div>
 						!{List<String> clusterLines = ko && n.statsKo() != null && !n.statsKo().isEmpty() ? n.statsKo() : n.stats();}
@@ -67,11 +67,11 @@
 					var search = document.getElementById("poeClusterSearch");
 					var count = document.getElementById("poeClusterCount");
 					function apply() {
-						var q = (search.value || "").trim().toLowerCase();
+						var q = (search.value || "").trim().toLowerCase().replace(/[ \t\u00a0]+/g, ""); // 띄어쓰기 무시(10-02 C25)
 						var rows = document.querySelectorAll("#poeClusterList [data-cluster-notable]");
 						var shown = 0;
 						rows.forEach(function (r) {
-							var hit = !q || r.textContent.toLowerCase().indexOf(q) !== -1;
+							var hit = !q || r.textContent.toLowerCase().replace(/[ \t\u00a0]+/g, "").indexOf(q) !== -1;
 							r.style.display = hit ? "" : "none";
 							if (hit) shown++;
 						});

@@ -16,6 +16,7 @@
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
 @param java.util.List<net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick> monthlyContributionPicks = java.util.List.of()
 <%-- 이 표의 '현재가'가 어느 날 종가인지. 배당 기준값(스냅샷 시점)과 시세는 시점이 다르다. --%>
+@param String monthlyDividendPriceBasisIntradayTime = null
 @param java.time.LocalDate monthlyDividendPriceBasisDate = null
 @param boolean monthlyDividendCurrentHoldingsUnavailable = false
 <%-- 종목 -> 저장된 지급 이력으로 계산한 1년 평균 과세표준 비중(관리 탭과 같은 계산). 저장값과 벌어지면 그 자리에서 알린다. --%>
@@ -232,7 +233,7 @@
 						<input type="hidden" name="direction" value="${monthlyDividendDirection}" />
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
-							<input name="symbol" type="text" list="monthlyDividendStockOptions" value="${symbolValue}" placeholder="O" class="input input-bordered w-full uppercase" required />
+							<input name="symbol" type="text" list="monthlyDividendStockOptions" value="${symbolValue}" placeholder="${MessageUtil.getMessage("stock.simulator.monthly.input.symbol.placeholder")}" class="input input-bordered w-full uppercase" required />
 						</label>
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.quantity")}</span></div>
@@ -277,7 +278,7 @@
 						@endif
 						<%-- 시세 기준일은 스냅샷 기준일과 다르다 - 실측 2026-09-11: 스냅샷 2026-08-19 인데 현재가는 2026-09-09 종가였다. --%>
 						@if(monthlyDividendPriceBasisDate != null)
-						<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", monthlyDividendPriceBasisDate.toString())}</div>
+						<div class="text-[11px] text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(monthlyDividendPriceBasisIntradayTime).replace("{0}", monthlyDividendPriceBasisDate.toString())}</div>
 						@endif
 						<%-- 원장 조회가 실패하면 어긋난 줄에 붙던 "현재 N" 표시가 통째로 사라진다. 표시가 없는 표는
 						     "원장과 같다" 로 읽히므로(실측 2026-09-12: 8 줄 중 3 줄이 표시를 달고 있었다) 실패를 밝힌다. --%>
@@ -417,6 +418,8 @@
 								@elseif(pick.runnerUpSymbol() != null)
 									<div class="mt-1 text-xs text-base-content/60" data-contribution-runner-up>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.runner.up"), pick.runnerUpName(), pick.runnerUpSymbol(), percentFormat.format(pick.runnerUpScore()))}</div>
 								@endif
+								<%-- 기준별 1위 비교(사용자 질문 2026-10-06) - 몇 개 기준이 이 종목을 꼽았는지 + 기준마다 1위. --%>
+								@template.stock.fragments.contributionCompare(pick = pick, percentFormat = percentFormat)
 							</li>
 						@endfor
 					</ul>

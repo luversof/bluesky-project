@@ -1,6 +1,6 @@
 // PoE2 일반(베이스) 아이템 → ~/.poe-gamedata/poe2/base-items.json
 // 목록은 PoB-PoE2 Data/Bases/*.lua 에서 `hidden = true` 가 아닌 것(미출시·내부 베이스 제외), 수치·한국어·아이콘 경로는 게임 테이블에서 붙인다.
-import { createDescriber, createTranslator, makeSlugger, pobFile, stripMarkup } from "./common2.mjs";
+import { CSD_CHAINS, createDescriber, createKeywordIndex, createTranslator, loadKeywords, makeSlugger, pobFile, stripMarkup } from "./common2.mjs";
 import { loadConfig, loadTable, writeJson } from "./paths.mjs";
 
 const FILES = [
@@ -88,6 +88,9 @@ const implicitLines = (baseIdx, lang) => {
 	return out;
 };
 
+// 키워드 설명(10-04 C113, 고유 C112 짝) — 암시 줄의 강조 용어를 원문 템플릿 색인으로 찾아 정의째
+const keywordById = loadKeywords(loadTable);
+const keywordIdsOf = createKeywordIndex(CSD_CHAINS.item);
 const slug = makeSlugger();
 const items = [];
 const classUse = new Map();
@@ -132,6 +135,8 @@ for (const file of FILES) {
 			subType: pb.subType,
 			icon: b.ItemVisualIdentity != null ? visuals[b.ItemVisualIdentity]?.DDSFile || null : null,
 		};
+		const kwIds = keywordIdsOf(implicits.map((x) => x.en)).filter((id) => keywordById.has(id));
+		if (kwIds.length) item.keywords = kwIds.map((id) => keywordById.get(id));
 		items.push(item);
 		// en = 게임 영어 분류 이름(ItemClasses.Name — "Fishing Rods" · "Traps") — 영어 화면 칩이 내부 id(FishingRod · TrapTool)로 나오지 않게(10-02 ZZ)
 		classUse.set(cls.Id, { key: cls.Id, ko: item.itemClassKo, en: cls.Name || cls.Id, category: item.category });

@@ -63,7 +63,13 @@ public record MonthlyDividendCatalogResponse(
      * 읽힌다.
      */
     BigDecimal totalExpenseRatioPct,
-    LocalDate listingDate) {
+    LocalDate listingDate,
+    /**
+     * 최근 12 회 안에서 분배금이 직전 회보다 줄어든 횟수와 견준 쌍의 수(2026-10-06, 추천 기준 "꾸준함"). 이력이 모자라면 둘 다 {@code null}
+     * &mdash; 0 을 보내면 "한 번도 안 줄었다" 로 읽힌다.
+     */
+    Integer payoutCutCount,
+    Integer payoutCutPairs) {
 
   /** 한 기간의 가격 · 합산 수익률(사용자 결정 2026-09-21). */
   public record PeriodReturnView(

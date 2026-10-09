@@ -35,7 +35,18 @@ export function runExtractor() {
 	const config = { ...loadConfig(), files: [] };
 	fs.writeFileSync(path.join(WORK_DIR, "config.json"), JSON.stringify(config, null, 2));
 	const cli = path.join(DAT_LIB, "dist", "cli", "run.js");
-	execSync(`"${process.execPath}" "${cli}"`, { stdio: "inherit", cwd: WORK_DIR });
+	// 추출기는 시작할 때 스키마를 github 에서 받고 다시 시도하지 않는다 — PoE1 파이프라인이 연결 시간 초과 한 번에 중간에서 멈춰
+	//   고유 아이템 데이터가 반쯤 쓰인 채 나갔다(10-03 C53). PoE2 도 같은 추출기라 3번까지 다시 한다(C54).
+	for (let attempt = 1; ; attempt++) {
+		try {
+			execSync(`"${process.execPath}" "${cli}"`, { stdio: "inherit", cwd: WORK_DIR });
+			return;
+		} catch (e) {
+			if (attempt >= 3) throw e;
+			console.warn(`추출기 실패(${attempt}/3) — 15초 뒤 다시: ${e.message.split(String.fromCharCode(10))[0]}`);
+			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15000);
+		}
+	}
 }
 
 /** 번들 로더를 직접 열어 파일을 받는다(같은 .cache 를 쓴다). 반환: { get(path) → Buffer|null, close } */

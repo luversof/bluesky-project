@@ -28,6 +28,7 @@
 @param BigDecimal currentPrice = java.math.BigDecimal.ZERO
 @param boolean currentPriceUnknown = false
 @param java.time.LocalDate priceBasisDate = null
+@param String priceBasisIntradayTime = null
 @param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
 @param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
@@ -97,6 +98,7 @@
 					currentPrice = currentPrice,
 					currentPriceUnknown = currentPriceUnknown,
 					priceBasisDate = priceBasisDate,
+					priceBasisIntradayTime = priceBasisIntradayTime,
 					evaluationAmount = evaluationAmount,
 					evaluationProfit = evaluationProfit,
 					realizedProfit = realizedProfit,

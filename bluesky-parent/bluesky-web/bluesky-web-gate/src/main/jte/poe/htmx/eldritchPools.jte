@@ -16,7 +16,7 @@
 		<div>
 			<h3 class="mb-2 flex items-baseline gap-2 font-bold">
 				<span class="text-amber-500">${ko ? faction.nameKo() : faction.name()}</span>
-				<span class="text-xs text-base-content/40">${fams.size()}</span>
+				<span class="text-xs text-base-content/60">${fams.size()}</span>
 			</h3>
 			<div class="space-y-2">
 				@for(PoeEldritch.Family fam : fams)
@@ -26,7 +26,7 @@
 					<%-- data-mod-family 병기 — 페이지 검색 필터(modFilterBar)가 엘드리치 카드에도 걸리게 --%>
 					<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-eldritch-family="${fam.key()}" data-mod-family="eld-${fam.key()}">
 						<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
-							<span class="text-xs text-base-content/30 font-mono shrink-0">${fam.tiers().size()}T</span>
+							<span class="text-xs text-base-content/60 font-mono shrink-0">${fam.tiers().size()}T</span>
 							<span class="min-w-0 flex-1">
 								@if(top != null)
 									@for(String line : (ko ? top.ko() : top.en()))
@@ -38,7 +38,7 @@
 						<div class="border-t border-base-200 px-3 py-1.5 space-y-0.5">
 							@for(PoeEldritch.Tier t : fam.tiers())
 								<div class="flex items-baseline gap-2 text-[12px]">
-									<span class="shrink-0 font-mono text-base-content/40 w-6">T${t.tier()}</span>
+									<span class="shrink-0 font-mono text-base-content/60 w-6">T${t.tier()}</span>
 									<span class="whitespace-pre-line">$unsafe{PoeText.highlightValues(String.join(", ", ko ? t.ko() : t.en()))}</span>
 								</div>
 							@endfor

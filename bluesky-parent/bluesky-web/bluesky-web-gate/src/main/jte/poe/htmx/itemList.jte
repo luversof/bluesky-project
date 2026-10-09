@@ -23,7 +23,7 @@
 @if(totalCount == 0)
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), hint = "tools/poe-extract: node parse-items.mjs")
 @else
-<div class="text-xs text-base-content/50 mb-2">${capped ? cappedLabel : countLabel}</div>
+<div class="text-xs text-base-content/60 mb-2">${capped ? cappedLabel : countLabel}</div>
 @if(items.isEmpty())
 	@template._components.ui.emptyState(message = emptyLabel)
 @else
@@ -69,13 +69,13 @@
 						<%-- 이름 클릭 → 상세 페이지 --%>
 						<a class="font-bold text-[15px] truncate link-hover" href="/poe/items/${item.slug()}" title="${item.name()}">${displayName}</a>
 						@if(net.luversof.web.gate.poe.PoeText.isKorean())
-							<span class="text-xs text-base-content/40 truncate">${item.name()}</span>
+							<span class="text-xs text-base-content/60 truncate">${item.name()}</span>
 						@endif
 						<span class="badge badge-xs badge-ghost ml-auto shrink-0">${displayClass}</span>
 					</div>
 					<div class="flex items-center gap-2 text-[13px] text-base-content/70">
 						<span class="font-mono truncate">${summary.toString()}</span>
-						<span class="ml-auto shrink-0 text-base-content/40">Lv ${item.dropLevel()}</span>
+						<span class="ml-auto shrink-0 text-base-content/60">Lv ${item.dropLevel()}</span>
 					</div>
 					@if(!item.implicits().isEmpty())
 						!{String implicitPreview = net.luversof.web.gate.poe.PoeText.name(item.implicits().get(0).ko(), item.implicits().get(0).en());}

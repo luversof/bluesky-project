@@ -18,14 +18,14 @@
 @if(total == null || total == 0)
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"))
 @else
-	<div class="text-xs text-base-content/50 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), items.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), items.size(), total)}</div>
 	@if(items.isEmpty())
 		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.empty"))
 	@else
 		<div class="space-y-4">
 			@for(java.util.Map.Entry<String, List<Poe2.BaseItem>> group : byClass.entrySet())
 				<section>
-					<h2 class="text-sm font-semibold mb-1.5">${group.getKey()} <span class="text-xs font-normal text-base-content/40">${group.getValue().size()}</span></h2>
+					<h2 class="text-sm font-semibold mb-1.5">${group.getKey()} <span class="text-xs font-normal text-base-content/60">${group.getValue().size()}</span></h2>
 					<%-- 카드 = PoE1 베이스 목록과 같은 구성(10-01: 이름 · 레벨뿐이었다) — 요약 수치(방어/피해·DPS/회복) + 암시 옵션 첫 줄 --%>
 					<div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-2">
 						@for(Poe2.BaseItem b : group.getValue())
@@ -40,13 +40,13 @@
 								<div class="flex items-baseline gap-1.5 min-w-0">
 									<a class="font-semibold truncate link-hover" href="/poe2/items/${b.slug()}" title="${b.name()}">${PoeText.name(b.nameKo(), b.name())}</a>
 									@if(korean)
-										<span class="text-[11px] text-base-content/35 truncate">${b.name()}</span>
+										<span class="text-[11px] text-base-content/60 truncate">${b.name()}</span>
 									@endif
 								</div>
 								!{ String summary = net.luversof.web.gate.poe2.Poe2View.cardSummary(b); List<String> impl = net.luversof.web.gate.poe2.Poe2View.implicitLines(b); }
 								<div class="flex items-center gap-2 text-[12px] text-base-content/70">
 									<span class="font-mono truncate" data-card-summary>${summary}</span>
-									<span class="ml-auto shrink-0 text-[10px] text-base-content/40">Lv ${nz(b.reqLevel())}</span>
+									<span class="ml-auto shrink-0 text-[10px] text-base-content/60">Lv ${nz(b.reqLevel())}</span>
 								</div>
 								@if(!impl.isEmpty())
 									<p class="text-xs leading-5 text-sky-600/80 dark:text-sky-300/80 line-clamp-1" data-card-implicit>${impl.get(0)}</p>

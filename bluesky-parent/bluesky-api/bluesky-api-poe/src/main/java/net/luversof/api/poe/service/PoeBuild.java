@@ -17,7 +17,9 @@ public record PoeBuild(
     List<PlayerStat> stats,
     List<Integer> passiveNodeIds,
     List<SkillGroup> skillGroups,
-    List<BuildItem> items) {
+    List<BuildItem> items,
+    // 트리 보기 주소 — nodes= + 클러스터 구성 c= + 고유 주얼 j=(10-03 C41: nodes 만 넘겨 클러스터 노드가 빠지고 점수가 적게 보였다)
+    String treeLink) {
 
   /** PoB가 계산한 캐릭터 스탯 한 줄. label 은 uiMessage 의 {@code poe.build.stat.<key>} 로 표시한다. */
   public record PlayerStat(String key, String value) {}
@@ -62,5 +64,25 @@ public record PoeBuild(
       boolean corrupted,
       /** 아이템 품질 %. 인게임 툴팁은 속성 블록 **첫 줄**에 "품질: +N%%"(값은 매직 파랑)를 둔다. 0이면 표시하지 않는다. */
       int quality,
-      PoeBaseItem base) {}
+      PoeBaseItem base,
+      // 줄별 인게임 리마인더(회색 부연) — implicitLines · modLines 와 같은 길이, 레어 · 노멀만(고유는 자체 상세). 없으면 null(10-04
+      // C131)
+      List<List<String>> implicitReminders,
+      List<List<String>> implicitRemindersKo,
+      List<List<String>> modReminders,
+      List<List<String>> modRemindersKo,
+      // 무형성 %(3.27 아이템 속성, PoB "Intangibility: N%") — 인게임은 속성 칸 줄. 0 이면 없음(10-04 C136)
+      int intangibility,
+      // 영향력 · 분열 · 합성 심볼 키(shaper · elder · crusader · hunter · redeemer · warlord · exarch · eater
+      // · fractured · synthesised) — 등장 순(10-04 C137)
+      List<String> influences,
+      // 줄 종류 — implicitLines · modLines 와 같은 길이: crafted(제작, 연보라) · fractured(분열, 금색) · enchant(암시
+      // 칸의 crafted = 인챈트, 하늘색) · ""(10-04 C138)
+      List<String> implicitKinds,
+      List<String> modKinds,
+      // 고유 로어(플레이버) — 인게임 고유 툴팁 맨 아래 주황 기울임(고유만, 10-04 C139)
+      List<String> flavour,
+      List<String> flavourKo,
+      // 거래소 검색 쿼리(q JSON) — 고유는 이름, 레어 · 마법은 베이스 + 옵션(PoeTradeQueries, 10-08). 만들 수 없으면 null
+      String tradeQuery) {}
 }

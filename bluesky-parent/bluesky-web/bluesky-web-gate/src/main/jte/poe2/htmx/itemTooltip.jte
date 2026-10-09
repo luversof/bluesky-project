@@ -9,7 +9,7 @@
 	java.util.List<String> implicits = Poe2View.implicitLines(base);
 }
 
-<div class="poe-tooltip poe-rar-white w-80 max-h-[80vh] overflow-y-auto shadow-2xl">
+<div class="poe-tooltip poe-rar-white w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl">
 	<div class="poe-tt-band">
 		<div class="text-center font-bold text-[15px] leading-tight text-[#c8c8c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${PoeText.name(base.nameKo(), base.name())}</div>
 	</div>
@@ -26,5 +26,10 @@
 				<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 			@endfor
 		</div>
+	@endif
+	<%-- 키워드 설명(10-04 C113, 고유 · 젬과 같은 조각) --%>
+	@if(base.keywords() != null && !base.keywords().isEmpty())
+		<div class="pt-1.5"></div>
+		@template.poe2.htmx.keywordBox(keywords = base.keywords())
 	@endif
 </div>

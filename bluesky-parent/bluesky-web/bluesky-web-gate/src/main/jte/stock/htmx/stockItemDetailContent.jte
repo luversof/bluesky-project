@@ -23,6 +23,7 @@
 @param BigDecimal currentPrice = java.math.BigDecimal.ZERO
 @param boolean currentPriceUnknown = false
 @param java.time.LocalDate priceBasisDate = null
+@param String priceBasisIntradayTime = null
 @param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
 @param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
@@ -176,7 +177,7 @@
 	<%-- "현재가"·평가액은 마지막으로 수집된 종가 기준이라, 오늘 시세가 아직 없으면 며칠 전 값일 수 있다.
 	     어느 날 기준인지 밝혀 실시간 시세로 오해하지 않게 한다(자산현황·포트폴리오와 같은 표기). --%>
 	@if(priceBasisDate != null)
-		<p class="mb-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())}</p>
+		<p class="mb-2 text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime).replace("{0}", priceBasisDate.toString())}</p>
 	@endif
 	<%-- 합산 손익 - 평가손익·실현손익·배당이 카드로 흩어져 있어 사람이 더해야 알 수 있었다.
 	     아래 격자의 세 값을 그대로 더한 것이라, 화면에서 눈으로 검산할 수 있게 셋을 함께 적는다. --%>
@@ -341,7 +342,7 @@
 		<script nonce="${CspNonceHolder.getNonce()}">
 		(function() {
 			if (typeof window.ensureStockCharts !== 'function') return;
-			var series = $unsafe{ChartSeriesJs.candleSeries(priceChart, trades, zone)};
+			var series = $unsafe{ChartSeriesJs.candleSeries(priceChart, trades, zone, timeSeries)};
 			window.ensureStockCharts(function() {
 				if (!window.StockCharts || !window.StockCharts.createCandleChart) return;
 				var __priceChart = window.StockCharts.createCandleChart('stockPriceChart', series, {
@@ -355,7 +356,13 @@
 					buyLabel: '${MessageUtil.getMessage("stock.trade.label.buy")}',
 					sellLabel: '${MessageUtil.getMessage("stock.trade.label.sell")}',
 					sharePattern: '${MessageUtil.getMessage("stock.activity.label.shares")}',
-					shareOnePattern: '${MessageUtil.getMessage("stock.activity.label.shares.one")}'
+					shareOnePattern: '${MessageUtil.getMessage("stock.activity.label.shares.one")}',
+					distLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.distribution")}',
+					holdingValueLabel: '${MessageUtil.getMessage("stock.item.detail.chart.value")}',
+					holdingCostLabel: '${MessageUtil.getMessage("stock.item.detail.chart.cost")}',
+					holdingProfitLabel: '${MessageUtil.getMessage("stock.profit.unrealized")}',
+					maxLabel: '${MessageUtil.getMessage("stock.chart.range.max")}',
+					minLabel: '${MessageUtil.getMessage("stock.chart.range.min")}'
 				});
 				var unitEl = document.querySelector('[data-candle-unit]');
 				var unitText = {
@@ -405,6 +412,10 @@
 	@endif
 
 	<!-- 보유 평가액·원가 추이 -->
+	<%-- 캔들이 있으면 따로 두지 않는다(사용자 요청 2026-10-07: "굳이 2개가 나뉘어있을 필요가 없을거 같아") - 그 날 보유 평가액 · 원가 ·
+	     평가손익은 주가 추이 캔들의 툴팁에 있다. 시세 봉(OHLC)이 없어 선 차트로 그리는 종목에서만 이 차트를 그대로 둔다. --%>
+	!{boolean holdingsMergedIntoCandles = priceChart != null && !priceChart.isEmpty();}
+	@if(!holdingsMergedIntoCandles)
 	@if(timeSeries != null && !timeSeries.isEmpty() && chartFormatter != null)
 		<div>
 			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
@@ -438,6 +449,7 @@
 			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
 			@template._components.ui.emptyState(message = MessageUtil.getMessage("stock.item.detail.empty.valuation.series"), boxed = true, padding = "py-6", widenRangeAction = !"all".equals(rangeMode))
 		</div>
+	@endif
 	@endif
 
 	<!-- 계좌별 보유 현황 -->

@@ -7,7 +7,7 @@
 // 하위 트리: 뿌리 7개(일반·의식·균열·환영·심연·침입·탐험) — 뿌리에서 다른 뿌리를 넘지 않는 BFS 로 노드마다 소속(tree)을 붙인다.
 import fs from "node:fs";
 import path from "node:path";
-import { createDescriber, pobFile, stripMarkup } from "./common2.mjs";
+import { CSD_CHAINS, createDescriber, createKeywordIndex, loadKeywords, pobFile, stripMarkup } from "./common2.mjs";
 import { DATA_DIR, loadConfig, loadTable, openLoader, writeJson } from "./paths.mjs";
 
 const loader = await openLoader();
@@ -172,6 +172,20 @@ for (const [id, n] of Object.entries(nodes)) {
 const orphan = Object.values(nodes).filter((n) => !n.tree && n.kind !== "mastery").length;
 const noName = Object.values(nodes).filter((n) => !n.name && n.kind !== "mastery").length;
 const noKo = Object.values(nodes).filter((n) => n.stats.length && n.statsKo.join() === n.stats.join()).length;
+// 키워드 설명(10-04 C129, 패시브 트리 C110 짝) — 아틀라스 문구에도 강조 용어(희귀도 · 생물 군계 · 균열 …)가 있어 같은 Alt 설명을 붙인다.
+//   노드 stats(영어 서술) → 원문 템플릿 뼈대 색인으로 Id, 쓰인 용어만 맨 위 keywords 사전으로(트리 툴팁이 data.keywords 로 찾는다)
+const keywordById = loadKeywords(loadTable);
+const keywordIdsOf = createKeywordIndex(CSD_CHAINS.atlas);
+const usedKeywords = new Set();
+for (const n of Object.values(nodes)) {
+	if (!n.stats.length) continue;
+	const ids = keywordIdsOf(n.stats.flatMap((l) => l.split("\n"))).filter((id) => keywordById.has(id));
+	if (ids.length) {
+		n.keywords = ids;
+		ids.forEach((id) => usedKeywords.add(id));
+	}
+}
+console.log(`[atlas2] 키워드: 노드 ${Object.values(nodes).filter((n) => n.keywords).length} · 용어 ${usedKeywords.size}`);
 const pad = 400;
 writeJson("atlas-tree.json", {
 	patch: loadConfig().patch,
@@ -183,6 +197,7 @@ writeJson("atlas-tree.json", {
 	trees,
 	groups,
 	nodes,
+	keywords: Object.fromEntries([...usedKeywords].sort().map((id) => [id, keywordById.get(id)])),
 });
 console.log(
 	`[atlas2] atlas-tree.json: 노드 ${Object.keys(nodes).length} · 그룹 ${psg.groups.length} · 하위 트리 ${trees.map((t) => `${t.nameKo} ${t.nodeCount}`).join(", ")}` +

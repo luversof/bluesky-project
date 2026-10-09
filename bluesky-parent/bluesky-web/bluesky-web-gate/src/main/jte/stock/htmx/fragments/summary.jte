@@ -21,6 +21,7 @@
 @param String trendChartValuesJs = "[]"
 @param int trendPointCount = 0
 @param java.time.LocalDate priceBasisDate = null
+@param String priceBasisIntradayTime = null
 @param StockCoreHoldingUtil.Split coreHoldingSplit = null
 @param net.luversof.web.gate.stock.dto.response.PeriodSummary periodSummary = null
 @param java.time.LocalDate periodSummaryFrom = null
@@ -109,7 +110,7 @@
 				 (실측 2026-08-22 토요일: 거래일인 08-21 이 빠진 채 08-20 종가로 표시). 자산 현황·포트폴리오·
 				 종목 상세와 같은 문구를 쓴다. --%>
 			@if(priceBasisDate != null)
-				<div class="text-xs text-base-content/60 mt-1">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", priceBasisDate.toString())}</div>
+				<div class="text-xs text-base-content/60 mt-1">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime).replace("{0}", priceBasisDate.toString())}</div>
 			@endif
 			<%-- 통합손익은 총자산의 보조 지표로 같은 카드 하단에 배치한다 --%>
 			<div class="flex items-center justify-between border-t border-base-200 mt-4 pt-3">

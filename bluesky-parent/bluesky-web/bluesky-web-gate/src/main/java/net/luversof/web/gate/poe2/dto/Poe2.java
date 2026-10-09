@@ -44,6 +44,8 @@ public final class Poe2 {
       String icon,
       String image,
       Integer castTimeMs,
+      // 설명 · 레벨 문장의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C111). 목록 사본엔 없다
+      List<Keyword> keywords,
       List<GemLevel> levels) {
 
     /** 목록용 — 레벨별 수치를 뺀 사본(전체 젬 목록 응답이 수 MB 가 되지 않게). */
@@ -74,9 +76,13 @@ public final class Poe2 {
           icon,
           image,
           castTimeMs,
+          null,
           null);
     }
   }
+
+  /** 강조 용어 하나 — 인게임 툴팁에서 Alt 로 보는 용어 · 정의(PoE2 KeywordPopups, 영 · 한). */
+  public record Keyword(String term, String termKo, String def, String defKo) {}
 
   /** 젬 한 레벨 — 비용(costType: Mana 등) · 정신력 예약 · 재사용 대기 · 치명타 확률(%) · 스탯 문장(영/한). */
   public record GemLevel(
@@ -154,7 +160,11 @@ public final class Poe2 {
       List<String> tags,
       String subType,
       String icon,
-      String image) {}
+      String image,
+      // 암시 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C113)
+      List<Keyword> keywords,
+      // 거래소가 이 베이스를 아는가(10-08 C174, 상세 응답만) — false 면 "거래소에서 찾기" 단추를 숨긴다, null = 모름(보인다)
+      Boolean tradable) {}
 
   /** en = 게임 영어 분류 이름(옛 데이터면 null). 화면 글자는 enName() — 없으면 key. */
   public record ItemClass(String key, String ko, String category, String en) {
@@ -174,7 +184,9 @@ public final class Poe2 {
       Integer level,
       Integer weight,
       List<String> text,
-      List<String> textKo) {}
+      List<String> textKo,
+      // text 줄별 강조 용어 Id(10-04 C132, API 와 쌍)
+      List<List<String>> kw) {}
 
   /** 같은 계열(ModType)의 티어 사다리 — tiers[0] 이 1티어(레벨이 가장 높은 것). gen = prefix | suffix. */
   public record ModGroup(String modType, String gen, List<ModTier> tiers) {}
@@ -201,7 +213,14 @@ public final class Poe2 {
       Integer baseCount,
       Integer groupCount) {}
 
-  public record ModData(String patch, List<ModPool> pools) {}
+  public record ModData(
+      String patch,
+      List<ModPool> pools,
+      java.util.Map<String, Keyword> keywords,
+      // 풀 밖 옵션의 영 · 한 쌍(10-04 C133, API 와 쌍)
+      List<ModPair> extra) {}
+
+  public record ModPair(List<String> text, List<String> textKo) {}
 
   // ─────────────────────────── 증강물(룬 · 영혼 핵 · 우상 …) ───────────────────────────
 
@@ -237,7 +256,9 @@ public final class Poe2 {
       List<String> implicits,
       List<String> implicitsKo,
       List<String> explicits,
-      List<String> explicitsKo) {}
+      List<String> explicitsKo,
+      // 기본과 용어가 다른 변형만 자기 키워드 정의(빈 목록 = 없음), null 이면 고유 keywords 그대로(10-04 C117)
+      List<Keyword> keywords) {}
 
   public record Unique(
       String name,
@@ -260,7 +281,11 @@ public final class Poe2 {
       List<String> flavourKo,
       // 리그 출처(해당 리그 기제를 돌려야 얻는다) — 데이터엔 있었는데 레코드에 없어 화면에 못 보였다(10-01, 443개 중 173개)
       String league,
-      String image) {}
+      String image,
+      // 주얼 반경(10-03 C74) — 옛 응답엔 없어 null
+      String radius,
+      // 기본 암시 · 옵션 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C112, 젬 Gem.keywords 와 같은 모양)
+      List<Keyword> keywords) {}
 
   public record UniqueData(String patch, List<Unique> items) {}
 
@@ -278,7 +303,9 @@ public final class Poe2 {
       List<BuildSkill> skills,
       List<BuildItem> items,
       BuildTree tree,
-      String treeLink) {}
+      String treeLink,
+      // 거래소 주소 경로의 리그(API 와 짝, 10-08) — null 이면 Standard
+      String tradeLeague) {}
 
   public record BuildStat(String key, Double value) {}
 
@@ -306,7 +333,19 @@ public final class Poe2 {
       String baseSlug,
       String image,
       List<String> mods,
-      List<String> modsKo) {}
+      List<String> modsKo,
+      // mods 앞 N줄이 암시 · 레어 등 옵션 줄의 강조 용어 정의(10-04 C132, API 와 쌍)
+      Integer implicitCount,
+      List<Keyword> keywords,
+      // 고유 로어(10-04 C140, API 와 쌍)
+      List<String> flavour,
+      List<String> flavourKo,
+      // 베이스(속성 칸 · 요구 사항, 10-04 C147, API 와 쌍)
+      BaseItem base,
+      // 품질 %(10-04 C148, API 와 쌍)
+      Integer quality,
+      // 거래소 검색 쿼리(q JSON, API 와 짝, 10-08) — null 이면 링크 없음
+      String tradeQuery) {}
 
   public record BuildNode(Integer id, String name, String nameKo) {}
 
@@ -358,7 +397,9 @@ public final class Poe2 {
       Double dps,
       Double ehp,
       Double maxHit,
-      Double life) {}
+      Double life,
+      // 거래소 검색 쿼리(고유 이름, API 와 짝, 10-08 C172)
+      String tradeQuery) {}
 
   public record GuideMod(
       String modType,
@@ -415,7 +456,13 @@ public final class Poe2 {
    * 그대로 붙여 넣는다(10-02).
    */
   public record GuideRare(
-      Double dps, Double ehp, List<String> lines, List<String> linesKo, String itemText) {}
+      Double dps,
+      Double ehp,
+      List<String> lines,
+      List<String> linesKo,
+      String itemText,
+      // 거래소 검색 쿼리(분류 + 옵션, API 와 짝, 10-08 C172)
+      String tradeQuery) {}
 
   public record BuildGuide(
       Boolean available,
@@ -479,7 +526,9 @@ public final class Poe2 {
       Integer augments,
       Integer uniques,
       Boolean tree,
-      String loadedAt) {}
+      String loadedAt,
+      // 거래소 주소 경로의 리그(API 와 짝, 10-08 C172)
+      String tradeLeague) {}
 
   /** 데이터 추출(run-all2.mjs) 상태 — log 는 마지막 200줄. */
   public record ExtractStatus(
@@ -613,7 +662,9 @@ public final class Poe2 {
       Double startEhp,
       Double refinedDps,
       Double refinedEhp,
-      long durationMs) {}
+      long durationMs,
+      // 전직 한국어 이름(10-03 C57) — 옛 API 응답엔 없어 null 이면 영문
+      String ascendancyKo) {}
 
   /** 젬 DPS 랭킹 한 건 — API Poe2SimRankingService.GemRank(PoE1 PoeGemRank 와 같은 필드). */
   public record SimGemRank(

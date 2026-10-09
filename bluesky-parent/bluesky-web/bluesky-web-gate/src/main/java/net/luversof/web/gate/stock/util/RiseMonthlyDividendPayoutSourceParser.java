@@ -66,9 +66,10 @@ public class RiseMonthlyDividendPayoutSourceParser {
           .append('\t')
           .append(plain(row.amount()))
           // 과세표준액이 0 인 달이 있다(전액 비과세). 빠진 값과 구분해 0 을 그대로 싣는다.
+          // 모름이면 "-" 로 싣는다(2026-10-08) - 0 으로 적으면 진짜 0 원(전액 비과세)과 구분되지 않아 다음 갱신이 채우지 못한다(가져오기 파서가
+          // "-" 를 모름으로 받는다).
           .append('\t')
-          .append(
-              plain(row.taxStandardAmount() != null ? row.taxStandardAmount() : BigDecimal.ZERO));
+          .append(row.taxStandardAmount() != null ? plain(row.taxStandardAmount()) : "-");
     }
 
     if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {

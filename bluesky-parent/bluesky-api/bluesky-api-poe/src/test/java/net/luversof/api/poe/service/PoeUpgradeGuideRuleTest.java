@@ -16,7 +16,8 @@ class PoeUpgradeGuideRuleTest {
 
   private static ItemPick pick(String slug, double dps, double ehp, Double minion) {
     return new ItemPick(
-        "UNIQUE", slug, slug, slug, "Base", "베이스", null, dps, ehp, 0, minion, 0, 0, null, null);
+        "UNIQUE", slug, slug, slug, "Base", "베이스", null, dps, ehp, 0, minion, 0, 0, null, null,
+        null);
   }
 
   @Test

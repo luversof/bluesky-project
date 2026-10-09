@@ -40,13 +40,13 @@
 				      hx-trigger="input changed delay:300ms, change" data-url-sync="true">
 					<input type="search" name="q" value="${initialQ}" autofocus class="input input-sm input-bordered w-full sm:w-72"
 					       placeholder="${MessageUtil.getMessage("poe.gems.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
-					<select name="kind" class="select select-sm select-bordered" aria-label="kind">
+					<select name="kind" class="select select-sm select-bordered" aria-label="${PoeText.isKorean() ? "젬 종류" : "Gem type"}">
 						<option value="all" selected="${"all".equals(initialKind)}">${MessageUtil.getMessage("poe2.all")}</option>
 						@for(String k : List.of("skill", "support", "meta"))
 							<option value="${k}" selected="${k.equals(initialKind)}">${MessageUtil.getMessage("poe2.gems.kind." + k)}</option>
 						@endfor
 					</select>
-					<select name="color" class="select select-sm select-bordered" aria-label="color">
+					<select name="color" class="select select-sm select-bordered" aria-label="${PoeText.isKorean() ? "젬 색" : "Gem color"}">
 						<option value="all" selected="${"all".equals(initialColor)}">${MessageUtil.getMessage("poe2.all")}</option>
 						@for(String c : List.of("str", "dex", "int", "white"))
 							<option value="${c}" selected="${c.equals(initialColor)}">${MessageUtil.getMessage("poe2.gems.color." + c)}</option>
@@ -62,7 +62,7 @@
 					</div>
 					@for(Poe2.TagGroup g : tagGroups)
 						<div class="flex flex-wrap items-center gap-1.5" data-chip-row="${g.key()}">
-							<span class="w-16 shrink-0 text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.gemgroup." + g.key())}</span>
+							<span class="w-16 shrink-0 text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.gemgroup." + g.key())}</span>
 							@for(Poe2.ModLine t : g.tags())
 								<button type="button" class="poe-chip ${t.en().equals(activeTag) ? "poe-chip-active" : ""}" data-chip-value="${t.en()}">${PoeText.name(t.ko(), t.en())}</button>
 							@endfor

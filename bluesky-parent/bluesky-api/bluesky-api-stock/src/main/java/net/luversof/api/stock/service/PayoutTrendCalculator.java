@@ -81,6 +81,48 @@ public final class PayoutTrendCalculator {
         baseCount);
   }
 
+  /**
+   * 최근 {@value #BASE_COUNT} 회 안에서 분배금이 직전 회보다 줄어든 횟수(사용자 요청 2026-10-06: 추천 기준 "꾸준함").
+   *
+   * <p>그 구간 평균의 1% 이하로 줄어든 것은 세지 않는다 - 주당 몇 원 단위 끝수 차이를 "감소" 로 세면 거의 모든 종목이 같은 수가 된다. 늘어난 것은 세지
+   * 않는다(변동계수로 재면 분배금이 크게 늘어난 종목이 "들쭉날쭉" 으로 깎였다 - 실측 0094M0 변동계수 46%, 대부분이 증가분).
+   *
+   * @param pairCount 견준 쌍의 수(회 수 &minus; 1). 화면이 "11 번 중 2 번" 처럼 적는다
+   */
+  public record PayoutCuts(int cutCount, int pairCount) {}
+
+  /**
+   * 감소 횟수.
+   *
+   * @param amountsPerShareDesc 주당 분배금, <b>최근 것이 앞</b>
+   * @return 이력이 {@value #MINIMUM_PAYOUTS} 회보다 적거나 평균이 0 이면 {@code null} - 두세 번 받은 종목의 "감소 0 회" 는
+   *     꾸준함의 근거가 아니다
+   */
+  public static PayoutCuts countCuts(List<BigDecimal> amountsPerShareDesc) {
+    if (amountsPerShareDesc == null) {
+      return null;
+    }
+    List<BigDecimal> amounts =
+        amountsPerShareDesc.stream().filter(amount -> amount != null).toList();
+    if (amounts.size() < MINIMUM_PAYOUTS) {
+      return null;
+    }
+    List<BigDecimal> window = amounts.subList(0, Math.min(BASE_COUNT, amounts.size()));
+    BigDecimal mean = average(window);
+    if (mean.signum() <= 0) {
+      return null;
+    }
+    BigDecimal tolerance = mean.divide(BigDecimal.valueOf(100), MathContext.DECIMAL64);
+    int cuts = 0;
+    // 최근 것이 앞이므로 window[i] 가 window[i + 1] 의 다음 회다.
+    for (int i = 0; i + 1 < window.size(); i++) {
+      if (window.get(i + 1).subtract(window.get(i)).compareTo(tolerance) > 0) {
+        cuts++;
+      }
+    }
+    return new PayoutCuts(cuts, window.size() - 1);
+  }
+
   private static BigDecimal average(List<BigDecimal> amounts) {
     BigDecimal sum = BigDecimal.ZERO;
     for (BigDecimal amount : amounts) {

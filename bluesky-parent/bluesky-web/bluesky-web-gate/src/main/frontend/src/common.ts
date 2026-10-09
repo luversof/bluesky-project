@@ -599,7 +599,7 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 // 배경 클릭·ESC 로 닫히면 오히려 안 된다. 닫기 처리를 그쪽에 이어 붙이지 말 것.
 
 // PoE 아이템 호버 미리보기 — .poe-hover 요소에 마우스를 올리면 hx-get 으로 로드된 게임 툴팁을
-// 요소 근처(뷰포트 안)에 띄운다. 툴팁은 pointer-events-none 이라 마우스가 카드를 벗어나면 사라진다.
+// 요소 근처(뷰포트 안)에 띄운다. 트리거와 툴팁 사이를 오가는 동안은 유지되고(150ms 유예), 둘 다 벗어나거나 Esc 면 닫힌다(10-02 C31).
 (() => {
 	let host: HTMLElement | null = null;
 	let active: Element | null = null;
@@ -608,8 +608,10 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 		if (!document.body) return null;
 		host = document.createElement("div");
 		host.id = "poePreview";
+		host.setAttribute("role", "tooltip");
 		host.className = "fixed z-[95] hidden";
-		host.style.pointerEvents = "none";
+		// 포인터가 툴팁 위로 올라갈 수 있어야 한다(1.4.13 hoverable, 10-02 C31) — 숨김은 display:none(hidden)이라 안 보일 땐 아무것도 가리지 않는다
+		host.style.pointerEvents = "auto";
 		document.body.appendChild(host);
 		return host;
 	}
@@ -633,15 +635,28 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 	}
 	// 클릭 시 툴팁을 고정(pinned)하면 상호작용 가능(레벨 버튼 등). 밖 클릭/ESC 로 해제.
 	let pinned = false;
+	// 키보드로 연 툴팁은 포커스 받은 요소의 설명으로 잇는다(aria-describedby, 10-02 C33) — 낭독기가 이름 뒤에 툴팁 내용을 읽는다. 닫으면 원래대로.
+	let described: Element | null = null;
+	let describedPrev: string | null = null;
+	function describe(el: Element | null) {
+		if (described) {
+			if (describedPrev === null) described.removeAttribute("aria-describedby");
+			else described.setAttribute("aria-describedby", describedPrev);
+		}
+		described = el;
+		describedPrev = el ? el.getAttribute("aria-describedby") : null;
+		if (el) el.setAttribute("aria-describedby", (describedPrev ? describedPrev + " " : "") + "poePreview");
+	}
 	function hide() {
 		if (pinned) return;
+		describe(null);
 		host?.classList.add("hidden");
 		if (host) host.replaceChildren();
 		active = null;
 	}
 	function unpin() {
 		pinned = false;
-		if (host) host.style.pointerEvents = "none";
+		describe(null);
 		host?.classList.add("hidden");
 		if (host) host.replaceChildren();
 		active = null;
@@ -682,10 +697,34 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 	// 서버 왕복(hx-get) 동안 띄우는 로딩 툴팁 — 빈 화면 대신 스피너를 보여준다(afterSwap 이 교체).
 	const LOADING_TIP =
 		'<div class="poe-tooltip poe-rar-white shadow-2xl" style="border-color:#c8c8c8"><div class="px-6 py-4 flex items-center justify-center gap-2"><span class="loading loading-spinner loading-sm text-primary"></span><span class="text-[12px] text-white/60">' + (LOADING_LABEL) + '</span></div></div>';
+	// WCAG 1.4.13(10-02 C31) — 툴팁 위로 포인터를 옮겨도 닫히지 않게(hoverable): 트리거에서 벗어나면 바로 닫지 않고 잠깐 기다렸다가,
+	//   그 사이 툴팁(#poePreview)이나 같은 트리거로 들어오면 취소한다. 예전엔 툴팁이 pointer-events:none 이라 옮기는 순간 사라졌다.
+	let hideTimer: number | undefined;
+	function cancelHide() {
+		if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+		hideTimer = undefined;
+	}
+	function hideSoon() {
+		cancelHide();
+		hideTimer = window.setTimeout(() => {
+			hideTimer = undefined;
+			hide();
+		}, 150);
+	}
 	document.addEventListener("mouseover", (event) => {
 		if (pinned) return;
+		if ((event.target as Element)?.closest?.("#poePreview")) {
+			cancelHide(); // 툴팁 위 — 그대로 둔다
+			return;
+		}
 		const trigger = (event.target as Element)?.closest?.(".poe-hover");
+		if (trigger === active && trigger) cancelHide();
 		if (!trigger || trigger === active) return;
+		openFor(trigger, false);
+	});
+	/** 툴팁 열기 — 마우스 호버와 키보드 포커스 공용. 키보드면 htmx 의 mouseenter 요청을 직접 불러 준다(마우스는 htmx 가 스스로 듣는다). */
+	function openFor(trigger: Element, viaKeyboard: boolean) {
+		cancelHide();
 		active = trigger;
 		// 인라인 툴팁: [data-poe-tip] 자식이 있으면 서버 왕복 없이 복제해 띄운다
 		// (hx-get 이 있는 요소는 htmx 가 로드 → afterSwap 에서 위치)
@@ -697,15 +736,38 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 					h.innerHTML = LOADING_TIP;
 					position(trigger);
 				}
+				if (viaKeyboard) (window as any).htmx?.trigger(trigger, "mouseenter");
 			}
+		}
+	}
+	// 키보드(10-02 C32) — Tab 으로 .poe-hover(또는 그 안의 링크)에 오면 같은 툴팁, 포커스가 트리거 · 툴팁 밖으로 나가면 닫는다. Esc 는 C31.
+	document.addEventListener("focusin", (event) => {
+		if (pinned) return;
+		const target = event.target as Element;
+		const trigger = target?.closest?.(".poe-hover");
+		if (!trigger || trigger === active) return;
+		if (!target.matches?.(":focus-visible")) return; // 마우스 클릭 포커스는 호버가 이미 처리
+		openFor(trigger, true);
+		describe(target);
+	});
+	document.addEventListener("focusout", (event) => {
+		if (pinned || !active) return;
+		const to = (event as FocusEvent).relatedTarget as Element | null;
+		if (to && (active.contains(to) || to.closest?.("#poePreview"))) return;
+		if ((event.target as Element)?.closest?.(".poe-hover") === active) {
+			cancelHide();
+			hide();
 		}
 	});
 	document.addEventListener("mouseout", (event) => {
 		if (pinned) return;
-		const trigger = (event.target as Element)?.closest?.(".poe-hover");
-		if (!trigger) return;
+		const from = event.target as Element;
+		const trigger = from?.closest?.(".poe-hover");
+		const fromLayer = from?.closest?.("#poePreview");
+		if (!trigger && !fromLayer) return;
 		const to = (event as MouseEvent).relatedTarget as Element | null;
-		if (!to?.closest?.(".poe-hover")) hide();
+		if (to?.closest?.("#poePreview") || (to && active && active.contains(to))) return; // 툴팁 ↔ 트리거 사이 이동
+		if (!to?.closest?.(".poe-hover")) hideSoon();
 	});
 	// 클릭: 트리거를 누르면 고정(상호작용 가능), 툴팁/트리거 밖을 누르면 해제
 	document.addEventListener("click", (event) => {
@@ -724,7 +786,13 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 		if (pinned && !(event.target as Element)?.closest?.("#poePreview")) unpin();
 	});
 	document.addEventListener("keydown", (event) => {
-		if (event.key === "Escape" && pinned) unpin();
+		if (event.key !== "Escape") return;
+		if (pinned) unpin();
+		// 호버로만 뜬 툴팁도 Esc 로 닫는다(WCAG 1.4.13 dismissible, 10-02 C31) — 포인터를 옮기지 않고 가린 내용을 볼 수 있게
+		else if (host && !host.classList.contains("hidden")) {
+			cancelHide();
+			hide();
+		}
 	});
 	// 캐시에 있는 레이어면 서버 재요청을 아예 취소(mouseover 에서 이미 캐시본을 띄웠다).
 	document.addEventListener("htmx:beforeRequest", (event: any) => {
@@ -1508,6 +1576,17 @@ function chartSummaryAmountsHidden(): boolean {
 		&& root.classList.contains("hide-amounts")
 	);
 }
+/**
+ * 차트 위 표시(캔들의 매수 ▲ · 매도 ▼ · 분배락 ◆ 등)의 개수 문장. 화면에는 모양으로만 보여 요약문에 없으면 보조기술 사용자는 표시가 있는지조차 모른다
+ * (2026-10-02). 차트가 options.plugins.a11ySummary.counts = [{ label, count }] 로 넘긴다(0 은 뺀다).
+ */
+function chartSummaryCounts(chart: any, ko: boolean): string {
+	const counts = chart?.options?.plugins?.a11ySummary?.counts;
+	if (!Array.isArray(counts)) return "";
+	const parts = counts.filter((c: any) => c && c.label && c.count > 0).map((c: any) => (ko ? String(c.label) + " " + c.count + "개" : String(c.label) + " " + c.count));
+	if (!parts.length) return "";
+	return (ko ? ". 표시: " : ". Markers: ") + parts.join(", ");
+}
 function chartSummaryText(chart: any, lang: string = document.documentElement.lang): string {
 	const locale = chartSummaryLocale(lang);
 	const ko = locale === "ko-KR";
@@ -1550,8 +1629,9 @@ function chartSummaryText(chart: any, lang: string = document.documentElement.la
 			? name + pts.length + "개 지점, 처음 " + first.l + " " + fmt.format(first.v) + ", 끝 " + last.l + " " + fmt.format(last.v) + ", 최고 " + fmt.format(hi.v) + " (" + hi.l + "), 최저 " + fmt.format(lo.v) + " (" + lo.l + ")"
 			: name + pts.length + " points, first " + first.l + " " + fmt.format(first.v) + ", last " + last.l + " " + fmt.format(last.v) + ", high " + fmt.format(hi.v) + " (" + hi.l + "), low " + fmt.format(lo.v) + " (" + lo.l + ")";
 	}).filter(Boolean).join(". ");
-	if (restDatasets <= 0) return body;
-	return body + (ko ? ". 외 " + restDatasets + "개 계열" : ". and " + restDatasets + " more series");
+	const counts = chartSummaryCounts(chart, ko);
+	if (restDatasets <= 0) return body + counts;
+	return body + (ko ? ". 외 " + restDatasets + "개 계열" : ". and " + restDatasets + " more series") + counts;
 }
 /** 캔버스 바로 뒤에 sr-only 요약을 두고(없으면 만들고) aria-describedby 로 잇는다. 요약이 비면 둘 다 거둔다. */
 function syncChartSummary(chart: any): HTMLElement | null {
@@ -1657,6 +1737,7 @@ function watchHideAmounts(): void {
 	}).observe(root, { attributes: true, attributeFilter: ["class"] });
 }
 watchHideAmounts();
+// (counts 는 chartSummaryCounts 참고)
 const chartSummaryPlugin = {
 	id: "a11ySummary",
 	afterInit: (chart: any) => { syncChartSummary(chart); },
@@ -2112,3 +2193,32 @@ function applyCountChoice(pattern: string, value: number): string {
     return pattern.slice(0, start) + (value === 1 ? one.slice(2) : many.slice(2)) + pattern.slice(end);
 }
 (globalThis as any).applyCountChoice = applyCountChoice;
+
+// PoE2 키워드 설명(10-04 C111) — 인게임처럼 Alt 를 누르는 동안 툴팁의 강조 용어 정의를 보인다(html.poe-alt → main.css .poe-kw-box).
+//   용어 안내([data-kw])가 있는 화면에서만 Alt 기본 동작(떼면 브라우저 메뉴로 포커스)을 막는다 — 다른 화면의 Alt 는 그대로
+const setPoeAlt = (on: boolean) => document.documentElement.classList.toggle("poe-alt", on);
+globalThis.addEventListener("keydown", (event) => {
+    if (event.key !== "Alt" || !document.querySelector("[data-kw]")) return;
+    event.preventDefault();
+    setPoeAlt(true);
+});
+globalThis.addEventListener("keyup", (event) => {
+    if (event.key !== "Alt") return;
+    if (document.querySelector("[data-kw]")) event.preventDefault();
+    setPoeAlt(false);
+});
+globalThis.addEventListener("blur", () => setPoeAlt(false));
+// 안내 단추를 누르면 펼치고(터치 · 키보드 — Alt 가 없는 환경, 10-04 C128), 펼친 정의 상자를 누르면 접는다
+document.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement | null;
+    const hint = target?.closest<HTMLElement>("[data-kw-hint]");
+    const holder = target?.closest<HTMLElement>("[data-kw]");
+    if (!holder) return;
+    if (hint) {
+        holder.classList.add("poe-kw-open");
+        hint.setAttribute("aria-expanded", "true");
+    } else if (target?.closest("[data-kw-box]") && holder.classList.contains("poe-kw-open")) {
+        holder.classList.remove("poe-kw-open");
+        holder.querySelector("[data-kw-hint]")?.setAttribute("aria-expanded", "false");
+    }
+});

@@ -29,6 +29,7 @@
 @param int holdingCount = 0
 @param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
 @param java.time.LocalDate priceBasisDate = null
+@param String priceBasisIntradayTime = null
 @param BigDecimal totalBuyCost = java.math.BigDecimal.ZERO
 @param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
 @param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
@@ -89,6 +90,7 @@
 					holdingCount = holdingCount,
 					evaluationAmount = evaluationAmount,
 					priceBasisDate = priceBasisDate,
+					priceBasisIntradayTime = priceBasisIntradayTime,
 					totalBuyCost = totalBuyCost,
 					evaluationProfit = evaluationProfit,
 					realizedProfit = realizedProfit,

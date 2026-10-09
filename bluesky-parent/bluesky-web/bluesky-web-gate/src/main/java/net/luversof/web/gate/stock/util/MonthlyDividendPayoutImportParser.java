@@ -169,8 +169,9 @@ public class MonthlyDividendPayoutImportParser {
             columns[columnMapping.dividendAmountIndex()],
             lineNumber,
             msg("stock.monthly.reference.field.dividend.per.share")));
+    // 과세표준이 "-" · 빈 칸이면 모름(null)으로 둔다(2026-10-07) - 0 으로 두면 진짜 0 과 구분되지 않아 다음 갱신이 채우지 못한다.
     request.setTaxableBasePerShare(
-        parseZeroAllowedBigDecimal(
+        parseOptionalBigDecimal(
             columns[columnMapping.taxableBaseIndex()],
             lineNumber,
             msg("stock.monthly.reference.field.taxable.base")));
@@ -337,13 +338,6 @@ public class MonthlyDividendPayoutImportParser {
   private BigDecimal parseOptionalBigDecimal(String value, int lineNumber, String label) {
     if (!StringUtils.hasText(value) || "-".equals(value.trim())) {
       return null;
-    }
-    return parseBigDecimal(value, lineNumber, label);
-  }
-
-  private BigDecimal parseZeroAllowedBigDecimal(String value, int lineNumber, String label) {
-    if (!StringUtils.hasText(value) || "-".equals(value.trim())) {
-      return BigDecimal.ZERO;
     }
     return parseBigDecimal(value, lineNumber, label);
   }

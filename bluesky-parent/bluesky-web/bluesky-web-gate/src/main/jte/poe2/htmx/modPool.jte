@@ -5,6 +5,8 @@
 @import net.luversof.web.gate.util.CspNonceHolder
 
 @param Poe2.ModPool pool
+<%-- 접두/접미 제목 단계 — 모드 화면(htmx)은 h1 바로 아래라 h2(PoE1 modClass 와 같음), 베이스 상세는 "전체 제작 모드" h2 아래라 h3(10-02 C20: h1→h3 건너뜀) --%>
+@param boolean nested = false
 
 !{
 	java.util.List<Poe2.ModGroup> prefixes = pool.groups().stream().filter(g -> "prefix".equals(g.gen())).toList();
@@ -17,9 +19,9 @@
 <div class="space-y-2">
 	<div class="flex flex-wrap items-baseline gap-2 text-sm">
 		<span class="font-semibold">${net.luversof.web.gate.poe.PoeClassNames.poe2(pool.itemClassKo(), pool.itemClass())}@if(pool.variant() != null) · ${PoeText.name(pool.variantKo(), pool.variant())}@endif</span>
-		<span class="text-xs text-base-content/50">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.bases"), pool.bases() == null ? 0 : pool.bases().size())}</span>
+		<span class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.bases"), pool.bases() == null ? 0 : pool.bases().size())}</span>
 	</div>
-	<div class="text-xs text-base-content/50">${MessageUtil.getMessage("poe2.mods.hint")}</div>
+	<div class="text-xs text-base-content/60">${MessageUtil.getMessage("poe2.mods.hint")}</div>
 	<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 		@for(String gen : java.util.List.of("prefix", "suffix"))
 			!{
@@ -29,7 +31,11 @@
 				for (Poe2.ModGroup pg : groups) for (Poe2.ModTier pt : pg.tiers()) poolWeight += pt.weight() == null ? 0 : pt.weight();
 			}
 			<section class="space-y-1.5">
-				<h3 class="font-semibold text-sm">${MessageUtil.getMessage("poe2.mods." + gen)} <span class="text-xs font-normal text-base-content/40">${groups.size()}</span></h3>
+				@if(nested)
+					<h3 class="font-semibold text-sm">${MessageUtil.getMessage("poe2.mods." + gen)} <span class="text-xs font-normal text-base-content/60">${groups.size()}</span></h3>
+				@else
+					<h2 class="font-semibold text-sm">${MessageUtil.getMessage("poe2.mods." + gen)} <span class="text-xs font-normal text-base-content/60">${groups.size()}</span></h2>
+				@endif
 				@for(Poe2.ModGroup g : groups)
 					!{
 						Poe2.ModTier top = g.tiers().get(0);
@@ -47,8 +53,8 @@
 							@endif
 							<span class="text-[#8888ff]" data-family-stats data-join=" / ">${String.join(" / ", topLines)}</span>
 							<%-- 최상위 티어 요구 아이템 레벨 — PoE1 과 같은 i 배지(레벨 막대가 가용 최상위로 바꿔 준다) --%>
-							<span class="ml-1 text-[10px] font-mono text-base-content/40" data-top-ilvl title="${korean ? "최상위 티어 요구 아이템 레벨" : "Top tier required item level"}">i${top.level()}</span>
-							<span class="ml-1 text-xs text-base-content/40" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.tiers"), g.tiers().size())}</span>
+							<span class="ml-1 text-[10px] font-mono text-base-content/60" data-top-ilvl title="${korean ? "최상위 티어 요구 아이템 레벨" : "Top tier required item level"}">i${top.level()}</span>
+							<span class="ml-1 text-xs text-base-content/60" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.tiers"), g.tiers().size())}</span>
 						</summary>
 						<div class="overflow-x-auto px-2 pb-2">
 							<table class="table table-xs">
@@ -75,7 +81,7 @@
 														<div>${line}</div>
 													@endfor
 												</div>
-												<div class="text-[10px] text-base-content/40">${PoeText.name(t.nameKo(), t.name())}@if(korean && t.name() != null) · ${t.name()}@endif</div>
+												<div class="text-[10px] text-base-content/60">${PoeText.name(t.nameKo(), t.name())}@if(korean && t.name() != null) · ${t.name()}@endif</div>
 											</td>
 											<td class="text-right">${t.weight()}</td>
 											@if(poolWeight > 0)
@@ -99,7 +105,7 @@
 <div id="poe2CraftCalc" class="sticky bottom-2 z-10 mt-3 hidden flex-wrap items-center gap-2 rounded-box border border-primary/30 bg-base-100 px-3 py-2 text-sm shadow-lg">
 	<span class="font-semibold text-primary" id="poe2CraftCalcLabel"></span>
 	<span class="font-mono" id="poe2CraftCalcValue"></span>
-	<span class="text-[11px] text-base-content/40">${korean ? "독립 가정 근사 — 접두/접미 자리 경쟁 미반영(실제는 더 낮음)" : "independence approximation"}</span>
+	<span class="text-[11px] text-base-content/60">${korean ? "독립 가정 근사 — 접두/접미 자리 경쟁 미반영(실제는 더 낮음)" : "independence approximation"}</span>
 	<button type="button" class="btn btn-ghost btn-xs ml-auto" id="poe2CraftCalcClear">${korean ? "선택 해제" : "Clear"}</button>
 </div>
 <script nonce="${CspNonceHolder.getNonce()}">

@@ -539,12 +539,13 @@ public class LedgerIntegrityService {
                 && (withholdingFloor == null
                     || nz(d.getGrossAmount()).multiply(WITHHOLDING_RATE).compareTo(withholdingFloor)
                         >= 0),
+        // 다른 예시처럼 key=value 로 - 이 한 줄만 한국어("15.4% 기준 예상 세금=")라 영어 화면 관리 탭에 그대로 보였다(2026-10-03).
         d ->
             "gross="
                 + nz(d.getGrossAmount())
-                + ", tax=0, "
+                + ", tax=0, expectedTax@"
                 + WITHHOLDING_RATE.multiply(BigDecimal.valueOf(100)).stripTrailingZeros()
-                + "% 기준 예상 세금="
+                + "%="
                 + nz(d.getGrossAmount())
                     .multiply(WITHHOLDING_RATE)
                     .setScale(0, RoundingMode.HALF_UP),

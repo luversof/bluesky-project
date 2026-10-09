@@ -6,6 +6,8 @@
 @param String error = null
 <%-- 무기 세트별 가이드(10-01) — 주 세트(DPS 큰 쪽). 다른 세트로 바꿔 볼 때도 표시를 유지하려고 게이트가 넘긴다. --%>
 @param Integer mainSet = null
+<%-- 거래소 주소 경로의 리그(10-08 C172) --%>
+@param String tradeLeague = null
 
 <%-- 업그레이드 가이드(PoB-PoE2 비교 계산기 — PoB 아이템 툴팁의 "끼우면/빼면" 과 같은 계산) — PoE1 빌드 화면의 가이드 자리.
      ① 고유 아이템으로 바꾸면(DPS 상위 · 생존 상위) ② 장비 칸 기여(빼면) ③ 보조젬 기여(끄면) ④ 특화·핵심 패시브 기여(빼면, 0 = 재분배 후보).
@@ -27,7 +29,7 @@
 @else
 	!{
 		java.util.function.Function<Double, String> pct = v -> v == null ? "-" : Math.abs(v) < 0.05 ? "0" : String.format("%+.1f%%", v);
-		java.util.function.Function<Double, String> tone = v -> v == null || Math.abs(v) < 0.05 ? "text-base-content/40" : v > 0 ? "text-success" : "text-error";
+		java.util.function.Function<Double, String> tone = v -> v == null || Math.abs(v) < 0.05 ? "text-base-content/60" : v > 0 ? "text-success" : "text-error";
 		java.util.List<Poe2.GuideNode> strong = new java.util.ArrayList<>();
 		java.util.List<Poe2.GuideNode> zero = new java.util.ArrayList<>();
 		for (Poe2.GuideNode n : guide.nodes()) {
@@ -38,7 +40,7 @@
 	<section class="space-y-3" data-poe2-guide>
 		<div class="flex flex-wrap items-baseline gap-2">
 			<h3 class="text-sm font-semibold">${korean ? "업그레이드 가이드 (PoB-PoE2 계산)" : "Upgrade guide (PoB-PoE2)"}</h3>
-			<span class="text-xs text-base-content/50" data-guide-tried>${korean ? "고유 아이템 " + guide.tried() + "가지를 끼워 보고 오르는 것만(PoB 고유 목록처럼 품질 20% 기준) · 요구 능력치가 모자라게 되거나 다른 축을 5% 넘게 깎는 교체는 뺐습니다" : guide.tried() + " unique swaps tried (20% quality, as in PoB's unique list) · excludes swaps that break attribute requirements or cost over 5% on the other axis"} (${guide.elapsedMs()}ms)</span>
+			<span class="text-xs text-base-content/60" data-guide-tried>${korean ? "고유 아이템 " + guide.tried() + "가지를 끼워 보고 오르는 것만(PoB 고유 목록처럼 품질 20% 기준) · 요구 능력치가 모자라게 되거나 다른 축을 5% 넘게 깎는 교체는 뺐습니다" : guide.tried() + " unique swaps tried (20% quality, as in PoB's unique list) · excludes swaps that break attribute requirements or cost over 5% on the other axis"} (${guide.elapsedMs()}ms)</span>
 		</div>
 		<%-- 무기 세트별 추천(10-01 사용자 요청) — 세트마다 패시브·무기가 달라 추천도 달라진다. 이 가이드는 weaponSet 을 켠 채 계산했다(처음엔 주 세트).
 		     다른 세트 단추는 그 세트로 가이드를 다시 계산해 이 구획을 통째로 바꾼다(가이드는 수 초~20초 — 단추에 로딩 표시). --%>
@@ -59,7 +61,7 @@
 						</button>
 					@endif
 				@endfor
-				<span class="text-base-content/50">${korean ? "— 세트마다 패시브·무기가 달라 그 세트를 켠 채 계산했습니다" : "— computed with that set active (passives and weapons differ per set)"}</span>
+				<span class="text-base-content/60">${korean ? "— 세트마다 패시브·무기가 달라 그 세트를 켠 채 계산했습니다" : "— computed with that set active (passives and weapons differ per set)"}</span>
 			</div>
 		@endif
 		<%-- 증감의 기준 — DPS 는 PoB 주 스킬 하나의 값이다. 주 스킬이 보조용(의식·오라 등)이면 DPS 추천이 그 스킬 기준이 되므로 밝힌다(09-30 실빌드 리치: 78 DPS) --%>
@@ -86,7 +88,7 @@
 				<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-swaps="${k == 0 ? "dps" : "ehp"}">
 					<div class="text-xs font-semibold mb-1">${title}</div>
 					@if(list.isEmpty())
-						<div class="text-xs text-base-content/50">${korean ? "오르는 교체가 없습니다." : "No improving swap."}</div>
+						<div class="text-xs text-base-content/60">${korean ? "오르는 교체가 없습니다." : "No improving swap."}</div>
 					@else
 						<div class="overflow-x-auto">
 							<table class="table table-xs">
@@ -106,6 +108,9 @@
 														   hx-target="#poePreview"
 														   hx-trigger="mouseenter delay:100ms"
 														   hx-swap="innerHTML">${korean && s.itemKo() != null ? s.itemKo() : s.item()}</a>
+														@if(PoeText.trade2Url(tradeLeague, s.tradeQuery()) != null)
+															<a class="badge badge-xs badge-outline badge-info" target="_blank" rel="noopener" href="${PoeText.trade2Url(tradeLeague, s.tradeQuery())}" data-guide-trade title="${korean ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "Search trade for this unique"}">${korean ? "거래소" : "Trade"}</a>
+														@endif
 													@else
 														<span class="text-[#af6025]">${s.item()}</span>
 													@endif
@@ -138,10 +143,10 @@
 			<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-gemswaps>
 				<div class="text-xs font-semibold mb-1">
 					${korean ? "보조젬 교체: 「" + (guide.gemWeakestKo() != null ? guide.gemWeakestKo() : guide.gemWeakest()) + "」 자리에 끼우면" : "Support swap: replacing " + guide.gemWeakest()}
-					<span class="font-normal text-base-content/50">${korean ? "(기여가 가장 작은 보조 · 이 스킬에 적용되는 보조 " + guide.gemTried() + "가지 중 · 같은 계열은 가장 좋은 하나만)" : "(weakest support · " + guide.gemTried() + " compatible supports tried)"}</span>
+					<span class="font-normal text-base-content/60">${korean ? "(기여가 가장 작은 보조 · 이 스킬에 적용되는 보조 " + guide.gemTried() + "가지 중 · 같은 계열은 가장 좋은 하나만)" : "(weakest support · " + guide.gemTried() + " compatible supports tried)"}</span>
 				</div>
 				@if(guide.gemSwaps().isEmpty())
-					<div class="text-xs text-base-content/50">${korean ? "오르는 교체가 없습니다." : "No improving swap."}</div>
+					<div class="text-xs text-base-content/60">${korean ? "오르는 교체가 없습니다." : "No improving swap."}</div>
 				@else
 					<div class="flex flex-wrap gap-1.5">
 						@for(Poe2.GuideSupport s : guide.gemSwaps())
@@ -174,9 +179,9 @@
 						String title = k == 0 ? (korean ? "다음에 찍을 패시브 — 피해(DPS)" : "Next passives — DPS") : (korean ? "다음에 찍을 패시브 — 생존(EHP)" : "Next passives — EHP");
 					}
 					<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-next-list="${k == 0 ? "dps" : "ehp"}">
-						<div class="text-xs font-semibold mb-1">${title} <span class="font-normal text-base-content/50">${korean ? "(가는 길 포함 점수 · 점수당 순 · 안 찍은 특화·핵심 " + guide.nextTried() + "개 중)" : "(path points included · per point · " + guide.nextTried() + " tried)"}</span></div>
+						<div class="text-xs font-semibold mb-1">${title} <span class="font-normal text-base-content/60">${korean ? "(가는 길 포함 점수 · 점수당 순 · 안 찍은 특화·핵심 " + guide.nextTried() + "개 중)" : "(path points included · per point · " + guide.nextTried() + " tried)"}</span></div>
 						@if(list.isEmpty())
-							<div class="text-xs text-base-content/50">${korean ? "오르는 패시브가 없습니다." : "None."}</div>
+							<div class="text-xs text-base-content/60">${korean ? "오르는 패시브가 없습니다." : "None."}</div>
 						@else
 							<table class="table table-xs">
 								<thead><tr><th>${korean ? "패시브" : "Passive"}</th><th class="text-right">${korean ? "점수" : "Pts"}</th><th class="text-right">DPS</th><th class="text-right">EHP</th><th class="text-right">${korean ? "점당" : "Per pt"}</th></tr></thead>
@@ -208,17 +213,17 @@
 			<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-modtargets>
 				<div class="text-xs font-semibold mb-1">
 					${korean ? "칸별로 노릴 옵션" : "Mods to aim for, per slot"}
-					<span class="font-normal text-base-content/50">${korean ? "(지금 아이템에 그 옵션의 최고 등급·최대 롤을 더하면 — 이미 있는 옵션은 제외, 인게임에선 접두·접미 칸이 비어야 붙습니다)" : "(adding the top tier at max roll to the current item — existing mods excluded)"}</span>
+					<span class="font-normal text-base-content/60">${korean ? "(지금 아이템에 그 옵션의 최고 등급·최대 롤을 더하면 — 이미 있는 옵션은 제외, 인게임에선 접두·접미 칸이 비어야 붙습니다)" : "(adding the top tier at max roll to the current item — existing mods excluded)"}</span>
 				</div>
 				<div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
 					@for(Poe2.GuideModTarget t : guide.modTargets())
 						@if(!t.dps().isEmpty() || !t.ehp().isEmpty())
 							<div class="rounded-lg border border-base-200 px-2 py-1.5 text-xs" data-guide-modtarget="${t.slot()}">
-								<div class="font-semibold">${Poe2View.slotName(t.slot())} <span class="font-normal text-base-content/50">${korean && t.itemKo() != null ? t.itemKo() : t.item()}</span></div>
+								<div class="font-semibold">${Poe2View.slotName(t.slot())} <span class="font-normal text-base-content/60">${korean && t.itemKo() != null ? t.itemKo() : t.item()}</span></div>
 								@for(int k = 0; k < 2; k++)
 									!{ java.util.List<Poe2.GuideMod> mods = k == 0 ? t.dps() : t.ehp(); }
 									@if(!mods.isEmpty())
-										<div class="mt-1 text-[11px] text-base-content/50">${k == 0 ? (korean ? "피해(DPS)" : "DPS") : (korean ? "생존(EHP)" : "EHP")}</div>
+										<div class="mt-1 text-[11px] text-base-content/60">${k == 0 ? (korean ? "피해(DPS)" : "DPS") : (korean ? "생존(EHP)" : "EHP")}</div>
 										@for(Poe2.GuideMod m : mods)
 											<div class="flex items-baseline gap-2">
 												<span class="flex-1 text-[#8888ff]">${String.join(" / ", korean && m.linesKo() != null && !m.linesKo().isEmpty() ? m.linesKo() : m.lines())}</span>
@@ -243,7 +248,7 @@
 					<tbody>
 						@for(Poe2.GuideSlot s : guide.slots())
 							<tr title="${korean && s.itemKo() != null ? s.itemKo() : s.item()}">
-								<td class="whitespace-nowrap">${Poe2View.slotName(s.slot())}<div class="text-[10px] text-base-content/50 truncate max-w-[10rem]">${korean && s.itemKo() != null ? s.itemKo() : s.item()}</div></td>
+								<td class="whitespace-nowrap">${Poe2View.slotName(s.slot())}<div class="text-[10px] text-base-content/60 truncate max-w-[10rem]">${korean && s.itemKo() != null ? s.itemKo() : s.item()}</div></td>
 								<td class="text-right font-mono ${tone.apply(s.dps())}">${pct.apply(s.dps())}</td>
 								<td class="text-right font-mono ${tone.apply(s.ehp())}">${pct.apply(s.ehp())}</td>
 							</tr>
@@ -255,7 +260,7 @@
 			<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-supports>
 				<div class="text-xs font-semibold mb-1">${korean ? "주 스킬 보조젬 기여 (끄면 잃는 몫)" : "Support gem contribution"}</div>
 				@if(guide.supports().isEmpty())
-					<div class="text-xs text-base-content/50">${korean ? "주 스킬 묶음에 보조젬이 없습니다." : "No supports in the main group."}</div>
+					<div class="text-xs text-base-content/60">${korean ? "주 스킬 묶음에 보조젬이 없습니다." : "No supports in the main group."}</div>
 				@else
 					<table class="table table-xs">
 						<thead><tr><th>${korean ? "보조젬" : "Support"}</th><th class="text-right">DPS</th><th class="text-right">EHP</th></tr></thead>

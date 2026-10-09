@@ -19,9 +19,12 @@
 	String rarity = "#af6025";
 	String itemClass = net.luversof.web.gate.poe.PoeClassNames.poe2(item.itemClassKo(), item.itemClass());
 	java.util.List<String> flavourLines = PoeText.lines(item.flavourKo(), item.flavour());
+	// 데이터의 "Corrupted"/"타락" 옵션 줄(고유 13) — 인게임은 옵션이 아니라 맨 아래 붉은 한 줄(10-05 C157, PoE1 uniqueDetail 짝)
+	java.util.Set<String> corruptedWords = java.util.Set.of("Corrupted", "타락");
+	boolean corruptedItem = explicits != null && explicits.stream().anyMatch(corruptedWords::contains);
 }
 
-<div class="poe-tooltip poe-rar-unique w-80 max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
+<div class="poe-tooltip poe-rar-unique w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
 	<div class="poe-tt-band poe-tt-band-2">
 		<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${PoeText.name(item.nameKo(), item.name())}</div>
 		<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${PoeText.name(item.baseTypeKo(), item.baseType())}</div>
@@ -48,7 +51,9 @@
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center space-y-0.5">
 			@for(String line : explicits)
+				@if(!corruptedWords.contains(line))
 				<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+				@endif
 			@endfor
 		</div>
 	@endif
@@ -62,4 +67,10 @@
 			@endfor
 		</div>
 	@endif
+	@if(corruptedItem)
+		<div class="poe-tt-sepimg"></div>
+		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${PoeText.isKorean() ? "타락" : "Corrupted"}</div>
+	@endif
+	<%-- 키워드 설명(10-04 C112, 젬 C111 짝) — 변형을 골랐으면 그 변형 줄의 용어(기본과 다른 변형만 자기 목록을 갖고, 없으면 고유 것과 같다 — C117) --%>
+	@template.poe2.htmx.keywordBox(keywords = picked != null && picked.keywords() != null ? picked.keywords() : item.keywords())
 </div>

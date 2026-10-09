@@ -45,6 +45,45 @@ function NewFileSearch(pattern, ...)
 	if rawNewFileSearch then return rawNewFileSearch(pattern, ...) end
 	return nil
 end
+-- Abyss 타임리스 주얼(아마나무 · 쿠르갈 · 테크로드 · 울라만 · 조라스)은 PoB 가 .bin 캐시 없이(cacheUncompressed=false) 늘
+-- 분할 zip 을 이어 Inflate 로 푼다 → 헤드리스 빈 스텁이라 "Invalid Abyss timeless jewel header" 로 스펙 임포트가 실패했다
+-- (10-05 C166, 엔진 단계 10건). 파이프라인(timeless-bin.mjs)이 미리 푼 .bin 을 압축본 크기로 짝지어 돌려준다(이름이 인자로 안 온다).
+local rawInflate = Inflate
+local abyssBinBySize = nil
+function Inflate(data)
+	if type(data) == "string" then
+		if not abyssBinBySize then
+			abyssBinBySize = {}
+			for _, name in ipairs({ "AbyssAmanamu", "AbyssKurgal", "AbyssTecrod", "AbyssUlaman", "AbyssZorath" }) do
+				local base = "./Data/TimelessJewelData/" .. name
+				local size, part = 0, 0
+				while true do
+					local f = io.open(base .. ".zip.part" .. part, "rb")
+					if not f then break end
+					size = size + f:seek("end")
+					f:close()
+					part = part + 1
+				end
+				if part == 0 then
+					local f = io.open(base .. ".zip", "rb")
+					if f then size = f:seek("end") f:close() end
+				end
+				if size > 0 then abyssBinBySize[size] = base .. ".bin" end
+			end
+		end
+		local bin = abyssBinBySize[#data]
+		if bin then
+			local f = io.open(bin, "rb")
+			if f then
+				local out = f:read("*a")
+				f:close()
+				return out
+			end
+		end
+	end
+	if rawInflate then return rawInflate(data) end
+	return nil
+end
 
 
 -- ⚠ PoB 는 빌드 로드 중 오류를 자신의 PCall 로 삼킨다. 그러면 스펙 임포트가 중단된 채
@@ -136,7 +175,7 @@ end
 	-- 소환수 생존 — 주 스킬 소환수의 방어(PoB 가 calcs.defence + buildDefenceEstimations 로 소환수에게도 계산한다).
 	--   "Minion" 접두 키로 따로 싣는다(플레이어 값과 섞지 않는다). 발단(2026-09-29): 업그레이드 가이드가 수호자 빌드의
 	--   소환수 생명력 보조를 "DPS 기여 0%" 로 보고 교체를 권했다 — 플레이어 EHP 만 봐서 소환수가 버티는 몫이 안 보였다.
-	--   ⚠ worker.lua(최적화기 상주 워커)엔 아직 없다 — 가이드·재계산 전용.
+	--   worker.lua(최적화기)도 Life · EnergyShield · TotalEHP 를 싣는다(10-05 C168 — 균형 목표의 소환수 생존 항).
 	if minionOut then
 		for _, key in ipairs({ "Life", "EnergyShield", "TotalEHP", "PhysicalMaximumHitTaken", "FireMaximumHitTaken",
 				"ColdMaximumHitTaken", "LightningMaximumHitTaken", "ChaosMaximumHitTaken" }) do

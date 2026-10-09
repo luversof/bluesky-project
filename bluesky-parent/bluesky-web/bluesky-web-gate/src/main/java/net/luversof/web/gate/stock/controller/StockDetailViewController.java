@@ -315,7 +315,9 @@ public class StockDetailViewController {
     seriesRequestPre.setStartDate(startDate);
     seriesRequestPre.setEndDate(endDate);
     var seriesParamsPre = seriesRequestPre.toParams();
-    seriesParamsPre.add("granularity", "AUTO");
+    // 일별로 받는다(2026-10-07) - 보유 평가액 추이 차트를 주가 캔들에 합쳐 툴팁이 그 날 평가액을 보여 준다. AUTO 는 180 점을 넘으면
+    // 주 · 월 마지막 날만 남겨, 캔들(봉 수로 따로 묶는다)의 날짜와 어긋나 툴팁이 비었다. 기간 배지는 첫 · 끝 점만 쓰므로 그대로다.
+    seriesParamsPre.add("granularity", "DAILY");
     // 차트용 시리즈와 '기간별 손익' 표를 한 번의 시뮬레이션으로 함께 받는다. 따로 부르면 같은 이력을
     // 두 번 돌린다. 쪼갬 단위(달/해)는 조회 기간 길이에 따라 api-stock 이 고른다.
     seriesParamsPre.add("breakdown", "AUTO");
@@ -715,6 +717,11 @@ public class StockDetailViewController {
       priceBasisDate = lastPricePoint.tradeDate();
     }
     model.addAttribute("priceBasisDate", priceBasisDate);
+    // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
+    model.addAttribute(
+        "priceBasisIntradayTime",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
+            snapshotProfits, priceBasisDate));
 
     model.addAttribute("trades", trades);
     model.addAttribute("dividends", dividends);
@@ -998,6 +1005,10 @@ public class StockDetailViewController {
     // 실시간 시세로 오해할 수 있다(실측: 오늘이 2026-08-22 인데 보유 15종목의 currentPriceDate 가
     // 모두 2026-08-20 이었다). 자산현황·포트폴리오와 같은 표기를 쓴다.
     model.addAttribute("priceBasisDate", latestPriceBasisDate(holdings));
+    model.addAttribute(
+        "priceBasisIntradayTime",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
+            holdings, latestPriceBasisDate(holdings)));
     model.addAttribute("evaluationAmount", evaluationAmount);
     model.addAttribute("totalBuyCost", totalBuyCost);
     model.addAttribute("evaluationProfit", evaluationProfit);

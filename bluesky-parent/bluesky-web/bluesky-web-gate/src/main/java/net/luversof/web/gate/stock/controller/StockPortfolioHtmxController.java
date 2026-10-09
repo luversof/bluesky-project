@@ -335,6 +335,11 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     java.time.LocalDate priceBasisDate =
         net.luversof.web.gate.stock.util.StockPriceBasisUtil.latestPriceBasisDate(enrichedList);
     model.addAttribute("priceBasisDate", priceBasisDate);
+    // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
+    model.addAttribute(
+        "priceBasisIntradayTime",
+        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
+            enrichedList, priceBasisDate));
 
     // 보유 기간의 끝은 '오늘'이다. 요청 존으로 잡는다 - 서버 존(UTC)으로 잡으면 KST 오전에 하루가 덜 센다.
     java.time.ZoneId holdingZone = resolveZoneIdOrDefault(request.getTimeZone());

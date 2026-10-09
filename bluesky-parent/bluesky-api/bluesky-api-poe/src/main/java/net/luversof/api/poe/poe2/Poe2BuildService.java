@@ -18,6 +18,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import net.luversof.api.poe.service.PoePobImportService;
+import net.luversof.api.poe.service.PoeTradeQueries;
 
 /**
  * PoB(PoE2) 코드 → 빌드 요약. PoB-PoE2 의 저장 형식은 PoE1 과 같은 구조의 XML(루트만 PathOfBuilding2)이라 코드 해독은 PoE1 의
@@ -54,11 +55,17 @@ public class Poe2BuildService {
   private final Poe2DataService data;
   private final Poe2PobEngineService engine;
 
+  private final Poe2TradeStatDataService tradeStats;
+
   public Poe2BuildService(
-      PoePobImportService decoder, Poe2DataService data, Poe2PobEngineService engine) {
+      PoePobImportService decoder,
+      Poe2DataService data,
+      Poe2PobEngineService engine,
+      Poe2TradeStatDataService tradeStats) {
     this.decoder = decoder;
     this.data = data;
     this.engine = engine;
+    this.tradeStats = tradeStats;
   }
 
   /** 코드 → 업그레이드 가이드(칸·보조젬·패시브 기여 + 고유 교체 상위). 이름은 우리 데이터로 한국어를 붙인다. */
@@ -475,8 +482,8 @@ public class Poe2BuildService {
               spec.base(),
               spec.baseKo(),
               n.path("tried").asInt(0),
-              upgradeOrNull(rareOf(n.path("dps"), spec)),
-              upgradeOrNull(rareOf(n.path("ehp"), spec))));
+              withTrade(upgradeOrNull(rareOf(n.path("dps"), spec)), spec),
+              withTrade(upgradeOrNull(rareOf(n.path("ehp"), spec)), spec)));
     }
     // 오르는 폭이 큰 칸부터(DPS·EHP 중 큰 쪽)
     out.sort(
@@ -487,6 +494,22 @@ public class Poe2BuildService {
                         r.ehp() == null || r.ehp().ehp() == null ? -1e9 : r.ehp().ehp()))
             .thenComparing(Poe2.GuideRareTarget::slot));
     return out;
+  }
+
+  /** 레어 목표에 거래소 쿼리를 붙인다(10-08 C172) — 분류(장화 · 반지 …) + 옵션 85% 이상, 옵션 5개 이상이면 n−2. */
+  private Poe2.GuideRare withTrade(Poe2.GuideRare r, RareSpec spec) {
+    if (r == null) {
+      return null;
+    }
+    String itemClass = data.baseByName(spec.base()).map(Poe2.BaseItem::itemClass).orElse(null);
+    return new Poe2.GuideRare(
+        r.dps(),
+        r.ehp(),
+        r.lines(),
+        r.linesKo(),
+        r.itemText(),
+        PoeTradeQueries.rareTarget2(
+            itemClass, spec.baseKo(), r.linesKo(), tradeStats.dictionary()));
   }
 
   /** 레어 목표를 보일 만한가 — PoE1 가이드 isUpgrade 와 같은 기준(한 축 +1% 이상, 어느 축도 -5% 넘게 안 깎임). */
@@ -523,7 +546,7 @@ public class Poe2BuildService {
         ko.addAll(c.linesKo() == null || c.linesKo().isEmpty() ? c.lines() : c.linesKo());
       }
     }
-    return new Poe2.GuideRare(num(n, "dps"), num(n, "ehp"), en, ko, rareItemText(spec, en));
+    return new Poe2.GuideRare(num(n, "dps"), num(n, "ehp"), en, ko, rareItemText(spec, en), null);
   }
 
   /** guide2.lua ⑧ 이 재는 아이템과 같은 텍스트(머리 줄 · 암시 개수 · 암시 · 옵션) — 붙여 넣으면 엔진이 잰 그 아이템이 된다. */
@@ -655,7 +678,8 @@ public class Poe2BuildService {
               num(s, "dps"),
               num(s, "ehp"),
               num(s, "maxHit"),
-              num(s, "life")));
+              num(s, "life"),
+              PoeTradeQueries.unique(u.map(Poe2.Unique::nameKo).orElse(null), item)));
     }
     return out;
   }
@@ -693,6 +717,21 @@ public class Poe2BuildService {
       String skill,
       Map<Integer, Integer> attrs,
       Map<Integer, Integer> sets) {
+    return treeEval(className, ascendancy, nodes, skill, attrs, sets, Map.of());
+  }
+
+  /**
+   * jewels = 주얼 칸 → 고유 주얼 slug(트리 화면에서 꽂은 것, 10-03 C73) — PoB 원문을 아이템으로 넣고 그 칸에 꽂는다. 모르는 slug 는
+   * 건너뛴다.
+   */
+  public Poe2.TreeEval treeEval(
+      String className,
+      String ascendancy,
+      List<Integer> nodes,
+      String skill,
+      Map<Integer, Integer> attrs,
+      Map<Integer, Integer> sets,
+      Map<Integer, String> jewels) {
     Poe2.Gem gem = skill == null || skill.isBlank() ? null : data.gemByName(skill).orElse(null);
     String xml =
         gem != null
@@ -704,6 +743,16 @@ public class Poe2BuildService {
                 + "<Tree activeSpec=\"1\"><Spec ascendClassId=\"0\" treeVersion=\"0_5\" classId=\"6\" nodes=\"\"/></Tree>\n"
                 + "</PathOfBuilding2>\n";
     xml = withTree(xml, className, ascendancy, nodes, attrs, sets);
+    if (jewels != null && !jewels.isEmpty()) {
+      Map<Integer, String> raws = new java.util.LinkedHashMap<>();
+      for (Map.Entry<Integer, String> j : jewels.entrySet()) {
+        String raw = jewelText(j.getValue());
+        if (raw != null && nodes.contains(j.getKey())) {
+          raws.put(j.getKey(), raw);
+        }
+      }
+      xml = withJewels(withItemsBlock(xml), raws);
+    }
     Poe2DataService.TreeIndex idx = data.treeIndex();
     Integer start = idx.classStartNode().get(className);
     java.util.Set<Integer> ids = new java.util.HashSet<>();
@@ -766,6 +815,129 @@ public class Poe2BuildService {
   }
 
   /** 세트를 켜려면 Items·ItemSet 의 useSecondWeaponSet 이 있어야 한다 — 스킬 없는 평가 XML 엔 Items 가 없어 빈 것을 넣는다. */
+  /**
+   * 주얼 칸 → PoB 아이템 원문을 &lt;Items&gt; 에 아이템으로 넣고 &lt;Spec&gt;&lt;Sockets&gt; 로 그 칸에 꽂는다(10-03 C73).
+   * 아이템 id 는 있던 것 다음부터. &lt;Items&gt; · &lt;/Spec&gt; 가 없으면 그대로 돌려준다.
+   */
+  static String withJewels(String xml, Map<Integer, String> rawBySocket) {
+    if (rawBySocket == null
+        || rawBySocket.isEmpty()
+        || !xml.contains("</Items>")
+        || !xml.contains("</Spec>")) {
+      return xml;
+    }
+    int next = 1;
+    java.util.regex.Matcher m = java.util.regex.Pattern.compile("<Item id=\"(\\d+)\"").matcher(xml);
+    while (m.find()) {
+      next = Math.max(next, Integer.parseInt(m.group(1)) + 1);
+    }
+    StringBuilder items = new StringBuilder();
+    StringBuilder sockets = new StringBuilder("<Sockets>");
+    for (Map.Entry<Integer, String> e : rawBySocket.entrySet()) {
+      // PoB 고유 DB 원문은 이름부터 시작한다 — 빌드 XML 아이템은 "Rarity:" 줄이 있어야 PoB 가 고유로 읽는다(없으면 조용히 무시, 첫 시도에서 생명력
+      // 그대로)
+      String text =
+          e.getValue().startsWith("Rarity:") ? e.getValue() : "Rarity: UNIQUE\n" + e.getValue();
+      String body = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+      items.append("<Item id=\"").append(next).append("\">\n").append(body).append("\n</Item>\n");
+      sockets
+          .append("<Socket nodeId=\"")
+          .append(e.getKey())
+          .append("\" itemId=\"")
+          .append(next)
+          .append("\"/>");
+      next++;
+    }
+    sockets.append("</Sockets>");
+    String out =
+        xml.replaceFirst("</Items>", java.util.regex.Matcher.quoteReplacement(items + "</Items>"));
+    return out.replaceFirst(
+        "</Spec>", java.util.regex.Matcher.quoteReplacement(sockets + "</Spec>"));
+  }
+
+  /**
+   * 꽂은 주얼 값 "slug" 또는 "slug:변형번호" → 엔진에 넣을 아이템 원문(10-03 C74). 변형을 골랐으면 그 변형의 옵션 줄로 직접 짠다 — PoB 원문의
+   * "Selected Variant" 번호는 아이템마다 앞에 붙은 버전 변형(Pre 0.4.0 등) 때문에 우리 변형 번호와 어긋난다. 변형이 없으면 PoB 원문.
+   */
+  String jewelText(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    int sep = value.lastIndexOf(':');
+    String slug = sep > 0 ? value.substring(0, sep) : value;
+    Integer variant = null;
+    if (sep > 0) {
+      try {
+        variant = Integer.valueOf(value.substring(sep + 1));
+      } catch (NumberFormatException e) {
+        slug = value; // 숫자가 아니면 slug 의 일부
+      }
+    }
+    Poe2.Unique u = data.unique(slug).orElse(null);
+    if (u == null) {
+      return null;
+    }
+    if (variant != null && u.variants() != null) {
+      for (Poe2.UniqueVariant v : u.variants()) {
+        if (variant.equals(v.index())) {
+          return variantText(u, v);
+        }
+      }
+    }
+    return data.uniqueRaw(u);
+  }
+
+  /** 고유 + 변형 → PoB 아이템 원문(희귀도 · 이름 · 베이스 · 반경 · 암시 개수 · 암시 · 옵션). */
+  static String variantText(Poe2.Unique u, Poe2.UniqueVariant v) {
+    StringBuilder sb = new StringBuilder("Rarity: UNIQUE\n");
+    sb.append(u.name()).append("\n").append(u.baseType()).append("\n");
+    if (u.radius() != null && !u.radius().isBlank()) {
+      sb.append("Radius: ").append(u.radius()).append("\n");
+    }
+    List<String> imp = v.implicits() != null ? v.implicits() : List.of();
+    if (!imp.isEmpty()) {
+      sb.append("Implicits: ").append(imp.size()).append("\n");
+      imp.forEach(l -> sb.append(l).append("\n"));
+    }
+    if (v.explicits() != null) {
+      v.explicits().forEach(l -> sb.append(l).append("\n"));
+    }
+    return sb.toString();
+  }
+
+  /**
+   * 트리 주얼 칸 j= 값(10-04 C81) — 고유 주얼이면 slug, 변형이 여럿이면 원문 옵션 줄로 맞춘 "slug:번호"(뷰어 tree2.ts splitPick ·
+   * 계산 jewelText 와 같은 꼴). 레어 · 마법 주얼은 슬러그가 없어 넘기지 않는다.
+   */
+  String treeJewelSpec(String text) {
+    String[] lines = text.trim().split("[\\r\\n]+");
+    for (int i = 0; i + 1 < lines.length; i++) {
+      if (lines[i].trim().equalsIgnoreCase("Rarity: UNIQUE")) {
+        return data.uniqueByName(lines[i + 1].trim())
+            .map(
+                u -> {
+                  Integer variant =
+                      u.variants() == null
+                          ? null
+                          : net.luversof.api.poe.service.PoePobImportService.matchVariantLines(
+                              u.variants().stream()
+                                  .map(
+                                      v ->
+                                          java.util.Map.entry(
+                                              v.index(),
+                                              v.explicits() == null
+                                                  ? List.<String>of()
+                                                  : v.explicits()))
+                                  .toList(),
+                              text);
+                  return variant == null ? u.slug() : u.slug() + ":" + variant;
+                })
+            .orElse(null);
+      }
+    }
+    return null;
+  }
+
   static String withItemsBlock(String xml) {
     if (xml.contains("<Items")) {
       return xml;
@@ -1052,9 +1224,27 @@ public class Poe2BuildService {
 
     // 장비 — 활성 아이템 세트의 칸 → 아이템 원문
     List<Poe2.BuildItem> items = new ArrayList<>();
+    // 장비가 "Allocates X" 로 주는 노드 이름 — PoB 는 이런 부여 노드(isGrantedPassive · isFreeAllocate)를 포인트로 안
+    // 센다(10-03 C38)
+    java.util.Set<String> grantedNames = new java.util.HashSet<>();
+    // 목소리 "Allocates N Sinister Jewel sockets" — 심연 주얼 홈 1..N 을 공짜로 준다(PoB
+    // voicesSinisterSocketAliases, C39)
+    int[] sinisterSockets = {0};
+    // 주얼 "Can Allocate Passives from the X's starting point" — 그 직업 시작점도 출발점(PoB
+    // jewelData.alternateClassStart, C47)
+    java.util.Set<String> altStarts = new java.util.LinkedHashSet<>();
+    // 주얼 "From Nothing" — 핵심 노드 id:반경(C40). 뷰어 주소 l= 로 넘겨 그 반경 안을 연결 없이 찍게 한다
+    List<String> fromNothing = new ArrayList<>();
+    // 트리 주얼 칸에 꽂은 고유 주얼(j=칸:slug[:변형], 10-04 C81) — PoE1 트리 링크(PoePobImportService.treeLink)의 짝.
+    // 예전엔 없어 빌드 트리를 열면 주얼이 빠졌다
+    List<String> treeJewels = new ArrayList<>();
+    // 주얼 "Passives in Radius can be Allocated without being connected"(Controlled Metamorphosis 등)
+    // — 그 주얼 칸 둘레 고리(C47)
+    List<String> leapRings = new ArrayList<>();
     Element itemsEl = first(root, "Items");
+    // 아이템 id → 원문(장비 칸 + 트리 주얼 칸 둘 다에서 찾는다, C39)
+    Map<String, String> textById = new LinkedHashMap<>();
     if (itemsEl != null) {
-      Map<String, String> textById = new LinkedHashMap<>();
       for (Element it : children(itemsEl, "Item")) {
         textById.put(it.getAttribute("id"), directText(it));
       }
@@ -1067,6 +1257,7 @@ public class Poe2BuildService {
           continue;
         }
         items.add(item(slot.getAttribute("name"), text));
+        readGrants(text, grantedNames, sinisterSockets, altStarts);
       }
     }
 
@@ -1121,6 +1312,28 @@ public class Poe2BuildService {
             }
           }
         }
+        // 트리 주얼 칸의 주얼도 "Allocates" 를 준다(목소리 → 심연 주얼 홈, C39). 장비 칸(ItemSet Slot)엔 없다
+        Element sockets = first(spec, "Sockets");
+        if (sockets != null) {
+          for (Element socket : children(sockets, "Socket")) {
+            String jewel = textById.get(socket.getAttribute("itemId"));
+            if (jewel != null) {
+              readGrants(jewel, grantedNames, sinisterSockets, altStarts);
+              Integer socketId = intOrNull(socket.getAttribute("nodeId"));
+              if (socketId != null && allocated.contains(socketId)) {
+                String jewelSpec = treeJewelSpec(jewel);
+                if (jewelSpec != null) {
+                  treeJewels.add(socketId + ":" + jewelSpec);
+                }
+                fromNothing.addAll(fromNothingRoots(jewel, tree));
+                String ring = leapRing(jewel);
+                if (ring != null) {
+                  leapRings.add(socketId + ":" + ring);
+                }
+              }
+            }
+          }
+        }
         Element overrides = first(spec, "Overrides");
         Element attr = overrides == null ? null : first(overrides, "AttributeOverride");
         if (attr != null) {
@@ -1140,7 +1353,6 @@ public class Poe2BuildService {
     List<Poe2.BuildNode> notables = new ArrayList<>();
     List<Poe2.BuildNode> ascNodes = new ArrayList<>();
     int ascPoints = 0;
-    int mainPoints = 0;
     for (Integer id : allocated) {
       Poe2DataService.TreeNodeLite n = tree.nodes().get(id);
       if (n == null) {
@@ -1148,7 +1360,9 @@ public class Poe2BuildService {
       }
       Poe2.BuildNode ref = new Poe2.BuildNode(id, n.name(), n.nameKo());
       if (n.ascendancy() != null) {
-        if (!"ascendancyStart".equals(n.kind())) {
+        // 전직 선택지(데드아이 Point Blank 등)는 PoB 처럼 전직 포인트에서 뺀다(10-03 C38: 실빌드가 9점으로 보였다)
+        // 공짜 노드(isFreeAllocate)도 PoB CountAllocNodes 처럼 뺀다(C49)
+        if (!"ascendancyStart".equals(n.kind()) && !n.multipleChoiceOption() && !n.freeAllocate()) {
           ascPoints++;
           if ("notable".equals(n.kind())) {
             ascNodes.add(ref);
@@ -1159,7 +1373,6 @@ public class Poe2BuildService {
       if ("classStart".equals(n.kind())) {
         continue;
       }
-      mainPoints++;
       if ("keystone".equals(n.kind())) {
         keystones.add(ref);
       } else if ("notable".equals(n.kind())) {
@@ -1186,6 +1399,22 @@ public class Poe2BuildService {
           link.append("&w").append(k).append('=').append(String.join(",", setNodes.get(k - 1)));
         }
       }
+      // 장비가 준 노드(g=, 10-03 C38) — 뷰어가 출발점으로 써서 그 너머 유료 노드가 끊기지 않고, 점수로는 안 센다
+      if (!fromNothing.isEmpty()) {
+        link.append("&l=").append(String.join(",", fromNothing));
+      }
+      if (!leapRings.isEmpty()) {
+        link.append("&r=").append(String.join(",", leapRings));
+      }
+      java.util.Set<Integer> grantedIds =
+          grantedIds(grantedNames, sinisterSockets[0], tree, altStarts);
+      if (!grantedIds.isEmpty()) {
+        link.append("&g=")
+            .append(String.join(",", grantedIds.stream().sorted().map(String::valueOf).toList()));
+      }
+      if (!treeJewels.isEmpty()) {
+        link.append("&j=").append(String.join(",", treeJewels));
+      }
       treeLink = link.toString();
     }
     return new Poe2.BuildSummary(
@@ -1198,8 +1427,18 @@ public class Poe2BuildService {
         stats,
         skills,
         items,
-        new Poe2.BuildTree(mainPoints, ascPoints, keystones, notables, ascNodes),
-        treeLink);
+        new Poe2.BuildTree(
+            normalPoints(
+                allocated,
+                setNodes,
+                tree,
+                grantedIds(grantedNames, sinisterSockets[0], tree, altStarts)),
+            ascPoints,
+            keystones,
+            notables,
+            ascNodes),
+        treeLink,
+        tradeStats.league());
   }
 
   /** PoB 전직 이름 → 트리 JSON 의 전직 id(대부분 같은 영문 이름). */
@@ -1268,14 +1507,113 @@ public class Poe2BuildService {
         name,
         unique
             .map(Poe2.Unique::nameKo)
-            .orElse("NORMAL".equals(rarity) ? base.map(Poe2.BaseItem::nameKo).orElse(null) : null),
+            .orElse(
+                "NORMAL".equals(rarity)
+                    ? base.map(Poe2.BaseItem::nameKo).orElse(null)
+                    // 레어 이름 → 게임 Words 접두 · 접미 한국어(10-04 C144), 마법 → "접두 베이스 접미"(C145)
+                    : "RARE".equals(rarity)
+                        ? data.rareNameKo(name)
+                        : "MAGIC".equals(rarity) ? magicNameKo(name, base.orElse(null)) : null),
         base.map(Poe2.BaseItem::name).orElse(baseType),
         base.map(Poe2.BaseItem::nameKo).orElse(null),
         unique.map(Poe2.Unique::slug).orElse(null),
         base.map(Poe2.BaseItem::slug).orElse(null),
         unique.map(Poe2.Unique::image).orElse(base.map(Poe2.BaseItem::image).orElse(null)),
         mods,
-        translateAll(mods));
+        translateAll(mods),
+        implicitCountOf(lines),
+        // 고유는 고유 데이터의 키워드(기본 줄 기준, C112), 그 밖엔 옵션 풀 틀에서 찾은 것
+        unique
+            .map(Poe2.Unique::keywords)
+            .filter(k -> !k.isEmpty())
+            .orElseGet(() -> nullIfEmpty(data.keywordsFor(mods))),
+        unique.map(Poe2.Unique::flavour).orElse(null),
+        unique.map(Poe2.Unique::flavourKo).orElse(null),
+        base.map(Poe2.BaseItem::withoutKeywords).orElse(null),
+        qualityOf(lines),
+        tradeQuery(
+            rarity, name, unique.orElse(null), base.orElse(null), mods, implicitCountOf(lines)));
+  }
+
+  /** 거래소 검색 쿼리(10-08) — 고유는 이름, 레어 · 마법은 베이스 + 익스플리싯 옵션(암시 줄 제외). */
+  private String tradeQuery(
+      String rarity,
+      String name,
+      Poe2.Unique unique,
+      Poe2.BaseItem base,
+      List<String> mods,
+      Integer implicitCount) {
+    if ("UNIQUE".equals(rarity)) {
+      return PoeTradeQueries.unique(unique == null ? null : unique.nameKo(), name);
+    }
+    if (!"RARE".equals(rarity) && !"MAGIC".equals(rarity)) {
+      return null;
+    }
+    List<String> ko = translateAll(mods);
+    int from = Math.min(implicitCount == null ? 0 : implicitCount, ko.size());
+    return PoeTradeQueries.rare(
+        base == null ? null : base.nameKo(),
+        ko.subList(from, ko.size()),
+        null,
+        tradeStats.dictionary());
+  }
+
+  /**
+   * 마법 이름 "접두 베이스 접미" → 한국어(게임 MagicNamePrefixSuffix "{1} {0} {2}" — 한국어도 같은 순서). 못 옮기면 null(10-04
+   * C145).
+   */
+  private String magicNameKo(String name, Poe2.BaseItem base) {
+    if (name == null || base == null || base.nameKo() == null) {
+      return null;
+    }
+    int at = name.indexOf(base.name());
+    if (at < 0) {
+      return null;
+    }
+    String prefix = name.substring(0, at).trim();
+    String suffix = name.substring(at + base.name().length()).trim();
+    String prefixKo = prefix.isEmpty() ? "" : data.affixNameKo(prefix);
+    String suffixKo = suffix.isEmpty() ? "" : data.affixNameKo(suffix);
+    if (prefixKo == null || suffixKo == null) {
+      return null;
+    }
+    return String.join(
+        " ",
+        java.util.stream.Stream.of(prefixKo, base.nameKo(), suffixKo)
+            .filter(s -> !s.isEmpty())
+            .toList());
+  }
+
+  /** PoB 아이템 텍스트의 "Quality: N"(없으면 0, 10-04 C148). */
+  private static int qualityOf(List<String> lines) {
+    for (String l : lines) {
+      if (l.startsWith("Quality:")) {
+        try {
+          return Integer.parseInt(l.substring("Quality:".length()).replaceAll("[^0-9]", ""));
+        } catch (NumberFormatException e) {
+          return 0;
+        }
+      }
+    }
+    return 0;
+  }
+
+  /** PoB 아이템 텍스트의 "Implicits: N"(없으면 0). */
+  private static int implicitCountOf(List<String> lines) {
+    for (String l : lines) {
+      if (l.startsWith("Implicits:")) {
+        try {
+          return Integer.parseInt(l.substring("Implicits:".length()).trim());
+        } catch (NumberFormatException e) {
+          return 0;
+        }
+      }
+    }
+    return 0;
+  }
+
+  private static <T> List<T> nullIfEmpty(List<T> list) {
+    return list == null || list.isEmpty() ? null : list;
   }
 
   /** 옵션 줄 한국어 — 못 옮긴 줄은 영문 그대로(목록 길이·순서는 mods 와 같다). */
@@ -1283,10 +1621,52 @@ public class Poe2BuildService {
     Poe2ModTranslator t = data.modTranslator();
     List<String> out = new ArrayList<>(mods.size());
     for (String m : mods) {
-      String ko = t.translate(m);
+      String ko = translateLine(t, m);
       out.add(ko != null ? ko : m);
     }
     return out;
+  }
+
+  // 옵션 사전(§ 틀)으로 못 옮기는 특수 줄(10-04 C133 실측: ninja 출발점 60빌드 레어 줄 3842 중 572 영문, 그중 "Bonded:" 330여 줄).
+  //   문구는 게임 ClientStrings 그대로 — ItemDisplayShamanOnly "결속됨:", ItemPopupSanctified "축성",
+  //   ItemDisplayGrantedSkill "스킬 부여: {1}레벨 {0}", 고유 데이터의 "Allocates X" = "할당 X"
+  private static final String BONDED = "Bonded: ";
+  private static final java.util.regex.Pattern GRANTS_SKILL =
+      java.util.regex.Pattern.compile("^Grants Skill: (?:Level (\\d+) )?(.+)$");
+  private static final java.util.regex.Pattern ALLOCATES =
+      java.util.regex.Pattern.compile("^Allocates (\\D.*)$");
+
+  /** 한 줄 한국어(못 옮기면 null). 결속 접두는 벗겨 나머지를 옮긴 뒤 다시 붙인다. */
+  private String translateLine(Poe2ModTranslator t, String m) {
+    if (m.startsWith(BONDED)) {
+      String rest = m.substring(BONDED.length());
+      String ko = translateLine(t, rest);
+      return "결속됨: " + (ko != null ? ko : rest);
+    }
+    String ko = t.translate(m);
+    if (ko != null) {
+      return ko;
+    }
+    if ("Sanctified".equals(m)) {
+      return "축성";
+    }
+    java.util.regex.Matcher g = GRANTS_SKILL.matcher(m);
+    if (g.matches()) {
+      String skill = data.gemByName(g.group(2)).map(Poe2.Gem::nameKo).orElse(null);
+      if (skill != null) {
+        return g.group(1) != null ? "스킬 부여: " + g.group(1) + "레벨 " + skill : "스킬 부여: " + skill;
+      }
+    }
+    java.util.regex.Matcher a = ALLOCATES.matcher(m);
+    if (a.matches()) {
+      String name = a.group(1);
+      for (Poe2DataService.TreeNodeLite n : data.treeIndex().nodes().values()) {
+        if (name.equalsIgnoreCase(n.name()) && n.nameKo() != null) {
+          return "할당 " + n.nameKo();
+        }
+      }
+    }
+    return null;
   }
 
   // ── XML 도우미 ──
@@ -1376,5 +1756,187 @@ public class Poe2BuildService {
 
   private static String enc(String s) {
     return java.net.URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
+  }
+
+  /**
+   * 일반 패시브 포인트 — PoB-PoE2 규칙(Build.lua: 전체 − min(세트 I, 세트 II) = 공용 + 큰 쪽 세트, 10-03 C38). 예전엔 노드를 다
+   * 더해 실빌드가 "패시브 148점"(게임 한도 123)으로 보였고 트리 화면(115 / 123)과 달랐다.
+   *
+   * <p>공용 = 할당 노드 중 전직 · 직업 시작 · 두 세트 노드를 뺀 것(Spec nodes 에 세트 노드가 들었는지와 상관없이 같게 센다).
+   */
+  static int normalPoints(
+      List<Integer> allocated,
+      List<List<String>> setNodes,
+      Poe2DataService.TreeIndex tree,
+      java.util.Set<Integer> grantedIds) {
+    java.util.Set<Integer> inSets = new java.util.HashSet<>();
+    int[] sizes = new int[2];
+    for (int k = 0; k < 2; k++) {
+      for (String s : setNodes.get(k)) {
+        Integer id = Integer.valueOf(s);
+        Poe2DataService.TreeNodeLite n = tree.nodes().get(id);
+        if (n != null && n.ascendancy() == null) {
+          sizes[k]++;
+        }
+        inSets.add(id);
+      }
+    }
+    int shared = 0;
+    for (Integer id : new java.util.LinkedHashSet<>(allocated)) {
+      Poe2DataService.TreeNodeLite n = tree.nodes().get(id);
+      if (n == null
+          || n.ascendancy() != null
+          || "classStart".equals(n.kind())
+          || inSets.contains(id)
+          || grantedIds.contains(id)) {
+        continue;
+      }
+      shared++;
+    }
+    return shared + Math.max(sizes[0], sizes[1]);
+  }
+
+  /**
+   * 장비가 준 노드 id — "Allocates X" 이름(전직 노드 제외, 같은 이름이 여럿이면 모두) + 목소리 심연 주얼 홈 1..sinisterSockets (PoB
+   * ResolveGrantedPassiveNodes). 점수로 안 세고(isFreeAllocate) 뷰어엔 출발점(g=)으로 넘긴다.
+   */
+  private static final java.util.Map<String, String> LEGACY_START_CLASS =
+      java.util.Map.of(
+          "Shadow", "Monk", "Marauder", "Warrior", "Duelist", "Mercenary", "Templar", "Druid");
+
+  static java.util.Set<Integer> grantedIds(
+      java.util.Set<String> grantedNames,
+      int sinisterSockets,
+      Poe2DataService.TreeIndex tree,
+      java.util.Set<String> altStarts) {
+    java.util.Set<Integer> out = new java.util.TreeSet<>();
+    // 다른 직업 시작점(C47) — 시작 노드는 점수가 아니고(직업 시작) 뷰어엔 출발점으로
+    for (String className : altStarts) {
+      // 문구가 PoE1 직업명일 때가 있다("Shadow's starting point") — 같은 시작 노드를 쓰는 PoE2 직업으로
+      //   (PoB tree.json classesStart: SIX = Shadow · Monk, MARAUDER = Marauder · Warrior, DUELIST
+      // = Duelist · Mercenary, TEMPLAR = Templar · Druid)
+      className = LEGACY_START_CLASS.getOrDefault(className, className);
+      Integer start = tree.classStartNode() == null ? null : tree.classStartNode().get(className);
+      if (start != null) {
+        out.add(start);
+      }
+    }
+    for (java.util.Map.Entry<Integer, Poe2DataService.TreeNodeLite> e : tree.nodes().entrySet()) {
+      Poe2DataService.TreeNodeLite n = e.getValue();
+      if (n.ascendancy() != null) {
+        continue;
+      }
+      if (grantedNames.contains(n.name())
+          || (n.sinisterSlot() > 0 && n.sinisterSlot() <= sinisterSockets)) {
+        out.add(e.getKey());
+      }
+    }
+    return out;
+  }
+
+  /** 아이템 원문의 "Allocates X" → 이름, "Allocates N Sinister Jewel sockets" → 홈 수(큰 값). 표식 {…} 은 지운다. */
+  static void readGrants(
+      String text,
+      java.util.Set<String> grantedNames,
+      int[] sinisterSockets,
+      java.util.Set<String> altStarts) {
+    java.util.regex.Matcher alt =
+        java.util.regex.Pattern.compile(
+                "Can Allocate Passives? (?:Skills )?from the ([A-Za-z]+)'s starting point",
+                java.util.regex.Pattern.CASE_INSENSITIVE)
+            .matcher(text.replaceAll("\\s+", " "));
+    while (alt.find()) {
+      String name = alt.group(1);
+      altStarts.add(
+          Character.toUpperCase(name.charAt(0))
+              + name.substring(1).toLowerCase(java.util.Locale.ROOT));
+    }
+    java.util.regex.Pattern sinisterRe =
+        java.util.regex.Pattern.compile(
+            "^Allocates ([0-9]+) Sinister Jewel Sockets?$",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
+    for (String line : text.split(String.valueOf((char) 10))) {
+      String clean = line.replaceAll("[{][^}]*[}]", "").trim();
+      java.util.regex.Matcher sinister = sinisterRe.matcher(clean);
+      if (sinister.matches()) {
+        sinisterSockets[0] = Math.max(sinisterSockets[0], Integer.parseInt(sinister.group(1)));
+      } else if (clean.startsWith("Allocates ")) {
+        grantedNames.add(clean.substring("Allocates ".length()).trim());
+      }
+    }
+  }
+
+  /** PoB-PoE2 jewelRadii(0_1) 바깥 반경 × PassiveTreeJewelDistanceMultiplier 1.2 — 트리 좌표 단위. */
+  private static final java.util.Map<String, Integer> JEWEL_RADIUS =
+      java.util.Map.of("Small", 1200, "Medium", 1380, "Large", 1560, "Very Large", 1800);
+
+  /**
+   * 주얼 "From Nothing"(Passives in Radius of X can be Allocated without being connected to your
+   * tree) → "핵심 id:반경". PoB ModParser fromNothingKeystone + PassiveSpec(그 핵심 노드의 nodesInRadius[주얼
+   * 반경]). 반경 줄(Radius: Large)이 없으면 빈 목록.
+   */
+  static List<String> fromNothingRoots(String jewel, Poe2DataService.TreeIndex tree) {
+    java.util.regex.Matcher radius =
+        java.util.regex.Pattern.compile("(?m)^Radius: (.+?)\\s*$").matcher(jewel);
+    Integer r = radius.find() ? JEWEL_RADIUS.get(radius.group(1).trim()) : null;
+    if (r == null) {
+      return List.of();
+    }
+    List<String> out = new ArrayList<>();
+    java.util.regex.Matcher m =
+        java.util.regex.Pattern.compile(
+                "Passives in Radius of ([A-Za-z' ]+?) can be Allocated without being connected to your tree",
+                java.util.regex.Pattern.CASE_INSENSITIVE)
+            .matcher(
+                jewel.replaceAll(
+                    "\\s+", " ")); // 줄이 둘로 나뉘어 저장된다(…Allocated / without being connected…)
+    while (m.find()) {
+      String name = m.group(1).trim();
+      for (java.util.Map.Entry<Integer, Poe2DataService.TreeNodeLite> e : tree.nodes().entrySet()) {
+        if ("keystone".equals(e.getValue().kind()) && name.equalsIgnoreCase(e.getValue().name())) {
+          out.add(e.getKey() + ":" + r);
+        }
+      }
+    }
+    return out;
+  }
+
+  /**
+   * PoB jewelRadii(0_1) 고리 5..12 의 안 · 바깥 반경(× 1.2) — "Only affects Passives in <X> Ring" /
+   * "Affects Passives in <X> Ring".
+   */
+  private static final java.util.Map<String, int[]> JEWEL_RING =
+      java.util.Map.of(
+          "very small", new int[] {780, 1140},
+          "small", new int[] {960, 1320},
+          "medium-small", new int[] {1140, 1500},
+          "medium", new int[] {1320, 1680},
+          "medium-large", new int[] {1500, 1860},
+          "large", new int[] {1680, 2040},
+          "very large", new int[] {1980, 2340},
+          "massive", new int[] {2160, 2520});
+
+  /**
+   * 주얼 "Passives in Radius can be Allocated without being connected to your tree" → "안:바깥"(트리 좌표).
+   * PoB jewelData.intuitiveLeapLike + PassiveSpec(소켓 nodesInRadius[jewelRadiusIndex]). 고리 줄이 있으면 그
+   * 고리, 없으면 Radius: Small… 의 원(안 0). 해당 없으면 null.
+   */
+  static String leapRing(String jewel) {
+    String flat = jewel.replaceAll("\\s+", " ");
+    if (!flat.matches(
+        "(?i).*Passives in Radius can be Allocated without being connected to your tree.*")) {
+      return null;
+    }
+    java.util.regex.Matcher ring =
+        java.util.regex.Pattern.compile("(?i)affects Passives in ([A-Za-z -]+?) Ring")
+            .matcher(flat);
+    if (ring.find()) {
+      int[] r = JEWEL_RING.get(ring.group(1).trim().toLowerCase(java.util.Locale.ROOT));
+      return r == null ? null : r[0] + ":" + r[1];
+    }
+    java.util.regex.Matcher radius =
+        java.util.regex.Pattern.compile("(?m)^Radius: (.+?)\\s*$").matcher(jewel);
+    Integer outer = radius.find() ? JEWEL_RADIUS.get(radius.group(1).trim()) : null;
+    return outer == null ? null : "0:" + outer;
   }
 }

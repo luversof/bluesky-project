@@ -65,7 +65,10 @@ public record ArchetypeBenchmark(
     List<SkillDpsEntry> skillDps,
     // 패싯(poe.ninja 검색 사이드바 집계) — 전체 모집단 기준. facetTotal = % 분모. 구 데이터엔 없어 0/null.
     long facetTotal,
-    java.util.Map<String, List<FacetEntry>> facets) {
+    java.util.Map<String, List<FacetEntry>> facets,
+    // 한국어 표기(10-03 C57) — 옛 응답엔 없어 null 이면 영문
+    String mainSkillKo,
+    String ascendancyKo) {
 
   /** 조합 벤치 스킬별 전용 DPS — count = 해당 스킬 전용 DPS 를 보유한 표본 수. */
   public record SkillDpsEntry(String name, long dps, int count) {}

@@ -32,11 +32,14 @@ public class TigerMonthlyDividendPayoutSourceParser {
       String payDate = normalizeText(cells.get(1).text());
       String dividendAmount = normalizeText(cells.get(2).text());
       String taxableBase = normalizeText(cells.get(3).text());
+      // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 분배금 이력이 빠진다. 과세표준만 모름("-")으로 싣는다.
       if (!StringUtils.hasText(recordDate)
           || !StringUtils.hasText(payDate)
-          || !StringUtils.hasText(dividendAmount)
-          || !StringUtils.hasText(taxableBase)) {
+          || !StringUtils.hasText(dividendAmount)) {
         continue;
+      }
+      if (!StringUtils.hasText(taxableBase)) {
+        taxableBase = "-";
       }
 
       bulkInput

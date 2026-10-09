@@ -30,7 +30,9 @@ public interface Poe2EngineClient {
       @RequestParam(required = false) String nodes,
       @RequestParam(required = false) String skill,
       @RequestParam(required = false) String attrs,
-      @RequestParam(required = false) String sets);
+      @RequestParam(required = false) String sets,
+      // 꽂은 고유 주얼 "칸:slug,…"(10-03 C73)
+      @RequestParam(required = false) String jewels);
 
   /** 가이드 레어 목표만(10-02) — 가이드 뒤에 따로. */
   @PostExchange(

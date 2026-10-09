@@ -3,6 +3,8 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 
 @param Poe2.BaseItem base
+<%-- 품질 %(빌드 툴팁, 10-04 C148) — 인게임 속성 칸 첫 줄 "품질: +N%"(값 마법 파랑, PoE1 itemTooltip 과 같은 모양) --%>
+@param int quality = 0
 
 !{
 	// 베이스 속성(툴팁 가운데 칸) — 인게임처럼 라벨 회색 · 값 흰색. 고유는 옵션으로 값이 바뀌므로 베이스 값을 그대로 보인다.
@@ -15,9 +17,10 @@
 	boolean hasWeapon = w != null && nz(w.damageMax()) > 0;
 	boolean hasFlask = f != null && (nz(f.lifePerUse()) > 0 || nz(f.manaPerUse()) > 0 || (f.recoverySeconds() != null && f.recoverySeconds() > 0));
 }
-@if(hasWeapon || hasArmour || hasFlask)
+@if(hasWeapon || hasArmour || hasFlask || quality > 0)
 	<div class="poe-tt-sepimg"></div>
 	<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+		@if(quality > 0)<div data-tt-quality><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="text-[#8888ff]">+${quality}%</span></div>@endif
 		@if(hasWeapon)
 			<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${value}">${w.damageMin()}–${w.damageMax()}</span></div>
 			<div><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${value}">${String.format("%.2f", w.critChance())}%</span></div>

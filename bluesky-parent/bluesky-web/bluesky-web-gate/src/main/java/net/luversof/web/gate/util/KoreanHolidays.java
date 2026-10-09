@@ -396,9 +396,80 @@ public final class KoreanHolidays {
     return java.util.Collections.unmodifiableSet(COVERED_YEARS);
   }
 
-  /** 공휴일이면 이름을(겹치면 "·"로 병기), 아니면 null 을 반환한다. */
+  /**
+   * 공휴일이면 이름을(겹치면 "·"로 병기), 아니면 null 을 반환한다. 이름은 지금 요청 로케일 말로(한국어가 아니면 영어, 2026-10-03).
+   *
+   * <p>예전에는 표의 한국어 이름을 그대로 돌려줘 영어 화면 달력에 "개천절 · 한글날" 이 남았다(stock-en-hangul-scan).
+   */
   public static String holidayName(LocalDate date) {
+    // 요청 밖(시험 · 뒤에서 도는 작업)은 표의 말(한국어) - getLocale() 은 그때 JVM 기본 로케일로 떨어져 환경마다 달라진다(2026-10-03 검토).
+    org.springframework.context.i18n.LocaleContext context =
+        org.springframework.context.i18n.LocaleContextHolder.getLocaleContext();
+    return holidayName(date, context != null ? context.getLocale() : java.util.Locale.KOREAN);
+  }
+
+  /** 로케일을 정해서. 한국어(또는 null)면 표 이름 그대로, 아니면 영어 이름(표에 없는 이름은 한국어로 둔다). */
+  public static String holidayName(LocalDate date, java.util.Locale locale) {
     List<String> names = date != null ? HOLIDAYS.get(date) : null;
-    return names != null ? String.join("·", names) : null;
+    if (names == null) {
+      return null;
+    }
+    if (locale == null || "ko".equals(locale.getLanguage())) {
+      return String.join("·", names);
+    }
+    return String.join(" · ", names.stream().map(KoreanHolidays::englishName).toList());
+  }
+
+  private static final Map<String, String> ENGLISH =
+      Map.ofEntries(
+          Map.entry("신정", "New Year's Day"),
+          Map.entry("설날", "Seollal"),
+          Map.entry("설날 연휴", "Seollal holiday"),
+          Map.entry("삼일절", "Independence Movement Day"),
+          Map.entry("석가탄신일", "Buddha's Birthday"),
+          Map.entry("어린이날", "Children's Day"),
+          Map.entry("현충일", "Memorial Day"),
+          Map.entry("광복절", "Liberation Day"),
+          Map.entry("추석", "Chuseok"),
+          Map.entry("추석 연휴", "Chuseok holiday"),
+          Map.entry("개천절", "National Foundation Day"),
+          Map.entry("한글날", "Hangul Day"),
+          Map.entry("성탄절", "Christmas Day"),
+          Map.entry("국군의 날", "Armed Forces Day"),
+          Map.entry("임시공휴일", "temporary holiday"),
+          Map.entry("지방선거일", "Local election day"),
+          Map.entry("대통령 선거일", "Presidential election day"),
+          Map.entry("국회의원 선거일", "General election day"),
+          Map.entry("대체공휴일", "Substitute holiday"));
+
+  /**
+   * "대체공휴일(추석)" -> "Substitute holiday (Chuseok)", "국군의 날(임시공휴일)" -> "Armed Forces Day (temporary
+   * holiday)".
+   */
+  static String englishName(String korean) {
+    String direct = ENGLISH.get(korean);
+    if (direct != null) {
+      return capitalize(direct);
+    }
+    int open = korean.indexOf('(');
+    if (open > 0 && korean.endsWith(")")) {
+      String base = ENGLISH.get(korean.substring(0, open));
+      String inner = ENGLISH.get(korean.substring(open + 1, korean.length() - 1));
+      if (base != null && inner != null) {
+        return capitalize(base) + " (" + inner + ")";
+      }
+    }
+    return korean;
+  }
+
+  private static String capitalize(String s) {
+    return s.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + s.substring(1);
+  }
+
+  /** 표에 실린 이름 전부(시험이 번역 빠짐을 찾는다). */
+  static java.util.Set<String> allNames() {
+    java.util.Set<String> all = new java.util.TreeSet<>();
+    HOLIDAYS.values().forEach(all::addAll);
+    return all;
   }
 }

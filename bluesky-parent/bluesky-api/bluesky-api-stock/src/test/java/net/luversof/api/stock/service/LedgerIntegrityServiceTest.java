@@ -607,7 +607,7 @@ class LedgerIntegrityServiceTest {
     assertThat(found.count()).isEqualTo(1);
     assertThat(found.examples().get(0).detail())
         .as("얼마를 떼었어야 하는지 함께 보여야 고칠 수 있다")
-        .contains("gross=100000", "15.4% 기준 예상 세금=15400");
+        .contains("gross=100000", "expectedTax@15.4%=15400");
   }
 
   /**

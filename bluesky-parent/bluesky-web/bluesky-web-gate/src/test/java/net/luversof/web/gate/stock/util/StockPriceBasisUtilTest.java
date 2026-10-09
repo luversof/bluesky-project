@@ -137,4 +137,122 @@ class StockPriceBasisUtilTest {
     assertThat(StockPriceBasisUtil.priceBasisDateWithFallback(List.of())).isNull();
     assertThat(StockPriceBasisUtil.priceBasisDateWithFallback(List.of(holding(0, null)))).isNull();
   }
+
+  private TradeProfit pricedAt(LocalDate priceDate, String updatedAtUtc) {
+    TradeProfit base = holding(1, priceDate);
+    return new TradeProfit(
+        base.stockItemId(),
+        base.stockItemName(),
+        base.accountId(),
+        base.accountName(),
+        base.totalBuyAmount(),
+        base.averageBuyPrice(),
+        base.totalSellQuantity(),
+        base.averageSellPrice(),
+        base.totalSellAmount(),
+        base.realizedProfit(),
+        base.holdingQuantity(),
+        base.currentPrice(),
+        base.evaluationAmount(),
+        base.evaluationProfit(),
+        base.totalProfit(),
+        base.totalBuyFee(),
+        base.totalSellFee(),
+        base.totalSellTax(),
+        base.totalBuyCost(),
+        base.totalSellProceeds(),
+        base.averageBuyPriceNet(),
+        base.averageSellPriceNet(),
+        base.realizedProfitNet(),
+        base.evaluationProfitNet(),
+        base.totalProfitNet(),
+        base.currentPriceDate(),
+        updatedAtUtc == null ? null : java.time.Instant.parse(updatedAtUtc));
+  }
+
+  /**
+   * 장중에 받은 시세는 "종가" 가 아니다(2026-10-02 실측: 10:16 에 받은 행이 장 마감 뒤까지 "평가 기준 2026-10-02 종가" 로 보였다). 마감
+   * 15:30 KST 경계 양쪽, 다음 날 받은 경우, 값이 없는 경우를 본다.
+   */
+  @Test
+  void 그_거래일_마감_전에_받은_시세만_장중_시각을_낸다() {
+    LocalDate day = LocalDate.parse("2026-10-02");
+    // 10:16 KST = 01:16 UTC
+    assertThat(
+            StockPriceBasisUtil.intradayTime(java.time.Instant.parse("2026-10-02T01:16:02Z"), day))
+        .isEqualTo("10:16");
+    // 15:29 KST 는 아직 장중, 15:30 KST 부터는 종가
+    assertThat(
+            StockPriceBasisUtil.intradayTime(java.time.Instant.parse("2026-10-02T06:29:59Z"), day))
+        .isEqualTo("15:29");
+    assertThat(
+            StockPriceBasisUtil.intradayTime(java.time.Instant.parse("2026-10-02T06:30:00Z"), day))
+        .isNull();
+    // 다음 날 아침에 받았으면 전날 행은 확정 종가
+    assertThat(
+            StockPriceBasisUtil.intradayTime(java.time.Instant.parse("2026-10-03T00:30:00Z"), day))
+        .isNull();
+    // UTC 로는 전날이지만 KST 로는 그 날 08:59 - 날짜 비교는 KST 로 한다
+    assertThat(
+            StockPriceBasisUtil.intradayTime(java.time.Instant.parse("2026-10-01T23:59:00Z"), day))
+        .isEqualTo("08:59");
+    assertThat(StockPriceBasisUtil.intradayTime((java.time.Instant) null, day)).isNull();
+    assertThat(
+            StockPriceBasisUtil.intradayTime(java.time.Instant.parse("2026-10-02T01:16:02Z"), null))
+        .isNull();
+  }
+
+  @Test
+  void 기준일_행_중_하나라도_장중이면_가장_이른_시각을_낸다() {
+    LocalDate day = LocalDate.parse("2026-10-02");
+    List<TradeProfit> rows =
+        List.of(
+            pricedAt(day, "2026-10-02T09:19:37Z"), // 18:19 KST - 종가
+            pricedAt(day, "2026-10-02T01:16:02Z"), // 10:16 KST - 장중
+            pricedAt(LocalDate.parse("2026-10-01"), "2026-10-01T00:10:00Z"), // 다른 날 행은 안 본다
+            pricedAt(day, null));
+    assertThat(StockPriceBasisUtil.intradayTime(rows, day)).isEqualTo("10:16");
+    assertThat(StockPriceBasisUtil.intradayTime(List.of(rows.get(0), rows.get(3)), day)).isNull();
+    assertThat(StockPriceBasisUtil.intradayTime(List.of(rows.get(2)), day)).isNull();
+    assertThat(StockPriceBasisUtil.intradayTime((List<TradeProfit>) null, day)).isNull();
+  }
+
+  @Test
+  void 보유_행이_있으면_다_판_종목의_같은_날_행은_시각을_정하지_않는다() {
+    LocalDate day = LocalDate.parse("2026-10-02");
+    TradeProfit held = pricedAt(day, "2026-10-02T09:19:37Z"); // 보유 1 주, 18:19 KST - 종가
+    TradeProfit soldBase = holding(0, day);
+    TradeProfit sold =
+        new TradeProfit(
+            soldBase.stockItemId(),
+            soldBase.stockItemName(),
+            soldBase.accountId(),
+            soldBase.accountName(),
+            soldBase.totalBuyAmount(),
+            soldBase.averageBuyPrice(),
+            soldBase.totalSellQuantity(),
+            soldBase.averageSellPrice(),
+            soldBase.totalSellAmount(),
+            soldBase.realizedProfit(),
+            0,
+            soldBase.currentPrice(),
+            soldBase.evaluationAmount(),
+            soldBase.evaluationProfit(),
+            soldBase.totalProfit(),
+            soldBase.totalBuyFee(),
+            soldBase.totalSellFee(),
+            soldBase.totalSellTax(),
+            soldBase.totalBuyCost(),
+            soldBase.totalSellProceeds(),
+            soldBase.averageBuyPriceNet(),
+            soldBase.averageSellPriceNet(),
+            soldBase.realizedProfitNet(),
+            soldBase.evaluationProfitNet(),
+            soldBase.totalProfitNet(),
+            day,
+            java.time.Instant.parse("2026-10-02T01:16:02Z")); // 다 판 종목, 10:16 KST
+    assertThat(StockPriceBasisUtil.intradayTime(List.of(held, sold), day)).isNull();
+    // 보유가 하나도 없으면(전량 매도 화면) 그 행들로 판정한다
+    assertThat(StockPriceBasisUtil.intradayTime(List.of(sold), day)).isEqualTo("10:16");
+  }
 }

@@ -30,10 +30,10 @@
 	@template._components.ui.card(bodyClass = "gap-3", body = @`
 			<%-- 버전 비교 — 갱신 버튼 바로 옆. 최신이어도 "검사 결과"를 보여야 사용자가 확인 여부를 안다. --%>
 			<div class="flex flex-wrap items-center gap-2 text-xs">
-				<span class="text-base-content/50">${MessageUtil.getMessage("poe.admin.version.current")}</span>
+				<span class="text-base-content/60">${MessageUtil.getMessage("poe.admin.version.current")}</span>
 				<span class="font-mono font-semibold">${dataPatch == null ? "-" : dataPatch}</span>
-				<span class="text-base-content/30">→</span>
-				<span class="text-base-content/50">${MessageUtil.getMessage("poe.admin.version.latest")}</span>
+				<span class="text-base-content/60">→</span>
+				<span class="text-base-content/60">${MessageUtil.getMessage("poe.admin.version.latest")}</span>
 				<span class="font-mono font-semibold ${outdated ? "text-warning" : ""}">${latestPatch == null ? "?" : latestPatch}</span>
 				@if(latestPatch == null)
 					<span class="badge badge-ghost badge-sm">${MessageUtil.getMessage("poe.admin.version.unknown")}</span>

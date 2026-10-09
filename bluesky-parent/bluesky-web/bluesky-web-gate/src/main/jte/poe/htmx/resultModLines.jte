@@ -20,9 +20,9 @@
 			: (mk.contains("접미") || mk.contains("suffix")) && !mk.contains("에센스") && !mk.contains("essence") ? "text-amber-500"
 			: mk.startsWith("에센스") || mk.startsWith("essence") ? "text-teal-500"
 			: mk.contains("엘드리치") || mk.contains("eldritch") ? "text-fuchsia-500"
-			: "text-base-content/45";
+			: "text-base-content/60";
 		String tier = modTiers != null && li < modTiers.size() ? modTiers.get(li) : null;
 	}
-	<div class="text-[#8888ff]">@if(mk != null)<span class="${mkColor} text-[10px]">(${mk})</span> @endif@if(tier != null && !tier.isEmpty())<span class="text-[10px] font-mono text-base-content/50 mr-0.5" title="인게임 고급 모드 설명(Alt)의 티어 — 최상위=T1">${tier}</span> @endif${mRest}</div>
+	<div class="text-[#8888ff]">@if(mk != null)<span class="${mkColor} text-[10px]">(${mk})</span> @endif@if(tier != null && !tier.isEmpty())<span class="text-[10px] font-mono text-base-content/60 mr-0.5" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "인게임 고급 모드 설명(Alt)의 티어 — 최상위=T1" : "Tier from the in-game advanced mod descriptions (Alt) — best = T1"}">${tier}</span> @endif${mRest}</div>
 @endfor
 </div>

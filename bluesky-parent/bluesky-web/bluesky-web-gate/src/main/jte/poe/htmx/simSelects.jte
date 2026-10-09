@@ -51,7 +51,7 @@
 	java.util.List<String> topAsc = ascendancyOrder.stream().filter(ascKo::containsKey).limit(5).toList();
 }
 
-<div class="min-w-56">
+<div class="min-w-[min(14rem,100%)]">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.ascendancy")}</label>
 	<select name="ascendancy" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe.sim.opt.ascendancy")}">
 		<option value="" selected="${ascendancy.isBlank()}">${MessageUtil.getMessage("poe.sim.opt.ascendancy.auto")}</option>
@@ -71,9 +71,9 @@
 		@endfor
 	</select>
 </div>
-<div class="min-w-52 flex-1">
+<div class="min-w-[min(13rem,100%)] flex-1">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.skills")}
-		@if(popularSkills > 0)<span class="ml-1 font-normal text-base-content/40">${ko ? "· 많이 쓰는 순 " + popularSkills : "· by usage " + popularSkills}</span>@endif
+		@if(popularSkills > 0)<span class="ml-1 font-normal text-base-content/60">${ko ? "· 많이 쓰는 순 " + popularSkills : "· by usage " + popularSkills}</span>@endif
 	</label>
 	<select name="skills" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.skills.placeholder")}" size="4" class="select select-sm select-bordered w-full">
 		@for(PoeGem skillOpt : gems)
@@ -81,13 +81,34 @@
 		@endfor
 	</select>
 </div>
-<div class="min-w-52 flex-1">
+<div class="min-w-[min(13rem,100%)] flex-1">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.uniques")}
-		@if(popularItems > 0)<span class="ml-1 font-normal text-base-content/40">${ko ? "· 많이 쓰는 순 " + popularItems : "· by usage " + popularItems}</span>@endif
+		@if(popularItems > 0)<span class="ml-1 font-normal text-base-content/60">${ko ? "· 많이 쓰는 순 " + popularItems : "· by usage " + popularItems}</span>@endif
 	</label>
 	<select name="uniques" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.uniques.placeholder")}" size="4" class="select select-sm select-bordered w-full">
 		@for(PoeUniqueItem uniqueItem : uniques)
 			<option value="${uniqueItem.slug()}" selected="${preUniques.contains(uniqueItem.slug())}">${PoeText.name(uniqueItem.nameKo(), uniqueItem.name())}</option>
+		@endfor
+		<%-- 고유 상세에서 고른 변형(uniques=slug:v번호, C95) — 목록엔 기본 변형뿐이라 그 변형 항목을 따로 넣어 고른 채로 둔다 --%>
+		@for(String pu : preUniques)
+			!{
+				int vAt = pu.lastIndexOf(":v");
+				String puLabel = null;
+				if (vAt > 0 && pu.substring(vAt + 2).matches("[0-9]+")) {
+					String puSlug = pu.substring(0, vAt);
+					int puIdx = Integer.parseInt(pu.substring(vAt + 2));
+					for (PoeUniqueItem u : uniques) {
+						if (u.slug().equals(puSlug) && u.variants() != null) {
+							for (var v : u.variants()) {
+								if (v.index() == puIdx) puLabel = PoeText.name(u.nameKo(), u.name()) + " (" + PoeText.name(v.nameKo(), v.name()) + ")";
+							}
+						}
+					}
+				}
+			}
+			@if(puLabel != null)
+				<option value="${pu}" selected>${puLabel}</option>
+			@endif
 		@endfor
 	</select>
 </div>

@@ -561,6 +561,9 @@ public class StockViewController {
         "monthlyDividendCurrentAverageBuyPrices", currentHoldings.averageBuyPrices());
     // 이 표는 배당 기준값(스냅샷 시점)과 시세(최근 종가) 두 시점을 한 줄에 섞는다. 앞의 날짜만 적혀 있었다.
     model.addAttribute("monthlyDividendPriceBasisDate", currentHoldings.priceBasisDate());
+    // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
+    model.addAttribute(
+        "monthlyDividendPriceBasisIntradayTime", currentHoldings.priceBasisIntradayTime());
     // 원장 조회가 실패하면 어긋난 줄에 붙던 "현재 N" 표시가 통째로 사라진다 - 사라진 표시는
     // "원장과 같다" 로 읽히므로(실측 2026-09-12: 8 줄 중 3 줄이 이 표시를 달고 있었다),
     // 실패했다는 사실을 화면에 남긴다.

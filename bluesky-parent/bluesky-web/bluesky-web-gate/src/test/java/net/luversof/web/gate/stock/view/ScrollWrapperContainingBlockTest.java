@@ -21,7 +21,10 @@ import org.junit.jupiter.api.Test;
  */
 class ScrollWrapperContainingBlockTest {
 
-  private static final String RULE = ".overflow-x-auto, .overflow-auto) { position: relative; }";
+  // 스스로 떠 있는 요소는 뺀다(2026-10-02) - 이 규칙은 레이어 밖이라 .absolute 를 이겨, 상세 검색 선택 상자 패널(absolute +
+  // overflow-auto)이 흐름에 끼고 260px 아래로 떠서 열렸다.
+  private static final String RULE =
+      ".overflow-x-auto, .overflow-auto):not(.absolute, .fixed, .sticky) { position: relative; }";
 
   @Test
   void 소스_css_에_규칙이_있다() throws IOException {
@@ -38,7 +41,8 @@ class ScrollWrapperContainingBlockTest {
 
     assertThat(built)
         .as("npm run build 를 돌리지 않으면 배포본에는 규칙이 없다")
-        .contains(":is(.overflow-x-auto,.overflow-auto){position:relative}");
+        .contains(
+            ":is(.overflow-x-auto,.overflow-auto):not(.absolute,.fixed,.sticky){position:relative}");
   }
 
   /** 인쇄 규칙은 래퍼의 overflow 를 풀기 때문에 이 규칙과 충돌하지 않아야 한다. */

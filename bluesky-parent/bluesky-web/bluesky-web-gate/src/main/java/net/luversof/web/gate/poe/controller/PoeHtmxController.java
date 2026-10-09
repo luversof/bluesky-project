@@ -81,6 +81,12 @@ public class PoeHtmxController {
     model.addAttribute("result", status.result());
     model.addAttribute("tattooIcons", tattooIcons(status.result()));
     model.addAttribute("rareBases", rareBases(status.result()));
+    java.util.Map<String, PoeBaseItem> uniqueOverrideBases = new java.util.HashMap<>();
+    model.addAttribute("uniqueOverrides", uniqueOverrides(status.result(), uniqueOverrideBases));
+    model.addAttribute("uniqueOverrideBases", uniqueOverrideBases);
+    java.util.Map<String, PoeBaseItem> jewelOverrideBases = new java.util.HashMap<>();
+    model.addAttribute("jewelOverrides", jewelOverrides(status.result(), jewelOverrideBases));
+    model.addAttribute("jewelOverrideBases", jewelOverrideBases);
     model.addAttribute("ninjaBenchmark", benchmark(status.result()));
     model.addAttribute("realStart", realStart(status.result()));
     if (!status.running()) {
@@ -218,6 +224,234 @@ public class PoeHtmxController {
     return map;
   }
 
+  /**
+   * 결과 고유 중 원래 고유와 옵션이 다른 것 → 실제 장착 옵션으로 바꾼 사본(슬롯별, 10-05 C152). 삿된(Foulborn) · 변형 사본은 원래 고유와 slug
+   * 가 같아 일반 상세(hx-get)가 **원래 옵션 · 기본 변형**을 띄웠다. 영문 결과 줄 = 도유 + 임플리싯 + 익스플리싯이라 앞의 두 묶음을 떼면 장착한
+   * 익스플리싯이 남는다. C153 부터 표식 없는 고유도(결과 줄 = 계산이 쓴 롤) — 결과가 있을 때만 고유 수만큼 조회. bases 에는 그 슬롯의 베이스(분류 · 요구
+   * 사항)를 채운다.
+   */
+  private java.util.Map<String, PoeUniqueItem> uniqueOverrides(
+      net.luversof.web.gate.poe.dto.PoeOptimizeResult result,
+      java.util.Map<String, PoeBaseItem> bases) {
+    java.util.Map<String, PoeUniqueItem> map = new java.util.HashMap<>();
+    if (result == null || result.items() == null) {
+      return map;
+    }
+    for (var item : result.items()) {
+      boolean foulborn = item.name() != null && item.name().startsWith("Foulborn ");
+      // 표식 없는 고유도 — 결과 줄은 계산에 쓴 롤(최대롤)이라 일반 상세의 범위와 다르다(10-05 C153)
+      if (!"UNIQUE".equals(item.rarity()) || item.slug() == null || item.modLinesEn() == null) {
+        continue;
+      }
+      try {
+        PoeUniqueItem u = poeDataClient.unique(item.slug());
+        if (u == null) {
+          continue;
+        }
+        java.util.List<String> en = item.modLinesEn();
+        int off = 0;
+        while (off < en.size() && en.get(off).startsWith("(anoint) ")) {
+          off++;
+        }
+        // 변형 사본은 이름 꼬리 괄호 = 변형 이름(API uniqueVariants 규약) — 임플리싯 수가 기본 변형과 다른 변형이 78개라 그 변형 것으로
+        java.util.List<String> baseImplicits = u.implicits();
+        if (!foulborn
+            && item.name().endsWith(")")
+            && item.name().contains(" (")
+            && u.variants() != null) {
+          String label =
+              item.name().substring(item.name().lastIndexOf(" (") + 2, item.name().length() - 1);
+          for (var v : u.variants()) {
+            if (label.equals(v.name())) {
+              baseImplicits = v.implicits();
+            }
+          }
+        }
+        int implicitStart = off;
+        off += baseImplicits == null ? 0 : baseImplicits.size();
+        if (off > en.size()) {
+          continue;
+        }
+        int end = en.size();
+        java.util.List<String> explicits = java.util.List.copyOf(en.subList(off, end));
+        java.util.List<String> ko = item.modLines();
+        java.util.List<String> explicitsKo =
+            ko != null && ko.size() == end ? java.util.List.copyOf(ko.subList(off, end)) : null;
+        java.util.List<java.util.List<String>> rem =
+            item.modReminders() != null && item.modReminders().size() == end
+                ? java.util.List.copyOf(item.modReminders().subList(off, end))
+                : null;
+        java.util.List<java.util.List<String>> remKo =
+            item.modRemindersKo() != null && item.modRemindersKo().size() == end
+                ? java.util.List.copyOf(item.modRemindersKo().subList(off, end))
+                : null;
+        // 인게임 이름: 삿된은 "삿된 X"(Foulborn X), 변형 꼬리 괄호는 우리 표식이라 원래 이름
+        map.put(
+            item.slot(),
+            new PoeUniqueItem(
+                foulborn ? item.name() : u.name(),
+                foulborn ? item.nameKo() : u.nameKo(),
+                u.slug(),
+                u.baseType(),
+                u.baseTypeKo(),
+                u.category(),
+                u.requiredLevel(),
+                u.league(),
+                u.legacy(),
+                u.radius(),
+                // 임플리싯도 결과 줄(계산이 쓴 롤 · 고른 변형의 것)
+                java.util.List.copyOf(en.subList(implicitStart, off)),
+                explicitsKo == null ? null : java.util.List.copyOf(ko.subList(implicitStart, off)),
+                explicits,
+                explicitsKo,
+                null,
+                null,
+                u.reqStr(),
+                u.reqDex(),
+                u.reqInt(),
+                u.iconKey(),
+                u.flavour(),
+                u.flavourKo(),
+                rem,
+                remKo));
+        PoeBaseItem base = poeDataClient.baseItemByName(u.baseType());
+        if (base != null) {
+          bases.put(item.slot(), base);
+        }
+      } catch (Exception e) {
+        log.warn("결과 고유 사본 실패 {}: {}", item.slug(), e.toString());
+      }
+    }
+    return map;
+  }
+
+  private static final java.util.regex.Pattern ROLL_RANGE =
+      java.util.regex.Pattern.compile("[(]([0-9]+(?:[.][0-9]+)?)-([0-9]+(?:[.][0-9]+)?)[)]");
+
+  /** "(4-6)%" → "6%" — 이로운 줄의 최대롤(API PoeOptimizeService.resolveRoll 과 같은 규칙, 10-05 C156). */
+  static String maxRoll(String line) {
+    return line == null ? null : ROLL_RANGE.matcher(line).replaceAll("$2");
+  }
+
+  /** 결과 고유 주얼 툴팁 사본의 키 — 같은 고유 주얼이 둘이어도(감시자의 눈 두 개) 고른 옵션으로 갈린다. 템플릿도 같은 식. */
+  public static String jewelOverrideKey(String slug, java.util.List<String> linesEn) {
+    return slug + "|" + (linesEn == null ? 0 : linesEn.hashCode());
+  }
+
+  /**
+   * 결과 고유 주얼 중 빌드마다 옵션이 다른 것(감시자의 눈 · 금단 짝 — 결과가 고른 옵션 줄을 보낸다) → 그 옵션으로 바꾼 사본(10-05 C154, 장비 고유
+   * C152 짝). 일반 상세는 감시자의 눈의 모든 후보 · 금단의 기본 노터블을 띄워 고른 물건과 달랐다. bases 엔 키별 베이스.
+   */
+  private java.util.Map<String, PoeUniqueItem> jewelOverrides(
+      net.luversof.web.gate.poe.dto.PoeOptimizeResult result,
+      java.util.Map<String, PoeBaseItem> bases) {
+    java.util.Map<String, PoeUniqueItem> map = new java.util.HashMap<>();
+    if (result == null || result.jewels() == null) {
+      return map;
+    }
+    for (var jewel : result.jewels()) {
+      if (jewel.slug() == null
+          || jewel.slug().isBlank()
+          || jewel.linesEn() == null
+          || jewel.linesEn().isEmpty()) {
+        continue;
+      }
+      try {
+        PoeUniqueItem u = poeDataClient.unique(jewel.slug());
+        if (u == null) {
+          continue;
+        }
+        String key = jewelOverrideKey(jewel.slug(), jewel.linesEn());
+        // PoB 아이템 속성 줄(금단 사본의 "Limited to: 1" · "Requires Class X")은 옵션이 아니다 — 한국어 줄엔 없어 수가 어긋났다
+        java.util.List<String> en =
+            jewel.linesEn().stream()
+                .filter(l -> !l.startsWith("Limited to:") && !l.startsWith("Requires Class "))
+                .toList();
+        java.util.List<String> ko = jewel.lines();
+        java.util.List<String> explicits = en;
+        java.util.List<String> explicitsKo = ko != null && ko.size() == en.size() ? ko : null;
+        java.util.List<java.util.List<String>> rem = null;
+        java.util.List<java.util.List<String>> remKo = null;
+        // 고른 옵션을 다 가진 데이터 변형이 있으면 그 변형 그대로(금단 166 변형 — 한국어 · 타락 줄 · 리마인더까지 인게임 문구)
+        if (u.variants() != null) {
+          for (var v : u.variants()) {
+            if (v.explicits() != null && !en.isEmpty() && v.explicits().containsAll(en)) {
+              explicits = v.explicits();
+              explicitsKo = v.explicitsKo();
+              rem = v.explicitsReminders();
+              remKo = v.explicitsRemindersKo();
+              break;
+            }
+          }
+          // 못 찾으면(감시자의 눈 — 변형은 오라 옵션 하나씩) 모든 변형이 함께 가진 줄(최대 생명력 · 마나 · 보호막 %)을 앞에 붙인다
+          if (explicits == en) {
+            var first = u.variants().get(0);
+            java.util.List<String> common = new java.util.ArrayList<>();
+            java.util.List<String> commonKo = new java.util.ArrayList<>();
+            for (int k = 0; first.explicits() != null && k < first.explicits().size(); k++) {
+              String line = first.explicits().get(k);
+              if (!en.contains(line)
+                  && u.variants().stream()
+                      .allMatch(v -> v.explicits() != null && v.explicits().contains(line))) {
+                // 공통 줄(최대 생명력 · 마나 · 보호막 %)은 이로운 줄 — 계산(합성 감시자의 눈 · 최대롤)과 같게 범위의 큰 값으로(C156)
+                common.add(maxRoll(line));
+                commonKo.add(
+                    maxRoll(
+                        first.explicitsKo() != null && k < first.explicitsKo().size()
+                            ? first.explicitsKo().get(k)
+                            : line));
+              }
+            }
+            if (!common.isEmpty()) {
+              java.util.List<String> joined = new java.util.ArrayList<>(common);
+              joined.addAll(en);
+              explicits = joined;
+              if (explicitsKo != null) {
+                java.util.List<String> joinedKo = new java.util.ArrayList<>(commonKo);
+                joinedKo.addAll(explicitsKo);
+                explicitsKo = joinedKo;
+              }
+            }
+          }
+        }
+        map.put(
+            key,
+            new PoeUniqueItem(
+                u.name(),
+                u.nameKo(),
+                u.slug(),
+                u.baseType(),
+                u.baseTypeKo(),
+                u.category(),
+                u.requiredLevel(),
+                u.league(),
+                u.legacy(),
+                u.radius(),
+                u.implicits(),
+                u.implicitsKo(),
+                explicits,
+                explicitsKo,
+                null,
+                null,
+                u.reqStr(),
+                u.reqDex(),
+                u.reqInt(),
+                u.iconKey(),
+                u.flavour(),
+                u.flavourKo(),
+                rem,
+                remKo));
+        PoeBaseItem base = poeDataClient.baseItemByName(u.baseType());
+        if (base != null) {
+          bases.put(key, base);
+        }
+      } catch (Exception e) {
+        log.warn("결과 고유 주얼 사본 실패 {}: {}", jewel.slug(), e.toString());
+      }
+    }
+    return map;
+  }
+
   /** 실행 중인 최적 조합 탐색 잡 중지 (로그인 필요) — 취소 요청만 보내고, UI 는 폴링 래퍼가 다음 상태로 갱신한다. */
   @PostMapping("/sim/optimize/stop")
   @org.springframework.web.bind.annotation.ResponseBody
@@ -240,8 +474,15 @@ public class PoeHtmxController {
   public String optimizeHistoryResult(@RequestParam long id, Model model) {
     net.luversof.web.gate.poe.dto.PoeOptimizeResult result = poeOptimizeClient.result(id);
     model.addAttribute("result", result);
+    model.addAttribute("historyId", id); // "빌드 화면에서 열기"가 이 이력 결과로 연다(10-08)
     model.addAttribute("tattooIcons", tattooIcons(result));
     model.addAttribute("rareBases", rareBases(result));
+    java.util.Map<String, PoeBaseItem> uniqueOverrideBases = new java.util.HashMap<>();
+    model.addAttribute("uniqueOverrides", uniqueOverrides(result, uniqueOverrideBases));
+    model.addAttribute("uniqueOverrideBases", uniqueOverrideBases);
+    java.util.Map<String, PoeBaseItem> jewelOverrideBases = new java.util.HashMap<>();
+    model.addAttribute("jewelOverrides", jewelOverrides(result, jewelOverrideBases));
+    model.addAttribute("jewelOverrideBases", jewelOverrideBases);
     model.addAttribute("ninjaBenchmark", benchmark(result));
     model.addAttribute("realStart", realStart(result));
     return "poe/htmx/simOptimizeResult";
@@ -458,6 +699,36 @@ public class PoeHtmxController {
       log.warn("실빌드 출발점 임포트 실패({} / {}): {}", ascendancy, skill, e.toString());
       model.addAttribute("importError", true);
     }
+    return "poe/htmx/buildRealStart";
+  }
+
+  /**
+   * 빌드 화면 "시뮬레이터 결과 열기"(10-08, PoE2 /poe2/htmx/build/sim-result 짝) — 마지막 최적화 결과(id 없음) 또는 결과 이력의 그
+   * 결과(id)의 PoB 코드를 불러오고 코드 칸도 채운다(OOB). 거래소 링크 · 업그레이드 가이드는 빌드 화면이 그대로 준다.
+   */
+  @GetMapping("/build/sim-result")
+  public String importSimResult(@RequestParam(required = false) Long id, Model model) {
+    String code = null;
+    try {
+      net.luversof.web.gate.poe.dto.PoeOptimizeResult r =
+          id != null ? poeOptimizeClient.result(id) : poeOptimizeClient.status().result();
+      code = r == null ? null : r.pobCode();
+    } catch (RuntimeException e) {
+      log.warn("시뮬레이터 결과 조회 실패({}): {}", id, e.toString());
+    }
+    if (code == null || code.isBlank()) {
+      model.addAttribute("importError", true);
+      return "poe/htmx/buildSummary";
+    }
+    try {
+      model.addAttribute("build", poeBuildClient.importBuild(code));
+      model.addAttribute("engineAvailable", poeBuildClient.available());
+    } catch (RuntimeException e) {
+      log.warn("시뮬레이터 결과 임포트 실패({}): {}", id, e.toString());
+      model.addAttribute("importError", true);
+    }
+    model.addAttribute("oobCode", code);
+    model.addAttribute("fromSim", true);
     return "poe/htmx/buildRealStart";
   }
 
@@ -779,7 +1050,8 @@ public class PoeHtmxController {
       @RequestParam(required = false, defaultValue = "all") String tag,
       Model model) {
     var meta = poeDataClient.gemMeta();
-    model.addAttribute("gems", poeDataClient.searchGems(q, type, color, tag));
+    // 목록 카드는 레벨별 데이터를 안 쓴다 — lite(10-02)
+    model.addAttribute("gems", poeDataClient.searchGemsForList(q, type, color, tag, true));
     model.addAttribute("totalCount", meta.totalCount());
     model.addAttribute("iconVersion", poeIconVersion.value()); // 아이콘 URL 캐시버스터(재생성 때마다 갱신)
     return "poe/htmx/gemList";
@@ -819,14 +1091,14 @@ public class PoeHtmxController {
       Model model) {
     // 폼 최초 렌더(PoeViewController.sim)와 **같은 후보 집합**이어야 한다 — 다르면 재정렬 시 항목이 생겼다 사라진다
     java.util.List<net.luversof.web.gate.poe.dto.PoeGem> gems =
-        poeDataClient.searchGems(null, "active", "all", null).stream()
+        poeDataClient.searchGemsLite("active", "all", true).stream()
             .sorted(
                 java.util.Comparator.comparing(
                     gem -> gem.nameKo() != null ? gem.nameKo() : gem.name()))
             .toList();
     java.util.Set<String> nonEquip = java.util.Set.of("jewel", "tincture", "fishing");
     java.util.List<PoeUniqueItem> uniqueItems =
-        poeDataClient.searchUniques(null, "all").stream()
+        poeDataClient.uniqueNames().stream() // 이름만(10-04 C124)
             .filter(u -> u.category() == null || !nonEquip.contains(u.category()))
             .sorted(java.util.Comparator.comparing(u -> u.nameKo() != null ? u.nameKo() : u.name()))
             .toList();
@@ -853,14 +1125,29 @@ public class PoeHtmxController {
     return "poe/htmx/simSelects";
   }
 
-  /** 변형 칩 + 아이템 레이어 — 칩을 누르면 이 조각만 갈아끼워 변형별 모드를 보여준다. */
+  /**
+   * 변형 칩 + 아이템 레이어 — 칩을 누르면 이 조각만 갈아끼워 변형별 모드를 보여준다. 변형이 많은 고유(소아사의 진주 656 등)는 칩 대신 select 라 주소를 응답
+   * 머리(HX-Push-Url)로 밀어 준다(10-04 C80 — select 는 요소마다 다른 hx-push-url 을 못 단다).
+   */
   @GetMapping("/uniques/variant")
   public String uniqueVariant(
-      @RequestParam String slug, @RequestParam(required = false) Integer variant, Model model) {
+      @RequestParam String slug,
+      @RequestParam(required = false) Integer variant,
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response) {
+    if (variant != null) {
+      response.setHeader(
+          "HX-Push-Url",
+          "/poe/uniques/"
+              + java.net.URLEncoder.encode(slug, java.nio.charset.StandardCharsets.UTF_8)
+              + "?variant="
+              + variant);
+    }
     PoeUniqueItem item = poeDataClient.unique(slug);
     model.addAttribute("item", item);
     model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
     model.addAttribute("variant", variant);
+    model.addAttribute("oob", true); // 단추(이 유니크로 최적화)도 그 변형으로 함께 바꾼다(C95)
     return "poe/htmx/uniqueVariants";
   }
 

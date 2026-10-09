@@ -66,7 +66,7 @@
 			<!-- 최적 조합 탐색: 젬 + 목표 선택 → 보조젬/트리/아이템 greedy 탐색 -->
 			<div data-poe-sim-panel="optimize" class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
 				<div class="text-sm text-base-content/60">${optimizeDesc}</div>
-				<form class="space-y-3"
+				<form class="space-y-3" data-no-success-toast
 				      hx-post="/poe/htmx/sim/optimize"
 				      hx-target="#poeOptimizeStatusWrap"
 				      hx-swap="outerHTML">
@@ -119,7 +119,7 @@
 						<%-- min-w-0: flex 아이템 기본값(min-width:auto)이면 내용 너비를 고집해 좁은 폭에서 가로 스크롤이 생긴다(768px 실측). --%>
 						<div class="flex min-w-0 flex-wrap items-center gap-2">
 						<%-- 목표(objective) 셀렉트 제거(2026-07-30): poe.ninja 실빌드 성향이 목표축을 자동 결정(위 미리보기). objective=auto → API가 성향으로 dps/ehp/balanced 해석 --%>
-						<span class="self-center whitespace-nowrap text-xs text-base-content/60" title="선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정">${net.luversof.web.gate.poe.PoeText.isKorean() ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
+						<span class="self-center sm:whitespace-nowrap text-xs text-base-content/60" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정" : "Objective follows the real-build lean"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
 						<select name="scenario" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.scenario")}">
 							<option value="None">${MessageUtil.getMessage("poe.sim.opt.scenario.none")}</option>
 							<option value="Boss">${MessageUtil.getMessage("poe.sim.opt.scenario.boss")}</option>
@@ -172,7 +172,7 @@
 								// 시각을 못 읽으면 원문 그대로
 							}
 						}
-						<div class="text-xs text-base-content/50" data-sim-snapshot>${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.ninja.snapshot"), ninjaLeague, ninjaSnapshot, ninjaFetched)}</div>
+						<div class="text-xs text-base-content/60" data-sim-snapshot>${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.ninja.snapshot"), ninjaLeague, ninjaSnapshot, ninjaFetched)}</div>
 					@endif
 				</form>
 				@template.poe.htmx.simOptimizeWrap()

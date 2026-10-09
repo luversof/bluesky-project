@@ -1,5 +1,5 @@
 {
-  "patch": "3.29.3.2",
+  "patch": "3.29.3.3",
   "translations": [
     "English",
     "Korean"
@@ -154,6 +154,13 @@
       "columns": [
         "Id",
         "DDSFile"
+      ]
+    },
+    {
+      "name": "AlternatePassiveSkills",
+      "columns": [
+        "Id",
+        "Name"
       ]
     },
     {
@@ -383,6 +390,31 @@
       "columns": [
         "Id",
         "Text"
+      ]
+    },
+    {
+      "name": "ClientStrings",
+      "columns": [
+        "Id",
+        "Text"
+      ]
+    },
+    {
+      "name": "PantheonPanelLayout",
+      "columns": [
+        "Id",
+        "GodName1",
+        "GodName2",
+        "GodName3",
+        "GodName4"
+      ]
+    },
+    {
+      "name": "NPCs",
+      "columns": [
+        "Id",
+        "Name",
+        "ShortName"
       ]
     }
   ],

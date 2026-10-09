@@ -23,6 +23,21 @@
 	String displayClass = base != null ? net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass()) : null;
 	java.util.List<String> displayImplicits = picked != null ? PoeText.lines(picked.implicitsKo(), picked.implicits()) : PoeText.lines(item.implicitsKo(), item.implicits());
 	java.util.List<String> displayExplicits = picked != null ? PoeText.lines(picked.explicitsKo(), picked.explicits()) : PoeText.lines(item.explicitsKo(), item.explicits());
+	// 리마인더(인게임 회색 부연, 10-04 C114) — 영어 explicits 와 같은 길이의 줄별 목록. 보이는 줄 수가 같으면 그 줄 밑에,
+	//   한국어가 여러 줄을 한 줄로 합쳐 수가 다르면 옵션 칸 끝에 모아서
+	//   한국어 부연은 옵션 줄도 한국어로 보일 때만(옵션 줄과 같은 기준 — 10-04 C127 검토: 영어 줄 밑 한국어 부연)
+	java.util.List<String> shownKo = picked != null ? picked.explicitsKo() : item.explicitsKo();
+	boolean remKo = PoeText.isKorean() && shownKo != null && !shownKo.isEmpty();
+	java.util.List<java.util.List<String>> reminders = picked != null
+		? (remKo && picked.explicitsRemindersKo() != null ? picked.explicitsRemindersKo() : picked.explicitsReminders())
+		: (remKo && item.explicitsRemindersKo() != null ? item.explicitsRemindersKo() : item.explicitsReminders());
+	boolean remindersPerLine = reminders != null && reminders.size() == displayExplicits.size();
+	// 데이터의 "Corrupted"/"타락" 옵션 줄(고유 55 · 금단 변형 등) — 인게임은 옵션이 아니라 툴팁 맨 아래 붉은 한 줄(10-05 C157, 빌드 툴팁과 같은 모양)
+	// ⚠ Set.of 는 중복을 못 받는다 — 영어 메시지가 "Corrupted" 라 영어 화면 전부 500 이었다(탐침이 잡음). 메시지가 "타락"으로 바뀌어 고정 두 낱말이면 된다
+	java.util.Set<String> corruptedWords = java.util.Set.of("Corrupted", "타락");
+	boolean corruptedItem = displayExplicits.stream().anyMatch(corruptedWords::contains);
+	java.util.List<String> remindersAtEnd = new java.util.ArrayList<>();
+	if (reminders != null && !remindersPerLine) for (java.util.List<String> r : reminders) if (r != null) for (String x : r) if (!remindersAtEnd.contains(x)) remindersAtEnd.add(x);
 	// PoE 고유(주황) 색
 	String rarity = "#af6025";
 	// 고유는 기본 퀄리티 20% — 무기 물리 피해에 반영해 게임 표기(예 57-171 → 68-205)에 맞춘다
@@ -42,7 +57,7 @@
 }
 
 <%-- PoE 게임 아이템 툴팁 (고유/주황) — 호버 시 #poePreview 에 떠서 표시(플로팅) --%>
-	<div class="poe-tooltip poe-rar-unique w-80 max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
+	<div class="poe-tooltip poe-rar-unique w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
 		<%-- 헤더 밴드 (인게임 2줄 아트: 이름 + 베이스) --%>
 		<div class="poe-tt-band poe-tt-band-2">
 			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayName}</div>
@@ -131,8 +146,18 @@
 		@if(!displayExplicits.isEmpty())
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-2 text-center space-y-0.5">
-				@for(String line : displayExplicits)
-					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(line)}</div>
+				@for(int li = 0; li < displayExplicits.size(); li++)
+					@if(!corruptedWords.contains(displayExplicits.get(li)))
+					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(displayExplicits.get(li))}</div>
+					@endif
+					@if(remindersPerLine && reminders.get(li) != null)
+						@for(String rem : reminders.get(li))
+							<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+						@endfor
+					@endif
+				@endfor
+				@for(String rem : remindersAtEnd)
+					<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 				@endfor
 			</div>
 		@endif
@@ -145,5 +170,9 @@
 					<div class="text-[12px] leading-snug italic text-[#af6025]">${line}</div>
 				@endfor
 			</div>
+		@endif
+		@if(corruptedItem)
+			<div class="poe-tt-sepimg"></div>
+			<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.items.corrupted")}</div>
 		@endif
 	</div>

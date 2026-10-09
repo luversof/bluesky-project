@@ -25,8 +25,14 @@
 		<div class="space-y-4">
 			<a href="/poe2/items" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe2.items.title")}</a>
 			@template.poe2.header(title = title, meta = meta)
+			<%-- 거래소에서 찾기(10-08 C174, PoE1 베이스 상세 짝 · 고유 상세 C173 과 같은 자리) — 리그가 주소 경로에 들어간다. 거래소 사전에 없는 베이스(룬벼림 · 고유 전용 · 미출시)는 숨긴다 --%>
+			@if(!Boolean.FALSE.equals(base.tradable()))
+			<div class="flex flex-wrap items-center gap-2">
+				<a class="btn btn-sm btn-outline" target="_blank" rel="noopener" data-base-trade href="${PoeText.trade2Url(meta == null ? null : meta.tradeLeague(), PoeText.baseTradeQuery(base.nameKo(), base.name()))}" title="${PoeText.isKorean() ? "이 베이스를 거래소에서 검색(고유 제외 · 즉시 구입 · 가격순, 새 창)" : "Search trade for this base (non-unique, instant buyout, new tab)"}">${PoeText.isKorean() ? "거래소에서 찾기 ↗" : "Find on trade ↗"}</a>
+			</div>
+			@endif
 			@if(PoeText.isKorean())
-				<div class="text-sm text-base-content/50">${MessageUtil.getMessage("poe2.english")}: ${base.name()}</div>
+				<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.english")}: ${base.name()}</div>
 			@endif
 			<div class="flex flex-wrap items-start gap-6">
 				@if(base.image() != null)
@@ -41,7 +47,7 @@
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-base-uniques>
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
 						<h2 class="font-bold text-orange-500">${PoeText.isKorean() ? "이 베이스의 고유 아이템" : "Uniques on this base"}</h2>
-						<span class="text-xs font-mono text-base-content/40">${baseUniques.size()}</span>
+						<span class="text-xs font-mono text-base-content/60">${baseUniques.size()}</span>
 					</div>
 					<div class="flex flex-wrap gap-x-4 gap-y-1">
 						@for(Poe2.Unique u : baseUniques)
@@ -63,7 +69,7 @@
 				</div>
 				@template.poe.modFilterBar(scope = "#poe2ItemModBody", idPrefix = "poe2ItemMod")
 				<div id="poe2ItemModBody">
-					@template.poe2.htmx.modPool(pool = pool)
+					@template.poe2.htmx.modPool(pool = pool, nested = true)
 				</div>
 			@endif
 		</div>

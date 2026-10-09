@@ -40,3 +40,25 @@ ALTER TABLE "StockPriceHistory" ADD COLUMN IF NOT EXISTS "rawClosePrice" NUMERIC
 
 -- 되돌리기(채운 원주가가 사라진다 - 평가는 정수배 추정으로 돌아간다)
 -- ALTER TABLE "StockPriceHistory" DROP COLUMN IF EXISTS "rawClosePrice";
+
+-- =====================================================================
+-- 2026-10-07
+-- =====================================================================
+
+-- (1) 지급 이력의 주당 과세표준을 "확인 안 됨"(NULL)으로 둘 수 있게 한다. 운용사 화면이 과세표준을 "-" · 빈 칸으로 보여 줄 때
+--     예전 가져오기는 0 원으로 저장해 진짜 0 원과 구분되지 않았고, 다음 갱신이 그 행을 채우지 못했다.
+--     앱은 이제 모르면 NULL 로 두고(MonthlyDividendPayoutImportParser), 갱신에서 숫자가 오면 채운다(MonthlyDividendPayoutService.mergeTaxableBase).
+--     저장된 0 은 출처가 다시 "-" 를 주면 NULL 로 되돌린다. 과세표준 비중은 값을 아는 행만으로 낸다.
+--     이 DDL 전에 "-" 가 든 출처를 가져오면 NULL 을 넣지 못해 저장이 실패한다 - 이것부터 적용한다.
+--     잠금은 짧다(NOT NULL 제약만 푼다, 행을 다시 쓰지 않는다).
+ALTER TABLE "MonthlyDividendPayout" ALTER COLUMN "taxableBasePerShare" DROP NOT NULL;
+
+-- 확인(is_nullable = YES 가 나오면 끝)
+-- SELECT column_name, is_nullable FROM information_schema.columns
+--  WHERE table_name = 'MonthlyDividendPayout' AND column_name = 'taxableBasePerShare';
+
+-- 적용 뒤: 월배당 종목마다 출처에서 다시 가져오기 - 운용사가 "-" 로 보여 주는 행은 NULL(확인 안 됨)로, 진짜 0 원은 0 으로 정리된다.
+
+-- 되돌리기(NULL 행이 있으면 먼저 0 으로 채워야 한다 - 그러면 "확인 안 됨" 이 다시 0 원이 된다)
+-- UPDATE "MonthlyDividendPayout" SET "taxableBasePerShare" = 0 WHERE "taxableBasePerShare" IS NULL;
+-- ALTER TABLE "MonthlyDividendPayout" ALTER COLUMN "taxableBasePerShare" SET NOT NULL;

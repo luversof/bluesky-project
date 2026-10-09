@@ -43,13 +43,13 @@
 				<h1 class="text-2xl font-bold mr-1">${pageTitle}</h1>
 				<span class="badge badge-ghost">${MessageUtil.getMessage("poe.admin.version.current")}: ${patch}</span>
 				@if(latestPatch == null)
-					<span class="badge badge-ghost badge-outline text-base-content/50">${MessageUtil.getMessage("poe.admin.version.unknown")}</span>
+					<span class="badge badge-ghost badge-outline text-base-content/60">${MessageUtil.getMessage("poe.admin.version.unknown")}</span>
 				@elseif(upToDate)
 					<span class="badge badge-success badge-outline">${MessageUtil.getMessage("poe.admin.version.uptodate")}</span>
 				@else
 					<span class="badge badge-warning">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.admin.version.outdated"), latestPatch)}</span>
 				@endif
-				<span class="text-xs text-base-content/40 font-mono ml-auto">${dataDir}</span>
+				<span class="text-xs text-base-content/60 font-mono ml-auto min-w-0 [overflow-wrap:anywhere]">${dataDir}</span>
 			</div>
 
 			<%-- 최초 실행 안내: 데이터가 하나도 없을 때 --%>
@@ -60,23 +60,23 @@
 			<!-- 현재 데이터 상태 -->
 			<div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-						<div class="text-xs font-semibold text-base-content/50">${gemsLabel}</div>
+						<div class="text-xs font-semibold text-base-content/60">${gemsLabel}</div>
 						<div class="text-xl font-bold font-mono">${java.text.MessageFormat.format(countUnit, gemCount)}</div>
 				`)
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-						<div class="text-xs font-semibold text-base-content/50">${uniquesLabel}</div>
+						<div class="text-xs font-semibold text-base-content/60">${uniquesLabel}</div>
 						<div class="text-xl font-bold font-mono">${java.text.MessageFormat.format(countUnit, uniqueCount)}</div>
 				`)
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-						<div class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("poe.tab.items")}</div>
+						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.tab.items")}</div>
 						<div class="text-xl font-bold font-mono">${java.text.MessageFormat.format(countUnit, baseItemCount)}</div>
 				`)
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-						<div class="text-xs font-semibold text-base-content/50">${treeLabel}</div>
+						<div class="text-xs font-semibold text-base-content/60">${treeLabel}</div>
 						<div class="text-xl font-bold">${hasTreeData ? treeReadyLabel : treeMissingLabel}</div>
 				`)
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
-						<div class="text-xs font-semibold text-base-content/50">${MessageUtil.getMessage("layout.menu.poe.atlas")}</div>
+						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("layout.menu.poe.atlas")}</div>
 						<div class="text-xl font-bold">${hasAtlasData ? treeReadyLabel : treeMissingLabel}</div>
 				`)
 			</div>
@@ -86,11 +86,11 @@
 					<%-- 데이터 산출물 인벤토리 — 갱신 후 무엇이 실제로 생성됐는지, 어떤 파일만 옛 버전으로 남았는지.
 					     한 추출 스텝이 조용히 실패해도 이전엔 화면에 드러나지 않았다. --%>
 					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.admin.data.inventory")}</h2>
-					<div class="text-[11px] text-base-content/50 -mt-1">${MessageUtil.getMessage("poe.admin.data.inventory.hint")}</div>
+					<div class="text-[11px] text-base-content/60 -mt-1">${MessageUtil.getMessage("poe.admin.data.inventory.hint")}</div>
 					<%-- 파일 시각과 **API 가 읽은 시각**을 나란히 — 앱 밖에서 파이프라인을 돌리면 재기동 전까지 반영되지 않는다.
 					     이게 안 보여서 2026-08-11 에 "재기동했더니 최적화 기준선이 -0.97% 움직인" 원인 추적에 시간을 썼다. --%>
 					@if(dataLoadedAtEpochMs != null)
-						<div class="text-[11px] ${dataStaleInApi ? "text-warning" : "text-base-content/50"}" data-poe-dataload>
+						<div class="text-[11px] ${dataStaleInApi ? "text-warning" : "text-base-content/60"}" data-poe-dataload>
 							${MessageUtil.getMessage("poe.admin.data.loadedat")}
 							<span class="font-mono">${java.time.Instant.ofEpochMilli(dataLoadedAtEpochMs).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))}</span>
 							@if(dataStaleInApi)
@@ -100,13 +100,13 @@
 					@endif
 					<div class="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3 text-[12px]" data-poe-artifacts>
 						@for(var a : artifacts)
-							<div class="flex items-baseline gap-2 border-b border-base-200/60 py-0.5" data-artifact="${a.file()}">
+							<div class="flex flex-wrap items-baseline gap-x-2 border-b border-base-200/60 py-0.5" data-artifact="${a.file()}">
 								<span class="w-28 shrink-0 text-base-content/70">${MessageUtil.getMessage(a.labelKey())}</span>
 								@if(!a.exists())
 									<span class="badge badge-warning badge-sm">${MessageUtil.getMessage("poe.admin.data.missing")}</span>
 								@else
-									<span class="font-mono text-base-content/50">${String.format("%,d KB", a.sizeBytes() / 1024)}</span>
-									<span class="ml-auto font-mono text-[11px] text-base-content/40">${a.modifiedEpochMs() == null ? "" : java.time.Instant.ofEpochMilli(a.modifiedEpochMs()).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))}</span>
+									<span class="font-mono text-base-content/60">${String.format("%,d KB", a.sizeBytes() / 1024)}</span>
+									<span class="ml-auto font-mono text-[11px] text-base-content/60">${a.modifiedEpochMs() == null ? "" : java.time.Instant.ofEpochMilli(a.modifiedEpochMs()).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))}</span>
 									@if(a.stale())
 										<span class="badge badge-warning badge-sm shrink-0">${MessageUtil.getMessage("poe.admin.data.stale")}</span>
 									@endif
@@ -123,7 +123,7 @@
 						@else
 							<span class="badge badge-warning badge-outline badge-sm">${MessageUtil.getMessage("poe.admin.env.missing")}</span>
 							<code class="text-xs bg-base-200 rounded px-1.5 py-0.5">winget install ImageMagick.ImageMagick</code>
-							<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.admin.env.imagemagick.hint")}</span>
+							<span class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.admin.env.imagemagick.hint")}</span>
 						@endif
 					</div>
 					<div class="flex flex-wrap items-center gap-2 text-sm">
@@ -133,7 +133,7 @@
 						@else
 							<span class="badge badge-warning badge-outline badge-sm">${MessageUtil.getMessage("poe.admin.env.missing")}</span>
 							<code class="text-xs bg-base-200 rounded px-1.5 py-0.5">winget install DEVCOM.LuaJIT</code>
-							<span class="text-xs text-base-content/50">${MessageUtil.getMessage("poe.admin.env.engine.hint")}</span>
+							<span class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.admin.env.engine.hint")}</span>
 						@endif
 					</div>
 			`)

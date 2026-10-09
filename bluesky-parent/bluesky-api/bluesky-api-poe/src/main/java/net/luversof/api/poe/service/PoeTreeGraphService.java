@@ -62,7 +62,9 @@ public class PoeTreeGraphService {
       // 클러스터 서브그래프 참조(GGG 원본 expansionJewel) — 자동 클러스터 채택의 가상 노드 id 산출에
       // 필요(id = 0x10000 + size/index 비트 + sizeIndex<<4 + templateIndex, 프론트 buildClusterSubgraph
       // 파리티).
-      ExpansionJewel expansionJewel) {}
+      ExpansionJewel expansionJewel,
+      // 전직 선택지(GGG isMultipleChoiceOption — 렐리쿼리언 진열장의 고유 아이템): 포인트가 들지 않고 진열장마다 하나만(10-03 C52)
+      Boolean multipleChoiceOption) {}
 
   /** 클러스터 소켓의 확장 참조 — size(0소/1중/2대), index(부모 내 자리), proxy(생성 노드 부착 기준), parent(중첩 상위 소켓). */
   public record ExpansionJewel(int size, int index, Integer proxy, Integer parent) {}
@@ -227,6 +229,11 @@ public class PoeTreeGraphService {
   }
 
   /** 비전직 노터블/키스톤 후보 (최적화 탐색 대상). id 정렬로 실행 간 결정적 순서 보장(동점 타이브레이크 안정화) */
+  /** 모든 노드(전직 · 혈맹 포함) — 이름 사전용(10-03 C56). */
+  public java.util.Collection<TreeNode> allNodes() {
+    return nodeById.values();
+  }
+
   public List<TreeNode> searchCandidates() {
     return nodeById.values().stream()
         .filter(node -> node.ascendancy() == null)
@@ -452,7 +459,47 @@ public class PoeTreeGraphService {
   /** 전직 서브그래프 안에서의 최단 경로 (해당 전직 노드만 통과) */
   public List<Integer> shortestPathInAscendancy(
       Set<Integer> allocated, int targetId, String ascendancy) {
+    // 진열장(렐리쿼리언)의 선택지는 하나만 — 같은 진열장의 다른 선택지가 이미 찍혀 있으면 못 간다(PoB isMultipleChoice, C52)
+    if (isChoiceOption(targetId)) {
+      for (int display : adjacency.getOrDefault(targetId, List.of())) {
+        for (int sibling : adjacency.getOrDefault(display, List.of())) {
+          if (sibling != targetId && isChoiceOption(sibling) && allocated.contains(sibling)) {
+            return null;
+          }
+        }
+      }
+    }
     return shortestPath(allocated, targetId, ascendancy);
+  }
+
+  private boolean isChoiceOption(int nodeId) {
+    TreeNode node = nodeById.get(nodeId);
+    return node != null && Boolean.TRUE.equals(node.multipleChoiceOption());
+  }
+
+  /** 경로의 전직 포인트 비용 — 선택지는 공짜(PoB CountAllocNodes 는 isMultipleChoiceOption 을 안 센다, C52). */
+  public int ascendancyPathCost(List<Integer> path) {
+    int cost = 0;
+    for (int id : path) {
+      if (!isChoiceOption(id)) {
+        cost++;
+      }
+    }
+    return cost;
+  }
+
+  /** 찍힌 전직 노드들이 쓴 포인트 — 시작 노드 · 선택지 제외(모르는 id 는 1로 센다, 기존 규칙). */
+  public int ascendancyPointsUsed(java.util.Collection<Integer> nodes) {
+    int used = 0;
+    for (int id : nodes) {
+      TreeNode info = nodeById.get(id);
+      if (info == null
+          || (!Boolean.TRUE.equals(info.ascendancyStart())
+              && !Boolean.TRUE.equals(info.multipleChoiceOption()))) {
+        used++;
+      }
+    }
+    return used;
   }
 
   /**

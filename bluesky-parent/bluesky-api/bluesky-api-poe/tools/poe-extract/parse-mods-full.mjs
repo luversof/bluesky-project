@@ -19,6 +19,21 @@ const OUT = path.join(DATA_DIR, "mods.json");
 const OUT_TIERS = path.join(DATA_DIR, "mod-pool-tiers.json");
 
 const mods = loadTable("English", "Mods");
+// 리마인더(인게임 회색 부연, 10-04 C131) — 티어 영어(최대롤) 줄마다 고른 템플릿의 reminderstring Id(describe.reminders)를 rem 으로,
+//   쓰인 Id 의 영 · 한 문구는 맨 위 reminderText 로 한 번(빌드 화면 레어 아이템 툴팁이 API 번역기를 거쳐 쓴다)
+const remEnRows = loadTable("English", "ReminderText");
+const remKoRows = loadTable("Korean", "ReminderText");
+const reminderTextById = new Map();
+remEnRows.forEach((r, i) => {
+	if (r.Text) reminderTextById.set(r.Id, { en: r.Text, ko: remKoRows[i]?.Id === r.Id && remKoRows[i]?.Text ? remKoRows[i].Text : r.Text });
+});
+const usedReminderIds = new Set();
+const remOf = () => {
+	const ids = (describe.reminders || []).map((l) => l.filter((id) => reminderTextById.has(id)));
+	if (!ids.some((l) => l.length)) return {};
+	ids.flat().forEach((id) => usedReminderIds.add(id));
+	return { rem: ids };
+};
 const modsKo = loadTable("Korean", "Mods");
 const stats = loadTable("English", "Stats");
 const tags = loadTable("English", "Tags");
@@ -261,7 +276,7 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 						nameKo: label.nameKo,
 						ilvl: mod.Level,
 						weight: weight,
-						en: describe(rollValues(mod, "max"), "English"),
+						en: describe(rollValues(mod, "max"), "English"), ...remOf(), // 바로 위 영어 호출의 리마인더 Id(C131)
 						enMin: describe(rollValues(mod, "min"), "English"),
 						ko: describe(rollValues(mod, "max"), "Korean"),
 						koMin: describe(rollValues(mod, "min"), "Korean"),
@@ -291,7 +306,7 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 					nameKo: "부패",
 					ilvl: mod.Level,
 					weight: weight,
-					en: describe(rollValues(mod, "max"), "English"),
+					en: describe(rollValues(mod, "max"), "English"), ...remOf(), // 바로 위 영어 호출의 리마인더 Id(C131)
 					enMin: describe(rollValues(mod, "min"), "English"),
 					ko: describe(rollValues(mod, "max"), "Korean"),
 					koMin: describe(rollValues(mod, "min"), "Korean"),
@@ -338,7 +353,7 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 				nameKo: modsKo[index]?.Name || mod.Name,
 				ilvl: mod.Level,
 				weight: weight,
-				en: describe(rollValues(mod, "max"), "English"),
+				en: describe(rollValues(mod, "max"), "English"), ...remOf(), // 바로 위 영어 호출의 리마인더 Id(C131)
 				enMin: describe(rollValues(mod, "min"), "English"),
 				ko: describe(rollValues(mod, "max"), "Korean"),
 				koMin: describe(rollValues(mod, "min"), "Korean"),
@@ -406,7 +421,39 @@ const outClasses = [...classLabel.keys()]
 	})
 	.sort((a, b) => a.itemClass.localeCompare(b.itemClass));
 
-const result = { patch: loadConfig().patch, itemClasses: outClasses, pools: outPools, families: outFamilies };
+// 풀 밖 옵션의 영 · 한 쌍(10-04 C135, PoE2 C133 짝) — 빌드 화면 번역 사전 보강. 플라스크 · 제작대 · 엘드리치 · 심연 홈처럼 패밀리 풀에 없는 옵션이
+//   실빌드에 붙어 영어로 남았다(ninja 59빌드 레어 줄 3349 중 568). 티어와 같은 describe(최대 · 최소롤), 영어 틀(숫자 → #)이 이미 풀에 있으면 뺀다
+const NUM = /-?\d+(?:\.\d+)?/g;
+const poolTemplates = new Set(Object.values(outFamilies).flatMap((f) => f.tiers.flatMap((t) => [...(t.en || []), ...(t.enMin || [])].map((l) => l.replace(NUM, "#")))));
+const extraSeen = new Set();
+const extra = [];
+mods.forEach((mod, index) => {
+	if (mod.StatsKey1 == null) return;
+	const en = describe(rollValues(mod, "max"), "English");
+	const remIds = describe.reminders.map((l) => l.filter((id) => reminderTextById.has(id))); // 바로 위 영어 호출 기준(C141)
+	const ko = describe(rollValues(mod, "max"), "Korean");
+	if (!en.length || en.length !== ko.length || en.join() === ko.join()) return;
+	const key = en.map((l) => l.replace(NUM, "#")).join("|");
+	if (extraSeen.has(key) || en.every((l) => poolTemplates.has(l.replace(NUM, "#")))) return;
+	extraSeen.add(key);
+	// 리마인더도(10-04 C141) — 빌드 화면 고유 줄 · 풀 밖 줄의 회색 부연
+	const rem = remIds.some((l) => l.length) ? remIds : null;
+	if (rem) rem.flat().forEach((id) => usedReminderIds.add(id));
+	extra.push({ en, ko, enMin: describe(rollValues(mod, "min"), "English"), koMin: describe(rollValues(mod, "min"), "Korean"), ...(rem ? { rem } : {}) });
+	void index;
+});
+console.log(`풀 밖 옵션 쌍: ${extra.length}개`);
+// 옵션 이름 영 · 한 전부(접두 · 접미 = GenerationType 1 · 2) — 빌드 화면 마법 아이템 이름(10-04 C146). 티어 이름에 없는 제작대 접미("of Craft" → "- 제작") 등
+const affixNames = {};
+mods.forEach((mod, index) => {
+	if (mod.GenerationType !== 1 && mod.GenerationType !== 2) return;
+	const k = modsKo[index]?.Name;
+	if (mod.Name && k && !(mod.Name in affixNames)) affixNames[mod.Name] = k;
+});
+console.log(`옵션 이름: ${Object.keys(affixNames).length}개`);
+const reminderText = Object.fromEntries([...usedReminderIds].sort().map((id) => [id, reminderTextById.get(id)]));
+console.log(`리마인더: 티어 ${Object.values(outFamilies).reduce((n, f) => n + f.tiers.filter((t) => t.rem).length, 0)}개 · 문구 ${usedReminderIds.size}종`);
+const result = { patch: loadConfig().patch, itemClasses: outClasses, pools: outPools, families: outFamilies, reminderText, extra, affixNames };
 fs.writeFileSync(OUT, JSON.stringify(result));
 // 풀별 묶음 — ModTypeKey 하나 = 티어 사다리 하나(ilvl 내림차순, 상위 먼저). 서술이 없어 families 에서 빠진 티어는 뺀다.
 // key 는 사람이 읽는 이름(구성 티어의 familyKey 중 가장 많은 것 — 억제는 ChanceToSuppressSpells), families 는 동시 부착 판정용 게임 값.

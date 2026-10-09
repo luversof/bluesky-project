@@ -134,6 +134,9 @@ export function buildTree(tree, koByGraphId = null) {
 			flavourKo: node.flavourText?.length && ko?.flavourKo?.length ? ko.flavourKo : undefined,
 			ascendancy: node.ascendancyName || null,
 			ascendancyStart: node.isAscendancyStart ? true : undefined,
+			// 전직 선택지(GGG isMultipleChoiceOption — 렐리쿼리언 진열장의 고유 아이템 고르기 등): PoB CountAllocNodes 는 전직 포인트로 안 센다.
+			//   없으면 실빌드가 "전직 10 / 8"(10-03 C51)
+			multipleChoiceOption: node.isMultipleChoiceOption ? true : undefined,
 			// 프록시 그룹(isProxy) 노드는 게임 화면엔 없는 자리표시자다 — 클러스터 서브트리를 붙일 좌표 기준일 뿐.
 			// 표시하면 "위치 대행" 같은 노드를 실제로 찍어 포인트를 버리게 된다(실측으로 발각).
 			isProxy: group.isProxy ? true : undefined,

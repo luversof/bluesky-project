@@ -51,21 +51,22 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
       """
                     SELECT i.id  AS stock_item_id,
                                  x."tradeDate"  AS trade_date,
-                                 x."closePrice" AS close_price
+                                 x."closePrice" AS close_price,
+                                 x."updatedDate" AS updated_date
                     FROM unnest(string_to_array(:ids, ',')::uuid[]) AS i(id)
                     CROSS JOIN LATERAL (
                             -- 거래가 있던 날의 최근 행, 없으면 그냥 최근 행. 두 갈래 모두 인덱스를 거꾸로 훑다
                             -- 첫 행에서 멈춘다(예전 식 정렬은 종목 이력 전체를 정렬했다 - StockDailyClosePriceQuery 참고).
-                            SELECT y."tradeDate", y."closePrice"
+                            SELECT y."tradeDate", y."closePrice", y."updatedDate"
                             FROM (
-                                    (SELECT h."tradeDate", h."closePrice", 0 AS pick
+                                    (SELECT h."tradeDate", h."closePrice", h."updatedDate", 0 AS pick
                                      FROM "StockPriceHistory" h
                                      WHERE h."stockItem_id" = i.id
                                        AND h."volume" > 0
                                      ORDER BY h."tradeDate" DESC
                                      LIMIT 1)
                                     UNION ALL
-                                    (SELECT h."tradeDate", h."closePrice", 1 AS pick
+                                    (SELECT h."tradeDate", h."closePrice", h."updatedDate", 1 AS pick
                                      FROM "StockPriceHistory" h
                                      WHERE h."stockItem_id" = i.id
                                      ORDER BY h."tradeDate" DESC

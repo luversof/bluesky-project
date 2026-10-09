@@ -36,7 +36,7 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-sm text-base-content/50">${ko ? "일반 아이템 제작 모드 — 아이템 클래스별 접두/접미 티어" : "Craftable modifiers by item class"}</span>
+				<span class="text-sm text-base-content/60">${ko ? "일반 아이템 제작 모드 — 아이템 클래스별 접두/접미 티어" : "Craftable modifiers by item class"}</span>
 			</div>
 
 			<%-- 아이템 클래스 칩 — 30클래스라 평면 나열 대신 그룹(방어구/무기/장신구/플라스크·주얼) 행으로.
@@ -61,7 +61,7 @@
 			<div class="space-y-1.5 rounded-2xl bg-base-100 p-3 shadow-sm" data-mod-classchips>
 				@for(var grp : chipGroups.entrySet())
 					<div class="flex flex-wrap items-center gap-1.5">
-						<span class="w-24 shrink-0 text-xs font-semibold text-base-content/50">${grp.getKey()}</span>
+						<span class="w-24 shrink-0 text-xs font-semibold text-base-content/60">${grp.getKey()}</span>
 						@for(PoeModItemClass c : grp.getValue())
 							<a class="poe-chip badge ${c.itemClass().equals(activeClass) ? "badge-primary" : "badge-ghost"} cursor-pointer"
 							   href="/poe/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"

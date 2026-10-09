@@ -110,9 +110,10 @@ public class TimeMonthlyDividendPayoutSourceParser {
           .append(formatDate(row.payDate()))
           .append('\t')
           .append(plain(row.dividendAmount()))
-          // 과세표준이 없는 달은 빈 칸이 아니라 0 으로 적는다(가져오기 파서가 빈 칸을 거부한다).
+          // 모름이면 "-" 로 싣는다(2026-10-08) - 0 으로 적으면 진짜 0 원(전액 비과세)과 구분되지 않아 다음 갱신이 채우지 못한다(가져오기 파서가
+          // "-" 를 모름으로 받는다).
           .append('\t')
-          .append(plain(row.taxableBase() != null ? row.taxableBase() : BigDecimal.ZERO));
+          .append(row.taxableBase() != null ? plain(row.taxableBase()) : "-");
     }
 
     if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {

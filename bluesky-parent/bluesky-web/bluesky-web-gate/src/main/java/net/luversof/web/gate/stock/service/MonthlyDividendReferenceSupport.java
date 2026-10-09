@@ -703,10 +703,13 @@ public class MonthlyDividendReferenceSupport {
     Map<UUID, Integer> quantities = new HashMap<>();
     Map<UUID, BigDecimal> averageBuyPrices = new HashMap<>();
     java.time.LocalDate basisDate = null;
+    String basisIntradayTime = null;
     try {
       List<TradeProfit> rows = tradeProfitClient.calculateProfit(params);
       basisDate =
           net.luversof.web.gate.stock.util.StockPriceBasisUtil.priceBasisDateWithFallback(rows);
+      basisIntradayTime =
+          net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(rows, basisDate);
       if (rows != null) {
         for (TradeProfit row : rows) {
           if (row.stockItemId() != null) {
@@ -721,7 +724,7 @@ public class MonthlyDividendReferenceSupport {
       log.warn("현재 보유 상태 조회 실패: userId={}", userId, ex);
       return CurrentHoldings.failed();
     }
-    return new CurrentHoldings(quantities, averageBuyPrices, basisDate, false);
+    return new CurrentHoldings(quantities, averageBuyPrices, basisDate, false, basisIntradayTime);
   }
 
   public List<MonthlyDividendSnapshotResponse> loadMonthlyDividendRows(UUID userId) {
@@ -743,7 +746,19 @@ public class MonthlyDividendReferenceSupport {
       Map<UUID, Integer> quantities,
       Map<UUID, BigDecimal> averageBuyPrices,
       java.time.LocalDate priceBasisDate,
-      boolean unavailable) {
+      boolean unavailable,
+      /**
+       * 그 날 시세를 장중에 받았으면 받은 시각("HH:mm"), 종가면 null(2026-10-02 - StockPriceBasisUtil.intradayTime).
+       */
+      String priceBasisIntradayTime) {
+
+    public CurrentHoldings(
+        Map<UUID, Integer> quantities,
+        Map<UUID, BigDecimal> averageBuyPrices,
+        java.time.LocalDate priceBasisDate,
+        boolean unavailable) {
+      this(quantities, averageBuyPrices, priceBasisDate, unavailable, null);
+    }
 
     static CurrentHoldings empty() {
       return new CurrentHoldings(Map.of(), Map.of(), null, false);

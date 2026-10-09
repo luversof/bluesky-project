@@ -29,7 +29,7 @@
 	<%-- 게임 데이터 미준비: 추출 파이프라인 안내 --%>
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), hint = "tools/poe-extract: npx pathofexile-dat && node transform.mjs")
 @else
-<div class="text-xs text-base-content/50 mb-2">${countLabel}</div>
+<div class="text-xs text-base-content/60 mb-2">${countLabel}</div>
 @if(gems.isEmpty())
 	@template._components.ui.emptyState(message = emptyLabel)
 @else
@@ -54,7 +54,7 @@
 					<div class="flex items-center gap-2 sticky top-0 bg-base-200/85 backdrop-blur py-1.5 z-[1] rounded">
 						<span class="w-3 h-3 rounded-full ${accent}"></span>
 						<span class="font-semibold text-sm">${attrLabel}</span>
-						<span class="text-xs text-base-content/40">${group.getValue().size()}</span>
+						<span class="text-xs text-base-content/60">${group.getValue().size()}</span>
 					</div>
 					@for(PoeGem gem : group.getValue())
 						!{
@@ -82,12 +82,12 @@
 								<a class="font-semibold truncate link-hover ${gem.isVaal() ? "text-[#d20000]" : gemNameColor}" href="/poe/gems/${gem.slug()}" title="${gem.name()}">${displayName}</a>
 									@if(gem.isVaal())
 										<%-- 인게임 부패(corrupted) 관례: 바알 젬은 붉은색. 목록에서 바로 구분되게 배지 표시 --%>
-										<span class="shrink-0 text-[9px] font-bold px-1 rounded bg-[#d20000]/15 text-[#d20000] border border-[#d20000]/40" title="${korean ? "바알 스킬 (부패) — 브라우저 표시 전용, 최적화기 미포함" : "Vaal skill (corrupted) — browse only, excluded from optimizer"}">${korean ? "바알" : "Vaal"}</span>
+										<span class="shrink-0 text-[9px] font-bold px-1 rounded bg-[#d20000]/15 text-[#d20000] border border-[#d20000]/40" title="${korean ? "바알 스킬 (타락) — 브라우저 표시 전용, 최적화기 미포함" : "Vaal skill (corrupted) — browse only, excluded from optimizer"}">${korean ? "바알" : "Vaal"}</span>
 									@endif
 									@if(korean)
-										<span class="text-[11px] text-base-content/40 truncate">${gem.name()}</span>
+										<span class="text-[11px] text-base-content/60 truncate">${gem.name()}</span>
 									@endif
-									<span class="ml-auto shrink-0 text-[10px] text-base-content/40">Lv ${gem.dropLevel()}</span>
+									<span class="ml-auto shrink-0 text-[10px] text-base-content/60">Lv ${gem.dropLevel()}</span>
 								</div>
 								@if(displayTags != null && !displayTags.isEmpty())
 									<div class="flex flex-wrap gap-1 mt-1">

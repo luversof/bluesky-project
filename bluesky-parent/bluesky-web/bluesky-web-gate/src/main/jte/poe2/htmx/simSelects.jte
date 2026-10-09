@@ -25,7 +25,7 @@
 		groups = java.util.List.of(new Poe2.SimClassGroup("All", ko ? "전체" : "All", ascendancies));
 	}
 }
-<div class="min-w-56">
+<div class="min-w-[min(14rem,100%)]">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.ascendancy")}</label>
 	<select name="ascendancy" class="select select-sm select-bordered w-full" title="${ko ? "전직" : "Ascendancy"}" data-sim-ascendancy>
 		<option value="" selected="${ascendancy == null || ascendancy.isBlank()}">${ko ? "자동(전 전직 실빌드)" : "Auto (all ascendancies)"}</option>
@@ -46,8 +46,8 @@
 		@endfor
 	</select>
 </div>
-<div class="min-w-52 flex-1">
-	<label class="mb-1 block text-xs font-semibold text-base-content/70">${ko ? "주 스킬" : "Main skill"}<span class="ml-1 font-normal text-base-content/40">${ko ? "· 많이 쓰는 순" : "· by usage"}</span></label>
+<div class="min-w-[min(13rem,100%)] flex-1">
+	<label class="mb-1 block text-xs font-semibold text-base-content/70">${ko ? "주 스킬" : "Main skill"}<span class="ml-1 font-normal text-base-content/60">${ko ? "· 많이 쓰는 순" : "· by usage"}</span></label>
 	<%-- data-poe-multi: PoE1 과 같은 검색형 위젯(multiSelect.js) — multiple 이 없으니 단일 선택 모드(칩 하나, 고르면 교체) --%>
 	<select name="skill" data-poe-multi data-placeholder="${ko ? "스킬 선택…" : "Select skills…"}" class="select select-sm select-bordered w-full" title="${ko ? "주 스킬" : "Main skill"}" data-sim-skill>
 		@for(Poe2.SimChoice c : skills)

@@ -124,6 +124,13 @@ public class StockPriceChartService {
         continue;
       }
       LocalDate exDate = days.lower(payout.getRecordDate());
+      // 기준일이 시세 끝보다 뒤면(미리 공시된 지급 · 시세를 아직 안 받은 날) "기준일 전 마지막 시세 날" 이 분배락일이 아니다 - 그 사이에
+      // 평일이 하나라도 있으면 싣지 않는다(2026-10-03 S49: 안 그러면 오늘 봉에 ◆ 가 찍힌다). 시세 안쪽의 빈 평일은 휴장일이라 그대로 둔다.
+      if (exDate != null
+          && payout.getRecordDate().isAfter(days.last())
+          && weekdaysBetween(exDate, payout.getRecordDate()) > 0) {
+        continue;
+      }
       if (exDate != null) {
         byExDate.merge(exDate, payout.getDividendAmountPerShare(), BigDecimal::add);
       }
@@ -131,12 +138,26 @@ public class StockPriceChartService {
     return byExDate;
   }
 
+  /** from 과 to 사이(둘 다 빼고)의 평일 수. */
+  static int weekdaysBetween(LocalDate from, LocalDate to) {
+    int count = 0;
+    for (LocalDate d = from.plusDays(1); d.isBefore(to); d = d.plusDays(1)) {
+      if (d.getDayOfWeek() != java.time.DayOfWeek.SATURDAY
+          && d.getDayOfWeek() != java.time.DayOfWeek.SUNDAY) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   /** 주당 분배금(실제 주식 기준)을 차트 단위로 - 그 날 (차트 종가 / 원주가) 배율. 원주가가 없으면 그대로. */
   static BigDecimal distribution(BigDecimal amount, BigDecimal chartClose, StockOhlcRow row) {
     if (amount == null) {
       return null;
     }
-    if (row.rawClose() == null || row.rawClose().signum() <= 0 || chartClose.compareTo(row.rawClose()) == 0) {
+    if (row.rawClose() == null
+        || row.rawClose().signum() <= 0
+        || chartClose.compareTo(row.rawClose()) == 0) {
       return normalize(amount);
     }
     return normalize(amount.multiply(chartClose).divide(row.rawClose(), 2, RoundingMode.HALF_UP));

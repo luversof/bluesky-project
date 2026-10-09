@@ -18,7 +18,7 @@
 		<div class="flex flex-wrap items-center gap-1.5 text-xs">
 			<span class="badge badge-primary badge-outline badge-sm">${classLabel}${treeEval.ascendancy() != null ? " · " + treeEval.ascendancy() : ""}</span>
 			<span class="badge badge-accent badge-outline badge-sm">${gemLabel}</span>
-			<span class="text-base-content/50 font-mono">${meta}</span>
+			<span class="text-base-content/60 font-mono">${meta}</span>
 		</div>
 		<!-- 계산 가정 — "장비 없음"이라고만 하면 공격 스킬에 들어간 표준 무기가 숨는다 -->
 		@if(treeEval.assumedWeapon() != null)
@@ -34,11 +34,11 @@
 		<div class="grid grid-cols-2 gap-1.5">
 			@for(PoeBuild.PlayerStat stat : treeEval.stats())
 				<div class="rounded bg-base-100/60 px-2 py-1">
-					<div class="text-[10px] text-base-content/50">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
+					<div class="text-[10px] text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
 					<div class="text-xs font-bold font-mono">${stat.value()}</div>
 				</div>
 			@endfor
 		</div>
-		<div class="text-[10px] text-base-content/40 leading-4">${MessageUtil.getMessage("poe.tree.eval.hint")}</div>
+		<div class="text-[10px] text-base-content/60 leading-4">${MessageUtil.getMessage("poe.tree.eval.hint")}</div>
 	</div>
 @endif

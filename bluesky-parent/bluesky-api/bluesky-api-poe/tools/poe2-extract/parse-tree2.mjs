@@ -36,6 +36,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { FILES_DIR, WORK_DIR, loadConfig, loadTable, writeJson } from "./paths.mjs";
 import { createStatDescriber, reportUnknownHandlers } from "../poe-extract/statDescriptions.mjs";
+import { loadKeywords, markupIds } from "./common2.mjs";
 
 const TREE_VERSION = "0_5";
 const TREE_PATH = path.join(WORK_DIR, "pob", `tree-${TREE_VERSION}.json`);
@@ -155,6 +156,11 @@ try {
 	/* 테이블 없음 → 리마인더 생략 */
 }
 const usableText = (s) => s && !/^\[DNT/.test(s) && s !== "WIP";
+// 키워드 설명(10-04 C110) — PoE2 는 리마인더 대신 스탯 문구의 강조 용어([Critical|Critical Hit] 의 앞쪽 Id)를 KeywordPopups(용어 · 정의)로
+//   풀어 준다(인게임 툴팁에서 Alt). 스탯은 마크업을 벗겨 싣지만 그 전에 Id 를 모아 노드 keywords 로, 쓰인 용어만 맨 위 keywords 사전으로 싣는다
+//   (읽기 · Id 모으기는 젬과 같은 common2 도우미, C111)
+const keywordById = loadKeywords(loadTable);
+const usedKeywords = new Set();
 
 // 스탯이 아니라 PassiveSkills 열로 붙는 줄(PoB 는 문장으로 싣는다): 부여 스킬 / 패시브 포인트 / 무기 세트 포인트.
 // 문구는 게임 ClientStrings 에서 영/한 쌍으로 가져온다("Grants Skill: <underline>{{{0}}}" → "Grants Skill: {0}").
@@ -203,7 +209,9 @@ function extraLines(row) {
 
 /** 서술 결과(설명 블록 단위 배열)를 줄 단위 영/한 평행 배열로 편다. 블록 안 \n 은 PoB 처럼 줄로 나눈다. */
 function describeLines(statValues) {
-	const en = describe(statValues, "English").map(stripMarkup);
+	const raw = describe(statValues, "English");
+	const keywords = [...new Set(raw.flatMap(markupIds))].filter((id) => keywordById.has(id));
+	const en = raw.map(stripMarkup);
 	const ko = describe(statValues, "Korean").map(stripMarkup);
 	const enLines = [];
 	const koLines = [];
@@ -219,7 +227,7 @@ function describeLines(statValues) {
 			koLines.push(k.join(" "));
 		}
 	});
-	return { enLines, koLines };
+	return { enLines, koLines, keywords };
 }
 
 const gameByGraphId = new Map();
@@ -249,6 +257,7 @@ passivesEn.forEach((row, i) => {
 		flavourKo: usableText(ko?.FlavourText) ? stripMarkup(ko.FlavourText) : null,
 		valuesMissing,
 		reminders,
+		keywords: described.keywords,
 		enLines: [...described.enLines, ...extra.en],
 		koLines: [...described.koLines, ...extra.ko],
 	});
@@ -417,9 +426,25 @@ for (const [idStr, n] of Object.entries(tree.nodes)) {
 		classStart: n.classesStart ? n.classesStart.filter((c) => pobClassNames.has(c)) : null,
 		icon: n.icon || null,
 	};
+	// 여러 갈래 중 하나를 고르는 전직 선택지(데드아이 "Point Blank" 등) — PoB CountAllocNodes 는 전직 포인트로 세지 않는다.
+	//   이 표시가 없어 실빌드가 "전직 9 / 8" 로 넘쳐 보였다(10-03 C38)
+	if (n.isMultipleChoiceOption) entry.multipleChoiceOption = true;
+	// 공짜 노드(PoB isFreeAllocate — 블러드 메이지 Sanguimancy · 스피릿 워커 Sacred Unity · 키타바의 대장장이 Smith's Masterwork):
+	//   CountAllocNodes 가 포인트로 안 센다. 없으면 실빌드가 "전직 9 / 8"(10-03 C49)
+	if (n.isFreeAllocate) entry.freeAllocate = true;
+	// 잠금 조건(PoB unlockConstraint — 스피릿 워커 Sacred Unity): 이 노드들이 다 찍혀야 찍히고, 하나라도 빠지면 같이 빠진다(10-03 C50)
+	if (n.unlockConstraint?.nodes?.length) entry.unlockConstraint = n.unlockConstraint.nodes;
+	// 심연 주얼 홈 순번(10-03 C39) — 목소리 "Allocates N Sinister Jewel sockets" 는 이 순번 1..N 홈을 공짜로 준다
+	//   (PoB PassiveSpec voicesSinisterSocketAliases: voices_jewel_slot1, 2, 3__, 4, 5 순서). 그 너머 노드는 유료로 이어진다
+	const SINISTER_ALIASES = ["voices_jewel_slot1", "voices_jewel_slot2", "voices_jewel_slot3__", "voices_jewel_slot4", "voices_jewel_slot5"];
+	if (n.sinister && SINISTER_ALIASES.includes(n.aliasPassiveSocket)) entry.sinisterSlot = SINISTER_ALIASES.indexOf(n.aliasPassiveSocket) + 1;
 	if (game?.reminders?.length) {
 		entry.reminders = game.reminders.map((r) => stripMarkup(r.en));
 		entry.remindersKo = game.reminders.map((r) => (usableText(r.ko) ? stripMarkup(r.ko) : stripMarkup(r.en)));
+	}
+	if (game?.keywords?.length && pobStats.length) {
+		entry.keywords = game.keywords;
+		for (const k of game.keywords) usedKeywords.add(k);
 	}
 	if (n.flavourText) {
 		entry.flavour = n.flavourText;
@@ -458,6 +483,7 @@ const result = {
 	classes,
 	groups,
 	nodes,
+	keywords: Object.fromEntries([...usedKeywords].sort().map((id) => [id, keywordById.get(id)])),
 };
 const outPath = writeJson("passive-tree.json", result);
 
@@ -475,6 +501,7 @@ if (stat.nameMismatch.length) console.log(`  그 밖의 이름 불일치 ${stat.
 console.log(`한글 이름: ${stat.nameKo}/${placedCount} (${pct(stat.nameKo, placedCount)})`);
 console.log(`영문 스탯 일치(노드): ${stat.matched}/${stat.withStats} (${pct(stat.matched, stat.withStats)}), 줄: ${stat.lineMatched}/${stat.lineTotal} (${pct(stat.lineMatched, stat.lineTotal)})`);
 console.log(`한글 스탯: 노드 ${stat.nodesKoFull}/${stat.withStats} (${pct(stat.nodesKoFull, stat.withStats)}), 줄 ${stat.koHangul}/${stat.koLines} (${pct(stat.koHangul, stat.koLines)}), 서술 빈 노드 ${stat.describeEmpty}`);
+console.log(`키워드 설명: 노드 ${Object.values(nodes).filter((e) => e.keywords).length}개 · 용어 ${usedKeywords.size}종(테이블 ${keywordById.size}, 한글 정의 ${[...usedKeywords].filter((k) => keywordById.get(k).defKo).length})`);
 const unknown = reportUnknownHandlers();
 console.log(`서술 파일 전처리: table_only 변형 ${cleanStats.tableOnly}줄 제거, per_minute_to_per_second ${cleanStats.perMinute}곳 소수 유지로 교체`);
 if (unknown.length) console.log("모르는 핸들러(패시브 전체 9731행 서술 중 만남):", unknown.join(", "));

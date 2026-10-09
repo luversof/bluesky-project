@@ -7,6 +7,10 @@
 <%-- modLines 와 1:1 정렬된 티어 라벨. 재버킷팅(임플리싯/익스플리싯) 시 인덱스로 익스플리싯에만 실어 나른다. --%>
 @param java.util.List<String> modTiers = null
 @param net.luversof.web.gate.poe.dto.PoeBaseItem base = null
+<%-- modLines 와 1:1 정렬된 줄별 리마인더(회색 부연, 10-04 C150 — 빌드 화면 C131 짝). 길이가 다르면 무시. --%>
+@param java.util.List<java.util.List<String>> reminders = null
+<%-- 결과 목록 행의 CSS 호버 레이어로 쓸 때(group-hover — 서버 호출 없이, 10-05 C151). 페이퍼돌 · 주얼은 data-poe-tip 복제라 false. --%>
+@param boolean rowTip = false
 
 <%-- 시뮬 결과 레어 아이템 인게임 툴팁 — 목록 행과 페이퍼돌 공용.
      엘드리치(총주교/포식자)·영향력(셰이퍼/엘더)은 인게임처럼 헤더 밴드 좌우 상단 모서리에 심볼 아이콘으로 표시.
@@ -21,13 +25,18 @@
 	java.util.List<String> ttImplicits = new java.util.ArrayList<>();
 	java.util.List<String> ttExplicits = new java.util.ArrayList<>();
 	java.util.List<String> ttExplicitTiers = new java.util.ArrayList<>();
+	java.util.List<java.util.List<String>> ttImplicitRems = new java.util.ArrayList<>();
+	java.util.List<java.util.List<String>> ttExplicitRems = new java.util.ArrayList<>();
+	boolean remAligned = reminders != null && reminders.size() == lines.size();
 	for (int i = 0; i < lines.size(); i++) {
 		String ml = lines.get(i);
 		String mk = ml.startsWith("(") && ml.indexOf(") ") > 0 ? ml.substring(1, ml.indexOf(") ")) : null;
 		String rest = mk != null ? ml.substring(ml.indexOf(") ") + 2) : ml;
 		String tier = modTiers != null && i < modTiers.size() ? modTiers.get(i) : null;
+		java.util.List<String> rem = remAligned && reminders.get(i) != null ? reminders.get(i) : java.util.List.of();
 		if (mk != null && implicitMarkers.contains(mk)) {
 			ttImplicits.add(rest);
+			ttImplicitRems.add(rem);
 			switch (mk) {
 				case "총주교": case "exarch": hasExarch = true; break;
 				case "포식자": case "eater": hasEater = true; break;
@@ -36,6 +45,7 @@
 		} else {
 			ttExplicits.add(ml);
 			ttExplicitTiers.add(tier);
+			ttExplicitRems.add(rem);
 			if (mk != null && (mk.equals("셰이퍼") || mk.equalsIgnoreCase("shaper"))) hasShaper = true;
 			if (mk != null && (mk.equals("엘더") || mk.equalsIgnoreCase("elder"))) hasElder = true;
 		}
@@ -52,7 +62,7 @@
 		rightIco = hasEater ? eaterIco : exarchIco;
 	}
 }
-<div class="poe-tooltip poe-rar-rare w-80 max-h-[80vh] overflow-y-auto shadow-2xl">
+<div class="poe-tooltip poe-rar-rare w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl ${rowTip ? "hidden group-hover:block absolute left-0 top-full z-30" : ""}" data-rare-tooltip="${rowTip ? "" : null}">
 	<div class="poe-tt-band poe-tt-band-2">
 		@if(leftIco != null)
 			<img src="${leftIco}" style="position:absolute;left:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
@@ -80,8 +90,11 @@
 	@if(!ttImplicits.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
-			@for(String ml : ttImplicits)
-				<div class="text-[#d0a2f7]">$unsafe{PoeText.highlightValues(ml)}</div>
+			@for(int ii = 0; ii < ttImplicits.size(); ii++)
+				<div class="text-[#d0a2f7]" data-tt-line>$unsafe{PoeText.highlightValues(ttImplicits.get(ii))}</div>
+				@for(String rem : ttImplicitRems.get(ii))
+					<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+				@endfor
 			@endfor
 		</div>
 	@endif
@@ -97,7 +110,10 @@
 				String rest = mk != null ? ml.substring(end + 2) : ml;
 				String tier = ei < ttExplicitTiers.size() ? ttExplicitTiers.get(ei) : null;
 			}
-			<div class="text-[#8888ff]">@if(mk != null)<span class="text-[10px] text-white/35">(${mk})</span> @endif@if(tier != null && !tier.isEmpty())<span class="text-[10px] font-mono text-white/40 mr-0.5">${tier}</span> @endif$unsafe{PoeText.highlightValues(rest)}</div>
+			<div class="text-[#8888ff]" data-tt-line>@if(mk != null)<span class="text-[10px] text-white/35">(${mk})</span> @endif@if(tier != null && !tier.isEmpty())<span class="text-[10px] font-mono text-white/40 mr-0.5">${tier}</span> @endif$unsafe{PoeText.highlightValues(rest)}</div>
+			@for(String rem : ttExplicitRems.get(ei))
+				<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+			@endfor
 		@endfor
 	</div>
 </div>

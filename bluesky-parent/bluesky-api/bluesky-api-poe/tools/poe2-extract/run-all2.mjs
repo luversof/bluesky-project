@@ -54,6 +54,7 @@ step("스탯 설명 파일", "export-files.mjs");
 step("스킬 전용 스탯 설명", "export-skill-desc.mjs");
 step("베이스 아이템", "parse-items2.mjs");
 step("젬", "parse-gems2.mjs");
+step("레어 이름 낱말", "rare-names2.mjs"); // 빌드 요약 레어 이름 한국어(10-04 C144)
 step("옵션", "parse-mods2.mjs");
 step("경로석 옵션", "parse-waystone-mods2.mjs");
 step("증강물(룬·영혼 핵)", "parse-augments2.mjs");
@@ -93,6 +94,13 @@ try {
 	console.log(`(고유 로어·요구 레벨 ${((Date.now() - t0) / 1000).toFixed(1)}초)`);
 } catch (e) {
 	console.warn(`[poe2] ⚠ 고유 로어·요구 레벨 채우기 실패 — 로어 없이 계속: ${String(e.message).split("\n")[0]}`);
+}
+// 거래소 스탯 사전 · 지금 리그(빌드 화면 아이템 → 거래소 검색 링크, 10-08) — 네트워크 단계라 비치명(실패하면 기존 파일로).
+try {
+	console.log("\n=== 거래소 스탯 사전 ===");
+	execFileSync(process.execPath, [path.join(REPO_DIR, "trade-stats2.mjs")], { stdio: "inherit", cwd: REPO_DIR });
+} catch (e) {
+	console.warn(`[poe2] ⚠ 거래소 스탯 사전 갱신 실패 — 기존 파일로 계속: ${String(e.message).split("\n")[0]}`);
 }
 // 빌드 재계산 엔진(PoB-PoE2) — 상류 최신으로 받아 표준 LuaJIT 용으로 고치고(patch-pob2) 표본을 계산해 본다(verify-engine2).
 //   실패해도 데이터는 멀쩡하다(빌드 화면의 재계산만 안 된다) — 경고로 남기고 끝낸다.

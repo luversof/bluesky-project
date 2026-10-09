@@ -83,7 +83,7 @@ class MonthlyDividendPayoutImportParserTest {
         LocalDate.of(2025, 1, 3),
         null,
         "126",
-        "0");
+        null);
     assertPayout(
         requests.get(1),
         "381170",
@@ -91,7 +91,7 @@ class MonthlyDividendPayoutImportParserTest {
         LocalDate.of(2024, 12, 3),
         null,
         "134",
-        "0");
+        null);
   }
 
   @Test
@@ -193,7 +193,8 @@ class MonthlyDividendPayoutImportParserTest {
 
     assertThat(requests).hasSize(1);
     assertThat(requests.get(0).getDividendAmountPerShare()).isEqualByComparingTo("126");
-    assertThat(requests.get(0).getTaxableBasePerShare()).isEqualByComparingTo("0");
+    // "-" 는 모름(2026-10-07) - 0 으로 두면 진짜 0 과 구분되지 않아 다음 갱신이 채우지 못한다.
+    assertThat(requests.get(0).getTaxableBasePerShare()).isNull();
   }
 
   @Test
@@ -225,6 +226,7 @@ class MonthlyDividendPayoutImportParserTest {
     assertThat(request.getDistributionRatePct())
         .isEqualTo(distributionRate != null ? new BigDecimal(distributionRate) : null);
     assertThat(request.getDividendAmountPerShare()).isEqualTo(new BigDecimal(dividendAmount));
-    assertThat(request.getTaxableBasePerShare()).isEqualTo(new BigDecimal(taxableBase));
+    assertThat(request.getTaxableBasePerShare())
+        .isEqualTo(taxableBase != null ? new BigDecimal(taxableBase) : null);
   }
 }

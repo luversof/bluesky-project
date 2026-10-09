@@ -6,6 +6,8 @@
 @param boolean engineAvailable = false
 @param RealStart realStart = null
 @param String oobCode = null
+<%-- 시뮬레이터 결과를 불러왔을 때(10-08) — 안내 문구만 다르다 --%>
+@param boolean fromSim = false
 
 <%-- 빌드 화면 "실빌드에서 출발"(realStart) · 다듬은 빌드 불러오기(oobCode) — 출처 안내 + 코드 칸 채우기(OOB: 재계산·가이드 버튼이 이 칸을 보낸다)
      + 자동 다듬기 버튼 + 일반 요약 fragment. --%>
@@ -20,7 +22,7 @@
 				? "poe.ninja 실빌드에서 출발" + (realStart.level() != null ? " (Lv" + realStart.level() + ")" : "") + " — " + realStart.ascendancy() + " · " + realStart.mainSkill() + ", 실빌드 " + realStart.sample() + "명 중 DPS·EHP 중앙값에 가장 가까운 빌드입니다. 시뮬레이터와 같은 가정(보스·충전·전투 버프)에 그 빌드의 운용 설정(공명·낙인 부착 등)을 더해 불러왔습니다. 아래 업그레이드 가이드로 다듬거나, 자동으로 다듬어 보세요."
 				: "Starting from a poe.ninja real build" + (realStart.level() != null ? " (Lv" + realStart.level() + ")" : "") + " — " + realStart.ascendancy() + " · " + realStart.mainSkill() + ", closest to the median of " + realStart.sample() + " real builds, loaded under the simulator's assumptions plus the build's own settings. Refine it with the upgrade guide below, or automatically."}</span>
 			<div class="flex flex-wrap items-center gap-2">
-				<button type="button" class="btn btn-primary btn-sm" data-refine-start
+				<button type="button" class="btn btn-primary btn-sm" data-refine-start data-no-success-toast
 				        hx-post="/poe/htmx/build/refine/start" hx-include="#poeBuildCode" hx-target="#poeRefineArea" hx-swap="innerHTML">
 					${ko ? "자동으로 다듬기" : "Refine automatically"}
 				</button>
@@ -28,6 +30,8 @@
 			</div>
 			<div id="poeRefineArea" class="w-full"></div>
 		</div>
+	@elseif(fromSim)
+		<div class="alert alert-success mb-3 text-sm" data-sim-note>${ko ? "시뮬레이터 결과 빌드를 불러왔습니다. 코드 칸도 이 빌드로 바뀌었습니다 — 아이템마다 거래소 링크가 있습니다." : "Loaded the simulator result build. The code box now holds it — each item has a trade link."}</div>
 	@else
 		<div class="alert alert-success mb-3 text-sm" data-refined-note>${ko ? "다듬은 빌드를 불러왔습니다. 코드 칸도 이 빌드로 바뀌었습니다." : "Loaded the refined build. The code box now holds it."}</div>
 	@endif

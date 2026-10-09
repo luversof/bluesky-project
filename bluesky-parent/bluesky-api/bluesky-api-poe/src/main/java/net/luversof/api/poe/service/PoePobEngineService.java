@@ -394,7 +394,13 @@ public class PoePobEngineService {
           "MilitantFaith",
           "ElegantHubris",
           "HeroicTragedy",
-          "GloriousVanity");
+          "GloriousVanity",
+          // Abyss 5종 — 10-05 C166 부터 추출 대상(러너 Inflate 대체가 이 .bin 을 쓴다)
+          "AbyssAmanamu",
+          "AbyssKurgal",
+          "AbyssTecrod",
+          "AbyssUlaman",
+          "AbyssZorath");
 
   /**
    * 점검 결과 캐시. BuildError 는 후보 평가마다 날 수 있어(최적화 한 판에 수천 번) 매번 파일시스템을 훑으면 그 자체가 부담이다. 환경은 잡 도중에 바뀌지
@@ -457,8 +463,9 @@ public class PoePobEngineService {
             String name = f.getFileName().toString();
             java.util.regex.Matcher zm =
                 java.util.regex.Pattern.compile("^(.+)\\.zip(?:\\.part\\d+)?$").matcher(name);
-            // ⚠ 폴더의 압축 파일을 전부 요구하면 안 된다 — Abyss* 처럼 **추출 대상이 아닌 것**이 섞여 있어
-            //    "AbyssAmanamu.bin 없음" 같은 거짓 진단이 쏟아진다(추출기 verify-engine.mjs 에서 실제로 겪음).
+            // ⚠ 폴더의 압축 파일을 전부 요구하면 안 된다 — **추출 대상이 아닌 것**이 섞이면 "X.bin 없음" 거짓 진단이
+            //    쏟아진다(추출기 verify-engine.mjs 에서 실제로 겪음). 목록은 timeless-bin.mjs 와 같게(Abyss 5종 포함,
+            // C166).
             if (!zm.matches() || !TIMELESS_JEWELS.contains(zm.group(1))) {
               continue;
             }
