@@ -404,8 +404,8 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 								<tr class="text-base-content/60">
 									<th scope="col">${yearLabel}</th>
 									<th scope="col" class="text-right yield-extra-col">${grossAmountLabel}</th>
-									<th scope="col" class="text-right">@template._components.ui.termHint(label = netAmountLabel, desc = annualizedTermDesc)</th>
-									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = heldAverageLabel, desc = heldTermDesc)</th>
+									<th scope="col" class="text-right">@template._components.ui.termHint(label = netAmountLabel, desc = annualizedTermDesc)</th>
+									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = heldAverageLabel, desc = heldTermDesc)</th>
 									<th scope="col" class="text-right yield-extra-col">${taxLabel}</th>
 									<th scope="col" class="text-right yield-extra-col">${taxableAmountLabel}</th>
 									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = dailyAverageInvestedCapitalLabel, desc = dailyCapitalTermDesc)</th>
