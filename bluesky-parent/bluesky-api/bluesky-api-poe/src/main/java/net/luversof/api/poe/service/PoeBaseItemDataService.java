@@ -210,9 +210,83 @@ public class PoeBaseItemDataService {
     return data.items().stream().filter(item -> item.slug().equals(slug)).findFirst();
   }
 
-  /** 영문 이름 정확 일치 (대소문자 무시) — PoB 임포트 매칭용 */
+  /**
+   * 영문 이름 정확 일치 (대소문자 무시) — PoB 임포트 · 고유 baseType 조인용.
+   *
+   * <p>정확 일치가 없으면 PoB 표기 두 가지를 더 받아 준다(10-09 C209): 발음 구별 기호를 뺀 이름(PoB "Maelstrom Staff" = 게임
+   * "Maelström Staff" — 파쇄자), 같은 이름 베이스 3종을 가르는 꼬리(PoB "Two-Toned Boots (Evasion/Energy Shield)" =
+   * 회피+에너지 보호막을 가진 "Two-Toned Boots" — 광기의 신호, "Two-Stone Ring (Cold/Lightning)" = 냉기 · 번개 저항 암시 —
+   * 선구자의 상징). 예전엔 둘 다 못 찾아 고유 상세에서 베이스 속성 · 요구 사항이 빠졌다.
+   */
   public Optional<PoeBaseItem> findByName(String name) {
-    return data.items().stream().filter(item -> item.name().equalsIgnoreCase(name)).findFirst();
+    return findByName(data.items(), name);
+  }
+
+  static Optional<PoeBaseItem> findByName(List<PoeBaseItem> items, String name) {
+    if (name == null) {
+      return Optional.empty();
+    }
+    Optional<PoeBaseItem> exact =
+        items.stream().filter(item -> item.name().equalsIgnoreCase(name)).findFirst();
+    if (exact.isPresent()) {
+      return exact;
+    }
+    java.util.regex.Matcher suffix = VARIANT_SUFFIX.matcher(name);
+    String bare = suffix.matches() ? suffix.group(1) : name;
+    String key = foldName(bare);
+    List<PoeBaseItem> sameName =
+        items.stream().filter(item -> foldName(item.name()).equals(key)).toList();
+    if (!suffix.matches()) {
+      return sameName.stream().findFirst();
+    }
+    Set<String> wanted = Set.of(suffix.group(2).split("/"));
+    return sameName.stream().filter(item -> suffixMatches(item, wanted)).findFirst();
+  }
+
+  /**
+   * "이름 (Armour/Evasion)" · "이름 (Cold/Lightning)" — PoB 가 같은 이름 베이스를 가르는 꼬리(두 가지 색 장화 3종 · 쌍보석 반지
+   * 3종).
+   */
+  private static final java.util.regex.Pattern VARIANT_SUFFIX =
+      java.util.regex.Pattern.compile("(.+?) \\(([A-Za-z ]+(?:/[A-Za-z ]+)+)\\)");
+
+  private static final Set<String> DEFENCES = Set.of("Armour", "Evasion", "Energy Shield");
+
+  /** 방어 유형 꼬리는 그 방어 수치를 가진 베이스, 그 밖(원소)은 암시 옵션 영어 줄에 낱말이 다 들어 있는 베이스. */
+  private static boolean suffixMatches(PoeBaseItem item, Set<String> words) {
+    if (DEFENCES.containsAll(words)) {
+      return defenceTypes(item).equals(words);
+    }
+    String implicits =
+        item.implicits() == null
+            ? ""
+            : String.join(" ", item.implicits().stream().map(PoeBaseItem.ModLine::en).toList())
+                .toLowerCase(Locale.ROOT);
+    return words.stream().allMatch(w -> implicits.contains(w.toLowerCase(Locale.ROOT)));
+  }
+
+  private static String foldName(String s) {
+    return java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+        .replaceAll("\\p{M}", "")
+        .toLowerCase(Locale.ROOT);
+  }
+
+  private static Set<String> defenceTypes(PoeBaseItem item) {
+    PoeBaseItem.Armour a = item.armour();
+    if (a == null) {
+      return Set.of();
+    }
+    Set<String> types = new java.util.HashSet<>();
+    if (a.armourMax() > 0) {
+      types.add("Armour");
+    }
+    if (a.evasionMax() > 0) {
+      types.add("Evasion");
+    }
+    if (a.energyShieldMax() > 0) {
+      types.add("Energy Shield");
+    }
+    return types;
   }
 
   /**

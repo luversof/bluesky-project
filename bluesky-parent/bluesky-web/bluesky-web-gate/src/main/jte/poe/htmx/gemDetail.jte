@@ -15,7 +15,8 @@
 	String costLabel = MessageUtil.getMessage("poe.gems.detail.cost");
 	String reservationLabel = MessageUtil.getMessage("poe.gems.detail.reservation");
 	String costMultiplierLabel = MessageUtil.getMessage("poe.gems.detail.cost.multiplier");
-	String castTimeLabel = MessageUtil.getMessage("poe.gems.label.cast.time");
+	// 게임 문구(10-09 C202 — ClientStrings ItemDisplaySkillGemCastTime "시전 속도" · CastTimeValue/CooldownValue "{0}초" · SoulsCanStoreUses "{0}회 사용 가능", 예약 "점유")
+	String castTimeLabel = MessageUtil.getMessage("poe.gems.detail.cast.time");
 	String cooldownLabel = MessageUtil.getMessage("poe.gems.detail.cooldown");
 	String soulPreventionLabel = MessageUtil.getMessage("poe.gems.detail.soul.prevention");
 	String soulStoredLabel = MessageUtil.getMessage("poe.gems.detail.soul.stored");
@@ -23,7 +24,8 @@
 	String damageLabel = MessageUtil.getMessage("poe.gems.detail.damage");
 	String damageEffectivenessLabel = MessageUtil.getMessage("poe.gems.detail.damage.effectiveness");
 	String qualityLabel = MessageUtil.getMessage("poe.gems.detail.quality");
-	String socketHint = MessageUtil.getMessage("poe.gems.detail.socket.hint");
+	// 보조 젬은 보조 젬 안내(10-09 C229 — ClientStrings ItemDescriptionSupportSkillGem, 예전엔 액티브 젬 문구가 보조 젬에도 나왔다)
+	String socketHint = MessageUtil.getMessage(gem.isSupport() ? "poe.gems.detail.socket.hint.support" : "poe.gems.detail.socket.hint");
 	String supportBadgeLabel = MessageUtil.getMessage("poe.gems.type.support");
 	String activeBadgeLabel = MessageUtil.getMessage("poe.gems.type.active");
 
@@ -65,7 +67,7 @@
 			@if(current != null)
 				@if(current.cost() != null && current.cost() > 0)
 					<%-- 수량 먼저 — 진행표(gemPage)와 순서를 맞춘다. 이전엔 툴팁만 "Mana 29", 표는 "29 Mana" 로 달랐다. --%>
-					<div><span class="${label}">${costLabel}: </span><span class="${value}">${current.cost()} ${net.luversof.web.gate.poe.PoeText.costType(current.costType())}</span></div>
+					<div><span class="${label}">${costLabel}: </span><span class="${value}">${net.luversof.web.gate.poe.PoeText.costValue(current.cost(), current.costType())}</span></div>
 				@endif
 				@if(current.reservation() != null)
 					<div><span class="${label}">${reservationLabel}: </span><span class="${value}">${String.format("%.0f", current.reservation())}%</span></div>
@@ -73,24 +75,36 @@
 				@if(current.costMultiplier() != null && current.costMultiplier() != 100)
 					<div><span class="${label}">${costMultiplierLabel}: </span><span class="${value}">${current.costMultiplier()}%</span></div>
 				@endif
-				@if(gem.castTimeMs() != null && gem.castTimeMs() > 0)
-					<div><span class="${label}">${castTimeLabel}: </span><span class="${value}">${String.format("%.2f", gem.castTimeMs() / 1000.0)}s</span></div>
-				@endif
 				@if(current.cooldownMs() != null)
-					<div><span class="${label}">${cooldownLabel}: </span><span class="${value}">${String.format("%.2f", current.cooldownMs() / 1000.0)}s</span></div>
+					<div><span class="${label}">${cooldownLabel}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.value.seconds"), String.format("%.2f", current.cooldownMs() / 1000.0))}</span></div>
 				@endif
 				<%-- 바알 스킬 영혼 정보(인게임 툴팁 파리티): 영혼 획득 방지 시간 · 저장 사용 횟수. 레벨 무관(젬 단위). --%>
-				@if(gem.soulPreventionSeconds() != null)
-					<div><span class="${label}">${soulPreventionLabel}: </span><span class="${value}">${String.format("%.2f", gem.soulPreventionSeconds()).replaceAll("\\.?0+$", "")}s</span></div>
+				<%-- 영혼 소모(10-09 C234 — ClientStrings ItemDisplaySkillGemSoulsPerUse "사용 시 영혼 소모", PoB cost.Soul). 줄 순서는 poedb · PoB GemTooltip.lua:
+				     재사용 대기시간 → 영혼 소모 → 저장 횟수 → 영혼 획득 방지 → 시전 속도(예전엔 시전 속도가 맨 앞) --%>
+				@if(current.soulCost() != null)
+					<div data-gem-souls><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.souls.per.use")}: </span><span class="${value}">${current.soulCost()}</span></div>
 				@endif
 				@if(gem.storedUses() != null)
-					<div><span class="${label}">${soulStoredLabel}: </span><span class="${value}">${gem.storedUses()}</span></div>
+					<div data-gem-stored-uses><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.detail.soul.can.store"), String.valueOf(gem.storedUses()))}</span></div>
+				@endif
+				@if(gem.soulPreventionSeconds() != null)
+					<div><span class="${label}">${soulPreventionLabel}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.value.seconds"), String.format("%.2f", gem.soulPreventionSeconds()).replaceAll("\\.?0+$", ""))}</span></div>
+				@endif
+				<%-- 시전 속도 — 공격 젬엔 없다(공격 속도 · 공격 피해가 대신), 0 이면 "즉시 시전"(10-09 C226 — PoB GemTooltip.lua · ClientStrings SkillIsInstant.
+				     예전엔 회오리바람 같은 공격 젬에도 "시전 속도: 1.00초"가 나왔다) --%>
+				@if(gem.castTimeMs() != null && (gem.tags() == null || !gem.tags().contains("Attack")))
+					<div data-gem-cast-time><span class="${label}">${castTimeLabel}: </span><span class="${value}">${gem.castTimeMs() > 0 ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.value.seconds"), String.format("%.2f", gem.castTimeMs() / 1000.0)) : MessageUtil.getMessage("poe.gems.cast.instant")}</span></div>
 				@endif
 				@if(current.critChance() != null)
 					<div><span class="${label}">${critChanceLabel}: </span><span class="${value}">${String.format("%.2f", current.critChance())}%</span></div>
 				@endif
+				<%-- 공격 속도 → 공격 피해 순(10-09 C234 — PoB GemTooltip.lua · poedb) --%>
+				@if(current.attackSpeedPct() != null)
+					<div data-gem-attack-speed><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.attack.speed")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.of.base"), String.valueOf(current.attackSpeedPct()))}</span></div>
+				@endif
 				@if(current.baseMultiplier() != null)
-					<div><span class="${label}">${damageLabel}: </span><span class="${value}">${String.format("%.0f", current.baseMultiplier())}%</span></div>
+					<%-- 공격 피해(10-08 C201 — 게임 ClientStrings ItemDisplaySkillGemAttackDamageEffectiveness "공격 피해" · PercentageOfBase "기본 수치의 {0}%", 소수 한 자리까지 — 예전엔 "피해: 79%") --%>
+					<div data-gem-attack-damage><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.attack.damage")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.of.base"), current.baseMultiplier() % 1 == 0 ? String.valueOf(current.baseMultiplier().longValue()) : String.format("%.1f", current.baseMultiplier()))}</span></div>
 				@endif
 				@if(current.damageEffectiveness() != null)
 					<div><span class="${label}">${damageEffectivenessLabel}: </span><span class="${value}">${String.format("%.0f", current.damageEffectiveness())}%</span></div>
@@ -100,11 +114,23 @@
 				     틀린 값을 보여주게 되므로 **속성 종류만** 인게임 속성 색으로 덧붙인다(색은 사이클 16 팔레트). --%>
 				!{
 					java.util.List<String> reqAttrs = new java.util.ArrayList<>();
-					if (gem.requiresStr()) reqAttrs.add("<span class=\"poe-gem-red\">" + MessageUtil.getMessage("poe.items.detail.str") + "</span>");
-					if (gem.requiresDex()) reqAttrs.add("<span class=\"poe-gem-green\">" + MessageUtil.getMessage("poe.items.detail.dex") + "</span>");
-					if (gem.requiresInt()) reqAttrs.add("<span class=\"poe-gem-blue\">" + MessageUtil.getMessage("poe.items.detail.int") + "</span>");
+					// 10-09 C225: 비율(reqStrPct 등)이 있으면 PoB getGemStatRequirement 수치로 — 인게임 "요구 사항 레벨 70, 68 힘, 98 민첩"(아이템과 같은 꼴, poedb 와 같은 값).
+					//   14 미만은 요구 없음(PoB 와 같음). 비율이 없는 옛 데이터면 예전처럼 속성 이름만
+					boolean numeric = gem.reqStrPct() != null || gem.reqDexPct() != null || gem.reqIntPct() != null;
+					if (numeric) {
+						int rs = net.luversof.web.gate.poe.PoeGemRequirements.stat(current.requiredLevel(), gem.isSupport(), gem.reqStrPct());
+						int rd = net.luversof.web.gate.poe.PoeGemRequirements.stat(current.requiredLevel(), gem.isSupport(), gem.reqDexPct());
+						int ri = net.luversof.web.gate.poe.PoeGemRequirements.stat(current.requiredLevel(), gem.isSupport(), gem.reqIntPct());
+						if (rs > 0) reqAttrs.add("<span class=\"" + value + "\">" + rs + "</span> <span class=\"" + label + "\">" + MessageUtil.getMessage("poe.items.detail.str") + "</span>");
+						if (rd > 0) reqAttrs.add("<span class=\"" + value + "\">" + rd + "</span> <span class=\"" + label + "\">" + MessageUtil.getMessage("poe.items.detail.dex") + "</span>");
+						if (ri > 0) reqAttrs.add("<span class=\"" + value + "\">" + ri + "</span> <span class=\"" + label + "\">" + MessageUtil.getMessage("poe.items.detail.int") + "</span>");
+					} else {
+						if (gem.requiresStr()) reqAttrs.add("<span class=\"poe-gem-red\">" + MessageUtil.getMessage("poe.items.detail.str") + "</span>");
+						if (gem.requiresDex()) reqAttrs.add("<span class=\"poe-gem-green\">" + MessageUtil.getMessage("poe.items.detail.dex") + "</span>");
+						if (gem.requiresInt()) reqAttrs.add("<span class=\"poe-gem-blue\">" + MessageUtil.getMessage("poe.items.detail.int") + "</span>");
+					}
 				}
-				<div class="pt-0.5"><span class="${label}">${requiredLevelLabel} </span><span class="${value}">${current.requiredLevel()}</span>@if(!reqAttrs.isEmpty())<span class="${label}">, </span>$unsafe{String.join("<span class=\"" + label + "\"> · </span>", reqAttrs)}@endif</div>
+				<div class="pt-0.5" data-gem-requirements>@if(numeric)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} ${MessageUtil.getMessage("poe.items.detail.level")} </span>@else<span class="${label}">${requiredLevelLabel} </span>@endif<span class="${value}">${current.requiredLevel()}</span>@if(!reqAttrs.isEmpty())<span class="${label}">, </span>$unsafe{String.join("<span class=\"" + label + "\">" + (numeric ? ", " : " · ") + "</span>", reqAttrs)}@endif</div>
 			@endif
 		</div>
 
@@ -170,7 +196,7 @@
 		@if(gem.isVaal())
 			<%-- 바알 젬은 늘 타락 — 인게임 젬 툴팁 맨 아래 붉은 한 줄(10-05 C159, 고유 툴팁 C157 과 같은 모양 · 낱말) --%>
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${PoeText.isKorean() ? "타락" : "Corrupted"}</div>
+			<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.common.corrupted")}</div>
 		@endif
 		<div class="px-4 py-2 border-t border-white/10">
 			<div class="flex flex-wrap gap-1 items-center">

@@ -196,9 +196,9 @@
 				java.util.function.BiFunction<Integer, Long, Boolean> low = (mine, med) -> mine != null && med > 0 && mine < med * 0.6;
 				// 실빌드 성향(lean): 이 (전직×스킬)을 실제 유저들이 공격특화/생존특화/균형 중 어디로 굴리는지. 시뮬 목표의 근거.
 				String lean = ninjaBenchmark.lean();
-				String leanLabel = "dps".equals(lean) ? (ko ? "공격 특화 (고DPS·저EHP)" : "Offense (high DPS)")
-					: "ehp".equals(lean) ? (ko ? "생존 특화 (고EHP)" : "Defense (high EHP)")
-					: (ko ? "균형형" : "Balanced");
+				String leanLabel = "dps".equals(lean) ? MessageUtil.getMessage("poe.sim.lean.dps")
+					: "ehp".equals(lean) ? MessageUtil.getMessage("poe.sim.lean.ehp")
+					: MessageUtil.getMessage("poe.sim.lean.balanced");
 				String leanCls = "dps".equals(lean) ? "badge-error" : "ehp".equals(lean) ? "badge-info" : "badge-ghost";
 				// 교환 문구 — "DPS 가 중앙값보다 낮다"만 보고 결함으로 읽는 오독을 막는다. 실측 사례: 폭발 덫 아키타입은
 				//   중앙값 EHP 1,300 의 유리대포인데 우리 balanced 결과는 EHP 26,029 라, DPS 0.37배가 결함이 아니라 예산 배분의 결과였다
@@ -230,14 +230,14 @@
 					case "dps" -> ko ? "공격(DPS)" : "DPS";
 					case "ehp" -> ko ? "생존(EHP)" : "EHP";
 					case "life" -> ko ? "생명" : "Life";
-					case "es" -> ko ? "에너지실드" : "ES";
+					case "es" -> MessageUtil.getMessage("poe.build.stat.energyshield");
 					case "liferegen" -> ko ? "생명재생" : "Life regen";
 					case "armour" -> ko ? "방어도" : "Armour";
 					case "evasion" -> ko ? "회피" : "Evasion";
 					case "block" -> ko ? "막기" : "Block";
-					case "suppress" -> ko ? "회피억제" : "Suppress";
+					case "suppress" -> MessageUtil.getMessage("poe.build.stat.spellsuppressionchance");
 					case "maxres" -> ko ? "최대저항" : "Max res";
-					case "ward" -> ko ? "수호물" : "Ward";
+					case "ward" -> MessageUtil.getMessage("poe.build.stat.ward");
 					case "mana" -> ko ? "마나" : "Mana";
 					case "rarity" -> ko ? "아이템희귀도" : "Item rarity";
 					case "movespeed" -> ko ? "이동속도" : "Move speed";
@@ -245,7 +245,7 @@
 					case "dex" -> ko ? "민첩" : "Dex";
 					case "int" -> ko ? "지능" : "Int";
 					case "cluster" -> ko ? "클러스터주얼" : "Cluster jewels";
-					case "unique" -> ko ? "유니크장비" : "Unique gear";
+					case "unique" -> ko ? "고유 장비" : "Unique gear";
 					case "spellblock" -> ko ? "주문막기" : "Spell block";
 					case "spelldodge" -> ko ? "주문회피" : "Spell dodge";
 					case "phystaken" -> ko ? "물리피해전환" : "Phys taken as";
@@ -325,7 +325,7 @@
 					list.add(new String[] {a[0], a[1], "—", "", "text-base-content/60"});
 				Long L = null; // 캐스팅 편의
 				// ── 좌: 공격·생존 ──
-				addCmp.accept(cmpL, new Object[] {ko ? "DPS(메인 스킬)" : "DPS (main)", ninjaBenchmark.dps(), myDps == null ? null : Long.valueOf(myDps), false});
+				addCmp.accept(cmpL, new Object[] {ko ? "DPS(주 스킬)" : "DPS (main)", ninjaBenchmark.dps(), myDps == null ? null : Long.valueOf(myDps), false});
 				if (ninjaBenchmark.skillDps() != null) {
 					for (int si = 1; si < ninjaBenchmark.skillDps().size(); si++) {
 						var sd = ninjaBenchmark.skillDps().get(si);
@@ -334,7 +334,7 @@
 				}
 				addCmp.accept(cmpL, new Object[] {"EHP", ninjaBenchmark.ehp(), myEhp == null ? null : Long.valueOf(myEhp), false});
 				addCmp.accept(cmpL, new Object[] {ko ? "생명" : "Life", ninjaBenchmark.life(), myLife == null ? null : Long.valueOf(myLife), false});
-				addCmp.accept(cmpL, new Object[] {ko ? "에너지실드" : "ES", ninjaBenchmark.energyShield(), myEs == null ? null : Long.valueOf(myEs), false});
+				addCmp.accept(cmpL, new Object[] {MessageUtil.getMessage("poe.build.stat.energyshield"), ninjaBenchmark.energyShield(), myEs == null ? null : Long.valueOf(myEs), false});
 				addCmp.accept(cmpL, new Object[] {ko ? "생명재생/초" : "Life regen/s", ninjaBenchmark.lifeRegen(), myRegen == null ? null : Long.valueOf(myRegen), false});
 				addCmp.accept(cmpL, new Object[] {ko ? "최대피격(물리)" : "Max hit (phys)", ninjaBenchmark.physicalMax(), myHits.get("physical"), false});
 				addCmp.accept(cmpL, new Object[] {ko ? "최대피격(화염)" : "Max hit (fire)", ninjaBenchmark.fireMax(), myHits.get("fire"), false});
@@ -347,7 +347,7 @@
 				addCmp.accept(cmpR, new Object[] {ko ? "회피" : "Evasion", ninjaBenchmark.evasion(), myEvasion == null ? null : Long.valueOf(myEvasion), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "막기" : "Block", (long) ninjaBenchmark.block(), myBlock == null ? null : Long.valueOf(myBlock), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "주문막기" : "Spell block", (long) ninjaBenchmark.spellBlock(), mySpellBlock == null ? null : Long.valueOf(mySpellBlock), true});
-				addCmp.accept(cmpR, new Object[] {ko ? "회피억제" : "Suppress", (long) ninjaBenchmark.suppress(), mySuppress == null ? null : Long.valueOf(mySuppress), true});
+				addCmp.accept(cmpR, new Object[] {MessageUtil.getMessage("poe.build.stat.spellsuppressionchance"), (long) ninjaBenchmark.suppress(), mySuppress == null ? null : Long.valueOf(mySuppress), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "주문회피" : "Spell dodge", (long) ninjaBenchmark.spellDodge(), toLong.apply(statInt.apply("spelldodgechance")), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "물리피해전환" : "Phys taken as", (long) ninjaBenchmark.physTakenAs(), L, true});
 				addCmp.accept(cmpR, new Object[] {ko ? "화염 저항" : "Fire res", (long) ninjaBenchmark.fireRes(), myFireRes == null ? null : Long.valueOf(myFireRes), true});
@@ -355,7 +355,7 @@
 				addCmp.accept(cmpR, new Object[] {ko ? "번개 저항" : "Light res", (long) ninjaBenchmark.lightningRes(), myLightRes == null ? null : Long.valueOf(myLightRes), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "카오스 저항" : "Chaos res", (long) ninjaBenchmark.chaosRes(), myChaosRes == null ? null : Long.valueOf(myChaosRes), true});
 				addCmp.accept(cmpR, new Object[] {ko ? "마나" : "Mana", ninjaBenchmark.mana(), myMana == null ? null : Long.valueOf(myMana), false});
-				addCmp.accept(cmpR, new Object[] {ko ? "수호물" : "Ward", ninjaBenchmark.ward(), toLong.apply(statInt.apply("ward")), false});
+				addCmp.accept(cmpR, new Object[] {MessageUtil.getMessage("poe.build.stat.ward"), ninjaBenchmark.ward(), toLong.apply(statInt.apply("ward")), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "힘" : "Str", (long) ninjaBenchmark.str(), statInt.apply("str") == null ? null : Long.valueOf(statInt.apply("str")), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "민첩" : "Dex", (long) ninjaBenchmark.dex(), statInt.apply("dex") == null ? null : Long.valueOf(statInt.apply("dex")), false});
 				addCmp.accept(cmpR, new Object[] {ko ? "지능" : "Int", (long) ninjaBenchmark.intel(), statInt.apply("int") == null ? null : Long.valueOf(statInt.apply("int")), false});
@@ -371,7 +371,7 @@
 					addInfo.accept(cmpR, new String[] {ko ? "클러스터(대/중/소)" : "Cluster (L/M/S)", ninjaBenchmark.largeCluster() + "/" + ninjaBenchmark.mediumCluster() + "/" + ninjaBenchmark.smallCluster()});
 				}
 				if (ninjaBenchmark.uniqueEquip() > 0) {
-					addInfo.accept(cmpR, new String[] {ko ? "유니크 장비" : "Unique gear", String.valueOf(ninjaBenchmark.uniqueEquip())});
+					addInfo.accept(cmpR, new String[] {ko ? "고유 장비" : "Unique gear", String.valueOf(ninjaBenchmark.uniqueEquip())});
 				}
 				int mirrorSum = ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours();
 				if (mirrorSum > 0) {
@@ -430,13 +430,13 @@
 					@endfor
 				</div>
 				@if(ninjaBenchmark.skillDps() != null && ninjaBenchmark.skillDps().size() > 1)
-					<div class="text-[10px] text-base-content/60">${ko ? "DPS(메인 스킬)·내 DPS 는 메인 스킬 전용 — 추가 스킬 DPS 는 실빌드 참고값(DPS·스킬명 행)" : "Main-skill DPS on both sides; extra-skill rows are real-build reference"}</div>
+					<div class="text-[10px] text-base-content/60">${ko ? "DPS(주 스킬)·내 DPS 는 주 스킬 전용 — 추가 스킬 DPS 는 실빌드 참고값(DPS·스킬명 행)" : "Main-skill DPS on both sides; extra-skill rows are real-build reference"}</div>
 				@endif
 				@if(ninjaBenchmark.topKeystones() != null && !ninjaBenchmark.topKeystones().isEmpty())
-					<div class="text-base-content/60">${ko ? "실빌드 키스톤" : "common keystones"}: ${String.join(", ", ninjaBenchmark.topKeystones())}</div>
+					<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.keystones")}: ${String.join(", ", ninjaBenchmark.topKeystones())}</div>
 				@endif
 				@if(ninjaBenchmark.topCoSkills() != null && !ninjaBenchmark.topCoSkills().isEmpty())
-					<div class="text-base-content/60">${ko ? "함께 쓰는 스킬" : "common co-skills"}: ${String.join(", ", ninjaBenchmark.topCoSkills())}</div>
+					<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.coskills")}: ${String.join(", ", ninjaBenchmark.topCoSkills())}</div>
 				@endif
 				<%-- 실빌드 마스터리(캐릭터 상세 채집) — 패싯이 없을 때만(패싯 패널이 모집단 기준이라 우선) --%>
 				@if(ninjaBenchmark.topMasteries() != null && !ninjaBenchmark.topMasteries().isEmpty() && (ninjaBenchmark.facets() == null || !ninjaBenchmark.facets().containsKey("masteries")))
@@ -1044,7 +1044,7 @@
 									@if(item.tradeQuery() != null && !item.tradeQuery().isBlank())
 										<a class="badge badge-xs badge-outline badge-info align-middle ml-1" target="_blank" rel="noopener"
 										   href="${net.luversof.web.gate.poe.PoeText.tradeUrl(item.tradeQuery())}"
-										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색" : "Search trade for this unique"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소" : "Trade"}</a>
+										   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색" : "Search trade for this unique"}">${MessageUtil.getMessage("poe.common.trade")}</a>
 									@endif
 								@if(!shownModLines.isEmpty())
 									@template.poe.htmx.resultModLines(modLines = shownModLines, modTiers = item.modTiers())
@@ -1115,17 +1115,17 @@
 				<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.code")}</div>
 				<%-- 클립보드 복사 — PoB 에 붙여넣는 게 이 코드의 유일한 용도라 원클릭이 맞다 --%>
 				<%-- 공용 복사(common.ts [data-copy-target]) — PoE2 시뮬 결과와 같은 동작(10-02: 예전엔 인라인 onclick) --%>
-				<button type="button" class="btn btn-ghost btn-xs" id="poePobCopy" data-copy-target="#poePobCode" data-copied-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사됨 ✓" : "Copied ✓"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "복사" : "Copy"}</button>
+				<button type="button" class="btn btn-ghost btn-xs" id="poePobCopy" data-copy-target="#poePobCode" data-copied-label="${MessageUtil.getMessage("poe.common.copied")}">${MessageUtil.getMessage("poe.common.copy")}</button>
 			</div>
 			<textarea id="poePobCode" readonly rows="3" class="textarea textarea-bordered w-full font-mono text-xs leading-5" aria-label="${MessageUtil.getMessage("poe.sim.opt.result.code")}">${result.pobCode()}</textarea>
 		</div>
 		<%-- 빌드 화면에서 열기(10-08, PoE2 시뮬 결과와 같은 자리 · 문구 — 코드 칸 아래) — 거래소 링크 · 업그레이드 가이드 · 툴팁은 빌드 화면이 준다 --%>
 		<div class="flex flex-wrap items-center gap-2">
-			<a class="btn btn-primary btn-sm" href="/poe/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${net.luversof.web.gate.poe.PoeText.isKorean() ? "빌드 화면에서 열기" : "Open in build view"}</a>
+			<a class="btn btn-primary btn-sm" href="/poe/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${MessageUtil.getMessage("poe.sim.result.openbuild")}</a>
 			<span class="text-xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아이템마다 거래소 링크 · 업그레이드 가이드는 빌드 화면에서" : "Trade links per item and the upgrade guide are on the build view"}</span>
 		</div>
 	</div>
 @else
 	<%-- PoE2 시뮬 결과(poe2/htmx/simResult.jte)와 같은 안내 --%>
-	<div class="alert alert-warning text-sm">${net.luversof.web.gate.poe.PoeText.isKorean() ? "결과를 찾지 못했습니다(삭제됐거나 오래돼 정리됐습니다)." : "Result not found (deleted or pruned)."}</div>
+	<div class="alert alert-warning text-sm">${MessageUtil.getMessage("poe.sim.result.notfound")}</div>
 @endif

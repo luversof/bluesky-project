@@ -39,7 +39,7 @@
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<%-- 거래소에서 찾기(10-08 C174, 고유 상세 C173 의 짝) — 이 베이스의 고유 아닌 아이템 · 즉시 구입 · 가격순. 거래소 사전에 없는 베이스(tradable=false, 더는 안 떨어지는 옛 베이스 등)는 숨긴다 --%>
 				@if(!Boolean.FALSE.equals(item.tradable()))
-				<a class="btn btn-sm btn-outline ml-auto" target="_blank" rel="noopener" data-base-trade href="${PoeText.tradeUrl(PoeText.baseTradeQuery(item.nameKo(), item.name()))}" title="${ko ? "이 베이스를 거래소에서 검색(고유 제외 · 즉시 구입 · 가격순, 새 창)" : "Search trade for this base (non-unique, instant buyout, new tab)"}">${ko ? "거래소에서 찾기 ↗" : "Find on trade ↗"}</a>
+				<a class="btn btn-sm btn-outline ml-auto" target="_blank" rel="noopener" data-base-trade href="${PoeText.tradeUrl(PoeText.baseTradeQuery(item.nameKo(), item.name()))}" title="${MessageUtil.getMessage("poe.items.trade.title")}">${MessageUtil.getMessage("poe.common.trade.find")}</a>
 				@endif
 			</div>
 
@@ -57,7 +57,7 @@
 			@if(baseUniques != null && !baseUniques.isEmpty())
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
-						<h2 class="font-bold text-orange-500">${ko ? "이 베이스의 고유 아이템" : "Uniques on this base"}</h2>
+						<h2 class="font-bold text-orange-500">${MessageUtil.getMessage("poe.items.base.uniques")}</h2>
 						<span class="text-xs font-mono text-base-content/60">${baseUniques.size()}</span>
 					</div>
 					<div class="flex flex-wrap gap-x-4 gap-y-1">
@@ -86,7 +86,7 @@
 							}
 						}
 						<span class="text-sm text-base-content/60">${ko ? PoeText.name(fullMods.nameKo(), fullMods.name()) + (variantLabel.isEmpty() ? "" : " · " + variantLabel + " 변형") + " · 접두 " + fullMods.prefixes().size() + " · 접미 " + fullMods.suffixes().size() : fullMods.name() + (variantLabel.isEmpty() ? "" : " · " + variantLabel) + " · " + fullMods.prefixes().size() + " prefixes · " + fullMods.suffixes().size() + " suffixes"}</span>
-						<a class="link link-hover text-sm text-primary ml-auto" href="/poe/mods?itemClass=${java.net.URLEncoder.encode(fullMods.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}">${ko ? "모드 페이지에서 보기 →" : "Open in Modifiers →"}</a>
+						<a class="link link-hover text-sm text-primary ml-auto" href="/poe/mods?itemClass=${java.net.URLEncoder.encode(fullMods.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}">${MessageUtil.getMessage("poe.items.open.mods")}</a>
 					</div>
 					@template.poe.modFilterBar(scope = "#poeItemModBody", idPrefix = "poeItemMod")
 					<div id="poeItemModBody" class="mt-2">

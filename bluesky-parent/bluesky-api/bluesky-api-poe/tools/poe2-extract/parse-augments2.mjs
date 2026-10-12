@@ -40,12 +40,18 @@ for (let i = 0; i < cores.length; i++) {
 		const linesKo = describe(values, "Korean");
 		if (!lines.length) continue;
 		const label = catLabel(s.StatCategory);
+		// 결속 효과(10-09 C238 — SoulCoreStats.BondedStats · BondedStatsValues, 인게임 "결속됨:" 아래 같은 분류 줄. poe2db 사막 룬 "무도 무기: 점화 강도 30% 증가")
+		const bonded = new Map();
+		(s.BondedStats || []).forEach((k, j) => bonded.set(stats[k].Id, (s.BondedStatsValues || [])[j]));
+		const bondedLines = bonded.size ? describe(bonded, "English") : [];
+		const bondedLinesKo = bonded.size ? describe(bonded, "Korean") : [];
 		effects.push({
 			target: label.en,
 			targetKo: label.ko,
 			targetClasses: (cats[s.StatCategory].TargetItemClasses || []).map((x) => classes[x].Id),
 			lines,
 			linesKo: linesKo.length === lines.length ? linesKo : lines,
+			...(bondedLines.length ? { bondedLines, bondedLinesKo: bondedLinesKo.length === bondedLines.length ? bondedLinesKo : bondedLines } : {}),
 		});
 	}
 	if (!effects.length) continue; // 효과 없는 자리표시 행

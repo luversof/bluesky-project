@@ -244,7 +244,7 @@
 									!{var pickCandidate = monthlyEtfCandidates.get(pick.row().stockItemSymbol());}
 									<div class="flex flex-wrap items-baseline gap-1">
 										<span class="text-lg font-semibold tabular-nums" data-pick-score>${"steady".equals(monthlyEtfBasis) && pickCandidate != null ? String.valueOf(pickCandidate.payoutCutCount()) : percentFormat.format(pick.score())}</span>
-										<span class="text-xs text-base-content/60">${"total".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.total") : ("stable".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.stable") : ("steady".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.steady") : MessageUtil.getMessage("stock.monthly.etf.pick.score")))}</span>
+										<span class="text-xs text-base-content/60">${"total".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.total") : ("stable".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.stable") : ("steady".equals(monthlyEtfBasis) ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.unit.steady"), pickCandidate != null && pickCandidate.payoutCutCount() != null ? pickCandidate.payoutCutCount() : 0) : MessageUtil.getMessage("stock.monthly.etf.pick.score")))}</span>
 									</div>
 									<%-- 점수가 어떻게 나왔는지 뺄셈으로 적는다(사용자 요청 2026-09-30). 두 수는 점수를 낼 때와 똑같이 반올림한다. --%>
 									!{BigDecimal pickCut = MonthlyContributionPickSupport.cutOf(pick.row().payoutTrendPct());}

@@ -38,6 +38,15 @@
 					</span>
 				</li>
 			@endfor
+			<%-- 값을 못 낸 기준도 줄을 둔다(2026-10-08) - 말없이 빼면 "왜 세 줄뿐인가" 를 알 수 없다. 총수익은 이력 12 개월, 꾸준함은 지급 6 회가 있어야 낸다. --%>
+			@for(var basis : MonthlyContributionPickSupport.Basis.values())
+				@if(pick.tops().stream().noneMatch(top -> top.basis() == basis))
+					<li class="flex flex-wrap gap-x-2 text-base-content/60" data-compare-row="${basis.param()}" data-compare-missing>
+						<span class="break-keep">${StockPickBasisLabelUtil.label(basis)}</span>
+						<span class="min-w-0 wrap-anywhere">${MessageUtil.getMessage("stock.pick.compare.missing")}</span>
+					</li>
+				@endif
+			@endfor
 		</ul>
 	</div>
 @endif

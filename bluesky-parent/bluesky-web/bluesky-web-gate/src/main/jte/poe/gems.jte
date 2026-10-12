@@ -56,12 +56,12 @@
 				      hx-trigger="input changed delay:300ms, change"
 			      data-url-sync="true">
 					<input type="search" name="q" value="${initialQ}" class="input input-sm input-bordered w-full sm:w-72" placeholder="${searchPlaceholder}" autocomplete="off" autofocus aria-label="${searchPlaceholder}">
-					<select name="type" class="select select-sm select-bordered" aria-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "젬 종류" : "Gem type"}">
+					<select name="type" class="select select-sm select-bordered" aria-label="${MessageUtil.getMessage("poe.gems.filter.type")}">
 						<option value="all" selected="${"all".equals(initialType)}">${typeAllLabel}</option>
 						<option value="active" selected="${"active".equals(initialType)}">${typeActiveLabel}</option>
 						<option value="support" selected="${"support".equals(initialType)}">${typeSupportLabel}</option>
 					</select>
-					<select name="color" class="select select-sm select-bordered" aria-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "젬 색" : "Gem color"}">
+					<select name="color" class="select select-sm select-bordered" aria-label="${MessageUtil.getMessage("poe.gems.filter.color")}">
 						<option value="all" selected="${"all".equals(initialColor)}">${colorAllLabel}</option>
 						<option value="red" selected="${"red".equals(initialColor)}">${colorRedLabel}</option>
 						<option value="green" selected="${"green".equals(initialColor)}">${colorGreenLabel}</option>

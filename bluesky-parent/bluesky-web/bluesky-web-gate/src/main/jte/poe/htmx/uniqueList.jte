@@ -12,8 +12,8 @@
 @param java.util.Set<String> foulbornNames = java.util.Set.of()
 
 !{
-	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.count"), items.size(), totalCount);
-	String emptyLabel = MessageUtil.getMessage("poe.gems.empty");
+	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), totalCount);
+	String emptyLabel = MessageUtil.getMessage("poe.list.empty");
 	boolean capped = matchedCount > items.size();
 	String moreLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.more"), Math.min(nextLimit, matchedCount) - items.size()) : null;
 	String moreUrl = "/poe/htmx/uniques?limit=" + nextLimit
@@ -23,7 +23,7 @@
 }
 
 @if(totalCount == 0)
-	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), hint = "tools/poe-extract: node parse-uniques.mjs")
+	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), actionLabel = MessageUtil.getMessage("layout.menu.poe.admin"), actionHref = "/poe/admin")
 @else
 <div class="text-xs text-base-content/60 mb-2">${capped ? cappedLabel : countLabel}</div>
 @if(items.isEmpty())
@@ -71,19 +71,21 @@
 						@if(item.requiredLevel() != null)
 							<span class="text-base-content/60">${levelLabel} ${item.requiredLevel()}</span>
 						@endif
-						@if(item.reqStr() != null && item.reqStr() > 0)
-							<span class="poe-gem-red">${strLabel} ${item.reqStr()}</span>
+						<%-- 요구 능력치는 이 아이템 옵션 반영(10-08 C177, 상세 툴팁과 같은 값) --%>
+						!{ net.luversof.web.gate.poe.PoeRequirements.Result ureq = net.luversof.web.gate.poe.PoeRequirements.apply(item.reqStr(), item.reqDex(), item.reqInt(), item.implicits(), item.explicits()); }
+						@if(ureq.str().present())
+							<span class="poe-gem-red">${strLabel} ${ureq.str().text()}</span>
 						@endif
-						@if(item.reqDex() != null && item.reqDex() > 0)
-							<span class="poe-gem-green">${dexLabel} ${item.reqDex()}</span>
+						@if(ureq.dex().present())
+							<span class="poe-gem-green">${dexLabel} ${ureq.dex().text()}</span>
 						@endif
-						@if(item.reqInt() != null && item.reqInt() > 0)
-							<span class="poe-gem-blue">${intLabel} ${item.reqInt()}</span>
+						@if(ureq.intel().present())
+							<span class="poe-gem-blue">${intLabel} ${ureq.intel().text()}</span>
 						@endif
 						<%-- 리그 출처 — 444종이 특정 리그 기제에서만 나온다(하이스트 122, 브리치 34 …).
 						     이게 없으면 "지금 파밍할 수 있는 것"과 "그 리그 콘텐츠를 돌아야 하는 것"이 구분되지 않는다. --%>
 						@if(item.league() != null && !item.league().isBlank())
-							<span class="badge badge-ghost badge-xs" title="${PoeText.isKorean() ? "이 고유는 해당 리그 콘텐츠에서 나옵니다" : "Drops from this league's content"}">${item.league()}</span>
+							<span class="badge badge-ghost badge-xs" title="${MessageUtil.getMessage("poe.uniques.league.title")}">${item.league()}</span>
 						@endif
 						<%-- 레거시 — 지금 리그에선 못 얻는 고유(레이스 보상 데미갓, 예언 전용 Fated, 삭제된 주얼).
 						     게임의 고유 수집 탭이 챌린지 리그/스탠다드 어디에도 칸을 안 보여주는 것들이다.
@@ -94,7 +96,7 @@
 						<%-- 변형 — 같은 이름·같은 베이스인데 모드 구성이 다른 것들(임프레션스 5원소 등).
 						     목록엔 기본 변형만 나오므로, 나머지가 있다는 사실은 여기서 알린다. --%>
 						@if(item.variants() != null && item.variants().size() > 1)
-							<span class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" title="${PoeText.isKorean() ? "모드 구성이 다른 변형이 있습니다 — 상세에서 선택" : "Has alternate variants - pick one on the detail page"}">${PoeText.isKorean() ? "변형 " + item.variants().size() : item.variants().size() + " variants"}</span>
+							<span class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" title="${MessageUtil.getMessage("poe.uniques.variants.title")}">${PoeText.isKorean() ? "변형 " + item.variants().size() : item.variants().size() + " variants"}</span>
 						@endif
 						<%-- 인게임 "삿된 XXX" 가 존재하는 아이템 — 상세에서 붙을 수 있는 옵션 풀을 볼 수 있다 --%>
 						@if(foulbornNames != null && foulbornNames.contains(item.name()))

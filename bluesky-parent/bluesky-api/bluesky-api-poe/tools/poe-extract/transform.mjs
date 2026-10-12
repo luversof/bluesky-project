@@ -28,7 +28,10 @@ const en = {
 	qualityStats: load("English", "GrantedEffectQualityStats"),
 };
 
-const describe = createStatDescriber(FILES_DIR);
+const describe = createStatDescriber(FILES_DIR, [], { fileOrder: true });
+// 보조 젬 문장은 gem_stat_descriptions 가 우선(10-09 C229 — 게임 "Supported Skills gain 39% of Physical Damage as Extra Fire Damage"
+//   / "보조 대상 스킬로 …"). 기본 서술기는 뒤에 파싱되는 skill_stat_descriptions 가 같은 스탯을 "Gain … of your …" 로 덮어 보조 젬이 일반 문장이었다
+const describeSupport = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@gem_stat_descriptions.txt"], { fileOrder: true });
 // 리마인더(인게임 회색 부연, 10-04 C115) — 레벨 문장마다 고른 템플릿의 reminderstring Id(describe.reminders)를 statReminders 로,
 //   그 젬이 쓰는 Id 의 영 · 한 문구는 젬마다 한 번 reminderText 로(레벨마다 문구를 넣으면 25MB 파일이 부푼다)
 const remEn = load("English", "ReminderText");
@@ -38,6 +41,56 @@ remEn.forEach((r, i) => {
 	if (r.Text) reminderTextById.set(r.Id, { en: r.Text, ko: remKo[i]?.Id === r.Id && remKo[i]?.Text ? remKo[i].Text : r.Text });
 });
 let reminderLineCount = 0;
+
+// 바알 스킬 영혼 소모(10-09 C234) — 게임 GrantedEffectsPerLevel 의 영혼 열은 추출 설정에 없어 PoB Data/Skills 의 "cost = { Soul = 50, }" 를 읽는다.
+//   인게임 "사용 시 영혼 소모: 50"(ClientStrings ItemDisplaySkillGemSoulsPerUse, poedb 바알 은총). 키 = GrantedEffects.Id(= PoB skills 키)
+const soulCostBySkill = (() => {
+	const map = new Map();
+	const dir = path.join(DATA_DIR, "work", "pob-src", "src", "Data", "Skills");
+	try {
+		for (const file of fs.readdirSync(dir)) {
+			const text = fs.readFileSync(path.join(dir, file), "utf8");
+			for (const block of text.split(/\nskills\["/).slice(1)) {
+				const id = block.slice(0, block.indexOf('"'));
+				const lv = new Map();
+				for (const m of block.matchAll(/\[(\d+)\] = \{[^\n]*?cost = \{[^}\n]*?\bSoul = (\d+)/g)) lv.set(Number(m[1]), Number(m[2]));
+				if (lv.size) map.set(id, lv);
+			}
+		}
+	} catch {
+		console.warn("PoB Data/Skills 없음 — 영혼 소모 없이 진행");
+	}
+	return map;
+})();
+
+// 스킬 전용 스탯 설명(10-09 C235) — 게임은 스킬마다 정한 설명 파일로 서술한다(PoB Data/Skills statDescriptionScope: 오라 40 · 버프 38 · 저주 37 ·
+//   디버프 59 · 소환수 주문 83 …). 예전엔 일반 사슬만 써서 바알 은총 "공격 적중 회피 확률 +15%"(인게임 · poedb "자신 및 주변 동료들의 공격 명중
+//   회피 확률 +15%"), "기본 지속시간 +6초"(인게임 "6초") 처럼 일반 문장이었다. 파일은 config.json files(extract) — 없으면 일반 사슬
+const scopeBySkill = (() => {
+	const map = new Map();
+	const dir = path.join(DATA_DIR, "work", "pob-src", "src", "Data", "Skills");
+	try {
+		for (const file of fs.readdirSync(dir)) {
+			const text = fs.readFileSync(path.join(dir, file), "utf8");
+			for (const block of text.split(/\nskills\["/).slice(1)) {
+				const m = block.match(/\n\tstatDescriptionScope = "([a-z_]+)"/);
+				if (m) map.set(block.slice(0, block.indexOf('"')), m[1]);
+			}
+		}
+	} catch {
+		// PoB 없으면 일반 사슬
+	}
+	return map;
+})();
+const scopeDescribers = new Map();
+function describerForScope(scope) {
+	if (!scope || scope === "skill_stat_descriptions") return describe;
+	if (scope === "gem_stat_descriptions") return describeSupport;
+	const file = `metadata@statdescriptions@${scope}.txt`;
+	if (!fs.existsSync(path.join(FILES_DIR, file))) return describe;
+	if (!scopeDescribers.has(scope)) scopeDescribers.set(scope, createStatDescriber(FILES_DIR, [file], { fileOrder: true }));
+	return scopeDescribers.get(scope);
+}
 
 // GrantedEffect 인덱스 → 레벨별 행 묶음 (조회 성능용 사전 구축)
 const perLevelByEffect = new Map();
@@ -101,6 +154,7 @@ for (const gem of en.gems) {
 		.map((t) => ko.tags[t] && ko.tags[t].Tag)
 		.filter((t) => t);
 
+	const desc = gem.IsSupport ? describeSupport : describerForScope(granted && scopeBySkill.get(granted.Id));
 	// 레벨별 수치: 요구 레벨/소모/재사용/크리 확률/피해 효율/지원 배율
 	const levels = (perLevelByEffect.get(effect.GrantedEffect) || []).map((row) => {
 		const stat = statsByEffectLevel.get(effect.GrantedEffect + ":" + row.Level);
@@ -115,6 +169,8 @@ for (const gem of en.gems) {
 			(stat.AdditionalStats || []).forEach((statIndex, i) => {
 				statValues.set(en.stats[statIndex].Id, (stat.AdditionalStatsValues || [])[i] ?? 0);
 			});
+			// 레벨별 플래그(값 1, 10-10 C247 — 추출 설정에 열이 빠져 있었다. PoE2 parse-gems2 statsAt 과 같은 처리)
+			(stat.AdditionalFlags || []).forEach((statIndex) => statValues.set(en.stats[statIndex].Id, 1));
 			const statSet = en.statSets[stat.StatSet];
 			if (statSet) {
 				(statSet.ConstantStats || []).forEach((statIndex, i) => {
@@ -135,12 +191,18 @@ for (const gem of en.gems) {
 			costMultiplier: gem.IsSupport ? row.CostMultiplier : null,
 			cooldownMs: row.Cooldown > 0 ? row.Cooldown : null,
 			critChance: critChance > 0 ? critChance / 100 : null,
-			damageEffectiveness: stat && stat.DamageEffectiveness > 0 ? stat.DamageEffectiveness / 100 : null,
-			baseMultiplier: stat && stat.BaseMultiplier > 0 ? stat.BaseMultiplier / 100 : null,
-			statLines: describe(statValues, "English"),
+			// 게임 값은 100% 에 **더하는** 만분율(+5000 = 150%, -1840 = 81.6%) — PoB 도 1 + x/10000(10-09 C224: 예전 x/100 · 양수만이라 회오리바람
+			//   20레벨 공격 피해가 "50%"(실제 150%), 파이어볼 추가 피해 효율 380%(실제 480%), 100% 미만 단계(회오리 1레벨 81.6%)는 줄째 빠졌다)
+			damageEffectiveness: stat && stat.DamageEffectiveness ? 100 + stat.DamageEffectiveness / 100 : null,
+			baseMultiplier: stat && stat.BaseMultiplier ? 100 + stat.BaseMultiplier / 100 : null,
+			// 공격 속도 배율(10-08 C201) — GrantedEffectsPerLevel.AttackSpeedMultiplier(-10 → 기본 수치의 90%, PoE2 C200 짝). 0 이면 없음
+			attackSpeedPct: row.AttackSpeedMultiplier ? 100 + row.AttackSpeedMultiplier : null,
+			// 바알 스킬 영혼 소모(10-09 C234 — PoB cost.Soul). 없으면 null
+			soulCost: (granted && soulCostBySkill.get(granted.Id)?.get(row.Level)) ?? null,
+			statLines: desc(statValues, "English", { gemQuality: "skip" }),
 			// 바로 위 영어 호출의 고른 변형 기준(한국어 호출 전에 읽어야 한다)
-			statReminders: describe.reminders.map((ids) => ids.filter((id) => reminderTextById.has(id))),
-			statLinesKo: describe(statValues, "Korean"),
+			statReminders: desc.reminders.map((ids) => ids.filter((id) => reminderTextById.has(id))),
+			statLinesKo: desc(statValues, "Korean", { gemQuality: "skip" }),
 		};
 	});
 	const usedReminderIds = new Set();
@@ -160,10 +222,10 @@ for (const gem of en.gems) {
 				qualityValues.set(en.stats[statIndex].Id, Math.round((perMille / 1000) * 20));
 			});
 		}
-		const qualityStatLines = qualityValues.size ? describe(qualityValues, "English") : [];
+		const qualityStatLines = qualityValues.size ? desc(qualityValues, "English", { gemQuality: "prefer" }) : [];
 		// 퀄리티 줄 리마인더(10-04 C120, 레벨 statReminders 와 같은 규칙 — 영어 호출 직후에 읽는다)
-		const qualityReminders = qualityValues.size ? describe.reminders.map((ids) => ids.filter((id) => reminderTextById.has(id))) : [];
-		const qualityStatLinesKo = qualityValues.size ? describe(qualityValues, "Korean") : [];
+		const qualityReminders = qualityValues.size ? desc.reminders.map((ids) => ids.filter((id) => reminderTextById.has(id))) : [];
+		const qualityStatLinesKo = qualityValues.size ? desc(qualityValues, "Korean", { gemQuality: "prefer" }) : [];
 		if (qualityReminders.some((ids) => ids.length)) {
 			qualityReminders.flat().forEach((id) => usedReminderIds.add(id));
 			reminderLineCount += qualityReminders.filter((ids) => ids.length).length;
@@ -204,6 +266,10 @@ for (const gem of en.gems) {
 		requiresStr: gem.StrengthRequirementPercent > 0,
 		requiresDex: gem.DexterityRequirementPercent > 0,
 		requiresInt: gem.IntelligenceRequirementPercent > 0,
+		// 요구 능력치 비율(10-09 C225) — 인게임 "요구 사항 레벨 70, 68 힘, 98 민첩" 수치를 게이트가 PoB getGemStatRequirement 식으로 낸다
+		reqStrPct: gem.StrengthRequirementPercent || null,
+		reqDexPct: gem.DexterityRequirementPercent || null,
+		reqIntPct: gem.IntelligenceRequirementPercent || null,
 		castTimeMs: granted && !gem.IsSupport ? granted.CastTime : null,
 		description: gem.IsSupport ? effect.SupportText : active ? active.Description : null,
 		descriptionKo: gem.IsSupport

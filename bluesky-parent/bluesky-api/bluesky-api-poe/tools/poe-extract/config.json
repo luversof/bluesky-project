@@ -108,7 +108,8 @@
         "AdditionalStats",
         "AdditionalStatsValues",
         "StatInterpolations",
-        "InterpolationBases"
+        "InterpolationBases",
+        "AdditionalFlags"
       ]
     },
     {
@@ -425,6 +426,22 @@
     "metadata/statdescriptions/gem_stat_descriptions.txt",
     "metadata/statdescriptions/passive_skill_stat_descriptions.txt",
     "metadata/statdescriptions/atlas_stat_descriptions.txt",
-    "metadata/statdescriptions/map_stat_descriptions.txt"
+    "metadata/statdescriptions/map_stat_descriptions.txt",
+    "metadata/statdescriptions/tincture_stat_descriptions.txt",
+    "metadata/statdescriptions/aura_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/banner_aura_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/beam_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/brand_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/buff_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/curse_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/debuff_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/minion_attack_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/minion_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/minion_spell_damage_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/minion_spell_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/offering_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/secondary_debuff_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/single_minion_spell_skill_stat_descriptions.txt",
+    "metadata/statdescriptions/variable_duration_skill_stat_descriptions.txt"
   ]
 }

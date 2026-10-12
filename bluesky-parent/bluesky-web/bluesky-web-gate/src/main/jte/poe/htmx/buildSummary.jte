@@ -6,7 +6,7 @@
 @param boolean engineAvailable = false
 
 @if(importError)
-	<div class="alert alert-error text-sm">${MessageUtil.getMessage("poe.build.error")}</div>
+	<div class="alert alert-error text-sm" role="alert">${MessageUtil.getMessage("poe.build.error")}</div>
 @elseif(build != null)
 	!{
 		String classLine = net.luversof.web.gate.poe.PoeText.name(build.classNameKo(), build.className())
@@ -19,7 +19,7 @@
 		<%-- 캐릭터 요약 --%>
 		@template._components.ui.card(bodyClass = "gap-3", body = @`
 				<div class="flex flex-wrap items-center gap-3">
-					<div class="text-lg font-bold">${classLine}</div>
+					<h2 class="text-lg font-bold">${classLine}</h2>
 					<span class="badge badge-primary badge-outline">${levelLabel}</span>
 					@if(!build.treeVersion().isEmpty())
 						<span class="badge badge-ghost">${MessageUtil.getMessage("poe.build.summary.tree")} ${build.treeVersion()}</span>
@@ -30,6 +30,8 @@
 					@endif
 				</div>
 				@if(!build.stats().isEmpty())
+					<%-- PoE2 요약과 같은 머리(10-12 C276) — 이 수치는 PoB 가 코드에 저장한 값이다(엔진 재계산과 다를 수 있다) --%>
+					<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe.build.stats.saved")}</h3>
 					<div class="grid grid-cols-[repeat(auto-fit,minmax(min(8rem,100%),1fr))] sm:grid-cols-4 lg:grid-cols-7 gap-2">
 						@for(PoeBuild.PlayerStat stat : build.stats())
 							<div class="rounded-box bg-base-200/60 px-3 py-2">
@@ -142,13 +144,13 @@
 								     한 줄에 붙여두면 truncate 가 걸릴 때 베이스가 먼저 잘려 무슨 베이스인지 안 보인다. --%>
 								<div class="min-w-0 text-sm">
 									@if(!item.slot().isEmpty())<div class="text-xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</div>@endif
-									<div class="flex items-center gap-1 min-w-0"><span class="truncate font-semibold ${itemColor}">${displayName}</span>@if(tradeHref != null)<a class="badge badge-xs badge-outline badge-info shrink-0" target="_blank" rel="noopener" href="${tradeHref}" data-build-trade title="${net.luversof.web.gate.poe.PoeText.isKorean() ? (isUnique ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "베이스 + 옵션(이 수치의 85% 이상)으로 거래소 검색(즉시 구입 · 가격순)") : (isUnique ? "Search trade for this unique" : "Search trade — base + mods at 85%+ of these values")}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소" : "Trade"}</a>@endif</div>
+									<div class="flex items-center gap-1 min-w-0"><span class="truncate font-semibold ${itemColor}">${displayName}</span>@if(tradeHref != null)<a class="badge badge-xs badge-outline badge-info shrink-0" target="_blank" rel="noopener" href="${tradeHref}" data-build-trade title="${net.luversof.web.gate.poe.PoeText.isKorean() ? (isUnique ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "베이스 + 옵션(이 수치의 85% 이상)으로 거래소 검색(즉시 구입 · 가격순)") : (isUnique ? "Search trade for this unique" : "Search trade — base + mods at 85%+ of these values")}">${MessageUtil.getMessage("poe.common.trade")}</a>@endif</div>
 									@if(!item.baseType().equals(item.name()))
 										<div class="truncate text-xs text-base-content/60">${displayBase}</div>
 									@endif
 								</div>
 								<div data-poe-tip class="hidden">
-									@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = displayName, base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods, implicitLines = displayImplicits, modReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.modLinesKo() != null && !item.modLinesKo().isEmpty() ? item.modRemindersKo() : item.modReminders(), implicitReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.implicitLinesKo() != null && !item.implicitLinesKo().isEmpty() ? item.implicitRemindersKo() : item.implicitReminders(), corrupted = item.corrupted(), quality = item.quality(), intangibility = item.intangibility(), influences = item.influences(), implicitKinds = item.implicitKinds(), modKinds = item.modKinds(), flavourLines = net.luversof.web.gate.poe.PoeText.lines(item.flavourKo(), item.flavour()))
+									@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = displayName, base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods, implicitLines = displayImplicits, reqImplicits = item.implicitLines(), reqMods = item.modLines(), levelReq = item.levelReq(), defences = item.defences(), modReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.modLinesKo() != null && !item.modLinesKo().isEmpty() ? item.modRemindersKo() : item.modReminders(), implicitReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.implicitLinesKo() != null && !item.implicitLinesKo().isEmpty() ? item.implicitRemindersKo() : item.implicitReminders(), corrupted = item.corrupted(), quality = item.quality(), intangibility = item.intangibility(), influences = item.influences(), implicitKinds = item.implicitKinds(), modKinds = item.modKinds(), flavourLines = net.luversof.web.gate.poe.PoeText.lines(item.flavourKo(), item.flavour()))
 								</div>
 								</div>
 							@else
@@ -160,7 +162,7 @@
 										@if(!item.slot().isEmpty())<div class="text-xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</div>@endif
 										<%-- 유니크 행과 같은 구조(이름 줄 / 베이스 줄). 이름도 displayName 으로 — 여긴 원문만 쓰고 있어
 										     한글 이름이 있는 아이템에서 유니크 행과 표기가 달랐다. --%>
-										<div class="flex items-center gap-1 min-w-0"><span class="truncate font-semibold ${itemColor}">${displayName}</span>@if(tradeHref != null)<a class="badge badge-xs badge-outline badge-info shrink-0" target="_blank" rel="noopener" href="${tradeHref}" data-build-trade title="${net.luversof.web.gate.poe.PoeText.isKorean() ? (isUnique ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "베이스 + 옵션(이 수치의 85% 이상)으로 거래소 검색(즉시 구입 · 가격순)") : (isUnique ? "Search trade for this unique" : "Search trade — base + mods at 85%+ of these values")}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소" : "Trade"}</a>@endif</div>
+										<div class="flex items-center gap-1 min-w-0"><span class="truncate font-semibold ${itemColor}">${displayName}</span>@if(tradeHref != null)<a class="badge badge-xs badge-outline badge-info shrink-0" target="_blank" rel="noopener" href="${tradeHref}" data-build-trade title="${net.luversof.web.gate.poe.PoeText.isKorean() ? (isUnique ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "베이스 + 옵션(이 수치의 85% 이상)으로 거래소 검색(즉시 구입 · 가격순)") : (isUnique ? "Search trade for this unique" : "Search trade — base + mods at 85%+ of these values")}">${MessageUtil.getMessage("poe.common.trade")}</a>@endif</div>
 										@if(!item.baseType().equals(item.name()))
 											<div class="truncate text-xs text-base-content/60">${displayBase}</div>
 										@endif
@@ -169,7 +171,7 @@
 										@endif
 									</div>
 									<div data-poe-tip class="hidden">
-										@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = displayName, base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods, implicitLines = displayImplicits, modReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.modLinesKo() != null && !item.modLinesKo().isEmpty() ? item.modRemindersKo() : item.modReminders(), implicitReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.implicitLinesKo() != null && !item.implicitLinesKo().isEmpty() ? item.implicitRemindersKo() : item.implicitReminders(), corrupted = item.corrupted(), quality = item.quality(), intangibility = item.intangibility(), influences = item.influences(), implicitKinds = item.implicitKinds(), modKinds = item.modKinds())
+										@template.poe.htmx.itemTooltip(rarityClass = tipClass, nameColor = tipColor, rarityBorder = tipColor, name = displayName, base = displayBase, itemClass = itemClassLabel, baseItem = item.base(), modLines = displayMods, implicitLines = displayImplicits, reqImplicits = item.implicitLines(), reqMods = item.modLines(), levelReq = item.levelReq(), defences = item.defences(), modReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.modLinesKo() != null && !item.modLinesKo().isEmpty() ? item.modRemindersKo() : item.modReminders(), implicitReminders = net.luversof.web.gate.poe.PoeText.isKorean() && item.implicitLinesKo() != null && !item.implicitLinesKo().isEmpty() ? item.implicitRemindersKo() : item.implicitReminders(), corrupted = item.corrupted(), quality = item.quality(), intangibility = item.intangibility(), influences = item.influences(), implicitKinds = item.implicitKinds(), modKinds = item.modKinds())
 									</div>
 								</div>
 							@endif

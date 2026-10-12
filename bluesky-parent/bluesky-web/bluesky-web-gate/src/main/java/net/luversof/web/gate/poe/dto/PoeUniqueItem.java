@@ -33,4 +33,134 @@ public record PoeUniqueItem(
     List<String> flavourKo,
     // 옵션 줄별 인게임 리마인더(회색 부연), explicits 와 같은 길이(10-04 C114, API 와 쌍). 없으면 null
     List<List<String>> explicitsReminders,
-    List<List<String>> explicitsRemindersKo) {}
+    List<List<String>> explicitsRemindersKo,
+    // 중복 사용 제한(API 와 짝, 10-08 C197) — 없으면 null
+    String limit,
+    // 영향력(API 와 짝, 10-08 C198) — 없으면 null
+    List<String> influences,
+    // 팅크처 베이스 속성(PoB Bases tincture.lua manaBurn · cooldown, 인게임 "N초마다 마나 연소 유발" · "비활성화 시 재사용 대기시간
+    // N초",
+    // 10-09 C211). 팅크처 아니면 null
+    Tincture tincture,
+    // 부적 등급(PoB "Talisman Tier: 2", 인게임 "부적 등급: 2", 10-09 C214). 부적 아니면 null
+    Integer talismanTier) {
+
+  /** 팅크처 베이스 속성 — 마나 연소 간격(초) · 비활성화 뒤 재사용 대기시간(초). */
+  public record Tincture(double manaBurn, double cooldown) {}
+
+  /** 팅크처 없는 옛 모양(10-09 C211 전 — 제한 · 영향력까지). */
+  public PoeUniqueItem(
+      String name,
+      String nameKo,
+      String slug,
+      String baseType,
+      String baseTypeKo,
+      String category,
+      Integer requiredLevel,
+      String league,
+      boolean legacy,
+      String radius,
+      List<String> implicits,
+      List<String> implicitsKo,
+      List<String> explicits,
+      List<String> explicitsKo,
+      List<PoeUniqueVariant> variants,
+      Integer defaultVariant,
+      Integer reqStr,
+      Integer reqDex,
+      Integer reqInt,
+      String iconKey,
+      List<String> flavour,
+      List<String> flavourKo,
+      List<List<String>> explicitsReminders,
+      List<List<String>> explicitsRemindersKo,
+      String limit,
+      List<String> influences) {
+    this(
+        name,
+        nameKo,
+        slug,
+        baseType,
+        baseTypeKo,
+        category,
+        requiredLevel,
+        league,
+        legacy,
+        radius,
+        implicits,
+        implicitsKo,
+        explicits,
+        explicitsKo,
+        variants,
+        defaultVariant,
+        reqStr,
+        reqDex,
+        reqInt,
+        iconKey,
+        flavour,
+        flavourKo,
+        explicitsReminders,
+        explicitsRemindersKo,
+        limit,
+        influences,
+        null,
+        null);
+  }
+
+  /** 제한 없는 옛 모양(게이트가 고유를 다시 짓는 곳 · 시험용). */
+  public PoeUniqueItem(
+      String name,
+      String nameKo,
+      String slug,
+      String baseType,
+      String baseTypeKo,
+      String category,
+      Integer requiredLevel,
+      String league,
+      boolean legacy,
+      String radius,
+      List<String> implicits,
+      List<String> implicitsKo,
+      List<String> explicits,
+      List<String> explicitsKo,
+      List<PoeUniqueVariant> variants,
+      Integer defaultVariant,
+      Integer reqStr,
+      Integer reqDex,
+      Integer reqInt,
+      String iconKey,
+      List<String> flavour,
+      List<String> flavourKo,
+      List<List<String>> explicitsReminders,
+      List<List<String>> explicitsRemindersKo) {
+    this(
+        name,
+        nameKo,
+        slug,
+        baseType,
+        baseTypeKo,
+        category,
+        requiredLevel,
+        league,
+        legacy,
+        radius,
+        implicits,
+        implicitsKo,
+        explicits,
+        explicitsKo,
+        variants,
+        defaultVariant,
+        reqStr,
+        reqDex,
+        reqInt,
+        iconKey,
+        flavour,
+        flavourKo,
+        explicitsReminders,
+        explicitsRemindersKo,
+        null,
+        null,
+        null,
+        null);
+  }
+}

@@ -511,6 +511,9 @@ function formatPercent(value: number, scale = 1): string {
 				plugins: {
 					tooltip: {
 						callbacks: {
+							// 툴팁 · 키보드 알림 제목이 숫자만("3")이던 것을 "3년 차" / "Year 3" 으로(2026-10-08 S79).
+							title: (items: any[]) =>
+								items.length ? String(i18n.yearTitle || "Year {0}").replace("{0}", String(items[0].label)) : "",
 							label: (context: any) => {
 								const datasets = context.chart.data.datasets;
 								const values = datasets.map((dataset: any) =>

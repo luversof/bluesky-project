@@ -10,8 +10,8 @@
 @param int nextLimit = 0
 
 !{
-	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.count"), items.size(), totalCount);
-	String emptyLabel = MessageUtil.getMessage("poe.gems.empty");
+	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), totalCount);
+	String emptyLabel = MessageUtil.getMessage("poe.list.empty");
 	boolean capped = matchedCount > items.size();
 	String moreLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.more"), Math.min(nextLimit, matchedCount) - items.size()) : null;
 	String moreUrl = "/poe/htmx/items?limit=" + nextLimit
@@ -21,7 +21,7 @@
 }
 
 @if(totalCount == 0)
-	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), hint = "tools/poe-extract: node parse-items.mjs")
+	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), actionLabel = MessageUtil.getMessage("layout.menu.poe.admin"), actionHref = "/poe/admin")
 @else
 <div class="text-xs text-base-content/60 mb-2">${capped ? cappedLabel : countLabel}</div>
 @if(items.isEmpty())
@@ -75,7 +75,7 @@
 					</div>
 					<div class="flex items-center gap-2 text-[13px] text-base-content/70">
 						<span class="font-mono truncate">${summary.toString()}</span>
-						<span class="ml-auto shrink-0 text-base-content/60">Lv ${item.dropLevel()}</span>
+						<span class="ml-auto shrink-0 text-base-content/60">${MessageUtil.getMessage("poe.gems.label.drop.level")} ${item.dropLevel()}</span>
 					</div>
 					@if(!item.implicits().isEmpty())
 						!{String implicitPreview = net.luversof.web.gate.poe.PoeText.name(item.implicits().get(0).ko(), item.implicits().get(0).en());}

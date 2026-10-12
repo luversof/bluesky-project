@@ -7,6 +7,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+// 번들 받기 주소를 패치 서버가 준 CDN(한국은 카카오)으로 돌린다 — 이 모듈을 쓰는 스크립트는 단독 실행해도 적용(10-12 C260)
+import "./cdn-redirect.mjs";
 
 export const REPO_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const POE1_TOOLS = path.join(REPO_DIR, "..", "poe-extract");
@@ -21,9 +23,11 @@ export const loadTable = (lang, table) =>
 
 export const loadConfig = () => JSON.parse(fs.readFileSync(path.join(REPO_DIR, "config.json"), "utf8"));
 
+// POE_DATA_OUT — 출력만 다른 폴더로(10-10 C249). API 는 데이터 파일이 바뀌면 바로 다시 읽어서, 회귀 도중 재생성하면 돌던 탐침이 바뀐 데이터를 본다 → 사본으로 만들어 대조한 뒤 회귀 끝나고 교체
 export const writeJson = (name, data) => {
-	fs.mkdirSync(DATA_DIR, { recursive: true });
-	const out = path.join(DATA_DIR, name);
+	const dir = process.env.POE_DATA_OUT || DATA_DIR;
+	fs.mkdirSync(dir, { recursive: true });
+	const out = path.join(dir, name);
 	fs.writeFileSync(out, JSON.stringify(data));
 	return out;
 };
@@ -39,7 +43,9 @@ export function runExtractor() {
 	//   고유 아이템 데이터가 반쯤 쓰인 채 나갔다(10-03 C53). PoE2 도 같은 추출기라 3번까지 다시 한다(C54).
 	for (let attempt = 1; ; attempt++) {
 		try {
-			execSync(`"${process.execPath}" "${cli}"`, { stdio: "inherit", cwd: WORK_DIR });
+			// 추출기는 별도 프로세스라 CDN 주소 바꾸기를 --import 로 넣는다(C260)
+			const redirect = pathToFileURL(path.join(REPO_DIR, "cdn-redirect.mjs")).href;
+			execSync(`"${process.execPath}" --import "${redirect}" "${cli}"`, { stdio: "inherit", cwd: WORK_DIR });
 			return;
 		} catch (e) {
 			if (attempt >= 3) throw e;

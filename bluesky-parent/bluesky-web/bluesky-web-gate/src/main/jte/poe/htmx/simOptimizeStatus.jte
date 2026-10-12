@@ -39,7 +39,7 @@
 				<%-- 중지 버튼 — 잘못된 조건으로 시작한 실행을 취소. 다음 폴링(≤3초)에서 중지됨 상태로 갱신된다. --%>
 				<button type="button" class="btn btn-error btn-xs ml-auto"
 				        hx-post="/poe/htmx/sim/optimize/stop" hx-swap="none"
-				        onclick="this.disabled=true;this.textContent='${MessageUtil.getMessage("poe.sim.opt.stopping")}'">${MessageUtil.getMessage("poe.sim.opt.stop")}</button>
+				        data-busy-label="${MessageUtil.getMessage("poe.sim.opt.stopping")}">${MessageUtil.getMessage("poe.sim.opt.stop")}</button>
 			@endif
 		</div>
 		@if(phaseTotal > 0)

@@ -56,8 +56,7 @@
 					<span class="text-xs font-semibold text-base-content/60 mr-1">${itemsKo ? "방어구 속성" : "Defence base"}</span>
 					@for(String[] a : attrChips)
 						<button type="button" data-attr="${a[0]}"
-						        class="btn btn-xs ${"all".equals(a[0]) ? "btn-primary" : "btn-outline"}"
-						        onclick="var f=document.getElementById('poeItemFilter'); f.querySelector('input[name=attr]').value=this.dataset.attr; this.parentElement.querySelectorAll('button[data-attr]').forEach(function(b){b.classList.remove('btn-primary');b.classList.add('btn-outline');}); this.classList.remove('btn-outline'); this.classList.add('btn-primary'); f.dispatchEvent(new Event('change', {bubbles:true}));">${itemsKo ? a[1] : a[2]}</button>
+						        class="btn btn-xs ${"all".equals(a[0]) ? "btn-primary" : "btn-outline"}">${itemsKo ? a[1] : a[2]}</button>
 					@endfor
 				</div>
 			</div>
@@ -72,29 +71,44 @@
 			<script src="/js/poe/filterUrl.js" defer></script>
 				<%-- 방어구 속성 칩은 방어구 부위(투구/갑옷/장갑/장화/방패) 선택 시에만 노출. 다른 부위면 숨기고 attr 초기화. --%>
 				<script nonce="${CspNonceHolder.getNonce()}">
+					// PoE2 일반 아이템 화면과 같은 스크립트(10-12 C285 — 칩 클릭은 인라인 onclick 이었다. aria-pressed 도 PoE2 처럼)
 					(function () {
 						var ARMOUR = { Helmet: 1, "Body Armour": 1, Gloves: 1, Boots: 1, Shield: 1 };
 						var form = document.getElementById("poeItemFilter");
 						var row = document.getElementById("poeItemAttrRow");
 						if (!form || !row) return;
+						var attr = form.querySelector("input[name=attr]");
+						function mark(v) {
+							row.querySelectorAll("button[data-attr]").forEach(function (b) {
+								var on = b.dataset.attr === v;
+								b.classList.toggle("btn-primary", on);
+								b.classList.toggle("btn-outline", !on);
+								b.setAttribute("aria-pressed", on ? "true" : "false");
+							});
+						}
+						row.addEventListener("click", function (e) {
+							var b = e.target.closest("button[data-attr]");
+							if (!b || !attr) return;
+							attr.value = b.dataset.attr;
+							mark(attr.value);
+							form.dispatchEvent(new Event("change", { bubbles: true }));
+						});
+						// 방어구가 아닌 부위로 바꾸면 숨기고 attr 를 되돌린다(무기에 "힘" 이 남아 빈 목록이 되지 않게)
 						function sync() {
 							var el = form.querySelector("input[name=itemClass]");
 							var show = el && ARMOUR[el.value];
 							row.style.display = show ? "flex" : "none";
-							if (!show) {
-								var a = form.querySelector("input[name=attr]");
-								if (a && a.value !== "all") {
-									a.value = "all";
-									row.querySelectorAll("button[data-attr]").forEach(function (b) {
-										var on = b.dataset.attr === "all";
-										b.classList.toggle("btn-primary", on);
-										b.classList.toggle("btn-outline", !on);
-									});
-								}
-							}
+							if (!show && attr && attr.value !== "all") { attr.value = "all"; mark("all"); }
 						}
 						document.addEventListener("click", function (e) { if (e.target.closest("[data-chip-group]")) setTimeout(sync, 0); });
 						form.addEventListener("change", function () { setTimeout(sync, 0); });
+						// 주소의 attr 복원(공유 링크 — 10-12 C285: 두 게임 모두 칩이 "전체"로 돌아가고 목록도 안 걸렀다). 첫 목록 요청은 attr 를 안 보내서 바뀌면 다시 부른다
+						var qa = new URLSearchParams(location.search).get("attr");
+						if (attr && qa && /^[a-z]+$/.test(qa) && qa !== attr.value && row.querySelector('button[data-attr="' + qa + '"]')) {
+							attr.value = qa;
+							var refire = function () { setTimeout(function () { form.dispatchEvent(new Event("change", { bubbles: true })); }, 0); }; if (document.readyState === "complete") refire(); else window.addEventListener("load", refire); // htmx 가 폼에 붙은 뒤에
+						}
+						mark(attr ? attr.value : "all");
 						sync();
 					})();
 				</script>

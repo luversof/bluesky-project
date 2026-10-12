@@ -9,7 +9,7 @@ import { alignKoToGameOrder, buildKoreanMap, buildTree, joinReminderKo } from ".
 import { createTemplateTranslator } from "./ko-templates.mjs";
 
 const RAW = path.join(WORK_DIR, "passive-tree-raw.json");
-const OUT = path.join(DATA_DIR, "passive-tree.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "passive-tree.json"); // POE_DATA_OUT = 사본 출력(10-10)
 const SOURCE_URL = "https://raw.githubusercontent.com/grindinggear/skilltree-export/master/data.json";
 
 // 트리는 항상 GGG master 에서 최신본을 받는다 — RAW 캐시가 있으면 재fetch 를 건너뛰던 옛 로직은
@@ -29,7 +29,10 @@ const tree = JSON.parse(fs.readFileSync(RAW, "utf8"));
 
 // 한국어: 게임 데이터 PassiveSkills(이름) + 스탯 문장 파서(스탯 라인).
 // GGG 트리 익스포트는 영어 전용이라 PassiveSkillGraphId 로 조인해 결합한다.
+// 게임 passive_skill_stat_descriptions 는 stat_descriptions 만 include 한다(10-10 C257) — 기본 사슬은 skill 계열이 끼어 노드 한국어가
+//   "소환수 최대 생명력" · "저주 효과" · "보조 대상 스킬의 …"(젬 문장)였다. 영어 줄은 GGG 트리 원본("Minions have …% increased maximum Life")이라 한국어만 어긋났다
 const describe = createStatDescriber(FILES_DIR, [
+	"metadata@statdescriptions@stat_descriptions.txt",
 	"metadata@statdescriptions@passive_skill_stat_descriptions.txt",
 ]);
 const statsTable = loadTable("English", "Stats");
@@ -140,9 +143,11 @@ try {
 // 후행 스텝(parse-anoints)이 이 파일에 **주입**해 둔 것을 되살린다.
 // 이 파서만 단독 재실행하면 도유(성유) 470개 + 오일 14종이 통째로 날아가 노터블 툴팁의 기름 아이콘이 사라진다
 // (실제로 한 번 겪었다). 낡을 수는 있어도 없어지는 것보단 낫고, parse-anoints 를 다시 돌리면 갱신된다.
-if (fs.existsSync(OUT)) {
+// 사본 출력(POE_DATA_OUT)이어도 되살릴 원본은 실제 데이터 파일(10-10)
+const PREV = path.join(DATA_DIR, "passive-tree.json");
+if (fs.existsSync(PREV)) {
 	try {
-		const prev = JSON.parse(fs.readFileSync(OUT, "utf8"));
+		const prev = JSON.parse(fs.readFileSync(PREV, "utf8"));
 		const anoints = new Map((prev.nodes || []).filter((n) => n.anoint).map((n) => [n.id, n.anoint]));
 		if (anoints.size) {
 			for (const node of result.nodes) {

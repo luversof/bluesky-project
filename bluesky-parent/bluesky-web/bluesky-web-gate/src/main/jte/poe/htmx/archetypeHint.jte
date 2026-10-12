@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe.dto.ArchetypeBenchmark
 @import net.luversof.web.gate.poe.PoeText
 
@@ -16,23 +17,23 @@
 			return String.valueOf(n);
 		};
 		String lean = ninjaBenchmark.lean();
-		String leanLabel = "dps".equals(lean) ? (ko ? "공격 특화 (고DPS·저EHP)" : "Offense (high DPS)")
-			: "ehp".equals(lean) ? (ko ? "생존 특화 (고EHP)" : "Defense (high EHP)")
-			: (ko ? "균형형" : "Balanced");
+		String leanLabel = "dps".equals(lean) ? MessageUtil.getMessage("poe.sim.lean.dps")
+			: "ehp".equals(lean) ? MessageUtil.getMessage("poe.sim.lean.ehp")
+			: MessageUtil.getMessage("poe.sim.lean.balanced");
 		String leanCls = "dps".equals(lean) ? "badge-error" : "ehp".equals(lean) ? "badge-info" : "badge-ghost";
-		String ascLabel = ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.ascendancyKo(), ninjaBenchmark.ascendancy()) : (ko ? "전 전직 통합" : "all ascendancies");
+		String ascLabel = ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.ascendancyKo(), ninjaBenchmark.ascendancy()) : MessageUtil.getMessage("poe.sim.lean.allasc");
 		java.util.function.Function<String, String> specLabel = k -> switch (k) {
 			case "dps" -> ko ? "공격(DPS)" : "DPS";
 			case "ehp" -> ko ? "생존(EHP)" : "EHP";
 			case "life" -> ko ? "생명" : "Life";
-			case "es" -> ko ? "에너지실드" : "ES";
+			case "es" -> MessageUtil.getMessage("poe.build.stat.energyshield");
 			case "liferegen" -> ko ? "생명재생" : "Life regen";
 			case "armour" -> ko ? "방어도" : "Armour";
 			case "evasion" -> ko ? "회피" : "Evasion";
 			case "block" -> ko ? "막기" : "Block";
-			case "suppress" -> ko ? "회피억제" : "Suppress";
+			case "suppress" -> MessageUtil.getMessage("poe.build.stat.spellsuppressionchance");
 			case "maxres" -> ko ? "최대저항" : "Max res";
-			case "ward" -> ko ? "수호물" : "Ward";
+			case "ward" -> MessageUtil.getMessage("poe.build.stat.ward");
 			case "mana" -> ko ? "마나" : "Mana";
 			case "rarity" -> ko ? "아이템희귀도" : "Item rarity";
 			case "movespeed" -> ko ? "이동속도" : "Move speed";
@@ -40,7 +41,7 @@
 			case "dex" -> ko ? "민첩" : "Dex";
 			case "int" -> ko ? "지능" : "Int";
 			case "cluster" -> ko ? "클러스터주얼" : "Cluster jewels";
-			case "unique" -> ko ? "유니크장비" : "Unique gear";
+			case "unique" -> ko ? "고유 장비" : "Unique gear";
 			case "spellblock" -> ko ? "주문막기" : "Spell block";
 			case "spelldodge" -> ko ? "주문회피" : "Spell dodge";
 			case "phystaken" -> ko ? "물리피해전환" : "Phys taken as";
@@ -53,7 +54,7 @@
 	}
 	<div class="mt-2 rounded-box bg-base-100 px-3 py-2 text-xs space-y-1 border border-base-200">
 		<div class="flex flex-wrap items-center gap-2">
-			<span class="text-base-content/60">${ko ? "실빌드 성향" : "Real-build lean"}</span>
+			<span class="text-base-content/60">${MessageUtil.getMessage("poe.sim.archetype")}</span>
 			<span class="badge badge-sm ${leanCls}">${leanLabel}</span>
 			<span class="badge badge-ghost badge-xs">${net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.mainSkillKo(), ninjaBenchmark.mainSkill())} · ${ascLabel}</span>
 			<span class="text-base-content/60">n=${ninjaBenchmark.sample()}</span>
@@ -97,7 +98,7 @@
 			$unsafe{cell.apply(ko ? "회피" : "Evasion", fmt.apply(ninjaBenchmark.evasion()))}
 			$unsafe{cell.apply(ko ? "막기" : "Block", ninjaBenchmark.block() + "%")}
 			$unsafe{cell.apply(ko ? "주문막기" : "Sp.block", ninjaBenchmark.spellBlock() + "%")}
-			$unsafe{cell.apply(ko ? "회피억제" : "Suppress", ninjaBenchmark.suppress() + "%")}
+			$unsafe{cell.apply(MessageUtil.getMessage("poe.build.stat.spellsuppressionchance"), ninjaBenchmark.suppress() + "%")}
 			@if(ninjaBenchmark.spellDodge() > 0)$unsafe{cell.apply(ko ? "주문회피" : "Sp.dodge", ninjaBenchmark.spellDodge() + "%")}@endif
 			@if(ninjaBenchmark.physTakenAs() > 0)$unsafe{cell.apply(ko ? "물리전환" : "Phys taken", ninjaBenchmark.physTakenAs() + "%")}@endif
 			$unsafe{cell.apply(ko ? "저항" : "Res", (ko ? "화" : "F") + ninjaBenchmark.fireRes() + NBSP + (ko ? "냉" : "C") + ninjaBenchmark.coldRes() + NBSP + (ko ? "번" : "L") + ninjaBenchmark.lightningRes() + NBSP + (ko ? "카" : "Ch") + ninjaBenchmark.chaosRes())}
@@ -105,7 +106,7 @@
 		</div>
 		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "자원·속성" : "Resources & attributes"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
-			$unsafe{cell.apply(ko ? "수호물" : "Ward", fmt.apply(ninjaBenchmark.ward()))}
+			$unsafe{cell.apply(MessageUtil.getMessage("poe.build.stat.ward"), fmt.apply(ninjaBenchmark.ward()))}
 			$unsafe{cell.apply(ko ? "마나" : "Mana", fmt.apply(ninjaBenchmark.mana()))}
 			$unsafe{cell.apply(ko ? "이동속도" : "Move spd", ninjaBenchmark.movementSpeed() + "%")}
 			$unsafe{cell.apply(ko ? "희귀도" : "Rarity", ninjaBenchmark.itemRarity() + "%")}
@@ -115,7 +116,7 @@
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(ko ? "충전(인·격·권)" : "Charges E·F·P", ninjaBenchmark.enduranceCharges() + NBSP + "·" + NBSP + ninjaBenchmark.frenzyCharges() + NBSP + "·" + NBSP + ninjaBenchmark.powerCharges())}
 			$unsafe{cell.apply(ko ? "클러스터(대·중·소)" : "Cluster L·M·S", ninjaBenchmark.largeCluster() + NBSP + "·" + NBSP + ninjaBenchmark.mediumCluster() + NBSP + "·" + NBSP + ninjaBenchmark.smallCluster())}
-			$unsafe{cell.apply(ko ? "유니크" : "Uniques", String.valueOf(ninjaBenchmark.uniqueEquip()))}
+			$unsafe{cell.apply(ko ? "고유" : "Uniques", String.valueOf(ninjaBenchmark.uniqueEquip()))}
 			@if(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours() > 0)$unsafe{cell.apply(ko ? "미러" : "Mirrored", String.valueOf(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours()))}@endif
 			$unsafe{cell.apply(ko ? "최대피격 물·화" : "Max hit Ph·F", fmt.apply(ninjaBenchmark.physicalMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.fireMax()))}
 			$unsafe{cell.apply(ko ? "최대피격 냉·번·카" : "Max hit C·L·Ch", fmt.apply(ninjaBenchmark.coldMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.lightningMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.chaosMax()))}

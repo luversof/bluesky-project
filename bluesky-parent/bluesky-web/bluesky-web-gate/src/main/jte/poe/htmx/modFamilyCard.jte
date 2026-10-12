@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe.dto.PoeModClass
 @import net.luversof.web.gate.poe.dto.PoeModTier
 @import net.luversof.web.gate.poe.PoeText
@@ -27,13 +28,13 @@
 	<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
 		@if(selectable && poolWeight > 0)
 			<%-- 계산기 선택 — 클릭이 details 토글로 번지지 않게 onclick 전파 차단 --%>
-			<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" onclick="event.stopPropagation()" title="${ko ? "동시 확률 계산에 포함" : "Include in combined odds"}">
+			<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" onclick="event.stopPropagation()" title="${MessageUtil.getMessage("poe.mods.odds.include")}">
 		@endif
 		<%-- 티어 "개수"(펼치면 T1..Tn). 접힌 배지가 "티어5"로 오해되지 않게 title 로 명시. --%>
-		<span class="text-xs text-base-content/60 font-mono shrink-0" title="${ko ? "사용 가능 티어 수" : "Number of tiers"}">${tiers.size()}T</span>
+		<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), tiers.size())}</span>
 		<%-- 최상위 티어 요구 아이템 레벨 — 접힌 상태에서도 "이 옵션 T1 을 뜨게 하려면 몇 렙 아이템이 필요한지" 바로 보이게 --%>
 		@if(top != null)
-			<span class="text-[10px] font-mono text-base-content/60 shrink-0" data-top-ilvl title="${ko ? "최상위 티어 요구 아이템 레벨" : "Top tier required item level"}">i${top.ilvl()}</span>
+			<span class="text-[10px] font-mono text-base-content/60 shrink-0" data-top-ilvl title="${MessageUtil.getMessage("poe.mods.toptier.ilvl")}">i${top.ilvl()}</span>
 		@endif
 		<span class="min-w-0 flex-1">
 			@if(top != null)
@@ -49,12 +50,12 @@
 			<thead>
 				<tr class="text-base-content/60">
 					<%-- 머리글은 PoE2 옵션 풀(poe2.mods.tier/level "티어 · 레벨")과 같은 말 — 한국어 화면에 "T · iLvl" 이 남아 있었다(10-02 C30) --%>
-					<th class="w-10">${ko ? "티어" : "Tier"}</th>
-					<th class="w-12">${ko ? "레벨" : "Level"}</th>
-					<th>${ko ? "효과 (범위)" : "Effect (range)"}</th>
-					<th class="w-16 text-right">${ko ? "가중치" : "Weight"}</th>
+					<th class="w-10">${MessageUtil.getMessage("poe.mods.col.tier")}</th>
+					<th class="w-12">${MessageUtil.getMessage("poe.mods.col.level")}</th>
+					<th>${MessageUtil.getMessage("poe.mods.col.effect")}</th>
+					<th class="w-16 text-right">${MessageUtil.getMessage("poe.mods.col.weight")}</th>
 					@if(poolWeight > 0)
-						<th class="w-16 text-right" title="${ko ? "무작위 롤(카오스/변화 1회)에서 이 티어가 뜰 확률" : "Chance per random roll"}">${ko ? "확률" : "Odds"}</th>
+						<th class="w-16 text-right" title="${MessageUtil.getMessage("poe.mods.col.odds.title")}">${MessageUtil.getMessage("poe.mods.col.odds")}</th>
 					@endif
 				</tr>
 			</thead>
@@ -79,7 +80,7 @@
 						@if(poolWeight > 0)
 							!{double pct = t.weight() * 100.0 / poolWeight;}
 							<td class="text-right font-mono text-[11px] text-base-content/60"
-							    title="${ko ? "평균 1/" : "avg 1 in "}${pct > 0 ? String.valueOf(Math.round(100.0 / pct)) : "∞"}">
+							    title="${MessageUtil.getMessage("poe.mods.odds.avg")}${pct > 0 ? String.valueOf(Math.round(100.0 / pct)) : "∞"}">
 								${pct >= 1 ? String.format("%.1f%%", pct) : String.format("%.2f%%", pct)}
 							</td>
 						@endif

@@ -50,10 +50,10 @@
 			</div>
 			<div data-poe2-sim-panel="sim" class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
 				<div class="text-sm text-base-content/60 max-w-3xl">${ko
-					? "전직과 메인 스킬을 고르고 실행하면, 그 조건의 poe.ninja 실빌드 후보를 받아 PoB-PoE2 엔진으로 다시 계산하고 목표에 가장 맞는 빌드를 골라 자동으로 다듬습니다. 목표는 실빌드 성향으로 정해집니다(아래 미리보기)."
+					? "전직과 주 스킬을 고르고 실행하면, 그 조건의 poe.ninja 실빌드 후보를 받아 PoB-PoE2 엔진으로 다시 계산하고 목표에 가장 맞는 빌드를 골라 자동으로 다듬습니다. 목표는 실빌드 성향으로 정해집니다(아래 미리보기)."
 					: "Pick an ascendancy and main skill and run: real-build candidates from poe.ninja are recalculated with the PoB-PoE2 engine, the best fit for the objective is chosen and refined automatically. The objective follows the real-build lean (preview below)."}</div>
 				@if(skills.isEmpty())
-					@template._components.ui.emptyState(message = ko ? "시뮬레이터 선택지를 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요." : "Could not load simulator options. Please try again shortly.")
+					@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.sim.options.error"))
 				@else
 					<form class="space-y-3" data-no-success-toast
 					      hx-post="/poe2/htmx/sim/start" hx-target="#poe2SimArea" hx-swap="innerHTML">
@@ -70,15 +70,25 @@
 								@template.poe2.htmx.simSelects(skills = skills, ascendancies = ascs, popularAscendancies = options.popularAscendancies() == null ? java.util.List.of() : options.popularAscendancies(), classes = options.classes() == null ? java.util.List.of() : options.classes(), skill = preSkill, ascendancy = treeAsc)
 							</div>
 							<div class="flex min-w-0 flex-wrap items-center gap-2">
-								<span class="self-center sm:whitespace-nowrap text-xs text-base-content/60" title="${ko ? "선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정" : "Objective follows the real-build lean"}">${ko ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
+								<span class="self-center sm:whitespace-nowrap text-xs text-base-content/60" title="${MessageUtil.getMessage("poe.sim.objective.auto.title")}">${MessageUtil.getMessage("poe.sim.objective.auto")}</span>
 								<%-- 시나리오 문구는 PoE1 과 같은 메시지 키. "플레이어 설정 그대로"는 PoE2 만(실빌드에서 출발하므로 그 사람의 설정이 있다) --%>
 								<%-- 내 트리에서 출발(10-02) — 트리 화면 "→ 시뮬"로 왔을 때만. 같은 직업 실빌드의 장비·젬에 이 트리를 끼우고 다듬는다(트리는 안 바뀐다) --%>
 								@if(!treeNodes.isBlank())
 									!{ int treeCount = treeNodes.split(",").length; }
-									<div class="flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2 py-1 text-xs" data-sim-tree>
-										<span class="font-semibold">${ko ? "내 트리에서 출발" : "From my tree"}</span>
-										<span class="text-base-content/70">${treeClass}@if(!treeAsc.isBlank()) · ${treeAsc}@endif · ${ko ? "노드 " + treeCount + "개" : treeCount + " nodes"}</span>
-										<a class="link link-hover text-base-content/60" href="/poe2/sim" title="${ko ? "트리 없이" : "Without tree"}" aria-label="${ko ? "내 트리 빼기" : "Remove my tree"}">✕</a>
+									<%-- PoE1 의 "에디터에서 확정한 트리 (노드) N … 해제" 띠와 같은 문구 · 차림(10-12 C270). 직업 · 전직은 PoE2 만(트리 직업으로 후보를 거른다) --%>
+									<div class="flex items-center gap-2 rounded border border-primary/40 bg-primary/5 px-3 py-1.5 text-xs" data-sim-tree>
+										<span class="font-semibold text-primary">${MessageUtil.getMessage("poe.sim.opt.fixedtree")}</span>
+										<span class="font-mono text-base-content/60">${treeCount}</span>
+										!{
+											// 직업 · 전직 이름은 화면 언어로(10-12 — 한국어 화면에도 "Warrior" 원문이 나왔다). 선택지에 없으면 원문
+											String treeClassLabel = treeClass; String treeAscLabel = treeAsc;
+											if (options != null && options.classes() != null) for (Poe2.SimClassGroup g : options.classes()) {
+												if (treeClass.equals(g.name())) treeClassLabel = PoeText.name(g.nameKo(), g.name());
+												if (g.ascendancies() != null) for (Poe2.SimChoice ch : g.ascendancies()) if (treeAsc.equals(ch.name())) treeAscLabel = PoeText.name(ch.nameKo(), ch.name());
+											}
+										}
+										<span class="text-base-content/70">${treeClassLabel}@if(!treeAsc.isBlank()) · ${treeAscLabel}@endif</span>
+										<a class="link link-primary ml-auto" href="/poe2/sim">${MessageUtil.getMessage("poe.sim.opt.fixedtree.clear")}</a>
 										<input type="hidden" name="treeClass" value="${treeClass}">
 										<input type="hidden" name="treeNodes" value="${treeNodes}">
 										<input type="hidden" name="treeAttrs" value="${treeAttrs}">
@@ -87,8 +97,8 @@
 								@endif
 								<%-- 고정 고유 — PoE1 시뮬 "고유 고정"의 짝(10-01). 다듬기 전에 끼우고 그 칸은 다시 안 바꾼다. 방어구·장신구만(무기는 스킬 요구와 얽힌다) --%>
 								<div class="w-56 max-w-full" data-sim-unique>
-									<select name="unique" data-poe-multi data-placeholder="${ko ? "고정 고유템 (선택)…" : "Lock a unique (optional)…"}" class="select select-sm select-bordered w-full" title="${ko ? "고정 고유템" : "Locked unique"}">
-										<option value="" selected="${preUnique.isEmpty()}">${ko ? "고정 고유템 없음" : "No locked unique"}</option>
+									<select name="unique" data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.uniques.placeholder")}" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe2.sim.opt.unique")}">
+										<option value="" selected="${preUnique.isEmpty()}">${MessageUtil.getMessage("poe2.sim.opt.unique.none")}</option>
 										@for(Poe2.Unique u : forceUniques)
 											<option value="${u.slug()}" selected="${u.slug().equals(preUnique)}">${PoeText.name(u.nameKo(), u.name())} · ${net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass())}</option>
 										@endfor
@@ -117,13 +127,13 @@
 									<option value="Boss">${MessageUtil.getMessage("poe.sim.opt.scenario.boss")}</option>
 									<option value="Pinnacle" selected>${MessageUtil.getMessage("poe.sim.opt.scenario.pinnacle")}</option>
 									<option value="Uber">${MessageUtil.getMessage("poe.sim.opt.scenario.uber")}</option>
-									<option value="keep">${ko ? "플레이어 설정 그대로" : "Keep player setting"}</option>
+									<option value="keep">${MessageUtil.getMessage("poe2.sim.opt.scenario.keep")}</option>
 								</select>
 								@if(isAuthenticated)
 									<button type="submit" class="btn btn-primary btn-sm" data-sim-run>${MessageUtil.getMessage("poe.sim.opt.run")}</button>
 								@else
 									<button type="button" class="btn btn-primary btn-sm btn-disabled" disabled>${MessageUtil.getMessage("poe.sim.opt.run")}</button>
-									<a class="link link-primary text-xs" href="${loginUrl}">${ko ? "로그인하면 실행할 수 있습니다" : "Sign in to run"}</a>
+									<a class="link link-primary text-xs" href="${loginUrl}">${MessageUtil.getMessage("poe.sim.opt.login")}</a>
 								@endif
 							</div>
 						</div>
@@ -156,8 +166,8 @@
 				<style>#poe2SimHistory button.poe-hist-active{border-color:var(--color-primary);background-color:color-mix(in oklch, var(--color-primary) 12%, transparent);font-weight:600}</style>
 				<div id="poe2HistoryResultViewWrap" class="mt-3 hidden">
 					<div class="flex items-center justify-between mb-1.5">
-						<div class="text-xs font-semibold text-base-content/60">${ko ? "지난 결과 보기" : "Saved result"}</div>
-						<button type="button" class="btn btn-ghost btn-xs" data-poe2-hist-close>${ko ? "닫기" : "Close"} ✕</button>
+						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.saved.show")}</div>
+						<button type="button" class="btn btn-ghost btn-xs" data-poe2-hist-close>${MessageUtil.getMessage("poe.common.close")}</button>
 					</div>
 					<div id="poe2HistoryResultView"></div>
 				</div>
@@ -175,6 +185,22 @@
 			<%-- 탭 전환·지난 결과 뷰어 — PoE1 sim.jte 스크립트를 옮겼다(?tab= 과 sessionStorage 로 보던 탭 유지, replaceState) --%>
 			<script nonce="${CspNonceHolder.getNonce()}">
 			(function () {
+				// 인라인 onclick 대신(CSP 강제 대비, 10-12 C284) — 이력 항목 선택 표시 · 실행 중 중지 단추 잠금. 조각이 다시 그려져도 되게 문서에 한 번만 건다
+				if (!window.__poeSimClicks) {
+					window.__poeSimClicks = true;
+					document.addEventListener('click', function (e) {
+						var t = e.target && e.target.closest ? e.target : null;
+						if (!t) return;
+						var item = t.closest('button[data-hist-item]');
+						if (item) {
+							var list = document.getElementById(item.dataset.histItem);
+							if (list) list.querySelectorAll('button.poe-hist-active').forEach(function (b) { b.classList.remove('poe-hist-active'); });
+							item.classList.add('poe-hist-active');
+						}
+						var busy = t.closest('button[data-busy-label]');
+						if (busy && !busy.disabled) { busy.disabled = true; busy.textContent = busy.dataset.busyLabel; }
+					});
+				}
 				var TABS = ['sim', 'ranking'];
 				var bar = document.getElementById('poe2SimTabs');
 				if (!bar) return;

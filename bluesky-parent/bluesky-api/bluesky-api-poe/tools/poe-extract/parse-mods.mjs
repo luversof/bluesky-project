@@ -7,12 +7,15 @@ import path from "node:path";
 import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
-const OUT = path.join(DATA_DIR, "mod-pool.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "mod-pool.json"); // POE_DATA_OUT = 사본 출력(10-10)
 
 const mods = loadTable("English", "Mods");
 const stats = loadTable("English", "Stats");
+// 아이템 옵션이라 stat_descriptions 가 최우선(10-10 C258 — 예전엔 passive 만 덧붙인 기본 사슬이라 뒤의 skill_stat_descriptions 문장이 이겼다:
+//   "# to # Added Fire Damage"(PoB 는 공격 · 주문 공통 추가 피해로 읽는다) ↔ 게임 "Adds # to # Fire Damage to Attacks"(공격 전용) 등 243곳)
 const describe = createStatDescriber(FILES_DIR, [
 	"metadata@statdescriptions@passive_skill_stat_descriptions.txt",
+	"metadata@statdescriptions@stat_descriptions.txt",
 ]);
 
 // 슬롯 카테고리: weaponAttack, weaponSpell, body, helmet, gloves, boots, amulet, ring, belt, shield, quiver

@@ -1,5 +1,7 @@
 {
   "patch": "4.5.5.4",
+  "cdn": "https://patch.poe2.kakaogames.com/production/patch/0.5.5.4.2/",
+  "cdnVersion": "0.5.5.4.2",
   "translations": [
     "English",
     "Korean"
@@ -11,7 +13,9 @@
     "data/statdescriptions/skill_stat_descriptions.csd",
     "data/statdescriptions/active_skill_gem_stat_descriptions.csd",
     "data/statdescriptions/atlas_stat_descriptions.csd",
-    "data/statdescriptions/map_stat_descriptions.csd"
+    "data/statdescriptions/map_stat_descriptions.csd",
+    "data/statdescriptions/utility_flask_buff_stat_descriptions.csd",
+    "data/statdescriptions/meta_gem_stat_descriptions.csd"
   ],
   "tables": [
     {
@@ -312,7 +316,9 @@
         "SoulCore",
         "StatCategory",
         "Stats",
-        "StatsValues"
+        "StatsValues",
+        "BondedStats",
+        "BondedStatsValues"
       ]
     },
     {
@@ -441,11 +447,20 @@
         "ConstantStatsValues",
         "BaseEffectiveness",
         "IncrementalEffectiveness",
-        "DamageIncrementalEffectiveness"
+        "DamageIncrementalEffectiveness",
+        "Label",
+        "IgnoredStats"
       ]
     },
     {
       "name": "FlavourText",
+      "columns": [
+        "Id",
+        "Text"
+      ]
+    },
+    {
+      "name": "GrantedEffectLabels",
       "columns": [
         "Id",
         "Text"

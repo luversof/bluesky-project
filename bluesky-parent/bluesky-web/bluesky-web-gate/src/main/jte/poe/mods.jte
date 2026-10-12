@@ -36,47 +36,32 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-sm text-base-content/60">${ko ? "일반 아이템 제작 모드 — 아이템 클래스별 접두/접미 티어" : "Craftable modifiers by item class"}</span>
+				<span class="text-sm text-base-content/60">${MessageUtil.getMessage("poe.mods.desc")}</span>
 			</div>
 
-			<%-- 아이템 클래스 칩 — 30클래스라 평면 나열 대신 그룹(방어구/무기/장신구/플라스크·주얼) 행으로.
+			<%-- 아이템 클래스 칩 — 분류별 줄 + 줄 이름. PoE2 모드 화면(poe2/mods.jte)과 같은 묶음 · 순서 · 칩 모양(10-12 C272).
 			     클릭 시 htmx 로 본문 교체 + URL ?itemClass= 동기화 --%>
-			!{
-				var chipGroups = new java.util.LinkedHashMap<String, java.util.List<PoeModItemClass>>();
-				// 표시 순서 고정(선시드) — modClasses 는 알파벳순이라 그대로 두면 플라스크·주얼이 맨 위로 온다
-				chipGroups.put(ko ? "방어구" : "Armour", new java.util.ArrayList<>());
-				chipGroups.put(ko ? "무기" : "Weapons", new java.util.ArrayList<>());
-				chipGroups.put(ko ? "장신구" : "Accessories", new java.util.ArrayList<>());
-				chipGroups.put(ko ? "플라스크·주얼" : "Flasks · Jewels", new java.util.ArrayList<>());
-				for (PoeModItemClass c : modClasses) {
-					String id = c.itemClass();
-					String g;
-					if (id.contains("Flask") || id.contains("Jewel")) g = ko ? "플라스크·주얼" : "Flasks · Jewels";
-					else if (java.util.Set.of("Body Armour", "Helmet", "Gloves", "Boots", "Shield").contains(id)) g = ko ? "방어구" : "Armour";
-					else if (java.util.Set.of("Amulet", "Ring", "Belt", "Quiver").contains(id)) g = ko ? "장신구" : "Accessories";
-					else g = ko ? "무기" : "Weapons";
-					chipGroups.computeIfAbsent(g, k -> new java.util.ArrayList<>()).add(c);
-				}
-			}
-			<div class="space-y-1.5 rounded-2xl bg-base-100 p-3 shadow-sm" data-mod-classchips>
-				@for(var grp : chipGroups.entrySet())
-					<div class="flex flex-wrap items-center gap-1.5">
-						<span class="w-24 shrink-0 text-xs font-semibold text-base-content/60">${grp.getKey()}</span>
-						@for(PoeModItemClass c : grp.getValue())
-							<a class="poe-chip badge ${c.itemClass().equals(activeClass) ? "badge-primary" : "badge-ghost"} cursor-pointer"
-							   href="/poe/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"
-							   hx-get="/poe/htmx/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"
-							   hx-target="#poeModBody"
-							   hx-swap="innerHTML"
-							   hx-push-url="/poe/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"
-							   data-chip-value="${c.itemClass()}">
-								${ko ? c.nameKo() : c.name()}
-								<span class="ml-1 text-[10px] opacity-60">${c.prefixes().size() + c.suffixes().size()}</span>
-							</a>
-						@endfor
-					</div>
+			<nav class="space-y-2 rounded-2xl bg-base-100 p-3 shadow-sm" aria-label="${MessageUtil.getMessage("poe.mods.title")}" data-mod-classchips>
+				@for(String cat : net.luversof.web.gate.poe.controller.PoeViewController.MOD_CATEGORIES)
+					!{ List<PoeModItemClass> inCat = modClasses.stream().filter(c -> cat.equals(net.luversof.web.gate.poe.controller.PoeViewController.modCategory(c.itemClass()))).toList(); }
+					@if(!inCat.isEmpty())
+						<div class="flex flex-wrap items-center gap-1.5" data-chip-row="${cat}">
+							<span class="w-16 shrink-0 text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.itemgroup." + cat)}</span>
+							@for(PoeModItemClass c : inCat)
+								!{ boolean on = c.itemClass().equals(activeClass); }
+								<a class="poe-chip ${on ? "poe-chip-active" : ""}"
+								   href="/poe/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"
+								   hx-get="/poe/htmx/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"
+								   hx-target="#poeModBody"
+								   hx-swap="innerHTML"
+								   hx-push-url="/poe/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"
+								   aria-current="${on ? "page" : null}"
+								   data-chip-value="${c.itemClass()}">${ko ? c.nameKo() : c.name()}<span class="ml-1 text-[10px] opacity-60">${c.prefixes().size() + c.suffixes().size()}</span></a>
+							@endfor
+						</div>
+					@endif
 				@endfor
-			</div>
+			</nav>
 
 			@template.poe.modFilterBar(scope = "#poeModBody", idPrefix = "poeMod")
 
@@ -92,8 +77,9 @@
 							var chip = e.target.closest(".poe-chip");
 							if (!chip || !bar.contains(chip)) return;
 							bar.querySelectorAll(".poe-chip").forEach(function (c) {
-								c.classList.toggle("badge-primary", c === chip);
-								c.classList.toggle("badge-ghost", c !== chip);
+								c.classList.toggle("poe-chip-active", c === chip);
+								if (c === chip) c.setAttribute("aria-current", "page");
+								else c.removeAttribute("aria-current");
 							});
 						});
 					}

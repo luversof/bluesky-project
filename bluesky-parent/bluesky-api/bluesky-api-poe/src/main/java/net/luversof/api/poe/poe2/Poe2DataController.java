@@ -141,6 +141,12 @@ public class Poe2DataController {
     return sim.start(skill, ascendancy, scenario, unique, tree);
   }
 
+  /** 실행 중인 시뮬레이션 중지 — 돌고 있지 않으면 false(PoE1 /api/poe/optimize/cancel 짝, 10-12 C269). */
+  @PostMapping("/sim/stop")
+  public boolean simStop() {
+    return sim.cancel();
+  }
+
   @GetMapping("/sim/status")
   public Poe2SimService.SimStatus simStatus() {
     return sim.status();
@@ -491,6 +497,12 @@ public class Poe2DataController {
   @GetMapping("/extract/status")
   public Poe2ExtractService.Status extractStatus() {
     return extract.status();
+  }
+
+  /** 데이터 버전(현재 · 설정 · 패치 서버 최신) — PoE1 /api/poe/extract/version 짝(10-12 C261). */
+  @GetMapping("/extract/version")
+  public Poe2ExtractService.VersionInfo extractVersion() {
+    return extract.version();
   }
 
   @PostMapping("/extract/start")

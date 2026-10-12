@@ -7,7 +7,7 @@
      없는 항목(404)과 일시 장애를 구분한다 — 삭제·개명된 slug 에 "잠시 후 다시 시도"를 권하면
      영영 안 되는 걸 계속 누르게 된다. --%>
 @if(notFound)
-	<div class="alert alert-warning text-sm">${MessageUtil.getMessage("poe.api.notfound")}</div>
+	<div class="alert alert-warning text-sm" role="alert" data-error-kind="notfound"><span>${MessageUtil.getMessage("poe.api.notfound")}</span></div>
 @else
-	<div class="alert alert-error text-sm">${MessageUtil.getMessage("poe.api.error")}</div>
+	<div class="alert alert-error text-sm" role="alert" data-error-kind="error"><span>${MessageUtil.getMessage("poe.api.error")}</span></div>
 @endif

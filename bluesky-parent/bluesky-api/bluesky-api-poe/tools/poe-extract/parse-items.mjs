@@ -7,7 +7,8 @@ import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
 import { createReminderIndex, createStatDescriber } from "./statDescriptions.mjs";
 
 const PATCH = loadConfig().patch;
-const OUT = path.join(DATA_DIR, "base-items.json");
+// POE_DATA_OUT — 출력만 다른 폴더로(10-10, 회귀 중 사본 대조용 — poe2-extract writeJson 과 같은 규칙)
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "base-items.json");
 
 // 장비 클래스 화이트리스트 (ItemClasses.Id) → 광역 카테고리
 const EQUIPMENT_CLASSES = {
@@ -39,7 +40,9 @@ const ko = {
 	classes: loadTable("Korean", "ItemClasses"),
 };
 
-const describe = createStatDescriber(FILES_DIR);
+// stat_descriptions 를 마지막(최우선)으로(10-10 C256 — 기본 사슬은 뒤의 skill_stat_descriptions 가 같은 스탯을 스킬 문장으로 덮어 단검 임플리싯이
+//   "Global" 없이 "(60-65)% increased Critical Strike Chance" · "치명타 확률" 이었다. 게임 · poedb "일반 치명타 확률". parse-eldritch 와 같은 처리)
+const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt"]);
 
 const armourByBase = new Map(en.armour.map((row) => [row.BaseItemTypesKey, row]));
 // 방패 기본 막기 확률 (ShieldTypes.BaseItemTypesKey = 행 인덱스, Block = 정수 %)
@@ -78,6 +81,22 @@ function describeModRange(mod, lang) {
 		});
 	});
 }
+
+// 이동 속도 감소(10-09 C223 — 갑옷 · 방패 "이동 속도: -3%", poedb 툴팁에 있음). 게임 ArmourTypes 의 이 열은 추출 설정에 없어 PoB Bases(게임 데이터에서
+//   생성)의 "MovementPenalty = 3" 을 읽는다 — PoB Item.lua 도 이 값으로 MovementSpeed INC -N 을 건다
+const movementPenaltyByBase = (() => {
+	const map = new Map();
+	const dir = path.join(DATA_DIR, "work", "pob-src", "src", "Data", "Bases");
+	try {
+		for (const file of fs.readdirSync(dir)) {
+			const src = fs.readFileSync(path.join(dir, file), "utf8");
+			for (const m of src.matchAll(/itemBases\["([^"]+)"\] = \{(?:(?!itemBases\[)[\s\S])*?MovementPenalty = (\d+)/g)) map.set(m[1], Number(m[2]));
+		}
+	} catch {
+		console.warn("PoB Bases 없음 — 이동 속도 감소 없이 진행");
+	}
+	return map;
+})();
 
 const junkName = /\bDNT\b|\[UNUSED\]|^[. ]+$/i;
 const items = [];
@@ -149,6 +168,7 @@ for (const base of en.base) {
 						energyShieldMin: armour.EnergyShieldMin, energyShieldMax: armour.EnergyShieldMax,
 						wardMin: armour.WardMin, wardMax: armour.WardMax,
 						block: shieldByBase.get(base._index)?.Block || 0,
+						...(movementPenaltyByBase.get(base.Name) ? { movementPenalty: movementPenaltyByBase.get(base.Name) } : {}),
 					}
 				: null,
 		weapon:

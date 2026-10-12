@@ -1532,7 +1532,10 @@ public class Poe2BuildService {
         base.map(Poe2.BaseItem::withoutKeywords).orElse(null),
         qualityOf(lines),
         tradeQuery(
-            rarity, name, unique.orElse(null), base.orElse(null), mods, implicitCountOf(lines)));
+            rarity, name, unique.orElse(null), base.orElse(null), mods, implicitCountOf(lines)),
+        net.luversof.api.poe.service.PoePobImportService.itemLevelReq(lines)
+            .orElse(unique.map(Poe2.Unique::requiredLevel).orElse(null)),
+        net.luversof.api.poe.service.PoePobImportService.itemDefences(lines));
   }
 
   /** 거래소 검색 쿼리(10-08) — 고유는 이름, 레어 · 마법은 베이스 + 익스플리싯 옵션(암시 줄 제외). */

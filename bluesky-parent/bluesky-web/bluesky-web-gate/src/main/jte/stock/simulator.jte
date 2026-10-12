@@ -181,6 +181,8 @@
 						seriesTotalWealth: '${MessageUtil.getMessage("stock.simulator.table.header.total.wealth")}',
 						seriesMarketValue: '${MessageUtil.getMessage("stock.simulator.table.header.market.value")}',
 						seriesCashReserve: '${MessageUtil.getMessage("stock.simulator.metric.cash.reserve")}',
+						chartAxisYear: '${MessageUtil.getMessage("stock.simulator.chart.axis.year")}',
+						chartYearTitle: '${MessageUtil.getMessage("stock.simulator.chart.year.title")}',
 						timelinePhaseStable: '${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}',
 						timelinePhaseDeficit: '${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}',
 						timelinePhaseWealthDecline: '${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}',

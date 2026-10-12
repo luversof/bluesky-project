@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe2.dto.Poe2
 @import net.luversof.web.gate.poe.PoeText
 
@@ -33,8 +34,9 @@
 	</div>
 	<%-- 베이스 속성 칸 · 요구 사항(10-04 C147, PoE1 빌드 툴팁 짝 — 고유 · 베이스 툴팁과 같은 조각) --%>
 	@if(item.base() != null)
-		@template.poe2.htmx.baseProps(base = item.base(), quality = item.quality() == null ? 0 : item.quality())
-		@template.poe2.htmx.requirements(level = item.base().reqLevel(), base = item.base())
+		@template.poe2.htmx.baseProps(base = item.base(), quality = item.quality() == null ? 0 : item.quality(), lines = item.mods(), defences = item.defences())
+		<%-- 요구 능력치에 이 아이템 옵션 반영(10-08 C178, mods = 영문 원문 — 암시 포함) --%>
+		@template.poe2.htmx.requirements(level = item.levelReq() != null ? item.levelReq() : item.base().reqLevel(), base = item.base(), explicits = item.mods())
 	@endif
 	@if(!implicits.isEmpty())
 		<div class="poe-tt-sepimg"></div>
@@ -57,6 +59,11 @@
 			@endfor
 		</div>
 	@endif
+	<%-- 타락 줄 = 옵션 바로 아래 · 로어 위(10-09 C216 — poedb 목소리 · poe2db 신념의 프리즘 툴팁 순서: 옵션 → Corrupted → 로어 → 사용 설명. 예전(C157)엔 맨 아래) --%>
+	@if(corruptedItem)
+		<div class="poe-tt-sepimg"></div>
+		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.common.corrupted")}</div>
+	@endif
 	@if(flavourLines != null && !flavourLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center space-y-0.5" data-tt-flavour>
@@ -65,9 +72,11 @@
 			@endfor
 		</div>
 	@endif
-	@if(corruptedItem)
+	<%-- 사용 설명(10-09 C213 — PoE2 게임 ClientStrings ItemDescriptionFlask · FlaskUtility1(부적) · PassiveJewel, 마크업 벗김. 맨 아래 회색 문단) --%>
+	!{ String helpKey = net.luversof.web.gate.poe.PoeItemDescription.poe2Key(item.base() == null ? null : item.base().itemClass()); }
+	@if(helpKey != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${PoeText.isKorean() ? "타락" : "Corrupted"}</div>
+		<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${io.github.luversof.boot.context.support.MessageUtil.getMessage(helpKey)}</div>
 	@endif
 	<div class="pt-1.5"></div>
 	@template.poe2.htmx.keywordBox(keywords = item.keywords())

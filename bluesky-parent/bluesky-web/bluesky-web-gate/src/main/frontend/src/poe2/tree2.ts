@@ -783,7 +783,7 @@
 					el.appendChild(note);
 				}
 			};
-			add(t("패시브", "Passives"), sum.normal, sum.normalMax, sum.normalEndgame, t("엔드게임에서 얻는 패시브 스킬 포인트(최대 2)는 빌드 코드에 남지 않습니다", "Passive Skill Points from the endgame (up to 2) are not stored in build codes"));
+			add(t("포인트", "Points"), sum.normal, sum.normalMax, sum.normalEndgame, t("엔드게임에서 얻는 패시브 스킬 포인트(최대 2)는 빌드 코드에 남지 않습니다", "Passive Skill Points from the endgame (up to 2) are not stored in build codes"));
 			if (setPts[1] || setPts[2]) {
 				const setWhy = t("엔드게임에서 얻는 무기 세트 패시브 스킬 포인트(최대 1)는 빌드 코드에 남지 않습니다", "Weapon Set Passive Skill Points from the endgame (up to 1) are not stored in build codes");
 				add(t(" · 세트 I", " · Set I"), setPts[1], sum.setMax, sum.setEndgame, setWhy);

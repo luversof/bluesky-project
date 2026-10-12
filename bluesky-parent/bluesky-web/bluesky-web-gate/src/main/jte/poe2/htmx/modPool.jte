@@ -49,23 +49,23 @@
 						<summary class="cursor-pointer px-3 py-2 text-sm">
 							@if(famOdds != null)
 								<%-- 제작 계산기 선택 — PoE1 과 같은 체크박스(동시 확률에 포함) --%>
-								<input type="checkbox" class="checkbox checkbox-xs poe2-craft-pick mr-1 align-middle" title="${korean ? "동시 확률 계산에 포함" : "Include in combined odds"}" aria-label="${korean ? "동시 확률 계산에 포함" : "Include in combined odds"}">
+								<input type="checkbox" class="checkbox checkbox-xs poe2-craft-pick mr-1 align-middle" title="${MessageUtil.getMessage("poe.mods.odds.include")}" aria-label="${MessageUtil.getMessage("poe.mods.odds.include")}">
 							@endif
 							<span class="text-[#8888ff]" data-family-stats data-join=" / ">${String.join(" / ", topLines)}</span>
 							<%-- 최상위 티어 요구 아이템 레벨 — PoE1 과 같은 i 배지(레벨 막대가 가용 최상위로 바꿔 준다) --%>
-							<span class="ml-1 text-[10px] font-mono text-base-content/60" data-top-ilvl title="${korean ? "최상위 티어 요구 아이템 레벨" : "Top tier required item level"}">i${top.level()}</span>
-							<span class="ml-1 text-xs text-base-content/60" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.tiers"), g.tiers().size())}</span>
+							<span class="ml-1 text-[10px] font-mono text-base-content/60" data-top-ilvl title="${MessageUtil.getMessage("poe.mods.toptier.ilvl")}">i${top.level()}</span>
+							<span class="ml-1 text-xs text-base-content/60" title="${MessageUtil.getMessage("poe.mods.tiers.title")}" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), g.tiers().size())}</span>
 						</summary>
 						<div class="overflow-x-auto px-2 pb-2">
 							<table class="table table-xs">
 								<thead>
 									<tr>
-										<th scope="col">${MessageUtil.getMessage("poe2.mods.tier")}</th>
-										<th scope="col">${MessageUtil.getMessage("poe2.mods.level")}</th>
-										<th scope="col">${MessageUtil.getMessage("poe2.mods.title")}</th>
-										<th scope="col" class="text-right">${MessageUtil.getMessage("poe2.mods.weight")}</th>
+										<th scope="col">${MessageUtil.getMessage("poe.mods.col.tier")}</th>
+										<th scope="col">${MessageUtil.getMessage("poe.mods.col.level")}</th>
+										<th scope="col">${MessageUtil.getMessage("poe.mods.col.effect")}</th>
+										<th scope="col" class="text-right">${MessageUtil.getMessage("poe.mods.col.weight")}</th>
 										@if(poolWeight > 0)
-											<th scope="col" class="text-right" title="${korean ? "무작위 롤 한 번에 이 티어가 뜰 확률" : "Chance per random roll"}">${korean ? "확률" : "Odds"}</th>
+											<th scope="col" class="text-right" title="${MessageUtil.getMessage("poe.mods.col.odds.title")}">${MessageUtil.getMessage("poe.mods.col.odds")}</th>
 										@endif
 									</tr>
 								</thead>
@@ -86,7 +86,7 @@
 											<td class="text-right">${t.weight()}</td>
 											@if(poolWeight > 0)
 												!{ double pct = (t.weight() == null ? 0 : t.weight()) * 100.0 / poolWeight; }
-												<td class="text-right font-mono text-[11px] text-base-content/60" data-tier-odds title="${korean ? "평균 1/" : "avg 1 in "}${pct > 0 ? String.valueOf(Math.round(100.0 / pct)) : "∞"}">${pct >= 1 ? String.format("%.1f%%", pct) : String.format("%.2f%%", pct)}</td>
+												<td class="text-right font-mono text-[11px] text-base-content/60" data-tier-odds title="${MessageUtil.getMessage("poe.mods.odds.avg")}${pct > 0 ? String.valueOf(Math.round(100.0 / pct)) : "∞"}">${pct >= 1 ? String.format("%.1f%%", pct) : String.format("%.2f%%", pct)}</td>
 											@endif
 										</tr>
 									@endfor
@@ -105,8 +105,8 @@
 <div id="poe2CraftCalc" class="sticky bottom-2 z-10 mt-3 hidden flex-wrap items-center gap-2 rounded-box border border-primary/30 bg-base-100 px-3 py-2 text-sm shadow-lg">
 	<span class="font-semibold text-primary" id="poe2CraftCalcLabel"></span>
 	<span class="font-mono" id="poe2CraftCalcValue"></span>
-	<span class="text-[11px] text-base-content/60">${korean ? "독립 가정 근사 — 접두/접미 자리 경쟁 미반영(실제는 더 낮음)" : "independence approximation"}</span>
-	<button type="button" class="btn btn-ghost btn-xs ml-auto" id="poe2CraftCalcClear">${korean ? "선택 해제" : "Clear"}</button>
+	<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("poe.mods.odds.approx")}</span>
+	<button type="button" class="btn btn-ghost btn-xs ml-auto" id="poe2CraftCalcClear">${MessageUtil.getMessage("poe.mods.odds.clear")}</button>
 </div>
 <script nonce="${CspNonceHolder.getNonce()}">
 	(function () {

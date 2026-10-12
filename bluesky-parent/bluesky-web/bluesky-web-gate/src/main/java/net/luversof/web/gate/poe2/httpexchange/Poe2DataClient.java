@@ -40,6 +40,10 @@ public interface Poe2DataClient {
   @GetExchange("/sim/status")
   Poe2.SimStatus simStatus();
 
+  /** 실행 중인 시뮬레이션 중지(10-12 C269) — 돌고 있지 않으면 false. */
+  @org.springframework.web.service.annotation.PostExchange("/sim/stop")
+  Boolean simStop();
+
   // 결과 이력·젬 DPS 랭킹 — PoE1 시뮬의 optimize/history·sim/ranking 에 대응
   @GetExchange("/sim/history")
   List<Poe2.SimHistoryEntry> simHistory();
@@ -155,6 +159,9 @@ public interface Poe2DataClient {
   // ── 데이터 관리 ──
   @GetExchange("/extract/status")
   Poe2.ExtractStatus extractStatus();
+
+  @GetExchange("/extract/version")
+  Poe2.ExtractVersion extractVersion();
 
   @PostExchange("/extract/start")
   Map<String, Boolean> extractStart();

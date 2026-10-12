@@ -43,7 +43,7 @@
 	String ratioNoneLabel = MessageUtil.getMessage("stock.simulator.compound.table.ratio.none");
 }
 
-<div id="stockCompoundSimulator" class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]" data-series-principal="${seriesPrincipalLabel}" data-series-profit="${seriesProfitLabel}" data-ratio-none="${ratioNoneLabel}">
+<div id="stockCompoundSimulator" class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[24rem_minmax(0,1fr)]" data-series-principal="${seriesPrincipalLabel}" data-series-profit="${seriesProfitLabel}" data-ratio-none="${ratioNoneLabel}" data-year-title="${MessageUtil.getMessage("stock.simulator.chart.year.title")}">
 	@template._components.ui.card(bodyClass = "gap-4", body = @`
 			<div class="flex flex-col gap-2">
 				<div class="space-y-2">

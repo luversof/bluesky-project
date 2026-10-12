@@ -56,7 +56,7 @@
 	<select name="ascendancy" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe.sim.opt.ascendancy")}">
 		<option value="" selected="${ascendancy.isBlank()}">${MessageUtil.getMessage("poe.sim.opt.ascendancy.auto")}</option>
 		@if(!topAsc.isEmpty())
-			<optgroup label="${ko ? "많이 쓰는 직업" : "Most used"}">
+			<optgroup label="${MessageUtil.getMessage("poe.sim.popular.classes")}">
 				@for(String asc : topAsc)
 					<option value="${asc}" selected="${asc.equals(ascendancy)}">${ko ? ascKo.get(asc) : asc}</option>
 				@endfor
@@ -73,7 +73,7 @@
 </div>
 <div class="min-w-[min(13rem,100%)] flex-1">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.skills")}
-		@if(popularSkills > 0)<span class="ml-1 font-normal text-base-content/60">${ko ? "· 많이 쓰는 순 " + popularSkills : "· by usage " + popularSkills}</span>@endif
+		@if(popularSkills > 0)<span class="ml-1 font-normal text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.byusage")} ${popularSkills}</span>@endif
 	</label>
 	<select name="skills" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.skills.placeholder")}" size="4" class="select select-sm select-bordered w-full">
 		@for(PoeGem skillOpt : gems)
@@ -83,7 +83,7 @@
 </div>
 <div class="min-w-[min(13rem,100%)] flex-1">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.uniques")}
-		@if(popularItems > 0)<span class="ml-1 font-normal text-base-content/60">${ko ? "· 많이 쓰는 순 " + popularItems : "· by usage " + popularItems}</span>@endif
+		@if(popularItems > 0)<span class="ml-1 font-normal text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.byusage")} ${popularItems}</span>@endif
 	</label>
 	<select name="uniques" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.uniques.placeholder")}" size="4" class="select select-sm select-bordered w-full">
 		@for(PoeUniqueItem uniqueItem : uniques)

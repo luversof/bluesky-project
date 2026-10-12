@@ -27,6 +27,12 @@
 			@endfor
 		</div>
 	@endif
+	<%-- 사용 설명(10-09 C213 — PoE2 게임 ClientStrings ItemDescriptionFlask · FlaskUtility1(부적) · PassiveJewel, 마크업 벗김. 맨 아래 회색 문단) --%>
+	!{ String helpKey = net.luversof.web.gate.poe.PoeItemDescription.poe2Key(base.itemClass()); }
+	@if(helpKey != null)
+		<div class="poe-tt-sepimg"></div>
+		<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${io.github.luversof.boot.context.support.MessageUtil.getMessage(helpKey)}</div>
+	@endif
 	<%-- 키워드 설명(10-04 C113, 고유 · 젬과 같은 조각) --%>
 	@if(base.keywords() != null && !base.keywords().isEmpty())
 		<div class="pt-1.5"></div>

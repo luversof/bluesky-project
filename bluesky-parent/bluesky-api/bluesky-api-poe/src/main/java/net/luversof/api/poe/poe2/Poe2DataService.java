@@ -39,7 +39,7 @@ public class Poe2DataService {
       JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
 
   private volatile Poe2.GemData gems = new Poe2.GemData("", List.of());
-  private volatile Poe2.BaseItemData bases = new Poe2.BaseItemData("", List.of(), List.of());
+  private volatile Poe2.BaseItemData bases = new Poe2.BaseItemData("", List.of(), List.of(), null);
   private volatile Poe2.ModData mods = new Poe2.ModData("", List.of(), Map.of(), List.of());
   private volatile Poe2.AugmentData augments = new Poe2.AugmentData("", List.of());
   private volatile Poe2.UniqueData uniques = new Poe2.UniqueData("", List.of());
@@ -146,7 +146,7 @@ public class Poe2DataService {
         read(
             "base-items.json",
             Poe2.BaseItemData.class,
-            new Poe2.BaseItemData("", List.of(), List.of()));
+            new Poe2.BaseItemData("", List.of(), List.of(), null));
     mods =
         read("mods.json", Poe2.ModData.class, new Poe2.ModData("", List.of(), Map.of(), List.of()));
     augments = read("augments.json", Poe2.AugmentData.class, new Poe2.AugmentData("", List.of()));
@@ -364,11 +364,36 @@ public class Poe2DataService {
 
   public List<Poe2.BaseItem> searchBases(String query, String itemClass, String category) {
     Predicate<String[]> byName = nameMatches(query);
-    return bases.items().stream()
-        .filter(b -> byName.test(new String[] {b.name(), b.nameKo()}))
-        .filter(b -> blank(itemClass) || itemClass.equals(b.itemClass()))
-        .filter(b -> blank(category) || category.equals(b.category()))
-        .toList();
+    List<Poe2.BaseItem> found =
+        bases.items().stream()
+            .filter(b -> byName.test(new String[] {b.name(), b.nameKo()}))
+            .filter(b -> blank(itemClass) || itemClass.equals(b.itemClass()))
+            .filter(b -> blank(category) || category.equals(b.category()))
+            .toList();
+    // 목록에 없고 이름이 정확히 숨김 베이스면 그것 하나(10-08 C176) — 게이트 고유 툴팁이 베이스를 이름 검색으로 찾는다(해질녘 Glacial Fortress)
+    if (found.isEmpty() && !blank(query) && blank(itemClass) && blank(category)) {
+      return hiddenExact(query).map(List::of).orElse(List.of());
+    }
+    return found;
+  }
+
+  private Optional<Poe2.BaseItem> hiddenExact(String name) {
+    return bases.hiddenItems() == null
+        ? Optional.empty()
+        : bases.hiddenItems().stream().filter(b -> b.name().equalsIgnoreCase(name)).findFirst();
+  }
+
+  /**
+   * 이름 정확 조회 — 목록 베이스, 없으면 숨김 베이스(고유 전용 Glacial Fortress 등, 10-08 C176). 고유 툴팁 · 빌드 아이템이 베이스 수치를
+   * 그린다.
+   */
+  public Optional<Poe2.BaseItem> baseExact(String name) {
+    if (blank(name)) {
+      return Optional.empty();
+    }
+    Optional<Poe2.BaseItem> found =
+        bases.items().stream().filter(b -> b.name().equalsIgnoreCase(name)).findFirst();
+    return found.isPresent() ? found : hiddenExact(name);
   }
 
   /** 거래소가 이 베이스 이름(한국어)을 아는가(10-08 C174) — 사전에 이름 목록이 없으면 null. */
@@ -377,11 +402,17 @@ public class Poe2DataService {
   }
 
   public Optional<Poe2.BaseItem> base(String slug) {
-    return bases.items().stream().filter(b -> b.slug().equals(slug)).findFirst();
+    Optional<Poe2.BaseItem> found =
+        bases.items().stream().filter(b -> b.slug().equals(slug)).findFirst();
+    // 숨김 베이스 상세(검색 폴백으로 목록에 뜬 것을 눌렀을 때 404 가 나지 않게, 10-08 C176)
+    if (found.isPresent() || bases.hiddenItems() == null) {
+      return found;
+    }
+    return bases.hiddenItems().stream().filter(b -> b.slug().equals(slug)).findFirst();
   }
 
   public Optional<Poe2.BaseItem> baseByName(String name) {
-    return bases.items().stream().filter(b -> b.name().equalsIgnoreCase(name)).findFirst();
+    return baseExact(name);
   }
 
   // ─────────────────────────── 옵션 ───────────────────────────

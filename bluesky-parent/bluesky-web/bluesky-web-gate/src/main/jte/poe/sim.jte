@@ -84,16 +84,16 @@
 							<span class="font-mono text-base-content/60">${treeNodes.split(",").length}</span>
 							<!-- 클러스터/주얼/마스터리/문신이 함께 넘어왔는지 눈에 보이게 — 안 보이면 인계가 됐는지 알 수 없다 -->
 							@if(!masteries.isBlank())
-								<span class="badge badge-sm badge-outline border-sky-400 text-sky-300">${net.luversof.web.gate.poe.PoeText.isKorean() ? "마스터리 " + masteries.split(",").length : "masteries " + masteries.split(",").length}</span>
+								<span class="badge badge-sm badge-outline border-sky-400 text-sky-300">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.fixedtree.masteries"), masteries.split(",").length)}</span>
 							@endif
 							@if(!clusters.isBlank())
-								<span class="badge badge-sm badge-secondary badge-outline">${net.luversof.web.gate.poe.PoeText.isKorean() ? "클러스터 " + clusters.split(",").length : "clusters " + clusters.split(",").length}</span>
+								<span class="badge badge-sm badge-secondary badge-outline">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.fixedtree.clusters"), clusters.split(",").length)}</span>
 							@endif
 							@if(!jewels.isBlank())
-								<span class="badge badge-sm badge-accent badge-outline">${net.luversof.web.gate.poe.PoeText.isKorean() ? "주얼 " + jewels.split(",").length : "jewels " + jewels.split(",").length}</span>
+								<span class="badge badge-sm badge-accent badge-outline">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.fixedtree.jewels"), jewels.split(",").length)}</span>
 							@endif
 							@if(!tattoos.isBlank())
-								<span class="badge badge-sm badge-outline border-purple-400 text-purple-300">${net.luversof.web.gate.poe.PoeText.isKorean() ? "문신 " + tattoos.split("\\|").length : "tattoos " + tattoos.split("\\|").length}</span>
+								<span class="badge badge-sm badge-outline border-purple-400 text-purple-300">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.fixedtree.tattoos"), tattoos.split("\\|").length)}</span>
 							@endif
 							<a class="link link-primary ml-auto" href="/poe/sim">${MessageUtil.getMessage("poe.sim.opt.fixedtree.clear")}</a>
 						</div>
@@ -119,7 +119,7 @@
 						<%-- min-w-0: flex 아이템 기본값(min-width:auto)이면 내용 너비를 고집해 좁은 폭에서 가로 스크롤이 생긴다(768px 실측). --%>
 						<div class="flex min-w-0 flex-wrap items-center gap-2">
 						<%-- 목표(objective) 셀렉트 제거(2026-07-30): poe.ninja 실빌드 성향이 목표축을 자동 결정(위 미리보기). objective=auto → API가 성향으로 dps/ehp/balanced 해석 --%>
-						<span class="self-center sm:whitespace-nowrap text-xs text-base-content/60" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "선택한 스킬×전직의 poe.ninja 실빌드 성향으로 목표를 자동 결정" : "Objective follows the real-build lean"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "목표: 실빌드 성향 자동" : "Objective: auto (real-build lean)"}</span>
+						<span class="self-center sm:whitespace-nowrap text-xs text-base-content/60" title="${MessageUtil.getMessage("poe.sim.objective.auto.title")}">${MessageUtil.getMessage("poe.sim.objective.auto")}</span>
 						<select name="scenario" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.sim.opt.scenario")}">
 							<option value="None">${MessageUtil.getMessage("poe.sim.opt.scenario.none")}</option>
 							<option value="Boss">${MessageUtil.getMessage("poe.sim.opt.scenario.boss")}</option>
@@ -187,12 +187,10 @@
 				<style>#poeOptimizeHistory button.poe-hist-active{border-color:var(--color-primary);background-color:color-mix(in oklch, var(--color-primary) 12%, transparent);font-weight:600}</style>
 				<div id="poeHistoryResultViewWrap" class="mt-3 hidden">
 					<div class="flex items-center justify-between mb-1.5">
-						<div class="text-xs font-semibold text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "지난 결과 보기" : "Saved result"}</div>
-						<button type="button" class="btn btn-ghost btn-xs"
-						        onclick="var v=document.getElementById('poeHistoryResultView'); if(v){v.innerHTML='';} this.closest('#poeHistoryResultViewWrap').classList.add('hidden'); document.querySelectorAll('#poeOptimizeHistory button.poe-hist-active').forEach(function(b){b.classList.remove('poe-hist-active');});">${net.luversof.web.gate.poe.PoeText.isKorean() ? "닫기 ✕" : "Close ✕"}</button>
+						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.saved.show")}</div>
+						<button type="button" class="btn btn-ghost btn-xs" data-poe-hist-close>${MessageUtil.getMessage("poe.common.close")}</button>
 					</div>
-					<div id="poeHistoryResultView"
-					     hx-on::after-swap="var w=document.getElementById('poeHistoryResultViewWrap'); if(this.innerHTML.trim()){w.classList.remove('hidden'); var h=document.getElementById('poeOptimizeHistory'); if(h){h.scrollIntoView({block:'start'}); setTimeout(function(){h.scrollIntoView({block:'start'});},350);}}"></div>
+					<div id="poeHistoryResultView"></div>
 				</div>
 			</div>
 
@@ -212,6 +210,39 @@
 			     새로고침/뒤로가기 후에도 보던 탭이 유지된다. history.replaceState 라 뒤로가기 스택을 늘리지 않는다. --%>
 			<script nonce="${CspNonceHolder.getNonce()}">
 			(function () {
+				// 인라인 onclick 대신(CSP 강제 대비, 10-12 C284) — 이력 항목 선택 표시 · 실행 중 중지 단추 잠금. 조각이 다시 그려져도 되게 문서에 한 번만 건다
+				if (!window.__poeSimClicks) {
+					window.__poeSimClicks = true;
+					document.addEventListener('click', function (e) {
+						var t = e.target && e.target.closest ? e.target : null;
+						if (!t) return;
+						var item = t.closest('button[data-hist-item]');
+						if (item) {
+							var list = document.getElementById(item.dataset.histItem);
+							if (list) list.querySelectorAll('button.poe-hist-active').forEach(function (b) { b.classList.remove('poe-hist-active'); });
+							item.classList.add('poe-hist-active');
+						}
+						var busy = t.closest('button[data-busy-label]');
+						if (busy && !busy.disabled) { busy.disabled = true; busy.textContent = busy.dataset.busyLabel; }
+					});
+				}
+				// 지난 결과 뷰어 — PoE2 시뮬과 같은 방식(인라인 hx-on · onclick 이던 것을 옮김, C284). 결과가 들어오면 펼치고 목록을 화면 위로
+				var view = document.getElementById('poeHistoryResultView');
+				var wrap = document.getElementById('poeHistoryResultViewWrap');
+				if (view && wrap) {
+					view.addEventListener('htmx:afterSwap', function () {
+						if (!view.innerHTML.trim()) return;
+						wrap.classList.remove('hidden');
+						var h = document.getElementById('poeOptimizeHistory');
+						if (h) { h.scrollIntoView({ block: 'start' }); setTimeout(function () { h.scrollIntoView({ block: 'start' }); }, 350); }
+					});
+					var close = wrap.querySelector('[data-poe-hist-close]');
+					if (close) close.addEventListener('click', function () {
+						view.innerHTML = '';
+						wrap.classList.add('hidden');
+						document.querySelectorAll('#poeOptimizeHistory button.poe-hist-active').forEach(function (b) { b.classList.remove('poe-hist-active'); });
+					});
+				}
 				var TABS = ['optimize', 'ranking'];
 				var bar = document.getElementById('poeSimTabs');
 				if (!bar) return;

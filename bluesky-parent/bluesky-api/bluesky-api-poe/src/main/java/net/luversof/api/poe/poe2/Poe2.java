@@ -47,7 +47,17 @@ public final class Poe2 {
       Integer castTimeMs,
       // 설명 · 레벨 문장의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C111). 목록 사본엔 없다
       List<Keyword> keywords,
-      List<GemLevel> levels) {
+      List<GemLevel> levels,
+      // 퀄리티로 인한 추가 효과(퀄리티 20% 값, PoB2 스킬 qualityStats, 10-08 C195) — 목록 사본엔 없다
+      List<String> qualityStatLines,
+      List<String> qualityStatLinesKo,
+      // 필요 무기 한국어(게임 ClientStrings · ItemClasses, 10-09 C228). 못 옮기면 null
+      String weaponRequirementsKo,
+      // 주 스탯 묶음 머리글(추가 묶음이 있을 때, 10-09 C236). 없으면 null
+      String statSetLabel,
+      String statSetLabelKo,
+      // 젬이 덤으로 주는 스킬(10-10 C249). 없으면 null
+      List<GrantedSkill> grantedSkills) {
 
     /** 목록용 — 레벨별 수치를 뺀 사본(전체 젬 목록 응답이 수 MB 가 되지 않게). */
     public Gem withoutLevels() {
@@ -78,7 +88,13 @@ public final class Poe2 {
           image,
           castTimeMs,
           null,
-          null);
+          null,
+          null,
+          null,
+          weaponRequirementsKo,
+          statSetLabel,
+          statSetLabelKo,
+          grantedSkills);
     }
   }
 
@@ -96,7 +112,56 @@ public final class Poe2 {
       List<String> statLines,
       List<String> statLinesKo,
       // 요구 캐릭터 레벨 — PoB Data/Skills levelRequirement(tools/poe2-extract/parse-gems2.mjs, 10-01)
-      Integer requiredLevel) {}
+      Integer requiredLevel,
+      // 공격 스킬 배율(인게임 "공격 피해: 기본 수치의 95%" · "공격 속도: 기본 수치의 90%", 10-08 C200 — 게임
+      // GrantedEffectStatSetsPerLevel.BaseMultiplier ·
+      // GrantedEffectsPerLevel.AttackSpeedMultiplier, PoB2 Export 식). 없으면 null
+      Integer attackDamagePct,
+      Integer attackSpeedPct,
+      // 보조 젬 소모 · 점유 배율 %(PoB2 manaMultiplier · reservationMultiplier, 10-09 C231). 없으면 null
+      Integer costMultiplierPct,
+      Integer reservationMultiplierPct,
+      // 추가 스탯 묶음(PoE2 GrantedEffects.AdditionalStatSets — 머리글 "폭파" 등, 10-09 C236). 없으면 null
+      List<GemStatSet> statSets,
+      // 젬이 덤으로 주는 스킬의 이 레벨 수치(10-10 C249 — Gem.grantedSkills 와 같은 순서, 그 레벨 행이 없으면 null)
+      List<GrantedSkillLevel> grantedSkills) {}
+
+  /** 추가 스탯 묶음 한 개(10-09 C236) — 머리글(GrantedEffectLabels) · 치명타 · 공격 피해 · 스탯 줄. */
+  public record GemStatSet(
+      String label,
+      String labelKo,
+      Double critChance,
+      Integer attackDamagePct,
+      List<String> statLines,
+      List<String> statLinesKo) {}
+
+  /**
+   * 젬이 덤으로 주는 스킬(10-10 C249 — GemEffects.AdditionalGrantedEffects, poe2db 세차게 흐르는 전류 칸). 머리글 =
+   * label, 없으면 name.
+   */
+  public record GrantedSkill(
+      String label,
+      String labelKo,
+      String name,
+      String nameKo,
+      String description,
+      String descriptionKo,
+      Boolean copiesLevel,
+      Integer castTimeMs,
+      // 메타 젬의 보조형 효과(10-10 C250 — 이름 없음, 머리글 "보조")
+      Boolean support) {}
+
+  /** 부여 스킬의 레벨별 수치(10-10 C249). */
+  public record GrantedSkillLevel(
+      Integer cost,
+      String costType,
+      Integer cooldownMs,
+      Double critChance,
+      Integer attackDamagePct,
+      List<String> statLines,
+      List<String> statLinesKo,
+      // 부여 스킬의 추가 스탯 묶음(poe2db 촉진시키는 방출 "화염" · "번개" · "냉기"). 없으면 null
+      List<GemStatSet> statSets) {}
 
   public record GemData(String patch, List<Gem> gems) {}
 
@@ -132,7 +197,9 @@ public final class Poe2 {
       Integer evasion,
       Integer energyShield,
       Double movementPenalty,
-      Integer block) {}
+      Integer block,
+      // 룬 수호(Runic Ward, 0.4 룬벼림 베이스 — PoB2 베이스 armour.Ward, 10-08 C185). 없으면 null
+      Integer ward) {}
 
   public record Weapon(
       Integer damageMin,
@@ -143,7 +210,15 @@ public final class Poe2 {
       Integer reloadTime) {}
 
   public record Flask(
-      Integer type, Integer lifePerUse, Integer manaPerUse, Double recoverySeconds) {}
+      Integer type,
+      Integer lifePerUse,
+      Integer manaPerUse,
+      Double recoverySeconds,
+      // 충전 최대 · 사용당 소모(PoB2 베이스, 10-08 C189) — 없으면 null
+      Integer maxCharges,
+      Integer perCharge,
+      // 호신부 버프 줄(PoB2 베이스 charm.buff — 인게임 파란 줄, 10-08 C189). 없으면 null
+      List<ModLine> buffLines) {}
 
   public record BaseItem(
       String name,
@@ -170,7 +245,9 @@ public final class Poe2 {
       // 암시 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C113)
       List<Keyword> keywords,
       // 거래소가 이 베이스를 아는가(10-08 C174, 상세 응답에만 채운다) — null = 모름
-      Boolean tradable) {
+      Boolean tradable,
+      // 정신력(셉터 베이스 속성, 10-08 C188) — 없으면 null
+      Integer spirit) {
 
     /** 상세 응답용 — 거래소 사전 대조 결과를 실은 사본. */
     public BaseItem withTradable(Boolean t) {
@@ -197,7 +274,8 @@ public final class Poe2 {
           icon,
           image,
           keywords,
-          t);
+          t,
+          spirit);
     }
 
     /** 목록용 — 키워드 정의를 뺀 사본(10-04 C117). */
@@ -225,14 +303,20 @@ public final class Poe2 {
           icon,
           image,
           null,
-          tradable);
+          tradable,
+          spirit);
     }
   }
 
   /** en = 게임 영어 분류 이름(옛 데이터면 null — 화면은 key 로 대신). */
   public record ItemClass(String key, String ko, String category, String en) {}
 
-  public record BaseItemData(String patch, List<ItemClass> classes, List<BaseItem> items) {}
+  /**
+   * hiddenItems = PoB 숨김 베이스(고유 전용 · 내부, 10-08 C176) — 목록 · 검색엔 안 나오고 이름 정확 조회만(고유 툴팁의 베이스 수치). 옛
+   * 데이터면 null.
+   */
+  public record BaseItemData(
+      String patch, List<ItemClass> classes, List<BaseItem> items, List<BaseItem> hiddenItems) {}
 
   // ─────────────────────────── 옵션 ───────────────────────────
 
@@ -288,7 +372,10 @@ public final class Poe2 {
       String targetKo,
       List<String> targetClasses,
       List<String> lines,
-      List<String> linesKo) {}
+      List<String> linesKo,
+      // 결속 효과(인게임 "결속됨:" — SoulCoreStats.BondedStats, 10-09 C238). 없으면 null
+      List<String> bondedLines,
+      List<String> bondedLinesKo) {}
 
   public record Augment(
       String name,
@@ -344,7 +431,57 @@ public final class Poe2 {
       // 주얼 반경(PoB "Radius: Small") — 트리 화면 꽂은 주얼의 연결 없이 찍기(From Nothing) 반경 · 엔진 아이템 원문(10-03 C74)
       String radius,
       // 기본 암시 · 옵션 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C112, 젬 Gem.keywords 와 같은 모양)
-      List<Keyword> keywords) {
+      List<Keyword> keywords,
+      // 중복 사용 제한(주얼 "Limited to: 1", PoB 메타 줄 — 인게임 "중복 사용 제한: 1", 10-08 C197). 없으면 null
+      String limit) {
+
+    /** 제한 없는 옛 모양(시험 · 다시 짓는 곳용, 10-08 C197). */
+    public Unique(
+        String name,
+        String nameKo,
+        String slug,
+        String baseType,
+        String baseTypeKo,
+        String itemClass,
+        String itemClassKo,
+        String category,
+        Integer requiredLevel,
+        List<String> implicits,
+        List<String> implicitsKo,
+        List<String> explicits,
+        List<String> explicitsKo,
+        List<UniqueVariant> variants,
+        Integer defaultVariant,
+        List<String> flavour,
+        List<String> flavourKo,
+        String league,
+        String image,
+        String radius,
+        List<Keyword> keywords) {
+      this(
+          name,
+          nameKo,
+          slug,
+          baseType,
+          baseTypeKo,
+          itemClass,
+          itemClassKo,
+          category,
+          requiredLevel,
+          implicits,
+          implicitsKo,
+          explicits,
+          explicitsKo,
+          variants,
+          defaultVariant,
+          flavour,
+          flavourKo,
+          league,
+          image,
+          radius,
+          keywords,
+          null);
+    }
 
     /** 목록용 — 키워드 정의(고유 · 변형)를 뺀 사본. 툴팁은 상세 응답으로 그린다(10-04 C117). */
     public Unique withoutKeywords() {
@@ -385,7 +522,8 @@ public final class Poe2 {
           league,
           image,
           radius,
-          null);
+          null,
+          limit);
     }
   }
 
@@ -620,7 +758,12 @@ public final class Poe2 {
       // 품질 %(PoB "Quality: N") — 인게임 속성 칸 첫 줄. 0 이면 없음(10-04 C148)
       Integer quality,
       // 거래소 검색 쿼리(q JSON) — 고유는 이름, 레어 · 마법은 베이스 + 옵션(PoeTradeQueries, 10-08). 만들 수 없으면 null
-      String tradeQuery) {}
+      String tradeQuery,
+      // 인게임 요구 레벨(10-08 C179, PoE1 짝) — PoB 원문 "LevelReq: N", 없으면 고유 요구 레벨, 그것도 없으면 null(화면은 베이스 요구
+      // 레벨)
+      Integer levelReq,
+      // 실제 방어 수치(10-08 C184, PoE1 짝 — PoB 원문 최종값). 없으면 null
+      net.luversof.api.poe.service.PoeBuild.Defences defences) {}
 
   public record BuildNode(Integer id, String name, String nameKo) {}
 

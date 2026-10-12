@@ -8,7 +8,7 @@
 
 @if(loginRequired)
 	<div class="alert alert-warning py-1.5 px-3 text-xs mb-1.5">
-		${net.luversof.web.gate.poe.PoeText.isKorean() ? "로그인이 풀려 삭제되지 않았습니다 — 다시 로그인 후 시도해 주세요." : "Session expired — the result was not deleted. Please sign in again."}
+		${MessageUtil.getMessage("poe.sim.history.expired")}
 	</div>
 @endif
 
@@ -33,7 +33,7 @@
 				        hx-get="/poe/htmx/sim/optimize/result?id=${h.id()}"
 				        hx-target="#poeHistoryResultView"
 				        hx-swap="innerHTML"
-				        onclick="this.closest('#poeOptimizeHistory').querySelectorAll('button.poe-hist-active').forEach(function(b){b.classList.remove('poe-hist-active');}); this.classList.add('poe-hist-active');">
+				        data-hist-item="poeOptimizeHistory">
 					<span class="font-semibold">${net.luversof.web.gate.poe.PoeText.name(h.gemNameKo(), h.gemName())}</span>
 					@if(h.classNameKo() != null && !h.classNameKo().isBlank())
 						<span class="text-base-content/60">${net.luversof.web.gate.poe.PoeText.name(h.classNameKo(), h.className())}</span>
@@ -52,11 +52,11 @@
 				<%-- 이력 삭제(사용자 요청) — 삭제 후 갱신된 목록 fragment 로 #poeOptimizeHistory 교체. 버튼 중첩 불가라 행 밖에 둔다 --%>
 				<button type="button"
 				        class="btn btn-ghost btn-xs px-2 text-base-content/60 hover:text-error shrink-0 self-start"
-				        title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 결과 삭제" : "Delete this result"}"
+				        title="${MessageUtil.getMessage("poe.sim.history.delete")}"
 				        hx-delete="/poe/htmx/sim/optimize/history/${h.id()}"
 				        hx-target="#poeOptimizeHistory"
 				        hx-swap="innerHTML"
-				        hx-confirm="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 최근 결과를 삭제할까요?" : "Delete this saved result?"}">✕</button>
+				        hx-confirm="${MessageUtil.getMessage("poe.sim.history.delete.confirm")}">✕</button>
 				</div>
 			@endfor
 		</div>

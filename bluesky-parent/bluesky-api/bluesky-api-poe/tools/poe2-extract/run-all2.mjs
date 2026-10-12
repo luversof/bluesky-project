@@ -9,15 +9,19 @@ import net from "node:net";
 import path from "node:path";
 import { REPO_DIR, WORK_DIR } from "./paths.mjs";
 
-/** 패치 서버(patch.pathofexile2.com:13060)에 [1,6] 을 보내면 CDN 주소(…/patch/4.x.y.z/)가 UTF-16 으로 온다. */
-function latestPatch() {
+/** 패치 서버(patch.pathofexile2.com:13060)에 [1,6] 을 보내면 CDN 주소가 UTF-16 으로 온다 → { base, version, kakao }.
+ *  해외는 GGG(…/patch/4.x.y.z/), 한국 IP 는 카카오(…kakaogames.com/production/patch/0.5.5.4.2/). 응답이 없으면 null. */
+function patchServer() {
 	return new Promise((resolve) => {
 		const s = net.connect(13060, "patch.pathofexile2.com", () => s.write(Buffer.from([1, 6])));
 		let buf = Buffer.alloc(0);
 		const done = () => {
 			for (const off of [0, 1]) {
-				const m = buf.subarray(off).toString("utf16le").match(/\/patch\/(4\.\d+\.\d+\.\d+)\//);
-				if (m) return resolve(m[1]);
+				const text = buf.subarray(off).toString("utf16le");
+				const g = text.match(/(https?:\/\/[^\s\u0000]*?\/patch\/(4\.\d+\.\d+\.\d+)\/)/);
+				if (g) return resolve({ base: g[1], version: g[2], kakao: false });
+				const k = text.match(/(https?:\/\/[^\s\u0000]*?kakaogames\.com\/[^/]+\/patch\/(0\.\d+\.\d+\.\d+(?:\.\d+)?)\/)/);
+				if (k) return resolve({ base: k[1], version: k[2], kakao: true });
 			}
 			resolve(null);
 		};
@@ -40,13 +44,33 @@ const step = (name, file) => {
 
 const configPath = path.join(REPO_DIR, "config.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-const patch = await latestPatch();
-if (patch && patch !== config.patch) {
-	console.log(`[poe2] 패치 ${config.patch} → ${patch}`);
+// 받는 곳 = 패치 서버가 알려 준 CDN 그대로(10-12 C260 — PoE1 이 최신 버전을 확인해 받듯이). 예전엔 카카오 응답이면 경고만 하고 GGG 4.5.5.4 로
+//   받았는데, GGG 가 새 핫픽스(0.5.5e)로 옛 패치 폴더를 내리자 캐시 없는 PC 에서 404(번들 29). 카카오 0.A.B.C.D ↔ GGG 4.A.B.C
+//   (0.5.5.4.2 ↔ 4.5.5.4 — 지금까지 받은 데이터와 같다): patch 는 라이브러리가 PoE2 스키마를 고르는 "4." 번호로 두고,
+//   실제 주소는 cdn(cdn-redirect.mjs 가 번들 주소를 바꾼다), 표시용 번호는 cdnVersion.
+const info = await patchServer();
+if (info) {
+	const patch = info.kakao ? "4." + info.version.split(".").slice(1, 4).join(".") : info.version;
+	const cdn = info.kakao ? info.base : null;
+	const before = { patch: config.patch, cdn: config.cdn || null, cdnVersion: config.cdnVersion || null };
 	config.patch = patch;
-	fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+	if (cdn) {
+		config.cdn = cdn;
+		config.cdnVersion = info.version;
+	} else {
+		delete config.cdn;
+		delete config.cdnVersion;
+	}
+	if (before.patch !== config.patch || before.cdn !== (config.cdn || null) || before.cdnVersion !== (config.cdnVersion || null)) {
+		fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+		// 같은 4.x 번호라도 받는 곳 · 빌드(카카오 다섯째 자리)가 바뀌면 캐시의 색인 · 번들이 옛것 — 비운다(라이브러리가 새로 받는다)
+		if (before.patch === config.patch) fs.rmSync(path.join(WORK_DIR, ".cache", config.patch), { recursive: true, force: true });
+		console.log(`[poe2] 패치 ${before.patch}${before.cdnVersion ? " (" + before.cdnVersion + ")" : ""} → ${config.patch}${config.cdnVersion ? " (카카오 CDN " + config.cdnVersion + ")" : ""}`);
+	} else {
+		console.log(`[poe2] 패치 ${config.patch}${config.cdnVersion ? " (카카오 CDN " + config.cdnVersion + ")" : ""} (최신)`);
+	}
 } else {
-	console.log(`[poe2] 패치 ${config.patch}${patch ? " (최신)" : " (패치 서버 응답 없음 — 설정값 그대로)"}`);
+	console.log(`[poe2] 패치 ${config.patch} (패치 서버 응답 없음 — 설정값 그대로)`);
 }
 
 step("테이블 추출", "extract.mjs");

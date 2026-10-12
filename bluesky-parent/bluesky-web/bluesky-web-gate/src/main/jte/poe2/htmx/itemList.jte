@@ -16,41 +16,47 @@
 }
 
 @if(total == null || total == 0)
-	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"))
+	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"), actionLabel = MessageUtil.getMessage("layout.menu.poe2.admin"), actionHref = "/poe2/admin")
 @else
-	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), items.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), total)}</div>
 	@if(items.isEmpty())
-		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.empty"))
+		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.list.empty"))
 	@else
 		<div class="space-y-4">
 			@for(java.util.Map.Entry<String, List<Poe2.BaseItem>> group : byClass.entrySet())
 				<section>
 					<h2 class="text-sm font-semibold mb-1.5">${group.getKey()} <span class="text-xs font-normal text-base-content/60">${group.getValue().size()}</span></h2>
-					<%-- 카드 = PoE1 베이스 목록과 같은 구성(10-01: 이름 · 레벨뿐이었다) — 요약 수치(방어/피해·DPS/회복) + 암시 옵션 첫 줄 --%>
-					<div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-2">
+					<%-- 카드 = PoE1 베이스 목록과 같은 카드(10-12 C274): 인게임 인벤토리 칸 프레임(베이스의 실제 가로×세로 칸, PoE1 과 같은 58px 단위) · 굵은 이름 ·
+					     요약 수치(방어/피해·DPS/회복) + 요구 레벨 · 암시 옵션 첫 줄. 분류 배지 대신 구획 제목이 분류를 보인다 --%>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
 						@for(Poe2.BaseItem b : group.getValue())
-							<div class="poe-hover flex items-center gap-3 rounded-lg bg-base-100 border border-base-200 px-3 py-2 cursor-help transition-colors duration-300 hover:border-primary/40 hover:duration-75"
+							!{ int cw = b.width() != null && b.width() > 0 ? b.width() : 2; int ch = b.height() != null && b.height() > 0 ? b.height() : 2; int unit = 58; }
+							<div class="poe-hover card bg-base-100 shadow-sm border border-base-200 cursor-help transition-colors duration-300 hover:border-primary/40 hover:duration-75"
 							     hx-get="/poe2/htmx/items/detail?slug=${b.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-								<div class="w-10 h-12 shrink-0 flex items-center justify-center">
-									@if(b.image() != null)
-										<img src="/poe-data/poe2/icons/${b.image()}" class="max-w-10 max-h-12 object-contain" alt="" loading="lazy">
-									@endif
-								</div>
-								<div class="min-w-0 flex-1">
-								<div class="flex items-baseline gap-1.5 min-w-0">
-									<a class="font-semibold truncate link-hover" href="/poe2/items/${b.slug()}" title="${b.name()}">${PoeText.name(b.nameKo(), b.name())}</a>
-									@if(korean)
-										<span class="text-[11px] text-base-content/60 truncate">${b.name()}</span>
-									@endif
-								</div>
-								!{ String summary = net.luversof.web.gate.poe2.Poe2View.cardSummary(b); List<String> impl = net.luversof.web.gate.poe2.Poe2View.implicitLines(b); }
-								<div class="flex items-center gap-2 text-[12px] text-base-content/70">
-									<span class="font-mono truncate" data-card-summary>${summary}</span>
-									<span class="ml-auto shrink-0 text-[10px] text-base-content/60">Lv ${nz(b.reqLevel())}</span>
-								</div>
-								@if(!impl.isEmpty())
-									<p class="text-xs leading-5 text-sky-600/80 dark:text-sky-300/80 line-clamp-1" data-card-implicit>${impl.get(0)}</p>
-								@endif
+								<div class="card-body p-3 gap-1">
+									<div class="flex gap-3 items-start">
+										<div class="poe-item-slot shrink-0" style="width:${cw * unit}px;height:${ch * unit}px">
+											@if(b.image() != null)
+												<img src="/poe-data/poe2/icons/${b.image()}" class="max-w-full max-h-full object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" alt="" loading="lazy">
+											@endif
+										</div>
+										<div class="min-w-0 flex-1 space-y-1">
+											<div class="flex items-baseline gap-2 flex-wrap">
+												<a class="font-bold text-[15px] truncate link-hover" href="/poe2/items/${b.slug()}" title="${b.name()}">${PoeText.name(b.nameKo(), b.name())}</a>
+												@if(korean)
+													<span class="text-xs text-base-content/60 truncate">${b.name()}</span>
+												@endif
+											</div>
+											!{ String summary = net.luversof.web.gate.poe2.Poe2View.cardSummary(b); List<String> impl = net.luversof.web.gate.poe2.Poe2View.implicitLines(b); }
+											<div class="flex items-center gap-2 text-[13px] text-base-content/70">
+												<span class="font-mono truncate" data-card-summary>${summary}</span>
+												<span class="ml-auto shrink-0 text-base-content/60">${MessageUtil.getMessage("poe.gems.label.drop.level")} ${nz(b.reqLevel())}</span>
+											</div>
+											@if(!impl.isEmpty())
+												<p class="text-xs leading-5 text-sky-600/80 dark:text-sky-300/80 line-clamp-1" data-card-implicit>${impl.get(0)}</p>
+											@endif
+										</div>
+									</div>
 								</div>
 							</div>
 						@endfor

@@ -92,7 +92,13 @@ public class PoeViewController {
     try {
       gem = poeDataClient.gem(slug);
     } catch (RuntimeException e) {
-      return notFound(response, model, slug, "poe.notfound.gem", "/poe", "layout.menu.poe.gems");
+      return notFound(
+          response,
+          model,
+          slug,
+          "poe.notfound.gem",
+          "/poe",
+          "poe.gems.title"); // 되돌아가기 = 목록 제목(고유 · 아이템 · PoE2 와 같게, C268)
     }
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("gem", gem);
@@ -116,7 +122,11 @@ public class PoeViewController {
     }
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("item", item);
-    model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
+    // 변형마다 베이스가 다른 고유는 고른 변형의 베이스(10-09 C209 — 광기의 신호 · 선구자의 상징)
+    model.addAttribute(
+        "base",
+        net.luversof.web.gate.poe.PoeUniqueBase.resolve(
+            item, variant, poeDataClient::baseItemByName));
     model.addAttribute("variant", variant);
     // 이 유니크에 붙을 수 있는 삿된 옵션(인게임 "삿된 XXX") — 없으면 섹션이 통째로 숨는다
     model.addAttribute("foulborn", poeDataClient.foulbornForUnique(item.name()));
@@ -158,7 +168,8 @@ public class PoeViewController {
     model.addAttribute(
         "baseUniques",
         poeDataClient.searchUniques(null, item.itemClass()).stream()
-            .filter(u -> item.name().equals(u.baseType()))
+            // 변형 베이스 · PoB 표기(Maelstrom · "(Armour/Evasion)" 꼬리)까지 게임 베이스로 맞춘다(10-09 C209)
+            .filter(u -> net.luversof.web.gate.poe.PoeUniqueBase.matches(u, item))
             .toList());
     model.addAttribute("slug", slug);
     return "poe/itemPage";
@@ -328,29 +339,46 @@ public class PoeViewController {
     return "poe/items";
   }
 
+  /** 모드 분류 칩 줄 순서 — PoE2 모드 화면(poe2/mods.jte)과 같은 묶음 · 순서(10-12 C272). 이름은 poe.itemgroup.* */
+  public static final java.util.List<String> MOD_CATEGORIES =
+      java.util.List.of("weapon", "offhand", "armour", "jewellery", "flask", "jewel");
+
+  /** PoE1 아이템 클래스 → 분류 칩 줄(PoE2 API 의 category 와 같은 이름). */
+  public static String modCategory(String itemClass) {
+    if (itemClass.contains("Flask")) {
+      return "flask";
+    }
+    if (itemClass.contains("Jewel")) {
+      return "jewel";
+    }
+    if (java.util.Set.of("Shield", "Quiver").contains(itemClass)) {
+      return "offhand";
+    }
+    if (java.util.Set.of("Body Armour", "Helmet", "Gloves", "Boots").contains(itemClass)) {
+      return "armour";
+    }
+    if (java.util.Set.of("Amulet", "Ring", "Belt").contains(itemClass)) {
+      return "jewellery";
+    }
+    return "weapon";
+  }
+
   /**
-   * 모드 페이지 기본 클래스 — mods.jte 의 표시 순서(방어구 → 무기 → 장신구 → 플라스크·주얼)에서 첫 칩.
+   * 모드 페이지 기본 클래스 — 갑옷(PoE2 모드 화면 기본과 같다, 10-12 C272). 없으면 화면 순서(분류 줄 → 줄 안 순서)의 첫 칩.
    *
-   * <p>순서 판정은 화면과 같은 규칙을 쓴다. 여기서만 알파벳순 첫 항목을 고르면 선택 칩이 화면 맨 아래에 찍힌다.
+   * <p>알파벳순 첫 항목(Abyss Jewel)을 고르면 선택 칩이 화면 맨 아래에 찍힌다.
    */
   private static String defaultModClass(
       java.util.List<net.luversof.web.gate.poe.dto.PoeModItemClass> classes) {
     if (classes.isEmpty()) {
       return null;
     }
-    java.util.List<java.util.function.Predicate<String>> displayOrder =
-        java.util.List.of(
-            id ->
-                java.util.Set.of("Body Armour", "Helmet", "Gloves", "Boots", "Shield").contains(id),
-            id ->
-                !id.contains("Flask")
-                    && !id.contains("Jewel")
-                    && !java.util.Set.of("Amulet", "Ring", "Belt", "Quiver").contains(id),
-            id -> java.util.Set.of("Amulet", "Ring", "Belt", "Quiver").contains(id),
-            id -> id.contains("Flask") || id.contains("Jewel"));
-    for (var group : displayOrder) {
+    if (classes.stream().anyMatch(c -> "Body Armour".equals(c.itemClass()))) {
+      return "Body Armour";
+    }
+    for (String category : MOD_CATEGORIES) {
       for (var c : classes) {
-        if (group.test(c.itemClass())) {
+        if (category.equals(modCategory(c.itemClass()))) {
           return c.itemClass();
         }
       }
@@ -573,6 +601,11 @@ public class PoeViewController {
       {"trade-stats.json", "poe.admin.data.tradestats"},
       {"skill-weapons.json", "poe.admin.data.skillweapons"},
     };
+    return dataArtifacts(dataDir, files);
+  }
+
+  /** 산출물 목록 — 폴더 + {파일명, 메시지 키}. PoE2 관리 화면도 같은 표를 그린다(10-12 C261). */
+  public static java.util.List<DataArtifact> dataArtifacts(String dataDir, String[][] files) {
     java.util.List<DataArtifact> list = new java.util.ArrayList<>();
     long newest = 0L;
     java.util.Map<String, Long> modified = new java.util.LinkedHashMap<>();

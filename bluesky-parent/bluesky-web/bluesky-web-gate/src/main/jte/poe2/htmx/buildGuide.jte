@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe2.dto.Poe2
 @import net.luversof.web.gate.poe2.Poe2View
 @import net.luversof.web.gate.poe.PoeText
@@ -17,7 +18,7 @@
 }
 @if(error != null || guide == null || !Boolean.TRUE.equals(guide.available()) || guide.error() != null)
 	<section class="space-y-1" data-poe2-guide>
-		<h3 class="text-sm font-semibold">${korean ? "업그레이드 가이드" : "Upgrade guide"}</h3>
+		<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe.build.guide.title")}</h3>
 		@if(error != null)
 			<div class="text-sm text-warning">${korean ? "코드를 읽지 못해 가이드를 만들지 못했습니다." : "Could not read the code."}</div>
 		@elseif(guide == null || !Boolean.TRUE.equals(guide.available()))
@@ -39,7 +40,7 @@
 	}
 	<section class="space-y-3" data-poe2-guide>
 		<div class="flex flex-wrap items-baseline gap-2">
-			<h3 class="text-sm font-semibold">${korean ? "업그레이드 가이드 (PoB-PoE2 계산)" : "Upgrade guide (PoB-PoE2)"}</h3>
+			<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe.build.guide.title")}</h3>
 			<span class="text-xs text-base-content/60" data-guide-tried>${korean ? "고유 아이템 " + guide.tried() + "가지를 끼워 보고 오르는 것만(PoB 고유 목록처럼 품질 20% 기준) · 요구 능력치가 모자라게 되거나 다른 축을 5% 넘게 깎는 교체는 뺐습니다" : guide.tried() + " unique swaps tried (20% quality, as in PoB's unique list) · excludes swaps that break attribute requirements or cost over 5% on the other axis"} (${guide.elapsedMs()}ms)</span>
 		</div>
 		<%-- 무기 세트별 추천(10-01 사용자 요청) — 세트마다 패시브·무기가 달라 추천도 달라진다. 이 가이드는 weaponSet 을 켠 채 계산했다(처음엔 주 세트).
@@ -109,7 +110,7 @@
 														   hx-trigger="mouseenter delay:100ms"
 														   hx-swap="innerHTML">${korean && s.itemKo() != null ? s.itemKo() : s.item()}</a>
 														@if(PoeText.trade2Url(tradeLeague, s.tradeQuery()) != null)
-															<a class="badge badge-xs badge-outline badge-info" target="_blank" rel="noopener" href="${PoeText.trade2Url(tradeLeague, s.tradeQuery())}" data-guide-trade title="${korean ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "Search trade for this unique"}">${korean ? "거래소" : "Trade"}</a>
+															<a class="badge badge-xs badge-outline badge-info" target="_blank" rel="noopener" href="${PoeText.trade2Url(tradeLeague, s.tradeQuery())}" data-guide-trade title="${korean ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "Search trade for this unique"}">${MessageUtil.getMessage("poe.common.trade")}</a>
 														@endif
 													@else
 														<span class="text-[#af6025]">${s.item()}</span>

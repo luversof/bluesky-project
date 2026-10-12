@@ -13,11 +13,11 @@
 !{ boolean korean = PoeText.isKorean(); }
 
 @if(total == null || total == 0)
-	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"))
+	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"), actionLabel = MessageUtil.getMessage("layout.menu.poe2.admin"), actionHref = "/poe2/admin")
 @else
-	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), items.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), total)}</div>
 	@if(items.isEmpty())
-		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.empty"))
+		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.list.empty"))
 	@else
 		<div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-2 items-start">
 			@for(Poe2.Augment a : items)
@@ -48,6 +48,24 @@
 							</div>
 						@endfor
 					</dl>
+					<%-- 결속 효과(10-09 C238 — 게임 ClientStrings ItemDisplayShamanOnly "결속됨:" · SoulCoreStats.BondedStats, poe2db 사막 룬과 같은 분류별 줄) --%>
+					@if(effects.stream().anyMatch(e -> e.bondedLines() != null && !e.bondedLines().isEmpty()))
+						<div class="mt-1.5 text-xs text-base-content/60" data-augment-bonded>${MessageUtil.getMessage("poe2.augments.bonded")}</div>
+						<dl class="mt-1 space-y-1 text-sm">
+							@for(Poe2.AugmentEffect e : effects)
+								@if(e.bondedLines() != null && !e.bondedLines().isEmpty())
+									<div class="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] gap-2">
+										<dt class="text-xs text-base-content/60 pt-0.5">${PoeText.name(e.targetKo(), e.target())}</dt>
+										<dd class="[overflow-wrap:anywhere]">
+											@for(String line : PoeText.lines(e.bondedLinesKo(), e.bondedLines()))
+												<div class="text-[#8888ff]">${line}</div>
+											@endfor
+										</dd>
+									</div>
+								@endif
+							@endfor
+						</dl>
+					@endif
 					@if(a.limitText() != null || a.limitTextKo() != null)
 						<div class="mt-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("poe2.augments.limit")}: ${PoeText.name(a.limitTextKo(), a.limitText())}</div>
 					@endif

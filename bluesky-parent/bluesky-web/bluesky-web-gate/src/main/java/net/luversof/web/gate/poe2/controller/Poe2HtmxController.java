@@ -316,9 +316,13 @@ public class Poe2HtmxController {
 
   /** 시뮬레이션 상태 — 끝나면 결과 빌드 요약을 붙이고 HTTP 286 으로 폴링을 멈춘다. */
   @GetMapping("/sim/status")
-  public String simStatus(Model model, jakarta.servlet.http.HttpServletResponse response) {
+  public String simStatus(
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response,
+      java.security.Principal principal) {
     Poe2.SimStatus status = safeSimStatus();
     model.addAttribute("status", status);
+    model.addAttribute("authenticated", principal != null); // 중지 단추는 로그인 사용자에게만(PoE1 과 같다)
     if (status == null || !Boolean.TRUE.equals(status.running())) {
       response.setStatus(286);
       if (status != null && status.result() != null && status.result().code() != null) {
@@ -330,6 +334,20 @@ public class Poe2HtmxController {
       }
     }
     return "poe2/htmx/simStatus";
+  }
+
+  /** 시뮬레이션 중지 — PoE1 /poe/htmx/sim/optimize/stop 짝(10-12 C269). 다음 폴링에서 중지됨 상태로 바뀐다. */
+  @org.springframework.web.bind.annotation.PostMapping("/sim/stop")
+  @org.springframework.web.bind.annotation.ResponseBody
+  public String simStop(java.security.Principal principal) {
+    if (principal != null) {
+      try {
+        client.simStop();
+      } catch (RuntimeException e) {
+        logger.warn("PoE2 시뮬레이션 중지 실패: {}", e.toString());
+      }
+    }
+    return "";
   }
 
   // ── 결과 이력 — PoE1 /poe/htmx/sim/optimize/{history,result} 와 같은 흐름(목록 → 폴링과 분리된 지난-결과 뷰어) ──
@@ -671,7 +689,12 @@ public class Poe2HtmxController {
   @GetMapping("/admin/status")
   public String adminStatus(Model model, Principal principal) {
     model.addAttribute("status", client.extractStatus());
-    model.addAttribute("meta", client.meta());
+    // 버전 줄(현재 → 최신) — PoE1 상태 조각과 같은 구성(10-12 C261). API 가 옛 버전이면 줄만 비운다
+    try {
+      model.addAttribute("version", client.extractVersion());
+    } catch (Exception e) {
+      model.addAttribute("version", null);
+    }
     model.addAttribute("loggedIn", principal != null);
     return "poe2/htmx/extractStatus";
   }

@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe2.dto.Poe2
 @import net.luversof.web.gate.poe.PoeText
 
@@ -36,9 +37,19 @@
 		</div>
 	@endif
 	@if(base != null)
-		@template.poe2.htmx.baseProps(base = base)
+		@template.poe2.htmx.baseProps(base = base, lines = net.luversof.web.gate.poe.PoeLocalProps.join(picked != null ? picked.implicits() : item.implicits(), picked != null ? picked.explicits() : item.explicits()))
 	@endif
-	@template.poe2.htmx.requirements(level = item.requiredLevel() != null ? item.requiredLevel() : (base == null ? null : base.reqLevel()), base = base)
+	<%-- 적용 반경(주얼, 10-08 C191 — 게임 ClientStrings JewelRadiusLabel "적용 반경" · JewelRadiusSmall "작게" 등, PoE1 고유 상세의 반경 줄 짝) --%>
+	<%-- 중복 사용 제한(10-08 C197, PoE1 짝 — 게임 ClientStrings JewelItemLimit) --%>
+	@if(item.limit() != null && !item.limit().isBlank())
+		<div class="poe-tt-sepimg"></div>
+		<div class="px-4 py-1.5 text-center text-[12px]" data-tt-limit><span class="text-[#7f7f7f]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe.items.detail.limit")}: </span><span class="text-[#e0e0e0]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe.limit." + item.limit().replace(" ", ""), item.limit())}</span></div>
+	@endif
+	@if(item.radius() != null && !item.radius().isBlank())
+		<div class="poe-tt-sepimg"></div>
+		<div class="px-4 py-1.5 text-center text-[12px]" data-tt-radius><span class="text-[#7f7f7f]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe2.radius.label")}: </span><span class="text-[#e0e0e0]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe2.radius." + item.radius().replace(" ", ""), item.radius())}</span></div>
+	@endif
+	@template.poe2.htmx.requirements(level = item.requiredLevel() != null ? item.requiredLevel() : (base == null ? null : base.reqLevel()), base = base, implicits = picked != null ? picked.implicits() : item.implicits(), explicits = picked != null ? picked.explicits() : item.explicits())
 	@if(implicits != null && !implicits.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center space-y-0.5 bg-white/[0.03]">
@@ -59,6 +70,11 @@
 	@endif
 
 	<%-- 로어(플레이버) — 인게임 고유 툴팁 맨 아래 주황 기울임(10-01, 위키 + 게임 FlavourText 원문) --%>
+	<%-- 타락 줄 = 옵션 바로 아래 · 로어 위(10-09 C216 — poedb 목소리 · poe2db 신념의 프리즘 툴팁 순서: 옵션 → Corrupted → 로어 → 사용 설명. 예전(C157)엔 맨 아래) --%>
+	@if(corruptedItem)
+		<div class="poe-tt-sepimg"></div>
+		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.common.corrupted")}</div>
+	@endif
 	@if(flavourLines != null && !flavourLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center space-y-0.5" data-tt-flavour>
@@ -67,9 +83,11 @@
 			@endfor
 		</div>
 	@endif
-	@if(corruptedItem)
+	<%-- 사용 설명(10-09 C213 — PoE2 게임 ClientStrings ItemDescriptionFlask · FlaskUtility1(부적) · PassiveJewel, 마크업 벗김. 맨 아래 회색 문단) --%>
+	!{ String helpKey = net.luversof.web.gate.poe.PoeItemDescription.poe2Key(item.itemClass()); }
+	@if(helpKey != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${PoeText.isKorean() ? "타락" : "Corrupted"}</div>
+		<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${io.github.luversof.boot.context.support.MessageUtil.getMessage(helpKey)}</div>
 	@endif
 	<%-- 키워드 설명(10-04 C112, 젬 C111 짝) — 변형을 골랐으면 그 변형 줄의 용어(기본과 다른 변형만 자기 목록을 갖고, 없으면 고유 것과 같다 — C117) --%>
 	@template.poe2.htmx.keywordBox(keywords = picked != null && picked.keywords() != null ? picked.keywords() : item.keywords())

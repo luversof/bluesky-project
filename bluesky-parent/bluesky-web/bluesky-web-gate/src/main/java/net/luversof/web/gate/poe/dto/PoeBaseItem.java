@@ -30,7 +30,34 @@ public record PoeBaseItem(
       int energyShieldMax,
       int wardMin,
       int wardMax,
-      int block) {}
+      int block,
+      // 이동 속도 감소 %(갑옷 · 방패, PoB Bases MovementPenalty — 10-09 C223). 없으면 null
+      Integer movementPenalty) {
+
+    /** 이동 속도 감소 없는 옛 모양(10-09 C223 전). */
+    public Armour(
+        int armourMin,
+        int armourMax,
+        int evasionMin,
+        int evasionMax,
+        int energyShieldMin,
+        int energyShieldMax,
+        int wardMin,
+        int wardMax,
+        int block) {
+      this(
+          armourMin,
+          armourMax,
+          evasionMin,
+          evasionMax,
+          energyShieldMin,
+          energyShieldMax,
+          wardMin,
+          wardMax,
+          block,
+          null);
+    }
+  }
 
   public record Weapon(
       int damageMin, int damageMax, double critChance, double attacksPerSecond, int range) {}

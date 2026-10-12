@@ -13,7 +13,7 @@
 	boolean split = recalc != null && recalc.savedSet() != null;
 }
 <section class="space-y-1.5 max-w-3xl" data-poe2-recalc>
-	<h3 class="text-sm font-semibold">${korean ? "엔진 재계산 (PoB-PoE2)" : "Engine recalculation (PoB-PoE2)"}</h3>
+	<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe.build.engine.title")}</h3>
 	@if(error != null)
 		<div class="text-sm text-warning">${korean ? "코드를 읽지 못해 재계산하지 못했습니다." : "Could not read the code for recalculation."}</div>
 	@elseif(recalc == null || !Boolean.TRUE.equals(recalc.available()))

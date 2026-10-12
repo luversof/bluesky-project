@@ -34,7 +34,7 @@
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<%-- 거래소에서 찾기(10-08 C173 — 빌드 화면 거래소 링크와 같은 쿼리: 이름 · 즉시 구입 · 가격순) + 최적화 단추. 주얼처럼 최적화 단추가 없는 고유도 거래소는 보인다 --%>
 				<div class="ml-auto flex flex-wrap items-center gap-2">
-					<a class="btn btn-sm btn-outline" target="_blank" rel="noopener" data-unique-trade href="${net.luversof.web.gate.poe.PoeText.tradeUrl(net.luversof.web.gate.poe.PoeText.uniqueTradeQuery(item.nameKo(), item.name()))}" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순, 새 창)" : "Search trade for this unique (instant buyout, new tab)"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "거래소에서 찾기 ↗" : "Find on trade ↗"}</a>
+					<a class="btn btn-sm btn-outline" target="_blank" rel="noopener" data-unique-trade href="${net.luversof.web.gate.poe.PoeText.tradeUrl(net.luversof.web.gate.poe.PoeText.uniqueTradeQuery(item.nameKo(), item.name()))}" title="${MessageUtil.getMessage("poe.uniques.trade.title")}">${MessageUtil.getMessage("poe.common.trade.find")}</a>
 					@template.poe.htmx.optimizeUniqueLink(item = item, variant = variant)
 				</div>
 			</div>
@@ -49,11 +49,11 @@
 
 				<div class="flex-1 min-w-0 sm:min-w-[20rem] space-y-4">
 					<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
-						<h2 class="font-bold mb-2">${ko ? "정보" : "Info"}</h2>
+						<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.uniques.info")}</h2>
 						<table class="table table-xs [overflow-wrap:anywhere]">
 							<tbody>
-								<tr><td class="text-base-content/60">${ko ? "영문명" : "Name"}</td><td>${item.name()}</td></tr>
-								<tr><td class="text-base-content/60">${ko ? "베이스" : "Base"}</td><td>
+								<tr><td class="text-base-content/60">${MessageUtil.getMessage("poe.uniques.info.name")}</td><td>${item.name()}</td></tr>
+								<tr><td class="text-base-content/60">${MessageUtil.getMessage("poe.uniques.info.base")}</td><td>
 									@if(base != null)
 										<a class="link link-hover" href="/poe/items/${base.slug()}">${PoeText.name(item.baseTypeKo(), item.baseType())}</a>
 									@else
@@ -61,15 +61,19 @@
 									@endif
 								</td></tr>
 								@if(base != null)
-									<tr><td class="text-base-content/60">${ko ? "아이템 클래스" : "Item class"}</td><td>${net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass())}</td></tr>
+									<tr><td class="text-base-content/60">${MessageUtil.getMessage("poe.uniques.info.class")}</td><td>${net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass())}</td></tr>
 								@endif
 								@if(item.category() != null)
 									<%-- 분류는 목록 칩과 같은 문구로(예전엔 "boots" 원문이 그대로 나왔다 — 10-01) --%>
 									<tr><td class="text-base-content/60">${ko ? "분류" : "Category"}</td><td>${MessageUtil.getMessage("poe.uniques.category." + item.category(), item.category())}</td></tr>
 								@endif
+								<%-- 요구 레벨 — PoE2 고유 상세 정보 표와 같은 행(10-12 C282) --%>
+								@if(item.requiredLevel() != null && item.requiredLevel() > 1)
+									<tr><td class="text-base-content/60">${MessageUtil.getMessage("poe.gems.detail.required.level")}</td><td>${item.requiredLevel()}</td></tr>
+								@endif
 								<%-- 리그 출처 — 이 아이템을 얻으려면 해당 리그 기제를 돌려야 한다(목록 배지와 같은 정보) --%>
 								@if(item.league() != null && !item.league().isBlank())
-									<tr><td class="text-base-content/60">${ko ? "리그 출처" : "League"}</td><td>${item.league()}</td></tr>
+									<tr><td class="text-base-content/60">${MessageUtil.getMessage("poe.uniques.info.league")}</td><td>${item.league()}</td></tr>
 								@endif
 								<%-- 획득 가능 여부 — 지금 리그에서 못 얻는 고유는 그 사실이 스펙만큼 중요하다(시뮬 후보에서도 빠진다) --%>
 								@if(item.legacy())

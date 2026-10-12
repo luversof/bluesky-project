@@ -11,6 +11,17 @@ import { createModTranslator } from "../poe-extract/statDescriptions.mjs";
 import { createKeywordIndex, loadKeywords } from "./common2.mjs";
 
 const PATCH = loadConfig().patch;
+// 공식 베이스 보정(10-08 C176, PoE1 unique-base-overrides.json 짝) — PoB-PoE2 원문의 베이스가 게임과 다른 고유(영문 고유 이름 → PoB Bases 에 있는 영문 베이스).
+//   근거: 한국 서버 거래소 사전(그 이름의 베이스 = 공식) + 위키 요구 레벨이 새 베이스 드롭 레벨과 같다(네뷸록 55 = Execratus Hammer, 옛 Brigand Mace 33)
+const baseOverrides = (() => {
+	try {
+		const raw = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "unique-base-overrides2.json"), "utf8"));
+		delete raw._comment;
+		return raw;
+	} catch {
+		return {};
+	}
+})();
 const POB_DIR = path.join(WORK_DIR, "pob-uniques");
 const POB_BRANCH = "dev";
 const POB_FILES = [
@@ -205,6 +216,17 @@ const gemBaseKoByLower = (() => {
 	});
 	return map;
 })();
+// 젬 아이템(Metadata/Items/Gem/…) 영 → 한 이름(C252)
+const gemNameKo = (() => {
+	const en = loadTable("English", "BaseItemTypes");
+	const ko = loadTable("Korean", "BaseItemTypes");
+	const map = new Map();
+	en.forEach((b, i) => {
+		const k = ko[i]?.Name;
+		if (/\/Gems?\//i.test(b.Id || "") && b.Name && k && !/^\[DNT/.test(b.Name) && !map.has(b.Name)) map.set(b.Name, k);
+	});
+	return map;
+})();
 // "Grants Skill: Level {1} {0}" 한국어 틀은 ClientStrings 에 있다("스킬 부여: {1}레벨 {0}")
 const clientTemplate = (id, fallback) => {
 	const en = loadTable("English", "ClientStrings");
@@ -220,7 +242,9 @@ const GRANTED_SKILL_NO_LEVEL_KO = clientTemplate("ItemDisplayGrantedSkillNoScali
 function grantsSkillKo(line) {
 	const m = line.match(/^Grants Skill: (?:Level (\S+) )?(.+)$/);
 	if (!m) return null;
-	const skill = skillKoByEn.get(m[2]);
+	// 젬 아이템 이름이 먼저(10-10 C252 — 게임 · poe2db "스킬 부여: 방패 들기" · "마나 고갈"(젬 이름), 스킬 표시 이름은 "방패 올리기" · "마나 흡수")
+	//   PoB "Skeletal Warrior Minion" ↔ 무기 부여 젬 "Skeletal Warrior" — 꼬리를 떼고도 찾는다(C255)
+	const skill = gemNameKo.get(m[2]) || gemNameKo.get(m[2].replace(/ Minion$/, "")) || skillKoByEn.get(m[2]);
 	if (!skill) return null;
 	return m[1]
 		? GRANTED_SKILL_KO.replace("{0}", skill).replace("{1}", m[1])
@@ -322,6 +346,13 @@ export const isUntranslated = (ko) => !HANGUL.test(ko);
  *  - "Grants Skill:" 은 스탯 설명이 아니라 ClientStrings 틀로 옮긴다.
  * 결과 길이는 입력과 다를 수 있다(PoB 가 쪼갠 멀티라인 모드는 한 줄로 합쳐진다). 실패 줄은 영어 원문 유지.
  */
+// 허리띠 "Has N Charm Slot" 은 임플리싯 첫 줄(스킬 부여 다음)(10-10 C254 — 게임: 새 허리띠 BaseItemTypes.Implicit_Mods 에서 첫 줄, poe2db 고유 허리띠 9개 모두 첫 줄.
+//   PoB2 고유 문장은 제각각이라 헤드헌터 · 허리문은 "기절 한계치" 가 먼저였다)
+function charmSlotFirst(lines) {
+	const grant = (l) => /^Grants Skill:/.test(l);
+	const charm = (l) => !grant(l) && /Charm Slot/.test(l);
+	return [...lines.filter(grant), ...lines.filter(charm), ...lines.filter((l) => !grant(l) && !charm(l))];
+}
 function toKo(lines) {
 	const sentinels = new Map();
 	let seq = 0;
@@ -357,7 +388,8 @@ function toKo(lines) {
 		} else chunk.push(prepared[i]);
 	});
 	flush();
-	return out;
+	// 0 을 가로지르는 범위 앞의 "+"(10-09 C240, PoE1 parse-uniques 짝 — "화염 저항 +(-30-30)%" → "화염 저항 (-30-30)%"). 영어는 그대로
+	return out.map((l) => l.replace(/\+\((-\d)/g, "($1"));
 }
 
 // ─── 변형 라벨 한글화 ────────────────────────────────────────────────────────────
@@ -516,6 +548,7 @@ function parseBlock(block, category) {
 	let source = null;
 	// 주얼 반경(PoB "Radius: Small") — 트리 화면에서 꽂은 주얼의 연결 없이 찍기 반경(From Nothing)에 쓴다(10-03 C74)
 	let radius = null;
+	let limit = null; // 중복 사용 제한(10-08 C197, PoE1 짝)
 	let implicitCount = 0;
 	const modSection = [];
 
@@ -544,6 +577,7 @@ function parseBlock(block, category) {
 		if (line.startsWith("League:")) { league = line.slice(7).trim(); return; }
 		if (line.startsWith("Source:")) { source = line.slice(7).trim(); return; }
 		if (line.startsWith("Radius:")) { radius = line.slice(7).trim(); return; }
+		if (line.startsWith("Limited to:")) { limit = line.slice(11).trim(); return; }
 		if (line.startsWith("LevelReq:")) { requiredLevel = Number(line.slice(9).trim()) || null; return; }
 		if (line.startsWith("Requires Level")) {
 			const m = line.match(/Requires Level (\d+)/);
@@ -620,7 +654,7 @@ function parseBlock(block, category) {
 		const baseLine = baseLines.find((l) => includeLine(l, active, groupSel)) || baseLines[0];
 		return {
 			baseType: baseLine?.text || null,
-			implicits: picked.filter((l) => l.implicit).map((l) => l.text),
+			implicits: charmSlotFirst(picked.filter((l) => l.implicit).map((l) => l.text)),
 			explicits: picked.filter((l) => !l.implicit).map((l) => l.text),
 		};
 	};
@@ -638,7 +672,8 @@ function parseBlock(block, category) {
 		const altList = altSelected.length ? altSelected : [variantCount];
 		for (const v of altList) if (v >= 1 && v <= variantCount) defaultActive.add(v);
 	}
-	const { baseType, implicits, explicits } = linesFor(defaultActive, defaultGroupSel);
+	const { baseType: pobBaseType, implicits, explicits } = linesFor(defaultActive, defaultGroupSel);
+	const baseType = baseOverrides[name] || pobBaseType;
 
 	// 변형 목록 — 현재 변형이 둘 이상일 때만.
 	//   그룹 아이템: 기본 선택에서 그 변형의 그룹만 바꿔 끼운 완성품
@@ -714,6 +749,7 @@ function parseBlock(block, category) {
 		league,
 	};
 	if (radius) item.radius = radius;
+	if (limit) item.limit = limit;
 	// 여러 칸을 동시에 고르는 아이템(그룹/Alt)은 기본 조합 전체를 남긴다
 	if (variants && defaultIndexes.length > 1) item.defaultVariants = defaultIndexes;
 	// 얻을 수 없는 고유 — PoB 가 명시한 경우만 (그 외 판정은 하지 않는다)

@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe.dto.PoeBuild
 @import net.luversof.web.gate.poe.dto.RealStart
 
@@ -24,16 +25,16 @@
 			<div class="flex flex-wrap items-center gap-2">
 				<button type="button" class="btn btn-primary btn-sm" data-refine-start data-no-success-toast
 				        hx-post="/poe/htmx/build/refine/start" hx-include="#poeBuildCode" hx-target="#poeRefineArea" hx-swap="innerHTML">
-					${ko ? "자동으로 다듬기" : "Refine automatically"}
+					${MessageUtil.getMessage("poe.refine.start")}
 				</button>
 				<span class="text-xs text-base-content/60">${ko ? "가이드 교체안 중 DPS·EHP 를 함께 올리는 것을 하나씩 실제로 적용하며 다시 잽니다(최대 3단계, 약 3~5분, 로그인 필요)." : "Applies the guide's best DPS+EHP swap one at a time and re-measures (up to 3 steps, ~3-5 min, sign-in required)."}</span>
 			</div>
 			<div id="poeRefineArea" class="w-full"></div>
 		</div>
 	@elseif(fromSim)
-		<div class="alert alert-success mb-3 text-sm" data-sim-note>${ko ? "시뮬레이터 결과 빌드를 불러왔습니다. 코드 칸도 이 빌드로 바뀌었습니다 — 아이템마다 거래소 링크가 있습니다." : "Loaded the simulator result build. The code box now holds it — each item has a trade link."}</div>
+		<div class="alert alert-success mb-3 text-sm" data-sim-note>${MessageUtil.getMessage("poe.refine.loaded.sim")}</div>
 	@else
-		<div class="alert alert-success mb-3 text-sm" data-refined-note>${ko ? "다듬은 빌드를 불러왔습니다. 코드 칸도 이 빌드로 바뀌었습니다." : "Loaded the refined build. The code box now holds it."}</div>
+		<div class="alert alert-success mb-3 text-sm" data-refined-note>${MessageUtil.getMessage("poe.refine.loaded")}</div>
 	@endif
 	<textarea id="poeBuildCode" hx-swap-oob="true" name="code" rows="4" required
 	          class="textarea textarea-bordered w-full font-mono text-xs leading-5"

@@ -19,11 +19,11 @@
 }
 
 @if(total == null || total == 0)
-	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"))
+	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"), actionLabel = MessageUtil.getMessage("layout.menu.poe2.admin"), actionHref = "/poe2/admin")
 @else
-	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), gems.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), gems.size(), total)}</div>
 	@if(gems.isEmpty())
-		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.empty"))
+		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.list.empty"))
 	@else
 		<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
 			@for(Map.Entry<String, List<Poe2.Gem>> group : byColor.entrySet())
@@ -37,7 +37,7 @@
 					<div class="space-y-1.5">
 						<div class="flex items-center gap-2 sticky top-0 bg-base-200/85 backdrop-blur py-1.5 z-[1] rounded">
 							<span class="w-3 h-3 rounded-full ${dot}"></span>
-							<span class="font-semibold text-sm">${MessageUtil.getMessage("poe2.gems.color." + color)}</span>
+							<span class="font-semibold text-sm">${MessageUtil.getMessage("poe.gems.attr." + ("str".equals(color) ? "red" : "dex".equals(color) ? "green" : "int".equals(color) ? "blue" : "white"))}</span>
 							<span class="text-xs text-base-content/60">${group.getValue().size()}</span>
 						</div>
 						@for(Poe2.Gem gem : group.getValue())
@@ -45,7 +45,7 @@
 							<div class="poe-hover flex items-center gap-2.5 rounded-lg bg-base-100 border border-base-200 px-2.5 py-2 cursor-help transition-colors duration-300 hover:border-primary/40 hover:duration-75"
 							     hx-get="/poe2/htmx/gems/detail?slug=${gem.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
 								@if(gem.image() != null)
-									<img src="/poe-data/poe2/icons/${gem.image()}" class="w-11 h-11 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" alt="" loading="lazy">
+									<img src="/poe-data/poe2/icons/${gem.image()}" class="w-14 h-14 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" alt="" loading="lazy">
 								@endif
 								<div class="min-w-0 flex-1">
 								<div class="flex items-baseline gap-1.5 min-w-0">
@@ -53,13 +53,13 @@
 									@if(!"skill".equals(gem.kind()))
 										<span class="shrink-0 badge badge-xs badge-outline">${MessageUtil.getMessage("poe2.gems.kind." + gem.kind())}</span>
 									@endif
+									@if(korean)
+										<span class="text-[11px] text-base-content/60 truncate">${gem.name()}</span>
+									@endif
 									@if(gem.tier() != null && gem.tier() > 0)
 										<span class="ml-auto shrink-0 text-[10px] text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.tier"), gem.tier())}</span>
 									@endif
 								</div>
-								@if(korean)
-									<div class="text-[11px] text-base-content/60 truncate">${gem.name()}</div>
-								@endif
 								@if(shownTags != null && !shownTags.isEmpty())
 									<div class="flex flex-wrap gap-1 mt-1">
 										@for(String t : shownTags)

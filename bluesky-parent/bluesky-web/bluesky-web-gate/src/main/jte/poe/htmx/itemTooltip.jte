@@ -26,6 +26,13 @@
 @param java.util.List<String> modKinds = null
 <%-- 고유 로어(플레이버) 줄 — 옵션 밑, 부패됨 위(10-04 C139, 빌드 화면 고유 툴팁) --%>
 @param java.util.List<String> flavourLines = null
+<%-- 요구 능력치에 반영할 이 아이템 옵션 줄(영문 원문, 10-08 C178 — 빌드 화면 고유 "+100 Strength Requirement" 등. C177 고유 상세와 같은 PoeRequirements 규칙) --%>
+@param java.util.List<String> reqImplicits = null
+@param java.util.List<String> reqMods = null
+<%-- 인게임 요구 레벨(10-08 C179 — PoB "LevelReq" · 고유 요구 레벨). null 이면 베이스 드롭 레벨 --%>
+@param Integer levelReq = null
+<%-- 실제 방어 수치(10-08 C184 — PoB 원문 "Armour: N" 등 최종값). null 이면 베이스 + 로컬 옵션 계산 --%>
+@param net.luversof.web.gate.poe.dto.PoeBuild.Defences defences = null
 
 !{
 	// 이름+베이스 2줄이면 인게임 2줄 헤더 아트(레어/유니크에 --band2-* 정의, 그 외 1줄 아트 폴백)
@@ -33,14 +40,42 @@
 	boolean hasWeapon = baseItem != null && baseItem.weapon() != null && baseItem.weapon().damageMax() > 0;
 	PoeBaseItem.Armour armour = baseItem != null ? baseItem.armour() : null;
 	PoeBaseItem.Flask flask = baseItem != null ? baseItem.flask() : null;
+	// 플라스크 속성에 이 플라스크 자신의 로컬 옵션 반영(10-08 C186 — 회복량 · 지속 · 충전, PoB 식). 바뀐 숫자만 인게임처럼 파랑(품질이 바꾼 회복량 · 유틸 지속 포함)
+	net.luversof.web.gate.poe.PoeFlaskProps.Result fp = flask == null ? null : net.luversof.web.gate.poe.PoeFlaskProps.apply(flask.lifePerUse(), flask.manaPerUse(), flask.durationSeconds(), flask.maxCharges(), flask.perCharge(), flask.type() == 4, net.luversof.web.gate.poe.PoeLocalProps.join(reqImplicits, reqMods), quality);
+	java.util.function.BiFunction<String, Boolean, String> fpNum = (v, ch) -> ch ? "<span class=\"text-[#8888ff]\">" + v + "</span>" : v;
+	String fdur = fp == null ? "" : fpNum.apply(fp.duration().seconds(), fp.duration().changed() || (flask.type() == 4 && quality > 0));
+	String flife = fp == null ? "" : fpNum.apply(fp.life().text(), fp.life().changed() || quality > 0);
+	String fmana = fp == null ? "" : fpNum.apply(fp.mana().text(), fp.mana().changed() || quality > 0);
+	String fmax = fp == null ? "" : fpNum.apply(fp.maxCharges().text(), fp.maxCharges().changed());
+	String fused = fp == null ? "" : fpNum.apply(fp.chargesUsed().text(), fp.chargesUsed().changed());
 	boolean hasArmour = armour != null && (armour.block() > 0 || armour.armourMax() > 0 || armour.evasionMax() > 0 || armour.energyShieldMax() > 0 || armour.wardMax() > 0);
 	// 무기 범위는 근접 무기만 인게임 표시(활/완드=투사체라 미표시, range=120 센티넬 → <100 근접만). 미터=내부 데시미터/10.
 	// itemDetail.jte 와 같은 규칙 — 두 화면이 어긋나면 같은 아이템이 화면마다 다르게 보인다.
 	boolean showWeaponRange = hasWeapon && baseItem.weapon().range() > 0 && baseItem.weapon().range() < 100;
 	// 인게임 요구 사항 줄은 **레벨이 먼저**다("요구 능력치 레벨 68, 155 힘"). 속성만 보고 게이트하면
 	// 레벨 요구만 있는 아이템(장신구 등)은 요구 줄이 통째로 사라진다 → dropLevel 도 조건에 넣는다.
+	net.luversof.web.gate.poe.PoeRequirements.Result req = baseItem == null ? null : net.luversof.web.gate.poe.PoeRequirements.apply(baseItem.reqStr(), baseItem.reqDex(), baseItem.reqInt(), reqImplicits, reqMods);
+	int reqLevel = levelReq != null ? levelReq : (baseItem == null ? 0 : baseItem.dropLevel());
+	// 속성 칸 — 품질 · 로컬 옵션 반영(10-08 C184, C182 PoeLocalProps 와 같은 PoB 식). 예전엔 순수 베이스 값이라 물리 피해 170% 증가 무기도 베이스 피해였다.
+	//   방어는 PoB 원문 실제값이 있으면 그것(베이스 롤이 아이템마다 달라 계산은 범위뿐), 무기 · 막기 · 원소 피해는 계산(베이스 고정이라 정확)
+	net.luversof.web.gate.poe.PoeLocalProps.Result lp = baseItem == null ? null : net.luversof.web.gate.poe.PoeLocalProps.apply(new net.luversof.web.gate.poe.PoeLocalProps.Base(
+		armour == null ? 0 : armour.armourMin(), armour == null ? 0 : armour.armourMax(),
+		armour == null ? 0 : armour.evasionMin(), armour == null ? 0 : armour.evasionMax(),
+		armour == null ? 0 : armour.energyShieldMin(), armour == null ? 0 : armour.energyShieldMax(),
+		armour == null ? 0 : armour.wardMin(), armour == null ? 0 : armour.wardMax(),
+		armour == null ? 0 : armour.block(),
+		hasWeapon ? baseItem.weapon().damageMin() : 0, hasWeapon ? baseItem.weapon().damageMax() : 0,
+		hasWeapon ? baseItem.weapon().attacksPerSecond() : 0, hasWeapon ? baseItem.weapon().critChance() : 0),
+		net.luversof.web.gate.poe.PoeLocalProps.join(reqImplicits, reqMods), hasArmour, hasWeapon, quality);
+	String aug = "text-[#8888ff]";
+	String armourText = defences != null && defences.armour() != null ? String.valueOf(defences.armour()) : (lp == null ? "" : lp.armour().text("-"));
+	String evasionText = defences != null && defences.evasion() != null ? String.valueOf(defences.evasion()) : (lp == null ? "" : lp.evasion().text("-"));
+	String esText = defences != null && defences.energyShield() != null ? String.valueOf(defences.energyShield()) : (lp == null ? "" : lp.energyShield().text("-"));
+	String wardText = defences != null && defences.ward() != null ? String.valueOf(defences.ward()) : (lp == null ? "" : lp.ward().text("-"));
+	// 값이 베이스와 다르면(품질 · 옵션) 인게임처럼 파란색
+	boolean defAug = quality > 0 || (lp != null && (lp.armour().changed() || lp.evasion().changed() || lp.energyShield().changed() || lp.ward().changed()));
 	boolean hasReq = baseItem != null
-		&& (baseItem.dropLevel() > 0 || baseItem.reqStr() > 0 || baseItem.reqDex() > 0 || baseItem.reqInt() > 0);
+		&& (reqLevel > 0 || req.str().present() || req.dex().present() || req.intel().present());
 	String label = "text-[#7f7f7f]";
 	String value = "text-[#e0e0e0]";
 }
@@ -74,20 +109,23 @@
 			@if(quality > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="text-[#8888ff]">+${quality}%</span></div>@endif
 			@if(intangibility > 0)<div data-tt-intangibility><span class="${label}">${MessageUtil.getMessage("poe.items.detail.intangibility")}: </span><span class="text-[#8888ff]">${intangibility}%</span></div>@endif
 			@if(hasWeapon)
-				<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${value}">${baseItem.weapon().damageMin()}–${baseItem.weapon().damageMax()}</span></div>
-				<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.crit.chance")}: </span><span class="${value}">${String.format("%.2f", baseItem.weapon().critChance())}%</span></div>
-				<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.attacks.per.second")}: </span><span class="${value}">${String.format("%.2f", baseItem.weapon().attacksPerSecond())}</span></div>
-				@if(showWeaponRange)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.range")}: </span><span class="${value}">${String.format("%.1f", baseItem.weapon().range() / 10.0)}${PoeText.isKorean() ? "미터" : "m"}</span></div>@endif
+				<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${quality > 0 || lp.physMin().changed() || lp.physMax().changed() ? aug : value}" data-tt-phys>${lp.physMin().damageText()}-${lp.physMax().damageText()}</span></div>
+				@if(lp.hasElemental())<div data-tt-ele><span class="${label}">${MessageUtil.getMessage("poe.items.detail.elemental.damage")}: </span>!{ boolean eleFirst = true; }@if(lp.fire().present())<span class="text-[#960000]">${lp.fire().text()}</span>!{ eleFirst = false; }@endif@if(lp.cold().present())${eleFirst ? "" : ", "}<span class="text-[#366492]">${lp.cold().text()}</span>!{ eleFirst = false; }@endif@if(lp.lightning().present())${eleFirst ? "" : ", "}<span class="text-[#ffd700]">${lp.lightning().text()}</span>@endif</div>@endif@if(lp.chaos().present())<div data-tt-chaos><span class="${label}">${MessageUtil.getMessage("poe.items.detail.chaos.damage")}: </span><span class="text-[#d02090]">${lp.chaos().text()}</span></div>@endif
+				<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.crit.chance")}: </span><span class="${lp.critChance().changed() ? aug : value}">${lp.critChance().text2()}%</span></div>
+				<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.attacks.per.second")}: </span><span class="${lp.attacksPerSecond().changed() ? aug : value}">${lp.attacksPerSecond().text2()}</span></div>
+				@if(showWeaponRange)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.range")}: </span><span class="${value}">${String.format("%.1f", baseItem.weapon().range() / 10.0)}${PoeText.isKorean() ? "미터" : (baseItem.weapon().range() == 10 ? " metre" : " metres")}</span></div>@endif
 			@endif
 			@if(hasArmour)
 				<%-- 인게임 방패 툴팁은 **막기 확률이 첫 줄**이다(방어도/회피보다 위). --%>
-				@if(armour.block() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.block")}: </span><span class="${value}">${armour.block()}%</span></div>@endif
-				@if(armour.armourMax() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.armour")}: </span><span class="${value}">${armour.armourMin()}${armour.armourMin() != armour.armourMax() ? "–" + armour.armourMax() : ""}</span></div>@endif
-				@if(armour.evasionMax() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.evasion")}: </span><span class="${value}">${armour.evasionMin()}${armour.evasionMin() != armour.evasionMax() ? "–" + armour.evasionMax() : ""}</span></div>@endif
-				@if(armour.energyShieldMax() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.energy.shield")}: </span><span class="${value}">${armour.energyShieldMin()}${armour.energyShieldMin() != armour.energyShieldMax() ? "–" + armour.energyShieldMax() : ""}</span></div>@endif
+				@if(lp.block().present())<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.block")}: </span><span class="${lp.block().changed() ? aug : value}">${lp.block().text("-")}%</span></div>@endif
+				@if(!armourText.isEmpty() && !"0".equals(armourText))<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.armour")}: </span><span class="${defAug ? aug : value}" data-tt-armour>${armourText}</span></div>@endif
+				@if(!evasionText.isEmpty() && !"0".equals(evasionText))<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.evasion")}: </span><span class="${defAug ? aug : value}" data-tt-evasion>${evasionText}</span></div>@endif
+				@if(!esText.isEmpty() && !"0".equals(esText))<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.energy.shield")}: </span><span class="${defAug ? aug : value}" data-tt-es>${esText}</span></div>@endif
 				<%-- 수호(ward) — 탐험 리그 베이스 9종. hasArmour 조건엔 들어 있었는데 행이 없어
 				     수호 전용 아이템은 구분선만 그려지고 속성 칸이 비어 있었다. --%>
-				@if(armour.wardMax() > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.ward")}: </span><span class="${value}">${armour.wardMin()}${armour.wardMin() != armour.wardMax() ? "–" + armour.wardMax() : ""}</span></div>@endif
+				@if(!wardText.isEmpty() && !"0".equals(wardText))<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.ward")}: </span><span class="${defAug ? aug : value}">${wardText}</span></div>@endif
+				<%-- 이동 속도 감소(10-09 C223 — 갑옷 · 방패, PoB Bases MovementPenalty · poedb 툴팁 "이동 속도: -3%", PoE2 와 같은 키) --%>
+				@if(armour != null && armour.movementPenalty() != null && armour.movementPenalty() > 0)<div data-tt-movement><span class="${label}">${MessageUtil.getMessage("poe2.items.movement")}: </span><span class="${value}">-${armour.movementPenalty()}%</span></div>@endif
 			@endif
 		</div>
 	@endif
@@ -98,17 +136,25 @@
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
 			@if(flask.type() == 4)
-				<div class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), String.format("%.2f", flask.durationSeconds()))}</div>
+				<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
 			@else
 				@if(flask.lifePerUse() > 0)
-					<div class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), String.format("%.2f", flask.durationSeconds()), String.valueOf(flask.lifePerUse()))}</div>
+					<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), fdur, flife)}</div>
 				@endif
 				@if(flask.manaPerUse() > 0)
-					<div class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), String.format("%.2f", flask.durationSeconds()), String.valueOf(flask.manaPerUse()))}</div>
+					<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), fdur, fmana)}</div>
 				@endif
 			@endif
 			@if(flask.maxCharges() > 0)
-				<div class="${label}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.charges"), String.valueOf(flask.maxCharges()), String.valueOf(flask.perCharge()))}</div>
+				<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.charges"), fmax, fused)}</div>
+				<%-- 현재 충전량(10-09 C221 — ClientStrings ItemDisplayChargesNCharges, 새 아이템 = 최대 충전) --%>
+				<div class="${label}" data-tt-charges-now>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.current"), fmax)}</div>
+				<%-- 플라스크 부여 버프 = 충전 줄 바로 아래 파란 줄(10-09 C241 — PoB ItemsTab.lua buffModLines · poedb 죽어가는 해 순서. 예전(C196·C204)엔 옵션 뒤 별도 칸) --%>
+				@if(flask != null && flask.buffLines() != null && !flask.buffLines().isEmpty())
+					@for(var buffLine : flask.buffLines())
+						<div class="text-[#8888ff] whitespace-pre-line" data-tt-flask-buff>$unsafe{PoeText.highlightValues(PoeText.name(buffLine.ko(), buffLine.en()))}</div>
+					@endfor
+				@endif
 			@endif
 		</div>
 	@endif
@@ -120,7 +166,7 @@
 		<div class="px-4 py-1 text-center text-[12px]">
 			<%-- ⚠ 한 줄로 붙여 쓸 것. @if 사이에 줄바꿈을 넣으면 그 개행이 공백으로 렌더돼
 			     "레벨 62 , 180 힘"처럼 쉼표 앞이 벌어진다(itemDetail 도 같은 이유로 한 줄이다). --%>
-			<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>@if(baseItem.dropLevel() > 0)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${baseItem.dropLevel()}</span>@endif@if(baseItem.reqStr() > 0)<span class="${value}">${baseItem.dropLevel() > 0 ? ", " : ""}${baseItem.reqStr()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(baseItem.reqDex() > 0)<span class="${value}">${baseItem.dropLevel() > 0 || baseItem.reqStr() > 0 ? ", " : ""}${baseItem.reqDex()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(baseItem.reqInt() > 0)<span class="${value}">${baseItem.dropLevel() > 0 || baseItem.reqStr() > 0 || baseItem.reqDex() > 0 ? ", " : ""}${baseItem.reqInt()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
+			<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>@if(reqLevel > 0)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${reqLevel}</span>@endif@if(req.str().present())<span class="${value}">${reqLevel > 0 ? ", " : ""}${req.str().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(req.dex().present())<span class="${value}">${reqLevel > 0 || req.str().present() ? ", " : ""}${req.dex().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(req.intel().present())<span class="${value}">${reqLevel > 0 || req.str().present() || req.dex().present() ? ", " : ""}${req.intel().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
 		</div>
 	@endif
 
@@ -158,6 +204,11 @@
 		</div>
 	@endif
 
+	<%-- 타락 줄 = 옵션 바로 아래 · 로어 위(10-09 C216 — poedb 목소리 · poe2db 신념의 프리즘 툴팁 순서: 옵션 → Corrupted → 로어 → 사용 설명. 예전(C157)엔 맨 아래) --%>
+	@if(corrupted)
+		<div class="poe-tt-sepimg"></div>
+		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.items.corrupted")}</div>
+	@endif
 	@if(flavourLines != null && !flavourLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center space-y-0.5" data-tt-flavour>
@@ -166,11 +217,11 @@
 			@endfor
 		</div>
 	@endif
-
-	<%-- 인게임은 부패 아이템 툴팁 **맨 아래**에 빨간 "부패됨" 한 줄을 둔다(더 이상 제작 불가라는 신호).
-	     색은 화면 전체가 쓰는 --poe-corrupt(다크 #ff5a5a / 라이트 #d20000) 그대로. --%>
-	@if(corrupted)
+	<%-- 사용 설명(10-09 C213 — 고유 상세 C212 와 같은 게임 ClientStrings ItemDescription*, 빌드의 플라스크 · 팅크처 · 주얼 카드) --%>
+	!{ String helpKey = baseItem == null ? null : net.luversof.web.gate.poe.PoeItemDescription.key(baseItem.category(), baseItem.name()); }
+	@if(helpKey != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]">${MessageUtil.getMessage("poe.items.corrupted")}</div>
+		<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
 	@endif
+
 </div>

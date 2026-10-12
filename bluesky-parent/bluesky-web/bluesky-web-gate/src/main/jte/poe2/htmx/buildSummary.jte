@@ -21,17 +21,17 @@
 		Poe2.BuildTree tree = build.tree();
 	}
 	<div class="space-y-4">
-		<%-- 머리: 직업 · 전직 · 레벨 --%>
-		<div class="flex flex-wrap items-baseline gap-3">
-			<h2 class="text-xl font-bold">${asc != null ? asc : (className != null ? className : "?")}</h2>
-			@if(asc != null && className != null)<span class="text-base-content/60">${className}</span>@endif
-			@if(build.level() != null)<span class="badge badge-ghost">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.build.level"), build.level())}</span>@endif
+		<%-- 머리 + 스탯 = PoE1 빌드 요약 첫 카드와 같은 차림(10-12 C281): "직업 · 전직"(굵게) + 레벨 배지 --%>
+		@template._components.ui.card(bodyClass = "gap-3", body = @`
+		<div class="flex flex-wrap items-center gap-3">
+			<h2 class="text-lg font-bold">${className != null ? className : "?"}@if(asc != null) · ${asc}@endif</h2>
+			@if(build.level() != null)<span class="badge badge-primary badge-outline">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.summary.level"), build.level())}</span>@endif
 		</div>
 
 		<%-- 스탯 (PoB 가 저장한 값) --%>
 		@if(build.stats() != null && !build.stats().isEmpty())
-			<section class="space-y-1.5">
-				<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe2.build.stats")}</h3>
+			<div class="space-y-1.5">
+				<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe.build.stats.saved")}</h3>
 				<div class="grid grid-cols-[repeat(auto-fit,minmax(min(8rem,100%),1fr))] sm:grid-cols-4 lg:grid-cols-6 gap-2">
 					@for(Poe2.BuildStat s : build.stats())
 						!{
@@ -47,8 +47,9 @@
 						</div>
 					@endfor
 				</div>
-			</section>
+			</div>
 		@endif
+		`)
 
 		<%-- 엔진 재계산(약 2초) — 요약을 먼저 보이고 붙인다. 코드는 위 입력칸 것을 그대로(13KB 라 POST), 조회라 "완료" 토스트는 뺀다 --%>
 		<div hx-post="/poe2/htmx/build/recalc" hx-trigger="load" hx-include="#poe2BuildImport [name=code]" hx-swap="outerHTML" data-no-success-toast>
@@ -61,15 +62,15 @@
 
 		<%-- 스킬 묶음 --%>
 		@if(build.skills() != null && !build.skills().isEmpty())
-			<section class="space-y-1.5">
-				<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe2.build.skills")}</h3>
+			@template._components.ui.card(bodyClass = "gap-3", body = @`
+				<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.build.skills")}</h2>
 				<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
 					@for(Poe2.BuildSkill g : build.skills())
 						<div class="rounded-lg border ${Boolean.TRUE.equals(g.main()) ? "border-primary/60" : "border-base-200"} bg-base-100 px-3 py-2 ${Boolean.FALSE.equals(g.enabled()) ? "opacity-60" : ""}">
 							<div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
 								@if(g.slot() != null)<span>${net.luversof.web.gate.poe2.Poe2View.slotName(g.slot())}</span>@endif
 								@if(Boolean.TRUE.equals(g.main()))<span class="badge badge-xs badge-primary">${MessageUtil.getMessage("poe2.build.main")}</span>@endif
-								@if(Boolean.FALSE.equals(g.enabled()))<span class="badge badge-xs badge-ghost">${MessageUtil.getMessage("poe2.build.disabled")}</span>@endif
+								@if(Boolean.FALSE.equals(g.enabled()))<span class="badge badge-xs badge-ghost">${MessageUtil.getMessage("poe.build.disabled")}</span>@endif
 							</div>
 							<ul class="space-y-0.5">
 								@for(Poe2.BuildGem gem : g.gems())
@@ -94,13 +95,13 @@
 						</div>
 					@endfor
 				</div>
-			</section>
+			`)
 		@endif
 
 		<%-- 장비 --%>
 		@if(build.items() != null && !build.items().isEmpty())
-			<section class="space-y-1.5">
-				<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe2.build.items")}</h3>
+			@template._components.ui.card(bodyClass = "gap-3", body = @`
+				<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.build.items")}</h2>
 				<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
 					@for(Poe2.BuildItem it : build.items())
 						!{
@@ -125,7 +126,7 @@
 								@endif
 								@if(tradeHref != null)
 									<a class="badge badge-xs badge-outline badge-info shrink-0" target="_blank" rel="noopener" href="${tradeHref}" data-build-trade
-									   title="${korean ? (tradeUnique ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "베이스 + 옵션(이 수치의 85% 이상)으로 거래소 검색(즉시 구입 · 가격순)") : (tradeUnique ? "Search trade for this unique" : "Search trade — base + mods at 85%+ of these values")}">${korean ? "거래소" : "Trade"}</a>
+									   title="${korean ? (tradeUnique ? "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)" : "베이스 + 옵션(이 수치의 85% 이상)으로 거래소 검색(즉시 구입 · 가격순)") : (tradeUnique ? "Search trade for this unique" : "Search trade — base + mods at 85%+ of these values")}">${MessageUtil.getMessage("poe.common.trade")}</a>
 								@endif
 								</div>
 								@if(!"UNIQUE".equals(it.rarity()) && !"NORMAL".equals(it.rarity()) || it.baseTypeKo() != null && "UNIQUE".equals(it.rarity()))
@@ -149,17 +150,17 @@
 						</div>
 					@endfor
 				</div>
-			</section>
+			`)
 		@endif
 
 		<%-- 패시브 --%>
 		@if(tree != null)
-			<section class="space-y-1.5">
+			@template._components.ui.card(bodyClass = "gap-3", body = @`
 				<div class="flex flex-wrap items-baseline gap-3">
-					<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe2.build.tree")}</h3>
+					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe2.build.tree")}</h2>
 					<span class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.build.points"), tree.allocated(), tree.ascendancyPoints())}</span>
 					@if(build.treeLink() != null)
-						<a class="link link-primary text-sm" href="${build.treeLink()}">${MessageUtil.getMessage("poe2.build.opentree")}</a>
+						<a class="link link-primary text-sm" href="${build.treeLink()}">${MessageUtil.getMessage("poe.build.summary.tree.view")}</a>
 					@endif
 				</div>
 				@for(String kind : java.util.List.of("ascnodes", "keystones", "notables"))
@@ -173,7 +174,7 @@
 						</div>
 					@endif
 				@endfor
-			</section>
+			`)
 		@endif
 	</div>
 @endif

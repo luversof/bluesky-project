@@ -37,8 +37,8 @@
 					<tr>
 						<th class="w-14 text-right">${rankLabel}</th>
 						@if(comparing)
-							<th class="w-14 text-center whitespace-nowrap" title="${ko ? "비교 시즌 대비 순위 변화" : "Rank change vs compared season"}">${ko ? "변화" : "Δ"}</th>
-							<th class="w-20 text-right whitespace-nowrap">${ko ? "DPS 변화" : "DPS Δ"}</th>
+							<th class="w-14 text-center whitespace-nowrap" title="${MessageUtil.getMessage("poe.ranking.change.title")}">${MessageUtil.getMessage("poe.ranking.change")}</th>
+							<th class="w-20 text-right whitespace-nowrap">${MessageUtil.getMessage("poe.ranking.dps.change")}</th>
 						@endif
 						<th>${gemLabel}</th>
 						<th class="hidden sm:table-cell">${weaponLabel}</th>

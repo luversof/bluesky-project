@@ -100,6 +100,28 @@ public final class PoeText {
     return m.find() ? "&level=" + m.group(1) : "";
   }
 
+  /**
+   * 젬 소모 값 — 게임 문구 순서(ClientStrings SkillPopupCostValueMana "마나 {0}" · Life "생명력 {0}", 10-09 C207 —
+   * 예전엔 "8 마나"). 마나 · 생명력 · 에너지 보호막만 그 꼴, 그 밖의 종류(분당 · % 마나)는 예전 꼴(수량 + 종류).
+   */
+  public static String costValue(Integer amount, String raw) {
+    if (amount == null) {
+      return "";
+    }
+    String key =
+        raw == null
+            ? null
+            : switch (raw) {
+              case "Mana" -> "poe.gems.cost.value.mana";
+              case "Life" -> "poe.gems.cost.value.life";
+              case "ES" -> "poe.gems.cost.value.es";
+              default -> null;
+            };
+    return key == null
+        ? amount + " " + costType(raw)
+        : java.text.MessageFormat.format(MessageUtil.getMessage(key), String.valueOf(amount));
+  }
+
   public static String costType(String raw) {
     if (raw == null || raw.isBlank()) {
       return "";
@@ -243,10 +265,13 @@ public final class PoeText {
     }
   }
 
-  /** 변동 수치(숫자·범위·%·+/-) 토큰 — 예: +25%, (80-120), 30~50, 1.15, +2 */
+  /**
+   * 변동 수치(숫자·범위·%·+/-) 토큰 — 예: +25%, (80-120), 30~50, 1.15, +2, (-40-40)(10-09 C240 — 0 을 가로지르는 범위
+   * 괄호 안 부호)
+   */
   private static final java.util.regex.Pattern VALUE_TOKEN =
       java.util.regex.Pattern.compile(
-          "[+\\-]?\\(?\\d+(?:\\.\\d+)?(?:\\s*[-~–]\\s*\\d+(?:\\.\\d+)?)?\\)?%?");
+          "[+\\-]?\\(?[+\\-]?\\d+(?:\\.\\d+)?(?:\\s*[-~–]\\s*[+\\-]?\\d+(?:\\.\\d+)?)?\\)?%?");
 
   /**
    * 모드 라인의 변동 수치를 강조(poe-val: 다크 레이어=흰색, 테마 배경=본문 강조색)한 안전 HTML 문자열. HTML 이스케이프 후 숫자 토큰만 흰색 span 으로

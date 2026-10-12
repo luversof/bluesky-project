@@ -7,5 +7,5 @@
 @if(notFound)
 	<div class="alert alert-warning text-sm" role="alert" data-error-kind="notfound"><span>${MessageUtil.getMessage("poe.api.notfound")}</span></div>
 @else
-	<div class="alert alert-warning text-sm" role="alert" data-error-kind="error"><span>${MessageUtil.getMessage("poe2.error")}</span></div>
+	<div class="alert alert-error text-sm" role="alert" data-error-kind="error"><span>${MessageUtil.getMessage("poe.api.error")}</span></div>
 @endif

@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe2.dto.Poe2
 @import net.luversof.web.gate.poe.PoeText
 
@@ -13,25 +14,25 @@
 }
 <div class="rounded-box bg-base-100 px-3 py-2 text-sm text-base-content" data-refine-status>
 @if(loginRequired)
-	<div class="text-base-content/60">${ko ? "자동 다듬기는 로그인 후 쓸 수 있습니다(엔진 계산을 여러 번 합니다)." : "Sign in to refine automatically (it runs the engine many times)."}</div>
+	<div class="text-base-content/60">${MessageUtil.getMessage("poe.build.guide.login")}</div>
 @elseif(status == null)
-	<div class="text-error">${ko ? "다듬기 서버에 연결하지 못했습니다." : "Could not reach the refine service."}</div>
+	<div class="text-error">${MessageUtil.getMessage("poe.build.guide.unavailable")}</div>
 @elseif(Boolean.TRUE.equals(status.running()) && notStarted)
-	<div class="text-warning">${ko ? "다른 자동 다듬기가 진행 중입니다. 끝난 뒤 다시 눌러 주세요." : "Another refine is running. Try again when it finishes."}</div>
+	<div class="text-warning">${MessageUtil.getMessage("poe.refine.busy")}</div>
 @elseif(Boolean.TRUE.equals(status.running()))
 	<div class="flex flex-wrap items-center gap-2">
 		<span class="loading loading-spinner loading-xs text-primary"></span>
-		<span class="font-semibold">${ko ? "자동 다듬기" : "Refining"} ${status.round()}/${status.rounds()}</span>
-		<span class="text-base-content/60">${status.phase()}</span>
+		<span class="font-semibold">${MessageUtil.getMessage("poe.refine.running")} ${status.round()}/${status.rounds()}</span>
+		<span class="text-base-content/60">${MessageUtil.getMessage("poe2.refine.phase." + status.phase(), status.phase())}</span>
 	</div>
 @elseif(status.error() != null)
 	<div class="text-error">${status.error()}</div>
 @elseif(status.result() != null)
 	!{ Poe2.RefineResult r = status.result(); }
 	<div class="space-y-2" data-refine-result>
-		<div class="font-semibold">${ko ? "자동 다듬기 결과" : "Refine result"}</div>
+		<div class="font-semibold">${MessageUtil.getMessage("poe.refine.result")}</div>
 		<table class="table table-xs w-auto">
-			<thead><tr><th></th><th class="text-right">${ko ? "출발" : "Start"}</th><th class="text-right">${ko ? "다듬은 뒤" : "Refined"}</th><th class="text-right">${ko ? "변화" : "Change"}</th></tr></thead>
+			<thead><tr><th></th><th class="text-right">${MessageUtil.getMessage("poe.refine.before")}</th><th class="text-right">${MessageUtil.getMessage("poe.refine.after")}</th><th class="text-right">${MessageUtil.getMessage("poe.refine.change")}</th></tr></thead>
 			<tbody>
 				<tr><td>DPS</td><td class="text-right font-mono">${String.format("%,.0f", r.before().dps())}</td><td class="text-right font-mono">${String.format("%,.0f", r.after().dps())}</td><td class="text-right font-mono">${sgn.apply(chg.apply(r.before().dps(), r.after().dps()))}</td></tr>
 				<tr><td>EHP</td><td class="text-right font-mono">${String.format("%,.0f", r.before().ehp())}</td><td class="text-right font-mono">${String.format("%,.0f", r.after().ehp())}</td><td class="text-right font-mono">${sgn.apply(chg.apply(r.before().ehp(), r.after().ehp()))}</td></tr>
@@ -48,7 +49,7 @@
 			</ol>
 			<form hx-post="/poe2/htmx/build/import-replace" hx-target="#poe2BuildResult" hx-swap="innerHTML" data-no-success-toast>
 				<input type="hidden" name="code" value="${r.code()}">
-				<button type="submit" class="btn btn-primary btn-sm" data-refine-load>${ko ? "다듬은 빌드 불러오기" : "Load refined build"}</button>
+				<button type="submit" class="btn btn-primary btn-sm" data-refine-load>${MessageUtil.getMessage("poe.refine.load")}</button>
 			</form>
 		@endif
 		<div class="text-[11px] text-base-content/60">${ko ? "각 단계의 증감은 직전 빌드 대비이며, 적용한 빌드를 PoB-PoE2 엔진으로 다시 계산한 값입니다(가이드 예측이 아니라 실측). 고유 아이템은 품질 20% 기준. DPS 는 주 스킬 한 대상 기준이라, 갈래·연쇄·투사체 수 보조를 바꾸는 단계는 사냥 속도를 줄일 수 있습니다." : "Each step's change is vs. the previous build, measured by recalculating the applied build (not the guide's prediction). Uniques at 20% quality. DPS is single-target for the main skill — steps that swap out fork, chain or projectile-count supports can slow down clearing."}</div>

@@ -88,8 +88,20 @@ public class Poe2SimService {
       // 무기 세트 전용 노드(노드 → 1·2) — 10-02
       java.util.Map<Integer, Integer> sets) {}
 
+  /**
+   * phase = 단계 코드(fetch · measure · refine.&lt;다듬기 단계&gt; — 게이트가 옮긴다), round/rounds = 그 단계의 진행(후보
+   * i/N, 다듬기 단계 r/3), evals = 엔진 계산 수, cancelled = 사용자가 중지한 마지막 실행(PoE1 simOptimizeStatus 의 중지 · 평가
+   * 수 · 진행 막대 짝, 10-12 C269).
+   */
   public record SimStatus(
-      boolean running, String phase, int round, int rounds, SimResult result, String error) {}
+      boolean running,
+      String phase,
+      int round,
+      int rounds,
+      SimResult result,
+      String error,
+      int evals,
+      boolean cancelled) {}
 
   /** 결과 이력 상한 — PoE1 최적화 이력(HISTORY_LIMIT)과 같다. */
   static final int HISTORY_LIMIT = 30;
@@ -121,6 +133,9 @@ public class Poe2SimService {
   private volatile String phase = "";
   private volatile SimResult lastResult;
   private volatile String lastError;
+  private volatile boolean lastCancelled;
+  private volatile int candidate;
+  private volatile int candidates;
 
   public Poe2SimService(
       Poe2NinjaService ninja,
@@ -237,14 +252,21 @@ public class Poe2SimService {
   }
 
   public SimStatus status() {
-    boolean refining = running && phase.startsWith("다듬기");
+    boolean refining = running && "refine".equals(phase);
     return new SimStatus(
         running,
-        refining ? "다듬기 · " + refine.phase() : phase,
-        refining ? refine.round() : 0,
-        Poe2RefineService.ROUNDS,
+        refining ? "refine." + refine.phase() : phase,
+        refining ? refine.round() : "measure".equals(phase) ? candidate : 0,
+        refining ? Poe2RefineService.ROUNDS : "measure".equals(phase) ? candidates : 0,
         lastResult,
-        lastError);
+        lastError,
+        refine.evals(),
+        lastCancelled);
+  }
+
+  /** 실행 중인 시뮬레이션 중지 — 돌고 있지 않으면 false. 다음 후보·다듬기 단계 경계에서 끝나고 cancelled 로 남는다. */
+  public boolean cancel() {
+    return running && refine.requestCancel();
   }
 
   /**
@@ -323,7 +345,10 @@ public class Poe2SimService {
     running = true;
     lastResult = null;
     lastError = null;
-    phase = "실빌드 후보 조회";
+    lastCancelled = false;
+    candidate = 0;
+    candidates = 0;
+    phase = "fetch";
     String asc = ascendancy == null ? "" : ascendancy.trim();
     String scen = scenario == null || scenario.isBlank() ? "Pinnacle" : scenario.trim();
     Thread thread =
@@ -332,6 +357,9 @@ public class Poe2SimService {
               try {
                 lastResult = run(skill.trim(), asc, scen, lockedUnique, userTree);
                 saveHistory(lastResult);
+              } catch (Poe2RefineService.Cancelled e) {
+                logger.info("PoE2 시뮬레이션 중지(사용자 요청)");
+                lastCancelled = true;
               } catch (Throwable e) {
                 logger.warn("PoE2 시뮬레이션 실패", e);
                 lastError = e.getMessage();
@@ -390,9 +418,12 @@ public class Poe2SimService {
     Poe2NinjaService.NinjaBuild bestBuild = null;
     double bestScore = Double.NEGATIVE_INFINITY;
     int i = 0;
+    candidates = pool.size();
+    phase = "measure";
     for (Poe2NinjaService.NinjaBuild b : pool) {
+      refine.checkCancel();
       i++;
-      phase = "후보 " + i + "/" + pool.size() + " 받기·재계산";
+      candidate = i;
       String error = null;
       Poe2RefineService.Metrics m = null;
       Integer set = null;
@@ -464,7 +495,8 @@ public class Poe2SimService {
               c.error(),
               c.set()));
     }
-    phase = "다듬기";
+    refine.checkCancel();
+    phase = "refine";
     Poe2RefineService.Result r = refine.refineWith(bestXml, objective, forced);
     String chosenAsc = chosen.ascendancy();
     if (ascendancy.isEmpty() && chosenAsc != null) {

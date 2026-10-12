@@ -296,6 +296,8 @@
 	let scale = 0.03;
 	let offsetX = 0;
 	let offsetY = 0;
+	// 전체 트리 범위 — "처음 보기" 단추가 쓴다(PoE2 트리 ＋/－/처음 보기의 짝, 10-12 C271)
+	let treeBounds: { minX: number; minY: number; maxX: number; maxY: number } | null = null;
 	let hovered: TreeNode | null = null;
 	const searchHits = new Set<number>(); // 검색 매칭 노드(청록 테두리 강조)
 	let hoverPath: number[] = []; // 호버 노드까지 할당집합에서의 최단경로 미리보기
@@ -1306,7 +1308,7 @@
 			el.appendChild(span);
 		};
 		add(isKorean ? "포인트" : "Points", passive, pointMax);
-		if (!isAtlas && maxAscPoints > 0) add(isKorean ? "· 전직" : "· Asc", asc, maxAscPoints);
+		if (!isAtlas && maxAscPoints > 0) add(isKorean ? "· 전직" : "· Ascendancy", asc, maxAscPoints); // PoE2 와 같은 낱말(10-12 C266 짝)
 		// 트리 상한 123 은 만렙(100) 기준인데 평가/최적화는 레벨 90(=퀘스트 24 + 레벨업 89 = 113포인트)이다.
 		// 113 을 넘으면 그 레벨에선 못 찍는 트리라 계산이 과대평가된다 → 필요 레벨을 표시해 알린다.
 		// 추가 포인트만큼은 레벨이 필요 없다(C51)
@@ -4554,6 +4556,18 @@
 			hideTooltip();
 			scheduleDraw();
 		};
+		// 처음 보기 — 전체 트리 범위에 맞춘다(PoE2 트리 "처음 보기"의 짝, 10-12 C271)
+		const fitAll = () => {
+			if (!treeBounds) return;
+			const b = treeBounds;
+			const width = canvas.clientWidth;
+			const height = canvas.clientHeight;
+			scale = Math.min(0.6, Math.min(width / (b.maxX - b.minX), height / (b.maxY - b.minY)) * 0.95);
+			offsetX = width / 2 - ((b.minX + b.maxX) / 2) * scale;
+			offsetY = height / 2 - ((b.minY + b.maxY) / 2) * scale;
+			hideTooltip();
+			scheduleDraw();
+		};
 		const mk = (id: string, label: string, factor: number, title: string) => {
 			const b = document.createElement("button");
 			b.type = "button";
@@ -4561,11 +4575,13 @@
 			b.className = "btn btn-sm btn-square border border-amber-700/60 bg-stone-900/85 text-amber-100 text-lg";
 			b.textContent = label;
 			b.title = title;
-			b.addEventListener("click", () => zoomBy(factor));
+			b.setAttribute("aria-label", title);
+			b.addEventListener("click", () => (factor > 0 ? zoomBy(factor) : fitAll()));
 			wrap.appendChild(b);
 		};
 		mk("poeTreeZoomIn", "+", 1.35, isKorean ? "확대" : "Zoom in");
 		mk("poeTreeZoomOut", "−", 1 / 1.35, isKorean ? "축소" : "Zoom out");
+		mk("poeTreeFit", "⤢", 0, isKorean ? "처음 보기" : "Reset view");
 		host.appendChild(wrap);
 		const positionZoomBtns = () => {
 			wrap.style.left = canvas.offsetLeft + canvas.clientWidth - wrap.offsetWidth - 12 + "px";
@@ -4642,6 +4658,7 @@
 						altRoots.forEach((id) => highlighted.add(id));
 					}
 					let bounds = data.bounds;
+					treeBounds = data.bounds;
 					// 할당 영역에 맞춰 확대하는 건 "실제 트리를 불러왔을 때"만. 시작 노드 하나뿐이면
 					// 그 점에 맞춰 과하게 확대돼 이웃이 화면 밖으로 나간다 → 전체 트리를 보여준다.
 					if (highlighted.size > 1) {

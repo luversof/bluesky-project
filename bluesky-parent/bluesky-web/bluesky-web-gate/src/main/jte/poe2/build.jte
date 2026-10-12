@@ -24,12 +24,15 @@
 	contentPoe = @`
 		<div class="space-y-4">
 			@template.poe2.header(title = pageTitle, meta = meta)
-			<p class="text-sm text-base-content/70 max-w-3xl">${MessageUtil.getMessage("poe2.build.desc")}</p>
 			<form id="poe2BuildImport" data-no-success-toast class="space-y-2 rounded-2xl bg-base-100 p-3 shadow-sm"
 			      hx-post="/poe2/htmx/build/import" hx-target="#poe2BuildResult" hx-swap="innerHTML">
-				<textarea id="poe2BuildCode" name="code" rows="4" class="textarea textarea-bordered w-full font-mono text-xs"
-				          placeholder="${MessageUtil.getMessage("poe2.build.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.build.placeholder")}" spellcheck="false"></textarea>
-				<button type="submit" class="btn btn-primary btn-sm">${MessageUtil.getMessage("poe2.build.submit")}</button>
+				<%-- 설명 · 코드 칸 · 오른쪽 단추 = PoE1 빌드 입력 카드와 같은 차림(10-12 C276) --%>
+				<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.build.desc")}</div>
+				<textarea id="poe2BuildCode" name="code" rows="4" class="textarea textarea-bordered w-full font-mono text-xs leading-5"
+				          placeholder="${MessageUtil.getMessage("poe2.build.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.build.placeholder")}" autocomplete="off" spellcheck="false"></textarea>
+				<div class="flex justify-end">
+					<button type="submit" class="btn btn-primary btn-sm">${MessageUtil.getMessage("poe.build.import")}</button>
+				</div>
 			</form>
 			<%-- 시뮬레이터 "실빌드에서 출발"(/poe2/build?ascendancy=&skill=) — 대표 실빌드를 서버에서 받아 바로 불러오고 코드 칸도 채운다(OOB) --%>
 			@if(startSim)
@@ -44,7 +47,7 @@
 					<span class="loading loading-spinner loading-sm"></span>
 				</div>
 			@else
-				<div id="poe2BuildResult" aria-live="polite"></div>
+				<div id="poe2BuildResult" aria-live="polite" data-no-success-toast></div>
 			@endif
 		</div>
 	`

@@ -39,17 +39,17 @@
 				      hx-get="/poe2/htmx/gems" hx-target="#poe2GemList" hx-swap="innerHTML"
 				      hx-trigger="input changed delay:300ms, change" data-url-sync="true">
 					<input type="search" name="q" value="${initialQ}" autofocus class="input input-sm input-bordered w-full sm:w-72"
-					       placeholder="${MessageUtil.getMessage("poe.gems.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
-					<select name="kind" class="select select-sm select-bordered" aria-label="${PoeText.isKorean() ? "젬 종류" : "Gem type"}">
-						<option value="all" selected="${"all".equals(initialKind)}">${MessageUtil.getMessage("poe2.all")}</option>
+					       placeholder="${MessageUtil.getMessage("poe.gems.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe.gems.search.placeholder")}" autocomplete="off">
+					<select name="kind" class="select select-sm select-bordered" aria-label="${MessageUtil.getMessage("poe.gems.filter.type")}">
+						<option value="all" selected="${"all".equals(initialKind)}">${MessageUtil.getMessage("poe.gems.type.all")}</option>
 						@for(String k : List.of("skill", "support", "meta"))
 							<option value="${k}" selected="${k.equals(initialKind)}">${MessageUtil.getMessage("poe2.gems.kind." + k)}</option>
 						@endfor
 					</select>
-					<select name="color" class="select select-sm select-bordered" aria-label="${PoeText.isKorean() ? "젬 색" : "Gem color"}">
-						<option value="all" selected="${"all".equals(initialColor)}">${MessageUtil.getMessage("poe2.all")}</option>
+					<select name="color" class="select select-sm select-bordered" aria-label="${MessageUtil.getMessage("poe.gems.filter.color")}">
+						<option value="all" selected="${"all".equals(initialColor)}">${MessageUtil.getMessage("poe.gems.color.all")}</option>
 						@for(String c : List.of("str", "dex", "int", "white"))
-							<option value="${c}" selected="${c.equals(initialColor)}">${MessageUtil.getMessage("poe2.gems.color." + c)}</option>
+							<option value="${c}" selected="${c.equals(initialColor)}">${MessageUtil.getMessage("poe.gems.color." + ("str".equals(c) ? "red" : "dex".equals(c) ? "green" : "int".equals(c) ? "blue" : "white"))}</option>
 						@endfor
 					</select>
 					<input type="hidden" name="tag" value="${activeTag}">

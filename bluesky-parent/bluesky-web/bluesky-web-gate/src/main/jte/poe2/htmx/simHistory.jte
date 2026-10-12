@@ -23,7 +23,7 @@
 }
 @if(loginRequired)
 	<div class="alert alert-warning py-1.5 px-3 text-xs mb-1.5">
-		${ko ? "로그인이 풀려 삭제되지 않았습니다 — 다시 로그인 후 시도해 주세요." : "Session expired — the result was not deleted. Please sign in again."}
+		${MessageUtil.getMessage("poe.sim.history.expired")}
 	</div>
 @endif
 @if(!history.isEmpty())
@@ -44,7 +44,7 @@
 					String scen = "None".equals(h.scenario()) ? MessageUtil.getMessage("poe.sim.opt.scenario.none")
 							: "Boss".equals(h.scenario()) ? MessageUtil.getMessage("poe.sim.opt.scenario.boss")
 							: "Uber".equals(h.scenario()) ? MessageUtil.getMessage("poe.sim.opt.scenario.uber")
-							: "keep".equals(h.scenario()) ? (ko ? "플레이어 설정 그대로" : "Player setting")
+							: "keep".equals(h.scenario()) ? MessageUtil.getMessage("poe2.sim.opt.scenario.keep")
 							: MessageUtil.getMessage("poe.sim.opt.scenario.pinnacle");
 					String when = new java.text.SimpleDateFormat("MM-dd HH:mm").format(new java.util.Date(h.id()));
 				}
@@ -54,7 +54,7 @@
 				        hx-get="/poe2/htmx/sim/result?id=${h.id()}"
 				        hx-target="#poe2HistoryResultView"
 				        hx-swap="innerHTML"
-				        onclick="this.closest('#poe2SimHistory').querySelectorAll('button.poe-hist-active').forEach(function(b){b.classList.remove('poe-hist-active');}); this.classList.add('poe-hist-active');">
+				        data-hist-item="poe2SimHistory">
 					<span class="font-semibold">${PoeText.name(h.skillKo(), h.skill())}</span>
 					@if(h.ascendancy() != null && !h.ascendancy().isBlank())
 						<span class="badge badge-ghost badge-sm">${PoeText.name(h.ascendancyKo(), h.ascendancy())}</span>
@@ -67,11 +67,11 @@
 				<%-- 이력 삭제 — 삭제 후 갱신된 목록으로 #poe2SimHistory 교체. 버튼 중첩 불가라 행 밖에 둔다(PoE1 과 같다) --%>
 				<button type="button"
 				        class="btn btn-ghost btn-xs px-2 text-base-content/60 hover:text-error shrink-0 self-start"
-				        title="${ko ? "이 결과 삭제" : "Delete this result"}"
+				        title="${MessageUtil.getMessage("poe.sim.history.delete")}"
 				        hx-delete="/poe2/htmx/sim/history/${h.id()}"
 				        hx-target="#poe2SimHistory"
 				        hx-swap="innerHTML"
-				        hx-confirm="${ko ? "이 최근 결과를 삭제할까요?" : "Delete this saved result?"}">✕</button>
+				        hx-confirm="${MessageUtil.getMessage("poe.sim.history.delete.confirm")}">✕</button>
 				</div>
 			@endfor
 		</div>

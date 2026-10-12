@@ -35,7 +35,7 @@
 				      hx-get="/poe2/htmx/items" hx-target="#poe2ItemList" hx-swap="innerHTML"
 				      hx-trigger="input changed delay:300ms, change" data-url-sync="true">
 					<input type="search" name="q" value="${initialQ}" autofocus class="input input-sm input-bordered w-full sm:w-72"
-					       placeholder="${MessageUtil.getMessage("poe.items.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe2.search.placeholder")}" autocomplete="off">
+					       placeholder="${MessageUtil.getMessage("poe.items.search.placeholder")}" aria-label="${MessageUtil.getMessage("poe.items.search.placeholder")}" autocomplete="off">
 					<input type="hidden" name="itemClass" value="${activeClass}">
 					<input type="hidden" name="attr" value="all">
 				</form>
@@ -85,7 +85,13 @@
 					}
 					document.addEventListener("click", function (e) { if (e.target.closest("[data-chip-group]")) setTimeout(sync, 0); });
 					form.addEventListener("change", function () { setTimeout(sync, 0); });
-					mark("all");
+					// 주소의 attr 복원(공유 링크 — 10-12 C285: 두 게임 모두 칩이 "전체"로 돌아가고 목록도 안 걸렀다). 첫 목록 요청은 attr 를 안 보내서 바뀌면 다시 부른다
+					var qa = new URLSearchParams(location.search).get("attr");
+					if (attr && qa && /^[a-z]+$/.test(qa) && qa !== attr.value && row.querySelector('button[data-attr="' + qa + '"]')) {
+						attr.value = qa;
+						var refire = function () { setTimeout(function () { form.dispatchEvent(new Event("change", { bubbles: true })); }, 0); }; if (document.readyState === "complete") refire(); else window.addEventListener("load", refire); // htmx 가 폼에 붙은 뒤에
+					}
+					mark(attr.value);
 					sync();
 				})();
 			</script>

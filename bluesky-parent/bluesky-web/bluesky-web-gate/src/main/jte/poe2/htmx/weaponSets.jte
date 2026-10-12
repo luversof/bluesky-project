@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe2.dto.Poe2
 @import net.luversof.web.gate.poe.PoeText
 
@@ -34,9 +35,9 @@
 					<tr>
 						<th>${ko ? "무기 세트" : "Weapon set"}</th>
 						<th class="text-right">DPS</th>
-						<th class="text-right">${ko ? "변화" : "Change"}</th>
+						<th class="text-right">${MessageUtil.getMessage("poe.refine.change")}</th>
 						<th class="text-right">EHP</th>
-						<th class="text-right">${ko ? "변화" : "Change"}</th>
+						<th class="text-right">${MessageUtil.getMessage("poe.refine.change")}</th>
 					</tr>
 				</thead>
 				<tbody>

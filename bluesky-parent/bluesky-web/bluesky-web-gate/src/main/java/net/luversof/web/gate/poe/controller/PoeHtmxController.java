@@ -255,6 +255,7 @@ public class PoeHtmxController {
         }
         // 변형 사본은 이름 꼬리 괄호 = 변형 이름(API uniqueVariants 규약) — 임플리싯 수가 기본 변형과 다른 변형이 78개라 그 변형 것으로
         java.util.List<String> baseImplicits = u.implicits();
+        Integer variantIdx = null;
         if (!foulborn
             && item.name().endsWith(")")
             && item.name().contains(" (")
@@ -264,6 +265,7 @@ public class PoeHtmxController {
           for (var v : u.variants()) {
             if (label.equals(v.name())) {
               baseImplicits = v.implicits();
+              variantIdx = v.index();
             }
           }
         }
@@ -313,8 +315,18 @@ public class PoeHtmxController {
                 u.flavour(),
                 u.flavourKo(),
                 rem,
-                remKo));
-        PoeBaseItem base = poeDataClient.baseItemByName(u.baseType());
+                remKo,
+                // 제한 · 영향력 · 팅크처 · 부적 등급도 원본 그대로(10-09 C215 — 옛 24인자 생성자라 결과 툴팁에서 "중복 사용 제한: 1"(금단
+                // 주얼) ·
+                //   영향력 상징(파쇄자) 등이 빠졌다)
+                u.limit(),
+                u.influences(),
+                u.tincture(),
+                u.talismanTier()));
+        // 고른 변형의 베이스(10-09 C215 — 변형마다 베이스가 다른 고유, C209 와 같은 규칙)
+        PoeBaseItem base =
+            net.luversof.web.gate.poe.PoeUniqueBase.resolve(
+                u, variantIdx, poeDataClient::baseItemByName);
         if (base != null) {
           bases.put(item.slot(), base);
         }
@@ -440,7 +452,14 @@ public class PoeHtmxController {
                 u.flavour(),
                 u.flavourKo(),
                 rem,
-                remKo));
+                remKo,
+                // 제한 · 영향력 · 팅크처 · 부적 등급도 원본 그대로(10-09 C215 — 옛 24인자 생성자라 결과 툴팁에서 "중복 사용 제한: 1"(금단
+                // 주얼) ·
+                //   영향력 상징(파쇄자) 등이 빠졌다)
+                u.limit(),
+                u.influences(),
+                u.tincture(),
+                u.talismanTier()));
         PoeBaseItem base = poeDataClient.baseItemByName(u.baseType());
         if (base != null) {
           bases.put(key, base);
@@ -1145,7 +1164,11 @@ public class PoeHtmxController {
     }
     PoeUniqueItem item = poeDataClient.unique(slug);
     model.addAttribute("item", item);
-    model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
+    // 변형마다 베이스가 다른 고유는 고른 변형의 베이스(10-09 C209)
+    model.addAttribute(
+        "base",
+        net.luversof.web.gate.poe.PoeUniqueBase.resolve(
+            item, variant, poeDataClient::baseItemByName));
     model.addAttribute("variant", variant);
     model.addAttribute("oob", true); // 단추(이 유니크로 최적화)도 그 변형으로 함께 바꾼다(C95)
     return "poe/htmx/uniqueVariants";

@@ -80,11 +80,15 @@ function matcher(enTable, koTable) {
 		const pool = new Set();
 		for (const t of wt) for (const c of index.get(t) || []) pool.add(c);
 		let best = null, bestScore = 0;
+		// 동점이면 줄 나눔이 위키 원문과 같은 행(10-09 C239 — 게임엔 같은 문장이 한 줄 · 두 줄 행으로 둘 다 있다: 과대망상 "…싶은가, 그런 …"(옛 한 줄) 대신
+		//   poe2db 와 같은 "…싶은가?" / "그런 사람이 될지어다." 두 줄. 예전엔 먼저 나온 행이 이겼다)
+		const wikiLines = (String(wikiText).match(/&lt;br\s*\/?&gt;|<br\s*\/?>|\n/gi) || []).length + 1;
+		const lineCount = (c) => c.text.split(/\r?\n/).length;
 		for (const c of pool) {
 			let inter = 0;
 			for (const t of wt) if (c.toks.has(t)) inter++;
 			const score = inter / (wt.size + c.toks.size - inter);
-			if (score > bestScore) { bestScore = score; best = c; }
+			if (score > bestScore || (score === bestScore && best && lineCount(c) === wikiLines && lineCount(best) !== wikiLines)) { bestScore = score; best = c; }
 		}
 		if (!best || bestScore < 0.75) return null;
 		return { en: best.text, ko: koById.get(best.id) || null, score: bestScore };

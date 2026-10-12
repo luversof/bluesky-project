@@ -37,15 +37,15 @@
 				<span class="badge badge-ghost">${patchLabel}</span>
 				@if(!treeVersions.isEmpty())
 					<%-- 버전별 아카이브 조회 — 빈 값=현행(최신) 데이터 --%>
-					<select class="select select-xs select-bordered" data-poe-ver-select aria-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "트리 버전" : "Tree version"}">
-						<option value="">${net.luversof.web.gate.poe.PoeText.isKorean() ? "최신" : "Latest"}</option>
+					<select class="select select-xs select-bordered" data-poe-ver-select aria-label="${MessageUtil.getMessage("poe.tree.version")}">
+						<option value="">${MessageUtil.getMessage("poe.tree.version.latest")}</option>
 						@for(String v : treeVersions)
 							<option value="${v}" selected="${v.equals(activeVer)}">${v}</option>
 						@endfor
 					</select>
 				@endif
 				@if(!activeVer.isEmpty())
-					<span class="badge badge-warning badge-sm">${net.luversof.web.gate.poe.PoeText.isKorean() ? "아카이브 보기" : "Archive view"}@if(!activePatch.isEmpty()) · ${activePatch}@endif — ${net.luversof.web.gate.poe.PoeText.isKorean() ? "계산·최적화는 최신 기준" : "calc uses latest"}</span>
+					<span class="badge badge-warning badge-sm">${MessageUtil.getMessage("poe.tree.version.archive")}@if(!activePatch.isEmpty()) · ${activePatch}@endif — ${MessageUtil.getMessage("poe.tree.version.calclatest")}</span>
 				@endif
 			</div>
 
@@ -68,12 +68,12 @@
 				     포인트 표시는 접힘과 무관하게 항상 보이도록 details 밖에 둔다. --%>
 				<div class="flex items-start gap-2 mb-2">
 					<details class="poe-tools min-w-0 flex-1">
-						<summary class="btn btn-sm btn-outline sm:hidden">${net.luversof.web.gate.poe.PoeText.isKorean() ? "도구" : "Tools"}</summary>
+						<summary class="btn btn-sm btn-outline sm:hidden">${MessageUtil.getMessage("poe.tree.tool.toggle")}</summary>
 						<div class="flex flex-wrap items-center gap-2 pt-2 sm:pt-0">
-					<input id="poeTreeSearch" type="text" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "Enter: 다음 노드로 · Shift+Enter: 이전 · Ctrl+Enter: 그 노드 찍기/해제" : "Enter: next node · Shift+Enter: previous · Ctrl+Enter: allocate/remove it"}" class="input input-sm input-bordered w-full sm:w-52" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "검색 (노드/스탯)" : "Search (node/stat)"}" aria-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "검색 (노드/스탯)" : "Search (node/stat)"}">
+					<input id="poeTreeSearch" type="text" title="${MessageUtil.getMessage("poe.tree.search.title")}" class="input input-sm input-bordered w-full sm:w-52" placeholder="${MessageUtil.getMessage("poe.tree.search")}" aria-label="${MessageUtil.getMessage("poe.tree.search")}">
 					<span id="poeTreeSearchCount" class="text-xs font-mono text-base-content/60" aria-live="polite"></span>
 					<span id="poeTreeNotice" class="text-xs font-mono text-warning"></span>
-					<select id="poeTreeClass" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "캐릭터 직업" : "Class"}">
+					<select id="poeTreeClass" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.tree.class")}">
 						<option value="0">${net.luversof.web.gate.poe.PoeText.name("사이온", "Scion")}</option>
 						<option value="1">${net.luversof.web.gate.poe.PoeText.name("머라우더", "Marauder")}</option>
 						<option value="2">${net.luversof.web.gate.poe.PoeText.name("레인저", "Ranger")}</option>
@@ -82,20 +82,20 @@
 						<option value="5">${net.luversof.web.gate.poe.PoeText.name("템플러", "Templar")}</option>
 						<option value="6">${net.luversof.web.gate.poe.PoeText.name("섀도우", "Shadow")}</option>
 					</select>
-					<select id="poeTreeAscend" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "전직" : "Ascendancy"}"></select>
-					<select id="poeTreeBloodline" class="select select-sm select-bordered" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "혈맹" : "Bloodline"}"></select>
-					<button id="poeTreeUndo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실행취소" : "Undo"}</button>
-					<button id="poeTreeRedo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Shift+Z">${net.luversof.web.gate.poe.PoeText.isKorean() ? "다시실행" : "Redo"}</button>
-					<button id="poeTreeReset" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "트리 초기화" : "Reset"}</button>
-					<button id="poeTreeAnoint" type="button" class="btn btn-sm btn-ghost" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "아뮬렛 도유로 노터블 부여" : "Anoint a notable"}">${net.luversof.web.gate.poe.PoeText.isKorean() ? "도유" : "Anoint"}</button>
-					<button id="poeTreeStatsToggle" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "스탯 요약" : "Stat summary"}</button>
-					<input id="poeTreeImport" type="text" class="input input-sm input-bordered w-full sm:w-56" placeholder="${net.luversof.web.gate.poe.PoeText.isKorean() ? "공홈 트리 링크 붙여넣기" : "Paste official tree link"}" aria-label="${net.luversof.web.gate.poe.PoeText.isKorean() ? "공홈 트리 링크 붙여넣기" : "Paste official tree link"}">
-					<button id="poeTreeImportGo" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "가져오기" : "Import"}</button>
-					<button id="poeTreeCopy" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "링크 복사" : "Copy link"}</button>
-					<button id="poeTreeCopyOfficial" type="button" class="btn btn-sm btn-ghost" title="pathofexile.com">${net.luversof.web.gate.poe.PoeText.isKorean() ? "공홈 링크" : "Official link"}</button>
+					<select id="poeTreeAscend" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.tree.ascendancy")}"></select>
+					<select id="poeTreeBloodline" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.tree.bloodline")}"></select>
+					<button id="poeTreeUndo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Z">${MessageUtil.getMessage("poe.tree.tool.undo")}</button>
+					<button id="poeTreeRedo" type="button" class="btn btn-sm btn-ghost" disabled title="Ctrl+Shift+Z">${MessageUtil.getMessage("poe.tree.tool.redo")}</button>
+					<button id="poeTreeReset" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe.tree.tool.reset")}</button>
+					<button id="poeTreeAnoint" type="button" class="btn btn-sm btn-ghost" title="${MessageUtil.getMessage("poe.tree.anoint.title")}">${MessageUtil.getMessage("poe.tree.anoint")}</button>
+					<button id="poeTreeStatsToggle" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe.tree.tool.stats")}</button>
+					<input id="poeTreeImport" type="text" class="input input-sm input-bordered w-full sm:w-56" placeholder="${MessageUtil.getMessage("poe.tree.import.placeholder")}" aria-label="${MessageUtil.getMessage("poe.tree.import.placeholder")}">
+					<button id="poeTreeImportGo" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe.tree.tool.import")}</button>
+					<button id="poeTreeCopy" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe.tree.tool.copy")}</button>
+					<button id="poeTreeCopyOfficial" type="button" class="btn btn-sm btn-ghost" title="pathofexile.com">${MessageUtil.getMessage("poe.tree.tool.official")}</button>
 					<button id="poeTreeEval" type="button" class="btn btn-sm btn-primary btn-outline">${MessageUtil.getMessage("poe.tree.eval")}</button>
 					<button id="poeTreeToSim" type="button" class="btn btn-sm btn-secondary btn-outline">${MessageUtil.getMessage("poe.tree.tosim")}</button>
-					<button id="poeTreeFullscreen" type="button" class="btn btn-sm btn-ghost">${net.luversof.web.gate.poe.PoeText.isKorean() ? "전체 화면" : "Fullscreen"}</button>
+					<button id="poeTreeFullscreen" type="button" class="btn btn-sm btn-ghost">${MessageUtil.getMessage("poe.tree.tool.fullscreen")}</button>
 						</div>
 					</details>
 					<span id="poeTreePoints" class="flex flex-wrap min-w-0 items-center gap-2 text-sm text-base-content/70"></span>
@@ -106,7 +106,7 @@
 					<div id="poeTreeEvalPanel" class="hidden absolute left-2 top-2 z-10 w-72 max-h-[70%] overflow-y-auto rounded shadow-2xl border border-primary/50 bg-base-300/95">
 						<div class="sticky top-0 border-b border-primary/40 bg-base-200 text-xs px-4 py-1 flex items-center">
 							<span class="flex-1 text-center font-bold">${MessageUtil.getMessage("poe.tree.eval.title")}</span>
-							<button id="poeTreeEvalClose" type="button" class="shrink-0 px-1 text-base-content/60 hover:text-base-content" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "닫기" : "Close"}">✕</button>
+							<button id="poeTreeEvalClose" type="button" class="shrink-0 px-1 text-base-content/60 hover:text-base-content" title="${MessageUtil.getMessage("poe.tree.tool.close")}">✕</button>
 						</div>
 						<div class="border-b border-primary/20 bg-base-200/60 p-2 space-y-1">
 							<div class="text-[10px] text-base-content/60 leading-4">${MessageUtil.getMessage("poe.tree.eval.gem.help")}</div>
@@ -131,7 +131,7 @@
 						<div id="poeTreeEvalBody" class="p-2"></div>
 					</div>
 					<div id="poeTreeStats" class="hidden absolute right-2 top-2 z-10 w-72 max-h-[60%] overflow-y-auto poe-node-popup">
-						<div class="sticky top-0 poe-popup-head text-xs">${net.luversof.web.gate.poe.PoeText.isKorean() ? "할당 스탯 합계" : "Allocated stats"}</div>
+						<div class="sticky top-0 poe-popup-head text-xs">${MessageUtil.getMessage("poe.tree.stats.total")}</div>
 						<div id="poeTreeStatsBody" class="py-1"></div>
 					</div>
 				</div>

@@ -95,7 +95,11 @@ function parseVariant(line, statCount) {
 			k++;
 		}
 	}
-	return reminders.length ? { conditions, text: textToken.quoted, handlers, reminders } : { conditions, text: textToken.quoted, handlers };
+	// 조건과 문장 사이 표식 — gem_quality = 젬 "퀄리티로 인한 추가 효과" 전용 변형(PoE2 "Chains {0:+d} time", 일반 줄은 "{0}회 연쇄", 10-09 C244)
+	const quality = tokens.slice(statCount, tokens.indexOf(textToken)).some((t) => t.raw === "gem_quality");
+	const v = reminders.length ? { conditions, text: textToken.quoted, handlers, reminders } : { conditions, text: textToken.quoted, handlers };
+	if (quality) v.quality = true;
+	return v;
 }
 
 function parseFile(text, blocks) {
@@ -161,8 +165,14 @@ function formatValue(value) {
 	return String(Math.round(value * 100) / 100);
 }
 
-/** @param extraFiles 마지막에 파싱되어 최우선 적용되는 추가 설명 파일 (예: passive_skill_stat_descriptions) */
-export function createStatDescriber(fileDir, extraFiles = []) {
+/**
+ * @param extraFiles 마지막에 파싱되어 최우선 적용되는 추가 설명 파일 (예: passive_skill_stat_descriptions)
+ * @param options.fileOrder true 면 줄을 설명 파일 순서(앞 파일 → 뒤 파일, 파일 안 블록 순)로 놓는다 — 게임 · poe2db 젬 툴팁 순서
+ *   (10-09 C242, 볼 라이트닝 "번개 피해"(stat_descriptions) → "0.2초마다"(active_skill_gem) → "감전"(skill) → "1.8미터"(전용 파일)).
+ *   기본은 예전대로 스탯이 들어온 순서
+ * @param options.gemQuality "skip" = gem_quality 표식 변형을 건너뜀(젬 일반 줄) · "prefer" = 그 변형 먼저(퀄리티 줄) · 없으면 예전대로 구분 안 함(10-09 C244)
+ */
+export function createStatDescriber(fileDir, extraFiles = [], options = {}) {
 	const blocks = [];
 	// 뒤 파일이 앞 파일을 include 하는 구조 — 범용(stat) → 전용 순으로 파싱하고 뒤가 우선하도록 나중에 색인
 	for (const name of [
@@ -180,13 +190,17 @@ export function createStatDescriber(fileDir, extraFiles = []) {
 	for (const block of blocks) {
 		for (const stat of block.stats) blockByStat.set(stat, block);
 	}
+	const orderOf = new Map(blocks.map((b, i) => [b, i]));
 
 	/** statValues: Map<statId, value> (표시 순서 유지) → 언어별 문장 배열 */
 	//  고른 변형의 reminderstring Id 는 describe.reminders 에 결과와 같은 길이로 남긴다(마지막 호출 기준, 10-04 C115)
-	const describe = function describe(statValues, lang) {
+	// callOptions.gemQuality — 호출마다 덮어쓰기(PoE1 transform: 같은 서술기로 레벨 줄은 skip, 퀄리티 줄은 prefer, 10-10 C245)
+	const describe = function describe(statValues, lang, callOptions = {}) {
+		const gemQuality = callOptions.gemQuality ?? options.gemQuality;
 		const consumed = new Set();
 		const result = [];
 		const reminders = [];
+		const ords = [];
 		describe.reminders = reminders;
 		for (const [statId] of statValues) {
 			if (consumed.has(statId)) continue;
@@ -198,7 +212,10 @@ export function createStatDescriber(fileDir, extraFiles = []) {
 			const variants = block.variants[lang]?.length
 				? block.variants[lang]
 				: block.variants.English;
-			const variant = variants.find((v) =>
+			const pool = gemQuality === "skip" ? variants.filter((v) => !v.quality)
+				: gemQuality === "prefer" ? [...variants.filter((v) => v.quality), ...variants.filter((v) => !v.quality)]
+				: variants;
+			const variant = pool.find((v) =>
 				v.conditions.every((c, idx) => conditionMatches(c, values[idx])),
 			);
 			if (!variant) continue;
@@ -222,6 +239,12 @@ export function createStatDescriber(fileDir, extraFiles = []) {
 				.replace(/\\n/g, "\n");
 			result.push(text);
 			reminders.push(variant.reminders || []);
+			ords.push(orderOf.get(block));
+		}
+		if (options.fileOrder && result.length > 1) {
+			const idx = result.map((_, i) => i).sort((a, b) => ords[a] - ords[b] || a - b);
+			describe.reminders = idx.map((i) => reminders[i]);
+			return idx.map((i) => result[i]);
 		}
 		return result;
 	};
@@ -241,6 +264,11 @@ export function reportUnknownHandlers() {
  * @param options.keepLineBreaks 게임 설명이 여러 줄("…tree" + "통로" · 아세나스의 두 모드처럼)이고 PoB 도 같은 수의 줄로 쪼갰으면 한국어도 그 줄 수대로 낸다
  *   (10-04 C93). 끄면 예전처럼 공백으로 한 줄 — 고유 툴팁에서 두 옵션이 한 줄로 이어 보이고 영어 · 한국어 줄 수가 어긋났다(PoE1 171종).
  */
+/** 게임 원문 마크업 "[Id|보이는 글자]" → 보이는 글자, "[Id]" → Id(10-09 C210). */
+export function unmark(text) {
+	return text.replace(/\[([^\]|]+)\|([^\]]+)\]/g, "$2").replace(/\[([^\]|]+)\]/g, "$1");
+}
+
 export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 	const blocks = [];
 	for (const name of [
@@ -257,12 +285,17 @@ export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 	// 토큰 = 플레이스홀더({..}) 또는 숫자/범위(선행 +, 감싸는 괄호 포함). 둘 다 스켈레톤에서 sentinel 로 바꿔
 	// 템플릿의 고정 숫자("2 seconds")도 PoB 라인 숫자와 정렬되게 한다.
 	const TOKEN = /\+?\(?\{[^}]*\}\)?|\+?\(?-?\d[\d.\-]*\)?/g;
-	const skel = (text) => text.replace(/\\n/g, " ").replace(TOKEN, "").replace(/\s+/g, " ").trim();
-	const tokensOf = (text) => text.replace(/\\n/g, " ").match(TOKEN) || [];
+	// 원문 마크업 "[CrabTotem|Crab Totem]" · "[Ignite]" 은 보이는 글자만 남긴다(10-09 C210 — PoB 줄엔 마크업이 없어 뼈대가 안 맞았다:
+	//   "Socketed Spells are Supported by level 20 Crab Totem" · "Brine Charge" 등 영어 그대로 남던 줄). 리마인더 색인도 같은 뼈대
+	const skel = (text) => unmark(text).replace(/\\n/g, " ").replace(TOKEN, "").replace(/\s+/g, " ").trim();
+	const tokensOf = (text) => unmark(text).replace(/\\n/g, " ").match(TOKEN) || [];
 	const isPlaceholder = (token) => token.includes("{");
 
 	// 영어 스켈레톤 → { enTokens, koText } (먼저 등장한 것 우선)
 	const bySkeleton = new Map();
+	// 정확 일치가 없을 때만 대소문자 무시(10-09 C210 — PoB "50% Chance to avoid being Stunned during Effect" ↔ 게임 "Avoid". 처음부터 무시하면
+	//   "Bleeding cannot be inflicted on you" 가 대소문자만 다른 다른 설명으로 바뀌었다 — 출혈에 면역 → 출혈이 플레이어에게 유발될 수 없음)
+	const byLowerSkeleton = new Map();
 	for (const block of blocks) {
 		const en = block.variants.English || [];
 		const ko = block.variants.Korean || [];
@@ -270,12 +303,13 @@ export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 			if (!ko[k]) continue;
 			const key = skel(en[k].text);
 			if (key && !bySkeleton.has(key)) bySkeleton.set(key, { enTokens: tokensOf(en[k].text), koText: ko[k].text });
+			if (key && !byLowerSkeleton.has(key.toLowerCase())) byLowerSkeleton.set(key.toLowerCase(), { enTokens: tokensOf(en[k].text), koText: ko[k].text });
 		}
 	}
 
 	// 단일 라인 번역
 	function translateLine(englishLine) {
-		const entry = bySkeleton.get(skel(englishLine));
+		const entry = bySkeleton.get(skel(englishLine)) || byLowerSkeleton.get(skel(englishLine).toLowerCase());
 		if (!entry) return null;
 		const pobTokens = tokensOf(englishLine);
 		if (pobTokens.length !== entry.enTokens.length) return null;
@@ -288,7 +322,7 @@ export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 			valueByIndex.set(m && m[1] !== "" ? Number(m[1]) : seq++, pobTokens[i]);
 		});
 		let koSeq = 0;
-		return entry.koText
+		return unmark(entry.koText)
 			.replace(/\\n/g, "\n")
 			.replace(/\+?\(?\{[^}]*\}\)?/g, (token) => {
 				const m = token.match(/\{(\d*)/);
@@ -349,13 +383,15 @@ export function createReminderIndex(fileDir, extraFiles = []) {
 	}
 	const TOKEN = /\+?\(?\{[^}]*\}\)?|\+?\(?-?\d[\d.\-]*\)?/g;
 	// 번역기(createModTranslator)와 같은 뼈대 — 원문의 글자 그대로 "\n"(역슬래시+n) · 토큰 자리표시 \u0001(10-04 C127 검토 지적)
-	const skel = (text) => text.replace(/\\n/g, " ").replace(TOKEN, "\u0001").replace(/\s+/g, " ").trim();
+	const skel = (text) => unmark(text).replace(/\\n/g, " ").replace(TOKEN, "\u0001").replace(/\s+/g, " ").trim();
 	const bySkeleton = new Map();
+	const byLowerSkeleton = new Map(); // 번역기와 같은 대소문자 폴백(C210)
 	for (const block of blocks) {
 		for (const v of block.variants.English || []) {
 			const key = skel(v.text);
 			if (!key || bySkeleton.has(key)) continue;
 			bySkeleton.set(key, v.reminders || []);
+			if (!byLowerSkeleton.has(key.toLowerCase())) byLowerSkeleton.set(key.toLowerCase(), v.reminders || []);
 		}
 	}
 	return (lines) => {
@@ -363,7 +399,8 @@ export function createReminderIndex(fileDir, extraFiles = []) {
 		for (let i = 0; i < lines.length; ) {
 			let step = 1;
 			for (let w = 1; w <= Math.min(3, lines.length - i); w++) {
-				const ids = bySkeleton.get(skel(lines.slice(i, i + w).join(" ")));
+				const key = skel(lines.slice(i, i + w).join(" "));
+				const ids = bySkeleton.get(key) ?? byLowerSkeleton.get(key.toLowerCase());
 				if (ids !== undefined) {
 					out[i + w - 1] = [...ids];
 					step = w;

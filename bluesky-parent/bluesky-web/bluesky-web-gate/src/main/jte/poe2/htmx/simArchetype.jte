@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe2.dto.Poe2
 @import net.luversof.web.gate.poe.PoeText
 
@@ -17,9 +18,9 @@
 			return String.format("%,.0f", n);
 		};
 		String lean = archetype.lean();
-		String leanLabel = "dps".equals(lean) ? (ko ? "공격 특화 → 목표 DPS" : "Offense → DPS objective")
-			: "ehp".equals(lean) ? (ko ? "생존 특화 → 목표 EHP" : "Defense → EHP objective")
-			: (ko ? "균형 → 목표 DPS·EHP 합" : "Balanced → DPS+EHP objective");
+		String leanLabel = "dps".equals(lean) ? MessageUtil.getMessage("poe.sim.lean.dps")
+			: "ehp".equals(lean) ? MessageUtil.getMessage("poe.sim.lean.ehp")
+			: MessageUtil.getMessage("poe.sim.lean.balanced");
 		String leanCls = "dps".equals(lean) ? "badge-error" : "ehp".equals(lean) ? "badge-info" : "badge-ghost";
 		boolean auto = archetype.ascendancy() == null || archetype.ascendancy().isBlank();
 		java.util.List<String> items = archetype.topItems() == null ? java.util.List.of()
@@ -27,9 +28,9 @@
 	}
 	<div class="space-y-1 rounded-box border border-base-200 bg-base-100 px-3 py-2 text-xs" data-sim-hint>
 		<div class="flex flex-wrap items-center gap-2">
-			<span class="text-base-content/60">${ko ? "실빌드 성향" : "Real-build lean"}</span>
+			<span class="text-base-content/60">${MessageUtil.getMessage("poe.sim.archetype")}</span>
 			<span class="badge badge-sm ${leanCls}">${leanLabel}</span>
-			<span class="badge badge-ghost badge-xs">${archetype.mainSkill()} · ${auto ? (ko ? "전 전직" : "all ascendancies") : archetype.ascendancy()}</span>
+			<span class="badge badge-ghost badge-xs">${archetype.mainSkill()} · ${auto ? MessageUtil.getMessage("poe.sim.lean.allasc") : archetype.ascendancy()}</span>
 			<span class="text-base-content/60">n=${archetype.sample()}</span>
 		</div>
 		<div class="grid grid-cols-2 gap-1 sm:grid-cols-4">
@@ -39,10 +40,10 @@
 			<div class="rounded bg-base-200/60 px-2 py-1"><div class="text-[10px] text-base-content/60">DPS</div><div class="font-mono">${fmt.apply(archetype.medianDps())}</div></div>
 		</div>
 		@if(archetype.topKeystones() != null && !archetype.topKeystones().isEmpty())
-			<div class="text-base-content/60">${ko ? "실빌드 키스톤" : "Common keystones"}: ${String.join(", ", archetype.topKeystones().stream().limit(4).map(Poe2.NinjaCount::name).toList())}</div>
+			<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.keystones")}: ${String.join(", ", archetype.topKeystones().stream().limit(4).map(Poe2.NinjaCount::name).toList())}</div>
 		@endif
 		@if(archetype.topCoSkills() != null && !archetype.topCoSkills().isEmpty())
-			<div class="text-base-content/60">${ko ? "함께 쓰는 스킬" : "Common co-skills"}: ${String.join(", ", archetype.topCoSkills().stream().limit(5).map(Poe2.NinjaCount::name).toList())}</div>
+			<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.coskills")}: ${String.join(", ", archetype.topCoSkills().stream().limit(5).map(Poe2.NinjaCount::name).toList())}</div>
 		@endif
 		@if(!items.isEmpty())
 			<div class="text-base-content/60">${ko ? "자주 쓰는 고유" : "Common uniques"}: ${String.join(", ", items)}</div>

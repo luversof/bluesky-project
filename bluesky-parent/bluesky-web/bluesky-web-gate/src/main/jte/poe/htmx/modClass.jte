@@ -82,7 +82,7 @@
 	<div class="mb-3 flex flex-wrap items-center gap-1.5 text-xs">
 		<a class="badge badge-ghost badge-sm" href="#mod-sec-affix">${ko ? "접두·접미" : "Affixes"}</a>
 		@if(mods.corrupted() != null && !mods.corrupted().isEmpty())
-			<a class="badge badge-ghost badge-sm" href="#mod-sec-corrupted">${ko ? "타락" : "Corrupted"}</a>
+			<a class="badge badge-ghost badge-sm" href="#mod-sec-corrupted">${MessageUtil.getMessage("poe.common.corrupted")}</a>
 		@endif
 		@if(mods.enchants() != null && !mods.enchants().isEmpty())
 			<a class="badge badge-ghost badge-sm" href="#mod-sec-enchant">${ko ? "인챈트" : "Enchants"}</a>
@@ -141,8 +141,8 @@
 	<div id="poeCraftCalc" class="sticky bottom-2 z-10 mt-3 hidden flex-wrap items-center gap-2 rounded-box border border-primary/30 bg-base-100 px-3 py-2 text-sm shadow-lg">
 		<span class="font-semibold text-primary" id="poeCraftCalcLabel"></span>
 		<span class="font-mono" id="poeCraftCalcValue"></span>
-		<span class="text-[11px] text-base-content/60">${ko ? "독립 가정 근사 — 접두/접미 자리 경쟁 미반영(실제는 더 낮음)" : "independence approximation"}</span>
-		<button type="button" class="btn btn-ghost btn-xs ml-auto" id="poeCraftCalcClear">${ko ? "선택 해제" : "Clear"}</button>
+		<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("poe.mods.odds.approx")}</span>
+		<button type="button" class="btn btn-ghost btn-xs ml-auto" id="poeCraftCalcClear">${MessageUtil.getMessage("poe.mods.odds.clear")}</button>
 	</div>
 	<script nonce="${CspNonceHolder.getNonce()}">
 		(function () {
@@ -279,7 +279,7 @@
 							@if(topEss.icon() != null)
 								<img src="/poe-assets/${topEss.icon()}" class="w-6 h-6 object-contain shrink-0" alt="${ko ? topEss.nameKo() : topEss.name()}" loading="lazy">
 							@endif
-							<span class="text-xs text-base-content/60 font-mono shrink-0">${fam.getValue().size()}T</span>
+							<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), fam.getValue().size())}</span>
 							<span class="text-[10px] font-mono shrink-0 ${"prefix".equals(topEss.gen()) ? "text-[#8888ff]" : "text-amber-400"}">${"prefix".equals(topEss.gen()) ? (ko ? "접두" : "pre") : (ko ? "접미" : "suf")}</span>
 							<span class="min-w-0 flex-1">
 								@for(String line : (ko ? topEss.ko() : topEss.en()))
@@ -336,7 +336,7 @@
 					<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-mod-family="bench-${fam.getKey().hashCode()}" data-family-odds="100" data-family-gen="${topBench.gen()}">
 						<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
 							<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" onclick="event.stopPropagation()" title="${ko ? "동시 확률 계산에 확정 크래프트로 포함" : "Include as deterministic craft"}">
-							<span class="text-xs text-base-content/60 font-mono shrink-0">${fam.getValue().size()}T</span>
+							<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), fam.getValue().size())}</span>
 							<span class="text-[10px] font-mono shrink-0 ${"prefix".equals(topBench.gen()) ? "text-[#8888ff]" : "text-amber-400"}">${"prefix".equals(topBench.gen()) ? (ko ? "접두" : "pre") : (ko ? "접미" : "suf")}</span>
 							<span class="min-w-0 flex-1">
 								@for(String line : (ko ? topBench.ko() : topBench.en()))

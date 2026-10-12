@@ -9,8 +9,10 @@ import { DATA_DIR, FILES_DIR, POB_DIR, findLuaJit, loadConfig, loadTable } from 
 import { createModTranslator, createReminderIndex } from "./statDescriptions.mjs";
 
 // 영어 모드 배열 → 한국어 배열 역번역 (멀티라인 모드 결합, 매칭 실패 라인은 영어 유지)
+// 팅크처 옵션은 따로 있는 tincture_stat_descriptions(10-09 C210 — config.json files 에 추가. 없던 동안 재껍질 · 참나무 가지 등 팅크처 고유 6개 옵션이 영어 그대로)
 const toKoRaw = createModTranslator(FILES_DIR, [
 	"metadata@statdescriptions@passive_skill_stat_descriptions.txt",
+	"metadata@statdescriptions@tincture_stat_descriptions.txt",
 ], { keepLineBreaks: true });
 
 // 번역기 앞뒤 손질(10-02, PoE2 parse-uniques2 toKo 와 같은 방식):
@@ -56,6 +58,8 @@ const PARAM_LINE_KO = [
 	//   공포의 균형 action_speed_cannot_be_slowed_below_base_if_cast_temporal_chains_in_past_10_seconds("cannot be modified to below …")
 	[/^Gain an Endurance Charge every second if you've been Hit Recently$/, () => "최근 4초 이내 피격된 경우 1초마다 인내 충전 1개 획득"],
 	[/^(\(\d+-\d+\)|\d+)% chance that if you would gain Endurance Charges, you instead gain up to your maximum number of Endurance Charges$/, (m) => `인내 충전 획득 시 ${m[1]}%의 확률로 인내 충전 최대치 획득`],
+	// "This item can be anointed by Cassia"(PoB 원문) = 게임 local_can_be_anointed "Can be Anointed" — 한국어 "성유 바를 수 있음"(10-09 C210)
+	[/^This item can be anointed by Cassia$/, () => "성유 바를 수 있음"],
 	[/^Action Speed cannot be Slowed below Base Value if you've cast Temporal Chains in the past 10 seconds$/, () => "최근 10초 이내 시간의 사슬을 시전한 경우 동작 속도가 기본 수치 밑으로 내려가지 않음"],
 ];
 function paramLineKo(line) {
@@ -107,7 +111,8 @@ function toKo(lines) {
 		if (!ko) fixed.push(line);
 		else if (!(fixed.length && fixed[fixed.length - 1].includes(ko))) fixed.push(ko);
 	}
-	return fixed;
+	// 0 을 가로지르는 범위 앞의 "+"(10-09 C240 — "화염 저항 +(-25-50)%" → poedb 처럼 "화염 저항 (-25-50)%", 20줄). 영어(엔진 입력)는 그대로
+	return fixed.map((l) => l.replace(/\+\((-\d)/g, "($1"));
 }
 
 const PATCH = loadConfig().patch;
@@ -120,7 +125,7 @@ const wordsEn = load("English", "Words");
 const wordsKo = load("Korean", "Words");
 const nameKoByEn = new Map();
 wordsEn.forEach((w, i) => {
-	if (w.Text) nameKoByEn.set(w.Text, wordsKo[i]?.Text2 || null);
+	if (w.Text) nameKoByEn.set(w.Text, wordsKo[i]?.Text2?.trimStart() || null); // 앞 공백이 붙은 원문(" 관성" · " 장작")은 다듬는다 — 거래소 사전(공식 이름)엔 앞 공백이 없다. 뒤 공백은 그대로: "들불 체관 " 은 거래소도 뒤 공백까지 이름이라 다듬으면 "Unknown item name"(10-08 C175)
 });
 // KR 클라이언트 Words 테이블에 번역이 없는 레거시/제거 고유템의 한글명 폴백(영문명 기준, best-effort 커뮤니티 표준)
 const nameKoOverrides = (() => {
@@ -132,6 +137,32 @@ const nameKoOverrides = (() => {
 		return {};
 	}
 })();
+// 공식 베이스 보정(10-08 C176) — PoB 고유 원문의 베이스가 게임과 다른 고유(영문 고유 이름 → PoB Bases 에 있는 영문 베이스).
+//   근거는 한국 서버 거래소 사전(같은 이름의 베이스 = 공식)
+const baseOverrides = (() => {
+	try {
+		const raw = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "unique-base-overrides.json"), "utf8"));
+		delete raw._comment;
+		return raw;
+	} catch {
+		return {};
+	}
+})();
+// 팅크처 베이스 속성(10-09 C211) — PoB Bases tincture.lua 의 "tincture = { manaBurn = 0.6, cooldown = 7 }". 팅크처는 장비 베이스 표
+//   (base-items.json)에 없어 고유 상세가 마나 연소 · 재사용 대기시간 줄을 못 그렸다(인게임 툴팁 속성 칸)
+const tinctureByBase = (() => {
+	const map = new Map();
+	try {
+		const src = fs.readFileSync(path.join(DATA_DIR, "work", "pob-src", "src", "Data", "Bases", "tincture.lua"), "utf8");
+		for (const m of src.matchAll(/itemBases\["([^"]+)"\] = \{(?:(?!itemBases\[)[\s\S])*?tincture = \{ manaBurn = ([\d.]+), cooldown = ([\d.]+) \}/g)) {
+			map.set(m[1], { manaBurn: Number(m[2]), cooldown: Number(m[3]) });
+		}
+	} catch {
+		console.warn("PoB tincture.lua 없음 — 팅크처 속성 줄 없이 진행");
+	}
+	return map;
+})();
+
 // PoB 원문이 롤 범위를 고정값으로 단순화한 라인 보정(빛나는 묘약 "(1-2)초" 등 — 거래소 가변 옵션 판정용)
 const lineOverrides = (() => {
 	try {
@@ -171,6 +202,11 @@ const baseKoByEnForMods = baseKoByEn;
 baseEn.forEach((b, i) => {
 	if (b.Name) baseKoByEn.set(b.Name, baseKo[i]?.Name || null);
 });
+// 발음 구별 기호를 뺀 이름으로도 찾는다 — PoB 는 "Maelstrom Staff", 게임은 "Maelström Staff"(10-08 C176: 파쇄자 한국어 베이스가 비었다).
+//   영문 베이스는 PoB 표기 그대로 둔다(엔진이 그 이름으로 베이스를 찾는다)
+const foldName = (s) => s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+const baseKoByFold = new Map();
+for (const [en, ko] of baseKoByEn) if (ko && !baseKoByFold.has(foldName(en))) baseKoByFold.set(foldName(en), ko);
 
 // 블록 메타데이터로 취급하는 접두사 (모드 라인이 아님)
 const META_PREFIXES = [
@@ -181,6 +217,9 @@ const META_PREFIXES = [
 	// PoB 생성 고유(금단 불꽃/살점)의 "{variant:N}Item Level: 83" · "{variant:N}Requires Class Duelist" — 아이템 정보 줄이지 옵션이 아니다(10-03 C78)
 	"Item Level:",
 ];
+// PoB 원문 머리의 속성 줄("Energy Shield: 64" — 하늘가름 · "Crafted: true" — 근원 흡수) — 아이템 정보지 옵션이 아니다(10-09 C210, 예전엔 툴팁 옵션 칸에 영어로 나왔다).
+//   "Marauder: …"(순수한 재능) 같은 진짜 옵션과 섞이지 않게 키를 못박는다
+const META_PROPERTY = /^(Energy Shield|Armour|Evasion|Ward|Quality|Crafted): \S+$/;
 
 // 변형 라벨 한글화 — PoB 라벨은 영어 자유 문구라 완역이 불가능하다. 그래서 **확실한 것만** 옮기고
 //   못 옮기면 null 로 두어 화면이 영어 원문으로 폴백하게 한다(어설픈 반쪽 한글보다 낫다).
@@ -416,7 +455,8 @@ function parseBlock(block, category) {
 	//   예전엔 둘째 줄만 베이스로 보고 셋째 줄("{variant:10…}Leviathan Greaves")을 옵션 줄로 넣었다 → 옵션 목록에 베이스 이름이 섞이고 baseType 에 마크업이 남았다.
 	//   베이스보다 "Source:" · "League:" 가 먼저 오는 블록도 있다(고르곤의 응시 — 예전엔 baseType 이 "Source: …" 였다) → 그 줄은 건너뛰고 찾는다.
 	let baseAt = 1;
-	while (baseAt < lines.length && /^(Source|League):/.test(lines[baseAt])) baseAt++;
+	//   영향력 표시 줄("Shaper Item")이 베이스보다 먼저 오는 블록도 있다(창조의 메아리 — 예전엔 baseType 이 "Shaper Item", 진짜 베이스 "Royal Burgonet" 은 옵션 줄로 섞였다, 10-08 C176)
+	while (baseAt < lines.length && (/^(Source|League):/.test(lines[baseAt]) || /^(Shaper|Elder|Crusader|Redeemer|Hunter|Warlord) Item$/.test(lines[baseAt]))) baseAt++;
 	const baseLines = [];
 	let afterBase = baseAt;
 	while (afterBase < lines.length) {
@@ -433,6 +473,9 @@ function parseBlock(block, category) {
 	let selectedVariant = null;
 	let requiredLevel = null;
 	let league = null;
+	const influences = []; // 영향력("Shaper Item" · "Elder Item" — 인게임 툴팁 머리 좌우 상징, 10-08 C198)
+	let talismanTier = null;
+	let limit = null; // 중복 사용 제한 "Limited to: 1" · "1 Historic"(인게임 "중복 사용 제한: 1" 속성 줄, 10-08 C197)
 	let radius = null; // 반경 주얼("…in Radius")은 이 라벨이 없으면 PoB 가 반경 모드를 **조용히 무시**한다
 	let implicitCount = 0;
 	const modSection = []; // 메타 이후의 원시 라인들 (implicit 구분 전)
@@ -442,6 +485,11 @@ function parseBlock(block, category) {
 		if (line.startsWith("Selected Variant:")) { selectedVariant = Number(line.slice(17).trim()) || null; continue; }
 		if (line.startsWith("League:")) { league = line.slice(7).trim(); continue; }
 		if (line.startsWith("Radius:")) { radius = line.slice(7).trim(); continue; }
+		if (line.startsWith("Limited to:")) { limit = line.slice(11).trim(); continue; }
+		// 부적 등급(인게임 속성 줄 "부적 등급: 2" — ClientStrings ItemDisplayTalismanTier, 10-09 C214). 예전엔 메타 줄로 버렸다
+		if (line.startsWith("Talisman Tier:")) { talismanTier = Number(line.slice(14).trim()) || null; continue; }
+		const infM = line.match(/^(Shaper|Elder|Crusader|Redeemer|Hunter|Warlord) Item$/);
+		if (infM) { influences.push(infM[1].toLowerCase()); continue; }
 		if (line.startsWith("LevelReq:")) { requiredLevel = Number(line.slice(9).trim()) || null; continue; }
 		if (line.startsWith("Requires Level")) {
 			const m = line.match(/Requires Level (\d+)/);
@@ -451,7 +499,7 @@ function parseBlock(block, category) {
 		if (line.startsWith("Implicits:")) { implicitCount = Number(line.slice(10).trim()) || 0; modSection.length = 0; continue; }
 		// 메타 줄이 변형 표식 뒤에 숨어 있을 수 있다("{variant:3}Requires Class Witch" — 금단 불꽃/살점 166변형마다, C78)
 		const bare = line.replace(/^(\{[^}]*\})+/, "");
-		if (META_PREFIXES.some((p) => line.startsWith(p) || bare.startsWith(p))) continue;
+		if (META_PREFIXES.some((p) => line.startsWith(p) || bare.startsWith(p)) || META_PROPERTY.test(bare)) continue;
 		modSection.push(line);
 	}
 
@@ -469,9 +517,11 @@ function parseBlock(block, category) {
 	}
 
 	// 대표 베이스 = 기본 변형이 속한 베이스 줄(없으면 마지막 줄 — PoB 는 새 베이스를 뒤에 둔다), 베이스 줄이 하나면 그대로
-	const baseType = baseLines.length
-		? (baseLines.find((b) => defaultVariant != null && b.variants.has(defaultVariant)) || baseLines[baseLines.length - 1]).base
-		: lines[baseAt];
+	const baseType =
+		baseOverrides[name] ||
+		(baseLines.length
+			? (baseLines.find((b) => defaultVariant != null && b.variants.has(defaultVariant)) || baseLines[baseLines.length - 1]).base
+			: lines[baseAt]);
 
 	// {variant:...} 필터 + {tags:...}/{range:...} 등 마크업 제거
 	function cleanLine(raw, variant) {
@@ -489,7 +539,8 @@ function parseBlock(block, category) {
 	const explicitRaw = modSection.slice(implicitCount);
 	const overrides = lineOverrides[name] || {};
 	// PoB 생성 고유(선도자의 상징) 원문의 관사 오타 "an Frenzy/Power Charge" — 게임 문구는 "a"(번역기도 그래야 맞춘다, C78)
-	const applyOverride = (line) => (overrides[line] || line).replace(/\ban (Frenzy|Power) Charge/g, "a $1 Charge");
+	//   비빈섹트 "a Endurance Charge" 는 반대 방향 같은 오타(10-09 C210)
+	const applyOverride = (line) => (overrides[line] || line).replace(/\ban (Frenzy|Power) Charge/g, "a $1 Charge").replace(/\ba Endurance Charge/g, "an Endurance Charge");
 	const linesFor = (variant) => ({
 		implicits: implicitRaw.map((l) => cleanLine(l, variant)).filter(Boolean).map(applyOverride),
 		explicits: explicitRaw.map((l) => cleanLine(l, variant)).filter(Boolean).map(applyOverride),
@@ -535,12 +586,16 @@ function parseBlock(block, category) {
 		slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
 		baseType,
 		// "Two-Toned Boots (Evasion/Energy Shield)" 처럼 괄호 부기가 붙은 베이스는 괄호를 떼고 한 번 더(게임 테이블엔 부기 없는 이름)
-		baseTypeKo: baseKoByEn.get(baseType) || baseKoByEn.get(baseType.replace(/\s*\([^)]*\)$/, "")) || null,
+		baseTypeKo: baseKoByEn.get(baseType) || baseKoByEn.get(baseType.replace(/\s*\([^)]*\)$/, "")) || baseKoByFold.get(foldName(baseType)) || null,
 		category,
 		requiredLevel,
 		league,
 		legacy: legacyUniqueNames.has(name),
 		radius,
+		...(limit ? { limit } : {}),
+		...(influences.length ? { influences } : {}),
+		...(tinctureByBase.has(baseType) ? { tincture: tinctureByBase.get(baseType) } : {}),
+		...(talismanTier ? { talismanTier } : {}),
 		implicits,
 		implicitsKo: toKo(implicits),
 		explicits,
@@ -642,7 +697,7 @@ items.sort((a, b) => a.name.localeCompare(b.name));
 // 리마인더(인게임 회색 부연 — "최근"은 지난 4초 …, 10-04 C114): 옵션 줄의 템플릿 reminderstring Id → ReminderText 영 · 한.
 //   explicits 와 같은 길이의 줄별 배열(그 줄 밑에 붙인다). 하나도 없으면 필드를 두지 않는다. 변형도 같은 규칙
 {
-	const reminderIdsOf = createReminderIndex(FILES_DIR, ["metadata@statdescriptions@passive_skill_stat_descriptions.txt"]);
+	const reminderIdsOf = createReminderIndex(FILES_DIR, ["metadata@statdescriptions@passive_skill_stat_descriptions.txt", "metadata@statdescriptions@tincture_stat_descriptions.txt"]);
 	const remEn = load("English", "ReminderText");
 	const remKo = load("Korean", "ReminderText");
 	const textById = new Map(remEn.map((r, i) => [r.Id, { en: r.Text, ko: remKo[i]?.Id === r.Id && remKo[i]?.Text ? remKo[i].Text : r.Text }]));

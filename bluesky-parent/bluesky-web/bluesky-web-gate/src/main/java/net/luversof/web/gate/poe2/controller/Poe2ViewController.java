@@ -25,9 +25,16 @@ import net.luversof.web.gate.poe2.httpexchange.Poe2DataClient;
 public class Poe2ViewController {
 
   private final Poe2DataClient client;
+  // PoE2 데이터 폴더 — 관리 화면 산출물 목록(10-12 C261, PoE1 poe.data-dir 아래 poe2)
+  private final String dataDir;
 
-  public Poe2ViewController(Poe2DataClient client) {
+  public Poe2ViewController(
+      Poe2DataClient client,
+      @org.springframework.beans.factory.annotation.Value(
+              "${poe.data-dir:${user.home}/.poe-gamedata}")
+          String poeDataDir) {
     this.client = client;
+    this.dataDir = poeDataDir + "/poe2"; // PoE1 화면과 같은 표기(구분자 /)
   }
 
   /** 모든 화면 머리의 패치 배지 — API 가 내려가 있어도 화면은 그린다. */
@@ -384,10 +391,68 @@ public class Poe2ViewController {
     return "poe2/build";
   }
 
+  /**
+   * PoE2 데이터 관리 — PoE1 관리 화면과 같은 구성(10-12 C261 — 사용자 지적: 현재/최신 버전 · 산출물 · 실행 환경이 PoE2 에만 없었다). 버전은
+   * 패치 서버 기준(한국은 카카오 CDN 번호를 GGG 식으로 옮겨 비교).
+   */
   @GetMapping("/admin")
   public String admin(Model model, Principal principal) {
-    model.addAttribute("meta", meta());
+    Poe2.Meta meta = meta();
+    model.addAttribute("meta", meta);
     model.addAttribute("loggedIn", principal != null);
+    Poe2.ExtractVersion version = null;
+    Poe2.ExtractStatus status = null;
+    try {
+      version = client.extractVersion();
+      status = client.extractStatus();
+    } catch (Exception e) {
+      // API 가 내려갔거나 옛 버전 — 버전 · 환경 줄만 비우고 화면은 그린다
+    }
+    model.addAttribute(
+        "patch",
+        version != null && version.dataPatch() != null ? version.dataPatch() : meta.patch());
+    model.addAttribute("latestPatch", version == null ? null : version.latestPatch());
+    model.addAttribute("upToDate", version != null && Boolean.TRUE.equals(version.upToDate()));
+    model.addAttribute("latestCdnVersion", version == null ? null : version.latestCdnVersion());
+    model.addAttribute("dataDir", dataDir);
+    model.addAttribute(
+        "imageMagickInstalled",
+        status != null && Boolean.TRUE.equals(status.imageMagickInstalled()));
+    model.addAttribute(
+        "engineAvailable", status != null && Boolean.TRUE.equals(status.engineAvailable()));
+    // {파일명, 메시지 키} — run-all2 산출물. 새 단계를 추가하면 여기에도 한 줄
+    String[][] files = {
+      {"gems.json", "poe.admin.data.gems"},
+      {"uniques.json", "poe.admin.data.uniques"},
+      {"base-items.json", "poe.admin.data.baseitems"},
+      {"passive-tree.json", "poe.admin.data.tree"},
+      {"atlas-tree.json", "poe.admin.data.atlas"},
+      {"mods.json", "poe.admin.data.modpool"},
+      {"augments.json", "poe2.admin.data.augments"},
+      {"waystone-mods.json", "poe2.admin.data.waystonemods"},
+      {"rare-name-words.json", "poe2.admin.data.rarenames"},
+      {"trade-stats.json", "poe.admin.data.tradestats"},
+    };
+    java.util.List<net.luversof.web.gate.poe.controller.PoeViewController.DataArtifact> artifacts =
+        net.luversof.web.gate.poe.controller.PoeViewController.dataArtifacts(dataDir, files);
+    model.addAttribute("artifacts", artifacts);
+    // API 가 데이터를 읽은 시각(meta.loadedAt) — 파일보다 이르면 실행 중인 API 는 옛 데이터(PoE1 과 같은 표시)
+    Long loadedAt = null;
+    try {
+      if (meta.loadedAt() != null && !meta.loadedAt().isBlank()) {
+        loadedAt = java.time.OffsetDateTime.parse(meta.loadedAt()).toInstant().toEpochMilli();
+      }
+    } catch (Exception e) {
+      // 형식이 다르면 표시만 생략
+    }
+    long newestFile =
+        artifacts.stream()
+            .filter(a -> a.modifiedEpochMs() != null)
+            .mapToLong(a -> a.modifiedEpochMs())
+            .max()
+            .orElse(0L);
+    model.addAttribute("dataLoadedAtEpochMs", loadedAt);
+    model.addAttribute("dataStaleInApi", loadedAt != null && newestFile > loadedAt);
     return "poe2/admin";
   }
 }

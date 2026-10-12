@@ -23,18 +23,16 @@
 	menu = "poe2",
 	contentPoe = @`
 		<div class="space-y-4">
-			<a href="/poe2" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe2.gems.title")}</a>
-			@template.poe2.header(title = title, meta = meta)
+			@template.poe2.header(title = title, meta = meta, backHref = "/poe2", backLabel = MessageUtil.getMessage("poe2.gems.title"),
+				subtitle = PoeText.isKorean() ? gem.name() : null, actions = @`
 			@if(simulatable)
 				<%-- PoE1 젬 상세와 같은 바로가기 — 시뮬레이터가 이 스킬을 고른 채 열린다(10-01) --%>
-				<a class="btn btn-sm btn-primary btn-outline" href="/poe2/sim?skill=${java.net.URLEncoder.encode(gem.name(), java.nio.charset.StandardCharsets.UTF_8)}" data-optimize-skill>${PoeText.isKorean() ? "이 스킬로 최적화 →" : "Optimize with this skill →"}</a>
+				<a class="btn btn-sm btn-primary btn-outline" href="/poe2/sim?skill=${java.net.URLEncoder.encode(gem.name(), java.nio.charset.StandardCharsets.UTF_8)}" data-optimize-skill>${MessageUtil.getMessage("poe.gems.optimize")}</a>
 			@endif
-			@if(PoeText.isKorean())
-				<div class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.english")}: ${gem.name()}</div>
-			@endif
+			`)
 			<div class="flex flex-wrap gap-2 text-xs">
 				<span class="badge badge-ghost">${MessageUtil.getMessage("poe2.gems.kind." + gem.kind())}</span>
-				<span class="badge badge-ghost">${MessageUtil.getMessage("poe2.gems.color." + gem.color())}</span>
+				<span class="badge badge-ghost">${MessageUtil.getMessage("poe.gems.color." + ("str".equals(gem.color()) ? "red" : "dex".equals(gem.color()) ? "green" : "int".equals(gem.color()) ? "blue" : "white"))}</span>
 				<%-- 젬 유형(PoB gemType = 젬 태그 이름) — 한국어는 같은 자리의 tagsKo. Support 는 종류 배지(보조)와 겹쳐 뺀다 --%>
 				!{
 					int gemTypeIdx = gem.tags() == null || gem.gemType() == null ? -1 : gem.tags().indexOf(gem.gemType());
@@ -74,18 +72,20 @@
 						boolean hasReq = gem.levels().stream().anyMatch(l -> l.requiredLevel() != null);
 					}
 					<div class="flex-1 min-w-0 sm:min-w-[20rem] rounded-2xl bg-base-100 p-4 shadow-sm">
-						<h2 class="font-bold mb-2">${ko ? "레벨별 진행" : "Level progression"}</h2>
+						<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.gems.progression")}</h2>
 						<div class="overflow-x-auto">
 							<table class="table table-xs">
 								<thead>
 									<tr>
-										<th>${ko ? "레벨" : "Level"}</th>
+										<th>${MessageUtil.getMessage("poe.gems.detail.level")}</th>
 										@if(hasReq)<th>${MessageUtil.getMessage("poe.gems.detail.required.level")}</th>@endif
+										<%-- 레벨별 요구 능력치(10-09 C237 — PoB2 getGemStatRequirement, 툴팁 C227 과 같은 식. 보조 젬은 0 이라 열 안 보임) --%>
+										@if(hasReq && !"support".equals(gem.kind()))<th>${MessageUtil.getMessage("poe.gems.col.attributes")}</th>@endif
 										@if(hasCost)<th>${MessageUtil.getMessage("poe.gems.detail.cost")}</th>@endif
 										@if(hasRes)<th>${MessageUtil.getMessage("poe2.gems.reservation")}</th>@endif
 										@if(hasCd)<th>${MessageUtil.getMessage("poe.gems.detail.cooldown")}</th>@endif
-										@if(hasCrit)<th>${ko ? "치명타" : "Crit"}</th>@endif
-										<th>${ko ? "효과" : "Effects"}</th>
+										@if(hasCrit)<th>${MessageUtil.getMessage("poe.gems.col.crit")}</th>@endif
+										<th>${MessageUtil.getMessage("poe.gems.col.effects")}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -93,7 +93,12 @@
 										<tr class="${l.level().equals(shownRow) ? "bg-primary/10" : ""}">
 											<td class="font-mono"><a class="link link-hover" href="/poe2/gems/${gem.slug()}?level=${l.level()}">${l.level()}</a></td>
 											@if(hasReq)<td class="font-mono" data-req-col>@if(l.requiredLevel() != null)${l.requiredLevel()}@endif</td>@endif
-											@if(hasCost)<td class="font-mono whitespace-nowrap">@if(l.cost() != null && l.cost() > 0)${l.cost()} ${PoeText.costType(l.costType())}@endif</td>@endif
+											@if(hasReq && !"support".equals(gem.kind()))
+												!{ int lvReq = l.requiredLevel() == null ? 1 : l.requiredLevel(); int ar = net.luversof.web.gate.poe.PoeGemRequirements.poe2Stat(lvReq, false, gem.reqStr()); int ad = net.luversof.web.gate.poe.PoeGemRequirements.poe2Stat(lvReq, false, gem.reqDex()); int ai = net.luversof.web.gate.poe.PoeGemRequirements.poe2Stat(lvReq, false, gem.reqInt());
+												   java.util.List<String> attrCells = new java.util.ArrayList<>(); if (ar > 0) attrCells.add(ar + " " + MessageUtil.getMessage("poe.items.detail.str")); if (ad > 0) attrCells.add(ad + " " + MessageUtil.getMessage("poe.items.detail.dex")); if (ai > 0) attrCells.add(ai + " " + MessageUtil.getMessage("poe.items.detail.int")); }
+												<td class="font-mono whitespace-nowrap" data-gem-level-attrs>${String.join(", ", attrCells)}</td>
+											@endif
+											@if(hasCost)<td class="font-mono whitespace-nowrap">@if(l.cost() != null && l.cost() > 0)${PoeText.costValue(l.cost(), l.costType())}@endif</td>@endif
 											@if(hasRes)<td class="font-mono whitespace-nowrap">@if(l.reservation() != null && l.reservation() > 0)${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.spirit.value"), l.reservation())}@endif</td>@endif
 											@if(hasCd)<td class="font-mono whitespace-nowrap">@if(l.cooldownMs() != null && l.cooldownMs() > 0)${String.format("%.2f", l.cooldownMs() / 1000.0)}s@endif</td>@endif
 											@if(hasCrit)<td class="font-mono">@if(l.critChance() != null && l.critChance() > 0)${String.format("%.2f", l.critChance())}%@endif</td>@endif
@@ -102,6 +107,18 @@
 									@endfor
 								</tbody>
 							</table>
+						</div>
+					</div>
+				@endif
+				<%-- 태그(PoE1 젬 화면과 같은 칸, 10-12 C265 짝 맞춤) --%>
+				!{java.util.List<String> displayTags = PoeText.lines(gem.tagsKo(), gem.tags());}
+				@if(displayTags != null && !displayTags.isEmpty())
+					<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-gem-tags>
+						<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.gems.tags")}</h2>
+						<div class="flex flex-wrap gap-1.5">
+							@for(String tag : displayTags)
+								<span class="badge badge-outline badge-sm">${tag}</span>
+							@endfor
 						</div>
 					</div>
 				@endif

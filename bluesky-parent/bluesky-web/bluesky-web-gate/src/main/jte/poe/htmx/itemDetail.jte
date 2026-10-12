@@ -57,7 +57,7 @@
 					<div class="flex justify-between"><span class="text-[#7f7f7f]">${critChanceLabel}</span><span class="text-white">${String.format("%.2f", item.weapon().critChance())}%</span></div>
 					<div class="flex justify-between"><span class="text-[#7f7f7f]">${attacksPerSecondLabel}</span><span class="text-white">${String.format("%.2f", item.weapon().attacksPerSecond())}</span></div>
 					@if(showWeaponRange)
-						<div class="flex justify-between"><span class="text-[#7f7f7f]">${weaponRangeLabel}</span><span class="text-white">${String.format("%.1f", item.weapon().range() / 10.0)}${PoeText.isKorean() ? "미터" : "m"}</span></div>
+						<div class="flex justify-between"><span class="text-[#7f7f7f]">${weaponRangeLabel}</span><span class="text-white">${String.format("%.1f", item.weapon().range() / 10.0)}${PoeText.isKorean() ? "미터" : (item.weapon().range() == 10 ? " metre" : " metres")}</span></div>
 					@endif
 				@endif
 				@if(item.armour() != null)
@@ -75,6 +75,10 @@
 					@endif
 					@if(item.armour().wardMax() > 0)
 						<div class="flex justify-between"><span class="text-[#7f7f7f]">${wardLabel}</span><span class="text-[#e0e0e0] font-medium">${item.armour().wardMin()}-${item.armour().wardMax()}</span></div>
+					@endif
+					<%-- 이동 속도 감소(10-09 C223 — 갑옷 · 방패, PoB Bases MovementPenalty · poedb 툴팁 "이동 속도: -3%", PoE2 와 같은 키) --%>
+					@if(item.armour().movementPenalty() != null && item.armour().movementPenalty() > 0)
+						<div class="flex justify-between" data-tt-movement><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe2.items.movement")}</span><span class="text-[#e0e0e0] font-medium">-${item.armour().movementPenalty()}%</span></div>
 					@endif
 				@endif
 			</div>
@@ -96,6 +100,14 @@
 				@endif
 				@if(flask.maxCharges() > 0)
 					<div class="text-[#7f7f7f]">${java.text.MessageFormat.format(flaskChargesLabel, String.valueOf(flask.maxCharges()), String.valueOf(flask.perCharge()))}</div>
+					<%-- 현재 충전량(10-09 C221 — ClientStrings ItemDisplayChargesNCharges, 새 아이템 = 최대 충전) --%>
+					<div class="text-[#7f7f7f]" data-tt-charges-now>${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.current"), String.valueOf(flask.maxCharges()))}</div>
+					<%-- 플라스크 부여 버프 = 충전 줄 바로 아래 파란 줄(10-09 C241 — PoB ItemsTab.lua buffModLines · poedb 죽어가는 해 순서. 예전(C196·C204)엔 옵션 뒤 별도 칸) --%>
+					@if(flask != null && flask.buffLines() != null && !flask.buffLines().isEmpty())
+						@for(var buffLine : flask.buffLines())
+							<div class="text-[#8888ff] whitespace-pre-line" data-tt-flask-buff>$unsafe{PoeText.highlightValues(PoeText.name(buffLine.ko(), buffLine.en()))}</div>
+						@endfor
+					@endif
 				@endif
 			</div>
 		@endif
@@ -121,14 +133,12 @@
 			</div>
 		@endif
 
-		<%-- 특수 플라스크 부여 버프 (인게임: 임플리싯식 파랑 모드 줄 — 자수정 카오스저항, 화강암 방어도 등) --%>
-		@if(flask != null && flask.buffLines() != null && !flask.buffLines().isEmpty())
+
+		<%-- 사용 설명(10-09 C213 — 게임 ClientStrings ItemDescription*, 고유 상세 C212 와 같은 맨 아래 회색 문단) --%>
+		!{ String helpKey = net.luversof.web.gate.poe.PoeItemDescription.key(item.category(), item.name()); }
+		@if(helpKey != null)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-2 text-center space-y-0.5">
-				@for(var buffLine : flask.buffLines())
-					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(PoeText.name(buffLine.ko(), buffLine.en()))}</div>
-				@endfor
-			</div>
+			<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
 		@endif
 
 		<%-- 가능한 모드 티어 열거는 레이어에서 제외(의미 없음, 사용자 요청). 전체 모드 풀은 상세 페이지(/poe/items/{slug})에서 확인. --%>

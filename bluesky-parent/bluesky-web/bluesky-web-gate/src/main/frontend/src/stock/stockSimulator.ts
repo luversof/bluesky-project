@@ -452,6 +452,9 @@ function simulateScenario(scenario) {
 		seriesTotalWealth: "Total Wealth",
 		seriesMarketValue: "Market Value",
 		seriesCashReserve: "Cash Reserve",
+		// 차트 x 축 제목 · 툴팁 제목(2026-10-08 S79: 축은 한국어 화면에도 "Year" 고정, 툴팁 · 키보드 알림 제목은 숫자만 "42").
+		chartAxisYear: "Year",
+		chartYearTitle: "Year {0}",
 		timelinePhaseStable: "Spending Covered",
 		timelinePhaseDeficit: "Deficit",
 		timelinePhaseWealthDecline: "Wealth Decline",
@@ -1578,6 +1581,9 @@ function renderMonthlyDetailsTable(record) {
 				},
 				tooltip: {
 					callbacks: {
+						title(items) {
+							return items.length ? String(i18n.chartYearTitle).replace("{0}", String(items[0].label)) : "";
+						},
 						label(context) {
 							const value = Number(context.parsed.y || 0);
 							return `${context.dataset.label}: ${formatCurrency(value)}`;
@@ -1589,7 +1595,7 @@ function renderMonthlyDetailsTable(record) {
 				x: {
 					title: {
 						display: true,
-						text: "Year",
+						text: i18n.chartAxisYear,
 					},
 				},
 				y: {

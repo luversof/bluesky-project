@@ -84,5 +84,16 @@ public record PoeBuild(
       List<String> flavour,
       List<String> flavourKo,
       // 거래소 검색 쿼리(q JSON) — 고유는 이름, 레어 · 마법은 베이스 + 옵션(PoeTradeQueries, 10-08). 만들 수 없으면 null
-      String tradeQuery) {}
+      String tradeQuery,
+      // 인게임 요구 레벨(10-08 C179) — PoB 아이템 원문 "LevelReq: N"(옵션 레벨이 올린 값), 없으면 고유 요구 레벨, 그것도 없으면
+      // null(화면은 베이스
+      // 드롭 레벨). 예전엔 늘 베이스 드롭 레벨이라 표본 190개 중 90개가 인게임과 달랐다(군집 주얼 1 → 54 등)
+      Integer levelReq,
+      // 실제 방어 수치(10-08 C184) — PoB 원문 "Armour: N" 등은 품질 · 로컬 옵션이 반영된 최종값(PoB 가 이 값으로 베이스 백분위를
+      // 역산한다). 없으면
+      // null(화면이 베이스 + 옵션으로 계산)
+      Defences defences) {}
+
+  /** 아이템 실제 방어 수치 — 없는 칸은 null. PoE2 빌드 아이템도 같은 모양을 쓴다. */
+  public record Defences(Integer armour, Integer evasion, Integer energyShield, Integer ward) {}
 }

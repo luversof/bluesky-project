@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe.dto.PoeEldritch
 @import net.luversof.web.gate.poe.PoeText
 
@@ -26,7 +27,7 @@
 					<%-- data-mod-family 병기 — 페이지 검색 필터(modFilterBar)가 엘드리치 카드에도 걸리게 --%>
 					<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-eldritch-family="${fam.key()}" data-mod-family="eld-${fam.key()}">
 						<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
-							<span class="text-xs text-base-content/60 font-mono shrink-0">${fam.tiers().size()}T</span>
+							<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), fam.tiers().size())}</span>
 							<span class="min-w-0 flex-1">
 								@if(top != null)
 									@for(String line : (ko ? top.ko() : top.en()))

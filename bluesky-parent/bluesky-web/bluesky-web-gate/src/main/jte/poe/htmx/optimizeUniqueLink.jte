@@ -14,5 +14,5 @@
 }
 @if(forceable)
 	<a id="poeOptimizeUnique" hx-swap-oob="${oob ? "true" : null}" class="btn btn-sm btn-primary btn-outline ml-auto" data-optimize-unique
-	   href="/poe/sim?uniques=${item.slug()}${withVariant ? ":v" + variant : ""}">${PoeText.isKorean() ? "이 유니크로 최적화 →" : "Optimize with this unique →"}</a>
+	   href="/poe/sim?uniques=${item.slug()}${withVariant ? ":v" + variant : ""}">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe.uniques.optimize")}</a>
 @endif

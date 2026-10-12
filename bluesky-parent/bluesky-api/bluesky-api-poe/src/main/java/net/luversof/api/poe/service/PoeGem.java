@@ -28,7 +28,13 @@ public record PoeGem(
     // 레벨 statReminders 의 Id → 영 · 한 문구(이 젬이 쓰는 것만, 10-04 C115). 없으면 null
     java.util.Map<String, PoeReminderText> reminderText,
     // qualityStatLines 와 같은 길이의 줄별 리마인더 Id(10-04 C120). 없으면 null
-    List<List<String>> qualityReminders) {
+    List<List<String>> qualityReminders,
+    // 요구 능력치 비율 %(SkillGems.Strength/Dexterity/IntelligenceRequirementPercent — 10-09 C225, 게이트가
+    // PoB
+    // getGemStatRequirement 식으로 레벨별 수치를 낸다). 없으면 null
+    Integer reqStrPct,
+    Integer reqDexPct,
+    Integer reqIntPct) {
 
   /** 레벨별 데이터를 뺀 사본 — 이름 · 태그만 쓰는 고르기 목록용(10-02: 액티브 젬 전체가 15.6MB · 0.6초였다). */
   public PoeGem withoutLevels() {
@@ -55,6 +61,9 @@ public record PoeGem(
         qualityStatLinesKo,
         List.of(),
         null,
-        null);
+        null,
+        reqStrPct,
+        reqDexPct,
+        reqIntPct);
   }
 }

@@ -15119,8 +15119,13 @@ public class PoeOptimizeService {
     //  A=B=C 동일): PoB 단일표적 계산은 투사체 수를 반영하지 않아 접미 슬롯만 낭비한다. 42단계 대표 활
     //  이식 +45.3%는 물리 스택 효과였음. 54단계 판정.)
     // 남는 접두/접미 슬롯(각 3개까지)을 데미지 키워드 상위로 채움
+    // 공격이 아닌 스킬은 공격 전용 계열("Adds … to Attacks" · 공격 속도)을 빼고 채운다(10-10 C259 — C258 로 옵션 문장이 게임 그대로
+    //   "to Attacks" 가 되자 PoB 가 주문에 안 붙이는데도, 키워드 lightning · damage 2점으로 주문 옵션과 동점이라 Arc 반지에 계속
+    // 뽑혔다)
+    final boolean attackSkill = keywords.contains("attack");
     prefixPool.stream()
         .filter(f -> !prefixes.contains(f))
+        .filter(f -> attackSkill || f.keywords() == null || !f.keywords().contains("attack"))
         .map(f -> new Scored(f, score(f.keywords(), keywords)))
         .filter(s -> s.score() > 0)
         .sorted(Comparator.comparingInt(Scored::score).reversed())
@@ -15131,6 +15136,7 @@ public class PoeOptimizeService {
             });
     suffixPool.stream()
         .filter(f -> !suffixes.contains(f))
+        .filter(f -> attackSkill || f.keywords() == null || !f.keywords().contains("attack"))
         .map(f -> new Scored(f, score(f.keywords(), keywords)))
         .filter(s -> s.score() > 0)
         .sorted(Comparator.comparingInt(Scored::score).reversed())

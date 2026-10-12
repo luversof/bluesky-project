@@ -1,3 +1,4 @@
+@import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.poe.dto.PoeUniqueItem
 @import net.luversof.web.gate.poe.dto.PoeBaseItem
 @import net.luversof.web.gate.poe.PoeText
@@ -17,20 +18,22 @@
 			<%-- 변형이 많은 고유(소아사의 진주 656 · 금단의 샤코 406 · 거대망상 300 — PoB 생성 고유, 10-03 C76)는 칩을 다 늘어놓으면 높이 6,908px 벽이 된다(10-04 C80).
 			     select 로 줄인다: 글자 입력으로 찾기는 브라우저 기본, 스크립트가 없어도 폼 제출로 동작, htmx 가 있으면 이 조각만 교체(주소는 응답 머리 HX-Push-Url). --%>
 			<form class="flex w-80 max-w-[calc(100vw-2rem)] flex-wrap items-center gap-1" method="get" action="/poe/uniques/${item.slug()}">
-				<label class="text-xs text-base-content/60" for="uniqueVariantSelect">${PoeText.isKorean() ? "변형" : "Variant"} ${item.variants().size()}</label>
+				<label class="text-xs font-semibold text-base-content/60" for="uniqueVariantSelect">${MessageUtil.getMessage("poe.uniques.variant")} ${item.variants().size()}</label>
 				<select id="uniqueVariantSelect" name="variant" class="select select-bordered select-sm min-w-0 flex-1"
 				        hx-get="/poe/htmx/uniques/variant?slug=${item.slug()}" hx-trigger="change" hx-target="#uniqueVariantBox" hx-swap="outerHTML">
 					@for(var v : item.variants())
 						<option value="${v.index()}" selected="${v.index() == current}">${PoeText.name(v.nameKo(), v.name())}</option>
 					@endfor
 				</select>
-				<noscript><button type="submit" class="btn btn-sm">${PoeText.isKorean() ? "보기" : "Show"}</button></noscript>
+				<noscript><button type="submit" class="btn btn-sm">${MessageUtil.getMessage("poe.uniques.variants.show")}</button></noscript>
 			</form>
 		@else
-		<div class="flex w-80 max-w-[calc(100vw-2rem)] flex-wrap items-center gap-1">
-			<span class="text-xs text-base-content/60">${PoeText.isKorean() ? "변형" : "Variant"}</span>
+		<%-- 칩 모양 · 라벨은 PoE2 고유 상세와 같다(poe-chip, 10-12 C273) --%>
+		<div class="flex w-80 max-w-[calc(100vw-2rem)] flex-wrap items-center gap-1.5" aria-label="${MessageUtil.getMessage("poe.uniques.variant")}">
+			<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.uniques.variant")}</span>
 			@for(var v : item.variants())
-				<a class="badge badge-sm cursor-pointer ${v.index() == current ? "badge-primary" : "badge-ghost"}"
+				<a class="poe-chip ${v.index() == current ? "poe-chip-active" : ""}"
+				   aria-current="${v.index() == current ? "page" : null}"
 				   href="/poe/uniques/${item.slug()}?variant=${v.index()}"
 				   hx-get="/poe/htmx/uniques/variant?slug=${item.slug()}&variant=${v.index()}"
 				   hx-target="#uniqueVariantBox"

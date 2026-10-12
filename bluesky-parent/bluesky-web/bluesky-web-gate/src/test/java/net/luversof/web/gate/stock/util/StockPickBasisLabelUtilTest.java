@@ -53,6 +53,28 @@ class StockPickBasisLabelUtilTest {
     assertThat(StockPickBasisLabelUtil.description("weekly")).isEmpty();
   }
 
+  /**
+   * 영어 감소 횟수는 1 과 나머지를 나눠 적는다(2026-10-08 영어 화면 판독: "0 of 11 cut" · "1 cuts" 가 어색했다). 한국어는 단 · 복수가
+   * 없어 그대로.
+   */
+  @Test
+  void 영어_감소_횟수는_단수와_복수를_나눈다() throws IOException {
+    Properties en = new Properties();
+    try (InputStream in = getClass().getResourceAsStream("/uiMessage.properties")) {
+      en.load(in);
+    }
+    String compare = en.getProperty("stock.pick.compare.value.steady");
+    assertThat(java.text.MessageFormat.format(compare, 0, 11)).isEqualTo("0 cuts in 11 changes");
+    assertThat(java.text.MessageFormat.format(compare, 1, 11)).isEqualTo("1 cut in 11 changes");
+    assertThat(java.text.MessageFormat.format(compare, 3, 11)).isEqualTo("3 cuts in 11 changes");
+    String unit = en.getProperty("stock.pick.basis.unit.steady");
+    assertThat(java.text.MessageFormat.format(unit, 1)).isEqualTo("cut");
+    assertThat(java.text.MessageFormat.format(unit, 2)).isEqualTo("cuts");
+    String value = en.getProperty("stock.pick.basis.value.steady");
+    assertThat(java.text.MessageFormat.format(value, 11, 1, "9.84"))
+        .isEqualTo("1 cut in 11 payout changes · dividend score 9.84");
+  }
+
   /** 로케일 가드: 영어 · 한국어 파일 둘 다 키가 있어야 한다(한쪽이 빠지면 그 언어 화면만 빈 칸이 된다). */
   @Test
   void 영어와_한국어_파일_모두_키가_있다() throws IOException {

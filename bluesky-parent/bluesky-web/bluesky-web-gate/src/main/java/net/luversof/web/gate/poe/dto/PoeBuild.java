@@ -82,5 +82,12 @@ public record PoeBuild(
       List<String> flavour,
       List<String> flavourKo,
       // 거래소 검색 쿼리(q JSON, API 와 짝, 10-08) — null 이면 링크 없음
-      String tradeQuery) {}
+      String tradeQuery,
+      // 인게임 요구 레벨(10-08 C179, API 와 짝) — null 이면 베이스 드롭 레벨
+      Integer levelReq,
+      // 실제 방어 수치(10-08 C184, API 와 짝) — PoB 원문 최종값, null 이면 베이스 + 로컬 옵션 계산
+      Defences defences) {}
+
+  /** 아이템 실제 방어 수치 — 없는 칸은 null(PoE2 빌드 아이템도 같은 모양). */
+  public record Defences(Integer armour, Integer evasion, Integer energyShield, Integer ward) {}
 }

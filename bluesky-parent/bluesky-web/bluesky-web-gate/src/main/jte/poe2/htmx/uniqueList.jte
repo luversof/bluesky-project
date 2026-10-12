@@ -14,11 +14,11 @@
 }
 
 @if(total == null || total == 0)
-	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"))
+	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"), actionLabel = MessageUtil.getMessage("layout.menu.poe2.admin"), actionHref = "/poe2/admin")
 @else
-	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.count"), items.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), total)}</div>
 	@if(items.isEmpty())
-		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.empty"))
+		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.list.empty"))
 	@else
 		<%-- 카드 = PoE1 고유 목록(poe/htmx/uniqueList.jte)과 같은 구성(10-01: PoE2 는 이름 · 베이스만): 베이스 + 요구 레벨 + 리그 배지 + 변형 배지,
 		     인게임 툴팁 구조대로 고정(암시) 옵션 → 구분선 → 접두/접미 옵션(모드 파랑, 수치 강조). 변형이 있으면 기본 변형의 옵션. --%>
@@ -40,9 +40,12 @@
 				     hx-get="/poe2/htmx/uniques/detail?slug=${u.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML" data-unique-card>
 					<div class="card-body p-3">
 					<div class="flex gap-3 items-start">
-						<div class="w-14 h-16 shrink-0 flex items-center justify-center">
+						<%-- 인게임 인벤토리 칸 프레임 — PoE1 고유 목록과 같은 58px 단위(10-12 C280). 칸 수는 아이콘 그림 크기에서(없으면 분류 기본값) --%>
+						!{ int[] ucells = u.image() == null ? null : net.luversof.web.gate.poe.config.PoeDataVersion.iconCells("/poe-data/poe2/icons/" + u.image());
+						   if (ucells == null) ucells = net.luversof.web.gate.poe.PoeText.invCells(u.itemClass()); int uunit = 58; }
+						<div class="poe-item-slot shrink-0" style="width:${ucells[0] * uunit}px;height:${ucells[1] * uunit}px">
 							@if(u.image() != null)
-								<img src="/poe-data/poe2/icons/${u.image()}" class="max-w-14 max-h-16 object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" alt="" loading="lazy">
+								<img src="/poe-data/poe2/icons/${u.image()}" class="max-w-full max-h-full object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" alt="" loading="lazy">
 							@endif
 						</div>
 						<div class="min-w-0 flex-1 space-y-1">
@@ -58,10 +61,10 @@
 									<span class="text-base-content/60" data-req-level>${MessageUtil.getMessage("poe.gems.detail.required.level")} ${u.requiredLevel()}</span>
 								@endif
 								@if(u.league() != null && !u.league().isBlank())
-									<span class="badge badge-ghost badge-xs" data-league title="${korean ? "이 고유는 해당 리그 콘텐츠에서 나옵니다" : "Drops from this league's content"}">${u.league()}</span>
+									<span class="badge badge-ghost badge-xs" data-league title="${MessageUtil.getMessage("poe.uniques.league.title")}">${u.league()}</span>
 								@endif
 								@if(u.variants() != null && u.variants().size() > 1)
-									<span class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" title="${korean ? "모드 구성이 다른 변형이 있습니다 — 상세에서 선택" : "Has alternate variants - pick one on the detail page"}">${MessageUtil.getMessage("poe2.uniques.variant")} ${u.variants().size()}</span>
+									<span class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" title="${MessageUtil.getMessage("poe.uniques.variants.title")}">${MessageUtil.getMessage("poe.uniques.variant")} ${u.variants().size()}</span>
 								@endif
 							</div>
 							@if(!imps.isEmpty() || !exps.isEmpty())

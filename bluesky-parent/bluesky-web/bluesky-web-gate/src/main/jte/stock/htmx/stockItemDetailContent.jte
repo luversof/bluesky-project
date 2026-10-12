@@ -349,6 +349,7 @@
 					openLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.open")}',
 					highLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.high")}',
 					lowLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.low")}',
+					rangeLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.high")} - ${MessageUtil.getMessage("stock.item.detail.price.chart.low")}',
 					closeLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.close")}',
 					avgLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average.at")}',
 					avgBelowLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average.below")}',
@@ -362,7 +363,8 @@
 					holdingCostLabel: '${MessageUtil.getMessage("stock.item.detail.chart.cost")}',
 					holdingProfitLabel: '${MessageUtil.getMessage("stock.profit.unrealized")}',
 					maxLabel: '${MessageUtil.getMessage("stock.chart.range.max")}',
-					minLabel: '${MessageUtil.getMessage("stock.chart.range.min")}'
+					minLabel: '${MessageUtil.getMessage("stock.chart.range.min")}',
+					keyboardHint: '${MessageUtil.getMessage("stock.item.detail.price.chart.keyboard.hint")}'
 				});
 				var unitEl = document.querySelector('[data-candle-unit]');
 				var unitText = {

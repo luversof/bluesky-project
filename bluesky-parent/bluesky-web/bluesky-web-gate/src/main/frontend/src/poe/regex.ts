@@ -1231,7 +1231,7 @@
 		})
 		.catch(() => {
 			listEl.textContent = uiKo
-				? "맵 모드 데이터가 없습니다 — 데이터 관리에서 갱신을 실행하세요."
-				: "No map mod data — run data update in admin.";
+				? "옵션 데이터가 없습니다 — 데이터 관리에서 갱신을 실행하세요."
+				: "No modifier data — run data update in admin.";
 		});
 })();

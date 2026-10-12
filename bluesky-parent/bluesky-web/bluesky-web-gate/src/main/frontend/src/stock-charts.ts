@@ -39,6 +39,7 @@ interface StockChartsAPI {
 	extremeGapText?: (lastV: number, extreme: number) => string;
 	candleBuckets?: (series: any, maxCandles?: number) => any;
 	splitTooltipLine?: (line: string) => string[];
+	nextCandleIndex?: (key: string, current: number, count: number) => number;
 	candleYRange?: (candles: any[]) => any;
 	candleChartConfig?: (series: any, texts: any) => any;
 	createCandleChart?: (canvasId: string, series: any, texts: any, existingInstance?: any) => any;
@@ -404,8 +405,9 @@ function makeDonutTooltipHandler(
 		if (!tooltipEl) {
 			tooltipEl = document.createElement("div");
 			tooltipEl.id = tooltipId;
+			// 글꼴 rem · 폭 창 안 - 캔들 툴팁(S68)과 같은 까닭(2026-10-08 S76).
 			tooltipEl.style.cssText =
-				"position:fixed;z-index:9999;background:rgba(30,30,30,0.92);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;pointer-events:none;white-space:nowrap;transition:opacity .1s;";
+				"position:fixed;z-index:9999;background:rgba(30,30,30,0.92);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.75rem;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 16px);overflow-wrap:anywhere;box-sizing:border-box;transition:opacity .1s;";
 			document.body.appendChild(tooltipEl);
 		}
 		if (tooltip.opacity === 0) {
@@ -429,9 +431,8 @@ function makeDonutTooltipHandler(
 			'<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' +
 			color +
 			'"></span>' +
+			// 이름은 제목 줄에 이미 있다 - 둘째 줄은 값만(2026-10-08 S76: "삼성전자" / "삼성전자: ▲ ₩..." 로 두 번 읽혔다).
 			"<span>" +
-			label +
-			": " +
 			valText +
 			"</span>" +
 			"</div>";
@@ -446,7 +447,9 @@ function makeDonutTooltipHandler(
 		let finalX = x + 12;
 		let finalY = y - th - 8;
 		if (finalX + tw > window.innerWidth - 8) finalX = x - tw - 12;
+		if (finalX < 8) finalX = 8;
 		if (finalY < 8) finalY = y + 16;
+		if (finalY + th > window.innerHeight - 8) finalY = window.innerHeight - th - 8;
 		tooltipEl.style.left = finalX + "px";
 		tooltipEl.style.top = finalY + "px";
 	};
@@ -814,6 +817,15 @@ StockCharts.initDonutFromData = function (
 						isProfitMode,
 						opts.tooltipId || "tradeDonutTooltipEl",
 					),
+					// 그림 툴팁(위 handler)이 아니라 키보드 알림 칸이 읽는 글(2026-10-08 S74). 조각 크기는 절댓값이라 기본 글은
+					// "78,000" 처럼 단위 · 부호가 없어 손실도 이익처럼 읽혔다 - 그림 툴팁과 같은 원 단위 + 부호(+/-)로.
+					callbacks: {
+						label: (ctx: any) => {
+							const raw = d.rawData[ctx.dataIndex] !== undefined ? d.rawData[ctx.dataIndex] : 0;
+							const sign = isProfitMode ? (raw > 0 ? "+" : raw < 0 ? "-" : "") : "";
+							return sign + "₩" + fmtAmt(Math.abs(raw));
+						},
+					},
 				},
 			},
 		},
@@ -1339,8 +1351,11 @@ function candleTooltipHandler(context: any) {
 		el = document.createElement("div");
 		el.id = "candleTooltipEl";
 		el.setAttribute("aria-hidden", "true");
+		// 옅은 밝은 테두리 - 다크 테마에선 툴팁 배경이 카드 배경과 비슷해 가장자리가 묻혔다(2026-10-08 S91).
+		// 글꼴은 rem - 사용자가 브라우저 글꼴을 키우면 같이 커진다(2026-10-08 S68: 12px 고정이라 200% 에서도 12px 였다).
+		// 커진 글꼴에 좁은 폭이면 창보다 넓어지므로 폭을 창 안으로 묶고, 이름 칸만 줄을 바꾼다(금액 · 비율은 한 줄).
 		el.style.cssText =
-			"position:fixed;z-index:9999;background:rgba(30,30,30,0.92);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;line-height:1.45;pointer-events:none;white-space:nowrap;transition:opacity .1s;";
+			"position:fixed;z-index:9999;background:rgba(30,30,30,0.92);border:1px solid rgba(255,255,255,0.18);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.75rem;line-height:1.45;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 16px);box-sizing:border-box;transition:opacity .1s;";
 		document.body.appendChild(el);
 	}
 	if (!tooltip || tooltip.opacity === 0) {
@@ -1380,6 +1395,7 @@ function candleTooltipHandler(context: any) {
 	el.style.opacity = "1";
 	el.style.left = "0px";
 	el.style.top = "0px";
+	fitCandleTooltip(el, table);
 	const tw = el.offsetWidth;
 	const th = el.offsetHeight;
 	let finalX = x + 12;
@@ -1390,6 +1406,33 @@ function candleTooltipHandler(context: any) {
 	if (finalY < 8) finalY = 8;
 	el.style.left = finalX + "px";
 	el.style.top = finalY + "px";
+}
+
+// 창보다 넓으면 차례로 좁힌다(2026-10-08 S68, 큰 글꼴 + 좁은 폭): 먼저 비율 칸을 금액 아래 줄로 내리고(이름은 한 줄 그대로),
+// 그래도 넘치면 이름 칸을 낱말 사이에서 줄 바꾸고, 그래도 넘치면 마지막에야 낱말 중간에서 끊는다.
+function fitCandleTooltip(el: HTMLElement, table: HTMLTableElement) {
+	const room = () => el.clientWidth - 20;
+	if (table.offsetWidth <= room()) return;
+	table.querySelectorAll("tr").forEach((tr) => {
+		const cells = tr.children;
+		if (cells.length !== 3) return;
+		const pct = cells[2] as HTMLElement;
+		const amount = cells[1] as HTMLElement;
+		const span = document.createElement("span");
+		span.style.opacity = ".75";
+		span.textContent = pct.textContent;
+		amount.appendChild(document.createElement("br"));
+		amount.appendChild(span);
+		pct.remove();
+	});
+	if (table.offsetWidth <= room()) return;
+	const labels = Array.from(table.querySelectorAll("td:first-child")) as HTMLElement[];
+	labels.forEach((td) => {
+		td.style.whiteSpace = "normal";
+		td.style.wordBreak = "keep-all";
+	});
+	if (table.offsetWidth <= room()) return;
+	labels.forEach((td) => (td.style.overflowWrap = "anywhere"));
 }
 
 StockCharts.candleChartConfig = function (series: any, texts: any) {
@@ -1610,6 +1653,8 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 			// 축이 캔들에 맞춰져 평단이 축 밖이면(사용자 요청 2026-10-02) 선을 축 끝에 붙여 그린다(2026-10-07: "평균 단가가 짧은 기간엔 안 보인다" -
 			// 잘려서 아예 없었다). 실제 값은 툴팁 · 범례 · 끝 글자(avgEdgeLabel)가 말한다.
 			data: candles.map((c: any) => (c.avg === null || c.avg === undefined ? null : pinToAxis(c.avg))),
+			// 그린 값은 축 끝에 붙인 값일 수 있다 - 실제 평단은 따로 둔다(탐침 · 시험이 이걸 읽는다, 2026-10-08).
+			avgActual: candles.map((c: any) => (c.avg === null || c.avg === undefined ? null : c.avg)),
 			borderColor: "rgba(120,120,120,0.9)",
 			backgroundColor: "rgba(120,120,120,0.9)",
 			borderDash: [5, 4],
@@ -1633,6 +1678,8 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 				interaction: { mode: "index", intersect: false },
 				plugins: {
 					// 텍스트 대안에 표시 개수(▲▼◆ 는 모양뿐이라 요약문에 없으면 낭독기 사용자는 모른다, 2026-10-02).
+					// 키보드 툴팁(chartKeyboardPlugin): 봉 몸통 자리에 띄우고, 알림 칸은 캔들 탐침이 찾는 이름으로.
+					chartKeyboard: { hint: t.keyboardHint, live: "data-candle-live", anchorDataset: 1 },
 					a11ySummary: {
 						counts: [
 							{ label: t.buyLabel || "Buy", count: candles.filter((c: any) => c.buy > 0).length },
@@ -1694,10 +1741,138 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 	};
 };
 
+/**
+ * 다음에 고를 봉 차례(키보드). 순수 계산이라 시험에서 직접 부른다. 처음 누르면(current < 0) 왼쪽은 마지막 봉 · 오른쪽은 첫 봉,
+ * 끝에서는 멈춘다(돌아가지 않는다 - 맨 끝을 지나쳐 처음으로 가면 어디인지 잃는다). 모르는 키는 -2(처리 안 함).
+ */
+function nextCandleIndex(key: string, current: number, count: number): number {
+	// 시험이 이 함수만 꺼내 돌리므로 상수도 안에 둔다.
+	const page = 10;
+	if (count <= 0) return -2;
+	switch (key) {
+		case "ArrowLeft":
+			return current < 0 ? count - 1 : Math.max(0, current - 1);
+		case "ArrowRight":
+			return current < 0 ? 0 : Math.min(count - 1, current + 1);
+		// 점이 많은 차트(자산 성장 200 여 점)는 한 칸씩으론 끝까지 수백 번 - 10 칸씩 건너뛴다(2026-10-08 S82).
+		// 처음 누르면 화살표처럼 PageUp 은 마지막 점, PageDown 은 첫 점에서 연다.
+		case "PageUp":
+			return current < 0 ? count - 1 : Math.max(0, current - page);
+		case "PageDown":
+			return current < 0 ? 0 : Math.min(count - 1, current + page);
+		case "Home":
+			return 0;
+		case "End":
+			return count - 1;
+		default:
+			return -2;
+	}
+}
+StockCharts.nextCandleIndex = nextCandleIndex;
+
+/**
+ * 차트 툴팁을 키보드로(2026-10-08 캔들에서 시작, S73 에서 모든 금액 차트로) - 마우스로만 열리면 키보드 · 낭독기 사용자는 요약문(처음 · 끝 ·
+ * 최고 · 최저)밖의 그 날 · 그 달 값을 볼 길이 없다(WCAG 2.1.1). 캔버스에 탭으로 들어와 ← → (Home · End)로 항목을 옮기면 마우스와 같은
+ * 툴팁이 뜨고, Esc · 포커스를 떠나면 닫힌다. 툴팁은 캔버스 그림(또는 aria-hidden HTML)이라 같은 글을 옆 알림 칸(aria-live)에 적는다.
+ * 금액 가리기 중에는 열지 않는다 - 마우스는 가리기의 pointer-events:none 으로 막히는데 키보드는 열려 알림 칸 · HTML 툴팁이 금액을 그대로
+ * 읽었다(2026-10-08 실측). 열려 있는 중에 가리기를 켜면 바로 닫는다.
+ * 플러그인 옵션(options.plugins.chartKeyboard): hint(낭독기 안내), live(알림 칸 data 속성 이름), anchorDataset(툴팁 위치를 잡을 데이터셋).
+ */
+const chartKeyboardClosers = new Set<() => void>();
+function chartKeyboardAmountsHidden(): boolean {
+	return document.documentElement.classList.contains("hide-amounts");
+}
+if (typeof MutationObserver !== "undefined" && document.documentElement) {
+	new MutationObserver(() => {
+		if (chartKeyboardAmountsHidden()) chartKeyboardClosers.forEach((close) => close());
+	}).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+}
+function chartKeyboardHint(): string {
+	return (document.documentElement.lang || "").toLowerCase().startsWith("ko")
+		? "왼쪽 · 오른쪽 화살표로 항목을 옮기며 값을 봅니다. PageUp · PageDown 은 10 칸씩, Home · End 는 처음 · 끝, Esc 는 닫기."
+		: "Use the left and right arrow keys to move between points and read their values. PageUp and PageDown move 10 at a time, Home and End jump to the ends, Esc closes.";
+}
+function attachChartKeyboard(canvas: HTMLCanvasElement, options: any) {
+	if (!canvas || (canvas as any).$chartKeys) return;
+	(canvas as any).$chartKeys = true;
+	const opts = options || {};
+	canvas.tabIndex = 0;
+	canvas.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight PageUp PageDown Home End Escape");
+	canvas.setAttribute("aria-description", opts.hint || chartKeyboardHint());
+	const live = document.createElement("div");
+	live.className = "sr-only";
+	live.setAttribute("aria-live", "polite");
+	live.setAttribute(opts.live || "data-chart-live", "");
+	canvas.insertAdjacentElement("afterend", live);
+	// 차트는 같은 캔버스에 다시 만들어진다(기간 바꾸기 등) - 늘 지금 차트를 쓴다.
+	const current = () => (globalThis as any).Chart?.getChart?.(canvas) || (canvas as any).$chart;
+	let index = -1;
+	const close = () => {
+		if (index < 0) return;
+		index = -1;
+		chartKeyboardClosers.delete(close);
+		const c = current();
+		if (c && c.tooltip) {
+			c.tooltip.setActiveElements([], { x: 0, y: 0 });
+			c.update("none");
+		}
+		live.textContent = "";
+	};
+	canvas.addEventListener("keydown", (event: KeyboardEvent) => {
+		const c = current();
+		if (!c || !c.tooltip || chartKeyboardAmountsHidden()) return;
+		const count = c.data.labels ? c.data.labels.length : 0;
+		if (event.key === "Escape") {
+			if (index >= 0) {
+				close();
+				event.preventDefault();
+			}
+			return;
+		}
+		const next = nextCandleIndex(event.key, index, count);
+		if (next === -2) return;
+		event.preventDefault();
+		index = next;
+		chartKeyboardClosers.add(close);
+		// 마우스(같은 날 모든 줄을 고르는 index 모드)와 같은 줄을 같은 차례로 - index 모드처럼 order 로 줄 세운 데이터셋에서
+		// 그 날 점이 있는 것만 고른다(2026-10-08: 1 · 2 로 적어 두니 평단 줄이 마우스와 달리 맨 아래로 갔다).
+		const active = c
+			.getSortedVisibleDatasetMetas()
+			.filter((m: any) => m.data && m.data[index] && !m.data[index].skip)
+			.map((m: any) => ({ datasetIndex: m.index, index: index }));
+		const anchorMeta = opts.anchorDataset != null ? c.getDatasetMeta(opts.anchorDataset) : active.length ? c.getDatasetMeta(active[0].datasetIndex) : null;
+		const el = anchorMeta && anchorMeta.data ? anchorMeta.data[index] : null;
+		const pos = el ? (typeof el.tooltipPosition === "function" ? el.tooltipPosition(true) : { x: el.x, y: el.y }) : { x: 0, y: 0 };
+		c.tooltip.setActiveElements(active, pos);
+		c.update("none");
+		const tip = c.tooltip;
+		const lines: string[] = [];
+		if (tip.title && tip.title.length) lines.push(tip.title.join(" "));
+		(tip.body || []).forEach((part: any) => (part.lines || []).forEach((line: string) => lines.push(String(line).trim())));
+		(tip.afterBody || []).forEach((line: string) => lines.push(String(line).trim()));
+		// 구분선(───) 같은 글자 없는 줄은 낭독기가 기호 이름을 줄줄이 읽는다 - 뺀다(자산 성장 툴팁 실측).
+		live.textContent = lines.filter((line) => /[\p{L}\p{N}]/u.test(String(line))).join(", ");
+	});
+	canvas.addEventListener("blur", close);
+}
+// 금액 차트(canvas.amount-chart)마다 붙인다. 다른 화면의 장식용 차트는 건드리지 않는다.
+const chartKeyboardPlugin = {
+	id: "chartKeyboard",
+	afterInit: (chart: any, _args: any, options: any) => {
+		const canvas = chart && chart.canvas;
+		if (!canvas || !canvas.classList || !canvas.classList.contains("amount-chart")) return;
+		attachChartKeyboard(canvas, options);
+	},
+};
+
 StockCharts.createCandleChart = function (canvasId: string, series: any, texts: any, existingInstance?: any) {
 	const built = StockCharts.candleChartConfig!(series, texts);
 	const chart = StockCharts.createChart!(canvasId, built.config, existingInstance);
-	if (chart) (chart as any).$candleUnit = built.unit;
+	if (chart) {
+		(chart as any).$candleUnit = built.unit;
+		const canvas = document.getElementById(canvasId) as any;
+		if (canvas) canvas.$chart = chart;
+	}
 	return chart;
 };
 
@@ -1887,6 +2062,9 @@ try {
 try {
 	const summaryPlugin = (globalThis as any).__chartSummaryInternals?.chartSummaryPlugin;
 	if (summaryPlugin && (globalThis as any).Chart?.register) (globalThis as any).Chart.register(summaryPlugin);
+} catch (e) {}
+try {
+	(globalThis as any).Chart?.register?.(chartKeyboardPlugin);
 } catch (e) {}
 try {
 	if (typeof MutationObserver !== "undefined" && document.documentElement) {

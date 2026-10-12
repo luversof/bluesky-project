@@ -32,7 +32,7 @@
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<span class="text-sm text-base-content/60">${ko
-					? "삿된 오브로 유니크의 기존 모드를 대체할 때 붙는 모드"
+					? "삿된 오브로 고유 아이템의 기존 모드를 대체할 때 붙는 모드"
 					: "Mods that replace a unique's existing mod when using Foulborn currency"}</span>
 				<span class="text-xs font-mono text-base-content/60">${groups.size()} / ${modCount}</span>
 			</div>

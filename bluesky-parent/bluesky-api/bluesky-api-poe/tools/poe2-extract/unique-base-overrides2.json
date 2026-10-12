@@ -1,0 +1,6 @@
+{
+	"_comment": "PoB-PoE2 고유 원문의 베이스가 게임과 다른 고유의 공식 베이스(영문 고유 이름 → PoB Bases 에 있는 영문 베이스). parse-uniques2.mjs 가 PoB 베이스 대신 쓴다. 근거는 한국 서버 거래소 사전(/api/trade2/data/items) + 위키 요구 레벨 = 새 베이스 드롭 레벨(10-08 C176). 탐침 poe-unique-name-parity-probe.js 가 이름+베이스 쌍을 전수 대조한다.",
+	"Nebuloch": "Execratus Hammer",
+	"Nightfall": "Glacial Fortress",
+	"Prism Guardian": "Intricate Crest Shield"
+}

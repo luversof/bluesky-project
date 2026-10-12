@@ -1,0 +1,4 @@
+{
+	"_comment": "PoB 고유 원문의 베이스가 게임과 다른 고유의 공식 베이스(영문 고유 이름 → PoB Bases 에 있는 영문 베이스). parse-uniques.mjs 가 PoB 베이스 대신 쓴다. 근거는 한국 서버 거래소 사전(poe.kakaogames.com /api/trade/data/items 의 그 고유 이름 항목 type = 공식 베이스, 10-08 C176). 탐침 poe-unique-name-parity-probe.js 가 이름+베이스 쌍을 전수 대조한다.",
+	"Dissolution of the Flesh": "Crimson Jewel"
+}

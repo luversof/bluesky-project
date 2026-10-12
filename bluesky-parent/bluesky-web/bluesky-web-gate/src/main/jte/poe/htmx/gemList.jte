@@ -8,8 +8,8 @@
 @param String iconVersion = "0"
 
 !{
-	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.count"), gems.size(), totalCount);
-	String emptyLabel = MessageUtil.getMessage("poe.gems.empty");
+	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), gems.size(), totalCount);
+	String emptyLabel = MessageUtil.getMessage("poe.list.empty");
 	boolean korean = net.luversof.web.gate.poe.PoeText.isKorean();
 
 	// poedb 처럼 속성(색)별 세로 컬럼: 힘=빨강, 민첩=초록, 지능=파랑, 그 외=백색. 각 컬럼은 요구(드롭) 레벨 오름차순.
@@ -27,14 +27,14 @@
 
 @if(totalCount == 0)
 	<%-- 게임 데이터 미준비: 추출 파이프라인 안내 --%>
-	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), hint = "tools/poe-extract: npx pathofexile-dat && node transform.mjs")
+	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.gems.no.data"), actionLabel = MessageUtil.getMessage("layout.menu.poe.admin"), actionHref = "/poe/admin")
 @else
 <div class="text-xs text-base-content/60 mb-2">${countLabel}</div>
 @if(gems.isEmpty())
 	@template._components.ui.emptyState(message = emptyLabel)
 @else
-	<%-- 힘/민첩/지능(+그외) 세로 3열. 각 컬럼은 요구 레벨순 정렬. --%>
-	<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+	<%-- 힘/민첩/지능/속성 없음 세로 4열(PoE2 젬 목록과 같다, 10-12 C282 — 3열이면 넷째 묶음이 아래로 밀렸다). 각 컬럼은 요구 레벨순 정렬. --%>
+	<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
 		@for(Map.Entry<String, List<PoeGem>> group : byColor.entrySet())
 			@if(!group.getValue().isEmpty())
 				!{
@@ -87,7 +87,7 @@
 									@if(korean)
 										<span class="text-[11px] text-base-content/60 truncate">${gem.name()}</span>
 									@endif
-									<span class="ml-auto shrink-0 text-[10px] text-base-content/60">Lv ${gem.dropLevel()}</span>
+									<span class="ml-auto shrink-0 text-[10px] text-base-content/60">${MessageUtil.getMessage("poe.gems.label.drop.level")} ${gem.dropLevel()}</span>
 								</div>
 								@if(displayTags != null && !displayTags.isEmpty())
 									<div class="flex flex-wrap gap-1 mt-1">

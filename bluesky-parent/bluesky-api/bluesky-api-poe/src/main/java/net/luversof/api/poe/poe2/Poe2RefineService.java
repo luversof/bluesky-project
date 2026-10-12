@@ -112,8 +112,25 @@ public class Poe2RefineService {
   /** 세트 하나를 켠 측정값 — set = 1·2(세트를 안 나누는 빌드면 0 = 저장된 그대로). */
   record Best(int set, Metrics metrics) {}
 
+  /**
+   * phase = 단계 코드(baseline · unique · guide · apply — 게이트가 poe2.refine.phase.* 로 옮긴다, 10-12 C269).
+   * evals = 이번 실행의 엔진 계산 수(PoE1 최적화 "평가 N회" 의 짝).
+   */
   public record Status(
-      boolean running, int round, int rounds, String phase, Result result, String error) {}
+      boolean running,
+      int round,
+      int rounds,
+      String phase,
+      Result result,
+      String error,
+      int evals) {}
+
+  /** 사용자 중지(시뮬레이터 중지 단추) — 다음 단계·후보 경계에서 던져 실행을 끝낸다. */
+  static final class Cancelled extends RuntimeException {
+    Cancelled() {
+      super("사용자 요청으로 중지됨", null, false, false);
+    }
+  }
 
   /** 적용 후보 — change 는 apply2.lua 변경 JSON, 예측 증감(%)은 가이드 값. */
   record Candidate(String label, String change, double dpsPct, double ehpPct) {
@@ -132,6 +149,8 @@ public class Poe2RefineService {
   private volatile String phase = "";
   private volatile Result lastResult;
   private volatile String lastError;
+  private volatile boolean cancelRequested;
+  private volatile int evals;
 
   public Poe2RefineService(
       Poe2BuildService builds,
@@ -146,7 +165,7 @@ public class Poe2RefineService {
   }
 
   public Status status() {
-    return new Status(running.get(), round, ROUNDS, phase, lastResult, lastError);
+    return new Status(running.get(), round, ROUNDS, phase, lastResult, lastError, evals);
   }
 
   /** 시작 — 이미 돌고 있거나 코드를 못 읽으면 false(사유는 status().error). */
@@ -166,7 +185,9 @@ public class Poe2RefineService {
     lastError = null;
     lastResult = null;
     round = 0;
-    phase = "기준선";
+    cancelRequested = false;
+    evals = 0;
+    phase = "baseline";
     Thread thread =
         new Thread(
             () -> {
@@ -188,7 +209,33 @@ public class Poe2RefineService {
 
   /** 시뮬레이터(Poe2SimService)가 다듬기와 동시에 돌지 않게 같은 잠금을 쓴다 — 둘 다 가이드·엔진을 수십 번 부른다. */
   boolean tryLock() {
-    return running.compareAndSet(false, true);
+    if (!running.compareAndSet(false, true)) {
+      return false;
+    }
+    round = 0;
+    cancelRequested = false;
+    evals = 0;
+    return true;
+  }
+
+  /** 중지 요청 — 돌고 있지 않으면 false. 실제 종료는 다음 경계({@link #checkCancel()})에서. */
+  boolean requestCancel() {
+    if (!running.get()) {
+      return false;
+    }
+    cancelRequested = true;
+    return true;
+  }
+
+  /** 중지가 요청됐으면 {@link Cancelled} 를 던진다 — 단계·후보 경계에서 부른다. */
+  void checkCancel() {
+    if (cancelRequested) {
+      throw new Cancelled();
+    }
+  }
+
+  int evals() {
+    return evals;
   }
 
   void unlock() {
@@ -215,6 +262,7 @@ public class Poe2RefineService {
 
   private Result refine(String startXml, String objective, Forced forced) {
     long startedAt = System.currentTimeMillis();
+    phase = "baseline";
     // 기준선도 저장 왕복(apply2 noop = 바꾸지 않고 SaveDB)을 거친 빌드로 잰다 — 왕복 자체가 수치를 바꾸는 빌드가 있어(10-01 60빌드 점검:
     //   워브링어 집속 수류탄 DPS +4.4%, 오라클 정신력) 그대로 두면 첫 단계 이득에 그 몫이 섞인다. 왕복이 실패하면 원본 그대로.
     String roundTrip = engine.apply(startXml, "{\"type\":\"noop\"}");
@@ -240,7 +288,8 @@ public class Poe2RefineService {
     // 고정 고유 — 목표 점수와 상관없이 먼저 끼운다(사용자가 고른 것). 반지는 두 칸 중 나은 쪽. 끼우기가 실패하면 고정 없이 진행하고 단계 이름으로 알린다
     String lockedSlot = null;
     if (forced != null && forced.raw() != null) {
-      phase = "고유 고정";
+      checkCancel();
+      phase = "unique";
       String bestNext = null;
       Metrics bestM = null;
       String bestSlot = null;
@@ -278,8 +327,9 @@ public class Poe2RefineService {
       }
     }
     for (int r = 1; r <= ROUNDS; r++) {
+      checkCancel();
       round = r;
-      phase = "가이드 측정";
+      phase = "guide";
       // 세트를 나눠 쓰면 주 세트를 지정해 부른다(지정 안 하면 가이드가 단계마다 두 세트를 다시 재 주 세트를 고른다 — 엔진 2회 낭비)
       Poe2.BuildGuide guide = builds.guide(encode(xml), sets ? start.set() : null);
       if (guide == null || guide.error() != null) {
@@ -291,13 +341,14 @@ public class Poe2RefineService {
         final String locked = "\"slot\":\"" + lockedSlot + "\"";
         candidates.removeIf(c -> c.change().contains(locked)); // 고정한 칸은 다시 바꾸지 않는다
       }
-      phase = "적용·재계산";
+      phase = "apply";
       boolean applied = false;
       int tries = 0;
       for (Candidate c : candidates) {
         if (tries++ >= TRIES_PER_ROUND) {
           break;
         }
+        checkCancel();
         String next = engine.apply(xml, c.change());
         Metrics m = next == null ? null : measure(next);
         if (m == null) {
@@ -442,6 +493,7 @@ public class Poe2RefineService {
   }
 
   Metrics measure(String xml) {
+    evals++; // 잠금을 잡은 스레드 하나만 쓴다
     Poe2PobEngineService.Result r = engine.calc(xml);
     if (r.error() != null || r.values().isEmpty()) {
       return null;

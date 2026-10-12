@@ -22,12 +22,12 @@
 		double p = (b / a - 1) * 100;
 		return Math.abs(p) < 0.05 ? "0.0%" : String.format("%+.1f%%", p);
 	};
-	java.util.function.Function<String, String> objLabel = o -> "dps".equals(o) ? (ko ? "공격(DPS)" : "Offense (DPS)") : "ehp".equals(o) ? (ko ? "생존(EHP)" : "Defense (EHP)") : (ko ? "균형(DPS·EHP 합)" : "Balanced (DPS+EHP)");
-	java.util.function.Function<String, String> scenLabel = s -> "None".equals(s) ? (ko ? "보스 아님" : "Not a boss") : "Boss".equals(s) ? (ko ? "일반 보스" : "Standard boss") : "Uber".equals(s) ? (ko ? "우버 보스" : "Uber boss") : "keep".equals(s) ? (ko ? "플레이어 설정 그대로" : "Player setting") : (ko ? "최종 보스" : "Pinnacle boss");
+	java.util.function.Function<String, String> objLabel = o -> MessageUtil.getMessage("dps".equals(o) ? "poe.sim.opt.objective.dps" : "ehp".equals(o) ? "poe.sim.opt.objective.ehp" : "poe.sim.opt.objective.balanced");
+	java.util.function.Function<String, String> scenLabel = s -> MessageUtil.getMessage("None".equals(s) ? "poe.sim.opt.scenario.none" : "Boss".equals(s) ? "poe.sim.opt.scenario.boss" : "Uber".equals(s) ? "poe.sim.opt.scenario.uber" : "keep".equals(s) ? "poe2.sim.opt.scenario.keep" : "poe.sim.opt.scenario.pinnacle");
 }
 
 @if(result == null)
-	<div class="alert alert-warning text-sm">${ko ? "결과를 찾지 못했습니다(삭제됐거나 오래돼 정리됐습니다)." : "Result not found (deleted or pruned)."}</div>
+	<div class="alert alert-warning text-sm">${MessageUtil.getMessage("poe.sim.result.notfound")}</div>
 @else
 !{
 	Poe2.SimResult r = result;
@@ -53,8 +53,8 @@
 				<tr>
 					<th></th>
 					<th class="text-right">${ko ? "출발 실빌드" : "Real-build start"}</th>
-					<th class="text-right">${ko ? "다듬은 뒤" : "Refined"}</th>
-					<th class="text-right">${ko ? "변화" : "Change"}</th>
+					<th class="text-right">${MessageUtil.getMessage("poe.refine.after")}</th>
+					<th class="text-right">${MessageUtil.getMessage("poe.refine.change")}</th>
 					<th class="text-right">${ko ? "poe.ninja 중앙값" : "poe.ninja median"}@if(bm != null && bm.sample() != null)<div class="text-[10px] font-normal text-base-content/60">n=${bm.sample()}</div>@endif</th>
 				</tr>
 			</thead>
@@ -106,13 +106,13 @@
 		<div class="space-y-1">
 			<div class="flex items-center gap-2">
 				<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.code")}</div>
-				<button type="button" class="btn btn-ghost btn-xs" data-copy-target="#poe2SimCode" data-copied-label="${ko ? "복사됨 ✓" : "Copied ✓"}">${ko ? "복사" : "Copy"}</button>
+				<button type="button" class="btn btn-ghost btn-xs" data-copy-target="#poe2SimCode" data-copied-label="${MessageUtil.getMessage("poe.common.copied")}">${MessageUtil.getMessage("poe.common.copy")}</button>
 			</div>
 			<textarea id="poe2SimCode" readonly rows="3" class="textarea textarea-bordered w-full font-mono text-xs leading-5" aria-label="${MessageUtil.getMessage("poe.sim.opt.result.code")}">${r.code()}</textarea>
 		</div>
 	@endif
 	<div class="flex flex-wrap items-center gap-2">
-		<a class="btn btn-primary btn-sm" href="/poe2/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${ko ? "빌드 화면에서 열기" : "Open in build view"}</a>
+		<a class="btn btn-primary btn-sm" href="/poe2/build?sim=${historyId == null ? "1" : String.valueOf(historyId)}" data-sim-open>${MessageUtil.getMessage("poe.sim.result.openbuild")}</a>
 		<%-- 안내 첫 문장은 PoE1 시뮬 결과와 같다(10-08) --%>
 		<span class="text-xs text-base-content/60">${ko ? "아이템마다 거래소 링크 · 업그레이드 가이드는 빌드 화면에서 · 고유 아이템은 품질 20% 기준 · 단계 증감은 적용 뒤 엔진 실측 · 계보 젬은 드물게 얻는 젬" : "Trade links per item and the upgrade guide are on the build view · Uniques at 20% quality · step changes are engine-measured · lineage gems are rare"}</span>
 	</div>

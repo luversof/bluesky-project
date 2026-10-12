@@ -113,6 +113,16 @@ public class PoeUniqueDataService {
           item.baseType() != null
               ? nameToClass.get(item.baseType().toLowerCase(Locale.ROOT))
               : null;
+      if (cls == null && item.baseType() != null) {
+        // PoB 표기("Maelstrom Staff" · "Two-Toned Boots (Armour/Evasion)")는 findByName 규칙으로(10-09
+        // C209 — 파쇄자가 전쟁지팡이
+        //   분류에서 빠지고 category 폴백 "Staff" 로 들어가 마엘스트롬 지팡이 상세의 "이 베이스의 고유"에 없었다)
+        cls =
+            poeBaseItemDataService
+                .findByName(item.baseType())
+                .map(PoeBaseItem::itemClass)
+                .orElse(null);
+      }
       if (cls == null) {
         cls = FALLBACK_CLASS.getOrDefault(item.category(), item.category());
       }
@@ -159,7 +169,11 @@ public class PoeUniqueDataService {
         it.flavour(),
         it.flavourKo(),
         it.explicitsReminders(),
-        it.explicitsRemindersKo());
+        it.explicitsRemindersKo(),
+        it.limit(),
+        it.influences(),
+        it.tincture(),
+        it.talismanTier());
   }
 
   public int totalCount() {

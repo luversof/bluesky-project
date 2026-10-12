@@ -594,7 +594,38 @@ public class PoePobImportService {
                         kindsAll.subList(
                             Math.min(implicitCount(lines), kindsAll.size()), kindsAll.size())),
                     poeTradeStatDataService)
-                : null);
+                : null,
+        itemLevelReq(lines).orElse(unique.map(PoeUniqueItem::requiredLevel).orElse(null)),
+        itemDefences(lines));
+  }
+
+  private static final java.util.regex.Pattern ITEM_DEFENCE =
+      java.util.regex.Pattern.compile(
+          "^(armour|evasion|energy shield|ward):\\s*(\\d+)$",
+          java.util.regex.Pattern.CASE_INSENSITIVE);
+
+  /**
+   * PoB 아이템 텍스트의 "Armour: N" · "Evasion: N" · "Energy Shield: N" · "Ward: N"(최종값 — 품질 · 로컬 옵션 반영,
+   * 10-08 C184). 하나도 없으면 null.
+   */
+  public static PoeBuild.Defences itemDefences(List<String> lines) {
+    Integer armour = null, evasion = null, energyShield = null, ward = null;
+    for (String line : lines) {
+      java.util.regex.Matcher m = ITEM_DEFENCE.matcher(line.trim());
+      if (!m.matches()) {
+        continue;
+      }
+      int v = Integer.parseInt(m.group(2));
+      switch (m.group(1).toLowerCase(java.util.Locale.ROOT)) {
+        case "armour" -> armour = v;
+        case "evasion" -> evasion = v;
+        case "energy shield" -> energyShield = v;
+        default -> ward = v;
+      }
+    }
+    return armour == null && evasion == null && energyShield == null && ward == null
+        ? null
+        : new PoeBuild.Defences(armour, evasion, energyShield, ward);
   }
 
   private static final java.util.Map<String, String> INFLUENCE_KEYS =
@@ -625,6 +656,22 @@ public class PoePobImportService {
   private static final java.util.regex.Pattern ITEM_INTANGIBILITY =
       java.util.regex.Pattern.compile(
           "^intangibility:\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+  private static final java.util.regex.Pattern ITEM_LEVEL_REQ =
+      java.util.regex.Pattern.compile(
+          "^levelreq:\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+  /** PoB 아이템 텍스트의 "LevelReq: N"(인게임 요구 레벨 — 옵션 레벨이 올린 값, 10-08 C179). 없거나 0 이면 빈 값. */
+  public static java.util.Optional<Integer> itemLevelReq(List<String> lines) {
+    for (String line : lines) {
+      java.util.regex.Matcher m = ITEM_LEVEL_REQ.matcher(line.trim());
+      // "LevelReq: 0"(PoE2 접합 부위 등)은 값이 없는 것으로 — 베이스 · 고유 요구 레벨로 넘긴다
+      if (m.find() && Integer.parseInt(m.group(1)) > 0) {
+        return java.util.Optional.of(Integer.parseInt(m.group(1)));
+      }
+    }
+    return java.util.Optional.empty();
+  }
 
   /** PoB 아이템 텍스트의 "Intangibility: N%"(없으면 0) — 메타 줄로 걸러낸 뒤 속성으로 따로 싣는다(10-04 C136). */
   private static int itemIntangibility(List<String> lines) {

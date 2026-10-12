@@ -37,7 +37,7 @@
 		<div class="space-y-4">
 			@template.poe2.header(title = pageTitle, meta = meta)
 			<%-- PoE1 모디파이어 화면과 같은 한 줄 설명(10-01) --%>
-			<div class="text-sm text-base-content/60 -mt-2">${PoeText.isKorean() ? "일반 아이템 제작 모드 — 아이템 클래스별 접두/접미 티어" : "Craftable modifiers by item class"}</div>
+			<div class="text-sm text-base-content/60 -mt-2">${MessageUtil.getMessage("poe.mods.desc")}</div>
 			<nav class="space-y-2 rounded-2xl bg-base-100 p-3 shadow-sm" aria-label="${MessageUtil.getMessage("poe2.mods.pool")}">
 				<%-- 분류별 줄 + 줄 이름 — 베이스·고유 목록(poe2/classChips.jte)·PoE1 과 같은 모양(10-01: 한 줄에 전부 늘어놓았다) --%>
 				@for(String cat : List.of("weapon", "offhand", "armour", "jewellery", "flask", "jewel", "other"))
