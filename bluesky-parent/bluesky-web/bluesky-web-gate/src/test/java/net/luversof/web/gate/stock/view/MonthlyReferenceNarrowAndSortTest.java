@@ -81,11 +81,11 @@ class MonthlyReferenceNarrowAndSortTest {
     // 행 링크도 정렬을 싣고 다니므로 머리칸 링크(기준 주소로 시작하는 것)만 센다.
     long sortable =
         lines.stream().filter(line -> line.contains("referenceListBaseUrl}&profileSort=")).count();
-    assertThat(sortable).as("전제: 프로필 표에 정렬 링크가 여섯").isEqualTo(6);
+    assertThat(sortable).as("전제: 프로필 표에 정렬 링크가 일곱(2026-10-13 최근 지급 기준일 추가)").isEqualTo(7);
 
     assertThat(sortHeaders.stream().filter(line -> line.contains("aria-sort")).count())
         .as("정렬 링크가 있는 머리칸은 모두 aria-sort 를 가져야 한다 - 하나만 빠져도 그 열만 조용하다")
-        .isGreaterThanOrEqualTo(6);
+        .isGreaterThanOrEqualTo(7);
 
     assertThat(template())
         .as("방향 글자(asc · desc)는 aria-sort 가 이미 전하는 상태다 - 접근성 이름에 섞이면 \"표시 순서 asc\" 로 읽힌다")

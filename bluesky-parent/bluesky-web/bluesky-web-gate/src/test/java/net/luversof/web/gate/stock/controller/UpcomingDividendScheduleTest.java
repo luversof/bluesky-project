@@ -384,4 +384,101 @@ class UpcomingDividendScheduleTest {
         .doesNotContain("=loadPayoutsQuietly();")
         .doesNotContain("monthlyDividendReferenceSupport.loadCurrentHoldings(userId);");
   }
+
+  /** 최근과 평균이 다른 기준 데이터(최근 latestPerShare, 평균 averagePerShare, 100 주). */
+  private static MonthlyDividendSnapshotResponse snapshot(
+      UUID item, String symbol, long latestPerShare, long averagePerShare) {
+    BigDecimal one = BigDecimal.ONE;
+    return new MonthlyDividendSnapshotResponse(
+        UUID.randomUUID(),
+        null,
+        item,
+        symbol,
+        symbol + " NAME",
+        LocalDate.parse("2026-09-02"),
+        BigDecimal.valueOf(latestPerShare),
+        BigDecimal.valueOf(averagePerShare),
+        BigDecimal.ZERO,
+        100,
+        one,
+        one,
+        one,
+        BigDecimal.valueOf(averagePerShare * 100),
+        one,
+        one,
+        one,
+        one,
+        BigDecimal.ZERO,
+        one,
+        one,
+        null);
+  }
+
+  /**
+   * 같은 날 합계는 평균과 최근을 함께 낸다(2026-10-13 사용자 지적). 이 칸 합계가 최근만 더해 대시보드의 다가올 배당(평균)과 같은 날 금액이 달랐다 - 10월
+   * 17일분 1,601,445 vs 997,459(한 종목이 9월만 주당 60원, 평소 29원). 최근을 앞에 두고 종목도 최근이 큰 순서로 적는다(사용자 선택 "최근을
+   * 우선으로" - 처음엔 평균을 앞에 뒀다).
+   */
+  @Test
+  void 같은_날_합계는_최근과_평균을_함께_내고_최근_순으로_적는다() {
+    UUID spike = UUID.randomUUID();
+    UUID steady = UUID.randomUUID();
+    List<MonthlyDividendPayoutResponse> all = new ArrayList<>();
+    all.addAll(payouts("SPIKE1", 17));
+    all.addAll(payouts("STEADY1", 17));
+    UpcomingDividendScheduleView view =
+        controller(ledger(List.of()))
+            .buildUpcomingSchedule(
+                UUID.randomUUID(),
+                List.of(snapshot(spike, "SPIKE1", 60, 30), snapshot(steady, "STEADY1", 10, 50)),
+                all,
+                TODAY);
+
+    DividendCalendarView.Day day = view.days().get(0);
+    assertThat(day.date()).isEqualTo(LocalDate.parse("2026-09-17"));
+    assertThat(day.averageTotal()).isEqualByComparingTo("8000");
+    assertThat(day.latestTotal()).isEqualByComparingTo("7000");
+    // 평균 순이면 STEADY1(5,000) 이 먼저지만 최근 순이라 SPIKE1(6,000) 이 먼저 - 대시보드 목록과 같은 순서.
+    assertThat(day.entries())
+        .extracting(DividendCalendarView.Entry::symbol)
+        .containsExactly("SPIKE1", "STEADY1");
+    assertThat(view.thisMonthAverageTotal()).isEqualByComparingTo("8000");
+    assertThat(view.thisMonthTotal()).isEqualByComparingTo("7000");
+
+    Map<String, Object> model = new HashMap<>();
+    model.put("hasRows", true);
+    model.put("schedule", view);
+    String html = renderSection(model);
+    String average = StockFormatUtil.fullKrw(8000L);
+    String latest = StockFormatUtil.fullKrw(7000L);
+    assertThat(html).contains("data-daycard-average-total").contains("data-daycard-latest-total");
+    // 최근이 앞에 온다.
+    assertThat(html.indexOf(latest)).isGreaterThan(-1).isLessThan(html.indexOf(average));
+    assertThat(html)
+        .contains("data-upcoming-this-month-total>" + latest)
+        .contains("data-upcoming-this-month-average-total>" + average);
+  }
+
+  /** 수량 어긋남 안내도 최근 · 평균을 함께, 최근이 앞(2026-10-13 - 카드와 같은 순서 · 같은 두 기준). */
+  @Test
+  void 수량_어긋남_안내도_최근과_평균을_함께_적는다() {
+    UpcomingDividendScheduleView view = schedule(ledger(List.of()));
+    Map<String, Object> model = new HashMap<>();
+    model.put("hasRows", true);
+    model.put("schedule", view);
+    model.put("staleQuantityCount", 2L);
+    model.put("currentQuantityTotal", new BigDecimal("4600"));
+    model.put("currentQuantityLatestTotal", new BigDecimal("7700"));
+    String html = renderSection(model);
+
+    String expected =
+        java.text.MessageFormat.format(
+            MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity.both"),
+            "2",
+            StockFormatUtil.fullKrw(7700L),
+            StockFormatUtil.fullKrw(4600L));
+    assertThat(expected).contains("7,700").contains("4,600");
+    assertThat(expected.indexOf("7,700")).isLessThan(expected.indexOf("4,600"));
+    assertThat(html).contains("data-upcoming-stale-quantity=\"2\"").contains(expected);
+  }
 }

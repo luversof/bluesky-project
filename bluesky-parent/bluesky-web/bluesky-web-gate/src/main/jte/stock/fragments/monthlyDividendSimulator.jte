@@ -44,6 +44,8 @@
 @param BigDecimal monthlyDividendMinAnnualYield = null
 @param boolean monthlyDividendPositiveOnly = false
 @param String monthlyDividendPayoutWindowFilter = ""
+<%-- 지급 시기 칩의 개수(다른 조건은 그대로, 지급 시기만 바꿨을 때 남는 줄). 비면 개수 없이 칩만. --%>
+@param java.util.Map<String, Integer> monthlyDividendPayoutWindowCounts = java.util.Map.of()
 @param String monthlyDividendAccountFilter = ""
 @param boolean monthlyDividendSlotFilterUnavailable = false
 @param boolean monthlyDividendHasSavedRows = false
@@ -154,6 +156,14 @@
 		// 지급 시기 · 계좌 자리(사용자 요청 2026-09-23). 값은 컨트롤러가 정해진 넷 중 하나로 걸러 준다.
 		+ (monthlyDividendPayoutWindowFilter.isBlank() ? "" : "&payoutWindow=" + monthlyDividendPayoutWindowFilter)
 		+ (monthlyDividendAccountFilter.isBlank() ? "" : "&account=" + monthlyDividendAccountFilter);
+	// 지급 시기 칩(2026-10-13 사용자 요청): 기준 주소에서 지급 시기만 빼고 정렬을 붙인다 - 다른 조건과 정렬은 그대로, 지급 시기만 바뀐다.
+	String monthlyDividendWindowChipBaseUrl = (monthlyDividendPayoutWindowFilter.isBlank() ? monthlyDividendTableBaseUrl
+			: monthlyDividendTableBaseUrl.replace("&payoutWindow=" + monthlyDividendPayoutWindowFilter, ""))
+		+ "&sort=" + monthlyDividendSort + "&direction=" + monthlyDividendDirection;
+	// 필터 지우기: 폼 조건만 비우고 탭 · 정렬 · 칩이 고른 지급 시기는 남긴다(지급 시기를 비우려면 칩의 "전체").
+	String monthlyDividendFilterResetUrl = "/stock/simulator?tab=monthly-dividend&sort=" + monthlyDividendSort + "&direction=" + monthlyDividendDirection
+		+ (monthlyDividendPayoutWindowFilter.isBlank() ? "" : "&payoutWindow=" + monthlyDividendPayoutWindowFilter);
+	String monthlyDividendWindowChipLabel = MessageUtil.getMessage("stock.monthly.etf.filter.payout.window");
 	String currentDirectionIndicator = "asc".equals(monthlyDividendDirection) ? "↑" : "↓";
 	String displayOrderDirection = "display-order".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
 	String symbolDirectionToggle = "symbol".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "desc" : "asc") : "asc";
@@ -259,7 +269,13 @@
 			`)
 		</div>
 
-		<div class="space-y-6">
+		<%-- 결과 구역(요약 · 적립 추천 · 비교표 · 기준). 표 좁히기 폼 · 지급 시기 칩 · 정렬 머리 · 초기화는 페이지를 새로 부르지 않고 이 구역만
+		     바꿔 끼운다(사용자 요청 2026-10-13: 적용할 때마다 맨 위로 튀어 표까지 한참 내려와야 했다). 숫자는 여전히 서버가 다시 낸다 -
+		     합계 · 선택 합산 · 추천 · 칩 개수를 브라우저에서 따로 계산하면 두 벌이 된다. show:none = 부스트 기본값(맨 위로)을 끈다.
+		     주소는 갈아 끼운다(replace) - 새로 고침해도 같은 조건이고, 뒤로 가기는 이전 화면으로 간다. 위 탭 링크도 지금 조건을 싣도록 함께 바꾼다.
+		     data-swap-anchor: 비교표 제목을 교체 전후 화면의 같은 자리에 둔다 - 위 적립 추천 카드는 지급 시기에 따라 길이가 바뀌어 scrollY 만 지키면
+		     칩 · 폼이 위아래로 밀렸다(사용자 지적 2026-10-13: 전체 ↔ 월중 · 월말 위치가 달랐다). --%>
+		<div class="space-y-6" id="monthlyDividendResults" hx-target="#monthlyDividendResults" hx-select="#monthlyDividendResults" hx-select-oob="#simulatorTabs" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true" data-swap-anchor="#monthlyDividendCompareTable">
 			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 					<div class="text-xs text-base-content/60">${selectionOverviewLabel}</div>
@@ -317,7 +333,7 @@
 						<p class="text-[11px] leading-4 text-base-content/60" data-comparison-basis>
 							${MessageUtil.getMessage("stock.simulator.monthly.summary.comparison.basis")}
 							@if(bestChoice != null)
-								<a class="link link-hover whitespace-nowrap" href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=desc#monthlyDividendCompareTable" data-comparison-rank-link>${MessageUtil.getMessage("stock.simulator.monthly.summary.comparison.rank.link")}</a>
+								<a hx-boost="true" class="link link-hover whitespace-nowrap" href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=desc#monthlyDividendCompareTable" data-comparison-rank-link>${MessageUtil.getMessage("stock.simulator.monthly.summary.comparison.rank.link")}</a>
 							@endif
 						</p>
 					</div>
@@ -437,7 +453,7 @@
 					<%-- 표 좁히기. 서버는 오래전부터 keyword · minAnnualYield · positiveOnly 를 받았지만 화면에 입력 칸이 없어 주소를 직접 쳐야만
 					     걸렸다(실측 2026-09-21: name="keyword" 입력 요소 0 개). 사용자 선택 2026-09-21: "검색·필터를 화면으로".
 					     이 표는 보유 종목만 다룬다 - 안 가진 종목은 '월배당 ETF' 화면에서 본다. --%>
-					<form method="get" action="/stock/simulator" class="grid gap-3 rounded-box bg-base-200/40 p-3 md:grid-cols-2 xl:grid-cols-4" data-monthly-filter-form>
+					<form method="get" action="/stock/simulator" class="grid gap-3 rounded-box bg-base-200/40 p-3 md:grid-cols-2 xl:grid-cols-4" hx-boost="true" data-monthly-filter-form>
 						<input type="hidden" name="tab" value="monthly-dividend" />
 						<input type="hidden" name="sort" value="${monthlyDividendSort}" />
 						<input type="hidden" name="direction" value="${monthlyDividendDirection}" />
@@ -450,15 +466,10 @@
 							<input name="minAnnualYield" type="number" step="0.01" min="0" value="${minAnnualYieldValue}" class="input input-bordered input-sm w-full max-w-full" />
 						</label>
 						<%-- 지급 시기 · 계좌 자리로 좁힌다(사용자 요청 2026-09-23). 계좌는 적립 추천 카드와 같은 규칙이다(사용자 결정) -
-						     과세표준 비중 10% 이내면 위탁, 넘으면 ISA/연금. 월배당 ETF 화면의 같은 필터와 문구를 같이 쓴다. --%>
-						<label class="form-control min-w-0 max-w-full">
-							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.monthly.etf.filter.payout.window")}</span></div>
-							<select name="payoutWindow" class="select select-bordered select-sm w-full max-w-full" data-monthly-slot-window>
-								<option value="" selected="${monthlyDividendPayoutWindowFilter.isBlank()}">${MessageUtil.getMessage("stock.monthly.etf.filter.payout.window.all")}</option>
-								<option value="MID_MONTH" selected="${"MID_MONTH".equals(monthlyDividendPayoutWindowFilter)}">${payoutWindowMidMonthLabel}</option>
-								<option value="MONTH_END" selected="${"MONTH_END".equals(monthlyDividendPayoutWindowFilter)}">${payoutWindowMonthEndLabel}</option>
-							</select>
-						</label>
+						     과세표준 비중 10% 이내면 위탁, 넘으면 ISA/연금. 월배당 ETF 화면의 같은 필터와 문구를 같이 쓴다.
+						     지급 시기는 표 위 칩으로만 고른다(사용자 결정 2026-10-13 - 칸과 칩이 같은 일을 두 번 했다). 칸이 없어도 "적용" 이
+						     거르기를 풀지 않도록 지금 값을 숨은 칸으로 싣는다. --%>
+						<input type="hidden" name="payoutWindow" value="${monthlyDividendPayoutWindowFilter}" data-monthly-slot-window />
 						<label class="form-control min-w-0 max-w-full">
 							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.monthly.etf.filter.account")}</span></div>
 							<select name="account" class="select select-bordered select-sm w-full max-w-full" data-monthly-slot-account>
@@ -474,9 +485,20 @@
 						<div class="flex items-end gap-2">
 							<button type="submit" class="btn btn-primary btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.simulator.monthly.filter.apply")}</button>
 							<%-- 필터 지우기 링크는 일부러 기준 주소(필터를 싣는 주소)를 쓰지 않는다(SimulatorSortKeepsFilterTest 예외). --%>
-							<a data-filter-reset href="/stock/simulator?tab=monthly-dividend&sort=${monthlyDividendSort}&direction=${monthlyDividendDirection}" class="btn btn-ghost btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.simulator.monthly.filter.reset")}</a>
+							<%-- 지급 시기는 폼 밖 칩이 고르는 값이라(2026-10-13) 지우기가 비우지 않는다 - 비우려면 칩의 "전체". --%>
+							<a data-filter-reset href="${monthlyDividendFilterResetUrl}" hx-boost="true" class="btn btn-ghost btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.simulator.monthly.filter.reset")}</a>
 						</div>
 					</form>
+					<%-- 한 번 눌러 월중만 · 월말만(2026-10-13 사용자 요청). 위 폼의 지급 시기 칸은 다른 조건과 함께 "적용" 해야 걸려 두 번 손이 갔다.
+					     칩과 칸은 같은 주소 값(payoutWindow)을 보므로 늘 같은 상태다. --%>
+					<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${monthlyDividendWindowChipLabel}" data-monthly-window-chips>
+						<span class="text-xs font-medium text-base-content/60" aria-hidden="true">${monthlyDividendWindowChipLabel}</span>
+						@for(String windowOption : java.util.List.of("", "MID_MONTH", "MONTH_END"))
+							!{boolean windowSelected = windowOption.equals(monthlyDividendPayoutWindowFilter);}
+							!{Integer windowCount = monthlyDividendPayoutWindowCounts.get(windowOption);}
+							<a hx-boost="true" href="${monthlyDividendWindowChipBaseUrl + (windowOption.isEmpty() ? "" : "&payoutWindow=" + windowOption)}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${windowSelected ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${windowSelected ? "true" : null}" data-monthly-window-chip="${windowOption.isEmpty() ? "all" : windowOption}">${windowOption.isEmpty() ? MessageUtil.getMessage("stock.monthly.etf.filter.payout.window.all") : ("MID_MONTH".equals(windowOption) ? payoutWindowMidMonthLabel : payoutWindowMonthEndLabel)}@if(windowCount != null) <span class="tabular-nums">${String.valueOf(windowCount)}</span>@endif</a>
+						@endfor
+					</div>
 					@if(monthlyDividendSlotFilterUnavailable)
 						<p role="status" class="text-xs text-warning" data-monthly-slot-unavailable>${MessageUtil.getMessage("stock.simulator.monthly.filter.slot.unavailable")}</p>
 					@endif
@@ -596,14 +618,14 @@
 										<th rowspan="2" scope="col" aria-sort="${displayOrderAriaSort}" class="min-w-[8rem] max-w-[11rem] align-middle">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 font-medium">
 												<div class="flex items-center gap-1">
-													<a href="${monthlyDividendTableBaseUrl}&sort=display-order&direction=${displayOrderDirection}" class="link link-hover no-underline">
+													<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=display-order&direction=${displayOrderDirection}" class="link link-hover no-underline">
 														${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.display.order")}
 														@if("display-order".equals(monthlyDividendSort))
 															<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 														@endif
 													</a>
 													<span>/</span>
-													<a href="${monthlyDividendTableBaseUrl}&sort=symbol&direction=${symbolDirectionToggle}" class="link link-hover no-underline">
+													<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=symbol&direction=${symbolDirectionToggle}" class="link link-hover no-underline">
 														${MessageUtil.getMessage("stock.simulator.monthly.table.header.symbol")}
 														@if("symbol".equals(monthlyDividendSort))
 															<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
@@ -620,7 +642,7 @@
 										<th scope="colgroup" class="col-group-start col-group-label text-center text-[11px] font-medium uppercase tracking-wide text-base-content/60" colspan="3">${MessageUtil.getMessage("stock.simulator.monthly.table.group.input")}</th>
 										<th rowspan="2" scope="col" class="col-group-start min-w-[7.5rem] align-middle text-right" aria-sort="${"monthly-dividend".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none"}">
 											<div class="flex min-h-[4.5rem] flex-col justify-center gap-1 whitespace-normal text-right">
-												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover block text-sm font-medium no-underline">
+												<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=monthly-dividend&direction=${monthlyDividendDirectionToggle}" class="link link-hover block text-sm font-medium no-underline">
 													<span class="inline-flex items-center justify-end gap-1">
 														@if("monthly-dividend".equals(monthlyDividendSort))
 															<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
@@ -637,7 +659,7 @@
 										<th scope="col" class="col-group-start text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.dividend.per.share")}</th>
 										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.amount")}</th>
 										<th scope="col" class="text-right" aria-sort="${"taxable-base".equals(monthlyDividendSort) ? ("asc".equals(monthlyDividendDirection) ? "ascending" : "descending") : "none"}">
-											<a href="${monthlyDividendTableBaseUrl}&sort=taxable-base&direction=${taxableBaseDirectionToggle}" class="link link-hover inline-flex items-end gap-1 font-medium no-underline">
+											<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=taxable-base&direction=${taxableBaseDirectionToggle}" class="link link-hover inline-flex items-end gap-1 font-medium no-underline">
 												<span class="inline-flex flex-col items-end whitespace-normal leading-4 text-right">
 													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio.line.one")}</span>
 													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.taxable.base.ratio.line.two")}</span>
@@ -663,13 +685,13 @@
 										<th scope="col" aria-sort="${marketYieldAriaSort}" class="col-group-start min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.market.price.basis")}</div>
-												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
+												<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=monthly-yield&direction=${monthlyYieldDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}<span class="sr-only"> ${marketBasisLabel}</span>
 													@if("monthly-yield".equals(monthlyDividendSort))
 														<span class="ml-1 text-[11px] text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 													@endif
 												</a>
-												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield&direction=${annualYieldDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
+												<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=annual-yield&direction=${annualYieldDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}<span class="sr-only"> ${marketBasisLabel}</span>
 													@if("annual-yield".equals(monthlyDividendSort))
 														<span class="ml-1 text-[11px] text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
@@ -680,13 +702,13 @@
 										<th scope="col" aria-sort="${onCostYieldAriaSort}" class="min-w-[6.5rem] align-bottom text-right">
 											<div class="space-y-1 whitespace-normal text-right">
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.header.on.cost")}</div>
-												<a href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
+												<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=monthly-yield-on-cost&direction=${monthlyYieldOnCostDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.monthly.yield.short")}<span class="sr-only"> ${onCostBasisLabel}</span>
 													@if("monthly-yield-on-cost".equals(monthlyDividendSort))
 														<span class="ml-1 text-[11px] text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
 													@endif
 												</a>
-												<a href="${monthlyDividendTableBaseUrl}&sort=annual-yield-on-cost&direction=${annualYieldOnCostDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
+												<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=annual-yield-on-cost&direction=${annualYieldOnCostDirectionToggle}" class="link link-hover block py-1 text-xs font-medium leading-4 no-underline">
 													${MessageUtil.getMessage("stock.simulator.monthly.table.header.annual.yield.short")}<span class="sr-only"> ${onCostBasisLabel}</span>
 													@if("annual-yield-on-cost".equals(monthlyDividendSort))
 														<span class="ml-1 text-[11px] text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>
@@ -701,7 +723,7 @@
 												 price return had no name at all and the column read as one metric with two numbers. --%>
 												<div class="text-[11px] font-medium leading-4 text-base-content/60">${onCostBasisLabel}</div>
 												<div class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.total.return.on.cost.line.one")}</div>
-												<a href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
+												<a hx-boost="true" href="${monthlyDividendTableBaseUrl}&sort=combined-return&direction=${combinedReturnDirectionToggle}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
 													<span class="whitespace-nowrap">${MessageUtil.getMessage("stock.simulator.monthly.table.header.expected.combined.return.line.one")}</span>
 													@if("combined-return".equals(monthlyDividendSort))
 														<span class="text-xs text-base-content/60" aria-hidden="true">${currentDirectionIndicator}</span>

@@ -53,7 +53,7 @@
 						<%-- 인게임 아이템 슬롯 프레임 — 크기를 인벤토리 칸 비율(category 기준)로. 고유 전용 아이콘 우선, 없으면 베이스 아이콘 폴백. --%>
 						!{ int[] ucells = net.luversof.web.gate.poe.PoeText.invCells(item.category()); int uunit = 58; }
 						<div class="poe-item-slot shrink-0" style="width:${ucells[0] * uunit}px;height:${ucells[1] * uunit}px">
-							<img src="/poe-assets/uniques/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" onerror="this.onerror=null;this.src='/poe-assets/items/${item.iconKey()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}'" class="max-w-full max-h-full object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" alt="" loading="lazy">
+							<img src="/poe-assets/uniques/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" data-fallback-src="/poe-assets/items/${item.iconKey()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="max-w-full max-h-full object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" alt="" loading="lazy">
 						</div>
 					@endif
 					<div class="min-w-0 flex-1 space-y-1">

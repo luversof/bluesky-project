@@ -42,10 +42,10 @@ class FilterResetKeepsHiddenStateTest {
     for (String name : hidden) {
       assertThat(reset).as("초기화 링크가 숨은 입력 " + name + " 을 잃는다").contains(name + "=");
     }
+    // 지급 시기는 2026-10-13 부터 폼 밖 칩이 고른다 - 보기 · 기간처럼 초기화가 지킨다(숨은 칸이라 위 반복이 확인한다).
     assertThat(reset)
         .as("초기화는 보이는 필터를 비운다")
         .doesNotContain("keyword=")
-        .doesNotContain("payoutWindow=")
         .doesNotContain("account=")
         .doesNotContain("holding=");
   }

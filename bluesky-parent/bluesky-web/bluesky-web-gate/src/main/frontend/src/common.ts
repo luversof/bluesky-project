@@ -1474,6 +1474,39 @@ document.addEventListener("htmx:afterSettle", (event: any) => {
 });
 (globalThis as any).__swapFocusInternals = { structuralPath, rememberFocus, restoreFocus };
 
+// 구역을 바꿔 끼울 때 기준 요소를 화면의 같은 자리에 둔다(사용자 지적 2026-10-13: 시뮬레이터 월배당에서 지급 시기 칩을 전체 ↔ 월중 · 월말로
+// 바꾸면 칩 위치가 달라졌다). scrollY 는 그대로인데 구역 안에서 칩보다 위에 있는 적립 추천 카드가 조건에 따라 길이가 바뀐다 - 그만큼 칩이 밀린다.
+// 교체 대상에 data-swap-anchor="선택자" 를 달면 교체 직전 그 요소의 화면 위치를 재 두고, 교체 직후(그리기 전) 새 요소가 같은 자리에 오도록 굴린다.
+type SwapAnchorMemo = { selector: string; top: number };
+const swapAnchorMemos: SwapAnchorMemo[] = [];
+function rememberSwapAnchor(target: unknown, doc: Pick<Document, "querySelector"> = document): SwapAnchorMemo | null {
+	// 다른 처리기와 같은 이벤트를 듣는다 - 속성을 못 읽는 대상(시험 가짜 등)이면 조용히 빠진다.
+	if (!(target instanceof Element) || typeof target.getAttribute !== "function") return null;
+	const selector = target.getAttribute("data-swap-anchor");
+	if (!selector) return null;
+	const anchor = doc.querySelector(selector);
+	if (!anchor) return null;
+	return { selector, top: anchor.getBoundingClientRect().top };
+}
+/** 새 기준 요소를 옛 자리로 굴리고 굴린 양을 돌려준다(못 찾으면 0). */
+function restoreSwapAnchor(memo: SwapAnchorMemo | null, doc: Pick<Document, "querySelector"> = document, scrollBy: (x: number, y: number) => void = (x, y) => globalThis.scrollBy(x, y)): number {
+	if (!memo) return 0;
+	const anchor = doc.querySelector(memo.selector);
+	if (!anchor) return 0;
+	const delta = Math.round(anchor.getBoundingClientRect().top - memo.top);
+	if (delta !== 0) scrollBy(0, delta);
+	return delta;
+}
+document.addEventListener("htmx:beforeSwap", (event: any) => {
+	const memo = rememberSwapAnchor(event.detail?.target);
+	if (memo) swapAnchorMemos.push(memo);
+});
+// outerHTML 교체에서는 afterSwap 의 target 이 떨어져 나간 옛 요소일 수 있다 - 선택자로 새 요소를 찾는다.
+document.addEventListener("htmx:afterSwap", () => {
+	for (const memo of swapAnchorMemos.splice(0)) restoreSwapAnchor(memo);
+});
+(globalThis as any).__swapAnchorInternals = { rememberSwapAnchor, restoreSwapAnchor };
+
 
 
 
@@ -2141,10 +2174,8 @@ function syncStickyTheadHeights(): void {
 	});
 }
 
-function watchStickyStackTop(): void {
-	syncStickyStackTop();
-	if (typeof ResizeObserver !== "function") return;
-	const observer = new ResizeObserver(() => syncStickyStackTop());
+let stickyStackObserver: ResizeObserver | null = null;
+function observeStickyStack(observer: ResizeObserver): void {
 	const header = document.querySelector("header.navbar");
 	if (header) observer.observe(header);
 	const holder = document.querySelector(".table-filter-sticky");
@@ -2152,6 +2183,18 @@ function watchStickyStackTop(): void {
 	// 머리 줄은 폭 · 글꼴에 따라 줄이 접혀 높이가 바뀐다.
 	document.querySelectorAll(":is(.table-head-sticky, .table-head-sticky-xl) > table > thead").forEach((head) => observer.observe(head));
 }
+function watchStickyStackTop(): void {
+	syncStickyStackTop();
+	if (typeof ResizeObserver !== "function") return;
+	stickyStackObserver = new ResizeObserver(() => syncStickyStackTop());
+	observeStickyStack(stickyStackObserver);
+}
+// 구역을 바꿔 끼우면(월배당 ETF · 시뮬레이터 비교표, 2026-10-13) 붙는 줄 · 표 상자 · 머리 줄이 새 요소가 된다 - 다시 재고(표 상자의
+// --sticky-thead-height 는 새 상자에 없다) 새 요소를 관찰한다. 같은 요소를 다시 observe 해도 한 번만 걸린다.
+document.addEventListener("htmx:afterSettle", () => {
+	syncStickyStackTop();
+	if (stickyStackObserver) observeStickyStack(stickyStackObserver);
+});
 if (document.readyState === "loading") {
 	document.addEventListener("DOMContentLoaded", watchStickyStackTop, { once: true });
 } else {
@@ -2222,3 +2265,36 @@ document.addEventListener("click", (event) => {
         holder.querySelector("[data-kw-hint]")?.setAttribute("aria-expanded", "false");
     }
 });
+
+// 이미지 실패 처리 — 인라인 onerror 대신(CSP 강제 대비, 10-13 C287). common.js 는 head 에서 동기로 돌아
+// 본문 그림보다 먼저 걸린다(error 는 거품이 안 올라와 capture 로 받는다). 동작은 데이터 속성으로 고른다:
+//   data-fallback-src="주소"  → 한 번만 그 주소로 바꾼다(고유 그림 → 베이스 그림)
+//   data-onerror="remove" · "hide" · "hide-reveal-next"(옆 대체 칸을 보인다) · "text"(data-onerror-text 글자로 바꾼다)
+function handleImgError(img: any): string {
+    if (!img || img.tagName !== "IMG") return "skip";
+    const fallback = img.dataset ? img.dataset.fallbackSrc : undefined;
+    if (fallback && !img.dataset.fallbackTried) {
+        img.dataset.fallbackTried = "1";
+        img.src = fallback;
+        return "fallback";
+    }
+    switch (img.dataset ? img.dataset.onerror : undefined) {
+        case "remove":
+            img.remove();
+            return "remove";
+        case "hide":
+            img.style.display = "none";
+            return "hide";
+        case "hide-reveal-next":
+            img.style.display = "none";
+            img.nextElementSibling?.classList.remove("hidden");
+            return "hide-reveal-next";
+        case "text":
+            img.replaceWith(document.createTextNode(img.dataset.onerrorText || ""));
+            return "text";
+        default:
+            return "none";
+    }
+}
+document.addEventListener("error", (event) => handleImgError(event.target), true);
+(globalThis as any).__imgErrorInternals = { handleImgError };

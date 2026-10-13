@@ -9,13 +9,13 @@ import { DATA_DIR, FILES_DIR, loadConfig } from "./paths.mjs";
 import { createModTranslator } from "./statDescriptions.mjs";
 
 const SRC = path.join(DATA_DIR, "work", "pob-src", "src", "Data", "Uniques", "Special", "WatchersEye.lua");
-const OUT = path.join(DATA_DIR, "watchers-eye.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "watchers-eye.json"); // POE_DATA_OUT = 사본 출력(10-13)
 
 if (!fs.existsSync(SRC)) {
 	console.warn("WatchersEye.lua 없음 — PoB 소스 갱신 후 다시. 건너뜀");
 	process.exit(0);
 }
-const toKo = createModTranslator(FILES_DIR, ["metadata@statdescriptions@passive_skill_stat_descriptions.txt"]);
+const toKo = createModTranslator(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt", "metadata@statdescriptions@passive_skill_stat_descriptions.txt"]) /* 게임 passive 사슬 = stat → passive(C257 과 같다, 10-13 C288 — 기본 사슬의 gem/skill 문장이 이기지 않게) */;
 const source = fs.readFileSync(SRC, "utf8");
 
 // ["Key"] = { affix = "", "모드 문구", statOrder = …

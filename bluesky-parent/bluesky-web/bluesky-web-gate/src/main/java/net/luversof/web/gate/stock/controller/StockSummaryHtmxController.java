@@ -603,7 +603,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       }
     }
 
-    // 다음 시기 종목: 시기 필터 → 예상 월배당 내림차순. (시기 미분류 종목만 있으면 전체 상위로 폴백)
+    // 다음 시기 종목: 시기 필터 → 최근 기준 월배당 내림차순(2026-10-13 사용자 선택 "최근을 우선으로" - 배당 내역 다가올 배당과 같은 순서).
+    // (시기 미분류 종목만 있으면 전체 상위로 폴백)
     final String window = nextWindow;
     List<MonthlyDividendSnapshotResponse> windowRows =
         snapshots.stream()
@@ -613,12 +614,29 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                     window == null
                         || window.equals(windowBySymbol.get(normalizeSymbol(s.stockItemSymbol()))))
             .sorted(
-                (left, right) ->
-                    right.expectedMonthlyDividend().compareTo(left.expectedMonthlyDividend()))
+                Comparator.comparing(
+                        net.luversof.web.gate.stock.service.MonthlyDividendCalculator
+                            ::latestMonthlyDividend)
+                    .reversed())
             .toList();
+    // 평균과 최근을 함께 낸다 - 배당 내역의 다가올 배당은 같은 날을 최근으로만 더해 두 화면 금액이 달랐다(2026-10-13 사용자 지적: 10월 17일분
+    // 997,459 vs 1,601,445). 합계는 배당 내역 칸과 같은 규칙(종목마다 원 단위로 반올림한 뒤 더한다)이라 두 화면이 원 단위까지 같다.
     BigDecimal windowTotal =
         windowRows.stream()
-            .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
+            .map(
+                row ->
+                    BigDecimal.valueOf(
+                        net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
+                            row.expectedMonthlyDividend())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal windowLatestTotal =
+        windowRows.stream()
+            .map(
+                row ->
+                    BigDecimal.valueOf(
+                        net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
+                            net.luversof.web.gate.stock.service.MonthlyDividendCalculator
+                                .latestMonthlyDividend(row))))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     String nextWindowLabel =
@@ -646,6 +664,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     model.addAttribute("nextWindowIsMid", "MID_MONTH".equals(nextWindow));
     model.addAttribute("nextPayDateLabel", nextPayDateLabel);
     model.addAttribute("windowTotal", windowTotal);
+    model.addAttribute("windowLatestTotal", windowLatestTotal);
     // 목록은 다섯 줄까지지만 위의 합계는 이 창의 <b>모든</b> 종목을 더한 값이다. 몇이 더 있는지
     // 밝히지 않으면 합계가 안 맞는 것처럼 읽힌다(같은 화면의 배분 막대는 이미 "기타 N개" 를 적는다).
     model.addAttribute("topDividendSnapshots", windowRows.stream().limit(5).toList());
@@ -666,6 +685,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             windowRows, currentQuantityByStockItem);
     model.addAttribute("staleQuantityCount", currentQuantitySummary.staleCount());
     model.addAttribute("currentQuantityTotal", currentQuantitySummary.totalAtCurrentQuantity());
+    model.addAttribute(
+        "currentQuantityLatestTotal", currentQuantitySummary.latestTotalAtCurrentQuantity());
     // 이 카드의 예상 배당은 저장된 기준 데이터(스냅샷)로 계산된다. 스냅샷은 사람이 갱신해야 하고
     // 종목마다 시점이 다르다(실측 2026-08-22: 2026-07-20 ~ 2026-08-04 로 최대 33 일 지연, 그만큼
     // 보유 수량이 옛날 값이라 예상 월배당이 1.66% 낮게 잡혔다). 어느 시점 데이터인지 밝히지 않으면

@@ -74,7 +74,7 @@ const out = {
 // 숫자는 자리표시자(#)로 빼고, 클러스터 문장의 숫자를 순서대로 다시 끼운다.
 const translator = createTemplateTranslator();
 try {
-	const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@passive_skill_stat_descriptions.txt"]);
+	const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt", "metadata@statdescriptions@passive_skill_stat_descriptions.txt"]) /* 게임 passive 사슬 = stat → passive(C257 과 같다, 10-13 C288 — 기본 사슬의 gem/skill 문장이 이기지 않게) */;
 	translator.addFromStats(describe, loadTable("English", "Stats"));
 } catch (error) {
 	console.warn("스탯 서술기 로드 실패 — 트리 문장만으로 한글화:", error.message);
@@ -114,6 +114,6 @@ for (const size of sizes) {
 			` · 스킬 ${skills.length}종`,
 	);
 }
-const target = join(DATA_DIR, "cluster-jewels.json");
+const target = join(process.env.POE_DATA_OUT || DATA_DIR, "cluster-jewels.json"); // POE_DATA_OUT = 사본 출력(10-13)
 writeFileSync(target, JSON.stringify(out), "utf8");
 console.log(`클러스터 주얼 ${sizes.length}종 / 스킬 ${skillTotal}개 → ${target}`);

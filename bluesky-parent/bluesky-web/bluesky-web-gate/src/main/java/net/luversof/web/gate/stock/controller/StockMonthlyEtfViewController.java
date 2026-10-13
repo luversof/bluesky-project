@@ -126,6 +126,26 @@ public class StockMonthlyEtfViewController {
             List.copyOf(contributionPicks.keySet()));
 
     model.addAttribute("monthlyEtfRows", rows);
+    // 지급 시기 칩(2026-10-13 사용자 요청 - 폼의 칸 대신 한 번 눌러 거르기)에 적을 개수. 다른 조건(검색어 · 수익률 · 보유 · 계좌 ·
+    // 이번 적립 보기)은 그대로 두고 지급 시기만 바꿨을 때 남는 줄 수다.
+    Map<String, Integer> payoutWindowCounts = new java.util.LinkedHashMap<>();
+    for (String window : List.of("", "MID_MONTH", "MONTH_END", "OTHER", "UNKNOWN")) {
+      payoutWindowCounts.put(
+          window,
+          monthlyEtfViewSupport
+              .filterContribution(
+                  monthlyEtfViewSupport.filterRows(
+                      allRows,
+                      resolvedKeyword,
+                      minAnnualYield,
+                      window,
+                      resolvedHolding,
+                      resolvedAccount),
+                  contributionPicks.keySet(),
+                  resolvedView)
+              .size());
+    }
+    model.addAttribute("monthlyEtfPayoutWindowCounts", payoutWindowCounts);
     model.addAttribute("monthlyEtfContributionPicks", contributionPicks);
     model.addAttribute("monthlyEtfView", resolvedView);
     // 추천은 걸러 놓은 목록 안에서 고른다 - 화면에 안 보이는 종목을 추천하면 안 된다.

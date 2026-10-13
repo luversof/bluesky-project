@@ -115,4 +115,55 @@ class MonthlyDividendCurrentQuantityTest {
                 .totalAtCurrentQuantity())
         .isEqualByComparingTo("10");
   }
+
+  /** 최근 1 회 주당 배당까지 있는 행(다가올 배당 카드의 최근 기준). */
+  private MonthlyDividendSnapshotResponse rowWithLatest(
+      UUID stockItemId,
+      int heldQuantity,
+      String latestPerShare,
+      String perShare1y,
+      String expected) {
+    return new MonthlyDividendSnapshotResponse(
+        null,
+        null,
+        stockItemId,
+        "SYM",
+        "이름",
+        null,
+        new BigDecimal(latestPerShare),
+        new BigDecimal(perShare1y),
+        null,
+        heldQuantity,
+        null,
+        null,
+        null,
+        new BigDecimal(expected),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /**
+   * 최근 기준도 같은 규칙으로 다시 센다(2026-10-13: 다가올 배당 카드가 최근을 앞에 두면서 수량 안내도 최근 · 평균을 함께 적는다). 현재 수량을 아는 종목은 그
+   * 수량, 모르는 종목은 스냅샷 수량.
+   */
+  @Test
+  void 최근_기준_합계도_현재_수량으로_다시_센다() {
+    CurrentQuantitySummary summary =
+        MonthlyDividendCalculator.currentQuantitySummary(
+            List.of(
+                rowWithLatest(ITEM_A, 100, "60", "30", "3000"),
+                rowWithLatest(ITEM_B, 50, "10", "20", "1000")),
+            Map.of(ITEM_A, 120));
+
+    assertThat(summary.staleCount()).isEqualTo(1);
+    // 평균: 30 x 120 + (모름) 1,000 = 4,600 / 최근: 60 x 120 + (모름) 10 x 50 = 7,700
+    assertThat(summary.totalAtCurrentQuantity()).isEqualByComparingTo("4600");
+    assertThat(summary.latestTotalAtCurrentQuantity()).isEqualByComparingTo("7700");
+  }
 }

@@ -28,7 +28,10 @@
 	String monthName = day.date().getMonth().getDisplayName(TextStyle.SHORT, locale);
 	String dayTitle = (showMonth ? monthName + " " : "") + java.text.MessageFormat.format(dayTitlePattern, String.valueOf(day.date().getDayOfMonth()), day.date().getDayOfWeek().getDisplayName(TextStyle.SHORT, locale));
 	boolean dayRed = day.date().getDayOfWeek() == DayOfWeek.SUNDAY || day.date().getDayOfWeek() == DayOfWeek.SATURDAY || dayHoliday != null;
+	boolean estimatedDay = day.entries() != null && !day.entries().isEmpty() && day.entries().stream().noneMatch(DividendCalendarView.Entry::actualAmount);
 }
+<%-- 예상(실수령이 아닌) 칸은 최근을 앞에, 평균을 뒤에 함께 적는다(2026-10-13 사용자 선택 - 처음엔 평균을 앞에 뒀다가 "최근을 우선으로"). 이 칸 합계가 최근만 더해 대시보드의
+     다가올 배당(평균)과 같은 날 금액이 달랐다 - 10월 17일분 1,601,445 vs 997,459. 실수령 칸은 세전 · 실수령 그대로. --%>
 <li class="rounded-box border border-base-200 px-3 py-2" data-calendar-daylist-day="${day.date().toString()}">
 	<%-- 날짜 덩어리는 눈으로만 읽는다 - 낭독기에는 '4일 (화)' 를 한 번만 준다(숫자와 요일이 따로 읽히면 어수선하다). --%>
 	<span class="sr-only">${dayTitle}@if(dayHoliday != null), ${dayHoliday}@endif</span>
@@ -40,7 +43,14 @@
 			@if(dayHoliday != null)<div class="truncate text-[10px] leading-tight text-error/80" title="${dayHoliday}">${dayHoliday}</div>@endif
 		</div>
 		<div class="min-w-0 flex-1">
+			@if(estimatedDay)
+			<div class="mb-1 flex flex-wrap items-baseline gap-x-2 font-mono" data-daycard-totals>
+				<span class="text-base font-medium text-dividend" data-daycard-latest-total><span class="sr-only">${dayTotalLabel} </span><span class="mr-1 text-[11px] font-normal text-base-content/60">${latestLabel}</span><span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(day.latestTotal()))}</span></span>
+				<span class="text-xs text-base-content/60" data-daycard-average-total>${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(day.averageTotal()))}</span></span>
+			</div>
+			@else
 			<div class="mb-1 font-mono text-base font-medium text-dividend"><span class="sr-only">${dayTotalLabel} </span><span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(day.latestTotal()))}</span></div>
+			@endif
 			<ul class="space-y-1">
 				@for(DividendCalendarView.Entry entry : day.entries())
 					<%-- 폭 안내와 표본 수는 추정일 때만 할 말이다. 실제 수령액에는 붙이지 않는다. --%>
@@ -54,8 +64,13 @@
 					<li class="flex flex-col gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-3" data-calendar-entry="${entry.symbol() != null ? entry.symbol() : ""}" data-calendar-entry-name="${entry.name()}" title="${entryNote}">
 						<span class="min-w-0 truncate text-xs sm:flex-1" title="${entry.name()}">${entry.name()}</span>
 						<span class="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] sm:shrink-0">
-							<span class="text-xs font-medium text-dividend"><span class="sr-only">${entry.actualAmount() ? actualGrossLabel : latestLabel} </span><span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span></span>
-							<span class="text-base-content/60">${entry.actualAmount() ? actualNetLabel : avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span>
+							@if(entry.actualAmount())
+							<span class="text-xs font-medium text-dividend"><span class="sr-only">${actualGrossLabel} </span><span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span></span>
+							<span class="text-base-content/60">${actualNetLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span>
+							@else
+							<span class="text-xs font-medium text-dividend" data-calendar-entry-latest><span class="font-normal text-base-content/60">${latestLabel}</span> <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span></span>
+							<span class="text-base-content/60" data-calendar-entry-average>${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span>
+							@endif
 							<span class="${taxableUnknown ? "text-warning" : "text-base-content/60"}" data-calendar-taxable data-taxable-unknown="${String.valueOf(taxableUnknown)}" title="${taxableNote}">${taxableShortLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.taxable()))}</span>@if(taxableUnknown)<span aria-hidden="true">&nbsp;?</span><span class="sr-only">, ${taxableNote}</span>@endif</span>
 							@if(!entryNote.isEmpty())<span class="sr-only">, ${entryNote}</span>@endif
 						</span>

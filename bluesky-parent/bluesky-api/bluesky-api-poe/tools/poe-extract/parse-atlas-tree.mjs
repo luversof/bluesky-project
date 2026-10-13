@@ -7,9 +7,10 @@ import path from "node:path";
 import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 import { buildKoreanMap, buildTree, joinReminderKo } from "./tree-common.mjs";
+import { applyOfficialKo, loadKakaoTree } from "./kakao-tree.mjs";
 
 const RAW = path.join(WORK_DIR, "atlas-tree-raw.json");
-const OUT = path.join(DATA_DIR, "atlas-tree.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "atlas-tree.json"); // POE_DATA_OUT = 사본 출력(10-13)
 const SOURCE_URL = "https://raw.githubusercontent.com/grindinggear/atlastree-export/master/data.json";
 
 // 아틀라스 트리도 항상 GGG master 에서 최신본을 받는다(RAW 캐시 고정 방지 — parse-tree 와 동일 함정).
@@ -43,6 +44,9 @@ const named = result.nodes.filter((n) => n.type !== "mastery");
 console.log(
 	`한글 이름 ${named.filter((n) => n.nameKo).length}/${named.length}, 한글 스탯 ${named.filter((n) => n.statsKo?.length).length}/${named.filter((n) => n.stats.length).length}`,
 );
+// 한국 공식 아틀라스 트리로 보강 — 서술기가 못 만든 줄(확고한 비전 "Grants 20 Atlas Passive Skill Points")을 공식 문장으로(10-13 C296)
+const kakaoAtlas = await loadKakaoTree("https://poe.kakaogames.com/atlas-skill-tree", path.join(WORK_DIR, "kakao-atlas-tree.json"), "아틀라스 트리");
+console.log(`공식 아틀라스 트리로 보강: ${applyOfficialKo(result.nodes, kakaoAtlas)}개 노드`);
 // 리마인더 한글 — 게임 테이블 ReminderText(EN/KO) 페어링 조인.
 // 테이블은 config 추가(2026-07) 후 추출부터 생긴다 — 옛 추출물로 parse 만 단독 재실행해도 죽지 않게 폴백.
 try {

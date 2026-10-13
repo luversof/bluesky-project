@@ -42,13 +42,16 @@ function mergeVisibleOrderIntoAll(
 };
 
 (() => {
-	const lists = Array.from(
-		document.querySelectorAll<HTMLTableSectionElement>(
-			"[data-profile-order-list]",
-		),
-	);
+	// 시뮬레이터 비교표는 좁히기 · 정렬 때 구역만 바꿔 끼운다(2026-10-13) - 새로 들어온 목록도 잇는다. 이미 이은 목록은
+	// initializeProfileOrderList 가 건너뛴다.
+	const initializeAll = () => {
+		document
+			.querySelectorAll<HTMLTableSectionElement>("[data-profile-order-list]")
+			.forEach((list) => initializeProfileOrderList(list));
+	};
 
-	lists.forEach((list) => initializeProfileOrderList(list));
+	initializeAll();
+	document.addEventListener("htmx:afterSettle", initializeAll);
 
 	function initializeProfileOrderList(list: HTMLTableSectionElement) {
 		if (list.dataset.initialized === "true") {

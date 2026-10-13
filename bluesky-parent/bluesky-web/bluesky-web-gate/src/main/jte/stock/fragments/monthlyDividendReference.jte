@@ -16,6 +16,11 @@
 
 @param List<StockItem> stockItems = java.util.List.of()
 @param List<MonthlyDividendProfileResponse> monthlyDividendProfiles = java.util.List.of()
+<%-- 종목코드(대문자) -> 가장 늦은 지급 기준일(2026-10-13 사용자 요청 - 목록에서 갱신 여부 확인). --%>
+@param java.util.Map<String, net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView> monthlyDividendLatestPayoutBySymbol = java.util.Map.of()
+<%-- 목록 지급 시기 거르기(2026-10-13 사용자 요청): MID_MONTH · MONTH_END · 빈 값(전체), 칩에 적을 개수는 거르기 전 전체 기준. --%>
+@param String monthlyDividendProfileWindow = ""
+@param java.util.Map<String, Long> monthlyDividendProfileWindowCounts = java.util.Map.of()
 @param List<MonthlyDividendPayoutResponse> monthlyDividendPayouts = java.util.List.of()
 @param MonthlyDividendReferenceSummaryView monthlyDividendReferenceSummary = null
 @param MonthlyDividendProfileUpsertRequest monthlyDividendProfileForm = null
@@ -75,7 +80,10 @@
 	boolean activeValue = profileForm.getActive() == null || profileForm.getActive();
 	String profileSortValue = monthlyDividendProfileSort != null ? monthlyDividendProfileSort : "display-order";
 	String profileDirectionValue = monthlyDividendProfileDirection != null ? monthlyDividendProfileDirection : "asc";
-	boolean profileReorderEnabled = "display-order".equals(profileSortValue) && "asc".equals(profileDirectionValue);
+	String profileWindowValue = monthlyDividendProfileWindow != null ? monthlyDividendProfileWindow : "";
+	boolean profileWindowFiltered = !profileWindowValue.isEmpty();
+	// 거른 목록에서 끌어 옮기면 보이는 줄만 다시 번호를 매겨 숨은 줄과 순서가 겹친다 - 거르는 동안은 끈다.
+	boolean profileReorderEnabled = "display-order".equals(profileSortValue) && "asc".equals(profileDirectionValue) && !profileWindowFiltered;
 	String profileOrderEndpoint = "/stock/dividend/monthly-reference/profile/order";
 	StringBuilder referenceListBaseUrlSb = new StringBuilder("/stock/admin?tab=monthly-reference");
 	String monthlyDividendSimulatorUrl = "/stock/simulator?tab=monthly-dividend";
@@ -91,7 +99,11 @@
 	if (selectedMonthlyDividendPayoutPayDate != null && !selectedMonthlyDividendPayoutPayDate.isEmpty()) {
 		referenceListBaseUrlSb.append("&payoutPayDate=").append(URLEncoder.encode(selectedMonthlyDividendPayoutPayDate, StandardCharsets.UTF_8));
 	}
-	String referenceListBaseUrl = referenceListBaseUrlSb.toString();
+	String profileWindowQuery = profileWindowFiltered ? "&profileWindow=" + URLEncoder.encode(profileWindowValue, StandardCharsets.UTF_8) : "";
+	// 거르기 칩은 정렬은 그대로 두고 거르기만 바꾼다.
+	String profileWindowBaseUrl = referenceListBaseUrlSb + "&profileSort=" + URLEncoder.encode(profileSortValue, StandardCharsets.UTF_8) + "&profileDirection=" + URLEncoder.encode(profileDirectionValue, StandardCharsets.UTF_8);
+	String referenceListBaseUrl = referenceListBaseUrlSb + profileWindowQuery;
+	String profileWindowFilterLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.window.filter");
 	String displayOrderSortDirection = "display-order".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String symbolSortDirection = "symbol".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String payoutWindowSortDirection = "payout-window".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
@@ -112,6 +124,11 @@
 	String opensNewWindowLabel = MessageUtil.getMessage("common.label.opens.new.window");
 	String lastVerifiedDateSortDirection = "last-verified-date".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String activeSortDirection = "active".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
+	String latestRecordDateSortDirection = "latest-record-date".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
+	String noPayoutLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.none");
+	String staleRecordLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale");
+	String staleRecordTitle = java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.title"), String.valueOf(net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView.STALE_AFTER_DAYS));
+	String daysAgoPattern = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ago");
 	String recordDateValue = payoutForm.getRecordDate() != null ? String.valueOf(payoutForm.getRecordDate()) : String.valueOf(LocalDate.now());
 	String payDateValue = payoutForm.getPayDate() != null ? String.valueOf(payoutForm.getPayDate()) : String.valueOf(LocalDate.now());
 	String distributionRateValue = payoutForm.getDistributionRatePct() != null ? payoutForm.getDistributionRatePct().stripTrailingZeros().toPlainString() : "";
@@ -218,6 +235,7 @@
 					<form method="post" action="/stock/dividend/monthly-reference/profile/import/links" class="grid gap-4" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.submit")}">
 						<input type="hidden" name="profileSort" value="${profileSortValue}" />
 						<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+						<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.field")}</span></div>
 							<textarea name="links" rows="4" class="textarea textarea-bordered w-full min-w-0 font-mono text-xs" placeholder="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.link.placeholder")}" required></textarea>
@@ -233,6 +251,7 @@
 					<form method="post" action="/stock/dividend/monthly-reference/profile" class="grid gap-4">
 						<input type="hidden" name="profileSort" value="${profileSortValue}" />
 						<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+						<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input type="hidden" name="symbol" value="${profileSymbolValue}" />
@@ -293,12 +312,14 @@
 						<form method="post" action="/stock/dividend/monthly-reference/profile/refresh-price" class="mb-2">
 							<input type="hidden" name="profileSort" value="${profileSortValue}" />
 							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+							<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 							<input type="hidden" name="symbol" value="${profileSymbolValue}" />
 							<button type="submit" data-refresh-price class="btn btn-outline w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.refresh.price")}</button>
 						</form>
 						<form method="post" action="/stock/dividend/monthly-reference/profile/delete">
 							<input type="hidden" name="profileSort" value="${profileSortValue}" />
 							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+							<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 							<input type="hidden" name="symbol" value="${profileSymbolValue}" />
 							<button type="submit" class="btn btn-error btn-outline w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
 						</form>
@@ -319,6 +340,7 @@
 							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source" class="mt-4 grid gap-4" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+								<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
 								<label class="form-control min-w-0">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.url")}</span></div>
@@ -337,6 +359,7 @@
 						<form method="post" action="/stock/dividend/monthly-reference/payout/import" class="mt-4 grid gap-4" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.submit")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.admin.message.please.wait")}">
 							<input type="hidden" name="profileSort" value="${profileSortValue}" />
 							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+							<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 							<label class="form-control min-w-0">
 								<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
@@ -355,6 +378,7 @@
 					<form method="post" action="/stock/dividend/monthly-reference/payout" class="grid gap-4">
 						<input type="hidden" name="profileSort" value="${profileSortValue}" />
 						<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+						<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 						<label class="form-control min-w-0">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input type="hidden" name="symbol" value="${payoutSymbolValue}" />
@@ -387,6 +411,7 @@
 						<form method="post" action="/stock/dividend/monthly-reference/payout/delete">
 							<input type="hidden" name="profileSort" value="${profileSortValue}" />
 							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+							<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 							<input type="hidden" name="symbol" value="${payoutSymbolValue}" />
 							<input type="hidden" name="recordDate" value="${selectedMonthlyDividendPayoutRecordDate}" />
 							<input type="hidden" name="payDate" value="${selectedMonthlyDividendPayoutPayDate}" />
@@ -401,7 +426,7 @@
 					<div class="space-y-2">
 						<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.title")}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.desc")}</p>
-						<p class="text-xs leading-5 text-base-content/60">${profileReorderEnabled ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.enabled") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.disabled")}</p>
+						<p class="text-xs leading-5 text-base-content/60" id="monthlyReferenceReorderNote">${profileReorderEnabled ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.enabled") : (profileWindowFiltered ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.filtered") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.reorder.disabled"))}</p>
 					</div>
 					<div class="rounded-2xl border border-base-300 bg-base-50/70 p-4">
 						<div class="space-y-1">
@@ -413,12 +438,14 @@
 							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.mid.month")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+								<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 								<input type="hidden" name="payoutWindow" value="MID_MONTH" />
 								<button type="submit" class="btn btn-secondary btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.mid.month")}</button>
 							</form>
 							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source/bulk" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.month.end")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+								<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 								<input type="hidden" name="payoutWindow" value="MONTH_END" />
 								<button type="submit" class="btn btn-secondary btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.bulk.month.end")}</button>
 							</form>
@@ -433,17 +460,31 @@
 							<form method="post" action="/stock/dividend/monthly-reference/profile/facts/refresh" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.facts.refresh.button")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
 								<input type="hidden" name="profileSort" value="${profileSortValue}" />
 								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+								<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 								<button type="submit" class="btn btn-secondary btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.facts.refresh.button")}</button>
 							</form>
 						</div>
 					</div>
+					<%-- 프로필 목록 구역. 지급 시기 칩 · 정렬 머리는 페이지를 새로 부르지 않고 이 구역만 바꿔 끼운다(사용자 요청 2026-10-13 - 시뮬레이터 ·
+					     월배당 ETF 와 같은 방식). 함께 바뀌는 것: 위 끌어 옮기기 안내(거르면 꺼진다) · 아래 지급 이력(행 링크가 정렬 · 거르기를 싣는다).
+					     왼쪽 편집 폼은 바꾸지 않는다 - 입력하던 값이 날아간다. 대신 폼의 숨은 정렬 · 거르기 칸을 이 구역의 data-* 값으로 맞춘다(아래 스크립트).
+					     종목 고르기(편집 · 종목코드)는 편집 폼을 바꾸므로 예전처럼 페이지를 옮긴다. data-swap-anchor: 칩이 같은 자리에 머문다. --%>
+					<div class="flex flex-col gap-5" id="monthlyReferenceProfileList" hx-target="#monthlyReferenceProfileList" hx-select="#monthlyReferenceProfileList" hx-select-oob="#monthlyReferenceReorderNote,#monthlyReferencePayoutList" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true" data-swap-anchor="[data-profile-window-filter]" data-profile-sort-value="${profileSortValue}" data-profile-direction-value="${profileDirectionValue}" data-profile-window-value="${profileWindowValue}">
+					<%-- 월중만 · 월말만 보기(2026-10-13 사용자 요청). 개수는 거르기 전 전체 기준이라 칩을 누르기 전에 몇 줄이 남을지 보인다. --%>
+					<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${profileWindowFilterLabel}" data-profile-window-filter hx-boost="true">
+						<span class="text-xs font-medium text-base-content/60" aria-hidden="true">${profileWindowFilterLabel}</span>
+						@for(String windowOption : java.util.List.of("", "MID_MONTH", "MONTH_END"))
+							!{boolean windowSelected = windowOption.equals(profileWindowValue);}
+							<a href="${profileWindowBaseUrl + (windowOption.isEmpty() ? "" : "&profileWindow=" + windowOption)}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${windowSelected ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${windowSelected ? "true" : null}" data-profile-window-link="${windowOption.isEmpty() ? "all" : windowOption}">${windowOption.isEmpty() ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.window.all") : net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil.label(windowOption)} <span class="tabular-nums">${String.valueOf(monthlyDividendProfileWindowCounts.getOrDefault(windowOption, 0L))}</span></a>
+						@endfor
+					</div>
 					<div id="monthlyDividendProfileOrderStatus" class="hidden"></div>
 					@if(monthlyDividendProfiles == null || monthlyDividendProfiles.isEmpty())
-						<div class="rounded-2xl border border-dashed border-base-300 bg-base-50 px-6 py-10 text-center text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.empty")}</div>
+						<div class="rounded-2xl border border-dashed border-base-300 bg-base-50 px-6 py-10 text-center text-sm text-base-content/60" data-profile-list-empty>${profileWindowFiltered ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.window.empty") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.empty")}</div>
 					@else
 						<div class="overflow-x-auto">
 							<table class="table table-sm" aria-label="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.title")}">
-								<thead>
+								<thead hx-boost="true">
 									<tr>
 										<th scope="col" aria-sort="${"display-order".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
 											<a href="${referenceListBaseUrl}&profileSort=display-order&profileDirection=${displayOrderSortDirection}" class="link link-hover font-medium no-underline">
@@ -485,6 +526,14 @@
 												@endif
 											</a>
 										</th>
+										<th scope="col" aria-sort="${"latest-record-date".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
+											<a href="${referenceListBaseUrl}&profileSort=latest-record-date&profileDirection=${latestRecordDateSortDirection}" class="link link-hover font-medium no-underline">
+												${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date")}
+												@if("latest-record-date".equals(profileSortValue))
+													<span class="ml-1 text-xs uppercase text-base-content/60" aria-hidden="true">${profileDirectionValue}</span>
+												@endif
+											</a>
+										</th>
 										<%-- 이 칸만 aria-sort 가 없었다(나머지 다섯은 있음) - 낭독기가 정렬 가능/현재 상태를 못 듣는다(실측 2026-09-21). --%>
 										<th scope="col" aria-sort="${"active".equals(profileSortValue) ? ("asc".equals(profileDirectionValue) ? "ascending" : "descending") : "none"}">
 											<a href="${referenceListBaseUrl}&profileSort=active&profileDirection=${activeSortDirection}" class="link link-hover font-medium no-underline">
@@ -508,11 +557,11 @@
 												</div>
 											</td>
 											<td>
-												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}#monthly-reference-editor" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
+												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}${profileWindowQuery}#monthly-reference-editor" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
 												<div class="text-xs text-base-content/60">${row.stockItemName()}</div>
 												<div class="mt-2 flex flex-wrap gap-2">
 													<button type="button" class="btn btn-xs btn-outline h-auto min-h-6 whitespace-normal" data-payout-peek-toggle data-peek-url="/stock/dividend/monthly-reference/payout/peek?symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}" data-peek-loading="${payoutPeekLoading}" data-peek-failed="${payoutPeekFailed}" aria-expanded="false" aria-controls="payout-peek-${row.stockItemSymbol()}" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, payoutPeekLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${payoutPeekLabel} <span aria-hidden="true" data-payout-peek-icon>▾</span></button>
-													<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}#monthly-reference-editor" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, profileEditLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${profileEditLabel}</a>
+													<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}${profileWindowQuery}#monthly-reference-editor" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, profileEditLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${profileEditLabel}</a>
 													<a href="/stock/simulator?tab=monthly-dividend&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&sort=display-order&direction=asc" class="btn btn-xs btn-primary" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 												</div>
 											</td>
@@ -530,6 +579,19 @@
 												@endif
 											</td>
 											<td title="${row.lastVerifiedDate() == null ? notVerifiedLabel : null}">${row.lastVerifiedDate() != null ? String.valueOf(row.lastVerifiedDate()) : "-"}@if(row.lastVerifiedDate() == null)<span class="sr-only">${notVerifiedLabel}</span>@endif</td>
+											!{var latestPayout = row.stockItemSymbol() != null ? monthlyDividendLatestPayoutBySymbol.get(row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT)) : null;}
+											<%-- 마지막 기준일 + 며칠 전. 한 달 치가 빠졌을 만큼 오래됐으면 "갱신 확인" 표시(색만이 아니라 글자로). --%>
+											@if(latestPayout != null)
+												<td class="whitespace-nowrap" data-profile-latest-record-date="${String.valueOf(latestPayout.recordDate())}" data-profile-latest-record-stale="${latestPayout.stale() ? "true" : "false"}">
+													<div>${String.valueOf(latestPayout.recordDate())}</div>
+													<div class="text-xs text-base-content/60">${java.text.MessageFormat.format(daysAgoPattern, String.valueOf(latestPayout.daysSinceRecord()))}</div>
+													@if(latestPayout.stale())
+														<span class="badge badge-warning badge-sm mt-1" title="${staleRecordTitle}">${staleRecordLabel}</span>
+													@endif
+												</td>
+											@else
+												<td title="${noPayoutLabel}" data-profile-latest-record-date="">-<span class="sr-only">${noPayoutLabel}</span></td>
+											@endif
 											<td>${row.active() ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active.true") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.active.false")}</td>
 										</tr>
 									@endfor
@@ -537,9 +599,12 @@
 							</table>
 						</div>
 					@endif
+					</div>
 			`)
 
 			@template._components.ui.card(bodyClass = "gap-5", body = @`
+					<%-- id: 프로필 목록을 바꿔 끼울 때 함께 바꾼다(행 링크가 정렬 · 거르기를 싣는다, 2026-10-13). --%>
+					<div class="flex flex-col gap-5" id="monthlyReferencePayoutList">
 					<div class="space-y-2">
 						<%-- 입력칸은 size=20 만큼의 내재 폭을 갖는다 - w-full 로는 안 줄어들어 320px/200% 에서 폼이 280px 바닥을 만든다.
 						     min-w-0 를 함께 줘야 좁은 폭에서 접힌다(실측 2026-09-21). --%>
@@ -568,7 +633,7 @@
 									@for(MonthlyDividendPayoutResponse row : monthlyDividendPayouts)
 										<tr class="${selectedMonthlyDividendPayoutKey.equals(String.valueOf(row.recordDate()) + "|" + String.valueOf(row.payDate())) ? "bg-base-200/60" : ""}">
 											<td class="whitespace-nowrap tabular-nums">
-												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}&payoutRecordDate=${URLEncoder.encode(String.valueOf(row.recordDate()), StandardCharsets.UTF_8)}&payoutPayDate=${URLEncoder.encode(String.valueOf(row.payDate()), StandardCharsets.UTF_8)}" class="link link-hover font-medium tabular-nums">${String.valueOf(row.recordDate())}</a>
+												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}${profileWindowQuery}&payoutRecordDate=${URLEncoder.encode(String.valueOf(row.recordDate()), StandardCharsets.UTF_8)}&payoutPayDate=${URLEncoder.encode(String.valueOf(row.payDate()), StandardCharsets.UTF_8)}" class="link link-hover font-medium tabular-nums">${String.valueOf(row.recordDate())}</a>
 											</td>
 											<td class="whitespace-nowrap tabular-nums">${String.valueOf(row.payDate())}</td>
 											@if(showDistributionRate)
@@ -582,6 +647,7 @@
 							</table>
 						</div>
 					@endif
+					</div>
 			`)
 		</div>
 	</div>
@@ -589,6 +655,20 @@
 
 @template._components.ui.submitOverlay()
 <script nonce="${CspNonceHolder.getNonce()}">
+	// 프로필 목록만 바꿔 끼운 뒤(2026-10-13) 왼쪽 편집 폼의 숨은 정렬 · 거르기 칸을 새 값으로 맞춘다 - 안 그러면 저장 뒤 옛 정렬 · 거르기로 돌아간다.
+	document.addEventListener('htmx:afterSettle', function() {
+		var list = document.getElementById('monthlyReferenceProfileList');
+		if (!list) {
+			return;
+		}
+		var pairs = [['profileSort', list.dataset.profileSortValue], ['profileDirection', list.dataset.profileDirectionValue], ['profileWindow', list.dataset.profileWindowValue]];
+		for (var p = 0; p < pairs.length; p++) {
+			var inputs = document.querySelectorAll('input[type="hidden"][name="' + pairs[p][0] + '"]');
+			for (var k = 0; k < inputs.length; k++) {
+				inputs[k].value = pairs[p][1] || '';
+			}
+		}
+	});
 	(function() {
 		var selects = document.querySelectorAll('select[data-sync-hidden-field]');
 		for (var i = 0; i < selects.length; i++) {

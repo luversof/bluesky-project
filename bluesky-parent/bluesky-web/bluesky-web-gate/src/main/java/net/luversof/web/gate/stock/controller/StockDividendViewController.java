@@ -133,7 +133,8 @@ public class StockDividendViewController {
       @RequestParam(required = false) String profileDirection,
       @RequestParam(required = false) LocalDate payoutRecordDate,
       @RequestParam(required = false) LocalDate payoutPayDate,
-      @RequestParam(required = false) String month) {
+      @RequestParam(required = false) String month,
+      @RequestParam(required = false) String profileWindow) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
@@ -144,7 +145,7 @@ public class StockDividendViewController {
         .DIVIDEND_TAB_MONTHLY_REFERENCE
         .equals(dividendTab)) {
       return buildMonthlyDividendReferencePageRedirect(
-          symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate);
+          symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate, profileWindow);
     }
 
     // 배당 캘린더 탭은 실수령 배당에 통합됐다(사용자 결정 2026-09-17). 옛 주소(북마크 · 공유 링크)는 실수령 배당으로
@@ -251,6 +252,8 @@ public class StockDividendViewController {
     // 조회가 실패해도 빈 맵이면 어긋난 줄이 0 이 되어 안내가 사라진다 - 안내가 없는 화면은 "수량이 원장과 같다" 로 읽힌다.
     model.addAttribute("upcomingCurrentQuantityUnavailable", currentHoldings.unavailable());
     model.addAttribute("upcomingCurrentQuantityTotal", quantityBasis.totalAtCurrentQuantity());
+    model.addAttribute(
+        "upcomingCurrentQuantityLatestTotal", quantityBasis.latestTotalAtCurrentQuantity());
     // 스냅샷은 종목마다 시점이 다르다 - 가장 이른 것과 늦은 것을 함께 적는다.
     model.addAttribute(
         "upcomingAsOfOldest",
@@ -378,7 +381,7 @@ public class StockDividendViewController {
                   row, symbol, ratio, payDay, nextDate.getDayOfMonth(), announcedNext != null));
     }
 
-    // 같은 날에 여럿이면 금액이 큰 종목부터(달력 칸 · 목록과 같은 순서).
+    // 같은 날에 여럿이면 최근 금액이 큰 종목부터 - 대시보드의 다가올 배당과 같은 순서(2026-10-13 사용자 선택 "최근을 우선으로").
     Comparator<DividendCalendarView.Entry> byLatestDesc =
         Comparator.comparing(
                 (DividendCalendarView.Entry entry) ->
@@ -1069,6 +1072,10 @@ public class StockDividendViewController {
                     .DIVIDEND_TAB_MONTHLY_REFERENCE);
     StockViewSupport.appendQueryParam(redirectUrl, "profileSort", profileSort);
     StockViewSupport.appendQueryParam(redirectUrl, "profileDirection", profileDirection);
+    StockViewSupport.appendQueryParam(
+        redirectUrl,
+        "profileWindow",
+        monthlyDividendViewSupport.resolveProfileWindow(request.getParameter("profileWindow")));
     return redirectUrl.toString();
   }
 
@@ -1178,6 +1185,18 @@ public class StockDividendViewController {
       String profileDirection,
       LocalDate payoutRecordDate,
       LocalDate payoutPayDate) {
+    return buildMonthlyDividendReferencePageRedirect(
+        symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate, null);
+  }
+
+  /** 지급 시기 거르기(2026-10-13)도 정렬처럼 저장 뒤 되돌아온 화면에 남긴다. */
+  private String buildMonthlyDividendReferencePageRedirect(
+      String symbol,
+      String profileSort,
+      String profileDirection,
+      LocalDate payoutRecordDate,
+      LocalDate payoutPayDate,
+      String profileWindow) {
     String resolvedProfileSort = monthlyDividendViewSupport.resolveProfileSort(profileSort);
     String resolvedProfileDirection =
         monthlyDividendViewSupport.resolveProfileDirection(resolvedProfileSort, profileDirection);
@@ -1191,6 +1210,10 @@ public class StockDividendViewController {
     StockViewSupport.appendQueryParam(redirectUrl, "profileDirection", resolvedProfileDirection);
     StockViewSupport.appendQueryParam(redirectUrl, "payoutRecordDate", payoutRecordDate);
     StockViewSupport.appendQueryParam(redirectUrl, "payoutPayDate", payoutPayDate);
+    StockViewSupport.appendQueryParam(
+        redirectUrl,
+        "profileWindow",
+        monthlyDividendViewSupport.resolveProfileWindow(profileWindow));
     return redirectUrl.toString();
   }
 
@@ -1212,7 +1235,12 @@ public class StockDividendViewController {
         monthlyDividendViewSupport.resolveProfileDirection(
             profileSort, request.getParameter("profileDirection"));
     return buildMonthlyDividendReferencePageRedirect(
-        symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate);
+        symbol,
+        profileSort,
+        profileDirection,
+        payoutRecordDate,
+        payoutPayDate,
+        request.getParameter("profileWindow"));
   }
 
   private String renderMonthlyDividendReferenceError(
@@ -1255,7 +1283,8 @@ public class StockDividendViewController {
         request.getParameter("profileSort"),
         request.getParameter("profileDirection"),
         monthlyDividendPayoutForm != null ? monthlyDividendPayoutForm.getRecordDate() : null,
-        monthlyDividendPayoutForm != null ? monthlyDividendPayoutForm.getPayDate() : null);
+        monthlyDividendPayoutForm != null ? monthlyDividendPayoutForm.getPayDate() : null,
+        request.getParameter("profileWindow"));
     return "stock/admin";
   }
 
@@ -1353,11 +1382,6 @@ public class StockDividendViewController {
   }
 
   private static BigDecimal latestMonthlyDividend(MonthlyDividendSnapshotResponse row) {
-    BigDecimal perShare =
-        row.latestMonthlyDividendPerShare() != null
-            ? row.latestMonthlyDividendPerShare()
-            : BigDecimal.ZERO;
-    long quantity = row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L;
-    return perShare.multiply(BigDecimal.valueOf(quantity));
+    return net.luversof.web.gate.stock.service.MonthlyDividendCalculator.latestMonthlyDividend(row);
   }
 }

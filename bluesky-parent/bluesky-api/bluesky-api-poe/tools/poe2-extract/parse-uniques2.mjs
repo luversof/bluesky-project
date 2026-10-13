@@ -6,7 +6,7 @@
 // 산출물: ~/.poe-gamedata/poe2/uniques.json
 import fs from "node:fs";
 import path from "node:path";
-import { FILES_DIR, WORK_DIR, loadConfig, loadTable, writeJson } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, WORK_DIR, loadConfig, loadTable, writeJson } from "./paths.mjs";
 import { createModTranslator } from "../poe-extract/statDescriptions.mjs";
 import { createKeywordIndex, loadKeywords } from "./common2.mjs";
 
@@ -256,6 +256,33 @@ function grantsSkillKo(line) {
 //     이름은 호신부 베이스와 같다("Amethyst Charm" = "자수정 호신부") → 베이스 한국어에서 분류명 꼬리를 뗀다.
 //   - "Mirrored"/"Corrupted": 상태 표시(ClientStrings ItemPopup*)
 //   - "Has N Augment Sockets": 게임은 홈을 그림으로 보여 줘 스탯 설명이 없다 → 스탯 "홈 {0}개" 틀 + ClientStrings 의 [Augment|증강물]
+// PoE1 플라스크 공식 한국어 이름에서 " 플라스크" 꼬리를 뗀 낱말(Mageblood 변형 "Legacy of Basalt" 등, 10-13 C289). PoE1 데이터가 없으면 null
+const poe1FlaskWordKo = (() => {
+	const map = new Map();
+	try {
+		const raw = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "..", "base-items.json"), "utf8"));
+		for (const it of raw.items || raw) {
+			const m = /^(.+) Flask$/.exec(it.name || "");
+			if (m && it.nameKo && it.nameKo.endsWith(" 플라스크")) map.set(m[1], it.nameKo.slice(0, -" 플라스크".length));
+		}
+	} catch (e) {
+		// PoE1 데이터가 없으면(PoE2 만 추출한 PC) 예전처럼 영어 유지
+	}
+	return (en) => map.get(en) || null;
+})();
+// PoB-PoE2 원본이 두 줄짜리 게임 문장의 첫 줄만 담은 경우(ModCache 에도 잘린 채) — 게임 stat_descriptions 의 둘째 줄을 이어 붙인다(10-13 C289).
+// 쿨레막의 손아귀 변형 "…Onslaught for 3 seconds when you kill an" — 게임은 두 줄: "…when you kill an" / "enemy affected by abyssal wasting". PoB 가 고치면 끝 패턴이 안 걸린다
+const POB_TRUNCATED_TAILS = [[/% chance to gain Onslaught for 3 seconds when you kill an$/, " Enemy affected by Abyssal Wasting"]];
+// KeywordPopups 용어(영어 → 한국어) — 마법사의 유산 14종 이름의 공식 한국어(C293)
+const legacyTermKo = (() => {
+	const en = loadTable("English", "KeywordPopups");
+	const ko = loadTable("Korean", "KeywordPopups");
+	const map = new Map();
+	en.forEach((row, i) => {
+		if (typeof row?.Term === "string" && row.Term.startsWith("Legacy of ") && ko[i]?.Term) map.set(row.Term, ko[i].Term);
+	});
+	return map;
+})();
 const mageLegacyKo = (() => {
 	let text = fs.readFileSync(path.join(PLAIN_DIR, CSD_FILES[0])).toString("utf16le");
 	const m = text.match(/"legacy of \{0\}"[^\r\n]*\r?\n\s*lang "Korean"\r?\n\s*\d+\r?\n\s*\S+\s+"([^"]+)"/);
@@ -314,10 +341,15 @@ function specialKo(line) {
 	if (STATUS_KO[line]) return STATUS_KO[line];
 	const legacy = line.match(/^Legacy of (.+)$/);
 	if (legacy) {
-		// 호신부 베이스 → 낱말 사전(Words) → 같은 이름 베이스(Diamond 주얼) 순. 셋 다 없으면(Basalt 등 PoE1 플라스크 이름) 영어 유지
+		// 게임 KeywordPopups 의 용어 "Legacy of X" 가 공식 한국어다(10-13 C293 — poe2db 대조로 Gold 가 "황금의 유산" ↔ 게임 "금의 유산" 로 갈린 걸 찾음). 아래는 표에 없을 때의 대체
+		const official = legacyTermKo.get(line);
+		if (official) return official;
+		// 호신부 베이스 → 낱말 사전(Words) → 같은 이름 베이스(Diamond 주얼) → PoE1 플라스크 공식 이름(10-13 C289) 순.
+		// Basalt · Bismuth · Jade · Quicksilver · Stibnite · Sulphur 는 PoE2 베이스에 없는 PoE1 플라스크 이름이라 영어로 남았다 —
+		// PoE1 게임 데이터의 "현무암 플라스크" 등에서 꼬리를 뗀다(이미 번역되던 Amethyst · Diamond 도 PoE1 이름과 같다: 자수정 · 다이아몬드)
 		const charm = baseByEn.get(`${legacy[1]} Charm`)?.nameKo;
 		const word = (charm && charm.endsWith(" " + charmTailKo) ? charm.slice(0, -charmTailKo.length - 1) : null)
-			|| nameKoByEn.get(legacy[1]) || baseByEn.get(legacy[1])?.nameKo || null;
+			|| nameKoByEn.get(legacy[1]) || baseByEn.get(legacy[1])?.nameKo || poe1FlaskWordKo(legacy[1]) || null;
 		return word ? mageLegacyKo.replace(/\{0[^}]*\}/, word) : null;
 	}
 	const sockets = line.match(/^Has (\S+) Augment Sockets?$/);
@@ -591,6 +623,10 @@ function parseBlock(block, category) {
 
 	// 모드 줄 → { raw, text, variants, versions, groups }
 	const parsed = modSection.map(tagsOf).filter((l) => l.text.length);
+	for (const l of parsed) {
+		const fix = POB_TRUNCATED_TAILS.find(([re]) => re.test(l.text));
+		if (fix) l.text += fix[1];
+	}
 	// implicitCount 는 원문 줄 기준이라 필터 전에 가른다 (빈 줄은 위에서 이미 빠졌다)
 	parsed.forEach((l, i) => { l.implicit = i < implicitCount; });
 

@@ -265,4 +265,48 @@ class MonthlyDividendReferenceContractTest {
 
     assertThat(plain).as("사유를 알 수 없으면 기본 문구를 쓴다").isEqualTo(fallback);
   }
+
+  /** 지급 시기 거르기(2026-10-13)도 저장 뒤 남는다 - 월말만 보다 저장했는데 전체로 돌아가면 다시 골라야 한다. 모르는 값은 싣지 않는다. */
+  @Test
+  void 저장_뒤에도_지급_시기_거르기를_유지한다() throws Exception {
+    Class<?>[] types = {
+      String.class, String.class, String.class, LocalDate.class, LocalDate.class, String.class
+    };
+    assertThat(
+            (String)
+                call(
+                    "buildMonthlyDividendReferencePageRedirect",
+                    types,
+                    KNOWN_SYMBOL,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "month_end"))
+        .contains("profileWindow=MONTH_END");
+    assertThat(
+            (String)
+                call(
+                    "buildMonthlyDividendReferencePageRedirect",
+                    types,
+                    KNOWN_SYMBOL,
+                    null,
+                    null,
+                    null,
+                    null,
+                    "WEEKLY"))
+        .doesNotContain("profileWindow");
+    assertThat(
+            (String)
+                call(
+                    "buildMonthlyDividendReferencePageRedirect",
+                    types,
+                    KNOWN_SYMBOL,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null))
+        .doesNotContain("profileWindow");
+  }
 }

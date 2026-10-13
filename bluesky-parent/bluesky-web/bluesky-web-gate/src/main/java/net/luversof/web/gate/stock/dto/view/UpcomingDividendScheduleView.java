@@ -38,22 +38,35 @@ public record UpcomingDividendScheduleView(
 
   /** 이번 달 남은 날의 예정 합(최근 기준, 칸마다 보이는 값을 더한다). */
   public BigDecimal thisMonthTotal() {
-    return monthTotal(today != null ? YearMonth.from(today) : null);
+    return monthTotal(today != null ? YearMonth.from(today) : null, false);
   }
 
   /** 다음 달 예정 합(최근 기준). */
   public BigDecimal nextMonthTotal() {
-    return monthTotal(today != null ? YearMonth.from(today).plusMonths(1) : null);
+    return monthTotal(today != null ? YearMonth.from(today).plusMonths(1) : null, false);
   }
 
-  private BigDecimal monthTotal(YearMonth month) {
+  /**
+   * 이번 달 남은 날의 예정 합(평균 기준). 화면은 평균을 앞에, 최근을 뒤에 둔다 &mdash; 대시보드의 다가올 배당이 평균을 보여 같은 날 금액이 서로
+   * 달랐다(2026-10-13 사용자 지적).
+   */
+  public BigDecimal thisMonthAverageTotal() {
+    return monthTotal(today != null ? YearMonth.from(today) : null, true);
+  }
+
+  /** 다음 달 예정 합(평균 기준). */
+  public BigDecimal nextMonthAverageTotal() {
+    return monthTotal(today != null ? YearMonth.from(today).plusMonths(1) : null, true);
+  }
+
+  private BigDecimal monthTotal(YearMonth month, boolean average) {
     BigDecimal total = BigDecimal.ZERO;
     if (month == null || days == null) {
       return total;
     }
     for (DividendCalendarView.Day day : days) {
       if (day != null && day.date() != null && YearMonth.from(day.date()).equals(month)) {
-        total = total.add(day.latestTotal());
+        total = total.add(average ? day.averageTotal() : day.latestTotal());
       }
     }
     return total;

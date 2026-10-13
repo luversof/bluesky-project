@@ -275,7 +275,7 @@
 					<%-- 계산기 참여: 에센스 제작은 이 모드 확정(100%) — 확률 곱 중립, 젠 슬롯은 차지. 에센스는 1개만 가능(스크립트 가드) --%>
 					<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-mod-family="essence-${fam.getKey()}" data-family-odds="100" data-family-gen="${topEss.gen()}">
 						<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
-							<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" onclick="event.stopPropagation()" title="${ko ? "동시 확률 계산에 에센스 확정으로 포함" : "Include as essence-guaranteed"}">
+							<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" title="${ko ? "동시 확률 계산에 에센스 확정으로 포함" : "Include as essence-guaranteed"}">
 							@if(topEss.icon() != null)
 								<img src="/poe-assets/${topEss.icon()}" class="w-6 h-6 object-contain shrink-0" alt="${ko ? topEss.nameKo() : topEss.name()}" loading="lazy">
 							@endif
@@ -335,7 +335,7 @@
 					<%-- 계산기 참여: 벤치는 확정(100%)이라 확률 곱엔 중립이지만 접두/접미 슬롯은 차지한다(젠 상한 가드 대상) --%>
 					<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-mod-family="bench-${fam.getKey().hashCode()}" data-family-odds="100" data-family-gen="${topBench.gen()}">
 						<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
-							<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" onclick="event.stopPropagation()" title="${ko ? "동시 확률 계산에 확정 크래프트로 포함" : "Include as deterministic craft"}">
+							<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" title="${ko ? "동시 확률 계산에 확정 크래프트로 포함" : "Include as deterministic craft"}">
 							<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), fam.getValue().size())}</span>
 							<span class="text-[10px] font-mono shrink-0 ${"prefix".equals(topBench.gen()) ? "text-[#8888ff]" : "text-amber-400"}">${"prefix".equals(topBench.gen()) ? (ko ? "접두" : "pre") : (ko ? "접미" : "suf")}</span>
 							<span class="min-w-0 flex-1">
@@ -357,7 +357,7 @@
 									</span>
 									@if(b.cost() != null && !b.cost().isEmpty())
 										<span class="shrink-0 inline-flex items-center gap-1 text-[11px] text-base-content/60">
-											@for(var c : b.cost())${c.count()}×@if(c.icon() != null)<img src="/poe-assets/${c.icon()}" class="w-4 h-4 object-contain inline-block" alt="${ko ? c.nameKo() : c.name()}" title="${ko ? c.nameKo() : c.name()}" loading="lazy" onerror="this.replaceWith('${ko ? c.nameKo() : c.name()}')">@else ${ko ? c.nameKo() : c.name()}@endif @endfor
+											@for(var c : b.cost())${c.count()}×@if(c.icon() != null)<img src="/poe-assets/${c.icon()}" class="w-4 h-4 object-contain inline-block" alt="${ko ? c.nameKo() : c.name()}" title="${ko ? c.nameKo() : c.name()}" loading="lazy" data-onerror="text" data-onerror-text="${ko ? c.nameKo() : c.name()}">@else ${ko ? c.nameKo() : c.name()}@endif @endfor
 										</span>
 									@endif
 								</div>

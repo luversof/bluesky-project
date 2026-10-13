@@ -5,8 +5,53 @@ import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, POB_DIR, findLuaJit, loadConfig, loadTable } from "./paths.mjs";
-import { createModTranslator, createReminderIndex } from "./statDescriptions.mjs";
+import { DATA_DIR, FILES_DIR, POB_DIR, WORK_DIR, findLuaJit, loadConfig, loadTable } from "./paths.mjs";
+import { createModTranslator, createReminderIndex, parsedBlocks } from "./statDescriptions.mjs";
+
+// 여러 줄짜리 게임 문장("…\n…")을 PoB 는 줄마다 나눠 담는다(히네코라 허리띠 7줄 목록 · 직업 시작점 주얼 목록 등) — 줄 번역기가 못 맞춰
+// 영어로 남았다(10-13 C291, 16,726줄 중 32줄). 영어/한국어 조각을 줄 단위로 짝지은 보조 설명 파일을 만들어 번역기 맨 끝에 붙인다
+// (PoE2 parse-uniques2 의 SEGMENT_FILE 과 같은 방식). 조각 수가 다르거나 자리표시가 어긋나는 조각은 버린다
+const SEGMENT_FILE = path.join(WORK_DIR, "poe1-unique-segments.txt");
+// 숫자가 박힌 조각("Every 5 seconds, …" · "Duelist: +2 to Melee Strike Range")은 줄 전체가 같을 때만 쓴다(대소문자 · 공백 무시)
+const segKey = (text) => text.toLowerCase().replace(/\s+/g, " ").trim();
+const segExact = new Map();
+{
+	const placeholders = (s) => [...s.matchAll(/\{(\d*)[^}]*\}/g)].map((m) => m[1]).sort().join(",");
+	const pairs = new Map();
+	for (const name of ["metadata@statdescriptions@stat_descriptions.txt", "metadata@statdescriptions@passive_skill_stat_descriptions.txt", "metadata@statdescriptions@tincture_stat_descriptions.txt"]) {
+		const file = path.join(FILES_DIR, name);
+		if (!fs.existsSync(file)) continue;
+		for (const block of parsedBlocks(file)) {
+			const en = block.variants.English || [];
+			const ko = block.variants.Korean || [];
+			en.forEach((variant, k) => {
+				const koText = ko[k]?.text;
+				if (!koText || !/\\n|\n/.test(variant.text)) return;
+				const enSegs = variant.text.split(/\\n|\n/);
+				const koSegs = koText.split(/\\n|\n/);
+				if (enSegs.length !== koSegs.length) return;
+				enSegs.forEach((seg, j) => {
+					const s = seg.trim();
+					if (!/[a-z]/i.test(s) || placeholders(s) !== placeholders(koSegs[j])) return;
+					// 자리표시 밖 숫자가 박힌 조각은 버린다 — 번역기 뼈대는 숫자를 지워 맞추므로 "Every 10 seconds" 줄에 "14초마다" 조각이 붙었다(피에 젖은 메달리온)
+					if (/\d/.test(s.replace(/\{[^}]*\}/g, ""))) {
+						if (!placeholders(s) && !segExact.has(segKey(s))) segExact.set(segKey(s), koSegs[j].trim());
+						return;
+					}
+					if (!pairs.has(s)) pairs.set(s, koSegs[j].trim());
+				});
+			});
+		}
+	}
+	const out = [];
+	let n = 0;
+	for (const [en, ko] of pairs) {
+		out.push("description", `\t1 poe1_unique_segment_${n++}`, "\t1", `\t\t# "${en}"`, '\tlang "Korean"', "\t1", `\t\t# "${ko}"`, "");
+	}
+	fs.mkdirSync(WORK_DIR, { recursive: true });
+	fs.writeFileSync(SEGMENT_FILE, Buffer.from("\ufeff" + out.join("\r\n"), "utf16le"));
+	console.log(`여러 줄 문장 조각 ${pairs.size}쌍(+ 숫자 박힌 그대로 맞춤 ${segExact.size}) → ${SEGMENT_FILE}`);
+}
 
 // 영어 모드 배열 → 한국어 배열 역번역 (멀티라인 모드 결합, 매칭 실패 라인은 영어 유지)
 // 팅크처 옵션은 따로 있는 tincture_stat_descriptions(10-09 C210 — config.json files 에 추가. 없던 동안 재껍질 · 참나무 가지 등 팅크처 고유 6개 옵션이 영어 그대로)
@@ -14,6 +59,9 @@ const toKoRaw = createModTranslator(FILES_DIR, [
 	"metadata@statdescriptions@passive_skill_stat_descriptions.txt",
 	"metadata@statdescriptions@tincture_stat_descriptions.txt",
 ], { keepLineBreaks: true });
+// 조각 번역기 — 위 번역기로 안 풀린 줄에만 쓴다(먼저 붙였더니 제대로 맞던 두 줄 문장 · 어순이 다른 문장까지 가로챘다: 카탈의 간헐천 · 꿈 주얼 · 제국의 무게).
+// WORK_DIR 엔 기본 설명 파일이 없어 조각 파일만 읽는다
+const toKoSeg = createModTranslator(WORK_DIR, [SEGMENT_FILE], { keepLineBreaks: true });
 
 // 번역기 앞뒤 손질(10-02, PoE2 parse-uniques2 toKo 와 같은 방식):
 //  - "-(30-20)%" 처럼 부호가 괄호 밖인 음수 범위는 번역기 숫자 토큰이 부호를 못 먹어 틀이 어긋난다 → 음수 숫자 하나로 잠시 바꿨다가 되돌린다
@@ -86,7 +134,13 @@ function toKo(lines) {
 	let chunk = [];
 	const flush = () => {
 		if (!chunk.length) return;
-		for (const ko of toKoRaw(chunk)) out.push(originalByPrepared.has(ko) ? originalByPrepared.get(ko) : restore(ko));
+		for (const ko of toKoRaw(chunk)) {
+			if (!originalByPrepared.has(ko)) { out.push(restore(ko)); continue; }
+			const exact = segExact.get(segKey(originalByPrepared.get(ko)));
+			if (exact) { out.push(exact); continue; }
+			const seg = toKoSeg([ko])[0]; // 안 풀린 줄만 여러 줄 문장 조각으로 한 번 더(C291)
+			out.push(seg && seg !== ko ? restore(seg) : originalByPrepared.get(ko));
+		}
 		chunk = [];
 	};
 	lines.forEach((line, i) => {
@@ -116,7 +170,7 @@ function toKo(lines) {
 }
 
 const PATCH = loadConfig().patch;
-const OUT = path.join(DATA_DIR, "unique-items.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "unique-items.json"); // POE_DATA_OUT = 사본 출력(10-13)
 
 const load = loadTable;
 

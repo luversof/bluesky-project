@@ -42,7 +42,7 @@
 			<div class="flex flex-wrap gap-6 items-start">
 				<%-- 아이템 그림 — PoE2 고유 상세와 같은 자리(10-01: PoE2 에만 있었다). 고유 그림이 없으면 베이스 그림(목록과 같은 폴백) --%>
 				<img src="/poe-assets/uniques/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}"
-				     onerror="this.onerror=null;this.src='/poe-assets/items/${item.iconKey()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}'"
+				     data-fallback-src="/poe-assets/items/${item.iconKey()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}"
 				     class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${item.name()}" data-unique-art>
 				<%-- 호버 레이어(툴팁)를 그대로 바닥에 --%>
 				@template.poe.htmx.uniqueVariants(item = item, base = base, variant = variant, oob = false)

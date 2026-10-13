@@ -24,6 +24,8 @@
 @param String monthlyEtfKeyword = ""
 @param BigDecimal monthlyEtfMinAnnualYield = null
 @param String monthlyEtfPayoutWindow = ""
+<%-- 지급 시기 칩의 개수(다른 조건은 그대로, 지급 시기만 바꿨을 때 남는 줄). 키 "" 는 전체. --%>
+@param java.util.Map<String, Integer> monthlyEtfPayoutWindowCounts = java.util.Map.of()
 @param String monthlyEtfHolding = "all"
 @param String monthlyEtfAccount = ""
 @param java.util.List<net.luversof.web.gate.stock.service.MonthlyEtfViewSupport.MonthlyEtfPick> monthlyEtfPicks = java.util.List.of()
@@ -58,9 +60,13 @@
 	String periodQuery = baseUrl.substring("/stock/monthly-etf?".length())
 		.replaceAll("period=[0-9]+&", "")
 		+ "sort=" + monthlyEtfSort + "&direction=" + monthlyEtfDirection + "&";
-	// 초기화는 보이는 필터만 비운다 - 폼 밖에서 고른 보기(이번 적립) · 기간 · 정렬은 지킨다
+	// 지급 시기 칩(2026-10-13 사용자 요청): 기준 주소에서 지급 시기만 빼고 정렬을 붙인다 - 다른 필터 · 보기 · 기간 · 정렬은 그대로.
+	String windowChipBase = baseUrl.replaceAll("payoutWindow=[A-Z_]+&", "");
+	String windowChipLabel = MessageUtil.getMessage("stock.monthly.etf.filter.payout.window");
+	// 초기화는 보이는 필터만 비운다 - 폼 밖에서 고른 보기(이번 적립) · 지급 시기(칩) · 기간 · 정렬은 지킨다
 	// (실측 2026-09-24: 이번 적립 보기에서 초기화를 누르면 전체 보기 · 기간 1년으로 튕겼다).
 	String resetUrl = "/stock/monthly-etf?"
+		+ (monthlyEtfPayoutWindow == null || monthlyEtfPayoutWindow.isBlank() ? "" : "payoutWindow=" + monthlyEtfPayoutWindow + "&")
 		+ (monthlyEtfView == null || monthlyEtfView.isBlank() ? "" : "view=" + monthlyEtfView + "&")
 		+ ("dividend".equals(monthlyEtfBasis) ? "" : "basis=" + monthlyEtfBasis + "&")
 		+ "period=" + monthlyEtfPeriod + "&sort=" + monthlyEtfSort + "&direction=" + monthlyEtfDirection;
@@ -102,6 +108,10 @@
 		<div class="space-y-6">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.monthly.etf.title"), description = MessageUtil.getMessage("stock.page.monthly.etf.desc"))
 
+			<%-- 결과 구역(요약 숫자 · 붙는 필터 줄 · 추천 · 표). 좁히기 폼 · 지급 시기 / 기간 / 추천 기준 칩 · 이번 적립 보기 · 정렬 머리 · 초기화는
+			     페이지를 새로 부르지 않고 이 구역만 바꿔 끼운다(사용자 요청 2026-10-13 - 시뮬레이터와 같은 방식). 숫자는 서버가 다시 낸다.
+			     show:none = 부스트 기본값(맨 위로)을 끈다. 주소는 갈아 끼운다(replace). 기간에 따라 요약 숫자도 달라질 수 있어 구역에 넣는다. --%>
+			<div class="space-y-6" id="monthlyEtfResults" hx-target="#monthlyEtfResults" hx-select="#monthlyEtfResults" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true">
 			<div class="grid gap-4 stat-card-grid grid-cols-2 lg:grid-cols-3">
 				@template._components.ui.statCard(label = MessageUtil.getMessage("stock.monthly.etf.summary.count"), value = amountFormat.format(monthlyEtfTotalCount), sub = MessageUtil.getMessage("stock.monthly.etf.summary.count.sub"))
 				@template._components.ui.statCard(label = MessageUtil.getMessage("stock.monthly.etf.summary.held"), value = amountFormat.format(monthlyEtfHeldCount), sub = MessageUtil.getMessage("stock.monthly.etf.summary.held.sub"))
@@ -113,15 +123,15 @@
 				<%-- 표 제목·검색·기간 줄을 헤더 아래에 붙여 둔다(사용자 요청 2026-09-22). 목록이 21 행이 되면서
 				     좁하려고 맨 위까지 되돌아가야 했고, 어느 표를 보는 중인지도 사라진다.
 				     좁은 화면에서는 안 붙는다(main.css 참고). --%>
-				<div class="table-filter-sticky space-y-3">
+				<div class="table-filter-sticky space-y-3" hx-boost="true">
 					<div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.section.table.desc")}</p>
 						</div>
 						<div class="flex flex-wrap items-center gap-2">
-							<a href="${referenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.monthly.etf.manage")}</a>
-							<a href="${simulatorUrl}" class="btn btn-ghost btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.monthly.etf.simulator.link")}</a>
+							<a href="${referenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal" hx-boost="false">${MessageUtil.getMessage("stock.monthly.etf.manage")}</a>
+							<a href="${simulatorUrl}" class="btn btn-ghost btn-sm h-auto max-w-full whitespace-normal" hx-boost="false">${MessageUtil.getMessage("stock.monthly.etf.simulator.link")}</a>
 						</div>
 					</div>
 					<form method="get" action="/stock/monthly-etf" class="grid gap-3 rounded-box bg-base-200/40 p-3 md:grid-cols-2 xl:grid-cols-5">
@@ -140,16 +150,8 @@
 							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.monthly.etf.filter.min.annual.yield")}</span></div>
 							<input name="minAnnualYield" type="number" step="0.01" min="0" value="${minAnnualYieldValue}" class="input input-bordered input-sm w-full max-w-full" />
 						</label>
-						<label class="form-control min-w-0 max-w-full">
-							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.monthly.etf.filter.payout.window")}</span></div>
-							<select name="payoutWindow" class="select select-bordered select-sm w-full max-w-full">
-								<option value="" selected="${monthlyEtfPayoutWindow == null || monthlyEtfPayoutWindow.isBlank()}">${MessageUtil.getMessage("stock.monthly.etf.filter.payout.window.all")}</option>
-								<option value="MID_MONTH" selected="${"MID_MONTH".equals(monthlyEtfPayoutWindow)}">${midMonthLabel}</option>
-								<option value="MONTH_END" selected="${"MONTH_END".equals(monthlyEtfPayoutWindow)}">${monthEndLabel}</option>
-								<option value="OTHER" selected="${"OTHER".equals(monthlyEtfPayoutWindow)}">${otherWindowLabel}</option>
-								<option value="UNKNOWN" selected="${"UNKNOWN".equals(monthlyEtfPayoutWindow)}">${unknownWindowLabel}</option>
-							</select>
-						</label>
+						<%-- 지급 시기는 아래 칩 줄에서 고른다(사용자 결정 2026-10-13 - 시뮬레이터와 같이 칩만). 적용해도 풀리지 않게 지금 값을 싣는다. --%>
+						@if(monthlyEtfPayoutWindow != null && !monthlyEtfPayoutWindow.isBlank())<input type="hidden" name="payoutWindow" value="${monthlyEtfPayoutWindow}" />@endif
 						<label class="form-control min-w-0 max-w-full">
 							<div class="label py-1"><span class="label-text text-xs font-medium">${MessageUtil.getMessage("stock.monthly.etf.filter.account")}</span></div>
 						<%-- 과세표준 비중 10% 를 기준으로 가른다 - 적립 추천과 같은 규칙이다(사용자 요청 2026-09-22). --%>
@@ -178,7 +180,20 @@
 					     정렬도 이 기간을 따른다 - 주소에 period 를 싣고 다니므로 정렬 링크를 눌러도 기간이 풀리지 않는다. --%>
 					<%-- 기간 · 추천 기준을 한 줄에(사용자 요청 2026-10-08: "추천 기준도 sticky") - 이 줄이 붙어 있으므로 표를 내려 봐도 기준을 바꿀 수 있다.
 					     넓은 화면(1280px~)에서 한 줄로 접혀 붙은 줄이 높아지지 않는다. 표가 비면 고를 것이 없으니 기준 단추를 내지 않는다. --%>
-					<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+					<%-- 칸 사이 gap-x-4: 지급 시기 칩을 더하자 1280px(붙는 폭의 시작)에서 gap-x-6 로는 974px 상자에 979px 이 들어가 두 줄이 되어 붙은 줄이 216 → 260px 이 됐다(실측 2026-10-13). --%>
+					<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+						<%-- 지급 시기 칩(2026-10-13 사용자 요청). 기타 · 미확인은 그런 종목이 있거나 지금 고른 값일 때만 낸다(평소엔 0 이라 칩만 늘어난다). --%>
+						<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${windowChipLabel}" data-etf-window-chips>
+							<span class="text-sm font-medium text-base-content/70">${windowChipLabel}</span>
+							@for(String windowOption : java.util.List.of("", "MID_MONTH", "MONTH_END", "OTHER", "UNKNOWN"))
+								!{boolean windowSelected = windowOption.equals(monthlyEtfPayoutWindow == null ? "" : monthlyEtfPayoutWindow);}
+								!{Integer windowCount = monthlyEtfPayoutWindowCounts.get(windowOption);}
+								@if(windowSelected || windowOption.isEmpty() || "MID_MONTH".equals(windowOption) || "MONTH_END".equals(windowOption) || (windowCount != null && windowCount > 0))
+									!{String windowText = windowOption.isEmpty() ? MessageUtil.getMessage("stock.monthly.etf.filter.payout.window.all") : ("MID_MONTH".equals(windowOption) ? midMonthLabel : ("MONTH_END".equals(windowOption) ? monthEndLabel : ("OTHER".equals(windowOption) ? otherWindowLabel : unknownWindowLabel)));}
+									<a href="${windowChipBase + (windowOption.isEmpty() ? "" : "payoutWindow=" + windowOption + "&") + basisSortQuery}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${windowSelected ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${windowSelected ? "true" : null}" data-etf-window-chip="${windowOption.isEmpty() ? "all" : windowOption}">${windowText}@if(windowCount != null) <span class="tabular-nums">${String.valueOf(windowCount)}</span>@endif</a>
+								@endif
+							@endfor
+						</div>
 						<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${MessageUtil.getMessage("stock.monthly.etf.period.label")}">
 							<span class="text-sm font-medium text-base-content/70">${MessageUtil.getMessage("stock.monthly.etf.period.label")}</span>
 							@for(int periodOption : monthlyEtfPeriods)
@@ -275,7 +290,7 @@
 									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.why")}</p>
 									<p class="tabular-nums">${MessageUtil.getMessage("stock.monthly.etf.pick.how.example")}</p>
 									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.missing")}</p>
-									<p><a href="${baseUrl}sort=score&direction=desc" class="link link-primary" data-score-sort-link>${MessageUtil.getMessage("stock.monthly.etf.pick.how.sort")}</a></p>
+									<p hx-boost="true"><a href="${baseUrl}sort=score&direction=desc" class="link link-primary" data-score-sort-link>${MessageUtil.getMessage("stock.monthly.etf.pick.how.sort")}</a></p>
 								</div>
 							</details>
 							@endif
@@ -289,7 +304,7 @@
 					!{String viewlessBase = baseUrl.replace("view=" + monthlyEtfView + "&", "");}
 					!{String viewlessQuery = viewlessBase + "sort=" + ("slot".equals(monthlyEtfSort) ? "display-order" : monthlyEtfSort) + "&direction=" + monthlyEtfDirection;}
 					@if(!monthlyEtfContributionPicks.isEmpty() || !monthlyEtfView.isBlank())
-						<div class="flex flex-wrap gap-2" data-contribution-view>
+						<div class="flex flex-wrap gap-2" data-contribution-view hx-boost="true">
 							<a href="${viewlessBase.replace("/stock/monthly-etf?", "/stock/monthly-etf?view=contribution&") + "sort=slot&direction=asc"}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-primary" : "btn-outline"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? "page" : null}" data-contribution-view-link="contribution">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.view.contribution"), monthlyEtfContributionPicks.size())}</a>
 							<a href="${viewlessQuery}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-outline" : "btn-primary"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? null : "page"}" data-contribution-view-link="all">${MessageUtil.getMessage("stock.monthly.etf.view.all")}</a>
 						</div>
@@ -310,7 +325,7 @@
 
 					<div class="overflow-x-auto table-head-sticky">
 						<table class="table table-zebra table-sm whitespace-nowrap print-dense" aria-label="${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}">
-							<thead>
+							<thead hx-boost="true">
 								<tr>
 									<%-- 종목 열 최소 폭 9rem -> 8rem(2026-09-30): 영어 1440px 표가 상자를 5px 넘었다(열 최소 폭 합 1,139 / 상자 1,134). 긴 종목명은 원래 줄을 바꾼다. --%>
 									<th scope="col" class="min-w-[8rem] align-bottom" aria-sort="${"symbol".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
@@ -564,6 +579,7 @@
 					</div>
 				@endif
 			`)
+			</div>
 
 			@template._components.ui.card(bodyClass = "gap-4", body = @`
 				<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.monthly.etf.criteria.title")}</h2>

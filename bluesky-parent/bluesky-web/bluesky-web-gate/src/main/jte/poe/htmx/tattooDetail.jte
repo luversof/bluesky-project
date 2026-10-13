@@ -41,7 +41,7 @@
 		<div class="poe-tt-band">
 			<div class="flex items-center justify-center gap-1.5">
 				@if(tattooIcon != null)
-					<img src="/poe-assets/${tattooIcon}" class="w-7 h-7 object-contain shrink-0" alt="" loading="lazy" onerror="this.style.display='none'">
+					<img src="/poe-assets/${tattooIcon}" class="w-7 h-7 object-contain shrink-0" alt="" loading="lazy" data-onerror="hide">
 				@endif
 				<span class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayName}</span>
 			</div>

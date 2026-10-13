@@ -48,7 +48,8 @@
 									<img src="/poe-data/poe2/icons/${gem.image()}" class="w-14 h-14 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" alt="" loading="lazy">
 								@endif
 								<div class="min-w-0 flex-1">
-								<div class="flex items-baseline gap-1.5 min-w-0">
+								<%-- 좁은 폭 + 큰 글꼴에선 등급이 다음 줄로(10-13 C290 — 영문명을 이 줄로 올린 C282 뒤 320px+200% 에서 "등급: 14" 가 1px 넘쳤다) --%>
+								<div class="flex flex-wrap items-baseline gap-x-1.5 min-w-0">
 									<a class="font-semibold truncate link-hover ${nameColor}" href="/poe2/gems/${gem.slug()}" title="${gem.name()}">${PoeText.name(gem.nameKo(), gem.name())}</a>
 									@if(!"skill".equals(gem.kind()))
 										<span class="shrink-0 badge badge-xs badge-outline">${MessageUtil.getMessage("poe2.gems.kind." + gem.kind())}</span>

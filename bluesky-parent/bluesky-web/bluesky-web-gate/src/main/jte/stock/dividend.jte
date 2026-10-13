@@ -13,6 +13,7 @@
 @param long upcomingStaleQuantityCount = 0L
 @param boolean upcomingCurrentQuantityUnavailable = false
 @param BigDecimal upcomingCurrentQuantityTotal = java.math.BigDecimal.ZERO
+@param BigDecimal upcomingCurrentQuantityLatestTotal = java.math.BigDecimal.ZERO
 @param java.util.List<String> shortHistorySymbols = java.util.List.of()
 
 @template._layout.stockLayout(
@@ -49,6 +50,7 @@
 				staleQuantityCount = upcomingStaleQuantityCount,
 				currentQuantityUnavailable = upcomingCurrentQuantityUnavailable,
 				currentQuantityTotal = upcomingCurrentQuantityTotal,
+				currentQuantityLatestTotal = upcomingCurrentQuantityLatestTotal,
 				shortHistorySymbols = shortHistorySymbols)
 
 			<div class="min-h-[200px]" data-params-from-query="true" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">

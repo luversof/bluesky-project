@@ -78,4 +78,39 @@ class UpcomingDividendMoreTest {
     }
     return properties.substring(properties.indexOf("=", at) + 1, properties.indexOf((char) 10, at));
   }
+
+  /**
+   * 합계는 평균과 최근을 함께 낸다(2026-10-13 사용자 지적). 배당 내역의 다가올 배당은 같은 날을 최근으로만 더해 두 화면 금액이 달랐다 - 10월 17일분
+   * 997,459 vs 1,601,445. 최근 계산은 배당 내역과 같은 함수를 쓰고, 둘 다 종목마다 원 단위로 반올림한 뒤 더한다(두 화면이 원 단위까지 같게).
+   */
+  @Test
+  void 합계는_평균과_최근을_배당_내역과_같은_계산으로_낸다() throws IOException {
+    String controller = read(CONTROLLER);
+    assertThat(controller).contains("MonthlyDividendCalculator .latestMonthlyDividend(row)");
+    assertThat(controller).contains("\"windowLatestTotal\", windowLatestTotal");
+    assertThat(controller)
+        .contains(
+            "BigDecimal.valueOf( net.luversof.web.gate.stock.util.StockFormatUtil.displayWon( row.expectedMonthlyDividend()))");
+
+    String jte = read(FRAGMENT);
+    assertThat(jte).contains("@param BigDecimal windowLatestTotal");
+    assertThat(jte).contains("data-window-latest-total");
+  }
+
+  /**
+   * 최근이 우선이다(2026-10-13 사용자 선택 "최근을 우선으로"). 큰 숫자 · 라벨은 최근, 평균은 아래 작게, 목록도 최근 금액이 큰 순 · 최근 금액 - 배당
+   * 내역 다가올 배당의 종목 줄과 같은 값 · 같은 순서.
+   */
+  @Test
+  void 최근이_앞이고_목록도_최근_기준이다() throws IOException {
+    assertThat(read(CONTROLLER)).contains("::latestMonthlyDividend) .reversed())");
+
+    String jte = read(FRAGMENT);
+    assertThat(jte).contains("MessageUtil.getMessage(\"stock.summary.upcoming.window.latest\")");
+    assertThat(jte).contains("data-window-average-total");
+    assertThat(jte).contains("StockFormatUtil.displayWon(rowLatest)");
+    assertThat(jte).doesNotContain("StockFormatUtil.displayWon(row.expectedMonthlyDividend())");
+    assertThat(jte.indexOf("data-window-latest-total"))
+        .isLessThan(jte.indexOf("data-window-average-total"));
+  }
 }

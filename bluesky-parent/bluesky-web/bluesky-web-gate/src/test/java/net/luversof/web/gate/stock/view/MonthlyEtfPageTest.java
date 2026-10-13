@@ -127,7 +127,11 @@ class MonthlyEtfPageTest {
 
     assertThat(template).contains("<input name=\"keyword\" type=\"search\"");
     assertThat(template).contains("<input name=\"minAnnualYield\" type=\"number\"");
-    assertThat(template).contains("<select name=\"payoutWindow\"");
+    // 지급 시기는 칩으로 고른다(2026-10-13) - 폼은 지금 값을 숨은 칸으로 싣는다.
+    assertThat(template)
+        .doesNotContain("<select name=\"payoutWindow\"")
+        .contains("<input type=\"hidden\" name=\"payoutWindow\"")
+        .contains("data-etf-window-chips");
     assertThat(template).contains("<select name=\"holding\"");
     assertThat(template)
         .as("정렬 링크가 필터를 안 실으면 정렬 한 번에 검색어가 풀린다")

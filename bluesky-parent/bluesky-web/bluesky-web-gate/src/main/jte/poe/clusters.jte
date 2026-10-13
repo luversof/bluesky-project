@@ -48,7 +48,7 @@
 					<div class="rounded-lg border border-base-200 bg-base-100 px-3 py-2" data-cluster-notable>
 						<div class="flex items-center gap-2">
 							@if(clusterIcon != null)
-								<img src="/poe-assets/${clusterIcon}" class="w-12 h-12 object-contain shrink-0" alt="" loading="lazy" onerror="this.style.display='none'">
+								<img src="/poe-assets/${clusterIcon}" class="w-12 h-12 object-contain shrink-0" alt="" loading="lazy" data-onerror="hide">
 							@endif
 							<%-- 인게임 색 관례: 노터블 **이름**은 툴팁 제목색(흰색), **스탯 줄**이 모드 파랑(#8888ff).
 							     여기만 반대로 이름이 파랑·스탯이 본문색이라 트리 노드 팝업(.poe-popup-title/.poe-popup-stat)과 어긋났다. --%>

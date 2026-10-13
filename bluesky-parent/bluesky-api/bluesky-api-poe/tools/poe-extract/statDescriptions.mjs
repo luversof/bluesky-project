@@ -36,7 +36,9 @@ const HANDLERS = {
 	divide_by_one_hundred_2dp_if_required: (v) => Math.round(v) / 100,
 	divide_by_one_hundred_and_negate: (v) => -v / 100,
 	divide_by_one_thousand: (v) => v / 1000,
-	per_minute_to_per_second: (v) => Math.round(v / 60),
+	// 자릿수 표시 없는 per_minute_to_per_second 는 소수 첫째 자리까지 살린다(10-13 C295 — 한국 공식 트리 대조: 분당 6 → "0.1%", 30 → "0.5%", 90 → "1.5%".
+	// 정수로 반올림해 "0%" · "1%" · "2%" 로 나왔다). _0dp 는 그대로 정수
+	per_minute_to_per_second: (v) => Math.round(v / 6) / 10, // 소수 첫째 자리(PoB 와 같음 — 59278/분 → "988", 9126/분 → "152.1" = poedb "(128.1-152)")
 	per_minute_to_per_second_0dp: (v) => Math.round(v / 60),
 	per_minute_to_per_second_1dp: (v) => Math.round(v / 6) / 10,
 	per_minute_to_per_second_2dp: (v) => Math.round(v / 0.6) / 100,
@@ -52,6 +54,19 @@ const HANDLERS = {
 	plus_two_hundred: (v) => v + 200,
 	locations_to_metres: (v) => v / 10,
 	metres_to_locations: (v) => v * 10,
+	// 빠져 있던 계산형 핸들러(10-13 C296 — 한국 공식 아틀라스 트리 대조로 뇌물 "떨어지는 아이템 2% 증폭" ↔ 공식 "200%" 를 찾고, 설명 파일 전체의
+	// 핸들러 이름을 표와 맞대 모은 것). 모르는 핸들러는 항등이라 값이 그대로 찍혔다. 색인 → 이름 핸들러(passive_hash 등)는 표가 필요해 아직 없음
+	negate_and_double: (v) => -v * 2,
+	multiply_by_one_hundred: (v) => v * 100,
+	multiply_by_ten: (v) => v * 10,
+	multiply_by_four: (v) => v * 4,
+	divide_by_one_hundred_0dp: (v) => Math.round(v / 100),
+	divide_by_one_hundred_1dp: (v) => Math.round(v / 10) / 10,
+	divide_by_ten_thousand_1dp: (v) => Math.round(v / 1000) / 10,
+	divide_by_twenty: (v) => v / 20,
+	one_hundred_divide_by_value: (v) => (v ? 100 / v : 0),
+	subtract_one: (v) => v - 1,
+	add_one: (v) => v + 1,
 };
 const unknownHandlers = new Set();
 
@@ -120,6 +135,9 @@ function parseFile(text, blocks) {
 			const sectionLine = lines[i].trim();
 			const langMatch = sectionLine.match(/^lang "(.+)"$/);
 			if (langMatch) { lang = langMatch[1]; i++; continue; }
+			// 블록 안 빈 줄은 건너뛴다 — 영어와 lang "Korean" 사이에 빈 줄이 낀 블록(PoE1 2 · PoE2 3개)은 여기서 끝나 한국어를 잃었다(10-13 C289,
+			// 올로스의 결의 "최대 룬 수호의 {0}% 재생" · "현재 룬 수호와 동일한 가호"). 블록 끝은 다음 description(숫자 아닌 줄)이 정한다
+			if (sectionLine === "") { i++; continue; }
 			if (!/^\d+$/.test(sectionLine)) break; // 다음 description 등
 			const count = Number(sectionLine);
 			i++;
@@ -182,7 +200,7 @@ export function createStatDescriber(fileDir, extraFiles = [], options = {}) {
 		"metadata@statdescriptions@skill_stat_descriptions.txt",
 		...extraFiles,
 	]) {
-		const path = fileDir + "/" + name;
+		const path = /^([A-Za-z]:)?[\\/]/.test(name) ? name : fileDir + "/" + name; // 절대 경로 = 작업 폴더의 보조 설명 파일(10-13 C291)
 		if (fs.existsSync(path)) for (const b of parsedBlocks(path)) blocks.push(b);
 	}
 	// stat id → 블록 (뒤에 파싱된 블록이 우선)
@@ -212,7 +230,10 @@ export function createStatDescriber(fileDir, extraFiles = [], options = {}) {
 			const variants = block.variants[lang]?.length
 				? block.variants[lang]
 				: block.variants.English;
-			const pool = gemQuality === "skip" ? variants.filter((v) => !v.quality)
+			// skip: 퀄리티 표식 변형을 건너뛴다 — 단, 블록에 그것밖에 없으면 그대로 쓴다(10-13 C294: 방패 돌진 상수 스탯 shield_charge_extra_distance 80
+			// 의 설명이 gem_quality 표식 하나뿐이라 기본 칸에서 "최대 이동 거리 80% 증가" 가 통째로 빠졌다 — poe2db 는 기본 칸에 보인다)
+			const nonQuality = variants.filter((v) => !v.quality);
+			const pool = gemQuality === "skip" ? (nonQuality.length ? nonQuality : variants)
 				: gemQuality === "prefer" ? [...variants.filter((v) => v.quality), ...variants.filter((v) => !v.quality)]
 				: variants;
 			const variant = pool.find((v) =>
@@ -278,7 +299,7 @@ export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 		"metadata@statdescriptions@skill_stat_descriptions.txt",
 		...extraFiles,
 	]) {
-		const path = fileDir + "/" + name;
+		const path = /^([A-Za-z]:)?[\\/]/.test(name) ? name : fileDir + "/" + name; // 절대 경로 = 작업 폴더의 보조 설명 파일(10-13 C291)
 		if (fs.existsSync(path)) for (const b of parsedBlocks(path)) blocks.push(b);
 	}
 
@@ -378,7 +399,7 @@ export function createReminderIndex(fileDir, extraFiles = []) {
 		"metadata@statdescriptions@skill_stat_descriptions.txt",
 		...extraFiles,
 	]) {
-		const path = fileDir + "/" + name;
+		const path = /^([A-Za-z]:)?[\\/]/.test(name) ? name : fileDir + "/" + name; // 절대 경로 = 작업 폴더의 보조 설명 파일(10-13 C291)
 		if (fs.existsSync(path)) for (const b of parsedBlocks(path)) blocks.push(b);
 	}
 	const TOKEN = /\+?\(?\{[^}]*\}\)?|\+?\(?-?\d[\d.\-]*\)?/g;

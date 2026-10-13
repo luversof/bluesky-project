@@ -27,8 +27,8 @@
 <details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-mod-family="${key}" data-family-odds="${selectable && poolWeight > 0 ? String.format("%.4f", famOdds) : null}" data-family-gen="${selectable ? family.gen() : null}">
 	<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
 		@if(selectable && poolWeight > 0)
-			<%-- 계산기 선택 — 클릭이 details 토글로 번지지 않게 onclick 전파 차단 --%>
-			<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" onclick="event.stopPropagation()" title="${MessageUtil.getMessage("poe.mods.odds.include")}">
+			<%-- 계산기 선택 — summary 안 체크박스는 클릭해도 details 를 토글하지 않는다(체크박스가 활성화 대상, PoE2 와 같다 — 10-13 C287 인라인 onclick 제거) --%>
+			<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" title="${MessageUtil.getMessage("poe.mods.odds.include")}">
 		@endif
 		<%-- 티어 "개수"(펼치면 T1..Tn). 접힌 배지가 "티어5"로 오해되지 않게 title 로 명시. --%>
 		<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), tiers.size())}</span>

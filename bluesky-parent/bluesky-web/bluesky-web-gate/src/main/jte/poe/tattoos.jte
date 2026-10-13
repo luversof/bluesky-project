@@ -63,7 +63,7 @@
 					<div class="rounded-lg border border-base-200 bg-base-100 px-3 py-2" data-tattoo-type="${t.targetType()}">
 						<div class="flex flex-wrap items-center gap-2">
 							@if(tattooIcon != null)
-								<img src="/poe-assets/${tattooIcon}" class="w-7 h-7 object-contain shrink-0" alt="" loading="lazy" onerror="this.style.display='none'">
+								<img src="/poe-assets/${tattooIcon}" class="w-7 h-7 object-contain shrink-0" alt="" loading="lazy" data-onerror="hide">
 							@endif
 							<span class="font-semibold poe-entry-name">${PoeText.name(t.nameKo(), t.name())}</span>
 							<span class="badge badge-ghost badge-xs">${typeLabels.getOrDefault(t.targetType(), t.targetType())}</span>

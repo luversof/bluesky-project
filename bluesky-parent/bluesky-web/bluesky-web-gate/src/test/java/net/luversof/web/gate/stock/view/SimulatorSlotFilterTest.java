@@ -96,18 +96,14 @@ class SimulatorSlotFilterTest {
             fragment.indexOf("</form>", fragment.indexOf("data-monthly-filter-form>")));
     assertThat(form)
         .as("필터 폼 안에 있어야 적용 단추로 함께 보낸다")
+        .as("지급 시기는 칩으로만 고르고(2026-10-13) 폼은 지금 값을 숨은 칸으로 실어 적용해도 풀리지 않는다")
         .contains(
             norm(
-                "<select name=\"payoutWindow\" class=\"select select-bordered select-sm w-full max-w-full\" data-monthly-slot-window>"))
+                "<input type=\"hidden\" name=\"payoutWindow\" value=\"${monthlyDividendPayoutWindowFilter}\" data-monthly-slot-window />"))
+        .doesNotContain("<select name=\"payoutWindow\"")
         .contains(
             norm(
                 "<select name=\"account\" class=\"select select-bordered select-sm w-full max-w-full\" data-monthly-slot-account>"))
-        .contains(
-            norm(
-                "<option value=\"MID_MONTH\" selected=\"${\"MID_MONTH\".equals(monthlyDividendPayoutWindowFilter)}\">"))
-        .contains(
-            norm(
-                "<option value=\"MONTH_END\" selected=\"${\"MONTH_END\".equals(monthlyDividendPayoutWindowFilter)}\">"))
         .contains(
             norm(
                 "<option value=\"BROKERAGE\" selected=\"${\"BROKERAGE\".equals(monthlyDividendAccountFilter)}\">"))

@@ -2,6 +2,7 @@ package net.luversof.web.gate.stock.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +24,11 @@ public class MonthlyDividendViewSupport {
 
   public static final String SORT_DISPLAY_ORDER = "display-order";
   public static final String SORT_SYMBOL = "symbol";
+
+  /**
+   * 프로필 목록의 "최근 지급 기준일" 열(2026-10-13 사용자 요청 - 갱신 여부 확인용). 기본은 오름차순: 가장 오래된, 곧 갱신이 밀린 종목이 맨 위에 온다.
+   */
+  public static final String SORT_LATEST_RECORD_DATE = "latest-record-date";
 
   /**
    * 표의 마지막 열(예상 종합 수익률) 정렬 키.
@@ -47,10 +53,40 @@ public class MonthlyDividendViewSupport {
           "payout-window",
           "source-url",
           "last-verified-date",
+          SORT_LATEST_RECORD_DATE,
           "active" ->
           sort;
       default -> SORT_DISPLAY_ORDER;
     };
+  }
+
+  /**
+   * 프로필 목록의 지급 시기 거르기(2026-10-13 사용자 요청 - 월중만 · 월말만 보기). {@code MID_MONTH} · {@code MONTH_END} 만 받고
+   * 나머지(빈 값 · 모르는 값)는 빈 문자열 = 전체.
+   */
+  public String resolveProfileWindow(String window) {
+    if (!StringUtils.hasText(window)) {
+      return "";
+    }
+    String normalized = window.trim().toUpperCase(Locale.ROOT);
+    return switch (normalized) {
+      case "MID_MONTH", "MONTH_END" -> normalized;
+      default -> "";
+    };
+  }
+
+  /** 지급 시기로 거른 프로필(빈 값이면 그대로). 순서는 유지한다. */
+  public static List<MonthlyDividendProfileResponse> filterProfilesByWindow(
+      List<MonthlyDividendProfileResponse> profiles, String window) {
+    if (profiles == null) {
+      return List.of();
+    }
+    if (!StringUtils.hasText(window)) {
+      return profiles;
+    }
+    return profiles.stream()
+        .filter(profile -> profile != null && window.equalsIgnoreCase(profile.payoutWindow()))
+        .toList();
   }
 
   /** 프로파일 정렬 방향(미지정 시 정렬 키별 기본값). */
@@ -68,6 +104,20 @@ public class MonthlyDividendViewSupport {
   /** 프로파일 목록 정렬(동률이면 심볼 오름차순). */
   public List<MonthlyDividendProfileResponse> sortProfiles(
       List<MonthlyDividendProfileResponse> profiles, String sort, String direction) {
+    return sortProfiles(profiles, sort, direction, Map.of());
+  }
+
+  /**
+   * 프로파일 목록 정렬 - {@code latestRecordDateBySymbol}(대문자 종목코드 -&gt; 가장 늦은 지급 기준일)은 {@link
+   * #SORT_LATEST_RECORD_DATE} 정렬에만 쓴다. 지급 이력이 없는 종목은 방향과 무관하게 뒤로 간다.
+   */
+  public List<MonthlyDividendProfileResponse> sortProfiles(
+      List<MonthlyDividendProfileResponse> profiles,
+      String sort,
+      String direction,
+      Map<String, LocalDate> latestRecordDateBySymbol) {
+    Map<String, LocalDate> latest =
+        latestRecordDateBySymbol == null ? Map.of() : latestRecordDateBySymbol;
     return profiles.stream()
         .sorted(
             (left, right) -> {
@@ -83,6 +133,11 @@ public class MonthlyDividendViewSupport {
                     case "last-verified-date" ->
                         compareNullableProfileValue(
                             left.lastVerifiedDate(), right.lastVerifiedDate(), direction);
+                    case SORT_LATEST_RECORD_DATE ->
+                        compareNullableProfileValue(
+                            latest.get(symbolKey(left.stockItemSymbol())),
+                            latest.get(symbolKey(right.stockItemSymbol())),
+                            direction);
                     case "active" ->
                         compareProfileBoolean(left.active(), right.active(), direction);
                     case SORT_DISPLAY_ORDER ->
@@ -257,6 +312,10 @@ public class MonthlyDividendViewSupport {
 
   private int compareProfileBoolean(boolean left, boolean right, String direction) {
     return "desc".equals(direction) ? Boolean.compare(right, left) : Boolean.compare(left, right);
+  }
+
+  private static String symbolKey(String symbol) {
+    return symbol == null ? "" : symbol.trim().toUpperCase(Locale.ROOT);
   }
 
   private <T extends Comparable<? super T>> int compareNullableProfileValue(

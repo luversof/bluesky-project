@@ -9,6 +9,8 @@
 @param boolean nextWindowIsMid = false
 @param String nextPayDateLabel = ""
 @param BigDecimal windowTotal = java.math.BigDecimal.ZERO
+<%-- 같은 날의 최근 기준 합계 - 배당 내역의 다가올 배당과 같은 두 값(평균 · 최근)을 보인다(2026-10-13 사용자 선택). --%>
+@param BigDecimal windowLatestTotal = java.math.BigDecimal.ZERO
 @param List<MonthlyDividendSnapshotResponse> topDividendSnapshots = java.util.List.of()
 @param java.time.LocalDate dividendAsOfOldest = null
 @param java.time.LocalDate dividendAsOfNewest = null
@@ -19,11 +21,14 @@
 @param int payDaySpreadTo = 0
 @param long staleQuantityCount = 0L
 @param BigDecimal currentQuantityTotal = java.math.BigDecimal.ZERO
+<%-- 같은 안내의 최근 기준 합계(2026-10-13 - 카드가 최근을 앞에 둔다). --%>
+@param BigDecimal currentQuantityLatestTotal = java.math.BigDecimal.ZERO
 @param int upcomingDividendHiddenCount = 0
 
 !{
 	String titleLabel = MessageUtil.getMessage("stock.dashboard.upcoming.dividend");
 	String avgLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");
+	String latestLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest");
 	String dividendMenuLabel = MessageUtil.getMessage("layout.menu.stock.dividend");
 	boolean hasWindow = nextWindowLabel != null && !nextWindowLabel.isEmpty();
 }
@@ -58,8 +63,9 @@
 	@if(staleQuantityCount > 0)
 	<div data-stale-quantity="${staleQuantityCount}" class="text-[11px] text-warning mb-2 amount-value" data-stale-quantity-notice>
 		${java.text.MessageFormat.format(
-			MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
+			MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity.both"),
 			String.valueOf(staleQuantityCount),
+			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityLatestTotal)),
 			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}
 	</div>
 	@endif
@@ -67,17 +73,20 @@
 	     예정 3,973,543)으로 읽혔다(2026-10-01 자율 점검) - 어느 날 몫인지 적고 "/ 월" 은 뺀다. --%>
 	@if(hasSnapshots)
 	<div class="text-right leading-tight tabular-nums mb-2">
-		<div class="font-mono font-bold text-dividend amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60" data-window-average-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.window.average"), nextPayDateLabel) : avgLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
+		<div class="font-mono font-bold text-dividend amount-value" data-window-latest-total title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60" data-window-latest-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.window.latest"), nextPayDateLabel) : latestLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal)))</div>
+		<div class="font-mono text-[11px] text-base-content/60 amount-value" data-window-average-total title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}">${avgLabel} ${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
 	</div>
 	<div class="space-y-1">
 		!{int upcomingRank = 1;}
 		@for(MonthlyDividendSnapshotResponse row : topDividendSnapshots)
+			<%-- 줄 금액도 최근 기준(2026-10-13 사용자 선택 "최근을 우선으로" - 배당 내역 다가올 배당의 종목 줄과 같은 값). --%>
+			!{BigDecimal rowLatest = net.luversof.web.gate.stock.service.MonthlyDividendCalculator.latestMonthlyDividend(row);}
 			<div class="flex items-center justify-between text-sm py-1.5 border-b border-base-200 last:border-0">
 				<span class="flex items-center gap-2 min-w-0">
 					<span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${upcomingRank++}</span>
 					<span class="truncate" title="${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}">${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}</span>
 				</span>
-				<span class="font-mono font-bold text-dividend amount-value shrink-0" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(row.expectedMonthlyDividend()))}">${String.format("%,d", StockFormatUtil.displayWon(row.expectedMonthlyDividend()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(row.expectedMonthlyDividend())), visible = String.format("%,d", StockFormatUtil.displayWon(row.expectedMonthlyDividend())))</span>
+				<span class="font-mono font-bold text-dividend amount-value shrink-0" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest))}">${String.format("%,d", StockFormatUtil.displayWon(rowLatest))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest)), visible = String.format("%,d", StockFormatUtil.displayWon(rowLatest)))</span>
 			</div>
 		@endfor
 		@if(upcomingDividendHiddenCount > 0)

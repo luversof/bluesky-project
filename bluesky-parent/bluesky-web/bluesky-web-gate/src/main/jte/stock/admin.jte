@@ -17,6 +17,9 @@
 @param net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse ledgerIntegrity = null
 @param List<StockItem> stockItems = java.util.List.of()
 @param List<MonthlyDividendProfileResponse> monthlyDividendProfiles = java.util.List.of()
+@param java.util.Map<String, net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView> monthlyDividendLatestPayoutBySymbol = java.util.Map.of()
+@param String monthlyDividendProfileWindow = ""
+@param java.util.Map<String, Long> monthlyDividendProfileWindowCounts = java.util.Map.of()
 @param List<MonthlyDividendPayoutResponse> monthlyDividendPayouts = java.util.List.of()
 @param MonthlyDividendReferenceSummaryView monthlyDividendReferenceSummary = null
 @param MonthlyDividendProfileUpsertRequest monthlyDividendProfileForm = null
@@ -64,6 +67,9 @@
 					@template.stock.fragments.monthlyDividendReference(
 						stockItems = stockItems,
 						monthlyDividendProfiles = monthlyDividendProfiles,
+						monthlyDividendLatestPayoutBySymbol = monthlyDividendLatestPayoutBySymbol,
+						monthlyDividendProfileWindow = monthlyDividendProfileWindow,
+						monthlyDividendProfileWindowCounts = monthlyDividendProfileWindowCounts,
 						monthlyDividendPayouts = monthlyDividendPayouts,
 						monthlyDividendReferenceSummary = monthlyDividendReferenceSummary,
 						monthlyDividendProfileForm = monthlyDividendProfileForm,

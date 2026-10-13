@@ -15,6 +15,8 @@
 @param long staleQuantityCount = 0L
 @param boolean currentQuantityUnavailable = false
 @param BigDecimal currentQuantityTotal = java.math.BigDecimal.ZERO
+<%-- 같은 안내의 최근 기준 합계 - 카드가 최근을 앞에 두므로 안내도 최근 · 평균을 함께(2026-10-13). --%>
+@param BigDecimal currentQuantityLatestTotal = java.math.BigDecimal.ZERO
 @param java.util.List<String> shortHistorySymbols = java.util.List.of()
 
 !{
@@ -48,8 +50,9 @@
 		@if(staleQuantityCount > 0)
 			<div class="mt-1 text-[11px] text-warning amount-value" data-upcoming-stale-quantity="${staleQuantityCount}" data-stale-quantity-notice>
 				${java.text.MessageFormat.format(
-					MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
+					MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity.both"),
 					String.valueOf(staleQuantityCount),
+					StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityLatestTotal)),
 					StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}
 			</div>
 		@endif
@@ -60,10 +63,10 @@
 			</div>
 		@endif
 		@if(schedule != null && schedule.hasDays())
-			<%-- 이번 달 남은 예정과 다음 달 예정을 따로 더한다 - 한 줄로 합치면 "한 달 예상" 으로 읽힌다. 금액은 최근 기준, 칸마다 보이는 값의 합. --%>
+			<%-- 이번 달 남은 예정과 다음 달 예정을 따로 더한다 - 한 줄로 합치면 "한 달 예상" 으로 읽힌다. 칸마다 보이는 값의 합. 최근을 앞에, 평균을 뒤에(2026-10-13 사용자 선택 "최근을 우선으로" - 대시보드와 같은 두 값). --%>
 			<div class="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs" data-upcoming-totals>
-				<span><span class="text-base-content/60">${MessageUtil.getMessage("stock.dividend.upcoming.this.month")}</span> <span class="font-mono font-medium text-dividend amount-value" data-upcoming-this-month-total>${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(schedule.thisMonthTotal()))}</span></span>
-				<span><span class="text-base-content/60">${MessageUtil.getMessage("stock.dividend.upcoming.next.month")}</span> <span class="font-mono font-medium text-dividend amount-value" data-upcoming-next-month-total>${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(schedule.nextMonthTotal()))}</span></span>
+				<span><span class="text-base-content/60">${MessageUtil.getMessage("stock.dividend.upcoming.this.month")}</span> <span class="font-mono"><span class="text-base-content/60">${latestLabel}</span> <span class="font-medium text-dividend amount-value" data-upcoming-this-month-total>${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(schedule.thisMonthTotal()))}</span> <span class="text-base-content/60">· ${avgLabel} <span class="amount-value" data-upcoming-this-month-average-total>${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(schedule.thisMonthAverageTotal()))}</span></span></span></span>
+				<span><span class="text-base-content/60">${MessageUtil.getMessage("stock.dividend.upcoming.next.month")}</span> <span class="font-mono"><span class="text-base-content/60">${latestLabel}</span> <span class="font-medium text-dividend amount-value" data-upcoming-next-month-total>${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(schedule.nextMonthTotal()))}</span> <span class="text-base-content/60">· ${avgLabel} <span class="amount-value" data-upcoming-next-month-average-total>${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(schedule.nextMonthAverageTotal()))}</span></span></span></span>
 			</div>
 			<ul class="mt-3 space-y-2" data-upcoming-daylist="${schedule.days().size()}">
 				@for(DividendCalendarView.Day day : schedule.days())
@@ -81,7 +84,7 @@
 					@for(DividendCalendarView.Entry entry : schedule.overdue())
 						<li class="flex items-center justify-between gap-2">
 							<span class="truncate" title="${entry.name()}">${entry.name()}</span>
-							<span class="shrink-0 font-mono"><span class="text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.upcoming.overdue.day"), String.valueOf(entry.payDay()))}</span> <span class="text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span></span>
+							<span class="shrink-0 font-mono"><span class="text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.upcoming.overdue.day"), String.valueOf(entry.payDay()))}</span> <span class="text-base-content/60">${latestLabel}</span> <span class="text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span> <span class="text-base-content/60">· ${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span></span>
 						</li>
 					@endfor
 				</ul>
@@ -95,7 +98,7 @@
 					@for(DividendCalendarView.Entry entry : schedule.undated())
 						<li class="flex items-center justify-between gap-2">
 							<span class="truncate" title="${entry.name()}">${entry.name()}</span>
-							<span class="shrink-0 font-mono text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span>
+							<span class="shrink-0 font-mono"><span class="text-base-content/60">${latestLabel}</span> <span class="text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span> <span class="text-base-content/60">· ${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span></span>
 						</li>
 					@endfor
 				</ul>

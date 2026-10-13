@@ -7,6 +7,7 @@ import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 import { alignKoToGameOrder, buildKoreanMap, buildTree, joinReminderKo } from "./tree-common.mjs";
 import { createTemplateTranslator } from "./ko-templates.mjs";
+import { loadKakaoTree } from "./kakao-tree.mjs";
 
 const RAW = path.join(WORK_DIR, "passive-tree-raw.json");
 const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "passive-tree.json"); // POE_DATA_OUT = 사본 출력(10-10)
@@ -77,10 +78,21 @@ translator.addPairs(result.nodes.map((node) => ({ en: node.stats || [], ko: node
 translator.addPairs(
 	result.nodes.flatMap((node) => (node.masteryEffects || []).map((eff) => ({ en: eff.stats || [], ko: eff.statsKo || [] }))),
 );
-// 게임 데이터가 한글 문장을 아예 안 주는 몇 개는 수동 번역(직접 옮긴 것임을 명시).
+// ---- 한국 공식 패시브 트리(카카오) — 노드별 공식 한국어 스탯 ----
+// poe.kakaogames.com/passive-skill-tree 페이지에 트리 데이터(passiveSkillTreeData)가 한국어로 박혀 있다(10-13 C295).
+// 게임 테이블 · 서술기로 안 나오는 줄(트리 export 에만 있는 "Nearby Enemies have …" 6줄 · 패시브 포인트 노드)을 이 공식 문장으로 채운다.
+// 받기에 실패하면 WORK_DIR 캐시, 그것도 없으면 예전대로(사전 · 수동 번역).
+// 받기 · 캐시 · 페이지에서 꺼내기는 아틀라스 트리와 같이 kakao-tree.mjs 로(10-13 C296)
+const kakaoNodes = await loadKakaoTree("https://poe.kakaogames.com/passive-skill-tree", path.join(WORK_DIR, "kakao-passive-tree.json"), "패시브 트리");
+// 영어 줄 i 의 공식 한국어 — 줄 수가 같을 때만(순서가 같다고 볼 수 있을 때)
+const kakaoLine = (node, i) => {
+	const k = kakaoNodes?.[String(node.id)];
+	return k && node.stats && k.stats.length === node.stats.length && i >= 0 ? k.stats[i] : null;
+};
+// 게임 데이터가 한글 문장을 아예 안 주는 몇 개는 수동 번역 — 공식 트리를 못 받았을 때의 대체. 문구는 공식 트리와 같게(C295: "1 획득" → "1포인트 제공")
 const MANUAL_KO = {
-	"Grants 1 Passive Skill Point": "패시브 스킬 포인트 1 획득",
-	"Grants 2 Passive Skill Points": "패시브 스킬 포인트 2 획득",
+	"Grants 1 Passive Skill Point": "패시브 스킬 포인트 1포인트 제공",
+	"Grants 2 Passive Skill Points": "패시브 스킬 포인트 2포인트 제공",
 };
 // 마스터리 효과도 같은 사전으로 보강 — 1825개 중 7개가 서술기에서 안 나온다
 let effectFilled = 0;
@@ -98,7 +110,7 @@ let filled = 0;
 let stillMissing = 0;
 for (const node of result.nodes) {
 	if (!node.stats?.length || node.statsKo?.length) continue;
-	const lines = node.stats.map((line) => MANUAL_KO[line] || translator.translate(line));
+	const lines = node.stats.map((line, i) => kakaoLine(node, i) || MANUAL_KO[line] || translator.translate(line));
 	if (lines.every(Boolean)) {
 		node.statsKo = lines;
 		filled++;
@@ -116,7 +128,7 @@ for (const node of result.nodes) {
 		if (!t.statsKo?.length || !t.stats?.length) continue;
 		t.statsKo = t.statsKo.map((line) => {
 			if (!t.stats.includes(line)) return line; // 이미 한글
-			const ko = MANUAL_KO[line] || translator.translate(line);
+			const ko = (t === node ? kakaoLine(node, t.stats.indexOf(line)) : null) || MANUAL_KO[line] || translator.translate(line);
 			if (ko) {
 				lineFilled++;
 				return ko;
@@ -130,6 +142,18 @@ console.log(
 	`스탯 한글 보강: 템플릿 ${translator.size}개로 노드 ${filled}개 + 마스터리 효과 ${effectFilled}개 채움, 남은 미번역 노드 ${stillMissing}개`,
 );
 console.log(`부분 미번역 줄: ${lineFilled}줄 사전으로 한글화, ${lineEnglish}줄은 한글 소스 없어 영문 유지`);
+// 줄 수 어긋남 — 서술기가 영어(트리 export)보다 줄을 더 만든 노드는 공식 트리가 영어와 줄 수가 같으면 공식 문장으로(10-13 C295,
+// 시간의 모래: 게임 표 스탯 2개라 "20레벨 시간 속 정지 발동" 줄이 하나 더 생겼다 — 영어 · 공식 한국어는 한 줄)
+let countFixed = 0;
+for (const node of result.nodes) {
+	const k = kakaoNodes?.[String(node.id)];
+	if (!k || !node.stats?.length || !node.statsKo?.length) continue;
+	if (node.statsKo.length !== node.stats.length && k.stats.length === node.stats.length) {
+		node.statsKo = [...k.stats];
+		countFixed++;
+	}
+}
+console.log(`줄 수 어긋남을 공식 트리로 맞춤: ${countFixed}개 노드`);
 
 // 리마인더 한글 — 게임 테이블 ReminderText(EN/KO) 페어링 조인.
 // 테이블은 config 추가(2026-07) 후 추출부터 생긴다 — 옛 추출물로 parse 만 단독 재실행해도 죽지 않게 폴백.

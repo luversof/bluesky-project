@@ -138,7 +138,7 @@
 								<%-- 고유도 실제 굴림 수치의 인게임 툴팁(10-04 C139) — 예전엔 고유 일반 상세(범위 값)를 띄워 이 빌드가 실제로 굴린 값 · 타락 · 변이 옵션이 안 보였다 --%>
 								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors" data-build-unique="${item.uniqueSlug()}">
 									<div class="w-10 h-12 shrink-0 flex items-center justify-center" data-build-icon>
-										@if(iconSrc != null)<img src="${iconSrc}" class="max-w-10 max-h-12 object-contain" alt="" loading="lazy" onerror="this.remove()">@endif
+										@if(iconSrc != null)<img src="${iconSrc}" class="max-w-10 max-h-12 object-contain" alt="" loading="lazy" data-onerror="remove">@endif
 									</div>
 									<%-- 이름 줄 / 베이스 줄 분리 — 인게임 아이템 툴팁이 그렇고, 우리 고유 목록도 그렇다.
 								     한 줄에 붙여두면 truncate 가 걸릴 때 베이스가 먼저 잘려 무슨 베이스인지 안 보인다. --%>
@@ -156,7 +156,7 @@
 							@else
 								<div class="poe-hover flex items-start gap-2 rounded-box bg-base-200/40 px-3 py-2 text-left cursor-help hover:bg-base-200 transition-colors">
 									<div class="w-10 h-12 shrink-0 flex items-center justify-center" data-build-icon>
-										@if(iconSrc != null)<img src="${iconSrc}" class="max-w-10 max-h-12 object-contain" alt="" loading="lazy" onerror="this.remove()">@endif
+										@if(iconSrc != null)<img src="${iconSrc}" class="max-w-10 max-h-12 object-contain" alt="" loading="lazy" data-onerror="remove">@endif
 									</div>
 									<div class="min-w-0 text-sm">
 										@if(!item.slot().isEmpty())<div class="text-xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.name(item.slotKo(), item.slot())}</div>@endif

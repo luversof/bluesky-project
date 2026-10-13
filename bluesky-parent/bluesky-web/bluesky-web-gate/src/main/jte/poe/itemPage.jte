@@ -47,7 +47,7 @@
 			<div class="flex flex-wrap items-start gap-6">
 				<img src="/poe-assets/items/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}"
 				     class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${item.name()}" data-base-art
-				     onerror="this.remove()">
+				     data-onerror="remove">
 				<div>
 					@template.poe.htmx.itemDetail(item = item)
 				</div>

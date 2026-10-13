@@ -539,6 +539,24 @@ public class StockViewController {
             monthlyDividendDirection,
             monthlyDividendProfileDisplayOrders);
 
+    // 지급 시기 칩(전체 · 월중 · 월말)에 적을 개수(2026-10-13 사용자 요청 - 한 번 눌러 거르기). 검색어 · 수익률 · 양수만 · 계좌는
+    // 그대로 둔 채 지급 시기만 바꿨을 때 남는 줄 수다. 카탈로그를 못 받으면 개수를 비운다(칩은 그대로 쓸 수 있다).
+    Map<String, Integer> monthlyDividendPayoutWindowCounts = new LinkedHashMap<>();
+    if (monthlyDividendCatalog != null) {
+      List<MonthlyDividendSnapshotResponse> windowBaseRows =
+          monthlyDividendViewSupport.filterRows(
+              allRows, monthlyDividendKeyword, minAnnualYield, positiveOnly);
+      for (String window : List.of("", "MID_MONTH", "MONTH_END")) {
+        java.util.Set<String> windowSymbols =
+            window.isEmpty() && monthlyDividendAccountFilter.isEmpty()
+                ? null
+                : monthlyContributionPickSupport.symbolsInSlot(
+                    window, monthlyDividendAccountFilter, monthlyDividendCatalog);
+        monthlyDividendPayoutWindowCounts.put(
+            window, keepSlotRows(windowBaseRows, windowSymbols).size());
+      }
+    }
+
     Map<String, String> monthlyDividendPayoutWindowBySymbol = new LinkedHashMap<>();
     for (MonthlyDividendProfileResponse profile : monthlyDividendProfiles) {
       String profileSymbol =
@@ -673,6 +691,7 @@ public class StockViewController {
     model.addAttribute("monthlyDividendMinAnnualYield", minAnnualYield);
     model.addAttribute("monthlyDividendPositiveOnly", positiveOnly);
     model.addAttribute("monthlyDividendPayoutWindowFilter", monthlyDividendPayoutWindowFilter);
+    model.addAttribute("monthlyDividendPayoutWindowCounts", monthlyDividendPayoutWindowCounts);
     model.addAttribute("monthlyDividendAccountFilter", monthlyDividendAccountFilter);
     model.addAttribute(
         "monthlyDividendSlotFilterUnavailable", monthlyDividendSlotFilterUnavailable);
@@ -1052,7 +1071,8 @@ public class StockViewController {
       @RequestParam(required = false) String profileSort,
       @RequestParam(required = false) String profileDirection,
       @RequestParam(required = false) LocalDate payoutRecordDate,
-      @RequestParam(required = false) LocalDate payoutPayDate) {
+      @RequestParam(required = false) LocalDate payoutPayDate,
+      @RequestParam(required = false) String profileWindow) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
@@ -1099,7 +1119,13 @@ public class StockViewController {
       // 결과 코드(monthlyDividendReferenceResult)는 POST 후 flash 로만 전달된다.
       // URL 쿼리로 받으면 새로고침마다 이전 결과 메시지가 재표시되는 버그가 있어 제거했다.
       monthlyDividendReferenceSupport.populateMonthlyDividendReferenceModel(
-          model, symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate);
+          model,
+          symbol,
+          profileSort,
+          profileDirection,
+          payoutRecordDate,
+          payoutPayDate,
+          profileWindow);
     }
 
     return "stock/admin";

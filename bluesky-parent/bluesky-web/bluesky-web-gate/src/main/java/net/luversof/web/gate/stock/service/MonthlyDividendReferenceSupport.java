@@ -26,6 +26,7 @@ import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertReque
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
+import net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
@@ -223,13 +224,43 @@ public class MonthlyDividendReferenceSupport {
       String requestedProfileDirection,
       LocalDate requestedPayoutRecordDate,
       LocalDate requestedPayoutPayDate) {
+    populateMonthlyDividendReferenceModel(
+        model,
+        requestedSymbol,
+        requestedProfileSort,
+        requestedProfileDirection,
+        requestedPayoutRecordDate,
+        requestedPayoutPayDate,
+        null);
+  }
+
+  /**
+   * {@code requestedProfileWindow}(MID_MONTH · MONTH_END · 빈 값)는 목록에 보일 프로필만 거른다(2026-10-13 사용자
+   * 요청). 종목 선택 · 편집 폼은 거르기와 무관하게 전체 프로필에서 찾는다 - 월말만 보는 중에도 월중 종목을 편집하던 자리는 그대로여야 한다.
+   */
+  public void populateMonthlyDividendReferenceModel(
+      Model model,
+      String requestedSymbol,
+      String requestedProfileSort,
+      String requestedProfileDirection,
+      LocalDate requestedPayoutRecordDate,
+      LocalDate requestedPayoutPayDate,
+      String requestedProfileWindow) {
+    String profileWindow = monthlyDividendViewSupport.resolveProfileWindow(requestedProfileWindow);
     List<StockItem> stockItems = loadMonthlyDividendStockItems();
     String profileSort = monthlyDividendViewSupport.resolveProfileSort(requestedProfileSort);
     String profileDirection =
         monthlyDividendViewSupport.resolveProfileDirection(profileSort, requestedProfileDirection);
+    Map<String, MonthlyDividendLatestPayoutView> latestPayoutBySymbol =
+        latestPayoutBySymbol(
+            loadAllMonthlyDividendPayoutsQuietly(),
+            LocalDate.now(java.time.ZoneId.of("Asia/Seoul")));
+    Map<String, LocalDate> latestRecordDateBySymbol = new HashMap<>();
+    latestPayoutBySymbol.forEach(
+        (symbol, view) -> latestRecordDateBySymbol.put(symbol, view.recordDate()));
     List<MonthlyDividendProfileResponse> profiles =
         monthlyDividendViewSupport.sortProfiles(
-            loadMonthlyDividendProfiles(), profileSort, profileDirection);
+            loadMonthlyDividendProfiles(), profileSort, profileDirection, latestRecordDateBySymbol);
     List<StockItem> selectableStockItems =
         mergeMonthlyDividendReferenceStockItems(stockItems, profiles);
     String selectedSymbol =
@@ -249,7 +280,19 @@ public class MonthlyDividendReferenceSupport {
             model, payouts, requestedPayoutRecordDate, requestedPayoutPayDate);
 
     model.addAttribute("stockItems", selectableStockItems);
-    model.addAttribute("monthlyDividendProfiles", profiles);
+    model.addAttribute(
+        "monthlyDividendProfiles",
+        MonthlyDividendViewSupport.filterProfilesByWindow(profiles, profileWindow));
+    model.addAttribute("monthlyDividendProfileWindow", profileWindow);
+    Map<String, Long> windowCounts = new LinkedHashMap<>();
+    windowCounts.put("", (long) profiles.size());
+    for (String window : List.of("MID_MONTH", "MONTH_END")) {
+      windowCounts.put(
+          window,
+          (long) MonthlyDividendViewSupport.filterProfilesByWindow(profiles, window).size());
+    }
+    model.addAttribute("monthlyDividendProfileWindowCounts", windowCounts);
+    model.addAttribute("monthlyDividendLatestPayoutBySymbol", latestPayoutBySymbol);
     model.addAttribute("monthlyDividendProfileSort", profileSort);
     model.addAttribute("monthlyDividendProfileDirection", profileDirection);
     model.addAttribute("monthlyDividendPayouts", payouts);
@@ -467,6 +510,54 @@ public class MonthlyDividendReferenceSupport {
       }
     }
     return result;
+  }
+
+  /**
+   * 종목코드(대문자) -&gt; 가장 늦은 지급 기준일 행. 같은 기준일이 둘이면 지급일이 늦은 쪽.
+   *
+   * <p>관리 &gt; 월배당 기준 데이터 목록이 종목마다 마지막 기준일을 보여 갱신 여부를 확인하게 한다(사용자 요청 2026-10-13).
+   */
+  public static Map<String, MonthlyDividendLatestPayoutView> latestPayoutBySymbol(
+      List<MonthlyDividendPayoutResponse> payouts, LocalDate today) {
+    if (payouts == null || payouts.isEmpty()) {
+      return Map.of();
+    }
+    Map<String, MonthlyDividendPayoutResponse> latest = new HashMap<>();
+    Comparator<MonthlyDividendPayoutResponse> byDate =
+        Comparator.comparing(MonthlyDividendPayoutResponse::recordDate)
+            .thenComparing(
+                MonthlyDividendPayoutResponse::payDate,
+                Comparator.nullsFirst(Comparator.naturalOrder()));
+    for (MonthlyDividendPayoutResponse payout : payouts) {
+      if (payout == null
+          || payout.recordDate() == null
+          || !StringUtils.hasText(payout.stockItemSymbol())) {
+        continue;
+      }
+      latest.merge(
+          payout.stockItemSymbol().trim().toUpperCase(Locale.ROOT),
+          payout,
+          (left, right) -> byDate.compare(left, right) >= 0 ? left : right);
+    }
+    Map<String, MonthlyDividendLatestPayoutView> result = new HashMap<>();
+    latest.forEach(
+        (symbol, payout) ->
+            result.put(
+                symbol,
+                MonthlyDividendLatestPayoutView.of(payout.recordDate(), payout.payDate(), today)));
+    return result;
+  }
+
+  /** 전 종목 지급 이력 - 실패해도 화면은 열려야 하므로 빈 목록(목록의 기준일 칸만 "-"). */
+  private List<MonthlyDividendPayoutResponse> loadAllMonthlyDividendPayoutsQuietly() {
+    try {
+      List<MonthlyDividendPayoutResponse> payouts =
+          monthlyDividendPayoutClient.findPayouts(new LinkedMultiValueMap<>());
+      return payouts != null ? payouts : List.of();
+    } catch (RuntimeException ex) {
+      log.warn("월배당 지급 이력 전체 조회 실패 - 목록의 최근 기준일을 비웁니다", ex);
+      return List.of();
+    }
   }
 
   /** 최근 지급 이력 {@code limit} 건 - 기준일 · 지급일 최근순(날짜가 없는 행은 뒤). 원본 목록 순서에 기대지 않는다. */

@@ -57,7 +57,7 @@ for (const node of tree.nodes || []) {
 // 스탯 문장 한글 1순위: 게임 테이블 PassiveSkillOverrides(문신이 만드는 대체 노드의 원본 정의).
 // Name 이 PoB dn 과 일치하고 Stats+StatValues 를 서술기로 풀면 **게임 원문 한글**이 나온다.
 // (문신 아이템엔 implicit 모드가 없고, 룬 접합 문장은 마스터리 효과와도 달라 템플릿 사전만으론 못 옮긴다)
-const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@passive_skill_stat_descriptions.txt"]);
+const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt", "metadata@statdescriptions@passive_skill_stat_descriptions.txt"]) /* 게임 passive 사슬 = stat → passive(C257 과 같다, 10-13 C288 — 기본 사슬의 gem/skill 문장이 이기지 않게) */;
 const statsTable = loadTable("English", "Stats");
 // 옛 추출본(테이블 추가 전)에서도 파서가 죽지 않게 — 없으면 템플릿 번역만으로 돌아간다
 let overridesEn = [];
@@ -144,7 +144,7 @@ for (const [dn, node] of Object.entries(nodes)) {
 out.sort((a, b) => a.dn.localeCompare(b.dn));
 
 const byTarget = out.reduce((acc, t) => ((acc[t.targetType] = (acc[t.targetType] || 0) + 1), acc), {});
-const outFile = path.join(DATA_DIR, "tattoos.json");
+const outFile = path.join(process.env.POE_DATA_OUT || DATA_DIR, "tattoos.json"); // POE_DATA_OUT = 사본 출력(10-13)
 fs.writeFileSync(outFile, JSON.stringify({ tattoos: out }, null, "\t"), "utf8");
 console.log(
 	`문신 ${out.length}종 → ${outFile}\n  대상별: ${Object.entries(byTarget).map(([k, v]) => `${k || "(없음)"} ${v}`).join(", ")}` +

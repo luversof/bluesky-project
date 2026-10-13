@@ -82,9 +82,14 @@ public class MonthlyDividendCalculator {
    * 스냅샷 수량이 원장의 현재 보유와 얼마나 어긋났는지.
    *
    * @param staleCount 수량이 달라진 종목 수
-   * @param totalAtCurrentQuantity 1주당 배당(스냅샷)은 그대로 두고 수량만 현재 값으로 바꿔 다시 낸 월배당 합계
+   * @param totalAtCurrentQuantity 1주당 배당(스냅샷)은 그대로 두고 수량만 현재 값으로 바꿔 다시 낸 월배당 합계(평균 기준)
+   * @param latestTotalAtCurrentQuantity 같은 방법의 최근 기준 합계(최근 1 회 주당 배당 x 현재 수량). 다가올 배당 카드가 최근을 앞에
+   *     두면서(2026-10-13 사용자 선택) 안내도 최근 · 평균을 함께 적는다
    */
-  public record CurrentQuantitySummary(long staleCount, BigDecimal totalAtCurrentQuantity) {}
+  public record CurrentQuantitySummary(
+      long staleCount,
+      BigDecimal totalAtCurrentQuantity,
+      BigDecimal latestTotalAtCurrentQuantity) {}
 
   /**
    * 스냅샷의 보유 수량은 사람이 갱신한 시점의 값이라 원장과 어긋난다(실측 2026-08-23: 8 종목 중 7 종목, 예상 월배당이 1.66% 낮게 잡혔다).
@@ -103,14 +108,23 @@ public class MonthlyDividendCalculator {
       java.util.Map<java.util.UUID, Integer> currentQuantityByStockItem) {
     long staleCount = 0;
     BigDecimal total = BigDecimal.ZERO;
+    BigDecimal latestTotal = BigDecimal.ZERO;
     if (rows == null) {
-      return new CurrentQuantitySummary(0, total);
+      return new CurrentQuantitySummary(0, total, latestTotal);
     }
     java.util.Map<java.util.UUID, Integer> quantities =
         currentQuantityByStockItem != null ? currentQuantityByStockItem : java.util.Map.of();
     for (MonthlyDividendSnapshotResponse row : rows) {
       BigDecimal perShare = row.averageMonthlyDividendPerShare1y();
       Integer currentQuantity = quantities.get(row.stockItemId());
+      // 최근 기준: 현재 수량을 알면 그 수량, 모르면 스냅샷 수량(평균 쪽과 같은 규칙).
+      if (currentQuantity != null && row.latestMonthlyDividendPerShare() != null) {
+        latestTotal =
+            latestTotal.add(
+                row.latestMonthlyDividendPerShare().multiply(BigDecimal.valueOf(currentQuantity)));
+      } else {
+        latestTotal = latestTotal.add(latestMonthlyDividend(row));
+      }
       if (perShare == null || row.heldQuantity() == null || currentQuantity == null) {
         total = total.add(safe(row.expectedMonthlyDividend()));
         continue;
@@ -120,7 +134,25 @@ public class MonthlyDividendCalculator {
       }
       total = total.add(perShare.multiply(BigDecimal.valueOf(currentQuantity)));
     }
-    return new CurrentQuantitySummary(staleCount, total);
+    return new CurrentQuantitySummary(staleCount, total, latestTotal);
+  }
+
+  /**
+   * 최근 1 회 주당 배당 x 스냅샷 수량 &mdash; '최근' 기준 예상 월배당. 값이 없으면 0.
+   *
+   * <p>배당 내역의 다가올 배당과 대시보드의 다가올 배당이 같은 날 합계를 서로 다른 기준(최근 / 평균)으로만 보여 숫자가 달랐다(2026-10-13 사용자 지적: 10월
+   * 17일분 1,601,445 vs 997,459). 두 화면이 평균 · 최근을 함께 보이도록 같은 계산을 여기 둔다.
+   */
+  public static BigDecimal latestMonthlyDividend(MonthlyDividendSnapshotResponse row) {
+    if (row == null) {
+      return BigDecimal.ZERO;
+    }
+    BigDecimal perShare =
+        row.latestMonthlyDividendPerShare() != null
+            ? row.latestMonthlyDividendPerShare()
+            : BigDecimal.ZERO;
+    long quantity = row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L;
+    return perShare.multiply(BigDecimal.valueOf(quantity));
   }
 
   public MonthlyDividendSimulatorSummaryView buildSimulatorSummary(

@@ -45,6 +45,7 @@
 @param BigDecimal monthlyDividendMinAnnualYield = null
 @param boolean monthlyDividendPositiveOnly = false
 @param String monthlyDividendPayoutWindowFilter = ""
+@param java.util.Map<String, Integer> monthlyDividendPayoutWindowCounts = java.util.Map.of()
 @param String monthlyDividendAccountFilter = ""
 @param boolean monthlyDividendSlotFilterUnavailable = false
 @param boolean monthlyDividendHasSavedRows = false
@@ -209,7 +210,8 @@
 			<%-- 이 탭들은 주소를 바꾸는 링크다(역할은 tab 이 아니라 링크). 지금 어느 탭인지 시각 스타일로만
 			     알렸다 - 실측 2026-09-12: role/aria-selected/aria-current 가 모두 없어 낭독기에는 링크 셋으로만
 			     들렸다. 링크형 탭의 표준 표식인 aria-current="page" 를 단다. --%>
-			<div class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1">
+			<%-- id: 월배당 비교표가 구역만 바꿔 끼울 때 탭 링크(지금 조건을 싣는다)도 함께 바꾼다(hx-select-oob, 2026-10-13). --%>
+			<div class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1" id="simulatorTabs">
 				<a href="${simulatorTabHrefSustainability}" aria-current="${sustainabilityTab ? "page" : null}" class="${sustainabilityTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${sustainabilityTabLabel}</a>
 				<a href="${simulatorTabHrefMonthlyDividend}" aria-current="${monthlyDividendTab ? "page" : null}" class="${monthlyDividendTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${monthlyDividendTabLabel}</a>
 				<a href="${simulatorTabHrefCompound}" aria-current="${compoundTab ? "page" : null}" class="${compoundTab ? activeSimulatorTabClass : inactiveSimulatorTabClass}">${compoundTabLabel}</a>
@@ -243,6 +245,7 @@
 					monthlyDividendMinAnnualYield = monthlyDividendMinAnnualYield,
 					monthlyDividendPositiveOnly = monthlyDividendPositiveOnly,
 					monthlyDividendPayoutWindowFilter = monthlyDividendPayoutWindowFilter,
+					monthlyDividendPayoutWindowCounts = monthlyDividendPayoutWindowCounts,
 					monthlyDividendAccountFilter = monthlyDividendAccountFilter,
 					monthlyDividendSlotFilterUnavailable = monthlyDividendSlotFilterUnavailable,
 					monthlyDividendHasSavedRows = monthlyDividendHasSavedRows,

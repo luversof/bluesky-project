@@ -9,7 +9,7 @@ import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
 
 const PATCH = loadConfig().patch;
 // 게임 데이터는 파생 산출물이라 git 에 커밋하지 않는다 — 홈 디렉토리에 두고 서버가 부팅 시 로드 (poe.data-dir 프로퍼티)
-const OUT = path.join(DATA_DIR, "skill-gems.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "skill-gems.json"); // POE_DATA_OUT = 사본 출력(10-13)
 
 const load = loadTable;
 

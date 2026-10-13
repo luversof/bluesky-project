@@ -102,7 +102,9 @@ class ContributionPickCardTest {
     }
 
     // 영어 파일에 한글·기호가 섞이면 편집기 코드페이지에서 깨진다.
-    for (String line : english.split("\r\n")) {
+    // 줄은 줄바꿈 종류와 상관없이 나눈다(\R) - "\r\n" 으로만 나누면 LF 작업 사본에서는 파일 전체가 한 줄이 되어 이 줄과 무관한 키의 글자까지 걸렸다
+    // (2026-10-13: PoE 키의 → · ✓ 때문에 이 시험이 실패).
+    for (String line : english.split("\\R")) {
       if (!line.contains("monthly.contribution")) {
         continue;
       }
