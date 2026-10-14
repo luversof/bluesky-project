@@ -13,6 +13,10 @@ const [limits, limitsKo] = T("SoulCoreLimits");
 const [classes, classesKo] = T("ItemClasses");
 const [stats] = T("Stats");
 const [visuals] = T("ItemVisualIdentity");
+// 중첩 개수(10-13 C297) — CurrencyItems.StackSize, 인게임 "중첩 개수: 1/10"(ClientStrings ItemDisplayStackSize · ItemDisplayStackSizeValue).
+//   poe2db: 사막 룬 · 뱀 우상 "1 / 10", 1 짜리(올로스의 유산 룬)와 행 없는 것(떠오르는 활력 · 우상 4종)은 줄 자체가 없다 → 2 이상만 싣는다
+const [currency] = T("CurrencyItems");
+const stackByBase = new Map(currency.map((r) => [r.BaseItemType, r.StackSize]));
 const describe = createDescriber();
 
 // 분류 한국어 표시 — 게임 문구가 비어 있으면 대상 아이템 클래스 한국어 이름으로
@@ -67,6 +71,7 @@ for (let i = 0; i < cores.length; i++) {
 		limit: lim ? lim.Limit : null,
 		limitText: lim && lim.Text ? stripMarkup(lim.Text).replace("{0}", String(lim.Limit)) : null,
 		limitTextKo: lim && limitsKo[c.Limit].Text ? stripMarkup(limitsKo[c.Limit].Text).replace("{0}", String(lim.Limit)) : null,
+		stackSize: stackByBase.get(c.BaseItemType) > 1 ? stackByBase.get(c.BaseItemType) : null,
 		effects,
 		icon: b.ItemVisualIdentity != null ? visuals[b.ItemVisualIdentity]?.DDSFile || null : null,
 	});

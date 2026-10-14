@@ -50,8 +50,8 @@
 			</div>
 			<div data-poe2-sim-panel="sim" class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
 				<div class="text-sm text-base-content/60 max-w-3xl">${ko
-					? "전직과 주 스킬을 고르고 실행하면, 그 조건의 poe.ninja 실빌드 후보를 받아 PoB-PoE2 엔진으로 다시 계산하고 목표에 가장 맞는 빌드를 골라 자동으로 다듬습니다. 목표는 실빌드 성향으로 정해집니다(아래 미리보기)."
-					: "Pick an ascendancy and main skill and run: real-build candidates from poe.ninja are recalculated with the PoB-PoE2 engine, the best fit for the objective is chosen and refined automatically. The objective follows the real-build lean (preview below)."}</div>
+					? "전직과 주 스킬을 고르고 실행하면, poe.ninja 에서 그 전직 · 스킬을 쓰는 실빌드들의 공통 특성(많이 찍는 패시브 — 무기 세트 1 · 2 따로, 절반 이상이 끼는 고유 · 보조 젬)을 참고해 최선의 빌드를 찾습니다. 실빌드들의 장비 · 젬을 PoB-PoE2 엔진으로 다시 계산해 가장 나은 구성에서 출발하고, 공통 트리 · 고유 · 보조 젬과 가이드 교체를 하나씩 실제로 계산해 목표 점수가 오르는 것만 적용합니다. 목표는 실빌드 성향으로 정해집니다(아래 미리보기). 내 PoB 빌드를 고칠 점은 빌드 화면의 업그레이드 가이드에서 봅니다."
+					: "Pick an ascendancy and main skill and run: the simulator looks for the best build using the common traits of poe.ninja builds with that ascendancy and skill (most-taken passives — weapon sets 1 and 2 separately — and the uniques and supports at least half of them use). It recalculates their gear and gems with the PoB-PoE2 engine to start from the strongest setup, then measures the common tree, uniques, supports and guide swaps one by one and keeps only what raises the objective. The objective follows the real-build lean (preview below). To improve your own PoB build, use the upgrade guide on the build page."}</div>
 				@if(skills.isEmpty())
 					@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.sim.options.error"))
 				@else

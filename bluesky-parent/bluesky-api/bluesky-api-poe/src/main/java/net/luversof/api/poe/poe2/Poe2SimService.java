@@ -44,7 +44,10 @@ public class Poe2SimService {
       Double ehp,
       boolean chosen,
       String error,
-      Integer set) {}
+      Integer set,
+      // 이 후보의 전직(영문 · 한국어, 10-14 C311 — 전직 자동일 때 "왜 이 전직인가"를 전직별 비교로 보인다)
+      String ascendancy,
+      String ascendancyKo) {}
 
   /**
    * 시뮬레이션 결과.
@@ -74,7 +77,31 @@ public class Poe2SimService {
       String forcedUnique,
       String forcedUniqueKo,
       // "내 트리에서 출발"이면 그 트리의 노드 수(10-02) — 아니면 null
-      Integer fromTreeNodes) {}
+      Integer fromTreeNodes,
+      // 고른 전직 한국어 · 전직을 자동으로 골랐는지(10-14 C311 사용자 요청 "어떤 전직인지 표시가 안 보인다") — 옛 이력엔 없다
+      String ascendancyKo,
+      Boolean ascendancyAuto,
+      // 참고한 닌자 공통 특성(10-14 사용자 요청 "특정 1명이 아니라 그 직업/스킬의 특성을 참고") — 실빌드 수 · 공통 트리와 실빌드 트리의 겹침(0~1).
+      //   공통 특성이 없는 아키타입(상위 60 밖)이면 0, 이 기능 전 이력은 null
+      Integer consensusN,
+      Double consensusOverlap,
+      // 전직 자동일 때 전직별 비교(10-14 P5) — 전직마다 가장 나은 후보와, 거기에 그 전직의 닌자 공통 트리를 덮은 값. 고른 전직 = 둘 중 나은 점수가
+      //   가장 큰 전직. 전직을 정했거나 옛 이력이면 null
+      List<AscCompare> ascCompare) {}
+
+  /**
+   * 전직 하나의 비교 줄(P5) — dps/ehp = 그 전직 최고 후보(엔진), treeDps/treeEhp = 그 후보에 공통 트리를 덮은 값(공통 특성이 없거나 계산
+   * 실패면 null), consensusN = 공통 특성 실빌드 수, chosen = 고른 전직.
+   */
+  public record AscCompare(
+      String ascendancy,
+      String ascendancyKo,
+      Double dps,
+      Double ehp,
+      Double treeDps,
+      Double treeEhp,
+      Integer consensusN,
+      boolean chosen) {}
 
   /**
    * 내 트리(10-02, PoE1 /poe/sim?treeNodes= 의 짝) — 트리 화면에서 넘어온 직업·전직·노드·능력치 선택. 시뮬은 같은 직업의 실빌드에서 장비·젬을
@@ -418,6 +445,9 @@ public class Poe2SimService {
     Poe2NinjaService.NinjaBuild bestBuild = null;
     double bestScore = Double.NEGATIVE_INFINITY;
     int i = 0;
+    int storedHits = 0;
+    // 전직별 최고 후보 {xml, Metrics, NinjaBuild} — P5 전직 비교용
+    java.util.Map<String, Object[]> ascBest = new java.util.LinkedHashMap<>();
     candidates = pool.size();
     phase = "measure";
     for (Poe2NinjaService.NinjaBuild b : pool) {
@@ -429,17 +459,27 @@ public class Poe2SimService {
       Integer set = null;
       String xml = null;
       try {
-        String code = ninja.characterCode(b);
+        // 저장된 실빌드 코드가 있으면 그것(같은 스냅샷 · 같은 사람 — fetch-ninja-start2 가 재며 남김, 10-14 C319), 없으면
+        // poe.ninja 실시간
+        String stored = ninja.memberCode(b.ascendancy(), skill, b.account(), b.name());
+        String code = stored != null ? stored : ninja.characterCode(b);
+        if (stored != null) {
+          storedHits++;
+        }
         xml = withScenario(alignMainGroup(decoder.decodeToXml(code), skill), scenario);
         if (tree != null) {
+          // 실빌드 주얼은 내 트리에도 찍힌 소켓에서만 유지(10-14 — withTree 가 소켓 장착을 지워 주얼이 다 빠졌다)
           xml =
-              builds.withTree(
+              Poe2RefineService.keepSockets(
                   xml,
-                  tree.className(),
-                  tree.ascendancy(),
-                  tree.nodes(),
-                  tree.attrs(),
-                  tree.sets());
+                  builds.withTree(
+                      xml,
+                      tree.className(),
+                      tree.ascendancy(),
+                      tree.nodes(),
+                      tree.attrs(),
+                      tree.sets()),
+                  new java.util.HashSet<>(tree.nodes()));
         }
         // 무기 세트를 나눠 쓰는 빌드는 두 세트를 재고 DPS 가 큰 쪽으로 견준다(저장 당시 켜진 세트가 주 세트가 아닐 수 있다)
         Poe2RefineService.Best best = refine.measureBest(xml);
@@ -456,6 +496,14 @@ public class Poe2SimService {
         error = e.getMessage();
       }
       boolean pick = false;
+      if (m != null && b.ascendancy() != null) {
+        Object[] prev = ascBest.get(b.ascendancy());
+        if (prev == null
+            || candidateScore(objective, m)
+                > candidateScore(objective, (Poe2RefineService.Metrics) prev[1])) {
+          ascBest.put(b.ascendancy(), new Object[] {xml, m, b});
+        }
+      }
       if (m != null) {
         double sc = candidateScore(objective, m);
         if (sc > bestScore) {
@@ -474,10 +522,84 @@ public class Poe2SimService {
               m == null ? null : m.ehp(),
               pick,
               error,
-              set));
+              set,
+              b.ascendancy(),
+              b.ascendancy() == null ? null : data.treeIndex().ascendancyKo().get(b.ascendancy())));
     }
+    logger.info("PoE2 시뮬 후보 {}명 중 저장 코드 {}명(나머지는 poe.ninja 실시간)", pool.size(), storedHits);
     if (bestXml == null) {
       throw new IllegalStateException("실빌드 후보를 하나도 계산하지 못했습니다(poe.ninja 응답·엔진 확인)");
+    }
+    // P5(10-14 사용자 요청 "내가 선택한 직업/스킬에 대해 닌자 특성을 참고해 최선의 결과") — 전직 자동이면 전직마다 최고 후보에 그 전직의 공통 트리를 덮어
+    //   재 보고, 둘 중 나은 점수로 전직을 고른다(후보만 보면 공통 트리로 크게 오르는 전직을 놓친다). 전직당 엔진 1~2회
+    List<AscCompare> ascCompare = null;
+    if (ascendancy.isEmpty() && tree == null && ascBest.size() >= 2) {
+      phase = "compare";
+      ascCompare = new ArrayList<>();
+      double topScore = Double.NEGATIVE_INFINITY;
+      String topAsc = null;
+      for (java.util.Map.Entry<String, Object[]> e : ascBest.entrySet()) {
+        refine.checkCancel();
+        String asc = e.getKey();
+        String candXml = (String) e.getValue()[0];
+        Poe2RefineService.Metrics cm = (Poe2RefineService.Metrics) e.getValue()[1];
+        Poe2NinjaService.Consensus c = ninja.consensus(asc, skill);
+        Poe2RefineService.Metrics tm = null;
+        if (c != null && c.nodes().size() > 1) {
+          try {
+            String treeXml =
+                Poe2RefineService.keepSockets(
+                    candXml,
+                    builds.withTree(
+                        candXml, c.className(), c.ascendancy(), c.nodes(), c.attrs(), c.sets()),
+                    new java.util.HashSet<>(c.nodes()));
+            Poe2RefineService.Best tb = refine.measureBest(treeXml);
+            tm = tb == null ? null : tb.metrics();
+          } catch (RuntimeException ex) {
+            logger.info("PoE2 전직 비교 공통 트리 실패({}): {}", asc, ex.getMessage());
+          }
+        }
+        double sc =
+            Math.max(
+                candidateScore(objective, cm),
+                tm == null || tm.dps() <= 0
+                    ? Double.NEGATIVE_INFINITY
+                    : candidateScore(objective, tm));
+        if (sc > topScore) {
+          topScore = sc;
+          topAsc = asc;
+        }
+        ascCompare.add(
+            new AscCompare(
+                asc,
+                data.treeIndex().ascendancyKo().get(asc),
+                cm.dps(),
+                cm.ehp(),
+                tm == null ? null : tm.dps(),
+                tm == null ? null : tm.ehp(),
+                c == null ? null : c.n(),
+                false));
+      }
+      if (topAsc != null && bestBuild != null && !topAsc.equals(bestBuild.ascendancy())) {
+        logger.info("PoE2 전직 비교: 공통 트리까지 견주면 {} → {}", bestBuild.ascendancy(), topAsc);
+        bestXml = (String) ascBest.get(topAsc)[0];
+        bestBuild = (Poe2NinjaService.NinjaBuild) ascBest.get(topAsc)[2];
+      }
+      final String picked = topAsc;
+      ascCompare =
+          ascCompare.stream()
+              .map(
+                  a ->
+                      new AscCompare(
+                          a.ascendancy(),
+                          a.ascendancyKo(),
+                          a.dps(),
+                          a.ehp(),
+                          a.treeDps(),
+                          a.treeEhp(),
+                          a.consensusN(),
+                          a.ascendancy().equals(picked)))
+              .toList();
     }
     // 고른 후보만 chosen=true 로 남긴다(루프 중 갱신된 앞 후보의 표시는 지운다)
     final Poe2NinjaService.NinjaBuild chosen = bestBuild;
@@ -493,12 +615,30 @@ public class Poe2SimService {
               c.ehp(),
               pool.get(k) == chosen,
               c.error(),
-              c.set()));
+              c.set(),
+              c.ascendancy(),
+              c.ascendancyKo()));
     }
     refine.checkCancel();
     phase = "refine";
-    Poe2RefineService.Result r = refine.refineWith(bestXml, objective, forced);
     String chosenAsc = chosen.ascendancy();
+    // 고른 실빌드의 전직 · 스킬 아키타입 공통 특성 — 내 트리에서 출발하면 트리는 견주지 않는다(고유 · 보조 젬만)
+    Poe2NinjaService.Consensus consensus = ninja.consensus(chosenAsc, skill);
+    if (consensus != null && tree != null) {
+      consensus =
+          new Poe2NinjaService.Consensus(
+              consensus.n(),
+              consensus.className(),
+              consensus.ascendancy(),
+              List.of(),
+              consensus.attrs(),
+              consensus.sets(),
+              consensus.overlap(),
+              consensus.supports(),
+              consensus.slotUniques(),
+              consensus.nodeCounts());
+    }
+    Poe2RefineService.Result r = refine.refineWith(bestXml, objective, forced, consensus);
     if (ascendancy.isEmpty() && chosenAsc != null) {
       Poe2NinjaService.Archetype exact = ninja.find(chosenAsc, skill);
       if (exact != null) {
@@ -523,7 +663,12 @@ public class Poe2SimService {
         r.sets(),
         forced == null ? null : forced.name(),
         forced == null ? null : forced.label(),
-        tree == null ? null : tree.nodes().size());
+        tree == null ? null : tree.nodes().size(),
+        chosenAsc == null ? null : data.treeIndex().ascendancyKo().get(chosenAsc),
+        ascendancy.isEmpty(),
+        consensus == null ? 0 : consensus.n(), // 0 = 공통 특성 집계 대상 아님(null 은 그 전 이력)
+        consensus == null || tree != null ? null : consensus.overlap(),
+        ascCompare);
   }
 
   /** 후보 정렬용 ninja 표기값 점수 — 같은 레벨 안에서 목표 축이 큰 사람부터. */

@@ -79,6 +79,8 @@
 	String latestLabel = MessageUtil.getMessage("stock.simulator.monthly.table.cell.latest.short");
 	String averageLabel = MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short");
 	String trendLabel = MessageUtil.getMessage("stock.monthly.etf.table.cell.trend.short");
+	// 추천 문구에 적는 기간 이름(기간 단추와 같은 말) - 2026-10-14 기간이 추천에 쓰이면서.
+	String pickPeriodLabel = monthlyEtfPeriod == 12 ? MessageUtil.getMessage("stock.monthly.etf.period.year") : java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.period.month"), monthlyEtfPeriod);
 	// 위험 지표는 1 년 기준이다. 이력이 그만큼 없는 종목은 "언제부터" 를 적어야 "1 년 기준" 이 거짓이 되지 않는다.
 	// 며칠 어긋나는 것까지 적으면 거의 모든 줄에 붙으므로, 한 달 넘게 모자랄 때만 적는다.
 	java.time.LocalDate riskFullFrom = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusMonths(12).plusMonths(1);
@@ -111,7 +113,7 @@
 			<%-- 결과 구역(요약 숫자 · 붙는 필터 줄 · 추천 · 표). 좁히기 폼 · 지급 시기 / 기간 / 추천 기준 칩 · 이번 적립 보기 · 정렬 머리 · 초기화는
 			     페이지를 새로 부르지 않고 이 구역만 바꿔 끼운다(사용자 요청 2026-10-13 - 시뮬레이터와 같은 방식). 숫자는 서버가 다시 낸다.
 			     show:none = 부스트 기본값(맨 위로)을 끈다. 주소는 갈아 끼운다(replace). 기간에 따라 요약 숫자도 달라질 수 있어 구역에 넣는다. --%>
-			<div class="space-y-6" id="monthlyEtfResults" hx-target="#monthlyEtfResults" hx-select="#monthlyEtfResults" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true">
+			<div class="space-y-6" id="monthlyEtfResults" hx-target="#monthlyEtfResults" hx-select="#monthlyEtfResults" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true" data-swap-announce="${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}">
 			<div class="grid gap-4 stat-card-grid grid-cols-2 lg:grid-cols-3">
 				@template._components.ui.statCard(label = MessageUtil.getMessage("stock.monthly.etf.summary.count"), value = amountFormat.format(monthlyEtfTotalCount), sub = MessageUtil.getMessage("stock.monthly.etf.summary.count.sub"))
 				@template._components.ui.statCard(label = MessageUtil.getMessage("stock.monthly.etf.summary.held"), value = amountFormat.format(monthlyEtfHeldCount), sub = MessageUtil.getMessage("stock.monthly.etf.summary.held.sub"))
@@ -123,7 +125,7 @@
 				<%-- 표 제목·검색·기간 줄을 헤더 아래에 붙여 둔다(사용자 요청 2026-09-22). 목록이 21 행이 되면서
 				     좁하려고 맨 위까지 되돌아가야 했고, 어느 표를 보는 중인지도 사라진다.
 				     좁은 화면에서는 안 붙는다(main.css 참고). --%>
-				<div class="table-filter-sticky space-y-3" hx-boost="true">
+				<div class="table-filter-sticky space-y-3" hx-boost="true" data-swap-anchor-key="etf-filter">
 					<div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 						<div class="space-y-2">
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}</h2>
@@ -238,6 +240,10 @@
 					@if(!monthlyEtfPicks.isEmpty() || !monthlyEtfContributionPicks.isEmpty() || !"dividend".equals(monthlyEtfBasis))
 						<%-- 기준 단추는 위 고정 줄(기간 옆)로 옮겼다(사용자 요청 2026-10-08) - 설명은 카드 옆에 남긴다. --%>
 						<p class="text-xs leading-5 text-base-content/60" data-pick-basis-desc>${net.luversof.web.gate.stock.util.StockPickBasisLabelUtil.description(monthlyEtfBasis)}</p>
+						<%-- 수익률 기간도 추천에 쓴다(사용자 요청 2026-10-14). 12 개월이 아니면 무엇이 그 기간을 따르고 무엇이 12 회 그대로인지 적는다. --%>
+						@if(monthlyEtfPeriod != 12)
+							<p class="text-xs leading-5 text-base-content/60" data-pick-period-note>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.period.note"), pickPeriodLabel, monthlyEtfPeriod)}</p>
+						@endif
 					@endif
 					@if(!monthlyEtfPicks.isEmpty())
 						<div class="rounded-box border border-base-300 bg-base-200/40 p-2 sm:p-4 space-y-3" data-etf-picks>
@@ -263,18 +269,20 @@
 									</div>
 									<%-- 점수가 어떻게 나왔는지 뺄셈으로 적는다(사용자 요청 2026-09-30). 두 수는 점수를 낼 때와 똑같이 반올림한다. --%>
 									!{BigDecimal pickCut = MonthlyContributionPickSupport.cutOf(pick.row().payoutTrendPct());}
-									!{String pickYield = percentFormat.format(pick.row().annualYieldPct().setScale(2, java.math.RoundingMode.HALF_UP));}
+									<%-- 배당 값은 후보의 것(고른 기간 - 2026-10-14). 후보가 없을 때만 행의 12 개월 값. --%>
+									!{java.math.BigDecimal pickYieldValue = pickCandidate != null && pickCandidate.annualYieldPct() != null ? pickCandidate.annualYieldPct() : pick.row().annualYieldPct();}
+									!{String pickYield = percentFormat.format(pickYieldValue.setScale(2, java.math.RoundingMode.HALF_UP));}
 									<div class="text-xs text-base-content/60 tabular-nums" data-pick-basis>
 										@if("total".equals(monthlyEtfBasis))
-											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.total"), percentFormat.format(pick.score()), pickYield)}
+											@if(monthlyEtfPeriod == 12)${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.total"), percentFormat.format(pick.score()), pickYield)}@else${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.total.period"), percentFormat.format(pick.score()), pickYield, pickPeriodLabel, monthlyEtfPeriod)}@endif
 										@elseif("steady".equals(monthlyEtfBasis) && pickCandidate != null)
 											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.steady"), pickCandidate.payoutCutPairs(), pickCandidate.payoutCutCount(), percentFormat.format(pickCandidate.dividendScore()))}
 										@elseif("stable".equals(monthlyEtfBasis))
-											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.stable"), percentFormat.format(MonthlyContributionPickSupport.score(pick.row().annualYieldPct(), pick.row().payoutTrendPct())), percentFormat.format(pick.row().volatilityPct()), percentFormat.format(pick.score()))}
+											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.stable"), percentFormat.format(MonthlyContributionPickSupport.score(pickYieldValue, pick.row().payoutTrendPct())), percentFormat.format(pick.row().volatilityPct()), percentFormat.format(pick.score()))}
 										@elseif(pickCut.signum() > 0)
-											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis"), pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()))}
+											@if(monthlyEtfPeriod == 12)${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis"), pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()))}@else${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis.period"), pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()), monthlyEtfPeriod)}@endif
 										@else
-											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis.nocut"), pickYield, percentFormat.format(pick.score()))}
+											@if(monthlyEtfPeriod == 12)${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis.nocut"), pickYield, percentFormat.format(pick.score()))}@else${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis.nocut.period"), pickYield, percentFormat.format(pick.score()), monthlyEtfPeriod)}@endif
 										@endif
 									</div>
 								</div>
@@ -290,7 +298,7 @@
 									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.why")}</p>
 									<p class="tabular-nums">${MessageUtil.getMessage("stock.monthly.etf.pick.how.example")}</p>
 									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.missing")}</p>
-									<p hx-boost="true"><a href="${baseUrl}sort=score&direction=desc" class="link link-primary" data-score-sort-link>${MessageUtil.getMessage("stock.monthly.etf.pick.how.sort")}</a></p>
+									<p hx-boost="true" data-swap-anchor-key="etf-score"><a href="${baseUrl}sort=score&direction=desc" class="link link-primary" data-score-sort-link>${MessageUtil.getMessage("stock.monthly.etf.pick.how.sort")}</a></p>
 								</div>
 							</details>
 							@endif
@@ -304,14 +312,15 @@
 					!{String viewlessBase = baseUrl.replace("view=" + monthlyEtfView + "&", "");}
 					!{String viewlessQuery = viewlessBase + "sort=" + ("slot".equals(monthlyEtfSort) ? "display-order" : monthlyEtfSort) + "&direction=" + monthlyEtfDirection;}
 					@if(!monthlyEtfContributionPicks.isEmpty() || !monthlyEtfView.isBlank())
-						<div class="flex flex-wrap gap-2" data-contribution-view hx-boost="true">
+						<div class="flex flex-wrap gap-2" data-contribution-view hx-boost="true" data-swap-anchor-key="etf-view">
 							<a href="${viewlessBase.replace("/stock/monthly-etf?", "/stock/monthly-etf?view=contribution&") + "sort=slot&direction=asc"}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-primary" : "btn-outline"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? "page" : null}" data-contribution-view-link="contribution">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.view.contribution"), monthlyEtfContributionPicks.size())}</a>
 							<a href="${viewlessQuery}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-outline" : "btn-primary"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? null : "page"}" data-contribution-view-link="all">${MessageUtil.getMessage("stock.monthly.etf.view.all")}</a>
 						</div>
 						@if("contribution".equals(monthlyEtfView))
 							<p class="text-xs leading-5 text-base-content/70" data-contribution-view-desc>${MessageUtil.getMessage("stock.monthly.etf.view.contribution.desc")}</p>
-							<%-- 자리마다 기준별 1위(사용자 질문 2026-10-06). 시뮬레이터 자리 카드와 같은 조각. --%>
-							<div class="grid gap-3 sm:grid-cols-2" data-contribution-compare-cards>
+							<%-- 자리마다 기준별 1위(사용자 질문 2026-10-06). 시뮬레이터 자리 카드와 같은 조각. 이 화면에서는 카드의 기준 링크도 구역만 바꿔 끼운다
+							     (2026-10-13 자율 - 같은 화면 안의 보기 바꾸기라 새로 부를 까닭이 없다). 시뮬레이터 쪽 같은 링크는 ETF 화면으로 옮긴다. --%>
+							<div class="grid gap-3 sm:grid-cols-2" data-contribution-compare-cards hx-boost="true" data-swap-anchor-key="etf-compare">
 								@for(var slotPick : monthlyEtfContributionPicks.values())
 									<div class="rounded-box border border-base-200 bg-base-100 p-3" data-contribution-compare-card="${slotPick.payoutWindow()}|${slotPick.account()}">
 										<div class="text-xs font-medium text-base-content/60">${"MID_MONTH".equals(slotPick.payoutWindow()) ? midMonthLabel : monthEndLabel} · ${"BROKERAGE".equals(slotPick.account()) ? MessageUtil.getMessage("stock.simulator.monthly.contribution.account.brokerage") : MessageUtil.getMessage("stock.simulator.monthly.contribution.account.pension")}</div>
@@ -325,7 +334,7 @@
 
 					<div class="overflow-x-auto table-head-sticky">
 						<table class="table table-zebra table-sm whitespace-nowrap print-dense" aria-label="${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}">
-							<thead hx-boost="true">
+							<thead hx-boost="true" data-swap-anchor-key="etf-thead">
 								<tr>
 									<%-- 종목 열 최소 폭 9rem -> 8rem(2026-09-30): 영어 1440px 표가 상자를 5px 넘었다(열 최소 폭 합 1,139 / 상자 1,134). 긴 종목명은 원래 줄을 바꾼다. --%>
 									<th scope="col" class="min-w-[8rem] align-bottom" aria-sort="${"symbol".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">

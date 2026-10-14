@@ -307,7 +307,9 @@
         "Limit",
         "Type",
         "CanSocketInJewellery",
-        "CanSocketInUniqueItems"
+        "CanSocketInUniqueItems",
+        "Description",
+        "ExtraDescription"
       ]
     },
     {
@@ -342,6 +344,13 @@
         "Id",
         "Limit",
         "Text"
+      ]
+    },
+    {
+      "name": "CurrencyItems",
+      "columns": [
+        "BaseItemType",
+        "StackSize"
       ]
     },
     {
@@ -414,6 +423,13 @@
     },
     {
       "name": "ClientStrings",
+      "columns": [
+        "Id",
+        "Text"
+      ]
+    },
+    {
+      "name": "ClientStrings2",
       "columns": [
         "Id",
         "Text"

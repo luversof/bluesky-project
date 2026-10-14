@@ -338,6 +338,7 @@ public class StockViewController {
       validateMonthlyDividendRequest(monthlyDividendForm);
       monthlyDividendSnapshotClient.upsertSnapshot(monthlyDividendForm);
       return buildMonthlyDividendRedirect(
+          request,
           redirectAttributes,
           sort,
           direction,
@@ -348,6 +349,7 @@ public class StockViewController {
           1);
     } catch (IllegalArgumentException ex) {
       return renderMonthlyDividendError(
+          request,
           model,
           userId,
           sort,
@@ -361,6 +363,7 @@ public class StockViewController {
     } catch (Exception ex) {
       log.warn("월배당 데이터 저장 실패: userId={}", userId, ex);
       return renderMonthlyDividendError(
+          request,
           model,
           userId,
           sort,
@@ -392,6 +395,7 @@ public class StockViewController {
 
     UUID userId = UserUtil.getUserId();
     return renderMonthlyDividendError(
+        request,
         model,
         userId,
         sort,
@@ -423,6 +427,7 @@ public class StockViewController {
     try {
       int processed = stockAdminClient.monthlyDividendSnapshotImportFromSheet(userId);
       return buildMonthlyDividendRedirect(
+          request,
           redirectAttributes,
           sort,
           direction,
@@ -434,6 +439,7 @@ public class StockViewController {
     } catch (Exception ex) {
       log.warn("배당주 검색 시트에서 월배당 보유/평단가 가져오기 실패: userId={}", userId, ex);
       return renderMonthlyDividendError(
+          request,
           model,
           userId,
           sort,
@@ -716,6 +722,7 @@ public class StockViewController {
   }
 
   private String buildMonthlyDividendRedirect(
+      HttpServletRequest request,
       RedirectAttributes redirectAttributes,
       String sort,
       String direction,
@@ -738,10 +745,31 @@ public class StockViewController {
         redirectUrl,
         "direction",
         monthlyDividendViewSupport.resolveRowDirection(resolvedSort, direction));
+    // 저장 · 시트 가져오기 뒤에도 표 좁히기를 그대로 둔다(2026-10-13 자율 - 관리 화면은 이미 그렇다). 예전에는 정렬만 남아
+    // 검색어 · 지급 시기 · 계좌로 좁혀 보던 표가 저장할 때마다 전체로 풀렸다.
+    StockViewSupport.appendQueryParam(redirectUrl, "keyword", keyword);
+    StockViewSupport.appendQueryParam(
+        redirectUrl,
+        "minAnnualYield",
+        minAnnualYield != null ? minAnnualYield.toPlainString() : null);
+    StockViewSupport.appendQueryParam(redirectUrl, "positiveOnly", positiveOnly ? "true" : null);
+    if (request != null) {
+      StockViewSupport.appendQueryParam(
+          redirectUrl,
+          "payoutWindow",
+          net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.resolveSlotWindow(
+              request.getParameter("payoutWindow")));
+      StockViewSupport.appendQueryParam(
+          redirectUrl,
+          "account",
+          net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.resolveSlotAccount(
+              request.getParameter("account")));
+    }
     return redirectUrl.toString();
   }
 
   private String renderMonthlyDividendError(
+      HttpServletRequest request,
       Model model,
       UUID userId,
       String sort,
@@ -759,7 +787,16 @@ public class StockViewController {
     model.addAttribute("monthlyDividendResult", "");
     model.addAttribute("monthlyDividendSavedCount", null);
     populateMonthlyDividendModel(
-        model, userId, sort, direction, keyword, minAnnualYield, positiveOnly, null, null, null);
+        model,
+        userId,
+        sort,
+        direction,
+        keyword,
+        minAnnualYield,
+        positiveOnly,
+        request != null ? request.getParameter("payoutWindow") : null,
+        request != null ? request.getParameter("account") : null,
+        null);
     return "stock/simulator";
   }
 

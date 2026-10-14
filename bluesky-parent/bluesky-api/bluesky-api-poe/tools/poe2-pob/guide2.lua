@@ -280,14 +280,58 @@ local ok, err = pcall(function()
 	lap("③")
 	-- ③ 특화·핵심 패시브 기여
 	local nodes = mine(1) and {} or nil
+	-- 빼면 풀리는 본 트리 점수(10-14 P4 재분배) — apply2 respec 과 같은 규칙: 그 노드에 매달린 것(depends) + 빈 자리 둘레에서 끝에 매달린 작은 노드를
+	-- 되풀이해 걷어 낸 수. 세트 전용 · 전직 노드는 nil(재분배 대상 아님). 다듬기는 이 점수 안에서 닿는 "다음 패시브"만 짝짓는다
+	-- 켜진 무기 세트(10-14 C316) — 세트 전용 노드의 효과는 "WeaponSetN" 조건이라 꺼진 세트 노드는 이 계산에서 기여 0 이다
+	local activeSet = (build.itemsTab.activeItemSet and build.itemsTab.activeItemSet.useSecondWeaponSet) and 2 or 1
+	local function freeable(node)
+		local mode = node.allocMode or 0
+		if node.ascendancyName or (mode ~= 0 and mode ~= activeSet) then return nil end
+		local gone = {}
+		local count = 0
+		for _, d in ipairs(node.depends or { node }) do
+			-- 다리 노드(빼면 다른 특화 · 핵심 · 소켓까지 끊기는 노드)는 재분배 대상이 아니다 — 기여(③)는 그 노드 하나만 빼고 재서 ≈0 으로 보이지만
+			-- 실제로 빼면 매달린 트리가 다 빠진다(10-14 실측: 미가공된 힘 free 123 → DPS −97.7%)
+			if d ~= node and (d.type == "Notable" or d.type == "Keystone" or d.type == "Socket") then return nil end
+			if not gone[d] then gone[d] = true; count = count + 1 end
+		end
+		if count > 8 then return nil end
+		local function live(n)
+			local out = {}
+			for _, o in ipairs(n.linked or {}) do if o.alloc and not gone[o] then out[#out + 1] = o end end
+			return out
+		end
+		local frontier = {}
+		for d in pairs(gone) do for _, o in ipairs(live(d)) do frontier[#frontier + 1] = o end end
+		local changed = true
+		while changed do
+			changed = false
+			local nextF = {}
+			for _, n in ipairs(frontier) do
+				local nbs = live(n)
+				if not gone[n] and n.type == "Normal" and (n.allocMode or 0) == mode and not n.ascendancyName and #nbs == 1 then
+					gone[n] = true
+					count = count + 1
+					nextF[#nextF + 1] = nbs[1]
+					changed = true
+				end
+			end
+			frontier = nextF
+		end
+		return count
+	end
 	local allocIds = {}
 	for id in pairs(build.spec.allocNodes) do allocIds[#allocIds + 1] = id end
 	table.sort(allocIds)
 	for _, id in ipairs(nodes and allocIds or {}) do
 		local node = build.spec.allocNodes[id]
-		if node.type == "Notable" or node.type == "Keystone" then
+		local mode = node.allocMode or 0
+		-- 꺼진 세트의 노드는 뺀다(10-14 C316: 세트 2 가이드의 "재분배 후보(기여 0)" 19개 중 14개가 세트 1 노드 — 꺼져 있어 0 일 뿐인데 빼도 되는 것처럼
+		-- 보였다). 그 세트 가이드(세트 단추)에서 따로 잰다
+		if (node.type == "Notable" or node.type == "Keystone") and (mode == 0 or mode == activeSet) then
 			local d = delta(calcFunc({ removeNodes = { [node] = true } }))
-			nodes[#nodes + 1] = { id = id, name = node.dn, type = node.type, ascendancy = node.ascendancyName, dps = -d.dps, ehp = -d.ehp }
+			nodes[#nodes + 1] = { id = id, name = node.dn, type = node.type, ascendancy = node.ascendancyName, dps = -d.dps, ehp = -d.ehp, free = freeable(node),
+				set = mode ~= 0 and mode or nil }
 		end
 	end
 
@@ -465,8 +509,10 @@ local ok, err = pcall(function()
 		-- 경로가 **무기 세트 전용으로 찍힌 노드**에서 출발하면(pathRoot.allocMode ≠ 0) 본 트리 점수로는 못 찍는다 — PoB 도 본 트리로 찍으면
 		-- 끊긴 노드로 보고 풀어 버린다(09-30 실적용 검증: 블러드 메이지 탈출 전략). 그 무기 세트 점수로만 가능한 제안이라 뺀다.
 		local weaponSetPath = node.pathRoot and (node.pathRoot.allocMode or 0) ~= 0
-		if weaponSetPath and not node.alloc and doNext then nextWeaponSet = nextWeaponSet + 1 end
-		local candidate = not node.alloc and not weaponSetPath and (node.type == "Notable" or node.type == "Keystone") and not node.ascendancyName
+		-- 켜진 세트에서 출발하는 길은 그 세트 점수로 찍는 제안으로 넣는다(10-14 C316 — 세트 전용 재분배의 짝). 꺼진 세트에서 출발하면 여전히 뺀다
+		local setPath = weaponSetPath and node.pathRoot.allocMode == activeSet
+		if weaponSetPath and not setPath and not node.alloc and doNext then nextWeaponSet = nextWeaponSet + 1 end
+		local candidate = not node.alloc and (not weaponSetPath or setPath) and (node.type == "Notable" or node.type == "Keystone") and not node.ascendancyName
 			and node.path and node.pathDist and node.pathDist > 0 and node.pathDist <= 8
 		if candidate then nextK = nextK + 1 end
 		if candidate and mine(nextK) then
@@ -476,7 +522,8 @@ local ok, err = pcall(function()
 			if okC and o then
 				local d = delta(o)
 				nextNodes[#nextNodes + 1] = { id = id, name = node.dn, type = node.type, points = node.pathDist,
-					dps = d.dps, ehp = d.ehp, dpsPer = d.dps / node.pathDist, ehpPer = d.ehp / node.pathDist, item = node.dn, slot = "", path = pathIds }
+					dps = d.dps, ehp = d.ehp, dpsPer = d.dps / node.pathDist, ehpPer = d.ehp / node.pathDist, item = node.dn, slot = "", path = pathIds,
+					set = setPath and activeSet or nil }
 			end
 		end
 	end

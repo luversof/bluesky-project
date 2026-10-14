@@ -91,8 +91,13 @@ class MonthlyReferenceListSwapTest {
         .contains("hx-select=\"#monthlyReferenceProfileList\"")
         .contains("show:none")
         .contains("hx-replace-url=\"true\"")
-        .contains("hx-select-oob=\"#monthlyReferenceReorderNote,#monthlyReferencePayoutList\"")
+        .contains(
+            "hx-select-oob=\"#monthlyReferenceReorderNote,#monthlyReferencePayoutList,#monthlyReferenceResultArea\"")
         .contains("data-swap-anchor=\"[data-profile-window-filter]\"")
+        .contains(
+            "data-swap-announce=\""
+                + MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.title")
+                + "\"")
         .contains("data-profile-sort-value=\"symbol\"")
         .contains("data-profile-direction-value=\"desc\"")
         .contains("data-profile-window-value=\"MONTH_END\"");
@@ -120,7 +125,13 @@ class MonthlyReferenceListSwapTest {
     String tbody =
         html.substring(
             html.indexOf("monthlyDividendProfileOrderList"), html.indexOf("</tbody>", list));
-    assertThat(tbody).as("행 안의 종목 고르기 링크는 편집 폼을 바꾸므로 부스트하지 않는다").doesNotContain("hx-boost");
+    // 2026-10-14: 행의 "출처에서 가져오기" 폼은 htmx 로 보낸다(목록만 바꿔 끼움) - 링크(종목 고르기)만 본다.
+    java.util.regex.Matcher links = java.util.regex.Pattern.compile("<a [^>]*>").matcher(tbody);
+    while (links.find()) {
+      assertThat(links.group())
+          .as("행 안의 종목 고르기 링크는 편집 폼을 바꾸므로 부스트하지 않는다")
+          .doesNotContain("hx-boost");
+    }
   }
 
   @Test

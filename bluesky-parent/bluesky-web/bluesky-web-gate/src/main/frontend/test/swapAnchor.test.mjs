@@ -56,3 +56,22 @@ test("위치가 같으면 굴리지 않는다", () => {
 	assert.equal(restoreSwapAnchor({ selector: "#t", top: 100 }, { querySelector: () => at(100) }, (x, y) => calls.push([x, y])), 0);
 	assert.equal(calls.length, 0);
 });
+
+test("누른 컨트롤이 data-swap-anchor-key 상자 안이면 그 상자를 기준으로 삼는다", () => {
+	const box = { getAttribute: (n) => (n === "data-swap-anchor-key" ? "etf-compare" : null) };
+	const trigger = Object.assign(new globalThis.Element(), { closest: (s) => (s === "[data-swap-anchor-key]" ? box : null) });
+	const memo = rememberSwapAnchor(target("#chips"), { querySelector: (s) => (s === '[data-swap-anchor-key="etf-compare"]' ? at(612) : at(40)) }, trigger);
+	assert.deepEqual(memo, { selector: '[data-swap-anchor-key="etf-compare"]', top: 612 });
+});
+
+test("상자 밖 컨트롤은 대상의 선택자를 쓴다", () => {
+	const trigger = Object.assign(new globalThis.Element(), { closest: () => null });
+	const memo = rememberSwapAnchor(target("#chips"), { querySelector: (s) => (s === "#chips" ? at(40) : null) }, trigger);
+	assert.deepEqual(memo, { selector: "#chips", top: 40 });
+});
+
+test("대상에 표시가 없어도 상자 안 컨트롤이면 고정한다", () => {
+	const box = { getAttribute: () => "k" };
+	const trigger = Object.assign(new globalThis.Element(), { closest: () => box });
+	assert.deepEqual(rememberSwapAnchor(target(null), { querySelector: () => at(5) }, trigger), { selector: '[data-swap-anchor-key="k"]', top: 5 });
+});

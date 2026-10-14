@@ -35,7 +35,9 @@ class MonthlyEtfResultsSwapTest {
         .contains("hx-target=\"#monthlyEtfResults\"")
         .contains("hx-select=\"#monthlyEtfResults\"")
         .contains("show:none")
-        .contains("hx-replace-url=\"true\"");
+        .contains("hx-replace-url=\"true\"")
+        .as("낭독기 안내")
+        .contains("data-swap-announce=");
     assertThat(page.indexOf("table-filter-sticky")).isGreaterThan(region);
     assertThat(page.indexOf("<thead")).isGreaterThan(region);
     assertThat(page.indexOf("stock.monthly.etf.criteria.title"))
@@ -66,7 +68,16 @@ class MonthlyEtfResultsSwapTest {
                 .filter(l -> l.contains("data-score-sort-link"))
                 .findFirst()
                 .orElseThrow())
-        .contains("<p hx-boost=\"true\">");
+        .contains("<p hx-boost=\"true\"");
+    // 기준별 비교 카드의 링크도 이 화면 안에서는 구역만 바꾼다(2026-10-13 자율) - 누른 카드 상자를 기준으로 제자리에 둔다.
+    assertThat(
+            lines.stream()
+                .filter(l -> l.contains("data-contribution-compare-cards"))
+                .filter(l -> l.contains("<div"))
+                .findFirst()
+                .orElseThrow())
+        .contains("hx-boost=\"true\"")
+        .contains("data-swap-anchor-key=\"etf-compare\"");
     for (String outbound :
         List.of(
             "href=\"${referenceManageUrl}\" class=\"btn btn-outline", "href=\"${simulatorUrl}\"")) {

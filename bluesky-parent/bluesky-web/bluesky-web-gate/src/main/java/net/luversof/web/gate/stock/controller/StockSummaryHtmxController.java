@@ -804,18 +804,27 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
    * 이미 가진 지급이력만 쓴다.
    */
   static LocalDate projectedPayDate(LocalDate today, int repDay, int lastDay) {
-    LocalDate thisRep = today.withDayOfMonth(Math.min(repDay, today.lengthOfMonth()));
+    // 대표일 · 마지막 날은 지급이력의 일자를 그 달에 놓은 것이라 주말 · 공휴일일 수 있다 - 그 달의 영업일로 옮긴 뒤 견준다
+    // (2026-10-14: 대시보드가 "월중 · 10월 17일" 토요일을 가리켰다).
+    LocalDate thisRep =
+        net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.businessDayInMonth(
+            today.withDayOfMonth(Math.min(repDay, today.lengthOfMonth())));
     if (!today.isAfter(thisRep)) {
       return thisRep;
     }
     // 대표일은 지났지만 이번 달 지급이 아직 남아 있을 수 있다 - 관측된 가장 늦은 날까지는 이번 달을 가리킨다.
+    // 마지막 날은 "이 날이 지나면 다음 달" 이라는 경계다 - 견줄 때는 관측된 날 그대로 쓰고, 그 날을 가리킬 때만 영업일로 옮긴다
+    // (경계까지 옮기면 6/20(토) 다음 6/21(일)에도 이번 달을 가리켰다).
     LocalDate thisLast =
         today.withDayOfMonth(Math.min(Math.max(lastDay, repDay), today.lengthOfMonth()));
     if (!today.isAfter(thisLast)) {
-      return thisLast;
+      LocalDate shifted =
+          net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.businessDayInMonth(thisLast);
+      return shifted.isBefore(today) ? thisLast : shifted;
     }
     LocalDate nm = today.plusMonths(1);
-    return nm.withDayOfMonth(Math.min(repDay, nm.lengthOfMonth()));
+    return net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.businessDayInMonth(
+        nm.withDayOfMonth(Math.min(repDay, nm.lengthOfMonth())));
   }
 
   /** 지급이력에서 그 시기의 가장 늦은 일자. 없으면 {@code fallback}. */

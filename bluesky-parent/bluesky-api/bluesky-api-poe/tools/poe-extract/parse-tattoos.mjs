@@ -16,6 +16,7 @@ import os from "node:os";
 import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 import { createTemplateTranslator } from "./ko-templates.mjs";
+import { alignKoToGameOrder } from "./tree-common.mjs";
 
 const pobSrc = path.join(WORK_DIR, "pob-src", "src");
 const dataFile = path.join(pobSrc, "Data", "TattooPassives.lua");
@@ -75,7 +76,8 @@ for (const row of overridesEn) {
 		if (stat?.Id) values.set(stat.Id, (row.StatValues || [])[i] ?? 0);
 	});
 	const lines = describe(values, "Korean");
-	if (lines?.length && !koLinesByName.has(row.Name)) koLinesByName.set(row.Name, lines);
+	// 영어 서술도 같이 — 한국어를 PoB(인게임) 줄 순서로 맞출 다리(10-13 C305)
+	if (lines?.length && !koLinesByName.has(row.Name)) koLinesByName.set(row.Name, { ko: lines, en: describe(values, "English") });
 }
 console.log(`PassiveSkillOverrides ${overridesEn.length}행 중 한글 서술 ${koLinesByName.size}건`);
 const translator = createTemplateTranslator();
@@ -114,8 +116,13 @@ for (const [dn, node] of Object.entries(nodes)) {
 	// 2순위: 줄 단위 템플릿 번역, 못 옮긴 줄은 영문 유지(한 줄 때문에 전부 영문이 되는 것을 막는다).
 	// 키스톤 문신은 실제 키스톤을 부여한다 — 트리의 같은 이름 노드에 게임 원문 한글이 이미 있다
 	//   (PoB sd 와 줄 나눔이 달라 템플릿 번역으론 못 옮긴다)
-	const gameKo = koLinesByName.get(dn) || (node.ks ? treeKoByName.get(dn) : null);
 	const limitLines = stats.filter((line) => /^Limited to /.test(line));
+	// 게임 서술 순서가 PoB(인게임 · poedb) 줄 순서와 다를 수 있다(10-13 C305 — 왜곡의 룬 접목: 영어 "버프 … 느리게 / 디버프 … 빠르게" 인데
+	//   한국어는 "디버프 … / 버프 …" 순서라 한국어 화면에서 줄이 뒤바뀌어 보였다) → 서술기 영어를 다리로 영어 줄 순서에 맞춘다
+	//   줄 수가 같을 때만 — PoB 가 한 문장을 두 줄로 나눈 문신(충성의 문신 등)은 짝이 없어 영어 줄이 끼어든다(그땐 게임 순서 그대로)
+	const game = koLinesByName.get(dn);
+	const own = stats.filter((line) => !/^Limited to /.test(line));
+	const gameKo = game ? (own.length === game.ko.length ? alignKoToGameOrder(own, game.ko, game.en) : game.ko) : node.ks ? treeKoByName.get(dn) : null;
 	const statsKo = gameKo
 		? [...gameKo, ...limitLines.map((line) => MANUAL_KO[line] || limitKo(line) || line)]
 		: stats.map((line) => MANUAL_KO[line] || translator.translate(line) || limitKo(line) || line);

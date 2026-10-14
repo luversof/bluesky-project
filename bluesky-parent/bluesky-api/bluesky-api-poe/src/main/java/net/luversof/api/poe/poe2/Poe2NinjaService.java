@@ -85,6 +85,25 @@ public class Poe2NinjaService {
       Double dps,
       String mainSkill) {}
 
+  /**
+   * 아키타입 공통 특성(10-14 사용자 요청 — 시뮬레이터가 실빌드 한 명이 아니라 그 직업/스킬 실빌드들의 특성을 참고하도록). 산출:
+   * tools/poe2-extract/archetype-consensus2.mjs → ninja-archetype-consensus2.json. n = 실빌드 수, tree
+   * = 빈도로 키운 공통 트리(본 · 전직 · 무기 세트 1/2 — 세트 전용 포인트를 따로 센다), supports = 메인 스킬 보조 젬별 인원, slotUniques =
+   * 장비 칸별 고유 이름별 인원.
+   */
+  public record Consensus(
+      int n,
+      String className,
+      String ascendancy,
+      List<Integer> nodes,
+      java.util.Map<Integer, Integer> attrs,
+      java.util.Map<Integer, Integer> sets,
+      double overlap,
+      java.util.Map<String, Integer> supports,
+      java.util.Map<String, java.util.Map<String, Integer>> slotUniques,
+      // 본 트리 노드별 인원(10-14 C315 — 공통 트리 통째 교체는 8/8 거절돼, 많이 찍는 노드를 하나씩 재분배로 넣어 본다)
+      java.util.Map<Integer, Integer> nodeCounts) {}
+
   /** 선택지 한 줄 — 이름(영문, 요청 값), 한국어 이름. 인원은 싣지 않는다(순서에만 쓴다). */
   public record Choice(String name, String nameKo) {}
 
@@ -111,6 +130,12 @@ public class Poe2NinjaService {
   private final Path archFile;
   private final Path startFile;
   private final Path buildsFile;
+  private final Path consensusFile;
+  private final Path membersFile;
+  private volatile FileTime membersAt;
+  private volatile java.util.Map<String, String> memberCodes = java.util.Map.of();
+  private volatile FileTime consensusAt;
+  private volatile java.util.Map<String, Consensus> consensus = java.util.Map.of();
   private final Poe2DataService data;
   private volatile FileTime buildsAt;
   private volatile List<NinjaBuild> builds = List.of();
@@ -138,7 +163,125 @@ public class Poe2NinjaService {
     this.archFile = Path.of(dataDir, "ninja", "ninja-archetypes2.json");
     this.startFile = Path.of(dataDir, "ninja", "ninja-start-builds2.json");
     this.buildsFile = Path.of(dataDir, "ninja", "ninja-builds2.json");
+    this.consensusFile = Path.of(dataDir, "ninja", "ninja-archetype-consensus2.json");
+    this.membersFile = Path.of(dataDir, "ninja", "ninja-archetype-members2.json");
     this.data = data;
+  }
+
+  /**
+   * 저장된 실빌드 코드(10-14 C319) — fetch-ninja-start2 가 아키타입마다 레벨 상위 8명을 재며 남긴 PoB 코드(메인 그룹을 아키타입 스킬로 맞춘
+   * 것). 시뮬레이터 후보도 같은 기준(레벨 순 상위)이라 거의 겹친다 — 있으면 poe.ninja 실시간 요청(캐릭터당 1회, 레이트리밋 위험)을 건너뛴다. 받은 지
+   * 36시간이 넘었거나 없으면 null. 스냅샷 일치를 요구하지 않는다 — 스냅샷은 하루에도 여러 번 바뀌어(10-14 수집 0421 → 동기 0629, 적중 0명) 같은
+   * 사람의 몇 시간 전 코드를 버리게 된다.
+   */
+  static final java.time.Duration MEMBER_MAX_AGE = java.time.Duration.ofHours(36);
+
+  public String memberCode(String ascendancy, String skill, String account, String name) {
+    if (ascendancy == null || skill == null || account == null || name == null) {
+      return null;
+    }
+    try {
+      FileTime t = Files.exists(membersFile) ? Files.getLastModifiedTime(membersFile) : null;
+      if (t != null && !t.equals(membersAt)) {
+        synchronized (this) {
+          JsonNode root = json.readTree(Files.readString(membersFile));
+          java.util.Map<String, String> map = new java.util.HashMap<>();
+          if (t.toInstant().isAfter(java.time.Instant.now().minus(MEMBER_MAX_AGE))) {
+            for (var e : root.path("archetypes").properties()) {
+              for (JsonNode m : e.getValue()) {
+                if (m.hasNonNull("account") && m.hasNonNull("name") && m.hasNonNull("code")) {
+                  map.put(
+                      e.getKey() + "|" + m.path("account").asText() + "|" + m.path("name").asText(),
+                      m.path("code").asText());
+                }
+              }
+            }
+          }
+          memberCodes = java.util.Map.copyOf(map);
+          membersAt = t;
+          logger.info("PoE2 저장 실빌드 코드 로드: {}명", map.size());
+        }
+      }
+    } catch (Exception e) {
+      logger.warn("PoE2 저장 실빌드 코드 로드 실패", e);
+    }
+    FileTime at = membersAt;
+    if (at == null || at.toInstant().isBefore(java.time.Instant.now().minus(MEMBER_MAX_AGE))) {
+      return null; // 읽은 뒤 시간이 지나 오래된 판
+    }
+    return memberCodes.get(ascendancy + "|" + skill + "|" + account + "|" + name);
+  }
+
+  /** (전직, 스킬) 공통 특성 — 파일이 없거나 그 아키타입이 없으면 null(시뮬레이터는 공통 특성 없이 돈다). 파일이 바뀌면 다시 읽는다. */
+  public Consensus consensus(String ascendancy, String skill) {
+    if (ascendancy == null || ascendancy.isBlank() || skill == null) {
+      return null;
+    }
+    try {
+      FileTime t = Files.exists(consensusFile) ? Files.getLastModifiedTime(consensusFile) : null;
+      if (t != null && !t.equals(consensusAt)) {
+        synchronized (this) {
+          JsonNode root = json.readTree(Files.readString(consensusFile));
+          java.util.Map<String, Consensus> map = new java.util.HashMap<>();
+          for (var e : root.path("archetypes").properties()) {
+            JsonNode a = e.getValue();
+            JsonNode tree = a.path("tree");
+            if (!tree.isObject()) {
+              continue;
+            }
+            List<Integer> nodes = new ArrayList<>();
+            tree.path("nodes").forEach(n -> nodes.add(n.asInt()));
+            java.util.Map<Integer, Integer> attrs = new java.util.HashMap<>();
+            tree.path("attrs")
+                .properties()
+                .forEach(x -> attrs.put(Integer.valueOf(x.getKey()), x.getValue().asInt()));
+            java.util.Map<Integer, Integer> sets = new java.util.HashMap<>();
+            tree.path("sets")
+                .properties()
+                .forEach(x -> sets.put(Integer.valueOf(x.getKey()), x.getValue().asInt()));
+            java.util.Map<String, Integer> supports = new java.util.LinkedHashMap<>();
+            a.path("supports")
+                .properties()
+                .forEach(x -> supports.put(x.getKey(), x.getValue().asInt()));
+            java.util.Map<String, java.util.Map<String, Integer>> slotUniques =
+                new java.util.LinkedHashMap<>();
+            for (var sl : a.path("slots").properties()) {
+              java.util.Map<String, Integer> u = new java.util.LinkedHashMap<>();
+              sl.getValue()
+                  .path("unique")
+                  .properties()
+                  .forEach(x -> u.put(x.getKey(), x.getValue().asInt()));
+              if (!u.isEmpty()) {
+                slotUniques.put(sl.getKey(), u);
+              }
+            }
+            java.util.Map<Integer, Integer> nodeCounts = new java.util.HashMap<>();
+            a.path("nodes")
+                .properties()
+                .forEach(x -> nodeCounts.put(Integer.valueOf(x.getKey()), x.getValue().asInt()));
+            map.put(
+                e.getKey(),
+                new Consensus(
+                    a.path("n").asInt(0),
+                    tree.path("className").asText(""),
+                    tree.path("ascendancy").asText(""),
+                    List.copyOf(nodes),
+                    java.util.Map.copyOf(attrs),
+                    java.util.Map.copyOf(sets),
+                    tree.path("overlap").asDouble(0),
+                    supports,
+                    slotUniques,
+                    java.util.Map.copyOf(nodeCounts)));
+          }
+          consensus = java.util.Map.copyOf(map);
+          consensusAt = t;
+          logger.info("PoE2 아키타입 공통 특성 로드: {}개", map.size());
+        }
+      }
+    } catch (Exception e) {
+      logger.warn("PoE2 아키타입 공통 특성 로드 실패", e);
+    }
+    return consensus.get(ascendancy + "|" + skill);
   }
 
   /** 실빌드 캐릭터 전체(ninja-builds2.json) — 파일이 바뀌면(스냅샷 동기가 새로 받으면) 다시 읽는다. */

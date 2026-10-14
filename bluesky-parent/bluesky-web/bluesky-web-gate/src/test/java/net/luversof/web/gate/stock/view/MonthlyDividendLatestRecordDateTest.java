@@ -203,4 +203,33 @@ class MonthlyDividendLatestRecordDateTest {
     int end = html.indexOf("</td>", start);
     return html.substring(start, end);
   }
+
+  /** 미리 발표돼 등록된 기준일(오늘 이후)은 "N일 뒤", 오늘이면 "오늘" - "-1일 전" 이 찍혔다(실측 2026-10-14). */
+  @Test
+  void 아직_안_온_기준일은_며칠_뒤로_적는다() {
+    Map<String, MonthlyDividendLatestPayoutView> latest = new HashMap<>();
+    latest.put(
+        "NEW", MonthlyDividendLatestPayoutView.of(LocalDate.parse("2026-10-15"), null, TODAY));
+    latest.put("OLD", MonthlyDividendLatestPayoutView.of(TODAY, null, TODAY));
+    Map<String, Object> model = new HashMap<>();
+    model.put("monthlyDividendProfiles", List.of(profile("NEW", 1), profile("OLD", 2)));
+    model.put("monthlyDividendLatestPayoutBySymbol", latest);
+    model.put("selectedMonthlyDividendSymbol", "NEW");
+    StringOutput output = new StringOutput();
+    TemplateEngine.createPrecompiled(ContentType.Html)
+        .render("stock/fragments/monthlyDividendReference.jte", model, output);
+    String html = output.toString();
+
+    assertThat(cell(html, "2026-10-15"))
+        .contains(
+            java.text.MessageFormat.format(
+                MessageUtil.getMessage(
+                    "stock.page.dividend.monthly.reference.profile.latest.record.date.days.ahead"),
+                "2"))
+        .doesNotContain("-2");
+    assertThat(cell(html, TODAY.toString()))
+        .contains(
+            MessageUtil.getMessage(
+                "stock.page.dividend.monthly.reference.profile.latest.record.date.today"));
+  }
 }

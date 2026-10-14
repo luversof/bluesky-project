@@ -292,9 +292,13 @@ for (const gem of en.gems) {
 // (SkillGemPlaytestAttack/Slam/Spell — 실제 획득/사용 불가한 개발 전용 스킬)
 {
 	const before = gems.length;
-	const kept = gems.filter((g) => !/Playtest/i.test(g.slug));
+	// 설명만 개발용 표식인 미출시 액티브 젬도(10-13 C299): 가연성 사격 · 강철 분리 "[UNUSED] …", 어둠의 칼날 "WIP", 바알 분할 화살 "[DNT] …" —
+	//   이름은 멀쩡해 junkName 을 통과했다. PoB 젬 목록에 없고 다른 데이터 참조도 없다. 보조 젬(교화 · 자력 · 수호 · 참혹한 인파 "[DNT] Supports bla")은
+	//   아이템 옵션("장착된 젬에 3레벨 교화 보조 효과 적용")이 가리키는 실제 숨은 보조라 남긴다(설명도 게임 원문 그대로 — poedb 같음)
+	const devDescription = (g) => !g.isSupport && /^\s*(\[(DNT|UNUSED)\]|WIP\s*$)/.test(g.description || "");
+	const kept = gems.filter((g) => !/Playtest/i.test(g.slug) && !devDescription(g));
 	if (kept.length !== before) {
-		console.log(`플레이테스트 젬 제외: ${before - kept.length}`);
+		console.log(`플레이테스트 · 미출시 젬 제외: ${before - kept.length}`);
 		gems.length = 0;
 		gems.push(...kept);
 	}

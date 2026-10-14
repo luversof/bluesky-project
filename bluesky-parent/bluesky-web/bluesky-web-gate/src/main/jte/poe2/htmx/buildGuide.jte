@@ -79,6 +79,85 @@
 			@endif
 		@endif
 
+		<%-- ⓪ 먼저 바꿀 것(10-14 사용자 요청 "빌드는 PoB 코드를 가져오면 개선할 점을 알려주는 업그레이드 가이드 — PoE1 처럼") — PoE1 가이드의 우선순위 한 목록
+		     (종류 배지 + 제목 + DPS · EHP)의 짝. 아래 표들(고유 교체 · 보조젬 교체 · 다음 패시브)의 제안을 DPS%+EHP% 합으로 줄 세워 위 6개만. 표는 그대로 아래에 --%>
+		!{
+			record Pick(String kind, String title, Double dps, Double ehp, String note) {}
+			java.util.List<Pick> picks = new java.util.ArrayList<>();
+			java.util.Set<String> seenPick = new java.util.HashSet<>();
+			for (java.util.List<Poe2.GuideSwap> l : java.util.List.of(guide.swapsDps() == null ? java.util.List.<Poe2.GuideSwap>of() : guide.swapsDps(), guide.swapsEhp() == null ? java.util.List.<Poe2.GuideSwap>of() : guide.swapsEhp())) {
+				for (Poe2.GuideSwap s : l) {
+					if (seenPick.add(s.slot() + "|" + s.item())) picks.add(new Pick("item", Poe2View.slotName(s.slot()) + " ← " + (korean && s.itemKo() != null ? s.itemKo() : s.item()), s.dps(), s.ehp(), null));
+				}
+			}
+			if (guide.gemWeakest() != null && guide.gemSwaps() != null) {
+				String from = korean && guide.gemWeakestKo() != null ? guide.gemWeakestKo() : guide.gemWeakest();
+				// 같은 자리(가장 약한 보조)를 바꾸는 대안들이라 가장 좋은 하나만 — 나머지는 아래 보조젬 표에
+				Poe2.GuideSupport bestGem = guide.gemSwaps().stream().max(java.util.Comparator.comparingDouble(g -> (g.dps() == null ? 0 : g.dps()) + (g.ehp() == null ? 0 : g.ehp()))).orElse(null);
+				for (Poe2.GuideSupport s : bestGem == null ? java.util.List.<Poe2.GuideSupport>of() : java.util.List.of(bestGem)) {
+					picks.add(new Pick("support", from + " → " + (korean && s.nameKo() != null ? s.nameKo() : s.name()), s.dps(), s.ehp(), Boolean.TRUE.equals(s.lineage()) ? (korean ? "계보 젬(드묾)" : "lineage (rare)") : null));
+				}
+			}
+			// 패시브 재분배(10-14 C317 — 다듬기 실측에서 8회 중 5회 채택): 다 찍은 빌드는 "다음 패시브"를 찍을 점수가 없다 → 같은 칸(본 트리 · 켜진 세트)의
+			//   기여 ≈0 특화(두 축 합 ≤ 2%, 빼면 풀리는 점수 ≤ 8 — 다리 노드 제외) 중 가장 많이 풀리는 것을 빼고 그 점수로 닿는 다음 패시브를 찍는 제안. 뺄 특화 하나에 가장 좋은 하나
+			java.util.Map<String, Poe2.GuideNode> weakBySlot = new java.util.HashMap<>();
+			for (Poe2.GuideNode w : guide.nodes()) {
+				if (w.free() == null || w.free() <= 0 || w.free() > 8 || (w.ascendancy() != null && !w.ascendancy().isBlank())) continue;
+				if (Math.abs(w.dps() == null ? 0 : w.dps()) + Math.abs(w.ehp() == null ? 0 : w.ehp()) > 2.0) continue;
+				weakBySlot.merge(String.valueOf(w.set()), w, (a, b) -> b.free() > a.free() ? b : a);
+			}
+			java.util.Map<Integer, Pick> respecByWeak = new java.util.HashMap<>();
+			java.util.Map<Integer, Integer> respecAdd = new java.util.HashMap<>();
+			for (java.util.List<Poe2.GuideNextNode> l : java.util.List.of(guide.nextDps() == null ? java.util.List.<Poe2.GuideNextNode>of() : guide.nextDps(), guide.nextEhp() == null ? java.util.List.<Poe2.GuideNextNode>of() : guide.nextEhp())) {
+				for (Poe2.GuideNextNode n : l) {
+					Poe2.GuideNode w = weakBySlot.get(String.valueOf(n.set()));
+					if (w == null || n.points() == null || n.points() > w.free()) continue;
+					double rd = (n.dps() == null ? 0 : n.dps()) - (w.dps() == null ? 0 : w.dps());
+					double re = (n.ehp() == null ? 0 : n.ehp()) - (w.ehp() == null ? 0 : w.ehp());
+					Pick rp = new Pick("respec", (korean && w.nameKo() != null ? w.nameKo() : w.name()) + " 빼고 → " + (korean && n.nameKo() != null ? n.nameKo() : n.name()), rd, re,
+						korean ? "풀리는 " + w.free() + "점 → 가는 길 " + n.points() + "점" + (n.set() == null ? "" : " · 세트 " + n.set() + " 점수") : w.free() + " pts freed → " + n.points() + "-pt path" + (n.set() == null ? "" : " · set " + n.set() + " points"));
+					Pick prev = respecByWeak.get(w.id());
+					if (prev == null || rd + re > prev.dps() + prev.ehp()) { respecByWeak.put(w.id(), rp); respecAdd.put(w.id(), n.id()); }
+				}
+			}
+			picks.addAll(respecByWeak.values());
+			// 재분배로 제안한 노드는 "그냥 찍기" 줄에서 뺀다(같은 노드가 두 줄로 겹쳐 보였다)
+			seenPick.addAll(respecAdd.values().stream().map(id -> "node|" + id).toList());
+			for (java.util.List<Poe2.GuideNextNode> l : java.util.List.of(guide.nextDps() == null ? java.util.List.<Poe2.GuideNextNode>of() : guide.nextDps(), guide.nextEhp() == null ? java.util.List.<Poe2.GuideNextNode>of() : guide.nextEhp())) {
+				for (Poe2.GuideNextNode n : l) {
+					if (seenPick.add("node|" + n.id())) picks.add(new Pick("passive", (korean && n.nameKo() != null ? n.nameKo() : n.name()), n.dps(), n.ehp(), n.points() == null ? null : (korean ? "가는 길 포함 " + n.points() + "점" : n.points() + " points incl. path") + (n.set() == null ? "" : korean ? " · 세트 " + n.set() + " 점수" : " · set " + n.set() + " points")));
+				}
+			}
+			java.util.function.ToDoubleFunction<Pick> gain = p -> (p.dps() == null ? 0 : p.dps()) + (p.ehp() == null ? 0 : p.ehp());
+			picks.removeIf(p -> gain.applyAsDouble(p) < 0.5);
+			picks.sort(java.util.Comparator.comparingDouble(gain).reversed());
+			java.util.List<Pick> top = picks.size() > 6 ? picks.subList(0, 6) : picks;
+		}
+		@if(!top.isEmpty())
+			<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-priority>
+				<div class="text-xs font-semibold mb-1">${korean ? "먼저 바꿀 것" : "Do these first"} <span class="font-normal text-base-content/60">${korean ? "(아래 표들의 제안을 DPS%+EHP% 합으로 줄 세운 위 " + top.size() + "개)" : "(top " + top.size() + " suggestions below, ranked by DPS% + EHP%)"}</span></div>
+				<ol class="space-y-1">
+					@for(Pick p : top)
+						<li class="flex flex-wrap items-center gap-2 rounded border border-base-300 px-2 py-1 text-sm" data-guide-pick="${p.kind()}">
+							@if("support".equals(p.kind()))
+								<span class="badge badge-primary badge-outline badge-sm">${MessageUtil.getMessage("poe.build.guide.kind.support")}</span>
+							@elseif("respec".equals(p.kind()))
+								<span class="badge badge-warning badge-outline badge-sm" title="${korean ? "기여가 거의 없는 특화와 그것만 잇던 길을 빼고, 그 점수로 다른 패시브까지 찍습니다(다 찍은 빌드용 · 인게임 재분배 비용 필요)" : "Refund a near-zero notable and its path, then spend those points on another passive (for full trees; needs in-game refund)"}">${MessageUtil.getMessage("poe2.build.guide.kind.respec", korean ? "재분배" : "Respec")}</span>
+							@elseif("passive".equals(p.kind()))
+								<span class="badge badge-success badge-outline badge-sm">${MessageUtil.getMessage("poe2.build.guide.kind.passive", korean ? "패시브" : "Passive")}</span>
+							@else
+								<span class="badge badge-ghost badge-sm">${MessageUtil.getMessage("poe.build.guide.kind.item")}</span>
+							@endif
+							<span class="font-semibold">${p.title()}</span>
+							@template.poe.htmx.buildGuideDelta(label = "DPS", pct = p.dps())
+							@template.poe.htmx.buildGuideDelta(label = "EHP", pct = p.ehp())
+							@if(p.note() != null)<span class="text-xs text-base-content/60">${p.note()}</span>@endif
+						</li>
+					@endfor
+				</ol>
+			</div>
+		@endif
+
 		<%-- ① 고유 아이템 교체 — DPS 상위 · 생존 상위 --%>
 		<div class="grid gap-3 lg:grid-cols-2">
 			@for(int k = 0; k < 2; k++)
@@ -129,6 +208,11 @@
 				</div>
 			@endfor
 		</div>
+
+		<%-- 닌자 공통 특성 중 이 빌드에 없는 것(10-14 C318) — 엔진 계산 없이 인원만, 가이드 뒤 따로 --%>
+		<div data-guide-common-gaps-lazy data-no-success-toast
+		     hx-post="/poe2/htmx/build/guide/common-gaps" hx-trigger="load" hx-swap="outerHTML"
+		     hx-include="#poe2BuildImport [name=code]"></div>
 
 		<%-- ⑧ 레어 목표 — 가이드가 붙은 뒤 따로 불러온다(10-02: 본 가이드가 4~6초 느려지지 않게). 코드 칸(#poe2BuildImport [name=code] — 본 가이드와 같은 선택자: 시뮬 결과 화면엔 #poe2BuildCode 가 없다, 10-02)과 이 가이드의 세트로 --%>
 		<div data-guide-rares-lazy data-no-success-toast
@@ -194,6 +278,7 @@
 												<%-- 트리 화면에서 가는 길까지 찍힌 상태로 열린다 --%>
 												@if(n.treeLink() != null)<a class="link link-hover" href="${n.treeLink()}" title="${korean ? "트리에서 가는 길 보기" : "Show the path on the tree"}">${korean && n.nameKo() != null ? n.nameKo() : n.name()}</a>@else${korean && n.nameKo() != null ? n.nameKo() : n.name()}@endif
 												@if("Keystone".equals(n.type()))<span class="badge badge-ghost badge-xs ml-1">${korean ? "핵심" : "Keystone"}</span>@endif
+												@if(n.set() != null)<span class="badge badge-outline badge-xs ml-1" data-guide-next-set="${n.set()}" title="${korean ? "이 무기 세트에 찍은 노드에서 이어지는 길 — 그 세트 전용 점수로 찍습니다" : "Path from this weapon set's nodes — uses that set's passive points"}">${korean ? "세트 " + n.set() + " 점수" : "Set " + n.set() + " points"}</span>@endif
 											</td>
 											<td class="text-right font-mono">${n.points()}</td>
 											<td class="text-right font-mono ${tone.apply(n.dps())}">${pct.apply(n.dps())}</td>

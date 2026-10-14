@@ -96,7 +96,7 @@ function supportKo(name) {
 }
 const PARAM_LINE_KO = [
 	[KEYSTONE_LEAP_EN, (m) => { const k = passiveKoByEn.get(m[1].trim()); return k && `반경 ${k} 내 패시브 스킬이 트리와 연결되지 않아도 할당 가능`; }],
-	[/^Allocates (.+) if you have the matching modifier on Forbidden (Flesh|Flame)$/, (m) => { const k = passiveKoByEn.get(m[1].trim()); return k && `금단의 ${m[2] === "Flesh" ? "살점" : "화염"}에 일치하는 속성이 있을 경우 ${k} 할당`; }],
+	[/^Allocates (.+) if you have the matching modifier on Forbidden (Flesh|Flame)$/, (m) => { const k = ascPassiveKoByEn.get(m[1].trim()) || passiveKoByEn.get(m[1].trim()); return k && `금단의 ${m[2] === "Flesh" ? "살점" : "화염"}에 일치하는 속성이 있을 경우 ${k} 할당`; }],
 	[/^Skills Socketed in your (Helmet|Gloves|Boots) are Supported by level (\d+) (.+)$/, (m) => { const k = supportKo(m[3]); return k && `${PEARL_SLOT_KO[m[1]]}에 장착된 스킬에 ${m[2]}레벨 ${k} 보조 효과 적용`; }],
 	[/^Skills granted by your Passive Tree are Supported by level (\d+) (.+)$/, (m) => { const k = supportKo(m[2]); return k && `패시브 트리로 부여된 스킬에 ${m[1]}레벨 ${k} 보조 효과 적용`; }],
 	[/^\+(\d+) to Level of all (.+) Gems$/, (m) => { const k = gemKoByEn.get(m[2].trim()); return k && `모든 ${k} 젬 레벨 +${m[1]}`; }],
@@ -339,12 +339,16 @@ const VARIANT_TAIL_KO = {
 };
 // 패시브 이름 영→한(게임 PassiveSkills) — 변형 라벨의 핵심 노드 이름("Asenath (Dance with Death)" 의 괄호 안 등, 10-02 PoE2 와 같은 방식)
 const passiveKoByEn = new Map();
+// 전직 노드만(Id "Ascendancy…") — 금단 불꽃/살점은 전직 노드를 할당한다. 영어 이름이 본 트리 노터블과 겹치면 본 트리 것이 먼저 잡혀
+//   "Allocates Juggernaut" 가 본 트리 노터블 "거신상" 으로 나왔다(10-13 C303 — 어센던트 전직 노드 · 공식 거래소 사전 "저거넛")
+const ascPassiveKoByEn = new Map();
 {
 	const en = load("English", "PassiveSkills");
 	const ko = load("Korean", "PassiveSkills");
 	en.forEach((ps, i) => {
 		const k = ko[i]?.Name;
 		if (ps.Name && k && k !== ps.Name && !passiveKoByEn.has(ps.Name)) passiveKoByEn.set(ps.Name, k);
+		if (ps.Name && k && k !== ps.Name && /^Ascendancy/.test(ps.Id || "") && !ascPassiveKoByEn.has(ps.Name)) ascPassiveKoByEn.set(ps.Name, k);
 	});
 }
 // 시간의 주얼 핵심 노드 영→한(게임 AlternatePassiveSkills — "Dance with Death" → "죽음의 춤"). 정복된 작은 노드 이름도 섞여 있어
@@ -392,6 +396,8 @@ const NAME_SLOT_TEMPLATES = [
 	[/Grants Level \d+ (.+?), which will be used by Shaper Memory$/, /사용하는 \d+레벨 (.+?) 사용 가능/],
 	[/Summon Bestial (\S+) Skill$/, /흉포한 (\S+) 소환/],
 	[/^Adds (\d+) Small Passive Skills? which grants? nothing$/, /(소형 패시브 스킬 \d+개 추가)/, (m) => `Adds ${m[1]} Small Passive Skill${m[1] === "1" ? "" : "s"}`],
+	// 10-13 C304: 모조품 용송곳니의 비상(젬 이름 변형) — 낱말 사전이 "Frenzy" 를 광란 충전 쪽 "격노" 로 옮겨 줄("모든 격분 젬 레벨 +3")과 어긋났다 → 그 줄의 젬 이름
+	[/^\+\d+ to Level of all (.+) Gems$/, /모든 ((?:(?!모든 ).)+?) 젬 레벨/], // 줄을 이어 붙인 문장이라 앞줄 "모든 능력치 …" 부터 잡지 않게
 ];
 function nameFromOwnLines(label, en, ko) {
 	const koText = (ko || []).join(" ");
@@ -433,7 +439,7 @@ const CLASS_KO = { Scion: "사이온", Marauder: "머라우더", Ranger: "레인
 function generatedVariantNameKo(label) {
 	const forbidden = label.match(/^\((\w+)\) (.+)$/);
 	if (forbidden && CLASS_KO[forbidden[1]]) {
-		const notable = passiveKoByEn.get(forbidden[2].trim());
+		const notable = ascPassiveKoByEn.get(forbidden[2].trim()) || passiveKoByEn.get(forbidden[2].trim()); // 전직 노드 먼저(C303 — "(Scion) Juggernaut" = 저거넛)
 		return notable ? `(${CLASS_KO[forbidden[1]]}) ${notable}` : null;
 	}
 	const pearl = label.match(/^(Helmet|Gloves|Boots|Passive Tree) \/ (.+)$/);

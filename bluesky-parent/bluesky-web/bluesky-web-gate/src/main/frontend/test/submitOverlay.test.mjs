@@ -21,31 +21,34 @@ function makeButton() {
 	return { disabled: false, type: "submit" };
 }
 
+// 2026-10-14: 오버레이는 문서에서 한 번 듣는다(위임 - 구역 교체로 나중에 들어온 폼도 잡는다). 제출은 문서의 submit 처리기로 흘린다.
+const documentSubmitListeners = [];
+const documentListeners = {};
+
 function makeForm(dataset) {
 	const buttons = [makeButton()];
-	const listeners = [];
-	return {
+	const form = {
 		dataset,
 		buttons,
-		listeners,
-		addEventListener: (type, fn) => listeners.push([type, fn]),
 		querySelectorAll: (selector) =>
 			selector === 'button[type="submit"]' ? buttons : [],
 		submit() {
 			let prevented = false;
 			const event = {
-				preventDefault: () => {
+				target: form,
+				defaultPrevented: false,
+				preventDefault() {
 					prevented = true;
+					this.defaultPrevented = true;
 				},
 			};
-			for (const [type, fn] of listeners) {
-				if (type === "submit") {
-					fn(event);
-				}
+			for (const fn of documentSubmitListeners) {
+				fn(event);
 			}
 			return prevented;
 		},
 	};
+	return form;
 }
 
 const overlayTitle = { textContent: "가져오는 중입니다..." };
@@ -72,7 +75,12 @@ const pendingTimeouts = [];
 
 globalThis.document = {
 	readyState: "complete",
-	addEventListener: () => {},
+	addEventListener: (type, fn) => {
+		if (type === "submit") {
+			documentSubmitListeners.push(fn);
+		}
+		(documentListeners[type] = documentListeners[type] || []).push(fn);
+	},
 	querySelector: (selector) =>
 		selector === "[data-submit-overlay-panel]" ? overlay : null,
 	querySelectorAll: (selector) =>
@@ -188,4 +196,18 @@ test("뒤로 가기로 돌아오면 오버레이를 걷는다", () => {
 	assert.equal(bulkForm.buttons[0].disabled, false);
 	assert.equal(pasteForm.buttons[0].disabled, false);
 	assert.equal(pasteForm.submit(), false, "다시 보낼 수 있어야 한다");
+});
+
+// 2026-10-14: 관리 월배당 목록 행의 "출처에서 가져오기" 는 htmx 로 보낸다 - 제출 처리기는 htmx 가 막아 덮개를 못 띄우므로 요청 시작에 띄우고,
+// 보낸 폼이 교체로 문서에서 빠져도 정착(afterSettle)에서 걷는다.
+test("htmx 요청이면 시작에 덮개를 띄우고 정착에 걷는다", () => {
+	firePageshow(true);
+	assert.equal(overlay.classList.has("hidden"), true);
+	const fire = (type, detail) => (documentListeners[type] || []).forEach((fn) => fn({ detail, preventDefault() {} }));
+	fire("htmx:beforeRequest", { elt: bulkForm });
+	assert.equal(overlay.classList.has("hidden"), false, "요청 시작에 덮개");
+	fire("htmx:afterSettle", { elt: {} });
+	assert.equal(overlay.classList.has("hidden"), true, "정착하면 걷는다");
+	fire("htmx:beforeRequest", { elt: { dataset: {} } });
+	assert.equal(overlay.classList.has("hidden"), true, "덮개 폼이 아닌 htmx 요청은 건드리지 않는다");
 });

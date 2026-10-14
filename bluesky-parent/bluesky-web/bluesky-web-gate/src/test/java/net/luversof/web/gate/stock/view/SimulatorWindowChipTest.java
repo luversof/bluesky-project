@@ -156,4 +156,31 @@ class SimulatorWindowChipTest {
             html.indexOf("</div>", html.indexOf("data-monthly-window-chips")));
     assertThat(group).doesNotContain("tabular-nums");
   }
+
+  /**
+   * 저장 · 시트 가져오기 폼도 지금 표 좁히기와 정렬을 싣는다(2026-10-13 자율 - 예전에는 정렬만 실어 저장할 때마다 검색어 · 지급 시기 · 계좌가 풀렸다). 두
+   * 폼은 표 구역 밖이라 구역을 바꿔 끼울 때 이 묶음만 함께 바꾼다(hx-select-oob).
+   */
+  @Test
+  void 저장_폼과_시트_가져오기_폼이_지금_조건을_싣는다() {
+    String html = render("MONTH_END", Map.of());
+    for (String carry :
+        List.of("monthlyDividendFilterCarrySave", "monthlyDividendFilterCarryImport")) {
+      int at = html.indexOf("id=\"" + carry + "\"");
+      assertThat(at).as(carry).isNotNegative();
+      String block = html.substring(at, html.indexOf("</div>", at));
+      assertThat(block)
+          .as(carry)
+          .contains("name=\"keyword\" value=\"TIGER\"")
+          .contains("name=\"account\" value=\"PENSION\"")
+          .contains("name=\"payoutWindow\" value=\"MONTH_END\"")
+          .contains("name=\"sort\" value=\"symbol\"")
+          .contains("name=\"direction\" value=\"desc\"");
+      int form = html.lastIndexOf("<form method=\"post\"", at);
+      assertThat(html.indexOf("</form>", form)).as(carry + " 는 폼 안").isGreaterThan(at);
+    }
+    assertThat(html)
+        .contains(
+            "hx-select-oob=\"#simulatorTabs,#monthlyDividendFilterCarrySave,#monthlyDividendFilterCarryImport\"");
+  }
 }

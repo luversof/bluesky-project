@@ -360,6 +360,10 @@ public class StockDividendViewController {
             thisMonth.atDay(
                 MonthlyDividendPayDayUtil.dayInMonth(
                     announced != null ? announced : payDay.day(), thisMonth));
+        // 추정일(최빈일)이 주말 · 공휴일이면 그 달의 영업일로(2026-10-14 - 10/17 토요일로 적혔다). 발표일은 그대로.
+        if (announced == null) {
+          date = MonthlyDividendPayDayUtil.businessDayInMonth(date);
+        }
         DividendCalendarView.Entry entry =
             upcomingEntry(row, symbol, ratio, payDay, date.getDayOfMonth(), announced != null);
         if (date.isBefore(today)) {
@@ -374,6 +378,9 @@ public class StockDividendViewController {
           nextMonth.atDay(
               MonthlyDividendPayDayUtil.dayInMonth(
                   announcedNext != null ? announcedNext : payDay.day(), nextMonth));
+      if (announcedNext == null) {
+        nextDate = MonthlyDividendPayDayUtil.businessDayInMonth(nextDate);
+      }
       byDate
           .computeIfAbsent(nextDate, key -> new ArrayList<>())
           .add(
@@ -825,8 +832,15 @@ public class StockDividendViewController {
                 net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser.joinReasons(
                     imported.skipped())));
       }
+      // 목록 행 단추(2026-10-14)는 보던 종목을 returnSymbol 로 싣는다 - 목록만 바꿔 끼우므로 선택은 그대로 둔다.
+      String returnSymbol =
+          monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(
+              request.getParameter("returnSymbol"));
       return buildMonthlyDividendReferenceRedirect(
-          request, redirectAttributes, normalizedSymbol, "payout-source-imported");
+          request,
+          redirectAttributes,
+          StringUtils.hasText(returnSymbol) ? returnSymbol : normalizedSymbol,
+          "payout-source-imported");
     } catch (IllegalArgumentException ex) {
       return renderMonthlyDividendReferenceError(
           request,

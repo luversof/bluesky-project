@@ -419,6 +419,18 @@ document.addEventListener("htmx:afterSettle", restorePanelTabs);
 // CSP 대응: hx-on:/hx-vals="js:" 는 htmx 가 eval 로 실행해 nonce 기반 CSP 와 함께 쓸 수 없다.
 // 아래 데이터 속성 + 문서 위임으로 대체한다.
 
+// [data-confirm]: 폼을 보내기 전에 확인을 받는다(2026-10-14 - 관리 월배당 지급 이력의 행 삭제. 단건 폼을 걷어내며 행마다 삭제를 두었는데
+// 한 번 누르면 바로 지워지면 안 된다). 잡는 단계(capture)에서 물어 취소하면 덮개(submitOverlay)도 뜨지 않는다.
+document.addEventListener(
+	"submit",
+	(event) => {
+		const form = event.target as HTMLFormElement | null;
+		const message = form && typeof form.getAttribute === "function" ? form.getAttribute("data-confirm") : null;
+		if (message && !globalThis.confirm(message)) event.preventDefault();
+	},
+	true,
+);
+
 // [data-reload-after-request]: htmx 요청 성공 시 페이지 새로고침 (관리 데이터 갱신 버튼 등)
 document.addEventListener("htmx:afterRequest", (event: any) => {
 	const el = (event.target as HTMLElement)?.closest?.(
@@ -1156,7 +1168,8 @@ document.addEventListener("htmx:afterSettle", () => describeControls());
 // 프로그램은 조회 결과가 바뀐 줄 몰랐다. #stockLiveStatus(role=status)에 '화면 이름: 내용 갱신됨' 을 넣는다 - 같은 문구를 다시
 // 넣어도 읽히도록 먼저 비운다. 대상 이름은 조각의 aria-label, 없으면 문서 제목(접미사 앞부분).
 function swapAnnouncement(target: Element, docTitle: string, template: string): string {
-	const name = (target.getAttribute("aria-label") || docTitle.split(" \u00B7 ")[0] || "").trim();
+	// data-swap-announce: 구역 이름(일반 div 에 aria-label 을 달면 보조기술 규칙 위반이라 따로 둔다, 2026-10-13).
+	const name = (target.getAttribute("data-swap-announce") || target.getAttribute("aria-label") || docTitle.split(" \u00B7 ")[0] || "").trim();
 	return template.replace("{0}", name);
 }
 // 사용자 조작 전(로드 때 불러오는 조각)의 교체는 알리지 않는다 - 실측: 종목 상세가 열리자마자 '갱신됨' 을 읽었다.
@@ -1167,7 +1180,11 @@ function noteUserInteraction(): void {
 ["click", "keydown", "submit", "change"].forEach((type) => document.addEventListener(type, noteUserInteraction, true));
 function announceSwap(target: unknown, root: ParentNode = document): boolean {
 	if (!swapAnnounceState.userInteracted) return false;
-	if (!(target instanceof Element) || !target.id || !target.id.endsWith("Fragment")) return false;
+	// *Fragment 조각, 또는 data-swap-announce 를 단 결과 구역(시뮬레이터 · 월배당 ETF · 관리 기준 데이터 - 2026-10-13 구역 교체로 생겼는데 이름이
+	// Fragment 로 끝나지 않아 칩 · 정렬 뒤 아무 안내가 없었다).
+	if (!(target instanceof Element)) return false;
+	const announced = target.getAttribute("data-swap-announce") !== null;
+	if (!announced && (!target.id || !target.id.endsWith("Fragment"))) return false;
 	const region = root.querySelector("#stockLiveStatus") as HTMLElement | null;
 	if (!region) return false;
 	const template = region.getAttribute("data-message-updated") || "{0}: updated";
@@ -1477,12 +1494,16 @@ document.addEventListener("htmx:afterSettle", (event: any) => {
 // 구역을 바꿔 끼울 때 기준 요소를 화면의 같은 자리에 둔다(사용자 지적 2026-10-13: 시뮬레이터 월배당에서 지급 시기 칩을 전체 ↔ 월중 · 월말로
 // 바꾸면 칩 위치가 달라졌다). scrollY 는 그대로인데 구역 안에서 칩보다 위에 있는 적립 추천 카드가 조건에 따라 길이가 바뀐다 - 그만큼 칩이 밀린다.
 // 교체 대상에 data-swap-anchor="선택자" 를 달면 교체 직전 그 요소의 화면 위치를 재 두고, 교체 직후(그리기 전) 새 요소가 같은 자리에 오도록 굴린다.
+// 누른 컨트롤이 data-swap-anchor-key="이름" 상자 안에 있으면 그 상자를 기준으로 삼는다 - 화면 가운데의 카드를 눌러도 그 카드가 제자리에
+// 머문다(2026-10-13: 월배당 ETF 기준별 비교 카드). 상자가 없으면 대상의 선택자.
 type SwapAnchorMemo = { selector: string; top: number };
 const swapAnchorMemos: SwapAnchorMemo[] = [];
-function rememberSwapAnchor(target: unknown, doc: Pick<Document, "querySelector"> = document): SwapAnchorMemo | null {
+function rememberSwapAnchor(target: unknown, doc: Pick<Document, "querySelector"> = document, trigger: unknown = null): SwapAnchorMemo | null {
 	// 다른 처리기와 같은 이벤트를 듣는다 - 속성을 못 읽는 대상(시험 가짜 등)이면 조용히 빠진다.
 	if (!(target instanceof Element) || typeof target.getAttribute !== "function") return null;
-	const selector = target.getAttribute("data-swap-anchor");
+	const keyed = trigger instanceof Element && typeof trigger.closest === "function" ? trigger.closest("[data-swap-anchor-key]") : null;
+	const key = keyed ? keyed.getAttribute("data-swap-anchor-key") : null;
+	const selector = key ? '[data-swap-anchor-key="' + key + '"]' : target.getAttribute("data-swap-anchor");
 	if (!selector) return null;
 	const anchor = doc.querySelector(selector);
 	if (!anchor) return null;
@@ -1498,7 +1519,7 @@ function restoreSwapAnchor(memo: SwapAnchorMemo | null, doc: Pick<Document, "que
 	return delta;
 }
 document.addEventListener("htmx:beforeSwap", (event: any) => {
-	const memo = rememberSwapAnchor(event.detail?.target);
+	const memo = rememberSwapAnchor(event.detail?.target, document, event.detail?.requestConfig?.elt);
 	if (memo) swapAnchorMemos.push(memo);
 });
 // outerHTML 교체에서는 afterSwap 의 target 이 떨어져 나간 옛 요소일 수 있다 - 선택자로 새 요소를 찾는다.

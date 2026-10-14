@@ -66,6 +66,10 @@
 							@endfor
 						</dl>
 					@endif
+					<%-- 중첩 개수(10-13 C297 — CurrencyItems.StackSize, 게임 ClientStrings ItemDisplayStackSize · ItemDisplayStackSizeValue. poe2db 사막 룬 · 뱀 우상 "1 / 10", 1 짜리 · 행 없는 것은 줄 없음) --%>
+					@if(nz(a.stackSize()) > 1)
+						<div class="mt-1 text-[11px] text-base-content/60" data-augment-stack>${MessageUtil.getMessage("poe2.augments.stack")}: ${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.augments.stack.value"), 1, a.stackSize())}</div>
+					@endif
 					@if(a.limitText() != null || a.limitTextKo() != null)
 						<div class="mt-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("poe2.augments.limit")}: ${PoeText.name(a.limitTextKo(), a.limitText())}</div>
 					@endif

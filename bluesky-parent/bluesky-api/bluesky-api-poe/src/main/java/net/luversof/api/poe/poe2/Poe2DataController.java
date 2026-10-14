@@ -28,6 +28,7 @@ public class Poe2DataController {
   private final Poe2RefineService refine;
   private final Poe2SimService sim;
   private final Poe2SimRankingService ranking;
+  private final Poe2CommonGapsService commonGaps;
 
   public Poe2DataController(
       Poe2DataService data,
@@ -37,7 +38,8 @@ public class Poe2DataController {
       Poe2NinjaSyncService ninjaSync,
       Poe2RefineService refine,
       Poe2SimService sim,
-      Poe2SimRankingService ranking) {
+      Poe2SimRankingService ranking,
+      Poe2CommonGapsService commonGaps) {
     this.data = data;
     this.extract = extract;
     this.build = build;
@@ -46,6 +48,7 @@ public class Poe2DataController {
     this.refine = refine;
     this.sim = sim;
     this.ranking = ranking;
+    this.commonGaps = commonGaps;
   }
 
   /**
@@ -357,6 +360,16 @@ public class Poe2DataController {
   }
 
   /** 가이드 레어 목표만(10-02) — 가이드 뒤에 따로 부른다. set = 가이드와 같은 무기 세트(없으면 주 세트). */
+  /** 닌자 공통 특성 중 이 빌드에 없는 것(10-14 C318) — 엔진 계산 없음. 아키타입이 집계 대상이 아니면 n = 0. */
+  @PostMapping(value = "/build/common-gaps", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+  public Poe2CommonGapsService.CommonGaps commonGaps(@RequestParam String code) {
+    try {
+      return commonGaps.gaps(code);
+    } catch (IllegalArgumentException e) {
+      throw new io.github.luversof.boot.exception.BlueskyException("POE2_INVALID_BUILD_CODE", 400);
+    }
+  }
+
   @PostMapping(value = "/build/guide/rares", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   public Poe2.GuideRares guideRares(
       @RequestParam String code, @RequestParam(required = false) Integer set) {

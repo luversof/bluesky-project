@@ -6,6 +6,10 @@
 
 @param List<Poe2.BaseItem> items
 @param Integer total = 0
+@param int limit = 0
+@param String listQ = ""
+@param String listItemClass = ""
+@param String listAttr = "all"
 
 !{
 	boolean korean = PoeText.isKorean();
@@ -13,12 +17,32 @@
 	java.util.Map<String, List<Poe2.BaseItem>> byClass = new java.util.LinkedHashMap<>();
 	for (Poe2.BaseItem b : items) byClass.computeIfAbsent(net.luversof.web.gate.poe.PoeClassNames.poe2(b.itemClassKo(), b.itemClass()), k -> new java.util.ArrayList<>()).add(b);
 	byClass.values().forEach(l -> l.sort(java.util.Comparator.comparingInt((Poe2.BaseItem b) -> nz(b.reqLevel())).thenComparing(Poe2.BaseItem::name)));
+	// 더 보기(10-13 C306) — PoE1 베이스 목록과 같은 90개씩. 보이는 순서(분류 묶음 → 요구 레벨)대로 앞에서 자른 뒤 다시 묶는다
+	int pageSize = 90;
+	int shown = Math.min(limit <= 0 ? pageSize : Math.max(limit, pageSize), items.size());
+	boolean capped = items.size() > shown;
+	if (capped) {
+		java.util.Map<String, List<Poe2.BaseItem>> cut = new java.util.LinkedHashMap<>();
+		int left = shown;
+		for (java.util.Map.Entry<String, List<Poe2.BaseItem>> e : byClass.entrySet()) {
+			if (left <= 0) break;
+			List<Poe2.BaseItem> part = e.getValue().subList(0, Math.min(left, e.getValue().size()));
+			cut.put(e.getKey(), part);
+			left -= part.size();
+		}
+		byClass = cut;
+	}
+	String moreUrl = "/poe2/htmx/items?limit=" + (shown + pageSize)
+		+ "&q=" + java.net.URLEncoder.encode(listQ, java.nio.charset.StandardCharsets.UTF_8)
+		+ "&itemClass=" + java.net.URLEncoder.encode(listItemClass, java.nio.charset.StandardCharsets.UTF_8)
+		+ "&attr=" + java.net.URLEncoder.encode(listAttr, java.nio.charset.StandardCharsets.UTF_8);
+	String moreLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.more"), Math.min(shown + pageSize, items.size()) - shown) : null;
 }
 
 @if(total == null || total == 0)
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"), actionLabel = MessageUtil.getMessage("layout.menu.poe2.admin"), actionHref = "/poe2/admin")
 @else
-	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.capped"), items.size(), shown) : java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), total)}</div>
 	@if(items.isEmpty())
 		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.list.empty"))
 	@else
@@ -64,5 +88,15 @@
 				</section>
 			@endfor
 		</div>
+		@if(capped)
+			<%-- 더 보기(C306) — PoE1 목록과 같은 단추 · 문구, 한 단계(90개)씩 늘려 같은 자리에 다시 그린다 --%>
+			<div class="flex justify-center pt-3">
+				<button type="button" class="btn btn-sm btn-outline"
+				        hx-get="${moreUrl}"
+				        hx-target="#poe2ItemList"
+				        hx-swap="innerHTML"
+				        hx-disabled-elt="this">${moreLabel}</button>
+			</div>
+		@endif
 	@endif
 @endif

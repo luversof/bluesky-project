@@ -197,7 +197,8 @@ class UpcomingDividendScheduleTest {
             LocalDate.parse("2026-09-17"),
             LocalDate.parse("2026-09-19"),
             LocalDate.parse("2026-10-02"),
-            LocalDate.parse("2026-10-17"));
+            // 다음 달 최빈일 17 일은 토요일이라 그 달의 영업일 10/19(월)(2026-10-14 영업일 보정).
+            LocalDate.parse("2026-10-19"));
     assertThat(view.days().get(0).today()).as("오늘인 날을 표시한다").isTrue();
     assertThat(view.days().get(1).entries().get(0).actualPayDate())
         .as("이번 달 발표된 지급일(19 일)이 있으면 최빈일(17 일) 대신 그 날이고, 확정이라고 적는다")

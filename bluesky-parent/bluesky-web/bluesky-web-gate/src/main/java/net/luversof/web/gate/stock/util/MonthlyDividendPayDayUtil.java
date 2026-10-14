@@ -149,4 +149,42 @@ public final class MonthlyDividendPayDayUtil {
     }
     return Math.min(day, month.lengthOfMonth());
   }
+
+  /**
+   * 추정한 지급일을 그 달 안의 영업일로 옮긴다 - 주말 · 공휴일이면 다음 영업일, 그 달 안에 없으면 앞 영업일.
+   *
+   * <p>추정일은 지급이력의 최빈 일자를 그 달에 그대로 놓은 것이라 요일을 보지 않았다. 실측 2026-10-14: 다가올 배당이 RISE 코리아밸류업을 10 월 17 일
+   * <b>토요일</b>로 적었고(최빈 17 일), 대시보드도 "월중 · 10월 17일" 이었다. ETF 분배금은 영업일에만 들어온다 &mdash; 같은 날 기준일 종목들은
+   * 10 월 19 일(월)로 잡혀 있었다. 달을 넘기지 않는 까닭: 다음 달로 넘기면 같은 종목이 다음 달 일정에 두 번 들어간다. 발표된 지급일(그 달 지급이력)은 옮기지
+   * 않는다.
+   *
+   * <p>공휴일은 {@link net.luversof.web.gate.util.KoreanHolidays} 표(대체공휴일 포함)를 쓴다. 표가 없는 해는 주말만 본다.
+   */
+  public static LocalDate businessDayInMonth(LocalDate date) {
+    if (date == null) {
+      return null;
+    }
+    for (LocalDate day = date; day.getMonth() == date.getMonth(); day = day.plusDays(1)) {
+      if (isBusinessDay(day)) {
+        return day;
+      }
+    }
+    for (LocalDate day = date.minusDays(1);
+        day.getMonth() == date.getMonth();
+        day = day.minusDays(1)) {
+      if (isBusinessDay(day)) {
+        return day;
+      }
+    }
+    return date;
+  }
+
+  /** 토 · 일이 아니고 공휴일 표에 없는 날. */
+  public static boolean isBusinessDay(LocalDate date) {
+    java.time.DayOfWeek weekday = date.getDayOfWeek();
+    return weekday != java.time.DayOfWeek.SATURDAY
+        && weekday != java.time.DayOfWeek.SUNDAY
+        && net.luversof.web.gate.util.KoreanHolidays.holidayName(date, java.util.Locale.KOREAN)
+            == null;
+  }
 }

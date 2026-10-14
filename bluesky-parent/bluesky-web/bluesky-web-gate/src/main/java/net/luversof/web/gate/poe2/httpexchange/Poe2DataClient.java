@@ -154,6 +154,12 @@ public interface Poe2DataClient {
   @PostExchange(url = "/build/import", contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   Poe2.BuildSummary importBuild(@RequestParam String code);
 
+  /** 닌자 공통 특성 중 이 빌드에 없는 것(10-14 C318) — 엔진 계산 없음. */
+  @PostExchange(
+      url = "/build/common-gaps",
+      contentType = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+  Poe2.CommonGaps commonGaps(@RequestParam String code);
+
   // 엔진 재계산·가이드는 Poe2EngineClient(읽기 제한을 넓힌 전용 클라이언트)
 
   // ── 데이터 관리 ──

@@ -57,7 +57,7 @@
 			        hx-post="/poe2/htmx/sim/stop" hx-swap="none"
 			        data-busy-label="${MessageUtil.getMessage("poe.sim.opt.stopping")}">${MessageUtil.getMessage("poe.sim.opt.stop")}</button>
 		@endif
-		<span class="text-xs text-base-content/60">${ko ? "실빌드 후보 받기·재계산 → 목표에 맞춰 다듬기(보통 1~2분)" : "Fetching real-build candidates → refining toward the objective (usually 1-2 min)"}</span>
+		<span class="text-xs text-base-content/60">${ko ? "실빌드 재계산 → 공통 특성 견주기 → 목표에 맞춰 다듬기(보통 1~2분)" : "Recalculating real builds → comparing common traits → refining toward the objective (usually 1-2 min)"}</span>
 	</div>
 	@if(total > 0)
 		<progress class="progress progress-primary w-full" value="${done}" max="${total}"></progress>

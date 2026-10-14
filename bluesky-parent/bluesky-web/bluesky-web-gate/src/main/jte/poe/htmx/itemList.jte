@@ -8,6 +8,7 @@
 @param String listQ = ""
 @param String listItemClass = "all"
 @param int nextLimit = 0
+@param String attr = "all"
 
 !{
 	String countLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), totalCount);
@@ -16,7 +17,8 @@
 	String moreLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.more"), Math.min(nextLimit, matchedCount) - items.size()) : null;
 	String moreUrl = "/poe/htmx/items?limit=" + nextLimit
 		+ "&q=" + java.net.URLEncoder.encode(listQ, java.nio.charset.StandardCharsets.UTF_8)
-		+ "&itemClass=" + java.net.URLEncoder.encode(listItemClass, java.nio.charset.StandardCharsets.UTF_8);
+		+ "&itemClass=" + java.net.URLEncoder.encode(listItemClass, java.nio.charset.StandardCharsets.UTF_8)
+		+ "&attr=" + java.net.URLEncoder.encode(attr == null ? "all" : attr, java.nio.charset.StandardCharsets.UTF_8); // 더 보기가 방어구 속성 필터를 풀던 것(10-13 C306)
 	String cappedLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.capped"), matchedCount, items.size()) : null;
 }
 

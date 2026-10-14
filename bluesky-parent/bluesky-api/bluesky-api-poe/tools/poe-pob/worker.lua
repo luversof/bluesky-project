@@ -221,6 +221,26 @@ while true do
 				end
 			end
 
+			-- 자원이 모자라 **인게임에선 못 쓰는** 주 스킬 — calc.lua 와 같은 블록(10-13 C307, 백로그 "주 스킬 비용을 못 치르는 빌드" 감사).
+			--   PoB 는 사이드바 경고만 띄우고 계산은 그대로 해 수치만 보면 멀쩡하다(Calcs.lua 의 *CostWarning / *CostWarningList).
+			--   실측: 뼈 박살 균형 위치 결과가 마나 883 중 836 을 오라로 점유 → 남은 47 로 주 스킬 소모를 못 치름(MainSkillCostWarning 1).
+			do
+				local mainWarn = 0
+				-- 어느 자원이 모자란지(10-13 C307): 마나 1 · 생명력 2 · 보호막 4 · 분노 8 — 최적화기는 예약(오라)과 얽힌 마나 · 생명력 · 보호막만 고친다
+				local mask = 0
+				for key, bit in pairs({ ManaCostWarning = 1, LifeCostWarning = 2, ESCostWarning = 4, RageCostWarning = 8 }) do
+					if output[key] == true then mainWarn = 1; mask = mask + bit end
+				end
+				local count = 0
+				for _, key in ipairs({ "LifeCostWarningList", "ManaCostWarningList", "RageCostWarningList", "ESCostWarningList",
+						"LifePercentCostPercentCostWarningList", "ManaPercentCostPercentCostWarningList" }) do
+					if type(output[key]) == "table" then count = count + #output[key] end
+				end
+				result.MainSkillCostWarning = mainWarn
+				result.MainSkillCostWarningMask = mask
+				result.CostWarningCount = count
+			end
+
 			-- ⚠ dkjson 은 빈 Lua 테이블을 **배열 []** 로 인코딩한다 → Java 쪽 Map 역직렬화가
 			-- "Cannot deserialize LinkedHashMap from Array" 로 터져 진짜 원인이 가려진다(타임리스 주얼에서 발각).
 			-- 비면 명시적으로 오브젝트 {} 를 내보내 "빈 결과"가 그대로 전달되게 한다.

@@ -549,7 +549,7 @@ public class MonthlyDividendReferenceSupport {
   }
 
   /** 전 종목 지급 이력 - 실패해도 화면은 열려야 하므로 빈 목록(목록의 기준일 칸만 "-"). */
-  private List<MonthlyDividendPayoutResponse> loadAllMonthlyDividendPayoutsQuietly() {
+  public List<MonthlyDividendPayoutResponse> loadAllMonthlyDividendPayoutsQuietly() {
     try {
       List<MonthlyDividendPayoutResponse> payouts =
           monthlyDividendPayoutClient.findPayouts(new LinkedMultiValueMap<>());

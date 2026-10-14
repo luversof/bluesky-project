@@ -3,6 +3,8 @@
 -- 사용: (cwd = pob2-src/src) luajit apply2.lua <build.xml> <change.json> <out.xml>   → 성공 시 "@@APPLIED@@<길이>"
 -- change.json: {type:"unique", slot, raw} | {type:"mod", slot, lines:[...]} | {type:"gem", from:"약한 보조 영문명", gemId}
 --              | {type:"nodes", ids:[...]} | {type:"remove", slot} | {type:"noop"}(저장 왕복만)
+--              | {type:"respec", remove:노드, add:노드}(10-14 패시브 재분배 — 본 트리 특화 하나와 그것만 잇던 길을 빼고, 그 점수로 다른 특화까지 길을 찍는다.
+--                 본 트리 사용 점수가 늘면 실패 = 후보 탈락)
 -- 저장 뒤 계산은 이 파일이 아니라 calc.lua 를 **새 프로세스**로 돌려서 한다(적용 경로와 계산 경로를 떼어 놓는다).
 local inPath, changePath, outPath = ...
 package.path = package.path .. ";../runtime/lua/?.lua;../runtime/lua/?/init.lua"
@@ -68,6 +70,61 @@ local ok, err = pcall(function()
 		local after = 0
 		for _ in pairs(build.spec.allocNodes) do after = after + 1 end
 		assert(after - before == #ch.ids, string.format("할당 수 어긋남 %d → %d (기대 +%d)", before, after, #ch.ids))
+	elseif ch.type == "respec" then
+		local spec = build.spec
+		-- mode = 뺄 노드의 점수 칸(0 본 트리 · 1/2 무기 세트, 10-14 C316) — 같은 칸 점수로 찍고, 그 칸 사용 점수가 늘면 거절
+		local target = assert(spec.nodes[ch.remove], "노드 없음 " .. tostring(ch.remove))
+		local mode = target.allocMode or 0
+		local function usedMain()
+			local u, _, _, _, w1, w2 = spec:CountAllocNodes()
+			return mode == 1 and w1 or mode == 2 and w2 or u - w1 - w2
+		end
+		local before = usedMain()
+		assert(target.alloc and not target.ascendancyName, "재분배: 찍힌 노드가 아님 " .. tostring(ch.remove))
+		-- 그 특화만 잇던 길 — 특화에서 트리 쪽으로, 찍힌 이웃이 둘뿐인 작은 노드가 이어지는 동안(갈림길 · 다른 특화에서 멈춘다)
+		local function allocNeighbors(n)
+			local out = {}
+			for _, o in ipairs(n.linked or {}) do if o.alloc then out[#out + 1] = o end end
+			return out
+		end
+		-- 특화를 빼고(PoB 가 거기 매달린 것도 함께 뺀다), 빈 자리 둘레에서 **끝에 매달린 작은 노드**(찍힌 이웃 하나 · 본 트리 · 특화/핵심/소켓 아님)를
+		-- 걷어 내기를 되풀이한다 — 특화가 작은 노드 무리 가운데 있으면 한 줄 길 걷기로는 1점만 풀렸다(10-14 실측: 131 → 133 초과). 둘레에서만
+		-- 걷으므로 다른 곳에 일부러 찍은 작은 노드는 건드리지 않는다
+		local frontier = {}
+		for _, d in ipairs(target.depends or { target }) do
+			for _, o in ipairs(allocNeighbors(d)) do frontier[#frontier + 1] = o end
+		end
+		spec:DeallocNode(target)
+		local pruned = true
+		while pruned do
+			pruned = false
+			local nextFrontier = {}
+			for _, n in ipairs(frontier) do
+				local nbs = allocNeighbors(n)
+				if n.alloc and n.type == "Normal" and (n.allocMode or 0) == mode and not n.ascendancyName and #nbs == 1 then
+					spec:DeallocNode(n)
+					nextFrontier[#nextFrontier + 1] = nbs[1]
+					pruned = true
+				end
+			end
+			frontier = nextFrontier
+		end
+		local freed = before - usedMain()
+		assert(freed <= 10, string.format("재분배: 다리 노드 — 빼면 %d점이 풀린다(매달린 트리가 끊김)", freed))
+		local addNode = assert(spec.nodes[ch.add], "노드 없음 " .. tostring(ch.add))
+		assert(not addNode.alloc and addNode.path and addNode.pathDist and addNode.pathDist > 0, "재분배: 찍을 수 없는 노드 " .. tostring(ch.add))
+		for _, n in ipairs(addNode.path) do
+			if not n.alloc then
+				n.alloc = true
+				n.allocMode = mode
+				spec.allocNodes[n.id] = n
+				if n.isAttribute then spec:SwitchAttributeNode(n.id, spec.attributeIndex or 1) end
+			end
+		end
+		spec:BuildAllDependsAndPaths()
+		local after = usedMain()
+		assert(after <= before, string.format("재분배 점수 초과: %d → %d (뺀 %d)", before, after, freed))
+		assert(spec.allocNodes[ch.add], "재분배: 찍은 노드가 풀렸다 " .. tostring(ch.add))
 	elseif ch.type == "noop" then
 		-- 바꾸지 않고 저장만 — 저장 왕복(SaveDB) 자체가 수치를 바꾸는 빌드가 있어(10-01: 워브링어 집속 수류탄 DPS +4.4%)
 		--   자동 다듬기·검증기가 기준선도 같은 왕복을 거친 빌드로 잰다

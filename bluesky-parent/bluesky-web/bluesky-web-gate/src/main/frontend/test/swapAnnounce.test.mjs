@@ -61,4 +61,9 @@ test("*Fragment 대상만, status 영역을 비운 뒤 문구를 넣는다 - 단
 	assert.equal(mod.announceSwap(new Fake("holdings-snapshot-container"), root), false, "목록 조각이 아닌 대상은 알리지 않는다");
 	assert.equal(mod.announceSwap(new Fake("tradeListFragment"), { querySelector: () => null }), false, "영역이 없으면 할 일 없음");
 	assert.equal(mod.announceSwap(undefined, root), false);
+	// 구역 교체(2026-10-13)의 결과 구역은 이름이 Fragment 로 끝나지 않는다 - data-swap-announce 가 있으면 그 이름으로 알린다.
+	assert.equal(mod.announceSwap(new Fake("monthlyEtfResults", { "data-swap-announce": "월배당 ETF 목록" }), root), true);
+	await sleep(80);
+	assert.equal(region.textContent, "월배당 ETF 목록: 내용 갱신됨");
+	assert.equal(mod.announceSwap(new Fake("monthlyEtfResults"), root), false, "표시가 없으면 여전히 침묵");
 });

@@ -52,7 +52,9 @@ class TextSpacingReflowTest {
     assertThat(form).as("출처 가져오기 폼을 찾지 못했다").isGreaterThan(0);
     Matcher m = Pattern.compile("<button\\b[^>]*type=\"submit\"[^>]*>").matcher(html);
     assertThat(m.find(form)).isTrue();
-    assertThat(m.group()).contains("w-full").contains("whitespace-normal").contains("h-auto");
+    // 2026-10-14: 따로 있던 큰 단추(w-full)가 목록 줄의 작은 단추가 됐다 - 줄바꿈 허용(h-auto · whitespace-normal)은 그대로
+    // 지킨다.
+    assertThat(m.group()).contains("whitespace-normal").contains("h-auto");
   }
 
   @Test

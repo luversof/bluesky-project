@@ -64,6 +64,25 @@ public class PoeMetaPopularityService {
   private volatile String snapshot;
   private volatile String fetchedAt;
 
+  /**
+   * 읽은 시드 파일의 수정 시각 — 파일이 바뀌면 다음 조회에서 다시 읽는다(10-14: 단위 시험 재기동에 수집 자식 프로세스가 살아남아 08:26 에 파일을 새로 썼는데
+   * 동기 서비스를 거치지 않아 순서 · 스냅샷 표시가 05:54 판에 머물렀다 — PoE2 Poe2NinjaService 와 같은 방식).
+   */
+  private volatile java.nio.file.attribute.FileTime loadedMtime;
+
+  private void fresh() {
+    try {
+      java.nio.file.attribute.FileTime t =
+          Files.exists(seedFile) ? Files.getLastModifiedTime(seedFile) : null;
+      if (t != null && !t.equals(loadedMtime)) {
+        logger.info("poe.ninja 아키타입 시드가 바뀌어 다시 읽음 ({} → {})", loadedMtime, t);
+        reload();
+      }
+    } catch (java.io.IOException e) {
+      logger.warn("poe.ninja 아키타입 시드 시각 확인 실패", e);
+    }
+  }
+
   public synchronized void reload() {
     Map<String, Map<String, Integer>> bySkillOfAsc = new LinkedHashMap<>();
     Map<String, Map<String, Integer>> byAscOfSkill = new LinkedHashMap<>();
@@ -85,7 +104,8 @@ public class PoeMetaPopularityService {
       }
       this.league = lg;
       this.snapshot = snap;
-      this.fetchedAt = Files.getLastModifiedTime(seedFile).toInstant().toString();
+      this.loadedMtime = Files.getLastModifiedTime(seedFile);
+      this.fetchedAt = loadedMtime.toInstant().toString();
       JsonNode arr = root.get("archetypes");
       if (arr == null || !arr.isArray()) {
         return;
@@ -136,6 +156,7 @@ public class PoeMetaPopularityService {
   }
 
   public boolean hasData() {
+    fresh();
     return !skillsByAscendancy.isEmpty();
   }
 
@@ -153,6 +174,7 @@ public class PoeMetaPopularityService {
 
   /** 이 전직이 많이 쓰는 스킬(영문명) 순. 전직 미지정이면 전체 합산 순. */
   public List<String> skillOrder(String ascendancy) {
+    fresh();
     if (ascendancy == null || ascendancy.isBlank()) {
       Map<String, Integer> all = new LinkedHashMap<>();
       for (Map<String, Integer> m : skillsByAscendancy.values()) {
@@ -165,6 +187,7 @@ public class PoeMetaPopularityService {
 
   /** 이 스킬들을 많이 쓰는 전직 순. 스킬 미지정이면 전체 합산 순. */
   public List<String> ascendancyOrder(List<String> skillNames) {
+    fresh();
     Map<String, Integer> merged = new LinkedHashMap<>();
     if (skillNames == null || skillNames.isEmpty()) {
       for (Map<String, Integer> m : ascendanciesBySkill.values()) {
@@ -183,6 +206,7 @@ public class PoeMetaPopularityService {
 
   /** 이 조합이 많이 쓰는 아이템(영문 이름) 순 — 유니크 목록 정렬용. */
   public List<String> itemOrder(String ascendancy, List<String> skillNames) {
+    fresh();
     Map<String, Integer> merged = new LinkedHashMap<>();
     String asc = ascendancy == null ? "" : ascendancy;
     List<String> skills = skillNames == null || skillNames.isEmpty() ? List.of("") : skillNames;
@@ -221,6 +245,7 @@ public class PoeMetaPopularityService {
    * 붙이므로(fetch-ninja-builds 폴백), 넓힌 합은 같은 패싯을 여러 번 더해 "몇 명이 쓰나"라는 숫자로 쓸 수 없다.
    */
   public ItemUsage itemUsage(String ascendancy, String skill) {
+    fresh();
     if (ascendancy == null || ascendancy.isEmpty() || skill == null || skill.isEmpty()) {
       return ItemUsage.EMPTY;
     }
@@ -244,6 +269,7 @@ public class PoeMetaPopularityService {
       String fetchedAt) {}
 
   public MetaOrder order(String ascendancy, List<String> skillNames) {
+    fresh();
     return new MetaOrder(
         skillOrder(ascendancy),
         ascendancyOrder(skillNames),

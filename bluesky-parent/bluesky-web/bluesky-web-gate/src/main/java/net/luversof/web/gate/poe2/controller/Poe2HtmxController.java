@@ -110,9 +110,14 @@ public class Poe2HtmxController {
   public String uniques(
       @RequestParam(required = false) String q,
       @RequestParam(required = false) String itemClass,
+      // 목록 상한 — PoE1 고유 목록과 같은 "더 보기"(90개씩, 10-13 C306). 정렬은 템플릿이 하므로 자르는 것도 템플릿에서
+      @RequestParam(required = false, defaultValue = "0") int limit,
       Model model) {
     model.addAttribute("items", client.searchUniques(blankToNull(q), blankToNull(itemClass)));
     model.addAttribute("total", client.meta().uniques());
+    model.addAttribute("limit", limit);
+    model.addAttribute("listQ", q == null ? "" : q);
+    model.addAttribute("listItemClass", itemClass == null ? "" : itemClass);
     return "poe2/htmx/uniqueList";
   }
 
@@ -133,6 +138,8 @@ public class Poe2HtmxController {
       // 방어구 속성 베이스 필터 — PoE1 베이스 목록(PoeHtmxController.baseItemList)과 같은 규칙(10-01).
       // 순수 str=방어도 / dex=회피 / int=보호막, 이중·삼중은 겹침 없이 분할. 방어구 부위에서만 적용(다른 부위면 무시해 빈 목록을 막는다)
       @RequestParam(required = false, defaultValue = "all") String attr,
+      // 목록 상한 — PoE1 베이스 목록과 같은 "더 보기"(90개씩, 10-13 C306 — 예전엔 1,534개 2MB 를 한 번에 그렸다)
+      @RequestParam(required = false, defaultValue = "0") int limit,
       Model model) {
     var items = client.searchBases(blankToNull(q), blankToNull(itemClass), null);
     boolean armourClass =
@@ -146,6 +153,10 @@ public class Poe2HtmxController {
     }
     model.addAttribute("items", items);
     model.addAttribute("total", client.meta().baseItems());
+    model.addAttribute("limit", limit);
+    model.addAttribute("listQ", q == null ? "" : q);
+    model.addAttribute("listItemClass", itemClass == null ? "" : itemClass);
+    model.addAttribute("listAttr", attr);
     return "poe2/htmx/itemList";
   }
 
@@ -665,6 +676,19 @@ public class Poe2HtmxController {
     return "poe2/htmx/buildGuide";
   }
 
+  /** 가이드 "닌자 공통 특성 중 이 빌드에 없는 것" 조각(10-14 C318) — 가이드 뒤 hx-trigger=load. 실패 · 집계 대상 아님이면 빈 조각. */
+  @PostMapping("/build/guide/common-gaps")
+  public String guideCommonGaps(@RequestParam(required = false) String code, Model model) {
+    if (code != null && !code.isBlank()) {
+      try {
+        model.addAttribute("gaps", client.commonGaps(code.trim()));
+      } catch (RuntimeException e) {
+        // 보조 정보라 실패해도 가이드는 그대로 — 빈 조각
+      }
+    }
+    return "poe2/htmx/guideCommonGaps";
+  }
+
   /** 가이드 "좋은 레어로 바꾸면" 조각 — 가이드가 붙은 뒤 hx-trigger=load 로 따로(10-02, 본 가이드가 4~6초 느려지지 않게). */
   @PostMapping("/build/guide/rares")
   public String guideRares(
@@ -681,6 +705,22 @@ public class Poe2HtmxController {
       if (e.getStatus() >= 500) {
         throw e;
       }
+    }
+    // 칸마다 지금 아이템(10-14 C310 사용자 요청 "레이어 처리가 안 되어 있다") — 한국어 이름 + 빌드 카드와 같은 툴팁 레이어. 레어 목표 응답엔 이름뿐이라
+    //   같은 코드로 빌드를 한 번 더 읽는다(가져오기만, 엔진 계산 없음). 실패하면 예전처럼 이름만
+    try {
+      java.util.Map<String, Poe2.BuildItem> slotItems = new java.util.LinkedHashMap<>();
+      Poe2.BuildSummary build = client.importBuild(code.trim());
+      if (build != null && build.items() != null) {
+        for (Poe2.BuildItem it : build.items()) {
+          if (it.slot() != null) {
+            slotItems.putIfAbsent(it.slot(), it);
+          }
+        }
+      }
+      model.addAttribute("slotItems", slotItems);
+    } catch (RuntimeException e) {
+      model.addAttribute("slotItems", java.util.Map.of());
     }
     model.addAttribute("tradeLeague", tradeLeague());
     return "poe2/htmx/guideRares";

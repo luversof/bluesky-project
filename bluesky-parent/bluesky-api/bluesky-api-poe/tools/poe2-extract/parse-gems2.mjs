@@ -152,14 +152,15 @@ function levelsOf(effectIdx, specific, maxLevel, support = false) {
 
 // 필요 무기 한국어(10-09 C228) — PoB2 문장("Any Martial Weapon" · "Spear, Bow")은 게임 ClientStrings 문장(EveryWeaponType 등)과 같은 영어다.
 //   문장째 같은 것은 그 한국어, 아니면 쉼표로 나눠 무기 종류마다 ItemClasses(Id → 이름) · WeaponClassDisplayName* 한국어로.
-//   하나라도 못 옮기면 null(영어 유지 — "Armoured Shield" 처럼 게임 문장이 없는 PoB 표현)
+//   하나라도 못 옮기면 null(영어 유지)
 const weaponKo = (() => {
 	const [csEn, csKo] = T("ClientStrings");
 	const [clsEn, clsKo] = T("ItemClasses");
 	const ko = new Map();
 	csEn.forEach((r, i) => {
 		if (!r.Text || !csKo[i]?.Text) return;
-		if (/^(Every|Any|WeaponClassDisplayName)/.test(r.Id) || r.Id === "AnyShield") ko.set(stripMarkup(r.Text), stripMarkup(csKo[i].Text));
+		// …WeaponRequirement(10-13 C298): ArmouredShieldWeaponRequirement "방어도가 있는 방패"(poe2db 방패 들기 같음) — 방어 함성 등 5젬이 영어로 남았다
+		if (/^(Every|Any|WeaponClassDisplayName)/.test(r.Id) || r.Id === "AnyShield" || /WeaponRequirement$/.test(r.Id)) ko.set(stripMarkup(r.Text), stripMarkup(csKo[i].Text));
 	});
 	clsEn.forEach((r, i) => {
 		if (r.Id && clsKo[i]?.Name && !ko.has(r.Id)) ko.set(r.Id, clsKo[i].Name);

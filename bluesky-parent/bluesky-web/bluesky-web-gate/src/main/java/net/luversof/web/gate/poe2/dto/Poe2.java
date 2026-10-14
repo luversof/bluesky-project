@@ -336,6 +336,7 @@ public final class Poe2 {
       Integer limit,
       String limitText,
       String limitTextKo,
+      Integer stackSize,
       List<AugmentEffect> effects,
       String icon,
       String image) {}
@@ -486,7 +487,10 @@ public final class Poe2 {
       String type,
       String ascendancy,
       Double dps,
-      Double ehp) {}
+      Double ehp,
+      // 빼면 풀리는 점수 · 무기 세트 전용이면 그 세트(10-14 C316 — API 와 짝, 꺼진 세트 노드는 안 실린다)
+      Integer free,
+      Integer set) {}
 
   public record GuideSwap(
       String slot,
@@ -529,7 +533,9 @@ public final class Poe2 {
       Integer points,
       Double dps,
       Double ehp,
-      String treeLink) {}
+      String treeLink,
+      // 켜진 무기 세트에서 출발하는 길이면 그 세트(그 세트 점수로 찍는다, 10-14 C316)
+      Integer set) {}
 
   /** 레어 목표만(10-02) — API Poe2.GuideRares. */
   public record GuideRares(
@@ -752,7 +758,10 @@ public final class Poe2 {
       Boolean chosen,
       String error,
       // 이 후보를 잰 무기 세트(1·2, DPS 가 큰 쪽) — 세트를 안 나누는 빌드면 null
-      Integer set) {}
+      Integer set,
+      // 후보의 전직(영문 · 한국어, C311 — API 와 짝)
+      String ascendancy,
+      String ascendancyKo) {}
 
   public record SimResult(
       String skill,
@@ -774,7 +783,40 @@ public final class Poe2 {
       String forcedUnique,
       String forcedUniqueKo,
       // 내 트리에서 출발이면 그 노드 수(10-02)
-      Integer fromTreeNodes) {}
+      Integer fromTreeNodes,
+      // 고른 전직 한국어 · 전직 자동 여부(C311 — API 와 짝, 옛 이력엔 null)
+      String ascendancyKo,
+      Boolean ascendancyAuto,
+      // 참고한 닌자 공통 특성(10-14 — API 와 짝): 실빌드 수(0 = 집계 대상 아님) · 공통 트리 겹침(0~1). 옛 이력이면 null
+      Integer consensusN,
+      Double consensusOverlap,
+      // 전직 자동일 때 전직별 비교(10-14 P5 — API 와 짝): 최고 후보 · 그 후보에 공통 트리를 덮은 값. 옛 이력 · 전직 지정이면 null
+      List<AscCompare> ascCompare) {}
+
+  /** 닌자 공통 특성 중 빌드에 없는 것 한 줄(10-14 C318 — API Poe2CommonGapsService.Gap). slot 은 고유만. */
+  public record CommonGap(String name, String nameKo, String slot, int count) {}
+
+  /** 닌자 공통 특성 비교(C318) — n = 0 이면 그 전직 · 스킬은 집계 대상이 아님. */
+  public record CommonGaps(
+      int n,
+      String ascendancy,
+      String ascendancyKo,
+      String skill,
+      String skillKo,
+      List<CommonGap> supports,
+      List<CommonGap> uniques,
+      List<CommonGap> nodes) {}
+
+  /** 전직 비교 한 줄(P5) — API Poe2SimService.AscCompare. */
+  public record AscCompare(
+      String ascendancy,
+      String ascendancyKo,
+      Double dps,
+      Double ehp,
+      Double treeDps,
+      Double treeEhp,
+      Integer consensusN,
+      boolean chosen) {}
 
   /** 결과 이력 한 건(목록용 요약) — API Poe2SimService.HistoryEntry. id = 저장 시각 epochMs. */
   public record SimHistoryEntry(

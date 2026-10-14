@@ -23,7 +23,7 @@ export function extractObjectAfter(text, marker) {
 	return null;
 }
 
-/** { 노드번호: { name, stats } } — 스탯이 있는 노드만. */
+/** { 노드번호: { name, stats, reminder? } } — 스탯이 있는 노드만. reminder = 공식 리마인더 문장(reminderText, 10-13 C301) */
 export async function loadKakaoTree(url, cacheFile, label) {
 	try {
 		const response = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -31,7 +31,8 @@ export async function loadKakaoTree(url, cacheFile, label) {
 		const data = extractObjectAfter(await response.text(), "passiveSkillTreeData");
 		if (!data?.nodes) throw new Error("passiveSkillTreeData 없음");
 		const nodes = {};
-		for (const [id, n] of Object.entries(data.nodes)) if (n.stats?.length) nodes[id] = { name: n.name, stats: n.stats };
+		for (const [id, n] of Object.entries(data.nodes))
+			if (n.stats?.length) nodes[id] = { name: n.name, stats: n.stats, ...(n.reminderText?.length ? { reminder: n.reminderText } : {}) };
 		fs.writeFileSync(cacheFile, JSON.stringify(nodes));
 		console.log(`한국 공식 ${label}: 노드 ${Object.keys(nodes).length}개 → ${cacheFile}`);
 		return nodes;
@@ -69,6 +70,31 @@ export function applyOfficialKo(nodes, kakao) {
 			return k.stats[i];
 		});
 		if (changed) fixed++;
+	}
+	return fixed;
+}
+
+/**
+ * 리마인더(괄호 설명) 한국어를 공식 문장으로 보강(10-13 C301 — 수호자 "거룩한 불길" 설명 3줄이 영어로 남았다: 게임 ReminderText 페어링에 없는 문장).
+ *   공식 줄 수가 영어 리마인더와 같을 때만, 영어로 남은 줄(또는 빈 reminderKo)을 그 자리 공식 줄로. 고친 노드 수를 돌려준다.
+ */
+export function applyOfficialReminderKo(nodes, kakao) {
+	if (!kakao) return 0;
+	let fixed = 0;
+	for (const node of nodes) {
+		const k = kakao[String(node.id)];
+		if (!k?.reminder || !node.reminder?.length || k.reminder.length !== node.reminder.length) continue;
+		const ko = node.reminderKo?.length === node.reminder.length ? node.reminderKo : node.reminder;
+		let changed = false;
+		const next = ko.map((line, i) => {
+			if (HANGUL.test(line)) return line;
+			changed = true;
+			return k.reminder[i];
+		});
+		if (changed) {
+			node.reminderKo = next;
+			fixed++;
+		}
 	}
 	return fixed;
 }

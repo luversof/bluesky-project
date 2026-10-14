@@ -41,9 +41,11 @@ class SimulatorResultsSwapTest {
         .contains("hx-select=\"#monthlyDividendResults\"")
         .contains("show:none")
         .contains("hx-replace-url=\"true\"")
-        .contains("hx-select-oob=\"#simulatorTabs\"")
+        .contains("hx-select-oob=\"#simulatorTabs,")
         .as("위 적립 추천 카드 길이가 바뀌어도 칩 · 폼이 같은 자리에 머물게(2026-10-13 지적)")
-        .contains("data-swap-anchor=\"#monthlyDividendCompareTable\"");
+        .contains("data-swap-anchor=\"#monthlyDividendCompareTable\"")
+        .as("낭독기 안내 - 이름이 Fragment 로 끝나지 않아 표시가 없으면 침묵한다")
+        .contains("data-swap-announce=");
     assertThat(read(PAGE)).contains("id=\"simulatorTabs\"");
 
     // 폼 · 칩 · 표가 구역 안에 있다(구역 시작 뒤)
@@ -82,8 +84,36 @@ class SimulatorResultsSwapTest {
         .contains("hx-boost=\"true\"");
   }
 
+  /** 시뮬레이터의 기준별 비교 카드 링크는 월배당 ETF 화면으로 옮기는 링크다 - 부스트되면 그 화면에 없는 구역을 찾다 빈다. */
+  @Test
+  void 비교_카드의_ETF_링크는_부스트하지_않는다() throws IOException {
+    String fragment = read(FRAGMENT);
+    int call = fragment.indexOf("@template.stock.fragments.contributionCompare(");
+    assertThat(call).isNotNegative();
+    String before = fragment.substring(fragment.lastIndexOf("<div", call), call);
+    assertThat(before).doesNotContain("hx-boost");
+    assertThat(read(Path.of("src/main/jte/stock/fragments/contributionCompare.jte")))
+        .doesNotContain("hx-boost");
+  }
+
   @Test
   void 순서_끌기가_바꿔_끼운_표에도_이어진다() throws IOException {
     assertThat(read(ORDER_BUILT)).contains("htmx:afterSettle");
+  }
+
+  /** 저장 뒤 돌아오는 주소가 표 좁히기를 싣는다(2026-10-13 자율). 정렬만 싣던 때는 저장할 때마다 좁힌 표가 전체로 풀렸다. */
+  @Test
+  void 저장_뒤_되돌림_주소가_표_좁히기를_싣는다() throws IOException {
+    String controller =
+        read(
+            Path.of(
+                "src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java"));
+    int at = controller.indexOf("private String buildMonthlyDividendRedirect(");
+    assertThat(at).isNotNegative();
+    String method = controller.substring(at, controller.indexOf("\n  }", at));
+    for (String key :
+        List.of("keyword", "minAnnualYield", "positiveOnly", "payoutWindow", "account")) {
+      assertThat(method).as(key).contains("\"" + key + "\"");
+    }
   }
 }

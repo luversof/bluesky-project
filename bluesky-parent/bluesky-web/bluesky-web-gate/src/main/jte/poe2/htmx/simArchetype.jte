@@ -48,6 +48,6 @@
 		@if(!items.isEmpty())
 			<div class="text-base-content/60">${ko ? "자주 쓰는 고유" : "Common uniques"}: ${String.join(", ", items)}</div>
 		@endif
-		<div class="text-[10px] text-base-content/60">${ko ? "poe.ninja 스냅샷 · 표기 중앙값 — 실행하면 이 조건의 실빌드 후보를 받아 우리 엔진으로 다시 계산하고, 성향에 맞춰 다듬습니다" : "poe.ninja snapshot · medians — running fetches real-build candidates, recalculates them with our engine and refines toward this lean"}</div>
+		<div class="text-[10px] text-base-content/60">${ko ? "poe.ninja 스냅샷 · 표기 중앙값 — 실행하면 이 조건 실빌드들의 공통 특성(패시브 · 고유 · 보조 젬)을 참고해 우리 엔진으로 계산하고, 성향에 맞춰 다듬습니다" : "poe.ninja snapshot · medians — running uses these builds' common traits (passives, uniques, supports), calculates with our engine and refines toward this lean"}</div>
 	</div>
 @endif

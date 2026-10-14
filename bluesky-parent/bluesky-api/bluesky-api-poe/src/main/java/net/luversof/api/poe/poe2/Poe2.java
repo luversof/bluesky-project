@@ -387,6 +387,7 @@ public final class Poe2 {
       Integer limit,
       String limitText,
       String limitTextKo,
+      Integer stackSize,
       List<AugmentEffect> effects,
       String icon,
       String image) {}
@@ -589,7 +590,11 @@ public final class Poe2 {
       String type,
       String ascendancy,
       Double dps,
-      Double ehp) {}
+      Double ehp,
+      // 빼면 풀리는 점수(10-14 P4 재분배 — guide2 freeable, 그 노드의 칸 기준). 전직 · 다리 노드면 null
+      Integer free,
+      // 무기 세트 전용 노드면 그 세트(1·2, 켜진 세트만 실린다 — 10-14 C316), 본 트리면 null
+      Integer set) {}
 
   /** 고유 아이템으로 바꾸면 오르는 폭. */
   public record GuideSwap(
@@ -635,7 +640,9 @@ public final class Poe2 {
       Integer points,
       Double dps,
       Double ehp,
-      String treeLink) {}
+      String treeLink,
+      // 켜진 무기 세트 노드에서 출발하는 길이면 그 세트(그 세트 점수로 찍는다, 10-14 C316), 본 트리면 null
+      Integer set) {}
 
   public record BuildGuide(
       Boolean available,

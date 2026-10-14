@@ -53,6 +53,40 @@ class MonthlyDividendImportOverlayRenderTest {
   }
 
   private String render(String template, Map<String, Object> model) {
+    // 2026-10-14: 출처 가져오기는 프로필 행의 단추, 삭제는 지급 이력 행의 단추가 됐다 - 행이 있어야 두 폼이 그려진다.
+    if (TEMPLATE.equals(template)) {
+      model.putIfAbsent(
+          "monthlyDividendProfiles",
+          java.util.List.of(
+              new net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse(
+                  java.util.UUID.randomUUID(),
+                  java.util.UUID.randomUUID(),
+                  "476800",
+                  "KODEX 한국부동산리츠인프라",
+                  "https://www.samsungfund.com/etf/product/view.do",
+                  "MID_MONTH",
+                  1,
+                  true,
+                  "",
+                  null,
+                  java.time.Instant.parse("2026-09-01T00:00:00Z"),
+                  null,
+                  null)));
+      model.putIfAbsent(
+          "monthlyDividendPayouts",
+          java.util.List.of(
+              new net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse(
+                  java.util.UUID.randomUUID(),
+                  java.util.UUID.randomUUID(),
+                  "476800",
+                  "KODEX 한국부동산리츠인프라",
+                  java.time.LocalDate.parse("2026-09-15"),
+                  java.time.LocalDate.parse("2026-09-17"),
+                  null,
+                  new java.math.BigDecimal("60"),
+                  new java.math.BigDecimal("9"),
+                  null)));
+    }
     // 출처 단건 가져오기는 저장된 프로필과 출처 URL 이 있을 때만 나온다.
     model.put("monthlyDividendProfileExists", true);
     // 지급 이력 삭제 폼은 저장된 이력이 있을 때만 나온다 - 덮지 않아야 할 폼의 본보기다.
@@ -112,7 +146,7 @@ class MonthlyDividendImportOverlayRenderTest {
     // 2026-09-28 총보수 · 상장일 새로 가져오기도 운용사 페이지를 내려받는다 - 같은 안내가 맞다.
     assertThat(formTag(html, "/stock/dividend/monthly-reference/profile/facts/refresh"))
         .contains("data-submit-overlay-desc=\"" + sourceNote + "\"");
-    // 단건 · 일괄 두 건 · 총보수 새로 가져오기까지 네 곳이다.
+    // 행 단추(2026-10-14, 출처가 있는 프로필 한 줄) · 일괄 두 건 · 총보수 새로 가져오기까지 네 곳이다.
     assertThat(html.split(java.util.regex.Pattern.quote(sourceNote), -1)).hasSize(4 + 1);
   }
 
@@ -135,7 +169,9 @@ class MonthlyDividendImportOverlayRenderTest {
     assertThat(formTag(html, "/stock/dividend/monthly-reference/profile"))
         .doesNotContain("data-submit-overlay");
     assertThat(formTag(html, "/stock/dividend/monthly-reference/payout/delete"))
-        .doesNotContain("data-submit-overlay");
+        .doesNotContain("data-submit-overlay")
+        .as("행 삭제는 한 번 누르면 바로 지워지지 않게 확인을 받는다(2026-10-14)")
+        .contains("data-confirm=");
   }
 
   /**
@@ -175,5 +211,44 @@ class MonthlyDividendImportOverlayRenderTest {
 
     assertThat(source)
         .contains("<script type=\"module\" src=\"/js/stock/submitOverlay.js\"></script>");
+  }
+
+  /**
+   * 사용자 요청 2026-10-14: 출처 가져오기는 따로 구성하지 말고 목록 행의 단추로, 단건 입력 · 수정 폼은 없앤다. 지급 이력 행마다 삭제가 있어 잘못 들어간 행은
+   * 지울 수 있다.
+   */
+  @Test
+  void 출처_가져오기는_행_단추고_단건_입력_폼은_없다() {
+    String html = render();
+    assertThat(html)
+        .as("단건 입력 · 수정 폼(action 이 payout 로 끝나는 폼)은 없다")
+        .doesNotContain("action=\"/stock/dividend/monthly-reference/payout\"")
+        .contains("data-payout-source-import=\"476800\"")
+        .as("행 단추 폼은 그 행의 종목을 싣는다")
+        .contains("<input type=\"hidden\" name=\"symbol\" value=\"476800\" />");
+    int list = html.indexOf("id=\"monthlyReferenceProfileList\"");
+    assertThat(html.indexOf("data-payout-source-import="))
+        .as("출처 가져오기는 프로필 목록 안")
+        .isGreaterThan(list);
+  }
+
+  /**
+   * 목록 행의 "출처에서 가져오기" 는 htmx 로 보내 목록 · 결과 알림만 바꿔 끼운다(2026-10-14 - 예전엔 페이지를 새로 불러 맨 위로 갔다). 보던 종목은
+   * returnSymbol 로 실어 왼쪽 편집 · 지급 이력이 다른 종목으로 바뀌지 않게 한다. 주소는 POST 로 갈아 끼우지 않는다.
+   */
+  @Test
+  void 행_가져오기는_htmx_로_보내고_보던_종목을_싣는다() {
+    String html = render();
+    String rowForm = formTag(html, "/stock/dividend/monthly-reference/payout/import/source");
+    assertThat(rowForm)
+        .contains("hx-boost=\"true\"")
+        .contains("hx-replace-url=\"false\"")
+        .contains("data-submit-overlay=\"true\"");
+    int at = html.indexOf(rowForm);
+    assertThat(html.substring(at, html.indexOf("</form>", at)))
+        .contains("<input type=\"hidden\" name=\"returnSymbol\" value=\"476800\" />");
+    assertThat(html)
+        .contains("id=\"monthlyReferenceResultArea\"")
+        .contains("#monthlyReferenceResultArea\"");
   }
 }

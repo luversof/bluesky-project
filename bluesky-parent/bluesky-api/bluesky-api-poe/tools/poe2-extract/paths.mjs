@@ -32,10 +32,34 @@ export const writeJson = (name, data) => {
 	return out;
 };
 
+/** 번들 캐시 출처 표식(10-13 C297) — 캐시 폴더 이름이 patch("4.5.5.4")뿐이라 GGG 에서 받은 캐시(색인 포함, 09-30)에 C260 뒤로 카카오 번들이 섞였다:
+ *  색인은 GGG 것 · 새로 받는 번들은 카카오 것이라 새로 추가한 표(한국어 CurrencyItems)가 엉뚱한 바이트(러시아어 문자열)로 읽혀 추출이 3번 다 실패.
+ *  같은 표를 카카오 색인으로 읽으면 정상(번들 08, 1537행). 캐시에 받은 곳(cdn, 해외는 "ggg")을 적어 두고 다르면 옛 캐시를 옆 이름으로 치운다
+ *  (지우지 않음 — 되돌리기 = 이름 되돌리기). 표식 없는 옛 캐시도 출처를 모르니 치운다(한 번 새로 받는다). */
+function ensureCacheSource() {
+	const { patch, cdn } = loadConfig();
+	const dir = path.join(WORK_DIR, ".cache", patch);
+	const marker = path.join(dir, ".source");
+	const source = cdn || "ggg";
+	if (fs.existsSync(dir)) {
+		const current = fs.existsSync(marker) ? fs.readFileSync(marker, "utf8").trim() : fs.readdirSync(dir).length ? "표식 없음" : source;
+		if (current === source) {
+			if (!fs.existsSync(marker)) fs.writeFileSync(marker, source);
+			return;
+		}
+		const aside = `${dir}.stale-${new Date().toISOString().replace(/[:.]/g, "").slice(0, 15)}`;
+		fs.renameSync(dir, aside);
+		console.warn(`[poe2] 번들 캐시 출처가 다르다(${current} → ${source}) — 옛 캐시를 ${aside} 로 치우고 새로 받는다`);
+	}
+	fs.mkdirSync(dir, { recursive: true });
+	fs.writeFileSync(marker, source);
+}
+
 /** 테이블만 CLI 로 뽑는다(files 는 비움) — CLI 의 파일 추출은 PoE1 스프라이트 목록(Art/UIImages1.txt …)을 먼저 읽는데
  *  PoE2 번들엔 없을 수 있어서, 파일은 exportFiles() 가 로더를 직접 불러 받는다. */
 export function runExtractor() {
 	fs.mkdirSync(WORK_DIR, { recursive: true });
+	ensureCacheSource();
 	const config = { ...loadConfig(), files: [] };
 	fs.writeFileSync(path.join(WORK_DIR, "config.json"), JSON.stringify(config, null, 2));
 	const cli = path.join(DAT_LIB, "dist", "cli", "run.js");
@@ -57,6 +81,7 @@ export function runExtractor() {
 
 /** 번들 로더를 직접 열어 파일을 받는다(같은 .cache 를 쓴다). 반환: { get(path) → Buffer|null, close } */
 export async function openLoader() {
+	ensureCacheSource();
 	const { patch } = loadConfig();
 	const loaders = await import(pathToFileURL(path.join(DAT_LIB, "dist", "cli", "bundle-loaders.js")).href);
 	const loader = await loaders.FileLoader.create(

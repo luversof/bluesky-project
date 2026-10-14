@@ -162,6 +162,9 @@
 }
 
 <div class="space-y-6">
+	<%-- 결과 알림 묶음. 목록 행의 "출처에서 가져오기" 는 페이지를 새로 부르지 않고 목록만 바꿔 끼우므로(2026-10-14) 이 묶음도 함께 바꾼다
+	     (hx-select-oob). 늘 그려 두고, 알림이 없으면 숨긴다(빈 칸이 위에 틈을 만들지 않게). --%>
+	<div id="monthlyReferenceResultArea" class="space-y-4 [&:not(:has(*))]:hidden">
 	@if(!successMessage.isEmpty())
 		<div class="alert alert-success border border-success/20 bg-success/10 text-success-content" role="status">
 			<span>${successMessage}</span>
@@ -184,6 +187,7 @@
 			<span>${monthlyDividendReferenceWarningMessage}</span>
 		</div>
 	@endif
+	</div>
 
 	<div class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
 		<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -332,26 +336,7 @@
 						<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.desc")}</p>
 					</div>
 					<div class="rounded-2xl border border-base-300 bg-base-50/70 p-4">
-						<div class="space-y-2">
-							<h3 class="text-sm font-semibold text-base-content">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.title")}</h3>
-							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.desc")}</p>
-						</div>
-						@if(monthlyDividendProfileExists && sourceImportUrlValue != null && !sourceImportUrlValue.isEmpty())
-							<form method="post" action="/stock/dividend/monthly-reference/payout/import/source" class="mt-4 grid gap-4" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}">
-								<input type="hidden" name="profileSort" value="${profileSortValue}" />
-								<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
-								<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
-								<input type="hidden" name="symbol" value="${payoutImportSymbolValue}" />
-								<label class="form-control min-w-0">
-									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.url")}</span></div>
-									<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content break-all">${sourceImportUrlValue}</div>
-								</label>
-								<button type="submit" class="btn btn-secondary w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}</button>
-							</form>
-						@else
-							<div class="mt-4 rounded-box border border-base-300 bg-base-100 px-4 py-3 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.empty")}</div>
-						@endif
-						<div class="divider my-4 text-xs text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.title")}</div>
+						<%-- 출처에서 가져오기는 프로필 목록의 행 단추로 옮겼다(사용자 요청 2026-10-14 - 따로 구성하지 말고 목록에 단추). --%>
 						<div class="space-y-2">
 							<h3 class="text-sm font-semibold text-base-content">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.title")}</h3>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.desc")}</p>
@@ -373,51 +358,8 @@
 							<button type="submit" class="btn btn-primary w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.submit")}</button>
 						</form>
 					</div>
-					<div class="divider my-0 text-xs text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.manual.title")}</div>
-					<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.manual.desc")}</p>
-					<form method="post" action="/stock/dividend/monthly-reference/payout" class="grid gap-4">
-						<input type="hidden" name="profileSort" value="${profileSortValue}" />
-						<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
-						<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
-						<label class="form-control min-w-0">
-							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
-							<input type="hidden" name="symbol" value="${payoutSymbolValue}" />
-							<div class="rounded-box border border-base-300 bg-base-200/40 px-4 py-3 text-sm text-base-content [overflow-wrap:anywhere]">${payoutSymbolLabel}</div>
-							<p class="mt-2 text-xs leading-5 text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.symbol.desc")}</p>
-						</label>
-						<label class="form-control min-w-0">
-							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.record.date")}</span></div>
-							<input name="recordDate" type="date" value="${recordDateValue}" class="input input-bordered w-full min-w-0" required />
-						</label>
-						<label class="form-control min-w-0">
-							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.pay.date")}</span></div>
-							<input name="payDate" type="date" value="${payDateValue}" class="input input-bordered w-full min-w-0" required />
-						</label>
-						<label class="form-control min-w-0">
-							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.distribution.rate")}</span></div>
-							<input name="distributionRatePct" type="number" min="0" step="0.01" value="${distributionRateValue}" class="input input-bordered w-full min-w-0" />
-						</label>
-						<label class="form-control min-w-0">
-							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.dividend.amount")}</span></div>
-							<input name="dividendAmountPerShare" type="number" min="0" step="0.0001" value="${dividendAmountValue}" class="input input-bordered w-full min-w-0" required />
-						</label>
-						<label class="form-control min-w-0">
-							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.taxable.base")}</span></div>
-							<input name="taxableBasePerShare" type="number" min="0" step="0.0001" value="${taxableBaseValue}" class="input input-bordered w-full min-w-0" required />
-						</label>
-						<button type="submit" class="btn btn-outline w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.submit")}</button>
-					</form>
-					@if(monthlyDividendPayoutExists)
-						<form method="post" action="/stock/dividend/monthly-reference/payout/delete">
-							<input type="hidden" name="profileSort" value="${profileSortValue}" />
-							<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
-							<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
-							<input type="hidden" name="symbol" value="${payoutSymbolValue}" />
-							<input type="hidden" name="recordDate" value="${selectedMonthlyDividendPayoutRecordDate}" />
-							<input type="hidden" name="payDate" value="${selectedMonthlyDividendPayoutPayDate}" />
-							<button type="submit" class="btn btn-error btn-outline w-full h-auto min-h-12 whitespace-normal py-3 leading-snug">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
-						</form>
-					@endif
+					<%-- 단건 입력 · 수정 폼과 그 삭제는 걷어냈다(사용자 요청 2026-10-14 "단건 수정도 굳이 있을 필요가 없을거 같아") - 이력은 출처 가져오기 ·
+					     붙여넣기로 넣고, 잘못 들어간 행은 아래 지급 이력 표의 행 삭제로 지운다. --%>
 			`)
 		</div>
 
@@ -469,7 +411,7 @@
 					     월배당 ETF 와 같은 방식). 함께 바뀌는 것: 위 끌어 옮기기 안내(거르면 꺼진다) · 아래 지급 이력(행 링크가 정렬 · 거르기를 싣는다).
 					     왼쪽 편집 폼은 바꾸지 않는다 - 입력하던 값이 날아간다. 대신 폼의 숨은 정렬 · 거르기 칸을 이 구역의 data-* 값으로 맞춘다(아래 스크립트).
 					     종목 고르기(편집 · 종목코드)는 편집 폼을 바꾸므로 예전처럼 페이지를 옮긴다. data-swap-anchor: 칩이 같은 자리에 머문다. --%>
-					<div class="flex flex-col gap-5" id="monthlyReferenceProfileList" hx-target="#monthlyReferenceProfileList" hx-select="#monthlyReferenceProfileList" hx-select-oob="#monthlyReferenceReorderNote,#monthlyReferencePayoutList" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true" data-swap-anchor="[data-profile-window-filter]" data-profile-sort-value="${profileSortValue}" data-profile-direction-value="${profileDirectionValue}" data-profile-window-value="${profileWindowValue}">
+					<div class="flex flex-col gap-5" id="monthlyReferenceProfileList" hx-target="#monthlyReferenceProfileList" hx-select="#monthlyReferenceProfileList" hx-select-oob="#monthlyReferenceReorderNote,#monthlyReferencePayoutList,#monthlyReferenceResultArea" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true" data-swap-anchor="[data-profile-window-filter]" data-swap-announce="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.list.title")}" data-profile-sort-value="${profileSortValue}" data-profile-direction-value="${profileDirectionValue}" data-profile-window-value="${profileWindowValue}">
 					<%-- 월중만 · 월말만 보기(2026-10-13 사용자 요청). 개수는 거르기 전 전체 기준이라 칩을 누르기 전에 몇 줄이 남을지 보인다. --%>
 					<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${profileWindowFilterLabel}" data-profile-window-filter hx-boost="true">
 						<span class="text-xs font-medium text-base-content/60" aria-hidden="true">${profileWindowFilterLabel}</span>
@@ -562,6 +504,18 @@
 												<div class="mt-2 flex flex-wrap gap-2">
 													<button type="button" class="btn btn-xs btn-outline h-auto min-h-6 whitespace-normal" data-payout-peek-toggle data-peek-url="/stock/dividend/monthly-reference/payout/peek?symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}" data-peek-loading="${payoutPeekLoading}" data-peek-failed="${payoutPeekFailed}" aria-expanded="false" aria-controls="payout-peek-${row.stockItemSymbol()}" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, payoutPeekLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${payoutPeekLabel} <span aria-hidden="true" data-payout-peek-icon>▾</span></button>
 													<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}${profileWindowQuery}#monthly-reference-editor" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, profileEditLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${profileEditLabel}</a>
+													@if(row.sourceUrl() != null && !row.sourceUrl().isEmpty())
+														<%-- 출처에서 지급 이력 가져오기(사용자 요청 2026-10-14 - 따로 구성하지 말고 목록에 단추). 출처를 내려받아 오래 걸리므로 덮개를 띄운다. --%>
+														<form method="post" action="/stock/dividend/monthly-reference/payout/import/source" class="inline" hx-boost="true" hx-replace-url="false" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}" data-payout-source-import="${row.stockItemSymbol()}">
+															<input type="hidden" name="profileSort" value="${profileSortValue}" />
+															<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+															<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
+															<input type="hidden" name="symbol" value="${row.stockItemSymbol()}" />
+															<%-- 가져온 뒤에도 보던 종목(왼쪽 편집 · 아래 지급 이력)은 그대로 - 목록만 바꿔 끼우므로 선택이 바뀌면 화면이 갈린다. --%>
+															<input type="hidden" name="returnSymbol" value="${selectedMonthlyDividendSymbol}" />
+															<button type="submit" class="btn btn-xs btn-outline h-auto min-h-6 whitespace-normal" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.row"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.row")}</button>
+														</form>
+													@endif
 													<a href="/stock/simulator?tab=monthly-dividend&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&sort=display-order&direction=asc" class="btn btn-xs btn-primary" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 												</div>
 											</td>
@@ -584,7 +538,8 @@
 											@if(latestPayout != null)
 												<td class="whitespace-nowrap" data-profile-latest-record-date="${String.valueOf(latestPayout.recordDate())}" data-profile-latest-record-stale="${latestPayout.stale() ? "true" : "false"}">
 													<div>${String.valueOf(latestPayout.recordDate())}</div>
-													<div class="text-xs text-base-content/60">${java.text.MessageFormat.format(daysAgoPattern, String.valueOf(latestPayout.daysSinceRecord()))}</div>
+													<%-- 미리 발표돼 등록된 기준일은 아직 안 왔다 - "-1일 전" 으로 찍혔다(실측 2026-10-14, 10-15 기준일). 오늘 · N일 뒤로 적는다. --%>
+													<div class="text-xs text-base-content/60">${latestPayout.daysSinceRecord() > 0 ? java.text.MessageFormat.format(daysAgoPattern, String.valueOf(latestPayout.daysSinceRecord())) : (latestPayout.daysSinceRecord() == 0 ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.today") : java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ahead"), String.valueOf(-latestPayout.daysSinceRecord())))}</div>
 													@if(latestPayout.stale())
 														<span class="badge badge-warning badge-sm mt-1" title="${staleRecordTitle}">${staleRecordLabel}</span>
 													@endif
@@ -627,13 +582,14 @@
 										@endif
 										<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.dividend.amount")}</th>
 										<th scope="col" class="whitespace-nowrap text-right">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.taxable.base")}</th>
+										<th scope="col"><span class="sr-only">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</span></th>
 									</tr>
 								</thead>
 								<tbody>
 									@for(MonthlyDividendPayoutResponse row : monthlyDividendPayouts)
 										<tr class="${selectedMonthlyDividendPayoutKey.equals(String.valueOf(row.recordDate()) + "|" + String.valueOf(row.payDate())) ? "bg-base-200/60" : ""}">
 											<td class="whitespace-nowrap tabular-nums">
-												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}${profileWindowQuery}&payoutRecordDate=${URLEncoder.encode(String.valueOf(row.recordDate()), StandardCharsets.UTF_8)}&payoutPayDate=${URLEncoder.encode(String.valueOf(row.payDate()), StandardCharsets.UTF_8)}" class="link link-hover font-medium tabular-nums">${String.valueOf(row.recordDate())}</a>
+												<span class="font-medium" data-payout-record-date>${String.valueOf(row.recordDate())}</span>
 											</td>
 											<td class="whitespace-nowrap tabular-nums">${String.valueOf(row.payDate())}</td>
 											@if(showDistributionRate)
@@ -641,6 +597,17 @@
 											@endif
 											<td class="text-right tabular-nums">₩${amountFormat.format(row.dividendAmountPerShare() != null ? row.dividendAmountPerShare() : BigDecimal.ZERO)}</td>
 											<td class="text-right tabular-nums">@if(row.taxableBasePerShare() == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else₩${amountFormat.format(row.taxableBasePerShare())}@endif</td>
+											<td class="text-right">
+												<form method="post" action="/stock/dividend/monthly-reference/payout/delete" class="inline" data-confirm="${java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.row.delete.confirm"), String.valueOf(row.recordDate()))}">
+													<input type="hidden" name="profileSort" value="${profileSortValue}" />
+													<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
+													<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
+													<input type="hidden" name="symbol" value="${row.stockItemSymbol()}" />
+													<input type="hidden" name="recordDate" value="${String.valueOf(row.recordDate())}" />
+													<input type="hidden" name="payDate" value="${String.valueOf(row.payDate())}" />
+													<button type="submit" class="btn btn-xs btn-ghost text-error h-auto min-h-6 whitespace-normal" aria-label="${java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.row.delete.aria"), String.valueOf(row.recordDate()))}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
+												</form>
+											</td>
 										</tr>
 									@endfor
 								</tbody>

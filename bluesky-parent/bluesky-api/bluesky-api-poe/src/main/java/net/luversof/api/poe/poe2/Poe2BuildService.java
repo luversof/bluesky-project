@@ -216,7 +216,9 @@ public class Poe2BuildService {
               n.path("type").asString(null),
               n.path("ascendancy").asString(null),
               num(n, "dps"),
-              num(n, "ehp")));
+              num(n, "ehp"),
+              n.path("free").isNumber() ? n.path("free").asInt() : null,
+              n.path("set").isNumber() ? n.path("set").asInt() : null));
     }
     // 기여가 큰 것부터(DPS+EHP) — 0 인 것(재분배 후보)은 뒤로
     nodes.sort((x, y) -> Double.compare(y.dps() + y.ehp(), x.dps() + x.ehp()));
@@ -589,7 +591,8 @@ public class Poe2BuildService {
               n.path("points").asInt(0),
               num(n, "dps"),
               num(n, "ehp"),
-              link));
+              link,
+              n.path("set").isNumber() ? n.path("set").asInt() : null));
     }
     return out;
   }

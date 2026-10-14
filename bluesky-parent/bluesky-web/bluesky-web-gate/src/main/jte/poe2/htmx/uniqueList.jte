@@ -5,25 +5,37 @@
 
 @param List<Poe2.Unique> items
 @param Integer total = 0
+@param int limit = 0
+@param String listQ = ""
+@param String listItemClass = ""
 
 !{
 	boolean korean = PoeText.isKorean();
 	List<Poe2.Unique> sorted = new java.util.ArrayList<>(items);
 	sorted.sort(java.util.Comparator.comparing((Poe2.Unique u) -> net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass()) == null ? "" : net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass()))
 		.thenComparing(u -> PoeText.name(u.nameKo(), u.name())));
+	// 더 보기(10-13 C306) — PoE1 고유 목록과 같은 90개씩(PoeHtmxController.LIST_LIMIT · listLimit). 예전엔 443개 900KB 를 한 번에 그렸다
+	int pageSize = 90;
+	int shown = Math.min(limit <= 0 ? pageSize : Math.max(limit, pageSize), sorted.size());
+	boolean capped = sorted.size() > shown;
+	List<Poe2.Unique> visible = sorted.subList(0, shown);
+	String moreUrl = "/poe2/htmx/uniques?limit=" + (shown + pageSize)
+		+ "&q=" + java.net.URLEncoder.encode(listQ, java.nio.charset.StandardCharsets.UTF_8)
+		+ "&itemClass=" + java.net.URLEncoder.encode(listItemClass, java.nio.charset.StandardCharsets.UTF_8);
+	String moreLabel = capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.more"), Math.min(shown + pageSize, sorted.size()) - shown) : null;
 }
 
 @if(total == null || total == 0)
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"), actionLabel = MessageUtil.getMessage("layout.menu.poe2.admin"), actionHref = "/poe2/admin")
 @else
-	<div class="text-xs text-base-content/60 mb-2">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), total)}</div>
+	<div class="text-xs text-base-content/60 mb-2">${capped ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.list.capped"), sorted.size(), shown) : java.text.MessageFormat.format(MessageUtil.getMessage("poe.list.count"), items.size(), total)}</div>
 	@if(items.isEmpty())
 		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.list.empty"))
 	@else
 		<%-- 카드 = PoE1 고유 목록(poe/htmx/uniqueList.jte)과 같은 구성(10-01: PoE2 는 이름 · 베이스만): 베이스 + 요구 레벨 + 리그 배지 + 변형 배지,
 		     인게임 툴팁 구조대로 고정(암시) 옵션 → 구분선 → 접두/접미 옵션(모드 파랑, 수치 강조). 변형이 있으면 기본 변형의 옵션. --%>
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-			@for(Poe2.Unique u : sorted)
+			@for(Poe2.Unique u : visible)
 				!{
 					Poe2.UniqueVariant dv = null;
 					if (u.defaultVariant() != null && u.variants() != null) {
@@ -86,5 +98,15 @@
 				</div>
 			@endfor
 		</div>
+		@if(capped)
+			<%-- 더 보기(C306) — PoE1 목록과 같은 단추 · 문구, 한 단계(90개)씩 늘려 같은 자리에 다시 그린다 --%>
+			<div class="flex justify-center pt-3">
+				<button type="button" class="btn btn-sm btn-outline"
+				        hx-get="${moreUrl}"
+				        hx-target="#poe2UniqueList"
+				        hx-swap="innerHTML"
+				        hx-disabled-elt="this">${moreLabel}</button>
+			</div>
+		@endif
 	@endif
 @endif

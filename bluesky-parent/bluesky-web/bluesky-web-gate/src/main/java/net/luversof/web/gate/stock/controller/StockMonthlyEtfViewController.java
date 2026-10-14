@@ -92,6 +92,12 @@ public class StockMonthlyEtfViewController {
             () -> monthlyDividendCatalogClient.findCatalog(new LinkedMultiValueMap<>()));
     var holdingsFuture =
         stockAsync.supply(() -> monthlyDividendReferenceSupport.loadCurrentHoldings(userId));
+    // 수익률 기간이 12 개월이 아니면 추천의 배당 값을 최근 N 회 분배금으로 다시 낸다(2026-10-14) - 그때만 지급 이력을 받는다.
+    var payoutHistoryFuture =
+        resolvedPeriod == MonthlyContributionPickSupport.TOTAL_RETURN_MONTHS
+            ? null
+            : stockAsync.supply(
+                monthlyDividendReferenceSupport::loadAllMonthlyDividendPayoutsQuietly);
     List<MonthlyDividendCatalogResponse> catalog =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(catalogFuture);
     List<MonthlyEtfRowView> allRows =
@@ -104,8 +110,27 @@ public class StockMonthlyEtfViewController {
     // 추천 기준(사용자 요청 2026-10-06) - 자리 추천과 "지금 눈여겨볼 종목" 이 같은 기준을 쓴다. 모르는 값은 배당.
     MonthlyContributionPickSupport.Basis resolvedBasis =
         MonthlyContributionPickSupport.Basis.of(basis);
+    // 추천 후보는 고른 수익률 기간으로 한 번 만든다(사용자 요청 2026-10-14 - 기간을 바꿔도 같은 종목만 추천됐다). "이번 적립" 과
+    // "지금 눈여겨볼 종목" 이 같은 후보를 써야 서로 다른 말을 하지 않는다.
+    Map<String, java.math.BigDecimal> periodYieldBySymbol =
+        payoutHistoryFuture == null
+            ? Map.of()
+            : MonthlyContributionPickSupport.periodYieldBySymbol(
+                net.luversof.web.gate.stock.support.StockAsyncSupport.join(payoutHistoryFuture),
+                catalog,
+                resolvedPeriod);
+    Map<String, MonthlyContributionPickSupport.ContributionCandidate> candidateBySymbol =
+        new java.util.LinkedHashMap<>();
+    for (MonthlyDividendCatalogResponse item : catalog) {
+      if (item != null && item.stockItemSymbol() != null) {
+        candidateBySymbol.put(
+            item.stockItemSymbol(),
+            MonthlyContributionPickSupport.candidateOf(
+                item, resolvedPeriod, periodYieldBySymbol.get(item.stockItemSymbol())));
+      }
+    }
     Map<String, MonthlyContributionPickSupport.ContributionPick> contributionPicks =
-        loadContributionPicks(catalog, resolvedBasis);
+        loadContributionPicks(catalog, resolvedBasis, resolvedPeriod, periodYieldBySymbol);
     String resolvedView = monthlyEtfViewSupport.resolveView(view);
     // 자리별 적립 추천 보기는 자리 차례(월중 → 월말, 위탁 → ISA/연금)로 놓는다(사용자 요청 2026-09-30). 전체 보기면 표시 순서.
     String viewSort = monthlyEtfViewSupport.resolveSortForView(resolvedSort, resolvedView);
@@ -148,15 +173,7 @@ public class StockMonthlyEtfViewController {
     model.addAttribute("monthlyEtfPayoutWindowCounts", payoutWindowCounts);
     model.addAttribute("monthlyEtfContributionPicks", contributionPicks);
     model.addAttribute("monthlyEtfView", resolvedView);
-    // 추천은 걸러 놓은 목록 안에서 고른다 - 화면에 안 보이는 종목을 추천하면 안 된다.
-    Map<String, MonthlyContributionPickSupport.ContributionCandidate> candidateBySymbol =
-        new java.util.HashMap<>();
-    for (MonthlyDividendCatalogResponse item : catalog) {
-      if (item != null && item.stockItemSymbol() != null) {
-        candidateBySymbol.put(
-            item.stockItemSymbol(), MonthlyContributionPickSupport.candidateOf(item));
-      }
-    }
+    // 추천은 걸러 놓은 목록 안에서 고른다 - 화면에 안 보이는 종목을 추천하면 안 된다. 후보는 위에서 기간으로 만든 것 그대로.
     model.addAttribute(
         "monthlyEtfPicks", monthlyEtfViewSupport.pickRows(rows, resolvedBasis, candidateBySymbol));
     model.addAttribute("monthlyEtfBasis", resolvedBasis.param());
@@ -185,11 +202,15 @@ public class StockMonthlyEtfViewController {
    * 실패는 로그로 남긴다.
    */
   private Map<String, MonthlyContributionPickSupport.ContributionPick> loadContributionPicks(
-      List<MonthlyDividendCatalogResponse> catalog, MonthlyContributionPickSupport.Basis basis) {
+      List<MonthlyDividendCatalogResponse> catalog,
+      MonthlyContributionPickSupport.Basis basis,
+      int months,
+      Map<String, java.math.BigDecimal> yields) {
     try {
       Map<String, MonthlyContributionPickSupport.ContributionPick> bySymbol =
           new java.util.LinkedHashMap<>();
-      for (var pick : monthlyContributionPickSupport.pickFromCatalog(catalog, basis)) {
+      var picks = monthlyContributionPickSupport.pickFromCatalog(catalog, basis, months, yields);
+      for (var pick : picks) {
         bySymbol.putIfAbsent(pick.symbol(), pick);
       }
       return bySymbol;

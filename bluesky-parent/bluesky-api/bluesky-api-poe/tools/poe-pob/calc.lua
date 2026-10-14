@@ -214,11 +214,13 @@ end
 	--   계산은 그대로 해서 수치만 보면 멀쩡해 보인다(Calcs.lua 의 *CostWarning / *CostWarningList).
 	--   MainSkillCostWarning = 주 스킬이 비용을 못 치름(1/0), CostWarningCount = 비용을 못 치르는 스킬 수(주 스킬 포함).
 	--   발단(2026-09-29): 업그레이드 가이드가 실빌드(족장)의 생명력 전환을 잔혹으로 바꾸라고 했다(DPS +17%) —
-	--   마나를 오라에 묶어 둔 빌드면 그 교체로 주 스킬을 못 쓴다. ⚠ worker.lua(최적화기 상주 워커)엔 아직 없다 — 가이드·재계산 전용.
+	--   마나를 오라에 묶어 둔 빌드면 그 교체로 주 스킬을 못 쓴다. worker.lua(최적화기 상주 워커)에도 같은 블록(10-13 C307 — 최적화기 비용 게이트).
 	do
 		local mainWarn = 0
-		for _, key in ipairs({ "LifeCostWarning", "ManaCostWarning", "RageCostWarning", "ESCostWarning" }) do
-			if output[key] == true then mainWarn = 1 end
+		-- 어느 자원이 모자란지(10-13 C307): 마나 1 · 생명력 2 · 보호막 4 · 분노 8 — 최적화기는 예약(오라)과 얽힌 마나 · 생명력 · 보호막만 고친다
+		local mask = 0
+		for key, bit in pairs({ ManaCostWarning = 1, LifeCostWarning = 2, ESCostWarning = 4, RageCostWarning = 8 }) do
+			if output[key] == true then mainWarn = 1; mask = mask + bit end
 		end
 		local count = 0
 		for _, key in ipairs({ "LifeCostWarningList", "ManaCostWarningList", "RageCostWarningList", "ESCostWarningList",
@@ -226,6 +228,7 @@ end
 			if type(output[key]) == "table" then count = count + #output[key] end
 		end
 		result.MainSkillCostWarning = mainWarn
+		result.MainSkillCostWarningMask = mask
 		result.CostWarningCount = count
 	end
 

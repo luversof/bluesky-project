@@ -348,7 +348,13 @@ export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 			.replace(/\+?\(?\{[^}]*\}\)?/g, (token) => {
 				const m = token.match(/\{(\d*)/);
 				const index = m && m[1] !== "" ? Number(m[1]) : koSeq++;
-				return valueByIndex.has(index) ? valueByIndex.get(index) : "";
+				if (!valueByIndex.has(index)) return "";
+				// 한쪽에만 붙은 괄호는 틀의 글자다(10-13 C302 — 도박의 질주 "속성({0}% 감소~{1}% 증가)" 의 "(" 를 값 자리로 먹어
+				//   "속성40% 감소~100% 증가)" 가 됐다, poedb 는 괄호 있음). 양쪽이 다 붙은 "({0})" 은 예전처럼 값으로 바꾼다
+				const open = /^\+?\(/.test(token);
+				const close = token.endsWith(")");
+				const value = valueByIndex.get(index);
+				return open === close ? value : open ? "(" + value : value + ")";
 			})
 			.split("\n")
 			.map((part) => part.replace(/\s+/g, " ").trim())

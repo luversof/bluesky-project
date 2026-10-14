@@ -228,7 +228,7 @@
 							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.simulator.monthly.form.title")}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.form.desc")}</p>
 						</div>
-						<div class="flex flex-wrap items-center gap-2"><form method="post" action="/stock/simulator/monthly-dividend/import-sheet" class="inline" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.simulator.monthly.import.sheet.overlay.desc")}"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><button type="submit" class="btn btn-secondary btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}</button></form><a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a></div>
+						<div class="flex flex-wrap items-center gap-2"><form method="post" action="/stock/simulator/monthly-dividend/import-sheet" class="inline" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.simulator.monthly.import.sheet.overlay.desc")}"><div id="monthlyDividendFilterCarryImport" class="hidden"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><input type="hidden" name="keyword" value="${monthlyDividendKeyword}" /><input type="hidden" name="minAnnualYield" value="${monthlyDividendMinAnnualYield != null ? monthlyDividendMinAnnualYield.toPlainString() : ""}" />@if(monthlyDividendPositiveOnly)<input type="hidden" name="positiveOnly" value="true" />@endif<input type="hidden" name="payoutWindow" value="${monthlyDividendPayoutWindowFilter}" /><input type="hidden" name="account" value="${monthlyDividendAccountFilter}" /></div><button type="submit" class="btn btn-secondary btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.import.sheet")}</button></form><a href="${monthlyDividendReferenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal">${MessageUtil.getMessage("stock.simulator.monthly.reference.manage")}</a></div>
 					</div>
 					@if(symbolValue != null && !symbolValue.isEmpty() && !referenceValuesAvailable)
 						<div class="alert border border-warning/20 bg-warning/10 text-warning-content" role="status">
@@ -239,8 +239,9 @@
 						</div>
 					@endif
 					<form method="post" action="/stock/simulator/monthly-dividend" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-						<input type="hidden" name="sort" value="${monthlyDividendSort}" />
-						<input type="hidden" name="direction" value="${monthlyDividendDirection}" />
+						<%-- 저장 뒤에도 표 좁히기 · 정렬이 그대로(2026-10-13 자율). 표 구역을 바꿔 끼울 때 이 묶음도 함께 새 값으로 바꾼다(hx-select-oob) -
+						     폼은 입력 중이라 통째로 바꾸지 않는다. 시트 가져오기 폼도 같다. --%>
+						<div id="monthlyDividendFilterCarrySave" class="hidden"><input type="hidden" name="sort" value="${monthlyDividendSort}" /><input type="hidden" name="direction" value="${monthlyDividendDirection}" /><input type="hidden" name="keyword" value="${monthlyDividendKeyword}" /><input type="hidden" name="minAnnualYield" value="${monthlyDividendMinAnnualYield != null ? monthlyDividendMinAnnualYield.toPlainString() : ""}" />@if(monthlyDividendPositiveOnly)<input type="hidden" name="positiveOnly" value="true" />@endif<input type="hidden" name="payoutWindow" value="${monthlyDividendPayoutWindowFilter}" /><input type="hidden" name="account" value="${monthlyDividendAccountFilter}" /></div>
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.symbol")}</span></div>
 							<input name="symbol" type="text" list="monthlyDividendStockOptions" value="${symbolValue}" placeholder="${MessageUtil.getMessage("stock.simulator.monthly.input.symbol.placeholder")}" class="input input-bordered w-full uppercase" required />
@@ -275,7 +276,7 @@
 		     주소는 갈아 끼운다(replace) - 새로 고침해도 같은 조건이고, 뒤로 가기는 이전 화면으로 간다. 위 탭 링크도 지금 조건을 싣도록 함께 바꾼다.
 		     data-swap-anchor: 비교표 제목을 교체 전후 화면의 같은 자리에 둔다 - 위 적립 추천 카드는 지급 시기에 따라 길이가 바뀌어 scrollY 만 지키면
 		     칩 · 폼이 위아래로 밀렸다(사용자 지적 2026-10-13: 전체 ↔ 월중 · 월말 위치가 달랐다). --%>
-		<div class="space-y-6" id="monthlyDividendResults" hx-target="#monthlyDividendResults" hx-select="#monthlyDividendResults" hx-select-oob="#simulatorTabs" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true" data-swap-anchor="#monthlyDividendCompareTable">
+		<div class="space-y-6" id="monthlyDividendResults" hx-target="#monthlyDividendResults" hx-select="#monthlyDividendResults" hx-select-oob="#simulatorTabs,#monthlyDividendFilterCarrySave,#monthlyDividendFilterCarryImport" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="true" data-swap-anchor="#monthlyDividendCompareTable" data-swap-announce="${MessageUtil.getMessage("stock.simulator.monthly.section.table.title")}">
 			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 				<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 					<div class="text-xs text-base-content/60">${selectionOverviewLabel}</div>

@@ -60,10 +60,12 @@ function createSubmitGuard() {
 	const overlay = document.querySelector<HTMLElement>(
 		"[data-submit-overlay-panel]",
 	);
-	const forms = Array.from(
-		document.querySelectorAll<HTMLFormElement>("form[data-submit-overlay]"),
-	);
-	if (overlay === null || forms.length === 0) {
+	// 폼은 그때그때 찾는다 - 관리 월배당 목록은 구역만 바꿔 끼워(2026-10-13) 행의 "출처에서 가져오기" 폼(2026-10-14)이 나중에 들어온다.
+	const currentForms = () =>
+		Array.from(
+			document.querySelectorAll<HTMLFormElement>("form[data-submit-overlay]"),
+		);
+	if (overlay === null) {
 		return;
 	}
 
@@ -80,19 +82,22 @@ function createSubmitGuard() {
 	const guard = createSubmitGuard();
 	const lockedButtons: HTMLButtonElement[] = [];
 
-	for (const form of forms) {
-		if (form.dataset.submitOverlayBound === "true") {
-			continue;
+	// 문서에서 한 번 듣는다(위임). 확인 창(data-confirm)이 취소했으면 덮개를 띄우지 않는다.
+	document.addEventListener("submit", (event) => {
+		// 지금 화면의 오버레이 폼인가 - 목록에서 찾는다(instanceof 는 시험 가짜에서 쓸 수 없다).
+		const form = currentForms().find((one) => one === event.target);
+		if (form === undefined) {
+			return;
 		}
-		form.dataset.submitOverlayBound = "true";
-		form.addEventListener("submit", (event) => {
-			if (!guard.begin()) {
-				event.preventDefault();
-				return;
-			}
-			show(form);
-		});
-	}
+		if (event.defaultPrevented) {
+			return;
+		}
+		if (!guard.begin()) {
+			event.preventDefault();
+			return;
+		}
+		show(form);
+	});
 
 	function show(form: HTMLFormElement) {
 		const text = overlayTextFor(form.dataset as OverlayDataset, fallback);
@@ -107,7 +112,7 @@ function createSubmitGuard() {
 		// 버튼 잠금은 다음 틱으로 미룬다. submit 처리 도중에 disabled 로 만들면
 		// 이름을 가진 제출 버튼의 값이 폼 데이터에서 빠질 수 있다.
 		window.setTimeout(() => {
-			for (const target of forms) {
+			for (const target of currentForms()) {
 				const buttons = target.querySelectorAll<HTMLButtonElement>(
 					'button[type="submit"]',
 				);
@@ -125,6 +130,34 @@ function createSubmitGuard() {
 			button.disabled = false;
 		}
 		guard.reset();
+	}
+
+	// htmx 로 보내는 폼(관리 월배당 목록 행의 "출처에서 가져오기", 2026-10-14)은 htmx 가 제출을 가로채 위 처리기가 덮개를 띄우지 않는다 -
+	// 요청이 시작될 때 띄우고 끝나면 걷는다(페이지가 바뀌지 않으므로 걷어야 한다).
+	document.addEventListener("htmx:beforeRequest", (event) => {
+		const elt = (event as CustomEvent).detail?.elt;
+		const form = currentForms().find((one) => one === elt);
+		if (form === undefined) {
+			return;
+		}
+		if (!guard.begin()) {
+			event.preventDefault();
+			return;
+		}
+		htmxOverlayActive = true;
+		show(form);
+	});
+	// 끝은 보낸 폼에서 알리는데, 구역을 바꿔 끼우면 그 폼이 문서에서 빠져 알림이 문서까지 오지 않는다(실측 2026-10-14: 덮개가 남았다).
+	// 그래서 덮개를 띄운 htmx 요청을 기억해 두고, 문서까지 오는 끝 알림(정착 · 응답 오류 · 전송 오류)에서 걷는다.
+	let htmxOverlayActive = false;
+	const endHtmxOverlay = () => {
+		if (htmxOverlayActive) {
+			htmxOverlayActive = false;
+			reset();
+		}
+	};
+	for (const type of ["htmx:afterSettle", "htmx:responseError", "htmx:sendError", "htmx:timeout"]) {
+		document.addEventListener(type, endHtmxOverlay);
 	}
 
 	// 뒤로 가기로 bfcache 에서 돌아오면 DOM 이 그대로 살아 돌아온다.

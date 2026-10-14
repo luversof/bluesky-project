@@ -7,7 +7,7 @@ import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 import { alignKoToGameOrder, buildKoreanMap, buildTree, joinReminderKo } from "./tree-common.mjs";
 import { createTemplateTranslator } from "./ko-templates.mjs";
-import { loadKakaoTree } from "./kakao-tree.mjs";
+import { applyOfficialReminderKo, loadKakaoTree } from "./kakao-tree.mjs";
 
 const RAW = path.join(WORK_DIR, "passive-tree-raw.json");
 const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "passive-tree.json"); // POE_DATA_OUT = 사본 출력(10-10)
@@ -160,6 +160,8 @@ console.log(`줄 수 어긋남을 공식 트리로 맞춤: ${countFixed}개 노�
 try {
 	const rem = joinReminderKo(result, loadTable("English", "ReminderText"), loadTable("Korean", "ReminderText"));
 	console.log(`리마인더 한글: ${rem.hit}/${rem.total}`);
+	// 페어링에 없는 리마인더 줄은 한국 공식 트리 문장으로(10-13 C301 — 수호자 "거룩한 불길" 설명)
+	console.log(`리마인더 공식 트리로 보강: ${applyOfficialReminderKo(result.nodes, kakaoNodes)}개 노드`);
 } catch {
 	console.log("리마인더 한글: ReminderText 테이블 없음(extract 먼저 실행 필요) — 영문 유지");
 }

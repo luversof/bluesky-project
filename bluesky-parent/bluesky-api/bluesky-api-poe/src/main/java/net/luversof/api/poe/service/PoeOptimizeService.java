@@ -1929,6 +1929,10 @@ public class PoeOptimizeService {
   private volatile boolean feasibilitySteering = false;
   // #1 정의의 화염류(자가연소) 잡 — 선택 지표에 지속력(순생명재생) 게이트 적용. RF 외엔 false 라 기준선 불변.
   private volatile boolean selfBurnRun = false;
+  // 주 스킬 비용 게이트(10-13 C307) — 인게임에서 최종 빌드가 주 스킬 비용을 못 치르면(오라가 마나를 다 점유 등) 오라를 덜어 낸다.
+  //   한 번 불러 두면 남는 소환수(망령 · 좀비 …)는 오라를 켜기 전에 소환하면 되므로 제외(가이드 isCastOnceMinion 과 같은 규칙).
+  //   되돌리기: 환경 변수 POE_COST_GATE=off
+  private volatile boolean costGateRun = false;
   // #235 미니언 잡 — 선택/표시 지표를 max(CombinedDPS, FullDPS)=미니언수 합산 총합으로(ninja 총합 표기 정합).
   //   FullDPS 는 미니언 그룹에만 조건부로 켠 includeInFullDPS XML + PoB calcFullDPS 로 count-정확 집계됨. 미니언
   //   외엔 false + XML 도 원본 동일 → 단일 액터·토템 기준선(arc/cyclone/ED/RF/AW) 구조적 불변.
@@ -2932,6 +2936,7 @@ public class PoeOptimizeService {
     this.attrRepairs.clear(); // 속성 보정 희생 이력 초기화(잡마다)
     this.feasibilitySteering = false; // 실현 가능성 조향 초기화(잡마다)
     this.selfBurnRun = false; // 자가연소 지속력 게이트 초기화(잡마다)
+    this.costGateRun = false; // 주 스킬 비용 게이트 초기화(잡마다, C307)
     this.multiActorBuild = false; // #235 다중 액터(토템/미니언) 총합 지표 초기화(잡마다)
     this.targetMaxHit = MAXHIT_FLOOR; // poe.ninja 생존 목표치 초기화(스킬 확정 후 재설정)
     this.targetEhp = EHP_FLOOR;
@@ -3065,6 +3070,9 @@ public class PoeOptimizeService {
       final List<String> keywords = pickDamageAxis(gem, objective, baseKeywords);
       this.currentKeywords = keywords;
       this.selfBurnRun = isSelfBurnLifeScaled(gem); // #1 RF 류면 선택 지표에 지속력 게이트
+      this.costGateRun =
+          !"off".equalsIgnoreCase(System.getenv("POE_COST_GATE"))
+              && !PoeUpgradeGuideService.isCastOnceMinion(gem); // C307 주 스킬 비용 게이트
       // #235 메인 스킬이 미니언이면 선택/표시 지표를 미니언수 합산 총합(FullDPS)으로 — ninja 총합 표기 정합.
       //   ⚠ 토템은 제외: calcFullDPS 가 토템은 미니언처럼 count 집계하지 않아 FullDPS 기반 탐색이 더 나쁜 빌드로
       //   흘러 AW 3,590,847→2,692,513 회귀(실측). 토템 count 스케일링은 별도 과제.
@@ -8765,11 +8773,13 @@ public class PoeOptimizeService {
       {
         double unreservedFinal = finalValues.getOrDefault("ManaUnreserved", 0d);
         double unreservedLifeFinal = finalValues.getOrDefault("LifeUnreserved", 1d);
-        while ((unreservedFinal < MIN_UNRESERVED_MANA || unreservedLifeFinal < MIN_UNRESERVED_LIFE)
-            && !selectedAuras.isEmpty()) {
+        // 주 스킬 비용(10-13 C307) — 남은 마나로 주 스킬을 못 쓰는 오라 조합도 같은 방식으로 덜어 낸다(뼈 박살 균형 위치: 마나 883 중
+        //   836 점유, 남은 47 로 주 스킬 비용 못 치름). 처음엔 목표값에서 0 으로 걸렀는데, 마나가 아직 모자란 **중간 단계**까지 막혀
+        //   탐색 경로가 바뀌고 경고 없던 축(회오리 사격 −26% · 맹독의 비 −27%)까지 내려갔다 → 최종 검증에서만
+        while (needsReservationRepair(finalValues) && !selectedAuras.isEmpty()) {
           PoeGem dropped = selectedAuras.remove(selectedAuras.size() - 1);
           log(
-              "오라 최종 예약 초과 — 해제: "
+              "오라 최종 예약 초과(또는 주 스킬 비용 부족) — 해제: "
                   + dropped.name()
                   + " (미예약 마나 "
                   + Math.round(unreservedFinal)
@@ -10592,6 +10602,30 @@ public class PoeOptimizeService {
                   + " 해제(다른 반지가 착용을 금지 — PoB 가 이미 무시하던 아이템)");
         }
       }
+      // ── 결과 직전 예약 · 주 스킬 비용 재검증(10-13 C307) — 위 "오라 최종 예약 초과" 검증 뒤에도 영원한 축복 오라 · 적중 시 저주 ·
+      //   가드 스킬 · 오라 1:1 교체가 예약을 다시 늘린다(실측: 정전기 타격 남은 마나 −112 · 주 스킬 비용 부족). 같은 규칙으로
+      //   마지막 채택 오라부터 해제한다(마나 · 생명력 부족일 때만 — 보호막 · 분노 비용은 오라와 무관, 트라투스에서 오라 둘을 헛해제)
+      for (int repair = 0;
+          repair < 10 && needsReservationRepair(finalValues) && !selectedAuras.isEmpty();
+          repair++) {
+        PoeGem dropped = selectedAuras.remove(selectedAuras.size() - 1);
+        finalXml =
+            buildXml(
+                gem, supports, className, ascendancy, ascendancyNodes, allocated, items, jewels);
+        if (currentAnoint != null) {
+          finalXml = withAnoint(finalXml, currentAnoint.name());
+        }
+        finalValues = poePobEngineService.calculateValues(finalXml);
+        evalCount.incrementAndGet();
+        log(
+            "결과 직전 예약 · 비용 재검증 — 오라 해제: "
+                + dropped.name()
+                + " (미예약 마나 "
+                + Math.round(finalValues.getOrDefault("ManaUnreserved", 0d))
+                + " / 생명력 "
+                + Math.round(finalValues.getOrDefault("LifeUnreserved", 1d))
+                + ")");
+      }
       // ── 가정별 성능 매트릭스: 최종 빌드를 적 시나리오 4종 × 버프 off/on 으로 재평가 ──
       // 완성된 XML 의 <Config> 만 바꿔 병렬 재계산(luajit 프로세스는 서로 독립). EHP 는 적/버프 무관이라 DPS 만.
       //   ⚠ 반드시 finalXml 을 바꾸는 마지막 단계(도유 재대결 · 주얼 · 회수 · 주얼 정리) **뒤**에서 — 예전엔 그 단계들 앞에서
@@ -11284,12 +11318,36 @@ public class PoeOptimizeService {
         null);
   }
 
+  /**
+   * 최종 빌드 예약 · 비용 수리가 필요한가(10-13 C307) — 예약 초과(미예약 마나 · 생명력 하한 미만) 또는 주 스킬이 마나 · 생명력 · 보호막 비용을 못
+   * 치름(워커의 MainSkillCostWarningMask 1|2 = 마나 · 생명력). 보호막(4) · 분노(8) 비용은 오라 예약과 무관해 해제해도 안 풀린다(실측:
+   * 트라투스의 묵직한 타격 mask 4 — 오라 둘을 해제해도 경고가 남고 값만 −10.7%).
+   */
+  private boolean needsReservationRepair(Map<String, Double> values) {
+    if (values.getOrDefault("ManaUnreserved", 0d) < MIN_UNRESERVED_MANA
+        || values.getOrDefault("LifeUnreserved", 1d) < MIN_UNRESERVED_LIFE) {
+      return true;
+    }
+    long mask = Math.round(values.getOrDefault("MainSkillCostWarningMask", 0d));
+    return costGateRun && (mask & 3L) != 0L;
+  }
+
   private double objectiveOf(Map<String, Double> values, String objective) {
     // 인게임에서 **적용되지 않는** 보조젬이 섞인 빌드는 후보에서 뺀다(값 0).
     //   PoB 는 그런 보조를 적용하지 않으면서도 자체 스킬로 피해를 내 목표값을 부풀린다(위 supportCompatible 주석의 Hextoad 실측).
     //   판정은 러너(calc.lua/worker.lua)가 PoB 의 calcLib.canGrantedEffectSupportActiveSkill 로 세어 넘긴다 —
     //   규칙이 소환수 타입·아이템 부여·imbued 까지 얽혀 있어 Java 로 재구현하면 틀린다.
     if (values.getOrDefault("UnappliedSupportCount", 0d) > 0d) {
+      return 0d;
+    }
+    // 주 스킬 에너지 보호막 비용을 못 치르는 빌드(10-14 C308) — 비용을 보호막으로 바꾸는 아이템(모조품 서약 "Skills gain a Base Energy
+    // Shield
+    //   Cost equal to 200% of Base Mana Cost")을 보호막 0 인 생명력 빌드가 초반 장비 단계에서 집어 끝까지 갔다(트라투스, 인게임 주 스킬
+    // 사용 불가).
+    //   마나 부족(1)은 중간 단계에 흔해 여기서 막으면 탐색이 틀어진다(C307 1차) — 보호막(4)만, 마나 · 생명력은 최종
+    // 수리(needsReservationRepair)
+    if (costGateRun
+        && (Math.round(values.getOrDefault("MainSkillCostWarningMask", 0d)) & 4L) != 0L) {
       return 0d;
     }
     double factor = feasibilitySteering ? feasibilityFactor(values) : 1.0;
