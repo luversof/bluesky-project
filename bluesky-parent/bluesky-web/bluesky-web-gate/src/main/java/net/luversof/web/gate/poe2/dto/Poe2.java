@@ -702,7 +702,8 @@ public final class Poe2 {
 
   public record RefineMetrics(Double dps, Double ehp, Double life, Double es) {}
 
-  public record RefineStep(String label, Double dpsPct, Double ehpPct) {}
+  /** 다듬기 한 단계 — labelEn 은 영어 화면용(10-14 C321 — API 와 짝, 옛 이력엔 없다). */
+  public record RefineStep(String label, Double dpsPct, Double ehpPct, String labelEn) {}
 
   /** mainSet·sets — 무기 세트를 나눠 쓰는 빌드일 때만(API Poe2RefineService.Result 와 쌍). */
   public record RefineResult(
@@ -791,7 +792,26 @@ public final class Poe2 {
       Integer consensusN,
       Double consensusOverlap,
       // 전직 자동일 때 전직별 비교(10-14 P5 — API 와 짝): 최고 후보 · 그 후보에 공통 트리를 덮은 값. 옛 이력 · 전직 지정이면 null
-      List<AscCompare> ascCompare) {}
+      List<AscCompare> ascCompare,
+      // 무기 세트 성격 + 그 세트를 다듬은 목표(10-15 C332 — API 와 짝). 세트를 안 나누는 아키타입 · 옛 이력이면 null
+      List<SetRoleView> setRoles) {}
+
+  /**
+   * 무기 세트 하나의 성격(C332) — API Poe2SimService.SetRoleView. kind = attack · defense · support, focus =
+   * 상대 세트보다 더 치중한 특성(damage · crit · dot · area · boss · speed · accuracy · buff · minion ·
+   * defense), weapon(Ko) = 그 세트 무기 종류 다수결, objective = 시뮬레이터가 이 세트를 다듬은 목표, main = 주 세트.
+   */
+  public record SetRoleView(
+      int set,
+      String kind,
+      List<String> focus,
+      String weapon,
+      String weaponKo,
+      int weaponCount,
+      int active,
+      int n,
+      String objective,
+      boolean main) {}
 
   /** 닌자 공통 특성 중 빌드에 없는 것 한 줄(10-14 C318 — API Poe2CommonGapsService.Gap). slot 은 고유만. */
   public record CommonGap(String name, String nameKo, String slot, int count) {}

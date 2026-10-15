@@ -44,7 +44,7 @@
 		@else
 			<ol class="list-decimal space-y-1 pl-5" data-refine-steps>
 				@for(Poe2.RefineStep st : r.steps())
-					<li><span>${st.label()}</span> <span class="font-mono text-xs text-base-content/60">DPS ${sgn.apply(st.dpsPct())} · EHP ${sgn.apply(st.ehpPct())}</span></li>
+					<li><span>${!ko && st.labelEn() != null ? st.labelEn() : st.label()}</span> <span class="font-mono text-xs text-base-content/60">DPS ${sgn.apply(st.dpsPct())} · EHP ${sgn.apply(st.ehpPct())}</span></li>
 				@endfor
 			</ol>
 			<form hx-post="/poe2/htmx/build/import-replace" hx-target="#poe2BuildResult" hx-swap="innerHTML" data-no-success-toast>

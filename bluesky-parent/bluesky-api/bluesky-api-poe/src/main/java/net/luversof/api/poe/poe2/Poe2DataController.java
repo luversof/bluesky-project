@@ -71,7 +71,9 @@ public class Poe2DataController {
     if (a == null || a.start() == null) {
       return a;
     }
-    // 출발점 코드는 무거워 미리보기엔 싣지 않는다
+    // 출발점 코드는 무거워 미리보기엔 싣지 않는다 — 수치(DPS · EHP)는 싣는다(10-14 C325: 미리보기 "실빌드에서 출발하기" 단추가 대표 실빌드 수치를
+    // 보인다)
+    Poe2NinjaService.RealStart st = a.start();
     return new Poe2NinjaService.Archetype(
         a.ascendancy(),
         a.mainSkill(),
@@ -87,7 +89,16 @@ public class Poe2DataController {
         a.facetTotal(),
         a.topItems(),
         a.topAnointed(),
-        null);
+        new Poe2NinjaService.RealStart(
+            st.level(),
+            st.dps(),
+            st.ehp(),
+            st.life(),
+            st.es(),
+            st.measured(),
+            st.medianDps(),
+            st.medianEhp(),
+            null));
   }
 
   /** poe.ninja 스냅샷 동기 상태(저장본·현재 버전, 마지막 갱신·엔진 단계). */

@@ -66,7 +66,67 @@ export function parseBuild(xml, ascendancyNodes, baseNames = []) {
 	const ov = xml.match(/<AttributeOverride\b[^>]*>/)?.[0] || "";
 	const attrs = {};
 	["strNodes", "dexNodes", "intNodes"].forEach((k, i) => ids(attr(ov, k)).forEach((id) => (attrs[id] = i + 1)));
-	return { className: attr(build, "className"), ascendancy: attr(build, "ascendClassName"), level: Number(attr(build, "level")) || 0, main, asc, set1: [...set1], set2: [...set2], supports, others, slots, attrs };
+	// 켜진 무기 세트(저장 당시) — 세트 성격(setRoles)의 "주로 쓰는 세트"
+	const activeWeaponSet = /\buseSecondWeaponSet="true"/.test(xml.match(/<ItemSet\b[^>]*>/)?.[0] || "") ? 2 : 1;
+	return { className: attr(build, "className"), ascendancy: attr(build, "ascendClassName"), level: Number(attr(build, "level")) || 0, main, asc, set1: [...set1], set2: [...set2], supports, others, slots, attrs, activeWeaponSet };
+}
+
+// 세트 전용 노드 문구 → 특성(10-15 사용자 요청 "세트 1 · 2 가 어떤 특성에 치중하는지 파악해 시뮬레이션하고 보여 달라" — 버프/공격, 광역/보스, 지속 피해/치명타).
+// 노드 하나가 여러 특성에 걸릴 수 있다. 특출 노드는 3배(작은 노드 여럿보다 방향을 정한다)
+export const SET_TRAITS = [
+	["damage", /(?:increased|more) [A-Za-z ]*Damage(?! taken)|Damage Bonus|Penetrat/i],
+	["crit", /Critical/i],
+	["dot", /Damage over Time|Poison|Bleed|Ignite|Magnitude of Damaging Ailments|Wither/i],
+	["area", /Area of Effect|Projectile|Chain|Fork|Pierce|Additional Arrow/i],
+	["boss", /Rare or Unique|Unique Enem|Armour Break|Break Armour|Fully Broken|Exposure/i],
+	["speed", /Attack Speed|Cast Speed|Skill Speed/i],
+	["accuracy", /Accuracy/i],
+	["buff", /Spirit|Aura|Buff|Herald|Presence|Offering|Banner|Reservation|Curse|\bMark/i],
+	["minion", /Minion|Companion|Allies/i],
+	["defense", /Armour|Evasion|Energy Shield|maximum Life|Resist|Block|Damage taken|Regenerat|Recovery|Flask|Charm|Stun Threshold|Ailment Threshold/i],
+];
+const ATTACK_TRAITS = new Set(["damage", "crit", "dot", "area", "boss"]);
+const SUPPORT_TRAITS = new Set(["buff", "minion", "speed", "accuracy"]);
+
+/**
+ * 세트 성격 — 멤버마다 세트 1 · 2 전용 노드 문구를 특성으로 묶어 비율을 내고, 두 세트의 차이(이 세트가 상대보다 더 치중한 특성)로 역할을 정한다.
+ * kind: attack(공격 — 다듬기 목표 DPS) · defense(방어 — EHP) · support(버프 · 소환 · 속도 · 명중 — 균형). 세트를 나눠 쓰는 멤버가 절반 미만이면 null.
+ * 무기는 그 세트 무기 칸의 아이템 종류 다수결("Bow+Quiver", 비면 "none").
+ */
+export function setRoles(builds, pobTree, classOf = new Map(), classKo = new Map()) {
+	if (!pobTree?.nodes || !builds.length) return null;
+	const using = builds.filter((b) => b.set1.length + b.set2.length > 0);
+	if (using.length * 2 < builds.length) return null;
+	const sum = [{}, {}];
+	for (const b of using) {
+		[b.set1, b.set2].forEach((nodes, i) => {
+			for (const id of nodes) {
+				const n = pobTree.nodes[id];
+				if (!n?.stats?.length) continue;
+				const txt = n.stats.join(" | ");
+				for (const [k, re] of SET_TRAITS) if (re.test(txt)) sum[i][k] = (sum[i][k] || 0) + (n.isNotable ? 3 : 1);
+			}
+		});
+	}
+	const share = sum.map((o) => { const t = Object.values(o).reduce((a, c) => a + c, 0) || 1; return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Math.round((v / t) * 1000) / 1000])); });
+	const weaponOf = (b, a, c) => [b.slots[a], b.slots[c]].filter(Boolean).map((it) => classOf.get(it.base) || it.base).join("+") || "none";
+	const sets = [0, 1].map((i) => {
+		const other = share[1 - i];
+		const diff = Object.keys({ ...share[i], ...other }).map((k) => [k, (share[i][k] || 0) - (other[k] || 0)]).filter(([, d]) => d >= 0.04).sort((a, b) => b[1] - a[1]);
+		const focus = diff.slice(0, 3).map(([k]) => k);
+		// 역할 = 더 치중한 특성 차이를 묶음(공격 · 지원 · 방어)별로 더해 큰 쪽(첫 특성 하나로 정하면 "속도 + 공격력 + 치명타" 가 지원이 됐다).
+		// 차이가 없으면(두 세트가 닮음) 이 세트 자체 비율로
+		const by = diff.length ? diff : Object.entries(share[i]);
+		const score = { attack: 0, support: 0, defense: 0 };
+		by.forEach(([k, d]) => (score[ATTACK_TRAITS.has(k) ? "attack" : SUPPORT_TRAITS.has(k) ? "support" : "defense"] += d));
+		const kind = by.length ? Object.entries(score).sort((a, b) => b[1] - a[1])[0][0] : null;
+		const w = {};
+		for (const b of builds) bump(w, i === 0 ? weaponOf(b, "Weapon 1", "Weapon 2") : weaponOf(b, "Weapon 1 Swap", "Weapon 2 Swap"));
+		const [weapon, weaponCount] = Object.entries(w).sort((a, b) => b[1] - a[1])[0] || ["none", 0];
+		const weaponKo = weapon === "none" ? "" : weapon.split("+").map((c) => classKo.get(c) || c).join(" + ");
+		return { set: i + 1, kind, focus, traits: share[i], weapon, weaponKo, weaponCount, active: builds.filter((b) => b.activeWeaponSet === i + 1).length };
+	});
+	return { n: builds.length, used: using.length, sets };
 }
 
 /** 한 아키타입의 멤버들 → 빈도. */
@@ -219,11 +279,16 @@ export function writeConsensus() {
 	const tree = JSON.parse(fs.readFileSync(TREE, "utf8"));
 	const ascendancyNodes = new Set(Object.entries(tree.nodes).filter(([, n]) => n.ascendancy).map(([id]) => Number(id)));
 	let baseNames = [];
+	const classOf = new Map(), classKo = new Map();
 	try {
 		const bi = JSON.parse(fs.readFileSync(path.join(os.homedir(), ".poe-gamedata", "poe2", "base-items.json"), "utf8"));
-		baseNames = [...new Set((bi.items || bi).map((b) => b.name).filter(Boolean))].sort((a, b) => b.length - a.length);
+		const list = bi.items || Object.values(bi);
+		baseNames = [...new Set(list.map((b) => b.name).filter(Boolean))].sort((a, b) => b.length - a.length);
+		list.forEach((b) => b.name && b.itemClass && classOf.set(b.name, b.itemClass));
+		list.forEach((b) => b.itemClass && b.itemClassKo && classKo.set(b.itemClass, b.itemClassKo));
 	} catch { /* 베이스 목록이 없으면 이름 그대로 */ }
-	const adj = treeGraph(tree, loadPobTree());
+	const pobTree = loadPobTree();
+	const adj = treeGraph(tree, pobTree);
 	const archetypes = {};
 	for (const [key, list] of Object.entries(members.archetypes || {})) {
 		const builds = [];
@@ -233,6 +298,7 @@ export function writeConsensus() {
 		if (!builds.length) continue;
 		const agg = aggregate(builds);
 		try { agg.tree = consensusTree(agg, builds, tree, adj); } catch (e) { agg.treeError = String(e?.message || e); }
+		try { agg.setRoles = setRoles(builds, pobTree, classOf, classKo); } catch (e) { agg.setRolesError = String(e?.message || e); }
 		archetypes[key] = agg;
 	}
 	fs.writeFileSync(CONSENSUS_PATH, JSON.stringify({ league: members.league, snapshot: members.snapshot, builtAt: new Date().toISOString(), archetypes }));

@@ -102,7 +102,68 @@ public class Poe2NinjaService {
       java.util.Map<String, Integer> supports,
       java.util.Map<String, java.util.Map<String, Integer>> slotUniques,
       // 본 트리 노드별 인원(10-14 C315 — 공통 트리 통째 교체는 8/8 거절돼, 많이 찍는 노드를 하나씩 재분배로 넣어 본다)
-      java.util.Map<Integer, Integer> nodeCounts) {}
+      java.util.Map<Integer, Integer> nodeCounts,
+      // 무기 세트 성격(10-15 C332) — 세트를 나눠 쓰는 실빌드가 절반 미만이거나 옛 파일이면 null
+      SetRoles setRoles) {
+
+    public Consensus(
+        int n,
+        String className,
+        String ascendancy,
+        List<Integer> nodes,
+        java.util.Map<Integer, Integer> attrs,
+        java.util.Map<Integer, Integer> sets,
+        double overlap,
+        java.util.Map<String, Integer> supports,
+        java.util.Map<String, java.util.Map<String, Integer>> slotUniques,
+        java.util.Map<Integer, Integer> nodeCounts) {
+      this(
+          n,
+          className,
+          ascendancy,
+          nodes,
+          attrs,
+          sets,
+          overlap,
+          supports,
+          slotUniques,
+          nodeCounts,
+          null);
+    }
+
+    /** 그 세트의 역할(attack · defense · support) — 모르면 null. */
+    public String roleOf(int set) {
+      return setRoles == null
+          ? null
+          : setRoles.sets().stream()
+              .filter(r -> r.set() == set)
+              .map(SetRole::kind)
+              .findFirst()
+              .orElse(null);
+    }
+  }
+
+  /**
+   * 무기 세트 성격(10-15 C332 사용자 요청 "세트 1 에서 버프, 세트 2 에서 공격력 · 한쪽은 광역, 한쪽은 보스 · 한쪽은 지속 피해, 한쪽은 치명타 — 닌자
+   * 실빌드들의 세트 1 · 2 성격을 파악해 시뮬레이션하고 보여 달라"). archetype-consensus2.mjs setRoles 산출 — n = 실빌드 수, used
+   * = 세트 전용 노드를 찍은 실빌드 수.
+   */
+  public record SetRoles(int n, int used, List<SetRole> sets) {}
+
+  /**
+   * 세트 하나 — kind = attack(공격) · defense(방어) · support(버프 · 소환 · 속도 · 명중), focus = 상대 세트보다 더 치중한
+   * 특성(damage · crit · dot · area · boss · speed · accuracy · buff · minion · defense, 큰 순 최대 3),
+   * weapon = 그 세트 무기 종류 다수결("Bow+Quiver", 비면 "none") · weaponKo = 그 한국어("활 + 화살통", 없으면 "") ·
+   * weaponCount = 그 인원, active = 저장 당시 이 세트를 켜 둔 인원.
+   */
+  public record SetRole(
+      int set,
+      String kind,
+      List<String> focus,
+      String weapon,
+      String weaponKo,
+      int weaponCount,
+      int active) {}
 
   /** 선택지 한 줄 — 이름(영문, 요청 값), 한국어 이름. 인원은 싣지 않는다(순서에만 쓴다). */
   public record Choice(String name, String nameKo) {}
@@ -212,6 +273,28 @@ public class Poe2NinjaService {
     return memberCodes.get(ascendancy + "|" + skill + "|" + account + "|" + name);
   }
 
+  /** 공통 특성 파일의 setRoles → 기록(없거나 모양이 다르면 null). */
+  static SetRoles setRoles(JsonNode sr) {
+    if (sr == null || !sr.isObject() || !sr.path("sets").isArray()) {
+      return null;
+    }
+    List<SetRole> sets = new ArrayList<>();
+    for (JsonNode x : sr.path("sets")) {
+      List<String> focus = new ArrayList<>();
+      x.path("focus").forEach(f -> focus.add(f.asText()));
+      sets.add(
+          new SetRole(
+              x.path("set").asInt(0),
+              x.path("kind").isTextual() ? x.path("kind").asText() : null,
+              List.copyOf(focus),
+              x.path("weapon").asText("none"),
+              x.path("weaponKo").asText(""),
+              x.path("weaponCount").asInt(0),
+              x.path("active").asInt(0)));
+    }
+    return new SetRoles(sr.path("n").asInt(0), sr.path("used").asInt(0), List.copyOf(sets));
+  }
+
   /** (전직, 스킬) 공통 특성 — 파일이 없거나 그 아키타입이 없으면 null(시뮬레이터는 공통 특성 없이 돈다). 파일이 바뀌면 다시 읽는다. */
   public Consensus consensus(String ascendancy, String skill) {
     if (ascendancy == null || ascendancy.isBlank() || skill == null) {
@@ -271,7 +354,8 @@ public class Poe2NinjaService {
                     tree.path("overlap").asDouble(0),
                     supports,
                     slotUniques,
-                    java.util.Map.copyOf(nodeCounts)));
+                    java.util.Map.copyOf(nodeCounts),
+                    setRoles(a.path("setRoles"))));
           }
           consensus = java.util.Map.copyOf(map);
           consensusAt = t;

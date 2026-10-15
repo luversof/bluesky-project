@@ -17,6 +17,10 @@ const OUT = path.join(DATA_DIR, "mods.json");
 //   티어를 따로 떼어 내, 2티어를 잘못 세고(억제 +9~10% 를 2티어로) 같은 계열을 한 아이템에 두 번 얹었다(2026-09-29). 한 아이템에 같이 못 붙는지는
 //   게임의 **Families** 로 판정한다(생명력[0] 과 방어도+생명력 복합[2605] 은 같이 붙는다).
 const OUT_TIERS = path.join(DATA_DIR, "mod-pool-tiers.json");
+// 제작 엔진용(10-15 C335 — 사용자 요청 "craftofexile 같은 제작 시뮬레이터 · 에뮬레이터"): 풀마다 옵션 id → 그 풀의 가중치, 옵션마다
+//   계열 · 접두/접미 · 아이템 레벨 · 옵션 그룹(Families — 같은 그룹은 한 아이템에 하나) · 옵션 태그(ImplicitTags — 화석 · 수확 가중치용).
+//   mods.json 의 등급 가중치는 그 등급이 처음 나온 풀의 값이라 클래스마다 가중치가 다른 옵션이 틀릴 수 있어 따로 싣는다
+const OUT_CRAFT = path.join(DATA_DIR, "craft-mods.json");
 
 const mods = loadTable("English", "Mods");
 // 리마인더(인게임 회색 부연, 10-04 C131) — 티어 영어(최대롤) 줄마다 고른 템플릿의 reminderstring Id(describe.reminders)를 rem 으로,
@@ -248,6 +252,8 @@ mods.forEach((mod, index) => {
 // 2) (클래스×변형) 풀별 매칭 + 패밀리 구성
 const families = new Map(); // famKey → {gen, essence, tiers: Map<index, tier>}
 const perPool = new Map(); // "itemClass|variant" → Map<famKey, weight>
+const craftPools = new Map(); // "itemClass|variant|influence" → Map<modId, weight>(그 풀 가중치, C335)
+const craftMods = new Map(); // modId → {f, g, l, grp, t, ess}
 const perPoolTiers = new Map(); // "itemClass|variant|" → Map<sig, Map<modType, {gen, families:Set, mods:[{id, ilvl, fam}]}>> (영향력 없는 풀만)
 const corruptedPerPool = new Map(); // "itemClass|variant|" → Set<famKey>
 const enchantPerPool = new Map(); // 플라스크 클래스 풀 → Set<famKey> (주입/점화 인챈트)
@@ -325,6 +331,20 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 		if (weight <= 0) continue;
 		const key = familyKey(mod);
 		famWeights.set(key, Math.max(famWeights.get(key) || 0, weight));
+		if (!/Royale/.test(mod.Id)) {
+			if (!craftPools.has(poolKey)) craftPools.set(poolKey, new Map());
+			craftPools.get(poolKey).set(mod.Id, weight);
+			if (!craftMods.has(mod.Id)) {
+				craftMods.set(mod.Id, {
+					f: key,
+					g: GEN[mod.GenerationType],
+					l: mod.Level,
+					grp: mod.Families || [],
+					t: (mod.ImplicitTagsKeys || []).map((i) => tags[i]?.Id).filter(Boolean),
+					...(mod.IsEssenceOnlyModifier ? { ess: true } : {}),
+				});
+			}
+		}
 		// Royale(PvP 전용) 모드는 일반 모드와 ModTypeKey 가 같아 사다리에 섞인다(46곳) — 일반 레어엔 안 붙으므로 뺀다
 		if (poolKey.endsWith("|") && !/Royale/.test(mod.Id)) {
 			if (!perPoolTiers.has(poolKey)) perPoolTiers.set(poolKey, new Map());
@@ -478,6 +498,15 @@ for (const [poolKey, bySig] of perPoolTiers) {
 	outPoolTiers[poolKey] = sigs;
 }
 fs.writeFileSync(OUT_TIERS, JSON.stringify({ patch: loadConfig().patch, pools: outPoolTiers }));
+{
+	// 제작용(C335) — 문구가 있는 계열(outFamilies)의 옵션만
+	const mods = {};
+	for (const [id, m] of craftMods) if (outFamilies[m.f]) mods[id] = m;
+	const pools = {};
+	for (const [k, ws] of craftPools) pools[k] = Object.fromEntries([...ws].filter(([id]) => mods[id]));
+	fs.writeFileSync(OUT_CRAFT, JSON.stringify({ patch: loadConfig().patch, mods, pools }));
+	console.log(`craft-mods.json: 옵션 ${Object.keys(mods).length}개 · 풀 ${Object.keys(pools).length}개 → ${OUT_CRAFT}`);
+}
 console.log(`mod-pool-tiers.json: 풀 ${Object.keys(outPoolTiers).length}개 → ${OUT_TIERS}`);
 const famCount = Object.keys(outFamilies).length;
 const tierCount = Object.values(outFamilies).reduce((n, f) => n + f.tiers.length, 0);

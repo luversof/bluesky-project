@@ -25,6 +25,8 @@ const wantedNames = new Set();
 for (const list of Object.values(bench.classes)) {
 	for (const e of list) for (const c of e.cost || []) wantedNames.add(c.name);
 }
+// 제작 에뮬레이터 화폐 버튼(10-15 C335) — 제작대 비용에 안 나오는 소멸 · 정제 등도
+for (const n of ["Orb of Transmutation", "Orb of Alteration", "Orb of Augmentation", "Regal Orb", "Orb of Alchemy", "Chaos Orb", "Exalted Orb", "Orb of Annulment", "Orb of Scouring"]) wantedNames.add(n);
 
 const baseEn = loadTable("English", "BaseItemTypes");
 const visual = loadTable("English", "ItemVisualIdentity");

@@ -63,6 +63,42 @@ class Poe2ConsensusNodeCandidatesTest {
   }
 
   @Test
+  void 가는_길이_풀리는_점수를_넘으면_뺀다() {
+    Poe2.BuildGuide g =
+        new Poe2.BuildGuide(
+            true,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            List.of(new Poe2.GuideNode(2, "B", "약한2", "Notable", null, 0.5, 0d, 5, null)),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            Map.of(23, 6, 20, 5)); // 21 은 길이 모름(8점 밖)
+    List<Poe2RefineService.Candidate> out =
+        refine.consensusNodeCandidates(
+            XML, g, consensus(8, Map.of(20, 7, 21, 7, 23, 8)), "balanced");
+    assertThat(out)
+        .extracting(Poe2RefineService.Candidate::label)
+        .containsExactly("닌자 공통 패시브(7/8명): 약한2(풀리는 5점) 빼고 → 노드20 찍기");
+  }
+
+  @Test
   void 뺄_특화가_없거나_공통_특성이_없으면_없다() {
     Poe2NinjaService.Consensus c = consensus(8, Map.of(20, 8));
     assertThat(refine.consensusNodeCandidates(XML, guide(List.of()), c, "dps")).isEmpty();

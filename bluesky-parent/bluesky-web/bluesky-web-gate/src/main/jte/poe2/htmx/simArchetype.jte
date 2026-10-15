@@ -48,6 +48,14 @@
 		@if(!items.isEmpty())
 			<div class="text-base-content/60">${ko ? "자주 쓰는 고유" : "Common uniques"}: ${String.join(", ", items)}</div>
 		@endif
+		<%-- 실빌드 출발점 바로가기(10-14 C325 — PoE1 archetypeHint 의 짝): 시뮬을 돌리지 않고 이 아키타입의 대표 실빌드를 빌드 화면에서 열어
+		     업그레이드 가이드 · 자동 다듬기로 다듬는다(/poe2/build?ascendancy=&skill= 은 이미 있던 경로) --%>
+		@if(!auto && archetype.start() != null && archetype.start().dps() != null)
+			<div class="flex flex-wrap items-center gap-2 pt-1" data-real-start-hint>
+				<a class="btn btn-outline btn-xs" href="/poe2/build?ascendancy=${java.net.URLEncoder.encode(archetype.ascendancy(), java.nio.charset.StandardCharsets.UTF_8)}&skill=${java.net.URLEncoder.encode(archetype.mainSkill(), java.nio.charset.StandardCharsets.UTF_8)}">${ko ? "실빌드에서 출발하기" : "Start from a real build"}</a>
+				<span class="text-[11px] text-base-content/60">${ko ? "대표 실빌드 DPS " + fmt.apply(archetype.start().dps()) + " · EHP " + fmt.apply(archetype.start().ehp()) + " — 빌드 화면에서 업그레이드 가이드 · 자동 다듬기" : "Representative build DPS " + fmt.apply(archetype.start().dps()) + " · EHP " + fmt.apply(archetype.start().ehp()) + " — upgrade guide and auto-refine in the build view"}</span>
+			</div>
+		@endif
 		<div class="text-[10px] text-base-content/60">${ko ? "poe.ninja 스냅샷 · 표기 중앙값 — 실행하면 이 조건 실빌드들의 공통 특성(패시브 · 고유 · 보조 젬)을 참고해 우리 엔진으로 계산하고, 성향에 맞춰 다듬습니다" : "poe.ninja snapshot · medians — running uses these builds' common traits (passives, uniques, supports), calculates with our engine and refines toward this lean"}</div>
 	</div>
 @endif

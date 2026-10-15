@@ -156,7 +156,10 @@ local ok, err = pcall(function()
 
 	lap("①")
 	-- ① 칸 기여
-	local EQUIP = { "Weapon 1", "Weapon 2", "Helmet", "Body Armour", "Gloves", "Boots", "Amulet", "Ring 1", "Ring 2", "Belt" }
+	-- 무기 칸은 켜진 무기 세트 것(10-15 C331, 사용자 질문 "세트1, 세트2 아이템 계산 맞아?") — 세트 2 를 켜면 PoB 가 쓰는 무기는 "Weapon 1 Swap ·
+	-- Weapon 2 Swap" 이다. 예전엔 늘 "Weapon 1 · 2"(세트 1 무기)를 봐, 주 세트가 2 인 빌드의 무기 칸 기여 · 옵션 목표가 꺼진 무기 기준이었다
+	local set2On = build.itemsTab.activeItemSet and build.itemsTab.activeItemSet.useSecondWeaponSet
+	local EQUIP = { set2On and "Weapon 1 Swap" or "Weapon 1", set2On and "Weapon 2 Swap" or "Weapon 2", "Helmet", "Body Armour", "Gloves", "Boots", "Amulet", "Ring 1", "Ring 2", "Belt" }
 	local slots = {}
 	for _, slotName in ipairs(EQUIP) do
 		local slot = build.itemsTab.slots[slotName]
@@ -528,6 +531,19 @@ local ok, err = pcall(function()
 		end
 	end
 
+	-- 본 트리 특화 · 핵심까지 가는 길 점수(10-14 C323) — 다듬기의 "닌자 공통 패시브" 재분배가 풀리는 점수 안에서 닿는 것만 짝짓도록. 계산 없음(PoB 가 이미 잰
+	-- pathDist), 한 조각만
+	local nodeDist = mine(1) and {} or nil
+	if nodeDist then
+		for id, node in pairs(build.spec.nodes) do
+			if not node.alloc and not node.ascendancyName and (node.type == "Notable" or node.type == "Keystone")
+				and node.pathDist and node.pathDist > 0 and node.pathDist <= 8
+				and not (node.pathRoot and (node.pathRoot.allocMode or 0) ~= 0) then
+				nodeDist[tostring(id)] = node.pathDist
+			end
+		end
+	end
+
 	-- 패시브는 "점수당"으로 줄 세우되 거르기는 **합계**로(점수당 1% 기준이면 생존 쪽이 다 빠졌다: 5점에 +3% = 0.6%/점)
 	local function topPer(list, key, other, n)
 		local picked = {}
@@ -578,6 +594,7 @@ local ok, err = pcall(function()
 		nextDps = topPer(nextNodes, "dps", "ehp", 8),
 		nextEhp = topPer(nextNodes, "ehp", "dps", 8),
 		nextTried = #nextNodes,
+		nodeDist = nodeDist,
 		nextWeaponSetSkipped = doNext and nextWeaponSet or nil,
 	}))
 end)

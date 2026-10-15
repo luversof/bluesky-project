@@ -34,7 +34,11 @@ public record PoeGem(
     // getGemStatRequirement 식으로 레벨별 수치를 낸다). 없으면 null
     Integer reqStrPct,
     Integer reqDexPct,
-    Integer reqIntPct) {
+    Integer reqIntPct,
+    // 자연 최대 레벨(10-15 C334 — PoB Gems.lua naturalMaxLevel: 각성 4~5 · 예외적 3 · 그 밖 20). levels 표는 가상의
+    // 높은 레벨까지 있어
+    // 최대치가 아니다. PoB 에 없는 젬이면 null
+    Integer naturalMaxLevel) {
 
   /** 레벨별 데이터를 뺀 사본 — 이름 · 태그만 쓰는 고르기 목록용(10-02: 액티브 젬 전체가 15.6MB · 0.6초였다). */
   public PoeGem withoutLevels() {
@@ -64,6 +68,7 @@ public record PoeGem(
         null,
         reqStrPct,
         reqDexPct,
-        reqIntPct);
+        reqIntPct,
+        naturalMaxLevel);
   }
 }

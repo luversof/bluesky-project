@@ -58,6 +58,21 @@ public class Poe2RefineService {
     return dps >= -TOLERANCE_PCT && ehp >= -TOLERANCE_PCT && dps + ehp >= MIN_GAIN_PCT;
   }
 
+  /**
+   * 파레토 개선(10-14 C328) — 한 축 목표에서 목표 축은 손해 없이(≥ 0) 다른 축만 {@link #MIN_GAIN_PCT} 이상 오르는 교체. 그 단계에 목표
+   * 축을 올리는 교체가 하나도 없을 때만 받는다(전체 실측 60개 중 "바꿀 것 없음" 타이탄 대지 분쇄: 생존 목표라 DPS +8.9% · EHP 0 인 공통 보조젬을
+   * 버렸다). balanced 는 해당 없음(acceptable 이 두 축을 이미 본다).
+   */
+  static boolean pareto(String objective, double dps, double ehp) {
+    if ("dps".equals(objective)) {
+      return dps >= 0 && ehp >= MIN_GAIN_PCT;
+    }
+    if ("ehp".equals(objective)) {
+      return ehp >= 0 && dps >= MIN_GAIN_PCT;
+    }
+    return false;
+  }
+
   /** 목표별 순위 점수 — balanced 는 DPS%+EHP%, 한 축 목표는 그 축(%). */
   static double score(String objective, double dps, double ehp) {
     return "dps".equals(objective) ? dps : "ehp".equals(objective) ? ehp : dps + ehp;
@@ -75,7 +90,12 @@ public class Poe2RefineService {
 
   public record Metrics(double dps, double ehp, double life, double es) {}
 
-  public record Step(String label, double dpsPct, double ehpPct) {}
+  /** 다듬기 한 단계 — label 한국어, labelEn 영어(10-14 C321, 없으면 null — 옛 이력 · 영어 이름이 없는 단계). */
+  public record Step(String label, double dpsPct, double ehpPct, String labelEn) {
+    public Step(String label, double dpsPct, double ehpPct) {
+      this(label, dpsPct, ehpPct, null);
+    }
+  }
 
   /**
    * 고정 고유(10-01, PoE1 시뮬 "고유 고정"의 짝) — 다듬기 전에 그 칸에 끼우고, 이후 교체 후보에서 그 칸은 뺀다. slots = 끼워 볼 칸(반지는 두 칸
@@ -134,7 +154,16 @@ public class Poe2RefineService {
   }
 
   /** 적용 후보 — change 는 apply2.lua 변경 JSON, 예측 증감(%)은 가이드 값. */
-  record Candidate(String label, String change, double dpsPct, double ehpPct) {
+  record Candidate(String label, String change, double dpsPct, double ehpPct, String labelEn) {
+    Candidate(String label, String change, double dpsPct, double ehpPct) {
+      this(label, change, dpsPct, ehpPct, null);
+    }
+
+    /** 영어 단계 이름을 붙인 사본(C321). */
+    Candidate en(String labelEn) {
+      return new Candidate(label, change, dpsPct, ehpPct, labelEn);
+    }
+
     double gain() {
       return dpsPct + ehpPct;
     }
@@ -151,7 +180,20 @@ public class Poe2RefineService {
   private volatile Result lastResult;
   private volatile String lastError;
   private volatile boolean cancelRequested;
-  private volatile int evals;
+  // 엔진 계산 수 — 후보를 동시에 재므로(C330) 원자 카운터
+  private final java.util.concurrent.atomic.AtomicInteger evals =
+      new java.util.concurrent.atomic.AtomicInteger();
+
+  /** 단계 후보를 동시에 재는 풀(C330) — 엔진 자체 상한(Semaphore 12) 안에서 돈다. */
+  private final java.util.concurrent.ExecutorService tryPool =
+      java.util.concurrent.Executors.newFixedThreadPool(
+          6,
+          r -> {
+            Thread t = new Thread(r, "poe2-refine-try");
+            t.setDaemon(true);
+            return t;
+          });
+
   // 마지막 measure 의 주 스킬 비용 경고 자원(10-14 C309) — 마나 1 · 생명력 2 · 보호막 4 · 분노 8(calc.lua
   // MainSkillCostWarningMask). 잠금을 잡은 스레드 하나만 쓴다
   private long lastCostMask;
@@ -172,7 +214,7 @@ public class Poe2RefineService {
   }
 
   public Status status() {
-    return new Status(running.get(), round, ROUNDS, phase, lastResult, lastError, evals);
+    return new Status(running.get(), round, ROUNDS, phase, lastResult, lastError, evals.get());
   }
 
   /** 시작 — 이미 돌고 있거나 코드를 못 읽으면 false(사유는 status().error). */
@@ -193,7 +235,7 @@ public class Poe2RefineService {
     lastResult = null;
     round = 0;
     cancelRequested = false;
-    evals = 0;
+    evals.set(0);
     phase = "baseline";
     Thread thread =
         new Thread(
@@ -221,7 +263,7 @@ public class Poe2RefineService {
     }
     round = 0;
     cancelRequested = false;
-    evals = 0;
+    evals.set(0);
     return true;
   }
 
@@ -242,7 +284,7 @@ public class Poe2RefineService {
   }
 
   int evals() {
-    return evals;
+    return evals.get();
   }
 
   void unlock() {
@@ -336,12 +378,18 @@ public class Poe2RefineService {
             new Step(
                 "고유 고정: " + bestSlot + " ← " + forced.label(),
                 pct(current.dps(), bestM.dps()),
-                pct(current.ehp(), bestM.ehp())));
+                pct(current.ehp(), bestM.ehp()),
+                "Locked unique: " + bestSlot + " ← " + forced.name()));
         xml = bestNext;
         current = bestM;
         lockedSlot = bestSlot;
       } else {
-        steps.add(new Step("고유 고정 실패(끼울 수 없음): " + forced.label(), 0, 0));
+        steps.add(
+            new Step(
+                "고유 고정 실패(끼울 수 없음): " + forced.label(),
+                0,
+                0,
+                "Could not lock unique: " + forced.name()));
       }
     }
     // 주 스킬 비용(10-14 C309, PoE1 최적화기 C307 · C308 의 짝) — 교체가 마나 · 생명력 · 보호막 비용 경고를 **새로** 만들면 건너뛴다.
@@ -358,6 +406,7 @@ public class Poe2RefineService {
       checkCancel();
       phase = "tree";
       String label = COMMON_PREFIX + " 트리(" + consensus.n() + "명)";
+      String labelEn = "Ninja common tree (" + consensus.n() + " builds)";
       String treeXml = null;
       try {
         treeXml =
@@ -378,7 +427,8 @@ public class Poe2RefineService {
         measure(treeXml); // 비용 · 능력치 표시는 마지막 측정 것 — 고른 세트로 한 번 더
       }
       if (tb == null) {
-        steps.add(new Step(label + " — 계산 실패, 지금 트리 유지", 0, 0));
+        steps.add(
+            new Step(label + " — 계산 실패, 지금 트리 유지", 0, 0, labelEn + " — calculation failed, kept"));
       } else {
         double dps = pct(current.dps(), tb.metrics().dps());
         double ehp = pct(current.ehp(), tb.metrics().ehp());
@@ -393,13 +443,28 @@ public class Poe2RefineService {
             attrMask,
             lastAttrMask);
         if (!acceptable(objective, dps, ehp)) {
-          steps.add(new Step(label + " — 지금 트리가 나아 유지", dps, ehp));
+          steps.add(
+              new Step(
+                  label + " — 지금 트리가 나아 유지",
+                  dps,
+                  ehp,
+                  labelEn + " — current tree is better, kept"));
         } else if ((lastCostMask & ~costMask & 7L) != 0L) {
-          steps.add(new Step(label + " — 주 스킬 비용을 못 치르게 돼 유지", dps, ehp));
+          steps.add(
+              new Step(
+                  label + " — 주 스킬 비용을 못 치르게 돼 유지",
+                  dps,
+                  ehp,
+                  labelEn + " — main skill cost would fail, kept"));
         } else if ((lastAttrMask & ~attrMask) != 0L) {
-          steps.add(new Step(label + " — 능력치 요구를 못 채우게 돼 유지", dps, ehp));
+          steps.add(
+              new Step(
+                  label + " — 능력치 요구를 못 채우게 돼 유지",
+                  dps,
+                  ehp,
+                  labelEn + " — attribute requirements would fail, kept"));
         } else {
-          steps.add(new Step(label, dps, ehp));
+          steps.add(new Step(label, dps, ehp, labelEn));
           xml = treeXml;
           current = tb.metrics();
           costMask = lastCostMask;
@@ -426,10 +491,51 @@ public class Poe2RefineService {
       // 닌자 공통 고유 · 보조 젬 — 가이드 예측이 없어 맨 앞에서 한 번씩만 실측해 본다(채택 조건 · 비용 · 능력치 규칙은 같다)
       List<Candidate> common = consensusCandidates(xml, guide, consensus);
       common.addAll(consensusNodeCandidates(xml, guide, consensus, objective));
+      // 다른 세트 무기 칸 고유는 주 세트를 켠 채로는 효과가 0 이라 늘 버려졌다 — 다른 세트 다듬기에서 그 세트를 켜고 잰다(10-15 C333)
+      final int onSet = sets ? mainSet : 1;
+      common.removeIf(
+          c -> {
+            int ws = changeWeaponSet(c.change());
+            return ws != 0 && ws != onSet;
+          });
       // 같은 고유 · 젬은 한 번만 — 빼는 보조젬이 단계마다 달라 변경 JSON 으로 견주면 같은 젬을 매 단계 다시 쟀다(10-14: 가루칸의 투지 4번)
       common.removeIf(
           c -> !triedConsensus.add(c.label().replaceFirst(":.*→", "→").replaceFirst(":.*←", "←")));
       candidates.addAll(0, common);
+      // 닌자 4분의 3 이상이 쓰는 보조젬은 "가장 약한 보조"로 빼지 않는다(10-15 C329) — PoB 가 효과를 못 재는 젬이라는 신호다. 실측: 바라쉬타 제자
+      // 서리
+      //   화살은 8/8명이 쓰는 균열 군주의 융합체(재사용 대기시간 + 되돌아오며 관통 — PoB 는 대기시간만 셈)를 빼면 DPS +467%로 보였다. 패시브(C322
+      //   되돌림)와 달리 보조젬은 계산이 놓치는 메커니즘이 있다
+      if (consensus != null && guide.gemWeakest() != null) {
+        Integer used = consensus.supports().get(guide.gemWeakest());
+        // 좁힘(10-15 C329b): PoB 가 그 젬의 기여를 1% 미만(0 · 마이너스)으로 볼 때만 — 기여가 플러스면 효과가 계산되는 젬이라 더 나은 젬으로
+        // 바꾸는 게
+        //   맞다(얼음 화살: 7/8명이 쓰는 원소 병기 II → 격노벼림 I +9% 를 막았다). 균열 군주의 융합체(빼면 +467%) · 넘치는 충전(기여 0)은
+        // 그대로 막는다
+        double weakestContrib =
+            guide.supports() == null
+                ? 0
+                : guide.supports().stream()
+                    .filter(x -> guide.gemWeakest().equals(x.name()))
+                    .mapToDouble(x -> nz(x.dps()) + nz(x.ehp()))
+                    .findFirst()
+                    .orElse(0);
+        if (used != null
+            && used >= consensus.n() * COMMON_NODE_SHARE
+            && weakestContrib < MIN_GAIN_PCT) {
+          String from = "\"from\":" + json.writeValueAsString(guide.gemWeakest());
+          int countBefore = candidates.size();
+          candidates.removeIf(c -> c.change().contains(from));
+          logger.info(
+              "PoE2 자동 다듬기 {}단계: 가장 약한 보조 {} 는 닌자 {}/{}명이 쓰는데 PoB 기여 {}% — 계산이 못 재는 젬으로 보고 빼지 않음(후보 {}개 제외)",
+              r,
+              guide.gemWeakest(),
+              used,
+              consensus.n(),
+              String.format("%.1f", weakestContrib),
+              countBefore - candidates.size());
+        }
+      }
       if (lockedSlot != null) {
         final String locked = "\"slot\":\"" + lockedSlot + "\"";
         candidates.removeIf(c -> c.change().contains(locked)); // 고정한 칸은 다시 바꾸지 않는다
@@ -437,16 +543,34 @@ public class Poe2RefineService {
       phase = "apply";
       boolean applied = false;
       int tries = 0;
+      Object[] bestPareto = null;
+      // 시도할 후보(순차일 때와 같은 집합 — 공통 후보 전부 + 그 밖 앞 TRIES_PER_ROUND 개)를 동시에 재고, 결과는 그 순서대로 읽어 고른다(10-15
+      // C330 —
+      //   고르는 규칙 · 결과는 순차와 같고 시간만 준다. 먼저 채택되면 뒤 후보 계산은 버려진다)
+      List<Candidate> toTry = new ArrayList<>();
       for (Candidate c : candidates) {
         if (!c.label().startsWith(COMMON_PREFIX) && tries++ >= TRIES_PER_ROUND) {
           break;
         }
+        toTry.add(c);
+      }
+      final String roundXml = xml;
+      List<java.util.concurrent.Future<Object[]>> futures = new ArrayList<>();
+      for (Candidate c : toTry) {
+        futures.add(tryPool.submit(() -> applyAndMeasure(roundXml, c)));
+      }
+      for (int k = 0; k < toTry.size(); k++) {
+        Candidate c = toTry.get(k);
         checkCancel();
-        String next = engine.apply(xml, c.change());
-        Metrics m = next == null ? null : measure(next);
+        Object[] res = join(futures.get(k));
+        String next = (String) res[0];
+        Measured mm = (Measured) res[1];
+        Metrics m = mm == null ? null : mm.metrics();
         if (m == null) {
           continue;
         }
+        lastCostMask = mm.cost();
+        lastAttrMask = mm.attr();
         double dps = pct(current.dps(), m.dps());
         double ehp = pct(current.ehp(), m.ehp());
         logger.info(
@@ -458,6 +582,14 @@ public class Poe2RefineService {
             String.format("%+.1f", dps),
             String.format("%+.1f", ehp));
         if (!acceptable(objective, dps, ehp)) {
+          // 파레토 개선이면 이 단계에 목표 축 교체가 없을 때 쓰려고 남겨 둔다(C328) — 비용 · 능력치 전이 규칙은 같다
+          double other = "dps".equals(objective) ? ehp : dps;
+          if (pareto(objective, dps, ehp)
+              && (lastCostMask & ~costMask & 7L) == 0L
+              && (lastAttrMask & ~attrMask) == 0L
+              && (bestPareto == null || other > (double) bestPareto[5])) {
+            bestPareto = new Object[] {c, next, m, dps, ehp, other, lastCostMask, lastAttrMask};
+          }
           continue; // 적용해 보니 예측만큼 안 오르거나 다른 축을 한도 넘게 깎는다
         }
         long nextMask = lastCostMask;
@@ -483,13 +615,140 @@ public class Poe2RefineService {
         attrMask = lastAttrMask;
         xml = next;
         current = m;
-        steps.add(new Step(c.label(), dps, ehp));
+        steps.add(new Step(c.label(), dps, ehp, c.labelEn()));
         applied = true;
         break;
+      }
+      futures.forEach(f -> f.cancel(false)); // 채택 뒤 아직 시작 안 한 계산은 버린다
+      if (!applied && bestPareto != null) {
+        Candidate pc = (Candidate) bestPareto[0];
+        double pd = (double) bestPareto[3];
+        double pe = (double) bestPareto[4];
+        logger.info("PoE2 자동 다듬기 {}단계: 목표 축 교체가 없어 파레토 개선 {}", r, pc.label());
+        costMask = (long) bestPareto[6];
+        attrMask = (long) bestPareto[7];
+        xml = (String) bestPareto[1];
+        current = (Metrics) bestPareto[2];
+        steps.add(
+            new Step(
+                pc.label() + " · 목표 축 손해 없이",
+                pd,
+                pe,
+                pc.labelEn() == null ? null : pc.labelEn() + " · no loss on the objective"));
+        applied = true;
       }
       if (!applied) {
         logger.info("PoE2 자동 다듬기 {}단계: 적용할 교체 없음(후보 {}개) — 종료", r, candidates.size());
         break;
+      }
+    }
+    // 다른 무기 세트도 다듬기(10-14 C327, 사용자 요청 3 "세트1, 세트2 패시브 트리 · 무기 세트 설정 고려") — 주 세트로 다 다듬은 뒤 다른 세트를 켜고
+    // 그 세트
+    //   전용 노드 재분배만 한다(본 트리 · 장비 · 젬을 바꾸면 주 세트가 흔들린다). 세트 전용 노드는 그 세트가 켜졌을 때만 효과라 주 세트 수치는 그대로여야 하고,
+    //   끝에 다시 재 어긋나면(0.5% 넘게) 다른 세트 다듬기를 버린다
+    logger.info("PoE2 다른 세트 다듬기: 세트 나눔 {} · 주 세트 {}", sets, mainSet);
+    if (sets) {
+      int other = mainSet == 1 ? 2 : 1;
+      String beforeOther = xml;
+      String otherXml = Poe2WeaponSets.withSet(xml, other);
+      Metrics oc = measure(otherXml);
+      long oCost = lastCostMask;
+      long oAttr = lastAttrMask;
+      List<Step> otherSteps = new ArrayList<>();
+      java.util.Set<String> triedOther = new java.util.HashSet<>();
+      // 다른 세트는 균형 기준으로 고른다 — 그 세트 전용 노드는 주 세트 수치에 영향이 없어, 주 세트 목표(예: 생존)를 그대로 쓰면 교체 세트의 DPS 개선을 다
+      // 버린다
+      //   (10-14 위치헌터: 세트 1 재분배 후보 8개가 생존 목표에 걸려 0개)
+      // 10-15 C332: 닌자 실빌드들이 그 세트를 무엇에 쓰는지(공격 · 방어 · 지원) 알면 그 역할의 목표로 — 공격 세트는 DPS, 방어 세트는 EHP,
+      // 지원(버프
+      //   · 속도 · 명중)과 모를 때는 균형(사용자 요청 "세트 1 · 2 성격을 파악해 그에 따라 시뮬레이션")
+      final String oRole = consensus == null ? null : consensus.roleOf(other);
+      final String oObj = roleObjective(oRole);
+      logger.info("PoE2 다른 세트({}) 역할 {} → 목표 {}", other, oRole, oObj);
+      for (int r = 1; oc != null && r <= OTHER_SET_ROUNDS; r++) {
+        checkCancel();
+        phase = "guide";
+        Poe2.BuildGuide og = builds.guide(encode(otherXml), other);
+        if (og == null || og.error() != null) {
+          break;
+        }
+        List<Candidate> cs = respecCandidates(og, oObj, other);
+        int raw = cs.size();
+        cs.removeIf(c -> !acceptable(oObj, c.dpsPct(), c.ehpPct()));
+        logger.info("PoE2 다른 세트({}) 다듬기 {}단계: 재분배 후보 {}개 중 채택 조건 통과 {}개", other, r, raw, cs.size());
+        cs.sort(
+            Comparator.comparingDouble((Candidate c) -> score(oObj, c.dpsPct(), c.ehpPct()))
+                .reversed());
+        // 그 세트 무기 칸의 닌자 공통 고유(10-15 C333 — 예: 트위스터 세트 2 신성한 불꽃 셉터 7/8명) — 예측이 없어 맨 앞에서 한 번씩 실측
+        List<Candidate> weapons = consensusCandidates(otherXml, og, consensus);
+        weapons.removeIf(c -> changeWeaponSet(c.change()) != other || !triedOther.add(c.label()));
+        cs.addAll(0, weapons);
+        logger.info("PoE2 다른 세트({}) 다듬기 {}단계: 그 세트 무기 칸 닌자 공통 고유 후보 {}개", other, r, weapons.size());
+        phase = "apply";
+        boolean applied = false;
+        int tries = 0;
+        for (Candidate c : cs) {
+          if (!c.label().startsWith(COMMON_PREFIX) && tries++ >= TRIES_PER_ROUND) {
+            break;
+          }
+          checkCancel();
+          String next = engine.apply(otherXml, c.change());
+          Metrics m = next == null ? null : measure(next);
+          if (m == null) {
+            continue;
+          }
+          double dps = pct(oc.dps(), m.dps());
+          double ehp = pct(oc.ehp(), m.ehp());
+          logger.info(
+              "PoE2 다른 세트({}) 다듬기 {}단계 후보 {}: 예측 DPS {} EHP {} / 실측 DPS {} EHP {}",
+              other,
+              r,
+              c.label(),
+              String.format("%+.1f", c.dpsPct()),
+              String.format("%+.1f", c.ehpPct()),
+              String.format("%+.1f", dps),
+              String.format("%+.1f", ehp));
+          if (!acceptable(oObj, dps, ehp)
+              || (lastCostMask & ~oCost & 7L) != 0L
+              || (lastAttrMask & ~oAttr) != 0L) {
+            continue;
+          }
+          oCost = lastCostMask;
+          oAttr = lastAttrMask;
+          otherXml = next;
+          oc = m;
+          otherSteps.add(
+              new Step(
+                  c.label() + " · 세트 " + other + " 켠 값",
+                  dps,
+                  ehp,
+                  c.labelEn() == null ? null : c.labelEn() + " · measured with set " + other));
+          applied = true;
+          break;
+        }
+        if (!applied) {
+          break;
+        }
+      }
+      if (!otherSteps.isEmpty()) {
+        String back = Poe2WeaponSets.withSet(otherXml, mainSet);
+        Metrics mainAfter = measure(back);
+        if (mainAfter != null
+            && Math.abs(pct(current.dps(), mainAfter.dps())) <= 0.5
+            && Math.abs(pct(current.ehp(), mainAfter.ehp())) <= 0.5) {
+          xml = back;
+          steps.addAll(otherSteps);
+        } else {
+          logger.info(
+              "PoE2 다른 세트 다듬기 버림 — 주 세트 수치가 바뀜(DPS {} EHP {})",
+              mainAfter == null
+                  ? null
+                  : String.format("%+.2f", pct(current.dps(), mainAfter.dps())),
+              mainAfter == null
+                  ? null
+                  : String.format("%+.2f", pct(current.ehp(), mainAfter.ehp())));
+          xml = beforeOther;
+        }
       }
     }
     List<SetMetrics> setList = null;
@@ -575,18 +834,27 @@ public class Poe2RefineService {
       String ko = uniqueKo(top.getKey());
       out.add(
           new Candidate(
-              COMMON_PREFIX
-                  + " 고유("
-                  + top.getValue()
-                  + "/"
-                  + consensus.n()
-                  + "명): "
-                  + sl.getKey()
-                  + " ← "
-                  + ko,
-              ch.toString(),
-              0,
-              0));
+                  COMMON_PREFIX
+                      + " 고유("
+                      + top.getValue()
+                      + "/"
+                      + consensus.n()
+                      + "명): "
+                      + sl.getKey()
+                      + " ← "
+                      + ko,
+                  ch.toString(),
+                  0,
+                  0)
+              .en(
+                  "Ninja common unique ("
+                      + top.getValue()
+                      + "/"
+                      + consensus.n()
+                      + "): "
+                      + sl.getKey()
+                      + " ← "
+                      + top.getKey()));
     }
     if (g != null && g.gemWeakest() != null) {
       for (Map.Entry<String, Integer> sp : consensus.supports().entrySet()) {
@@ -603,18 +871,27 @@ public class Poe2RefineService {
         String ko = gemKo(name);
         out.add(
             new Candidate(
-                COMMON_PREFIX
-                    + " 보조젬("
-                    + sp.getValue()
-                    + "/"
-                    + consensus.n()
-                    + "명): "
-                    + (g.gemWeakestKo() != null ? g.gemWeakestKo() : g.gemWeakest())
-                    + " → "
-                    + ko,
-                ch.toString(),
-                0,
-                0));
+                    COMMON_PREFIX
+                        + " 보조젬("
+                        + sp.getValue()
+                        + "/"
+                        + consensus.n()
+                        + "명): "
+                        + (g.gemWeakestKo() != null ? g.gemWeakestKo() : g.gemWeakest())
+                        + " → "
+                        + ko,
+                    ch.toString(),
+                    0,
+                    0)
+                .en(
+                    "Ninja common support ("
+                        + sp.getValue()
+                        + "/"
+                        + consensus.n()
+                        + "): "
+                        + g.gemWeakest()
+                        + " → "
+                        + name));
       }
     }
     return out;
@@ -676,6 +953,12 @@ public class Poe2RefineService {
         .filter(e -> e.getValue() >= consensus.n() * COMMON_NODE_SHARE)
         .filter(e -> !mine.contains(e.getKey()))
         .filter(e -> isNotableOrKeystone(e.getKey()))
+        // 가는 길이 풀리는 점수 안이어야(C323 — 길이를 몰라 1점 풀리는 자리에 6점 길을 짝지어 엔진이 3번 거절했다). 가이드에 길이가 없으면 예전처럼
+        .filter(
+            e ->
+                g.nodeDist() == null
+                    || (g.nodeDist().get(e.getKey()) != null
+                        && g.nodeDist().get(e.getKey()) <= weak.free()))
         .sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed())
         .limit(COMMON_NODES)
         .forEach(
@@ -686,21 +969,32 @@ public class Poe2RefineService {
               ch.put("add", e.getKey());
               out.add(
                   new Candidate(
-                      COMMON_PREFIX
-                          + " 패시브("
-                          + e.getValue()
-                          + "/"
-                          + consensus.n()
-                          + "명): "
-                          + (weak.nameKo() != null ? weak.nameKo() : weak.name())
-                          + "(풀리는 "
-                          + weak.free()
-                          + "점) 빼고 → "
-                          + nodeKo(e.getKey())
-                          + " 찍기",
-                      ch.toString(),
-                      0,
-                      0));
+                          COMMON_PREFIX
+                              + " 패시브("
+                              + e.getValue()
+                              + "/"
+                              + consensus.n()
+                              + "명): "
+                              + (weak.nameKo() != null ? weak.nameKo() : weak.name())
+                              + "(풀리는 "
+                              + weak.free()
+                              + "점) 빼고 → "
+                              + nodeKo(e.getKey())
+                              + " 찍기",
+                          ch.toString(),
+                          0,
+                          0)
+                      .en(
+                          "Ninja common passive ("
+                              + e.getValue()
+                              + "/"
+                              + consensus.n()
+                              + "): "
+                              + weak.name()
+                              + " (frees "
+                              + weak.free()
+                              + ") → "
+                              + nodeEn(e.getKey())));
             });
     return out;
   }
@@ -710,6 +1004,11 @@ public class Poe2RefineService {
     return n != null
         && (n.ascendancy() == null || n.ascendancy().isBlank())
         && ("notable".equals(n.kind()) || "keystone".equals(n.kind()));
+  }
+
+  String nodeEn(int id) {
+    Poe2DataService.TreeNodeLite n = data == null ? null : data.treeIndex().nodes().get(id);
+    return n == null || n.name() == null ? String.valueOf(id) : n.name();
   }
 
   String nodeKo(int id) {
@@ -730,6 +1029,32 @@ public class Poe2RefineService {
 
   static final int RESPEC_ADD = 3;
 
+  /** 다른 무기 세트 다듬기 단계 수(C327). */
+  static final int OTHER_SET_ROUNDS = 3;
+
+  private static final java.util.regex.Pattern WEAPON_SLOT =
+      java.util.regex.Pattern.compile("\"slot\"\\s*:\\s*\"Weapon [12]( Swap)?\"");
+
+  /** 변경이 무기 칸을 건드리면 그 칸의 세트(Weapon 1 · 2 = 1, … Swap = 2), 아니면 0(C333). */
+  static int changeWeaponSet(String change) {
+    if (change == null) {
+      return 0;
+    }
+    java.util.regex.Matcher m = WEAPON_SLOT.matcher(change);
+    if (!m.find()) {
+      return 0;
+    }
+    return m.group(1) == null ? 1 : 2;
+  }
+
+  /** 세트 역할 → 그 세트 다듬기 목표(C332) — attack → dps, defense → ehp, support · 모름 → balanced. */
+  static String roleObjective(String kind) {
+    if ("attack".equals(kind)) {
+      return "dps";
+    }
+    return "defense".equals(kind) ? "ehp" : "balanced";
+  }
+
   /**
    * 재분배로 뺄 수 있는 최대 점수 — 더 크면 다리 노드(매달린 트리가 끊긴다, 10-14 free 123 → DPS −97.7%). guide2 · apply2 도 같은
    * 선을 둔다.
@@ -742,6 +1067,11 @@ public class Poe2RefineService {
    * = 찍을 것의 증감 − 뺄 것의 기여(길의 작은 노드 몫은 빠져 있어 실측으로 거른다). 전직 노드는 점수가 따로라 뺀다.
    */
   List<Candidate> respecCandidates(Poe2.BuildGuide g, String objective) {
+    return respecCandidates(g, objective, null);
+  }
+
+  /** onlySet = 그 무기 세트 칸의 재분배만(다른 세트 다듬기, C327). null 이면 모든 칸. */
+  List<Candidate> respecCandidates(Poe2.BuildGuide g, String objective, Integer onlySet) {
     List<Candidate> out = new ArrayList<>();
     if (g == null || g.nodes() == null) {
       return out;
@@ -751,6 +1081,7 @@ public class Poe2RefineService {
             .filter(
                 n ->
                     n.id() != null
+                        && (onlySet == null || onlySet.equals(n.set()))
                         && (n.ascendancy() == null || n.ascendancy().isBlank())
                         && n.free() != null
                         && n.free() > 0
@@ -805,20 +1136,31 @@ public class Poe2RefineService {
         ch.put("add", n.id());
         out.add(
             new Candidate(
-                "패시브 재분배: "
-                    + (w.nameKo() != null ? w.nameKo() : w.name())
-                    + "(풀리는 "
-                    + w.free()
-                    + "점) 빼고 → "
-                    + (n.nameKo() != null ? n.nameKo() : n.name())
-                    + " 찍기(가는 길 "
-                    + n.points()
-                    + "점"
-                    + (n.set() == null ? "" : " · 세트 " + n.set() + " 점수")
-                    + ")",
-                ch.toString(),
-                nz(n.dps()) - nz(w.dps()),
-                nz(n.ehp()) - nz(w.ehp())));
+                    "패시브 재분배: "
+                        + (w.nameKo() != null ? w.nameKo() : w.name())
+                        + "(풀리는 "
+                        + w.free()
+                        + "점) 빼고 → "
+                        + (n.nameKo() != null ? n.nameKo() : n.name())
+                        + " 찍기(가는 길 "
+                        + n.points()
+                        + "점"
+                        + (n.set() == null ? "" : " · 세트 " + n.set() + " 점수")
+                        + ")",
+                    ch.toString(),
+                    nz(n.dps()) - nz(w.dps()),
+                    nz(n.ehp()) - nz(w.ehp()))
+                .en(
+                    "Respec: "
+                        + w.name()
+                        + " (frees "
+                        + w.free()
+                        + ") → "
+                        + n.name()
+                        + " (path "
+                        + n.points()
+                        + (n.set() == null ? "" : " · set " + n.set() + " points")
+                        + ")"));
       }
     }
     return out;
@@ -899,10 +1241,11 @@ public class Poe2RefineService {
       ch.put("quality20", true); // 가이드도 PoB 고유 DB 아이템(품질 20%)을 끼워 잰다
       out.add(
           new Candidate(
-              "고유 교체: " + s.slot() + " ← " + (s.itemKo() != null ? s.itemKo() : s.item()),
-              ch.toString(),
-              nz(s.dps()),
-              nz(s.ehp())));
+                  "고유 교체: " + s.slot() + " ← " + (s.itemKo() != null ? s.itemKo() : s.item()),
+                  ch.toString(),
+                  nz(s.dps()),
+                  nz(s.ehp()))
+              .en("Unique swap: " + s.slot() + " ← " + s.item()));
     }
     if (g.gemSwaps() != null && g.gemWeakest() != null) {
       for (Poe2.GuideSupport s : g.gemSwaps()) {
@@ -915,24 +1258,38 @@ public class Poe2RefineService {
         ch.put("name", s.name());
         out.add(
             new Candidate(
-                "보조젬 교체: "
-                    + (g.gemWeakestKo() != null ? g.gemWeakestKo() : g.gemWeakest())
-                    + " → "
-                    + (s.nameKo() != null ? s.nameKo() : s.name())
-                    // 계보 젬은 드물게 얻는다 — 60빌드 일괄에서 DPS 중앙 +114% 의 상당 부분이 계보 젬(제르피의 악명 18 · 라키아타의 흐름
-                    // 13)이라
-                    //   "쉽게 할 수 있는 교체"로 읽히지 않게 표시한다(2026-10-01)
-                    + (isLineage(s.slug()) ? " · 계보 젬(드묾)" : ""),
-                ch.toString(),
-                nz(s.dps()),
-                nz(s.ehp())));
+                    "보조젬 교체: "
+                        + (g.gemWeakestKo() != null ? g.gemWeakestKo() : g.gemWeakest())
+                        + " → "
+                        + (s.nameKo() != null ? s.nameKo() : s.name())
+                        // 계보 젬은 드물게 얻는다 — 60빌드 일괄에서 DPS 중앙 +114% 의 상당 부분이 계보 젬(제르피의 악명 18 · 라키아타의
+                        // 흐름
+                        // 13)이라
+                        //   "쉽게 할 수 있는 교체"로 읽히지 않게 표시한다(2026-10-01)
+                        + (isLineage(s.slug()) ? " · 계보 젬(드묾)" : ""),
+                    ch.toString(),
+                    nz(s.dps()),
+                    nz(s.ehp()))
+                .en(
+                    "Support swap: "
+                        + g.gemWeakest()
+                        + " → "
+                        + s.name()
+                        + (isLineage(s.slug()) ? " · lineage gem (rare)" : "")));
       }
     }
     out.addAll(respecCandidates(g, objective));
-    out.removeIf(c -> !acceptable(objective, c.dpsPct(), c.ehpPct()));
+    // 목표 축 교체가 먼저, 파레토 개선(목표 축 손해 0 · 다른 축 +)은 그 뒤(C328 — 목표 축 교체가 없는 단계에서만 쓰인다)
+    out.removeIf(
+        c ->
+            !acceptable(objective, c.dpsPct(), c.ehpPct())
+                && !pareto(objective, c.dpsPct(), c.ehpPct()));
     out.sort(
-        Comparator.comparingDouble((Candidate c) -> score(objective, c.dpsPct(), c.ehpPct()))
-            .reversed());
+        Comparator.comparing((Candidate c) -> !acceptable(objective, c.dpsPct(), c.ehpPct()))
+            .thenComparing(
+                Comparator.comparingDouble(
+                        (Candidate c) -> score(objective, c.dpsPct(), c.ehpPct()))
+                    .reversed()));
     return out;
   }
 
@@ -948,24 +1305,57 @@ public class Poe2RefineService {
   }
 
   Metrics measure(String xml) {
-    evals++; // 잠금을 잡은 스레드 하나만 쓴다
+    Measured x = measureFull(xml);
+    if (x == null) {
+      return null;
+    }
+    lastCostMask = x.cost();
+    lastAttrMask = x.attr();
+    return x.metrics();
+  }
+
+  /** 한 번 잰 값 — 수치 + 주 스킬 비용 경고 · 능력치 부족 비트(필드를 건드리지 않아 동시에 불러도 된다, C330). */
+  record Measured(Metrics metrics, long cost, long attr) {}
+
+  Measured measureFull(String xml) {
+    evals.incrementAndGet();
     Poe2PobEngineService.Result r = engine.calc(xml);
     if (r.error() != null || r.values().isEmpty()) {
       return null;
     }
     Map<String, Double> v = r.values();
-    lastCostMask = Math.round(v.getOrDefault("MainSkillCostWarningMask", 0d));
-    lastAttrMask =
+    long cost = Math.round(v.getOrDefault("MainSkillCostWarningMask", 0d));
+    long attr =
         (v.getOrDefault("ReqStr", 0d) > v.getOrDefault("Str", 0d) ? 1L : 0L)
             | (v.getOrDefault("ReqDex", 0d) > v.getOrDefault("Dex", 0d) ? 2L : 0L)
             | (v.getOrDefault("ReqInt", 0d) > v.getOrDefault("Int", 0d) ? 4L : 0L);
     double full = v.getOrDefault("FullDPS", 0d);
     double dps = full > 0 ? full : v.getOrDefault("CombinedDPS", 0d);
-    return new Metrics(
-        dps,
-        v.getOrDefault("TotalEHP", 0d),
-        v.getOrDefault("Life", 0d),
-        v.getOrDefault("EnergyShield", 0d));
+    return new Measured(
+        new Metrics(
+            dps,
+            v.getOrDefault("TotalEHP", 0d),
+            v.getOrDefault("Life", 0d),
+            v.getOrDefault("EnergyShield", 0d)),
+        cost,
+        attr);
+  }
+
+  /** 후보 하나 적용 + 측정(동시 실행용) — {next xml, Measured}. 적용 실패면 {null, null}. */
+  private Object[] applyAndMeasure(String xml, Candidate c) {
+    String next = engine.apply(xml, c.change());
+    return new Object[] {next, next == null ? null : measureFull(next)};
+  }
+
+  private static Object[] join(java.util.concurrent.Future<Object[]> f) {
+    try {
+      return f.get();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return new Object[] {null, null};
+    } catch (java.util.concurrent.ExecutionException e) {
+      return new Object[] {null, null};
+    }
   }
 
   /**

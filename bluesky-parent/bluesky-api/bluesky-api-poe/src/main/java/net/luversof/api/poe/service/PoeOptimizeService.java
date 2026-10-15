@@ -13508,7 +13508,12 @@ public class PoeOptimizeService {
   }
 
   /** 젬의 실질 최대 레벨 — 각성/특수 젬은 20이 아니다(각성=5 등). 레벨 하향의 시작점. */
-  private static int defaultGemLevel(PoeGem gem) {
+  static int defaultGemLevel(PoeGem gem) {
+    // 자연 최대 레벨이 있으면 그것(10-15 C334) — 보조젬을 모두 20 으로 넣어 각성 강화 20(인게임 최대 4) · 상급 주문 메아리 20(최대 3)이
+    //   DPS 를 수 배 부풀렸다(배터리 15개 중 12개 −56~−86%). levels 표 최대(상급 주문 메아리 15줄)도 인게임 최대가 아니다
+    if (gem.naturalMaxLevel() != null && gem.naturalMaxLevel() > 0) {
+      return Math.min(20, gem.naturalMaxLevel());
+    }
     if (gem.levels() == null || gem.levels().isEmpty()) {
       return 20;
     }
@@ -14567,7 +14572,7 @@ public class PoeOptimizeService {
           .append(support.name().replaceFirst(" Support$", ""))
           .append("\" level=\"")
           // 속성 요구치 보정이 낮춘 레벨(없으면 20) — 실전의 "요구치 맞는 레벨까지만 키운 젬"
-          .append(supportLevelOverride.getOrDefault(support.slug(), 20))
+          .append(supportLevelOverride.getOrDefault(support.slug(), defaultGemLevel(support)))
           .append("\" quality=\"20\" enabled=\"true\"/>");
     }
     // (소켓 시너지의 명시 Burning Damage 젬은 제거 — 메인 그룹을 투구 슬롯에 두면 PoB 가 아이템 문구로
@@ -14628,7 +14633,7 @@ public class PoeOptimizeService {
             .append(aura.name())
             .append("\" level=\"")
             // 오라도 속성 요구치 보정 대상 — Grace(민첩)·Haste 등이 젬 총 요구치를 끌어올린다
-            .append(supportLevelOverride.getOrDefault(aura.slug(), 20))
+            .append(supportLevelOverride.getOrDefault(aura.slug(), defaultGemLevel(aura)))
             .append("\" quality=\"20\" enabled=\"true\"/>");
       }
       xml.append("</Skill>");
@@ -14644,7 +14649,8 @@ public class PoeOptimizeService {
           .append("<Gem nameSpec=\"")
           .append(blessingAura.name())
           .append("\" level=\"")
-          .append(supportLevelOverride.getOrDefault(blessingAura.slug(), 20))
+          .append(
+              supportLevelOverride.getOrDefault(blessingAura.slug(), defaultGemLevel(blessingAura)))
           .append("\" quality=\"20\" enabled=\"true\"/>")
           .append("</Skill>");
     }
@@ -14680,7 +14686,9 @@ public class PoeOptimizeService {
         xml.append("<Gem nameSpec=\"")
             .append(extraSupport.name().replaceFirst(" Support$", ""))
             .append("\" level=\"")
-            .append(supportLevelOverride.getOrDefault(extraSupport.slug(), 20))
+            .append(
+                supportLevelOverride.getOrDefault(
+                    extraSupport.slug(), defaultGemLevel(extraSupport)))
             .append("\" quality=\"20\" enabled=\"true\"/>");
       }
       xml.append("</Skill>");

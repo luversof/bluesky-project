@@ -224,7 +224,7 @@ public class Poe2PobEngineService {
   static tools.jackson.databind.node.ObjectNode mergeGuide(List<JsonNode> parts) {
     tools.jackson.databind.node.ObjectNode m =
         (tools.jackson.databind.node.ObjectNode) parts.get(0).deepCopy();
-    for (String key : List.of("nodes", "modTargets", "nextWeaponSetSkipped")) {
+    for (String key : List.of("nodes", "modTargets", "nextWeaponSetSkipped", "nodeDist")) {
       for (JsonNode p : parts) {
         if (p.has(key) && !p.get(key).isNull()) {
           m.set(key, p.get(key));

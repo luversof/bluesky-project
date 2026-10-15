@@ -669,7 +669,62 @@ public final class Poe2 {
       Integer weaponSet,
       Integer mainSet,
       // 레어 목표 — 칸마다 같은 베이스의 좋은 레어(2티어 중간 롤 접두3·접미3)로 바꾸면(10-02 사용자 요청)
-      List<GuideRareTarget> rareTargets) {}
+      List<GuideRareTarget> rareTargets,
+      // 안 찍은 본 트리 특화 · 핵심까지 가는 길 점수(≤ 8, 10-14 C323 — 다듬기 공통 패시브 재분배용). 없으면 null
+      Map<Integer, Integer> nodeDist) {
+
+    /** nodeDist 없는 생성(옛 호출 · 시험). */
+    public BuildGuide(
+        Boolean available,
+        String error,
+        Long elapsedMs,
+        GuideBase base,
+        Integer unappliedSupports,
+        Boolean mainSkillCostWarning,
+        List<GuideSlot> slots,
+        List<GuideSupport> supports,
+        List<GuideNode> nodes,
+        List<GuideSwap> swapsDps,
+        List<GuideSwap> swapsEhp,
+        Integer tried,
+        String gemWeakest,
+        String gemWeakestKo,
+        List<GuideSupport> gemSwaps,
+        Integer gemTried,
+        List<GuideModTarget> modTargets,
+        List<GuideNextNode> nextDps,
+        List<GuideNextNode> nextEhp,
+        Integer nextTried,
+        Integer weaponSet,
+        Integer mainSet,
+        List<GuideRareTarget> rareTargets) {
+      this(
+          available,
+          error,
+          elapsedMs,
+          base,
+          unappliedSupports,
+          mainSkillCostWarning,
+          slots,
+          supports,
+          nodes,
+          swapsDps,
+          swapsEhp,
+          tried,
+          gemWeakest,
+          gemWeakestKo,
+          gemSwaps,
+          gemTried,
+          modTargets,
+          nextDps,
+          nextEhp,
+          nextTried,
+          weaponSet,
+          mainSet,
+          rareTargets,
+          null);
+    }
+  }
 
   /** 레어 목표만(10-02) — 가이드 뒤에 따로 불러온다(본 가이드가 4~6초 느려지지 않게). */
   public record GuideRares(

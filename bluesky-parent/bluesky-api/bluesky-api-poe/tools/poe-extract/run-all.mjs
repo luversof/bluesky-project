@@ -172,4 +172,12 @@ try {
 	console.warn("실빌드 출발점 수집 실패 — 기존 파일로 계속(api 미가동·레이트리밋?):", e.message);
 }
 
+// 제작 계산기 단가(10-15 C336) — poe.ninja 거래소 시세. 네트워크 의존이라 비치명(실패하면 기존 파일 유지)
+console.log("\n===== fetch-ninja-prices.mjs (화폐 시세, 비치명) =====");
+try {
+	execSync(`"${process.execPath}" "${path.join(here, "fetch-ninja-prices.mjs")}"`, { stdio: "inherit", cwd: here });
+} catch (e) {
+	console.warn("화폐 시세 수집 실패 — 기존 파일로 계속:", e.message);
+}
+
 console.log("\n===== 완료 =====");

@@ -136,6 +136,17 @@ public class PoeModDataService {
   /** 티어 Id → 티어(모든 패밀리). 풀 묶음이 가리키는 티어의 문장을 찾을 때 쓴다. */
   private volatile Map<String, ModTier> tierIndex = Map.of();
 
+  /**
+   * 풀별 등급 · 가중치(craft-mods.json, 10-15 C337) — 없으면(시험 · 데이터 없음) 예전처럼 계열 사다리 그대로. 순환 없음(제작 데이터 서비스는
+   * 파일만 읽는다).
+   */
+  private PoeCraftDataService craftData;
+
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  void setCraftData(PoeCraftDataService craftData) {
+    this.craftData = craftData;
+  }
+
   public PoeModDataService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
     this.dataFile = Path.of(dataDir, "mods.json");
     this.tiersFile = Path.of(dataDir, "mod-pool-tiers.json");
@@ -344,10 +355,54 @@ public class PoeModDataService {
         cls.variants(),
         resolvedInfluence,
         cls.influences(),
-        resolve(prefixKeys),
-        resolve(suffixKeys),
+        inPool(resolve(prefixKeys), itemClass + "|" + resolvedVariant + "|" + resolvedInfluence),
+        inPool(resolve(suffixKeys), itemClass + "|" + resolvedVariant + "|" + resolvedInfluence),
         resolve(corruptedKeys),
         resolve(enchantKeys));
+  }
+
+  /**
+   * 계열 사다리를 그 풀에 실제로 붙는 등급 · 그 풀 가중치로(10-15 C337). families 의 사다리는 모든 클래스를 합친 것이라 장갑(힘) 등급 184개 중
+   * 38개가 장갑에 안 붙는 등급(생명력 12등급 +175~189 는 갑옷 전용)이었고 20개는 가중치가 달랐다(그 등급이 처음 나온 풀의 값) — 옵션 페이지 확률이
+   * 틀렸다. 풀에 없는 계열(등급 0개)은 뺀다. 에센스 전용 계열은 원래대로.
+   */
+  private List<NamedFamily> inPool(List<NamedFamily> fams, String poolKey) {
+    if (craftData == null || !craftData.hasPool(poolKey)) {
+      return fams;
+    }
+    Map<String, Integer> w = craftData.pool(poolKey);
+    List<NamedFamily> out = new java.util.ArrayList<>();
+    for (NamedFamily nf : fams) {
+      if (Boolean.TRUE.equals(nf.family().essence())) {
+        out.add(nf);
+        continue;
+      }
+      List<ModTier> tiers =
+          nf.family().tiers().stream()
+              .filter(t -> w.containsKey(t.id()))
+              .map(
+                  t ->
+                      t.weight() == w.get(t.id())
+                          ? t
+                          : new ModTier(
+                              t.id(),
+                              t.name(),
+                              t.nameKo(),
+                              t.ilvl(),
+                              w.get(t.id()),
+                              t.en(),
+                              t.enMin(),
+                              t.ko(),
+                              t.koMin(),
+                              t.rem()))
+              .toList();
+      if (!tiers.isEmpty()) {
+        out.add(
+            new NamedFamily(
+                nf.key(), new ModFamily(nf.family().gen(), nf.family().essence(), tiers)));
+      }
+    }
+    return out;
   }
 
   private List<NamedFamily> resolve(List<String> keys) {

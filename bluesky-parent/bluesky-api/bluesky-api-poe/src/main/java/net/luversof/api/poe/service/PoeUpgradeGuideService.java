@@ -649,7 +649,7 @@ public class PoeUpgradeGuideService {
           final GemRef target = weakest;
           List<Future<Map<String, Double>>> swaps = new ArrayList<>();
           for (PoeGem c : candidates) {
-            String swapXml = replaceGem(xml, target, pobName(c));
+            String swapXml = replaceGem(xml, target, pobName(c), c);
             swaps.add(pool.submit(() -> eval(swapXml)));
           }
           PoeGem best = null;
@@ -693,7 +693,7 @@ public class PoeUpgradeGuideService {
             if (minion == null) {
               offer(
                   "보조젬 교체: " + label(target.gem()) + " → " + label(candidates.get(i)),
-                  replaceGem(xml, target, pobName(candidates.get(i))),
+                  replaceGem(xml, target, pobName(candidates.get(i)), candidates.get(i)),
                   base,
                   m);
             }
@@ -2161,14 +2161,36 @@ public class PoeUpgradeGuideService {
     return xml.substring(0, g.start()) + changed + xml.substring(g.end());
   }
 
-  private static String replaceGem(String xml, GemRef g, String newNameSpec) {
+  private static String replaceGem(String xml, GemRef g, String newNameSpec, PoeGem newGem) {
     String tag = xml.substring(g.start(), g.end());
     // gemId 가 남아 있으면 PoB 가 이름 대신 gemId(+variantId/skillId)로 젬을 찾으므로 지운다 — gemId 가 없으면 variantId 는
     // 보지 않는다.
     String changed = stripAttr(stripAttr(tag, "gemId"), "skillId");
     changed =
         changed.replace(" nameSpec=\"" + g.nameSpec() + "\"", " nameSpec=\"" + newNameSpec + "\"");
-    return xml.substring(0, g.start()) + changed + xml.substring(g.end());
+    return xml.substring(0, g.start()) + capLevel(changed, newGem) + xml.substring(g.end());
+  }
+
+  /**
+   * 바꿔 끼운 젬의 레벨을 그 젬의 자연 최대 레벨 이하로(10-15 C334) — 레벨 20 일반 보조를 각성 · 예외적 보조(최대 3~5)로 바꾸면서 레벨 20 을 그대로
+   * 두면 인게임에 없는 젬으로 재 이득이 수 배 부풀었다. 최대가 20 인 젬은 원래 레벨(부패 21 포함) 그대로.
+   */
+  static String capLevel(String tag, PoeGem gem) {
+    if (gem == null || gem.naturalMaxLevel() == null || gem.naturalMaxLevel() >= 20) {
+      return tag;
+    }
+    java.util.regex.Matcher m = java.util.regex.Pattern.compile(" level=\"(\\d+)\"").matcher(tag);
+    if (!m.find()) {
+      return tag.replace("<Gem ", "<Gem level=\"" + gem.naturalMaxLevel() + "\" ");
+    }
+    int cur = Integer.parseInt(m.group(1));
+    return cur <= gem.naturalMaxLevel()
+        ? tag
+        : tag.substring(0, m.start())
+            + " level=\""
+            + gem.naturalMaxLevel()
+            + "\""
+            + tag.substring(m.end());
   }
 
   private static String stripAttr(String tag, String name) {

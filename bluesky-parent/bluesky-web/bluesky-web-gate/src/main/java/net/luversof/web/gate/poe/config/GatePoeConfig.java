@@ -63,6 +63,13 @@ public class GatePoeConfig {
   }
 
   @Bean
+  net.luversof.web.gate.poe.httpexchange.PoeCraftClient poeCraftClient(
+      @Qualifier("poeHttpServiceProxyFactory") HttpServiceProxyFactory poeHttpServiceProxyFactory) {
+    return poeHttpServiceProxyFactory.createClient(
+        net.luversof.web.gate.poe.httpexchange.PoeCraftClient.class);
+  }
+
+  @Bean
   PoeRegexClient poeRegexClient(
       @Qualifier("poeHttpServiceProxyFactory") HttpServiceProxyFactory poeHttpServiceProxyFactory) {
     return poeHttpServiceProxyFactory.createClient(PoeRegexClient.class);

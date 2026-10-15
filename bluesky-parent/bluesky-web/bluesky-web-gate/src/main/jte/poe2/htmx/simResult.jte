@@ -74,7 +74,7 @@
 			</tbody>
 		</table>
 	</div>
-	@template.poe2.htmx.weaponSets(mainSet = r.mainSet(), sets = r.sets())
+	@template.poe2.htmx.weaponSets(mainSet = r.mainSet(), sets = r.sets(), roles = r.setRoles())
 	<div class="space-y-1">
 		<div class="text-sm font-semibold">${ko ? "다듬기 단계" : "Refine steps"}</div>
 		@if(r.steps() == null || r.steps().isEmpty())
@@ -82,7 +82,18 @@
 		@else
 			<ol class="list-decimal space-y-0.5 pl-5 text-sm" data-sim-steps>
 				@for(Poe2.RefineStep st : r.steps())
-					<li>${st.label()} <span class="font-mono text-xs text-base-content/60">DPS ${chg.apply(100d, 100d * (1 + (st.dpsPct() == null ? 0 : st.dpsPct()) / 100))} · EHP ${chg.apply(100d, 100d * (1 + (st.ehpPct() == null ? 0 : st.ehpPct()) / 100))}</span></li>
+					<%-- 종류 배지(10-14 C320 — 빌드 가이드 "먼저 바꿀 것"과 같은 배지 말). "유지"로 끝나는 줄은 견주기만 하고 안 바꾼 것이라 흐리게 --%>
+					!{
+						String sl = st.label() == null ? "" : st.label();
+						boolean kept = sl.endsWith("유지");
+						String kind = sl.startsWith("패시브 재분배") ? (ko ? "재분배" : "Respec")
+							: sl.startsWith("닌자 공통 트리") ? (ko ? "공통 트리" : "Common tree")
+							: sl.startsWith("닌자 공통") ? (ko ? "닌자 공통" : "Ninja common")
+							: sl.startsWith("보조젬") ? (ko ? "보조젬" : "Support")
+							: sl.startsWith("고유") ? (ko ? "장비" : "Item") : null;
+						String kindCls = sl.startsWith("패시브 재분배") ? "badge-warning badge-outline" : sl.startsWith("닌자 공통") ? "badge-info badge-outline" : sl.startsWith("보조젬") ? "badge-primary badge-outline" : "badge-ghost";
+					}
+					<li class="${kept ? "text-base-content/60" : ""}" data-sim-step-kind="${kind == null ? "" : kind}">@if(kind != null)<span class="badge badge-xs ${kindCls} mr-1 align-middle">${kind}</span>@endif${!ko && st.labelEn() != null ? st.labelEn() : st.label()} <span class="font-mono text-xs text-base-content/60">DPS ${chg.apply(100d, 100d * (1 + (st.dpsPct() == null ? 0 : st.dpsPct()) / 100))} · EHP ${chg.apply(100d, 100d * (1 + (st.ehpPct() == null ? 0 : st.ehpPct()) / 100))}</span></li>
 				@endfor
 			</ol>
 		@endif

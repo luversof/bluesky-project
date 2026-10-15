@@ -83,6 +83,11 @@ for (const [itemClass, column] of Object.entries(CLASS_COLUMN)) {
 			ilvlMax: e.ItemLevelRestriction || 0,
 			gen: mod.GenerationType === 1 ? "prefix" : "suffix",
 			modName: mod.Name || "",
+			// 제작 엔진(10-15 C335): 보장 옵션 id · 옵션 그룹(같은 그룹 옵션은 같이 못 붙는다) · 아이템 레벨 요구 · 에센스 슬러그
+			modId: mod.Id,
+			groups: mod.Families || [],
+			modLevel: mod.Level,
+			slug: baseRow?.Id ? baseRow.Id.split("/").pop() : null,
 			en,
 			enMin: describe(rollValues(mod, "min"), "English"),
 			ko: describe(rollValues(mod, "max"), "Korean"),

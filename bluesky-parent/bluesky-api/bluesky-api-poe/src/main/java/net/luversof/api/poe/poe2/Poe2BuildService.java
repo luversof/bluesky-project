@@ -90,7 +90,7 @@ public class Poe2BuildService {
     if (!engine.available()) {
       return new Poe2.GuideRares(false, null, 0L, weaponSet, List.of());
     }
-    Map<String, RareSpec> rares = rareCandidates(summarize(code));
+    Map<String, RareSpec> rares = rareCandidates(summarize(code), weaponSet);
     if (rares.isEmpty()) {
       return new Poe2.GuideRares(true, null, 0L, weaponSet, List.of());
     }
@@ -135,7 +135,7 @@ public class Poe2BuildService {
     }
     // 옵션 목표 후보 — 희귀·마법·일반 장비 칸마다 그 베이스 옵션 풀의 계열별 최고 등급(최대 롤)
     Poe2.BuildSummary summary = summarize(code);
-    Map<String, List<ModCandidate>> cands = modCandidates(summary);
+    Map<String, List<ModCandidate>> cands = modCandidates(summary, weaponSet);
     // 레어 목표는 본 가이드에서 빼고 guideRares 로 따로(본 가이드가 4~6초 느려지지 않게, 10-02)
     Map<String, RareSpec> rares = Map.of();
     Poe2PobEngineService.Raw raw = engine.guide(xml, candidatesJson(cands, rares));
@@ -252,7 +252,18 @@ public class Poe2BuildService {
         g.path("nextTried").asInt(0),
         weaponSet,
         mainSet,
-        rareTargets(g.path("rareTargets"), rares));
+        rareTargets(g.path("rareTargets"), rares),
+        nodeDist(g.path("nodeDist")));
+  }
+
+  /** guide2 nodeDist {"노드": 점수} → 맵(C323). 없으면 null. */
+  private static Map<Integer, Integer> nodeDist(tools.jackson.databind.JsonNode n) {
+    if (n == null || !n.isObject()) {
+      return null;
+    }
+    Map<Integer, Integer> out = new java.util.HashMap<>();
+    n.properties().forEach(e -> out.put(Integer.valueOf(e.getKey()), e.getValue().asInt()));
+    return out;
   }
 
   /** 옵션 목표 후보 한 줄(계열 하나의 최고 등급) — lines 는 최대 롤로 채운 영문(PoB 가 읽는 모양), linesKo 는 화면용. */
@@ -275,14 +286,17 @@ public class Poe2BuildService {
   }
 
   /** 요약의 장비(주 아이템 세트)에서 칸별 후보 — 고유는 옵션을 더할 수 없어 뺀다. */
-  private Map<String, List<ModCandidate>> modCandidates(Poe2.BuildSummary summary) {
+  private Map<String, List<ModCandidate>> modCandidates(
+      Poe2.BuildSummary summary, Integer weaponSet) {
+    // 무기는 켜진 세트 것만(10-15 C331) — 세트 2 를 켜면 교체 칸(Weapon 1 · 2 Swap), 아니면 Weapon 1 · 2
+    boolean set2 = weaponSet != null && weaponSet == 2;
     Map<String, List<ModCandidate>> out = new LinkedHashMap<>();
     for (Poe2.BuildItem it : summary.items()) {
       if ("UNIQUE".equals(it.rarity())
           || it.slot() == null
           || it.slot().startsWith("Flask")
           || it.slot().startsWith("Charm")
-          || it.slot().contains("Swap")) {
+          || (set2 ? it.slot().matches("Weapon [12]") : it.slot().contains("Swap"))) {
         continue;
       }
       Optional<Poe2.ModPool> pool = data.modPoolForBase(it.baseType());
@@ -365,6 +379,19 @@ public class Poe2BuildService {
           "Ring 2",
           "Belt");
 
+  private static final java.util.Set<String> RARE_SLOTS_SET2 =
+      java.util.Set.of(
+          "Weapon 1 Swap",
+          "Weapon 2 Swap",
+          "Helmet",
+          "Body Armour",
+          "Gloves",
+          "Boots",
+          "Amulet",
+          "Ring 1",
+          "Ring 2",
+          "Belt");
+
   /** 범위 → 중간 롤(반올림, 소수 범위는 한 자리). "(45-50)% increased Armour" → "48% increased Armour". */
   static String midRoll(String line) {
     if (line == null) {
@@ -413,10 +440,13 @@ public class Poe2BuildService {
    * 레어 목표 후보(10-02 사용자 요청 "고유만 보지 말고 레어로도") — PoE1 가이드 "레어 목표"(최상위는 못 사니 2티어 중간 롤)와 같은 기준. 고유를 낀 칸도
    * 포함(그 고유 대신 좋은 레어). 옵션 풀이 없는 베이스는 뺀다.
    */
-  private Map<String, RareSpec> rareCandidates(Poe2.BuildSummary summary) {
+  private Map<String, RareSpec> rareCandidates(Poe2.BuildSummary summary, Integer weaponSet) {
+    // 세트 2 를 켠 가이드면 무기는 교체 칸(Weapon 1 · 2 Swap) — guide2 EQUIP 과 같은 규칙(10-15 C331)
+    java.util.Set<String> slots =
+        weaponSet != null && weaponSet == 2 ? RARE_SLOTS_SET2 : RARE_SLOTS;
     Map<String, RareSpec> out = new LinkedHashMap<>();
     for (Poe2.BuildItem it : summary.items()) {
-      if (it.slot() == null || !RARE_SLOTS.contains(it.slot()) || it.baseType() == null) {
+      if (it.slot() == null || !slots.contains(it.slot()) || it.baseType() == null) {
         continue;
       }
       Optional<Poe2.ModPool> pool = data.modPoolForBase(it.baseType());

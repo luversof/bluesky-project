@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createStatDescriber, reportUnknownHandlers } from "./statDescriptions.mjs";
-import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, WORK_DIR, loadConfig, loadTable } from "./paths.mjs";
 
 const PATCH = loadConfig().patch;
 // 게임 데이터는 파생 산출물이라 git 에 커밋하지 않는다 — 홈 디렉토리에 두고 서버가 부팅 시 로드 (poe.data-dir 프로퍼티)
@@ -310,6 +310,34 @@ gems.forEach((g) => slugCounts.set(g.slug, (slugCounts.get(g.slug) || 0) + 1));
 const dupes = [...slugCounts.entries()].filter(([, n]) => n > 1);
 if (dupes.length) {
 	throw new Error("slug 중복: " + dupes.map(([s]) => s).join(", "));
+}
+
+// 자연 최대 레벨(10-15 C334) — 각성 젬 4~5 · 예외적 젬 3 · 그 밖 20. 레벨 표(levels)는 PoB 처럼 가상의 높은 레벨까지 있어 최대치가
+//   아니다(상급 주문 메아리 표 15줄 · 각성 강화 20줄). 최적화기가 보조젬을 모두 20 으로 넣어 각성 강화 20(인게임 최대 4~5)이 DPS 를
+//   5배 부풀렸다(배터리 15개 중 12개 −56~−86%). 게임 표(ItemExperiencePerLevel)는 추출하지 않아 계산 엔진인 PoB Gems.lua 의
+//   naturalMaxLevel 을 쓴다 — 이름(보조 젬은 " Support" 를 뗀 것) → 없으면 gameId 로. 못 찾으면 null(최적화기는 20 가정)
+{
+	const gemsLua = path.join(WORK_DIR, "pob-src", "src", "Data", "Gems.lua");
+	const byName = new Map(), byGameId = new Map();
+	if (fs.existsSync(gemsLua)) {
+		const src = fs.readFileSync(gemsLua, "utf8");
+		// 항목마다 블록으로 끊어 그 안에서 name · gameId · naturalMaxLevel 을 찾는다(사이에 baseTypeName 등이 끼어 붙여 쓴 정규식은 263/822 만 잡았다)
+		for (const block of src.split(/\n\t\["[^"]+"\] = \{/).slice(1)) {
+			const name = block.match(/\n\t\tname = "([^"]*)"/)?.[1];
+			const gameId = block.match(/\n\t\tgameId = "([^"]*)"/)?.[1];
+			const max = Number(block.match(/\n\t\tnaturalMaxLevel = (\d+)/)?.[1]);
+			if (!name || !max) continue;
+			byName.set(name, max);
+			if (gameId && !byGameId.has(gameId)) byGameId.set(gameId, max);
+		}
+	}
+	let found = 0;
+	for (const g of gems) {
+		const n = byName.get(g.name.replace(/ Support$/, "")) ?? (g.transfigured ? undefined : byGameId.get(g.id.replace(/^(.*?Gems\/)SkillGem(Support)/, "$1$2")) ?? byGameId.get(g.id));
+		g.naturalMaxLevel = n ?? null;
+		if (n != null) found++;
+	}
+	console.log(`자연 최대 레벨: ${found}/${gems.length}(PoB Gems.lua ${byName.size}개${fs.existsSync(gemsLua) ? "" : " — 파일 없음"})`);
 }
 
 gems.sort((a, b) => a.name.localeCompare(b.name));

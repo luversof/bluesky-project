@@ -34,6 +34,11 @@ public class Poe2SimService {
   /** 후보 인원 — 캐릭터 상세 요청 수(ninja 레이트리밋)와 재계산 시간의 타협. */
   static final int CANDIDATES = 5;
 
+  /** 전직 자동일 때 비교할 전직 수(많이 쓰는 순) · 전직마다 후보 수 — C324. */
+  static final int AUTO_ASCENDANCIES = 5;
+
+  static final int AUTO_PER_ASCENDANCY = 2;
+
   /** 후보 한 명 — 캐릭터 이름은 내보내지 않는다(화면에 실을 이유가 없다). */
   /** set = 이 후보를 잰 무기 세트(1·2, DPS 가 큰 쪽) — 세트를 안 나누는 빌드면 null. */
   public record SimCandidate(
@@ -87,7 +92,27 @@ public class Poe2SimService {
       Double consensusOverlap,
       // 전직 자동일 때 전직별 비교(10-14 P5) — 전직마다 가장 나은 후보와, 거기에 그 전직의 닌자 공통 트리를 덮은 값. 고른 전직 = 둘 중 나은 점수가
       //   가장 큰 전직. 전직을 정했거나 옛 이력이면 null
-      List<AscCompare> ascCompare) {}
+      List<AscCompare> ascCompare,
+      // 무기 세트 성격 + 그 세트를 다듬은 목표(10-15 C332 사용자 요청 "세트 1 · 2 가 어떤 특성에 치중해 계산한 것인지 보여 달라") — 공통 특성에
+      //   세트 성격이 없거나(세트를 안 나누는 아키타입) 옛 이력이면 null
+      List<SetRoleView> setRoles) {}
+
+  /**
+   * 세트 하나의 성격(C332) — kind · focus · weapon · weaponCount · active 는 닌자 공통 특성
+   * 그대로(Poe2NinjaService.SetRole), n = 실빌드 수, objective = 시뮬레이터가 이 세트를 다듬은 목표(주 세트 = 고른 목표, 다른 세트 =
+   * 역할 목표), main = 주 세트(DPS 가 큰 쪽)인지.
+   */
+  public record SetRoleView(
+      int set,
+      String kind,
+      List<String> focus,
+      String weapon,
+      String weaponKo,
+      int weaponCount,
+      int active,
+      int n,
+      String objective,
+      boolean main) {}
 
   /**
    * 전직 하나의 비교 줄(P5) — dps/ehp = 그 전직 최고 후보(엔진), treeDps/treeEhp = 그 후보에 공통 트리를 덮은 값(공통 특성이 없거나 계산
@@ -433,8 +458,31 @@ public class Poe2SimService {
                         Comparator.comparingDouble(
                                 (Poe2NinjaService.NinjaBuild b) -> ninjaScore(objective, b))
                             .reversed()))
-            .limit(CANDIDATES)
             .toList();
+    if (ascendancy.isEmpty()) {
+      // 전직 자동(10-14 C324): 레벨 순 상위 5명이면 전직 2~3개만 비교됐다(불꽃: 공통 특성이 있는 전직 5개 중 3개) — 전직 5개에서 2명씩.
+      //   전직 순위는 인원이 아니라 그 전직 최고 후보의 닌자 점수(목표 기준) — 인원 순이면 인원은 적지만 가장 센 젬링 군단병(불꽃 후보 9.7M)이 빠져
+      //   최종이 19M → 13.4M 으로 낮아졌다
+      pool = pool.stream().filter(b -> b.ascendancy() != null).toList();
+      java.util.Map<String, Double> bestOfAsc = new java.util.HashMap<>();
+      for (Poe2NinjaService.NinjaBuild b : pool) {
+        bestOfAsc.merge(b.ascendancy(), ninjaScore(objective, b), Math::max);
+      }
+      java.util.Set<String> topAscs =
+          bestOfAsc.entrySet().stream()
+              .sorted(java.util.Map.Entry.<String, Double>comparingByValue().reversed())
+              .limit(AUTO_ASCENDANCIES)
+              .map(java.util.Map.Entry::getKey)
+              .collect(java.util.stream.Collectors.toSet());
+      java.util.Map<String, Integer> taken = new java.util.HashMap<>();
+      pool =
+          pool.stream()
+              .filter(b -> topAscs.contains(b.ascendancy()))
+              .filter(b -> taken.merge(b.ascendancy(), 1, Integer::sum) <= AUTO_PER_ASCENDANCY)
+              .toList();
+    } else {
+      pool = pool.stream().limit(CANDIDATES).toList();
+    }
     if (pool.isEmpty()) {
       throw new IllegalStateException(
           "이 조건의 poe.ninja 실빌드가 없습니다"
@@ -450,50 +498,33 @@ public class Poe2SimService {
     java.util.Map<String, Object[]> ascBest = new java.util.LinkedHashMap<>();
     candidates = pool.size();
     phase = "measure";
+    // 후보 준비 · 측정을 동시에(10-15 C330 — 저장 코드라 poe.ninja 요청이 거의 없다). 고르는 규칙은 아래에서 원래 순서대로
+    final String scen = scenario;
+    final UserTree userTree = tree;
+    List<java.util.concurrent.Future<Object[]>> prepared = new ArrayList<>();
     for (Poe2NinjaService.NinjaBuild b : pool) {
+      prepared.add(measurePool.submit(() -> prepareCandidate(b, skill, scen, userTree)));
+    }
+    for (int pi = 0; pi < pool.size(); pi++) {
+      Poe2NinjaService.NinjaBuild b = pool.get(pi);
       refine.checkCancel();
       i++;
       candidate = i;
-      String error = null;
-      Poe2RefineService.Metrics m = null;
-      Integer set = null;
-      String xml = null;
+      Object[] prep;
       try {
-        // 저장된 실빌드 코드가 있으면 그것(같은 스냅샷 · 같은 사람 — fetch-ninja-start2 가 재며 남김, 10-14 C319), 없으면
-        // poe.ninja 실시간
-        String stored = ninja.memberCode(b.ascendancy(), skill, b.account(), b.name());
-        String code = stored != null ? stored : ninja.characterCode(b);
-        if (stored != null) {
-          storedHits++;
-        }
-        xml = withScenario(alignMainGroup(decoder.decodeToXml(code), skill), scenario);
-        if (tree != null) {
-          // 실빌드 주얼은 내 트리에도 찍힌 소켓에서만 유지(10-14 — withTree 가 소켓 장착을 지워 주얼이 다 빠졌다)
-          xml =
-              Poe2RefineService.keepSockets(
-                  xml,
-                  builds.withTree(
-                      xml,
-                      tree.className(),
-                      tree.ascendancy(),
-                      tree.nodes(),
-                      tree.attrs(),
-                      tree.sets()),
-                  new java.util.HashSet<>(tree.nodes()));
-        }
-        // 무기 세트를 나눠 쓰는 빌드는 두 세트를 재고 DPS 가 큰 쪽으로 견준다(저장 당시 켜진 세트가 주 세트가 아닐 수 있다)
-        Poe2RefineService.Best best = refine.measureBest(xml);
-        m = best == null ? null : best.metrics();
-        if (best != null && best.set() > 0) {
-          set = best.set();
-          xml = Poe2WeaponSets.withSet(xml, set);
-        }
-        if (m == null || m.dps() <= 0) {
-          error = "계산 실패";
-          m = null;
-        }
-      } catch (RuntimeException e) {
-        error = e.getMessage();
+        prep = prepared.get(pi).get();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException("중단됨", e);
+      } catch (java.util.concurrent.ExecutionException e) {
+        prep = new Object[] {null, null, null, String.valueOf(e.getCause()), false};
+      }
+      String xml = (String) prep[0];
+      Poe2RefineService.Metrics m = (Poe2RefineService.Metrics) prep[1];
+      Integer set = (Integer) prep[2];
+      String error = (String) prep[3];
+      if (Boolean.TRUE.equals(prep[4])) {
+        storedHits++;
       }
       boolean pick = false;
       if (m != null && b.ascendancy() != null) {
@@ -636,7 +667,8 @@ public class Poe2SimService {
               consensus.overlap(),
               consensus.supports(),
               consensus.slotUniques(),
-              consensus.nodeCounts());
+              consensus.nodeCounts(),
+              consensus.setRoles());
     }
     Poe2RefineService.Result r = refine.refineWith(bestXml, objective, forced, consensus);
     if (ascendancy.isEmpty() && chosenAsc != null) {
@@ -668,7 +700,88 @@ public class Poe2SimService {
         ascendancy.isEmpty(),
         consensus == null ? 0 : consensus.n(), // 0 = 공통 특성 집계 대상 아님(null 은 그 전 이력)
         consensus == null || tree != null ? null : consensus.overlap(),
-        ascCompare);
+        ascCompare,
+        setRoleViews(consensus, r.mainSet(), objective));
+  }
+
+  /** 공통 특성의 세트 성격 + 다듬은 목표(C332) — 결과가 세트를 안 나누거나(mainSet null) 성격이 없으면 null. */
+  static List<SetRoleView> setRoleViews(
+      Poe2NinjaService.Consensus consensus, Integer mainSet, String objective) {
+    if (consensus == null || consensus.setRoles() == null || mainSet == null) {
+      return null;
+    }
+    Poe2NinjaService.SetRoles sr = consensus.setRoles();
+    return sr.sets().stream()
+        .map(
+            x ->
+                new SetRoleView(
+                    x.set(),
+                    x.kind(),
+                    x.focus(),
+                    x.weapon(),
+                    x.weaponKo(),
+                    x.weaponCount(),
+                    x.active(),
+                    sr.n(),
+                    x.set() == mainSet ? objective : Poe2RefineService.roleObjective(x.kind()),
+                    x.set() == mainSet))
+        .toList();
+  }
+
+  /** 후보 측정 풀(C330) — 엔진 자체 상한 안에서. poe.ninja 실시간 요청이 섞여도 넷 이하. */
+  private final java.util.concurrent.ExecutorService measurePool =
+      java.util.concurrent.Executors.newFixedThreadPool(
+          4,
+          r -> {
+            Thread t = new Thread(r, "poe2-sim-measure");
+            t.setDaemon(true);
+            return t;
+          });
+
+  /** 후보 하나 준비 + 측정 — {xml, Metrics, 세트, 오류, 저장 코드 여부}. 동시에 불린다. */
+  private Object[] prepareCandidate(
+      Poe2NinjaService.NinjaBuild b, String skill, String scenario, UserTree tree) {
+    String error = null;
+    Poe2RefineService.Metrics m = null;
+    Integer set = null;
+    String xml = null;
+    boolean storedHit = false;
+    try {
+      // 저장된 실빌드 코드가 있으면 그것(같은 스냅샷 · 같은 사람 — fetch-ninja-start2 가 재며 남김, 10-14 C319), 없으면 poe.ninja
+      // 실시간
+      String stored = ninja.memberCode(b.ascendancy(), skill, b.account(), b.name());
+      String code = stored != null ? stored : ninja.characterCode(b);
+      storedHit = stored != null;
+      xml = withScenario(alignMainGroup(decoder.decodeToXml(code), skill), scenario);
+      if (tree != null) {
+        // 실빌드 주얼은 내 트리에도 찍힌 소켓에서만 유지(10-14 — withTree 가 소켓 장착을 지워 주얼이 다 빠졌다)
+        xml =
+            Poe2RefineService.keepSockets(
+                xml,
+                builds.withTree(
+                    xml,
+                    tree.className(),
+                    tree.ascendancy(),
+                    tree.nodes(),
+                    tree.attrs(),
+                    tree.sets()),
+                new java.util.HashSet<>(tree.nodes()));
+      }
+      // 무기 세트를 나눠 쓰는 빌드는 두 세트를 재고 DPS 가 큰 쪽으로 견준다(저장 당시 켜진 세트가 주 세트가 아닐 수 있다)
+      Poe2RefineService.Best best = refine.measureBest(xml);
+      m = best == null ? null : best.metrics();
+      if (best != null && best.set() > 0) {
+        set = best.set();
+        xml = Poe2WeaponSets.withSet(xml, set);
+      }
+      if (m == null || m.dps() <= 0) {
+        error = "계산 실패";
+        m = null;
+      }
+    } catch (RuntimeException e) {
+      error = e.getMessage();
+    }
+    return new Object[] {xml, m, set, error, storedHit};
   }
 
   /** 후보 정렬용 ninja 표기값 점수 — 같은 레벨 안에서 목표 축이 큰 사람부터. */
