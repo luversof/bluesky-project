@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
+import net.luversof.web.gate.poe2.httpexchange.Poe2CraftClient;
 import net.luversof.web.gate.poe2.httpexchange.Poe2DataClient;
 import net.luversof.web.gate.poe2.httpexchange.Poe2EngineClient;
 import net.luversof.web.gate.poe2.httpexchange.Poe2RegexClient;
@@ -50,6 +51,13 @@ public class GatePoe2Config {
     return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
         .build()
         .createClient(Poe2EngineClient.class);
+  }
+
+  /** PoE2 제작 에뮬레이터(10-15 C351). */
+  @Bean
+  Poe2CraftClient poe2CraftClient(
+      @Qualifier("poeHttpServiceProxyFactory") HttpServiceProxyFactory poeHttpServiceProxyFactory) {
+    return poeHttpServiceProxyFactory.createClient(Poe2CraftClient.class);
   }
 
   @Bean

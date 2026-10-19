@@ -1491,13 +1491,195 @@ document.addEventListener("htmx:afterSettle", (event: any) => {
 });
 (globalThis as any).__swapFocusInternals = { structuralPath, rememberFocus, restoreFocus };
 
+// 구역을 바꿔 끼워도 열어 둔 details 를 다시 연다(2026-10-18 C440 UX QA: PoE2 제작에서 화폐를 쓸 때마다 펼친 에센스 · 훼손 · 징조 묶음이 접혔다).
+// 대상에 data-keep-open="키 속성 이름"(예: data-craft-group)을 달면 교체 직전 그 속성이 있는 열린 details 의 키를 적어 두고, 교체 뒤 같은 키를 연다.
+// 닫는 일은 없다(더하기만) - 교체 직전 열려 있던 것은 사용자가 열었든 서버가 열었든 다시 연다(2026-10-18 C445 검토로 주석 정정).
+// 스왑이 없던 응답(4xx/5xx · 204)의 메모가 남지 않게 요청(requestConfig)과 짝지어 같은 요청의 afterSwap 에서만 쓴다(C445 검토).
+type KeepOpenMemo = { id: string; attr: string; keys: string[] };
+const keepOpenMemos: { cfg: unknown; memo: KeepOpenMemo }[] = [];
+function rememberOpenDetails(target: unknown): KeepOpenMemo | null {
+	if (!(target instanceof Element) || typeof target.getAttribute !== "function") return null;
+	const attr = target.getAttribute("data-keep-open");
+	if (!attr || !target.id) return null;
+	const keys = Array.from(target.querySelectorAll("details[" + attr + "]"))
+		.filter((d: any) => d.open)
+		.map((d) => d.getAttribute(attr) || "")
+		.filter((k) => k);
+	return { id: target.id, attr, keys };
+}
+/** 새 대상에서 적어 둔 키의 details 를 연다 - 연 개수. */
+function restoreOpenDetails(memo: KeepOpenMemo | null, doc: Pick<Document, "getElementById"> = document): number {
+	if (!memo || memo.keys.length === 0) return 0;
+	const root = doc.getElementById(memo.id);
+	if (!root) return 0;
+	let n = 0;
+	root.querySelectorAll("details[" + memo.attr + "]").forEach((d: any) => {
+		if (!d.open && memo.keys.includes(d.getAttribute(memo.attr) || "")) {
+			d.open = true;
+			n++;
+		}
+	});
+	return n;
+}
+document.addEventListener("htmx:beforeSwap", (event: any) => {
+	const memo = rememberOpenDetails(event.detail?.target);
+	if (memo) keepOpenMemos.push({ cfg: event.detail?.requestConfig, memo });
+});
+// 기준 자리 복원(아래 afterSwap)보다 먼저 열어야 높이가 맞는다 - 같은 이벤트는 먼저 등록된 처리기가 먼저 돈다(그래서 이 블록이 위에 있다)
+document.addEventListener("htmx:afterSwap", (event: any) => {
+	const cfg = event.detail?.requestConfig;
+	for (const m of keepOpenMemos.splice(0)) if (m.cfg === cfg) restoreOpenDetails(m.memo);
+});
+
+// 정착 뒤 대상 안 오류가 고정 헤더 밑 · 화면 밖이면 보이게 굴린다(2026-10-18 C440 UX QA: 390px 에서 오류가 헤더에 가려 '눌렀는데 아무 일 없음'으로 보였다).
+// 대상에 data-error-into-view="선택자". 오류 요소의 scroll-margin-top 을 헤더 높이로 본다.
+function needsReveal(rect: { top: number; bottom: number }, marginTop: number, viewH: number): boolean {
+	return rect.top < marginTop || rect.bottom > viewH;
+}
+document.addEventListener("htmx:afterSettle", (event: any) => {
+	const t = event.detail?.target;
+	if (!(t instanceof Element) || typeof t.getAttribute !== "function") return;
+	const host = (t.id && document.getElementById(t.id)) || t;
+	const sel = host.getAttribute?.("data-error-into-view");
+	if (!sel) return;
+	const el = host.querySelector(sel) as HTMLElement | null;
+	if (!el) return;
+	const margin = parseFloat(getComputedStyle(el).scrollMarginTop || "0") || 0;
+	if (needsReveal(el.getBoundingClientRect(), margin, globalThis.innerHeight)) el.scrollIntoView({ block: "start" });
+});
+(globalThis as any).__keepOpenInternals = { rememberOpenDetails, restoreOpenDetails, needsReveal };
+
+// 구역을 바꿔 끼워도 고른 값을 되살린다(2026-10-19 C450 UX QA: PoE1 제작에서 화폐를 쓰면 고른 에센스 · 수확 · 제작대가 첫 항목으로, 화석 체크가 전부 풀려
+// 연타하면 엉뚱한 화폐를 썼다). 대상에 data-keep-values="이름,이름" - 그 이름의 select 값과 체크된 checkbox 값들을 적어 두고 같은 요청의 교체 뒤 되돌린다.
+// 새 select 에 그 값이 없으면 그대로(서버가 고른 기본값), 꺼진 체크박스는 켜지 않는다. change 이벤트는 내지 않는다(요청이 다시 나가지 않게).
+type KeepValuesMemo = { id: string; selects: Record<string, string>; checks: Record<string, string[]> };
+const keepValuesMemos: { cfg: unknown; memo: KeepValuesMemo }[] = [];
+function rememberValues(target: unknown): KeepValuesMemo | null {
+	if (!(target instanceof Element) || typeof target.getAttribute !== "function") return null;
+	const names = (target.getAttribute("data-keep-values") || "").split(",").map((n) => n.trim()).filter((n) => n);
+	if (names.length === 0 || !target.id) return null;
+	const selects: Record<string, string> = {};
+	const checks: Record<string, string[]> = {};
+	for (const n of names) {
+		const sel = target.querySelector('select[name="' + n + '"]') as HTMLSelectElement | null;
+		if (sel) selects[n] = sel.value;
+		const boxes = Array.from(target.querySelectorAll('input[type="checkbox"][name="' + n + '"]')) as HTMLInputElement[];
+		if (boxes.length) checks[n] = boxes.filter((b) => b.checked).map((b) => b.value);
+	}
+	return { id: target.id, selects, checks };
+}
+/** 새 대상에 적어 둔 값을 되돌린다 - 바꾼 칸 수. */
+function restoreValues(memo: KeepValuesMemo | null, doc: Pick<Document, "getElementById"> = document): number {
+	if (!memo) return 0;
+	const root = doc.getElementById(memo.id);
+	if (!root) return 0;
+	let n = 0;
+	for (const [name, value] of Object.entries(memo.selects)) {
+		const sel = root.querySelector('select[name="' + name + '"]') as HTMLSelectElement | null;
+		if (sel && sel.value !== value && Array.from(sel.options).some((o) => o.value === value)) {
+			sel.value = value;
+			n++;
+		}
+	}
+	for (const [name, values] of Object.entries(memo.checks)) {
+		(Array.from(root.querySelectorAll('input[type="checkbox"][name="' + name + '"]')) as HTMLInputElement[]).forEach((b) => {
+			if (!b.disabled && !b.checked && values.includes(b.value)) {
+				b.checked = true;
+				n++;
+			}
+		});
+	}
+	return n;
+}
+document.addEventListener("htmx:beforeSwap", (event: any) => {
+	const memo = rememberValues(event.detail?.target);
+	if (memo) keepValuesMemos.push({ cfg: event.detail?.requestConfig, memo });
+});
+document.addEventListener("htmx:afterSwap", (event: any) => {
+	const cfg = event.detail?.requestConfig;
+	for (const m of keepValuesMemos.splice(0)) if (m.cfg === cfg) restoreValues(m.memo);
+});
+(globalThis as any).__keepValuesInternals = { rememberValues, restoreValues };
+
+// 단추로 다른 자리의 details 를 열고 닫는다(2026-10-19 C454: PoE2 제작 둘째 줄 단추 → 그 줄 아래 펼침 자리의 묶음). data-toggle-details="선택자".
+// details 의 toggle 은 버블링되지 않아 capture 로 듣고, 그 details 를 가리키는 단추의 aria-expanded(+ data-toggle-active-class)를 맞춘다(교체 뒤 keep-open 이 다시 열어도).
+// daisyUI 컴포넌트 클래스엔 aria-expanded: 변형이 안 만들어져 켜진 모양은 클래스로 붙인다.
+function syncDetailsTogglers(d: Element): void {
+	document.querySelectorAll("[data-toggle-details]").forEach((b) => {
+		const sel = b.getAttribute("data-toggle-details") || "";
+		let target: Element | null = null;
+		try {
+			target = document.querySelector(sel);
+		} catch (e) {
+			target = null;
+		}
+		if (target !== d) return;
+		const open = (d as HTMLDetailsElement).open;
+		b.setAttribute("aria-expanded", open ? "true" : "false");
+		const cls = b.getAttribute("data-toggle-active-class");
+		if (cls) b.classList.toggle(cls, open);
+	});
+}
+document.addEventListener("click", (event) => {
+	const btn = (event.target as HTMLElement)?.closest?.("[data-toggle-details]") as HTMLElement | null;
+	if (!btn) return;
+	let d: HTMLDetailsElement | null = null;
+	try {
+		d = document.querySelector(btn.getAttribute("data-toggle-details") || "") as HTMLDetailsElement | null;
+	} catch (e) {
+		d = null;
+	}
+	if (!d) return;
+	event.preventDefault();
+	d.open = !d.open;
+	syncDetailsTogglers(d);
+});
+document.addEventListener("toggle", (event) => {
+	const d = event.target;
+	if (d instanceof Element && d.tagName === "DETAILS") syncDetailsTogglers(d);
+}, true);
+function syncAllDetailsTogglers(): void {
+	document.querySelectorAll("[data-toggle-details]").forEach((b) => {
+		try {
+			const d = document.querySelector(b.getAttribute("data-toggle-details") || "");
+			if (d) syncDetailsTogglers(d);
+		} catch (e) {
+			/* 잘못된 선택자는 무시 */
+		}
+	});
+}
+document.addEventListener("DOMContentLoaded", syncAllDetailsTogglers);
+document.addEventListener("htmx:afterSettle", syncAllDetailsTogglers);
+
+// 바꾸면 화면 상태가 초기화되는 고르기 폼(2026-10-18 C442 UX QA: PoE2 제작에서 아이템 레벨을 바꾸면 만들던 아이템이 말없이 사라졌다).
+// 폼(또는 조상)에 data-confirm-dirty="선택자" · data-confirm-text="문구" - 선택자 입력 중 값이 있는 게 있으면 확인을 받고, 취소하면 폼을 처음 값으로.
+function isDirtyValues(values: string[]): boolean {
+	return values.some((v) => v !== "" && v !== "[]" && v !== "{}");
+}
+document.addEventListener("htmx:confirm", (event: any) => {
+	const elt = event.detail?.elt;
+	const host = elt && typeof elt.closest === "function" ? (elt.closest("[data-confirm-dirty]") as HTMLElement | null) : null;
+	if (!host) return;
+	const values = Array.from(document.querySelectorAll(host.getAttribute("data-confirm-dirty") || "")).map((i: any) => String(i.value ?? ""));
+	if (!isDirtyValues(values)) return;
+	event.preventDefault();
+	if (globalThis.confirm(host.getAttribute("data-confirm-text") || "")) {
+		event.detail.issueRequest(true);
+	} else {
+		const form = (host.tagName === "FORM" ? host : host.closest("form")) as HTMLFormElement | null;
+		form?.reset();
+	}
+});
+(globalThis as any).__confirmDirtyInternals = { isDirtyValues };
+
 // 구역을 바꿔 끼울 때 기준 요소를 화면의 같은 자리에 둔다(사용자 지적 2026-10-13: 시뮬레이터 월배당에서 지급 시기 칩을 전체 ↔ 월중 · 월말로
 // 바꾸면 칩 위치가 달라졌다). scrollY 는 그대로인데 구역 안에서 칩보다 위에 있는 적립 추천 카드가 조건에 따라 길이가 바뀐다 - 그만큼 칩이 밀린다.
 // 교체 대상에 data-swap-anchor="선택자" 를 달면 교체 직전 그 요소의 화면 위치를 재 두고, 교체 직후(그리기 전) 새 요소가 같은 자리에 오도록 굴린다.
 // 누른 컨트롤이 data-swap-anchor-key="이름" 상자 안에 있으면 그 상자를 기준으로 삼는다 - 화면 가운데의 카드를 눌러도 그 카드가 제자리에
 // 머문다(2026-10-13: 월배당 ETF 기준별 비교 카드). 상자가 없으면 대상의 선택자.
 type SwapAnchorMemo = { selector: string; top: number };
-const swapAnchorMemos: SwapAnchorMemo[] = [];
+// 요청(requestConfig)과 짝 - 스왑이 없던 응답의 메모는 다음 afterSwap 에서 버려진다(2026-10-18 C445 검토: 오류 응답 뒤 다른 구역 교체에서 화면이 튀었다)
+const swapAnchorMemos: { cfg: unknown; memo: SwapAnchorMemo }[] = [];
 function rememberSwapAnchor(target: unknown, doc: Pick<Document, "querySelector"> = document, trigger: unknown = null): SwapAnchorMemo | null {
 	// 다른 처리기와 같은 이벤트를 듣는다 - 속성을 못 읽는 대상(시험 가짜 등)이면 조용히 빠진다.
 	if (!(target instanceof Element) || typeof target.getAttribute !== "function") return null;
@@ -1519,12 +1701,15 @@ function restoreSwapAnchor(memo: SwapAnchorMemo | null, doc: Pick<Document, "que
 	return delta;
 }
 document.addEventListener("htmx:beforeSwap", (event: any) => {
-	const memo = rememberSwapAnchor(event.detail?.target, document, event.detail?.requestConfig?.elt);
-	if (memo) swapAnchorMemos.push(memo);
+	// 폼 제출이면 elt 는 폼이다 - 누른 단추(submitter)로 상자를 찾는다(2026-10-18 C440: PoE2 제작 화폐 단추가 결과 뒤 21~45px 밀렸다)
+	const cfg = event.detail?.requestConfig;
+	const memo = rememberSwapAnchor(event.detail?.target, document, cfg?.triggeringEvent?.submitter || cfg?.elt);
+	if (memo) swapAnchorMemos.push({ cfg, memo });
 });
 // outerHTML 교체에서는 afterSwap 의 target 이 떨어져 나간 옛 요소일 수 있다 - 선택자로 새 요소를 찾는다.
-document.addEventListener("htmx:afterSwap", () => {
-	for (const memo of swapAnchorMemos.splice(0)) restoreSwapAnchor(memo);
+document.addEventListener("htmx:afterSwap", (event: any) => {
+	const cfg = event.detail?.requestConfig;
+	for (const m of swapAnchorMemos.splice(0)) if (m.cfg === cfg) restoreSwapAnchor(m.memo);
 });
 (globalThis as any).__swapAnchorInternals = { rememberSwapAnchor, restoreSwapAnchor };
 

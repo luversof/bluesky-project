@@ -26,7 +26,14 @@ for (const list of Object.values(bench.classes)) {
 	for (const e of list) for (const c of e.cost || []) wantedNames.add(c.name);
 }
 // 제작 에뮬레이터 화폐 버튼(10-15 C335) — 제작대 비용에 안 나오는 소멸 · 정제 등도
-for (const n of ["Orb of Transmutation", "Orb of Alteration", "Orb of Augmentation", "Regal Orb", "Orb of Alchemy", "Chaos Orb", "Exalted Orb", "Orb of Annulment", "Orb of Scouring"]) wantedNames.add(n);
+// 화석 · 공명기(10-15 C338) — craft-currencies.json 이 있으면 그 이름들
+try {
+	const cc = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "craft-currencies.json"), "utf8"));
+	for (const f of [...(cc.fossils || []), ...(cc.resonators || [])]) wantedNames.add(f.name);
+	// 기폭제 13종(C385)
+	for (const c of cc.currencies || []) if (c.catalyst || /^(reroll_single_attribute_modifier|add_deepwater_hazard_belt_mod|add_pantheon_aspect|add_mod_and_corrupt_rare_abyss_jewel|reroll_rare_infamous|add_eldritch_implicit_amulet)$/.test(c.action)) wantedNames.add(c.name); // + 두카트(C391)
+} catch { /* 없으면 건너뜀 */ }
+for (const n of ["Orb of Transmutation", "Orb of Alteration", "Orb of Augmentation", "Regal Orb", "Orb of Alchemy", "Chaos Orb", "Exalted Orb", "Orb of Annulment", "Orb of Scouring", "Fracturing Orb", "Awakener's Orb", "Crusader's Exalted Orb", "Hunter's Exalted Orb", "Redeemer's Exalted Orb", "Warlord's Exalted Orb", "Shaper's Exalted Orb", "Elder's Exalted Orb", "Veiled Chaos Orb", "Veiled Exalted Orb", "Eldritch Chaos Orb", "Eldritch Exalted Orb", "Eldritch Orb of Annulment", "Orb of Dominance", "Orb of Conflict", "Foulborn Orb of Augmentation", "Foulborn Regal Orb", "Foulborn Exalted Orb", "Vaal Orb", "Tainted Chaos Orb", "Tainted Exalted Orb", "Tainted Divine Teardrop", "Divine Orb", "Blessed Orb", ...["Lesser", "Greater", "Grand", "Exceptional"].flatMap((t) => [t + " Eldritch Ember", t + " Eldritch Ichor"])]) wantedNames.add(n);
 
 const baseEn = loadTable("English", "BaseItemTypes");
 const visual = loadTable("English", "ItemVisualIdentity");

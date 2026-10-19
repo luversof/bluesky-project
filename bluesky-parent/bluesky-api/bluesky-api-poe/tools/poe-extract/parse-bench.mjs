@@ -38,6 +38,7 @@ function rollValues(mod, kind) {
 }
 
 const GEN = { 1: "prefix", 2: "suffix" };
+const benchTags = loadTable("English", "Tags");
 const classes = {}; // itemClassId → [entry]
 let total = 0;
 for (const row of options) {
@@ -69,6 +70,12 @@ for (const row of options) {
 		tier: row.Tier ?? 0,
 		reqLevel: row.RequiredLevel ?? 0,
 		modName: mod.Name || "",
+		// 제작 엔진(10-15 C338): 옵션 id · 옵션 그룹(같은 그룹 옵션이 있으면 못 붙인다) · 옵션 태그 · 레벨 — 메타 제작(접두/접미 변경 불가 ·
+		//   제작 옵션 3개 · 공격/주문 옵션 금지)은 id 로 판별한다
+		modId: mod.Id,
+		groups: mod.Families || [],
+		tags: (mod.ImplicitTagsKeys || []).map((i) => benchTags[i]?.Id).filter(Boolean),
+		modLevel: mod.Level,
 		en,
 		enMin,
 		ko,

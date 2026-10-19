@@ -514,6 +514,8 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	.alert-info { background-color: color-mix(in oklab, var(--color-info) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-info) 30%, transparent); }
 	.alert-success { background-color: color-mix(in oklab, var(--color-success) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-success) 30%, transparent); }
 	.alert-error { background-color: color-mix(in oklab, var(--color-error) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-error) 30%, transparent); }
+	/* 10-18 C442 UX QA — 정의가 없어 19개 화면의 경고가 기본 회색 배너로 보였다 */
+	.alert-warning { background-color: color-mix(in oklab, var(--color-warning) 12%, var(--color-base-100)); border-color: color-mix(in oklab, var(--color-warning) 30%, transparent); }
 
 	/* ---- stat ---- */
 	.stats { display: inline-grid; grid-auto-flow: column; border-radius: var(--radius-box); }
@@ -1195,21 +1197,38 @@ html.sidebar-collapsed .sidebar-toggle-icon { transform: rotate(180deg); }
 	font-family: "Fontin";
 	src: url("/fonts/Fontin-Regular-Hinted.ttf") format("truetype");
 	font-weight: 400; font-style: normal; font-display: swap;
+	unicode-range: U+0000-00B0, U+00B2-2247, U+2249-2263, U+2266-10FFFF;
 }
 @font-face {
 	font-family: "Fontin";
 	src: url("/fonts/Fontin-Bold-Hinted.ttf") format("truetype");
 	font-weight: 700; font-style: normal; font-display: swap;
+	unicode-range: U+0000-00B0, U+00B2-2247, U+2249-2263, U+2266-10FFFF;
 }
 @font-face {
 	font-family: "Fontin";
 	src: url("/fonts/Fontin-Italic-Hinted.ttf") format("truetype");
 	font-weight: 400; font-style: italic; font-display: swap;
+	unicode-range: U+0000-00B0, U+00B2-2247, U+2249-2263, U+2266-10FFFF;
 }
 @font-face {
 	font-family: "Fontin SmallCaps";
 	src: url("/fonts/Fontin-SmallCaps-Hinted.ttf") format("truetype");
 	font-weight: 400; font-style: normal; font-display: swap;
+	unicode-range: U+0000-00B0, U+00B2-2247, U+2249-2263, U+2266-10FFFF;
+}
+/* ↑ unicode-range(10-18 C422 UX QA): Fontin 은 ± ≈ ≤ ≥ 글리프가 비어 있어(빈칸으로 그려져 대체 글꼴로 안 넘어간다) '등급 ±1' 이
+   '등급  1' 로 보였다 - 이 넷은 범위에서 빼 한글 글꼴이 그린다. */
+/* 제작 에뮬레이터(10-18 C422 UX QA): 좁은 폭에서 버튼을 누르면 화면이 시뮬레이터 표로 튀었다(375px 실측 893 → 10614) - 구역을 outerHTML 로
+   바꿀 때 브라우저 스크롤 고정이 아래 요소를 기준으로 잡아 그만큼 따라 내려간 것. 이 두 페이지에서만 끈다(끄면 893 → 874 제자리). */
+html:has([data-craft-page]),
+html:has([data-craft2-page]) {
+	overflow-anchor: none;
+}
+/* 제작 페이지 표 머리글은 한 줄(10-18 C424 UX QA — 375px 에서 '아이템 레벨'이 아이/템/레/벨 로 세로 쪼개졌다). 표는 상자 안에서 가로로 민다. */
+[data-craft-page] th,
+[data-craft2-page] th {
+	white-space: nowrap;
 }
 /* PoE 폰트 스택 — Fontin 우선(영문·숫자), 한글은 한국 게임 클라이언트 글꼴 Spoqa Han Sans Neo(OFL, poeLayout 이 jsDelivr 에서 비차단 로드 — 10-01),
    못 받으면 시스템 한글 폰트. 공용 변수로 재사용. */

@@ -192,7 +192,7 @@ class PoeCraftEngineTest {
     assertThat(e.apply(n, Action.CHAOS, null, rng).item()).isEqualTo(n);
     assertThat(e.apply(n, Action.ALTERATION, null, rng).error()).isNotNull();
     Item corrupt = new Item("Gloves", "str_armour", "", 84, Rarity.RARE, List.of(), true);
-    assertThat(e.apply(corrupt, Action.CHAOS, null, rng).error()).contains("부패");
+    assertThat(e.apply(corrupt, Action.CHAOS, null, rng).error()).contains("타락");
     // 매직 두 옵션이면 확장 불가, 한 옵션이면 남은 쪽 자리에 붙는다
     Item magic1 =
         new Item(

@@ -27,6 +27,36 @@ public interface PoeCraftClient {
   @PostExchange(value = "/calc", contentType = MediaType.APPLICATION_JSON_VALUE)
   PoeCraft.CalcResponse calc(@RequestBody PoeCraft.CalcRequest request);
 
+  /** 최적 조합(C457) — 에센스 · 제작대 · 짐승 · 화폐를 섞은 최소 비용(시간 예산 안). */
+  @PostExchange(value = "/optimize", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.OptimizeResult optimize(@RequestBody PoeCraft.OptimizeRequest request);
+
+  /** 최적 조합 백그라운드 시작(C457k) — {"id": …}. */
+  @PostExchange(value = "/optimize/start", contentType = MediaType.APPLICATION_JSON_VALUE)
+  java.util.Map<String, String> optimizeStart(@RequestBody PoeCraft.OptimizeRequest request);
+
+  @org.springframework.web.service.annotation.GetExchange("/optimize/{id}")
+  PoeCraft.OptimizeStatus optimizeStatus(
+      @org.springframework.web.bind.annotation.PathVariable String id);
+
+  @PostExchange(value = "/strategy", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.StrategyResult strategy(@RequestBody PoeCraft.StrategyRequest request);
+
+  /** 쓴 화폐 · 총비용(C365). */
+  @PostExchange(value = "/spent", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.SpentResult spent(@RequestBody PoeCraft.SpentRequest request);
+
+  /** 상태마다 옵션 줄(C455 — 단계 기록의 붙은 · 지운 옵션). */
+  @PostExchange(value = "/lines", contentType = MediaType.APPLICATION_JSON_VALUE)
+  List<List<PoeCraft.Line>> lines(@RequestBody List<PoeCraft.Item> items);
+
+  @GetExchange("/options")
+  PoeCraft.Options options(@RequestParam String itemClass, @RequestParam String variant);
+
+  /** 이 종류의 장막 해제 옵션(C421). */
+  @GetExchange("/veiled")
+  List<PoeCraft.VeiledLine> veiled(@RequestParam String itemClass, @RequestParam String variant);
+
   @GetExchange("/essences")
   List<PoeCraft.Essence> essences(@RequestParam String itemClass);
 }

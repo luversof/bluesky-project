@@ -68,6 +68,33 @@ export function runExtractor(configOverride, { partial = false } = {}) {
 	}
 
 	const cli = path.join(REPO_DIR, "node_modules", "pathofexile-dat", "dist", "cli", "run.js");
+	// 축소 추출은 files/ 도 비운다 — 아이콘 스크립트를 단독으로 돌리자 옵션 문구 정의 파일(stat_descriptions 등)이 아이콘 PNG 2개로 바뀌어
+	//   그 뒤 parse-bench 가 제작대 옵션 0개를 썼다(10-15 C338). 돌리기 전 files/ 를 떠 두고, 끝나면 사라진 파일만 되돌린다(새로 뽑은 파일은 그대로)
+	let keepDir = null;
+	if (partial && fs.existsSync(FILES_DIR)) {
+		keepDir = fs.mkdtempSync(path.join(WORK_DIR, "_keep-files-"));
+		fs.cpSync(FILES_DIR, keepDir, { recursive: true });
+	}
+	try {
+		runCli(cli, env);
+	} finally {
+		if (keepDir) {
+			fs.mkdirSync(FILES_DIR, { recursive: true });
+			let restored = 0;
+			for (const name of fs.readdirSync(keepDir)) {
+				const dst = path.join(FILES_DIR, name);
+				if (!fs.existsSync(dst)) {
+					fs.cpSync(path.join(keepDir, name), dst, { recursive: true });
+					restored++;
+				}
+			}
+			fs.rmSync(keepDir, { recursive: true, force: true });
+			if (restored) console.log(`[runExtractor] 축소 추출이 지운 files/ ${restored}개를 되돌림`);
+		}
+	}
+}
+
+function runCli(cli, env) {
 	// PATH 의존 없이 현재 node 바이너리로 실행.
 	// 추출기는 시작할 때 스키마를 github 에서 받는데 다시 시도하지 않는다 — 한 번 끊기면(10-03 실측: 3번에 1번 연결 시간 초과)
 	//   파이프라인이 중간(고유 아이템 JSON 을 반쯤 쓴 뒤)에 멈춰 아이콘 · 로어 빠진 데이터가 나간다. 그래서 3번까지 다시 한다(C53).

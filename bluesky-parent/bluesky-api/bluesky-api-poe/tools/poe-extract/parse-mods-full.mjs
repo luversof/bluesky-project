@@ -23,6 +23,13 @@ const OUT_TIERS = path.join(DATA_DIR, "mod-pool-tiers.json");
 const OUT_CRAFT = path.join(DATA_DIR, "craft-mods.json");
 
 const mods = loadTable("English", "Mods");
+// 옵션 유형 이름(C384 — 수확 원소 변환의 매개변수가 ModType 이름 목록이다). 옛 작업 폴더면 없을 수 있다
+let modTypeNames = [];
+try {
+	modTypeNames = loadTable("English", "ModType");
+} catch {
+	console.warn("ModType 표 없음 — craft-mods.json 에 mt 를 싣지 않는다");
+}
 // 리마인더(인게임 회색 부연, 10-04 C131) — 티어 영어(최대롤) 줄마다 고른 템플릿의 reminderstring Id(describe.reminders)를 rem 으로,
 //   쓰인 Id 의 영 · 한 문구는 맨 위 reminderText 로 한 번(빌드 화면 레어 아이템 툴팁이 API 번역기를 거쳐 쓴다)
 const remEnRows = loadTable("English", "ReminderText");
@@ -123,7 +130,7 @@ const INFLUENCES = [
 	{ key: "shaper", name: "Shaper", nameKo: "쉐이퍼" },
 	{ key: "elder", name: "Elder", nameKo: "엘더" },
 	{ key: "crusader", name: "Crusader", nameKo: "십자군" },
-	{ key: "eyrie", name: "Redeemer", nameKo: "구원자" },
+	{ key: "eyrie", name: "Redeemer", nameKo: "대속자" }, // 공식 이름(BaseItemTypes "대속자의 엑잘티드 오브", 10-15)
 	{ key: "basilisk", name: "Hunter", nameKo: "사냥꾼" },
 	{ key: "adjudicator", name: "Warlord", nameKo: "전쟁군주" },
 ];
@@ -226,6 +233,42 @@ mods.forEach((mod, index) => {
 	list.push({ mod, index });
 });
 
+// 1a) 해제(Unveiled) 옵션 — 도메인 28("Chosen" · "of the Order", 장막 옵션을 해제할 때 셋 중 고르는 Jun 옵션, 10-15 C341). 장비와 같은 스폰웨이트 태그 매칭
+const veiledCandidates = [];
+mods.forEach((mod, index) => {
+	if (mod.Domain !== 28 || !GEN[mod.GenerationType] || !(mod.SpawnWeight_TagsKeys || []).length) return;
+	veiledCandidates.push({ mod, index });
+});
+const craftVeiled = new Map(); // poolKey → Map<modId, weight>
+const craftVeiledMods = new Map(); // modId → {g, l, grp, t, name, nameKo, en, enMin, ko, koMin}
+// 1a') 화석 추가 · 강제 옵션 — 도메인 16(델브: 연마한 화석 젬 레벨 · 공허의 화석 심연 홈 · 얽혀든 화석 바알 옵션, 10-15 C342). 장막과 같은 매칭
+//      델브 도메인의 나머지(관통 · 흡수 등 130여 개)는 스폰 풀에서 빠진 레거시라(poedb) 화석이 직접 넣는 것(Added · ForcedAdd)만 남긴다
+const fossilModIdx = new Set();
+try {
+	for (const r of loadTable("English", "DelveCraftingModifiers")) for (const k of [...(r.AddedModsKeys || []), ...(r.ForcedAddModsKeys || [])]) fossilModIdx.add(k);
+} catch { /* 표 없으면 화석 옵션 생략 */ }
+const delveCandidates = [];
+mods.forEach((mod, index) => {
+	if (mod.Domain !== 16 || !fossilModIdx.has(index) || !GEN[mod.GenerationType] || !(mod.SpawnWeight_TagsKeys || []).length) return;
+	delveCandidates.push({ mod, index });
+});
+const craftFossil = new Map(); // poolKey → Map<modId, weight>
+const craftFossilMods = new Map(); // modId → 장막과 같은 모양
+// 1a'') 엘드리치 임플리싯(10-15 C343) — GenerationType 28 = 작열의 총주교, 29 = 세계 포식자. …EldritchImplicitN 의 N = 등급(1 하급 ~ 6 완벽한,
+//       화폐 등급과 같다 — poedb "Adds a Lesser … implicit"). 스폰 태그 매칭은 같고(no_tier_* 태그는 아이템에 없어 건너뜀), g = exarch|eater
+const mods0ById = new Map(mods.map((m) => [m.Id, m]));
+const modsTable = mods; // 아래 출력 블록에서 mods 가 출력 객체로 가려진다(C388)
+const eldritchCandidates = [];
+mods.forEach((mod, index) => {
+	if ((mod.GenerationType !== 28 && mod.GenerationType !== 29) || !/EldritchImplicit\d+$/.test(mod.Id || "") || !(mod.SpawnWeight_TagsKeys || []).length) return;
+	eldritchCandidates.push({ mod, index });
+});
+const craftEldritch = new Map(); // poolKey → Map<modId, weight>
+const craftEldritchMods = new Map();
+// 바알 오브 부패 임플리싯(C358) — 제작 에뮬레이터의 "임플리싯 변경" 결과(장비 도메인 1, 풀별 가중치)
+const craftCorrupted = new Map(); // poolKey → Map<modId, weight>
+const craftCorruptedMods = new Map();
+
 // 1b) 바알 오브 부패 임플리싯(GenerationType 5) — 접두/접미와 같은 스폰웨이트 태그 매칭을 쓰지만
 // Name 이 빈 문자열이라 별도 수집. 영향력과 무관하게 붙으므로 영향력 없음("") 풀에만 담는다.
 // 플라스크 인챈트(주입 gen21/점화 gen22 오브) — 도메인 1 이지만 flask 태그로만 스폰. 플라스크 풀에만 담는다.
@@ -324,6 +367,33 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 	perPool.set(poolKey, famWeights);
 	const poolClass = poolKey.split("|")[0];
 	const candidates = candidatesByDomain.get(CLASS_DOMAIN[poolClass] ?? 1) || [];
+	const poolDomain = CLASS_DOMAIN[poolClass] ?? 1;
+	// 바알 오브 부패 임플리싯(C358)은 플라스크(도메인 2 — 바알 오브를 못 쓴다)만 빼고 클래스 도메인별(주얼 10 · 심연 주얼 13)
+	const extraSets = poolDomain === 1 ? [[veiledCandidates, craftVeiled, craftVeiledMods], [delveCandidates, craftFossil, craftFossilMods], [eldritchCandidates, craftEldritch, craftEldritchMods]] : [];
+	if (poolDomain !== 2) extraSets.push([corruptedByDomain.get(poolDomain) || [], craftCorrupted, craftCorruptedMods]);
+	{
+		for (const [cands, outPool, outMods] of extraSets) for (const { mod, index } of cands) {
+			let weight = 0;
+			for (const { tagSet } of tagSets) weight = Math.max(weight, spawnWeight(mod, tagSet));
+			if (weight <= 0) continue;
+			if (!outPool.has(poolKey)) outPool.set(poolKey, new Map());
+			outPool.get(poolKey).set(mod.Id, weight);
+			if (!outMods.has(mod.Id)) {
+				outMods.set(mod.Id, {
+					g: GEN[mod.GenerationType] || (mod.GenerationType === 5 ? "corrupted" : undefined),
+					l: mod.Level,
+					grp: mod.Families || [],
+					t: (mod.ImplicitTagsKeys || []).map((i) => tags[i]?.Id).filter(Boolean),
+					name: mod.Name,
+					nameKo: modsKo[index]?.Name || mod.Name,
+					en: describe(rollValues(mod, "max"), "English"),
+					enMin: describe(rollValues(mod, "min"), "English"),
+					ko: describe(rollValues(mod, "max"), "Korean"),
+					koMin: describe(rollValues(mod, "min"), "Korean"),
+				});
+			}
+		}
+	}
 	for (const { mod, index } of candidates) {
 		// 같은 변형 안의 베이스들끼리는 태그가 같으므로 max 로 합쳐도 섞이지 않는다
 		let weight = 0;
@@ -342,6 +412,7 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 					grp: mod.Families || [],
 					t: (mod.ImplicitTagsKeys || []).map((i) => tags[i]?.Id).filter(Boolean),
 					...(mod.IsEssenceOnlyModifier ? { ess: true } : {}),
+					...(modTypeNames[mod.ModTypeKey]?.Name ? { mt: modTypeNames[mod.ModTypeKey].Name } : {}),
 				});
 			}
 		}
@@ -498,14 +569,157 @@ for (const [poolKey, bySig] of perPoolTiers) {
 	outPoolTiers[poolKey] = sigs;
 }
 fs.writeFileSync(OUT_TIERS, JSON.stringify({ patch: loadConfig().patch, pools: outPoolTiers }));
+// 지배의 오브(10-15 C345) — 영향력 풀에만 있는 옵션(같은 클래스 · 변형의 영향력 없는 풀에 없는 것)을 ModTypeKey 사다리로 묶어 "한 등급 위" id.
+//   최고 등급이면 고양 옵션(…Maven, 같은 ModTypeKey, 스폰 태그 끝이 _<영향력>, 가중치 0 이라 풀엔 없다 — poedb "Upgrading a modifier of the
+//   highest tier transforms the modifier into an Elevated Modifier"). 고양 옵션 문구도 여기서.
+const INFLUENCE_KEYS = ["shaper", "elder", "crusader", "eyrie", "basilisk", "adjudicator"];
+const elevatedByType = new Map(); // `${ModTypeKey}|${영향력}` → {mod, index}
+mods.forEach((mod, index) => {
+	if (mod.Domain !== 1 || !/Maven/.test(mod.Id || "") || !GEN[mod.GenerationType]) return;
+	const inf = (mod.SpawnWeight_TagsKeys || []).map((k) => tags[k]?.Id || "").map((t) => t.split("_").pop()).find((t) => INFLUENCE_KEYS.includes(t));
+	if (inf) elevatedByType.set(`${mod.ModTypeKey}|${inf}`, { mod, index });
+});
+const craftUpgrade = new Map(); // poolKey → {id: 다음 id}
+const craftElevated = new Map(); // 고양 옵션 id → 문구
+for (const [poolKey, ws] of craftPools) {
+	const [cls, variant, inf] = poolKey.split("|");
+	if (!inf || !INFLUENCE_KEYS.includes(inf)) continue;
+	const base = craftPools.get(`${cls}|${variant}|`) || new Map();
+	const byType = new Map();
+	for (const id of ws.keys()) {
+		if (base.has(id)) continue;
+		const m = mods0ById.get(id);
+		if (!m) continue;
+		if (!byType.has(m.ModTypeKey)) byType.set(m.ModTypeKey, []);
+		byType.get(m.ModTypeKey).push(m);
+	}
+	const next = {};
+	for (const [type, list] of byType) {
+		list.sort((a, b) => a.Level - b.Level);
+		list.forEach((m, i) => {
+			if (i + 1 < list.length) next[m.Id] = list[i + 1].Id;
+			else {
+				const el = elevatedByType.get(`${type}|${inf}`);
+				if (!el) return;
+				next[m.Id] = el.mod.Id;
+				if (!craftElevated.has(el.mod.Id))
+					craftElevated.set(el.mod.Id, {
+						g: GEN[el.mod.GenerationType],
+						l: el.mod.Level,
+						grp: el.mod.Families || [],
+						t: (el.mod.ImplicitTagsKeys || []).map((k) => tags[k]?.Id).filter(Boolean),
+						name: el.mod.Name,
+						nameKo: modsKo[el.index]?.Name || el.mod.Name,
+						en: describe(rollValues(el.mod, "max"), "English"),
+						enMin: describe(rollValues(el.mod, "min"), "English"),
+						ko: describe(rollValues(el.mod, "max"), "Korean"),
+						koMin: describe(rollValues(el.mod, "min"), "Korean"),
+					});
+			}
+		});
+	}
+	craftUpgrade.set(poolKey, next);
+}
 {
 	// 제작용(C335) — 문구가 있는 계열(outFamilies)의 옵션만
 	const mods = {};
 	for (const [id, m] of craftMods) if (outFamilies[m.f]) mods[id] = m;
 	const pools = {};
 	for (const [k, ws] of craftPools) pools[k] = Object.fromEntries([...ws].filter(([id]) => mods[id]));
-	fs.writeFileSync(OUT_CRAFT, JSON.stringify({ patch: loadConfig().patch, mods, pools }));
-	console.log(`craft-mods.json: 옵션 ${Object.keys(mods).length}개 · 풀 ${Object.keys(pools).length}개 → ${OUT_CRAFT}`);
+	// 해제 옵션(C341) — 문구가 있는 것만
+	const veiledMods = {};
+	for (const [id, m] of craftVeiledMods) if (m.en?.length) veiledMods[id] = m;
+	const veiled = {};
+	for (const [k, ws] of craftVeiled) veiled[k] = Object.fromEntries([...ws].filter(([id]) => veiledMods[id]));
+	// 화석 추가 · 강제 옵션(C342)
+	const fossilMods = {};
+	for (const [id, m] of craftFossilMods) if (m.en?.length) fossilMods[id] = m;
+	const fossil = {};
+	for (const [k, ws] of craftFossil) fossil[k] = Object.fromEntries([...ws].filter(([id]) => fossilMods[id]));
+	// 엘드리치(C343) — g = 진영, tier = 이름 끝 숫자
+	const eldritchMods = {};
+	for (const [id, m] of craftEldritchMods) {
+		if (!m.en?.length) continue;
+		const src = mods0ById.get(id);
+		eldritchMods[id] = { ...m, g: src.GenerationType === 28 ? "exarch" : "eater", tier: parseInt(id.match(/(\d+)$/)[1], 10) };
+	}
+	const eldritch = {};
+	for (const [k, ws] of craftEldritch) eldritch[k] = Object.fromEntries([...ws].filter(([id]) => eldritchMods[id]));
+	// 지배의 오브(C345) — 다음 등급이 문구 있는 옵션(제작 옵션 또는 고양 옵션)인 것만
+	const elevatedMods = {};
+	for (const [id, m] of craftElevated) if (m.en?.length) elevatedMods[id] = m;
+	const upgrade = {};
+	for (const [k, nx] of craftUpgrade) {
+		const kept = Object.fromEntries(Object.entries(nx).filter(([a, b]) => mods[a] && (mods[b] || elevatedMods[b])));
+		if (Object.keys(kept).length) upgrade[k] = kept;
+	}
+	// 바알 오브 부패 임플리싯(C358)
+	const corruptedMods = {};
+	for (const [id, m] of craftCorruptedMods) if (m.en?.length) corruptedMods[id] = m;
+	const corrupted = {};
+	for (const [k, ws] of craftCorrupted) corrupted[k] = Object.fromEntries([...ws].filter(([id]) => corruptedMods[id]));
+	// 짐승 제작 위상 스킬(C388, BestiaryRecipes EinharMasterCraftMorrigan1~4 "30레벨 … 위상 스킬") — 제작 접미어, 스폰 가중치 없음(레시피로만)
+	const beastMods = {};
+	// 두카트 제작(C391, 군왕호 올플레임 — 도메인 42): 부패모의 두카트 = 희귀 허리띠에 덫 · 지뢰 옵션(태그 deepwater_hazard_belt 가중치),
+	//   브라인훅의 두카트 = 판테온 위상 스킬(GrantsXAspectCrafted, deepwater_pantheon_aspect) — 위상은 beastMods 에 함께
+	const hazardMods = {};
+	const hazardTag = tags.findIndex((x) => x?.Id === "deepwater_hazard_belt");
+	modsTable.forEach((mod, index) => {
+		const k = (mod.SpawnWeight_TagsKeys || []).indexOf(hazardTag);
+		if (mod.Domain !== 42 || k < 0) return;
+		hazardMods[mod.Id] = {
+			g: GEN[mod.GenerationType],
+			l: mod.Level,
+			grp: mod.Families || [],
+			t: (mod.ImplicitTagsKeys || []).map((i) => tags[i]?.Id).filter(Boolean),
+			name: mod.Name,
+			nameKo: modsKo[index]?.Name || mod.Name,
+			en: describe(rollValues(mod, "max"), "English"),
+			enMin: describe(rollValues(mod, "min"), "English"),
+			ko: describe(rollValues(mod, "max"), "Korean"),
+			koMin: describe(rollValues(mod, "min"), "Korean"),
+			w: mod.SpawnWeight_Values[k],
+		};
+	});
+	// 사이악산의 두카트(C393) "악명 높은 속성" — 도메인 41(트라투스 용병 옵션), 부위 태그 가중치(장화 · 장갑 …). cls = 그 태그
+	const infamousMods = {};
+	modsTable.forEach((mod, index) => {
+		if (mod.Domain !== 41) return;
+		const ks = mod.SpawnWeight_TagsKeys || [];
+		const cls = ks.map((k, i) => (mod.SpawnWeight_Values[i] > 0 ? tags[k]?.Id : null)).filter((x) => x && x !== "default");
+		if (!cls.length) return;
+		infamousMods[mod.Id] = {
+			g: GEN[mod.GenerationType],
+			l: mod.Level,
+			grp: mod.Families || [],
+			t: (mod.ImplicitTagsKeys || []).map((i) => tags[i]?.Id).filter(Boolean),
+			name: mod.Name,
+			nameKo: modsKo[index]?.Name || mod.Name,
+			en: describe(rollValues(mod, "max"), "English"),
+			enMin: describe(rollValues(mod, "min"), "English"),
+			ko: describe(rollValues(mod, "max"), "Korean"),
+			koMin: describe(rollValues(mod, "min"), "Korean"),
+			cls,
+			w: Math.max(...ks.map((k, i) => (cls.includes(tags[k]?.Id) ? mod.SpawnWeight_Values[i] : 0))),
+		};
+	});
+	modsTable.forEach((mod, index) => {
+		if (!/^Grants((Cat|Bird|Spider|Crab)AspectCrafted30|(BrineKing|Lunaris|Solaris|Arakaali)AspectCrafted)$/.test(mod.Id || "")) return;
+		beastMods[mod.Id] = {
+			g: GEN[mod.GenerationType],
+			l: mod.Level,
+			grp: mod.Families || [],
+			t: (mod.ImplicitTagsKeys || []).map((i) => tags[i]?.Id).filter(Boolean),
+			name: mod.Name,
+			nameKo: modsKo[index]?.Name || mod.Name,
+			en: describe(rollValues(mod, "max"), "English"),
+			enMin: describe(rollValues(mod, "min"), "English"),
+			ko: describe(rollValues(mod, "max"), "Korean"),
+			koMin: describe(rollValues(mod, "min"), "Korean"),
+		};
+	});
+	fs.writeFileSync(OUT_CRAFT, JSON.stringify({ patch: loadConfig().patch, mods, pools, veiledMods, veiled, fossilMods, fossil, eldritchMods, eldritch, elevatedMods, upgrade, corruptedMods, corrupted, beastMods, hazardMods, infamousMods }));
+	console.log(`craft-mods.json: 옵션 ${Object.keys(mods).length}개 · 풀 ${Object.keys(pools).length}개 · 해제 옵션 ${Object.keys(veiledMods).length}개(풀 ${Object.keys(veiled).length}) · 화석 옵션 ${Object.keys(fossilMods).length}개(풀 ${Object.keys(fossil).length}) · 엘드리치 ${Object.keys(eldritchMods).length}개(풀 ${Object.keys(eldritch).length}) · 고양 ${Object.keys(elevatedMods).length}개(올림 풀 ${Object.keys(upgrade).length}) · 부패 임플리싯 ${Object.keys(corruptedMods).length}개(풀 ${Object.keys(corrupted).length}) → ${OUT_CRAFT}`);
 }
 console.log(`mod-pool-tiers.json: 풀 ${Object.keys(outPoolTiers).length}개 → ${OUT_TIERS}`);
 const famCount = Object.keys(outFamilies).length;

@@ -481,6 +481,43 @@
         "Id",
         "Text"
       ]
+    },
+    {
+      "name": "Essences",
+      "columns": [
+        "BaseItemType",
+        "Perfect",
+        "Tier",
+        "UpgradeResult"
+      ]
+    },
+    {
+      "name": "EssenceMods",
+      "columns": [
+        "Essence",
+        "TargetItemCategory",
+        "Mod",
+        "DisplayMod",
+        "Text"
+      ]
+    },
+    {
+      "name": "EssenceTargetItemCategories",
+      "columns": [
+        "Id",
+        "ItemClasses",
+        "Text"
+      ]
+    },
+    {
+      "name": "AbyssBenchTicketTypes",
+      "columns": [
+        "BaseItemType",
+        "UsableOnItemClasses",
+        "MaximumItemLevel",
+        "MinimumModLevel",
+        "Tag"
+      ]
     }
   ]
 }

@@ -24,6 +24,12 @@
       ]
     },
     {
+      "name": "ModType",
+      "columns": [
+        "Name"
+      ]
+    },
+    {
       "name": "SkillGems",
       "columns": [
         "BaseItemTypesKey",
@@ -416,6 +422,61 @@
         "Id",
         "Name",
         "ShortName"
+      ]
+    },
+    {
+      "name": "DelveCraftingModifiers",
+      "columns": [
+        "BaseItemTypesKey",
+        "AddedModsKeys",
+        "NegativeWeight_TagsKeys",
+        "NegativeWeight_Values",
+        "ForcedAddModsKeys",
+        "CorruptedEssenceChance",
+        "CanImproveQuality",
+        "HasLuckyRolls",
+        "Weight_TagsKeys",
+        "Weight_Values",
+        "DelveCraftingModifierDescriptionsKeys",
+        "BlockedDelveCraftingModifierDescriptionsKeys"
+      ]
+    },
+    {
+      "name": "DelveCraftingModifierDescriptions",
+      "columns": [
+        "Id",
+        "Description"
+      ]
+    },
+    {
+      "name": "HarvestCraftOptions",
+      "columns": [
+        "Id",
+        "Text",
+        "Tier",
+        "Command",
+        "Parameters",
+        "Description",
+        "IsEnchant",
+        "LifeforceType",
+        "LifeforceCost",
+        "SacredCost"
+      ]
+    },
+    {
+      "name": "HarvestCraftTiers",
+      "columns": [
+        "Id"
+      ]
+    },
+    {
+      "name": "CurrencyItems",
+      "columns": [
+        "BaseItemTypesKey",
+        "CurrencyUseType",
+        "Action",
+        "Directions",
+        "Description"
       ]
     }
   ],

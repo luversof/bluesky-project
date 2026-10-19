@@ -42,6 +42,32 @@ class PoeCraftCalcTest {
   }
 
   @Test
+  void 채울_수_있는_목표_수는_서로_다른_옵션으로_센다() {
+    // 조합 탐색(C456)의 출발 조건 — 몇 개까지 맞았나
+    Target lifeHigh = new Target(List.of("Life1", "Life2"));
+    Target anyLife = new Target(List.of("Life1", "Life2", "Life3"));
+    Target res = new Target(List.of("Res1"));
+    assertThat(PoeCraftCalcService.matched(item("Life1"), List.of(lifeHigh, anyLife))).isEqualTo(1);
+    assertThat(PoeCraftCalcService.matched(item("Life3", "Life1"), List.of(lifeHigh, anyLife, res)))
+        .isEqualTo(2);
+    assertThat(
+            PoeCraftCalcService.matched(
+                item("Life3", "Life1", "Res1"), List.of(anyLife, lifeHigh, res)))
+        .isEqualTo(3);
+    assertThat(PoeCraftCalcService.matched(item(), List.of(lifeHigh))).isZero();
+    assertThat(PoeCraftCalcService.matched(item("Res1"), List.of())).isZero();
+  }
+
+  @Test
+  void 문구_모양은_숫자만_뺀다() {
+    assertThat(PoeCraftCalcService.shape(List.of("+121 to Evasion Rating")))
+        .isEqualTo(PoeCraftCalcService.shape(List.of("+36 to Evasion Rating")))
+        .isNotEqualTo(PoeCraftCalcService.shape(List.of("+36 to Armour")));
+    assertThat(PoeCraftCalcService.shape(List.of("0.2% of Life"))).isEqualTo("#% of Life");
+    assertThat(PoeCraftCalcService.shape(null)).isNull();
+  }
+
+  @Test
   void 첫_수치() {
     assertThat(PoeCraftCalcService.firstNumber(List.of("+90 to maximum Life"))).isEqualTo(90.0);
     assertThat(
