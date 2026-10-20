@@ -63,6 +63,20 @@ public interface Poe2CraftClient {
   @PostExchange(value = "/calc", contentType = MediaType.APPLICATION_JSON_VALUE)
   Poe2Craft.CalcResponse calc(@RequestBody Poe2Craft.CalcRequest request);
 
+  /** 에뮬레이터 따라 하기(C464) — 끝난 작업 정책으로 다음 수단. */
+  @PostExchange(value = "/optimize/{id}/next", contentType = MediaType.APPLICATION_JSON_VALUE)
+  net.luversof.web.gate.poe.dto.PoeCraft.OptimizeNext optimizeNext(
+      @org.springframework.web.bind.annotation.PathVariable String id,
+      @RequestBody Poe2Craft.Item item);
+
+  /** 최적 조합 백그라운드 시작(C461) — {"id": …}. 결과 모양은 PoE1 과 같아 PoeCraft.OptimizeStatus 로 받는다. */
+  @PostExchange(value = "/optimize/start", contentType = MediaType.APPLICATION_JSON_VALUE)
+  java.util.Map<String, String> optimizeStart(@RequestBody Poe2Craft.OptimizeRequest request);
+
+  @GetExchange("/optimize/{id}")
+  net.luversof.web.gate.poe.dto.PoeCraft.OptimizeStatus optimizeStatus(
+      @org.springframework.web.bind.annotation.PathVariable String id);
+
   /** 쓴 화폐 · 총비용(C366). */
   @PostExchange(value = "/spent", contentType = MediaType.APPLICATION_JSON_VALUE)
   Poe2Craft.SpentResult spent(@RequestBody Poe2Craft.SpentRequest request);

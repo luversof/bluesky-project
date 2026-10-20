@@ -29,7 +29,7 @@ public class PoeCraftController {
   static final int HISTORY_MAX = 100;
 
   /** 최적 조합 시간 예산(C457k) — 백그라운드 작업이라 게이트 읽기 제한과 무관, 화면은 조회하며 기다린다. */
-  static final int OPTIMIZE_BUDGET_MS = 20_000;
+  static final int OPTIMIZE_BUDGET_MS = 30_000;
 
   private static final List<String> ACTIONS =
       List.of(
@@ -148,6 +148,8 @@ public class PoeCraftController {
    */
   @PostMapping(value = "/poe/htmx/craft", produces = MediaType.TEXT_HTML_VALUE)
   public String apply(
+      // 최적 조합 작업 id(C464) — 결과 카드에 있으면 에뮬레이터가 다음 수단을 받아 보인다
+      @RequestParam(required = false) String optJob,
       @RequestParam String itemClass,
       @RequestParam(required = false, defaultValue = "") String variant,
       @RequestParam(required = false, defaultValue = "") String influence,
@@ -251,6 +253,9 @@ public class PoeCraftController {
       spentLog.add(new PoeCraft.SpentStep("FORESEE", null));
     } else if ("FORESEE_OFF".equals(action)) {
       lock = null;
+    } else if ("UNVEIL_OPEN".equals(action)) {
+      // 장막 해제 칸 열기(C475) — 아이템은 그대로, 셋 중 하나를 고르는 칸만(인게임: 장막 옵션은 가려진 채 남고 해제를 따로)
+      lastAction = action;
     } else if ("DIVINE".equals(action)) {
       // 신성한 오브(C370) — 옵션 수치만 다시(분열 옵션은 그대로). 타락 · 옵션 없음이면 못 쓴다
       if (current.corrupted()) {
@@ -302,6 +307,8 @@ public class PoeCraftController {
           }
         }
       }
+      // 장막 해제 셋을 새로(C483) — 되돌리기는 보통 다른 셋을 노리고 하는데 같은 셋이 다시 나왔다
+      current = current.reseedVeil();
     } else if (ACTIONS.contains(
         action.contains(":") ? action.substring(0, action.indexOf(':')) : action)) {
       String act = action.contains(":") ? action.substring(0, action.indexOf(':')) : action;
@@ -330,6 +337,7 @@ public class PoeCraftController {
         model.addAttribute("imprintJson", imp == null ? "" : json.writeValueAsString(imp));
         model.addAttribute(
             "imprintRollsJson", imp == null ? "{}" : json.writeValueAsString(imprintRollMap));
+        recommend(model, optJob);
         return "poe/htmx/craftEmu";
       }
       if (v.error() == null) {
@@ -370,6 +378,7 @@ public class PoeCraftController {
       model.addAttribute("imprintJson", imp == null ? "" : json.writeValueAsString(imp));
       model.addAttribute(
           "imprintRollsJson", imp == null ? "{}" : json.writeValueAsString(imprintRollMap));
+      recommend(model, optJob);
       return "poe/htmx/craftEmu";
     }
     fill(model, current, hist, null, lastAction);
@@ -384,6 +393,7 @@ public class PoeCraftController {
     model.addAttribute("imprintJson", imp == null ? "" : json.writeValueAsString(imp));
     model.addAttribute(
         "imprintRollsJson", imp == null ? "{}" : json.writeValueAsString(imprintRollMap));
+    recommend(model, optJob);
     return "poe/htmx/craftEmu";
   }
 
@@ -566,6 +576,7 @@ public class PoeCraftController {
       return "poe/htmx/craftOptimizeWait";
     }
     model.addAttribute("opt", st.result());
+    model.addAttribute("jobId", id);
     return "poe/htmx/craftOptimize";
   }
 
@@ -1263,6 +1274,28 @@ public class PoeCraftController {
       return l == null ? new ArrayList<>() : new ArrayList<>(l);
     } catch (RuntimeException e) {
       return new ArrayList<>();
+    }
+  }
+
+  /** 에뮬레이터 따라 하기(C464) — 최적 조합 작업이 있으면 지금 아이템의 다음 수단. 작업이 사라졌거나 실패하면 표시 안 함. */
+  private void recommend(Model model, String optJob) {
+    if (optJob == null || optJob.isBlank()) {
+      return;
+    }
+    Object sj = model.getAttribute("stateJson");
+    PoeCraft.Item it = sj == null ? null : parse(sj.toString(), null);
+    if (it == null) {
+      return;
+    }
+    // 각인(C468) — 에뮬레이터 각인도 넘긴다(최적 조합이 각인 · 되돌리기를 쓴다)
+    Object ij = model.getAttribute("imprintJson");
+    PoeCraft.Item imp = ij == null || ij.toString().isBlank() ? null : parse(ij.toString(), null);
+    try {
+      model.addAttribute(
+          "recommend", craftClient.optimizeNext(optJob, new PoeCraft.OptimizeNextRequest(it, imp)));
+      model.addAttribute("optJob", optJob);
+    } catch (RuntimeException e) {
+      // 작업이 사라졌으면(10분) 표시 안 함
     }
   }
 }

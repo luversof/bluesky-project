@@ -80,7 +80,9 @@ public class PoeCraftCalcService {
           Map.entry("aspect:cat", "Bestiary: Level 30 Aspect of the Cat skill"),
           Map.entry("aspect:avian", "Bestiary: Level 30 Aspect of the Avian skill"),
           Map.entry("aspect:spider", "Bestiary: Level 30 Aspect of the Spider skill"),
-          Map.entry("aspect:crab", "Bestiary: Level 30 Aspect of the Crab skill"));
+          Map.entry("aspect:crab", "Bestiary: Level 30 Aspect of the Crab skill"),
+          // 각인(C468 — 최적 조합)
+          Map.entry("imprint", "Bestiary: Imprint"));
 
   static final Map<String, String> SPENT_KO =
       Map.ofEntries(
@@ -96,6 +98,7 @@ public class PoeCraftCalcService {
           Map.entry("Bestiary: Level 30 Aspect of the Avian skill", "짐승 제작: 30레벨 새의 위상 스킬"),
           Map.entry("Bestiary: Level 30 Aspect of the Spider skill", "짐승 제작: 30레벨 거미의 위상 스킬"),
           Map.entry("Bestiary: Level 30 Aspect of the Crab skill", "짐승 제작: 30레벨 게의 위상 스킬"),
+          Map.entry("Bestiary: Imprint", "짐승 제작: 각인"),
           Map.entry("Orb of Transmutation", "진화의 오브"),
           Map.entry("Orb of Alteration", "변화의 오브"),
           Map.entry("Orb of Augmentation", "확장의 오브"),
@@ -218,8 +221,7 @@ public class PoeCraftCalcService {
       out.addAll(harvests(item, req.targets(), sub));
       out.addAll(eldritchChaos(item, req.targets(), sub));
       out.addAll(veiledChaos(item, req.targets(), sub));
-      // 여러 방법을 이어 쓰는 조합(C456 사용자 요청) — 위에서 고른 화석 · 수확도 굴리는 방법 후보로
-      out.addAll(combos(item, req.targets(), req.essence(), out, started));
+      // 여러 방법을 섞는 조합은 최적 조합(C457 PoeCraftOptimizer)이 맡는다 — C456 의 고정 조합은 C458 에서 뺐다
     }
     out.sort(
         Comparator.comparing(
@@ -1192,7 +1194,7 @@ public class PoeCraftCalcService {
           "ukatoa", "add_eldritch_implicit_amulet");
 
   /** 목표 옵션들의 태그 합집합(화석 · 수확 후보 고르기). */
-  private java.util.Set<String> targetTags(List<Target> targets) {
+  java.util.Set<String> targetTags(List<Target> targets) {
     java.util.Set<String> out = new java.util.HashSet<>();
     for (Target t : targets) {
       for (String id : t.anyOf()) {
@@ -1593,355 +1595,6 @@ public class PoeCraftCalcService {
         Comparator.comparing(
             (MethodResult r) -> r.expectedCost() == null ? Double.MAX_VALUE : r.expectedCost()));
     return all.subList(0, Math.min(1, all.size()));
-  }
-
-  /** 조합 탐색 시간(C456) — 게이트 읽기 제한 10초 안(단일 방법 비교가 5~6초). 계산 전체가 CALC_WALL_MS 를 넘지 않게 남은 만큼만. */
-  static final long COMBO_BUDGET_MS = 3_000;
-
-  static final long CALC_WALL_MS = 7_000;
-
-  static final int COMBO_SAMPLE = 20_000;
-  static final int COMBO_CHAIN_RUNS = 1_500;
-  static final int COMBO_KEEP = 3;
-
-  /**
-   * 조합의 굴리는 단계(C456) — 회차마다 같은 출발점에서 한 번 굴린다(기억 없음). magic = 변화(+옵션 하나면 확장)라 결과가 매직, goal = 이 방법에서
-   * 목표로 치는 옵션(에센스 보장 옵션 포함).
-   */
-  private record Roller(
-      String key,
-      String ko,
-      boolean magic,
-      Item start,
-      Action act,
-      String arg,
-      List<Target> goal) {}
-
-  /**
-   * 여러 제작 방법을 이어 쓰는 조합(C456 사용자 요청 — "가장 적은 비용에 조합이 전혀 고려 안 됨"). [굴리는 방법으로 목표 일부(+ 마무리할 자리)가 맞을
-   * 때까지] → [마무리: 제왕(매직 → 레어) · 엑잘티드 · 제작대]. 마무리 도중 남은 목표를 더 채울 수 없게 되면 실패 — 다시 굴리기부터(변화 계열은 레어가 됐으니
-   * 정제 → 진화도). 성공 한 번당 비용 = (굴리기 1회 비용 / 출발 조건 확률 + 마무리 평균 비용) / 마무리 성공률. 조합 중 가장 싼 셋.
-   */
-  private List<MethodResult> combos(
-      Item item, List<Target> targets, String chosen, List<MethodResult> found, long started) {
-    int n = targets.size();
-    long budget = Math.min(COMBO_BUDGET_MS, CALC_WALL_MS - (System.currentTimeMillis() - started));
-    if (n < 2 || budget < 500) {
-      return List.of();
-    }
-    long deadline = System.currentTimeMillis() + budget;
-    PoeCraftEngine engine = craft.engine();
-    String cls = item.itemClass();
-    // 제작대로 채울 수 있는 목표 → 가장 싼 제작대 옵션
-    Map<Integer, PoeCraftDataService.BenchCraft> bench = new LinkedHashMap<>();
-    PoeCraftService.Options o = craft.options(cls, item.variant() == null ? "" : item.variant());
-    for (int t = 0; t < n; t++) {
-      PoeCraftDataService.BenchCraft best = null;
-      Double bestCost = null;
-      for (PoeCraftDataService.BenchCraft b :
-          o.bench() == null ? List.<PoeCraftDataService.BenchCraft>of() : o.bench()) {
-        if (b.modId() == null || !benchCounts(b, targets.get(t))) {
-          continue;
-        }
-        Map<String, Double> m = new LinkedHashMap<>();
-        spend(m, Action.BENCH, b.modId(), cls);
-        Double c = cost(m);
-        if (best == null || (c != null && (bestCost == null || c < bestCost))) {
-          best = b;
-          bestCost = c;
-        }
-      }
-      if (best != null) {
-        bench.put(t, best);
-      }
-    }
-    // 굴리는 방법
-    List<Roller> rollers = new ArrayList<>();
-    SplittableRandom rs = new SplittableRandom(4561);
-    rollers.add(
-        new Roller(
-            "CHAOS", "카오스 연타", false, rareStart(engine, item, rs), Action.CHAOS, null, targets));
-    List<PoeCraftEngine.Affix> fr = fractured(item);
-    if (fr.stream().filter(a -> "prefix".equals(a.gen())).count() <= 1
-        && fr.stream().filter(a -> !"prefix".equals(a.gen())).count() <= 1) {
-      Item magic =
-          new Item(
-              cls,
-              item.variant(),
-              item.influence(),
-              item.ilvl(),
-              Rarity.MAGIC,
-              fr,
-              false,
-              item.implicits());
-      rollers.add(new Roller("ALT", "변화 연타(+확장)", true, magic, Action.ALTERATION, null, targets));
-    }
-    Map<String, PoeCraftDataService.Essence> ess = new LinkedHashMap<>();
-    for (PoeCraftDataService.Essence e : craft.essences(cls)) {
-      if (e.modId() == null
-          || e.slug() == null
-          || (e.ilvlMax() > 0 && item.ilvl() > e.ilvlMax())
-          || targets.stream().noneMatch(t -> essenceCounts(e, t))) {
-        continue;
-      }
-      PoeCraftDataService.Essence cur = ess.get(e.family());
-      if (cur == null || e.tier() > cur.tier() || e.slug().equals(chosen)) {
-        ess.put(e.family(), e);
-      }
-    }
-    for (PoeCraftDataService.Essence e : ess.values()) {
-      List<Target> goal = new ArrayList<>();
-      for (Target t : targets) {
-        goal.add(essenceCounts(e, t) ? new Target(concat(t.anyOf(), e.modId())) : t);
-      }
-      rollers.add(
-          new Roller(
-              "ESSENCE:" + e.slug(),
-              e.nameKo() + " 연타",
-              false,
-              normal(item),
-              Action.ESSENCE,
-              e.slug(),
-              goal));
-    }
-    for (MethodResult r : found) {
-      if (r.method().startsWith("FOSSIL:")) {
-        rollers.add(
-            new Roller(
-                r.method(),
-                r.label(),
-                false,
-                normal(item),
-                Action.FOSSIL,
-                r.method().substring(7),
-                targets));
-      } else if (r.method().startsWith("HARVEST:")) {
-        rollers.add(
-            new Roller(
-                r.method(),
-                r.label(),
-                false,
-                rareStart(engine, item, rs),
-                Action.HARVEST,
-                r.method().substring(8),
-                targets));
-      }
-    }
-    List<MethodResult> out = new ArrayList<>();
-    for (int ri = 0; ri < rollers.size(); ri++) {
-      long now = System.currentTimeMillis();
-      if (now >= deadline) {
-        break;
-      }
-      long sliceEnd = now + (deadline - now) / (rollers.size() - ri);
-      long sampleEnd = now + (sliceEnd - now) * 3 / 5;
-      Roller ro = rollers.get(ri);
-      SplittableRandom rng = new SplittableRandom(ro.key().hashCode());
-      // 굴린 결과 표본
-      List<Item> outs = new ArrayList<>();
-      Map<String, Double> spentR = new LinkedHashMap<>();
-      for (int i = 0;
-          i < COMBO_SAMPLE && (i < 500 || System.currentTimeMillis() < sampleEnd);
-          i++) {
-        PoeCraftEngine.Result r = engine.apply(ro.start(), ro.act(), ro.arg(), rng);
-        if (r.error() != null) {
-          break;
-        }
-        Item it = r.item();
-        spend(spentR, ro.act(), ro.arg(), cls);
-        if (ro.magic() && it.affixes().size() < 2) {
-          PoeCraftEngine.Result a = engine.apply(it, Action.AUGMENTATION, null, rng);
-          if (a.error() == null) {
-            it = a.item();
-            spend(spentR, Action.AUGMENTATION, null, cls);
-          }
-        }
-        outs.add(it);
-      }
-      if (outs.isEmpty()) {
-        continue;
-      }
-      Map<String, Double> perUse = new LinkedHashMap<>();
-      final int nOut = outs.size();
-      spentR.forEach((k, v) -> perUse.put(k, v / nOut));
-      List<String> shapes =
-          ro.magic() ? List.of("R", "B", "RE", "RB", "REB", "REE") : List.of("E", "B", "EB", "EE");
-      for (String shape : shapes) {
-        // 굴리기로 목표 하나는 맞춰야 조합(굴리기 없이 마무리만은 아님), 변화 + 제왕만은 C372 의 '변화 → 제왕'과 같아 목표 셋이면 뺀다
-        if (n - shape.length() < 1 || ("R".equals(shape) && n == 3)) {
-          continue;
-        }
-        // 매직은 옵션 둘까지 — 변화 + 제작대는 목표 둘일 때만
-        if ("B".equals(shape) && ro.magic() && n > 2) {
-          continue;
-        }
-        List<Integer> bts =
-            shape.indexOf('B') >= 0
-                ? new ArrayList<>(bench.keySet())
-                : java.util.Collections.singletonList(-1);
-        for (Integer bt : bts) {
-          if (System.currentTimeMillis() >= sliceEnd) {
-            break;
-          }
-          MethodResult m =
-              chain(
-                  ro,
-                  shape,
-                  bt == null || bt < 0 ? null : bench.get(bt),
-                  bt == null ? -1 : bt,
-                  outs,
-                  perUse,
-                  targets,
-                  sliceEnd,
-                  rng);
-          if (m != null) {
-            out.add(m);
-          }
-        }
-      }
-    }
-    out.sort(
-        Comparator.comparing(
-            (MethodResult r) -> r.expectedCost() == null ? Double.MAX_VALUE : r.expectedCost()));
-    return out.subList(0, Math.min(COMBO_KEEP, out.size()));
-  }
-
-  /** 조합 한 갈래(C456) — 표본 중 출발 조건을 채운 것에 마무리를 이어 붙여 성공률 · 비용. 출발 조건을 채운 표본이 없으면 null. */
-  private MethodResult chain(
-      Roller ro,
-      String shape,
-      PoeCraftDataService.BenchCraft b,
-      int bt,
-      List<Item> outs,
-      Map<String, Double> perUse,
-      List<Target> targets,
-      long sliceEnd,
-      RandomGenerator rng) {
-    int n = targets.size();
-    String cls = ro.start().itemClass();
-    List<Target> goal = new ArrayList<>(ro.goal());
-    if (b != null) {
-      goal.set(bt, new Target(concat(goal.get(bt).anyOf(), b.modId())));
-    }
-    List<Target> others = new ArrayList<>(goal);
-    if (b != null) {
-      others.remove(bt);
-    }
-    int needPre = n - shape.length();
-    List<Item> pre = new ArrayList<>();
-    for (Item it : outs) {
-      if (meets(it, goal) || (matched(it, others) >= needPre && room(it, shape, b))) {
-        pre.add(it);
-      }
-    }
-    if (pre.isEmpty()) {
-      return null;
-    }
-    double p = (double) pre.size() / outs.size();
-    int runs = Math.min(COMBO_CHAIN_RUNS, Math.max(pre.size(), 300));
-    int ok = 0;
-    int done = 0;
-    Map<String, Double> fin = new LinkedHashMap<>();
-    for (int k = 0; k < runs && (k < 100 || System.currentTimeMillis() < sliceEnd); k++, done++) {
-      Item it = pre.get(k % pre.size());
-      boolean success = meets(it, goal);
-      for (int s = 0; s < shape.length() && !success; s++) {
-        char c = shape.charAt(s);
-        if (c == 'B' && meets(it, List.of(goal.get(bt)))) {
-          continue; // 제작대 목표가 이미 굴려서 붙었으면 안 쓴다
-        }
-        Action act = c == 'R' ? Action.REGAL : c == 'E' ? Action.EXALT : Action.BENCH;
-        String arg = c == 'B' ? b.modId() : null;
-        PoeCraftEngine.Result r = craft.engine().apply(it, act, arg, rng);
-        if (r.error() != null) {
-          break;
-        }
-        it = r.item();
-        spend(fin, act, arg, cls);
-        if (meets(it, goal)) {
-          success = true;
-          break;
-        }
-        if (n - matched(it, goal) > shape.length() - s - 1) {
-          break; // 남은 마무리로는 못 채운다
-        }
-      }
-      if (success) {
-        ok++;
-      } else if (ro.magic() && it.rarity() == Rarity.RARE) {
-        // 제왕 뒤 실패 — 변화를 다시 쓰려면 정제 → 진화(C378 과 같은 규칙)
-        spend(fin, Action.SCOUR, null, cls);
-        spend(fin, Action.TRANSMUTE, null, cls);
-      }
-    }
-    if (ok == 0) {
-      return null;
-    }
-    double q = (double) ok / done;
-    double chance = p * q;
-    double attempts = 1 / chance;
-    // 성공 한 번당 화폐 = 굴리기 1회 × 굴리기 횟수 + 마무리(실패 포함) 평균 / 마무리 성공률
-    Map<String, Double> perSuccess = new LinkedHashMap<>();
-    perUse.forEach((k, v) -> perSuccess.merge(k, v * attempts, Double::sum));
-    final int doneF = done;
-    fin.forEach((k, v) -> perSuccess.merge(k, v / doneF / q, Double::sum));
-    Map<String, Double> perAttempt = new LinkedHashMap<>();
-    perSuccess.forEach((k, v) -> perAttempt.put(k, v / attempts));
-    Double total = cost(perSuccess);
-    List<String> steps = new ArrayList<>();
-    for (char c : shape.toCharArray()) {
-      steps.add(
-          c == 'R'
-              ? "제왕"
-              : c == 'E'
-                  ? "엑잘티드"
-                  : "제작대("
-                      + String.join(", ", b.ko() != null && !b.ko().isEmpty() ? b.ko() : b.en())
-                      + ")");
-    }
-    String label = ro.ko() + " → " + String.join(" → ", steps);
-    String note =
-        "① "
-            + ro.ko().replace(" 연타", "")
-            + "로 목표 "
-            + needPre
-            + "개"
-            + (b != null || shape.indexOf('E') >= 0 ? "(마무리할 자리 남김)" : "")
-            + "까지 — 굴림의 "
-            + String.format(p < 0.01 ? "%.3f%%" : "%.1f%%", p * 100)
-            + " → ② "
-            + String.join(" → ", steps)
-            + " — 마무리 성공 "
-            + String.format(q < 0.1 ? "%.1f%%" : "%.0f%%", q * 100)
-            + ", 실패하면 다시 굴리기부터"
-            + (ro.magic() && shape.indexOf('R') >= 0 ? "(정제 → 진화)" : "")
-            + (pre.size() < LOW_HITS ? " · 출발 조건 표본 " + pre.size() + "개라 오차가 큽니다" : "");
-    return new MethodResult(
-        "COMBO:" + ro.key() + ":" + shape + (b != null ? ":" + b.modId() : ""),
-        label,
-        outs.size(),
-        (int) Math.max(1, Math.round(pre.size() * q)),
-        chance,
-        attempts,
-        perAttempt,
-        total == null ? null : total / attempts,
-        total,
-        note);
-  }
-
-  /** 마무리할 자리 — 엑잘티드 · 제작대가 붙을 빈 자리가 남았는가(매직이 제왕부터면 레어가 돼 늘 남는다). */
-  private static boolean room(Item it, String shape, PoeCraftDataService.BenchCraft b) {
-    if (it.rarity() == Rarity.MAGIC && shape.charAt(0) == 'R') {
-      return true;
-    }
-    int max = PoeCraftEngine.maxPerGen(it, it.rarity());
-    long pre = it.affixes().stream().filter(a -> "prefix".equals(a.gen())).count();
-    long suf = it.affixes().size() - pre;
-    long free = (max - pre) + (max - suf);
-    if (free < shape.length()) {
-      return false;
-    }
-    return b == null || ("prefix".equals(b.gen()) ? pre < max : suf < max);
   }
 
   /** 서로 다른 옵션으로 채울 수 있는 목표 수의 최댓값(C456 — 조합의 출발 조건 · 남은 목표). */

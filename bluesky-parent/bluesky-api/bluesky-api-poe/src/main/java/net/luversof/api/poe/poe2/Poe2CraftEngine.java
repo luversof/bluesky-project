@@ -109,7 +109,20 @@ public class Poe2CraftEngine {
       // 기폭제 퀄리티(C386) — "종류:양"(예: life:20), 없으면 null. 옵션을 다시 굴려도 남는다
       String quality,
       // 축성(C390) — 더 바꿀 수 없다
-      boolean sanctified) {
+      boolean sanctified,
+      // 공개 씨앗(C483) — 드러낼 셋을 섞는 값, 없으면 아이템 상태만으로. 에뮬레이터가 되돌릴 때 새로 줘서 다른 셋이 나온다
+      Long revealSeed) {
+
+    public Item(
+        String poolKey,
+        int ilvl,
+        Rarity rarity,
+        List<Affix> affixes,
+        boolean corrupted,
+        String quality,
+        boolean sanctified) {
+      this(poolKey, ilvl, rarity, affixes, corrupted, quality, sanctified, null);
+    }
 
     public Item(String poolKey, int ilvl, Rarity rarity, List<Affix> affixes, boolean corrupted) {
       this(poolKey, ilvl, rarity, affixes, corrupted, null, false);
@@ -130,11 +143,11 @@ public class Poe2CraftEngine {
     }
 
     Item with(Rarity r, List<Affix> a) {
-      return new Item(poolKey, ilvl, r, List.copyOf(a), corrupted, quality, sanctified);
+      return new Item(poolKey, ilvl, r, List.copyOf(a), corrupted, quality, sanctified, revealSeed);
     }
 
     Item withQuality(String q) {
-      return new Item(poolKey, ilvl, rarity, affixes, corrupted, q, sanctified);
+      return new Item(poolKey, ilvl, rarity, affixes, corrupted, q, sanctified, revealSeed);
     }
 
     /** 기폭제 종류 키, 없으면 null. */
@@ -1127,7 +1140,10 @@ public class Poe2CraftEngine {
         used(om, "SinistralNecromancy", "DextralNecromancy", "Sovereign", "Liege", "Blackblooded"));
   }
 
-  /** 드러낼 셋 — 미공개 자리의 쪽 · 최소 레벨 · 군주 · 아이템 레벨 · 다른 옵션 그룹. 아이템 상태로 정해진 난수(다시 열어도 같다). */
+  /**
+   * 드러낼 셋 — 미공개 자리의 쪽 · 최소 레벨 · 군주 · 아이템 레벨 · 다른 옵션 그룹. 아이템 상태(+ 공개 씨앗)로 정해진 난수(다시 열어도 같다). 공개 씨앗이
+   * 바뀌면(에뮬레이터 되돌리기, C483) 다른 셋.
+   */
   public List<String> revealOffers(Item item) {
     Affix u = item.affixes().stream().filter(Poe2CraftEngine::unrevealed).findFirst().orElse(null);
     if (u == null) {
@@ -1167,7 +1183,11 @@ public class Poe2CraftEngine {
     java.util.Collections.sort(cand);
     StringBuilder key = new StringBuilder(item.poolKey()).append('|').append(item.ilvl());
     item.affixes().stream().map(Affix::id).sorted().forEach(x -> key.append('|').append(x));
-    java.util.Collections.shuffle(cand, new java.util.Random(key.toString().hashCode()));
+    long mix = key.toString().hashCode();
+    if (item.revealSeed() != null) {
+      mix ^= item.revealSeed() * 0x9E3779B97F4A7C15L;
+    }
+    java.util.Collections.shuffle(cand, new java.util.Random(mix));
     return cand.subList(0, Math.min(3, cand.size()));
   }
 

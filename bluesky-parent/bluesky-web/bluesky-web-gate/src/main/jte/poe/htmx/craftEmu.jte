@@ -27,6 +27,8 @@
 @param java.util.List<PoeCraft.HistRow> historyRows = java.util.List.of()
 @param Integer historyStartUndo = null
 @param int historyDropped = 0
+@param net.luversof.web.gate.poe.dto.PoeCraft.OptimizeNext recommend = null
+@param String optJob = null
 
 <%-- PoE1 제작 에뮬레이터 결과 구역(10-15 C335) — 화폐를 누르면 이 구역만 바꿔 끼운다. 아이템 상태 · 되돌리기 이력은 숨은 칸(서버는 상태를 안 든다).
      툴팁은 인게임 배색(일반 흰색 · 매직 파랑 · 레어 노랑 헤더, 옵션 파랑), 줄마다 그 풀 안 등급(T1 = 최상위)과 수치 범위. --%>
@@ -68,6 +70,9 @@
 		new Btn("VEILED_CHAOS", "currencyrerollrareveiledchaos", "장막의 카오스 오브", "Veiled Chaos Orb", rare),
 		// 장막 옵션이 있으면 끔(C415 — 인게임 "이미 장막 속성 부여가 있습니다.")
 		new Btn("VEILED_EXALT", "currencyrerollrareveiled", "장막의 엑잘티드 오브", "Veiled Exalted Orb", rare && removable && lines.stream().noneMatch(l -> l.id().startsWith("Veiled"))),
+		// 장막 해제(10-20 사용자 요청 "가려져 있는 상태에서 선택하면 장막 옵션 중 하나를 고르는 식으로 단계가") — 인게임처럼 장막 옵션은 가려진 채 남고,
+		// 이 단추를 눌러야 셋 중 하나를 고르는 칸이 뜬다(아이템은 그대로 · 화폐 안 듦). 아이콘 없음(전용 화폐가 아님)
+		new Btn("UNVEIL_OPEN", null, "장막 해제", "Unveil", lines.stream().anyMatch(l -> l.id().startsWith("Veiled")) && !item.corrupted()),
 		// 삿된 화폐(C401) — 보통 확장 · 제왕 · 엑잘과 같되 "레벨이 높은 속성이 붙을 가능성이 더 높음"(가중은 축성된 화석과 같다고 가정)
 		new Btn("FOULBORN_AUG", "currencymutatedaddmodtomagic", "삿된 확장의 오브", "Foulborn Orb of Augmentation", magic && lines.size() < 2 && !item.corrupted()),
 		new Btn("FOULBORN_REGAL", "currencymutatedupgrademagictorare", "삿된 제왕의 오브", "Foulborn Regal Orb", magic && !item.corrupted()),
@@ -135,8 +140,8 @@
 }
 <%-- 화폐 클릭은 조회가 아니라 시험 적용이라 "처리되었습니다" 토스트를 띄우지 않는다(누를 때마다 쌓였다) --%>
 <%-- C449 UX QA(PoE2 C440 과 같은 공용 장치): 누른 단추가 든 상자를 제자리에 · 열어 둔 묶음 유지 · 오류가 헤더 밑 · 화면 밖이면 보이게 --%>
-<div id="craft-emu" class="space-y-3" data-craft-rarity="${rarity}" data-no-success-toast data-swap-anchor="#craft-emu [data-craft-actions]" data-keep-open="data-craft-group" data-error-into-view=".craft-error-reveal" data-keep-values="essence,harvest,bench,fossil">
-	<form hx-post="/poe/htmx/craft" hx-target="#craft-emu" hx-swap="outerHTML" class="space-y-2 min-w-0" data-craft-toolbar>
+<div id="craft-emu" data-craft-arm-scope class="space-y-3" data-craft-rarity="${rarity}" data-no-success-toast data-swap-anchor="#craft-emu [data-craft-actions]" data-keep-open="data-craft-group" data-error-into-view=".craft-error-reveal" data-keep-values="essence,harvest,bench,fossil">
+	<form hx-post="/poe/htmx/craft" hx-target="#craft-emu" hx-swap="outerHTML" class="space-y-2 min-w-0" hx-include="#craft-opt-result input[name=optJob]" data-craft-toolbar>
 		<input type="hidden" name="itemClass" value="${item.itemClass()}">
 		<input type="hidden" name="variant" value="${item.variant()}">
 		<input type="hidden" name="influence" value="${item.influence()}">
@@ -152,6 +157,36 @@
 		<input type="hidden" name="rolls" value="${rollsJson}">
 		<input type="hidden" name="rollHistory" value="${rollHistJson}">
 
+		<div class="grid grid-cols-4 min-[380px]:grid-cols-5 gap-1.5 sm:flex sm:flex-wrap sm:items-stretch" data-craft-actions data-swap-anchor-key="actions">
+			@for(Btn b : btns)
+				<button type="submit" name="action" value="${b.action()}" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 ${recommend != null && recommend.actionId() != null && (recommend.actionId().equals(b.action()) || recommend.actionId().startsWith(b.action() + ":") || ("FALLBACK".equals(recommend.actionId()) && "SCOUR".equals(b.action())) || ("UNVEIL".equals(recommend.actionId()) && "UNVEIL_OPEN".equals(b.action()))) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""} ${b.action().equals(lastAction) ? "btn-primary" : "btn-ghost border border-base-300"}" data-craft-action="${b.action()}" disabled="${"UNVEIL_OPEN".equals(b.action()) ? !b.enabled() : view.blocked() != null ? blocked.containsKey(b.action()) : !b.enabled()}" data-craft-blocked="${blocked.get(b.action())}" title="${blocked.containsKey(b.action()) ? (ko ? b.ko() : b.en()) + " — " + blocked.get(b.action()) : (tip.apply(b.en()) != null ? tip.apply(b.en()) : (ko ? b.ko() : b.en()))}">
+					@if(b.icon() != null)<img src="/poe-assets/currency/${b.icon()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">@else<span class="w-7 h-7 grid place-items-center text-lg leading-none" aria-hidden="true">◈</span>@endif
+					<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? b.ko().replace(" 오브", "").replace("의", "") : b.en().replace("Orb of ", "").replace(" Orb", "")}</span>
+				</button>
+			@endfor
+			<%-- 되돌리기 · 새 아이템 · 신성 · 축복 · 머리카락도 같은 줄(C455 — CoE 처럼 제작 수단은 위 한 줄) --%>
+			<span class="hidden sm:block w-px self-stretch bg-base-300 mx-1" aria-hidden="true"></span>
+			<button type="submit" name="action" value="UNDO" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-outline" data-craft-action="UNDO" disabled="${historySize == 0}" title="${ko ? "한 단계 되돌리기 — 여러 단계는 아래 단계 기록의 '여기로'" : "Undo one step — use 'Go here' in the step history for more"}"><span class="text-lg leading-none" aria-hidden="true">↶</span><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "되돌리기" : "Undo"} (${historySize})</span></button>
+			<button type="submit" name="action" value="RESET" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="RESET" title="${ko ? "새 일반 아이템 — 기록 · 쓴 화폐도 처음부터" : "New normal item — history and spending start over"}"><span class="text-lg leading-none" aria-hidden="true">↺</span><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "새 일반 아이템" : "New normal item"}</span></button>
+			<button type="submit" name="action" value="DIVINE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="DIVINE" disabled="${item.corrupted() || lines.stream().allMatch(PoeCraft.Line::fractured)}" title="${ko ? "신성한 오브 — 옵션 수치를 다시 굴립니다(분열 옵션 제외). 되돌리기로 돌아가지 않습니다" : "Divine Orb — rerolls modifier values (not fractured). Not undoable"}"><img src="/poe-assets/currency/currencymodvalues.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "신성한 오브" : "Divine Orb"}</span></button>
+			<button type="submit" name="action" value="BLESSED" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="BLESSED" disabled="${item.corrupted() || implicits.isEmpty()}" title="${ko ? "축복의 오브 — 고정 속성(임플리싯) 수치를 다시 굴립니다. 되돌리기로 돌아가지 않습니다" : "Blessed Orb — rerolls implicit values. Not undoable"}"><img src="/poe-assets/currency/currencyrerollimplicit.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "축복의 오브" : "Blessed Orb"}</span></button>
+			<button type="submit" name="action" value="FORESEE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="FORESEE" disabled="${!foresee.isEmpty()}" title="${ko ? "히네코라의 머리카락 — 다음에 쓸 화폐의 결과를 미리 봅니다. 아이템이 바뀌면 사라집니다" : "Hinekora's Lock — foresee the result of the next currency. Lost once the item is modified"}"><img src="/poe-data/poe2/icons/currency/currencyhinekoraslock.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "히네코라의 머리카락" : "Hinekora's Lock"}</span></button>
+		</div>
+		<%-- 최적 조합 따라 하기(C464) — 계산기의 최적 조합 정책이 지금 아이템에 쓸 다음 수단(단추는 테두리로 강조) --%>
+		@if(recommend != null)
+			<div class="text-xs rounded-box border border-primary/50 bg-primary/10 px-2 py-1" data-craft-recommend="${recommend.actionId()}" role="status">
+				@if(recommend.done())
+					<span class="font-semibold">${ko ? "최적 조합: 목표를 모두 채웠습니다" : "Optimal plan: all targets met"}</span>
+				@elseif(!recommend.known())
+					${ko ? "최적 조합: 이 상태는 계산에 없던 상태입니다(목표 · 아이템이 다르면 계산기를 다시)" : "Optimal plan: this state was not part of the plan (re-run the calculator if targets or item changed)"}
+				@else
+					<span class="font-semibold">${ko ? "최적 조합 다음 수단: " : "Optimal plan next: "}${recommend.action()}</span>
+					<span class="text-base-content/70"> · ${recommend.state()}@if(recommend.remaining() != null) · ${ko ? "남은 기대 " : "cost to go "}${String.format(recommend.remaining() >= 1 ? "%,.1f" : "%,.3f", recommend.remaining())}@endif</span>
+				@endif
+			</div>
+		@endif
+
+		<%-- 화폐 결과 칸(머리카락 미리 보기 · 더럽혀진 · 기폭제 · 얽혀든 · 갈등 · 바알 · 장막 해제)은 단추줄 아래(10-20 사용자 보고 "장막 카오스를 바르면 장막 옵션이 보여야 하는데 안 보여" — 단추줄 위에 있어 누른 단추 자리를 지키는 스크롤에 화면 위로 밀려났다) --%>
 		@if(!foresee.isEmpty())
 			<%-- 히네코라의 머리카락(C360) — 다음 화폐 결과를 미리 본다(적용 안 함). "이대로 적용"은 같은 결과 --%>
 			<div class="rounded-box border border-info/60 bg-base-100 p-3 space-y-2" data-craft-foresee>
@@ -283,8 +318,8 @@
 			</div>
 		@endif
 
-		@if(!unveil.isEmpty())
-			<%-- 장막 해제(C341) — 제시 셋은 아이템 상태로 정해져 다시 열어도 같다. 고르면 그 옵션으로 바뀐다 --%>
+		@if(!unveil.isEmpty() && "UNVEIL_OPEN".equals(lastAction))
+			<%-- 장막 해제(C341) — 제시 셋은 아이템 상태로 정해져 다시 열어도 같다. 고르면 그 옵션으로 바뀐다. '장막 해제' 단추를 눌렀을 때만(C475) --%>
 			<div class="rounded-box border border-base-300 bg-base-100 p-3 space-y-2" data-craft-unveil>
 				<div class="text-sm font-medium">${ko ? "장막 해제 — 셋 중 하나를 고르세요" : "Unveil — choose one of three"}</div>
 				<div class="grid gap-2">
@@ -303,52 +338,62 @@
 			</div>
 		@endif
 
-		<div class="grid grid-cols-4 min-[380px]:grid-cols-5 gap-1.5 sm:flex sm:flex-wrap sm:items-stretch" data-craft-actions data-swap-anchor-key="actions">
-			@for(Btn b : btns)
-				<button type="submit" name="action" value="${b.action()}" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 ${b.action().equals(lastAction) ? "btn-primary" : "btn-ghost border border-base-300"}" data-craft-action="${b.action()}" disabled="${view.blocked() != null ? blocked.containsKey(b.action()) : !b.enabled()}" data-craft-blocked="${blocked.get(b.action())}" title="${blocked.containsKey(b.action()) ? (ko ? b.ko() : b.en()) + " — " + blocked.get(b.action()) : (tip.apply(b.en()) != null ? tip.apply(b.en()) : (ko ? b.ko() : b.en()))}">
-					<img src="/poe-assets/currency/${b.icon()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
-					<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? b.ko().replace(" 오브", "").replace("의", "") : b.en().replace("Orb of ", "").replace(" Orb", "")}</span>
-				</button>
-			@endfor
-			<%-- 되돌리기 · 새 아이템 · 신성 · 축복 · 머리카락도 같은 줄(C455 — CoE 처럼 제작 수단은 위 한 줄) --%>
-			<span class="hidden sm:block w-px self-stretch bg-base-300 mx-1" aria-hidden="true"></span>
-			<button type="submit" name="action" value="UNDO" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-outline" data-craft-action="UNDO" disabled="${historySize == 0}" title="${ko ? "한 단계 되돌리기 — 여러 단계는 아래 단계 기록의 '여기로'" : "Undo one step — use 'Go here' in the step history for more"}"><span class="text-lg leading-none" aria-hidden="true">↶</span><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "되돌리기" : "Undo"} (${historySize})</span></button>
-			<button type="submit" name="action" value="RESET" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="RESET" title="${ko ? "새 일반 아이템 — 기록 · 쓴 화폐도 처음부터" : "New normal item — history and spending start over"}"><span class="text-lg leading-none" aria-hidden="true">↺</span><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "새 일반 아이템" : "New normal item"}</span></button>
-			<button type="submit" name="action" value="DIVINE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="DIVINE" disabled="${item.corrupted() || lines.stream().allMatch(PoeCraft.Line::fractured)}" title="${ko ? "신성한 오브 — 옵션 수치를 다시 굴립니다(분열 옵션 제외). 되돌리기로 돌아가지 않습니다" : "Divine Orb — rerolls modifier values (not fractured). Not undoable"}"><img src="/poe-assets/currency/currencymodvalues.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "신성한 오브" : "Divine Orb"}</span></button>
-			<button type="submit" name="action" value="BLESSED" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="BLESSED" disabled="${item.corrupted() || implicits.isEmpty()}" title="${ko ? "축복의 오브 — 고정 속성(임플리싯) 수치를 다시 굴립니다. 되돌리기로 돌아가지 않습니다" : "Blessed Orb — rerolls implicit values. Not undoable"}"><img src="/poe-assets/currency/currencyrerollimplicit.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "축복의 오브" : "Blessed Orb"}</span></button>
-			<button type="submit" name="action" value="FORESEE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="FORESEE" disabled="${!foresee.isEmpty()}" title="${ko ? "히네코라의 머리카락 — 다음에 쓸 화폐의 결과를 미리 봅니다. 아이템이 바뀌면 사라집니다" : "Hinekora's Lock — foresee the result of the next currency. Lost once the item is modified"}"><img src="/poe-data/poe2/icons/currency/currencyhinekoraslock.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "히네코라의 머리카락" : "Hinekora's Lock"}</span></button>
-		</div>
 
 		<%-- 접는 칸은 일반 details(게이트 .collapse 는 체크박스 방식만 지원 — details[open] 이어도 내용이 visibility:hidden 이라 확률 표가 안 보였다, 10-15) --%>
 		<%-- 섞어 쓰는 제작 수단(10-15 C338 — 사용자 요청 "다양한 제작 컨텐츠들이 엮여 있고, 섞어서 사용이 가능하고 그에 따른 제약도 있다").
 		     묶음마다 접는 칸 — 에센스 · 화석과 공명기 · 수확 · 제작대 · 정복자. 쓸 수 없는 상태면 버튼이 꺼지고, 서버가 이유를 알려 준다 --%>
-		<%-- 둘째 줄(C455): 섞어 쓰는 제작 수단 — 누르면 이 줄 바로 아래에 그 묶음을 펼친다(여럿 열어 둘 수 있음, 닫힌 묶음은 자리를 차지하지 않음) --%>
-		<div class="flex flex-wrap items-center gap-1.5" data-craft-means role="group" aria-label="${ko ? "다른 제작 수단" : "Other crafting methods"}">
+		<%-- 둘째 줄(C455): 섞어 쓰는 제작 수단 — 누르면 이 줄 바로 아래에 그 묶음을 펼친다(C476: 한 번에 하나 — data-toggle-exclusive, 닫힌 묶음은 자리를 차지하지 않음) --%>
+		<%-- 최적 조합 다음 수단이 접힌 칸 안이면 그 칸 단추도 테두리(C464b) --%>
+		!{ String recId = recommend == null || recommend.actionId() == null ? "" : recommend.actionId(); String recGroup = recId.startsWith("ESSENCE") ? "essence" : recId.startsWith("FOSSIL") ? "fossil" : recId.startsWith("HARVEST") ? "harvest" : recId.startsWith("BENCH") ? "bench" : recId.startsWith("CONQUEROR") ? "influence" : (recId.startsWith("EMBER") || recId.startsWith("ICHOR") || recId.startsWith("ELDRITCH")) ? "eldritch" : (recId.startsWith("BEAST") || recId.startsWith("IMPRINT")) ? "beast" : ""; }
+		<%-- 묶음 켜고 끄기(C476 — 사용자 요청 "아이템 상태에 따라 사용 가능한 제작 방식과 세부 제작 옵션이 활성/비활성"): 묶음 안 옵션이 모두 엔진에
+		     막히면(서버가 옵션마다 시험 적용한 이유) 그 묶음 단추도 끈다. 이유는 마우스를 올리면 --%>
+		!{
+			java.util.function.Function<java.util.List<String>, String> allWhy = ks -> { String w = null; for (String k : ks) { String r = blocked.get(k); if (r == null) return null; if (w == null) w = r; } return w; };
+			String essWhy = allWhy.apply(essences.stream().map(e -> "ESSENCE:" + e.slug()).toList());
+			String fosWhy = options == null ? null : allWhy.apply(options.fossils().stream().filter(PoeCraft.Fossil::supported).map(f -> "FOSSIL:" + f.slug()).toList());
+			String harWhy = options == null ? null : allWhy.apply(options.harvest().stream().map(h -> "HARVEST:" + h.id()).toList());
+			java.util.List<String> benchKeys = new java.util.ArrayList<>();
+			if (options != null) { options.bench().forEach(b -> benchKeys.add("BENCH:" + b.modId())); }
+			benchKeys.add("BENCH_REMOVE");
+			String benWhy = allWhy.apply(benchKeys);
+			java.util.List<String> infKeys = new java.util.ArrayList<>(java.util.List.of("DOMINANCE"));
+			if (options != null) { options.conquerors().forEach(c -> { infKeys.add("CONQUEROR:" + c); infKeys.add("AWAKENER:" + c); }); }
+			String infWhy = allWhy.apply(infKeys);
+			String eldWhy = allWhy.apply(java.util.List.of("EMBER", "ICHOR", "ELDRITCH_CHAOS", "ELDRITCH_EXALT", "ELDRITCH_ANNUL", "CONFLICT"));
+			String taiWhy = allWhy.apply(java.util.List.of("TAINTED_CHAOS", "TAINTED_EXALT", "TAINTED_DIVINE"));
+			java.util.List<String> beastKeys = new java.util.ArrayList<>(java.util.List.of("BEAST:swap-prefix", "BEAST:swap-suffix", "BEAST:aspect:cat", "BEAST:aspect:avian", "BEAST:aspect:spider", "BEAST:aspect:crab"));
+			if (!inf.isEmpty()) { for (String one : inf.split(",")) beastKeys.add("BEAST:influence:" + one.trim()); }
+			String beaWhy = magic || !imprintJson.isEmpty() ? null : allWhy.apply(beastKeys);
+			java.util.Map<String, String> groupWhy = new java.util.HashMap<>();
+			groupWhy.put("essence", essWhy); groupWhy.put("fossil", fosWhy); groupWhy.put("harvest", harWhy); groupWhy.put("bench", benWhy);
+			groupWhy.put("influence", infWhy); groupWhy.put("eldritch", eldWhy); groupWhy.put("tainted", taiWhy); groupWhy.put("beast", beaWhy);
+		}
+		<div class="flex flex-wrap items-center gap-1.5" data-craft-means data-toggle-exclusive role="group" aria-label="${ko ? "다른 제작 수단" : "Other crafting methods"}">
 			@if((!essences.isEmpty()))
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="essence"]' aria-expanded="false" data-craft-means-open="essence">${ko ? "에센스" : "Essences"}</button>
+			<button type="button" class="btn btn-sm ${"essence".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="essence"]' aria-expanded="false" data-craft-means-open="essence" disabled="${groupWhy.get("essence") != null}" data-craft-means-blocked="${groupWhy.get("essence")}" title="${groupWhy.get("essence")}">${ko ? "에센스" : "Essences"}</button>
 			@endif
 			@if((options != null && !options.fossils().isEmpty()))
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="fossil"]' aria-expanded="false" data-craft-means-open="fossil">${ko ? "화석 · 공명기" : "Fossils"}</button>
+			<button type="button" class="btn btn-sm ${"fossil".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="fossil"]' aria-expanded="false" data-craft-means-open="fossil" disabled="${groupWhy.get("fossil") != null}" data-craft-means-blocked="${groupWhy.get("fossil")}" title="${groupWhy.get("fossil")}">${ko ? "화석 · 공명기" : "Fossils"}</button>
 			@endif
 			@if((options != null && !options.harvest().isEmpty()))
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="harvest"]' aria-expanded="false" data-craft-means-open="harvest">${ko ? "수확" : "Harvest"}</button>
+			<button type="button" class="btn btn-sm ${"harvest".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="harvest"]' aria-expanded="false" data-craft-means-open="harvest" disabled="${groupWhy.get("harvest") != null}" data-craft-means-blocked="${groupWhy.get("harvest")}" title="${groupWhy.get("harvest")}">${ko ? "수확" : "Harvest"}</button>
 			@endif
 			@if((options != null && !options.bench().isEmpty()))
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="bench"]' aria-expanded="false" data-craft-means-open="bench">${ko ? "제작대" : "Bench"}</button>
+			<button type="button" class="btn btn-sm ${"bench".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="bench"]' aria-expanded="false" data-craft-means-open="bench" disabled="${groupWhy.get("bench") != null}" data-craft-means-blocked="${groupWhy.get("bench")}" title="${groupWhy.get("bench")}">${ko ? "제작대" : "Bench"}</button>
 			@endif
 			@if((options != null && !options.conquerors().isEmpty()))
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="influence"]' aria-expanded="false" data-craft-means-open="influence">${ko ? "영향력 엑잘" : "Influence exalts"}</button>
+			<button type="button" class="btn btn-sm ${"influence".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="influence"]' aria-expanded="false" data-craft-means-open="influence" disabled="${groupWhy.get("influence") != null}" data-craft-means-blocked="${groupWhy.get("influence")}" title="${groupWhy.get("influence")}">${ko ? "영향력 엑잘" : "Influence exalts"}</button>
 			@endif
 			@if((eldritchClass))
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="eldritch"]' aria-expanded="false" data-craft-means-open="eldritch">${ko ? "엘드리치" : "Eldritch"}</button>
+			<button type="button" class="btn btn-sm ${"eldritch".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="eldritch"]' aria-expanded="false" data-craft-means-open="eldritch" disabled="${groupWhy.get("eldritch") != null}" data-craft-means-blocked="${groupWhy.get("eldritch")}" title="${groupWhy.get("eldritch")}">${ko ? "엘드리치" : "Eldritch"}</button>
 			@endif
 			@if((jewellery && !catalysts.isEmpty()))
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="catalyst"]' aria-expanded="false" data-craft-means-open="catalyst">${ko ? "기폭제" : "Catalysts"}</button>
+			<button type="button" class="btn btn-sm ${"catalyst".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="catalyst"]' aria-expanded="false" data-craft-means-open="catalyst">${ko ? "기폭제" : "Catalysts"}</button>
 			@endif
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="ducat"]' aria-expanded="false" data-craft-means-open="ducat">${ko ? "두카트" : "Ducats"}</button>
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="tainted"]' aria-expanded="false" data-craft-means-open="tainted">${ko ? "더럽혀진 화폐" : "Tainted"}</button>
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="beast"]' aria-expanded="false" data-craft-means-open="beast">${ko ? "짐승 제작 · 각인" : "Beastcrafting"}</button>
-			<button type="button" class="btn btn-sm" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="manual"]' aria-expanded="false" data-craft-means-open="manual">${ko ? "직접 편집" : "Edit directly"}</button>
+			<button type="button" class="btn btn-sm ${"ducat".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="ducat"]' aria-expanded="false" data-craft-means-open="ducat">${ko ? "두카트" : "Ducats"}</button>
+			<button type="button" class="btn btn-sm ${"tainted".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="tainted"]' aria-expanded="false" data-craft-means-open="tainted" disabled="${groupWhy.get("tainted") != null}" data-craft-means-blocked="${groupWhy.get("tainted")}" title="${groupWhy.get("tainted")}">${ko ? "더럽혀진 화폐" : "Tainted"}</button>
+			<button type="button" class="btn btn-sm ${"beast".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="beast"]' aria-expanded="false" data-craft-means-open="beast" disabled="${groupWhy.get("beast") != null}" data-craft-means-blocked="${groupWhy.get("beast")}" title="${groupWhy.get("beast")}">${ko ? "짐승 제작 · 각인" : "Beastcrafting"}</button>
+			<button type="button" class="btn btn-sm ${"manual".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft-emu details[data-craft-group="manual"]' aria-expanded="false" data-craft-means-open="manual">${ko ? "직접 편집" : "Edit directly"}</button>
 		</div>
 		<div class="space-y-2 [&>details:not([open])]:hidden" data-craft-groups>
 			@if(!essences.isEmpty())
@@ -357,10 +402,10 @@
 					<div class="px-3 pb-3 flex flex-wrap items-center gap-2" data-craft-essence>
 						<select name="essence" class="select select-sm select-bordered min-w-0 flex-1" aria-label="${ko ? "에센스" : "Essence"}">
 							@for(PoeCraft.Essence e : essences)
-								<option value="${e.slug()}">${ko ? e.nameKo() : e.name()} — ${String.join(", ", ko && e.ko() != null && !e.ko().isEmpty() ? e.ko() : e.en())}</option>
+								<option value="${e.slug()}" disabled="${blocked.containsKey("ESSENCE:" + e.slug())}">${ko ? e.nameKo() : e.name()} — ${String.join(", ", ko && e.ko() != null && !e.ko().isEmpty() ? e.ko() : e.en())}@if(blocked.containsKey("ESSENCE:" + e.slug())) (${blocked.get("ESSENCE:" + e.slug())})@endif</option>
 							@endfor
 						</select>
-						<button type="submit" name="action" value="ESSENCE" class="btn btn-sm" data-craft-action="ESSENCE" disabled="${magic || item.corrupted() || outcomeMeta}" title="${outcomeMeta ? (ko ? "속성의 결과에 영향을 미치는 속성 부여가 포함된 아이템에는 해당 화폐를 사용할 수 없습니다." : "You can't use this currency on items with a modifier that affects mod outcomes.") : null}">${ko ? "에센스 사용" : "Use essence"}</button>
+						<button type="submit" name="action" value="ESSENCE" class="btn btn-sm" data-craft-action="ESSENCE" disabled="${magic || item.corrupted() || outcomeMeta || essWhy != null}" title="${outcomeMeta ? (ko ? "속성의 결과에 영향을 미치는 속성 부여가 포함된 아이템에는 해당 화폐를 사용할 수 없습니다." : "You can't use this currency on items with a modifier that affects mod outcomes.") : null}">${ko ? "에센스 사용" : "Use essence"}</button>
 					</div>
 				</details>
 			@endif
@@ -378,8 +423,8 @@
 								!{
 									String effect = String.join(", ", ko && f.descKo() != null && !f.descKo().isEmpty() ? f.descKo() : (f.desc() == null ? java.util.List.of() : f.desc()));
 								}
-								<label class="flex items-start gap-2 text-xs min-w-0 ${f.supported() ? "" : "opacity-50"}" data-craft-fossil="${f.slug()}">
-									<input type="checkbox" name="fossil" value="${f.slug()}" class="checkbox checkbox-xs mt-0.5" disabled="${!f.supported() || magic}">
+								<label class="flex items-start gap-2 text-xs min-w-0 ${f.supported() && !blocked.containsKey("FOSSIL:" + f.slug()) ? "" : "opacity-50"}" data-craft-fossil="${f.slug()}" title="${blocked.get("FOSSIL:" + f.slug())}">
+									<input type="checkbox" name="fossil" value="${f.slug()}" class="checkbox checkbox-xs mt-0.5" disabled="${!f.supported() || magic || blocked.containsKey("FOSSIL:" + f.slug())}">
 									<img src="/poe-assets/${f.icon()}" alt="" class="w-5 h-5 object-contain shrink-0" loading="lazy">
 									<span class="min-w-0 wrap-anywhere"><span class="font-medium">${ko ? f.nameKo() : f.name()}</span> <span class="text-base-content/60">${effect}</span>@if(!f.supported()) <span class="badge badge-ghost badge-xs" title="${ko ? "행운 굴림 · 무작위 효과는 근거 공식이 없어 아직 계산하지 않습니다" : "Lucky rolls and random effects are not modelled yet"}">${ko ? "준비 중" : "soon"}</span>@endif</span>
 								</label>
@@ -389,7 +434,7 @@
 							@for(PoeCraft.Resonator r : resos)
 								<img src="/poe-assets/${r.icon()}" alt="${ko ? r.nameKo() : r.name()}" title="${ko ? r.nameKo() : r.name()} (${r.sockets()}${ko ? "칸" : " sockets"})" class="w-6 h-6 object-contain" loading="lazy">
 							@endfor
-							<button type="submit" name="action" value="FOSSIL" class="btn btn-sm" data-craft-action="FOSSIL" disabled="${magic || item.corrupted() || outcomeMeta}" title="${outcomeMeta ? (ko ? "속성의 결과에 영향을 미치는 속성 부여가 포함된 아이템에는 해당 화폐를 사용할 수 없습니다." : "You can't use this currency on items with a modifier that affects mod outcomes.") : null}">${ko ? (normal ? "연금 공명기로 사용" : "혼돈 공명기로 사용") : (normal ? "Use (alchemical)" : "Use (chaotic)")}</button>
+							<button type="submit" name="action" value="FOSSIL" class="btn btn-sm" data-craft-action="FOSSIL" disabled="${magic || item.corrupted() || outcomeMeta || fosWhy != null}" title="${outcomeMeta ? (ko ? "속성의 결과에 영향을 미치는 속성 부여가 포함된 아이템에는 해당 화폐를 사용할 수 없습니다." : "You can't use this currency on items with a modifier that affects mod outcomes.") : null}">${ko ? (normal ? "연금 공명기로 사용" : "혼돈 공명기로 사용") : (normal ? "Use (alchemical)" : "Use (chaotic)")}</button>
 						</div>
 					</div>
 				</details>
@@ -413,13 +458,13 @@
 								<optgroup label="${ko ? hg.getValue()[0] : hg.getValue()[1]}">
 									@for(PoeCraft.Harvest h : options.harvest())
 										@if(hg.getKey().equals(h.command()))
-											<option value="${h.id()}">${ko && h.textKo() != null ? h.textKo() : h.text()}</option>
+											<option value="${h.id()}" disabled="${blocked.containsKey("HARVEST:" + h.id())}">${ko && h.textKo() != null ? h.textKo() : h.text()}@if(blocked.containsKey("HARVEST:" + h.id())) (${blocked.get("HARVEST:" + h.id())})@endif</option>
 										@endif
 									@endfor
 								</optgroup>
 							@endfor
 						</select>
-						<button type="submit" name="action" value="HARVEST" class="btn btn-sm" data-craft-action="HARVEST" disabled="${(normal && inf.isEmpty()) || item.corrupted()}">${ko ? "수확 사용" : "Use harvest"}</button>
+						<button type="submit" name="action" value="HARVEST" class="btn btn-sm" data-craft-action="HARVEST" disabled="${(normal && inf.isEmpty()) || item.corrupted() || harWhy != null}" title="${harWhy}">${ko ? "수확 사용" : "Use harvest"}</button>
 					</div>
 				</details>
 			@endif
@@ -435,7 +480,7 @@
 						<select name="bench" class="select select-sm select-bordered min-w-0 flex-1" aria-label="${ko ? "제작대 옵션" : "Bench craft"}">
 							<optgroup label="${ko ? "메타 제작" : "Meta-crafts"}">
 								@for(PoeCraft.BenchCraft b : metaCrafts)
-									<option value="${b.modId()}">${String.join(", ", ko && b.ko() != null && !b.ko().isEmpty() ? b.ko() : b.en())} (${"prefix".equals(b.gen()) ? (ko ? "접두" : "prefix") : (ko ? "접미" : "suffix")})</option>
+									<option value="${b.modId()}" disabled="${blocked.containsKey("BENCH:" + b.modId())}">${String.join(", ", ko && b.ko() != null && !b.ko().isEmpty() ? b.ko() : b.en())} (${"prefix".equals(b.gen()) ? (ko ? "접두" : "prefix") : (ko ? "접미" : "suffix")})@if(blocked.containsKey("BENCH:" + b.modId())) (${blocked.get("BENCH:" + b.modId())})@endif</option>
 								@endfor
 							</optgroup>
 							@for(String gen : java.util.List.of("prefix", "suffix"))
@@ -448,13 +493,13 @@
 												java.util.List<String> parts = new java.util.ArrayList<>();
 												for (int i = 0; i < mx.size(); i++) parts.add(PoeModRange.range(mn != null && i < mn.size() ? mn.get(i) : null, mx.get(i)));
 											}
-											<option value="${b.modId()}">${String.join(", ", parts)}</option>
+											<option value="${b.modId()}" disabled="${blocked.containsKey("BENCH:" + b.modId())}">${String.join(", ", parts)}@if(blocked.containsKey("BENCH:" + b.modId())) (${blocked.get("BENCH:" + b.modId())})@endif</option>
 										@endif
 									@endfor
 								</optgroup>
 							@endfor
 						</select>
-						<button type="submit" name="action" value="BENCH" class="btn btn-sm" data-craft-action="BENCH" disabled="${item.corrupted()}">${ko ? "제작" : "Craft"}</button>
+						<button type="submit" name="action" value="BENCH" class="btn btn-sm" data-craft-action="BENCH" disabled="${item.corrupted() || options.bench().stream().allMatch(b -> blocked.containsKey("BENCH:" + b.modId()))}">${ko ? "제작" : "Craft"}</button>
 						<button type="submit" name="action" value="BENCH_REMOVE" class="btn btn-sm btn-ghost" data-craft-action="BENCH_REMOVE" disabled="${craftedCount == 0}" title="${blocked.get("BENCH_REMOVE")}">${ko ? "제작대 옵션 제거" : "Remove crafted mods"}</button>
 					</div>
 				</details>
@@ -620,8 +665,8 @@
 			<details class="rounded-box border border-base-300 bg-base-100" data-craft-group="beast" data-swap-anchor-key="beast" open="${"beast".equals(openGroup)}">
 				<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "짐승 제작 · 각인" : "Beastcrafting · Imprint"} <span class="text-xs font-normal text-base-content/60">· ${ko ? "접두/접미 맞바꾸기 · 영향력 옵션 추가 · 위상 스킬(아인하르 레시피)" : "prefix/suffix swap, influence mod, aspect skills (Einhar recipes)"}</span>@if(!imprintJson.isEmpty()) <span class="badge badge-sm badge-info badge-outline" data-craft-imprinted>${ko ? "각인됨" : "Imprinted"}</span>@endif</summary>
 				<div class="px-3 pb-3 flex flex-wrap gap-2">
-					<button type="submit" name="action" value="IMPRINT" class="btn btn-sm btn-ghost border border-base-300" data-craft-action="IMPRINT" disabled="${!magic}">${ko ? "각인 만들기(매직)" : "Create imprint (magic)"}</button>
-					<button type="submit" name="action" value="IMPRINT_RESTORE" class="btn btn-sm btn-ghost border border-base-300" data-craft-action="IMPRINT_RESTORE" disabled="${imprintJson.isEmpty()}">${ko ? "각인으로 되돌리기" : "Restore imprint"}</button>
+					<button type="submit" name="action" value="IMPRINT" class="btn btn-sm btn-ghost border border-base-300 ${recommend != null && "IMPRINT".equals(recommend.actionId()) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-craft-action="IMPRINT" disabled="${!magic}">${ko ? "각인 만들기(매직)" : "Create imprint (magic)"}</button>
+					<button type="submit" name="action" value="IMPRINT_RESTORE" class="btn btn-sm btn-ghost border border-base-300 ${recommend != null && "IMPRINT_RESTORE".equals(recommend.actionId()) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-craft-action="IMPRINT_RESTORE" disabled="${imprintJson.isEmpty()}">${ko ? "각인으로 되돌리기" : "Restore imprint"}</button>
 				</div>
 				<%-- 짐승 제작 레시피(C387, BestiaryRecipes — 문구는 레시피 설명 그대로, 메모 "희귀 아이템에만 적용") --%>
 				!{
@@ -689,7 +734,9 @@
 	<div class="grid gap-4 items-start lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,24rem)]" data-craft-workspace>
 	<%-- 대상 아이템은 늘 보이게(C455, PoE2 C453 의 짝) — 좁은 화면 · 넓은 3칸 화면은 화면 위에 붙는다. 2칸(lg)은 아래 기록이 가려져 붙이지 않음 --%>
 	<div class="sticky top-[4.75rem] z-20 bg-base-100 pt-1 pb-2 space-y-1 min-w-0 max-h-[40vh] overflow-y-auto lg:static lg:max-h-none lg:overflow-visible xl:sticky" data-craft-item-sticky>
-		<div class="poe-tooltip ${rarCls} w-full max-w-[24rem]" style="border-color:${borderColor}" data-craft-tooltip>
+		<%-- 화폐를 고른 상태 안내(C477 — 고르고 아이템을 누르면 적용, CoE 처럼) --%>
+		<div class="text-xs rounded-box border border-warning/60 bg-warning/10 px-2 py-1 max-w-[24rem]" data-craft-arm-hint hidden><span class="font-semibold" data-craft-arm-label></span> ${ko ? "— 아이템을 누르면 적용(계속 누르면 연타) · 단추를 다시 누르거나 Esc 로 취소" : "— click the item to apply (keep clicking to repeat) · click the button again or Esc to cancel"}</div>
+		<div class="poe-tooltip ${rarCls} w-full max-w-[24rem]" style="border-color:${borderColor}" data-craft-tooltip data-craft-arm-target>
 			<div class="poe-tt-band">
 				@if(infInfo != null)
 					<img src="/poe-data/ui-assets/${infInfo[3]}.png" alt="" style="position:absolute;left:8px;top:6px;width:28px;height:28px;object-fit:contain" data-craft-influence="${inf}">
@@ -740,15 +787,24 @@
 							String color = l.fractured() ? "#a29162" : l.crafted() ? "#b4b4ff" : "#8888ff";
 						}
 						<div class="${isNew ? "bg-white/10 rounded" : ""}" style="color:${color}" data-craft-line="${l.id()}" data-craft-gen="${l.gen()}" data-craft-new="${isNew ? "1" : null}">
-							<span class="text-[10px] font-mono text-white/40 mr-0.5" data-craft-line-tag title="${ko ? (l.nameKo() != null ? l.nameKo() : l.name()) + (("prefix".equals(l.gen())) ? " · 접두" : " · 접미") + " · 아이템 레벨 " + l.ilvl() : l.name() + (("prefix".equals(l.gen())) ? " · prefix" : " · suffix") + " · item level " + l.ilvl()}">${"prefix".equals(l.gen()) ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}@if(l.tierRank() != null) T${l.tierRank()}@endif@if(l.essence()) ${ko ? "에센스" : "Ess"}@endif@if(l.crafted()) ${ko ? "제작" : "Crafted"}@endif@if(l.fractured()) ${ko ? "분열" : "Fractured"}@endif@if(l.name() != null && l.name().contains("Elevated")) ${ko ? "고양" : "Elevated"}@endif@if(rolls.containsKey("lucky:" + l.id())) <span data-craft-line-lucky title="${ko ? "축성된 화석 — 수치 행운(두 번 굴려 큰 값)" : "Sanctified Fossil — lucky values (higher of two rolls)"}">${ko ? "행운" : "Lucky"}</span>@endif@if(boostedIds.contains(l.id()) && qAmt > 0) <span data-craft-line-boosted title="${ko ? "기폭제 퀄리티로 수치 +" + qAmt + "%" : "Values +" + qAmt + "% from catalyst quality"}">${ko ? "퀄리티" : "Q"}</span>@endif</span>
-							@for(int i = 0; i < mx.size(); i++)
-								!{ String rangeTxt = PoeModRange.range(i < mn.size() ? mn.get(i) : null, mx.get(i)); Long rs = rolls.get(l.id()); }
-								<%-- 굴린 값(C370, 인게임 툴팁처럼) — 범위는 마우스를 올리면 --%>
-								<div class="inline" title="${rs != null ? rangeTxt : null}" data-craft-rolled="${rs != null ? "1" : null}" data-craft-boosted="${boostedIds.contains(l.id()) && qAmt > 0 ? "1" : null}">$unsafe{PoeText.highlightValues(net.luversof.web.gate.poe.PoeModRoll.scale(rs != null ? (rolls.containsKey("lucky:" + l.id()) ? net.luversof.web.gate.poe.PoeModRoll.rollLucky(rangeTxt, rangeTxt, rs + i) : net.luversof.web.gate.poe.PoeModRoll.roll(rangeTxt, rs + i)) : rangeTxt, boostedIds.contains(l.id()) ? qAmt : 0))}</div>@if(i < mx.size() - 1)<br>@endif
-							@endfor
+							<span class="text-[10px] font-mono text-white/40 block leading-tight" data-craft-line-tag title="${ko ? (l.nameKo() != null ? l.nameKo() : l.name()) + (("prefix".equals(l.gen())) ? " · 접두" : " · 접미") + " · 아이템 레벨 " + l.ilvl() : l.name() + (("prefix".equals(l.gen())) ? " · prefix" : " · suffix") + " · item level " + l.ilvl()}">${"prefix".equals(l.gen()) ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}@if(l.tierRank() != null) T${l.tierRank()}@endif@if(l.id().startsWith("Veiled")) <span class="font-sans" data-craft-line-veiled>${ko ? "장막 — 해제 전(쥰)" : "Veiled — not yet unveiled"}</span>@endif@if(!l.id().startsWith("Veiled") && !l.id().startsWith("Unrevealed") && (ko ? (l.nameKo() != null && !l.nameKo().isBlank()) : (l.name() != null && !l.name().isBlank()))) <span class="font-sans text-white/75" data-craft-line-affix>${(ko ? l.nameKo() : l.name()).replaceFirst("^- ", "")}</span>@endif!{ java.util.List<String> lineTags = ko ? (view.tagsKo() == null ? null : view.tagsKo().get(l.id())) : (view.tags() == null ? null : view.tags().get(l.id())); }@if(lineTags != null && !lineTags.isEmpty()) <span class="font-sans text-white/50" data-craft-line-tags>— ${String.join(", ", lineTags)}</span>@endif@if(l.essence()) ${ko ? "에센스" : "Ess"}@endif@if(l.crafted()) ${ko ? "제작" : "Crafted"}@endif@if(l.fractured()) ${ko ? "분열" : "Fractured"}@endif@if(l.name() != null && l.name().contains("Elevated")) ${ko ? "고양" : "Elevated"}@endif@if(rolls.containsKey("lucky:" + l.id())) <span data-craft-line-lucky title="${ko ? "축성된 화석 — 수치 행운(두 번 굴려 큰 값)" : "Sanctified Fossil — lucky values (higher of two rolls)"}">${ko ? "행운" : "Lucky"}</span>@endif@if(boostedIds.contains(l.id()) && qAmt > 0) <span data-craft-line-boosted title="${ko ? "기폭제 퀄리티로 수치 +" + qAmt + "%" : "Values +" + qAmt + "% from catalyst quality"}">${ko ? "퀄리티" : "Q"}</span>@endif</span>
+							@if(l.id().startsWith("Veiled"))
+								<%-- 장막 옵션(10-20 C482 — "게임 내랑 동일한 디자인") — 인게임 툴팁처럼 룬처럼 뒤섞인 글자 그림(게임 튜토리얼 그림에서 잘라 냄, ui-assets.mjs 5)) --%>
+								<img src="/poe-data/ui-assets/veiled-mod.png" alt="${ko ? l.nameKo() : l.name()}" class="inline-block h-[1.15em] w-auto align-middle" data-craft-veiled-img>
+							@else
+								@for(int i = 0; i < mx.size(); i++)
+									!{ String rangeTxt = PoeModRange.range(i < mn.size() ? mn.get(i) : null, mx.get(i)); Long rs = rolls.get(l.id()); }
+									<%-- 굴린 값(C370, 인게임 툴팁처럼) — 범위는 마우스를 올리면 --%>
+									<div class="inline" title="${rs != null ? rangeTxt : null}" data-craft-rolled="${rs != null ? "1" : null}" data-craft-boosted="${boostedIds.contains(l.id()) && qAmt > 0 ? "1" : null}">$unsafe{PoeText.highlightValues(net.luversof.web.gate.poe.PoeModRoll.scale(rs != null ? (rolls.containsKey("lucky:" + l.id()) ? net.luversof.web.gate.poe.PoeModRoll.rollLucky(rangeTxt, rangeTxt, rs + i) : net.luversof.web.gate.poe.PoeModRoll.roll(rangeTxt, rs + i)) : rangeTxt, boostedIds.contains(l.id()) ? qAmt : 0))}</div>@if(i < mx.size() - 1)<br>@endif
+								@endfor
+							@endif
 						</div>
 					@endfor
 				</div>
+				@if(lines.stream().anyMatch(x -> x.id().startsWith("Veiled")))
+					<%-- 인게임 안내(ClientStrings VeiledModItemInformation) — 카드를 우클릭하면 장막 해제 칸이 열린다(common.ts) --%>
+					<div class="text-xs italic text-white/55 mt-1" data-craft-veiled-hint>${ko ? "이 아이템에 우클릭하여 장막을 해제하십시오." : "Right click this item to Unveil it."}</div>
+				@endif
 			@endif
 			@if(item.corrupted())
 				<div class="poe-tt-sepimg"></div>

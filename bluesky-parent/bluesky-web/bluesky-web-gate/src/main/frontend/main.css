@@ -162,6 +162,31 @@ html.poe-theme [data-theme-toggle] { display: none; }
    컴포넌트 (daisyUI 대체) — 앱에서 쓰는 클래스만 재구현
    ============================================================ */
 @layer components {
+	/* 고른 줄은 맨 위로 · 강조(C458 — 공용 data-picked-list, common.ts syncPicked) */
+	/* 가려진 옵션(10-20 사용자 보고 "장막 카오스 사용 시 베일 처리가 아이템에 안 보여") — PoE1 장막 접두/접미어 · PoE2 미공개 훼손 옵션.
+	   다른 옵션과 같은 파란 글씨라 가려진 줄로 보이지 않았다 → 흐린 보라 기울임 + 줄무늬 바탕 + 점선 테두리(인라인 색보다 우선) */
+	/* 장막 줄은 C482 부터 인게임 룬 그림(veiled-mod.png) — 이 모양은 PoE2 미공개 훼손 줄만 */
+	[data-craft-tooltip] [data-craft-line^="Unrevealed"] {
+		color: #b9a7d8 !important;
+		font-style: italic;
+		background: repeating-linear-gradient(135deg, rgb(185 167 216 / 0.12) 0 6px, transparent 6px 12px);
+		outline: 1px dashed rgb(185 167 216 / 0.55);
+		outline-offset: -1px;
+		border-radius: 0.25rem;
+	}
+	/* 고른 화폐(C477) — 아이템을 누르면 적용될 단추 */
+	[data-craft-armed] {
+		outline: 3px solid var(--color-warning);
+		outline-offset: 1px;
+	}
+	/* 화폐를 고른 상태의 아이템 카드 — 누를 자리라는 표시 */
+	[data-craft-arm-target][data-craft-arm-on] {
+		box-shadow: 0 0 0 2px var(--color-warning);
+	}
+	[data-picked-list] > [data-picked] {
+		order: -1;
+		background: color-mix(in oklab, var(--color-primary) 14%, transparent);
+	}
 	/* ---- button ---- */
 	.btn {
 		display: inline-flex;

@@ -68,6 +68,20 @@ public class PoeCraftController {
     return s;
   }
 
+  /** 에뮬레이터 따라 하기(C464) — 끝난 작업의 정책으로 이 아이템의 다음 수단. 모르는 작업이면 404. */
+  @PostMapping(value = "/optimize/{id}/next", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public net.luversof.api.poe.service.PoeCraftOptimizer.Next optimizeNext(
+      @org.springframework.web.bind.annotation.PathVariable String id,
+      @RequestBody net.luversof.api.poe.service.PoeCraftOptimizer.NextRequest body) {
+    check(body.item());
+    net.luversof.api.poe.service.PoeCraftOptimizer.Next n =
+        optimizer.next(id, body.item(), body.imprint());
+    if (n == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "모르는 작업: " + id);
+    }
+    return n;
+  }
+
   @PostMapping(value = "/optimize", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftOptimizer.Result optimize(
       @RequestBody net.luversof.api.poe.service.PoeCraftOptimizer.Request req) {

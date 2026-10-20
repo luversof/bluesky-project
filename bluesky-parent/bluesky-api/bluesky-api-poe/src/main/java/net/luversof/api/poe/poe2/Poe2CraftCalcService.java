@@ -195,7 +195,7 @@ public class Poe2CraftCalcService {
   }
 
   /** 한 단계에서 쓴 화폐 이름 → 개수(C453 — 전에 spent 루프 본문, 합계와 단계별이 같은 규칙). */
-  private Map<String, Double> stepNames(SpentStep s, Names names) {
+  Map<String, Double> stepNames(SpentStep s, Names names) {
     Map<String, Double> sm = new LinkedHashMap<>();
     if (s == null || s.action() == null) {
       return sm;
@@ -280,7 +280,7 @@ public class Poe2CraftCalcService {
     return prices;
   }
 
-  private Double cost(Map<String, Double> per) {
+  Double cost(Map<String, Double> per) {
     if (per.isEmpty()) {
       return null;
     }
@@ -1042,6 +1042,11 @@ public class Poe2CraftCalcService {
         .orElse(cand.get(0));
   }
 
+  /** 반쪽 하나를 채우는 가장 싼 방법(최적 조합 재조합 수단 C472) — 시간 budget 안. */
+  Method half(Poe2CraftEngine.Item base, List<Target> half, String sideOmen, long budget) {
+    return cheapestHalf(base, half, 400, budget, sideOmen);
+  }
+
   /** 두 반쪽 + 재조합 — 성공 한 번당 개수 = (A + B) / 성공 확률(행운이면 1 − (1 − p)², 징조 하나 / 시도). */
   static Method combineHalves(
       Method a, Method b, double p, boolean lucky, int chance, String split, double omenPrice) {
@@ -1323,7 +1328,7 @@ public class Poe2CraftCalcService {
     }
   }
 
-  private Names names(String poolKey) {
+  Names names(String poolKey) {
     Poe2CraftService.Options o = craft.options();
     Map<String, String> cur = new java.util.HashMap<>();
     for (Poe2CraftService.Currency c : o.currencies()) {

@@ -155,10 +155,27 @@ public final class PoeCraftEngine {
       // 임플리싯(10-15 C343) — 지금은 엘드리치(gen = exarch|eater)만. 다시 굴리기 · 정제가 건드리지 않는다
       List<Affix> implicits,
       // 기폭제 퀄리티(C385) — "종류:양"(예: attack:20), 없으면 null. 옵션을 다시 굴려도 남는다(퀄리티는 옵션이 아니다)
-      String quality) {
+      String quality,
+      // 장막 해제 씨앗(C483) — 해제 제시 셋을 섞는 값, 없으면 아이템 상태만으로. 에뮬레이터가 되돌릴 때 새로 줘서 다른 셋이 나온다
+      Long veilSeed) {
 
     public Item {
       implicits = implicits == null ? List.of() : List.copyOf(implicits);
+    }
+
+    public Item(
+        String itemClass,
+        String variant,
+        String influence,
+        int ilvl,
+        Rarity rarity,
+        List<Affix> affixes,
+        boolean corrupted,
+        List<Affix> implicits,
+        String quality) {
+      this(
+          itemClass, variant, influence, ilvl, rarity, affixes, corrupted, implicits, quality,
+          null);
     }
 
     public Item(
@@ -217,27 +234,36 @@ public final class PoeCraftEngine {
 
     Item with(Rarity r, List<Affix> a) {
       return new Item(
-          itemClass, variant, influence, ilvl, r, List.copyOf(a), corrupted, implicits, quality);
+          itemClass,
+          variant,
+          influence,
+          ilvl,
+          r,
+          List.copyOf(a),
+          corrupted,
+          implicits,
+          quality,
+          veilSeed);
     }
 
     Item withInfluence(String inf) {
       return new Item(
-          itemClass, variant, inf, ilvl, rarity, affixes, corrupted, implicits, quality);
+          itemClass, variant, inf, ilvl, rarity, affixes, corrupted, implicits, quality, veilSeed);
     }
 
     Item withImplicits(List<Affix> imp) {
       return new Item(
-          itemClass, variant, influence, ilvl, rarity, affixes, corrupted, imp, quality);
+          itemClass, variant, influence, ilvl, rarity, affixes, corrupted, imp, quality, veilSeed);
     }
 
     Item withQuality(String q) {
       return new Item(
-          itemClass, variant, influence, ilvl, rarity, affixes, corrupted, implicits, q);
+          itemClass, variant, influence, ilvl, rarity, affixes, corrupted, implicits, q, veilSeed);
     }
 
     Item corrupt() {
       return new Item(
-          itemClass, variant, influence, ilvl, rarity, affixes, true, implicits, quality);
+          itemClass, variant, influence, ilvl, rarity, affixes, true, implicits, quality, veilSeed);
     }
   }
 
@@ -720,6 +746,11 @@ public final class PoeCraftEngine {
     }
     if (item.rarity() == Rarity.MAGIC) {
       return Result.fail(item, "일반 · 레어 아이템에만 쓸 수 있습니다");
+    }
+    // 속삭이는 ~ 울부짖는(등급 1~4)은 일반 아이템에만(C460 — CurrencyItems Directions "left click a normal item",
+    // 비명 등급부터 · 타락 · 황폐는 "a normal or rare item")
+    if (item.rarity() == Rarity.RARE && e.tier() >= 1 && e.tier() <= 4) {
+      return Result.fail(item, "일반 아이템에만 쓸 수 있는 에센스입니다(레어 재련은 비명 등급부터)");
     }
     if (e.ilvlMax() > 0 && item.ilvl() > e.ilvlMax()) {
       return Result.fail(item, "아이템 레벨 " + e.ilvlMax() + " 이하에만 쓸 수 있는 에센스입니다");
@@ -2577,8 +2608,8 @@ public final class PoeCraftEngine {
   }
 
   /**
-   * 해제 제시 셋 — 첫 장막 옵션 쪽의 해제 옵션(아이템 레벨 · 다른 옵션 그룹)에서 가중치로 서로 다른 셋. 아이템 상태로 정해진 난수라 다시 열어도 같다(게임처럼 고를
-   * 때까지 바뀌지 않음).
+   * 해제 제시 셋 — 첫 장막 옵션 쪽의 해제 옵션(아이템 레벨 · 다른 옵션 그룹)에서 가중치로 서로 다른 셋. 아이템 상태(+ 해제 씨앗)로 정해진 난수라 다시 열어도
+   * 같다(게임처럼 고를 때까지 바뀌지 않음). 해제 씨앗이 바뀌면(에뮬레이터 되돌리기, C483) 다른 셋.
    */
   public List<String> unveilOffers(Item item) {
     Affix v = item.affixes().stream().filter(PoeCraftEngine::veiled).findFirst().orElse(null);
@@ -2604,7 +2635,11 @@ public final class PoeCraftEngine {
     }
     StringBuilder seed = new StringBuilder(item.poolKey()).append(item.ilvl());
     item.affixes().stream().map(Affix::id).sorted().forEach(seed::append);
-    RandomGenerator rng = new java.util.SplittableRandom(seed.toString().hashCode());
+    long mix = seed.toString().hashCode();
+    if (item.veilSeed() != null) {
+      mix ^= item.veilSeed() * 0x9E3779B97F4A7C15L;
+    }
+    RandomGenerator rng = new java.util.SplittableRandom(mix);
     List<String> out = new ArrayList<>();
     while (out.size() < 3 && !ids.isEmpty()) {
       long total = 0;

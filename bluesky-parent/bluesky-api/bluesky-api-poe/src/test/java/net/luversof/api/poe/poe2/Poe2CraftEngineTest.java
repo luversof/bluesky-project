@@ -264,6 +264,26 @@ class Poe2CraftEngineTest {
     // 드러낼 셋 — 다시 봐도 같고, 고르면 바뀜
     List<String> o = e.revealOffers(d.item());
     assertThat(o).hasSize(3).isEqualTo(e.revealOffers(d.item()));
+    // 공개 씨앗(C483) — 에뮬레이터가 되돌리면 새 씨앗을 줘 다른 셋이 나온다. 드러내기는 그 씨앗의 셋으로 검사
+    java.util.Set<List<String>> seen = new java.util.HashSet<>();
+    for (long s = 1; s <= 20; s++) {
+      Item dx = d.item();
+      dx =
+          new Item(
+              dx.poolKey(),
+              dx.ilvl(),
+              dx.rarity(),
+              dx.affixes(),
+              dx.corrupted(),
+              dx.quality(),
+              dx.sanctified(),
+              s);
+      List<String> os = e.revealOffers(dx);
+      assertThat(os).isEqualTo(e.revealOffers(dx));
+      assertThat(e.apply(dx, Action.REVEAL, os.get(os.size() - 1), Set.of(), rng).error()).isNull();
+      seen.add(os);
+    }
+    assertThat(seen).hasSizeGreaterThan(1);
     Poe2CraftEngine.Result r = e.apply(d.item(), Action.REVEAL, o.get(0), Set.of(), rng);
     assertThat(r.item().affixes())
         .noneMatch(Poe2CraftEngine::unrevealed)

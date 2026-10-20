@@ -88,7 +88,7 @@
 			</form>
 
 			@if(view != null)
-				@template.poe.htmx.craftEmu(view = view, error = error, lastAction = lastAction, added = added, stateJson = stateJson, historyJson = historyJson, historySize = historySize, pool = pool, essences = essences, classLabel = classLabel, options = options, imprintJson = "", foresee = "", preview = null, previewAction = null, previewArg = null, spentJson = "[]", spent = null, rollsJson = "{}", rolls = java.util.Map.of(), rollHistJson = "[]", imprintRollsJson = "{}", historyRows = java.util.List.of(), historyStartUndo = null, historyDropped = 0)
+				@template.poe.htmx.craftEmu(view = view, error = error, lastAction = lastAction, added = added, stateJson = stateJson, historyJson = historyJson, historySize = historySize, pool = pool, essences = essences, classLabel = classLabel, options = options, imprintJson = "", foresee = "", preview = null, previewAction = null, previewArg = null, spentJson = "[]", spent = null, rollsJson = "{}", rolls = java.util.Map.of(), rollHistJson = "[]", imprintRollsJson = "{}", historyRows = java.util.List.of(), historyStartUndo = null, historyDropped = 0, recommend = null, optJob = null)
 			@else
 				<p class="text-sm text-base-content/60">${ko ? "제작 데이터를 불러오지 못했습니다." : "Crafting data is not available."}</p>
 			@endif
@@ -97,21 +97,24 @@
 				<%-- 계산기(10-15 C336) — 계열마다 최소 등급을 고르면 방법별 기대 비용(가장 적은 비용 순). 목표는 일반 → 레어 기준 전체 풀에서 고른다 --%>
 				<section id="craft-calc" class="space-y-3 border-t border-base-300 pt-4 scroll-mt-24" data-craft-calc data-no-success-toast>
 					<h2 class="text-lg font-semibold">${ko ? "제작 계산기 — 가장 적은 비용" : "Crafting calculator — cheapest method"}</h2>
-					<p class="text-sm text-base-content/60">${ko ? "원하는 옵션의 최소 등급을 고르면 카오스 · 변화 · 에센스 · 화석 · 수확 연타와, 그 연타로 목표 일부를 맞춘 뒤 제왕 · 엑잘티드 · 제작대로 마무리하는 조합까지 성공 확률과 기대 비용(poe.ninja 시세)을 비교합니다." : "Pick the minimum tier of the modifiers you want to compare chaos, alteration, essence, fossil and harvest spam, plus combinations that roll part of the targets and finish with regal, exalted or bench crafts, by chance and expected cost (poe.ninja prices)."}</p>
-					<%-- 계산 중 표시(C422 UX QA — 6~10초 동안 아무 변화가 없어 다시 눌렀다): 버튼을 끄고 진행 표시 --%>
-					<form hx-post="/poe/htmx/craft/calc" hx-target="#craft-calc-result" hx-swap="outerHTML" hx-include="#craft-emu input[name=state]" hx-disabled-elt="find [data-craft-calc-run], find [data-craft-strategy-run]" hx-indicator="[data-craft-calc-busy]" class="space-y-3">
+					<p class="text-sm text-base-content/60">${ko ? "목표 등급을 고르면 에센스 · 화석 · 수확 · 제작대(메타) · 짐승 · 화폐를 모두 섞어 지금 아이템에서 가장 싼 길을 찾습니다(같이 못 쓰는 조합은 제작 규칙대로 막음)." : "Pick target tiers — the cheapest path from the current item mixing essences, fossils, harvest, bench (meta), beasts and orbs (invalid combinations blocked by the crafting rules)."}</p>
+					<%-- 한 화면(C458): 왼쪽 목표 · 시작 · 실행, 오른쪽 결과 --%>
+					<div class="grid gap-4 items-start lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]" data-craft-calc-workspace>
+					<form hx-post="/poe/htmx/craft/calc" hx-target="#craft-calc-result" hx-swap="outerHTML" hx-include="#craft-emu input[name=state]" hx-disabled-elt="find [data-craft-calc-run], find [data-craft-strategy-run]" hx-indicator="[data-craft-calc-busy]" class="space-y-2 min-w-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:flex lg:flex-col" data-craft-calc-form>
 						<input type="hidden" name="itemClass" value="${activeClass}">
 						<input type="hidden" name="variant" value="${activeVariant}">
 						<input type="hidden" name="influence" value="${activeInfluence}">
 						<input type="hidden" name="ilvl" value="${ilvl}">
-						<div class="grid gap-3 lg:grid-cols-2">
-							@for(String gen : java.util.List.of("prefix", "suffix"))
-								!{
-									java.util.Map<String, java.util.List<PoeCraft.PoolLine>> fams = new java.util.LinkedHashMap<>();
-									for (PoeCraft.PoolLine p : calcPool) if (gen.equals(p.gen())) fams.computeIfAbsent(p.family(), k -> new java.util.ArrayList<>()).add(p);
-								}
-								<div class="space-y-1 min-w-0">
-									<div class="text-sm font-medium">${"prefix".equals(gen) ? (ko ? "접두" : "Prefixes") : (ko ? "접미" : "Suffixes")}</div>
+						<%-- 목표 고르기(C458 — 한 화면): 검색 · 고른 줄은 맨 위로(공용 data-picked-list) · 칸 안 스크롤. 최소 등급 = 그 등급 이상이면 충족 --%>
+						<div class="space-y-1 lg:flex lg:flex-col lg:min-h-0 lg:flex-1" data-craft-calc-targets>
+							<input type="search" class="input input-sm input-bordered w-full" placeholder="${ko ? "옵션 검색 — 생명력, 저항, 공격 속도…" : "Search modifiers — life, resistance, attack speed…"}" data-filter-input="#craft-calc-mods [data-craft-calc-family]" aria-label="${ko ? "옵션 검색" : "Search modifiers"}" autocomplete="off">
+							<div class="text-xs text-base-content/70">${ko ? "고른 목표 " : "Targets "}<span class="font-semibold" data-picked-count>0</span>${ko ? "개 · 고른 줄은 맨 위로 · 최소 등급 이상이면 충족" : " · picked rows move to the top · any tier at or above the minimum counts"}</div>
+							<div id="craft-calc-mods" class="flex flex-col gap-0.5 max-h-[22rem] lg:max-h-none lg:flex-1 lg:min-h-0 overflow-y-auto rounded-box border border-base-300 p-1.5" data-picked-list>
+								@for(String gen : java.util.List.of("prefix", "suffix"))
+									!{
+										java.util.Map<String, java.util.List<PoeCraft.PoolLine>> fams = new java.util.LinkedHashMap<>();
+										for (PoeCraft.PoolLine p : calcPool) if (gen.equals(p.gen())) fams.computeIfAbsent(p.family(), k -> new java.util.ArrayList<>()).add(p);
+									}
 									@for(var fe : fams.entrySet())
 										!{
 											java.util.List<PoeCraft.PoolLine> tiers = fe.getValue().stream().sorted(java.util.Comparator.comparing(p -> p.tierRank() == null ? 99 : p.tierRank())).toList();
@@ -119,8 +122,9 @@
 											java.util.List<String> mx = ko && top.ko() != null && !top.ko().isEmpty() ? top.ko() : top.en();
 											java.util.List<String> mn = ko && top.koMin() != null && !top.koMin().isEmpty() ? top.koMin() : top.enMin();
 										}
-										<label class="flex items-center gap-2 text-xs min-w-0" data-craft-calc-family="${gen}:${fe.getKey()}">
-											<select name="t_${gen}:${fe.getKey()}" class="select select-xs select-bordered w-24 shrink-0" aria-label="${ko ? "최소 등급" : "Minimum tier"}">
+										<label class="flex items-center gap-2 text-xs min-w-0 rounded px-1 py-0.5" data-craft-calc-family="${gen}:${fe.getKey()}" data-picked-row>
+											<span class="text-[10px] font-mono text-base-content/60 w-6 shrink-0">${"prefix".equals(gen) ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}</span>
+											<select name="t_${gen}:${fe.getKey()}" class="select select-xs select-bordered w-24 shrink-0 h-7 min-h-0" aria-label="${ko ? "최소 등급" : "Minimum tier"}">
 												<option value="">-</option>
 												@for(PoeCraft.PoolLine t : tiers)
 													@if(t.tierRank() != null)<option value="${t.tierRank()}">T1@if(t.tierRank() > 1)~T${t.tierRank()}@endif</option>@endif
@@ -129,8 +133,8 @@
 											<span class="min-w-0 wrap-anywhere">@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(net.luversof.web.gate.poe.PoeModRange.range(mn != null && i < mn.size() ? mn.get(i) : null, mx.get(i)))}@if(i < mx.size() - 1), @endif@endfor</span>
 										</label>
 									@endfor
-								</div>
-							@endfor
+								@endfor
+							</div>
 						</div>
 						@if(!calcVeiled.isEmpty())
 							<%-- 장막 해제 옵션 목표(C421) — 체크하면 '장막의 카오스 오브 → 해제(목표 먼저)' 방법도 비교 --%>
@@ -147,8 +151,17 @@
 								</div>
 							</details>
 						@endif
-						<div class="flex flex-wrap items-center gap-2">
-							@if(!essences.isEmpty())
+						<div class="flex flex-wrap items-center gap-2" data-craft-calc-run-row>
+							<label class="flex items-center gap-1 text-xs" title="${ko ? "분열 옵션과 엘드리치 임플리싯은 남기고 나머지는 비운 채 시작합니다(분열 옵션이 있으면 레어)" : "Keeps fractured modifiers and eldritch implicits, clears the rest (rare if anything is fractured)"}"><input type="checkbox" name="fromState" value="1" class="checkbox checkbox-xs" data-craft-from-state checked>${ko ? "에뮬레이터의 지금 아이템(분열 · 임플리싯)에서 시작" : "Start from the emulator item (fractured · implicits)"}</label>
+							<button type="submit" class="btn btn-sm btn-primary" data-craft-calc-run>${ko ? "최소 비용 찾기" : "Find the cheapest way"}</button>
+							<span class="htmx-indicator text-xs text-base-content/70" data-craft-calc-busy role="status"><span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? "계산 중(최대 10초)…" : "Calculating (up to 10 s)…"}</span>
+						</div>
+						<%-- 최적 조합은 표와 동시에 시작(C458 — 표가 끝나길 기다리면 6~9초 늦었다). 백그라운드 작업이라 게이트 읽기 제한과 무관 --%>
+						<div hidden hx-post="/poe/htmx/craft/optimize" hx-trigger="submit from:closest form" hx-include="closest form, #craft-emu input[name=state]" hx-target="#craft-opt-result" hx-swap="outerHTML" data-craft-optimize-trigger></div>
+						<details class="rounded-box border border-base-300 bg-base-100" data-craft-calc-advanced>
+							<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "고급 — 에센스 하나 비교 · 다단계 전략 직접 모의" : "Advanced — compare one essence · simulate your own strategy"}</summary>
+							<div class="px-3 pb-3 space-y-3">
+								@if(!essences.isEmpty())
 								<%-- 좁은 폭에선 한 줄 전체(C422 UX QA — 375px 한국어에서 옆 체크 문구에 밀려 62px 로 눌렸다) --%>
 								<select name="essence" class="select select-sm select-bordered min-w-0 flex-1 basis-full sm:basis-0" aria-label="${ko ? "비교할 에센스" : "Essence to compare"}">
 									<option value="">${ko ? "에센스 비교 안 함" : "No essence"}</option>
@@ -157,11 +170,6 @@
 									@endfor
 								</select>
 							@endif
-							<%-- 지금 아이템에서 시작(10-15 C349) — 에뮬레이터의 분열 옵션 · 임플리싯을 남긴 채(분열 베이스 · 엘드리치 베이스). "직접 편집"으로 만든 아이템 --%>
-							<label class="flex items-center gap-1 text-xs" title="${ko ? "분열 옵션과 엘드리치 임플리싯은 남기고 나머지는 비운 채 시작합니다(분열 옵션이 있으면 레어)" : "Keeps fractured modifiers and eldritch implicits, clears the rest (rare if anything is fractured)"}"><input type="checkbox" name="fromState" value="1" class="checkbox checkbox-xs" data-craft-from-state>${ko ? "지금 아이템(분열 · 임플리싯)에서 시작" : "Start from the current item (fractured · implicits)"}</label>
-							<button type="submit" class="btn btn-sm btn-primary" data-craft-calc-run>${ko ? "계산" : "Calculate"}</button>
-							<span class="htmx-indicator text-xs text-base-content/70" data-craft-calc-busy role="status"><span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? "계산 중(최대 10초)…" : "Calculating (up to 10 s)…"}</span>
-						</div>
 						<%-- 다단계 전략(10-15 C339) — 같은 목표로 프리셋 전략을 모의(craftofexile 시뮬레이터처럼 단계 · 조건) --%>
 						<div class="flex flex-wrap items-center gap-2 border-t border-base-300 pt-3" data-craft-strategy>
 							<span class="text-sm font-medium">${ko ? "다단계 전략" : "Multi-step strategy"}</span>
@@ -275,9 +283,15 @@
 								<p class="text-xs text-base-content/70">${ko ? "묶음은 마지막 줄의 \"언제까지 · 최대\"로 통째 반복합니다. 최대를 비우면 5,000번." : "A group repeats as a whole using its last row's until / max. Empty max = 5,000."}</p>
 							</div>
 						</details>
+							</div>
+						</details>
 					</form>
-					@template.poe.htmx.craftCalc(calc = null, targetLabels = java.util.List.of())
-					@template.poe.htmx.craftStrategy(result = null, presetLabel = "", targetLabels = java.util.List.of())
+					<div class="min-w-0 space-y-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1" data-craft-calc-results>
+						<div id="craft-opt-result" class="rounded-box border border-dashed border-base-300 p-4 text-sm text-base-content/70" data-craft-optimize-empty>${ko ? "목표를 고르고 '최소 비용 찾기'를 누르면 여기에 가장 싼 제작 흐름(상태마다 쓸 수단)이, 아래에 방법별 비교 표가 나옵니다." : "Pick targets and press 'Find the cheapest way' — the cheapest crafting flow appears here and the per-method table below."}</div>
+						@template.poe.htmx.craftCalc(calc = null, targetLabels = java.util.List.of())
+						@template.poe.htmx.craftStrategy(result = null, presetLabel = "", targetLabels = java.util.List.of())
+					</div>
+					</div>
 				</section>
 			@endif
 

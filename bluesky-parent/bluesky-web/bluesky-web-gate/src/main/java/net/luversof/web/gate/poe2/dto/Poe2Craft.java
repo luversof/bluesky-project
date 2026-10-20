@@ -21,10 +21,39 @@ public final class Poe2Craft {
       // 기폭제 퀄리티(C386) — "종류:양"(주얼용은 "jewel:종류:양"), 없으면 null
       String quality,
       // 축성(C390) — 더 바꿀 수 없다
-      boolean sanctified) {
+      boolean sanctified,
+      // 공개 씨앗(C483) — 드러낼 셋을 섞는 값, 되돌리면 새로 준다
+      Long revealSeed) {
 
     public Item(String poolKey, int ilvl, String rarity, List<Affix> affixes, boolean corrupted) {
-      this(poolKey, ilvl, rarity, affixes, corrupted, null, false);
+      this(poolKey, ilvl, rarity, affixes, corrupted, null, false, null);
+    }
+
+    public Item(
+        String poolKey,
+        int ilvl,
+        String rarity,
+        List<Affix> affixes,
+        boolean corrupted,
+        String quality,
+        boolean sanctified) {
+      this(poolKey, ilvl, rarity, affixes, corrupted, quality, sanctified, null);
+    }
+
+    /** 미공개 훼손 옵션이 있으면 공개 씨앗을 새로(C483) — 되돌린 뒤 다시 열면 다른 셋이 나온다. */
+    public Item reseedReveal() {
+      if (affixes == null || affixes.stream().noneMatch(a -> a.id().startsWith("Unrevealed"))) {
+        return this;
+      }
+      return new Item(
+          poolKey,
+          ilvl,
+          rarity,
+          affixes,
+          corrupted,
+          quality,
+          sanctified,
+          java.util.concurrent.ThreadLocalRandom.current().nextLong());
     }
   }
 
@@ -54,7 +83,10 @@ public final class Poe2Craft {
       // 결과 설명(C376 — 바알 오브 "vaal:…", C386 기폭제 "catalyst:종류:양:개수"), 없으면 null
       String note,
       // 기폭제 퀄리티로 수치가 오르는 옵션 id(C386)
-      List<String> boosted) {}
+      List<String> boosted,
+      // 옵션 태그(C480) — 줄 id → 태그 이름(영어 · 한국어)
+      java.util.Map<String, List<String>> tags,
+      java.util.Map<String, List<String>> tagsKo) {}
 
   /** 뼈(C354) — classes = 쓸 수 있는 종류, maxIlvl(0 = 없음), minModLevel. */
   public record Bone(
@@ -81,6 +113,16 @@ public final class Poe2Craft {
 
   /** 시뮬레이터(C352) — 목표 하나 = anyOf 중 하나. */
   public record Target(List<String> anyOf) {}
+
+  /** 최적 조합 요청(C461) — upper · upperLabel = 아는 가장 싼 방법(없으면 API 가 연금 연타로 잰다). */
+  /** recombChance = 재조합 성공 확률(C472, 인게임 값) — 있으면 최적 조합이 재조합기(반쪽 합치기)도 쓴다. */
+  public record OptimizeRequest(
+      Item item,
+      List<Target> targets,
+      Integer budgetMs,
+      Double upper,
+      String upperLabel,
+      Integer recombChance) {}
 
   /** recombChance = 반쪽 재조합(C409) 비교에 쓸 재조합 성공 확률(인게임 값 1~100, 없으면 비교 안 함). */
   public record CalcRequest(Item item, List<Target> targets, Integer runs, Integer recombChance) {

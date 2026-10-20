@@ -1631,13 +1631,82 @@ document.addEventListener("click", (event) => {
 	}
 	if (!d) return;
 	event.preventDefault();
+	if (!d.open) closeExclusiveSiblings(d);
 	d.open = !d.open;
 	syncDetailsTogglers(d);
+});
+// 한 번에 하나(2026-10-20 C476 사용자 요청 "제작 방식은 선택이 하나만 되도록"): [data-toggle-exclusive] 안 단추들이 여는 details 는 하나를 열면 나머지를 닫는다.
+// data-toggle-keep 단추의 칸은 예외(PoE2 징조 — 다음 화폐에 걸어 두는 칸이라 다른 칸과 같이 연다). 사람이 누를 때만(스크립트가 여는 것은 그대로 — 탐침이 전부 열어 넘침을 본다).
+function closeExclusiveSiblings(d: Element): void {
+	document.querySelectorAll("[data-toggle-exclusive]").forEach((box) => {
+		const pairs: { b: Element; t: Element | null }[] = [];
+		box.querySelectorAll("[data-toggle-details]").forEach((b) => {
+			let t: Element | null = null;
+			try {
+				t = document.querySelector(b.getAttribute("data-toggle-details") || "");
+			} catch (e) {
+				t = null;
+			}
+			pairs.push({ b, t });
+		});
+		const mine = pairs.find((x) => x.t === d);
+		if (!mine || mine.b.hasAttribute("data-toggle-keep")) return;
+		pairs.forEach((x) => {
+			if (x.t && x.t !== d && !x.b.hasAttribute("data-toggle-keep") && (x.t as HTMLDetailsElement).open) (x.t as HTMLDetailsElement).open = false;
+		});
+	});
+}
+// 묶음 머리(summary)를 눌러 여는 것도 같게
+document.addEventListener("click", (event) => {
+	const sum = (event.target as HTMLElement)?.closest?.("summary");
+	const d = sum?.parentElement;
+	// 태그로 판정(시험용 가짜 DOM 엔 HTMLDetailsElement 가 없다)
+	if (d && d.tagName === "DETAILS" && !(d as HTMLDetailsElement).open && sum === d.querySelector(":scope > summary")) closeExclusiveSiblings(d);
 });
 document.addEventListener("toggle", (event) => {
 	const d = event.target;
 	if (d instanceof Element && d.tagName === "DETAILS") syncDetailsTogglers(d);
 }, true);
+// 목록 거르기 · 고른 줄(2026-10-19 C458: PoE1 계산기 목표 고르기 한 화면).
+// [data-filter-input="선택자"] — 입력 글자가 들어간 항목만 보인다(공백 무시, 대소문자 무시).
+// [data-picked-list] 안 [data-picked-row] — 안의 select · 체크박스에 값이 있으면 data-picked(CSS 가 맨 위로 · 강조), 같은 폼의 [data-picked-count] 에 개수.
+function filterItems(input: HTMLInputElement): void {
+	const sel = input.getAttribute("data-filter-input") || "";
+	const q = input.value.replace(/\s+/g, "").toLowerCase();
+	let items: NodeListOf<HTMLElement>;
+	try {
+		items = document.querySelectorAll<HTMLElement>(sel);
+	} catch (e) {
+		return;
+	}
+	items.forEach((it) => {
+		const text = (it.textContent || "").replace(/\s+/g, "").toLowerCase();
+		it.hidden = q !== "" && !text.includes(q) && !it.hasAttribute("data-picked");
+	});
+}
+document.addEventListener("input", (event) => {
+	const el = (event.target as HTMLElement)?.closest?.("[data-filter-input]") as HTMLInputElement | null;
+	if (el) filterItems(el);
+});
+function syncPicked(): void {
+	document.querySelectorAll("[data-picked-list]").forEach((list) => {
+		let n = 0;
+		list.querySelectorAll<HTMLElement>("[data-picked-row]").forEach((row) => {
+			const picked = Array.from(row.querySelectorAll<HTMLInputElement | HTMLSelectElement>("select, input")).some((c) =>
+				c instanceof HTMLInputElement && (c.type === "checkbox" || c.type === "radio") ? c.checked : c.value !== "",
+			);
+			row.toggleAttribute("data-picked", picked);
+			if (picked) n++;
+		});
+		const form = list.closest("form");
+		form?.querySelectorAll("[data-picked-count]").forEach((c) => (c.textContent = String(n)));
+	});
+}
+document.addEventListener("change", (event) => {
+	if ((event.target as HTMLElement)?.closest?.("[data-picked-list]")) syncPicked();
+});
+document.addEventListener("DOMContentLoaded", syncPicked);
+document.addEventListener("htmx:afterSettle", syncPicked);
 function syncAllDetailsTogglers(): void {
 	document.querySelectorAll("[data-toggle-details]").forEach((b) => {
 		try {
@@ -2504,3 +2573,114 @@ function handleImgError(img: any): string {
 }
 document.addEventListener("error", (event) => handleImgError(event.target), true);
 (globalThis as any).__imgErrorInternals = { handleImgError };
+
+// 화폐를 고르고 아이템을 눌러 적용(2026-10-20 C477 사용자 요청 "제작을 선택하면 마우스 포인터가 해당 화폐 모양이 되고 아이템을 클릭하면 적용 — craftofexile 과 같은 방식").
+// [data-craft-arm-scope] 안 name=action 단추(되돌리기 · 새 아이템 · 장막 해제 고르기 · 직접 편집 · 재조합 보관 등은 빼고)를 누르면 바로 보내지 않고 '고른' 상태로 두고,
+// [data-craft-arm-target](아이템 카드)을 누르면(또는 Enter) 그 단추를 눌러 보낸다. 같은 단추를 다시 누르거나 Esc 면 취소. 교체 뒤에도 고른 화폐를 유지해 카드를 거듭 누르면 연타.
+// 탐침은 window.__craftDirectApply 로 예전처럼 바로 적용(lib.js launch).
+const CRAFT_IMMEDIATE = /^(UNDO|UNDO_TO:|RESET|UNVEIL|MANUAL|COMMIT|FORESEE_OFF|STASH|SWAP|UNSTASH|RECOMBINE)/;
+let craftArmed: string | null = null;
+let craftPassThrough = false;
+function craftArmable(b: Element | null): b is HTMLButtonElement {
+	if (!b || b.tagName !== "BUTTON" || b.getAttribute("name") !== "action") return false;
+	if (!b.closest("[data-craft-arm-scope]")) return false;
+	return !CRAFT_IMMEDIATE.test(b.getAttribute("value") || "");
+}
+function craftArmedButton(scope: Element): HTMLButtonElement | null {
+	if (!craftArmed) return null;
+	let found: HTMLButtonElement | null = null;
+	scope.querySelectorAll<HTMLButtonElement>('button[name="action"]').forEach((b) => {
+		if (!found && b.value === craftArmed) found = b;
+	});
+	return found;
+}
+function syncCraftArm(): void {
+	document.querySelectorAll("[data-craft-arm-scope]").forEach((scope) => {
+		scope.querySelectorAll("[data-craft-armed]").forEach((b) => b.removeAttribute("data-craft-armed"));
+		let btn = craftArmedButton(scope);
+		if (btn && btn.disabled) {
+			craftArmed = null;
+			btn = null;
+		}
+		if (btn) btn.setAttribute("data-craft-armed", "");
+		const target = scope.querySelector<HTMLElement>("[data-craft-arm-target]");
+		if (target) {
+			const img = btn?.querySelector("img") as HTMLImageElement | null;
+			target.style.cursor = btn ? (img ? `url("${img.src}") 16 16, crosshair` : "crosshair") : "";
+			target.toggleAttribute("data-craft-arm-on", !!btn);
+			if (btn) target.setAttribute("tabindex", "0");
+		}
+		const hint = scope.querySelector<HTMLElement>("[data-craft-arm-hint]");
+		if (hint) {
+			hint.hidden = !btn;
+			const label = hint.querySelector("[data-craft-arm-label]");
+			if (label && btn) label.textContent = (btn.textContent || "").replace(/\s+/g, " ").trim() || btn.value;
+		}
+	});
+}
+function craftFire(scope: Element): boolean {
+	const b = craftArmedButton(scope);
+	if (!b || b.disabled) return false;
+	craftPassThrough = true;
+	try {
+		b.click();
+	} finally {
+		craftPassThrough = false;
+	}
+	return true;
+}
+document.addEventListener(
+	"click",
+	(event) => {
+		if ((globalThis as any).__craftDirectApply || craftPassThrough) return;
+		const t = event.target as HTMLElement | null;
+		const btn = t?.closest?.("button") as Element | null;
+		if (craftArmable(btn)) {
+			event.preventDefault();
+			event.stopPropagation();
+			craftArmed = craftArmed === btn.value ? null : btn.value;
+			syncCraftArm();
+			return;
+		}
+		const target = t?.closest?.("[data-craft-arm-target]");
+		const scope = target?.closest?.("[data-craft-arm-scope]");
+		if (target && scope && craftArmed && craftFire(scope)) event.preventDefault();
+	},
+	true,
+);
+document.addEventListener("keydown", (event) => {
+	if (!craftArmed) return;
+	if (event.key === "Escape") {
+		craftArmed = null;
+		syncCraftArm();
+		return;
+	}
+	const target = (event.target as HTMLElement | null)?.closest?.("[data-craft-arm-target]");
+	const scope = target?.closest?.("[data-craft-arm-scope]");
+	if ((event.key === "Enter" || event.key === " ") && target && scope && craftFire(scope)) event.preventDefault();
+});
+document.addEventListener("htmx:afterSettle", syncCraftArm);
+
+// 꺼진 옵션이 골라진 채 남지 않게(2026-10-20 C478b): 아이템이 바뀌어 지금 고른 옵션이 꺼지면(값 유지 장치가 예전 값을 되살려도) 첫 켜진 옵션으로.
+// 꺼진 option 은 폼에 실리지 않아 '모르는 수확 제작'으로 실패했다(허리띠 레어 단추 전수 탐침).
+function fixDisabledSelections(): void {
+	document.querySelectorAll<HTMLSelectElement>("[data-craft-arm-scope] select").forEach((sel) => {
+		const cur = sel.selectedOptions && sel.selectedOptions[0];
+		if (!cur || !cur.disabled) return;
+		const first = Array.from(sel.options).find((o) => !o.disabled);
+		if (first) sel.value = first.value;
+	});
+}
+document.addEventListener("DOMContentLoaded", fixDisabledSelections);
+document.addEventListener("htmx:afterSettle", () => setTimeout(fixDisabledSelections, 0));
+
+// 장막 아이템 우클릭 → 장막 해제(2026-10-20 C482): 인게임 안내 "이 아이템에 우클릭하여 장막을 해제하십시오." 그대로 — 카드에 장막 줄 그림이 있으면 '장막 해제' 단추를 누른다.
+document.addEventListener("contextmenu", (event) => {
+	const target = (event.target as HTMLElement | null)?.closest?.("[data-craft-arm-target]");
+	if (!target || !target.querySelector("[data-craft-veiled-img]")) return;
+	const scope = target.closest("[data-craft-arm-scope]");
+	const btn = scope?.querySelector<HTMLButtonElement>('button[name="action"][value="UNVEIL_OPEN"]');
+	if (!btn || btn.disabled) return;
+	event.preventDefault();
+	btn.click();
+});

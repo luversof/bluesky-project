@@ -96,7 +96,9 @@ public class Poe2CraftService {
       List<BoneInfo> bones,
       // 바알 오브 타락 인챈트(C376)
       Map<String, List<String>> corrupted,
-      Map<String, CorruptedModData> corruptedMods) {}
+      Map<String, CorruptedModData> corruptedMods,
+      // 옵션 태그 표시 이름(C480) — 태그 id → [영어, 한국어](Tags.DisplayString)
+      Map<String, List<String>> tagNames) {}
 
   /** 타락 인챈트(C376) — g = corrupted. */
   record CorruptedModData(
@@ -129,7 +131,10 @@ public class Poe2CraftService {
       // 결과 설명(C376 — 바알 오브 "vaal:…", C386 기폭제 "catalyst:종류:양:개수"), 없으면 null
       String note,
       // 기폭제 퀄리티로 수치가 오르는 옵션 id(C386)
-      List<String> boosted) {}
+      List<String> boosted,
+      // 옵션 태그(C480 — 인게임 상세 보기 " — 생명력, 방어도") — 줄 id → 태그 이름(영어 · 한국어)
+      Map<String, List<String>> tags,
+      Map<String, List<String>> tagsKo) {}
 
   /** 다음 옵션(균등) — chance = 1/개수(가중치 비공개). */
   public record PoolLine(
@@ -158,7 +163,7 @@ public class Poe2CraftService {
   private volatile CraftData data =
       new CraftData(
           "", Map.of(), Map.of(), List.of(), List.of(), List.of(), Map.of(), Map.of(), Map.of(),
-          List.of(), Map.of(), Map.of());
+          List.of(), Map.of(), Map.of(), Map.of());
   private final Map<String, List<Poe2CraftEngine.Mod>> poolCache = new ConcurrentHashMap<>();
   private final Map<String, Map<String, Object[]>> textCache = new ConcurrentHashMap<>();
   private final Poe2CraftEngine engine;
@@ -302,7 +307,8 @@ public class Poe2CraftService {
         d.desecratedMods(),
         d.bones(),
         d.corrupted(),
-        d.corruptedMods());
+        d.corruptedMods(),
+        d.tagNames());
   }
 
   private final Map<String, List<Poe2CraftEngine.DesecratedMod>> desecratedCache =
@@ -483,7 +489,8 @@ public class Poe2CraftService {
         out,
         item.corrupted(),
         quality(item),
-        item.sanctified());
+        item.sanctified(),
+        item.revealSeed());
   }
 
   /** 기폭제 퀄리티(C386) — 이 아이템에 맞는 종류 · 1~20% 만 남긴다. */
@@ -590,7 +597,32 @@ public class Poe2CraftService {
                 })
             .toList(),
         note,
-        engine.boosted(item));
+        engine.boosted(item),
+        lineTags(item, 0),
+        lineTags(item, 1));
+  }
+
+  /** 줄 id → 태그 이름(C480, PoE1 짝) — lang 0 = 영어 · 1 = 한국어, 옵션 태그 순서, 이름 없는 태그는 뺀다. */
+  private Map<String, List<String>> lineTags(Poe2CraftEngine.Item item, int lang) {
+    Map<String, List<String>> names = data.tagNames() == null ? Map.of() : data.tagNames();
+    Map<String, List<String>> out = new LinkedHashMap<>();
+    for (Poe2CraftEngine.Affix a : item.affixes()) {
+      Poe2CraftEngine.Mod m = modOf(a.id());
+      if (m == null || m.tags() == null) {
+        continue;
+      }
+      List<String> ts = new ArrayList<>();
+      for (String t : m.tags()) {
+        List<String> n = names.get(t);
+        if (n != null && n.size() > lang) {
+          ts.add(n.get(lang));
+        }
+      }
+      if (!ts.isEmpty()) {
+        out.put(a.id(), ts);
+      }
+    }
+    return out;
   }
 
   /** 줄 하나 — 풀 등급 문구, 없으면 에센스 전용 · 훼손 옵션 문구, 미공개 자리는 인게임 "훼손된 접두어/접미어". */
@@ -650,7 +682,84 @@ public class Poe2CraftService {
 
   /** 징조 없이 · 기본 등급으로 시험 적용해 못 쓰는 이유. */
   Map<String, String> blocked(Poe2CraftEngine.Item item) {
-    return blockedFor(engine, item);
+    Map<String, String> out = blockedFor(engine, item);
+    // 묶음 안 옵션(C478 — 사용자 요청 "PoE2 에뮬레이터도 탭 안 옵션 상태별로 꺼지게", PoE1 C476 의 짝) — 에센스 · 뼈 · 징조도 엔진으로 시험
+    // 적용해
+    // 못 쓰는 이유를 모은다(엔진 규칙 = 화면 규칙)
+    RandomGenerator rng = new java.util.SplittableRandom(0);
+    String cls = item.poolKey() == null ? "" : item.poolKey().split("[|]")[0];
+    List<EssenceOption> ess = essences(item.poolKey());
+    for (EssenceOption e : ess) {
+      String r =
+          engine.apply(item, Poe2CraftEngine.Action.ESSENCE, e.slug(), Set.of(), rng).error();
+      if (r != null) {
+        out.put("ESSENCE:" + e.slug(), r);
+      }
+    }
+    Options o = options();
+    for (BoneInfo b : o.bones() == null ? List.<BoneInfo>of() : o.bones()) {
+      if (b.classes() == null || !b.classes().contains(cls)) {
+        continue;
+      }
+      String r =
+          engine.apply(item, Poe2CraftEngine.Action.DESECRATE, b.slug(), Set.of(), rng).error();
+      if (r != null) {
+        out.put("DESECRATE:" + b.slug(), r);
+      }
+    }
+    // 징조 — 거는 화폐를 그 징조와 함께 시험(쪽이 꽉 찬 좌 · 우 징조 등)
+    Map<String, Poe2CraftEngine.Action> omenAct = new LinkedHashMap<>();
+    for (String k :
+        List.of(
+            "SinistralExaltation",
+            "DextralExaltation",
+            "GreaterExaltation",
+            "HomogenisingExaltation",
+            "CatalysingExaltation")) {
+      omenAct.put(k, Poe2CraftEngine.Action.EXALT);
+    }
+    for (String k : List.of("SinistralCoronation", "DextralCoronation", "HomogenisingCoronation")) {
+      omenAct.put(k, Poe2CraftEngine.Action.REGAL);
+    }
+    omenAct.put("SinistralAlchemy", Poe2CraftEngine.Action.ALCHEMY);
+    omenAct.put("DextralAlchemy", Poe2CraftEngine.Action.ALCHEMY);
+    for (String k : List.of("Whittling", "SinistralErasure", "DextralErasure")) {
+      omenAct.put(k, Poe2CraftEngine.Action.CHAOS);
+    }
+    for (String k : List.of("SinistralAnnulment", "DextralAnnulment", "GreaterAnnulment")) {
+      omenAct.put(k, Poe2CraftEngine.Action.ANNUL);
+    }
+    omenAct.put("Corruption", Poe2CraftEngine.Action.VAAL);
+    omenAct.put("Sanctification", Poe2CraftEngine.Action.SANCTIFY);
+    for (Map.Entry<String, Poe2CraftEngine.Action> e : omenAct.entrySet()) {
+      String r = engine.apply(item, e.getValue(), null, Set.of(e.getKey()), rng).error();
+      if (r != null) {
+        out.put("OMEN:" + e.getKey(), r);
+      }
+    }
+    // 결정화(완벽 · 타락 에센스에 거는 징조) — 그 에센스 중 하나라도 이 징조와 함께 되면 켬
+    for (String k : List.of("SinistralCrystallisation", "DextralCrystallisation")) {
+      String first = null;
+      boolean any = false;
+      for (EssenceOption e : ess) {
+        if ("normal".equals(e.kind()) || out.containsKey("ESSENCE:" + e.slug())) {
+          continue;
+        }
+        String r =
+            engine.apply(item, Poe2CraftEngine.Action.ESSENCE, e.slug(), Set.of(k), rng).error();
+        if (r == null) {
+          any = true;
+          break;
+        }
+        if (first == null) {
+          first = r;
+        }
+      }
+      if (!any) {
+        out.put("OMEN:" + k, first != null ? first : "완벽 · 타락 에센스를 쓸 수 있는 레어에만");
+      }
+    }
+    return out;
   }
 
   /** 등급이 있는 화폐(진화 · 확장 · 제왕 · 엑잘 · 카오스). */

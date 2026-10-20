@@ -20,7 +20,9 @@
     {
       "name": "Tags",
       "columns": [
-        "Id"
+        "Id",
+        "DisplayString",
+        "Name"
       ]
     },
     {

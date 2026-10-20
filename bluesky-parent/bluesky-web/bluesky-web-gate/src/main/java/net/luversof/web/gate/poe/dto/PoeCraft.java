@@ -23,7 +23,42 @@ public final class PoeCraft {
       // 임플리싯(10-15 C343, 엘드리치 — gen = exarch|eater)
       List<Affix> implicits,
       // 기폭제 퀄리티(C385) — "종류:양"(예: attack:20), 없으면 null
-      String quality) {
+      String quality,
+      // 장막 해제 씨앗(C483) — 해제 제시 셋을 섞는 값, 되돌리면 새로 준다
+      Long veilSeed) {
+
+    public Item(
+        String itemClass,
+        String variant,
+        String influence,
+        int ilvl,
+        String rarity,
+        List<Affix> affixes,
+        boolean corrupted,
+        List<Affix> implicits,
+        String quality) {
+      this(
+          itemClass, variant, influence, ilvl, rarity, affixes, corrupted, implicits, quality,
+          null);
+    }
+
+    /** 장막 옵션이 있으면 해제 씨앗을 새로(C483) — 되돌린 뒤 다시 열면 다른 셋이 나온다(되돌리기로 다른 셋을 노린다). */
+    public Item reseedVeil() {
+      if (affixes == null || affixes.stream().noneMatch(a -> a.id().startsWith("Veiled"))) {
+        return this;
+      }
+      return new Item(
+          itemClass,
+          variant,
+          influence,
+          ilvl,
+          rarity,
+          affixes,
+          corrupted,
+          implicits,
+          quality,
+          java.util.concurrent.ThreadLocalRandom.current().nextLong());
+    }
 
     public Item(
         String itemClass,
@@ -72,7 +107,10 @@ public final class PoeCraft {
       // 결과 설명(C358 — 바알 오브 "vaal:결과[:사유]", C385 기폭제 "catalyst:종류:양:개수"), 없으면 null
       String note,
       // 기폭제 퀄리티로 수치가 오르는 옵션 · 임플리싯 id(C385)
-      List<String> boosted) {}
+      List<String> boosted,
+      // 옵션 태그(C480) — 줄 id → 태그 이름(영어 · 한국어), 인게임 상세 보기 " — 생명력, 방어력"
+      java.util.Map<String, List<String>> tags,
+      java.util.Map<String, List<String>> tagsKo) {}
 
   /** 메타 제작 상태(10-15 C338) — 접두/접미 잠금 · 제작 옵션 3개 · 공격/주문 옵션 금지. */
   public record Meta(
@@ -272,6 +310,18 @@ public final class PoeCraft {
   /** 최적 조합 백그라운드 작업 상태(C457k) — state = running | done. */
   public record OptimizeStatus(
       String id, String state, long elapsedMs, long budgetMs, OptimizeResult result) {}
+
+  /** 에뮬레이터 따라 하기(C464) — 이 아이템 상태에서 최적 조합 정책의 다음 수단(PoE1 · PoE2 같은 모양). */
+  public record OptimizeNext(
+      boolean done,
+      boolean known,
+      String state,
+      String action,
+      String actionId,
+      Double remaining) {}
+
+  /** 다음 수단 요청(PoE1) — imprint = 에뮬레이터 각인(없으면 null). */
+  public record OptimizeNextRequest(Item item, Item imprint) {}
 
   /** 최적 조합 상태별 결정 — 상태 설명 · 수단 · 지나는 비율 · 그 상태에서 남은 기대 비용(카오스). */
   public record OptimizeRule(String state, String action, double share, Double remaining) {}

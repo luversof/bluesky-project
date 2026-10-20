@@ -718,7 +718,14 @@ for (const [poolKey, ws] of craftPools) {
 			koMin: describe(rollValues(mod, "min"), "Korean"),
 		};
 	});
-	fs.writeFileSync(OUT_CRAFT, JSON.stringify({ patch: loadConfig().patch, mods, pools, veiledMods, veiled, fossilMods, fossil, eldritchMods, eldritch, elevatedMods, upgrade, corruptedMods, corrupted, beastMods, hazardMods, infamousMods }));
+	// 옵션 태그 표시 이름(10-20 C480 — 사용자 요청 "옵션의 태그도 보여주면") — Tags.Name(이름이 있는 태그만 인게임 상세 보기에 " — 생명력, 방어력"),
+	// tagNames[id] = [영어, 한국어]. 옵션의 태그 순서는 mods[id].t(ImplicitTags)
+	const tagsKo = loadTable("Korean", "Tags");
+	const tagNames = {};
+	tags.forEach((t, i) => {
+		if (t && t.Name) tagNames[t.Id] = [t.Name, (tagsKo[i] && tagsKo[i].Name) || t.Name];
+	});
+	fs.writeFileSync(OUT_CRAFT, JSON.stringify({ patch: loadConfig().patch, mods, pools, veiledMods, veiled, fossilMods, fossil, eldritchMods, eldritch, elevatedMods, upgrade, corruptedMods, corrupted, beastMods, hazardMods, infamousMods, tagNames }));
 	console.log(`craft-mods.json: 옵션 ${Object.keys(mods).length}개 · 풀 ${Object.keys(pools).length}개 · 해제 옵션 ${Object.keys(veiledMods).length}개(풀 ${Object.keys(veiled).length}) · 화석 옵션 ${Object.keys(fossilMods).length}개(풀 ${Object.keys(fossil).length}) · 엘드리치 ${Object.keys(eldritchMods).length}개(풀 ${Object.keys(eldritch).length}) · 고양 ${Object.keys(elevatedMods).length}개(올림 풀 ${Object.keys(upgrade).length}) · 부패 임플리싯 ${Object.keys(corruptedMods).length}개(풀 ${Object.keys(corrupted).length}) → ${OUT_CRAFT}`);
 }
 console.log(`mod-pool-tiers.json: 풀 ${Object.keys(outPoolTiers).length}개 → ${OUT_TIERS}`);

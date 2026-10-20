@@ -31,6 +31,12 @@ public interface PoeCraftClient {
   @PostExchange(value = "/optimize", contentType = MediaType.APPLICATION_JSON_VALUE)
   PoeCraft.OptimizeResult optimize(@RequestBody PoeCraft.OptimizeRequest request);
 
+  /** 에뮬레이터 따라 하기(C464) — 끝난 작업 정책으로 다음 수단. */
+  @PostExchange(value = "/optimize/{id}/next", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.OptimizeNext optimizeNext(
+      @org.springframework.web.bind.annotation.PathVariable String id,
+      @RequestBody PoeCraft.OptimizeNextRequest body);
+
   /** 최적 조합 백그라운드 시작(C457k) — {"id": …}. */
   @PostExchange(value = "/optimize/start", contentType = MediaType.APPLICATION_JSON_VALUE)
   java.util.Map<String, String> optimizeStart(@RequestBody PoeCraft.OptimizeRequest request);

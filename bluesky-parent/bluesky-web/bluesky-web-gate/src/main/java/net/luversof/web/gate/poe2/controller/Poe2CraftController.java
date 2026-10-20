@@ -27,6 +27,9 @@ public class Poe2CraftController {
   // 30 → 100(C453 — 단계 기록에서 한참 전 단계로도 되돌리게)
   static final int HISTORY_MAX = 100;
 
+  /** 최적 조합 시간 예산(C461) — 백그라운드 작업, 화면은 조회하며 기다린다. */
+  static final int OPTIMIZE_BUDGET_MS = 30_000;
+
   /** 재조합에 쓴 재료(C407) — 쓴 화폐 기록의 인자로 들고 다니다 되돌리면 보관함에 되살린다. */
   record StashSnap(Poe2Craft.Item item, java.util.Map<String, Long> rolls) {}
 
@@ -144,6 +147,8 @@ public class Poe2CraftController {
   /** 화폐 적용 · 되돌리기 · 새로 시작 — tier = 화폐 등급(greater · perfect), omen = 체크한 징조 키들. */
   @PostMapping(value = "/poe2/htmx/craft", produces = MediaType.TEXT_HTML_VALUE)
   public String apply(
+      // 최적 조합 작업 id(C464) — 결과 카드에 있으면 에뮬레이터가 다음 수단을 받아 보인다
+      @RequestParam(required = false) String optJob,
       @RequestParam String poolKey,
       @RequestParam(required = false, defaultValue = "82") int ilvl,
       @RequestParam(required = false, defaultValue = "") String state,
@@ -297,6 +302,8 @@ public class Poe2CraftController {
           }
         }
       }
+      // 드러낼 셋을 새로(C483) — 되돌리기는 보통 다른 셋을 노리고 하는데 같은 셋이 다시 나왔다
+      current = current.reseedReveal();
     } else if ("STASH".equals(action)) {
       // 재조합기(C407) — 지금 아이템을 재료로 보관(아이템은 그대로 · 비용 없음 · 이력 아님)
       stashItem = current;
@@ -437,6 +444,7 @@ public class Poe2CraftController {
         rollsModel(model, ids(current), fixedIds(current), rollMap, false);
         model.addAttribute("rollHistJson", json.writeValueAsString(rollHist));
         stashModel(model, stashItem, stashRollMap, recombChance, recombL, recombR);
+        recommend(model, optJob);
         return "poe2/htmx/craftEmu";
       }
       if (applied.error() == null) {
@@ -482,6 +490,7 @@ public class Poe2CraftController {
     if (divineError != null) {
       model.addAttribute("error", divineError);
     }
+    recommend(model, optJob);
     return "poe2/htmx/craftEmu";
   }
 
@@ -897,10 +906,43 @@ public class Poe2CraftController {
       @RequestParam(required = false, defaultValue = "82") int ilvl,
       @RequestParam org.springframework.util.MultiValueMap<String, String> params,
       Model model) {
+    List<String> labels = new ArrayList<>();
+    List<Poe2Craft.Target> targets = calcTargets(poolKey, ilvl, params, labels);
+    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+    // 표는 지금 아이템이 레어일 때만 그 아이템에서(C461 — '지금 아이템에서 시작'을 기본으로 켰는데 표는 레어만 받는다), 아니면 새 베이스
+    Poe2Craft.Item from = startItem(poolKey, clamp(ilvl), params);
+    if (from != null
+        && from.affixes() != null
+        && !from.affixes().isEmpty()
+        && !"RARE".equals(from.rarity())) {
+      from = new Poe2Craft.Item(poolKey, clamp(ilvl), "NORMAL", List.of(), false);
+    }
+    Poe2Craft.CalcResponse res =
+        targets.isEmpty()
+            ? new Poe2Craft.CalcResponse(
+                List.of(),
+                null,
+                null,
+                null,
+                ko ? "목표 옵션의 최소 등급을 하나 이상 고르세요" : "Pick a minimum tier for at least one modifier")
+            : craftClient.calc(
+                new Poe2Craft.CalcRequest(
+                    from, targets, null, chanceOf(params.getFirst("recombChance"))));
+    model.addAttribute("calc", res);
+    model.addAttribute("targetLabels", labels);
+    model.addAttribute("nameKo", nameKoMap(poolKey));
+    return "poe2/htmx/craftCalc";
+  }
+
+  /** 시뮬레이터 목표(계열마다 최소 등급 · 훼손 목표) — 표 · 최적 조합이 같이 쓴다(C461). labels 에 화면 이름. */
+  private List<Poe2Craft.Target> calcTargets(
+      String poolKey,
+      int ilvl,
+      org.springframework.util.MultiValueMap<String, String> params,
+      List<String> labels) {
     Poe2Craft.Item rareBase = new Poe2Craft.Item(poolKey, clamp(ilvl), "RARE", List.of(), false);
     List<Poe2Craft.PoolLine> pool = craftClient.pool(rareBase);
     List<Poe2Craft.Target> targets = new ArrayList<>();
-    List<String> labels = new ArrayList<>();
     boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
     List<Poe2Craft.PoolLine> dese = null;
     for (String key : params.keySet()) {
@@ -950,24 +992,84 @@ public class Poe2CraftController {
       targets.add(new Poe2Craft.Target(in.stream().map(Poe2Craft.PoolLine::id).toList()));
       labels.add(spanLabel(in, ko) + " (T1" + (rank > 1 ? "~T" + rank : "") + ")");
     }
-    Poe2Craft.CalcResponse res =
-        targets.isEmpty()
-            ? new Poe2Craft.CalcResponse(
-                List.of(),
-                null,
-                null,
-                null,
-                ko ? "목표 옵션의 최소 등급을 하나 이상 고르세요" : "Pick a minimum tier for at least one modifier")
-            : craftClient.calc(
-                new Poe2Craft.CalcRequest(
-                    startItem(poolKey, clamp(ilvl), params),
-                    targets,
-                    null,
-                    chanceOf(params.getFirst("recombChance"))));
-    model.addAttribute("calc", res);
+    return targets;
+  }
+
+  /** 최적 조합(C461) — 백그라운드로 시작하고 조회하며 기다린다(화면 조각은 PoE1 것, 단위 디바인). */
+  @PostMapping(value = "/poe2/htmx/craft/optimize", produces = MediaType.TEXT_HTML_VALUE)
+  public String optimize(
+      @RequestParam String poolKey,
+      @RequestParam(required = false, defaultValue = "82") int ilvl,
+      @RequestParam org.springframework.util.MultiValueMap<String, String> params,
+      Model model) {
+    List<String> labels = new ArrayList<>();
+    List<Poe2Craft.Target> targets = calcTargets(poolKey, ilvl, params, labels);
+    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+    String error = null;
+    String jobId = null;
+    if (targets.isEmpty()) {
+      error = ko ? "목표가 없습니다" : "No targets";
+    } else {
+      try {
+        jobId =
+            craftClient
+                .optimizeStart(
+                    new Poe2Craft.OptimizeRequest(
+                        startItem(poolKey, clamp(ilvl), params),
+                        targets,
+                        OPTIMIZE_BUDGET_MS,
+                        null,
+                        null,
+                        chanceOf(params.getFirst("recombChance"))))
+                .get("id");
+      } catch (RuntimeException e) {
+        error = ko ? "최적 조합 계산을 시작하지 못했습니다" : "Could not start the optimal combination";
+      }
+    }
+    model.addAttribute("optError", error);
     model.addAttribute("targetLabels", labels);
-    model.addAttribute("nameKo", nameKoMap(poolKey));
-    return "poe2/htmx/craftCalc";
+    model.addAttribute("jobId", jobId);
+    model.addAttribute("progress", 0);
+    model.addAttribute("base", "/poe2");
+    model.addAttribute("unit", "div");
+    model.addAttribute("game", "poe2");
+    return error != null ? "poe/htmx/craftOptimize" : "poe/htmx/craftOptimizeWait";
+  }
+
+  @org.springframework.web.bind.annotation.GetMapping(
+      value = "/poe2/htmx/craft/optimize/{id}",
+      produces = MediaType.TEXT_HTML_VALUE)
+  public String optimizeStatus(
+      @org.springframework.web.bind.annotation.PathVariable String id,
+      @RequestParam(required = false) List<String> label,
+      Model model) {
+    net.luversof.web.gate.poe.dto.PoeCraft.OptimizeStatus st;
+    try {
+      st = craftClient.optimizeStatus(id);
+    } catch (RuntimeException e) {
+      st = null;
+    }
+    model.addAttribute("targetLabels", label == null ? List.of() : label);
+    model.addAttribute("base", "/poe2");
+    model.addAttribute("unit", "div");
+    model.addAttribute("game", "poe2");
+    if (st == null) {
+      model.addAttribute(
+          "optError",
+          net.luversof.web.gate.poe.PoeText.isKorean()
+              ? "최적 조합 작업을 찾지 못했습니다(다시 계산하세요)"
+              : "The optimization job was not found (calculate again)");
+      return "poe/htmx/craftOptimize";
+    }
+    if (!"done".equals(st.state())) {
+      model.addAttribute("jobId", id);
+      model.addAttribute(
+          "progress", (int) Math.min(99, st.elapsedMs() * 100 / Math.max(1, st.budgetMs())));
+      return "poe/htmx/craftOptimizeWait";
+    }
+    model.addAttribute("opt", st.result());
+    model.addAttribute("jobId", id);
+    return "poe/htmx/craftOptimize";
   }
 
   /** 전략 프리셋(C425) — 목표는 화면에서 고른 것(all = 목표 전부 번호). */
@@ -1195,5 +1297,23 @@ public class Poe2CraftController {
 
   private static int clamp(int ilvl) {
     return Math.max(1, Math.min(100, ilvl));
+  }
+
+  /** 에뮬레이터 따라 하기(C464) — 최적 조합 작업이 있으면 지금 아이템의 다음 수단. 작업이 사라졌거나 실패하면 표시 안 함. */
+  private void recommend(Model model, String optJob) {
+    if (optJob == null || optJob.isBlank()) {
+      return;
+    }
+    Object sj = model.getAttribute("stateJson");
+    Poe2Craft.Item it = sj == null ? null : parse(sj.toString(), null);
+    if (it == null) {
+      return;
+    }
+    try {
+      model.addAttribute("recommend", craftClient.optimizeNext(optJob, it));
+      model.addAttribute("optJob", optJob);
+    } catch (RuntimeException e) {
+      // 작업이 사라졌으면(10분) 표시 안 함
+    }
   }
 }

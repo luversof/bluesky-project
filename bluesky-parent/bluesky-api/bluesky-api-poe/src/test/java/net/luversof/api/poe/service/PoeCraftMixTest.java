@@ -645,6 +645,27 @@ class PoeCraftMixTest {
         .anyMatch(x -> x.id().equals(o1.get(0)));
     String other = VEILED.keySet().stream().filter(id -> !o1.contains(id)).findFirst().get();
     assertThat(E.apply(ex, Action.UNVEIL, other, rng).error()).contains("셋 중");
+    // 해제 씨앗(C483) — 에뮬레이터가 되돌리면 새 씨앗을 줘 다른 셋이 나온다. 같은 씨앗이면 같은 셋, 해제는 그 씨앗의 셋으로 검사
+    java.util.Set<java.util.Set<String>> sets = new java.util.HashSet<>();
+    for (long s = 1; s <= 20; s++) {
+      Item sx =
+          new Item(
+              ex.itemClass(),
+              ex.variant(),
+              ex.influence(),
+              ex.ilvl(),
+              ex.rarity(),
+              ex.affixes(),
+              ex.corrupted(),
+              ex.implicits(),
+              ex.quality(),
+              s);
+      List<String> os = E.unveilOffers(sx);
+      assertThat(os).isEqualTo(E.unveilOffers(sx)).hasSize(3);
+      assertThat(E.apply(sx, Action.UNVEIL, os.get(2), rng).error()).isNull();
+      sets.add(new java.util.HashSet<>(os));
+    }
+    assertThat(sets).hasSizeGreaterThan(1);
     assertThat(E.apply(it, Action.UNVEIL, "VP0", rng).error()).contains("장막 옵션이 없습니다");
     // 분열 오브는 장막 자리 표시를 고정하지 않는다
     for (int i = 0; i < 300; i++) {

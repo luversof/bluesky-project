@@ -37,10 +37,50 @@ public class Poe2CraftController {
 
   private final Poe2CraftService craft;
   private final Poe2CraftCalcService calc;
+  private final Poe2CraftOptimizer optimizer;
 
-  public Poe2CraftController(Poe2CraftService craft, Poe2CraftCalcService calc) {
+  public Poe2CraftController(
+      Poe2CraftService craft, Poe2CraftCalcService calc, Poe2CraftOptimizer optimizer) {
     this.craft = craft;
     this.calc = calc;
+    this.optimizer = optimizer;
+  }
+
+  /** 최적 제작 경로(C461) — 화폐 × 등급 × 징조 · 에센스 · 훼손 · 분열 · 새 베이스를 섞은 최소 기대 비용(디바인). */
+  @PostMapping(value = "/optimize", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public Poe2CraftOptimizer.Result optimize(@RequestBody Poe2CraftOptimizer.Request req) {
+    check(req.item());
+    return optimizer.optimize(req);
+  }
+
+  /** 에뮬레이터 따라 하기(C464) — 끝난 작업의 정책으로 이 아이템의 다음 수단. 모르는 작업이면 404. */
+  @PostMapping(value = "/optimize/{id}/next", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public Poe2CraftOptimizer.Next optimizeNext(
+      @org.springframework.web.bind.annotation.PathVariable String id,
+      @RequestBody Poe2CraftEngine.Item item) {
+    check(item);
+    Poe2CraftOptimizer.Next n = optimizer.next(id, item);
+    if (n == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "모르는 작업: " + id);
+    }
+    return n;
+  }
+
+  /** 최적 제작 경로 백그라운드 시작(C461) — 작업 id, 진행은 /optimize/{id}. */
+  @PostMapping(value = "/optimize/start", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public java.util.Map<String, String> optimizeStart(@RequestBody Poe2CraftOptimizer.Request req) {
+    check(req.item());
+    return java.util.Map.of("id", optimizer.start(req));
+  }
+
+  @GetMapping("/optimize/{id}")
+  public Poe2CraftOptimizer.JobStatus optimizeStatus(
+      @org.springframework.web.bind.annotation.PathVariable String id) {
+    Poe2CraftOptimizer.JobStatus s = optimizer.status(id);
+    if (s == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "모르는 작업: " + id);
+    }
+    return s;
   }
 
   /** 시뮬레이터(C352) — 목표 → 방법별 성공률 · 성공 한 번당 화폐 개수(균등 가정, 참고용). */

@@ -52,7 +52,10 @@ public class PoeCraftService {
       // 결과 설명(C358 — 바알 오브 "vaal:결과[:사유]", C385 기폭제 "catalyst:종류:양:개수"), 없으면 null
       String note,
       // 기폭제 퀄리티로 수치가 오르는 옵션 · 임플리싯 id(C385) — 화면이 굴린 값에 (100 + 퀄리티) / 100 을 곱한다
-      List<String> boosted) {}
+      List<String> boosted,
+      // 옵션 태그(C480 — 인게임 상세 보기 " — 생명력, 방어력") — 줄 id → 태그 이름(영어 · 한국어), 이름 있는 태그만
+      Map<String, List<String>> tags,
+      Map<String, List<String>> tagsKo) {}
 
   /**
    * 아이템 종류에 쓸 수 있는 제작 수단(10-15 C338) — conquerors = 그 종류에 풀이 있는 정복자 영향력. 화석은 simple(엔진이 다루는 것)이 아닌
@@ -428,7 +431,8 @@ public class PoeCraftService {
         out,
         item.corrupted(),
         imp,
-        quality(item));
+        quality(item),
+        item.veilSeed());
   }
 
   /** 기폭제 퀄리티(C385) — 장신구 · 아는 종류 · 1~20% 만 남긴다. */
@@ -476,7 +480,32 @@ public class PoeCraftService {
         item.implicits().stream().map(this::implicitLine).toList(),
         engine.dominance(item),
         note,
-        engine.boosted(item));
+        engine.boosted(item),
+        lineTags(item, 0),
+        lineTags(item, 1));
+  }
+
+  /** 줄 id → 태그 이름(C480) — lang 0 = 영어 · 1 = 한국어, 옵션 태그(ImplicitTags) 순서, 이름 없는 태그는 뺀다. */
+  private Map<String, List<String>> lineTags(PoeCraftEngine.Item item, int lang) {
+    Map<String, List<String>> names = data.tagNames();
+    Map<String, List<String>> out = new java.util.LinkedHashMap<>();
+    for (PoeCraftEngine.Affix a : item.affixes()) {
+      PoeCraftDataService.CraftMod m = data.mod(a.id());
+      if (m == null || m.t() == null) {
+        continue;
+      }
+      List<String> ts = new ArrayList<>();
+      for (String t : m.t()) {
+        List<String> n = names.get(t);
+        if (n != null && n.size() > lang) {
+          ts.add(n.get(lang));
+        }
+      }
+      if (!ts.isEmpty()) {
+        out.put(a.id(), ts);
+      }
+    }
+    return out;
   }
 
   /** 엘드리치 임플리싯 줄 — 이름 = 진영(인게임 "작열의 총주교 아이템" · "세계 포식자 아이템"), tierRank = 등급. */
@@ -565,6 +594,45 @@ public class PoeCraftService {
       String e = engine.apply(item, PoeCraftEngine.Action.CONQUEROR, c, rng).error();
       if (e != null) {
         out.put("CONQUEROR:" + c, e);
+      }
+    }
+    // 묶음 안 옵션(C476 — 사용자 요청 "아이템 상태에 따라 사용 가능한 제작 방식과 세부 제작 옵션이 활성/비활성", "A 제작을 하면 B 에서 어떤 제작이
+    // 비활성화되는 조건") — 에센스 · 화석(하나씩) · 수확 · 제작대 · 짐승도 엔진으로 시험 적용해 못 쓰는 이유를 모은다(엔진 규칙 = 화면 규칙). 메타 제작
+    // (접두/접미 변경 불가 · 제작 옵션 셋) · 제작 옵션 한도 · 영향력 · 희귀도 · 타락 같은 앞선 제작의 결과가 그대로 반영된다
+    for (PoeCraftDataService.Essence e : data.essences(item.itemClass())) {
+      String r = engine.apply(item, PoeCraftEngine.Action.ESSENCE, e.slug(), rng).error();
+      if (r != null) {
+        out.put("ESSENCE:" + e.slug(), r);
+      }
+    }
+    for (PoeCraftDataService.Fossil f : data.fossils()) {
+      String r = engine.apply(item, PoeCraftEngine.Action.FOSSIL, f.slug(), rng).error();
+      if (r != null) {
+        out.put("FOSSIL:" + f.slug(), r);
+      }
+    }
+    for (PoeCraftDataService.Harvest h : data.harvests()) {
+      String r = engine.apply(item, PoeCraftEngine.Action.HARVEST, h.id(), rng).error();
+      if (r != null) {
+        out.put("HARVEST:" + h.id(), r);
+      }
+    }
+    for (PoeCraftDataService.BenchCraft b : data.bench(item.itemClass())) {
+      if (b.modId() == null || out.containsKey("BENCH:" + b.modId())) {
+        continue;
+      }
+      String r = engine.apply(item, PoeCraftEngine.Action.BENCH, b.modId(), rng).error();
+      if (r != null) {
+        out.put("BENCH:" + b.modId(), r);
+      }
+    }
+    for (String arg : PoeCraftCalcService.BEAST_RECIPE.keySet()) {
+      if ("imprint".equals(arg)) {
+        continue; // 각인은 게이트가 따로(매직 · 각인 유무)
+      }
+      String r = engine.apply(item, PoeCraftEngine.Action.BEAST, arg, rng).error();
+      if (r != null) {
+        out.put("BEAST:" + arg, r);
       }
     }
     for (String c : PoeCraftEngine.INFLUENCE_EXALTS) {

@@ -296,5 +296,13 @@ try {
 } catch (e) {
 	console.warn("탈신성화 데이터 생략:", e.message);
 }
-writeJson("craft2-mods.json", { patch: loadConfig().patch, mods: out, pools, omens, currencies, essences, essenceMods, desecrated, desecratedMods, bones, corrupted, corruptedMods });
+// 옵션 태그 표시 이름(10-20 C480, PoE1 짝) — Tags.DisplayString(이름 있는 태그만 인게임 상세 보기에), tagNames[id] = [영어, 한국어]
+const tagsKo = loadTable("Korean", "Tags");
+const tagNames = {};
+tags.forEach((t, i) => {
+	const en = t && t.DisplayString;
+	const ko = tagsKo[i] && tagsKo[i].DisplayString;
+	if (en || ko) tagNames[t.Id] = [en || ko, ko || en];
+});
+writeJson("craft2-mods.json", { patch: loadConfig().patch, mods: out, pools, omens, currencies, essences, essenceMods, desecrated, desecratedMods, bones, corrupted, corruptedMods, tagNames });
 console.log(`craft2-mods.json: 옵션 ${Object.keys(out).length} · 풀 ${Object.keys(pools).length} · 징조 ${omens.length} · 화폐 ${currencies.length} · 에센스 ${essences.length}(전용 옵션 ${Object.keys(essenceMods).length}) · 탈신성 옵션 ${Object.keys(desecratedMods).length}(풀 ${Object.keys(desecrated).length}) · 뼈 ${bones.length} · 타락 인챈트 ${Object.keys(corruptedMods).length}(풀 ${Object.keys(corrupted).length})`);

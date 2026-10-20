@@ -72,7 +72,9 @@ public class PoeCraftDataService {
       // 부패모의 두카트 덫 · 지뢰 옵션(C391, 도메인 42) — w = 가중치
       Map<String, HazardMod> hazardMods,
       // 사이악산의 두카트 악명 높은 속성(C393, 도메인 41) — cls = 부위 태그
-      Map<String, InfamousMod> infamousMods) {}
+      Map<String, InfamousMod> infamousMods,
+      // 옵션 태그 표시 이름(C480) — 태그 id → [영어, 한국어](Tags.Name, 이름이 있는 태그만 인게임 상세 보기에 보인다)
+      Map<String, List<String>> tagNames) {}
 
   /** 악명 높은 속성(C393) — 해제 옵션 모양 + 부위 태그 · 가중치. */
   public record InfamousMod(
@@ -251,7 +253,7 @@ public class PoeCraftDataService {
   private volatile CraftData data =
       new CraftData(
           "", Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
-          Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+          Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
   private volatile Map<String, List<Essence>> essences = Map.of();
   // 풀 → 옵션 id → 그 풀 안 같은 계열에서의 등급(1 = 아이템 레벨 요구가 가장 높은 것)
   private volatile Map<String, Map<String, Integer>> tierRank = Map.of();
@@ -269,7 +271,7 @@ public class PoeCraftDataService {
     CraftData loaded =
         new CraftData(
             "", Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
-            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
     if (Files.exists(craftFile)) {
       try (InputStream in = Files.newInputStream(craftFile)) {
         loaded = json.readValue(in, CraftData.class);
@@ -443,6 +445,11 @@ public class PoeCraftDataService {
   }
 
   /** 악명 높은 속성(C393) — id → 옵션. */
+  /** 옵션 태그 표시 이름(C480) — 태그 id → [영어, 한국어]. */
+  public Map<String, List<String>> tagNames() {
+    return data.tagNames() == null ? Map.of() : data.tagNames();
+  }
+
   public Map<String, InfamousMod> infamousMods() {
     return data.infamousMods() == null ? Map.of() : data.infamousMods();
   }

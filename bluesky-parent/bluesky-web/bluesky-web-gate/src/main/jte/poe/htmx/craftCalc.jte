@@ -13,6 +13,9 @@
 	java.util.function.Function<Double, Long> n90 = p -> p == null || p <= 0 ? null : p >= 1 ? 1L : (long) Math.ceil(Math.log(0.1) / Math.log(1 - p));
 }
 <div id="craft-calc-result" class="space-y-2" data-craft-calc-result>
+	@if(calc != null && calc.error() == null)
+		<h3 class="text-sm font-semibold">${ko ? "방법별 비교 — 한 가지 방법만 반복할 때" : "Per-method comparison — repeating a single method"}</h3>
+	@endif
 	@if(calc == null)
 	@elseif(calc.error() != null)
 		<div role="alert" class="alert alert-warning py-2 text-sm" data-craft-calc-error>${calc.error()}</div>
@@ -53,14 +56,5 @@
 			</table>
 		</div>
 		<p class="text-xs text-base-content/60">${ko ? "확률은 같은 제작 엔진으로 " : "Chances come from "}${calc.results().isEmpty() ? 0 : calc.results().get(0).trials()}${ko ? "번 모의 시행한 값입니다. 매우 낮은 확률은 오차가 큽니다." : " simulated tries with the same crafting engine; very low chances are noisy."} ${ko ? "90% 예산 = 시도마다 독립일 때 90% 확률로 한 번은 성공하는 비용(기대 비용의 약 2.3배)." : "90% budget = cost to succeed at least once with 90% probability for independent tries (about 2.3× the expected cost)."}</p>
-		<%-- 최적 조합(C457 사용자 요청) — 표가 뜨면 이어서 계산(표의 가장 싼 방법 = 비교 기준 · 넘길 곳) --%>
-		!{
-			PoeCraft.MethodResult top = calc.results().stream().filter(x -> x.expectedCost() != null).findFirst().orElse(null);
-			String picked = String.join("|", calc.results().stream().map(PoeCraft.MethodResult::method).filter(m -> m.startsWith("FOSSIL:") || m.startsWith("HARVEST:")).toList());
-			String vals = top == null ? "{\"methods\":\"" + picked + "\"}" : "{\"upper\":" + top.expectedCost() + ",\"upperLabel\":\"" + top.label().replace("\\", "").replace("\"", "'") + "\",\"methods\":\"" + picked + "\"}";
-		}
-		<div data-craft-optimize hx-post="/poe/htmx/craft/optimize" hx-trigger="load" hx-swap="outerHTML" hx-include="#craft-calc form, #craft-emu input[name=state]" hx-vals="${vals}" class="rounded-box border border-base-300 bg-base-100 p-3 text-sm">
-			<span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? "최적 조합 시작하는 중…" : "Starting the optimal combination…"}
-		</div>
 	@endif
 </div>

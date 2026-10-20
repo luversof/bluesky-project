@@ -73,6 +73,10 @@ WANTED_FULL.set("Art/2DArt/UIImages/InGame/JudicatorItemSymbol", "influence-warl
 // 분열 · 합성 아이템도 인게임 헤더 모서리에 심볼(C137)
 WANTED_FULL.set("Art/2DArt/UIImages/InGame/FracturedItemSymbol", "influence-fractured");
 WANTED_FULL.set("Art/2DArt/UIImages/InGame/SynthesisedItemSymbol", "influence-synthesised");
+// 장막 옵션 줄(10-20 C482 — 사용자 요청 "게임 내랑 동일한 디자인이면 좋을 텐데 이미지를 찾아서 대체") — 인게임 툴팁은 장막 옵션을 룬처럼 뒤섞인
+// 글자 그림으로 그린다. 그 그림만 따로 든 아틀라스 항목은 없어(art/*.txt 의 'veil' 은 신디케이트 문장 · 제작창뿐), 게임이 그린 툴팁이 든 튜토리얼
+// 그림에서 그 띠를 잘라 쓴다(아래 5) — 밝기를 투명도로 해 어느 바탕에도)
+WANTED_FULL.set("Art/2DArt/UIImages/InGame/TutorialPictures/UnveiledMods", "tutorial-unveiledmods");
 
 // 1) atlas 좌표표 추출 (UTF-16LE)
 const baseConfig = loadConfig();
@@ -106,5 +110,19 @@ for (const e of entries) {
 	}
 	execFileSync(MAGICK, [sheet, "-crop", `${e.w}x${e.h}+${e.x}+${e.y}`, "+repage", path.join(OUT_DIR, e.out + ".png")]);
 	done++;
+}
+// 5) 장막 옵션 줄 그림(C482) — 튜토리얼 그림(2627x1745) 오른쪽 위 툴팁의 장막 줄(룬 띠)만 잘라, 밝기를 투명도로
+{
+	const tut = path.join(OUT_DIR, "tutorial-unveiledmods.png");
+	if (fs.existsSync(tut)) {
+		const tmp = path.join(OUT_DIR, "veiled-mod.tmp.png");
+		execFileSync(MAGICK, [tut, "-crop", "600x56+1660+750", "+repage", "-fuzz", "10%", "-trim", "+repage", tmp]);
+		execFileSync(MAGICK, [tmp, "(", "+clone", "-colorspace", "gray", "-level", "8%,85%", ")", "-alpha", "off", "-compose", "copy-opacity", "-composite", path.join(OUT_DIR, "veiled-mod.png")]);
+		fs.rmSync(tmp, { force: true });
+		fs.rmSync(tut, { force: true }); // 큰 원본은 남기지 않는다
+		done++;
+	} else {
+		console.warn("튜토리얼 그림 없음 — veiled-mod.png 건너뜀");
+	}
 }
 console.log(`ui-assets 완료: ${done}개 → ${OUT_DIR}`);

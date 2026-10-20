@@ -41,20 +41,20 @@ class PoeCraftEngineTest {
 
           @Override
           public PoeCraftDataService.Essence essence(String itemClass, String slug) {
-            return "ess".equals(slug)
+            return "ess".equals(slug) || "ess4".equals(slug)
                 ? new PoeCraftDataService.Essence(
                     "Greed",
                     "E",
                     "E",
                     null,
-                    7,
+                    "ess4".equals(slug) ? 4 : 7,
                     0,
                     "prefix",
                     "x",
                     "ESS",
                     List.of(9),
                     1,
-                    "ess",
+                    slug,
                     List.of(),
                     List.of(),
                     List.of(),
@@ -181,6 +181,18 @@ class PoeCraftEngineTest {
       assertThat(r.item().affixes()).anyMatch(a -> a.id().equals("ESS"));
     }
     assertThat(e.apply(normal(84), Action.ESSENCE, "nope", rng).error()).isNotNull();
+  }
+
+  @Test
+  void 레어_재련은_비명_등급_에센스부터() {
+    // C460 — 속삭이는 ~ 울부짖는(1~4)은 일반 아이템에만, 비명(5)부터 레어 재련(CurrencyItems Directions)
+    PoeCraftEngine e = small();
+    SplittableRandom rng = new SplittableRandom(8);
+    Item rare = e.apply(normal(84), Action.ALCHEMY, null, rng).item();
+    assertThat(rare.rarity()).isEqualTo(Rarity.RARE);
+    assertThat(e.apply(rare, Action.ESSENCE, "ess4", rng).error()).contains("일반 아이템에만");
+    assertThat(e.apply(rare, Action.ESSENCE, "ess", rng).error()).isNull();
+    assertThat(e.apply(normal(84), Action.ESSENCE, "ess4", rng).error()).isNull();
   }
 
   @Test
