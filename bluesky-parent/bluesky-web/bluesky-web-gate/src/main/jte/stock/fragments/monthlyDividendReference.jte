@@ -541,7 +541,7 @@
 													<%-- 미리 발표돼 등록된 기준일은 아직 안 왔다 - "-1일 전" 으로 찍혔다(실측 2026-10-14, 10-15 기준일). 오늘 · N일 뒤로 적는다. --%>
 													<div class="text-xs text-base-content/60">${latestPayout.daysSinceRecord() > 0 ? java.text.MessageFormat.format(daysAgoPattern, String.valueOf(latestPayout.daysSinceRecord())) : (latestPayout.daysSinceRecord() == 0 ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.today") : java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ahead"), String.valueOf(-latestPayout.daysSinceRecord())))}</div>
 													@if(latestPayout.stale())
-														<span class="badge badge-warning badge-sm mt-1" title="${staleRecordTitle}">${staleRecordLabel}</span>
+														<span class="badge badge-warning badge-sm mt-1" title="${latestPayout.expectedRecordDate() != null ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.missing"), String.valueOf(latestPayout.expectedRecordDate())) : staleRecordTitle}" data-profile-latest-record-expected="${latestPayout.expectedRecordDate() != null ? String.valueOf(latestPayout.expectedRecordDate()) : ""}">${staleRecordLabel}</span>
 													@endif
 												</td>
 											@else

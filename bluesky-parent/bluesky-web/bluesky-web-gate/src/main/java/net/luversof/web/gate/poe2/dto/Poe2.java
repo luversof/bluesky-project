@@ -303,7 +303,9 @@ public final class Poe2 {
       String variant,
       String variantKo,
       Integer baseCount,
-      Integer groupCount) {}
+      Integer groupCount,
+      // 이 풀의 베이스 이름(C528, API 와 짝)
+      List<String> bases) {}
 
   public record ModData(
       String patch,

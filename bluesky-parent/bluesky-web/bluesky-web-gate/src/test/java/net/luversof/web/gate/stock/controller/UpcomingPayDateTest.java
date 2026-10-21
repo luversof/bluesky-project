@@ -16,7 +16,7 @@ import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
  *
  * <p>대표 지급일은 지급이력의 <b>최빈 일자</b>다(월중 그룹은 17 일). 그런데 실제 지급은 그 날 <b>이후</b>로 밀리는 달이 잦다 &mdash; 실측
  * 2026-09-11, 월중 그룹 11 개월: 17 일 당일이 5 회, +1 일 1 회, +2 일 3 회, +3 일 2 회. 밀리는 이유는 휴일만이 아니다 (2026-02-17
- * 은 설, 2026-07-17 은 금요일인데도 7/20 지급).
+ * 은 설, 2026-07-17 은 금요일인데도 7/20 지급 - 이건 휴일이었다: 제헌절이 2026 년부터 공휴일인데 공휴일 표에 빠져 있었다, 2026-10-20 보탬).
  *
  * <p>그래서 17 일이 지나자마자 다음 달로 넘기면, 내일 들어올 배당을 두고 "한 달 뒤" 라고 말하게 된다.
  */
@@ -92,9 +92,10 @@ class UpcomingPayDateTest {
   @Test
   void 지급이_끝난_뒤에는_다음_달을_가리킨다() {
     // 관측된 마지막 날(20) 다음날부터는 이번 달을 더 가리키지 않는다.
+    // 7 월 대표일 17 일은 제헌절(2026 년부터 공휴일, 2026-10-20 표에 보탬)이라 다음 영업일 20 일 - 실제 7 월 지급일과 같다.
     LocalDate projected =
         StockSummaryHtmxController.projectedPayDate(LocalDate.parse("2026-06-21"), 17, 20);
-    assertThat(projected).isEqualTo(LocalDate.parse("2026-07-17"));
+    assertThat(projected).isEqualTo(LocalDate.parse("2026-07-20"));
   }
 
   private MonthlyDividendPayoutResponse payout(String symbol, String payDate) {

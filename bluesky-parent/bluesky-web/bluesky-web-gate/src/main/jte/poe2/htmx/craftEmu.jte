@@ -9,10 +9,17 @@
 @param String historyJson = "[]"
 @param int historySize = 0
 @param java.util.List<Poe2Craft.PoolLine> pool = java.util.List.of()
+@param java.util.List<net.luversof.web.gate.poe.CraftPoolGroups.Family<Poe2Craft.PoolLine>> poolGroups = java.util.List.of()
 @param java.util.List<Poe2Craft.Omen> omens = java.util.List.of()
 @param java.util.List<String> activeOmens = java.util.List.of()
 @param String tier = ""
 @param String classLabel = ""
+@param String baseName = ""
+@param String baseNameKo = ""
+@param String itemName = ""
+@param String itemNameKo = ""
+@param net.luversof.web.gate.poe2.dto.Poe2.BaseItem craftBase = null
+@param String spamNote = null
 @param java.util.List<Poe2Craft.Currency> currencies = java.util.List.of()
 @param java.util.List<Poe2Craft.EssenceOption> essences = java.util.List.of()
 @param java.util.List<Poe2Craft.Bone> bones = java.util.List.of()
@@ -53,11 +60,15 @@
 	long suffixes = lines.stream().filter(l -> "suffix".equals(l.gen())).count();
 	java.util.function.Function<java.util.List<String>, java.util.List<String>> nz = x -> x == null ? java.util.List.of() : x;
 	java.util.function.Function<String, String> nzsF = x -> x == null ? "" : x;
-	String magicName = classLabel;
+	// 카드 이름은 베이스(C493 — PoE1 C487 과 같이)
+	String baseLabel = baseName == null || baseName.isBlank() ? classLabel : (ko && baseNameKo != null && !baseNameKo.isBlank() ? baseNameKo : baseName);
+	String magicName = baseLabel;
+	// 레어 이름(C499) — 레어가 될 때 지은 종류별 무작위 이름(영 · 한)
+	String shownName = ko && itemNameKo != null && !itemNameKo.isBlank() ? itemNameKo : itemName;
 	if ("MAGIC".equals(rarity)) {
 		String pre = lines.stream().filter(l -> "prefix".equals(l.gen())).map(l -> ko && l.nameKo() != null ? l.nameKo() : l.name()).findFirst().orElse(null);
 		String suf = lines.stream().filter(l -> "suffix".equals(l.gen())).map(l -> ko && l.nameKo() != null ? l.nameKo() : l.name()).findFirst().orElse(null);
-		magicName = (pre != null ? pre + " " : "") + classLabel + (suf != null ? " " + suf : "");
+		magicName = (pre != null ? pre + " " : "") + baseLabel + (suf != null ? " " + suf : "");
 	}
 	boolean rare = "RARE".equals(rarity);
 	// 영어 화면이면 엔진 문구를 영어로(C447 UX QA)
@@ -142,6 +153,9 @@
 	<%-- hx-sync(C396) — 징조 체크의 다시 그리기와 화폐 요청이 겹치면 나중 것이 앞 것을 대체(늦게 온 다시 그리기가 엑잘 결과를 덮던 경합) --%>
 	<form hx-post="/poe2/htmx/craft" hx-target="#craft2-emu" hx-swap="outerHTML" hx-sync="this:replace" class="space-y-2 min-w-0" hx-include="#craft2-opt-result input[name=optJob]" data-craft-toolbar>
 		<input type="hidden" name="poolKey" value="${item.poolKey()}">
+		<input type="hidden" name="base" value="${baseName}">
+		<input type="hidden" name="itemName" value="${itemName}">
+		<input type="hidden" name="itemNameKo" value="${itemNameKo}">
 		<input type="hidden" name="ilvl" value="${item.ilvl()}">
 		<input type="hidden" name="state" value="${stateJson}">
 		<input type="hidden" name="history" value="${historyJson}">
@@ -156,11 +170,18 @@
 
 		<%-- 등급 + 기본 화폐(C436 검토) — 등급을 바꾸면 이 구역만 다시 그린다(열린 묶음 · 강조 · 미리보기 유지) --%>
 		<div class="space-y-3" data-craft-basic>
+		<div class="flex flex-wrap items-center justify-between gap-2">
 		<div class="flex flex-wrap items-center gap-3 text-sm" data-craft-tier hx-post="/poe2/htmx/craft" hx-trigger="change" hx-include="closest form" hx-vals='{"action":"VIEW"}' hx-target="closest [data-craft-basic]" hx-select="[data-craft-basic]" hx-select-oob="#craft2-pool" hx-swap="outerHTML" hx-sync="closest form:replace">
 			<span class="text-xs text-base-content/70">${ko ? "화폐 등급" : "Currency tier"}</span>
 			<label class="flex items-center gap-1"><input type="radio" name="tier" value="" id="craft2-tier-normal" class="radio radio-xs" checked="${tier.isEmpty()}">${ko ? "기본" : "Normal"}</label>
 			<label class="flex items-center gap-1" title="${ko ? "진화 · 확장 옵션 레벨 44 이상, 제왕 · 엑잘 · 카오스 35 이상" : "Transmute/Augment level 44+, Regal/Exalt/Chaos 35+"}"><input type="radio" name="tier" value="greater" id="craft2-tier-greater" class="radio radio-xs" checked="${"greater".equals(tier)}">${ko ? "상위" : "Greater"}</label>
 			<label class="flex items-center gap-1" title="${ko ? "진화 · 확장 옵션 레벨 70 이상, 제왕 · 엑잘 · 카오스 50 이상" : "Transmute/Augment level 70+, Regal/Exalt/Chaos 50+"}"><input type="radio" name="tier" value="perfect" id="craft2-tier-perfect" class="radio radio-xs" checked="${"perfect".equals(tier)}">${ko ? "완벽한" : "Perfect"}</label>
+		</div>
+		<%-- 되돌리기 · 새 일반 아이템(10-21 C546 사용자 요청 "화폐랑 되돌리기 · 새 일반 아이템은 기능이 다르니 라인을 바꾸는 등 다른 위치에") — 화폐 칸 밖 이 줄 오른쪽, 화폐 타일과 다른 한 줄 단추. 신성 · 축복 · 머리카락 · 바알은 화폐라 칸에 남김 --%>
+		<div class="flex flex-wrap items-center gap-1.5 text-xs" data-craft-controls data-swap-anchor-key="controls">
+			<button type="submit" name="action" value="UNDO" class="btn btn-sm gap-1 btn-outline" data-craft-action="UNDO" disabled="${historySize == 0}" aria-keyshortcuts="Control+Z" title="${ko ? "한 단계 되돌리기(Ctrl+Z) — 여러 단계는 아래 단계 기록의 '여기로'" : "Undo one step (Ctrl+Z) — use 'Go here' in the step history for more"}"><span class="text-base leading-none" aria-hidden="true">↶</span><span>${ko ? "되돌리기" : "Undo"} (${historySize})</span></button>
+			<button type="submit" name="action" value="RESET" class="btn btn-sm gap-1 btn-ghost border border-base-300 ${recommend != null && ("NEW_BASE".equals(recommend.actionId()) || "FALLBACK".equals(recommend.actionId())) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-craft-action="RESET" title="${ko ? "새 일반 아이템 — 기록 · 쓴 화폐도 처음부터" : "New normal item — history and spending start over"}"><span class="text-base leading-none" aria-hidden="true">↺</span><span>${ko ? "새 일반 아이템" : "New normal item"}</span></button>
+		</div>
 		</div>
 
 		<%-- 같은 화폐의 좌 · 우 징조를 함께 걸면 인게임 오류(C437) — 버튼을 미리 끔(C439 UX QA) --%>
@@ -176,10 +197,8 @@
 					<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${label}</span>
 				</button>
 			@endfor
-			<%-- 신성 · 바알 · 머리카락 · 되돌리기 · 새 아이템도 같은 줄(C454 — CoE 처럼 제작 수단은 위 한 줄) --%>
+			<%-- 신성 · 바알 · 머리카락도 같은 줄(C454 — CoE 처럼 제작 수단은 위 한 줄). 되돌리기 · 새 아이템은 C546 에서 위 줄로 --%>
 			<span class="hidden sm:block w-px self-stretch bg-base-300 mx-1" aria-hidden="true"></span>
-			<button type="submit" name="action" value="UNDO" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-outline" data-craft-action="UNDO" disabled="${historySize == 0}" title="${ko ? "한 단계 되돌리기 — 여러 단계는 아래 단계 기록의 '여기로'" : "Undo one step — use 'Go here' in the step history for more"}"><span class="text-lg leading-none" aria-hidden="true">↶</span><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "되돌리기" : "Undo"} (${historySize})</span></button>
-			<button type="submit" name="action" value="RESET" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300 ${recommend != null && ("NEW_BASE".equals(recommend.actionId()) || "FALLBACK".equals(recommend.actionId())) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-craft-action="RESET" title="${ko ? "새 일반 아이템 — 기록 · 쓴 화폐도 처음부터" : "New normal item — history and spending start over"}"><span class="text-lg leading-none" aria-hidden="true">↺</span><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "새 일반 아이템" : "New normal item"}</span></button>
 			<button type="submit" name="action" value="VAAL" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="VAAL" disabled="${item.corrupted() || item.sanctified()}" title="${ko ? "바알 오브 — 타락시키며 결과 중 하나(변화 없음 · 옵션 1~3개 무작위 · 타락 인챈트 · 부위 특수). 타락하면 더는 못 바꿉니다" : "Vaal Orb — corrupts with one outcome (none, 1–3 randomized, enchantment, slot special). Corrupted items cannot be modified"}"><img src="/poe-data/poe2/icons/currency/currencycorrupt.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "바알 오브" : "Vaal Orb"}</span></button>
 			<button type="submit" name="action" value="DIVINE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="DIVINE" disabled="${item.corrupted() || item.sanctified() || lines.stream().allMatch(Poe2Craft.Line::fractured)}" title="${ko ? "신성한 오브 — 옵션 수치를 다시 굴립니다(분열 옵션 제외). 되돌리기로 돌아가지 않습니다" : "Divine Orb — rerolls modifier values (not fractured). Not undoable"}"><img src="/poe-data/poe2/icons/currency/currencymodvalues.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "신성한 오브" : "Divine Orb"}</span></button>
 			<button type="submit" name="action" value="FORESEE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="FORESEE" disabled="${!foresee.isEmpty()}" title="${ko ? "히네코라의 머리카락 — 다음에 쓸 화폐의 결과를 미리 봅니다. 아이템이 바뀌면 사라집니다" : "Hinekora's Lock — foresee the result of the next currency. Lost once the item is modified"}"><img src="/poe-data/poe2/icons/currency/currencyhinekoraslock.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "히네코라의 머리카락" : "Hinekora's Lock"}</span></button>
@@ -246,6 +265,19 @@
 			java.util.Map<String, String> groupWhy2 = new java.util.HashMap<>();
 			groupWhy2.put("essence", essWhy2); groupWhy2.put("bone", boneWhy2); groupWhy2.put("omen", omenWhy2);
 		}
+		<%-- 목표까지 연타(C508, PoE1 C506 짝) — 아래 시뮬레이터 목표(☆)를 모두 채우거나 최대까지, 지금 고른 등급 · 에센스로(징조 없이) --%>
+		<div class="flex flex-wrap items-center gap-1.5 text-xs" data-craft-spam>
+			<span class="text-base-content/70">${ko ? "목표까지 연타" : "Repeat until targets"}</span>
+			<select name="spamAct" class="select select-xs select-bordered h-7 min-h-0" aria-label="${ko ? "연타할 화폐" : "Currency to repeat"}" data-craft-spam-act>
+				<option value="CHAOS">${ko ? "카오스 오브(고른 등급)" : "Chaos Orb (picked tier)"}</option>
+				<option value="EXALT">${ko ? "엑잘티드 오브(고른 등급)" : "Exalted Orb (picked tier)"}</option>
+				<option value="ESSENCE">${ko ? "에센스(고른 것)" : "Essence (picked)"}</option>
+			</select>
+			<label class="flex items-center gap-1">${ko ? "최대" : "max"}<input type="number" name="spamMax" min="1" max="5000" value="1000" class="input input-xs input-bordered w-20 h-7 min-h-0" aria-label="${ko ? "최대 횟수" : "Maximum uses"}"></label>
+			<button type="button" name="action" value="SPAM" class="btn btn-xs btn-ghost border border-base-300" hx-post="/poe2/htmx/craft" hx-target="#craft2-emu" hx-swap="outerHTML" hx-include="#craft2-emu > form, [data-craft2-calc-form] [name^='t_']" data-craft-spam-run title="${ko ? "아래 시뮬레이터에서 고른 목표를 모두 채울 때까지(또는 최대 횟수까지) 같은 화폐를 씁니다 — 쓴 화폐는 한 단계에 개수로" : "Uses the same currency until all simulator targets are met (or the limit) — recorded as one step with the count"}">${ko ? "연타" : "Repeat"}</button>
+			<span class="text-base-content/60" data-craft-spam-expect aria-live="polite"></span>
+			@if(spamNote != null)<span class="text-success" data-craft-spam-note>${spamNote}</span>@endif
+		</div>
 		<div class="flex flex-wrap items-center gap-1.5" data-craft-means data-toggle-exclusive role="group" aria-label="${ko ? "다른 제작 수단" : "Other crafting methods"}">
 			@if(!essences.isEmpty())
 			<button type="button" class="btn btn-sm ${"essence".equals(recGroup) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""}" data-toggle-active-class="btn-primary" data-toggle-details='#craft2-emu details[data-craft-group="essence"]' aria-expanded="${"ESSENCE".equals(lastAction) ? "true" : "false"}" data-craft-means-open="essence" disabled="${groupWhy2.get("essence") != null}" data-craft-means-blocked="${groupWhy2.get("essence")}" title="${groupWhy2.get("essence")}">${ko ? "에센스" : "Essences"}</button>
@@ -562,9 +594,26 @@
 	<div class="text-xs rounded-box border border-warning/60 bg-warning/10 px-2 py-1 max-w-[24rem]" data-craft-arm-hint hidden><span class="font-semibold" data-craft-arm-label></span> ${ko ? "— 아이템을 누르면 적용(계속 누르면 연타) · 단추를 다시 누르거나 Esc 로 취소" : "— click the item to apply (keep clicking to repeat) · click the button again or Esc to cancel"}</div>
 	<div class="poe-tooltip ${rarCls} w-full max-w-[24rem]" style="border-color:${headColor}" data-craft-tooltip data-craft-arm-target>
 		<div class="poe-tt-band">
-			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${headColor}" data-craft-name>${rare ? (ko ? "레어 아이템" : "Rare Item") : magicName}</div>
-			@if(rare)<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${headColor}">${classLabel}</div>@endif
+			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${headColor}" data-craft-name>${rare ? (shownName != null && !shownName.isBlank() ? shownName : (ko ? "레어 아이템" : "Rare Item")) : magicName}</div>
+			@if(rare)<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${headColor}" data-craft-base>${baseLabel}</div>@endif
 		</div>
+		<%-- 베이스 속성 · 요구 사항(C498 — PoE1 C490 짝, 상세 화면과 같은 baseProps · requirements 조각에 굴린 영어 옵션 문구, 요구 레벨 = max(베이스, 옵션 최고 레벨 × 0.8)) --%>
+		@if(craftBase != null)
+			!{
+				java.util.List<String> cbMods = new java.util.ArrayList<>();
+				for (Poe2Craft.Line cl : lines) {
+					java.util.List<String> cx = cl.en() == null ? java.util.List.of() : cl.en();
+					Long crs = rolls.get(cl.id());
+					for (int ci = 0; ci < cx.size(); ci++) {
+						cbMods.add(crs != null ? net.luversof.web.gate.poe.PoeModRoll.roll(cx.get(ci), cx.get(ci), crs + ci) : cx.get(ci));
+					}
+				}
+				int cbModLevel = lines.stream().mapToInt(Poe2Craft.Line::level).max().orElse(0);
+				int cbReqLevel = Math.max(craftBase.reqLevel() == null ? 0 : craftBase.reqLevel(), (int) Math.floor(cbModLevel * 0.8));
+			}
+			<div data-craft-props>@template.poe2.htmx.baseProps(base = craftBase, lines = cbMods)</div>
+			<div data-craft-req>@template.poe2.htmx.requirements(level = cbReqLevel, base = craftBase, explicits = cbMods)</div>
+		@endif
 		@if(qAmt > 0 && qInfo != null)
 			<%-- 기폭제 퀄리티(C386) — "Quality (Life Modifiers): +20%", 값은 보강 색 --%>
 			<div class="px-4 pt-2 -mb-1 text-center text-[13px] text-white/60" data-craft-quality="${qKey}">${ko ? "퀄리티 (" + qInfo.qualityLabelKo() + "): " : "Quality (" + qInfo.qualityLabel() + "): "}<span style="color:#8888ff">+${qAmt}%</span></div>
@@ -580,8 +629,9 @@
 						java.util.List<String> mx = ko && !nz.apply(l.ko()).isEmpty() ? l.ko() : nz.apply(l.en());
 						boolean isNew = added != null && added.contains(l.id());
 						String color = l.fractured() ? "#a29162" : "#8888ff";
+						java.util.List<String> exTags = ko ? (view.tagsKo() == null ? null : view.tagsKo().get(l.id())) : (view.tags() == null ? null : view.tags().get(l.id()));
 					}
-					<div class="${isNew ? "bg-white/10 rounded" : ""}" style="color:${color}" data-craft-line="${l.id()}" data-craft-gen="${l.gen()}" data-craft-new="${isNew ? "1" : null}">
+					<div class="${isNew ? "bg-white/10 rounded" : ""}" style="color:${color}" data-craft-line="${l.id()}" data-craft-gen="${l.gen()}" data-craft-new="${isNew ? "1" : null}" data-craft-ex-name="${ko ? l.nameKo() : l.name()}" data-craft-ex-tier="${l.tierRank() == null ? null : String.valueOf(l.tierRank())}" data-craft-ex-tags="${exTags == null ? null : String.join(", ", exTags)}" data-craft-ex-fractured="${l.fractured() ? "1" : null}">
 						<span class="text-[10px] font-mono text-white/60 block leading-tight" data-craft-line-tag title="${(ko ? l.nameKo() : l.name()) + (ko ? " · 옵션 레벨 " : " · level ") + l.level()}">${"corrupted".equals(l.gen()) ? (ko ? "타락" : "Corrupted") : "prefix".equals(l.gen()) ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}@if(l.tierRank() != null) T${l.tierRank()}@endif@if(!l.id().startsWith("Veiled") && !l.id().startsWith("Unrevealed") && (ko ? (l.nameKo() != null && !l.nameKo().isBlank()) : (l.name() != null && !l.name().isBlank()))) <span class="font-sans text-white/75" data-craft-line-affix>${(ko ? l.nameKo() : l.name()).replaceFirst("^- ", "")}</span>@endif!{ java.util.List<String> lineTags = ko ? (view.tagsKo() == null ? null : view.tagsKo().get(l.id())) : (view.tags() == null ? null : view.tags().get(l.id())); }@if(lineTags != null && !lineTags.isEmpty()) <span class="font-sans text-white/50" data-craft-line-tags>— ${String.join(", ", lineTags)}</span>@endif@if(l.fractured()) ${ko ? "분열" : "Fractured"}@endif@if(l.id().startsWith("Unrevealed")) ${ko ? "미공개" : "Unrevealed"}@elseif(l.id().startsWith("AbyssMod")) ${ko ? "훼손" : "Desecrated"}@endif@if(boostedIds.contains(l.id()) && qAmt > 0) <span data-craft-line-boosted title="${ko ? "기폭제 퀄리티로 수치 +" + qAmt + "%" : "Values +" + qAmt + "% from catalyst quality"}">${ko ? "퀄리티" : "Q"}</span>@endif</span>
 						@for(int i = 0; i < mx.size(); i++)
 							!{ Long rs = rolls.get(l.id()); }
@@ -602,6 +652,16 @@
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-craft-corrupted>${ko ? "타락" : "Corrupted"}</div>
 		@endif
+	</div>
+	<%-- 내보내기 · 공유(C493 — PoE1 C489 와 같은 단추, 게임 고급 복사 형식) --%>
+	<div class="flex flex-wrap items-center gap-1" data-craft-export-row>
+		<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-export-text data-ex-lang="${ko ? "ko" : "en"}" data-ex-class="${classLabel}" data-ex-rarity="${rarity}" data-ex-ilvl="${item.ilvl()}" data-ex-name="${rare ? shownName : magicName}" data-ex-base="${baseLabel}" data-ex-corrupted="${item.corrupted() ? "1" : null}" title="${ko ? "게임 고급 복사(Ctrl+Alt+C)와 같은 형식 — 이 화면 붙여넣기 · 다른 도구에 그대로" : "Same format as the game's advanced copy (Ctrl+Alt+C) — paste back here or into other tools"}">${ko ? "아이템 글 복사" : "Copy item text"}</button>
+		<%-- 아이템 붙여넣기(10-21 C545 사용자 요청 "아이템 글 복사가 있는데 인게임에서 복사한 아이템 붙여넣기도") — 복사의 짝. 클립보드를 읽어 게임 글이면 바로 시작, 못 읽으면 위 붙여넣기 칸(C485)을 연다 --%>
+		<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-import-paste title="${ko ? "게임에서 아이템에 마우스를 올리고 Ctrl+C(옵션 이름 · 등급까지는 Ctrl+Alt+C)로 복사한 글을 붙여 넣어 그 아이템으로 시작합니다 — 클립보드 읽기를 허용하지 않으면 위쪽 붙여넣기 칸이 열립니다(Ctrl+V)" : "Paste an item copied in game with Ctrl+C (Ctrl+Alt+C for mod names and tiers) and start from it — if clipboard access is blocked, the paste box above opens (Ctrl+V)"}">${ko ? "아이템 붙여넣기" : "Paste item"}</button>
+		<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-to-targets title="${ko ? "카드의 옵션(그 등급 이상)을 아래 시뮬레이터 목표로 — '지금 아이템에서 시작'을 꺼서 이 아이템을 처음부터 만드는 최소 비용을 봅니다" : "Use the card's modifiers (that tier or better) as simulator targets — unchecks 'start from current item' to price crafting this item from scratch"}">${ko ? "옵션을 계산기 목표로" : "Use as calculator targets"}</button>
+		<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-share-link title="${ko ? "지금 아이템을 여는 주소(새로 고침 · 공유)" : "A link that opens this item (reload · share)"}">${ko ? "공유 링크 복사" : "Copy share link"}</button>
+		<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-inv-save title="${ko ? "지금 아이템을 이 브라우저의 보관함에 담아 둡니다 — 위쪽 '보관함'에서 그대로 다시 열기" : "Keeps this item in this browser's inventory — reopen it from 'Inventory' above"}">${ko ? "보관함에 저장" : "Save to inventory"}</button>
+		<span class="text-xs text-success" data-craft-export-msg aria-live="polite"></span>
 	</div>
 	<div class="text-xs text-base-content/70" data-craft-slots>
 		${ko ? "접두 " : "Prefixes "}${prefixes}/${view.maxPerGen()} · ${ko ? "접미 " : "Suffixes "}${suffixes}/${view.maxPerGen()}
@@ -635,39 +695,29 @@
 			<%-- 축성된 아이템(C397 검토) — 더 바꿀 수 없다(타락과 같게 확률 표 대신 안내) --%>
 			<p class="text-sm text-base-content/70" data-craft-pool-sanctified>${ko ? "축성된 아이템이라 더 붙을 수 있는 옵션이 없습니다." : "Sanctified — no modifier can be added."}</p>
 		@endif
-		@for(String gen : item.corrupted() || item.sanctified() ? java.util.List.<String>of() : java.util.List.of("prefix", "suffix"))
-			!{ java.util.List<Poe2Craft.PoolLine> g = pool.stream().filter(p -> gen.equals(p.gen())).toList(); }
-			@if(!g.isEmpty())
-				<details class="rounded-box border border-base-300 bg-base-100" open>
-					<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${"prefix".equals(gen) ? (ko ? "접두" : "Prefixes") : (ko ? "접미" : "Suffixes")} · ${g.size()}${ko ? "개" : ""}</summary>
-					<div class="px-3 pb-3 overflow-x-auto">
-						<table class="table table-xs">
-							<thead><tr><th>${ko ? "등급" : "Tier"}</th><th>${ko ? "옵션" : "Modifier"}</th><th class="text-right">${ko ? "레벨" : "Level"}</th><th class="text-right">${ko ? "확률" : "Chance"}</th><th class="text-right">${ko ? "넣기" : "Add"}</th></tr></thead>
-							<tbody>
-								@for(Poe2Craft.PoolLine p : g)
-									!{ java.util.List<String> mx = ko && !nz.apply(p.ko()).isEmpty() ? p.ko() : nz.apply(p.en()); }
-									<%-- 고른 등급에 걸린 줄(C445) = 확률 0 · 흐리게, 직접 편집 넣기는 그대로 --%>
-									<tr data-craft-pool-line="${p.id()}" data-craft-pool-zero="${p.chance() <= 0 ? "1" : null}" class="${p.chance() <= 0 ? "opacity-50" : null}">
-										<td class="font-mono text-xs">@if(p.tierRank() != null)T${p.tierRank()}@endif</td>
-										<td class="min-w-0 wrap-anywhere">
-											@for(String t : mx)
-												<div>$unsafe{PoeText.highlightValues(t)}</div>
-											@endfor
-										</td>
-										<td class="text-right font-mono">${p.level()}</td>
-										<td class="text-right font-mono">@if(p.chance() <= 0)-@else${String.format("%.2f%%", p.chance() * 100)}@endif</td>
-										<td class="text-right whitespace-nowrap">
-											<button type="button" name="action" value="MANUAL_ADD:${p.id()}" class="btn btn-xs btn-ghost border border-base-300" hx-post="/poe2/htmx/craft" hx-target="#craft2-emu" hx-swap="outerHTML" hx-include="#craft2-emu > form" data-craft-action="MANUAL_ADD:${p.id()}" title="${ko ? "이 옵션을 넣기" : "Add this modifier"}">+</button>
-											<button type="button" name="action" value="MANUAL_ADD:${p.id()}:F" class="btn btn-xs btn-ghost border border-base-300" hx-post="/poe2/htmx/craft" hx-target="#craft2-emu" hx-swap="outerHTML" hx-include="#craft2-emu > form" data-craft-action="MANUAL_ADD:${p.id()}:F" title="${ko ? "분열 옵션으로 넣기" : "Add as fractured"}">${ko ? "+분열" : "+frac"}</button>
-										</td>
-									</tr>
-								@endfor
-							</tbody>
-						</table>
-					</div>
-				</details>
-			@endif
-		@endfor
+		<%-- 결과 분포(10-21 C534, PoE1 C533 짝 · craftofexile 대량 모의) — 지금 고른 등급 · 켠 징조로, 에센스는 고른 것. 확률 표 위에 · 화폐를 써도 열린 채로(C543, PoE1 C542 짝) --%>
+		<details class="rounded-box border border-base-300" data-craft-dist-panel data-craft-group="dist">
+			<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "결과 분포 — 대량 모의" : "Result distribution — mass simulation"} <span class="text-xs font-normal text-base-content/70">${ko ? "· 이 화폐를 지금 아이템에 여러 번 쓰면 어떤 옵션이 몇 % 로 붙나(고른 등급 · 켠 징조)" : "· which modifiers this currency gives on the current item (picked tier · active omens)"}</span></summary>
+			<div class="px-3 pb-3 space-y-2">
+				<div class="flex flex-wrap items-center gap-2 text-xs">
+					<select name="distAct" class="select select-xs select-bordered h-7 min-h-0" aria-label="${ko ? "모의할 화폐" : "Currency to simulate"}" data-craft-dist-act>
+						<option value="CHAOS">${ko ? "카오스 오브" : "Chaos Orb"}</option>
+						<option value="EXALT">${ko ? "엑잘티드 오브" : "Exalted Orb"}</option>
+						<option value="ALCHEMY">${ko ? "연금술의 오브" : "Orb of Alchemy"}</option>
+						<option value="TRANSMUTE">${ko ? "진화의 오브" : "Orb of Transmutation"}</option>
+						<option value="AUGMENTATION">${ko ? "확장의 오브" : "Orb of Augmentation"}</option>
+						<option value="REGAL">${ko ? "제왕의 오브" : "Regal Orb"}</option>
+						<option value="ESSENCE">${ko ? "고른 에센스" : "Picked essence"}</option>
+					</select>
+					<button type="button" class="btn btn-xs btn-ghost border border-base-300" hx-post="/poe2/htmx/craft/dist" hx-include="#craft2-emu > form, [data-craft-dist-act]" hx-target="#craft-dist-result" hx-swap="outerHTML" data-craft-dist-run>${ko ? "5천 번 모의" : "Simulate 5,000"}</button>
+				</div>
+				<div id="craft-dist-result" data-craft-dist></div>
+			</div>
+		</details>
+		@if(!item.corrupted() && !item.sanctified())
+			<%-- 계열 묶음(10-21 C543, PoE1 C542 짝) — 계열 한 줄 + 누르면 등급 상세 · 붙은 옵션 표시 --%>
+			@template.poe2.htmx.craftPoolGroups(poolGroups = poolGroups, lines = lines, added = added, max = view.maxPerGen(), prefixes = prefixes, suffixes = suffixes, lineTags = ko ? (view.tagsKo() == null ? java.util.Map.of() : view.tagsKo()) : (view.tags() == null ? java.util.Map.of() : view.tags()))
+		@endif
 		<p class="text-xs text-base-content/70">${ko ? "PoE2 옵션 가중치는 게임 데이터에 없어(GGG 비공개) 붙을 수 있는 옵션 중 균등으로 굴립니다 — 확률은 참고용입니다. 옵션 수 · 등급 최소 레벨 · 징조 규칙은 poe2db 문구 기준." : "PoE2 modifier weights are hidden, so rolls are uniform among eligible modifiers — odds are indicative only. Counts, tier minimum levels and omen rules follow poe2db text."}</p>
 	</section>
 	<%-- 단계 기록(C453 사용자 요청) — 단계마다 쓴 화폐 · 그 단계 · 누적 비용 · 변화, 아무 단계로 되돌리기(이 단계 뒤 상태로) --%>

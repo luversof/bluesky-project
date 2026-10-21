@@ -109,10 +109,25 @@ public final class Poe2Craft {
       Integer tierRank,
       int level,
       double chance,
-      String family) {}
+      String family,
+      // 옵션 태그(C544 — API PoolLine 과 같게)
+      List<String> tags,
+      List<String> tagsKo) {}
 
   /** 시뮬레이터(C352) — 목표 하나 = anyOf 중 하나. */
   public record Target(List<String> anyOf) {}
+
+  /** 화폐 한 번의 목표 적중 확률(C500) — omens = 지금 켠 징조, arg = 화폐 등급 · 에센스. */
+  public record HitRequest(
+      Item item,
+      List<Target> targets,
+      List<HitAction> actions,
+      List<String> omens,
+      Integer samples) {}
+
+  public record HitAction(String action, String arg) {}
+
+  public record Hit(String action, String arg, Double chance, String error) {}
 
   /** 최적 조합 요청(C461) — upper · upperLabel = 아는 가장 싼 방법(없으면 API 가 연금 연타로 잰다). */
   /** recombChance = 재조합 성공 확률(C472, 인게임 값) — 있으면 최적 조합이 재조합기(반쪽 합치기)도 쓴다. */
@@ -122,13 +137,43 @@ public final class Poe2Craft {
       Integer budgetMs,
       Double upper,
       String upperLabel,
-      Integer recombChance) {}
+      Integer recombChance,
+      java.util.Map<String, Double> prices) {
+
+    /** 지금 요청의 사용자 가격(C530)을 싣는다. */
+    public OptimizeRequest(
+        Item item,
+        List<Target> targets,
+        Integer budgetMs,
+        Double upper,
+        String upperLabel,
+        Integer recombChance) {
+      this(
+          item,
+          targets,
+          budgetMs,
+          upper,
+          upperLabel,
+          recombChance,
+          net.luversof.web.gate.poe.CraftPrices.current());
+    }
+  }
 
   /** recombChance = 반쪽 재조합(C409) 비교에 쓸 재조합 성공 확률(인게임 값 1~100, 없으면 비교 안 함). */
-  public record CalcRequest(Item item, List<Target> targets, Integer runs, Integer recombChance) {
+  public record CalcRequest(
+      Item item,
+      List<Target> targets,
+      Integer runs,
+      Integer recombChance,
+      java.util.Map<String, Double> prices) {
 
     public CalcRequest(Item item, List<Target> targets, Integer runs) {
-      this(item, targets, runs, null);
+      this(item, targets, runs, null, net.luversof.web.gate.poe.CraftPrices.current());
+    }
+
+    /** 지금 요청의 사용자 가격(C530)을 싣는다. */
+    public CalcRequest(Item item, List<Target> targets, Integer runs, Integer recombChance) {
+      this(item, targets, runs, recombChance, net.luversof.web.gate.poe.CraftPrices.current());
     }
   }
 
@@ -203,9 +248,36 @@ public final class Poe2Craft {
   /**
    * 에뮬레이터에서 쓴 단계 하나(C366) — action = 화폐(FORESEE = 히네코라의 머리카락), arg = 등급 · 에센스 · 뼈, omens = 쓰인 징조 키.
    */
-  public record SpentStep(String action, String arg, List<String> omens) {}
+  public record SpentStep(String action, String arg, List<String> omens, Integer times) {
 
-  public record SpentRequest(String poolKey, List<SpentStep> steps) {}
+    /** 한 번 쓴 단계(times 없음 = 1, C508 목표까지 연타 전 모양). */
+    public SpentStep(String action, String arg, List<String> omens) {
+      this(action, arg, omens, null);
+    }
+  }
+
+  /** 목표까지 연타(C508) 요청 · 결과. */
+  public record SpamRequest(
+      Item item, String action, String arg, List<Target> targets, Integer max) {}
+
+  public record SpamResult(View view, int tries, boolean met, List<String> added, String error) {}
+
+  public record SpentRequest(
+      String poolKey, List<SpentStep> steps, java.util.Map<String, Double> prices) {
+
+    /** 지금 요청의 사용자 가격(C530)을 싣는다. */
+    public SpentRequest(String poolKey, List<SpentStep> steps) {
+      this(poolKey, steps, net.luversof.web.gate.poe.CraftPrices.current());
+    }
+  }
+
+  /** 결과 분포(C534, API 와 짝) — 결과는 PoE1 모양(PoeCraft.DistResult)과 같다. */
+  public record DistRequest(
+      Item item, String action, String arg, List<String> omens, Integer samples) {}
+
+  /** 제작 시세(C530, API 와 짝) — 디바인. */
+  public record Prices(
+      String league, String fetchedAt, String unit, java.util.Map<String, Double> divine) {}
 
   public record SpentLine(
       String name, String nameKo, double count, Double unitDivine, Double subtotalDivine) {}
@@ -247,6 +319,19 @@ public final class Poe2Craft {
 
   /** 화폐 적용 — arg = 화폐 등급(greater · perfect, 없으면 기본), omens = 이번에 걸 징조 키. */
   public record ApplyRequest(Item item, String action, String arg, List<String> omens, Long seed) {}
+
+  /** 아이템 가져오기(C486) — text = 게임에서 Ctrl+C · Ctrl+Alt+C 로 복사한 글. */
+  public record ImportRequest(String text) {}
+
+  /** 가져온 결과 — error 면 item 은 null, values = 옵션 id → 복사 글 수치. */
+  public record ImportResult(
+      Item item,
+      String baseName,
+      String baseNameKo,
+      String itemName,
+      java.util.Map<String, List<Double>> values,
+      List<String> warnings,
+      String error) {}
 
   /** 재조합기(C407) — left = 지금 아이템, right = 보관한 재료, chance = 인게임 화면의 성공 확률(%), lucky = 재조합의 징조. */
   public record RecombineRequest(

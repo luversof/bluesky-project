@@ -187,4 +187,114 @@ public final class MonthlyDividendPayDayUtil {
         && net.luversof.web.gate.util.KoreanHolidays.holidayName(date, java.util.Locale.KOREAN)
             == null;
   }
+
+  /** 기준일과 지급일이 둘 다 있는 한 건(2026-10-20). */
+  public record RecordedPayout(String symbol, LocalDate recordDate, LocalDate payDate) {}
+
+  /**
+   * 한 종목의 지급 규칙 &mdash; 기준일 규칙(월중 · 월말, {@link KrxRecordDateUtil#recordDate}) + 기준일 뒤 지급까지의 거래일 수.
+   *
+   * @param payoutWindow {@code MID_MONTH} · {@code MONTH_END}
+   * @param lagTradingDays 기준일 다음 거래일부터 세어 지급일까지(대부분 2 - 결제일)
+   * @param sampleCount 근거가 된 지급 건수
+   */
+  public record SettlementRule(String payoutWindow, int lagTradingDays, int sampleCount) {}
+
+  /** 기준일 규칙을 확인할 최근 건수. 이만큼(적으면 있는 만큼, 최소 2) 모두 같은 규칙이어야 쓴다. */
+  private static final int RULE_CHECK_RECENT = 3;
+
+  /**
+   * 종목별 지급 규칙(2026-10-20 자율 개선).
+   *
+   * <p>예상 지급일을 최빈 일자로 놓으면 달마다 1 ~ 3 일씩 어긋났다 &mdash; 지급일은 날짜가 아니라 <b>기준일 + 결제 거래일</b>로 정해지기 때문이다. 실측
+   * 2026-10-20(지급 이력 209 건, 2025-10 ~ 2026-10, 그 전 이력만으로 맞히기): 최빈 일자 + 영업일 보정은 119 건(57%) 정확, 기준일
+   * 규칙 + 종목별 거래일 수는 209 건(100%). 7 월 월중이 15 일(수) 기준 &rarr; 20 일(월) 지급이었던 것도 17 일 제헌절을 건너뛴 2 거래일이다.
+   *
+   * <p>최근 {@value #RULE_CHECK_RECENT} 건의 기준일이 모두 한 규칙(월중 15 일 · 월말 마지막 거래일, 아니면 앞 거래일)과 맞는 종목만 규칙을
+   * 준다 &mdash; 안 맞는 종목은 예전 추정(최빈 일자)을 그대로 쓴다. 거래일 수는 최빈값(같으면 최근 것).
+   */
+  public static Map<String, SettlementRule> settlementRules(List<RecordedPayout> payouts) {
+    Map<String, List<RecordedPayout>> bySymbol = new LinkedHashMap<>();
+    if (payouts != null) {
+      for (RecordedPayout payout : payouts) {
+        if (payout == null
+            || payout.recordDate() == null
+            || payout.payDate() == null
+            || payout.payDate().isBefore(payout.recordDate())) {
+          continue;
+        }
+        String symbol = normalizeSymbol(payout.symbol());
+        if (symbol != null) {
+          bySymbol.computeIfAbsent(symbol, key -> new java.util.ArrayList<>()).add(payout);
+        }
+      }
+    }
+    Map<String, SettlementRule> rules = new LinkedHashMap<>();
+    for (Map.Entry<String, List<RecordedPayout>> entry : bySymbol.entrySet()) {
+      List<RecordedPayout> list = entry.getValue();
+      list.sort(Comparator.comparing(RecordedPayout::recordDate));
+      if (list.size() < 2) {
+        continue;
+      }
+      List<RecordedPayout> recent =
+          list.subList(Math.max(0, list.size() - RULE_CHECK_RECENT), list.size());
+      String window = null;
+      for (String candidate : new String[] {"MID_MONTH", "MONTH_END"}) {
+        boolean all = true;
+        for (RecordedPayout payout : recent) {
+          LocalDate expected =
+              KrxRecordDateUtil.recordDate(
+                  java.time.YearMonth.from(payout.recordDate()), candidate);
+          if (!payout.recordDate().equals(expected)) {
+            all = false;
+            break;
+          }
+        }
+        if (all) {
+          window = candidate;
+          break;
+        }
+      }
+      if (window == null) {
+        continue;
+      }
+      Map<Integer, Integer> lagCount = new HashMap<>();
+      Map<Integer, LocalDate> lagLatest = new HashMap<>();
+      for (RecordedPayout payout : list) {
+        int lag = KrxRecordDateUtil.tradingDaysBetween(payout.recordDate(), payout.payDate());
+        lagCount.merge(lag, 1, Integer::sum);
+        lagLatest.merge(
+            lag, payout.recordDate(), (left, right) -> left.isAfter(right) ? left : right);
+      }
+      int lag =
+          lagCount.entrySet().stream()
+              .max(
+                  Comparator.comparingInt(Map.Entry<Integer, Integer>::getValue)
+                      .thenComparing(candidate -> lagLatest.get(candidate.getKey())))
+              .map(Map.Entry::getKey)
+              .orElse(-1);
+      if (lag < 0 || lag > 10) {
+        continue;
+      }
+      rules.put(entry.getKey(), new SettlementRule(window, lag, list.size()));
+    }
+    return rules;
+  }
+
+  /**
+   * 그 달({@code payMonth})에 들어올 지급일. 월중은 그 달 기준일, 월말은 앞 달 기준일에서 센다. 지급일이 그 달을 벗어나면 null(예전 추정으로).
+   */
+  public static LocalDate projectedPayDate(java.time.YearMonth payMonth, SettlementRule rule) {
+    if (payMonth == null || rule == null) {
+      return null;
+    }
+    java.time.YearMonth recordMonth =
+        "MID_MONTH".equals(rule.payoutWindow()) ? payMonth : payMonth.minusMonths(1);
+    LocalDate record = KrxRecordDateUtil.recordDate(recordMonth, rule.payoutWindow());
+    if (record == null) {
+      return null;
+    }
+    LocalDate pay = KrxRecordDateUtil.plusTradingDays(record, rule.lagTradingDays());
+    return java.time.YearMonth.from(pay).equals(payMonth) ? pay : null;
+  }
 }

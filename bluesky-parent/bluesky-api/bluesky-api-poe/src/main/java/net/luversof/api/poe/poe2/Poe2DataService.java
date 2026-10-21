@@ -150,7 +150,8 @@ public class Poe2DataService {
     mods =
         read("mods.json", Poe2.ModData.class, new Poe2.ModData("", List.of(), Map.of(), List.of()));
     augments = read("augments.json", Poe2.AugmentData.class, new Poe2.AugmentData("", List.of()));
-    rareWords = read("rare-name-words.json", RareWords.class, new RareWords(Map.of(), Map.of()));
+    rareWords =
+        read("rare-name-words.json", RareWords.class, new RareWords(Map.of(), Map.of(), Map.of()));
     uniques = read("uniques.json", Poe2.UniqueData.class, new Poe2.UniqueData("", List.of()));
     treeIndex = null;
     modTranslator = null;
@@ -430,7 +431,8 @@ public class Poe2DataService {
                     p.variant(),
                     p.variantKo(),
                     p.bases() == null ? 0 : p.bases().size(),
-                    p.groups() == null ? 0 : p.groups().size()))
+                    p.groups() == null ? 0 : p.groups().size(),
+                    p.bases() == null ? List.of() : p.bases()))
         .toList();
   }
 
@@ -521,9 +523,13 @@ public class Poe2DataService {
   }
 
   // 레어 이름 낱말(tools/poe2-extract/rare-names2.mjs — 게임 Words 접두 · 접미, 10-04 C144)
-  private record RareWords(Map<String, String> prefix, Map<String, String> suffix) {}
+  // classWords = 종류 → 그 종류에 생기는 낱말(10-20 C499, Words SpawnWeight_Tags). 옛 파일엔 없어 null
+  private record RareWords(
+      Map<String, String> prefix, Map<String, String> suffix, Map<String, ClassWords> classWords) {}
 
-  private volatile RareWords rareWords = new RareWords(Map.of(), Map.of());
+  private record ClassWords(List<String> prefix, List<String> suffix) {}
+
+  private volatile RareWords rareWords = new RareWords(Map.of(), Map.of(), Map.of());
 
   private volatile Map<String, String> affixNameKo;
 
@@ -545,6 +551,24 @@ public class Poe2DataService {
       affixNameKo = m;
     }
     return en == null ? null : m.get(en);
+  }
+
+  /** 그 종류의 무작위 레어 이름 {영, 한}(10-20 C499, 제작 에뮬레이터) — 낱말표가 없으면 null. */
+  public String[] randomRareName(String itemClass, java.util.random.RandomGenerator rng) {
+    RareWords w = rareWords;
+    ClassWords cw = w.classWords() == null ? null : w.classWords().get(itemClass);
+    if (cw == null || cw.prefix() == null || cw.suffix() == null) {
+      return null;
+    }
+    if (cw.prefix().isEmpty() || cw.suffix().isEmpty()) {
+      return null;
+    }
+    String en =
+        cw.prefix().get(rng.nextInt(cw.prefix().size()))
+            + " "
+            + cw.suffix().get(rng.nextInt(cw.suffix().size()));
+    String ko = rareNameKo(en);
+    return new String[] {en, ko == null ? en : ko};
   }
 
   /** 레어 이름 "Mind Reach" → "마음의 역량"(두 낱말 모두 표에 있을 때만, 아니면 null). */

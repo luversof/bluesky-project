@@ -95,7 +95,12 @@ class EmptyDataRenderTest {
           "stock/htmx/fragments/components/filterBadge.jte",
           // 달력은 그릴 달이 정해져야 의미가 있다. 자료 없이 부르면 달을 지어내는 대신 아무것도 그리지 않는다
           // (배당 캘린더 페이지는 자료가 없으면 이 조각을 아예 부르지 않고 빈 상태 문구를 띄운다).
-          "stock/fragments/dividendCalendarMonth.jte");
+          "stock/fragments/dividendCalendarMonth.jte",
+          // 금융소득 종합과세 기준(2026-10-20): 배당 조회가 실패해 합을 모르면 구역째 숨긴다 - 0 으로 그리면
+          // "기준까지 2,000 만 원 남음" 으로 읽힌다.
+          "stock/fragments/financialIncomeThreshold.jte",
+          // 다음 기준일 · 매수 마감(2026-10-20): 지급 시기 규칙이 없으면(행 0) 적을 날짜가 없다.
+          "stock/fragments/recordDateBuyBy.jte");
 
   @Test
   void 데이터가_없어도_조각이_예외를_내지_않는다() throws IOException {

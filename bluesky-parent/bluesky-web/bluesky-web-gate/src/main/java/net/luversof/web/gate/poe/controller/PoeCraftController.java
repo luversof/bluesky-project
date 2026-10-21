@@ -77,9 +77,79 @@ public class PoeCraftController {
   private final PoeDataClient dataClient;
   private final JsonMapper json = JsonMapper.builder().build();
 
-  public PoeCraftController(PoeCraftClient craftClient, PoeDataClient dataClient) {
+  public PoeCraftController(
+      PoeCraftClient craftClient,
+      PoeDataClient dataClient,
+      net.luversof.web.gate.poe.httpexchange.PoeBuildClient buildClient) {
     this.craftClient = craftClient;
     this.dataClient = dataClient;
+    this.buildClient = buildClient;
+  }
+
+  private final net.luversof.web.gate.poe.httpexchange.PoeBuildClient buildClient;
+
+  /** PoB 빌드 코드(C525) — 공백 없는 base64(url) 긴 글. */
+  public static boolean buildCode(String text) {
+    String t = text == null ? "" : text.strip();
+    return t.length() >= 200 && t.matches("[A-Za-z0-9_+/=\\-]+");
+  }
+
+  /**
+   * 빌드 아이템 → PoB 아이템 글(C525) — 붙여넣기 해석기(PoeCraftImportService.fromPob)가 읽는 모양: Rarity · 이름 · 베이스 ·
+   * Quality · Implicits: N · {crafted}/{fractured} 머리표 · Corrupted · 영향력 줄.
+   */
+  public static String pobText(net.luversof.web.gate.poe.dto.PoeBuild.BuildItem bi) {
+    StringBuilder sb = new StringBuilder("Rarity: ").append(bi.rarity()).append('\n');
+    String name = bi.name() == null ? "" : bi.name().strip();
+    if ("RARE".equals(bi.rarity())) {
+      sb.append(name.isEmpty() ? "Rare Item" : name)
+          .append('\n')
+          .append(bi.baseType())
+          .append('\n');
+    } else if ("MAGIC".equals(bi.rarity()) && !name.isEmpty()) {
+      sb.append(name).append('\n');
+    } else {
+      sb.append(bi.baseType()).append('\n');
+    }
+    if (bi.quality() > 0) {
+      sb.append("Quality: ").append(bi.quality()).append('\n');
+    }
+    List<String> imp = bi.implicitLines() == null ? List.of() : bi.implicitLines();
+    sb.append("Implicits: ").append(imp.size()).append('\n');
+    for (int i = 0; i < imp.size(); i++) {
+      String k = kindAt(bi.implicitKinds(), i);
+      sb.append("crafted".equals(k) || "enchant".equals(k) ? "{crafted}" : "")
+          .append(imp.get(i))
+          .append('\n');
+    }
+    List<String> mods = bi.modLines() == null ? List.of() : bi.modLines();
+    for (int i = 0; i < mods.size(); i++) {
+      String k = kindAt(bi.modKinds(), i);
+      sb.append("crafted".equals(k) ? "{crafted}" : "fractured".equals(k) ? "{fractured}" : "")
+          .append(mods.get(i))
+          .append('\n');
+    }
+    if (bi.corrupted()) {
+      sb.append("Corrupted").append('\n');
+    }
+    java.util.Map<String, String> inf =
+        java.util.Map.of(
+            "shaper", "Shaper Item",
+            "elder", "Elder Item",
+            "crusader", "Crusader Item",
+            "hunter", "Hunter Item",
+            "redeemer", "Redeemer Item",
+            "warlord", "Warlord Item");
+    for (String f : bi.influences() == null ? List.<String>of() : bi.influences()) {
+      if (inf.containsKey(f)) {
+        sb.append(inf.get(f)).append('\n');
+      }
+    }
+    return sb.toString();
+  }
+
+  private static String kindAt(List<String> kinds, int i) {
+    return kinds != null && i < kinds.size() && kinds.get(i) != null ? kinds.get(i) : "";
   }
 
   @GetMapping(value = "/poe/craft", produces = MediaType.TEXT_HTML_VALUE)
@@ -88,6 +158,17 @@ public class PoeCraftController {
       @RequestParam(required = false, defaultValue = "") String variant,
       @RequestParam(required = false, defaultValue = "") String influence,
       @RequestParam(required = false, defaultValue = "84") int ilvl,
+      // 가져온 아이템(C485) — 아이템 JSON · 굴림 씨앗 JSON · 못 알아본 줄 안내. 같은 종류 · 변형 · 영향력 · 아이템 레벨일 때만
+      @RequestParam(required = false) String state,
+      @RequestParam(required = false) String rolls,
+      @RequestParam(required = false) String importNote,
+      // 베이스(C487, craftofexile 처럼 베이스를 고른다 — 옵션 풀은 종류 · 변형이 정하고, 베이스는 카드 이름 · 표시) · 가져온 레어 이름
+      @RequestParam(required = false) String base,
+      @RequestParam(required = false) String itemName,
+      // 레어 이름 한국어(C518 — 공유 · 보관 링크, 없으면 itemName 그대로)
+      @RequestParam(required = false) String itemNameKo,
+      // 군집 주얼 패시브 수(C531, 크기마다 범위 — 없으면 최소)
+      @RequestParam(required = false) Integer passives,
       Model model) {
     List<PoeModItemClass> classes = dataClient.modItemClasses();
     PoeModItemClass active =
@@ -112,6 +193,33 @@ public class PoeCraftController {
     model.addAttribute("activeInfluence", influence);
     model.addAttribute("ilvl", Math.max(1, Math.min(100, ilvl)));
     model.addAttribute("classLabel", active == null ? "" : label(active));
+    String vKey = v;
+    List<net.luversof.web.gate.poe.dto.PoeBaseItem> bases =
+        active == null
+            ? List.of()
+            : basesFor(
+                active.itemClass(),
+                active.variants().isEmpty() ? "" : vKey,
+                active.variants().stream()
+                    .filter(x -> x.key().equals(vKey))
+                    .map(PoeModItemClass.Variant::bases)
+                    .findFirst()
+                    .orElse(null));
+    net.luversof.web.gate.poe.dto.PoeBaseItem chosen =
+        bases.stream()
+            .filter(b -> b.name().equals(base))
+            .findFirst()
+            .orElse(bases.isEmpty() ? null : bases.get(0));
+    model.addAttribute("bases", bases);
+    model.addAttribute("craftBase", chosen);
+    model.addAttribute("craftPriceList", priceList(active == null ? "" : active.itemClass(), v));
+    model.addAttribute(
+        "craftEnchant", enchantOf(classes, active == null ? "" : active.itemClass(), v, passives));
+    model.addAttribute("passives", clusterRange(v) == null ? null : clusterPassives(v, passives));
+    model.addAttribute("baseName", chosen == null ? "" : chosen.name());
+    model.addAttribute("baseNameKo", chosen == null ? "" : nz(chosen.nameKo()));
+    model.addAttribute("itemName", "");
+    model.addAttribute("itemNameKo", "");
     if (active != null) {
       // 계산기 목표 고르기 — 일반 → 레어 기준 전체 풀(지금 에뮬레이터 상태와 무관, 10-15 C336)
       model.addAttribute(
@@ -129,17 +237,421 @@ public class PoeCraftController {
         veiled = List.of();
       }
       model.addAttribute("calcVeiled", veiled);
+      // 계산기 목표 칸 덧붙임(10-21 C548 사용자 요청 "타락 · 정복자 · 제작 옵션이 안 보인다") — 못 읽으면 칸을 그리지 않는다
+      try {
+        model.addAttribute(
+            "calcExtras",
+            craftClient.calcExtras(
+                active.itemClass(),
+                v == null ? "" : v,
+                influence == null ? "" : influence,
+                clamp(ilvl)));
+      } catch (RuntimeException e) {
+        // 덧붙임 없이
+      }
     }
     if (active != null) {
-      fill(
-          model,
+      PoeCraft.Item start =
           new PoeCraft.Item(
-              active.itemClass(), v, influence, clamp(ilvl), "NORMAL", List.of(), false),
-          List.of(),
-          null,
-          null);
+              active.itemClass(), v, influence, clamp(ilvl), "NORMAL", List.of(), false);
+      PoeCraft.Item imported = state == null || state.isBlank() ? null : parse(state, null);
+      if (imported != null && same(imported, start)) {
+        start = imported;
+        rollsModel(
+            model, ids(start), fixedIds(start), parseRolls(rolls == null ? "{}" : rolls), false);
+        model.addAttribute("importNote", importNote);
+        model.addAttribute("imported", true);
+        model.addAttribute("itemName", nz(itemName));
+        model.addAttribute(
+            "itemNameKo", itemNameKo == null || itemNameKo.isBlank() ? nz(itemName) : itemNameKo);
+      }
+      fill(model, start, List.of(), null, null);
     }
     return "poe/craft";
+  }
+
+  /**
+   * 게임 아이템 붙여넣기(10-20 C485, craftofexile 의 Import item) — 복사 글을 API 가 아이템으로 읽고, 수치에 맞는 굴림 씨앗을 찾아 그
+   * 아이템으로 에뮬레이터를 연다(HX-Redirect — 주소에 아이템이 들어 있어 공유 · 새로 고침에도 그대로). 못 읽으면 이유를 그 자리에.
+   */
+  /**
+   * 제작할 아이템 검색(10-21 C527, craftofexile 'Search for a craftable item') — 베이스 이름(영 · 한)으로 종류 · 변형 ·
+   * 베이스를 한 번에 연다. 변형은 변형의 베이스 목록(주얼 색 · 심연 · 군집 = 첫 인챈트) → 속성 변형(방어구) 순, 제작 대상 아닌 베이스(고유 전용 등)는 뺀다.
+   */
+  @GetMapping(value = "/poe/htmx/craft/base-search", produces = MediaType.TEXT_HTML_VALUE)
+  public String baseSearch(
+      @RequestParam(required = false, defaultValue = "") String q, Model model) {
+    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+    List<String[]> hits = new ArrayList<>();
+    String term = q.strip();
+    if (term.length() >= 2) {
+      List<PoeModItemClass> classes;
+      List<net.luversof.web.gate.poe.dto.PoeBaseItem> found;
+      try {
+        classes = dataClient.modItemClasses();
+        found = dataClient.searchBaseItems(term, null);
+      } catch (RuntimeException e) {
+        classes = List.of();
+        found = List.of();
+      }
+      for (net.luversof.web.gate.poe.dto.PoeBaseItem b : found) {
+        PoeModItemClass c =
+            classes.stream()
+                .filter(x -> x.itemClass().equals(b.itemClass()))
+                .findFirst()
+                .orElse(null);
+        if (c == null) {
+          continue;
+        }
+        String v = "";
+        String vLabel = null;
+        if (c.variants() != null && !c.variants().isEmpty()) {
+          PoeModItemClass.Variant hit =
+              c.variants().stream()
+                  .filter(x -> x.bases() != null && x.bases().contains(b.name()))
+                  .findFirst()
+                  .orElse(null);
+          if (hit == null) {
+            String av = attributeVariant(b);
+            hit = c.variants().stream().filter(x -> x.key().equals(av)).findFirst().orElse(null);
+          }
+          if (hit == null) {
+            continue; // 제작 대상 아닌 베이스(분광 · 무궁한 주얼 등)
+          }
+          v = hit.key();
+          vLabel = ko && hit.nameKo() != null ? hit.nameKo() : hit.name();
+        }
+        String url =
+            "/poe/craft?itemClass="
+                + enc(c.itemClass())
+                + (v.isEmpty() ? "" : "&variant=" + enc(v))
+                + "&base="
+                + enc(b.name());
+        String name = ko && b.nameKo() != null && !b.nameKo().isBlank() ? b.nameKo() : b.name();
+        String cls = ko && c.nameKo() != null ? c.nameKo() : c.name();
+        hits.add(
+            new String[] {
+              url,
+              name,
+              cls
+                  + (vLabel == null || v.startsWith("cluster_") || vLabel.equals(name)
+                      ? ""
+                      : " · " + vLabel)
+            });
+        if (hits.size() >= 15) {
+          break;
+        }
+      }
+    }
+    model.addAttribute("baseHits", hits);
+    model.addAttribute("baseQuery", term);
+    return "poe/htmx/craftBaseSearch";
+  }
+
+  @PostMapping(value = "/poe/htmx/craft/import", produces = MediaType.TEXT_HTML_VALUE)
+  public String importItem(
+      @RequestParam(required = false, defaultValue = "") String text,
+      Model model,
+      jakarta.servlet.http.HttpServletResponse response) {
+    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+    if (buildCode(text)) {
+      // PoB 빌드 코드(10-21 C525, 사용자 요청 '아이템을 복사해서도 시뮬레이션') — 빌드의 일반 · 매직 · 희귀 아이템 목록, 고르면 그 아이템(PoB
+      // 글로 되살려)으로
+      net.luversof.web.gate.poe.dto.PoeBuild b;
+      try {
+        b = buildClient.importBuild(text.strip());
+      } catch (RuntimeException e) {
+        b = null;
+      }
+      if (b == null || b.items() == null) {
+        model.addAttribute(
+            "importError", ko ? "PoB 빌드 코드를 읽지 못했습니다" : "Could not read the PoB build code");
+        return "poe/htmx/craftImportMsg";
+      }
+      List<String[]> picks = new ArrayList<>();
+      for (net.luversof.web.gate.poe.dto.PoeBuild.BuildItem bi : b.items()) {
+        if (bi.baseType() == null
+            || !java.util.Set.of("RARE", "MAGIC", "NORMAL").contains(bi.rarity())) {
+          continue;
+        }
+        String nm = ko && bi.nameKo() != null && !bi.nameKo().isBlank() ? bi.nameKo() : bi.name();
+        String bt =
+            ko && bi.baseTypeKo() != null && !bi.baseTypeKo().isBlank()
+                ? bi.baseTypeKo()
+                : bi.baseType();
+        String slot = ko && bi.slotKo() != null ? bi.slotKo() : bi.slot();
+        String label =
+            (slot == null ? "" : slot + " · ")
+                + ("NORMAL".equals(bi.rarity()) || nm == null || nm.isBlank()
+                    ? bt
+                    : nm + " (" + bt + ")");
+        try {
+          picks.add(
+              new String[] {
+                label, bi.rarity(), json.writeValueAsString(java.util.Map.of("text", pobText(bi)))
+              });
+        } catch (RuntimeException e) {
+          // 이 아이템만 건너뛴다
+        }
+      }
+      model.addAttribute("buildItems", picks);
+      return "poe/htmx/craftImportBuild";
+    }
+    PoeCraft.ImportResult r;
+    try {
+      r =
+          craftClient.importItem(
+              new PoeCraft.ImportRequest(
+                  text.length() > 20_000 ? text.substring(0, 20_000) : text));
+    } catch (RuntimeException e) {
+      r = null;
+    }
+    if (r == null || r.error() != null || r.item() == null) {
+      model.addAttribute(
+          "importError", r == null ? (ko ? "가져오기에 실패했습니다" : "Import failed") : r.error());
+      model.addAttribute(
+          "importWarnings", r == null || r.warnings() == null ? List.of() : r.warnings());
+      return "poe/htmx/craftImportMsg";
+    }
+    PoeCraft.View v = craftClient.view(r.item());
+    java.util.Map<String, Long> seeds =
+        net.luversof.web.gate.poe.PoeCraftRollFit.fit(v.lines(), v.implicits(), r.values());
+    String note = String.join(" · ", r.warnings() == null ? List.of() : r.warnings());
+    if (note.length() > 400) {
+      note = note.substring(0, 400) + "…";
+    }
+    PoeCraft.Item it = v.item();
+    StringBuilder url = new StringBuilder("/poe/craft?itemClass=").append(enc(it.itemClass()));
+    url.append("&variant=").append(enc(nz(it.variant())));
+    url.append("&influence=").append(enc(nz(it.influence())));
+    url.append("&ilvl=").append(it.ilvl());
+    url.append("&state=").append(enc(json.writeValueAsString(it)));
+    url.append("&rolls=").append(enc(json.writeValueAsString(seeds)));
+    if (!note.isEmpty()) {
+      url.append("&importNote=").append(enc(note));
+    }
+    if (r.baseName() != null) {
+      url.append("&base=").append(enc(r.baseName()));
+    }
+    if (r.itemName() != null) {
+      url.append("&itemName=").append(enc(r.itemName()));
+    }
+    // 군집 주얼 패시브 수(C531) — 글의 'Adds N Passive Skills' · '패시브 스킬 N개 추가'
+    if (clusterRange(it.variant()) != null) {
+      java.util.regex.Matcher pm =
+          java.util.regex.Pattern.compile("(?:Adds (\\d+) Passive Skills|패시브 스킬 (\\d+)개 추가)")
+              .matcher(text);
+      if (pm.find()) {
+        url.append("&passives=").append(pm.group(1) != null ? pm.group(1) : pm.group(2));
+      }
+    }
+    response.setHeader("HX-Redirect", url.toString());
+    model.addAttribute("importError", null);
+    model.addAttribute("importWarnings", List.of());
+    return "poe/htmx/craftImportMsg";
+  }
+
+  /**
+   * 이 종류 · 변형의 베이스(C487) — 요구 속성으로 변형을 가르고(API PoeOptimizeService.attributeVariantOf 와 같은 규칙), 드롭
+   * 레벨 높은 순. 못 읽으면 빈 목록(카드는 종류 이름).
+   */
+  /**
+   * 군집 주얼 인챈트 줄(10-20 C514) — 변형에 인챈트가 있으면(Jewel 의 cluster_*) 화면 언어로, 없으면 null. classes 가 없으면 읽는다.
+   */
+  /** 군집 주얼 크기별 패시브 수 범위(C531, PoB ClusterJewels minNodes~maxNodes) — 대형 8~12 · 중형 4~6 · 소형 2~3. */
+  static final java.util.Map<String, int[]> CLUSTER_NODES =
+      java.util.Map.of(
+          "large", new int[] {8, 12}, "medium", new int[] {4, 6}, "small", new int[] {2, 3});
+
+  /** 변형(cluster_<크기>.<인챈트>)의 패시브 수 범위, 군집이 아니면 null. */
+  public static int[] clusterRange(String variant) {
+    if (variant == null || !variant.startsWith("cluster_") || variant.indexOf('.') < 9) {
+      return null;
+    }
+    return CLUSTER_NODES.get(variant.substring(8, variant.indexOf('.')));
+  }
+
+  /** 고른 패시브 수 — 범위 안으로, 없으면 최소. */
+  static int clusterPassives(String variant, Integer passives) {
+    int[] r = clusterRange(variant);
+    if (r == null) {
+      return 0;
+    }
+    return passives == null ? r[0] : Math.max(r[0], Math.min(r[1], passives));
+  }
+
+  private List<String> enchantOf(
+      List<PoeModItemClass> classes, String itemClass, String variant, Integer passives) {
+    List<String> lines = enchantOf(classes, itemClass, variant);
+    if (lines == null || lines.isEmpty() || clusterRange(variant) == null) {
+      return lines;
+    }
+    // 첫 줄 '패시브 스킬 N개 추가' · 'Adds N Passive Skills' 의 N 을 고른 수로(C531)
+    List<String> out = new ArrayList<>(lines);
+    out.set(
+        0, lines.get(0).replaceFirst("\\d+", String.valueOf(clusterPassives(variant, passives))));
+    return out;
+  }
+
+  private List<String> enchantOf(List<PoeModItemClass> classes, String itemClass, String variant) {
+    if (variant == null || !variant.startsWith("cluster_")) {
+      return null;
+    }
+    try {
+      List<PoeModItemClass> list = classes != null ? classes : dataClient.modItemClasses();
+      for (PoeModItemClass c : list) {
+        if (c.itemClass().equals(itemClass) && c.variants() != null) {
+          for (PoeModItemClass.Variant v : c.variants()) {
+            if (v.key().equals(variant)) {
+              boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+              return ko && v.enchantKo() != null ? v.enchantKo() : v.enchant();
+            }
+          }
+        }
+      }
+    } catch (RuntimeException e) {
+      return null;
+    }
+    return null;
+  }
+
+  /** 가격 직접 입력 칸의 화폐(C529) — 에뮬레이터가 쓰는 주요 화폐, 시세에 있는 것만. */
+  static final List<String> PRICE_NAMES =
+      List.of(
+          "Divine Orb",
+          "Exalted Orb",
+          "Orb of Alchemy",
+          "Orb of Alteration",
+          "Orb of Augmentation",
+          "Orb of Transmutation",
+          "Regal Orb",
+          "Orb of Scouring",
+          "Orb of Annulment",
+          "Vaal Orb",
+          "Blessed Orb",
+          "Fracturing Orb",
+          "Veiled Chaos Orb",
+          "Eldritch Chaos Orb",
+          "Eldritch Exalted Orb",
+          "Orb of Dominance",
+          "Awakener's Orb",
+          "Hinekora's Lock");
+
+  /** 가격 직접 입력 칸(C529) — [영어 이름, 한국어 이름, 시세 카오스]. 못 읽으면 빈 목록. */
+  private List<String[]> priceList(String itemClass, String variant) {
+    try {
+      PoeCraft.Prices p = craftClient.prices();
+      java.util.Map<String, String> ko = new java.util.HashMap<>();
+      try {
+        PoeCraft.Options o = craftClient.options(itemClass, variant);
+        if (o != null && o.currencies() != null) {
+          o.currencies().forEach(c -> ko.putIfAbsent(c.name(), c.nameKo()));
+        }
+      } catch (RuntimeException e) {
+        // 한국어 이름 없이
+      }
+      List<String[]> out = new ArrayList<>();
+      for (String n : PRICE_NAMES) {
+        Double v = p == null || p.chaos() == null ? null : p.chaos().get(n);
+        if (v != null) {
+          out.add(
+              new String[] {
+                n,
+                ko.getOrDefault(n, n),
+                v >= 100 ? String.format("%.0f", v) : String.format("%.2f", v)
+              });
+        }
+      }
+      return out;
+    } catch (RuntimeException e) {
+      return List.of();
+    }
+  }
+
+  /** 베이스가 변형을 정하는 종류(C514 · C516) — 주얼 색 · 군집 주얼 크기 · 심연 주얼 종류, 변형의 베이스 목록으로 거른다. */
+  static final java.util.Set<String> BASE_VARIANT_CLASSES = java.util.Set.of("Jewel", "AbyssJewel");
+
+  private List<net.luversof.web.gate.poe.dto.PoeBaseItem> basesFor(
+      String itemClass, String variant, List<String> variantBases) {
+    // 주얼 · 심연 주얼은 변형의 베이스(진홍 · 대형 군집 · 살인적인 눈 …)만 — 분광 · 무궁한 · 조립된 눈 같은 고유 전용 베이스는 어느 변형에도 없다
+    boolean byList = BASE_VARIANT_CLASSES.contains(itemClass);
+    try {
+      return dataClient.searchBaseItems(null, itemClass).stream()
+          .filter(b -> itemClass.equals(b.itemClass()))
+          .filter(b -> !byList || (variantBases != null && variantBases.contains(b.name())))
+          .filter(b -> variant.isEmpty() || byList || variant.equals(attributeVariant(b)))
+          .sorted(
+              java.util.Comparator.comparingInt(
+                      net.luversof.web.gate.poe.dto.PoeBaseItem::dropLevel)
+                  .reversed())
+          .toList();
+    } catch (RuntimeException e) {
+      return List.of();
+    }
+  }
+
+  /** 베이스 상세(C490 — 카드 속성 · 요구 사항) — 이름으로, 한 번 읽으면 기억. 못 읽으면 null(속성 칸 없음). */
+  private final java.util.Map<String, net.luversof.web.gate.poe.dto.PoeBaseItem> baseCache =
+      new java.util.concurrent.ConcurrentHashMap<>();
+
+  private net.luversof.web.gate.poe.dto.PoeBaseItem baseByName(String name) {
+    if (name == null || name.isBlank()) {
+      return null;
+    }
+    net.luversof.web.gate.poe.dto.PoeBaseItem b = baseCache.get(name);
+    if (b == null) {
+      try {
+        b = dataClient.baseItemByName(name);
+      } catch (RuntimeException e) {
+        b = null;
+      }
+      if (b != null) {
+        baseCache.put(name, b);
+      }
+    }
+    return b;
+  }
+
+  static String attributeVariant(net.luversof.web.gate.poe.dto.PoeBaseItem b) {
+    boolean str = b.reqStr() > 0;
+    boolean dex = b.reqDex() > 0;
+    boolean in = b.reqInt() > 0;
+    if (str && dex && in) {
+      return "str_dex_int_armour";
+    }
+    if (str && dex) {
+      return "str_dex_armour";
+    }
+    if (str && in) {
+      return "str_int_armour";
+    }
+    if (dex && in) {
+      return "dex_int_armour";
+    }
+    if (str) {
+      return "str_armour";
+    }
+    if (dex) {
+      return "dex_armour";
+    }
+    return in ? "int_armour" : "";
+  }
+
+  /** 새 레어 이름을 지을 때 — 레어가 아니었거나, 옛 옵션(분열 제외)이 하나도 안 남았다(다시 만들기). */
+  static boolean renamed(PoeCraft.Item before, PoeCraft.Item after) {
+    if (!"RARE".equals(before.rarity())) {
+      return true;
+    }
+    java.util.Set<String> old = new java.util.HashSet<>();
+    before.affixes().stream().filter(a -> !a.fractured()).forEach(a -> old.add(a.id()));
+    return !old.isEmpty()
+        && after.affixes().stream()
+            .filter(a -> !a.fractured())
+            .noneMatch(a -> old.contains(a.id()));
+  }
+
+  private static String enc(String s) {
+    return java.net.URLEncoder.encode(s == null ? "" : s, java.nio.charset.StandardCharsets.UTF_8);
   }
 
   /**
@@ -163,6 +675,13 @@ public class PoeCraftController {
       @RequestParam(required = false) String bench,
       @RequestParam(required = false) String harvest,
       @RequestParam(required = false, defaultValue = "") String classLabel,
+      // 베이스 이름 · 레어 이름(C487) — 카드 머리 표시용, 숨은 칸
+      @RequestParam(required = false, defaultValue = "") String baseName,
+      @RequestParam(required = false, defaultValue = "") String baseNameKo,
+      @RequestParam(required = false, defaultValue = "") String itemName,
+      @RequestParam(required = false, defaultValue = "") String itemNameKo,
+      // 군집 주얼 패시브 수(C531)
+      @RequestParam(required = false) Integer passives,
       // 짐승 제작 각인(10-15 C350) — 각인한 매직 아이템(JSON), 한 번 되돌리면 사라진다
       @RequestParam(required = false, defaultValue = "") String imprint,
       // 각인할 때 굴림 씨앗(C381) — 복원하면 그때 값으로
@@ -178,8 +697,25 @@ public class PoeCraftController {
       @RequestParam(required = false, defaultValue = "[]") String rollHistory,
       // 기폭제 "20%까지 한 번에"(C385)
       @RequestParam(required = false) String catalystFill,
+      // 목표까지 연타(C506) — 화폐 · 최대 횟수, 목표는 계산기 칸(t_*)을 함께 보낸다
+      @RequestParam(required = false, defaultValue = "CHAOS") String spamAct,
+      @RequestParam(required = false, defaultValue = "1000") int spamMax,
+      // 올플레임 제작(10-20 C523, 3.29 Deepwater) — 화폐 한 번에 실체 없는 복제본 N 개(2~4, 0 = 끔)
+      @RequestParam(required = false, defaultValue = "0") int ghost,
+      @RequestParam org.springframework.util.MultiValueMap<String, String> params,
       Model model) {
     model.addAttribute("classLabel", classLabel);
+    int ghostN = ghost >= 2 ? Math.min(4, ghost) : 0;
+    model.addAttribute("ghost", ghostN);
+    model.addAttribute("baseName", baseName);
+    model.addAttribute("baseNameKo", baseNameKo);
+    model.addAttribute("craftBase", baseByName(baseName));
+    model.addAttribute("craftEnchant", enchantOf(null, itemClass, variant, passives));
+    model.addAttribute(
+        "passives", clusterRange(variant) == null ? null : clusterPassives(variant, passives));
+    // 새로 시작하면 가져온 레어 이름은 버린다
+    model.addAttribute("itemName", rawAction.startsWith("RESET") ? "" : itemName);
+    model.addAttribute("itemNameKo", rawAction.startsWith("RESET") ? "" : itemNameKo);
     List<PoeCraft.SpentStep> spentLog = parseSpent(spent);
     java.util.Map<String, Long> rollMap = parseRolls(rolls);
     java.util.Map<String, Long> imprintRollMap = parseRolls(imprintRolls);
@@ -187,9 +723,16 @@ public class PoeCraftController {
     boolean reroll = false;
     boolean blessed = false;
     Long lock = seedOf(foresee);
+    // 올플레임 복제본 고르기(C523) — GHOST:씨앗:화폐 = 그 씨앗으로 그 화폐를 적용(고른 복제본 그대로, 미리 보기 적용과 같은 길)
+    String rawAct = rawAction;
+    if (rawAct.startsWith("GHOST:") && rawAct.indexOf(':', 6) > 6) {
+      int c = rawAct.indexOf(':', 6);
+      lock = seedOf(rawAct.substring(6, c));
+      rawAct = "COMMIT:" + rawAct.substring(c + 1);
+    }
     // "이대로 적용"(COMMIT:화폐) — 미리 본 씨앗 · 인자로 그 화폐를 적용
-    boolean commit = rawAction.startsWith("COMMIT:");
-    String action = commit ? rawAction.substring("COMMIT:".length()) : rawAction;
+    boolean commit = rawAct.startsWith("COMMIT:");
+    String action = commit ? rawAct.substring("COMMIT:".length()) : rawAct;
     PoeCraft.View preview = null;
     PoeCraft.Item imp = parse(imprint, null);
     String imprintError = null;
@@ -309,6 +852,80 @@ public class PoeCraftController {
       }
       // 장막 해제 셋을 새로(C483) — 되돌리기는 보통 다른 셋을 노리고 하는데 같은 셋이 다시 나왔다
       current = current.reseedVeil();
+    } else if ("SPAM".equals(action)) {
+      // 목표까지 연타(10-20 C506, craftofexile 시뮬레이터의 '될 때까지') — 계산기 목표를 모두 채우거나 최대 횟수까지 같은 화폐, 한 단계로 기록
+      String act = SPAM_ACTIONS.contains(spamAct) ? spamAct : "CHAOS";
+      String arg = argFor(act, null, essence, fossil, bench, harvest);
+      List<PoeCraft.Target> targets;
+      try {
+        targets = calcTargets(itemClass, variant, fresh, params, new ArrayList<>());
+      } catch (RuntimeException e) {
+        targets = List.of();
+      }
+      if (targets.isEmpty()) {
+        imprintError =
+            ko
+                ? "아래 계산기에서 목표를 먼저 고르세요(확률 표의 ☆ 로도 고를 수 있습니다)"
+                : "Pick targets in the calculator below first (or with ☆ in the odds table)";
+      } else {
+        PoeCraft.SpamResult res;
+        try {
+          res =
+              craftClient.spam(
+                  new PoeCraft.SpamRequest(
+                      current,
+                      act,
+                      arg,
+                      targets,
+                      Math.max(1, Math.min(5000, spamMax)),
+                      // 올플레임(C524) — 켜져 있고 쓸 수 있는 화폐면 한 번에 복제본 N 개 중 고르기
+                      ghostN >= 2 && GHOST_ACTS.contains(act) ? ghostN : null));
+        } catch (RuntimeException e) {
+          res = null;
+        }
+        if (res == null) {
+          imprintError = ko ? "연타에 실패했습니다" : "Repeat failed";
+        } else if (res.error() != null) {
+          imprintError = res.error();
+        } else if (res.tries() > 0) {
+          hist.add(current);
+          rollHist.add(new java.util.LinkedHashMap<>(rollMap));
+          while (hist.size() > HISTORY_MAX) {
+            hist.remove(0);
+          }
+          while (rollHist.size() > hist.size()) {
+            rollHist.remove(0);
+          }
+          current = res.view().item();
+          for (String id : res.added() == null ? List.<String>of() : res.added()) {
+            rollMap.remove(id);
+          }
+          spentLog.add(new PoeCraft.SpentStep(act, arg, res.tries()));
+          lastAction = action;
+          model.addAttribute(
+              "spamNote",
+              ko
+                  ? (res.met()
+                      ? res.tries()
+                          + "번 만에 목표를 모두 채웠습니다"
+                          + (ghostN >= 2 && GHOST_ACTS.contains(act)
+                              ? "(올플레임 복제본 " + ghostN + "개 중 고르기)"
+                              : "")
+                      : res.tries() < Math.max(1, Math.min(5000, spamMax))
+                          ? res.tries() + "번 쓴 뒤 더 쓸 수 없어 멈췄습니다(못 채움)"
+                          : res.tries() + "번 써도 못 채웠습니다(최대 횟수)")
+                  : (res.met()
+                      ? "Met all targets after " + res.tries() + " uses"
+                      : res.tries() < Math.max(1, Math.min(5000, spamMax))
+                          ? "Stopped after "
+                              + res.tries()
+                              + " uses — the currency can no longer be used (not met)"
+                          : "Not met after " + res.tries() + " uses (limit)"));
+        } else {
+          model.addAttribute(
+              "spamNote", ko ? "이미 목표를 모두 채운 아이템입니다" : "The item already meets all targets");
+        }
+      }
     } else if (ACTIONS.contains(
         action.contains(":") ? action.substring(0, action.indexOf(':')) : action)) {
       String act = action.contains(":") ? action.substring(0, action.indexOf(':')) : action;
@@ -316,6 +933,46 @@ public class PoeCraftController {
       String arg = commit ? previewArg : argFor(act, actArg, essence, fossil, bench, harvest);
       if ("CATALYST".equals(act) && !commit && "1".equals(catalystFill) && arg != null) {
         arg = arg + "*20";
+      }
+      if (ghostN >= 2
+          && !commit
+          && lock == null
+          && !current.corrupted()
+          && GHOST_ACTS.contains(act)) {
+        // 올플레임 제작(C523) — 원본에 각각 적용한 복제본 N 개(씨앗마다 미리 보기), 아이템은 그대로 두고 고르게 한다
+        List<PoeCraft.View> ghosts = new ArrayList<>();
+        List<String> ghostSeeds = new ArrayList<>();
+        for (int g = 0; g < ghostN; g++) {
+          long sd = java.util.concurrent.ThreadLocalRandom.current().nextLong();
+          PoeCraft.View gv =
+              craftClient.apply(new PoeCraft.ApplyRequest(current, act, essence, sd, arg));
+          if (gv.error() == null) {
+            ghosts.add(gv);
+            ghostSeeds.add(Long.toString(sd));
+          }
+        }
+        if (!ghosts.isEmpty()) {
+          model.addAttribute("ghosts", ghosts);
+          model.addAttribute("ghostSeeds", ghostSeeds);
+          model.addAttribute("ghostAction", action);
+          model.addAttribute("previewArg", "ESSENCE".equals(act) ? essence : arg);
+          fill(model, current, hist, null, action);
+          rollsModel(model, ids(current), fixedIds(current), rollMap, false);
+          historyModel(
+              model,
+              current,
+              hist,
+              spentLog,
+              spentModel(model, itemClass, spentLog),
+              rollStates(rollHist, rollMap));
+          model.addAttribute("rollHistJson", json.writeValueAsString(rollHist));
+          model.addAttribute("foresee", "");
+          model.addAttribute("imprintJson", imp == null ? "" : json.writeValueAsString(imp));
+          model.addAttribute(
+              "imprintRollsJson", imp == null ? "{}" : json.writeValueAsString(imprintRollMap));
+          recommend(model, optJob);
+          return "poe/htmx/craftEmu";
+        }
       }
       PoeCraft.View v =
           craftClient.apply(
@@ -329,8 +986,14 @@ public class PoeCraftController {
           model.addAttribute("previewArg", arg);
         }
         fill(model, current, hist, v.error() == null ? null : v, action);
-        historyModel(model, current, hist, spentLog, spentModel(model, itemClass, spentLog));
         rollsModel(model, ids(current), fixedIds(current), rollMap, false);
+        historyModel(
+            model,
+            current,
+            hist,
+            spentLog,
+            spentModel(model, itemClass, spentLog),
+            rollStates(rollHist, rollMap));
         model.addAttribute("rollHistJson", json.writeValueAsString(rollHist));
         model.addAttribute("preview", preview);
         model.addAttribute("foresee", lock.toString());
@@ -350,6 +1013,17 @@ public class PoeCraftController {
           rollHist.remove(0);
         }
         current = v.item();
+        // 레어가 되거나 다시 만들어지면(연금 · 제왕 · 카오스 · 에센스 재련 등 — 남은 옵션이 없으면) 새 레어 이름(C488, 인게임처럼 종류별 낱말)
+        if ("RARE".equals(current.rarity()) && renamed(before, current)) {
+          try {
+            java.util.Map<String, String> n = craftClient.rareName(itemClass);
+            model.addAttribute("itemName", n.getOrDefault("en", ""));
+            model.addAttribute("itemNameKo", n.getOrDefault("ko", ""));
+          } catch (RuntimeException e) {
+            model.addAttribute("itemName", "");
+            model.addAttribute("itemNameKo", "");
+          }
+        }
         // 새로 붙은 옵션은 새 씨앗(C378 검토 — 같은 id 가 다시 붙으면 옛 씨앗이 남아 매번 같은 값이었다), 임플리싯도
         boolean luckyFossil =
             "FOSSIL".equals(act)
@@ -370,8 +1044,14 @@ public class PoeCraftController {
                 act, "CATALYST".equals(act) ? catalystSpent(v.note(), arg) : arg));
       }
       fill(model, current, hist, v, lastAction);
-      historyModel(model, current, hist, spentLog, spentModel(model, itemClass, spentLog));
       rollsModel(model, ids(current), fixedIds(current), rollMap, false);
+      historyModel(
+          model,
+          current,
+          hist,
+          spentLog,
+          spentModel(model, itemClass, spentLog),
+          rollStates(rollHist, rollMap));
       model.addAttribute("rollHistJson", json.writeValueAsString(rollHist));
       // 아이템이 바뀌면 미리 보기 능력은 사라진다(인게임 "Modifying the item in any way removes the ability to foresee")
       model.addAttribute("foresee", lock == null || current != before ? "" : lock.toString());
@@ -382,9 +1062,15 @@ public class PoeCraftController {
       return "poe/htmx/craftEmu";
     }
     fill(model, current, hist, null, lastAction);
-    historyModel(model, current, hist, spentLog, spentModel(model, itemClass, spentLog));
     rollsModel(
         model, ids(current), blessed ? explicitIds(current) : fixedIds(current), rollMap, reroll);
+    historyModel(
+        model,
+        current,
+        hist,
+        spentLog,
+        spentModel(model, itemClass, spentLog),
+        rollStates(rollHist, rollMap));
     model.addAttribute("rollHistJson", json.writeValueAsString(rollHist));
     model.addAttribute("foresee", lock == null || current != before ? "" : lock.toString());
     if (imprintError != null) {
@@ -431,7 +1117,112 @@ public class PoeCraftController {
                     null));
     model.addAttribute("calc", res);
     model.addAttribute("targetLabels", labels);
+    // 올플레임 복제본 수(C532) — 에뮬레이터에서 켜 둔 값(common.ts 가 ghost 로 보냄), 2~4 가 아니면 표 없음
+    String g = params.getFirst("ghost");
+    int ghostN = 0;
+    try {
+      ghostN = g == null ? 0 : Integer.parseInt(g);
+    } catch (NumberFormatException e) {
+      ghostN = 0;
+    }
+    model.addAttribute("ghost", ghostN >= 2 && ghostN <= 4 ? ghostN : 0);
     return "poe/htmx/craftCalc";
+  }
+
+  /** 묶음(10-20 C522, craftofexile 계산기 '일부 맞춤') — 줄 끝 체크(t_grp:접두접미:계열)한 계열들. */
+  static java.util.Set<String> groupMembers(
+      org.springframework.util.MultiValueMap<String, String> params) {
+    java.util.Set<String> out = new java.util.LinkedHashSet<>();
+    for (String key : params.keySet()) {
+      if (key.startsWith("t_grp:") && "1".equals(params.getFirst(key))) {
+        out.add(key.substring("t_grp:".length()));
+      }
+    }
+    return out;
+  }
+
+  /**
+   * 묶음 목표(C522) — 체크한 계열 중 k(t_grpk)개 이상: 계열들의 등급 id 를 합친 목표 k 개(옵션 하나는 계열 하나에만 들어 '서로 다른 k 계열'과
+   * 같다). 계열 등급 칸을 고르면 그 등급 이상, 안 고르면 모든 등급. 계산기 · 적중 확률 · 연타 · 전략 · 최적 조합이 같은 목표로.
+   */
+  void groupTargets(
+      org.springframework.util.MultiValueMap<String, String> params,
+      java.util.Set<String> members,
+      List<PoeCraft.PoolLine> pool,
+      List<PoeCraft.Target> targets,
+      List<String> labels) {
+    if (members.isEmpty()) {
+      return;
+    }
+    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+    List<String> ids = new ArrayList<>();
+    List<String> names = new ArrayList<>();
+    for (String fam : members) {
+      int rank = 99;
+      try {
+        rank = Integer.parseInt(params.getFirst("t_" + fam));
+      } catch (RuntimeException e) {
+        rank = 99;
+      }
+      int r = rank;
+      List<PoeCraft.PoolLine> in =
+          pool.stream()
+              .filter(p -> (p.gen() + ":" + p.family()).equals(fam))
+              .filter(p -> p.tierRank() != null && p.tierRank() <= r)
+              .sorted(java.util.Comparator.comparing(PoeCraft.PoolLine::tierRank))
+              .toList();
+      if (in.isEmpty()) {
+        continue;
+      }
+      in.forEach(p -> ids.add(p.id()));
+      names.add(spanLabel(in, ko) + (r < 99 ? " (T1" + (r > 1 ? "~T" + r : "") + ")" : ""));
+    }
+    if (names.isEmpty()) {
+      return;
+    }
+    int k;
+    try {
+      k = Integer.parseInt(params.getFirst("t_grpk"));
+    } catch (RuntimeException e) {
+      k = 1;
+    }
+    k = Math.max(1, Math.min(names.size(), k));
+    for (int i = 0; i < k; i++) {
+      targets.add(new PoeCraft.Target(List.copyOf(ids)));
+    }
+    labels.add(
+        (ko
+                ? "묶음 " + names.size() + "개 중 " + k + "개 이상: "
+                : "At least " + k + " of " + names.size() + ": ")
+            + String.join(" · ", names));
+  }
+
+  /**
+   * 빈 자리 조건(10-20 C519, craftofexile 계산기 'open affix') — t_open:prefix · t_open:suffix = 그 쪽에 남아야 할
+   * 빈 자리 수(목표 하나 = 자리 하나). 이 칸이면 목표 · 이름을 넣고 true.
+   */
+  static boolean openTarget(
+      String fam, String value, List<PoeCraft.Target> targets, List<String> labels) {
+    if (!"open:prefix".equals(fam) && !"open:suffix".equals(fam)) {
+      return false;
+    }
+    int n;
+    try {
+      n = Math.max(0, Math.min(3, Integer.parseInt(value)));
+    } catch (RuntimeException e) {
+      n = 0;
+    }
+    boolean pre = fam.endsWith("prefix");
+    for (int i = 0; i < n; i++) {
+      targets.add(new PoeCraft.Target(List.of(pre ? "@open:prefix" : "@open:suffix")));
+    }
+    if (n > 0) {
+      labels.add(
+          net.luversof.web.gate.poe.PoeText.isKorean()
+              ? "빈 " + (pre ? "접두" : "접미") + " 자리 " + n + "개"
+              : n + " open " + (pre ? "prefix" : "suffix"));
+    }
+    return true;
   }
 
   /** 계산기 목표(계열마다 고른 최소 등급 · 장막 해제 옵션) — 계산기 · 최적 조합이 같이 쓴다(C457). labels 에 화면 이름. */
@@ -441,15 +1232,149 @@ public class PoeCraftController {
       PoeCraft.Item item,
       org.springframework.util.MultiValueMap<String, String> params,
       List<String> labels) {
+    return calcTargets(itemClass, variant, item, params, labels, null, false);
+  }
+
+  /**
+   * gens(null 이면 안 씀) = 목표마다 prefix · suffix · implicit(엘드리치) · null(묶음 · 빈 자리) — 전략 모의가 접두/접미 목표를
+   * 고른다(C550). explicitOnly = 엘드리치 임플리싯 목표를 뺀다(전략 모의는 명시 옵션만). labels 는 화면 이름(묶음 · 빈 자리는 목표 여럿에 이름
+   * 하나). 패키지 공개 = 쪽 표시 시험(PoeCraftTargetSidesTest).
+   */
+  List<PoeCraft.Target> calcTargets(
+      String itemClass,
+      String variant,
+      PoeCraft.Item item,
+      org.springframework.util.MultiValueMap<String, String> params,
+      List<String> labels,
+      List<String> gens,
+      boolean explicitOnly) {
     List<PoeCraft.PoolLine> pool = craftClient.pool(new PoeCraft.PoolRequest(item, "RARE"));
     List<PoeCraft.Target> targets = new ArrayList<>();
+    // 목표마다 쪽(C550) — 앞의 빈 칸(묶음 · 빈 자리)은 null 로 채우고 이 목표의 쪽
+    java.util.function.Consumer<String> gen =
+        g -> {
+          if (gens != null) {
+            while (gens.size() < targets.size() - 1) {
+              gens.add(null);
+            }
+            gens.add(g);
+          }
+        };
     boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
     List<PoeCraft.VeiledLine> veiled = null;
+    // 탐광 · 엘드리치 목표(C549) — 덧붙임에서 문구 · 등급 id
+    PoeCraft.CalcExtras ext = null;
+    java.util.Set<String> grp = groupMembers(params);
+    groupTargets(params, grp, pool, targets, labels);
     for (String key : params.keySet()) {
       if (!key.startsWith("t_")) {
         continue;
       }
       String fam = key.substring(2);
+      if (openTarget(fam, params.getFirst(key), targets, labels)) {
+        continue;
+      }
+      if (fam.startsWith("delve:") || fam.startsWith("eld:") || fam.startsWith("ess:")) {
+        String val = params.getFirst(key);
+        if (val == null || val.isBlank()) {
+          continue;
+        }
+        if (ext == null) {
+          try {
+            ext = craftClient.calcExtras(itemClass, nz(variant), nz(item.influence()), item.ilvl());
+          } catch (RuntimeException e) {
+            ext = null;
+          }
+        }
+        if (ext == null) {
+          continue;
+        }
+        if (fam.startsWith("delve:")) {
+          String did = fam.substring("delve:".length());
+          PoeCraft.DelveLine dl =
+              ext.delve() == null
+                  ? null
+                  : ext.delve().stream().filter(x -> x.id().equals(did)).findFirst().orElse(null);
+          if (dl == null || !"1".equals(val)) {
+            continue;
+          }
+          targets.add(new PoeCraft.Target(List.of(did)));
+          gen.accept(dl.gen());
+          List<String> dt = ko && dl.ko() != null && !dl.ko().isEmpty() ? dl.ko() : dl.en();
+          labels.add(String.join(", ", dt == null ? List.of() : dt) + (ko ? " (탐광)" : " (delve)"));
+        } else if (fam.startsWith("ess:")) {
+          // 에센스 전용 옵션(C551) — 고른 에센스 등급 이상의 보장 옵션 id
+          int min;
+          try {
+            min = Integer.parseInt(val);
+          } catch (RuntimeException e) {
+            continue;
+          }
+          String ef = fam.substring("ess:".length());
+          PoeCraft.EssenceOnly eo =
+              ext.essenceOnly() == null
+                  ? null
+                  : ext.essenceOnly().stream()
+                      .filter(x -> x.family().equals(ef))
+                      .findFirst()
+                      .orElse(null);
+          if (eo == null) {
+            continue;
+          }
+          List<PoeCraft.EssenceTier> in = eo.tiers().stream().filter(t -> t.tier() >= min).toList();
+          if (in.isEmpty()) {
+            continue;
+          }
+          targets.add(new PoeCraft.Target(in.stream().map(PoeCraft.EssenceTier::modId).toList()));
+          gen.accept(eo.gen());
+          PoeCraft.EssenceTier t0 = in.get(0);
+          List<String> et = ko && t0.ko() != null && !t0.ko().isEmpty() ? t0.ko() : t0.en();
+          labels.add(
+              String.join(", ", et == null ? List.of() : et)
+                  + (in.size() < eo.tiers().size() ? (ko ? " 이상" : " or better") : "")
+                  + (ko ? " (에센스)" : " (essence)"));
+        } else {
+          if (explicitOnly) {
+            continue;
+          }
+          int min;
+          try {
+            min = Integer.parseInt(val);
+          } catch (RuntimeException e) {
+            continue;
+          }
+          String sk = fam.substring("eld:".length());
+          PoeCraft.EldritchFamily ef =
+              ext.eldritch() == null
+                  ? null
+                  : ext.eldritch().stream()
+                      .filter(x -> (x.side() + ":" + x.key()).equals(sk))
+                      .findFirst()
+                      .orElse(null);
+          if (ef == null) {
+            continue;
+          }
+          List<PoeCraft.EldritchTier> in =
+              ef.tiers().stream().filter(t -> t.tier() >= min).toList();
+          if (in.isEmpty()) {
+            continue;
+          }
+          targets.add(new PoeCraft.Target(in.stream().map(PoeCraft.EldritchTier::id).toList()));
+          gen.accept("implicit");
+          PoeCraft.EldritchTier t0 = in.get(0);
+          List<String> et = ko && t0.ko() != null && !t0.ko().isEmpty() ? t0.ko() : t0.en();
+          labels.add(
+              ("exarch".equals(ef.side())
+                      ? (ko ? "작열의 총주교: " : "Exarch: ")
+                      : (ko ? "세계 포식자: " : "Eater: "))
+                  + String.join(", ", et == null ? List.of() : et)
+                  + (ko ? " 이상" : " or better"));
+        }
+        continue;
+      }
+      if (fam.startsWith("grp:") || "grpk".equals(fam) || grp.contains(fam)) {
+        continue; // 묶음(C522) — 위에서 따로
+      }
       if (fam.startsWith("veil:")) {
         // 장막 해제 옵션 목표(C421) — 체크하면 그 옵션
         if (!"1".equals(params.getFirst(key))) {
@@ -469,6 +1394,7 @@ public class PoeCraftController {
           continue;
         }
         targets.add(new PoeCraft.Target(List.of(vid)));
+        gen.accept(vl.gen());
         List<String> vt = ko && vl.ko() != null && !vl.ko().isEmpty() ? vl.ko() : vl.en();
         labels.add(String.join(", ", vt == null ? List.of() : vt) + (ko ? " (해제)" : " (unveiled)"));
         continue;
@@ -489,7 +1415,13 @@ public class PoeCraftController {
         continue;
       }
       targets.add(new PoeCraft.Target(in.stream().map(PoeCraft.PoolLine::id).toList()));
+      gen.accept(in.get(0).gen());
       labels.add(spanLabel(in, ko) + " (T1" + (rank > 1 ? "~T" + rank : "") + ")");
+    }
+    if (gens != null) {
+      while (gens.size() < targets.size()) {
+        gens.add(null);
+      }
     }
     return targets;
   }
@@ -498,6 +1430,222 @@ public class PoeCraftController {
    * 최적 조합(10-19 C457 사용자 요청 "에센스 · 제작대 · 야수 같은 다양한 방법을 조합해 최소 비용") — 계산기와 같은 목표로, 계산기 표가 뜬 뒤 이어서
    * 부른다(upper · upperLabel = 표의 가장 싼 방법). API 가 상태별 최소 기대 비용을 찾고(8초 안) 그 정책을 실제 아이템에 굴려 잰 비용.
    */
+  /**
+   * 화석 조합 기준 첫 옵션 확률(10-20 C504, craftofexile 화석 풀) — 화석 탭에서 고른 화석으로 레어를 다시 굴릴 때 첫 옵션이 무엇일 확률(분열
+   * 옵션은 남김). 확률 높은 순 표.
+   */
+  @PostMapping(value = "/poe/htmx/craft/fossil-pool", produces = MediaType.TEXT_HTML_VALUE)
+  public String fossilPool(
+      @RequestParam String itemClass,
+      @RequestParam(required = false, defaultValue = "") String variant,
+      @RequestParam(required = false, defaultValue = "") String influence,
+      @RequestParam(required = false, defaultValue = "84") int ilvl,
+      @RequestParam(required = false, defaultValue = "") String state,
+      @RequestParam(required = false) List<String> fossil,
+      Model model) {
+    PoeCraft.Item fresh =
+        new PoeCraft.Item(itemClass, variant, influence, clamp(ilvl), "NORMAL", List.of(), false);
+    PoeCraft.Item cur = parse(state, fresh);
+    if (!same(cur, fresh)) {
+      cur = fresh;
+    }
+    List<String> picked = fossil == null ? List.of() : fossil;
+    List<PoeCraft.PoolLine> lines = List.of();
+    if (!picked.isEmpty()) {
+      try {
+        lines =
+            craftClient.fossilPool(new PoeCraft.FossilPoolRequest(cur, String.join(",", picked)));
+      } catch (RuntimeException e) {
+        lines = List.of();
+      }
+    }
+    model.addAttribute("fossilPicked", picked.size());
+    model.addAttribute("fossilLines", lines);
+    return "poe/htmx/craftFossilPool";
+  }
+
+  /**
+   * 올플레임 제작에 쓸 수 있는 화폐(C523) — 인게임 안내: 타락한 아이템 · 타락시키는 화폐(바알 · 더럽혀진), 품질 · 홈 화폐 대부분, 여러 아이템을 만드는
+   * 화폐는 안 된다. 제작대 · 수확 · 야수 · 직접 편집 · 장막 해제(셋 중 고르기) · 각성자(두 아이템)도 화폐 한 번이 아니라 뺀다.
+   */
+  static final java.util.Set<String> GHOST_ACTS =
+      java.util.Set.of(
+          "TRANSMUTE",
+          "ALTERATION",
+          "AUGMENTATION",
+          "REGAL",
+          "ALCHEMY",
+          "CHAOS",
+          "EXALT",
+          "ANNUL",
+          "SCOUR",
+          "ESSENCE",
+          "FOSSIL",
+          "CONQUEROR",
+          "FRACTURE",
+          "VEILED_CHAOS",
+          "VEILED_EXALT",
+          "EMBER",
+          "ICHOR",
+          "ELDRITCH_CHAOS",
+          "ELDRITCH_EXALT",
+          "ELDRITCH_ANNUL",
+          "DOMINANCE",
+          "DUCAT",
+          "CONFLICT",
+          "FOULBORN_AUG",
+          "FOULBORN_REGAL",
+          "FOULBORN_EXALT");
+
+  /** 목표까지 연타로 쓸 수 있는 화폐(C506) — 같은 화폐를 되풀이해 의미가 있는 것(고른 에센스 · 화석 · 수확 포함). */
+  static final java.util.Set<String> SPAM_ACTIONS =
+      java.util.Set.of(
+          "CHAOS", "ALTERATION", "ESSENCE", "FOSSIL", "HARVEST", "VEILED_CHAOS", "EXALT");
+
+  /** 목표 적중 확률을 보는 화폐(C494) — 인자 없는 기본 화폐. 에센스는 고른 것을 더한다. */
+  static final List<String> HIT_ACTIONS =
+      List.of(
+          "TRANSMUTE",
+          "ALTERATION",
+          "AUGMENTATION",
+          "REGAL",
+          "ALCHEMY",
+          "CHAOS",
+          "EXALT",
+          "ANNUL",
+          "SCOUR",
+          "VEILED_CHAOS",
+          "VEILED_EXALT",
+          "VAAL");
+
+  /**
+   * 화폐 한 번의 목표 적중 확률(10-20 C494, craftofexile 에뮬레이터의 목표 확률) — 아래 계산기에서 고른 목표를 지금 아이템에 화폐 하나로 다 채울
+   * 확률. 화면이 화폐 단추마다 작은 표로 보인다. 목표가 없으면 targets 0.
+   */
+  /** 결과 분포 화폐(C533) — 같은 화폐를 지금 아이템에 여러 번 따로 써서 결과를 세는 것. */
+  static final List<String> DIST_ACTIONS =
+      List.of(
+          "CHAOS",
+          "ALCHEMY",
+          "EXALT",
+          "ALTERATION",
+          "AUGMENTATION",
+          "REGAL",
+          "TRANSMUTE",
+          "ESSENCE",
+          "FOSSIL",
+          "VEILED_CHAOS");
+
+  /**
+   * 결과 분포(10-21 C533, craftofexile '대량 모의 — 옵션 분포') — 고른 화폐를 지금 아이템에 5천 번 따로 써서 계열마다 붙는 비율 · 그중 1등급
+   * · 옵션 개수. 계열 이름은 그 풀의 등급 범위 문구로.
+   */
+  @PostMapping(value = "/poe/htmx/craft/dist", produces = MediaType.TEXT_HTML_VALUE)
+  public String distribution(
+      @RequestParam String itemClass,
+      @RequestParam(required = false, defaultValue = "") String variant,
+      @RequestParam(required = false, defaultValue = "") String influence,
+      @RequestParam(required = false, defaultValue = "84") int ilvl,
+      @RequestParam(required = false, defaultValue = "") String state,
+      @RequestParam(required = false, defaultValue = "CHAOS") String distAct,
+      @RequestParam(required = false, defaultValue = "") String essence,
+      @RequestParam(required = false) List<String> fossil,
+      Model model) {
+    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+    PoeCraft.Item fresh =
+        new PoeCraft.Item(itemClass, variant, influence, clamp(ilvl), "NORMAL", List.of(), false);
+    PoeCraft.Item cur = parse(state, fresh);
+    if (!same(cur, fresh)) {
+      cur = fresh;
+    }
+    String act = DIST_ACTIONS.contains(distAct) ? distAct : "CHAOS";
+    String arg = argFor(act, null, essence.isBlank() ? null : essence, fossil, null, null);
+    PoeCraft.DistResult res;
+    try {
+      res = craftClient.distribution(new PoeCraft.DistRequest(cur, act, arg, 5000));
+    } catch (RuntimeException e) {
+      res =
+          new PoeCraft.DistResult(
+              0, List.of(), java.util.Map.of(), ko ? "모의에 실패했습니다" : "Simulation failed");
+    }
+    // 계열 이름 = 그 풀의 등급 범위 문구(낮은 등급 최소 ~ 1등급 최대)
+    java.util.Map<String, String> labels = new java.util.HashMap<>();
+    try {
+      java.util.Map<String, List<PoeCraft.PoolLine>> byFam = new java.util.HashMap<>();
+      for (PoeCraft.PoolLine p : craftClient.pool(new PoeCraft.PoolRequest(cur, "RARE"))) {
+        byFam.computeIfAbsent(p.gen() + "|" + p.family(), k -> new ArrayList<>()).add(p);
+      }
+      byFam.forEach(
+          (k, v) -> {
+            List<PoeCraft.PoolLine> tiers =
+                v.stream()
+                    .filter(p -> p.tierRank() != null)
+                    .sorted(java.util.Comparator.comparing(PoeCraft.PoolLine::tierRank))
+                    .toList();
+            if (!tiers.isEmpty()) {
+              labels.put(k, spanLabel(tiers, ko));
+            }
+          });
+    } catch (RuntimeException e) {
+      // 이름 없이 계열 키로
+    }
+    model.addAttribute("dist", res);
+    model.addAttribute("distLabels", labels);
+    model.addAttribute("distAct", act);
+    return "poe/htmx/craftDist";
+  }
+
+  @PostMapping(value = "/poe/htmx/craft/hit-chance", produces = MediaType.APPLICATION_JSON_VALUE)
+  @org.springframework.web.bind.annotation.ResponseBody
+  public java.util.Map<String, Object> hitChance(
+      @RequestParam String itemClass,
+      @RequestParam(required = false, defaultValue = "") String variant,
+      @RequestParam(required = false, defaultValue = "") String influence,
+      @RequestParam(required = false, defaultValue = "84") int ilvl,
+      @RequestParam(required = false, defaultValue = "") String state,
+      @RequestParam(required = false, defaultValue = "") String essence,
+      // 고른 화석 · 수확도(C507 — 그 '사용' 단추와 연타 줄에)
+      @RequestParam(required = false) List<String> fossil,
+      @RequestParam(required = false, defaultValue = "") String harvest,
+      @RequestParam org.springframework.util.MultiValueMap<String, String> params) {
+    PoeCraft.Item fresh =
+        new PoeCraft.Item(itemClass, variant, influence, clamp(ilvl), "NORMAL", List.of(), false);
+    List<PoeCraft.Target> targets;
+    try {
+      targets = calcTargets(itemClass, variant, fresh, params, new ArrayList<>());
+    } catch (RuntimeException e) {
+      targets = List.of();
+    }
+    if (targets.isEmpty()) {
+      return java.util.Map.of("targets", 0);
+    }
+    PoeCraft.Item cur = parse(state, fresh);
+    if (!same(cur, fresh)) {
+      cur = fresh;
+    }
+    List<PoeCraft.HitAction> actions = new ArrayList<>();
+    HIT_ACTIONS.forEach(a -> actions.add(new PoeCraft.HitAction(a, null)));
+    if (!essence.isBlank()) {
+      actions.add(new PoeCraft.HitAction("ESSENCE", essence));
+    }
+    if (fossil != null && !fossil.isEmpty()) {
+      actions.add(new PoeCraft.HitAction("FOSSIL", String.join(",", fossil)));
+    }
+    if (!harvest.isBlank()) {
+      actions.add(new PoeCraft.HitAction("HARVEST", harvest));
+    }
+    java.util.Map<String, Object> chances = new java.util.LinkedHashMap<>();
+    try {
+      for (PoeCraft.Hit h :
+          craftClient.hitChance(new PoeCraft.HitRequest(cur, targets, actions, 1000))) {
+        chances.put(h.action(), h.error() == null ? h.chance() : null);
+      }
+    } catch (RuntimeException e) {
+      return java.util.Map.of("targets", targets.size(), "error", "fail");
+    }
+    return java.util.Map.of("targets", targets.size(), "chances", chances);
+  }
+
   @PostMapping(value = "/poe/htmx/craft/optimize", produces = MediaType.TEXT_HTML_VALUE)
   public String optimize(
       @RequestParam String itemClass,
@@ -597,64 +1745,22 @@ public class PoeCraftController {
       Model model) {
     PoeCraft.Item item =
         new PoeCraft.Item(itemClass, variant, influence, clamp(ilvl), "NORMAL", List.of(), false);
-    List<PoeCraft.PoolLine> pool = craftClient.pool(new PoeCraft.PoolRequest(item, "RARE"));
-    List<PoeCraft.Target> targets = new ArrayList<>();
+    // 목표 해석은 계산기와 같은 것(10-21 C550 정리 — 두 벌이던 것을 하나로. 전략 쪽은 묶음 · 빈 자리 목표에 접두/접미 표시를 안 넣어 그 뒤
+    // 목표의 접두/접미 번호가 한 칸씩 어긋났다). 엘드리치 임플리싯은 명시 옵션 제작과 따로라 전략 모의에선 뺀다(C549)
     List<String> labels = new ArrayList<>();
-    List<Boolean> isPrefix = new ArrayList<>();
+    List<String> gens = new ArrayList<>();
+    List<PoeCraft.Target> targets =
+        calcTargets(itemClass, variant, item, params, labels, gens, true);
     boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
-    List<PoeCraft.VeiledLine> veiled = null;
-    for (String key : params.keySet()) {
-      if (!key.startsWith("t_")) {
-        continue;
-      }
-      String fam = key.substring(2);
-      if (fam.startsWith("veil:")) {
-        // 해제 목표(C426 검토 — 전략 모의는 계산기와 달리 말없이 버려 성공률이 부풀었다)
-        if (!"1".equals(params.getFirst(key))) {
-          continue;
-        }
-        if (veiled == null) {
-          try {
-            veiled = craftClient.veiled(itemClass, variant);
-          } catch (RuntimeException e) {
-            veiled = List.of();
-          }
-        }
-        String vid = fam.substring("veil:".length());
-        PoeCraft.VeiledLine vl =
-            veiled.stream().filter(x -> x.id().equals(vid)).findFirst().orElse(null);
-        if (vl == null) {
-          continue;
-        }
-        targets.add(new PoeCraft.Target(List.of(vid)));
-        isPrefix.add("prefix".equals(vl.gen()));
-        List<String> vt = ko && vl.ko() != null && !vl.ko().isEmpty() ? vl.ko() : vl.en();
-        labels.add(String.join(", ", vt == null ? List.of() : vt) + (ko ? " (해제)" : " (unveiled)"));
-        continue;
-      }
-      int rank;
-      try {
-        rank = Integer.parseInt(params.getFirst(key));
-      } catch (RuntimeException e) {
-        continue;
-      }
-      List<PoeCraft.PoolLine> in =
-          pool.stream()
-              .filter(p -> (p.gen() + ":" + p.family()).equals(fam))
-              .filter(p -> p.tierRank() != null && p.tierRank() <= rank)
-              .sorted(java.util.Comparator.comparing(PoeCraft.PoolLine::tierRank))
-              .toList();
-      if (in.isEmpty()) {
-        continue;
-      }
-      targets.add(new PoeCraft.Target(in.stream().map(PoeCraft.PoolLine::id).toList()));
-      isPrefix.add("prefix".equals(in.get(0).gen()));
-      labels.add(spanLabel(in, ko) + " (T1" + (rank > 1 ? "~T" + rank : "") + ")");
-    }
     List<Integer> pre = new ArrayList<>();
     List<Integer> suf = new ArrayList<>();
-    for (int i = 0; i < isPrefix.size(); i++) {
-      (isPrefix.get(i) ? pre : suf).add(i);
+    for (int i = 0; i < targets.size(); i++) {
+      String g = i < gens.size() ? gens.get(i) : null;
+      if ("prefix".equals(g)) {
+        pre.add(i);
+      } else if ("suffix".equals(g)) {
+        suf.add(i);
+      }
     }
     List<Integer> all = new ArrayList<>();
     for (int i = 0; i < targets.size(); i++) {
@@ -974,6 +2080,16 @@ public class PoeCraftController {
     return Math.max(1, Math.min(100, ilvl));
   }
 
+  /** 확률 표 계열 묶음에서 PoE1 줄 꺼내기(10-21). */
+  private static final net.luversof.web.gate.poe.CraftPoolGroups.Accessors<PoeCraft.PoolLine>
+      POOL_ACC =
+          new net.luversof.web.gate.poe.CraftPoolGroups.Accessors<>(
+              PoeCraft.PoolLine::id,
+              PoeCraft.PoolLine::gen,
+              PoeCraft.PoolLine::family,
+              PoeCraft.PoolLine::tierRank,
+              PoeCraft.PoolLine::chance);
+
   private void fill(
       Model model,
       PoeCraft.Item item,
@@ -991,7 +2107,40 @@ public class PoeCraftController {
     model.addAttribute("historyJson", json.writeValueAsString(hist));
     model.addAttribute("historySize", hist.size());
     // 다음에 붙을 옵션 — 일반이면 레어 자리로(연금 · 에센스), 그 밖엔 지금 희귀도
-    model.addAttribute("pool", craftClient.pool(new PoeCraft.PoolRequest(view.item(), null)));
+    List<PoeCraft.PoolLine> pool = craftClient.pool(new PoeCraft.PoolRequest(view.item(), null));
+    model.addAttribute("pool", pool);
+    // 확률 표 계열 묶음(10-21 사용자 요청 "옵션별로 묶어 줄을 줄이고 누르면 등급 상세, 제작으로 붙은 옵션은 표시") — 이 종류의 전체 계열(일반 → 레어
+    // 풀, 계산기 목표와 같은 풀)을 고정 순서로 두고 지금 확률 · 붙은 옵션을 얹는다. 못 읽으면 지금 풀만으로 묶는다
+    PoeCraft.Item it = view.item();
+    List<PoeCraft.PoolLine> full;
+    try {
+      full =
+          craftClient.pool(
+              new PoeCraft.PoolRequest(
+                  new PoeCraft.Item(
+                      it.itemClass(),
+                      it.variant(),
+                      it.influence(),
+                      it.ilvl(),
+                      "NORMAL",
+                      List.of(),
+                      false),
+                  "RARE"));
+    } catch (RuntimeException e) {
+      full = List.of();
+    }
+    java.util.Set<String> onIds = new java.util.HashSet<>();
+    if (view.lines() != null) {
+      view.lines().forEach(l -> onIds.add(l.id()));
+    }
+    java.util.Set<String> freshIds =
+        applied == null || applied.error() != null || applied.added() == null
+            ? java.util.Set.of()
+            : new java.util.HashSet<>(applied.added());
+    model.addAttribute(
+        "poolGroups",
+        net.luversof.web.gate.poe.CraftPoolGroups.group(
+            full == null ? List.of() : full, pool, POOL_ACC, onIds, freshIds));
     PoeCraft.Options opts = craftClient.options(item.itemClass(), nz(item.variant()));
     model.addAttribute("options", opts);
     model.addAttribute("essences", opts.essences());
@@ -1152,7 +2301,9 @@ public class PoeCraftController {
       PoeCraft.Item current,
       List<PoeCraft.Item> hist,
       List<PoeCraft.SpentStep> log,
-      PoeCraft.SpentResult spent) {
+      PoeCraft.SpentResult spent,
+      // 상태마다 굴림 씨앗(C512) — hist + 지금, 단계 기록의 바뀐 옵션을 그때 굴린 값으로
+      List<java.util.Map<String, Long>> rolls) {
     boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
     int nf = (int) log.stream().filter(s -> !sideStep(s)).count();
     int dropped = Math.max(0, nf - hist.size());
@@ -1198,8 +2349,12 @@ public class PoeCraftController {
         j++;
         int i = j - dropped;
         if (i >= 0 && lines != null && i + 1 < lines.size()) {
-          add = lineDiff(lines.get(i + 1), lines.get(i), ko);
-          rem = lineDiff(lines.get(i), lines.get(i + 1), ko);
+          java.util.Map<String, Long> after =
+              rolls != null && rolls.size() == lines.size() ? rolls.get(i + 1) : null;
+          java.util.Map<String, Long> before =
+              rolls != null && rolls.size() == lines.size() ? rolls.get(i) : null;
+          add = lineDiff(lines.get(i + 1), lines.get(i), ko, after);
+          rem = lineDiff(lines.get(i), lines.get(i + 1), ko, before);
           if (i + 1 < hist.size()) {
             undoTo = i + 1;
           } else {
@@ -1243,7 +2398,16 @@ public class PoeCraftController {
   }
 
   /** a 에만 있는 옵션 줄의 문구(id 대조) — "접두 T1 문구", 임플리싯은 진영 · 타락. */
-  private static List<String> lineDiff(List<PoeCraft.Line> a, List<PoeCraft.Line> b, boolean ko) {
+  /** 상태마다 굴림 씨앗 — 이력의 씨앗 + 지금(C512). */
+  private static List<java.util.Map<String, Long>> rollStates(
+      List<java.util.Map<String, Long>> rollHist, java.util.Map<String, Long> now) {
+    List<java.util.Map<String, Long>> out = new ArrayList<>(rollHist);
+    out.add(now);
+    return out;
+  }
+
+  private static List<String> lineDiff(
+      List<PoeCraft.Line> a, List<PoeCraft.Line> b, boolean ko, java.util.Map<String, Long> rolls) {
     java.util.Set<String> bIds = new java.util.HashSet<>();
     for (PoeCraft.Line l : b) {
       bIds.add(l.gen() + ":" + l.id());
@@ -1253,7 +2417,18 @@ public class PoeCraftController {
       if (bIds.contains(l.gen() + ":" + l.id())) {
         continue;
       }
-      List<String> t = ko && l.ko() != null && !l.ko().isEmpty() ? l.ko() : l.en();
+      List<String> mx = ko && l.ko() != null && !l.ko().isEmpty() ? l.ko() : l.en();
+      List<String> mn = ko && l.koMin() != null && !l.koMin().isEmpty() ? l.koMin() : l.enMin();
+      // 범위로(C511 — 최대 굴림 문구라 카드의 굴린 값과 달라 보였다 · 지난 단계의 굴린 값은 남기지 않는다)
+      List<String> t = new ArrayList<>();
+      Long seed = rolls == null ? null : rolls.get(l.id());
+      for (int x = 0; mx != null && x < mx.size(); x++) {
+        String range =
+            net.luversof.web.gate.poe.PoeModRange.range(
+                mn != null && x < mn.size() ? mn.get(x) : null, mx.get(x));
+        // 그 단계에 굴린 값(C512) — 씨앗이 없으면 범위
+        t.add(seed == null ? range : net.luversof.web.gate.poe.PoeModRoll.roll(range, seed + x));
+      }
       String side =
           switch (l.gen() == null ? "" : l.gen()) {
             case "prefix" -> ko ? "접두 " : "P ";

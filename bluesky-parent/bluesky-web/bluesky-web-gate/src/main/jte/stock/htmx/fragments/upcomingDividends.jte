@@ -19,11 +19,16 @@
      (실측 2026-09-11: 월중 17일x39 · 19일x20 · 18일x10 · 20일x9, 최근 두 달은 19·20일). --%>
 @param int payDaySpreadFrom = 0
 @param int payDaySpreadTo = 0
+<%-- 규칙 날짜가 종목마다 다를 때 그 달 안의 범위(2026-10-20). --%>
+@param int payDayRangeFrom = 0
+@param int payDayRangeTo = 0
 @param long staleQuantityCount = 0L
 @param BigDecimal currentQuantityTotal = java.math.BigDecimal.ZERO
 <%-- 같은 안내의 최근 기준 합계(2026-10-13 - 카드가 최근을 앞에 둔다). --%>
 @param BigDecimal currentQuantityLatestTotal = java.math.BigDecimal.ZERO
 @param int upcomingDividendHiddenCount = 0
+<%-- 다음 분배금 매수 마감(2026-10-20) - 적립하는 날을 정할 때 본다. 계산은 KrxRecordDateUtil. --%>
+@param java.util.List<net.luversof.web.gate.stock.dto.view.RecordDateBuyByView> upcomingBuyBy = java.util.List.of()
 
 !{
 	String titleLabel = MessageUtil.getMessage("stock.dashboard.upcoming.dividend");
@@ -50,6 +55,11 @@
 	 예상 월배당이 1.66% 낮게 잡혔다). 어느 시점 데이터인지 밝히지 않으면 사용자는 현재값으로 읽는다.
 	 문구는 월배당 시뮬레이터와 같은 키를 쓴다. --%>
 	@if(dividendAsOfOldest != null)
+	@if(payDayRangeFrom > 0 && payDayRangeTo > payDayRangeFrom)
+	<div class="text-[11px] text-base-content/60 mb-2" data-payday-range="${payDayRangeFrom}-${payDayRangeTo}">
+		${java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.dividend.payday.range"), String.valueOf(payDayRangeFrom), String.valueOf(payDayRangeTo))}
+	</div>
+	@endif
 	@if(payDaySpreadFrom > 0 && payDaySpreadTo > payDaySpreadFrom)
 	<div class="text-[11px] text-base-content/60 mb-2" data-payday-spread="${payDaySpreadFrom}-${payDaySpreadTo}">
 		${java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.dividend.payday.spread"), String.valueOf(payDaySpreadFrom), String.valueOf(payDaySpreadTo))}
@@ -96,6 +106,7 @@
 			</div>
 		@endif
 	</div>
+	@template.stock.fragments.recordDateBuyBy(rows = upcomingBuyBy, compact = true)
 	@else
 	@template._components.ui.emptyState(padding = "py-6")
 	@endif

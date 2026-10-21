@@ -89,10 +89,51 @@ public class PoeCraftPriceService {
           // 각인(EinharMasterCraft27 "Of a Magic Item")
           Map.entry("Bestiary: Imprint", List.of("Craicic Croaker")));
 
-  /** 이름 → 카오스 값. 모르면 null. 짐승 제작 레시피는 필요한 짐승 시세 합(C457). */
+  /**
+   * 사용자 가격(10-21 C529, craftofexile 'custom pricing') — 이 요청(스레드) 동안 이름 → 카오스 값을 시세보다 먼저. 계산 · 쓴 화폐
+   * · 최적 조합 요청의 prices 로 컨트롤러가 걸고 끝나면 푼다(최적 조합은 작업 스레드에서).
+   */
+  private static final ThreadLocal<Map<String, Double>> OVERRIDE = new ThreadLocal<>();
+
+  /** 사용자 가격 걸기 — null · 빈 맵이면 푼다. 이름 80자 · 값 0 초과 1천만 미만 · 60개까지만. */
+  public static void override(Map<String, Double> prices) {
+    if (prices == null || prices.isEmpty()) {
+      OVERRIDE.remove();
+      return;
+    }
+    Map<String, Double> ok = new java.util.HashMap<>();
+    for (Map.Entry<String, Double> e : prices.entrySet()) {
+      Double v = e.getValue();
+      if (e.getKey() != null
+          && e.getKey().length() <= 80
+          && v != null
+          && Double.isFinite(v)
+          && v > 0
+          && v < 1e7
+          && ok.size() < 60) {
+        ok.put(e.getKey(), v);
+      }
+    }
+    if (ok.isEmpty()) {
+      OVERRIDE.remove();
+    } else {
+      OVERRIDE.set(Map.copyOf(ok));
+    }
+  }
+
+  /** 지금 걸린 사용자 가격(없으면 null). */
+  public static Map<String, Double> overrides() {
+    return OVERRIDE.get();
+  }
+
+  /** 이름 → 카오스 값. 모르면 null. 짐승 제작 레시피는 필요한 짐승 시세 합(C457). 사용자 가격(C529)이 있으면 그것. */
   public Double chaos(String name) {
     if (name == null) {
       return null;
+    }
+    Map<String, Double> user = OVERRIDE.get();
+    if (user != null && user.containsKey(name)) {
+      return user.get(name);
     }
     Map<String, Double> c = prices().chaos();
     Double v = c.get(name);

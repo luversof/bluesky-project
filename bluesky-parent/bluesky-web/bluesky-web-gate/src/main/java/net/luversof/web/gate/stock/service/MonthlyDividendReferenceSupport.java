@@ -539,12 +539,33 @@ public class MonthlyDividendReferenceSupport {
           payout,
           (left, right) -> byDate.compare(left, right) >= 0 ? left : right);
     }
+    // 기준일 규칙이 선 종목은 규칙의 가장 최근 기준일로 "갱신 확인" 을 판정한다(2026-10-20 - 35 일을 기다리지 않는다).
+    List<net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.RecordedPayout> recorded =
+        new java.util.ArrayList<>();
+    for (MonthlyDividendPayoutResponse payout : payouts) {
+      if (payout != null) {
+        recorded.add(
+            new net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.RecordedPayout(
+                payout.stockItemSymbol(), payout.recordDate(), payout.payDate()));
+      }
+    }
+    Map<String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule> rules =
+        net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.settlementRules(recorded);
     Map<String, MonthlyDividendLatestPayoutView> result = new HashMap<>();
     latest.forEach(
-        (symbol, payout) ->
-            result.put(
-                symbol,
-                MonthlyDividendLatestPayoutView.of(payout.recordDate(), payout.payDate(), today)));
+        (symbol, payout) -> {
+          var rule = rules.get(symbol);
+          LocalDate expected =
+              rule != null
+                  // 기준일 "당일" 은 아직 지나지 않았다 - 어제까지 지난 기준일로 본다(검토 2026-10-20: 당일에 "지났는데" 배지가 떴다).
+                  ? net.luversof.web.gate.stock.util.KrxRecordDateUtil.latestRecordDateOnOrBefore(
+                      today.minusDays(1), rule.payoutWindow())
+                  : null;
+          result.put(
+              symbol,
+              MonthlyDividendLatestPayoutView.of(
+                  payout.recordDate(), payout.payDate(), today, expected));
+        });
     return result;
   }
 

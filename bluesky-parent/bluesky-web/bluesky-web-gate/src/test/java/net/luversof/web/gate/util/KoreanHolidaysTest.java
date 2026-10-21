@@ -124,4 +124,31 @@ class KoreanHolidaysTest {
         .isNull();
     assertThat(KoreanHolidays.holidayName(LocalDate.of(before, 1, 1))).isNull();
   }
+
+  /**
+   * 제헌절은 2026 년부터, 노동절은 2027 년부터 공휴일이다(2026 년 법 개정 - 우주항공청 월력요항 · 한국천문연구원 달력 자료, 2026-10-20 확인).
+   * 2026-07-17 이 표에 빠져 있었다 - 그날은 시세 행이 없다(거래소 휴장).
+   */
+  @Test
+  void 제헌절은_2026년부터_노동절은_2027년부터다() {
+    assertThat(KoreanHolidays.holidayName(LocalDate.of(2026, 7, 17))).isEqualTo("제헌절");
+    assertThat(KoreanHolidays.holidayName(LocalDate.of(2025, 7, 17))).isNull();
+    assertThat(KoreanHolidays.holidayName(LocalDate.of(2027, 5, 1))).isEqualTo("노동절");
+    assertThat(KoreanHolidays.holidayName(LocalDate.of(2027, 5, 3))).isEqualTo("대체공휴일(노동절)");
+    assertThat(KoreanHolidays.holidayName(LocalDate.of(2027, 7, 19))).isEqualTo("대체공휴일(제헌절)");
+    assertThat(KoreanHolidays.holidayName(LocalDate.of(2027, 7, 19), java.util.Locale.ENGLISH))
+        .isEqualTo("Substitute holiday (Constitution Day)");
+  }
+
+  /**
+   * 올해가 표에 있어야 한다 - 표가 끝난 해에는 달력 · 예상 지급일 · 매수 마감이 공휴일을 모른 채 주말만 뺀다(2026-10-20: 표가 2026 에서 끝나 있었다).
+   * 다음 해 월력요항은 6 월께 나오니 그때 넣는다. 이 시험은 해가 바뀌는 날부터 깨져 알린다.
+   */
+  @Test
+  void 올해가_표에_있다() {
+    int thisYear = LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).getYear();
+    assertThat(KoreanHolidays.covered(thisYear))
+        .as(thisYear + " 년 공휴일을 KoreanHolidays 에 넣을 것(우주항공청 월력요항)")
+        .isTrue();
+  }
 }

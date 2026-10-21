@@ -35,6 +35,31 @@ public class PoeWebConfig implements WebMvcConfigurer {
               }
             })
         .addPathPatterns("/poe/htmx/**");
+    // 사용자 가격(10-21 C529) — 제작 htmx 요청의 prices(JSON, 화면 '가격 직접 입력')를 이 요청 동안 걸어 둔다(DTO 가 실어 보냄)
+    registry
+        .addInterceptor(
+            new org.springframework.web.servlet.HandlerInterceptor() {
+              @Override
+              public boolean preHandle(
+                  jakarta.servlet.http.HttpServletRequest request,
+                  jakarta.servlet.http.HttpServletResponse response,
+                  Object handler) {
+                net.luversof.web.gate.poe.CraftPrices.set(
+                    net.luversof.web.gate.poe.CraftPrices.parse(request.getParameter("prices")));
+                return true;
+              }
+
+              @Override
+              public void afterCompletion(
+                  jakarta.servlet.http.HttpServletRequest request,
+                  jakarta.servlet.http.HttpServletResponse response,
+                  Object handler,
+                  Exception ex) {
+                net.luversof.web.gate.poe.CraftPrices.clear();
+              }
+            })
+        .addPathPatterns(
+            "/poe/htmx/craft", "/poe/htmx/craft/**", "/poe2/htmx/craft", "/poe2/htmx/craft/**");
   }
 
   @Override

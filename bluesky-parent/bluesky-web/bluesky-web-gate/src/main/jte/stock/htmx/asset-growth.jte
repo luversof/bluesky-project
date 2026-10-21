@@ -81,6 +81,8 @@
 	String noDataLabel = MessageUtil.getMessage("common.message.no.data");
 	String rangeMaxLabel = MessageUtil.getMessage("stock.chart.range.max");
 	String rangeMinLabel = MessageUtil.getMessage("stock.chart.range.min");
+	String rangeMaxGapLabel = MessageUtil.getMessage("stock.chart.range.max.gap");
+	String rangeMinGapLabel = MessageUtil.getMessage("stock.chart.range.min.gap");
 	String chartDescriptionLabel = MessageUtil.getMessage("stock.asset.growth.chart.description");
 	String clickDateHoldingsLabel = MessageUtil.getMessage("stock.asset.growth.chart.click.date");
 	String profitAnalysisLabel = MessageUtil.getMessage("stock.asset.growth.profit.analysis");
@@ -431,6 +433,8 @@
 			unrealizedProfit: '${unrealizedProfitLabel}',
 			rangeMax: '${rangeMaxLabel}',
 			rangeMin: '${rangeMinLabel}',
+			rangeMaxGap: '${rangeMaxGapLabel}',
+			rangeMinGap: '${rangeMinGapLabel}',
 			clickTradeHistory: '${clickTradeHistoryLabel}',
 			tradeCount: '${tradeCountLabel}',
 			dailyRealizedProfit: '${dailyRealizedProfitLabel}',

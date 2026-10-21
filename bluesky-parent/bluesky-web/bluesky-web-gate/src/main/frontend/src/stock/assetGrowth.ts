@@ -147,7 +147,10 @@ interface AssetGrowthConfig {
                     axisLabel: L.totalAssetAxis,
                     profitLabel: L.unrealizedProfit,
                     maxLabel: L.rangeMax,
-                    minLabel: L.rangeMin
+                    minLabel: L.rangeMin,
+                    // 최고 · 최저 표시 금액 = 그 지점 대비 지금 손익(2026-10-21 사용자 요청)
+                    maxGapLabel: L.rangeMaxGap,
+                    minGapLabel: L.rangeMinGap
                 }, {
                     animate: true,
                     showMarkers: true,

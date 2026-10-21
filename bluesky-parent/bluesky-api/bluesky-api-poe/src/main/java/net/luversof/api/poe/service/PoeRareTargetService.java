@@ -115,6 +115,11 @@ public class PoeRareTargetService {
     }
     PoeBaseItem base = found.get();
     String variant = "armour".equals(base.category()) ? attributeVariantOf(base) : "";
+    // 베이스가 정하는 변형(C516 — 주얼 색 · 심연 주얼 종류는 베이스마다 붙는 옵션이 다르다)
+    String byBase = modData.variantOfBase(base.itemClass(), base.name());
+    if (byBase != null) {
+      variant = byBase;
+    }
     PoeModDataService.ClassMods mods = modData.forItemClass(base.itemClass(), variant);
     if (mods == null) {
       return Optional.empty();

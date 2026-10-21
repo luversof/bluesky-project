@@ -21,6 +21,43 @@ public interface PoeCraftClient {
   @PostExchange(value = "/view", contentType = MediaType.APPLICATION_JSON_VALUE)
   PoeCraft.View view(@RequestBody PoeCraft.Item item);
 
+  /** 결과 분포(C533). */
+  @PostExchange(value = "/distribution", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.DistResult distribution(@RequestBody PoeCraft.DistRequest request);
+
+  /** 계산기 목표 칸 덧붙임(C548) — 계열별 제작대 값어치 · 바알 타락 임플리싯 · 영향력 옵션 id. */
+  @GetExchange("/calc-extras")
+  PoeCraft.CalcExtras calcExtras(
+      @RequestParam String itemClass,
+      @RequestParam String variant,
+      @RequestParam String influence,
+      @RequestParam int ilvl);
+
+  /** 제작 시세(C529 — 가격 직접 입력 칸의 기본값). */
+  @GetExchange("/prices")
+  PoeCraft.Prices prices();
+
+  /** 목표까지 연타(C506). */
+  @PostExchange(value = "/spam", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.SpamResult spam(@RequestBody PoeCraft.SpamRequest request);
+
+  /** 화석 조합 기준 첫 옵션 확률(C504). */
+  @PostExchange(value = "/fossil-pool", contentType = MediaType.APPLICATION_JSON_VALUE)
+  List<PoeCraft.PoolLine> fossilPool(@RequestBody PoeCraft.FossilPoolRequest request);
+
+  /** 화폐 한 번의 목표 적중 확률(C494). */
+  @PostExchange(value = "/hit-chance", contentType = MediaType.APPLICATION_JSON_VALUE)
+  List<PoeCraft.Hit> hitChance(@RequestBody PoeCraft.HitRequest request);
+
+  /** 그 종류의 무작위 레어 이름 {en, ko}(C488) — 낱말표가 없으면 빈 맵. */
+  @org.springframework.web.service.annotation.GetExchange("/rare-name")
+  java.util.Map<String, String> rareName(
+      @org.springframework.web.bind.annotation.RequestParam String itemClass);
+
+  /** 게임 아이템 복사 글 → 아이템(C485). */
+  @PostExchange(value = "/import", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.ImportResult importItem(@RequestBody PoeCraft.ImportRequest request);
+
   @PostExchange(value = "/pool", contentType = MediaType.APPLICATION_JSON_VALUE)
   List<PoeCraft.PoolLine> pool(@RequestBody PoeCraft.PoolRequest request);
 

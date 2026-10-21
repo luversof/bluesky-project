@@ -17,6 +17,15 @@ public interface Poe2CraftClient {
   @GetExchange("/options")
   Poe2Craft.Options options();
 
+  /** 결과 분포(C534) — 결과 모양은 PoE1 과 같다. */
+  @PostExchange(value = "/distribution", contentType = MediaType.APPLICATION_JSON_VALUE)
+  net.luversof.web.gate.poe.dto.PoeCraft.DistResult distribution(
+      @RequestBody Poe2Craft.DistRequest request);
+
+  /** 제작 시세(C530 — 가격 직접 입력 칸의 기본값, 디바인). */
+  @GetExchange("/prices")
+  Poe2Craft.Prices prices();
+
   @PostExchange(value = "/apply", contentType = MediaType.APPLICATION_JSON_VALUE)
   Poe2Craft.View apply(@RequestBody Poe2Craft.ApplyRequest request);
 
@@ -26,6 +35,23 @@ public interface Poe2CraftClient {
 
   @PostExchange(value = "/view", contentType = MediaType.APPLICATION_JSON_VALUE)
   Poe2Craft.View view(@RequestBody Poe2Craft.Item item);
+
+  /** 목표까지 연타(C508). */
+  @PostExchange(value = "/spam", contentType = MediaType.APPLICATION_JSON_VALUE)
+  Poe2Craft.SpamResult spam(@RequestBody Poe2Craft.SpamRequest request);
+
+  /** 화폐 한 번의 목표 적중 확률(C500). */
+  @PostExchange(value = "/hit-chance", contentType = MediaType.APPLICATION_JSON_VALUE)
+  List<Poe2Craft.Hit> hitChance(@RequestBody Poe2Craft.HitRequest request);
+
+  /** 그 종류의 무작위 레어 이름 {en, ko}(C499). */
+  @GetExchange("/rare-name")
+  java.util.Map<String, String> rareName(
+      @org.springframework.web.bind.annotation.RequestParam String itemClass);
+
+  /** 게임 아이템 복사 글 → 아이템(C486). */
+  @PostExchange(value = "/import", contentType = MediaType.APPLICATION_JSON_VALUE)
+  Poe2Craft.ImportResult importItem(@RequestBody Poe2Craft.ImportRequest request);
 
   /** 아이템 여럿의 옵션 줄(C453 — 단계 기록의 붙은 · 지운 옵션 문구). */
   @PostExchange(value = "/lines", contentType = MediaType.APPLICATION_JSON_VALUE)

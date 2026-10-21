@@ -36,7 +36,20 @@ public class Poe2CraftOptimizer {
       Double upper,
       String upperLabel,
       // 재조합 성공 확률(C472, 인게임 값 1~100) — 있으면 표에 반쪽 재조합 · 최적 조합에 재조합 수단
-      Integer recombChance) {}
+      Integer recombChance,
+      // 사용자 가격(C530) — 작업 스레드에서 건다
+      Map<String, Double> prices) {
+
+    public Request(
+        Item item,
+        List<Target> targets,
+        Integer budgetMs,
+        Double upper,
+        String upperLabel,
+        Integer recombChance) {
+      this(item, targets, budgetMs, upper, upperLabel, recombChance, null);
+    }
+  }
 
   public record Rule(String state, String action, double share, Double remaining) {}
 
@@ -59,7 +72,32 @@ public class Poe2CraftOptimizer {
       String pricesAt,
       String note,
       String error,
-      String diag) {}
+      String diag,
+      // 결과 예시(C503, PoE1 C502 짝) — 성공 회차 중 싼 편 · 중간 · 비싼 편의 마지막 아이템
+      List<Showcase> showcase,
+      // 성공 회차 비용 분포(C505) — 25% · 50% · 90% 지점(못 닿은 회차 비용은 안 넣음, 기대 비용과 다를 수 있다)
+      List<Double> costQuantiles) {}
+
+  /**
+   * 결과 예시 하나 — 그 회차 비용(디바인) · 옵션 줄. 게이트는 PoE1 과 같은 결과 모양(PoeCraft.OptimizeStatus)으로 받으므로 줄도 PoE1 줄
+   * 모양으로 (원시형 칸이 비면 Jackson 3 기본값 FAIL_ON_NULL_FOR_PRIMITIVES 로 결과 전체를 못 읽었다)
+   */
+  public record Showcase(double cost, String rarity, List<ShowLine> lines) {}
+
+  public record ShowLine(
+      String id,
+      String gen,
+      String name,
+      String nameKo,
+      List<String> en,
+      List<String> ko,
+      List<String> enMin,
+      List<String> koMin,
+      Integer tierRank,
+      int ilvl,
+      boolean crafted,
+      boolean fractured,
+      boolean essence) {}
 
   public record JobStatus(String id, String state, long elapsedMs, long budgetMs, Result result) {}
 
@@ -172,9 +210,24 @@ public class Poe2CraftOptimizer {
             (int) budget,
             req.upper(),
             req.upperLabel(),
-            req.recombChance());
+            req.recombChance(),
+            req.prices());
     String id = java.util.UUID.randomUUID().toString();
-    jobs.put(id, new Running(now, budget, pool.submit(() -> optimize(r, id))));
+    jobs.put(
+        id,
+        new Running(
+            now,
+            budget,
+            pool.submit(
+                () -> {
+                  // 사용자 가격(C530) — 작업 스레드에서
+                  Poe2CraftCalcService.override(r.prices());
+                  try {
+                    return optimize(r, id);
+                  } finally {
+                    Poe2CraftCalcService.override(null);
+                  }
+                })));
     policies.entrySet().removeIf(e -> now - e.getValue().at() > 10 * 60_000L);
     return id;
   }
@@ -199,6 +252,9 @@ public class Poe2CraftOptimizer {
 
   private final class Job {
     final List<Target> goal;
+    // 빈 자리 조건(C521, PoE1 C520 짝): 쪽마다 남아야 할 빈 자리 [접두, 접미] · 레어 쪽당 한도. 있으면 열쇠 끝에 쪽별 옵션 수
+    int[] openNeed = new int[2];
+    int openCap = 3;
     final Map<String, Integer> idMask = new HashMap<>();
     final Map<Integer, Integer> groupMask = new HashMap<>();
     final List<Act> acts;
@@ -340,7 +396,37 @@ public class Poe2CraftOptimizer {
           + "|"
           + blocked
           + "|"
-          + ex;
+          + ex
+          + openBits(it);
+    }
+
+    /** 빈 자리 조건이 있으면 '|o접두수,접미수'(C521). */
+    String openBits(Item it) {
+      if (openNeed[0] + openNeed[1] == 0) {
+        return "";
+      }
+      int p = 0;
+      int s = 0;
+      for (Affix a : it.affixes()) {
+        if ("prefix".equals(a.gen())) {
+          p++;
+        } else if ("suffix".equals(a.gen())) {
+          s++;
+        }
+      }
+      return "|o" + p + "," + s;
+    }
+
+    /** 목표 도달(실제 아이템) — 옵션 목표 전부 + 빈 자리 조건. */
+    boolean met(Item it) {
+      if (!Poe2CraftCalcService.meets(it, goal)) {
+        return false;
+      }
+      if (openNeed[0] + openNeed[1] == 0) {
+        return true;
+      }
+      int[] free = Poe2CraftCalcService.openFree(it);
+      return free[0] >= openNeed[0] && free[1] >= openNeed[1];
     }
 
     /** 열쇠의 맞은 목표 비트(첫 '|' 뒤 칸). */
@@ -350,7 +436,21 @@ public class Poe2CraftOptimizer {
     }
 
     boolean goalKey(String k) {
-      return Integer.parseInt(k.split("\\|")[1]) == (1 << goal.size()) - 1;
+      if (Integer.parseInt(k.split("\\|")[1]) != (1 << goal.size()) - 1) {
+        return false;
+      }
+      if (openNeed[0] + openNeed[1] == 0) {
+        return true;
+      }
+      // 빈 자리 조건(C521) — 열쇠 끝 '|o접두수,접미수', 매직 쪽당 1 · 그 밖 레어 한도
+      int o = k.lastIndexOf("|o");
+      if (o < 0) {
+        return false;
+      }
+      String[] ps = k.substring(o + 2).split(",");
+      int cap = k.charAt(0) == 'M' ? 1 : openCap;
+      return cap - Integer.parseInt(ps[0]) >= openNeed[0]
+          && cap - Integer.parseInt(ps[1]) >= openNeed[1];
     }
 
     /** 드러내기 고르기 — 제시 셋 중 목표에 드는 것, 없으면 무작위. 제시가 없으면 null. */
@@ -501,10 +601,15 @@ public class Poe2CraftOptimizer {
   /** jobId 가 있으면 끝난 정책을 보관한다(C464 — 에뮬레이터 따라 하기). */
   private Result optimize(Request req, String jobId) {
     long started = System.currentTimeMillis();
-    if (req.targets() == null || req.targets().isEmpty()) {
+    // 빈 자리 조건(C521)은 옵션 목표와 나눠 Job 에 — 옵션 목표가 하나는 있어야
+    int[] openNeed =
+        Poe2CraftCalcService.openNeed(req.targets() == null ? List.of() : req.targets());
+    List<Target> realTargets =
+        Poe2CraftCalcService.real(req.targets() == null ? List.of() : req.targets());
+    if (realTargets.isEmpty()) {
       return error("목표 옵션을 하나 이상 고르세요");
     }
-    if (req.targets().size() > 6) {
+    if (realTargets.size() > 6) {
       return error("목표는 여섯 개까지입니다");
     }
     Item start = craft.normalize(req.item());
@@ -512,7 +617,7 @@ public class Poe2CraftOptimizer {
     // '모의 400/400 성공'으로 보였다)
     int onlyPre = 0;
     int onlySuf = 0;
-    for (Target t : req.targets()) {
+    for (Target t : realTargets) {
       java.util.Set<String> gens = new java.util.HashSet<>();
       for (String id : t.anyOf()) {
         Poe2CraftEngine.Mod md = craft.modOf(id);
@@ -528,13 +633,19 @@ public class Poe2CraftOptimizer {
       }
     }
     int perSide = Poe2CraftEngine.maxPerGen(start, Rarity.RARE);
-    if (onlyPre > perSide || onlySuf > perSide) {
+    // 빈 자리 조건도 그 쪽 자리를 쓴다(C521)
+    if (onlyPre + openNeed[0] > perSide || onlySuf + openNeed[1] > perSide) {
       return error(
           "목표를 동시에 채울 수 없습니다 — 접두 목표 "
               + onlyPre
-              + "개 · 접미 목표 "
+              + "개"
+              // 빈 자리 조건도 같이 적는다(C540 — 판정은 빈 자리까지 세는데 문구엔 목표 수만 나와 '접두 1개, 쪽마다 3자리'처럼 앞뒤가 안 맞았다)
+              + (openNeed[0] > 0 ? "(+빈 자리 " + openNeed[0] + ")" : "")
+              + " · 접미 목표 "
               + onlySuf
-              + "개, 레어는 쪽마다 "
+              + "개"
+              + (openNeed[1] > 0 ? "(+빈 자리 " + openNeed[1] + ")" : "")
+              + ", 레어는 쪽마다 "
               + perSide
               + "자리");
     }
@@ -547,7 +658,7 @@ public class Poe2CraftOptimizer {
     String pk = start.poolKey();
     Poe2CraftCalcService.Names names = calc.names(pk);
     Poe2CraftService.Options o = craft.options();
-    List<Target> targets = req.targets();
+    List<Target> targets = realTargets;
     Set<String> targetIds = new java.util.HashSet<>();
     targets.forEach(t -> targetIds.addAll(t.anyOf()));
     Map<String, String> ko = new HashMap<>();
@@ -820,13 +931,17 @@ public class Poe2CraftOptimizer {
       }
     }
     Job job = new Job(targets, usable, fresh, started + budget * 92 / 100);
+    job.openNeed = openNeed;
+    job.openCap = perSide;
     job.recomb.putAll(recombInfo);
     double known = req.upper() != null && req.upper() > 0 ? req.upper() : spamUpper(job);
     if (req.upper() == null) {
       // 시뮬레이터 표의 최저도 위 경계로(C462) — 새 베이스에서(넘김 = 새 베이스 → 그 방법)
       try {
         Poe2CraftCalcService.Response t =
-            calc.calc(new Poe2CraftCalcService.Request(fresh, targets, null, req.recombChance()));
+            // 빈 자리 조건까지 넣은 표(C540, PoE1 짝)
+            calc.calc(
+                new Poe2CraftCalcService.Request(fresh, req.targets(), null, req.recombChance()));
         Poe2CraftCalcService.Method top =
             t.results().stream()
                 .filter(x -> x.costPerSuccess() != null)
@@ -880,8 +995,13 @@ public class Poe2CraftOptimizer {
       frontier.parallelStream()
           .forEach(
               k -> {
-                if (job.trans.size() >= MAX_STATES || System.currentTimeMillis() >= until) {
+                // 상태 한도와 시간 한도를 가른다(C538 — 시간이 다 돼도 '상태 한도로 더 넓히지 못함'이라 적어 상태 1,520개(한도 5,000)에도
+                // 그렇게 보였다). 시간이면 바깥 반복이 끝난다
+                if (job.trans.size() >= MAX_STATES) {
                   hitCap[0] = true;
+                  return;
+                }
+                if (System.currentTimeMillis() >= until) {
                   return;
                 }
                 expand(job, k);
@@ -907,6 +1027,11 @@ public class Poe2CraftOptimizer {
     Map<String, Integer> visits = new HashMap<>();
     List<List<Integer>> paths = new ArrayList<>();
     List<Double> runCost = new ArrayList<>();
+    // 목표에 실제로 닿은 회차의 비용(C540) — 분포(운 좋으면 · 보통 · 운 나쁘면)는 이것만. 넘김 · 고리 감시 회차는 '아는 최저'의 기대 비용을 덩어리로
+    // 더해 분포처럼 보였다
+    List<Double> reachedCost = new ArrayList<>();
+    // 성공 회차의 마지막 아이템(C503 결과 예시) — runCost 와 같은 순서
+    List<Poe2CraftEngine.Item> finals = new ArrayList<>();
     int runs = 0;
     int succ = 0;
     int fallbacks = 0;
@@ -945,6 +1070,10 @@ public class Poe2CraftOptimizer {
       int sameRun = 0;
       int steps = 0;
       int restartRun = 0;
+      // 목표에 실제로 닿았나(C536) — 넘김(아는 최저로) 회차의 마지막 아이템은 목표 아이템이 아니라 결과 예시에서 뺀다
+      boolean reached = false;
+      // 재조합으로 끝났나(C540) — 목표 도달이지만 실제 아이템은 없다(분포엔 넣고 결과 예시엔 뺀다)
+      boolean recombined = false;
       for (int step = 0; step < SIM_STEPS; step++) {
         steps = step;
         if ((step & 4095) == 4095 && System.currentTimeMillis() > simHard) {
@@ -957,6 +1086,7 @@ public class Poe2CraftOptimizer {
         trace.add(k + "→" + (pol.get(k) == null ? "?" : label(usable, pol.get(k), "")));
         if (job.goalKey(k)) {
           done = true;
+          reached = true;
           break;
         }
         if (seenRun.add(k)) {
@@ -1042,6 +1172,7 @@ public class Poe2CraftOptimizer {
           }
           if (job.rng.nextDouble() < rcb[1]) {
             done = true;
+            recombined = true;
             break;
           }
           it = job.fresh;
@@ -1113,6 +1244,10 @@ public class Poe2CraftOptimizer {
         succ++;
         paths.add(path);
         runCost.add(c);
+        finals.add(reached ? it : null);
+        if (reached || recombined) {
+          reachedCost.add(c);
+        }
       } else {
         failCost += c;
         if (diag.isEmpty()) {
@@ -1181,6 +1316,10 @@ public class Poe2CraftOptimizer {
       }
       se = Math.sqrt(var / (succ - 1) / succ);
     }
+    // 못 끝낸 회차가 있으면 비용 = 전체 / 성공 수(C536) — 성공이 적을수록 거칠다(성공 한 번당 비용이 기하 분포에 가까워 상대 오차 ≈ 1/√성공)
+    if (unfinished > 0 && expected != null) {
+      se = Math.max(se == null ? 0 : se, expected / Math.sqrt(succ));
+    }
     if (jobId != null) {
       policies.put(
           jobId,
@@ -1202,7 +1341,9 @@ public class Poe2CraftOptimizer {
             + rounds
             + "단계"
             + (refined > 0 ? " · 다듬기 " + refined + "수단(" + tRefine + "ms)" : "")
-            + (converged ? "(정책이 닿는 상태를 모두 넓힘)" : capped ? " · 상태 한도로 더 넓히지 못함" : " · 시간 한도로 덜 넓힘")
+            + (converged
+                ? "(정책이 닿는 상태를 모두 넓힘)"
+                : capped ? " · 상태 한도(" + MAX_STATES + "개)로 더 넓히지 못함" : " · 시간 한도로 덜 넓힘")
             + (skipped.isEmpty() ? "" : " · 시세가 없어 뺀 수단 " + skipped.size() + "개")
             + (fallbacks > 0 ? " · " + fbLabel + "로 넘긴 회차 " + fallbacks : "")
             + (policyRestarts > 0 ? " · 새 베이스로 처음부터 " + policyRestarts + "번" : "")
@@ -1218,6 +1359,52 @@ public class Poe2CraftOptimizer {
             + succ
             + ")";
     Poe2CraftCalcService.Prices p = calc.prices();
+    List<Showcase> showcase = new ArrayList<>();
+    List<Double> quant = new ArrayList<>();
+    // 성공이 다섯 번은 돼야(C536 — 한 번이면 '운 좋으면 · 보통 · 운 나쁘면'이 같은 값으로 나와 분포처럼 보였다)
+    if (reachedCost.size() >= 5) {
+      List<Double> sorted = new ArrayList<>(reachedCost);
+      java.util.Collections.sort(sorted);
+      for (double q : new double[] {0.25, 0.5, 0.9}) {
+        quant.add(sorted.get(Math.min(sorted.size() - 1, (int) Math.floor(q * sorted.size()))));
+      }
+    }
+    // 목표에 닿은 회차만(C536 — 넘김 회차는 마지막 아이템이 목표 아이템이 아니다)
+    List<Integer> ord = new ArrayList<>();
+    for (int i = 0; i < finals.size(); i++) {
+      if (finals.get(i) != null) {
+        ord.add(i);
+      }
+    }
+    if (!ord.isEmpty()) {
+      ord.sort(java.util.Comparator.comparingDouble(runCost::get));
+      java.util.LinkedHashSet<Integer> pick = new java.util.LinkedHashSet<>();
+      for (double q : new double[] {0.25, 0.5, 0.75}) {
+        pick.add(ord.get(Math.min(ord.size() - 1, (int) Math.floor(q * ord.size()))));
+      }
+      for (int i : pick) {
+        Poe2CraftService.View fv = craft.view(finals.get(i));
+        List<ShowLine> sl = new ArrayList<>();
+        for (Poe2CraftService.Line l : fv.lines()) {
+          sl.add(
+              new ShowLine(
+                  l.id(),
+                  l.gen(),
+                  l.name(),
+                  l.nameKo(),
+                  l.en(),
+                  l.ko(),
+                  List.of(),
+                  List.of(),
+                  l.tierRank(),
+                  l.level(),
+                  false,
+                  l.fractured(),
+                  false));
+        }
+        showcase.add(new Showcase(runCost.get(i), fv.item().rarity().name(), sl));
+      }
+    }
     return new Result(
         expected,
         se,
@@ -1235,10 +1422,20 @@ public class Poe2CraftOptimizer {
         p.league(),
         p.fetchedAt(),
         note,
-        succ == 0 ? "정책 모의에서 목표에 닿지 못했습니다" : null,
+        succ == 0
+            ? "정책 모의에서 목표에 닿지 못했습니다"
+                + (unfinished > 0
+                    ? " — 새 베이스로 처음부터 다시를 "
+                        + policyRestarts
+                        + "번 해도 목표 0번이라 계획 값은 확인되지 않았습니다(드문 결과에 기댄 값)"
+                        + (job.upper < 1e8 ? ". 아는 가장 싼 방법: " + job.upperLabel : "")
+                    : "")
+            : null,
         failedActs.isEmpty()
             ? diag
-            : "안 통한 정책 수단 " + failedActs + (diag.isEmpty() ? "" : " · " + diag));
+            : "안 통한 정책 수단 " + failedActs + (diag.isEmpty() ? "" : " · " + diag),
+        showcase,
+        quant);
   }
 
   private static String label(List<Act> usable, int ai, String upperLabel) {
@@ -1258,7 +1455,7 @@ public class Poe2CraftOptimizer {
     int hits = 0;
     for (int i = 0; i < SPAM_SAMPLE; i++) {
       Item it = job.apply(alch, job.fresh, job.rng);
-      if (it != null && Poe2CraftCalcService.meets(it, job.goal)) {
+      if (it != null && job.met(it)) {
         hits++;
       }
     }
@@ -1627,6 +1824,6 @@ public class Poe2CraftOptimizer {
   private Result error(String msg) {
     return new Result(
         null, null, null, null, null, 0, 0, 0, Map.of(), Map.of(), "", List.of(), List.of(), null,
-        null, null, msg, "");
+        null, null, msg, "", List.of(), List.of());
   }
 }

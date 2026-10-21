@@ -35,6 +35,15 @@ class PoeCraftOptimizerTest {
   }
 
   @Test
+  void 빈_자리_조건이면_쪽별_옵션_수를_설명한다() {
+    // C520 — 빈 자리 조건이 있으면 열쇠 끝 'o접두수,접미수'(바꾸기 칸 뒤)
+    assertThat(PoeCraftOptimizer.describe("R|1|0,1|0||o1,1", 1)).endsWith(" · 옵션 접두 1/접미 1");
+    assertThat(PoeCraftOptimizer.describe("R|1|0,1|0||c01|o2,1", 1))
+        .contains("수확 바꾸기 가능")
+        .endsWith(" · 옵션 접두 2/접미 1");
+  }
+
+  @Test
   void 각인은_열쇠_뒤에_붙어_따로_설명한다() {
     // C468 — 지금 상태(레어, 목표 1) + '#' + 각인한 매직 상태(목표 1)
     assertThat(PoeCraftOptimizer.describe("R|1|1,0|0|#M|1|0,0|0|", 2))

@@ -15,6 +15,7 @@
 @param BigDecimal upcomingCurrentQuantityTotal = java.math.BigDecimal.ZERO
 @param BigDecimal upcomingCurrentQuantityLatestTotal = java.math.BigDecimal.ZERO
 @param java.util.List<String> shortHistorySymbols = java.util.List.of()
+@param net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView financialIncome = null
 
 @template._layout.stockLayout(
 	pageTitle = MessageUtil.getMessage("stock.page.dividend.title"),
@@ -52,6 +53,9 @@
 				currentQuantityTotal = upcomingCurrentQuantityTotal,
 				currentQuantityLatestTotal = upcomingCurrentQuantityLatestTotal,
 				shortHistorySymbols = shortHistorySymbols)
+
+			<%-- 올해 금융소득 종합과세 기준(2026-10-20) - 다가올 배당처럼 기간 · 필터와 무관한 한 해 단위. 조회 실패면 숨는다. --%>
+			@template.stock.fragments.financialIncomeThreshold(view = financialIncome)
 
 			<div class="min-h-[200px]" data-params-from-query="true" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex items-center gap-2 text-base-content/60">

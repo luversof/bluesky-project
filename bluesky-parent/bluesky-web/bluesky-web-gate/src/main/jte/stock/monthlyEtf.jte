@@ -28,6 +28,7 @@
 @param java.util.Map<String, Integer> monthlyEtfPayoutWindowCounts = java.util.Map.of()
 @param String monthlyEtfHolding = "all"
 @param String monthlyEtfAccount = ""
+@param java.util.List<net.luversof.web.gate.stock.dto.view.RecordDateBuyByView> monthlyEtfBuyBy = java.util.List.of()
 @param java.util.List<net.luversof.web.gate.stock.service.MonthlyEtfViewSupport.MonthlyEtfPick> monthlyEtfPicks = java.util.List.of()
 @param java.util.Map<String, net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick> monthlyEtfContributionPicks = java.util.Map.of()
 @param String monthlyEtfView = ""
@@ -109,6 +110,9 @@
 	contentStock = @`
 		<div class="space-y-6">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.monthly.etf.title"), description = MessageUtil.getMessage("stock.page.monthly.etf.desc"))
+
+			<%-- 다음 분배금 기준일 · 매수 마감일(2026-10-20) - 필터와 무관해 결과 구역 밖. --%>
+			@template.stock.fragments.recordDateBuyBy(rows = monthlyEtfBuyBy)
 
 			<%-- 결과 구역(요약 숫자 · 붙는 필터 줄 · 추천 · 표). 좁히기 폼 · 지급 시기 / 기간 / 추천 기준 칩 · 이번 적립 보기 · 정렬 머리 · 초기화는
 			     페이지를 새로 부르지 않고 이 구역만 바꿔 끼운다(사용자 요청 2026-10-13 - 시뮬레이터와 같은 방식). 숫자는 서버가 다시 낸다.

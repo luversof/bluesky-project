@@ -99,6 +99,10 @@ public class StockDividendViewController {
   @Autowired private MonthlyDividendViewSupport monthlyDividendViewSupport;
 
   @Autowired
+  private net.luversof.web.gate.stock.service.FinancialIncomeThresholdSupport
+      financialIncomeThresholdSupport;
+
+  @Autowired
   private net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
       monthlyDividendReferenceSupport;
 
@@ -156,7 +160,19 @@ public class StockDividendViewController {
               request.getQueryString(), month, LocalDate.now(), java.time.ZoneId.systemDefault());
     }
 
+    // 금융소득 종합과세 기준(2026-10-20)은 다가올 배당과 기대는 것이 없어 같이 던진다. 실패하면 null - 구역을 숨긴다.
+    // 과세 연도는 한국 세법의 해라 존을 박아 둔다(JVM 기본 존에 기대지 않는다 - AmbientZoneDependencyTest).
+    UUID financialIncomeUserId = UserUtil.getUserId();
+    java.time.ZoneId taxZone = java.time.ZoneId.of("Asia/Seoul");
+    var financialIncomeFuture =
+        stockAsync.supply(
+            () ->
+                financialIncomeThresholdSupport.load(
+                    financialIncomeUserId, LocalDate.now(taxZone), taxZone));
     populateUpcomingDividendModel(UserUtil.getUserId(), model);
+    model.addAttribute(
+        "financialIncome",
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(financialIncomeFuture));
     return "stock/dividend";
   }
 
@@ -326,6 +342,18 @@ public class StockDividendViewController {
     }
     Map<String, MonthlyDividendPayDayUtil.PayDay> payDayBySymbol =
         MonthlyDividendPayDayUtil.byStockItem(payDayInput);
+    // 예상 지급일 = 기준일 규칙 + 종목별 결제 거래일 수(2026-10-20). 최빈 일자는 지급 이력 209 건 중 57% 만 맞혔고 이 규칙은 100% 였다.
+    // 규칙이 안 서는 종목(기준일이 규칙과 다름 · 이력 부족)만 예전처럼 최빈 일자를 영업일로 옮긴다.
+    List<MonthlyDividendPayDayUtil.RecordedPayout> recordedInput = new ArrayList<>();
+    for (MonthlyDividendPayoutResponse payout : payouts) {
+      if (payout != null) {
+        recordedInput.add(
+            new MonthlyDividendPayDayUtil.RecordedPayout(
+                payout.stockItemSymbol(), payout.recordDate(), payout.payDate()));
+      }
+    }
+    Map<String, MonthlyDividendPayDayUtil.SettlementRule> settlementBySymbol =
+        MonthlyDividendPayDayUtil.settlementRules(recordedInput);
     YearMonth thisMonth = YearMonth.from(today);
     YearMonth nextMonth = thisMonth.plusMonths(1);
     Map<String, Integer> announcedThisMonth =
@@ -362,7 +390,10 @@ public class StockDividendViewController {
                     announced != null ? announced : payDay.day(), thisMonth));
         // 추정일(최빈일)이 주말 · 공휴일이면 그 달의 영업일로(2026-10-14 - 10/17 토요일로 적혔다). 발표일은 그대로.
         if (announced == null) {
-          date = MonthlyDividendPayDayUtil.businessDayInMonth(date);
+          LocalDate ruled =
+              MonthlyDividendPayDayUtil.projectedPayDate(
+                  thisMonth, symbol != null ? settlementBySymbol.get(symbol) : null);
+          date = ruled != null ? ruled : MonthlyDividendPayDayUtil.businessDayInMonth(date);
         }
         DividendCalendarView.Entry entry =
             upcomingEntry(row, symbol, ratio, payDay, date.getDayOfMonth(), announced != null);
@@ -379,7 +410,10 @@ public class StockDividendViewController {
               MonthlyDividendPayDayUtil.dayInMonth(
                   announcedNext != null ? announcedNext : payDay.day(), nextMonth));
       if (announcedNext == null) {
-        nextDate = MonthlyDividendPayDayUtil.businessDayInMonth(nextDate);
+        LocalDate ruled =
+            MonthlyDividendPayDayUtil.projectedPayDate(
+                nextMonth, symbol != null ? settlementBySymbol.get(symbol) : null);
+        nextDate = ruled != null ? ruled : MonthlyDividendPayDayUtil.businessDayInMonth(nextDate);
       }
       byDate
           .computeIfAbsent(nextDate, key -> new ArrayList<>())

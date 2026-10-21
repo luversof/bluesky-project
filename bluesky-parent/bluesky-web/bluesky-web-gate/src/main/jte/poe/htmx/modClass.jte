@@ -28,7 +28,7 @@
 	<%-- 속성 변형 탭 — 방어구는 힘/민첩/지능 베이스마다 붙는 모드가 다르다(ES=지능, 방어도=힘, 회피=민첩) --%>
 	@if(showVariants && !mods.variants().isEmpty())
 		<div class="mb-2 flex flex-wrap items-center gap-1.5" data-mod-variants>
-			<span class="text-sm text-base-content/60 mr-1">${ko ? "속성 변형" : "Attribute"}</span>
+			<span class="text-sm text-base-content/60 mr-1">${"Jewel".equals(mods.itemClass()) || "AbyssJewel".equals(mods.itemClass()) ? (ko ? "주얼 종류" : "Jewel type") : (ko ? "속성 변형" : "Attribute")}</span>
 			@for(var v : mods.variants())
 				!{ String url = "/poe/mods?itemClass=" + clsEnc + "&variant=" + v.key() + "&influence=" + mods.influence(); }
 				<a class="poe-chip badge ${v.key().equals(mods.variant()) ? "badge-secondary" : "badge-ghost"} cursor-pointer"

@@ -102,7 +102,10 @@ public class PoeCraftService {
       Integer tierRank,
       int ilvl,
       int weight,
-      double chance) {}
+      double chance,
+      // 옵션 태그(10-21 C544 사용자 요청 "옵션에 태그가 보여야" — 인게임 상세 보기 " — 원소, 냉기, 저항") — 이름 있는 태그만(영어 · 한국어)
+      List<String> tags,
+      List<String> tagsKo) {}
 
   private final PoeCraftDataService data;
   private final PoeModDataService mods;
@@ -250,8 +253,52 @@ public class PoeCraftService {
     return engine;
   }
 
+  /** 바알 오브 부패 임플리싯 풀(C548 — 계산기 덧붙임) — id → 가중치. */
+  public Map<String, Integer> corruptedPool(String poolKey) {
+    return data.corruptedPool(poolKey);
+  }
+
+  public PoeCraftDataService.VeiledMod corruptedMod(String id) {
+    return data.corruptedMod(id);
+  }
+
+  /** 엘드리치 임플리싯 풀 · 옵션(C549 — 계산기 엘드리치 목표). */
+  public Map<String, Integer> eldritchPool(String poolKey) {
+    return data.eldritchPool(poolKey);
+  }
+
+  public PoeCraftDataService.EldritchMod eldritchMod(String id) {
+    return data.eldritchMod(id);
+  }
+
+  /** 화석 전용(탐광) 옵션(C549). */
+  public PoeCraftDataService.VeiledMod fossilMod(String id) {
+    return data.fossilMod(id);
+  }
+
+  /** 태그 id 목록 → 표시 이름(C548, lineTags 와 같은 규칙) — lang 0 = 영어 · 1 = 한국어, 이름 없는 태그는 뺀다. */
+  public List<String> tagNames(List<String> tagIds, int lang) {
+    if (tagIds == null) {
+      return List.of();
+    }
+    Map<String, List<String>> names = data.tagNames();
+    List<String> out = new ArrayList<>();
+    for (String t : tagIds) {
+      List<String> n = names.get(t);
+      if (n != null && n.size() > lang) {
+        out.add(n.get(lang));
+      }
+    }
+    return out;
+  }
+
   public PoeCraftDataService.CraftMod mod(String id) {
     return data.mod(id);
+  }
+
+  /** 그 풀에서 옵션의 등급(1 = 최상, C533 결과 분포). 모르면 null. */
+  public Integer tierRank(String poolKey, String modId) {
+    return data.tierRank(poolKey, modId);
   }
 
   public List<PoeCraftDataService.Fossil> fossils() {
@@ -483,6 +530,23 @@ public class PoeCraftService {
         engine.boosted(item),
         lineTags(item, 0),
         lineTags(item, 1));
+  }
+
+  /** 옵션 하나의 태그 이름(C544 — 확률 표 줄에도, lineTags 와 같은 규칙) — lang 0 = 영어 · 1 = 한국어, 없으면 빈 목록. */
+  private List<String> modTags(String id, int lang) {
+    PoeCraftDataService.CraftMod m = data.mod(id);
+    if (m == null || m.t() == null) {
+      return List.of();
+    }
+    Map<String, List<String>> names = data.tagNames();
+    List<String> ts = new ArrayList<>();
+    for (String t : m.t()) {
+      List<String> n = names.get(t);
+      if (n != null && n.size() > lang) {
+        ts.add(n.get(lang));
+      }
+    }
+    return ts;
   }
 
   /** 줄 id → 태그 이름(C480) — lang 0 = 영어 · 1 = 한국어, 옵션 태그(ImplicitTags) 순서, 이름 없는 태그는 뺀다. */
@@ -818,6 +882,41 @@ public class PoeCraftService {
    * 다음에 붙을 옵션의 풀 — rarity 를 주면 그 희귀도로 본 자리(일반 아이템에서 "변화를 쓰면" = MAGIC, "연금을 쓰면" = RARE). chance 는 다음
    * 옵션 하나가 그것일 확률.
    */
+  /** 화석 조합 기준 첫 옵션 확률(10-20 C504) — 화석 가중 · 추가 옵션, 확률 높은 순. */
+  public List<PoolLine> fossilPool(PoeCraftEngine.Item item, String fossils) {
+    PoeCraftEngine.Item it = normalize(item);
+    Map<String, Double> el = engine.fossilEligible(it, fossils);
+    double total = el.values().stream().mapToDouble(Double::doubleValue).sum();
+    List<PoolLine> out = new ArrayList<>();
+    for (Map.Entry<String, Double> e : el.entrySet()) {
+      PoeCraftDataService.CraftMod m = data.mod(e.getKey());
+      PoeModDataService.ModTier t = mods.tier(e.getKey());
+      PoeCraftDataService.VeiledMod fm = m == null ? data.fossilMod(e.getKey()) : null;
+      if (m == null && fm == null) {
+        continue;
+      }
+      out.add(
+          new PoolLine(
+              e.getKey(),
+              m != null ? m.g() : fm.g(),
+              m != null ? m.f() : e.getKey(),
+              t != null ? t.name() : fm != null ? fm.name() : e.getKey(),
+              t != null ? t.nameKo() : fm != null ? fm.nameKo() : null,
+              t != null ? t.en() : fm != null ? fm.en() : List.of(),
+              t != null ? t.ko() : fm != null ? fm.ko() : List.of(),
+              t != null ? t.enMin() : fm != null ? fm.enMin() : List.of(),
+              t != null ? t.koMin() : fm != null ? fm.koMin() : List.of(),
+              m != null ? data.tierRank(it.poolKey(), e.getKey()) : null,
+              m != null ? m.l() : fm.l(),
+              (int) Math.round(e.getValue()),
+              total == 0 ? 0 : e.getValue() / total,
+              modTags(e.getKey(), 0),
+              modTags(e.getKey(), 1)));
+    }
+    out.sort(Comparator.comparingDouble((PoolLine p) -> -p.chance()));
+    return out;
+  }
+
   public List<PoolLine> pool(PoeCraftEngine.Item item, PoeCraftEngine.Rarity rarity) {
     PoeCraftEngine.Item it = normalize(item);
     PoeCraftEngine.Rarity r =
@@ -846,7 +945,9 @@ public class PoeCraftService {
               data.tierRank(it.poolKey(), e.getKey()),
               m.l(),
               e.getValue(),
-              total == 0 ? 0 : (double) e.getValue() / total));
+              total == 0 ? 0 : (double) e.getValue() / total,
+              modTags(e.getKey(), 0),
+              modTags(e.getKey(), 1)));
     }
     out.sort(
         Comparator.comparing((PoolLine p) -> "prefix".equals(p.gen()) ? 0 : 1)

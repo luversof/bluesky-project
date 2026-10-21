@@ -2855,6 +2855,72 @@ public final class PoeCraftEngine {
     return f;
   }
 
+  /**
+   * 화석 조합 기준 첫 옵션 가중치(10-20 C504, craftofexile 의 화석 옵션 풀) — 화석은 레어로 다시 굴리므로 분열 옵션만 남긴 레어 자리에서, 화석
+   * 태그 배수 · 추가 옵션 · 축성된 고레벨 가중을 얹는다. 얽혀든 화석의 무작위 태그 · 강제 옵션은 빼고(첫 옵션 확률 표용).
+   */
+  public Map<String, Double> fossilEligible(Item item, String slugs) {
+    Map<String, Double> mult = new java.util.HashMap<>();
+    Map<String, Integer> extra = new java.util.LinkedHashMap<>();
+    Map<String, Integer> fpool = data.fossilPool(item.poolKey());
+    for (String s : slugs == null ? new String[0] : slugs.split(",")) {
+      PoeCraftDataService.Fossil f = data.fossil(s.trim());
+      if (f == null) {
+        continue;
+      }
+      for (Map.Entry<String, Double> e : f.weights().entrySet()) {
+        mult.merge(e.getKey(), e.getValue(), (x, y) -> x * y);
+      }
+      for (String id : f.added() == null ? List.<String>of() : f.added()) {
+        Integer wgt = fpool.get(id);
+        if (wgt != null && wgt > 0) {
+          extra.put(id, wgt);
+        }
+      }
+      if (f.lucky()) {
+        mult.put(LEVEL_BIAS, 1d);
+      }
+    }
+    Weights w = new Weights(mult, null, null, false, false, extra.isEmpty() ? null : extra);
+    List<Affix> keep = item.affixes().stream().filter(Affix::fractured).toList();
+    Item base = item.with(Rarity.RARE, keep);
+    PoolIndex px = index(base.poolKey());
+    int max = maxPerGen(base, Rarity.RARE);
+    boolean po = base.count("prefix") < max;
+    boolean so = base.count("suffix") < max;
+    int[] tg = takenGroups(base);
+    int[] taken = java.util.Arrays.copyOfRange(tg, 1, tg.length);
+    Meta meta = meta(keep);
+    Map<String, Double> out = new java.util.LinkedHashMap<>();
+    for (int i = 0; i < px.ids().length; i++) {
+      if (open(px, i, base.ilvl(), po, so, taken, tg[0])) {
+        double f = px.weights()[i] * factor(px, i, w, meta);
+        if (f > 0) {
+          out.put(px.ids()[i], f);
+        }
+      }
+    }
+    for (Map.Entry<String, Integer> e : extra.entrySet()) {
+      PoeCraftDataService.VeiledMod m = data.fossilMod(e.getKey());
+      if (m == null || m.l() > base.ilvl()) {
+        continue;
+      }
+      Affix a = new Affix(e.getKey(), m.g(), m.grp() == null ? List.of() : m.grp(), false, false);
+      if (("prefix".equals(m.g()) ? !po : !so) || keep.stream().anyMatch(x -> sharesGroup(x, a))) {
+        continue;
+      }
+      String[] tags = m.t() == null ? new String[0] : m.t().toArray(new String[0]);
+      double f = e.getValue() * factor(e.getKey(), tags, w, meta);
+      if (f > 0 && w.tagMult().containsKey(LEVEL_BIAS)) {
+        f *= Math.max(0.01, 1 + (m.l() - 40) / 100.0);
+      }
+      if (f > 0) {
+        out.put(e.getKey(), f);
+      }
+    }
+    return out;
+  }
+
   /** 지금 붙을 수 있는 옵션 → 가중치(에뮬레이터 옵션 풀 패널 · 계산기와 같은 규칙, 메타 공격/주문 금지 포함). */
   public Map<String, Integer> eligible(Item item, Rarity rarity) {
     PoolIndex px = index(item.poolKey());

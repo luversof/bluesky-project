@@ -1315,12 +1315,24 @@ function tooltipAlignable(el: Element): boolean {
 	return !cl.contains("tooltip-right") && !cl.contains("tooltip-left")
 		&& !cl.contains("tooltip-bottom-start") && !cl.contains("tooltip-bottom-end");
 }
+// 화면 가장자리만 보면 고정 옆 메뉴 밑으로 말풍선이 들어간다. 실측 2026-10-21(대시보드 1280px): 옆 메뉴(fixed z-40, 불투명)가
+// [0,224] 를 덮는데 통합손익 계산 내역 말풍선이 가운데 맞춤으로 [197,517] 에 놓여 왼쪽 27px 이 메뉴에 가려 "잘려" 보였다
+// (말풍선 z 20 < 메뉴 40). 레이아웃이 본문 칸에 data-tooltip-bounds 를 달면 그 칸(화면과 겹치는 부분)을 경계로 잰다.
+function tooltipBounds(el: Element, viewportWidth: number): { left: number; width: number } {
+	const host = el.closest("[data-tooltip-bounds]");
+	if (!host) return { left: 0, width: viewportWidth };
+	const r = host.getBoundingClientRect();
+	const left = Math.max(0, r.left);
+	const right = Math.min(viewportWidth, r.right);
+	return right > left ? { left, width: right - left } : { left: 0, width: viewportWidth };
+}
 function alignTooltip(el: Element, viewportWidth: number): string {
 	if (!tooltipAlignable(el)) return "skip";
 	el.classList.remove(TOOLTIP_ALIGN_START, TOOLTIP_ALIGN_END);
 	const rect = el.getBoundingClientRect();
 	if (!(rect.width > 0)) return "hidden";
-	const align = tooltipAlign(rect.left, rect.right, tooltipBubbleWidth(el), viewportWidth);
+	const bounds = tooltipBounds(el, viewportWidth);
+	const align = tooltipAlign(rect.left - bounds.left, rect.right - bounds.left, tooltipBubbleWidth(el), bounds.width);
 	if (align === "start") el.classList.add(TOOLTIP_ALIGN_START);
 	else if (align === "end") el.classList.add(TOOLTIP_ALIGN_END);
 	return align;
@@ -1354,7 +1366,7 @@ document.addEventListener("focusin", (event) => {
 		alignTooltip(target, document.documentElement.clientWidth);
 	}
 });
-(globalThis as any).__tooltipAlignInternals = { tooltipAlign, tooltipAlignable, alignTooltip, alignTooltips, TOOLTIP_ALIGN_START, TOOLTIP_ALIGN_END };
+(globalThis as any).__tooltipAlignInternals = { tooltipAlign, tooltipAlignable, tooltipBounds, alignTooltip, alignTooltips, TOOLTIP_ALIGN_START, TOOLTIP_ALIGN_END };
 
 
 // htmx 가 걷어내는 요소 안의 canvas 에 붙은 Chart.js 인스턴스를 파괴한다. 실측 2026-09-09: 자산성장·배당 화면에서 기간 프리셋을
@@ -2578,7 +2590,7 @@ document.addEventListener("error", (event) => handleImgError(event.target), true
 // [data-craft-arm-scope] 안 name=action 단추(되돌리기 · 새 아이템 · 장막 해제 고르기 · 직접 편집 · 재조합 보관 등은 빼고)를 누르면 바로 보내지 않고 '고른' 상태로 두고,
 // [data-craft-arm-target](아이템 카드)을 누르면(또는 Enter) 그 단추를 눌러 보낸다. 같은 단추를 다시 누르거나 Esc 면 취소. 교체 뒤에도 고른 화폐를 유지해 카드를 거듭 누르면 연타.
 // 탐침은 window.__craftDirectApply 로 예전처럼 바로 적용(lib.js launch).
-const CRAFT_IMMEDIATE = /^(UNDO|UNDO_TO:|RESET|UNVEIL|MANUAL|COMMIT|FORESEE_OFF|STASH|SWAP|UNSTASH|RECOMBINE)/;
+const CRAFT_IMMEDIATE = /^(UNDO|UNDO_TO:|RESET|UNVEIL|MANUAL|COMMIT|FORESEE_OFF|STASH|SWAP|UNSTASH|RECOMBINE|SPAM|GHOST)/;
 let craftArmed: string | null = null;
 let craftPassThrough = false;
 function craftArmable(b: Element | null): b is HTMLButtonElement {
@@ -2674,6 +2686,19 @@ function fixDisabledSelections(): void {
 document.addEventListener("DOMContentLoaded", fixDisabledSelections);
 document.addEventListener("htmx:afterSettle", () => setTimeout(fixDisabledSelections, 0));
 
+// Ctrl+Z 되돌리기(2026-10-20 C517, craftofexile 'Ctrl+Z to revert emulator actions'): 제작 화면에서 입력 칸 밖이면 에뮬레이터 '되돌리기' 단추를 누른다(PoE1 · PoE2).
+// 한글 입력 상태에선 key 가 'ㅋ' 라 물리 키(code KeyZ)로도 본다. 되돌릴 게 없으면(단추 꺼짐) 브라우저 기본 동작 그대로.
+document.addEventListener("keydown", (event) => {
+	if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey) return;
+	if (event.code !== "KeyZ" && (event.key || "").toLowerCase() !== "z") return;
+	const t = event.target as HTMLElement | null;
+	if (t && (t.closest?.("input, textarea, select, [contenteditable]") || t.isContentEditable)) return;
+	const btn = document.querySelector<HTMLButtonElement>('#craft-emu button[data-craft-action="UNDO"], #craft2-emu button[data-craft-action="UNDO"]');
+	if (!btn || btn.disabled) return;
+	event.preventDefault();
+	btn.click();
+});
+
 // 장막 아이템 우클릭 → 장막 해제(2026-10-20 C482): 인게임 안내 "이 아이템에 우클릭하여 장막을 해제하십시오." 그대로 — 카드에 장막 줄 그림이 있으면 '장막 해제' 단추를 누른다.
 document.addEventListener("contextmenu", (event) => {
 	const target = (event.target as HTMLElement | null)?.closest?.("[data-craft-arm-target]");
@@ -2683,4 +2708,685 @@ document.addEventListener("contextmenu", (event) => {
 	if (!btn || btn.disabled) return;
 	event.preventDefault();
 	btn.click();
+});
+
+// 게임 아이템 붙여넣기(2026-10-20 C485, craftofexile 의 Import item): 제작 화면 아무 데서나 Ctrl+V 하면 게임 복사 글인지 보고 붙여넣기 칸에 넣어 바로 보낸다.
+// 입력 칸 안에서 붙여 넣는 건 그대로 둔다(검색 · 수치 칸).
+function looksLikeItemText(text: string): boolean {
+	return /^(Item Class|아이템 종류|Rarity|아이템 희귀도)\s*:/m.test(text) && /^-{4,}\s*$/m.test(text);
+}
+document.addEventListener("paste", (event) => {
+	const form = document.querySelector<HTMLFormElement>("[data-craft-import-form]");
+	if (!form) return;
+	const t = event.target as HTMLElement | null;
+	if (t && (t.closest("input, textarea, select, [contenteditable]") || t.isContentEditable)) return;
+	const text = event.clipboardData?.getData("text/plain") || "";
+	if (!looksLikeItemText(text)) return;
+	event.preventDefault();
+	craftImportFrom(text);
+});
+/** 게임 글을 붙여넣기 칸에 넣어 보낸다(C485 · C545 공용) — 칸이 없거나 게임 글이 아니면 false. */
+function craftImportFrom(text: string): boolean {
+	const form = document.querySelector<HTMLFormElement>("[data-craft-import-form]");
+	const area = form?.querySelector<HTMLTextAreaElement>("[data-craft-import-text]");
+	if (!form || !area || !looksLikeItemText(text)) return false;
+	area.value = text;
+	const box = form.closest("details");
+	if (box) box.open = true;
+	form.requestSubmit();
+	return true;
+}
+// 아이템 붙여넣기 단추(2026-10-21 C545 사용자 요청 "아이템 글 복사가 있는데 인게임에서 복사한 아이템 붙여넣기도"): 카드 아래 '아이템 글 복사'의 짝.
+// 클립보드를 읽어 게임 글이면 바로 보내고, 읽을 수 없거나(권한 거부 · 미지원) 게임 글이 아니면 위 붙여넣기 칸을 열어 커서를 두고 Ctrl+V 를 안내한다.
+document.addEventListener("click", (event) => {
+	const b = (event.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-craft-import-paste]");
+	if (!b) return;
+	const ko = (document.documentElement.lang || "").startsWith("ko");
+	const msg = b.closest("[data-craft-export-row]")?.querySelector<HTMLElement>("[data-craft-export-msg]");
+	const say = (s: string) => {
+		if (!msg) return;
+		msg.textContent = s;
+		setTimeout(() => {
+			if (msg.textContent === s) msg.textContent = "";
+		}, 5000);
+	};
+	const openBox = (why: string) => {
+		const form = document.querySelector<HTMLFormElement>("[data-craft-import-form]");
+		const box = form?.closest("details");
+		if (box) box.open = true;
+		const area = form?.querySelector<HTMLTextAreaElement>("[data-craft-import-text]");
+		area?.scrollIntoView({ block: "center" });
+		area?.focus();
+		say(why);
+	};
+	if (!navigator.clipboard?.readText) {
+		openBox(ko ? "위 붙여넣기 칸에 Ctrl+V" : "Press Ctrl+V in the paste box above");
+		return;
+	}
+	navigator.clipboard.readText().then(
+		(text) => {
+			if (craftImportFrom(text)) say(ko ? "붙여 넣었습니다" : "Pasted");
+			else openBox(ko ? "클립보드에 게임 아이템 글이 없습니다 — 게임에서 아이템에 마우스를 올리고 Ctrl+C" : "No game item text on the clipboard — hover an item in game and press Ctrl+C");
+		},
+		() => openBox(ko ? "클립보드 읽기가 막혀 있습니다 — 위 칸에 Ctrl+V" : "Clipboard access is blocked — press Ctrl+V in the box above"),
+	);
+});
+
+// 에센스 고르기(2026-10-21 C547 사용자 요청 "에센스 셀렉트가 너무 길다 — 종류를 아이콘으로 고르고 등급을 고르는 식"): 숨은 select[name=essence] 가 값의
+// 주인(서버 · 열린 값 유지 · 적중 확률 그대로). 종류 단추 = 그 종류의 등급 줄을 보이고 지금 등급과 같은 단계(없으면 쓸 수 있는 가장 높은 등급)를 고름,
+// 등급 단추 = 그 에센스. 고르면 select 에 change 를 보내고, select 가 바뀌면(탐침 · 값 유지) 단추 표시를 맞춘다.
+function syncEssencePicker(root: ParentNode = document): void {
+	const boxes = root instanceof Element && root.matches("[data-craft-essence]") ? [root as HTMLElement] : Array.from(root.querySelectorAll<HTMLElement>("[data-craft-essence]"));
+	boxes.forEach((box) => {
+		const sel = box.querySelector<HTMLSelectElement>("select[data-craft-ess-select]");
+		if (!sel) return;
+		const slug = sel.value;
+		const pick = Array.from(box.querySelectorAll<HTMLElement>("[data-craft-ess-pick]")).find((b) => b.dataset.craftEssPick === slug);
+		const famOfPick = pick?.closest<HTMLElement>("[data-craft-ess-tiers]")?.dataset.craftEssTiers || "";
+		const fam = box.dataset.viewFam || famOfPick;
+		// 고른 단추 = 화폐 단추와 같은 btn-primary(btn-ghost 와 겹치면 글자가 안 보였다)
+		const mark = (b: HTMLElement, on: boolean) => {
+			b.setAttribute("aria-pressed", on ? "true" : "false");
+			b.classList.toggle("btn-primary", on);
+			b.classList.toggle("btn-ghost", !on);
+		};
+		box.querySelectorAll<HTMLElement>("[data-craft-ess-fam]").forEach((b) => mark(b, b.dataset.craftEssFam === fam));
+		box.querySelectorAll<HTMLElement>("[data-craft-ess-tiers]").forEach((row) => (row.hidden = row.dataset.craftEssTiers !== fam));
+		box.querySelectorAll<HTMLElement>("[data-craft-ess-pick]").forEach((b) => mark(b, b.dataset.craftEssPick === slug));
+		const desc = box.querySelector<HTMLElement>("[data-craft-ess-desc]");
+		if (desc) {
+			const ko = (document.documentElement.lang || "").startsWith("ko");
+			const viewRow = box.querySelector<HTMLElement>(`[data-craft-ess-tiers="${CSS.escape(fam)}"]`);
+			const shown = famOfPick === fam || slug === "" ? pick : undefined;
+			const why = !shown && viewRow ? viewRow.querySelector<HTMLElement>("[data-craft-ess-pick][data-why]")?.dataset.why : undefined;
+			desc.textContent = shown ? shown.dataset.desc || "" : why ? (ko ? "지금 아이템에 못 씀 — " : "Not usable on this item — ") + why : "";
+		}
+	});
+}
+document.addEventListener("click", (event) => {
+	const t = event.target as HTMLElement | null;
+	const pb = t?.closest?.<HTMLButtonElement>("[data-craft-ess-pick]");
+	const fb = pb ? null : t?.closest?.<HTMLButtonElement>("[data-craft-ess-fam]");
+	if (!pb && !fb) return;
+	const box = (pb || fb)!.closest<HTMLElement>("[data-craft-essence]");
+	const sel = box?.querySelector<HTMLSelectElement>("select[data-craft-ess-select]");
+	if (!box || !sel) return;
+	let slug: string | undefined;
+	if (pb) {
+		slug = pb.dataset.craftEssPick || "";
+		delete box.dataset.viewFam;
+	} else {
+		const fam = fb!.dataset.craftEssFam || "";
+		box.dataset.viewFam = fam;
+		const row = box.querySelector<HTMLElement>(`[data-craft-ess-tiers="${CSS.escape(fam)}"]`);
+		const picks = Array.from(row?.querySelectorAll<HTMLButtonElement>("[data-craft-ess-pick]") || []).filter((x) => !x.disabled);
+		const curTier = Array.from(box.querySelectorAll<HTMLElement>("[data-craft-ess-pick]")).find((b) => b.dataset.craftEssPick === sel.value)?.dataset.tier;
+		const chosen = picks.find((x) => x.dataset.tier === curTier) || picks[picks.length - 1];
+		slug = chosen?.dataset.craftEssPick;
+		if (slug !== undefined) delete box.dataset.viewFam;
+	}
+	if (slug !== undefined && sel.value !== slug) {
+		sel.value = slug;
+		sel.dispatchEvent(new Event("change", { bubbles: true }));
+	}
+	syncEssencePicker(box);
+});
+document.addEventListener("change", (e) => {
+	const sel = e.target as HTMLElement | null;
+	if (!sel?.matches?.("select[data-craft-ess-select]")) return;
+	const box = sel.closest<HTMLElement>("[data-craft-essence]");
+	if (box) {
+		delete box.dataset.viewFam;
+		syncEssencePicker(box);
+	}
+});
+document.addEventListener("htmx:afterSettle", () => syncEssencePicker());
+document.addEventListener("DOMContentLoaded", () => syncEssencePicker());
+
+// 계산기 영향력 바로가기(2026-10-21 C548 사용자 요청 "제작 계산기에 정복자 옵션이 안 보인다"): 위쪽 선택 칸의 영향력을 바꿔(change → 그 조건으로 페이지
+// 구역을 다시 받음 · 만들던 아이템이 있으면 확인) 그 영향력 옵션을 계산기 목표 목록에 넣는다
+document.addEventListener("click", (event) => {
+	const b = (event.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-craft-set-influence]");
+	if (!b) return;
+	const sel = document.querySelector<HTMLSelectElement>('[data-craft-picker] select[name="influence"]');
+	if (!sel) return;
+	sel.value = b.dataset.craftSetInfluence || "";
+	sel.dispatchEvent(new Event("change", { bubbles: true }));
+});
+
+// 아이템 글 내보내기 · 공유 링크(2026-10-20 C489, craftofexile 의 RAW 내보내기 · Share link): 게임 고급 복사(Ctrl+Alt+C)와 같은 형식이라
+// 이 화면 붙여넣기(C485)로 다시 들어오고 다른 도구에도 붙는다. 머리줄 문구는 게임 ClientStrings(ModDescriptionLinePrefix · Tier 등) 그대로.
+function craftExportText(btn: HTMLElement): string {
+	const d = btn.dataset;
+	const ko = d.exLang === "ko";
+	const card = btn.closest("[data-craft-arm-scope]")?.querySelector("[data-craft-tooltip]") || document.querySelector("[data-craft-arm-scope] [data-craft-tooltip]");
+	const out: string[] = [];
+	const rarity = d.exRarity || "NORMAL";
+	const rarName: Record<string, [string, string]> = { NORMAL: ["Normal", "일반"], MAGIC: ["Magic", "마법"], RARE: ["Rare", "희귀"] };
+	out.push((ko ? "아이템 종류: " : "Item Class: ") + (d.exClass || ""));
+	out.push((ko ? "아이템 희귀도: " : "Rarity: ") + (rarName[rarity] || rarName.NORMAL)[ko ? 1 : 0]);
+	if (rarity === "RARE") {
+		out.push(d.exName && d.exName !== (ko ? "레어 아이템" : "Rare Item") ? d.exName : ko ? "레어 아이템" : "Rare Item");
+		out.push(d.exBase || "");
+	} else if (rarity === "MAGIC") {
+		out.push(d.exName || d.exBase || "");
+	} else {
+		out.push(d.exBase || "");
+	}
+	out.push("--------");
+	const quality = card?.querySelector<HTMLElement>("[data-craft-quality]");
+	if (quality) {
+		out.push(quality.innerText.trim());
+		out.push("--------");
+	}
+	out.push((ko ? "아이템 레벨: " : "Item Level: ") + (d.exIlvl || ""));
+	// 군집 주얼 인챈트(C515) — 게임 복사 글처럼 아이템 레벨 다음 칸, 꼬리표 (enchant)
+	const enchants = card ? Array.from(card.querySelectorAll<HTMLElement>("[data-craft-enchant] > div")).map((e) => e.innerText.trim()).filter(Boolean) : [];
+	if (enchants.length) {
+		out.push("--------");
+		enchants.forEach((e) => out.push(e + " (enchant)"));
+	}
+	const values = (el: Element) => Array.from(el.querySelectorAll<HTMLElement>("div.inline")).map((v) => v.innerText.replace(/\s+/g, " ").trim()).filter(Boolean);
+	const implicits = card ? Array.from(card.querySelectorAll<HTMLElement>("[data-craft-implicit]")) : [];
+	if (implicits.length) {
+		out.push("--------");
+		implicits.forEach((el) => {
+			const side = el.dataset.craftSide;
+			const label = el.dataset.craftExTierLabel || "";
+			const head = side === "exarch" ? (ko ? `작열의 총주교 고정 속성 (${label})` : `Searing Exarch Implicit Modifier (${label})`) : side === "eater" ? (ko ? `세계 포식자 고정 속성 (${label})` : `Eater of Worlds Implicit Modifier (${label})`) : ko ? "타락 고정 속성 부여" : "Corruption Implicit Modifier";
+			out.push(`{ ${head} }`);
+			values(el).forEach((v) => out.push(v + " (implicit)"));
+		});
+	}
+	const lines = card ? Array.from(card.querySelectorAll<HTMLElement>("[data-craft-line]")) : [];
+	if (lines.length) {
+		out.push("--------");
+		lines.forEach((el) => {
+			const id = el.dataset.craftLine || "";
+			const pre = el.dataset.craftGen === "prefix";
+			if (id.startsWith("Veiled")) {
+				out.push(`{ ${ko ? (pre ? "접두어 속성 부여" : "접미어 속성 부여") : pre ? "Prefix Modifier" : "Suffix Modifier"} }`);
+				out.push(ko ? (pre ? "장막 접두어" : "장막 접미어") : pre ? "Veiled Prefix" : "Veiled Suffix");
+				return;
+			}
+			const crafted = el.dataset.craftExCrafted === "1";
+			const fractured = el.dataset.craftExFractured === "1";
+			const mark = crafted ? (ko ? "대가의 제작 " : "Master Crafted ") : fractured ? (ko ? "분열된 " : "Fractured ") : "";
+			const kind = ko ? (pre ? "접두어 속성 부여" : "접미어 속성 부여") : pre ? "Prefix Modifier" : "Suffix Modifier";
+			const tier = !crafted && el.dataset.craftExTier ? (ko ? ` (등급: ${el.dataset.craftExTier})` : ` (Tier: ${el.dataset.craftExTier})`) : "";
+			const tags = el.dataset.craftExTags ? ` — ${el.dataset.craftExTags}` : "";
+			out.push(`{ ${mark}${kind} "${el.dataset.craftExName || ""}"${tier}${tags} }`);
+			values(el).forEach((v) => out.push(v + (fractured ? " (fractured)" : crafted ? " (crafted)" : "")));
+		});
+	}
+	if (d.exInfluence || d.exCorrupted === "1") {
+		out.push("--------");
+		if (d.exInfluence) out.push(d.exInfluence);
+		if (d.exCorrupted === "1") out.push(ko ? "타락" : "Corrupted");
+	}
+	return out.join("\n") + "\n";
+}
+function craftShareLink(btn: HTMLElement): string {
+	const scope = btn.closest("[data-craft-arm-scope]") || document;
+	const form = scope.querySelector<HTMLFormElement>("form") || document.querySelector<HTMLFormElement>("#craft-emu form, #craft2-emu form");
+	const val = (n: string) => (form?.querySelector<HTMLInputElement>(`input[name="${n}"]`)?.value ?? "");
+	const p = new URLSearchParams();
+	let path = "/poe/craft";
+	if (val("poolKey")) {
+		path = "/poe2/craft";
+		p.set("pool", val("poolKey"));
+		if (val("base")) p.set("base", val("base"));
+		// 레어 이름(C518 — PoE2 공유 링크에 빠져 있었다, PoE1 은 C489 부터)
+		if (val("itemName")) p.set("itemName", val("itemName"));
+		if (val("itemNameKo") && val("itemNameKo") !== val("itemName")) p.set("itemNameKo", val("itemNameKo"));
+	} else {
+		p.set("itemClass", val("itemClass"));
+		p.set("variant", val("variant"));
+		p.set("influence", val("influence"));
+		if (val("baseName")) p.set("base", val("baseName"));
+		if (val("itemName")) p.set("itemName", val("itemName"));
+		// 레어 이름 한국어(C518 — 링크로 다시 열면 한국어 화면에 영어 이름이 나왔다)
+		if (val("itemNameKo") && val("itemNameKo") !== val("itemName")) p.set("itemNameKo", val("itemNameKo"));
+		// 군집 주얼 패시브 수(C531)
+		if (val("passives")) p.set("passives", val("passives"));
+	}
+	p.set("ilvl", val("ilvl"));
+	p.set("state", val("state"));
+	p.set("rolls", val("rolls"));
+	return `${location.origin}${path}?${p.toString()}`;
+}
+function craftNote(msgFrom: HTMLElement, text: string): void {
+	const msg = msgFrom.parentElement?.querySelector<HTMLElement>("[data-craft-export-msg]");
+	if (msg) {
+		msg.textContent = text;
+		setTimeout(() => (msg.textContent = ""), 2500);
+	}
+}
+function craftCopy(text: string, msgFrom: HTMLElement, ok: string): void {
+	const done = () => craftNote(msgFrom, ok);
+	const fallback = () => {
+		const ta = document.createElement("textarea");
+		ta.value = text;
+		document.body.appendChild(ta);
+		ta.select();
+		document.execCommand("copy");
+		ta.remove();
+		done();
+	};
+	if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+	else fallback();
+}
+document.addEventListener("click", (event) => {
+	const t = event.target as HTMLElement | null;
+	const ex = t?.closest?.<HTMLElement>("[data-craft-export-text]");
+	if (ex) {
+		const ko = ex.dataset.exLang === "ko";
+		craftCopy(craftExportText(ex), ex, ko ? "아이템 글을 복사했습니다" : "Copied item text");
+		return;
+	}
+	const sh = t?.closest?.<HTMLElement>("[data-craft-share-link]");
+	if (sh) {
+		const ko = document.documentElement.lang?.startsWith("ko") || !!document.querySelector("[data-craft-export-text][data-ex-lang=ko]");
+		craftCopy(craftShareLink(sh), sh, ko ? "링크를 복사했습니다" : "Copied link");
+		return;
+	}
+	const sv = t?.closest?.<HTMLElement>("[data-craft-inv-save]");
+	if (sv) {
+		const d = sv.parentElement?.querySelector<HTMLElement>("[data-craft-export-text]")?.dataset || {};
+		const ko = d.exLang === "ko";
+		const url = craftShareLink(sv);
+		const item: CraftInvItem = { name: d.exName || d.exBase || "", base: d.exBase || "", rarity: d.exRarity || "NORMAL", url, at: Date.now() };
+		const saved = craftInvStore([item, ...craftInvLoad().filter((x) => x.url !== url)]);
+		craftNote(sv, saved ? (ko ? "보관함에 저장했습니다" : "Saved to inventory") : ko ? "이 브라우저는 저장소를 쓸 수 없습니다" : "Browser storage is unavailable");
+		renderCraftInventory();
+		return;
+	}
+	const del = t?.closest?.<HTMLElement>("[data-craft-inv-del]");
+	if (del) {
+		const url = del.dataset.craftInvDel || "";
+		craftInvStore(craftInvLoad().filter((x) => x.url !== url));
+		renderCraftInventory();
+		return;
+	}
+	// 보관함 옮기기(C535) — 목록을 글(JSON)로 복사 · 붙여넣은 글을 합치기
+	const box = t?.closest?.<HTMLElement>("[data-craft-inv-move]");
+	const msg = box?.querySelector<HTMLElement>("[data-craft-inv-msg]");
+	const ko = document.querySelector<HTMLElement>("[data-craft-inventory]")?.dataset.invLang === "ko";
+	const note = (s: string) => {
+		if (msg) {
+			msg.textContent = s;
+			setTimeout(() => (msg.textContent = ""), 3000);
+		}
+	};
+	if (t?.closest?.("[data-craft-inv-export]")) {
+		const text = JSON.stringify(craftInvLoad());
+		const done = () => note(ko ? `${craftInvLoad().length}개를 복사했습니다` : `Copied ${craftInvLoad().length} items`);
+		if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, done);
+		const ta = box?.querySelector<HTMLTextAreaElement>("[data-craft-inv-import-text]");
+		if (ta) ta.value = text;
+		return;
+	}
+	if (t?.closest?.("[data-craft-inv-import]")) {
+		const ta = box?.querySelector<HTMLTextAreaElement>("[data-craft-inv-import-text]");
+		const added = craftInvImport(ta?.value || "");
+		if (added < 0) note(ko ? "보관함 글이 아닙니다" : "Not inventory text");
+		else {
+			note(ko ? `${added}개를 더했습니다` : `Added ${added} items`);
+			renderCraftInventory();
+		}
+	}
+});
+
+/** 붙여넣은 보관함 글(JSON 배열)을 합친다(C535) — 같은 사이트의 제작 화면 주소(/poe/craft · /poe2/craft, 이 화면 게임)만, 같은 주소는 한 번. 글이 아니면 -1. */
+function craftInvImport(text: string): number {
+	let list: unknown;
+	try {
+		list = JSON.parse(text);
+	} catch {
+		return -1;
+	}
+	if (!Array.isArray(list)) return -1;
+	const path = location.pathname.startsWith("/poe2/") ? "/poe2/craft" : "/poe/craft";
+	const cur = craftInvLoad();
+	const seen = new Set(cur.map((x) => x.url));
+	let added = 0;
+	const fresh: CraftInvItem[] = [];
+	for (const raw of list) {
+		if (!raw || typeof raw !== "object") continue;
+		const o = raw as Record<string, unknown>;
+		let u: URL;
+		try {
+			u = new URL(String(o.url || ""), location.origin);
+		} catch {
+			continue;
+		}
+		if (u.origin !== location.origin || u.pathname !== path) continue;
+		const url = u.toString();
+		if (seen.has(url)) continue;
+		seen.add(url);
+		fresh.push({
+			name: String(o.name || "").slice(0, 80),
+			base: String(o.base || "").slice(0, 80),
+			rarity: ["NORMAL", "MAGIC", "RARE"].includes(String(o.rarity)) ? String(o.rarity) : "NORMAL",
+			url,
+			at: Number.isFinite(Number(o.at)) ? Number(o.at) : Date.now(),
+		});
+		added++;
+	}
+	craftInvStore([...fresh, ...cur]);
+	return added;
+}
+
+// 사용자 가격(2026-10-21 C529, craftofexile 'custom pricing'): '가격 직접 입력' 칸 값을 이 브라우저에 저장하고, 제작 htmx 요청마다 prices(JSON)로
+// 보낸다(게이트가 계산 · 쓴 화폐 · 최적 조합 요청에 싣는다). 비우면 시세. 저장소를 못 쓰면 이번 화면에서만.
+// PoE1 = 카오스 · PoE2 = 디바인(C530), 게임마다 따로
+const CRAFT_PRICE_KEY = location.pathname.startsWith("/poe2/") ? "craftPrices.poe2" : "craftPrices.poe1";
+let craftPricesMem: Record<string, number> = {};
+function craftPricesLoad(): Record<string, number> {
+	try {
+		const v = JSON.parse(localStorage.getItem(CRAFT_PRICE_KEY) || "{}");
+		return v && typeof v === "object" ? v : {};
+	} catch {
+		return craftPricesMem;
+	}
+}
+function craftPricesSave(p: Record<string, number>): void {
+	craftPricesMem = p;
+	try {
+		if (Object.keys(p).length) localStorage.setItem(CRAFT_PRICE_KEY, JSON.stringify(p));
+		else localStorage.removeItem(CRAFT_PRICE_KEY);
+	} catch {
+		/* 저장 못 하면 이번 화면만 */
+	}
+}
+function syncCraftPrices(): void {
+	const box = document.querySelector<HTMLElement>("[data-craft-prices]");
+	if (!box) return;
+	const p = craftPricesLoad();
+	box.querySelectorAll<HTMLInputElement>("[data-craft-price-name]").forEach((i) => {
+		const v = p[i.dataset.craftPriceName || ""];
+		if (document.activeElement !== i) i.value = v ? String(v) : "";
+	});
+	const n = Object.keys(p).length;
+	const c = box.querySelector<HTMLElement>("[data-craft-prices-count]");
+	if (c) c.textContent = n ? `(${n})` : "";
+}
+document.addEventListener("DOMContentLoaded", syncCraftPrices);
+document.addEventListener("htmx:afterSettle", syncCraftPrices);
+document.addEventListener("input", (e) => {
+	const i = (e.target as HTMLElement | null)?.closest?.<HTMLInputElement>("[data-craft-price-name]");
+	if (!i) return;
+	const p = { ...craftPricesLoad() };
+	const name = i.dataset.craftPriceName || "";
+	const v = parseFloat(i.value);
+	if (Number.isFinite(v) && v > 0) p[name] = v;
+	else delete p[name];
+	craftPricesSave(p);
+	syncCraftPrices();
+});
+document.addEventListener("click", (e) => {
+	if (!(e.target as HTMLElement | null)?.closest?.("[data-craft-prices-reset]")) return;
+	craftPricesSave({});
+	syncCraftPrices();
+});
+document.addEventListener("htmx:configRequest", (e) => {
+	const d = (e as CustomEvent).detail;
+	const path = String(d?.path || "");
+	if (!path.startsWith("/poe/htmx/craft") && !path.startsWith("/poe2/htmx/craft")) return;
+	const p = craftPricesLoad();
+	if (Object.keys(p).length) d.parameters["prices"] = JSON.stringify(p);
+	// 올플레임 복제본 수(C532) — 계산기 결과에 '복제본 N개 중 고르기' 표
+	if (path.startsWith("/poe/htmx/craft/calc") && craftGhostN() > 1) d.parameters["ghost"] = String(craftGhostN());
+});
+
+// 보관함(2026-10-20 C518, craftofexile beta 의 Inventory): 지금 에뮬레이터 아이템을 이 브라우저에 담아 두고(공유 링크 = 아이템 상태 전부 + 이름 · 베이스 ·
+// 희귀도 · 시각) 페이지의 '보관함' 칸에서 다시 열기 · 지우기. PoE1 · PoE2 따로, 최대 60개(새 것 먼저, 같은 아이템은 한 번). 저장소를 못 쓰면(사생활 보호 창 등) 안내만.
+type CraftInvItem = { name: string; base: string; rarity: string; url: string; at: number };
+function craftInvKey(): string {
+	return location.pathname.startsWith("/poe2/") ? "craftInventory.poe2" : "craftInventory.poe1";
+}
+function craftInvLoad(): CraftInvItem[] {
+	try {
+		const v = JSON.parse(localStorage.getItem(craftInvKey()) || "[]");
+		return Array.isArray(v) ? v.filter((x) => x && typeof x.url === "string") : [];
+	} catch {
+		return [];
+	}
+}
+function craftInvStore(items: CraftInvItem[]): boolean {
+	try {
+		localStorage.setItem(craftInvKey(), JSON.stringify(items.slice(0, 60)));
+		return true;
+	} catch {
+		return false;
+	}
+}
+function renderCraftInventory(): void {
+	const box = document.querySelector<HTMLElement>("[data-craft-inventory]");
+	if (!box) return;
+	const ko = box.dataset.invLang === "ko";
+	const list = box.querySelector<HTMLElement>("[data-craft-inv-list]");
+	const count = box.querySelector<HTMLElement>("[data-craft-inv-count]");
+	const items = craftInvLoad();
+	if (count) count.textContent = items.length ? `(${items.length})` : "";
+	if (!list) return;
+	list.replaceChildren();
+	if (!items.length) {
+		const p = document.createElement("p");
+		p.className = "text-xs text-base-content/60";
+		p.dataset.craftInvEmpty = "";
+		p.textContent = ko ? "저장한 아이템이 없습니다 — 카드 아래 '보관함에 저장'으로 담아 두면 나중에 그대로 열 수 있습니다(이 브라우저에만)." : "No saved items — use 'Save to inventory' under the card to reopen it later (this browser only).";
+		list.appendChild(p);
+		return;
+	}
+	const rarLabel: Record<string, [string, string]> = { NORMAL: ["Normal", "일반"], MAGIC: ["Magic", "마법"], RARE: ["Rare", "희귀"] };
+	items.forEach((it) => {
+		const row = document.createElement("div");
+		row.className = "flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm min-w-0";
+		row.dataset.craftInvRow = "";
+		const badge = document.createElement("span");
+		badge.className = "badge badge-ghost badge-sm";
+		badge.textContent = (rarLabel[it.rarity] || rarLabel.NORMAL)[ko ? 1 : 0];
+		const a = document.createElement("a");
+		a.href = it.url;
+		a.className = "link link-hover font-medium wrap-anywhere";
+		a.textContent = it.name || it.base || "?";
+		a.title = ko ? "이 아이템으로 열기" : "Open this item";
+		const meta = document.createElement("span");
+		meta.className = "text-xs text-base-content/60";
+		// 앱 로케일 · 기준 시간대로(AppTimeZoneFormatTest · LocaleAwareFormatTest 가드)
+		const when = new Date(it.at).toLocaleString(appLocale(), { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: appTimeZone() });
+		meta.textContent = (it.base && it.base !== it.name ? it.base + " · " : "") + when;
+		const btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "btn btn-xs btn-ghost";
+		btn.dataset.craftInvDel = it.url;
+		btn.textContent = ko ? "지우기" : "Delete";
+		btn.setAttribute("aria-label", (ko ? "보관함에서 지우기: " : "Delete from inventory: ") + a.textContent);
+		row.append(badge, a, meta, btn);
+		list.appendChild(row);
+	});
+}
+document.addEventListener("DOMContentLoaded", renderCraftInventory);
+globalThis.addEventListener("storage", (event) => {
+	if (event.key === craftInvKey()) renderCraftInventory();
+});
+
+// 목표 적중 확률(2026-10-20 C494, craftofexile 에뮬레이터의 목표 확률): 계산기에서 목표를 고르면 에뮬레이터 화폐 단추마다 '지금 아이템에 한 번 써서
+// 목표를 다 채울 확률'을 작은 표로. 아이템이 바뀌거나(htmx 교체) 목표를 바꾸면 다시 잰다(0.4초 모아서).
+let craftHitTimer: ReturnType<typeof setTimeout> | undefined;
+// 마지막으로 잰 적중 확률(C507 — 연타 줄 '한 번 확률 · 평균 몇 번')
+let craftHitLast: Record<string, number | null> | null = null;
+// 올플레임 제작(C524) — 복제본 N 개면 한 번 쓸 때 목표를 채울 확률 = 1 − (1 − p)^N(복제본마다 원본에 따로 적용). 꺼져 있으면 p 그대로
+// 올플레임에 쓸 수 있는 화폐 — PoeCraftController.GHOST_ACTS 와 같은 목록
+const CRAFT_GHOST_OK = new Set(["TRANSMUTE", "ALTERATION", "AUGMENTATION", "REGAL", "ALCHEMY", "CHAOS", "EXALT", "ANNUL", "SCOUR", "ESSENCE", "FOSSIL", "CONQUEROR", "FRACTURE", "VEILED_CHAOS", "VEILED_EXALT", "EMBER", "ICHOR", "ELDRITCH_CHAOS", "ELDRITCH_EXALT", "ELDRITCH_ANNUL", "DOMINANCE", "DUCAT", "CONFLICT", "FOULBORN_AUG", "FOULBORN_REGAL", "FOULBORN_EXALT"]);
+function craftGhostN(): number {
+	const v = parseInt(document.querySelector<HTMLSelectElement>("#craft-emu [data-craft-ghost-count]")?.value || "0", 10);
+	return v >= 2 ? Math.min(4, v) : 1;
+}
+function ghostChance(c: number): number {
+	const n = craftGhostN();
+	return n > 1 ? 1 - Math.pow(1 - c, n) : c;
+}
+function syncSpamExpect(): void {
+	const sel = document.querySelector<HTMLSelectElement>("[data-craft-spam-act]");
+	const out = document.querySelector<HTMLElement>("[data-craft-spam-expect]");
+	if (!sel || !out) return;
+	const raw = craftHitLast ? craftHitLast[sel.value] : undefined;
+	const c = raw === undefined || raw === null || !CRAFT_GHOST_OK.has(sel.value) ? raw : ghostChance(raw);
+	const ko = (document.documentElement.lang || "").startsWith("ko");
+	if (c === undefined || c === null) {
+		out.textContent = "";
+	} else if (c === 0) {
+		out.textContent = ko ? "한 번에 다 채울 확률 0% — 연타로는 안 될 수 있음" : "0% per use — repeating may not work";
+	} else {
+		const n = Math.max(1, Math.round(1 / c));
+		out.textContent = ko ? `한 번 ${(c * 100).toFixed(c < 0.1 ? 1 : 0)}% · 평균 약 ${n.toLocaleString(appLocale())}번` : `${(c * 100).toFixed(c < 0.1 ? 1 : 0)}% per use · ~${n.toLocaleString(appLocale())} uses on average`;
+	}
+}
+let craftHitSeq = 0;
+function scheduleCraftHit(): void {
+	if (craftHitTimer) clearTimeout(craftHitTimer);
+	craftHitTimer = setTimeout(updateCraftHit, 400);
+}
+function updateCraftHit(): void {
+	// PoE1 #craft-emu + [data-craft-calc-form], PoE2 #craft2-emu + [data-craft2-calc-form](C500)
+	const poe2 = !document.getElementById("craft-emu") && !!document.getElementById("craft2-emu");
+	const emu = document.getElementById(poe2 ? "craft2-emu" : "craft-emu");
+	const calc = document.querySelector<HTMLFormElement>(poe2 ? "[data-craft2-calc-form]" : "[data-craft-calc-form]");
+	const emuForm = emu?.querySelector<HTMLFormElement>("form");
+	if (!emu || !calc || !emuForm) return;
+	const body = new URLSearchParams();
+	new FormData(calc).forEach((v, k) => {
+		if (k.startsWith("t_") && typeof v === "string" && v !== "" && v !== "0") body.append(k, v);
+	});
+	const clear = () => emu.querySelectorAll("[data-craft-hit]").forEach((e) => e.remove());
+	if (body.toString() === "") {
+		clear();
+		return;
+	}
+	for (const n of poe2 ? ["poolKey", "ilvl", "state"] : ["itemClass", "variant", "influence", "ilvl", "state"]) {
+		const el = emuForm.querySelector<HTMLInputElement>(`input[name="${n}"]`);
+		if (el) body.set(n, el.value);
+	}
+	if (poe2) {
+		const tierEl = emu.querySelector<HTMLInputElement>('input[name="tier"]:checked');
+		if (tierEl && tierEl.value) body.set("tier", tierEl.value);
+		emu.querySelectorAll<HTMLInputElement>('input[name="omen"]:checked').forEach((o) => body.append("omen", o.value));
+	}
+	const ess = emu.querySelector<HTMLSelectElement>('select[name="essence"]');
+	if (ess && ess.value) body.set("essence", ess.value);
+	if (!poe2) {
+		// 고른 화석 · 수확도(C507)
+		emu.querySelectorAll<HTMLInputElement>('input[name="fossil"]:checked').forEach((f) => body.append("fossil", f.value));
+		const har = emu.querySelector<HTMLSelectElement>('select[name="harvest"]');
+		if (har && har.value) body.set("harvest", har.value);
+	}
+	const seq = ++craftHitSeq;
+	fetch(poe2 ? "/poe2/htmx/craft/hit-chance" : "/poe/htmx/craft/hit-chance", { method: "POST", body, headers: { "Content-Type": "application/x-www-form-urlencoded" } })
+		.then((r) => (r.ok ? r.json() : null))
+		.then((j) => {
+			if (seq !== craftHitSeq) return;
+			clear();
+			craftHitLast = j && j.chances ? (j.chances as Record<string, number | null>) : null;
+			syncSpamExpect();
+			if (!j || !j.chances) return;
+			const ko = (document.documentElement.lang || "").startsWith("ko");
+			for (const [act, c] of Object.entries(j.chances as Record<string, number | null>)) {
+				if (c === null || c === undefined) continue;
+				emu.querySelectorAll<HTMLButtonElement>(`button[data-craft-action="${act}"]`).forEach((b) => {
+					// 올플레임(C524) — 복제본을 고를 수 있는 화폐면 1 − (1 − p)^N
+					const gn = b.closest("#craft-emu") && CRAFT_GHOST_OK.has(act) ? craftGhostN() : 1;
+					const cc = gn > 1 ? 1 - Math.pow(1 - c, gn) : c;
+					const s = document.createElement("span");
+					s.setAttribute("data-craft-hit", cc === 0 ? "0" : "1");
+					if (gn > 1) s.setAttribute("data-craft-hit-ghost", String(gn));
+					s.textContent = cc === 0 ? "0%" : cc < 0.001 ? "<0.1%" : `${(cc * 100).toFixed(cc < 0.1 ? 1 : 0)}%`;
+					s.title =
+						(ko ? `계산기에서 고른 목표 ${j.targets}개를 지금 아이템에 이 화폐 한 번으로 다 채울 확률` : `Chance to meet all ${j.targets} calculator targets with one use on the current item`) +
+						(gn > 1 ? (ko ? ` — 올플레임 복제본 ${gn}개 중 고르기 기준(복제본 하나 ${(c * 100).toFixed(1)}%)` : ` — keeping the best of ${gn} Ghostly Copies (one copy ${(c * 100).toFixed(1)}%)`) : "");
+					b.appendChild(s);
+				});
+			}
+		})
+		.catch(() => {});
+}
+document.addEventListener("htmx:afterSettle", (e) => {
+	const t = (e as CustomEvent).detail?.target as HTMLElement | undefined;
+	if (t && (t.id === "craft-emu" || t.id === "craft2-emu" || t.closest?.("#craft-emu, #craft2-emu") || t.querySelector?.("#craft-emu, #craft2-emu"))) scheduleCraftHit();
+});
+document.addEventListener("change", (e) => {
+	const t = e.target as HTMLElement | null;
+	if (t?.closest?.("[data-craft-calc-form], [data-craft2-calc-form]") && (t as HTMLSelectElement).name?.startsWith("t_")) scheduleCraftHit();
+	if (t?.closest?.("#craft-emu, #craft2-emu") && ["essence", "tier", "omen", "fossil", "harvest"].includes((t as HTMLInputElement).name)) scheduleCraftHit();
+	if ((t as HTMLElement | null)?.hasAttribute?.("data-craft-spam-act")) syncSpamExpect();
+	// 올플레임 복제본 수를 바꾸면 적중 확률 · 연타 기대를 다시(C524)
+	if ((t as HTMLElement | null)?.hasAttribute?.("data-craft-ghost-count")) scheduleCraftHit();
+});
+document.addEventListener("DOMContentLoaded", scheduleCraftHit);
+
+// 확률 표에서 바로 목표 고르기(2026-10-20 C496, craftofexile 처럼 옵션 표에서 목표 지정): ☆ = 계산기의 그 계열 목표를 T1~T(이 줄)로, 같은 등급이 이미 골라져
+// 있으면 끔. 계산기 select 에 change 를 보내 목표 칸 · 적중 확률(C494)이 함께 바뀐다.
+function syncPoolTargets(): void {
+	document.querySelectorAll<HTMLButtonElement>("[data-craft-pool-target]").forEach((b) => {
+		const fam = b.dataset.craftPoolTarget;
+		const sel = document.querySelector<HTMLSelectElement>(`[data-craft-calc-family="${fam}"] select, [data-craft2-calc-family="${fam}"] select`);
+		const on = !!sel && sel.value !== "" && sel.value === b.dataset.tier;
+		b.textContent = on ? "★" : "☆";
+		b.setAttribute("aria-pressed", on ? "true" : "false");
+		b.classList.toggle("text-warning", on);
+	});
+}
+document.addEventListener("click", (event) => {
+	const b = (event.target as HTMLElement | null)?.closest?.<HTMLButtonElement>("[data-craft-pool-target]");
+	if (!b) return;
+	// 계열 줄 머리(summary, 10-21 C542) 안의 ☆ 는 목표만 — 펼치거나 접지 않는다
+	if (b.closest("summary")) event.preventDefault();
+	const fam = b.dataset.craftPoolTarget;
+	const sel = document.querySelector<HTMLSelectElement>(`[data-craft-calc-family="${fam}"] select, [data-craft2-calc-family="${fam}"] select`);
+	if (!sel) return;
+	const tier = b.dataset.tier || "";
+	sel.value = sel.value === tier ? "" : tier;
+	sel.dispatchEvent(new Event("change", { bubbles: true }));
+	syncPoolTargets();
+});
+document.addEventListener("change", (e) => {
+	if ((e.target as HTMLElement | null)?.closest?.("[data-craft-calc-form], [data-craft2-calc-form]")) syncPoolTargets();
+});
+document.addEventListener("htmx:afterSettle", syncPoolTargets);
+document.addEventListener("DOMContentLoaded", syncPoolTargets);
+
+// 카드 옵션을 계산기 목표로(2026-10-20 C497, craftofexile 의 가져온 아이템 → 목표): 붙여넣은 아이템과 같은 것을 처음부터 만드는 최소 비용을 보려고 —
+// 카드 줄 옵션 id 를 계산기 계열 줄(data-craft-calc-ids "id=등급")에서 찾아 T1~그 등급으로, 다른 목표는 비우고 '지금 아이템에서 시작'은 끈다.
+document.addEventListener("click", (event) => {
+	const b = (event.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-craft-to-targets]");
+	if (!b) return;
+	const card = b.closest("[data-craft-arm-scope]")?.querySelector("[data-craft-tooltip]");
+	const form = document.querySelector<HTMLFormElement>("[data-craft-calc-form], [data-craft2-calc-form]");
+	if (!card || !form) return;
+	const rows = Array.from(form.querySelectorAll<HTMLElement>("[data-craft-calc-ids]"));
+	form.querySelectorAll<HTMLSelectElement>('select[name^="t_"]').forEach((s) => (s.value = ""));
+	let n = 0;
+	let skipped = 0;
+	card.querySelectorAll<HTMLElement>("[data-craft-line]").forEach((line) => {
+		const id = line.dataset.craftLine || "";
+		const row = rows.find((r) => (r.dataset.craftCalcIds || "").split(" ").some((t) => t.startsWith(id + "=")));
+		const tok = row ? (row.dataset.craftCalcIds || "").split(" ").find((t) => t.startsWith(id + "=")) : undefined;
+		const sel = row?.querySelector<HTMLSelectElement>("select");
+		if (!tok || !sel) {
+			skipped++;
+			return;
+		}
+		sel.value = tok.substring(id.length + 1);
+		n++;
+	});
+	const from = form.querySelector<HTMLInputElement>('[data-craft-from-state], input[name="fromState"]');
+	if (from) from.checked = false;
+	form.querySelector<HTMLSelectElement>('select[name^="t_"]')?.dispatchEvent(new Event("change", { bubbles: true }));
+	const ko = b.textContent?.includes("목표") ?? false;
+	const msg = b.parentElement?.querySelector<HTMLElement>("[data-craft-export-msg]");
+	if (msg) {
+		msg.textContent = ko ? `목표 ${n}개를 계산기에 넣었습니다${skipped ? ` (못 넣은 옵션 ${skipped}개)` : ""}` : `Set ${n} targets${skipped ? ` (${skipped} skipped)` : ""}`;
+		setTimeout(() => (msg.textContent = ""), 4000);
+	}
 });

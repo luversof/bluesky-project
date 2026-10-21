@@ -23,8 +23,15 @@ public class PoeRareNameService {
   private static final Logger logger = LoggerFactory.getLogger(PoeRareNameService.class);
 
   // bases = 장비 베이스 표 밖 베이스(팅크처)의 영 · 한 — 마법 이름 번역용(10-05 C162). 옛 파일엔 없어 null
+  // classWords = 종류(ItemClasses.Id) → 그 종류에 생기는 낱말(10-20 C488, Words SpawnWeight_Tags). 옛 파일엔 없어
+  // null
   private record Words(
-      Map<String, String> prefix, Map<String, String> suffix, Map<String, String> bases) {}
+      Map<String, String> prefix,
+      Map<String, String> suffix,
+      Map<String, String> bases,
+      Map<String, ClassWords> classWords) {}
+
+  private record ClassWords(java.util.List<String> prefix, java.util.List<String> suffix) {}
 
   private final Path file;
   private final JsonMapper jsonMapper = JsonMapper.builder().build();
@@ -39,7 +46,7 @@ public class PoeRareNameService {
     if (w != null) {
       return w;
     }
-    w = new Words(Map.of(), Map.of(), Map.of());
+    w = new Words(Map.of(), Map.of(), Map.of(), Map.of());
     if (Files.exists(file)) {
       try (InputStream in = Files.newInputStream(file)) {
         w = jsonMapper.readValue(in, Words.class);
@@ -64,6 +71,27 @@ public class PoeRareNameService {
       }
     }
     return best == null ? null : new String[] {best, bases.get(best)};
+  }
+
+  /**
+   * 그 종류의 무작위 레어 이름 {영, 한}(10-20 C488, 제작 에뮬레이터가 레어가 될 때) — 그 종류에 생기는 접두 · 접미 낱말에서 고르게(게임 가중치는 모두
+   * 1000). 낱말표가 없으면 null.
+   */
+  public String[] randomName(String itemClass, java.util.random.RandomGenerator rng) {
+    Words w = words();
+    ClassWords cw = w.classWords() == null ? null : w.classWords().get(itemClass);
+    if (cw == null || cw.prefix() == null || cw.suffix() == null) {
+      return null;
+    }
+    if (cw.prefix().isEmpty() || cw.suffix().isEmpty()) {
+      return null;
+    }
+    String en =
+        cw.prefix().get(rng.nextInt(cw.prefix().size()))
+            + " "
+            + cw.suffix().get(rng.nextInt(cw.suffix().size()));
+    String ko = translate(en);
+    return new String[] {en, ko == null ? en : ko};
   }
 
   /** "접두 접미" 두 낱말 이름 → 한국어(못 옮기면 null). */

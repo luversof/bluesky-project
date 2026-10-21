@@ -25,10 +25,20 @@ public class Poe2CraftCalcService {
 
   /** recombChance = 반쪽 재조합(C409)에 쓸 재조합 성공 확률(인게임 화면 값 1~100, 없으면 그 방법은 뺀다). */
   public record Request(
-      Poe2CraftEngine.Item item, List<Target> targets, Integer runs, Integer recombChance) {
+      Poe2CraftEngine.Item item,
+      List<Target> targets,
+      Integer runs,
+      Integer recombChance,
+      // 사용자 가격(C530, PoE1 C529 짝) — 이름 → 디바인, 없으면 시세
+      Map<String, Double> prices) {
 
     public Request(Poe2CraftEngine.Item item, List<Target> targets, Integer runs) {
-      this(item, targets, runs, null);
+      this(item, targets, runs, null, null);
+    }
+
+    public Request(
+        Poe2CraftEngine.Item item, List<Target> targets, Integer runs, Integer recombChance) {
+      this(item, targets, runs, recombChance, null);
     }
   }
 
@@ -96,15 +106,59 @@ public class Poe2CraftCalcService {
     this.pricesFile = java.nio.file.Path.of(dataDir, "ninja", "craft-prices2.json");
   }
 
-  record Prices(String league, String fetchedAt, String unit, Map<String, Double> divine) {}
+  public record Prices(String league, String fetchedAt, String unit, Map<String, Double> divine) {}
+
+  /** 사용자 가격(10-21 C530, PoE1 C529 짝) — 이 요청(스레드) 동안 이름 → 디바인을 시세보다 먼저(prices() 가 합친다). */
+  private static final ThreadLocal<Map<String, Double>> OVERRIDE = new ThreadLocal<>();
+
+  /** 사용자 가격 걸기 — null · 빈 맵이면 푼다. 이름 80자 · 값 0 초과 1천만 미만 · 60개까지만. */
+  public static void override(Map<String, Double> prices) {
+    if (prices == null || prices.isEmpty()) {
+      OVERRIDE.remove();
+      return;
+    }
+    Map<String, Double> ok = new java.util.HashMap<>();
+    for (Map.Entry<String, Double> e : prices.entrySet()) {
+      Double v = e.getValue();
+      if (e.getKey() != null
+          && e.getKey().length() <= 80
+          && v != null
+          && Double.isFinite(v)
+          && v > 0
+          && v < 1e7
+          && ok.size() < 60) {
+        ok.put(e.getKey(), v);
+      }
+    }
+    if (ok.isEmpty()) {
+      OVERRIDE.remove();
+    } else {
+      OVERRIDE.set(Map.copyOf(ok));
+    }
+  }
 
   /**
    * 에뮬레이터에서 쓴 단계 하나(C366) — action = 화폐(FORESEE = 히네코라의 머리카락), arg = 등급 · 에센스 · 뼈, omens = 그때 쓰인 징조
    * 키.
    */
-  public record SpentStep(String action, String arg, List<String> omens) {}
+  /** times = 같은 화폐를 연달아 쓴 횟수(C508 목표까지 연타, 없으면 1). */
+  public record SpentStep(String action, String arg, List<String> omens, Integer times) {
 
-  public record SpentRequest(String poolKey, List<SpentStep> steps) {}
+    public SpentStep(String action, String arg, List<String> omens) {
+      this(action, arg, omens, null);
+    }
+  }
+
+  public record SpentRequest(
+      String poolKey,
+      List<SpentStep> steps,
+      // 사용자 가격(C530)
+      Map<String, Double> prices) {
+
+    public SpentRequest(String poolKey, List<SpentStep> steps) {
+      this(poolKey, steps, null);
+    }
+  }
 
   /** 화폐 한 줄 — 개수 · 단가(디바인, 시세 없으면 null) · 합계. */
   public record SpentLine(
@@ -130,6 +184,10 @@ public class Poe2CraftCalcService {
     List<Map<String, Double>> perStep = new ArrayList<>();
     for (SpentStep s : req.steps() == null ? List.<SpentStep>of() : req.steps()) {
       Map<String, Double> sm = stepNames(s, names);
+      if (s != null && s.times() != null && s.times() > 1) {
+        // 목표까지 연타(C508) — 한 단계에 여러 번
+        sm.replaceAll((k, v) -> v * s.times());
+      }
       perStep.add(sm);
       sm.forEach((k, v) -> m.merge(k, v, Double::sum));
     }
@@ -261,8 +319,20 @@ public class Poe2CraftCalcService {
   private volatile Prices prices;
   private volatile long pricesMtime = -1;
 
-  /** 시세(디바인) — 파일이 바뀌면 다시 읽는다. 없으면 빈 시세. */
-  Prices prices() {
+  /** 시세(디바인) — 파일이 바뀌면 다시 읽는다. 없으면 빈 시세. 사용자 가격(C530)이 걸려 있으면 합쳐서. */
+  public Prices prices() {
+    Prices base = filePrices();
+    Map<String, Double> user = OVERRIDE.get();
+    if (user == null) {
+      return base;
+    }
+    Map<String, Double> merged =
+        new java.util.HashMap<>(base.divine() == null ? Map.of() : base.divine());
+    merged.putAll(user);
+    return new Prices(base.league(), base.fetchedAt(), base.unit(), merged);
+  }
+
+  private Prices filePrices() {
     try {
       long m = java.nio.file.Files.getLastModifiedTime(pricesFile).toMillis();
       if (prices == null || m != pricesMtime) {
@@ -297,7 +367,8 @@ public class Poe2CraftCalcService {
   }
 
   public Response calc(Request req) {
-    if (req.targets() == null || req.targets().isEmpty()) {
+    if (req.targets() == null || real(req.targets()).isEmpty()) {
+      // 빈 자리 조건(C521)만으로는 계산하지 않는다 — 옵션 목표와 함께
       return new Response(List.of(), null, null, null, "목표 옵션을 하나 이상 고르세요");
     }
     for (Target t : req.targets()) {
@@ -340,7 +411,9 @@ public class Poe2CraftCalcService {
             && rc != null
             && rc >= 1
             && rc <= 100
-            && req.targets().size() >= 2
+            && real(req.targets()).size() >= 2
+            // 반쪽 재조합은 두 반쪽 확률을 곱해 합치는 분석식이라 빈 자리 조건(C521)을 따질 수 없다 — 그땐 뺀다
+            && real(req.targets()).size() == req.targets().size()
             && !Poe2CraftEngine.jewel(given.poolKey());
     // 반쪽 재조합은 반쪽마다 방법 셋을 더 굴려 몫을 둘 더 준다(게이트 10초 안)
     // 훼손 목표(C420) — 목표에 훼손된 속성이 있으면 훼손 방법(변형 최대 넷)에 몫을 둘 더
@@ -475,13 +548,15 @@ public class Poe2CraftCalcService {
     int max = Poe2CraftEngine.maxPerGen(item, Poe2CraftEngine.Rarity.RARE);
     int openPre = max - (int) item.affixes().stream().filter(x -> "prefix".equals(x.gen())).count();
     int openSuf = max - (int) item.affixes().stream().filter(x -> "suffix".equals(x.gen())).count();
-    int needPre = 0;
-    int needSuf = 0;
-    int unmet = 0;
+    // 빈 자리 조건(C521) — 그 쪽 자리를 비워 둬야 하니 처음부터 요구에 더한다
+    int[] openNeed = openNeed(targets);
+    int needPre = openNeed[0];
+    int needSuf = openNeed[1];
+    int unmet = openNeed[0] + openNeed[1];
     // 최소 속성 레벨이 있으면 엔진과 같은 판정(유형 전부가 아래면 최고 등급은 붙는다 — C418 검토: 예외를 몰라 완벽 엑잘을 일찍 접었다).
     // 예외는 아이템 상태와 무관해(같은 유형 = 같은 그룹 · 쪽) 빈 레어 기준으로 풀 · 아이템 레벨 · 최소 레벨마다 한 번만
     Set<String> elig = minLevel > 0 ? eligibleAtMin(item, minLevel) : null;
-    for (Target t : targets) {
+    for (Target t : real(targets)) {
       if (t.anyOf().stream().anyMatch(have::contains)) {
         continue;
       }
@@ -964,6 +1039,9 @@ public class Poe2CraftCalcService {
   }
 
   private String genOf(Target t) {
+    if (isOpen(t)) {
+      return OPEN_SUFFIX.equals(t.anyOf().get(0)) ? "suffix" : "prefix";
+    }
     Poe2CraftEngine.Mod m = craft.modOf(t.anyOf().get(0));
     return m == null ? "prefix" : m.gen();
   }
@@ -1095,7 +1173,7 @@ public class Poe2CraftCalcService {
   // ─────────────────────────── 다단계 전략(C355) ───────────────────────────
 
   public StrategyResult strategy(StrategyRequest req) {
-    if (req.targets() == null || req.targets().isEmpty()) {
+    if (req.targets() == null || real(req.targets()).isEmpty()) {
       return new StrategyResult(0, 0, 0, Map.of(), null, null, List.of(), "목표 옵션을 하나 이상 고르세요");
     }
     if (req.steps() == null || req.steps().isEmpty()) {
@@ -1349,7 +1427,231 @@ public class Poe2CraftCalcService {
   }
 
   /** 목표마다 서로 다른 옵션으로 채우는가(작은 이분 매칭). */
-  static boolean meets(Poe2CraftEngine.Item item, List<Target> targets) {
+  /**
+   * 목표까지 연타(10-20 C508, PoE1 C506 짝) — 목표를 모두 채우거나 최대 횟수까지 같은 화폐(arg = 등급 · 에센스), 징조는 쓰지 않는다(첫 번에
+   * 사라지므로).
+   */
+  public record SpamRequest(
+      Poe2CraftEngine.Item item, String action, String arg, List<Target> targets, Integer max) {}
+
+  public record SpamResult(
+      Poe2CraftService.View view, int tries, boolean met, List<String> added, String error) {}
+
+  public SpamResult spam(SpamRequest req) {
+    Poe2CraftEngine.Item start = craft.normalize(req.item());
+    List<Target> targets = req.targets() == null ? List.of() : req.targets();
+    int max = Math.max(1, Math.min(5000, req.max() == null ? 1000 : req.max()));
+    Poe2CraftEngine.Action act;
+    try {
+      act = Poe2CraftEngine.Action.valueOf(req.action());
+    } catch (RuntimeException e) {
+      return new SpamResult(craft.view(start), 0, false, List.of(), "모르는 화폐");
+    }
+    java.util.random.RandomGenerator rng =
+        new java.util.SplittableRandom(java.util.concurrent.ThreadLocalRandom.current().nextLong());
+    Poe2CraftEngine.Item cur = start;
+    int tries = 0;
+    boolean met = !targets.isEmpty() && meets(cur, targets);
+    while (!met && tries < max) {
+      Poe2CraftEngine.Result r = craft.engine().apply(cur, act, req.arg(), java.util.Set.of(), rng);
+      if (r.error() != null) {
+        if (tries == 0) {
+          return new SpamResult(craft.view(start), 0, false, List.of(), r.error());
+        }
+        break;
+      }
+      cur = r.item();
+      tries++;
+      met = !targets.isEmpty() && meets(cur, targets);
+    }
+    java.util.Set<String> before = new java.util.HashSet<>();
+    start.affixes().forEach(a -> before.add(a.id()));
+    List<String> added =
+        cur.affixes().stream()
+            .map(Poe2CraftEngine.Affix::id)
+            .filter(id -> !before.contains(id))
+            .toList();
+    return new SpamResult(craft.view(cur), tries, met, added, null);
+  }
+
+  /**
+   * 목표 적중 확률(10-20 C500, PoE1 C494 짝) — omens = 지금 켠 징조, actions 의 arg = 화폐 등급(greater · perfect) ·
+   * 에센스 · 뼈.
+   */
+  public record HitRequest(
+      Poe2CraftEngine.Item item,
+      List<Target> targets,
+      List<HitAction> actions,
+      List<String> omens,
+      Integer samples) {}
+
+  public record HitAction(String action, String arg) {}
+
+  public record Hit(String action, String arg, Double chance, String error) {}
+
+  /** 화폐 한 번(지금 징조와 함께)으로 목표를 모두 채울 확률 — 같은 제작 엔진 표본, 전체 2만 번 안. */
+  public List<Hit> hitChance(HitRequest req) {
+    Poe2CraftEngine.Item start = craft.normalize(req.item());
+    List<Target> targets = req.targets() == null ? List.of() : req.targets();
+    List<HitAction> actions =
+        req.actions() == null
+            ? List.of()
+            // 무인증 API 입력 한도(C540) — 화폐 수가 끝없으면 화폐마다 표본 하한 100 이라 엔진 적용이 한없이 는다
+            : req.actions().subList(0, Math.min(200, req.actions().size()));
+    java.util.Set<String> omens =
+        req.omens() == null ? java.util.Set.of() : new java.util.HashSet<>(req.omens());
+    int n = Math.max(100, Math.min(4000, req.samples() == null ? 1000 : req.samples()));
+    if (!actions.isEmpty()) {
+      n = Math.max(100, Math.min(n, 20_000 / actions.size()));
+    }
+    java.util.random.RandomGenerator rng =
+        new java.util.SplittableRandom(java.util.concurrent.ThreadLocalRandom.current().nextLong());
+    List<Hit> out = new java.util.ArrayList<>();
+    for (HitAction ha : actions) {
+      Poe2CraftEngine.Action act;
+      try {
+        act = Poe2CraftEngine.Action.valueOf(ha.action());
+      } catch (RuntimeException e) {
+        out.add(new Hit(ha.action(), ha.arg(), null, "모르는 화폐"));
+        continue;
+      }
+      int hits = 0;
+      String error = null;
+      for (int i = 0; i < n; i++) {
+        Poe2CraftEngine.Result r = craft.engine().apply(start, act, ha.arg(), omens, rng);
+        if (r.error() != null) {
+          error = r.error();
+          break;
+        }
+        if (!targets.isEmpty() && meets(r.item(), targets)) {
+          hits++;
+        }
+      }
+      out.add(new Hit(ha.action(), ha.arg(), error == null ? (double) hits / n : null, error));
+    }
+    return out;
+  }
+
+  /** 빈 자리 조건(10-20 C521, PoE1 C519 짝 · craftofexile 계산기 'open affix') — 목표 하나 = 그 쪽 빈 자리 하나. */
+  static final String OPEN_PREFIX = "@open:prefix";
+
+  static final String OPEN_SUFFIX = "@open:suffix";
+
+  static boolean isOpen(Target t) {
+    return t != null
+        && t.anyOf() != null
+        && t.anyOf().size() == 1
+        && (OPEN_PREFIX.equals(t.anyOf().get(0)) || OPEN_SUFFIX.equals(t.anyOf().get(0)));
+  }
+
+  /** 옵션 목표만(빈 자리 조건 뺌). */
+  static List<Target> real(List<Target> targets) {
+    return targets.stream().filter(t -> !isOpen(t)).toList();
+  }
+
+  /** 요구 빈 자리 [접두, 접미]. */
+  static int[] openNeed(List<Target> targets) {
+    int[] need = new int[2];
+    for (Target t : targets) {
+      if (isOpen(t)) {
+        need[OPEN_PREFIX.equals(t.anyOf().get(0)) ? 0 : 1]++;
+      }
+    }
+    return need;
+  }
+
+  /** 지금 빈 자리 [접두, 접미] — 희귀도 한도(매직 1 · 레어 3 · 주얼 2) − 그 쪽 옵션 수(미공개 훼손 포함). */
+  static int[] openFree(Poe2CraftEngine.Item item) {
+    int cap = Poe2CraftEngine.maxPerGen(item, item.rarity());
+    int p = 0;
+    int s = 0;
+    for (Poe2CraftEngine.Affix a : item.affixes()) {
+      if ("prefix".equals(a.gen())) {
+        p++;
+      } else if ("suffix".equals(a.gen())) {
+        s++;
+      }
+    }
+    return new int[] {Math.max(0, cap - p), Math.max(0, cap - s)};
+  }
+
+  /** 결과 분포 요청(10-21 C534, PoE1 C533 짝) — arg = 화폐 등급(greater · perfect) 또는 에센스, omens = 켠 징조. */
+  public record DistRequest(
+      Poe2CraftEngine.Item item, String action, String arg, List<String> omens, Integer samples) {}
+
+  public record DistLine(String family, String gen, double share, double top) {}
+
+  public record DistResult(
+      int samples, List<DistLine> lines, Map<Integer, Double> affixes, String error) {}
+
+  /** 결과 분포(C534) — 화폐 한 번의 결과에 어떤 계열이 몇 % 로 붙나 · 옵션 개수 분포. */
+  public DistResult distribution(DistRequest req) {
+    Poe2CraftEngine.Item start = craft.normalize(req.item());
+    Poe2CraftEngine.Action act;
+    try {
+      act = Poe2CraftEngine.Action.valueOf(req.action());
+    } catch (RuntimeException e) {
+      return new DistResult(0, List.of(), Map.of(), "모르는 화폐");
+    }
+    java.util.Set<String> omens =
+        req.omens() == null ? java.util.Set.of() : new java.util.HashSet<>(req.omens());
+    int n = Math.max(100, Math.min(20_000, req.samples() == null ? 5_000 : req.samples()));
+    java.util.random.RandomGenerator rng =
+        new java.util.SplittableRandom(java.util.concurrent.ThreadLocalRandom.current().nextLong());
+    Map<String, int[]> fam = new java.util.HashMap<>();
+    Map<Integer, Integer> count = new java.util.TreeMap<>();
+    int done = 0;
+    for (int i = 0; i < n; i++) {
+      Poe2CraftEngine.Result r = craft.engine().apply(start, act, req.arg(), omens, rng);
+      if (r.error() != null) {
+        if (done == 0) {
+          return new DistResult(0, List.of(), Map.of(), r.error());
+        }
+        break;
+      }
+      Poe2CraftEngine.Item it = r.item();
+      done++;
+      java.util.Set<String> seen = new java.util.HashSet<>();
+      for (Poe2CraftEngine.Affix a : it.affixes()) {
+        String key = a.gen() + "|" + craft.familyOf(a.id());
+        if (!seen.add(key)) {
+          continue;
+        }
+        int[] c = fam.computeIfAbsent(key, k -> new int[2]);
+        c[0]++;
+        Integer t = craft.tierRank(it.poolKey(), a.id());
+        if (t != null && t == 1) {
+          c[1]++;
+        }
+      }
+      count.merge(it.affixes().size(), 1, Integer::sum);
+    }
+    int total = done;
+    List<DistLine> lines =
+        fam.entrySet().stream()
+            .map(
+                e ->
+                    new DistLine(
+                        e.getKey().substring(e.getKey().indexOf('|') + 1),
+                        e.getKey().substring(0, e.getKey().indexOf('|')),
+                        (double) e.getValue()[0] / total,
+                        (double) e.getValue()[1] / total))
+            .sorted(java.util.Comparator.comparingDouble(DistLine::share).reversed())
+            .toList();
+    Map<Integer, Double> affixes = new java.util.TreeMap<>();
+    count.forEach((k, v) -> affixes.put(k, (double) v / total));
+    return new DistResult(total, lines, affixes, null);
+  }
+
+  static boolean meets(Poe2CraftEngine.Item item, List<Target> all) {
+    int[] need = openNeed(all);
+    if (need[0] + need[1] > 0) {
+      int[] free = openFree(item);
+      if (free[0] < need[0] || free[1] < need[1]) {
+        return false;
+      }
+    }
+    List<Target> targets = real(all);
     List<String> ids = item.affixes().stream().map(Poe2CraftEngine.Affix::id).toList();
     int[] owner = new int[ids.size()];
     java.util.Arrays.fill(owner, -1);

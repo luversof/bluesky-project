@@ -107,6 +107,41 @@ const CLASS_DOMAIN = {
 // 이 파이프라인이 모드 풀을 보여줄 대상 = 장비(무기/방어/장신구)만. 플라스크/주얼은 별도 모드 도메인이라 제외.
 const wantedClasses = new Set(Object.keys(CLASS_TAGS));
 
+// 군집 주얼(10-20 C514) — 베이스는 'Jewel' 클래스지만 옵션은 도메인 21(군집 전용 — 노터블 · 작은 패시브 효과)이고,
+// 인챈트(작은 패시브 효과)마다 붙는 노터블이 다르다. 스폰 태그 = 크기 태그(expansion_jewel_*, 베이스 TagsKeys) + 인챈트 태그(affliction_*).
+// 크기마다 인챈트 태그가 겹치지 않아(대형 17 · 중형 21 · 소형 17종, 10-20 확인) 생성 태그만으로 노터블 크기 제한까지 맞는다.
+// 인챈트 목록은 PoB 파생 cluster-jewels.json(이 파서보다 뒤 단계 산출물 — 지난 실행본)에서 읽고, 없으면 군집 주얼을 뺀다(일반 주얼 풀에 섞지 않는다).
+// 변형 키 = "cluster_<크기>.<인챈트 태그>" — 풀 키 "Jewel|cluster_large.affliction_attack_damage_|".
+const CLUSTER_DOMAIN = 21;
+let clusterDefs = null;
+try {
+	clusterDefs = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "cluster-jewels.json"), "utf8")).jewels || null;
+} catch {
+	clusterDefs = null;
+}
+const isClusterBase = (b) => b.itemClass === "Jewel" && /Cluster Jewel$/.test(b.name || "");
+// 카드 인챈트 줄(인게임 순서 = PoB ItemsTab CraftClusterJewel): 패시브 수(최소) → 주얼 홈(대형 2 · 중형 1 · 소형 없음) → 작은 패시브 효과
+// 문구는 게임 서술(local_jewel_expansion_passive_node_count · local_jewel_expansion_jewels_count) + ClientStrings 접두
+const clusterGrantPrefix = (() => {
+	const pick = (lang) => (loadTable(lang, "ClientStrings").find((r) => r?.Id === "StatDescripotionTreeExpansionJewelGrantedSmallStat")?.Text || "");
+	try {
+		return { en: pick("English") || "Added Small Passive Skills grant: {0}", ko: pick("Korean") || "" };
+	} catch {
+		return { en: "Added Small Passive Skills grant: {0}", ko: "" };
+	}
+})();
+const CLUSTER_SOCKETS = { Large: 2, Medium: 1, Small: 0 };
+const CLUSTER_SIZE_ORDER = ["large", "medium", "small"];
+// 주얼 색 · 심연 주얼 종류(10-20 C516) — 주얼 옵션은 not_str · not_dex · not_int 태그로, 심연 주얼은 abyss_jewel_melee 등으로 베이스마다 붙는 게
+// 다르다(진홍 106 · 진청록 114 · 코발트 108묶음). 클래스 하나로 합치면 진홍 주얼에 코발트 전용 옵션이 붙는다 → 베이스 하나 = 변형 하나.
+// 이 태그가 정확히 하나인 베이스만 제작 풀에 넣는다 — 분광 · 무궁한(셋) · 조립된 눈(abyss_jewel_special, 없음)은 고유 전용.
+const JEWEL_VARIANT_TAGS = ["strjewel", "dexjewel", "intjewel", "abyss_jewel_melee", "abyss_jewel_ranged", "abyss_jewel_caster", "abyss_jewel_summoner"];
+const JEWEL_CLASSES = new Set(["Jewel", "AbyssJewel"]);
+const domainOf = (poolKey) => {
+	const [cls, variant] = poolKey.split("|");
+	return (variant || "").startsWith("cluster_") ? CLUSTER_DOMAIN : (CLASS_DOMAIN[cls] ?? 1);
+};
+
 // 베이스 이름 → BaseItemTypes 행 (base-items.json 과 게임 테이블 조인)
 const baseRowByName = new Map();
 for (const row of baseEn) if (row?.Name) baseRowByName.set(row.Name.toLowerCase(), row);
@@ -144,6 +179,7 @@ const tagSetsByPool = new Map(); // "itemClass|variant|influence" → [{sig,tagS
 const basesBySig = new Map(); // "itemClass|variant|" → Map<sig, Set<baseName>>
 const classLabel = new Map(); // itemClass명 → {name, nameKo}
 const variantsByClass = new Map(); // itemClass명 → Map<variantKey, label>
+const variantBases = new Map(); // "itemClass|variant" → Set<베이스 이름>(C516)
 for (const b of baseItems) {
 	if (!wantedClasses.has(b.itemClass)) continue; // 장비만
 	const row = baseRowByName.get((b.name || "").toLowerCase());
@@ -151,8 +187,11 @@ for (const b of baseItems) {
 	const tagSet = new Set((row.TagsKeys || []).map((i) => tags[i]?.Id).filter(Boolean));
 	tagSet.add("default"); // 모든 베이스의 암묵 태그
 	for (const t of CLASS_TAGS[b.itemClass] || []) tagSet.add(t); // 클래스 레벨 일반 태그
+	// 주얼 · 심연 주얼(C516) — 색 · 종류 태그가 하나가 아니면(고유 전용 베이스) 건너뛴다. 군집 주얼은 아래에서 따로
+	const jewelTags = JEWEL_CLASSES.has(b.itemClass) ? JEWEL_VARIANT_TAGS.filter((t) => tagSet.has(t)) : [];
+	if (JEWEL_CLASSES.has(b.itemClass) && !isClusterBase(b) && jewelTags.length !== 1) continue;
 	// 속성 변형(str_armour 등) → 일반 armour 파생
-	const variantTag = [...tagSet].find((t) => VARIANT_LABEL[t]) || "";
+	const variantTag = jewelTags[0] || [...tagSet].find((t) => VARIANT_LABEL[t]) || "";
 	for (const t of [...tagSet]) if (t.endsWith("_armour")) tagSet.add("armour");
 
 	if (!classLabel.has(b.itemClass)) {
@@ -165,7 +204,40 @@ for (const b of baseItems) {
 		});
 		variantsByClass.set(b.itemClass, new Map());
 	}
-	if (variantTag) variantsByClass.get(b.itemClass).set(variantTag, VARIANT_LABEL[variantTag]);
+	if (variantTag) variantsByClass.get(b.itemClass).set(variantTag, VARIANT_LABEL[variantTag] || { name: b.name, nameKo: b.nameKo || b.name });
+	// 변형 → 베이스 이름(C516) — 가져오기 · 레어 목표 · 베이스 고르기가 베이스로 변형을 찾는다
+	if (variantTag) {
+		if (!variantBases.has(b.itemClass + "|" + variantTag)) variantBases.set(b.itemClass + "|" + variantTag, new Set());
+		variantBases.get(b.itemClass + "|" + variantTag).add(b.name);
+	}
+
+	if (isClusterBase(b)) {
+		// 군집 주얼(C514) — 인챈트마다 풀 하나(영향력 없음만), 일반 주얼 풀("Jewel||")엔 넣지 않는다
+		const def = clusterDefs?.[b.name];
+		for (const [enchantTag, skill] of Object.entries(def?.skills || {})) {
+			const variantKey = "cluster_" + String(def.size || "").toLowerCase() + "." + enchantTag;
+			const finalTags = new Set(tagSet);
+			finalTags.add(enchantTag);
+			const stats = skill.statsKo?.length ? skill.statsKo : skill.stats || [];
+			const head = (lang) => [
+				...describe(new Map([["local_jewel_expansion_passive_node_count", def.minNodes]]), lang),
+				...(CLUSTER_SOCKETS[def.size] ? describe(new Map([["local_jewel_expansion_jewels_count", CLUSTER_SOCKETS[def.size]]]), lang) : []),
+			];
+			const grantKo = skill.statsKo?.length && clusterGrantPrefix.ko ? skill.statsKo.map((x) => clusterGrantPrefix.ko.replace("{0}", x)) : null;
+			variantsByClass.get(b.itemClass).set(variantKey, {
+				name: b.name + ": " + (skill.name || enchantTag),
+				nameKo: (b.nameKo || b.name) + ": " + stats.join(" / "),
+				enchant: [...head("English"), ...(skill.enchant || (skill.stats || []).map((x) => clusterGrantPrefix.en.replace("{0}", x)))],
+				enchantKo: grantKo ? [...head("Korean"), ...grantKo] : null,
+			});
+			const poolKey = b.itemClass + "|" + variantKey + "|";
+			variantBases.set(b.itemClass + "|" + variantKey, new Set([b.name]));
+			const sig = [...finalTags].sort().join(",");
+			tagSetsByPool.set(poolKey, [{ sig, tagSet: finalTags }]);
+			basesBySig.set(poolKey, new Map([[sig, new Set([b.name])]]));
+		}
+		continue;
+	}
 
 	// 영향력 없음("") + 영향력 6종 각각을 별도 풀로. 영향력 풀은 기본 태그에 `<슬롯>_<영향력>` 를 얹은 것이라
 	// 일반 모드 + 그 영향력 전용 모드가 함께 잡힌다(게임에서도 영향력 아이템은 일반 모드도 그대로 받는다).
@@ -216,11 +288,13 @@ function rollValues(mod, kind) {
 }
 
 // 패밀리 키: Id 의 꼬리 숫자를 벗긴 티어 사다리 이름 (IncreasedLife4 → IncreasedLife)
-const familyKey = (mod) => (mod.Id || "").replace(/\d+_?$/, "") || mod.Id;
+// 군집 옵션(도메인 21)은 꼬리 밑줄이 여럿이거나 숫자 없이 밑줄만 붙어(GrantLife_ · GrantLife2_ · GrantLife3) 한 사다리가 갈라진다 → 밑줄 → 숫자 순으로 벗긴다(C514, 다른 도메인은 그대로)
+const familyKey = (mod) =>
+	(mod.Domain === CLUSTER_DOMAIN ? (mod.Id || "").replace(/_+$/, "").replace(/\d+$/, "") : (mod.Id || "").replace(/\d+_?$/, "")) || mod.Id;
 
 // 1) 장비 도메인 접두/접미 크래프팅 모드 수집 (Name 없는 내부 모드 제외)
 const GEN = { 1: "prefix", 2: "suffix" };
-const WANTED_DOMAINS = new Set([1, ...Object.values(CLASS_DOMAIN)]);
+const WANTED_DOMAINS = new Set([1, ...Object.values(CLASS_DOMAIN), CLUSTER_DOMAIN]);
 const candidatesByDomain = new Map(); // domain → [{mod,index}]
 mods.forEach((mod, index) => {
 	if (!WANTED_DOMAINS.has(mod.Domain) || !GEN[mod.GenerationType] || !mod.Name) return;
@@ -303,7 +377,7 @@ const enchantPerPool = new Map(); // 플라스크 클래스 풀 → Set<famKey> 
 for (const [poolKey, tagSets] of tagSetsByPool) {
 	if (poolKey.endsWith("|")) {
 		// 플라스크 풀엔 인챈트(주입/점화) 매칭
-		if (CLASS_DOMAIN[poolKey.split("|")[0]] === 2) {
+		if (domainOf(poolKey) === 2) {
 			const enchKeys = new Set();
 			enchantPerPool.set(poolKey, enchKeys);
 			for (const { mod, index } of enchantCandidates) {
@@ -336,7 +410,7 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 		// 영향력 없음 풀에만 부패 임플리싯 매칭
 		const famKeys = new Set();
 		corruptedPerPool.set(poolKey, famKeys);
-		const corruptedCandidates = corruptedByDomain.get(CLASS_DOMAIN[poolKey.split("|")[0]] ?? 1) || [];
+		const corruptedCandidates = corruptedByDomain.get(domainOf(poolKey)) || [];
 		for (const { mod, index } of corruptedCandidates) {
 			let weight = 0;
 			for (const { tagSet } of tagSets) weight = Math.max(weight, spawnWeight(mod, tagSet));
@@ -365,9 +439,8 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 	}
 	const famWeights = new Map();
 	perPool.set(poolKey, famWeights);
-	const poolClass = poolKey.split("|")[0];
-	const candidates = candidatesByDomain.get(CLASS_DOMAIN[poolClass] ?? 1) || [];
-	const poolDomain = CLASS_DOMAIN[poolClass] ?? 1;
+	const poolDomain = domainOf(poolKey);
+	const candidates = candidatesByDomain.get(poolDomain) || [];
 	// 바알 오브 부패 임플리싯(C358)은 플라스크(도메인 2 — 바알 오브를 못 쓴다)만 빼고 클래스 도메인별(주얼 10 · 심연 주얼 13)
 	const extraSets = poolDomain === 1 ? [[veiledCandidates, craftVeiled, craftVeiledMods], [delveCandidates, craftFossil, craftFossilMods], [eldritchCandidates, craftEldritch, craftEldritchMods]] : [];
 	if (poolDomain !== 2) extraSets.push([corruptedByDomain.get(poolDomain) || [], craftCorrupted, craftCorruptedMods]);
@@ -474,14 +547,20 @@ for (const [poolKey, famWeights] of perPool) {
 	};
 }
 // 클래스 목록 — 변형이 여럿이면 variants 로 노출(UI 가 하위 탭을 만든다). 변형 없으면 빈 목록.
-const VARIANT_ORDER = ["str_armour", "dex_armour", "int_armour", "str_dex_armour", "str_int_armour", "dex_int_armour", "str_dex_int_armour"];
+const VARIANT_ORDER = ["str_armour", "dex_armour", "int_armour", "str_dex_armour", "str_int_armour", "dex_int_armour", "str_dex_int_armour", ...JEWEL_VARIANT_TAGS];
 const outClasses = [...classLabel.keys()]
 	.map((itemClass) => {
-		const variants = [...(variantsByClass.get(itemClass) || new Map()).entries()]
-			.sort((a, b) => VARIANT_ORDER.indexOf(a[0]) - VARIANT_ORDER.indexOf(b[0]))
+		const variantMap = new Map(variantsByClass.get(itemClass) || new Map());
+		// 군집 주얼 변형이 있는 클래스(Jewel)는 일반 주얼("" 풀)을 첫 변형으로(C514) — 크기 순 → 이름 순
+		const hasCluster = [...variantMap.keys()].some((k) => k.startsWith("cluster_"));
+		if (hasCluster && outPools[itemClass + "||"]) variantMap.set("", { name: itemClass, nameKo: classLabel.get(itemClass)?.nameKo || itemClass });
+		const variantRank = (k) => (k === "" ? -1 : k.startsWith("cluster_") ? 100 + CLUSTER_SIZE_ORDER.indexOf(k.slice(8, k.indexOf("."))) : VARIANT_ORDER.indexOf(k));
+		const variants = [...variantMap.entries()]
+			.sort((a, b) => variantRank(a[0]) - variantRank(b[0]) || (a[0].startsWith("cluster_") ? String(a[1].name).localeCompare(String(b[1].name)) : 0))
 			.map(([key, label]) => {
 				const pool = outPools[itemClass + "|" + key + "|"] || { prefixes: [], suffixes: [] };
-				return { key, name: label.name, nameKo: label.nameKo, prefixCount: pool.prefixes.length, suffixCount: pool.suffixes.length };
+				const vb = variantBases.get(itemClass + "|" + key);
+				return { key, name: label.name, nameKo: label.nameKo, prefixCount: pool.prefixes.length, suffixCount: pool.suffixes.length, ...(vb ? { bases: [...vb].sort() } : {}), ...(label.enchant ? { enchant: label.enchant, enchantKo: label.enchantKo || label.enchant } : {}) };
 			});
 		// 클래스 칩에 쓰는 대표 풀 — 변형이 있는 클래스는 **첫 변형** 기준이어야 한다.
 		// "변형 없음" 풀은 모든 베이스가 변형을 가진 클래스(갑옷 등)에선 비어 있어 칩이 0 으로 나왔다.

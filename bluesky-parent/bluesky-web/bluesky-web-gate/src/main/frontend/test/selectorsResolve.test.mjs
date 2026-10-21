@@ -32,6 +32,8 @@ const SCRIPT_CREATED = new Map([
 	["data-row-select-checkbox", "common.ts 가 선택 가능한 행(data-row-select)의 첫 칸에 만들어 넣는 체크박스"],
 	["data-page-section-nav", "common.ts 가 만드는 화면 안 구역 막대(구역 표식은 data-page-section)"],
 	["data-craft-armed", "common.ts 가 고른 화폐 단추에 붙인다(C477 — 고르고 아이템을 눌러 적용)"],
+	["data-craft-hit", "common.ts 가 화폐 단추에 붙이는 목표 적중 확률 표(C494)"],
+	["data-craft-inv-del", "common.ts 가 보관함 줄마다 만드는 지우기 단추(C518)"],
 	["candleTooltipEl", "stock-charts.ts 가 만드는 주가 추이 툴팁(금액 자리수 정렬용 HTML 표, 2026-10-07)"],
 ]);
 

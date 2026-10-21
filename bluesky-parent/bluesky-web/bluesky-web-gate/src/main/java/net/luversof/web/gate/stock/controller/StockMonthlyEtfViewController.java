@@ -193,6 +193,17 @@ public class StockMonthlyEtfViewController {
     model.addAttribute("monthlyEtfAccount", resolvedAccount);
     model.addAttribute("monthlyEtfPeriod", resolvedPeriod);
     model.addAttribute("monthlyEtfPeriods", MonthlyEtfViewSupport.PERIODS);
+    // 다음 분배금 기준일 · 매수 마감일(2026-10-20) - 적립하는 날을 정하는 데 쓴다. 거래소 날짜라 존을 박는다.
+    java.time.LocalDate marketToday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+    model.addAttribute(
+        "monthlyEtfBuyBy",
+        java.util.stream.Stream.of("MID_MONTH", "MONTH_END")
+            .map(
+                window ->
+                    net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyBy(
+                        marketToday, window))
+            .filter(java.util.Objects::nonNull)
+            .toList());
     model.addAttribute("pageTitle", StockViewSupport.msg("stock.page.monthly.etf.title"));
     return "stock/monthlyEtf";
   }

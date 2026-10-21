@@ -56,7 +56,9 @@
 					});
 				})();
 			</script>
-			<div class="flex-1 min-w-0 p-4 pb-20 lg:pb-4 relative">
+			<%-- data-tooltip-bounds: 툴팁 끝 맞춤의 경계(common.ts tooltipBounds). 옆 메뉴가 fixed 라 화면 가장자리로 재면
+				 말풍선이 메뉴 밑으로 들어가 가려졌다(2026-10-21 대시보드 통합손익 계산 내역). --%>
+			<div class="flex-1 min-w-0 p-4 pb-20 lg:pb-4 relative" data-tooltip-bounds>
 				${contentStock}
 			</div>
 		</div>

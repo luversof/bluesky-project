@@ -125,6 +125,11 @@ public class PoeBaseItemDataService {
     return data.items().size();
   }
 
+  /** 베이스 전체(제작 에뮬레이터 아이템 가져오기 — 한국어 이름 대조, C485). */
+  public List<PoeBaseItem> items() {
+    return data.items();
+  }
+
   /** 아이템 클래스 id → 한국어 라벨 (표시 순서 유지) */
   public Map<String, String> itemClasses() {
     Map<String, String> classes = new LinkedHashMap<>();

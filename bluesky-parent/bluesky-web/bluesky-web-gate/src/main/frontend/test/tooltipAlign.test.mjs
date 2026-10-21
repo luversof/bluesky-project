@@ -65,6 +65,26 @@ test("폭을 못 재면 건드리지 않는다", () => {
 	assert.equal(mod.tooltipAlign(309, 335, 176, 0), "center");
 });
 
+// 실측 2026-10-21(대시보드 1280px): 고정 옆 메뉴가 [0,224] 를 덮는다. 화면 기준이면 트리거 [345,369] 의 말풍선 320 은
+// 가운데 [197,517] 로 놓여 왼쪽 27px 이 메뉴에 가렸다. 본문 칸 [224,1280] 기준이면 시작점 맞춤 [345,665].
+test("본문 칸이 표시돼 있으면 그 칸을 경계로 잰다", () => {
+	const host = { getBoundingClientRect: () => ({ left: 224, right: 1280 }) };
+	const el = { closest: (s) => (s === "[data-tooltip-bounds]" ? host : null) };
+	const b = mod.tooltipBounds(el, 1280);
+	assert.deepEqual(b, { left: 224, width: 1056 });
+	assert.equal(mod.tooltipAlign(345, 369, 320, 1280), "center", "화면 기준이면 가운데(메뉴 밑으로 들어감)");
+	assert.equal(mod.tooltipAlign(345 - b.left, 369 - b.left, 320, b.width), "start");
+});
+
+test("표시가 없거나 칸이 화면 밖이면 화면 전체", () => {
+	assert.deepEqual(mod.tooltipBounds({ closest: () => null }, 375), { left: 0, width: 375 });
+	const off = { getBoundingClientRect: () => ({ left: 400, right: 900 }) };
+	assert.deepEqual(mod.tooltipBounds({ closest: () => off }, 375), { left: 0, width: 375 });
+	// 칸이 화면보다 넓으면 화면과 겹치는 부분만
+	const wide = { getBoundingClientRect: () => ({ left: -50, right: 2000 }) };
+	assert.deepEqual(mod.tooltipBounds({ closest: () => wide }, 1280), { left: 0, width: 1280 });
+});
+
 test("세로 변형과 마크업이 고른 끝 맞춤은 건너뛴다", () => {
 	const el = (names) => ({ classList: { contains: (n) => names.includes(n) } });
 	assert.equal(mod.tooltipAlignable(el(["tooltip", "tooltip-bottom"])), true);

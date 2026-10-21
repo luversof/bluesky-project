@@ -50,6 +50,7 @@
 					</tbody>
 				</table>
 			</div>
+			@if(net.luversof.web.gate.poe.CraftPrices.current() != null)<p class="text-xs text-base-content/70" data-craft-calc-custom-prices>${ko ? "사용자 가격 " + net.luversof.web.gate.poe.CraftPrices.current().size() + "개 반영" : net.luversof.web.gate.poe.CraftPrices.current().size() + " custom prices applied"}</p>@endif
 			<p class="text-xs text-base-content/70">${ko ? "시세: poe.ninja " : "Prices: poe.ninja "}${calc.league() == null ? "-" : calc.league()}@if(calc.pricesAt() != null) (${calc.pricesAt().substring(0, Math.min(16, calc.pricesAt().length()))})@endif · ${ko ? "가중치 균등 가정(PoE2 비공개) · 베이스 값 제외 · 90% 예산 = 회차마다 독립일 때 90% 확률로 한 번은 성공하는 비용" : "uniform weights (PoE2 hidden) · base cost excluded · 90% budget = cost to succeed at least once with 90% probability"}</p>
 		@endif
 	@endif

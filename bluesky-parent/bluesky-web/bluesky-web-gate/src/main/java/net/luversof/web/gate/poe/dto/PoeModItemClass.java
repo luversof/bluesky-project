@@ -17,8 +17,17 @@ public record PoeModItemClass(
     List<String> prefixes,
     List<String> suffixes) {
 
-  /** 속성 변형 하나. */
-  public record Variant(String key, String name, String nameKo, int prefixCount, int suffixCount) {}
+  /** 속성 변형 하나 — enchant · enchantKo = 군집 주얼 인챈트 줄(C514, 그 밖의 변형은 null). */
+  public record Variant(
+      String key,
+      String name,
+      String nameKo,
+      int prefixCount,
+      int suffixCount,
+      // 이 변형의 베이스 이름(C516 — 주얼 색 · 심연 주얼 종류 · 군집 주얼은 하나)
+      List<String> bases,
+      List<String> enchant,
+      List<String> enchantKo) {}
 
   /** 영향력 하나 — extraCount = 영향력 전용으로 더 붙는 패밀리 수. */
   public record Influence(String key, String name, String nameKo, int extraCount) {}

@@ -310,9 +310,48 @@ public class StockViewController {
           payoutWindow,
           account,
           symbol);
+      // 목표 월배당까지(2026-10-20) - 주소의 goalMonthly · goalContribution 으로 계산한다. 전 종목 기준이라 표 거르기와 무관하다.
+      // 메서드 인자를 늘리지 않고 요청에서 읽는다(인자 순서로 부르는 시험이 있다).
+      BigDecimal goalMonthly = parseGoalAmount(request.getParameter("goalMonthly"));
+      BigDecimal goalContribution = parseGoalAmount(request.getParameter("goalContribution"));
+      model.addAttribute("monthlyDividendGoalMonthly", goalMonthly);
+      model.addAttribute("monthlyDividendGoalContribution", goalContribution);
+      Object goalBasis = model.getAttribute("monthlyDividendGoalBasis");
+      if (goalMonthly != null
+          && goalMonthly.signum() > 0
+          && goalBasis
+              instanceof
+              net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Basis basis) {
+        model.addAttribute(
+            "monthlyDividendGoal",
+            net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.compute(
+                basis, goalMonthly, goalContribution));
+      }
     }
 
     return "stock/simulator";
+  }
+
+  /** 목표 월배당 입력 칸 값. 비었거나 숫자가 아니거나 음수 · 1 조 원 넘으면 null(입력을 무시한다). 쉼표는 지운다. */
+  static BigDecimal parseGoalAmount(String raw) {
+    if (!StringUtils.hasText(raw)) {
+      return null;
+    }
+    // 숫자(와 쉼표)만 받는다(2026-10-20 검토): new BigDecimal 은 "1E-600000000" 같은 지수 표기를 받아 setScale 이 10^6 억
+    // 자리를
+    // 만들려다 요청 스레드를 몇 분씩 붙잡았다. 원 단위 금액에 소수 · 지수 · 부호는 필요 없다.
+    String digits = raw.replace(",", "").trim();
+    if (digits.isEmpty() || digits.length() > 13) {
+      return null;
+    }
+    for (int i = 0; i < digits.length(); i++) {
+      char c = digits.charAt(i);
+      if (c < '0' || c > '9') {
+        return null;
+      }
+    }
+    BigDecimal value = new BigDecimal(digits);
+    return value.compareTo(new BigDecimal("1000000000000")) > 0 ? null : value;
   }
 
   @BlueskyPreAuthorize
@@ -581,6 +620,22 @@ public class StockViewController {
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(currentHoldingsFuture);
     Map<UUID, Integer> monthlyDividendCurrentQuantities = currentHoldings.quantities();
     model.addAttribute("monthlyDividendCurrentQuantities", monthlyDividendCurrentQuantities);
+    // 다음 분배금 기준일 · 매수 마감(2026-10-20) - 적립 추천 바로 위에서 사는 날을 정하게(월배당 ETF 화면 머리와 같은 계산).
+    java.time.LocalDate marketToday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+    model.addAttribute(
+        "monthlyDividendBuyBy",
+        java.util.stream.Stream.of("MID_MONTH", "MONTH_END")
+            .map(
+                buyByWindow ->
+                    net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyBy(
+                        marketToday, buyByWindow))
+            .filter(java.util.Objects::nonNull)
+            .toList());
+    // 목표 월배당까지(2026-10-20)의 기준 - 전 종목(표 거르기 전), 원장 지금 수량.
+    model.addAttribute(
+        "monthlyDividendGoalBasis",
+        net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.basisOf(
+            allRows, monthlyDividendCurrentQuantities));
     model.addAttribute(
         "monthlyDividendCurrentAverageBuyPrices", currentHoldings.averageBuyPrices());
     // 이 표는 배당 기준값(스냅샷 시점)과 시세(최근 종가) 두 시점을 한 줄에 섞는다. 앞의 날짜만 적혀 있었다.

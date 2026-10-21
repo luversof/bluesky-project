@@ -121,8 +121,81 @@ for (const e of entries) {
 		fs.rmSync(tmp, { force: true });
 		fs.rmSync(tut, { force: true }); // 큰 원본은 남기지 않는다
 		done++;
+		veiledFrames(path.join(OUT_DIR, "veiled-mod.png"), path.join(OUT_DIR, "veiled-mod-anim.png"));
+		done++;
 	} else {
 		console.warn("튜토리얼 그림 없음 — veiled-mod.png 건너뜀");
 	}
 }
 console.log(`ui-assets 완료: ${done}개 → ${OUT_DIR}`);
+
+/**
+ * 장막 줄 움직임 세 벌(C484) — 게임 툴팁의 장막 줄은 룬 문양이 다른 벌로 바뀌며 반짝인다(정지 그림은 튜토리얼 한 장뿐, 움직이는 원본은 게임 파일에 없음).
+ * 룬 띠를 빈 열 기준으로 마디로 쪼개 순서 · 뒤집기를 바꾼 두 벌을 더 만들고 세 줄로 쌓는다(빈 열 폭은 그대로라 너비가 같다). 화면은 CSS 로 세 줄을 번갈아 보인다.
+ */
+function veiledFrames(src, out) {
+	const [w, h] = execFileSync(MAGICK, ["identify", "-format", "%w %h", src]).toString().trim().split(" ").map(Number);
+	const col = execFileSync(MAGICK, [src, "-alpha", "extract", "-scale", `${w}x1!`, "-depth", "8", "txt:-"])
+		.toString()
+		.split(/\r?\n/)
+		.slice(1)
+		.filter(Boolean)
+		.map((l) => Number((l.match(/\((\d+)/) || [0, 0])[1]));
+	// 마디 = 밝은 열(> 8)이 이어진 구간, 4px 미만 틈은 마디 안으로
+	const segs = [];
+	let start = -1;
+	let gap = 0;
+	for (let x = 0; x <= w; x++) {
+		const on = x < w && col[x] > 8;
+		if (on) {
+			if (start < 0) start = x;
+			gap = 0;
+		} else if (start >= 0) {
+			gap++;
+			if (gap >= 4 || x === w) {
+				segs.push({ x: start, w: x - gap + 1 - start });
+				start = -1;
+				gap = 0;
+			}
+		}
+	}
+	if (segs.length < 3) {
+		fs.copyFileSync(src, out);
+		return;
+	}
+	// 마디 사이 틈(앞 여백 · 뒤 여백 포함)은 원래 순서 그대로, 마디만 바꿔 넣는다
+	// 고정 씨앗 섞기(같은 입력이면 늘 같은 그림)
+	const shuffled = (seed) => {
+		const idx = segs.map((_, i) => i);
+		let r = seed;
+		for (let i = idx.length - 1; i > 0; i--) {
+			r = (r * 1103515245 + 12345) % 2147483648;
+			const j = r % (i + 1);
+			[idx[i], idx[j]] = [idx[j], idx[i]];
+		}
+		return idx;
+	};
+	const p2 = shuffled(7);
+	const p3 = shuffled(29);
+	const variants = [
+		segs.map((s) => ({ ...s, op: null })),
+		p2.map((k, i) => ({ ...segs[k], op: i % 2 ? "-flop" : null })),
+		p3.map((k, i) => ({ ...segs[k], op: i % 3 === 0 ? "-flip" : i % 3 === 1 ? "-flop" : null })),
+	];
+	const rows = variants.map((v, k) => {
+		const file = out.replace(/\.png$/, `.row${k}.png`);
+		const args = ["-size", `${w}x${h}`, "xc:none"];
+		let x = segs[0].x;
+		v.forEach((s, i) => {
+			args.push("(", src, "-crop", `${s.w}x${h}+${s.x}+0`, "+repage");
+			if (s.op) args.push(s.op);
+			args.push(")", "-geometry", `+${x}+0`, "-composite");
+			x += s.w + (i + 1 < segs.length ? segs[i + 1].x - (segs[i].x + segs[i].w) : 0);
+		});
+		args.push(file);
+		execFileSync(MAGICK, args);
+		return file;
+	});
+	execFileSync(MAGICK, [...rows, "-append", out]);
+	rows.forEach((f) => fs.rmSync(f, { force: true }));
+}

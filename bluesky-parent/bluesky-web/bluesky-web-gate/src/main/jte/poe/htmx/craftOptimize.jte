@@ -32,6 +32,10 @@
 		<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
 			<div><span class="text-xs text-base-content/70">${ko ? "성공 한 번당 기대 비용" : "Expected cost per success"}</span>
 				<div class="text-2xl font-bold font-mono" data-craft-optimize-cost="${opt.expectedCost()}">${num.apply(opt.expectedCost())}${unit}@if(opt.stderr() != null)<span class="text-sm font-normal text-base-content/70"> ±${num.apply(opt.stderr() * 1.96)}</span>@endif</div>
+				@if(opt.eldritch() != null && opt.eldritch().error() == null && opt.eldritch().cost() != null)<div class="text-xs" data-craft-optimize-eldritch="${opt.eldritch().cost()}">+ ${ko ? "엘드리치 임플리싯 " : "Eldritch implicits "}<span class="font-mono">${num.apply(opt.eldritch().cost())}${unit}</span> ${ko ? "(따로 — 불씨 · 영액, 합계 " : "(separate — embers/ichors, total "}<span class="font-mono">${num.apply(opt.expectedCost() + opt.eldritch().cost())}${unit}</span>)</div>@endif
+				@if(opt.costQuantiles() != null && opt.costQuantiles().size() == 3)<div class="text-xs text-base-content/70" data-craft-optimize-quantiles title="${ko ? "성공한 회차의 비용 분포 — 운이 좋으면 25% 지점, 보통 중간, 운이 나쁘면 90% 지점까지 든다(못 닿은 회차 비용은 기대 비용에만)" : "Cost distribution of successful runs — lucky 25%, typical median, unlucky 90%"}">${ko ? "운 좋으면 " : "Lucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(0))}${unit}</span> · ${ko ? "보통 " : "typical "}<span class="font-mono">${num.apply(opt.costQuantiles().get(1))}${unit}</span> · ${ko ? "운 나쁘면 " : "unlucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(2))}${unit}</span></div>@endif
+				<%-- 성공이 적은 결과(C539) — 못 끝낸 회차(C536)가 많으면 비용 = 전체 / 성공 수라 성공 몇 번으로 잰 거친 값 --%>
+				@if(opt.runs() > 0 && opt.successes() < 5)<div class="text-xs text-base-content/80" data-craft-optimize-few="${opt.successes()}">⚠ ${ko ? "목표에 닿은 회차가 " + opt.runs() + "번 중 " + opt.successes() + "번뿐이라 거친 값입니다 — 다시 계산하면 크게 달라질 수 있습니다" : "Only " + opt.successes() + " of " + opt.runs() + " runs reached the target — a rough estimate that may change a lot on rerun"}</div>@endif
 			</div>
 			@if(opt.upper() != null && opt.upper() < 1e8)
 				<div class="text-sm" data-craft-optimize-compare>
@@ -62,12 +66,39 @@
 					<table class="table table-xs">
 						<thead><tr><th>${ko ? "상태" : "State"}</th><th>${ko ? "쓸 수단" : "Action"}</th><th class="text-right">${ko ? "지나는 회차" : "Visited"}</th><th class="text-right">${ko ? "남은 기대 비용" : "Cost to go"}</th></tr></thead>
 						<tbody>
-							@for(PoeCraft.OptimizeRule r : opt.rules())
-								<tr data-craft-optimize-rule>
-									<td class="min-w-[12rem] break-keep">${r.state()}</td>
-									<td class="min-w-[9rem] break-keep font-medium">${r.action()}</td>
-									<td class="text-right font-mono">${String.format("%.0f%%", r.share() * 100)}</td>
-									<td class="text-right font-mono">${r.remaining() == null ? "-" : num.apply(r.remaining()) + unit}</td>
+							<%-- 같은 수단 상태는 한 줄로(C492 — 정제 → 다시 시작이 12줄 반복돼 읽기 어려웠다). 펼치면 상태 목록, 남은 비용은 범위 --%>
+							!{
+								java.util.LinkedHashMap<String, java.util.List<PoeCraft.OptimizeRule>> ruleGroups = new java.util.LinkedHashMap<>();
+								for (PoeCraft.OptimizeRule gr : opt.rules()) {
+									ruleGroups.computeIfAbsent(gr.action(), k -> new java.util.ArrayList<>()).add(gr);
+								}
+							}
+							@for(var ge : ruleGroups.entrySet())
+								!{
+									java.util.List<PoeCraft.OptimizeRule> grs = ge.getValue();
+									PoeCraft.OptimizeRule g0 = grs.get(0);
+									double gShare = grs.stream().mapToDouble(PoeCraft.OptimizeRule::share).max().orElse(0);
+									java.util.DoubleSummaryStatistics gRem = grs.stream().filter(x -> x.remaining() != null).mapToDouble(PoeCraft.OptimizeRule::remaining).summaryStatistics();
+									String gRemText = gRem.getCount() == 0 ? "-" : (Math.abs(gRem.getMax() - gRem.getMin()) < 0.5 ? num.apply(gRem.getMax()) + unit : num.apply(gRem.getMin()) + "~" + num.apply(gRem.getMax()) + unit);
+								}
+								<tr data-craft-optimize-group="${grs.size()}">
+									<td class="min-w-[12rem] break-keep">
+										@if(grs.size() == 1)
+											<span data-craft-optimize-rule>${g0.state()}</span>
+										@else
+											<details>
+												<summary class="cursor-pointer">${g0.state()} <span class="text-base-content/60">${ko ? "외 " + (grs.size() - 1) + "가지 상태" : "and " + (grs.size() - 1) + " more states"}</span></summary>
+												<ul class="mt-1 list-disc pl-4 space-y-0.5 text-base-content/80">
+													@for(PoeCraft.OptimizeRule r : grs.subList(1, grs.size()))
+														<li data-craft-optimize-rule>${r.state()}</li>
+													@endfor
+												</ul>
+											</details>
+										@endif
+									</td>
+									<td class="min-w-[9rem] break-keep font-medium">${g0.action()}</td>
+									<td class="text-right font-mono">${String.format("%.0f%%", gShare * 100)}</td>
+									<td class="text-right font-mono whitespace-nowrap">${gRemText}</td>
 								</tr>
 							@endfor
 						</tbody>
@@ -76,6 +107,27 @@
 			</details>
 		@endif
 		@if(!opt.perSuccess().isEmpty())
+			@if(opt.showcase() != null && !opt.showcase().isEmpty())
+				<%-- 결과 예시(C502, craftofexile 시뮬레이터의 쇼케이스) — 이 조합으로 성공한 회차의 마지막 아이템, 목표 밖 옵션도 보인다 --%>
+				<details class="rounded-box border border-base-300" data-craft-optimize-showcase open>
+					<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "결과 예시" : "Example results"} <span class="text-xs font-normal text-base-content/70">· ${ko ? "성공한 회차 중 싼 편 · 중간 · 비싼 편의 아이템(목표 밖 옵션도)" : "items from cheap · median · expensive successful runs (other modifiers too)"}</span></summary>
+					<div class="px-3 pb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+						@for(var sc : opt.showcase())
+							<div class="rounded-box border border-[#ffff77]/40 bg-black/85 px-2 py-1.5 text-center text-[12px] leading-snug min-w-0" data-craft-showcase>
+								<div class="text-[11px] text-white/60 mb-0.5">${ko ? "이 회차 비용 " : "Run cost "}<span class="font-mono text-white/80">${num.apply(sc.cost())}${unit}</span></div>
+								@for(PoeCraft.Line sl : sc.lines())
+									!{
+										java.util.List<String> sx = ko && sl.ko() != null && !sl.ko().isEmpty() ? sl.ko() : (sl.en() == null ? java.util.List.of() : sl.en());
+										java.util.List<String> sn = ko && sl.koMin() != null && !sl.koMin().isEmpty() ? sl.koMin() : (sl.enMin() == null ? java.util.List.of() : sl.enMin());
+										String sc2 = sl.fractured() ? "#a29162" : sl.crafted() ? "#b4b4ff" : "#8888ff";
+									}
+									<div class="wrap-anywhere" style="color:${sc2}" data-craft-showcase-gen="${sl.gen()}">@for(int si = 0; si < sx.size(); si++)$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(net.luversof.web.gate.poe.PoeModRange.range(si < sn.size() ? sn.get(si) : null, sx.get(si)))}@if(si < sx.size() - 1)<br>@endif@endfor</div>
+								@endfor
+							</div>
+						@endfor
+					</div>
+				</details>
+			@endif
 			<details class="rounded-box border border-base-300" data-craft-optimize-spend>
 				<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "성공 한 번당 쓰는 화폐" : "Currency per success"}</summary>
 				<div class="px-3 pb-3 overflow-x-auto">

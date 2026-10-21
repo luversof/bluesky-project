@@ -53,6 +53,12 @@
 @param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
 @param boolean monthlyDividendReorderEnabled = false
 @param Map<String, String> monthlyDividendPayoutWindowBySymbol = java.util.Map.of()
+<%-- 목표 월배당까지(2026-10-20). --%>
+@param java.util.List<net.luversof.web.gate.stock.dto.view.RecordDateBuyByView> monthlyDividendBuyBy = java.util.List.of()
+@param net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Basis monthlyDividendGoalBasis = null
+@param net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Goal monthlyDividendGoal = null
+@param BigDecimal monthlyDividendGoalMonthly = null
+@param BigDecimal monthlyDividendGoalContribution = null
 
 !{
 	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
@@ -269,6 +275,11 @@
 					</form>
 			`)
 		</div>
+
+		<%-- 목표 월배당까지(2026-10-20) - 전 종목 기준이라 결과 구역 밖, 자기 구역만 바꿔 끼운다. --%>
+		<%-- 다음 분배금 기준일 · 매수 마감(2026-10-20) - 필터와 무관해 결과 구역 밖. --%>
+		@template.stock.fragments.recordDateBuyBy(rows = monthlyDividendBuyBy)
+		@template.stock.fragments.monthlyDividendGoal(basis = monthlyDividendGoalBasis, goal = monthlyDividendGoal, goalMonthly = monthlyDividendGoalMonthly, goalContribution = monthlyDividendGoalContribution)
 
 		<%-- 결과 구역(요약 · 적립 추천 · 비교표 · 기준). 표 좁히기 폼 · 지급 시기 칩 · 정렬 머리 · 초기화는 페이지를 새로 부르지 않고 이 구역만
 		     바꿔 끼운다(사용자 요청 2026-10-13: 적용할 때마다 맨 위로 튀어 표까지 한참 내려와야 했다). 숫자는 여전히 서버가 다시 낸다 -

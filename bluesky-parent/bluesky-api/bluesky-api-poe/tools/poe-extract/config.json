@@ -155,6 +155,8 @@
       "columns": [
         "Wordlist",
         "Text",
+        "SpawnWeight_Tags",
+        "SpawnWeight_Values",
         "Text2"
       ]
     },

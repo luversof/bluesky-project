@@ -148,7 +148,10 @@ public class Poe2CraftService {
       int level,
       double chance,
       // 계열(ModType) — 시뮬레이터 목표를 계열마다 최소 등급으로 고를 때
-      String family) {}
+      String family,
+      // 옵션 태그(10-21 C544 사용자 요청 "옵션에 태그가 보여야" — 인게임 상세 보기 " — 원소, 냉기, 저항") — 이름 있는 태그만(영어 · 한국어)
+      List<String> tags,
+      List<String> tagsKo) {}
 
   public record Options(
       List<Poe2.ModPoolSummary> pools,
@@ -330,7 +333,9 @@ public class Poe2CraftService {
               1,
               d.mod().level(),
               0,
-              d.lich()));
+              d.lich(),
+              modTags(d.mod().id(), 0),
+              modTags(d.mod().id(), 1)));
     }
     return out;
   }
@@ -444,6 +449,23 @@ public class Poe2CraftService {
 
   public Poe2CraftEngine engine() {
     return engine;
+  }
+
+  /** 결과 분포(C534) — 옵션 계열(시뮬레이터 목표 · 풀 줄과 같은 mt), 모르면 id. */
+  public String familyOf(String id) {
+    CraftMod m = data.mods().get(id);
+    return m == null || m.mt() == null ? id : m.mt();
+  }
+
+  /** 결과 분포(C534) — 그 풀에서 옵션의 등급(1 = 최상), 모르면 null. */
+  public Integer tierRank(String poolKey, String id) {
+    Object[] t = texts(poolKey).get(id);
+    return t == null ? null : (Integer) t[1];
+  }
+
+  /** 제작 자료(아이템 가져오기 — 에센스 · 훼손 · 타락 옵션 문구, C486). */
+  CraftData craftData() {
+    return data;
   }
 
   public Options options() {
@@ -600,6 +622,23 @@ public class Poe2CraftService {
         engine.boosted(item),
         lineTags(item, 0),
         lineTags(item, 1));
+  }
+
+  /** 옵션 하나의 태그 이름(C544, PoE1 짝 — 확률 표 줄에도) — lang 0 = 영어 · 1 = 한국어, 없으면 빈 목록. */
+  private List<String> modTags(String id, int lang) {
+    Poe2CraftEngine.Mod m = modOf(id);
+    if (m == null || m.tags() == null) {
+      return List.of();
+    }
+    Map<String, List<String>> names = data.tagNames() == null ? Map.of() : data.tagNames();
+    List<String> ts = new ArrayList<>();
+    for (String t : m.tags()) {
+      List<String> n = names.get(t);
+      if (n != null && n.size() > lang) {
+        ts.add(n.get(lang));
+      }
+    }
+    return ts;
   }
 
   /** 줄 id → 태그 이름(C480, PoE1 짝) — lang 0 = 영어 · 1 = 한국어, 옵션 태그 순서, 이름 없는 태그는 뺀다. */
@@ -931,7 +970,9 @@ public class Poe2CraftService {
               t == null ? null : (Integer) t[1],
               m.level(),
               c,
-              data.mods().get(m.id()) == null ? null : data.mods().get(m.id()).mt()));
+              data.mods().get(m.id()) == null ? null : data.mods().get(m.id()).mt(),
+              modTags(m.id(), 0),
+              modTags(m.id(), 1)));
     }
     return out;
   }

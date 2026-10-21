@@ -34,7 +34,9 @@ class UpcomingPaydaySpreadTest {
     assertThat(controller).contains("payDaySpreadFrom");
     assertThat(controller)
         .as("폭이 없으면 0 을 넘겨 화면이 아무것도 그리지 않게 한다")
-        .contains("spreadTo > spreadFrom ? spreadFrom : 0");
+        .contains("showSpread ? spreadFrom : 0")
+        .as("기준일 규칙으로 낸 날짜(정확한 날)엔 폭을 적지 않는다(2026-10-20)")
+        .contains("boolean showSpread = !nextPayDateRuled && spreadTo > spreadFrom;");
     assertThat(template).contains("@if(payDaySpreadFrom > 0 && payDaySpreadTo > payDaySpreadFrom)");
   }
 

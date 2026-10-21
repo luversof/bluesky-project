@@ -354,7 +354,9 @@ public final class Poe2 {
       String variant,
       String variantKo,
       int baseCount,
-      int groupCount) {}
+      int groupCount,
+      // 이 풀의 베이스 이름(C528 — 묶음 풀 '잿빛 지팡이 · 불저항 지팡이' 의 베이스 고르기 · 검색)
+      List<String> bases) {}
 
   public record ModData(
       String patch,

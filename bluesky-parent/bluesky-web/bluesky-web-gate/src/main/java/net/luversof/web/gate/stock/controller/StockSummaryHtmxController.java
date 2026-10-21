@@ -91,6 +91,11 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
   }
 
   /** 서로 의존이 없는 원격 호출을 동시에 던진다. */
+  /** 올해 줄 배당 카드의 금융소득 기준 비율(2026-10-20). 없으면(시험) 그 말만 빠진다. */
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private net.luversof.web.gate.stock.service.FinancialIncomeThresholdSupport
+      financialIncomeThresholdSupport;
+
   private <T> CompletableFuture<T> supplyRemote(Supplier<T> supplier) {
     return CompletableFuture.supplyAsync(supplier, stockRemoteCallExecutor);
   }
@@ -154,6 +159,15 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         "endDate", periodTo.plusDays(1).atStartOfDay(periodZone).toInstant().toString());
     var periodSummaryFuture =
         supplyRemote(() -> periodSummaryClient.findPeriodSummary(periodParams));
+    // 올해 줄의 배당 카드에 금융소득 종합과세 기준 대비 비율(2026-10-20) - 올해 줄처럼 계좌 필터와 무관한 사용자 전체 값.
+    // 조회가 실패하면 null 이라 그 말만 빠진다. 과세 연도는 한국 세법의 해라 존을 박는다.
+    java.time.ZoneId taxZone = java.time.ZoneId.of("Asia/Seoul");
+    var financialIncomeFuture =
+        financialIncomeThresholdSupport == null
+            ? null
+            : supplyRemote(
+                () ->
+                    financialIncomeThresholdSupport.load(userId, LocalDate.now(taxZone), taxZone));
 
     var stockItemsFuture = supplyRemote(() -> emptyIfNull(stockItemClient.getStockItems()));
     var rawProfitFuture =
@@ -413,6 +427,9 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       model.addAttribute("periodSummary", joinRemote(periodSummaryFuture));
       model.addAttribute("periodSummaryFrom", periodFrom);
       model.addAttribute("periodSummaryTo", periodTo);
+      model.addAttribute(
+          "financialIncome",
+          financialIncomeFuture == null ? null : joinRemote(financialIncomeFuture));
     } catch (RuntimeException e) {
       log.warn("period summary lookup failed: userId={}", userId, e);
     }
@@ -591,21 +608,43 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     boolean holdsEnd = holdsWindow(snapshots, windowBySymbol, "MONTH_END");
     String nextWindow = null;
     LocalDate nextPayDate = null;
+    // 다음 지급일 = 기준일 규칙 + 결제 거래일 수(2026-10-20 - 배당 내역 다가올 배당과 같은 계산, 지급 이력 209 건 100% 재현).
+    // 규칙이 안 서면(이력에 기준일이 없거나 규칙과 다름) 예전 추정(최빈 일자 ~ 관측된 가장 늦은 날).
+    Map<String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule> rules =
+        settlementRules(payouts);
+    java.util.Set<String> heldSymbols = new java.util.HashSet<>();
+    for (MonthlyDividendSnapshotResponse snapshot : snapshots) {
+      String sym = normalizeSymbol(snapshot.stockItemSymbol());
+      if (sym != null) {
+        heldSymbols.add(sym);
+      }
+    }
+    RuledPayDates ruledRange = null;
     if (holdsMid) {
       nextWindow = "MID_MONTH";
-      nextPayDate = projectedPayDate(today, midRepDay, midLastDay);
+      RuledPayDates ruled =
+          ruledNextPayDates(today, "MID_MONTH", rules, windowBySymbol, heldSymbols);
+      nextPayDate = ruled != null ? ruled.first() : projectedPayDate(today, midRepDay, midLastDay);
+      ruledRange = ruled;
     }
     if (holdsEnd) {
-      LocalDate endDate = projectedPayDate(today, endRepDay, endLastDay);
+      RuledPayDates ruledEnd =
+          ruledNextPayDates(today, "MONTH_END", rules, windowBySymbol, heldSymbols);
+      LocalDate endDate =
+          ruledEnd != null ? ruledEnd.first() : projectedPayDate(today, endRepDay, endLastDay);
       if (nextPayDate == null || endDate.isBefore(nextPayDate)) {
         nextWindow = "MONTH_END";
         nextPayDate = endDate;
+        ruledRange = ruledEnd;
       }
     }
+    boolean nextPayDateRuled = ruledRange != null;
 
     // 다음 시기 종목: 시기 필터 → 최근 기준 월배당 내림차순(2026-10-13 사용자 선택 "최근을 우선으로" - 배당 내역 다가올 배당과 같은 순서).
     // (시기 미분류 종목만 있으면 전체 상위로 폴백)
     final String window = nextWindow;
+    // 규칙 날짜면 그 달에 들어올 종목만(이번 달 몫을 이미 받은 종목은 뺀다 - 2026-10-20 검토).
+    final java.util.Set<String> payingSymbols = ruledRange != null ? ruledRange.symbols() : null;
     List<MonthlyDividendSnapshotResponse> windowRows =
         snapshots.stream()
             .filter(s -> s.expectedMonthlyDividend() != null)
@@ -613,6 +652,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                 s ->
                     window == null
                         || window.equals(windowBySymbol.get(normalizeSymbol(s.stockItemSymbol()))))
+            .filter(
+                s ->
+                    payingSymbols == null
+                        || payingSymbols.contains(normalizeSymbol(s.stockItemSymbol())))
             .sorted(
                 Comparator.comparing(
                         net.luversof.web.gate.stock.service.MonthlyDividendCalculator
@@ -657,8 +700,15 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         "MID_MONTH".equals(nextWindow)
             ? midLastDay
             : "MONTH_END".equals(nextWindow) ? endLastDay : 0;
-    model.addAttribute("payDaySpreadFrom", spreadTo > spreadFrom ? spreadFrom : 0);
-    model.addAttribute("payDaySpreadTo", spreadTo > spreadFrom ? spreadTo : 0);
+    // 날짜가 기준일 규칙에서 나왔으면(2026-10-20) 정확한 날이라 폭을 적지 않는다 - 적으면 "그 사이 아무 날" 로 읽힌다.
+    boolean showSpread = !nextPayDateRuled && spreadTo > spreadFrom;
+    model.addAttribute("payDaySpreadFrom", showSpread ? spreadFrom : 0);
+    model.addAttribute("payDaySpreadTo", showSpread ? spreadTo : 0);
+    // 규칙 날짜인데 종목마다 하루 이틀 다르면(SOL 코리아고배당만 결제 1 거래일) 그 달 안의 범위를 적는다 - 첫 날만 적으면 나머지가 그 날 오는 걸로 읽힌다.
+    boolean showRange =
+        ruledRange != null && ruledRange.lastSameMonth().isAfter(ruledRange.first());
+    model.addAttribute("payDayRangeFrom", showRange ? ruledRange.first().getDayOfMonth() : 0);
+    model.addAttribute("payDayRangeTo", showRange ? ruledRange.lastSameMonth().getDayOfMonth() : 0);
 
     model.addAttribute("nextWindowLabel", nextWindowLabel);
     model.addAttribute("nextWindowIsMid", "MID_MONTH".equals(nextWindow));
@@ -706,6 +756,17 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .filter(java.util.Objects::nonNull)
             .max(java.time.LocalDate::compareTo)
             .orElse(null));
+    // 다음 분배금 매수 마감(2026-10-20) - 월배당 ETF 화면 머리와 같은 계산. 거래소 날짜라 존을 박는다.
+    java.time.LocalDate marketToday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+    model.addAttribute(
+        "upcomingBuyBy",
+        java.util.stream.Stream.of("MID_MONTH", "MONTH_END")
+            .map(
+                buyByWindow ->
+                    net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyBy(
+                        marketToday, buyByWindow))
+            .filter(java.util.Objects::nonNull)
+            .toList());
 
     return "stock/htmx/fragments/upcomingDividends";
   }
@@ -825,6 +886,79 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     LocalDate nm = today.plusMonths(1);
     return net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.businessDayInMonth(
         nm.withDayOfMonth(Math.min(repDay, nm.lengthOfMonth())));
+  }
+
+  private static Map<
+          String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule>
+      settlementRules(List<MonthlyDividendPayoutResponse> payouts) {
+    List<net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.RecordedPayout> input =
+        new java.util.ArrayList<>();
+    if (payouts != null) {
+      for (MonthlyDividendPayoutResponse payout : payouts) {
+        if (payout != null) {
+          input.add(
+              new net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.RecordedPayout(
+                  payout.stockItemSymbol(), payout.recordDate(), payout.payDate()));
+        }
+      }
+    }
+    return net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.settlementRules(input);
+  }
+
+  /** 규칙으로 낸 그 시기의 다음 지급일 - 가장 이른 날과 그 달 안에서 가장 늦은 날. */
+  record RuledPayDates(LocalDate first, LocalDate lastSameMonth, java.util.Set<String> symbols) {}
+
+  /**
+   * 그 시기의 다음 지급일(오늘 포함, 2026-10-20) - <b>들고 있는 종목마다</b> 제 규칙(기준일 + 결제 거래일 수)으로 낸 날 중 가장 이른 날과, 그 달
+   * 안에서 가장 늦은 날. 시기 전체의 최빈 거래일 수 하나로 내면 다른 종목(SOL 코리아고배당 1 거래일)의 날이 틀리고, 소수 종목이 더 늦으면 그 종목이 받는 날에
+   * 이미 다음 달을 가리켰다(검토 2026-10-20). 그 시기에 들고 있는 종목 중 하나라도 규칙이 없으면 null - 예전 추정으로 통째로 간다.
+   */
+  static RuledPayDates ruledNextPayDates(
+      LocalDate today,
+      String window,
+      Map<String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule> rules,
+      Map<String, String> windowBySymbol,
+      java.util.Set<String> heldSymbols) {
+    Map<String, LocalDate> dateBySymbol = new HashMap<>();
+    for (String symbol : heldSymbols) {
+      if (!window.equals(windowBySymbol.get(symbol))) {
+        continue;
+      }
+      var rule = rules.get(symbol);
+      if (rule == null || !window.equals(rule.payoutWindow())) {
+        return null;
+      }
+      LocalDate next = null;
+      java.time.YearMonth month = java.time.YearMonth.from(today);
+      for (int i = 0; i < 3 && next == null; i++, month = month.plusMonths(1)) {
+        LocalDate pay =
+            net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.projectedPayDate(
+                month, rule);
+        if (pay != null && !pay.isBefore(today)) {
+          next = pay;
+        }
+      }
+      if (next == null) {
+        return null;
+      }
+      dateBySymbol.put(symbol, next);
+    }
+    if (dateBySymbol.isEmpty()) {
+      return null;
+    }
+    LocalDate first = java.util.Collections.min(dateBySymbol.values());
+    LocalDate last = first;
+    // 그 달에 들어올 종목만 - 이번 달 몫을 이미 받은 종목(다음 지급이 다음 달)을 카드 합계에 넣으면 "그 날 몫" 이 부풀었다(검토 2026-10-20).
+    java.util.Set<String> symbols = new java.util.HashSet<>();
+    for (Map.Entry<String, LocalDate> entry : dateBySymbol.entrySet()) {
+      if (java.time.YearMonth.from(entry.getValue()).equals(java.time.YearMonth.from(first))) {
+        symbols.add(entry.getKey());
+        if (entry.getValue().isAfter(last)) {
+          last = entry.getValue();
+        }
+      }
+    }
+    return new RuledPayDates(first, last, symbols);
   }
 
   /** 지급이력에서 그 시기의 가장 늦은 일자. 없으면 {@code fallback}. */

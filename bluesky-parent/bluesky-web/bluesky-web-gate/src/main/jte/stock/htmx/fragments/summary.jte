@@ -26,6 +26,8 @@
 @param net.luversof.web.gate.stock.dto.response.PeriodSummary periodSummary = null
 @param java.time.LocalDate periodSummaryFrom = null
 @param java.time.LocalDate periodSummaryTo = null
+<%-- 금융소득 종합과세 기준(2026-10-20) - 올해 배당 카드의 보조 문구에 기준 대비 비율. null 이면 그 말만 빠진다. --%>
+@param net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView financialIncome = null
 
 !{
 	String currentTotalAssetLabel = MessageUtil.getMessage("stock.summary.label.current.total.asset");
@@ -113,27 +115,30 @@
 				<div class="text-xs text-base-content/60 mt-1">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime).replace("{0}", priceBasisDate.toString())}</div>
 			@endif
 			<%-- 통합손익은 총자산의 보조 지표로 같은 카드 하단에 배치한다 --%>
-			<div class="flex items-center justify-between border-t border-base-200 mt-4 pt-3">
+			<div class="relative flex items-center justify-between border-t border-base-200 mt-4 pt-3">
 				<div class="flex items-center gap-1 text-sm text-base-content/60">
 					<span>${totalCombinedProfitLabel}</span>
 					<%-- 시작점 정렬은 트리거 위치에 따라 오른쪽으로 밀려 좁은 화면에서 화면 밖으로 나간다
-						 (실측: 영어 라벨이 길어 375px 에서 14px 넘침). 중앙 정렬로 둔다. --%>
-					<div class="tooltip tooltip-bottom shrink-0" tabindex="0">
+						 (실측: 영어 라벨이 길어 375px 에서 14px 넘침). 중앙 정렬로 둔다.
+						 좁은 화면에서는 tooltip-span-row 로 이 줄(relative) 폭에 맞춘다 - 트리거 기준 상한 176px 이면 금액이 숫자 중간에서
+						 끊겼다(2026-10-21). --%>
+					<div class="tooltip tooltip-bottom tooltip-span-row shrink-0" tabindex="0">
 						<div class="tooltip-content z-[20] w-64 sm:w-72 lg:w-80 max-w-[calc(100vw-2rem)] rounded-box bg-neutral text-neutral-content shadow-lg">
 							<div class="space-y-1 text-left text-xs leading-5">
+								<%-- 금액은 줄지 않게(shrink-0) - 라벨이 긴 영어 320px 에서 금액이 숫자 중간에서 끊겼다("260,000,00 / 0", 2026-10-21). 라벨이 대신 줄바꿈한다. --%>
 								<div class="font-semibold mb-1">${calculationDetailsLabel}</div>
 								<div class="flex items-center justify-between gap-3">
 									<span>${currentEvaluationProfitLabel}</span>
-									<span class="amount-value font-medium">${String.format("%,d", StockFormatUtil.displayWon(currentEvaluationProfit))}</span>
+									<span class="amount-value shrink-0 font-medium">${String.format("%,d", StockFormatUtil.displayWon(currentEvaluationProfit))}</span>
 								</div>
 								<div class="flex items-center justify-between gap-3">
 									<span>+ ${cumulativeRealizedIncomeLabel}</span>
-									<span class="amount-value font-medium">${String.format("%,d", StockFormatUtil.displayWon(totalRealizedIncome))}</span>
+									<span class="amount-value shrink-0 font-medium">${String.format("%,d", StockFormatUtil.displayWon(totalRealizedIncome))}</span>
 								</div>
 								@if(hasCombinedAdjustment)
 								<div class="flex items-center justify-between gap-3">
 									<span>${combinedAdjustmentOperator} ${combinedAdjustmentLabel}</span>
-									<span class="amount-value font-medium">${String.format("%,d", StockFormatUtil.displayWon(combinedAdjustmentAbs))}</span>
+									<span class="amount-value shrink-0 font-medium">${String.format("%,d", StockFormatUtil.displayWon(combinedAdjustmentAbs))}</span>
 								</div>
 								<div class="border-t border-neutral-content/20 pt-1 text-neutral-content/80">
 									${combinedAdjustmentMeaning}
@@ -142,23 +147,23 @@
 								@if(holdingFeeAdjustment != null && holdingFeeAdjustment.compareTo(BigDecimal.ZERO) != 0)
 								<div class="flex items-center justify-between gap-3 text-neutral-content/80">
 									<span>${holdingFeeAdjustmentLabel}</span>
-									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingFeeAdjustment))}</span>
+									<span class="amount-value shrink-0">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingFeeAdjustment))}</span>
 								</div>
 								@endif
 								@if(manualPrincipalAdjustment != null && manualPrincipalAdjustment.compareTo(BigDecimal.ZERO) != 0)
 								<div class="flex items-center justify-between gap-3 text-neutral-content/80">
 									<span>${manualPrincipalAdjustmentLabel}</span>
-									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(manualPrincipalAdjustment))}</span>
+									<span class="amount-value shrink-0">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(manualPrincipalAdjustment))}</span>
 								</div>
 								@endif
 								<div class="flex items-center justify-between gap-3 border-t border-neutral-content/20 pt-1 font-semibold">
 									<span>= ${totalCombinedProfitLabel}</span>
-									<span class="amount-value">${String.format("%,d", StockFormatUtil.displayWon(totalCombinedProfit))}</span>
+									<span class="amount-value shrink-0">${String.format("%,d", StockFormatUtil.displayWon(totalCombinedProfit))}</span>
 								</div>
 								@if(combinedPrincipal.compareTo(BigDecimal.ZERO) > 0)
 								<div class="flex items-center justify-between gap-3 text-neutral-content/80">
 									<span>${combinedRateBasisLabel}</span>
-									<span class="amount-value">${String.format("%,d", StockFormatUtil.displayWon(combinedPrincipal))}</span>
+									<span class="amount-value shrink-0">${String.format("%,d", StockFormatUtil.displayWon(combinedPrincipal))}</span>
 								</div>
 								@endif
 								<%-- 표시되는 평가손익은 매수 수수료를 원가로 보지 않는 기준이다(거래 행이 증권사 기록값이라
@@ -166,7 +171,7 @@
 								@if(excludedHoldingBuyFee != null && excludedHoldingBuyFee.compareTo(BigDecimal.ZERO) != 0)
 								<div class="flex items-center justify-between gap-3 text-neutral-content/80">
 									<span>${excludedHoldingBuyFeeLabel}</span>
-									<span class="amount-value">${String.format("%,d", StockFormatUtil.displayWon(excludedHoldingBuyFee))}</span>
+									<span class="amount-value shrink-0">${String.format("%,d", StockFormatUtil.displayWon(excludedHoldingBuyFee))}</span>
 								</div>
 								@endif
 							</div>
@@ -282,7 +287,7 @@
 					label = periodDividendLabel,
 					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.dividendNet())),
 					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodSummary.dividendNet())),
-					sub = periodCount.apply(periodSummary.dividendCount()),
+					sub = periodCount.apply(periodSummary.dividendCount()) + (financialIncome != null ? " · " + java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.financial.income.pct"), financialIncome.usedPct().toPlainString()) : ""),
 					tone = "text-dividend",
 					icon = "gift",
 					accent = "dividend",

@@ -114,6 +114,40 @@ class MonthlyDividendLatestRecordDateTest {
         .isTrue();
   }
 
+  /**
+   * 기준일 규칙이 선 종목은 규칙의 기준일이 지나면 바로 갱신 확인(2026-10-20) - 월말 종목은 10-30(금) 기준일이 지난 10-31 부터, 35
+   * 일(11-04)을 기다리지 않는다. 기준일 전날까지는 아니다.
+   */
+  @Test
+  void 규칙_종목은_새_기준일이_지나면_바로_갱신_확인() {
+    List<MonthlyDividendPayoutResponse> history =
+        Arrays.asList(
+            payout("END1", "2026-07-31", "2026-08-04"),
+            payout("END1", "2026-08-31", "2026-09-02"),
+            payout("END1", "2026-09-30", "2026-10-02"));
+
+    MonthlyDividendLatestPayoutView before =
+        MonthlyDividendReferenceSupport.latestPayoutBySymbol(history, LocalDate.parse("2026-10-29"))
+            .get("END1");
+    assertThat(before.stale()).isFalse();
+    assertThat(before.expectedRecordDate()).isEqualTo(LocalDate.parse("2026-09-30"));
+
+    // 기준일 당일(10-30)은 아직 "지난" 게 아니다(검토 2026-10-20 - 당일에 배지가 떴다).
+    assertThat(
+            MonthlyDividendReferenceSupport.latestPayoutBySymbol(
+                    history, LocalDate.parse("2026-10-30"))
+                .get("END1")
+                .stale())
+        .isFalse();
+
+    MonthlyDividendLatestPayoutView after =
+        MonthlyDividendReferenceSupport.latestPayoutBySymbol(history, LocalDate.parse("2026-10-31"))
+            .get("END1");
+    assertThat(after.expectedRecordDate()).isEqualTo(LocalDate.parse("2026-10-30"));
+    assertThat(after.daysSinceRecord()).as("35 일 규칙이면 아직 아니다").isEqualTo(31);
+    assertThat(after.stale()).isTrue();
+  }
+
   @Test
   void 최근_기준일로_정렬하고_이력이_없는_종목은_늘_뒤다() {
     MonthlyDividendViewSupport support = new MonthlyDividendViewSupport();

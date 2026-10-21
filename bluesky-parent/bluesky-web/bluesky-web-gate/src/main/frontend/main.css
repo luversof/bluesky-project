@@ -174,6 +174,75 @@ html.poe-theme [data-theme-toggle] { display: none; }
 		outline-offset: -1px;
 		border-radius: 0.25rem;
 	}
+	/* 장막 줄 움직임(C484) — 게임 툴팁처럼 룬 문양이 다른 벌로 바뀌며 빛이 훑고 지나간다(craftofexile 도 움직이는 그림).
+	   세 벌 = 원래 룬 띠(img) + veiled-mod-anim.png 의 둘째 · 셋째 줄(ui-assets.mjs 가 마디를 섞어 만든다), 2.7초에 한 바퀴 */
+	.craft-veiled {
+		position: relative;
+		display: inline-block;
+		vertical-align: middle;
+		height: 1.15em;
+		filter: brightness(1.3) drop-shadow(0 0 2px rgb(170 200 255 / 0.45));
+	}
+	.craft-veiled > img,
+	.craft-veiled > .craft-veiled-f {
+		height: 100%;
+		-webkit-mask-image: linear-gradient(100deg, rgb(0 0 0 / 0.72) 38%, #000 50%, rgb(0 0 0 / 0.72) 62%);
+		mask-image: linear-gradient(100deg, rgb(0 0 0 / 0.72) 38%, #000 50%, rgb(0 0 0 / 0.72) 62%);
+		-webkit-mask-size: 300% 100%;
+		mask-size: 300% 100%;
+		animation:
+			craft-veil-fade 2.7s ease-in-out infinite,
+			craft-veil-sheen 1.8s linear infinite;
+	}
+	.craft-veiled > img {
+		display: block;
+		width: auto;
+	}
+	.craft-veiled > .craft-veiled-f {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		background: url(/poe-data/ui-assets/veiled-mod-anim.png) no-repeat 0 50% / 100% 300%;
+		animation-delay: -1.8s, 0s;
+	}
+	.craft-veiled > .craft-veiled-f[data-f="2"] {
+		background-position: 0 100%;
+		animation-delay: -0.9s, 0s;
+	}
+	@keyframes craft-veil-fade {
+		0% { opacity: 0; }
+		8% { opacity: 1; }
+		33% { opacity: 1; }
+		41% { opacity: 0; }
+		100% { opacity: 0; }
+	}
+	@keyframes craft-veil-sheen {
+		from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+		to { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+	}
+	/* 목표 적중 확률(C494) — 계산기에서 고른 목표를 이 화폐 한 번으로 다 채울 확률, 단추 오른쪽 위 작은 표 */
+	#craft-emu button[data-craft-action],
+	#craft2-emu button[data-craft-action] {
+		position: relative;
+	}
+	[data-craft-hit] {
+		position: absolute;
+		top: -0.4rem;
+		right: -0.25rem;
+		padding: 0 0.25rem;
+		border-radius: 0.375rem;
+		font-size: 9px;
+		line-height: 1.1rem;
+		font-family: ui-monospace, monospace;
+		background: var(--color-base-300, #333);
+		color: var(--color-base-content, #ddd);
+		border: 1px solid rgb(136 136 255 / 0.6);
+		pointer-events: none;
+		white-space: nowrap;
+	}
+	[data-craft-hit="0"] {
+		opacity: 0.55;
+	}
 	/* 고른 화폐(C477) — 아이템을 누르면 적용될 단추 */
 	[data-craft-armed] {
 		outline: 3px solid var(--color-warning);
@@ -341,16 +410,19 @@ html.poe-theme [data-theme-toggle] { display: none; }
 
 	/* 첫 화면의 주 지표 카드. 흰 카드가 줄줄이 놓이면 어디가 제일 중요한지 보이지 않는다
 	   - 옅은 브랜드 색을 깔고 위쪽에 얇은 강조선을 둬서 한 장만 도드라지게 한다. */
+	/* 강조선은 배경 층으로 그린다. 예전엔 ::before 막대를 카드의 overflow: hidden 으로 둥근 모서리에 맞춰 잘랐는데, 그 overflow 가
+	   카드 안 툴팁(총자산 설명 · 통합손익 계산 내역)까지 카드 가장자리에서 잘랐다(사용자 보고 2026-10-21). 배경은 모서리 곡선을
+	   저절로 따른다 - 막대 층은 padding-box 로 잘라 예전처럼 테두리 안쪽 곡선을 따른다. 카드에 overflow 를 다시 걸지 말 것. */
 	.hero-card {
-		background-image: linear-gradient(160deg,
-			color-mix(in oklch, var(--color-primary) 7%, var(--color-base-100)) 0%,
-			var(--color-base-100) 58%);
+		background-image:
+			linear-gradient(90deg, var(--color-primary), color-mix(in oklch, var(--color-accent) 80%, var(--color-primary))),
+			linear-gradient(160deg,
+				color-mix(in oklch, var(--color-primary) 7%, var(--color-base-100)) 0%,
+				var(--color-base-100) 58%);
+		background-size: 100% 3px, auto;
+		background-repeat: no-repeat, repeat;
+		background-clip: padding-box, border-box;
 		border-color: color-mix(in oklch, var(--color-primary) 18%, var(--color-surface-line));
-		overflow: hidden;
-	}
-	.hero-card::before {
-		content: ""; position: absolute; inset-inline: 0; top: 0; height: 3px;
-		background-image: linear-gradient(90deg, var(--color-primary), color-mix(in oklch, var(--color-accent) 80%, var(--color-primary)));
 	}
 
 	/* 구역 제목. 14px 굵은 글자 한 줄이라 본문 소제목과 구분이 안 됐다 - 앞에 짧은 강조 막대를 둔다.
@@ -405,6 +477,8 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	.badge-info { background-color: var(--color-info); color: var(--color-info-content); border-color: transparent; }
 	.badge-success { background-color: var(--color-success); color: var(--color-success-content); border-color: transparent; }
 	.badge-error { background-color: var(--color-error); color: var(--color-error-content); border-color: transparent; }
+	/* badge-warning 은 템플릿 29 곳(주식 "갱신 확인" · PoE 경고 칩)이 쓰는데 정의가 없어 맨 배지로 그려졌다(2026-10-20 확인). */
+	.badge-warning { background-color: var(--color-warning); color: var(--color-warning-content); border-color: transparent; }
 	.badge-ghost { background-color: var(--color-base-200); color: var(--color-base-content); border-color: transparent; }
 	/* outline 배지가 글자색과 같은 굵기의 테두리를 두르면 작은 칩이 시끄럽다
 	   - 테두리는 옅게 낮추고 같은 색 옅은 바탕을 깐다 - 10% 로 깔았더니 success 배지가 4.38 로 AA 미달이라 6% 로 낮췄다(실측 4.62). */
@@ -426,6 +500,9 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	.badge-error.badge-outline { color: var(--color-error);
 		background-color: color-mix(in oklch, var(--color-error) 6%, transparent);
 		border-color: color-mix(in oklch, var(--color-error) 28%, transparent); }
+	.badge-warning.badge-outline { color: var(--color-warning);
+		background-color: color-mix(in oklch, var(--color-warning) 6%, transparent);
+		border-color: color-mix(in oklch, var(--color-warning) 28%, transparent); }
 
 	/* ---- table ---- */
 	.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
@@ -1783,6 +1860,20 @@ html.poe-alt .poe-kw-hint,
 .tooltip-bottom.tooltip-align-end[data-tip]::before,
 .tooltip-bottom.tooltip-align-end > .tooltip-content {
 	transform: translateY(0.25rem);
+}
+
+/* 줄이 긴 말풍선(대시보드 통합손익 계산 내역)은 좁은 화면에서 트리거 대신 감싼 줄(position: relative 를 준 부모)의 폭에 맞춘다.
+   위의 좁은 화면 상한(11rem)이 그대로 걸려 375px 에서 176px 로 조여 금액이 숫자 중간에서 끊겼다("910,000,00 / 0" - 실측
+   2026-10-21). 트리거를 static 으로 두면 말풍선의 기준 상자가 그 줄이 된다. common.js 가 붙이는 끝 맞춤 클래스보다 강하게 쓴다. */
+@media (width < 40rem) {
+	.tooltip.tooltip-span-row { position: static; }
+	.tooltip.tooltip-span-row > .tooltip-content {
+		left: 0;
+		right: 0;
+		width: auto;
+		max-width: none;
+		transform: translateY(0.25rem);
+	}
 }
 
 /* 활동 달력의 달 밖 채움 칸(앞뒤 달 날짜): 셀 전체를 opacity-30 으로 눌렀더니 날짜 숫자 대비가 1.59:1,

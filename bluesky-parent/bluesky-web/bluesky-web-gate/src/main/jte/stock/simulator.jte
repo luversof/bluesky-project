@@ -51,6 +51,11 @@
 @param boolean monthlyDividendHasSavedRows = false
 @param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
 @param Map<String, String> monthlyDividendPayoutWindowBySymbol = java.util.Map.of()
+@param java.util.List<net.luversof.web.gate.stock.dto.view.RecordDateBuyByView> monthlyDividendBuyBy = java.util.List.of()
+@param net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Basis monthlyDividendGoalBasis = null
+@param net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Goal monthlyDividendGoal = null
+@param BigDecimal monthlyDividendGoalMonthly = null
+@param BigDecimal monthlyDividendGoalContribution = null
 @param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
 @param boolean monthlyDividendReorderEnabled = false
 
@@ -251,6 +256,11 @@
 					monthlyDividendHasSavedRows = monthlyDividendHasSavedRows,
 					monthlyDividendProfileDisplayOrders = monthlyDividendProfileDisplayOrders,
 					monthlyDividendPayoutWindowBySymbol = monthlyDividendPayoutWindowBySymbol,
+					monthlyDividendBuyBy = monthlyDividendBuyBy,
+					monthlyDividendGoalBasis = monthlyDividendGoalBasis,
+					monthlyDividendGoal = monthlyDividendGoal,
+					monthlyDividendGoalMonthly = monthlyDividendGoalMonthly,
+					monthlyDividendGoalContribution = monthlyDividendGoalContribution,
 					monthlyDividendProfileOrderedSymbols = monthlyDividendProfileOrderedSymbols,
 					monthlyDividendReorderEnabled = monthlyDividendReorderEnabled
 				)

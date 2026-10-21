@@ -40,9 +40,20 @@ public class PoeModDataService {
   /** 패밀리 = 같은 그룹의 티어 사다리. gen = prefix|suffix. */
   public record ModFamily(String gen, Boolean essence, List<ModTier> tiers) {}
 
-  /** 속성 변형 하나(방어구 str/dex/int 등) — 변형마다 붙는 모드가 다르다. */
+  /**
+   * 속성 변형 하나(방어구 str/dex/int 등) — 변형마다 붙는 모드가 다르다. enchant · enchantKo = 군집 주얼 인챈트 줄(C514 — 패시브 수 ·
+   * 주얼 홈 · 작은 패시브 효과, 그 밖의 변형은 null).
+   */
   public record ModVariant(
-      String key, String name, String nameKo, int prefixCount, int suffixCount) {}
+      String key,
+      String name,
+      String nameKo,
+      int prefixCount,
+      int suffixCount,
+      // 이 변형의 베이스 이름(C516 — 주얼 색 · 심연 주얼 종류 · 군집 주얼은 하나)
+      List<String> bases,
+      List<String> enchant,
+      List<String> enchantKo) {}
 
   /** 영향력 하나(쉐이퍼/엘더/정복자 4종) — extraCount = 영향력 전용으로 더 붙는 패밀리 수. */
   public record ModInfluence(String key, String name, String nameKo, int extraCount) {}
@@ -304,6 +315,28 @@ public class PoeModDataService {
   /** 표시할 아이템 클래스 목록(패밀리 키 없이 이름·개수만 필요할 때). */
   public List<ModItemClass> itemClasses() {
     return data.itemClasses();
+  }
+
+  /**
+   * 베이스 이름 → 변형(C516) — 그 베이스를 가진 변형이 정확히 하나면 그 키(주얼 색 · 심연 주얼 종류 · 방어구 속성), 없거나 여럿(군집 주얼 =
+   * 인챈트마다)이면 null.
+   */
+  public String variantOfBase(String itemClass, String baseName) {
+    String found = null;
+    for (ModItemClass c : data.itemClasses()) {
+      if (!c.itemClass().equals(itemClass) || c.variants() == null) {
+        continue;
+      }
+      for (ModVariant v : c.variants()) {
+        if (v.bases() != null && v.bases().contains(baseName)) {
+          if (found != null) {
+            return null;
+          }
+          found = v.key();
+        }
+      }
+    }
+    return found;
   }
 
   /**

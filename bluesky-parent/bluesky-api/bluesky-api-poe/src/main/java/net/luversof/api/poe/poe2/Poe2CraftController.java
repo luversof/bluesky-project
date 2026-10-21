@@ -38,19 +38,63 @@ public class Poe2CraftController {
   private final Poe2CraftService craft;
   private final Poe2CraftCalcService calc;
   private final Poe2CraftOptimizer optimizer;
+  private final Poe2CraftImportService importer;
+  private final Poe2DataService data2;
 
   public Poe2CraftController(
-      Poe2CraftService craft, Poe2CraftCalcService calc, Poe2CraftOptimizer optimizer) {
+      Poe2CraftService craft,
+      Poe2CraftCalcService calc,
+      Poe2CraftOptimizer optimizer,
+      Poe2CraftImportService importer,
+      Poe2DataService data2) {
     this.craft = craft;
     this.calc = calc;
     this.optimizer = optimizer;
+    this.importer = importer;
+    this.data2 = data2;
+  }
+
+  /** 목표까지 연타(10-20 C508). */
+  @PostMapping(value = "/spam", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public Poe2CraftCalcService.SpamResult spam(@RequestBody Poe2CraftCalcService.SpamRequest req) {
+    return calc.spam(req);
+  }
+
+  /** 화폐 한 번의 목표 적중 확률(10-20 C500) — 에뮬레이터 화폐 단추마다. */
+  @PostMapping(value = "/hit-chance", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public List<Poe2CraftCalcService.Hit> hitChance(
+      @RequestBody Poe2CraftCalcService.HitRequest req) {
+    return calc.hitChance(req);
+  }
+
+  /** 그 종류의 무작위 레어 이름 {en, ko}(10-20 C499) — 낱말표가 없으면 빈 값. */
+  @GetMapping("/rare-name")
+  public java.util.Map<String, String> rareName(
+      @org.springframework.web.bind.annotation.RequestParam String itemClass) {
+    String[] n = data2.randomRareName(itemClass, java.util.concurrent.ThreadLocalRandom.current());
+    return n == null ? java.util.Map.of() : java.util.Map.of("en", n[0], "ko", n[1]);
+  }
+
+  /** 아이템 가져오기 요청 — text = 게임에서 Ctrl+C · Ctrl+Alt+C 로 복사한 글. */
+  public record ImportRequest(String text) {}
+
+  /** PoE2 게임 아이템 복사 글 → 에뮬레이터 아이템(10-20 C486). 못 읽으면 error. */
+  @PostMapping(value = "/import", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public Poe2CraftImportService.ImportResult importItem(@RequestBody ImportRequest req) {
+    String t = req.text() == null ? "" : req.text();
+    return importer.parse(t.length() > 20_000 ? t.substring(0, 20_000) : t);
   }
 
   /** 최적 제작 경로(C461) — 화폐 × 등급 × 징조 · 에센스 · 훼손 · 분열 · 새 베이스를 섞은 최소 기대 비용(디바인). */
   @PostMapping(value = "/optimize", consumes = MediaType.APPLICATION_JSON_VALUE)
   public Poe2CraftOptimizer.Result optimize(@RequestBody Poe2CraftOptimizer.Request req) {
     check(req.item());
-    return optimizer.optimize(req);
+    Poe2CraftCalcService.override(req.prices());
+    try {
+      return optimizer.optimize(req);
+    } finally {
+      Poe2CraftCalcService.override(null);
+    }
   }
 
   /** 에뮬레이터 따라 하기(C464) — 끝난 작업의 정책으로 이 아이템의 다음 수단. 모르는 작업이면 404. */
@@ -88,13 +132,39 @@ public class Poe2CraftController {
   @PostMapping(value = "/spent", consumes = MediaType.APPLICATION_JSON_VALUE)
   public Poe2CraftCalcService.SpentResult spent(
       @RequestBody Poe2CraftCalcService.SpentRequest req) {
-    return calc.spent(req);
+    Poe2CraftCalcService.override(req.prices());
+    try {
+      return calc.spent(req);
+    } finally {
+      Poe2CraftCalcService.override(null);
+    }
   }
 
   @PostMapping(value = "/calc", consumes = MediaType.APPLICATION_JSON_VALUE)
   public Poe2CraftCalcService.Response calc(@RequestBody Poe2CraftCalcService.Request req) {
     check(req.item());
-    return calc.calc(req);
+    Poe2CraftCalcService.override(req.prices());
+    try {
+      return calc.calc(req);
+    } finally {
+      Poe2CraftCalcService.override(null);
+    }
+  }
+
+  /** 결과 분포(C534). */
+  @org.springframework.web.bind.annotation.PostMapping(
+      value = "/distribution",
+      consumes = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+  public Poe2CraftCalcService.DistResult distribution(
+      @org.springframework.web.bind.annotation.RequestBody Poe2CraftCalcService.DistRequest req) {
+    check(req.item());
+    return calc.distribution(req);
+  }
+
+  /** 제작 시세(C530 — 게이트 '가격 직접 입력' 칸의 기본값, 디바인). */
+  @org.springframework.web.bind.annotation.GetMapping("/prices")
+  public Poe2CraftCalcService.Prices prices() {
+    return calc.prices();
   }
 
   /** 다단계 전략(C355) — 단계(화폐 · 인자 · 징조 · 목표까지 반복 · 묶음)를 모의해 성공률 · 성공 한 번당 비용(디바인). */

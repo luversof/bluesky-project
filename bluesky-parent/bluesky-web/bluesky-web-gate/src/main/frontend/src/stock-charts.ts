@@ -37,6 +37,7 @@ interface StockChartsAPI {
 	formatCurrency?: (value: any) => string;
 	formatCompactNumber?: (value: any) => string;
 	extremeGapText?: (lastV: number, extreme: number) => string;
+	extremeLabelText?: (isMax: boolean, label: string, extreme: number, lastV: number, gapAmount: boolean) => string;
 	candleBuckets?: (series: any, maxCandles?: number) => any;
 	splitTooltipLine?: (line: string) => string[];
 	nextCandleIndex?: (key: string, current: number, count: number) => number;
@@ -244,6 +245,24 @@ function extremeGapText(lastV: number, extreme: number): string {
 	return (pct > 0 ? "+" : "") + pct.toFixed(2) + "%";
 }
 StockCharts.extremeGapText = extremeGapText;
+
+/**
+ * 최고 · 최저 표시의 글자. 예전엔 그 지점의 평가액("▼ 최고 ₩150,000,000 (-5.23%)")만 적었다. 자산 성장은 사용자 요청(2026-10-21)으로
+ * 금액을 "최고 대비 / 최저 대비 손익" 으로 적는다 - 금액 = 지금 - 그 지점("▼ 최고 대비 -₩7,850,000 (-5.23%)"). 부호는 반올림 뒤에 정한다(0 엔
+ * 방향이 없다 - assetGrowth 의 formatSignedCurrency 와 같은 규칙).
+ */
+function extremeLabelText(isMax: boolean, label: string, extreme: number, lastV: number, gapAmount: boolean): string {
+	const gap = extremeGapText(lastV, extreme);
+	const pct = gap ? " (" + gap + ")" : "";
+	const head = (isMax ? "▼ " : "▲ ") + label + " ";
+	if (!gapAmount) {
+		return head + StockCharts.formatCurrency!(extreme) + pct;
+	}
+	const diff = Math.round(lastV - extreme);
+	const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
+	return head + sign + StockCharts.formatCurrency!(Math.abs(diff)) + pct;
+}
+StockCharts.extremeLabelText = extremeLabelText;
 
 StockCharts.formatCompactNumber = function (value: any) {
 	return compactNumber(value);
@@ -923,6 +942,8 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 	const o = opts || {};
 	// maxLabel/minLabel 이 주어진 차트만 범위 내 최고/최저 주석을 그린다
 	const showExtremes = !!(t.maxLabel && t.minLabel);
+	// maxGapLabel/minGapLabel 까지 주면 그 지점 평가액 대신 "최고 대비 / 최저 대비 손익" 금액(자산 성장 - 2026-10-21 사용자 요청).
+	const extremeGapAmount = !!(t.maxGapLabel && t.minGapLabel);
 
 	// 원가 계열이 비어 있으면 그 선은 아예 긋지 않는다. 지금 보유가 없는 종목의 "현재 평균단가" 는
 	// 0 이 아니라 없는 값인데, 0 으로 그으면 종가가 20 만 원인 차트 바닥에 선이 깔려 공짜로 산 것처럼
@@ -1021,10 +1042,6 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 					.trim();
 				if (cv) baseColor = cv;
 			} catch (e) {}
-			function pctText(extreme: number) {
-				const gap = extremeGapText(lastV, extreme);
-				return gap ? " (" + gap + ")" : "";
-			}
 			let backColor = "#ffffff";
 			try {
 				const bv = getComputedStyle(document.documentElement)
@@ -1036,12 +1053,7 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 				const px = xAxis.getPixelForValue(idx);
 				if (px < area.left || px > area.right) return;
 				const py = yAxis.getPixelForValue(v);
-				const text =
-					(isMax ? "▼ " : "▲ ") +
-					label +
-					" " +
-					StockCharts.formatCurrency!(v) +
-					pctText(v);
+				const text = extremeLabelText(isMax, label, v, lastV, extremeGapAmount);
 				ctx.save();
 				ctx.font = "11px sans-serif";
 				const w = ctx.measureText(text).width;
@@ -1066,8 +1078,8 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 				ctx.fillText(text, tx, ty);
 				ctx.restore();
 			}
-			drawExtreme(maxIdx, maxV, true, t.maxLabel);
-			drawExtreme(minIdx, minV, false, t.minLabel);
+			drawExtreme(maxIdx, maxV, true, extremeGapAmount ? t.maxGapLabel : t.maxLabel);
+			drawExtreme(minIdx, minV, false, extremeGapAmount ? t.minGapLabel : t.minLabel);
 		},
 	};
 
