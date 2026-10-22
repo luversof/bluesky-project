@@ -19,10 +19,6 @@ public class PeriodSummaryController {
 
   @Autowired private PeriodSummaryService periodSummaryService;
 
-  public void setPeriodSummaryService(PeriodSummaryService periodSummaryService) {
-    this.periodSummaryService = periodSummaryService;
-  }
-
   @GetMapping
   public PeriodSummary findPeriodSummary(
       @RequestParam UUID userId,

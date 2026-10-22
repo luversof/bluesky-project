@@ -95,7 +95,10 @@ class DetailDataFirstDateTest {
       count++;
       at = source.indexOf("StockFirstDateUtil.coveredStart(", at + 1);
     }
-    assertThat(count).as("두 화면 모두").isEqualTo(2);
+    assertThat(count).as("공용 도우미 한 곳(2026-10-22 까지 두 핸들러에 한 벌씩)").isEqualTo(1);
+    assertThat(source.split(java.util.regex.Pattern.quote("addRangeFilterAttributes("), -1))
+        .as("정의 하나 + 두 화면이 부른다 - 값은 DetailRangeAttributesTest")
+        .hasSize(4);
   }
 
   /** 배지의 끝도 화면이 그린 자료로 메운다 - 시계열이 없으면 "~ ?" 가 나간다. */

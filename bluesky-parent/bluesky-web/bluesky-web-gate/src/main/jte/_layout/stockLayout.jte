@@ -19,6 +19,8 @@
 	content = @`
 		<!-- stock 전용 스크립트: 페이지·프래그먼트 스크립트보다 먼저 1회만 로드 (defaultLayout 에서 이관) -->
 		<script src="/js/date-range-picker.js"></script>
+		<%-- 표 행 선택 합산 공통(배당 변동 요인 · 실현손익 표의 인라인 스크립트가 바로 부른다 - 그래서 본문보다 먼저, classic 으로). --%>
+		<script src="/js/stock/rowSelection.js"></script>
 		<script type="module" src="/js/stock/selectionStorage.js"></script>
 		<script type="module" src="/js/stock/multiSelectInit.js"></script>
 		<script type="module" src="/js/stock/tagFilterChips.js"></script>
@@ -74,6 +76,10 @@
 		<script src="/js/stock/globalDateRange.js"></script>
 		<script src="/js/stock/detailFilterState.js"></script>
 		<script src="/js/stock/tableSort.js"></script>
+		<%-- 표 안 태그 풍선(data-stock-tag-tooltip). 자산 현황 · 배당 내역 조각이 한 벌씩 들고 있던 것을 모았다(2026-10-22). --%>
+		<script src="/js/stock/stockTagTooltip.js"></script>
+		<%-- 브라우저 표 정렬(자산 현황 · 배당 수익 분석). 두 조각이 한 벌씩 들고 있던 것을 모았다(2026-10-22). --%>
+		<script src="/js/stock/clientTableSort.js"></script>
 		<script src="/js/stock/multiSelectDropdown.js"></script>
 
 		<%-- 조각 교체 알림(보조기술용): common.ts 가 정착 때 '화면 이름: 내용 갱신됨' 을 넣는다(실측 2026-09-10: 알림 0). --%>

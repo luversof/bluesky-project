@@ -121,7 +121,7 @@ public final class PoeCraft {
       boolean noCaster) {}
 
   /**
-   * 화석 — simple = 태그 배수만(계산기 자동 조합 후보), supported = 엔진이 다루는 것(C342 특수 화석 포함), weights = 옵션 태그 → 배수.
+   * 화석 — simple = 태그 배수만(계산기 자동 조합 후보), weights = 옵션 태그 → 배수. 엔진은 모든 화석을 다룬다(C400 — 축성된 · 얽혀든까지).
    */
   public record Fossil(
       String slug,
@@ -131,8 +131,7 @@ public final class PoeCraft {
       java.util.Map<String, Double> weights,
       List<String> desc,
       List<String> descKo,
-      boolean simple,
-      boolean supported) {}
+      boolean simple) {}
 
   public record Resonator(
       String slug, String name, String nameKo, String kind, int sockets, String icon) {}
@@ -214,7 +213,9 @@ public final class PoeCraft {
       List<EldritchFamily> eldritch,
       String eldritchBlocked,
       // 에센스 전용 옵션(C551)
-      List<EssenceOnly> essenceOnly) {}
+      List<EssenceOnly> essenceOnly,
+      // eldritchBlocked 의 영어 판(C557)
+      String eldritchBlockedEn) {}
 
   /** 에센스 전용 옵션(C551) — 자연 풀에 없는 에센스 보장 옵션, 가문마다 등급 오름차순. */
   public record EssenceOnly(
@@ -256,7 +257,17 @@ public final class PoeCraft {
       double chance) {}
 
   /** 엘드리치 임플리싯 목표 비용(C549 — API PoeCraftCalcService.EldritchResult). */
-  public record EldritchResult(Double cost, List<EldritchStep> steps, String error) {}
+  public record EldritchResult(
+      Double cost,
+      List<EldritchStep> steps,
+      String error,
+      // error 의 영어 판(C557)
+      String errorEn) {
+
+    public String errorFor(boolean ko) {
+      return ko || errorEn == null ? error : errorEn;
+    }
+  }
 
   public record EldritchStep(
       String side,
@@ -436,7 +447,10 @@ public final class PoeCraft {
       java.util.Map<String, Double> perAttempt,
       Double costPerAttempt,
       Double expectedCost,
-      String note) {}
+      String note,
+      // 영어 화면용(C557) — 없으면 null(한국어로)
+      String labelEn,
+      String noteEn) {}
 
   /**
    * 다단계 전략 한 단계(10-15 C339) — action "SEQ" 면 sub 를 차례로 한 번씩(묶음을 반복). until = 채울 목표 번호들(없으면 한 번).
@@ -464,10 +478,16 @@ public final class PoeCraft {
       String pricesAt,
       String error,
       // 엘드리치 임플리싯 목표(C549) — 방법 표와 따로 잰 비용
-      EldritchResult eldritch) {
+      EldritchResult eldritch,
+      // error 의 영어 판(C557)
+      String errorEn) {
 
     public CalcResponse(List<MethodResult> results, String league, String pricesAt, String error) {
-      this(results, league, pricesAt, error, null);
+      this(results, league, pricesAt, error, null, null);
+    }
+
+    public String errorFor(boolean ko) {
+      return ko || errorEn == null ? error : errorEn;
     }
   }
 
@@ -511,13 +531,33 @@ public final class PoeCraft {
       String state,
       String action,
       String actionId,
-      Double remaining) {}
+      Double remaining,
+      // 영어 화면용(C557, PoE1 만 — PoE2 는 null)
+      String stateEn,
+      String actionEn) {}
 
   /** 다음 수단 요청(PoE1) — imprint = 에뮬레이터 각인(없으면 null). */
   public record OptimizeNextRequest(Item item, Item imprint) {}
 
   /** 최적 조합 상태별 결정 — 상태 설명 · 수단 · 지나는 비율 · 그 상태에서 남은 기대 비용(카오스). */
-  public record OptimizeRule(String state, String action, double share, Double remaining) {}
+  public record OptimizeRule(
+      String state,
+      String action,
+      double share,
+      Double remaining,
+      // 영어 화면용(C557, PoE1 만 — PoE2 는 null)
+      String stateEn,
+      String actionEn) {
+
+    /** 화면 언어의 상태 설명 · 수단(영어가 없으면 한국어). */
+    public String stateFor(boolean ko) {
+      return ko || stateEn == null ? state : stateEn;
+    }
+
+    public String actionFor(boolean ko) {
+      return ko || actionEn == null ? action : actionEn;
+    }
+  }
 
   /** 최적 조합 결과(C457) — expectedCost = 정책을 실제 아이템에 굴려 잰 성공 한 번당 비용(카오스) ± stderr. */
   public record OptimizeResult(
@@ -543,12 +583,68 @@ public final class PoeCraft {
       // 성공 회차 비용 분포(C505) — 25% · 50% · 90% 지점
       List<Double> costQuantiles,
       // 엘드리치 임플리싯 목표(C549) — 명시 옵션과 따로 잰 비용
-      EldritchResult eldritch) {}
+      EldritchResult eldritch,
+      // 영어 화면용(C557 ⑦ — 흐름 · 비교 기준 · 수단 · 설명 · 오류, PoE1 만 — PoE2 는 null)
+      String upperLabelEn,
+      String pathEn,
+      List<String> methodsEn,
+      String noteEn,
+      String errorEn,
+      // 모의 성공이 적어 계획 값을 비용으로 보였을 때의 모의 값(C563 ⑧), 아니면 null
+      Double simCost) {
+
+    /** 화면 언어의 비교 기준 이름 · 흐름 · 설명 · 수단 · 오류(영어가 없으면 한국어). */
+    public String upperLabelFor(boolean ko) {
+      return ko || upperLabelEn == null ? upperLabel : upperLabelEn;
+    }
+
+    public String pathFor(boolean ko) {
+      return ko || pathEn == null || pathEn.isEmpty() ? path : pathEn;
+    }
+
+    public String noteFor(boolean ko) {
+      return ko || noteEn == null ? note : noteEn;
+    }
+
+    public List<String> methodsFor(boolean ko) {
+      return ko || methodsEn == null || methodsEn.isEmpty() ? methods : methodsEn;
+    }
+
+    public String errorFor(boolean ko) {
+      return ko || errorEn == null ? error : errorEn;
+    }
+  }
 
   public record Showcase(double cost, String rarity, List<Line> lines) {}
 
   public record PoolRequest(Item item, String rarity) {}
 
-  /** 화석 조합 기준 첫 옵션 확률(C504) 요청 — fossils = 슬러그 쉼표 목록. */
-  public record FossilPoolRequest(Item item, String fossils) {}
+  /** 같은 옵션을 얻는 다른 길 요청(10-22 P4 — API FamilyWaysRequest 와 같게). family = 접두/접미:계열. */
+  public record FamilyWaysRequest(Item item, String family) {}
+
+  /** 같은 옵션을 얻는 다른 길(10-22 P4 — API PoeCraftCalcService.FamilyWays 와 같게). */
+  public record FamilyWays(
+      List<EssenceWay> essences,
+      BenchEquiv bench,
+      List<FossilWay> fossils,
+      List<HarvestWay> harvests) {}
+
+  public record EssenceWay(
+      String slug, String name, String nameKo, String icon, int level, int rank) {}
+
+  public record FossilWay(String slug, String name, String nameKo, String icon, double mult) {}
+
+  public record HarvestWay(String id, String text, String textKo) {}
+
+  /**
+   * 고른 화폐 기준 옵션 표(10-22 P3 — API PoeCraftService.ActionPool 과 같게) — lines = 그 수단이 처음 뽑는 옵션(확률 = 가중
+   * ÷ 합), mult = 옵션 → 화폐 배수(1 이면 없음), picked = 표의 옵션을 무작위로 뽑는 수단인가, error = 못 쓰는 사유, baseRarity =
+   * 뽑을 때 희귀도.
+   */
+  public record ActionPool(
+      List<PoolLine> lines,
+      java.util.Map<String, Double> mult,
+      boolean picked,
+      String error,
+      String baseRarity) {}
 }

@@ -25,8 +25,11 @@ globalThis.document = {
 globalThis.window = globalThis;
 globalThis.addEventListener = (type, fn) => listeners.push([type, fn]);
 
+// 2026-10-22 부터 정렬기는 자산 현황 · 배당 수익 분석이 함께 쓰는 clientTableSort.js 에 있다(레이아웃이 먼저 싣는다).
+// 자산 현황 스크립트도 그 뒤에 실어 본다 - 공용 정렬기를 부르는 초기화가 가짜 문서에서 던지지 않아야 한다.
+await import("../../resources/static/js/stock/clientTableSort.js");
 await import("../../resources/static/js/stock/assetStatus.js");
-const internals = globalThis.__assetStatusInternals;
+const internals = { updateSortIndicators: globalThis.StockClientTableSort?.updateIndicators };
 
 /** th > (감싸개)* > button 구조를 최소한으로 흉내낸다. */
 function fakeHeader({ wrapped }) {

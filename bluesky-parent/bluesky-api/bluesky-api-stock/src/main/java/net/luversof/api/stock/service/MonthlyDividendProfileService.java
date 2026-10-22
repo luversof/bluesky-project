@@ -4,15 +4,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -56,17 +53,10 @@ public class MonthlyDividendProfileService {
             : monthlyDividendProfileRepository.findAllByOrderByDisplayOrderAscUpdatedDateDesc();
 
     // 종목 정보는 1회 일괄 조회한다. (행마다 findById 하면 행 수만큼 SELECT 가 나가는 N+1)
-    Map<UUID, StockItem> stockItemById = new HashMap<>();
-    Set<UUID> stockItemIds =
-        profiles.stream()
-            .map(MonthlyDividendProfile::getStockItemId)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-    if (!stockItemIds.isEmpty()) {
-      stockItemRepository
-          .findAllById(stockItemIds)
-          .forEach(item -> stockItemById.put(item.getId(), item));
-    }
+    Map<UUID, StockItem> stockItemById =
+        StockItemLookup.byIds(
+            stockItemRepository,
+            profiles.stream().map(MonthlyDividendProfile::getStockItemId).toList());
     return profiles.stream()
         .map(profile -> toResponse(profile, stockItemById.get(profile.getStockItemId())))
         .toList();
@@ -77,7 +67,7 @@ public class MonthlyDividendProfileService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "symbol is required");
     }
 
-    StockItem stockItem = resolveStockItem(request.getSymbol());
+    StockItem stockItem = StockItemLookup.requireBySymbol(stockItemRepository, request.getSymbol());
     Instant now = Instant.now();
 
     MonthlyDividendProfile profile =
@@ -140,7 +130,7 @@ public class MonthlyDividendProfileService {
     int displayOrder = 1;
 
     for (String symbol : requestedSymbols) {
-      StockItem stockItem = resolveStockItem(symbol);
+      StockItem stockItem = StockItemLookup.requireBySymbol(stockItemRepository, symbol);
       MonthlyDividendProfile profile = findProfile(profiles, stockItem.getId(), symbol);
       profile.setDisplayOrder(displayOrder++);
       profile.setUpdatedDate(now);
@@ -166,7 +156,7 @@ public class MonthlyDividendProfileService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "symbol is required");
     }
 
-    StockItem stockItem = resolveStockItem(symbol);
+    StockItem stockItem = StockItemLookup.requireBySymbol(stockItemRepository, symbol);
     MonthlyDividendProfile profile =
         monthlyDividendProfileRepository
             .findByStockItemId(stockItem.getId())
@@ -209,15 +199,7 @@ public class MonthlyDividendProfileService {
       return null;
     }
 
-    return resolveStockItem(symbol).getId();
-  }
-
-  private StockItem resolveStockItem(String symbol) {
-    StockItem stockItem = stockItemRepository.findBySymbol(symbol.trim());
-    if (stockItem == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown stock symbol: " + symbol);
-    }
-    return stockItem;
+    return StockItemLookup.requireBySymbol(stockItemRepository, symbol).getId();
   }
 
   private String normalizePayoutWindow(String payoutWindow) {

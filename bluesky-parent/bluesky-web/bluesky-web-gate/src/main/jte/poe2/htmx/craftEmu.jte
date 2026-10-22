@@ -211,8 +211,8 @@
 				@elseif(!recommend.known())
 					${ko ? "최적 조합: 이 상태는 계산에 없던 상태입니다(목표 · 아이템이 다르면 계산기를 다시)" : "Optimal plan: this state was not part of the plan (re-run the calculator if targets or item changed)"}
 				@else
-					<span class="font-semibold">${ko ? "최적 조합 다음 수단: " : "Optimal plan next: "}${recommend.action()}</span>
-					<span class="text-base-content/70"> · ${recommend.state()}@if(recommend.remaining() != null) · ${ko ? "남은 기대 " : "cost to go "}${String.format(recommend.remaining() >= 1 ? "%,.1f" : "%,.3f", recommend.remaining())}@endif</span>
+					<span class="font-semibold">${ko ? "최적 조합 다음 수단: " : "Optimal plan next: "}${ko || recommend.actionEn() == null ? recommend.action() : recommend.actionEn()}</span>
+					<span class="text-base-content/70"> · ${ko || recommend.stateEn() == null ? recommend.state() : recommend.stateEn()}@if(recommend.remaining() != null) · ${ko ? "남은 기대 " : "cost to go "}${String.format(recommend.remaining() >= 1 ? "%,.1f" : "%,.3f", recommend.remaining())}@endif</span>
 				@endif
 			</div>
 		@endif
@@ -587,7 +587,7 @@
 	</form>
 
 	<%-- 작업 영역(C454 — 한 화면): 아이템 카드 | 다음 옵션 확률(칸 안 스크롤) | 단계 기록 + 쓴 화폐(칸 안 스크롤). 2칸(lg)은 카드 아래 기록 --%>
-	<div class="grid gap-4 items-start lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,24rem)]" data-craft-workspace>
+	<div class="grid gap-4 items-start lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(24rem,1fr)]" data-craft-workspace>
 	<%-- 대상 아이템은 늘 보이게(C453 사용자 요청) — 좁은 화면 · 넓은 3칸 화면은 화면 위에 붙는다(C453b · C454). 2칸(lg)은 아래 기록이 가려져 붙이지 않음 --%>
 	<div class="sticky top-[4.75rem] z-20 bg-base-100 pt-1 pb-2 space-y-1 min-w-0 max-h-[40vh] overflow-y-auto lg:static lg:max-h-none lg:overflow-visible xl:sticky" data-craft-item-sticky>
 	<%-- 화폐를 고른 상태 안내(C477 — 고르고 아이템을 누르면 적용, CoE 처럼) --%>
@@ -716,7 +716,7 @@
 		</details>
 		@if(!item.corrupted() && !item.sanctified())
 			<%-- 계열 묶음(10-21 C543, PoE1 C542 짝) — 계열 한 줄 + 누르면 등급 상세 · 붙은 옵션 표시 --%>
-			@template.poe2.htmx.craftPoolGroups(poolGroups = poolGroups, lines = lines, added = added, max = view.maxPerGen(), prefixes = prefixes, suffixes = suffixes, lineTags = ko ? (view.tagsKo() == null ? java.util.Map.of() : view.tagsKo()) : (view.tags() == null ? java.util.Map.of() : view.tags()))
+			@template.poe2.htmx.craftPoolGroups(poolGroups = poolGroups, lines = lines, added = added, max = view.maxPerGen(), prefixes = prefixes, suffixes = suffixes, lineTags = ko ? (view.tagsKo() == null ? java.util.Map.of() : view.tagsKo()) : (view.tags() == null ? java.util.Map.of() : view.tags()), essences = essences)
 		@endif
 		<p class="text-xs text-base-content/70">${ko ? "PoE2 옵션 가중치는 게임 데이터에 없어(GGG 비공개) 붙을 수 있는 옵션 중 균등으로 굴립니다 — 확률은 참고용입니다. 옵션 수 · 등급 최소 레벨 · 징조 규칙은 poe2db 문구 기준." : "PoE2 modifier weights are hidden, so rolls are uniform among eligible modifiers — odds are indicative only. Counts, tier minimum levels and omen rules follow poe2db text."}</p>
 	</section>
@@ -729,20 +729,21 @@
 		@else
 			<div class="overflow-x-auto rounded-box border border-base-300">
 				<table class="table table-xs">
-					<thead class="sticky top-0 z-10 bg-base-200"><tr><th>#</th><th>${ko ? "쓴 화폐" : "Currency"}</th><th class="text-right" title="${ko ? "이 단계 비용 · 아래 작은 글씨는 여기까지 누적(div)" : "This step · total so far below (div)"}">${ko ? "비용 · 누적" : "Cost · total"}</th><th>${ko ? "변화" : "Change"}</th><th class="text-right">${ko ? "되돌리기" : "Go back"}</th></tr></thead>
+					<thead class="sticky top-0 z-10 bg-base-200"><tr><th>#</th><th>${ko ? "쓴 화폐 · 변화" : "Currency · change"}</th><th class="text-right" title="${ko ? "이 단계 비용 · 아래 작은 글씨는 여기까지 누적(div)" : "This step · total so far below (div)"}">${ko ? "비용 · 누적" : "Cost · total"}</th><th class="text-right">${ko ? "되돌리기" : "Go back"}</th></tr></thead>
 					<tbody>
 						@for(Poe2Craft.HistRow r : historyRows)
 							<tr data-craft-history-row="${r.no()}" class="${r.now() ? "bg-primary/10" : null}">
 								<td class="font-mono">${r.no()}</td>
-								<td class="break-keep">${r.label()}</td>
+								<td class="min-w-0 wrap-anywhere"><div class="font-medium break-keep">${r.label()}</div>
+									<div class="mt-0.5" data-craft-history-change>
+										@for(String a : r.added())<div class="text-success">+ ${a}</div>@endfor
+										@for(String rm : r.removed())<div class="text-error line-through decoration-1">− ${rm}</div>@endfor
+										@if(r.note() != null)<div class="text-base-content/60">${r.note()}</div>@endif
+									</div>
+								</td>
 								<td class="text-right font-mono whitespace-nowrap">
 									<div data-craft-history-cost>@if(r.divine() != null)${String.format("%.4f", r.divine())}@else-@endif</div>
 									<div class="text-[10px] text-base-content/60" data-craft-history-cum>Σ @if(r.cumDivine() != null)${String.format("%.4f", r.cumDivine())}@else-@endif</div>
-								</td>
-								<td class="wrap-anywhere" data-craft-history-change>
-									@for(String a : r.added())<div class="text-success">+ ${a}</div>@endfor
-									@for(String rm : r.removed())<div class="text-error line-through decoration-1">− ${rm}</div>@endfor
-									@if(r.note() != null)<div class="text-base-content/60">${r.note()}</div>@endif
 								</td>
 								<td class="text-right whitespace-nowrap">
 									@if(r.now())
@@ -756,7 +757,7 @@
 						@if(historyStartUndo != null)
 							<tr data-craft-history-row="0">
 								<td class="font-mono">0</td>
-								<td colspan="3" class="text-base-content/70">${historyDropped > 0 ? (ko ? "기록에 남은 가장 오래된 상태" : "Oldest state in the history") : (ko ? "시작 — 새 아이템" : "Start — new item")}</td>
+								<td colspan="2" class="text-base-content/70">${historyDropped > 0 ? (ko ? "기록에 남은 가장 오래된 상태" : "Oldest state in the history") : (ko ? "시작 — 새 아이템" : "Start — new item")}</td>
 								<td class="text-right"><button type="button" name="action" value="UNDO_TO:${historyStartUndo}" class="btn btn-xs btn-ghost border border-base-300 whitespace-nowrap" hx-post="/poe2/htmx/craft" hx-target="#craft2-emu" hx-swap="outerHTML" hx-include="#craft2-emu > form" data-craft-action="UNDO_TO:${historyStartUndo}">${ko ? "여기로" : "Go here"}</button></td>
 							</tr>
 						@endif

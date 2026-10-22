@@ -32,8 +32,6 @@ import org.springframework.util.StringUtils;
 @Component
 public class TimeMonthlyDividendPayoutSourceParser {
 
-  private static final String BULK_INPUT_HEADER = "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)";
-
   /** 지급 이력 표. 이 클래스 이름은 이 사이트에서 이 표에만 쓰인다(실측 2026-09-22). */
   private static final Pattern PAYOUT_TABLE =
       Pattern.compile(
@@ -95,7 +93,7 @@ public class TimeMonthlyDividendPayoutSourceParser {
           msg("stock.monthly.reference.error.source.rows.missing", "TIME"));
     }
 
-    StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
+    StringBuilder bulkInput = new StringBuilder(PayoutSourceText.BULK_INPUT_HEADER);
     for (TimeDividendRow row : rows) {
       if (!StringUtils.hasText(row.recordDate())
           || !StringUtils.hasText(row.payDate())
@@ -105,33 +103,23 @@ public class TimeMonthlyDividendPayoutSourceParser {
 
       bulkInput
           .append('\n')
-          .append(formatDate(row.recordDate()))
+          .append(PayoutSourceText.isoDate(row.recordDate()))
           .append('\t')
-          .append(formatDate(row.payDate()))
+          .append(PayoutSourceText.isoDate(row.payDate()))
           .append('\t')
-          .append(plain(row.dividendAmount()))
+          .append(PayoutSourceText.plain(row.dividendAmount()))
           // 모름이면 "-" 로 싣는다(2026-10-08) - 0 으로 적으면 진짜 0 원(전액 비과세)과 구분되지 않아 다음 갱신이 채우지 못한다(가져오기 파서가
           // "-" 를 모름으로 받는다).
           .append('\t')
-          .append(row.taxableBase() != null ? plain(row.taxableBase()) : "-");
+          .append(row.taxableBase() != null ? PayoutSourceText.plain(row.taxableBase()) : "-");
     }
 
-    if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
+    if (bulkInput.toString().equals(PayoutSourceText.BULK_INPUT_HEADER)) {
       throw new IllegalArgumentException(
           msg("stock.monthly.reference.error.source.rows.missing", "TIME"));
     }
 
     return bulkInput.toString();
-  }
-
-  /** 2026.08.31 · 2026-08-31 · 20260831 을 모두 yyyy-MM-dd 로. */
-  private String formatDate(String value) {
-    String digits = value != null ? value.replaceAll("[^0-9]", "") : "";
-    if (digits.length() < 8) {
-      return value != null ? value.trim() : "";
-    }
-
-    return digits.substring(0, 4) + "-" + digits.substring(4, 6) + "-" + digits.substring(6, 8);
   }
 
   private BigDecimal number(String value) {
@@ -145,10 +133,6 @@ public class TimeMonthlyDividendPayoutSourceParser {
     } catch (NumberFormatException ex) {
       return null;
     }
-  }
-
-  private String plain(BigDecimal value) {
-    return value.stripTrailingZeros().toPlainString();
   }
 
   private String text(String html) {

@@ -91,10 +91,13 @@ class NavbarLabelBreakpointTest {
         .startsWith("1 row has more than one reason");
     assertThat(f.apply("stock.admin.ledger.multi.reason.rows", new Object[] {3}))
         .startsWith("3 rows have more than one reason");
+    // 보유 일수 문구는 DividendYieldViewUtil 에서 만들고(2026-10-22), 템플릿 두 곳은 그것을 부른다 - 셋을 이어 본다.
     String dividendYield =
-        Files.readString(
-            Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte"),
-            StandardCharsets.UTF_8);
+        String.join(" ", YieldAnalyticsSource.definitionSources())
+            + Files.readString(
+                Path.of(
+                    "src/main/java/net/luversof/web/gate/stock/util/DividendYieldViewUtil.java"),
+                StandardCharsets.UTF_8);
     assertThat(dividendYield)
         .as("문자열로 넘기면 choice 가 예외를 던진다")
         .doesNotContain("String.valueOf(days)")

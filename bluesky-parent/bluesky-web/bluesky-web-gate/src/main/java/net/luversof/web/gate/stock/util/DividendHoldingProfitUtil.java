@@ -1,7 +1,8 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -143,14 +144,7 @@ public final class DividendHoldingProfitUtil {
     return map == null ? null : map.get(id);
   }
 
-  private static BigDecimal nz(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
-  }
-
   private static BigDecimal pct(BigDecimal amount, BigDecimal base) {
-    if (base == null || base.signum() <= 0) {
-      return null;
-    }
-    return amount.multiply(BigDecimal.valueOf(100)).divide(base, 2, RoundingMode.HALF_UP);
+    return StockAmountUtil.percentOrNull(amount, base, 2);
   }
 }

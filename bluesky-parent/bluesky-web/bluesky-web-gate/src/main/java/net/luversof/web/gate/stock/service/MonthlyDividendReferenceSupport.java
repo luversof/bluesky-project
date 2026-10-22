@@ -33,6 +33,7 @@ import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.support.StockViewSupport;
+import net.luversof.web.gate.stock.util.StockAmountUtil;
 
 /**
  * 월배당 기준(프로필·지급이력) 화면이 쓰는 <b>데이터 적재와 모델 조립</b>.
@@ -148,11 +149,7 @@ public class MonthlyDividendReferenceSupport {
 
     /** 과세 계좌만 따진 비중(%). 과세 계좌에서 받은 것이 없으면 {@code null}. */
     public BigDecimal taxableAccountRatioPct() {
-      return taxableAccountGross.signum() > 0
-          ? taxableAccountTaxable
-              .multiply(BigDecimal.valueOf(100))
-              .divide(taxableAccountGross, 2, java.math.RoundingMode.HALF_UP)
-          : null;
+      return StockAmountUtil.percentOrNull(taxableAccountTaxable, taxableAccountGross, 2);
     }
   }
 
@@ -169,9 +166,7 @@ public class MonthlyDividendReferenceSupport {
       java.util.Set<UUID> deferredAccountIds = new java.util.HashSet<>();
       for (net.luversof.web.gate.stock.domain.Account account :
           accountClient.getAccountsByUserId(userId)) {
-        if (account != null
-            && account.jsonConfig() != null
-            && Boolean.TRUE.equals(account.jsonConfig().get("isTaxDeferred"))) {
+        if (account != null && account.isTaxDeferred()) {
           deferredAccountIds.add(account.id());
         }
       }
@@ -215,23 +210,6 @@ public class MonthlyDividendReferenceSupport {
     Map<UUID, TaxableRatioBasis> result = new LinkedHashMap<>();
     sums.forEach((id, sum) -> result.put(id, new TaxableRatioBasis(sum[0], sum[1], sum[2])));
     return result;
-  }
-
-  public void populateMonthlyDividendReferenceModel(
-      Model model,
-      String requestedSymbol,
-      String requestedProfileSort,
-      String requestedProfileDirection,
-      LocalDate requestedPayoutRecordDate,
-      LocalDate requestedPayoutPayDate) {
-    populateMonthlyDividendReferenceModel(
-        model,
-        requestedSymbol,
-        requestedProfileSort,
-        requestedProfileDirection,
-        requestedPayoutRecordDate,
-        requestedPayoutPayDate,
-        null);
   }
 
   /**
@@ -297,11 +275,7 @@ public class MonthlyDividendReferenceSupport {
     model.addAttribute("monthlyDividendProfileDirection", profileDirection);
     model.addAttribute("monthlyDividendPayouts", payouts);
     model.addAttribute("selectedMonthlyDividendSymbol", selectedSymbol);
-    model.addAttribute(
-        "selectedMonthlyDividendSourceUrl",
-        selectedProfile != null ? StockViewSupport.safeString(selectedProfile.sourceUrl()) : "");
     model.addAttribute("monthlyDividendProfileExists", selectedProfile != null);
-    model.addAttribute("monthlyDividendPayoutExists", selectedPayout != null);
     model.addAttribute(
         "selectedMonthlyDividendPayoutKey", buildMonthlyDividendPayoutKey(selectedPayout));
     model.addAttribute(
@@ -540,17 +514,9 @@ public class MonthlyDividendReferenceSupport {
           (left, right) -> byDate.compare(left, right) >= 0 ? left : right);
     }
     // 기준일 규칙이 선 종목은 규칙의 가장 최근 기준일로 "갱신 확인" 을 판정한다(2026-10-20 - 35 일을 기다리지 않는다).
-    List<net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.RecordedPayout> recorded =
-        new java.util.ArrayList<>();
-    for (MonthlyDividendPayoutResponse payout : payouts) {
-      if (payout != null) {
-        recorded.add(
-            new net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.RecordedPayout(
-                payout.stockItemSymbol(), payout.recordDate(), payout.payDate()));
-      }
-    }
     Map<String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule> rules =
-        net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.settlementRules(recorded);
+        net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.settlementRulesFromResponses(
+            payouts);
     Map<String, MonthlyDividendLatestPayoutView> result = new HashMap<>();
     latest.forEach(
         (symbol, payout) -> {
@@ -767,8 +733,11 @@ public class MonthlyDividendReferenceSupport {
     return sortSelectableStockItems(stockItems);
   }
 
+  /**
+   * 종목코드 정규화(비면 null, 아니면 앞뒤 공백을 걷고 대문자) - 규칙은 MonthlyDividendPayDayUtil.normalizeSymbol 한 곳에 있다.
+   */
   public String normalizeMonthlyDividendSymbol(String symbol) {
-    return StringUtils.hasText(symbol) ? symbol.trim().toUpperCase(Locale.ROOT) : null;
+    return net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.normalizeSymbol(symbol);
   }
 
   public void validateMonthlyDividendSymbol(String symbol) {
@@ -870,10 +839,6 @@ public class MonthlyDividendReferenceSupport {
         java.time.LocalDate priceBasisDate,
         boolean unavailable) {
       this(quantities, averageBuyPrices, priceBasisDate, unavailable, null);
-    }
-
-    static CurrentHoldings empty() {
-      return new CurrentHoldings(Map.of(), Map.of(), null, false);
     }
 
     /**

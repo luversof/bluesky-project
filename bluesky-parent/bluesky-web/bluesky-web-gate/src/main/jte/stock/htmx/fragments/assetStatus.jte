@@ -125,7 +125,7 @@
 		<div class="flex flex-wrap items-baseline gap-2 mb-3">
 			<h2 class="text-lg font-semibold text-base-content/70" data-page-section>${accountSectionTitle}</h2>
 			@if(priceBasisDate != null)
-				<span class="text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime).replace("{0}", priceBasisDate.toString())}</span>
+				<span class="text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</span>
 			@endif
 		</div>
 		@if(accountTotalMap != null && !accountTotalMap.isEmpty())
@@ -195,69 +195,13 @@
 			<table class="table table-sm w-full" data-sortable-table data-asset-status-account-table aria-label="${accountSectionTitle}">
 				<thead class="bg-base-200">
 					<tr>
-						<th scope="col">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="account"
-									data-sort-type="text">
-								<span>${accountLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="buyAmount"
-									data-sort-type="number">
-								<span>${buyAmountLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="evaluationAmount"
-									data-sort-type="number">
-								<span>${evaluationAmountLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="evaluationProfit"
-									data-sort-type="number">
-								<span>${evaluationProfitLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right hidden min-[850px]:table-cell print:table-cell">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="principal"
-									data-sort-type="number">
-								<span>${principalLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="principalReturn"
-									data-sort-type="number">
-								<span>${principalReturnLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="weight"
-									data-sort-type="number">
-								<span>${weightLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "account", sortType = "text", label = accountLabel, buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "buyAmount", sortType = "number", label = buyAmountLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "evaluationAmount", sortType = "number", label = evaluationAmountLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "evaluationProfit", sortType = "number", label = evaluationProfitLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "principal", sortType = "number", label = principalLabel, cellClass = "text-right hidden min-[850px]:table-cell print:table-cell", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "principalReturn", sortType = "number", label = principalReturnLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "weight", sortType = "number", label = weightLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
 					</tr>
 				</thead>
 				<tbody>
@@ -527,15 +471,7 @@
 			<table class="table table-sm w-full print-dense" data-sortable-table data-asset-status-stock-table aria-label="${stockSectionTitle}">
 				<thead class="bg-base-200">
 					<tr>
-						<th scope="col">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="stockName"
-									data-sort-type="text">
-								<span>${stockNameLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "stockName", sortType = "text", label = stockNameLabel, buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
 						<%-- 보유 기간은 종목 이름 다음에 온다 - "이 종목을 언제부터 들고 있나" 는 이름 바로 옆에서 읽힌다.
 						     정렬 값은 행의 data-holding-days(일수)다. '6년 6개월' 같은 표시 문자열로 정렬하면 6개월이 6년보다 뒤에 온다. --%>
 						<th scope="col">
@@ -548,96 +484,16 @@
 								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 							</button>
 						</th>
-						<th scope="col" class="text-right hidden lg:table-cell print:table-cell">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="quantity"
-									data-sort-type="number">
-								<span>${stockTableQuantityLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right hidden min-[1340px]:table-cell print:table-cell">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="averageCost"
-									data-sort-type="number">
-								<span>${averageCostLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right hidden sm:table-cell print:table-cell">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="buyAmount"
-									data-sort-type="number">
-								<span>${buyAmountLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right hidden lg:table-cell print:table-cell">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="currentPrice"
-									data-sort-type="number">
-								<span>${currentPriceLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="evaluationAmount"
-									data-sort-type="number">
-								<span>${evaluationAmountLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="evaluationProfit"
-									data-sort-type="number">
-								<span>${evaluationProfitLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right hidden min-[1340px]:table-cell print:table-cell">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="realizedProfit"
-									data-sort-type="number">
-								<span>${realizedProfitLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right hidden min-[1340px]:table-cell print:table-cell">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="dividendTotal"
-									data-sort-type="number">
-								<span>${dividendTotalLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right hidden lg:table-cell print:table-cell">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="combinedProfit"
-									data-sort-type="number">
-								<span>${combinedProfitLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
-						<th scope="col" class="text-right">
-							<button type="button"
-									class="btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content"
-									data-sort-key="weight"
-									data-sort-type="number">
-								<span>${weightLabel}</span>
-								<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
-							</button>
-						</th>
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "quantity", sortType = "number", label = stockTableQuantityLabel, cellClass = "text-right hidden lg:table-cell print:table-cell", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "averageCost", sortType = "number", label = averageCostLabel, cellClass = "text-right hidden min-[1340px]:table-cell print:table-cell", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "buyAmount", sortType = "number", label = buyAmountLabel, cellClass = "text-right hidden sm:table-cell print:table-cell", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "currentPrice", sortType = "number", label = currentPriceLabel, cellClass = "text-right hidden lg:table-cell print:table-cell", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "evaluationAmount", sortType = "number", label = evaluationAmountLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "evaluationProfit", sortType = "number", label = evaluationProfitLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "realizedProfit", sortType = "number", label = realizedProfitLabel, cellClass = "text-right hidden min-[1340px]:table-cell print:table-cell", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "dividendTotal", sortType = "number", label = dividendTotalLabel, cellClass = "text-right hidden min-[1340px]:table-cell print:table-cell", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "combinedProfit", sortType = "number", label = combinedProfitLabel, cellClass = "text-right hidden lg:table-cell print:table-cell", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
+						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "weight", sortType = "number", label = weightLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
 					</tr>
 				</thead>
 				<tbody>
@@ -861,7 +717,7 @@
 
 </div>
 
-<%-- 브라우저 동작(상세 펼침·정렬·선택 합계·태그 툴팁)은 /js/stock/assetStatus.js 에 있다.
+<%-- 브라우저 동작(상세 펼침·정렬·선택 합계)은 /js/stock/assetStatus.js 에 있다(태그 툴팁은 stockLayout 의 stockTagTooltip.js).
 	 2026-09-08 까지 여기 669 줄 인라인 스크립트였다 - JTE 식이 없는 순수 JS 라 파일로 뺐다.
 	 모듈 스크립트는 문서당 한 번 실행되고, 재스왑은 htmx:afterSettle 에서 다시 초기화한다. --%>
 <script type="module" src="/js/stock/assetStatus.js"></script>

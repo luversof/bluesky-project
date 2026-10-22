@@ -1,5 +1,8 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockMath.nz;
+import static net.luversof.api.stock.util.StockMath.percent;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -46,17 +49,12 @@ public class MonthlyDividendSnapshotService {
         monthlyDividendSnapshotRepository.findByUserIdOrderByUpdatedDateDesc(userId);
 
     // 종목 정보는 1회 일괄 조회한다. (행마다 findById 하면 행 수만큼 SELECT 가 나가는 N+1)
-    Map<UUID, StockItem> stockItemById = new HashMap<>();
     Set<UUID> stockItemIds =
         snapshots.stream()
             .map(MonthlyDividendSnapshot::getStockItemId)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
-    if (!stockItemIds.isEmpty()) {
-      stockItemRepository
-          .findAllById(stockItemIds)
-          .forEach(item -> stockItemById.put(item.getId(), item));
-    }
+    Map<UUID, StockItem> stockItemById = StockItemLookup.byIds(stockItemRepository, stockItemIds);
 
     // 현재가도 1회 일괄 조회한다. 행마다 조회하면 보유 종목 수만큼 SELECT 가 더 나간다
     // (실측: 8행 응답에 DB 왕복 11회, 그중 8회가 이 조회였다).
@@ -85,11 +83,7 @@ public class MonthlyDividendSnapshotService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "symbol is required");
     }
 
-    StockItem stockItem = stockItemRepository.findBySymbol(request.getSymbol().trim());
-    if (stockItem == null) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "Unknown stock symbol: " + request.getSymbol());
-    }
+    StockItem stockItem = StockItemLookup.requireBySymbol(stockItemRepository, request.getSymbol());
 
     validateAmounts(request);
 
@@ -106,12 +100,11 @@ public class MonthlyDividendSnapshotService {
     snapshot.setUserId(request.getUserId());
     snapshot.setStockItemId(stockItem.getId());
     snapshot.setAsOfDate(request.getAsOfDate() != null ? request.getAsOfDate() : LocalDate.now());
-    snapshot.setLatestMonthlyDividendPerShare(safe(request.getLatestMonthlyDividendPerShare()));
-    snapshot.setAverageMonthlyDividendPerShare1y(
-        safe(request.getAverageMonthlyDividendPerShare1y()));
-    snapshot.setAverageTaxableBaseRatio1y(safe(request.getAverageTaxableBaseRatio1y()));
+    snapshot.setLatestMonthlyDividendPerShare(nz(request.getLatestMonthlyDividendPerShare()));
+    snapshot.setAverageMonthlyDividendPerShare1y(nz(request.getAverageMonthlyDividendPerShare1y()));
+    snapshot.setAverageTaxableBaseRatio1y(nz(request.getAverageTaxableBaseRatio1y()));
     snapshot.setHeldQuantity(request.getHeldQuantity() != null ? request.getHeldQuantity() : 0);
-    snapshot.setAverageBuyPrice(safe(request.getAverageBuyPrice()));
+    snapshot.setAverageBuyPrice(nz(request.getAverageBuyPrice()));
     snapshot.setUpdatedDate(now);
 
     return toResponse(monthlyDividendSnapshotRepository.save(snapshot), stockItem);
@@ -125,10 +118,7 @@ public class MonthlyDividendSnapshotService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "symbol is required");
     }
 
-    StockItem stockItem = stockItemRepository.findBySymbol(symbol.trim());
-    if (stockItem == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown stock symbol: " + symbol);
-    }
+    StockItem stockItem = StockItemLookup.requireBySymbol(stockItemRepository, symbol);
 
     monthlyDividendSnapshotRepository
         .findByUserIdAndStockItemId(userId, stockItem.getId())
@@ -152,11 +142,11 @@ public class MonthlyDividendSnapshotService {
             ? providedStockItem
             : stockItemRepository.findById(snapshot.getStockItemId()).orElse(null);
 
-    BigDecimal latestMonthlyDividendPerShare = safe(snapshot.getLatestMonthlyDividendPerShare());
+    BigDecimal latestMonthlyDividendPerShare = nz(snapshot.getLatestMonthlyDividendPerShare());
     BigDecimal averageMonthlyDividendPerShare1y =
-        safe(snapshot.getAverageMonthlyDividendPerShare1y());
-    BigDecimal averageTaxableBaseRatio1y = safe(snapshot.getAverageTaxableBaseRatio1y());
-    BigDecimal averageBuyPrice = safe(snapshot.getAverageBuyPrice());
+        nz(snapshot.getAverageMonthlyDividendPerShare1y());
+    BigDecimal averageTaxableBaseRatio1y = nz(snapshot.getAverageTaxableBaseRatio1y());
+    BigDecimal averageBuyPrice = nz(snapshot.getAverageBuyPrice());
     int heldQuantity = snapshot.getHeldQuantity() != null ? snapshot.getHeldQuantity() : 0;
     BigDecimal quantity = BigDecimal.valueOf(heldQuantity);
     BigDecimal currentPrice =
@@ -240,11 +230,11 @@ public class MonthlyDividendSnapshotService {
   }
 
   private int compareDesc(BigDecimal left, BigDecimal right) {
-    return safe(right).compareTo(safe(left));
+    return nz(right).compareTo(nz(left));
   }
 
   private int compareAsc(BigDecimal left, BigDecimal right) {
-    return safe(left).compareTo(safe(right));
+    return nz(left).compareTo(nz(right));
   }
 
   /**
@@ -284,19 +274,7 @@ public class MonthlyDividendSnapshotService {
     }
   }
 
-  private BigDecimal safe(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
-  }
-
   private BigDecimal annualize(BigDecimal monthlyPercent) {
-    return safe(monthlyPercent).multiply(BigDecimal.valueOf(12)).setScale(2, RoundingMode.HALF_UP);
-  }
-
-  private BigDecimal percent(BigDecimal numerator, BigDecimal denominator) {
-    if (numerator == null || denominator == null || denominator.signum() <= 0) {
-      return BigDecimal.ZERO;
-    }
-
-    return numerator.multiply(BigDecimal.valueOf(100)).divide(denominator, 2, RoundingMode.HALF_UP);
+    return nz(monthlyPercent).multiply(BigDecimal.valueOf(12)).setScale(2, RoundingMode.HALF_UP);
   }
 }

@@ -19,7 +19,7 @@
 <div id="craft-strategy-result" class="space-y-2" data-craft-strategy-result>
 	@if(result != null)
 		@if(result.runs() == 0)
-			<div role="alert" class="alert alert-warning py-2 text-sm" data-craft-strategy-error>${result.error()}</div>
+			<div role="alert" class="alert alert-warning py-2 text-sm" data-craft-strategy-error>${ko ? result.error() : net.luversof.web.gate.poe.PoeCraftText.en(result.error())}</div>
 		@else
 			<div class="text-xs text-base-content/60">${ko ? "전략: " : "Strategy: "}${presetLabel} · ${ko ? "목표: " : "Targets: "}${String.join(" · ", targetLabels)}</div>
 			<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -37,7 +37,7 @@
 					<div class="text-lg font-semibold font-mono" data-craft-strategy-cost>${result.expectedCost() == null ? "-" : num.apply(result.expectedCost()) + "c"}</div>
 				</div>
 			</div>
-			@if(result.error() != null)<div role="alert" class="alert alert-warning py-2 text-sm">${result.error()}</div>@endif
+			@if(result.error() != null)<div role="alert" class="alert alert-warning py-2 text-sm">${ko ? result.error() : net.luversof.web.gate.poe.PoeCraftText.en(result.error())}</div>@endif
 			<div class="grid gap-3 md:grid-cols-2">
 				<div class="overflow-x-auto">
 					<table class="table table-xs">

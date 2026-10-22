@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 import net.luversof.web.gate.stock.support.StockDateParamException;
+import net.luversof.web.gate.stock.support.StockParamException;
 
 /**
  * 주소의 날짜 값을 못 읽으면 <b>어느 값인지</b> 말해 준다.
@@ -36,9 +37,14 @@ class StockDateParamMessageTest {
     String resolver =
         read("src/main/java/net/luversof/web/gate/stock/config/StockHtmxErrorResolver.java");
 
-    assertThat(resolver).contains("StockDateParamException dateParam");
-    assertThat(resolver).contains("dateParam.getName()");
-    assertThat(resolver).contains("stock.error.badrequest.day.desc");
+    // 2026-10-22 부터 다섯 인자 예외를 공통 부모(StockParamException)로 본다 - 이름과 문구 키를 예외가 들고 온다.
+    assertThat(resolver).contains("StockParamException param");
+    assertThat(resolver).contains("clientDescArg = param.getName();");
+    assertThat(resolver).contains("clientDescKey = param.descKey();");
+    StockDateParamException thrown = new StockDateParamException("from", null);
+    assertThat(thrown).isInstanceOf(StockParamException.class);
+    assertThat(thrown.getName()).isEqualTo("from");
+    assertThat(thrown.descKey()).isEqualTo("stock.error.badrequest.day.desc");
   }
 
   @Test

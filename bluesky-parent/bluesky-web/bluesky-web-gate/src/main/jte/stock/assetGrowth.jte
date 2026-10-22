@@ -14,7 +14,6 @@
 	contentStock = @`
 		<div class="space-y-6" data-sync-url="/stock/htmx/asset-growth/view">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.asset.growth.title"))
-			<!-- Chart.js 는 stockLayout 에서 1회 로드됨. -->
 			<div class="mb-8">
 				<div data-params-from-query="true" hx-get="/stock/htmx/asset-growth/view" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 					<div class="flex justify-center p-10">

@@ -490,7 +490,7 @@ public class Poe2RefineService {
       List<Candidate> candidates = candidates(guide, objective);
       // 닌자 공통 고유 · 보조 젬 — 가이드 예측이 없어 맨 앞에서 한 번씩만 실측해 본다(채택 조건 · 비용 · 능력치 규칙은 같다)
       List<Candidate> common = consensusCandidates(xml, guide, consensus);
-      common.addAll(consensusNodeCandidates(xml, guide, consensus, objective));
+      common.addAll(consensusNodeCandidates(xml, guide, consensus));
       // 다른 세트 무기 칸 고유는 주 세트를 켠 채로는 효과가 0 이라 늘 버려졌다 — 다른 세트 다듬기에서 그 세트를 켜고 잰다(10-15 C333)
       final int onSet = sets ? mainSet : 1;
       common.removeIf(
@@ -912,7 +912,7 @@ public class Poe2RefineService {
    * 빼고(가이드 free) 그 점수로 찍는다(apply2 respec — 닿지 않으면 엔진이 거절). 예측이 없어 실측으로만 고른다.
    */
   List<Candidate> consensusNodeCandidates(
-      String xml, Poe2.BuildGuide g, Poe2NinjaService.Consensus consensus, String objective) {
+      String xml, Poe2.BuildGuide g, Poe2NinjaService.Consensus consensus) {
     List<Candidate> out = new ArrayList<>();
     if (consensus == null
         || consensus.n() < 2

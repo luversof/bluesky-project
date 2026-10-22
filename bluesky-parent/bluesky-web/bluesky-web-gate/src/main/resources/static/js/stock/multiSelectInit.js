@@ -1,4 +1,4 @@
-console.debug("[multiSelectInit] simple multi-select initializer loaded");function ensureMultiSelectStyle(){if(document.getElementById("simple-multi-style"))return;const s=document.createElement("style");s.id="simple-multi-style",s.appendChild(document.createTextNode(`
+function ensureMultiSelectStyle(){if(document.getElementById("simple-multi-style"))return;const s=document.createElement("style");s.id="simple-multi-style",s.appendChild(document.createTextNode(`
 /* Remove fixed DaisyUI sizing without overriding native multi-select row height */
 .select[multiple], select.select[multiple], .form-control select[multiple] {
 	min-height: unset !important;

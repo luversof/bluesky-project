@@ -185,7 +185,10 @@ public final class Poe2Craft {
       double successRate,
       Map<String, Double> perSuccess,
       Double costPerSuccess,
-      String note) {}
+      String note,
+      // 영어 화면용(10-22 C561 ⑦b) — 없으면 null(한국어로)
+      String labelEn,
+      String noteEn) {}
 
   /** 다단계 전략(C355) — action = 화폐 | SEQ, omens = 이 단계에 걸 징조, until = 채울 목표 번호(없으면 한 번). */
   public record Step(

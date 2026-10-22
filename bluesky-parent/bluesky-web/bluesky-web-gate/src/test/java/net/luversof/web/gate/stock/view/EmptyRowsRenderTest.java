@@ -232,7 +232,8 @@ class EmptyRowsRenderTest {
     // 2026-09-09 tabsPortfolio.jte(죽은 조각) 를 지워 25 -> 24. 바닥값은 스캔이 헛도는 것을 막는 용도라 지운 만큼만 내린다.
     // 2026-09-17 배당 캘린더 탭 통합으로 월 · 연 예상 합계 카드를 빼면서 그 카드 조각(dividendCalendarTotalCard.jte)을 지워 24 ->
     // 23.
-    assertThat(templates).hasSizeGreaterThanOrEqualTo(23);
+    // 2026-10-22 넘기기만 하던 dateRangeNavBar 껍데기를 지우고, 배당 · 매매 검색 폼 둘을 listSearchForm 하나로 합쳐 23 -> 21.
+    assertThat(templates).hasSizeGreaterThanOrEqualTo(21);
 
     TemplateEngine engine = TemplateEngine.createPrecompiled(ContentType.Html);
     List<String> failures = new ArrayList<>();

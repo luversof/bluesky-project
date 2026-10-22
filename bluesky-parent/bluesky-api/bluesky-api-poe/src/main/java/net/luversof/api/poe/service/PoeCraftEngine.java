@@ -824,10 +824,6 @@ public final class PoeCraftEngine {
       if (f == null) {
         return Result.fail(item, "모르는 화석: " + s);
       }
-      // supported() 는 C400 부터 늘 참(축성된 · 얽혀든까지 계산) — 데이터에 새 특수 화석이 생길 때를 위한 자리
-      if (!f.supported()) {
-        return Result.fail(item, f.nameKo() + " 은(는) 아직 계산하지 않는 화석입니다(행운 굴림 · 무작위 효과)");
-      }
       for (Map.Entry<String, Double> e : f.weights().entrySet()) {
         mult.merge(e.getKey(), e.getValue(), (a, b) -> a * b);
       }
@@ -1052,7 +1048,7 @@ public final class PoeCraftEngine {
       }
       case "remove_type_and_add_type_mod" ->
           removeAdd(item, p.length > 2 ? p[2] : "", h.params().contains("noinfluence"), rng);
-      case "convert_mod" -> convert(item, p, rng);
+      case "convert_mod" -> convert(item, p);
       case "reroll_with_influence_mod" -> {
         if (item.rarity() != Rarity.RARE
             || item.influence() == null
@@ -1169,7 +1165,7 @@ public final class PoeCraftEngine {
    * 저항 변환 — params 끝 "CONVERT from to"(fire · cold · lightning). 그 원소 저항 옵션을 같은 등급(풀 안 아이템 레벨 순위)의
    * 다른 원소로.
    */
-  private Result convert(Item item, String[] p, RandomGenerator rng) {
+  private Result convert(Item item, String[] p) {
     int k = java.util.Arrays.asList(p).indexOf("CONVERT");
     if (k < 0 || k + 2 >= p.length) {
       return Result.fail(item, "변환 정보를 읽지 못했습니다");
@@ -1765,12 +1761,12 @@ public final class PoeCraftEngine {
         : null;
   }
 
-  /** 정복자 엑잘 — 영향력 없는 레어에 영향력 + 그 영향력 전용 옵션 하나. */
   /** 영향력 옵션을 더할 수 있는 아이템 레벨(C415 — ClientStrings ItemErrorItemLevelNotHighEnough). */
   static final int INFLUENCE_MIN_ILVL = 68;
 
   static final String INFLUENCE_ILVL_ERROR = "아이템 레벨이 68 미만이므로 영향력 속성 부여를 추가할 수 없습니다.";
 
+  /** 정복자 엑잘 — 영향력 없는 레어에 영향력 + 그 영향력 전용 옵션 하나. */
   private Result conqueror(Item item, String influence, RandomGenerator rng) {
     if (item.rarity() != Rarity.RARE) {
       return Result.fail(item, "레어 아이템에만 쓸 수 있습니다");
@@ -2028,10 +2024,6 @@ public final class PoeCraftEngine {
   }
 
   /**
-   * 옵션 직접 넣기(C348) — 이 아이템 풀(종류 · 변형 · 영향력)에 있는 옵션만, 아이템 레벨 · 같은 그룹 · 자리 규칙은 지킨다. 희귀도는 필요한 만큼
-   * 올린다(일반 → 매직 → 레어). 분열 표시(:F)는 분열 베이스에서 시작하려는 것.
-   */
-  /**
    * 기폭제 종류 → 수치를 올리는 옵션 태그(C385, PoB Item.lua catalystTags — prefix · suffix 는 태그가 아니라 옵션 자리). 키 =
    * 화폐 Id 끝 CurrencyJewelleryQuality{…} 소문자.
    */
@@ -2188,6 +2180,49 @@ public final class PoeCraftEngine {
       }
     }
     return List.of();
+  }
+
+  /**
+   * 첫 뽑기 기록(10-22 P3 — poedb 속성 부여처럼 고른 화폐 기준 옵션 표) — 수단을 한 번 적용하며 pick 이 처음 계산한 가중치를 남긴다(옵션 id →
+   * {실제 가중, 기본 가중}, 그때 아이템). 수단마다 규칙(다시 굴릴 바탕 · 화석 배수 · 메타 금지 · 축성 레벨 가중 · 추가 옵션)을 따로 옮기지 않고 엔진이
+   * 실제로 쓰는 값 그대로. pick 을 안 거치는 수단(소멸 · 신성 · 제작대 · 바알 · 엘드리치 임플리싯 등)은 weights = null.
+   */
+  public static final class PickProbe {
+    private Map<String, double[]> weights;
+    private Item base;
+    private Result result;
+
+    public Map<String, double[]> weights() {
+      return weights;
+    }
+
+    public Item base() {
+      return base;
+    }
+
+    public Result result() {
+      return result;
+    }
+  }
+
+  private static final ThreadLocal<PickProbe> PICK_PROBE = new ThreadLocal<>();
+
+  // 켜진 기록 수 — 0 이면 pick 이 ThreadLocal 도 안 본다(최적화기 표본 뜨기의 뜨거운 길)
+  private static final java.util.concurrent.atomic.AtomicInteger PICK_PROBES =
+      new java.util.concurrent.atomic.AtomicInteger();
+
+  /** 수단을 한 번(고정 씨앗) 적용하며 첫 pick 의 가중치를 기록한다. */
+  public PickProbe probeFirstPick(Item item, Action action, String arg) {
+    PickProbe p = new PickProbe();
+    PICK_PROBE.set(p);
+    PICK_PROBES.incrementAndGet();
+    try {
+      p.result = apply(item, action, arg, new java.util.SplittableRandom(1));
+    } finally {
+      PICK_PROBES.decrementAndGet();
+      PICK_PROBE.remove();
+    }
+    return p;
   }
 
   /** 축성된 화석(C399) — tagMult 에 이 키가 있으면 옵션 요구 레벨로 가중. */
@@ -2399,6 +2434,10 @@ public final class PoeCraftEngine {
         || c.endsWith("Flask"));
   }
 
+  /**
+   * 옵션 직접 넣기(C348) — 이 아이템 풀(종류 · 변형 · 영향력)에 있는 옵션만, 아이템 레벨 · 같은 그룹 · 자리 규칙은 지킨다. 희귀도는 필요한 만큼
+   * 올린다(일반 → 매직 → 레어). 분열 표시(:F)는 분열 베이스에서 시작하려는 것.
+   */
   private Result manualAdd(Item item, String arg) {
     if (arg == null || arg.isBlank()) {
       return Result.fail(item, "넣을 옵션을 고르세요");
@@ -2999,6 +3038,22 @@ public final class PoeCraftEngine {
           exA.add(a);
           total += f;
         }
+      }
+    }
+    if (PICK_PROBES.get() > 0) {
+      PickProbe probe = PICK_PROBE.get();
+      if (probe != null && probe.weights == null) {
+        Map<String, double[]> seen = new java.util.LinkedHashMap<>();
+        for (int k = 0; k < exA.size(); k++) {
+          seen.put(exA.get(k).id(), new double[] {exW[k], w.extra().get(exA.get(k).id())});
+        }
+        for (int i = 0; i < n; i++) {
+          if (eff[i] > 0) {
+            seen.put(px.ids()[i], new double[] {eff[i], px.weights()[i]});
+          }
+        }
+        probe.weights = seen;
+        probe.base = item;
       }
     }
     if (total <= 0) {

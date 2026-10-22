@@ -717,7 +717,6 @@ public class Poe2BuildService {
     return out;
   }
 
-  /** 코드 → 엔진 재계산(저장값 대조 + 인게임 경고). 코드를 못 읽으면 IllegalArgumentException. */
   /**
    * 패시브 트리 평가(10-01, PoE1 트리 "트리 계산"의 PoE2 짝) — 직업·전직·노드로 레벨 90 캐릭터 XML 을 만들어 엔진에 넣는다. 스킬을 주면 시뮬
    * 랭킹의 기준 캐릭터(표준 무기·젬 20레벨) 위에 트리만 바꾼다. classId 는 트리 integerId, ascendClassId 는 그 직업 전직 순번(1부터).
@@ -847,7 +846,6 @@ public class Poe2BuildService {
     return rows;
   }
 
-  /** 세트를 켜려면 Items·ItemSet 의 useSecondWeaponSet 이 있어야 한다 — 스킬 없는 평가 XML 엔 Items 가 없어 빈 것을 넣는다. */
   /**
    * 주얼 칸 → PoB 아이템 원문을 &lt;Items&gt; 에 아이템으로 넣고 &lt;Spec&gt;&lt;Sockets&gt; 로 그 칸에 꽂는다(10-03 C73).
    * 아이템 id 는 있던 것 다음부터. &lt;Items&gt; · &lt;/Spec&gt; 가 없으면 그대로 돌려준다.
@@ -971,6 +969,7 @@ public class Poe2BuildService {
     return null;
   }
 
+  /** 세트를 켜려면 Items·ItemSet 의 useSecondWeaponSet 이 있어야 한다 — 스킬 없는 평가 XML 엔 Items 가 없어 빈 것을 넣는다. */
   static String withItemsBlock(String xml) {
     if (xml.contains("<Items")) {
       return xml;
@@ -1091,6 +1090,7 @@ public class Poe2BuildService {
     return out.toString();
   }
 
+  /** 코드 → 엔진 재계산(저장값 대조 + 인게임 경고). 코드를 못 읽으면 IllegalArgumentException. */
   public Poe2.BuildRecalc recalc(String code) {
     String xml = decoder.decodeToXml(code.trim());
     Element build = first(parse(xml).getDocumentElement(), "Build");

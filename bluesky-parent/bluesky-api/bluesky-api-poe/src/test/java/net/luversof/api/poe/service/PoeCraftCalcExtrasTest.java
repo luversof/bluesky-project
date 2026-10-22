@@ -153,6 +153,20 @@ class PoeCraftCalcExtrasTest {
     assertThat(eo).noneMatch(f -> "Greed".equals(f.family()) || "Anger".equals(f.family()));
     PoeCraftCalcService.EssenceOnly fear =
         eo.stream().filter(f -> "Fear".equals(f.family())).findFirst().orElseThrow();
+    // 태그(C553 — 에센스 옵션은 자연 옵션 표에 없어 비었다)
+    assertThat(fear.tags()).isNotEmpty();
+    assertThat(fear.tagsKo()).isNotEmpty();
+    // 에센스를 쓴 아이템 줄에도 그 옵션 태그
+    PoeCraftService craft = new PoeCraftService(data, new PoeModDataService(dir));
+    String fearTop = fear.tiers().get(fear.tiers().size() - 1).modId();
+    String fearSlug =
+        craft.essences("Gloves").stream()
+            .filter(e -> fearTop.equals(e.modId()))
+            .map(PoeCraftDataService.Essence::slug)
+            .findFirst()
+            .orElseThrow();
+    PoeCraftService.View v = craft.apply(plain, PoeCraftEngine.Action.ESSENCE, fearSlug, 1L);
+    assertThat(v.tags().get(fearTop)).isNotEmpty();
     assertThat(fear.tiers())
         .isSortedAccordingTo(
             java.util.Comparator.comparingInt(PoeCraftCalcService.EssenceTier::tier));

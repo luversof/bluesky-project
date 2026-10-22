@@ -1,5 +1,8 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockIds.joinOrNull;
+import static net.luversof.api.stock.util.StockMath.nz;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -40,10 +43,6 @@ public class YearlyCostService {
     this.dividendRepository = dividendRepository;
   }
 
-  private static BigDecimal nz(BigDecimal value) {
-    return value == null ? BigDecimal.ZERO : value;
-  }
-
   /**
    * @param zoneId 해를 가르는 존. 세금은 그 나라 기준이라 화면이 보는 존과 같아야 한다(기본 Asia/Seoul).
    */
@@ -72,8 +71,8 @@ public class YearlyCostService {
     if (userId == null) {
       return List.of();
     }
-    String accountIds = joinIds(accountIdList);
-    String stockItemIds = joinIds(stockItemIdList);
+    String accountIds = joinOrNull(accountIdList);
+    String stockItemIds = joinOrNull(stockItemIdList);
     String zone = (zoneId != null ? zoneId : ZoneId.of("Asia/Seoul")).getId();
     Map<Integer, BigDecimal[]> byYear = new LinkedHashMap<>();
     // 매도 건수는 금액이 아니라 세는 값이라 따로 담는다. 배당만 있는 해는 매매가 없으니 0 이다.
@@ -114,24 +113,6 @@ public class YearlyCostService {
     // 최신이 위로. 표는 늘 최근부터 읽는다.
     result.sort(Comparator.comparingInt(YearlyCostSummary::year).reversed());
     return result;
-  }
-
-  /** 빈 목록은 좁히지 않는 것과 같게 둔다 - 화면이 "선택 없음" 을 빈 목록으로 보내기 때문이다. */
-  private static String joinIds(List<UUID> ids) {
-    if (ids == null || ids.isEmpty()) {
-      return null;
-    }
-    StringBuilder sb = new StringBuilder();
-    for (UUID id : ids) {
-      if (id == null) {
-        continue;
-      }
-      if (sb.length() > 0) {
-        sb.append(',');
-      }
-      sb.append(id);
-    }
-    return sb.length() == 0 ? null : sb.toString();
   }
 
   private static BigDecimal[] newSlot() {

@@ -149,7 +149,32 @@ public class PoeCraftDataService {
       List<String> en,
       List<String> enMin,
       List<String> ko,
-      List<String> koMin) {}
+      List<String> koMin,
+      // 보장 옵션의 태그 id(10-21 C553, parse-essences.mjs — 자연 옵션 표에 없는 에센스 전용 옵션도 태그가 나오게). 옛 데이터면 null
+      List<String> t) {
+
+    public Essence(
+        String family,
+        String name,
+        String nameKo,
+        String icon,
+        int tier,
+        int ilvlMax,
+        String gen,
+        String modName,
+        String modId,
+        List<Integer> groups,
+        Integer modLevel,
+        String slug,
+        List<String> en,
+        List<String> enMin,
+        List<String> ko,
+        List<String> koMin) {
+      this(
+          family, name, nameKo, icon, tier, ilvlMax, gen, modName, modId, groups, modLevel, slug,
+          en, enMin, ko, koMin, null);
+    }
+  }
 
   private record EssenceData(String patch, Map<String, List<Essence>> classes) {}
 
@@ -169,18 +194,7 @@ public class PoeCraftDataService {
       boolean lucky,
       List<String> desc,
       List<String> descKo,
-      boolean simple) {
-
-    /**
-     * 엔진이 다루는가(10-15 C342) — 태그 배수 · 추가 · 강제 옵션 · 부패 에센스(반드시) · 부패 · 분열 · 상점가 · 축성된(C399 — 고레벨 가중 +
-     * 수치 행운)까지. 무작위 효과(얽혀든, 부패 에센스 일부 확률)는 근거 공식이 없어 아직 막는다.
-     */
-    @com.fasterxml.jackson.annotation.JsonProperty("supported")
-    public boolean supported() {
-      // 얽혀든(C400 — 무작위 효과 · 부패 에센스 10%)까지 전부 다룬다
-      return true;
-    }
-  }
+      boolean simple) {}
 
   /** 공명기 — kind = alchemical(일반 → 레어) | chaotic(레어 다시), sockets = 화석 칸 1~4. */
   public record Resonator(
@@ -255,6 +269,8 @@ public class PoeCraftDataService {
           "", Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
           Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
   private volatile Map<String, List<Essence>> essences = Map.of();
+  // 에센스 보장 옵션 id → 태그 id(C553)
+  private volatile Map<String, List<String>> essenceTags = Map.of();
   // 풀 → 옵션 id → 그 풀 안 같은 계열에서의 등급(1 = 아이템 레벨 요구가 가장 높은 것)
   private volatile Map<String, Map<String, Integer>> tierRank = Map.of();
 
@@ -297,6 +313,17 @@ public class PoeCraftDataService {
     }
     this.data = loaded;
     this.essences = ess;
+    Map<String, List<String>> et = new java.util.HashMap<>();
+    ess.values()
+        .forEach(
+            l ->
+                l.forEach(
+                    e -> {
+                      if (e.modId() != null && e.t() != null && !e.t().isEmpty()) {
+                        et.putIfAbsent(e.modId(), e.t());
+                      }
+                    }));
+    this.essenceTags = et;
     benchIndex.clear();
     if (Files.exists(currencyFile)) {
       try (InputStream in = Files.newInputStream(currencyFile)) {
@@ -444,12 +471,12 @@ public class PoeCraftDataService {
     return data.corrupted() == null ? Map.of() : data.corrupted().getOrDefault(poolKey, Map.of());
   }
 
-  /** 악명 높은 속성(C393) — id → 옵션. */
   /** 옵션 태그 표시 이름(C480) — 태그 id → [영어, 한국어]. */
   public Map<String, List<String>> tagNames() {
     return data.tagNames() == null ? Map.of() : data.tagNames();
   }
 
+  /** 악명 높은 속성(C393) — id → 옵션. */
   public Map<String, InfamousMod> infamousMods() {
     return data.infamousMods() == null ? Map.of() : data.infamousMods();
   }
@@ -493,6 +520,11 @@ public class PoeCraftDataService {
 
   public List<Essence> essences(String itemClass) {
     return essences.getOrDefault(itemClass, List.of());
+  }
+
+  /** 에센스 보장 옵션의 태그 id(C553). 에센스 옵션이 아니거나 태그가 없으면 null. */
+  public List<String> essenceModTags(String modId) {
+    return modId == null ? null : essenceTags.get(modId);
   }
 
   /** 클래스 · 에센스 슬러그 → 에센스(그 클래스에 보장 옵션이 있는 것만). 없으면 null. */

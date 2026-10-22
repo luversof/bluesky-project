@@ -41,9 +41,13 @@ public interface PoeCraftClient {
   @PostExchange(value = "/spam", contentType = MediaType.APPLICATION_JSON_VALUE)
   PoeCraft.SpamResult spam(@RequestBody PoeCraft.SpamRequest request);
 
-  /** 화석 조합 기준 첫 옵션 확률(C504). */
-  @PostExchange(value = "/fossil-pool", contentType = MediaType.APPLICATION_JSON_VALUE)
-  List<PoeCraft.PoolLine> fossilPool(@RequestBody PoeCraft.FossilPoolRequest request);
+  /** 같은 옵션을 얻는 다른 길(10-22 P4). */
+  @PostExchange(value = "/family-ways", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.FamilyWays familyWays(@RequestBody PoeCraft.FamilyWaysRequest request);
+
+  /** 고른 화폐 기준 옵션 표(10-22 P3) — 요청은 화폐 적용과 같다. */
+  @PostExchange(value = "/action-pool", contentType = MediaType.APPLICATION_JSON_VALUE)
+  PoeCraft.ActionPool actionPool(@RequestBody PoeCraft.ApplyRequest request);
 
   /** 화폐 한 번의 목표 적중 확률(C494). */
   @PostExchange(value = "/hit-chance", contentType = MediaType.APPLICATION_JSON_VALUE)
@@ -63,10 +67,6 @@ public interface PoeCraftClient {
 
   @PostExchange(value = "/calc", contentType = MediaType.APPLICATION_JSON_VALUE)
   PoeCraft.CalcResponse calc(@RequestBody PoeCraft.CalcRequest request);
-
-  /** 최적 조합(C457) — 에센스 · 제작대 · 짐승 · 화폐를 섞은 최소 비용(시간 예산 안). */
-  @PostExchange(value = "/optimize", contentType = MediaType.APPLICATION_JSON_VALUE)
-  PoeCraft.OptimizeResult optimize(@RequestBody PoeCraft.OptimizeRequest request);
 
   /** 에뮬레이터 따라 하기(C464) — 끝난 작업 정책으로 다음 수단. */
   @PostExchange(value = "/optimize/{id}/next", contentType = MediaType.APPLICATION_JSON_VALUE)

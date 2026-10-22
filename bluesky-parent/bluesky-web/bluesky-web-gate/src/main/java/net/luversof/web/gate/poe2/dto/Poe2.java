@@ -56,46 +56,7 @@ public final class Poe2 {
       String statSetLabel,
       String statSetLabelKo,
       // 젬이 덤으로 주는 스킬(10-10 C249). 없으면 null
-      List<GrantedSkill> grantedSkills) {
-
-    /** 목록용 — 레벨별 수치를 뺀 사본(전체 젬 목록 응답이 수 MB 가 되지 않게). */
-    public Gem withoutLevels() {
-      return new Gem(
-          id,
-          slug,
-          name,
-          nameKo,
-          kind,
-          color,
-          tier,
-          maxLevel,
-          gemType,
-          weaponRequirements,
-          reqStr,
-          reqDex,
-          reqInt,
-          tags,
-          tagsKo,
-          description,
-          descriptionKo,
-          supportText,
-          supportTextKo,
-          family,
-          familyKo,
-          lineage,
-          icon,
-          image,
-          castTimeMs,
-          null,
-          null,
-          null,
-          null,
-          weaponRequirementsKo,
-          statSetLabel,
-          statSetLabelKo,
-          grantedSkills);
-    }
-  }
+      List<GrantedSkill> grantedSkills) {}
 
   /** 강조 용어 하나 — 인게임 툴팁에서 Alt 로 보는 용어 · 정의(PoE2 KeywordPopups, 영 · 한). */
   public record Keyword(String term, String termKo, String def, String defKo) {}
@@ -159,8 +120,6 @@ public final class Poe2 {
       List<String> statLinesKo,
       // 부여 스킬의 추가 스탯 묶음(poe2db 촉진시키는 방출 "화염" · "번개" · "냉기"). 없으면 null
       List<GemStatSet> statSets) {}
-
-  public record GemData(String patch, List<Gem> gems) {}
 
   /** 트리 평가 한 줄 — API Poe2.TreeEvalRow 와 쌍. */
   public record TreeEvalRow(String key, Double value) {}
@@ -265,8 +224,6 @@ public final class Poe2 {
     }
   }
 
-  public record BaseItemData(String patch, List<ItemClass> classes, List<BaseItem> items) {}
-
   // ─────────────────────────── 옵션 ───────────────────────────
 
   public record ModTier(
@@ -307,13 +264,6 @@ public final class Poe2 {
       // 이 풀의 베이스 이름(C528, API 와 짝)
       List<String> bases) {}
 
-  public record ModData(
-      String patch,
-      List<ModPool> pools,
-      java.util.Map<String, Keyword> keywords,
-      // 풀 밖 옵션의 영 · 한 쌍(10-04 C133, API 와 쌍)
-      List<ModPair> extra) {}
-
   public record ModPair(List<String> text, List<String> textKo) {}
 
   // ─────────────────────────── 증강물(룬 · 영혼 핵 · 우상 …) ───────────────────────────
@@ -342,8 +292,6 @@ public final class Poe2 {
       List<AugmentEffect> effects,
       String icon,
       String image) {}
-
-  public record AugmentData(String patch, List<Augment> items) {}
 
   // ─────────────────────────── 고유 아이템 ───────────────────────────
 
@@ -386,8 +334,6 @@ public final class Poe2 {
       List<Keyword> keywords,
       // 중복 사용 제한(API 와 짝, 10-08 C197) — 없으면 null
       String limit) {}
-
-  public record UniqueData(String patch, List<Unique> items) {}
 
   // ─────────────────────────── 빌드(PoB2 코드) ───────────────────────────
 

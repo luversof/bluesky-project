@@ -39,8 +39,11 @@ public class Poe2SimService {
 
   static final int AUTO_PER_ASCENDANCY = 2;
 
-  /** 후보 한 명 — 캐릭터 이름은 내보내지 않는다(화면에 실을 이유가 없다). */
-  /** set = 이 후보를 잰 무기 세트(1·2, DPS 가 큰 쪽) — 세트를 안 나누는 빌드면 null. */
+  /**
+   * 후보 한 명 — 캐릭터 이름은 내보내지 않는다(화면에 실을 이유가 없다).
+   *
+   * <p>set = 이 후보를 잰 무기 세트(1·2, DPS 가 큰 쪽) — 세트를 안 나누는 빌드면 null.
+   */
   public record SimCandidate(
       Integer level,
       Double ninjaDps,

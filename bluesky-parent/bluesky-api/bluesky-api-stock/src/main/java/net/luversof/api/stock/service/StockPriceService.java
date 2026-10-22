@@ -24,11 +24,6 @@ public class StockPriceService {
   @Autowired
   private net.luversof.api.stock.repository.StockDailyClosePriceQuery stockDailyClosePriceQuery;
 
-  public void setStockPriceHistoryRepository(
-      StockPriceHistoryRepository stockPriceHistoryRepository) {
-    this.stockPriceHistoryRepository = stockPriceHistoryRepository;
-  }
-
   public BigDecimal getCurrentPrice(UUID stockItemId) {
     return getCurrentPriceHistory(stockItemId)
         .map(StockPriceHistory::getClosePrice)
@@ -88,52 +83,72 @@ public class StockPriceService {
   }
 
   /**
-   * 종목마다 조회 구간이 다른 일별 종가 조회.
+   * 종목마다 조회 구간이 다른 일별 종가를 (일자 -> (종목 -> 종가)) 맵으로 읽는다.
    *
    * <p>보유 시작 전과 전량 매도 후의 행은 시뮬레이션에서 쓰이지 않으므로 아예 읽지 않는다.
-   */
-  /**
-   * 종목별 조회 구간을 (일자 -> (종목 -> 종가)) 맵으로 읽는다.
    *
    * <p>{@code ids} 문자열을 만드는 순서 그대로 {@code idOrder} 를 쌓아 넘긴다. 조회 쪽이 종목 UUID 대신 이 순번을 돌려주므로 행마다 UUID
    * 를 새로 만들지 않는다.
    */
   public Map<LocalDate, Map<UUID, BigDecimal>> getDailyClosePricesGrouped(
       Map<UUID, LocalDate[]> rangeByStockItemId) {
-    if (rangeByStockItemId == null || rangeByStockItemId.isEmpty()) {
-      return new HashMap<>();
-    }
-    StringBuilder ids = new StringBuilder();
-    StringBuilder froms = new StringBuilder();
-    StringBuilder tos = new StringBuilder();
-    List<UUID> idOrder = new ArrayList<>();
-    for (Map.Entry<UUID, LocalDate[]> entry : rangeByStockItemId.entrySet()) {
-      LocalDate[] range = entry.getValue();
-      if (entry.getKey() == null || range == null || range[0] == null || range[1] == null) {
-        continue;
-      }
-      if (range[1].isBefore(range[0])) {
-        continue;
-      }
-      if (!ids.isEmpty()) {
-        ids.append(',');
-        froms.append(',');
-        tos.append(',');
-      }
-      ids.append(entry.getKey());
-      froms.append(range[0]);
-      tos.append(range[1]);
-      idOrder.add(entry.getKey());
-    }
-    if (ids.isEmpty()) {
+    RangeArrays arrays = RangeArrays.of(rangeByStockItemId);
+    if (arrays == null) {
       return new HashMap<>();
     }
     return stockDailyClosePriceQuery.findDailyClosePricesGrouped(
-        ids.toString(), froms.toString(), tos.toString(), idOrder);
+        arrays.ids(), arrays.froms(), arrays.tos(), arrays.idOrder());
+  }
+
+  /**
+   * 종목별 구간을 SQL 의 unnest 배열 인자(쉼표로 이은 ids · froms · tos)와 그 순번 목록으로 바꾼 것. 키나 끝이 없거나 끝이 시작보다 앞선 구간은
+   * 뺀다. 남는 구간이 없으면 {@link #of} 가 null.
+   */
+  private record RangeArrays(String ids, String froms, String tos, List<UUID> idOrder) {
+
+    static RangeArrays of(Map<UUID, LocalDate[]> rangeByStockItemId) {
+      if (rangeByStockItemId == null || rangeByStockItemId.isEmpty()) {
+        return null;
+      }
+      StringBuilder ids = new StringBuilder();
+      StringBuilder froms = new StringBuilder();
+      StringBuilder tos = new StringBuilder();
+      List<UUID> idOrder = new ArrayList<>();
+      for (Map.Entry<UUID, LocalDate[]> entry : rangeByStockItemId.entrySet()) {
+        LocalDate[] range = entry.getValue();
+        if (entry.getKey() == null
+            || range == null
+            || range[0] == null
+            || range[1] == null
+            || range[1].isBefore(range[0])) {
+          continue;
+        }
+        if (!ids.isEmpty()) {
+          ids.append(',');
+          froms.append(',');
+          tos.append(',');
+        }
+        ids.append(entry.getKey());
+        froms.append(range[0]);
+        tos.append(range[1]);
+        idOrder.add(entry.getKey());
+      }
+      return ids.isEmpty()
+          ? null
+          : new RangeArrays(ids.toString(), froms.toString(), tos.toString(), idOrder);
+    }
   }
 
   /** 원주가 열이 있다고 확인했는가(한 번 확인되면 다시 묻지 않는다 - 없을 때만 매번 확인). */
   private volatile boolean rawClosePriceColumnKnown;
+
+  /** 원주가 열이 있는가. 열을 나중에 추가해도(schema-alter 2026-10-02) 재기동 없이 잡히도록, 없다고 나온 동안은 매번 묻는다. */
+  private boolean rawClosePriceColumnPresent() {
+    if (!rawClosePriceColumnKnown && stockPriceHistoryRepository.countRawClosePriceColumn() > 0) {
+      rawClosePriceColumnKnown = true;
+    }
+    return rawClosePriceColumnKnown;
+  }
 
   /**
    * 종목마다 [from, to] 구간의 원주가와 수정 종가, 종목별 날짜순(KisStockPriceUpdateService.fillRawClosePrices 가 보유 기간을
@@ -143,59 +158,26 @@ public class StockPriceService {
    */
   public Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> getRawCloses(
       Map<UUID, LocalDate[]> rangeByStockItemId) {
-    Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> result = new HashMap<>();
-    if (rangeByStockItemId == null || rangeByStockItemId.isEmpty()) {
-      return result;
+    if (rangeByStockItemId == null
+        || rangeByStockItemId.isEmpty()
+        || !rawClosePriceColumnPresent()) {
+      return new HashMap<>();
     }
-    if (!rawClosePriceColumnKnown) {
-      if (stockPriceHistoryRepository.countRawClosePriceColumn() == 0) {
-        return result;
-      }
-      rawClosePriceColumnKnown = true;
-    }
-    StringBuilder ids = new StringBuilder();
-    StringBuilder froms = new StringBuilder();
-    StringBuilder tos = new StringBuilder();
-    List<UUID> idOrder = new ArrayList<>();
-    for (Map.Entry<UUID, LocalDate[]> entry : rangeByStockItemId.entrySet()) {
-      LocalDate[] range = entry.getValue();
-      if (entry.getKey() == null
-          || range == null
-          || range[0] == null
-          || range[1] == null
-          || range[1].isBefore(range[0])) {
-        continue;
-      }
-      if (!ids.isEmpty()) {
-        ids.append(',');
-        froms.append(',');
-        tos.append(',');
-      }
-      ids.append(entry.getKey());
-      froms.append(range[0]);
-      tos.append(range[1]);
-      idOrder.add(entry.getKey());
-    }
-    if (ids.isEmpty()) {
-      return result;
+    RangeArrays arrays = RangeArrays.of(rangeByStockItemId);
+    if (arrays == null) {
+      return new HashMap<>();
     }
     // Spring Data 행 변환을 건너뛰는 빠른 경로(일별 종가와 같은 이유 - StockDailyClosePriceQuery).
     return stockDailyClosePriceQuery.findRawClosesGrouped(
-        ids.toString(), froms.toString(), tos.toString(), idOrder);
+        arrays.ids(), arrays.froms(), arrays.tos(), arrays.idOrder());
   }
 
   /** 종목들의 fromDate 이후 원주가(종가 자리에 원주가, 빈 날 제외), 종목별 날짜순. 원주가 열이 없는 DB 면 빈 맵 - 호출부는 수정 종가로 돌아간다. */
   public Map<UUID, List<StockDailyClosePrice>> getRawClosePricesForItems(
       String ids, LocalDate fromDate) {
     Map<UUID, List<StockDailyClosePrice>> result = new HashMap<>();
-    if (ids == null || ids.isEmpty()) {
+    if (ids == null || ids.isEmpty() || !rawClosePriceColumnPresent()) {
       return result;
-    }
-    if (!rawClosePriceColumnKnown) {
-      if (stockPriceHistoryRepository.countRawClosePriceColumn() == 0) {
-        return result;
-      }
-      rawClosePriceColumnKnown = true;
     }
     for (StockDailyClosePrice row :
         stockDailyClosePriceQuery.findRawClosePricesForItems(ids, fromDate)) {
@@ -207,14 +189,10 @@ public class StockPriceService {
   /** 한 종목의 일별 시가 · 고가 · 저가 · 종가와 원주가(열이 없는 DB 면 원주가 null) - 종목 상세 캔들 차트. */
   public List<net.luversof.api.stock.domain.StockOhlcRow> getOhlc(
       UUID stockItemId, LocalDate fromDate) {
-    if (!rawClosePriceColumnKnown && stockPriceHistoryRepository.countRawClosePriceColumn() > 0) {
-      rawClosePriceColumnKnown = true;
-    }
-    return stockDailyClosePriceQuery.findOhlc(stockItemId, fromDate, rawClosePriceColumnKnown);
+    return stockDailyClosePriceQuery.findOhlc(stockItemId, fromDate, rawClosePriceColumnPresent());
   }
 
-  /** 기준일 목록 각각에 대해 종목별 "그 날 이하의 마지막 종가"를 한 행씩 조회한다. */
-  /** (종목, 기준일) 쌍 목록으로 최근 종가를 조회한다. 두 리스트는 같은 길이의 병렬 배열이다. */
+  /** (종목, 기준일) 쌍마다 "그 날 이하의 마지막 종가"를 한 행씩 조회한다. 두 리스트는 같은 길이의 병렬 배열이다. */
   public List<StockDailyClosePrice> getLatestClosePricesForPairs(
       List<UUID> stockItemIds, List<LocalDate> days) {
     if (stockItemIds == null || days == null || stockItemIds.isEmpty()) {

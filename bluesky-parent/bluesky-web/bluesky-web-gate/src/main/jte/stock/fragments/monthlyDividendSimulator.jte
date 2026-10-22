@@ -3,7 +3,6 @@
 @import java.math.BigDecimal
 @import java.math.RoundingMode
 @import java.text.DecimalFormat
-@import java.time.LocalDate
 @import java.util.List
 @import java.util.Map
 @import net.luversof.web.gate.stock.domain.StockItem
@@ -34,7 +33,6 @@
 @param MonthlyDividendSimulatorSummaryView monthlyDividendSummary = null
 @param List<StockItem> stockItems = java.util.List.of()
 @param MonthlyDividendSnapshotUpsertRequest monthlyDividendForm = null
-@param String monthlyDividendBulkInput = ""
 @param String monthlyDividendErrorMessage = ""
 @param String monthlyDividendResult = ""
 @param Integer monthlyDividendSavedCount = null
@@ -63,7 +61,6 @@
 !{
 	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
-	boolean monthlyDividendDisplayOrderSort = "display-order".equals(monthlyDividendSort);
 	MonthlyDividendSnapshotResponse bestChoice = monthlyDividendSummary != null ? monthlyDividendSummary.bestChoice() : null;
 	// 행마다 비교 우위 순위. 1 위 하나만 배지를 달던 표에 순위를 전부 적는다(사용자 요청 2026-09-17).
 	java.util.Map<java.util.UUID, Integer> comparisonRanks = monthlyDividendSummary != null && monthlyDividendSummary.comparisonRanks() != null ? monthlyDividendSummary.comparisonRanks() : java.util.Map.of();
@@ -85,11 +82,7 @@
 	int itemCount = monthlyDividendSummary != null ? monthlyDividendSummary.itemCount() : 0;
 	MonthlyDividendSnapshotUpsertRequest form = monthlyDividendForm != null ? monthlyDividendForm : new MonthlyDividendSnapshotUpsertRequest();
 	boolean referenceValuesAvailable = form.getLatestMonthlyDividendPerShare() != null && form.getAverageMonthlyDividendPerShare1y() != null && form.getAverageTaxableBaseRatio1y() != null;
-	String asOfDateValue = String.valueOf(form.getAsOfDate() != null ? form.getAsOfDate() : LocalDate.now());
 	String symbolValue = form.getSymbol() != null ? form.getSymbol() : "";
-	String latestMonthlyDividendValue = form.getLatestMonthlyDividendPerShare() != null ? form.getLatestMonthlyDividendPerShare().stripTrailingZeros().toPlainString() : "";
-	String averageMonthlyDividendValue = form.getAverageMonthlyDividendPerShare1y() != null ? form.getAverageMonthlyDividendPerShare1y().stripTrailingZeros().toPlainString() : "";
-	String taxableBaseRatioValue = form.getAverageTaxableBaseRatio1y() != null ? form.getAverageTaxableBaseRatio1y().stripTrailingZeros().toPlainString() : "";
 	String heldQuantityValue = form.getHeldQuantity() != null ? String.valueOf(form.getHeldQuantity()) : "";
 	String averageBuyPriceValue = form.getAverageBuyPrice() != null ? form.getAverageBuyPrice().stripTrailingZeros().toPlainString() : "";
 	// 폼은 저장된 스냅샷 값을 그대로 채운다 - 원장과 어긋날 수 있다. 아래 표는 이미 "현재 N" 으로 알려 주는데
@@ -306,7 +299,7 @@
 						@endif
 						<%-- 시세 기준일은 스냅샷 기준일과 다르다 - 실측 2026-09-11: 스냅샷 2026-08-19 인데 현재가는 2026-09-09 종가였다. --%>
 						@if(monthlyDividendPriceBasisDate != null)
-						<div class="text-[11px] text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(monthlyDividendPriceBasisIntradayTime).replace("{0}", monthlyDividendPriceBasisDate.toString())}</div>
+						<div class="text-[11px] text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(monthlyDividendPriceBasisIntradayTime, monthlyDividendPriceBasisDate)}</div>
 						@endif
 						<%-- 원장 조회가 실패하면 어긋난 줄에 붙던 "현재 N" 표시가 통째로 사라진다. 표시가 없는 표는
 						     "원장과 같다" 로 읽히므로(실측 2026-09-12: 8 줄 중 3 줄이 표시를 달고 있었다) 실패를 밝힌다. --%>

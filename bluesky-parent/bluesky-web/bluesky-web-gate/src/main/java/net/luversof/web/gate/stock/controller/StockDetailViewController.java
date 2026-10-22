@@ -53,6 +53,13 @@ import net.luversof.web.gate.stock.util.StockZoneUtil;
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
 public class StockDetailViewController {
 
+  /** 보유 줄 순서 - 평가액 큰 순(값이 없으면 0). 종목 상세의 계좌별 보유와 계좌 상세의 종목별 보유가 같이 쓴다(2026-10-22 까지 두 벌). */
+  private static final Comparator<TradeProfit> BY_EVALUATION_DESC =
+      Comparator.comparing(
+              (TradeProfit p) ->
+                  p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO)
+          .reversed();
+
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(StockDetailViewController.class);
 
@@ -188,7 +195,6 @@ public class StockDetailViewController {
   }
 
   /** 종목 상세: 한 종목의 보유/손익 요약 + 매매·배당 내역을 모아 보여준다(기존 엔드포인트 재활용). */
-  @BlueskyPreAuthorize
   /**
    * 날짜 없이 프리셋 상태({@code rangeMode})만 실려 온 요청의 기간을 정한다.
    *
@@ -215,6 +221,7 @@ public class StockDetailViewController {
     return new java.time.Instant[] {preset.start(), preset.end()};
   }
 
+  @BlueskyPreAuthorize
   @GetMapping("/item")
   public String stockItemDetailPage(
       HttpServletRequest request,
@@ -456,35 +463,13 @@ public class StockDetailViewController {
                 BigDecimal.valueOf(holdingQuantity), 0, java.math.RoundingMode.HALF_UP)
             : BigDecimal.ZERO;
 
-    // 매매 내역 (이 종목, 최신순, 기간 적용)
+    // 매매 · 배당 내역 (이 종목, 기간 적용) - 날짜 순, 오래된 것부터(tradesByDate 참고)
     List<TradeResponse> trades =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(tradesFuture);
-    if (trades == null) {
-      trades = List.of();
-    }
-    trades =
-        trades.stream()
-            .sorted(
-                Comparator.comparing(
-                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.naturalOrder())))
-            .toList();
-
-    // 배당 내역 (이 종목, 최신순)
+        tradesByDate(net.luversof.web.gate.stock.support.StockAsyncSupport.join(tradesFuture));
     List<DividendResponse> dividends =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(dividendsFuture);
-    if (dividends == null) {
-      dividends = List.of();
-    }
-    dividends =
-        dividends.stream()
-            .sorted(
-                Comparator.comparing(
-                    DividendResponse::payDate, Comparator.nullsLast(Comparator.naturalOrder())))
-            .toList();
-    BigDecimal totalDividend =
-        dividends.stream()
-            .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        dividendsByPayDate(
+            net.luversof.web.gate.stock.support.StockAsyncSupport.join(dividendsFuture));
+    BigDecimal totalDividend = netDividendTotal(dividends);
 
     // 보유 평가액·원가 추이 (차트용, 기간 적용 AUTO 단위) + 기간별 손익 표
     var timeSeriesResult =
@@ -572,53 +557,18 @@ public class StockDetailViewController {
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
             .withZone(java.time.ZoneId.systemDefault()));
 
-    // 기간 필터 모델 (날짜 필터 바) - 존(filterZone)은 최초 데이터 일자 조회가 쓰므로 조회를 던질 때 앞에서 정했다.
-    model.addAttribute(
-        "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
-    model.addAttribute(
-        "filterEndLocal",
-        endDate != null ? endDate.atZone(filterZone).toLocalDate().minusDays(1) : null);
-    model.addAttribute("filterStartInstant", startDate);
-    model.addAttribute("filterEndInstant", endDate);
-    model.addAttribute("filterTimeZone", timeZone);
-    model.addAttribute("filterRangeMode", rangeMode);
-    // '전체' 는 날짜를 안 보내 기간 배지가 빌 수밖에 없다. 그때 대신 적을, 이 화면이 덮은 구간.
-    // 사용자 전체의 최초 일자가 아니라 <b>이 종목/계좌의</b> 시계열에서 뽑아야 맞는 날짜가 나온다.
-    var covered =
-        net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
-            timeSeries,
-            net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
-            filterZone);
-    String detailFirstDate =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture);
-    // 배지의 시작은 시계열의 첫 점과 이 화면 데이터의 최초일 중 이른 쪽이다 - 시계열은 평가액이
-    // 잡히는 날부터라 첫 거래보다 늦게 시작할 수 있다(실측 2026-09-13: 삼성전자 19 일 · 한투 위탁 13 일).
-    model.addAttribute(
-        "coveredStartLocal",
-        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredStart(
-            covered.startDate(), detailFirstDate));
-    // 시계열이 없는 종목(배당만 있는 경우)은 끝을 못 정해 배지가 "~ ?" 로 나갔다 -
-    // 화면이 그린 매매·배당의 마지막 날로 메운다(실측 2026-09-13: 하나금융지주).
-    java.time.LocalDate contentLast =
-        net.luversof.web.gate.stock.util.StockFirstDateUtil.later(
-            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
-                    trades,
-                    net.luversof.web.gate.stock.dto.response.TradeResponse::tradeDate,
-                    filterZone)
-                .endDate(),
-            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
-                    dividends,
-                    net.luversof.web.gate.stock.dto.response.DividendResponse::payDate,
-                    filterZone)
-                .endDate());
-    model.addAttribute(
-        "coveredEndLocal",
-        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredEnd(
-            covered.endDate(), contentLast));
-    // 이 종목의 최초 일자. 날짜 선택기 하한이자 '가장 이른 기간으로'(«) 의 목표다.
-    model.addAttribute("dataFirstDate", detailFirstDate);
-    // 빈 기간 안내에 "전체 기간으로 보기" 를 띄울지 화면이 판단하려면 지금 모드를 알아야 한다.
-    model.addAttribute("rangeMode", rangeMode == null ? "" : rangeMode);
+    // 기간 필터 바 · 기간 배지 - 존(filterZone)은 최초 데이터 일자 조회가 쓰므로 조회를 던질 때 앞에서 정했다.
+    addRangeFilterAttributes(
+        model,
+        startDate,
+        endDate,
+        timeZone,
+        rangeMode,
+        filterZone,
+        timeSeries,
+        trades,
+        dividends,
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture));
 
     // 보유 전체 기준 보유 기간 · 연평균 수익률(복리). 자산 현황의 종목 줄과 <b>같은 계산 · 같은 입력</b>이다 -
     // 자산 현황의 종목 줄과 같은 계산 · 같은 입력이다 - 연평균은 이 종목의 하루치 순현금흐름에 지금 평가액을 더한 XIRR(사용자 결정
@@ -695,11 +645,7 @@ public class StockDetailViewController {
                 p ->
                     TradeProfit.withNames(
                         p, resolvedStockName, accountNameById.getOrDefault(p.accountId(), "-")))
-            .sorted(
-                Comparator.comparing(
-                        (TradeProfit p) ->
-                            p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO)
-                    .reversed())
+            .sorted(BY_EVALUATION_DESC)
             .toList();
     model.addAttribute("accountHoldings", accountHoldings);
 
@@ -893,14 +839,7 @@ public class StockDetailViewController {
                         p, stockNameById.getOrDefault(p.stockItemId(), "-"), account.name()))
             .toList();
     List<TradeProfit> holdings =
-        enriched.stream()
-            .filter(p -> p.holdingQuantity() > 0)
-            .sorted(
-                Comparator.comparing(
-                        (TradeProfit p) ->
-                            p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO)
-                    .reversed())
-            .toList();
+        enriched.stream().filter(p -> p.holdingQuantity() > 0).sorted(BY_EVALUATION_DESC).toList();
     BigDecimal evaluationAmount = sumTradeProfit(enriched, TradeProfit::evaluationAmount);
     // 평가손익도 실현손익과 같은 기준(기본값)을 쓴다. 두 값은 각각 닫힌 삼중항이라
     // (기록실현+기본평가=totalProfit, Net실현+Net평가=totalProfitNet) 섞으면 '실현+평가=총' 이
@@ -908,35 +847,13 @@ public class StockDetailViewController {
     // 자산현황·포트폴리오가 이미 기본값을 쓰므로 그쪽에 맞춘다.
     BigDecimal evaluationProfit = sumTradeProfit(enriched, TradeProfit::evaluationProfit);
 
-    // 매매 내역 (이 계좌, 최신순, 기간 적용)
+    // 매매 · 배당 내역 (이 계좌, 기간 적용) - 날짜 순, 오래된 것부터(tradesByDate 참고)
     List<TradeResponse> trades =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accTradesFuture);
-    if (trades == null) {
-      trades = List.of();
-    }
-    trades =
-        trades.stream()
-            .sorted(
-                Comparator.comparing(
-                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.naturalOrder())))
-            .toList();
-
-    // 배당 내역 (이 계좌, 최신순)
+        tradesByDate(net.luversof.web.gate.stock.support.StockAsyncSupport.join(accTradesFuture));
     List<DividendResponse> dividends =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accDividendsFuture);
-    if (dividends == null) {
-      dividends = List.of();
-    }
-    dividends =
-        dividends.stream()
-            .sorted(
-                Comparator.comparing(
-                    DividendResponse::payDate, Comparator.nullsLast(Comparator.naturalOrder())))
-            .toList();
-    BigDecimal totalDividend =
-        dividends.stream()
-            .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        dividendsByPayDate(
+            net.luversof.web.gate.stock.support.StockAsyncSupport.join(accDividendsFuture));
+    BigDecimal totalDividend = netDividendTotal(dividends);
 
     // 평가액·원가 추이 (차트용, 기간 적용)
     List<TradeProfitTimeSeriesPoint> timeSeries =
@@ -945,59 +862,24 @@ public class StockDetailViewController {
       timeSeries = List.of();
     }
 
-    // 기간 필터 모델 (날짜 필터 바) - 존(filterZone)은 최초 데이터 일자 조회가 쓰므로 조회를 던질 때 앞에서 정했다.
-    model.addAttribute(
-        "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
-    model.addAttribute(
-        "filterEndLocal",
-        endDate != null ? endDate.atZone(filterZone).toLocalDate().minusDays(1) : null);
-    model.addAttribute("filterStartInstant", startDate);
-    model.addAttribute("filterEndInstant", endDate);
-    model.addAttribute("filterTimeZone", timeZone);
-    model.addAttribute("filterRangeMode", rangeMode);
-    // '전체' 는 날짜를 안 보내 기간 배지가 빌 수밖에 없다. 그때 대신 적을, 이 화면이 덮은 구간.
-    // 사용자 전체의 최초 일자가 아니라 <b>이 종목/계좌의</b> 시계열에서 뽑아야 맞는 날짜가 나온다.
-    var covered =
-        net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
-            timeSeries,
-            net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
-            filterZone);
-    String detailFirstDate =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture);
+    // 기간 필터 바 · 기간 배지 - 존(filterZone)은 최초 데이터 일자 조회가 쓰므로 조회를 던질 때 앞에서 정했다.
+    addRangeFilterAttributes(
+        model,
+        startDate,
+        endDate,
+        timeZone,
+        rangeMode,
+        filterZone,
+        timeSeries,
+        trades,
+        dividends,
+        net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture));
     model.addAttribute(
         "accountNavEntries",
         accountNavEntries(
             net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountNavFuture),
             resolvedId,
             request.getQueryString()));
-    // 배지의 시작은 시계열의 첫 점과 이 화면 데이터의 최초일 중 이른 쪽이다 - 시계열은 평가액이
-    // 잡히는 날부터라 첫 거래보다 늦게 시작할 수 있다(실측 2026-09-13: 삼성전자 19 일 · 한투 위탁 13 일).
-    model.addAttribute(
-        "coveredStartLocal",
-        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredStart(
-            covered.startDate(), detailFirstDate));
-    // 시계열이 없는 종목(배당만 있는 경우)은 끝을 못 정해 배지가 "~ ?" 로 나갔다 -
-    // 화면이 그린 매매·배당의 마지막 날로 메운다(실측 2026-09-13: 하나금융지주).
-    java.time.LocalDate contentLast =
-        net.luversof.web.gate.stock.util.StockFirstDateUtil.later(
-            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
-                    trades,
-                    net.luversof.web.gate.stock.dto.response.TradeResponse::tradeDate,
-                    filterZone)
-                .endDate(),
-            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
-                    dividends,
-                    net.luversof.web.gate.stock.dto.response.DividendResponse::payDate,
-                    filterZone)
-                .endDate());
-    model.addAttribute(
-        "coveredEndLocal",
-        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredEnd(
-            covered.endDate(), contentLast));
-    // 이 계좌의 최초 일자(종목 상세와 같은 규칙).
-    model.addAttribute("dataFirstDate", detailFirstDate);
-    // 빈 기간 안내에 "전체 기간으로 보기" 를 띄울지 화면이 판단하려면 지금 모드를 알아야 한다.
-    model.addAttribute("rangeMode", rangeMode == null ? "" : rangeMode);
 
     model.addAttribute("holdings", holdings);
     model.addAttribute("holdingCount", holdings.size());
@@ -1063,6 +945,101 @@ public class StockDetailViewController {
         java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
             .withZone(java.time.ZoneId.systemDefault()));
     return "stock/htmx/accountDetailContent";
+  }
+
+  /**
+   * 상세 화면(종목 · 계좌)의 매매 내역 - 없으면 빈 목록, 거래일 순(오래된 것부터, 날짜가 없는 줄은 뒤). 표도 이 순서로 그린다. 2026-10-22 까지 두
+   * 핸들러가 한 벌씩 들고 있었고 주석은 '최신순' 이라 적혀 있었지만 정렬은 늘 오름차순이었다.
+   */
+  static List<TradeResponse> tradesByDate(List<TradeResponse> trades) {
+    return trades == null
+        ? List.of()
+        : trades.stream()
+            .sorted(
+                Comparator.comparing(
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+  }
+
+  /** 상세 화면의 배당 내역 - 없으면 빈 목록, 지급일 순(오래된 것부터, 날짜가 없는 줄은 뒤). */
+  static List<DividendResponse> dividendsByPayDate(List<DividendResponse> dividends) {
+    return dividends == null
+        ? List.of()
+        : dividends.stream()
+            .sorted(
+                Comparator.comparing(
+                    DividendResponse::payDate, Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+  }
+
+  /** 배당 내역의 세후 합(값이 없는 줄은 0). */
+  static BigDecimal netDividendTotal(List<DividendResponse> dividends) {
+    return dividends.stream()
+        .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  /**
+   * 기간 필터 바(날짜 · 존 · 모드)와 기간 배지(이 화면이 덮은 구간 · 최초 일자) 모델. 종목 상세와 계좌 상세가 같은 규칙이다 - 2026-10-22 까지 두
+   * 핸들러가 한 벌씩 들고 있었다.
+   *
+   * @param detailFirstDate 이 종목/계좌의 최초 데이터 일자(yyyy-MM-dd, 못 구하면 빈 글자)
+   */
+  static void addRangeFilterAttributes(
+      Model model,
+      java.time.Instant startDate,
+      java.time.Instant endDate,
+      String timeZone,
+      String rangeMode,
+      java.time.ZoneId filterZone,
+      List<TradeProfitTimeSeriesPoint> timeSeries,
+      List<TradeResponse> trades,
+      List<DividendResponse> dividends,
+      String detailFirstDate) {
+    model.addAttribute(
+        "filterStartLocal", startDate != null ? startDate.atZone(filterZone).toLocalDate() : null);
+    model.addAttribute(
+        "filterEndLocal",
+        endDate != null ? endDate.atZone(filterZone).toLocalDate().minusDays(1) : null);
+    model.addAttribute("filterStartInstant", startDate);
+    model.addAttribute("filterEndInstant", endDate);
+    model.addAttribute("filterTimeZone", timeZone);
+    model.addAttribute("filterRangeMode", rangeMode);
+    // '전체' 는 날짜를 안 보내 기간 배지가 빌 수밖에 없다. 그때 대신 적을, 이 화면이 덮은 구간.
+    // 사용자 전체의 최초 일자가 아니라 <b>이 종목/계좌의</b> 시계열에서 뽑아야 맞는 날짜가 나온다.
+    var covered =
+        net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+            timeSeries,
+            net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp,
+            filterZone);
+    // 배지의 시작은 시계열의 첫 점과 이 화면 데이터의 최초일 중 이른 쪽이다 - 시계열은 평가액이
+    // 잡히는 날부터라 첫 거래보다 늦게 시작할 수 있다(실측 2026-09-13: 삼성전자 19 일 · 한투 위탁 13 일).
+    model.addAttribute(
+        "coveredStartLocal",
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredStart(
+            covered.startDate(), detailFirstDate));
+    // 시계열이 없는 종목(배당만 있는 경우)은 끝을 못 정해 배지가 "~ ?" 로 나갔다 -
+    // 화면이 그린 매매·배당의 마지막 날로 메운다(실측 2026-09-13: 하나금융지주).
+    java.time.LocalDate contentLast =
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.later(
+            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+                    trades,
+                    net.luversof.web.gate.stock.dto.response.TradeResponse::tradeDate,
+                    filterZone)
+                .endDate(),
+            net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(
+                    dividends,
+                    net.luversof.web.gate.stock.dto.response.DividendResponse::payDate,
+                    filterZone)
+                .endDate());
+    model.addAttribute(
+        "coveredEndLocal",
+        net.luversof.web.gate.stock.util.StockFirstDateUtil.coveredEnd(
+            covered.endDate(), contentLast));
+    // 이 종목/계좌의 최초 일자. 날짜 선택기 하한이자 '가장 이른 기간으로'(«) 의 목표다.
+    model.addAttribute("dataFirstDate", detailFirstDate);
+    // 빈 기간 안내에 "전체 기간으로 보기" 를 띄울지 화면이 판단하려면 지금 모드를 알아야 한다.
+    model.addAttribute("rangeMode", rangeMode == null ? "" : rangeMode);
   }
 
   private static UUID parseUuidOrNull(String value) {

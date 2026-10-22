@@ -1,11 +1,10 @@
 package net.luversof.web.gate.stock.controller;
 
 import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -34,21 +33,12 @@ import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 import net.luversof.web.gate.stock.dto.view.MonthlyDividendReferenceSummaryView;
-import net.luversof.web.gate.stock.httpexchange.AccountClient;
-import net.luversof.web.gate.stock.httpexchange.DividendClient;
-import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
-import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
-import net.luversof.web.gate.stock.httpexchange.StockItemClient;
-import net.luversof.web.gate.stock.httpexchange.TradeClient;
-import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
 import net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendViewSupport;
 import net.luversof.web.gate.stock.support.StockViewSupport;
-import net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser;
-import net.luversof.web.gate.stock.util.MonthlyDividendPayoutSourceImportService;
 
 @Controller
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
@@ -58,10 +48,6 @@ public class StockViewController {
 
   private static final String ADMIN_TAB_DATA_MANAGEMENT = "data-management";
   private static final String MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER = "display-order";
-
-  private AccountClient accountClient;
-
-  private MonthlyDividendPayoutClient monthlyDividendPayoutClient;
 
   @org.springframework.beans.factory.annotation.Autowired
   private net.luversof.web.gate.stock.httpexchange.DataStatusClient dataStatusClient;
@@ -76,8 +62,6 @@ public class StockViewController {
   @org.springframework.beans.factory.annotation.Autowired
   private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
 
-  private MonthlyDividendProfileClient monthlyDividendProfileClient;
-
   /** 적립 추천에 쓰는 종목 단위 정보(연배당 수익률 · 분배금 추세)는 이 창구에만 있다. */
   @org.springframework.beans.factory.annotation.Autowired
   private net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient
@@ -89,12 +73,6 @@ public class StockViewController {
 
   private MonthlyDividendSnapshotClient monthlyDividendSnapshotClient;
 
-  private StockItemClient stockItemClient;
-
-  private MonthlyDividendPayoutImportParser monthlyDividendPayoutImportParser;
-
-  private MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService;
-
   private StockAdminClient stockAdminClient;
 
   private MonthlyDividendCalculator monthlyDividendCalculator;
@@ -104,32 +82,6 @@ public class StockViewController {
   @Autowired
   private net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
       monthlyDividendReferenceSupport;
-
-  private TradeProfitClient tradeProfitClient;
-
-  private TradeClient tradeClient;
-
-  private DividendClient dividendClient;
-
-  @Autowired
-  public void setAccountClient(AccountClient accountClient) {
-    this.accountClient = accountClient;
-  }
-
-  @Autowired
-  public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
-    this.tradeProfitClient = tradeProfitClient;
-  }
-
-  @Autowired
-  public void setTradeClient(TradeClient tradeClient) {
-    this.tradeClient = tradeClient;
-  }
-
-  @Autowired
-  public void setDividendClient(DividendClient dividendClient) {
-    this.dividendClient = dividendClient;
-  }
 
   @Autowired
   public void setMonthlyDividendViewSupport(MonthlyDividendViewSupport monthlyDividendViewSupport) {
@@ -153,38 +105,9 @@ public class StockViewController {
   }
 
   @Autowired
-  public void setMonthlyDividendPayoutClient(
-      MonthlyDividendPayoutClient monthlyDividendPayoutClient) {
-    this.monthlyDividendPayoutClient = monthlyDividendPayoutClient;
-  }
-
-  @Autowired
-  public void setMonthlyDividendProfileClient(
-      MonthlyDividendProfileClient monthlyDividendProfileClient) {
-    this.monthlyDividendProfileClient = monthlyDividendProfileClient;
-  }
-
-  @Autowired
   public void setMonthlyDividendSnapshotClient(
       MonthlyDividendSnapshotClient monthlyDividendSnapshotClient) {
     this.monthlyDividendSnapshotClient = monthlyDividendSnapshotClient;
-  }
-
-  @Autowired
-  public void setMonthlyDividendPayoutImportParser(
-      MonthlyDividendPayoutImportParser monthlyDividendPayoutImportParser) {
-    this.monthlyDividendPayoutImportParser = monthlyDividendPayoutImportParser;
-  }
-
-  @Autowired
-  public void setMonthlyDividendPayoutSourceImportService(
-      MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService) {
-    this.monthlyDividendPayoutSourceImportService = monthlyDividendPayoutSourceImportService;
-  }
-
-  @Autowired
-  public void setStockItemClient(StockItemClient stockItemClient) {
-    this.stockItemClient = stockItemClient;
   }
 
   @BlueskyPreAuthorize
@@ -397,8 +320,7 @@ public class StockViewController {
           minAnnualYield,
           positiveOnly,
           ex.getMessage(),
-          monthlyDividendForm,
-          "");
+          monthlyDividendForm);
     } catch (Exception ex) {
       log.warn("월배당 데이터 저장 실패: userId={}", userId, ex);
       return renderMonthlyDividendError(
@@ -412,39 +334,8 @@ public class StockViewController {
           positiveOnly,
           StockViewSupport.failureMessage(
               ex, msg("stock.monthly.reference.error.snapshot.save.failed")),
-          monthlyDividendForm,
-          "");
+          monthlyDividendForm);
     }
-  }
-
-  @BlueskyPreAuthorize
-  @PostMapping("/simulator/monthly-dividend/bulk")
-  public String saveMonthlyDividendBulk(
-      HttpServletRequest request,
-      Model model,
-      @RequestParam String bulkInput,
-      @RequestParam(required = false) String sort,
-      @RequestParam(required = false) String direction,
-      @RequestParam(required = false) String keyword,
-      @RequestParam(required = false) BigDecimal minAnnualYield,
-      @RequestParam(defaultValue = "false") boolean positiveOnly) {
-    if (StockViewSupport.isNotAuthenticated()) {
-      return StockViewSupport.loginRedirectView(request);
-    }
-
-    UUID userId = UserUtil.getUserId();
-    return renderMonthlyDividendError(
-        request,
-        model,
-        userId,
-        sort,
-        direction,
-        keyword,
-        minAnnualYield,
-        positiveOnly,
-        msg("stock.monthly.reference.error.reference.managed.elsewhere"),
-        buildDefaultMonthlyDividendForm(),
-        bulkInput);
   }
 
   @BlueskyPreAuthorize
@@ -487,8 +378,7 @@ public class StockViewController {
           minAnnualYield,
           positiveOnly,
           msg("stock.monthly.reference.error.sheet.import.failed"),
-          buildDefaultMonthlyDividendForm(),
-          "");
+          buildDefaultMonthlyDividendForm());
     }
   }
 
@@ -624,13 +514,7 @@ public class StockViewController {
     java.time.LocalDate marketToday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
     model.addAttribute(
         "monthlyDividendBuyBy",
-        java.util.stream.Stream.of("MID_MONTH", "MONTH_END")
-            .map(
-                buyByWindow ->
-                    net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyBy(
-                        marketToday, buyByWindow))
-            .filter(java.util.Objects::nonNull)
-            .toList());
+        net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
     // 목표 월배당까지(2026-10-20)의 기준 - 전 종목(표 거르기 전), 원장 지금 수량.
     model.addAttribute(
         "monthlyDividendGoalBasis",
@@ -762,9 +646,6 @@ public class StockViewController {
       model.addAttribute(
           "monthlyDividendForm", buildDefaultMonthlyDividendForm(prefillSymbol, allRows));
     }
-    if (!model.containsAttribute("monthlyDividendBulkInput")) {
-      model.addAttribute("monthlyDividendBulkInput", "");
-    }
     if (!model.containsAttribute("monthlyDividendErrorMessage")) {
       model.addAttribute("monthlyDividendErrorMessage", "");
     }
@@ -833,11 +714,9 @@ public class StockViewController {
       BigDecimal minAnnualYield,
       boolean positiveOnly,
       String errorMessage,
-      MonthlyDividendSnapshotUpsertRequest monthlyDividendForm,
-      String bulkInput) {
+      MonthlyDividendSnapshotUpsertRequest monthlyDividendForm) {
     model.addAttribute("simulatorTab", "monthly-dividend");
     model.addAttribute("monthlyDividendForm", monthlyDividendForm);
-    model.addAttribute("monthlyDividendBulkInput", bulkInput != null ? bulkInput : "");
     model.addAttribute("monthlyDividendErrorMessage", errorMessage);
     model.addAttribute("monthlyDividendResult", "");
     model.addAttribute("monthlyDividendSavedCount", null);
@@ -972,87 +851,11 @@ public class StockViewController {
         request.getAverageBuyPrice(),
         msg("stock.monthly.reference.error.average.buy.price.negative"));
 
-    BigDecimal taxableBaseRatio = safe(request.getAverageTaxableBaseRatio1y());
+    BigDecimal taxableBaseRatio = nz(request.getAverageTaxableBaseRatio1y());
     if (taxableBaseRatio.compareTo(BigDecimal.ZERO) < 0
         || taxableBaseRatio.compareTo(BigDecimal.valueOf(100)) > 0) {
       throw new IllegalArgumentException(msg("stock.monthly.reference.error.taxable.ratio.range"));
     }
-  }
-
-  List<MonthlyDividendSnapshotUpsertRequest> parseBulkInput(String bulkInput, UUID userId) {
-    if (!StringUtils.hasText(bulkInput)) {
-      throw new IllegalArgumentException(msg("stock.monthly.reference.error.bulk.empty"));
-    }
-
-    List<MonthlyDividendSnapshotUpsertRequest> requests = new ArrayList<>();
-    String[] lines = bulkInput.split("\\R");
-    for (int index = 0; index < lines.length; index++) {
-      String line = lines[index] != null ? lines[index].trim() : "";
-      if (!StringUtils.hasText(line)) {
-        continue;
-      }
-
-      String[] columns = splitBulkColumns(line);
-      if (columns.length == 0) {
-        continue;
-      }
-
-      if (requests.isEmpty() && isMonthlyDividendHeader(columns[0])) {
-        continue;
-      }
-
-      if (columns.length < 7) {
-        throw new IllegalArgumentException(
-            msg("stock.monthly.reference.error.bulk.columns.short", index + 1));
-      }
-
-      // 콤마로 나눈 줄에 열이 더 있으면 숫자의 천단위 콤마가 열을 갈라놓은 것이다.
-      // 이대로 앞 7개만 쓰면 값이 한 칸씩 밀려도 전부 숫자로 읽혀 오류 없이 잘못 저장된다
-      // (실측: "…,50,1,000,71,887" 이 9열이 되어 보유 수량 1,000 -> 1, 평단가 71,887 -> 000).
-      // 탭으로 나눈 줄은 콤마가 값 안에 남아 있어 안전하므로 이 검사가 필요 없다.
-      if (!line.contains("	") && columns.length > 7) {
-        throw new IllegalArgumentException(
-            msg("stock.monthly.reference.error.bulk.columns.long", index + 1));
-      }
-
-      MonthlyDividendSnapshotUpsertRequest request = new MonthlyDividendSnapshotUpsertRequest();
-      request.setUserId(userId);
-      request.setSymbol(columns[0]);
-      request.setAsOfDate(parseLocalDate(columns[1], index + 1));
-      request.setLatestMonthlyDividendPerShare(
-          parseBigDecimal(
-              columns[2], index + 1, msg("stock.monthly.reference.field.latest.dividend")));
-      request.setAverageMonthlyDividendPerShare1y(
-          parseBigDecimal(
-              columns[3], index + 1, msg("stock.monthly.reference.field.average.dividend")));
-      request.setAverageTaxableBaseRatio1y(
-          parseBigDecimal(
-              columns[4], index + 1, msg("stock.monthly.reference.field.taxable.ratio")));
-      request.setHeldQuantity(
-          parseInteger(columns[5], index + 1, msg("stock.monthly.reference.field.held.quantity")));
-      request.setAverageBuyPrice(
-          parseBigDecimal(
-              columns[6], index + 1, msg("stock.monthly.reference.field.average.buy.price")));
-
-      normalizeMonthlyDividendRequest(request, userId);
-      validateMonthlyDividendRequest(request);
-      requests.add(request);
-    }
-
-    if (requests.isEmpty()) {
-      throw new IllegalArgumentException(msg("stock.monthly.reference.error.bulk.nothing"));
-    }
-
-    return requests;
-  }
-
-  String[] splitBulkColumns(String line) {
-    String[] rawColumns = line.contains("\t") ? line.split("\t") : line.split(",");
-    List<String> columns = new ArrayList<>();
-    for (String rawColumn : rawColumns) {
-      columns.add(rawColumn != null ? rawColumn.trim() : "");
-    }
-    return columns.toArray(String[]::new);
   }
 
   /**
@@ -1115,42 +918,6 @@ public class StockViewController {
             row ->
                 row.stockItemSymbol() != null && slotSymbols.contains(row.stockItemSymbol().trim()))
         .toList();
-  }
-
-  private boolean isMonthlyDividendHeader(String firstColumn) {
-    String normalized = StockViewSupport.safeString(firstColumn).trim().toLowerCase(Locale.ROOT);
-    return "symbol".equals(normalized) || "ticker".equals(normalized) || "종목코드".equals(normalized);
-  }
-
-  private LocalDate parseLocalDate(String value, int lineNumber) {
-    try {
-      return LocalDate.parse(value.trim().replace('/', '-').replace('.', '-'));
-    } catch (DateTimeParseException ex) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.bulk.date.invalid", lineNumber));
-    }
-  }
-
-  private BigDecimal parseBigDecimal(String value, int lineNumber, String label) {
-    try {
-      return new BigDecimal(value.trim().replace(",", "").replace("%", ""));
-    } catch (NumberFormatException ex) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.bulk.value.invalid", lineNumber, label));
-    }
-  }
-
-  private Integer parseInteger(String value, int lineNumber, String label) {
-    try {
-      return Integer.valueOf(value.trim().replace(",", ""));
-    } catch (NumberFormatException ex) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.bulk.value.invalid", lineNumber, label));
-    }
-  }
-
-  private BigDecimal safe(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
   }
 
   @BlueskyPreAuthorize

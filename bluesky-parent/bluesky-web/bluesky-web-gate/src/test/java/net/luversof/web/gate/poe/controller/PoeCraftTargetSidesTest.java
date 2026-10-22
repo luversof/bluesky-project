@@ -78,7 +78,8 @@ class PoeCraftTargetSidesTest {
         List.of(),
         List.of(),
         null,
-        List.of(new PoeCraft.EssenceOnly("Fear", "prefix", null, List.of(), List.of(), tiers)));
+        List.of(new PoeCraft.EssenceOnly("Fear", "prefix", null, List.of(), List.of(), tiers)),
+        null);
   }
 
   private static PoeCraft.Item item() {

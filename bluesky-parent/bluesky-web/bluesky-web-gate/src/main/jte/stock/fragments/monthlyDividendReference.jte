@@ -4,7 +4,6 @@
 @import java.net.URLEncoder
 @import java.nio.charset.StandardCharsets
 @import java.text.DecimalFormat
-@import java.time.LocalDate
 @import java.util.List
 @import net.luversof.web.gate.stock.domain.StockItem
 @import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutImportRequest
@@ -27,11 +26,9 @@
 @param MonthlyDividendPayoutUpsertRequest monthlyDividendPayoutForm = null
 @param MonthlyDividendPayoutImportRequest monthlyDividendPayoutImportForm = null
 @param String selectedMonthlyDividendSymbol = ""
-@param String selectedMonthlyDividendSourceUrl = ""
 @param String monthlyDividendProfileSort = "display-order"
 @param String monthlyDividendProfileDirection = "asc"
 @param boolean monthlyDividendProfileExists = false
-@param boolean monthlyDividendPayoutExists = false
 @param String selectedMonthlyDividendPayoutKey = ""
 @param String selectedMonthlyDividendPayoutRecordDate = ""
 @param String selectedMonthlyDividendPayoutPayDate = ""
@@ -56,7 +53,6 @@
 	String profileSymbolValue = profileForm.getSymbol() != null ? profileForm.getSymbol() : selectedMonthlyDividendSymbol;
 	String payoutSymbolValue = payoutForm.getSymbol() != null ? payoutForm.getSymbol() : selectedMonthlyDividendSymbol;
 	String payoutImportSymbolValue = payoutImportForm.getSymbol() != null ? payoutImportForm.getSymbol() : selectedMonthlyDividendSymbol;
-	String sourceImportUrlValue = selectedMonthlyDividendSourceUrl != null ? selectedMonthlyDividendSourceUrl : "";
 	// content block(내부 클래스)에서 참조하므로 effectively final 이어야 한다 — 가변 계산은 Tmp 에서 하고 한 번만 할당
 	String payoutSymbolLabelTmp = payoutSymbolValue;
 	for (StockItem stockItem : stockItems) {
@@ -129,11 +125,6 @@
 	String staleRecordLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale");
 	String staleRecordTitle = java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.title"), String.valueOf(net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView.STALE_AFTER_DAYS));
 	String daysAgoPattern = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ago");
-	String recordDateValue = payoutForm.getRecordDate() != null ? String.valueOf(payoutForm.getRecordDate()) : String.valueOf(LocalDate.now());
-	String payDateValue = payoutForm.getPayDate() != null ? String.valueOf(payoutForm.getPayDate()) : String.valueOf(LocalDate.now());
-	String distributionRateValue = payoutForm.getDistributionRatePct() != null ? payoutForm.getDistributionRatePct().stripTrailingZeros().toPlainString() : "";
-	String dividendAmountValue = payoutForm.getDividendAmountPerShare() != null ? payoutForm.getDividendAmountPerShare().stripTrailingZeros().toPlainString() : "";
-	String taxableBaseValue = payoutForm.getTaxableBasePerShare() != null ? payoutForm.getTaxableBasePerShare().stripTrailingZeros().toPlainString() : "";
 	String successMessage = "";
 	if ("profile-saved".equals(monthlyDividendReferenceResult)) {
 		successMessage = MessageUtil.getMessage("stock.page.dividend.monthly.reference.saved.profile");

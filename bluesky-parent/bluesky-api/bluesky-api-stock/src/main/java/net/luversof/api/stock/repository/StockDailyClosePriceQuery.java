@@ -26,25 +26,8 @@ import net.luversof.api.stock.domain.StockDailyClosePrice;
 @Repository
 public class StockDailyClosePriceQuery {
 
-  private static final String RANGES_SQL =
-      """
-      SELECT h."stockItem_id", h."tradeDate", h."closePrice"
-      FROM unnest(string_to_array(:ids, ',')::uuid[],
-                  string_to_array(:froms, ',')::date[],
-                  string_to_array(:tos, ',')::date[]) AS f(id, from_date, to_date)
-      JOIN "StockPriceHistory" h
-        ON h."stockItem_id" = f.id
-       AND h."tradeDate" >= f.from_date
-       AND h."tradeDate" <= f.to_date
-       -- 거래량 0 인 날은 그 날 거래가 없었다는 뜻이고, 종가 자리에는 직전 종가가 들어 있다.
-       -- 그 행을 그 날의 종가로 쓰면 화면의 평가 기준 일자가 실제보다 앞당겨진다(실측 2026-08-22:
-       -- 2026-08-20 행 9건이 전부 거래량 0, 종가는 08-19 와 동일). 값은 어차피 같으므로
-       -- (거래량 0 행 1,352 개 중 종가가 직전과 다른 것은 1 개) 빼도 평가액은 변하지 않는다.
-       AND h."volume" > 0
-      """;
-
   /**
-   * 위 SQL 과 같은 조인이지만 종목 UUID 대신 입력 배열에서의 순번(ordinality)을 돌려준다.
+   * 종목별 구간(ids · froms · tos 배열)의 종가를 읽는다. 종목 UUID 대신 입력 배열에서의 순번(ordinality)을 돌려준다.
    *
    * <p>행마다 UUID 를 만들 이유가 없다 — 전체 기간이면 87,465 행이 오는데 서로 다른 종목은 수십 개뿐이고, 순번으로 호출부의 UUID 인스턴스를 그대로
    * 재사용할 수 있다. 조인 조건과 결과 집합은 동일하다.

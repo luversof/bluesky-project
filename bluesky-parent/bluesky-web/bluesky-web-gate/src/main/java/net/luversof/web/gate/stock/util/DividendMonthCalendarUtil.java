@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -136,9 +138,5 @@ public final class DividendMonthCalendarUtil {
         List.of(),
         List.of(),
         past && entries.isEmpty());
-  }
-
-  private static BigDecimal nz(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
   }
 }

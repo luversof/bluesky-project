@@ -91,6 +91,20 @@ class MonthlyDividendPayDayUtilTest {
     assertThat(MonthlyDividendPayDayUtil.normalizeSymbol(null)).isNull();
   }
 
+  /**
+   * 대문자는 로케일과 무관해야 한다 - 기본 로케일이 터키어면 toUpperCase() 가 i 를 점 있는 İ 로 바꾼다(2026-10-22 사본 넷을 하나로 모으며 맞춤).
+   */
+  @Test
+  void 종목코드_대문자는_기본_로케일과_무관하다() {
+    java.util.Locale saved = java.util.Locale.getDefault();
+    try {
+      java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+      assertThat(MonthlyDividendPayDayUtil.normalizeSymbol(" i1 ")).isEqualTo("I1");
+    } finally {
+      java.util.Locale.setDefault(saved);
+    }
+  }
+
   @Test
   void 빈_입력에도_죽지_않는다() {
     assertThat(MonthlyDividendPayDayUtil.byStockItem(null)).isEmpty();

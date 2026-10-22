@@ -10,18 +10,16 @@ package net.luversof.web.gate.stock.support;
  * <p>화면은 이 값을 보내지 않는다. 그러니 이 값은 손으로 만든 주소에서만 오는데, 조용히 다른 수로 바꾸면 사용자는 자기가 적은 줄 수가 먹혔다고 읽는다 &mdash;
  * {@code sort} 와 {@code timeZone} 에서 같은 이유로 이미 끊기로 했다.
  */
-public class StockPageSizeParamException extends RuntimeException {
+public class StockPageSizeParamException extends StockParamException {
 
   private static final long serialVersionUID = 1L;
 
-  private final String name;
-
   public StockPageSizeParamException(String name, int value) {
-    super("page size parameter cannot be used: " + name + "=" + value);
-    this.name = name;
+    super("page size parameter cannot be used: " + name + "=" + value, name, null);
   }
 
-  public String getName() {
-    return name;
+  @Override
+  public String descKey() {
+    return "stock.error.badrequest.pagesize.desc";
   }
 }

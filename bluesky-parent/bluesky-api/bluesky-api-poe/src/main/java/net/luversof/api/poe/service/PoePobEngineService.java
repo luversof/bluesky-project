@@ -375,17 +375,6 @@ public class PoePobEngineService {
     throw new IllegalStateException(base.getMessage() + " · " + diag, base);
   }
 
-  /**
-   * 실패가 반복될 때의 환경 점검 — "스펙 임포트 실패(클래스 N → 0)" 처럼 <b>매 요청이 같은 방식으로</b> 깨질 때 사람이 확인하던 것들을 자동으로 본다.
-   * 원인을 못 찾으면 빈 문자열(=추측을 지어내지 않는다).
-   *
-   * <p>점검 항목은 실제로 이 증상을 낸 적이 있는 것들이다:
-   *
-   * <ul>
-   *   <li>타임리스 주얼 .bin 이 없거나 원본(.zip)보다 오래됨 — LUT 인덱스가 어긋나 스펙 임포트가 중단된다
-   *   <li>요청한 트리 버전의 PoB TreeData 디렉터리가 없음 — 로드가 기본 클래스(사이온)로 떨어진다
-   * </ul>
-   */
   /** 추출 파이프라인(timeless-bin.mjs)이 .bin 으로 푸는 주얼 — 이 목록 밖의 압축 파일은 검사 대상이 아니다. */
   private static final java.util.Set<String> TIMELESS_JEWELS =
       java.util.Set.of(
@@ -434,6 +423,17 @@ public class PoePobEngineService {
         : "";
   }
 
+  /**
+   * 실패가 반복될 때의 환경 점검 — "스펙 임포트 실패(클래스 N → 0)" 처럼 <b>매 요청이 같은 방식으로</b> 깨질 때 사람이 확인하던 것들을 자동으로 본다.
+   * 원인을 못 찾으면 빈 문자열(=추측을 지어내지 않는다).
+   *
+   * <p>점검 항목은 실제로 이 증상을 낸 적이 있는 것들이다:
+   *
+   * <ul>
+   *   <li>타임리스 주얼 .bin 이 없거나 원본(.zip)보다 오래됨 — LUT 인덱스가 어긋나 스펙 임포트가 중단된다
+   *   <li>요청한 트리 버전의 PoB TreeData 디렉터리가 없음 — 로드가 기본 클래스(사이온)로 떨어진다
+   * </ul>
+   */
   private String environmentDiagnosis(String buildXml) {
     java.util.regex.Matcher tv =
         java.util.regex.Pattern.compile("treeVersion=\"([^\"]+)\"").matcher(buildXml);

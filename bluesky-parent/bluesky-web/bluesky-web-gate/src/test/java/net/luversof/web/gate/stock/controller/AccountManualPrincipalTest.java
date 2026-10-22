@@ -121,4 +121,24 @@ class AccountManualPrincipalTest {
     config.put("someOtherAmount", 12345);
     assertThat(controller.resolveAccountManualPrincipal(account(config))).isNull();
   }
+
+  /** 대시보드 요약 · 자산 현황이 같이 쓰는 계좌별 덮어쓰기 맵(2026-10-22 - 두 곳에 같은 식이 있었다). */
+  @Test
+  void 덮어쓰기_맵은_값이_있는_계좌만_앞의_값으로_담는다() {
+    UUID shared = UUID.randomUUID();
+    Account first =
+        new Account(
+            shared, UUID.randomUUID(), "ISA", null, Map.of("manualPrincipalAmount", 60000000));
+    Account duplicate =
+        new Account(shared, UUID.randomUUID(), "ISA", null, Map.of("manualPrincipalAmount", 1));
+    Account without = account(Map.of("isTaxDeferred", true));
+
+    var overrides =
+        controller.accountPrincipalOverrides(
+            java.util.Arrays.asList(first, without, duplicate, null));
+
+    assertThat(overrides).containsOnlyKeys(shared);
+    assertThat(overrides.get(shared)).isEqualByComparingTo("60000000");
+    assertThat(controller.accountPrincipalOverrides(null)).isEmpty();
+  }
 }

@@ -1,7 +1,8 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,10 +24,6 @@ public final class StockAssetStatusUtil {
 
   private StockAssetStatusUtil() {}
 
-  private static BigDecimal nz(BigDecimal value) {
-    return value == null ? BigDecimal.ZERO : value;
-  }
-
   private static boolean positive(BigDecimal value) {
     return value != null && value.compareTo(BigDecimal.ZERO) > 0;
   }
@@ -47,10 +44,7 @@ public final class StockAssetStatusUtil {
    * 식으로 틀린다. 형제와 규칙을 맞춘다.
    */
   private static BigDecimal ratePctScaled(BigDecimal numerator, BigDecimal denominator) {
-    if (!positive(denominator) || numerator == null) {
-      return BigDecimal.ZERO;
-    }
-    return numerator.multiply(BigDecimal.valueOf(100)).divide(denominator, 4, RoundingMode.HALF_UP);
+    return nz(StockAmountUtil.percentOrNull(numerator, denominator, 4));
   }
 
   /**

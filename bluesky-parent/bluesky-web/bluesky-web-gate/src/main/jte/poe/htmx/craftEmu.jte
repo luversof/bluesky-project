@@ -113,7 +113,7 @@
 	// 화폐 인게임 사용 설명(C340, CurrencyItems.Directions) — 버튼 설명(이름 = 영문 키)
 	java.util.Map<String, PoeCraft.CurrencyInfo> infoByName = new java.util.HashMap<>();
 	if (options != null && options.currencies() != null) for (PoeCraft.CurrencyInfo ci : options.currencies()) infoByName.put(ci.name(), ci);
-	java.util.Map<String, String> blocked = view.blocked() == null ? java.util.Map.of() : view.blocked();
+	java.util.Map<String, String> blocked = view.blocked() == null ? java.util.Map.of() : ko ? view.blocked() : net.luversof.web.gate.poe.PoeCraftText.en(view.blocked());
 	java.util.function.Function<String, String> tip = en -> { PoeCraft.CurrencyInfo ci = infoByName.get(en); if (ci == null) return null; String d = ko && ci.directionsKo() != null ? ci.directionsKo() : ci.directions(); return (ko ? ci.nameKo() : ci.name()) + (d == null || d.isEmpty() ? "" : " — " + d); };
 	// 영향력 키 → 정복자 이름 · 오브 아이콘 · 영향력 아이콘(10-15 C338) — 십자군 · 대속자(eyrie) · 사냥꾼(basilisk) · 전쟁군주(adjudicator)
 	java.util.Map<String, String[]> conq = new java.util.LinkedHashMap<>();
@@ -216,8 +216,8 @@
 				@elseif(!recommend.known())
 					${ko ? "최적 조합: 이 상태는 계산에 없던 상태입니다(목표 · 아이템이 다르면 계산기를 다시)" : "Optimal plan: this state was not part of the plan (re-run the calculator if targets or item changed)"}
 				@else
-					<span class="font-semibold">${ko ? "최적 조합 다음 수단: " : "Optimal plan next: "}${recommend.action()}</span>
-					<span class="text-base-content/70"> · ${recommend.state()}@if(recommend.remaining() != null) · ${ko ? "남은 기대 " : "cost to go "}${String.format(recommend.remaining() >= 1 ? "%,.1f" : "%,.3f", recommend.remaining())}@endif</span>
+					<span class="font-semibold">${ko ? "최적 조합 다음 수단: " : "Optimal plan next: "}${ko || recommend.actionEn() == null ? recommend.action() : recommend.actionEn()}</span>
+					<span class="text-base-content/70"> · ${ko || recommend.stateEn() == null ? recommend.state() : recommend.stateEn()}@if(recommend.remaining() != null) · ${ko ? "남은 기대 " : "cost to go "}${String.format(recommend.remaining() >= 1 ? "%,.1f" : "%,.3f", recommend.remaining())}@endif</span>
 				@endif
 			</div>
 		@endif
@@ -413,7 +413,7 @@
 		!{
 			java.util.function.Function<java.util.List<String>, String> allWhy = ks -> { String w = null; for (String k : ks) { String r = blocked.get(k); if (r == null) return null; if (w == null) w = r; } return w; };
 			String essWhy = allWhy.apply(essences.stream().map(e -> "ESSENCE:" + e.slug()).toList());
-			String fosWhy = options == null ? null : allWhy.apply(options.fossils().stream().filter(PoeCraft.Fossil::supported).map(f -> "FOSSIL:" + f.slug()).toList());
+			String fosWhy = options == null ? null : allWhy.apply(options.fossils().stream().map(f -> "FOSSIL:" + f.slug()).toList());
 			String harWhy = options == null ? null : allWhy.apply(options.harvest().stream().map(h -> "HARVEST:" + h.id()).toList());
 			java.util.List<String> benchKeys = new java.util.ArrayList<>();
 			if (options != null) { options.bench().forEach(b -> benchKeys.add("BENCH:" + b.modId())); }
@@ -500,10 +500,10 @@
 								!{
 									String effect = String.join(", ", ko && f.descKo() != null && !f.descKo().isEmpty() ? f.descKo() : (f.desc() == null ? java.util.List.of() : f.desc()));
 								}
-								<label class="flex items-start gap-2 text-xs min-w-0 ${f.supported() && !blocked.containsKey("FOSSIL:" + f.slug()) ? "" : "opacity-50"}" data-craft-fossil="${f.slug()}" title="${blocked.get("FOSSIL:" + f.slug())}">
-									<input type="checkbox" name="fossil" value="${f.slug()}" class="checkbox checkbox-xs mt-0.5" disabled="${!f.supported() || magic || blocked.containsKey("FOSSIL:" + f.slug())}">
+								<label class="flex items-start gap-2 text-xs min-w-0 ${!blocked.containsKey("FOSSIL:" + f.slug()) ? "" : "opacity-50"}" data-craft-fossil="${f.slug()}" title="${blocked.get("FOSSIL:" + f.slug())}">
+									<input type="checkbox" name="fossil" value="${f.slug()}" class="checkbox checkbox-xs mt-0.5" disabled="${magic || blocked.containsKey("FOSSIL:" + f.slug())}">
 									<img src="/poe-assets/${f.icon()}" alt="" class="w-5 h-5 object-contain shrink-0" loading="lazy">
-									<span class="min-w-0 wrap-anywhere"><span class="font-medium">${ko ? f.nameKo() : f.name()}</span> <span class="text-base-content/60">${effect}</span>@if(!f.supported()) <span class="badge badge-ghost badge-xs" title="${ko ? "행운 굴림 · 무작위 효과는 근거 공식이 없어 아직 계산하지 않습니다" : "Lucky rolls and random effects are not modelled yet"}">${ko ? "준비 중" : "soon"}</span>@endif</span>
+									<span class="min-w-0 wrap-anywhere"><span class="font-medium">${ko ? f.nameKo() : f.name()}</span> <span class="text-base-content/60">${effect}</span></span>
 								</label>
 							@endfor
 						</div>
@@ -511,11 +511,10 @@
 							@for(PoeCraft.Resonator r : resos)
 								<img src="/poe-assets/${r.icon()}" alt="${ko ? r.nameKo() : r.name()}" title="${ko ? r.nameKo() : r.name()} (${r.sockets()}${ko ? "칸" : " sockets"})" class="w-6 h-6 object-contain" loading="lazy">
 							@endfor
-							<button type="button" class="btn btn-sm btn-ghost border border-base-300" hx-post="/poe/htmx/craft/fossil-pool" hx-target="#craft-fossil-pool" hx-swap="innerHTML" data-craft-fossil-pool-run title="${ko ? "고른 화석으로 다시 굴릴 때 첫 옵션 확률(craftofexile 화석 옵션 풀)" : "First-modifier odds when reforging with the picked fossils"}">${ko ? "이 조합의 옵션 확률" : "Mod odds for this combo"}</button>
 							<button type="submit" name="action" value="FOSSIL" class="btn btn-sm" data-craft-action="FOSSIL" disabled="${magic || item.corrupted() || outcomeMeta || fosWhy != null}" title="${outcomeMeta ? (ko ? "속성의 결과에 영향을 미치는 속성 부여가 포함된 아이템에는 해당 화폐를 사용할 수 없습니다." : "You can't use this currency on items with a modifier that affects mod outcomes.") : null}">${ko ? (normal ? "연금 공명기로 사용" : "혼돈 공명기로 사용") : (normal ? "Use (alchemical)" : "Use (chaotic)")}</button>
 						</div>
 					</div>
-					<div id="craft-fossil-pool" class="px-3 pb-3" data-craft-fossil-pool aria-live="polite"></div>
+					<p class="px-3 pb-3 text-xs text-base-content/70" data-craft-fossil-hint>${ko ? "화석을 고르고 '화석' 단추를 누르면(고른 상태) 옵션 표가 이 조합 기준 확률 · 배수로 바뀝니다." : "Pick fossils and click Fossil (armed) — the modifier table switches to this combination's odds and multipliers."}</p>
 				</details>
 			@endif
 
@@ -810,7 +809,7 @@
 	</form>
 
 	<%-- 작업 영역(C455 — 한 화면): 아이템 카드 | 다음 옵션 확률(칸 안 스크롤) | 단계 기록 + 쓴 화폐(칸 안 스크롤). 2칸(lg)은 카드 아래 기록, 좁은 화면은 확률 표가 맨 뒤 --%>
-	<div class="grid gap-4 items-start lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,24rem)]" data-craft-workspace>
+	<div class="grid gap-4 items-start lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(24rem,1fr)]" data-craft-workspace>
 	<%-- 대상 아이템은 늘 보이게(C455, PoE2 C453 의 짝) — 좁은 화면 · 넓은 3칸 화면은 화면 위에 붙는다. 2칸(lg)은 아래 기록이 가려져 붙이지 않음 --%>
 	<div class="sticky top-[4.75rem] z-20 bg-base-100 pt-1 pb-2 space-y-1 min-w-0 max-h-[40vh] overflow-y-auto lg:static lg:max-h-none lg:overflow-visible xl:sticky" data-craft-item-sticky>
 		<%-- 화폐를 고른 상태 안내(C477 — 고르고 아이템을 누르면 적용, CoE 처럼) --%>
@@ -1019,7 +1018,7 @@
 	@endif
 	<%-- 오류는 아이템 카드와 함께 붙어 있게(PoE2 C453c 와 같게) --%>
 	@if(error != null)
-		<div role="alert" class="alert alert-warning py-2 text-sm scroll-mt-24 craft-error-reveal" data-craft-error>${error}</div>
+		<div role="alert" class="alert alert-warning py-2 text-sm scroll-mt-24 craft-error-reveal" data-craft-error>${ko ? error : net.luversof.web.gate.poe.PoeCraftText.en(error)}</div>
 	@endif
 	</div>
 	<section class="min-w-0 space-y-2 max-lg:order-last lg:row-span-2 xl:row-span-1 lg:max-h-[max(26rem,calc(100vh-24rem))] lg:overflow-y-auto lg:pr-1" id="craft-pool" data-craft-pool>
@@ -1057,12 +1056,16 @@
 			<p class="text-sm text-base-content/60" data-craft-pool-none>${ko ? "더 붙을 수 있는 옵션이 없습니다." : "No more modifiers can roll."}</p>
 		@endif
 		<%-- 계열 묶음(10-21 C542) — 조각으로 뗌(craftEmu 의 생성 메서드가 64KB 한도를 넘어 'code too large') --%>
-		@template.poe.htmx.craftPoolGroups(poolGroups = poolGroups, lines = lines, added = added, max = max, prefixes = prefixes, suffixes = suffixes, lineTags = ko ? (view.tagsKo() == null ? java.util.Map.of() : view.tagsKo()) : (view.tags() == null ? java.util.Map.of() : view.tags()))
+		<%-- 고른 화폐 기준 표(10-22 P3) — 화폐를 고르면 common.ts refreshCraftPool 이 이 칸을 그 수단 기준으로 바꿔 끼운다 --%>
+		<div id="craft-pool-groups" class="space-y-2" data-craft-pool-groups="/poe/htmx/craft/action-pool" data-keep-open="data-craft-group">
+			@template.poe.htmx.craftPoolGroups(poolGroups = poolGroups, lines = lines, added = added, max = max, prefixes = prefixes, suffixes = suffixes, lineTags = ko ? (view.tagsKo() == null ? java.util.Map.of() : view.tagsKo()) : (view.tags() == null ? java.util.Map.of() : view.tags()), actionLabel = null, actionPicked = false, actionRarity = null, actionMult = java.util.Map.of(), actionError = null, waysUrl = net.luversof.web.gate.poe.CraftPoolGroups.waysUrl("/poe/htmx/craft/family-ways", item.itemClass(), item.variant(), item.influence(), item.ilvl()))
+		</div>
 		<p class="text-xs text-base-content/60">
 			${ko ? "삿된 화폐의 '레벨 높은 속성' 가중은 공개 수치가 없어 축성된 화석과 같다고(요구 레벨 40 기준 레벨당 ±1%) 가정합니다. 옵션 수(매직 1~2 반반 · 레어 4/5/6 = 8:3:1)는 게임 데이터에 없어 커뮤니티 측정값을 씁니다. 툴팁 수치는 굴린 값(범위는 마우스를 올리면), 확률 표는 범위입니다." : "Foulborn currency's higher-level bias is unpublished; the Sanctified Fossil weighting (±1% per required level from 40) is assumed. Affix counts (magic 1–2 at 50/50, rare 4/5/6 at 8:3:1) are not in the game data; community-measured values are used. Tooltip values are rolled (hover for the range); the odds table shows ranges."}
 		</p>
 	</section>
-	<%-- 단계 기록(C455, PoE2 C453 의 짝) — 단계마다 쓴 화폐 · 그 단계 · 누적 비용 · 변화, 아무 단계로 되돌리기(이 단계 뒤 상태로) --%>
+	<%-- 단계 기록(C455, PoE2 C453 의 짝) — 단계마다 쓴 화폐 · 그 단계 · 누적 비용 · 변화, 아무 단계로 되돌리기(이 단계 뒤 상태로)
+	     변화는 쓴 화폐 칸 아래(10-22 C562 사용자 요청 "단계 기록의 변화가 너무 좁다" — 따로 칸이면 143px), xl 세 칸은 기록이 확률 칸과 남는 폭을 나눈다(minmax(24rem,1fr)) --%>
 	<section class="min-w-0 space-y-3 lg:col-start-1 xl:col-start-3 xl:row-start-1 lg:max-h-[max(26rem,calc(100vh-24rem))] lg:overflow-y-auto lg:pr-1" data-craft-history>
 		!{ Double histCum = historyRows.isEmpty() ? null : historyRows.get(0).cumChaos(); }
 		<h2 class="text-base font-semibold">${ko ? "단계 기록" : "Step history"} <span class="text-xs font-normal text-base-content/70">· ${historyRows.size()}${ko ? "단계" : " steps"}@if(histCum != null) · ${ko ? "누적 " : "total "}${String.format("%.2f", histCum)} c@endif@if(historyDropped > 0) · ${ko ? "앞 " + historyDropped + "단계는 기록 한도로 되돌릴 수 없음" : historyDropped + " oldest steps beyond the undo limit"}@endif</span></h2>
@@ -1071,20 +1074,21 @@
 		@else
 			<div class="overflow-x-auto rounded-box border border-base-300">
 				<table class="table table-xs">
-					<thead class="sticky top-0 z-10 bg-base-200"><tr><th>#</th><th>${ko ? "쓴 화폐" : "Currency"}</th><th class="text-right" title="${ko ? "이 단계 비용 · 아래 작은 글씨는 여기까지 누적(c)" : "This step · total so far below (c)"}">${ko ? "비용 · 누적" : "Cost · total"}</th><th>${ko ? "변화" : "Change"}</th><th class="text-right">${ko ? "되돌리기" : "Go back"}</th></tr></thead>
+					<thead class="sticky top-0 z-10 bg-base-200"><tr><th>#</th><th>${ko ? "쓴 화폐 · 변화" : "Currency · change"}</th><th class="text-right" title="${ko ? "이 단계 비용 · 아래 작은 글씨는 여기까지 누적(c)" : "This step · total so far below (c)"}">${ko ? "비용 · 누적" : "Cost · total"}</th><th class="text-right">${ko ? "되돌리기" : "Go back"}</th></tr></thead>
 					<tbody>
 						@for(PoeCraft.HistRow r : historyRows)
 							<tr data-craft-history-row="${r.no()}" class="${r.now() ? "bg-primary/10" : null}">
 								<td class="font-mono">${r.no()}</td>
-								<td class="break-keep">${r.label()}</td>
+								<td class="min-w-0 wrap-anywhere"><div class="font-medium break-keep">${r.label()}</div>
+									<div class="mt-0.5" data-craft-history-change>
+										@for(String a : r.added())<div class="text-success">+ ${a}</div>@endfor
+										@for(String rm : r.removed())<div class="text-error line-through decoration-1">− ${rm}</div>@endfor
+										@if(r.note() != null)<div class="text-base-content/60">${r.note()}</div>@endif
+									</div>
+								</td>
 								<td class="text-right font-mono whitespace-nowrap">
 									<div data-craft-history-cost>@if(r.chaos() != null)${String.format("%.2f", r.chaos())}@else-@endif</div>
 									<div class="text-[10px] text-base-content/60" data-craft-history-cum>Σ @if(r.cumChaos() != null)${String.format("%.2f", r.cumChaos())}@else-@endif</div>
-								</td>
-								<td class="wrap-anywhere" data-craft-history-change>
-									@for(String a : r.added())<div class="text-success">+ ${a}</div>@endfor
-									@for(String rm : r.removed())<div class="text-error line-through decoration-1">− ${rm}</div>@endfor
-									@if(r.note() != null)<div class="text-base-content/60">${r.note()}</div>@endif
 								</td>
 								<td class="text-right whitespace-nowrap">
 									@if(r.now())
@@ -1098,7 +1102,7 @@
 						@if(historyStartUndo != null)
 							<tr data-craft-history-row="0">
 								<td class="font-mono">0</td>
-								<td colspan="3" class="text-base-content/70">${historyDropped > 0 ? (ko ? "기록에 남은 가장 오래된 상태" : "Oldest state in the history") : (ko ? "시작 — 새 아이템" : "Start — new item")}</td>
+								<td colspan="2" class="text-base-content/70">${historyDropped > 0 ? (ko ? "기록에 남은 가장 오래된 상태" : "Oldest state in the history") : (ko ? "시작 — 새 아이템" : "Start — new item")}</td>
 								<td class="text-right"><button type="button" name="action" value="UNDO_TO:${historyStartUndo}" class="btn btn-xs btn-ghost border border-base-300 whitespace-nowrap" hx-post="/poe/htmx/craft" hx-target="#craft-emu" hx-swap="outerHTML" hx-include="#craft-emu > form" data-craft-action="UNDO_TO:${historyStartUndo}">${ko ? "여기로" : "Go here"}</button></td>
 							</tr>
 						@endif

@@ -112,8 +112,6 @@
 	String tagLabel = MessageUtil.getMessage("common.label.tag");
 	String tagHelperLabel = MessageUtil.getMessage("stock.filter.tag.helper");
 	String tagSummaryLabel = MessageUtil.getMessage("stock.filter.tag.summary.selected");
-	String tagStockSummaryPattern = MessageUtil.getMessage("stock.filter.tag.summary.stocks");
-	String tagMorePattern = MessageUtil.getMessage("stock.filter.tag.summary.more");
 	String allLabel = MessageUtil.getMessage("common.label.all");
 	String searchLabel = MessageUtil.getMessage("common.button.search");
 	String resetLabel = MessageUtil.getMessage("common.button.reset");
@@ -124,7 +122,7 @@
 		<%-- 화면 제목(h1)이 바로 위에 같은 글자로 있어 카드 제목이 그대로 겹쳤다(실측 2026-09-10: 이 화면만
 		     제목 중복 1건). 화면 낭독기의 제목 목록에서도 같은 이름이 두 번 읽혀 지웠다. --%>
 
-		@template.stock.htmx.fragments.dateRangeNavBar(
+		@template.stock.htmx.fragments.components.dateRangeNavBar(
 			pickerName = "assetPicker",
 			btnClass = "asset-range-btn",
 			canPrev = canPrev,
@@ -222,12 +220,9 @@
 					<div class="contents">
 						@template.stock.htmx.fragments.components.stockSelectionPanel(
 							tagLabel = tagLabel,
-							stockLabel = stockNameLabel,
 							allLabel = allLabel,
 							helperLabel = tagHelperLabel,
 							selectedTagSummaryLabel = tagSummaryLabel,
-							selectedStockSummaryPattern = tagStockSummaryPattern,
-							stockPreviewMorePattern = tagMorePattern,
 							stockTagList = stockTagList,
 							selectedStockTags = selectedStockTags,
 							stockItemList = stockItemList
@@ -261,8 +256,6 @@
 		</details>
 
 		<script type="module" src="/js/stock/assetGrowth.js"></script>
-		<script type="module" src="/js/stock/selectionStorage.js"></script>
-		<script type="module" src="/js/stock/tagFilterChips.js"></script>
 
 		<div class="w-full flex flex-col gap-4">
 			@if(ts == null || ts.isEmpty())
@@ -394,7 +387,6 @@
 						zone = zone,
 						trades = tradeHistoryData.trades(),
 						totalItems = tradeHistoryData.totalItems(),
-						currentPage = tradeHistoryData.currentPage(),
 						totalPages = tradeHistoryData.totalPages(),
 						pageSize = tradeHistoryData.pageSize(),
 						from = tradeHistoryData.from(),

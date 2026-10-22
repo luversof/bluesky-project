@@ -125,6 +125,17 @@ public final class StockPriceBasisUtil {
         .replace("{1}", intradayTime);
   }
 
+  /**
+   * 기준일 안내 한 줄 - {@link #basisMessage} 의 {0} 에 기준일을 넣는다. 요약 · 자산 현황 · 종목 / 계좌 상세 · 월배당 시뮬레이터가 같은 식을
+   * 한 벌씩 적고 있었다(2026-10-22 정리). 자산 성장 화면은 날짜만 감싸려고 틀을 직접 자르므로 {@link #basisMessage} 를 그대로 쓴다.
+   *
+   * @param intradayTime 장중 시세 시각(HH:mm) - null 이면 종가 문구
+   * @param basisDate 기준일 - null 이면 안 된다(부르는 템플릿은 모두 {@code @if(기준일 != null)} 안이다)
+   */
+  public static String basisText(String intradayTime, java.time.LocalDate basisDate) {
+    return basisMessage(intradayTime).replace("{0}", basisDate.toString());
+  }
+
   /** 보유 수량이 남은 종목들의 종가 일자 중 가장 늦은 날. 하나도 없으면 {@code null}. */
   public static LocalDate latestPriceBasisDate(List<TradeProfit> holdings) {
     if (holdings == null) {

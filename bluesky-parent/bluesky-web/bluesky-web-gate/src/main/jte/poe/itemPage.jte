@@ -1,5 +1,4 @@
 @import net.luversof.web.gate.poe.dto.PoeBaseItem
-@import net.luversof.web.gate.poe.dto.ModFamily
 @import net.luversof.web.gate.poe.PoeText
 @import io.github.luversof.boot.context.support.MessageUtil
 
@@ -9,7 +8,6 @@
 @param String profile = "local"
 @param String patch = ""
 @param PoeBaseItem item
-@param java.util.List<ModFamily> modFamilies = null
 @param net.luversof.web.gate.poe.dto.PoeModClass fullMods = null
 @param net.luversof.web.gate.poe.dto.PoeEldritch eldritch = null
 @param String slug = ""

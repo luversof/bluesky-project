@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,10 +37,6 @@ public final class StockCombinedProfitUtil {
    */
   public record Breakdown(
       BigDecimal realizedProfit, BigDecimal dividendTotal, BigDecimal combinedProfit) {}
-
-  private static BigDecimal nz(BigDecimal value) {
-    return value == null ? BigDecimal.ZERO : value;
-  }
 
   /** 종목 id 로 찾는다. 화면은 줄마다 한 번 찾아 세 칸을 채운다. */
   public static Map<UUID, Breakdown> byStockItem(

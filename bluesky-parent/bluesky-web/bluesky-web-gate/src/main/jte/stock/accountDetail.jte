@@ -26,38 +26,11 @@
 @param boolean notFound = false
 @param String accountIdParam = ""
 @param Account account = null
-@param int holdingCount = 0
-@param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
-@param java.time.LocalDate priceBasisDate = null
-@param String priceBasisIntradayTime = null
-@param BigDecimal totalBuyCost = java.math.BigDecimal.ZERO
-@param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
-@param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
-@param BigDecimal realizedProfitOwnBasis = java.math.BigDecimal.ZERO
-@param BigDecimal realizedCostBasis = java.math.BigDecimal.ZERO
-@param BigDecimal realizedOwnCostBasis = java.math.BigDecimal.ZERO
-@param BigDecimal totalDividend = java.math.BigDecimal.ZERO
-@param net.luversof.web.gate.stock.util.StockHoldingReturnUtil.Row accountReturn = null
-@param java.time.LocalDate accountFirstTradeDate = null
-@param List<TradeProfit> holdings = java.util.List.of()
-@param List<TradeResponse> trades = java.util.List.of()
-@param List<DividendResponse> dividends = java.util.List.of()
-@param List<TradeProfitTimeSeriesPoint> timeSeries = java.util.List.of()
-@param List<net.luversof.web.gate.stock.domain.DetailNavEntry> accountNavEntries = java.util.List.of()
-@param DateTimeFormatter chartFormatter = null
-@param Map<UUID, String> stockNameById = java.util.Map.of()
-@param LocalDate filterStartLocal = null
-@param LocalDate filterEndLocal = null
-@param Instant filterStartInstant = null
-@param Instant filterEndInstant = null
-@param String filterTimeZone = null
-@param String filterRangeMode = null
-@param LocalDate coveredStartLocal = null
-@param LocalDate coveredEndLocal = null
-@param String dataFirstDate = ""
-@param String rangeMode = ""
 
 
+<%-- 이 템플릿은 비 htmx 진입의 껍데기만 그린다(contentReady=false). htmx 요청은 컨트롤러가 내용 템플릿
+     (stock/htmx/accountDetailContent) 을 바로 돌려준다 - 예전 @else 분기(내용 템플릿에 값 30 여 개를 넘기던 것)는 닿지 않아
+     2026-10-21 에 지웠다. 표시(contentReady)는 DetailShellContractTest 가 지킨다. --%>
 @template._layout.stockLayout(
 	pageTitle = notFound ? MessageUtil.getMessage("stock.account.detail.notfound.title") : MessageUtil.getMessage("stock.account.detail.breadcrumb"),
 	isAuthenticated = isAuthenticated,
@@ -83,41 +56,6 @@
 				     hx-swap="outerHTML">
 					<div class="flex justify-center p-10"><span class="loading loading-spinner text-primary loading-lg"></span></div>
 				</div>
-			@else
-				@template.stock.htmx.accountDetailContent(
-					accountIdParam = accountIdParam,
-					account = account,
-					holdingCount = holdingCount,
-					evaluationAmount = evaluationAmount,
-					priceBasisDate = priceBasisDate,
-					priceBasisIntradayTime = priceBasisIntradayTime,
-					totalBuyCost = totalBuyCost,
-					evaluationProfit = evaluationProfit,
-					realizedProfit = realizedProfit,
-					realizedProfitOwnBasis = realizedProfitOwnBasis,
-					realizedCostBasis = realizedCostBasis,
-					realizedOwnCostBasis = realizedOwnCostBasis,
-					totalDividend = totalDividend,
-					accountReturn = accountReturn,
-					accountFirstTradeDate = accountFirstTradeDate,
-					holdings = holdings,
-					trades = trades,
-					dividends = dividends,
-					timeSeries = timeSeries,
-					accountNavEntries = accountNavEntries,
-					chartFormatter = chartFormatter,
-					stockNameById = stockNameById,
-					filterStartLocal = filterStartLocal,
-					filterEndLocal = filterEndLocal,
-					filterStartInstant = filterStartInstant,
-					filterEndInstant = filterEndInstant,
-					filterTimeZone = filterTimeZone,
-					filterRangeMode = filterRangeMode,
-					coveredStartLocal = coveredStartLocal,
-					coveredEndLocal = coveredEndLocal,
-					dataFirstDate = dataFirstDate,
-					rangeMode = rangeMode
-				)
 			@endif
 		</div>
 	`

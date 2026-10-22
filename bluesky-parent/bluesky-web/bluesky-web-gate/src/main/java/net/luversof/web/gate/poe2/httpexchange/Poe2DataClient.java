@@ -72,9 +72,6 @@ public interface Poe2DataClient {
   List<String> simRankingSeasons();
 
   // ── poe.ninja 실빌드 시뮬레이터 ──
-  @GetExchange("/ninja/overview")
-  Poe2.NinjaOverview ninjaOverview();
-
   /** 한 아키타입(실빌드 출발점 코드 포함) — 없으면 null. */
   @GetExchange("/ninja/archetype")
   Poe2.NinjaArchetype ninjaArchetype(@RequestParam String ascendancy, @RequestParam String skill);
@@ -95,9 +92,6 @@ public interface Poe2DataClient {
       @RequestParam(required = false) String kind,
       @RequestParam(required = false) String color,
       @RequestParam(required = false) String tag);
-
-  @GetExchange("/gems/tags")
-  List<Poe2.ModLine> gemTags();
 
   @GetExchange("/gems/tag-groups")
   List<Poe2.TagGroup> gemTagGroups();
@@ -134,9 +128,6 @@ public interface Poe2DataClient {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) String kind,
       @RequestParam(required = false) String itemClass);
-
-  @GetExchange("/augments/{slug}")
-  Poe2.Augment augment(@PathVariable String slug);
 
   // ── 고유 ──
   @GetExchange("/uniques/classes")

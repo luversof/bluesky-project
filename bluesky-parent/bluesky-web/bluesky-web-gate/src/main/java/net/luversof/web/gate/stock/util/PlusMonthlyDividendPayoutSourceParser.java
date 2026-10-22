@@ -14,8 +14,6 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class PlusMonthlyDividendPayoutSourceParser {
 
-  private static final String BULK_INPUT_HEADER = "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)";
-
   private final JsonMapper objectMapper;
 
   public PlusMonthlyDividendPayoutSourceParser(JsonMapper objectMapper) {
@@ -37,7 +35,7 @@ public class PlusMonthlyDividendPayoutSourceParser {
           msg("stock.monthly.reference.error.source.rows.missing", "PLUS"));
     }
 
-    StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
+    StringBuilder bulkInput = new StringBuilder(PayoutSourceText.BULK_INPUT_HEADER);
     for (PlusDividendRow row : rows) {
       // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 과세표준만 모름("-")으로 싣는다.
       if (!StringUtils.hasText(row.wkdate())
@@ -48,34 +46,21 @@ public class PlusMonthlyDividendPayoutSourceParser {
 
       bulkInput
           .append('\n')
-          .append(formatCompactDate(row.wkdate()))
+          .append(PayoutSourceText.isoDateOfCompact(row.wkdate()))
           .append('\t')
-          .append(formatCompactDate(row.dkdate()))
+          .append(PayoutSourceText.isoDateOfCompact(row.dkdate()))
           .append('\t')
           .append(row.dividend().trim())
           .append('\t')
           .append(StringUtils.hasText(row.taxBase()) ? row.taxBase().trim() : "-");
     }
 
-    if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
+    if (bulkInput.toString().equals(PayoutSourceText.BULK_INPUT_HEADER)) {
       throw new IllegalArgumentException(
           msg("stock.monthly.reference.error.source.rows.missing", "PLUS"));
     }
 
     return bulkInput.toString();
-  }
-
-  private String formatCompactDate(String value) {
-    String normalized = value != null ? value.replaceAll("[^0-9]", "") : "";
-    if (normalized.length() != 8) {
-      return value != null ? value.trim() : "";
-    }
-
-    return normalized.substring(0, 4)
-        + "-"
-        + normalized.substring(4, 6)
-        + "-"
-        + normalized.substring(6, 8);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

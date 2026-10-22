@@ -43,17 +43,8 @@
 	BigDecimal safeDividend = dividendAmount != null ? dividendAmount : BigDecimal.ZERO;
 	java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
 	String advancedSearchLabel = MessageUtil.getMessage("stock.activity.label.advanced.search");
-	String periodLabel = MessageUtil.getMessage("common.label.period");
 	String accountLabel = MessageUtil.getMessage("common.label.account");
 	String stockLabel = MessageUtil.getMessage("common.label.stock");
-	String tagLabel = MessageUtil.getMessage("common.label.tag");
-	String tagHelperLabel = MessageUtil.getMessage("stock.filter.tag.helper");
-	String tagSummaryLabel = MessageUtil.getMessage("stock.filter.tag.summary.selected");
-	String tagStockSummaryPattern = MessageUtil.getMessage("stock.filter.tag.summary.stocks");
-	String tagMorePattern = MessageUtil.getMessage("stock.filter.tag.summary.more");
-	String allLabel = MessageUtil.getMessage("stock.label.period.all");
-	String searchLabel = MessageUtil.getMessage("common.button.search");
-	String resetLabel = MessageUtil.getMessage("common.button.reset");
 	String buyLabel = MessageUtil.getMessage("stock.trade.label.buy");
 	String sellLabel = MessageUtil.getMessage("stock.trade.label.sell");
 	String tradeLabel = MessageUtil.getMessage("stock.activity.label.trade");
@@ -100,7 +91,7 @@
 		// 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
 		var coveredRange = net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(activities, net.luversof.web.gate.stock.controller.StockTradeHtmxController.Activity::date, zone);
 	}
-	@template.stock.htmx.fragments.dateRangeNavBar(
+	@template.stock.htmx.fragments.components.dateRangeNavBar(
 		pickerName = "activityPicker",
 		btnClass = "date-range-btn",
 		canPrev = canPrev,
@@ -112,101 +103,30 @@
 		coveredEndDate = coveredRange.endDate()
 	)
 
-	<!-- Filter Form (collapsible) -->
-	<details class="mb-4" data-detail-filter data-filter-active="${(selectedAccountIds != null && !selectedAccountIds.isEmpty()) || (selectedStockItemIds != null && !selectedStockItemIds.isEmpty()) || (selectedStockTags != null && !selectedStockTags.isEmpty()) ? "true" : "false"}">
-		<summary class="flex items-center gap-2 cursor-pointer select-none text-sm font-medium text-base-content/60 hover:text-base-content py-1 px-2 rounded hover:bg-base-200 w-fit transition-colors">
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
-			${advancedSearchLabel}
-			@template.stock.htmx.fragments.components.filterBadge(
-				selectedAccountId = selectedAccountId,
-				selectedStockItemId = selectedStockItemId,
-				selectedAccountIds = selectedAccountIds,
-				selectedStockItemIds = selectedStockItemIds,
-				selectedStockTags = selectedStockTags
-			)
-		</summary>
-	<form id="activitySearchForm" class="mt-2 mb-2 rounded-2xl bg-base-100 p-3 shadow-sm"
-		  hx-get="/stock/htmx/activity-list"
-		  hx-target="#activityListFragment"
-		  hx-select="#activityListFragment"
-		  hx-swap="outerHTML"
-		  hx-trigger="submit">
-		<div class="stock-filter-grid">
-			<div class="form-control w-full">
-				<label class="label p-1" id="filterPeriodLabel"><span class="label-text text-xs">${periodLabel}</span></label>
-				<div class="join w-full" role="group" aria-labelledby="filterPeriodLabel">
-					<input type="date" name="activityUiStartDate" aria-label="${MessageUtil.getMessage("common.label.date.start")}" id="activityStartDateInput" class="input input-sm input-bordered join-item w-1/2" value="${startDate != null ? startDate.atZone(zone).toLocalDate().toString() : ""}">
-					<input type="date" name="activityUiEndDate" aria-label="${MessageUtil.getMessage("common.label.date.end")}" id="activityEndDateInput" class="input input-sm input-bordered join-item w-1/2" value="${endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1).toString() : ""}">
-				</div>
-			</div>
-			<div class="form-control w-full">
-				<label class="label p-1" for="filterAccountSelect"><span class="label-text text-xs">${accountLabel}</span></label>
-				<select id="filterAccountSelect" name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
-					<option value="">${allLabel}</option>
-					@if(accountList != null)
-						@for(Account account : accountList)
-							<option value="${account.id().toString()}" selected="${selectedAccountIds != null && selectedAccountIds.contains(account.id())}">${account.name()}</option>
-						@endfor
-					@endif
-				</select>
-			</div>
+	@template.stock.htmx.fragments.components.listSearchForm(
+		formId = "activitySearchForm",
+		contentUrl = "/stock/htmx/activity-list",
+		fragmentId = "activityListFragment",
+		idPrefix = "activity",
+		summaryLabel = advancedSearchLabel,
+		accountLabel = accountLabel,
+		stockLabel = stockLabel,
+		accountList = accountList,
+		stockItemList = stockItemList,
+		stockTagList = stockTagList,
+		selectedAccountId = selectedAccountId,
+		selectedStockItemId = selectedStockItemId,
+		selectedAccountIds = selectedAccountIds,
+		selectedStockItemIds = selectedStockItemIds,
+		selectedStockTags = selectedStockTags,
+		startDate = startDate,
+		endDate = endDate,
+		timeZone = timeZone,
+		rangeMode = rangeMode,
+		zone = zone,
+		activityRefresh = true
+	)
 
-			<div class="form-control w-full">
-				<label class="label p-1" for="filterStockSelect"><span class="label-text text-xs">${stockLabel}</span></label>
-				<select id="filterStockSelect" name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
-					<option value="">${allLabel}</option>
-					@if(stockItemList != null)
-						@for(StockItem stockItem : stockItemList)
-							!{String stockItemTags = stockItem.tags() != null ? String.join("|", stockItem.tags()) : "";}
-							<option value="${stockItem.id().toString()}"
-									selected="${selectedStockItemIds != null && selectedStockItemIds.contains(stockItem.id())}"
-									data-stock-tags="${stockItemTags}">${stockItem.name()}</option>
-						@endfor
-					@endif
-				</select>
-			</div>
-
-			<div class="contents">
-				@template.stock.htmx.fragments.components.stockSelectionPanel(
-					tagLabel = tagLabel,
-					stockLabel = stockLabel,
-					allLabel = allLabel,
-					helperLabel = tagHelperLabel,
-					selectedTagSummaryLabel = tagSummaryLabel,
-					selectedStockSummaryPattern = tagStockSummaryPattern,
-					stockPreviewMorePattern = tagMorePattern,
-					stockTagList = stockTagList,
-					selectedStockTags = selectedStockTags,
-					stockItemList = stockItemList
-				)
-
-				<div class="flex justify-end gap-2 xl:self-end">
-					<%-- data-activity-refresh: 아직 렌더되지 않은 뷰로 전환할 때 common.js 가 이 버튼을 눌러 재조회한다. --%>
-					<button type="button" class="btn btn-sm btn-primary" data-selection-save="true" data-activity-refresh="true"
-						hx-get="/stock/htmx/activity-list"
-						hx-target="#activityListFragment"
-						hx-select="#activityListFragment"
-						hx-swap="outerHTML"
-						hx-include="#activitySearchForm">${searchLabel}</button>
-					<button type="button" class="btn btn-sm text-xs"
-						hx-get="/stock/htmx/activity-list"
-						hx-target="#activityListFragment"
-						hx-select="#activityListFragment"
-							hx-swap="outerHTML"
-							hx-include="#activitySearchForm"
-						data-selection-reset="true">${resetLabel}</button>
-				</div>
-			</div>
-		</div>
-		<input type="hidden" name="rangeMode" id="activityRangeModeInput" value="${rangeMode != null ? rangeMode : ""}">
-		<input type="hidden" name="startDate" id="activityStartInstantInput" value="${startDate != null ? startDate.toString() : ""}">
-		<input type="hidden" name="endDate" id="activityEndInstantInput" value="${endDate != null ? endDate.toString() : ""}">
-		<input type="hidden" name="timeZone" id="activityTimeZoneInput" value="${timeZone != null ? timeZone : ""}">
-	</form>
-	</details>
-
-	<script type="module" src="/js/stock/selectionStorage.js"></script>
-	<script type="module" src="/js/stock/tagFilterChips.js"></script>
 
 	<!-- Summary Cards -->
 	<%-- 자동 검사가 짚을 자리를 준다(달 카드 · 달력 항목과 같은 관례). 이 카드의 "건" 은 묶인 줄 수를 센 적이 있다. --%>
@@ -287,9 +207,7 @@
 				} else { monthSums[0] = monthSums[0].add(chartAmount); }
 			}
 		}
-		// tradeList.jte 의 tradeDataJs 패턴: JS 배열 문자열을 만들어 $unsafe 로 심는다
-		java.util.function.Function<String, String> ej = s ->
-			s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
+		// tradeList.jte 의 tradeDataJs 패턴: JS 배열 문자열을 만들어 $unsafe 로 심는다. 문구는 ChartSeriesJs.jsString 으로 감싼다(< 까지 막는다).
 		StringBuilder chartLabelSb = new StringBuilder();
 		StringBuilder chartDividendSb = new StringBuilder();
 		StringBuilder chartRealizedSb = new StringBuilder();
@@ -302,7 +220,7 @@
 		String activityChartDataJs = "var activityChartLabels=[" + chartLabelSb + "];"
 			+ "var activityChartDividend=[" + chartDividendSb + "];"
 			+ "var activityChartRealized=[" + chartRealizedSb + "];"
-			+ "var activityChartSeriesLabels=[\"" + ej.apply(dividendLabel) + "\",\"" + ej.apply(realizedProfitLabel) + "\"];";
+			+ "var activityChartSeriesLabels=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(java.util.Arrays.asList(dividendLabel, realizedProfitLabel)) + ";";
 	}
 
 	<%-- 차트는 활동이 있는 달만 막대로 그린다. 즉 X축이 시간캕이 아니라 빈 달이 통째로 사라진다.
@@ -731,7 +649,7 @@
 
 		// 월별 차트 두 개 — 배당(매달 꾸준함)과 실현손익(판 달에만)은 크기대가 달라 각자 축을 쓴다.
 		// 한 축에 올렸을 때 배당은 최대 막대의 0.62%(약 1px)라 사실상 보이지 않았다(실측 2026-09-07).
-		// Chart.js 는 stockLayout 에서 1회 로드된다. htmx 재스왑 시 이전 인스턴스를 destroy 한다.
+		// Chart.js 는 ensureStockCharts 로 필요할 때 불러온다. htmx 재스왑 시 이전 인스턴스를 destroy 한다.
 		// 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다.
 		setTimeout(function() {
 		if (activityChartLabels.length === 0) return;

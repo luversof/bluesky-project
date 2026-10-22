@@ -66,8 +66,6 @@ class TradeTest implements GeneralTest {
 
     if (sellTrade != null) {
       log.debug("Fetched SELL Trade: {}", sellTrade);
-      // Assert that realizedProfit is populated (assuming data has it)
-      // assertThat(sellTrade.getRealizedProfit()).isNotNull();
     }
   }
 

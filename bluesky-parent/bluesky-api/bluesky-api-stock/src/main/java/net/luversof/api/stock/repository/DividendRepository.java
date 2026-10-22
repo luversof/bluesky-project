@@ -67,16 +67,6 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
       @org.springframework.data.repository.query.Param("startDate") Instant startDate,
       @org.springframework.data.repository.query.Param("endDate") Instant endDate);
 
-  /** 사용자의 최초 배당 지급일. 전체 배당을 내려받아 min() 하는 대신 DB 집계로 1행만 가져온다. */
-  @Query(
-      """
-				SELECT MIN(d."payDate")
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId AND d."payDate" IS NOT NULL
-			""")
-  Instant findFirstDividendDateByUserId(UUID userId);
-
   /** 종목·계좌로 좁힌 최초 배당일. 규칙은 {@code TradeRepository#findFirstTradeDate} 와 같다. */
   @Query(
       """
@@ -88,16 +78,6 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
 					AND (CAST(:accountId AS uuid) IS NULL OR d."account_id" = :accountId)
 			""")
   Instant findFirstDividendDate(UUID userId, UUID stockItemId, UUID accountId);
-
-  /** 사용자의 마지막 배당 지급일. 데이터 최신 시점 표시용(집계 1건). */
-  @Query(
-      """
-				SELECT MAX(d."payDate")
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId AND d."payDate" IS NOT NULL
-			""")
-  Instant findLastDividendDateByUserId(UUID userId);
 
   /** 기간 내 배당이 있는 계좌 id (필터 목록용). */
   @Query(
@@ -122,16 +102,6 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
 					AND (CAST(:endDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") < :endDate)
 			""")
   List<UUID> findDistinctStockItemIds(UUID userId, Instant startDate, Instant endDate);
-
-  /** 사용자의 배당 건수. */
-  @Query(
-      """
-				SELECT COUNT(*)
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId
-			""")
-  long countByUserId(UUID userId);
 
   /**
    * 마지막 일자와 건수를 한 번에 읽는다. 따로 물으면 같은 조인을 두 번 훑는다.

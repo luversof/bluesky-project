@@ -95,6 +95,7 @@ class FindingDetailAccountSuffixTest {
     String source = Files.readString(SOURCE, StandardCharsets.UTF_8);
     assertThat(source)
         .as("tradeRule 이 계좌를 붙이지 않게 됐다면 detail 쪽에서 붙여야 한다 - 이 검사를 뒤집을 것")
-        .contains("detail.apply(hit) + accountSuffix(hit.getAccountId(), accountNames)");
+        // 2026-10-22 부터 배당 · 매매 규칙이 같은 꼬리(addFinding)를 쓴다 - 계좌는 거기서 붙인다.
+        .contains("detail.apply(hit) + accountSuffix(accountId.apply(hit), ctx.accountNames())");
   }
 }

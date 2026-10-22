@@ -1,5 +1,7 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockMath.nz;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -29,10 +31,6 @@ public class PeriodSummaryService {
     this.dividendRepository = dividendRepository;
   }
 
-  private static BigDecimal safe(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
-  }
-
   public PeriodSummary findPeriodSummary(UUID userId, Instant startDate, Instant endDate) {
     PeriodTradeSummary trade = tradeRepository.findPeriodSummary(userId, startDate, endDate);
     PeriodDividendSummary dividend =
@@ -40,20 +38,20 @@ public class PeriodSummaryService {
 
     // 기간에 아무것도 없으면 쿼리가 null 을 돌려줄 수 있다(집계 함수만 있는 SELECT 라 행은 오지만, 매핑이
     // 실패하면 null 이다). 화면이 "0" 과 "못 가져왔다" 를 구분할 필요는 없으므로 0 으로 채운다.
-    BigDecimal dividendGross = dividend != null ? safe(dividend.grossAmount()) : BigDecimal.ZERO;
-    BigDecimal dividendTax = dividend != null ? safe(dividend.tax()) : BigDecimal.ZERO;
-    BigDecimal dividendFee = dividend != null ? safe(dividend.fee()) : BigDecimal.ZERO;
+    BigDecimal dividendGross = dividend != null ? nz(dividend.grossAmount()) : BigDecimal.ZERO;
+    BigDecimal dividendTax = dividend != null ? nz(dividend.tax()) : BigDecimal.ZERO;
+    BigDecimal dividendFee = dividend != null ? nz(dividend.fee()) : BigDecimal.ZERO;
 
     return new PeriodSummary(
-        trade != null ? safe(trade.buyAmount()) : BigDecimal.ZERO,
-        trade != null ? safe(trade.sellAmount()) : BigDecimal.ZERO,
-        trade != null ? safe(trade.fee()) : BigDecimal.ZERO,
-        trade != null ? safe(trade.tax()) : BigDecimal.ZERO,
-        trade != null ? safe(trade.realizedProfit()) : BigDecimal.ZERO,
+        trade != null ? nz(trade.buyAmount()) : BigDecimal.ZERO,
+        trade != null ? nz(trade.sellAmount()) : BigDecimal.ZERO,
+        trade != null ? nz(trade.fee()) : BigDecimal.ZERO,
+        trade != null ? nz(trade.tax()) : BigDecimal.ZERO,
+        trade != null ? nz(trade.realizedProfit()) : BigDecimal.ZERO,
         trade != null ? trade.buyCount() : 0L,
         trade != null ? trade.sellCount() : 0L,
         dividendGross,
-        dividend != null ? safe(dividend.taxableAmount()) : BigDecimal.ZERO,
+        dividend != null ? nz(dividend.taxableAmount()) : BigDecimal.ZERO,
         dividendTax,
         dividendFee,
         // 실수령 = 세전 - 세금 - 수수료. 배당 화면의 "세후" 와 같은 정의다.

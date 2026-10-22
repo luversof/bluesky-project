@@ -14,7 +14,7 @@
 	String[] tierEn = {"Lesser", "Greater", "Grand", "Exceptional", "Exquisite", "Perfect"};
 	java.util.List<PoeCraft.DelveLine> delve = extras == null || extras.delve() == null ? java.util.List.of() : extras.delve();
 	java.util.List<PoeCraft.EldritchFamily> eld = extras == null || extras.eldritch() == null ? java.util.List.of() : extras.eldritch();
-	String eldBlocked = extras == null ? null : extras.eldritchBlocked();
+	String eldBlocked = extras == null ? null : !ko && extras.eldritchBlockedEn() != null ? extras.eldritchBlockedEn() : extras.eldritchBlocked();
 	java.util.List<PoeCraft.EssenceOnly> essOnly = extras == null || extras.essenceOnly() == null ? java.util.List.of() : extras.essenceOnly();
 	String[] essKo = {"속삭이는", "불평하는", "흐느끼는", "울부짖는", "절규하는", "악을 쓰는", "귀를 찢는"};
 	String[] essEn = {"Whispering", "Muttering", "Weeping", "Wailing", "Screaming", "Shrieking", "Deafening"};

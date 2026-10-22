@@ -21,10 +21,6 @@ public class YearlyCostController {
 
   @Autowired private YearlyCostService yearlyCostService;
 
-  public void setYearlyCostService(YearlyCostService yearlyCostService) {
-    this.yearlyCostService = yearlyCostService;
-  }
-
   @GetMapping
   public List<YearlyCostSummary> findYearlyCost(
       @RequestParam UUID userId,

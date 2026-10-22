@@ -292,6 +292,9 @@
 	(function() {
 		// 계좌별/종목별 실현손익 행 선택 합산 — 배당 효율 랭킹과 동일한 UX
 		// (행 클릭 토글 + 하이라이트 + 상단 요약 패널 펼침/접힘 + 선택 해제)
+		// 행 결합 · 금액 넣기는 stockLayout 이 먼저 싣는 /js/stock/rowSelection.js(배당 변동 요인 카드와 같은 것 - 2026-10-22 에 모았다).
+		var RS = window.StockRowSelection;
+		if (!RS) return;
 		var sections = document.querySelectorAll('[data-trade-realized-section]');
 		for (var si = 0; si < sections.length; si++) {
 			(function(section) {
@@ -299,26 +302,6 @@
 				section.dataset.selectionInitialized = 'true';
 				var summary = section.querySelector('[data-trade-realized-summary]');
 				if (!summary) return;
-				function setRow(row, selected) {
-					if (!row) return;
-					row.classList.toggle('bg-primary/10', selected);
-					row.setAttribute('aria-selected', selected ? 'true' : 'false');
-				}
-				function putAmount(sel, value, signed) {
-					var el = summary.querySelector(sel);
-					if (!el) return;
-					var abs = Math.abs(Math.round(value));
-					var rounded = Math.round(value) || 0;
-					// 0 에는 방향이 없다 - 판정은 반올림 뒤에(StockFormatUtil.signedWon 과 같은 규칙).
-					var sign = rounded > 0 ? '+' : (rounded < 0 ? '-' : '');
-					// 로케일은 앱이 정한다(common.js 의 appLocale) - 인자를 빼면 브라우저 로케일을 따라
-					// 같은 화면 안에서 자릿수 구분이 갈린다(실측 2026-09-15).
-					el.textContent = (signed ? sign : '') + '₩' + abs.toLocaleString(appLocale());
-					if (signed) {
-						el.classList.toggle('text-profit', value >= 0);
-						el.classList.toggle('text-loss', value < 0);
-					}
-				}
 				function update() {
 					var selected = section.querySelectorAll('[data-trade-realized-row][aria-selected="true"]');
 					var reveal = summary.closest('.selection-reveal');
@@ -332,9 +315,9 @@
 					}
 					var countEl = summary.querySelector('[data-trade-realized-selection-count]');
 					if (countEl) countEl.textContent = (summary.dataset.countTemplate || '{0}').replace('{0}', selected.length);
-					putAmount('[data-trade-realized-sel-sold-cost]', soldCost, false);
-					putAmount('[data-trade-realized-sel-sell]', sell, false);
-					putAmount('[data-trade-realized-sel-net]', net, true);
+					RS.putAmount(summary, '[data-trade-realized-sel-sold-cost]', soldCost, false);
+					RS.putAmount(summary, '[data-trade-realized-sel-sell]', sell, false);
+					RS.putAmount(summary, '[data-trade-realized-sel-net]', net, true);
 					var rateEl = summary.querySelector('[data-trade-realized-sel-rate]');
 					if (rateEl) {
 						if (soldCost > 0) {
@@ -361,31 +344,7 @@
 						}
 					}
 				}
-				var rows = section.querySelectorAll('[data-trade-realized-row]');
-				for (var ri = 0; ri < rows.length; ri++) {
-					(function(row) {
-						row.addEventListener('click', function(event) {
-							if (event.target && event.target.closest('button, a, input, label, select, textarea')) return;
-							setRow(this, this.getAttribute('aria-selected') !== 'true');
-							update();
-						});
-						row.addEventListener('keydown', function(event) {
-							if (event.target && event.target.closest('button, a, input, label, select, textarea')) return;
-							if (event.key !== 'Enter' && event.key !== ' ') return;
-							event.preventDefault();
-							setRow(this, this.getAttribute('aria-selected') !== 'true');
-							update();
-						});
-					})(rows[ri]);
-				}
-				var clearButton = section.querySelector('[data-trade-realized-clear]');
-				if (clearButton) {
-					clearButton.addEventListener('click', function() {
-						var selected = section.querySelectorAll('[data-trade-realized-row][aria-selected="true"]');
-						for (var i = 0; i < selected.length; i++) setRow(selected[i], false);
-						update();
-					});
-				}
+				RS.bind(section, '[data-trade-realized-row]', '[data-trade-realized-clear]', update);
 			})(sections[si]);
 		}
 	})();

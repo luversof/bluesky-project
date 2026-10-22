@@ -87,13 +87,12 @@ class MonthlyDividendImportOverlayRenderTest {
                   new java.math.BigDecimal("9"),
                   null)));
     }
-    // 출처 단건 가져오기는 저장된 프로필과 출처 URL 이 있을 때만 나온다.
+    // 이 종목 시세 갱신(refresh-price) 폼은 저장된 프로필이 있을 때만 나온다. 출처 단건 가져오기는 이 값과 상관없이 목록의 행마다, 그 행에
+    // 출처 URL 이 있을 때 나온다(위 프로필 행의 sourceUrl).
     model.put("monthlyDividendProfileExists", true);
     // 지급 이력 삭제 폼은 저장된 이력이 있을 때만 나온다 - 덮지 않아야 할 폼의 본보기다.
     model.put("monthlyDividendPayoutExists", true);
     model.put("selectedMonthlyDividendSymbol", "476800");
-    model.put(
-        "selectedMonthlyDividendSourceUrl", "https://www.samsungfund.com/etf/product/view.do");
     StringOutput output = new StringOutput();
     TemplateEngine.createPrecompiled(ContentType.Html).render(template, model, output);
     return output.toString();

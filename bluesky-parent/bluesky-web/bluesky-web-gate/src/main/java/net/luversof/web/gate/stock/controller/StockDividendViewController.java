@@ -3,7 +3,6 @@ package net.luversof.web.gate.stock.controller;
 import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 
 import java.math.BigDecimal;
-import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
@@ -344,16 +343,8 @@ public class StockDividendViewController {
         MonthlyDividendPayDayUtil.byStockItem(payDayInput);
     // 예상 지급일 = 기준일 규칙 + 종목별 결제 거래일 수(2026-10-20). 최빈 일자는 지급 이력 209 건 중 57% 만 맞혔고 이 규칙은 100% 였다.
     // 규칙이 안 서는 종목(기준일이 규칙과 다름 · 이력 부족)만 예전처럼 최빈 일자를 영업일로 옮긴다.
-    List<MonthlyDividendPayDayUtil.RecordedPayout> recordedInput = new ArrayList<>();
-    for (MonthlyDividendPayoutResponse payout : payouts) {
-      if (payout != null) {
-        recordedInput.add(
-            new MonthlyDividendPayDayUtil.RecordedPayout(
-                payout.stockItemSymbol(), payout.recordDate(), payout.payDate()));
-      }
-    }
     Map<String, MonthlyDividendPayDayUtil.SettlementRule> settlementBySymbol =
-        MonthlyDividendPayDayUtil.settlementRules(recordedInput);
+        MonthlyDividendPayDayUtil.settlementRulesFromResponses(payouts);
     YearMonth thisMonth = YearMonth.from(today);
     YearMonth nextMonth = thisMonth.plusMonths(1);
     Map<String, Integer> announcedThisMonth =
@@ -555,23 +546,15 @@ public class StockDividendViewController {
       monthlyDividendProfileClient.upsertProfile(monthlyDividendProfileForm);
       return buildMonthlyDividendReferenceRedirect(
           request, redirectAttributes, monthlyDividendProfileForm.getSymbol(), "profile-saved");
-    } catch (IllegalArgumentException ex) {
-      return renderMonthlyDividendReferenceError(
-          request,
-          model,
-          monthlyDividendProfileForm.getSymbol(),
-          ex.getMessage(),
-          monthlyDividendProfileForm,
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(
-              monthlyDividendProfileForm.getSymbol()));
     } catch (Exception ex) {
-      log.warn("월배당 프로필 저장 실패: symbol={}", monthlyDividendProfileForm.getSymbol(), ex);
+      if (!(ex instanceof IllegalArgumentException)) {
+        log.warn("월배당 프로필 저장 실패: symbol={}", monthlyDividendProfileForm.getSymbol(), ex);
+      }
       return renderMonthlyDividendReferenceError(
           request,
           model,
           monthlyDividendProfileForm.getSymbol(),
-          StockViewSupport.failureMessage(
-              ex, msg("stock.monthly.reference.error.profile.save.failed")),
+          referenceFailureMessage(ex, "stock.monthly.reference.error.profile.save.failed"),
           monthlyDividendProfileForm,
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(
               monthlyDividendProfileForm.getSymbol()));
@@ -639,12 +622,11 @@ public class StockDividendViewController {
       stockAdminClient.priceHistoryUpdateOne(normalizedSymbol, userId);
       return buildMonthlyDividendReferenceRedirect(
           request, redirectAttributes, normalizedSymbol, "price-refreshed");
-    } catch (IllegalArgumentException ex) {
-      return renderMonthlyDividendReferenceError(
-          request, model, normalizedSymbol, ex.getMessage(), null, null);
     } catch (Exception ex) {
-      // 원격 호출 실패는 반드시 남긴다 - 조용히 삼키면 화면만 "안 됨" 이 되고 까닭을 못 찾는다.
-      log.warn("종목 시세 갱신 실패: {}", normalizedSymbol, ex);
+      if (!(ex instanceof IllegalArgumentException)) {
+        // 원격 호출 실패는 반드시 남긴다 - 조용히 삼키면 화면만 "안 됨" 이 되고 까닭을 못 찾는다(입력 문제는 문구만 띄운다).
+        log.warn("종목 시세 갱신 실패: {}", normalizedSymbol, ex);
+      }
       return renderMonthlyDividendReferenceError(
           request, model, normalizedSymbol, ex.getMessage(), null, null);
     }
@@ -667,22 +649,15 @@ public class StockDividendViewController {
       monthlyDividendProfileClient.deleteProfile(normalizedSymbol);
       return buildMonthlyDividendReferenceRedirect(
           request, redirectAttributes, normalizedSymbol, "profile-deleted");
-    } catch (IllegalArgumentException ex) {
-      return renderMonthlyDividendReferenceError(
-          request,
-          model,
-          normalizedSymbol,
-          ex.getMessage(),
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(normalizedSymbol));
     } catch (Exception ex) {
-      log.warn("월배당 프로필 삭제 실패: symbol={}", normalizedSymbol, ex);
+      if (!(ex instanceof IllegalArgumentException)) {
+        log.warn("월배당 프로필 삭제 실패: symbol={}", normalizedSymbol, ex);
+      }
       return renderMonthlyDividendReferenceError(
           request,
           model,
           normalizedSymbol,
-          StockViewSupport.failureMessage(
-              ex, msg("stock.monthly.reference.error.profile.delete.failed")),
+          referenceFailureMessage(ex, "stock.monthly.reference.error.profile.delete.failed"),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(normalizedSymbol));
     }
@@ -751,23 +726,15 @@ public class StockDividendViewController {
           "payout-saved",
           monthlyDividendPayoutForm.getRecordDate(),
           monthlyDividendPayoutForm.getPayDate());
-    } catch (IllegalArgumentException ex) {
-      return renderMonthlyDividendReferenceError(
-          request,
-          model,
-          monthlyDividendPayoutForm.getSymbol(),
-          ex.getMessage(),
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
-              monthlyDividendPayoutForm.getSymbol()),
-          monthlyDividendPayoutForm);
     } catch (Exception ex) {
-      log.warn("월배당 지급 이력 저장 실패: symbol={}", monthlyDividendPayoutForm.getSymbol(), ex);
+      if (!(ex instanceof IllegalArgumentException)) {
+        log.warn("월배당 지급 이력 저장 실패: symbol={}", monthlyDividendPayoutForm.getSymbol(), ex);
+      }
       return renderMonthlyDividendReferenceError(
           request,
           model,
           monthlyDividendPayoutForm.getSymbol(),
-          StockViewSupport.failureMessage(
-              ex, msg("stock.monthly.reference.error.payout.save.failed")),
+          referenceFailureMessage(ex, "stock.monthly.reference.error.payout.save.failed"),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
               monthlyDividendPayoutForm.getSymbol()),
           monthlyDividendPayoutForm);
@@ -801,25 +768,15 @@ public class StockDividendViewController {
           redirectAttributes,
           monthlyDividendPayoutImportForm.getSymbol(),
           "payout-imported");
-    } catch (IllegalArgumentException ex) {
-      return renderMonthlyDividendReferenceError(
-          request,
-          model,
-          monthlyDividendPayoutImportForm.getSymbol(),
-          ex.getMessage(),
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
-              monthlyDividendPayoutImportForm.getSymbol()),
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(
-              monthlyDividendPayoutImportForm.getSymbol()),
-          monthlyDividendPayoutImportForm);
     } catch (Exception ex) {
-      log.warn("월배당 지급 이력 일괄 저장 실패: symbol={}", monthlyDividendPayoutImportForm.getSymbol(), ex);
+      if (!(ex instanceof IllegalArgumentException)) {
+        log.warn("월배당 지급 이력 일괄 저장 실패: symbol={}", monthlyDividendPayoutImportForm.getSymbol(), ex);
+      }
       return renderMonthlyDividendReferenceError(
           request,
           model,
           monthlyDividendPayoutImportForm.getSymbol(),
-          StockViewSupport.failureMessage(
-              ex, msg("stock.monthly.reference.error.payout.bulk.save.failed")),
+          referenceFailureMessage(ex, "stock.monthly.reference.error.payout.bulk.save.failed"),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
               monthlyDividendPayoutImportForm.getSymbol()),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(
@@ -875,27 +832,15 @@ public class StockDividendViewController {
           redirectAttributes,
           StringUtils.hasText(returnSymbol) ? returnSymbol : normalizedSymbol,
           "payout-source-imported");
-    } catch (IllegalArgumentException ex) {
-      return renderMonthlyDividendReferenceError(
-          request,
-          model,
-          normalizedSymbol,
-          ex.getMessage(),
-          profile != null
-              ? monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(profile)
-              : monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
-                  normalizedSymbol),
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutForm(normalizedSymbol),
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendPayoutImportForm(
-              normalizedSymbol));
     } catch (Exception ex) {
-      log.warn("저장된 출처 URL 가져오기 실패: symbol={}", normalizedSymbol, ex);
+      if (!(ex instanceof IllegalArgumentException)) {
+        log.warn("저장된 출처 URL 가져오기 실패: symbol={}", normalizedSymbol, ex);
+      }
       return renderMonthlyDividendReferenceError(
           request,
           model,
           normalizedSymbol,
-          StockViewSupport.failureMessage(
-              ex, msg("stock.monthly.reference.error.source.import.failed")),
+          referenceFailureMessage(ex, "stock.monthly.reference.error.source.import.failed"),
           profile != null
               ? monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(profile)
               : monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(
@@ -924,26 +869,23 @@ public class StockDividendViewController {
     try {
       var result = monthlyDividendLinkRegisterService.registerLinks(links);
       String summary =
-          MessageFormat.format(
-              MessageUtil.getMessage("stock.monthly.reference.link.result.summary"),
+          msg(
+              "stock.monthly.reference.link.result.summary",
               result.successCount(),
               result.newStockItemCount(),
               result.payoutCount(),
               result.failureCount());
       List<String> notes = new ArrayList<>();
       if (result.skippedCount() > 0) {
-        notes.add(
-            MessageFormat.format(
-                MessageUtil.getMessage("stock.monthly.reference.link.result.skipped"),
-                result.skippedCount()));
+        notes.add(msg("stock.monthly.reference.link.result.skipped", result.skippedCount()));
       }
       result.results().stream()
           .filter(one -> !one.succeeded())
           .forEach(
               one ->
                   notes.add(
-                      MessageFormat.format(
-                          MessageUtil.getMessage("stock.monthly.reference.link.result.failure"),
+                      msg(
+                          "stock.monthly.reference.link.result.failure",
                           one.sourceUrl(),
                           one.failureReason())));
 
@@ -977,8 +919,8 @@ public class StockDividendViewController {
     var result = monthlyDividendLinkRegisterService.refreshFacts();
     redirectAttributes.addFlashAttribute(
         "monthlyDividendReferenceResultMessage",
-        MessageFormat.format(
-            MessageUtil.getMessage("stock.monthly.reference.facts.refresh.summary"),
+        msg(
+            "stock.monthly.reference.facts.refresh.summary",
             result.updatedCount(),
             result.unchangedCount(),
             result.failures().size()));
@@ -1022,14 +964,14 @@ public class StockDividendViewController {
             .filter(profile -> StringUtils.hasText(profile.sourceUrl()))
             .toList();
 
-    String windowLabel = resolveMonthlyDividendPayoutWindowLabel(normalizedWindow);
+    String windowLabel =
+        net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil.label(normalizedWindow);
 
     if (targets.isEmpty()) {
       redirectAttributes.addFlashAttribute(
           "monthlyDividendReferenceResultMessage",
-          MessageFormat.format(
-              MessageUtil.getMessage(
-                  "stock.page.dividend.monthly.reference.payout.import.source.bulk.empty"),
+          msg(
+              "stock.page.dividend.monthly.reference.payout.import.source.bulk.empty",
               windowLabel));
       redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultIsError", false);
       return buildMonthlyDividendReferenceBulkRedirect(request);
@@ -1068,9 +1010,8 @@ public class StockDividendViewController {
     }
 
     String message =
-        MessageFormat.format(
-            MessageUtil.getMessage(
-                "stock.page.dividend.monthly.reference.payout.import.source.bulk.result"),
+        msg(
+            "stock.page.dividend.monthly.reference.payout.import.source.bulk.result",
             windowLabel,
             targets.size(),
             successCount,
@@ -1078,9 +1019,8 @@ public class StockDividendViewController {
     if (!failedSymbols.isEmpty()) {
       message +=
           " "
-              + MessageFormat.format(
-                  MessageUtil.getMessage(
-                      "stock.page.dividend.monthly.reference.payout.import.source.bulk.failed.symbols"),
+              + msg(
+                  "stock.page.dividend.monthly.reference.payout.import.source.bulk.failed.symbols",
                   String.join(", ", failedSymbols));
     }
     redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultMessage", message);
@@ -1093,18 +1033,6 @@ public class StockDividendViewController {
     }
 
     return buildMonthlyDividendReferenceBulkRedirect(request);
-  }
-
-  private String resolveMonthlyDividendPayoutWindowLabel(String payoutWindow) {
-    if ("MID_MONTH".equals(payoutWindow)) {
-      return MessageUtil.getMessage(
-          "stock.page.dividend.monthly.reference.profile.payout.window.mid.month");
-    }
-    if ("MONTH_END".equals(payoutWindow)) {
-      return MessageUtil.getMessage(
-          "stock.page.dividend.monthly.reference.profile.payout.window.month.end");
-    }
-    return payoutWindow;
   }
 
   private String buildMonthlyDividendReferenceBulkRedirect(HttpServletRequest request) {
@@ -1159,22 +1087,15 @@ public class StockDividendViewController {
       monthlyDividendPayoutClient.deletePayout(normalizedSymbol, recordDate, payDate);
       return buildMonthlyDividendReferenceRedirect(
           request, redirectAttributes, normalizedSymbol, "payout-deleted");
-    } catch (IllegalArgumentException ex) {
-      return renderMonthlyDividendReferenceError(
-          request,
-          model,
-          normalizedSymbol,
-          ex.getMessage(),
-          monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
-          payoutForm);
     } catch (Exception ex) {
-      log.warn("월배당 지급 이력 삭제 실패: symbol={}", normalizedSymbol, ex);
+      if (!(ex instanceof IllegalArgumentException)) {
+        log.warn("월배당 지급 이력 삭제 실패: symbol={}", normalizedSymbol, ex);
+      }
       return renderMonthlyDividendReferenceError(
           request,
           model,
           normalizedSymbol,
-          StockViewSupport.failureMessage(
-              ex, msg("stock.monthly.reference.error.payout.delete.failed")),
+          referenceFailureMessage(ex, "stock.monthly.reference.error.payout.delete.failed"),
           monthlyDividendReferenceSupport.buildDefaultMonthlyDividendProfileForm(normalizedSymbol),
           payoutForm);
     }
@@ -1289,6 +1210,17 @@ public class StockDividendViewController {
         payoutRecordDate,
         payoutPayDate,
         request.getParameter("profileWindow"));
+  }
+
+  /**
+   * 월배당 참고 자료 쓰기가 실패했을 때 화면에 적을 사유. 입력 문제(IllegalArgumentException)는 그 문구 그대로, 그 밖의 실패는 원격이 준
+   * 사유(없으면 failedKey 문구). 2026-10-22 까지 핸들러 여섯이 catch 두 개로 같은 오류 화면을 한 번씩 더 그렸다 - 로그는 지금도 catch 안에서
+   * 입력 문제가 아닐 때만 남긴다(넓은 catch 는 그 자리에서 로그를 남긴다는 규칙, RemoteFailureMessageTest).
+   */
+  private static String referenceFailureMessage(Exception ex, String failedKey) {
+    return ex instanceof IllegalArgumentException
+        ? ex.getMessage()
+        : StockViewSupport.failureMessage(ex, msg(failedKey));
   }
 
   private String renderMonthlyDividendReferenceError(

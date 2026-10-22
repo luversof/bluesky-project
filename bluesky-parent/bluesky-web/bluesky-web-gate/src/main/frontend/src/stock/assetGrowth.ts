@@ -110,7 +110,6 @@ interface AssetGrowthConfig {
             };
 
             var locale: string | undefined = win.StockCharts ? win.StockCharts.getLocale() : undefined;
-            var percentFormatter = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             var formatNumber = function(value: number) {
                 return win.StockCharts ? win.StockCharts.formatNumber(value) : new Intl.NumberFormat(locale).format(value);
             };
@@ -122,12 +121,6 @@ interface AssetGrowthConfig {
                 // 0 에는 방향이 없다. 판정은 **반올림 뒤**에 한다(compoundSimulator 의 규칙과 같다).
                 var sign = rounded > 0 ? '+' : (rounded < 0 ? '-' : '');
                 return sign + formatCurrency(Math.abs(rounded));
-            };
-            var formatSignedPercent = function(value: number) {
-                // 표시 자릿수(2)로 먼저 반올림한다 - -0.004 는 '-0.00%' 도 '+0.00%' 도 아니고 '0.00%' 다.
-                var rounded = Math.round((value || 0) * 100) / 100;
-                var sign = rounded > 0 ? '+' : (rounded < 0 ? '-' : '');
-                return sign + percentFormatter.format(Math.abs(rounded)) + '%';
             };
 
             var syncing = false;

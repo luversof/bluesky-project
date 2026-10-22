@@ -32,14 +32,6 @@ public class AccountService {
     this.accountRepository = accountRepository;
   }
 
-  public void setDividendRepository(DividendRepository dividendRepository) {
-    this.dividendRepository = dividendRepository;
-  }
-
-  public void setTradeRepository(TradeRepository tradeRepository) {
-    this.tradeRepository = tradeRepository;
-  }
-
   /**
    * 계좌를 만든다.
    *
@@ -88,17 +80,6 @@ public class AccountService {
   }
 
   /**
-   * 계좌 이름에서 파생되는 설정을 채운다.
-   *
-   * <p>{@code isTaxDeferred} 는 <b>이름에서만</b> 나온다 - 다른 쓰기 경로가 없고, 게이트는 읽기만 한다(배당 화면이 이 값이 참이면 "세후 =
-   * 세전" 으로 그린다).
-   *
-   * <p>그래서 붙이기만 해서는 안 된다. 비과세 계좌의 이름을 바꿔 저장하면 옛 값이 그대로 남아, 과세 계좌인데도 화면이 세금을 떼지 않은 금액을 실수령액으로 보여준다.
-   * 이름이 조건을 만족하지 않으면 지운다 - 파생값은 근거와 항상 같아야 한다.
-   *
-   * <p>{@code manualPrincipalAmount} 같은 다른 키는 건드리지 않는다.
-   */
-  /**
    * 갱신하는 쪽이 보내지 않은 설정 키는 저장된 값을 이어받는다.
    *
    * <p>{@code createdDate} 를 이어받는 것과 같은 이유다 &mdash; 계좌 이름 하나 고치려는 호출자가 그 계좌에 어떤 설정이 붙어 있는지 알 이유가
@@ -125,6 +106,17 @@ public class AccountService {
     account.setJsonConfig(merged.isEmpty() ? null : merged);
   }
 
+  /**
+   * 계좌 이름에서 파생되는 설정을 채운다.
+   *
+   * <p>{@code isTaxDeferred} 는 <b>이름에서만</b> 나온다 - 다른 쓰기 경로가 없고, 게이트는 읽기만 한다(배당 화면이 이 값이 참이면 "세후 =
+   * 세전" 으로 그린다).
+   *
+   * <p>그래서 붙이기만 해서는 안 된다. 비과세 계좌의 이름을 바꿔 저장하면 옛 값이 그대로 남아, 과세 계좌인데도 화면이 세금을 떼지 않은 금액을 실수령액으로 보여준다.
+   * 이름이 조건을 만족하지 않으면 지운다 - 파생값은 근거와 항상 같아야 한다.
+   *
+   * <p>{@code manualPrincipalAmount} 같은 다른 키는 건드리지 않는다.
+   */
   private void appendJsonConfig(Account account) {
     var jsonConfig =
         account.getJsonConfig() == null ? new HashMap<String, Object>() : account.getJsonConfig();

@@ -28,12 +28,15 @@ class TargetSizeTest {
 
   @Test
   void btn_xs_버튼은_최소_높이를_0으로_낮추지_않는다() throws IOException {
-    Pattern small = Pattern.compile("class=\"[^\"]*\\bbtn-xs\\b[^\"]*\\bmin-h-0\\b[^\"]*\"");
+    // 조각 인자로 넘기는 클래스(sortButtonHeader 의 buttonClass = "…", 2026-10-22)도 같은 규칙을 지킨다.
+    Pattern small =
+        Pattern.compile("[cC]lass\\s*=\\s*\"[^\"]*\\bbtn-xs\\b[^\"]*\\bmin-h-0\\b[^\"]*\"");
     List<String> offenders = new ArrayList<>();
     int raised = 0;
     try (Stream<Path> walk = Files.walk(JTE)) {
       for (Path p : walk.filter(x -> x.toString().endsWith(".jte")).toList()) {
-        String html = Files.readString(p, StandardCharsets.UTF_8);
+        // 배당 수익 분석 카드는 부모를 펼쳐 두 번 세고 조각 파일은 건너뛴다(YieldAnalyticsSource, 2026-10-22).
+        String html = YieldAnalyticsSource.readForScan(p);
         Matcher m = small.matcher(html);
         while (m.find())
           offenders.add(

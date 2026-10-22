@@ -127,7 +127,6 @@ public class Poe2CraftController {
     return s;
   }
 
-  /** 시뮬레이터(C352) — 목표 → 방법별 성공률 · 성공 한 번당 화폐 개수(균등 가정, 참고용). */
   /** 에뮬레이터에서 쓴 화폐 · 총비용(10-16 C366, 디바인). */
   @PostMapping(value = "/spent", consumes = MediaType.APPLICATION_JSON_VALUE)
   public Poe2CraftCalcService.SpentResult spent(
@@ -140,6 +139,7 @@ public class Poe2CraftController {
     }
   }
 
+  /** 시뮬레이터(C352) — 목표 → 방법별 성공률 · 성공 한 번당 화폐 개수(균등 가정, 참고용). */
   @PostMapping(value = "/calc", consumes = MediaType.APPLICATION_JSON_VALUE)
   public Poe2CraftCalcService.Response calc(@RequestBody Poe2CraftCalcService.Request req) {
     check(req.item());
@@ -180,7 +180,6 @@ public class Poe2CraftController {
     return craft.options();
   }
 
-  /** 이 풀(아이템 종류)에 쓸 수 있는 에센스 + 보장 옵션 문구(C353). */
   /** 이 풀의 훼손된 속성(C420) — 시뮬레이터 목표 고르기. */
   @GetMapping("/desecrated")
   public List<Poe2CraftService.PoolLine> desecrated(
@@ -192,6 +191,7 @@ public class Poe2CraftController {
         .toList();
   }
 
+  /** 이 풀(아이템 종류)에 쓸 수 있는 에센스 + 보장 옵션 문구(C353). */
   @GetMapping("/essences")
   public List<Poe2CraftService.EssenceOption> essences(
       @org.springframework.web.bind.annotation.RequestParam String poolKey) {

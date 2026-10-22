@@ -24,9 +24,8 @@ class DetailFilterDefaultTest {
 
   private static final List<Path> FORMS =
       List.of(
-          Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendSearchForm.jte"),
-          Path.of("src/main/jte/stock/htmx/fragments/trade/tradeSearchForm.jte"),
-          Path.of("src/main/jte/stock/htmx/fragments/activityList.jte"),
+          // 배당 · 매매 · 활동(2026-10-22 에 한 조각으로 합쳤다)
+          Path.of("src/main/jte/stock/htmx/fragments/components/listSearchForm.jte"),
           Path.of("src/main/jte/stock/htmx/asset-growth.jte"));
 
   @Test

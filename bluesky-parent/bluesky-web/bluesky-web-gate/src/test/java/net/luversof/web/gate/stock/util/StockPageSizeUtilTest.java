@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 import net.luversof.web.gate.stock.support.StockPageSizeParamException;
+import net.luversof.web.gate.stock.support.StockParamException;
 
 /**
  * 주소의 {@code size}(한 쪽에 담을 줄 수)를 읽는 규칙.
@@ -86,10 +87,16 @@ class StockPageSizeUtilTest {
         Files.readString(
             Path.of("src/main/java/net/luversof/web/gate/stock/config/StockHtmxErrorResolver.java"),
             StandardCharsets.UTF_8);
-    assertThat(countOccurrences(resolver, "StockPageSizeParamException"))
+    // 2026-10-22 부터 해석기는 다섯 인자 예외를 공통 부모(StockParamException) 하나로 본다 - 부모가 판정 · 문구 두 곳에 쓰이고,
+    // 이 예외는 그 부모를 이어받아 제 문구 키를 말한다.
+    assertThat(
+            countOccurrences(
+                resolver, "instanceof net.luversof.web.gate.stock.support.StockParamException"))
         .as("4xx 판정 한 번 + 문구 선택 한 번")
         .isEqualTo(2);
-    assertThat(resolver).contains("stock.error.badrequest.pagesize.desc");
+    StockPageSizeParamException thrown = new StockPageSizeParamException("size", 0);
+    assertThat(thrown).isInstanceOf(StockParamException.class);
+    assertThat(thrown.descKey()).isEqualTo("stock.error.badrequest.pagesize.desc");
     for (String bundle : new String[] {"uiMessage.properties", "uiMessage_ko.properties"}) {
       assertThat(
               Files.readString(

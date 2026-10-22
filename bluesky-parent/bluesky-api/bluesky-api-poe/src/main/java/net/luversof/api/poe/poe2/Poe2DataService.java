@@ -45,7 +45,6 @@ public class Poe2DataService {
   private volatile Poe2.UniqueData uniques = new Poe2.UniqueData("", List.of());
   private volatile String loadedAt = "";
 
-  /** 패시브 트리 색인(빌드 요약용) — 노드 id → 이름·종류, 직업·전직 한국어. 트리 JSON 은 2MB 라 처음 쓸 때 읽는다. */
   /**
    * multipleChoiceOption = 전직 선택지(PoB isMultipleChoiceOption) — 전직 포인트로 안 센다(10-03 C38).
    * freeAllocate = 공짜 노드(PoB 트리 isFreeAllocate — 블러드 메이지 Sanguimancy · 스피릿 워커 Sacred Unity · 키타바의
@@ -71,6 +70,7 @@ public class Poe2DataService {
       java.util.Map<String, Integer> classIntegerId,
       java.util.Map<String, Integer> classStartNode) {}
 
+  /** 패시브 트리 색인(빌드 요약용) — 노드 id → 이름·종류, 직업·전직 한국어. 트리 JSON 은 2MB 라 처음 쓸 때 읽는다. */
   private volatile TreeIndex treeIndex;
 
   /** 옵션 번역 사전(빌드 요약용) — 처음 쓸 때 만들고 reload 때 버린다. */

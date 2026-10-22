@@ -168,16 +168,15 @@ public class Poe2NinjaService {
   /** 선택지 한 줄 — 이름(영문, 요청 값), 한국어 이름. 인원은 싣지 않는다(순서에만 쓴다). */
   public record Choice(String name, String nameKo) {}
 
-  /**
-   * 시뮬레이터 폼 선택지 — 목록은 게임 데이터 전부, 순서만 스냅샷 집계. snapshot·fetchedAt = 순서의 근거(poe.ninja 버전, 받은 시각 — 새
-   * 버전이 나오면 Poe2NinjaSyncService 가 다시 받는다).
-   */
   /** 전직 셀렉트의 직업별 묶음(PoE1 시뮬 폼과 같은 optgroup) — 트리 순서. */
   public record ClassGroup(String name, String nameKo, List<Choice> ascendancies) {}
 
   /**
-   * ascendancies = 많이 쓰는 순 전체, popularAscendancies = 그중 실제로 쓰이는 상위 5개(이름만 — "많이 쓰는 직업" 묶음), classes
-   * = 직업별 묶음.
+   * 시뮬레이터 폼 선택지 — 목록은 게임 데이터 전부, 순서만 스냅샷 집계. snapshot·fetchedAt = 순서의 근거(poe.ninja 버전, 받은 시각 — 새
+   * 버전이 나오면 Poe2NinjaSyncService 가 다시 받는다).
+   *
+   * <p>ascendancies = 많이 쓰는 순 전체, popularAscendancies = 그중 실제로 쓰이는 상위 5개(이름만 — "많이 쓰는 직업" 묶음),
+   * classes = 직업별 묶음.
    */
   public record Options(
       String league,

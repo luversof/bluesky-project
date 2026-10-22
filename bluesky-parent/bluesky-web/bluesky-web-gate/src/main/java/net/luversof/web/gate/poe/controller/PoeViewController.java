@@ -50,7 +50,6 @@ public class PoeViewController {
       Model model) {
     var meta = poeDataClient.gemMeta();
     model.addAttribute("patch", meta.patch());
-    model.addAttribute("totalCount", meta.totalCount());
     model.addAttribute("tagGroups", poeDataClient.gemTagGroups());
     model.addAttribute("initialQ", q == null ? "" : q);
     model.addAttribute("initialType", type);
@@ -148,7 +147,6 @@ public class PoeViewController {
     }
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("item", item);
-    model.addAttribute("modFamilies", poeDataClient.modFamiliesForItemClass(item.itemClass()));
     // 상세 페이지엔 전체 모드 풀(poedb식)도 함께 — 장비 클래스만 mods.json 에 있고 플라스크/주얼은 없어 없으면 생략.
     boolean isEquipClass =
         poeDataClient.modItemClasses().stream()
@@ -214,7 +212,6 @@ public class PoeViewController {
       Model model) {
     var groups = poeDataClient.uniqueCategoryGroups();
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
-    model.addAttribute("totalCount", poeDataClient.uniqueMeta().totalCount());
     model.addAttribute("categoryGroups", groups);
     model.addAttribute("initialQ", q == null ? "" : q);
     model.addAttribute("activeValue", resolveSlot(groups, slot));
@@ -332,7 +329,6 @@ public class PoeViewController {
       Model model) {
     var groups = poeDataClient.itemClassGroups();
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
-    model.addAttribute("totalCount", poeDataClient.baseItemMeta().totalCount());
     model.addAttribute("classGroups", groups);
     model.addAttribute("initialQ", q == null ? "" : q);
     model.addAttribute("activeValue", resolveSlot(groups, slot));

@@ -6,9 +6,17 @@ import net.luversof.web.gate.stock.support.StockSortParamException;
  * {@code sort=필드,방향} 문자열을 읽는다. 규칙은 timeZone · granularity 와 같다 &mdash; 값이 없으면 화면의 기본 순서, 값을 줬는데 쓸 수
  * 없으면 이름을 들고 끊는다.
  *
- * <p>필드 이름이 맞는지는 각 화면의 비교기 switch 가 판정한다(허용 목록을 여기 한 벌 더 두면 조용히 어긋난다). 이 유틸은 갈라 읽기와 방향만 맡는다.
+ * <p>필드 이름이 맞는지는 각 화면의 열 지도(배당 DIVIDEND_SORTS · 매매 TRADE_SORTS)가 판정한다(허용 목록을 여기 한 벌 더 두면 조용히 어긋난다).
+ * 이 유틸은 갈라 읽기 · 방향과 열 비교기의 모양(ascendingNullsLast)만 맡는다.
  */
 public final class StockSortUtil {
+
+  /** 목록 정렬 열 하나의 비교기 - 값이 없으면 뒤로 가는 오름차순(내림차순은 부르는 쪽이 뒤집는다). */
+  public static <T, U extends Comparable<? super U>> java.util.Comparator<T> ascendingNullsLast(
+      java.util.function.Function<? super T, ? extends U> key) {
+    return java.util.Comparator.comparing(
+        key, java.util.Comparator.nullsLast(java.util.Comparator.<U>naturalOrder()));
+  }
 
   private StockSortUtil() {}
 

@@ -72,11 +72,6 @@ class MonthlyDividendPayoutFormValidationTest {
           }
 
           @Override
-          public StockItem findByName(String name) {
-            return null;
-          }
-
-          @Override
           public List<StockItem> getStockItemsByTag(String tag) {
             return List.of();
           }

@@ -3,8 +3,6 @@ package net.luversof.web.gate.stock.view;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -21,8 +19,9 @@ import org.junit.jupiter.api.Test;
  */
 class DashReasonAccessibleTest {
 
+  /** 배당 수익 분석은 카드 조각을 펼쳐 읽는다(YieldAnalyticsSource, 2026-10-22). */
   private String read(String path) throws IOException {
-    return Files.readString(Path.of(path), StandardCharsets.UTF_8);
+    return YieldAnalyticsSource.readForScan(Path.of(path));
   }
 
   private int count(String source, String marker) {

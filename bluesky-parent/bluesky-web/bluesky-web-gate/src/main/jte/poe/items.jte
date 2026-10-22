@@ -8,7 +8,6 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param String patch = ""
-@param int totalCount = 0
 @param List<PoeGroups.Group> classGroups = java.util.List.of()
 @param String initialQ = ""
 @param String activeValue = "all"

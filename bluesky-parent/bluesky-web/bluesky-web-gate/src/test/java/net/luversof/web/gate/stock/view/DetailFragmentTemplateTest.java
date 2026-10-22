@@ -51,11 +51,8 @@ class DetailFragmentTemplateTest {
   }
 
   @Test
-  void 페이지_템플릿은_같은_조각을_호출하고_셸은_그대로다() {
-    String ready = render("stock/stockItemDetail.jte", Map.of("contentReady", true));
-    assertThat(ready)
-        .contains("<html")
-        .contains("<div id=\"stockItemDetailFragment\" class=\"space-y-6\"");
+  void 페이지_템플릿은_껍데기만_그린다() {
+    // 내용은 htmx 요청에 컨트롤러가 내용 템플릿으로 바로 준다(2026-10-21 에 페이지 템플릿의 닿지 않는 @else 를 지웠다).
     String shell =
         render("stock/stockItemDetail.jte", Map.of("contentReady", false, "stockItemIdParam", "x"));
     assertThat(shell)

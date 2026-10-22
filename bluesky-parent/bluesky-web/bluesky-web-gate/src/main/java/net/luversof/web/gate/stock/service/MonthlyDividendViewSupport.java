@@ -1,5 +1,8 @@
 package net.luversof.web.gate.stock.service;
 
+import static net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.normalizeSymbol;
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -221,8 +224,8 @@ public class MonthlyDividendViewSupport {
         .filter(
             row ->
                 minAnnualYield == null
-                    || safe(row.expectedAnnualYieldPct()).compareTo(minAnnualYield) >= 0)
-        .filter(row -> !positiveOnly || safe(row.expectedCombinedReturnPct()).signum() >= 0)
+                    || nz(row.expectedAnnualYieldPct()).compareTo(minAnnualYield) >= 0)
+        .filter(row -> !positiveOnly || nz(row.expectedCombinedReturnPct()).signum() >= 0)
         .toList();
   }
 
@@ -240,21 +243,20 @@ public class MonthlyDividendViewSupport {
               Comparator.comparing(
                   row -> safeString(row.stockItemSymbol()), String.CASE_INSENSITIVE_ORDER);
           case "monthly-yield-on-cost" ->
-              Comparator.comparing(row -> safe(row.expectedMonthlyYieldOnCostPct()));
+              Comparator.comparing(row -> nz(row.expectedMonthlyYieldOnCostPct()));
           case "annual-yield-on-cost" ->
-              Comparator.comparing(row -> safe(row.expectedAnnualYieldOnCostPct()));
-          case "monthly-yield" -> Comparator.comparing(row -> safe(row.expectedMonthlyYieldPct()));
-          case "annual-yield" -> Comparator.comparing(row -> safe(row.expectedAnnualYieldPct()));
-          case "monthly-dividend" ->
-              Comparator.comparing(row -> safe(row.expectedMonthlyDividend()));
-          case "taxable-base" -> Comparator.comparing(row -> safe(row.averageTaxableBaseRatio1y()));
+              Comparator.comparing(row -> nz(row.expectedAnnualYieldOnCostPct()));
+          case "monthly-yield" -> Comparator.comparing(row -> nz(row.expectedMonthlyYieldPct()));
+          case "annual-yield" -> Comparator.comparing(row -> nz(row.expectedAnnualYieldPct()));
+          case "monthly-dividend" -> Comparator.comparing(row -> nz(row.expectedMonthlyDividend()));
+          case "taxable-base" -> Comparator.comparing(row -> nz(row.averageTaxableBaseRatio1y()));
           case "updated-date" ->
               Comparator.comparing(
                   row -> row.updatedDate() != null ? row.updatedDate() : Instant.EPOCH);
           // 합산 수익률이 같을 때도 비교 우위 순서를 따른다 - 내림차순으로 정렬한 표가 순위 배지 1, 2, 3 ... 순이 되게
           // (동률을 종목코드로만 가르면 1 위 배지가 맨 위에 오지 않을 수 있다). 오름차순은 그 역순이다.
           case SORT_COMBINED_RETURN -> MonthlyDividendCalculator.COMPARISON_ORDER.reversed();
-          default -> Comparator.comparing(row -> safe(row.expectedCombinedReturnPct()));
+          default -> Comparator.comparing(row -> nz(row.expectedCombinedReturnPct()));
         };
 
     if (!"asc".equals(direction)) {
@@ -333,20 +335,12 @@ public class MonthlyDividendViewSupport {
     return "desc".equals(direction) ? right.compareTo(left) : left.compareTo(right);
   }
 
-  private String normalizeSymbol(String symbol) {
-    return StringUtils.hasText(symbol) ? symbol.trim().toUpperCase(Locale.ROOT) : null;
-  }
-
   private String trimToNull(String value) {
     if (value == null) {
       return null;
     }
     String trimmed = value.trim();
     return trimmed.isEmpty() ? null : trimmed;
-  }
-
-  private static BigDecimal safe(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
   }
 
   private static String safeString(String value) {

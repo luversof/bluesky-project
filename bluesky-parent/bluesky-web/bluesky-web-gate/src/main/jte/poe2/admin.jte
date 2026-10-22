@@ -6,11 +6,9 @@
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param Poe2.Meta meta = null
-@param boolean loggedIn = false
 @param String patch = ""
 @param String latestPatch = null
 @param boolean upToDate = false
-@param String latestCdnVersion = null
 @param java.util.List<net.luversof.web.gate.poe.controller.PoeViewController.DataArtifact> artifacts = java.util.List.of()
 @param Long dataLoadedAtEpochMs = null
 @param boolean dataStaleInApi = false

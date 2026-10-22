@@ -82,11 +82,6 @@ public class StockAdminService {
       DO NOTHING
       """;
 
-  // Price history insertion is handled by the price update pipeline; removed
-  // here.
-
-  // Trade and Dividend batch SQL removed — persisted via repositories.
-
   private static final ZoneId KST = ZoneId.of("Asia/Seoul");
   private static final List<DateTimeFormatter> DATE_FORMATTERS =
       List.of(
@@ -130,9 +125,7 @@ public class StockAdminService {
 
     syncStockItemTags(googleSheetStockItemList, savedStockItemList);
 
-    // Price history is managed by a separate update process; return count of saved
-    // stock items.
-    log.debug("Skipped initial price history insert; handled by price pipeline");
+    // 시세는 시세 갱신 작업이 따로 채운다 - 여기서는 저장한 종목 수만 돌려준다.
     return savedStockItemList.size();
   }
 
@@ -156,9 +149,12 @@ public class StockAdminService {
 
     existingAccounts.forEach(account -> accountMap.put(account.getName(), account.getId()));
 
+    // 계좌 이름은 앞뒤 공백을 다듬어 맞춘다 - 배당 가져오기(prepareAccountMap)와 같은 규칙. 예전엔 거래 쪽만 그대로 써서
+    // 시트 한 칸에 공백이 붙으면 같은 계좌가 하나 더 만들어질 수 있었다(2026-10-21 정리, 지금 계좌 6 개는 공백 없음 확인).
     importableGoogleSheetsTradeList.stream()
         .map(GoogleSheetTrade::get계좌)
         .filter(accountName -> accountName != null && !accountName.isBlank())
+        .map(String::trim)
         .distinct()
         .filter(accountName -> !accountMap.containsKey(accountName))
         .forEach(
@@ -297,18 +293,7 @@ public class StockAdminService {
       MonthlyDividendPayoutService.SnapshotStats stats =
           monthlyDividendPayoutService.computeSnapshotStats(stockItem.getId());
       if (stats != null) {
-        snapshot.setAsOfDate(stats.asOfDate());
-        snapshot.setLatestMonthlyDividendPerShare(stats.latestPerShare());
-        snapshot.setAverageMonthlyDividendPerShare1y(stats.averagePerShare1y());
-        // 과세비율은 원장 실적이 우선이다 - 참조는 종목당 값이 하나뿐이라 계좌별 혜택(비과세·분리과세)을 담지 못한다.
-        java.math.BigDecimal ledgerRatio =
-            monthlyDividendPayoutService.ledgerTaxableBaseRatio1y(userId, stockItem.getId());
-        snapshot.setAverageTaxableBaseRatio1y(
-            ledgerRatio != null
-                ? ledgerRatio
-                : (stats.taxableBaseRatio1y() != null
-                    ? stats.taxableBaseRatio1y()
-                    : java.math.BigDecimal.ZERO));
+        monthlyDividendPayoutService.applyStats(snapshot, stats, userId);
       } else if (snapshot.getAsOfDate() == null) {
         snapshot.setAsOfDate(LocalDate.now());
       }
@@ -438,7 +423,7 @@ public class StockAdminService {
 
     String accountName = googleSheetTrade.get계좌();
     if (accountName != null && !accountName.isBlank()) {
-      UUID accountId = accountMap.get(accountName);
+      UUID accountId = accountMap.get(accountName.trim());
       if (accountId != null) {
         trade.setAccountId(accountId);
       } else {

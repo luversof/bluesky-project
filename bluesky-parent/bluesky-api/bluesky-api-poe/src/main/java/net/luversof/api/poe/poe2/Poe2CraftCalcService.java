@@ -52,7 +52,33 @@ public class Poe2CraftCalcService {
       Map<String, Double> perSuccess,
       // 성공 한 번당 비용(디바인, poe.ninja 시세 — 시세 없는 화폐가 있으면 null)
       Double costPerSuccess,
-      String note) {}
+      String note,
+      // 영어 화면용(10-22 C561 ⑦b — PoE1 C557 짝). 없으면 null(게이트가 한국어로)
+      String labelEn,
+      String noteEn) {
+
+    public Method(
+        String method,
+        String label,
+        int runs,
+        int successes,
+        double successRate,
+        Map<String, Double> perSuccess,
+        Double costPerSuccess,
+        String note) {
+      this(
+          method,
+          label,
+          runs,
+          successes,
+          successRate,
+          perSuccess,
+          costPerSuccess,
+          note,
+          null,
+          null);
+    }
+  }
 
   public record Response(
       List<Method> results, String league, String pricesAt, Double exaltPerDivine, String error) {}
@@ -139,9 +165,8 @@ public class Poe2CraftCalcService {
 
   /**
    * 에뮬레이터에서 쓴 단계 하나(C366) — action = 화폐(FORESEE = 히네코라의 머리카락), arg = 등급 · 에센스 · 뼈, omens = 그때 쓰인 징조
-   * 키.
+   * 키. times = 같은 화폐를 연달아 쓴 횟수(C508 목표까지 연타, 없으면 1).
    */
-  /** times = 같은 화폐를 연달아 쓴 횟수(C508 목표까지 연타, 없으면 1). */
   public record SpentStep(String action, String arg, List<String> omens, Integer times) {
 
     public SpentStep(String action, String arg, List<String> omens) {
@@ -509,7 +534,9 @@ public class Poe2CraftCalcService {
         done == 0 ? 0 : (double) success / done,
         per,
         cost(per),
-        "회차 " + done + "번 · 카오스는 옵션 하나만 바꿔 상태가 남는다(회차 단위)");
+        "회차 " + done + "번 · 카오스는 옵션 하나만 바꿔 상태가 남는다(회차 단위)",
+        "Alchemy → " + tierEn(tier) + "Chaos Orb repeated (up to " + CHAOS_MAX + ")",
+        done + " runs · Chaos changes one modifier at a time, so the item carries over (per run)");
   }
 
   /**
@@ -646,6 +673,12 @@ public class Poe2CraftCalcService {
     }
     String sideKo =
         sideOmen == null ? "" : sideOmen.startsWith("Sinistral") ? "(좌측 찬미)" : "(우측 찬미)";
+    String sideEn =
+        sideOmen == null
+            ? ""
+            : sideOmen.startsWith("Sinistral")
+                ? " (Sinistral Exaltation)"
+                : " (Dextral Exaltation)";
     return new Method(
         "EXALT" + (tier.isEmpty() ? "" : ":" + tier) + (sideOmen == null ? "" : ":" + sideOmen),
         tierKo(tier) + "진화 → 확장 → 제왕 → 엑잘" + sideKo + "(목표까지, 최대 6옵션)",
@@ -654,7 +687,12 @@ public class Poe2CraftCalcService {
         (double) success / Math.max(1, done),
         per,
         cost(per),
-        "시도마다 새 베이스(베이스 값은 빼고) · 목표를 채우거나 목표 쪽 자리가 막히면 멈춤");
+        "시도마다 새 베이스(베이스 값은 빼고) · 목표를 채우거나 목표 쪽 자리가 막히면 멈춤",
+        tierEn(tier)
+            + "Transmute → Augment → Regal → Exalt"
+            + sideEn
+            + " (until the targets, up to 6 modifiers)",
+        "New base each try (base cost excluded) · stops when the targets are met or the target side is full");
   }
 
   /**
@@ -754,7 +792,11 @@ public class Poe2CraftCalcService {
               (double) success / done,
               per,
               cost(per),
-              "엑잘마다 기폭제 20개 · 징조 하나(퀄리티를 모두 소모) · 같은 종류 가중치 ×5(poe2wiki, 균등 가정 위에)");
+              "엑잘마다 기폭제 20개 · 징조 하나(퀄리티를 모두 소모) · 같은 종류 가중치 ×5(poe2wiki, 균등 가정 위에)",
+              "Transmute → Augment → Regal → (20% catalyst + Omen of Catalysing Exaltation) Exalt — "
+                  + catName.getOrDefault(key, key),
+              "20 catalysts per Exalt · one omen (consumes all quality) · same-type weighting ×5"
+                  + " (poe2wiki, on top of the uniform assumption)");
       if (best == null
           || (m.costPerSuccess() != null
               && (best.costPerSuccess() == null || m.costPerSuccess() < best.costPerSuccess()))
@@ -835,7 +877,10 @@ public class Poe2CraftCalcService {
               (double) success / Math.max(1, done),
               per,
               cost(per),
-              "보장: " + String.join(", ", e.ko() == null || e.ko().isEmpty() ? e.en() : e.ko())));
+              "보장: " + String.join(", ", e.ko() == null || e.ko().isEmpty() ? e.en() : e.ko()),
+              e.name()
+                  + " — Transmute → Augment → Essence → Exalt (until the targets, up to 6 modifiers)",
+              "Guaranteed: " + String.join(", ", e.en() == null ? List.of() : e.en())));
     }
     all.sort(
         java.util.Comparator.comparing(
@@ -869,7 +914,9 @@ public class Poe2CraftCalcService {
         (double) success / Math.max(1, done),
         per,
         cost(per),
-        "4옵션 · 베이스 값은 빼고");
+        "4옵션 · 베이스 값은 빼고",
+        "Orb of Alchemy spam (new base each time)",
+        "4 modifiers · base cost excluded");
   }
 
   /**
@@ -1027,6 +1074,8 @@ public class Poe2CraftCalcService {
             ? ""
             : " + "
                 + String.join(" + ", omens.stream().map(k -> omenKo.getOrDefault(k, k)).toList());
+    String suffixEn =
+        omens.isEmpty() ? "" : " + " + String.join(" + ", omens.stream().map(names::omen).toList());
     return new Method(
         "DESECRATE" + (omens.isEmpty() ? "" : ":" + String.join(",", omens)),
         "연금 → 훼손(" + bone.nameKo() + ") → 드러내기(목표 먼저)" + suffix,
@@ -1035,7 +1084,10 @@ public class Poe2CraftCalcService {
         (double) success / Math.max(1, done),
         per,
         cost(per),
-        "새 베이스마다 · 셋에 목표가 있으면 그것 · 심연의 메아리는 셋에 목표가 없을 때만 씀 · 베이스 값은 빼고");
+        "새 베이스마다 · 셋에 목표가 있으면 그것 · 심연의 메아리는 셋에 목표가 없을 때만 씀 · 베이스 값은 빼고",
+        "Alchemy → Desecrate (" + bone.name() + ") → Reveal (targets first)" + suffixEn,
+        "New base each time · takes a target if one of the three offered is a target · Omen of"
+            + " Abyssal Echoes only when none is · base cost excluded");
   }
 
   private String genOf(Target t) {
@@ -1083,7 +1135,9 @@ public class Poe2CraftCalcService {
         (double) success / Math.max(1, done),
         per,
         cost(per),
-        "매직 2옵션까지 · 베이스 값은 빼고");
+        "매직 2옵션까지 · 베이스 값은 빼고",
+        "Transmute → Augment (magic, new base each time)",
+        "Up to 2 modifiers on a magic item · base cost excluded");
   }
 
   /**
@@ -1157,13 +1211,33 @@ public class Poe2CraftCalcService {
             + b.label()
             + " · 성공률 칸 = 재조합 성공 확률(입력값"
             + (lucky ? ", 행운" : "")
-            + "), 두 아이템은 실패해도 소모 · 유물(재조합 비용)은 시세 없어 뺌");
+            + "), 두 아이템은 실패해도 소모 · 유물(재조합 비용)은 시세 없어 뺌",
+        "Half recombination ("
+            + ("접두 · 접미".equals(split) ? "prefix · suffix" : "split in half")
+            + ", recombine "
+            + chance
+            + "%"
+            + (lucky ? " + Omen of Recombination" : "")
+            + ")",
+        "Half 1: "
+            + (a.labelEn() == null ? a.label() : a.labelEn())
+            + " · Half 2: "
+            + (b.labelEn() == null ? b.label() : b.labelEn())
+            + " · the success column = recombination chance (your input"
+            + (lucky ? ", lucky" : "")
+            + "), both items are consumed even on failure · the relic (recombination cost) has no"
+            + " price and is excluded");
   }
 
   private static String tierName(String name, String tier) {
     return "greater".equals(tier)
         ? "Greater " + name
         : "perfect".equals(tier) ? "Perfect " + name : name;
+  }
+
+  /** tierKo 의 영어 판(C561). */
+  private static String tierEn(String tier) {
+    return "greater".equals(tier) ? "Greater " : "perfect".equals(tier) ? "Perfect " : "";
   }
 
   private static String tierKo(String tier) {
@@ -1351,7 +1425,6 @@ public class Poe2CraftCalcService {
     return it;
   }
 
-  /** 드러낼 셋에서 목표에 든 것을 먼저, 없으면 첫 번째. */
   /** 드러낼 셋에 목표 옵션이 있는가(C411). */
   private static boolean offersHitTarget(
       Poe2CraftEngine engine, Poe2CraftEngine.Item it, List<Target> targets) {
@@ -1365,6 +1438,7 @@ public class Poe2CraftCalcService {
     return false;
   }
 
+  /** 드러낼 셋에서 목표에 든 것을 먼저, 없으면 첫 번째. */
   private static String revealChoice(
       Poe2CraftEngine engine, Poe2CraftEngine.Item it, List<Target> targets) {
     List<String> offers = engine.revealOffers(it);
@@ -1426,7 +1500,6 @@ public class Poe2CraftCalcService {
     return new Names(cur, other, om);
   }
 
-  /** 목표마다 서로 다른 옵션으로 채우는가(작은 이분 매칭). */
   /**
    * 목표까지 연타(10-20 C508, PoE1 C506 짝) — 목표를 모두 채우거나 최대 횟수까지 같은 화폐(arg = 등급 · 에센스), 징조는 쓰지 않는다(첫 번에
    * 사라지므로).
@@ -1643,6 +1716,7 @@ public class Poe2CraftCalcService {
     return new DistResult(total, lines, affixes, null);
   }
 
+  /** 목표마다 서로 다른 옵션으로 채우는가(작은 이분 매칭). */
   static boolean meets(Poe2CraftEngine.Item item, List<Target> all) {
     int[] need = openNeed(all);
     if (need[0] + need[1] > 0) {

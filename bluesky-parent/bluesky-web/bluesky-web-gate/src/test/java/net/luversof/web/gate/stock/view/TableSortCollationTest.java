@@ -29,10 +29,9 @@ class TableSortCollationTest {
   private static final List<Path> SORT_SOURCES =
       List.of(
           Path.of("src/main/frontend/src/stock/tableSort.ts"),
-          // 2026-09-08 인라인 정렬기가 assetStatus.ts 로 옮겨갔다(같은 구현, 파일만 바뀜)
-          Path.of("src/main/frontend/src/stock/assetStatus.ts"),
-          // 2026-09-08 인라인 정렬기가 dividendHistory.ts 로 옮겨갔다
-          Path.of("src/main/frontend/src/stock/dividendHistory.ts"));
+          // 2026-09-08 인라인 정렬기가 assetStatus.ts · dividendHistory.ts 로 옮겨갔고, 2026-10-22 에 그 두 벌이
+          // 공용 clientTableSort.ts 하나가 됐다(같은 구현).
+          Path.of("src/main/frontend/src/stock/clientTableSort.ts"));
 
   /** {@code localeCompare(x, <로케일>, ...)} 의 두 번째 인자를 뽑는다. */
   private static final Pattern LOCALE_ARG =

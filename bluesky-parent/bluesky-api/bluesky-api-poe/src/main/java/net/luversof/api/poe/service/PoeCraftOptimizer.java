@@ -38,7 +38,9 @@ public class PoeCraftOptimizer {
       // 계산기 표가 고른 화석 · 수확 방법 id(FOSSIL:… · HARVEST:…) — 있으면 다시 고르지 않는다(1.8초 절약)
       List<String> methods,
       // 사용자 가격(C529) — 작업 스레드에서 건다
-      Map<String, Double> prices) {
+      Map<String, Double> prices,
+      // upperLabel 의 영어 판(C557) — 요청에 upper 를 줄 때만(지금 게이트는 안 보내고 API 가 계산기 표 · 연타로 정한다)
+      String upperLabelEn) {
 
     public Request(
         Item item,
@@ -47,12 +49,19 @@ public class PoeCraftOptimizer {
         Double upper,
         String upperLabel,
         List<String> methods) {
-      this(item, targets, budgetMs, upper, upperLabel, methods, null);
+      this(item, targets, budgetMs, upper, upperLabel, methods, null, null);
     }
   }
 
   /** 정책 규칙 하나 — state = 상태 설명, action = 그 상태에서 쓸 수단, share = 시뮬레이션에서 이 상태를 지난 비율. */
-  public record Rule(String state, String action, double share, Double remaining) {}
+  public record Rule(
+      String state,
+      String action,
+      double share,
+      Double remaining,
+      // 영어 화면용(C557)
+      String stateEn,
+      String actionEn) {}
 
   /**
    * 결과 — expectedCost = 정책을 실제 아이템에 굴려 잰 성공 한 번당 비용(카오스), planCost = 가치 반복이 낸 값(상태 근사), perSuccess
@@ -86,7 +95,15 @@ public class PoeCraftOptimizer {
       // 성공 회차 비용 분포(C505) — 25% · 50% · 90% 지점(못 닿은 회차 비용은 안 넣음, 기대 비용과 다를 수 있다)
       List<Double> costQuantiles,
       // 엘드리치 임플리싯 목표(C549) — 명시 옵션과 따로 잰 비용(더해서 본다), 없으면 null
-      PoeCraftCalcService.EldritchResult eldritch) {}
+      PoeCraftCalcService.EldritchResult eldritch,
+      // 영어 화면용(10-21 C557 ⑦ — 영어 화면에 흐름 · 비교 기준 · 수단 · 설명이 한국어로 나왔다)
+      String upperLabelEn,
+      String pathEn,
+      List<String> methodsEn,
+      String noteEn,
+      String errorEn,
+      // 모의 성공이 적어 계획 값을 비용으로 보였을 때의 모의 값(C563), 아니면 null
+      Double simCost) {}
 
   /** 결과 예시 하나 — 그 회차 비용(카오스) · 옵션 줄(문구는 범위). */
   public record Showcase(double cost, String rarity, List<PoeCraftService.Line> lines) {}
@@ -110,7 +127,10 @@ public class PoeCraftOptimizer {
       String state,
       String action,
       String actionId,
-      Double remaining) {}
+      Double remaining,
+      // 영어 화면용(C557)
+      String stateEn,
+      String actionEn) {}
 
   /** 다음 수단 요청 — imprint = 에뮬레이터의 각인(없으면 null). */
   public record NextRequest(Item item, Item imprint) {}
@@ -128,11 +148,11 @@ public class PoeCraftOptimizer {
             + (imprint == null ? "" : "#" + p.job().key(craft.normalize(imprint)));
     int n = p.job().goal.size();
     if (p.job().goalKey(k)) {
-      return new Next(true, true, describe(k, n), null, null, 0d);
+      return new Next(true, true, describe(k, n), null, null, 0d, describeEn(k, n), null);
     }
     Integer ai = p.pol().get(k);
     if (ai == null) {
-      return new Next(false, false, describe(k, n), null, null, null);
+      return new Next(false, false, describe(k, n), null, null, null, describeEn(k, n), null);
     }
     return new Next(
         false,
@@ -140,7 +160,9 @@ public class PoeCraftOptimizer {
         describe(k, n),
         label(p.usable(), ai, p.job().upperLabel),
         ai == FALLBACK ? "FALLBACK" : p.usable().get(ai).id(),
-        p.v().get(k));
+        p.v().get(k),
+        describeEn(k, n),
+        labelEn(p.usable(), ai, p.job().upperLabelEn));
   }
 
   private final java.util.concurrent.ExecutorService pool =
@@ -167,7 +189,8 @@ public class PoeCraftOptimizer {
             req.upper(),
             req.upperLabel(),
             req.methods(),
-            req.prices());
+            req.prices(),
+            req.upperLabelEn());
     String id = java.util.UUID.randomUUID().toString();
     jobs.put(
         id,
@@ -202,14 +225,24 @@ public class PoeCraftOptimizer {
     try {
       res = run.future().get();
     } catch (Exception e) {
-      res = error("계산 중 오류: " + e.getClass().getSimpleName());
+      res =
+          error(
+              "계산 중 오류: " + e.getClass().getSimpleName(),
+              "Calculation error: " + e.getClass().getSimpleName());
     }
     return new JobStatus(id, "done", el, run.budget(), res);
   }
 
   /** 수단 하나 — 같은 엔진 동작 · 인자, 한 번 쓸 때 화폐(이름 → 개수)와 비용(카오스). */
   private record Act(
-      String id, Action action, String arg, String ko, Map<String, Double> spend, double cost) {}
+      String id,
+      Action action,
+      String arg,
+      String ko,
+      Map<String, Double> spend,
+      double cost,
+      // 영어 이름(C557 — 게임 화폐 · 짐승 · 제작대 영어 원문)
+      String en) {}
 
   static final int MAX_STATES = 5_000;
   // 다시 굴리기는 남는 옵션이 같은 상태끼리 결과 분포를 함께 써 종류가 적다 — 드문 결과(목표 둘이 한 번에)의 확률을 잡도록 크게(C457e: 1,200 이면 목표 둘
@@ -219,6 +252,12 @@ public class PoeCraftOptimizer {
   static final int SAMPLE_STEP = 400;
   // 다시 굴리기 표본을 늘리는 기준 — 목표를 새로 맞힌 결과 수(C472d)
   static final int RARE_HITS = 40;
+  // 드문 결과 깎기(10-22 C563 ⑧) — 목표를 새로 맞힌 결과의 확률을 Wilson 신뢰 하한(z = 1)으로. 승자의 저주(표본이 적은 드문 결과가 우연히 높게 뜬
+  // 수단이 뽑혀 계획이 낙관적 — 4목표 6회 중 3회가 계획이 실제보다 최대 41% 낮았다)를 없앤다. 측정(같은 요청 6~8회): 낙관 3/6 → 0/6, 실제 비용
+  // 평균 2,836 → 2,495c, 쉬운 목표(2목표)는 결과 같음. z = 0.5 는 낙관이 남았다
+  public static final double LCB_Z = 1.0;
+  // 모의 성공이 이보다 적으면 계획 값을 비용으로(C563)
+  static final int FEW_SUCCESSES = 5;
   // 다듬기(C467) — 정책이 닿는 상태의 수단을 다시 뜨는 표본 수 · 상태 수 · 상태마다 수단 수
   static final int SAMPLE_REFINE = 4_000;
   static final int REFINE_STATES = 300;
@@ -310,6 +349,7 @@ public class PoeCraftOptimizer {
     // 원본 옵션 → 바꾼 옵션(C469b — 열쇠마다 엔진 바꾸기를 돌리면 처음 상태 하나에 9초)
     final Map<String, Affix> convertMemo = new java.util.concurrent.ConcurrentHashMap<>();
     String upperLabel = "";
+    String upperLabelEn = "";
     final PoeCraftEngine engine = craft.engine();
 
     Job(
@@ -709,7 +749,7 @@ public class PoeCraftOptimizer {
         return null;
       }
       final double okD = ok;
-      out.replaceAll((x, v) -> v / okD);
+      shrinkProgress(out, this::maskOf, curMask, okD, LCB_Z);
       if (ck != null) {
         rerollCache.put(ck, out);
       }
@@ -718,6 +758,41 @@ public class PoeCraftOptimizer {
         return null;
       }
       return out;
+    }
+  }
+
+  /**
+   * 횟수 → 확률, 목표를 새로 맞힌 결과는 Wilson 하한(z)으로(C563 — PoE2 도 같이 쓴다). 깎은 몫은 진전 없는 결과에 비례로 돌린다(진전 없는 결과가
+   * 없으면 깎지 않는다).
+   */
+  public static void shrinkProgress(
+      Map<String, Double> out,
+      java.util.function.ToIntFunction<String> mask,
+      int curMask,
+      double n,
+      double z) {
+    double removed = 0;
+    double rest = 0;
+    Map<String, Double> adj = new HashMap<>();
+    for (Map.Entry<String, Double> e : out.entrySet()) {
+      double c = e.getValue();
+      if ((mask.applyAsInt(e.getKey()) & ~curMask) != 0) {
+        double lb =
+            Math.max(0, (c + z * z / 2 - z * Math.sqrt(c * (n - c) / n + z * z / 4)) / (n + z * z));
+        adj.put(e.getKey(), lb);
+        removed += c / n - lb;
+      } else {
+        rest += c / n;
+      }
+    }
+    if (rest <= 0 || removed <= 0) {
+      out.replaceAll((x, v) -> v / n);
+      return;
+    }
+    double scale = (rest + removed) / rest;
+    for (Map.Entry<String, Double> e : out.entrySet()) {
+      Double a = adj.get(e.getKey());
+      e.setValue(a != null ? a : e.getValue() / n * scale);
     }
   }
 
@@ -756,13 +831,16 @@ public class PoeCraftOptimizer {
     List<Target> eldTargets = allReal.stream().filter(calc::eldritchTarget).toList();
     List<Target> realTargets = allReal.stream().filter(t -> !calc.eldritchTarget(t)).toList();
     if (realTargets.isEmpty() && !eldTargets.isEmpty()) {
-      return error("명시 옵션(접두 · 접미) 목표가 없습니다 — 엘드리치 임플리싯 비용은 계산기 표 위 '엘드리치 임플리싯' 줄");
+      return error(
+          "명시 옵션(접두 · 접미) 목표가 없습니다 — 엘드리치 임플리싯 비용은 계산기 표 위 '엘드리치 임플리싯' 줄",
+          "No explicit (prefix · suffix) targets — the Eldritch implicit cost is on the 'Eldritch"
+              + " implicits' line above the calculator table");
     }
     if (realTargets.isEmpty()) {
-      return error("목표 옵션을 하나 이상 고르세요");
+      return error("목표 옵션을 하나 이상 고르세요", "Choose at least one target modifier");
     }
     if (realTargets.size() > 6) {
-      return error("목표는 여섯 개까지입니다");
+      return error("목표는 여섯 개까지입니다", "Up to six targets");
     }
     Item start = craft.normalize(req.item());
     // 쪽마다 자리 검사(C471e) — 한쪽(접두/접미)에만 붙는 목표가 그쪽 자리 수보다 많으면 동시에 채울 수 없다(접미 저항 넷 — 정책이 넘김뿐인 1e9 결과를
@@ -799,10 +877,19 @@ public class PoeCraftOptimizer {
               + (openNeed[1] > 0 ? "(+빈 자리 " + openNeed[1] + ")" : "")
               + ", 레어는 쪽마다 "
               + perSide
-              + "자리");
+              + "자리",
+          "The targets cannot all fit — prefix targets "
+              + onlyPre
+              + (openNeed[0] > 0 ? " (+" + openNeed[0] + " open)" : "")
+              + " · suffix targets "
+              + onlySuf
+              + (openNeed[1] > 0 ? " (+" + openNeed[1] + " open)" : "")
+              + ", a rare has "
+              + perSide
+              + " slots per side");
     }
     if (start.corrupted()) {
-      return error("타락한 아이템은 바꿀 수 없습니다");
+      return error("타락한 아이템은 바꿀 수 없습니다", "Corrupted items cannot be modified");
     }
     long budget =
         Math.max(
@@ -823,7 +910,13 @@ public class PoeCraftOptimizer {
           continue;
         }
         Act a =
-            act("BENCH:" + b.modId(), Action.BENCH, b.modId(), "제작대: " + text(b.ko(), b.en()), cls);
+            act(
+                "BENCH:" + b.modId(),
+                Action.BENCH,
+                b.modId(),
+                "제작대: " + text(b.ko(), b.en()),
+                "Bench: " + textEn(b.en()),
+                cls);
         if (a != null && a.cost() < bestCost) {
           best = b;
           bestCost = a.cost();
@@ -837,6 +930,7 @@ public class PoeCraftOptimizer {
                 Action.BENCH,
                 best.modId(),
                 "제작대: " + text(best.ko(), best.en()),
+                "Bench: " + textEn(best.en()),
                 cls));
       }
     }
@@ -870,37 +964,74 @@ public class PoeCraftOptimizer {
           extra.get(t).add(e.modId());
         }
       }
-      acts.add(act("ESSENCE:" + e.slug(), Action.ESSENCE, e.slug(), e.nameKo(), cls));
+      acts.add(act("ESSENCE:" + e.slug(), Action.ESSENCE, e.slug(), e.nameKo(), e.name(), cls));
     }
     List<Target> goal = extra.stream().map(Target::new).toList();
     // 기본 화폐
-    acts.add(act("TRANSMUTE", Action.TRANSMUTE, null, "진화의 오브", cls));
-    acts.add(act("ALTERATION", Action.ALTERATION, null, "변화의 오브", cls));
-    acts.add(act("AUGMENTATION", Action.AUGMENTATION, null, "확장의 오브", cls));
-    acts.add(act("REGAL", Action.REGAL, null, "제왕의 오브", cls));
-    acts.add(act("ALCHEMY", Action.ALCHEMY, null, "연금술의 오브", cls));
-    acts.add(act("CHAOS", Action.CHAOS, null, "카오스 오브", cls));
-    acts.add(act("EXALT", Action.EXALT, null, "엑잘티드 오브", cls));
-    acts.add(act("ANNUL", Action.ANNUL, null, "소멸의 오브", cls));
-    acts.add(act("SCOUR", Action.SCOUR, null, "정제의 오브", cls));
+    acts.add(act("TRANSMUTE", Action.TRANSMUTE, null, "진화의 오브", "Orb of Transmutation", cls));
+    acts.add(act("ALTERATION", Action.ALTERATION, null, "변화의 오브", "Orb of Alteration", cls));
+    acts.add(act("AUGMENTATION", Action.AUGMENTATION, null, "확장의 오브", "Orb of Augmentation", cls));
+    acts.add(act("REGAL", Action.REGAL, null, "제왕의 오브", "Regal Orb", cls));
+    acts.add(act("ALCHEMY", Action.ALCHEMY, null, "연금술의 오브", "Orb of Alchemy", cls));
+    acts.add(act("CHAOS", Action.CHAOS, null, "카오스 오브", "Chaos Orb", cls));
+    acts.add(act("EXALT", Action.EXALT, null, "엑잘티드 오브", "Exalted Orb", cls));
+    acts.add(act("ANNUL", Action.ANNUL, null, "소멸의 오브", "Orb of Annulment", cls));
+    acts.add(act("SCOUR", Action.SCOUR, null, "정제의 오브", "Orb of Scouring", cls));
     // 분열의 오브(C465) — 옵션 4개 이상 레어(영향력 · 이미 분열이면 엔진이 거절)
-    acts.add(act("FRACTURE", Action.FRACTURE, null, "분열의 오브", cls));
+    acts.add(act("FRACTURE", Action.FRACTURE, null, "분열의 오브", "Fracturing Orb", cls));
     // 삿된 화폐(C459) — 레벨 높은 속성 가중
-    acts.add(act("FOULBORN_AUG", Action.FOULBORN_AUG, null, "삿된 확장의 오브", cls));
-    acts.add(act("FOULBORN_REGAL", Action.FOULBORN_REGAL, null, "삿된 제왕의 오브", cls));
-    acts.add(act("FOULBORN_EXALT", Action.FOULBORN_EXALT, null, "삿된 엑잘티드 오브", cls));
+    acts.add(
+        act(
+            "FOULBORN_AUG",
+            Action.FOULBORN_AUG,
+            null,
+            "삿된 확장의 오브",
+            "Foulborn Orb of Augmentation",
+            cls));
+    acts.add(
+        act("FOULBORN_REGAL", Action.FOULBORN_REGAL, null, "삿된 제왕의 오브", "Foulborn Regal Orb", cls));
+    acts.add(
+        act(
+            "FOULBORN_EXALT",
+            Action.FOULBORN_EXALT,
+            null,
+            "삿된 엑잘티드 오브",
+            "Foulborn Exalted Orb",
+            cls));
     // 장막(C459) — 장막 카오스(장막 옵션 하나 보장) · 장막 엑잘 · 해제(제시 셋 중 목표 먼저)
-    acts.add(act("VEILED_CHAOS", Action.VEILED_CHAOS, null, "장막의 카오스 오브", cls));
-    acts.add(act("VEILED_EXALT", Action.VEILED_EXALT, null, "장막의 엑잘티드 오브", cls));
-    acts.add(act("UNVEIL", Action.UNVEIL, null, "장막 해제(목표 먼저)", cls));
+    acts.add(act("VEILED_CHAOS", Action.VEILED_CHAOS, null, "장막의 카오스 오브", "Veiled Chaos Orb", cls));
+    acts.add(
+        act("VEILED_EXALT", Action.VEILED_EXALT, null, "장막의 엑잘티드 오브", "Veiled Exalted Orb", cls));
+    acts.add(act("UNVEIL", Action.UNVEIL, null, "장막 해제(목표 먼저)", "Unveil (targets first)", cls));
     // 엘드리치(C459) — 갑옷 · 장화 · 장갑 · 투구, 영향력 없는 아이템. 불씨 · 영액으로 우세를 만들고 섬뜩한 화폐는 우세한 쪽만
     if (PoeCraftEngine.ELDRITCH_CLASSES.contains(cls)
         && (start.influence() == null || start.influence().isEmpty())) {
-      acts.add(act("EMBER:1", Action.EMBER, "1", "하급 섬뜩한 불씨", cls));
-      acts.add(act("ICHOR:1", Action.ICHOR, "1", "하급 섬뜩한 영액", cls));
-      acts.add(act("ELDRITCH_CHAOS", Action.ELDRITCH_CHAOS, null, "섬뜩한 카오스 오브", cls));
-      acts.add(act("ELDRITCH_EXALT", Action.ELDRITCH_EXALT, null, "섬뜩한 엑잘티드 오브", cls));
-      acts.add(act("ELDRITCH_ANNUL", Action.ELDRITCH_ANNUL, null, "섬뜩한 소멸의 오브", cls));
+      acts.add(act("EMBER:1", Action.EMBER, "1", "하급 섬뜩한 불씨", "Lesser Eldritch Ember", cls));
+      acts.add(act("ICHOR:1", Action.ICHOR, "1", "하급 섬뜩한 영액", "Lesser Eldritch Ichor", cls));
+      acts.add(
+          act(
+              "ELDRITCH_CHAOS",
+              Action.ELDRITCH_CHAOS,
+              null,
+              "섬뜩한 카오스 오브",
+              "Eldritch Chaos Orb",
+              cls));
+      acts.add(
+          act(
+              "ELDRITCH_EXALT",
+              Action.ELDRITCH_EXALT,
+              null,
+              "섬뜩한 엑잘티드 오브",
+              "Eldritch Exalted Orb",
+              cls));
+      acts.add(
+          act(
+              "ELDRITCH_ANNUL",
+              Action.ELDRITCH_ANNUL,
+              null,
+              "섬뜩한 소멸의 오브",
+              "Eldritch Orb of Annulment",
+              cls));
     }
     // 화석 · 수확 — 계산기가 고르는 것과 같은 상위 조합(짧게)
     long tFossil = System.currentTimeMillis();
@@ -920,18 +1051,20 @@ public class PoeCraftOptimizer {
     if (req.methods() != null) {
       for (String m : req.methods()) {
         if (m != null && (m.startsWith("FOSSIL:") || m.startsWith("HARVEST:"))) {
-          picked.add(new String[] {m, m});
+          picked.add(new String[] {m, m, m});
         }
       }
     } else if (table != null) {
       for (PoeCraftCalcService.MethodResult r : table.results()) {
         if (r.method() != null && r.method().startsWith("FOSSIL:")) {
-          picked.add(new String[] {r.method(), r.label()});
+          picked.add(
+              new String[] {r.method(), r.label(), r.labelEn() == null ? r.label() : r.labelEn()});
         }
       }
     } else {
       for (PoeCraftCalcService.MethodResult r : calc.fossils(start, targets, 4_000)) {
-        picked.add(new String[] {r.method(), r.label()});
+        picked.add(
+            new String[] {r.method(), r.label(), r.labelEn() == null ? r.label() : r.labelEn()});
       }
     }
     // 수확 재련(C459) — 목표 태그에 맞는 것 전부(표의 상위 둘만이 아니라)
@@ -950,7 +1083,7 @@ public class PoeCraftOptimizer {
           };
       if ((otherHarvest || "reroll_with_mod".equals(h.command()) && tags.contains(tag))
           && picked.stream().noneMatch(x -> x[0].equals("HARVEST:" + h.id()))) {
-        picked.add(new String[] {"HARVEST:" + h.id(), "HARVEST:" + h.id()});
+        picked.add(new String[] {"HARVEST:" + h.id(), "HARVEST:" + h.id(), "HARVEST:" + h.id()});
       }
     }
     for (String[] m : picked) {
@@ -962,6 +1095,7 @@ public class PoeCraftOptimizer {
               fossil ? Action.FOSSIL : Action.HARVEST,
               arg,
               m[1].equals(m[0]) ? methodKo(fossil, arg) : m[1],
+              m[2].equals(m[0]) ? methodEn(fossil, arg) : m[2],
               cls));
     }
     // 메타 제작 · 제작대 옵션 지우기 · 짐승 맞바꾸기
@@ -972,16 +1106,44 @@ public class PoeCraftOptimizer {
       String id = b.modId() == null ? "" : b.modId();
       if (id.endsWith("ItemGenerationCannotChangePrefixes")) {
         lockPre = id;
-        acts.add(act("BENCH:" + id, Action.BENCH, id, "제작대: 접두어 변경 불가", cls));
+        acts.add(
+            act(
+                "BENCH:" + id,
+                Action.BENCH,
+                id,
+                "제작대: 접두어 변경 불가",
+                "Bench: Prefixes Cannot Be Changed",
+                cls));
       } else if (id.endsWith("ItemGenerationCannotChangeSuffixes")) {
         lockSuf = id;
-        acts.add(act("BENCH:" + id, Action.BENCH, id, "제작대: 접미어 변경 불가", cls));
+        acts.add(
+            act(
+                "BENCH:" + id,
+                Action.BENCH,
+                id,
+                "제작대: 접미어 변경 불가",
+                "Bench: Suffixes Cannot Be Changed",
+                cls));
       } else if (id.endsWith("ItemGenerationCanHaveMultipleCraftedMods")) {
         multi = id;
-        acts.add(act("BENCH:" + id, Action.BENCH, id, "제작대: 제작 속성 최대 3개", cls));
+        acts.add(
+            act(
+                "BENCH:" + id,
+                Action.BENCH,
+                id,
+                "제작대: 제작 속성 최대 3개",
+                "Bench: Can have up to 3 Crafted Modifiers",
+                cls));
       }
     }
-    acts.add(act("BENCH_REMOVE", Action.BENCH_REMOVE, null, "제작대: 제작 속성 지우기", cls));
+    acts.add(
+        act(
+            "BENCH_REMOVE",
+            Action.BENCH_REMOVE,
+            null,
+            "제작대: 제작 속성 지우기",
+            "Bench: Remove Crafted Modifiers",
+            cls));
     // 영향력 아이템 — 짐승 '그 영향력 아이템에 속성 추가'(C463, BestiaryRecipes EinharMasterCraft42~47, 엑잘처럼 그 아이템 풀에서
     // 하나)
     Map<String, String> infKo =
@@ -1008,14 +1170,45 @@ public class PoeCraftOptimizer {
               Action.BEAST,
               "influence:" + inf,
               "짐승: " + infKo.getOrDefault(inf, inf) + " 아이템에 속성 추가",
+              "Beast: Add a Mod to a " + INFLUENCE_EN.getOrDefault(inf, inf) + " Item",
               cls));
     }
-    acts.add(act("BEAST:swap-prefix", Action.BEAST, "swap-prefix", "짐승: 접두어 추가, 무작위 접미어 제거", cls));
-    acts.add(act("BEAST:swap-suffix", Action.BEAST, "swap-suffix", "짐승: 접미어 추가, 무작위 접두어 제거", cls));
+    acts.add(
+        act(
+            "BEAST:swap-prefix",
+            Action.BEAST,
+            "swap-prefix",
+            "짐승: 접두어 추가, 무작위 접미어 제거",
+            "Beast: Add a Prefix, Remove a Random Suffix",
+            cls));
+    acts.add(
+        act(
+            "BEAST:swap-suffix",
+            Action.BEAST,
+            "swap-suffix",
+            "짐승: 접미어 추가, 무작위 접두어 제거",
+            "Beast: Add a Suffix, Remove a Random Prefix",
+            cls));
     // 각인(C468) — 매직 아이템 저장 · 되돌리기(되돌리기는 화폐가 안 든다 — 최소 비용)
-    acts.add(act(IMPRINT, Action.BEAST, "imprint", "짐승: 각인(매직 아이템 저장)", cls));
-    acts.add(new Act(RESTORE, Action.BEAST, "restore", "각인으로 되돌리기", Map.of(), MIN_COST));
+    acts.add(
+        act(
+            IMPRINT,
+            Action.BEAST,
+            "imprint",
+            "짐승: 각인(매직 아이템 저장)",
+            "Beast: Imprint (save the magic item)",
+            cls));
+    acts.add(
+        new Act(
+            RESTORE,
+            Action.BEAST,
+            "restore",
+            "각인으로 되돌리기",
+            Map.of(),
+            MIN_COST,
+            "Restore from Imprint"));
     List<String> skipped = new ArrayList<>();
+    List<String> skippedEn = new ArrayList<>();
     List<Act> usable = new ArrayList<>();
     for (Act a : acts) {
       if (a == null) {
@@ -1023,6 +1216,7 @@ public class PoeCraftOptimizer {
       }
       if (Double.isNaN(a.cost())) {
         skipped.add(a.ko());
+        skippedEn.add(a.en());
       } else if (usable.stream().noneMatch(x -> x.id().equals(a.id()))) {
         usable.add(a);
       }
@@ -1063,6 +1257,7 @@ public class PoeCraftOptimizer {
       if (top != null && top.expectedCost() < known) {
         known = top.expectedCost();
         job.upperLabel = top.label();
+        job.upperLabelEn = top.labelEn() == null ? top.label() : top.labelEn();
       }
     }
     job.upper = known + scour;
@@ -1078,6 +1273,10 @@ public class PoeCraftOptimizer {
           req.upperLabel() == null || req.upperLabel().isBlank()
               ? "계산기 표의 가장 싼 방법"
               : req.upperLabel();
+      job.upperLabelEn =
+          req.upperLabelEn() == null || req.upperLabelEn().isBlank()
+              ? "the cheapest method in the calculator table"
+              : req.upperLabelEn();
     }
     String s0 = job.key(start);
     job.rep.put(s0, start);
@@ -1143,7 +1342,9 @@ public class PoeCraftOptimizer {
     long tSim = System.currentTimeMillis();
     Double planCost = job.goalKey(s0) ? Double.valueOf(0) : v.get(s0);
     if (planCost == null || pol.get(s0) == null) {
-      return error("목표까지 가는 길을 찾지 못했습니다(시간 안에 넓힌 상태 " + job.trans.size() + "개)");
+      return error(
+          "목표까지 가는 길을 찾지 못했습니다(시간 안에 넓힌 상태 " + job.trans.size() + "개)",
+          "No path to the targets was found (" + job.trans.size() + " states expanded in time)");
     }
     // 3) 정책을 실제 아이템에 굴려 비용 재기 — 열쇠가 표에 없으면 그 자리에서 표본(시간 안) 또는 처음 상태의 정책
     Map<String, Double> spent = new LinkedHashMap<>();
@@ -1165,6 +1366,7 @@ public class PoeCraftOptimizer {
     // 넘김 대신 정제 → 이 정책으로 처음부터(C469j)
     // 넘김 이름(C471) — 다시 시작 상한이 위 경계보다 싸면 '처음부터 이 조합', 아니면 아는 최저 방법
     String fbLabel = job.effUpper < job.upper ? "처음부터 다시(이 조합)" : job.upperLabel;
+    String fbLabelEn = job.effUpper < job.upper ? "start over (this combo)" : job.upperLabelEn;
     int policyRestarts = 0;
     // 다시 시작 한도에 못 끝낸 회차(C536, PoE2 C472c 와 같게)
     int unfinished = 0;
@@ -1469,6 +1671,7 @@ public class PoeCraftOptimizer {
     spent.forEach((n, x) -> per.put(n, x / succF));
     // 흔한 흐름 — 성공 회차 중 비용이 중간인 것, 같은 수단 연속은 ×n
     String pathText = "";
+    String pathTextEn = "";
     if (!paths.isEmpty()) {
       List<Integer> order = new ArrayList<>();
       for (int i = 0; i < paths.size(); i++) {
@@ -1477,6 +1680,7 @@ public class PoeCraftOptimizer {
       order.sort(Comparator.comparingDouble(runCost::get));
       List<Integer> mid = paths.get(order.get(order.size() / 2));
       List<String> parts = new ArrayList<>();
+      List<String> partsEn = new ArrayList<>();
       // 다시 시작(정제)으로 길어지지 않게 — 마지막 다시 시작 뒤만 보이고 그 앞은 횟수로(C461c)
       int last = -1;
       int restarts = 0;
@@ -1488,6 +1692,7 @@ public class PoeCraftOptimizer {
       }
       if (restarts > 0) {
         parts.add("정제로 다시 시작 ×" + restarts);
+        partsEn.add("restart with Scouring ×" + restarts);
         mid = mid.subList(last + 1, mid.size());
       }
       for (int i = 0; i < mid.size(); ) {
@@ -1496,9 +1701,11 @@ public class PoeCraftOptimizer {
           j++;
         }
         parts.add(label(usable, mid.get(i), fbLabel) + (j - i > 1 ? " ×" + (j - i) : ""));
+        partsEn.add(labelEn(usable, mid.get(i), fbLabelEn) + (j - i > 1 ? " ×" + (j - i) : ""));
         i = j;
       }
       pathText = String.join(" → ", parts);
+      pathTextEn = String.join(" → ", partsEn);
     }
     // 자주 지나는 상태의 결정
     final int runsF = Math.max(1, runs);
@@ -1514,16 +1721,28 @@ public class PoeCraftOptimizer {
                   pol.get(e.getKey()) == null
                       ? "(모름)"
                       : label(usable, pol.get(e.getKey()), fbLabel);
+              String actEn =
+                  pol.get(e.getKey()) == null
+                      ? "(unknown)"
+                      : labelEn(usable, pol.get(e.getKey()), fbLabelEn);
               double share = (double) e.getValue() / runsF;
               merged.merge(
                   st + "|" + act,
-                  new Rule(st, act, Math.min(1, share), v.get(e.getKey())),
+                  new Rule(
+                      st,
+                      act,
+                      Math.min(1, share),
+                      v.get(e.getKey()),
+                      describeEn(e.getKey(), targets.size()),
+                      actEn),
                   (x, y) ->
                       new Rule(
                           x.state(),
                           x.action(),
                           Math.min(1, x.share() + y.share()),
-                          x.remaining()));
+                          x.remaining(),
+                          x.stateEn(),
+                          x.actionEn()));
             });
     List<Rule> rules =
         merged.values().stream()
@@ -1572,6 +1791,65 @@ public class PoeCraftOptimizer {
             + "회(성공 "
             + succ
             + ")";
+    String noteEn =
+        "prep "
+            + (tLearn - started)
+            + "ms (fossils · harvest "
+            + (tLearn - tFossil)
+            + "ms) · search "
+            + (tSim - tLearn)
+            + "ms (value iteration "
+            + tVi
+            + " · expansion "
+            + tExp
+            + ")"
+            + "ms · simulation "
+            + (System.currentTimeMillis() - tSim)
+            + "ms · "
+            + job.trans.size()
+            + " states · "
+            + usable.size()
+            + " actions"
+            + " · "
+            + rounds
+            + " search rounds"
+            + (refined > 0 ? " · refined " + refined + " actions (" + tRefine + "ms)" : "")
+            + (converged
+                ? " (every state the policy reaches was expanded)"
+                : capped
+                    ? " · stopped expanding at the state limit (" + MAX_STATES + ")"
+                    : " · expansion cut short by the time limit")
+            + (skippedEn.isEmpty()
+                ? ""
+                : " · actions without prices: " + String.join(", ", skippedEn))
+            + (fallbacks > 0
+                ? " · "
+                    + fallbacks
+                    + " runs handed off to Scour → "
+                    + fbLabelEn
+                    + " (counted at its expected cost)"
+                : "")
+            + (stuckStates > 0 ? " · states handed off for not progressing: " + stuckStates : "")
+            + (cycles > 0 ? " · runs handed off for cycling between states: " + cycles : "")
+            + (cycleBreaks > 0 ? " · states with a cycle broken: " + cycleBreaks : "")
+            + (policyRestarts > 0
+                ? " · Scour → restart with this policy instead of handing off: " + policyRestarts
+                : "")
+            + (unfinished > 0
+                ? " · runs not finished within "
+                    + RESTART_RUNS
+                    + " restarts: "
+                    + unfinished
+                    + " (cost counted, not counted as success)"
+                : "")
+            + (replaced > 0
+                ? " · steps replaced because the policy action did not apply: " + replaced
+                : "")
+            + " · policy simulation "
+            + runs
+            + " runs ("
+            + succ
+            + " successes)";
     Double se = null;
     if (succ > 1) {
       double mean = totalCost / succ;
@@ -1584,6 +1862,40 @@ public class PoeCraftOptimizer {
     // 못 끝낸 회차가 있으면 비용 = 전체 / 성공 수(C536) — 성공이 적을수록 거칠다(성공 한 번당 비용이 기하 분포에 가까워 상대 오차 ≈ 1/√성공)
     if (unfinished > 0 && expected != null) {
       se = Math.max(se == null ? 0 : se, expected / Math.sqrt(succ));
+    }
+    // 모의 성공이 적으면(C563 ⑧) 계획 값을 비용으로 — 성공 1~4번이면 모의 값의 상대 오차가 50~100% 라 같은 요청도 실행마다 몇 배씩 흔들렸다(성공 한
+    // 번에
+    // 다시 시작 수백 번인 연타 정책). 계획 값은 수만 번 표본의 상태 모형(드문 결과는 신뢰 하한, C563)이라 더 안정적이다. 모의 값은 simCost 로 함께
+    Double simCost = null;
+    boolean unverified = false;
+    if (succ > 0 && succ < FEW_SUCCESSES && planCost != null && planCost > 0 && expected != null) {
+      simCost = expected;
+      expected = planCost;
+      se = null;
+    } else if (succ == 0
+        && planCost != null
+        && planCost > 0
+        && totalCost + failCost < 3 * planCost) {
+      // 성공 0번이어도 쓴 비용이 계획 값의 3배가 안 되면(기대 성공 < 3 — 10-22 측정 9회 · 성공 0 · 계획 3,639c) 정책이 틀렸다는 근거가 못 된다
+      // →
+      // 계획 값을 비용으로(검증 전, 화면에 알림). 3배 넘게 쓰고도 0번이면 지금처럼 오류(정책이 실제 아이템에 안 통함)
+      expected = planCost;
+      se = null;
+      unverified = true;
+    }
+    if (unverified) {
+      note += " · 모의 회차가 아직 목표에 닿지 못해 비용은 계획 값(검증 전)";
+      noteEn +=
+          " · no simulated run reached the target yet, so the cost shown is the unverified plan value";
+    }
+    if (simCost != null) {
+      note += " · 모의 성공 " + succ + "번뿐이라 비용은 계획 값(모의 값 " + Math.round(simCost) + "c)";
+      noteEn +=
+          " · only "
+              + succ
+              + " simulated successes, so the cost shown is the plan value (simulated "
+              + Math.round(simCost)
+              + "c)";
     }
     if (jobId != null) {
       policies.put(
@@ -1640,7 +1952,7 @@ public class PoeCraftOptimizer {
         p.league(),
         p.fetchedAt(),
         note,
-        succ == 0
+        succ == 0 && expected == null
             ? "정책 모의에서 목표에 닿지 못했습니다"
                 + (unfinished > 0
                     ? " — 처음부터 다시를 "
@@ -1659,10 +1971,51 @@ public class PoeCraftOptimizer {
                 : "안 통한 정책 수단 " + failedActs + (diag.isEmpty() ? "" : " · " + diag)),
         showcase,
         quant,
-        eldTargets.isEmpty() ? null : calc.eldritchPlan(start, eldTargets));
+        eldTargets.isEmpty() ? null : calc.eldritchPlan(start, eldTargets),
+        job.upperLabelEn,
+        pathTextEn,
+        usable.stream().map(Act::en).toList(),
+        noteEn,
+        succ == 0 && expected == null
+            ? "No run reached the targets in the policy simulation"
+                + (unfinished > 0
+                    ? " — even after "
+                        + policyRestarts
+                        + " restarts from scratch there were 0 successes, so the planned "
+                        + Math.round(planCost)
+                        + "c is unconfirmed (it relies on rare outcomes)"
+                        + (job.upper < 1e8
+                            ? ". Cheapest known method: "
+                                + job.upperLabelEn
+                                + " "
+                                + Math.round(job.upper)
+                                + "c"
+                            : "")
+                    : "")
+            : null,
+        simCost);
   }
 
   /** 화석 · 수확 이름(표가 넘긴 id 만 있을 때) — 화석 한국어 이름 + 공명기, 수확은 설명. */
+  /** methodKo 의 영어 판(C557) — 화석 영어 이름 · 수확 영어 원문. */
+  private String methodEn(boolean fossil, String arg) {
+    if (fossil) {
+      List<String> names = new ArrayList<>();
+      for (String slug : arg.split(",")) {
+        craft.fossils().stream()
+            .filter(f -> f.slug().equals(slug.trim()))
+            .findFirst()
+            .ifPresent(f -> names.add(f.name()));
+      }
+      return String.join(" + ", names);
+    }
+    return craft.harvests().stream()
+        .filter(h -> h.id().equals(arg))
+        .findFirst()
+        .map(h -> "Harvest: " + h.text())
+        .orElse("Harvest");
+  }
+
   private String methodKo(boolean fossil, String arg) {
     if (fossil) {
       List<String> names = new ArrayList<>();
@@ -1683,6 +2036,11 @@ public class PoeCraftOptimizer {
 
   private static String label(List<Act> usable, int ai, String upperLabel) {
     return ai == FALLBACK ? "정제 → " + upperLabel : usable.get(ai).ko();
+  }
+
+  /** label 의 영어 판(C557). */
+  private static String labelEn(List<Act> usable, int ai, String upperLabelEn) {
+    return ai == FALLBACK ? "Scour → " + upperLabelEn : usable.get(ai).en();
   }
 
   /** 연타 위 경계 — 카오스(레어 출발) · 변화+확장(매직 출발) · 에센스(일반 출발) 연타의 성공 한 번당 비용 중 최저. 표본에서 한 번도 안 나오면 1e9. */
@@ -1743,6 +2101,7 @@ public class PoeCraftOptimizer {
       if (hits > 0 && cost / hits < best) {
         best = cost / hits;
         job.upperLabel = a.ko() + " 연타";
+        job.upperLabelEn = a.en() + " spam";
       }
     }
     return best;
@@ -2051,12 +2410,32 @@ public class PoeCraftOptimizer {
   }
 
   /** 수단 하나 — 시세를 모르면 비용 NaN(고려에서 뺀다). */
-  private Act act(String id, Action action, String arg, String ko, String cls) {
+  private Act act(String id, Action action, String arg, String ko, String en, String cls) {
     Map<String, Double> m = new LinkedHashMap<>();
     calc.spend(m, action, arg, cls);
     Double c = calc.cost(m);
     // 비용 0 수단(제작대 옵션 지우기 등)이 고리를 만들지 않게 최소 비용(카오스 0.001)
-    return new Act(id, action, arg, ko, m, c == null ? Double.NaN : Math.max(c, MIN_COST));
+    return new Act(id, action, arg, ko, m, c == null ? Double.NaN : Math.max(c, MIN_COST), en);
+  }
+
+  /** 영향력 키 → 게임 영어 이름(짐승 제작 문구, C557). */
+  private static final Map<String, String> INFLUENCE_EN =
+      Map.of(
+          "shaper",
+          "Shaper",
+          "elder",
+          "Elder",
+          "crusader",
+          "Crusader",
+          "eyrie",
+          "Redeemer",
+          "basilisk",
+          "Hunter",
+          "adjudicator",
+          "Warlord");
+
+  private static String textEn(List<String> en) {
+    return String.join(", ", en == null ? List.of() : en);
   }
 
   private static String text(List<String> ko, List<String> en) {
@@ -2140,9 +2519,91 @@ public class PoeCraftOptimizer {
     return sb.toString();
   }
 
-  private Result error(String msg) {
+  /** describe 의 영어 판(10-21 C557 — 영어 화면 상태별 결정 · 따라 하기). 같은 열쇠 규칙. */
+  static String describeEn(String key, int n) {
+    int hash = key.indexOf('#');
+    if (hash >= 0) {
+      return describeEn(key.substring(0, hash), n)
+          + " · imprint: "
+          + describeEn(key.substring(hash + 1), n);
+    }
+    String[] f = key.split("\\|", -1);
+    String rar =
+        switch (f[0].substring(0, 1)) {
+          case "N" -> "Normal";
+          case "M" -> "Magic";
+          default -> "Rare";
+        };
+    int mask = Integer.parseInt(f[1]);
+    List<String> met = new ArrayList<>();
+    for (int t = 0; t < n; t++) {
+      if ((mask & (1 << t)) != 0) {
+        met.add(String.valueOf(t + 1));
+      }
+    }
+    String[] j = f[2].split(",");
+    int blocked = Integer.parseInt(f[3]);
+    List<String> bl = new ArrayList<>();
+    for (int t = 0; t < n; t++) {
+      if ((blocked & (1 << t)) != 0) {
+        bl.add(String.valueOf(t + 1));
+      }
+    }
+    StringBuilder sb = new StringBuilder(rar);
+    if (f[0].length() > 1) {
+      sb.append(
+          f[0].charAt(1) == 'e'
+              ? " · Searing Exarch dominant"
+              : f[0].charAt(1) == 't'
+                  ? " · Eldritch tie (no dominance)"
+                  : " · Eater of Worlds dominant");
+    }
+    sb.append(" · ")
+        .append(met.isEmpty() ? "no targets hit" : "targets " + String.join("·", met) + " hit");
+    if (!"0".equals(j[0]) || !"0".equals(j[1])) {
+      sb.append(" · other mods prefix ").append(j[0]).append("/suffix ").append(j[1]);
+    }
+    if (!bl.isEmpty()) {
+      sb.append(" · target ").append(String.join("·", bl)).append(" slot blocked by other mods");
+    }
+    String cr = f[4];
+    if (!cr.isEmpty()) {
+      List<String> c = new ArrayList<>();
+      for (char ch : cr.toCharArray()) {
+        c.add(
+            switch (ch) {
+              case 'T' -> "bench target mod";
+              case 'P' -> "prefixes cannot be changed";
+              case 'S' -> "suffixes cannot be changed";
+              case 'M' -> "multimod";
+              case 'F' -> "fractured target mod";
+              case 'f' -> "fractured other mod (prefix)";
+              case 'g' -> "fractured other mod (suffix)";
+              case 'v' -> "veiled mod";
+              default -> "other crafted mod";
+            });
+      }
+      sb.append(" · ").append(String.join(", ", c));
+    }
+    if (f.length > 5 && f[5].startsWith("c")) {
+      String cv = f[5].substring(1);
+      sb.append(
+          cv.indexOf('2') >= 0
+              ? " · harvest swap gives +1 target"
+              : cv.indexOf('1') >= 0 ? " · harvest swap possible" : "");
+    }
+    for (int x = 5; x < f.length; x++) {
+      if (f[x].startsWith("o") && f[x].indexOf(',') > 1) {
+        String[] ps = f[x].substring(1).split(",");
+        sb.append(" · mods prefix ").append(ps[0]).append("/suffix ").append(ps[1]);
+      }
+    }
+    return sb.toString();
+  }
+
+  private Result error(String msg, String en) {
     return new Result(
         null, null, null, null, null, 0, 0, 0, Map.of(), Map.of(), "", List.of(), List.of(), null,
-        null, null, msg, "", List.of(), List.of(), null);
+        null, null, msg, "", List.of(), List.of(), null, null, "", List.of(), null, en, null);
   }
 }

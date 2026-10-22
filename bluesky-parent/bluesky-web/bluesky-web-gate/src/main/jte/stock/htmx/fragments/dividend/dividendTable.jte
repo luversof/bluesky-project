@@ -83,38 +83,17 @@
 					     정렬 상태는 ▲▼ 글자 외에 aria-sort 로도 알린다. --%>
 					<thead>
 					<tr class="bg-base-200">
-						<th scope="col" class="cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("payDate") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
-							hx-vals='{"sort": "payDate,${sortField.equals("payDate") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${dateLabel} @if(sortField.equals("payDate"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
-						<th scope="col" class="cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("stockItemName") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
-							hx-vals='{"sort": "stockItemName,${sortField.equals("stockItemName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${stockNameLabel} @if(sortField.equals("stockItemName"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
-						<th scope="col" class="cursor-pointer hover:bg-base-300 hidden sm:table-cell" tabindex="0" aria-sort="${sortField.equals("accountName") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
-							hx-vals='{"sort": "accountName,${sortField.equals("accountName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${accountLabel} @if(sortField.equals("accountName"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
-						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("grossAmount") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
-							hx-vals='{"sort": "grossAmount,${sortField.equals("grossAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${grossAmountLabel} @if(sortField.equals("grossAmount"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
-						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("netAmount") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
-							hx-vals='{"sort": "netAmount,${sortField.equals("netAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${netAmountLabel} @if(sortField.equals("netAmount"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
+						@template.stock.htmx.fragments.components.sortHeader(field = "payDate", label = dateLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
+						@template.stock.htmx.fragments.components.sortHeader(field = "stockItemName", label = stockNameLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
+						@template.stock.htmx.fragments.components.sortHeader(field = "accountName", label = accountLabel, cellClass = "cursor-pointer hover:bg-base-300 hidden sm:table-cell", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
+						@template.stock.htmx.fragments.components.sortHeader(field = "grossAmount", label = grossAmountLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
+						@template.stock.htmx.fragments.components.sortHeader(field = "netAmount", label = netAmountLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 						<th scope="col" class="text-right hidden md:table-cell">${quantityLabel}</th>
 						<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${referencePriceLabel}</th>
 						<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${basisCostLabel}</th>
 						<th scope="col" class="text-right">${yieldOnBasisCostLabel}</th>
-						<th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell print:table-cell" tabindex="0" aria-sort="${sortField.equals("tax") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
-							hx-vals='{"sort": "tax,${sortField.equals("tax") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${taxLabel} @if(sortField.equals("tax"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
-						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("taxableAmount") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}" hx-get="/stock/htmx/dividend/list" hx-target="#dividendListFragment" hx-select="#dividendListFragment" hx-swap="outerHTML" hx-include="#dividendSearchForm"
-							hx-vals='{"sort": "taxableAmount,${sortField.equals("taxableAmount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${taxableAmountLabel} @if(sortField.equals("taxableAmount"))<span aria-hidden="true">${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
+						@template.stock.htmx.fragments.components.sortHeader(field = "tax", label = taxLabel, cellClass = "text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell print:table-cell", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
+						@template.stock.htmx.fragments.components.sortHeader(field = "taxableAmount", label = taxableAmountLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 					</tr>
 					</thead>
 					<tbody>

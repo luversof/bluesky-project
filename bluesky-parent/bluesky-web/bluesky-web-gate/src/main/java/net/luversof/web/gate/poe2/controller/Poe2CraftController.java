@@ -165,10 +165,6 @@ public class Poe2CraftController {
     return "poe2/craft";
   }
 
-  /**
-   * PoE2 게임 아이템 붙여넣기(10-20 C486) — PoE1 C485 와 같은 흐름(API 가 읽고, 수치 → 굴림 씨앗, HX-Redirect 로 그 아이템을
-   * 연다).
-   */
   /** 목표까지 연타로 쓸 수 있는 화폐(C508). */
   static final java.util.Set<String> SPAM_ACTIONS = java.util.Set.of("CHAOS", "EXALT", "ESSENCE");
 
@@ -370,7 +366,6 @@ public class Poe2CraftController {
     }
     model.addAttribute("dist", res);
     model.addAttribute("distLabels", labels);
-    model.addAttribute("distAct", act);
     return "poe/htmx/craftDist";
   }
 
@@ -435,6 +430,10 @@ public class Poe2CraftController {
     }
   }
 
+  /**
+   * PoE2 게임 아이템 붙여넣기(10-20 C486) — PoE1 C485 와 같은 흐름(API 가 읽고, 수치 → 굴림 씨앗, HX-Redirect 로 그 아이템을
+   * 연다).
+   */
   @PostMapping(value = "/poe2/htmx/craft/import", produces = MediaType.TEXT_HTML_VALUE)
   public String importItem(
       @RequestParam(required = false, defaultValue = "") String text,
@@ -594,7 +593,7 @@ public class Poe2CraftController {
     model.addAttribute("reqBase", base);
     model.addAttribute("itemName", rawAction.startsWith("RESET") ? "" : itemName);
     model.addAttribute("itemNameKo", rawAction.startsWith("RESET") ? "" : itemNameKo);
-    Long lock = seedOf(foresee);
+    Long lock = net.luversof.web.gate.poe.CraftTargetParams.seedOf(foresee);
     List<Poe2Craft.SpentStep> spentLog = parseSpent(spent);
     java.util.Map<String, Long> rollMap = parseRolls(rolls);
     List<java.util.Map<String, Long>> rollHist = parseRollHist(rollHistory);
@@ -1284,69 +1283,19 @@ public class Poe2CraftController {
       @RequestParam org.springframework.util.MultiValueMap<String, String> params,
       Model model) {
     boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
-    List<Poe2Craft.PoolLine> pool =
-        craftClient.pool(new Poe2Craft.Item(poolKey, clamp(ilvl), "RARE", List.of(), false));
-    List<Poe2Craft.Target> targets = new ArrayList<>();
+    // 목표 해석은 계산기와 같은 것(10-21 C552 정리 — 두 벌이던 것을 하나로). gens = 목표마다 접두/접미(묶음 · 빈 자리는 null)
     List<String> labels = new ArrayList<>();
+    List<String> gens = new ArrayList<>();
+    List<Poe2Craft.Target> targets = calcTargets(poolKey, ilvl, params, labels, gens);
     List<Integer> pre = new ArrayList<>();
     List<Integer> suf = new ArrayList<>();
-    List<Poe2Craft.PoolLine> deseLines = null;
-    java.util.Set<String> grp = groupMembers(params);
-    groupTargets(params, grp, pool, targets, labels);
-    for (String key : params.keySet()) {
-      if (!key.startsWith("t_")) {
-        continue;
+    for (int i = 0; i < targets.size(); i++) {
+      String g = i < gens.size() ? gens.get(i) : null;
+      if ("prefix".equals(g)) {
+        pre.add(i);
+      } else if ("suffix".equals(g)) {
+        suf.add(i);
       }
-      String fam = key.substring(2);
-      if (openTarget(fam, params.getFirst(key), targets, labels)) {
-        continue;
-      }
-      if (fam.startsWith("grp:") || "grpk".equals(fam) || grp.contains(fam)) {
-        continue; // 묶음(C522) — 위에서 따로
-      }
-      if (fam.startsWith("dese:")) {
-        // 훼손된 속성 목표(C425 — 계산기만 받고 전략 모의는 조용히 무시했다)
-        if (!"1".equals(params.getFirst(key))) {
-          continue;
-        }
-        if (deseLines == null) {
-          try {
-            deseLines = craftClient.desecrated(poolKey, clamp(ilvl));
-          } catch (RuntimeException e) {
-            deseLines = List.of();
-          }
-        }
-        String did = fam.substring("dese:".length());
-        Poe2Craft.PoolLine dl =
-            deseLines.stream().filter(p -> p.id().equals(did)).findFirst().orElse(null);
-        if (dl == null) {
-          continue;
-        }
-        ("prefix".equals(dl.gen()) ? pre : suf).add(targets.size());
-        targets.add(new Poe2Craft.Target(List.of(did)));
-        List<String> dt = ko && dl.ko() != null && !dl.ko().isEmpty() ? dl.ko() : dl.en();
-        labels.add(
-            String.join(", ", dt == null ? List.of() : dt) + (ko ? " (훼손)" : " (desecrated)"));
-        continue;
-      }
-      int rank;
-      try {
-        rank = Integer.parseInt(params.getFirst(key));
-      } catch (RuntimeException e) {
-        continue;
-      }
-      List<Poe2Craft.PoolLine> in =
-          pool.stream()
-              .filter(p -> (p.gen() + ":" + p.family()).equals(fam))
-              .filter(p -> p.tierRank() != null && p.tierRank() <= rank)
-              .sorted(java.util.Comparator.comparing(Poe2Craft.PoolLine::tierRank))
-              .toList();
-      if (in.isEmpty()) {
-        continue;
-      }
-      (fam.startsWith("prefix:") ? pre : suf).add(targets.size());
-      targets.add(new Poe2Craft.Target(in.stream().map(Poe2Craft.PoolLine::id).toList()));
-      labels.add(spanLabel(in, ko) + " (T1" + (rank > 1 ? "~T" + rank : "") + ")");
     }
     List<Integer> all = new ArrayList<>();
     for (int i = 0; i < targets.size(); i++) {
@@ -1477,114 +1426,66 @@ public class Poe2CraftController {
     return "poe2/htmx/craftCalc";
   }
 
-  /** 시뮬레이터 목표(계열마다 최소 등급 · 훼손 목표) — 표 · 최적 조합이 같이 쓴다(C461). labels 에 화면 이름. */
-  /** 묶음(10-20 C522, craftofexile 계산기 '일부 맞춤') — 줄 끝 체크(t_grp:접두접미:계열)한 계열들. */
-  static java.util.Set<String> groupMembers(
-      org.springframework.util.MultiValueMap<String, String> params) {
-    java.util.Set<String> out = new java.util.LinkedHashSet<>();
-    for (String key : params.keySet()) {
-      if (key.startsWith("t_grp:") && "1".equals(params.getFirst(key))) {
-        out.add(key.substring("t_grp:".length()));
-      }
-    }
-    return out;
-  }
-
-  /**
-   * 묶음 목표(C522) — 체크한 계열 중 k(t_grpk)개 이상: 계열들의 등급 id 를 합친 목표 k 개(옵션 하나는 계열 하나에만 들어 '서로 다른 k 계열'과
-   * 같다). 계열 등급 칸을 고르면 그 등급 이상, 안 고르면 모든 등급. 계산기 · 적중 확률 · 연타 · 전략 · 최적 조합이 같은 목표로.
-   */
+  /** 묶음 목표(C522) — 공용 CraftTargetParams(C552, PoE1 과 같은 규칙). */
   void groupTargets(
       org.springframework.util.MultiValueMap<String, String> params,
       java.util.Set<String> members,
       List<Poe2Craft.PoolLine> pool,
       List<Poe2Craft.Target> targets,
       List<String> labels) {
-    if (members.isEmpty()) {
-      return;
-    }
-    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
-    List<String> ids = new ArrayList<>();
-    List<String> names = new ArrayList<>();
-    for (String fam : members) {
-      int rank = 99;
-      try {
-        rank = Integer.parseInt(params.getFirst("t_" + fam));
-      } catch (RuntimeException e) {
-        rank = 99;
-      }
-      int r = rank;
-      List<Poe2Craft.PoolLine> in =
-          pool.stream()
-              .filter(p -> (p.gen() + ":" + p.family()).equals(fam))
-              .filter(p -> p.tierRank() != null && p.tierRank() <= r)
-              .sorted(java.util.Comparator.comparing(Poe2Craft.PoolLine::tierRank))
-              .toList();
-      if (in.isEmpty()) {
-        continue;
-      }
-      in.forEach(p -> ids.add(p.id()));
-      names.add(spanLabel(in, ko) + (r < 99 ? " (T1" + (r > 1 ? "~T" + r : "") + ")" : ""));
-    }
-    if (names.isEmpty()) {
-      return;
-    }
-    int k;
-    try {
-      k = Integer.parseInt(params.getFirst("t_grpk"));
-    } catch (RuntimeException e) {
-      k = 1;
-    }
-    k = Math.max(1, Math.min(names.size(), k));
-    for (int i = 0; i < k; i++) {
-      targets.add(new Poe2Craft.Target(List.copyOf(ids)));
-    }
-    labels.add(
-        (ko
-                ? "묶음 " + names.size() + "개 중 " + k + "개 이상: "
-                : "At least " + k + " of " + names.size() + ": ")
-            + String.join(" · ", names));
+    net.luversof.web.gate.poe.CraftTargetParams.groupTargets(
+        params,
+        members,
+        pool,
+        POOL_ACC,
+        Poe2CraftController::spanLabel,
+        Poe2Craft.Target::new,
+        targets,
+        labels);
   }
 
-  /**
-   * 빈 자리 조건(10-20 C521, PoE1 C519 짝) — t_open:prefix · t_open:suffix = 그 쪽에 남아야 할 빈 자리 수(목표 하나 = 자리
-   * 하나). 이 칸이면 목표 · 이름을 넣고 true.
-   */
+  /** 빈 자리 조건(C519) — 공용 CraftTargetParams(C552). */
   static boolean openTarget(
       String fam, String value, List<Poe2Craft.Target> targets, List<String> labels) {
-    if (!"open:prefix".equals(fam) && !"open:suffix".equals(fam)) {
-      return false;
-    }
-    int n;
-    try {
-      n = Math.max(0, Math.min(3, Integer.parseInt(value)));
-    } catch (RuntimeException e) {
-      n = 0;
-    }
-    boolean pre = fam.endsWith("prefix");
-    for (int i = 0; i < n; i++) {
-      targets.add(new Poe2Craft.Target(List.of(pre ? "@open:prefix" : "@open:suffix")));
-    }
-    if (n > 0) {
-      labels.add(
-          net.luversof.web.gate.poe.PoeText.isKorean()
-              ? "빈 " + (pre ? "접두" : "접미") + " 자리 " + n + "개"
-              : n + " open " + (pre ? "prefix" : "suffix"));
-    }
-    return true;
+    return net.luversof.web.gate.poe.CraftTargetParams.openTarget(
+        fam, value, Poe2Craft.Target::new, targets, labels);
   }
 
+  /** 시뮬레이터 목표(계열마다 최소 등급 · 훼손 목표) — 표 · 최적 조합이 같이 쓴다(C461). labels 에 화면 이름. */
   private List<Poe2Craft.Target> calcTargets(
       String poolKey,
       int ilvl,
       org.springframework.util.MultiValueMap<String, String> params,
       List<String> labels) {
+    return calcTargets(poolKey, ilvl, params, labels, null);
+  }
+
+  /**
+   * gens(null 이면 안 씀) = 목표마다 prefix · suffix · null(묶음 · 빈 자리) — 전략 모의가 접두/접미 목표를 고른다(C552). labels
+   * 는 화면 이름(묶음 · 빈 자리는 목표 여럿에 이름 하나). 패키지 공개 = 쪽 표시 시험(Poe2CraftTargetSidesTest).
+   */
+  List<Poe2Craft.Target> calcTargets(
+      String poolKey,
+      int ilvl,
+      org.springframework.util.MultiValueMap<String, String> params,
+      List<String> labels,
+      List<String> gens) {
     Poe2Craft.Item rareBase = new Poe2Craft.Item(poolKey, clamp(ilvl), "RARE", List.of(), false);
     List<Poe2Craft.PoolLine> pool = craftClient.pool(rareBase);
     List<Poe2Craft.Target> targets = new ArrayList<>();
+    // 목표마다 쪽(C552) — 앞의 빈 칸(묶음 · 빈 자리)은 null 로 채우고 이 목표의 쪽
+    java.util.function.Consumer<String> gen =
+        g -> {
+          if (gens != null) {
+            while (gens.size() < targets.size() - 1) {
+              gens.add(null);
+            }
+            gens.add(g);
+          }
+        };
     boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
     List<Poe2Craft.PoolLine> dese = null;
-    java.util.Set<String> grp = groupMembers(params);
+    java.util.Set<String> grp = net.luversof.web.gate.poe.CraftTargetParams.groupMembers(params);
     groupTargets(params, grp, pool, targets, labels);
     for (String key : params.keySet()) {
       if (!key.startsWith("t_")) {
@@ -1616,6 +1517,7 @@ public class Poe2CraftController {
           continue;
         }
         targets.add(new Poe2Craft.Target(List.of(did)));
+        gen.accept(dl.gen());
         List<String> dt = ko && dl.ko() != null && !dl.ko().isEmpty() ? dl.ko() : dl.en();
         labels.add(
             String.join(", ", dt == null ? List.of() : dt) + (ko ? " (훼손)" : " (desecrated)"));
@@ -1637,7 +1539,13 @@ public class Poe2CraftController {
         continue;
       }
       targets.add(new Poe2Craft.Target(in.stream().map(Poe2Craft.PoolLine::id).toList()));
+      gen.accept(in.get(0).gen());
       labels.add(spanLabel(in, ko) + " (T1" + (rank > 1 ? "~T" + rank : "") + ")");
+    }
+    if (gens != null) {
+      while (gens.size() < targets.size()) {
+        gens.add(null);
+      }
     }
     return targets;
   }
@@ -1768,7 +1676,6 @@ public class Poe2CraftController {
     return s;
   }
 
-  /** 시뮬레이터 · 전략 결과의 화폐 · 징조 · 에센스 · 뼈 한국어 이름(C423 UX QA — 한국어 화면 결과에 영어 이름이 섞였다). */
   /**
    * 전략 단계 인자(뼈 · 에센스 슬러그 · 징조 키 · 등급) → 이름(C439 UX QA — 결과에 AbyssalBenchTicketArmour 같은 내부 id 가
    * 보였다).
@@ -1796,6 +1703,7 @@ public class Poe2CraftController {
     return m;
   }
 
+  /** 시뮬레이터 · 전략 결과의 화폐 · 징조 · 에센스 · 뼈 한국어 이름(C423 UX QA — 한국어 화면 결과에 영어 이름이 섞였다). */
   private java.util.Map<String, String> nameKoMap(String poolKey) {
     java.util.Map<String, String> m = new java.util.HashMap<>();
     try {
@@ -1840,18 +1748,6 @@ public class Poe2CraftController {
       out.add(net.luversof.web.gate.poe.PoeModSpan.span(txt.get(i), b, w));
     }
     return String.join(", ", out);
-  }
-
-  /** 미리 보기 씨앗(C361) — 숫자가 아니면 없음. */
-  static Long seedOf(String s) {
-    if (s == null || s.isBlank()) {
-      return null;
-    }
-    try {
-      return Long.parseLong(s.trim());
-    } catch (NumberFormatException e) {
-      return null;
-    }
   }
 
   /** 확률 표 계열 묶음에서 PoE2 줄 꺼내기(10-21 C543). */

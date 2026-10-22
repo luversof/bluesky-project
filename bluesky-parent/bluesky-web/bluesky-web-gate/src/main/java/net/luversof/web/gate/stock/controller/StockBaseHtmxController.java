@@ -14,13 +14,13 @@ import java.util.stream.Stream;
 
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
-import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
@@ -63,7 +63,6 @@ public abstract class StockBaseHtmxController {
   }
 
   protected static final String LOGIN_URL_ATTRIBUTE = "loginUrl";
-  protected static final String RETRY_URL_ATTRIBUTE = "retryUrl";
 
   /**
    * 세션이 풀린 조각에서 돌아갈 로그인 주소. 페이지 리다이렉트({@code StockViewSupport.loginRedirectView})와 같은 {@code
@@ -92,21 +91,6 @@ public abstract class StockBaseHtmxController {
         + java.net.URLEncoder.encode(target, java.nio.charset.StandardCharsets.UTF_8);
   }
 
-  /**
-   * 실패한 조회를 그 자리에서 다시 부를 주소(쿼리 포함). 조회가 아닌 요청(POST 등)이나 요청 문맥이 없으면 {@code null}. 공통 예외 처리기({@code
-   * StockHtmxErrorResolver})의 loadError 조각과 같은 규칙이다.
-   */
-  protected String retryUrlForCurrentRequest() {
-    jakarta.servlet.http.HttpServletRequest request = currentRequest();
-    if (request == null || !"GET".equalsIgnoreCase(request.getMethod())) {
-      return null;
-    }
-    String query = request.getQueryString();
-    return query == null || query.isEmpty()
-        ? request.getRequestURI()
-        : request.getRequestURI() + "?" + query;
-  }
-
   private static jakarta.servlet.http.HttpServletRequest currentRequest() {
     return org.springframework.web.context.request.RequestContextHolder.getRequestAttributes()
             instanceof org.springframework.web.context.request.ServletRequestAttributes attributes
@@ -115,19 +99,28 @@ public abstract class StockBaseHtmxController {
   }
 
   /**
-   * 백엔드 호출이 실패한 조각에 "불러오지 못했다" 는 안내를 돌려준다.
-   *
-   * <p>실패를 삼키고 값 없는 화면을 그리면 사용자는 <b>계산 결과가 없다</b> 고 읽는다. 실측: 자산증가 화면의 기간수익률 조각은 api-stock 호출이 예외로
-   * 끝나도 요약을 {@code null} 로 넘겨, 기초 평가액이 너무 작아 비율을 못 내는 정상 상황과 <b>똑같이</b> "계산할 수 없음" 으로 그렸다. 두 상황은
-   * 사용자가 할 일이 다르다 &mdash; 앞은 다시 시도, 뒤는 기간 변경이다.
+   * 기간으로 좁힌 선택지 목록에 사용자가 이미 고른 항목이 빠져 있으면 전체 목록에서 찾아 앞에 되살린다 - 고른 것이 목록에서 사라지면 선택 상자가 그 선택을 보여 줄 수
+   * 없다. 배당 · 매매 · 활동 · 자산 성장 화면이 같은 루프를 따로 적고 있었다(2026-10-22 정리).
    */
-  protected String remoteFailureView(org.springframework.ui.Model model) {
-    model.addAttribute(ERROR_ATTRIBUTE, msg("stock.error.fragment.title"));
-    String retryUrl = retryUrlForCurrentRequest();
-    if (retryUrl != null) {
-      model.addAttribute(RETRY_URL_ATTRIBUTE, retryUrl);
+  protected static <T> List<T> withSelectedFirst(
+      List<T> narrowed,
+      List<T> all,
+      List<UUID> requested,
+      java.util.function.Function<T, UUID> id) {
+    List<T> result = new ArrayList<>(narrowed);
+    if (requested == null) {
+      return result;
     }
-    return ERROR_VIEW;
+    for (UUID selected : requested) {
+      if (selected == null || result.stream().anyMatch(x -> selected.equals(id.apply(x)))) {
+        continue;
+      }
+      all.stream()
+          .filter(x -> selected.equals(id.apply(x)))
+          .findFirst()
+          .ifPresent(x -> result.add(0, x));
+    }
+    return result;
   }
 
   /**
@@ -204,6 +197,44 @@ public abstract class StockBaseHtmxController {
   protected String msg(String code, Object... args) {
     return messageSource.getMessage(
         code, args.length > 0 ? args : null, code, LocaleContextHolder.getLocale());
+  }
+
+  /**
+   * 상세 조회 폼 · 필터 배지가 되살릴 선택 상태 - 고른 계좌 · 종목(없으면 빈 목록) · 태그와, 첫 번째 계좌 · 종목. 배당 · 매매 · 활동 목록이 같은 다섯
+   * 줄을 한 벌씩 적고 있었다(2026-10-22 정리).
+   */
+  protected static void addSelectionAttributes(
+      Model model, List<UUID> accountIds, List<UUID> stockItemIds, List<String> stockTags) {
+    model.addAttribute("selectedAccountIds", accountIds != null ? accountIds : List.of());
+    model.addAttribute("selectedStockItemIds", stockItemIds != null ? stockItemIds : List.of());
+    model.addAttribute("selectedStockTags", stockTags);
+    model.addAttribute(
+        "selectedAccountId",
+        accountIds != null && !accountIds.isEmpty() ? accountIds.get(0) : null);
+    model.addAttribute(
+        "selectedStockItemId",
+        stockItemIds != null && !stockItemIds.isEmpty() ? stockItemIds.get(0) : null);
+  }
+
+  /**
+   * 계좌 id -> 직접 입력한 투자원금(manualPrincipalAmount). 값이 없는 계좌는 빠지고, 같은 id 가 둘이면 앞의 값을 쓴다. 대시보드 요약과 자산
+   * 현황이 같은 맵을 따로 만들고 있었다(2026-10-22 정리).
+   */
+  protected java.util.Map<UUID, BigDecimal> accountPrincipalOverrides(List<Account> accounts) {
+    java.util.Map<UUID, BigDecimal> overrides = new java.util.LinkedHashMap<>();
+    if (accounts == null) {
+      return overrides;
+    }
+    for (Account account : accounts) {
+      if (account == null || account.id() == null) {
+        continue;
+      }
+      BigDecimal principal = resolveAccountManualPrincipal(account);
+      if (principal != null) {
+        overrides.putIfAbsent(account.id(), principal);
+      }
+    }
+    return overrides;
   }
 
   protected BigDecimal resolveAccountManualPrincipal(Account account) {
@@ -421,18 +452,6 @@ public abstract class StockBaseHtmxController {
         .toList();
   }
 
-  protected List<TradeProfit> getEnrichedTradeProfits(TradeProfitRequest request) {
-    return getEnrichedTradeProfits(request, (TradeProfitNames) null);
-  }
-
-  protected List<TradeProfit> getEnrichedTradeProfits(
-      TradeProfitRequest request, TradeProfitNames names) {
-    return enrichTradeProfits(
-        emptyIfNull(tradeProfitClient.calculateProfit(request.toParams())),
-        request.getUserId(),
-        names);
-  }
-
   /**
    * 이미 조회한 손익 목록에 계좌명/종목명을 붙인다. 원격 호출을 미리(혹은 병렬로) 끝낸 뒤 이름만 입히는 경우에 쓴다. 메시지 조회가 LocaleContextHolder
    * 에 의존하므로 반드시 요청 스레드에서 호출할 것.
@@ -472,22 +491,6 @@ public abstract class StockBaseHtmxController {
         .toList();
   }
 
-  protected List<TradeProfit> getEnrichedTradeProfits(
-      TradeProfitRequest request, TradeProfitRequestGroup groupBy) {
-    return getEnrichedTradeProfits(request, groupBy, null);
-  }
-
-  protected List<TradeProfit> getEnrichedTradeProfits(
-      TradeProfitRequest request, TradeProfitRequestGroup groupBy, TradeProfitNames names) {
-    if (groupBy == null || groupBy == request.getGroupBy()) {
-      return getEnrichedTradeProfits(request, names);
-    }
-
-    TradeProfitRequest requestCopy = copyTradeProfitRequest(request);
-    requestCopy.setGroupBy(groupBy);
-    return getEnrichedTradeProfits(requestCopy, names);
-  }
-
   protected TradeProfitRequest copyTradeProfitRequest(TradeProfitRequest request) {
     TradeProfitRequest requestCopy = new TradeProfitRequest();
     requestCopy.setUserId(request.getUserId());
@@ -500,24 +503,8 @@ public abstract class StockBaseHtmxController {
     return requestCopy;
   }
 
-  /** 종목 단위(계좌 무시)로 그룹핑된 손익 목록을 반환한다. */
-  protected List<TradeProfit> getStockGroupedTradeProfits(
-      TradeProfitRequest request, boolean includeZeroHoldings) {
-    return getStockGroupedTradeProfits(request, includeZeroHoldings, null);
-  }
-
-  protected List<TradeProfit> getStockGroupedTradeProfits(
-      TradeProfitRequest request, boolean includeZeroHoldings, TradeProfitNames names) {
-    List<TradeProfit> stockGroupedTradeProfits =
-        new ArrayList<>(getEnrichedTradeProfits(request, TradeProfitRequestGroup.STOCKITEM, names));
-    if (!includeZeroHoldings) {
-      stockGroupedTradeProfits.removeIf(tp -> tp.holdingQuantity() == 0);
-    }
-    return stockGroupedTradeProfits;
-  }
-
   /** 종목별 실현손익 행으로 변환한다 (수수료/세금 반영 + 매수/매도 금액 포함). */
-  protected TradeProfit toStockRealized(TradeProfit profit) {
+  protected static TradeProfit toStockRealized(TradeProfit profit) {
     return TradeProfit.ofStockRealized(
         profit.stockItemId(),
         profit.stockItemName(),

@@ -50,8 +50,7 @@ class Poe2ConsensusNodeCandidatesTest {
                     new Poe2.GuideNode(1, "A", "약한1", "Notable", null, 0d, 0d, 2, null),
                     new Poe2.GuideNode(2, "B", "약한2", "Notable", null, 0.5, 0d, 5, null),
                     new Poe2.GuideNode(3, "C", "강한", "Notable", null, 30d, 10d, 9, null))),
-            consensus(8, Map.of(10, 8, 20, 7, 21, 6, 22, 5, 99, 8, 23, 8)),
-            "balanced");
+            consensus(8, Map.of(10, 8, 20, 7, 21, 6, 22, 5, 99, 8, 23, 8)));
     // 10 은 이미 찍음 · 22(5/8) 는 4분의 3 미만 · 99 는 작은 노드 → 23(8) · 20(7) · 21(6)
     assertThat(out)
         .extracting(Poe2RefineService.Candidate::label)
@@ -91,8 +90,7 @@ class Poe2ConsensusNodeCandidatesTest {
             null,
             Map.of(23, 6, 20, 5)); // 21 은 길이 모름(8점 밖)
     List<Poe2RefineService.Candidate> out =
-        refine.consensusNodeCandidates(
-            XML, g, consensus(8, Map.of(20, 7, 21, 7, 23, 8)), "balanced");
+        refine.consensusNodeCandidates(XML, g, consensus(8, Map.of(20, 7, 21, 7, 23, 8)));
     assertThat(out)
         .extracting(Poe2RefineService.Candidate::label)
         .containsExactly("닌자 공통 패시브(7/8명): 약한2(풀리는 5점) 빼고 → 노드20 찍기");
@@ -101,16 +99,15 @@ class Poe2ConsensusNodeCandidatesTest {
   @Test
   void 뺄_특화가_없거나_공통_특성이_없으면_없다() {
     Poe2NinjaService.Consensus c = consensus(8, Map.of(20, 8));
-    assertThat(refine.consensusNodeCandidates(XML, guide(List.of()), c, "dps")).isEmpty();
+    assertThat(refine.consensusNodeCandidates(XML, guide(List.of()), c)).isEmpty();
     assertThat(
             refine.consensusNodeCandidates(
                 XML,
                 guide(
                     List.of(
                         new Poe2.GuideNode(1, "A", "전직", "Notable", "Deadeye", 0d, 0d, 3, null))),
-                c,
-                "dps"))
+                c))
         .isEmpty();
-    assertThat(refine.consensusNodeCandidates(XML, guide(List.of()), null, "dps")).isEmpty();
+    assertThat(refine.consensusNodeCandidates(XML, guide(List.of()), null)).isEmpty();
   }
 }

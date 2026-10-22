@@ -118,14 +118,12 @@
 		     없으면 서버 존이 기준이다 - 브라우저가 찍는 날짜·시각도 이 값을 따라야 한다. --%>
 		data-time-zone="${java.time.ZoneId.systemDefault().getId()}"
 		data-common-button-search="${MessageUtil.getMessage("common.button.search")}"
-		data-common-button-reset="${MessageUtil.getMessage("common.button.reset")}"
 		data-common-message-load-error="${MessageUtil.getMessage("common.message.load.error")}"
 		data-common-message-action-success="${MessageUtil.getMessage("common.message.action.success")}"
 		data-common-message-action-error="${MessageUtil.getMessage("common.message.action.error")}"
 		data-stock-label-buy="${MessageUtil.getMessage("stock.trade.label.buy")}"
 		data-stock-chart-title-yearly-trade-amount="${MessageUtil.getMessage("stock.trade.chart.title.yearly.trade.amount")}"
 		data-stock-label-sell="${MessageUtil.getMessage("stock.trade.label.sell")}"
-		data-stock-label-realized-profit="${MessageUtil.getMessage("stock.profit.realized")}"
 		<%-- 월별 매매 차트의 실현손익은 '매도한 달에만' 찍힌다. 범례가 그것을 말해 주지 않으면
 		     표식 없는 달이 "그 달은 0원" 으로 읽힌다. --%>
 		data-stock-label-realized-profit-months="${MessageUtil.getMessage("stock.trade.chart.label.realized.profit.months")}"

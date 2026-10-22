@@ -250,7 +250,7 @@ public class PoeCraftImportService {
     }
     if (base.name().endsWith("Cluster Jewel")) {
       // 군집 주얼(10-20 C515) — 인챈트 '작은 패시브 효과' 줄로 변형(cluster_<크기>.<인챈트>)을 고른다
-      variant = clusterVariant(itemClass, base.name(), sections, warnings);
+      variant = clusterVariant(itemClass, base.name(), sections);
       if (variant == null) {
         return ImportResult.fail("군집 주얼의 인챈트(작은 패시브 효과) 줄을 찾지 못했습니다");
       }
@@ -339,7 +339,7 @@ public class PoeCraftImportService {
           }
           i = j;
           // 장막 줄은 머리줄 이름이 없다("{ Prefix Modifier }" — 내보내기 C489 도 이 꼴) → 머리줄 해석 전에
-          if (veiled(stat, b, affixes)) {
+          if (veiled(stat, affixes)) {
             continue;
           }
           if (b == null) {
@@ -368,7 +368,7 @@ public class PoeCraftImportService {
           i++;
           continue;
         }
-        if (veiled(List.of(line), null, affixes)) {
+        if (veiled(List.of(line), affixes)) {
           i++;
           continue;
         }
@@ -426,17 +426,11 @@ public class PoeCraftImportService {
   }
 
   /**
-   * Path of Building 아이템 글 → 게임 복사 글 모양(10-20 C509). PoB 는 구분선이 없고 "Rarity: RARE" 다음 이름 · 베이스, 메타
-   * 줄(Unique ID · Item Level · Quality · Sockets · LevelReq · Implicits: N), 옵션 줄 앞에 {crafted} ·
-   * {fractured} · {range:0.5} 같은 머리표를 쓴다. 구분선이 있으면(게임 글) 그대로.
-   */
-  /**
    * 군집 주얼 변형(C515) — 그 크기 변형 중 인챈트 '작은 패시브 효과' 줄(콜론 있는 줄, 영 · 한)이 글에 모두 있는 것, 여럿이면 줄이 많은 것. 꼬리표
    * (enchant · implicit — PoB 글은 Implicits 로 온다) · 굴림 범위는 떼고 비교. 패시브 수가 최소(변형 첫 줄)와 다르면 안내(옵션 확률엔
    * 영향 없음). 못 찾으면 null.
    */
-  private String clusterVariant(
-      String itemClass, String baseName, List<List<String>> sections, List<String> warnings) {
+  private String clusterVariant(String itemClass, String baseName, List<List<String>> sections) {
     String size =
         "cluster_" + baseName.substring(0, baseName.indexOf(' ')).toLowerCase(Locale.ROOT) + ".";
     java.util.Set<String> seen = new java.util.HashSet<>();
@@ -472,6 +466,11 @@ public class PoeCraftImportService {
     return best.key();
   }
 
+  /**
+   * Path of Building 아이템 글 → 게임 복사 글 모양(10-20 C509). PoB 는 구분선이 없고 "Rarity: RARE" 다음 이름 · 베이스, 메타
+   * 줄(Unique ID · Item Level · Quality · Sockets · LevelReq · Implicits: N), 옵션 줄 앞에 {crafted} ·
+   * {fractured} · {range:0.5} 같은 머리표를 쓴다. 구분선이 있으면(게임 글) 그대로.
+   */
   public static String fromPob(String text) {
     List<String> lines = new ArrayList<>();
     for (String raw : text.replace("\r", "").split("\n")) {
@@ -676,7 +675,7 @@ public class PoeCraftImportService {
   }
 
   /** 장막 줄(ClientStrings ItemDisplayVeiledPrefix/Suffix) — 자리 표시 옵션으로. */
-  private static boolean veiled(List<String> stat, Block b, List<PoeCraftEngine.Affix> out) {
+  private static boolean veiled(List<String> stat, List<PoeCraftEngine.Affix> out) {
     for (String s : stat) {
       String t = TRAIL.matcher(s).replaceAll("").strip();
       if (t.equalsIgnoreCase("Veiled Prefix") || t.equals("장막 접두어")) {

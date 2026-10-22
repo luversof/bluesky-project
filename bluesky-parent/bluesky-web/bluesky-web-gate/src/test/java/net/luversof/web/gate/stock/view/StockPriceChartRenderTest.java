@@ -33,7 +33,7 @@ import net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint;
  */
 class StockPriceChartRenderTest {
 
-  private static final String TEMPLATE = "stock/stockItemDetail.jte";
+  private static final String TEMPLATE = "stock/htmx/stockItemDetailContent.jte";
 
   @BeforeAll
   static void primeMessages() {
@@ -51,7 +51,6 @@ class StockPriceChartRenderTest {
 
   private Map<String, Object> model(List<StockPriceHistoryPoint> prices) {
     Map<String, Object> model = new HashMap<>();
-    model.put("contentReady", true);
     model.put("stockItem", new StockItem(UUID.randomUUID(), "005930", "표본종목", "KOSPI", List.of()));
     model.put("averageBuyPrice", new BigDecimal("71886.79"));
     model.put("priceHistory", prices);

@@ -141,8 +141,6 @@ public record PoeOptimizeResult(
    * @param ascendancy 전직 이름
    * @param unmodeled 스탯 노드 중 엔진이 문장을 해석조차 못 하는 노드 수
    * @param total 스탯을 가진 전직 노드 수
-   */
-  /**
    * @param mercenary 루미너리에 용병 코드를 넣었으면 반영한 용병 버프 요약("분노 150% · …"), 아니면 null
    */
   public record UnmodeledAscendancy(

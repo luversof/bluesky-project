@@ -23,13 +23,4 @@ public record PriceHistoryUpdateJobStatus(
     int processedSymbolCount,
     int targetSymbolCount,
     List<String> failedSymbols,
-    String failureReason) {
-
-  public boolean running() {
-    return "RUNNING".equals(status);
-  }
-
-  public int failedSymbolCount() {
-    return failedSymbols == null ? 0 : failedSymbols.size();
-  }
-}
+    String failureReason) {}

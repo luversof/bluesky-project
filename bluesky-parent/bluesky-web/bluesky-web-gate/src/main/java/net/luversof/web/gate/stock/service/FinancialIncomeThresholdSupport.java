@@ -73,9 +73,7 @@ public class FinancialIncomeThresholdSupport {
       List<Account> accounts = accountClient.getAccountsByUserId(userId);
       if (accounts != null) {
         for (Account account : accounts) {
-          if (account != null
-              && account.jsonConfig() != null
-              && Boolean.TRUE.equals(account.jsonConfig().get("isTaxDeferred"))) {
+          if (account != null && account.isTaxDeferred()) {
             deferredAccountIds.add(account.id());
           }
         }

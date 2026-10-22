@@ -21,8 +21,8 @@ class DetailEmptyWidenCtaTest {
 
   private static final String ITEM = "src/main/jte/stock/htmx/stockItemDetailContent.jte";
   private static final String ACCOUNT = "src/main/jte/stock/htmx/accountDetailContent.jte";
-  private static final String ITEM_SHELL = "src/main/jte/stock/stockItemDetail.jte";
-  private static final String ACCOUNT_SHELL = "src/main/jte/stock/accountDetail.jte";
+  private static final String ITEM_CONTENT = "src/main/jte/stock/htmx/stockItemDetailContent.jte";
+  private static final String ACCOUNT_CONTENT = "src/main/jte/stock/htmx/accountDetailContent.jte";
   private static final String CONTROLLER =
       "src/main/java/net/luversof/web/gate/stock/controller/StockDetailViewController.java";
   private static final String CTA = "widenRangeAction = !\"all\".equals(rangeMode)";
@@ -41,23 +41,29 @@ class DetailEmptyWidenCtaTest {
     return seen;
   }
 
-  /** 컨트롤러가 지금 기간 모드를 화면에 넘긴다 - 두 상세 화면 모두. */
+  /**
+   * 컨트롤러가 지금 기간 모드를 화면에 넘긴다 - 두 상세 화면 모두. 2026-10-22 부터 그 줄은 공용 도우미(addRangeFilterAttributes) 한 곳에
+   * 있고 두 핸들러가 부른다 - 값(null 이면 빈 글자)은 DetailRangeAttributesTest 가 본다.
+   */
   @Test
   void 컨트롤러가_기간_모드를_넘긴다() throws IOException {
+    String controller = read(CONTROLLER);
     assertThat(
             count(
-                read(CONTROLLER),
+                controller,
                 "model.addAttribute(\"rangeMode\", rangeMode == null ? \"\" : rangeMode);"))
-        .as("종목 상세 · 계좌 상세")
-        .isEqualTo(2);
+        .as("공용 도우미 한 곳")
+        .isEqualTo(1);
+    assertThat(count(controller, "addRangeFilterAttributes("))
+        .as("정의 하나 + 종목 상세 · 계좌 상세")
+        .isEqualTo(3);
   }
 
   /** 껍데기가 조각에 그대로 흘려 준다. */
   @Test
   void 껍데기가_조각에_넘긴다() throws IOException {
-    for (String path : new String[] {ITEM_SHELL, ACCOUNT_SHELL}) {
+    for (String path : new String[] {ITEM_CONTENT, ACCOUNT_CONTENT}) {
       assertThat(read(path)).as(path).contains("@param String rangeMode = \"\"");
-      assertThat(read(path)).as(path).contains("rangeMode = rangeMode");
     }
   }
 

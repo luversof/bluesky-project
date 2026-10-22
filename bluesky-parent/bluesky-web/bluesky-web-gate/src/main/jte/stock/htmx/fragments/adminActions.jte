@@ -51,7 +51,7 @@
 			 그 폭에서는 줄바꿈을 허용한다. 글꼴 200% 에서는 "(Dividends)" 같은 영어 한 단어가 버튼 안쪽보다 넓어
 			 페이지를 33px 밀었다 - 그때는 단어 안에서도 끊는다(wrap-anywhere, 실측 2026-09-17). 한글 단어는 띄어쓰기에서만 나눈다(break-keep). --%>
 		<div class="flex flex-wrap gap-4">
-			<button hx-post="/api/stock/admin/stock-items"
+			<button type="button" hx-post="/api/stock/admin/stock-items"
 					data-admin-action="stock-items"
 					hx-swap="none"
 					hx-indicator="#update-loading"
@@ -63,7 +63,7 @@
 				</svg>
 				${updateStockItemsLabel}
 			</button>
-			<button hx-post="/api/stock/admin/trades"
+			<button type="button" hx-post="/api/stock/admin/trades"
 					data-admin-action="trades"
 					hx-swap="none"
 					hx-indicator="#update-loading"
@@ -75,7 +75,7 @@
 				</svg>
 				${updateTradesLabel}
 			</button>
-			<button hx-post="/api/stock/admin/dividends"
+			<button type="button" hx-post="/api/stock/admin/dividends"
 					data-admin-action="dividends"
 					hx-swap="none"
 					hx-indicator="#update-loading"
@@ -87,7 +87,7 @@
 				</svg>
 				${updateDividendsLabel}
 			</button>
-			<button hx-post="/api/stock/admin/price-histories"
+			<button type="button" hx-post="/api/stock/admin/price-histories"
 					data-admin-action="price-histories"
 					hx-swap="none"
 					hx-confirm="${updatePriceHistoriesConfirm}"

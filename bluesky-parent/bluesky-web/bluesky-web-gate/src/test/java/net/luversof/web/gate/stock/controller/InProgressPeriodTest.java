@@ -35,7 +35,8 @@ class InProgressPeriodTest {
           method.invoke(
               controller,
               from == null ? null : LocalDate.parse(from).atStartOfDay(KST).toInstant(),
-              to == null ? null : LocalDate.parse(to).atStartOfDay(KST).toInstant(),
+              // 화면이 넘기는 끝은 배타적(마지막 날 다음 날 0시)이다 - 단언은 포함 날짜로 적고 여기서 하루 민다.
+              to == null ? null : LocalDate.parse(to).plusDays(1).atStartOfDay(KST).toInstant(),
               rangeMode,
               KST);
     } catch (ReflectiveOperationException e) {

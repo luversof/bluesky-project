@@ -14,8 +14,6 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class KodexMonthlyDividendPayoutSourceParser {
 
-  private static final String BULK_INPUT_HEADER = "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)";
-
   private final JsonMapper objectMapper;
 
   public KodexMonthlyDividendPayoutSourceParser(JsonMapper objectMapper) {
@@ -37,7 +35,7 @@ public class KodexMonthlyDividendPayoutSourceParser {
           msg("stock.monthly.reference.error.source.rows.missing", "KODEX"));
     }
 
-    StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
+    StringBuilder bulkInput = new StringBuilder(PayoutSourceText.BULK_INPUT_HEADER);
     for (KodexDividendRow row : rows) {
       // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 과세표준만 모름("-")으로 싣는다.
       if (!StringUtils.hasText(row.basicD())
@@ -48,34 +46,21 @@ public class KodexMonthlyDividendPayoutSourceParser {
 
       bulkInput
           .append('\n')
-          .append(formatCompactDate(row.basicD()))
+          .append(PayoutSourceText.isoDateOfCompact(row.basicD()))
           .append('\t')
-          .append(formatCompactDate(row.payD()))
+          .append(PayoutSourceText.isoDateOfCompact(row.payD()))
           .append('\t')
           .append(row.dividA().trim())
           .append('\t')
           .append(StringUtils.hasText(row.taxDividA()) ? row.taxDividA().trim() : "-");
     }
 
-    if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
+    if (bulkInput.toString().equals(PayoutSourceText.BULK_INPUT_HEADER)) {
       throw new IllegalArgumentException(
           msg("stock.monthly.reference.error.source.rows.missing", "KODEX"));
     }
 
     return bulkInput.toString();
-  }
-
-  private String formatCompactDate(String value) {
-    String normalized = value != null ? value.replaceAll("[^0-9]", "") : "";
-    if (normalized.length() != 8) {
-      return value != null ? value.trim() : "";
-    }
-
-    return normalized.substring(0, 4)
-        + "-"
-        + normalized.substring(4, 6)
-        + "-"
-        + normalized.substring(6, 8);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

@@ -87,8 +87,10 @@ public class Poe2CraftEngine {
    */
   public record Essence(String slug, String kind, java.util.Map<String, String> mods) {}
 
-  /** 옵션 — groups = 옵션 그룹(같은 그룹은 한 아이템에 하나), tags = 옵션 태그(동질화 징조), level = 옵션 레벨. */
-  /** type = 옵션 유형(ModType — 최소 속성 레벨 예외의 '속성 유형', C418), 모르면 null(그룹으로 대신). */
+  /**
+   * 옵션 — groups = 옵션 그룹(같은 그룹은 한 아이템에 하나), tags = 옵션 태그(동질화 징조), level = 옵션 레벨. type = 옵션
+   * 유형(ModType — 최소 속성 레벨 예외의 '속성 유형', C418), 모르면 null(그룹으로 대신).
+   */
   public record Mod(
       String id, String gen, int level, List<Integer> groups, List<String> tags, String type) {
 
@@ -825,7 +827,6 @@ public class Poe2CraftEngine {
         used(om, "SinistralCrystallisation", "DextralCrystallisation"));
   }
 
-  /** 옵션 직접 넣기(C357) — 이 풀 옵션만, 아이템 레벨 · 같은 그룹 · 자리 규칙, 희귀도 자동(일반 → 매직 → 레어). */
   /** 홈이 +1 될 수 있는 부위(C376, maxroll) — 방어구 · 방패 · 마도서 · 근접 무기(활 · 쇠뇌 포함). */
   static final Set<String> SOCKET_CLASSES =
       Set.of(
@@ -975,6 +976,7 @@ public class Poe2CraftEngine {
         note);
   }
 
+  /** 옵션 직접 넣기(C357) — 이 풀 옵션만, 아이템 레벨 · 같은 그룹 · 자리 규칙, 희귀도 자동(일반 → 매직 → 레어). */
   private Result manualAdd(Item item, String arg) {
     if (arg == null || arg.isBlank()) {
       return Result.fail(item, "넣을 옵션을 고르세요");

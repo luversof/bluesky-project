@@ -693,6 +693,34 @@ class LedgerIntegrityServiceTest {
   }
 
   /**
+   * 과세이연 계좌(연금 · ISA)는 원천징수를 하지 않는다 - 그 계좌의 개별 주식 배당은 세금이 0 이어도 걸리면 안 된다. 같은 배당이 일반 계좌에 있으면 걸린다는
+   * 대조를 같은 꾸밈 안에 둔다(하한 경계에서도 떼어 둔다). 2026-10-22 규칙을 메서드로 옮기며 돌린 변이(과세이연 조건 빼기)를 어떤 시험도 못 잡아 더했다.
+   */
+  @Test
+  void 과세이연_계좌의_개별_주식_배당은_세금이_0_이어도_걸리지_않는다() {
+    UUID deferredAccountId = UUID.randomUUID();
+    // 실제 계좌는 늘 이름이 있다(이름 없는 계좌는 계좌별 요약 정렬에서 넘어진다).
+    net.luversof.api.stock.domain.Account deferred = account(deferredAccountId, "연금저축");
+    deferred.setJsonConfig(java.util.Map.of("isTaxDeferred", Boolean.TRUE));
+    when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(deferred));
+    // 예상 세액(200,000 x 15.4% = 30,800)이 하한(원장에서 실제로 뗀 가장 작은 세액 15,400)보다 넉넉히 크다 - 경계에 기대지 않는다.
+    Dividend inDeferred = dividend("200000", "0", "0", 100, "2000");
+    inDeferred.setAccountId(deferredAccountId);
+    // 같은 배당이 일반 계좌에 있으면 걸린다(같은 꾸밈 안의 대조).
+    Dividend inNormal = dividendInAccount("200000", "0", "0", 100, "2000");
+
+    LedgerIntegrityResponse response =
+        run(
+            List.of(
+                inDeferred, inNormal, dividendInAccount("100000", "15400", "100000", 100, "1000")),
+            List.of(trade(TradeType.SELL, 10, "1000", "10", "23", "0")));
+
+    LedgerIntegrityFinding found = finding(response, "STOCK_DIVIDEND_WITHOUT_WITHHOLDING");
+    assertThat(found).as("일반 계좌의 무징수 배당은 걸려야 한다").isNotNull();
+    assertThat(found.count()).as("과세이연 계좌의 배당까지 걸면 2").isEqualTo(1);
+  }
+
+  /**
    * 수수료가 한 건도 없는 계좌는 <b>계좌 단위로 한 번만</b> 알린다.
    *
    * <p>거래마다 또 알리면 같은 사정이 열몇 번 반복돼 화면을 덮는다. 그 계좌는 증권사에서 기록을 되받을 수 없어 채울 방법이 없으므로, 반복될수록 나머지 지적까지 같이
@@ -819,6 +847,22 @@ class LedgerIntegrityServiceTest {
             List.of(),
             List.of(
                 trade(TradeType.BUY, 10, "1000", "10", "0", null), sell("100000", 10, "1", "0")));
+
+    assertThat(finding(response, "SELL_WITHOUT_FEE_AND_TAX")).isNull();
+  }
+
+  /**
+   * 수수료만 0 이고 거래세가 있는 매도도 "둘 다 0" 이 아니므로 걸리면 안 된다. 2026-10-22 규칙을 메서드로 옮기며 돌린 변이(거래세 조건 빼기)를 기존 시험
+   * 어느 것도 못 잡아 더했다 - 바로 위 시험은 그 반대(거래세만 0)다.
+   */
+  @Test
+  void 수수료만_0이고_거래세가_있는_매도는_걸리지_않는다() {
+    LedgerIntegrityResponse response =
+        run(
+            List.of(),
+            List.of(
+                trade(TradeType.BUY, 10, "1000", "10", "0", null),
+                sell("100000", 10, "0", "2300")));
 
     assertThat(finding(response, "SELL_WITHOUT_FEE_AND_TAX")).isNull();
   }

@@ -1900,10 +1900,6 @@ function renderMonthlyDetailsTable(record) {
 			.join("");
 	}
 
-	function buildScenarioConfigurationText(scenario) {
-		return buildScenarioConfigurationSegments(scenario).join(" · ");
-	}
-
 	/**
 	 * 해마다 다른 이름을 준다.
 	 *

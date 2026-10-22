@@ -470,27 +470,11 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       model.addAttribute("coreHoldingName", coreNames.size() == 1 ? coreNames.get(0) : null);
       model.addAttribute("coreHoldingCount", coreNames.size());
       if (!excludedApplied) {
-        var endItems = snapshots.get(contributionEnd.toString());
-        if (endItems != null) {
-          java.math.BigDecimal totalValue = java.math.BigDecimal.ZERO;
-          java.math.BigDecimal coreValue = java.math.BigDecimal.ZERO;
-          for (var item : endItems) {
-            if (item == null || item.value() == null) {
-              continue;
-            }
-            totalValue = totalValue.add(item.value());
-            if (coreStockItemIds.contains(item.stockItemId())) {
-              coreValue = coreValue.add(item.value());
-            }
-          }
-          if (totalValue.signum() > 0 && coreValue.signum() > 0) {
-            model.addAttribute(
-                "coreHoldingWeightPct",
-                coreValue
-                    .multiply(java.math.BigDecimal.valueOf(100))
-                    .divide(totalValue, 1, java.math.RoundingMode.HALF_UP)
-                    .toPlainString());
-          }
+        java.math.BigDecimal coreWeightPct =
+            net.luversof.web.gate.stock.util.StockCoreHoldingUtil.snapshotWeightPct(
+                snapshots.get(contributionEnd.toString()), coreStockItemIds);
+        if (coreWeightPct != null) {
+          model.addAttribute("coreHoldingWeightPct", coreWeightPct.toPlainString());
         }
       }
     }
@@ -631,46 +615,17 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // Final dropdown lists: narrowed list + previously-selected items not in range.
     List<net.luversof.web.gate.stock.domain.Account> finalAccountList;
     if (clientProvidedRange) {
-      finalAccountList = new ArrayList<>(filteredAccountList);
-      if (requestedAccountIds != null) {
-        for (UUID sel : requestedAccountIds) {
-          if (sel == null || tradeAccountIds.contains(sel)) {
-            continue;
-          }
-          accountList.stream()
-              .filter(a -> a.id().equals(sel))
-              .findFirst()
-              .ifPresent(
-                  a -> {
-                    if (finalAccountList.stream().noneMatch(x -> x.id().equals(a.id()))) {
-                      finalAccountList.add(0, a);
-                    }
-                  });
-        }
-      }
+      finalAccountList =
+          withSelectedFirst(filteredAccountList, accountList, requestedAccountIds, a -> a.id());
     } else {
       finalAccountList = new ArrayList<>(filteredAccountList);
     }
 
     List<StockItem> finalStockItemList;
     if (clientProvidedRange) {
-      finalStockItemList = new ArrayList<>(filteredStockItemList);
-      if (requestedStockItemIds != null) {
-        for (UUID sel : requestedStockItemIds) {
-          if (sel == null || tradeStockIds.contains(sel)) {
-            continue;
-          }
-          stockItemList.stream()
-              .filter(s -> s.id().equals(sel))
-              .findFirst()
-              .ifPresent(
-                  s -> {
-                    if (finalStockItemList.stream().noneMatch(x -> x.id().equals(s.id()))) {
-                      finalStockItemList.add(0, s);
-                    }
-                  });
-        }
-      }
+      finalStockItemList =
+          withSelectedFirst(
+              filteredStockItemList, stockItemList, requestedStockItemIds, s -> s.id());
     } else {
       finalStockItemList = new ArrayList<>(filteredStockItemList);
     }
@@ -754,14 +709,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     return "stock/htmx/holdings-snapshot";
   }
 
-  /** 매매 이력 계산(원격 호출 포함). 프래그먼트 요청과 자산성장 인라인 렌더가 공유한다. */
-  private TradeHistoryData buildTradeHistoryData(
-      UUID userId, String from, String to, int page, int size) {
-    return buildTradeHistoryData(userId, from, to, page, size, null);
-  }
-
-  /** preloadedStockItems 가 있으면 종목 목록을 다시 읽지 않는다(같은 요청에서 이미 읽은 목록 재사용). */
-  /** 매매 이력 거래 조회 파라미터. 조기 발사와 일반 경로가 반드시 같은 값을 쓰도록 한 곳에서 만든다. */
   /** 매매 이력 패널의 페이징 링크에 붙일 필터 질의 문자열(비어 있으면 ""). */
   private static String tradeHistoryFilterQuery(
       List<UUID> accountIdList, List<UUID> stockItemIdList) {
@@ -798,13 +745,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
   }
 
-  private org.springframework.util.MultiValueMap<String, String> tradeHistoryParams(
-      UUID userId, String from, String to) {
-    return tradeHistoryParams(userId, from, to, null, null);
-  }
-
   /**
-   * 매매 이력 조회 파라미터.
+   * 매매 이력 거래 조회 파라미터. 조기 발사와 일반 경로가 반드시 같은 값을 쓰도록 한 곳에서 만든다.
    *
    * <p>이 패널은 화면의 계좌/종목 필터를 전혀 싣지 않고 있었다. 위 차트는 필터를 타는데 아래 목록만 전체를 보여줘서, 계좌를 바꿔도 목록이 그대로였다(실측: 서로 다른
    * 세 계좌에서 매매 20건이 완전히 동일했고, API 로 보면 각 계좌의 실제 거래는 전부 달랐다).
@@ -829,17 +771,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             : null;
     return new TradeSearchRequest(userId, accountIdList, stockItemIdList, tradeStart, tradeEnd)
         .toParams();
-  }
-
-  private TradeHistoryData buildTradeHistoryData(
-      UUID userId,
-      String from,
-      String to,
-      int page,
-      int size,
-      List<StockItem> preloadedStockItems) {
-    return buildTradeHistoryData(
-        userId, from, to, page, size, preloadedStockItems, null, null, null, null);
   }
 
   /** 거래 조회를 호출부가 이미 던져 뒀으면 그 future 를 그대로 쓴다. */
@@ -883,19 +814,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         allFromApi.stream()
             .map(
                 t ->
-                    new TradeResponse(
-                        t.id(),
-                        t.accountId(),
-                        t.stockItemId(),
-                        stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown")),
-                        t.type(),
-                        t.quantity(),
-                        t.price(),
-                        t.fee(),
-                        t.tax(),
-                        t.amount(),
-                        t.realizedProfit(),
-                        t.tradeDate()))
+                    t.withStockItemName(
+                        stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"))))
             .sorted(
                 Comparator.comparing(
                     TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
@@ -1055,7 +975,6 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     model.addAttribute("zone", zone);
     model.addAttribute("trades", data.trades());
     model.addAttribute("totalItems", data.totalItems());
-    model.addAttribute("currentPage", data.currentPage());
     model.addAttribute("totalPages", data.totalPages());
     model.addAttribute("pagination", data.pagination());
     model.addAttribute("pageSize", data.pageSize());
@@ -1086,12 +1005,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 판단은 한 곳에 둔다(종목 상세도 같은 규칙을 쓴다) - 문구만 이 화면의 MessageSource 가 찾는다.
     String key =
         net.luversof.web.gate.stock.util.StockBreakdownNoteUtil.noteKey(breakdownRows, true);
-    return key.isEmpty() ? "" : message(key);
-  }
-
-  private String message(String code) {
-    return messageSource.getMessage(
-        code, null, org.springframework.context.i18n.LocaleContextHolder.getLocale());
+    return key.isEmpty() ? "" : msg(key);
   }
 
   /**

@@ -1,4 +1,4 @@
-// 배당 내역 조각의 브라우저 동작: 월별/도넛 차트 · 평균 카드 · 수익률 표 정렬과 행 선택 합계 · 기간 선택기.
+// 배당 내역 조각의 브라우저 동작: 월별/도넛 차트 · 평균 카드 · 수익률 표 행 선택 합계 · 기간 선택기(표 정렬은 clientTableSort.ts).
 //
 // 2026-09-08 까지 tabsDividendHistory.jte 안의 인라인 <script> 였다(746 줄 - 이 모듈에서 가장 컸다). 서버가 넣어 주던 것
 // (배당 데이터 배열, 기간 문자열, 라벨 9 개, 선택기 minDate)은 조각에 남은 작은 인라인 스크립트가 window.dividendHistoryConfig 로
@@ -229,126 +229,6 @@ interface MonthRange {
             }
         }
 
-        function getDividendYieldSortValue(row: HTMLElement, sortKey: string, sortType: string): any {
-            if (!row || !sortKey) {
-                return sortType === 'number' ? 0 : '';
-            }
-
-            const rawValue = row.dataset[sortKey];
-            if (sortType === 'number') {
-                const parsedValue = Number(rawValue);
-                return Number.isFinite(parsedValue) ? parsedValue : 0;
-            }
-
-            return rawValue || '';
-        }
-
-        function compareDividendYieldSortValues(leftValue: any, rightValue: any, sortType: string): number {
-            if (sortType === 'number') {
-                return leftValue - rightValue;
-            }
-
-            return String(leftValue).localeCompare(String(rightValue), 'ko', {
-                numeric: true,
-                sensitivity: 'base'
-            });
-        }
-
-        function updateDividendYieldSortIndicators(table: HTMLTableElement) {
-            if (!table) {
-                return;
-            }
-
-            const activeKey = table.dataset.sortKey;
-            const direction = table.dataset.sortDirection;
-            const buttons = table.querySelectorAll<HTMLElement>('[data-sort-key]');
-            for (let i = 0; i < buttons.length; i++) {
-                const button = buttons[i];
-                const indicator = button.querySelector<HTMLElement>('[data-sort-indicator]');
-                const headerCell = button.parentElement;
-                const isActive = activeKey && button.dataset.sortKey === activeKey;
-
-                if (indicator) {
-                    indicator.textContent = isActive
-                        ? (direction === 'asc' ? '▲' : '▼')
-                        : '↕';
-                }
-
-                if (headerCell) {
-                    headerCell.setAttribute(
-                        'aria-sort',
-                        isActive
-                            ? (direction === 'asc' ? 'ascending' : 'descending')
-                            : 'none'
-                    );
-                }
-            }
-        }
-
-        function sortDividendYieldTable(table: HTMLTableElement, sortKey: string, sortType: string) {
-            if (!table || !sortKey || !sortType || !table.tBodies || table.tBodies.length === 0) {
-                return;
-            }
-
-            let nextDirection: string;
-            if (table.dataset.sortKey === sortKey) {
-                nextDirection = table.dataset.sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                nextDirection = sortType === 'text' ? 'asc' : 'desc';
-            }
-
-            table.dataset.sortKey = sortKey;
-            table.dataset.sortDirection = nextDirection;
-
-            const tbody = table.tBodies[0];
-            const rows = Array.from(tbody.querySelectorAll('[data-dividend-yield-row]'));
-            rows.sort(function(left: any, right: any) {
-                let compared = compareDividendYieldSortValues(
-                    getDividendYieldSortValue(left, sortKey, sortType),
-                    getDividendYieldSortValue(right, sortKey, sortType),
-                    sortType
-                );
-
-                if (compared === 0) {
-                    compared = compareDividendYieldSortValues(
-                        left.dataset.label || '',
-                        right.dataset.label || '',
-                        'text'
-                    );
-                }
-
-                return nextDirection === 'asc' ? compared : -compared;
-            });
-
-            for (let i = 0; i < rows.length; i++) {
-                tbody.appendChild(rows[i]);
-            }
-
-            updateDividendYieldSortIndicators(table);
-        }
-
-        function initializeDividendYieldSortableTables() {
-            const tables = document.querySelectorAll<HTMLTableElement>('[data-dividend-yield-sortable-table]');
-            for (let i = 0; i < tables.length; i++) {
-                const table = tables[i];
-                if (table.dataset.sortableInitialized === 'true') {
-                    continue;
-                }
-
-                table.dataset.sortableInitialized = 'true';
-
-                const buttons = table.querySelectorAll<HTMLElement>('[data-sort-key]');
-                for (let j = 0; j < buttons.length; j++) {
-                    buttons[j].addEventListener('click', function() {
-                        const targetTable = this.closest<HTMLTableElement>('[data-dividend-yield-sortable-table]');
-                        sortDividendYieldTable(targetTable!, this.dataset.sortKey!, this.dataset.sortType!);
-                    });
-                }
-
-                updateDividendYieldSortIndicators(table);
-            }
-        }
-
         function initializeDividendYieldSelection() {
             const sections = document.querySelectorAll<HTMLElement>('[data-dividend-yield-selection-section]');
             for (let i = 0; i < sections.length; i++) {
@@ -409,94 +289,6 @@ interface MonthRange {
 
                 updateDividendYieldSelectionSummary(section);
             }
-        }
-
-        if (typeof win.initializeStockTagHoverTooltips !== 'function') {
-            win.initializeStockTagHoverTooltips = function(root: ParentNode | null) {
-                let tooltip = win.stockTagHoverTooltip;
-                if (!tooltip) {
-                    const tooltipEl = document.createElement('div');
-                    tooltipEl.id = 'stockTagHoverTooltip';
-                    tooltipEl.className = 'pointer-events-none fixed left-0 top-0 z-50 hidden w-64 max-w-[calc(100vw-2rem)] rounded-box bg-neutral px-3 py-2 text-left text-xs leading-5 text-neutral-content shadow-lg sm:w-72';
-                    document.body.appendChild(tooltipEl);
-
-                    tooltip = {
-                        element: tooltipEl,
-                        show(message: string, clientX: number, clientY: number) {
-                            if (!message) {
-                                this.hide();
-                                return;
-                            }
-
-                            this.element.textContent = message;
-                            this.element.classList.remove('hidden');
-                            this.move(clientX, clientY);
-                        },
-                        move(clientX: number, clientY: number) {
-                            if (this.element.classList.contains('hidden')) {
-                                return;
-                            }
-
-                            const offsetX = 12;
-                            const offsetY = 18;
-                            const viewportPadding = 12;
-                            let left = clientX + offsetX;
-                            let top = clientY + offsetY;
-                            const rect = this.element.getBoundingClientRect();
-
-                            if (left + rect.width + viewportPadding > win.innerWidth) {
-                                left = Math.max(viewportPadding, win.innerWidth - rect.width - viewportPadding);
-                            }
-
-                            if (top + rect.height + viewportPadding > win.innerHeight) {
-                                top = Math.max(viewportPadding, clientY - rect.height - offsetY);
-                            }
-
-                            this.element.style.left = left + 'px';
-                            this.element.style.top = top + 'px';
-                        },
-                        hide() {
-                            this.element.classList.add('hidden');
-                            this.element.textContent = '';
-                        }
-                    };
-
-                    win.stockTagHoverTooltip = tooltip;
-                    win.addEventListener('scroll', function() {
-                        if (win.stockTagHoverTooltip) {
-                            win.stockTagHoverTooltip.hide();
-                        }
-                    }, true);
-                    win.addEventListener('resize', function() {
-                        if (win.stockTagHoverTooltip) {
-                            win.stockTagHoverTooltip.hide();
-                        }
-                    });
-                }
-
-                const scope = root || document;
-                const targets = scope.querySelectorAll<HTMLElement>('[data-stock-tag-tooltip]');
-                for (let i = 0; i < targets.length; i++) {
-                    const target = targets[i];
-                    if (target.dataset.stockTagTooltipInitialized === 'true') {
-                        continue;
-                    }
-
-                    target.dataset.stockTagTooltipInitialized = 'true';
-
-                    target.addEventListener('mouseenter', function(this: HTMLElement, event: MouseEvent) {
-                        tooltip.show(this.dataset.stockTagTooltip, event.clientX, event.clientY);
-                    });
-
-                    target.addEventListener('mousemove', function(this: HTMLElement, event: MouseEvent) {
-                        tooltip.move(event.clientX, event.clientY);
-                    });
-
-                    target.addEventListener('mouseleave', function() {
-                        tooltip.hide();
-                    });
-                }
-            };
         }
 
         let monthlyChart: any = null;
@@ -834,8 +626,8 @@ interface MonthRange {
         win.dividendPicker = win.DateRangePicker
             ? win.DateRangePicker.create({
                 formId:      'dividendSearchForm',
-                startId:     'startDateInput',
-                endId:       'endDateInput',
+                startId:     'dividendStartDateInput',
+                endId:       'dividendEndDateInput',
                 instantStartId: 'dividendStartInstantInput',
                 instantEndId:   'dividendEndInstantInput',
                 timeZoneId:     'dividendTimeZoneInput',
@@ -873,9 +665,11 @@ interface MonthRange {
             });
         }
 
-        initializeDividendYieldSortableTables();
+        // 수익률 표 정렬은 stockLayout 이 싣는 공용 정렬기(clientTableSort.ts) - 줄의 data-* 값, 같으면 이름 순.
+        if (win.StockClientTableSort) win.StockClientTableSort.initialize({ tableSelector: "[data-dividend-yield-sortable-table]", rowSelector: "[data-dividend-yield-row]", tieBreakKeys: ["label"] });
         initializeDividendYieldSelection();
-        win.initializeStockTagHoverTooltips(document);
+        // 태그 풍선은 stockLayout 이 싣는 /js/stock/stockTagTooltip.js 에 있다 - 없으면(레이아웃 밖 · 검사) 건너뛰고 나머지 초기화는 계속한다.
+        if (typeof win.initializeStockTagHoverTooltips === "function") win.initializeStockTagHoverTooltips(document);
 
         // Chart.js 는 stockLayout 에서 1회 로드되어 항상 존재한다. (initAll 은 ensureStockCharts 로 헬퍼 보장)
         setTimeout(initAll, 0);

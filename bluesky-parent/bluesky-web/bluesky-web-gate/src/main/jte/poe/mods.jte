@@ -15,7 +15,6 @@
 @param java.util.List<net.luversof.web.gate.poe.dto.PoeAnointEntry> anoints = null
 @param PoeModClass mods = null
 @param net.luversof.web.gate.poe.dto.PoeEldritch eldritch = null
-@param String activeInfluence = ""
 @param java.util.List<net.luversof.web.gate.poe.dto.PoeEssenceEntry> essences = null
 @param java.util.List<net.luversof.web.gate.poe.dto.PoeBenchEntry> bench = null
 

@@ -58,6 +58,43 @@
 		};
 	} catch (e) {}
 
+	/**
+	 * 커스텀 드롭다운의 껍데기 - 감싼 상자 · 토글 단추(요약 글자 + ▾) · 패널. 계좌 · 종목 드롭다운과 태그 드롭다운이 같은 모양을 따로 만들고
+	 * 있었다(2026-10-22 정리). 다른 점은 패널 최대 높이뿐이라 그것만 받는다. 클래스 이름은 Tailwind 가 이 파일을 훑어 찾으므로 문자열 그대로 둔다.
+	 */
+	function createDropdownShell(panelMaxHeightClass: "max-h-64" | "max-h-72") {
+		var wrap = document.createElement("div");
+		wrap.className = "relative w-full";
+		wrap.setAttribute("data-msd-wrap", "1");
+
+		var toggle = document.createElement("button");
+		toggle.type = "button";
+		toggle.className =
+			"btn btn-sm btn-outline btn-block justify-between font-normal gap-2";
+		toggle.setAttribute("data-msd-toggle", "1");
+		toggle.setAttribute("aria-haspopup", "true");
+		toggle.setAttribute("aria-expanded", "false");
+		var summary = document.createElement("span");
+		summary.className = "truncate flex-1 min-w-0 text-left";
+		var caret = document.createElement("span");
+		caret.className = "opacity-60 text-xs shrink-0";
+		caret.textContent = "▾";
+		toggle.appendChild(summary);
+		toggle.appendChild(caret);
+
+		var panel = document.createElement("div");
+		panel.className =
+			"absolute z-30 left-0 top-full mt-1 min-w-full w-max max-w-[calc(100vw-2rem)] sm:max-w-sm bg-base-100 border border-base-300 rounded-box shadow-lg p-2 " +
+			panelMaxHeightClass +
+			" overflow-auto focus:outline-none";
+		panel.setAttribute("data-msd-panel", "1");
+		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
+		panel.id = "msd-panel-" + (++msdPanelSeq);
+		toggle.setAttribute("aria-controls", panel.id);
+		panel.hidden = true;
+		return { wrap: wrap, toggle: toggle, summary: summary, panel: panel };
+	}
+
 	function enhance(select: HTMLSelectElement) {
 		if (!select) return;
 		if (select.dataset.msd === "1") {
@@ -88,33 +125,11 @@
 		var fieldLabel =
 			fcLabelEl && fcLabelEl.textContent ? fcLabelEl.textContent.trim() : "";
 
-		var wrap = document.createElement("div");
-		wrap.className = "relative w-full";
-		wrap.setAttribute("data-msd-wrap", "1");
-
-		var toggle = document.createElement("button");
-		toggle.type = "button";
-		toggle.className =
-			"btn btn-sm btn-outline btn-block justify-between font-normal gap-2";
-		toggle.setAttribute("data-msd-toggle", "1");
-		toggle.setAttribute("aria-haspopup", "true");
-		toggle.setAttribute("aria-expanded", "false");
-		var summary = document.createElement("span");
-		summary.className = "truncate flex-1 min-w-0 text-left";
-		var caret = document.createElement("span");
-		caret.className = "opacity-60 text-xs shrink-0";
-		caret.textContent = "▾";
-		toggle.appendChild(summary);
-		toggle.appendChild(caret);
-
-		var panel = document.createElement("div");
-		panel.className =
-			"absolute z-30 left-0 top-full mt-1 min-w-full w-max max-w-[calc(100vw-2rem)] sm:max-w-sm bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-64 overflow-auto focus:outline-none";
-		panel.setAttribute("data-msd-panel", "1");
-		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
-		panel.id = "msd-panel-" + (++msdPanelSeq);
-		toggle.setAttribute("aria-controls", panel.id);
-		panel.hidden = true;
+		var shell = createDropdownShell("max-h-64");
+		var wrap = shell.wrap;
+		var toggle = shell.toggle;
+		var summary = shell.summary;
+		var panel = shell.panel;
 		// 패널 안 아무 곳(항목 이름 글자)을 눌러도 포커스가 패널에 머물게 한다. 실측 2026-10-02: 이름을 누르면 마우스를 누르는 순간 포커스가
 		// 패널 밖 <main tabindex="-1"> 로 넘어가 아래 focusin 이 패널을 닫았고, 클릭이 체크박스에 닿지 못했다(체크박스만 눌러야 됐다).
 		panel.tabIndex = -1;
@@ -326,33 +341,11 @@
 		lab.appendChild(labSpan);
 		col.appendChild(lab);
 
-		var wrap = document.createElement("div");
-		wrap.className = "relative w-full";
-		wrap.setAttribute("data-msd-wrap", "1");
-
-		var toggle = document.createElement("button");
-		toggle.type = "button";
-		toggle.className =
-			"btn btn-sm btn-outline btn-block justify-between font-normal gap-2";
-		toggle.setAttribute("data-msd-toggle", "1");
-		toggle.setAttribute("aria-haspopup", "true");
-		toggle.setAttribute("aria-expanded", "false");
-		var summary = document.createElement("span");
-		summary.className = "truncate flex-1 min-w-0 text-left";
-		var caret = document.createElement("span");
-		caret.className = "opacity-60 text-xs shrink-0";
-		caret.textContent = "▾";
-		toggle.appendChild(summary);
-		toggle.appendChild(caret);
-
-		var panel = document.createElement("div");
-		panel.className =
-			"absolute z-30 left-0 top-full mt-1 min-w-full w-max max-w-[calc(100vw-2rem)] sm:max-w-sm bg-base-100 border border-base-300 rounded-box shadow-lg p-2 max-h-72 overflow-auto focus:outline-none";
-		panel.setAttribute("data-msd-panel", "1");
-		// 토글-패널 연결(aria-controls). 실측 2026-09-09: haspopup/expanded/Escape 는 갖췄는데 이것만 빠져 있었다.
-		panel.id = "msd-panel-" + (++msdPanelSeq);
-		toggle.setAttribute("aria-controls", panel.id);
-		panel.hidden = true;
+		var shell = createDropdownShell("max-h-72");
+		var wrap = shell.wrap;
+		var toggle = shell.toggle;
+		var summary = shell.summary;
+		var panel = shell.panel;
 		// 계좌 · 종목 패널과 같은 이유 - 패널 안을 눌러도 포커스가 밖(main)으로 나가 닫히지 않게.
 		panel.tabIndex = -1;
 

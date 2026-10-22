@@ -1,12 +1,13 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockMath.nz;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -95,7 +96,6 @@ public class TradeProfitService {
     return base;
   }
 
-  /** accountId+stockItemId별 통합 손익 통계 (실현손익 + 미실현손익) */
   /** 현재가가 필요한 경로(기간 미지정)에서만 종목별 최신 종가를 일괄 조회한다. */
   private Map<UUID, net.luversof.api.stock.domain.StockDailyClosePrice> loadLatestPricesIfNeeded(
       List<Trade> tradeList, TradeProfitRequest request) {
@@ -106,6 +106,7 @@ public class TradeProfitService {
         tradeList.stream().map(Trade::getStockItemId).filter(java.util.Objects::nonNull).toList());
   }
 
+  /** accountId+stockItemId별 통합 손익 통계 (실현손익 + 미실현손익) */
   public List<TradeProfit> calculateProfitByAccountAndStock(
       List<Trade> tradeList, TradeProfitRequest request) {
     Map<String, List<Trade>> grouped =
@@ -146,9 +147,6 @@ public class TradeProfitService {
     return result;
   }
 
-  /**
-   * stockItemId별 통합 손익 통계 (accountId 무시, 실현손익 + 미실현손익) StockItem Symbol이 같으면 통합하여 계산 (중복 데이터 보정)
-   */
   /**
    * 한 종목의 거래를 계좌별로 계산한 뒤 하나로 합친다.
    *
@@ -259,39 +257,46 @@ public class TradeProfitService {
     return weightedSum.divide(BigDecimal.valueOf(quantitySum), 10, RoundingMode.HALF_UP);
   }
 
-  public List<TradeProfit> calculateProfitByStock(
-      List<Trade> tradeList, TradeProfitRequest request) {
-    // 1. StockItem 정보 조회 (Symbol 기준 병합을 위해)
-    var stockItemIds = tradeList.stream().map(Trade::getStockItemId).collect(Collectors.toSet());
+  /** 종목 id -> 종목(태그 없이 한 번에 읽는다 - 손익 · 시뮬레이션 경로는 심볼 / 이름만 쓴다). */
+  private Map<UUID, StockItem> loadStockItemMap(java.util.Collection<UUID> stockItemIds) {
     Map<UUID, StockItem> stockItemMap = new HashMap<>();
     stockItemService
         .findAllByIdWithoutTags(stockItemIds)
         .forEach(si -> stockItemMap.put(si.getId(), si));
+    return stockItemMap;
+  }
+
+  /**
+   * 종목 식별 키 - 같은 종목이 여러 stockItemId 로 들어와도 하나로 본다(심볼 -> 이름 -> id 순). 손익의 종목 묶음과 시계열 시뮬레이션이 같은 키를
+   * 쓴다(예전엔 두 곳에 같은 식이 따로 있었다 - 2026-10-22 정리). 이름은 앞뒤 공백만 걷는다(2026-01-17 데이터 불일치 대응).
+   */
+  static String stockKey(StockItem stockItem, UUID stockItemId) {
+    if (stockItem != null) {
+      if (stockItem.getSymbol() != null && !stockItem.getSymbol().isBlank()) {
+        return "S:" + stockItem.getSymbol();
+      }
+      if (stockItem.getName() != null && !stockItem.getName().isBlank()) {
+        return "N:" + stockItem.getName().trim();
+      }
+    }
+    return "I:" + stockItemId;
+  }
+
+  /**
+   * stockItemId별 통합 손익 통계 (accountId 무시, 실현손익 + 미실현손익) StockItem Symbol이 같으면 통합하여 계산 (중복 데이터 보정)
+   */
+  public List<TradeProfit> calculateProfitByStock(
+      List<Trade> tradeList, TradeProfitRequest request) {
+    // 1. StockItem 정보 조회 (Symbol 기준 병합을 위해)
+    Map<UUID, StockItem> stockItemMap =
+        loadStockItemMap(tradeList.stream().map(Trade::getStockItemId).collect(Collectors.toSet()));
 
     // 2. 그룹핑 (Symbol -> Name -> ID 순으로 식별)
     Map<String, List<Trade>> grouped =
         tradeList.stream()
             .collect(
                 Collectors.groupingBy(
-                    t -> {
-                      var si = stockItemMap.get(t.getStockItemId());
-                      if (si != null) {
-                        if (si.getSymbol() != null && !si.getSymbol().isBlank()) {
-                          return "S:" + si.getSymbol(); // Symbol Prefix
-                        }
-                        // 2026-01-17: Name match fallback for inconsistent
-                        // data
-                        // Remove spaces to ensure better matching (e.g.
-                        // "Samsung Electronics" vs
-                        // "SamsungElectronics")
-                        // But risking collision? TIGER REITs name is
-                        // specific enough.
-                        if (si.getName() != null && !si.getName().isBlank()) {
-                          return "N:" + si.getName().trim();
-                        }
-                      }
-                      return "I:" + t.getStockItemId().toString();
-                    }));
+                    t -> stockKey(stockItemMap.get(t.getStockItemId()), t.getStockItemId())));
 
     List<TradeProfit> result = new ArrayList<>();
 
@@ -339,10 +344,6 @@ public class TradeProfitService {
         && profit.getTotalSellQuantity() == 0
         && (profit.getTotalBuyAmount() == null
             || profit.getTotalBuyAmount().compareTo(BigDecimal.ZERO) == 0);
-  }
-
-  private static BigDecimal nz(BigDecimal v) {
-    return v == null ? BigDecimal.ZERO : v;
   }
 
   /**
@@ -682,12 +683,10 @@ public class TradeProfitService {
 
     if (allTrades.isEmpty()) {
       return new ArrayList<>();
-    } // 2) StockItem 정보 로딩 및 그룹핑 키 생성 (calculateProfitByStock과 동일 로직)
+    }
+    // 2) StockItem 정보 로딩 및 그룹핑 키 생성 (calculateProfitByStock 과 같은 loadStockItemMap · stockKey)
     var stockItemIds = allTrades.stream().map(Trade::getStockItemId).collect(Collectors.toSet());
-    Map<UUID, StockItem> stockItemMap = new HashMap<>();
-    stockItemService
-        .findAllByIdWithoutTags(stockItemIds)
-        .forEach(si -> stockItemMap.put(si.getId(), si));
+    Map<UUID, StockItem> stockItemMap = loadStockItemMap(stockItemIds);
     // 보유 스냅샷 경로가 이 맵을 다시 읽지 않도록 그대로 넘겨준다.
     // (실측: holdingsSnapshotBatch 한 요청이 StockItem 조회를 2회 냈다. 두 번째 대상은
     //  첫 번째의 부분집합이라 통째로 중복이었다.)
@@ -713,18 +712,7 @@ public class TradeProfitService {
 
     // 종목 식별 키. 같은 종목이 여러 stockItemId 로 들어오는 경우를 하나로 본다(심볼 -> 이름 -> id 순).
     Function<Trade, String> getStockKey =
-        t -> {
-          var si = stockItemMap.get(t.getStockItemId());
-          if (si != null) {
-            if (si.getSymbol() != null && !si.getSymbol().isBlank()) {
-              return "S:" + si.getSymbol();
-            }
-            if (si.getName() != null && !si.getName().isBlank()) {
-              return "N:" + si.getName().trim();
-            }
-          }
-          return "I:" + t.getStockItemId().toString();
-        };
+        t -> stockKey(stockItemMap.get(t.getStockItemId()), t.getStockItemId());
 
     // 평균단가(WMA) 상태의 키는 '계좌 + 종목'이다. 종목만으로 묶으면 계좌를 가로질러 원가가 섞인다 —
     // A 계좌에서 판 수량의 원가가 B 계좌 평균단가로 빠져나가 남은 원가가 실제와 달라진다.
@@ -809,14 +797,7 @@ public class TradeProfitService {
       UUID stockItemId = entry.getKey();
       String groupKey = groupByStockItem.get(stockItemId);
       LocalDate from = entry.getValue().isBefore(outputStart) ? outputStart : entry.getValue();
-      LocalDate to = endLocalDate;
-      Long net = netQuantityByGroup.get(groupKey);
-      if (net != null && net <= 0L) {
-        LocalDate closedOn = lastTradeDayByGroup.get(groupKey);
-        if (closedOn != null && closedOn.isBefore(to)) {
-          to = closedOn;
-        }
-      }
+      LocalDate to = holdingEnd(groupKey, endLocalDate, netQuantityByGroup, lastTradeDayByGroup);
       if (from.isAfter(endLocalDate) || to.isBefore(from)) {
         continue;
       }
@@ -830,14 +811,7 @@ public class TradeProfitService {
     Map<UUID, LocalDate[]> rawRangeByStockItem = new HashMap<>();
     for (Map.Entry<UUID, LocalDate> entry : firstTradeDayByStockItem.entrySet()) {
       String groupKey = groupByStockItem.get(entry.getKey());
-      LocalDate to = endLocalDate;
-      Long net = netQuantityByGroup.get(groupKey);
-      if (net != null && net <= 0L) {
-        LocalDate closedOn = lastTradeDayByGroup.get(groupKey);
-        if (closedOn != null && closedOn.isBefore(to)) {
-          to = closedOn;
-        }
-      }
+      LocalDate to = holdingEnd(groupKey, endLocalDate, netQuantityByGroup, lastTradeDayByGroup);
       if (!to.isBefore(entry.getValue())) {
         rawRangeByStockItem.put(entry.getKey(), new LocalDate[] {entry.getValue(), to});
       }
@@ -903,15 +877,10 @@ public class TradeProfitService {
     LocalDate nextTradeDay =
         nextTrade == null ? null : toRecordedDate(nextTrade.getTradeDate(), zoneId);
 
-    LocalDate currentDay = simulationStart.isBefore(outputStart) ? simulationStart : outputStart;
-    // ※ 단, simulationStart가 outputStart보다 늦으면 (데이터가 미래에 시작),
-    // outputStart ~ simulationStart 구간은 데이터 없음(0)으로 채워야 함.
-    // 편의상 currentDay를 Math.min(simulationStart, outputStart)로 잡고 진행.
-    if (outputStart.isBefore(simulationStart)) {
-      currentDay = outputStart;
-    } else {
-      currentDay = simulationStart;
-    }
+    // simulationStart 와 outputStart 중 이른 날부터 돈다(= 위 가격 조회의 startLocalDate). simulationStart 가 더
+    // 늦으면(데이터가
+    // 출력 구간 뒤에 시작) 그 사이는 데이터 없음(0)으로 채워진다. 예전엔 같은 값을 if/else 로 한 번 더 계산했다(2026-10-22 정리).
+    LocalDate currentDay = startLocalDate;
 
     while (!currentDay.isAfter(outputEnd)) {
       // 해당 일자(currentDay)에 포함되는 모든 거래 처리
@@ -1468,6 +1437,25 @@ public class TradeProfitService {
   }
 
   /**
+   * 종목 그룹의 가격이 쓰이는 마지막 날. 다 팔아 잔량이 0 이하인 그룹은 마지막 거래일까지(그 뒤로는 평가 대상이 아니다), 아니면 출력 끝까지. 종가 조회 범위와 원주가
+   * 조회 범위가 같은 규칙을 쓴다(예전엔 두 벌 - 2026-10-22 정리).
+   */
+  private static LocalDate holdingEnd(
+      String groupKey,
+      LocalDate outputEnd,
+      Map<String, Long> netQuantityByGroup,
+      Map<String, LocalDate> lastTradeDayByGroup) {
+    Long net = netQuantityByGroup.get(groupKey);
+    if (net != null && net <= 0L) {
+      LocalDate closedOn = lastTradeDayByGroup.get(groupKey);
+      if (closedOn != null && closedOn.isBefore(outputEnd)) {
+        return closedOn;
+      }
+    }
+    return outputEnd;
+  }
+
+  /**
    * 거래·배당 "일자"를 읽는다.
    *
    * <p>이 값들은 시각이 아니라 날짜다. 저장할 때 KST 09:00(= 자정 UTC)으로 박아 넣는다({@code StockAdminService} 의 변환 규칙, 실측:
@@ -1479,18 +1467,18 @@ public class TradeProfitService {
    *
    * <p>자정 UTC 인 값은 날짜 전용으로 보고 UTC 날짜를 쓴다(= KST 날짜와 같다). 실제 시각이 들어 있는 데이터는 예전처럼 요청 타임존을 따른다.
    */
-  /** 시계열 지점의 '거래일'. 시뮬레이션이 담아 둔 값을 그대로 쓰고, 없을 때만 예전처럼 타임스탬프를 되돌린다. */
-  private static LocalDate pointDate(TradeProfitTimeSeriesPoint point, ZoneId zoneId) {
-    LocalDate date = point.date();
-    return date != null ? date : point.timestamp().atZone(zoneId).toLocalDate();
-  }
-
   private static LocalDate toRecordedDate(Instant instant, ZoneId zoneId) {
     java.time.ZonedDateTime utc = instant.atZone(java.time.ZoneOffset.UTC);
     if (utc.toLocalTime().equals(java.time.LocalTime.MIDNIGHT)) {
       return utc.toLocalDate();
     }
     return instant.atZone(zoneId).toLocalDate();
+  }
+
+  /** 시계열 지점의 '거래일'. 시뮬레이션이 담아 둔 값을 그대로 쓰고, 없을 때만 예전처럼 타임스탬프를 되돌린다. */
+  private static LocalDate pointDate(TradeProfitTimeSeriesPoint point, ZoneId zoneId) {
+    LocalDate date = point.date();
+    return date != null ? date : point.timestamp().atZone(zoneId).toLocalDate();
   }
 
   private LocalDate toInclusiveEndDate(Instant instant, ZoneId zoneId) {
@@ -2087,91 +2075,46 @@ public class TradeProfitService {
     return result;
   }
 
+  /** 주(ISO, 월요일 시작)마다 줄인다. */
   private List<TradeProfitTimeSeriesPoint> downsampleWeekly(
       List<TradeProfitTimeSeriesPoint> series, ZoneId zoneId) {
-    // 주별로 그룹핑 후 마지막 포인트(금요일 or 마지막 거래일)를 유지하되,
-    // 해당 주 전체의 tradeCount/dailyRealizedProfit을 합산하여 반영
-    return series.stream()
-        .collect(
-            Collectors.groupingBy(
-                p -> {
-                  ZonedDateTime zdt = p.timestamp().atZone(zoneId);
-                  // ISO week: Monday=1, Sunday=7 → 해당 주 월요일 날짜를 키로 사용
-                  return zdt.toLocalDate().with(java.time.temporal.WeekFields.ISO.dayOfWeek(), 1);
-                }))
-        .values()
-        .stream()
-        .map(
-            week -> {
-              // 마지막 포인트(기준값: 총자산, 원금 등)를 base로 사용
-              TradeProfitTimeSeriesPoint last =
-                  week.stream()
-                      .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
-                      .orElse(null);
-              if (last == null) return null;
-              // 주 전체 tradeCount / buyCount / dailyRealizedProfit 합산
-              long weekTradeCount =
-                  week.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
-              long weekBuyCount =
-                  week.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
-              // tradeVolume 도 흐름값(그 기간의 매도 수량)이라 합산해야 한다. 마지막 날 값을 그대로
-              // 쓰면 그 하루에 매도가 없었으면 0 이 되어, 같은 구간인데 granularity 에 따라 합계가
-              // 달라진다(실측: 일 121,305 / 주 680 / 월 3,947).
-              long weekTradeVolume =
-                  week.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeVolume).sum();
-              BigDecimal weekDailyRealized =
-                  week.stream()
-                      .map(
-                          p ->
-                              p.dailyRealizedProfit() != null
-                                  ? p.dailyRealizedProfit()
-                                  : BigDecimal.ZERO)
-                      .reduce(BigDecimal.ZERO, BigDecimal::add);
-              return new TradeProfitTimeSeriesPoint(
-                  last.timestamp(),
-                  last.cumulativeRealizedProfit(),
-                  weekDailyRealized,
-                  weekTradeCount,
-                  weekBuyCount,
-                  weekTradeVolume,
-                  last.totalHoldingsValue(),
-                  last.totalHoldingsCost(),
-                  last.cumulativeTotalProfit(),
-                  last.cumulativeDividend(),
-                  last.date(),
-                  last.cumulativeNetCashFlow(),
-                  last.cumulativeGrossInflow());
-            })
-        .filter(Objects::nonNull)
-        .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
-        .collect(Collectors.toList());
+    // 주 키도 월과 같은 '거래일'(pointDate)에서 만든다(2026-10-21 정리). 예전엔 주만 타임스탬프를 요청 타임존으로 되돌려 읽었는데,
+    // 시계열 지점의 타임스탬프가 그 존의 0 시라 결과는 같았다 - 두 갈래가 같은 읽기를 쓰게 맞춘 것뿐이다.
+    return downsample(
+        series, p -> pointDate(p, zoneId).with(java.time.temporal.WeekFields.ISO.dayOfWeek(), 1));
   }
 
+  /** 달마다 줄인다. */
   private List<TradeProfitTimeSeriesPoint> downsampleMonthly(
       List<TradeProfitTimeSeriesPoint> series, ZoneId zoneId) {
-    // 월별로 그룹핑 후 마지막 포인트를 유지하되 tradeCount/dailyRealizedProfit 합산
-    return series.stream()
-        .collect(Collectors.groupingBy(p -> YearMonth.from(pointDate(p, zoneId))))
-        .values()
-        .stream()
+    return downsample(series, p -> YearMonth.from(pointDate(p, zoneId)));
+  }
+
+  /**
+   * 구간(주 · 달)마다 마지막 지점을 남긴다 - 총자산 · 원금 같은 상태값은 그 지점 값이다. 흐름값(tradeCount · buyCount · tradeVolume ·
+   * dailyRealizedProfit)은 구간 합으로 바꾼다.
+   *
+   * <p>tradeVolume 도 흐름값(그 기간의 매도 수량)이라 합산해야 한다. 마지막 날 값을 그대로 쓰면 그 하루에 매도가 없었으면 0 이 되어, 같은 구간인데
+   * granularity 에 따라 합계가 달라진다(실측: 일 121,305 / 주 680 / 월 3,947).
+   */
+  private static <K> List<TradeProfitTimeSeriesPoint> downsample(
+      List<TradeProfitTimeSeriesPoint> series,
+      java.util.function.Function<TradeProfitTimeSeriesPoint, K> bucketKey) {
+    return series.stream().collect(Collectors.groupingBy(bucketKey)).values().stream()
         .map(
-            month -> {
+            bucket -> {
               TradeProfitTimeSeriesPoint last =
-                  month.stream()
+                  bucket.stream()
                       .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
                       .orElse(null);
               if (last == null) return null;
-              long monthTradeCount =
-                  month.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
-              long monthBuyCount =
-                  month.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
-              // tradeVolume 도 흐름값(그 기간의 매도 수량)이라 합산해야 한다. 마지막 날 값을 그대로
-              // 쓰면 그 하루에 매도가 없었으면 0 이 되어, 같은 구간인데 granularity 에 따라 합계가
-              // 달라진다(실측: 일 121,305 / 주 680 / 월 3,947).
-              long monthTradeVolume =
-                  month.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeVolume).sum();
-              BigDecimal monthDailyRealized =
-                  month.stream()
+              long tradeCount =
+                  bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
+              long buyCount = bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
+              long tradeVolume =
+                  bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeVolume).sum();
+              BigDecimal dailyRealized =
+                  bucket.stream()
                       .map(
                           p ->
                               p.dailyRealizedProfit() != null
@@ -2181,10 +2124,10 @@ public class TradeProfitService {
               return new TradeProfitTimeSeriesPoint(
                   last.timestamp(),
                   last.cumulativeRealizedProfit(),
-                  monthDailyRealized,
-                  monthTradeCount,
-                  monthBuyCount,
-                  monthTradeVolume,
+                  dailyRealized,
+                  tradeCount,
+                  buyCount,
+                  tradeVolume,
                   last.totalHoldingsValue(),
                   last.totalHoldingsCost(),
                   last.cumulativeTotalProfit(),
@@ -2310,11 +2253,6 @@ public class TradeProfitService {
         Comparator.comparing(TradeResponse::tradeDate).thenComparing(TradeResponse::id).reversed());
 
     return result;
-  }
-
-  /** 특정 날짜의 보유 종목 스냅샷을 반환합니다. */
-  public List<HoldingsSnapshotItem> getHoldingsSnapshot(UUID userId, LocalDate date) {
-    return getHoldingsSnapshot(userId, date, null, null);
   }
 
   /** 보유 스냅샷. accountId 가 있으면 해당 계좌, 없으면 사용자 전체 기준. */

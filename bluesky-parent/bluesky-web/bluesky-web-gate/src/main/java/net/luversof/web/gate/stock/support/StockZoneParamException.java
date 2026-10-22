@@ -9,18 +9,16 @@ package net.luversof.web.gate.stock.support;
  * <p>조용한 폴백은 값을 틀리게 만든다 &mdash; 일자 경계가 옮겨간다(실측: 같은 요청의 {@code UTC} 응답은 {@code Asia/Seoul} 과 달랐다).
  * granularity · breakdown · 날짜 파라미터와 같은 규칙으로, 값이 없으면 종전 기본값이고 값을 줬는데 모르는 값이면 무엇이 문제인지 말한다.
  */
-public class StockZoneParamException extends RuntimeException {
+public class StockZoneParamException extends StockParamException {
 
   private static final long serialVersionUID = 1L;
 
-  private final String name;
-
   public StockZoneParamException(String name, String value, Throwable cause) {
-    super("time zone parameter cannot be read: " + name + "=" + value, cause);
-    this.name = name;
+    super("time zone parameter cannot be read: " + name + "=" + value, name, cause);
   }
 
-  public String getName() {
-    return name;
+  @Override
+  public String descKey() {
+    return "stock.error.badrequest.timezone.desc";
   }
 }

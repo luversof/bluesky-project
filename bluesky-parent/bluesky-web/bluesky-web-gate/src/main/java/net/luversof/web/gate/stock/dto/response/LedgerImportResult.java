@@ -12,9 +12,4 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record LedgerImportResult(
-    int sourceRowCount, int importedCount, List<String> unknownStockNames) {
-
-  public int droppedCount() {
-    return sourceRowCount - importedCount;
-  }
-}
+    int sourceRowCount, int importedCount, List<String> unknownStockNames) {}

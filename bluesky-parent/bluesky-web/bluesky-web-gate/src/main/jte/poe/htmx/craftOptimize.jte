@@ -14,7 +14,7 @@
 !{
 	boolean ko = PoeText.isKorean();
 	java.util.function.Function<Double, String> num = v -> v == null ? "-" : v >= 100 ? String.format("%,.0f", v) : v >= 1 ? String.format("%,.1f", v) : String.format("%,.3f", v);
-	String err = optError != null ? optError : opt == null ? (ko ? "결과가 없습니다" : "No result") : opt.error();
+	String err = optError != null ? optError : opt == null ? (ko ? "결과가 없습니다" : "No result") : opt.errorFor(ko);
 	Double gain = opt == null || opt.expectedCost() == null || opt.upper() == null || opt.upper() <= 0 ? null : 1 - opt.expectedCost() / opt.upper();
 }
 <section id="${"/poe2".equals(base) ? "craft2-opt-result" : "craft-opt-result"}" class="rounded-box border border-primary/40 bg-base-100 p-3 space-y-3" data-craft-optimize-result>
@@ -34,12 +34,15 @@
 				<div class="text-2xl font-bold font-mono" data-craft-optimize-cost="${opt.expectedCost()}">${num.apply(opt.expectedCost())}${unit}@if(opt.stderr() != null)<span class="text-sm font-normal text-base-content/70"> ±${num.apply(opt.stderr() * 1.96)}</span>@endif</div>
 				@if(opt.eldritch() != null && opt.eldritch().error() == null && opt.eldritch().cost() != null)<div class="text-xs" data-craft-optimize-eldritch="${opt.eldritch().cost()}">+ ${ko ? "엘드리치 임플리싯 " : "Eldritch implicits "}<span class="font-mono">${num.apply(opt.eldritch().cost())}${unit}</span> ${ko ? "(따로 — 불씨 · 영액, 합계 " : "(separate — embers/ichors, total "}<span class="font-mono">${num.apply(opt.expectedCost() + opt.eldritch().cost())}${unit}</span>)</div>@endif
 				@if(opt.costQuantiles() != null && opt.costQuantiles().size() == 3)<div class="text-xs text-base-content/70" data-craft-optimize-quantiles title="${ko ? "성공한 회차의 비용 분포 — 운이 좋으면 25% 지점, 보통 중간, 운이 나쁘면 90% 지점까지 든다(못 닿은 회차 비용은 기대 비용에만)" : "Cost distribution of successful runs — lucky 25%, typical median, unlucky 90%"}">${ko ? "운 좋으면 " : "Lucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(0))}${unit}</span> · ${ko ? "보통 " : "typical "}<span class="font-mono">${num.apply(opt.costQuantiles().get(1))}${unit}</span> · ${ko ? "운 나쁘면 " : "unlucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(2))}${unit}</span></div>@endif
-				<%-- 성공이 적은 결과(C539) — 못 끝낸 회차(C536)가 많으면 비용 = 전체 / 성공 수라 성공 몇 번으로 잰 거친 값 --%>
-				@if(opt.runs() > 0 && opt.successes() < 5)<div class="text-xs text-base-content/80" data-craft-optimize-few="${opt.successes()}">⚠ ${ko ? "목표에 닿은 회차가 " + opt.runs() + "번 중 " + opt.successes() + "번뿐이라 거친 값입니다 — 다시 계산하면 크게 달라질 수 있습니다" : "Only " + opt.successes() + " of " + opt.runs() + " runs reached the target — a rough estimate that may change a lot on rerun"}</div>@endif
+				<%-- 성공이 적은 결과(C539) — 못 끝낸 회차(C536)가 많으면 비용 = 전체 / 성공 수라 성공 몇 번으로 잰 거친 값.
+				     C563: 성공 1~4번이면 API 가 계획 값을 비용으로 보이고 모의 값은 simCost 로 --%>
+				@if(opt.simCost() != null)<div class="text-xs text-base-content/80" data-craft-optimize-few="${opt.successes()}" data-craft-optimize-plan-cost>⚠ ${ko ? "목표에 닿은 모의 회차가 " + opt.runs() + "번 중 " + opt.successes() + "번뿐이라 계획 값(표본 모형)을 비용으로 보였습니다 — 모의 값 " + num.apply(opt.simCost()) + unit : "Only " + opt.successes() + " of " + opt.runs() + " simulated runs reached the target, so the plan value (sampled model) is shown — simulated " + num.apply(opt.simCost()) + unit}</div>
+				@elseif(opt.successes() == 0 && opt.expectedCost() != null)<div class="text-xs text-base-content/80" data-craft-optimize-few="0" data-craft-optimize-plan-cost>⚠ ${ko ? "모의 회차 " + opt.runs() + "번이 아직 목표에 닿지 못해 계획 값(표본 모형, 검증 전)을 비용으로 보였습니다 — 다시 계산하면 달라질 수 있습니다" : "None of the " + opt.runs() + " simulated runs has reached the target yet, so the unverified plan value (sampled model) is shown — it may change on rerun"}</div>
+				@elseif(opt.runs() > 0 && opt.successes() < 5)<div class="text-xs text-base-content/80" data-craft-optimize-few="${opt.successes()}">⚠ ${ko ? "목표에 닿은 회차가 " + opt.runs() + "번 중 " + opt.successes() + "번뿐이라 거친 값입니다 — 다시 계산하면 크게 달라질 수 있습니다" : "Only " + opt.successes() + " of " + opt.runs() + " runs reached the target — a rough estimate that may change a lot on rerun"}</div>@endif
 			</div>
 			@if(opt.upper() != null && opt.upper() < 1e8)
 				<div class="text-sm" data-craft-optimize-compare>
-					${ko ? "한 가지 방법만 반복할 때 최저" : "Cheapest single method"} (${opt.upperLabel()}): <span class="font-mono">${num.apply(opt.upper())}${unit}</span>
+					${ko ? "한 가지 방법만 반복할 때 최저" : "Cheapest single method"} (${opt.upperLabelFor(ko)}): <span class="font-mono">${num.apply(opt.upper())}${unit}</span>
 					@if(gain != null && gain > 0.005)
 						<span class="badge badge-success badge-sm" data-craft-optimize-gain>${ko ? String.format("%.0f%% 저렴", gain * 100) : String.format("%.0f%% cheaper", gain * 100)}</span>
 					@elseif(gain != null)
@@ -53,10 +56,11 @@
 			<input type="hidden" name="optJob" value="${jobId}">
 			<p class="text-xs text-base-content/70" data-craft-optimize-follow>${ko ? "위 에뮬레이터에서 화폐를 쓰면 이 조합이 지금 아이템에 쓸 다음 수단을 알려 줍니다(10분 동안)." : "Use currency in the emulator above and it shows this plan's next action for the current item (for 10 minutes)."}</p>
 		@endif
-		@if(opt.path() != null && !opt.path().isEmpty())
+		!{ String optPath = opt.pathFor(ko); }
+		@if(optPath != null && !optPath.isEmpty())
 			<div class="space-y-1">
 				<div class="text-xs font-medium text-base-content/70">${ko ? "흔한 흐름(성공한 회차 중 비용이 중간인 것 — 같은 수단 연속은 ×n)" : "Typical run (median-cost success — repeats as ×n)"}</div>
-				<p class="text-sm leading-relaxed wrap-anywhere" data-craft-optimize-path>${opt.path().length() > 900 ? opt.path().substring(0, opt.path().lastIndexOf(" → ", 900)) + " → …" : opt.path()}</p>
+				<p class="text-sm leading-relaxed wrap-anywhere" data-craft-optimize-path>${optPath.length() > 900 ? optPath.substring(0, optPath.lastIndexOf(" → ", 900)) + " → …" : optPath}</p>
 			</div>
 		@endif
 		@if(!opt.rules().isEmpty())
@@ -70,7 +74,7 @@
 							!{
 								java.util.LinkedHashMap<String, java.util.List<PoeCraft.OptimizeRule>> ruleGroups = new java.util.LinkedHashMap<>();
 								for (PoeCraft.OptimizeRule gr : opt.rules()) {
-									ruleGroups.computeIfAbsent(gr.action(), k -> new java.util.ArrayList<>()).add(gr);
+									ruleGroups.computeIfAbsent(gr.actionFor(ko), k -> new java.util.ArrayList<>()).add(gr);
 								}
 							}
 							@for(var ge : ruleGroups.entrySet())
@@ -84,19 +88,19 @@
 								<tr data-craft-optimize-group="${grs.size()}">
 									<td class="min-w-[12rem] break-keep">
 										@if(grs.size() == 1)
-											<span data-craft-optimize-rule>${g0.state()}</span>
+											<span data-craft-optimize-rule>${g0.stateFor(ko)}</span>
 										@else
 											<details>
-												<summary class="cursor-pointer">${g0.state()} <span class="text-base-content/60">${ko ? "외 " + (grs.size() - 1) + "가지 상태" : "and " + (grs.size() - 1) + " more states"}</span></summary>
+												<summary class="cursor-pointer">${g0.stateFor(ko)} <span class="text-base-content/60">${ko ? "외 " + (grs.size() - 1) + "가지 상태" : "and " + (grs.size() - 1) + " more states"}</span></summary>
 												<ul class="mt-1 list-disc pl-4 space-y-0.5 text-base-content/80">
 													@for(PoeCraft.OptimizeRule r : grs.subList(1, grs.size()))
-														<li data-craft-optimize-rule>${r.state()}</li>
+														<li data-craft-optimize-rule>${r.stateFor(ko)}</li>
 													@endfor
 												</ul>
 											</details>
 										@endif
 									</td>
-									<td class="min-w-[9rem] break-keep font-medium">${g0.action()}</td>
+									<td class="min-w-[9rem] break-keep font-medium">${g0.actionFor(ko)}</td>
 									<td class="text-right font-mono">${String.format("%.0f%%", gShare * 100)}</td>
 									<td class="text-right font-mono whitespace-nowrap">${gRemText}</td>
 								</tr>
@@ -191,8 +195,8 @@
 					@endif
 				</ul>
 			</div>
-			<p class="mt-1">${opt.note()}</p>
-			<p class="mt-1">${ko ? "고려한 수단: " : "Actions considered: "}${String.join(" · ", opt.methods())}</p>
+			<p class="mt-1">${opt.noteFor(ko)}</p>
+			<p class="mt-1">${ko ? "고려한 수단: " : "Actions considered: "}${String.join(" · ", opt.methodsFor(ko))}</p>
 		</details>
 	@endif
 </section>

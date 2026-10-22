@@ -1,5 +1,8 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockMath.nz;
+import static net.luversof.api.stock.util.StockMath.percent;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -20,7 +23,6 @@ import net.luversof.api.stock.domain.MonthlyDividendProfile;
 import net.luversof.api.stock.domain.StockDailyClosePrice;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.repository.MonthlyDividendPayoutQuery;
-import net.luversof.api.stock.repository.MonthlyDividendPayoutRepository;
 import net.luversof.api.stock.repository.MonthlyDividendProfileRepository;
 import net.luversof.api.stock.repository.StockDailyClosePriceQuery;
 import net.luversof.api.stock.repository.StockItemRepository;
@@ -46,8 +48,6 @@ public class MonthlyDividendCatalogService {
   private static final ZoneId MARKET_ZONE_ID = ZoneId.of("Asia/Seoul");
 
   @Autowired private MonthlyDividendProfileRepository monthlyDividendProfileRepository;
-
-  @Autowired private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
   @Autowired private MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
 
@@ -83,10 +83,7 @@ public class MonthlyDividendCatalogService {
             stockItemIds.add(profile.getStockItemId());
           }
         });
-    Map<UUID, StockItem> stockItemById = new HashMap<>();
-    stockItemRepository
-        .findAllById(stockItemIds)
-        .forEach(item -> stockItemById.put(item.getId(), item));
+    Map<UUID, StockItem> stockItemById = StockItemLookup.byIds(stockItemRepository, stockItemIds);
     Map<UUID, StockDailyClosePrice> priceById = stockPriceService.getLatestPrices(stockItemIds);
     // 지급 이력 · 시세 이력도 한 번에 읽는다. 실측 2026-09-23: 종목(21)마다 지급 이력 두 번(통계 · 추세) · 시세 한 번씩 63 번 왕복해
     // 이 응답이 190~230ms 였고, 월배당 ETF 화면 본문 280ms · 시뮬레이터 월배당 216ms 의 대부분이었다.
@@ -174,15 +171,14 @@ public class MonthlyDividendCatalogService {
       // 분배금 추세는 지급 이력만으로 난다. null 은 여기서 0 으로 맞춰 평균이 computeSnapshotStats 와 같게 나오게 한다.
       PayoutTrendCalculator.PayoutTrend payoutTrend =
           PayoutTrendCalculator.compute(
-              payouts.stream().map(payout -> safe(payout.getDividendAmountPerShare())).toList());
+              payouts.stream().map(payout -> nz(payout.getDividendAmountPerShare())).toList());
 
       PayoutTrendCalculator.PayoutCuts payoutCuts =
           PayoutTrendCalculator.countCuts(
-              payouts.stream().map(payout -> safe(payout.getDividendAmountPerShare())).toList());
+              payouts.stream().map(payout -> nz(payout.getDividendAmountPerShare())).toList());
 
-      BigDecimal currentPrice = price != null ? safe(price.closePrice()) : BigDecimal.ZERO;
-      BigDecimal averagePerShare =
-          stats != null ? safe(stats.averagePerShare1y()) : BigDecimal.ZERO;
+      BigDecimal currentPrice = price != null ? nz(price.closePrice()) : BigDecimal.ZERO;
+      BigDecimal averagePerShare = stats != null ? nz(stats.averagePerShare1y()) : BigDecimal.ZERO;
       // 모르면 null 그대로 내보낸다(2026-10-07) - 0 이면 화면이 "0%" 로 적고 적립 추천이 위탁계좌 자리에 넣는다.
       BigDecimal taxableRatio = stats != null ? stats.taxableBaseRatio1y() : null;
       BigDecimal monthlyYieldPct = percent(averagePerShare, currentPrice);
@@ -200,7 +196,7 @@ public class MonthlyDividendCatalogService {
               payouts.size(),
               latestPayout != null ? latestPayout.getRecordDate() : null,
               latestPayout != null ? latestPayout.getPayDate() : null,
-              stats != null ? safe(stats.latestPerShare()) : BigDecimal.ZERO,
+              stats != null ? nz(stats.latestPerShare()) : BigDecimal.ZERO,
               averagePerShare,
               taxableRatio,
               taxableRatio == null
@@ -229,17 +225,4 @@ public class MonthlyDividendCatalogService {
 
   /** 위험 지표를 내는 기간(개월). 사용자 결정 2026-09-22. */
   private static final int RISK_MONTHS = 12;
-
-  private BigDecimal safe(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
-  }
-
-  /** 분모가 0 이하면 0 - 시세를 못 받은 종목은 수익률을 지어내지 않는다. */
-  private BigDecimal percent(BigDecimal numerator, BigDecimal denominator) {
-    if (numerator == null || denominator == null || denominator.signum() <= 0) {
-      return BigDecimal.ZERO;
-    }
-
-    return numerator.multiply(BigDecimal.valueOf(100)).divide(denominator, 2, RoundingMode.HALF_UP);
-  }
 }

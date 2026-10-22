@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 
-import net.luversof.web.gate.poe.dto.ModFamily;
 import net.luversof.web.gate.poe.dto.PoeBaseItem;
 import net.luversof.web.gate.poe.dto.PoeEldritch;
 import net.luversof.web.gate.poe.dto.PoeGem;
@@ -77,9 +76,6 @@ public interface PoeDataClient {
   @GetExchange("/uniques/{slug}")
   PoeUniqueItem unique(@PathVariable String slug);
 
-  @GetExchange("/uniques/categories")
-  List<String> uniqueCategories();
-
   @GetExchange("/uniques/category-groups")
   List<PoeGroups.ClassGroup> uniqueCategoryGroups();
 
@@ -108,9 +104,6 @@ public interface PoeDataClient {
   PoeJobStatus.CountMeta baseItemMeta();
 
   // ── 모드 풀 (일반 아이템 티어표) ──
-  @GetExchange("/mod-pool/for-item-class")
-  List<ModFamily> modFamiliesForItemClass(@RequestParam String itemClass);
-
   @GetExchange("/mods/item-classes")
   List<PoeModItemClass> modItemClasses();
 

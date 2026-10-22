@@ -111,13 +111,6 @@ public class PoeTattooDataService {
   }
 
   /**
-   * 어떤 패시브에 붙일 수 있는 문신 목록. 게임은 소형 패시브의 <b>속성 종류</b>까지 구분한다(힘 소형에는 힘 문신) — 속성 소형이면 그 속성 + "Small
-   * Attribute", 그 외 소형이면 붙일 수 있는 문신이 없다.
-   *
-   * @param nodeType 트리 노드 종류("normal"/"notable"/"keystone"/"mastery")
-   * @param attribute 소형 속성 패시브면 "Strength"/"Dexterity"/"Intelligence", 아니면 null
-   */
-  /**
    * 현재 리그에서 구할 수 없는 <b>레거시 문신</b> 접두 — "명예로운(Honoured)" 계열.
    *
    * <p>근거(실측): poe.ninja 현재 리그 실빌드 패싯에서 일반 문신 43종이 30.5만 회 쓰이는 동안 <b>명예로운 18종은 0회</b>다. 명예로운은 일반의
@@ -133,6 +126,13 @@ public class PoeTattooDataService {
     return tattoo.name() == null || !tattoo.name().startsWith(LEGACY_TATTOO_PREFIX);
   }
 
+  /**
+   * 어떤 패시브에 붙일 수 있는 문신 목록. 게임은 소형 패시브의 <b>속성 종류</b>까지 구분한다(힘 소형에는 힘 문신) — 속성 소형이면 그 속성 + "Small
+   * Attribute", 그 외 소형이면 붙일 수 있는 문신이 없다.
+   *
+   * @param nodeType 트리 노드 종류("normal"/"notable"/"keystone"/"mastery")
+   * @param attribute 소형 속성 패시브면 "Strength"/"Dexterity"/"Intelligence", 아니면 null
+   */
   public List<Tattoo> candidates(String nodeType, String attribute) {
     String target =
         switch (nodeType == null ? "" : nodeType) {

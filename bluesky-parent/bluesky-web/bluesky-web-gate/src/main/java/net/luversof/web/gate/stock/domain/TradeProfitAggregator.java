@@ -40,25 +40,11 @@ public final class TradeProfitAggregator {
           : BigDecimal.ZERO;
     }
 
-    /** 매도 평균 단가 (수수료 제외) */
-    public BigDecimal avgSellPrice() {
-      return totalSellQuantity > 0
-          ? totalSellAmount.divide(BigDecimal.valueOf(totalSellQuantity), 0, RoundingMode.HALF_UP)
-          : BigDecimal.ZERO;
-    }
-
     /** 현재 보유분 기준 가중 평균 매수 단가 (수수료/세금 반영) */
     public BigDecimal avgBuyPriceNet() {
       return holdingQuantity > 0
           ? currentHoldingBuyCost.divide(
               BigDecimal.valueOf(holdingQuantity), 2, RoundingMode.HALF_UP)
-          : BigDecimal.ZERO;
-    }
-
-    /** 매도 평균 단가 (수수료/세금 반영) */
-    public BigDecimal avgSellPriceNet() {
-      return totalSellQuantity > 0
-          ? totalSellProceeds.divide(BigDecimal.valueOf(totalSellQuantity), 0, RoundingMode.HALF_UP)
           : BigDecimal.ZERO;
     }
   }

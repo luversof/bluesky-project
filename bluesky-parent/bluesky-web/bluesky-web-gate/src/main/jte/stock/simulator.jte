@@ -35,7 +35,6 @@
 @param MonthlyDividendSimulatorSummaryView monthlyDividendSummary = null
 @param List<StockItem> stockItems = java.util.List.of()
 @param MonthlyDividendSnapshotUpsertRequest monthlyDividendForm = null
-@param String monthlyDividendBulkInput = ""
 @param String monthlyDividendErrorMessage = ""
 @param String monthlyDividendResult = ""
 @param Integer monthlyDividendSavedCount = null
@@ -240,7 +239,6 @@
 					monthlyDividendSummary = monthlyDividendSummary,
 					stockItems = stockItems,
 					monthlyDividendForm = monthlyDividendForm,
-					monthlyDividendBulkInput = monthlyDividendBulkInput,
 					monthlyDividendErrorMessage = monthlyDividendErrorMessage,
 					monthlyDividendResult = monthlyDividendResult,
 					monthlyDividendSavedCount = monthlyDividendSavedCount,

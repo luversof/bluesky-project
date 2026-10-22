@@ -135,6 +135,14 @@ public final class KrxRecordDateUtil {
     return null;
   }
 
+  /** 월중 · 월말 두 지급 창의 다음 매수 마감(정할 수 없는 창은 뺀다). 시뮬레이터 · 월배당 ETF · 대시보드 카드가 같은 목록을 쓴다. */
+  public static java.util.List<RecordDateBuyByView> nextBuyByAllWindows(LocalDate today) {
+    return java.util.stream.Stream.of("MID_MONTH", "MONTH_END")
+        .map(window -> nextBuyBy(today, window))
+        .filter(java.util.Objects::nonNull)
+        .toList();
+  }
+
   /**
    * 오늘 사서 받을 수 있는 가장 가까운 기준일과 그 매수 마감일. 이번 달 마감이 지났으면 다음 달 것이다.
    *

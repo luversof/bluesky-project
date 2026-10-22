@@ -8,18 +8,16 @@ package net.luversof.web.gate.stock.support;
  * 주세요</b>" 로 나왔다 &mdash; 같은 조각의 {@code size}/{@code page} 는 "주소의 size 값을 읽지 못했습니다" 라고 정확히 알려 주는데
  * 날짜만 서버 장애처럼 보였고, 다시 시도해도 결과는 같다.
  */
-public class StockDateParamException extends RuntimeException {
+public class StockDateParamException extends StockParamException {
 
   private static final long serialVersionUID = 1L;
 
-  private final String name;
-
   public StockDateParamException(String name, Throwable cause) {
-    super("date parameter cannot be read: " + name, cause);
-    this.name = name;
+    super("date parameter cannot be read: " + name, name, cause);
   }
 
-  public String getName() {
-    return name;
+  @Override
+  public String descKey() {
+    return "stock.error.badrequest.day.desc";
   }
 }

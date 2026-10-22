@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 
+import net.luversof.web.gate.stock.util.StockAmountUtil;
+
 /**
  * 배당 내역 위의 '올해 금융소득 종합과세 기준' &mdash; 올해 받은 과세 대상 배당이 2,000 만 원에 얼마나 다가갔는지(2026-10-20 자율 개선).
  *
@@ -120,9 +122,6 @@ public record FinancialIncomeThresholdView(
   }
 
   private BigDecimal pctOf(BigDecimal value) {
-    if (threshold == null || threshold.signum() <= 0 || value == null) {
-      return BigDecimal.ZERO;
-    }
-    return value.multiply(BigDecimal.valueOf(100)).divide(threshold, 1, RoundingMode.HALF_UP);
+    return StockAmountUtil.nz(StockAmountUtil.percentOrNull(value, threshold, 1));
   }
 }

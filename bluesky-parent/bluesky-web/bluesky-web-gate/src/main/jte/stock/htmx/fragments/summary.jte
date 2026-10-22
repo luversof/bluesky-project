@@ -112,7 +112,7 @@
 				 (실측 2026-08-22 토요일: 거래일인 08-21 이 빠진 채 08-20 종가로 표시). 자산 현황·포트폴리오·
 				 종목 상세와 같은 문구를 쓴다. --%>
 			@if(priceBasisDate != null)
-				<div class="text-xs text-base-content/60 mt-1">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime).replace("{0}", priceBasisDate.toString())}</div>
+				<div class="text-xs text-base-content/60 mt-1">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</div>
 			@endif
 			<%-- 통합손익은 총자산의 보조 지표로 같은 카드 하단에 배치한다 --%>
 			<div class="relative flex items-center justify-between border-t border-base-200 mt-4 pt-3">
@@ -331,34 +331,34 @@
 				<table class="table table-xs w-full" aria-label="${coreTitle}">
 					<thead>
 						<tr>
-							<th></th>
-							<th class="text-right"><span class="text-base-content/60">${coreLabel}</span> <span class="font-semibold" data-core-holding-name>${coreName}</span></th>
-							<th class="text-right" data-core-holding-rest>${restLabel}</th>
+							<th scope="col"><span class="sr-only">${MessageUtil.getMessage("stock.summary.core.metric")}</span></th>
+							<th scope="col" class="text-right"><span class="text-base-content/60">${coreLabel}</span> <span class="font-semibold" data-core-holding-name>${coreName}</span></th>
+							<th scope="col" class="text-right" data-core-holding-rest>${restLabel}</th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr>
-							<td>${evaluationAmountLabel} <span class="text-base-content/60">(${coreWeightLabel})</span></td>
+							<th scope="row" class="text-left font-normal">${evaluationAmountLabel} <span class="text-base-content/60">(${coreWeightLabel})</span></th>
 							<td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount())), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount())))</span> <span class="text-xs text-base-content/60" data-core-holding-weight>${coreHoldingSplit.core().weightPct().toPlainString()}%</span></td>
 							<td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount())), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount())))</span> <span class="text-xs text-base-content/60">${coreHoldingSplit.rest().weightPct().toPlainString()}%</span></td>
 						</tr>
 						<tr>
-							<td>${MessageUtil.getMessage("stock.profit.unrealized")}</td>
+							<th scope="row" class="text-left font-normal">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
 							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().evaluationProfit())}">${signedKrw.apply(coreHoldingSplit.core().evaluationProfit())}</td>
 							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().evaluationProfit())}">${signedKrw.apply(coreHoldingSplit.rest().evaluationProfit())}</td>
 						</tr>
 						<tr>
-							<td>${realizedProfitLabel}</td>
+							<th scope="row" class="text-left font-normal">${realizedProfitLabel}</th>
 							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().realizedProfit())}">${signedKrw.apply(coreHoldingSplit.core().realizedProfit())}</td>
 							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().realizedProfit())}">${signedKrw.apply(coreHoldingSplit.rest().realizedProfit())}</td>
 						</tr>
 						<tr>
-							<td>${cumulativeDividendLabel}</td>
+							<th scope="row" class="text-left font-normal">${cumulativeDividendLabel}</th>
 							<td class="text-right font-mono amount-value text-dividend">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().dividendTotal()))}</td>
 							<td class="text-right font-mono amount-value text-dividend">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().dividendTotal()))}</td>
 						</tr>
 						<tr class="font-semibold">
-							<td>${combinedProfitLabel}</td>
+							<th scope="row" class="text-left font-semibold">${combinedProfitLabel}</th>
 							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().combinedProfit())}">${signedKrw.apply(coreHoldingSplit.core().combinedProfit())}</td>
 							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().combinedProfit())}">${signedKrw.apply(coreHoldingSplit.rest().combinedProfit())}</td>
 						</tr>
@@ -372,7 +372,7 @@
 @if(hasTrendSeries)
 <script nonce="${CspNonceHolder.getNonce()}">
 (function () {
-	// 자산 추이 미니 차트 — Chart.js 는 stockLayout 에서 1회 로드됨.
+	// 자산 추이 미니 차트 — Chart.js 는 ensureStockCharts 로 필요할 때 불러온다.
 	// htmx 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다(activityList.jte 와 동일).
 	setTimeout(function () {
 		var trendCanvas = document.getElementById('dashboardTrendChart');

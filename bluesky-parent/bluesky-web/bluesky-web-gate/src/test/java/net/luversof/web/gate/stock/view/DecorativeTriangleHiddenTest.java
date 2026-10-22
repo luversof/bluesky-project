@@ -27,12 +27,34 @@ class DecorativeTriangleHiddenTest {
         .doesNotContain("(diffPositive ? \"▲\" : \"▼\")} ${diffPct}%");
   }
 
+  /**
+   * 서버 정렬 머리칸은 2026-10-22 부터 components/sortHeader.jte 한 곳에서 그린다. 그 전엔 배당 상세 표(7 칸)만 화살표를 숨기고 매매 상세
+   * 표(5 칸)는 그대로 읽혔다 - 두 표가 같은 조각을 쓰는지까지 본다.
+   */
   @Test
-  void 배당_상세_정렬_화살표는_숨긴다() throws IOException {
-    String table = read("dividendTable.jte");
-    assertThat(table).doesNotContain("<span>${sortDir.equals(\"asc\") ? \"▲\" : \"▼\"}</span>");
-    assertThat(table.split("<span aria-hidden=\"true\">\\$\\{sortDir.equals", -1))
-        .as("정렬 머리칸 일곱")
+  void 정렬_머리칸_화살표는_숨긴다() throws IOException {
+    String header =
+        Files.readString(
+            Path.of("src/main/jte/stock/htmx/fragments/components/sortHeader.jte"),
+            StandardCharsets.UTF_8);
+    assertThat(header)
+        .contains("<span aria-hidden=\"true\">${ascending ? \"▲\" : \"▼\"}</span>")
+        .doesNotContain("<span>${");
+
+    String sortHeaderCall = "@template.stock.htmx.fragments.components.sortHeader(";
+    String dividend = read("dividendTable.jte");
+    String trade =
+        Files.readString(
+            Path.of("src/main/jte/stock/htmx/fragments/trade/tradeDetailList.jte"),
+            StandardCharsets.UTF_8);
+    assertThat(dividend.split(java.util.regex.Pattern.quote(sortHeaderCall), -1))
+        .as("배당 상세 정렬 머리칸 일곱")
         .hasSize(8);
+    assertThat(trade.split(java.util.regex.Pattern.quote(sortHeaderCall), -1))
+        .as("매매 상세 정렬 머리칸 다섯")
+        .hasSize(6);
+    for (String table : new String[] {dividend, trade}) {
+      assertThat(table).doesNotContain("\"▲\" : \"▼\"}</span>");
+    }
   }
 }

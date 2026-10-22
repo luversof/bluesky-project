@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -52,10 +54,6 @@ public final class StockContributionUtil {
       BigDecimal dividendTotal,
       BigDecimal contribution,
       boolean heldAtEnd) {}
-
-  private static BigDecimal nz(BigDecimal value) {
-    return value == null ? BigDecimal.ZERO : value;
-  }
 
   private static Map<UUID, HoldingsSnapshotItem> index(List<HoldingsSnapshotItem> snapshot) {
     Map<UUID, HoldingsSnapshotItem> map = new LinkedHashMap<>();

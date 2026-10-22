@@ -19,7 +19,6 @@
 @import net.luversof.web.gate.stock.util.ChartSeriesJs
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
-@param String accountIdParam = ""
 @param Account account = null
 @param int holdingCount = 0
 @param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
@@ -139,7 +138,7 @@
 	<%-- "현재가"·평가액은 마지막으로 수집된 종가 기준이라, 오늘 시세가 아직 없으면 며칠 전 값일 수 있다.
 	     어느 날 기준인지 밝혀 실시간 시세로 오해하지 않게 한다(자산현황·포트폴리오와 같은 표기). --%>
 	@if(priceBasisDate != null)
-		<p class="mb-2 text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime).replace("{0}", priceBasisDate.toString())}</p>
+		<p class="mb-2 text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</p>
 	@endif
 	<%-- 수수료·거래세 기록을 되받을 수 없는 계좌. 원장 점검(ACCOUNT_WITHOUT_ANY_FEE)에서는 고칠 수 없는
 	     지적이라 빼지만, 사실 자체는 그 값이 어긋나는 자리에서 밝힌다 - 안 그러면 부풀려진 실현손익이

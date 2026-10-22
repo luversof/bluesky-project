@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.service;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -284,7 +286,7 @@ public class MonthlyEtfViewSupport {
         .filter(row -> matchesKeyword(row, keyword))
         .filter(
             row ->
-                minAnnualYield == null || safe(row.annualYieldPct()).compareTo(minAnnualYield) >= 0)
+                minAnnualYield == null || nz(row.annualYieldPct()).compareTo(minAnnualYield) >= 0)
         .filter(row -> resolvedWindow.isEmpty() || resolvedWindow.equals(row.payoutWindow()))
         .filter(row -> matchesHolding(row, resolvedHolding))
         .filter(row -> matchesAccount(row, resolvedAccount))
@@ -297,8 +299,8 @@ public class MonthlyEtfViewSupport {
   }
 
   /**
-   * 자리 차례 정렬. 추천은 자리마다 하나라 자리 차례가 곧 추천 차례다({@link MonthlyContributionPickSupport#pickHeld} 가 월중 먼저,
-   * 그 안에서 위탁 먼저로 낸다). 방향은 없다 - 자리 차례를 거꾸로 볼 까닭이 없다.
+   * 자리 차례 정렬. 추천은 자리마다 하나라 자리 차례가 곧 추천 차례다({@link MonthlyContributionPickSupport#pick} 가 월중 먼저, 그
+   * 안에서 위탁 먼저로 낸다). 방향은 없다 - 자리 차례를 거꾸로 볼 까닭이 없다.
    *
    * @param slotOrder 자리 차례대로 놓인 추천 종목코드
    */
@@ -334,10 +336,10 @@ public class MonthlyEtfViewSupport {
               Comparator.comparing(
                   row -> safeText(row.payoutWindow()), String.CASE_INSENSITIVE_ORDER);
           case SORT_MONTHLY_DIVIDEND ->
-              Comparator.comparing(row -> safe(row.averageDividendPerShare1y()));
+              Comparator.comparing(row -> nz(row.averageDividendPerShare1y()));
           // 과세표준을 모르는 종목(null)은 0% 와 섞지 않고 맨 뒤로(2026-10-07).
           case SORT_TAXABLE_BASE -> nullsLast(MonthlyEtfRowView::averageTaxableBaseRatio1y);
-          case SORT_ANNUAL_YIELD -> Comparator.comparing(row -> safe(row.annualYieldPct()));
+          case SORT_ANNUAL_YIELD -> Comparator.comparing(row -> nz(row.annualYieldPct()));
           // 이력이 모자라 값이 없는 종목은 늘 뒤로 보낸다(빈 칸이 "가장 낮은 수익률" 로 읽히면 안 된다).
           case SORT_PERIOD_PRICE -> nullsLast(MonthlyEtfRowView::periodPriceReturnPct);
           case SORT_MAX_DRAWDOWN -> nullsLast(MonthlyEtfRowView::maxDrawdownPct);
@@ -467,10 +469,6 @@ public class MonthlyEtfViewSupport {
   /** 모르는 기간은 기본값으로 되돌린다 - 주소에 아무 숫자나 쳐도 화면이 무너지지 않게. */
   public int resolvePeriod(Integer period) {
     return period != null && PERIODS.contains(period) ? period : DEFAULT_PERIOD;
-  }
-
-  private BigDecimal safe(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
   }
 
   private String safeText(String value) {

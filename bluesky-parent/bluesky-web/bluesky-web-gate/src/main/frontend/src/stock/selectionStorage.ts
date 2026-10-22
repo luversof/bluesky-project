@@ -56,6 +56,77 @@ type SelectionObject = {
 		return options[emptyIndex + 1] || null;
 	}
 
+	/** select 에서 고른 값(id · 보이는 글자). 여럿 고르기면 고른 것 모두(빈 값 '전체' 는 빼고), 하나 고르기면 그 값 하나. */
+	function readSelection(select: HTMLSelectElement): SelectionEntry[] {
+		const out: SelectionEntry[] = [];
+		if (select.multiple) {
+			for (const o of Array.from(select.selectedOptions)) {
+				if (o && o.value) out.push({ id: o.value, text: o.text });
+			}
+		} else if (select.value) {
+			const txt =
+				(select.options[select.selectedIndex] &&
+					select.options[select.selectedIndex].text) ||
+				select.value;
+			out.push({ id: select.value, text: txt });
+		}
+		return out;
+	}
+
+	/**
+	 * 저장해 둔 선택을 select 에 되살리고 change 를 알린다. 화면 목록에 없는 값은 option 을 만들어 '전체' 다음에 넣는다.
+	 * 저장된 것이 없으면 아무것도 하지 않는다. 저장된 값 가운데 지금 고르지 않은 것이 있었거나(하나 고르기면 값이 다르면) 목록에 없어 새로 만들었으면
+	 * true - 자동 제출 판단에 쓴다. 여럿 고르기에서 저장된 것이 지금 선택의 일부뿐이면(고른 것이 줄기만 하면) 선택이 바뀌어도 false 다(예전 그대로).
+	 */
+	function restoreSelect(
+		select: HTMLSelectElement,
+		saved: SelectionEntry[] | undefined,
+		form: HTMLFormElement | null,
+		what: string,
+	): boolean {
+		if (!Array.isArray(saved) || saved.length === 0) return false;
+		let restored = false;
+		if (select.multiple) {
+			const current = new Set(
+				Array.from(select.selectedOptions).map((o) => o.value),
+			);
+			for (const sel of saved) {
+				if (!current.has(sel.id)) {
+					restored = true;
+					break;
+				}
+			}
+			Array.from(select.options).forEach((o) => (o.selected = false));
+			for (const sel of saved) {
+				let opt = Array.from(select.options).find((o) => o.value === sel.id);
+				if (!opt) {
+					opt = document.createElement("option");
+					opt.value = sel.id;
+					opt.text = sel.text || sel.id;
+					select.insertBefore(opt, insertionAnchor(select));
+					restored = true;
+				}
+				opt.selected = true;
+			}
+		} else {
+			const sel = saved[0];
+			if (select.value !== sel.id) restored = true;
+			let opt = Array.from(select.options).find((o) => o.value === sel.id);
+			if (!opt) {
+				opt = document.createElement("option");
+				opt.value = sel.id;
+				opt.text = sel.text || sel.id;
+				select.insertBefore(opt, insertionAnchor(select));
+				restored = true;
+			}
+			select.value = sel.id;
+		}
+		select.dispatchEvent(new Event("change", { bubbles: true }));
+		if (DEBUG)
+			console.debug("[selectionStorage] restored " + what, form && form.id, restored);
+		return restored;
+	}
+
 	function saveFromForm(form: HTMLFormElement | null): void {
 		try {
 			if (!form) return;
@@ -73,48 +144,10 @@ type SelectionObject = {
 				stockItemIdList: [],
 				stockTagList: [],
 			};
-			if (acc) {
-				if (acc.multiple) {
-					for (const o of Array.from(acc.selectedOptions)) {
-						if (o && o.value)
-							out.accountIdList.push({ id: o.value, text: o.text });
-					}
-				} else if (acc.value) {
-					const txt =
-						(acc.options[acc.selectedIndex] &&
-							acc.options[acc.selectedIndex].text) ||
-						acc.value;
-					out.accountIdList.push({ id: acc.value, text: txt });
-				}
-			}
-			if (stk) {
-				if (stk.multiple) {
-					for (const o of Array.from(stk.selectedOptions)) {
-						if (o && o.value)
-							out.stockItemIdList.push({ id: o.value, text: o.text });
-					}
-				} else if (stk.value) {
-					const txt =
-						(stk.options[stk.selectedIndex] &&
-							stk.options[stk.selectedIndex].text) ||
-						stk.value;
-					out.stockItemIdList.push({ id: stk.value, text: txt });
-				}
-			}
-			if (tag) {
-				if (tag.multiple) {
-					for (const o of Array.from(tag.selectedOptions)) {
-						if (o && o.value)
-							out.stockTagList.push({ id: o.value, text: o.text });
-					}
-				} else if (tag.value) {
-					const txt =
-						(tag.options[tag.selectedIndex] &&
-							tag.options[tag.selectedIndex].text) ||
-						tag.value;
-					out.stockTagList.push({ id: tag.value, text: txt });
-				}
-			}
+			// 계좌 · 종목 · 태그 셋이 같은 규칙(여럿 고르면 고른 것 모두, 하나만이면 그 값)이다 - 2026-10-22 까지 한 벌씩 적혀 있었다.
+			if (acc) out.accountIdList = readSelection(acc);
+			if (stk) out.stockItemIdList = readSelection(stk);
+			if (tag) out.stockTagList = readSelection(tag);
 			try {
 				sessionStorage.setItem(GLOBAL_KEY, JSON.stringify(out));
 			} catch (e) {
@@ -147,153 +180,10 @@ type SelectionObject = {
 					form && form.id,
 					obj,
 				);
-			if (
-				acc &&
-				obj &&
-				Array.isArray(obj.accountIdList) &&
-				obj.accountIdList.length > 0
-			) {
-				if (acc.multiple) {
-					const current = new Set(
-						Array.from(acc.selectedOptions).map((o) => o.value),
-					);
-					for (const sel of obj.accountIdList) {
-						if (!current.has(sel.id)) {
-							restored = true;
-							break;
-						}
-					}
-					Array.from(acc.options).forEach((o) => (o.selected = false));
-					for (const sel of obj.accountIdList) {
-						let opt = Array.from(acc.options).find((o) => o.value === sel.id);
-						if (!opt) {
-							opt = document.createElement("option");
-							opt.value = sel.id;
-							opt.text = sel.text || sel.id;
-							acc.insertBefore(opt, insertionAnchor(acc));
-							restored = true;
-						}
-						opt.selected = true;
-					}
-				} else {
-					const sel = obj.accountIdList[0];
-					if (acc.value !== sel.id) restored = true;
-					let opt = Array.from(acc.options).find((o) => o.value === sel.id);
-					if (!opt) {
-						opt = document.createElement("option");
-						opt.value = sel.id;
-						opt.text = sel.text || sel.id;
-						acc.insertBefore(opt, insertionAnchor(acc));
-						restored = true;
-					}
-					acc.value = sel.id;
-				}
-				acc.dispatchEvent(new Event("change", { bubbles: true }));
-				if (DEBUG)
-					console.debug(
-						"[selectionStorage] restored account",
-						form && form.id,
-						restored,
-					);
-			}
-			if (
-				stk &&
-				obj &&
-				Array.isArray(obj.stockItemIdList) &&
-				obj.stockItemIdList.length > 0
-			) {
-				if (stk.multiple) {
-					const current = new Set(
-						Array.from(stk.selectedOptions).map((o) => o.value),
-					);
-					for (const sel of obj.stockItemIdList) {
-						if (!current.has(sel.id)) {
-							restored = true;
-							break;
-						}
-					}
-					Array.from(stk.options).forEach((o) => (o.selected = false));
-					for (const sel of obj.stockItemIdList) {
-						let opt = Array.from(stk.options).find((o) => o.value === sel.id);
-						if (!opt) {
-							opt = document.createElement("option");
-							opt.value = sel.id;
-							opt.text = sel.text || sel.id;
-							stk.insertBefore(opt, insertionAnchor(stk));
-							restored = true;
-						}
-						opt.selected = true;
-					}
-				} else {
-					const sel = obj.stockItemIdList[0];
-					if (stk.value !== sel.id) restored = true;
-					let opt = Array.from(stk.options).find((o) => o.value === sel.id);
-					if (!opt) {
-						opt = document.createElement("option");
-						opt.value = sel.id;
-						opt.text = sel.text || sel.id;
-						stk.insertBefore(opt, insertionAnchor(stk));
-						restored = true;
-					}
-					stk.value = sel.id;
-				}
-				stk.dispatchEvent(new Event("change", { bubbles: true }));
-				if (DEBUG)
-					console.debug(
-						"[selectionStorage] restored stock",
-						form && form.id,
-						restored,
-					);
-			}
-			if (
-				tag &&
-				obj &&
-				Array.isArray(obj.stockTagList) &&
-				obj.stockTagList.length > 0
-			) {
-				if (tag.multiple) {
-					const current = new Set(
-						Array.from(tag.selectedOptions).map((o) => o.value),
-					);
-					for (const sel of obj.stockTagList) {
-						if (!current.has(sel.id)) {
-							restored = true;
-							break;
-						}
-					}
-					Array.from(tag.options).forEach((o) => (o.selected = false));
-					for (const sel of obj.stockTagList) {
-						let opt = Array.from(tag.options).find((o) => o.value === sel.id);
-						if (!opt) {
-							opt = document.createElement("option");
-							opt.value = sel.id;
-							opt.text = sel.text || sel.id;
-							tag.insertBefore(opt, insertionAnchor(tag));
-							restored = true;
-						}
-						opt.selected = true;
-					}
-				} else {
-					const sel = obj.stockTagList[0];
-					if (tag.value !== sel.id) restored = true;
-					let opt = Array.from(tag.options).find((o) => o.value === sel.id);
-					if (!opt) {
-						opt = document.createElement("option");
-						opt.value = sel.id;
-						opt.text = sel.text || sel.id;
-						tag.insertBefore(opt, insertionAnchor(tag));
-						restored = true;
-					}
-					tag.value = sel.id;
-				}
-				tag.dispatchEvent(new Event("change", { bubbles: true }));
-				if (DEBUG)
-					console.debug(
-						"[selectionStorage] restored tag",
-						form && form.id,
-						restored,
-					);
-			}
+			// 셋 다 되살린다(하나가 바뀌었다고 나머지를 건너뛰지 않는다) - restored 는 셋 중 하나라도 restoreSelect 가 true 를 냈는가.
+			if (acc && obj && restoreSelect(acc, obj.accountIdList, form, "account")) restored = true;
+			if (stk && obj && restoreSelect(stk, obj.stockItemIdList, form, "stock")) restored = true;
+			if (tag && obj && restoreSelect(tag, obj.stockTagList, form, "tag")) restored = true;
 
 			// 자동 제출: 복원으로 인해 값이 변경되었고 폼에 HTMX 속성이 있으면 submit 트리거
 			try {

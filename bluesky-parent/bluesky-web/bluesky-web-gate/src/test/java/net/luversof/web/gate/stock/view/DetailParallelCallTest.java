@@ -52,9 +52,11 @@ class DetailParallelCallTest {
     assertThat(count(item, supply)).as("최초 일자를 던진다").isEqualTo(1);
     assertThat(item.indexOf(supply)).as("첫 join 전에").isGreaterThan(0).isLessThan(firstJoin);
     assertThat(count(item, "detailDataFirstDate(")).as("동기로 또 부르지 않는다").isEqualTo(1);
+    // 2026-10-22 부터 받은 값은 지역 변수를 거치지 않고 기간 배지 도우미(addRangeFilterAttributes)로 바로 넘긴다.
     assertThat(item)
+        .as("던진 최초 일자를 받아 기간 배지에 넘긴다")
         .contains(
-            "StringdetailFirstDate=net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture);");
+            "dividends,net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture));");
   }
 
   @Test
@@ -82,6 +84,10 @@ class DetailParallelCallTest {
         .isLessThan(account.indexOf("varaccCalls=stockAsync.deduper();"));
     assertThat(count(account, "getAccountsByUserId(")).as("이동 목록 호출은 한 번").isEqualTo(1);
     assertThat(count(account, "detailDataFirstDate(")).as("최초 일자 호출은 한 번").isEqualTo(1);
+    assertThat(account)
+        .as("던진 최초 일자를 받아 기간 배지에 넘긴다(2026-10-22 부터 addRangeFilterAttributes)")
+        .contains(
+            "dividends,net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture));");
     assertThat(account)
         .as("받은 이동 목록을 모델에 싣는다")
         .contains(

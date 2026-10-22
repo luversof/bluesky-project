@@ -258,8 +258,11 @@ public class PoeMetaPopularityService {
     return new ItemUsage(total, Map.copyOf(counts));
   }
 
-  /** 정렬 결과 묶음 — 폼이 한 번에 받아 세 목록을 재배치한다. */
-  /** league·snapshot·fetchedAt = 순서의 근거(poe.ninja 리그·스냅샷 버전·받은 시각) — 시뮬 화면에 표시한다. */
+  /**
+   * 정렬 결과 묶음 — 폼이 한 번에 받아 세 목록을 재배치한다.
+   *
+   * <p>league·snapshot·fetchedAt = 순서의 근거(poe.ninja 리그·스냅샷 버전·받은 시각) — 시뮬 화면에 표시한다.
+   */
   public record MetaOrder(
       List<String> skills,
       List<String> ascendancies,

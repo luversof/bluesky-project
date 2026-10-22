@@ -228,12 +228,12 @@ public class PoeTreeGraphService {
         .toList();
   }
 
-  /** 비전직 노터블/키스톤 후보 (최적화 탐색 대상). id 정렬로 실행 간 결정적 순서 보장(동점 타이브레이크 안정화) */
   /** 모든 노드(전직 · 혈맹 포함) — 이름 사전용(10-03 C56). */
   public java.util.Collection<TreeNode> allNodes() {
     return nodeById.values();
   }
 
+  /** 비전직 노터블/키스톤 후보 (최적화 탐색 대상). id 정렬로 실행 간 결정적 순서 보장(동점 타이브레이크 안정화) */
   public List<TreeNode> searchCandidates() {
     return nodeById.values().stream()
         .filter(node -> node.ascendancy() == null)
@@ -265,12 +265,12 @@ public class PoeTreeGraphService {
     return digits.isEmpty() ? -1 : Integer.parseInt(digits);
   }
 
-  /** poedb 속성부여식 도유 목록 — 최고 성유 등급 내림차순(동급은 id). */
   /** 클러스터 주얼 노터블 사전(이름 오름차순) — 브라우징 페이지용. */
   public List<ClusterNotable> clusterNotables() {
     return clusterNotables;
   }
 
+  /** poedb 속성부여식 도유 목록 — 최고 성유 등급 내림차순(동급은 id). */
   public List<AnointEntry> anointList() {
     Map<String, Oil> oilMap = oils;
     List<AnointEntry> out = new ArrayList<>();
@@ -393,13 +393,6 @@ public class PoeTreeGraphService {
   }
 
   /**
-   * 해당 전직의 탐색 후보 노드 (id 정렬로 결정적 순서).
-   *
-   * <p>일반 전직은 notable 노드가 선택지다. 그러나 사이온 <b>렐리쿼리언</b>처럼 렐릭(유니크) 효과를 스탯으로 가진 노드가 대부분 {@code
-   * type:"normal"} 인 렐릭형 전직은 notable 만 잡으면 핵심 선택지를 통째로 놓친다. 스탯을 가진 normal 노드가 notable 보다 많으면(렐릭형)
-   * normal 노드도 후보에 포함한다. 이 판정은 전직별 노드 구성에서 자동 도출되므로 기존 6개 일반 전직은 동작이 바뀌지 않는다.
-   */
-  /**
    * 해당 전직의 <b>스탯을 가진 모든 노드</b>(작은 노드 포함, 마스터리·시작 노드 제외).
    *
    * <p>노터블만 후보로 두면 남은 포인트로 닿는 노터블이 없을 때 전직 포인트가 그냥 남는다(실측 6/8). 잔여 포인트를 작은 노드로 마저 쓰기 위한 목록.
@@ -433,6 +426,13 @@ public class PoeTreeGraphService {
         .toList();
   }
 
+  /**
+   * 해당 전직의 탐색 후보 노드 (id 정렬로 결정적 순서).
+   *
+   * <p>일반 전직은 notable 노드가 선택지다. 그러나 사이온 <b>렐리쿼리언</b>처럼 렐릭(유니크) 효과를 스탯으로 가진 노드가 대부분 {@code
+   * type:"normal"} 인 렐릭형 전직은 notable 만 잡으면 핵심 선택지를 통째로 놓친다. 스탯을 가진 normal 노드가 notable 보다 많으면(렐릭형)
+   * normal 노드도 후보에 포함한다. 이 판정은 전직별 노드 구성에서 자동 도출되므로 기존 6개 일반 전직은 동작이 바뀌지 않는다.
+   */
   public List<TreeNode> ascendancyCandidates(String ascendancy) {
     List<TreeNode> all =
         nodeById.values().stream().filter(node -> ascendancy.equals(node.ascendancy())).toList();

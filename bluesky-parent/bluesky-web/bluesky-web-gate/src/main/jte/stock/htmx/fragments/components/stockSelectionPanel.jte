@@ -2,12 +2,9 @@
 @import net.luversof.web.gate.stock.domain.StockItem
 
 @param String tagLabel
-@param String stockLabel
 @param String allLabel
 @param String helperLabel = null
 @param String selectedTagSummaryLabel = null
-@param String selectedStockSummaryPattern = null
-@param String stockPreviewMorePattern = null
 @param List<String> stockTagList = java.util.List.of()
 @param List<String> selectedStockTags = java.util.List.of()
 @param List<StockItem> stockItemList = java.util.List.of()

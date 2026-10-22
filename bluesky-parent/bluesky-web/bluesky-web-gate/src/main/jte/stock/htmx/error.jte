@@ -2,8 +2,9 @@
 
 @param String error
 @param String loginUrl = ""
-@param String retryUrl = ""
-<%-- 세션이 풀렸으면 로그인으로 가는 링크, 백엔드 조회가 실패했으면 그 자리에서 다시 부르는 버튼. 둘 다 비면 문구만. --%>
+<%-- 세션이 풀렸으면 로그인으로 가는 링크, 없으면 문구만. 백엔드 조회 실패는 이 조각이 아니라 공통 예외 처리기(StockHtmxErrorResolver)의 loadError 조각이
+     그리고, GET 조회면 거기에 재시도 버튼이 붙는다(LoadErrorRetryTest). 2026-10-22 까지 여기에도 재시도 버튼이 있었지만 그 값을 채우던
+     remoteFailureView 를 부르는 곳이 2026-09-09 부터 없었다. --%>
 
 <div class="alert alert-error" role="alert" data-load-error>
 	<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
@@ -13,8 +14,5 @@
 	<span class="min-w-0">${error != null ? error : MessageUtil.getMessage("common.message.error")}</span>
 	@if(loginUrl != null && !loginUrl.isEmpty())
 		<a href="${loginUrl}" class="btn btn-sm btn-outline shrink-0">${MessageUtil.getMessage("layout.navbar.login")}</a>
-	@endif
-	@if(retryUrl != null && !retryUrl.isEmpty())
-		<button type="button" class="btn btn-sm btn-outline shrink-0" hx-get="${retryUrl}" hx-target="closest [data-load-error]" hx-swap="outerHTML">${MessageUtil.getMessage("common.button.retry")}</button>
 	@endif
 </div>

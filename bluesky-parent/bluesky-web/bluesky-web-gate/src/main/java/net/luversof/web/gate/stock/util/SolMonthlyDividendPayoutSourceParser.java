@@ -34,8 +34,6 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 public class SolMonthlyDividendPayoutSourceParser {
 
-  private static final String BULK_INPUT_HEADER = "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)";
-
   private final JsonMapper objectMapper;
 
   public SolMonthlyDividendPayoutSourceParser(JsonMapper objectMapper) {
@@ -49,19 +47,7 @@ public class SolMonthlyDividendPayoutSourceParser {
 
   /** 상세 주소에서 펀드 코드를 뽑는다(경로 마지막 조각). {@code /ko/fund/etf/211097} */
   public static String fundCodeFrom(String path) {
-    if (!StringUtils.hasText(path)) {
-      return "";
-    }
-
-    String[] parts = path.split("/");
-    for (int index = parts.length - 1; index >= 0; index--) {
-      String candidate = parts[index].trim();
-      if (StringUtils.hasText(candidate)
-          && candidate.chars().allMatch(Character::isLetterOrDigit)) {
-        return candidate;
-      }
-    }
-    return "";
+    return PayoutSourceText.lastCodeSegment(path);
   }
 
   public SolDividendResponse parseResponse(String json) {
@@ -79,7 +65,7 @@ public class SolMonthlyDividendPayoutSourceParser {
           msg("stock.monthly.reference.error.source.rows.missing", "SOL"));
     }
 
-    StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
+    StringBuilder bulkInput = new StringBuilder(PayoutSourceText.BULK_INPUT_HEADER);
     for (SolDividendRow row : rows) {
       if (!StringUtils.hasText(row.recordDate())
           || !StringUtils.hasText(row.payDate())
@@ -89,42 +75,23 @@ public class SolMonthlyDividendPayoutSourceParser {
 
       bulkInput
           .append('\n')
-          .append(formatDate(row.recordDate()))
+          .append(PayoutSourceText.isoDate(row.recordDate()))
           .append('\t')
-          .append(formatDate(row.payDate()))
+          .append(PayoutSourceText.isoDate(row.payDate()))
           .append('\t')
-          .append(plain(row.dividendAmount()))
+          .append(PayoutSourceText.plain(row.dividendAmount()))
           // 모름이면 "-" 로 싣는다(2026-10-08) - 0 으로 적으면 진짜 0 원(전액 비과세)과 구분되지 않아 다음 갱신이 채우지 못한다(가져오기 파서가
           // "-" 를 모름으로 받는다).
           .append('\t')
-          .append(row.taxableBase() != null ? plain(row.taxableBase()) : "-");
+          .append(row.taxableBase() != null ? PayoutSourceText.plain(row.taxableBase()) : "-");
     }
 
-    if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
+    if (bulkInput.toString().equals(PayoutSourceText.BULK_INPUT_HEADER)) {
       throw new IllegalArgumentException(
           msg("stock.monthly.reference.error.source.rows.missing", "SOL"));
     }
 
     return bulkInput.toString();
-  }
-
-  /** 20260915 · 2026.09.15 · 2026-09-15 를 모두 yyyy-MM-dd 로. */
-  private String formatDate(String value) {
-    String normalized = value != null ? value.replaceAll("[^0-9]", "") : "";
-    if (normalized.length() < 8) {
-      return value != null ? value.trim() : "";
-    }
-
-    return normalized.substring(0, 4)
-        + "-"
-        + normalized.substring(4, 6)
-        + "-"
-        + normalized.substring(6, 8);
-  }
-
-  /** 60.0 을 60 으로(지수 표기도 막는다). */
-  private String plain(BigDecimal value) {
-    return value.stripTrailingZeros().toPlainString();
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

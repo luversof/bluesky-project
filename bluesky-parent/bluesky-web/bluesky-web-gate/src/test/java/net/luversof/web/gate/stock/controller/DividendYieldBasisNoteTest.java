@@ -9,6 +9,8 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.stock.view.YieldAnalyticsSource;
+
 /**
  * 수익률에서 빠진 배당이 있으면 그 수익률 칸이 근거를 달아야 한다.
  *
@@ -20,11 +22,9 @@ import org.junit.jupiter.api.Test;
  */
 class DividendYieldBasisNoteTest {
 
-  private static final Path YIELD =
-      Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte");
-
+  /** 종목별 · 계좌별 카드는 dividendYieldGroupCard.jte 에 한 벌 - 화면에 그려지는 대로 두 번 펼쳐 센다(2026-10-22). */
   private String read() throws IOException {
-    return Files.readString(YIELD, StandardCharsets.UTF_8);
+    return YieldAnalyticsSource.expanded();
   }
 
   /**
@@ -146,12 +146,14 @@ class DividendYieldBasisNoteTest {
 
   @Test
   void 걸러진_배당이_없으면_툴팁을_붙이지_않는다() throws IOException {
-    String template = read();
-
-    assertThat(template)
-        .as("제외액이 0 이면 null 을 돌려줘야 title= 이 통째로 빠진다")
-        .contains("if (excludedNet.compareTo(BigDecimal.ZERO) <= 0)");
-    assertThat(template).contains("stock.dividend.yield.basis.excluded");
+    // 식은 DividendYieldViewUtil.basisTitle 한 곳(제외액 0 이면 null - 동작은 DividendYieldViewUtilTest).
+    // 부모(연도별 표)와
+    // 카드(종목 · 계좌)가 둘 다 그것을 부르는지 본다(2026-10-22 까지 두 템플릿에 식이 한 벌씩 있었다).
+    for (String template : YieldAnalyticsSource.definitionSources()) {
+      assertThat(template)
+          .as("제외액이 0 이면 null 을 돌려줘야 title= 이 통째로 빠진다 - 공용 식을 부른다")
+          .contains("DividendYieldViewUtil.basisTitle(usedNet, totalNet, decimalFormat)");
+    }
   }
 
   /**

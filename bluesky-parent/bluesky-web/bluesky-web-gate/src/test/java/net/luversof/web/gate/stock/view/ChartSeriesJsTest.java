@@ -79,6 +79,30 @@ class ChartSeriesJsTest {
         .isEqualTo("\"a\\\"b\\\\c\\u003C/script>\\n\"");
   }
 
+  /**
+   * 매매 · 배당 목록의 종목/계좌 이름표와 활동 목록의 계열 이름은 $unsafe 로 스크립트에 들어간다. 2026-10-22 까지 세 템플릿이 제각각 이스케이프(ej)를
+   * 들고 있었고 {@code <} 를 막지 않아, 이름에 {@code </script>} 가 들어가면 스크립트가 끊겼다 - 계좌 이름은 사용자가 적는다.
+   */
+  @Test
+  void 이름표_배열도_스크립트를_깨지_못한다() throws IOException {
+    assertThat(ChartSeriesJs.stringArray(List.of("삼성전자", "x</script><b>", "a\"b")))
+        .isEqualTo("[\"삼성전자\",\"x\\u003C/script>\\u003Cb>\",\"a\\\"b\"]");
+    assertThat(ChartSeriesJs.stringArray(java.util.Arrays.asList("가", null)))
+        .isEqualTo("[\"가\",\"\"]");
+    assertThat(ChartSeriesJs.stringArray(List.of())).isEqualTo("[]");
+    for (String rel :
+        List.of(
+            "src/main/jte/stock/htmx/tradeList.jte",
+            "src/main/jte/stock/htmx/fragments/tabsDividendHistory.jte",
+            "src/main/jte/stock/htmx/fragments/activityList.jte")) {
+      String source = Files.readString(Path.of(rel), StandardCharsets.UTF_8);
+      assertThat(source).as(rel).contains("ChartSeriesJs.stringArray(");
+      assertThat(source)
+          .as(rel + " 가 스크립트용 이스케이프를 따로 들고 있다(< 를 놓친다)")
+          .doesNotContain("Function<String, String> ej =");
+    }
+  }
+
   @Test
   void 점당_출력은_30바이트_아래다() {
     List<StockPriceHistoryPoint> pts = new ArrayList<>();

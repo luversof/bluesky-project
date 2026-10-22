@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -58,10 +60,6 @@ public final class StockTradePeriodUtil {
       BigDecimal fee,
       BigDecimal tax,
       BigDecimal realizedProfit) {}
-
-  private static BigDecimal nz(BigDecimal value) {
-    return value == null ? BigDecimal.ZERO : value;
-  }
 
   /** 구간이 3 년을 넘으면 해 단위. 줄이 하나도 없으면 달 단위로 둔다(그릴 것이 없어 뜻이 없다). */
   static String resolveUnit(List<LocalDate> dates) {

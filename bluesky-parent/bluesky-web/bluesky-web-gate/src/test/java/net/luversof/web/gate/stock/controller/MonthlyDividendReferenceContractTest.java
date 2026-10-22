@@ -65,11 +65,6 @@ class MonthlyDividendReferenceContractTest {
           }
 
           @Override
-          public StockItem findByName(String name) {
-            return null;
-          }
-
-          @Override
           public List<StockItem> getStockItemsByTag(String tag) {
             return List.of();
           }
@@ -264,6 +259,36 @@ class MonthlyDividendReferenceContractTest {
             new IllegalStateException("boom"), fallback);
 
     assertThat(plain).as("사유를 알 수 없으면 기본 문구를 쓴다").isEqualTo(fallback);
+  }
+
+  /**
+   * 쓰기 핸들러 여섯(프로필 저장 · 삭제, 지급 이력 저장 · 일괄 저장 · 삭제, 출처 가져오기)의 실패 사유. 입력 문제는 그 문구 그대로, 그 밖은 원격 사유가 없으면
+   * 그 동작의 기본 문구 - 2026-10-22 까지 핸들러마다 catch 두 개로 적혀 있었다.
+   */
+  @Test
+  void 쓰기_실패_사유는_입력_문제면_그_문구_그_밖이면_동작의_기본_문구다() throws Exception {
+    Class<?>[] types = {Exception.class, String.class};
+    String key = "stock.monthly.reference.error.profile.save.failed";
+    assertThat(
+            call(
+                "referenceFailureMessage",
+                types,
+                new IllegalArgumentException("종목코드를 입력하세요."),
+                key))
+        .isEqualTo("종목코드를 입력하세요.");
+    assertThat(call("referenceFailureMessage", types, new IllegalStateException("boom"), key))
+        .isEqualTo(net.luversof.web.gate.stock.support.StockViewSupport.msg(key))
+        .isNotEqualTo(key);
+  }
+
+  @Test
+  void 쓰기_핸들러_여섯이_실패_사유_도우미를_쓴다() throws java.io.IOException {
+    String source =
+        java.nio.file.Files.readString(
+            java.nio.file.Path.of(
+                "src/main/java/net/luversof/web/gate/stock/controller/StockDividendViewController.java"),
+            java.nio.charset.StandardCharsets.UTF_8);
+    assertThat(source.split("referenceFailureMessage\\(", -1)).as("정의 하나 + 핸들러 여섯").hasSize(8);
   }
 
   /** 지급 시기 거르기(2026-10-13)도 저장 뒤 남는다 - 월말만 보다 저장했는데 전체로 돌아가면 다시 골라야 한다. 모르는 값은 싣지 않는다. */

@@ -12,8 +12,6 @@ import org.springframework.util.StringUtils;
 @Component
 public class TigerMonthlyDividendPayoutSourceParser {
 
-  private static final String BULK_INPUT_HEADER = "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)";
-
   public String toBulkInput(String html) {
     if (!StringUtils.hasText(html)) {
       throw new IllegalArgumentException(
@@ -21,7 +19,7 @@ public class TigerMonthlyDividendPayoutSourceParser {
     }
 
     Document document = Jsoup.parseBodyFragment("<table><tbody>" + html + "</tbody></table>");
-    StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
+    StringBuilder bulkInput = new StringBuilder(PayoutSourceText.BULK_INPUT_HEADER);
     for (Element row : document.select("tr")) {
       Elements cells = row.select("td");
       if (cells.size() < 4) {
@@ -53,7 +51,7 @@ public class TigerMonthlyDividendPayoutSourceParser {
           .append(taxableBase);
     }
 
-    if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
+    if (bulkInput.toString().equals(PayoutSourceText.BULK_INPUT_HEADER)) {
       throw new IllegalArgumentException(
           msg("stock.monthly.reference.error.source.rows.missing", "TIGER"));
     }

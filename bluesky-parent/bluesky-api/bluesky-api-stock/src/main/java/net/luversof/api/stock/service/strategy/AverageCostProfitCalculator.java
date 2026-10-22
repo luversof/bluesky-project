@@ -1,5 +1,7 @@
 package net.luversof.api.stock.service.strategy;
 
+import static net.luversof.api.stock.util.StockMath.nz;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -23,12 +25,6 @@ import net.luversof.api.stock.web.dto.request.TradeProfitRequestGroup;
 public class AverageCostProfitCalculator implements ProfitCalculator {
 
   private static final Logger log = LoggerFactory.getLogger(AverageCostProfitCalculator.class);
-
-  @Override
-  public TradeProfit calculate(
-      List<Trade> trades, TradeProfitRequest request, StockPriceService stockPriceService) {
-    return calculate(trades, request, stockPriceService, null);
-  }
 
   @Override
   public TradeProfit calculate(
@@ -275,9 +271,5 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
         periodRealizedProfitNet);
 
     return profit;
-  }
-
-  private static BigDecimal nz(BigDecimal v) {
-    return v == null ? BigDecimal.ZERO : v;
   }
 }

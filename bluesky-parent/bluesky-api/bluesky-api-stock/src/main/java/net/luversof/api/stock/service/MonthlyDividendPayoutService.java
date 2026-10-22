@@ -1,16 +1,14 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockMath.nz;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -79,23 +77,13 @@ public class MonthlyDividendPayoutService {
             .toList();
 
     // 종목 정보는 1회 일괄 조회한다. (행마다 findById 하면 행 수만큼 SELECT 가 나가는 N+1)
-    Map<UUID, StockItem> stockItemById = loadStockItems(filtered);
+    Map<UUID, StockItem> stockItemById =
+        StockItemLookup.byIds(
+            stockItemRepository,
+            filtered.stream().map(MonthlyDividendPayout::getStockItemId).toList());
     return filtered.stream()
         .map(payout -> toResponse(payout, stockItemById.get(payout.getStockItemId())))
         .toList();
-  }
-
-  private Map<UUID, StockItem> loadStockItems(List<MonthlyDividendPayout> payouts) {
-    Set<UUID> ids =
-        payouts.stream()
-            .map(MonthlyDividendPayout::getStockItemId)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-    Map<UUID, StockItem> byId = new HashMap<>();
-    if (!ids.isEmpty()) {
-      stockItemRepository.findAllById(ids).forEach(item -> byId.put(item.getId(), item));
-    }
-    return byId;
   }
 
   public MonthlyDividendPayoutResponse upsert(MonthlyDividendPayoutUpsertRequest request) {
@@ -116,7 +104,7 @@ public class MonthlyDividendPayoutService {
     requireTaxableWithinDividend(
         request.getTaxableBasePerShare(), request.getDividendAmountPerShare());
 
-    StockItem stockItem = resolveStockItem(request.getSymbol());
+    StockItem stockItem = StockItemLookup.requireBySymbol(stockItemRepository, request.getSymbol());
     Instant now = Instant.now();
     MonthlyDividendPayout payout =
         monthlyDividendPayoutRepository
@@ -132,7 +120,7 @@ public class MonthlyDividendPayoutService {
     payout.setRecordDate(request.getRecordDate());
     payout.setPayDate(request.getPayDate());
     payout.setDistributionRatePct(request.getDistributionRatePct());
-    payout.setDividendAmountPerShare(safe(request.getDividendAmountPerShare()));
+    payout.setDividendAmountPerShare(nz(request.getDividendAmountPerShare()));
     payout.setTaxableBasePerShare(
         mergeTaxableBase(payout.getTaxableBasePerShare(), request.getTaxableBasePerShare()));
     payout.setUpdatedDate(now);
@@ -155,7 +143,7 @@ public class MonthlyDividendPayoutService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "payDate is required");
     }
 
-    StockItem stockItem = resolveStockItem(symbol);
+    StockItem stockItem = StockItemLookup.requireBySymbol(stockItemRepository, symbol);
     MonthlyDividendPayout payout =
         monthlyDividendPayoutRepository
             .findByStockItemIdAndRecordDateAndPayDate(stockItem.getId(), recordDate, payDate)
@@ -194,19 +182,28 @@ public class MonthlyDividendPayoutService {
     Instant now = Instant.now();
     snapshots.forEach(
         snapshot -> {
-          snapshot.setAsOfDate(
-              stats.asOfDate() != null ? stats.asOfDate() : snapshot.getAsOfDate());
-          snapshot.setLatestMonthlyDividendPerShare(stats.latestPerShare());
-          snapshot.setAverageMonthlyDividendPerShare1y(stats.averagePerShare1y());
-          // 과세비율은 원장 실적이 우선이다. 계좌별 혜택(비과세·분리과세)이 참조에는 담기지 않는다.
-          BigDecimal ledgerRatio =
-              ledgerTaxableBaseRatio1y(snapshot.getUserId(), stockItem.getId());
-          // 스냅샷 칸은 NOT NULL 이라 모르면 0 으로 둔다(화면은 카탈로그의 null 로 "확인 안 됨" 을 적는다).
-          snapshot.setAverageTaxableBaseRatio1y(
-              ledgerRatio != null ? ledgerRatio : safe(stats.taxableBaseRatio1y()));
+          applyStats(snapshot, stats, snapshot.getUserId());
           snapshot.setUpdatedDate(now);
         });
     monthlyDividendSnapshotRepository.saveAll(snapshots);
+  }
+
+  /**
+   * 지급 이력 통계를 스냅샷에 옮긴다. 기준일을 모르면 저장된 값을 남긴다.
+   *
+   * <p>과세비율은 원장 실적이 우선이다 - 계좌별 혜택(비과세 · 분리과세)이 참조에는 담기지 않는다. 스냅샷 칸은 NOT NULL 이라 모르면 0 으로 둔다(화면은
+   * 카탈로그의 null 로 "확인 안 됨" 을 적는다).
+   *
+   * <p>지급 이력 저장 뒤 갱신과 시트 가져오기(StockAdminService)가 같은 규칙을 쓴다. 예전엔 둘이 따로 적혀 가져오기 쪽만 기준일을 모르면 null 로
+   * 덮었다(2026-10-21 정리).
+   */
+  public void applyStats(MonthlyDividendSnapshot snapshot, SnapshotStats stats, UUID userId) {
+    snapshot.setAsOfDate(stats.asOfDate() != null ? stats.asOfDate() : snapshot.getAsOfDate());
+    snapshot.setLatestMonthlyDividendPerShare(stats.latestPerShare());
+    snapshot.setAverageMonthlyDividendPerShare1y(stats.averagePerShare1y());
+    BigDecimal ledgerRatio = ledgerTaxableBaseRatio1y(userId, snapshot.getStockItemId());
+    snapshot.setAverageTaxableBaseRatio1y(
+        ledgerRatio != null ? ledgerRatio : nz(stats.taxableBaseRatio1y()));
   }
 
   /**
@@ -237,8 +234,8 @@ public class MonthlyDividendPayoutService {
     BigDecimal taxableSum = BigDecimal.ZERO;
     BigDecimal grossSum = BigDecimal.ZERO;
     for (var dividend : dividendService.findDividends(request)) {
-      taxableSum = taxableSum.add(safe(dividend.getTaxableAmount()));
-      grossSum = grossSum.add(safe(dividend.getGrossAmount()));
+      taxableSum = taxableSum.add(nz(dividend.getTaxableAmount()));
+      grossSum = grossSum.add(nz(dividend.getGrossAmount()));
     }
     if (grossSum.signum() <= 0) {
       return null;
@@ -276,24 +273,24 @@ public class MonthlyDividendPayoutService {
             ? latestPayout.getPayDate()
             : latestPayout.getRecordDate();
     BigDecimal latestDividendAmountPerShare =
-        safe(latestPayout.getDividendAmountPerShare()).setScale(4, RoundingMode.HALF_UP);
+        nz(latestPayout.getDividendAmountPerShare()).setScale(4, RoundingMode.HALF_UP);
     BigDecimal averageDividendAmountPerShare1y =
         lastYearRows.stream()
             .map(MonthlyDividendPayout::getDividendAmountPerShare)
-            .map(this::safe)
+            .map(net.luversof.api.stock.util.StockMath::nz)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .divide(BigDecimal.valueOf(lastYearRows.size()), 4, RoundingMode.HALF_UP);
 
     // 과세표준을 아는 행만 센다(2026-10-07) - 모르는 행을 0 으로 넣으면 비중이 실제보다 낮게 나오고, 다 모르면 "0%" 가 된다.
     List<BigDecimal> taxableBaseRatios =
         lastYearRows.stream()
-            .filter(row -> safe(row.getDividendAmountPerShare()).signum() > 0)
+            .filter(row -> nz(row.getDividendAmountPerShare()).signum() > 0)
             .filter(row -> row.getTaxableBasePerShare() != null)
             .map(
                 row ->
                     row.getTaxableBasePerShare()
                         .multiply(BigDecimal.valueOf(100))
-                        .divide(safe(row.getDividendAmountPerShare()), 2, RoundingMode.HALF_UP))
+                        .divide(nz(row.getDividendAmountPerShare()), 2, RoundingMode.HALF_UP))
             .toList();
     // 아는 행이 하나도 없으면 null(모름) - 0 이면 "비과세" 로 읽혀 위탁계좌 자리로 잘못 간다.
     BigDecimal averageTaxableBaseRatio1y =
@@ -347,18 +344,6 @@ public class MonthlyDividendPayoutService {
         payout.getDividendAmountPerShare(),
         payout.getTaxableBasePerShare(),
         payout.getUpdatedDate());
-  }
-
-  private StockItem resolveStockItem(String symbol) {
-    StockItem stockItem = stockItemRepository.findBySymbol(symbol.trim());
-    if (stockItem == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown stock symbol: " + symbol);
-    }
-    return stockItem;
-  }
-
-  private BigDecimal safe(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
   }
 
   /**

@@ -1,5 +1,3 @@
-@param boolean isAuthenticated = false
-
 <!-- Dashboard Layout -->
 <div class="space-y-6">
 	<!-- 1. 요약 허브: 총자산/통합손익 + 자산 추이 미니 차트 + 지표 스트립 -->

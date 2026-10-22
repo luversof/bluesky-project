@@ -22,10 +22,6 @@ public class StockItemController {
 
   @Autowired private StockItemService stockItemService;
 
-  public void setStockItemService(StockItemService stockItemService) {
-    this.stockItemService = stockItemService;
-  }
-
   @PostMapping
   public StockItem createStockItem(@RequestBody StockItem stockItem) {
     return stockItemService.createStockItem(stockItem);

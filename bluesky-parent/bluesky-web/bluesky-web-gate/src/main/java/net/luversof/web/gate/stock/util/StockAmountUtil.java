@@ -1,6 +1,7 @@
 package net.luversof.web.gate.stock.util;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -26,6 +27,21 @@ public final class StockAmountUtil {
 
   public static BigDecimal nz(BigDecimal value) {
     return value == null ? BigDecimal.ZERO : value;
+  }
+
+  /**
+   * amount 가 base 의 몇 % 인가. <b>100 을 먼저 곱한 뒤</b> 나눈다 &mdash; 순서를 바꾸면 표시 자릿수보다 굵게 미리 반올림된다(실측
+   * 2026-09-12: 8,847,600 / 1,622,109,770 = 0.5454% 가 0.6% 로 나갔다). 값이 없거나 base 가 0 이하면 null &mdash;
+   * 0 으로 읽어야 하는 화면은 {@link #nz} 로 감싼다.
+   *
+   * <p>같은 식이 주식 코드 열두 곳에 따로 있었다(도우미 6 · 인라인 6, 자릿수 1 · 2 · 4 와 빈 값 처리 null · 0 이 섞여 있었다 -
+   * 2026-10-22 정리). 순서 실수는 그중 두 곳에서 실제로 났다.
+   */
+  public static BigDecimal percentOrNull(BigDecimal amount, BigDecimal base, int scale) {
+    if (amount == null || base == null || base.signum() <= 0) {
+      return null;
+    }
+    return amount.multiply(BigDecimal.valueOf(100)).divide(base, scale, RoundingMode.HALF_UP);
   }
 
   /** null 줄과 null 값을 0 으로 읽고 더한다. */

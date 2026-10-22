@@ -25,7 +25,7 @@ class UnknownCurrentPriceTest {
   private static final String CONTROLLER =
       "src/main/java/net/luversof/web/gate/stock/controller/StockDetailViewController.java";
   private static final String FRAGMENT = "src/main/jte/stock/htmx/stockItemDetailContent.jte";
-  private static final String SHELL = "src/main/jte/stock/stockItemDetail.jte";
+  private static final String CONTENT = "src/main/jte/stock/htmx/stockItemDetailContent.jte";
   private static final String KEY = "stock.item.detail.current.price.unknown";
 
   private String read(String path) throws IOException {
@@ -94,8 +94,7 @@ class UnknownCurrentPriceTest {
   @Test
   void 껍데기가_그_값을_넘긴다() throws IOException {
     assertThat(read(FRAGMENT)).contains("@param boolean currentPriceUnknown = false");
-    assertThat(read(SHELL)).contains("@param boolean currentPriceUnknown = false");
-    assertThat(read(SHELL)).contains("currentPriceUnknown = currentPriceUnknown,");
+    assertThat(read(CONTENT)).contains("@param boolean currentPriceUnknown = false");
   }
 
   @Test

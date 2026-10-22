@@ -50,7 +50,8 @@ public final class MonthlyDividendPayDayUtil {
       return null;
     }
     String trimmed = symbol.trim();
-    return trimmed.isEmpty() ? null : trimmed.toUpperCase();
+    // Locale.ROOT - 기본 로케일이 터키어면 소문자 i 가 점 있는 대문자가 된다. 다른 세 사본은 이미 ROOT 였다(2026-10-22 하나로 모음).
+    return trimmed.isEmpty() ? null : trimmed.toUpperCase(java.util.Locale.ROOT);
   }
 
   /**
@@ -202,6 +203,24 @@ public final class MonthlyDividendPayDayUtil {
 
   /** 기준일 규칙을 확인할 최근 건수. 이만큼(적으면 있는 만큼, 최소 2) 모두 같은 규칙이어야 쓴다. */
   private static final int RULE_CHECK_RECENT = 3;
+
+  /**
+   * 지급 이력 응답에서 바로 종목별 결제 규칙을 낸다(null 목록 · null 행은 건너뛴다). 배당 내역 다가올 배당 · 대시보드 다음 지급일 · 월배당 기준의 갱신
+   * 확인이 같은 변환을 따로 적고 있었다(2026-10-22 정리).
+   */
+  public static Map<String, SettlementRule> settlementRulesFromResponses(
+      List<net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse> payouts) {
+    List<RecordedPayout> recorded = new java.util.ArrayList<>();
+    if (payouts != null) {
+      for (var payout : payouts) {
+        if (payout != null) {
+          recorded.add(
+              new RecordedPayout(payout.stockItemSymbol(), payout.recordDate(), payout.payDate()));
+        }
+      }
+    }
+    return settlementRules(recorded);
+  }
 
   /**
    * 종목별 지급 규칙(2026-10-20 자율 개선).

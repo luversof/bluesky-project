@@ -222,7 +222,23 @@ public final class ChartSeriesJs {
     return sb;
   }
 
-  /** JSON 규칙의 문자열 리터럴. 라벨은 날짜·기간 문구지만 따옴표·역슬래시·제어문자·{@code </} 는 반드시 피한다. */
+  /**
+   * 문자열 배열 리터럴({@code ["a","b"]}). 값은 {@link #jsString} 으로 감싸고 null 은 빈 글자로. 매매 · 배당 목록의 종목/계좌 이름표와
+   * 활동 목록의 계열 이름이 쓴다. 결과는 $unsafe 로 스크립트에 들어간다 &mdash; 2026-10-22 까지 세 템플릿이 제각각 이스케이프를 들고 있었고
+   * {@code <} 를 막지 않아 이름의 {@code </script>} 가 스크립트를 끊었다.
+   */
+  public static String stringArray(java.util.Collection<String> values) {
+    StringBuilder sb = new StringBuilder();
+    for (String value : values) {
+      sep(sb).append(jsString(value == null ? "" : value));
+    }
+    return "[" + sb + "]";
+  }
+
+  /**
+   * JSON 규칙의 문자열 리터럴. 날짜 · 기간 문구뿐 아니라 사용자가 적은 계좌 · 종목 이름도 지나가므로({@link #stringArray}) 따옴표 · 역슬래시 ·
+   * 제어문자 · {@code </} 를 반드시 피한다.
+   */
   public static String jsString(String s) {
     StringBuilder sb = new StringBuilder(s.length() + 2).append('"');
     for (int i = 0; i < s.length(); i++) {

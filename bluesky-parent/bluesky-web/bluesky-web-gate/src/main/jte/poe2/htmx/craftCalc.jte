@@ -30,9 +30,9 @@
 							!{ Poe2Craft.CalcMethod m = calc.results().get(i); }
 							<tr data-craft2-calc-method="${m.method()}">
 								<td class="min-w-[9rem]">
-									!{ String lab = m.label(); if (ko && lab != null) for (var en : nameKo.entrySet()) if (lab.contains(en.getKey())) lab = lab.replace(en.getKey(), en.getValue()); }
+									!{ String lab = !ko && m.labelEn() != null ? m.labelEn() : m.label(); if (ko && lab != null) for (var en : nameKo.entrySet()) if (lab.contains(en.getKey())) lab = lab.replace(en.getKey(), en.getValue()); String mnote = !ko && m.noteEn() != null ? m.noteEn() : m.note(); }
 									<div class="font-medium">${lab}@if(i == 0 && m.costPerSuccess() != null) <span class="badge badge-sm badge-success badge-outline">${ko ? "가장 저렴" : "Cheapest"}</span>@endif</div>
-									@if(m.note() != null)<div class="text-xs text-base-content/70">${m.note()}</div>@endif
+									@if(mnote != null)<div class="text-xs text-base-content/70">${mnote}</div>@endif
 								</td>
 								<td class="text-right font-mono">${String.format("%.2f%%", m.successRate() * 100)}</td>
 								<%-- 열 순서 = 계산 흐름(C439 UX QA): 성공률 · 화폐 개수 → 성공당 비용 → 90% 예산 --%>

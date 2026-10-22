@@ -110,10 +110,8 @@ class NumberStaysWholeTest {
    */
   @Test
   void 금액과_둘째_줄은_글자로도_떨어져_있다() throws IOException {
-    String source =
-        Files.readString(
-            Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte"),
-            StandardCharsets.UTF_8);
+    // 종목 · 계좌 카드는 dividendYieldGroupCard.jte - 그려지는 대로 펼쳐 본다(2026-10-22).
+    String source = YieldAnalyticsSource.expanded();
     assertThat(source)
         .doesNotContain("</div><div class=\"text-[11px] whitespace-nowrap")
         .doesNotContain("</span><div class=\"text-[11px] whitespace-nowrap")

@@ -31,6 +31,11 @@ class Select extends Node {
 		this.name = name;
 		this.multiple = multiple;
 		this.options = opts;
+		this.events = [];
+	}
+	dispatchEvent(event) {
+		this.events.push(event.type);
+		return true;
 	}
 	get selectedOptions() {
 		return this.options.filter((o) => o.selected);
@@ -65,6 +70,14 @@ class Form extends Node {
 		super();
 		this.id = id;
 		this.selects = selects;
+		this.attributes = new Set();
+		this.submits = 0;
+	}
+	hasAttribute(name) {
+		return this.attributes.has(name);
+	}
+	requestSubmit() {
+		this.submits++;
 	}
 	querySelector(sel) {
 		const m = /name="([^"]+)"/.exec(sel);
@@ -183,4 +196,56 @@ test("아무것도 안 고르고 저장하면 빈 선택으로 남는다", () =>
 	const b = form("dividendSearchForm", DIVIDEND_OPTIONS, ["both"]);
 	api.restoreToForm(b.form);
 	assert.deepEqual(b.select.selectedOptions.map((o) => o.value), ["both"]);
+});
+
+// 2026-10-22 검토: 모의 select 에 dispatchEvent 가 없어 종목을 되살린 직후 TypeError 로 바깥 catch 에 빠졌다 - 태그 되살리기와
+// 자동 제출은 그때까지 한 번도 돌지 않았다. 아래 셋이 그 자리다.
+function fullForm(id, { acc = [], stk = [], tag = [], hx = false } = {}) {
+	const mark = (options, ids) =>
+		options.map(([v, t]) => {
+			const o = new Opt(v, t);
+			o.selected = ids.includes(v);
+			return o;
+		});
+	const f = new Form(id, [
+		new Select("accountIdList", mark([["", "전체"], ["acc1", "위탁"], ["acc2", "ISA"]], acc)),
+		new Select("stockItemIdList", mark(TRADE_OPTIONS, stk)),
+		new Select("stockTagList", mark([["", "전체"], ["배당", "배당"], ["성장", "성장"]], tag)),
+	]);
+	if (hx) f.attributes.add("hx-get");
+	return f;
+}
+const picked = (f, name) =>
+	f.querySelector(`select[name="${name}"]`).selectedOptions.map((o) => o.value);
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+test("계좌 · 종목 · 태그 셋 다 되살리고 셋 다 change 를 알린다", () => {
+	store.clear();
+	api.saveFromForm(fullForm("tradeSearchForm", { acc: ["acc2"], stk: ["both"], tag: ["성장"] }));
+	const b = fullForm("dividendSearchForm");
+	api.restoreToForm(b);
+	assert.deepEqual(picked(b, "accountIdList"), ["acc2"]);
+	assert.deepEqual(picked(b, "stockItemIdList"), ["both"]);
+	assert.deepEqual(picked(b, "stockTagList"), ["성장"]);
+	for (const s of b.selects) assert.deepEqual(s.events, ["change"], s.name);
+});
+
+test("되살려서 선택이 바뀌었으면 htmx 폼을 한 번 다시 제출한다", async () => {
+	store.clear();
+	api.saveFromForm(fullForm("tradeSearchForm", { tag: ["배당"] }));
+	const b = fullForm("dividendSearchForm", { hx: true });
+	api.restoreToForm(b);
+	assert.deepEqual(picked(b, "stockTagList"), ["배당"], "태그만 저장돼 있어도 되살린다");
+	await wait(60);
+	assert.equal(b.submits, 1);
+});
+
+test("되살려도 바뀐 것이 없으면 다시 제출하지 않는다", async () => {
+	store.clear();
+	const same = { acc: ["acc1"], stk: ["both"], tag: ["배당"] };
+	api.saveFromForm(fullForm("tradeSearchForm", same));
+	const b = fullForm("dividendSearchForm", { ...same, hx: true });
+	api.restoreToForm(b);
+	await wait(60);
+	assert.equal(b.submits, 0);
 });

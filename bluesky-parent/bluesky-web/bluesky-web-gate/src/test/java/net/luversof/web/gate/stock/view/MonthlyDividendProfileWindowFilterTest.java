@@ -88,7 +88,6 @@ class MonthlyDividendProfileWindowFilterTest {
     // 저장 · 삭제 폼까지 나오게 - 숨은 칸이 빠진 폼이 없는지 보려면 폼이 다 있어야 한다.
     model.put("monthlyDividendProfileExists", true);
     model.put("monthlyDividendPayoutExists", true);
-    model.put("selectedMonthlyDividendSourceUrl", "https://example.com/etf");
     StringOutput output = new StringOutput();
     TemplateEngine.createPrecompiled(ContentType.Html).render(TEMPLATE, model, output);
     // 표현식으로 나온 주소의 & 는 &amp; 로 이스케이프된다(속성 안이라 브라우저는 & 로 읽는다) - 주소 비교는 풀어서 한다.

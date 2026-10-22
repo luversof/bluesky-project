@@ -43,10 +43,23 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.support.StockAsyncSupport;
+import net.luversof.web.gate.stock.util.StockSortUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockTradeHtmxController extends StockBaseHtmxController {
+
+  /**
+   * 매매 목록 정렬 열(정렬 머리칸의 field) -> 비교기(값이 없으면 뒤로 가는 오름차순, 내림차순은 뒤집는다). 모르는 열은 StockSortParamException
+   * 으로 끊는다. 2026-10-22 까지 같은 꼴의 switch 였다 - 열 목록과 템플릿 머리칸이 맞는지는 SortColumnMapTest 가 본다.
+   */
+  static final Map<String, Comparator<TradeResponse>> TRADE_SORTS =
+      Map.of(
+          "tradeDate", StockSortUtil.ascendingNullsLast(TradeResponse::tradeDate),
+          "stockItemName", StockSortUtil.ascendingNullsLast(TradeResponse::stockItemName),
+          "amount", StockSortUtil.ascendingNullsLast(TradeResponse::amount),
+          "fee", StockSortUtil.ascendingNullsLast(TradeResponse::fee),
+          "realizedProfit", StockSortUtil.ascendingNullsLast(TradeResponse::realizedProfit));
 
   private final DataFirstDateClient dataFirstDateClient;
 
@@ -88,7 +101,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     return first != null ? first.atZone(zone).toLocalDate() : null;
   }
 
-  @BlueskyPreAuthorize
   /** 필터 드롭다운에 쓰는 '해당 기간에 등장한' 계좌/종목 id 집합. */
   private record AvailableIds(Set<UUID> accountIds, Set<UUID> stockItemIds) {}
 
@@ -112,6 +124,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               TradeResponse::id,
               Comparator.nullsLast(Comparator.comparing(java.util.UUID::toString)));
 
+  @BlueskyPreAuthorize
   @GetMapping("/trade/list")
   public String tradeList(
       @RequestParam(required = false) List<UUID> accountIdList,
@@ -239,19 +252,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
         allFromApi.stream()
             .map(
                 t ->
-                    new TradeResponse(
-                        t.id(),
-                        t.accountId(),
-                        t.stockItemId(),
-                        stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown")),
-                        t.type(),
-                        t.quantity(),
-                        t.price(),
-                        t.fee(),
-                        t.tax(),
-                        t.amount(),
-                        t.realizedProfit(),
-                        t.tradeDate()))
+                    t.withStockItemName(
+                        stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"))))
             .collect(Collectors.toCollection(ArrayList::new));
 
     // Prepare filtered lists based on date-only availability (do NOT include
@@ -296,44 +298,17 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     // disappear.
     List<Account> finalAccountList;
     if (clientProvidedRange) {
-      finalAccountList = new ArrayList<>(filteredAccountList);
-      if (requestedAccountIds != null) {
-        for (UUID sel : requestedAccountIds) {
-          if (sel == null) continue;
-          if (!tradeAccountIds.contains(sel)) {
-            accountList.stream()
-                .filter(a -> a.id().equals(sel))
-                .findFirst()
-                .ifPresent(
-                    a -> {
-                      if (finalAccountList.stream().noneMatch(x -> x.id().equals(a.id())))
-                        finalAccountList.add(0, a);
-                    });
-          }
-        }
-      }
+      finalAccountList =
+          withSelectedFirst(filteredAccountList, accountList, requestedAccountIds, a -> a.id());
     } else {
       finalAccountList = accountList;
     }
 
     List<StockItem> finalStockItemList;
     if (clientProvidedRange) {
-      finalStockItemList = new ArrayList<>(filteredStockItemList);
-      if (requestedStockItemIds != null) {
-        for (UUID sel : requestedStockItemIds) {
-          if (sel == null) continue;
-          if (!tradeStockIds.contains(sel)) {
-            stockItemList.stream()
-                .filter(s -> s.id().equals(sel))
-                .findFirst()
-                .ifPresent(
-                    s -> {
-                      if (finalStockItemList.stream().noneMatch(x -> x.id().equals(s.id())))
-                        finalStockItemList.add(0, s);
-                    });
-          }
-        }
-      }
+      finalStockItemList =
+          withSelectedFirst(
+              filteredStockItemList, stockItemList, requestedStockItemIds, s -> s.id());
     } else {
       finalStockItemList = stockItemList;
     }
@@ -353,27 +328,11 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     if (sort != null && !sort.isEmpty()) {
       String field = net.luversof.web.gate.stock.util.StockSortUtil.field(sort);
       boolean descending = net.luversof.web.gate.stock.util.StockSortUtil.descending("sort", sort);
-      Comparator<TradeResponse> comparator =
-          switch (field) {
-            case "tradeDate" ->
-                Comparator.comparing(
-                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "stockItemName" ->
-                Comparator.comparing(
-                    TradeResponse::stockItemName, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "amount" ->
-                Comparator.comparing(
-                    TradeResponse::amount, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "fee" ->
-                Comparator.comparing(
-                    TradeResponse::fee, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "realizedProfit" ->
-                Comparator.comparing(
-                    TradeResponse::realizedProfit, Comparator.nullsLast(Comparator.naturalOrder()));
-            // 배당 목록과 같은 규칙 - 모르는 열 이름은 이름을 들고 끊는다.
-            default ->
-                throw new net.luversof.web.gate.stock.support.StockSortParamException("sort", sort);
-          };
+      Comparator<TradeResponse> comparator = TRADE_SORTS.get(field);
+      // 배당 목록과 같은 규칙 - 모르는 열 이름은 이름을 들고 끊는다.
+      if (comparator == null) {
+        throw new net.luversof.web.gate.stock.support.StockSortParamException("sort", sort);
+      }
       if (descending) {
         comparator = comparator.reversed();
       }
@@ -452,13 +411,100 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             ? List.of()
             : enrichTradeProfits(
                 StockAsyncSupport.join(realizedRawFuture), userId, tradeProfitNames);
+    List<AccountRealizedRow> accountRealizedList = accountRealizedRows(realizedEnrichedList);
+
+    // 종목별 실현손익 (계좌 무시, 보유량 0 포함) — 실현손익 발생 종목만, 실현손익 내림차순
+    List<TradeProfit> stockRealizedList =
+        stockRealizedRows(
+            stockGroupedRawFuture == null
+                ? Collections.<TradeProfit>emptyList()
+                : enrichTradeProfits(
+                    StockAsyncSupport.join(stockGroupedRawFuture), userId, tradeProfitNames));
+    long realizedWinCount =
+        stockRealizedList.stream()
+            .filter(
+                tp ->
+                    tp.realizedProfit() != null
+                        && tp.realizedProfit().compareTo(BigDecimal.ZERO) > 0)
+            .count();
+
+    // 상세 목록은 페이징 없이 전체를 펼쳐서 표시한다(헤더 sticky 로 스크롤). 예전의 page/size 파라미터와 slice·Pagination 은
+    // 이 결정 뒤로 항상 '1 페이지 = 전체' 라 도달 불가였다(실측 2026-09-09: 폼·화면 어디서도 보내지 않고, 보내도 응답이 같았다).
+    int totalItems = viewList.size();
+
+    // 화면에는 오름차순(오래된 것 위)으로 표시한다 - 기본 순서(거래일 최신순)를 뒤집기만 한다.
+    // 사용자가 컬럼 정렬을 명시한 경우(sort 존재)는 선택한 정렬을 그대로 보여준다.
+    List<TradeResponse> displayTradeList = new ArrayList<>(viewList);
+    if (sort == null || sort.isEmpty()) {
+      Collections.reverse(displayTradeList);
+    }
+    model.addAttribute("tradeList", displayTradeList);
+    model.addAttribute("allTradeList", viewList);
+    model.addAttribute("totalItems", totalItems);
+    model.addAttribute("accountList", finalAccountList);
+    model.addAttribute("stockItemList", finalStockItemList);
+    model.addAttribute(
+        "tagCountStockItemList", clientProvidedRange ? filteredStockItemList : stockItemList);
+    model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
+    model.addAttribute("accountNames", accountNames);
+    addSelectionAttributes(
+        model, effectiveAccountIdList, effectiveStockItemIdList, selectedStockTags);
+    // reflect actual instants used (may have been defaulted to YTD above)
+    model.addAttribute("startDate", startInst);
+    model.addAttribute("endDate", endInst);
+    // reflect rangeMode back into model (may have been defaulted above)
+    model.addAttribute("rangeMode", rangeMode);
+    model.addAttribute("timeZone", timeZone);
+    model.addAttribute("sort", sort);
+    // 표 합계 줄(total*)과 요약(totalAll*)은 페이징이 없어진 뒤 같은 목록의 합이다 - 위에서 한 번 센 값을 두 이름에 싣는다(2026-10-22 까지 두
+    // 번 셌다).
+    model.addAttribute("totalFee", totalAllFee);
+    model.addAttribute("totalTax", totalAllTax);
+    model.addAttribute("totalRealizedProfit", totalAllRealizedProfit);
+    model.addAttribute("totalAllBuyAmount", totalAllBuyAmount);
+    model.addAttribute("totalAllSellAmount", totalAllSellAmount);
+    model.addAttribute("totalAllFee", totalAllFee);
+    model.addAttribute("totalAllTax", totalAllTax);
+    model.addAttribute("totalAllRealizedProfit", totalAllRealizedProfit);
+    model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
+    model.addAttribute("accountRealizedList", accountRealizedList);
+    model.addAttribute("stockRealizedList", stockRealizedList);
+    model.addAttribute("realizedWinCount", realizedWinCount);
+    model.addAttribute("realizedStockCount", stockRealizedList.size());
+
+    return "stock/htmx/tradeList";
+  }
+
+  /**
+   * 종목별 실현손익 표의 줄 - 종목 단위 손익 행을 실현손익 행으로 바꾸고, 실현손익이 0 이거나 없는 종목은 빼고, 실현손익 큰 순(같으면 종목명 순, 이름 없으면
+   * 뒤로)으로 세운다. 2026-10-22 까지 매매 목록 핸들러 안에 적혀 있었다(StockTradeHtmxControllerAccountRealizedTest).
+   */
+  static List<TradeProfit> stockRealizedRows(List<TradeProfit> enriched) {
+    return enriched.stream()
+        .map(StockBaseHtmxController::toStockRealized)
+        // 표시 값과 같은 기준(거래에 기록된 실현손익)으로 걸러 정렬한다. 기준이 다르면
+        // 기록값은 0 이 아닌데 목록에서 빠지거나, 정렬 순서가 표시 값과 어긋난다.
+        .filter(
+            tp ->
+                tp.realizedProfit() != null && tp.realizedProfit().compareTo(BigDecimal.ZERO) != 0)
+        .sorted(
+            Comparator.comparing(
+                    TradeProfit::realizedProfit, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(
+                    TradeProfit::stockItemName, Comparator.nullsLast(Comparator.naturalOrder())))
+        .toList();
+  }
+
+  /**
+   * 계좌별 실현손익 표의 줄 - 손익 행을 계좌 id 로 묶어 계좌 이름 순(이름 없으면 뒤로)으로 세우고 매도액 · 기록된 실현손익 · 매도 원가(매도액 - 거래세 -
+   * 실현손익) · 그 계좌 매매로 다시 계산한 보조 실현손익(realizedOwnBasis - 화면은 차이를 밝힐 때만 쓴다)을 낸다. 값 없는 합은 0. 판정 근거와 실측은
+   * 아래 주석. 2026-10-22 까지 매매 목록 핸들러 안에 적혀 있었다(StockTradeHtmxControllerAccountRealizedTest).
+   */
+  static List<AccountRealizedRow> accountRealizedRows(List<TradeProfit> enriched) {
     List<AccountRealizedRow> accountRealizedList = new ArrayList<>();
     // 계좌는 id 로 묶는다. 이름으로 묶으면 같은 이름의 계좌가 둘일 때 한 행으로 합쳐져
     // 실현손익이 뭉뚱그려진다(표시 순서는 예전과 같이 계좌명 오름차순).
-    realizedEnrichedList.stream()
-        .collect(Collectors.groupingBy(TradeProfit::accountId))
-        .entrySet()
-        .stream()
+    enriched.stream().collect(Collectors.groupingBy(TradeProfit::accountId)).entrySet().stream()
         .sorted(
             Comparator.comparing(
                 e -> e.getValue().isEmpty() ? null : e.getValue().get(0).accountName(),
@@ -498,122 +544,17 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                       realizedOwnBasis,
                       entry.getKey()));
             });
-
-    // 종목별 실현손익 (계좌 무시, 보유량 0 포함) — 실현손익 발생 종목만, 실현손익 내림차순
-    List<TradeProfit> stockRealizedList =
-        (stockGroupedRawFuture == null
-                ? Collections.<TradeProfit>emptyList()
-                : enrichTradeProfits(
-                    StockAsyncSupport.join(stockGroupedRawFuture), userId, tradeProfitNames))
-            .stream()
-                .map(this::toStockRealized)
-                // 표시 값과 같은 기준(거래에 기록된 실현손익)으로 걸러 정렬한다. 기준이 다르면
-                // 기록값은 0 이 아닌데 목록에서 빠지거나, 정렬 순서가 표시 값과 어긋난다.
-                .filter(
-                    tp ->
-                        tp.realizedProfit() != null
-                            && tp.realizedProfit().compareTo(BigDecimal.ZERO) != 0)
-                .sorted(
-                    Comparator.comparing(
-                            TradeProfit::realizedProfit,
-                            Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(
-                            TradeProfit::stockItemName,
-                            Comparator.nullsLast(Comparator.naturalOrder())))
-                .toList();
-    long realizedWinCount =
-        stockRealizedList.stream()
-            .filter(
-                tp ->
-                    tp.realizedProfit() != null
-                        && tp.realizedProfit().compareTo(BigDecimal.ZERO) > 0)
-            .count();
-
-    // 상세 목록은 페이징 없이 전체를 펼쳐서 표시한다(헤더 sticky 로 스크롤). 예전의 page/size 파라미터와 slice·Pagination 은
-    // 이 결정 뒤로 항상 '1 페이지 = 전체' 라 도달 불가였다(실측 2026-09-09: 폼·화면 어디서도 보내지 않고, 보내도 응답이 같았다).
-    int totalItems = viewList.size();
-    List<TradeResponse> pagedList = viewList;
-
-    BigDecimal totalFee =
-        pagedList.stream()
-            .map(t -> t.fee() != null ? t.fee() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalTax =
-        pagedList.stream()
-            .map(t -> t.tax() != null ? t.tax() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalRealizedProfit =
-        pagedList.stream()
-            .filter(t -> t.type() == TradeType.SELL)
-            .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    // 조회/페이징은 그대로(기본=날짜 desc, 1페이지=최신 묶음) 두고, 화면에는 그 페이지를 오름차순(오래된 것 위)으로 표시.
-    // 사용자가 컬럼 정렬을 명시한 경우(sort 존재)는 선택한 정렬을 그대로 보여준다.
-    List<TradeResponse> displayTradeList = new ArrayList<>(pagedList);
-    if (sort == null || sort.isEmpty()) {
-      Collections.reverse(displayTradeList);
-    }
-    model.addAttribute("tradeList", displayTradeList);
-    model.addAttribute("allTradeList", viewList);
-    model.addAttribute("totalItems", totalItems);
-    model.addAttribute("accountList", finalAccountList);
-    model.addAttribute("stockItemList", finalStockItemList);
-    model.addAttribute(
-        "tagCountStockItemList", clientProvidedRange ? filteredStockItemList : stockItemList);
-    model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
-    model.addAttribute("accountNames", accountNames);
-    model.addAttribute(
-        "selectedAccountIds", effectiveAccountIdList != null ? effectiveAccountIdList : List.of());
-    model.addAttribute(
-        "selectedStockItemIds",
-        effectiveStockItemIdList != null ? effectiveStockItemIdList : List.of());
-    model.addAttribute("selectedStockTags", selectedStockTags);
-    model.addAttribute(
-        "selectedAccountId",
-        (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
-            ? effectiveAccountIdList.get(0)
-            : null);
-    model.addAttribute(
-        "selectedStockItemId",
-        (effectiveStockItemIdList != null && !effectiveStockItemIdList.isEmpty())
-            ? effectiveStockItemIdList.get(0)
-            : null);
-    // reflect actual instants used (may have been defaulted to YTD above)
-    model.addAttribute("startDate", startInst);
-    model.addAttribute("endDate", endInst);
-    // reflect rangeMode back into model (may have been defaulted above)
-    model.addAttribute("rangeMode", rangeMode);
-    model.addAttribute("timeZone", timeZone);
-    model.addAttribute("sort", sort);
-    model.addAttribute("totalFee", totalFee);
-    model.addAttribute("totalTax", totalTax);
-    model.addAttribute("totalRealizedProfit", totalRealizedProfit);
-    model.addAttribute("totalAllBuyAmount", totalAllBuyAmount);
-    model.addAttribute("totalAllSellAmount", totalAllSellAmount);
-    model.addAttribute("totalAllFee", totalAllFee);
-    model.addAttribute("totalAllTax", totalAllTax);
-    model.addAttribute("totalAllRealizedProfit", totalAllRealizedProfit);
-    model.addAttribute("rangeMode", rangeMode);
-    model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
-    model.addAttribute("accountRealizedList", accountRealizedList);
-    model.addAttribute("stockRealizedList", stockRealizedList);
-    model.addAttribute("realizedWinCount", realizedWinCount);
-    model.addAttribute("realizedStockCount", stockRealizedList.size());
-
-    return "stock/htmx/tradeList";
+    return accountRealizedList;
   }
 
-  /** 계좌별 실현손익 요약 행 (매매 내역 화면용). */
   /**
-   * @param realizedNet 화면에 찍는 값 &mdash; 매도 거래에 <b>기록된</b> 실현손익의 합
-   * @param realizedOwnBasis 같은 계좌의 매매만으로 앱이 평균단가로 계산한 실현손익
-   */
-  /**
-   * 계좌별 실현손익 한 줄.
+   * 계좌별 실현손익 한 줄(매매 내역 화면).
    *
    * <p>매수금액은 담지 않는다 - 이 절의 다른 값은 전부 '판 것' 기준인데 매수금액만 '산 것 전체' 기준이라 종목별 표와 합이 6.79% 달랐다(실측
    * 2026-08-24). 화면은 수익률의 실제 분모인 {@code soldCost} 를 보여준다.
+   *
+   * @param realizedNet 화면에 찍는 값 &mdash; 매도 거래에 <b>기록된</b> 실현손익의 합
+   * @param realizedOwnBasis 같은 계좌의 매매만으로 앱이 평균단가로 계산한 실현손익
    */
   public record AccountRealizedRow(
       String name,
@@ -773,7 +714,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       List<StockItem> preloadedStockItems,
       ZoneId zone) {
     return getAllActivities(
-        userId, startInstant, endInstant, null, null, preloadedStockItems, null, null, null, zone);
+        userId, startInstant, endInstant, null, null, preloadedStockItems, null, null, zone);
   }
 
   @BlueskyPreAuthorize
@@ -817,50 +758,13 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                         && a.date().isBefore(monthEndInst))
             .toList();
 
-    long buyCount =
-        thisMonth.stream()
-            .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
-            .mapToLong(Activity::recordCount)
-            .sum();
-    long sellCount =
-        thisMonth.stream()
-            .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
-            .mapToLong(Activity::recordCount)
-            .sum();
-    BigDecimal buyAmount =
-        thisMonth.stream()
-            .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
-            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal sellAmount =
-        thisMonth.stream()
-            .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
-            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    long dividendCount =
-        thisMonth.stream()
-            .filter(a -> "DIVIDEND".equals(a.type()))
-            .mapToLong(Activity::recordCount)
-            .sum();
-    BigDecimal dividendAmount =
-        thisMonth.stream()
-            .filter(a -> "DIVIDEND".equals(a.type()))
-            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
     // 대시보드 "최근 활동"은 최신순 5건 유지.
     model.addAttribute("activities", activities.stream().limit(RECENT_ACTIVITY_COUNT).toList());
     model.addAttribute("thisMonthLabel", shortMonthLabel(now));
-    model.addAttribute("buyCount", buyCount);
-    model.addAttribute("sellCount", sellCount);
-    model.addAttribute("buyAmount", buyAmount);
-    model.addAttribute("sellAmount", sellAmount);
-    model.addAttribute("dividendCount", dividendCount);
-    model.addAttribute("dividendAmount", dividendAmount);
+    addActivityTotals(model, thisMonth);
     return "stock/htmx/fragments/recentActivities";
   }
 
-  @BlueskyPreAuthorize
   /** 활동 화면 뷰 모드. 셋 중 하나가 아니면 "all"(전부 렌더)로 본다. */
   /**
    * 활동 내역의 표시 뷰. 화면(JS)은 항상 {@code calendar / timeline / list} 중 하나를 실어 보내고 저장값이 없으면 {@code
@@ -881,6 +785,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     return "calendar";
   }
 
+  @BlueskyPreAuthorize
   @GetMapping("/activity-list")
   public String activityList(
       @RequestParam(required = false) List<UUID> accountIdList,
@@ -1001,7 +906,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 effectiveAccountIdListForActivity,
                 requestedStockIdsForActivity,
                 stockItemList,
-                accountList,
                 earlyActivityTrades,
                 earlyActivityDividends,
                 zone);
@@ -1036,80 +940,21 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     // Build final lists and preserve selected items
     List<Account> finalAccountListForActivity;
     if (clientProvidedRangeForActivity) {
-      finalAccountListForActivity = new ArrayList<>(filteredAccountList);
-      if (requestedAccountIdsForActivity != null) {
-        for (UUID sel : requestedAccountIdsForActivity) {
-          if (sel == null) continue;
-          if (!activityAccountIds.contains(sel)) {
-            accountList.stream()
-                .filter(a -> a.id().equals(sel))
-                .findFirst()
-                .ifPresent(
-                    a -> {
-                      if (finalAccountListForActivity.stream()
-                          .noneMatch(x -> x.id().equals(a.id())))
-                        finalAccountListForActivity.add(0, a);
-                    });
-          }
-        }
-      }
+      finalAccountListForActivity =
+          withSelectedFirst(
+              filteredAccountList, accountList, requestedAccountIdsForActivity, a -> a.id());
     } else {
       finalAccountListForActivity = accountList;
     }
 
     List<StockItem> finalStockItemListForActivity;
     if (clientProvidedRangeForActivity) {
-      finalStockItemListForActivity = new ArrayList<>(filteredStockItemList);
-      if (requestedStockIdsForActivity != null) {
-        for (UUID sel : requestedStockIdsForActivity) {
-          if (sel == null) continue;
-          if (!activityStockIds.contains(sel)) {
-            stockItemList.stream()
-                .filter(s -> s.id().equals(sel))
-                .findFirst()
-                .ifPresent(
-                    s -> {
-                      if (finalStockItemListForActivity.stream()
-                          .noneMatch(x -> x.id().equals(s.id())))
-                        finalStockItemListForActivity.add(0, s);
-                    });
-          }
-        }
-      }
+      finalStockItemListForActivity =
+          withSelectedFirst(
+              filteredStockItemList, stockItemList, requestedStockIdsForActivity, s -> s.id());
     } else {
       finalStockItemListForActivity = stockItemList;
     }
-
-    long buyCount =
-        activities.stream()
-            .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
-            .mapToLong(Activity::recordCount)
-            .sum();
-    long sellCount =
-        activities.stream()
-            .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
-            .mapToLong(Activity::recordCount)
-            .sum();
-    BigDecimal buyAmount =
-        activities.stream()
-            .filter(a -> "TRADE".equals(a.type()) && "BUY".equals(a.tradeType()))
-            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal sellAmount =
-        activities.stream()
-            .filter(a -> "TRADE".equals(a.type()) && "SELL".equals(a.tradeType()))
-            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    long dividendCount =
-        activities.stream()
-            .filter(a -> "DIVIDEND".equals(a.type()))
-            .mapToLong(Activity::recordCount)
-            .sum();
-    BigDecimal dividendAmount =
-        activities.stream()
-            .filter(a -> "DIVIDEND".equals(a.type()))
-            .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     // 화면에는 오름차순(오래된 것 위)으로 표시 — 조회는 그대로(날짜 desc).
     List<Activity> displayActivities = new ArrayList<>(activities);
@@ -1128,37 +973,17 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     model.addAttribute("accountList", finalAccountListForActivity);
     model.addAttribute("stockItemList", finalStockItemListForActivity);
     model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
-    model.addAttribute(
-        "selectedAccountIds",
-        effectiveAccountIdListForActivity != null ? effectiveAccountIdListForActivity : List.of());
-    model.addAttribute(
-        "selectedStockItemIds",
-        effectiveStockItemIdListForActivity != null
-            ? effectiveStockItemIdListForActivity
-            : List.of());
-    model.addAttribute("selectedStockTags", selectedStockTags);
-    model.addAttribute(
-        "selectedAccountId",
-        (effectiveAccountIdListForActivity != null && !effectiveAccountIdListForActivity.isEmpty())
-            ? effectiveAccountIdListForActivity.get(0)
-            : null);
-    model.addAttribute(
-        "selectedStockItemId",
-        (effectiveStockItemIdListForActivity != null
-                && !effectiveStockItemIdListForActivity.isEmpty())
-            ? effectiveStockItemIdListForActivity.get(0)
-            : null);
+    addSelectionAttributes(
+        model,
+        effectiveAccountIdListForActivity,
+        effectiveStockItemIdListForActivity,
+        selectedStockTags);
     model.addAttribute("startDate", startInstant);
     model.addAttribute("endDate", endInstant);
     model.addAttribute("timeZone", timeZone);
     model.addAttribute("rangeMode", rangeMode);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
-    model.addAttribute("buyCount", buyCount);
-    model.addAttribute("sellCount", sellCount);
-    model.addAttribute("buyAmount", buyAmount);
-    model.addAttribute("sellAmount", sellAmount);
-    model.addAttribute("dividendCount", dividendCount);
-    model.addAttribute("dividendAmount", dividendAmount);
+    addActivityTotals(model, activities);
     return "stock/htmx/fragments/activityList";
   }
 
@@ -1197,11 +1022,10 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       List<UUID> accountIdList,
       List<UUID> stockItemIdList,
       List<StockItem> preloadedStockItems,
-      List<Account> preloadedAccounts,
       java.util.concurrent.CompletableFuture<List<TradeResponse>> preTradesFuture,
       java.util.concurrent.CompletableFuture<List<DividendResponse>> preDividendsFuture,
       ZoneId zone) {
-    // 네 조회(거래·배당·종목목록·계좌)는 서로 의존이 없다. 순차로 던지면 응답시간이 그대로 합산된다
+    // 세 조회(거래·배당·종목목록)는 서로 의존이 없다. 순차로 던지면 응답시간이 그대로 합산된다
     // (실측: 종목목록 16.7 + 거래 24.1 + 배당 13.6 + 계좌 17.7 = 72ms, 프래그먼트 실측 77.6ms).
     // 호출 하나하나의 시간은 응답 크기와 거의 무관하다(거래 전체 80KB 24.1ms vs 이번달 3.3KB 19.2ms)
     // - 즉 줄일 것은 전송량이 아니라 직렬 왕복 횟수다. 호출부가 미리 받아 둔 것(preloaded*/pre*Future)이
@@ -1223,10 +1047,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
         preloadedStockItems != null
             ? null
             : async.supply(() -> emptyIfNull(stockItemClient.getStockItems()));
-    var accountsFuture =
-        preloadedAccounts != null
-            ? null
-            : async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
+    // 계좌 목록은 받지 않는다 - 활동 행은 계좌 id 만 싣는다(예전엔 받아서 이름 맵을 만들고 아무 데도 쓰지 않았다.
+    // 최근 활동 카드는 이 함수를 두 번까지 불러 원격 호출이 두 번 더 나갔고, 이름 없는 계좌면 toMap 이 NPE 를 냈다 - 2026-10-21).
     List<TradeResponse> trades = StockAsyncSupport.join(tradesFuture);
     List<DividendResponse> dividends = StockAsyncSupport.join(dividendsFuture);
     List<StockItem> stockItemList =
@@ -1235,10 +1057,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             : StockAsyncSupport.join(stockItemsFuture);
     Map<UUID, String> stockItemNames =
         stockItemList.stream().collect(Collectors.toMap(StockItem::id, StockItem::name));
-    List<Account> accountList =
-        preloadedAccounts != null ? preloadedAccounts : StockAsyncSupport.join(accountsFuture);
-    Map<UUID, String> accountNamesMap =
-        accountList.stream().collect(Collectors.toMap(Account::id, Account::name));
 
     List<Activity> rawActivities = new ArrayList<>();
 
@@ -1249,7 +1067,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
           t.stockItemName() != null
               ? t.stockItemName()
               : stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"));
-      String accountName = accountNamesMap.getOrDefault(t.accountId(), "Unknown Account");
       rawActivities.add(
           new Activity(
               "TRADE",
@@ -1269,7 +1086,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
           d.stockItemName() != null
               ? d.stockItemName()
               : stockItemNames.getOrDefault(d.stockItemId(), msg("stock.label.unknown"));
-      String accountName = accountNamesMap.getOrDefault(d.accountId(), "Unknown Account");
       rawActivities.add(
           new Activity(
               "DIVIDEND",
@@ -1285,5 +1101,37 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     }
 
     return groupActivitiesByDay(rawActivities, zone);
+  }
+
+  /**
+   * 매수 · 매도 · 배당 건수와 금액을 싣는다. 건수는 원장 행 수(recordCount)로 센다 - 같은 날 같은 종목이 한 줄로 묶여도 실제 건수가 나온다. 최근
+   * 활동(이번 달)과 활동 목록(조회 기간)이 같은 계산을 쓴다(2026-10-22 정리 - 두 핸들러가 30 줄을 따로 적고 있었다).
+   */
+  private static void addActivityTotals(Model model, List<Activity> activities) {
+    model.addAttribute("buyCount", recordCount(activities, "TRADE", "BUY"));
+    model.addAttribute("sellCount", recordCount(activities, "TRADE", "SELL"));
+    model.addAttribute("buyAmount", amountSum(activities, "TRADE", "BUY"));
+    model.addAttribute("sellAmount", amountSum(activities, "TRADE", "SELL"));
+    model.addAttribute("dividendCount", recordCount(activities, "DIVIDEND", null));
+    model.addAttribute("dividendAmount", amountSum(activities, "DIVIDEND", null));
+  }
+
+  private static boolean isKind(Activity activity, String type, String tradeType) {
+    return type.equals(activity.type())
+        && (tradeType == null || tradeType.equals(activity.tradeType()));
+  }
+
+  private static long recordCount(List<Activity> activities, String type, String tradeType) {
+    return activities.stream()
+        .filter(a -> isKind(a, type, tradeType))
+        .mapToLong(Activity::recordCount)
+        .sum();
+  }
+
+  private static BigDecimal amountSum(List<Activity> activities, String type, String tradeType) {
+    return activities.stream()
+        .filter(a -> isKind(a, type, tradeType))
+        .map(a -> a.amount() != null ? a.amount() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 }

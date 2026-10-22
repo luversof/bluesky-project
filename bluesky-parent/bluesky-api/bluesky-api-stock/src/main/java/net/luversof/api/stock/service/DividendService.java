@@ -9,7 +9,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import net.luversof.api.stock.constant.StockErrorCode;
@@ -61,7 +60,6 @@ public class DividendService {
         return dividend;
       };
 
-  @Transactional(readOnly = true)
   /** 배당 조회의 WHERE 절. 목록과 합계가 반드시 같은 조건을 쓰도록 한 곳에서 만든다. */
   private String buildDividendWhere(DividendSearchRequest request, Map<String, Object> params) {
     StringBuilder where = new StringBuilder(" WHERE a.\"user_id\" = :userId");
@@ -86,6 +84,17 @@ public class DividendService {
     return where.toString();
   }
 
+  /** 세후 배당 합계 식(총액 - 세금 - 수수료, 빈 값은 0). 전체 합계와 종목별 합계가 같은 식을 쓴다 - 값들의 합이 곧 전체여야 한다. */
+  private static final String NET_AMOUNT_SUM =
+      "COALESCE(SUM(COALESCE(d.\"grossAmount\", 0) - COALESCE(d.\"tax\", 0)"
+          + " - COALESCE(d.\"fee\", 0)), 0)";
+
+  private static void requireUser(DividendSearchRequest request) {
+    if (request.getUserId() == null) {
+      StockErrorCode.NOT_EXIST_USER_ID.throwException();
+    }
+  }
+
   /**
    * 같은 조건의 세후 배당 합계.
    *
@@ -93,14 +102,13 @@ public class DividendService {
    * 그대로 더해져, KB증권 위탁 값이 그 계좌 실제 배당의 <b>6.1 배</b>로 표시됐다). 실현손익과 같은 조건으로 집계해 두 항이 어긋나지 않게 한다.
    */
   public java.math.BigDecimal sumNetAmount(DividendSearchRequest request) {
-    if (request.getUserId() == null) {
-      StockErrorCode.NOT_EXIST_USER_ID.throwException();
-    }
+    requireUser(request);
     Map<String, Object> params = new HashMap<>();
     String where = buildDividendWhere(request, params);
     String sql =
-        "SELECT COALESCE(SUM(COALESCE(d.\"grossAmount\", 0) - COALESCE(d.\"tax\", 0)"
-            + " - COALESCE(d.\"fee\", 0)), 0) FROM \"Dividend\" d"
+        "SELECT "
+            + NET_AMOUNT_SUM
+            + " FROM \"Dividend\" d"
             + " JOIN \"Account\" a ON d.\"account_id\" = a.\"id\""
             + where;
     return jdbcClient
@@ -124,15 +132,13 @@ public class DividendService {
    * <p>합계는 {@code sumNetAmount} 와 같아야 한다 - 값들의 합이 곧 그 값이다.
    */
   public Map<UUID, java.math.BigDecimal> sumNetAmountByStockItem(DividendSearchRequest request) {
-    if (request.getUserId() == null) {
-      StockErrorCode.NOT_EXIST_USER_ID.throwException();
-    }
+    requireUser(request);
     Map<String, Object> params = new HashMap<>();
     String where = buildDividendWhere(request, params);
     String sql =
-        "SELECT d.\"stockItem_id\" AS stock_item_id,"
-            + " COALESCE(SUM(COALESCE(d.\"grossAmount\", 0) - COALESCE(d.\"tax\", 0)"
-            + " - COALESCE(d.\"fee\", 0)), 0) AS net_total"
+        "SELECT d.\"stockItem_id\" AS stock_item_id, "
+            + NET_AMOUNT_SUM
+            + " AS net_total"
             + " FROM \"Dividend\" d"
             + " JOIN \"Account\" a ON d.\"account_id\" = a.\"id\""
             + where
@@ -154,9 +160,7 @@ public class DividendService {
   }
 
   public List<Dividend> findDividends(DividendSearchRequest request) {
-    if (request.getUserId() == null) {
-      StockErrorCode.NOT_EXIST_USER_ID.throwException();
-    }
+    requireUser(request);
 
     StringBuilder sql =
         new StringBuilder()

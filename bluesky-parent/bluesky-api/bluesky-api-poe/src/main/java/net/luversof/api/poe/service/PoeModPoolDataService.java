@@ -32,8 +32,6 @@ public class PoeModPoolDataService {
    * @param gen prefix | suffix
    * @param slots 적용 슬롯 카테고리 (body/helmet/.../weaponAttack/weaponSpell)
    * @param tiers best-first (index 0 = 최상위 티어)
-   */
-  /**
    * @param pattern 게임 모드 Id 패턴 = 전체 풀(mods.json)의 패밀리 키. 베이스 속성 변형에 실제로 붙는 모드인지 데이터로 판정할 때 쓴다.
    */
   public record ModFamily(

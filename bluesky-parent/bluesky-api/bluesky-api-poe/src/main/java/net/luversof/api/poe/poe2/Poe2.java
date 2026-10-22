@@ -748,9 +748,10 @@ public final class Poe2 {
       GuideRare dps,
       GuideRare ehp) {}
 
-  /** 고른 레어 — 옵션 줄(영문 PoB 모양 · 한국어 화면용)과 지금 아이템 대비 증감(%). */
   /**
-   * itemText = PoB 아이템 텍스트(영어, 엔진이 잰 것과 같은 모양 — 희귀도 · 이름 · 베이스 · 암시 · 옵션). PoB "Create custom" 에
+   * 고른 레어 — 옵션 줄(영문 PoB 모양 · 한국어 화면용)과 지금 아이템 대비 증감(%).
+   *
+   * <p>itemText = PoB 아이템 텍스트(영어, 엔진이 잰 것과 같은 모양 — 희귀도 · 이름 · 베이스 · 암시 · 옵션). PoB "Create custom" 에
    * 그대로 붙여 넣는다(10-02).
    */
   public record GuideRare(

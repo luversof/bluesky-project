@@ -41,12 +41,15 @@ class DividendYieldSelectionConsistencyTest {
 
   @Test
   void 행이_걸러진_분자를_내보낸다() throws IOException {
-    String rows = read(ROWS);
-    assertThat(rows)
-        .as("합계행 연 수익률도 걸러진 세후액을 분자로 쓴다")
-        .contains(
-            "sumDividendYieldValue.apply(rows, DividendYieldGroupView::netAmountWithPrincipalCost)")
-        .contains("StockYieldUtil.annualizedPctOnHeldDays(usedNet, daySum)");
+    // 종목별 · 계좌별 카드는 dividendYieldGroupCard.jte 한 벌 - 그려지는 대로 두 번 펼쳐 센다(2026-10-22).
+    String rows = YieldAnalyticsSource.expanded();
+    // 합계행 연 수익률 식은 DividendYieldViewUtil.footerAnnualizedPct 한 곳(분자 = 걸러진 세후 합 - 동작은
+    // DividendYieldViewUtilTest). 부모(연도별 표)와 카드가 둘 다 그것을 부르는지 본다(2026-10-22 까지 한 벌씩 있었다).
+    for (String source : YieldAnalyticsSource.definitionSources()) {
+      assertThat(source)
+          .as("합계행 연 수익률도 걸러진 세후액을 분자로 쓴다 - 공용 식을 부른다")
+          .contains("footerAnnualizedPct = DividendYieldViewUtil::footerAnnualizedPct;");
+    }
     // 종목별 표와 계좌별 표 두 곳 모두 필요하다.
     int count = rows.split("data-net-with-principal-cost=", -1).length - 1;
     assertThat(count).as("종목별/계좌별 두 표 모두 값을 내보내야 한다").isEqualTo(2);
@@ -88,25 +91,26 @@ class DividendYieldSelectionConsistencyTest {
         .doesNotContain("(totalNetAmount * 365 / totalPrincipalCostDaySum) * 100")
         .doesNotContain("(totalNetAmount / totalDailyPrincipalCost) * 100");
 
-    String rows = read(ROWS);
-    // 종목별·계좌별 두 합계행 모두.
-    for (String prefix : new String[] {"stockYield", "accountYield"}) {
+    // 종목별·계좌별 두 합계행은 2026-10-22 부터 카드 조각 한 곳(footer…)에서, 부모에는 연도별 표가 쓰는 종목 합계(stockYieldFooter…)가
+    // 남았다.
+    String[][] sources = {
+      {read(ROWS), "stockYieldFooter"}, {read(YieldAnalyticsSource.CARD), "footer"}
+    };
+    for (String[] source : sources) {
+      String rows = source[0];
+      String prefix = source[1];
       assertThat(rows)
           .as(prefix + " 합계행의 일평균원가 수익률 분자가 행과 다르다")
           .contains(
               "computeYieldPct.apply("
                   + prefix
-                  + "FooterNetWithPrincipalCost, "
+                  + "NetWithPrincipalCost, "
                   + prefix
-                  + "FooterDailyPrincipalCost)");
+                  + "DailyPrincipalCost)");
       assertThat(rows)
           .as(prefix + " 합계행이 걸러지지 않은 세후액으로 되돌아갔다")
           .doesNotContain(
-              "computeYieldPct.apply("
-                  + prefix
-                  + "FooterNetAmount, "
-                  + prefix
-                  + "FooterDailyPrincipalCost)");
+              "computeYieldPct.apply(" + prefix + "NetAmount, " + prefix + "DailyPrincipalCost)");
     }
   }
 

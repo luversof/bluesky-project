@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.stock.support.StockParamException;
 import net.luversof.web.gate.stock.support.StockZoneParamException;
 
 /**
@@ -77,10 +78,16 @@ class StockZoneUtilTest {
         Files.readString(
             Path.of("src/main/java/net/luversof/web/gate/stock/config/StockHtmxErrorResolver.java"),
             StandardCharsets.UTF_8);
-    assertThat(countOccurrences(resolver, "StockZoneParamException"))
+    // 2026-10-22 부터 해석기는 다섯 인자 예외를 공통 부모(StockParamException) 하나로 본다 - 부모가 판정 · 문구 두 곳에 쓰이고,
+    // 이 예외는 그 부모를 이어받아 제 문구 키를 말한다.
+    assertThat(
+            countOccurrences(
+                resolver, "instanceof net.luversof.web.gate.stock.support.StockParamException"))
         .as("4xx 판정 한 번 + 문구 선택 한 번")
         .isEqualTo(2);
-    assertThat(resolver).contains("stock.error.badrequest.timezone.desc");
+    StockZoneParamException thrown = new StockZoneParamException("timeZone", "Not/AZone", null);
+    assertThat(thrown).isInstanceOf(StockParamException.class);
+    assertThat(thrown.descKey()).isEqualTo("stock.error.badrequest.timezone.desc");
     for (String bundle : new String[] {"uiMessage.properties", "uiMessage_ko.properties"}) {
       assertThat(
               Files.readString(

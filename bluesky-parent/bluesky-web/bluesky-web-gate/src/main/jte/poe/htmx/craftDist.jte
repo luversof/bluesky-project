@@ -1,7 +1,6 @@
 @import net.luversof.web.gate.poe.dto.PoeCraft
 @param PoeCraft.DistResult dist = null
 @param java.util.Map<String, String> distLabels = java.util.Map.of()
-@param String distAct = "CHAOS"
 <%-- 결과 분포(10-21 C533, craftofexile 대량 모의) — 고른 화폐를 지금 아이템에 여러 번 따로 써서 계열마다 붙는 비율 · 그중 1등급 · 옵션 개수 --%>
 !{ boolean ko = net.luversof.web.gate.poe.PoeText.isKorean(); }
 <div id="craft-dist-result" class="space-y-1 text-xs" data-craft-dist>

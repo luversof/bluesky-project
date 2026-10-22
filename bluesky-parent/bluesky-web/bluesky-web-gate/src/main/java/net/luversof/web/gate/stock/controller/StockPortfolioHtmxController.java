@@ -29,12 +29,21 @@ import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.util.StockAmountUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 // /stock/htmx/portfolio(tabsPortfolio.jte) 는 2026-09-09 에 지웠다 - 어떤 화면도 부르지 않는 서버 왕복 정렬 시절의 잔재였다
 // (UnreachableEndpointTest 가 2026-08-23 부터 '알려진 죽은 경로' 로 들고 있던 것). 지금 보유 표는 assetStatus 다.
 public class StockPortfolioHtmxController extends StockBaseHtmxController {
+
+  /** 평가액 큰 순, 같으면 종목명 순(값이 없으면 뒤로). 계좌별 보유 상세와 종목별 표가 같은 순서를 쓴다(2026-10-22 까지 두 벌). */
+  private static final Comparator<TradeProfit> BY_EVALUATION_DESC_THEN_NAME =
+      Comparator.comparing(
+              TradeProfit::evaluationAmount,
+              Comparator.nullsLast(Comparator.<BigDecimal>reverseOrder()))
+          .thenComparing(
+              TradeProfit::stockItemName, Comparator.nullsLast(Comparator.naturalOrder()));
 
   private final DataFirstDateClient dataFirstDateClient;
 
@@ -151,84 +160,15 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             .filter(Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    Map<UUID, BigDecimal> accountPrincipalOverrideMap =
-        accountList.stream()
-            .filter(account -> account.id() != null)
-            .flatMap(
-                account -> {
-                  BigDecimal principal = resolveAccountManualPrincipal(account);
-                  return principal != null
-                      ? java.util.stream.Stream.of(Map.entry(account.id(), principal))
-                      : java.util.stream.Stream.empty();
-                })
-            .collect(
-                Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (left, right) -> left));
+    Map<UUID, BigDecimal> accountPrincipalOverrideMap = accountPrincipalOverrides(accountList);
 
-    // 계좌별 집계
-    // 표시용 맵의 키는 계좌 id 다. 예전에는 계좌명을 키로 써서, 같은 이름의 계좌가 둘이면
-    // 뒤에 담긴 쪽이 앞의 것을 덮어 한 행이 화면에서 사라졌다(집계 자체는 id 기준이라 정확했다).
-    Map<UUID, TradeProfit> accountTotalMap = new LinkedHashMap<>();
-    Map<UUID, BigDecimal> accountProfitBasisMap = new LinkedHashMap<>();
-    // 원금이 계좌 설정의 수동 입력값인 계좌. 화면이 계산 원가와 구분해 표시한다.
-    java.util.Set<UUID> manualPrincipalAccountIds = new java.util.LinkedHashSet<>();
-    Map<UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap = new LinkedHashMap<>();
-    enrichedList.stream().collect(Collectors.groupingBy(TradeProfit::accountId)).entrySet().stream()
-        .sorted(
-            Comparator.comparing(
-                entry -> {
-                  List<TradeProfit> list = entry.getValue();
-                  if (list == null || list.isEmpty()) {
-                    return null;
-                  }
-                  return list.get(0).accountName();
-                },
-                Comparator.nullsLast(Comparator.naturalOrder())))
-        .forEach(
-            entry -> {
-              UUID accountId = entry.getKey();
-              List<TradeProfit> list = entry.getValue();
-              TradeProfit first = list.get(0);
-              String accountName = first.accountName();
-              List<TradeProfit> sortedHoldings =
-                  list.stream()
-                      .sorted(
-                          Comparator.comparing(
-                                  TradeProfit::evaluationAmount,
-                                  Comparator.nullsLast(Comparator.reverseOrder()))
-                              .thenComparing(
-                                  TradeProfit::stockItemName,
-                                  Comparator.nullsLast(Comparator.naturalOrder())))
-                      .toList();
-              var s = TradeProfitAggregator.aggregate(list);
-              BigDecimal evaluationAmount =
-                  s.evaluationAmount() != null ? s.evaluationAmount() : BigDecimal.ZERO;
-              BigDecimal holdingCost =
-                  resolveCurrentHoldingCost(
-                      evaluationAmount, s.evaluationProfit(), s.avgBuyPrice(), s.holdingQuantity());
-              BigDecimal defaultEvaluationProfit =
-                  s.evaluationProfit() != null ? s.evaluationProfit() : BigDecimal.ZERO;
-              BigDecimal defaultPrincipal = holdingCost;
-              BigDecimal manualPrincipal =
-                  accountId != null ? accountPrincipalOverrideMap.get(accountId) : null;
-              BigDecimal profitBasis = manualPrincipal != null ? manualPrincipal : defaultPrincipal;
-              accountProfitBasisMap.put(accountId, profitBasis);
-              if (manualPrincipal != null && accountId != null) {
-                manualPrincipalAccountIds.add(accountId);
-              }
-              accountHoldingMap.put(
-                  accountId,
-                  buildAccountHoldingViews(
-                      sortedHoldings, evaluationAmount, totalEvaluationAmount));
-              accountTotalMap.put(
-                  accountId,
-                  TradeProfit.ofAccountStatus(
-                      accountName,
-                      evaluationAmount,
-                      defaultEvaluationProfit,
-                      s.realizedProfit(),
-                      holdingCost,
-                      s.totalSellProceeds()));
-            });
+    AccountStatusTables accountTables =
+        accountStatusTables(enrichedList, accountPrincipalOverrideMap, totalEvaluationAmount);
+    Map<UUID, TradeProfit> accountTotalMap = accountTables.accountTotalMap();
+    Map<UUID, BigDecimal> accountProfitBasisMap = accountTables.accountProfitBasisMap();
+    java.util.Set<UUID> manualPrincipalAccountIds = accountTables.manualPrincipalAccountIds();
+    Map<UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap =
+        accountTables.accountHoldingMap();
 
     // 종목별 보유 계좌(사용자 요청 2026-09-17: 계좌 표의 "보유 종목 보기" 처럼 종목 줄에서 그 종목을 가진 계좌를 펼쳐 본다).
     // 계좌 표 펼침과 같은 재료(계좌 x 종목 손익 행)를 뒤집어 모은다 - 두 펼침의 수량 · 금액이 서로 어긋나지 않게.
@@ -245,33 +185,17 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                         rawStockGroupedFuture),
                     userId,
                     tradeProfitNames));
-    // 걸러내기 전에 '이미 다 판 종목' 몫을 따로 센다. 이 표의 합계는 보유 종목만이라 전체 누적보다 작은데,
+    // 걸러내기 전에 '이미 다 판 종목' 을 따로 잡는다(셈은 soldOutSummary). 이 표의 합계는 보유 종목만이라 전체 누적보다 작은데,
     // 얼마나 작은지는 화면 어디에도 없었다 - 실측 2026-09-11: 실현손익 합계가 자산 현황 140,350,295 인데
     // 대시보드·매매·자산 성장은 225,630,135 를 적는다(차이 85,279,840, 37.8%). 그 차이를 숫자로 밝힌다.
     List<TradeProfit> soldOutList =
         stockGroupedList.stream().filter(tp -> tp.holdingQuantity() == 0).toList();
-    java.util.Set<UUID> soldOutStockItemIds =
-        soldOutList.stream()
-            .map(TradeProfit::stockItemId)
-            .filter(Objects::nonNull)
-            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
-    BigDecimal soldOutRealizedProfit =
-        soldOutList.stream()
-            .map(TradeProfit::realizedProfit)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    // getStockGroupedTradeProfits(request, false) 와 같은 순서로 보유량 0 을 먼저 걸러낸다.
+    // 종목 단위 손익에서 보유량 0 을 먼저 걸러낸다(예전 getStockGroupedTradeProfits(request, false) 와 같은 순서).
     stockGroupedList.removeIf(tp -> tp.holdingQuantity() == 0);
     List<TradeProfit> stockAggregated =
         stockGroupedList.stream()
             .map(this::toAssetStatusStock)
-            .sorted(
-                Comparator.comparing(
-                        TradeProfit::evaluationAmount,
-                        Comparator.nullsLast(Comparator.reverseOrder()))
-                    .thenComparing(
-                        TradeProfit::stockItemName,
-                        Comparator.nullsLast(Comparator.naturalOrder())))
+            .sorted(BY_EVALUATION_DESC_THEN_NAME)
             .toList();
     BigDecimal totalEvaluationProfit =
         stockAggregated.stream()
@@ -300,29 +224,10 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     var stockProfitBreakdown =
         net.luversof.web.gate.stock.util.StockCombinedProfitUtil.byStockItem(
             stockAggregated, dividendByStockItem);
-    // 이 표에 없는 종목 = 다 판 종목 + '거래는 없는데 배당만 있는 종목'. 후자를 빼면 합이 맞지 않는다 -
-    // 실측 2026-09-11: 하나금융지주가 거래 행 없이 배당 2,100 만 있어, 다 판 34 종목만 세면
-    // 59,067,537 + 6,582,497 = 65,650,034 로 전체 배당 65,652,134 에 2,100 모자랐다.
-    java.util.Set<UUID> heldStockItemIds =
-        stockGroupedList.stream()
-            .map(TradeProfit::stockItemId)
-            .filter(Objects::nonNull)
-            .collect(java.util.stream.Collectors.toSet());
-    java.util.Set<UUID> notListedStockItemIds = new java.util.LinkedHashSet<>(soldOutStockItemIds);
-    dividendByStockItem.forEach(
-        (stockItemId, amount) -> {
-          if (stockItemId != null && !heldStockItemIds.contains(stockItemId)) {
-            notListedStockItemIds.add(stockItemId);
-          }
-        });
-    BigDecimal soldOutDividend =
-        notListedStockItemIds.stream()
-            .map(dividendByStockItem::get)
-            .filter(Objects::nonNull)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    model.addAttribute("soldOutStockCount", notListedStockItemIds.size());
-    model.addAttribute("soldOutRealizedProfit", soldOutRealizedProfit);
-    model.addAttribute("soldOutDividend", soldOutDividend);
+    SoldOutSummary soldOut = soldOutSummary(soldOutList, stockGroupedList, dividendByStockItem);
+    model.addAttribute("soldOutStockCount", soldOut.stockCount());
+    model.addAttribute("soldOutRealizedProfit", soldOut.realizedProfit());
+    model.addAttribute("soldOutDividend", soldOut.dividend());
     model.addAttribute("stockProfitBreakdown", stockProfitBreakdown);
     model.addAttribute(
         "stockProfitBreakdownTotal",
@@ -394,6 +299,126 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
           }
         });
     return result;
+  }
+
+  /** 자산 현황 표에 없는 종목 몫 - 종목 수 · 실현손익(다 판 종목) · 배당(다 판 종목 + 배당만 있는 종목). */
+  record SoldOutSummary(int stockCount, BigDecimal realizedProfit, BigDecimal dividend) {}
+
+  /**
+   * 표에 없는 종목 몫(2026-10-22 까지 assetStatus 안 두 곳에 나뉘어 적혀 있었다).
+   *
+   * <p>이 표에 없는 종목 = 다 판 종목 + '거래는 없는데 배당만 있는 종목'. 후자를 빼면 합이 맞지 않는다 - 실측 2026-09-11: 하나금융지주가 거래 행 없이
+   * 배당 2,100 만 있어, 다 판 34 종목만 세면 59,067,537 + 6,582,497 = 65,650,034 로 전체 배당 65,652,134 에 2,100
+   * 모자랐다.
+   */
+  static SoldOutSummary soldOutSummary(
+      List<TradeProfit> soldOutList,
+      List<TradeProfit> heldList,
+      java.util.Map<UUID, BigDecimal> dividendByStockItem) {
+    java.util.Set<UUID> soldOutStockItemIds =
+        soldOutList.stream()
+            .map(TradeProfit::stockItemId)
+            .filter(Objects::nonNull)
+            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+    BigDecimal soldOutRealizedProfit =
+        soldOutList.stream()
+            .map(TradeProfit::realizedProfit)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    java.util.Set<UUID> heldStockItemIds =
+        heldList.stream()
+            .map(TradeProfit::stockItemId)
+            .filter(Objects::nonNull)
+            .collect(java.util.stream.Collectors.toSet());
+    java.util.Set<UUID> notListedStockItemIds = new java.util.LinkedHashSet<>(soldOutStockItemIds);
+    dividendByStockItem.forEach(
+        (stockItemId, amount) -> {
+          if (stockItemId != null && !heldStockItemIds.contains(stockItemId)) {
+            notListedStockItemIds.add(stockItemId);
+          }
+        });
+    BigDecimal soldOutDividend =
+        notListedStockItemIds.stream()
+            .map(dividendByStockItem::get)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    return new SoldOutSummary(notListedStockItemIds.size(), soldOutRealizedProfit, soldOutDividend);
+  }
+
+  /** 자산 현황 계좌 표의 재료 넷 - 모두 계좌 id 가 키, 계좌 이름 차례(이름 없는 계좌는 뒤). */
+  record AccountStatusTables(
+      Map<UUID, TradeProfit> accountTotalMap,
+      Map<UUID, BigDecimal> accountProfitBasisMap,
+      java.util.Set<UUID> manualPrincipalAccountIds,
+      Map<UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap) {}
+
+  /**
+   * 계좌별 집계(2026-10-22 까지 assetStatus 안에 그대로 적혀 있었다). 수익률 기준(원금)은 계좌 설정의 수동 원금이 있으면 그것, 없으면 지금 보유
+   * 원가다.
+   */
+  AccountStatusTables accountStatusTables(
+      List<TradeProfit> enrichedList,
+      Map<UUID, BigDecimal> accountPrincipalOverrideMap,
+      BigDecimal totalEvaluationAmount) {
+    // 계좌별 집계
+    // 표시용 맵의 키는 계좌 id 다. 예전에는 계좌명을 키로 써서, 같은 이름의 계좌가 둘이면
+    // 뒤에 담긴 쪽이 앞의 것을 덮어 한 행이 화면에서 사라졌다(집계 자체는 id 기준이라 정확했다).
+    Map<UUID, TradeProfit> accountTotalMap = new LinkedHashMap<>();
+    Map<UUID, BigDecimal> accountProfitBasisMap = new LinkedHashMap<>();
+    // 원금이 계좌 설정의 수동 입력값인 계좌. 화면이 계산 원가와 구분해 표시한다.
+    java.util.Set<UUID> manualPrincipalAccountIds = new java.util.LinkedHashSet<>();
+    Map<UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap = new LinkedHashMap<>();
+    enrichedList.stream().collect(Collectors.groupingBy(TradeProfit::accountId)).entrySet().stream()
+        .sorted(
+            Comparator.comparing(
+                entry -> {
+                  List<TradeProfit> list = entry.getValue();
+                  if (list == null || list.isEmpty()) {
+                    return null;
+                  }
+                  return list.get(0).accountName();
+                },
+                Comparator.nullsLast(Comparator.naturalOrder())))
+        .forEach(
+            entry -> {
+              UUID accountId = entry.getKey();
+              List<TradeProfit> list = entry.getValue();
+              TradeProfit first = list.get(0);
+              String accountName = first.accountName();
+              List<TradeProfit> sortedHoldings =
+                  list.stream().sorted(BY_EVALUATION_DESC_THEN_NAME).toList();
+              var s = TradeProfitAggregator.aggregate(list);
+              BigDecimal evaluationAmount =
+                  s.evaluationAmount() != null ? s.evaluationAmount() : BigDecimal.ZERO;
+              BigDecimal holdingCost =
+                  resolveCurrentHoldingCost(
+                      evaluationAmount, s.evaluationProfit(), s.avgBuyPrice(), s.holdingQuantity());
+              BigDecimal defaultEvaluationProfit =
+                  s.evaluationProfit() != null ? s.evaluationProfit() : BigDecimal.ZERO;
+              BigDecimal defaultPrincipal = holdingCost;
+              BigDecimal manualPrincipal =
+                  accountId != null ? accountPrincipalOverrideMap.get(accountId) : null;
+              BigDecimal profitBasis = manualPrincipal != null ? manualPrincipal : defaultPrincipal;
+              accountProfitBasisMap.put(accountId, profitBasis);
+              if (manualPrincipal != null && accountId != null) {
+                manualPrincipalAccountIds.add(accountId);
+              }
+              accountHoldingMap.put(
+                  accountId,
+                  buildAccountHoldingViews(
+                      sortedHoldings, evaluationAmount, totalEvaluationAmount));
+              accountTotalMap.put(
+                  accountId,
+                  TradeProfit.ofAccountStatus(
+                      accountName,
+                      evaluationAmount,
+                      defaultEvaluationProfit,
+                      s.realizedProfit(),
+                      holdingCost,
+                      s.totalSellProceeds()));
+            });
+    return new AccountStatusTables(
+        accountTotalMap, accountProfitBasisMap, manualPrincipalAccountIds, accountHoldingMap);
   }
 
   private List<AssetStatusAccountHoldingView> buildAccountHoldingViews(
@@ -545,10 +570,6 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
    * <p>{@code StockDividendHtmxController.percentage} 는 처음부터 이 순서였다. 같은 규칙으로 맞춘다.
    */
   private BigDecimal percentage(BigDecimal amount, BigDecimal base) {
-    if (amount == null || base == null || base.compareTo(BigDecimal.ZERO) <= 0) {
-      return BigDecimal.ZERO;
-    }
-
-    return amount.multiply(BigDecimal.valueOf(100)).divide(base, 4, java.math.RoundingMode.HALF_UP);
+    return StockAmountUtil.nz(StockAmountUtil.percentOrNull(amount, base, 4));
   }
 }

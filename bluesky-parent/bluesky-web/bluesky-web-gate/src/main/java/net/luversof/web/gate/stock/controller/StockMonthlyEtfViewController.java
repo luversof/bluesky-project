@@ -197,14 +197,7 @@ public class StockMonthlyEtfViewController {
     java.time.LocalDate marketToday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
     model.addAttribute(
         "monthlyEtfBuyBy",
-        java.util.stream.Stream.of("MID_MONTH", "MONTH_END")
-            .map(
-                window ->
-                    net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyBy(
-                        marketToday, window))
-            .filter(java.util.Objects::nonNull)
-            .toList());
-    model.addAttribute("pageTitle", StockViewSupport.msg("stock.page.monthly.etf.title"));
+        net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
     return "stock/monthlyEtf";
   }
 

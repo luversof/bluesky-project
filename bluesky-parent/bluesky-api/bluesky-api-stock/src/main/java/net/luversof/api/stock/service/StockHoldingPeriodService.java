@@ -1,5 +1,7 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockIds.joinOrNull;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -10,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -50,7 +51,7 @@ public class StockHoldingPeriodService {
       UUID userId, ZoneId zoneId, List<UUID> accountIdList) {
     ZoneId zone = zoneId == null ? DEFAULT_ZONE : zoneId;
     List<StockItemFirstBuy> rows =
-        tradeRepository.findFirstBuyDateByStockItem(userId, joinIds(accountIdList));
+        tradeRepository.findFirstBuyDateByStockItem(userId, joinOrNull(accountIdList));
     Map<UUID, LocalDate> result = new LinkedHashMap<>();
     if (rows == null) {
       return result;
@@ -82,7 +83,7 @@ public class StockHoldingPeriodService {
       UUID userId, ZoneId zoneId, List<UUID> accountIdList, List<UUID> stockItemIdList) {
     return netByDay(
         tradeRepository.findCashFlowsByStockItem(
-            userId, joinIds(accountIdList), joinIds(stockItemIdList)),
+            userId, joinOrNull(accountIdList), joinOrNull(stockItemIdList)),
         zoneId == null ? DEFAULT_ZONE : zoneId);
   }
 
@@ -111,18 +112,5 @@ public class StockHoldingPeriodService {
           result.put(stockItemId, flows);
         });
     return result;
-  }
-
-  /** 빈 목록은 "좁히지 않음"(null)과 같게 둔다. */
-  private static String joinIds(List<UUID> ids) {
-    if (ids == null || ids.isEmpty()) {
-      return null;
-    }
-    String joined =
-        ids.stream()
-            .filter(java.util.Objects::nonNull)
-            .map(UUID::toString)
-            .collect(Collectors.joining(","));
-    return joined.isEmpty() ? null : joined;
   }
 }

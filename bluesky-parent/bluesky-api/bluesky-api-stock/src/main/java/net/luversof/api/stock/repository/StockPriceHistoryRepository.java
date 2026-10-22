@@ -120,8 +120,6 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                 """)
   List<StockDailyClosePrice> findFirstTradeDatesForItems(@Param("ids") String ids);
 
-  Optional<StockPriceHistory> findByStockItemIdAndTradeDate(UUID stockItemId, LocalDate tradeDate);
-
   Optional<StockPriceHistory> findTopByStockItemIdOrderByTradeDateDesc(UUID stockItemId);
 
   /**

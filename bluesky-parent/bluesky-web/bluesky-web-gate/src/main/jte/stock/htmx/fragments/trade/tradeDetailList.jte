@@ -68,39 +68,19 @@
 				<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${detailListLabel}">
 					<thead>
 					<tr class="bg-base-200">
-						<th scope="col" class="cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("tradeDate") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}"
-							hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
-							hx-vals='{"sort": "tradeDate,${sortField.equals("tradeDate") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${dateLabel} @if(sortField.equals("tradeDate"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
+						@template.stock.htmx.fragments.components.sortHeader(field = "tradeDate", label = dateLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
 						<th scope="col">${typeLabel}</th>
-						<th scope="col" class="cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("stockItemName") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}"
-							hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
-							hx-vals='{"sort": "stockItemName,${sortField.equals("stockItemName") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${stockLabel} @if(sortField.equals("stockItemName"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
+						@template.stock.htmx.fragments.components.sortHeader(field = "stockItemName", label = stockLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
 						<%-- 수수료·거래세 열은 lg(1024px)에서 폈는데, 그 폭에서 사이드바(224px)가 함께 나타나 본문 열이 991px -> 768px 로 줄어든다.
 						     실측 2026-09-10: 1023px 은 8열 · 표 991px · 넘침 0 인데 1024px 은 10열 · 표 1,033px · 컨테이너 768px 로 넘침 265px 이 됐다
 						     (1100px 189 · 1200px 89 · 1280px 9 · 1300px 0). 넓혔는데 더 나빠지는 구간이라 실제로 들어가는 폭에서 편다. --%>
 						<th scope="col" class="hidden sm:table-cell">${accountLabel}</th>
 						<th scope="col" class="text-right">${unitPriceLabel}</th>
 						<th scope="col" class="text-right" aria-label="${quantityLabel}"><abbr title="${quantityLabel}" class="no-underline">${quantityShortLabel}</abbr></th>
-						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("amount") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}"
-							hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
-							hx-vals='{"sort": "amount,${sortField.equals("amount") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${amountLabel} @if(sortField.equals("amount"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
-						<th scope="col" class="text-right cursor-pointer hover:bg-base-300 hidden min-[1300px]:table-cell print:table-cell" tabindex="0" aria-sort="${sortField.equals("fee") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}"
-							hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
-							hx-vals='{"sort": "fee,${sortField.equals("fee") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${feeLabel} @if(sortField.equals("fee"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
+						@template.stock.htmx.fragments.components.sortHeader(field = "amount", label = amountLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
+						@template.stock.htmx.fragments.components.sortHeader(field = "fee", label = feeLabel, cellClass = "text-right cursor-pointer hover:bg-base-300 hidden min-[1300px]:table-cell print:table-cell", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
 						<th scope="col" class="text-right hidden min-[1300px]:table-cell print:table-cell">${tradingTaxLabel}</th>
-						<th scope="col" class="text-right cursor-pointer hover:bg-base-300" tabindex="0" aria-sort="${sortField.equals("realizedProfit") ? (sortDir.equals("asc") ? "ascending" : "descending") : "none"}"
-							hx-get="/stock/htmx/trade/list" hx-target="#tradeListFragment" hx-select="#tradeListFragment" hx-swap="outerHTML" hx-include="#tradeSearchForm"
-							hx-vals='{"sort": "realizedProfit,${sortField.equals("realizedProfit") && sortDir.equals("asc") ? "desc" : "asc"}"}'>
-							${realizedProfitLabel} @if(sortField.equals("realizedProfit"))<span>${sortDir.equals("asc") ? "▲" : "▼"}</span>@endif
-						</th>
+						@template.stock.htmx.fragments.components.sortHeader(field = "realizedProfit", label = realizedProfitLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
 					</tr>
 					</thead>
 					<tbody>

@@ -16,7 +16,6 @@
 <%-- 날짜 칸에 쓸 존. 이 화면(자산성장)의 기간 표시와 같은 존이어야 한다. --%>
 @param java.time.ZoneId zone
 @param int totalItems
-@param int currentPage
 @param int totalPages
 @param int pageSize
 @param String from = ""

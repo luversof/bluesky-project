@@ -87,11 +87,16 @@ class TabAnchorKeyboardTest {
   void hx_get_을_단_표_머리는_키보드로_닿고_aria_sort_를_가진다() throws IOException {
     List<String> offenders = new ArrayList<>();
     int seen = 0;
+    // 2026-10-22 부터 배당 · 매매 상세 표의 정렬 머리칸(7 + 5)은 components/sortHeader.jte 한 곳에서 그린다.
+    // th 는 그 조각에 하나만 있고 표는 조각을 부르므로, 부르는 수도 머리칸으로 센다.
+    String sortHeaderCall = "@template.stock.htmx.fragments.components.sortHeader(";
+    int sortHeaderCalls = 0;
     Pattern thWithHx = Pattern.compile("<th[^>]*hx-get[^>]*>", Pattern.DOTALL);
     Path base = Path.of("src/main/jte/stock");
     try (var stream = Files.walk(base)) {
       for (Path template : stream.filter(p -> p.toString().endsWith(".jte")).toList()) {
         String source = Files.readString(template, StandardCharsets.UTF_8);
+        sortHeaderCalls += source.split(Pattern.quote(sortHeaderCall), -1).length - 1;
         Matcher matcher = thWithHx.matcher(source);
         while (matcher.find()) {
           seen++;
@@ -106,7 +111,8 @@ class TabAnchorKeyboardTest {
         }
       }
     }
-    assertThat(seen).as("hx-get 을 단 th 수").isGreaterThanOrEqualTo(7);
+    assertThat(seen).as("hx-get 을 단 th 수(정렬 머리 조각 포함)").isGreaterThanOrEqualTo(1);
+    assertThat(sortHeaderCalls).as("정렬 머리 조각을 부르는 칸(배당 7 + 매매 5)").isEqualTo(12);
     assertThat(offenders).as("키보드로 닿지 않거나 정렬 상태가 없는 표 머리").isEmpty();
   }
 

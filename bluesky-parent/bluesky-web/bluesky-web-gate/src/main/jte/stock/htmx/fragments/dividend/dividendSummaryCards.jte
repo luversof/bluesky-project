@@ -248,30 +248,12 @@
 			<script nonce="${CspNonceHolder.getNonce()}">
 			(function() {
 				// 변동 요인 행 선택 합산 — 수익률 랭킹의 선택 방식(행 클릭 토글 + 상단 요약 + 선택 해제)과 동일.
+				// 행 결합 · 금액 넣기는 stockLayout 이 먼저 싣는 /js/stock/rowSelection.js(실현손익 표와 같은 것 - 2026-10-22 에 모았다).
+				var RS = window.StockRowSelection;
 				var card = document.getElementById('dividendChangeCard');
-				if (!card || card.dataset.selectionInitialized === 'true') return;
+				if (!RS || !card || card.dataset.selectionInitialized === 'true') return;
 				card.dataset.selectionInitialized = 'true';
 				var summary = card.querySelector('[data-dividend-change-summary]');
-				function setRow(row, selected) {
-					if (!row) return;
-					row.classList.toggle('bg-primary/10', selected);
-					row.setAttribute('aria-selected', selected ? 'true' : 'false');
-				}
-				function putAmount(sel, value, signed) {
-					var el = summary.querySelector(sel);
-					if (!el) return;
-					var abs = Math.abs(Math.round(value));
-					var rounded = Math.round(value) || 0;
-					// 0 에는 방향이 없다 - 판정은 반올림 뒤에(StockFormatUtil.signedWon 과 같은 규칙).
-					var sign = rounded > 0 ? '+' : (rounded < 0 ? '-' : '');
-					// 로케일은 앱이 정한다(common.js 의 appLocale) - 인자를 빼면 브라우저 로케일을 따라
-					// 같은 화면 안에서 자릿수 구분이 갈린다(실측 2026-09-15).
-					el.textContent = (signed ? sign : '') + '₩' + abs.toLocaleString(appLocale());
-					if (signed) {
-						el.classList.toggle('text-profit', value >= 0);
-						el.classList.toggle('text-loss', value < 0);
-					}
-				}
 				function update() {
 					if (!summary) return;
 					var selected = card.querySelectorAll('[data-dividend-change-row][aria-selected="true"]');
@@ -286,35 +268,11 @@
 					}
 					var countEl = summary.querySelector('[data-dividend-change-selection-count]');
 					if (countEl) countEl.textContent = (summary.dataset.countTemplate || '{0}').replace('{0}', selected.length);
-					putAmount('[data-dividend-change-selection-prev]', prev, false);
-					putAmount('[data-dividend-change-selection-current]', current, false);
-					putAmount('[data-dividend-change-selection-delta]', delta, true);
+					RS.putAmount(summary, '[data-dividend-change-selection-prev]', prev, false);
+					RS.putAmount(summary, '[data-dividend-change-selection-current]', current, false);
+					RS.putAmount(summary, '[data-dividend-change-selection-delta]', delta, true);
 				}
-				var rows = card.querySelectorAll('[data-dividend-change-row]');
-				for (var i = 0; i < rows.length; i++) {
-					(function(row) {
-						row.addEventListener('click', function(event) {
-							if (event.target && event.target.closest('button, a, input, label, select, textarea')) return;
-							setRow(this, this.getAttribute('aria-selected') !== 'true');
-							update();
-						});
-						row.addEventListener('keydown', function(event) {
-							if (event.target && event.target.closest('button, a, input, label, select, textarea')) return;
-							if (event.key !== 'Enter' && event.key !== ' ') return;
-							event.preventDefault();
-							setRow(this, this.getAttribute('aria-selected') !== 'true');
-							update();
-						});
-					})(rows[i]);
-				}
-				var clearButton = card.querySelector('[data-dividend-change-selection-clear]');
-				if (clearButton) {
-					clearButton.addEventListener('click', function() {
-						var selected = card.querySelectorAll('[data-dividend-change-row][aria-selected="true"]');
-						for (var i = 0; i < selected.length; i++) setRow(selected[i], false);
-						update();
-					});
-				}
+				RS.bind(card, '[data-dividend-change-row]', '[data-dividend-change-selection-clear]', update);
 			})();
 			</script>
 	`)

@@ -53,10 +53,6 @@ public record LedgerIntegrityResponse(
     return findings == null || findings.isEmpty();
   }
 
-  public long checkedCount() {
-    return dividendCount + tradeCount;
-  }
-
   /** 규칙 중복을 걷어내기 전 발견 건수. */
   public int totalFindingCount() {
     return findings == null ? 0 : findings.stream().mapToInt(Finding::count).sum();

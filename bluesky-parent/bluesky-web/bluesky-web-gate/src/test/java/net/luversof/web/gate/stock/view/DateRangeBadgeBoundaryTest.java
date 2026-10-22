@@ -32,7 +32,7 @@ class DateRangeBadgeBoundaryTest {
 
   private static final String DETAIL_FILTER =
       "stock/htmx/fragments/components/detailDateFilter.jte";
-  private static final String NAV_BAR = "stock/htmx/fragments/dateRangeNavBar.jte";
+  private static final String NAV_BAR = "stock/htmx/fragments/components/dateRangeNavBar.jte";
 
   @BeforeAll
   static void primeMessages() {

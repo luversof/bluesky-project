@@ -36,11 +36,6 @@ public class StockItemService {
   @Autowired
   private net.luversof.api.stock.repository.StockPriceHistoryRepository stockPriceHistoryRepository;
 
-  public void setStockPriceHistoryRepository(
-      net.luversof.api.stock.repository.StockPriceHistoryRepository stockPriceHistoryRepository) {
-    this.stockPriceHistoryRepository = stockPriceHistoryRepository;
-  }
-
   /**
    * 한 종목의 일별 종가. 종목 상세의 주가 차트가 쓴다.
    *
@@ -83,10 +78,6 @@ public class StockItemService {
               row.tradeDate(), row.closePrice()));
     }
     return points;
-  }
-
-  public void setStockItemRepository(StockItemRepository stockItemRepository) {
-    this.stockItemRepository = stockItemRepository;
   }
 
   /**
@@ -136,18 +127,11 @@ public class StockItemService {
     return attachTags(stockItemRepository.findByName(name));
   }
 
-  public Iterable<StockItem> findAllById(Iterable<UUID> ids) {
-    List<StockItem> list = new ArrayList<>();
-    stockItemRepository.findAllById(ids).forEach(list::add);
-    attachTags(list);
-    return list;
-  }
-
   /**
    * 태그를 붙이지 않는 종목 조회.
    *
-   * <p>손익·시뮬레이션 경로는 종목을 심볼/이름(그룹 키)으로만 쓰는데, {@link #findAllById} 는 늘 태그 테이블을 한 번 더 읽는다(실측:
-   * holdingsSnapshotBatch 스택 샘플의 15% 가 attachTags). 그 경로에서는 이 메서드를 쓴다.
+   * <p>손익·시뮬레이션 경로는 종목을 심볼/이름(그룹 키)으로만 쓰는데, 태그를 붙이는 조회(findAll · findAllByTag 처럼 attachTags 를 거치는
+   * 것)는 늘 태그 테이블을 한 번 더 읽는다(실측: holdingsSnapshotBatch 스택 샘플의 15% 가 attachTags). 그 경로에서는 이 메서드를 쓴다.
    */
   public Iterable<StockItem> findAllByIdWithoutTags(Iterable<UUID> ids) {
     return stockItemRepository.findAllById(ids);

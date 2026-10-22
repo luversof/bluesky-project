@@ -1,6 +1,5 @@
 package net.luversof.web.gate.poe2.controller;
 
-import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -396,10 +395,9 @@ public class Poe2ViewController {
    * 패치 서버 기준(한국은 카카오 CDN 번호를 GGG 식으로 옮겨 비교).
    */
   @GetMapping("/admin")
-  public String admin(Model model, Principal principal) {
+  public String admin(Model model) {
     Poe2.Meta meta = meta();
     model.addAttribute("meta", meta);
-    model.addAttribute("loggedIn", principal != null);
     Poe2.ExtractVersion version = null;
     Poe2.ExtractStatus status = null;
     try {
@@ -413,7 +411,6 @@ public class Poe2ViewController {
         version != null && version.dataPatch() != null ? version.dataPatch() : meta.patch());
     model.addAttribute("latestPatch", version == null ? null : version.latestPatch());
     model.addAttribute("upToDate", version != null && Boolean.TRUE.equals(version.upToDate()));
-    model.addAttribute("latestCdnVersion", version == null ? null : version.latestCdnVersion());
     model.addAttribute("dataDir", dataDir);
     model.addAttribute(
         "imageMagickInstalled",

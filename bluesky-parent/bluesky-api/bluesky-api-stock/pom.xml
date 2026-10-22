@@ -58,6 +58,7 @@
 		<dependency>
 			<groupId>tools.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-csv</artifactId>
+			<scope>test</scope>
 		</dependency>
 
 		<!-- (s) bluesky-boot -->

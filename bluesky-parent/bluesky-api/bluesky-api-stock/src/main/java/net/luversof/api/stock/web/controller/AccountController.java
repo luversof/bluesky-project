@@ -21,10 +21,6 @@ public class AccountController {
 
   @Autowired private AccountService accountService;
 
-  public void setAccountService(AccountService accountService) {
-    this.accountService = accountService;
-  }
-
   @PostMapping
   public Account createAccount(@RequestBody Account account) {
     return accountService.createAccount(account);

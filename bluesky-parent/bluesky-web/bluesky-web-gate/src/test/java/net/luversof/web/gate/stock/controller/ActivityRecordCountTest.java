@@ -115,7 +115,16 @@ class ActivityRecordCountTest {
       from = at + 1;
     }
 
-    assertThat(recordCountSums).as("매수·매도·배당 건수를 두 화면(이번 달 요약 · 활동 목록)에서 세므로 여섯 군데다").isEqualTo(6);
+    // 2026-10-22: 두 화면(이번 달 요약 · 활동 목록)의 매수 · 매도 · 배당 건수가 addActivityTotals 한 곳으로 모였다 - 그 한 곳이
+    // recordCount 로 세고, 두 화면이 모두 그것을 부른다.
+    assertThat(recordCountSums).as("건수는 recordCount 로 센다(공용 함수 한 곳)").isEqualTo(1);
+    int callers = 0;
+    for (int at = source.indexOf("addActivityTotals(model, ");
+        at >= 0;
+        at = source.indexOf("addActivityTotals(model, ", at + 1)) {
+      callers++;
+    }
+    assertThat(callers).as("최근 활동 · 활동 목록 두 화면이 같은 계산을 부른다").isEqualTo(2);
   }
 
   @Test

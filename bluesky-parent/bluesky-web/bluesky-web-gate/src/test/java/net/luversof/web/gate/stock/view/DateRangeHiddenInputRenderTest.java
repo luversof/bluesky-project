@@ -41,7 +41,7 @@ import io.github.luversof.boot.context.support.MessageUtil;
  *
  * <p>그래서 서버 대신 <b>조각을 그려서</b> 확인한다. 로그인이 필요 없고 빌드에서 돈다.
  *
- * <p>실측 2026-08-24: 아래 여섯 조각이 네 개를 모두 그린다.
+ * <p>실측 2026-08-24: 아래 여섯 조각이 네 개를 모두 그린다(2026-10-22 배당 · 매매 폼을 하나로 합쳐 다섯).
  */
 class DateRangeHiddenInputRenderTest {
 
@@ -56,8 +56,8 @@ class DateRangeHiddenInputRenderTest {
           "stock/htmx/asset-growth.jte",
           "stock/htmx/fragments/activityList.jte",
           "stock/htmx/fragments/components/detailDateFilter.jte",
-          "stock/htmx/fragments/dividend/dividendSearchForm.jte",
-          "stock/htmx/fragments/trade/tradeSearchForm.jte");
+          // 배당 · 매매 상세 조회 폼(2026-10-22 에 dividendSearchForm · tradeSearchForm 두 벌을 하나로 합쳤다)
+          "stock/htmx/fragments/components/listSearchForm.jte");
 
   private static final List<String> REQUIRED_SUFFIXES =
       List.of("StartInstantInput", "EndInstantInput", "TimeZoneInput", "RangeModeInput");

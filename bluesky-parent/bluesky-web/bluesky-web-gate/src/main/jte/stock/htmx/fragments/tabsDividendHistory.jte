@@ -48,6 +48,10 @@
 @param BigDecimal prevPeriodNetAmount = null
 @param LocalDate prevStartDate = null
 @param LocalDate prevEndDate = null
+<%-- 달력 프리셋(이번 달 · 올해)이 아직 진행 중이면 [경과일, 총일수] - 전기 비교 카드에 "비교 기간 진행 중" 을 붙인다.
+     컨트롤러는 넣고 있었는데 이 조각이 받지 않아 카드까지 오지 않았다(2026-10-21). --%>
+@param int currentPeriodElapsedDays = 0
+@param int currentPeriodTotalDays = 0
 @param List<DividendChange> dividendChangeContributors = java.util.List.of()
 @param BigDecimal portfolioYieldOnDailyAverageCostPct = null
 @param BigDecimal portfolioYieldOnCostPct = null
@@ -116,8 +120,6 @@
 	}
 
 	// Build JSON for charts
-	java.util.function.Function<String, String> ej = s ->
-		s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
 	DateTimeFormatter ymd = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	// 차트가 쓰는 것은 월(payDate)·종목·계좌·세후 금액이다(gross 는 dividendHistory.ts 가 읽지 않는다).
 	// 종목/계좌 이름은 줄마다 되풀이되므로 색인표(S/A)로 한 번만 싣고 줄은 [날짜, 종목#, 계좌#, 세후] 로 줄인다.
@@ -138,16 +140,9 @@
 			.append(si).append(",").append(ai).append(",")
 			.append(d.netAmount() != null ? d.netAmount().toPlainString() : "0").append("]");
 	}
-	java.util.function.Function<java.util.Set<String>, String> namesJs = names -> {
-		StringBuilder sb = new StringBuilder("[");
-		int i = 0;
-		for (String name : names) {
-			if (i++ > 0) sb.append(",");
-			sb.append("\"").append(ej.apply(name)).append("\"");
-		}
-		return sb.append("]").toString();
-	};
-	String dividendDataJs = "const S=" + namesJs.apply(stockIndex.keySet()) + ",A=" + namesJs.apply(accountIndex.keySet())
+	// 이름표(S/A)는 JS 문자열 배열로 - 따옴표 · 역슬래시 · 꺾쇠(<) 와 제어문자를 막는다(ChartSeriesJs.jsString). 2026-10-22 까지 매매 목록 · 배당 목록 ·
+	// 활동 목록이 제각각 이스케이프를 들고 있었고 < 를 막지 않아, 이름에 </script> 가 들어가면 아래 $unsafe 스크립트가 끊겼다.
+	String dividendDataJs = "const S=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(stockIndex.keySet()) + ",A=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(accountIndex.keySet())
 		+ ",dividendData=[" + rowsSb + "].map(function(r){return {payDate:r[0],stockItem:S[r[1]],account:A[r[2]],net:r[3]};});";
 
 	// Nav 버튼 활성화 여부 (use client timezone if available)
@@ -198,7 +193,7 @@
 
 <div id="dividendListFragment">
 
-	@template.stock.htmx.fragments.dateRangeNavBar(
+	@template.stock.htmx.fragments.components.dateRangeNavBar(
 		pickerName = "dividendPicker",
 		btnClass = "date-range-btn",
 		canPrev = canPrev,
@@ -210,7 +205,12 @@
 		coveredEndDate = coveredRange.endDate()
 	)
 
-	@template.stock.htmx.fragments.dividend.dividendSearchForm(
+	@template.stock.htmx.fragments.components.listSearchForm(
+		formId = "dividendSearchForm",
+		contentUrl = "/stock/htmx/dividend/list",
+		fragmentId = "dividendListFragment",
+		idPrefix = "dividend",
+		summaryLabel = MessageUtil.getMessage("common.label.detail") + " " + MessageUtil.getMessage("common.button.search"),
 		accountList = accountList,
 		stockItemList = stockItemList,
 		stockTagList = stockTagList,
@@ -225,8 +225,7 @@
 		rangeMode = rangeMode,
 		zone = zone,
 		accountLabel = accountLabel,
-		stockNameLabel = stockNameLabel,
-		tagLabel = tagLabel
+		stockLabel = stockNameLabel
 	)
 
 	<!-- Dashboard -->
@@ -256,7 +255,9 @@
 		otherWindowNetAmount = otherWindowNetAmount,
 		midMonthCount = midMonthCount,
 		monthEndCount = monthEndCount,
-		otherWindowCount = otherWindowCount
+		otherWindowCount = otherWindowCount,
+		currentPeriodElapsedDays = currentPeriodElapsedDays,
+		currentPeriodTotalDays = currentPeriodTotalDays
 	)
 
 	<%-- 기간이 달력 한 달이면 그 달의 지급을 날짜에 놓는다. 금액은 아래 목록과 같은 행에서 온다(필터도 같다).

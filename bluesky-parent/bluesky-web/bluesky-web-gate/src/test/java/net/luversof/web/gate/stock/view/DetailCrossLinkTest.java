@@ -100,14 +100,13 @@ class DetailCrossLinkTest {
   void 종목_상세에서_계좌_상세로_갈_수_있다() {
     UUID accountId = UUID.fromString("00000000-0000-0000-0000-0000000000a1");
     Map<String, Object> model = new HashMap<>();
-    model.put("contentReady", true);
     model.put("stockItem", new StockItem(UUID.randomUUID(), "005930", "표본종목", "KOSPI", List.of()));
     model.put("evaluationAmount", new BigDecimal("1100000"));
     model.put("accountHoldings", List.of(accountHolding(accountId, "표본계좌")));
 
     StringOutput output = new StringOutput();
     TemplateEngine.createPrecompiled(ContentType.Html)
-        .render("stock/stockItemDetail.jte", model, output);
+        .render("stock/htmx/stockItemDetailContent.jte", model, output);
 
     assertThat(output.toString())
         .as("이 방향 링크만 없어서 종목에서 계좌로 가려면 뒤로 가야 했다")

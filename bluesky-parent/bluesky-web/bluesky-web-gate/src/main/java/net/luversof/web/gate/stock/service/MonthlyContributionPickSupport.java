@@ -10,6 +10,8 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import net.luversof.web.gate.stock.util.StockAmountUtil;
+
 /**
  * 이번에 무엇을 적립할까(사용자 요청 2026-09-22).
  *
@@ -286,9 +288,10 @@ public class MonthlyContributionPickSupport {
           || candidate.payoutCutPairs() <= 0) {
         return null;
       }
-      return BigDecimal.valueOf(candidate.payoutCutPairs() - candidate.payoutCutCount())
-          .multiply(BigDecimal.valueOf(100))
-          .divide(BigDecimal.valueOf(candidate.payoutCutPairs()), 2, RoundingMode.HALF_UP);
+      return StockAmountUtil.percentOrNull(
+          BigDecimal.valueOf(candidate.payoutCutPairs() - candidate.payoutCutCount()),
+          BigDecimal.valueOf(candidate.payoutCutPairs()),
+          2);
     }
     return valueOf(
         basis,

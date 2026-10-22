@@ -73,7 +73,7 @@ class MonthlyDividendSelectionA11yTest {
     List<String> missing = new ArrayList<>();
     int rows = 0;
     for (String fragment : SELECTABLE_FRAGMENTS) {
-      String html = Files.readString(Path.of(fragment), StandardCharsets.UTF_8);
+      String html = YieldAnalyticsSource.readForScan(Path.of(fragment));
       int selectable = count(html, "aria-selected=" + (char) 34 + "false" + (char) 34);
       int marked = count(html, "data-row-select=");
       rows += selectable;
@@ -98,7 +98,7 @@ class MonthlyDividendSelectionA11yTest {
     assertThat(css).as("row-select-box 모양 정의가 없다").contains(".row-select-box {");
 
     for (String fragment : SELECTABLE_FRAGMENTS) {
-      String html = Files.readString(Path.of(fragment), StandardCharsets.UTF_8);
+      String html = YieldAnalyticsSource.readForScan(Path.of(fragment));
       assertThat(html)
           .as(fragment + " 이 조각 안에서 체크박스를 따로 만들고 있다 - 처리는 한 곳이어야 한다")
           .doesNotContain("data-row-select-checkbox");

@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@source "../resources/templates";
 @source "../jte";
 @source "./src";
 @plugin "@tailwindcss/typography";
@@ -314,10 +313,9 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	/* 입력칸·체크박스는 배경이 주변과 같아 경계선이 유일한 단서다 - 3:1 을 넘는 색을 쓴다(위 토큰 주석 참조).
 	   daisyUI 규칙이 `border: 2px solid var(--color-base-300)` 이라 :where() 로 덮으면 특이도 0 이라 진다.
 	   그 변수를 컨트롤 안에서만 바꿔 daisyUI 자신의 규칙이 새 값을 집게 한다(특이도 다툼 없음). */
-	.input, .textarea, .select, .checkbox, .radio, .toggle, .file-input {
+	.input, .textarea, .select, .checkbox, .radio, .toggle {
 		--color-base-300: var(--color-control-line);
 	}
-	a.card:hover, .card-hoverable:hover { box-shadow: var(--shadow-card-hover); }
 	/* ---- 지표 카드 ---- */
 	/* 회색 상자 + 작은 글자 두 줄이던 것을 카드 표면 + 아이콘 칩 + 큰 값 + 알약 보조문구로 바꿨다. */
 	.stat-card {

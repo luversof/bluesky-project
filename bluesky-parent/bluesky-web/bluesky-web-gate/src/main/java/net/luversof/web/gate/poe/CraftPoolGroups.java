@@ -23,6 +23,31 @@ public final class CraftPoolGroups {
 
   private CraftPoolGroups() {}
 
+  /**
+   * 계열을 펼치면 불러오는 '같은 옵션을 얻는 다른 길' 주소(10-22 P4) — 아이템 종류 · 변형 · 영향력 · 아이템 레벨까지, 계열은 줄마다 &family= 로
+   * 붙인다.
+   */
+  public static String waysUrl(
+      String base, String itemClass, String variant, String influence, int ilvl) {
+    java.util.function.UnaryOperator<String> enc =
+        v ->
+            java.net.URLEncoder.encode(v == null ? "" : v, java.nio.charset.StandardCharsets.UTF_8);
+    return base
+        + "?itemClass="
+        + enc.apply(itemClass)
+        + "&variant="
+        + enc.apply(variant)
+        + "&influence="
+        + enc.apply(influence)
+        + "&ilvl="
+        + ilvl;
+  }
+
+  /** 계열 키를 주소 인자로. */
+  public static String enc(String v) {
+    return java.net.URLEncoder.encode(v == null ? "" : v, java.nio.charset.StandardCharsets.UTF_8);
+  }
+
   /** 줄에서 꺼내는 함수 — id · 접두/접미 · 계열 · 등급 순위(1 = 최상위, 없으면 null) · 지금 붙을 확률. */
   public record Accessors<T>(
       Function<T, String> id,
@@ -110,24 +135,6 @@ public final class CraftPoolGroups {
       out.add(
           new Family<>(
               a.gen().apply(top), e.getKey(), top, tiers, sum, tiers.get(0).chance(), applied));
-    }
-    return out;
-  }
-
-  /** 묶음 어느 계열에도 없는 id(붙은 옵션 중 풀 밖 — 제작대 · 에센스 전용 등). */
-  public static <T> Set<String> unmatched(
-      List<Family<T>> groups, Collection<String> ids, Accessors<T> a) {
-    Set<String> known = new HashSet<>();
-    for (Family<T> f : groups) {
-      for (Tier<T> t : f.tiers()) {
-        known.add(a.id().apply(t.line()));
-      }
-    }
-    Set<String> out = new java.util.LinkedHashSet<>();
-    for (String id : ids) {
-      if (id != null && !known.contains(id)) {
-        out.add(id);
-      }
     }
     return out;
   }

@@ -12,6 +12,8 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.stock.view.YieldAnalyticsSource;
+
 /**
  * 폭 때문에 숨긴 열은 인쇄에서 되살려야 한다.
  *
@@ -81,7 +83,8 @@ class PrintColumnRestoreTest {
       "stockContributionTable.jte",
     };
     for (String name : restored) {
-      String template = Files.readString(FRAGMENTS.resolve(name), StandardCharsets.UTF_8);
+      // 배당 수익 분석의 종목 · 계좌 카드는 조각(dividendYieldGroupCard.jte)이라 펼쳐 읽는다(2026-10-22).
+      String template = YieldAnalyticsSource.readForScan(FRAGMENTS.resolve(name));
       assertThat(template)
           .as(name + " 에 인쇄 복원이 없는 lg 열이 남았다")
           .doesNotContain("hidden lg:table-cell\"");

@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -83,7 +84,7 @@ public class StockAdminApiController {
 
   /** 전체 갱신 작업의 진행 상황. 화면이 주기적으로 물어본다. */
   @BlueskyPreAuthorize
-  @org.springframework.web.bind.annotation.GetMapping("/price-histories/status")
+  @GetMapping("/price-histories/status")
   public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus>
       priceHistoryUpdateStatus() {
     if (UserUtil.getUserId() == null) {

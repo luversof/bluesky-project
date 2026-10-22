@@ -11,6 +11,7 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.stock.support.StockParamException;
 import net.luversof.web.gate.stock.support.StockSortParamException;
 
 /**
@@ -59,10 +60,16 @@ class StockSortUtilTest {
       String source = Files.readString(Path.of(rel), StandardCharsets.UTF_8);
       // 서식에는 묶지 않는다 - spotless 가 default 화살표와 throw 를 두 줄로 나눈다(실측 2026-09-11).
       assertThat(source)
-          .as(rel + " 의 비교기 switch 는 모르는 이름에서 끊어야 한다")
+          .as(rel + " 의 열 지도는 모르는 이름에서 끊어야 한다")
           .contains(
               "throw new net.luversof.web.gate.stock.support.StockSortParamException(\"sort\", sort);");
-      assertThat(source).as(rel + " 에 조용한 무시가 남아 있으면 안 된다").doesNotContain("default -> null;");
+      // 2026-10-22 부터 비교기는 열 지도에서 꺼낸다 - 없으면 끊고(null 확인), 기본값으로 넘기지 않는다.
+      assertThat(source)
+          .as(rel + " 가 지도에서 꺼낸 비교기를 확인하지 않는다")
+          .contains("SORTS.get(field);", "if (comparator == null) {");
+      assertThat(source)
+          .as(rel + " 에 조용한 무시가 남아 있으면 안 된다")
+          .doesNotContain("SORTS.getOrDefault(field");
     }
   }
 
@@ -72,10 +79,16 @@ class StockSortUtilTest {
         Files.readString(
             Path.of("src/main/java/net/luversof/web/gate/stock/config/StockHtmxErrorResolver.java"),
             StandardCharsets.UTF_8);
-    assertThat(countOccurrences(resolver, "StockSortParamException"))
+    // 2026-10-22 부터 해석기는 다섯 인자 예외를 공통 부모(StockParamException) 하나로 본다 - 부모가 판정 · 문구 두 곳에 쓰이고,
+    // 이 예외는 그 부모를 이어받아 제 문구 키를 말한다.
+    assertThat(
+            countOccurrences(
+                resolver, "instanceof net.luversof.web.gate.stock.support.StockParamException"))
         .as("4xx 판정 한 번 + 문구 선택 한 번")
         .isEqualTo(2);
-    assertThat(resolver).contains("stock.error.badrequest.sort.desc");
+    StockSortParamException thrown = new StockSortParamException("sort", "BOGUS");
+    assertThat(thrown).isInstanceOf(StockParamException.class);
+    assertThat(thrown.descKey()).isEqualTo("stock.error.badrequest.sort.desc");
     for (String bundle : new String[] {"uiMessage.properties", "uiMessage_ko.properties"}) {
       assertThat(
               Files.readString(

@@ -11,18 +11,16 @@ package net.luversof.web.gate.stock.support;
  * <p>The upper end is not checked here: a bookmarked page 10 should still open when the list has
  * shrunk to five pages, so that side keeps clamping to the last page.
  */
-public class StockPageNumberParamException extends RuntimeException {
+public class StockPageNumberParamException extends StockParamException {
 
   private static final long serialVersionUID = 1L;
 
-  private final String name;
-
   public StockPageNumberParamException(String name, int value) {
-    super("page parameter cannot be used: " + name + "=" + value);
-    this.name = name;
+    super("page parameter cannot be used: " + name + "=" + value, name, null);
   }
 
-  public String getName() {
-    return name;
+  @Override
+  public String descKey() {
+    return "stock.error.badrequest.page.desc";
   }
 }

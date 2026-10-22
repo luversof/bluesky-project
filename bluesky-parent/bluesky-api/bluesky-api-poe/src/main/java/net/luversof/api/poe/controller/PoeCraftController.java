@@ -63,14 +63,26 @@ public class PoeCraftController {
     return calc.spam(req);
   }
 
-  /** 화석 조합 기준 첫 옵션 확률 요청(C504) — fossils = 화석 슬러그 쉼표 목록. */
-  public record FossilPoolRequest(PoeCraftEngine.Item item, String fossils) {}
+  /** 같은 옵션을 얻는 다른 길 요청(10-22 P4) — family = 접두/접미:계열(계산기 목표 키와 같다). */
+  public record FamilyWaysRequest(PoeCraftEngine.Item item, String family) {}
 
-  /** 화석 조합 기준 첫 옵션 확률(10-20 C504, craftofexile 화석 풀). */
-  @PostMapping(value = "/fossil-pool", consumes = MediaType.APPLICATION_JSON_VALUE)
-  public List<PoeCraftService.PoolLine> fossilPool(@RequestBody FossilPoolRequest req) {
+  /** 같은 옵션을 얻는 다른 길(10-22 P4) — 에센스 · 제작대 · 화석 배수 · 수확. */
+  @PostMapping(value = "/family-ways", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public net.luversof.api.poe.service.PoeCraftCalcService.FamilyWays familyWays(
+      @RequestBody FamilyWaysRequest req) {
     check(req.item());
-    return craft.fossilPool(req.item(), req.fossils());
+    return calc.familyWays(req.item(), req.family());
+  }
+
+  /** 고른 화폐 기준 옵션 표(10-22 P3) — 요청은 화폐 적용과 같다(씨앗은 무시). */
+  @PostMapping(value = "/action-pool", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public PoeCraftService.ActionPool actionPool(@RequestBody ApplyRequest req) {
+    check(req.item());
+    if (req.action() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "action 이 없습니다");
+    }
+    return craft.actionPool(
+        req.item(), req.action(), req.arg() != null ? req.arg() : req.essence());
   }
 
   /** 화폐 한 번의 목표 적중 확률(10-20 C494) — 에뮬레이터 화폐 단추마다. */
@@ -101,10 +113,6 @@ public class PoeCraftController {
     return importer.parse(req.text());
   }
 
-  /**
-   * 최적 제작 경로(10-19 C457 사용자 요청) — 에센스 · 제작대 · 짐승 · 화폐를 섞어 목표까지 성공 한 번당 최소 기대 비용과 상태별 수단(정책). 시간
-   * 예산(budgetMs, 기본 8초) 안에서.
-   */
   /** 최적 제작 경로 백그라운드 시작(C457k) — 작업 id. 기본 20초, 진행은 /optimize/{id}. */
   @PostMapping(value = "/optimize/start", consumes = MediaType.APPLICATION_JSON_VALUE)
   public java.util.Map<String, String> optimizeStart(
@@ -137,6 +145,10 @@ public class PoeCraftController {
     return n;
   }
 
+  /**
+   * 최적 제작 경로(10-19 C457 사용자 요청) — 에센스 · 제작대 · 짐승 · 화폐를 섞어 목표까지 성공 한 번당 최소 기대 비용과 상태별 수단(정책). 시간
+   * 예산(budgetMs, 기본 8초) 안에서. 동기 호출(게이트는 /optimize/start 를 쓴다).
+   */
   @PostMapping(value = "/optimize", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftOptimizer.Result optimize(
       @RequestBody net.luversof.api.poe.service.PoeCraftOptimizer.Request req) {

@@ -194,11 +194,6 @@ public class PoeRareTargetService {
         group.families() == null ? List.of() : List.copyOf(group.families()));
   }
 
-  /**
-   * 최저·최고 롤 문장을 범위 문장으로 — 숫자 자리 말고는 같아야 한다(다르면 최고 롤 문장 그대로). 같은 숫자는 범위로 만들지 않는다.
-   *
-   * <p>예: ("+100 to maximum Life", "+114 to maximum Life") → "+(100-114) to maximum Life"
-   */
   /** 이 옵션의 최저 롤 한국어 문장(거래소 최소값용, 10-08 C171) — 최저 롤 문장이 없으면 최고 롤 문장. */
   public List<String> koMinLines(Affix a) {
     PoeModDataService.ModTier tier = modData.tier(a.tierId());
@@ -209,6 +204,11 @@ public class PoeRareTargetService {
     return lines == null ? List.of() : lines;
   }
 
+  /**
+   * 최저·최고 롤 문장을 범위 문장으로 — 숫자 자리 말고는 같아야 한다(다르면 최고 롤 문장 그대로). 같은 숫자는 범위로 만들지 않는다.
+   *
+   * <p>예: ("+100 to maximum Life", "+114 to maximum Life") → "+(100-114) to maximum Life"
+   */
   static String mergeRange(String min, String max, String open, String sep, String close) {
     if (min == null || max == null) {
       return max;

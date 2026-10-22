@@ -204,7 +204,7 @@ class ItemDetailCardRatesTest {
         .contains(
             "periodSellAmount.signum() > 0 ? periodSellAmount.subtract(realizedProfit) : BigDecimal.ZERO;")
         .contains("model.addAttribute(\"realizedCostBasis\", realizedCostBasis);");
-    assertThat(flatten("src/main/jte/stock/stockItemDetail.jte"))
-        .contains("realizedCostBasis = realizedCostBasis");
+    assertThat(flatten("src/main/jte/stock/htmx/stockItemDetailContent.jte"))
+        .contains("@param BigDecimal realizedCostBasis");
   }
 }

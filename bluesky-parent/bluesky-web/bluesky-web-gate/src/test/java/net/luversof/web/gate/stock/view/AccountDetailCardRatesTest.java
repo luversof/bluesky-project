@@ -278,10 +278,11 @@ class AccountDetailCardRatesTest {
         .as("연평균은 기간 선택과 무관한 전체 거래 값이다")
         .doesNotContain("startDate")
         .doesNotContain("endDate");
-    assertThat(source("src/main/jte/stock/accountDetail.jte"))
-        .contains(squash("realizedCostBasis = realizedCostBasis"))
-        .contains(squash("realizedOwnCostBasis = realizedOwnCostBasis"))
-        .contains(squash("accountReturn = accountReturn"))
-        .contains(squash("accountFirstTradeDate = accountFirstTradeDate"));
+    // 컨트롤러가 내용 템플릿을 바로 돌려주므로(껍데기를 거치지 않는다) 내용 템플릿이 값을 받으면 된다.
+    assertThat(source("src/main/jte/stock/htmx/accountDetailContent.jte"))
+        .contains(squash("@param BigDecimal realizedCostBasis"))
+        .contains(squash("@param BigDecimal realizedOwnCostBasis"))
+        .contains(squash("StockHoldingReturnUtil.Row accountReturn"))
+        .contains(squash("@param LocalDate accountFirstTradeDate"));
   }
 }

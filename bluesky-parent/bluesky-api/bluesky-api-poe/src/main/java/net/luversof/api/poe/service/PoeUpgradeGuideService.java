@@ -51,10 +51,6 @@ public class PoeUpgradeGuideService {
   private static final Logger logger = LoggerFactory.getLogger(PoeUpgradeGuideService.class);
 
   /**
-   * 동시 평가 수 — 격리 경로는 호출마다 luajit 프로세스(단일 스레드)를 띄운다. 이 서버는 논리 코어 28개·메모리 64GB 라 8 로 둔다(레어 목표까지 재면
-   * 평가가 200회 안팎이라 4 로는 3분을 넘었다).
-   */
-  /**
    * 평가 동시 수 — 평가마다 엔진 프로세스를 새로 띄워(calculateValuesIsolated) CPU 가 병목이다. 코어 수 - 4(최소 8, 예전 고정값).
    * 10-02 실빌드 표본(평가 197회): 8 → 93초, 16 → 75초, 24(28 코어) → 60초, 결과 JSON 은 셋 다 같다(평가가 서로 독립).
    */

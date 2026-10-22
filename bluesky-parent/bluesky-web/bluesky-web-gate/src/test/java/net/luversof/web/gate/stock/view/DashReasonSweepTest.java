@@ -43,14 +43,16 @@ class DashReasonSweepTest {
 
   @Test
   void 기준일_원금이_없어_비는_칸은_그렇게_말한다() throws IOException {
-    String template =
-        Files.readString(
-            Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte"),
-            StandardCharsets.UTF_8);
+    String template = YieldAnalyticsSource.expanded();
 
-    assertThat(template)
-        .as("기준일 원금이 없거나 0 이면 까닭을 돌려주는 판정이 있어야 한다")
-        .contains("principalCost == null || principalCost.signum() == 0 ? basisNoneTitle : null");
+    // 판정 식은 DividendYieldViewUtil.basisNoneOrNull 한 곳(동작은 DividendYieldViewUtilTest) - 부모(연도별 표)와
+    // 카드(종목 · 계좌)가
+    // 둘 다 그것을 부르는지 본다(2026-10-22 까지 두 템플릿에 식이 한 벌씩 있었다).
+    for (String source : YieldAnalyticsSource.definitionSources()) {
+      assertThat(source)
+          .as("기준일 원금이 없거나 0 이면 까닭을 돌려주는 판정을 공용 식으로 부른다")
+          .contains("basisNoneOrNull = DividendYieldViewUtil::basisNoneOrNull;");
+    }
     assertThat(template).contains("stock.dividend.yield.basis.none");
     // 세 표(연도별·종목별·계좌별)의 금액 칸 하나씩, 수익률 칸 하나씩.
     assertThat(
@@ -84,10 +86,7 @@ class DashReasonSweepTest {
   /** 기간 일평균 투입원금도 비면 까닭을 단다 - 매매 없이 배당만 있는 종목(실측: 하나금융지주)이 여기에 걸린다. */
   @Test
   void 기간_투입원금이_없어_비는_칸도_그렇게_말한다() throws IOException {
-    String template =
-        Files.readString(
-            Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte"),
-            StandardCharsets.UTF_8);
+    String template = YieldAnalyticsSource.expanded();
 
     assertThat(template).contains("stock.dividend.yield.daily.basis.none");
     assertThat(

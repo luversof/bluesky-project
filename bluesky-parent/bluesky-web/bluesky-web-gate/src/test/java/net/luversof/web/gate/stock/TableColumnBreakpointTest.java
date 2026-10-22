@@ -11,6 +11,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.stock.view.YieldAnalyticsSource;
+
 /**
  * 열을 펴는 분기점은 그 열이 실제로 들어가는 폭이어야 한다.
  *
@@ -21,9 +23,6 @@ import org.junit.jupiter.api.Test;
  * <p>1,535px 에서는 6열만 보여 멀쩡하다가 1,536px 에서 갑자기 가로 스크롤이 생기는 것이 더 나쁘므로, 들어가는 폭에서 편다.
  */
 class TableColumnBreakpointTest {
-
-  private static final Path YIELD_ANALYTICS =
-      Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte");
 
   private static final String SORTABLE_TABLE = "data-dividend-yield-sortable-table";
 
@@ -37,7 +36,7 @@ class TableColumnBreakpointTest {
 
   @Test
   void rankingTablesRevealColumnsWhereTheyFit() throws IOException {
-    String source = Files.readString(YIELD_ANALYTICS, StandardCharsets.UTF_8);
+    String source = YieldAnalyticsSource.expanded();
     int firstRanking = source.indexOf(SORTABLE_TABLE);
 
     assertThat(firstRanking).as("정렬 가능한 랭킹 표를 찾지 못했다").isGreaterThan(0);
@@ -55,7 +54,7 @@ class TableColumnBreakpointTest {
    */
   @Test
   void rankingTablesStillHaveTheWideOnlyColumns() throws IOException {
-    String source = Files.readString(YIELD_ANALYTICS, StandardCharsets.UTF_8);
+    String source = YieldAnalyticsSource.expanded();
     int firstRanking = source.indexOf(SORTABLE_TABLE);
 
     long extra =
@@ -208,7 +207,7 @@ class TableColumnBreakpointTest {
 
   @Test
   void narrowerTablesKeepTheirOwnBreakpoint() throws IOException {
-    String source = Files.readString(YIELD_ANALYTICS, StandardCharsets.UTF_8);
+    String source = YieldAnalyticsSource.expanded();
     int firstRanking = source.indexOf(SORTABLE_TABLE);
     String before = source.substring(0, firstRanking);
 

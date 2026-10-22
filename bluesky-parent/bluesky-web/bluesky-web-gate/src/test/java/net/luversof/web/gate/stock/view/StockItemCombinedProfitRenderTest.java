@@ -34,7 +34,7 @@ import net.luversof.web.gate.stock.domain.StockItem;
  */
 class StockItemCombinedProfitRenderTest {
 
-  private static final String TEMPLATE = "stock/stockItemDetail.jte";
+  private static final String TEMPLATE = "stock/htmx/stockItemDetailContent.jte";
 
   @BeforeAll
   static void primeMessages() {
@@ -61,7 +61,6 @@ class StockItemCombinedProfitRenderTest {
    */
   private Map<String, Object> model() {
     Map<String, Object> model = new HashMap<>();
-    model.put("contentReady", true);
     model.put("stockItem", new StockItem(UUID.randomUUID(), "005930", "표본종목", "KOSPI", List.of()));
     model.put("evaluationAmount", bd("1900000"));
     model.put("evaluationProfit", bd("900000"));

@@ -103,13 +103,4 @@ public class PoeEngineUnmodeledDataService {
   public AscendancySummary summaryOf(String ascendancy) {
     return data.ascendancySummary().get(ascendancy);
   }
-
-  /** 그 전직의 스탯 노드 중 미모델링 비율(0~1). 데이터가 없거나 모르는 전직이면 0. */
-  public double unmodeledShare(String ascendancy) {
-    AscendancySummary summary = data.ascendancySummary().get(ascendancy);
-    if (summary == null || summary.total() <= 0) {
-      return 0d;
-    }
-    return (double) summary.unmodeled() / summary.total();
-  }
 }

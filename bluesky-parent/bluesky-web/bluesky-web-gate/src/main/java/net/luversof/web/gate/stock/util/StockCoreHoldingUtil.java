@@ -1,7 +1,8 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,10 +36,6 @@ public final class StockCoreHoldingUtil {
    * <p>화면 문구가 아니라 <b>데이터 값</b>이다 &mdash; {@code StockItemTag} 테이블에 그대로 저장된 문자열이라 로케일에 따라 바뀌면 안 된다.
    */
   public static final String CORE_TAG = "핵심";
-
-  private static BigDecimal nz(BigDecimal v) {
-    return v == null ? BigDecimal.ZERO : v;
-  }
 
   /** 핵심 태그가 달린 종목 id. 태그를 단 종목이 없으면 빈 집합이다. */
   public static Set<UUID> coreStockItemIds(List<StockItem> stockItemList) {
@@ -74,6 +71,32 @@ public final class StockCoreHoldingUtil {
       BigDecimal combinedProfit) {}
 
   public record Split(Sleeve core, Sleeve rest) {}
+
+  /**
+   * 보유 스냅샷(그날 종목별 평가액)에서 핵심 종목이 차지하는 비중(%, 소수 한 자리). 값이 없는 줄은 건너뛰고, 전체나 핵심 몫이 0 이하면(핵심을 안 들고 있거나
+   * 스냅샷이 비면) null - 화면은 비중을 적지 않는다. 자산 성장 화면이 기간 끝 스냅샷으로 쓴다(2026-10-22 까지 핸들러 안에 적혀 있었고 시험이 없었다).
+   */
+  public static BigDecimal snapshotWeightPct(
+      List<net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem> items,
+      Set<UUID> coreIds) {
+    if (items == null || coreIds == null) {
+      return null;
+    }
+    BigDecimal totalValue = BigDecimal.ZERO;
+    BigDecimal coreValue = BigDecimal.ZERO;
+    for (var item : items) {
+      if (item == null || item.value() == null) {
+        continue;
+      }
+      totalValue = totalValue.add(item.value());
+      if (coreIds.contains(item.stockItemId())) {
+        coreValue = coreValue.add(item.value());
+      }
+    }
+    return totalValue.signum() > 0 && coreValue.signum() > 0
+        ? StockAmountUtil.percentOrNull(coreValue, totalValue, 1)
+        : null;
+  }
 
   /**
    * @param profitRows 종목(또는 계좌x종목) 단위 손익. 같은 종목이 여러 줄이면 합친다.
@@ -187,9 +210,6 @@ public final class StockCoreHoldingUtil {
   }
 
   private static BigDecimal pct(BigDecimal part, BigDecimal total) {
-    if (total == null || total.signum() <= 0) {
-      return BigDecimal.ZERO;
-    }
-    return part.multiply(BigDecimal.valueOf(100)).divide(total, 1, RoundingMode.HALF_UP);
+    return nz(StockAmountUtil.percentOrNull(part, total, 1));
   }
 }

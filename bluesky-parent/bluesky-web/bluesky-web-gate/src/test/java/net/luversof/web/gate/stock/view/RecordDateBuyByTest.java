@@ -205,4 +205,14 @@ class RecordDateBuyByTest {
         page.indexOf("@template.stock.fragments.recordDateBuyBy(rows = monthlyDividendBuyBy)");
     assertThat(buyBy).isPositive().isLessThan(page.indexOf("id=\"monthlyDividendResults\""));
   }
+
+  /** 시뮬레이터 · 월배당 ETF · 대시보드 카드가 같은 목록을 쓴다(2026-10-22 - 세 컨트롤러가 같은 스트림을 따로 적고 있었다). */
+  @Test
+  void 두_지급_창의_매수_마감을_한_번에_돌려준다() {
+    LocalDate today = LocalDate.parse("2026-10-20");
+    assertThat(KrxRecordDateUtil.nextBuyByAllWindows(today))
+        .containsExactly(
+            KrxRecordDateUtil.nextBuyBy(today, "MID_MONTH"),
+            KrxRecordDateUtil.nextBuyBy(today, "MONTH_END"));
+  }
 }

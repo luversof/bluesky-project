@@ -180,4 +180,34 @@ class StockCoreHoldingUtilTest {
     assertThat(split.core().weightPct()).isEqualByComparingTo("0");
     assertThat(split.core().combinedProfit()).isEqualByComparingTo("150");
   }
+
+  private static net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem snap(
+      UUID id, String value) {
+    return new net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem(
+        id, "n", "s", null, null, null, null, value == null ? null : new BigDecimal(value), null);
+  }
+
+  /** 자산 성장 화면의 핵심 보유 비중 - 기간 끝 스냅샷의 평가액 가운데 핵심 종목 몫(2026-10-22 첫 시험). */
+  @Test
+  void 스냅샷_비중은_핵심_몫_나누기_전체이고_값_없는_줄은_건너뛴다() {
+    UUID core = new UUID(0, 1);
+    UUID other = new UUID(0, 2);
+    var items =
+        java.util.Arrays.asList(snap(core, "839"), snap(other, "161"), snap(other, null), null);
+    assertThat(StockCoreHoldingUtil.snapshotWeightPct(items, Set.of(core)))
+        .isEqualByComparingTo("83.9");
+    assertThat(StockCoreHoldingUtil.snapshotWeightPct(items, Set.of(core)).scale()).isEqualTo(1);
+  }
+
+  @Test
+  void 핵심을_안_들고_있거나_스냅샷이_비면_비중이_없다() {
+    UUID core = new UUID(0, 1);
+    UUID other = new UUID(0, 2);
+    assertThat(StockCoreHoldingUtil.snapshotWeightPct(List.of(snap(other, "100")), Set.of(core)))
+        .isNull();
+    assertThat(StockCoreHoldingUtil.snapshotWeightPct(List.of(), Set.of(core))).isNull();
+    assertThat(StockCoreHoldingUtil.snapshotWeightPct(null, Set.of(core))).isNull();
+    assertThat(StockCoreHoldingUtil.snapshotWeightPct(List.of(snap(core, "0")), Set.of(core)))
+        .isNull();
+  }
 }

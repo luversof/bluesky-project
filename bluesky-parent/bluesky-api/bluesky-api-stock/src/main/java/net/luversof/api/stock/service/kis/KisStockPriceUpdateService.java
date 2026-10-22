@@ -122,6 +122,9 @@ public class KisStockPriceUpdateService {
 
   @Autowired private RestTemplate kisRestTemplate;
 
+  /** KIS 일별시세의 날짜 형식(요청 FID_INPUT_DATE_* 와 응답 stck_bsop_date 모두). */
+  private static final DateTimeFormatter KIS_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
+
   @Value("${kis.api.base-url:https://openapi.koreainvestment.com:9443}")
   private String baseUrl;
 
@@ -331,16 +334,6 @@ public class KisStockPriceUpdateService {
   record DateRange(LocalDate start, LocalDate end) {}
 
   /**
-   * 종목 하나를 어느 구간으로 받을지 정한다.
-   *
-   * <ul>
-   *   <li>시작: 원장(매매 · 배당) 이력이 있으면 그 첫날. 없으면 오늘 &mdash; 단 월배당 프로필 종목은 10 영업일 전부터(휴장일 빈손 방지).
-   *   <li>끝: 보유 중이거나 월배당 프로필 종목이면 오늘. 둘 다 아니면 마지막 거래 · 배당일까지만(예전 그대로).
-   * </ul>
-   *
-   * <p>미보유인데 프로필인 종목은 끝이 오늘이 되므로, 이력이 끊긴 날부터 오늘까지 한 번에 메워진다(그 뒤로는 하루치씩).
-   */
-  /**
    * 시세를 받아 올 수 있는 종목인가. KIS 로 조회되는 시장만 대상이다.
    *
    * <p>진행 상황의 분모를 미리 세는 곳과 루프 안에서 거르는 곳이 <b>같은 판정</b>을 쓰게 한 메서드다. 둘을 따로 적으면 분모와 분자가 어긋나 "51 / 53
@@ -353,6 +346,16 @@ public class KisStockPriceUpdateService {
             || "KOSDAQ".equalsIgnoreCase(stockItem.getMarket()));
   }
 
+  /**
+   * 종목 하나를 어느 구간으로 받을지 정한다.
+   *
+   * <ul>
+   *   <li>시작: 원장(매매 · 배당) 이력이 있으면 그 첫날. 없으면 오늘 &mdash; 단 월배당 프로필 종목은 10 영업일 전부터(휴장일 빈손 방지).
+   *   <li>끝: 보유 중이거나 월배당 프로필 종목이면 오늘. 둘 다 아니면 마지막 거래 · 배당일까지만(예전 그대로).
+   * </ul>
+   *
+   * <p>미보유인데 프로필인 종목은 끝이 오늘이 되므로, 이력이 끊긴 날부터 오늘까지 한 번에 메워진다(그 뒤로는 하루치씩).
+   */
   static DateRange resolvePriceWindow(
       LocalDate today,
       LocalDate ledgerMinDate,
@@ -432,19 +435,10 @@ public class KisStockPriceUpdateService {
   private boolean fetchRangesInBlocks(
       UUID userId, UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
     boolean allSucceeded = true;
-    LocalDate currentStartDate = startDate;
-    while (!currentStartDate.isAfter(endDate)) {
-      LocalDate currentEndDate = currentStartDate.plusDays(99);
-      if (currentEndDate.isAfter(endDate)) {
-        currentEndDate = endDate;
-      }
-
-      if (!fetchAndSavePriceHistory(
-          userId, stockItemId, symbol, currentStartDate, currentEndDate)) {
+    for (DateRange block : splitIntoBlocks(List.of(new DateRange(startDate, endDate)))) {
+      if (!fetchAndSavePriceHistory(userId, stockItemId, symbol, block.start(), block.end())) {
         allSucceeded = false;
       }
-
-      currentStartDate = currentEndDate.plusDays(1);
 
       try {
         Thread.sleep(KIS_CALL_INTERVAL_MS);
@@ -514,37 +508,13 @@ public class KisStockPriceUpdateService {
       return false;
     }
 
-    String path = "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice";
-
-    HttpHeaders headers = new HttpHeaders();
-    headers.set("authorization", "Bearer " + config.getAccessToken());
-    headers.set("appkey", config.getAppKey());
-    headers.set("appsecret", config.getAppSecret());
-    headers.set("tr_id", "FHKST03010100");
-
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-
-    String url =
-        UriComponentsBuilder.fromUriString(baseUrl + path)
-            .queryParam("FID_COND_MRKT_DIV_CODE", "J")
-            .queryParam("FID_INPUT_ISCD", symbol)
-            .queryParam("FID_INPUT_DATE_1", startDate.format(formatter))
-            .queryParam("FID_INPUT_DATE_2", endDate.format(formatter))
-            .queryParam("FID_PERIOD_DIV_CODE", "D")
-            .queryParam("FID_ORG_ADJ_PRC", "0")
-            .build()
-            .toUriString();
-
     try {
-      HttpEntity<?> entity = new HttpEntity<>(headers);
-      ResponseEntity<KisDailyPriceResponse> response = exchangeWithRateLimitRetry(url, entity);
-
+      // 수정주가("0")로 받는다 - 원주가는 fillRawClosePrices 가 따로 채운다. 요청 조립은 fetchDailyPrices 한 곳에 있다.
+      List<KisDailyPriceItem> items = fetchDailyPrices(config, symbol, startDate, endDate, "0");
       // 응답이 비었다는 건 그 구간에 시세가 없다는 뜻(휴장 등)이지 실패가 아니다.
-      if (response.getBody() == null || response.getBody().getOutput2() == null) {
+      if (items.isEmpty()) {
         return true;
       }
-
-      List<KisDailyPriceItem> items = response.getBody().getOutput2();
 
       List<StockPriceHistory> existingHistories =
           stockPriceHistoryRepository.findByStockItemIdAndTradeDateBetween(
@@ -570,7 +540,7 @@ public class KisStockPriceUpdateService {
           continue;
         }
 
-        LocalDate tradeDate = LocalDate.parse(item.getStck_bsop_date(), formatter);
+        LocalDate tradeDate = LocalDate.parse(item.getStck_bsop_date(), KIS_DATE);
         StockPriceHistory history = existingHistoryMap.get(tradeDate);
         BigDecimal newOpen = new BigDecimal(item.getStck_oprc());
         BigDecimal newHigh = new BigDecimal(item.getStck_hgpr());
@@ -578,6 +548,7 @@ public class KisStockPriceUpdateService {
         BigDecimal newClose = new BigDecimal(item.getStck_clpr());
         long newVolume = Long.parseLong(item.getAcml_vol());
         boolean shouldSave;
+        boolean meaningfulChange = false;
 
         if (history == null) {
           // 거래량 0 인 날은 그 날 거래가 없었다는 뜻이고, 그럴 때 KIS 는 종가 자리에 직전 종가를 실어 보낸다.
@@ -605,7 +576,7 @@ public class KisStockPriceUpdateService {
           }
 
           // KIS 응답 값이 기존과 실제로 다를 때만 재저장한다(과거 수정주가/거래량 보정 반영).
-          boolean meaningfulChange =
+          meaningfulChange =
               hasMeaningfulHistoryChange(history, newOpen, newHigh, newLow, newClose, newVolume);
 
           // 장중에 저장되어(updatedDate==tradeDate) refresh 대상으로 남아있는 "과거" 거래일 레코드는,
@@ -630,12 +601,8 @@ public class KisStockPriceUpdateService {
         }
 
         if (shouldSave) {
-          boolean shouldInvalidateSnapshots = history.getId() == null;
-          if (!shouldInvalidateSnapshots) {
-            shouldInvalidateSnapshots =
-                hasMeaningfulHistoryChange(history, newOpen, newHigh, newLow, newClose, newVolume);
-          }
-          if (shouldInvalidateSnapshots) {
+          // 새 행이거나 값이 실제로 바뀐 행이면 "과거 평가액이 바뀐다" (판정은 위에서 한 번 했다 - 아직 setter 전이라 같은 값).
+          if (history.getId() == null || meaningfulChange) {
             changedHistoryFromDate = getMin(changedHistoryFromDate, tradeDate);
           }
 
@@ -643,7 +610,7 @@ public class KisStockPriceUpdateService {
           // 오늘 날짜(장중 업데이트)가 아닌 과거 날짜인 경우 → 분할/합병 등 이벤트로 판단
           if (history.getId() != null
               && history.getClosePrice() != null
-              && !tradeDate.isEqual(LocalDate.now(zoneId))) {
+              && !tradeDate.isEqual(today)) {
             BigDecimal oldClose = history.getClosePrice();
             // 변동률 = |신규 - 기존| / 기존
             java.math.BigDecimal changeRatio =
@@ -787,8 +754,7 @@ public class KisStockPriceUpdateService {
                 || day.getStck_clpr() == null) {
               continue;
             }
-            LocalDate date =
-                LocalDate.parse(day.getStck_bsop_date(), DateTimeFormatter.ofPattern("yyyyMMdd"));
+            LocalDate date = LocalDate.parse(day.getStck_bsop_date(), KIS_DATE);
             if (neededSet.contains(date)) {
               filledRows +=
                   stockPriceHistoryRepository.updateRawClosePrice(
@@ -819,7 +785,7 @@ public class KisStockPriceUpdateService {
     return new RawClosePriceFillResult(true, targetDays, filledRows, apiCalls, List.copyOf(failed));
   }
 
-  /** 구간을 100 일 이하로 쪼갠다 - KIS 일별시세는 한 호출에 100 행까지라 더 긴 구간은 앞쪽이 잘린다(fetchRangesInBlocks 와 같은 폭). */
+  /** 구간을 100 일 이하로 쪼갠다 - KIS 일별시세는 한 호출에 100 행까지라 더 긴 구간은 앞쪽이 잘린다(수정주가 · 원주가 받기가 같이 쓴다). */
   static List<DateRange> splitIntoBlocks(List<DateRange> ranges) {
     List<DateRange> blocks = new ArrayList<>();
     for (DateRange range : ranges) {
@@ -848,14 +814,13 @@ public class KisStockPriceUpdateService {
     headers.set("appkey", config.getAppKey());
     headers.set("appsecret", config.getAppSecret());
     headers.set("tr_id", "FHKST03010100");
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
     String url =
         UriComponentsBuilder.fromUriString(
                 baseUrl + "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice")
             .queryParam("FID_COND_MRKT_DIV_CODE", "J")
             .queryParam("FID_INPUT_ISCD", symbol)
-            .queryParam("FID_INPUT_DATE_1", startDate.format(formatter))
-            .queryParam("FID_INPUT_DATE_2", endDate.format(formatter))
+            .queryParam("FID_INPUT_DATE_1", startDate.format(KIS_DATE))
+            .queryParam("FID_INPUT_DATE_2", endDate.format(KIS_DATE))
             .queryParam("FID_PERIOD_DIV_CODE", "D")
             .queryParam("FID_ORG_ADJ_PRC", adjusted)
             .build()

@@ -11,6 +11,8 @@ const OUT = path.join(DATA_DIR, "essences.json");
 const essences = loadTable("English", "Essences");
 const mods = loadTable("English", "Mods");
 const stats = loadTable("English", "Stats");
+// 옵션 태그(10-21 C553 — 에센스 보장 옵션은 craft-mods 의 자연 옵션 표에 없어 태그가 비었다. 확률 표 · 계산기 · 아이템 줄의 태그용)
+const tags = loadTable("English", "Tags");
 const baseEn = loadTable("English", "BaseItemTypes");
 const baseKo = loadTable("Korean", "BaseItemTypes");
 const describe = createStatDescriber(FILES_DIR, [
@@ -86,6 +88,7 @@ for (const [itemClass, column] of Object.entries(CLASS_COLUMN)) {
 			// 제작 엔진(10-15 C335): 보장 옵션 id · 옵션 그룹(같은 그룹 옵션은 같이 못 붙는다) · 아이템 레벨 요구 · 에센스 슬러그
 			modId: mod.Id,
 			groups: mod.Families || [],
+			t: (mod.ImplicitTagsKeys || []).map((i) => tags[i]?.Id).filter(Boolean),
 			modLevel: mod.Level,
 			slug: baseRow?.Id ? baseRow.Id.split("/").pop() : null,
 			en,

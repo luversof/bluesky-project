@@ -234,11 +234,12 @@ class ItemDetailHoldingReturnTest {
         .contains("tradeClient.findCashFlowsByStockItem(profitParams)")
         .contains("\"cashFlowsByStockItem\",");
 
-    String shell = flatten("src/main/jte/stock/stockItemDetail.jte");
-    assertThat(shell)
-        .contains("periodCapitalBase = periodCapitalBase,")
-        .contains("holdingReturn = holdingReturn,")
-        .contains("holdingFirstBuyDate = holdingFirstBuyDate");
+    // htmx 요청은 컨트롤러가 내용 템플릿을 바로 돌려준다 - 내용 템플릿이 값을 받으면 된다.
+    String content = flatten("src/main/jte/stock/htmx/stockItemDetailContent.jte");
+    assertThat(content)
+        .contains("@param BigDecimal periodCapitalBase")
+        .contains("StockHoldingReturnUtil.Row holdingReturn")
+        .contains("@param java.time.LocalDate holdingFirstBuyDate");
     List<String> missing = new ArrayList<>();
     for (String bundle : List.of("uiMessage.properties", "uiMessage_ko.properties")) {
       if (!Files.readString(Path.of("src/main/resources", bundle), StandardCharsets.UTF_8)

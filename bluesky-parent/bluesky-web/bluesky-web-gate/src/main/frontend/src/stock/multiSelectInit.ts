@@ -1,4 +1,3 @@
-console.debug("[multiSelectInit] simple multi-select initializer loaded");
 
 function ensureMultiSelectStyle() {
 	if (document.getElementById("simple-multi-style")) return;

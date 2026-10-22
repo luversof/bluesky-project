@@ -255,4 +255,25 @@ class StockPriceBasisUtilTest {
     // 보유가 하나도 없으면(전량 매도 화면) 그 행들로 판정한다
     assertThat(StockPriceBasisUtil.intradayTime(List.of(sold), day)).isEqualTo("10:16");
   }
+
+  /** 기준일 안내 한 줄 - 종가면 날짜만, 장중이면 날짜와 시각(템플릿 다섯 곳이 이 한 줄을 쓴다). */
+  @Test
+  void 기준일_안내_한_줄에_날짜와_장중_시각을_넣는다() {
+    org.springframework.context.support.ReloadableResourceBundleMessageSource source =
+        new org.springframework.context.support.ReloadableResourceBundleMessageSource();
+    source.setBasenames("classpath:uiMessage");
+    source.setDefaultEncoding("UTF-8");
+    source.setFallbackToSystemLocale(false);
+    io.github.luversof.boot.context.support.MessageUtil.setMessageSourceAccessor(
+        new org.springframework.context.support.MessageSourceAccessor(
+            source, java.util.Locale.KOREAN));
+    try {
+      LocalDate day = LocalDate.parse("2026-10-21");
+      assertThat(StockPriceBasisUtil.basisText(null, day)).isEqualTo("평가 기준 2026-10-21 종가");
+      assertThat(StockPriceBasisUtil.basisText("10:16", day))
+          .isEqualTo("평가 기준 2026-10-21 10:16 장중 시세");
+    } finally {
+      io.github.luversof.boot.context.support.MessageUtil.setMessageSourceAccessor(null);
+    }
+  }
 }

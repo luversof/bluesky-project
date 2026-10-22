@@ -26,11 +26,9 @@
 @param MonthlyDividendPayoutUpsertRequest monthlyDividendPayoutForm = null
 @param MonthlyDividendPayoutImportRequest monthlyDividendPayoutImportForm = null
 @param String selectedMonthlyDividendSymbol = ""
-@param String selectedMonthlyDividendSourceUrl = ""
 @param String monthlyDividendProfileSort = "display-order"
 @param String monthlyDividendProfileDirection = "asc"
 @param boolean monthlyDividendProfileExists = false
-@param boolean monthlyDividendPayoutExists = false
 @param String selectedMonthlyDividendPayoutKey = ""
 @param String selectedMonthlyDividendPayoutRecordDate = ""
 @param String selectedMonthlyDividendPayoutPayDate = ""
@@ -76,11 +74,9 @@
 						monthlyDividendPayoutForm = monthlyDividendPayoutForm,
 						monthlyDividendPayoutImportForm = monthlyDividendPayoutImportForm,
 						selectedMonthlyDividendSymbol = selectedMonthlyDividendSymbol,
-						selectedMonthlyDividendSourceUrl = selectedMonthlyDividendSourceUrl,
 						monthlyDividendProfileSort = monthlyDividendProfileSort,
 						monthlyDividendProfileDirection = monthlyDividendProfileDirection,
 						monthlyDividendProfileExists = monthlyDividendProfileExists,
-						monthlyDividendPayoutExists = monthlyDividendPayoutExists,
 						selectedMonthlyDividendPayoutKey = selectedMonthlyDividendPayoutKey,
 						selectedMonthlyDividendPayoutRecordDate = selectedMonthlyDividendPayoutRecordDate,
 						selectedMonthlyDividendPayoutPayDate = selectedMonthlyDividendPayoutPayDate,

@@ -1,5 +1,7 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockMath.nz;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
@@ -34,25 +36,26 @@ import net.luversof.api.stock.web.dto.response.LedgerIntegrityResponse;
 /**
  * 원장에서 산술적으로 불가능한 기록을 찾는다.
  *
- * <p>이 앱의 원장은 증권사 화면을 사람이 옮겨 담은 것이라 실제로 잘못된 값이 들어와 있다(실측 2026-08-23: 배당 193 건 중 8 건이 세금 &gt; 과세표준
- * &mdash; KODEX 한국부동산리츠인프라. 기록된 과세표준이 정확히 "주당 세전 x 77 주" 인데 기록 수량은 10,256 주라 맞지 않는다. 8 건 모두 세율 기준
- * 추정치의 1/84.9 이라 과세표준이 그만큼 과소 계상된다). 화면은 그 값을 그대로 더할 뿐이라 사용자가 스스로 눈치채지 못하면 잘못된 값이 계속 합계에 섞인다.
+ * <p>이 앱의 원장은 증권사 화면을 사람이 옮겨 담은 것이라 실제로 잘못된 값이 들어와 있다(실측 2026-08-25: 동양증권 계좌는 수수료 기록이 한 건도 없고 매도 12
+ * 건은 거래세 기록도 없어, 그 계좌 실현손익이 빠진 몫만큼 크게 잡혀 있다 &mdash; {@code FEE_RECORDS_UNAVAILABLE}). 화면은 그 값을 그대로
+ * 더할 뿐이라 사용자가 스스로 눈치채지 못하면 잘못된 값이 계속 합계에 섞인다.
+ *
+ * <p>처음 예로 들었던 KODEX 한국부동산리츠인프라 8 건(실측 2026-08-23: 세금 &gt; 과세표준, 과세표준 = 주당 세전 x 77 주)은 오류가 아니었다
+ * &mdash; 분리과세 혜택 뒤 남은 몫을 과세금액으로 적은 것이다(2026-08-24 확인, checkInternal 의 "원장(구글 시트)의 값을 그대로 믿는다" 주석).
+ * 그 8 건을 잡던 규칙 넷은 걷어냈다.
  *
  * <p>규칙은 <b>도메인 지식이 필요 없는 산술 모순</b>만 넣는다. 예를 들어 "개별주식 매도인데 증권거래세가 0" 은 실제 문제지만(실측 12 건) ETF 인지를 알아야
  * 판정할 수 있고, 종목 태그가 21 종목에서 빠져 있어 그대로 쓰면 오탐이 난다. 잘못 울리는 경고는 아예 없는 것보다 나쁘므로 여기서는 다루지 않는다.
  *
- * <p>실측 기준선(2026-08-22, 배당 193 / 매매 250): 아래 11 개 규칙 중 {@code DIVIDEND_TAX_EXCEEDS_TAXABLE} 만 8 건이고
- * 나머지는 모두 0 건이다.
+ * <p>도메인 지식이 필요한 판정은 그 근거를 원장 자체에서 끌어낼 수 있을 때만 둔다 &mdash; {@code
+ * STOCK_DIVIDEND_WITHOUT_WITHHOLDING} 은 증권거래세가 붙은 매도가 있는 종목을 개별 주식으로 보고, 과세이연 계좌는 계좌 설정으로 가린다.
+ *
+ * <p>실측 기준선(2026-08-22, 배당 193 / 매매 250, 그때 규칙 11 개): {@code DIVIDEND_TAX_EXCEEDS_TAXABLE} 만 8 건이고
+ * 나머지는 모두 0 건이었다. 그 8 건이 위 리츠 ETF 오탐이라 그 규칙은 지금 없다.
  */
 @Service
 public class LedgerIntegrityService {
 
-  /**
-   * 계좌 전체에 수수료가 없다고 볼 최소 거래 건수.
-   *
-   * <p>거래가 한두 건이면 공모주 청약만 있는 계좌일 수 있어 우연이다. 실측 2026-08-23 기준 이 원장에서 문제가 된 계좌는 26 건이고, 수수료가 붙는 계좌 중
-   * 가장 작은 것도 25 건이다.
-   */
   /**
    * 계좌 설정 키 &mdash; <b>수수료 기록을 되받을 수 없는 계좌</b>.
    *
@@ -62,14 +65,19 @@ public class LedgerIntegrityService {
    * <p>다만 사실이 사라지면 안 된다 &mdash; 그 계좌의 실현손익은 빠진 수수료/거래세만큼 부풀려져 있다. 그래서 계좌 상세 화면이 이 값을 읽어 그 자리에
    * 밝힌다(gate {@code accountDetail.jte}).
    *
-   * <p>실측 2026-08-25: 동양증권 매매 12 건 전부 수수료/거래세 기록이 없다. 빠진 몫만큼 그 계좌 실현손익이 크게 잡혀 있다(하한 추정으로 그 계좌 실현손익의
-   * 약 2.4%).
+   * <p>실측 2026-08-25: 동양증권 계좌는 수수료 기록이 한 건도 없고, 매도 12 건은 거래세 기록도 없다. 빠진 몫만큼 그 계좌 실현손익이 크게 잡혀 있다(하한
+   * 추정으로 그 계좌 실현손익의 약 2.4%).
    */
   static final String FEE_RECORDS_UNAVAILABLE = "feeRecordsUnavailable";
 
+  /**
+   * 계좌 전체에 수수료가 없다고 볼 최소 거래 건수.
+   *
+   * <p>거래가 한두 건이면 공모주 청약만 있는 계좌일 수 있어 우연이다. 실측 2026-08-23 기준 이 원장에서 문제가 된 계좌는 26 건이고, 수수료가 붙는 계좌 중
+   * 가장 작은 것도 25 건이다.
+   */
   private static final int MIN_TRADES_FOR_FEELESS_ACCOUNT = 10;
 
-  /** 예시로 담을 최대 건수. 전체를 실으면 응답 크기가 원장 크기를 따라간다. */
   /**
    * 기본 예시 개수. 관리 화면의 경고 블록이 길어지지 않을 만큼만 보여 준다.
    *
@@ -132,10 +140,6 @@ public class LedgerIntegrityService {
     this.accountRepository = accountRepository;
     this.monthlyDividendPayoutQuery = monthlyDividendPayoutQuery;
     this.monthlyDividendSnapshotRepository = monthlyDividendSnapshotRepository;
-  }
-
-  static BigDecimal nz(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
   }
 
   static boolean positive(BigDecimal value) {
@@ -233,7 +237,10 @@ public class LedgerIntegrityService {
     Map<String, long[]> accountFindingCounts = new java.util.LinkedHashMap<>();
     Map<String, Set<String>> accountDistinctRows = new java.util.LinkedHashMap<>();
     Map<UUID, String> accountNames = new HashMap<>();
-    for (var account : accountRepository.findByUserId(userId)) {
+    // 아래 비과세 · 수수료 기록 없음 판정도 같은 목록을 쓴다 - 한 번만 읽는다(예전엔 같은 조회를 두 번 했다).
+    List<net.luversof.api.stock.domain.Account> userAccounts =
+        accountRepository.findByUserId(userId);
+    for (var account : userAccounts) {
       accountNames.put(account.getId(), account.getName());
     }
 
@@ -248,6 +255,16 @@ public class LedgerIntegrityService {
     }
 
     List<LedgerIntegrityFinding> findings = new ArrayList<>();
+    // 규칙 헬퍼가 함께 채우는 것들. 2026-10-22 까지 규칙 18 곳이 같은 일곱 인자를 같은 순서로 넘겼다.
+    RuleContext ctx =
+        new RuleContext(
+            findings,
+            names,
+            maxExamples,
+            distinctRows,
+            accountNames,
+            accountFindingCounts,
+            accountDistinctRows);
 
     // 과세금액(과세표준)은 원장(구글 시트)의 값을 그대로 믿는다. 앱이 다시 계산하지 않는다.
     //
@@ -259,8 +276,8 @@ public class LedgerIntegrityService {
     // 8 건에서 네 가지 지적(세금>과세표준 · 다른 수량으로 계산 · 참조와 다름 · 예상 과세비율 어긋남)이
     // 한꺼번에 나왔는데, 넷 다 "세금 = 과세금액 x 15.4%" 를 전제로 한 것이라 전부 오탐이었다.
     //
-    // 그래서 그 네 규칙을 걷어냈다. 참조 시트 자체의 입력 오류를 보는 REFERENCE_TAXABLE_RATIO_OUTLIER 는
-    // 원천징수를 쓰지 않으므로 그대로 둔다.
+    // 그래서 그 네 규칙을 걷어냈다. 참조 시트 자체의 입력 오류를 보던 REFERENCE_TAXABLE_RATIO_OUTLIER 도 같은 날
+    // 걷어냈다 - 전제가 달라서다(아래 "참조 과세비율의 월별 편차는 규칙으로 잡지 않는다").
     //
     // 그 규칙들이 쓰던 헬퍼 셋(storedTaxableVerdict · effectiveRateOnReference · taxableImpliedQuantity)은
     // 2026-09-09 에 지웠다(어디서도 부르지 않았다). 거기 적혀 있던 실측만 남긴다 - 2026-08-23 어긋난 9 건은
@@ -268,22 +285,15 @@ public class LedgerIntegrityService {
     // '참조를 믿었을 때의 실효세율이 15.40% 인가' 로 참조가 맞는지 부풀려졌는지 가를 수 있었다.
 
     dividendRule(
-        findings,
-        names,
+        ctx,
         dividends,
         "DIVIDEND_TAXABLE_EXCEEDS_GROSS",
         d ->
             positive(d.getGrossAmount())
                 && nz(d.getTaxableAmount()).compareTo(d.getGrossAmount()) > 0,
-        d -> "taxable=" + nz(d.getTaxableAmount()) + ", gross=" + nz(d.getGrossAmount()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        d -> "taxable=" + nz(d.getTaxableAmount()) + ", gross=" + nz(d.getGrossAmount()));
     dividendRule(
-        findings,
-        names,
+        ctx,
         dividends,
         "DIVIDEND_PER_SHARE_MISMATCH",
         d ->
@@ -302,15 +312,9 @@ public class LedgerIntegrityService {
                 + " x "
                 + d.getQuantity()
                 + " != gross="
-                + nz(d.getGrossAmount()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+                + nz(d.getGrossAmount()));
     dividendRule(
-        findings,
-        names,
+        ctx,
         dividends,
         "DIVIDEND_NEGATIVE_AMOUNT",
         d ->
@@ -326,24 +330,13 @@ public class LedgerIntegrityService {
                 + ", fee="
                 + nz(d.getFee())
                 + ", taxable="
-                + nz(d.getTaxableAmount()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+                + nz(d.getTaxableAmount()));
     dividendRule(
-        findings,
-        names,
+        ctx,
         dividends,
         "DIVIDEND_QUANTITY_NOT_POSITIVE",
         d -> (d.getQuantity() == null || d.getQuantity() <= 0) && positive(d.getGrossAmount()),
-        d -> "quantity=" + d.getQuantity() + ", gross=" + nz(d.getGrossAmount()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        d -> "quantity=" + d.getQuantity() + ", gross=" + nz(d.getGrossAmount()));
 
     // 비과세 계좌인데 세금이 기록된 배당.
     //
@@ -353,7 +346,7 @@ public class LedgerIntegrityService {
     // 기대고 있으므로, 전제가 깨지는 순간 알 수 있어야 한다.
     java.util.Set<UUID> taxDeferredAccountIds = new java.util.HashSet<>();
     Set<UUID> feeRecordsUnavailableAccountIds = new java.util.HashSet<>();
-    for (var account : accountRepository.findByUserId(userId)) {
+    for (var account : userAccounts) {
       var config = account.getJsonConfig();
       if (config == null) {
         continue;
@@ -366,20 +359,14 @@ public class LedgerIntegrityService {
       }
     }
     dividendRule(
-        findings,
-        names,
+        ctx,
         dividends,
         "DIVIDEND_TAX_IN_TAX_DEFERRED_ACCOUNT",
         d ->
             d.getAccountId() != null
                 && taxDeferredAccountIds.contains(d.getAccountId())
                 && positive(d.getTax()),
-        d -> "tax=" + nz(d.getTax()) + ", gross=" + nz(d.getGrossAmount()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        d -> "tax=" + nz(d.getTax()) + ", gross=" + nz(d.getGrossAmount()));
 
     // 참조 과세비율의 월별 편차는 규칙으로 잡지 않는다.
     //
@@ -395,526 +382,26 @@ public class LedgerIntegrityService {
     // 즉 "중앙값에서 벗어나면 오류" 라는 전제가 이 자료에는 성립하지 않는다. 참조 시트 자체의 문제는 그 달
     // 참조가 통째로 빠진 경우(MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH)로만 본다.
 
-    // 배당을 받았는데 그 달의 참조 지급 이력이 없다.
-    //
-    // 월배당 참조(지급 이력)는 사람이 발행사 사이트에서 가져와야 하는 자료다. 그게 밀리면 예상 월배당의
-    // 기준(최신 1개월)·12 개월 평균의 창·"다가올 배당"의 예상 지급일이 함께 어긋난다.
-    //
-    // 데이터 상태 화면에 이미 "밀림" 표시가 있지만 그건 <b>주기 추정</b>이다(경과일 > 그 종목의 과거 최대
-    // 간격). 이 규칙은 <b>증거</b>로 판정한다 - 사용자 원장에 그 달 배당이 실제로 들어와 있으면 그 달의 참조
-    // 행은 반드시 있어야 한다. 펀드가 한 달 거른 경우를 밀림으로 오판하지 않고, 주기 안이라 조용히 넘어가는
-    // 누락도 잡는다.
-    //
-    // 실측 2026-08-23: 4 건이며 주기 추정이 짚은 4 종목과 정확히 같다 - KODEX 200타겟위클리커버드콜,
-    // KODEX 한국부동산리츠인프라, PLUS 고배당주위클리고정커버드콜, RISE 코리아밸류업위클리고정커버드콜의
-    // 2026-08 이다(넷 다 참조 마지막이 2026-07-20). 참조가 있는 8 종목 중 나머지 4 종목은 빠진 달이 없다.
-    Set<String> referencedMonths = new java.util.HashSet<>();
-    Set<UUID> referencedStockItemIds = new java.util.HashSet<>();
-    for (var payout : monthlyDividendPayoutQuery.findAllByOrderByPayDateDescRecordDateDesc()) {
-      if (payout.getStockItemId() == null || payout.getPayDate() == null) {
-        continue;
-      }
-      referencedStockItemIds.add(payout.getStockItemId());
-      referencedMonths.add(
-          payout.getStockItemId() + "@" + java.time.YearMonth.from(payout.getPayDate()));
-    }
-    // 이 규칙의 주어는 "이 종목의 이 달 참조가 없다" 이지 개별 배당 행이 아니다. 원장 행으로 세면 같은
-    // (종목, 달)이 계좌 수만큼 부풀어 할 일이 실제보다 많아 보인다 - 실측 2026-08-23: 원장 행으로는
-    // 9 건인데 자동 가져오기는 4 번이면 끝난다(KODEX 한국부동산리츠인프라 4 계좌, PLUS 고배당주위클리고정
-    // 커버드콜 3 계좌, KODEX 200타겟위클리커버드콜·RISE 코리아밸류업위클리고정커버드콜 각 1 계좌).
-    // 그래서 (종목, 달)로 묶어 세고, 어느 계좌들이 걸려 있는지는 상세에 적는다.
-    Map<String, java.util.TreeSet<String>> missingReferenceAccounts =
-        new java.util.LinkedHashMap<>();
-    Map<String, Dividend> missingReferenceSample = new java.util.LinkedHashMap<>();
-    for (Dividend dividend : dividends) {
-      if (dividend.getStockItemId() == null || dividend.getPayDate() == null) {
-        continue;
-      }
-      if (!referencedStockItemIds.contains(dividend.getStockItemId())) {
-        continue;
-      }
-      java.time.YearMonth month =
-          java.time.YearMonth.from(dividend.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate());
-      if (referencedMonths.contains(dividend.getStockItemId() + "@" + month)) {
-        continue;
-      }
-      String key = dividend.getStockItemId() + "@" + month;
-      missingReferenceSample.putIfAbsent(key, dividend);
-      String accountName = accountNames.get(dividend.getAccountId());
-      if (accountName != null) {
-        missingReferenceAccounts
-            .computeIfAbsent(key, ignored -> new java.util.TreeSet<>())
-            .add(accountName);
-      } else {
-        missingReferenceAccounts.computeIfAbsent(key, ignored -> new java.util.TreeSet<>());
-      }
-    }
-    if (!missingReferenceSample.isEmpty()) {
-      List<LedgerIntegrityFinding.Example> missingReferenceExamples = new ArrayList<>();
-      for (var entry : missingReferenceSample.entrySet()) {
-        Dividend sample = entry.getValue();
-        String rowKey = day(sample.getPayDate()) + "|" + names.get(sample.getStockItemId());
-        distinctRows.add(rowKey, "MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH", null);
-        if (missingReferenceExamples.size() >= maxExamples) {
-          continue;
-        }
-        java.util.TreeSet<String> accounts = missingReferenceAccounts.get(entry.getKey());
-        missingReferenceExamples.add(
-            new LedgerIntegrityFinding.Example(
-                day(sample.getPayDate()),
-                names.get(sample.getStockItemId()),
-                "원장에는 "
-                    + java.time.YearMonth.from(
-                        sample.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate())
-                    + " 배당이 있는데 참조 지급 이력에 그 달이 없다 (자동 가져오기 필요"
-                    // 계좌를 모르는 행만 있으면 "계좌 0곳: " 같은 빈 꼬리가 남는다.
-                    + (accounts.isEmpty()
-                        ? ""
-                        : ", 계좌 " + accounts.size() + "곳: " + String.join(", ", accounts))
-                    + ")"));
-      }
-      findings.add(
-          new LedgerIntegrityFinding(
-              "MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH",
-              missingReferenceSample.size(),
-              missingReferenceExamples));
-    }
+    // 배당을 받았는데 그 달의 참조 지급 이력이 없다 - (종목, 달)로 묶는 규칙이라 따로 둔다.
+    checkReferenceMissingMonths(ctx, dividends);
 
-    // 개별 주식 배당인데 원천징수가 없다.
-    //
-    // 국내 상장 주식의 현금배당은 예외 없이 15.4% 를 원천징수한다. 반면 국내주식형 ETF 의 분배금은
-    // 재원이 매매차익이면 비과세라 세금 0 이 정상이다. 그래서 "세금 0" 만으로는 판정할 수 없고,
-    // 개별 주식인지 ETF 인지를 가려야 한다.
-    //
-    // 그 구분을 원장에서 끌어낸다 - 증권거래세는 개별 주식 매도에만 붙고 ETF 매도에는 붙지 않는다.
-    // 실측 2026-08-23 로 검증: 매도 거래세가 붙은 종목 6 개(HK이노엔·NAVER·SK텔레콤·삼성SDI·
-    // 삼성전자·에스디바이오센서)는 전부 개별 주식이고, 매도가 있는데 거래세가 0 인 종목 4 개
-    // (KODEX 한국부동산리츠인프라·PLUS 자사주매입고배당주·TIGER 리츠부동산인프라·
-    // TIGER 코리아배당다우존스)는 전부 ETF 다. 오분류 0.
-    //
-    // 그렇게 가른 개별 주식의 배당 36 건 중 35 건이 15.34~15.40% 로 원천징수돼 있었고, 남은 한 건이
-    // 이 규칙이 잡는 것이다 - HK이노엔 2022-04-22 세전 3,840 원에 세금 0(15.4% 면 591 원).
-    //
-    // 한 번도 판 적이 없는 종목은 이 방법으로 가릴 수 없어 대상에서 빠진다(하나금융지주가 그렇고,
-    // 그 건은 DIVIDEND_WITHOUT_TRADE 가 이미 잡는다).
-    java.util.Set<UUID> individualStockItemIds = new java.util.HashSet<>();
-    for (Trade trade : trades) {
-      if (trade.getType() == TradeType.SELL
-          && trade.getStockItemId() != null
-          && positive(trade.getTax())) {
-        individualStockItemIds.add(trade.getStockItemId());
-      }
-    }
-    // 원장에서 실제로 징수된 가장 작은 세액. 이보다 작은 예상 세액은 "안 뗀 것" 이 정상이다.
-    //
-    // 세액이 아주 작으면 원천징수를 하지 않는다. 그 경계를 바깥 지식으로 박지 않고 원장에서 스스로 잡는다
-    // (수수료·거래세 규칙과 같은 방식).
-    //
-    // 실측 2026-08-24: 개별주식 배당 36 건 중 세금이 0 인 것은 HK이노엔 2022-04-22 한 건뿐인데, 그 건이
-    // 곧 <b>예상 세액이 가장 작은 한 건</b>(591 원)이었다. 나머지 35 건은 예상 세액이 3,690 원 이상이고
-    // 전부 15.34~15.40% 로 징수됐다. 과세 계좌 전체로 넓혀도 예상 세액 1,000 원 미만인 9 건이 예외 없이
-    // 세금 0 이다. 즉 이 건은 누락이 아니라 소액이라 떼지 않은 것이다.
-    BigDecimal smallestWithheldTax = null;
-    for (Dividend dividend : dividends) {
-      if (positive(dividend.getTax())
-          && (smallestWithheldTax == null
-              || dividend.getTax().compareTo(smallestWithheldTax) < 0)) {
-        smallestWithheldTax = dividend.getTax();
-      }
-    }
-    BigDecimal withholdingFloor = smallestWithheldTax;
-    dividendRule(
-        findings,
-        names,
-        dividends,
-        "STOCK_DIVIDEND_WITHOUT_WITHHOLDING",
-        d ->
-            d.getAccountId() != null
-                && !taxDeferredAccountIds.contains(d.getAccountId())
-                && d.getStockItemId() != null
-                && individualStockItemIds.contains(d.getStockItemId())
-                && positive(d.getGrossAmount())
-                && !positive(d.getTax())
-                // 예상 세액이 원장에서 관측된 최소 징수액보다 작으면 소액이라 떼지 않은 것이다.
-                && (withholdingFloor == null
-                    || nz(d.getGrossAmount()).multiply(WITHHOLDING_RATE).compareTo(withholdingFloor)
-                        >= 0),
-        // 다른 예시처럼 key=value 로 - 이 한 줄만 한국어("15.4% 기준 예상 세금=")라 영어 화면 관리 탭에 그대로 보였다(2026-10-03).
-        d ->
-            "gross="
-                + nz(d.getGrossAmount())
-                + ", tax=0, expectedTax@"
-                + WITHHOLDING_RATE.multiply(BigDecimal.valueOf(100)).stripTrailingZeros()
-                + "%="
-                + nz(d.getGrossAmount())
-                    .multiply(WITHHOLDING_RATE)
-                    .setScale(0, RoundingMode.HALF_UP),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+    // 개별 주식 배당인데 원천징수가 없다 - 개별 주식 · 원천징수 하한을 원장에서 끌어내는 규칙이라 따로 둔다.
+    checkStockDividendWithholding(ctx, trades, dividends, taxDeferredAccountIds);
 
-    // 매매 기록이 하나도 없는 종목의 배당.
-    //
-    // 원장상 취득한 적이 없는 주식으로 배당을 받을 수는 없다. 도메인 지식이 필요 없는 판정이고,
-    // 실제로 한 건 있다(실측 2026-08-22: 하나금융지주 배당 2건, 매매 원장 0건).
-    //
-    // 조용히 어긋나는 곳: 손익 집계는 매매에서 파생되므로 그 종목이 아예 빠진다. 그래서 종목별
-    // 시계열을 전부 더해도 전체와 배당이 2,100원 어긋난다 - 화면에서는 원인을 알 수 없다.
-    java.util.Set<UUID> tradedStockItemIds = new java.util.HashSet<>();
-    for (Trade trade : trades) {
-      if (trade.getStockItemId() != null) {
-        tradedStockItemIds.add(trade.getStockItemId());
-      }
-    }
-    dividendRule(
-        findings,
-        names,
-        dividends,
-        "DIVIDEND_WITHOUT_TRADE",
-        d -> d.getStockItemId() != null && !tradedStockItemIds.contains(d.getStockItemId()),
-        d -> "gross=" + nz(d.getGrossAmount()) + ", quantity=" + d.getQuantity(),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+    // 배당을 매매 원장과 맞춰 보는 규칙 셋(checkDividendsAgainstTrades) - DIVIDEND_WITHOUT_TRADE ·
+    // DIVIDEND_WITHOUT_HOLDING_ON_BASIS_DATE · DIVIDEND_QUANTITY_ABOVE_EVER_HELD
+    checkDividendsAgainstTrades(ctx, trades, dividends);
 
-    // 배당 기준일에 그 종목을 하나도 들고 있지 않았던 배당.
-    //
-    // 다만 <b>기준일이 실제로 적혀 있을 때만</b> 판정한다. 이 원장에는 기준일 칸이 따로 없어서 지급일이 그대로
-    // 복사돼 들어온다(실측 2026-08-24: 배당 193 건 전부 recordDate == payDate). 그 상태에서 "기준일 보유" 를
-    // 따지면 사실은 "지급일 보유" 를 따지는 것이고, 결산배당은 거의 언제나 걸린다 - 기준일이 전년 12-31 이라
-    // 그 뒤에 팔아도 배당은 나오기 때문이다.
-    //
-    // 실측 2026-08-24, 걸려 있던 3 건이 모두 그런 경우였다.
-    //
-    //   HK이노엔   2021-08-09 매수 -> 2021 결산배당 -> 2022-04-22 지급 + 같은 날 매도
-    //   NAVER     2020-01-30 매수 -> 2020 결산배당 -> 2021-01-18 매도 -> 2021-04-08 지급
-    //   삼성SDI    2019-12-13 매수 -> 2019 결산배당 -> 2020-01-28 매도 -> 2020-04-17 지급
-    //
-    // 셋 다 기준일에는 들고 있었으므로 정상이다. 기준일을 모르는 자료로 "보유가 없다" 고 말할 수는 없다.
-    //
-    // 기준일이 지급일과 다르게 적히기 시작하면 이 규칙이 다시 살아난다. 그때는 진짜로 "기준일에 보유 0" 인
-    // 배당만 걸린다.
-    //
-    // 거래가 아예 없는 종목은 DIVIDEND_WITHOUT_TRADE 가 이미 알리므로 여기서는 제외한다.
-    Map<UUID, java.util.List<Trade>> tradesByStockItem = new java.util.HashMap<>();
-    for (Trade trade : trades) {
-      if (trade.getStockItemId() != null && trade.getTradeDate() != null) {
-        tradesByStockItem
-            .computeIfAbsent(trade.getStockItemId(), key -> new ArrayList<>())
-            .add(trade);
-      }
-    }
-    dividendRule(
-        findings,
-        names,
-        dividends,
-        "DIVIDEND_WITHOUT_HOLDING_ON_BASIS_DATE",
-        d ->
-            d.getStockItemId() != null
-                && tradedStockItemIds.contains(d.getStockItemId())
-                && hasOwnRecordDate(d)
-                && holdingQuantityAt(tradesByStockItem.get(d.getStockItemId()), basisDate(d)) <= 0,
-        d ->
-            "기준일="
-                + day(basisDate(d))
-                + ", 배당수량="
-                + d.getQuantity()
-                + ", 그 날 보유="
-                + holdingQuantityAt(tradesByStockItem.get(d.getStockItemId()), basisDate(d))
-                + lastHeldHint(
-                    tradesByStockItem.get(d.getStockItemId()), d.getQuantity(), basisDate(d)),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+    // 수수료 · 거래세가 빠진 기록을 보는 규칙 둘(checkMissingFeesAndTaxes) - SELL_WITHOUT_FEE_AND_TAX ·
+    // ACCOUNT_WITHOUT_ANY_FEE
+    checkMissingFeesAndTaxes(ctx, trades, feeRecordsUnavailableAccountIds);
 
-    // 배당 수량이 그때까지 한 번이라도 보유했던 최대 수량을 넘는 배당.
-    //
-    // 위 두 규칙은 "거래가 아예 없다"와 "그 날 보유가 0"만 본다. 보유가 있는데 <b>수량이 과하게</b> 적힌
-    // 경우는 어느 쪽에도 걸리지 않는다. 그러면 그 배당의 주당 배당금과 수익률 분모가 함께 틀어진다.
-    //
-    // 기준일이 비어 있어 지급일로 대신하는 자료가 많으므로, "그 날 보유"가 아니라 "그때까지의 최대 보유"와
-    // 견준다 - 기말배당의 기준일·지급일 시차(서너 달)를 오탐으로 만들지 않으려는 것이다.
-    //
-    // 실측 2026-08-24: 배당 193 건을 (계좌·종목·지급일)로 묶은 188 묶음 중, 합계 수량이 직전 400 일의
-    // 어느 보유 수량과도 맞지 않는 것은 하나금융지주 2 건뿐이고 그건 DIVIDEND_WITHOUT_TRADE 가 이미
-    // 잡는다. 즉 지금 이 규칙의 발견은 0 이며, 앞으로 배당을 넣을 때를 위한 그물이다.
-    dividendRule(
-        findings,
-        names,
-        dividends,
-        "DIVIDEND_QUANTITY_ABOVE_EVER_HELD",
-        d ->
-            d.getStockItemId() != null
-                && tradedStockItemIds.contains(d.getStockItemId())
-                && d.getQuantity() > 0
-                && d.getQuantity()
-                    > maxHoldingQuantityUntil(
-                        tradesByStockItem.get(d.getStockItemId()), basisDate(d)),
-        d ->
-            "배당수량="
-                + d.getQuantity()
-                + ", 그때까지 최대 보유="
-                + maxHoldingQuantityUntil(tradesByStockItem.get(d.getStockItemId()), basisDate(d)),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+    // (지운 규칙) DIVIDEND_TAXABLE_COMPUTED_WITH_OTHER_QUANTITY 가 여기 있었다 - 과세표준 / 주당 과세표준 이 수량과 다른
+    // 배당을 잡았다(실측 2026-08-23: KODEX 한국부동산리츠인프라 8 건이 모두 77, 실제 수량 10,256). 리츠 ETF 는 분리과세
+    // 혜택 뒤 남은 몫을 과세금액으로 적으므로 오탐이었다 - 위 "원장(구글 시트)의 값을 그대로 믿는다" 절의 네 규칙 중 하나.
 
-    // 매도인데 수수료와 증권거래세가 <b>둘 다</b> 0 인 거래.
-    //
-    // 조용히 어긋나는 곳: 매도 원가와 실현손익이 그만큼 부풀어 오른다. 화면은 그 값을 그대로 쓰므로
-    // 수익이 실제보다 좋아 보인다(실측 2026-08-23: 12 건).
-    //
-    // ETF 매도는 증권거래세가 면제라 세금만 0 인 것은 정상이다. 그래서 세금 하나만 보면 ETF 인지를
-    // 알아야 하고 종목 태그는 빠진 것이 있어 오탐이 난다. 반면 <b>수수료는 ETF 에도 붙는다</b> &mdash;
-    // 실측으로 세금만 0 인 매도 13 건은 전부 수수료가 있었고(최소 1 원), 둘 다 0 인 12 건은 전부
-    // 개별주식이었다. 즉 "둘 다 0" 은 종목 종류를 몰라도 판정할 수 있다.
-    //
-    // 초소액 매도는 수수료가 반올림으로 0 이 될 수 있으므로, 이 원장에서 수수료가 실제로 붙은 가장 작은
-    // 그 이상치 거래보다 작은 매도는 제외한다. 상수를 박지 않고 원장에서 스스로 보정한다.
-    BigDecimal minFeeBearingAmount = null;
-    for (Trade trade : trades) {
-      if (positive(trade.getFee())) {
-        BigDecimal amount = tradeAmount(trade);
-        if (amount != null
-            && (minFeeBearingAmount == null || amount.compareTo(minFeeBearingAmount) < 0)) {
-          minFeeBearingAmount = amount;
-        }
-      }
-    }
-    // 같은 해에 실제로 관측된 거래세율. 원장 자신에서만 뽑는다(세법 연혁 같은 바깥 지식을 쓰지 않는다).
-    //
-    // 실측 2026-08-23: 세금이 기록된 매도 29 건의 연도별 중앙값은 2020년 0.2500% · 2021년 0.2300% ·
-    // 2022년 0.2299% · 2023년 0.1997% · 2025년 0.1500% · 2026년 0.2000% 로 해마다 좁게 모인다.
-    // 그래서 "그 해 다른 계좌는 이만큼 냈다"는 근거로 쓸 수 있다.
-    Map<Integer, BigDecimal> observedTaxRateByYear = observedSellTaxRateByYear(trades);
-
-    // 이 하한도 전체 이력에서 뽑는다. 실측 2026-08-23: 전체 최소 거래대금은 2025-09-03 의 그 이상치 거래이고
-    // 최근 12 건 기준은 49,080 원인데, 대상이 되는 매도 12 건의 최소 거래대금이 316,000 원이라 어느 쪽을 써도
-    // 판정이 같다. 지급 지연 문턱과 달리 여기서는 창을 좁힐 이유가 없다.
-    // 수수료가 <b>한 건도</b> 없는 계좌. 아래 두 규칙이 함께 쓴다.
-    //
-    // 그런 계좌는 계좌 단위로 한 번만 알린다. 거래마다 또 알리면 같은 사정이 열몇 번 반복돼, 고칠 수 없는
-    // 지적이 화면을 덮는다(실측 2026-08-24: 동양증권 하나가 매도 12 건 + 계좌 1 건 = 13 건이었다.
-    // 그 계좌는 증권사에서 기록을 되받을 수 없어 채울 방법이 없다).
-    Set<UUID> feelessAccountIds = new java.util.HashSet<>();
-    Map<UUID, long[]> feeCountByAccount = new HashMap<>();
-    for (Trade trade : trades) {
-      if (trade.getAccountId() == null) {
-        continue;
-      }
-      long[] counts = feeCountByAccount.computeIfAbsent(trade.getAccountId(), key -> new long[2]);
-      counts[0]++;
-      if (positive(trade.getFee())) {
-        counts[1]++;
-      }
-    }
-    for (Map.Entry<UUID, long[]> entry : feeCountByAccount.entrySet()) {
-      if (entry.getValue()[1] == 0 && entry.getValue()[0] >= MIN_TRADES_FOR_FEELESS_ACCOUNT) {
-        feelessAccountIds.add(entry.getKey());
-      }
-    }
-
-    BigDecimal feeThreshold = minFeeBearingAmount;
-    if (feeThreshold != null) {
-      tradeRule(
-          findings,
-          names,
-          trades,
-          "SELL_WITHOUT_FEE_AND_TAX",
-          t ->
-              t.getType() == TradeType.SELL
-                  && !positive(t.getFee())
-                  && !positive(t.getTax())
-                  // 계좌 전체에 수수료가 없으면 ACCOUNT_WITHOUT_ANY_FEE 가 한 번에 알린다.
-                  && !feelessAccountIds.contains(t.getAccountId())
-                  && tradeAmount(t) != null
-                  && tradeAmount(t).compareTo(feeThreshold) >= 0,
-          // 계좌는 tradeRule 이 문장 끝에 붙인다. 여기서 또 붙이면 화면에 두 번 나온다
-          // (실측 2026-08-24: "… 거래세=0 [동양증권] (…) [동양증권]").
-          t ->
-              "매도금액="
-                  + tradeAmount(t).setScale(0, RoundingMode.HALF_UP)
-                  + ", 수수료=0, 거래세=0"
-                  + missingTaxHint(t, observedTaxRateByYear),
-          maxExamples,
-          distinctRows,
-          accountNames,
-          accountFindingCounts,
-          accountDistinctRows);
-    }
-
-    // 거래가 충분히 많은데 수수료가 <b>한 건도</b> 기록되지 않은 계좌.
-    //
-    // 조용히 어긋나는 곳: 그 계좌의 매수 원가는 낮게, 매도 실현손익은 높게 잡힌다. 계좌 단위로 전부
-    // 빠져 있으면 화면 어디에서도 이상해 보이지 않는다 - 숫자가 그냥 조금씩 좋을 뿐이다.
-    //
-    // 매수만 보면 판정할 수 없다. 공모주 청약은 수수료가 없는 것이 정상이라(실측 2026-08-23: 한국투자증권
-    // 위탁의 수수료 0 매수 14 건은 대부분 2020~2021 공모주 - 카카오게임즈·SK바이오사이언스·HK이노엔 등)
-    // 건별 규칙은 오탐이 난다. 계좌 전체가 0 이면 그 설명이 성립하지 않는다.
-    //
-    // 실측 2026-08-23: 동양증권 26/26 건이 수수료 0 이다. 나머지 계좌는 88~100% 에
-    // 수수료가 붙는다. 건수 하한을 두는 이유는 거래가 한두 건뿐인 계좌라면 우연일 수 있기 때문이다.
-    Map<UUID, long[]> tradeCountByAccount = new HashMap<>();
-    Map<UUID, BigDecimal> tradeAmountByAccount = new HashMap<>();
-    Map<UUID, Instant> firstTradeByAccount = new HashMap<>();
-    for (Trade trade : trades) {
-      if (trade.getAccountId() == null) {
-        continue;
-      }
-      long[] counts = tradeCountByAccount.computeIfAbsent(trade.getAccountId(), key -> new long[2]);
-      counts[0]++;
-      if (positive(trade.getFee())) {
-        counts[1]++;
-      }
-      BigDecimal amount = tradeAmount(trade);
-      if (amount != null) {
-        tradeAmountByAccount.merge(trade.getAccountId(), amount, BigDecimal::add);
-      }
-      if (trade.getTradeDate() != null) {
-        firstTradeByAccount.merge(
-            trade.getAccountId(), trade.getTradeDate(), (a, b) -> a.isBefore(b) ? a : b);
-      }
-    }
-    Map<UUID, List<Trade>> tradesByAccount = new HashMap<>();
-    for (Trade trade : trades) {
-      if (trade.getAccountId() != null) {
-        tradesByAccount.computeIfAbsent(trade.getAccountId(), key -> new ArrayList<>()).add(trade);
-      }
-    }
-    Map<Integer, BigDecimal> observedFeeRateFloorByYear = observedFeeRateFloorByYear(trades);
-    List<LedgerIntegrityFinding.Example> feelessAccounts = new ArrayList<>();
-    int feelessAccountCount = 0;
-    for (Map.Entry<UUID, long[]> entry : tradeCountByAccount.entrySet()) {
-      long total = entry.getValue()[0];
-      long withFee = entry.getValue()[1];
-      if (withFee > 0 || total < MIN_TRADES_FOR_FEELESS_ACCOUNT) {
-        continue;
-      }
-      // 계좌 설정에서 "기록을 되받을 수 없다" 고 밝힌 계좌는 지적하지 않는다.
-      if (feeRecordsUnavailableAccountIds.contains(entry.getKey())) {
-        continue;
-      }
-      feelessAccountCount++;
-      distinctRows.add(
-          day(firstTradeByAccount.get(entry.getKey())) + "|" + accountNames.get(entry.getKey()),
-          "ACCOUNT_WITHOUT_ANY_FEE",
-          accountNames.get(entry.getKey()));
-      if (feelessAccounts.size() < maxExamples) {
-        BigDecimal amount =
-            tradeAmountByAccount
-                .getOrDefault(entry.getKey(), BigDecimal.ZERO)
-                .setScale(0, RoundingMode.HALF_UP);
-        feelessAccounts.add(
-            new LedgerIntegrityFinding.Example(
-                day(firstTradeByAccount.get(entry.getKey())),
-                accountNames.get(entry.getKey()),
-                "거래="
-                    + total
-                    + "건, 수수료 기록=0건, 거래대금="
-                    + amount
-                    + missingFeeHint(
-                        tradesByAccount.getOrDefault(entry.getKey(), List.of()),
-                        observedFeeRateFloorByYear)
-                    + feelessSellTaxHint(
-                        tradesByAccount.getOrDefault(entry.getKey(), List.of()),
-                        observedTaxRateByYear)));
-      }
-    }
-    if (feelessAccountCount > 0) {
-      findings.add(
-          new LedgerIntegrityFinding(
-              "ACCOUNT_WITHOUT_ANY_FEE", feelessAccountCount, feelessAccounts));
-    }
-
-    // 저장된 과세표준이 그 배당의 수량이 아닌 다른 수량으로 계산된 경우.
-    //
-    // 과세표준은 (수량 x 주당 과세표준) 이어야 한다. 그 비를 되돌려 보면 계산에 쓰인 수량이 나온다.
-    //
-    // 실측 2026-08-23: KODEX 한국부동산리츠인프라 8 건(2026-01 ~ 2026-08)이 모두 과세표준 / 주당
-    // 과세표준 = 77 이었다. 실제 수량은 10,256 이다. 같은 종목의 2025 년 건(16,585 / 16,650 / 76)은
-    // 수량과 정확히 일치하므로, 2026-01 부터 낡은 수량 77 이 고정으로 물려 들어간 것이다.
-    // 그 결과 저장 과세표준이 원천징수를 15.4% 로 역산한 값의 1.2% 밖에 남지 않았다.
-    //
-    // 위 DIVIDEND_TAXABLE_DISAGREES_WITH_REFERENCE 는 "비율이 참조와 다르다"까지만 알려 준다.
-    // 어떤 수량으로 잘못 계산됐는지 짚어 줘야 사람이 바로 고칠 수 있다.
-
-    // 그 계좌의 평소 수수료율에서 크게 벗어난 거래.
-    //
-    // 수수료율은 계좌(증권사·약정)마다 정해져 있어 거의 일정하다. 한 건만 몇십 배로 튀면 입력이 잘못된
-    // 것이다. 기준은 바깥에서 가져오지 않고 <b>그 계좌 자신의 중앙값</b>으로 잡는다.
-    //
-    // 실측 2026-08-23: 5 개 계좌 중 4 개는 최대치가 중앙값의 1.0~1.2 배에 머무는데, 한국투자증권 위탁만
-    // 152.5 배인 거래가 하나 있다(2025-09-03 TIGER 코리아배당다우존스 1 주, 수수료율 0.6375%,
-    // 계좌 중앙값 0.0042%).
-    //
-    // "소액이라 최소수수료가 붙었다" 로는 설명되지 않는다 - 같은 계좌에 거래대금이 15 배인데 수수료는
-    // 1/13 인 건이 있어, 그런 하한은 존재할 수 없다. 그래서 그 계좌의 최저 수수료를 함께 적어 판단 근거를 남긴다.
-    Map<UUID, List<BigDecimal>> feeRatesByAccount = new HashMap<>();
-    Map<UUID, BigDecimal> minFeeByAccount = new HashMap<>();
-    for (Trade trade : trades) {
-      BigDecimal amount = tradeAmount(trade);
-      if (trade.getAccountId() == null
-          || amount == null
-          || amount.signum() <= 0
-          || !positive(trade.getFee())) {
-        continue;
-      }
-      feeRatesByAccount
-          .computeIfAbsent(trade.getAccountId(), key -> new ArrayList<>())
-          .add(
-              trade
-                  .getFee()
-                  .multiply(BigDecimal.valueOf(100))
-                  .divide(amount, 6, RoundingMode.HALF_UP));
-      minFeeByAccount.merge(trade.getAccountId(), trade.getFee(), BigDecimal::min);
-    }
-    Map<UUID, BigDecimal> medianFeeRate = new HashMap<>();
-    for (var entry : feeRatesByAccount.entrySet()) {
-      if (entry.getValue().size() < MIN_TRADES_FOR_FEE_RATE_MEDIAN) {
-        continue;
-      }
-      List<BigDecimal> sortedRates = new ArrayList<>(entry.getValue());
-      sortedRates.sort(Comparator.naturalOrder());
-      BigDecimal median = sortedRates.get(sortedRates.size() / 2);
-      if (median.signum() > 0) {
-        medianFeeRate.put(entry.getKey(), median);
-      }
-    }
-    tradeRule(
-        findings,
-        names,
-        trades,
-        "TRADE_FEE_RATE_FAR_ABOVE_ACCOUNT_MEDIAN",
-        t ->
-            feeRateMultiple(t, medianFeeRate) != null
-                && feeRateMultiple(t, medianFeeRate).compareTo(FEE_RATE_OUTLIER_MULTIPLE) > 0,
-        t ->
-            "수수료율="
-                + feeRate(t).setScale(4, RoundingMode.HALF_UP)
-                + "%(거래대금 "
-                + tradeAmount(t).setScale(0, RoundingMode.HALF_UP)
-                + " · 수수료 "
-                + nz(t.getFee()).setScale(0, RoundingMode.HALF_UP)
-                + "), 이 계좌 중앙값 "
-                + medianFeeRate.get(t.getAccountId()).setScale(4, RoundingMode.HALF_UP)
-                + "% 의 "
-                + feeRateMultiple(t, medianFeeRate).setScale(1, RoundingMode.HALF_UP)
-                + "배. 이 계좌의 최저 수수료는 "
-                + nz(minFeeByAccount.get(t.getAccountId())).setScale(0, RoundingMode.HALF_UP)
-                + "원이라 최소수수료로는 설명되지 않는다",
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+    // 그 계좌의 평소 수수료율에서 크게 벗어난 거래(checkFeeRateOutliers) - TRADE_FEE_RATE_FAR_ABOVE_ACCOUNT_MEDIAN
+    checkFeeRateOutliers(ctx, trades);
 
     // 한국 증시는 토·일에 열리지 않는다. 그런 날짜가 들어 있으면 입력 오류이고, 그 거래가 실제로
     // 언제였는지에 따라 기간별 손익 귀속이 달라진다.
@@ -925,8 +412,7 @@ public class LedgerIntegrityService {
     //
     // 공휴일은 판정하지 않는다 - 원장만으로는 휴장일 달력을 알 수 없어서, 주말처럼 확실한 것만 낸다.
     tradeRule(
-        findings,
-        names,
+        ctx,
         trades,
         "TRADE_ON_WEEKEND",
         t -> t.getTradeDate() != null && isWeekend(t.getTradeDate()),
@@ -938,90 +424,49 @@ public class LedgerIntegrityService {
                 + "), "
                 + t.getQuantity()
                 + "주 @"
-                + nz(t.getPrice()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+                + nz(t.getPrice()));
     tradeRule(
-        findings,
-        names,
+        ctx,
         trades,
         "TRADE_NEGATIVE_FEE_OR_TAX",
         t -> negative(t.getFee()) || negative(t.getTax()),
-        t -> "fee=" + nz(t.getFee()) + ", tax=" + nz(t.getTax()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        t -> "fee=" + nz(t.getFee()) + ", tax=" + nz(t.getTax()));
     tradeRule(
-        findings,
-        names,
+        ctx,
         trades,
         "TRADE_BUY_WITH_TAX",
         t -> t.getType() == TradeType.BUY && positive(t.getTax()),
-        t -> "tax=" + nz(t.getTax()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        t -> "tax=" + nz(t.getTax()));
     tradeRule(
-        findings,
-        names,
+        ctx,
         trades,
         "TRADE_SELL_WITHOUT_REALIZED_PROFIT",
         t -> t.getType() == TradeType.SELL && t.getRealizedProfit() == null,
-        t -> "quantity=" + t.getQuantity(),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        t -> "quantity=" + t.getQuantity());
     // 매수 행에 0 이 들어 있는 것은 정상 표현이다 - 조회 응답은 매수의 실현손익을 null 로 비워 보내지만
     // 저장값은 0 이다. 처음에 "null 이 아니면 이상" 으로 잡았다가 매수 196 건이 통째로 걸렸다.
     // 실제로 이상한 것은 매수인데 0 이 아닌 손익이 붙은 경우다.
     tradeRule(
-        findings,
-        names,
+        ctx,
         trades,
         "TRADE_BUY_WITH_REALIZED_PROFIT",
         t ->
             t.getType() == TradeType.BUY
                 && t.getRealizedProfit() != null
                 && t.getRealizedProfit().signum() != 0,
-        t -> "realizedProfit=" + t.getRealizedProfit(),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        t -> "realizedProfit=" + t.getRealizedProfit());
     tradeRule(
-        findings,
-        names,
+        ctx,
         trades,
         "TRADE_QUANTITY_NOT_POSITIVE",
         t -> t.getQuantity() <= 0,
-        t -> "quantity=" + t.getQuantity(),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        t -> "quantity=" + t.getQuantity());
     tradeRule(
-        findings,
-        names,
+        ctx,
         trades,
         "TRADE_NEGATIVE_PRICE",
         t -> negative(t.getPrice()),
-        t -> "price=" + nz(t.getPrice()),
-        maxExamples,
-        distinctRows,
-        accountNames,
-        accountFindingCounts,
-        accountDistinctRows);
+        t -> "price=" + nz(t.getPrice()));
 
     List<LedgerIntegrityResponse.AccountFindingSummary> accountSummary =
         accountFindingCounts.entrySet().stream()
@@ -1147,11 +592,6 @@ public class LedgerIntegrityService {
     return dividend.getRecordDate() != null ? dividend.getRecordDate() : dividend.getPayDate();
   }
 
-  /**
-   * 그 시점까지의 매매를 더한 보유 수량. 같은 날 거래는 포함한다(기준일 당일 매수도 그 날 보유로 본다).
-   *
-   * <p>이 계산은 화면의 보유 스냅샷과 같은 규칙이다 - 분할·병합 환산은 수량을 바꾸지 않는다(실측 확인).
-   */
   /**
    * 기준일 <b>이전</b>에 그 배당 수량을 마지막으로 보유하고 있던 날을 원장에서 되짚는다.
    *
@@ -1335,6 +775,11 @@ public class LedgerIntegrityService {
     return peak;
   }
 
+  /**
+   * 그 시점까지의 매매를 더한 보유 수량. 같은 날 거래는 포함한다(기준일 당일 매수도 그 날 보유로 본다).
+   *
+   * <p>이 계산은 화면의 보유 스냅샷과 같은 규칙이다 - 분할·병합 환산은 수량을 바꾸지 않는다(실측 확인).
+   */
   private static int holdingQuantityAt(java.util.List<Trade> stockItemTrades, Instant at) {
     if (stockItemTrades == null || at == null) {
       return 0;
@@ -1349,15 +794,6 @@ public class LedgerIntegrityService {
     return quantity;
   }
 
-  /**
-   * 발견에 계좌명을 붙인다.
-   *
-   * <p>계좌를 적어야 "한 계좌에 몰린 문제" 인지 "여기저기 흩어진 문제" 인지 보인다. 실측 2026-08-23: 규칙마다 발견이 <b>한 계좌에 100% 집중</b>돼
-   * 있었다 &mdash; 과세표준 관련 배당 8 건은 전부 KB증권 위탁, 매매 없는 배당 2 건은 한국투자증권 위탁, 수수료·거래세가 없는 매도 12 건은 전부
-   * 동양증권이다. 즉 각 결함이 한 계좌의 입력 경로에 묶여 있다.
-   *
-   * <p>계좌명이 없으면 같은 계좌의 다른 발견(예: {@code ACCOUNT_WITHOUT_ANY_FEE})과 이어지지 않는다.
-   */
   /** 계좌별 발견 수와 서로 다른 행을 모은다. 계좌를 모르는 발견은 세지 않는다. */
   private static void recordAccount(
       UUID accountId,
@@ -1375,6 +811,15 @@ public class LedgerIntegrityService {
         .add(rowKey);
   }
 
+  /**
+   * 발견에 계좌명을 붙인다.
+   *
+   * <p>계좌를 적어야 "한 계좌에 몰린 문제" 인지 "여기저기 흩어진 문제" 인지 보인다. 실측 2026-08-23: 규칙마다 발견이 <b>한 계좌에 100% 집중</b>돼
+   * 있었다 &mdash; 과세표준 관련 배당 8 건은 전부 KB증권 위탁, 매매 없는 배당 2 건은 한국투자증권 위탁, 수수료·거래세가 없는 매도 12 건은 전부
+   * 동양증권이다. 즉 각 결함이 한 계좌의 입력 경로에 묶여 있다.
+   *
+   * <p>계좌명이 없으면 같은 계좌의 다른 발견(예: {@code ACCOUNT_WITHOUT_ANY_FEE})과 이어지지 않는다.
+   */
   private static String accountSuffix(UUID accountId, Map<UUID, String> accountNames) {
     if (accountId == null) {
       return "";
@@ -1383,53 +828,27 @@ public class LedgerIntegrityService {
   }
 
   private void dividendRule(
-      List<LedgerIntegrityFinding> findings,
-      Map<UUID, String> names,
+      RuleContext ctx,
       List<Dividend> dividends,
       String code,
       Predicate<Dividend> broken,
-      Function<Dividend, String> detail,
-      int maxExamples,
-      RowIndex distinctRows,
-      Map<UUID, String> accountNames,
-      Map<String, long[]> accountFindingCounts,
-      Map<String, Set<String>> accountDistinctRows) {
-    List<Dividend> hits = dividends.stream().filter(broken).toList();
-    if (hits.isEmpty()) {
-      return;
-    }
-    for (Dividend hit : hits) {
-      String rowKey =
-          day(hit.getPayDate() != null ? hit.getPayDate() : hit.getRecordDate())
-              + "|"
-              + names.get(hit.getStockItemId());
-      distinctRows.add(rowKey, code, accountNames.get(hit.getAccountId()));
-      recordAccount(
-          hit.getAccountId(), accountNames, rowKey, accountFindingCounts, accountDistinctRows);
-    }
-    List<LedgerIntegrityFinding.Example> examples = new ArrayList<>();
-    for (Dividend hit : hits.stream().limit(maxExamples).toList()) {
-      examples.add(
-          new LedgerIntegrityFinding.Example(
-              day(hit.getPayDate() != null ? hit.getPayDate() : hit.getRecordDate()),
-              names.get(hit.getStockItemId()),
-              detail.apply(hit) + accountSuffix(hit.getAccountId(), accountNames)));
-    }
-    findings.add(new LedgerIntegrityFinding(code, hits.size(), examples));
+      Function<Dividend, String> detail) {
+    addFinding(
+        ctx,
+        code,
+        dividends.stream().filter(broken).toList(),
+        d -> d.getPayDate() != null ? d.getPayDate() : d.getRecordDate(),
+        Dividend::getStockItemId,
+        Dividend::getAccountId,
+        detail);
   }
 
   private void tradeRule(
-      List<LedgerIntegrityFinding> findings,
-      Map<UUID, String> names,
+      RuleContext ctx,
       List<Trade> trades,
       String code,
       Predicate<Trade> broken,
-      Function<Trade, String> detail,
-      int maxExamples,
-      RowIndex distinctRows,
-      Map<UUID, String> accountNames,
-      Map<String, long[]> accountFindingCounts,
-      Map<String, Set<String>> accountDistinctRows) {
+      Function<Trade, String> detail) {
     // 예시는 최신순으로 고른다.
     //
     // 배당 규칙은 목록이 지급일 내림차순으로 와서 이미 최신순인데 매매만 오래된 순이었다. 그래서 같은 화면에서
@@ -1445,23 +864,564 @@ public class LedgerIntegrityService {
                     .thenComparing(
                         Trade::getId, Comparator.nullsLast(Comparator.comparing(UUID::toString))))
             .toList();
+    addFinding(
+        ctx, code, hits, Trade::getTradeDate, Trade::getStockItemId, Trade::getAccountId, detail);
+  }
+
+  /**
+   * 개별 주식 배당인데 원천징수가 없다(STOCK_DIVIDEND_WITHOUT_WITHHOLDING) - 개별 주식인지는 매도 거래세로, 원천징수 하한은 원장에서 실제로 뗀
+   * 가장 작은 세액으로 가른다. 판정 근거와 실측은 아래 주석. 2026-10-22 까지 checkInternal 안에 그대로 적혀 있었다.
+   */
+  private void checkStockDividendWithholding(
+      RuleContext ctx,
+      List<Trade> trades,
+      List<Dividend> dividends,
+      Set<UUID> taxDeferredAccountIds) {
+    // 국내 상장 주식의 현금배당은 예외 없이 15.4% 를 원천징수한다. 반면 국내주식형 ETF 의 분배금은
+    // 재원이 매매차익이면 비과세라 세금 0 이 정상이다. 그래서 "세금 0" 만으로는 판정할 수 없고,
+    // 개별 주식인지 ETF 인지를 가려야 한다.
+    //
+    // 그 구분을 원장에서 끌어낸다 - 증권거래세는 개별 주식 매도에만 붙고 ETF 매도에는 붙지 않는다.
+    // 실측 2026-08-23 로 검증: 매도 거래세가 붙은 종목 6 개(HK이노엔·NAVER·SK텔레콤·삼성SDI·
+    // 삼성전자·에스디바이오센서)는 전부 개별 주식이고, 매도가 있는데 거래세가 0 인 종목 4 개
+    // (KODEX 한국부동산리츠인프라·PLUS 자사주매입고배당주·TIGER 리츠부동산인프라·
+    // TIGER 코리아배당다우존스)는 전부 ETF 다. 오분류 0.
+    //
+    // 그렇게 가른 개별 주식의 배당 36 건 중 35 건이 15.34~15.40% 로 원천징수돼 있었고, 남은 한 건이
+    // 이 규칙이 잡는 것이다 - HK이노엔 2022-04-22 세전 3,840 원에 세금 0(15.4% 면 591 원).
+    //
+    // 한 번도 판 적이 없는 종목은 이 방법으로 가릴 수 없어 대상에서 빠진다(하나금융지주가 그렇고,
+    // 그 건은 DIVIDEND_WITHOUT_TRADE 가 이미 잡는다).
+    java.util.Set<UUID> individualStockItemIds = new java.util.HashSet<>();
+    for (Trade trade : trades) {
+      if (trade.getType() == TradeType.SELL
+          && trade.getStockItemId() != null
+          && positive(trade.getTax())) {
+        individualStockItemIds.add(trade.getStockItemId());
+      }
+    }
+    // 원장에서 실제로 징수된 가장 작은 세액. 이보다 작은 예상 세액은 "안 뗀 것" 이 정상이다.
+    //
+    // 세액이 아주 작으면 원천징수를 하지 않는다. 그 경계를 바깥 지식으로 박지 않고 원장에서 스스로 잡는다
+    // (수수료·거래세 규칙과 같은 방식).
+    //
+    // 실측 2026-08-24: 개별주식 배당 36 건 중 세금이 0 인 것은 HK이노엔 2022-04-22 한 건뿐인데, 그 건이
+    // 곧 <b>예상 세액이 가장 작은 한 건</b>(591 원)이었다. 나머지 35 건은 예상 세액이 3,690 원 이상이고
+    // 전부 15.34~15.40% 로 징수됐다. 과세 계좌 전체로 넓혀도 예상 세액 1,000 원 미만인 9 건이 예외 없이
+    // 세금 0 이다. 즉 이 건은 누락이 아니라 소액이라 떼지 않은 것이다.
+    BigDecimal smallestWithheldTax = null;
+    for (Dividend dividend : dividends) {
+      if (positive(dividend.getTax())
+          && (smallestWithheldTax == null
+              || dividend.getTax().compareTo(smallestWithheldTax) < 0)) {
+        smallestWithheldTax = dividend.getTax();
+      }
+    }
+    BigDecimal withholdingFloor = smallestWithheldTax;
+    dividendRule(
+        ctx,
+        dividends,
+        "STOCK_DIVIDEND_WITHOUT_WITHHOLDING",
+        d ->
+            d.getAccountId() != null
+                && !taxDeferredAccountIds.contains(d.getAccountId())
+                && d.getStockItemId() != null
+                && individualStockItemIds.contains(d.getStockItemId())
+                && positive(d.getGrossAmount())
+                && !positive(d.getTax())
+                // 예상 세액이 원장에서 관측된 최소 징수액보다 작으면 소액이라 떼지 않은 것이다.
+                && (withholdingFloor == null
+                    || nz(d.getGrossAmount()).multiply(WITHHOLDING_RATE).compareTo(withholdingFloor)
+                        >= 0),
+        // 다른 예시처럼 key=value 로 - 이 한 줄만 한국어("15.4% 기준 예상 세금=")라 영어 화면 관리 탭에 그대로 보였다(2026-10-03).
+        d ->
+            "gross="
+                + nz(d.getGrossAmount())
+                + ", tax=0, expectedTax@"
+                + WITHHOLDING_RATE.multiply(BigDecimal.valueOf(100)).stripTrailingZeros()
+                + "%="
+                + nz(d.getGrossAmount())
+                    .multiply(WITHHOLDING_RATE)
+                    .setScale(0, RoundingMode.HALF_UP));
+  }
+
+  /**
+   * 배당을 받았는데 그 달의 참조 지급 이력이 없다(MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH) - (종목, 달)로 묶어 세고 걸린 계좌는
+   * 상세에 적는다. 판정 근거와 실측은 아래 주석. 2026-10-22 까지 checkInternal 안에 그대로 적혀 있었다(규칙 헬퍼로 못 쓰는 묶음 규칙이라 따로
+   * 둔다).
+   */
+  private void checkReferenceMissingMonths(RuleContext ctx, List<Dividend> dividends) {
+    List<LedgerIntegrityFinding> findings = ctx.findings();
+    Map<UUID, String> names = ctx.names();
+    int maxExamples = ctx.maxExamples();
+    RowIndex distinctRows = ctx.distinctRows();
+    Map<UUID, String> accountNames = ctx.accountNames();
+    // 월배당 참조(지급 이력)는 사람이 발행사 사이트에서 가져와야 하는 자료다. 그게 밀리면 예상 월배당의
+    // 기준(최신 1개월)·12 개월 평균의 창·"다가올 배당"의 예상 지급일이 함께 어긋난다.
+    //
+    // 데이터 상태 화면에 이미 "밀림" 표시가 있지만 그건 <b>주기 추정</b>이다(경과일 > 그 종목의 과거 최대
+    // 간격). 이 규칙은 <b>증거</b>로 판정한다 - 사용자 원장에 그 달 배당이 실제로 들어와 있으면 그 달의 참조
+    // 행은 반드시 있어야 한다. 펀드가 한 달 거른 경우를 밀림으로 오판하지 않고, 주기 안이라 조용히 넘어가는
+    // 누락도 잡는다.
+    //
+    // 실측 2026-08-23: 4 건이며 주기 추정이 짚은 4 종목과 정확히 같다 - KODEX 200타겟위클리커버드콜,
+    // KODEX 한국부동산리츠인프라, PLUS 고배당주위클리고정커버드콜, RISE 코리아밸류업위클리고정커버드콜의
+    // 2026-08 이다(넷 다 참조 마지막이 2026-07-20). 참조가 있는 8 종목 중 나머지 4 종목은 빠진 달이 없다.
+    Set<String> referencedMonths = new java.util.HashSet<>();
+    Set<UUID> referencedStockItemIds = new java.util.HashSet<>();
+    for (var payout : monthlyDividendPayoutQuery.findAllByOrderByPayDateDescRecordDateDesc()) {
+      if (payout.getStockItemId() == null || payout.getPayDate() == null) {
+        continue;
+      }
+      referencedStockItemIds.add(payout.getStockItemId());
+      referencedMonths.add(
+          payout.getStockItemId() + "@" + java.time.YearMonth.from(payout.getPayDate()));
+    }
+    // 이 규칙의 주어는 "이 종목의 이 달 참조가 없다" 이지 개별 배당 행이 아니다. 원장 행으로 세면 같은
+    // (종목, 달)이 계좌 수만큼 부풀어 할 일이 실제보다 많아 보인다 - 실측 2026-08-23: 원장 행으로는
+    // 9 건인데 자동 가져오기는 4 번이면 끝난다(KODEX 한국부동산리츠인프라 4 계좌, PLUS 고배당주위클리고정
+    // 커버드콜 3 계좌, KODEX 200타겟위클리커버드콜·RISE 코리아밸류업위클리고정커버드콜 각 1 계좌).
+    // 그래서 (종목, 달)로 묶어 세고, 어느 계좌들이 걸려 있는지는 상세에 적는다.
+    Map<String, java.util.TreeSet<String>> missingReferenceAccounts =
+        new java.util.LinkedHashMap<>();
+    Map<String, Dividend> missingReferenceSample = new java.util.LinkedHashMap<>();
+    for (Dividend dividend : dividends) {
+      if (dividend.getStockItemId() == null || dividend.getPayDate() == null) {
+        continue;
+      }
+      if (!referencedStockItemIds.contains(dividend.getStockItemId())) {
+        continue;
+      }
+      java.time.YearMonth month =
+          java.time.YearMonth.from(dividend.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate());
+      if (referencedMonths.contains(dividend.getStockItemId() + "@" + month)) {
+        continue;
+      }
+      String key = dividend.getStockItemId() + "@" + month;
+      missingReferenceSample.putIfAbsent(key, dividend);
+      String accountName = accountNames.get(dividend.getAccountId());
+      if (accountName != null) {
+        missingReferenceAccounts
+            .computeIfAbsent(key, ignored -> new java.util.TreeSet<>())
+            .add(accountName);
+      } else {
+        missingReferenceAccounts.computeIfAbsent(key, ignored -> new java.util.TreeSet<>());
+      }
+    }
+    if (!missingReferenceSample.isEmpty()) {
+      List<LedgerIntegrityFinding.Example> missingReferenceExamples = new ArrayList<>();
+      for (var entry : missingReferenceSample.entrySet()) {
+        Dividend sample = entry.getValue();
+        String rowKey = day(sample.getPayDate()) + "|" + names.get(sample.getStockItemId());
+        distinctRows.add(rowKey, "MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH", null);
+        if (missingReferenceExamples.size() >= maxExamples) {
+          continue;
+        }
+        java.util.TreeSet<String> accounts = missingReferenceAccounts.get(entry.getKey());
+        missingReferenceExamples.add(
+            new LedgerIntegrityFinding.Example(
+                day(sample.getPayDate()),
+                names.get(sample.getStockItemId()),
+                "원장에는 "
+                    + java.time.YearMonth.from(
+                        sample.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate())
+                    + " 배당이 있는데 참조 지급 이력에 그 달이 없다 (자동 가져오기 필요"
+                    // 계좌를 모르는 행만 있으면 "계좌 0곳: " 같은 빈 꼬리가 남는다.
+                    + (accounts.isEmpty()
+                        ? ""
+                        : ", 계좌 " + accounts.size() + "곳: " + String.join(", ", accounts))
+                    + ")"));
+      }
+      findings.add(
+          new LedgerIntegrityFinding(
+              "MONTHLY_DIVIDEND_REFERENCE_MISSING_MONTH",
+              missingReferenceSample.size(),
+              missingReferenceExamples));
+    }
+  }
+
+  /**
+   * 배당을 매매 원장과 맞춰 보는 규칙 셋 - 매매 기록이 없는 종목의 배당(DIVIDEND_WITHOUT_TRADE) · 기준일에 보유가 없는 배당 · 그때까지 보유한 최대
+   * 수량을 넘는 배당. 셋이 매매가 있는 종목 집합을, 뒤의 둘이 종목별 매매 목록을 함께 쓴다. 판정 근거와 실측은 아래 주석, 2026-10-22 까지
+   * checkInternal 안에 그대로 적혀 있었다.
+   */
+  private void checkDividendsAgainstTrades(
+      RuleContext ctx, List<Trade> trades, List<Dividend> dividends) {
+    // 원장상 취득한 적이 없는 주식으로 배당을 받을 수는 없다. 도메인 지식이 필요 없는 판정이고,
+    // 실제로 한 건 있다(실측 2026-08-22: 하나금융지주 배당 2건, 매매 원장 0건).
+    //
+    // 조용히 어긋나는 곳: 손익 집계는 매매에서 파생되므로 그 종목이 아예 빠진다. 그래서 종목별
+    // 시계열을 전부 더해도 전체와 배당이 2,100원 어긋난다 - 화면에서는 원인을 알 수 없다.
+    java.util.Set<UUID> tradedStockItemIds = new java.util.HashSet<>();
+    for (Trade trade : trades) {
+      if (trade.getStockItemId() != null) {
+        tradedStockItemIds.add(trade.getStockItemId());
+      }
+    }
+    dividendRule(
+        ctx,
+        dividends,
+        "DIVIDEND_WITHOUT_TRADE",
+        d -> d.getStockItemId() != null && !tradedStockItemIds.contains(d.getStockItemId()),
+        d -> "gross=" + nz(d.getGrossAmount()) + ", quantity=" + d.getQuantity());
+
+    // 배당 기준일에 그 종목을 하나도 들고 있지 않았던 배당.
+    //
+    // 다만 <b>기준일이 실제로 적혀 있을 때만</b> 판정한다. 이 원장에는 기준일 칸이 따로 없어서 지급일이 그대로
+    // 복사돼 들어온다(실측 2026-08-24: 배당 193 건 전부 recordDate == payDate). 그 상태에서 "기준일 보유" 를
+    // 따지면 사실은 "지급일 보유" 를 따지는 것이고, 결산배당은 거의 언제나 걸린다 - 기준일이 전년 12-31 이라
+    // 그 뒤에 팔아도 배당은 나오기 때문이다.
+    //
+    // 실측 2026-08-24, 걸려 있던 3 건이 모두 그런 경우였다.
+    //
+    //   HK이노엔   2021-08-09 매수 -> 2021 결산배당 -> 2022-04-22 지급 + 같은 날 매도
+    //   NAVER     2020-01-30 매수 -> 2020 결산배당 -> 2021-01-18 매도 -> 2021-04-08 지급
+    //   삼성SDI    2019-12-13 매수 -> 2019 결산배당 -> 2020-01-28 매도 -> 2020-04-17 지급
+    //
+    // 셋 다 기준일에는 들고 있었으므로 정상이다. 기준일을 모르는 자료로 "보유가 없다" 고 말할 수는 없다.
+    //
+    // 기준일이 지급일과 다르게 적히기 시작하면 이 규칙이 다시 살아난다. 그때는 진짜로 "기준일에 보유 0" 인
+    // 배당만 걸린다.
+    //
+    // 거래가 아예 없는 종목은 DIVIDEND_WITHOUT_TRADE 가 이미 알리므로 여기서는 제외한다.
+    Map<UUID, java.util.List<Trade>> tradesByStockItem = new java.util.HashMap<>();
+    for (Trade trade : trades) {
+      if (trade.getStockItemId() != null && trade.getTradeDate() != null) {
+        tradesByStockItem
+            .computeIfAbsent(trade.getStockItemId(), key -> new ArrayList<>())
+            .add(trade);
+      }
+    }
+    dividendRule(
+        ctx,
+        dividends,
+        "DIVIDEND_WITHOUT_HOLDING_ON_BASIS_DATE",
+        d ->
+            d.getStockItemId() != null
+                && tradedStockItemIds.contains(d.getStockItemId())
+                && hasOwnRecordDate(d)
+                && holdingQuantityAt(tradesByStockItem.get(d.getStockItemId()), basisDate(d)) <= 0,
+        d ->
+            "기준일="
+                + day(basisDate(d))
+                + ", 배당수량="
+                + d.getQuantity()
+                + ", 그 날 보유="
+                + holdingQuantityAt(tradesByStockItem.get(d.getStockItemId()), basisDate(d))
+                + lastHeldHint(
+                    tradesByStockItem.get(d.getStockItemId()), d.getQuantity(), basisDate(d)));
+
+    // 배당 수량이 그때까지 한 번이라도 보유했던 최대 수량을 넘는 배당.
+    //
+    // 위 두 규칙은 "거래가 아예 없다"와 "그 날 보유가 0"만 본다. 보유가 있는데 <b>수량이 과하게</b> 적힌
+    // 경우는 어느 쪽에도 걸리지 않는다. 그러면 그 배당의 주당 배당금과 수익률 분모가 함께 틀어진다.
+    //
+    // 기준일이 비어 있어 지급일로 대신하는 자료가 많으므로, "그 날 보유"가 아니라 "그때까지의 최대 보유"와
+    // 견준다 - 기말배당의 기준일·지급일 시차(서너 달)를 오탐으로 만들지 않으려는 것이다.
+    //
+    // 실측 2026-08-24: 배당 193 건을 (계좌·종목·지급일)로 묶은 188 묶음 중, 합계 수량이 직전 400 일의
+    // 어느 보유 수량과도 맞지 않는 것은 하나금융지주 2 건뿐이고 그건 DIVIDEND_WITHOUT_TRADE 가 이미
+    // 잡는다. 즉 지금 이 규칙의 발견은 0 이며, 앞으로 배당을 넣을 때를 위한 그물이다.
+    dividendRule(
+        ctx,
+        dividends,
+        "DIVIDEND_QUANTITY_ABOVE_EVER_HELD",
+        d ->
+            d.getStockItemId() != null
+                && tradedStockItemIds.contains(d.getStockItemId())
+                && d.getQuantity() > 0
+                && d.getQuantity()
+                    > maxHoldingQuantityUntil(
+                        tradesByStockItem.get(d.getStockItemId()), basisDate(d)),
+        d ->
+            "배당수량="
+                + d.getQuantity()
+                + ", 그때까지 최대 보유="
+                + maxHoldingQuantityUntil(tradesByStockItem.get(d.getStockItemId()), basisDate(d)));
+  }
+
+  /**
+   * 수수료 · 거래세가 빠진 기록을 보는 규칙 둘 - 수수료와 거래세가 둘 다 0 인 매도(SELL_WITHOUT_FEE_AND_TAX) · 거래가 충분한데 수수료가 한 건도
+   * 없는 계좌(ACCOUNT_WITHOUT_ANY_FEE). 둘이 원장에서 뽑은 해마다의 거래세율 · 하한을 함께 쓴다. 판정 근거와 실측은 아래 주석, 2026-10-22
+   * 까지 checkInternal 안에 그대로 적혀 있었다.
+   */
+  private void checkMissingFeesAndTaxes(
+      RuleContext ctx, List<Trade> trades, Set<UUID> feeRecordsUnavailableAccountIds) {
+    List<LedgerIntegrityFinding> findings = ctx.findings();
+    Map<UUID, String> accountNames = ctx.accountNames();
+    int maxExamples = ctx.maxExamples();
+    RowIndex distinctRows = ctx.distinctRows();
+    // 조용히 어긋나는 곳: 매도 원가와 실현손익이 그만큼 부풀어 오른다. 화면은 그 값을 그대로 쓰므로
+    // 수익이 실제보다 좋아 보인다(실측 2026-08-23: 12 건).
+    //
+    // ETF 매도는 증권거래세가 면제라 세금만 0 인 것은 정상이다. 그래서 세금 하나만 보면 ETF 인지를
+    // 알아야 하고 종목 태그는 빠진 것이 있어 오탐이 난다. 반면 <b>수수료는 ETF 에도 붙는다</b> &mdash;
+    // 실측으로 세금만 0 인 매도 13 건은 전부 수수료가 있었고(최소 1 원), 둘 다 0 인 12 건은 전부
+    // 개별주식이었다. 즉 "둘 다 0" 은 종목 종류를 몰라도 판정할 수 있다.
+    //
+    // 초소액 매도는 수수료가 반올림으로 0 이 될 수 있으므로, 이 원장에서 수수료가 실제로 붙은 가장 작은
+    // 그 이상치 거래보다 작은 매도는 제외한다. 상수를 박지 않고 원장에서 스스로 보정한다.
+    BigDecimal minFeeBearingAmount = null;
+    for (Trade trade : trades) {
+      if (positive(trade.getFee())) {
+        BigDecimal amount = tradeAmount(trade);
+        if (amount != null
+            && (minFeeBearingAmount == null || amount.compareTo(minFeeBearingAmount) < 0)) {
+          minFeeBearingAmount = amount;
+        }
+      }
+    }
+    // 같은 해에 실제로 관측된 거래세율. 원장 자신에서만 뽑는다(세법 연혁 같은 바깥 지식을 쓰지 않는다).
+    //
+    // 실측 2026-08-23: 세금이 기록된 매도 29 건의 연도별 중앙값은 2020년 0.2500% · 2021년 0.2300% ·
+    // 2022년 0.2299% · 2023년 0.1997% · 2025년 0.1500% · 2026년 0.2000% 로 해마다 좁게 모인다.
+    // 그래서 "그 해 다른 계좌는 이만큼 냈다"는 근거로 쓸 수 있다.
+    Map<Integer, BigDecimal> observedTaxRateByYear = observedSellTaxRateByYear(trades);
+
+    // 이 하한도 전체 이력에서 뽑는다. 실측 2026-08-23: 전체 최소 거래대금은 2025-09-03 의 그 이상치 거래이고
+    // 최근 12 건 기준은 49,080 원인데, 대상이 되는 매도 12 건의 최소 거래대금이 316,000 원이라 어느 쪽을 써도
+    // 판정이 같다. 지급 지연 문턱과 달리 여기서는 창을 좁힐 이유가 없다.
+    // 수수료가 <b>한 건도</b> 없는 계좌. 아래 두 규칙이 함께 쓴다.
+    //
+    // 그런 계좌는 계좌 단위로 한 번만 알린다. 거래마다 또 알리면 같은 사정이 열몇 번 반복돼, 고칠 수 없는
+    // 지적이 화면을 덮는다(실측 2026-08-24: 동양증권 하나가 매도 12 건 + 계좌 1 건 = 13 건이었다.
+    // 그 계좌는 증권사에서 기록을 되받을 수 없어 채울 방법이 없다).
+    Set<UUID> feelessAccountIds = new java.util.HashSet<>();
+    Map<UUID, long[]> feeCountByAccount = new HashMap<>();
+    for (Trade trade : trades) {
+      if (trade.getAccountId() == null) {
+        continue;
+      }
+      long[] counts = feeCountByAccount.computeIfAbsent(trade.getAccountId(), key -> new long[2]);
+      counts[0]++;
+      if (positive(trade.getFee())) {
+        counts[1]++;
+      }
+    }
+    for (Map.Entry<UUID, long[]> entry : feeCountByAccount.entrySet()) {
+      if (entry.getValue()[1] == 0 && entry.getValue()[0] >= MIN_TRADES_FOR_FEELESS_ACCOUNT) {
+        feelessAccountIds.add(entry.getKey());
+      }
+    }
+
+    BigDecimal feeThreshold = minFeeBearingAmount;
+    if (feeThreshold != null) {
+      tradeRule(
+          ctx,
+          trades,
+          "SELL_WITHOUT_FEE_AND_TAX",
+          t ->
+              t.getType() == TradeType.SELL
+                  && !positive(t.getFee())
+                  && !positive(t.getTax())
+                  // 계좌 전체에 수수료가 없으면 ACCOUNT_WITHOUT_ANY_FEE 가 한 번에 알린다.
+                  && !feelessAccountIds.contains(t.getAccountId())
+                  && tradeAmount(t) != null
+                  && tradeAmount(t).compareTo(feeThreshold) >= 0,
+          // 계좌는 tradeRule 이 문장 끝에 붙인다. 여기서 또 붙이면 화면에 두 번 나온다
+          // (실측 2026-08-24: "… 거래세=0 [동양증권] (…) [동양증권]").
+          t ->
+              "매도금액="
+                  + tradeAmount(t).setScale(0, RoundingMode.HALF_UP)
+                  + ", 수수료=0, 거래세=0"
+                  + missingTaxHint(t, observedTaxRateByYear));
+    }
+
+    // 거래가 충분히 많은데 수수료가 <b>한 건도</b> 기록되지 않은 계좌.
+    //
+    // 조용히 어긋나는 곳: 그 계좌의 매수 원가는 낮게, 매도 실현손익은 높게 잡힌다. 계좌 단위로 전부
+    // 빠져 있으면 화면 어디에서도 이상해 보이지 않는다 - 숫자가 그냥 조금씩 좋을 뿐이다.
+    //
+    // 매수만 보면 판정할 수 없다. 공모주 청약은 수수료가 없는 것이 정상이라(실측 2026-08-23: 한국투자증권
+    // 위탁의 수수료 0 매수 14 건은 대부분 2020~2021 공모주 - 카카오게임즈·SK바이오사이언스·HK이노엔 등)
+    // 건별 규칙은 오탐이 난다. 계좌 전체가 0 이면 그 설명이 성립하지 않는다.
+    //
+    // 실측 2026-08-23: 동양증권 26/26 건이 수수료 0 이다. 나머지 계좌는 88~100% 에
+    // 수수료가 붙는다. 건수 하한을 두는 이유는 거래가 한두 건뿐인 계좌라면 우연일 수 있기 때문이다.
+    Map<UUID, long[]> tradeCountByAccount = new HashMap<>();
+    Map<UUID, BigDecimal> tradeAmountByAccount = new HashMap<>();
+    Map<UUID, Instant> firstTradeByAccount = new HashMap<>();
+    for (Trade trade : trades) {
+      if (trade.getAccountId() == null) {
+        continue;
+      }
+      long[] counts = tradeCountByAccount.computeIfAbsent(trade.getAccountId(), key -> new long[2]);
+      counts[0]++;
+      if (positive(trade.getFee())) {
+        counts[1]++;
+      }
+      BigDecimal amount = tradeAmount(trade);
+      if (amount != null) {
+        tradeAmountByAccount.merge(trade.getAccountId(), amount, BigDecimal::add);
+      }
+      if (trade.getTradeDate() != null) {
+        firstTradeByAccount.merge(
+            trade.getAccountId(), trade.getTradeDate(), (a, b) -> a.isBefore(b) ? a : b);
+      }
+    }
+    Map<UUID, List<Trade>> tradesByAccount = new HashMap<>();
+    for (Trade trade : trades) {
+      if (trade.getAccountId() != null) {
+        tradesByAccount.computeIfAbsent(trade.getAccountId(), key -> new ArrayList<>()).add(trade);
+      }
+    }
+    Map<Integer, BigDecimal> observedFeeRateFloorByYear = observedFeeRateFloorByYear(trades);
+    List<LedgerIntegrityFinding.Example> feelessAccounts = new ArrayList<>();
+    int feelessAccountCount = 0;
+    for (Map.Entry<UUID, long[]> entry : tradeCountByAccount.entrySet()) {
+      long total = entry.getValue()[0];
+      long withFee = entry.getValue()[1];
+      if (withFee > 0 || total < MIN_TRADES_FOR_FEELESS_ACCOUNT) {
+        continue;
+      }
+      // 계좌 설정에서 "기록을 되받을 수 없다" 고 밝힌 계좌는 지적하지 않는다.
+      if (feeRecordsUnavailableAccountIds.contains(entry.getKey())) {
+        continue;
+      }
+      feelessAccountCount++;
+      distinctRows.add(
+          day(firstTradeByAccount.get(entry.getKey())) + "|" + accountNames.get(entry.getKey()),
+          "ACCOUNT_WITHOUT_ANY_FEE",
+          accountNames.get(entry.getKey()));
+      if (feelessAccounts.size() < maxExamples) {
+        BigDecimal amount =
+            tradeAmountByAccount
+                .getOrDefault(entry.getKey(), BigDecimal.ZERO)
+                .setScale(0, RoundingMode.HALF_UP);
+        feelessAccounts.add(
+            new LedgerIntegrityFinding.Example(
+                day(firstTradeByAccount.get(entry.getKey())),
+                accountNames.get(entry.getKey()),
+                "거래="
+                    + total
+                    + "건, 수수료 기록=0건, 거래대금="
+                    + amount
+                    + missingFeeHint(
+                        tradesByAccount.getOrDefault(entry.getKey(), List.of()),
+                        observedFeeRateFloorByYear)
+                    + feelessSellTaxHint(
+                        tradesByAccount.getOrDefault(entry.getKey(), List.of()),
+                        observedTaxRateByYear)));
+      }
+    }
+    if (feelessAccountCount > 0) {
+      findings.add(
+          new LedgerIntegrityFinding(
+              "ACCOUNT_WITHOUT_ANY_FEE", feelessAccountCount, feelessAccounts));
+    }
+  }
+
+  /**
+   * 그 계좌의 평소 수수료율에서 크게 벗어난 거래(TRADE_FEE_RATE_FAR_ABOVE_ACCOUNT_MEDIAN) - 계좌별 중앙 수수료율과 최소 수수료로 가른다.
+   * 판정 근거와 실측은 아래 주석, 2026-10-22 까지 checkInternal 안에 그대로 적혀 있었다.
+   */
+  private void checkFeeRateOutliers(RuleContext ctx, List<Trade> trades) {
+    // 수수료율은 계좌(증권사·약정)마다 정해져 있어 거의 일정하다. 한 건만 몇십 배로 튀면 입력이 잘못된
+    // 것이다. 기준은 바깥에서 가져오지 않고 <b>그 계좌 자신의 중앙값</b>으로 잡는다.
+    //
+    // 실측 2026-08-23: 5 개 계좌 중 4 개는 최대치가 중앙값의 1.0~1.2 배에 머무는데, 한국투자증권 위탁만
+    // 152.5 배인 거래가 하나 있다(2025-09-03 TIGER 코리아배당다우존스 1 주, 수수료율 0.6375%,
+    // 계좌 중앙값 0.0042%).
+    //
+    // "소액이라 최소수수료가 붙었다" 로는 설명되지 않는다 - 같은 계좌에 거래대금이 15 배인데 수수료는
+    // 1/13 인 건이 있어, 그런 하한은 존재할 수 없다. 그래서 그 계좌의 최저 수수료를 함께 적어 판단 근거를 남긴다.
+    Map<UUID, List<BigDecimal>> feeRatesByAccount = new HashMap<>();
+    Map<UUID, BigDecimal> minFeeByAccount = new HashMap<>();
+    for (Trade trade : trades) {
+      BigDecimal amount = tradeAmount(trade);
+      if (trade.getAccountId() == null
+          || amount == null
+          || amount.signum() <= 0
+          || !positive(trade.getFee())) {
+        continue;
+      }
+      feeRatesByAccount
+          .computeIfAbsent(trade.getAccountId(), key -> new ArrayList<>())
+          .add(
+              trade
+                  .getFee()
+                  .multiply(BigDecimal.valueOf(100))
+                  .divide(amount, 6, RoundingMode.HALF_UP));
+      minFeeByAccount.merge(trade.getAccountId(), trade.getFee(), BigDecimal::min);
+    }
+    Map<UUID, BigDecimal> medianFeeRate = new HashMap<>();
+    for (var entry : feeRatesByAccount.entrySet()) {
+      if (entry.getValue().size() < MIN_TRADES_FOR_FEE_RATE_MEDIAN) {
+        continue;
+      }
+      List<BigDecimal> sortedRates = new ArrayList<>(entry.getValue());
+      sortedRates.sort(Comparator.naturalOrder());
+      BigDecimal median = sortedRates.get(sortedRates.size() / 2);
+      if (median.signum() > 0) {
+        medianFeeRate.put(entry.getKey(), median);
+      }
+    }
+    tradeRule(
+        ctx,
+        trades,
+        "TRADE_FEE_RATE_FAR_ABOVE_ACCOUNT_MEDIAN",
+        t ->
+            feeRateMultiple(t, medianFeeRate) != null
+                && feeRateMultiple(t, medianFeeRate).compareTo(FEE_RATE_OUTLIER_MULTIPLE) > 0,
+        t ->
+            "수수료율="
+                + feeRate(t).setScale(4, RoundingMode.HALF_UP)
+                + "%(거래대금 "
+                + tradeAmount(t).setScale(0, RoundingMode.HALF_UP)
+                + " · 수수료 "
+                + nz(t.getFee()).setScale(0, RoundingMode.HALF_UP)
+                + "), 이 계좌 중앙값 "
+                + medianFeeRate.get(t.getAccountId()).setScale(4, RoundingMode.HALF_UP)
+                + "% 의 "
+                + feeRateMultiple(t, medianFeeRate).setScale(1, RoundingMode.HALF_UP)
+                + "배. 이 계좌의 최저 수수료는 "
+                + nz(minFeeByAccount.get(t.getAccountId())).setScale(0, RoundingMode.HALF_UP)
+                + "원이라 최소수수료로는 설명되지 않는다");
+  }
+
+  /** 규칙 18 곳이 함께 채우는 것(발견 목록 · 종목 이름 · 예시 수 · 행 색인 · 계좌 집계). */
+  private record RuleContext(
+      List<LedgerIntegrityFinding> findings,
+      Map<UUID, String> names,
+      int maxExamples,
+      RowIndex distinctRows,
+      Map<UUID, String> accountNames,
+      Map<String, long[]> accountFindingCounts,
+      Map<String, Set<String>> accountDistinctRows) {}
+
+  /**
+   * 규칙 하나의 결과: 걸린 행을 모두 행 색인 · 계좌 집계에 넣고, 앞에서부터 maxExamples 개를 예시(날짜 · 종목 · 설명 + 계좌)로 담아 발견을 더한다.
+   * 배당 · 매매 규칙이 같은 꼬리를 한 벌씩 들고 있었다(2026-10-22 정리) - 다른 것은 행의 날짜와 예시 순서(매매만 최신순으로 정렬해 넘긴다)뿐이다.
+   */
+  private static <T> void addFinding(
+      RuleContext ctx,
+      String code,
+      List<T> hits,
+      Function<T, Instant> date,
+      Function<T, UUID> stockItemId,
+      Function<T, UUID> accountId,
+      Function<T, String> detail) {
     if (hits.isEmpty()) {
       return;
     }
-    for (Trade hit : hits) {
-      String rowKey = day(hit.getTradeDate()) + "|" + names.get(hit.getStockItemId());
-      distinctRows.add(rowKey, code, accountNames.get(hit.getAccountId()));
+    for (T hit : hits) {
+      String rowKey = day(date.apply(hit)) + "|" + ctx.names().get(stockItemId.apply(hit));
+      ctx.distinctRows().add(rowKey, code, ctx.accountNames().get(accountId.apply(hit)));
       recordAccount(
-          hit.getAccountId(), accountNames, rowKey, accountFindingCounts, accountDistinctRows);
+          accountId.apply(hit),
+          ctx.accountNames(),
+          rowKey,
+          ctx.accountFindingCounts(),
+          ctx.accountDistinctRows());
     }
     List<LedgerIntegrityFinding.Example> examples = new ArrayList<>();
-    for (Trade hit : hits.stream().limit(maxExamples).toList()) {
+    for (T hit : hits.stream().limit(ctx.maxExamples()).toList()) {
       examples.add(
           new LedgerIntegrityFinding.Example(
-              day(hit.getTradeDate()),
-              names.get(hit.getStockItemId()),
-              detail.apply(hit) + accountSuffix(hit.getAccountId(), accountNames)));
+              day(date.apply(hit)),
+              ctx.names().get(stockItemId.apply(hit)),
+              detail.apply(hit) + accountSuffix(accountId.apply(hit), ctx.accountNames())));
     }
-    findings.add(new LedgerIntegrityFinding(code, hits.size(), examples));
+    ctx.findings().add(new LedgerIntegrityFinding(code, hits.size(), examples));
   }
 }

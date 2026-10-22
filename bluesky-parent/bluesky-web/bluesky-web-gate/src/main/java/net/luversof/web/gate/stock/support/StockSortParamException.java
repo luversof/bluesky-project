@@ -9,18 +9,16 @@ package net.luversof.web.gate.stock.support;
  *
  * <p>방향도 같다: {@code payDate,sideways} 는 조용히 오름차순이었다.
  */
-public class StockSortParamException extends RuntimeException {
+public class StockSortParamException extends StockParamException {
 
   private static final long serialVersionUID = 1L;
 
-  private final String name;
-
   public StockSortParamException(String name, String value) {
-    super("sort parameter cannot be used: " + name + "=" + value);
-    this.name = name;
+    super("sort parameter cannot be used: " + name + "=" + value, name, null);
   }
 
-  public String getName() {
-    return name;
+  @Override
+  public String descKey() {
+    return "stock.error.badrequest.sort.desc";
   }
 }

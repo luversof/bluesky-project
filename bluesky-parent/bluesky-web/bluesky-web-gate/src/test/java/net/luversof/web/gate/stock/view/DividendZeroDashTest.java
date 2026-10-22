@@ -53,10 +53,7 @@ class DividendZeroDashTest {
 
   @Test
   void 집계_표들도_같은_규칙을_쓴다() throws IOException {
-    String analytics =
-        Files.readString(
-            Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte"),
-            StandardCharsets.UTF_8);
+    String analytics = YieldAnalyticsSource.expanded();
 
     // 실측 2026-09-11(전체 기간): 연도별 · 종목별 · 계좌별 표에도 설명 없는 "-" 가 25 칸 있었고
     // 그중 19 칸(세금 12 · 과세 금액 7)이 0 원이었다.

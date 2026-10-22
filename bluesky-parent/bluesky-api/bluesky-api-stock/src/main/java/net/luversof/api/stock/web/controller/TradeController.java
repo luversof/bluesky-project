@@ -26,10 +26,6 @@ public class TradeController {
 
   @Autowired private StockHoldingPeriodService stockHoldingPeriodService;
 
-  public void setStockHoldingPeriodService(StockHoldingPeriodService stockHoldingPeriodService) {
-    this.stockHoldingPeriodService = stockHoldingPeriodService;
-  }
-
   @GetMapping
   public List<TradeResponse> findTrades(TradeSearchRequest request) {
     return tradeProfitService.getTradeHistory(request);

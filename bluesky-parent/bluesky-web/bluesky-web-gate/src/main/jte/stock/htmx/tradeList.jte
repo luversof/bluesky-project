@@ -62,8 +62,6 @@
 	String monthlyTradeAmountTitle = MessageUtil.getMessage("stock.trade.chart.title.monthly.trade.amount");
 
 	// Build JSON for charts
-	java.util.function.Function<String, String> ej = s ->
-		s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
 	DateTimeFormatter ymd = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	// 차트(stock-charts.ts)가 쓰는 것은 날짜·종목·계좌·구분·금액·실현손익이다. 종목/계좌 이름은 줄마다 되풀이되므로
 	// 색인표(S/A)로 한 번만 싣고 줄은 배열로 줄인다(실측 2026-09-09: 전체 기간 321 건에서 31KB → 약 11KB). 모양은 인라인에서 되펼친다.
@@ -84,16 +82,9 @@
 			.append(tr.amount() != null ? tr.amount().toPlainString() : "0").append(",")
 			.append(tr.realizedProfit() != null ? tr.realizedProfit().toPlainString() : "0").append("]");
 	}
-	java.util.function.Function<java.util.Set<String>, String> namesJs = names -> {
-		StringBuilder sb = new StringBuilder("[");
-		int i = 0;
-		for (String name : names) {
-			if (i++ > 0) sb.append(",");
-			sb.append("\"").append(ej.apply(name)).append("\"");
-		}
-		return sb.append("]").toString();
-	};
-	String tradeDataJs = "const S=" + namesJs.apply(stockIndex.keySet()) + ",A=" + namesJs.apply(accountIndex.keySet())
+	// 이름표(S/A)는 JS 문자열 배열로 - 따옴표 · 역슬래시 · 꺾쇠(<) 와 제어문자를 막는다(ChartSeriesJs.jsString). 2026-10-22 까지 매매 목록 · 배당 목록 ·
+	// 활동 목록이 제각각 이스케이프를 들고 있었고 < 를 막지 않아, 이름에 </script> 가 들어가면 아래 $unsafe 스크립트가 끊겼다.
+	String tradeDataJs = "const S=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(stockIndex.keySet()) + ",A=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(accountIndex.keySet())
 		+ ",tradeData=[" + rowsSb + "].map(function(r){return {tradeDate:r[0],stockItem:S[r[1]],account:A[r[2]],type:r[3],amount:r[4],profit:r[5]};});";
 
 	// Nav 버튼 활성화 여부 (use client timezone if available)
@@ -116,7 +107,7 @@
      이 값이 있으면 스왑 뒤에 버튼을 실제 값으로 되돌릴 수 있다. --%>
 <div id="tradeListFragment" data-applied-range-mode="${rangeMode == null ? "" : rangeMode}">
 
-	@template.stock.htmx.fragments.dateRangeNavBar(
+	@template.stock.htmx.fragments.components.dateRangeNavBar(
 		pickerName = "tradePicker",
 		btnClass = "date-range-btn",
 		canPrev = canPrev,
@@ -128,7 +119,12 @@
 		coveredEndDate = coveredRange.endDate()
 	)
 
-	@template.stock.htmx.fragments.trade.tradeSearchForm(
+	@template.stock.htmx.fragments.components.listSearchForm(
+		formId = "tradeSearchForm",
+		contentUrl = "/stock/htmx/trade/list",
+		fragmentId = "tradeListFragment",
+		idPrefix = "trade",
+		summaryLabel = MessageUtil.getMessage("stock.trade.label.advanced.search"),
 		accountList = accountList,
 		stockItemList = stockItemList,
 		tagCountStockItemList = tagCountStockItemList,
@@ -310,7 +306,7 @@
 				}
 			}
 		} catch(e) {}
-		// Chart.js / StockCharts 는 stockLayout 에서 1회 로드되어 항상 존재한다. (initAll 내부에서도 자체 가드)
+		// Chart.js / StockCharts 는 initAll 안에서 ensureStockCharts 로 필요할 때 불러온다.
 		setTimeout(initAll, 0);
 		setTimeout(function() {
 			// 크기가 실제로 달라졌을 때만(소수 폭에서 resize() 는 매번 전체 재렌더 - stock-charts.ts resizeIfChanged 참고)
@@ -327,15 +323,6 @@
 			});
 		}
 
-		// 페이징 클릭 시 fragment 상단 스크롤
-		if (window.__pendingScrollTo === 'tradeListFragment') {
-			delete window.__pendingScrollTo;
-			var frag = document.getElementById('tradeListFragment');
-			if (frag) frag.scrollIntoView({ behavior: 'smooth', block: 'start' });
-		}
-		document.querySelectorAll('#tradeListFragment .join button[hx-get]').forEach(function(btn) {
-			btn.addEventListener('click', function() { window.__pendingScrollTo = 'tradeListFragment'; });
-		});
 	})();
 	</script>
 </div>

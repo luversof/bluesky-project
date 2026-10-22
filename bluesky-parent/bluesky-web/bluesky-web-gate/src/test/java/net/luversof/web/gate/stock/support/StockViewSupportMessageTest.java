@@ -78,4 +78,45 @@ class StockViewSupportMessageTest {
 
     assertThat(StockViewSupport.msg(KEY, 1, "a", "b")).isEqualTo(KEY);
   }
+
+  /**
+   * 숫자 인자는 요청 로케일로 적는다 - JVM 기본 로케일이 아니다. {@code MessageFormat.format(MessageUtil.getMessage(key),
+   * …)} 로 두 단계를 따로 적으면 JVM 기본을 따라, 기본이 독일어면 "1.234" 가 나온다(2026-10-22 실측, 그 꼴 11 곳을 이 헬퍼로 모았다).
+   */
+  @Test
+  void 숫자_인자는_요청_로케일로_적는다() {
+    // FORMAT 범주만 바꾸고 되돌린다 - MessageFormat.format(정적)이 읽는 것이 이 범주다(검토 2026-10-22).
+    Locale jvmDefault = Locale.getDefault(Locale.Category.FORMAT);
+    try {
+      Locale.setDefault(Locale.Category.FORMAT, Locale.GERMANY);
+      LocaleContextHolder.setLocale(Locale.ENGLISH);
+
+      assertThat(StockViewSupport.msg("stock.dividend.yield.cell.held.days", 1234L))
+          .isEqualTo("Held 1,234 days");
+    } finally {
+      Locale.setDefault(Locale.Category.FORMAT, jvmDefault);
+    }
+  }
+
+  /** 게이트 주식 코드는 {@code msg} 가 하는 일을 두 단계로 다시 적지 않는다(위 시험의 로케일 차이 · 없는 키 처리가 갈린다). */
+  @Test
+  void 메시지_꺼내_끼우기를_두_단계로_적지_않는다() throws java.io.IOException {
+    java.util.regex.Pattern twoStep =
+        java.util.regex.Pattern.compile(
+            "(?:MessageFormat\\.format|new\\s+(?:[\\w.]+\\.)?MessageFormat)\\(\\s*(?:[\\w.]+\\.)?MessageUtil\\.getMessage\\(");
+    java.util.List<String> offenders = new java.util.ArrayList<>();
+    int scanned = 0;
+    try (var paths =
+        java.nio.file.Files.walk(
+            java.nio.file.Path.of("src/main/java/net/luversof/web/gate/stock"))) {
+      for (java.nio.file.Path path : paths.filter(p -> p.toString().endsWith(".java")).toList()) {
+        scanned++;
+        if (twoStep.matcher(java.nio.file.Files.readString(path)).find()) {
+          offenders.add(path.getFileName().toString());
+        }
+      }
+    }
+    assertThat(scanned).as("훑은 파일").isGreaterThan(100);
+    assertThat(offenders).as("StockViewSupport.msg(key, args) 로 적을 곳").isEmpty();
+  }
 }

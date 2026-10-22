@@ -86,6 +86,49 @@ class HtmxReferenceTargetTest {
   private static final Pattern ID_ATTR =
       Pattern.compile("\\bid\\s*=\\s*" + q() + "([^" + q() + "$]*)" + q());
 
+  /**
+   * 조각 호출. 2026-10-22 검색 폼 · 정렬 머리칸을 조각으로 모으면서 {@code id="dividendSearchForm"} · {@code
+   * hx-include="#dividendSearchForm"} 같은 글자가 템플릿에서 사라지고 호출 인자로 옮겨 갔다. 인자를 역할대로 나눠 센다:
+   *
+   * <ul>
+   *   <li>폼을 <b>그리는</b> 조각(listSearchForm · detailDateFilter, {@code <form id="${formId}">})의
+   *       formId &rarr; id 정의
+   *   <li>폼을 <b>가리키는</b> 조각(sortHeader, {@code hx-include="#${formId}"})의 formId &rarr; hx-include
+   *       참조
+   *   <li>세 조각의 fragmentId({@code hx-target="#${fragmentId}"}) &rarr; hx-target 참조
+   * </ul>
+   *
+   * <p>처음엔 모든 formId 인자를 정의로 셌다 &mdash; 정렬 머리칸 12 개가 스스로 폼 id 를 "정의" 해 줘서, 폼 쪽 id 를 바꿔도 통과했다(검토
+   * 2026-10-22).
+   */
+  private static final Pattern COMPONENT_CALL =
+      Pattern.compile(
+          "@template[.]stock[.]htmx[.]fragments[.]components[.](listSearchForm|detailDateFilter|sortHeader)[(]");
+
+  private static final Pattern ID_ARG =
+      Pattern.compile("\\b(formId|fragmentId)\\s*=\\s*" + q() + "([\\w-]+)" + q());
+
+  /** 여는 괄호 바로 뒤부터 짝이 맞는 닫는 괄호 앞까지(인자 안의 MessageUtil.getMessage(...) 같은 괄호를 건너뛴다). */
+  private static String callArguments(String text, int afterOpen) {
+    int depth = 1;
+    for (int i = afterOpen; i < text.length(); i++) {
+      char c = text.charAt(i);
+      if (c == '(') {
+        depth++;
+      } else if (c == ')' && --depth == 0) {
+        return text.substring(afterOpen, i);
+      }
+    }
+    throw new IllegalStateException("조각 호출이 닫히지 않았다");
+  }
+
+  /**
+   * 조각 호출 인자로 넘긴 목록 주소. listSearchForm · sortHeader · detailDateFilter 는 hx-get="${contentUrl}" 로
+   * 부른다 &mdash; 2026-10-22 검색 폼 · 정렬 머리칸을 조각으로 모으면서 hx-get 글자에서 주소가 사라졌다. 인자로 넘긴 주소도 열려 있는지 본다.
+   */
+  private static final Pattern CONTENT_URL_ARG =
+      Pattern.compile("\\bcontentUrl\\s*=\\s*" + q() + "(/[^" + q() + "]*)" + q());
+
   private static final Pattern ID_IN_SCRIPT =
       Pattern.compile("(?:\\bid|[.]id)\\s*=\\s*['" + q() + "]([\\w-]+)['" + q() + "]");
 
@@ -162,6 +205,8 @@ class HtmxReferenceTargetTest {
     Set<String> includes = new LinkedHashSet<>();
     Set<String> targets = new LinkedHashSet<>();
     Set<String> ids = new LinkedHashSet<>();
+    int formIdComponents = 0;
+    int componentCalls = 0;
     List<Path> templates = files(JTE, ".jte");
     for (Path path : templates) {
       String text =
@@ -170,6 +215,11 @@ class HtmxReferenceTargetTest {
       while (url.find()) {
         urls.computeIfAbsent(
                 url.group(1).toUpperCase() + " " + url.group(2), k -> new LinkedHashSet<>())
+            .add(path.getFileName().toString());
+      }
+      Matcher contentUrl = CONTENT_URL_ARG.matcher(text);
+      while (contentUrl.find()) {
+        urls.computeIfAbsent("GET " + contentUrl.group(1), k -> new LinkedHashSet<>())
             .add(path.getFileName().toString());
       }
       Matcher sync = SYNC_URL.matcher(text);
@@ -189,6 +239,24 @@ class HtmxReferenceTargetTest {
       while (id.find()) {
         ids.add(id.group(1));
       }
+      if (text.contains("<form id=" + q() + "${formId}" + q())) {
+        formIdComponents++;
+      }
+      Matcher call = COMPONENT_CALL.matcher(text);
+      while (call.find()) {
+        componentCalls++;
+        boolean drawsForm = !"sortHeader".equals(call.group(1));
+        Matcher arg = ID_ARG.matcher(callArguments(text, call.end()));
+        while (arg.find()) {
+          if ("fragmentId".equals(arg.group(1))) {
+            targets.add("#" + arg.group(2));
+          } else if (drawsForm) {
+            ids.add(arg.group(2));
+          } else {
+            includes.add("#" + arg.group(2));
+          }
+        }
+      }
     }
     for (Path path : files(TS, ".ts")) {
       Matcher id = ID_IN_SCRIPT.matcher(Files.readString(path, StandardCharsets.UTF_8));
@@ -204,6 +272,10 @@ class HtmxReferenceTargetTest {
     assertThat(ids).as("id 를 못 읽었다").hasSizeGreaterThan(50);
     assertThat(includes).as("hx-include 를 못 읽었다").isNotEmpty();
     assertThat(targets).as("hx-target 을 못 읽었다").isNotEmpty();
+    // formId 인자를 id 로 세는 근거: 그 인자를 받는 조각이 실제로 form id 로 그린다.
+    assertThat(formIdComponents).as("formId 를 form id 로 그리는 조각").isEqualTo(2);
+    // 검색 폼 3(배당 · 매매 · 활동) + 상세 기간 폼 2 + 정렬 머리칸 12.
+    assertThat(componentCalls).as("id 를 인자로 받는 조각 호출").isEqualTo(17);
 
     List<String> problems = new ArrayList<>();
     for (Map.Entry<String, Set<String>> entry : urls.entrySet()) {

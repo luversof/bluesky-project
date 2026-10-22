@@ -271,10 +271,6 @@ public class PoeCraftController {
   }
 
   /**
-   * 게임 아이템 붙여넣기(10-20 C485, craftofexile 의 Import item) — 복사 글을 API 가 아이템으로 읽고, 수치에 맞는 굴림 씨앗을 찾아 그
-   * 아이템으로 에뮬레이터를 연다(HX-Redirect — 주소에 아이템이 들어 있어 공유 · 새로 고침에도 그대로). 못 읽으면 이유를 그 자리에.
-   */
-  /**
    * 제작할 아이템 검색(10-21 C527, craftofexile 'Search for a craftable item') — 베이스 이름(영 · 한)으로 종류 · 변형 ·
    * 베이스를 한 번에 연다. 변형은 변형의 베이스 목록(주얼 색 · 심연 · 군집 = 첫 인챈트) → 속성 변형(방어구) 순, 제작 대상 아닌 베이스(고유 전용 등)는 뺀다.
    */
@@ -348,6 +344,10 @@ public class PoeCraftController {
     return "poe/htmx/craftBaseSearch";
   }
 
+  /**
+   * 게임 아이템 붙여넣기(10-20 C485, craftofexile 의 Import item) — 복사 글을 API 가 아이템으로 읽고, 수치에 맞는 굴림 씨앗을 찾아 그
+   * 아이템으로 에뮬레이터를 연다(HX-Redirect — 주소에 아이템이 들어 있어 공유 · 새로 고침에도 그대로). 못 읽으면 이유를 그 자리에.
+   */
   @PostMapping(value = "/poe/htmx/craft/import", produces = MediaType.TEXT_HTML_VALUE)
   public String importItem(
       @RequestParam(required = false, defaultValue = "") String text,
@@ -451,13 +451,6 @@ public class PoeCraftController {
     return "poe/htmx/craftImportMsg";
   }
 
-  /**
-   * 이 종류 · 변형의 베이스(C487) — 요구 속성으로 변형을 가르고(API PoeOptimizeService.attributeVariantOf 와 같은 규칙), 드롭
-   * 레벨 높은 순. 못 읽으면 빈 목록(카드는 종류 이름).
-   */
-  /**
-   * 군집 주얼 인챈트 줄(10-20 C514) — 변형에 인챈트가 있으면(Jewel 의 cluster_*) 화면 언어로, 없으면 null. classes 가 없으면 읽는다.
-   */
   /** 군집 주얼 크기별 패시브 수 범위(C531, PoB ClusterJewels minNodes~maxNodes) — 대형 8~12 · 중형 4~6 · 소형 2~3. */
   static final java.util.Map<String, int[]> CLUSTER_NODES =
       java.util.Map.of(
@@ -480,6 +473,9 @@ public class PoeCraftController {
     return passives == null ? r[0] : Math.max(r[0], Math.min(r[1], passives));
   }
 
+  /**
+   * 군집 주얼 인챈트 줄(10-20 C514) — 변형에 인챈트가 있으면(Jewel 의 cluster_*) 화면 언어로, 없으면 null. classes 가 없으면 읽는다.
+   */
   private List<String> enchantOf(
       List<PoeModItemClass> classes, String itemClass, String variant, Integer passives) {
     List<String> lines = enchantOf(classes, itemClass, variant);
@@ -571,6 +567,10 @@ public class PoeCraftController {
   /** 베이스가 변형을 정하는 종류(C514 · C516) — 주얼 색 · 군집 주얼 크기 · 심연 주얼 종류, 변형의 베이스 목록으로 거른다. */
   static final java.util.Set<String> BASE_VARIANT_CLASSES = java.util.Set.of("Jewel", "AbyssJewel");
 
+  /**
+   * 이 종류 · 변형의 베이스(C487) — 요구 속성으로 변형을 가르고(API PoeOptimizeService.attributeVariantOf 와 같은 규칙), 드롭
+   * 레벨 높은 순. 못 읽으면 빈 목록(카드는 종류 이름).
+   */
   private List<net.luversof.web.gate.poe.dto.PoeBaseItem> basesFor(
       String itemClass, String variant, List<String> variantBases) {
     // 주얼 · 심연 주얼은 변형의 베이스(진홍 · 대형 군집 · 살인적인 눈 …)만 — 분광 · 무궁한 · 조립된 눈 같은 고유 전용 베이스는 어느 변형에도 없다
@@ -722,12 +722,12 @@ public class PoeCraftController {
     List<java.util.Map<String, Long>> rollHist = parseRollHist(rollHistory);
     boolean reroll = false;
     boolean blessed = false;
-    Long lock = seedOf(foresee);
+    Long lock = net.luversof.web.gate.poe.CraftTargetParams.seedOf(foresee);
     // 올플레임 복제본 고르기(C523) — GHOST:씨앗:화폐 = 그 씨앗으로 그 화폐를 적용(고른 복제본 그대로, 미리 보기 적용과 같은 길)
     String rawAct = rawAction;
     if (rawAct.startsWith("GHOST:") && rawAct.indexOf(':', 6) > 6) {
       int c = rawAct.indexOf(':', 6);
-      lock = seedOf(rawAct.substring(6, c));
+      lock = net.luversof.web.gate.poe.CraftTargetParams.seedOf(rawAct.substring(6, c));
       rawAct = "COMMIT:" + rawAct.substring(c + 1);
     }
     // "이대로 적용"(COMMIT:화폐) — 미리 본 씨앗 · 인자로 그 화폐를 적용
@@ -1129,100 +1129,29 @@ public class PoeCraftController {
     return "poe/htmx/craftCalc";
   }
 
-  /** 묶음(10-20 C522, craftofexile 계산기 '일부 맞춤') — 줄 끝 체크(t_grp:접두접미:계열)한 계열들. */
-  static java.util.Set<String> groupMembers(
-      org.springframework.util.MultiValueMap<String, String> params) {
-    java.util.Set<String> out = new java.util.LinkedHashSet<>();
-    for (String key : params.keySet()) {
-      if (key.startsWith("t_grp:") && "1".equals(params.getFirst(key))) {
-        out.add(key.substring("t_grp:".length()));
-      }
-    }
-    return out;
-  }
-
-  /**
-   * 묶음 목표(C522) — 체크한 계열 중 k(t_grpk)개 이상: 계열들의 등급 id 를 합친 목표 k 개(옵션 하나는 계열 하나에만 들어 '서로 다른 k 계열'과
-   * 같다). 계열 등급 칸을 고르면 그 등급 이상, 안 고르면 모든 등급. 계산기 · 적중 확률 · 연타 · 전략 · 최적 조합이 같은 목표로.
-   */
+  /** 묶음 목표(C522) — 공용 CraftTargetParams(C552, PoE2 와 같은 규칙). */
   void groupTargets(
       org.springframework.util.MultiValueMap<String, String> params,
       java.util.Set<String> members,
       List<PoeCraft.PoolLine> pool,
       List<PoeCraft.Target> targets,
       List<String> labels) {
-    if (members.isEmpty()) {
-      return;
-    }
-    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
-    List<String> ids = new ArrayList<>();
-    List<String> names = new ArrayList<>();
-    for (String fam : members) {
-      int rank = 99;
-      try {
-        rank = Integer.parseInt(params.getFirst("t_" + fam));
-      } catch (RuntimeException e) {
-        rank = 99;
-      }
-      int r = rank;
-      List<PoeCraft.PoolLine> in =
-          pool.stream()
-              .filter(p -> (p.gen() + ":" + p.family()).equals(fam))
-              .filter(p -> p.tierRank() != null && p.tierRank() <= r)
-              .sorted(java.util.Comparator.comparing(PoeCraft.PoolLine::tierRank))
-              .toList();
-      if (in.isEmpty()) {
-        continue;
-      }
-      in.forEach(p -> ids.add(p.id()));
-      names.add(spanLabel(in, ko) + (r < 99 ? " (T1" + (r > 1 ? "~T" + r : "") + ")" : ""));
-    }
-    if (names.isEmpty()) {
-      return;
-    }
-    int k;
-    try {
-      k = Integer.parseInt(params.getFirst("t_grpk"));
-    } catch (RuntimeException e) {
-      k = 1;
-    }
-    k = Math.max(1, Math.min(names.size(), k));
-    for (int i = 0; i < k; i++) {
-      targets.add(new PoeCraft.Target(List.copyOf(ids)));
-    }
-    labels.add(
-        (ko
-                ? "묶음 " + names.size() + "개 중 " + k + "개 이상: "
-                : "At least " + k + " of " + names.size() + ": ")
-            + String.join(" · ", names));
+    net.luversof.web.gate.poe.CraftTargetParams.groupTargets(
+        params,
+        members,
+        pool,
+        POOL_ACC,
+        PoeCraftController::spanLabel,
+        PoeCraft.Target::new,
+        targets,
+        labels);
   }
 
-  /**
-   * 빈 자리 조건(10-20 C519, craftofexile 계산기 'open affix') — t_open:prefix · t_open:suffix = 그 쪽에 남아야 할
-   * 빈 자리 수(목표 하나 = 자리 하나). 이 칸이면 목표 · 이름을 넣고 true.
-   */
+  /** 빈 자리 조건(C519) — 공용 CraftTargetParams(C552). */
   static boolean openTarget(
       String fam, String value, List<PoeCraft.Target> targets, List<String> labels) {
-    if (!"open:prefix".equals(fam) && !"open:suffix".equals(fam)) {
-      return false;
-    }
-    int n;
-    try {
-      n = Math.max(0, Math.min(3, Integer.parseInt(value)));
-    } catch (RuntimeException e) {
-      n = 0;
-    }
-    boolean pre = fam.endsWith("prefix");
-    for (int i = 0; i < n; i++) {
-      targets.add(new PoeCraft.Target(List.of(pre ? "@open:prefix" : "@open:suffix")));
-    }
-    if (n > 0) {
-      labels.add(
-          net.luversof.web.gate.poe.PoeText.isKorean()
-              ? "빈 " + (pre ? "접두" : "접미") + " 자리 " + n + "개"
-              : n + " open " + (pre ? "prefix" : "suffix"));
-    }
-    return true;
+    return net.luversof.web.gate.poe.CraftTargetParams.openTarget(
+        fam, value, PoeCraft.Target::new, targets, labels);
   }
 
   /** 계산기 목표(계열마다 고른 최소 등급 · 장막 해제 옵션) — 계산기 · 최적 조합이 같이 쓴다(C457). labels 에 화면 이름. */
@@ -1264,7 +1193,7 @@ public class PoeCraftController {
     List<PoeCraft.VeiledLine> veiled = null;
     // 탐광 · 엘드리치 목표(C549) — 덧붙임에서 문구 · 등급 id
     PoeCraft.CalcExtras ext = null;
-    java.util.Set<String> grp = groupMembers(params);
+    java.util.Set<String> grp = net.luversof.web.gate.poe.CraftTargetParams.groupMembers(params);
     groupTargets(params, grp, pool, targets, labels);
     for (String key : params.keySet()) {
       if (!key.startsWith("t_")) {
@@ -1331,7 +1260,7 @@ public class PoeCraftController {
           List<String> et = ko && t0.ko() != null && !t0.ko().isEmpty() ? t0.ko() : t0.en();
           labels.add(
               String.join(", ", et == null ? List.of() : et)
-                  + (in.size() < eo.tiers().size() ? (ko ? " 이상" : " or better") : "")
+                  + (in.size() > 1 ? (ko ? " 이상" : " or better") : "")
                   + (ko ? " (에센스)" : " (essence)"));
         } else {
           if (explicitOnly) {
@@ -1427,21 +1356,50 @@ public class PoeCraftController {
   }
 
   /**
-   * 최적 조합(10-19 C457 사용자 요청 "에센스 · 제작대 · 야수 같은 다양한 방법을 조합해 최소 비용") — 계산기와 같은 목표로, 계산기 표가 뜬 뒤 이어서
-   * 부른다(upper · upperLabel = 표의 가장 싼 방법). API 가 상태별 최소 기대 비용을 찾고(8초 안) 그 정책을 실제 아이템에 굴려 잰 비용.
+   * 같은 옵션을 얻는 다른 길(10-22 P4, poedb 속성 부여의 '같은 문구 다른 출처') — 확률 표에서 계열을 펼치면 불러온다. 에센스 · 제작대 · 화석 배수 ·
+   * 수확(API familyWays), 못 읽으면 빈 안내.
    */
+  @GetMapping(value = "/poe/htmx/craft/family-ways", produces = MediaType.TEXT_HTML_VALUE)
+  public String familyWays(
+      @RequestParam String itemClass,
+      @RequestParam(required = false, defaultValue = "") String variant,
+      @RequestParam(required = false, defaultValue = "") String influence,
+      @RequestParam(required = false, defaultValue = "84") int ilvl,
+      @RequestParam String family,
+      Model model) {
+    PoeCraft.FamilyWays ways;
+    try {
+      ways =
+          craftClient.familyWays(
+              new PoeCraft.FamilyWaysRequest(
+                  new PoeCraft.Item(
+                      itemClass, variant, influence, clamp(ilvl), "NORMAL", List.of(), false),
+                  family));
+    } catch (RuntimeException e) {
+      ways = null;
+    }
+    model.addAttribute("ways", ways);
+    return "poe/htmx/craftFamilyWays";
+  }
+
   /**
-   * 화석 조합 기준 첫 옵션 확률(10-20 C504, craftofexile 화석 풀) — 화석 탭에서 고른 화석으로 레어를 다시 굴릴 때 첫 옵션이 무엇일 확률(분열
-   * 옵션은 남김). 확률 높은 순 표.
+   * 고른 화폐 기준 옵션 표(10-22 P3, poedb 속성 부여 — 화석을 고르면 같은 표가 그 기준으로 바뀐다) — 에뮬레이터에서 화폐를 고른 상태(CoE 방식)면 계열
+   * 표를 그 수단이 처음 뽑는 옵션의 가중치로 다시 그린다(화석 배수 · 메타 금지 · 축성 레벨 가중 · 다시 굴릴 바탕은 엔진이 실제로 쓰는 값). action 이 없으면
+   * 지금 아이템 기준 표, 표의 옵션을 뽑지 않는 수단 · 못 쓰는 화폐면 지금 아이템 기준 표에 그 안내.
    */
-  @PostMapping(value = "/poe/htmx/craft/fossil-pool", produces = MediaType.TEXT_HTML_VALUE)
-  public String fossilPool(
+  @PostMapping(value = "/poe/htmx/craft/action-pool", produces = MediaType.TEXT_HTML_VALUE)
+  public String actionPool(
       @RequestParam String itemClass,
       @RequestParam(required = false, defaultValue = "") String variant,
       @RequestParam(required = false, defaultValue = "") String influence,
       @RequestParam(required = false, defaultValue = "84") int ilvl,
       @RequestParam(required = false, defaultValue = "") String state,
+      @RequestParam(required = false, defaultValue = "") String action,
+      @RequestParam(required = false, defaultValue = "") String actionLabel,
+      @RequestParam(required = false) String essence,
       @RequestParam(required = false) List<String> fossil,
+      @RequestParam(required = false) String bench,
+      @RequestParam(required = false) String harvest,
       Model model) {
     PoeCraft.Item fresh =
         new PoeCraft.Item(itemClass, variant, influence, clamp(ilvl), "NORMAL", List.of(), false);
@@ -1449,19 +1407,56 @@ public class PoeCraftController {
     if (!same(cur, fresh)) {
       cur = fresh;
     }
-    List<String> picked = fossil == null ? List.of() : fossil;
-    List<PoeCraft.PoolLine> lines = List.of();
-    if (!picked.isEmpty()) {
+    PoeCraft.View view = craftClient.view(cur);
+    String act = action.contains(":") ? action.substring(0, action.indexOf(':')) : action;
+    String actArg = action.contains(":") ? action.substring(action.indexOf(':') + 1) : null;
+    PoeCraft.ActionPool ap = null;
+    if (ACTIONS.contains(act)) {
       try {
-        lines =
-            craftClient.fossilPool(new PoeCraft.FossilPoolRequest(cur, String.join(",", picked)));
+        ap =
+            craftClient.actionPool(
+                new PoeCraft.ApplyRequest(
+                    cur, act, essence, null, argFor(act, actArg, essence, fossil, bench, harvest)));
       } catch (RuntimeException e) {
-        lines = List.of();
+        ap = null;
       }
     }
-    model.addAttribute("fossilPicked", picked.size());
-    model.addAttribute("fossilLines", lines);
-    return "poe/htmx/craftFossilPool";
+    boolean picked = ap != null && ap.picked();
+    List<PoeCraft.PoolLine> pool =
+        picked ? ap.lines() : craftClient.pool(new PoeCraft.PoolRequest(view.item(), null));
+    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+    List<PoeCraft.Line> lines = view.lines() == null ? List.of() : view.lines();
+    model.addAttribute("poolGroups", poolGroups(view, pool, java.util.Set.of()));
+    model.addAttribute("lines", lines);
+    model.addAttribute(
+        "waysUrl",
+        net.luversof.web.gate.poe.CraftPoolGroups.waysUrl(
+            "/poe/htmx/craft/family-ways",
+            cur.itemClass(),
+            cur.variant(),
+            cur.influence(),
+            cur.ilvl()));
+    model.addAttribute("max", view.maxPerGen());
+    model.addAttribute("prefixes", lines.stream().filter(l -> "prefix".equals(l.gen())).count());
+    model.addAttribute("suffixes", lines.stream().filter(l -> "suffix".equals(l.gen())).count());
+    model.addAttribute(
+        "lineTags",
+        ko
+            ? (view.tagsKo() == null ? java.util.Map.of() : view.tagsKo())
+            : (view.tags() == null ? java.util.Map.of() : view.tags()));
+    if (!act.isEmpty()) {
+      model.addAttribute("actionLabel", actionLabel.isBlank() ? act : actionLabel);
+      model.addAttribute("actionPicked", picked);
+      model.addAttribute("actionRarity", picked ? ap.baseRarity() : null);
+      model.addAttribute(
+          "actionMult", picked && ap.mult() != null ? ap.mult() : java.util.Map.of());
+      model.addAttribute(
+          "actionError",
+          ap == null || ap.error() == null
+              ? null
+              : ko ? ap.error() : net.luversof.web.gate.poe.PoeCraftText.en(ap.error()));
+    }
+    return "poe/htmx/craftPoolGroups";
   }
 
   /**
@@ -1518,10 +1513,6 @@ public class PoeCraftController {
           "VEILED_EXALT",
           "VAAL");
 
-  /**
-   * 화폐 한 번의 목표 적중 확률(10-20 C494, craftofexile 에뮬레이터의 목표 확률) — 아래 계산기에서 고른 목표를 지금 아이템에 화폐 하나로 다 채울
-   * 확률. 화면이 화폐 단추마다 작은 표로 보인다. 목표가 없으면 targets 0.
-   */
   /** 결과 분포 화폐(C533) — 같은 화폐를 지금 아이템에 여러 번 따로 써서 결과를 세는 것. */
   static final List<String> DIST_ACTIONS =
       List.of(
@@ -1591,10 +1582,13 @@ public class PoeCraftController {
     }
     model.addAttribute("dist", res);
     model.addAttribute("distLabels", labels);
-    model.addAttribute("distAct", act);
     return "poe/htmx/craftDist";
   }
 
+  /**
+   * 화폐 한 번의 목표 적중 확률(10-20 C494, craftofexile 에뮬레이터의 목표 확률) — 아래 계산기에서 고른 목표를 지금 아이템에 화폐 하나로 다 채울
+   * 확률. 화면이 화폐 단추마다 작은 표로 보인다. 목표가 없으면 targets 0.
+   */
   @PostMapping(value = "/poe/htmx/craft/hit-chance", produces = MediaType.APPLICATION_JSON_VALUE)
   @org.springframework.web.bind.annotation.ResponseBody
   public java.util.Map<String, Object> hitChance(
@@ -1646,6 +1640,10 @@ public class PoeCraftController {
     return java.util.Map.of("targets", targets.size(), "chances", chances);
   }
 
+  /**
+   * 최적 조합(10-19 C457 사용자 요청 "에센스 · 제작대 · 야수 같은 다양한 방법을 조합해 최소 비용") — 계산기와 같은 목표로, 계산기 표가 뜬 뒤 이어서
+   * 부른다(upper · upperLabel = 표의 가장 싼 방법). API 가 상태별 최소 기대 비용을 찾고(8초 안) 그 정책을 실제 아이템에 굴려 잰 비용.
+   */
   @PostMapping(value = "/poe/htmx/craft/optimize", produces = MediaType.TEXT_HTML_VALUE)
   public String optimize(
       @RequestParam String itemClass,
@@ -1989,7 +1987,6 @@ public class PoeCraftController {
     return new PoeCraft.Step(action, arg, until, max, null);
   }
 
-  /** 화폐 인자 — 화석 = 고른 화석 쉼표 목록, 제작대 = 옵션 id, 수확 = id, 정복자 = action 값 뒤, 에센스 = 슬러그. */
   /** 기폭제 쓴 개수(C385) — note "catalyst:종류:양:개수" → 쓴 화폐 인자 "종류*개수"(더럽혀진 기폭제는 "vaal" 하나). */
   static String catalystSpent(String note, String arg) {
     String base = arg == null ? "" : arg.contains("*") ? arg.substring(0, arg.indexOf('*')) : arg;
@@ -2000,6 +1997,7 @@ public class PoeCraftController {
     return p.length == 4 ? base + "*" + p[3] : base;
   }
 
+  /** 화폐 인자 — 화석 = 고른 화석 쉼표 목록, 제작대 = 옵션 id, 수확 = id, 정복자 = action 값 뒤, 에센스 = 슬러그. */
   static String argFor(
       String act,
       String actArg,
@@ -2046,18 +2044,6 @@ public class PoeCraftController {
     return String.join(", ", out);
   }
 
-  /** 미리 보기 씨앗(C360) — 숫자가 아니면 없음. */
-  static Long seedOf(String s) {
-    if (s == null || s.isBlank()) {
-      return null;
-    }
-    try {
-      return Long.parseLong(s.trim());
-    } catch (NumberFormatException e) {
-      return null;
-    }
-  }
-
   /** 같은 종류 · 변형 · 영향력 · 아이템 레벨인가(아니면 새로 시작). */
   private static boolean same(PoeCraft.Item a, PoeCraft.Item b) {
     return a.itemClass().equals(b.itemClass())
@@ -2090,27 +2076,12 @@ public class PoeCraftController {
               PoeCraft.PoolLine::tierRank,
               PoeCraft.PoolLine::chance);
 
-  private void fill(
-      Model model,
-      PoeCraft.Item item,
-      List<PoeCraft.Item> hist,
-      PoeCraft.View applied,
-      String lastAction) {
-    PoeCraft.View view =
-        applied != null && applied.error() == null ? applied : craftClient.view(item);
-    model.addAttribute("view", view);
-    model.addAttribute("error", applied == null ? null : applied.error());
-    model.addAttribute("lastAction", lastAction);
-    model.addAttribute(
-        "added", applied == null || applied.error() != null ? List.of() : applied.added());
-    model.addAttribute("stateJson", json.writeValueAsString(view.item()));
-    model.addAttribute("historyJson", json.writeValueAsString(hist));
-    model.addAttribute("historySize", hist.size());
-    // 다음에 붙을 옵션 — 일반이면 레어 자리로(연금 · 에센스), 그 밖엔 지금 희귀도
-    List<PoeCraft.PoolLine> pool = craftClient.pool(new PoeCraft.PoolRequest(view.item(), null));
-    model.addAttribute("pool", pool);
-    // 확률 표 계열 묶음(10-21 사용자 요청 "옵션별로 묶어 줄을 줄이고 누르면 등급 상세, 제작으로 붙은 옵션은 표시") — 이 종류의 전체 계열(일반 → 레어
-    // 풀, 계산기 목표와 같은 풀)을 고정 순서로 두고 지금 확률 · 붙은 옵션을 얹는다. 못 읽으면 지금 풀만으로 묶는다
+  /**
+   * 확률 표 계열 묶음(10-21 사용자 요청 "옵션별로 묶어 줄을 줄이고 누르면 등급 상세, 제작으로 붙은 옵션은 표시") — 이 종류의 전체 계열(일반 → 레어 풀,
+   * 계산기 목표와 같은 풀)을 고정 순서로 두고 pool 의 확률(지금 아이템 · 고른 화폐 기준 P3) · 붙은 옵션을 얹는다. 못 읽으면 pool 만으로 묶는다.
+   */
+  private List<net.luversof.web.gate.poe.CraftPoolGroups.Family<PoeCraft.PoolLine>> poolGroups(
+      PoeCraft.View view, List<PoeCraft.PoolLine> pool, java.util.Set<String> freshIds) {
     PoeCraft.Item it = view.item();
     List<PoeCraft.PoolLine> full;
     try {
@@ -2133,14 +2104,34 @@ public class PoeCraftController {
     if (view.lines() != null) {
       view.lines().forEach(l -> onIds.add(l.id()));
     }
+    return net.luversof.web.gate.poe.CraftPoolGroups.group(
+        full == null ? List.of() : full, pool, POOL_ACC, onIds, freshIds);
+  }
+
+  private void fill(
+      Model model,
+      PoeCraft.Item item,
+      List<PoeCraft.Item> hist,
+      PoeCraft.View applied,
+      String lastAction) {
+    PoeCraft.View view =
+        applied != null && applied.error() == null ? applied : craftClient.view(item);
+    model.addAttribute("view", view);
+    model.addAttribute("error", applied == null ? null : applied.error());
+    model.addAttribute("lastAction", lastAction);
+    model.addAttribute(
+        "added", applied == null || applied.error() != null ? List.of() : applied.added());
+    model.addAttribute("stateJson", json.writeValueAsString(view.item()));
+    model.addAttribute("historyJson", json.writeValueAsString(hist));
+    model.addAttribute("historySize", hist.size());
+    // 다음에 붙을 옵션 — 일반이면 레어 자리로(연금 · 에센스), 그 밖엔 지금 희귀도
+    List<PoeCraft.PoolLine> pool = craftClient.pool(new PoeCraft.PoolRequest(view.item(), null));
+    model.addAttribute("pool", pool);
     java.util.Set<String> freshIds =
         applied == null || applied.error() != null || applied.added() == null
             ? java.util.Set.of()
             : new java.util.HashSet<>(applied.added());
-    model.addAttribute(
-        "poolGroups",
-        net.luversof.web.gate.poe.CraftPoolGroups.group(
-            full == null ? List.of() : full, pool, POOL_ACC, onIds, freshIds));
+    model.addAttribute("poolGroups", poolGroups(view, pool, freshIds));
     PoeCraft.Options opts = craftClient.options(item.itemClass(), nz(item.variant()));
     model.addAttribute("options", opts);
     model.addAttribute("essences", opts.essences());
@@ -2397,7 +2388,6 @@ public class PoeCraftController {
     };
   }
 
-  /** a 에만 있는 옵션 줄의 문구(id 대조) — "접두 T1 문구", 임플리싯은 진영 · 타락. */
   /** 상태마다 굴림 씨앗 — 이력의 씨앗 + 지금(C512). */
   private static List<java.util.Map<String, Long>> rollStates(
       List<java.util.Map<String, Long>> rollHist, java.util.Map<String, Long> now) {
@@ -2406,6 +2396,7 @@ public class PoeCraftController {
     return out;
   }
 
+  /** a 에만 있는 옵션 줄의 문구(id 대조) — "접두 T1 문구", 임플리싯은 진영 · 타락. */
   private static List<String> lineDiff(
       List<PoeCraft.Line> a, List<PoeCraft.Line> b, boolean ko, java.util.Map<String, Long> rolls) {
     java.util.Set<String> bIds = new java.util.HashSet<>();

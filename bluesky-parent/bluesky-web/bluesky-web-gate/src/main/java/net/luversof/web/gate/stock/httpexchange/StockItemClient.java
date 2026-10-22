@@ -24,9 +24,6 @@ public interface StockItemClient {
   @GetExchange("/{id}")
   Optional<StockItem> getStockItemById(@PathVariable UUID id);
 
-  @GetExchange("/search/findByName/{name}")
-  StockItem findByName(@PathVariable String name);
-
   @GetExchange("/search/findAll")
   java.util.List<StockItem> getStockItems();
 

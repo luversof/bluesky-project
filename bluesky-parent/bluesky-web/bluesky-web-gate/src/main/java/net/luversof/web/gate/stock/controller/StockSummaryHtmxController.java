@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.controller;
 
+import static net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.normalizeSymbol;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -7,7 +9,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -223,94 +224,54 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .filter(Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    Map<UUID, BigDecimal> accountPrincipalOverrideMap = new LinkedHashMap<>();
-    for (Account account : userAccountList) {
-      if (account.id() == null) {
-        continue;
-      }
-      BigDecimal principal = resolveAccountManualPrincipal(account);
-      if (principal != null) {
-        // 같은 계좌가 중복이면 먼저 값을 유지한다(기존 toMap 병합 규칙과 동일).
-        accountPrincipalOverrideMap.putIfAbsent(account.id(), principal);
-      }
-    }
+    Map<UUID, BigDecimal> accountPrincipalOverrideMap = accountPrincipalOverrides(userAccountList);
 
-    BigDecimal displayPrincipal =
+    // 계좌별 합계는 한 번만 묶는다 - 표시 원금 · 평가손익 셋이 같은 묶음(계좌별 TradeProfitAggregator)을 세 번 다시 만들었다(2026-10-22
+    // 정리).
+    // 계좌를 모르는 줄은 줄 값 그대로 더한다.
+    Map<UUID, TradeProfitAggregator.Sums> sumsByAccount =
         profitList.stream()
             .filter(profit -> profit.accountId() != null)
             .collect(Collectors.groupingBy(TradeProfit::accountId))
             .entrySet()
             .stream()
-            .map(
-                entry -> {
-                  var sums = TradeProfitAggregator.aggregate(entry.getValue());
-                  BigDecimal evaluationAmount =
-                      Optional.ofNullable(sums.evaluationAmount()).orElse(BigDecimal.ZERO);
-                  BigDecimal defaultEvaluationProfit =
-                      Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
-                  // 보유 원가는 포트폴리오 화면과 같은 헬퍼를 쓴다. 예전에는 폴백이 totalBuyCost 였는데
-                  // 그것은 기간 누적 매수액이라 성격이 다르다(실측: 실제 보유원가보다 16.4% 과대).
-                  BigDecimal defaultPrincipal =
-                      resolveCurrentHoldingCost(
-                          sums.evaluationAmount(),
-                          sums.evaluationProfit(),
-                          sums.avgBuyPrice(),
-                          sums.holdingQuantity());
-                  return accountPrincipal(
-                      accountPrincipalOverrideMap.get(entry.getKey()), defaultPrincipal);
-                })
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .add(
-                profitList.stream()
-                    .filter(profit -> profit.accountId() == null)
-                    .map(this::resolveCurrentHoldingCost)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, entry -> TradeProfitAggregator.aggregate(entry.getValue())));
+    List<TradeProfit> withoutAccount =
+        profitList.stream().filter(profit -> profit.accountId() == null).toList();
+
+    // 보유 원가는 포트폴리오 화면과 같은 헬퍼를 쓴다. 예전에는 폴백이 totalBuyCost 였는데
+    // 그것은 기간 누적 매수액이라 성격이 다르다(실측: 실제 보유원가보다 16.4% 과대).
+    BigDecimal displayPrincipal =
+        sumAccounts(
+                sumsByAccount,
+                (accountId, sums) ->
+                    accountPrincipal(
+                        accountPrincipalOverrideMap.get(accountId),
+                        resolveCurrentHoldingCost(
+                            sums.evaluationAmount(),
+                            sums.evaluationProfit(),
+                            sums.avgBuyPrice(),
+                            sums.holdingQuantity())))
+            .add(sumRows(withoutAccount, this::resolveCurrentHoldingCost));
 
     BigDecimal grossCurrentEvaluationProfit =
-        profitList.stream()
-            .filter(profit -> profit.accountId() != null)
-            .collect(Collectors.groupingBy(TradeProfit::accountId))
-            .entrySet()
-            .stream()
-            .map(
-                entry -> {
-                  var sums = TradeProfitAggregator.aggregate(entry.getValue());
-                  return Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
-                })
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .add(
-                profitList.stream()
-                    .filter(profit -> profit.accountId() == null)
-                    .map(TradeProfit::evaluationProfit)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+        sumAccounts(
+                sumsByAccount,
+                (accountId, sums) ->
+                    Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO))
+            .add(sumRows(withoutAccount, TradeProfit::evaluationProfit));
 
     BigDecimal displayCurrentEvaluationProfit =
-        profitList.stream()
-            .filter(profit -> profit.accountId() != null)
-            .collect(Collectors.groupingBy(TradeProfit::accountId))
-            .entrySet()
-            .stream()
-            .map(
-                entry -> {
-                  var sums = TradeProfitAggregator.aggregate(entry.getValue());
-                  BigDecimal evaluationAmount =
-                      Optional.ofNullable(sums.evaluationAmount()).orElse(BigDecimal.ZERO);
-                  BigDecimal defaultEvaluationProfit =
-                      Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO);
-                  return accountEvaluationProfit(
-                      accountPrincipalOverrideMap.get(entry.getKey()),
-                      evaluationAmount,
-                      defaultEvaluationProfit);
-                })
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .add(
-                profitList.stream()
-                    .filter(profit -> profit.accountId() == null)
-                    .map(TradeProfit::evaluationProfit)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add));
+        sumAccounts(
+                sumsByAccount,
+                (accountId, sums) ->
+                    accountEvaluationProfit(
+                        accountPrincipalOverrideMap.get(accountId),
+                        Optional.ofNullable(sums.evaluationAmount()).orElse(BigDecimal.ZERO),
+                        Optional.ofNullable(sums.evaluationProfit()).orElse(BigDecimal.ZERO)))
+            .add(sumRows(withoutAccount, TradeProfit::evaluationProfit));
 
     BigDecimal holdingFeeAdjustment = grossCurrentEvaluationProfit.subtract(totalUnrealizedVal);
     BigDecimal manualPrincipalAdjustment =
@@ -467,7 +428,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                 joinRemote(rawStockGroupedFuture),
                 userId,
                 toTradeProfitNames(joinRemote(accountsFuture), joinRemote(stockItemsFuture))));
-    // getStockGroupedTradeProfits(request, false) 와 같은 순서로 보유량 0 을 먼저 걸러낸다.
+    // 종목 단위 손익에서 보유량 0 을 먼저 걸러낸다(예전 getStockGroupedTradeProfits(request, false) 와 같은 순서).
     stockGroupedList.removeIf(tp -> tp.holdingQuantity() == 0);
 
     // 종목 단위 그룹핑(계좌 무시) 후 보유 중 + 평가금액 있는 종목만 평가금액 내림차순
@@ -611,7 +572,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 다음 지급일 = 기준일 규칙 + 결제 거래일 수(2026-10-20 - 배당 내역 다가올 배당과 같은 계산, 지급 이력 209 건 100% 재현).
     // 규칙이 안 서면(이력에 기준일이 없거나 규칙과 다름) 예전 추정(최빈 일자 ~ 관측된 가장 늦은 날).
     Map<String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule> rules =
-        settlementRules(payouts);
+        net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.settlementRulesFromResponses(
+            payouts);
     java.util.Set<String> heldSymbols = new java.util.HashSet<>();
     for (MonthlyDividendSnapshotResponse snapshot : snapshots) {
       String sym = normalizeSymbol(snapshot.stockItemSymbol());
@@ -683,11 +645,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     String nextWindowLabel =
-        "MID_MONTH".equals(nextWindow)
-            ? msg("stock.page.dividend.monthly.reference.profile.payout.window.mid.month")
-            : "MONTH_END".equals(nextWindow)
-                ? msg("stock.page.dividend.monthly.reference.profile.payout.window.month.end")
-                : "";
+        net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil.label(nextWindow);
     String nextPayDateLabel = nextPayDate != null ? monthDayLabel(nextPayDate) : "";
 
     // 예상일은 지급 이력의 최빈일 하나다. 실제 지급일은 그 주변에 퍼져 있어, 날짜 하나만 적으면
@@ -760,19 +718,9 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     java.time.LocalDate marketToday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
     model.addAttribute(
         "upcomingBuyBy",
-        java.util.stream.Stream.of("MID_MONTH", "MONTH_END")
-            .map(
-                buyByWindow ->
-                    net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyBy(
-                        marketToday, buyByWindow))
-            .filter(java.util.Objects::nonNull)
-            .toList());
+        net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
 
     return "stock/htmx/fragments/upcomingDividends";
-  }
-
-  private static String normalizeSymbol(String symbol) {
-    return symbol != null && !symbol.isBlank() ? symbol.trim().toUpperCase(Locale.ROOT) : null;
   }
 
   private static boolean holdsWindow(
@@ -888,23 +836,6 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         nm.withDayOfMonth(Math.min(repDay, nm.lengthOfMonth())));
   }
 
-  private static Map<
-          String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule>
-      settlementRules(List<MonthlyDividendPayoutResponse> payouts) {
-    List<net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.RecordedPayout> input =
-        new java.util.ArrayList<>();
-    if (payouts != null) {
-      for (MonthlyDividendPayoutResponse payout : payouts) {
-        if (payout != null) {
-          input.add(
-              new net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.RecordedPayout(
-                  payout.stockItemSymbol(), payout.recordDate(), payout.payDate()));
-        }
-      }
-    }
-    return net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.settlementRules(input);
-  }
-
   /** 규칙으로 낸 그 시기의 다음 지급일 - 가장 이른 날과 그 달 안에서 가장 늦은 날. */
   record RuledPayDates(LocalDate first, LocalDate lastSameMonth, java.util.Set<String> symbols) {}
 
@@ -1006,5 +937,23 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     }
     BigDecimal amount = evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO;
     return amount.subtract(manualPrincipal);
+  }
+
+  /** 계좌별 합계마다 값을 내 더한다(요약 카드의 표시 원금 · 평가손익). */
+  private static BigDecimal sumAccounts(
+      Map<UUID, TradeProfitAggregator.Sums> sumsByAccount,
+      java.util.function.BiFunction<UUID, TradeProfitAggregator.Sums, BigDecimal> value) {
+    return sumsByAccount.entrySet().stream()
+        .map(entry -> value.apply(entry.getKey(), entry.getValue()))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  /** 줄마다 값을 내 더한다 - 값이 없는 줄은 건너뛴다. */
+  private static BigDecimal sumRows(
+      List<TradeProfit> rows, java.util.function.Function<TradeProfit, BigDecimal> value) {
+    return rows.stream()
+        .map(value)
+        .filter(Objects::nonNull)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 }

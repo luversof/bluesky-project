@@ -29,7 +29,7 @@ import net.luversof.web.gate.stock.domain.Account;
  */
 class FeeRecordsUnavailableNoticeTest {
 
-  private static final String TEMPLATE = "stock/accountDetail.jte";
+  private static final String TEMPLATE = "stock/htmx/accountDetailContent.jte";
   private static final String KEY = "stock.account.detail.fee.records.unavailable";
 
   @BeforeAll
@@ -48,7 +48,6 @@ class FeeRecordsUnavailableNoticeTest {
 
   private String render(Map<String, Object> jsonConfig) {
     Map<String, Object> model = new HashMap<>();
-    model.put("contentReady", true);
     model.put(
         "account", new Account(UUID.randomUUID(), UUID.randomUUID(), "동양증권", null, jsonConfig));
 

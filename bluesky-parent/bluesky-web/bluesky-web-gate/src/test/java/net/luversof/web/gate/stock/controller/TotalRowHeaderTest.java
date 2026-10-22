@@ -14,6 +14,8 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.web.gate.stock.view.YieldAnalyticsSource;
+
 /**
  * 합계 줄의 첫 칸은 그 줄의 머리글이어야 한다({@code th scope="row"}).
  *
@@ -98,7 +100,7 @@ class TotalRowHeaderTest {
     };
 
     for (String[] t : targets) {
-      String template = Files.readString(FRAGMENTS.resolve(t[0]), StandardCharsets.UTF_8);
+      String template = YieldAnalyticsSource.readForScan(FRAGMENTS.resolve(t[0]));
       assertThat(count(template, "<th scope=\"row\""))
           .as(t[0] + " 의 행 머리글 수")
           .isEqualTo(Integer.parseInt(t[1]));

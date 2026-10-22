@@ -143,11 +143,6 @@ public class PoePobImportService {
     this.poeModTranslateService = poeModTranslateService;
   }
 
-  /**
-   * PoB 공유 코드를 빌드 모델로 변환한다.
-   *
-   * @throws IllegalArgumentException 코드가 base64/zlib/PoB XML 형식이 아닐 때
-   */
   /** PoB 공유 코드 → PoB XML 문자열 (엔진 재계산 등 XML 이 직접 필요할 때) */
   public String decodeToXml(String code) {
     return sanitizeXml(
@@ -194,6 +189,11 @@ public class PoePobImportService {
     return out.toString();
   }
 
+  /**
+   * PoB 공유 코드를 빌드 모델로 변환한다.
+   *
+   * @throws IllegalArgumentException 코드가 base64/zlib/PoB XML 형식이 아닐 때
+   */
   public PoeBuild importCode(String code) {
     Document document = parseXml(inflate(decodeBase64Url(code)));
     Element root = document.getDocumentElement();
@@ -728,7 +728,6 @@ public class PoePobImportService {
       java.util.regex.Pattern.compile(
           "^implicits:\\s*(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE);
 
-  /** PoB 아이템 텍스트의 "Implicits: N". 없으면 0. */
   /** PoB 아이템 텍스트의 "Quality: N" — 인게임 툴팁 속성 블록 **첫 줄**이 품질이다(PoB ItemsTab 4135/4170/4191 동일). */
   private static final java.util.regex.Pattern ITEM_QUALITY =
       java.util.regex.Pattern.compile(
@@ -748,6 +747,7 @@ public class PoePobImportService {
     return 0;
   }
 
+  /** PoB 아이템 텍스트의 "Implicits: N". 없으면 0. */
   private static int implicitCount(List<String> lines) {
     for (String line : lines) {
       java.util.regex.Matcher m = IMPLICIT_COUNT.matcher(line.trim());
@@ -1130,7 +1130,6 @@ public class PoePobImportService {
     return null;
   }
 
-  /** 고유 주얼이면 우리 고유 DB slug(트리 뷰어 j= — 주얼 효과 · 반경 표시). 아니면 null. */
   /**
    * 고유 주얼 → 트리 주소 j= 값 "slug" 또는 "slug:v번호"(10-03 C77). 변형이 여럿인 주얼(불가능한 탈출 핵심 · 희망의 실 고리 · 이중 인격
    * …)은 아이템 원문으로 변형을 맞춰 붙인다 — 예전엔 slug 만 넘어가 트리 툴팁 · 트리 계산이 기본 변형(희망의 실 = 거대 고리)으로 돌았다.

@@ -92,11 +92,6 @@ public class DataStatusController {
   }
 
   /**
-   * 종목 이름을 붙인다. 행 수에 상한이 있어(최대 5) 이름 조회는 한 번의 findAllById 로 끝난다.
-   *
-   * <p>이름을 못 찾으면 id 를 그대로 쓴다 &mdash; 이름이 없다고 행을 숨기면 정작 이상한 데이터를 못 보게 된다.
-   */
-  /**
    * 지급 이력이 제 주기를 넘겨 밀린 종목.
    *
    * <p>임계값을 상수로 박지 않고 종목 자신의 과거 최대 간격과 비교한다 &mdash; 월중(17일)·월말(익월 2일)처럼 주기가 다르고 상장 초기가 불규칙해서, 고정값을
@@ -173,16 +168,17 @@ public class DataStatusController {
   /** 지연 판정에 쓰는 최근 간격 개수. 예상 월배당의 "1년 평균" 과 같은 창이다. */
   private static final int RECENT_PAYOUT_GAP_WINDOW = 12;
 
+  /**
+   * 종목 이름을 붙인다. 행 수에 상한이 있어(최대 5) 이름 조회는 한 번의 findAllById 로 끝난다.
+   *
+   * <p>이름을 못 찾으면 id 를 그대로 쓴다 &mdash; 이름이 없다고 행을 숨기면 정작 이상한 데이터를 못 보게 된다.
+   */
   private List<DataStatusResponse.ZeroVolumeChangedCloseRow> toChangedCloseRows(
       List<net.luversof.api.stock.domain.ZeroVolumeChangedClose> rows) {
     if (rows == null || rows.isEmpty()) {
       return List.of();
     }
-    Map<UUID, String> names = new HashMap<>();
-    stockItemRepository
-        .findAllById(rows.stream().map(row -> row.stockItemId()).filter(Objects::nonNull).toList())
-        .forEach(item -> names.put(item.getId(), item.getName()));
-    return withNames(rows, names);
+    return withNames(rows, stockNames(rows.stream().map(row -> row.stockItemId()).toList()));
   }
 
   private List<DataStatusResponse.PriceLimitBreachRow> toBreachRows(
@@ -190,11 +186,16 @@ public class DataStatusController {
     if (rows == null || rows.isEmpty()) {
       return List.of();
     }
+    return withBreachNames(rows, stockNames(rows.stream().map(row -> row.stockItemId()).toList()));
+  }
+
+  /** 종목 id -> 이름(한 번의 findAllById). 두 점검 표가 같은 방식으로 이름을 붙인다. */
+  private Map<UUID, String> stockNames(List<UUID> stockItemIds) {
     Map<UUID, String> names = new HashMap<>();
     stockItemRepository
-        .findAllById(rows.stream().map(row -> row.stockItemId()).filter(Objects::nonNull).toList())
+        .findAllById(stockItemIds.stream().filter(Objects::nonNull).toList())
         .forEach(item -> names.put(item.getId(), item.getName()));
-    return withBreachNames(rows, names);
+    return names;
   }
 
   /**

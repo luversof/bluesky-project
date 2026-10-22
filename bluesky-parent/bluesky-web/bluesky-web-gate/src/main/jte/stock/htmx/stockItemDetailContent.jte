@@ -16,7 +16,6 @@
 @import net.luversof.web.gate.stock.util.ChartSeriesJs
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 
-@param String stockItemIdParam = ""
 @param StockItem stockItem = null
 @param int holdingQuantity = 0
 @param BigDecimal averageBuyPrice = java.math.BigDecimal.ZERO
@@ -177,7 +176,7 @@
 	<%-- "현재가"·평가액은 마지막으로 수집된 종가 기준이라, 오늘 시세가 아직 없으면 며칠 전 값일 수 있다.
 	     어느 날 기준인지 밝혀 실시간 시세로 오해하지 않게 한다(자산현황·포트폴리오와 같은 표기). --%>
 	@if(priceBasisDate != null)
-		<p class="mb-2 text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime).replace("{0}", priceBasisDate.toString())}</p>
+		<p class="mb-2 text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</p>
 	@endif
 	<%-- 합산 손익 - 평가손익·실현손익·배당이 카드로 흩어져 있어 사람이 더해야 알 수 있었다.
 	     아래 격자의 세 값을 그대로 더한 것이라, 화면에서 눈으로 검산할 수 있게 셋을 함께 적는다. --%>

@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.service;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
@@ -13,6 +15,7 @@ import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 import net.luversof.web.gate.stock.dto.view.MonthlyDividendReferenceSummaryView;
 import net.luversof.web.gate.stock.dto.view.MonthlyDividendSimulatorSummaryView;
+import net.luversof.web.gate.stock.util.StockAmountUtil;
 
 /** 월배당 기준 데이터(payout)와 시뮬레이터 스냅샷에 대한 순수 집계 계산. 컨트롤러에서 분리해 단위 테스트가 가능하도록 한다. */
 @Component
@@ -36,24 +39,23 @@ public class MonthlyDividendCalculator {
 
     List<MonthlyDividendPayoutResponse> lastYearRows = payouts.stream().limit(12).toList();
     BigDecimal latestDividendAmountPerShare =
-        safe(lastYearRows.get(0).dividendAmountPerShare()).setScale(4, RoundingMode.HALF_UP);
+        nz(lastYearRows.get(0).dividendAmountPerShare()).setScale(4, RoundingMode.HALF_UP);
     BigDecimal averageDividendAmountPerShare1y =
         lastYearRows.stream()
             .map(MonthlyDividendPayoutResponse::dividendAmountPerShare)
-            .map(MonthlyDividendCalculator::safe)
+            .map(net.luversof.web.gate.stock.util.StockAmountUtil::nz)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .divide(BigDecimal.valueOf(lastYearRows.size()), 4, RoundingMode.HALF_UP);
 
     // 과세표준을 아는 행만 센다(api-stock MonthlyDividendPayoutService 와 같은 규칙, 2026-10-07).
     List<BigDecimal> taxableBaseRatios =
         lastYearRows.stream()
-            .filter(row -> safe(row.dividendAmountPerShare()).signum() > 0)
+            .filter(row -> nz(row.dividendAmountPerShare()).signum() > 0)
             .filter(row -> row.taxableBasePerShare() != null)
             .map(
                 row ->
-                    row.taxableBasePerShare()
-                        .multiply(BigDecimal.valueOf(100))
-                        .divide(safe(row.dividendAmountPerShare()), 2, RoundingMode.HALF_UP))
+                    StockAmountUtil.percentOrNull(
+                        row.taxableBasePerShare(), row.dividendAmountPerShare(), 2))
             .toList();
     // 아는 행이 없으면 null(확인 안 됨) - 0 이면 "비과세" 로 읽힌다.
     BigDecimal averageTaxableBaseRatio1y =
@@ -126,7 +128,7 @@ public class MonthlyDividendCalculator {
         latestTotal = latestTotal.add(latestMonthlyDividend(row));
       }
       if (perShare == null || row.heldQuantity() == null || currentQuantity == null) {
-        total = total.add(safe(row.expectedMonthlyDividend()));
+        total = total.add(nz(row.expectedMonthlyDividend()));
         continue;
       }
       if (row.heldQuantity().intValue() != currentQuantity.intValue()) {
@@ -174,7 +176,7 @@ public class MonthlyDividendCalculator {
     BigDecimal totalLatestMonthlyDividendMonthEnd = BigDecimal.ZERO;
     for (MonthlyDividendSnapshotResponse row : rows) {
       BigDecimal rowLatest =
-          safe(row.latestMonthlyDividendPerShare())
+          nz(row.latestMonthlyDividendPerShare())
               .multiply(
                   BigDecimal.valueOf(
                       row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L));
@@ -194,7 +196,7 @@ public class MonthlyDividendCalculator {
         rows.stream()
             .map(
                 row ->
-                    safe(row.averageBuyPrice())
+                    nz(row.averageBuyPrice())
                         .multiply(
                             BigDecimal.valueOf(
                                 row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
@@ -202,7 +204,7 @@ public class MonthlyDividendCalculator {
     BigDecimal totalExpectedMonthlyDividend =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
-            .map(MonthlyDividendCalculator::safe)
+            .map(net.luversof.web.gate.stock.util.StockAmountUtil::nz)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     // 연 값은 <b>화면에 적히는 월 값</b>의 12 배여야 한다 - 실측 2026-09-11: 시뮬레이터는 원 단위로 자르기 전의
     // 합계에 12 를 곱해 36,657,049 를 냈는데, 화면의 월 값(3,054,754)에 12 를 곱하면 36,657,048 이다.
@@ -234,16 +236,11 @@ public class MonthlyDividendCalculator {
     BigDecimal totalCurrentMarketValue =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::currentMarketValue)
-            .map(MonthlyDividendCalculator::safe)
+            .map(net.luversof.web.gate.stock.util.StockAmountUtil::nz)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    BigDecimal portfolioExpectedAnnualYieldPct = BigDecimal.ZERO;
-    if (totalCurrentMarketValue.signum() > 0) {
-      portfolioExpectedAnnualYieldPct =
-          totalExpectedAnnualDividend
-              .multiply(BigDecimal.valueOf(100))
-              .divide(totalCurrentMarketValue, 2, RoundingMode.HALF_UP);
-    }
+    BigDecimal portfolioExpectedAnnualYieldPct =
+        nz(StockAmountUtil.percentOrNull(totalExpectedAnnualDividend, totalCurrentMarketValue, 2));
 
     MonthlyDividendSnapshotResponse bestChoice = resolveBestChoice(rows);
     return new MonthlyDividendSimulatorSummaryView(
@@ -271,16 +268,16 @@ public class MonthlyDividendCalculator {
    */
   public static final Comparator<MonthlyDividendSnapshotResponse> COMPARISON_ORDER =
       Comparator.comparing(
-              (MonthlyDividendSnapshotResponse row) -> safe(row.expectedCombinedReturnPct()),
+              (MonthlyDividendSnapshotResponse row) -> nz(row.expectedCombinedReturnPct()),
               Comparator.reverseOrder())
           .thenComparing(
-              (MonthlyDividendSnapshotResponse row) -> safe(row.expectedAnnualYieldOnCostPct()),
+              (MonthlyDividendSnapshotResponse row) -> nz(row.expectedAnnualYieldOnCostPct()),
               Comparator.reverseOrder())
           .thenComparing(
-              (MonthlyDividendSnapshotResponse row) -> safe(row.expectedAnnualYieldPct()),
+              (MonthlyDividendSnapshotResponse row) -> nz(row.expectedAnnualYieldPct()),
               Comparator.reverseOrder())
           .thenComparing(
-              (MonthlyDividendSnapshotResponse row) -> safe(row.averageTaxableBaseRatio1y()))
+              (MonthlyDividendSnapshotResponse row) -> nz(row.averageTaxableBaseRatio1y()))
           .thenComparing(
               (MonthlyDividendSnapshotResponse row) -> safeString(row.stockItemSymbol()),
               String.CASE_INSENSITIVE_ORDER);
@@ -315,10 +312,6 @@ public class MonthlyDividendCalculator {
       }
     }
     return ranks;
-  }
-
-  private static BigDecimal safe(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
   }
 
   private static String safeString(String value) {

@@ -69,11 +69,15 @@ class DividendFilterRuleTest {
     String text = java.nio.file.Files.readString(source, java.nio.charset.StandardCharsets.UTF_8);
 
     long uses = text.split("matchesFilter\\(", -1).length - 1;
-    assertThat(uses).as("계좌/종목 x 이번기간/전기2곳 = 6 회 + 정의 1 회").isGreaterThanOrEqualTo(7);
+    assertThat(uses)
+        .as("계좌/종목 x 이번 기간 · 최근 1 년 · 전기(comparePreviousPeriod) = 6 회 + 정의 1 회")
+        .isGreaterThanOrEqualTo(7);
 
     assertThat(text)
         .as("빈 목록을 '필터 없음' 으로 되돌리는 예외가 다시 생기면 전기 비교가 어긋난다")
-        .doesNotContain("|| finalAccountIdList.isEmpty()")
-        .doesNotContain("|| finalStockItemIdList.isEmpty()");
+        .doesNotContain("|| accountIds.isEmpty()")
+        .doesNotContain("|| stockItemIds.isEmpty()");
+    // 2026-10-22 부터 전기 판정은 comparePreviousPeriod 안에 있다 - 빈 목록 규칙은
+    // StockDividendHtmxControllerPreviousPeriodTest 가 값으로 본다.
   }
 }

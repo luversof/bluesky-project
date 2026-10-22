@@ -24,11 +24,13 @@ import gg.jte.output.StringOutput;
 import io.github.luversof.boot.context.support.MessageUtil;
 
 /**
- * 컨트롤러가 직접 돌려주는 오류 조각({@code stock/htmx/error})에도 다음 행동이 붙는다: 세션이 풀렸으면 로그인 링크, 백엔드 조회가 실패했으면 재시도
- * 버튼.
+ * 컨트롤러가 직접 돌려주는 오류 조각({@code stock/htmx/error})에도 다음 행동이 붙는다: 세션이 풀렸으면 로그인 링크.
  *
- * <p>실측 2026-09-09(익명으로 조각 27개 호출): 전부 "로그인이 필요합니다" 한 줄(337B)만 나왔고 로그인으로 가는 길이 없었다. 공통 예외 처리기의
- * loadError 조각에는 재시도가 붙는데, 컨트롤러가 {@code remoteFailureView} 로 직접 그리는 실패 안내에는 없어 같은 상황에 화면이 달랐다.
+ * <p>실측 2026-09-09(익명으로 조각 27개 호출): 전부 "로그인이 필요합니다" 한 줄(337B)만 나왔고 로그인으로 가는 길이 없었다.
+ *
+ * <p>2026-10-22 까지 이 시험은 백엔드 조회 실패 안내({@code remoteFailureView})의 재시도 버튼도 봤다. 그 안내를 부르던 마지막 라우트가
+ * 2026-09-09 에 지워진 뒤로는 시험만 불러 메서드와 버튼을 함께 지웠다 - 조회 실패의 재시도는 공통 예외 처리기의 loadError 조각이 맡고
+ * LoadErrorRetryTest 가 지킨다.
  */
 class HtmxErrorFragmentLinksTest {
 
@@ -105,40 +107,18 @@ class HtmxErrorFragmentLinksTest {
             "/login?redirectUrl=https%3A%2F%2Fdev.bluesky.local%3A40122%2Fstock%2Fhtmx%2Fsummary%3FtimeZone%3DAsia%252FSeoul");
   }
 
-  /** 요청 문맥이 없는 단위 테스트에서도 안내 문구는 그대로 나와야 한다(기존 호출부 15곳의 시그니처 불변). */
+  /** 요청 문맥이 없는 단위 테스트에서도 안내 문구는 그대로 나와야 한다(기존 호출부 11곳의 시그니처 불변). */
   @Test
   void 요청_문맥이_없으면_문구만_넣는다() {
     Model model = new ConcurrentModel();
 
     controller().loginRequiredView(model);
-    controller().remoteFailureView(model);
 
     assertThat(model.asMap()).containsOnlyKeys("error");
   }
 
   @Test
-  void 조회_실패에는_쿼리까지_그대로_재시도_주소가_붙는다() {
-    bind("GET", "/stock/htmx/asset-growth/period-summary", "rangeMode=1y&timeZone=Asia%2FSeoul");
-    Model model = new ConcurrentModel();
-
-    controller().remoteFailureView(model);
-
-    assertThat(model.getAttribute("retryUrl"))
-        .isEqualTo("/stock/htmx/asset-growth/period-summary?rangeMode=1y&timeZone=Asia%2FSeoul");
-  }
-
-  @Test
-  void 조회가_아닌_요청에는_재시도를_달지_않는다() {
-    bind("POST", "/stock/htmx/asset-growth/period-summary", null);
-    Model model = new ConcurrentModel();
-
-    controller().remoteFailureView(model);
-
-    assertThat(model.asMap()).doesNotContainKey("retryUrl");
-  }
-
-  @Test
-  void 오류_조각은_주소가_있을_때만_링크와_버튼을_그린다() {
+  void 오류_조각은_로그인_주소가_있을_때만_링크를_그린다() {
     Map<String, Object> login = new HashMap<>();
     login.put("error", "로그인이 필요합니다");
     login.put("loginUrl", "/login?redirectUrl=https%3A%2F%2Fdev.bluesky.local%3A40122%2Fstock");
@@ -149,20 +129,24 @@ class HtmxErrorFragmentLinksTest {
         .contains(">로그인</a>")
         .doesNotContain("<button");
 
-    Map<String, Object> retry = new HashMap<>();
-    retry.put("error", "불러오지 못했습니다");
-    retry.put("retryUrl", "/stock/htmx/summary?timeZone=Asia%2FSeoul");
-    String retryHtml = render(retry);
-    assertThat(retryHtml)
-        .contains("data-load-error")
-        .contains("hx-get=\"/stock/htmx/summary?timeZone=Asia%2FSeoul\"")
-        .contains("hx-target=\"closest [data-load-error]\"")
-        .contains("hx-swap=\"outerHTML\"")
-        .contains("다시 시도")
-        .doesNotContain("<a ");
-
     Map<String, Object> plain = new HashMap<>();
     plain.put("error", "오류");
     assertThat(render(plain)).doesNotContain("<a ").doesNotContain("<button").contains("오류");
+  }
+
+  /**
+   * 조각 실패 제목 문구 키가 실제 번들에 있는지 - 없으면 화면에 키 문자열이 그대로 나간다. 공통 예외 처리기의 loadError · pageError 가
+   * 쓴다(2026-10-22 PeriodSummaryFailureTest 에서 옮김).
+   */
+  @Test
+  void 조각_실패_문구_키가_번들에_있다() throws java.io.IOException {
+    for (String bundle : java.util.List.of("uiMessage.properties", "uiMessage_ko.properties")) {
+      java.nio.file.Path path = java.nio.file.Path.of("src/main/resources", bundle);
+      String source = java.nio.file.Files.readString(path, java.nio.charset.StandardCharsets.UTF_8);
+      // 키 줄 자체를 본다 - 글자만 찾으면 stock.error.fragment.title.xxx 나 주석에도 통과한다.
+      assertThat(source)
+          .as(bundle + " 에 stock.error.fragment.title 이 없다")
+          .containsPattern("(?m)^stock\\.error\\.fragment\\.title\\s*=");
+    }
   }
 }

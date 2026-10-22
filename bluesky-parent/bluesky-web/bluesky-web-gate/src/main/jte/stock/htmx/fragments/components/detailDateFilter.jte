@@ -40,7 +40,7 @@
 	 강조만 맞추고 숨은 입력(rangeMode)은 그대로 비워 둔다 - 여기서 mode 를 채우면 첫 방문에 '전체' 가 전역 기간으로
 	 저장돼(firstVisitRange) 매매·배당 화면의 기본값까지 올해에서 전체로 바뀐다. --%>
 !{String navRangeMode = (rangeMode == null || rangeMode.isBlank()) && startLocal == null && endLocal == null ? "all" : rangeMode;}
-@template.stock.htmx.fragments.dateRangeNavBar(
+@template.stock.htmx.fragments.components.dateRangeNavBar(
 	pickerName = pickerVar,
 	btnClass = btnClass,
 	canPrev = canPrev,

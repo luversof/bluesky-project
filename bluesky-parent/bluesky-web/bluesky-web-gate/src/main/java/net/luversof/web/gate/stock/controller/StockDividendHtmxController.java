@@ -1,5 +1,7 @@
 package net.luversof.web.gate.stock.controller;
 
+import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -45,6 +47,8 @@ import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.util.StockAmountUtil;
+import net.luversof.web.gate.stock.util.StockSortUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
@@ -53,6 +57,72 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   // 월중/월말 배당 구분에 쓰는 종목 태그. 월배당(커버드콜 등) 종목에 부여되어 있다.
   private static final String MID_MONTH_DIVIDEND_TAG = "월중배당";
   private static final String MONTH_END_DIVIDEND_TAG = "월말배당";
+
+  /**
+   * 배당 목록 정렬 열(정렬 머리칸의 field) -> 비교기(값이 없으면 뒤로 가는 오름차순, 내림차순은 뒤집는다). 모르는 열은 StockSortParamException
+   * 으로 끊는다. 2026-10-22 까지 같은 꼴의 switch 였다 - 열 목록과 템플릿 머리칸이 맞는지는 SortColumnMapTest 가 본다.
+   */
+  static final Map<String, Comparator<DividendView>> DIVIDEND_SORTS =
+      Map.of(
+          "payDate", StockSortUtil.ascendingNullsLast(DividendView::payDate),
+          "accountName", StockSortUtil.ascendingNullsLast(DividendView::accountName),
+          "stockItemName", StockSortUtil.ascendingNullsLast(DividendView::stockItemName),
+          "grossAmount", StockSortUtil.ascendingNullsLast(DividendView::grossAmount),
+          "netAmount", StockSortUtil.ascendingNullsLast(DividendView::netAmount),
+          "tax", StockSortUtil.ascendingNullsLast(DividendView::tax),
+          "taxableAmount", StockSortUtil.ascendingNullsLast(DividendView::taxableAmount));
+
+  /** 기간 배당(세후)의 월중 · 월말 · 기타 몫과 건수. */
+  record PayoutWindowSplit(
+      BigDecimal midMonthNetAmount,
+      long midMonthCount,
+      BigDecimal monthEndNetAmount,
+      long monthEndCount,
+      BigDecimal otherNetAmount,
+      long otherCount) {}
+
+  /**
+   * 기간 배당(세후)을 종목 태그로 나눈다 - 월중배당 태그면 월중, 아니고 월말배당이면 월말, 둘 다 없으면(분기배당 등 · 목록에 없는 종목) 기타. 두 태그가 다 붙은
+   * 종목은 월중으로 센다. 태그는 화면 필터와 상관없이 전체 종목 목록에서 찾는다. 2026-10-22 까지 배당 목록 핸들러 안에 지역 변수 여섯으로 적혀 있었고 시험이
+   * 없었다(StockDividendHtmxControllerWindowSplitTest).
+   */
+  static PayoutWindowSplit splitByPayoutWindow(
+      List<DividendView> views, List<StockItem> stockItems) {
+    Map<UUID, List<String>> tagsByStockId =
+        stockItems.stream()
+            .collect(
+                Collectors.toMap(
+                    StockItem::id,
+                    s -> s.tags() != null ? s.tags() : List.of(),
+                    (left, right) -> left));
+    BigDecimal midMonthNetAmount = BigDecimal.ZERO;
+    BigDecimal monthEndNetAmount = BigDecimal.ZERO;
+    BigDecimal otherNetAmount = BigDecimal.ZERO;
+    long midMonthCount = 0;
+    long monthEndCount = 0;
+    long otherCount = 0;
+    for (DividendView d : views) {
+      List<String> tags = tagsByStockId.getOrDefault(d.stockItemId(), List.of());
+      BigDecimal net = nz(d.netAmount());
+      if (tags.contains(MID_MONTH_DIVIDEND_TAG)) {
+        midMonthNetAmount = midMonthNetAmount.add(net);
+        midMonthCount++;
+      } else if (tags.contains(MONTH_END_DIVIDEND_TAG)) {
+        monthEndNetAmount = monthEndNetAmount.add(net);
+        monthEndCount++;
+      } else {
+        otherNetAmount = otherNetAmount.add(net);
+        otherCount++;
+      }
+    }
+    return new PayoutWindowSplit(
+        midMonthNetAmount,
+        midMonthCount,
+        monthEndNetAmount,
+        monthEndCount,
+        otherNetAmount,
+        otherCount);
+  }
 
   private final net.luversof.web.gate.stock.support.StockAsyncSupport async;
 
@@ -175,13 +245,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                     Account::id, Account::name, (left, right) -> left, LinkedHashMap::new));
     Map<UUID, Boolean> taxDeferredMap =
         accounts.stream()
-            .collect(
-                Collectors.toMap(
-                    Account::id,
-                    a ->
-                        a.jsonConfig() != null
-                            && Boolean.TRUE.equals(a.jsonConfig().get("isTaxDeferred")),
-                    (l, r) -> l));
+            .collect(Collectors.toMap(Account::id, a -> a.isTaxDeferred(), (l, r) -> l));
 
     List<StockItem> stockItemList =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockItemsFuture);
@@ -212,18 +276,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
     List<Account> finalAccountList;
     if (startInstant != null || endInstant != null) {
-      finalAccountList = new ArrayList<>(filteredAccountList);
-      if (requestedAccountIds != null) {
-        for (UUID sel : requestedAccountIds) {
-          if (sel == null) continue;
-          if (!finalAccountList.stream().anyMatch(a -> a.id().equals(sel))) {
-            accounts.stream()
-                .filter(a -> a.id().equals(sel))
-                .findFirst()
-                .ifPresent(a -> finalAccountList.add(0, a));
-          }
-        }
-      }
+      finalAccountList =
+          withSelectedFirst(filteredAccountList, accounts, requestedAccountIds, a -> a.id());
     } else {
       finalAccountList = accounts;
     }
@@ -232,92 +286,22 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     if (startInstant != null || endInstant != null) {
       // Date-specific search -> show only stocks that had dividends in the requested
       // period
-      finalStockItemList = new ArrayList<>(filteredStockItemList);
-      if (requestedStockItemIds != null) {
-        for (UUID sel : requestedStockItemIds) {
-          if (sel == null) continue;
-          if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
-            stockItemList.stream()
-                .filter(s -> s.id().equals(sel))
-                .findFirst()
-                .ifPresent(s -> finalStockItemList.add(0, s));
-          }
-        }
-      }
+      finalStockItemList =
+          withSelectedFirst(
+              filteredStockItemList, stockItemList, requestedStockItemIds, s -> s.id());
     } else {
       // No explicit date range (or rangeMode='all') -> show stocks that have any
       // dividend history
-      finalStockItemList = new ArrayList<>(filteredStockItemListAll);
-      if (requestedStockItemIds != null) {
-        for (UUID sel : requestedStockItemIds) {
-          if (sel == null) continue;
-          if (!finalStockItemList.stream().anyMatch(s -> s.id().equals(sel))) {
-            stockItemList.stream()
-                .filter(s -> s.id().equals(sel))
-                .findFirst()
-                .ifPresent(s -> finalStockItemList.add(0, s));
-          }
-        }
-      }
+      finalStockItemList =
+          withSelectedFirst(
+              filteredStockItemListAll, stockItemList, requestedStockItemIds, s -> s.id());
     }
 
     // 최근 1 년 창에서도 같은 변환을 쓰므로 함수로 둔다(2026-09-28).
+    String unknownLabel = msg("stock.label.unknown");
     java.util.function.Function<DividendResponse, DividendView> toDividendView =
-        dividend -> {
-          String accountName =
-              accountNames.getOrDefault(dividend.accountId(), msg("stock.label.unknown"));
-          String stockItemName =
-              Optional.ofNullable(dividend.stockItemName())
-                  .orElse(
-                      Optional.ofNullable(dividend.stockItemId())
-                          .map(id -> stockItemNames.getOrDefault(id, msg("stock.label.unknown")))
-                          .orElse(msg("stock.label.unknown")));
-
-          boolean isDeferred = taxDeferredMap.getOrDefault(dividend.accountId(), false);
-
-          BigDecimal grossAmount =
-              Optional.ofNullable(dividend.grossAmount()).orElse(BigDecimal.ZERO);
-          BigDecimal tax =
-              isDeferred
-                  ? BigDecimal.ZERO
-                  : Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
-          BigDecimal netAmount =
-              isDeferred
-                  ? grossAmount
-                  : Optional.ofNullable(dividend.netAmount()).orElse(grossAmount.subtract(tax));
-
-          BigDecimal taxableAmount = BigDecimal.ZERO;
-          if (!isDeferred) {
-            if (dividend.taxableAmount() != null) {
-              taxableAmount = dividend.taxableAmount();
-            } else if (dividend.taxPerShare() != null && dividend.quantity() != null) {
-              taxableAmount =
-                  dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
-            }
-          }
-
-          return new DividendView(
-              dividend.id(),
-              dividend.accountId(),
-              accountName,
-              dividend.stockItemId(),
-              stockItemName,
-              dividend.quantity(),
-              dividend.amountPerShare(),
-              grossAmount,
-              tax,
-              taxableAmount,
-              dividend.taxPerShare(),
-              netAmount,
-              dividend.recordDate(),
-              dividend.payDate(),
-              null,
-              null,
-              null,
-              null,
-              null,
-              null);
-        };
+        dividend ->
+            toDividendView(dividend, accountNames, stockItemNames, taxDeferredMap, unknownLabel);
     List<DividendView> viewList =
         dividends.stream()
             .filter(d -> matchesFilter(effectiveAccountIdList, d.accountId()))
@@ -374,14 +358,11 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     // 머리 숫자 = 최근 1 년 배당수익률(사용자 요청 2026-09-28: "다양한 수익률이 잘 눈에 안 들어온다").
     // 고른 기간이 아니라 그 기간 끝(없으면 오늘)에서 거꾸로 365 일이다 - 기간이 한 달이든 전체든 "1 년에 몇 %" 로 읽힌다.
     // 계좌 · 종목 필터는 그대로 따른다. 시가 수익률을 쓰지 않으므로 보유 스냅샷은 부르지 않는다.
-    LocalDate today = LocalDate.now(zone);
-    LocalDate ttmEndDate = resolvePeriodEndDate(endInstant, today, zone);
-    if (ttmEndDate.isAfter(today)) {
-      ttmEndDate = today;
-    }
-    LocalDate ttmStartDate = ttmEndDate.minusDays(364);
-    Instant ttmStartInstant = ttmStartDate.atStartOfDay(zone).toInstant();
-    Instant ttmEndInstant = ttmEndDate.plusDays(1).atStartOfDay(zone).toInstant();
+    TtmWindow ttm = ttmWindow(endInstant, LocalDate.now(zone), zone);
+    LocalDate ttmStartDate = ttm.startDate();
+    LocalDate ttmEndDate = ttm.endDate();
+    Instant ttmStartInstant = ttm.startInstant();
+    Instant ttmEndInstant = ttm.endInstant();
     List<DividendView> ttmViewList =
         inPayDateRange(allDividends, ttmStartInstant, ttmEndInstant).stream()
             .filter(d -> matchesFilter(effectiveAccountIdList, d.accountId()))
@@ -409,89 +390,23 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
     List<net.luversof.web.gate.stock.domain.TradeProfit> currentHoldings =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(currentHoldingsFuture);
-    model.addAttribute(
-        "currentValueByStock",
-        sumCurrentValue(
-            currentHoldings, net.luversof.web.gate.stock.domain.TradeProfit::stockItemId));
-    model.addAttribute(
-        "currentValueByAccount",
-        sumCurrentValue(
-            currentHoldings, net.luversof.web.gate.stock.domain.TradeProfit::accountId));
-    // 원금 대비 이익 · 손해(사용자 요청 2026-09-28: "평가금액이 원금에 대해 수익인지 손해인지", "합산 수익률도") - 같은 행들의 평가 손익.
-    model.addAttribute(
-        "evaluationProfitByStock",
-        sumHeld(
-            currentHoldings,
-            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
-            net.luversof.web.gate.stock.domain.TradeProfit::evaluationProfit));
-    model.addAttribute(
-        "evaluationProfitByAccount",
-        sumHeld(
-            currentHoldings,
-            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
-            net.luversof.web.gate.stock.domain.TradeProfit::evaluationProfit));
-    // 실현 손익(a + b + c = d 의 b, 사용자 승인 2026-09-28)과 합산 수익률의 분모(지금까지 산 총액) - 다 판 종목도 포함.
+    // 실현 손익은 기간을 골랐으면 그 기간의 계산에서, 아니면 지금 보유 계산에서(다 판 종목 포함).
     List<net.luversof.web.gate.stock.domain.TradeProfit> realizedSource =
         periodProfitFuture == null
             ? currentHoldings
             : net.luversof.web.gate.stock.support.StockAsyncSupport.join(periodProfitFuture);
-    model.addAttribute(
-        "realizedProfitByStock",
-        sumAll(
-            realizedSource,
-            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
-            net.luversof.web.gate.stock.domain.TradeProfit::realizedProfit));
-    model.addAttribute(
-        "realizedProfitByAccount",
-        sumAll(
-            realizedSource,
-            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
-            net.luversof.web.gate.stock.domain.TradeProfit::realizedProfit));
-    model.addAttribute(
-        "totalBuyCostByStock",
-        sumAll(
-            currentHoldings,
-            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
-            net.luversof.web.gate.stock.domain.TradeProfit::totalBuyCost));
-    model.addAttribute(
-        "totalBuyCostByAccount",
-        sumAll(
-            currentHoldings,
-            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
-            net.luversof.web.gate.stock.domain.TradeProfit::totalBuyCost));
+    addHoldingProfitAttributes(model, currentHoldings, realizedSource);
 
     if (sort != null && !sort.isEmpty()) {
       String field = net.luversof.web.gate.stock.util.StockSortUtil.field(sort);
       boolean descending = net.luversof.web.gate.stock.util.StockSortUtil.descending("sort", sort);
 
-      Comparator<DividendView> comparator =
-          switch (field) {
-            case "payDate" ->
-                Comparator.comparing(
-                    DividendView::payDate, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "accountName" ->
-                Comparator.comparing(
-                    DividendView::accountName, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "stockItemName" ->
-                Comparator.comparing(
-                    DividendView::stockItemName, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "grossAmount" ->
-                Comparator.comparing(
-                    DividendView::grossAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "netAmount" ->
-                Comparator.comparing(
-                    DividendView::netAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "tax" ->
-                Comparator.comparing(
-                    DividendView::tax, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "taxableAmount" ->
-                Comparator.comparing(
-                    DividendView::taxableAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-            // 모르는 열 이름은 조용히 넘기지 않는다 - 넘기면 정렬도 표시 역순도 걸리지 않아
-            // 지정 없음과도 다른 세 번째 순서가 나온다(실측 2026-09-11).
-            default ->
-                throw new net.luversof.web.gate.stock.support.StockSortParamException("sort", sort);
-          };
+      Comparator<DividendView> comparator = DIVIDEND_SORTS.get(field);
+      // 모르는 열 이름은 조용히 넘기지 않는다 - 넘기면 정렬도 표시 역순도 걸리지 않아
+      // 지정 없음과도 다른 세 번째 순서가 나온다(실측 2026-09-11).
+      if (comparator == null) {
+        throw new net.luversof.web.gate.stock.support.StockSortParamException("sort", sort);
+      }
 
       if (descending) {
         comparator = comparator.reversed();
@@ -506,57 +421,20 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     // 상세 목록은 페이징 없이 전체를 펼쳐서 표시한다(헤더 sticky 로 스크롤). 예전의 page/size 파라미터와 slice·Pagination 은
     // 이 결정 뒤로 항상 '1 페이지 = 전체' 라 도달 불가였다(실측 2026-09-09: 폼·화면 어디서도 보내지 않고, 보내도 응답이 같았다).
     int totalItems = viewList.size();
-    List<DividendView> pagedList = viewList;
 
+    // 표 합계 줄(total*)과 요약 카드(totalAll*)는 페이징이 없어진 뒤 같은 목록의 합이다 - 한 번 세서 두 이름에 싣는다(2026-10-22 까지 두 번
+    // 셌다).
     BigDecimal totalGrossAmount =
-        pagedList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalNetAmount =
-        pagedList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalTax =
-        pagedList.stream().map(DividendView::tax).reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalTaxableAmount =
-        pagedList.stream()
-            .map(DividendView::taxableAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalAllGrossAmount =
         viewList.stream().map(DividendView::grossAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalAllNetAmount =
+    BigDecimal totalNetAmount =
         viewList.stream().map(DividendView::netAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalAllTaxableAmount =
-        viewList.stream().map(DividendView::taxableAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal totalAllTax =
+    BigDecimal totalTax =
         viewList.stream().map(DividendView::tax).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totalTaxableAmount =
+        viewList.stream().map(DividendView::taxableAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    // 월중/월말 배당 구분: 종목 태그(월중배당/월말배당) 기준으로 기간 배당(세후)을 나눈다.
-    // 태그가 없는 종목(분기배당 등)은 '기타'로 집계한다. 전체 종목 리스트에서 태그를 조회한다.
-    Map<UUID, List<String>> tagsByStockId =
-        stockItemList.stream()
-            .collect(
-                Collectors.toMap(
-                    StockItem::id,
-                    s -> s.tags() != null ? s.tags() : List.of(),
-                    (left, right) -> left));
-    BigDecimal midMonthNetAmount = BigDecimal.ZERO;
-    BigDecimal monthEndNetAmount = BigDecimal.ZERO;
-    BigDecimal otherWindowNetAmount = BigDecimal.ZERO;
-    long midMonthCount = 0;
-    long monthEndCount = 0;
-    long otherWindowCount = 0;
-    for (DividendView d : viewList) {
-      List<String> tags = tagsByStockId.getOrDefault(d.stockItemId(), List.of());
-      BigDecimal net = nz(d.netAmount());
-      if (tags.contains(MID_MONTH_DIVIDEND_TAG)) {
-        midMonthNetAmount = midMonthNetAmount.add(net);
-        midMonthCount++;
-      } else if (tags.contains(MONTH_END_DIVIDEND_TAG)) {
-        monthEndNetAmount = monthEndNetAmount.add(net);
-        monthEndCount++;
-      } else {
-        otherWindowNetAmount = otherWindowNetAmount.add(net);
-        otherWindowCount++;
-      }
-    }
+    // 월중/월말 배당 구분(splitByPayoutWindow): 종목 태그 기준으로 기간 배당(세후)을 나눈다.
+    PayoutWindowSplit windowSplit = splitByPayoutWindow(viewList, stockItemList);
 
     BigDecimal prevPeriodNetAmount = null;
     LocalDate prevStartDate = null;
@@ -567,71 +445,20 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       prevStartDate = previousPeriod.start();
       prevEndDate = previousPeriod.end();
 
-      final List<UUID> finalAccountIdList = effectiveAccountIdList;
-      final List<UUID> finalStockItemIdList = effectiveStockItemIdList;
-      prevPeriodNetAmount =
-          prevDividends.stream()
-              .filter(d -> matchesFilter(finalAccountIdList, d.accountId()))
-              .filter(d -> matchesFilter(finalStockItemIdList, d.stockItemId()))
-              .map(
-                  d -> {
-                    boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
-                    BigDecimal gross = Optional.ofNullable(d.grossAmount()).orElse(BigDecimal.ZERO);
-                    if (isDeferred) return gross;
-                    BigDecimal tax2 = Optional.ofNullable(d.tax()).orElse(BigDecimal.ZERO);
-                    return Optional.ofNullable(d.netAmount()).orElse(gross.subtract(tax2));
-                  })
-              .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-      // 종목별 증감 분해(전기 대비): 어떤 종목이 차이를 만들었는지.
-      Map<String, BigDecimal> prevByStock = new HashMap<>();
-      prevDividends.stream()
-          .filter(d -> matchesFilter(finalAccountIdList, d.accountId()))
-          .filter(d -> matchesFilter(finalStockItemIdList, d.stockItemId()))
-          .forEach(
-              d -> {
-                boolean isDeferred = taxDeferredMap.getOrDefault(d.accountId(), false);
-                BigDecimal gross = nz(d.grossAmount());
-                BigDecimal net =
-                    isDeferred
-                        ? gross
-                        : Optional.ofNullable(d.netAmount()).orElse(gross.subtract(nz(d.tax())));
-                prevByStock.merge(
-                    d.stockItemName() != null ? d.stockItemName() : "-", net, BigDecimal::add);
-              });
-      Map<String, BigDecimal> curByStock = new HashMap<>();
-      viewList.forEach(
-          v ->
-              curByStock.merge(
-                  v.stockItemName() != null ? v.stockItemName() : "-",
-                  nz(v.netAmount()),
-                  BigDecimal::add));
-      // 종목명 -> stockItemId (변동 요인 종목 상세 링크용)
-      Map<String, UUID> changeStockIdByName = new HashMap<>();
-      stockItemList.forEach(
-          s -> {
-            if (s != null && s.name() != null && s.id() != null) {
-              changeStockIdByName.putIfAbsent(s.name(), s.id());
-            }
-          });
-      Set<String> changeNames = new HashSet<>();
-      changeNames.addAll(curByStock.keySet());
-      changeNames.addAll(prevByStock.keySet());
-      dividendChangeContributors =
-          changeNames.stream()
-              .map(
-                  n -> {
-                    BigDecimal c = curByStock.getOrDefault(n, BigDecimal.ZERO);
-                    BigDecimal p = prevByStock.getOrDefault(n, BigDecimal.ZERO);
-                    return new DividendChange(n, c, p, c.subtract(p), changeStockIdByName.get(n));
-                  })
-              .filter(ch -> ch.delta().signum() != 0)
-              .sorted((a, b) -> b.delta().abs().compareTo(a.delta().abs()))
-              .collect(java.util.stream.Collectors.toList());
+      PreviousPeriodComparison comparison =
+          comparePreviousPeriod(
+              prevDividends,
+              viewList,
+              effectiveAccountIdList,
+              effectiveStockItemIdList,
+              taxDeferredMap,
+              stockItemList);
+      prevPeriodNetAmount = comparison.previousNetAmount();
+      dividendChangeContributors = comparison.contributors();
     }
 
-    // 조회/페이징은 그대로 두고, 화면에는 그 페이지를 오름차순(오래된 것 위)으로 표시(명시 정렬 시 제외).
-    List<DividendView> displayDividendList = new java.util.ArrayList<>(pagedList);
+    // 화면에는 오름차순(오래된 것 위)으로 표시한다 - 기본 순서(지급일 최신순)를 뒤집기만 한다(명시 정렬 시 제외).
+    List<DividendView> displayDividendList = new java.util.ArrayList<>(viewList);
     if (sort == null || sort.isEmpty()) {
       java.util.Collections.reverse(displayDividendList);
     }
@@ -653,50 +480,30 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     // 화면이 쓰는 존 그대로 지급일 기준으로 묶는다 - 표의 다른 날짜와 하루가 어긋나지 않게.
     java.time.ZoneId breakdownZone =
         net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+    // 바로잡은 구간(startInstant/endInstant)을 쓴다. 원본 파라미터를 그대로 읽으면 역순 기간에서
+    // 이 표만 다른 모양이 된다 - 실측 2026-09-12: 뒤집힌 주소로 들어가면 월별 표가 213 행에서 37 행으로
+    // 줄었다(빈 달 채우기가 rangeStart.isAfter(rangeEnd) 에서 그냥 빠져나간다). 합계와 상세 목록은 같았다.
+    LocalDate breakdownFirstDay =
+        startInstant != null ? startInstant.atZone(breakdownZone).toLocalDate() : null;
+    // endDate 는 배타적이라 하루를 빼야 화면의 마지막 날과 같아진다.
+    LocalDate breakdownLastDay =
+        endInstant != null ? endInstant.atZone(breakdownZone).toLocalDate().minusDays(1) : null;
     model.addAttribute(
         "dividendYearlyRows",
         net.luversof.web.gate.stock.util.DividendPeriodBreakdown.byYear(
-            viewList,
-            breakdownZone,
-            // 바로잡은 구간(startInstant/endInstant)을 쓴다. 원본 파라미터를 그대로 읽으면 역순 기간에서
-            // 이 표만 다른 모양이 된다 - 실측 2026-09-12: 뒤집힌 주소로 들어가면 월별 표가 213 행에서 37 행으로
-            // 줄었다(빈 달 채우기가 rangeStart.isAfter(rangeEnd) 에서 그냥 빠져나간다). 합계와 상세 목록은 같았다.
-            startInstant != null ? startInstant.atZone(breakdownZone).toLocalDate() : null,
-            // endDate 는 배타적이라 하루를 빼야 화면의 마지막 날과 같아진다.
-            endInstant != null
-                ? endInstant.atZone(breakdownZone).toLocalDate().minusDays(1)
-                : null));
+            viewList, breakdownZone, breakdownFirstDay, breakdownLastDay));
     model.addAttribute(
         "dividendMonthlyRows",
         net.luversof.web.gate.stock.util.DividendPeriodBreakdown.byMonth(
-            viewList,
-            breakdownZone,
-            startInstant != null ? startInstant.atZone(breakdownZone).toLocalDate() : null,
-            endInstant != null
-                ? endInstant.atZone(breakdownZone).toLocalDate().minusDays(1)
-                : null));
+            viewList, breakdownZone, breakdownFirstDay, breakdownLastDay));
     // 월별 배당 차트의 "최근 12개월 합" 선은 뺐다(사용자 요청 2026-10-02: "의미없는거 같은데? 괜히 오른쪽에 다른 금액 표시하고
     // 헷갈리기만"). 막대(그 달 배당)와 크기대가 다른 금액이 오른쪽 축에 따로 붙어 무엇을 읽어야 할지 흐렸다.
     model.addAttribute("totalItems", totalItems);
     model.addAttribute("accountList", finalAccountList);
     model.addAttribute("stockItemList", finalStockItemList);
     model.addAttribute("stockTagList", getAvailableStockTags(stockItemList));
-    model.addAttribute(
-        "selectedAccountIds", effectiveAccountIdList != null ? effectiveAccountIdList : List.of());
-    model.addAttribute(
-        "selectedStockItemIds",
-        effectiveStockItemIdList != null ? effectiveStockItemIdList : List.of());
-    model.addAttribute("selectedStockTags", selectedStockTags);
-    model.addAttribute(
-        "selectedAccountId",
-        (effectiveAccountIdList != null && !effectiveAccountIdList.isEmpty())
-            ? effectiveAccountIdList.get(0)
-            : null);
-    model.addAttribute(
-        "selectedStockItemId",
-        (effectiveStockItemIdList != null && !effectiveStockItemIdList.isEmpty())
-            ? effectiveStockItemIdList.get(0)
-            : null);
+    addSelectionAttributes(
+        model, effectiveAccountIdList, effectiveStockItemIdList, selectedStockTags);
     // reflect actual instants used (may have been defaulted to YTD above)
     model.addAttribute("startDate", startInstant);
     model.addAttribute("endDate", endInstant);
@@ -706,23 +513,24 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalNetAmount", totalNetAmount);
     model.addAttribute("totalTax", totalTax);
     model.addAttribute("totalTaxableAmount", totalTaxableAmount);
-    model.addAttribute("totalAllGrossAmount", totalAllGrossAmount);
-    model.addAttribute("totalAllNetAmount", totalAllNetAmount);
-    model.addAttribute("totalAllTaxableAmount", totalAllTaxableAmount);
-    model.addAttribute("totalAllTax", totalAllTax);
-    model.addAttribute("midMonthNetAmount", midMonthNetAmount);
-    model.addAttribute("monthEndNetAmount", monthEndNetAmount);
-    model.addAttribute("otherWindowNetAmount", otherWindowNetAmount);
-    model.addAttribute("midMonthCount", midMonthCount);
-    model.addAttribute("monthEndCount", monthEndCount);
-    model.addAttribute("otherWindowCount", otherWindowCount);
+    model.addAttribute("totalAllGrossAmount", totalGrossAmount);
+    model.addAttribute("totalAllNetAmount", totalNetAmount);
+    model.addAttribute("totalAllTaxableAmount", totalTaxableAmount);
+    model.addAttribute("totalAllTax", totalTax);
+    model.addAttribute("midMonthNetAmount", windowSplit.midMonthNetAmount());
+    model.addAttribute("monthEndNetAmount", windowSplit.monthEndNetAmount());
+    model.addAttribute("otherWindowNetAmount", windowSplit.otherNetAmount());
+    model.addAttribute("midMonthCount", windowSplit.midMonthCount());
+    model.addAttribute("monthEndCount", windowSplit.monthEndCount());
+    model.addAttribute("otherWindowCount", windowSplit.otherCount());
     model.addAttribute("prevPeriodNetAmount", prevPeriodNetAmount);
     model.addAttribute("dividendChangeContributors", dividendChangeContributors);
     model.addAttribute("prevStartDate", prevStartDate);
     model.addAttribute("prevEndDate", prevEndDate);
     // 달력 프리셋(mtd/ytd)은 '진행 중인 기간'을 '완전한 전월/전년'과 비교한다. 밝히지 않으면 증감률이
     // 실제 추세와 다르게 읽힌다(실측은 resolveInProgressPeriod 주석 참고).
-    int[] monthProgress = resolveInProgressPeriod(startDate, endDate, rangeMode, zone);
+    // 바로잡은 구간(프리셋 기본 포함)을 쓴다 - 날짜 없이 rangeMode 만 오면 원본 파라미터는 null 이다.
+    int[] monthProgress = resolveInProgressPeriod(startInstant, endInstant, rangeMode, zone);
     model.addAttribute("currentPeriodElapsedDays", monthProgress == null ? 0 : monthProgress[0]);
     model.addAttribute("currentPeriodTotalDays", monthProgress == null ? 0 : monthProgress[1]);
     model.addAttribute(
@@ -762,12 +570,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     BigDecimal principalDeltaPct = null;
     if (startPrincipal != null && endPrincipal != null) {
       principalDelta = endPrincipal.subtract(startPrincipal);
-      if (startPrincipal.compareTo(BigDecimal.ZERO) > 0) {
-        principalDeltaPct =
-            principalDelta
-                .multiply(BigDecimal.valueOf(100))
-                .divide(startPrincipal, 2, RoundingMode.HALF_UP);
-      }
+      principalDeltaPct = StockAmountUtil.percentOrNull(principalDelta, startPrincipal, 2);
     }
     model.addAttribute("periodPrincipalDelta", principalDelta);
     model.addAttribute("periodPrincipalDeltaPct", principalDeltaPct);
@@ -777,7 +580,6 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("stockYieldRows", analyticsResult.stockYieldRows());
     model.addAttribute("accountYieldRows", analyticsResult.accountYieldRows());
     model.addAttribute("yearlyYieldRows", analyticsResult.yearlyYieldRows());
-    model.addAttribute("rangeMode", rangeMode);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
     // reflect rangeMode back into model (may have been defaulted above)
     model.addAttribute("rangeMode", rangeMode);
@@ -799,13 +601,17 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
    * </pre>
    *
    * <p>상대 N개월 프리셋은 양쪽 길이가 최대 3 일 차이라 표기하지 않는다(실측: 1개월 -8.7% vs -11.7%).
+   *
+   * <p>{@code endDate} 는 이 화면의 기간 규약대로 <b>배타적</b>이다(마지막 날 다음 날 0시). 포함 끝으로 읽으면 하루씩 밀리고, 달의 마지막 날에는
+   * 다음 달 1일로 읽혀 "1/30일" 이 붙는다(2026-10-21 배선하며 바로잡음).
    */
   private int[] resolveInProgressPeriod(
       Instant startDate, Instant endDate, String rangeMode, ZoneId zone) {
     if (startDate == null || endDate == null) {
       return null;
     }
-    LocalDate endLocal = endDate.atZone(zone).toLocalDate();
+    // 같은 파일 resolvePeriodEndDate 와 같은 읽기(끝 직전 순간의 날짜) - 끝이 그 존의 자정이 아니어도 하루 밀리지 않는다.
+    LocalDate endLocal = endDate.minusNanos(1).atZone(zone).toLocalDate();
     int elapsedDays;
     int totalDays;
     if ("mtd".equals(rangeMode)) {
@@ -1149,9 +955,65 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   }
 
   /**
-   * 머리 숫자(최근 1 년) 모델. "평균 A 원을 넣어 두고 B 원을 받았다" 가 머리 숫자와 맞아떨어지도록 A 는 365 일 달력 평균, B 는 수익률의 분자(기준일
-   * 원금이 있는 배당)다 - B 에 세후 전체를 넣으면 문장으로 되짚은 값과 머리 숫자가 어긋난다. 월 평균은 받은 돈 전체(ttmNetAmount)로 낸다.
+   * 종목별 · 계좌별 보유 손익 지도 여덟(2026-10-22 까지 dividendList 안에 그대로 적혀 있었다).
+   *
+   * <ul>
+   *   <li>지금 평가금액 · 평가 손익 - {@code currentHoldings} 중 지금 들고 있는 행. 원금 대비 이익 · 손해(사용자 요청 2026-09-28:
+   *       "평가금액이 원금에 대해 수익인지 손해인지", "합산 수익률도") - 같은 행들의 평가 손익
+   *   <li>실현 손익(a + b + c = d 의 b, 사용자 승인 2026-09-28) - {@code realizedSource} 의 모든 행
+   *   <li>합산 수익률의 분모(지금까지 산 총액) - {@code currentHoldings} 의 모든 행, 다 판 종목도 포함
+   * </ul>
    */
+  static void addHoldingProfitAttributes(
+      Model model,
+      List<net.luversof.web.gate.stock.domain.TradeProfit> currentHoldings,
+      List<net.luversof.web.gate.stock.domain.TradeProfit> realizedSource) {
+    model.addAttribute(
+        "currentValueByStock",
+        sumCurrentValue(
+            currentHoldings, net.luversof.web.gate.stock.domain.TradeProfit::stockItemId));
+    model.addAttribute(
+        "currentValueByAccount",
+        sumCurrentValue(
+            currentHoldings, net.luversof.web.gate.stock.domain.TradeProfit::accountId));
+    model.addAttribute(
+        "evaluationProfitByStock",
+        sumHeld(
+            currentHoldings,
+            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
+            net.luversof.web.gate.stock.domain.TradeProfit::evaluationProfit));
+    model.addAttribute(
+        "evaluationProfitByAccount",
+        sumHeld(
+            currentHoldings,
+            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
+            net.luversof.web.gate.stock.domain.TradeProfit::evaluationProfit));
+    model.addAttribute(
+        "realizedProfitByStock",
+        sumAll(
+            realizedSource,
+            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
+            net.luversof.web.gate.stock.domain.TradeProfit::realizedProfit));
+    model.addAttribute(
+        "realizedProfitByAccount",
+        sumAll(
+            realizedSource,
+            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
+            net.luversof.web.gate.stock.domain.TradeProfit::realizedProfit));
+    model.addAttribute(
+        "totalBuyCostByStock",
+        sumAll(
+            currentHoldings,
+            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
+            net.luversof.web.gate.stock.domain.TradeProfit::totalBuyCost));
+    model.addAttribute(
+        "totalBuyCostByAccount",
+        sumAll(
+            currentHoldings,
+            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
+            net.luversof.web.gate.stock.domain.TradeProfit::totalBuyCost));
+  }
+
   /**
    * 지금 들고 있는 것의 평가금액을 종목별 · 계좌별로 더한다. 수량 0(다 판 것)과 평가금액이 없는 행은 뺀다 - 표는 그 종목을 "지금 보유하지 않음" 으로 적는다(0
    * 원으로 적으면 값이 0 인 것처럼 읽힌다).
@@ -1210,6 +1072,31 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return sums;
   }
 
+  /** 최근 1 년 창 - 날짜는 양 끝 포함, 순간은 [시작일 자정, 끝 다음 날 자정). */
+  record TtmWindow(
+      LocalDate startDate, LocalDate endDate, Instant startInstant, Instant endInstant) {}
+
+  /**
+   * 머리 숫자(최근 1 년)의 창. 끝은 고른 기간의 끝(없으면 오늘)이되 오늘을 넘지 않고, 시작은 끝에서 364 일 전이다(양 끝 포함 365 일). 2026-10-22
+   * 까지 dividendList 안에 그대로 적혀 있었다.
+   */
+  static TtmWindow ttmWindow(Instant periodEnd, LocalDate today, ZoneId zone) {
+    LocalDate end = resolvePeriodEndDate(periodEnd, today, zone);
+    if (end.isAfter(today)) {
+      end = today;
+    }
+    LocalDate start = end.minusDays(364);
+    return new TtmWindow(
+        start,
+        end,
+        start.atStartOfDay(zone).toInstant(),
+        end.plusDays(1).atStartOfDay(zone).toInstant());
+  }
+
+  /**
+   * 머리 숫자(최근 1 년) 모델. "평균 A 원을 넣어 두고 B 원을 받았다" 가 머리 숫자와 맞아떨어지도록 A 는 365 일 달력 평균, B 는 수익률의 분자(기준일
+   * 원금이 있는 배당)다 - B 에 세후 전체를 넣으면 문장으로 되짚은 값과 머리 숫자가 어긋난다. 월 평균은 받은 돈 전체(ttmNetAmount)로 낸다.
+   */
   record TtmHeadline(
       BigDecimal yieldPct,
       BigDecimal averageDailyPrincipalCost,
@@ -1483,6 +1370,134 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         .toList();
   }
 
+  /**
+   * 배당 한 건 → 목록 한 줄. 과세이연 계좌면 세금 · 과세표준을 0 으로, 세후는 {@link #afterTaxNet} 규칙으로. 과세표준이 비어 있으면 주당 과세표준
+   * x 수량으로 채운다. 종목 이름은 응답 → 이름 지도 → {@code unknownLabel}, 계좌 이름은 이름 지도 → {@code unknownLabel} 차례.
+   * 2026-10-22 까지 dividendList 안의 람다였다.
+   */
+  static DividendView toDividendView(
+      DividendResponse dividend,
+      Map<UUID, String> accountNames,
+      Map<UUID, String> stockItemNames,
+      Map<UUID, Boolean> taxDeferredMap,
+      String unknownLabel) {
+    String accountName = accountNames.getOrDefault(dividend.accountId(), unknownLabel);
+    String stockItemName =
+        Optional.ofNullable(dividend.stockItemName())
+            .orElse(
+                Optional.ofNullable(dividend.stockItemId())
+                    .map(id -> stockItemNames.getOrDefault(id, unknownLabel))
+                    .orElse(unknownLabel));
+
+    boolean isDeferred = taxDeferredMap.getOrDefault(dividend.accountId(), false);
+
+    BigDecimal grossAmount = Optional.ofNullable(dividend.grossAmount()).orElse(BigDecimal.ZERO);
+    BigDecimal tax =
+        isDeferred ? BigDecimal.ZERO : Optional.ofNullable(dividend.tax()).orElse(BigDecimal.ZERO);
+    BigDecimal netAmount = afterTaxNet(dividend, isDeferred);
+
+    BigDecimal taxableAmount = BigDecimal.ZERO;
+    if (!isDeferred) {
+      if (dividend.taxableAmount() != null) {
+        taxableAmount = dividend.taxableAmount();
+      } else if (dividend.taxPerShare() != null && dividend.quantity() != null) {
+        taxableAmount = dividend.taxPerShare().multiply(BigDecimal.valueOf(dividend.quantity()));
+      }
+    }
+
+    return new DividendView(
+        dividend.id(),
+        dividend.accountId(),
+        accountName,
+        dividend.stockItemId(),
+        stockItemName,
+        dividend.quantity(),
+        dividend.amountPerShare(),
+        grossAmount,
+        tax,
+        taxableAmount,
+        dividend.taxPerShare(),
+        netAmount,
+        dividend.recordDate(),
+        dividend.payDate(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /**
+   * 배당 한 줄의 세후 금액 - 과세이연(연금 · ISA 등) 계좌면 세전 그대로, 아니면 기록된 세후, 기록이 없으면 세전 - 세금(값 없는 금액은 0). 목록 행과 전기
+   * 비교가 같은 규칙을 한 벌씩 들고 있었다(2026-10-22 정리).
+   */
+  static BigDecimal afterTaxNet(DividendResponse dividend, boolean taxDeferred) {
+    BigDecimal gross = nz(dividend.grossAmount());
+    return taxDeferred
+        ? gross
+        : Optional.ofNullable(dividend.netAmount()).orElse(gross.subtract(nz(dividend.tax())));
+  }
+
+  /** 전기 대비 - 전기 배당 합(세후)과 종목별 증감(차이가 있는 종목만, 차이 큰 순). */
+  record PreviousPeriodComparison(
+      BigDecimal previousNetAmount, List<DividendChange> contributors) {}
+
+  /**
+   * 전기 배당을 이번 기간과 같은 계좌 · 종목 필터로 거르고, 세후 합과 종목별 증감(이번 - 전기)을 낸다. 세후는 과세이연 계좌면 세전 그대로, 아니면 기록된
+   * 세후(없으면 세전 - 세금). 종목은 이름으로 묶고(이름 없으면 "-"), 상세 링크용 id 는 전체 종목 목록에서 처음 나온 같은 이름의 것. 2026-10-22 까지
+   * 배당 목록 핸들러가 같은 거르기 · 세후 셈을 합계와 종목별로 두 번 적었다(StockDividendHtmxControllerPreviousPeriodTest).
+   */
+  static PreviousPeriodComparison comparePreviousPeriod(
+      List<DividendResponse> prevDividends,
+      List<DividendView> currentViews,
+      List<UUID> accountIds,
+      List<UUID> stockItemIds,
+      Map<UUID, Boolean> taxDeferredMap,
+      List<StockItem> stockItems) {
+    BigDecimal previousNetAmount = BigDecimal.ZERO;
+    Map<String, BigDecimal> prevByStock = new HashMap<>();
+    for (DividendResponse d : prevDividends) {
+      if (!matchesFilter(accountIds, d.accountId())
+          || !matchesFilter(stockItemIds, d.stockItemId())) {
+        continue;
+      }
+      BigDecimal net = afterTaxNet(d, taxDeferredMap.getOrDefault(d.accountId(), false));
+      previousNetAmount = previousNetAmount.add(net);
+      prevByStock.merge(d.stockItemName() != null ? d.stockItemName() : "-", net, BigDecimal::add);
+    }
+    Map<String, BigDecimal> curByStock = new HashMap<>();
+    currentViews.forEach(
+        v ->
+            curByStock.merge(
+                v.stockItemName() != null ? v.stockItemName() : "-",
+                nz(v.netAmount()),
+                BigDecimal::add));
+    // 종목명 -> stockItemId (변동 요인 종목 상세 링크용)
+    Map<String, UUID> changeStockIdByName = new HashMap<>();
+    stockItems.forEach(
+        s -> {
+          if (s != null && s.name() != null && s.id() != null) {
+            changeStockIdByName.putIfAbsent(s.name(), s.id());
+          }
+        });
+    Set<String> changeNames = new HashSet<>();
+    changeNames.addAll(curByStock.keySet());
+    changeNames.addAll(prevByStock.keySet());
+    List<DividendChange> contributors =
+        changeNames.stream()
+            .map(
+                n -> {
+                  BigDecimal c = curByStock.getOrDefault(n, BigDecimal.ZERO);
+                  BigDecimal p = prevByStock.getOrDefault(n, BigDecimal.ZERO);
+                  return new DividendChange(n, c, p, c.subtract(p), changeStockIdByName.get(n));
+                })
+            .filter(ch -> ch.delta().signum() != 0)
+            .sorted((a, b) -> b.delta().abs().compareTo(a.delta().abs()))
+            .collect(java.util.stream.Collectors.toList());
+    return new PreviousPeriodComparison(previousNetAmount, contributors);
+  }
+
   static boolean matchesFilter(List<UUID> filter, UUID id) {
     if (filter == null) {
       return true;
@@ -1491,14 +1506,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   }
 
   static BigDecimal percentage(BigDecimal amount, BigDecimal principal) {
-    if (amount == null || principal == null || principal.compareTo(BigDecimal.ZERO) <= 0) {
-      return null;
-    }
-    return amount.multiply(BigDecimal.valueOf(100)).divide(principal, 4, RoundingMode.HALF_UP);
-  }
-
-  private static BigDecimal nz(BigDecimal value) {
-    return value != null ? value : BigDecimal.ZERO;
+    return StockAmountUtil.percentOrNull(amount, principal, 4);
   }
 
   record PositionKey(UUID accountId, UUID stockItemId) {}

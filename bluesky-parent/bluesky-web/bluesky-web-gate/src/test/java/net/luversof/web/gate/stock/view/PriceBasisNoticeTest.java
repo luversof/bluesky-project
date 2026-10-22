@@ -51,9 +51,10 @@ class PriceBasisNoticeTest {
     assertThat(support).as("현재 보유 조회가 이미 종가 일자를 갖고 있다").contains("priceBasisDate");
     assertThat(page).contains("monthlyDividendPriceBasisDate = monthlyDividendPriceBasisDate");
     assertThat(fragment).contains("@param java.time.LocalDate monthlyDividendPriceBasisDate");
-    // 문구 틀은 StockPriceBasisUtil.basisMessage 가 고른다(종가 / 장중 시세, 2026-10-02).
+    // 문구는 StockPriceBasisUtil.basisText(→ basisMessage) 가 고른다(종가 / 장중 시세, 2026-10-02).
     assertThat(fragment)
-        .contains("StockPriceBasisUtil.basisMessage(monthlyDividendPriceBasisIntradayTime)");
+        .contains(
+            "StockPriceBasisUtil.basisText(monthlyDividendPriceBasisIntradayTime, monthlyDividendPriceBasisDate)");
   }
 
   /** 공백을 한 칸으로 눌러 서식 차이를 지운다. */

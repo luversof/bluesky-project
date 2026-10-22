@@ -1,4 +1,4 @@
-// 자산 현황 조각의 브라우저 동작: 계좌 상세 펼침 · 표 정렬 · 행 선택 합계 · 태그 툴팁.
+// 자산 현황 조각의 브라우저 동작: 계좌 상세 펼침 · 행 선택 합계(표 정렬은 clientTableSort.ts, 태그 툴팁은 stockTagTooltip.ts).
 //
 // 2026-09-08 까지 assetStatus.jte 안의 인라인 <script> 였다(669 줄 - 이 모듈 인라인 스크립트 22 개 중 가장 큰
 // 순수 JS 였다: JTE 식이 하나도 없어 파일로 뺄 수 있었다). 인라인일 때는 검사가 템플릿 문자열에서 함수를
@@ -51,130 +51,6 @@ export {};
         }
     }
 
-    function getAssetStatusSortValue(row: HTMLElement, sortKey: string, sortType: string): any {
-        if (!row || !sortKey) {
-            return sortType === 'number' ? 0 : '';
-        }
-
-        var rawValue = row.dataset[sortKey];
-        if (sortType === 'number') {
-            var parsedValue = Number(rawValue);
-            return Number.isFinite(parsedValue) ? parsedValue : 0;
-        }
-
-        return rawValue || '';
-    }
-
-    function compareAssetStatusSortValues(leftValue: any, rightValue: any, sortType: string): number {
-        if (sortType === 'number') {
-            return leftValue - rightValue;
-        }
-
-        return String(leftValue).localeCompare(String(rightValue), 'ko', {
-            numeric: true,
-            sensitivity: 'base'
-        });
-    }
-
-    function updateAssetStatusSortIndicators(table: HTMLTableElement) {
-        if (!table) {
-            return;
-        }
-
-        var activeKey = table.dataset.sortKey;
-        var direction = table.dataset.sortDirection;
-        var buttons = table.querySelectorAll<HTMLElement>('[data-sort-key]');
-        for (var i = 0; i < buttons.length; i++) {
-            var button = buttons[i];
-            var indicator = button.querySelector<HTMLElement>('[data-sort-indicator]');
-            // aria-sort 는 헤더 셀(th)에 있어야 보조기술이 정렬 상태를 읽는다. parentElement 로 잡으면
-            // 버튼을 레이아웃용 div 로 한 겹만 감싸도 aria-sort 가 div 로 가서 th 에서 조용히 사라진다.
-            // 형제 구현(tableSort.ts)은 th 에 직접 달고 있어 둘이 어긋나 있었다.
-            var headerCell = button.closest<HTMLElement>('th, td') || button.parentElement;
-            var isActive = button.dataset.sortKey === activeKey;
-
-            if (indicator) {
-                indicator.textContent = isActive
-                    ? (direction === 'asc' ? '▲' : '▼')
-                    : '↕';
-            }
-
-            if (headerCell) {
-                headerCell.setAttribute(
-                    'aria-sort',
-                    isActive
-                        ? (direction === 'asc' ? 'ascending' : 'descending')
-                        : 'none'
-                );
-            }
-        }
-    }
-
-    function sortAssetStatusTable(table: HTMLTableElement, sortKey: string, sortType: string) {
-        if (!table || !sortKey || !sortType || !table.tBodies || table.tBodies.length === 0) {
-            return;
-        }
-
-        var nextDirection: string;
-        if (table.dataset.sortKey === sortKey) {
-            nextDirection = table.dataset.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            nextDirection = sortType === 'text' ? 'asc' : 'desc';
-        }
-
-        table.dataset.sortKey = sortKey;
-        table.dataset.sortDirection = nextDirection;
-
-        var tbody = table.tBodies[0];
-        var rows = tbody.querySelectorAll<HTMLTableRowElement>('[data-sortable-row]');
-        var rowGroups = [];
-
-        for (var i = 0; i < rows.length; i++) {
-            var row = rows[i];
-            var detailRowId = row.dataset.detailRowId;
-            var groupNodes: HTMLElement[] = [row];
-
-            if (detailRowId) {
-                var detailRow = document.getElementById(detailRowId);
-                if (detailRow && detailRow.parentElement === tbody) {
-                    groupNodes.push(detailRow);
-                }
-            }
-
-            rowGroups.push({
-                row: row,
-                groupNodes: groupNodes
-            });
-        }
-
-        rowGroups.sort(function(left: any, right: any) {
-            var compared = compareAssetStatusSortValues(
-                getAssetStatusSortValue(left.row, sortKey, sortType),
-                getAssetStatusSortValue(right.row, sortKey, sortType),
-                sortType
-            );
-
-            if (compared === 0) {
-                compared = compareAssetStatusSortValues(
-                    left.row.dataset.account || left.row.dataset.stockName || '',
-                    right.row.dataset.account || right.row.dataset.stockName || '',
-                    'text'
-                );
-            }
-
-            return nextDirection === 'asc' ? compared : -compared;
-        });
-
-        for (var j = 0; j < rowGroups.length; j++) {
-            var group = rowGroups[j].groupNodes;
-            for (var k = 0; k < group.length; k++) {
-                tbody.appendChild(group[k]);
-            }
-        }
-
-        updateAssetStatusSortIndicators(table);
-    }
-
     function initializeAssetStatusDetailToggles() {
         // 계좌 표의 "보유 종목 보기" 와 종목 표의 "보유 계좌 보기"(2026-09-17)가 같은 방식으로 여닫는다.
         var buttons = document.querySelectorAll<HTMLElement>('[data-account-detail-toggle], [data-stock-detail-toggle]');
@@ -188,28 +64,6 @@ export {};
             button.addEventListener('click', function(this: HTMLElement) {
                 toggleAssetStatusAccountDetail(this, (this.dataset.accountDetailToggle || this.dataset.stockDetailToggle)!);
             });
-        }
-    }
-
-    function initializeAssetStatusSortableTables() {
-        var tables = document.querySelectorAll<HTMLTableElement>('[data-sortable-table]');
-        for (var i = 0; i < tables.length; i++) {
-            var table = tables[i];
-            if (table.dataset.sortableInitialized === 'true') {
-                continue;
-            }
-
-            table.dataset.sortableInitialized = 'true';
-
-            var buttons = table.querySelectorAll<HTMLElement>('[data-sort-key]');
-            for (var j = 0; j < buttons.length; j++) {
-                buttons[j].addEventListener('click', function(this: HTMLElement) {
-                    var targetTable = this.closest<HTMLTableElement>('[data-sortable-table]');
-                    sortAssetStatusTable(targetTable!, this.dataset.sortKey!, this.dataset.sortType!);
-                });
-            }
-
-            updateAssetStatusSortIndicators(table);
         }
     }
 
@@ -574,108 +428,15 @@ export {};
         }
     }
 
-    if (typeof win.initializeStockTagHoverTooltips !== 'function') {
-        win.initializeStockTagHoverTooltips = function(root: ParentNode | null) {
-            var tooltip = win.stockTagHoverTooltip;
-            if (!tooltip) {
-                var tooltipEl = document.createElement('div');
-                tooltipEl.id = 'stockTagHoverTooltip';
-                tooltipEl.className = 'pointer-events-none fixed left-0 top-0 z-50 hidden w-64 max-w-[calc(100vw-2rem)] rounded-box bg-neutral px-3 py-2 text-left text-xs leading-5 text-neutral-content shadow-lg sm:w-72';
-                document.body.appendChild(tooltipEl);
-
-                tooltip = {
-                    element: tooltipEl,
-                    show: function(message: string, clientX: number, clientY: number) {
-                        if (!message) {
-                            this.hide();
-                            return;
-                        }
-
-                        this.element.textContent = message;
-                        this.element.classList.remove('hidden');
-                        this.move(clientX, clientY);
-                    },
-                    move: function(clientX: number, clientY: number) {
-                        if (this.element.classList.contains('hidden')) {
-                            return;
-                        }
-
-                        var offsetX = 12;
-                        var offsetY = 18;
-                        var viewportPadding = 12;
-                        var left = clientX + offsetX;
-                        var top = clientY + offsetY;
-                        var rect = this.element.getBoundingClientRect();
-
-                        if (left + rect.width + viewportPadding > win.innerWidth) {
-                            left = Math.max(viewportPadding, win.innerWidth - rect.width - viewportPadding);
-                        }
-
-                        if (top + rect.height + viewportPadding > win.innerHeight) {
-                            top = Math.max(viewportPadding, clientY - rect.height - offsetY);
-                        }
-
-                        this.element.style.left = left + 'px';
-                        this.element.style.top = top + 'px';
-                    },
-                    hide: function() {
-                        this.element.classList.add('hidden');
-                        this.element.textContent = '';
-                    }
-                };
-
-                win.stockTagHoverTooltip = tooltip;
-                win.addEventListener('scroll', function() {
-                    if (win.stockTagHoverTooltip) {
-                        win.stockTagHoverTooltip.hide();
-                    }
-                }, true);
-                win.addEventListener('resize', function() {
-                    if (win.stockTagHoverTooltip) {
-                        win.stockTagHoverTooltip.hide();
-                    }
-                });
-            }
-
-            var scope = root || document;
-            var targets = scope.querySelectorAll<HTMLElement>('[data-stock-tag-tooltip]');
-            for (var i = 0; i < targets.length; i++) {
-                var target = targets[i];
-                if (target.dataset.stockTagTooltipInitialized === 'true') {
-                    continue;
-                }
-
-                target.dataset.stockTagTooltipInitialized = 'true';
-
-                target.addEventListener('mouseenter', function(this: HTMLElement, event: MouseEvent) {
-                    tooltip.show(this.dataset.stockTagTooltip, event.clientX, event.clientY);
-                });
-
-                target.addEventListener('mousemove', function(this: HTMLElement, event: MouseEvent) {
-                    tooltip.move(event.clientX, event.clientY);
-                });
-
-                target.addEventListener('mouseleave', function(this: HTMLElement) {
-                    tooltip.hide();
-                });
-            }
-        };
-    }
-
     function initializeAssetStatus() {
         initializeAssetStatusDetailToggles();
-        initializeAssetStatusSortableTables();
+        // 표 정렬은 stockLayout 이 싣는 공용 정렬기(clientTableSort.ts) - 줄의 data-* 값, 같으면 계좌 · 종목 이름 순.
+        if (win.StockClientTableSort) win.StockClientTableSort.initialize({ tableSelector: "[data-sortable-table]", rowSelector: "[data-sortable-row]", tieBreakKeys: ["account", "stockName"] });
         initializeAssetStatusAccountSelection();
         initializeAssetStatusStockSelection();
-        win.initializeStockTagHoverTooltips(document);
+        // 태그 풍선은 stockLayout 이 싣는 /js/stock/stockTagTooltip.js 에 있다 - 없으면(레이아웃 밖 · 검사) 건너뛰고 나머지 초기화는 계속한다.
+        if (typeof win.initializeStockTagHoverTooltips === "function") win.initializeStockTagHoverTooltips(document);
     }
-
-    // 테스트에서 직접 부를 수 있게 노출한다(classic script 라 export 를 쓸 수 없다).
-    // 다른 주식 스크립트도 같은 방식이다(__tableSortInternals 등).
-    (globalThis as any).__assetStatusInternals = {
-        updateSortIndicators: updateAssetStatusSortIndicators,
-        sortValue: getAssetStatusSortValue,
-    };
 
     win.initializeAssetStatus = initializeAssetStatus;
     document.addEventListener("htmx:afterSettle", initializeAssetStatus);

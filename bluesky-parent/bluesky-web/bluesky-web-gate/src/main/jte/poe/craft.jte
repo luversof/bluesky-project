@@ -320,7 +320,7 @@
 									new String[] {"BENCH_REMOVE", "제작대 옵션 제거", "Remove crafted mods"})) acts.add(new String[] {ko ? "기본 화폐" : "Basic currency", b[0], ko ? b[1] : b[2]});
 							for (PoeCraft.Essence e : essences) acts.add(new String[] {ko ? "에센스" : "Essence", "ESSENCE:" + e.slug(), ko ? e.nameKo() : e.name()});
 							if (options != null) {
-								for (PoeCraft.Fossil f : options.fossils()) if (f.supported()) acts.add(new String[] {ko ? "화석(하나)" : "Fossil (one)", "FOSSIL:" + f.slug(), ko ? f.nameKo() : f.name()});
+								for (PoeCraft.Fossil f : options.fossils()) acts.add(new String[] {ko ? "화석(하나)" : "Fossil (one)", "FOSSIL:" + f.slug(), ko ? f.nameKo() : f.name()});
 								for (PoeCraft.BenchCraft b : options.bench()) if (b.modId() != null && b.modId().contains("MasterItemGeneration")) acts.add(new String[] {ko ? "제작대 메타" : "Bench meta", "BENCH:" + b.modId(), String.join(" ", ko && b.ko() != null && !b.ko().isEmpty() ? b.ko() : b.en())});
 								for (PoeCraft.Harvest h : options.harvest()) if ("reroll_with_mod".equals(h.command())) acts.add(new String[] {ko ? "수확" : "Harvest", "HARVEST:" + h.id(), ko && h.textKo() != null ? h.textKo() : h.text()});
 							}

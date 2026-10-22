@@ -22,7 +22,9 @@ class SortIndicatorHiddenTest {
 
   private static final String[] TEMPLATES = {
     "src/main/jte/stock/htmx/fragments/assetStatus.jte",
-    "src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte"
+    "src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte",
+    // 2026-10-22: 단순 이름 칸 26 개(자산 현황 18 · 수익 카드 8)는 이 조각이 그린다.
+    "src/main/jte/stock/htmx/fragments/components/sortButtonHeader.jte"
   };
 
   private int count(String text, String token) {
@@ -38,7 +40,7 @@ class SortIndicatorHiddenTest {
   @Test
   void 모든_정렬_표시는_보조기술에서_숨긴다() throws IOException {
     for (String rel : TEMPLATES) {
-      String template = Files.readString(Path.of(rel), StandardCharsets.UTF_8);
+      String template = YieldAnalyticsSource.readForScan(Path.of(rel));
 
       int indicators = count(template, "data-sort-indicator");
       int hidden =
@@ -53,8 +55,8 @@ class SortIndicatorHiddenTest {
   void 정렬_상태는_aria_sort_로_전한다() throws IOException {
     for (String rel :
         new String[] {
-          "src/main/frontend/src/stock/assetStatus.ts",
-          "src/main/frontend/src/stock/dividendHistory.ts"
+          // 2026-10-22 부터 자산 현황 · 배당 수익 분석의 정렬기는 이 공용 파일 하나다.
+          "src/main/frontend/src/stock/clientTableSort.ts"
         }) {
       String script = Files.readString(Path.of(rel), StandardCharsets.UTF_8);
 

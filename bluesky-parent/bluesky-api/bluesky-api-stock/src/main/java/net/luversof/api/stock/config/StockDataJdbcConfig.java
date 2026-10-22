@@ -56,9 +56,6 @@ public class StockDataJdbcConfig {
   JdbcCustomConversions stockJdbcCustomConversions() {
     return JdbcCustomConversions.of(
         JdbcPostgresDialect.INSTANCE,
-        List.of(
-            // new MapToStringConverter(),
-            // new StringToMapConverter()
-            new MapToPGobjectConverter(), new PGobjectToMapConverter()));
+        List.of(new MapToPGobjectConverter(), new PGobjectToMapConverter()));
   }
 }

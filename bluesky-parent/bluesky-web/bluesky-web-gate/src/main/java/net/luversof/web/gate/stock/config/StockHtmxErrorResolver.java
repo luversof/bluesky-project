@@ -132,31 +132,12 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver, Environ
             temporal ? "stock.error.badrequest.date.desc" : "stock.error.badrequest.param.desc";
       }
     }
-    // 컨트롤러가 직접 읽는 날짜 문자열(매매 이력의 from/to)도 같은 대접을 한다 - 이름을 들고 오므로 그대로 쓴다.
-    if (ex instanceof net.luversof.web.gate.stock.support.StockDateParamException dateParam) {
-      clientDescArg = dateParam.getName();
-      clientDescKey = "stock.error.badrequest.day.desc";
-    }
-    // 타임존도 마찬가지다 - 실측 2026-09-11: timeZone=Not/AZone 이면 다섯 화면 중 자산성장만
-    // "입력한 값(기간·필터 등)을 확인해 주세요" 였고 나머지 넷은 조용히 서버 존으로 그렸다.
-    if (ex instanceof net.luversof.web.gate.stock.support.StockZoneParamException zoneParam) {
-      clientDescArg = zoneParam.getName();
-      clientDescKey = "stock.error.badrequest.timezone.desc";
-    }
-    // 정렬도 마찬가지다 - 실측 2026-09-11: sort=BOGUS 는 지정 없음과도 다른 순서를 조용히 그렸다.
-    if (ex instanceof net.luversof.web.gate.stock.support.StockSortParamException sortParam) {
-      clientDescArg = sortParam.getName();
-      clientDescKey = "stock.error.badrequest.sort.desc";
-    }
-    // 줄 수도 마찬가지다 - 실측 2026-09-12: size=0 은 조용히 20 이 되고 size=100000 은 상한 없이 258 행이었다.
-    if (ex instanceof net.luversof.web.gate.stock.support.StockPageSizeParamException sizeParam) {
-      clientDescArg = sizeParam.getName();
-      clientDescKey = "stock.error.badrequest.pagesize.desc";
-    }
-    // The page number follows the same rule - measured 2026-09-12: page=0 quietly drew page 1.
-    if (ex instanceof net.luversof.web.gate.stock.support.StockPageNumberParamException pageParam) {
-      clientDescArg = pageParam.getName();
-      clientDescKey = "stock.error.badrequest.page.desc";
+    // 컨트롤러 · 유틸이 직접 읽는 인자(날짜 · 타임존 · 정렬 · 줄 수 · 쪽 번호)도 같은 대접을 한다 - 이름과 문구 키를 들고 온다.
+    // 실측 2026-09-11 ~ 12: 날짜는 서버 장애처럼("잠시 후 다시 시도"), 타임존 · 정렬 · 줄 수 · 쪽 번호는 아무 말 없이 다른 값으로 그렸다.
+    // 예외별 사연은 각 클래스(StockDateParamException …)에, 공통 규칙은 StockParamException 에 있다.
+    if (ex instanceof net.luversof.web.gate.stock.support.StockParamException param) {
+      clientDescArg = param.getName();
+      clientDescKey = param.descKey();
     }
     if (clientError) {
       log.warn("stock view rejected: {} htmx={} {}", uri, htmx, ex.toString());
@@ -218,19 +199,7 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver, Environ
     if (ex instanceof TypeMismatchException) {
       return true;
     }
-    if (ex instanceof net.luversof.web.gate.stock.support.StockDateParamException) {
-      return true;
-    }
-    if (ex instanceof net.luversof.web.gate.stock.support.StockZoneParamException) {
-      return true;
-    }
-    if (ex instanceof net.luversof.web.gate.stock.support.StockSortParamException) {
-      return true;
-    }
-    if (ex instanceof net.luversof.web.gate.stock.support.StockPageSizeParamException) {
-      return true;
-    }
-    if (ex instanceof net.luversof.web.gate.stock.support.StockPageNumberParamException) {
+    if (ex instanceof net.luversof.web.gate.stock.support.StockParamException) {
       return true;
     }
     if (ex instanceof BlueskyException blueskyException) {
