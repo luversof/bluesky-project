@@ -174,7 +174,6 @@ public final class StockContributionUtil {
         false);
   }
 
-  /** 화면에 그대로 내보내기에 표가 길어지는 기준. 전 기간이 44 줄이고 그중 25 줄이 100 만원 미만이었다. */
   /** 기초·기말 스냅샷을 찍을 날짜. 기초는 시작일이 없으면(= '전체') null 이다. */
   public record SnapshotDates(LocalDate start, LocalDate end) {}
 
@@ -204,6 +203,7 @@ public final class StockContributionUtil {
     return new SnapshotDates(startDate, endDate);
   }
 
+  /** 화면에 그대로 내보내기에 표가 길어지는 기준. 전 기간이 44 줄이고 그중 25 줄이 100 만원 미만이었다. */
   public static final int DEFAULT_VISIBLE = 15;
 
   /**

@@ -72,7 +72,7 @@ public class PoeCraftCalcService {
       String league,
       String pricesAt,
       String error,
-      // 엘드리치 임플리싯 목표(C549) — 명시 옵션 표와 따로 잰 비용(더해서 본다), 목표가 없으면 null
+      // 섬뜩한 고정 속성 목표(C549) — 명시 옵션 표와 따로 잰 비용(더해서 본다), 목표가 없으면 null
       EldritchResult eldritch,
       // error 의 영어 판(C557)
       String errorEn) {
@@ -97,9 +97,9 @@ public class PoeCraftCalcService {
   }
 
   /**
-   * 엘드리치 임플리싯 목표 비용(10-21 C549 사용자 요청 "엘드리치 옵션도 목표로 — 최종 아이템에 붙는 옵션 기준으로 최소 비용") — 임플리싯은 명시 옵션을 다시
-   * 굴려도 남고 섬뜩한 불씨 · 영액은 그쪽 임플리싯만 바꿔, 명시 옵션 제작과 따로 재서 더한다. cost = 쪽마다 (화폐 한 개 값 / 그 임플리싯이 나올 확률)의 합,
-   * 목표 등급 이상 화폐 등급(하급 1 ~ 특출난 4) 중 가장 싼 것. error 면 못 함(종류 · 영향력 · 같은 쪽 둘 · 등급 5~6).
+   * 섬뜩한 고정 속성 목표 비용(10-21 C549 사용자 요청 "엘드리치 옵션도 목표로 — 최종 아이템에 붙는 옵션 기준으로 최소 비용") — 고정 속성은 명시 옵션을 다시
+   * 굴려도 남고 섬뜩한 불씨 · 영액은 그쪽 고정 속성만 바꿔, 명시 옵션 제작과 따로 재서 더한다. cost = 쪽마다 (화폐 한 개 값 / 그 고정 속성이 나올 확률)의
+   * 합, 목표 등급 이상 화폐 등급(하급 1 ~ 특출난 4) 중 가장 싼 것. error 면 못 함(종류 · 영향력 · 같은 쪽 둘 · 등급 5~6).
    */
   public record EldritchResult(
       Double cost,
@@ -113,7 +113,7 @@ public class PoeCraftCalcService {
     }
   }
 
-  /** 쪽 하나 — currencyTier = 쓸 화폐 등급, chance = 한 개로 그 임플리싯(목표 등급 이상)이 나올 확률, attempts = 1/chance. */
+  /** 쪽 하나 — currencyTier = 쓸 화폐 등급, chance = 한 개로 그 고정 속성(목표 등급 이상)이 나올 확률, attempts = 1/chance. */
   public record EldritchStep(
       String side,
       String family,
@@ -153,7 +153,7 @@ public class PoeCraftCalcService {
   public record SpentLine(
       String name, String nameKo, double count, Double unitChaos, Double subtotalChaos) {}
 
-  /** 짐승 제작 인자 → 쓴 화폐 표 이름(C387, BestiaryRecipes 설명 — 한국어는 SPENT_KO). */
+  /** 야수 제작 인자 → 쓴 화폐 표 이름(C387, BestiaryRecipes 설명 — 한국어는 SPENT_KO). */
   static final Map<String, String> BEAST_RECIPE =
       Map.ofEntries(
           Map.entry("swap-suffix", "Bestiary: Add a Suffix, Remove a Random Prefix"),
@@ -172,22 +172,22 @@ public class PoeCraftCalcService {
           // 각인(C468 — 최적 조합)
           Map.entry("imprint", "Bestiary: Imprint"));
 
-  /** 쓴 화폐 한국어 이름 — 데이터(화폐 설명 · 에센스 · 화석 · 공명기 · 제작대 비용)에 없는 것(BaseItemTypes 한국어, C380). */
+  /** 쓴 화폐 한국어 이름 — 데이터(화폐 설명 · 에센스 · 화석 · 공명기 · 작업대 비용)에 없는 것(BaseItemTypes 한국어, C380). */
   static final Map<String, String> SPENT_KO =
       Map.ofEntries(
-          Map.entry("Bestiary: Add a Suffix, Remove a Random Prefix", "짐승 제작: 접미어 추가, 무작위 접두어 제거"),
-          Map.entry("Bestiary: Add a Prefix, Remove a Random Suffix", "짐승 제작: 접두어 추가, 무작위 접미어 제거"),
-          Map.entry("Bestiary: Add a Mod to a Shaper Item", "짐승 제작: 쉐이퍼 아이템에 속성 부여 추가"),
-          Map.entry("Bestiary: Add a Mod to an Elder Item", "짐승 제작: 엘더 아이템에 속성 부여 추가"),
-          Map.entry("Bestiary: Add a Mod to a Redeemer Item", "짐승 제작: 대속자 아이템에 속성 부여 추가"),
-          Map.entry("Bestiary: Add a Mod to a Hunter Item", "짐승 제작: 사냥꾼 아이템에 속성 부여 추가"),
-          Map.entry("Bestiary: Add a Mod to a Crusader Item", "짐승 제작: 십자군 아이템에 속성 부여 추가"),
-          Map.entry("Bestiary: Add a Mod to a Warlord Item", "짐승 제작: 전쟁군주 아이템에 속성 부여 추가"),
-          Map.entry("Bestiary: Level 30 Aspect of the Cat skill", "짐승 제작: 30레벨 고양이의 위상 스킬"),
-          Map.entry("Bestiary: Level 30 Aspect of the Avian skill", "짐승 제작: 30레벨 새의 위상 스킬"),
-          Map.entry("Bestiary: Level 30 Aspect of the Spider skill", "짐승 제작: 30레벨 거미의 위상 스킬"),
-          Map.entry("Bestiary: Level 30 Aspect of the Crab skill", "짐승 제작: 30레벨 게의 위상 스킬"),
-          Map.entry("Bestiary: Imprint", "짐승 제작: 각인"),
+          Map.entry("Bestiary: Add a Suffix, Remove a Random Prefix", "야수 제작: 접미어 추가, 무작위 접두어 제거"),
+          Map.entry("Bestiary: Add a Prefix, Remove a Random Suffix", "야수 제작: 접두어 추가, 무작위 접미어 제거"),
+          Map.entry("Bestiary: Add a Mod to a Shaper Item", "야수 제작: 쉐이퍼 아이템에 속성 부여 추가"),
+          Map.entry("Bestiary: Add a Mod to an Elder Item", "야수 제작: 엘더 아이템에 속성 부여 추가"),
+          Map.entry("Bestiary: Add a Mod to a Redeemer Item", "야수 제작: 대속자 아이템에 속성 부여 추가"),
+          Map.entry("Bestiary: Add a Mod to a Hunter Item", "야수 제작: 사냥꾼 아이템에 속성 부여 추가"),
+          Map.entry("Bestiary: Add a Mod to a Crusader Item", "야수 제작: 십자군 아이템에 속성 부여 추가"),
+          Map.entry("Bestiary: Add a Mod to a Warlord Item", "야수 제작: 전쟁군주 아이템에 속성 부여 추가"),
+          Map.entry("Bestiary: Level 30 Aspect of the Cat skill", "야수 제작: 30레벨 고양이의 위상 스킬"),
+          Map.entry("Bestiary: Level 30 Aspect of the Avian skill", "야수 제작: 30레벨 새의 위상 스킬"),
+          Map.entry("Bestiary: Level 30 Aspect of the Spider skill", "야수 제작: 30레벨 거미의 위상 스킬"),
+          Map.entry("Bestiary: Level 30 Aspect of the Crab skill", "야수 제작: 30레벨 게의 위상 스킬"),
+          Map.entry("Bestiary: Imprint", "야수 제작: 각인"),
           Map.entry("Orb of Transmutation", "진화의 오브"),
           Map.entry("Orb of Alteration", "변화의 오브"),
           Map.entry("Orb of Augmentation", "확장의 오브"),
@@ -246,7 +246,7 @@ public class PoeCraftCalcService {
   }
 
   public Response calc(Request req) {
-    // 엘드리치 임플리싯 목표(C549) — 따로 재서 붙이고, 명시 옵션 목표만 방법 표로
+    // 섬뜩한 고정 속성 목표(C549) — 따로 재서 붙이고, 명시 옵션 목표만 방법 표로
     List<Target> all = req.targets() == null ? List.of() : req.targets();
     List<Target> eld = all.stream().filter(this::eldritchTarget).toList();
     if (!eld.isEmpty()) {
@@ -610,7 +610,17 @@ public class PoeCraftCalcService {
   public record Step(String action, String arg, List<Integer> until, Integer max, List<Step> sub) {}
 
   public record StrategyRequest(
-      Item item, List<Target> targets, List<Step> steps, Integer trials) {}
+      Item item,
+      List<Target> targets,
+      List<Step> steps,
+      Integer trials,
+      // 사용자 가격(10-23 Q20a — 전엔 전략 요청에 없어 '가격 직접 입력'이 전략 비용에 안 먹었다)
+      Map<String, Double> prices) {
+
+    public StrategyRequest(Item item, List<Target> targets, List<Step> steps, Integer trials) {
+      this(item, targets, steps, trials, null);
+    }
+  }
 
   /** 단계 통계 — avgUses = 회차당 평균 사용 수(묶음이면 묶음 반복 수), reached = 이 단계까지 온 회차 비율. */
   public record StepStat(String action, String arg, double avgUses, double reached) {}
@@ -627,9 +637,29 @@ public class PoeCraftCalcService {
       Double costPerRun,
       Double expectedCost,
       List<StepStat> steps,
-      String error) {}
+      String error,
+      // 성공 예시(10-22 Q16 — craftofexile 시뮬레이터 'Store Items': 목표를 채운 아이템을 몇 개 남겨 같이 붙은 옵션을 본다). 처음
+      // STRATEGY_SAMPLES 개
+      List<StrategySample> samples) {
+
+    public StrategyResult(
+        int runs,
+        int successes,
+        double successRate,
+        Map<String, Double> perRun,
+        Double costPerRun,
+        Double expectedCost,
+        List<StepStat> steps,
+        String error) {
+      this(runs, successes, successRate, perRun, costPerRun, expectedCost, steps, error, List.of());
+    }
+  }
+
+  /** 성공 예시 한 개 — 아이템(제작 화면 state) · 표시 줄. */
+  public record StrategySample(Item item, List<PoeCraftService.Line> lines) {}
 
   static final int STRATEGY_DEFAULT_RUNS = 20_000;
+  static final int STRATEGY_SAMPLES = 5;
   static final int STRATEGY_MAX_STEP = 500;
 
   /**
@@ -715,6 +745,65 @@ public class PoeCraftCalcService {
   /** 전략 요청 하나의 엔진 호출 예산 — 넘으면 그때까지 돈 회차로 결과를 낸다. */
   static final long STRATEGY_BUDGET = 400_000L;
 
+  /**
+   * 전략에 쓰인 에센스 · 작업대 옵션이 채우는 목표에 그 옵션 id 를 더한다(10-22 Q12) — 계산기 essenceCounts · benchCounts 와 같은
+   * 규칙(같은 옵션 그룹 · 같은 문구 모양 · 최소 굴림이 목표 최하 등급 최소 이상). 목표 순서 · 수는 그대로(단계의 until 이 목표 번호를 쓴다).
+   */
+  List<Target> equivalentGoal(Item item, List<Target> targets, List<Step> steps) {
+    java.util.Set<String> ess = new java.util.HashSet<>();
+    java.util.Set<String> bench = new java.util.HashSet<>();
+    collectArgs(steps, ess, bench);
+    if (ess.isEmpty() && bench.isEmpty()) {
+      return targets;
+    }
+    PoeCraftService.Options o =
+        craft.options(item.itemClass(), item.variant() == null ? "" : item.variant());
+    List<PoeCraftDataService.Essence> es =
+        (o.essences() == null ? List.<PoeCraftDataService.Essence>of() : o.essences())
+            .stream().filter(e -> ess.contains(e.slug()) && e.modId() != null).toList();
+    List<PoeCraftDataService.BenchCraft> bs =
+        (o.bench() == null ? List.<PoeCraftDataService.BenchCraft>of() : o.bench())
+            .stream().filter(b -> b.modId() != null && bench.contains(b.modId())).toList();
+    List<Target> out = new ArrayList<>();
+    for (Target t : targets) {
+      // 무인증 API 입력 방어(Q15 검토) — 빈 목표는 그대로(연타 · 적중 확률은 앞에서 거르지 않는다)
+      if (t == null || t.anyOf() == null) {
+        out.add(t);
+        continue;
+      }
+      List<String> ids = new ArrayList<>(t.anyOf());
+      for (PoeCraftDataService.Essence e : es) {
+        if (!ids.contains(e.modId()) && essenceCounts(e, t)) {
+          ids.add(e.modId());
+        }
+      }
+      for (PoeCraftDataService.BenchCraft b : bs) {
+        if (!ids.contains(b.modId()) && benchCounts(b, t)) {
+          ids.add(b.modId());
+        }
+      }
+      out.add(new Target(ids));
+    }
+    return out;
+  }
+
+  /** 화폐 하나(연타 · 적중 확률, 10-22 Q13 — 같은 결함: 에센스 연타가 끝내 못 채움 · 에센스 단추 적중 0%). */
+  List<Target> equivalentGoal(Item item, List<Target> targets, String action, String arg) {
+    return equivalentGoal(item, targets, List.of(new Step(action, arg, null, null, null)));
+  }
+
+  private static void collectArgs(
+      List<Step> steps, java.util.Set<String> ess, java.util.Set<String> bench) {
+    for (Step st : steps == null ? List.<Step>of() : steps) {
+      if ("ESSENCE".equals(st.action()) && st.arg() != null) {
+        ess.add(st.arg());
+      } else if ("BENCH".equals(st.action()) && st.arg() != null) {
+        bench.add(st.arg());
+      }
+      collectArgs(st.sub(), ess, bench);
+    }
+  }
+
   public StrategyResult strategy(StrategyRequest req) {
     if (req.steps() == null || req.steps().isEmpty()) {
       return new StrategyResult(0, 0, 0, Map.of(), null, null, List.of(), "단계를 하나 이상 넣으세요");
@@ -730,6 +819,8 @@ public class PoeCraftCalcService {
       return new StrategyResult(0, 0, 0, Map.of(), null, null, List.of(), "모르는 화폐: " + bad);
     }
     Item start = craft.normalize(req.item());
+    // 에센스 · 작업대 옵션도 그 목표로(10-22 Q12 — 계산기와 같은 규칙. 전략은 목표 id 를 그대로 써서 탐욕 에센스가 생명력 T1~T3 에 0% 였다)
+    List<Target> goal = equivalentGoal(start, req.targets(), req.steps());
     int runs =
         Math.max(
             500, Math.min(200_000, req.trials() == null ? STRATEGY_DEFAULT_RUNS : req.trials()));
@@ -743,18 +834,24 @@ public class PoeCraftCalcService {
     int done = 0;
     Map<String, Sampler> samplers = new java.util.HashMap<>();
     long[] samplerOps = new long[1];
+    List<Item> hits = new ArrayList<>();
     for (int i = 0; i < runs && ops < STRATEGY_BUDGET; i++) {
       done++;
       Run run = new Run();
       run.item = start;
       run.samplers = samplers;
       run.samplerOps = samplerOps;
-      for (int s = 0; s < nSteps && !run.aborted; s++) {
+      // 목표를 다 채우면 그 회차는 끝(10-23 Q18 — craftofexile 시뮬레이터의 '끝' 길. 전엔 남은 '한 번' 단계를 그대로 써서 변화 →
+      // 제왕 → 엑잘 ×3 이 변화에서 이미 채운 회차에도 제왕 · 엑잘 셋을 셌다 — 생명력 T1~T3 하나에 회차 13.09c)
+      for (int s = 0; s < nSteps && !run.aborted && !meets(run.item, goal); s++) {
         reached[s]++;
-        uses[s] += step(run, req.steps().get(s), req.targets(), currency, rng);
+        uses[s] += step(run, req.steps().get(s), goal, currency, rng);
       }
-      if (!run.aborted && meets(run.item, req.targets())) {
+      if (!run.aborted && meets(run.item, goal)) {
         successes++;
+        if (hits.size() < STRATEGY_SAMPLES) {
+          hits.add(run.item);
+        }
       }
       ops += run.ops;
     }
@@ -782,7 +879,8 @@ public class PoeCraftCalcService {
         stats,
         successes == 0
             ? "모의 " + runs + "회 중 성공 0 — 단계나 목표를 바꿔 보세요"
-            : cut ? "계산량 한도로 " + runs + "회까지만 모의했습니다(오차가 큽니다)" : null);
+            : cut ? "계산량 한도로 " + runs + "회까지만 모의했습니다(오차가 큽니다)" : null,
+        hits.stream().map(h -> new StrategySample(h, craft.view(h).lines())).toList());
   }
 
   /** 모르는 화폐 이름(묶음 안까지) — 없으면 null. 묶음은 action "SEQ". */
@@ -822,7 +920,7 @@ public class PoeCraftCalcService {
             ? STRATEGY_MAX_STEP
             : Math.max(1, Math.min(STRATEGY_MAX_STEP * 10, st.max()));
     if (goal != null && !meets(run.item, goal)) {
-      // 기억 없는 반복: 한 화폐, 또는 [제작대 …, 다시 굴리기] 묶음(제작대는 정해진 결과 — 잠금 메타 + 카오스 등)
+      // 기억 없는 반복: 한 화폐, 또는 [작업대 …, 다시 굴리기] 묶음(작업대는 정해진 결과 — 잠금 메타 + 카오스 등)
       List<Step> seq = "SEQ".equals(st.action()) ? st.sub() : List.of(st);
       if (samplable(seq)) {
         int u = sampled(run, seq, goal, max, currency, rng);
@@ -878,7 +976,7 @@ public class PoeCraftCalcService {
   }
 
   /**
-   * 표본으로 처리할 수 있는 묶음 — [제작대 …] + 기억 없는 다시 굴리기 + [그 뒤 아무 화폐(묶음 제외)]. 다시 굴리기가 남는 옵션만 남기므로 묶음 한 번의 결과
+   * 표본으로 처리할 수 있는 묶음 — [작업대 …] + 기억 없는 다시 굴리기 + [그 뒤 아무 화폐(묶음 제외)]. 다시 굴리기가 남는 옵션만 남기므로 묶음 한 번의 결과
    * 분포는 그 시점 상태(열쇠)에만 달린다(예: [접두 잠금 → 카오스], [변경 → 확장]). 다시 굴리기 위치, 없으면 -1.
    */
   private int rerollIndex(List<Step> seq) {
@@ -911,7 +1009,7 @@ public class PoeCraftCalcService {
   }
 
   /**
-   * 기억 없는 반복 단계 — 표본으로 성공까지의 사용 수를 기하분포로 뽑는다(상한을 넘으면 그 회차 중단). 앞의 제작대가 실패하면(자리 · 그룹) -1 — 그땐 한 번씩
+   * 기억 없는 반복 단계 — 표본으로 성공까지의 사용 수를 기하분포로 뽑는다(상한을 넘으면 그 회차 중단). 앞의 작업대가 실패하면(자리 · 그룹) -1 — 그땐 한 번씩
    * 굴리는 길로. 화폐 소모는 표본에서 잰 묶음 한 번 평균 × 사용 수(뒤 단계가 쓸 수 없어 건너뛴 몫은 빠진다 — 예: 확장은 옵션이 하나일 때만).
    */
   private int sampled(
@@ -999,7 +1097,7 @@ public class PoeCraftCalcService {
       sp.p = ok == 0 ? -1 : (double) hits / ok;
       if (ok > 0) {
         final int okN = ok;
-        // 제작대 비용은 묶음마다 한 번 — 표본 회수만큼 곱해 평균에 맞춘다
+        // 작업대 비용은 묶음마다 한 번 — 표본 회수만큼 곱해 평균에 맞춘다
         benchSpend.forEach((name, v) -> spent.merge(name, v * (okN - 1), Double::sum));
         final Sampler fsp = sp;
         spent.forEach((name, v) -> fsp.perUse.put(name, v / okN));
@@ -1063,7 +1161,7 @@ public class PoeCraftCalcService {
     return out;
   }
 
-  /** 화폐 한 번 사용 → 시세 이름별 개수(제작대 · 화석 · 수확 · 정복자 포함). */
+  /** 화폐 한 번 사용 → 시세 이름별 개수(작업대 · 화석 · 수확 · 정복자 포함). */
   void spend(Map<String, Double> m, PoeCraftEngine.Action act, String arg, String itemClass) {
     spend(m, act, arg, itemClass, 1);
   }
@@ -1158,7 +1256,7 @@ public class PoeCraftCalcService {
       return sm;
     }
     if ("BLESSED".equals(s.action())) {
-      // 축복의 오브(C375) — 게이트가 임플리싯 수치만 다시 굴린다
+      // 축복의 오브(C375) — 게이트가 고정 속성 수치만 다시 굴린다
       sm.merge("Blessed Orb", 1d, Double::sum);
       return sm;
     }
@@ -1172,7 +1270,7 @@ public class PoeCraftCalcService {
     return sm;
   }
 
-  /** 쓴 화폐 한국어 이름표(C380) — 고정 이름표 + 이 종류의 화폐 설명 · 에센스 · 화석 · 공명기 · 제작대 비용. */
+  /** 쓴 화폐 한국어 이름표(C380) — 고정 이름표 + 이 종류의 화폐 설명 · 에센스 · 화석 · 공명기 · 작업대 비용. */
   Map<String, String> spentKo(String itemClass) {
     Map<String, String> ko = new java.util.HashMap<>(SPENT_KO);
     if (itemClass == null) {
@@ -1290,7 +1388,7 @@ public class PoeCraftCalcService {
               .ifPresent(c -> m.merge(c.name(), 1d, Double::sum));
         }
       }
-      // 짐승 제작(C387) — 화폐가 아니라 포획한 짐승(레시피 표에 재료가 없어 시세 없음, 횟수만)
+      // 야수 제작(C387) — 화폐가 아니라 포획한 야수(레시피 표에 재료가 없어 시세 없음, 횟수만)
       case BEAST -> m.merge(BEAST_RECIPE.getOrDefault(arg, "Bestiary craft"), 1d, Double::sum);
       case CATALYST -> {
         // 기폭제(C385) — arg = 종류[*쓴 개수]
@@ -1359,7 +1457,7 @@ public class PoeCraftCalcService {
   }
 
   /**
-   * 출발점(10-15 C349) — 분열 옵션 · 임플리싯은 남기고 나머지는 비운다(지금 아이템에서 시작 — 분열 베이스 등). 분열 옵션이 있으면 정제해도 일반이 되지
+   * 출발점(10-15 C349) — 분열 옵션 · 고정 속성은 남기고 나머지는 비운다(지금 아이템에서 시작 — 분열 베이스 등). 분열 옵션이 있으면 정제해도 일반이 되지
    * 않으니 레어, 없으면 일반.
    */
   static Item normal(Item item) {
@@ -1813,7 +1911,7 @@ public class PoeCraftCalcService {
         + Math.min(need[1], free[1]);
   }
 
-  /** 빈 자리 조건(10-20 C519, craftofexile 계산기 'open affix') — 목표 하나 = 그 쪽 빈 자리 하나(제작대 옵션도 자리를 차지). */
+  /** 빈 자리 조건(10-20 C519, craftofexile 계산기 'open affix') — 목표 하나 = 그 쪽 빈 자리 하나(작업대 옵션도 자리를 차지). */
   static final String OPEN_PREFIX = "@open:prefix";
 
   static final String OPEN_SUFFIX = "@open:suffix";
@@ -1873,7 +1971,7 @@ public class PoeCraftCalcService {
   }
 
   /**
-   * 제작대 옵션이 목표를 채우는가(C456, essenceCounts 와 같은 규칙) — 같은 옵션 그룹 · 같은 문구 모양이고 최소 굴림이 목표 최하 등급의 최소 굴림
+   * 작업대 옵션이 목표를 채우는가(C456, essenceCounts 와 같은 규칙) — 같은 옵션 그룹 · 같은 문구 모양이고 최소 굴림이 목표 최하 등급의 최소 굴림
    * 이상.
    */
   boolean benchCounts(PoeCraftDataService.BenchCraft b, Target t) {
@@ -1907,9 +2005,9 @@ public class PoeCraftCalcService {
   }
 
   /**
-   * 계산기 목표 칸 덧붙임(10-21 C548 사용자 요청 "제작 계산기에 타락 · 정복자 · 제작 옵션이 안 보인다") — bench = 계열마다 그 목표를 채우는 제작대
-   * 옵션 중 가장 높은 값어치(tier = 그 제작대 옵션이 채우는 가장 높은 등급 — 목표를 T1~T그 등급 이하로 고르면 제작대로도 됨, benchCounts 규칙),
-   * corrupted = 바알 오브 타락 임플리싯(chance = 바알 한 번에 그 옵션이 붙을 확률 — 결과 넷 중 '임플리싯' × 가중 몫, 계산기 목표는 아님),
+   * 계산기 목표 칸 덧붙임(10-21 C548 사용자 요청 "제작 계산기에 타락 · 정복자 · 제작 옵션이 안 보인다") — bench = 계열마다 그 목표를 채우는 작업대
+   * 옵션 중 가장 높은 값어치(tier = 그 작업대 옵션이 채우는 가장 높은 등급 — 목표를 T1~T그 등급 이하로 고르면 작업대로도 됨, benchCounts 규칙),
+   * corrupted = 바알 오브 타락 고정 속성(chance = 바알 한 번에 그 옵션이 붙을 확률 — 결과 넷 중 '고정 속성' × 가중 몫, 계산기 목표는 아님),
    * influenceIds = 고른 영향력 때문에 풀에 들어온 옵션 id(영향력 없으면 빈 목록).
    */
   public record CalcExtras(
@@ -1918,7 +2016,7 @@ public class PoeCraftCalcService {
       List<String> influenceIds,
       // 탐광(화석 전용) 옵션(C549) — 그 옵션을 붙일 수 있게 하는 화석 이름(영어 · 한국어)
       List<DelveLine> delve,
-      // 엘드리치 임플리싯(C549) — 쪽 · 계열마다 등급 1~6, 못 쓰면 eldritchBlocked 에 사유
+      // 섬뜩한 고정 속성(C549) — 쪽 · 계열마다 등급 1~6, 못 쓰면 eldritchBlocked 에 사유
       List<EldritchFamily> eldritch,
       String eldritchBlocked,
       // eldritchBlocked 의 영어 판(C557)
@@ -1939,7 +2037,7 @@ public class PoeCraftCalcService {
       int tier, String modId, String name, String nameKo, List<String> en, List<String> ko) {}
 
   /**
-   * 엘드리치 임플리싯 계열 — side = exarch|eater, tiers = 등급 1~6(chance = 그 등급 화폐 한 개로 이 계열이 나올 확률, 5~6 은 0).
+   * 섬뜩한 고정 속성 계열 — side = exarch|eater, tiers = 등급 1~6(chance = 그 등급 화폐 한 개로 이 계열이 나올 확률, 5~6 은 0).
    */
   public record EldritchFamily(
       String side, String key, List<String> tags, List<String> tagsKo, List<EldritchTier> tiers) {}
@@ -1987,7 +2085,7 @@ public class PoeCraftCalcService {
       int level,
       double chance) {}
 
-  /** 계열(등급 순)을 채우는 가장 높은 등급 상당의 제작대 옵션 — 가장 높은 등급부터 T1~Tr 목표를 채우는 가장 작은 r, 없으면 null. */
+  /** 계열(등급 순)을 채우는 가장 높은 등급 상당의 작업대 옵션 — 가장 높은 등급부터 T1~Tr 목표를 채우는 가장 작은 r, 없으면 null. */
   private BenchEquiv benchFor(
       List<PoeCraftService.PoolLine> tiers, List<PoeCraftDataService.BenchCraft> benches) {
     BenchEquiv best = null;
@@ -2020,7 +2118,7 @@ public class PoeCraftCalcService {
 
   /**
    * 같은 옵션을 얻는 다른 길(10-22 P4, poedb 속성 부여의 '같은 문구 다른 출처') — 계열 하나(접두/접미:계열)에 대해 보장 에센스(에센스 가문마다 가장
-   * 높은 등급 상당 — 계산기와 같은 essenceCounts), 제작대(가장 높은 등급 상당), 화석 배수(그 계열 태그에 걸리는 배수 ≠ 1 — 늘림 · 막음), 수확
+   * 높은 등급 상당 — 계산기와 같은 essenceCounts), 작업대(가장 높은 등급 상당), 화석 배수(그 계열 태그에 걸리는 배수 ≠ 1 — 늘림 · 막음), 수확
    * '그 태그 포함 재련'. 등급(rank) = 그 수단이 채우는 자연 등급(T1~Tr).
    */
   public record FamilyWays(
@@ -2035,6 +2133,42 @@ public class PoeCraftCalcService {
   public record FossilWay(String slug, String name, String nameKo, String icon, double mult) {}
 
   public record HarvestWay(String id, String text, String textKo) {}
+
+  /**
+   * 에센스가 확정으로 붙이는 옵션(10-22 Q7) — 그 옵션이 채우는 자연 계열과 등급 상당(essenceCounts, familyWays 와 같은 규칙). 자연 계열이
+   * 없는 에센스 전용 옵션이면 family = null. 모르는 에센스면 빈 목록.
+   */
+  public List<PoeCraftService.Forced> essenceForced(Item item, String slug) {
+    Item n = normal(craft.normalize(item));
+    PoeCraftService.Options o =
+        craft.options(n.itemClass(), n.variant() == null ? "" : n.variant());
+    PoeCraftDataService.Essence e =
+        (o.essences() == null ? List.<PoeCraftDataService.Essence>of() : o.essences())
+            .stream().filter(x -> x.slug().equals(slug)).findFirst().orElse(null);
+    if (e == null) {
+      return List.of();
+    }
+    Map<String, List<PoeCraftService.PoolLine>> fams = new LinkedHashMap<>();
+    for (PoeCraftService.PoolLine p : craft.pool(n, Rarity.RARE)) {
+      if (p.tierRank() != null && p.family() != null && p.gen().equals(e.gen())) {
+        fams.computeIfAbsent(p.gen() + ":" + p.family(), k -> new ArrayList<>()).add(p);
+      }
+    }
+    for (Map.Entry<String, List<PoeCraftService.PoolLine>> f : fams.entrySet()) {
+      List<PoeCraftService.PoolLine> tiers = new ArrayList<>(f.getValue());
+      tiers.sort(Comparator.comparing(PoeCraftService.PoolLine::tierRank));
+      List<String> ids = new ArrayList<>();
+      for (PoeCraftService.PoolLine t : tiers) {
+        ids.add(t.id());
+        if (essenceCounts(e, new Target(List.copyOf(ids)))) {
+          return List.of(
+              new PoeCraftService.Forced(
+                  f.getKey(), t.tierRank(), e.en(), e.enMin(), e.ko(), e.koMin()));
+        }
+      }
+    }
+    return List.of(new PoeCraftService.Forced(null, null, e.en(), e.enMin(), e.ko(), e.koMin()));
+  }
 
   public FamilyWays familyWays(Item item, String key) {
     Item n = normal(craft.normalize(item));
@@ -2136,7 +2270,7 @@ public class PoeCraftCalcService {
         bench.add(best);
       }
     }
-    // 바알 오브 타락 임플리싯 — 엔진 vaal() 과 같은 거르기(요구 레벨 ≤ 아이템 레벨 · 가중 > 0)
+    // 바알 오브 타락 고정 속성 — 엔진 vaal() 과 같은 거르기(요구 레벨 ≤ 아이템 레벨 · 가중 > 0)
     List<CorruptedLine> corrupted = new ArrayList<>();
     Map<String, Integer> cp = craft.corruptedPool(n.poolKey());
     double total = 0;
@@ -2209,12 +2343,12 @@ public class PoeCraftCalcService {
               e.getValue().stream().map(PoeCraftDataService.Fossil::name).toList(),
               e.getValue().stream().map(f -> f.nameKo() == null ? f.name() : f.nameKo()).toList()));
     }
-    // 엘드리치 임플리싯 — 쪽 · 계열마다 등급(화폐 등급과 같은 1~6), 등급 안 확률(가중 몫)
+    // 섬뜩한 고정 속성 — 쪽 · 계열마다 등급(화폐 등급과 같은 1~6), 등급 안 확률(가중 몫)
     List<EldritchFamily> eldritch = new ArrayList<>();
     String eldBlocked = null;
     String eldBlockedEn = null;
     if (!PoeCraftEngine.ELDRITCH_CLASSES.contains(n.itemClass())) {
-      eldBlocked = "엘드리치 임플리싯은 갑옷 · 장화 · 장갑 · 투구에만";
+      eldBlocked = "섬뜩한 고정 속성은 갑옷 · 장화 · 장갑 · 투구에만";
       eldBlockedEn = "Eldritch implicits only on body armours, boots, gloves and helmets";
     } else {
       if (n.influence() != null && !n.influence().isBlank()) {
@@ -2332,7 +2466,7 @@ public class PoeCraftCalcService {
     return false;
   }
 
-  /** 엘드리치 임플리싯 목표인가(C549) — 옵션 id 가 모두 엘드리치 임플리싯. */
+  /** 섬뜩한 고정 속성 목표인가(C549) — 옵션 id 가 모두 섬뜩한 고정 속성. */
   boolean eldritchTarget(Target t) {
     return t != null
         && t.anyOf() != null
@@ -2341,20 +2475,20 @@ public class PoeCraftCalcService {
   }
 
   /**
-   * 엘드리치 임플리싯 계열 키 — id 끝 등급 숫자(와 밑줄)를 뗀 것(AttackSpeedEldritchImplicit3 →
+   * 섬뜩한 고정 속성 계열 키 — id 끝 등급 숫자(와 밑줄)를 뗀 것(AttackSpeedEldritchImplicit3 →
    * AttackSpeedEldritchImplicit).
    */
   static String eldritchFamily(String id) {
     return id == null ? "" : id.replaceAll("_?\\d+_?$", "");
   }
 
-  /** 엘드리치 임플리싯 목표 비용(C549, EldritchResult 설명). */
+  /** 섬뜩한 고정 속성 목표 비용(C549, EldritchResult 설명). */
   EldritchResult eldritchPlan(Item item, List<Target> eld) {
     if (!PoeCraftEngine.ELDRITCH_CLASSES.contains(item.itemClass())) {
       return new EldritchResult(
           null,
           List.of(),
-          "엘드리치 임플리싯은 갑옷 · 장화 · 장갑 · 투구에만 붙습니다",
+          "섬뜩한 고정 속성은 갑옷 · 장화 · 장갑 · 투구에만 붙습니다",
           "Eldritch implicits only apply to body armours, boots, gloves and helmets");
     }
     if (item.influence() != null && !item.influence().isBlank()) {
@@ -2377,7 +2511,7 @@ public class PoeCraftCalcService {
         return new EldritchResult(
             null,
             List.of(),
-            "임플리싯은 한쪽(작열의 총주교 · 세계 포식자)에 하나씩만 붙습니다",
+            "고정 속성은 한쪽(작열의 총주교 · 세계 포식자)에 하나씩만 붙습니다",
             "Only one implicit per side (Searing Exarch · Eater of Worlds)");
       }
       java.util.Set<String> ids = new java.util.HashSet<>(t.anyOf());
@@ -2433,7 +2567,7 @@ public class PoeCraftCalcService {
         return new EldritchResult(
             null,
             List.of(),
-            "그 임플리싯 등급은 화폐(하급 ~ 특출난)로 굴릴 수 없습니다 — 등급 5~6 은 갈등의 오브 · 지배의 오브",
+            "그 고정 속성 등급은 화폐(하급 ~ 특출난)로 굴릴 수 없습니다 — 등급 5~6 은 갈등의 오브 · 지배의 오브",
             "That implicit tier cannot be rolled with Lesser ~ Exceptional currency — tiers 5~6 come"
                 + " from the Orb of Conflict / Orb of Dominance");
       }
@@ -2612,7 +2746,10 @@ public class PoeCraftCalcService {
   /** 목표까지 연타(10-20 C506, craftofexile 시뮬레이터의 '될 때까지') — 같은 제작 엔진으로 목표를 모두 채우거나 최대 횟수까지. */
   public SpamResult spam(SpamRequest req) {
     Item start = craft.normalize(req.item());
-    List<Target> targets = req.targets() == null ? List.of() : req.targets();
+    List<Target> targets =
+        req.targets() == null
+            ? List.of()
+            : equivalentGoal(start, req.targets(), req.action(), req.arg());
     int max = Math.max(1, Math.min(5000, req.max() == null ? 1000 : req.max()));
     PoeCraftEngine.Action act;
     try {
@@ -2702,13 +2839,15 @@ public class PoeCraftCalcService {
       }
       int hits = 0;
       String error = null;
+      List<Target> goal =
+          targets.isEmpty() ? targets : equivalentGoal(start, targets, ha.action(), ha.arg());
       for (int i = 0; i < n; i++) {
         PoeCraftEngine.Result r = craft.engine().apply(start, act, ha.arg(), rng);
         if (r.error() != null) {
           error = r.error();
           break;
         }
-        if (!targets.isEmpty() && meets(r.item(), targets)) {
+        if (!goal.isEmpty() && meets(r.item(), goal)) {
           hits++;
         }
       }

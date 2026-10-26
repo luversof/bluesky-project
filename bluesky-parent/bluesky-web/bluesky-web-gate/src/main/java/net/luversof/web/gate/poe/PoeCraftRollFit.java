@@ -23,7 +23,7 @@ public final class PoeCraftRollFit {
   static final int TRIES = 6000;
 
   /**
-   * 옵션 줄마다 씨앗 — key = 옵션 id(임플리싯은 "imp:" + id), values = 옵션 id → 복사 글 수치(줄 순서). 수치 개수가 안 맞는 옵션은
+   * 옵션 줄마다 씨앗 — key = 옵션 id(고정 속성은 "imp:" + id), values = 옵션 id → 복사 글 수치(줄 순서). 수치 개수가 안 맞는 옵션은
    * 건너뛴다.
    */
   public static Map<String, Long> fit(

@@ -12,6 +12,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<Activity> activities
 @param String activityView = "all"
@@ -41,7 +42,7 @@
 	BigDecimal safeBuy = buyAmount != null ? buyAmount : BigDecimal.ZERO;
 	BigDecimal safeSell = sellAmount != null ? sellAmount : BigDecimal.ZERO;
 	BigDecimal safeDividend = dividendAmount != null ? dividendAmount : BigDecimal.ZERO;
-	java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+	java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 	String advancedSearchLabel = MessageUtil.getMessage("stock.activity.label.advanced.search");
 	String accountLabel = MessageUtil.getMessage("common.label.account");
 	String stockLabel = MessageUtil.getMessage("common.label.stock");
@@ -128,11 +129,11 @@
 	)
 
 
-	<!-- Summary Cards -->
+	<%-- Summary Cards --%>
 	<%-- 자동 검사가 짚을 자리를 준다(달 카드 · 달력 항목과 같은 관례). 이 카드의 "건" 은 묶인 줄 수를 센 적이 있다. --%>
 	<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" data-activity-summary="true">
 
-		<!-- Card 1: 매매 현황 -->
+		<%-- Card 1: 매매 현황 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${tradeStatusLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
@@ -145,7 +146,7 @@
 				</div>
 		`)
 
-		<!-- Card 2: 배당 수령 -->
+		<%-- Card 2: 배당 수령 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${dividendReceivedLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
@@ -154,7 +155,7 @@
 				<div class="text-xs text-base-content/60" data-activity-kind="dividend-count">${countMessage.apply(dividendCount)}</div>
 		`)
 
-		<!-- Card 3: 전체 활동 -->
+		<%-- Card 3: 전체 활동 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${totalActivityLabel}</div>
 				<%-- activities.size() 는 (날짜·유형·종목·매매구분) 으로 묶인 '줄' 수다. 그걸 "건" 으로 쓰면 바로 아래
@@ -251,20 +252,20 @@
 			</div>
 			@if(chartSkippedMonths > 0)
 				<p class="mt-2 text-[11px] text-base-content/60" data-chart-skipped-months="${chartSkippedMonths}">
-					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.activity.chart.skipped.months"), chartSkippedMonths)}
+					${StockViewSupport.msg("stock.activity.chart.skipped.months", chartSkippedMonths)}
 				</p>
 			@endif
 		</div>
 	@endif
 
-	<!-- View Tabs: 캘린더/타임라인/목록 (클라이언트 사이드 전환, localStorage 유지) -->
+	<%-- View Tabs: 캘린더/타임라인/목록 (클라이언트 사이드 전환, localStorage 유지) --%>
 	<div role="tablist" class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1 mb-4" id="activityViewTabs">
 		<a role="tab" data-activity-view-tab="calendar" data-view-page-title="${activityTitleBase + calendarTabLabel}" aria-controls="${showCalendarView ? "activityCalendarView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${calendarTabLabel}</a>
 		<a role="tab" data-activity-view-tab="timeline" data-view-page-title="${activityTitleBase + timelineTabLabel}" aria-controls="${showTimelineView ? "activityTimelineView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${timelineTabLabel}</a>
 		<a role="tab" data-activity-view-tab="list" data-view-page-title="${activityTitleBase + listTabLabel}" aria-controls="${showListView ? "activityListView" : null}" class="tab flex-1 cursor-pointer text-base-content/60 hover:text-base-content" tabindex="0">${listTabLabel}</a>
 	</div>
 
-	<!-- Calendar View -->
+	<%-- Calendar View --%>
 	@if(showCalendarView)
 	<div id="activityCalendarView" role="tabpanel" class="hidden">
 		@if(activityMonths.isEmpty())
@@ -307,7 +308,7 @@
 							</span>
 						</summary>
 						<div class="mt-2">
-						<!-- 날짜 그리드와 동일한 gap/패딩 + 가운데 정렬로 컬럼 라인을 맞춘다. 토/일은 빨간색 -->
+						<%-- 날짜 그리드와 동일한 gap/패딩 + 가운데 정렬로 컬럼 라인을 맞춘다. 토/일은 빨간색 --%>
 						<div class="grid grid-cols-7 gap-1 text-[11px] text-base-content/60 mb-1 text-center">
 							@for(int weekdayIndex = 0; weekdayIndex < weekdayLabels.length; weekdayIndex++)
 								<div class="p-1${weekdayIndex == 0 || weekdayIndex == 6 ? " text-error" : ""}">${weekdayLabels[weekdayIndex]}</div>
@@ -365,7 +366,7 @@
 								</div>
 							@endfor
 						</div>
-						<!-- 날짜 셀 클릭 시 해당 날짜 상세 목록 표시 (미리 렌더된 hidden 블록을 JS로 토글) -->
+						<%-- 날짜 셀 클릭 시 해당 날짜 상세 목록 표시 (미리 렌더된 hidden 블록을 JS로 토글) --%>
 						<div class="selection-reveal mt-2" data-cal-panel="${ymKey}">
 							<div>
 								@for(java.util.Map.Entry<java.time.LocalDate, java.util.List<Activity>> dayEntry : activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).entrySet())
@@ -429,7 +430,7 @@
 	</div>
 	@endif
 
-	<!-- Timeline View: 날짜 내림차순 세로 타임라인 -->
+	<%-- Timeline View: 날짜 내림차순 세로 타임라인 --%>
 	@if(showTimelineView)
 	<div id="activityTimelineView" role="tabpanel" class="hidden">
 		@if(activityByDate.isEmpty())
@@ -531,7 +532,7 @@
 	</div>
 	@endif
 
-	<!-- List View (기존 테이블) -->
+	<%-- List View (기존 테이블) --%>
 	@if(showListView)
 	<div id="activityListView" role="tabpanel" class="hidden">
 		<div class="card-body">
@@ -573,7 +574,7 @@
 												@endif
 											</span>
 
-											<!-- Account Badges (Max 2 + Tooltip) -->
+											<%-- Account Badges (Max 2 + Tooltip) --%>
 											<%-- 계좌는 id 로 들고 다니고 표시 이름은 accountNames(id -> 이름) 에서 찾는다.
 												 예전에는 이름 목록만 있어 화면에서 이름으로 id 를 되찾았다. --%>
 											@if(activity.accountIds() != null && !activity.accountIds().isEmpty())
@@ -622,7 +623,7 @@
 			rootSelector: '#activityListFragment'
 		});
 		window.activityPicker = activityPicker;
-		// 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
+		<%-- 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드) --%>
 		try {
 			if (window.activityPicker && typeof window.activityPicker.getState === 'function') {
 				var __s = window.activityPicker.getState();
@@ -641,23 +642,23 @@
 	})();
 	</script>
 
-	<!-- 뷰 전환 탭/캘린더 상세 토글은 common.js 의 문서 위임 + htmx:afterSettle 복원으로 처리된다 -->
+	<%-- 뷰 전환 탭/캘린더 상세 토글은 common.js 의 문서 위임 + htmx:afterSettle 복원으로 처리된다 --%>
 
 	<script nonce="${CspNonceHolder.getNonce()}">
 	(function() {
 		$unsafe{activityChartDataJs}
 
-		// 월별 차트 두 개 — 배당(매달 꾸준함)과 실현손익(판 달에만)은 크기대가 달라 각자 축을 쓴다.
-		// 한 축에 올렸을 때 배당은 최대 막대의 0.62%(약 1px)라 사실상 보이지 않았다(실측 2026-09-07).
-		// Chart.js 는 ensureStockCharts 로 필요할 때 불러온다. htmx 재스왑 시 이전 인스턴스를 destroy 한다.
-		// 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다.
+		<%-- 월별 차트 두 개 — 배당(매달 꾸준함)과 실현손익(판 달에만)은 크기대가 달라 각자 축을 쓴다. --%>
+		<%-- 한 축에 올렸을 때 배당은 최대 막대의 0.62%(약 1px)라 사실상 보이지 않았다(실측 2026-09-07). --%>
+		<%-- Chart.js 는 ensureStockCharts 로 필요할 때 불러온다. htmx 재스왑 시 이전 인스턴스를 destroy 한다. --%>
+		<%-- 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다. --%>
 		setTimeout(function() {
 		if (activityChartLabels.length === 0) return;
 		window.ensureStockCharts(function() {
 		if (typeof Chart === 'undefined') return;
 
-		// 압축 표기는 공용 포맷터 한 곳에 있다(로케일 + 경계 승격). 여기 사본에는 승격이 빠져
-		// 있었고 억 단위를 소수 없이 잘라 1.5 억이 '2억' 이 됐다(실측 2026-09-15).
+		<%-- 압축 표기는 공용 포맷터 한 곳에 있다(로케일 + 경계 승격). 여기 사본에는 승격이 빠져 --%>
+		<%-- 있었고 억 단위를 소수 없이 잘라 1.5 억이 '2억' 이 됐다(실측 2026-09-15). --%>
 		function formatSignedCompact(v) {
 			return StockCharts.formatCompactNumber(Number(v) || 0);
 		}
@@ -693,8 +694,8 @@
 							callbacks: {
 								label: function(ctx) {
 									var raw = Math.round(Number(ctx.parsed.y) || 0);
-									// 손익 차트에서만 부호가 뜻이다. 배당은 늘 들어온 돈이라 부호를 붙이지 않는다.
-									// 0 에는 방향이 없다 - 반올림 뒤에 판정한다.
+									<%-- 손익 차트에서만 부호가 뜻이다. 배당은 늘 들어온 돈이라 부호를 붙이지 않는다. --%>
+									<%-- 0 에는 방향이 없다 - 반올림 뒤에 판정한다. --%>
 									var prefix = signed ? (raw > 0 ? '+' : (raw < 0 ? '-' : '')) : '';
 									return ctx.dataset.label + ': ' + prefix + StockCharts.formatCurrency(Math.abs(raw));
 								}
@@ -709,12 +710,12 @@
 			});
 		}
 
-		// 배당: 늘 들어오는 돈이라 한 가지 색.
+		<%-- 배당: 늘 들어오는 돈이라 한 가지 색. --%>
 		drawActivityBar('activityDividendChart', 'activityDividendChartInst',
 			activityChartSeriesLabels[0], activityChartDividend,
 			function() { return 'rgba(34,197,94,0.7)'; }, false);
 
-		// 실현손익: 부호가 곧 뜻이다 - 이익은 붉게, 손실은 푸르게(이 화면의 손익 색 관례).
+		<%-- 실현손익: 부호가 곧 뜻이다 - 이익은 붉게, 손실은 푸르게(이 화면의 손익 색 관례). --%>
 		drawActivityBar('activityRealizedChart', 'activityRealizedChartInst',
 			activityChartSeriesLabels[1], activityChartRealized,
 			function(v) { return Number(v) < 0 ? 'rgba(59,130,246,0.7)' : 'rgba(239,68,68,0.7)'; }, true);

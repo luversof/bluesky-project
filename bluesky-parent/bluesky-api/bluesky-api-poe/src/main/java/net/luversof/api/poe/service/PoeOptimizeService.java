@@ -41,8 +41,8 @@ import tools.jackson.databind.node.ObjectNode;
  * 시뮬레이터 2단계 — 최적 조합 탐색.
  *
  * <p>선택한 스킬젬 + 목표(DPS/유효 체력)에 대해 <b>보조젬 → 패시브 트리 → 고유 아이템</b> 순서의 단계별 greedy 탐색을 수행한다. 모든 후보는 PoB
- * 엔진 실계산으로 평가한다(회당 ~1.5초, 병렬 실행). 트리는 젬/목표 관련 키워드로 노터블·키스톤 후보를 추리고, BFS 최단 경로 비용 대비 실측 이득이 가장 큰 경로를
- * 반복 할당한다(포인트 예산 100). 결과는 PoB 공유 코드로 내보낸다.
+ * 엔진 실계산으로 평가한다(회당 ~1.5초, 병렬 실행). 트리는 젬/목표 관련 키워드로 주요 스킬·핵심노드 후보를 추리고, BFS 최단 경로 비용 대비 실측 이득이 가장 큰
+ * 경로를 반복 할당한다(포인트 예산 100). 결과는 PoB 공유 코드로 내보낸다.
  */
 @Service
 public class PoeOptimizeService {
@@ -137,7 +137,7 @@ public class PoeOptimizeService {
           System.getProperty(
               "poe.metaClassMinSample", System.getenv().getOrDefault("POE_META_CLASS_MIN", "5")));
 
-  /** 끊긴 주얼 소켓 연결/회수 라운드 상한. */
+  /** 끊긴 주얼 슬롯 연결/회수 라운드 상한. */
   private static final int STRANDED_SOCKET_ROUNDS = 4;
 
   /** 기여 0 주얼 재대결 라운드 상한(라운드당 한 자리). */
@@ -158,7 +158,7 @@ public class PoeOptimizeService {
   /** 전직 8포인트 중 혈맹(2차 전직)에 배분 예약할 포인트 — 나머지는 직업 전직에 사용 */
   private static final int BLOODLINE_RESERVE = 2;
 
-  /** 주얼 소켓용으로 트리 예산에서 예약하는 포인트 (너무 크면 트리 노터블 손실) */
+  /** 주얼 슬롯용으로 트리 예산에서 예약하는 포인트 (너무 크면 트리 주요 스킬 손실) */
   private static final int JEWEL_RESERVE = 10;
 
   /**
@@ -174,8 +174,8 @@ public class PoeOptimizeService {
       !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_TATTOOS", "on"));
 
   /**
-   * 노터블/키스톤 문신을 시험해 볼 자리 수 상한. 이 문신들은 "Limited to 1" 이라 (문신 × 자리) 를 전부 평가해야 하는데, 키스톤 풀만 45종이라 자리를 안
-   * 막으면 평가 수가 곱으로 튄다.
+   * 주요 스킬/핵심노드 문신을 시험해 볼 자리 수 상한. 이 문신들은 "Limited to 1" 이라 (문신 × 자리) 를 전부 평가해야 하는데, 핵심노드 풀만 45종이라
+   * 자리를 안 막으면 평가 수가 곱으로 튄다.
    */
   private static final int TATTOO_MAX_SPOTS = 4;
 
@@ -304,15 +304,15 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 레어 아이템 — 베이스 + 선택된 모드 패밀리. 기본은 모든 모드를 {@code tierFraction} 한 위치의 티어로 롤한다(0=최상위, 1=최하위). {@code
-   * perFractions} 가 있으면 패밀리별로 다른 티어를 준다(어픽스 예산 모델: 필수 N개는 T1, 나머지는 중위).
+   * 레어 아이템 — 베이스 + 선택된 모드 패밀리. 기본은 모든 모드를 {@code tierFraction} 한 위치의 등급으로 롤한다(0=최상위, 1=최하위). {@code
+   * perFractions} 가 있으면 패밀리별로 다른 등급을 준다(어픽스 예산 모델: 필수 N개는 T1, 나머지는 중위).
    */
   private record RareItem(
       String baseType,
       List<PoeModPoolDataService.ModFamily> families,
       double tierFraction,
       List<Double> perFractions,
-      // 엘드리치 임플리싯(총주교/포식자) — 영문(PoB Implicits 용) + 한글(표시용) 스탯 줄. 없으면 빈 목록.
+      // 섬뜩한 고정 속성(총주교/포식자) — 영문(PoB Implicits 용) + 한글(표시용) 스탯 줄. 없으면 빈 목록.
       List<String> implicitLines,
       List<String> implicitLinesKo) {
     RareItem(String baseType, List<PoeModPoolDataService.ModFamily> families, double tierFraction) {
@@ -327,7 +327,7 @@ public class PoeOptimizeService {
       this(baseType, families, tierFraction, perFractions, List.of(), List.of());
     }
 
-    /** i번째 패밀리에 적용할 티어 분수 — perFractions 가 있으면 그 값, 없으면 균일 tierFraction. */
+    /** i번째 패밀리에 적용할 등급 분수 — perFractions 가 있으면 그 값, 없으면 균일 tierFraction. */
     double fractionFor(int i) {
       return perFractions != null && i < perFractions.size() ? perFractions.get(i) : tierFraction;
     }
@@ -644,7 +644,7 @@ public class PoeOptimizeService {
     if (target <= 0 && ehp <= 0) {
       return null;
     }
-    // 상위 키스톤(count>=2, 최대 3) — 실빌드가 흔히 쓰는 키스톤(방어 포함)을 트리 후보 시드로.
+    // 상위 핵심노드(count>=2, 최대 3) — 실빌드가 흔히 쓰는 핵심노드(방어 포함)을 트리 후보 시드로.
     List<String> keystones = new ArrayList<>();
     JsonNode ks = a.path("topKeystones");
     if (ks.isArray()) {
@@ -740,7 +740,7 @@ public class PoeOptimizeService {
     return node == null ? null : node.nameKo();
   }
 
-  /** 패싯 이름 사전(영문 → 한글) — 문신 + 트리 노드(키스톤·노터블·마스터리). 최초 1회만 만든다. */
+  /** 패싯 이름 사전(영문 → 한글) — 문신 + 트리 노드(핵심노드·주요 스킬·마스터리). 최초 1회만 만든다. */
   private volatile Map<String, String> facetNameKoCache;
 
   private Map<String, String> facetNameKoMap() {
@@ -754,7 +754,7 @@ public class PoeOptimizeService {
         map.putIfAbsent(t.name(), t.nameKo());
       }
     }
-    // 키스톤·노터블(도유 포함)·마스터리는 트리 데이터에 한글명이 있다 — 패싯의 keypassives/anointed 차원이 여기서 잡힌다.
+    // 핵심노드·주요 스킬(성유 포함)·마스터리는 트리 데이터에 한글명이 있다 — 패싯의 keypassives/anointed 차원이 여기서 잡힌다.
     List<PoeTreeGraphService.TreeNode> treeNodes = new ArrayList<>();
     treeNodes.addAll(poeTreeGraphService.searchCandidates());
     treeNodes.addAll(poeTreeGraphService.anointableNotables());
@@ -764,10 +764,17 @@ public class PoeOptimizeService {
         map.putIfAbsent(n.name(), n.nameKo());
       }
     }
-    // 전직 · 혈맹 노드(렐리쿼리언 "Armour Display" · "Lycia Bloodline" 등)도 키스톤 차원에 이름으로 온다 — 트리에 한글명이 있다(C56)
+    // 전직 · 혈맹 노드(렐리쿼리언 "Armour Display" · "Lycia Bloodline" 등)도 핵심노드 차원에 이름으로 온다 — 트리에 한글명이 있다(C56)
     for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.allNodes()) {
       if (n.name() != null && n.nameKo() != null && !n.nameKo().isBlank()) {
         map.putIfAbsent(n.name(), n.nameKo());
+      }
+    }
+    // 성단 주얼 주요 스킬("Doryani's Lesson" 등)은 트리 노드가 아니라 성단 사전에 한글명이 있다(10-25 Q172 — 핵심노드 차원 13개가 영어로
+    // 남았다)
+    for (PoeTreeGraphService.ClusterNotable c : poeTreeGraphService.clusterNotables()) {
+      if (c.name() != null && c.nameKo() != null && !c.nameKo().isBlank()) {
+        map.putIfAbsent(c.name(), c.nameKo());
       }
     }
     // 장비 차원의 고유 아이템 이름("Soulwrest")은 고유 데이터에 한글명이 있다(C56)
@@ -1165,7 +1172,7 @@ public class PoeOptimizeService {
   private static final double COMBO_OUTLIER_MEAN_Z = 1.75;
 
   /**
-   * CI 서브그룹 생존 중앙값 — (전직|스킬) 풀에서 CI 키스톤 보유·96+ 필터 후 EHP 중앙값(표본<5면 0). 혼재 모집단(PB: CI 45/비CI 53)의 통합
+   * CI 서브그룹 생존 중앙값 — (전직|스킬) 풀에서 CI 핵심노드 보유·96+ 필터 후 EHP 중앙값(표본<5면 0). 혼재 모집단(PB: CI 45/비CI 53)의 통합
    * 중앙값은 CI 문맥에서 EHP 목표를 낮게 잡아 balanced 생존 팩터가 조기 포화 → Aegis Aurora 류 EHP 소스(실측 +21.1%)가 스코어에서 못
    * 이긴다(48단계).
    */
@@ -1333,7 +1340,7 @@ public class PoeOptimizeService {
     agg.put("ascendancy", ascendancy == null ? "" : ascendancy);
     agg.put("mainSkill", String.join(" + ", skills));
     agg.put("sample", kept.size());
-    // 키스톤/함께 쓰는 스킬/마스터리 빈도(선택 스킬 제외, 마스터리는 샘플링된 캐릭터만 기여)
+    // 핵심노드/함께 쓰는 스킬/마스터리 빈도(선택 스킬 제외, 마스터리는 샘플링된 캐릭터만 기여)
     Map<String, Integer> keyCnt = new HashMap<>();
     Map<String, Integer> coCnt = new HashMap<>();
     Map<String, Integer> mastCnt = new HashMap<>();
@@ -1653,7 +1660,7 @@ public class PoeOptimizeService {
       seedLogPending = false;
       log(
           String.format(
-              "시드 프로파일: 최약목표 %,.0f · EHP목표 %,.0f · 저항 화%d/냉%d/번%d/카%d · 억제 %d · 재생 %,.0f · 키스톤 [%s] · 마스터리 %d개 · 무기 %s",
+              "시드 프로파일: 최약목표 %,.0f · EHP목표 %,.0f · 저항 화%d/냉%d/번%d/카%d · 억제 %d · 재생 %,.0f · 핵심노드 [%s] · 마스터리 %d개 · 무기 %s",
               targetMaxHit,
               targetEhp,
               targetFireRes,
@@ -1884,7 +1891,7 @@ public class PoeOptimizeService {
 
   /** PoB config 값 → 한국어 라벨 */
   private static final Map<String, String> SCENARIO_KO =
-      Map.of("None", "일반 몬스터", "Boss", "표준 보스", "Pinnacle", "핀나클 보스", "Uber", "우버 보스");
+      Map.of("None", "일반 몬스터", "Boss", "표준 보스", "Pinnacle", "최종 보스", "Uber", "우버 보스");
 
   /** 전투 버프 가정(충전+돌격) — 엔드게임 빌드가 흔히 전제하는 상태 */
   private volatile boolean combatBuffs = true;
@@ -1913,9 +1920,9 @@ public class PoeOptimizeService {
   /** 영원한 축복으로 예약 없이 유지하는 오라(잡 스코프). 없으면 null. */
   private volatile PoeGem blessingAura;
 
-  // 이번 잡의 스킬 키워드 — XML 조립 시 유니크에 엘드리치 임플리싯을 고르는 데 쓴다(레어는 craft 시점에 이미 결정).
+  // 이번 잡의 스킬 키워드 — XML 조립 시 유니크에 섬뜩한 고정 속성을 고르는 데 쓴다(레어는 craft 시점에 이미 결정).
   private volatile List<String> currentKeywords = List.of();
-  // 이 잡에서 아뮬렛에 걸 도유(잡마다 키워드가 정해질 때 1회 계산). null = 키워드에 맞는 노터블 없음
+  // 이 잡에서 목걸이에 걸 성유(잡마다 키워드가 정해질 때 1회 계산). null = 키워드에 맞는 주요 스킬 없음
   private volatile AnointPick currentAnoint = null;
   // 속성 요구치 보정용 보조젬 레벨 하향(slug→level, 기본 20). 전 슬롯 유니크라 레어로 못 채울 때
   // 실전처럼 "요구치 맞는 레벨까지만 젬을 키운" 상태를 만든다.
@@ -2020,7 +2027,7 @@ public class PoeOptimizeService {
   /** 사용자가 요청으로 지정한 문신(불가침) — fixedTattoos 는 자동 채택이 병합돼 구분이 필요하다. 잡별 상태 — start() 세팅. */
   private volatile Map<Integer, String> userTattoos = Map.of();
 
-  // 트리 에디터에서 사용자가 고른 도유 노터블 id — 지정 시 자동 전수 스윕 대신 이것으로 고정(사용자 지정은 존중)
+  // 트리 에디터에서 사용자가 고른 성유 주요 스킬 id — 지정 시 자동 전수 스윕 대신 이것으로 고정(사용자 지정은 존중)
   private volatile Integer fixedAnoint = null;
 
   // 이 실행의 완료 결과를 이력(sim/history)에 남길지 — QA 배터리(고정트리 픽스처 포함)는 false 로 호출해
@@ -2049,7 +2056,7 @@ public class PoeOptimizeService {
   private final Map<String, NinjaSeed> ninjaSeedByKey = new HashMap<>();
   private final Map<String, NinjaSeed> ninjaSeedBySkill = new HashMap<>();
 
-  // 기본 on. 귀속 실험용으로만 끈다(POE_NINJA_SEED=off) — 시드는 목표치뿐 아니라 키스톤·마스터리·
+  // 기본 on. 귀속 실험용으로만 끈다(POE_NINJA_SEED=off) — 시드는 목표치뿐 아니라 핵심노드·마스터리·
   //   무기클래스·판테온 웜스타트로도 쓰여서, 벤치 갱신 후 결과가 크게 바뀌면 시드 탓인지 가려야 한다.
   /**
    * ehp 목표의 지표 — 기본 maxhit-all(사용자 판정 2026-09-10).
@@ -2093,7 +2100,7 @@ public class PoeOptimizeService {
       "on".equalsIgnoreCase(System.getenv().getOrDefault("POE_CURSE_SWAP", "off"));
 
   /**
-   * 예약 없는 저주 전달(장갑 부패 임플리싯) — **기본 on**. 신성모독은 예약이 무거워 마나가 남는 축에서만 들어가는데, 이 경로는 예약이 0 이라 막혀 있던 축을
+   * 예약 없는 저주 전달(장갑 부패 고정 속성) — **기본 on**. 신성모독은 예약이 무거워 마나가 남는 축에서만 들어가는데, 이 경로는 예약이 0 이라 막혀 있던 축을
    * 연다.
    *
    * <p>12축 실측(2026-08-28): DPS 상승 4축(냉기 급습 +14.6%, 혼의 균열 +12.2%, 사신 +8.3%, 고행 +2.4%), **DPS 비용 0 으로
@@ -2107,7 +2114,7 @@ public class PoeOptimizeService {
       !"off".equalsIgnoreCase(System.getenv().getOrDefault("POE_CURSE_ONHIT", "on"));
 
   /**
-   * 장갑 부패 임플리싯으로 붙는 "적중 시 저주" 9종 — mods.json families 의 V2CurseOnHit*(gen=corrupted, ilvl 30,
+   * 장갑 부패 고정 속성으로 붙는 "적중 시 저주" 9종 — mods.json families 의 V2CurseOnHit*(gen=corrupted, ilvl 30,
    * weight 1000, Gloves 전 베이스). 상수 9개라 모드 풀 서비스(mod-pool.json 큐레이션)를 새로 뚫지 않고 여기 둔다.
    */
   private static final List<String> CURSE_ON_HIT_MODS =
@@ -2188,13 +2195,13 @@ public class PoeOptimizeService {
   private volatile Set<String> metaUniqueNames = Set.of();
 
   /**
-   * 시드 키스톤 후보 주입 — **기본 off**(켜려면 POE_SEED_KEYSTONES=on).
+   * 시드 핵심노드 후보 주입 — **기본 off**(켜려면 POE_SEED_KEYSTONES=on).
    *
    * <p>topKeystones 는 그 아키타입 유저들의 **집계**지 한 빌드가 함께 찍는 조합이 아니다. 그대로 한 빌드에 주입하면 철의 반사신경(회피→방어도)과 유령
-   * 무도(회피 시 ES) 처럼 상호배타 키스톤이 동시에 후보가 되고, 빌드가 빈 시점(실측 값 44,344)에 6pt 를 써 채택된 뒤 트리 재대결도 되돌리지 못한다.
+   * 무도(회피 시 ES) 처럼 상호배타 핵심노드가 동시에 후보가 되고, 빌드가 빈 시점(실측 값 44,344)에 6pt 를 써 채택된 뒤 트리 재대결도 되돌리지 못한다.
    *
-   * <p>실측(원소 강타 분광/데드아이): 시드 전체 on 6,102,794 · 시드 전체 off 10,961,381 · **키스톤 주입만 off
-   * 15,084,361(+147%)** — 키스톤만 끈 쪽이 시드 전체를 끈 것보다 38% 높다(시드의 목표치·마스터리·저항은 이득). 7종 회귀에서는 전 축
+   * <p>실측(원소 강타 분광/데드아이): 시드 전체 on 6,102,794 · 시드 전체 off 10,961,381 · **핵심노드 주입만 off
+   * 15,084,361(+147%)** — 핵심노드만 끈 쪽이 시드 전체를 끈 것보다 38% 높다(시드의 목표치·마스터리·저항은 이득). 7종 회귀에서는 전 축
    * **±0.0%**(비트 동일) 로 손해 축이 없다 → 이득 증거 0, 손해 증거 1 이므로 기본 off. CI 아키타입 판정(isEsArchetype)은 이 토글과
    * 무관하게 동작한다.
    */
@@ -2412,7 +2419,7 @@ public class PoeOptimizeService {
   private volatile int targetFireRes = 75;
   private volatile int targetColdRes = 75;
   private volatile int targetLightRes = 75;
-  // job-scoped 시드 키스톤(아키타입 실측 상위) — 트리 탐색 후보 풀에 주입(키워드 미매칭 방어 키스톤 포착용).
+  // job-scoped 시드 핵심노드(아키타입 실측 상위) — 트리 탐색 후보 풀에 주입(키워드 미매칭 방어 핵심노드 포착용).
   private volatile List<String> seededKeystones = List.of();
   // job-scoped ES/CI(에너지실드 스태킹) 아키타입 여부 — poe.ninja 벤치마크로 판정. ES 서브시스템(트리/장비 시드)의 게이트.
   private volatile boolean esArchetype = false;
@@ -2496,7 +2503,7 @@ public class PoeOptimizeService {
    */
   private volatile String curseSkill;
 
-  /** 장갑에 얹은 "적중 시 저주" 임플리싯 문구(없으면 null) — 예약을 먹지 않는 저주 전달 경로. */
+  /** 장갑에 얹은 "적중 시 저주" 고정 속성 문구(없으면 null) — 예약을 먹지 않는 저주 전달 경로. */
   private volatile String curseOnHitMod;
 
   /** 오라 최종 재대결 후보 풀 — 예약 초과로 막힌 오라를 완성 문맥에서 다시 시도한다. */
@@ -2517,11 +2524,11 @@ public class PoeOptimizeService {
   /**
    * poe.ninja 벤치마크로 ES/CI(에너지실드 스태킹) 아키타입인지 판정.
    *
-   * <p>ES/CI 는 CI(카오스 접종, 생명→1·카오스면역) 키스톤 + ES 베이스 장비 + ES 트리를 <b>함께</b> 갖춰야만 성립하는 조율 아키타입이라, 생명
+   * <p>ES/CI 는 CI(카오스 접종, 생명→1·카오스면역) 핵심노드 + ES 베이스 장비 + ES 트리를 <b>함께</b> 갖춰야만 성립하는 조율 아키타입이라, 생명
    * 기준선에서 출발하는 greedy 로는 골짜기를 못 넘는다(ES 개별 변경은 각각 손해). 이 판정으로 ES 서브시스템(force-CI 시드 · ES 장비/트리 편향 ·
    * dual-pass)의 진입을 게이트한다.
    *
-   * <p>기준: 표본 충분(≥MIN_SEED_SAMPLE) 且 (CI/EB 키스톤이 실측 상위 || ES 중앙값이 생명 대비 우세). 매칭 없으면 false → 생명 빌드
+   * <p>기준: 표본 충분(≥MIN_SEED_SAMPLE) 且 (CI/EB 핵심노드가 실측 상위 || ES 중앙값이 생명 대비 우세). 매칭 없으면 false → 생명 빌드
    * 경로 그대로 → 기준선(arc/RF 등) 불변.
    */
   private boolean isEsArchetype(String ascendancy, String skill) {
@@ -2714,7 +2721,7 @@ public class PoeOptimizeService {
   }
 
   /**
-   * @param anoint 트리 에디터에서 고른 도유 노터블 id(없으면 null → 자동 전수 스윕). 문신/마스터리와 같은 "사용자 지정 존중" 원칙.
+   * @param anoint 트리 에디터에서 고른 성유 주요 스킬 id(없으면 null → 자동 전수 스윕). 문신/마스터리와 같은 "사용자 지정 존중" 원칙.
    */
   public boolean start(
       String gemSlug,
@@ -2928,7 +2935,7 @@ public class PoeOptimizeService {
     this.blessingAura = null;
     this.currentKeywords = List.of(); // 키워드 초기화(잡마다)
     this.tattooAllocated = Set.of(); // 문신 할당-이웃 판정 기준 초기화(잡마다)
-    this.currentAnoint = null; // 아뮬렛 도유 초기화(잡마다)
+    this.currentAnoint = null; // 목걸이 성유 초기화(잡마다)
     this.supportLevelOverride = Map.of(); // 보조젬 레벨 하향 초기화(잡마다)
     this.attrRepairs.clear(); // 속성 보정 희생 이력 초기화(잡마다)
     this.feasibilitySteering = false; // 실현 가능성 조향 초기화(잡마다)
@@ -2937,7 +2944,7 @@ public class PoeOptimizeService {
     this.multiActorBuild = false; // #235 다중 액터(토템/미니언) 총합 지표 초기화(잡마다)
     this.targetMaxHit = MAXHIT_FLOOR; // poe.ninja 생존 목표치 초기화(스킬 확정 후 재설정)
     this.targetEhp = EHP_FLOOR;
-    this.seededKeystones = List.of(); // 시드 키스톤 초기화(잡마다)
+    this.seededKeystones = List.of(); // 시드 핵심노드 초기화(잡마다)
     // ⚠ 메타 마스터리는 balanced 의 setSurvivalTargets 에서만 채워지므로 **잡마다 여기서 리셋** —
     //   안 하면 직전 balanced 잡의 메타 세트가 dps/ehp 잡으로 누출돼 기준선이 이탈한다
     //   (실사고: RF balanced 후 arc 41.9M→42.5M, 사이클론 9.9M→8.9M 오염, #161 계열).
@@ -3369,7 +3376,7 @@ public class PoeOptimizeService {
           RareItem starterWeapon = craftRare(Slot.WEAPON, gem, keywords, 0.0);
           if (starterWeapon != null) {
             items.put(Slot.WEAPON, Equipped.ofRare(starterWeapon));
-            log("기준 무기 임시 장착(공격 스킬): " + starterWeapon.baseType() + " — 보조젬이 0 DPS 에서 고르지 않도록");
+            log("기준 무기 임시 장착(공격 스킬): " + starterWeapon.baseType() + " — 보조 젬이 0 DPS 에서 고르지 않도록");
           }
         }
       }
@@ -3637,8 +3644,8 @@ public class PoeOptimizeService {
             candidates.stream()
                 .filter(c -> c.name() != null && c.name().startsWith("Awakened"))
                 .count();
-        logger.info("보조젬 후보(각성 필터 후): {}개, 남은 각성={}", candidates.size(), awakenedRemaining);
-        log("보조젬 1라운드: 후보 " + candidates.size() + "개");
+        logger.info("보조 젬 후보(각성 필터 후): {}개, 남은 각성={}", candidates.size(), awakenedRemaining);
+        log("보조 젬 1라운드: 후보 " + candidates.size() + "개");
         Map<PoeGem, Double> firstRound =
             evalBatch(
                 executor,
@@ -3695,7 +3702,7 @@ public class PoeOptimizeService {
           supports.add(best.getKey());
           shortlist.remove(best.getKey());
           supportCurrent = best.getValue();
-          log("보조젬 채택: " + koName(best.getKey()) + " → " + format(supportCurrent));
+          log("보조 젬 채택: " + koName(best.getKey()) + " → " + format(supportCurrent));
           // 채택 라운드의 상위 후보를 함께 남긴다 — "실빌드가 쓰는 젬이 우리 평가에서 몇 위였나" 를
           //   추측이 아니라 순위로 답하기 위한 것(번개 화살 대표는 신기루 궁수·삼위일체를 쓰는데 우리는 미채택).
           log(
@@ -3728,9 +3735,9 @@ public class PoeOptimizeService {
           evalCount.incrementAndGet();
           current = objectiveOf(afterSupports, objectiveKey);
           log(
-              "보조젬 후 목표값 재산정: "
+              "보조 젬 후 목표값 재산정: "
                   + format(current)
-                  + " (보조젬 "
+                  + " (보조 젬 "
                   + supports.size()
                   + "개 · dps "
                   + format(supportCurrent)
@@ -3807,7 +3814,7 @@ public class PoeOptimizeService {
         if (!extraPicked.isEmpty()) {
           additionalSkillSupports.put(extra.slug(), List.copyOf(extraPicked));
           log(
-              "추가 스킬 보조젬: "
+              "추가 스킬 보조 젬: "
                   + koName(extra)
                   + " → "
                   + extraPicked.stream()
@@ -3874,8 +3881,8 @@ public class PoeOptimizeService {
             candidateScores.put(node, score);
           }
         }
-        // poe.ninja 시드 키스톤 주입 — 키워드 미매칭(방어) 키스톤(CI/MoM/EB/피의마법 등)은 실빌드가 흔히 쓰나
-        //   위 점수화(데미지 키워드)에서 0점이라 후보에서 빠진다. 실측 상위 키스톤을 baseline 점수로 후보에 넣어
+        // poe.ninja 시드 핵심노드 주입 — 키워드 미매칭(방어) 핵심노드(CI/MoM/EB/피의마법 등)은 실빌드가 흔히 쓰나
+        //   위 점수화(데미지 키워드)에서 0점이라 후보에서 빠진다. 실측 상위 핵심노드를 baseline 점수로 후보에 넣어
         //   **평가 대상**이 되게 한다(채택은 여전히 full PoB 실측 이득 기준 → 강제 아님). 결정성: id 정렬 순회.
         if (!seededKeystones.isEmpty() && SEED_KEYSTONES_ENABLED) {
           int avg =
@@ -3899,12 +3906,12 @@ public class PoeOptimizeService {
             }
           }
           if (injected > 0) {
-            log("poe.ninja 시드 키스톤 후보 주입: " + injected + "개 (baseline " + ksBaseline + ")");
+            log("poe.ninja 시드 핵심노드 후보 주입: " + injected + "개 (baseline " + ksBaseline + ")");
           }
         }
-        log("트리 후보 노터블/키스톤: " + candidateScores.size() + "개");
+        log("트리 후보 주요 스킬/핵심노드: " + candidateScores.size() + "개");
 
-        // 주얼 소켓 경로용으로 일부 예약.
+        // 주얼 슬롯 경로용으로 일부 예약.
         // (마스터리용 추가 예약도 재 봤지만 — 4점 예약 시 마스터리 4개 채택으로 잡 내부 이득 +43%,
         //  예약 없이 남는 점으로 1개 채택 시 +41% — 최종 DPS 는 2.44M vs 2.47M 로 차이가 없어 도입하지 않았다)
         // ⚠ 위 실험은 dps 목표 기준. P1 메타 웜스타트(balanced + 메타 마스터리 존재)에선 마스터리 단계 도달 시
@@ -3984,12 +3991,12 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 3) 주얼 소켓 greedy — 트리에 연결 가능한 소켓에 전역 유니크 주얼을 꽂는다 ──
+      // ── 3) 주얼 슬롯 greedy — 트리에 연결 가능한 소켓에 전역 유니크 주얼을 꽂는다 ──
       enterPhase("jewels");
       // 사용자가 트리 에디터에서 직접 꽂은 주얼을 먼저 확정한다(할당된 소켓만). 나머지 소켓은 아래 탐색이 채운다.
       for (Map.Entry<Integer, String> fixed : fixedJewels.entrySet()) {
         if (!allocated.contains(fixed.getKey())) {
-          log("⚠ 지정 주얼 소켓 " + fixed.getKey() + " 이 트리에 없어 건너뜁니다");
+          log("⚠ 지정 주얼 슬롯 " + fixed.getKey() + " 이 트리에 없어 건너뜁니다");
           continue;
         }
         poeUniqueDataService
@@ -4087,7 +4094,7 @@ public class PoeOptimizeService {
             jewels.put(socketPath.socketId(), best.getKey());
             current = best.getValue();
             log(
-                "주얼 소켓: "
+                "주얼 슬롯: "
                     + jewelLabel(best.getKey())
                     + " (+"
                     + socketPath.path().size()
@@ -4119,7 +4126,7 @@ public class PoeOptimizeService {
         current = realCurrent;
       }
 
-      // ── 4) 아이템 greedy (슬롯 순회) — 고유 후보 + 생성 레어(최상위 티어) 를 함께 평가 ──
+      // ── 4) 아이템 greedy (슬롯 순회) — 고유 후보 + 생성 레어(최상위 등급) 를 함께 평가 ──
       enterPhase("items");
       feasibilitySteering = true; // 지금부터 선택 지표에 요구치 부족 페널티(사유는 필드 주석)
       // 기준값(current)은 방금까지 **무페널티**로 계산된 값 — 그대로 두면 강제 유니크로 부족이 큰 잡에서
@@ -4264,8 +4271,8 @@ public class PoeOptimizeService {
                           allocated,
                           trial,
                           jewels);
-                  // 최종 빌드엔 도유가 얹혀 있다 — 예산 축에서 빼면 "티어를 낮춰서" 가 아니라
-                  // "도유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
+                  // 최종 빌드엔 성유가 얹혀 있다 — 예산 축에서 빼면 "등급을 낮춰서" 가 아니라
+                  // "성유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
                   AnointPick anoint = currentAnoint;
                   return anoint != null ? withAnoint(xml, anoint.name()) : xml;
                 },
@@ -4453,7 +4460,7 @@ public class PoeOptimizeService {
           }
         }
 
-        // ── 예약 효율 확장 트라이얼 — **도입 실패로 비활성**(2026-08-04). 「노터블 경로 + 오라 1개」 묶음
+        // ── 예약 효율 확장 트라이얼 — **도입 실패로 비활성**(2026-08-04). 「주요 스킬 경로 + 오라 1개」 묶음
         // 실측은 두 가지 착시에 걸렸다: ① 혈마법 빌드에선 마나 예약 효율(Sovereignty)·Clarity 가 무의미한데
         // **경로 중간 노드 스탯**이 +3% 착시 이득을 만들어 채택됨 ② 소모한 3pt 가 하류 마스터리 예산을
         // 밀어내(막기 숙련 +4pt 탈락) 최종 EHP −11%·막기 39→23 회귀. 중간 단계 채택은 하류 기회비용을
@@ -4575,7 +4582,7 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 키스톤 후회 패스(혈마법) — balanced 전용. 트리 greedy(오라 이전)는 혈마법의 기회비용
+      // ── 핵심노드 후회 패스(혈마법) — balanced 전용. 트리 greedy(오라 이전)는 혈마법의 기회비용
       // (마나 예약 오라 스택)을 못 본다: 실측 RF 실빌드는 마나 96.8% 예약으로 오라를 쌓는데, 우리는
       // 혈마법 채택→마나 0→오라가 생명 예약 2개에서 멈췄다. 오라 확정 후 「혈마법 제거 + 오라 추가
       // greedy 재실행」을 통째 트라이얼로 실측해 이득일 때만 채택(비-balanced 는 미실행 — dps 기준선 불변).
@@ -4701,7 +4708,7 @@ public class PoeOptimizeService {
             selectedAuras.clear();
             selectedAuras.addAll(trialAuras);
             log(
-                "키스톤 후회(혈마법 제거): 오라 추가 "
+                "핵심노드 후회(혈마법 제거): 오라 추가 "
                     + (added.isEmpty() ? "없음(마나 회복만으로 이득)" : String.join(", ", added))
                     + " → "
                     + format(trialCurrent)
@@ -4709,7 +4716,7 @@ public class PoeOptimizeService {
                     + format(base)
                     + ")");
           } else {
-            log("키스톤 후회(혈마법): 유지가 우세 — 제거안 " + format(trialCurrent) + " vs 유지 " + format(base));
+            log("핵심노드 후회(혈마법): 유지가 우세 — 제거안 " + format(trialCurrent) + " vs 유지 " + format(base));
           }
         }
       }
@@ -4738,8 +4745,8 @@ public class PoeOptimizeService {
                     .filter(id -> !fixedMasteries.containsKey(id)) // 트리 에디터에서 고른 것은 존중
                     .filter(hasEffects)
                     .toList());
-        // 트리 greedy 는 노터블/키스톤만 노린다(searchCandidates) — **마스터리는 아예 후보에 없다**.
-        // 그런데 마스터리 하나가 "양손 적중 피해 60% 증가" 급이라 1포인트 대비 이득이 노터블보다 큰 경우가 많다.
+        // 트리 greedy 는 주요 스킬/핵심노드만 노린다(searchCandidates) — **마스터리는 아예 후보에 없다**.
+        // 그런데 마스터리 하나가 "양손 적중 피해 60% 증가" 급이라 1포인트 대비 이득이 주요 스킬보다 큰 경우가 많다.
         // 할당 집합에 인접한 미할당 마스터리를 키워드 점수 상위로 추려 후보에 넣는다(효과까지 함께 평가).
         Set<Integer> newMasteries = new LinkedHashSet<>();
         // P1 메타 마스터리 호스트 경로 — 후보 id → 할당 경로(마지막이 마스터리 노드). 인접 후보는 [자기 자신].
@@ -4788,7 +4795,7 @@ public class PoeOptimizeService {
                   || points + path.size() > POINT_BUDGET) {
                 continue;
               }
-              // 경로가 키스톤을 지나면 제외 — 키스톤은 찍는 순간 기제가 통째로 바뀌는 노드라 경로 부수
+              // 경로가 핵심노드를 지나면 제외 — 핵심노드는 찍는 순간 기제가 통째로 바뀌는 노드라 경로 부수
               // 할당으로 켜지면 안 된다. 실사고: RF 막기 숙련 +4pt 경로가 **혈마법**을 통과 채택 → 마나 0
               // → 오라가 생명 예약 2개 상한(실빌드는 마나 96.8% 예약 오라 스택). 단일 평가는 그 시점
               // 이득만 보고 오라 기회비용(이미 확정된 단계)을 못 본다.
@@ -5256,7 +5263,7 @@ public class PoeOptimizeService {
             }
           }
 
-          // 노터블/키스톤 문신 — 대부분 "Limited to 1" 이라 **어느 노드에 새길지**까지 골라야 한다.
+          // 주요 스킬/핵심노드 문신 — 대부분 "Limited to 1" 이라 **어느 노드에 새길지**까지 골라야 한다.
           // (소형처럼 한 종류를 전부에 바르는 방식으론 노드 선택이 첫 번째로 고정돼 버린다)
           // 마스터리 문신(룬 접합)도 같은 방식 — 마스터리 효과를 버리고 룬 접합 모드를 얻는 교환이라
           // (실측: 생명력 마스터리 +30 이 사라지고 룬 접합이 붙는다) 이득일 때만 그리디가 채택한다.
@@ -5535,11 +5542,11 @@ public class PoeOptimizeService {
 
       // ── 자동 클러스터 주얼 트라이얼(포트 4/5) — balanced 전용. 클러스터는 실빌드 표준 레이어(ninja 중앙값
       // 대2·중1·소1)인데 최적화기는 fixedClusters(에디터 인계)만 알았다. Large 1개를 스킬 키워드로 조립(스킬키 =
-      // enchant 스탯 점수 최고, 노터블 = 합법 목록 중 점수 상위 3)해 최근접 Large 소켓에 꽂는 통째 트라이얼을
-      // 실측한다. subgraphPlan 가상 노드 id 의 엔드투엔드 검증 겸용 — id 가 틀리면 노터블 기여 0 이라 미채택으로
+      // enchant 스탯 점수 최고, 주요 스킬 = 합법 목록 중 점수 상위 3)해 최근접 Large 소켓에 꽂는 통째 트라이얼을
+      // 실측한다. subgraphPlan 가상 노드 id 의 엔드투엔드 검증 겸용 — id 가 틀리면 주요 스킬 기여 0 이라 미채택으로
       // 표면화된다. 예산 초과여도 1회 평가는 남긴다(레벨/예산 설계 근거 데이터).
       if ("balanced".equals(objectiveKey) && poeClusterJewelDataService.hasData()) {
-        // 범용 "damage" 키워드는 모든 클러스터 스킬/노터블에 걸려(실사고: RF 에 bow damage 클러스터 조립)
+        // 범용 "damage" 키워드는 모든 클러스터 스킬/주요 스킬에 걸려(실사고: RF 에 bow damage 클러스터 조립)
         // 클러스터 스코어링에선 제거 — 원소/도트/방어 등 특이 키워드만 남긴다(parse-mods 와 동일 교훈).
         List<String> clusterKeywords = keywords.stream().filter(k -> !"damage".equals(k)).toList();
         boolean clusterAdopted = false;
@@ -5548,9 +5555,9 @@ public class PoeOptimizeService {
         for (var cn : poeTreeGraphService.clusterNotables()) {
           statsByName.put(cn.name(), cn.stats());
         }
-        // 스킬키 선택은 **노터블 페이로드 합**(합법 노터블 점수 상위 3 합) 기준 — enchant 스탯만으로는
+        // 스킬키 선택은 **주요 스킬 페이로드 합**(합법 주요 스킬 점수 상위 3 합) 기준 — enchant 스탯만으로는
         // 동점이 흔하다(실사고: bow 의 "Damage Over Time with Bow Skills" 가 RF 의 damage over time 에
-        // 걸려 fire 와 1:1 동점 → 순회 순서로 bow 채택). 클러스터의 본체는 노터블이다.
+        // 걸려 fire 와 1:1 동점 → 순회 순서로 bow 채택). 클러스터의 본체는 주요 스킬이다.
         record SkillCand(String key, long score) {}
         List<String> topSkillKeys =
             largeDef == null
@@ -5682,7 +5689,7 @@ public class PoeOptimizeService {
               bestCost = cost;
             }
           }
-          // ── 적재물 재선정 — 승자 스킬키의 노터블 3개는 **키워드 점수**로 골랐다. 그 점수는 이미
+          // ── 적재물 재선정 — 승자 스킬키의 주요 스킬 3개는 **키워드 점수**로 골랐다. 그 점수는 이미
           //    오판 전력이 있다(감시자의 눈: "받는 피해" 모드가 1순위로 올라옴). 승자에 한해 후보를
           //    넓혀(상위 6) 하나씩 실측으로 교체해 본다 — 클러스터가 손해로 기각되던 이유가
           //    "클러스터 자체"가 아니라 "적재물 선택"일 수 있기 때문이다.
@@ -5818,7 +5825,7 @@ public class PoeOptimizeService {
                 };
             Set<Integer> removable = new LinkedHashSet<>();
             // ⚠ 차수는 **교환 후 평가할 트리**(기존 + 소켓 경로 + 소켓) 기준으로 세야 한다.
-            //    예전엔 클러스터를 얹기 전 트리(allocated)로 셌는데, 주얼 소켓까지 가는 경로의 앵커는
+            //    예전엔 클러스터를 얹기 전 트리(allocated)로 셌는데, 주얼 슬롯까지 가는 경로의 앵커는
             //    보통 기존 트리의 잎이라 "가장 값싼 잎"으로 뽑혀 떨어져 나갔다 → 소켓·클러스터가 통째로
             //    끊겨 빌드가 붕괴(실측: 교환 후 640 vs 현재 587,450)하고 클러스터는 영원히 기각됐다.
             Set<Integer> pool = new HashSet<>(bestTrialNodes);
@@ -5854,7 +5861,7 @@ public class PoeOptimizeService {
                         || "keystone".equals(treeNode.type())
                         || "mastery".equals(treeNode.type()))) {
                   // 차수 1·score 낮음이라 잎 후보가 되기 쉽지만 떼는 순간 빌드 기제가 통째로 무너지는
-                  // 노드들 — 주얼 소켓(유니크 주얼 상실, 실측 130k), 키스톤(혈마법 상실 → 오라 전멸,
+                  // 노드들 — 주얼 슬롯(유니크 주얼 상실, 실측 130k), 핵심노드(혈마법 상실 → 오라 전멸,
                   // 실측 3,247), 마스터리(선택 효과 상실). 전부 제거 대상에서 제외한다. 남는 잎이
                   // 부족하면 "스왑 불가"로 정직하게 물러선다 — 이 예산에서 클러스터를 담는 정공법은
                   // LEVEL 파리티(실빌드 L100 = +10pt)다.
@@ -5989,8 +5996,8 @@ public class PoeOptimizeService {
                         : " (예산 부족: " + points + "+" + bestCost + ">" + POINT_BUDGET + ")"));
           }
         }
-        // 예약 환급 greedy — 클러스터가 미채택이면 트리 단계가 남긴 예산(메타 마스터리 예약 등)을 일반 노터블로
-        // 소진한다. 예약을 놀리면 순손실(11단계 교훈: 예산 기회비용)이라 필수. 키스톤 통과 경로 제외.
+        // 예약 환급 greedy — 클러스터가 미채택이면 트리 단계가 남긴 예산(메타 마스터리 예약 등)을 일반 주요 스킬로
+        // 소진한다. 예약을 놀리면 순손실(11단계 교훈: 예산 기회비용)이라 필수. 핵심노드 통과 경로 제외.
         if (!clusterAdopted) {
           boolean refundImproved = true;
           while (refundImproved && points < POINT_BUDGET - JEWEL_RESERVE) {
@@ -6273,7 +6280,7 @@ public class PoeOptimizeService {
         enterPhase("ascendancy-rematch");
         // 되돌리기용 스냅샷 — 아래 제거/재배분이 **순이득을 못 내면 통째로 원복**한다.
         //   제거 판정("빼도 값이 안 떨어진다")은 국소적으로 중립이지만, 바뀐 빌드 위에서 뒤따르는
-        //   tree-rematch·unique-rematch·도유가 다른 선택을 하며 더 나쁜 골짜기로 갈 수 있다.
+        //   tree-rematch·unique-rematch·성유가 다른 선택을 하며 더 나쁜 골짜기로 갈 수 있다.
         //   실측(2026-09-01, arc/ehp/void-battery): 혈맹 2노드를 "기여 0" 으로 뺐지만 EHP 를 올리는
         //   잔여 후보가 없어 2pt 가 통째로 사장됐고, 최종이 369,700,700 → 357,868,700(**−3.2%**) 이었다.
         Set<Integer> ascendancySnapshot = new LinkedHashSet<>(ascendancyNodes);
@@ -6353,12 +6360,12 @@ public class PoeOptimizeService {
           }
         }
 
-        // ⚠ 여기서 greedyAscendancy 를 부르지 않는다. 그쪽은 후보를 **노터블로만** 본다
-        //   (ascendancyCandidates). 노터블에 2점을 먼저 묶어 쓰는 바람에 더 나은 일반 노드 조합을 놓친다 —
+        // ⚠ 여기서 greedyAscendancy 를 부르지 않는다. 그쪽은 후보를 **주요 스킬로만** 본다
+        //   (ascendancyCandidates). 주요 스킬에 2점을 먼저 묶어 쓰는 바람에 더 나은 일반 노드 조합을 놓친다 —
         //   실측(지배의 맹타, 완성 빌드 3점 조합 106종 전수): 현 선택 dps 35,027,024·ehp 45,221 대비
         //   **dps·ehp 를 동시에 넘는 조합이 8개**였고 그 8개 전부가 일반 노드 "방어도 및 에너지 보호막,
-        //   오라 효과" 를 포함하며 노터블을 쓰지 않았다(최대 dps +0.36% · ehp +1.1%).
-        //   아래 채우기 greedy 는 노터블·일반을 **가리지 않고**(ascendancyAllNodes) 1점씩 실측해 고르므로
+        //   오라 효과" 를 포함하며 주요 스킬을 쓰지 않았다(최대 dps +0.36% · ehp +1.1%).
+        //   아래 채우기 greedy 는 주요 스킬·일반을 **가리지 않고**(ascendancyAllNodes) 1점씩 실측해 고르므로
         //   후보 풀만 넓어질 뿐 평가 비용은 그대로다.
         record AscendancyFill(int id, String tree, List<Integer> path) {}
         boolean filled = true;
@@ -6617,29 +6624,29 @@ public class PoeOptimizeService {
                   + "개)");
         }
 
-        // ── 노터블 승격 — 1:1 교체는 **인접 1칸**만 보므로 일반 노드끼리만 바뀐다. 실측(2026-09-02): 채택된
+        // ── 주요 스킬 승격 — 1:1 교체는 **인접 1칸**만 보므로 일반 노드끼리만 바뀐다. 실측(2026-09-02): 채택된
         //   교체 4건이 전부 일반 노드였다(방어도·생명력 재생 / 원소 피해 및 저항 / 원소 피해, 냉기 상태 이상
-        //   효과 / 생명력 재생, 화염 피해). 전직 **노터블은 경로가 2칸**이라 후보에 들지 못한다 —
-        //   혈맹 후보 수집에서 겪은 것과 같은 제약이다(1pt 예산에서 노터블 전부 탈락).
+        //   효과 / 생명력 재생, 화염 피해). 전직 **주요 스킬은 경로가 2칸**이라 후보에 들지 못한다 —
+        //   혈맹 후보 수집에서 겪은 것과 같은 제약이다(1pt 예산에서 주요 스킬 전부 탈락).
         //   전수로 2칸을 열면 조합이 커지므로 싼 2단계로 연다:
-        //     ①단일 제거 손실을 재서 **가장 안 아픈 2개**를 고르고(≤8회) ②그 2pt 로 닿는 노터블만 시도(≤20회).
+        //     ①단일 제거 손실을 재서 **가장 안 아픈 2개**를 고르고(≤8회) ②그 2pt 로 닿는 주요 스킬만 시도(≤20회).
         //   가드는 그대로 — 마진 1.003, 그리고 아래 스냅샷·순이득 검사 안쪽이라 전체가 나빠지면 통째로 원복된다.
         record NotablePromotion(List<Integer> drops, int add, List<Integer> path) {}
         // 라운드 상한 2. 1 로 줄여도 뼈 박살 최종이 **한 자리도 안 변했다**(181,610,139) — 2회째 승격(분투)은
         //   최종에 영향이 없고, −3.9% 는 **첫 승격(무적, 국소 +6.6%)** 하나에서 온다. 라운드 제한은 처방이 아니다.
         for (int promoteRound = 0; promoteRound < 2; promoteRound++) {
-          // ⚠ **직업 전직 노터블은 희생 대상에서 뺀다.** 희생 목록을 찍어보니 4축이 종류로 완전히 갈렸다
-          //   (2026-09-02 실측): 직업 전직 노터블을 버린 축만 졌다 —
+          // ⚠ **직업 전직 주요 스킬은 희생 대상에서 뺀다.** 희생 목록을 찍어보니 4축이 종류로 완전히 갈렸다
+          //   (2026-09-02 실측): 직업 전직 주요 스킬을 버린 축만 졌다 —
           //     뼈 박살  방어도·생명력 재생(−1.74%) + **완고**(Unyielding, Juggernaut, −3.45%) → 최종 −3.9%
           //     트라투스 무광 실루엣(−0.85%) + **완고**(−2.30%)                                  → 최종 −3.5%
-          //     한파     죄 지은 성자(Lycia 혈맹 노터블, −4.75%) + 카오스 피해(−4.92%)          → 최종 **+13.2%**
-          //     도살     무광 실루엣(KingInTheMists 혈맹 노터블, −2.12%) + 생명력(−6.39%)       → 최종 **+13.6%**
+          //     한파     죄 지은 성자(Lycia 혈맹 주요 스킬, −4.75%) + 카오스 피해(−4.92%)          → 최종 **+13.2%**
+          //     도살     무광 실루엣(KingInTheMists 혈맹 주요 스킬, −2.12%) + 생명력(−6.39%)       → 최종 **+13.6%**
           //   희생 **비용 크기로는 안 갈린다**(한파는 −4.9% 를 버리고도 이득). 갈리는 건 **소속**이다.
-          //   ⚠ 기제 설명 정정: 처음엔 "직업 전직 노터블은 빌드 정체성이라 떼면 안 된다"고 썼는데 **틀렸다**.
-          //   바로 위 1:1 교체는 직업 전직 노터블을 **버리고 이득**을 낸다 — 한파/고행은 `원소의 보루`
-          //   (Bastion of Elements, Elementalist 노터블)를, 정의의 화염은 `죽음의 광분, 히네코라`
-          //   (Chieftain 노터블)를 떼고 각각 +7.5% · +1.1pp · +0.8pp 였다. 즉 직업 노터블은 성역이 아니다.
-          //   이 규칙은 **이 단계(2개 희생 → 노터블 1개)에 한정된 경험칙**이고 근거는 위 4축 실측뿐이다.
+          //   ⚠ 기제 설명 정정: 처음엔 "직업 전직 주요 스킬은 빌드 정체성이라 떼면 안 된다"고 썼는데 **틀렸다**.
+          //   바로 위 1:1 교체는 직업 전직 주요 스킬을 **버리고 이득**을 낸다 — 한파/고행은 `원소의 보루`
+          //   (Bastion of Elements, Elementalist 주요 스킬)를, 정의의 화염은 `죽음의 광분, 히네코라`
+          //   (Chieftain 주요 스킬)를 떼고 각각 +7.5% · +1.1pp · +0.8pp 였다. 즉 직업 주요 스킬은 성역이 아니다.
+          //   이 규칙은 **이 단계(2개 희생 → 주요 스킬 1개)에 한정된 경험칙**이고 근거는 위 4축 실측뿐이다.
           //   같은 규칙을 교체 단계로 옮기면 안 된다(한파 +7.5% 가 사라진다).
           List<Integer> promoteDroppable = new ArrayList<>();
           for (Integer allocatedId : ascendancyNodes) {
@@ -6650,7 +6657,7 @@ public class PoeOptimizeService {
             if ("notable".equals(info.type())
                 && ascendancy != null
                 && ascendancy.equals(info.ascendancy())) {
-              continue; // 직업 전직 노터블 보호(혈맹 노터블·일반 노드는 그대로 후보)
+              continue; // 직업 전직 주요 스킬 보호(혈맹 주요 스킬·일반 노드는 그대로 후보)
             }
             promoteDroppable.add(allocatedId);
           }
@@ -6687,7 +6694,7 @@ public class PoeOptimizeService {
           //   못했다(4회 실측). 버리는 쪽 비용이 축마다 다른지 보려면 우선 찍혀야 한다.
           // 희생 조합은 **가장 싼 2개 하나**만 쓴다. 싼 3개로 넓혀 3쌍을 전부 시도해봤는데(2026-09-02 실측)
           //   이득은 0 이고 트라투스만 99,204,359 → **98,889,201(−0.32%)** 로 다시 내려갔다 — 새로 찾은
-          //   `무광 실루엣 + 생명력 → 분투` 는 위 규칙상 "안전한" 희생(혈맹 노터블 + 일반)인데도 졌다.
+          //   `무광 실루엣 + 생명력 → 분투` 는 위 규칙상 "안전한" 희생(혈맹 주요 스킬 + 일반)인데도 졌다.
           //   즉 그 규칙은 **필요조건이지 충분조건이 아니다**. 탐색을 넓히면 이 단계가 못 보는 손해를
           //   더 자주 집어 든다 → 폭은 좁게 유지한다(limit 2 = 조합 1개).
           List<Integer> dropTop3 =
@@ -6698,7 +6705,7 @@ public class PoeOptimizeService {
                   .toList();
           final double sacrificeBase = current; // current 는 재할당되므로 람다에서 직접 못 쓴다
           log(
-              "노터블 승격 희생 후보("
+              "주요 스킬 승격 희생 후보("
                   + dropTop3.size()
                   + "개): "
                   + dropTop3.stream()
@@ -6716,7 +6723,7 @@ public class PoeOptimizeService {
                                 + String.format(" −%.2f%%", loss);
                           })
                       .collect(java.util.stream.Collectors.joining(" · ")));
-          // ② 2pt 로 닿는 후보 — 노터블만(일반 노드는 이미 1:1 교체가 본다)
+          // ② 2pt 로 닿는 후보 — 주요 스킬만(일반 노드는 이미 1:1 교체가 본다)
           List<NotablePromotion> promotions = new ArrayList<>();
           for (int dropA = 0; dropA < dropTop3.size(); dropA++) {
             for (int dropB = dropA + 1; dropB < dropTop3.size(); dropB++) {
@@ -6801,7 +6808,7 @@ public class PoeOptimizeService {
               promoteResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
           if (bestPromotion == null || bestPromotion.getValue() <= promoteBefore * 1.003) {
             log(
-                "노터블 승격: 유지 — 최고 "
+                "주요 스킬 승격: 유지 — 최고 "
                     + format(bestPromotion == null ? 0d : bestPromotion.getValue())
                     + " vs 현재 "
                     + format(promoteBefore)
@@ -6816,7 +6823,7 @@ public class PoeOptimizeService {
           ascendancyNodes.addAll(bestPromotion.getKey().path());
           current = Math.max(current, bestPromotion.getValue());
           log(
-              "노터블 승격: "
+              "주요 스킬 승격: "
                   + bestPromotion.getKey().drops().stream()
                       .map(
                           node -> {
@@ -6924,7 +6931,7 @@ public class PoeOptimizeService {
             double drift = Math.abs(supSelfCheck - current) / current;
             if (drift > 0.001) {
               log(
-                  "⚠ 보조젬 재대결 자기검증 불일치: 현재 "
+                  "⚠ 보조 젬 재대결 자기검증 불일치: 현재 "
                       + format(current)
                       + " vs 같은 구성 재측정 "
                       + format(supSelfCheck)
@@ -6943,7 +6950,7 @@ public class PoeOptimizeService {
             supports.set(bestSup.getKey().idx(), bestSup.getKey().cand());
             current = bestSup.getValue();
             log(
-                "보조젬 최종 재대결: "
+                "보조 젬 최종 재대결: "
                     + koName(dropped)
                     + " → "
                     + koName(bestSup.getKey().cand())
@@ -6951,7 +6958,7 @@ public class PoeOptimizeService {
                     + format(current));
           } else {
             log(
-                "보조젬 최종 재대결: 유지 — 최고 "
+                "보조 젬 최종 재대결: 유지 — 최고 "
                     + (bestSup != null ? format(bestSup.getValue()) : "-")
                     + " vs 현재 "
                     + format(current)
@@ -7105,10 +7112,10 @@ public class PoeOptimizeService {
           }
         }
         int bloodlinePoints = Math.max(1, bloodlineInUse);
-        // ⚠ heuristicAscendancyNodes 를 쓰면 안 된다 — 후보를 **노터블만**(ascendancyCandidates) 보는데
-        //   혈맹 노터블까지는 경로가 2노드라 `points + path.size() > budget` 에 걸려 1pt 예산에선 전부 탈락한다.
+        // ⚠ heuristicAscendancyNodes 를 쓰면 안 된다 — 후보를 **주요 스킬만**(ascendancyCandidates) 보는데
+        //   혈맹 주요 스킬까지는 경로가 2노드라 `points + path.size() > budget` 에 걸려 1pt 예산에선 전부 탈락한다.
         //   실측: 후보 0개로 단계가 0초 만에 빠져나갔다(정의의 화염). 전직 재대결에서 이미 겪은 함정이라
-        //   여기서도 ascendancyAllNodes(노터블+일반)로 넓히고, 휴리스틱 점수 대신 **엔진으로 직접** 고른다.
+        //   여기서도 ascendancyAllNodes(주요 스킬+일반)로 넓히고, 휴리스틱 점수 대신 **엔진으로 직접** 고른다.
         List<BloodlineCandidate> blCandidates = new ArrayList<>();
         for (String bl : bloodlineOptions) {
           Integer blStart = poeTreeGraphService.ascendancyStart(bl);
@@ -7293,9 +7300,9 @@ public class PoeOptimizeService {
       //   아예 비었다(실빌드는 항상 하나씩 고른다). 가드 스킬과 같은 "층 자체가 빠진" 자리라 완성 문맥에서
       //   전수 실측해 고른다. 메이저/마이너 각각 그리디 1패스(각 후보 1회 평가) — 비용은 십수 회 평가뿐.
       // ⚠ balanced 전용 — ehp 목표에 켜면 크게 해롭다(실측: 판테온 on 87,255,811 vs off 113,182,940).
-      //   채택 시점엔 목표값을 올리지만 빌드가 바뀌며 이후 단계(유니크 재대결·ES 듀얼패스·티어)가 다른 가지로 간다.
+      //   채택 시점엔 목표값을 올리지만 빌드가 바뀌며 이후 단계(유니크 재대결·ES 듀얼패스·등급)가 다른 가지로 간다.
       // ── 마스터리 효과 재대결 — 효과는 오라 직후에 정해지는데 그 뒤로 문신·전직/보조젬/주얼/오라 재대결·
-      //   유니크 재대결·티어·도유가 문맥을 크게 바꾼다. **마스터리에는 재대결이 없어** 그때 고른 효과가 그대로 간다.
+      //   유니크 재대결·등급·성유가 문맥을 크게 바꾼다. **마스터리에는 재대결이 없어** 그때 고른 효과가 그대로 간다.
       //   포인트 예산을 건드리지 않고 효과만 바꾸므로(노드 할당 불변) 교체·승격보다 위험이 낮다.
       //   ⚠ fixedMasteries 는 공유 필드다 — 후보별로 바꾸려면 buildXmlMasteries 로 **인자 전달**해야 한다.
       //   마진 1.003 은 같은 이유(잡음 교체가 하류를 흔든다, 실측 −0.32%)로 건다.
@@ -7777,9 +7784,9 @@ public class PoeOptimizeService {
 
       // ── 트리 최종 재대결 — 트리는 **장비·오라·주얼이 없는 상태**에서 확정되고 그 뒤로 되돌아보지 않는다.
       // 그래서 완성 빌드에선 값이 죽은 잎(예: 무기가 바뀌어 무의미해진 계열)이 남고, 정작 지금 문맥에서
-      // 강한 노터블은 못 들어온다. 후보/예산을 조금만 바꿔도 결과가 ±5~20% 흔들리던 원인이기도 하다
+      // 강한 주요 스킬은 못 들어온다. 후보/예산을 조금만 바꿔도 결과가 ±5~20% 흔들리던 원인이기도 하다
       // (실측: 레벨 +10pt −4.1%, 유니크 후보 +34종 −9.3% — 국소 최적에 갇혀 경로에 휘둘림).
-      // 완성 문맥에서 「값싼 잎 제거 ↔ 미할당 노터블 편입」을 상승할 때만 반복 채택한다.
+      // 완성 문맥에서 「값싼 잎 제거 ↔ 미할당 주요 스킬 편입」을 상승할 때만 반복 채택한다.
       {
         enterPhase("tree-rematch");
         selfCheckProxy(
@@ -7965,9 +7972,9 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 금단의 화염/살점 — **다른 직업의 어센던시 노터블 1개**를 주얼 2칸으로 사 오는 실빌드 표준.
+      // ── 금단의 화염/살점 — **다른 직업의 어센던시 주요 스킬 1개**를 주얼 2칸으로 사 오는 실빌드 표준.
       // PoB 는 아이템 문구("Allocates X if you have the matching modifier on Forbidden Flame/Flesh")를
-      // GrantedAscendancyNode 로 읽어 실제로 노터블을 켠다. 우리 유니크 데이터엔 이 둘이 없다 —
+      // GrantedAscendancyNode 로 읽어 실제로 주요 스킬을 켠다. 우리 유니크 데이터엔 이 둘이 없다 —
       // PoB 가 아이템 목록이 아니라 코드로 생성하기 때문(Special/Generated.lua). 그래서 여기서 합성한다.
       // 근거: 하회 아키타입(RF·번개 화살) 대표 실빌드가 **둘 다** 금단의 살점을 낀다.
       if (!jewels.isEmpty() && forbiddenEnabled) {
@@ -8213,7 +8220,7 @@ public class PoeOptimizeService {
       repairAttributeShortfalls(
           items, gem, supports, className, ascendancy, ascendancyNodes, allocated, jewels);
 
-      // ── 4) 레어 슬롯 티어 비교 — 채택된 레어를 T1/중/하 티어로 재계산 ──
+      // ── 4) 레어 슬롯 등급 비교 — 채택된 레어를 T1/중/하 등급으로 재계산 ──
       enterPhase("tiers");
       List<PoeOptimizeResult.SlotTierCompare> tierComparisons = new ArrayList<>();
       for (Map.Entry<Slot, Equipped> entry : items.entrySet()) {
@@ -8242,8 +8249,8 @@ public class PoeOptimizeService {
                           allocated,
                           trial,
                           jewels);
-                  // 최종 빌드엔 도유가 얹혀 있다 — 예산 축에서 빼면 "티어를 낮춰서" 가 아니라
-                  // "도유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
+                  // 최종 빌드엔 성유가 얹혀 있다 — 예산 축에서 빼면 "등급을 낮춰서" 가 아니라
+                  // "성유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
                   AnointPick anoint = currentAnoint;
                   return anoint != null ? withAnoint(xml, anoint.name()) : xml;
                 },
@@ -8256,15 +8263,15 @@ public class PoeOptimizeService {
         tierComparisons.add(new PoeOptimizeResult.SlotTierCompare(slot.pobName, slot.ko, rows));
       }
 
-      // ── 적중 시 저주(장갑 부패 임플리싯) — **파이프라인 맨 끝**에서 결정한다 ──
+      // ── 적중 시 저주(장갑 부패 고정 속성) — **파이프라인 맨 끝**에서 결정한다 ──
       // 저주 단계(신성모독 옆)에 두었더니 단계 내 이득과 최종 부호가 갈렸다(실측 2026-08-28):
       //   혼의 균열 단계 내 +14.9% → 최종 +12.2% / 고행 단계 내 +9.9% → 최종 **-18.6%**.
       // 오라를 빼앗지 않는 순수 추가인데도 그렇다 = 채택이 뒤따르는 8개 단계(판테온·가드·트리재대결·
-      //   유니크재대결·금단·축복·감시자의눈·티어)의 선택을 바꿔 더 나쁜 골짜기로 보냈다는 뜻이다.
+      //   유니크재대결·금단·축복·감시자의눈·등급)의 선택을 바꿔 더 나쁜 골짜기로 보냈다는 뜻이다.
       // 뒤에 아무 단계도 없으면 단계 내 이득 = 최종 이득이라 발산이 원천적으로 불가능하다.
       if (balancedJob || "dps".equals(objectiveKey)) {
         enterPhase("curse-onhit");
-        // 예약 없는 전달 경로 — 장갑 부패 임플리싯. **저주가 하나도 안 걸린 경우에만** 본다:
+        // 예약 없는 전달 경로 — 장갑 부패 고정 속성. **저주가 하나도 안 걸린 경우에만** 본다:
         //   게임 기본 저주 한도는 1 이라 신성모독과 겹치면 둘 중 하나만 적용되고, 이미 채택된 저주를
         //   갈아치우는 건 자원을 빼앗는 교환이 된다(교환 경로가 12축에서 손해 전량의 출처였다).
         if (CURSE_ONHIT_ENABLED && curseSkill == null) {
@@ -8298,12 +8305,12 @@ public class PoeOptimizeService {
           if (distinct <= 1) {
             log(
                 String.format(
-                    "적중 시 저주: 9종 값이 전부 동일(%s) — PoB 가 임플리싯을 못 읽는 것으로 판단, 미채택",
+                    "적중 시 저주: 9종 값이 전부 동일(%s) — PoB 가 고정 속성을 못 읽는 것으로 판단, 미채택",
                     top == null ? "-" : format(top.getValue())));
           } else if (top != null && top.getValue() > current * 1.003) {
             curseOnHitMod = top.getKey();
             current = top.getValue();
-            log("적중 시 저주 채택(장갑 임플리싯): " + top.getKey() + " → " + format(current));
+            log("적중 시 저주 채택(장갑 고정 속성): " + top.getKey() + " → " + format(current));
           } else {
             log(
                 String.format(
@@ -8458,7 +8465,7 @@ public class PoeOptimizeService {
       }
 
       // ── 레어 주얼 최종 리파인 — balanced 전용(저항캡 패스와 동일 원칙: dps/ehp 기준선 보존). 완성 빌드
-      //   (장비·트리·오라·주얼 모두 반영) 기준으로 각 주얼 소켓에 제작 레어(DPS/방어)를 시도해 **목표값이 실제로
+      //   (장비·트리·오라·주얼 모두 반영) 기준으로 각 주얼 슬롯에 제작 레어(DPS/방어)를 시도해 **목표값이 실제로
       //   오를 때만** 교체(단조-개선). 주얼 greedy(아이템 前)에 제작 주얼을 넣으면 빈약한 부분 빌드 기준 조기 채택으로
       //   회귀했다(cyclone 11.70M→10.32M) → 최종 빌드 기준 이 패스로만. balanced 는 "실제로 쓸 수 있는 최상"
       //   목표라 실빌드처럼 레어 주얼을 반영(사용자 요구). dps/ehp 는 이론 상한 목적이라 유니크 greedy 그대로 →
@@ -8569,14 +8576,14 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 아뮬렛 도유 ──
-      // 실제 빌드는 예외 없이 아뮬렛에 도유를 건다(노터블 하나를 공짜로 얻는 셈) — 빼고 계산하면 실전보다 약하게 나온다.
+      // ── 목걸이 성유 ──
+      // 실제 빌드는 예외 없이 목걸이에 성유를 건다(주요 스킬 하나를 공짜로 얻는 셈) — 빼고 계산하면 실전보다 약하게 나온다.
       // 후보 전부를 **실제로 평가해서** 고른다. 키워드 점수는 조건절("방패를 들고 있는 동안")을 못 읽고,
       // 컷은 점수 밖의 진짜 1위(오라 효과 등 간접 기여)를 놓친다(둘 다 실측). 완성 XML 에 한 줄만 얹어
       // 재평가하므로 탐색 경로가 흔들리지 않는다.
       Integer pinnedAnoint = fixedAnoint;
       if (pinnedAnoint != null) {
-        // 트리 에디터에서 고른 도유 — 자동 스윕 대신 고정(문신/마스터리와 같은 존중 원칙)
+        // 트리 에디터에서 고른 성유 — 자동 스윕 대신 고정(문신/마스터리와 같은 존중 원칙)
         PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(pinnedAnoint);
         if (node != null && node.anoint() != null && !node.anoint().isEmpty()) {
           currentAnoint =
@@ -8587,9 +8594,9 @@ public class PoeOptimizeService {
           finalXml = withAnoint(finalXml, node.name());
           finalValues = poePobEngineService.calculateValues(finalXml);
           evalCount.incrementAndGet();
-          log("아뮬렛 도유(사용자 고정): " + currentAnoint.nameKo() + " (" + node.name() + ")");
+          log("목걸이 성유(사용자 고정): " + currentAnoint.nameKo() + " (" + node.name() + ")");
         } else {
-          log("아뮬렛 도유(사용자 고정) 무시 — 도유 불가 노드 id " + pinnedAnoint);
+          log("목걸이 성유(사용자 고정) 무시 — 성유 불가 노드 id " + pinnedAnoint);
           pinnedAnoint = null;
         }
       }
@@ -8722,7 +8729,7 @@ public class PoeOptimizeService {
                 name -> withAnoint(baseXml, name),
                 objectiveKey);
         // ⚠ 기준은 objectiveOf 로 — 트라이얼(evalBatch)이 objectiveKey 스코어라, displayMetric(effectiveDps)
-        //   과 비교하면 balanced 잡(스코어 = DPS×생존팩터 < DPS)에선 어떤 도유도 못 넘어 영구 비활성이었다
+        //   과 비교하면 balanced 잡(스코어 = DPS×생존팩터 < DPS)에선 어떤 성유도 못 넘어 영구 비활성이었다
         //   (실측: RF "470개 모두 이득 없음" 인데 수동 A/B 는 Discipline and Training +4.8% DPS·EHP).
         double anointBase = objectiveOf(finalValues, objectiveKey);
         String bestName = null;
@@ -8747,7 +8754,7 @@ public class PoeOptimizeService {
           finalValues = poePobEngineService.calculateValues(finalXml);
           evalCount.incrementAndGet();
           log(
-              "아뮬렛 도유: "
+              "목걸이 성유: "
                   + currentAnoint.nameKo()
                   + " ("
                   + bestName
@@ -8759,12 +8766,12 @@ public class PoeOptimizeService {
                   + anointPool.size()
                   + "개 평가)");
         } else {
-          log("아뮬렛 도유: 후보 " + anointPool.size() + "개 모두 이득 없음 — 도유 없음");
+          log("목걸이 성유: 후보 " + anointPool.size() + "개 모두 이득 없음 — 성유 없음");
         }
       }
 
       // ── 오라 예약 최종 검증 ──
-      // 오라 단계 이후(마스터리·문신·도유 등)가 최대 마나/예약 효율을 바꿔 최종적으로 예약이 초과될 수 있다.
+      // 오라 단계 이후(마스터리·문신·성유 등)가 최대 마나/예약 효율을 바꿔 최종적으로 예약이 초과될 수 있다.
       // 인게임에서 못 띄우는 오라가 결과에 남지 않도록, 초과 시 **한계 이득이 가장 작은 마지막 채택분부터** 해제한다.
       {
         double unreservedFinal = finalValues.getOrDefault("ManaUnreserved", 0d);
@@ -8795,10 +8802,10 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 최종 재대결(도유 이후, balanced) — 방어 슬롯 재대결은 도유·재생 후기 스위치 **이전** 문맥이라,
+      // ── 최종 재대결(성유 이후, balanced) — 방어 슬롯 재대결은 성유·재생 후기 스위치 **이전** 문맥이라,
       // 이후 문맥에서 역전되는 차선 유니크가 남는다(실사고: Blasphemer's Grasp — 재대결 시점 651,675 에선
-      // 우세였지만 도유 후 737,301 문맥에선 평범 방어 레어가 +4.9% DPS/+6.6% EHP). 완성 finalXml 문맥에서
-      // 방어 슬롯 유니크를 방어 레어와 1:1 재대결, 상승 시만 채택(도유 재적용 포함, 개선 소진까지 최대 2라운드).
+      // 우세였지만 성유 후 737,301 문맥에선 평범 방어 레어가 +4.9% DPS/+6.6% EHP). 완성 finalXml 문맥에서
+      // 방어 슬롯 유니크를 방어 레어와 1:1 재대결, 상승 시만 채택(성유 재적용 포함, 개선 소진까지 최대 2라운드).
       if (balancedJob) {
         for (int finalRound = 0; finalRound < 2; finalRound++) {
           boolean improvedFinal = false;
@@ -8888,7 +8895,7 @@ public class PoeOptimizeService {
                 finalValues = trialVals;
                 improvedFinal = true;
                 log(
-                    "최종 재대결(도유 후): "
+                    "최종 재대결(성유 후): "
                         + defSlot.pobName
                         + " "
                         + curFinal2.unique().name()
@@ -9079,7 +9086,7 @@ public class PoeOptimizeService {
             }
             if (!adopted) {
               // 매달린 소형 신설 — 기존 자리(할당-이웃≤1 소형)가 트리에 없을 때(실측: 경로 소형은 이웃 2,
-              // 경로 끝은 노터블/소켓): 가치 낮은 잎 소형 1pt 를 회수하고 경로 인접 미할당 속성 소형을 새로
+              // 경로 끝은 주요 스킬/소켓): 가치 낮은 잎 소형 1pt 를 회수하고 경로 인접 미할당 속성 소형을 새로
               // 할당해 여정 문신 전용 자리를 만든다 — ninja 실빌드의 표준 기법.
               dangling:
               for (String attr : List.of("Strength", "Dexterity", "Intelligence")) {
@@ -9264,7 +9271,7 @@ public class PoeOptimizeService {
 
       // ── 어픽스 예산 축(현실적 제작) 재평가 ──
       // 기본 결과는 모든 레어 모드를 T1 로 가정한다(낙관적). 실제로는 보통 필수 옵션 2~4개만 T1 이고
-      // 나머지는 중위 티어다. 레어를 전부 "필수 N T1 + 나머지 중위"로 바꿔 N∈{2,3,4} 을 병렬 재계산해,
+      // 나머지는 중위 등급이다. 레어를 전부 "필수 N T1 + 나머지 중위"로 바꿔 N∈{2,3,4} 을 병렬 재계산해,
       // "필수 옵션 수"에 따른 DPS 곡선을 사용자에게 보여준다(전부 T1 = finalValue = 상한).
       List<PoeOptimizeResult.AffixBudgetPoint> affixBudget = new ArrayList<>();
       boolean hasRare = items.values().stream().anyMatch(equipped -> !equipped.isUnique());
@@ -9295,8 +9302,8 @@ public class PoeOptimizeService {
                           allocated,
                           trial,
                           jewels);
-                  // 최종 빌드엔 도유가 얹혀 있다 — 예산 축에서 빼면 "티어를 낮춰서" 가 아니라
-                  // "도유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
+                  // 최종 빌드엔 성유가 얹혀 있다 — 예산 축에서 빼면 "등급을 낮춰서" 가 아니라
+                  // "성유가 빠져서" 낮아진 값이 섞여 곡선이 오염된다
                   AnointPick anoint = currentAnoint;
                   return anoint != null ? withAnoint(xml, anoint.name()) : xml;
                 },
@@ -9319,7 +9326,7 @@ public class PoeOptimizeService {
         }
       }
 
-      // 트리 링크/노터블 목록에는 전직 노드도 포함한다
+      // 트리 링크/주요 스킬 목록에는 전직 노드도 포함한다
       Set<Integer> allNodes = new LinkedHashSet<>(ascendancyNodes);
       allNodes.addAll(allocated);
       List<String> notables = new ArrayList<>();
@@ -9335,9 +9342,9 @@ public class PoeOptimizeService {
           notableIds.add(nodeId);
         }
       }
-      // 클러스터 주얼이 얹은 노터블은 트리 그래프에 없어(생성 노드) 위 루프에 안 걸린다 —
-      // 목록에서 빠지면 "무슨 노터블을 쓰는 빌드인지"가 결과 화면에서 사라진다.
-      // 클러스터 노터블은 **영문 이름**으로 들고 다닌다 — 한글 목록엔 사전(ClusterNotable.nameKo)으로 옮겨 담아야
+      // 클러스터 주얼이 얹은 주요 스킬은 트리 그래프에 없어(생성 노드) 위 루프에 안 걸린다 —
+      // 목록에서 빠지면 "무슨 주요 스킬을 쓰는 빌드인지"가 결과 화면에서 사라진다.
+      // 클러스터 주요 스킬은 **영문 이름**으로 들고 다닌다 — 한글 목록엔 사전(ClusterNotable.nameKo)으로 옮겨 담아야
       // 한국어 화면에 영문이 섞이지 않는다(트리 에디터 팝업은 이미 같은 사전으로 한글화한다).
       Map<String, String> clusterNotableKo = new HashMap<>();
       for (PoeTreeGraphService.ClusterNotable cn : poeTreeGraphService.clusterNotables()) {
@@ -9352,9 +9359,9 @@ public class PoeOptimizeService {
           notableIds.add(0); // 생성 노드 — 트리 그래프에 없어 focus 불가
         }
       }
-      // 도유 노터블도 배지 목록에 — 포인트 없이 활성인 트리의 일부(결과 링크 an= 과 focus 로 연결)
+      // 성유 주요 스킬도 배지 목록에 — 포인트 없이 활성인 트리의 일부(결과 링크 an= 과 focus 로 연결)
       if (currentAnoint != null) {
-        notables.add("(도유) " + currentAnoint.nameKo());
+        notables.add("(성유) " + currentAnoint.nameKo());
         notablesEn.add("(Anoint) " + currentAnoint.name());
         notableIds.add(currentAnoint.nodeId());
       }
@@ -9377,9 +9384,9 @@ public class PoeOptimizeService {
       }
       // 죽은 반지 정리 — `Can't use other Rings` 반지 옆의 두 번째 반지는 PoB 가 이미 무시한다.
       //   실측(2026-09-04, 도살의 낫질): 그 반지를 빼도 dps 35,606,366 · life 4,011 · ehp 86,309 불변.
-      //   ⚠ 위치가 두 번 틀렸다 — finish 자리는 도유 후 재대결이 반지를 다시 끼워 늦었고, 파이프라인 끝은
+      //   ⚠ 위치가 두 번 틀렸다 — finish 자리는 성유 후 재대결이 반지를 다시 끼워 늦었고, 파이프라인 끝은
       //     **결과 생성 뒤**라 로그만 남고 결과물엔 반영되지 않았다(저장 빌드에 그대로 남음). 결과 생성 직전이 맞다.
-      //   ⚠ finalXml 을 다시 만들지 않는다 — 도유·설정·문신이 얹힌 최종 문자열이라 재계산은 다른 요소를
+      //   ⚠ finalXml 을 다시 만들지 않는다 — 성유·설정·문신이 얹힌 최종 문자열이라 재계산은 다른 요소를
       //     흔들 위험이 있다. 값에 영향이 없는 아이템이므로 **슬롯 줄만 걷어낸다**.
       // ── 오라 1:1 교체 — 위 재대결은 **add-only** 라 마나 예산이 꽉 차면 더 못 간다. 실측(트라투스):
       //   Wrath+Anger+증오로 미예약 마나가 211 만 남아 정화(화염)를 넣을 수 없고, 넣으면 **−251** 이다.
@@ -9510,7 +9517,7 @@ public class PoeOptimizeService {
         }
       }
 
-      // ── 끊긴 주얼 소켓 연결/회수(완성 빌드) — 주얼이 기여 0인 진짜 원인이다.
+      // ── 끊긴 주얼 슬롯 연결/회수(완성 빌드) — 주얼이 기여 0인 진짜 원인이다.
       //   실측(2026-09-07): 소켓 노드가 트리 본체와 끊겨 있으면 PoB 가 그 주얼을 통째로 무시한다.
       //   고행 4/5 · 칼날 소용돌이 3/5 · 혼의 균열 3/5 소켓이 끊겨 있었고(회오리는 0), 끊긴 소켓에
       //   유니크 주얼 184개를 전수로 꽂아도 값이 자릿수까지 동일했다(716회 시도, 개선 0건).
@@ -9545,7 +9552,7 @@ public class PoeOptimizeService {
                     .toList();
             if (stranded.isEmpty()) {
               if (socketRound == 0) {
-                log("끊긴 주얼 소켓: 없음 (소켓 " + jewels.size() + "개 전부 연결됨)");
+                log("끊긴 주얼 슬롯: 없음 (소켓 " + jewels.size() + "개 전부 연결됨)");
               }
               break;
             }
@@ -9565,7 +9572,7 @@ public class PoeOptimizeService {
             }
             if (socketRound == 0) {
               log(
-                  "끊긴 주얼 소켓 "
+                  "끊긴 주얼 슬롯 "
                       + stranded.size()
                       + "/"
                       + jewels.size()
@@ -9855,7 +9862,7 @@ public class PoeOptimizeService {
                 continue;
               }
               if (jewels.containsKey(node)) {
-                continue; // 주얼 소켓은 별도 패스가 다룬다
+                continue; // 주얼 슬롯은 별도 패스가 다룬다
               }
               Set<Integer> rest = new LinkedHashSet<>(allocated);
               rest.remove(node);
@@ -9962,7 +9969,7 @@ public class PoeOptimizeService {
       //   (candidateScores)이 소진되면 멈춘다. 그래서 키워드에 안 걸리는 노드는 아예 후보가 못 된다.
       //   ⚠ 그 대가가 크다(실측, 칼날 소용돌이 완성 빌드에 인접 노드 184개를 하나씩 붙여 재봄):
       //     `힘` 1칸이 dps 55,447,735 → **64,122,514(+15.6%)** · `지능` +5.3% · `오라 효과` +2.9%.
-      //     이 빌드는 키스톤 **강철의 의지(Iron Will)** 를 찍어 힘이 주문 피해에 그대로 실리는데,
+      //     이 빌드는 핵심노드 **강철의 의지(Iron Will)** 를 찍어 힘이 주문 피해에 그대로 실리는데,
       //     속성 노드는 데미지 키워드가 아니라 풀에 못 들어온다. DPS 개선 후보가 35개나 남아 있었다.
       //   그래서 완성 빌드에서 **인접 1칸**만 실측으로 고른다(키워드 무관). 남는 포인트가 없으면
       //   즉시 빠지므로 123pt 를 다 쓴 10축에는 평가가 추가되지 않는다.
@@ -10624,7 +10631,7 @@ public class PoeOptimizeService {
       }
       // ── 가정별 성능 매트릭스: 최종 빌드를 적 시나리오 4종 × 버프 off/on 으로 재평가 ──
       // 완성된 XML 의 <Config> 만 바꿔 병렬 재계산(luajit 프로세스는 서로 독립). EHP 는 적/버프 무관이라 DPS 만.
-      //   ⚠ 반드시 finalXml 을 바꾸는 마지막 단계(도유 재대결 · 주얼 · 회수 · 주얼 정리) **뒤**에서 — 예전엔 그 단계들 앞에서
+      //   ⚠ 반드시 finalXml 을 바꾸는 마지막 단계(성유 재대결 · 주얼 · 회수 · 주얼 정리) **뒤**에서 — 예전엔 그 단계들 앞에서
       //   계산해 화면의 매트릭스 · 유형별 피격이 중간 빌드 기준이었다(10-04 C121: 회오리바람 셀 24.4M vs 최종 31.8M, 감사 불일치)
       List<PoeOptimizeResult.ScenarioCell> scenarioMatrix =
           computeScenarioMatrix(finalXml, executor);
@@ -10724,7 +10731,7 @@ public class PoeOptimizeService {
                       jewel ->
                           jewel.isUnique()
                               // 감시자의 눈·금단 페어는 **우리가 고른 모드가 곧 빌드**다(오라 모드 쌍 /
-                              //   부여 노터블). 이름만 보내면 상세 페이지의 일반 유니크 정보가 뜰 뿐이라
+                              //   부여 주요 스킬). 이름만 보내면 상세 페이지의 일반 유니크 정보가 뜰 뿐이라
                               //   어떤 물건을 구해야 하는지 알 수 없다 — 가드·저주와 같은 노출 누락.
                               ? new PoeOptimizeResult.SupportPick(
                                   jewel.unique().slug(),
@@ -10798,7 +10805,7 @@ public class PoeOptimizeService {
               masteryLabels(fixedMasteries, allocated, false),
               tattooLabels(fixedTattoos, true),
               tattooLabels(fixedTattoos, false),
-              // 트리 링크(an=)로 도유까지 되돌아가게 — 없으면 트리 화면 수치가 결과보다 약하게 나온다
+              // 트리 링크(an=)로 성유까지 되돌아가게 — 없으면 트리 화면 수치가 결과보다 약하게 나온다
               currentAnoint != null ? currentAnoint.nodeId() : null,
               belowMetaVerdict(objective, gem, ascendancy, finalValues),
               metaRatioOf(gem, ascendancy, finalValues),
@@ -10926,7 +10933,7 @@ public class PoeOptimizeService {
   // ── 평가 헬퍼 ────────────────────────────────────────────
 
   /**
-   * 현재 구성을 **같은 빌더로** 만든 XML(도유 포함) — 완성 빌드 패스의 자기검증용.
+   * 현재 구성을 **같은 빌더로** 만든 XML(성유 포함) — 완성 빌드 패스의 자기검증용.
    *
    * <p>발단(2026-09-07): 남은 전직 포인트 패스에서 기준값(finalValues)과 대리 빌드가 18.1% 어긋나 (70,466,521 vs 57,716,034)
    * 정상 후보가 전부 부당 기각됐다. 원인은 앞 패스가 상태만 바꾸고 finalXml 을 다시 만들지 않은 것. 같은 그물을 나머지 완성 빌드 패스에도 친다.
@@ -11145,10 +11152,10 @@ public class PoeOptimizeService {
    */
   private static final double RANKING_CONTEXT_BASELINE = 1000d;
 
-  /** 클러스터 적재물 재선정 시 볼 노터블 후보 수 — 승자 스킬키에 한해 실측으로 교체해 본다. */
+  /** 클러스터 적재물 재선정 시 볼 주요 스킬 후보 수 — 승자 스킬키에 한해 실측으로 교체해 본다. */
   private static final int CLUSTER_NOTABLE_POOL = 6;
 
-  /** 트리 재대결 후보 수 — 완성 문맥에서 다시 볼 미할당 노터블 상위 N(키워드 점수순). */
+  /** 트리 재대결 후보 수 — 완성 문맥에서 다시 볼 미할당 주요 스킬 상위 N(키워드 점수순). */
   private static final int TREE_REMATCH_CANDIDATES =
       Integer.parseInt(System.getenv().getOrDefault("POE_TREE_REMATCH_CANDIDATES", "14"));
 
@@ -11162,7 +11169,7 @@ public class PoeOptimizeService {
    * 없어서 빼먹기 쉬운데, 빼먹으면 시작에 붙은 첫 노드가 차수 1(=잎)로 보여 제거 대상이 되고 그 순간 트리 전체가 시작점과 끊긴다(실측: 클러스터 스왑에서 끊김
    * 115/123, 교환 후 953 → 붕괴를 손익으로 오인해 클러스터가 영원히 기각됐다).
    *
-   * <p>주얼 소켓·키스톤·마스터리는 떼는 순간 빌드 기제가 무너지므로 제외하고, 이번에 새로 얹은 경로(protect)도 보호한다.
+   * <p>주얼 슬롯·핵심노드·마스터리는 떼는 순간 빌드 기제가 무너지므로 제외하고, 이번에 새로 얹은 경로(protect)도 보호한다.
    */
   private Set<Integer> removableLeaves(
       Set<Integer> trial,
@@ -11222,14 +11229,14 @@ public class PoeOptimizeService {
     return removable;
   }
 
-  /** 금단 페어 후보 노터블 수 — 키워드 점수 상위 N 만 엔진으로 재 본다(1개당 엔진 1회). */
+  /** 금단 페어 후보 주요 스킬 수 — 키워드 점수 상위 N 만 엔진으로 재 본다(1개당 엔진 1회). */
   private static final int FORBIDDEN_CANDIDATES = 8;
 
   /**
-   * 금단의 화염/살점 한 짝을 합성한다. PoB 는 두 아이템의 문구가 **같은 노터블**을 가리킬 때만 그 노터블을 켠다(side=flame/flesh).
+   * 금단의 화염/살점 한 짝을 합성한다. PoB 는 두 아이템의 문구가 **같은 주요 스킬**을 가리킬 때만 그 주요 스킬을 켠다(side=flame/flesh).
    *
-   * <p>금단 페어. **영문 줄은 건드리지 말 것** — PoB 가 "Allocates X" 를 파싱해 노터블을 부여한다. 한글 줄만 트리 한글명을 쓴다(그 전엔 한글 문장
-   * 안에 영문 노터블이 박혀 나갔다: "Aspect of Carnage 할당").
+   * <p>금단 페어. **영문 줄은 건드리지 말 것** — PoB 가 "Allocates X" 를 파싱해 주요 스킬을 부여한다. 한글 줄만 트리 한글명을 쓴다(그 전엔 한글
+   * 문장 안에 영문 주요 스킬이 박혀 나갔다: "Aspect of Carnage 할당").
    *
    * @param flame true 면 화염(Crimson), false 면 살점(Cobalt)
    */
@@ -11250,7 +11257,7 @@ public class PoeOptimizeService {
         List.of(),
         List.of(),
         // "Limited to:"/"Requires Class" 는 원래 아이템 속성 줄이지만, PoB 는 모드 블록에 있어도 무해하게 넘긴다.
-        // 진짜 필수 조건은 **같은 직업의 전직 노터블**이라는 것 — 타 직업 노터블은 엔진이 조용히 무시한다
+        // 진짜 필수 조건은 **같은 직업의 전직 주요 스킬**이라는 것 — 타 직업 주요 스킬은 엔진이 조용히 무시한다
         // (실측: 타 직업 후보 8개가 전부 동일값 658,704 → 같은 직업으로 바꾸자 학살의 위상 914,736).
         List.of(
             "Limited to: 1",
@@ -11351,7 +11358,7 @@ public class PoeOptimizeService {
     factor *= sustainFactor(values);
     if ("ehp".equals(objective)) {
       // 기본은 PoB TotalEHP 그대로. 다만 그 지표는 **지속 기준**이라 경감+회복이 들어오는 피해를 넘는 순간
-      //   발산한다(실측: 주문억제 10% 짜리 도유 하나로 12,917,608 → 369,700,700, 생명·ES 는 불변).
+      //   발산한다(실측: 주문억제 10% 짜리 성유 하나로 12,917,608 → 369,700,700, 생명·ES 는 불변).
       //   대안 지표(POE_EHP_METRIC=maxhit)는 balanced 가 쓰는 **최약 최대피격**(단일 피격 생존)으로,
       //   문턱 발산이 없다. 제품 정의에 관한 선택이라 기본값은 바꾸지 않는다.
       return ("maxhit".equalsIgnoreCase(EHP_METRIC)
@@ -11638,7 +11645,7 @@ public class PoeOptimizeService {
     }
     // (2a) 생존 래칫 — **완성 단계(convexSurvivalPhase)** 에서만, 목표를 이미 넘긴 빌드가 목표 아래로
     //   내려가는 교환을 근사-배제한다(RF 지속 게이트와 같은 형태). 선형 벌점만으로는 "DPS 이득률 > 생존
-    //   손실률" 이면 무조건 채택돼, 도유 단계가 생명 노드(활력)를 공격 노드(복수)로 바꾸며 뼈 박살 최약
+    //   손실률" 이면 무조건 채택돼, 성유 단계가 생명 노드(활력)를 공격 노드(복수)로 바꾸며 뼈 박살 최약
     //   최대피격을 34,281(0.88) → 29,043(0.74) 로 떨어뜨렸다(실측). 탐색 구간에는 걸지 않는다 —
     //   중간 빌드는 늘 목표 미달이라 경로가 비틀린다(볼록 벌점 2판 실패의 교훈).
     if (SURV_RATCHET_ENABLED
@@ -11882,8 +11889,8 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 장갑 부패 임플리싯 저주를 젬으로 해석 — "Curse Enemies with X on Hit" → 젬 X. 이름 문자열만 넘기면 화면이 영문으로 나간다(실측: 냉기 급습
-   * "Elemental Weakness"). 미채택이면 null.
+   * 장갑 부패 고정 속성 저주를 젬으로 해석 — "Curse Enemies with X on Hit" → 젬 X. 이름 문자열만 넘기면 화면이 영문으로 나간다(실측: 냉기
+   * 급습 "Elemental Weakness"). 미채택이면 null.
    */
   private PoeOptimizeResult.SupportPick curseOnHitPick() {
     String mod = curseOnHitMod;
@@ -12321,7 +12328,7 @@ public class PoeOptimizeService {
     return pickAscendancy(className, keywords);
   }
 
-  /** 전직 선택 — 각 전직 노터블의 키워드 점수 합이 가장 높은 전직 (전부 0점이면 첫 번째) */
+  /** 전직 선택 — 각 전직 주요 스킬의 키워드 점수 합이 가장 높은 전직 (전부 0점이면 첫 번째) */
   private String pickAscendancy(String className, List<String> keywords) {
     List<String> options = poeTreeGraphService.ascendancies(className);
     if (options.isEmpty()) {
@@ -12632,7 +12639,7 @@ public class PoeOptimizeService {
         .collect(java.util.stream.Collectors.joining(","));
   }
 
-  /** clusters = "소켓:크기:노드수:스킬키:노터블|노터블:소켓수,..." — 트리 에디터/URL 과 같은 형식. */
+  /** clusters = "소켓:크기:노드수:스킬키:주요 스킬|주요 스킬:소켓수,..." — 트리 에디터/URL 과 같은 형식. */
   private List<ClusterSpec> parseClusters(String csv) {
     if (csv == null || csv.isBlank()) {
       return List.of();
@@ -12953,7 +12960,7 @@ public class PoeOptimizeService {
     }
     if (!unmet.isEmpty()) {
       log(
-          "⚠ 속성 부족으로 장착 불가한 장비 "
+          "⚠ 능력치 부족으로 장착 불가한 장비 "
               + unmet.size()
               + "건: "
               + unmet.stream()
@@ -13921,8 +13928,8 @@ public class PoeOptimizeService {
 
   /**
    * 금단의 화염/살점에 직업 제한 줄을 붙인다(10-04 C86). PoB 는 "Requires Class X" 로 짝을 맞추는데, 데이터의 옵션 줄에서는 C78 이 그 줄을
-   * 메타로 뺐다(인게임 옵션이 아니라 요구 사항) — 그 뒤 트리 계산에 짝을 꽂아도 노터블이 할당되지 않았다(템플러 신성한 인도 짝: 마나 684 그대로). 최적화기 금단
-   * 단계는 자체 합성(forbiddenJewel)에 이 줄을 넣어 영향이 없었다. 직업은 빌드의 것 — 다른 직업 전직 노터블은 PoB 가 어차피 무시한다.
+   * 메타로 뺐다(인게임 옵션이 아니라 요구 사항) — 그 뒤 트리 계산에 짝을 꽂아도 주요 스킬이 할당되지 않았다(템플러 신성한 인도 짝: 마나 684 그대로). 최적화기
+   * 금단 단계는 자체 합성(forbiddenJewel)에 이 줄을 넣어 영향이 없었다. 직업은 빌드의 것 — 다른 직업 전직 주요 스킬은 PoB 가 어차피 무시한다.
    */
   private static PoeUniqueItem withForbiddenClass(PoeUniqueItem item, String className) {
     if (className == null
@@ -14045,7 +14052,7 @@ public class PoeOptimizeService {
         // 예전엔 "반경/근처" 문구를 통째로 걸러 유니크 주얼 179개 중 81개가 후보에서 빠져 있었다.
         .map(item -> new Scored(item, score(item.explicits(), keywords)))
         // 구조형 주얼은 점수가 0 이어도 통과시킨다 — 값어치가 문구가 아니라 **구조**에서 나오기 때문이다
-        // (소켓을 늘린다, 노터블을 할당한다, 반경 안 패시브를 바꾼다 …). 키워드 점수로 거르면 이런 건
+        // (소켓을 늘린다, 주요 스킬을 할당한다, 반경 안 패시브를 바꾼다 …). 키워드 점수로 거르면 이런 건
         // 평가조차 안 된다. 어느 게 이득인지는 아래 후보 컷을 통과한 뒤 **엔진이** 정한다.
         .filter(scored -> scored.score() > 0 || isStructuralJewel(scored.item()))
         .sorted(Comparator.comparingInt(Scored::score).reversed())
@@ -14708,10 +14715,10 @@ public class PoeOptimizeService {
     for (Map.Entry<Slot, Equipped> entry : items.entrySet()) {
       itemId++;
       Equipped equipped = entry.getValue();
-      // 엘드리치 임플리싯(포식자/총주교)은 게임에서 **non-unique(레어/매직/일반)에만** 부여된다 — 엘드리치
+      // 섬뜩한 고정 속성(포식자/총주교)은 게임에서 **non-unique(레어/매직/일반)에만** 부여된다 — 엘드리치
       //   잉걸/영액은 고유템에 못 쓴다. 따라서 유니크엔 엘드리치를 붙이지 않는다(rareItemText 만 craft 시점에 반영).
-      //   (아뮬렛 도유는 탐색이 끝난 뒤 withAnoint 로 얹는다 — 후보를 실제로 평가해 고르므로 여기서 붙이지 않는다)
-      // "적중 시 저주" 는 장갑 **부패 임플리싯**으로 얹는다(예약 0). 부패는 엘드리치와 달리 유니크에도
+      //   (목걸이 성유는 탐색이 끝난 뒤 withAnoint 로 얹는다 — 후보를 실제로 평가해 고르므로 여기서 붙이지 않는다)
+      // "적중 시 저주" 는 장갑 **부패 고정 속성**으로 얹는다(예약 0). 부패는 엘드리치와 달리 유니크에도
       //   붙으므로 레어/유니크 모두 지원한다.
       List<String> curseImplicit =
           entry.getKey() == Slot.GLOVES && curseOnHitMod != null
@@ -14974,7 +14981,7 @@ public class PoeOptimizeService {
    */
   private static final Map<String, String> STANDARD_WEAPON_BY_CLASS = standardWeaponByClass();
 
-  /** 무기 종류별 표준(고티어) 베이스 — 무기 제한이 있는 스킬의 기본 무기로 쓴다. */
+  /** 무기 종류별 표준(고등급) 베이스 — 무기 제한이 있는 스킬의 기본 무기로 쓴다. */
   private static Map<String, String> standardWeaponByClass() {
     Map<String, String> map = new java.util.LinkedHashMap<>();
     map.put("Bow", "Thicket Bow");
@@ -14998,7 +15005,7 @@ public class PoeOptimizeService {
   // ── 레어 생성 ────────────────────────────────────────────
 
   /**
-   * 슬롯에 맞는 레어 아이템을 생성한다 — 모드 풀에서 키워드 관련 접두 최대 3 + 접미 최대 3 선택. tierFraction 0=최상위 티어, 1=최하위. 모드 풀
+   * 슬롯에 맞는 레어 아이템을 생성한다 — 모드 풀에서 키워드 관련 접두 최대 3 + 접미 최대 3 선택. tierFraction 0=최상위 등급, 1=최하위. 모드 풀
    * 없거나 슬롯이 레어 미지원(무기/플라스크)이면 null.
    */
   private RareItem craftRare(Slot slot, PoeGem gem, List<String> keywords, double tierFraction) {
@@ -15216,7 +15223,7 @@ public class PoeOptimizeService {
     if (chosen.isEmpty()) {
       return null;
     }
-    // 엘드리치 임플리싯(총주교 1 + 포식자 1) — 방어구/목걸이 슬롯이면 스킬 키워드에 맞는 최상위 티어를 얹는다.
+    // 섬뜩한 고정 속성(총주교 1 + 포식자 1) — 방어구/목걸이 슬롯이면 스킬 키워드에 맞는 최상위 등급을 얹는다.
     // 단, 영향력(엘더 등) 모드가 채택된 아이템엔 게임 규칙상 엘드리치 오브를 못 발라 상호 배타.
     boolean influenced = chosen.stream().anyMatch(f -> influenceOf(f) != null);
     EldritchPick eldritch =
@@ -15255,10 +15262,10 @@ public class PoeOptimizeService {
     return null;
   }
 
-  /** 엘드리치 임플리싯 선택 결과 — 영문(XML)·한글(표시) 스탯 줄. */
+  /** 섬뜩한 고정 속성 선택 결과 — 영문(XML)·한글(표시) 스탯 줄. */
   private record EldritchPick(List<String> en, List<String> ko) {}
 
-  // 모드 풀 슬롯 카테고리 → 엘드리치 아이템 클래스. 엘드리치 대상 아닌 슬롯은 없음.
+  // 모드 풀 슬롯 카테고리 → 엘드리치 아이템 종류. 엘드리치 대상 아닌 슬롯은 없음.
   private static final Map<String, String> ELDRITCH_CLASS_BY_CATEGORY =
       Map.of(
           "body", "Body Armour",
@@ -15268,7 +15275,7 @@ public class PoeOptimizeService {
           "amulet", "Amulet");
 
   /**
-   * 이 슬롯에 붙일 엘드리치 임플리싯 영문 스탯 줄 — 총주교 1개 + 포식자 1개(각 팩션에서 스킬 키워드 점수 최상위 계열의 최상위 티어). 대상 슬롯이 아니거나 데이터가
+   * 이 슬롯에 붙일 섬뜩한 고정 속성 영문 스탯 줄 — 총주교 1개 + 포식자 1개(각 팩션에서 스킬 키워드 점수 최상위 계열의 최상위 등급). 대상 슬롯이 아니거나 데이터가
    * 없으면 빈 목록.
    */
   private EldritchPick eldritchImplicits(String category, List<String> keywords) {
@@ -15298,7 +15305,7 @@ public class PoeOptimizeService {
     return new EldritchPick(en, ko);
   }
 
-  /** 한 팩션 계열들에서 키워드 점수 최상위 계열의 최상위 티어(tiers[0]=강함). 점수 0이면(무관) null. */
+  /** 한 팩션 계열들에서 키워드 점수 최상위 계열의 최상위 등급(tiers[0]=강함). 점수 0이면(무관) null. */
   private PoeEldritchDataService.EldritchTier bestEldritchTier(
       List<PoeEldritchDataService.EldritchFamily> families, List<String> keywords) {
     PoeEldritchDataService.EldritchTier best = null;
@@ -15387,8 +15394,8 @@ public class PoeOptimizeService {
 
   /**
    * 최적화기 크래프팅용 레어 주얼 모드 패밀리(큐레이션). mod-pool.json 에는 jewel 슬롯이 없어(장비 슬롯만) 별도로 둔다. 실제 게임의 주얼
-   * 접두(데미지/생명)·접미(치명타/속도/저항) 상위 롤을 대표값으로 담는다. 값은 실측이 아니라 대표 티어 근사 — 유니크가 최선이 아닌 빌드에서 제작 주얼이 경쟁하게 하는
-   * 게 목적이라 정확 티어보다 "합리적 상위 롤"이면 충분하다.
+   * 접두(데미지/생명)·접미(치명타/속도/저항) 상위 롤을 대표값으로 담는다. 값은 실측이 아니라 대표 등급 근사 — 유니크가 최선이 아닌 빌드에서 제작 주얼이 경쟁하게 하는
+   * 게 목적이라 정확 등급보다 "합리적 상위 롤"이면 충분하다.
    */
   private List<PoeModPoolDataService.ModFamily> jewelFamilies() {
     java.util.function.BiFunction<String, String, PoeModPoolDataService.ModTier> t =
@@ -15529,7 +15536,7 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 레어 주얼 최종 리파인 — 완성 빌드 기준으로 각 주얼 소켓에 제작 레어(DPS/방어)를 시도해 <b>목표값이 실제로 오를 때만</b> 교체한다(단조-개선).
+   * 레어 주얼 최종 리파인 — 완성 빌드 기준으로 각 주얼 슬롯에 제작 레어(DPS/방어)를 시도해 <b>목표값이 실제로 오를 때만</b> 교체한다(단조-개선).
    *
    * <p>주얼 greedy 는 아이템 단계 前이라 빈약한 부분 빌드 기준이다 — 거기에 제작 주얼을 넣으면 조기 채택으로 최종이 오히려 나빠졌다(cyclone
    * 11.70M→10.32M, greedy 경로 의존). 이 패스는 <b>완성 빌드</b>(장비·트리·오라·주얼)에서 소켓별로 {현재 주얼, 제작 DPS, 제작 방어}를 실측
@@ -15585,7 +15592,7 @@ public class PoeOptimizeService {
     boolean changed = false;
     for (Integer socket : new ArrayList<>(jewels.keySet())) {
       Equipped cur = jewels.get(socket);
-      // 사용자가 고정한 주얼 소켓은 존중(교체 금지).
+      // 사용자가 고정한 주얼 슬롯은 존중(교체 금지).
       if (fixedJewels.containsKey(socket)) {
         continue;
       }
@@ -15676,7 +15683,7 @@ public class PoeOptimizeService {
       List<String> keywords,
       String objectiveKey,
       ExecutorService executor) {
-    // 1) CI 키스톤 노드
+    // 1) CI 핵심노드 노드
     PoeTreeGraphService.TreeNode ci = null;
     for (PoeTreeGraphService.TreeNode n : poeTreeGraphService.searchCandidates()) {
       if ("keystone".equals(n.type())
@@ -16308,14 +16315,14 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 레어 → PoB 아이템 텍스트 (각 패밀리를 tierFraction 위치의 티어 최대 롤로)
+   * 레어 → PoB 아이템 텍스트 (각 패밀리를 tierFraction 위치의 등급 최대 롤로)
    *
-   * @param extraImplicits 임플리싯 뒤에 덧붙일 줄(아뮬렛 도유). Implicits 개수에 함께 반영해야 PoB 가 옳게 읽는다.
+   * @param extraImplicits 고정 속성 뒤에 덧붙일 줄(목걸이 성유). Implicits 개수에 함께 반영해야 PoB 가 옳게 읽는다.
    */
   private String rareItemText(RareItem rare, List<String> extraImplicits) {
     StringBuilder text = new StringBuilder();
     text.append("Rarity: RARE\nSim Craft\n").append(rare.baseType()).append("\n");
-    // 엘드리치 임플리싯이 있으면 Implicits 개수에 반영하고 곧바로 그 줄들을 넣는다(PoB 는 Implicits:N 뒤 N줄을 임플리싯으로 읽는다).
+    // 섬뜩한 고정 속성이 있으면 Implicits 개수에 반영하고 곧바로 그 줄들을 넣는다(PoB 는 Implicits:N 뒤 N줄을 고정 속성으로 읽는다).
     List<String> implicits =
         new ArrayList<>(rare.implicitLines() != null ? rare.implicitLines() : List.of());
     implicits.addAll(extraImplicits != null ? extraImplicits : List.of());
@@ -16515,11 +16522,11 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 트리 평가용 도유 — 아뮬렛 아이템의 {@code Allocates <노터블>} 로 전달한다(PoB 의 도유 시맨틱).
+   * 트리 평가용 성유 — 목걸이 아이템의 {@code Allocates <주요 스킬>} 로 전달한다(PoB 의 성유 시맨틱).
    *
    * <p>노드 id 를 nodes 목록에 끼우는 방식은 안 된다: PoB 가 시작점과 연결되지 않은 노드를 로드시 **해제
-   * 처리**해서(BuildAllDependsAndPaths) 스탯에 반영되지 않는다(실측: 고립 노터블 38706 을 nodes 에 넣어도 생명력 불변). 베이스는 임플리싯
-   * 줄을 안 넣으므로 부가 스탯 없음.
+   * 처리**해서(BuildAllDependsAndPaths) 스탯에 반영되지 않는다(실측: 고립 주요 스킬 38706 을 nodes 에 넣어도 생명력 불변). 베이스는 고정
+   * 속성 줄을 안 넣으므로 부가 스탯 없음.
    */
   private String withAnointAmulet(String xml, Integer anointNodeId) {
     if (anointNodeId == null) {
@@ -16527,7 +16534,7 @@ public class PoeOptimizeService {
     }
     PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(anointNodeId);
     if (node == null || node.anoint() == null || node.anoint().isEmpty()) {
-      return xml; // 도유 불가 노드 id — 조용히 무시(손댄 URL)
+      return xml; // 성유 불가 노드 id — 조용히 무시(손댄 URL)
     }
     int maxId = 0;
     java.util.regex.Matcher m =
@@ -16545,7 +16552,7 @@ public class PoeOptimizeService {
             + node.name()
             + "\n</Item>";
     // 슬롯은 반드시 <ItemSet> **안**에 — 느슨한 Slot(Items 직속)은 PoB 가 무시해서
-    // 아뮬렛이 장착되지 않고 GrantedPassive 도 조용히 사라진다(디버그로 확정한 함정).
+    // 목걸이가 장착되지 않고 GrantedPassive 도 조용히 사라진다(디버그로 확정한 함정).
     String slot = "<Slot name=\"Amulet\" itemId=\"" + itemId + "\"/>";
     return xml.replace("<Items activeItemSet=\"1\">", "<Items activeItemSet=\"1\">" + item)
         .replace("<ItemSet id=\"1\">", "<ItemSet id=\"1\">" + slot);
@@ -16608,16 +16615,16 @@ public class PoeOptimizeService {
   /** 레어의 한국어 모드 라인 (표시용) */
   private List<String> rareModLinesKo(RareItem rare) {
     List<String> lines = new ArrayList<>();
-    // 엘드리치 임플리싯(총주교/포식자)을 맨 위에 — 게임에서도 임플리싯이 익스플리싯 위에 뜬다.
+    // 섬뜩한 고정 속성(총주교/포식자)을 맨 위에 — 게임에서도 고정 속성이 익스플리싯 위에 뜬다.
     // ko 라인엔 이미 "(총주교)/(포식자)" 팩션 마커가 박혀 있다(eldritchImplicits) → 그대로 사용, 없으면 폴백.
     if (rare.implicitLinesKo() != null) {
       for (String line : rare.implicitLinesKo()) {
-        lines.add(line.startsWith("(") ? line : "(엘드리치) " + line);
+        lines.add(line.startsWith("(") ? line : "(섬뜩한) " + line);
       }
     }
     for (int i = 0; i < rare.families().size(); i++) {
       PoeModPoolDataService.ModFamily family = rare.families().get(i);
-      // 출처·젠 마커 — (도유)/(엘드리치) 관례 + 인게임 Alt(고급 모드 설명)의 접두/접미 표기 파리티.
+      // 출처·젠 마커 — (성유)/(엘드리치) 관례 + 인게임 Alt(고급 모드 설명)의 접두/접미 표기 파리티.
       // 에센스 전용 라인은 일반 크래프팅으론 못 얻는 라인임을 함께 알린다.
       String genKo =
           "prefix".equals(family.gen()) ? "접두" : "suffix".equals(family.gen()) ? "접미" : null;
@@ -16649,8 +16656,8 @@ public class PoeOptimizeService {
   }
 
   /**
-   * rareModLinesKo/En 와 1:1 정렬된 티어 라벨. 티어 없는 줄(임플리싯·명중가정)은 빈 문자열, 익스플리싯은 "T{순위}/{총티어}". ⚠
-   * rareModLinesKo 의 줄 생산 순서·개수를 **정확히 미러**해야 정렬이 어긋나지 않는다(임플리싯 → 패밀리별 tierAt().ko() → 명중). 순위는
+   * rareModLinesKo/En 와 1:1 정렬된 등급 라벨. 등급 없는 줄(고정 속성·명중가정)은 빈 문자열, 익스플리싯은 "T{순위}/{총등급}". ⚠
+   * rareModLinesKo 의 줄 생산 순서·개수를 **정확히 미러**해야 정렬이 어긋나지 않는다(고정 속성 → 패밀리별 tierAt().ko() → 명중). 순위는
    * family.tiers()(best-first) 인덱스+1 로 /poe/mods 카드(T1..Tn)와 동일 관례.
    */
   private List<String> rareModTiers(RareItem rare) {
@@ -16710,13 +16717,13 @@ public class PoeOptimizeService {
     return lines;
   }
 
-  /** 어픽스 예산: 최적화기가 고른 순서(우선순위) 앞 essentialCount 개는 T1, 나머지는 fillerFraction 티어. */
+  /** 어픽스 예산: 최적화기가 고른 순서(우선순위) 앞 essentialCount 개는 T1, 나머지는 fillerFraction 등급. */
   private static final int BUDGET_ESSENTIAL = 3;
 
   private static final double BUDGET_FILLER = 0.5;
 
   /**
-   * 레어를 "현실적 제작" 변형으로 — 필수(우선순위 상위) 몇 개만 최상위 티어, 나머지는 중위 티어. 최적화기의 기본 가정("모든 모드 T1")은 과하게 낙관적이라, 보통
+   * 레어를 "현실적 제작" 변형으로 — 필수(우선순위 상위) 몇 개만 최상위 등급, 나머지는 중위 등급. 최적화기의 기본 가정("모든 모드 T1")은 과하게 낙관적이라, 보통
    * 확보하는 필수 옵션 수만 T1 로 잡은 값을 함께 보여주기 위한 것.
    */
   private RareItem budgetVariant(RareItem rare, int essentialCount, double fillerFraction) {
@@ -16736,7 +16743,7 @@ public class PoeOptimizeService {
         rare.implicitLinesKo());
   }
 
-  /** tierFraction(0=best..1=worst) → 해당 패밀리 티어 (tiers 는 best-first) */
+  /** tierFraction(0=best..1=worst) → 해당 패밀리 등급 (tiers 는 best-first) */
   private PoeModPoolDataService.ModTier tierAt(
       PoeModPoolDataService.ModFamily family, double fraction) {
     List<PoeModPoolDataService.ModTier> tiers = family.tiers();
@@ -16774,7 +16781,7 @@ public class PoeOptimizeService {
             (nameKo != null ? nameKo : base) + " (시뮬 표준 무기)",
             List.of("물리 피해 60-120 추가", "명중 +2000"),
             List.of("Adds 60-120 Physical Damage", "+2000 Accuracy"),
-            // 시뮬 표준 무기는 실제 롤이 아닌 고정 가정 — 티어 없음
+            // 시뮬 표준 무기는 실제 롤이 아닌 고정 가정 — 등급 없음
             List.of("", ""),
             null,
             null,
@@ -16785,19 +16792,19 @@ public class PoeOptimizeService {
   private PoeOptimizeResult.ItemPick itemPick(Slot slot, Equipped equipped) {
     if (equipped.isUnique()) {
       PoeUniqueItem unique = equipped.unique();
-      // 엘드리치 임플리싯은 유니크에 안 붙는다(게임 규칙: non-unique 전용) — 계산(buildXml)에서 뺐으므로 표시에도
-      //   붙이지 않는다(표시=실제 유지). 아뮬렛 도유만 유니크에도 얹힌다.
+      // 섬뜩한 고정 속성은 유니크에 안 붙는다(게임 규칙: non-unique 전용) — 계산(buildXml)에서 뺐으므로 표시에도
+      //   붙이지 않는다(표시=실제 유지). 목걸이 성유만 유니크에도 얹힌다.
       List<String> lines = new ArrayList<>(anointLineKo(slot));
       lines.addAll(uniqueModLines(unique));
       // EN 로케일용 병렬 라인 — 결과 페이지가 유일한 ko 전용 표면이었다(다른 페이지는 전부 이중언어)
       List<String> linesEn = new ArrayList<>(anointLineEn(slot));
       linesEn.addAll(uniqueModLinesEn(unique));
-      // 고유 익스플리싯이 시작하는 줄 — 도유 · 임플리싯 뒤(리마인더는 데이터 것을 그대로, C150)
+      // 고유 익스플리싯이 시작하는 줄 — 성유 · 고정 속성 뒤(리마인더는 데이터 것을 그대로, C150)
       int explicitOffset =
           anointLineEn(slot).size() + (unique.implicits() == null ? 0 : unique.implicits().size());
       // 표시 = 계산이 쓴 롤(최대 · 해로운 모드는 최소, C153) — 리마인더 조회도 굴린 값 줄이 사전 키와 맞는다
       resolveRolls(lines, linesEn);
-      // 유니크는 롤 가능한 티어가 없다 — 줄 수만큼 빈 티어로 정렬 유지(템플릿 인덱스 정합)
+      // 유니크는 롤 가능한 등급이 없다 — 줄 수만큼 빈 등급으로 정렬 유지(템플릿 인덱스 정합)
       List<String> tiers = new ArrayList<>();
       for (int k = 0; k < lines.size(); k++) {
         tiers.add("");
@@ -16812,7 +16819,7 @@ public class PoeOptimizeService {
           lines,
           linesEn,
           tiers,
-          // 유니크도 원클릭 링크 제공(사용자 요청) — 고유명 검색 + 즉시 구입. 실속형은 티어 개념이 없어 미제공.
+          // 유니크도 원클릭 링크 제공(사용자 요청) — 고유명 검색 + 즉시 구입. 실속형은 등급 개념이 없어 미제공.
           uniqueTradeQuery(unique),
           null,
           resultReminders(linesEn, uniqueFixedReminders(unique, explicitOffset, false), false),
@@ -16826,7 +16833,7 @@ public class PoeOptimizeService {
     rareLines.addAll(rareModLinesKo(rare));
     List<String> rareLinesEn = new ArrayList<>(anointLineEn(slot));
     rareLinesEn.addAll(rareModLinesEn(rare));
-    // 티어: 도유 라인(선두)은 빈 티어, 이어서 레어 익스플리싯 티어(rareModTiers 가 rareModLinesKo 순서 미러)
+    // 등급: 성유 라인(선두)은 빈 등급, 이어서 레어 익스플리싯 등급(rareModTiers 가 rareModLinesKo 순서 미러)
     List<String> rareTiers = new ArrayList<>();
     for (int k = 0; k < anointLineKo(slot).size(); k++) {
       rareTiers.add("");
@@ -16850,14 +16857,14 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 레어의 거래소 검색 쿼리(q JSON) — 베이스(한글명) + 익스플리싯 스탯 필터(min = **그 티어의 최저 롤**, 다중 수치/미매칭 라인은 존재 필터 생략).
-   * 최대롤 기준(×0.7 포함) 검색은 매물이 없거나 미러급이라 구매 불가(사용자 피드백) — 같은 티어면 시장에서 살 수 있는 하한으로 잡는다. koMin 없는 구 데이터는
-   * ×0.7 폴백. daum(한국) 거래소 기준이며 stat id 는 서버 공통. 사전 미로드/매칭 0건이면 null(링크 미표시).
+   * 레어의 거래소 검색 쿼리(q JSON) — 베이스(한글명) + 익스플리싯 스탯 필터(min = **그 등급의 최저 롤**, 다중 수치/미매칭 라인은 존재 필터 생략).
+   * 최대롤 기준(×0.7 포함) 검색은 매물이 없거나 미러급이라 구매 불가(사용자 피드백) — 같은 등급이면 시장에서 살 수 있는 하한으로 잡는다. koMin 없는 구
+   * 데이터는 ×0.7 폴백. daum(한국) 거래소 기준이며 stat id 는 서버 공통. 사전 미로드/매칭 0건이면 null(링크 미표시).
    */
   private String tradeQueryFor(RareItem rare, String baseNameKo, boolean budget) {
     List<String> filters = new ArrayList<>();
     for (int i = 0; i < rare.families().size(); i++) {
-      // 실속형(budget): 필수(픽 우선순위 상위) 모드만 필터에 넣고, min 은 2티어 최저 롤(T2 이상 매물).
+      // 실속형(budget): 필수(픽 우선순위 상위) 모드만 필터에 넣고, min 은 2등급 최저 롤(T2 이상 매물).
       // 최상위 롤 매물이 없거나 비쌀 때의 대안 검색(사용자 요청) — 나머지 모드는 조건에서 제외.
       if (budget && i >= BUDGET_ESSENTIAL) {
         continue;
@@ -16916,8 +16923,8 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 잡 키워드(EN) → 거래소 임플리싯 사전(ko 텍스트) 매칭용 한글 조각 — **피해(DPS) 관련만**. 광의 "damage" 는 수백 건이 걸려 제외.
-   * life/regen(자기연소 스킬의 최적화기 키워드)은 매핑하지 않는다 — 마나 재생/생명력 획득 류 비DPS 임플리싯이 유효 옵션으로 섞였다(사용자 피드백). ehp
+   * 잡 키워드(EN) → 거래소 고정 속성 사전(ko 텍스트) 매칭용 한글 조각 — **피해(DPS) 관련만**. 광의 "damage" 는 수백 건이 걸려 제외.
+   * life/regen(자기연소 스킬의 최적화기 키워드)은 매핑하지 않는다 — 마나 재생/생명력 획득 류 비DPS 고정 속성이 유효 옵션으로 섞였다(사용자 피드백). ehp
    * 잡의 방어 키워드(resistance/armour 등)도 동일 이유로 제외 — 이 필터는 "이 유니크를 왜 쓰는가"(피해 스케일링)에 맞춘다.
    */
   private static final Map<String, String> KO_KEYWORD_BY_EN =
@@ -16941,7 +16948,7 @@ public class PoeOptimizeService {
           Map.entry("mine", "지뢰"),
           Map.entry("brand", "낙인"));
 
-  /** 임플리싯 그룹 필터 상한 — 60은 거래소 서버가 "쿼리가 너무 복잡합니다"로 거부(실측). 길이순 상위 30에 핵심 전부 포함. */
+  /** 고정 속성 그룹 필터 상한 — 60은 거래소 서버가 "쿼리가 너무 복잡합니다"로 거부(실측). 길이순 상위 30에 핵심 전부 포함. */
   private static final int UNIQUE_IMPLICIT_FILTER_CAP = 30;
 
   /** 유니크 템플릿 줄에 롤 범위 "(x-y)" 가 있는지 — 하한 음수 허용. */
@@ -16954,9 +16961,9 @@ public class PoeOptimizeService {
    * 검색하면 빌드에 무효한 옵션 매물이 섞이므로, 이번 잡 키워드(스킬 태그·직업 유래 — 엘드리치 선택과 동일 기준)에 유효한 옵션 라인을 존재 필터로 함께 건다(사용자
    * 요청). 롤 수치는 필터하지 않는다(매물 폭 유지) — 어떤 옵션이 달렸느냐만 거른다.
    *
-   * <p>결합(Synthesis) 계열 — "고정 속성 부여 규모 증가"(Implicit Modifier magnitudes) 익스플리싯을 가진 유니크(성운 등)는
-   * **임플리싯이 매물마다 랜덤**이고 그게 아이템의 존재 이유라, 빌드 키워드에 맞는 임플리싯을 "1개 이상 보유" count 그룹으로 건다(사용자 재지적 — 익스플리싯
-   * 필터는 고정 라인이라 아무것도 못 거른다).
+   * <p>결합(Synthesis) 계열 — "고정 속성 부여 규모 증가"(Implicit Modifier magnitudes) 익스플리싯을 가진 유니크(성운 등)는 **고정
+   * 속성이 매물마다 랜덤**이고 그게 아이템의 존재 이유라, 빌드 키워드에 맞는 고정 속성을 "1개 이상 보유" count 그룹으로 건다(사용자 재지적 — 익스플리싯 필터는
+   * 고정 라인이라 아무것도 못 거른다).
    */
   private String uniqueTradeQuery(PoeUniqueItem unique) {
     String name =
@@ -17034,7 +17041,7 @@ public class PoeOptimizeService {
         + "}";
   }
 
-  /** 고유 아이템 표시용 모드 라인 (임플리싯 + 익스플리싯, 한국어 우선·없으면 영문). 레어와 표시 일관성. */
+  /** 고유 아이템 표시용 모드 라인 (고정 속성 + 익스플리싯, 한국어 우선·없으면 영문). 레어와 표시 일관성. */
   private List<String> uniqueModLines(PoeUniqueItem unique) {
     List<String> lines = new ArrayList<>();
     mergeLocaleLines(lines, unique.implicits(), unique.implicitsKo());
@@ -17074,11 +17081,11 @@ public class PoeOptimizeService {
     }
   }
 
-  /** 아뮬렛에 실제로 얹은 도유 — 결과 표시용(표시=실제). 도유가 없거나 다른 슬롯이면 빈 목록. */
+  /** 목걸이에 실제로 얹은 성유 — 결과 표시용(표시=실제). 성유가 없거나 다른 슬롯이면 빈 목록. */
   private List<String> anointLineKo(Slot slot) {
     AnointPick pick = currentAnoint;
     return slot == Slot.AMULET && pick != null
-        ? List.of("(도유) " + pick.nameKo() + " 할당")
+        ? List.of("(성유) " + pick.nameKo() + " 할당")
         : List.of();
   }
 
@@ -17109,7 +17116,7 @@ public class PoeOptimizeService {
     return any ? List.copyOf(out) : null;
   }
 
-  /** 고유 익스플리싯 줄 위치(도유 · 임플리싯 뒤) → 데이터의 리마인더. */
+  /** 고유 익스플리싯 줄 위치(성유 · 고정 속성 뒤) → 데이터의 리마인더. */
   private static Map<Integer, List<String>> uniqueFixedReminders(
       PoeUniqueItem unique, int offset, boolean ko) {
     List<List<String>> rem = ko ? unique.explicitsRemindersKo() : unique.explicitsReminders();
@@ -17135,11 +17142,11 @@ public class PoeOptimizeService {
         : List.of();
   }
 
-  /** 아뮬렛 도유 선택 결과 — 노터블 영문/한글 이름. */
+  /** 목걸이 성유 선택 결과 — 주요 스킬 영문/한글 이름. */
   private record AnointPick(int nodeId, String name, String nameKo) {}
 
   /**
-   * 도유 후보 — 도유 가능 노터블 **전부**(470개), id 오름차순(결정성).
+   * 성유 후보 — 성유 가능 주요 스킬 **전부**(470개), id 오름차순(결정성).
    *
    * <p>키워드 점수 컷은 두 번 실패했다: ① 점수 1위 "공격적인 보루"는 조건절("방패를 들고 있는 동안")을 못 읽어 기여 0.00%, ② 상위 24 컷은 진짜 1위
    * "반사신경"(+2.65%, 점수순위 45)을 놓쳤고, EHP 3위 "영향력"(오라 효과 — 방어 오라 간접 증폭)은 점수 0 이라 컷을 아무리 넓혀도 안 잡힌다. 전수
@@ -17153,10 +17160,10 @@ public class PoeOptimizeService {
   }
 
   /**
-   * 완성된 빌드 XML 의 아뮬렛에 도유 한 줄을 얹는다 — PoB 는 {@code Allocates <노터블>} 을 GrantedPassive 로 읽는다.
+   * 완성된 빌드 XML 의 목걸이에 성유 한 줄을 얹는다 — PoB 는 {@code Allocates <주요 스킬>} 을 GrantedPassive 로 읽는다.
    *
-   * <p>줄을 넣으면 그 아이템의 {@code Implicits: N} 도 함께 올려야 PoB 가 뒤 줄들을 임플리싯으로 오독하지 않는다. 아이템 블록 단위로만 손대므로 병렬
-   * 평가에서 안전하다(공유 상태 없음).
+   * <p>줄을 넣으면 그 아이템의 {@code Implicits: N} 도 함께 올려야 PoB 가 뒤 줄들을 고정 속성으로 오독하지 않는다. 아이템 블록 단위로만 손대므로
+   * 병렬 평가에서 안전하다(공유 상태 없음).
    */
   private static String withAnoint(String xml, String notableName) {
     java.util.regex.Matcher slot =
@@ -17196,7 +17203,7 @@ public class PoeOptimizeService {
   }
 
   /**
-   * @param extraImplicits 유니크 자체 임플리싯 뒤에 덧붙일 줄(엘드리치). Implicits 개수에 함께 반영해야 PoB 가 옳게 읽는다.
+   * @param extraImplicits 유니크 자체 고정 속성 뒤에 덧붙일 줄(엘드리치). Implicits 개수에 함께 반영해야 PoB 가 옳게 읽는다.
    */
   private String uniqueItemText(PoeUniqueItem item, List<String> extraImplicits) {
     StringBuilder text = new StringBuilder();
@@ -17204,7 +17211,7 @@ public class PoeOptimizeService {
     // Guidance)")가 붙는데, PoB 는
     //   제목으로 조건을 건다(CalcSetup: conditions[item.title 공백 제거] = 직업 제한 → 금단 짝은 "ForbiddenFlame" 키).
     // 꼬리가 붙으면 짝이 안 맞아
-    //   트리 계산에 금단 짝을 꽂아도 노터블이 안 켜졌다.
+    //   트리 계산에 금단 짝을 꽂아도 주요 스킬이 안 켜졌다.
     String canonical = poeUniqueDataService.canonicalName(item.slug());
     String title = canonical != null ? canonical : item.name();
     text.append("Rarity: UNIQUE\n").append(title).append("\n").append(item.baseType()).append("\n");
@@ -17334,7 +17341,7 @@ public class PoeOptimizeService {
   /**
    * 트리 에디터에서 꽂은 클러스터 주얼 (소켓 노드 id + 크기/노드수/작은패시브 스킬키)
    *
-   * <p>notables = "1 Added Passive Skill is X" 로 얹을 클러스터 노터블 영문 이름들(순서 무관, PoB 가 정렬한다).
+   * <p>notables = "1 Added Passive Skill is X" 로 얹을 클러스터 주요 스킬 영문 이름들(순서 무관, PoB 가 정렬한다).
    */
   public record ClusterSpec(
       int socket,
@@ -17437,7 +17444,7 @@ public class PoeOptimizeService {
             jewels,
             List.of(),
             effects,
-            // 트리 평가는 최적화 잡과 독립이어야 한다 — 기본 가정(핀나클 보스 + 전투 버프)을 명시적으로 넘긴다
+            // 트리 평가는 최적화 잡과 독립이어야 한다 — 기본 가정(최종 보스 + 전투 버프)을 명시적으로 넘긴다
             "Pinnacle",
             true,
             List.of(),

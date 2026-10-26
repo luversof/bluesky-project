@@ -5,7 +5,7 @@
 @param PoeCraft.CalcExtras extras = null
 
 <%-- 탐광 · 엘드리치 목표(10-21 C549 사용자 요청 "엘드리치 옵션이나 탐광 같은 것도 있어야 — 최종 아이템에 붙는 옵션을 기준으로 최소 비용, 옵션 자체를
-     고를 수 있는 게 누락되면 안 된다"). 탐광 = 화석 전용 옵션(계산기가 그 옵션을 여는 화석을 조합에 넣어 비교), 엘드리치 = 섬뜩한 불씨 · 영액 임플리싯
+     고를 수 있는 게 누락되면 안 된다"). 탐광 = 화석 전용 옵션(계산기가 그 옵션을 여는 화석을 조합에 넣어 비교), 엘드리치 = 섬뜩한 불씨 · 영액 고정 속성
      (명시 옵션 제작과 무관해 따로 재서 더함 · 한쪽에 하나 · 화폐 등급 1~4). 펼친 내용은 칸 안 스크롤(계산기 폼은 화면 높이 고정 칸 — 길면 목표 목록이
      눌린다) --%>
 !{
@@ -71,7 +71,7 @@
 @endif
 @if(!eld.isEmpty() || eldBlocked != null)
 	<details class="rounded-box border border-base-300 bg-base-100" data-craft-calc-eldritch-targets>
-		<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "엘드리치 임플리싯 목표" : "Eldritch implicit targets"} <span class="text-xs font-normal text-base-content/70">· ${ko ? "섬뜩한 불씨(작열의 총주교) · 영액(세계 포식자) — 명시 옵션 비용에 따로 더함 · 한쪽에 하나" : "Eldritch Ember (Exarch) · Ichor (Eater) — added to the explicit cost · one per side"}@if(eldBlocked != null) · ${eldBlocked}@endif</span></summary>
+		<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "섬뜩한 고정 속성 목표" : "Eldritch implicit targets"} <span class="text-xs font-normal text-base-content/70">· ${ko ? "섬뜩한 불씨(작열의 총주교) · 영액(세계 포식자) — 명시 옵션 비용에 따로 더함 · 한쪽에 하나" : "Eldritch Ember (Exarch) · Ichor (Eater) — added to the explicit cost · one per side"}@if(eldBlocked != null) · ${eldBlocked}@endif</span></summary>
 		@if(eldBlocked == null)
 			<div class="px-3 pb-3 space-y-2 max-h-72 overflow-y-auto">
 				@for(String side : java.util.List.of("exarch", "eater"))
@@ -87,7 +87,7 @@
 									double c1 = f.tiers().stream().filter(t -> t.tier() == 1).mapToDouble(PoeCraft.EldritchTier::chance).findFirst().orElse(0);
 								}
 								<label class="flex items-center gap-2 text-xs min-w-0 rounded px-1 py-0.5" data-craft-calc-eld="${side}:${f.key()}">
-									<select name="t_eld:${side}:${f.key()}" class="select select-xs select-bordered w-28 shrink-0 h-7 min-h-0" aria-label="${ko ? "최소 등급" : "Minimum tier"}">
+									<select name="t_eld:${side}:${f.key()}" class="select select-xs select-bordered w-28 shrink-0 h-7 min-h-0" aria-label="${(ko ? "최소 등급 — " : "Minimum tier — ") + (mx.isEmpty() ? f.key() : mx.get(0))}">
 										<option value="">-</option>
 										@for(PoeCraft.EldritchTier t : f.tiers())
 											<option value="${t.tier()}">${ko ? tierKo[Math.max(0, Math.min(5, t.tier() - 1))] + " 이상" : tierEn[Math.max(0, Math.min(5, t.tier() - 1))] + "+"}</option>

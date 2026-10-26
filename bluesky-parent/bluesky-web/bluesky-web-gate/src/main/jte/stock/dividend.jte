@@ -27,7 +27,7 @@
 		<div class="space-y-6" data-sync-url="/stock/htmx/dividend/list">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.dividend.title"))
 
-			<!-- 월배당 도구: 별도 페이지로 이동(링크). -->
+			<%-- 월배당 도구: 별도 페이지로 이동(링크). --%>
 			<div class="flex flex-wrap items-center gap-2 text-sm">
 				<span class="text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.tools")}</span>
 				<a href="/stock/admin?tab=monthly-reference" class="btn btn-sm btn-outline gap-1 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">

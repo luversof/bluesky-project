@@ -62,7 +62,7 @@ public class PoeBuildController {
       @RequestParam(required = false) String jewels,
       @RequestParam(required = false) String clusters,
       @RequestParam(required = false) String tattoos,
-      // 도유 노터블 id — nodes 에 끼우면 PoB 가 미연결 노드로 보고 해제하므로 별도 인자(Allocates 아이템으로 변환)
+      // 성유 주요 스킬 id — nodes 에 끼우면 PoB 가 미연결 노드로 보고 해제하므로 별도 인자(Allocates 아이템으로 변환)
       @RequestParam(required = false) Integer anoint) {
     java.util.Set<Integer> nodeIds =
         java.util.Arrays.stream(nodes.split(","))
@@ -71,7 +71,7 @@ public class PoeBuildController {
             .map(Integer::valueOf)
             .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
     if (nodeIds.isEmpty() && anoint == null) {
-      // 도유만 있는 트리도 유효한 계산 대상이다(아뮬렛 도유는 트리 없이도 스탯을 준다)
+      // 성유만 있는 트리도 유효한 계산 대상이다(목걸이 성유는 트리 없이도 스탯을 준다)
       throw new ResponseStatusException(
           org.springframework.http.HttpStatus.BAD_REQUEST, "nodes 가 비어 있습니다");
     }
@@ -101,7 +101,7 @@ public class PoeBuildController {
       for (String entry : clusters.split(",")) {
         String[] parts = entry.trim().split(":");
         if (parts.length >= 3 && parts[0].matches("[0-9]+") && parts[2].matches("[0-9]+")) {
-          // 5번째 필드 = 노터블 이름들('|' 구분). 이름은 PoB 가 트리에서 찾는 영문 원문 그대로여야 한다.
+          // 5번째 필드 = 주요 스킬 이름들('|' 구분). 이름은 PoB 가 트리에서 찾는 영문 원문 그대로여야 한다.
           java.util.List<String> notables =
               parts.length > 4 && !parts[4].isBlank()
                   ? java.util.Arrays.stream(parts[4].split("\\|"))
@@ -116,7 +116,7 @@ public class PoeBuildController {
                   Integer.parseInt(parts[2]),
                   parts.length > 3 ? parts[3] : "",
                   notables,
-                  // 6번째 필드 = 주얼 소켓 수(중첩 클러스터를 꽂을 자리)
+                  // 6번째 필드 = 주얼 슬롯 수(중첩 클러스터를 꽂을 자리)
                   parts.length > 5 && parts[5].matches("[0-9]+") ? Integer.parseInt(parts[5]) : 0));
         }
       }

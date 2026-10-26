@@ -24,14 +24,14 @@ import java.util.random.RandomGenerator;
  * <p>여러 제작 콘텐츠를 섞는 규칙(10-15 C338 — 사용자 요청 "다양한 제작 컨텐츠들이 엮여 있고, 섞어서 사용이 가능하고 그에 따른 제약도 있다"):
  *
  * <ul>
- *   <li>메타 제작(제작대): 접두/접미 변경 불가 — 다시 굴리기(변경 · 카오스 · 에센스 · 화석 · 수확 재제작) · 소멸 · 정제가 잠긴 쪽을 남긴다(메타 옵션
+ *   <li>메타 제작(작업대): 접두/접미 변경 불가 — 다시 굴리기(변경 · 카오스 · 에센스 · 화석 · 수확 재제작) · 소멸 · 정제가 잠긴 쪽을 남긴다(메타 옵션
  *       자신은 반대쪽이라 다시 굴리면 사라진다). 공격/주문 옵션 금지 — 그 옵션이 남아 있는 동안 새로 붙는 옵션에서 attack/caster 태그를 뺀다. 제작 옵션
- *       3개 — 제작대 옵션 한도 1 → 3
- *   <li>제작대: 자리 · 옵션 그룹 · 제작 옵션 한도. 일반 아이템에 하면 매직이 된다
+ *       3개 — 작업대 옵션 한도 1 → 3
+ *   <li>작업대: 자리 · 옵션 그룹 · 제작 옵션 한도. 일반 아이템에 하면 매직이 된다
  *   <li>화석(공명기 1~4칸, 같은 화석 중복 불가): 옵션 태그마다 배수를 곱한다(0 = 막음). 일반은 연금 공명기(→ 레어), 레어는 혼돈 공명기(다시)
  *   <li>수확: 태그 재제작(그 태그 옵션 하나 보장) · 같은 유형 ±(지금 옵션 태그와 겹치면 ×10 / ×0.1) · 저항 변환(같은 등급) · 태그 추가 + 무작위
  *       제거(영향력 없는 아이템) · 영향력 재제작(영향력 옵션 하나 보장)
- *   <li>정복자 엑잘: 영향력 없는 레어에 영향력 + 그 영향력 전용 옵션 하나. 분열 오브: 옵션 4개 이상 레어의 제작대가 아닌 옵션 하나를 고정
+ *   <li>정복자 엑잘: 영향력 없는 레어에 영향력 + 그 영향력 전용 옵션 하나. 분열 오브: 옵션 4개 이상 레어의 작업대가 아닌 옵션 하나를 고정
  * </ul>
  */
 public final class PoeCraftEngine {
@@ -43,7 +43,7 @@ public final class PoeCraftEngine {
   }
 
   /**
-   * 화폐 — arg: ESSENCE = 에센스 슬러그, FOSSIL = 화석 슬러그 쉼표 목록(1~4), BENCH = 제작대 옵션 id, HARVEST = 수확 id,
+   * 화폐 — arg: ESSENCE = 에센스 슬러그, FOSSIL = 화석 슬러그 쉼표 목록(1~4), BENCH = 작업대 옵션 id, HARVEST = 수확 id,
    * CONQUEROR = 영향력 키(crusader · eyrie · basilisk · adjudicator).
    */
   public enum Action {
@@ -67,7 +67,7 @@ public final class PoeCraftEngine {
     VEILED_CHAOS,
     VEILED_EXALT,
     UNVEIL,
-    // 엘드리치(10-15 C343) — 불씨(작열의 총주교) · 영액(세계 포식자) 임플리싯(arg = 화폐 등급 1~4), 섬뜩한 카오스 · 엑잘 · 소멸(우세한 쪽
+    // 엘드리치(10-15 C343) — 불씨(작열의 총주교) · 영액(세계 포식자) 고정 속성(arg = 화폐 등급 1~4), 섬뜩한 카오스 · 엑잘 · 소멸(우세한 쪽
     // 접두/접미만)
     EMBER,
     ICHOR,
@@ -89,7 +89,7 @@ public final class PoeCraftEngine {
     CATALYST,
     // 시작 아이템 직접 편집(10-15 C348 — craftofexile 처럼 분열 베이스 등에서 출발). 화폐가 아니다(비용 없음).
     // MANUAL_ADD arg = 옵션 id[:F](F = 분열로), MANUAL_REMOVE arg = 옵션 id
-    // 짐승 제작(10-17 C387, BestiaryRecipes — 아인하르): arg = swap-suffix(접미 추가 + 무작위 접두 제거) |
+    // 야수 제작(10-17 C387, BestiaryRecipes — 아인하르): arg = swap-suffix(접미 추가 + 무작위 접두 제거) |
     // swap-prefix(반대) |
     // influence:영향력(그 영향력 아이템에 그 영향력 옵션 하나)
     BEAST,
@@ -100,7 +100,7 @@ public final class PoeCraftEngine {
     MANUAL_REMOVE,
     // 바알 오브(10-16 C358) — 타락시키며 넷 중 하나(poedb "Effects of Vaal Orbs", 가중치 비공개 → 균등): 변화 없음 · 소켓
     // 다시(옵션은 그대로) ·
-    // 레어로 다시 굴림(분열 · 메타 잠금 쪽은 남김) · 임플리싯을 부패 임플리싯 하나로. 플라스크엔 못 쓴다
+    // 레어로 다시 굴림(분열 · 메타 잠금 쪽은 남김) · 고정 속성을 부패 고정 속성 하나로. 플라스크엔 못 쓴다
     VAAL,
     // 더럽혀진 화폐(10-16 C359 — 인게임 설명, 타락한 희귀 아이템 전용 · 둘 중 하나는 확률 비공개 → 균등):
     // 카오스 = 새 옵션으로 다시 굴림 | 옵션을 전부 지움, 엑잘티드 = 옵션 하나 붙임 | 지움, 신성한 눈물방울 = 옵션마다 등급 하나 올림 | 내림
@@ -113,12 +113,12 @@ public final class PoeCraftEngine {
   static final Set<String> INFLUENCES =
       Set.of("shaper", "elder", "crusader", "eyrie", "basilisk", "adjudicator");
 
-  /** 엘드리치 진영 — 작열의 총주교(접두 쪽) · 세계 포식자(접미 쪽). 임플리싯 Affix 의 gen 에 쓴다. */
+  /** 엘드리치 진영 — 작열의 총주교(접두 쪽) · 세계 포식자(접미 쪽). 고정 속성 Affix 의 gen 에 쓴다. */
   public static final String EXARCH = "exarch";
 
   public static final String EATER = "eater";
 
-  /** 바알 오브 부패 임플리싯(C358) — 임플리싯 Affix 의 gen. */
+  /** 바알 오브 부패 고정 속성(C358) — 고정 속성 Affix 의 gen. */
   public static final String CORRUPTED = "corrupted";
 
   /** 엘드리치 부위 — 불씨 · 영액 인게임 설명(poedb): 갑옷 · 장화 · 장갑 · 투구. */
@@ -139,7 +139,7 @@ public final class PoeCraftEngine {
         : new Affix(VEILED_SUFFIX, "suffix", List.of(-2), false, false);
   }
 
-  /** 옵션 하나 — crafted = 제작대, fractured = 분열(고정). */
+  /** 옵션 하나 — crafted = 작업대, fractured = 분열(고정). */
   public record Affix(
       String id, String gen, List<Integer> groups, boolean crafted, boolean fractured) {}
 
@@ -152,7 +152,7 @@ public final class PoeCraftEngine {
       Rarity rarity,
       List<Affix> affixes,
       boolean corrupted,
-      // 임플리싯(10-15 C343) — 지금은 엘드리치(gen = exarch|eater)만. 다시 굴리기 · 정제가 건드리지 않는다
+      // 고정 속성(10-15 C343) — 지금은 엘드리치(gen = exarch|eater)만. 다시 굴리기 · 정제가 건드리지 않는다
       List<Affix> implicits,
       // 기폭제 퀄리티(C385) — "종류:양"(예: attack:20), 없으면 null. 옵션을 다시 굴려도 남는다(퀄리티는 옵션이 아니다)
       String quality,
@@ -282,7 +282,7 @@ public final class PoeCraftEngine {
     }
   }
 
-  /** 엔진이 보는 데이터 — 시험에선 작은 가짜 풀을 넣는다. 화석 · 제작대 · 수확은 없으면 null. */
+  /** 엔진이 보는 데이터 — 시험에선 작은 가짜 풀을 넣는다. 화석 · 작업대 · 수확은 없으면 null. */
   public interface Data {
 
     Map<String, Integer> pool(String poolKey);
@@ -330,7 +330,7 @@ public final class PoeCraftEngine {
       return null;
     }
 
-    /** 엘드리치 임플리싯 풀(C343) — 옵션 id → 가중치. */
+    /** 섬뜩한 고정 속성 풀(C343) — 옵션 id → 가중치. */
     default Map<String, Integer> eldritchPool(String poolKey) {
       return Map.of();
     }
@@ -339,12 +339,12 @@ public final class PoeCraftEngine {
       return null;
     }
 
-    /** 바알 오브 부패 임플리싯 풀(C358) — 옵션 id → 가중치. */
+    /** 바알 오브 부패 고정 속성 풀(C358) — 옵션 id → 가중치. */
     default Map<String, Integer> corruptedPool(String poolKey) {
       return Map.of();
     }
 
-    /** 짐승 제작 위상 스킬 옵션(C388). */
+    /** 야수 제작 위상 스킬 옵션(C388). */
     default PoeCraftDataService.VeiledMod beastMod(String id) {
       return null;
     }
@@ -369,7 +369,7 @@ public final class PoeCraftEngine {
     }
   }
 
-  /** 메타 제작 — 아이템 옵션 중 제작대 메타 옵션(id 로 판별). */
+  /** 메타 제작 — 아이템 옵션 중 작업대 메타 옵션(id 로 판별). */
   public record Meta(
       boolean prefixLocked,
       boolean suffixLocked,
@@ -535,7 +535,7 @@ public final class PoeCraftEngine {
       case BENCH_REMOVE -> {
         List<Affix> crafted = item.affixes().stream().filter(Affix::crafted).toList();
         if (crafted.isEmpty()) {
-          yield Result.fail(item, "제작대 옵션이 없습니다");
+          yield Result.fail(item, "작업대 옵션이 없습니다");
         }
         List<Affix> out = new ArrayList<>(item.affixes());
         out.removeAll(crafted);
@@ -795,7 +795,7 @@ public final class PoeCraftEngine {
       return Result.fail(item, META_MOD_ERROR);
     }
     if (item.rarity() == Rarity.MAGIC) {
-      return Result.fail(item, "일반(연금 공명기) · 레어(혼돈 공명기)에만 쓸 수 있습니다");
+      return Result.fail(item, "일반(연금술 공명기) · 레어(혼돈 공명기)에만 쓸 수 있습니다");
     }
     List<String> list =
         slugs == null
@@ -857,7 +857,7 @@ public final class PoeCraftEngine {
         mult.put(no, 0d);
         tangled = "tangled:" + more + ":" + no;
       }
-      // 효과가 데이터 필드에 없는 화석 — 슬러그로(피얼룩 = 부패 임플리싯, 분열된 = 옵션 하나 분열, 도금된 = 상점가만)
+      // 효과가 데이터 필드에 없는 화석 — 슬러그로(피얼룩 = 부패 고정 속성, 분열된 = 옵션 하나 분열, 도금된 = 상점가만)
       corrupt |= "CurrencyDelveCraftingVaal".equals(f.slug());
       // 축성된 화석(C399) — 고레벨 옵션 가중(요구 레벨 40 기준 레벨당 ±1%, poedb 커뮤니티 위키). 수치 행운은 게이트 굴림
       if (f.lucky()) {
@@ -942,7 +942,7 @@ public final class PoeCraftEngine {
       out = out.with(Rarity.RARE, as);
     }
     if (corrupt) {
-      // 피얼룩 화석 = 타락 + 부패 임플리싯(C383 검토 — 타락 표시만 했다). 임플리싯은 바알 오브와 같은 풀
+      // 피얼룩 화석 = 타락 + 부패 고정 속성(C383 검토 — 타락 표시만 했다). 고정 속성은 바알 오브와 같은 풀
       Affix ci = corruptedImplicit(out, rng);
       out = (ci == null ? out : out.withImplicits(List.of(ci))).corrupt();
       if (ci != null) {
@@ -978,11 +978,11 @@ public final class PoeCraftEngine {
           "poison",
           "speed");
 
-  /** 제작대 — 자리 · 옵션 그룹 · 제작 옵션 한도(메타 "제작 옵션 3개" 면 3, 아니면 1). 일반이면 매직이 된다. */
+  /** 작업대 — 자리 · 옵션 그룹 · 제작 옵션 한도(메타 "제작 옵션 3개" 면 3, 아니면 1). 일반이면 매직이 된다. */
   private Result bench(Item item, String modId) {
     PoeCraftDataService.BenchCraft b = data.bench(item.itemClass(), modId);
     if (b == null) {
-      return Result.fail(item, "이 아이템 종류의 제작대 옵션이 아닙니다");
+      return Result.fail(item, "이 아이템 종류의 작업대 옵션이 아닙니다");
     }
     Rarity r = item.rarity() == Rarity.NORMAL ? Rarity.MAGIC : item.rarity();
     if (item.count(b.gen()) >= maxPerGen(item, r)) {
@@ -996,7 +996,7 @@ public final class PoeCraftEngine {
     long crafted = item.affixes().stream().filter(Affix::crafted).count();
     int limit = meta(item.affixes()).multimod() ? 3 : 1;
     if (crafted >= limit) {
-      return Result.fail(item, limit == 1 ? "제작대 옵션은 하나만(제작 옵션 3개 메타 제작이 있으면 3개)" : "제작대 옵션은 3개까지");
+      return Result.fail(item, limit == 1 ? "작업대 옵션은 하나만(제작 옵션 3개 메타 제작이 있으면 3개)" : "작업대 옵션은 3개까지");
     }
     List<Affix> out = new ArrayList<>(item.affixes());
     out.add(a);
@@ -1188,7 +1188,7 @@ public final class PoeCraftEngine {
     }
     // 피해 변환은 유형 이름이 있어야 맞게 바꾼다 — 유형이 없는 옛 데이터면 막는다(C383 검토: 저항을 바꾸던 오류)
     if (srcTypes.stream().anyMatch(x -> x.contains("Damage"))) {
-      return Result.fail(item, cap(p[k + 1]) + " 피해 옵션이 없습니다");
+      return Result.fail(item, elKo(p[k + 1]) + " 피해 옵션이 없습니다");
     }
     String fromFam = cap(p[k + 1]) + "Resist";
     String toFam = cap(p[k + 2]) + "Resist";
@@ -1203,7 +1203,7 @@ public final class PoeCraftEngine {
             .findFirst()
             .orElse(null);
     if (src == null) {
-      return Result.fail(item, cap(p[k + 1]) + " 저항 옵션이 없습니다");
+      return Result.fail(item, elKo(p[k + 1]) + " 저항 옵션이 없습니다");
     }
     List<String> fromLadder = ladder(item, fromFam);
     List<String> toLadder = ladder(item, toFam);
@@ -1255,7 +1255,7 @@ public final class PoeCraftEngine {
     List<String> toLadder = ladderByType(item, tgtType);
     int rank = fromLadder.indexOf(src.id());
     if (rank < 0 || toLadder.isEmpty()) {
-      return Result.fail(item, "이 아이템에 바꿀 " + cap(toEl) + " 옵션이 없습니다");
+      return Result.fail(item, "이 아이템에 바꿀 " + elKo(toEl) + " 옵션이 없습니다");
     }
     String dst = toLadder.get(Math.min(rank, toLadder.size() - 1));
     PoeCraftDataService.CraftMod dm = data.mod(dst);
@@ -1296,6 +1296,18 @@ public final class PoeCraftEngine {
     return ids;
   }
 
+  /** 원소 이름 → 게임 한국어(화염 · 냉기 · 번개 · 카오스 · 물리, 10-24 Q129 — 사유 문구에 영어 'Cold' 가 섞였다). 모르면 첫 글자 대문자. */
+  private static String elKo(String s) {
+    return switch (s == null ? "" : s.toLowerCase(java.util.Locale.ROOT)) {
+      case "fire" -> "화염";
+      case "cold" -> "냉기";
+      case "lightning" -> "번개";
+      case "chaos" -> "카오스";
+      case "physical" -> "물리";
+      default -> cap(s);
+    };
+  }
+
   private static String cap(String s) {
     return s == null || s.isEmpty() ? "" : Character.toUpperCase(s.charAt(0)) + s.substring(1);
   }
@@ -1318,12 +1330,12 @@ public final class PoeCraftEngine {
     return s == null ? "" : s;
   }
 
-  /** 짐승 제작 영향력 추가가 받는 영향력(C387 — 레시피 "쉐이퍼 · 엘더 · 대속자 · 사냥꾼 · 십자군 · 전쟁군주 아이템에 속성 부여 추가"). */
+  /** 야수 제작 영향력 추가가 받는 영향력(C387 — 레시피 "쉐이퍼 · 엘더 · 대속자 · 사냥꾼 · 십자군 · 전쟁군주 아이템에 속성 부여 추가"). */
   static final List<String> BEAST_INFLUENCES =
       List.of("shaper", "elder", "eyrie", "basilisk", "crusader", "adjudicator");
 
   /**
-   * 짐승 제작(C387, BestiaryRecipes EinharMasterCraft30 · 31 · 42~47). swap-suffix = 무작위 접두 하나 지우고 접미
+   * 야수 제작(C387, BestiaryRecipes EinharMasterCraft30 · 31 · 42~47). swap-suffix = 무작위 접두 하나 지우고 접미
    * 하나 붙임(swap-prefix 반대) — 레시피 메모 "희귀 아이템에만 적용", 지우는 쪽은 소멸처럼 분열 · 메타 잠금 쪽 제외, 붙는 쪽은 엑잘처럼 그 쪽
    * 풀에서(자리가 있어야). influence:X = 이미 X 영향력이 있는 레어에 X 전용 옵션 하나(정복자 엑잘의 옵션 고르기와 같음, 영향력은 그대로).
    */
@@ -1361,7 +1373,7 @@ public final class PoeCraftEngine {
     }
     boolean addSuffix = "swap-suffix".equals(a);
     if (!addSuffix && !"swap-prefix".equals(a)) {
-      return Result.fail(item, "알 수 없는 짐승 제작입니다");
+      return Result.fail(item, "알 수 없는 야수 제작입니다");
     }
     String addGen = addSuffix ? "suffix" : "prefix";
     String rmGen = addSuffix ? "prefix" : "suffix";
@@ -1404,7 +1416,7 @@ public final class PoeCraftEngine {
           "crab", "GrantsCrabAspectCrafted30");
 
   /**
-   * 위상 스킬 부여(C388) — 제작 접미어 하나(그룹 1047 — 위상끼리 겹침). 제작대 옵션과 같은 규칙: 일반이면 매직이 되고, 제작 옵션 한도(1, 메타 '제작
+   * 위상 스킬 부여(C388) — 제작 접미어 하나(그룹 1047 — 위상끼리 겹침). 작업대 옵션과 같은 규칙: 일반이면 매직이 되고, 제작 옵션 한도(1, 메타 '제작
    * 옵션 3개'면 3)와 같은 그룹을 본다. 플라스크 · 주얼은 제외(가정 — 레시피 표에 대상 종류가 없다).
    */
   private Result aspect(Item item, String kind) {
@@ -2122,7 +2134,7 @@ public final class PoeCraftEngine {
   }
 
   /**
-   * 기폭제 퀄리티로 수치가 오르는 옵션 · 임플리싯 id(C385) — 옵션 태그나 자리(접두/접미)가 그 종류와 맞으면. 수치 = 원래 × (100 + 퀄리티) /
+   * 기폭제 퀄리티로 수치가 오르는 옵션 · 고정 속성 id(C385) — 옵션 태그나 자리(접두/접미)가 그 종류와 맞으면. 수치 = 원래 × (100 + 퀄리티) /
    * 100(PoB getCatalystScalar).
    */
   public List<String> boosted(Item item) {
@@ -2158,7 +2170,7 @@ public final class PoeCraftEngine {
   }
 
   /**
-   * 옵션 태그(C389 검토 — 풀 옵션만 봐서 제작대 · 장막 해제 · 화석 · 고양 옵션이 기폭제에서 빠졌다). 에센스 전용 옵션은 데이터에 태그가 없어 빈 목록(자리
+   * 옵션 태그(C389 검토 — 풀 옵션만 봐서 작업대 · 장막 해제 · 화석 · 고양 옵션이 기폭제에서 빠졌다). 에센스 전용 옵션은 데이터에 태그가 없어 빈 목록(자리
    * 기준 좌측 · 우측만 맞는다).
    */
   private List<String> affixTags(Item item, Affix a) {
@@ -2185,7 +2197,7 @@ public final class PoeCraftEngine {
   /**
    * 첫 뽑기 기록(10-22 P3 — poedb 속성 부여처럼 고른 화폐 기준 옵션 표) — 수단을 한 번 적용하며 pick 이 처음 계산한 가중치를 남긴다(옵션 id →
    * {실제 가중, 기본 가중}, 그때 아이템). 수단마다 규칙(다시 굴릴 바탕 · 화석 배수 · 메타 금지 · 축성 레벨 가중 · 추가 옵션)을 따로 옮기지 않고 엔진이
-   * 실제로 쓰는 값 그대로. pick 을 안 거치는 수단(소멸 · 신성 · 제작대 · 바알 · 엘드리치 임플리싯 등)은 weights = null.
+   * 실제로 쓰는 값 그대로. pick 을 안 거치는 수단(소멸 · 신성 · 작업대 · 바알 · 섬뜩한 고정 속성 등)은 weights = null.
    */
   public static final class PickProbe {
     private Map<String, double[]> weights;
@@ -2213,11 +2225,16 @@ public final class PoeCraftEngine {
 
   /** 수단을 한 번(고정 씨앗) 적용하며 첫 pick 의 가중치를 기록한다. */
   public PickProbe probeFirstPick(Item item, Action action, String arg) {
+    return probeFirstPick(item, action, arg, 1);
+  }
+
+  /** seed = 첫 뽑기 앞에 무작위가 있는 수단(카오스 · 지우고 붙이기)은 씨앗마다 다른 갈래 — 서비스가 여러 씨앗을 평균한다(10-22 Q3e 검토). */
+  public PickProbe probeFirstPick(Item item, Action action, String arg, long seed) {
     PickProbe p = new PickProbe();
     PICK_PROBE.set(p);
     PICK_PROBES.incrementAndGet();
     try {
-      p.result = apply(item, action, arg, new java.util.SplittableRandom(1));
+      p.result = apply(item, action, arg, new java.util.SplittableRandom(seed));
     } finally {
       PICK_PROBES.decrementAndGet();
       PICK_PROBE.remove();
@@ -2237,7 +2254,7 @@ public final class PoeCraftEngine {
   /** 수확 '같은 유형 더/덜'(C383) — tagMult 에 이 키가 있으면 옵션당 한 번만 곱한다. */
   static final String ONCE = "__once__";
 
-  /** 부패 임플리싯 하나(바알 오브 · 피얼룩 화석, C383) — 이 풀 · 아이템 레벨 안에서 가중치대로. 없으면 null. */
+  /** 부패 고정 속성 하나(바알 오브 · 피얼룩 화석, C383) — 이 풀 · 아이템 레벨 안에서 가중치대로. 없으면 null. */
   private Affix corruptedImplicit(Item item, RandomGenerator rng) {
     double total = 0;
     List<String> ids = new ArrayList<>();
@@ -2278,7 +2295,7 @@ public final class PoeCraftEngine {
     String outcome = VAAL_OUTCOMES.get(rng.nextInt(VAAL_OUTCOMES.size()));
     switch (outcome) {
       case "reforge" -> {
-        // 레어로 다시 굴림 — 임플리싯은 그대로, 분열 · 메타 잠금 쪽은 남긴다(poedb)
+        // 레어로 다시 굴림 — 고정 속성은 그대로, 분열 · 메타 잠금 쪽은 남긴다(poedb)
         Result r = roll(item, Rarity.RARE, keep, rareCount(item, rng), Weights.NONE, null, rng);
         if (r.error() != null) {
           return new Result(item.corrupt(), null, List.of(), List.of(), "vaal:none:reforge");
@@ -2310,7 +2327,7 @@ public final class PoeCraftEngine {
           }
         }
         PoeCraftDataService.VeiledMod m = data.corruptedMod(id);
-        // 기존 임플리싯(엘드리치 포함)은 모두 부패 임플리싯 하나로 바뀐다
+        // 기존 고정 속성(엘드리치 포함)은 모두 부패 고정 속성 하나로 바뀐다
         List<String> removed = item.implicits().stream().map(Affix::id).toList();
         List<Affix> imp =
             List.of(new Affix(id, CORRUPTED, m.grp() == null ? List.of() : m.grp(), false, false));
@@ -2473,7 +2490,7 @@ public final class PoeCraftEngine {
     return new Result(probe, null, List.of(id), List.of());
   }
 
-  /** 우세 진영 — 임플리싯 등급이 높은 쪽(없는 쪽은 0), 같으면 없음(null). */
+  /** 우세 진영 — 고정 속성 등급이 높은 쪽(없는 쪽은 0), 같으면 없음(null). */
   public String dominance(Item item) {
     int ex = 0;
     int ea = 0;
@@ -2491,7 +2508,7 @@ public final class PoeCraftEngine {
     return ex > ea ? EXARCH : ea > ex ? EATER : null;
   }
 
-  /** 불씨 · 영액 — 그 진영 임플리싯을 화폐 등급(arg 1~4)으로 하나 붙인다(같은 진영 것은 바뀐다). */
+  /** 불씨 · 영액 — 그 진영 고정 속성을 화폐 등급(arg 1~4)으로 하나 붙인다(같은 진영 것은 바뀐다). */
   private Result eldritchImplicit(Item item, String side, String arg, RandomGenerator rng) {
     if (!ELDRITCH_CLASSES.contains(item.itemClass())) {
       return Result.fail(item, "갑옷 · 투구 · 장갑 · 장화에만 쓸 수 있습니다");
@@ -2525,7 +2542,7 @@ public final class PoeCraftEngine {
       }
     }
     if (ids.isEmpty()) {
-      return Result.fail(item, "이 아이템에 붙을 수 있는 임플리싯이 없습니다(종류)");
+      return Result.fail(item, "이 아이템에 붙을 수 있는 고정 속성이 없습니다(종류)");
     }
     double r = rng.nextDouble() * total;
     String id = ids.get(ids.size() - 1);
@@ -2557,7 +2574,7 @@ public final class PoeCraftEngine {
   private Result eldritch(Item item, Action action, List<Affix> keep, RandomGenerator rng) {
     String dom = dominance(item);
     if (dom == null) {
-      return Result.fail(item, "작열의 총주교 · 세계 포식자 우세가 없습니다(임플리싯 등급이 높은 쪽이 우세)");
+      return Result.fail(item, "작열의 총주교 · 세계 포식자 우세가 없습니다(고정 속성 등급이 높은 쪽이 우세)");
     }
     boolean pre = EXARCH.equals(dom);
     String gen = pre ? "prefix" : "suffix";
@@ -2715,7 +2732,7 @@ public final class PoeCraftEngine {
     return new Result(item.with(item.rarity(), out), null, List.of(choice), List.of(v.id()));
   }
 
-  /** 분열 오브 — 옵션 4개 이상 레어, 분열 옵션이 없어야. 제작대가 아닌 옵션 하나를 무작위로 고정. */
+  /** 분열 오브 — 옵션 4개 이상 레어, 분열 옵션이 없어야. 작업대가 아닌 옵션 하나를 무작위로 고정. */
   private Result fracture(Item item, RandomGenerator rng) {
     if (item.rarity() != Rarity.RARE || item.affixes().size() < 4) {
       return Result.fail(item, "옵션이 4개 이상인 레어에만 쓸 수 있습니다");

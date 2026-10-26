@@ -54,7 +54,7 @@
 	java.util.function.Function<TradeType, String> tradeTypeLabel = type -> type == TradeType.BUY ? buyLabel : sellLabel;
 }
 
-	<!-- Collapsible Detail List -->
+	<%-- Collapsible Detail List --%>
 	<details id="tradeDetailSection" class="mb-4" data-persist-open="tradeDetail" data-page-section="${detailListLabel}">
 		<summary class="cursor-pointer select-none flex items-center gap-2 font-semibold text-sm p-3 bg-base-200 rounded-box hover:bg-base-300 transition-colors">
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform detail-arrow" viewBox="0 0 20 20" fill="currentColor">

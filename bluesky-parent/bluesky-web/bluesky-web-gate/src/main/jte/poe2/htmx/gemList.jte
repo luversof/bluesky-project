@@ -9,7 +9,7 @@
 
 !{
 	boolean korean = PoeText.isKorean();
-	// 속성(색)별 세로 컬럼 — 힘 · 민첩 · 지능 · 속성 없음. 컬럼 안은 티어(얻는 시점) → 이름 순.
+	// 속성(색)별 세로 컬럼 — 힘 · 민첩 · 지능 · 속성 없음. 컬럼 안은 등급(얻는 시점) → 이름 순.
 	Map<String, List<Poe2.Gem>> byColor = new java.util.LinkedHashMap<>();
 	for (String c : new String[] { "str", "dex", "int", "white" }) byColor.put(c, new java.util.ArrayList<>());
 	for (Poe2.Gem g : gems) byColor.getOrDefault(g.color(), byColor.get("white")).add(g);
@@ -37,7 +37,7 @@
 					<div class="space-y-1.5">
 						<div class="flex items-center gap-2 sticky top-0 bg-base-200/85 backdrop-blur py-1.5 z-[1] rounded">
 							<span class="w-3 h-3 rounded-full ${dot}"></span>
-							<span class="font-semibold text-sm">${MessageUtil.getMessage("poe.gems.attr." + ("str".equals(color) ? "red" : "dex".equals(color) ? "green" : "int".equals(color) ? "blue" : "white"))}</span>
+							<span class="font-semibold text-sm">${MessageUtil.getMessage(("str".equals(color) || "dex".equals(color) || "int".equals(color) ? "poe.gems.attr." : "poe2.gems.attr.") + ("str".equals(color) ? "red" : "dex".equals(color) ? "green" : "int".equals(color) ? "blue" : "white"))}</span>
 							<span class="text-xs text-base-content/60">${group.getValue().size()}</span>
 						</div>
 						@for(Poe2.Gem gem : group.getValue())

@@ -13,7 +13,7 @@ import net.luversof.web.gate.poe2.dto.Poe2;
 import net.luversof.web.gate.poe2.httpexchange.Poe2DataClient;
 
 /**
- * 아이템 분류 표시 이름(10-02 AAA) — 영어 화면의 상세 · 툴팁 "아이템 클래스" 줄이 내부 id(FishingRod · HybridFlask)로 나오지 않게 게임
+ * 아이템 분류 표시 이름(10-02 AAA) — 영어 화면의 상세 · 툴팁 "아이템 종류" 줄이 내부 id(FishingRod · HybridFlask)로 나오지 않게 게임
  * 영어 이름 (ItemClasses.Name — 한국어 줄이 이미 쓰는 같은 표의 영어 칸, 인게임 한국어 툴팁 첫 줄 "쇠뇌" 와 같은 출처)으로 바꾼다.
  *
  * <p>표는 칩이 쓰는 분류 목록 API 에서 만든다(데이터에 이미 있음 — 레코드마다 필드를 늘리지 않으려고). 30분마다 새로 받고, 받지 못하면 직전 표, 그것도 없으면
@@ -35,6 +35,7 @@ public class PoeClassNames {
   private final Poe2DataClient poe2Client;
   private final Table poe1 = new Table();
   private final Table poe2 = new Table();
+  private final Table poe2Tip = new Table();
 
   public PoeClassNames(PoeDataClient poe1Client, Poe2DataClient poe2Client) {
     this.poe1Client = poe1Client;
@@ -47,9 +48,70 @@ public class PoeClassNames {
     return PoeText.name(ko, enOf(id, false));
   }
 
+  /**
+   * PoE1 무기 종류 줄(10-23 Q43) — 인게임은 무기에만 속성 칸 첫 줄에 회색 단수 'Bow' · 'Two Handed Sword'(ClientStrings
+   * WeaponClassDisplayName*, 한국어 '활' · '양손 검'). 방어구 · 장신구 · 플라스크 · 주얼엔 이 줄이 없다. 무기가 아니면 null.
+   */
+  public static String poe1Weapon(String id) {
+    String[] n = id == null ? null : POE1_WEAPON.get(id);
+    return n == null ? null : PoeText.isKorean() ? n[1] : n[0];
+  }
+
+  private static final Map<String, String[]> POE1_WEAPON =
+      Map.ofEntries(
+          Map.entry("One Hand Sword", new String[] {"One Handed Sword", "한손 검"}),
+          Map.entry(
+              "Thrusting One Hand Sword", new String[] {"Thrusting One Handed Sword", "날카로운 한손 검"}),
+          Map.entry("Two Hand Sword", new String[] {"Two Handed Sword", "양손 검"}),
+          Map.entry("One Hand Mace", new String[] {"One Handed Mace", "한손 철퇴"}),
+          Map.entry("Two Hand Mace", new String[] {"Two Handed Mace", "양손 철퇴"}),
+          Map.entry("Sceptre", new String[] {"Sceptre", "셉터"}),
+          Map.entry("Wand", new String[] {"Wand", "마법봉"}),
+          Map.entry("One Hand Axe", new String[] {"One Handed Axe", "한손 도끼"}),
+          Map.entry("Two Hand Axe", new String[] {"Two Handed Axe", "양손 도끼"}),
+          Map.entry("Bow", new String[] {"Bow", "활"}),
+          Map.entry("Dagger", new String[] {"Dagger", "단검"}),
+          Map.entry("Staff", new String[] {"Staff", "지팡이"}),
+          Map.entry("Warstaff", new String[] {"Warstaff", "전쟁지팡이"}),
+          Map.entry("Claw", new String[] {"Claw", "클로"}),
+          Map.entry("FishingRod", new String[] {"Fishing Rod", "낚싯대"}),
+          Map.entry("Rune Dagger", new String[] {"Rune Dagger", "룬 단검"}));
+
   /** PoE2 분류 줄 — 한국어 화면이면 ko, 영어면 게임 영어 이름(없으면 id). */
   public static String poe2(String ko, String id) {
     return PoeText.name(ko, enOf(id, true));
+  }
+
+  /**
+   * PoE2 툴팁 종류 줄(10-23 Q39) — 인게임 툴팁은 단수 분류(ItemClassCategories.Text: Bow · 석궁 · Charm). 목록 칩이 쓰는
+   * poe2() 는 ItemClasses.Name(Ctrl+C 'Item Class:' 의 복수 — Bows · 쇠뇌)이라 툴팁 안 베이스 이름 '팽팽한 석궁'과 어긋났다.
+   * 없으면 poe2(ko, id).
+   */
+  public static String poe2Tip(String ko, String id) {
+    PoeClassNames self = instance;
+    if (self != null && id != null) {
+      Map<String, String> t = self.poe2Tip.get(self::loadPoe2Tip);
+      String v = t == null ? null : t.get((PoeText.isKorean() ? "ko:" : "en:") + id);
+      if (v != null && !v.isBlank()) {
+        return v;
+      }
+    }
+    return poe2(ko, id);
+  }
+
+  private Map<String, String> loadPoe2Tip() {
+    Map<String, String> m = new HashMap<>();
+    for (List<Poe2.ItemClass> l : List.of(poe2Client.itemClasses(), poe2Client.uniqueClasses())) {
+      for (Poe2.ItemClass c : l == null ? List.<Poe2.ItemClass>of() : l) {
+        if (c.tipEn() != null && !c.tipEn().isBlank()) {
+          m.putIfAbsent("en:" + c.key(), c.tipEn());
+        }
+        if (c.tipKo() != null && !c.tipKo().isBlank()) {
+          m.putIfAbsent("ko:" + c.key(), c.tipKo());
+        }
+      }
+    }
+    return m;
   }
 
   private static String enOf(String id, boolean isPoe2) {

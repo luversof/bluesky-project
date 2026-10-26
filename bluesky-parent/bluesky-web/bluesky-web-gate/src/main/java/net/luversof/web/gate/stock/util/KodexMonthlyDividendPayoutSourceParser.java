@@ -30,37 +30,20 @@ public class KodexMonthlyDividendPayoutSourceParser {
   }
 
   public String toBulkInput(List<KodexDividendRow> rows) {
-    if (rows == null || rows.isEmpty()) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.source.rows.missing", "KODEX"));
-    }
-
-    StringBuilder bulkInput = new StringBuilder(PayoutSourceText.BULK_INPUT_HEADER);
-    for (KodexDividendRow row : rows) {
-      // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 과세표준만 모름("-")으로 싣는다.
-      if (!StringUtils.hasText(row.basicD())
-          || !StringUtils.hasText(row.payD())
-          || !StringUtils.hasText(row.dividA())) {
-        continue;
-      }
-
-      bulkInput
-          .append('\n')
-          .append(PayoutSourceText.isoDateOfCompact(row.basicD()))
-          .append('\t')
-          .append(PayoutSourceText.isoDateOfCompact(row.payD()))
-          .append('\t')
-          .append(row.dividA().trim())
-          .append('\t')
-          .append(StringUtils.hasText(row.taxDividA()) ? row.taxDividA().trim() : "-");
-    }
-
-    if (bulkInput.toString().equals(PayoutSourceText.BULK_INPUT_HEADER)) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.source.rows.missing", "KODEX"));
-    }
-
-    return bulkInput.toString();
+    return PayoutSourceText.bulkInput(
+        rows,
+        "KODEX",
+        // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 과세표준만 모름("-")으로 싣는다.
+        row ->
+            !StringUtils.hasText(row.basicD())
+                    || !StringUtils.hasText(row.payD())
+                    || !StringUtils.hasText(row.dividA())
+                ? null
+                : new PayoutSourceText.BulkRow(
+                    PayoutSourceText.isoDateOfCompact(row.basicD()),
+                    PayoutSourceText.isoDateOfCompact(row.payD()),
+                    row.dividA().trim(),
+                    StringUtils.hasText(row.taxDividA()) ? row.taxDividA().trim() : "-"));
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

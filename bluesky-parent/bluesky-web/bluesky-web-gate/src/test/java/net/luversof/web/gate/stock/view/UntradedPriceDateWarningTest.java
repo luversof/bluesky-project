@@ -135,7 +135,6 @@ class UntradedPriceDateWarningTest {
     assertThat(html).doesNotContain("looks untraded");
   }
 
-  /** 시세 행이 아예 없으면(신규 사용자·초기 상태) 판단 근거가 없다. 없는 근거로 경고하면 안 된다. */
   /**
    * 거래량 0 행이 실제로 정보를 갖고 있는지는 "종가가 직전과 다른 행 수"로만 알 수 있다.
    *
@@ -153,6 +152,7 @@ class UntradedPriceDateWarningTest {
         .isZero();
   }
 
+  /** 시세 행이 아예 없으면(신규 사용자·초기 상태) 판단 근거가 없다. 없는 근거로 경고하면 안 된다. */
   @Test
   void 근거가_없으면_경고하지_않는다() {
     assertThat(status(0, 0, 0).priceHistoryLastDateLooksUntraded()).isFalse();

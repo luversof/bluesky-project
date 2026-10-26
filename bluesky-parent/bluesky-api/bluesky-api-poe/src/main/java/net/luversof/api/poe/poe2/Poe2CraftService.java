@@ -955,25 +955,101 @@ public class Poe2CraftService {
     }
     List<PoolLine> out = new ArrayList<>();
     for (int i = 0; i < next.size(); i++) {
-      Poe2CraftEngine.Mod m = next.get(i);
-      double c = total <= 0 ? 0 : w[i] / total;
-      Object[] t = tx.get(m.id());
-      Poe2.ModTier tier = t == null ? null : (Poe2.ModTier) t[0];
-      out.add(
-          new PoolLine(
-              m.id(),
-              m.gen(),
-              tier == null ? m.id() : tier.name(),
-              tier == null ? m.id() : tier.nameKo(),
-              tier == null ? List.of() : tier.text(),
-              tier == null ? List.of() : tier.textKo(),
-              t == null ? null : (Integer) t[1],
-              m.level(),
-              c,
-              data.mods().get(m.id()) == null ? null : data.mods().get(m.id()).mt(),
-              modTags(m.id(), 0),
-              modTags(m.id(), 1)));
+      out.add(poolLine(next.get(i), tx, total <= 0 ? 0 : w[i] / total));
     }
     return out;
+  }
+
+  private PoolLine poolLine(Poe2CraftEngine.Mod m, Map<String, Object[]> tx, double c) {
+    Object[] t = tx.get(m.id());
+    Poe2.ModTier tier = t == null ? null : (Poe2.ModTier) t[0];
+    return new PoolLine(
+        m.id(),
+        m.gen(),
+        tier == null ? m.id() : tier.name(),
+        tier == null ? m.id() : tier.nameKo(),
+        tier == null ? List.of() : tier.text(),
+        tier == null ? List.of() : tier.textKo(),
+        t == null ? null : (Integer) t[1],
+        m.level(),
+        c,
+        data.mods().get(m.id()) == null ? null : data.mods().get(m.id()).mt(),
+        modTags(m.id(), 0),
+        modTags(m.id(), 1));
+  }
+
+  /**
+   * 고른 화폐 기준 옵션 표(10-22 Q2, PoE1 PoeCraftService.ActionPool 짝) — lines = 그 수단이 처음 고르는 후보(등급 · 징조 ·
+   * 동질화가 걸린 그대로, 확률 = 가중 ÷ 합 — 균등, 촉진하는 찬미면 그 태그 배수), mult = 옵션 → 배수(1 이면 없음), picked = 표의 옵션을 고르는
+   * 수단인가, error = 못 쓰는 사유, baseRarity = 고를 때 희귀도.
+   */
+  public record ActionPool(
+      List<PoolLine> lines,
+      Map<String, Double> mult,
+      boolean picked,
+      String error,
+      String baseRarity,
+      // 확정으로 붙는 옵션 id(10-22 Q7 — 에센스가 보장하는 풀 옵션, 첫 고르기 표엔 없다)
+      List<String> forced) {}
+
+  /** 카오스처럼 첫 고르기 앞에 무작위가 있는 수단을 평균할 씨앗 수(10-22 Q3e 검토 — PoE1 PROBE_SEEDS 와 같게). */
+  static final int PROBE_SEEDS = 128;
+
+  public ActionPool actionPool(
+      Poe2CraftEngine.Item item, Poe2CraftEngine.Action action, String arg, List<String> omens) {
+    Poe2CraftEngine.Item it = normalize(item);
+    Set<String> om = omens == null ? Set.of() : new java.util.HashSet<>(omens);
+    // 확정 옵션(Q7) — 에센스가 보장하는 풀 옵션(기본 에센스는 그 하나만 붙여 고르기가 없다 — 고른 표가 없어도 알린다)
+    List<String> forced =
+        action == Poe2CraftEngine.Action.ESSENCE && arg != null
+            ? essences(it.poolKey()).stream()
+                .filter(e -> arg.equals(e.slug()) && e.modId() != null)
+                .map(EssenceOption::modId)
+                .toList()
+            : List.of();
+    Poe2CraftEngine.PickProbe p1 = engine.probeFirstPick(it, action, arg, om, 1);
+    Poe2CraftEngine.PickProbe p2 = engine.probeFirstPick(it, action, arg, om, 2);
+    List<Poe2CraftEngine.PickProbe> runs = new ArrayList<>(List.of(p1, p2));
+    if (!java.util.Objects.equals(p1.weights(), p2.weights())) {
+      for (long sd = 3; sd <= PROBE_SEEDS; sd++) {
+        runs.add(engine.probeFirstPick(it, action, arg, om, sd));
+      }
+    }
+    Map<String, Double> share = new java.util.LinkedHashMap<>();
+    Map<String, Poe2CraftEngine.Mod> mods = new java.util.LinkedHashMap<>();
+    Map<String, Double> mult = new java.util.LinkedHashMap<>();
+    Poe2CraftEngine.Item base = null;
+    int n = 0;
+    for (Poe2CraftEngine.PickProbe p : runs) {
+      if (p.cands() == null) {
+        continue;
+      }
+      n++;
+      base = base == null ? p.base() : base;
+      double total = p.weights().values().stream().mapToDouble(Double::doubleValue).sum();
+      for (Poe2CraftEngine.Mod m : p.cands()) {
+        double w = p.weights().getOrDefault(m.id(), 1d);
+        share.merge(m.id(), total <= 0 ? 0 : w / total, Double::sum);
+        mods.putIfAbsent(m.id(), m);
+        if (w != 1) {
+          mult.putIfAbsent(m.id(), w);
+        }
+      }
+    }
+    if (n == 0) {
+      return new ActionPool(
+          List.of(),
+          Map.of(),
+          false,
+          p1.result() == null ? null : p1.result().error(),
+          null,
+          forced);
+    }
+    Map<String, Object[]> tx = texts(it.poolKey());
+    List<PoolLine> out = new ArrayList<>();
+    for (Map.Entry<String, Double> e : share.entrySet()) {
+      out.add(poolLine(mods.get(e.getKey()), tx, e.getValue() / n));
+    }
+    return new ActionPool(out, mult, true, null, base.rarity().name(), forced);
   }
 }

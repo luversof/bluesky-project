@@ -4,6 +4,7 @@
 @import java.time.format.DateTimeFormatter
 @import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param Object timeSeries
 @param java.util.List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
@@ -141,10 +142,10 @@
 			!{
 				String coreToggleName = coreHoldingName != null
 					? coreHoldingName
-					: java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.core.multi"), coreHoldingCount);
+					: StockViewSupport.msg("stock.summary.core.multi", coreHoldingCount);
 				// 여럿이어도 무엇을 몇 개 빼는지 말한다: "핵심 보유 3종목 제외".
-				String coreExcludeLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.growth.exclude.core"), coreToggleName);
-				String coreExcludingLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.growth.exclude.core.active"), coreToggleName);
+				String coreExcludeLabel = StockViewSupport.msg("stock.asset.growth.exclude.core", coreToggleName);
+				String coreExcludingLabel = StockViewSupport.msg("stock.asset.growth.exclude.core.active", coreToggleName);
 			}
 			@if(coreHoldingExcluded)
 				<div class="mb-2 flex flex-wrap items-center gap-2" data-exclude-core="active">
@@ -159,7 +160,7 @@
 							hx-get="/stock/htmx/asset-growth/view" hx-include="#assetGrowthSearchForm" hx-vals='{"excludeCore": "true"}'
 							hx-target="#assetGrowthFragment" hx-select="#assetGrowthFragment" hx-swap="outerHTML">${coreExcludeLabel}</button>
 					@if(coreHoldingWeightPct != null)
-						<span class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.growth.exclude.core.hint"), coreHoldingWeightPct)}</span>
+						<span class="text-xs text-base-content/60">${StockViewSupport.msg("stock.asset.growth.exclude.core.hint", coreHoldingWeightPct)}</span>
 					@endif
 				</div>
 			@endif

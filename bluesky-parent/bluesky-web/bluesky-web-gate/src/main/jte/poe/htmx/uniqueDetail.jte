@@ -66,7 +66,7 @@
 	PoeBaseItem.Flask flask = base != null ? base.flask() : null;
 	// 플라스크 속성에 이 플라스크 자신의 로컬 옵션 반영(10-08 C186 — 회복량 · 지속 · 충전, PoB 식). 바뀐 숫자만 인게임처럼 파랑(품질이 바꾼 회복량 · 유틸 지속 포함)
 	net.luversof.web.gate.poe.PoeFlaskProps.Result fp = flask == null ? null : net.luversof.web.gate.poe.PoeFlaskProps.apply(flask.lifePerUse(), flask.manaPerUse(), flask.durationSeconds(), flask.maxCharges(), flask.perCharge(), flask.type() == 4, net.luversof.web.gate.poe.PoeLocalProps.join(picked != null ? picked.implicits() : item.implicits(), picked != null ? picked.explicits() : item.explicits()), 0);
-	java.util.function.BiFunction<String, Boolean, String> fpNum = (v, ch) -> ch ? "<span class=\"text-[#8888ff]\">" + v + "</span>" : v;
+	java.util.function.BiFunction<String, Boolean, String> fpNum = (v, ch) -> ch ? "<span class=\"text-[#8888ff]\">" + v + "</span>" : "<span class=\"text-[#e0e0e0]\">" + v + "</span>";
 	String fdur = fp == null ? "" : fpNum.apply(fp.duration().seconds(), fp.duration().changed() || (flask.type() == 4 && 0 > 0));
 	String flife = fp == null ? "" : fpNum.apply(fp.life().text(), fp.life().changed() || 0 > 0);
 	String fmana = fp == null ? "" : fpNum.apply(fp.mana().text(), fp.mana().changed() || 0 > 0);
@@ -95,19 +95,22 @@
 			<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayBase}</div>
 		</div>
 
-		<%-- 아이템 클래스 + 영문 병기 --%>
-		@if(displayClass != null || PoeText.isKorean())
+		<%-- 아이템 종류 + 영문 병기 --%>
+		<%-- 종류 줄은 무기만 속성 칸 첫 줄(10-23 Q43 — 인게임은 방어구 · 장신구 · 주얼에 종류 줄이 없고, 무기는 단수 'Bow' · '양손 검') --%>
+		!{ String weaponCls = net.luversof.web.gate.poe.PoeClassNames.poe1Weapon(base != null ? base.itemClass() : null); boolean abyss = base != null && "AbyssJewel".equals(base.itemClass()); }
+		@if(PoeText.isKorean())
 			<div class="px-4 pt-1.5 text-center text-[11px]">
-				@if(displayClass != null)<span class="text-white/70">${displayClass}</span>@endif
 				@if(PoeText.isKorean())<div class="text-[10px] text-white/30">${item.name()} · ${base != null ? base.name() : item.baseType()}</div>@endif
 			</div>
 		@endif
 
 		<%-- 반경 (주얼: 대형/중형/소형 — 인게임 "반경: 대형") --%>
 		<%-- 중복 사용 제한(10-08 C197 — 게임 ClientStrings JewelItemLimit "중복 사용 제한: 1" · HistoricJewelLimit "1 역사적인 순간") · 반경 — 인게임은 같은 속성 칸 --%>
-		@if((item.radius() != null && !item.radius().isBlank()) || (item.limit() != null && !item.limit().isBlank()) || item.talismanTier() != null)
+		@if(abyss || (item.radius() != null && !item.radius().isBlank()) || (item.limit() != null && !item.limit().isBlank()) || item.talismanTier() != null)
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
+				<%-- 심연 주얼(Q43 — 게임 ItemDisplayAbyssalJewel '심연' · 'Abyss', 속성 칸 첫 줄 회색) --%>
+				@if(abyss)<div class="${label}" data-tt-abyss>${PoeText.isKorean() ? "심연" : "Abyss"}</div>@endif
 				<%-- 부적 등급(10-09 C214 — 게임 ClientStrings ItemDisplayStringTalismanTier "부적 등급", 같은 속성 칸) --%>
 				@if(item.talismanTier() != null)<div data-tt-talisman><span class="${label}">${MessageUtil.getMessage("poe.items.detail.talisman.tier")}: </span><span class="${value}">${item.talismanTier()}</span></div>@endif
 				@if(item.limit() != null && !item.limit().isBlank())<div data-tt-limit><span class="${label}">${MessageUtil.getMessage("poe.items.detail.limit")}: </span><span class="${value}">${MessageUtil.getMessage("poe.limit." + item.limit().replace(" ", ""), item.limit())}</span></div>@endif
@@ -129,6 +132,7 @@
 		@if(hasProps)
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+				@if(weaponCls != null)<div class="${label}" data-tt-weapon-class>${weaponCls}</div>@endif
 				<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="${aug}">+${quality}%</span></div>
 				@if(hasWeapon)
 					<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${aug}" data-tt-phys>${lp.physMin().damageText()}-${lp.physMax().damageText()}</span></div>
@@ -157,13 +161,13 @@
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
 				@if(flask.type() == 4)
-					<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
+					<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
 				@else
 					@if(flask.lifePerUse() > 0)
-						<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), fdur, flife)}</div>
+						<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), fdur, flife)}</div>
 					@endif
 					@if(flask.manaPerUse() > 0)
-						<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), fdur, fmana)}</div>
+						<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), fdur, fmana)}</div>
 					@endif
 				@endif
 				@if(flask.maxCharges() > 0)
@@ -186,7 +190,9 @@
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-1.5 text-center text-[12px]" data-tt-requirements>
 				<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>
-				@if(item.requiredLevel() != null)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${item.requiredLevel()}</span>@endif@if(req != null && req.str().present())<span class="${value}">, ${req.str().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(req != null && req.dex().present())<span class="${value}">, ${req.dex().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(req != null && req.intel().present())<span class="${value}">, ${req.intel().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
+				<%-- 쉼표는 앞에 항목이 있을 때만(10-25 Q188 — 요구 레벨 없는 고유 23개가 "요구 사항 , 12 힘" 으로 시작했다, PoE2 requirements.jte 와 같은 규칙) --%>
+				!{ boolean rqL = item.requiredLevel() != null; boolean rqS = req != null && req.str().present(); boolean rqD = req != null && req.dex().present(); }
+				@if(rqL)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${item.requiredLevel()}</span>@endif@if(rqS)<span class="${value}">${rqL ? ", " : ""}${req.str().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(rqD)<span class="${value}">${rqL || rqS ? ", " : ""}${req.dex().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(req != null && req.intel().present())<span class="${value}">${rqL || rqS || rqD ? ", " : ""}${req.intel().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
 			</div>
 		@endif
 

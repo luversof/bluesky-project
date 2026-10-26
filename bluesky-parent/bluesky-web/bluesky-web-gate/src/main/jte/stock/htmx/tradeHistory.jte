@@ -11,6 +11,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<TradeResponse> trades
 <%-- 날짜 칸에 쓸 존. 이 화면(자산성장)의 기간 표시와 같은 존이어야 한다. --%>
@@ -60,7 +61,7 @@ long pageSellCount = trades != null ? trades.stream().filter(t -> t.type() == Tr
 boolean sellCountIsPeriod = totalSellCount >= 0;
 long sellCount = sellCountIsPeriod ? totalSellCount : pageSellCount;
 
-java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 String historyTitle = MessageUtil.getMessage("stock.page.trade.title");
 String noTradeInPeriodLabel = MessageUtil.getMessage("stock.trade.message.no.period.data");
 String periodStatusLabel = MessageUtil.getMessage("stock.trade.label.period.status");
@@ -82,7 +83,7 @@ String amountLabel = MessageUtil.getMessage("common.label.amount");
 String noTradeDataLabel = MessageUtil.getMessage("stock.trade.message.no.data");
 String sellCountPageLabel = sellCountIsPeriod
 	? sellLabel + " " + countMessage.apply(sellCount)
-	: java.text.MessageFormat.format(MessageUtil.getMessage("stock.trade.history.sell.count.page"), sellLabel, countMessage.apply(sellCount));
+	: StockViewSupport.msg("stock.trade.history.sell.count.page", sellLabel, countMessage.apply(sellCount));
 }
 
 @template._components.ui.card(cssClass = "mt-4", id = "trade-history-panel", body = @`

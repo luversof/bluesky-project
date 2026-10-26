@@ -262,12 +262,6 @@ class LedgerIntegrityPanelTest {
   }
 
   /**
-   * 계좌별 집계를 보여 준다.
-   *
-   * <p>실측 2026-08-23: 발견 45 건이 계좌 3 개로 깨끗하게 갈렸다 &mdash; KB증권 위탁 24 · 동양증권 12 · 한국투자증권 위탁 7. 계좌를 모르면
-   * 45 건이 뒤섞여 보여 어디부터 손대야 할지 알 수 없다.
-   */
-  /**
    * 한 행에 사유가 여러 개면 행으로 묶어 먼저 보여 준다.
    *
    * <p>실측 2026-08-23: 발견 48 건이 30 행이고 그중 10 행이 사유를 2~4 개씩 달고 있었다. KODEX 한국부동산리츠인프라 배당 8 행이 전부 여기
@@ -326,6 +320,12 @@ class LedgerIntegrityPanelTest {
     assertThat(render(response)).doesNotContain("data-ledger-multi-rows");
   }
 
+  /**
+   * 계좌별 집계를 보여 준다.
+   *
+   * <p>실측 2026-08-23: 발견 45 건이 계좌 3 개로 깨끗하게 갈렸다 &mdash; KB증권 위탁 24 · 동양증권 12 · 한국투자증권 위탁 7. 계좌를 모르면
+   * 45 건이 뒤섞여 보여 어디부터 손대야 할지 알 수 없다.
+   */
   @Test
   void 계좌별_집계를_보여_준다() {
     LedgerIntegrityResponse response =

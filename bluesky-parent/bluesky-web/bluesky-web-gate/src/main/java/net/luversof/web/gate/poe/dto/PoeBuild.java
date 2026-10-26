@@ -55,7 +55,7 @@ public record PoeBuild(
       String baseSlug,
       List<String> modLines,
       List<String> modLinesKo,
-      // 인게임 툴팁은 임플리싯(암시)이 구분선 위 별도 섹션이다 — API 가 갈라서 준다.
+      // 인게임 툴팁은 고정 속성(암시)이 구분선 위 별도 섹션이다 — API 가 갈라서 준다.
       List<String> implicitLines,
       List<String> implicitLinesKo,
       /** 인게임 툴팁 맨 아래 빨간 "부패됨" 줄 — PoB 텍스트의 Corrupted 플래그. */

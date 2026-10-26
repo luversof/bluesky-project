@@ -63,7 +63,7 @@
 				<button type="button" role="tab" data-poe-sim-tab="ranking" class="${tabInactive}">${rankingTitle}</button>
 			</div>
 
-			<!-- 최적 조합 탐색: 젬 + 목표 선택 → 보조젬/트리/아이템 greedy 탐색 -->
+			<!-- 최적 조합 탐색: 젬 + 목표 선택 → 보조 젬/트리/아이템 greedy 탐색 -->
 			<div data-poe-sim-panel="optimize" class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm">
 				<div class="text-sm text-base-content/60">${optimizeDesc}</div>
 				<form class="space-y-3" data-no-success-toast
@@ -98,22 +98,19 @@
 							<a class="link link-primary ml-auto" href="/poe/sim">${MessageUtil.getMessage("poe.sim.opt.fixedtree.clear")}</a>
 						</div>
 					@endif
-					<!-- 주 입력(스킬젬·고유템) + 최적화 설정을 한 줄로 — 셋 다 짧아 줄을 나눌 이유가 없다(사용자 요청).
+					<!-- 주 입력(스킬 젬·고유템) + 최적화 설정을 한 줄로 — 셋 다 짧아 줄을 나눌 이유가 없다(사용자 요청).
 					     좁은 화면에선 flex-wrap 이 알아서 접고, items-end 로 라벨 있는 칸과 컨트롤의 밑선을 맞춘다. -->
 					<div class="flex flex-wrap items-end gap-3">
-						<%-- 세 선택(직업·스킬젬·고유템)은 서로의 선택에 따라 "많이 쓰는 순"으로 재배치된다.
+						<%-- 세 선택(직업·스킬 젬·고유템)은 서로의 선택에 따라 "많이 쓰는 순"으로 재배치된다.
 						     그래서 통째로 한 fragment 로 두고, 아무 값이나 바뀌면 이 컨테이너만 다시 그린다. --%>
+						<%-- 다시 그리기 트리거는 직업 · 스킬 select 자체에 있다(simSelects.jte, 10-25 Q178 — 거름식 change[…] 은 htmx 가 Function() 으로 평가해 CSP eval 위반) --%>
 						<div id="poeSimSelects" class="contents"
-						     hx-get="/poe/htmx/sim/selects"
 						     <%-- ⚠ from: 의 CSS 선택자에 **공백이 있으면 괄호로 감싸야** htmx 가 읽는다.
 						          안 감싸면 htmx:syntax:error 가 나고 트리거가 통째로 안 걸린다 — 직업을 바꿔도
 						          스킬/고유템 목록이 재정렬되지 않는 채 조용히 죽어 있었다(콘솔 오류 6건으로 발견). --%>
 						     <%-- ⚠ "change from:(선택자)" 는 처음 그린 select 에만 걸린다 — 이 조각을 한 번 다시 그리면 새 select 의 변경은 조용히
 						          무시됐다(10-01 실측: 직업을 두 번째 바꾸면 요청 0건). 컨테이너로 버블링되는 change 를 이름으로 걸러 받는다. --%>
-						     hx-trigger="change[target.name==='ascendancy'||target.name==='skills']"
-						     hx-include="#poeSimSelects select"
-						     hx-target="this"
-						     hx-swap="innerHTML">
+						     >
 							@template.poe.htmx.simSelects(activeGems = activeGems, uniqueItems = uniqueItems, preSkills = preSkills, preUniques = preUniques, ascendancy = fixedAscendancy, skillOrder = skillOrder, ascendancyOrder = ascendancyOrder, itemOrder = itemOrder)
 						</div>
 						<%-- min-w-0: flex 아이템 기본값(min-width:auto)이면 내용 너비를 고집해 좁은 폭에서 가로 스크롤이 생긴다(768px 실측). --%>
@@ -151,7 +148,7 @@
 							<div class="text-xs text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.merc.desc")}</div>
 							<textarea name="mercCode" rows="2"
 							          class="textarea textarea-bordered w-full font-mono text-xs leading-5"
-							          placeholder="${MessageUtil.getMessage("poe.build.merc.placeholder")}" autocomplete="off" spellcheck="false"></textarea>
+							          placeholder="${MessageUtil.getMessage("poe.build.merc.placeholder")}" autocomplete="off" spellcheck="false" aria-label="${MessageUtil.getMessage("poe.build.merc.placeholder")}"></textarea>
 						</div>
 					</details>
 					<%-- 실시간 성향 미리보기 — 선택한 스킬×전직의 poe.ninja 실빌드 성향/프로파일(실행 전). 스킬/전직 변경 시 갱신. --%>

@@ -15,12 +15,12 @@
 	String pageTitle = MessageUtil.getMessage("poe.tattoos.title");
 	String patchLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.patch"), patch);
 	boolean ko = PoeText.isKorean();
-	// 대상 타입 → 한글 라벨 + 표시 순서(키스톤 → 노터블 → 마스터리 → 소형)
+	// 대상 타입 → 한글 라벨 + 표시 순서(핵심노드 → 주요 스킬 → 마스터리 → 소형)
 	var typeLabels = new java.util.LinkedHashMap<String, String>();
-	typeLabels.put("Keystone", ko ? "키스톤" : "Keystone");
-	typeLabels.put("Notable", ko ? "노터블" : "Notable");
-	typeLabels.put("Mastery", ko ? "마스터리" : "Mastery");
-	typeLabels.put("Small Attribute", ko ? "소형(속성)" : "Small attribute");
+	typeLabels.put("Keystone", ko ? "핵심노드" : "Keystone");
+	typeLabels.put("Notable", ko ? "주요 스킬" : "Notable");
+	typeLabels.put("Mastery", ko ? "숙련" : "Mastery"); // 게임 낱말(10-23 Q124 — 문신 상세 숙련과 같게)
+	typeLabels.put("Small Attribute", ko ? "소형(능력치)" : "Small attribute"); // 상세 툴팁과 같은 '능력치'(10-24 Q164 — 게임 '속성'은 속성 부여 뜻)
 	typeLabels.put("Small Strength", ko ? "소형(힘)" : "Small strength");
 	typeLabels.put("Small Dexterity", ko ? "소형(민첩)" : "Small dexterity");
 	typeLabels.put("Small Intelligence", ko ? "소형(지능)" : "Small intelligence");
@@ -37,7 +37,7 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-sm text-base-content/60">${ko ? "패시브 노드를 대체하는 카루이 문신 — " : "Karui tattoos replace passive nodes — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터에서 우클릭으로 적용 →" : "apply in tree editor →"}</a></span>
+				<span class="text-sm text-base-content/60">${ko ? "패시브 스킬을 교체하는 카루이 문신 — " : "Karui tattoos replace passive nodes — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터에서 우클릭으로 적용 →" : "apply in tree editor →"}</a></span>
 				<span class="text-xs font-mono text-base-content/60">${tattoos.size()}</span>
 			</div>
 
@@ -48,7 +48,7 @@
 					<a class="poe-chip badge badge-ghost cursor-pointer" data-tattoo-type-chip="${t.getKey()}">${t.getValue()}</a>
 				@endfor
 				<input id="poeTattooSearch" type="search" class="input input-sm input-bordered w-full sm:w-64 sm:ml-2"
-				       placeholder="${ko ? "문신 검색 (예: 화염, 토템)" : "Search tattoos"}" autocomplete="off">
+				       placeholder="${ko ? "문신 검색 (예: 화염, 토템)" : "Search tattoos"}" autocomplete="off" aria-label="${ko ? "문신 검색" : "Search tattoos"}">
 				<span id="poeTattooCount" class="text-xs font-mono text-base-content/60"></span>
 			</div>
 
@@ -67,8 +67,11 @@
 							@endif
 							<span class="font-semibold poe-entry-name">${PoeText.name(t.nameKo(), t.name())}</span>
 							<span class="badge badge-ghost badge-xs">${typeLabels.getOrDefault(t.targetType(), t.targetType())}</span>
+							<%-- 인접 조건(10-23 Q73) — 상한 100 은 데이터의 '제한 없음'이라 숫자로 안 보인다, 상한 1 도 보인다 --%>
 							@if(t.minConnected() > 0)
-								<span class="text-[10px] text-base-content/60" title="${ko ? "연결된 할당 노드 수 조건" : "Connected allocation requirement"}">${ko ? "연결" : "adj"} ${t.minConnected()}@if(t.maxConnected() > t.minConnected())–${t.maxConnected()}@endif</span>
+								<span class="text-[10px] text-base-content/60" title="${ko ? "할당되어 있는 인접 패시브 스킬이 " + t.minConnected() + "개 이상이어야 합니다" : "Requires at least " + t.minConnected() + " adjacent Passive Skills to be allocated"}">${ko ? "인접 " + t.minConnected() + "개 이상" : "adj ≥" + t.minConnected()}</span>
+							@elseif(t.maxConnected() == 1)
+								<span class="text-[10px] text-base-content/60" title="${ko ? "할당되어 있는 인접 패시브 스킬이 1개 이하여야 합니다" : "Requires that no more than 1 adjacent Passive Skill is allocated"}">${ko ? "인접 1개 이하" : "adj ≤1"}</span>
 							@endif
 						</div>
 						!{List<String> tattooLines = ko && t.statsKo() != null && !t.statsKo().isEmpty() ? t.statsKo() : t.stats();}

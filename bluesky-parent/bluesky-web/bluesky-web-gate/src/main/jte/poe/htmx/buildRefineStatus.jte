@@ -40,7 +40,7 @@
 			</tbody>
 		</table>
 		@if(r.steps() == null || r.steps().isEmpty())
-			<div class="text-base-content/60">${ko ? "DPS·EHP 를 함께 올리는 교체를 찾지 못했습니다 — 이 빌드는 가이드가 보는 범위(보조젬·고유·레어 목표)에서 이미 잘 맞춰져 있습니다." : "No swap raised DPS and EHP together — the build is already well tuned within the guide's scope."}</div>
+			<div class="text-base-content/60">${ko ? "DPS·EHP 를 함께 올리는 교체를 찾지 못했습니다 — 이 빌드는 가이드가 보는 범위(보조 젬·고유·레어 목표)에서 이미 잘 맞춰져 있습니다." : "No swap raised DPS and EHP together — the build is already well tuned within the guide's scope."}</div>
 		@else
 			<ol class="list-decimal space-y-1 pl-5" data-refine-steps>
 				@for(PoeUpgradeGuide.RefineStep st : r.steps())

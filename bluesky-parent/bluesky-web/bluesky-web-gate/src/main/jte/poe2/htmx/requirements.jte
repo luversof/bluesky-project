@@ -6,6 +6,8 @@
 <%-- 아이템 옵션 줄(영문 원문) — 요구 능력치에 그 아이템 자신의 옵션을 반영한다(10-08 C177, 해질녘 "+150 Strength Requirement"). 베이스 툴팁은 없음 --%>
 @param java.util.List<String> implicits = null
 @param java.util.List<String> explicits = null
+<%-- 첫 구분선(10-23 Q28) — 제작 카드에서 속성 칸이 없는 장신구는 머리 바로 아래라 끈다(인게임엔 머리와 요구 사항 사이 구분선이 없다) --%>
+@param boolean leadSep = true
 
 <%-- 툴팁 요구 사항 줄 — PoE1 poe/htmx/uniqueDetail.jte 의 "요구 사항 레벨 N, 힘 …" 과 같은 마크업·메시지 키(10-01 인게임 정합: PoE2 툴팁엔 이 줄이 없었다).
      인게임처럼 라벨 회색 · 수치 흰색, 속성 배치 칸 다음 · 암시 앞. 레벨이 1 이하이고 능력치 요구도 없으면 그리지 않는다. --%>
@@ -19,7 +21,7 @@
 	boolean hasLevel = level != null && level > 1;
 }
 @if(hasLevel || str > 0 || dex > 0 || intel > 0)
-	<div class="poe-tt-sepimg"></div>
+	@if(leadSep)<div class="poe-tt-sepimg"></div>@endif
 	<div class="px-4 py-1.5 text-center text-[12px]" data-tt-requirements>
 		<%-- 게임 문구 그대로 "요구 사항: 레벨 65, 23 지능"(PoE2 클라이언트 ItemRequirementsLabel, 10-02 — 예전엔 "요구 능력치 레벨 …") --%>
 		<span class="${label}">${MessageUtil.getMessage("poe2.tt.requires")} </span>

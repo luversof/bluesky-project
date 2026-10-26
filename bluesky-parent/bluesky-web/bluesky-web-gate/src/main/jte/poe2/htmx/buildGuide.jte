@@ -11,7 +11,7 @@
 @param String tradeLeague = null
 
 <%-- 업그레이드 가이드(PoB-PoE2 비교 계산기 — PoB 아이템 툴팁의 "끼우면/빼면" 과 같은 계산) — PoE1 빌드 화면의 가이드 자리.
-     ① 고유 아이템으로 바꾸면(DPS 상위 · 생존 상위) ② 장비 칸 기여(빼면) ③ 보조젬 기여(끄면) ④ 특화·핵심 패시브 기여(빼면, 0 = 재분배 후보).
+     ① 고유 아이템으로 바꾸면(DPS 상위 · 생존 상위) ② 장비 칸 기여(빼면) ③ 보조 젬 기여(끄면) ④ 특화·핵심 패시브 기여(빼면, 0 = 재분배 후보).
      DPS·EHP 를 따로 보인다(합친 점수 하나면 "점수는 올랐는데 DPS 가 내려간" 착시가 생긴다 — PoE1 가이드 교훈). --%>
 !{
 	boolean korean = PoeText.isKorean();
@@ -41,7 +41,7 @@
 	<section class="space-y-3" data-poe2-guide>
 		<div class="flex flex-wrap items-baseline gap-2">
 			<h3 class="text-sm font-semibold">${MessageUtil.getMessage("poe.build.guide.title")}</h3>
-			<span class="text-xs text-base-content/60" data-guide-tried>${korean ? "고유 아이템 " + guide.tried() + "가지를 끼워 보고 오르는 것만(PoB 고유 목록처럼 품질 20% 기준) · 요구 능력치가 모자라게 되거나 다른 축을 5% 넘게 깎는 교체는 뺐습니다" : guide.tried() + " unique swaps tried (20% quality, as in PoB's unique list) · excludes swaps that break attribute requirements or cost over 5% on the other axis"} (${guide.elapsedMs()}ms)</span>
+			<span class="text-xs text-base-content/60" data-guide-tried>${korean ? "고유 아이템 " + guide.tried() + "가지를 끼워 보고 오르는 것만(PoB 고유 목록처럼 퀄리티 20% 기준) · 요구 능력치가 모자라게 되거나 다른 축을 5% 넘게 깎는 교체는 뺐습니다" : guide.tried() + " unique swaps tried (20% quality, as in PoB's unique list) · excludes swaps that break attribute requirements or cost over 5% on the other axis"} (${guide.elapsedMs()}ms)</span>
 		</div>
 		<%-- 무기 세트별 추천(10-01 사용자 요청) — 세트마다 패시브·무기가 달라 추천도 달라진다. 이 가이드는 weaponSet 을 켠 채 계산했다(처음엔 주 세트).
 		     다른 세트 단추는 그 세트로 가이드를 다시 계산해 이 구획을 통째로 바꾼다(가이드는 수 초~20초 — 단추에 로딩 표시). --%>
@@ -80,7 +80,7 @@
 		@endif
 
 		<%-- ⓪ 먼저 바꿀 것(10-14 사용자 요청 "빌드는 PoB 코드를 가져오면 개선할 점을 알려주는 업그레이드 가이드 — PoE1 처럼") — PoE1 가이드의 우선순위 한 목록
-		     (종류 배지 + 제목 + DPS · EHP)의 짝. 아래 표들(고유 교체 · 보조젬 교체 · 다음 패시브)의 제안을 DPS%+EHP% 합으로 줄 세워 위 6개만. 표는 그대로 아래에 --%>
+		     (종류 배지 + 제목 + DPS · EHP)의 짝. 아래 표들(고유 교체 · 보조 젬 교체 · 다음 패시브)의 제안을 DPS%+EHP% 합으로 줄 세워 위 6개만. 표는 그대로 아래에 --%>
 		!{
 			record Pick(String kind, String title, Double dps, Double ehp, String note) {}
 			java.util.List<Pick> picks = new java.util.ArrayList<>();
@@ -92,10 +92,10 @@
 			}
 			if (guide.gemWeakest() != null && guide.gemSwaps() != null) {
 				String from = korean && guide.gemWeakestKo() != null ? guide.gemWeakestKo() : guide.gemWeakest();
-				// 같은 자리(가장 약한 보조)를 바꾸는 대안들이라 가장 좋은 하나만 — 나머지는 아래 보조젬 표에
+				// 같은 자리(가장 약한 보조)를 바꾸는 대안들이라 가장 좋은 하나만 — 나머지는 아래 보조 젬 표에
 				Poe2.GuideSupport bestGem = guide.gemSwaps().stream().max(java.util.Comparator.comparingDouble(g -> (g.dps() == null ? 0 : g.dps()) + (g.ehp() == null ? 0 : g.ehp()))).orElse(null);
 				for (Poe2.GuideSupport s : bestGem == null ? java.util.List.<Poe2.GuideSupport>of() : java.util.List.of(bestGem)) {
-					picks.add(new Pick("support", from + " → " + (korean && s.nameKo() != null ? s.nameKo() : s.name()), s.dps(), s.ehp(), Boolean.TRUE.equals(s.lineage()) ? (korean ? "계보 젬(드묾)" : "lineage (rare)") : null));
+					picks.add(new Pick("support", from + " → " + (korean && s.nameKo() != null ? s.nameKo() : s.name()), s.dps(), s.ehp(), Boolean.TRUE.equals(s.lineage()) ? (korean ? "혈통 보조 젬(드묾)" : "lineage (rare)") : null));
 				}
 			}
 			// 패시브 재분배(10-14 C317 — 다듬기 실측에서 8회 중 5회 채택): 다 찍은 빌드는 "다음 패시브"를 찍을 점수가 없다 → 같은 칸(본 트리 · 켜진 세트)의
@@ -115,7 +115,7 @@
 					double rd = (n.dps() == null ? 0 : n.dps()) - (w.dps() == null ? 0 : w.dps());
 					double re = (n.ehp() == null ? 0 : n.ehp()) - (w.ehp() == null ? 0 : w.ehp());
 					Pick rp = new Pick("respec", (korean && w.nameKo() != null ? w.nameKo() : w.name()) + " 빼고 → " + (korean && n.nameKo() != null ? n.nameKo() : n.name()), rd, re,
-						korean ? "풀리는 " + w.free() + "점 → 가는 길 " + n.points() + "점" + (n.set() == null ? "" : " · 세트 " + n.set() + " 점수") : w.free() + " pts freed → " + n.points() + "-pt path" + (n.set() == null ? "" : " · set " + n.set() + " points"));
+						korean ? "풀리는 " + w.free() + "포인트 → 가는 길 " + n.points() + "포인트" + (n.set() == null ? "" : " · 세트 " + n.set() + " 포인트") : w.free() + " pts freed → " + n.points() + "-pt path" + (n.set() == null ? "" : " · set " + n.set() + " points"));
 					Pick prev = respecByWeak.get(w.id());
 					if (prev == null || rd + re > prev.dps() + prev.ehp()) { respecByWeak.put(w.id(), rp); respecAdd.put(w.id(), n.id()); }
 				}
@@ -125,7 +125,7 @@
 			seenPick.addAll(respecAdd.values().stream().map(id -> "node|" + id).toList());
 			for (java.util.List<Poe2.GuideNextNode> l : java.util.List.of(guide.nextDps() == null ? java.util.List.<Poe2.GuideNextNode>of() : guide.nextDps(), guide.nextEhp() == null ? java.util.List.<Poe2.GuideNextNode>of() : guide.nextEhp())) {
 				for (Poe2.GuideNextNode n : l) {
-					if (seenPick.add("node|" + n.id())) picks.add(new Pick("passive", (korean && n.nameKo() != null ? n.nameKo() : n.name()), n.dps(), n.ehp(), n.points() == null ? null : (korean ? "가는 길 포함 " + n.points() + "점" : n.points() + " points incl. path") + (n.set() == null ? "" : korean ? " · 세트 " + n.set() + " 점수" : " · set " + n.set() + " points")));
+					if (seenPick.add("node|" + n.id())) picks.add(new Pick("passive", (korean && n.nameKo() != null ? n.nameKo() : n.name()), n.dps(), n.ehp(), n.points() == null ? null : (korean ? "가는 길 포함 " + n.points() + "포인트" : n.points() + " points incl. path") + (n.set() == null ? "" : korean ? " · 세트 " + n.set() + " 포인트" : " · set " + n.set() + " points")));
 				}
 			}
 			java.util.function.ToDoubleFunction<Pick> gain = p -> (p.dps() == null ? 0 : p.dps()) + (p.ehp() == null ? 0 : p.ehp());
@@ -142,7 +142,7 @@
 							@if("support".equals(p.kind()))
 								<span class="badge badge-primary badge-outline badge-sm">${MessageUtil.getMessage("poe.build.guide.kind.support")}</span>
 							@elseif("respec".equals(p.kind()))
-								<span class="badge badge-warning badge-outline badge-sm" title="${korean ? "기여가 거의 없는 특화와 그것만 잇던 길을 빼고, 그 점수로 다른 패시브까지 찍습니다(다 찍은 빌드용 · 인게임 재분배 비용 필요)" : "Refund a near-zero notable and its path, then spend those points on another passive (for full trees; needs in-game refund)"}">${MessageUtil.getMessage("poe2.build.guide.kind.respec", korean ? "재분배" : "Respec")}</span>
+								<span class="badge badge-warning badge-outline badge-sm" title="${korean ? "기여가 거의 없는 주요 패시브와 그것만 잇던 길을 빼고, 그 포인트로 다른 패시브까지 찍습니다(다 찍은 빌드용 · 인게임 패시브 스킬 반환 비용 필요)" : "Refund a near-zero notable and its path, then spend those points on another passive (for full trees; needs in-game refund)"}">${MessageUtil.getMessage("poe2.build.guide.kind.respec", korean ? "반환" : "Respec")}</span>
 							@elseif("passive".equals(p.kind()))
 								<span class="badge badge-success badge-outline badge-sm">${MessageUtil.getMessage("poe2.build.guide.kind.passive", korean ? "패시브" : "Passive")}</span>
 							@else
@@ -223,11 +223,11 @@
 			<span class="loading loading-spinner loading-xs align-middle mr-1"></span>${korean ? "좋은 레어로 바꾸면 — 계산 중(칸마다 옵션을 하나씩 재 봅니다)…" : "If you swap to a good rare — calculating…"}
 		</div>
 
-		<%-- ⑤ 보조젬 교체 — 가장 약한 보조 자리(미적용 우선)에 이 스킬에 적용되는 보조를 끼워 본 결과 --%>
+		<%-- ⑤ 보조 젬 교체 — 가장 약한 보조 자리(미적용 우선)에 이 스킬에 적용되는 보조를 끼워 본 결과 --%>
 		@if(guide.gemWeakest() != null)
 			<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-gemswaps>
 				<div class="text-xs font-semibold mb-1">
-					${korean ? "보조젬 교체: 「" + (guide.gemWeakestKo() != null ? guide.gemWeakestKo() : guide.gemWeakest()) + "」 자리에 끼우면" : "Support swap: replacing " + guide.gemWeakest()}
+					${korean ? "보조 젬 교체: 「" + (guide.gemWeakestKo() != null ? guide.gemWeakestKo() : guide.gemWeakest()) + "」 자리에 끼우면" : "Support swap: replacing " + guide.gemWeakest()}
 					<span class="font-normal text-base-content/60">${korean ? "(기여가 가장 작은 보조 · 이 스킬에 적용되는 보조 " + guide.gemTried() + "가지 중 · 같은 계열은 가장 좋은 하나만)" : "(weakest support · " + guide.gemTried() + " compatible supports tried)"}</span>
 				</div>
 				@if(guide.gemSwaps().isEmpty())
@@ -241,9 +241,9 @@
 								@if(s.ehp() != null && Math.abs(s.ehp()) >= 0.05)<span class="font-mono ${tone.apply(s.ehp())}">EHP ${pct.apply(s.ehp())}</span>@endif
 								<%-- 계보(lineage) 젬 — 드물게 얻는다(자동 다듬기 단계 이름의 "계보 젬(드묾)"과 같은 표시) --%>
 								@if(Boolean.TRUE.equals(s.lineage()))
-									<span class="badge badge-ghost badge-xs" data-guide-lineage title="${korean ? "계보 젬 — 드물게 얻는 젬이라 바로 구하기 어려울 수 있습니다" : "Lineage gem — rare drop, may be hard to obtain"}">${korean ? "계보" : "lineage"}</span>
+									<span class="badge badge-ghost badge-xs" data-guide-lineage title="${korean ? "혈통 보조 젬 — 드물게 얻는 젬이라 바로 구하기 어려울 수 있습니다" : "Lineage gem — rare drop, may be hard to obtain"}">${korean ? "계보" : "lineage"}</span>
 								@endif
-								<%-- 조건부 보조젬 — PoB 가 조건을 켠 채로 재서 부풀린다(API Poe2RefineService.CONDITIONAL_SUPPORTS 와 같은 목록, 자동 다듬기에선 뺀다) --%>
+								<%-- 조건부 보조 젬 — PoB 가 조건을 켠 채로 재서 부풀린다(API Poe2RefineService.CONDITIONAL_SUPPORTS 와 같은 목록, 자동 다듬기에선 뺀다) --%>
 								@if(s.name() != null && (s.name().startsWith("Inexorable Critical") || s.name().startsWith("Minion Pact")))
 									<span class="badge badge-warning badge-xs" data-guide-conditional
 									      title="${korean ? (s.name().startsWith("Minion Pact") ? "주변 소환수를 희생해야 효과가 납니다 — 소환수가 없으면 인게임에선 이득이 없습니다" : "치명타 없이 흐른 시간만큼 쌓이는 효과라 PoB 는 최대 누적을 가정합니다 — 실제로는 치명타마다 초기화됩니다") : (s.name().startsWith("Minion Pact") ? "Needs a nearby minion to sacrifice — no gain in game without minions" : "Stacks while not critting; PoB assumes the maximum — it resets on every crit in game")}">${korean ? "조건부" : "conditional"}</span>
@@ -264,12 +264,12 @@
 						String title = k == 0 ? (korean ? "다음에 찍을 패시브 — 피해(DPS)" : "Next passives — DPS") : (korean ? "다음에 찍을 패시브 — 생존(EHP)" : "Next passives — EHP");
 					}
 					<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-next-list="${k == 0 ? "dps" : "ehp"}">
-						<div class="text-xs font-semibold mb-1">${title} <span class="font-normal text-base-content/60">${korean ? "(가는 길 포함 점수 · 점수당 순 · 안 찍은 특화·핵심 " + guide.nextTried() + "개 중)" : "(path points included · per point · " + guide.nextTried() + " tried)"}</span></div>
+						<div class="text-xs font-semibold mb-1">${title} <span class="font-normal text-base-content/60">${korean ? "(가는 길 포함 포인트 · 포인트당 순 · 안 찍은 주요 · 핵심노드 " + guide.nextTried() + "개 중)" : "(path points included · per point · " + guide.nextTried() + " tried)"}</span></div>
 						@if(list.isEmpty())
 							<div class="text-xs text-base-content/60">${korean ? "오르는 패시브가 없습니다." : "None."}</div>
 						@else
 							<table class="table table-xs">
-								<thead><tr><th>${korean ? "패시브" : "Passive"}</th><th class="text-right">${korean ? "점수" : "Pts"}</th><th class="text-right">DPS</th><th class="text-right">EHP</th><th class="text-right">${korean ? "점당" : "Per pt"}</th></tr></thead>
+								<thead><tr><th>${korean ? "패시브" : "Passive"}</th><th class="text-right">${korean ? "포인트" : "Pts"}</th><th class="text-right">DPS</th><th class="text-right">EHP</th><th class="text-right">${korean ? "점당" : "Per pt"}</th></tr></thead>
 								<tbody>
 									@for(Poe2.GuideNextNode n : list)
 										!{ Double main = k == 0 ? n.dps() : n.ehp(); }
@@ -277,8 +277,8 @@
 											<td>
 												<%-- 트리 화면에서 가는 길까지 찍힌 상태로 열린다 --%>
 												@if(n.treeLink() != null)<a class="link link-hover" href="${n.treeLink()}" title="${korean ? "트리에서 가는 길 보기" : "Show the path on the tree"}">${korean && n.nameKo() != null ? n.nameKo() : n.name()}</a>@else${korean && n.nameKo() != null ? n.nameKo() : n.name()}@endif
-												@if("Keystone".equals(n.type()))<span class="badge badge-ghost badge-xs ml-1">${korean ? "핵심" : "Keystone"}</span>@endif
-												@if(n.set() != null)<span class="badge badge-outline badge-xs ml-1" data-guide-next-set="${n.set()}" title="${korean ? "이 무기 세트에 찍은 노드에서 이어지는 길 — 그 세트 전용 점수로 찍습니다" : "Path from this weapon set's nodes — uses that set's passive points"}">${korean ? "세트 " + n.set() + " 점수" : "Set " + n.set() + " points"}</span>@endif
+												@if("Keystone".equals(n.type()))<span class="badge badge-ghost badge-xs ml-1">${korean ? "핵심노드" : "Keystone"}</span>@endif
+												@if(n.set() != null)<span class="badge badge-outline badge-xs ml-1" data-guide-next-set="${n.set()}" title="${korean ? "이 무기 세트에 찍은 노드에서 이어지는 길 — 그 세트 전용 포인트(무기 세트 패시브 스킬 포인트)로 찍습니다" : "Path from this weapon set's nodes — uses that set's passive points"}">${korean ? "세트 " + n.set() + " 포인트" : "Set " + n.set() + " points"}</span>@endif
 											</td>
 											<td class="text-right font-mono">${n.points()}</td>
 											<td class="text-right font-mono ${tone.apply(n.dps())}">${pct.apply(n.dps())}</td>
@@ -342,20 +342,20 @@
 					</tbody>
 				</table>
 			</div>
-			<%-- ③ 보조젬 기여(끄면) --%>
+			<%-- ③ 보조 젬 기여(끄면) --%>
 			<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-supports>
-				<div class="text-xs font-semibold mb-1">${korean ? "주 스킬 보조젬 기여 (끄면 잃는 몫)" : "Support gem contribution"}</div>
+				<div class="text-xs font-semibold mb-1">${korean ? "주 스킬 보조 젬 기여 (끄면 잃는 몫)" : "Support gem contribution"}</div>
 				@if(guide.supports().isEmpty())
-					<div class="text-xs text-base-content/60">${korean ? "주 스킬 묶음에 보조젬이 없습니다." : "No supports in the main group."}</div>
+					<div class="text-xs text-base-content/60">${korean ? "주 스킬 묶음에 보조 젬이 없습니다." : "No supports in the main group."}</div>
 				@else
 					<table class="table table-xs">
-						<thead><tr><th>${korean ? "보조젬" : "Support"}</th><th class="text-right">DPS</th><th class="text-right">EHP</th></tr></thead>
+						<thead><tr><th>${korean ? "보조 젬" : "Support"}</th><th class="text-right">DPS</th><th class="text-right">EHP</th></tr></thead>
 						<tbody>
 							@for(Poe2.GuideSupport s : guide.supports())
 								<tr>
 									<td>
 										@if(s.slug() != null)<a class="poe-hover link link-hover" href="/poe2/gems/${s.slug()}" target="_blank" rel="noopener" hx-get="/poe2/htmx/gems/detail?slug=${s.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">${korean && s.nameKo() != null ? s.nameKo() : s.name()}</a>@else${s.name()}@endif
-										@if(!Boolean.TRUE.equals(s.applied()))<span class="badge badge-warning badge-xs ml-1" title="${korean ? "이 스킬에는 인게임에서 적용되지 않는 보조젬" : "Does not apply to this skill in game"}">${korean ? "미적용" : "not applied"}</span>@endif
+										@if(!Boolean.TRUE.equals(s.applied()))<span class="badge badge-warning badge-xs ml-1" title="${korean ? "이 스킬에는 인게임에서 적용되지 않는 보조 젬" : "Does not apply to this skill in game"}">${korean ? "미적용" : "not applied"}</span>@endif
 									</td>
 									<td class="text-right font-mono ${tone.apply(s.dps())}">${pct.apply(s.dps())}</td>
 									<td class="text-right font-mono ${tone.apply(s.ehp())}">${pct.apply(s.ehp())}</td>
@@ -367,14 +367,14 @@
 			</div>
 			<%-- ④ 특화·핵심 패시브 기여(빼면) --%>
 			<div class="rounded-box border border-base-200 bg-base-100 p-2" data-guide-nodes>
-				<div class="text-xs font-semibold mb-1">${korean ? "특화·핵심 패시브 기여 (빼면 잃는 몫)" : "Notable/keystone contribution"}</div>
+				<div class="text-xs font-semibold mb-1">${korean ? "주요 · 핵심노드 패시브 기여 (빼면 잃는 몫)" : "Notable/keystone contribution"}</div>
 				@if(!strong.isEmpty())
 					<table class="table table-xs">
 						<thead><tr><th>${korean ? "패시브" : "Passive"}</th><th class="text-right">DPS</th><th class="text-right">EHP</th></tr></thead>
 						<tbody>
 							@for(Poe2.GuideNode n : strong)
 								<tr>
-									<td>${korean && n.nameKo() != null ? n.nameKo() : n.name()}@if("Keystone".equals(n.type()))<span class="badge badge-ghost badge-xs ml-1">${korean ? "핵심" : "Keystone"}</span>@endif</td>
+									<td>${korean && n.nameKo() != null ? n.nameKo() : n.name()}@if("Keystone".equals(n.type()))<span class="badge badge-ghost badge-xs ml-1">${korean ? "핵심노드" : "Keystone"}</span>@endif</td>
 									<td class="text-right font-mono ${tone.apply(n.dps())}">${pct.apply(n.dps())}</td>
 									<td class="text-right font-mono ${tone.apply(n.ehp())}">${pct.apply(n.ehp())}</td>
 								</tr>
@@ -384,7 +384,7 @@
 				@endif
 				@if(!zero.isEmpty())
 					<div class="mt-1 text-xs">
-						<span class="text-base-content/60">${korean ? "DPS·EHP 기여 0 (재분배 후보 — 계산에 안 잡히는 효과일 수 있음):" : "No DPS/EHP effect (respec candidates — may be unmodelled):"}</span>
+						<span class="text-base-content/60">${korean ? "DPS·EHP 기여 0 (반환 후보 — 계산에 안 잡히는 효과일 수 있음):" : "No DPS/EHP effect (respec candidates — may be unmodelled):"}</span>
 						@for(Poe2.GuideNode n : zero)<span class="badge badge-ghost badge-xs mr-1">${korean && n.nameKo() != null ? n.nameKo() : n.name()}</span>@endfor
 					</div>
 				@endif

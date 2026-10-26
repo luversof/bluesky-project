@@ -25,7 +25,7 @@ public interface PoeCraftClient {
   @PostExchange(value = "/distribution", contentType = MediaType.APPLICATION_JSON_VALUE)
   PoeCraft.DistResult distribution(@RequestBody PoeCraft.DistRequest request);
 
-  /** 계산기 목표 칸 덧붙임(C548) — 계열별 제작대 값어치 · 바알 타락 임플리싯 · 영향력 옵션 id. */
+  /** 계산기 목표 칸 덧붙임(C548) — 계열별 작업대 값어치 · 바알 타락 고정 속성 · 영향력 옵션 id. */
   @GetExchange("/calc-extras")
   PoeCraft.CalcExtras calcExtras(
       @RequestParam String itemClass,

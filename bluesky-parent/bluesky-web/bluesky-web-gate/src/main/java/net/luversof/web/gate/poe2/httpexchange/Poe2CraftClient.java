@@ -29,6 +29,10 @@ public interface Poe2CraftClient {
   @PostExchange(value = "/apply", contentType = MediaType.APPLICATION_JSON_VALUE)
   Poe2Craft.View apply(@RequestBody Poe2Craft.ApplyRequest request);
 
+  /** 고른 화폐 기준 옵션 표(10-22 Q2) — 요청은 화폐 적용과 같다. */
+  @PostExchange(value = "/action-pool", contentType = MediaType.APPLICATION_JSON_VALUE)
+  Poe2Craft.ActionPool actionPool(@RequestBody Poe2Craft.ApplyRequest request);
+
   /** 재조합기(C407). */
   @PostExchange(value = "/recombine", contentType = MediaType.APPLICATION_JSON_VALUE)
   Poe2Craft.View recombine(@RequestBody Poe2Craft.RecombineRequest request);

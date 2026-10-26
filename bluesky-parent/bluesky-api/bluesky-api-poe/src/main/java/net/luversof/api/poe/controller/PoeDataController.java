@@ -182,7 +182,7 @@ public class PoeDataController {
     return poeBaseItemDataService.findByName(name).orElse(null);
   }
 
-  /** poedb 속성부여식 도유 목록 — 노터블 + 성유 3종, 비싼 성유 우선 정렬. */
+  /** poedb 속성부여식 성유 목록 — 주요 스킬 + 성유 3종, 비싼 성유 우선 정렬. */
   @GetMapping("/tree/anoints")
   public java.util.List<net.luversof.api.poe.service.PoeTreeGraphService.AnointEntry> anoints() {
     return poeTreeGraphService.anointList();
@@ -193,7 +193,7 @@ public class PoeDataController {
     return poeBaseItemDataService.itemClasses();
   }
 
-  /** 아이템 클래스를 PoB식 그룹(한손/양손 무기·방어구·장신구·플라스크·주얼)으로 — 그룹 칩 UI용 */
+  /** 아이템 종류를 PoB식 그룹(한손/양손 무기·방어구·장신구·플라스크·주얼)으로 — 그룹 칩 UI용 */
   @GetMapping("/base-items/item-class-groups")
   public List<PoeBaseItemDataService.ClassGroup> itemClassGroups() {
     return poeBaseItemDataService.itemClassGroups();
@@ -204,7 +204,7 @@ public class PoeDataController {
     return Map.of("totalCount", poeBaseItemDataService.totalCount());
   }
 
-  // ── 모드 풀 (일반 아이템 티어표) ──
+  // ── 모드 풀 (일반 아이템 등급표) ──
   @GetMapping("/mod-pool/for-item-class")
   public List<PoeModPoolDataService.ModFamily> modFamiliesForItemClass(
       @RequestParam String itemClass) {
@@ -230,7 +230,7 @@ public class PoeDataController {
     return mods;
   }
 
-  // ── 엘드리치 임플리싯(총주교/포식자) ──
+  // ── 섬뜩한 고정 속성(총주교/포식자) ──
   // 엘드리치 대상이 아닌 슬롯(무기/반지/허리띠 등)은 예외 대신 null(200) — 아이템 상세는 클래스마다 이걸
   // 호출하므로, 404→500 래핑 예외가 페이지 로드마다 로그를 더럽히는 것을 피한다.
   @GetMapping("/eldritch/for-item-class")
@@ -291,13 +291,13 @@ public class PoeDataController {
     return poeEssenceDataService.forItemClass(itemClass);
   }
 
-  // ── 장인 작업대(벤치크래프트) ──
+  // ── 작업대(벤치크래프트) ──
   @GetMapping("/bench/for-item-class")
   public List<PoeBenchDataService.BenchEntry> benchForItemClass(@RequestParam String itemClass) {
     return poeBenchDataService.forItemClass(itemClass);
   }
 
-  /** 클러스터 주얼 노터블 사전 — 브라우징 페이지용. */
+  /** 클러스터 주얼 주요 스킬 사전 — 브라우징 페이지용. */
   @GetMapping("/tree/cluster-notables")
   public List<PoeTreeGraphService.ClusterNotable> clusterNotables() {
     return poeTreeGraphService.clusterNotables();

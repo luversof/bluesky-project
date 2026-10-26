@@ -904,19 +904,20 @@ public class Poe2CraftOptimizer {
               names,
               false));
     }
-    // 새 베이스(값은 빼고 — 시뮬레이터 표와 같은 가정)
+    // 새 베이스 — 베이스 값은 '가격 직접 입력'의 베이스 아이템(10-23 Q20b, 없으면 0 — 시뮬레이터 표와 같은 가정)
     Item fresh = new Item(pk, start.ilvl(), Rarity.NORMAL, List.of(), false);
+    double bp = calc.basePrice();
     acts.add(
         new Act(
             "NEW_BASE",
             null,
             null,
             Set.of(),
-            "새 베이스(베이스 값 제외)",
-            Map.of(),
-            MIN_COST,
+            bp > 0 ? "새 베이스" : "새 베이스(베이스 값 제외)",
+            bp > 0 ? Map.of(Poe2CraftCalcService.BASE_ITEM, 1d) : Map.of(),
+            Math.max(MIN_COST, bp),
             true,
-            "New base (base cost excluded)"));
+            bp > 0 ? "New base" : "New base (base cost excluded)"));
     // 재조합기(C472) — 한쪽(접두/접미) 목표를 다 채운 아이템에 다른 쪽 반쪽(계산기의 가장 싼 방법으로 따로 만듦)을 합친다. 성공 = 완성, 실패 = 둘 다
     // 잃음(새 베이스). 확률은 공식 비공개라 사용자가 넣은 인게임 값
     Map<String, double[]> recombInfo = new HashMap<>();
@@ -977,7 +978,8 @@ public class Poe2CraftOptimizer {
                   Set.of(),
                   name,
                   h.perSuccess(),
-                  Math.max(h.costPerSuccess(), MIN_COST),
+                  // 실패하면 둘 다 잃고 새 베이스부터(Q20b — 그 베이스 값 기대치)
+                  Math.max(h.costPerSuccess() + (1 - p) * bp, MIN_COST),
                   false,
                   nameEn));
           recombInfo.put("RECOMB:" + side, new double[] {sufHalf ? preMask : sufMask, p});
@@ -992,7 +994,7 @@ public class Poe2CraftOptimizer {
                     Set.of(),
                     name + " + 재조합의 징조",
                     sp,
-                    Math.max(h.costPerSuccess() + omen, MIN_COST),
+                    Math.max(h.costPerSuccess() + omen + (1 - p) * (1 - p) * bp, MIN_COST),
                     false,
                     nameEn + " + Omen of Recombination"));
             recombInfo.put(
@@ -1039,7 +1041,8 @@ public class Poe2CraftOptimizer {
     }
     job.upper = known;
     job.restartKey = job.key(fresh);
-    job.restartCost = MIN_COST;
+    // 넘김 = 새 베이스부터(10-23 Q23 검토 — 베이스 값을 넣어도 넘김은 공짜라 정책이 NEW_BASE 대신 넘김을 골라 계획 비용에서 베이스가 빠졌다)
+    job.restartCost = Math.max(MIN_COST, calc.basePrice());
     // 넘김 값 시작 — 위 경계가 아주 크면(아는 방법 없음 1e9) 1e7 에서(기울기를 빼는 자릿수 손실, 근보다 작으면 뉴턴이 한 번에 넘어 위에서 내려온다)
     job.effUpper = Math.min(job.upper, 1e7);
     if (req.upper() != null && req.upper() > 0) {
@@ -1110,11 +1113,16 @@ public class Poe2CraftOptimizer {
           "목표까지 가는 길을 찾지 못했습니다(시간 안에 넓힌 상태 " + job.trans.size() + "개)",
           "No path to the targets was found (" + job.trans.size() + " states expanded in time)");
     }
+    // 새 베이스에서 시작하면 첫 베이스 값도(10-23 Q28 — 계산기 표 · 위 경계는 첫 시도부터 베이스를 넣는데 계획 · 모의엔 없어 그만큼 싸 보였다)
+    double firstBase = start.affixes().isEmpty() ? calc.basePrice() : 0;
+    planCost = planCost + firstBase;
     // 정책을 실제 아이템에 굴려 비용 재기
     Map<String, Double> spent = new LinkedHashMap<>();
     Map<String, Integer> visits = new HashMap<>();
     List<List<Integer>> paths = new ArrayList<>();
     List<Double> runCost = new ArrayList<>();
+    // 성공 회차마다 앞서 못 닿은 회차 비용까지(결과 예시 비용 — 분위수와 같은 기준, Q37)
+    List<Double> runCostCarry = new ArrayList<>();
     // 목표에 실제로 닿은 회차의 비용(C540) — 분포(운 좋으면 · 보통 · 운 나쁘면)는 이것만. 넘김 · 고리 감시 회차는 '아는 최저'의 기대 비용을 덩어리로
     // 더해 분포처럼 보였다
     List<Double> reachedCost = new ArrayList<>();
@@ -1141,6 +1149,9 @@ public class Poe2CraftOptimizer {
     Map<String, Integer> failedActs = new HashMap<>();
     int stuckStates = 0;
     double failCost = 0;
+    // 못 닿은 회차 비용을 다음 성공 회차에 얹는다(10-23 Q31 — 분위수가 성공 회차 비용만 봐 평균 19.5c 옆에 '운 좋으면 · 보통 · 운 나쁘면' 2.0c
+    // 셋이 나왔다)
+    double carry = 0;
     String diag = "";
     long simEnd = started + budget;
     // 하드 한도(C472f) — 최소 30회를 채우느라 예산을 크게 넘기지 않게(다시 시작이 많은 목표에서 2분 넘게 걸렸다)
@@ -1151,7 +1162,10 @@ public class Poe2CraftOptimizer {
             && System.currentTimeMillis() < simHard;
         runs++) {
       Item it = start;
-      double c = 0;
+      double c = firstBase;
+      if (firstBase > 0) {
+        spent.merge(Poe2CraftCalcService.BASE_ITEM, 1d, Double::sum);
+      }
       List<Integer> path = new ArrayList<>();
       Set<String> seenRun = new java.util.HashSet<>();
       ArrayDeque<String> trace = new ArrayDeque<>();
@@ -1264,6 +1278,10 @@ public class Poe2CraftOptimizer {
             recombined = true;
             break;
           }
+          // 실패 — 둘 다 잃고 새 베이스(Q23 검토: 비용엔 기대값 (1 − p)·베이스가 있는데 쓴 것엔 없었다)
+          if (calc.basePrice() > 0) {
+            spent.merge(Poe2CraftCalcService.BASE_ITEM, 1d, Double::sum);
+          }
           it = job.fresh;
           continue;
         }
@@ -1333,12 +1351,15 @@ public class Poe2CraftOptimizer {
         succ++;
         paths.add(path);
         runCost.add(c);
+        runCostCarry.add(c + carry);
         finals.add(reached ? it : null);
         if (reached || recombined) {
-          reachedCost.add(c);
+          reachedCost.add(c + carry);
+          carry = 0;
         }
       } else {
         failCost += c;
+        carry += c;
         if (diag.isEmpty()) {
           diag = "걸음 " + steps + " · 비용 " + c + " · " + String.join(" ; ", trace);
         }
@@ -1519,6 +1540,11 @@ public class Poe2CraftOptimizer {
       noteEn +=
           " · no simulated run reached the target yet, so the cost shown is the unverified plan value";
     }
+    if (calc.basePrice() <= 0 && pathText.contains("새 베이스")) {
+      note += " · 새 베이스 값은 빠져 있습니다('가격 직접 입력'의 베이스 아이템에 넣으면 포함)";
+      noteEn +=
+          " · new base items are not costed (set 'Base item' in Custom prices to include them)";
+    }
     if (simCost != null) {
       note += " · 모의 성공 " + succ + "번뿐이라 비용은 계획 값(모의 값 " + String.format("%.2f", simCost) + "div)";
       noteEn +=
@@ -1572,7 +1598,7 @@ public class Poe2CraftOptimizer {
                   l.fractured(),
                   false));
         }
-        showcase.add(new Showcase(runCost.get(i), fv.item().rarity().name(), sl));
+        showcase.add(new Showcase(runCostCarry.get(i), fv.item().rarity().name(), sl));
       }
     }
     return new Result(
@@ -1654,7 +1680,8 @@ public class Poe2CraftOptimizer {
     }
     job.upperLabel = alch.ko() + " 연타(새 베이스마다)";
     job.upperLabelEn = alch.en() + " spam (new base each time)";
-    return alch.cost() * SPAM_SAMPLE / hits;
+    // 시도마다 새 베이스 값도(Q23 검토 — 계산기 표의 연금 연타와 같게, 빼면 위 경계가 수십 배 낮아 정상 수단이 잘렸다)
+    return (alch.cost() + calc.basePrice()) * SPAM_SAMPLE / hits;
   }
 
   /**

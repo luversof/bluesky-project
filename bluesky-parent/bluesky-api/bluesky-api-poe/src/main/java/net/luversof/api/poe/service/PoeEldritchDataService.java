@@ -14,19 +14,19 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 엘드리치 임플리싯(총주교/포식자) 풀 — tools/poe-extract/parse-eldritch.mjs 가 만든 {@code
- * ~/.poe-gamedata/eldritch-implicits.json}. 특정 방어/장신구 슬롯에 화폐로 부여하는 임플리싯을 아이템 클래스별로 팩션(exarch=총주교,
- * eater=포식자) × 계열(티어 사다리)로 제공한다.
+ * 섬뜩한 고정 속성(총주교/포식자) 풀 — tools/poe-extract/parse-eldritch.mjs 가 만든 {@code
+ * ~/.poe-gamedata/eldritch-implicits.json}. 특정 방어/장신구 슬롯에 화폐로 부여하는 고정 속성을 아이템 종류별로 팩션(exarch=총주교,
+ * eater=포식자) × 계열(등급 사다리)로 제공한다.
  */
 @Service
 public class PoeEldritchDataService {
 
   private static final Logger logger = LoggerFactory.getLogger(PoeEldritchDataService.class);
 
-  /** 티어 한 줄 — tier(클수록 강함) + 최대롤 문장(en/ko). */
+  /** 등급 한 줄 — tier(클수록 강함) + 최대롤 문장(en/ko). */
   public record EldritchTier(int tier, List<String> en, List<String> ko) {}
 
-  /** 한 계열 = 티어 사다리(강→약). */
+  /** 한 계열 = 등급 사다리(강→약). */
   public record EldritchFamily(String key, List<EldritchTier> tiers) {}
 
   /** 팩션 이름. */
@@ -37,7 +37,7 @@ public class PoeEldritchDataService {
   private record EldritchData(
       String patch, Map<String, Faction> factions, Map<String, SlotPools> bySlot) {}
 
-  /** 한 아이템 클래스의 엘드리치 풀 — 팩션 정보 + 총주교/포식자 계열. */
+  /** 한 아이템 종류의 엘드리치 풀 — 팩션 정보 + 총주교/포식자 계열. */
   public record ClassEldritch(
       String itemClass,
       Faction exarchFaction,
@@ -60,12 +60,12 @@ public class PoeEldritchDataService {
       JsonMapper jsonMapper = JsonMapper.builder().build();
       try (InputStream inputStream = Files.newInputStream(dataFile)) {
         loaded = jsonMapper.readValue(inputStream, EldritchData.class);
-        logger.info("PoE 엘드리치 임플리싯 로드: {} (슬롯 {}종)", dataFile, loaded.bySlot().size());
+        logger.info("PoE 섬뜩한 고정 속성 로드: {} (슬롯 {}종)", dataFile, loaded.bySlot().size());
       } catch (Exception e) {
-        logger.warn("PoE 엘드리치 임플리싯 로드 실패: {}", dataFile, e);
+        logger.warn("PoE 섬뜩한 고정 속성 로드 실패: {}", dataFile, e);
       }
     } else {
-      logger.warn("PoE 엘드리치 임플리싯 없음: {} — parse-eldritch.mjs 실행 필요", dataFile);
+      logger.warn("PoE 섬뜩한 고정 속성 없음: {} — parse-eldritch.mjs 실행 필요", dataFile);
     }
     this.data = loaded;
   }
@@ -74,12 +74,12 @@ public class PoeEldritchDataService {
     return !data.bySlot().isEmpty();
   }
 
-  /** 이 아이템 클래스가 엘드리치 임플리싯을 받을 수 있는지. */
+  /** 이 아이템 종류가 섬뜩한 고정 속성을 받을 수 있는지. */
   public boolean supports(String itemClass) {
     return data.bySlot().containsKey(itemClass);
   }
 
-  /** 아이템 클래스의 엘드리치 풀 — 없으면 null. */
+  /** 아이템 종류의 엘드리치 풀 — 없으면 null. */
   public ClassEldritch forItemClass(String itemClass) {
     SlotPools pools = data.bySlot().get(itemClass);
     if (pools == null) {

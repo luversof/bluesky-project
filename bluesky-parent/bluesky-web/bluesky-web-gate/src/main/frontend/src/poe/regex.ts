@@ -3,7 +3,7 @@
 //  - 선택 모드마다 "다른 모드와 겹치지 않는 최단 부분 문자열"을 찾아 |로 압축, 인게임 검색창
 //    형식("!a|b" "c" — 공백 구분 = AND, !는 부정)으로 출력한다. 한도 250자.
 //  - 수치는 롤마다 달라 후보 문자열에서 숫자 구간을 배제한다(숫자 없는 구간의 부분 문자열만 사용).
-//  - 맵 아이템 헤더(아이템 수량/희귀도/무리 규모/티어/타락함)와 충돌하는 후보는 금지 — 아니면
+//  - 맵 아이템 헤더(아이템 수량/희귀도/무리 규모/등급/타락함)와 충돌하는 후보는 금지 — 아니면
 //    제외 정규식이 모든 맵을 걸러버린다.
 //  - 프리셋 저장/불러오기/편집: /poe/api/regex/presets (저장·삭제는 로그인 필요, 401 시 안내).
 (function () {
@@ -62,8 +62,8 @@
 		customInclude: string[];
 		/**
 		 * 수동 항이 <b>어느 모드를 노리는지</b> (모드 id → 항 목록). 체크로 바꾸지는 않는다 —
-		 * 예: {@code 4\d.*치로} 는 "강해진"의 특정 티어 롤(40~49)만 노리는데 우리 목록은 티어를 하나로
-		 * 병합해 두어서, 체크로 바꾸면 전 티어를 거르는 **더 센 필터**가 된다.
+		 * 예: {@code 4\d.*치로} 는 "강해진"의 특정 등급 롤(40~49)만 노리는데 우리 목록은 등급을 하나로
+		 * 병합해 두어서, 체크로 바꾸면 전 등급을 거르는 **더 센 필터**가 된다.
 		 * 그래서 화면에만 표시해 "이 항이 이 모드를 노린다"를 알린다(원문은 그대로 출력).
 		 */
 		customTargets: { [id: string]: string[] };
@@ -113,22 +113,37 @@
 	// ---------- 정규식 생성 ----------
 
 	// 맵 아이템에 항상 있을 수 있는 헤더 문구 — 후보가 이 문구에 걸리면 무효(모든 맵이 걸러진다)
+	//   게임 ClientStrings ItemDisplayMap* · ItemDisplayStringClass · ItemPopupCorrupted/Mirrored(10-23 Q121 — 3.25 이후 보상 줄 6개가 빠져
+	//   '증폭' · 'more' · 'cy' · 'bs' 같은 항이 '점술 카드 증폭' · 'More Currency' · 'More Scarabs' 에 걸릴 수 있었다)
 	let HEADER_KO = [
 		"아이템 수량: +99% (증강됨)",
 		"아이템 희귀도: +99% (증강됨)",
 		"몬스터 무리 규모: +99% (증강됨)",
-		"아이템 클래스: 지도",
-		"지도 티어: 17",
-		"타락함",
-		"미러티어",
+		"지도 더 많음: +99% (증강됨)",
+		"화폐 더 많음: +99% (증강됨)",
+		"갑충석 더 많음: +99% (증강됨)",
+		"점술 카드 증폭: +99% (증강됨)",
+		"지도 출현 확률: +99% (증강됨)",
+		"골드 발견량: +99% (증강됨)",
+		"아이템 종류: 지도",
+		"지도 등급: 17",
+		"타락",
+		"복제",
 	];
 	let HEADER_EN = [
 		"Item Quantity: +99% (augmented)",
 		"Item Rarity: +99% (augmented)",
 		"Monster Pack Size: +99% (augmented)",
+		"More Maps: +99% (augmented)",
+		"More Currency: +99% (augmented)",
+		"More Scarabs: +99% (augmented)",
+		"More Divination Cards: +99% (augmented)",
+		"Map Drop Chance: +99% (augmented)",
+		"Gold Found: +99% (augmented)",
 		"Item Class: Maps",
 		"Map Tier: 17",
 		"Corrupted",
+		"Mirrored",
 	];
 
 	// 임계값 두 칸의 머리글 앵커 — quant 칸(PoE1 아이템 수량 / PoE2 아이템 희귀도)과 pack 칸(무리 규모).
@@ -144,9 +159,16 @@
 	};
 
 	/** 라인 → 숫자 없는 구간들. "(a-b)" 범위 표기는 실제 아이템에선 단일 수치라 먼저 한 자리로 치환. */
+	/** 데이터 줄 → 화면 줄 — 한 데이터 줄 안의 줄바꿈('폭주'처럼 두 줄짜리 문장)도 자른다(10-25 Q183: 줄을 넘는 후보는 termize 로 '.' 이 되는데 인게임 '.' 은 줄바꿈을 못 넘는다) */
+	function splitLines(lines: string[]): string[] {
+		const out: string[] = [];
+		for (const l of lines) for (const part of l.split("\n")) out.push(part);
+		return out;
+	}
+
 	function segmentsOf(lines: string[]): string[] {
 		const segs: string[] = [];
-		for (const line of lines) {
+		for (const line of splitLines(lines)) {
 			const flat = line.replace(/\((-?[\d.]+)[-~](-?[\d.]+)\)/g, "9");
 			for (const part of flat.split(/[\d.]+/)) {
 				const s = part.trim();
@@ -213,6 +235,15 @@
 		const negative: string[][] = [];
 		const lower = (a: string[]) => a.map((s) => s.toLowerCase());
 		for (const m of mods) if (!selectedIds.has(m.id)) negative.push(lower(segmentsOf(linesOf(m, english))));
+		// 다른 옵션의 접두 · 접미 이름도 — 매직 지도 · 경로석 이름("<접두> 베이스 <접미>")에 들어가 검색에 걸린다(10-25 Q183: '번개' 가 '- 번개' 감전 지대 매직 지도까지 걸렀다)
+		const affixNames: string[] = [];
+		for (const m of mods) {
+			if (selectedIds.has(m.id)) continue;
+			const n = ((english ? m.name : m.nameKo) || "").replace(/^-\s*/, "").trim();
+			// 아이템 이름 안에선 앞뒤가 띄어쓰기("… 지도 번개") — 띄어쓰기 낀 후보(termize 로 ".번개")도 걸러지게 공백째 넣는다
+			if (n.length >= 2) affixNames.push(" " + n + " ");
+		}
+		negative.push(lower(affixNames));
 		negative.push(lower(segmentsOf(english ? HEADER_EN : HEADER_KO)));
 		// 지도 이름(527종)도 "걸리면 안 되는 말뭉치" — 이름에 든 낱말을 항으로 뽑으면 그 지도가 전부 걸린다
 		negative.push(lower(segmentsOf(english ? mapNames.en : mapNames.ko)));
@@ -309,7 +340,7 @@
 				// 그래도 없으면(다른 모드와 라인까지 동일) 가장 긴 구간 + 경고(과다 매치 가능)
 				const fallback = segs.slice().sort((a, b) => b.length - a.length)[0] || "";
 				warnings.push(
-					(uiKo ? "고유 문자열 없음(비슷한 모드와 함께 걸림): " : "No unique substring: ") +
+					(uiKo ? "고유 문자열 없음(비슷한 옵션과 함께 걸림): " : "No unique substring: ") +
 						(uiKo ? mod.nameKo : mod.name),
 				);
 				if (fallback) terms.push(escapeRegex(fallback));
@@ -327,7 +358,7 @@
 	 * 안 걸리는 가장 짧은 라인을 찾는다(없으면 null). 가져오기의 RegExp 매칭과 같은 문법이라 라운드트립이 안정.
 	 */
 	function lineRegexTerm(mod: MapMod, english: boolean, selectedIds: Set<string>): string | null {
-		const patterns = linesOf(mod, english)
+		const patterns = splitLines(linesOf(mod, english)) // 줄 단위(10-25 Q183 — segmentsOf 와 같은 까닭)
 			.map((line) =>
 				escapeRegex(line.replace(/\((-?[\d.]+)[-~](-?[\d.]+)\)/g, "\u0000")).replace(/\u0000/g, "\\d+"),
 			)
@@ -489,8 +520,10 @@
 				"badge badge-sm gap-1 font-mono " + (chip.kind === "exclude" ? "badge-error badge-outline" : "badge-success badge-outline");
 			span.textContent = (chip.kind === "exclude" ? "!" : "") + chip.term;
 			const x = document.createElement("button");
+			x.type = "button";
 			x.className = "cursor-pointer font-bold";
 			x.textContent = "×";
+			x.setAttribute("aria-label", (uiKo ? "제거: " : "Remove: ") + chip.term); // 10-25 Q204
 			x.addEventListener("click", () => {
 				const arr = chip.kind === "exclude" ? state.customExclude : state.customInclude;
 				const idx = arr.indexOf(chip.term);
@@ -722,7 +755,7 @@
 						const rollHits = modsMatchingSomeRoll(alt, english);
 						if (rollHits.length) rollCount++;
 						// "인식이 안 된다"의 실체는 **어느 모드를 노리는지 안 보이는 것**이었다.
-						// 체크로 바꾸진 않되(티어 병합 때문에 더 센 필터가 된다) 그 모드 행에 표시한다.
+						// 체크로 바꾸진 않되(등급 병합 때문에 더 센 필터가 된다) 그 모드 행에 표시한다.
 						for (const hit of rollHits) (state.customTargets[hit.id] = state.customTargets[hit.id] || []).push(alt);
 					}
 					continue;
@@ -757,7 +790,7 @@
 		if (rollCount)
 			parts.push(
 				uiKo
-					? "그중 " + rollCount + "개는 롤 수치 조건이라 모드 선택으로 못 바꿉니다(그대로 유지)"
+					? "그중 " + rollCount + "개는 롤 수치 조건이라 옵션 선택으로 못 바꿉니다(그대로 유지)"
 					: rollCount + " of them key on rolled values (kept as-is)",
 			);
 		return (uiKo ? "가져옴: " : "Imported: ") + (parts.length ? parts.join(" · ") : uiKo ? "매칭 없음" : "no matches");
@@ -839,7 +872,7 @@
 			if (m.uber && !m.normal) {
 				const t17 = document.createElement("span");
 				t17.className = "badge badge-warning badge-xs";
-				t17.textContent = "T17";
+				t17.textContent = uiKo ? "17등급" : "T17"; // 탭 이름(poe.regex.tab.t17)과 같게(10-25 Q183)
 				badges.appendChild(t17);
 			}
 			// 지도 보상 3종 — 인게임 지도 툴팁과 같은 순서(수량 → 희귀도 → 무리 크기)로 한 묶음.
@@ -874,7 +907,7 @@
 				}
 			} else {
 				if (m.quant > 0) reward.push((uiKo ? "수량 +" : "Q +") + m.quant + "%");
-				if (m.rarity > 0) reward.push((uiKo ? "희귀 +" : "R +") + m.rarity + "%");
+				if (m.rarity > 0) reward.push((uiKo ? "희귀도 +" : "R +") + m.rarity + "%");
 				if (m.packSize > 0) reward.push((uiKo ? "무리 +" : "P +") + m.packSize + "%");
 			}
 			if (reward.length) {
@@ -884,7 +917,7 @@
 				rb.title = rewardDefs
 					? (uiKo ? "경로석 보상(최대 롤) — " : "Waystone reward (max roll) — ") + rewardTitle.join(" / ")
 					: uiKo
-						? "지도 보상(최대 롤) — 아이템 수량 / 아이템 희귀도 / 몬스터 무리 크기"
+						? "지도 보상(최대 롤) — 아이템 수량 / 아이템 희귀도 / 몬스터 무리 규모"
 						: "Map reward (max roll) — item quantity / item rarity / monster pack size";
 				badges.appendChild(rb);
 			}
@@ -914,12 +947,12 @@
 			row.appendChild(badges);
 
 			// 가져온 정규식의 수동 항이 이 모드의 **특정 롤**을 노리는 경우 — 체크는 아니지만 눈에 보이게 한다.
-			// (예: 4\d.*치로 → "강해진"의 40~49 롤. 티어 변형을 하나로 병합해 둬서 체크로는 못 옮긴다.)
+			// (예: 4\d.*치로 → "강해진"의 40~49 롤. 등급 변형을 하나로 병합해 둬서 체크로는 못 옮긴다.)
 			const targets = state.customTargets[m.id];
 			if (targets && targets.length) {
 				const tb = document.createElement("div");
 				tb.className = "mt-0.5 text-[11px] font-mono text-warning";
-				tb.textContent = (uiKo ? "가져온 항이 이 모드의 특정 롤을 노림: " : "Imported term targets a specific roll: ") + targets.join(" , ");
+				tb.textContent = (uiKo ? "가져온 항이 이 옵션의 특정 롤을 노림: " : "Imported term targets a specific roll: ") + targets.join(" , ");
 				row.appendChild(tb);
 				row.className += " ring-1 ring-warning/50";
 			}

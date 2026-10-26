@@ -1274,6 +1274,61 @@ public class Poe2CraftEngine {
     return out;
   }
 
+  /**
+   * 첫 뽑기 기록(10-22 Q2, PoE1 PoeCraftEngine.PickProbe 짝) — 수단을 한 번 적용하며 처음 만든 후보(eligible — 등급 최소 레벨
+   * · 징조 쪽 · 동질화가 걸린 그대로)와 그 가중(균등, 촉진하는 찬미면 그 태그 배수)을 남긴다. 후보를 안 만드는 수단(소멸 · 신성 · 바알 · 드러내기 등)은
+   * cands = null.
+   */
+  public static final class PickProbe {
+    private List<Mod> cands;
+    private java.util.Map<String, Double> weights;
+    private boolean favoured;
+    private Item base;
+    private Result result;
+
+    public List<Mod> cands() {
+      return cands;
+    }
+
+    public java.util.Map<String, Double> weights() {
+      return weights;
+    }
+
+    public Item base() {
+      return base;
+    }
+
+    public Result result() {
+      return result;
+    }
+  }
+
+  private static final ThreadLocal<PickProbe> PICK_PROBE = new ThreadLocal<>();
+
+  // 켜진 기록 수 — 0 이면 ThreadLocal 도 안 본다(시뮬레이터 · 최적화기 표본의 뜨거운 길)
+  private static final java.util.concurrent.atomic.AtomicInteger PICK_PROBES =
+      new java.util.concurrent.atomic.AtomicInteger();
+
+  /** 수단을 한 번(고정 씨앗) 적용하며 첫 후보 · 가중을 기록한다. */
+  public PickProbe probeFirstPick(Item item, Action action, String arg, Set<String> omens) {
+    return probeFirstPick(item, action, arg, omens, 1);
+  }
+
+  /** seed = 카오스(무작위로 하나 지운 뒤 고름)처럼 씨앗마다 갈래가 다르면 서비스가 여러 씨앗을 평균한다(10-22 Q3e 검토). */
+  public PickProbe probeFirstPick(
+      Item item, Action action, String arg, Set<String> omens, long seed) {
+    PickProbe p = new PickProbe();
+    PICK_PROBE.set(p);
+    PICK_PROBES.incrementAndGet();
+    try {
+      p.result = apply(item, action, arg, omens, new java.util.SplittableRandom(seed));
+    } finally {
+      PICK_PROBES.decrementAndGet();
+      PICK_PROBE.remove();
+    }
+    return p;
+  }
+
   /** 붙을 수 있는 옵션 — 아이템 레벨 · 최소 레벨 · 자리 · 같은 그룹 · (쪽) · (동질화 = 있는 옵션과 태그 공유). */
   List<Mod> eligible(Item item, Rarity r, int min, String side, boolean homo) {
     int max = maxPerGen(item, r);
@@ -1330,6 +1385,17 @@ public class Poe2CraftEngine {
         }
       }
     }
+    if (PICK_PROBES.get() > 0 && !out.isEmpty()) {
+      PickProbe probe = PICK_PROBE.get();
+      if (probe != null && probe.cands == null) {
+        probe.cands = out;
+        probe.weights = new java.util.LinkedHashMap<>();
+        for (Mod m : out) {
+          probe.weights.put(m.id(), 1d);
+        }
+        probe.base = item;
+      }
+    }
     return out;
   }
 
@@ -1367,6 +1433,15 @@ public class Poe2CraftEngine {
       List<String> t = c.get(i).tags();
       w[i] = t != null && t.stream().anyMatch(favour::contains) ? mult : 1;
       total += w[i];
+    }
+    if (PICK_PROBES.get() > 0) {
+      PickProbe probe = PICK_PROBE.get();
+      if (probe != null && probe.cands == c && !probe.favoured) {
+        probe.favoured = true;
+        for (int i = 0; i < c.size(); i++) {
+          probe.weights.put(c.get(i).id(), w[i]);
+        }
+      }
     }
     double x = rng.nextDouble() * total;
     for (int i = 0; i < c.size(); i++) {

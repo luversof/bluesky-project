@@ -17,7 +17,7 @@
 				title = MessageUtil.getMessage("stock.page.analytics.title"),
 				description = MessageUtil.getMessage("stock.page.analytics.desc"))
 
-			<!-- 계좌별 카드 + 종목별 집계 테이블 (요약·비중 차트는 대시보드에서 제공) -->
+			<%-- 계좌별 카드 + 종목별 집계 테이블 (요약·비중 차트는 대시보드에서 제공) --%>
 			<div hx-get="/stock/htmx/asset-status" hx-trigger="load" hx-swap="innerHTML">
 				<div class="flex justify-center p-10">
 					<span class="loading loading-spinner text-primary loading-lg"></span>

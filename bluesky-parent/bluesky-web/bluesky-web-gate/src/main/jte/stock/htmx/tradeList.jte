@@ -13,6 +13,7 @@
 @import java.time.format.DateTimeFormatter
 @import java.text.DecimalFormat
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<TradeResponse> tradeList
 @param List<TradeResponse> allTradeList = java.util.List.of()
@@ -48,7 +49,7 @@
 
 !{
 	DecimalFormat decimalFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
-	java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+	java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 
 	// 여러 섹션이 공유하는 라벨 (하위 컴포넌트에 param 으로 전달)
 	String accountLabel = MessageUtil.getMessage("common.label.account");
@@ -160,7 +161,7 @@
 		tradingTaxLabel = tradingTaxLabel
 	)
 
-	<!-- Charts Row -->
+	<%-- Charts Row --%>
 	<div class="flex flex-wrap gap-4 mb-4 overflow-visible">
 
 		@template.stock.htmx.fragments.components.doughnutShell(
@@ -290,7 +291,7 @@
 				rootSelector: '#tradeListFragment'
 			})
 			: { set: function(){}, shift: function(){}, jumpToEdge: function(){} };
-		// 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드)
+		<%-- 기본값: 페이지 진입 시 기간 미지정이면 '이번달(mtd)'을 선택 (한번만 적용하도록 세션 가드) --%>
 		try {
 			if (window.tradePicker && typeof window.tradePicker.getState === 'function') {
 				var __s = window.tradePicker.getState();
@@ -306,10 +307,10 @@
 				}
 			}
 		} catch(e) {}
-		// Chart.js / StockCharts 는 initAll 안에서 ensureStockCharts 로 필요할 때 불러온다.
+		<%-- Chart.js / StockCharts 는 initAll 안에서 ensureStockCharts 로 필요할 때 불러온다. --%>
 		setTimeout(initAll, 0);
 		setTimeout(function() {
-			// 크기가 실제로 달라졌을 때만(소수 폭에서 resize() 는 매번 전체 재렌더 - stock-charts.ts resizeIfChanged 참고)
+			<%-- 크기가 실제로 달라졌을 때만(소수 폭에서 resize() 는 매번 전체 재렌더 - stock-charts.ts resizeIfChanged 참고) --%>
 			var fit = function(inst) { if (!inst || !inst.resize) return; if (window.StockCharts && window.StockCharts.resizeIfChanged) window.StockCharts.resizeIfChanged(inst); else inst.resize(); };
 			fit(window.tradeMonthlyChartInst);
 			fit(window.tradeDonutChartInst);

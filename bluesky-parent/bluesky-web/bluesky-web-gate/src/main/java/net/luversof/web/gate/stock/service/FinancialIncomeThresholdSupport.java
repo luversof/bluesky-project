@@ -240,7 +240,8 @@ public class FinancialIncomeThresholdSupport {
    * <ul>
    *   <li>그 차례를 올해 이미 받았으면(오늘까지 짝이 있으면) 세지 않는다 - 지금까지 합에 이미 들어 있다(2026-10-20 검토: 작년 11-20 · 올해
    *       11-19 이면 11-19 에 두 번 셌다).
-   *   <li>짝이 없고 L + 1 년이 올해 안이며 {@value #CYCLE_MATCH_DAYS} 일 넘게 지나지 않았으면 센다 - 늦어지는 지급도 아직 올 것으로 본다.
+   *   <li>짝이 없고 L + 1 년이 올해 안이며 {@value #CYCLE_MATCH_DAYS} 일이 다 지나지 않았으면(그날부터는 안 센다) 센다 - 늦어지는 지급도
+   *       아직 올 것으로 본다.
    * </ul>
    */
   static int pendingCyclesThisYear(TreeMap<LocalDate, BigDecimal> payDays, LocalDate today) {

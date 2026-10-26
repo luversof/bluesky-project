@@ -26,7 +26,7 @@ public record PoeOptimizeResult(
     List<SupportPick> guardGems,
     /** 채택한 저주 그룹(신성모독+저주젬) — API 와 평행. 미채택이면 빈 목록. */
     List<SupportPick> curseGems,
-    /** 장갑 부패 임플리싯 저주 이름(영문) — 표시용 한글은 같은 이름의 저주 젬에서 찾는다. */
+    /** 장갑 부패 고정 속성 저주 이름(영문) — 표시용 한글은 같은 이름의 저주 젬에서 찾는다. */
     SupportPick curseOnHit,
     /** 채택한 판테온(메이저/마이너) — 화면 표기용. 없으면 빈 문자열. */
     String pantheonMajor,
@@ -38,7 +38,7 @@ public record PoeOptimizeResult(
     List<Integer> treeNotableIds,
     List<SupportPick> jewels,
     List<ItemPick> items,
-    // 속성 부족으로 실제 장착이 불가능한 장비
+    // 능력치 부족으로 실제 장착이 불가능한 장비
     List<UnmetRequirement> unmetRequirements,
     List<UnmodeledNode> unmodeledNodes,
     UnmodeledAscendancy unmodeledAscendancy,
@@ -117,17 +117,17 @@ public record PoeOptimizeResult(
       String nameKo,
       List<String> modLines,
       List<String> modLinesEn,
-      // modLines 와 1:1 정렬된 티어 라벨("T{순위}/{총티어}"), 티어 없는 줄은 빈 문자열. 구 히스토리엔 없어 null 가능.
+      // modLines 와 1:1 정렬된 등급 라벨("T{순위}/{총등급}"), 등급 없는 줄은 빈 문자열. 구 히스토리엔 없어 null 가능.
       List<String> modTiers,
       // 거래소 검색 쿼리(q JSON, 레어 전용 — daum 서버 기준). null/구 히스토리면 링크 미표시.
       String tradeQuery,
-      // 실속형 쿼리 — 필수 모드만, min=2티어 최저 롤(T2 이상 매물). null/구 히스토리면 링크 미표시.
+      // 실속형 쿼리 — 필수 모드만, min=2등급 최저 롤(T2 이상 매물). null/구 히스토리면 링크 미표시.
       String tradeQueryBudget,
       // modLines 와 1:1 정렬된 줄별 인게임 리마인더(영 · 한, API 와 짝, 10-04 C150). 없거나 구 히스토리면 null.
       List<List<String>> modReminders,
       List<List<String>> modRemindersKo) {}
 
-  /** 레어 슬롯의 티어별 성능 비교 (T1/중간/하위) */
+  /** 레어 슬롯의 등급별 성능 비교 (T1/중간/하위) */
   public record SlotTierCompare(String slot, String slotKo, List<TierRow> rows) {}
 
   public record TierRow(String label, String value) {}

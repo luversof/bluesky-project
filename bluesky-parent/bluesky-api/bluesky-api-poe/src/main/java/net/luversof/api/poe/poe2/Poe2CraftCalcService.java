@@ -96,7 +96,18 @@ public class Poe2CraftCalcService {
       List<Step> sub) {}
 
   public record StrategyRequest(
-      Poe2CraftEngine.Item item, List<Target> targets, List<Step> steps, Integer runs) {}
+      Poe2CraftEngine.Item item,
+      List<Target> targets,
+      List<Step> steps,
+      Integer runs,
+      // 사용자 가격(10-23 Q20a, PoE1 짝)
+      Map<String, Double> prices) {
+
+    public StrategyRequest(
+        Poe2CraftEngine.Item item, List<Target> targets, List<Step> steps, Integer runs) {
+      this(item, targets, steps, runs, null);
+    }
+  }
 
   public record StepStat(String action, String arg, double avgUses, double reached) {}
 
@@ -109,8 +120,27 @@ public class Poe2CraftCalcService {
       Double costPerRun,
       Double expectedCost,
       List<StepStat> steps,
-      String error) {}
+      String error,
+      // 성공 예시(10-22 Q17, PoE1 Q16 짝 — craftofexile 시뮬레이터 'Store Items'). 처음 STRATEGY_SAMPLES 개
+      List<StrategySample> samples) {
 
+    public StrategyResult(
+        int runs,
+        int successes,
+        double successRate,
+        Map<String, Double> perRun,
+        Double costPerRun,
+        Double expectedCost,
+        List<StepStat> steps,
+        String error) {
+      this(runs, successes, successRate, perRun, costPerRun, expectedCost, steps, error, List.of());
+    }
+  }
+
+  /** 성공 예시 한 개 — 아이템(제작 화면 state) · 표시 줄. */
+  public record StrategySample(Poe2CraftEngine.Item item, List<Poe2CraftService.Line> lines) {}
+
+  static final int STRATEGY_SAMPLES = 5;
   static final int DEFAULT_RUNS = 300;
   static final int CHAOS_MAX = 1000;
   // 게이트 API 대기 10초(10-15 실측: 어려운 목표에서 방법마다 150만 번 → 시간 초과) — 방법마다 30만 번, 전체 벽시계 6초
@@ -375,6 +405,36 @@ public class Poe2CraftCalcService {
     return prices;
   }
 
+  /**
+   * 베이스 아이템 가격 이름(10-23 Q20b — craftofexile 'Base cost'). 시세가 없어 '가격 직접 입력'에만 있다. PoE2 는 정제가 없어
+   * 시도마다 새 베이스를 쓰는 방법이 많은데 그 값을 늘 0 으로 봤다.
+   */
+  public static final String BASE_ITEM = "Base item";
+
+  /** 베이스 값(디바인) — 사용자 가격에 넣었을 때만, 없으면 0. */
+  public double basePrice() {
+    Map<String, Double> d = prices().divine();
+    Double v = d == null ? null : d.get(BASE_ITEM);
+    return v == null || !(v > 0) ? 0 : v;
+  }
+
+  /** 새 베이스에서 시작한 방법 — 성공 한 번당 베이스 수(시도 수 / 성공)를 쓴 것에 더하고 비용(Q20b). 지금 아이템에서 시작이면 베이스는 이미 있다. */
+  private Double costWithBase(
+      Map<String, Double> per, Poe2CraftEngine.Item base, int done, int success) {
+    if (success > 0 && base.affixes().isEmpty() && basePrice() > 0) {
+      per.put(BASE_ITEM, (double) done / success);
+    }
+    return cost(per);
+  }
+
+  private String baseKo() {
+    return basePrice() > 0 ? "베이스 값 포함" : "베이스 값은 빼고";
+  }
+
+  private String baseEn() {
+    return basePrice() > 0 ? "base cost included" : "base cost excluded";
+  }
+
   Double cost(Map<String, Double> per) {
     if (per.isEmpty()) {
       return null;
@@ -533,7 +593,7 @@ public class Poe2CraftCalcService {
         success,
         done == 0 ? 0 : (double) success / done,
         per,
-        cost(per),
+        costWithBase(per, base, done, success),
         "회차 " + done + "번 · 카오스는 옵션 하나만 바꿔 상태가 남는다(회차 단위)",
         "Alchemy → " + tierEn(tier) + "Chaos Orb repeated (up to " + CHAOS_MAX + ")",
         done + " runs · Chaos changes one modifier at a time, so the item carries over (per run)");
@@ -686,13 +746,15 @@ public class Poe2CraftCalcService {
         success,
         (double) success / Math.max(1, done),
         per,
-        cost(per),
-        "시도마다 새 베이스(베이스 값은 빼고) · 목표를 채우거나 목표 쪽 자리가 막히면 멈춤",
+        costWithBase(per, base, done, success),
+        "시도마다 새 베이스(" + baseKo() + ") · 목표를 채우거나 목표 쪽 자리가 막히면 멈춤",
         tierEn(tier)
             + "Transmute → Augment → Regal → Exalt"
             + sideEn
             + " (until the targets, up to 6 modifiers)",
-        "New base each try (base cost excluded) · stops when the targets are met or the target side is full");
+        "New base each try ("
+            + baseEn()
+            + ") · stops when the targets are met or the target side is full");
   }
 
   /**
@@ -791,7 +853,7 @@ public class Poe2CraftCalcService {
               success,
               (double) success / done,
               per,
-              cost(per),
+              costWithBase(per, base, done, success),
               "엑잘마다 기폭제 20개 · 징조 하나(퀄리티를 모두 소모) · 같은 종류 가중치 ×5(poe2wiki, 균등 가정 위에)",
               "Transmute → Augment → Regal → (20% catalyst + Omen of Catalysing Exaltation) Exalt — "
                   + catName.getOrDefault(key, key),
@@ -876,7 +938,7 @@ public class Poe2CraftCalcService {
               success,
               (double) success / Math.max(1, done),
               per,
-              cost(per),
+              costWithBase(per, base, done, success),
               "보장: " + String.join(", ", e.ko() == null || e.ko().isEmpty() ? e.en() : e.ko()),
               e.name()
                   + " — Transmute → Augment → Essence → Exalt (until the targets, up to 6 modifiers)",
@@ -913,10 +975,10 @@ public class Poe2CraftCalcService {
         success,
         (double) success / Math.max(1, done),
         per,
-        cost(per),
-        "4옵션 · 베이스 값은 빼고",
+        costWithBase(per, base, done, success),
+        "4옵션 · " + baseKo(),
         "Orb of Alchemy spam (new base each time)",
-        "4 modifiers · base cost excluded");
+        "4 modifiers · " + baseEn());
   }
 
   /**
@@ -1083,11 +1145,12 @@ public class Poe2CraftCalcService {
         success,
         (double) success / Math.max(1, done),
         per,
-        cost(per),
-        "새 베이스마다 · 셋에 목표가 있으면 그것 · 심연의 메아리는 셋에 목표가 없을 때만 씀 · 베이스 값은 빼고",
+        costWithBase(per, base, done, success),
+        "새 베이스마다 · 셋에 목표가 있으면 그것 · 심연의 메아리는 셋에 목표가 없을 때만 씀 · " + baseKo(),
         "Alchemy → Desecrate (" + bone.name() + ") → Reveal (targets first)" + suffixEn,
         "New base each time · takes a target if one of the three offered is a target · Omen of"
-            + " Abyssal Echoes only when none is · base cost excluded");
+            + " Abyssal Echoes only when none is · "
+            + baseEn());
   }
 
   private String genOf(Target t) {
@@ -1134,10 +1197,10 @@ public class Poe2CraftCalcService {
         success,
         (double) success / Math.max(1, done),
         per,
-        cost(per),
-        "매직 2옵션까지 · 베이스 값은 빼고",
+        costWithBase(per, base, done, success),
+        "매직 2옵션까지 · " + baseKo(),
         "Transmute → Augment (magic, new base each time)",
-        "Up to 2 modifiers on a magic item · base cost excluded");
+        "Up to 2 modifiers on a magic item · " + baseEn());
   }
 
   /**
@@ -1266,13 +1329,15 @@ public class Poe2CraftCalcService {
     int[] reached = new int[req.steps().size()];
     int success = 0;
     int done = 0;
+    List<Poe2CraftEngine.Item> hits = new ArrayList<>();
     SplittableRandom rng = new SplittableRandom(42);
     for (int r = 0; r < runs && System.currentTimeMillis() < deadline.get(); r++, done++) {
       Poe2CraftEngine.Item it = base;
       boolean aborted = false;
       // 마지막으로 바뀐 아이템 — 중단돼도 그때까지 목표를 채웠으면 성공으로 센다(10-16 검토)
       Poe2CraftEngine.Item[] last = {base};
-      for (int k = 0; k < req.steps().size() && !aborted; k++) {
+      // 목표를 다 채우면 그 회차는 끝(10-23 Q18, PoE1 짝 — 남은 '한 번' 단계를 쓰지 않는다)
+      for (int k = 0; k < req.steps().size() && !aborted && !meets(it, req.targets()); k++) {
         reached[k]++;
         Step st = req.steps().get(k);
         int[] used = {0};
@@ -1287,11 +1352,18 @@ public class Poe2CraftCalcService {
       }
       if (meets(it, req.targets())) {
         success++;
+        if (hits.size() < STRATEGY_SAMPLES) {
+          hits.add(it);
+        }
       }
     }
     Map<String, Double> per = new LinkedHashMap<>();
     for (Map.Entry<String, Double> e : total.entrySet()) {
       per.put(e.getKey(), e.getValue() / Math.max(1, done));
+    }
+    // 새 베이스에서 시작하면 회차마다 베이스 하나(Q20b)
+    if (done > 0 && base.affixes().isEmpty() && basePrice() > 0) {
+      per.put(BASE_ITEM, 1.0);
     }
     Double cpr = cost(per);
     double rate = done == 0 ? 0 : (double) success / done;
@@ -1312,7 +1384,8 @@ public class Poe2CraftCalcService {
         cpr,
         cpr == null || success == 0 ? null : cpr / rate,
         stats,
-        null);
+        null,
+        hits.stream().map(h -> new StrategySample(h, craft.view(h).lines())).toList());
   }
 
   private static String validate(List<Step> steps) {

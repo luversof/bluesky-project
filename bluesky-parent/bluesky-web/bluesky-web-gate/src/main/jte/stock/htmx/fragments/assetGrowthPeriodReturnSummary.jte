@@ -2,6 +2,7 @@
 @import java.math.BigDecimal
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param String fromDate = ""
 @param String toDate = ""
@@ -288,7 +289,7 @@
 							@if(drawdownRangeAvailable)
 								<%-- 두 날짜 사이 화살표는 눈으로만 읽는다. 낭독기에는 '부터 ~ 까지' 를 준다 -
 								     기호를 그냥 두면 '오른쪽 화살표' 로 읽히고, 빼기만 하면 두 날짜가 나열될 뿐이다. --%>
-								<span class="text-base-content/60"><span aria-hidden="true">(<span class="whitespace-nowrap date-whole">${maxDrawdownPeakDate.toString()}</span> &#8594; <span class="whitespace-nowrap date-whole">${maxDrawdownTroughDate.toString()}</span>)</span><span class="sr-only">${java.text.MessageFormat.format(MessageUtil.getMessage("common.range.from.to"), maxDrawdownPeakDate.toString(), maxDrawdownTroughDate.toString())}</span></span>
+								<span class="text-base-content/60"><span aria-hidden="true">(<span class="whitespace-nowrap date-whole">${maxDrawdownPeakDate.toString()}</span> &#8594; <span class="whitespace-nowrap date-whole">${maxDrawdownTroughDate.toString()}</span>)</span><span class="sr-only">${StockViewSupport.msg("common.range.from.to", maxDrawdownPeakDate.toString(), maxDrawdownTroughDate.toString())}</span></span>
 							@endif
 						</p>
 					@else

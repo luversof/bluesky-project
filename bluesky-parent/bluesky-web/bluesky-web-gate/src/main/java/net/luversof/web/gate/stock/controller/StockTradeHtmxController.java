@@ -142,23 +142,11 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       return loginRequiredView(model);
     }
 
-    // If no date range provided by client, default to this year (ytd)
-    // 역순 기간은 앞뒤를 바로잡는다(피커와 같은 규칙). 그대로 두면 빈 결과가 '데이터 없음' 으로 읽힌다.
-    Instant[] orderedRange = effectiveRange(rangeMode, startDate, endDate);
-    Instant startInst = orderedRange[0];
-    Instant endInst = orderedRange[1];
-    // rangeMode 는 어떤 프리셋 버튼이 눌렸는지 알리는 화면 상태값이지 기간 그 자체가 아니다
-    // (기간은 startDate/endDate 로 온다). 그런데 이 가드가 rangeMode 의 '존재'를 보는 바람에,
-    // 날짜 없이 rangeMode 만 실려 오면 기본 기간이 적용되지 않고 전 기간이 조회됐다
-    // (실측: rangeMode=ytd 인데 올해 106행이 아니라 전체 300행). 같은 가드를 asset-growth 는
-    // 이미 '날짜가 없고 all 도 아니면 기본 적용'으로 쓰고 있어, 그쪽에 맞춘다.
-    if (startInst == null && endInst == null && !"all".equalsIgnoreCase(rangeMode)) {
-      ZoneId zone = resolveZoneIdOrDefault(timeZone);
-      var preset = resolvePresetRange(rangeMode, zone);
-      startInst = preset.start();
-      endInst = preset.end();
-      rangeMode = preset.mode();
-    }
+    // 역순 기간은 바로잡고, 날짜가 없으면 프리셋 기본 기간(listRange). 뒤에서 기본이 적용된 모드를 읽는다.
+    ListRange range = listRange(rangeMode, startDate, endDate, resolveZoneIdOrDefault(timeZone));
+    Instant startInst = range.start();
+    Instant endInst = range.end();
+    rangeMode = range.rangeMode();
 
     TradeSearchRequest request = new TradeSearchRequest(userId, null, null, startInst, endInst);
     ZoneId zone = resolveZoneIdOrDefault(timeZone);
@@ -700,13 +688,13 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     return activities;
   }
 
-  /** 필터·선행 조회 없이 전부 가져온다(최근 활동). 본문은 아래 10 인자판 하나다. */
   /** 대시보드 "최근 활동" 이 보여 주는 줄 수. */
   private static final int RECENT_ACTIVITY_COUNT = 5;
 
   /** 최근 활동을 찾을 창(일). 이번 달이 더 길면 이번 달 시작까지 넓힌다. */
   private static final int RECENT_WINDOW_DAYS = 90;
 
+  /** 필터·선행 조회 없이 전부 가져온다(최근 활동). 본문은 아래 9 인자판 하나다. */
   private List<Activity> getAllActivities(
       UUID userId,
       Instant startInstant,
@@ -765,7 +753,6 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     return "stock/htmx/fragments/recentActivities";
   }
 
-  /** 활동 화면 뷰 모드. 셋 중 하나가 아니면 "all"(전부 렌더)로 본다. */
   /**
    * 활동 내역의 표시 뷰. 화면(JS)은 항상 {@code calendar / timeline / list} 중 하나를 실어 보내고 저장값이 없으면 {@code
    * calendar} 를 쓴다.
@@ -804,25 +791,15 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
     // 화면에 보이는 뷰 하나만 렌더한다. 예전에는 캘린더/타임라인/목록 3종을 모두 그려 놓고
     // 클라이언트가 hidden 으로 감췄다(실측: 전체 기간에서 3048KB 중 1370KB 가 숨은 뷰).
-    // 값이 없으면 예전처럼 전부 렌더한다 — 스크립트가 꺼진 환경에서도 탭이 동작해야 하기 때문이다.
+    // 값이 없거나 모르는 값이면 화면과 같은 calendar 하나만 그린다(normalizeActivityView) - 셋을 한 번에 받으려면
+    // activityView=all 로 명시한다.
     model.addAttribute("activityView", normalizeActivityView(activityView));
 
-    // Convert start/end Instants into Instants for the helper (they already are
-    // Instants)
-    Instant[] orderedRange = effectiveRange(rangeMode, startDate, endDate);
-    Instant startInstant = orderedRange[0];
-    Instant endInstant = orderedRange[1];
-    // rangeMode 는 어떤 프리셋 버튼이 눌렸는지 알리는 화면 상태값이지 기간 그 자체가 아니다
-    // (기간은 startDate/endDate 로 온다). 그런데 이 가드가 rangeMode 의 '존재'를 보는 바람에,
-    // 날짜 없이 rangeMode 만 실려 오면 기본 기간이 적용되지 않고 전 기간이 조회됐다
-    // (실측: rangeMode=ytd 인데 올해 106행이 아니라 전체 300행). 같은 가드를 asset-growth 는
-    // 이미 '날짜가 없고 all 도 아니면 기본 적용'으로 쓰고 있어, 그쪽에 맞춘다.
-    if (startInstant == null && endInstant == null && !"all".equalsIgnoreCase(rangeMode)) {
-      var preset = resolvePresetRange(rangeMode, zone);
-      startInstant = preset.start();
-      endInstant = preset.end();
-      rangeMode = preset.mode();
-    }
+    // 매매 목록과 같은 기간 규칙(listRange).
+    ListRange range = listRange(rangeMode, startDate, endDate, zone);
+    Instant startInstant = range.start();
+    Instant endInstant = range.end();
+    rangeMode = range.rangeMode();
 
     // 최초 활동일 / 계좌 / 종목 / 기간 내 등장 계좌·종목 조회는 서로 의존이 없다. 함께 던진다.
     // 최초 활동일(거래·배당 중 이른 쪽)은 전체 활동 이력 대신 집계 엔드포인트 1회로 구한다.

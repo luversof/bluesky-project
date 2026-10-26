@@ -89,7 +89,7 @@
 					</div>
 					<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("poe.regex.combine.hint")}</span>
 				</div>
-				<div class="text-[11px] text-base-content/60">${ko ? "옵션 클릭: 선택/해제(선택하면 제외 — 빨강, !로 거름) · \"제외\" 배지 클릭: 포함(초록, 강조)으로 전환 · 문구가 포함관계인 옵션(일반↔T17 쌍둥이)는 함께 선택됩니다" : "Click a mod: select/clear (selected = exclude, red) · click the \"excl\" badge to switch it to include (green) · text-subset twins (normal↔T17) are linked"}</div>
+				<div class="text-[11px] text-base-content/60">${ko ? "옵션 클릭: 선택/해제(선택하면 제외 — 빨강, !로 거름) · \"제외\" 배지 클릭: 포함(초록, 강조)으로 전환 · 문구가 포함관계인 옵션(일반↔17등급 쌍둥이)은 함께 선택됩니다" : "Click a mod: select/clear (selected = exclude, red) · click the \"excl\" badge to switch it to include (green) · text-subset twins (normal↔T17) are linked"}</div>
 			</div>
 
 			<%-- 모드 목록 (TS 렌더) --%>

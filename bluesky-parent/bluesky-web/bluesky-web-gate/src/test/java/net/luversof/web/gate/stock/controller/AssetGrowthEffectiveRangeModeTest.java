@@ -59,10 +59,18 @@ class AssetGrowthEffectiveRangeModeTest {
           "src/main/java/net/luversof/web/gate/stock/controller/StockTradeHtmxController.java",
           "src/main/java/net/luversof/web/gate/stock/controller/StockDividendHtmxController.java"
         }) {
+      // 2026-10-22 부터 두 형제는 StockBaseHtmxController.listRange 의 모드를 받는다.
       assertThat(Files.readString(Path.of(sibling), StandardCharsets.UTF_8))
           .as(sibling)
-          .contains("rangeMode = preset.mode();");
+          .contains("rangeMode = range.rangeMode();");
     }
+    assertThat(
+            Files.readString(
+                Path.of(
+                    "src/main/java/net/luversof/web/gate/stock/controller/StockBaseHtmxController.java"),
+                StandardCharsets.UTF_8))
+        .as("listRange 는 기본 기간을 쓸 때 프리셋의 모드를 돌려준다")
+        .contains("new ListRange(preset.start(), preset.end(), preset.mode())");
   }
 
   /** 규칙의 근거: 모르는 값은 ytd 로 떨어지고, resolve 가 그 사실을 알려 준다. */

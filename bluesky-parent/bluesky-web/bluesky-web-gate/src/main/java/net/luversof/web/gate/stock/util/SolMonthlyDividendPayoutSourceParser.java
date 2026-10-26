@@ -60,38 +60,19 @@ public class SolMonthlyDividendPayoutSourceParser {
   }
 
   public String toBulkInput(List<SolDividendRow> rows) {
-    if (rows == null || rows.isEmpty()) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.source.rows.missing", "SOL"));
-    }
-
-    StringBuilder bulkInput = new StringBuilder(PayoutSourceText.BULK_INPUT_HEADER);
-    for (SolDividendRow row : rows) {
-      if (!StringUtils.hasText(row.recordDate())
-          || !StringUtils.hasText(row.payDate())
-          || row.dividendAmount() == null) {
-        continue;
-      }
-
-      bulkInput
-          .append('\n')
-          .append(PayoutSourceText.isoDate(row.recordDate()))
-          .append('\t')
-          .append(PayoutSourceText.isoDate(row.payDate()))
-          .append('\t')
-          .append(PayoutSourceText.plain(row.dividendAmount()))
-          // 모름이면 "-" 로 싣는다(2026-10-08) - 0 으로 적으면 진짜 0 원(전액 비과세)과 구분되지 않아 다음 갱신이 채우지 못한다(가져오기 파서가
-          // "-" 를 모름으로 받는다).
-          .append('\t')
-          .append(row.taxableBase() != null ? PayoutSourceText.plain(row.taxableBase()) : "-");
-    }
-
-    if (bulkInput.toString().equals(PayoutSourceText.BULK_INPUT_HEADER)) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.source.rows.missing", "SOL"));
-    }
-
-    return bulkInput.toString();
+    return PayoutSourceText.bulkInput(
+        rows,
+        "SOL",
+        row ->
+            !StringUtils.hasText(row.recordDate())
+                    || !StringUtils.hasText(row.payDate())
+                    || row.dividendAmount() == null
+                ? null
+                : new PayoutSourceText.BulkRow(
+                    PayoutSourceText.isoDate(row.recordDate()),
+                    PayoutSourceText.isoDate(row.payDate()),
+                    PayoutSourceText.plain(row.dividendAmount()),
+                    row.taxableBase() != null ? PayoutSourceText.plain(row.taxableBase()) : "-"));
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

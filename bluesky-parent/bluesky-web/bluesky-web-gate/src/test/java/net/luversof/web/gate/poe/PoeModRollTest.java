@@ -136,4 +136,34 @@ class PoeModRollTest {
       java.util.Locale.setDefault(old);
     }
   }
+
+  @Test
+  void 상세_보기는_굴린_값_뒤에_범위를_붙인다() {
+    assertThat(PoeModRoll.withRanges("+123 to maximum Life", "+(115-129) to maximum Life"))
+        .isEqualTo("+123(115-129) to maximum Life");
+    assertThat(
+            PoeModRoll.withRanges(
+                "Adds 10 to 20 Fire Damage", "Adds (8-11) to (16-19) Fire Damage"))
+        .isEqualTo("Adds 10(8-11) to 20(16-19) Fire Damage");
+    // 고정값 자리는 그대로
+    assertThat(
+            PoeModRoll.withRanges(
+                "7% chance to gain Onslaught for 4 seconds",
+                "(5-10)% chance to gain Onslaught for 4 seconds"))
+        .isEqualTo("7(5-10)% chance to gain Onslaught for 4 seconds");
+    // PoE2 한국어 괄호 없는 범위 · 물결
+    assertThat(PoeModRoll.withRanges("최대 생명력 +40", "최대 생명력 +39~42")).isEqualTo("최대 생명력 +40(39-42)");
+    assertThat(PoeModRoll.withRanges("화염 저항 +30%", "화염 저항 +(26~30)%"))
+        .isEqualTo("화염 저항 +30(26-30)%");
+  }
+
+  @Test
+  void 자리_수가_다르거나_범위가_없으면_그대로() {
+    assertThat(PoeModRoll.withRanges("+123 to maximum Life", "+(115-129) to (1-2) maximum Life"))
+        .isEqualTo("+123 to maximum Life");
+    assertThat(PoeModRoll.withRanges("Cannot be Frozen", "Cannot be Frozen"))
+        .isEqualTo("Cannot be Frozen");
+    assertThat(PoeModRoll.withRanges("+3 to Level", "+3 to Level")).isEqualTo("+3 to Level");
+    assertThat(PoeModRoll.withRanges(null, "x")).isEmpty();
+  }
 }

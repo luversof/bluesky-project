@@ -103,7 +103,7 @@ public interface PoeDataClient {
   @GetExchange("/base-items/meta")
   PoeJobStatus.CountMeta baseItemMeta();
 
-  // ── 모드 풀 (일반 아이템 티어표) ──
+  // ── 모드 풀 (일반 아이템 등급표) ──
   @GetExchange("/mods/item-classes")
   List<PoeModItemClass> modItemClasses();
 
@@ -119,7 +119,7 @@ public interface PoeDataClient {
   java.util.List<net.luversof.web.gate.poe.dto.PoeEssenceEntry> essencesForItemClass(
       @RequestParam String itemClass);
 
-  /** 클러스터 주얼 노터블 사전 — 브라우징 페이지용. */
+  /** 클러스터 주얼 주요 스킬 사전 — 브라우징 페이지용. */
   @GetExchange("/tree/cluster-notables")
   java.util.List<net.luversof.web.gate.poe.dto.PoeClusterNotable> clusterNotables();
 
@@ -150,12 +150,12 @@ public interface PoeDataClient {
   @GetExchange("/tree/tattoos")
   java.util.List<net.luversof.web.gate.poe.dto.PoeTattoo> tattoos();
 
-  /** 장인 작업대(벤치크래프트) 모드 — 비대상 클래스는 null. */
+  /** 작업대(벤치크래프트) 모드 — 비대상 클래스는 null. */
   @GetExchange("/bench/for-item-class")
   java.util.List<net.luversof.web.gate.poe.dto.PoeBenchEntry> benchForItemClass(
       @RequestParam String itemClass);
 
-  /** poedb 속성부여식 도유 목록(비싼 성유 우선 정렬) */
+  /** poedb 속성부여식 성유 목록(비싼 성유 우선 정렬) */
   @GetExchange("/tree/anoints")
   java.util.List<net.luversof.web.gate.poe.dto.PoeAnointEntry> anoints();
 }

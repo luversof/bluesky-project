@@ -4,7 +4,7 @@
 //   그룹마다 f32 x · f32 y · i32 flags · i32 unk · u8 · i32 노드 수 · 노드마다 i32 그래프 id · i32 궤도 · i32 궤도 위치 · i32 연결 수 · 연결마다 i32 id · i32 궤도.
 //   아틀라스 파일은 버전 259 지만 같은 형식으로 끝까지 정확히 읽힌다(소비 바이트 = 파일 길이로 확인).
 // 좌표는 본 트리와 같은 상수(PoB tree.json constants)·같은 식 — **본 트리 PSG 로 같은 계산을 해 PoB 좌표와 대조**해 식을 검증한다(자가검사).
-// 하위 트리: 뿌리 7개(일반·의식·균열·환영·심연·침입·탐험) — 뿌리에서 다른 뿌리를 넘지 않는 BFS 로 노드마다 소속(tree)을 붙인다.
+// 하위 트리: 뿌리 7개(일반·의식·균열·환영·심연·사원·탐험 — 이름은 게임 ReceivedAtlasPassivePoint<키>1, 침입(Incursion) = 사원) — 뿌리에서 다른 뿌리를 넘지 않는 BFS 로 노드마다 소속(tree)을 붙인다.
 import fs from "node:fs";
 import path from "node:path";
 import { CSD_CHAINS, createDescriber, createKeywordIndex, loadKeywords, pobFile, stripMarkup } from "./common2.mjs";
@@ -162,6 +162,42 @@ for (const rootId of psg.roots) {
 		}
 	}
 	trees.push({ key, name: label.en, nameKo: label.ko, rootId, nodeCount: seen.size - 1 });
+}
+// 선택형 노드의 선택지(10-24 Q152) — PassiveSkills 의 '부모 Id + a/b/c(+_)' 행(이름 '부모 이름: 선택지'), 배치 그래프엔 없어 따로 붙인다.
+//   늪 숙련(AtlasBiomeSwampNotable4) → 4a_ 엑잘티드 · 4b 카오스 · 4c 무리 규모. 선택지 이름은 '부모 이름: ' 을 뗀 뒤 부분
+{
+	const childrenOf = new Map();
+	ps.forEach((r, i) => {
+		const m = /^(.+?)([a-z])_?$/.exec(r.Id || "");
+		if (!m) return;
+		if (!childrenOf.has(m[1])) childrenOf.set(m[1], []);
+		childrenOf.get(m[1]).push(i);
+	});
+	let parents = 0, total = 0;
+	for (const n of Object.values(nodes)) {
+		const base = (n.rowId || "").replace(/_$/, "");
+		// Id 규칙 + 이름이 '부모 이름:' 으로 시작(엉뚱한 복수형 Id 오탐 방지)
+		const kids = base ? (childrenOf.get(base) || []).filter((i) => n.name && stripMarkup(ps[i].Name || "").startsWith(n.name + ":")) : null;
+		if (!kids || !kids.length) continue;
+		const prefix = (s) => stripMarkup(s || "").replace(/^[^:：]+[:：]\s*/, "");
+		n.options = kids
+			.sort((a, b) => (ps[a].Id < ps[b].Id ? -1 : 1))
+			.map((i) => {
+				const r = ps[i], rk = psKo[i];
+				const v = new Map();
+				(r.Stats || []).forEach((st, k) => v.set(stats[st].Id, r[`Stat${k + 1}Value`] ?? 0));
+				return {
+					id: r.PassiveSkillGraphId,
+					name: prefix(r.Name),
+					nameKo: prefix(rk?.Name) || undefined,
+					stats: v.size ? describe(v, "English") : [],
+					statsKo: v.size ? describe(v, "Korean") : [],
+				};
+			});
+		parents++;
+		total += n.options.length;
+	}
+	console.log(`[atlas2] 선택지: 부모 ${parents} · 선택지 ${total}`);
 }
 // 연결이 하나도 없는 특화(Mastery) 장식 노드 — 인게임에선 그룹 배경 문양이라 할당·표시 대상이 아니다(본 트리처럼 mastery 로 숨김)
 for (const [id, n] of Object.entries(nodes)) {

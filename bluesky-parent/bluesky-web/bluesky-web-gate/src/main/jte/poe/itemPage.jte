@@ -41,7 +41,7 @@
 				@endif
 			</div>
 
-			<%-- 아이템 그림 + 상세 레이어(게임 툴팁) — 그림은 PoE2 베이스 상세와 같은 자리(10-01: PoE2 에만 있었다). 모드 티어표는 아래 "전체 제작 모드". --%>
+			<%-- 아이템 그림 + 상세 레이어(게임 툴팁) — 그림은 PoE2 베이스 상세와 같은 자리(10-01: PoE2 에만 있었다). 모드 등급표는 아래 "전체 제작 모드". --%>
 			<div class="flex flex-wrap items-start gap-6">
 				<img src="/poe-assets/items/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}"
 				     class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${item.name()}" data-base-art
@@ -75,7 +75,7 @@
 			@if(fullMods != null)
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
-						<h2 class="font-bold">${ko ? "전체 제작 모드" : "All craftable modifiers"}</h2>
+						<h2 class="font-bold">${ko ? "전체 제작 옵션" : "All craftable modifiers"}</h2>
 						!{
 							// 이 베이스의 속성 변형(힘/민첩/지능…) — 변형마다 붙는 모드가 다르므로 무엇 기준인지 밝힌다
 							String variantLabel = "";
@@ -93,11 +93,11 @@
 				</div>
 			@endif
 
-			<%-- 엘드리치 임플리싯(총주교/포식자) — 부여 가능한 슬롯만(방어구·목걸이). 화폐로 붙이는 임플리싯이라 제작 모드와 별도 --%>
+			<%-- 섬뜩한 고정 속성(총주교/포식자) — 부여 가능한 슬롯만(방어구·목걸이). 화폐로 붙이는 고정 속성이라 제작 모드와 별도 --%>
 			@if(eldritch != null)
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
-						<h2 class="font-bold">${ko ? "엘드리치 임플리싯" : "Eldritch implicits"}</h2>
+						<h2 class="font-bold">${ko ? "섬뜩한 고정 속성" : "Eldritch implicits"}</h2>
 						<span class="text-sm text-base-content/60">${ko ? "총주교·포식자 화폐로 부여 — 팩션당 1개씩 최대 2개" : "Exarch + Eater — up to one each"}</span>
 					</div>
 					@template.poe.htmx.eldritchPools(eldritch = eldritch, ko = ko)

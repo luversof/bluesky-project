@@ -83,7 +83,7 @@ class Poe2ConsensusCandidatesTest {
         .extracting(Poe2RefineService.Candidate::label)
         .containsExactlyInAnyOrder(
             "닌자 공통 고유(5/8명): Amulet ← Astramentis(ko)",
-            "닌자 공통 보조젬(4/8명): 약한 보조 → Controlled Destruction(ko)");
+            "닌자 공통 보조 젬(4/8명): 약한 보조 → Controlled Destruction(ko)");
     assertThat(out).allMatch(c -> c.dpsPct() == 0 && c.ehpPct() == 0);
   }
 

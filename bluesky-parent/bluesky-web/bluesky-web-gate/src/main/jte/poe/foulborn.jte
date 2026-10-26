@@ -32,8 +32,8 @@
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<span class="text-sm text-base-content/60">${ko
-					? "삿된 오브로 고유 아이템의 기존 모드를 대체할 때 붙는 모드"
-					: "Mods that replace a unique's existing mod when using Foulborn currency"}</span>
+					? "삿된 고유 아이템에서 원래 속성 하나 대신 붙는 속성"
+					: "Modifiers a Foulborn unique has in place of one of its original modifiers"}</span>
 				<span class="text-xs font-mono text-base-content/60">${groups.size()} / ${modCount}</span>
 			</div>
 
@@ -42,14 +42,14 @@
 			     화면에서도 그 사실을 밝힌다 — 조용히 토큰만 띄우면 "왜 이름이 없지?" 가 된다. --%>
 			<div class="rounded-2xl border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-base-content/70">
 				${ko
-					? "아이템별로 붙을 수 있는 삿된 옵션입니다. 이름을 못 찾은 소수는 게임 내부 식별자(예: HelmetDex2)로 남겨 뒀습니다 — 추측해서 붙이지 않습니다."
-					: "Foulborn options per unique item. A few could not be resolved to a name and keep the game's internal id (e.g. HelmetDex2) — names are never guessed."}
+					? "아이템별 삿된 고유 속성입니다. 이름을 못 찾은 소수는 게임 내부 식별자(예: HelmetDex2)로 남겨 뒀습니다 — 추측해서 붙이지 않습니다."
+					: "Foulborn Unique Modifiers per unique item. A few could not be resolved to a name and keep the game's internal id (e.g. HelmetDex2) — names are never guessed."}
 			</div>
 
 			<form class="flex flex-wrap items-center gap-1.5 rounded-2xl bg-base-100 p-3 shadow-sm" method="get" action="/poe/foulborn">
 				<input id="poeFoulbornSearch" name="q" type="search" value="${query}"
 				       class="input input-sm input-bordered w-full sm:w-72"
-				       placeholder="${ko ? "아이템명·모드 검색 (예: 붉은 꿈, 생명력)" : "Search item name or mod text"}" autocomplete="off">
+				       placeholder="${ko ? "아이템명·옵션 검색 (예: 붉은 꿈, 생명력)" : "Search item name or mod text"}" autocomplete="off" aria-label="${ko ? "아이템명·옵션 검색" : "Search item name or mod text"}">
 				<button class="btn btn-sm btn-primary" type="submit">${ko ? "검색" : "Search"}</button>
 				<span class="text-xs font-mono text-base-content/60">${groups.size()}</span>
 			</form>

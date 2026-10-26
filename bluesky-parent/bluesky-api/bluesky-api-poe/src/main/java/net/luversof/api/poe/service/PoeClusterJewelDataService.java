@@ -43,10 +43,10 @@ public class PoeClusterJewelDataService {
 
   private volatile Map<String, ClusterJewelDef> jewels = Map.of();
 
-  /** 노터블 영문명 → PoB notableSortOrder(자리 배정은 이 값 오름차순 — 어긋나면 엔진과 다른 노드를 찍는다). */
+  /** 주요 스킬 영문명 → PoB notableSortOrder(자리 배정은 이 값 오름차순 — 어긋나면 엔진과 다른 노드를 찍는다). */
   private volatile Map<String, Integer> notableSortOrder = Map.of();
 
-  /** 노터블 합법성(cluster-jewels.json notableOptions) — tags=허용 skillKey 목록, sizes=허용 크기. */
+  /** 주요 스킬 합법성(cluster-jewels.json notableOptions) — tags=허용 skillKey 목록, sizes=허용 크기. */
   public record NotableOption(List<String> tags, List<String> sizes) {}
 
   private volatile Map<String, NotableOption> notableOptions = Map.of();
@@ -128,7 +128,7 @@ public class PoeClusterJewelDataService {
               });
       this.notableOptions = Map.copyOf(options);
       this.jewels = Map.copyOf(parsed);
-      logger.info("클러스터 주얼 정의 {}종 로드 (노터블 순서 {}건)", jewels.size(), notableSortOrder.size());
+      logger.info("클러스터 주얼 정의 {}종 로드 (주요 스킬 순서 {}건)", jewels.size(), notableSortOrder.size());
     } catch (Exception e) {
       logger.warn("클러스터 주얼 정의 로드 실패: {}", e.toString());
     }
@@ -142,12 +142,12 @@ public class PoeClusterJewelDataService {
     return Optional.ofNullable(jewels.get(sizeName + " Cluster Jewel"));
   }
 
-  /** 노터블 자리 배정 순서(PoB notableSortOrder) — 미등록 이름은 MAX(맨 뒤). */
+  /** 주요 스킬 자리 배정 순서(PoB notableSortOrder) — 미등록 이름은 MAX(맨 뒤). */
   public int notableSortOrder(String notableName) {
     return notableSortOrder.getOrDefault(notableName, Integer.MAX_VALUE);
   }
 
-  /** 이 (skillKey × 크기)에 합법인 노터블 이름들 — 어긋난 조합은 PoB 가 서브트리를 통째로 버린다. */
+  /** 이 (skillKey × 크기)에 합법인 주요 스킬 이름들 — 어긋난 조합은 PoB 가 서브트리를 통째로 버린다. */
   public List<String> legalNotables(String skillKey, String sizeName) {
     return notableOptions.entrySet().stream()
         .filter(e -> e.getValue().tags().contains(skillKey))
@@ -157,7 +157,7 @@ public class PoeClusterJewelDataService {
   }
 
   /**
-   * 클러스터 서브그래프 할당 계획 — 소켓에 이 클러스터를 꽂았을 때 <b>Spec nodes 에 넣어야 할 가상 노드 id</b>(노터블+소형, 마스터리는 스탯이 없어
+   * 클러스터 서브그래프 할당 계획 — 소켓에 이 클러스터를 꽂았을 때 <b>Spec nodes 에 넣어야 할 가상 노드 id</b>(주요 스킬+소형, 마스터리는 스탯이 없어
    * 미할당)와 포인트 비용. 프론트 tree.ts buildClusterSubgraph 의 id 산식 포트(PoB 파리티 — cluster-port-check.js 로 검증된
    * 규칙): {@code id = 0x10000 + (size==2? index<<6 : size==1? index<<9 : 0) + (sizeIndex<<4) +
    * templateIndex}. 좌표·링크는 할당에 불필요해 생략.
@@ -193,7 +193,7 @@ public class PoeClusterJewelDataService {
                 }
                 int idx = raw;
                 if ("Medium".equals(sizeName)) {
-                  // 프론트/PoB 와 동일한 중형 배치 보정(소켓0·노터블2, 4노드)
+                  // 프론트/PoB 와 동일한 중형 배치 보정(소켓0·주요 스킬2, 4노드)
                   if (notableCount == 2) {
                     idx = idx == 6 ? 4 : idx == 10 ? 8 : idx;
                   } else if (nodeCount == 4) {
@@ -256,10 +256,10 @@ public class PoeClusterJewelDataService {
               if (grant == null) {
                 return null;
               }
-              // 노터블은 "1 Added Passive Skill is <영문 이름>" 한 줄씩. PoB 는 이 이름으로 트리의
-              // 클러스터 노터블(clusterNodeMap)을 찾고, **하나라도 못 찾으면 서브트리를 통째로 버린다**.
+              // 주요 스킬은 "1 Added Passive Skill is <영문 이름>" 한 줄씩. PoB 는 이 이름으로 트리의
+              // 클러스터 주요 스킬(clusterNodeMap)을 찾고, **하나라도 못 찾으면 서브트리를 통째로 버린다**.
               StringBuilder added = new StringBuilder();
-              // 주얼 소켓은 별도 문구다(PoB ItemsTab:CraftClusterJewel 과 동일한 표현).
+              // 주얼 슬롯은 별도 문구다(PoB ItemsTab:CraftClusterJewel 과 동일한 표현).
               // 소켓이 있어야 그 안에 다시 클러스터를 꽂을 수 있다(중첩).
               if (socketCount == 1) {
                 added.append("1 Added Passive Skill is a Jewel Socket\n");

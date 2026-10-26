@@ -60,12 +60,6 @@ public class StockAdminApiController {
   }
 
   /**
-   * 가격 이력 갱신. 실패한 종목 수를 본문으로 돌려준다.
-   *
-   * <p>예전에는 본문이 비어 있어, 몇 종목이 실패하든 화면에는 늘 성공으로 보였다(실측: 평일인데 가격이 아예 없는 날이 2일 있었고 화면에서는 "기준일이 오래됐다" 로만
-   * 간접적으로 드러났다).
-   */
-  /**
    * 종목 하나만 갱신한다(사용자 요청 2026-09-22).
    *
    * <p>전체 갱신은 53 종목에 18~22 초가 걸려 이 게이트의 읽기 제한(10 초)에 매번 끊겼다(실측 2026-09-22: 08:17:06 시작 → 08:17:28
@@ -93,6 +87,13 @@ public class StockAdminApiController {
     return ResponseEntity.ok(stockAdminClient.priceHistoryUpdateStatus());
   }
 
+  /**
+   * 가격 이력 전체 갱신 - 작업을 띄우고 그 진행 상태를 돌려준다. 실패한 종목은 작업 상태의 {@code failedSymbols} · {@code
+   * failureReason} 으로 알린다.
+   *
+   * <p>예전에는 본문이 비어 있어, 몇 종목이 실패하든 화면에는 늘 성공으로 보였다(실측: 평일인데 가격이 아예 없는 날이 2일 있었고 화면에서는 "기준일이 오래됐다" 로만
+   * 간접적으로 드러났다).
+   */
   @BlueskyPreAuthorize
   @PostMapping("/price-histories")
   public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus>

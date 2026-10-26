@@ -47,7 +47,7 @@
 		y: number;
 		stats: string[];
 		statsKo: string[] | null;
-		// 공홈 툴팁 파리티 — 리마인더(회색 괄호 부연)와 키스톤 플레이버(이탤릭).
+		// 공홈 툴팁 파리티 — 리마인더(회색 괄호 부연)와 핵심노드 플레이버(이탤릭).
 		// reminderKo 는 게임 테이블 ReminderText 조인(미스 줄은 영문 폴백으로 채워져 길이가 같다).
 		reminder?: string[];
 		reminderKo?: string[];
@@ -63,7 +63,7 @@
 		icon: string | null;
 		// 직업 시작 노드의 중앙 아트 키(centerwitch 등)
 		startArt?: string;
-		// 도유(성유) 레시피 — 이 노터블을 아뮬렛에 새길 기름 slug 3개(티어 오름차순, 인게임 헤더 표기)
+		// 성유(성유) 레시피 — 이 주요 스킬을 목걸이에 새길 기름 slug 3개(등급 오름차순, 인게임 헤더 표기)
 		anoint?: string[];
 	}
 	interface Group {
@@ -106,7 +106,7 @@
 	}
 
 	let sprites: Record<string, Sprite> = {};
-	// 도유 오일 사전 (slug → 이름/아이콘) — 노터블 툴팁 헤더의 기름 3개 표기용
+	// 성유 오일 사전 (slug → 이름/아이콘) — 주요 스킬 툴팁 헤더의 기름 3개 표기용
 	let oils: Record<string, { name: string; nameKo?: string; icon: string }> = {};
 	// 트리 배경 레이어(클래스 일러스트) — GGG 트리 데이터의 extraImages(좌표 포함), 이미지는 게임 번들 추출본.
 	let extraImages: Array<{ x: number; y: number; image: string }> = [];
@@ -208,6 +208,15 @@
 		return ICON_SHEET[type];
 	}
 	// 노드 상태 3단계 — 공식 뷰어와 동일. 할당 / 지금 찍을 수 있음(인접) / 미할당.
+	/** 숙련 미선택 안내 — 게임 ClientStrings MasteryPassiveSelectionDescription(모음이면 …Vowel 'an'), {0} = 이름에서 ' Mastery' · ' 숙련' 뺀 것(10-23 Q59). */
+	function masterySelectText(node: TreeNode): string {
+		if (isKorean) {
+			const k = (node.nameKo || node.name).replace(/ 숙련$/, "");
+			return `이 스킬 군의 주요 패시브 스킬을 선택해 ${k} 보너스를 고른 후 할당하십시오.`;
+		}
+		const e = node.name.replace(/ Mastery$/, "");
+		return `Allocate after taking a Notable Passive Skill in this cluster to select ${/^[AEIOU]/i.test(e) ? "an" : "a"} ${e} bonus`;
+	}
 	const CLUSTER_SIZE_NAME = ["Small", "Medium", "Large"];
 	const CLUSTER_SIZE_KO = ["소형", "중형", "대형"];
 	// 클러스터 주얼 정의(크기별 노드 수/스킬 풀) — 소켓 툴팁에서 "무엇을 붙일 수 있는지" 안내에 쓴다.
@@ -216,15 +225,15 @@
 	let clusterDefs: Record<string, ClusterJewelDef> | null = null;
 	// 프록시 노드별 궤도 시작 오프셋(클러스터 생성에 필수)
 	let clusterOffsets: Record<string, Record<string, number>> | null = null;
-	// 노터블 정렬 순서 — PoB 는 이 순서로 노터블을 자리(템플릿 인덱스)에 배치한다.
-	// 이름→순번이 없으면 같은 노터블 조합이라도 우리와 PoB 의 배치가 어긋나 다른 노드를 찍게 된다.
+	// 주요 스킬 정렬 순서 — PoB 는 이 순서로 주요 스킬을 자리(템플릿 인덱스)에 배치한다.
+	// 이름→순번이 없으면 같은 주요 스킬 조합이라도 우리와 PoB 의 배치가 어긋나 다른 노드를 찍게 된다.
 	let clusterNotableOrder: Record<string, number> | null = null;
-	// 노터블 → 붙을 수 있는 스킬 태그·주얼 크기(게임 모드 가중치에서 추출).
-	// 이게 없으면 UI 가 노터블 309개를 전부 보여줘 **게임엔 존재할 수 없는 주얼**을 만들게 된다.
+	// 주요 스킬 → 붙을 수 있는 스킬 태그·주얼 크기(게임 모드 가중치에서 추출).
+	// 이게 없으면 UI 가 주요 스킬 309개를 전부 보여줘 **게임엔 존재할 수 없는 주얼**을 만들게 된다.
 	let clusterNotableOptions: Record<string, { tags: string[]; sizes: string[] }> | null = null;
-	// 크기별 노터블 최대 개수(게임 규칙) — 대형 3 / 중형 2 / 소형 1
+	// 크기별 주요 스킬 최대 개수(게임 규칙) — 대형 3 / 중형 2 / 소형 1
 	const CLUSTER_NOTABLE_MAX: Record<string, number> = { Small: 1, Medium: 2, Large: 3 };
-	// 크기별 주얼 소켓 최대 개수(게임 규칙, PoB CraftClusterJewel 과 동일) — 대형 2 / 중형 1 / 소형 0
+	// 크기별 주얼 슬롯 최대 개수(게임 규칙, PoB CraftClusterJewel 과 동일) — 대형 2 / 중형 1 / 소형 0
 	const CLUSTER_SOCKET_MAX: Record<string, number> = { Small: 0, Medium: 1, Large: 2 };
 	const CLUSTER_DEF_KEY = ["Small Cluster Jewel", "Medium Cluster Jewel", "Large Cluster Jewel"];
 	function loadClusterDefs(onReady?: () => void) {
@@ -255,7 +264,7 @@
 			case "wormhole":
 				return "KeystoneFrame" + st;
 			case "jewel":
-				// 클러스터 주얼 소켓은 크기별 전용 아트, 일반 소켓은 JewelSocketAlt 계열(공식 최신 아트)
+				// 클러스터 주얼 슬롯은 크기별 전용 아트, 일반 소켓은 JewelSocketAlt 계열(공식 최신 아트)
 				if (node.clusterSize !== undefined) {
 					const size = CLUSTER_SIZE_NAME[node.clusterSize] || "Small";
 					return "JewelSocketClusterAlt" + (allocated ? "Normal" : st === "CanAllocate" ? "CanAllocate" : "Normal") + "1" + size;
@@ -335,7 +344,7 @@
 	let maxAscPoints = 0; // 전직 8
 	const removalSet = new Set<number>(); // 할당 노드 호버 시 함께 해제될 노드(빨강 미리보기)
 	const masteryPicks = new Map<number, number>(); // 마스터리 노드 id → 선택한 효과 id
-	const jewelPicks = new Map<number, string>(); // 주얼 소켓 노드 id → 장착한 유니크 주얼 slug
+	const jewelPicks = new Map<number, string>(); // 주얼 슬롯 노드 id → 장착한 유니크 주얼 slug
 	// 주얼 지정 = "slug" · 타임리스 "slug:정복자:시드" · 변형 "slug:v번호"(10-03 C75). 변형 목록은 JTE 숨은 칸(#poeTreeJewelVariants)에서 읽는다.
 	type JewelVariantDef = { index: number; name: string; mods: string; en: string[]; rem: string[][] };
 	// 줄별 리마인더(data-rem: 줄은 줄바꿈, 한 줄 안 여러 개는 탭 — PoeText.reminderData, 10-04 C125)
@@ -373,7 +382,7 @@
 		return specVariant(spec)?.en ?? (jewelOption(spec)?.dataset.en || "").split("\n").filter(Boolean);
 	}
 	/**
-	 * 금단의 화염 · 살점 짝 상태(10-04 C87) — PoB 는 두 주얼이 **같은 전직 노터블**을 가리키고 직업 제한이 지금 직업일 때만 그 노터블을 켠다(CalcSetup
+	 * 금단의 화염 · 살점 짝 상태(10-04 C87) — PoB 는 두 주얼이 **같은 전직 주요 스킬**을 가리키고 직업 제한이 지금 직업일 때만 그 주요 스킬을 켠다(CalcSetup
 	 * GrantedAscendancyNode, C86 에서 트리 계산 확인). 한쪽만 꽂으면 조용히 꺼져 있으니 툴팁에 짝 상태를 보인다. 인게임엔 없는 플래너 안내(툴팁 바깥 줄).
 	 */
 	/** 받침에 따라 조사를 고른다("금단의 살점" + 과, "신성한 인도" + 를) — 한글이 아니면 받침 없음으로 */
@@ -399,12 +408,12 @@
 		const classIdx = node ? classAsc.findIndex((list) => list.includes(node.ascendancy as string)) : -1;
 		if (classIdx >= 0 && classIdx !== currentClassId) {
 			const clsLabel = document.querySelector<HTMLOptionElement>('#poeTreeClass option[value="' + classIdx + '"]')?.textContent || String(classIdx);
-			return { ok: false, text: isKorean ? `직업 불일치 — ${josa(notableLabel, "은", "는")} ${clsLabel} 전직 노터블이라 켜지지 않습니다` : `Class mismatch — ${notableLabel} is a ${clsLabel} ascendancy notable` };
+			return { ok: false, text: isKorean ? `직업 불일치 — ${josa(notableLabel, "은", "는")} ${clsLabel} 전직 주요 스킬이라 켜지지 않습니다` : `Class mismatch — ${notableLabel} is a ${clsLabel} ascendancy notable` };
 		}
 		const partner = [...jewelPicks].some(([id, sp]) => id !== socketId && highlighted.has(id) && sp.split(":")[0] === mine.other && read(sp)?.notable === mine.notable);
 		return partner
 			? { ok: true, text: isKorean ? `짝 맞음 — ${josa(otherName, "과", "와")} 함께 ${notableLabel} 할당` : `Pair matched — allocates ${notableLabel} with ${otherName}` }
-			: { ok: false, text: isKorean ? `짝 없음 — 다른 칸에 ${otherName}(같은 노터블: ${notableLabel}) 짝을 꽂아야 켜집니다` : `No pair — socket ${otherName} with the same notable (${notableLabel}) to enable` };
+			: { ok: false, text: isKorean ? `짝 없음 — 다른 칸에 ${otherName}(같은 주요 스킬: ${notableLabel}) 짝을 꽂아야 켜집니다` : `No pair — socket ${otherName} with the same notable (${notableLabel}) to enable` };
 	}
 	/** 희망의 실 고리(PoB data.jewelRadii["3_16"] 가변 고리 — 빌드 링크 r= 와 같은 값). 고리 문구가 없으면 null */
 	function jewelRingOf(spec: string): [number, number] | null {
@@ -444,8 +453,8 @@
 		}
 		return out;
 	}
-	// 아뮬렛 도유로 활성화한 노터블(게임: 아뮬렛 1개 = 도유 1개). 포인트 소모 없음, 연결 불필요 —
-	// 도유 전용 고립 노터블 30개는 이 방법으로만 켤 수 있다. GGG URL 엔 자리가 없어 an= 으로 따로 보존.
+	// 목걸이 성유로 활성화한 주요 스킬(게임: 목걸이 1개 = 성유 1개). 포인트 소모 없음, 연결 불필요 —
+	// 성유 전용 고립 주요 스킬 30개는 이 방법으로만 켤 수 있다. GGG URL 엔 자리가 없어 an= 으로 따로 보존.
 	let anointPick: number | null = null;
 	// 문신: 패시브 노드 id → 문신 영문명(dn). 게임에선 그 패시브가 **다른 노드로 교체**된다.
 	// 반경 주얼(붉은 악몽 등)과 짝지어 반경 안 소형 패시브를 저항 문신으로 바꾸는 것이 실전 용법이다.
@@ -660,10 +669,10 @@
 		// 연결 없이 찍기(l= · r=, C64)
 		leapKeys = (params.get("l") || "").split(",").map((x) => x.split(":").map(Number)).filter(([id, r]) => id > 0 && r > 0).map(([id, r]) => ({ id, r }));
 		leapRings = (params.get("r") || "").split(",").map((x) => x.split(":").map(Number)).filter(([id, a, b]) => id > 0 && b > 0 && a >= 0).map(([id, inner, outer]) => ({ id, inner, outer }));
-		// 도유(an=노드id) — 도유로 활성화한 노터블 하나
+		// 성유(an=노드id) — 성유로 활성화한 주요 스킬 하나
 		const an = Number(params.get("an"));
 		if (Number.isFinite(an) && an > 0) anointPick = an;
-		// focus=노드id — 로드 후 그 노드를 화면 중앙에(도유 목록 → 트리 점프 등 딥링크용)
+		// focus=노드id — 로드 후 그 노드를 화면 중앙에(성유 목록 → 트리 점프 등 딥링크용)
 		const fc = Number(params.get("focus"));
 		if (Number.isFinite(fc) && fc > 0) pendingFocus = fc;
 		// 주얼(j=노드:slug,...) — 트리 인코딩과 무관하게 ?t= / ?nodes= 어느 쪽이든 함께 복원한다
@@ -750,7 +759,7 @@
 		}
 		if (pendingBloodline) {
 			// 혈맹(타살리오 등) 서브트리 노드는 혈맹 미선택이면 통째로 숨는다 — 결과 링크가 이걸 안 실으면
-			// 혈맹 노터블 focus 가 "화면에 없음"이 된다(실사고).
+			// 혈맹 주요 스킬 focus 가 "화면에 없음"이 된다(실사고).
 			const idx = bloodlines.findIndex((b) => b.id.toLowerCase() === pendingBloodline!.toLowerCase());
 			if (idx >= 0) currentBloodline = idx + 1;
 			// 숫자도 받는다 = GGG · PoB secondary ascendancy id(빌드 트리 보기 링크는 PoB Spec secondaryAscendClassId 를 그대로 싣는다, 10-03 C44)
@@ -791,7 +800,7 @@
 				.map(([nodeId, dn]) => nodeId + ":" + dn);
 			if (inked.length) params.set("tt", inked.join("|"));
 			else params.delete("tt");
-			// 도유(an=) — GGG 인코딩에 자리가 없어 우리 파라미터로 보존(주얼 j= 와 같은 이유)
+			// 성유(an=) — GGG 인코딩에 자리가 없어 우리 파라미터로 보존(주얼 j= 와 같은 이유)
 			if (anointPick !== null) params.set("an", String(anointPick));
 			else params.delete("an");
 		}
@@ -856,7 +865,7 @@
 		let set = leapAreaCache.get(key);
 		if (!set) {
 			set = new Set<number>();
-			// 간선 없는 고립 노터블(도유 전용 30개)은 트리 노드가 아니다 — 반경 안이어도 못 찍는다(10-03 C72, 호버 탐침이 발견)
+			// 간선 없는 고립 주요 스킬(성유 전용 30개)은 트리 노드가 아니다 — 반경 안이어도 못 찍는다(10-03 C72, 호버 탐침이 발견)
 			if (center) for (const n of nodeById.values()) if ((adjacency.get(n.id)?.length || 0) > 0 && inLeapArea(n, center, inner, outer)) set.add(n.id);
 			leapAreaCache.set(key, set);
 		}
@@ -943,6 +952,16 @@
 	}
 	function toggleNode(node: TreeNode) {
 		if (!interactive || node.type === "class" || !nodeVisible(node)) return;
+		// 아틀라스 숙련은 할당 대신 같은 유형(같은 이름) 숙련을 강조(10-23 Q66 — 게임 AtlasMasterySkillPopup). 다시 누르면 해제
+		if (isAtlas && node.type === "mastery") {
+			const same = nodes.filter((n) => n.type === "mastery" && n.name === node.name && nodeVisible(n)).map((n) => n.id);
+			const already = same.length > 0 && same.length === searchHits.size && same.every((id) => searchHits.has(id));
+			searchHits.clear();
+			if (!already) for (const id of same) searchHits.add(id);
+			canvas.dataset.masteryHighlight = already ? "" : node.name + ":" + same.length;
+			draw();
+			return;
+		}
 		// 마스터리는 "어떤 효과를 쓸지" 를 골라야 찍힌다 — 할당 가능하면 선택 팝업을 띄운다.
 		// 마스터리는 "어떤 효과를 쓸지" 를 골라야 찍힌다 — 도달 가능하면 선택 팝업을 띄운다.
 		// (마스터리 이웃은 전부 같은 그룹이라, 도달 = 그룹 패시브를 이미 지남 = 게임 규칙 자동 충족)
@@ -988,7 +1007,7 @@
 	let masteryPicker: HTMLElement | null = null;
 	let masteryOpener: HTMLElement | null = null;
 	function closeMasteryPicker() {
-		restoreFocus(masteryPicker, masteryOpener); // 닫으면 연 요소로(10-04 C109, C105 도유 · 주얼 창과 같은 규칙)
+		restoreFocus(masteryPicker, masteryOpener); // 닫으면 연 요소로(10-04 C109, C105 성유 · 주얼 창과 같은 규칙)
 		masteryPicker?.remove();
 		masteryPicker = null;
 	}
@@ -1018,7 +1037,7 @@
 			row.className = taken
 				? "block w-full text-left px-4 py-2 text-xs leading-5 border-b border-stone-800 text-base-content/60 line-through cursor-not-allowed"
 				: "block w-full text-left px-4 py-2 text-xs text-sky-300 leading-5 hover:bg-amber-900/40 border-b border-stone-800";
-			row.textContent = effectLines(eff).join("\n") + (taken ? (isKorean ? "  (이미 선택함)" : "  (already taken)") : "");
+			row.textContent = effectLines(eff).join("\n") + (taken ? (isKorean ? "  (이미 다른 곳에 할당되어 있습니다)" : "  (already allocated elsewhere)") : "") // 게임 MasteryPassiveOptionUnavailable(10-24 Q167);
 			// 효과 리마인더 — 공홈처럼 회색 부연으로 효과 밑에
 			for (const rem of (isKorean && eff.reminderKo) || eff.reminder || []) {
 				const remLine = document.createElement("div");
@@ -1159,11 +1178,11 @@
 				});
 			}
 		}
-		// 도유 — 도유 레시피가 있는 노터블은 아뮬렛 도유로 포인트 없이 활성화할 수 있다(게임: 1개).
-		// 트리로 이미 찍은 노드엔 무의미하므로 미할당일 때만. 고립 노터블 30개는 이 방법이 유일하다.
+		// 성유 — 성유 레시피가 있는 주요 스킬은 목걸이 성유로 포인트 없이 활성화할 수 있다(게임: 1개).
+		// 트리로 이미 찍은 노드엔 무의미하므로 미할당일 때만. 고립 주요 스킬 30개는 이 방법이 유일하다.
 		if (!isAtlas && node.anoint?.length && !allocated && node.type === "notable") {
 			if (anointPick === node.id) {
-				item(isKorean ? "도유 해제" : "Remove anoint", () => {
+				item(isKorean ? "성유 해제" : "Remove anoint", () => {
 					const before = snapshot();
 					anointPick = null;
 					commit(before);
@@ -1175,7 +1194,7 @@
 			} else {
 				const prev = anointPick !== null ? nodeById.get(anointPick) : null;
 				item(
-					(isKorean ? "도유로 할당 (포인트 0)" : "Anoint (0 points)") +
+					(isKorean ? "성유로 할당 (포인트 0)" : "Anoint (0 points)") +
 						(prev ? (isKorean ? ` — ${(isKorean && prev.nameKo) || prev.name} 대체` : ` — replaces ${prev.name}`) : ""),
 					() => {
 						const before = snapshot();
@@ -1192,7 +1211,7 @@
 		if (node.type !== "class") {
 			if (allocated) {
 				const cost = computeRemoval(node.id).length;
-				item((isKorean ? "여기부터 해제" : "Refund from here") + (cost > 1 ? ` (−${cost})` : ""), () => toggleNode(node));
+				item((isKorean ? "여기부터 반환" : "Refund from here") + (cost > 1 ? ` (−${cost})` : ""), () => toggleNode(node));
 				if (node.masteryEffects?.length) item(isKorean ? "효과 변경" : "Change effect", () => openMasteryPicker(node));
 				// 문신 — 할당한 패시브를 다른 노드로 교체한다. 소형은 속성 종류가 맞아야 새길 수 있다.
 				if (!isAtlas && tattooTarget(node)) {
@@ -1268,14 +1287,15 @@
 	function extraPassivePoints(lines: string[]): number {
 		let extra = 0;
 		for (const line of lines) {
-			const m = /^Grants (\d+) Passive Skill Points?$/i.exec(line);
+			// 아틀라스 '변함없는 시각' "Grants 20 Atlas Passive Skill Points"(10-23 Q65 — 게임 PassiveNodeGrantsAtlasPassivePoints, 찍으면 한도 +20)
+			const m = /^Grants (\d+) (?:Atlas )?Passive Skill Points?$/i.exec(line);
 			if (m) extra += Number(m[1]);
 		}
 		return extra;
 	}
 	// 패시브/전직 포인트를 따로 센다(공식: 패시브 123, 전직 8). 클래스 시작·전직 시작 노드는 무료.
 	function updatePoints() {
-		// 도유한 노드를 트리로도 찍으면 도유가 낭비 — 게임처럼 도유를 비워 다른 노터블에 쓸 수 있게 한다.
+		// 성유를 부은 노드를 트리로도 찍으면 성유가 낭비 — 게임처럼 성유를 비워 다른 주요 스킬에 쓸 수 있게 한다.
 		// (모든 변경 경로가 updatePoints 를 지나므로 여기서 정규화하면 경로별 누락이 없다)
 		if (anointPick !== null && highlighted.has(anointPick)) anointPick = null;
 		updateStatsPanel();
@@ -1297,7 +1317,7 @@
 		// 추가 포인트(PoB ModParser "grants N passive skill points" → ExtraPoints, 한도 = 99 + 23 + 추가): 어센던트 · 렐리쿼리언
 		//   "Passive Point" · "Path of the X" 노드. 없으면 실빌드가 "포인트 127 / 123" 빨강(10-03 C51)
 		const statLines: string[] = [];
-		if (!isAtlas) for (const id of highlighted) statLines.push(...(nodeById.get(id)?.stats || []));
+		for (const id of highlighted) statLines.push(...(nodeById.get(id)?.stats || [])); // 아틀라스도(Q65)
 		const extra = extraPassivePoints(statLines); // TS lib 가 ES2019 전이라 flatMap 대신
 		const pointMax = maxPoints + extra;
 		el.replaceChildren();
@@ -1320,7 +1340,7 @@
 				? `· 레벨 ${needLevel} 필요 (평가는 90)`
 				: `· needs level ${needLevel} (eval at 90)`;
 			warn.title = isKorean
-				? "평가는 레벨 90(포인트 113) 기준이라 초과분은 실제로는 찍을 수 없습니다."
+				? "평가는 레벨 90(포인트 113) 기준이라 초과분은 실제로는 할당할 수 없습니다."
 				: "Evaluation assumes level 90 (113 points); the excess is not actually obtainable.";
 			el.appendChild(warn);
 		}
@@ -1377,7 +1397,7 @@
 			const mods = jewelMods(slug);
 			if (mods) add(mods.split(" / "));
 		}
-		// 도유 노터블 — 포인트 없이 활성화된 트리의 일부(아뮬렛 도유). 트리로도 찍었다면 중복 합산 금지.
+		// 성유 주요 스킬 — 포인트 없이 활성화된 트리의 일부(목걸이 성유). 트리로도 찍었다면 중복 합산 금지.
 		if (anointPick !== null && !highlighted.has(anointPick)) {
 			const anointNode = nodeById.get(anointPick);
 			if (anointNode) add(statLinesOf(anointNode));
@@ -1394,11 +1414,11 @@
 		}
 		return out.sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
 	}
-	// 할당한 키스톤/노터블 목록 — 빌드의 정체성을 한눈에 보고, 눌러서 그 노드로 이동한다.
-	// (스탯 합계만으로는 "무슨 키스톤을 찍었는지" 가 묻힌다)
+	// 할당한 핵심노드/주요 스킬 목록 — 빌드의 정체성을 한눈에 보고, 눌러서 그 노드로 이동한다.
+	// (스탯 합계만으로는 "무슨 핵심노드를 찍었는지" 가 묻힌다)
 	const NEWLINE = String.fromCharCode(10); // 툴팁(title)은 줄바꿈 문자로 여러 줄을 만든다
 	function appendKeyNodes(panel: HTMLElement) {
-		// 문신이 새겨진 노터블/키스톤은 다른 노드로 교체된 상태 — 원래 이름을 목록에 남기지 않는다
+		// 문신이 새겨진 주요 스킬/핵심노드는 다른 노드로 교체된 상태 — 원래 이름을 목록에 남기지 않는다
 		const picked = nodes.filter(
 			(n) =>
 				(highlighted.has(n.id) || n.id === anointPick) &&
@@ -1412,7 +1432,7 @@
 		);
 		// 꽂아둔 클러스터 주얼도 빌드 정체성이다 — 어떤 주얼을 몇 노드로 꽂았는지 목록에 함께 보인다
 		const socketedClusters = Array.from(clusterPicks).filter(([nodeId]) => highlighted.has(nodeId));
-		// 노터블이 없어도 마스터리/주얼만 있으면 목록을 보여준다(예전엔 조기 return 해 그 줄들이 통째로 사라졌다)
+		// 주요 스킬이 없어도 마스터리/주얼만 있으면 목록을 보여준다(예전엔 조기 return 해 그 줄들이 통째로 사라졌다)
 		if (!picked.length && !socketedJewels.length && !pickedMasteries.length && !socketedClusters.length) return;
 		picked.sort((a, b) => (a.type === b.type ? 0 : a.type === "keystone" ? -1 : 1));
 		const head = document.createElement("div");
@@ -1425,7 +1445,7 @@
 			row.type = "button";
 			row.className =
 				"block w-full text-left px-3 py-0.5 text-xs hover:bg-stone-700/60 " +
-				// 노터블 행도 고정 밝은 색 — base-content 는 라이트 모드에서 어두워져 다크 패널 위에서 안 보인다
+				// 주요 스킬 행도 고정 밝은 색 — base-content 는 라이트 모드에서 어두워져 다크 패널 위에서 안 보인다
 				(n.type === "keystone" ? "text-amber-300 font-semibold" : "text-stone-200");
 			row.textContent = (n.type === "keystone" ? "◆ " : "• ") + (isKorean && n.nameKo ? n.nameKo : n.name);
 			// 설명을 title(브라우저 툴팁)에만 두면 화면에선 안 보인다(사용자 지적) — 행 아래 작은 글씨로 직접 표시
@@ -1478,7 +1498,7 @@
 			});
 			panel.appendChild(row);
 		}
-		// 클러스터 주얼 — 크기/노드 수/효과, 노터블까지 한 줄로. 클릭하면 그 소켓으로 이동한다.
+		// 클러스터 주얼 — 크기/노드 수/효과, 주요 스킬까지 한 줄로. 클릭하면 그 소켓으로 이동한다.
 		for (const [nodeId, plan] of socketedClusters) {
 			const skill = clusterDefs?.[`${plan.sizeName} Cluster Jewel`]?.skills?.[plan.skillKey] as
 				| { name?: string; stats?: string[]; statsKo?: string[] }
@@ -1499,7 +1519,7 @@
 			const effectLine = (isKorean && skill?.statsKo?.length ? skill.statsKo : skill?.stats) || [];
 			row.title =
 				(effectLine.length ? effectLine.join(NEWLINE) + NEWLINE + NEWLINE : "") +
-				(plan.socketCount ? (isKorean ? `주얼 소켓 ${plan.socketCount}개` : `${plan.socketCount} jewel sockets`) + NEWLINE + NEWLINE : "") +
+				(plan.socketCount ? (isKorean ? `주얼 슬롯 ${plan.socketCount}개` : `${plan.socketCount} jewel sockets`) + NEWLINE + NEWLINE : "") +
 				(isKorean ? "클릭하면 해당 소켓으로 이동" : "Click to jump to socket");
 			row.addEventListener("click", () => {
 				centerOnNode(nodeId, 0.35);
@@ -1793,13 +1813,17 @@
 	// ---- C: 검색 ----
 	// 분류어 → 노드 타입. 공식 뷰어엔 없지만 범례에 쓰는 말이라 검색으로도 찾아지는 게 자연스럽다.
 	const SEARCH_TYPE_WORDS: Record<string, string> = {
-		키스톤: "keystone",
+		핵심노드: "keystone",
+		키스톤: "keystone", // 옛 낱말로 찾는 사람도(10-24 Q145 · Q148b)
 		keystone: "keystone",
-		노터블: "notable",
+		주요: "notable",
+		주요스킬: "notable",
+		노터블: "notable", // 옛 낱말(10-24 Q148)
 		notable: "notable",
 		주얼: "jewel",
 		주얼슬롯: "jewel", // 검색어는 띄어쓰기를 지운 뒤 맞댄다(searchKey) — 열쇠도 붙여 쓴다
 		jewel: "jewel",
+		숙련: "mastery", // 게임 낱말(PassiveSkillSearchMastery)
 		마스터리: "mastery",
 		mastery: "mastery",
 	};
@@ -1815,10 +1839,10 @@
 			for (const node of nodes) {
 				if (node.type === "class") continue;
 				const hay = searchKey([node.name, node.nameKo || "", ...node.stats, ...(node.statsKo || [])].join("\n"));
-				// 이름/스탯 텍스트 또는 분류어(키스톤·노터블·주얼·마스터리)로 찾는다.
-				// 분류어는 노드 텍스트에 안 들어 있어서 예전엔 "키스톤" 검색이 0건이었다(사용자가 자연히 시도하는 말인데).
-				// "도유"는 타입이 아니라 속성(anoint 보유) — 도유 후보를 한눈에 훑을 때 쓴다.
-				const anointWord = (q === "도유" || q === "anoint") && !isAtlas && !!node.anoint?.length;
+				// 이름/스탯 텍스트 또는 분류어(핵심노드·주요 스킬·주얼·마스터리)로 찾는다.
+				// 분류어는 노드 텍스트에 안 들어 있어서 예전엔 "핵심노드" 검색이 0건이었다(사용자가 자연히 시도하는 말인데).
+				// "성유"는 타입이 아니라 속성(anoint 보유) — 성유 후보를 한눈에 훑을 때 쓴다.
+				const anointWord = (q === "성유" || q === "anoint") && !isAtlas && !!node.anoint?.length;
 				if (hay.indexOf(q) !== -1 || SEARCH_TYPE_WORDS[q] === node.type || anointWord) {
 					searchHits.add(node.id);
 					// 화면에 보이는 매치만 이동 대상 — 숨은(미선택 전직) 노드로 이동하면 빈 화면만 보인다
@@ -1876,7 +1900,7 @@
 			// Enter — 다음 매치로 이동(Shift+Enter 는 이전). 강조만으로는 화면 밖 매치를 찾아갈 수 없다.
 			// 검색어가 바뀌면 커서를 0 으로 되돌린다 — 안 그러면 새 검색인데 엉뚱한 순번부터 시작한다.
 			searchInput.addEventListener("keydown", (event) => {
-				// Shift+F10 · 메뉴 키 — 지금 가운데 둔 검색 노드의 노드 메뉴(마스터리 · 주얼 장착 · 문신 · 도유 · 클러스터)를 연다(10-04 C108).
+				// Shift+F10 · 메뉴 키 — 지금 가운데 둔 검색 노드의 노드 메뉴(마스터리 · 주얼 장착 · 문신 · 성유 · 클러스터)를 연다(10-04 C108).
 				//   예전엔 우클릭으로만 열려 키보드 사용자는 찍기(Ctrl+Enter)까지만 할 수 있었다. 우클릭과 같은 처리를 타도록 그 자리에 contextmenu 를 보낸다
 				if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
 					const hits = nodes.filter((n) => searchHits.has(n.id) && nodeVisible(n));
@@ -1888,7 +1912,7 @@
 					draw();
 					const r = canvas.getBoundingClientRect();
 					canvas.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
-					// 방금 연 노드 메뉴 안으로 — 문서의 첫 창을 집으면 이미 열린 도유 · 주얼 창으로 갈 수 있다(10-04 C127 검토)
+					// 방금 연 노드 메뉴 안으로 — 문서의 첫 창을 집으면 이미 열린 성유 · 주얼 창으로 갈 수 있다(10-04 C127 검토)
 					nodeMenu?.querySelector<HTMLElement>("button:not([disabled]), input")?.focus();
 					// Windows 메뉴 키는 contextmenu 를 keyup 때 따로 보낸다 — 검색칸에 브라우저 기본 메뉴가 같이 뜨지 않게 한 번 막는다
 					if (event.key === "ContextMenu") searchInput.addEventListener("contextmenu", (e) => e.preventDefault(), { once: true });
@@ -1907,7 +1931,7 @@
 					toggleNode(cur);
 					const now = highlighted.has(cur.id);
 					const label = isKorean && cur.nameKo ? cur.nameKo : cur.name;
-					const verdict = now === was ? (isKorean ? "못 찍음" : "Not allocated") : now ? (isKorean ? "찍음" : "Allocated") : isKorean ? "해제" : "Removed";
+					const verdict = now === was ? (isKorean ? "미할당" : "Not allocated") : now ? (isKorean ? "할당" : "Allocated") : isKorean ? "해제" : "Removed";
 					const countEl = document.getElementById("poeTreeSearchCount");
 					if (countEl) countEl.textContent = `${verdict}: ${label} · ${(document.getElementById("poeTreePoints")?.textContent || "").replace(/\s*·\s*/g, " · ").replace(/\s+/g, " ").trim()}`;
 					return;
@@ -1954,7 +1978,7 @@
 				});
 				evalPanel.classList.remove("hidden");
 				if (!ids.length && anointPick === null) {
-					// 도유만 있어도 계산 대상이다(아뮬렛 도유는 트리 없이도 스탯을 준다)
+					// 성유만 있어도 계산 대상이다(목걸이 성유는 트리 없이도 스탯을 준다)
 					evalBody.textContent = isKorean ? "할당한 노드가 없습니다." : "No allocated nodes.";
 					return;
 				}
@@ -1963,13 +1987,16 @@
 				body.set("classId", String(currentClassId));
 				body.set("nodes", ids.join(","));
 				const asc = currentAscName();
-				if (asc) body.set("ascendancy", asc);
+				if (asc) {
+					body.set("ascendancy", asc);
+					body.set("ascendancyLabel", ascendancyLabel(asc)); // 결과 배지의 화면 언어 이름(10-25 Q211)
+				}
 				// 마스터리는 "어떤 효과를 골랐는지"까지 보내야 PoB 가 스탯에 반영한다
 				const picks = Array.from(masteryPicks)
 					.filter(([nodeId]) => highlighted.has(nodeId))
 					.map(([nodeId, effectId]) => nodeId + ":" + effectId);
 				if (picks.length) body.set("masteries", picks.join(","));
-				// 도유 — nodes 에 끼우면 PoB 가 미연결 노드로 보고 해제한다(실측). 서버가 Allocates 아이템으로 변환.
+				// 성유 — nodes 에 끼우면 PoB 가 미연결 노드로 보고 해제한다(실측). 서버가 Allocates 아이템으로 변환.
 				if (anointPick !== null) body.set("anoint", String(anointPick));
 				// 주 스킬: datalist 에서 고른 표시명 → data-slug 로 변환(미입력이면 서버가 표준 스킬 사용)
 				const gemInput = document.getElementById("poeTreeEvalGem") as HTMLInputElement | null;
@@ -2043,7 +2070,7 @@
 					.filter(([nodeId]) => highlighted.has(nodeId))
 					.map(([nodeId, dn]) => nodeId + ":" + dn);
 				if (inked.length) url += "&tattoos=" + encodeURIComponent(inked.join("|"));
-				// 도유도 인계 — 없으면 최적화기가 자동 스윕으로 사용자의 도유를 덮어쓴다
+				// 성유도 인계 — 없으면 최적화기가 자동 스윕으로 사용자의 성유를 덮어쓴다
 				if (anointPick !== null) url += "&anoint=" + anointPick;
 				if (className) url += "&className=" + encodeURIComponent(className);
 				const ascName = currentAscName();
@@ -2116,7 +2143,7 @@
 			resetBtn.addEventListener("click", () => {
 				const before = snapshot();
 				highlighted.clear();
-				anointPick = null; // 트리 초기화 = 도유도 함께 — 남기면 "초기화했는데 노드가 켜져 있다"
+				anointPick = null; // 트리 초기화 = 성유도 함께 — 남기면 "초기화했는데 노드가 켜져 있다"
 				const root = rootNode();
 				if (root !== undefined) highlighted.add(root);
 				commit(before);
@@ -2182,7 +2209,7 @@
 	// 공홈 공유 링크(`pathofexile.com/passive-skill-tree/<버전>/<코드>`)나 코드만 붙여넣어도 받는다.
 	// 우리 URL 의 ?t= 값과 같은 인코딩이라 디코더를 그대로 재사용한다.
 	// 쿼리 값 해석 — `+` 는 공백, `%XX` 는 문자. decodeURIComponent 만 쓰면 base64 의 `%3D`(=)가 남고
-	// 노터블 이름의 `+` 가 공백으로 안 바뀐다(둘 다 실제로 붙여넣기 실패를 만들었다).
+	// 주요 스킬 이름의 `+` 가 공백으로 안 바뀐다(둘 다 실제로 붙여넣기 실패를 만들었다).
 	const decodeParam = (v: string) => decodeURIComponent(v.replace(/\+/g, "%20"));
 	function importCode(raw: string): boolean {
 		// 아틀라스는 GGG 직업 기반 인코딩(t=)을 쓰지 않는다 — 우리 링크의 nodes= 목록만 받는다.
@@ -2690,7 +2717,7 @@
 
 		// 3) 노드 — 아이콘(원 클립) + 프레임 스프라이트. 저줌에선 점만.
 		// 지금 찍을 수 있는 노드(할당집합에 인접) 를 한 번에 모아 프레임 상태에 쓴다.
-		// 반경 주얼 소켓 위에 있을 때만 계산 — 반경 안 "문신 가능 패시브" 표시용
+		// 반경 주얼 슬롯 위에 있을 때만 계산 — 반경 안 "문신 가능 패시브" 표시용
 		const radiusHint = new Set<number>(
 			!isAtlas && hovered?.type === "jewel" && !hovered.expansionJewel ? radiusTattooTargets(hovered.id) : [],
 		);
@@ -2707,7 +2734,7 @@
 			const rWorld = nodeRadiusWorld[node.type] || 45;
 			const rScreen = rWorld * scale;
 			if (!visible(sx, sy, rScreen)) continue;
-			const isAllocated = highlighted.has(node.id) || node.id === anointPick; // 도유 노터블은 할당된 것처럼 그린다
+			const isAllocated = highlighted.has(node.id) || node.id === anointPick; // 성유 주요 스킬은 할당된 것처럼 그린다
 			// 저줌(전체 뷰)에서 미할당 프레임(은회색 링)이 뭉개져 "회색 점 도배"로 보인다(공홈 대조).
 			// 공홈은 이 정도 줌아웃이 없어 직접 비교 불가 — 할당 경로가 도드라지도록 미할당만 가라앉힌다.
 			// 검색 결과는 디밍하지 않는다(강조가 목적이므로).
@@ -2762,7 +2789,7 @@
 			if (fc) blit("frame", fc, node.x, node.y);
 			if (isAllocated) context.restore();
 
-			// 반경 주얼 소켓에 올리면 "반경 안에서 문신을 새길 수 있는 패시브"를 청록 테두리로 — 어디를 갈아끼울지 바로 보인다
+			// 반경 주얼 슬롯에 올리면 "반경 안에서 문신을 새길 수 있는 패시브"를 청록 테두리로 — 어디를 갈아끼울지 바로 보인다
 			if (radiusHint.has(node.id)) {
 				context.globalAlpha = 1;
 				context.save();
@@ -2802,8 +2829,8 @@
 				context.restore();
 			}
 
-			// 도유 노드 — 황금 점선 링(할당 프레임과 구분). 이게 없으면 링크로 받은 트리에서
-			// 어느 노드가 도유인지(= 포인트를 안 쓰고 아뮬렛에 걸린 것인지) 알 방법이 없다.
+			// 성유 노드 — 황금 점선 링(할당 프레임과 구분). 이게 없으면 링크로 받은 트리에서
+			// 어느 노드가 성유인지(= 포인트를 안 쓰고 목걸이에 걸린 것인지) 알 방법이 없다.
 			if (node.id === anointPick) {
 				context.globalAlpha = 1;
 				context.save();
@@ -2938,11 +2965,11 @@
 	// 소켓에 꽂은 클러스터 주얼(소켓 id → 구성) 과 그로부터 생성된 노드들.
 	// 생성 노드는 트리 데이터에 없는 합성 노드라 nodes 배열에 합쳐 렌더/히트테스트에 태운다.
 	const clusterPicks = new Map<number, { sizeName: string; nodeCount: number; skillKey: string; notables: string[]; socketCount: number }>();
-	// 이름 → 노터블 정의(스탯/아이콘/한글). 트리 데이터에 좌표 없이 실려 온다.
+	// 이름 → 주요 스킬 정의(스탯/아이콘/한글). 트리 데이터에 좌표 없이 실려 온다.
 	type ClusterNotable = { name: string; nameKo: string | null; stats: string[]; statsKo: string[] | null; icon: string | null; keystone?: boolean };
 	const clusterNotables = new Map<string, ClusterNotable>();
 	// URL(c=)과 평가 요청(clusters=)이 쓰는 공통 직렬화 — 두 곳이 갈라지면 "링크로 열면 다른 수치"가 된다.
-	// 형식: 소켓:크기:노드수:스킬키:노터블|노터블 (노터블 이름은 PoB 가 그대로 파싱하는 영문 원문)
+	// 형식: 소켓:크기:노드수:스킬키:주요 스킬|주요 스킬 (주요 스킬 이름은 PoB 가 그대로 파싱하는 영문 원문)
 	function clusterConfEntries(): string[] {
 		return Array.from(clusterPicks)
 			.filter(([socketId]) => highlighted.has(socketId))
@@ -2958,7 +2985,7 @@
 	// 생성 노드 id → 그 노드를 만든 소켓 id. 생성 노드에서 우클릭했을 때 "어느 주얼의 것인지" 알아야
 	// 구성 변경/제거를 그 자리에서 제공할 수 있다(소켓까지 찾아가지 않아도 되게).
 	const clusterOwner = new Map<number, number>();
-	// 클러스터가 드러낸 주얼 소켓(원본 노드) — 구성이 바뀌면 원래 숨은 상태로 되돌린다
+	// 클러스터가 드러낸 주얼 슬롯(원본 노드) — 구성이 바뀌면 원래 숨은 상태로 되돌린다
 	const clusterSocketBackup = new Map<number, TreeNode>();
 	const clusterSocketShown = new Set<number>();
 	function rebuildClusterNodes() {
@@ -3042,7 +3069,7 @@
 			}
 			for (const n of built.nodes) {
 				if (nodeById.has(n.id)) {
-					// 클러스터가 만든 주얼 소켓은 **트리에 이미 있는(프록시 그룹의 숨은) 노드를 재사용**한다.
+					// 클러스터가 만든 주얼 슬롯은 **트리에 이미 있는(프록시 그룹의 숨은) 노드를 재사용**한다.
 					// 원본은 isProxy 로 감춰져 있어 그대로 두면 소켓이 안 보이고 클릭도 안 된다 →
 					// 좌표만 서브그래프 자리로 옮기고 숨김을 푼다. 원본은 되돌릴 수 있게 보관.
 					if (n.type === "jewel") {
@@ -3084,7 +3111,7 @@
 		for (const id of Array.from(highlighted)) {
 			if (id >= 0x10000 && !nodeById.has(id)) highlighted.delete(id);
 		}
-		// 이번 구성에서 사라진 주얼 소켓의 할당도 정리(소켓은 실제 트리 id 라 위 조건에 안 걸린다)
+		// 이번 구성에서 사라진 주얼 슬롯의 할당도 정리(소켓은 실제 트리 id 라 위 조건에 안 걸린다)
 		for (const id of wasShown) if (!clusterSocketShown.has(id)) highlighted.delete(id);
 	}
 
@@ -3187,7 +3214,7 @@
 			if (!used.has(idx)) notableIdx.push(idx);
 		}
 		notableIdx.sort((a, b) => a - b);
-		// 어느 노터블이 어느 자리에 가는지 = PoB 와 동일하게 notableSortOrder 오름차순(PassiveSpec:BuildSubgraph).
+		// 어느 주요 스킬이 어느 자리에 가는지 = PoB 와 동일하게 notableSortOrder 오름차순(PassiveSpec:BuildSubgraph).
 		// 이름 순/고른 순으로 넣으면 같은 조합이라도 노드 id 가 뒤바뀌어 엔진과 트리가 다른 걸 찍는다.
 		const chosen = (plan.notables || [])
 			.map((name) => clusterNotables.get(name))
@@ -3440,7 +3467,7 @@
 		filter.focus();
 	}
 
-	// ---- 도유 픽커 (PoB 아뮬렛 도유 UX) ----
+	// ---- 성유 픽커 (PoB 목걸이 성유 UX) ----
 	let anointPanel: HTMLElement | null = null;
 	let anointOpener: HTMLElement | null = null;
 	function closeAnointPicker() {
@@ -3460,9 +3487,9 @@
 		const head = document.createElement("div");
 		head.className = "sticky top-0 poe-popup-head flex items-center justify-between gap-2";
 		const anointHeadTitle = document.createElement("span");
-		anointHeadTitle.textContent = isKorean ? "도유 선택 — 아뮬렛에 노터블 부여" : "Anoint — grant a notable";
+		anointHeadTitle.textContent = isKorean ? "성유 선택 — 목걸이에 주요 스킬 부여" : "Anoint — grant a notable";
 		head.appendChild(anointHeadTitle);
-		// 도유 사전(모드 페이지 아뮬렛 도유 섹션) 바로가기 — 문신/클러스터 픽커와 같은 관례
+		// 성유 사전(모드 페이지 목걸이 성유 섹션) 바로가기 — 문신/클러스터 픽커와 같은 관례
 		const anointDictLink = document.createElement("a");
 		anointDictLink.href = "/poe/mods?itemClass=Amulet#mod-sec-anoint";
 		anointDictLink.target = "_blank";
@@ -3474,7 +3501,7 @@
 		const filter = document.createElement("input");
 		filter.type = "text";
 		filter.className = "w-full px-3 py-1.5 text-xs bg-stone-800 text-amber-100 border-b border-stone-700 outline-none";
-		filter.placeholder = isKorean ? "노터블 이름/효과 검색" : "Filter by name or stat";
+		filter.placeholder = isKorean ? "주요 스킬 이름/효과 검색" : "Filter by name or stat";
 		filter.setAttribute("aria-label", filter.placeholder); // 고르기 창 검색칸 접근 이름(10-04, PoE2 짝 — placeholder 만으론 낭독기가 못 읽는다)
 		panel.appendChild(filter);
 		const list = document.createElement("div");
@@ -3496,12 +3523,12 @@
 		const render = (query: string) => {
 			list.replaceChildren();
 			const q = searchKey(query.trim());
-			// 해제 행 — 현재 도유가 있을 때만
+			// 해제 행 — 현재 성유가 있을 때만
 			if (anointPick !== null) {
 				const clear = document.createElement("button");
 				clear.type = "button";
 				clear.className = "block w-full text-left px-3 py-1.5 text-xs text-rose-300 hover:bg-stone-700/60 border-b border-stone-800";
-				clear.textContent = isKorean ? "도유 해제" : "Remove anoint";
+				clear.textContent = isKorean ? "성유 해제" : "Remove anoint";
 				clear.addEventListener("click", () => applyAnoint(null));
 				list.appendChild(clear);
 			}
@@ -3525,6 +3552,7 @@
 					img.src = "/poe-assets/" + oil.icon;
 					img.className = "w-4 h-4 object-contain";
 					img.title = (isKorean && oil.nameKo) || oil.name;
+					img.alt = img.title; // 단추 안 그림 — 이름에 파일명이 섞이지 않게(10-25 Q204)
 					title.appendChild(img);
 				}
 				row.appendChild(title);
@@ -3538,7 +3566,7 @@
 			if (!shown) {
 				const empty = document.createElement("div");
 				empty.className = "px-3 py-2 text-xs text-stone-400";
-				empty.textContent = isKorean ? "일치하는 노터블 없음" : "No matches";
+				empty.textContent = isKorean ? "일치하는 주요 스킬 없음" : "No matches";
 				list.appendChild(empty);
 			}
 		};
@@ -3653,6 +3681,7 @@
 			box.appendChild(hint);
 			const conqSel = document.createElement("select");
 			conqSel.className = "select select-xs select-bordered w-full bg-stone-900 text-amber-100";
+			conqSel.setAttribute("aria-label", isKorean ? "정복자" : "Conqueror"); // 이름 없는 선택 상자(10-25 Q204)
 			for (const c of def.conquerors) {
 				const opt = document.createElement("option");
 				opt.value = c;
@@ -3667,6 +3696,7 @@
 			seedInput.value = String(Math.floor((def.min + def.max) / 2));
 			seedInput.className = "input input-xs input-bordered w-full bg-stone-900 text-amber-100";
 			seedInput.title = `${def.min} ~ ${def.max}`;
+			seedInput.setAttribute("aria-label", (isKorean ? "시드 " : "Seed ") + `${def.min} ~ ${def.max}`);
 			box.appendChild(seedInput);
 			const range = document.createElement("div");
 			range.className = "text-[10px] font-mono text-base-content/60";
@@ -3801,7 +3831,7 @@
 		const headTitle = document.createElement("span");
 		headTitle.textContent = (isKorean ? "클러스터 주얼 — " : "Cluster jewel — ") + (isKorean ? CLUSTER_SIZE_KO[socket.expansionJewel?.size ?? 0] : sizeName);
 		head.appendChild(headTitle);
-		// 노터블 사전(/poe/clusters) 바로가기 — 픽커 목록은 요약뿐이라 전체 스탯 비교는 사전에서
+		// 주요 스킬 사전(/poe/clusters) 바로가기 — 픽커 목록은 요약뿐이라 전체 스탯 비교는 사전에서
 		const dictLink = document.createElement("a");
 		dictLink.href = "/poe/clusters";
 		dictLink.target = "_blank";
@@ -3814,7 +3844,7 @@
 		body.className = "flex-1 overflow-y-auto";
 		panel.appendChild(body);
 
-		// 숫자 선택 줄(노드 수 / 주얼 소켓 수) — 공통 헬퍼
+		// 숫자 선택 줄(노드 수 / 주얼 슬롯 수) — 공통 헬퍼
 		const numberRow = (label: string, min: number, max: number, initial: number, onPick: (v: number) => void) => {
 			const row = document.createElement("div");
 			row.className = "flex items-center gap-1 px-3 py-2 border-b border-stone-800";
@@ -3839,16 +3869,16 @@
 		};
 		numberRow(isKorean ? "노드 수" : "Nodes", def.minNodes, def.maxNodes, chosenCount, (v) => (chosenCount = v));
 		if (socketMax > 0) {
-			numberRow(isKorean ? "주얼 소켓" : "Sockets", 0, socketMax, chosenSockets, (v) => (chosenSockets = v));
+			numberRow(isKorean ? "주얼 슬롯" : "Sockets", 0, socketMax, chosenSockets, (v) => (chosenSockets = v));
 		}
 
 		// ---- 작은 패시브 효과(스킬) 선택 ----
-		// 노터블 후보가 스킬에 따라 달라지므로 **스킬을 먼저 고른다**(게임 크래프트 순서와 동일).
+		// 주요 스킬 후보가 스킬에 따라 달라지므로 **스킬을 먼저 고른다**(게임 크래프트 순서와 동일).
 		const skillBox = document.createElement("div");
 		skillBox.className = "border-b border-stone-800";
 		const skillHead = document.createElement("div");
 		skillHead.className = "px-3 pt-2 text-[11px] text-stone-400";
-		skillHead.textContent = isKorean ? "작은 패시브 효과" : "Small passive effect";
+		skillHead.textContent = isKorean ? "추가된 소형 패시브 스킬 효과" : "Added Small Passive Skills grant"; // 게임 StatDescripotionTreeExpansionJewelGrantedSmallStat(10-24 Q167)
 		skillBox.appendChild(skillHead);
 		const skillList = document.createElement("div");
 		skillList.className = "max-h-40 overflow-y-auto";
@@ -3883,17 +3913,17 @@
 		markSkills();
 		body.appendChild(skillBox);
 
-		// ---- 노터블 선택 ----
-		// 실제 주얼은 "1 Added Passive Skill is <노터블>" 로 노터블을 얹는다. 이름이 곧 계약이라
-		// 트리 데이터의 클러스터 노터블 목록에서 고른다 — 임의 이름이면 PoB 가 서브트리를 버린다.
-		// 게다가 **어떤 노터블이 나올 수 있는지는 스킬 태그·주얼 크기가 정한다**(notableOptions).
+		// ---- 주요 스킬 선택 ----
+		// 실제 주얼은 "1 Added Passive Skill is <주요 스킬>" 로 주요 스킬을 얹는다. 이름이 곧 계약이라
+		// 트리 데이터의 클러스터 주요 스킬 목록에서 고른다 — 임의 이름이면 PoB 가 서브트리를 버린다.
+		// 게다가 **어떤 주요 스킬이 나올 수 있는지는 스킬 태그·주얼 크기가 정한다**(notableOptions).
 		const notableBox = document.createElement("div");
 		notableBox.className = "px-3 py-2";
 		const notableHead = document.createElement("div");
 		notableHead.className = "text-[11px] text-stone-400 mb-1";
 		const renderHead = () => {
 			notableHead.textContent =
-				(isKorean ? "노터블" : "Notables") +
+				(isKorean ? "주요 스킬" : "Notables") +
 				` ${chosenNotables.length}/${notableMax}` +
 				(chosenNotables.length ? " — " + chosenNotables.map((n) => (isKorean && clusterNotables.get(n)?.nameKo) || n).join(", ") : "");
 		};
@@ -3902,7 +3932,7 @@
 		const filter = document.createElement("input");
 		filter.type = "text";
 		filter.className = "input input-xs w-full bg-stone-950 border-stone-700 text-stone-200";
-		filter.placeholder = isKorean ? "노터블 검색…" : "Search notables…";
+		filter.placeholder = isKorean ? "주요 스킬 검색…" : "Search notables…";
 		filter.setAttribute("aria-label", filter.placeholder); // 고르기 창 검색칸 접근 이름(10-04, PoE2 짝 — placeholder 만으론 낭독기가 못 읽는다)
 		notableBox.appendChild(filter);
 		const allToggle = document.createElement("label");
@@ -3941,7 +3971,7 @@
 			list.appendChild(row);
 			rows.push({ el: row, name: cn.name, hay: (cn.name + " " + (cn.nameKo || "")).toLowerCase(), mark });
 		}
-		// 이 주얼(크기 + 스킬 태그)에 실제로 붙을 수 있는 노터블인지
+		// 이 주얼(크기 + 스킬 태그)에 실제로 붙을 수 있는 주요 스킬인지
 		const eligible = (name: string) => {
 			const opt = clusterNotableOptions?.[name];
 			if (!opt) return false;
@@ -3979,7 +4009,7 @@
 		apply.textContent = isKorean ? "적용" : "Apply";
 		apply.addEventListener("click", () => {
 			const before = snapshot();
-			// 소켓/노터블이 노드 수를 넘지 않게(작은 패시브 수가 음수가 되면 PoB 와 노드 구성이 어긋난다)
+			// 소켓/주요 스킬이 노드 수를 넘지 않게(작은 패시브 수가 음수가 되면 PoB 와 노드 구성이 어긋난다)
 			const sockets = Math.min(chosenSockets, Math.max(0, chosenCount - 1));
 			const notables = chosenNotables.slice(0, Math.max(0, Math.min(notableMax, chosenCount - sockets - 1)));
 			clusterPicks.set(socket.id, { sizeName, nodeCount: chosenCount, skillKey: chosenSkill, notables, socketCount: sockets });
@@ -4007,13 +4037,15 @@
 	// "이 슬롯이 몇 개를 덮는가"가 슬롯 선택의 핵심 정보다.
 	// ⚠ 값은 **트리 버전마다 다르다** — 800/1200/1500 은 3.15 것이고, 3.16 이후는 아래 값이다
 	//   (PoB Modules/Data.lua `data.jewelRadii["3_16"]`). 옛 값으로 세면 반경 안 패시브 수가 실제보다 적게 나온다.
+	// 이름은 게임 ClientStrings JewelRadiusSmall~Massive(10-23 Q56 — 예전 '소형 · 중형 · 초대형 · 거대'는 사이트 낱말), 줄 머리는 JewelRadiusLabel '적용 반경'
 	const JEWEL_RADII: { en: string; ko: string; r: number }[] = [
-		{ en: "Small", ko: "소형", r: 960 },
-		{ en: "Medium", ko: "중형", r: 1440 },
+		{ en: "Small", ko: "작게", r: 960 },
+		{ en: "Medium", ko: "중간", r: 1440 },
 		{ en: "Large", ko: "대형", r: 1800 },
-		{ en: "Very Large", ko: "초대형", r: 2400 },
-		{ en: "Massive", ko: "거대", r: 2880 },
+		{ en: "Very Large", ko: "매우 넓은 반경", r: 2400 },
+		{ en: "Massive", ko: "거대한 반경", r: 2880 },
 	];
+	const RADIUS_LABEL = () => (isKorean ? "적용 반경: " : "Radius: ");
 	// 꽂은 주얼의 반경 링 아트(공식 시트) — 무궁한 주얼은 정복자 세력별로 링 색이 다르다.
 	const TIMELESS_RING: Record<string, string> = {
 		"glorious-vanity": "VaalJewelCircle1",
@@ -4060,7 +4092,7 @@
 			node.type === "keystone" || node.type === "notable" || node.type === "mastery" || node.type === "jewel"
 				? node.type
 				: node.type === "wormhole"
-					? "keystone" // 아틀라스 웜홀은 키스톤급 특수 노드 — 키스톤 밴드가 인게임 느낌에 가장 가깝다
+					? "keystone" // 아틀라스 웜홀은 핵심노드급 특수 노드 — 핵심노드 밴드가 인게임 느낌에 가장 가깝다
 					: node.ascendancy
 						? "ascendancy"
 						: "normal";
@@ -4070,7 +4102,7 @@
 		header.textContent = inkedDn
 			? tattooLabel(inkedDn)
 			: displayName + (node.ascendancy ? " (" + ascendancyLabel(node.ascendancy) + ")" : "");
-		// 도유(성유) 레시피 — 인게임처럼 헤더 오른쪽에 기름 3개(제목 옆, 아틀라스/문신 상태 제외)
+		// 성유(성유) 레시피 — 인게임처럼 헤더 오른쪽에 기름 3개(제목 옆, 아틀라스/문신 상태 제외)
 		if (!inkedDn && !isAtlas && node.anoint?.length) {
 			const oilBox = document.createElement("span");
 			oilBox.className = "flex items-center gap-0.5 ml-2";
@@ -4090,16 +4122,25 @@
 		// 마스터리: 고른 효과가 있으면 그 문장을, 없으면 선택지 개수를 보여준다
 		let displayStats = isKorean && node.statsKo && node.statsKo.length ? node.statsKo : node.stats;
 		let reminderLines = (isKorean && node.reminderKo) || node.reminder || [];
-		if (inkedDn) displayStats = tattooLines(inkedDn);
-		else if (isAtlas && node.type === "mastery") {
-			// 아틀라스 마스터리는 할당 불가한 그룹 표지 — 이름만 있으면 클릭 가능해 보여 오해를 부른다
-			displayStats = [isKorean ? "그룹 표지 — 할당할 수 없습니다" : "Group emblem — not allocatable"];
+		if (inkedDn) {
+			displayStats = tattooLines(inkedDn);
+			// 문신 · 룬 접목 노드 리마인더 = 게임 제거 안내(10-23 Q98 — ClientStrings PassiveSkillNodeTattooRemovalReminder · RunegraftRemovalReminder,
+			//   예전엔 원래 노드의 리마인더 · 플레이버가 남았다)
+			const runegraft = tattooByDn(inkedDn)?.targetType === "Mastery";
+			reminderLines = [
+				runegraft
+					? isKorean ? "(룬 접목은 이 패시브 스킬에 정제의 오브를 사용하여 제거할 수 있습니다)" : "(Runegraft can be removed by using an Orb of Scouring on this Passive Skill)"
+					: isKorean ? "(문신은 이 패시브 스킬에 정제의 오브를 사용하여 제거할 수 있습니다)" : "(Tattoo can be removed by using an Orb of Scouring on this Passive Skill)",
+			];
+		} else if (isAtlas && node.type === "mastery") {
+			// 아틀라스 숙련은 할당 불가한 그룹 표지 — 게임 ClientStrings AtlasMasterySkillPopup 문구(10-23 Q66, 예전엔 사이트 문구 '그룹 표지 — 할당할 수 없습니다')
+			displayStats = [isKorean ? "마우스 커서를 올리거나 클릭하면 같은 유형의 다른 스킬 군이 강조 표시됩니다." : "Hover or click to highlight other clusters of the same type"];
 		} else if (node.masteryEffects?.length) {
 			const picked = masteryPicks.get(node.id);
 			const eff = picked !== undefined ? node.masteryEffects.find((e) => e.id === picked) : undefined;
 			displayStats = eff
 				? effectLines(eff)
-				: [(isKorean ? "효과 " : "") + node.masteryEffects.length + (isKorean ? "개 중 선택 — 클릭" : " effects — click to pick")];
+				: [masterySelectText(node), (isKorean ? "효과 " : "") + node.masteryEffects.length + (isKorean ? "개 중 선택 — 클릭" : " effects — click to pick")];
 			// 고른 효과의 리마인더를 노드 리마인더 자리에 — 마스터리 노드 자체엔 리마인더가 없다
 			reminderLines = eff ? (isKorean && eff.reminderKo) || eff.reminder || [] : [];
 		}
@@ -4119,8 +4160,8 @@
 				line.textContent = rem;
 				body.appendChild(line);
 			}
-			// 키스톤 플레이버 문구 — 인게임 녹슨 금색 이탤릭
-			for (const fl of (isKorean && node.flavourKo) || node.flavour || []) {
+			// 핵심노드 플레이버 문구 — 인게임 녹슨 금색 이탤릭
+			for (const fl of inkedDn ? [] : (isKorean && node.flavourKo) || node.flavour || []) {
 				const line = document.createElement("div");
 				line.className = "poe-popup-flavour";
 				line.textContent = fl;
@@ -4137,8 +4178,8 @@
 			line.className = "text-[11px] font-mono text-purple-300 leading-5";
 			const sizeName = CLUSTER_SIZE_KO[node.expansionJewel.size] || "";
 			line.textContent = isKorean
-				? `클러스터 주얼 전용 (${sizeName})`
-				: `Cluster jewel socket (${CLUSTER_SIZE_NAME[node.expansionJewel.size] || ""})`;
+				? `${sizeName} 스킬 군 주얼 전용` // 게임 아이템 이름(BaseItemTypes '대형 스킬 군 주얼', 10-23 Q57)
+				: `${CLUSTER_SIZE_NAME[node.expansionJewel.size] || ""} Cluster Jewel socket`;
 			box.appendChild(line);
 			// 이 크기의 클러스터 주얼이 무엇을 붙여주는지 — 계획 단계에서 알아야 하는 정보
 			const def = clusterDefs?.[CLUSTER_DEF_KEY[node.expansionJewel.size]];
@@ -4155,7 +4196,7 @@
 			todo.className = "text-[10px] text-base-content/60 leading-4";
 			// 클러스터 편집은 완성됐다(우클릭 픽커) — 옛 "미지원" 문구가 남아 오정보였다.
 			// 모바일엔 우클릭이 없어 롱프레스를 병기한다(터치 감지 분기보다 하이브리드 기기에 안전).
-			todo.textContent = isKorean ? "우클릭(길게 누르기)으로 클러스터 주얼 구성" : "Right-click (long-press) to configure cluster jewel";
+			todo.textContent = isKorean ? "우클릭(길게 누르기)으로 스킬 군 주얼 구성" : "Right-click (long-press) to configure cluster jewel";
 			box.appendChild(todo);
 			tooltip.appendChild(box);
 		} else if (node.type === "jewel" && !isAtlas) {
@@ -4216,13 +4257,13 @@
 				line.className = "text-[11px] font-mono font-semibold text-emerald-200 leading-5 mt-1";
 				line.dataset.jewelRadius = "";
 				const where = center !== node ? (isKorean ? `${center.nameKo || center.name} 둘레 ` : `around ${center.name} `) : "";
-				line.textContent = `${where}${own.label ? own.label + " " : ""}${own.inner ? own.inner + "~" : ""}${own.r} — ${alloc}/${total}` + (isKorean ? " 패시브" : " passives");
+				line.textContent = `${where}${RADIUS_LABEL()}${own.label ? own.label + " " : ""}(${own.inner ? own.inner + "~" : ""}${own.r}) — ${alloc}/${total}` + (isKorean ? " 패시브" : " passives");
 				box.appendChild(line);
 			} else if (!socketed) {
 				for (const band of jewelRadiusInfo(node)) {
 					const line = document.createElement("div");
 					line.className = "text-[11px] font-mono font-semibold text-emerald-200 leading-5";
-					line.textContent = `${band.label} ${band.r} — ${band.alloc}/${band.total}` + (isKorean ? " 패시브" : " passives");
+					line.textContent = `${RADIUS_LABEL()}${band.label} (${band.r}) — ${band.alloc}/${band.total}` + (isKorean ? " 패시브" : " passives");
 					box.appendChild(line);
 				}
 			}
@@ -4233,20 +4274,20 @@
 		if (interactive && node.type !== "class" && !(isAtlas && node.type === "mastery")) {
 			let costText = "";
 			let costClass = "";
-			// 도유 전용 노터블(30개) — 트리에 간선이 아예 없어 어떤 경로로도 찍을 수 없고, 아뮬렛 도유로만 얻는다.
+			// 성유 전용 주요 스킬(30개) — 트리에 간선이 아예 없어 어떤 경로로도 찍을 수 없고, 목걸이 성유로만 얻는다.
 			// 기존 "연결 불가" 는 할당 노드가 있을 때만 뜨는 데다 "지금은 경로가 없다" 는 뜻이라 이 경우와 구분되지 않았다
 			// (빈 트리에서는 아무 안내도 없어, 클릭해도 반응 없는 이유를 알 길이 없었다).
-			// 판정은 도유 보유 + 간선 0 — 클러스터 주얼로 생성되는 노드는 도유가 없어 걸리지 않는다.
+			// 판정은 성유 보유 + 간선 0 — 클러스터 주얼로 생성되는 노드는 성유가 없어 걸리지 않는다.
 			const anointOnly = !isAtlas && !!node.anoint?.length && (adjacency.get(node.id)?.length || 0) === 0;
 			if (node.id === anointPick) {
-				costText = isKorean ? "도유로 할당됨 — 해제는 우클릭" : "Anointed — right-click to remove";
+				costText = isKorean ? "성유로 할당됨 — 해제는 우클릭" : "Anointed — right-click to remove";
 				costClass = "text-amber-300";
 			} else if (anointOnly) {
-				costText = isKorean ? "도유 전용 — 우클릭으로 도유 할당" : "Anoint only — right-click to anoint";
+				costText = isKorean ? "성유 전용 — 우클릭으로 성유 할당" : "Anoint only — right-click to anoint";
 				costClass = "text-amber-200/70";
 			} else if (highlighted.has(node.id)) {
 				if (removalSet.size) {
-					costText = (isKorean ? "해제 −" : "Refund −") + removalSet.size + (isKorean ? " 포인트" : " points");
+					costText = (isKorean ? "반환 −" : "Refund −") /* 게임 PassiveTreeRefundMode '패시브 스킬 반환'(10-24 Q167) */ + removalSet.size + (isKorean ? " 포인트" : " points");
 					costClass = "text-rose-400";
 				}
 			} else if (hoverPath.length > 1) {
@@ -4443,7 +4484,7 @@
 			closeMasteryPicker();
 			closeJewelPicker();
 			closeTattooPicker();
-			closeAnointPicker(); // 도유 고르기 창도(10-04 C104 — 다른 창은 다 닫히는데 이것만 남았다)
+			closeAnointPicker(); // 성유 고르기 창도(10-04 C104 — 다른 창은 다 닫히는데 이것만 남았다)
 		}
 		// 검색창 등 입력 중에는 브라우저 기본 실행취소를 방해하지 않는다.
 		const tag = (event.target as HTMLElement | null)?.tagName;
@@ -4603,7 +4644,7 @@
 					nodes = data.nodes;
 					edges = data.edges;
 					groups = data.groups || {};
-					// 클러스터 주얼 노터블 — 좌표가 없어(그룹 밖) 일반 노드 목록엔 못 들어간다. 이름으로만 참조된다.
+					// 클러스터 주얼 주요 스킬 — 좌표가 없어(그룹 밖) 일반 노드 목록엔 못 들어간다. 이름으로만 참조된다.
 					for (const cn of data.clusterNotables || []) clusterNotables.set(cn.name, cn);
 					extraImages = data.extraImages || [];
 					oils = data.oils || {};

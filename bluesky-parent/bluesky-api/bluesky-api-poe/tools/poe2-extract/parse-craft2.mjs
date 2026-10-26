@@ -302,7 +302,9 @@ const tagNames = {};
 tags.forEach((t, i) => {
 	const en = t && t.DisplayString;
 	const ko = tagsKo[i] && tagsKo[i].DisplayString;
-	if (en || ko) tagNames[t.Id] = [en || ko, ko || en];
+	// 영어 이름이 비면 한국어 대신 id(첫 글자 대문자) — 'drop' 영어 칸에 '출현'이 들어가 영어 화면에 한글이 남았다(10-23 Q35 UX QA, PoE1 은 Name 'Drop')
+	const idName = t && t.Id ? t.Id.charAt(0).toUpperCase() + t.Id.slice(1).replace(/_/g, " ") : "";
+	if (en || ko) tagNames[t.Id] = [en || idName || ko, ko || en];
 });
 writeJson("craft2-mods.json", { patch: loadConfig().patch, mods: out, pools, omens, currencies, essences, essenceMods, desecrated, desecratedMods, bones, corrupted, corruptedMods, tagNames });
 console.log(`craft2-mods.json: 옵션 ${Object.keys(out).length} · 풀 ${Object.keys(pools).length} · 징조 ${omens.length} · 화폐 ${currencies.length} · 에센스 ${essences.length}(전용 옵션 ${Object.keys(essenceMods).length}) · 탈신성 옵션 ${Object.keys(desecratedMods).length}(풀 ${Object.keys(desecrated).length}) · 뼈 ${bones.length} · 타락 인챈트 ${Object.keys(corruptedMods).length}(풀 ${Object.keys(corrupted).length})`);

@@ -32,10 +32,15 @@ public class Poe2NinjaService {
 
   private static final Logger logger = LoggerFactory.getLogger(Poe2NinjaService.class);
 
-  public record Count(String name, int count) {}
+  /** nameKo = 미리보기 응답에서만 채운다(10-25 Q172, 스냅샷 · 집계엔 null). */
+  public record Count(String name, int count, String nameKo) {
+    public Count(String name, int count) {
+      this(name, count, null);
+    }
+  }
 
   /**
-   * 아키타입 — lean = 전체 중앙값 대비 성향(dps 공격 특화 · ehp 생존 특화 · balanced), facets = 그 전직 전체 모집단의 아이템·키스톤·도유
+   * 아키타입 — lean = 전체 중앙값 대비 성향(dps 공격 특화 · ehp 생존 특화 · balanced), facets = 그 전직 전체 모집단의 아이템·핵심노드·성유
    * 사용 수.
    */
   public record Archetype(
@@ -53,7 +58,47 @@ public class Poe2NinjaService {
       Integer facetTotal,
       List<Count> topItems,
       List<Count> topAnointed,
-      RealStart start) {}
+      RealStart start,
+      // 미리보기 응답에서만 채우는 한글(10-25 Q172 — 전직 · 주 스킬이 영어로만 나왔다)
+      String ascendancyKo,
+      String mainSkillKo) {
+
+    public Archetype(
+        String ascendancy,
+        String mainSkill,
+        int sample,
+        Double medianLevel,
+        Double medianLife,
+        Double medianEs,
+        Double medianEhp,
+        Double medianDps,
+        String lean,
+        List<Count> topKeystones,
+        List<Count> topCoSkills,
+        Integer facetTotal,
+        List<Count> topItems,
+        List<Count> topAnointed,
+        RealStart start) {
+      this(
+          ascendancy,
+          mainSkill,
+          sample,
+          medianLevel,
+          medianLife,
+          medianEs,
+          medianEhp,
+          medianDps,
+          lean,
+          topKeystones,
+          topCoSkills,
+          facetTotal,
+          topItems,
+          topAnointed,
+          start,
+          null,
+          null);
+    }
+  }
 
   /**
    * 실빌드 출발점 — 여러 명을 우리 엔진으로 재계산해 (DPS, EHP) 중앙값에 가장 가까운 사람. code = PoB 코드(플레이어 Config 그대로, 메인 그룹만
@@ -461,8 +506,7 @@ public class Poe2NinjaService {
       if (b.mainSkill() != null) {
         skills.putIfAbsent(
             b.mainSkill(),
-            new Choice(
-                b.mainSkill(), data.gemByName(b.mainSkill()).map(Poe2.Gem::nameKo).orElse(null)));
+            new Choice(b.mainSkill(), data.nameKo(b.mainSkill()))); // 젬이 아닌 주 스킬도(10-25 Q172)
       }
     }
     List<Choice> skillList = new ArrayList<>(skills.values());
@@ -662,6 +706,41 @@ public class Poe2NinjaService {
         num(root, "globalMedianDps"),
         num(root, "globalMedianEhp"),
         List.copyOf(list));
+  }
+
+  /** 미리보기용 한글 이름을 채운다(10-25 Q172) — 전직 · 주 스킬 · 핵심노드 · 같이 쓰는 스킬 · 고유 · 성유. */
+  public Archetype localize(Archetype a) {
+    if (a == null) {
+      return null;
+    }
+    String ascKo =
+        a.ascendancy() == null || a.ascendancy().isBlank()
+            ? null
+            : data.treeIndex().ascendancyKo().get(a.ascendancy());
+    return new Archetype(
+        a.ascendancy(),
+        a.mainSkill(),
+        a.sample(),
+        a.medianLevel(),
+        a.medianLife(),
+        a.medianEs(),
+        a.medianEhp(),
+        a.medianDps(),
+        a.lean(),
+        localize(a.topKeystones()),
+        localize(a.topCoSkills()),
+        a.facetTotal(),
+        localize(a.topItems()),
+        localize(a.topAnointed()),
+        a.start(),
+        ascKo,
+        data.nameKo(a.mainSkill()));
+  }
+
+  private List<Count> localize(List<Count> list) {
+    return list == null
+        ? null
+        : list.stream().map(c -> new Count(c.name(), c.count(), data.nameKo(c.name()))).toList();
   }
 
   private static List<Count> counts(JsonNode arr, int limit) {

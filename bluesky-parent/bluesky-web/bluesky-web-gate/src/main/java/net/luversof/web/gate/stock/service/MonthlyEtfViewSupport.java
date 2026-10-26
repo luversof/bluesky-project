@@ -42,12 +42,12 @@ public class MonthlyEtfViewSupport {
   public static final String SORT_ANNUAL_YIELD = "annual-yield";
   public static final String SORT_PAYOUT_COUNT = "payout-count";
 
-  /** 고른 기간의 가격 수익률 · 합산 수익률로도 정렬한다(사용자 결정 2026-09-21). */
   /** 최근 1 년 위험 지표로도 정렬한다(사용자 결정 2026-09-22). */
   public static final String SORT_MAX_DRAWDOWN = "max-drawdown";
 
   public static final String SORT_VOLATILITY = "volatility";
 
+  /** 고른 기간의 가격 수익률 · 합산 수익률로도 정렬한다(사용자 결정 2026-09-21). */
   public static final String SORT_PERIOD_PRICE = "period-price";
 
   public static final String SORT_PERIOD_TOTAL = "period-total";

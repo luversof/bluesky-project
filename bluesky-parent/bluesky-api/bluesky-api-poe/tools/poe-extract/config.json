@@ -94,6 +94,8 @@
         "CostAmounts",
         "CostTypes",
         "ManaReservationPercent",
+        "ManaReservationFlat",
+        "LifeReservationFlat",
         "AttackTime",
         "SoulGainPreventionDuration",
         "StoredUses"

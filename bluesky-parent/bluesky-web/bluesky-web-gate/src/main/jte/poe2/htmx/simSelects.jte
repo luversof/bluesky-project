@@ -27,7 +27,7 @@
 }
 <div class="min-w-[min(14rem,100%)]">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.ascendancy")}</label>
-	<select name="ascendancy" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe.sim.opt.ascendancy")}" data-sim-ascendancy>
+	<select name="ascendancy" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe.sim.opt.ascendancy")}" data-sim-ascendancy hx-get="/poe2/htmx/sim/selects" hx-trigger="change" hx-include="#poe2SimSelects select" hx-target="#poe2SimSelects" hx-swap="innerHTML">
 		<option value="" selected="${ascendancy == null || ascendancy.isBlank()}">${MessageUtil.getMessage("poe.sim.opt.ascendancy.auto")}</option>
 		@if(!popularAscendancies.isEmpty())
 			<optgroup label="${MessageUtil.getMessage("poe.sim.popular.classes")}">
@@ -49,7 +49,7 @@
 <div class="min-w-[min(13rem,100%)] flex-1">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.tree.eval.skill")}<span class="ml-1 font-normal text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.byusage")}</span></label>
 	<%-- data-poe-multi: PoE1 과 같은 검색형 위젯(multiSelect.js) — multiple 이 없으니 단일 선택 모드(칩 하나, 고르면 교체) --%>
-	<select name="skill" data-poe-multi data-placeholder="${MessageUtil.getMessage("poe2.sim.opt.skill.placeholder")}" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe.tree.eval.skill")}" data-sim-skill>
+	<select name="skill" data-poe-multi data-placeholder="${MessageUtil.getMessage("poe2.sim.opt.skill.placeholder")}" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe.tree.eval.skill")}" data-sim-skill hx-get="/poe2/htmx/sim/selects" hx-trigger="change" hx-include="#poe2SimSelects select" hx-target="#poe2SimSelects" hx-swap="innerHTML">
 		@for(Poe2.SimChoice c : skills)
 			<option value="${c.name()}" selected="${c.name().equals(selSkill)}">${PoeText.name(c.nameKo(), c.name())}</option>
 		@endfor

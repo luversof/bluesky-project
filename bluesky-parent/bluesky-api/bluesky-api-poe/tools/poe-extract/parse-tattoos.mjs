@@ -88,16 +88,21 @@ translator.addPairs(
 	(tree.nodes || []).flatMap((node) => (node.masteryEffects || []).map((eff) => ({ en: eff.stats || [], ko: eff.statsKo || [] }))),
 );
 // 게임 데이터가 한글 문장을 안 주는 문신 전용 제한 문구는 직접 옮긴다(인게임 표기 기준).
+//   종류 낱말은 게임 낱말(10-24 Q164): Keystone = ClientStrings PassiveSkillSearchKeystone '핵심노드', Ancestral = 아이템 이름 '혈맹의 선조 문신'
 const MANUAL_KO = {
-	"Limited to 1 Keystone Tattoo": "키스톤 문신 1개로 제한",
-	"Limited to 1 Ancestral Tattoo": "선조의 문신 1개로 제한",
+	"Limited to 1 Keystone Tattoo": "핵심노드 문신 1개로 제한",
+	"Limited to 1 Ancestral Tattoo": "선조 문신 1개로 제한",
 	"Limited to 1 Ascendancy Tattoo": "승천 문신 1개로 제한",
 };
 // "Limited to N <종류> Tattoo" 계열은 종류가 여러 갈래라 패턴으로 처리한다(위 표에 없는 것만).
 // 룬 접합은 자기 이름으로 제한된다("Limited to 1 Runegraft of X") — 그 한글 이름을 그대로 쓴다.
+// 종류 낱말(10-23 Q70 — 예전엔 영어 그대로 'Loyalty 문신 1개로 제한' 19건). 게임 종류 표(문신 유형)는 추출 대상이 아니라
+//   같은 종류 아이템 이름의 게임 낱말을 쓴다: 'Loyalty Tattoo of Kaom' = '카옴의 충성 문신', 'Honoured Tattoo of the Dove' = '비둘기의 명예로운 문신'
+const TATTOO_TYPE_KO = { Loyalty: "충성", "Attribute Notable": "명예로운" };
 const limitKo = (line) => {
 	const match = /^Limited to (\d+) (.+?) Tattoos?$/.exec(line);
-	if (match) return `${match[2]} 문신 ${match[1]}개로 제한`;
+	if (match && !TATTOO_TYPE_KO[match[2]] && !/[가-힣]/.test(match[2])) console.warn(`문신 종류 한글 없음: ${match[2]}`);
+	if (match) return `${TATTOO_TYPE_KO[match[2]] || match[2]} 문신 ${match[1]}개로 제한`;
 	const rune = /^Limited to (\d+) (Runegraft of .+)$/.exec(line);
 	if (rune) return `${nameKo.get(rune[2]) || rune[2]} ${rune[1]}개로 제한`;
 	return null;

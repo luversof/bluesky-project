@@ -82,7 +82,10 @@ public final class Poe2 {
       // 추가 스탯 묶음(PoE2 GrantedEffects.AdditionalStatSets — 머리글 "폭파" 등, 10-09 C236). 없으면 null
       List<GemStatSet> statSets,
       // 젬이 덤으로 주는 스킬의 이 레벨 수치(10-10 C249 — Gem.grantedSkills 와 같은 순서, 그 레벨 행이 없으면 null)
-      List<GrantedSkillLevel> grantedSkills) {}
+      List<GrantedSkillLevel> grantedSkills,
+      // 재사용 사용 횟수(GrantedEffectsPerLevel.StoredUses — 인게임 '3.50s (3 uses)', 10-23 Q53). 재사용이 있고 2
+      // 이상일 때만
+      Integer cooldownUses) {}
 
   /** 추가 스탯 묶음 한 개(10-09 C236) — 머리글(GrantedEffectLabels) · 치명타 · 공격 피해 · 스탯 줄. */
   public record GemStatSet(
@@ -119,7 +122,9 @@ public final class Poe2 {
       List<String> statLines,
       List<String> statLinesKo,
       // 부여 스킬의 추가 스탯 묶음(poe2db 촉진시키는 방출 "화염" · "번개" · "냉기"). 없으면 null
-      List<GemStatSet> statSets) {}
+      List<GemStatSet> statSets,
+      // 재사용 사용 횟수(Q53, GemLevel 과 같은 규칙)
+      Integer cooldownUses) {}
 
   /** 트리 평가 한 줄 — API Poe2.TreeEvalRow 와 쌍. */
   public record TreeEvalRow(String key, Double value) {}
@@ -218,7 +223,19 @@ public final class Poe2 {
       Integer spirit) {}
 
   /** en = 게임 영어 분류 이름(옛 데이터면 null). 화면 글자는 enName() — 없으면 key. */
-  public record ItemClass(String key, String ko, String category, String en) {
+  public record ItemClass(
+      String key,
+      String ko,
+      String category,
+      String en,
+      // 툴팁 종류 줄(10-23 Q39, API 와 짝) — 단수 분류, 없으면 null
+      String tipEn,
+      String tipKo) {
+
+    public ItemClass(String key, String ko, String category, String en) {
+      this(key, ko, category, en, null, null);
+    }
+
     public String enName() {
       return en == null || en.isBlank() ? key : en;
     }
@@ -237,10 +254,10 @@ public final class Poe2 {
       // text 줄별 강조 용어 Id(10-04 C132, API 와 쌍)
       List<List<String>> kw) {}
 
-  /** 같은 계열(ModType)의 티어 사다리 — tiers[0] 이 1티어(레벨이 가장 높은 것). gen = prefix | suffix. */
+  /** 같은 계열(ModType)의 등급 사다리 — tiers[0] 이 1등급(레벨이 가장 높은 것). gen = prefix | suffix. */
   public record ModGroup(String modType, String gen, List<ModTier> tiers) {}
 
-  /** 옵션 풀 — 같은 아이템 클래스에서 스폰 태그 조합이 같은 베이스 묶음(갑옷은 방어 속성별로 갈린다). */
+  /** 옵션 풀 — 같은 아이템 종류에서 스폰 태그 조합이 같은 베이스 묶음(갑옷은 방어 속성별로 갈린다). */
   public record ModPool(
       String key,
       String itemClass,
@@ -276,7 +293,10 @@ public final class Poe2 {
       List<String> linesKo,
       // 결속 효과(인게임 "결속됨:" — SoulCoreStats.BondedStats, 10-09 C238). 없으면 null
       List<String> bondedLines,
-      List<String> bondedLinesKo) {}
+      List<String> bondedLinesKo,
+      // 분류 영어 표시(10-23 Q80 — SoulCoreStatCategories.Display 'All Equipment' · 'Weapon'). target 은
+      // 걸러 내기 열쇠(분류 Id)라 따로. 없으면 null
+      String targetEn) {}
 
   public record Augment(
       String name,
@@ -395,7 +415,60 @@ public final class Poe2 {
       // 인게임 요구 레벨(10-08 C179, API 와 짝) — null 이면 베이스 요구 레벨
       Integer levelReq,
       // 실제 방어 수치(10-08 C184, API 와 짝) — null 이면 베이스 + 로컬 옵션 계산
-      net.luversof.web.gate.poe.dto.PoeBuild.Defences defences) {}
+      net.luversof.web.gate.poe.dto.PoeBuild.Defences defences,
+      // mods 와 1:1 줄 종류(10-23 Q117, API 와 짝 — rune · enchant · fractured · crafted · desecrated ·
+      // mutated · 빈 문자열). 옛 응답 null
+      List<String> modKinds,
+      // 아이템 레벨(Q117, API 와 짝). 없으면 null
+      Integer itemLevel) {
+
+    /** 줄 종류 · 아이템 레벨 없는 옛 모양(시험). */
+    public BuildItem(
+        String slot,
+        String rarity,
+        String name,
+        String nameKo,
+        String baseType,
+        String baseTypeKo,
+        String uniqueSlug,
+        String baseSlug,
+        String image,
+        List<String> mods,
+        List<String> modsKo,
+        Integer implicitCount,
+        List<Keyword> keywords,
+        List<String> flavour,
+        List<String> flavourKo,
+        BaseItem base,
+        Integer quality,
+        String tradeQuery,
+        Integer levelReq,
+        net.luversof.web.gate.poe.dto.PoeBuild.Defences defences) {
+      this(
+          slot,
+          rarity,
+          name,
+          nameKo,
+          baseType,
+          baseTypeKo,
+          uniqueSlug,
+          baseSlug,
+          image,
+          mods,
+          modsKo,
+          implicitCount,
+          keywords,
+          flavour,
+          flavourKo,
+          base,
+          quality,
+          tradeQuery,
+          levelReq,
+          defences,
+          null,
+          null);
+    }
+  }
 
   public record BuildNode(Integer id, String name, String nameKo) {}
 
@@ -543,7 +616,7 @@ public final class Poe2 {
       // 무기 세트를 나눠 쓰는 빌드면 이 가이드를 계산한 세트(1·2)와 주 세트(DPS 큰 쪽, 세트를 지정해 부르면 null), 아니면 둘 다 null(10-01)
       Integer weaponSet,
       Integer mainSet,
-      // 레어 목표 — 칸마다 같은 베이스의 좋은 레어(2티어 중간 롤 접두3·접미3)로 바꾸면(10-02 사용자 요청) — API Poe2.GuideRareTarget
+      // 레어 목표 — 칸마다 같은 베이스의 좋은 레어(2등급 중간 롤 접두3·접미3)로 바꾸면(10-02 사용자 요청) — API Poe2.GuideRareTarget
       List<GuideRareTarget> rareTargets) {}
 
   /** 엔진 재계산 한 줄 — PoB 저장값 · PoB-PoE2 엔진 재계산값. */
@@ -612,7 +685,12 @@ public final class Poe2 {
   // ── poe.ninja 실빌드 시뮬레이터(/poe2/sim) — API Poe2NinjaService·Poe2RefineService 레코드와 필드 이름을 맞춘다 ──
   // ⚠ 숫자는 래퍼 타입(Jackson 3 FAIL_ON_NULL_FOR_PRIMITIVES 기본 ON)
 
-  public record NinjaCount(String name, Integer count) {}
+  // nameKo · ascendancyKo · mainSkillKo = 미리보기 응답에만(10-25 Q172), 그 밖엔 null
+  public record NinjaCount(String name, Integer count, String nameKo) {
+    public NinjaCount(String name, Integer count) {
+      this(name, count, null);
+    }
+  }
 
   public record NinjaStart(
       Integer level,
@@ -640,7 +718,46 @@ public final class Poe2 {
       Integer facetTotal,
       List<NinjaCount> topItems,
       List<NinjaCount> topAnointed,
-      NinjaStart start) {}
+      NinjaStart start,
+      String ascendancyKo,
+      String mainSkillKo) {
+
+    public NinjaArchetype(
+        String ascendancy,
+        String mainSkill,
+        Integer sample,
+        Double medianLevel,
+        Double medianLife,
+        Double medianEs,
+        Double medianEhp,
+        Double medianDps,
+        String lean,
+        List<NinjaCount> topKeystones,
+        List<NinjaCount> topCoSkills,
+        Integer facetTotal,
+        List<NinjaCount> topItems,
+        List<NinjaCount> topAnointed,
+        NinjaStart start) {
+      this(
+          ascendancy,
+          mainSkill,
+          sample,
+          medianLevel,
+          medianLife,
+          medianEs,
+          medianEhp,
+          medianDps,
+          lean,
+          topKeystones,
+          topCoSkills,
+          facetTotal,
+          topItems,
+          topAnointed,
+          start,
+          null,
+          null);
+    }
+  }
 
   public record NinjaOverview(
       String league,

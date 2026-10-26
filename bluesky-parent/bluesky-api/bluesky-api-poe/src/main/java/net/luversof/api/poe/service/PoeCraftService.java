@@ -46,12 +46,12 @@ public class PoeCraftService {
       List<Line> unveilOffers,
       // 지금 쓸 수 없는 화폐 → 이유(10-15 C340 — 엔진이 시험 적용해 본 결과, 화면이 버튼을 끄고 이유를 보인다). 정복자는 "CONQUEROR:영향력"
       Map<String, String> blocked,
-      // 임플리싯 줄(C343, 엘드리치 — gen = exarch|eater, tierRank = 등급 1~6) · 우세 진영(exarch|eater|null)
+      // 고정 속성 줄(C343, 엘드리치 — gen = exarch|eater, tierRank = 등급 1~6) · 우세 진영(exarch|eater|null)
       List<Line> implicits,
       String dominance,
       // 결과 설명(C358 — 바알 오브 "vaal:결과[:사유]", C385 기폭제 "catalyst:종류:양:개수"), 없으면 null
       String note,
-      // 기폭제 퀄리티로 수치가 오르는 옵션 · 임플리싯 id(C385) — 화면이 굴린 값에 (100 + 퀄리티) / 100 을 곱한다
+      // 기폭제 퀄리티로 수치가 오르는 옵션 · 고정 속성 id(C385) — 화면이 굴린 값에 (100 + 퀄리티) / 100 을 곱한다
       List<String> boosted,
       // 옵션 태그(C480 — 인게임 상세 보기 " — 생명력, 방어력") — 줄 id → 태그 이름(영어 · 한국어), 이름 있는 태그만
       Map<String, List<String>> tags,
@@ -253,7 +253,7 @@ public class PoeCraftService {
     return engine;
   }
 
-  /** 바알 오브 부패 임플리싯 풀(C548 — 계산기 덧붙임) — id → 가중치. */
+  /** 바알 오브 부패 고정 속성 풀(C548 — 계산기 덧붙임) — id → 가중치. */
   public Map<String, Integer> corruptedPool(String poolKey) {
     return data.corruptedPool(poolKey);
   }
@@ -262,7 +262,7 @@ public class PoeCraftService {
     return data.corruptedMod(id);
   }
 
-  /** 엘드리치 임플리싯 풀 · 옵션(C549 — 계산기 엘드리치 목표). */
+  /** 섬뜩한 고정 속성 풀 · 옵션(C549 — 계산기 엘드리치 목표). */
   public Map<String, Integer> eldritchPool(String poolKey) {
     return data.eldritchPool(poolKey);
   }
@@ -345,7 +345,7 @@ public class PoeCraftService {
     return view(normalize(item), null, List.of(), List.of(), null);
   }
 
-  /** 상태마다 옵션 줄(C455 — 에뮬레이터 단계 기록이 붙은 · 지운 옵션을 id 로 대조). 임플리싯(엘드리치 · 타락)도 뒤에 붙인다. */
+  /** 상태마다 옵션 줄(C455 — 에뮬레이터 단계 기록이 붙은 · 지운 옵션을 id 로 대조). 고정 속성(엘드리치 · 타락)도 뒤에 붙인다. */
   public List<List<Line>> linesOf(List<PoeCraftEngine.Item> items) {
     List<List<Line>> out = new ArrayList<>();
     for (PoeCraftEngine.Item item : items == null ? List.<PoeCraftEngine.Item>of() : items) {
@@ -410,7 +410,7 @@ public class PoeCraftService {
                 a.id(), hz.g(), hz.grp() == null ? List.of() : hz.grp(), false, a.fractured()));
         continue;
       }
-      // 짐승 제작 위상 스킬(C388) — 제작 접미어
+      // 야수 제작 위상 스킬(C388) — 제작 접미어
       PoeCraftDataService.VeiledMod bm = a.crafted() ? data.beastMod(a.id()) : null;
       if (bm != null) {
         out.add(
@@ -418,7 +418,7 @@ public class PoeCraftService {
                 a.id(), "suffix", bm.grp() == null ? List.of() : bm.grp(), true, false));
         continue;
       }
-      // 제작대 옵션(메타 제작 포함)은 제작 풀 데이터에 없다 — 제작대 데이터에서(C338)
+      // 작업대 옵션(메타 제작 포함)은 제작 풀 데이터에 없다 — 작업대 데이터에서(C338)
       PoeCraftDataService.BenchCraft b = a.crafted() ? data.bench(item.itemClass(), a.id()) : null;
       if (b != null) {
         out.add(
@@ -449,7 +449,7 @@ public class PoeCraftService {
     List<PoeCraftEngine.Affix> imp = new ArrayList<>();
     for (PoeCraftEngine.Affix a :
         item.implicits() == null ? List.<PoeCraftEngine.Affix>of() : item.implicits()) {
-      // 바알 오브 부패 임플리싯(C358) — 하나만, 있으면 다른 임플리싯은 없다
+      // 바알 오브 부패 고정 속성(C358) — 하나만, 있으면 다른 고정 속성은 없다
       PoeCraftDataService.VeiledMod cm = data.corruptedMod(a.id());
       if (cm != null) {
         imp.clear();
@@ -589,10 +589,10 @@ public class PoeCraftService {
     return out;
   }
 
-  /** 엘드리치 임플리싯 줄 — 이름 = 진영(인게임 "작열의 총주교 아이템" · "세계 포식자 아이템"), tierRank = 등급. */
+  /** 섬뜩한 고정 속성 줄 — 이름 = 진영(인게임 "작열의 총주교 아이템" · "세계 포식자 아이템"), tierRank = 등급. */
   private Line implicitLine(PoeCraftEngine.Affix a) {
     if (PoeCraftEngine.CORRUPTED.equals(a.gen())) {
-      // 바알 오브 부패 임플리싯(C358) — 이름 = 인게임 "타락"
+      // 바알 오브 부패 고정 속성(C358) — 이름 = 인게임 "타락"
       PoeCraftDataService.VeiledMod c = data.corruptedMod(a.id());
       return new Line(
           a.id(),
@@ -678,7 +678,7 @@ public class PoeCraftService {
       }
     }
     // 묶음 안 옵션(C476 — 사용자 요청 "아이템 상태에 따라 사용 가능한 제작 방식과 세부 제작 옵션이 활성/비활성", "A 제작을 하면 B 에서 어떤 제작이
-    // 비활성화되는 조건") — 에센스 · 화석(하나씩) · 수확 · 제작대 · 짐승도 엔진으로 시험 적용해 못 쓰는 이유를 모은다(엔진 규칙 = 화면 규칙). 메타 제작
+    // 비활성화되는 조건") — 에센스 · 화석(하나씩) · 수확 · 작업대 · 야수도 엔진으로 시험 적용해 못 쓰는 이유를 모은다(엔진 규칙 = 화면 규칙). 메타 제작
     // (접두/접미 변경 불가 · 제작 옵션 셋) · 제작 옵션 한도 · 영향력 · 희귀도 · 타락 같은 앞선 제작의 결과가 그대로 반영된다
     for (PoeCraftDataService.Essence e : data.essences(item.itemClass())) {
       String r = engine.apply(item, PoeCraftEngine.Action.ESSENCE, e.slug(), rng).error();
@@ -784,7 +784,7 @@ public class PoeCraftService {
     }
     PoeCraftDataService.VeiledMod bm = a.crafted() ? data.beastMod(a.id()) : null;
     if (bm != null) {
-      // 짐승 제작 위상 스킬(C388) — 제작 옵션 줄
+      // 야수 제작 위상 스킬(C388) — 제작 옵션 줄
       return new Line(
           a.id(),
           a.gen(),
@@ -868,7 +868,8 @@ public class PoeCraftService {
           a.id(),
           a.gen(),
           e.modName(),
-          e.modName(),
+          // 에센스 옵션 이름은 데이터에 영어(Essences)만 있다 — 한국어 화면에 영어가 섞였다(10-22 Q7 UX QA)
+          "Essences".equals(e.modName()) ? "에센스" : e.modName(),
           e.en(),
           e.ko(),
           e.enMin(),
@@ -905,32 +906,90 @@ public class PoeCraftService {
       Map<String, Double> mult,
       boolean picked,
       String error,
-      String baseRarity) {}
+      String baseRarity,
+      // 확정으로 붙는 옵션(10-22 Q7 — 에센스: 첫 뽑기 전에 붙어 표에서 '—'로 보였다). 계열 = 그 옵션이 채우는 자연 계열(없으면 null)
+      List<Forced> forced) {
+
+    public ActionPool withForced(List<Forced> f) {
+      return new ActionPool(lines, mult, picked, error, baseRarity, f == null ? List.of() : f);
+    }
+  }
+
+  /** 확정 옵션 — family = 접두/접미:계열(계산기 목표 키), rank = 그 옵션이 채우는 자연 등급 T1~Tr 의 r, 문구는 범위(min · max). */
+  public record Forced(
+      String family,
+      Integer rank,
+      List<String> en,
+      List<String> enMin,
+      List<String> ko,
+      List<String> koMin) {}
+
+  /** 첫 뽑기 앞에 무작위가 있는 수단을 평균할 씨앗 수(10-22 Q3e 검토 — 카오스 · 지우고 붙이기가 씨앗 1 의 한 갈래만 보였다). */
+  static final int PROBE_SEEDS = 128;
 
   public ActionPool actionPool(PoeCraftEngine.Item item, PoeCraftEngine.Action action, String arg) {
-    PoeCraftEngine.PickProbe p = engine.probeFirstPick(normalize(item), action, arg);
-    if (p.weights() == null) {
-      return new ActionPool(List.of(), Map.of(), false, p.result().error(), null);
+    PoeCraftEngine.Item it = normalize(item);
+    PoeCraftEngine.PickProbe p1 = engine.probeFirstPick(it, action, arg, 1);
+    PoeCraftEngine.PickProbe p2 = engine.probeFirstPick(it, action, arg, 2);
+    List<PoeCraftEngine.PickProbe> runs = new ArrayList<>(List.of(p1, p2));
+    if (!sameWeights(p1.weights(), p2.weights())) {
+      for (long sd = 3; sd <= PROBE_SEEDS; sd++) {
+        runs.add(engine.probeFirstPick(it, action, arg, sd));
+      }
     }
-    double total = p.weights().values().stream().mapToDouble(x -> x[0]).sum();
+    // 씨앗마다 확률(가중 ÷ 합)을 평균 — 후보가 없던 회차(빈 맵)는 빼고, 하나도 없으면 표를 뽑지 않은 것(사유는 엔진 그대로)
+    Map<String, Double> share = new java.util.LinkedHashMap<>();
+    Map<String, double[]> first = new java.util.LinkedHashMap<>();
+    PoeCraftEngine.Item base = null;
+    int n = 0;
+    for (PoeCraftEngine.PickProbe p : runs) {
+      if (p.weights() == null || p.weights().isEmpty()) {
+        continue;
+      }
+      double total = p.weights().values().stream().mapToDouble(x -> x[0]).sum();
+      // 가중 합 0(화석 추가 옵션만 · 가중 0) — 나누지 않고 그 회차는 표가 없는 것으로(Q15 검토)
+      if (total <= 0) {
+        continue;
+      }
+      n++;
+      base = base == null ? p.base() : base;
+      for (Map.Entry<String, double[]> e : p.weights().entrySet()) {
+        share.merge(e.getKey(), e.getValue()[0] / total, Double::sum);
+        first.putIfAbsent(e.getKey(), e.getValue());
+      }
+    }
+    if (n == 0) {
+      return new ActionPool(List.of(), Map.of(), false, p1.result().error(), null, List.of());
+    }
     List<PoolLine> out = new ArrayList<>();
     Map<String, Double> mult = new java.util.LinkedHashMap<>();
-    for (Map.Entry<String, double[]> e : p.weights().entrySet()) {
-      PoolLine line = poolLine(p.base(), e.getKey(), e.getValue()[0], total);
+    for (Map.Entry<String, Double> e : share.entrySet()) {
+      double[] w = first.get(e.getKey());
+      PoolLine line = poolLine(base, e.getKey(), w[0], e.getValue() / n);
       if (line == null) {
         continue;
       }
       out.add(line);
-      double base = e.getValue()[1];
-      if (base > 0 && Math.abs(e.getValue()[0] / base - 1) > 1e-9) {
-        mult.put(e.getKey(), e.getValue()[0] / base);
+      if (w[1] > 0 && Math.abs(w[0] / w[1] - 1) > 1e-9) {
+        mult.put(e.getKey(), w[0] / w[1]);
       }
     }
-    return new ActionPool(out, mult, true, p.result().error(), p.base().rarity().name());
+    return new ActionPool(out, mult, true, null, base.rarity().name(), List.of());
+  }
+
+  private static boolean sameWeights(Map<String, double[]> a, Map<String, double[]> b) {
+    if (a == null || b == null) {
+      return a == b;
+    }
+    if (!a.keySet().equals(b.keySet())) {
+      return false;
+    }
+    return a.entrySet().stream()
+        .allMatch(e -> Math.abs(e.getValue()[0] - b.get(e.getKey())[0]) < 1e-9);
   }
 
   /** 풀 한 줄 — 일반 옵션이거나 화석 전용(탐광) 옵션, 둘 다 아니면 null. */
-  private PoolLine poolLine(PoeCraftEngine.Item it, String id, double weight, double total) {
+  private PoolLine poolLine(PoeCraftEngine.Item it, String id, double weight, double chance) {
     PoeCraftDataService.CraftMod m = data.mod(id);
     PoeModDataService.ModTier t = mods.tier(id);
     PoeCraftDataService.VeiledMod fm = m == null ? data.fossilMod(id) : null;
@@ -950,7 +1009,7 @@ public class PoeCraftService {
         m != null ? data.tierRank(it.poolKey(), id) : null,
         m != null ? m.l() : fm.l(),
         (int) Math.round(weight),
-        total == 0 ? 0 : weight / total,
+        chance,
         modTags(id, 0),
         modTags(id, 1));
   }

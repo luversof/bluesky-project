@@ -47,7 +47,10 @@ public class PoeFoulbornDataService {
       // 이 옵션이 밀어내는 **원본 모드**. PoB 삿된 지도에서 온다(없으면 대체 대상 불명).
       String origId,
       List<String> origEn,
-      List<String> origKo) {}
+      List<String> origKo,
+      // 원본 모드 최소 롤(10-23 Q115). 옛 데이터면 null.
+      List<String> origEnMin,
+      List<String> origKoMin) {}
 
   /**
    * 한 유니크의 삿된 옵션 묶음 — 인게임 "삿된 XXX" 한 자루가 가질 수 있는 대체 모드 풀.

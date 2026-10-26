@@ -1,6 +1,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 <%-- 올해 금융소득 종합과세 기준(2026-10-20 자율 개선) - 과세 계좌의 과세표준이 2,000 만 원에 얼마나 다가갔는지.
      배당 내역의 기간 합계는 고른 기간만 말하고 과세이연 계좌까지 섞여, 한 해 기준을 볼 곳이 없었다.
@@ -17,26 +18,26 @@
 	}
 	<section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm" data-financial-income>
 		<h2 class="text-base font-bold" data-page-section>${MessageUtil.getMessage("stock.dividend.financial.income.title")}</h2>
-		<p class="mt-1 text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.financial.income.desc"), String.valueOf(view.year()))}</p>
+		<p class="mt-1 text-xs text-base-content/60">${StockViewSupport.msg("stock.dividend.financial.income.desc", String.valueOf(view.year()))}</p>
 
 		<dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
 			<div class="min-w-0 rounded-xl bg-base-200/60 p-3">
-				<dt class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.financial.income.ytd"), view.asOf().toString())}</dt>
+				<dt class="text-xs text-base-content/60">${StockViewSupport.msg("stock.dividend.financial.income.ytd", view.asOf().toString())}</dt>
 				<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-financial-income-ytd>${ytdText}</dd>
 			</div>
 			<div class="min-w-0 rounded-xl bg-base-200/60 p-3">
 				<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.financial.income.rest")}</dt>
 				<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-financial-income-rest>${restText}</dd>
 				<%-- 종목마다 나눠 센다(2026-10-20 검토): 달마다 나오는 종목은 최근 흐름, 분기 · 연 배당은 작년 이맘때 횟수 x 최근 금액. --%>
-				<dd class="mt-0.5 text-[11px] text-base-content/60 wrap-anywhere" data-financial-income-rest-basis>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.financial.income.rest.basis"), String.valueOf(view.recentWindowDays()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.recentDailyAverage())), String.valueOf(view.remainingDays()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.monthlyRest())))}</dd>
+				<dd class="mt-0.5 text-[11px] text-base-content/60 wrap-anywhere" data-financial-income-rest-basis>${StockViewSupport.msg("stock.dividend.financial.income.rest.basis", String.valueOf(view.recentWindowDays()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.recentDailyAverage())), String.valueOf(view.remainingDays()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.monthlyRest())))}</dd>
 				@if(view.periodicCount() > 0)
-					<dd class="text-[11px] text-base-content/60 wrap-anywhere" data-financial-income-rest-periodic>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.financial.income.rest.periodic"), String.valueOf(view.periodicCount()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.periodicRest())))}</dd>
+					<dd class="text-[11px] text-base-content/60 wrap-anywhere" data-financial-income-rest-periodic>${StockViewSupport.msg("stock.dividend.financial.income.rest.periodic", String.valueOf(view.periodicCount()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.periodicRest())))}</dd>
 				@endif
 			</div>
 			<div class="min-w-0 rounded-xl bg-base-200/60 p-3">
 				<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.financial.income.projected")}</dt>
 				<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-financial-income-projected>${projectedText}</dd>
-				<dd class="mt-0.5 text-[11px] text-base-content/60" data-financial-income-projected-pct>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.financial.income.pct.of.threshold"), view.projectedPct().toPlainString())}</dd>
+				<dd class="mt-0.5 text-[11px] text-base-content/60" data-financial-income-projected-pct>${StockViewSupport.msg("stock.dividend.financial.income.pct.of.threshold", view.projectedPct().toPlainString())}</dd>
 			</div>
 		</dl>
 
@@ -44,7 +45,7 @@
 			<div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
 				<span><span class="text-base-content/60">${MessageUtil.getMessage("stock.dividend.financial.income.threshold")}</span> <span class="font-mono amount-value">${thresholdText}</span> <span class="text-base-content/60">·</span> <span class="font-mono font-semibold" data-financial-income-used-pct>${view.usedPct().toPlainString()}%</span></span>
 				@if(view.exceeded())
-					<span class="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-base-content" data-financial-income-over>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.financial.income.over"), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.over())))}</span>
+					<span class="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-base-content" data-financial-income-over>${StockViewSupport.msg("stock.dividend.financial.income.over", StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.over())))}</span>
 				@else
 					<span class="text-base-content/70" data-financial-income-remaining>${MessageUtil.getMessage("stock.dividend.financial.income.remaining")} <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.remaining()))}</span></span>
 				@endif
@@ -58,10 +59,10 @@
 
 		<ul class="mt-3 space-y-1 text-xs text-base-content/60">
 			@if(view.lastYearTaxable() != null && view.lastYearTaxable().signum() > 0)
-				<li data-financial-income-last-year>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.financial.income.last.year"), String.valueOf(view.year() - 1))} <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.lastYearTaxable()))}</span></li>
+				<li data-financial-income-last-year>${StockViewSupport.msg("stock.dividend.financial.income.last.year", String.valueOf(view.year() - 1))} <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.lastYearTaxable()))}</span></li>
 			@endif
 			@if(view.unknownTaxableCount() > 0)
-				<li data-financial-income-unknown><span class="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-base-content">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.financial.income.unknown"), String.valueOf(view.unknownTaxableCount()))}</span></li>
+				<li data-financial-income-unknown><span class="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-base-content">${StockViewSupport.msg("stock.dividend.financial.income.unknown", String.valueOf(view.unknownTaxableCount()))}</span></li>
 			@endif
 			<li data-financial-income-note>${MessageUtil.getMessage("stock.dividend.financial.income.note")}</li>
 		</ul>

@@ -1,6 +1,10 @@
 package net.luversof.web.gate.stock.util;
 
+import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
+
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.function.Function;
 
 import org.springframework.util.StringUtils;
 
@@ -16,6 +20,47 @@ final class PayoutSourceText {
   static final String BULK_INPUT_HEADER = "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)";
 
   private PayoutSourceText() {}
+
+  /** 가져오기 붙여넣기 한 줄의 네 칸(기준일 · 지급일 · 분배금 · 과세표준) - 이미 내보낼 글자로 다듬은 값. */
+  record BulkRow(String recordDate, String payDate, String amount, String taxableBase) {}
+
+  /**
+   * 출처 행 → 가져오기 붙여넣기 형식(머리 줄 + 행마다 네 칸을 탭으로). {@code toCells} 가 null 을 주는 행(날짜 · 분배금이 빈 행)은 건너뛴다.
+   * 행이 없거나 남은 행이 없으면 그 출처 이름을 든 "행 없음" 오류다. 다섯 파서(KODEX · PLUS · RISE · SOL · TIME)가 이 뼈대를 한 벌씩 들고
+   * 있었다(2026-10-22 정리).
+   *
+   * <p>과세표준을 모르면 "-" 로 싣는다(2026-10-08) - 0 으로 적으면 진짜 0 원(전액 비과세)과 구분되지 않아 다음 갱신이 채우지 못한다(가져오기 파서가
+   * "-" 를 모름으로 받는다).
+   */
+  static <T> String bulkInput(List<T> rows, String provider, Function<T, BulkRow> toCells) {
+    if (rows == null || rows.isEmpty()) {
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rows.missing", provider));
+    }
+
+    StringBuilder bulkInput = new StringBuilder(BULK_INPUT_HEADER);
+    for (T row : rows) {
+      BulkRow cells = toCells.apply(row);
+      if (cells == null) {
+        continue;
+      }
+      bulkInput
+          .append('\n')
+          .append(cells.recordDate())
+          .append('\t')
+          .append(cells.payDate())
+          .append('\t')
+          .append(cells.amount())
+          .append('\t')
+          .append(cells.taxableBase());
+    }
+
+    if (bulkInput.toString().equals(BULK_INPUT_HEADER)) {
+      throw new IllegalArgumentException(
+          msg("stock.monthly.reference.error.source.rows.missing", provider));
+    }
+    return bulkInput.toString();
+  }
 
   /**
    * 2026-09-15T00:00:00 · 2026.09.15 · 20260915 · 2026-09-15 를 모두 yyyy-MM-dd 로. 숫자가 8 자리 미만이면 받은

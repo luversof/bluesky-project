@@ -106,7 +106,7 @@
 				x.type = "button";
 				x.className = "shrink-0 opacity-80 hover:opacity-100";
 				x.textContent = "×";
-				x.setAttribute("aria-label", t("제거", "Remove"));
+				x.setAttribute("aria-label", t("제거: ", "Remove: ") + opt.text); // 칩 이름까지(10-25 Q204)
 				x.addEventListener("click", function (e) {
 					e.preventDefault();
 					e.stopPropagation();

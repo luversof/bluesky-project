@@ -33,9 +33,9 @@ public final class PoeCraftText {
         "Item cannot gain any Influence Modifiers because its Item Level is below 68.");
     // 조건으로 고르는 문구(C560)
     EN.put(
-        "제작대 옵션은 하나만(제작 옵션 3개 메타 제작이 있으면 3개)",
+        "작업대 옵션은 하나만(제작 옵션 3개 메타 제작이 있으면 3개)",
         "Only one bench craft (three with the 'Can have up to 3 Crafted Modifiers' meta craft)");
-    EN.put("제작대 옵션은 3개까지", "Up to three bench crafts");
+    EN.put("작업대 옵션은 3개까지", "Up to three bench crafts");
     EN.put(
         "제작 옵션은 하나만(제작 옵션 3개 메타 제작이 있으면 3개)",
         "Only one crafted modifier (three with the 'Can have up to 3 Crafted Modifiers' meta craft)");
@@ -98,7 +98,7 @@ public final class PoeCraftText {
     EN.put("알 수 없는 두카트입니다", "Unknown ducat");
     EN.put("알 수 없는 영향력입니다", "Unknown influence");
     EN.put("알 수 없는 위상입니다", "Unknown aspect");
-    EN.put("알 수 없는 짐승 제작입니다", "Unknown beastcraft");
+    EN.put("알 수 없는 야수 제작입니다", "Unknown beastcraft");
     EN.put("없앨 아이템의 영향력 옵션이 아닙니다", "Not an influenced modifier of the item to be destroyed");
     EN.put("영향력 엑잘티드 오브의 영향력이 아닙니다", "Not the influence of that Influenced Exalted Orb");
     EN.put("영향력 옵션이 둘 이상인 아이템에만 쓸 수 있습니다", "Only items with two or more influenced modifiers");
@@ -116,12 +116,12 @@ public final class PoeCraftText {
     EN.put("이 아이템 종류엔 그 영향력이 없습니다", "This item class has no such influence");
     EN.put("이 아이템 종류엔 부패 에센스 옵션이 없습니다", "This item class has no corrupted essence modifier");
     EN.put("이 아이템 종류엔 쓸 수 없는 수확 제작입니다", "This harvest craft cannot be used on this item class");
-    EN.put("이 아이템 종류의 제작대 옵션이 아닙니다", "Not a bench craft for this item class");
+    EN.put("이 아이템 종류의 작업대 옵션이 아닙니다", "Not a bench craft for this item class");
     EN.put("이 아이템 풀의 옵션이 아닙니다", "Not a modifier of this item's pool");
     EN.put(
         "이 아이템에 바꿀 수 있는 다른 능력치 옵션이 없습니다",
         "No other attribute modifier on this item can be changed");
-    EN.put("이 아이템에 붙을 수 있는 임플리싯이 없습니다(종류)", "No implicit can roll on this item (class)");
+    EN.put("이 아이템에 붙을 수 있는 고정 속성이 없습니다(종류)", "No implicit can roll on this item (class)");
     EN.put(
         "이 아이템에 붙을 악명 높은 속성이 없습니다(종류 · 아이템 레벨 68)",
         "No Notorious modifier can roll on this item (class · item level 68)");
@@ -136,10 +136,10 @@ public final class PoeCraftText {
     EN.put("레어 재련은 비명 등급부터", "Reforging a rare needs Screaming or higher");
     EN.put("일반 아이템에만 쓸 수 있습니다", "Normal items only");
     EN.put(
-        "일반(연금 공명기) · 레어(혼돈 공명기)에만 쓸 수 있습니다",
+        "일반(연금술 공명기) · 레어(혼돈 공명기)에만 쓸 수 있습니다",
         "Normal (Alchemical Resonator) or rare (Chaotic Resonator) items only");
     EN.put(
-        "작열의 총주교 · 세계 포식자 우세가 없습니다(임플리싯 등급이 높은 쪽이 우세)",
+        "작열의 총주교 · 세계 포식자 우세가 없습니다(고정 속성 등급이 높은 쪽이 우세)",
         "Neither the Searing Exarch nor the Eater of Worlds is dominant (the side with the higher implicit tier"
             + " dominates)");
     EN.put(
@@ -153,7 +153,7 @@ public final class PoeCraftText {
     EN.put("장비에만 쓸 수 있습니다", "Equipment only");
     EN.put("접두 자리가 없습니다", "No open prefix");
     EN.put("접미 자리가 없습니다", "No open suffix");
-    EN.put("제작대 옵션이 없습니다", "The item has no crafted modifier");
+    EN.put("작업대 옵션이 없습니다", "The item has no crafted modifier");
     EN.put(
         "지울 수 있는 다른 영향력 옵션이 없습니다(분열 · 잠긴 쪽)",
         "No other influenced modifier can be removed (fractured · locked side)");
@@ -173,7 +173,15 @@ public final class PoeCraftText {
     EN.put("희귀 허리띠에만 쓸 수 있습니다", "Rare belts only");
   }
 
-  private record Rule(Pattern ko, String en) {}
+  private record Rule(Pattern ko, String en, boolean element) {
+    Rule(Pattern ko, String en) {
+      this(ko, en, false);
+    }
+  }
+
+  // 원소 이름 한국어 → 영어(10-24 Q129 — 엔진 사유가 '냉기 저항 옵션이 없습니다' 처럼 한국어 원소를 싣는다, 영문이 오면 그대로)
+  private static final Map<String, String> ELEMENT_EN =
+      Map.of("화염", "Fire", "냉기", "Cold", "번개", "Lightning", "카오스", "Chaos", "물리", "Physical");
 
   // 값이 끼는 문구
   private static final List<Rule> RULES =
@@ -189,11 +197,12 @@ public final class PoeCraftText {
           new Rule(
               Pattern.compile("^.+ 은\\(는\\) 이 아이템 종류에 쓸 수 없습니다$"),
               "This fossil cannot be used on this item class"),
-          new Rule(Pattern.compile("^(\\S+) 피해 옵션이 없습니다$"), "No $1 damage modifier"),
-          new Rule(Pattern.compile("^(\\S+) 저항 옵션이 없습니다$"), "No $1 resistance modifier"),
+          new Rule(Pattern.compile("^(\\S+) 피해 옵션이 없습니다$"), "No $1 damage modifier", true),
+          new Rule(Pattern.compile("^(\\S+) 저항 옵션이 없습니다$"), "No $1 resistance modifier", true),
           new Rule(
               Pattern.compile("^이 아이템에 바꿀 (\\S+) 옵션이 없습니다$"),
-              "This item has no $1 modifier to change"));
+              "This item has no $1 modifier to change",
+              true));
 
   private PoeCraftText() {}
 
@@ -209,6 +218,10 @@ public final class PoeCraftText {
     for (Rule r : RULES) {
       Matcher m = r.ko().matcher(ko);
       if (m.matches()) {
+        if (r.element()) {
+          String el = m.group(1);
+          return r.en().replace("$1", ELEMENT_EN.getOrDefault(el, el));
+        }
         return m.replaceAll(r.en());
       }
     }

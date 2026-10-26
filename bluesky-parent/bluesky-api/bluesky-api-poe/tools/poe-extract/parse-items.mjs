@@ -10,6 +10,22 @@ const PATCH = loadConfig().patch;
 // POE_DATA_OUT — 출력만 다른 폴더로(10-10, 회귀 중 사본 대조용 — poe2-extract writeJson 과 같은 규칙)
 const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "base-items.json");
 
+// 요구 레벨 = PoB Data/Bases/*.lua req.level(10-23 Q103 — 화면이 BaseItemTypes.DropLevel 을 요구 레벨처럼 보였다: 집중된 목걸이 드롭 80 · 인게임
+//   요구 24, 1013 중 126 다름 — 장신구 · 주얼 · 시작 베이스). PoB 에 있는데 req 에 level 이 없으면 1(요구 없음), PoB 에 없으면 드롭 레벨
+const pobReqLevel = (() => {
+	const out = new Map();
+	const dir = path.join(DATA_DIR, "work", "pob-src", "src", "Data", "Bases");
+	if (!fs.existsSync(dir)) return out;
+	for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".lua"))) {
+		const text = fs.readFileSync(path.join(dir, f), "utf8");
+		for (const m of text.matchAll(/itemBases\["([^"]+)"\] = \{([\s\S]*?)\n\}/g)) {
+			const lv = /req = \{[^}]*\blevel = (\d+)/.exec(m[2]);
+			out.set(m[1], lv ? Number(lv[1]) : 1);
+		}
+	}
+	return out;
+})();
+
 // 장비 클래스 화이트리스트 (ItemClasses.Id) → 광역 카테고리
 const EQUIPMENT_CLASSES = {
 	"One Hand Sword": "weapon", "Thrusting One Hand Sword": "weapon", "One Hand Axe": "weapon",
@@ -157,6 +173,7 @@ for (const base of en.base) {
 		itemClassName: itemClass.Name || null,
 		category,
 		dropLevel: base.DropLevel,
+		reqLevel: pobReqLevel.get(base.Name) ?? base.DropLevel,
 		reqStr: requirement?.ReqStr || 0,
 		reqDex: requirement?.ReqDex || 0,
 		reqInt: requirement?.ReqInt || 0,

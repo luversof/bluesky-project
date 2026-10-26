@@ -6,6 +6,7 @@
 @import java.util.List
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param String peekSymbol = ""
 @param List<MonthlyDividendPayoutResponse> peekPayouts = java.util.List.of()
@@ -32,7 +33,7 @@
 		<p class="text-sm text-base-content/70" data-payout-peek-empty>${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.empty")}</p>
 	@else
 		<div class="overflow-x-auto">
-			<table class="table table-xs" aria-label="${java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.peek.table"), peekSymbol)}">
+			<table class="table table-xs" aria-label="${StockViewSupport.msg("stock.page.dividend.monthly.reference.payout.peek.table", peekSymbol)}">
 				<thead>
 					<tr>
 						<th scope="col" class="whitespace-nowrap">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.record.date")}</th>
@@ -60,7 +61,7 @@
 			</table>
 		</div>
 		<p class="mt-1 text-xs text-base-content/70" data-payout-peek-more>
-			${java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.peek.more"), String.valueOf(peekTotalCount), String.valueOf(rows.size()))}
+			${StockViewSupport.msg("stock.page.dividend.monthly.reference.payout.peek.more", String.valueOf(peekTotalCount), String.valueOf(rows.size()))}
 			<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(peekSymbol != null ? peekSymbol : "", StandardCharsets.UTF_8)}#monthly-payout-list" class="link link-primary ml-1">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.peek.all")}</a>
 		</p>
 	@endif

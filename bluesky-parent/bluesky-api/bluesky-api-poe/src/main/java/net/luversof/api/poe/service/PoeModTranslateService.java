@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 
 /**
- * 임포트한 빌드의 영문 모드 라인 → 한국어. 모드 풀(en/ko 티어 라인)에서 숫자를 자리표시(§)로 정규화한 사전을 만들어, 들어온 영문 라인을 같은 방식으로
+ * 임포트한 빌드의 영문 모드 라인 → 한국어. 모드 풀(en/ko 등급 라인)에서 숫자를 자리표시(§)로 정규화한 사전을 만들어, 들어온 영문 라인을 같은 방식으로
  * 정규화·매칭한 뒤 실제 롤 숫자를 한국어 템플릿에 되꽂는다. 매칭 실패 시 영문 그대로.
  *
  * <p>PoB 아이템 텍스트는 GGG 스탯 설명 기반이라 모드 풀의 en 과 대부분 일치한다. 숫자 개수/순서가 en/ko 에서 같다는 가정.
@@ -43,7 +43,8 @@ public class PoeModTranslateService {
     this.poeTreeGraphService = poeTreeGraphService;
   }
 
-  // "Allocates 노터블"(도유 아뮬렛 등) — 이름이 바뀌는 자리라 § 사전으로 못 옮긴다. 게임 문구는 "X 할당"(고유 데이터 · 금단 줄과 같은 어순, 10-04
+  // "Allocates 주요 스킬"(성유 목걸이 등) — 이름이 바뀌는 자리라 § 사전으로 못 옮긴다. 게임 문구는 "X 할당"(고유 데이터 · 금단 줄과 같은 어순,
+  // 10-04
   // C135)
   private static final Pattern ALLOCATES = Pattern.compile("^Allocates (\\D.*)$");
   private static final Pattern RANGE = Pattern.compile("\\(-?\\d+(?:\\.\\d+)?-\\d+(?:\\.\\d+)?\\)");
@@ -89,7 +90,7 @@ public class PoeModTranslateService {
           registerReminders(remMap, tier.enMin(), tier.rem());
         }
       }
-      // ③ 풀 밖 옵션(플라스크 · 제작대 · 엘드리치 …) — 맨 마지막(putIfAbsent 라 위 번역이 이긴다, 10-04 C135)
+      // ③ 풀 밖 옵션(플라스크 · 작업대 · 엘드리치 …) — 맨 마지막(putIfAbsent 라 위 번역이 이긴다, 10-04 C135)
       for (PoeModDataService.ExtraPair pair : poeModDataService.extraPairs()) {
         registerPairs(map, pair.en(), pair.ko());
         registerPairs(map, pair.enMin(), pair.koMin());

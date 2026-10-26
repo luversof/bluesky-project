@@ -7,7 +7,7 @@ package net.luversof.web.gate.stock.util;
  * subBefore} + {@code subAmount}(= {@code amount-value} 로 감싼다) + {@code subAfter} 를 따로 받는다.
  *
  * <p>자리표시자 위치는 로케일마다 다르다 &mdash; {@code stock.trade.realized.basis.gap} 은 한국어가 "이 계좌 기준 {0}"(뒤) 이고
- * 영어가 "{0} on this account's own basis"(앞)다. 그래서 앞/뒤 글자를 박아 두면 한쪽이 깨진다. 패턴을 쪼개 쓴다.
+ * 영어가 "{0} (this account only)"(앞)다. 그래서 앞/뒤 글자를 박아 두면 한쪽이 깨진다. 패턴을 쪼개 쓴다.
  *
  * <p>실측 2026-09-12(금액 숨김 켜고 10 화면 · 금액 텍스트 540 개): 계좌 상세의 실현손익 카드 보조줄 "이 계좌 기준 +2,063,739" 한 곳만
  * 흐려지지 않았다. 같은 문구를 쓰는 매매 화면의 계좌별 표 3 줄은 정상이었다.

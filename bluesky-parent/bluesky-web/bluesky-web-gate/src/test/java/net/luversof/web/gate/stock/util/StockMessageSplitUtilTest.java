@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
  * <p>실측 2026-09-12(금액 숨김 켜고 10 화면, 금액 텍스트 540 개): 계좌 상세 실현손익 카드의 "이 계좌 기준 +2,063,739" <b>한 곳만</b>
  * 흐려지지 않았다. 같은 문구를 쓰는 매매 화면의 계좌별 표 3 줄은 정상이었다.
  *
- * <p>자리표시자 위치가 로케일마다 다르다 &mdash; 한국어 "이 계좌 기준 {0}"(뒤), 영어 "{0} on this account's own basis"(앞).
+ * <p>자리표시자 위치가 로케일마다 다르다 &mdash; 한국어 "이 계좌 기준 {0}"(뒤), 영어 "{0} (this account only)"(앞).
  */
 class StockMessageSplitUtilTest {
 
@@ -26,10 +26,9 @@ class StockMessageSplitUtilTest {
   void 자리표시자_앞뒤를_가른다() {
     assertThat(StockMessageSplitUtil.beforePlaceholder("이 계좌 기준 {0}")).isEqualTo("이 계좌 기준 ");
     assertThat(StockMessageSplitUtil.afterPlaceholder("이 계좌 기준 {0}")).isEmpty();
-    assertThat(StockMessageSplitUtil.beforePlaceholder("{0} on this account's own basis"))
-        .isEmpty();
-    assertThat(StockMessageSplitUtil.afterPlaceholder("{0} on this account's own basis"))
-        .isEqualTo(" on this account's own basis");
+    assertThat(StockMessageSplitUtil.beforePlaceholder("{0} (this account only)")).isEmpty();
+    assertThat(StockMessageSplitUtil.afterPlaceholder("{0} (this account only)"))
+        .isEqualTo(" (this account only)");
   }
 
   @Test

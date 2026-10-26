@@ -15,6 +15,7 @@
 @import java.time.Instant
 @import net.luversof.web.gate.stock.util.ChartSeriesJs
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param StockItem stockItem = null
 @param int holdingQuantity = 0
@@ -113,12 +114,12 @@
 	boolean holdingReturnShown = holdingReturn != null && holdingReturn.hasPeriod() && holdingQuantity > 0 && holdingFirstBuyDate != null;
 	String holdingPeriodText = !holdingReturnShown ? ""
 		: (holdingReturn.daysOnly()
-			? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.days"), String.valueOf(holdingReturn.holdingDays()))
+			? StockViewSupport.msg("stock.asset.status.cell.holding.days", String.valueOf(holdingReturn.holdingDays()))
 			: (holdingReturn.years() == 0
-				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.months"), String.valueOf(holdingReturn.months()))
+				? StockViewSupport.msg("stock.asset.status.cell.holding.months", String.valueOf(holdingReturn.months()))
 				: (holdingReturn.months() == 0
-					? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.years.only"), String.valueOf(holdingReturn.years()))
-					: java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.years"), String.valueOf(holdingReturn.years()), String.valueOf(holdingReturn.months())))));
+					? StockViewSupport.msg("stock.asset.status.cell.holding.years.only", String.valueOf(holdingReturn.years()))
+					: StockViewSupport.msg("stock.asset.status.cell.holding.years", String.valueOf(holdingReturn.years()), String.valueOf(holdingReturn.months())))));
 	// 카드 값은 비율만 적는다 - 라벨이 이미 '연평균 수익률' 이라 "연 +3.4%" 의 '연' 은 겹치고, 큰 숫자 글꼴 안에서 한 글자만 다른 글꼴로 떠 보였다.
 	String holdingAnnualizedText = !holdingReturnShown || holdingReturn.annualizedPct() == null ? ""
 		: StockFormatUtil.signedPct(holdingReturn.annualizedPct().doubleValue(), 1);
@@ -213,12 +214,12 @@
 		     배당이 지금 평가손실을 얼마나 덮었는지만 여기 남긴다. --%>
 		@if(holdingReturnShown && holdingReturn.coveragePct() != null && holdingReturn.coveragePct() > 0)
 			<p class="mt-2 border-t border-base-300/60 pt-2 text-[11px] leading-4" data-holding-coverage-line>
-				<span class="text-dividend" data-holding-coverage="${holdingReturn.coveragePct()}">${holdingReturn.coveragePct() >= 100 ? MessageUtil.getMessage("stock.asset.status.cell.coverage.all") : java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.coverage"), String.valueOf(holdingReturn.coveragePct()))}</span>
+				<span class="text-dividend" data-holding-coverage="${holdingReturn.coveragePct()}">${holdingReturn.coveragePct() >= 100 ? MessageUtil.getMessage("stock.asset.status.cell.coverage.all") : StockViewSupport.msg("stock.asset.status.cell.coverage", String.valueOf(holdingReturn.coveragePct()))}</span>
 			</p>
 		@endif
 	</div>
 
-	<!-- 보유/손익 요약 -->
+	<%-- 보유/손익 요약 --%>
 	<%-- 이 카드 여덟 장 중 셋(실현 손익·기간 매수·기간 배당)은 고른 기간의 값이고, 나머지 다섯(수량·평균 단가·
 	     현재가·평가 금액·평가 손익)은 지금 보유분이다. 라벨이 축을 말하지 않으면 나란히 놓인 값끼리 검산이 안 된다 -
 	     실측 2026-09-11 삼성전자: "매수 원가 466,248,078" 옆의 평가 손익은 996,563,421 인데
@@ -308,7 +309,7 @@
 			valueTitle = holdingAnnualizedText.isEmpty() ? MessageUtil.getMessage("stock.item.detail.annualized.none") : "",
 			scopeNote = MessageUtil.getMessage("stock.item.detail.holding.basis"),
 			sub = holdingPeriodText + " · " + (holdingReturn.shortTerm()
-				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.annualized.short"), String.valueOf(holdingReturn.holdingDays()))
+				? StockViewSupport.msg("stock.asset.status.cell.annualized.short", String.valueOf(holdingReturn.holdingDays()))
 				: (holdingSinceAt >= 0 ? holdingSinceMessage.substring(0, holdingSinceAt) : holdingSinceMessage + " ")),
 			subDate = holdingReturn.shortTerm() ? "" : holdingFirstBuyDate.toString(),
 			subDateAfter = holdingReturn.shortTerm() || holdingSinceAt < 0 ? "" : holdingSinceMessage.substring(holdingSinceAt + 3),
@@ -412,7 +413,7 @@
 		</div>
 	@endif
 
-	<!-- 보유 평가액·원가 추이 -->
+	<%-- 보유 평가액·원가 추이 --%>
 	<%-- 캔들이 있으면 따로 두지 않는다(사용자 요청 2026-10-07: "굳이 2개가 나뉘어있을 필요가 없을거 같아") - 그 날 보유 평가액 · 원가 ·
 	     평가손익은 주가 추이 캔들의 툴팁에 있다. 시세 봉(OHLC)이 없어 선 차트로 그리는 종목에서만 이 차트를 그대로 둔다. --%>
 	!{boolean holdingsMergedIntoCandles = priceChart != null && !priceChart.isEmpty();}
@@ -453,7 +454,7 @@
 	@endif
 	@endif
 
-	<!-- 계좌별 보유 현황 -->
+	<%-- 계좌별 보유 현황 --%>
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.account.holdings.title")}</h2>
 		<%-- 이 구역만 범용 "데이터가 없습니다" 를 썼다 - 실측 2026-09-13: 86 종목 중 77 종목(전량 매도 34 · 무거래 43)이
@@ -504,7 +505,7 @@
 		@endif
 	</div>
 
-	<!-- 매매 내역 -->
+	<%-- 매매 내역 --%>
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.trade.title")}</h2>
 		@if(trades == null || trades.isEmpty())
@@ -547,7 +548,7 @@
 		@endif
 	</div>
 
-	<!-- 배당 내역 -->
+	<%-- 배당 내역 --%>
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.dividend.title")}</h2>
 		@if(dividends == null || dividends.isEmpty())

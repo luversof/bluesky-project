@@ -424,7 +424,7 @@ public class Poe2ViewController {
       {"base-items.json", "poe.admin.data.baseitems"},
       {"passive-tree.json", "poe.admin.data.tree"},
       {"atlas-tree.json", "poe.admin.data.atlas"},
-      {"mods.json", "poe.admin.data.modpool"},
+      {"mods.json", "poe.admin.data.mods"}, // PoE1 과 같은 이름(전체 옵션 풀, 10-25 Q214)
       {"augments.json", "poe2.admin.data.augments"},
       {"waystone-mods.json", "poe2.admin.data.waystonemods"},
       {"rare-name-words.json", "poe2.admin.data.rarenames"},

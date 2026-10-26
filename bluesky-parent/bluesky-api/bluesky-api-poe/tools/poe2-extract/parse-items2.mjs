@@ -41,6 +41,13 @@ function parseBases(lua) {
 const T = (t) => [loadTable("English", t), loadTable("Korean", t)];
 const [bases, basesKo] = T("BaseItemTypes");
 const [classes, classesKo] = T("ItemClasses");
+// 툴팁 종류 줄(10-23 Q39) — 인게임 툴팁은 단수 분류 ItemClassCategories.Text(Bow · [Crossbow|석궁] · Charm), ItemClasses.Name 은 Ctrl+C 'Item Class:' 의 복수(Bows · 쇠뇌)
+const [classCats, classCatsKo] = T("ItemClassCategories");
+const catText = (row) => {
+	const t = (row && row.Text) || "";
+	const m = t.match(/^\[([^|\]]+)(?:\|([^\]]+))?\]$/);
+	return (m ? m[2] || m[1] : t).trim();
+};
 const [mods] = T("Mods");
 const [stats] = T("Stats");
 const [armours] = T("ArmourTypes");
@@ -326,7 +333,7 @@ for (const file of FILES) {
 		}
 		items.push(item);
 		// en = 게임 영어 분류 이름(ItemClasses.Name — "Fishing Rods" · "Traps") — 영어 화면 칩이 내부 id(FishingRod · TrapTool)로 나오지 않게(10-02 ZZ)
-		classUse.set(cls.Id, { key: cls.Id, ko: item.itemClassKo, en: cls.Name || cls.Id, category: item.category });
+		classUse.set(cls.Id, { key: cls.Id, ko: item.itemClassKo, en: cls.Name || cls.Id, category: item.category, tipEn: catText(classCats[cls.ItemClassCategory]) || undefined, tipKo: catText(classCatsKo[cls.ItemClassCategory]) || undefined });
 	}
 }
 items.sort((a, b) => a.itemClass.localeCompare(b.itemClass) || a.reqLevel - b.reqLevel || a.name.localeCompare(b.name));

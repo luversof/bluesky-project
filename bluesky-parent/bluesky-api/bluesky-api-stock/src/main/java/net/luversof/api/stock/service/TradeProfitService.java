@@ -1142,8 +1142,6 @@ public class TradeProfitService {
     return series;
   }
 
-  /** 일별 시리즈로부터 기간 요약(성장률/TWR/손익 분해)을 계산한다. */
-  // 인스턴스 상태를 쓰지 않아 static 이며, 같은 패키지의 테스트가 직접 부를 수 있게 package-private 이다.
   /** 이력 맨 앞의 전날 - 평가액 · 원가 · 실현 · 배당 · 현금흐름 모두 0. 값만 읽는다(날짜는 쓰지 않는다). */
   private static final TradeProfitTimeSeriesPoint ZERO_POINT =
       new TradeProfitTimeSeriesPoint(
@@ -1161,6 +1159,10 @@ public class TradeProfitService {
           BigDecimal.ZERO,
           BigDecimal.ZERO);
 
+  /**
+   * 일별 시리즈로부터 기간 요약(성장률/TWR/손익 분해)을 계산한다. 인스턴스 상태를 쓰지 않아 static 이며, 같은 패키지의 테스트가 직접 부를 수 있게
+   * package-private 이다.
+   */
   static TradeProfitTimeSeriesSummary summarizeSeries(
       List<TradeProfitTimeSeriesPoint> series, ZoneId zoneId, boolean zeroOpening) {
     if (series == null || series.isEmpty()) {

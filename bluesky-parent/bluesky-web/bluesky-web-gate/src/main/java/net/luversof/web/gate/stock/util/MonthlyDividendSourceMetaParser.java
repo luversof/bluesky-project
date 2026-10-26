@@ -45,10 +45,6 @@ public class MonthlyDividendSourceMetaParser {
       Pattern.compile("class=\"summary__product-code\"\\s*>\\s*([0-9A-Z]{6})\\s*<");
 
   /**
-   * SOL 상세는 제목 줄에 이름과 코드를 함께 적는다: {@code <h1 class="fv-name"><span>이름</span><small
-   * class="fd-code">(코드)</small>}
-   */
-  /**
    * TIME ETF 는 제목 한 줄에 이름과 코드를 같이 적는다 &mdash; {@code <title>TIME Korea플러스배당액티브(441800)</title>} (실측
    * 2026-09-22). 본문에는 구성 종목 코드가 수십 개 있어 아무 여섯 자리나 집으면 엉뚱한 종목이 걸린다.
    */
@@ -57,6 +53,10 @@ public class MonthlyDividendSourceMetaParser {
           "<title>\\s*(.+?)\\s*[(]\\s*([0-9A-Z]{6})\\s*[)]\\s*</title>",
           Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
+  /**
+   * SOL 상세는 제목 줄에 이름과 코드를 함께 적는다: {@code <h1 class="fv-name"><span>이름</span><small
+   * class="fd-code">(코드)</small>}
+   */
   private static final Pattern SOL_CODE = Pattern.compile("fd-code[^>]*>\\s*\\(?([0-9A-Z]{6})");
 
   private static final Pattern SOL_NAME =

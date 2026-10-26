@@ -28,7 +28,7 @@
 		</div>
 		<%-- 가로 스크롤 단서(C424 UX QA — 375px 에서 화폐 · 90% 예산 열이 잘려 보였는데 밀 수 있다는 표시가 없었다) --%>
 		<p class="text-xs text-base-content/60 sm:hidden" data-craft-scroll-hint>${ko ? "좁은 화면 — 표를 옆으로 밀어 나머지 열을 보세요" : "Narrow screen — swipe the table sideways for more columns"}</p>
-		<%-- 엘드리치 임플리싯 목표(10-21 C549) — 명시 옵션 표와 따로 잰 불씨 · 영액 비용(임플리싯은 다시 굴려도 남고 불씨 · 영액은 임플리싯만 바꾼다) --%>
+		<%-- 섬뜩한 고정 속성 목표(10-21 C549) — 명시 옵션 표와 따로 잰 불씨 · 영액 비용(고정 속성은 다시 굴려도 남고 불씨 · 영액은 고정 속성만 바꾼다) --%>
 		@if(calc.eldritch() != null)
 			!{
 				PoeCraft.EldritchResult er = calc.eldritch();
@@ -36,10 +36,10 @@
 			}
 			<div class="rounded-box border border-base-300 bg-base-100 p-2 text-xs space-y-0.5" data-craft-calc-eldritch>
 				@if(er.error() != null)
-					<div role="alert" class="text-warning" data-craft-calc-eldritch-error>${ko ? "엘드리치 임플리싯 목표: " : "Eldritch implicit targets: "}${er.errorFor(ko)}</div>
+					<div role="alert" class="text-warning" data-craft-calc-eldritch-error>${ko ? "섬뜩한 고정 속성 목표: " : "Eldritch implicit targets: "}${er.errorFor(ko)}</div>
 				@else
-					<div class="font-medium">${ko ? "엘드리치 임플리싯 — 명시 옵션과 따로(불씨 · 영액은 임플리싯만 바꿈), 아래 방법 비용에 더함: " : "Eldritch implicits — separate from the explicit modifiers (embers/ichors only change implicits), added to the methods below: "}<span class="font-mono" data-craft-calc-eldritch-cost="${er.cost()}">${num.apply(er.cost())} c</span>
-						@if(bestRow != null && er.cost() != null)<span class="text-base-content/70"> · ${ko ? "합계(가장 싼 방법 + 엘드리치) " : "Total (cheapest method + eldritch) "}<span class="font-mono" data-craft-calc-eldritch-total>${num.apply(bestRow + er.cost())} c</span></span>@endif</div>
+					<div class="font-medium">${ko ? "섬뜩한 고정 속성 — 명시 옵션과 따로(불씨 · 영액은 고정 속성만 바꿈), 아래 방법 비용에 더함: " : "Eldritch implicits — separate from the explicit modifiers (embers/ichors only change implicits), added to the methods below: "}<span class="font-mono" data-craft-calc-eldritch-cost="${er.cost()}">${num.apply(er.cost())} c</span>
+						@if(bestRow != null && er.cost() != null)<span class="text-base-content/70"> · ${ko ? "합계(가장 싼 방법 + 섬뜩한 고정 속성) " : "Total (cheapest method + eldritch) "}<span class="font-mono" data-craft-calc-eldritch-total>${num.apply(bestRow + er.cost())} c</span></span>@endif</div>
 					@for(PoeCraft.EldritchStep s : er.steps())
 						!{ java.util.List<String> st = ko && s.ko() != null && !s.ko().isEmpty() ? s.ko() : (s.en() == null ? java.util.List.<String>of() : s.en()); }
 						<div data-craft-calc-eldritch-step="${s.side()}">${"exarch".equals(s.side()) ? (ko ? "작열의 총주교" : "Exarch") : (ko ? "세계 포식자" : "Eater")}: ${String.join(", ", st)} — ${ko ? s.currencyKo() : s.currency()} ${ko ? "평균 " : "avg "}${String.format("%,.1f", s.attempts())}${ko ? "개" : ""}(${ko ? "한 개 " : "per orb "}${String.format("%.1f%%", s.chance() * 100)}) = <span class="font-mono">${num.apply(s.cost())} c</span></div>
@@ -62,9 +62,12 @@
 						!{ PoeCraft.MethodResult r = calc.results().get(i); }
 						<tr class="${i == 0 && r.expectedCost() != null ? "font-semibold" : ""}" data-craft-calc-method="${r.method()}">
 							<td class="min-w-0">
-								${ko || r.labelEn() == null ? r.label() : r.labelEn()}@if(i == 0 && r.expectedCost() != null) <span class="badge badge-primary badge-xs">${ko ? "가장 저렴" : "cheapest"}</span>@endif
+								${ko || r.labelEn() == null ? r.label() : r.labelEn()}@if(i == 0 && r.expectedCost() != null) <span class="badge badge-primary badge-xs" title="${ko ? "이 표의 한 가지 방법 중 가장 저렴 — 여러 수단을 섞는 최적 조합은 위 결과" : "Cheapest single method in this table — the mixed optimal plan is above"}">${ko ? "가장 저렴" : "cheapest"}</span>@endif
 								!{ String rn = ko ? r.note() : r.noteEn() != null ? r.noteEn() : net.luversof.web.gate.poe.PoeCraftText.en(r.note()); }
 								@if(rn != null && !rn.isEmpty())<div class="text-xs font-normal text-base-content/60">${rn}</div>@endif
+								<%-- 좁은 화면(10-23 Q32 ⑪ UX QA — 기대 비용 · 90% 예산 열이 가로 스크롤 밖) --%>
+								!{ Long m90 = r.hits() == 0 || r.costPerAttempt() == null ? null : n90.apply(r.chance()); }
+								<div class="sm:hidden text-xs font-mono font-normal" data-craft-calc-cost-mobile>${ko ? "기대 " : "Expected "}${r.expectedCost() == null ? "-" : num.apply(r.expectedCost()) + "c"} · ${ko ? "90% 예산 " : "90% budget "}${m90 == null ? "-" : num.apply(m90 * r.costPerAttempt()) + "c"}</div>
 							</td>
 							<td class="text-right font-mono">${r.hits() == 0 ? "< " + String.format("%.4f%%", 100.0 / Math.max(1, r.trials())) : String.format(r.chance() < 0.01 ? "%.4f%%" : "%.2f%%", r.chance() * 100)}</td>
 							<td class="text-right font-mono" data-craft-calc-attempts>${num.apply(r.expectedAttempts())}</td>

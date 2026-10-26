@@ -7,6 +7,7 @@
 @import net.luversof.web.gate.stock.service.MonthlyEtfViewSupport
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 <%-- 월배당 ETF 목록. 등록된 월배당 기준 데이터(프로필 + 지급 이력)로 만든 **종목 단위** 정보다.
      사용자 요청 2026-09-21: 내가 받을 배당금(시뮬레이터 월배당 탭)과 성격이 다르므로 화면을 나눴다.
@@ -81,7 +82,7 @@
 	String averageLabel = MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.short");
 	String trendLabel = MessageUtil.getMessage("stock.monthly.etf.table.cell.trend.short");
 	// 추천 문구에 적는 기간 이름(기간 단추와 같은 말) - 2026-10-14 기간이 추천에 쓰이면서.
-	String pickPeriodLabel = monthlyEtfPeriod == 12 ? MessageUtil.getMessage("stock.monthly.etf.period.year") : java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.period.month"), monthlyEtfPeriod);
+	String pickPeriodLabel = monthlyEtfPeriod == 12 ? MessageUtil.getMessage("stock.monthly.etf.period.year") : StockViewSupport.msg("stock.monthly.etf.period.month", monthlyEtfPeriod);
 	// 위험 지표는 1 년 기준이다. 이력이 그만큼 없는 종목은 "언제부터" 를 적어야 "1 년 기준" 이 거짓이 되지 않는다.
 	// 며칠 어긋나는 것까지 적으면 거의 모든 줄에 붙으므로, 한 달 넘게 모자랄 때만 적는다.
 	java.time.LocalDate riskFullFrom = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusMonths(12).plusMonths(1);
@@ -205,7 +206,7 @@
 							@for(int periodOption : monthlyEtfPeriods)
 								!{String periodLabel = periodOption == 12
 								    ? MessageUtil.getMessage("stock.monthly.etf.period.year")
-								    : java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.period.month"), periodOption);}
+								    : StockViewSupport.msg("stock.monthly.etf.period.month", periodOption);}
 								!{boolean periodSelected = periodOption == monthlyEtfPeriod;}
 								<a data-period-option href="/stock/monthly-etf?${periodQuery}period=${periodOption}"
 									class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug ${periodSelected ? "btn-primary" : "btn-ghost border border-base-300"}"
@@ -246,7 +247,7 @@
 						<p class="text-xs leading-5 text-base-content/60" data-pick-basis-desc>${net.luversof.web.gate.stock.util.StockPickBasisLabelUtil.description(monthlyEtfBasis)}</p>
 						<%-- 수익률 기간도 추천에 쓴다(사용자 요청 2026-10-14). 12 개월이 아니면 무엇이 그 기간을 따르고 무엇이 12 회 그대로인지 적는다. --%>
 						@if(monthlyEtfPeriod != 12)
-							<p class="text-xs leading-5 text-base-content/60" data-pick-period-note>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.period.note"), pickPeriodLabel, monthlyEtfPeriod)}</p>
+							<p class="text-xs leading-5 text-base-content/60" data-pick-period-note>${StockViewSupport.msg("stock.monthly.etf.pick.period.note", pickPeriodLabel, monthlyEtfPeriod)}</p>
 						@endif
 					@endif
 					@if(!monthlyEtfPicks.isEmpty())
@@ -260,7 +261,7 @@
 								!{var pick = monthlyEtfPicks.get(pickIndex);}
 								<div class="rounded-box bg-base-100 p-2 sm:p-3 space-y-1" data-etf-pick data-pick-symbol="${pick.row().stockItemSymbol()}">
 									<div class="flex flex-wrap items-baseline gap-2">
-										<span class="badge badge-sm badge-neutral" data-pick-rank>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.rank"), pickIndex + 1)}</span>
+										<span class="badge badge-sm badge-neutral" data-pick-rank>${StockViewSupport.msg("stock.monthly.etf.pick.rank", pickIndex + 1)}</span>
 										<%-- 지급 시기를 함께 적는다(사용자 요청 2026-09-23) - 월중과 월말은 적립하는 날이 다르다. --%>
 										<span class="badge badge-sm badge-ghost" data-pick-window="${pick.row().payoutWindow()}">${"MID_MONTH".equals(pick.row().payoutWindow()) ? midMonthLabel : ("MONTH_END".equals(pick.row().payoutWindow()) ? monthEndLabel : ("OTHER".equals(pick.row().payoutWindow()) ? otherWindowLabel : unknownWindowLabel))}</span>
 										<span class="font-medium break-keep wrap-anywhere">${pick.row().stockItemName()}</span>
@@ -269,7 +270,7 @@
 									!{var pickCandidate = monthlyEtfCandidates.get(pick.row().stockItemSymbol());}
 									<div class="flex flex-wrap items-baseline gap-1">
 										<span class="text-lg font-semibold tabular-nums" data-pick-score>${"steady".equals(monthlyEtfBasis) && pickCandidate != null ? String.valueOf(pickCandidate.payoutCutCount()) : percentFormat.format(pick.score())}</span>
-										<span class="text-xs text-base-content/60">${"total".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.total") : ("stable".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.stable") : ("steady".equals(monthlyEtfBasis) ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.unit.steady"), pickCandidate != null && pickCandidate.payoutCutCount() != null ? pickCandidate.payoutCutCount() : 0) : MessageUtil.getMessage("stock.monthly.etf.pick.score")))}</span>
+										<span class="text-xs text-base-content/60">${"total".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.total") : ("stable".equals(monthlyEtfBasis) ? MessageUtil.getMessage("stock.pick.basis.unit.stable") : ("steady".equals(monthlyEtfBasis) ? StockViewSupport.msg("stock.pick.basis.unit.steady", pickCandidate != null && pickCandidate.payoutCutCount() != null ? pickCandidate.payoutCutCount() : 0) : MessageUtil.getMessage("stock.monthly.etf.pick.score")))}</span>
 									</div>
 									<%-- 점수가 어떻게 나왔는지 뺄셈으로 적는다(사용자 요청 2026-09-30). 두 수는 점수를 낼 때와 똑같이 반올림한다. --%>
 									!{BigDecimal pickCut = MonthlyContributionPickSupport.cutOf(pick.row().payoutTrendPct());}
@@ -278,15 +279,15 @@
 									!{String pickYield = percentFormat.format(pickYieldValue.setScale(2, java.math.RoundingMode.HALF_UP));}
 									<div class="text-xs text-base-content/60 tabular-nums" data-pick-basis>
 										@if("total".equals(monthlyEtfBasis))
-											@if(monthlyEtfPeriod == 12)${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.total"), percentFormat.format(pick.score()), pickYield)}@else${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.total.period"), percentFormat.format(pick.score()), pickYield, pickPeriodLabel, monthlyEtfPeriod)}@endif
+											@if(monthlyEtfPeriod == 12)${StockViewSupport.msg("stock.pick.basis.value.total", percentFormat.format(pick.score()), pickYield)}@else${StockViewSupport.msg("stock.pick.basis.value.total.period", percentFormat.format(pick.score()), pickYield, pickPeriodLabel, monthlyEtfPeriod)}@endif
 										@elseif("steady".equals(monthlyEtfBasis) && pickCandidate != null)
-											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.steady"), pickCandidate.payoutCutPairs(), pickCandidate.payoutCutCount(), percentFormat.format(pickCandidate.dividendScore()))}
+											${StockViewSupport.msg("stock.pick.basis.value.steady", pickCandidate.payoutCutPairs(), pickCandidate.payoutCutCount(), percentFormat.format(pickCandidate.dividendScore()))}
 										@elseif("stable".equals(monthlyEtfBasis))
-											${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.basis.value.stable"), percentFormat.format(MonthlyContributionPickSupport.score(pickYieldValue, pick.row().payoutTrendPct())), percentFormat.format(pick.row().volatilityPct()), percentFormat.format(pick.score()))}
+											${StockViewSupport.msg("stock.pick.basis.value.stable", percentFormat.format(MonthlyContributionPickSupport.score(pickYieldValue, pick.row().payoutTrendPct())), percentFormat.format(pick.row().volatilityPct()), percentFormat.format(pick.score()))}
 										@elseif(pickCut.signum() > 0)
-											@if(monthlyEtfPeriod == 12)${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis"), pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()))}@else${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis.period"), pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()), monthlyEtfPeriod)}@endif
+											@if(monthlyEtfPeriod == 12)${StockViewSupport.msg("stock.monthly.etf.pick.basis", pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()))}@else${StockViewSupport.msg("stock.monthly.etf.pick.basis.period", pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()), monthlyEtfPeriod)}@endif
 										@else
-											@if(monthlyEtfPeriod == 12)${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis.nocut"), pickYield, percentFormat.format(pick.score()))}@else${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.pick.basis.nocut.period"), pickYield, percentFormat.format(pick.score()), monthlyEtfPeriod)}@endif
+											@if(monthlyEtfPeriod == 12)${StockViewSupport.msg("stock.monthly.etf.pick.basis.nocut", pickYield, percentFormat.format(pick.score()))}@else${StockViewSupport.msg("stock.monthly.etf.pick.basis.nocut.period", pickYield, percentFormat.format(pick.score()), monthlyEtfPeriod)}@endif
 										@endif
 									</div>
 								</div>
@@ -317,7 +318,7 @@
 					!{String viewlessQuery = viewlessBase + "sort=" + ("slot".equals(monthlyEtfSort) ? "display-order" : monthlyEtfSort) + "&direction=" + monthlyEtfDirection;}
 					@if(!monthlyEtfContributionPicks.isEmpty() || !monthlyEtfView.isBlank())
 						<div class="flex flex-wrap gap-2" data-contribution-view hx-boost="true" data-swap-anchor-key="etf-view">
-							<a href="${viewlessBase.replace("/stock/monthly-etf?", "/stock/monthly-etf?view=contribution&") + "sort=slot&direction=asc"}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-primary" : "btn-outline"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? "page" : null}" data-contribution-view-link="contribution">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.view.contribution"), monthlyEtfContributionPicks.size())}</a>
+							<a href="${viewlessBase.replace("/stock/monthly-etf?", "/stock/monthly-etf?view=contribution&") + "sort=slot&direction=asc"}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-primary" : "btn-outline"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? "page" : null}" data-contribution-view-link="contribution">${StockViewSupport.msg("stock.monthly.etf.view.contribution", monthlyEtfContributionPicks.size())}</a>
 							<a href="${viewlessQuery}" class="btn btn-sm ${"contribution".equals(monthlyEtfView) ? "btn-outline" : "btn-primary"} max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere" aria-current="${"contribution".equals(monthlyEtfView) ? null : "page"}" data-contribution-view-link="all">${MessageUtil.getMessage("stock.monthly.etf.view.all")}</a>
 						</div>
 						@if("contribution".equals(monthlyEtfView))
@@ -441,7 +442,7 @@
 											<%-- 이번 적립 자리(시뮬레이터 월배당 탭의 4자리 추천과 같은 답 - 같은 코드로 낸다). --%>
 											!{var contributionPick = monthlyEtfContributionPicks.get(row.stockItemSymbol());}
 											@if(contributionPick != null)
-												<div class="mt-1"><span class="badge badge-sm badge-primary whitespace-normal h-auto" data-contribution-pick="${contributionPick.payoutWindow()}|${contributionPick.account()}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.contribution"), "MID_MONTH".equals(contributionPick.payoutWindow()) ? midMonthLabel : monthEndLabel, "BROKERAGE".equals(contributionPick.account()) ? MessageUtil.getMessage("stock.simulator.monthly.contribution.account.brokerage") : MessageUtil.getMessage("stock.simulator.monthly.contribution.account.pension"))}</span></div>
+												<div class="mt-1"><span class="badge badge-sm badge-primary whitespace-normal h-auto" data-contribution-pick="${contributionPick.payoutWindow()}|${contributionPick.account()}">${StockViewSupport.msg("stock.monthly.etf.table.cell.contribution", "MID_MONTH".equals(contributionPick.payoutWindow()) ? midMonthLabel : monthEndLabel, "BROKERAGE".equals(contributionPick.account()) ? MessageUtil.getMessage("stock.simulator.monthly.contribution.account.brokerage") : MessageUtil.getMessage("stock.simulator.monthly.contribution.account.pension"))}</span></div>
 											@endif
 										</th>
 										<td class="align-top" data-keep-line>${windowLabel}</td>
@@ -457,7 +458,7 @@
 												<div class="text-sm">
 													<span class="mr-1 text-[11px] text-base-content/60">${trendLabel}</span>
 													@if(row.payoutTrendPct() != null && row.averageDividendPerShare3m() != null)
-														!{String trendBasis = java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.trend.title"), StockFormatUtil.fullKrw(row.averageDividendPerShare3m(), 2), StockFormatUtil.fullKrw(row.averageDividendPerShare1y(), 2));}
+														!{String trendBasis = StockViewSupport.msg("stock.monthly.etf.table.cell.trend.title", StockFormatUtil.fullKrw(row.averageDividendPerShare3m(), 2), StockFormatUtil.fullKrw(row.averageDividendPerShare1y(), 2));}
 														<span class="amount-value" title="${trendBasis}">${StockFormatUtil.fullKrw(row.averageDividendPerShare3m(), 2)}</span>
 														<span class="block font-medium ${row.payoutTrendPct().signum() > 0 ? "text-profit" : (row.payoutTrendPct().signum() < 0 ? "text-loss" : "text-base-content/60")}" data-payout-trend title="${trendBasis}">(${row.payoutTrendPct().signum() > 0 ? "+" : ""}${percentFormat.format(row.payoutTrendPct())}%)<span class="sr-only"> ${trendBasis}</span></span>
 													@else
@@ -541,7 +542,7 @@
 												!{String rowYield = percentFormat.format(row.annualYieldPct().setScale(2, java.math.RoundingMode.HALF_UP));}
 												<div class="font-semibold tabular-nums" data-score>${percentFormat.format(rowScore)}</div>
 												@if(rowCut.signum() > 0)
-													<div class="text-[11px] tabular-nums text-base-content/60" data-score-basis>${rowYield} − ${percentFormat.format(rowCut)}<span class="sr-only"> ${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.score.basis"), rowYield, percentFormat.format(rowCut))}</span></div>
+													<div class="text-[11px] tabular-nums text-base-content/60" data-score-basis>${rowYield} − ${percentFormat.format(rowCut)}<span class="sr-only"> ${StockViewSupport.msg("stock.monthly.etf.table.cell.score.basis", rowYield, percentFormat.format(rowCut))}</span></div>
 												@else
 													<div class="text-[11px] text-base-content/60" data-score-no-cut>${MessageUtil.getMessage("stock.monthly.etf.table.cell.score.no.cut")}</div>
 												@endif
@@ -573,7 +574,7 @@
 										</td>
 										<td class="align-top text-right">
 											<div class="space-y-1 tabular-nums">
-												<div>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.monthly.etf.table.cell.payout.count"), row.payoutCount())}</div>
+												<div>${StockViewSupport.msg("stock.monthly.etf.table.cell.payout.count", row.payoutCount())}</div>
 												@if(row.latestPayDate() != null)
 													<div class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.cell.latest.pay.date")} <span class="whitespace-nowrap date-whole">${row.latestPayDate().toString()}</span></div>
 												@endif

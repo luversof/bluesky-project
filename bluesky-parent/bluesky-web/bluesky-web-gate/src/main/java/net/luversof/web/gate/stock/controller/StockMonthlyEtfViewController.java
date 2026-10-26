@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,18 +135,23 @@ public class StockMonthlyEtfViewController {
     String resolvedView = monthlyEtfViewSupport.resolveView(view);
     // 자리별 적립 추천 보기는 자리 차례(월중 → 월말, 위탁 → ISA/연금)로 놓는다(사용자 요청 2026-09-30). 전체 보기면 표시 순서.
     String viewSort = monthlyEtfViewSupport.resolveSortForView(resolvedSort, resolvedView);
-    List<MonthlyEtfRowView> rows =
-        monthlyEtfViewSupport.sortRows(
+    // 화면에 남는 줄 - 지급 시기 하나를 받아 다른 조건(검색어 · 수익률 · 보유 · 계좌 · 이번 적립 보기)으로 거른다. 목록과 지급 시기 칩
+    // 개수가 이 하나를 쓴다(따로 적으면 칩 개수가 목록과 어긋날 수 있다).
+    Function<String, List<MonthlyEtfRowView>> visibleRows =
+        window ->
             monthlyEtfViewSupport.filterContribution(
                 monthlyEtfViewSupport.filterRows(
                     allRows,
                     resolvedKeyword,
                     minAnnualYield,
-                    resolvedPayoutWindow,
+                    window,
                     resolvedHolding,
                     resolvedAccount),
                 contributionPicks.keySet(),
-                resolvedView),
+                resolvedView);
+    List<MonthlyEtfRowView> rows =
+        monthlyEtfViewSupport.sortRows(
+            visibleRows.apply(resolvedPayoutWindow),
             viewSort,
             resolvedDirection,
             List.copyOf(contributionPicks.keySet()));
@@ -155,20 +161,7 @@ public class StockMonthlyEtfViewController {
     // 이번 적립 보기)은 그대로 두고 지급 시기만 바꿨을 때 남는 줄 수다.
     Map<String, Integer> payoutWindowCounts = new java.util.LinkedHashMap<>();
     for (String window : List.of("", "MID_MONTH", "MONTH_END", "OTHER", "UNKNOWN")) {
-      payoutWindowCounts.put(
-          window,
-          monthlyEtfViewSupport
-              .filterContribution(
-                  monthlyEtfViewSupport.filterRows(
-                      allRows,
-                      resolvedKeyword,
-                      minAnnualYield,
-                      window,
-                      resolvedHolding,
-                      resolvedAccount),
-                  contributionPicks.keySet(),
-                  resolvedView)
-              .size());
+      payoutWindowCounts.put(window, visibleRows.apply(window).size());
     }
     model.addAttribute("monthlyEtfPayoutWindowCounts", payoutWindowCounts);
     model.addAttribute("monthlyEtfContributionPicks", contributionPicks);

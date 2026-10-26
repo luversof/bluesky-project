@@ -363,7 +363,7 @@ public class Poe2BuildService {
     return rareJson;
   }
 
-  /** 레어 목표 한 칸의 재료 — 베이스 이름 · 베이스 암시(중간 롤) · 후보 옵션(계열별 2티어 중간 롤). */
+  /** 레어 목표 한 칸의 재료 — 베이스 이름 · 베이스 암시(중간 롤) · 후보 옵션(계열별 2등급 중간 롤). */
   record RareSpec(String base, String baseKo, List<String> implicits, List<ModCandidate> cands) {}
 
   private static final java.util.Set<String> RARE_SLOTS =
@@ -437,7 +437,7 @@ public class Poe2BuildService {
   }
 
   /**
-   * 레어 목표 후보(10-02 사용자 요청 "고유만 보지 말고 레어로도") — PoE1 가이드 "레어 목표"(최상위는 못 사니 2티어 중간 롤)와 같은 기준. 고유를 낀 칸도
+   * 레어 목표 후보(10-02 사용자 요청 "고유만 보지 말고 레어로도") — PoE1 가이드 "레어 목표"(최상위는 못 사니 2등급 중간 롤)와 같은 기준. 고유를 낀 칸도
    * 포함(그 고유 대신 좋은 레어). 옵션 풀이 없는 베이스는 뺀다.
    */
   private Map<String, RareSpec> rareCandidates(Poe2.BuildSummary summary, Integer weaponSet) {
@@ -1490,6 +1490,37 @@ public class Poe2BuildService {
     return ascendancy;
   }
 
+  /** 줄 종류 태그 — PoB2 Item.lua 가 붙이는 앞 {태그} 중 화면이 가르는 것(10-23 Q117). 없으면 빈 문자열. */
+  static String modKind(String raw) {
+    java.util.regex.Matcher t = java.util.regex.Pattern.compile("\\{([^}:]*)[^}]*\\}").matcher(raw);
+    int at = 0;
+    while (t.find() && t.start() == at) {
+      String k = t.group(1).toLowerCase(Locale.ROOT);
+      if (List.of("rune", "enchant", "fractured", "crafted", "desecrated", "mutated").contains(k)) {
+        return k;
+      }
+      at = t.end();
+    }
+    return "";
+  }
+
+  /** PoB "Item Level: N"(Implicits 앞 메타 줄, 10-23 Q117). 없으면 null. */
+  static Integer itemLevelOf(List<String> lines) {
+    for (String l : lines) {
+      if (l.startsWith("Implicits:")) {
+        return null;
+      }
+      if (l.startsWith("Item Level:")) {
+        try {
+          return Integer.parseInt(l.substring("Item Level:".length()).trim());
+        } catch (NumberFormatException e) {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
   /** PoB 아이템 원문 → 칸 요약(이름 · 베이스 · 희귀도 · 옵션 줄). */
   Poe2.BuildItem item(String slot, String text) {
     List<String> lines = new ArrayList<>();
@@ -1512,6 +1543,7 @@ public class Poe2BuildService {
     }
     // 옵션 줄 — "Implicits: N" 뒤 줄들(PoB 메타 줄은 뺀다), {태그} 접두는 벗긴다
     List<String> mods = new ArrayList<>();
+    List<String> modKinds = new ArrayList<>();
     int start = -1;
     for (int k = 0; k < lines.size(); k++) {
       if (lines.get(k).startsWith("Implicits:")) {
@@ -1521,9 +1553,11 @@ public class Poe2BuildService {
     }
     if (start >= 0) {
       for (int k = start; k < lines.size(); k++) {
-        String m = lines.get(k).replaceAll("^(\\{[^}]*\\})+", "").trim();
+        String raw = lines.get(k);
+        String m = raw.replaceAll("^(\\{[^}]*\\})+", "").trim();
         if (!m.isEmpty()) {
           mods.add(m);
+          modKinds.add(modKind(raw));
         }
       }
     }
@@ -1568,7 +1602,9 @@ public class Poe2BuildService {
             rarity, name, unique.orElse(null), base.orElse(null), mods, implicitCountOf(lines)),
         net.luversof.api.poe.service.PoePobImportService.itemLevelReq(lines)
             .orElse(unique.map(Poe2.Unique::requiredLevel).orElse(null)),
-        net.luversof.api.poe.service.PoePobImportService.itemDefences(lines));
+        net.luversof.api.poe.service.PoePobImportService.itemDefences(lines),
+        modKinds,
+        itemLevelOf(lines));
   }
 
   /** 거래소 검색 쿼리(10-08) — 고유는 이름, 레어 · 마법은 베이스 + 익스플리싯 옵션(암시 줄 제외). */

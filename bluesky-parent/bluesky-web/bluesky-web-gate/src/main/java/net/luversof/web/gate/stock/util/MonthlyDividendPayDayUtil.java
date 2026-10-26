@@ -55,12 +55,6 @@ public final class MonthlyDividendPayDayUtil {
   }
 
   /**
-   * 종목별 대표 지급일.
-   *
-   * <p>지급일이 없는 행과 종목 코드가 빈 행은 세지 않는다. 이력이 아예 없는 종목은 결과에 담기지 않는다 &mdash; 화면이 "날짜를 모른다" 를 따로 다뤄야 하기
-   * 때문이다(0 이나 1 일로 채워 넣으면 없는 일정을 지어내는 셈이다).
-   */
-  /**
    * 그 달에 <b>실제로</b> 지급된 날(종목코드 &rarr; 일자).
    *
    * <p>달력은 지급이력의 최빈일로 날짜를 <b>추정</b>하는데, 이미 지나간 달은 추정할 이유가 없다 &mdash; 그 달의 지급이력이 곧 답이다. 실측
@@ -91,6 +85,12 @@ public final class MonthlyDividendPayDayUtil {
     return bySymbol;
   }
 
+  /**
+   * 종목별 대표 지급일.
+   *
+   * <p>지급일이 없는 행과 종목 코드가 빈 행은 세지 않는다. 이력이 아예 없는 종목은 결과에 담기지 않는다 &mdash; 화면이 "날짜를 모른다" 를 따로 다뤄야 하기
+   * 때문이다(0 이나 1 일로 채워 넣으면 없는 일정을 지어내는 셈이다).
+   */
   public static Map<String, PayDay> byStockItem(List<Payout> payouts) {
     Map<String, Map<Integer, Integer>> countBySymbol = new LinkedHashMap<>();
     Map<String, Map<Integer, LocalDate>> latestDateBySymbol = new HashMap<>();

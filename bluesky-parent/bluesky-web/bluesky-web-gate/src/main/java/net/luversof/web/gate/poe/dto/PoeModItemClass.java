@@ -3,7 +3,7 @@ package net.luversof.web.gate.poe.dto;
 import java.util.List;
 
 /**
- * 모드 페이지의 아이템 클래스 목록 항목 — API {@code /api/poe/mods/item-classes} 응답 매핑용. prefixes/suffixes 는 패밀리 키
+ * 모드 페이지의 아이템 종류 목록 항목 — API {@code /api/poe/mods/item-classes} 응답 매핑용. prefixes/suffixes 는 패밀리 키
  * 목록(개수 표시·목차용).
  */
 public record PoeModItemClass(

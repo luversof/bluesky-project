@@ -25,30 +25,30 @@
 		java.util.function.Function<String, String> specLabel = k -> switch (k) {
 			case "dps" -> ko ? "공격(DPS)" : "DPS";
 			case "ehp" -> ko ? "생존(EHP)" : "EHP";
-			case "life" -> ko ? "생명" : "Life";
+			case "life" -> ko ? "생명력" : "Life"; // 게임 낱말 · 띄어쓰기(10-25 Q171 — Q123 이 시뮬 결과에서 고친 이름표의 원본)
 			case "es" -> MessageUtil.getMessage("poe.build.stat.energyshield");
-			case "liferegen" -> ko ? "생명재생" : "Life regen";
+			case "liferegen" -> ko ? "생명력 재생" : "Life regen";
 			case "armour" -> ko ? "방어도" : "Armour";
 			case "evasion" -> ko ? "회피" : "Evasion";
 			case "block" -> ko ? "막기" : "Block";
 			case "suppress" -> MessageUtil.getMessage("poe.build.stat.spellsuppressionchance");
-			case "maxres" -> ko ? "최대저항" : "Max res";
+			case "maxres" -> ko ? "최대 저항" : "Max res";
 			case "ward" -> MessageUtil.getMessage("poe.build.stat.ward");
 			case "mana" -> ko ? "마나" : "Mana";
-			case "rarity" -> ko ? "아이템희귀도" : "Item rarity";
-			case "movespeed" -> ko ? "이동속도" : "Move speed";
+			case "rarity" -> ko ? "아이템 희귀도" : "Item rarity";
+			case "movespeed" -> ko ? "이동 속도" : "Move speed";
 			case "str" -> ko ? "힘" : "Str";
 			case "dex" -> ko ? "민첩" : "Dex";
 			case "int" -> ko ? "지능" : "Int";
-			case "cluster" -> ko ? "클러스터주얼" : "Cluster jewels";
+			case "cluster" -> ko ? "클러스터 주얼" : "Cluster jewels";
 			case "unique" -> ko ? "고유 장비" : "Unique gear";
-			case "spellblock" -> ko ? "주문막기" : "Spell block";
-			case "spelldodge" -> ko ? "주문회피" : "Spell dodge";
-			case "phystaken" -> ko ? "물리피해전환" : "Phys taken as";
-			case "echarge" -> ko ? "인내충전" : "Endur. charges";
-			case "fcharge" -> ko ? "격노충전" : "Frenzy charges";
-			case "pcharge" -> ko ? "권능충전" : "Power charges";
-			case "mirror" -> ko ? "미러장비" : "Mirrored gear";
+			case "spellblock" -> ko ? "주문 막기" : "Spell block";
+			case "spelldodge" -> ko ? "주문 회피" : "Spell dodge";
+			case "phystaken" -> ko ? "물리 피해 전환" : "Phys taken as";
+			case "echarge" -> ko ? "인내 충전" : "Endur. charges";
+			case "fcharge" -> ko ? "격분 충전" : "Frenzy charges";
+			case "pcharge" -> ko ? "권능 충전" : "Power charges";
+			case "mirror" -> ko ? "복제 장비" : "Mirrored gear";
 			default -> k;
 		};
 	}
@@ -61,7 +61,7 @@
 		</div>
 		@if(ninjaBenchmark.specializations() != null && !ninjaBenchmark.specializations().isEmpty())
 			<div class="flex flex-wrap items-center gap-1">
-				<span class="text-base-content/60">${ko ? "특화 컬럼" : "Specializes in"}</span>
+				<span class="text-base-content/60">${ko ? "특화 항목" : "Specializes in"}</span>
 				@for(String sk : ninjaBenchmark.specializations())
 					<span class="badge badge-xs badge-warning badge-outline">${specLabel.apply(sk)}</span>
 				@endfor
@@ -79,7 +79,7 @@
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply("EHP", fmt.apply(ninjaBenchmark.ehp()))}
 			$unsafe{cell.apply("DPS", fmt.apply(ninjaBenchmark.dps()))}
-			$unsafe{cell.apply(ko ? "생명" : "Life", fmt.apply(ninjaBenchmark.life()))}
+			$unsafe{cell.apply(ko ? "생명력" : "Life", fmt.apply(ninjaBenchmark.life()))}
 			$unsafe{cell.apply("ES", fmt.apply(ninjaBenchmark.energyShield()))}
 			$unsafe{cell.apply(ko ? "재생" : "Regen", fmt.apply(ninjaBenchmark.lifeRegen()))}
 		</div>
@@ -97,18 +97,18 @@
 			$unsafe{cell.apply(ko ? "방어도" : "Armour", fmt.apply(ninjaBenchmark.armour()))}
 			$unsafe{cell.apply(ko ? "회피" : "Evasion", fmt.apply(ninjaBenchmark.evasion()))}
 			$unsafe{cell.apply(ko ? "막기" : "Block", ninjaBenchmark.block() + "%")}
-			$unsafe{cell.apply(ko ? "주문막기" : "Sp.block", ninjaBenchmark.spellBlock() + "%")}
+			$unsafe{cell.apply(ko ? "주문 막기" : "Sp.block", ninjaBenchmark.spellBlock() + "%")}
 			$unsafe{cell.apply(MessageUtil.getMessage("poe.build.stat.spellsuppressionchance"), ninjaBenchmark.suppress() + "%")}
 			@if(ninjaBenchmark.spellDodge() > 0)$unsafe{cell.apply(ko ? "주문회피" : "Sp.dodge", ninjaBenchmark.spellDodge() + "%")}@endif
 			@if(ninjaBenchmark.physTakenAs() > 0)$unsafe{cell.apply(ko ? "물리전환" : "Phys taken", ninjaBenchmark.physTakenAs() + "%")}@endif
 			$unsafe{cell.apply(ko ? "저항" : "Res", (ko ? "화" : "F") + ninjaBenchmark.fireRes() + NBSP + (ko ? "냉" : "C") + ninjaBenchmark.coldRes() + NBSP + (ko ? "번" : "L") + ninjaBenchmark.lightningRes() + NBSP + (ko ? "카" : "Ch") + ninjaBenchmark.chaosRes())}
 			$unsafe{cell.apply(ko ? "최대피격(최약)" : "Max hit (min)", ninjaBenchmark.lowestMax() > 0 ? fmt.apply(ninjaBenchmark.lowestMax()) : "—")}
 		</div>
-		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "자원·속성" : "Resources & attributes"}</div>
+		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "자원·능력치" : "Resources & attributes"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(MessageUtil.getMessage("poe.build.stat.ward"), fmt.apply(ninjaBenchmark.ward()))}
 			$unsafe{cell.apply(ko ? "마나" : "Mana", fmt.apply(ninjaBenchmark.mana()))}
-			$unsafe{cell.apply(ko ? "이동속도" : "Move spd", ninjaBenchmark.movementSpeed() + "%")}
+			$unsafe{cell.apply(ko ? "이동 속도" : "Move spd", ninjaBenchmark.movementSpeed() + "%")}
 			$unsafe{cell.apply(ko ? "희귀도" : "Rarity", ninjaBenchmark.itemRarity() + "%")}
 			$unsafe{cell.apply(ko ? "힘·민·지" : "Str·Dex·Int", ninjaBenchmark.str() + NBSP + "·" + NBSP + ninjaBenchmark.dex() + NBSP + "·" + NBSP + ninjaBenchmark.intel())}
 		</div>
@@ -117,12 +117,12 @@
 			$unsafe{cell.apply(ko ? "충전(인·격·권)" : "Charges E·F·P", ninjaBenchmark.enduranceCharges() + NBSP + "·" + NBSP + ninjaBenchmark.frenzyCharges() + NBSP + "·" + NBSP + ninjaBenchmark.powerCharges())}
 			$unsafe{cell.apply(ko ? "클러스터(대·중·소)" : "Cluster L·M·S", ninjaBenchmark.largeCluster() + NBSP + "·" + NBSP + ninjaBenchmark.mediumCluster() + NBSP + "·" + NBSP + ninjaBenchmark.smallCluster())}
 			$unsafe{cell.apply(ko ? "고유" : "Uniques", String.valueOf(ninjaBenchmark.uniqueEquip()))}
-			@if(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours() > 0)$unsafe{cell.apply(ko ? "미러" : "Mirrored", String.valueOf(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours()))}@endif
+			@if(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours() > 0)$unsafe{cell.apply(ko ? "복제" : "Mirrored", String.valueOf(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours()))}@endif
 			$unsafe{cell.apply(ko ? "최대피격 물·화" : "Max hit Ph·F", fmt.apply(ninjaBenchmark.physicalMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.fireMax()))}
 			$unsafe{cell.apply(ko ? "최대피격 냉·번·카" : "Max hit C·L·Ch", fmt.apply(ninjaBenchmark.coldMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.lightningMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.chaosMax()))}
 		</div>
 		@if(ninjaBenchmark.topMasteries() != null && !ninjaBenchmark.topMasteries().isEmpty() && (ninjaBenchmark.facets() == null || !ninjaBenchmark.facets().containsKey("masteries")))
-			<div class="text-base-content/60">${ko ? "실빌드 마스터리" : "Common masteries"}: ${String.join(" · ", ninjaBenchmark.topMasteries())}</div>
+			<div class="text-base-content/60">${ko ? "실빌드 숙련" : "Common masteries"}: ${String.join(" · ", ninjaBenchmark.topMasteries())}</div>
 		@endif
 		<%-- 패싯(사이드바 집계) — 마스터리/룬크래프트/문신/무기/판테온/아틀라스 등 전체 모집단 사용률(실행 전 미리보기는 3줄) --%>
 		@template.poe.htmx.benchFacets(bench = ninjaBenchmark, rows = 3)
@@ -130,7 +130,7 @@
 		@if(realStart != null)
 			<div class="flex flex-wrap items-center gap-2 pt-1" data-real-start-hint>
 				<a class="btn btn-outline btn-xs" href="/poe/build?ascendancy=${java.net.URLEncoder.encode(realStart.ascendancy(), java.nio.charset.StandardCharsets.UTF_8)}&skill=${java.net.URLEncoder.encode(realStart.mainSkill(), java.nio.charset.StandardCharsets.UTF_8)}">${ko ? "실빌드에서 출발하기" : "Start from a real build"}</a>
-				<span class="text-[11px] text-base-content/60">${ko ? "대표 실빌드(" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — 빌드 화면에서 가이드·자동 다듬기" : "Representative build (" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — refine it in the build view"}</span>
+				<span class="text-[11px] text-base-content/60">${ko ? "대표 실빌드(" + (realStart.ascendancy() != null && realStart.ascendancy().equals(ninjaBenchmark.ascendancy()) ? ascLabel : realStart.ascendancy()) + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — 빌드 화면에서 가이드·자동 다듬기" : "Representative build (" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — refine it in the build view"}</span>
 			</div>
 		@endif
 		<div class="text-[10px] text-base-content/60">${ko ? "poe.ninja 96레벨+ 실빌드 전 컬럼 — 이상치 캐릭터 제외 후 중앙값. 이 성향에 맞춰 시뮬이 강점 축을 밉니다" : "poe.ninja lv96+ all columns — median after dropping outlier characters; sim pushes this build's strong axis"}</div>

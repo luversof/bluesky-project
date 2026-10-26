@@ -10,11 +10,11 @@ import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 
 /**
- * 업그레이드 가이드의 <b>레어 목표</b> — 지금 낀 아이템과 <b>같은 베이스</b>에 실제로 붙을 수 있는 접두·접미를 <b>2티어</b>(그 베이스 풀에서 최상위 바로
- * 아래 티어, 롤은 그 티어의 중간값)로 얹은 아이템을 만든다. 최상위 티어는 시장에 거의 없어 사기 어렵다(사용자 지적 2026-09-29) — 2티어가 "살 수 있는 좋은
+ * 업그레이드 가이드의 <b>레어 목표</b> — 지금 낀 아이템과 <b>같은 베이스</b>에 실제로 붙을 수 있는 접두·접미를 <b>2등급</b>(그 베이스 풀에서 최상위 바로
+ * 아래 등급, 롤은 그 등급의 중간값)로 얹은 아이템을 만든다. 최상위 등급은 시장에 거의 없어 사기 어렵다(사용자 지적 2026-09-29) — 2등급이 "살 수 있는 좋은
  * 레어"의 기준이다.
  *
- * <p>티어는 반드시 <b>풀별 목록</b>({@link PoeModDataService#poolTierIds})으로 고른다. mods.json 의 티어 사다리는 모든 클래스를
+ * <p>등급은 반드시 <b>풀별 목록</b>({@link PoeModDataService#poolTierIds})으로 고른다. mods.json 의 등급 사다리는 모든 클래스를
  * 합친 것이라, 그걸로 고르면 장화에 갑옷 전용 생명력(+160~174)이 붙는다.
  *
  * <p>무엇을 얹을지는 여기서 정하지 않는다 — 후보만 추려 주고, 가이드가 하나씩 끼워 실측해 고른다.
@@ -27,7 +27,7 @@ public class PoeRareTargetService {
    *
    * @param en PoB 원문 — 범위 "(a-b)" 를 그대로 둬 PoB 가 중간 롤로 계산한다
    * @param ko 표시용 — "a~b"
-   * @param tierRank 그 베이스 풀에서의 티어 순위(1 = 최상위). 2티어가 없는 옵션(단일 티어)은 1
+   * @param tierRank 그 베이스 풀에서의 등급 순위(1 = 최상위). 2등급이 없는 옵션(단일 등급)은 1
    * @param families 게임 ModFamily 값 — 둘이 겹치는 옵션은 한 아이템에 같이 못 붙는다(방어도+생명력 복합과 회피+생명력 복합 등)
    */
   public record Affix(
@@ -125,7 +125,7 @@ public class PoeRareTargetService {
       return Optional.empty();
     }
     // 변형 키 확정만 전체 풀(forItemClass)에서 받고, 옵션 사다리는 게임 ModTypeKey 로 묶인 풀별 묶음을 쓴다 —
-    // mods.json 패밀리는 Id 이름 규칙으로 묶여 억제 최상위(ChanceToSuppressSpells5__)가 떨어져 나가 2티어를 잘못 셌다.
+    // mods.json 패밀리는 Id 이름 규칙으로 묶여 억제 최상위(ChanceToSuppressSpells5__)가 떨어져 나가 2등급을 잘못 셌다.
     String resolved = mods.variant() == null ? "" : mods.variant();
     List<PoeModDataService.PoolGroup> groups =
         modData.poolGroups(base.itemClass(), resolved, base.name());
@@ -158,7 +158,7 @@ public class PoeRareTargetService {
         new Plan(base, base.itemClass(), resolved, forced, candidates, keepLines(currentItemText)));
   }
 
-  /** 사다리의 2티어(단일 티어면 1티어) — 접두/접미가 아니거나 문장이 없으면 null. */
+  /** 사다리의 2등급(단일 등급이면 1등급) — 접두/접미가 아니거나 문장이 없으면 null. */
   private Affix secondTier(PoeModDataService.PoolGroup group) {
     boolean prefix = "prefix".equals(group.gen());
     if (!prefix && !"suffix".equals(group.gen())) {
@@ -245,7 +245,7 @@ public class PoeRareTargetService {
   }
 
   /**
-   * PoB 아이템 원문 — 베이스 임플리싯은 범위 그대로(PoB 중간 롤), 옵션은 2티어 범위. 품질·홈은 지금 아이템 것을 옮긴다(방어도·에너지 보호막이 품질에 따라
+   * PoB 아이템 원문 — 베이스 고정 속성은 범위 그대로(PoB 중간 롤), 옵션은 2등급 범위. 품질·홈은 지금 아이템 것을 옮긴다(방어도·에너지 보호막이 품질에 따라
    * 달라지고, 주 스킬 그룹이 이 칸의 홈에 꽂혀 있을 수 있다).
    */
   public String itemText(Plan plan, List<Affix> affixes) {

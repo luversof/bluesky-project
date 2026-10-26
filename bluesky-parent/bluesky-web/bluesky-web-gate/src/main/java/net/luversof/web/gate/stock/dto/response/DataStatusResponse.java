@@ -222,12 +222,6 @@ public record DataStatusResponse(
   }
 
   /**
-   * 마지막 시세 일자가 '거래가 없던 날'로 의심되는지.
-   *
-   * <p>그 날 행이 있는 종목이 전부 거래량 0 이고 종가도 직전 거래일과 같다면, 그 날은 확정 종가가 없는 날이다. 한 종목만 그런 것은 거래가 없었을 뿐일 수 있으므로
-   * 전 종목이 그럴 때만 의심한다.
-   */
-  /**
    * 거래량 0 행이 전체에서 차지하는 비율(%). 관리 화면의 데이터 품질 표시용.
    *
    * <p>실측 2026-08-22: 57,459 행 중 1,352 행(2.35%)이 거래량 0 이고, 그중 종가가 직전 행과 다른 것은 1 행뿐이었다. 즉 이 행들은 값을
@@ -239,6 +233,12 @@ public record DataStatusResponse(
         : 0.0;
   }
 
+  /**
+   * 마지막 시세 일자가 '거래가 없던 날'로 의심되는지.
+   *
+   * <p>그 날 행이 있는 종목이 전부 거래량 0 이고 종가도 직전 거래일과 같다면, 그 날은 확정 종가가 없는 날이다. 한 종목만 그런 것은 거래가 없었을 뿐일 수 있으므로
+   * 전 종목이 그럴 때만 의심한다.
+   */
   public boolean priceHistoryLastDateLooksUntraded() {
     return priceHistoryItemCount > 0
         && priceHistoryZeroVolumeCount == priceHistoryItemCount

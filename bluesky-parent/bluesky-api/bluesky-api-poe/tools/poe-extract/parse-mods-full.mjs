@@ -346,7 +346,8 @@ const craftCorruptedMods = new Map();
 // 1b) 바알 오브 부패 임플리싯(GenerationType 5) — 접두/접미와 같은 스폰웨이트 태그 매칭을 쓰지만
 // Name 이 빈 문자열이라 별도 수집. 영향력과 무관하게 붙으므로 영향력 없음("") 풀에만 담는다.
 // 플라스크 인챈트(주입 gen21/점화 gen22 오브) — 도메인 1 이지만 flask 태그로만 스폰. 플라스크 풀에만 담는다.
-const ENCHANT_GEN = { 21: { name: "Instilling", nameKo: "주입 오브" }, 22: { name: "Enkindling", nameKo: "점화 오브" } };
+// 출처 오브 이름 = 게임 BaseItemTypes(10-23 Q89 — 예전 '주입 오브' · '점화 오브')
+const ENCHANT_GEN = { 21: { name: "Instilling Orb", nameKo: "주입의 오브" }, 22: { name: "Enkindling Orb", nameKo: "자극의 오브" } };
 const enchantCandidates = [];
 mods.forEach((mod, index) => {
 	if (mod.Domain !== 1 || !ENCHANT_GEN[mod.GenerationType]) return;
@@ -426,7 +427,7 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 				fam.tiers.set(index, {
 					id: mod.Id,
 					name: "Corrupted",
-					nameKo: "부패",
+					nameKo: "타락", // 게임 ClientStrings ItemPopupCorrupted(10-23 Q89 — 예전 '부패')
 					ilvl: mod.Level,
 					weight: weight,
 					en: describe(rollValues(mod, "max"), "English"), ...remOf(), // 바로 위 영어 호출의 리마인더 Id(C131)

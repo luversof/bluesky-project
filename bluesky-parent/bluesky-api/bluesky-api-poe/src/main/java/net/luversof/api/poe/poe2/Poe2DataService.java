@@ -73,6 +73,9 @@ public class Poe2DataService {
   /** 패시브 트리 색인(빌드 요약용) — 노드 id → 이름·종류, 직업·전직 한국어. 트리 JSON 은 2MB 라 처음 쓸 때 읽는다. */
   private volatile TreeIndex treeIndex;
 
+  /** 영문 이름 → 한글(10-25 Q172) — 젬 · 젬이 주는 스킬 · 트리 노드 · 고유 순. 처음 쓸 때 만들고 reload 때 버린다. */
+  private volatile Map<String, String> nameKoIndex;
+
   /** 옵션 번역 사전(빌드 요약용) — 처음 쓸 때 만들고 reload 때 버린다. */
   private volatile Poe2ModTranslator modTranslator;
 
@@ -154,6 +157,7 @@ public class Poe2DataService {
         read("rare-name-words.json", RareWords.class, new RareWords(Map.of(), Map.of(), Map.of()));
     uniques = read("uniques.json", Poe2.UniqueData.class, new Poe2.UniqueData("", List.of()));
     treeIndex = null;
+    nameKoIndex = null;
     modTranslator = null;
     keywordIdsByTemplate = null;
     affixNameKo = null;
@@ -459,7 +463,7 @@ public class Poe2DataService {
         .toList();
   }
 
-  /** 효과가 그 아이템 클래스에 들어가는가 — 분류에 대상 클래스가 적혀 있으면 그것으로, 없으면(모든 장비·방어구·무도 무기) 분류 이름으로. */
+  /** 효과가 그 아이템 종류에 들어가는가 — 분류에 대상 클래스가 적혀 있으면 그것으로, 없으면(모든 장비·방어구·무도 무기) 분류 이름으로. */
   static boolean appliesTo(Poe2.AugmentEffect e, String itemClass) {
     if (e.targetClasses() != null && !e.targetClasses().isEmpty()) {
       return e.targetClasses().contains(itemClass);
@@ -586,16 +590,77 @@ public class Poe2DataService {
     return p != null && s != null ? p + " " + s : null;
   }
 
+  /**
+   * 영문 이름의 한글 — 젬 → 젬이 주는 스킬(보조 · 메타가 주는 Doom Blast 등) → 트리 노드(핵심노드 · 트리가 주는 스킬) → 고유. 없으면 null. 시뮬
+   * 스킬 상자 · 아키타입 미리보기가 젬 목록에만 기대 보조 · 트리가 주는 스킬과 핵심노드가 영어로 남았다(10-25 Q172).
+   */
+  public String nameKo(String en) {
+    if (en == null || en.isBlank()) {
+      return null;
+    }
+    Map<String, String> idx = nameKoIndex;
+    if (idx == null) {
+      Map<String, String> m = new HashMap<>();
+      java.util.function.BiConsumer<String, String> put =
+          (k, v) -> {
+            if (k != null && v != null && !v.isBlank()) {
+              m.putIfAbsent(k.toLowerCase(Locale.ROOT), v);
+            }
+          };
+      for (Poe2.Gem g : gems.gems()) {
+        put.accept(g.name(), g.nameKo());
+      }
+      for (Poe2.Gem g : gems.gems()) {
+        if (g.grantedSkills() != null) {
+          for (Poe2.GrantedSkill s : g.grantedSkills()) {
+            put.accept(s.name(), s.nameKo());
+          }
+        }
+      }
+      for (TreeNodeLite n : treeIndex().nodes().values()) {
+        put.accept(n.name(), n.nameKo());
+      }
+      for (Poe2.Unique u : uniques.items()) {
+        put.accept(u.name(), u.nameKo());
+      }
+      // 게임 ActiveSkills 표(영어 · 한국어 DisplayedName, Id 로 짝) — 젬 · 트리 · 고유 어디에도 없는 스킬(진이 주는 'Ruzhan's
+      // Brand' 등,
+      //   10-25 Q208). 틀 이름('Companion: {0}')은 빼서 한/영이 섞이지 않게
+      try {
+        Path enFile = dataDir.resolve("work/tables/English/ActiveSkills.json");
+        Path koFile = dataDir.resolve("work/tables/Korean/ActiveSkills.json");
+        if (Files.exists(enFile) && Files.exists(koFile)) {
+          JsonMapper jm = JsonMapper.builder().build();
+          Map<String, String> koById = new HashMap<>();
+          for (var r : jm.readTree(Files.readString(koFile))) {
+            koById.put(r.path("Id").asText(""), r.path("DisplayedName").asText(""));
+          }
+          for (var r : jm.readTree(Files.readString(enFile))) {
+            String n = r.path("DisplayedName").asText("");
+            if (!n.contains("{")) {
+              put.accept(n, koById.get(r.path("Id").asText("")));
+            }
+          }
+        }
+      } catch (java.io.IOException | RuntimeException e) {
+        logger.info("ActiveSkills 이름 표를 못 읽음 — 젬 · 트리 · 고유 이름만: {}", e.toString());
+      }
+      idx = Map.copyOf(m);
+      nameKoIndex = idx;
+    }
+    return idx.get(en.toLowerCase(Locale.ROOT));
+  }
+
   public Optional<Poe2.Gem> gemByName(String name) {
     return gems.gems().stream().filter(g -> g.name().equalsIgnoreCase(name)).findFirst();
   }
 
-  /** 옵션 번역 사전 — 옵션 풀 티어를 먼저(검증된 풀 문구가 이긴다), 이어서 베이스 암시·고유(변형 포함)·증강물 효과. */
+  /** 옵션 번역 사전 — 옵션 풀 등급을 먼저(검증된 풀 문구가 이긴다), 이어서 베이스 암시·고유(변형 포함)·증강물 효과. */
   @SuppressWarnings("unchecked")
   // 옵션 틀(§ 정규화, 번역과 같은 규칙) → 강조 용어 Id — 빌드 요약 레어 툴팁의 Alt 설명(10-04 C132)
   private volatile Map<String, List<String>> keywordIdsByTemplate;
 
-  /** 영문 옵션 줄들의 강조 용어 정의(등장 순 · 중복 제거). 옵션 풀 티어에서 찾고, 없으면 빈 목록. */
+  /** 영문 옵션 줄들의 강조 용어 정의(등장 순 · 중복 제거). 옵션 풀 등급에서 찾고, 없으면 빈 목록. */
   public List<Poe2.Keyword> keywordsFor(List<String> lines) {
     Map<String, List<String>> index = keywordIdsByTemplate;
     if (index == null) {
@@ -744,7 +809,7 @@ public class Poe2DataService {
   }
 
   /**
-   * 고유가 있는 아이템 클래스(영문 키 · 한국어) — 목록 화면 칩.
+   * 고유가 있는 아이템 종류(영문 키 · 한국어) — 목록 화면 칩.
    *
    * <p>분류(category)와 순서는 베이스 목록 칩과 같게 베이스 클래스에서 가져온다(10-01: 고유의 category 는 부위 이름 boots·wand 라 화면이
    * 분류별 줄로 묶을 때 대부분 "기타"로 떨어졌고, 순서도 데이터에 처음 나온 순이었다). 베이스에 없는 클래스만 고유 값 그대로 뒤에 붙인다.
@@ -766,7 +831,7 @@ public class Poe2DataService {
     for (Poe2.ItemClass c : bases.classes()) {
       Poe2.ItemClass u = fromUniques.remove(c.key());
       if (u != null) {
-        out.add(new Poe2.ItemClass(c.key(), u.ko(), c.category(), c.en()));
+        out.add(new Poe2.ItemClass(c.key(), u.ko(), c.category(), c.en(), c.tipEn(), c.tipKo()));
       }
     }
     out.addAll(fromUniques.values());

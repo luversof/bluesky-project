@@ -1,6 +1,7 @@
 @import net.luversof.web.gate.util.CspNonceHolder
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param boolean isAuthenticated = false
 @param net.luversof.web.gate.stock.dto.response.DataStatusResponse dataStatus = null
@@ -116,8 +117,7 @@
 				 종목 위주로 도는 결과라 데이터가 틀린 것은 아니지만, 밝히지 않으면 없는 최신성을 믿게 된다. --%>
 			@if(dataStatus.stockItemCount() > 0 && dataStatus.priceHistoryLastDate() != null)
 				<div class="text-[11px] text-base-content/60 mb-2">
-					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.history.coverage"),
-						String.format("%,d", dataStatus.stockItemCount()),
+					${StockViewSupport.msg("stock.admin.price.history.coverage", String.format("%,d", dataStatus.stockItemCount()),
 						String.format("%,d", dataStatus.priceHistoryLastDateItemCount()),
 						String.format("%,d", dataStatus.priceHistoryNoHistoryItemCount()))}
 				</div>
@@ -130,8 +130,7 @@
 						@endfor
 						@if(dataStatus.priceHistoryNoHistoryItemCount() > dataStatus.priceHistoryNoHistoryItemRows().size())
 							<div data-list-truncated="no-history">
-								${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.list.truncated"),
-									String.valueOf(dataStatus.priceHistoryNoHistoryItemRows().size()),
+								${StockViewSupport.msg("stock.admin.list.truncated", String.valueOf(dataStatus.priceHistoryNoHistoryItemRows().size()),
 									String.valueOf(dataStatus.priceHistoryNoHistoryItemCount() - dataStatus.priceHistoryNoHistoryItemRows().size()))}
 							</div>
 						@endif
@@ -143,8 +142,7 @@
 				 (실측 2026-08-22: 2026-08-20 행 9건이 전부 거래량 0, 종가는 08-19 와 동일) --%>
 			@if(dataStatus.priceHistoryLastDateLooksUntraded())
 				<div class="alert alert-warning py-2 px-3 text-xs mb-2" role="alert">
-					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.untraded"),
-						String.valueOf(dataStatus.priceHistoryLastDate()),
+					${StockViewSupport.msg("stock.admin.price.untraded", String.valueOf(dataStatus.priceHistoryLastDate()),
 						String.valueOf(dataStatus.priceHistoryItemCount()),
 						String.valueOf(dataStatus.priceHistoryPreviousDate()))}
 				</div>
@@ -156,8 +154,7 @@
 				  쌍방울 2025-05-08 한 건이고 13,450 -> 2,690 으로 정확히 1/5 - 액면분할이다) --%>
 			@if(dataStatus.priceHistoryRowCount() > 0)
 				<div class="text-[11px] text-base-content/60 mb-2">
-					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality"),
-						String.format("%,d", dataStatus.priceHistoryRowCount()),
+					${StockViewSupport.msg("stock.admin.price.quality", String.format("%,d", dataStatus.priceHistoryRowCount()),
 						String.format("%,d", dataStatus.priceHistoryZeroVolumeRowCount()),
 						String.format("%.2f", dataStatus.priceHistoryZeroVolumeRatioPercent()))}
 					<%-- "그중" 은 바로 위의 거래량 0 행을 받는다. 2026-09-12 까지 이 문장이 중복 행 문장 뒤에 있어
@@ -165,20 +162,18 @@
 						 앞 문장의 1 건을 받는 것처럼 읽혔다(실제로는 앞은 2026-09-09 기준, 이것은 쌍방울 2025-05-08 로 무관).
 						 받는 말 바로 뒤로 옮긴다. --%>
 					@if(dataStatus.priceHistoryZeroVolumeChangedCloseCount() > 0)
-						&middot; ${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.changed"),
-							String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseCount()))}
+						&middot; ${StockViewSupport.msg("stock.admin.price.quality.changed", String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseCount()))}
 					@endif
 					@if(dataStatus.priceHistoryZeroVolumeChangedCloseRows() != null)
 						@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.ZeroVolumeChangedCloseRow row : dataStatus.priceHistoryZeroVolumeChangedCloseRows())
 							<%-- 두 숫자만 보면 시세 수집이 깨진 것처럼 보인다. 배율이 깔끔한 정수비면 액면분할·병합이므로
 								 그 비를 함께 적는다(실측 2026-08-23: 쌍방울 2025-05-08 13,450 -> 2,690 = 정확히 1/5). --%>
-							<div class="font-mono" data-zero-volume-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()}@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.split"), row.splitRatioLabel())})</span>@endif</div>
+							<div class="font-mono" data-zero-volume-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()}@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${StockViewSupport.msg("stock.admin.price.quality.split", row.splitRatioLabel())})</span>@endif</div>
 						@endfor
 						<%-- 이 목록도 상한이 있다(질의 LIMIT 5). 같은 화면의 다른 두 목록과 같은 규칙으로 밝힌다. --%>
 						@if(dataStatus.priceHistoryZeroVolumeChangedCloseCount() > dataStatus.priceHistoryZeroVolumeChangedCloseRows().size())
 							<div class="text-[11px] text-base-content/60" data-list-truncated="zero-volume">
-								${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.list.truncated"),
-									String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseRows().size()),
+								${StockViewSupport.msg("stock.admin.list.truncated", String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseRows().size()),
 									String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseCount() - dataStatus.priceHistoryZeroVolumeChangedCloseRows().size()))}
 							</div>
 						@endif
@@ -188,8 +183,7 @@
 						 이 구분에 쓸 유일한 값(sameAll)이 api-stock 에서 오는데도 화면에 없었다
 						 (실측 2026-08-23: 9종목 중 종가 동일 9 / 전 항목 동일 0 - 복제는 아니다). --%>
 					@if(dataStatus.priceHistoryItemCount() > 0)
-						<div>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.duplicate.rows"),
-							String.valueOf(dataStatus.priceHistorySameCloseCount()),
+						<div>${StockViewSupport.msg("stock.admin.price.duplicate.rows", String.valueOf(dataStatus.priceHistorySameCloseCount()),
 							String.valueOf(dataStatus.priceHistoryItemCount()),
 							String.valueOf(dataStatus.priceHistorySameAllCount()))}</div>
 					@endif
@@ -201,18 +195,16 @@
 						 곱한 뒤 호가단위로 맞추므로 30% 를 아주 조금 넘길 수 있다(실측 2026-09-10: 한화오션
 						 2015-07-15 -30.00036%). 그 한 행이 빠져 5행 -> 4행이 됐고, 남은 4행 중 분할로 설명되는 것은 1행이다. --%>
 					@if(dataStatus.priceHistoryPriceLimitBreachCount() > 0)
-						<div class="mt-1">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.limit"),
-							String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount()))}</div>
+						<div class="mt-1">${StockViewSupport.msg("stock.admin.price.quality.limit", String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount()))}</div>
 						@if(dataStatus.priceHistoryPriceLimitBreachRows() != null)
 							@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.PriceLimitBreachRow row : dataStatus.priceHistoryPriceLimitBreachRows())
-								<div class="font-mono" data-price-limit-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}" data-price-limit-gap="${row.gapDays()}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()} (${StockFormatUtil.signedPct(row.changePercent(), 1)})@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.quality.split"), row.splitRatioLabel())})</span>@endif</div>
+								<div class="font-mono" data-price-limit-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}" data-price-limit-gap="${row.gapDays()}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()} (${StockFormatUtil.signedPct(row.changePercent(), 1)})@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${StockViewSupport.msg("stock.admin.price.quality.split", row.splitRatioLabel())})</span>@endif</div>
 							@endfor
 							<%-- 목록에는 상한이 있다. 개수만 크게 적고 몇 줄만 보이면 나머지가 있는 줄 모른다.
 								 (같은 화면의 다른 목록도 같은 규칙) --%>
 							@if(dataStatus.priceHistoryPriceLimitBreachCount() > dataStatus.priceHistoryPriceLimitBreachRows().size())
 								<div class="text-[11px] text-base-content/60" data-list-truncated="limit-breach">
-									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.list.truncated"),
-										String.valueOf(dataStatus.priceHistoryPriceLimitBreachRows().size()),
+									${StockViewSupport.msg("stock.admin.list.truncated", String.valueOf(dataStatus.priceHistoryPriceLimitBreachRows().size()),
 										String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount() - dataStatus.priceHistoryPriceLimitBreachRows().size()))}
 								</div>
 							@endif
@@ -224,8 +216,7 @@
 				 이어지지 않았고 분배금을 두 번 셌다. 원주가가 빈 날은 직전 날 배율로 메운 추정값이 평가에 쓰이므로 몇 날인지 밝힌다. --%>
 			@if(dataStatus.rawClosePriceDayCount() != null && dataStatus.rawClosePriceDayCount() > 0)
 				<div class="text-[11px] text-base-content/60 mb-2" data-raw-close-missing="${dataStatus.rawClosePriceMissingDayCount()}">
-					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.price.raw.coverage"),
-						String.format("%,d", dataStatus.rawClosePriceDayCount()),
+					${StockViewSupport.msg("stock.admin.price.raw.coverage", String.format("%,d", dataStatus.rawClosePriceDayCount()),
 						String.format("%,d", dataStatus.rawClosePriceMissingDayCount()))}
 					@if(dataStatus.rawClosePriceMissingDayCount() != null && dataStatus.rawClosePriceMissingDayCount() > 0)
 						&middot; ${MessageUtil.getMessage("stock.admin.price.raw.missing")}
@@ -237,12 +228,10 @@
 				 함께 어긋나므로 여기서 밝힌다. 밀림 판정은 종목 자신의 과거 최대 간격으로 한다. --%>
 			@if(dataStatus.monthlyDividendPayoutLastDate() != null)
 				<div class="text-[11px] text-base-content/60 mb-2">
-					${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.payout.reference"),
-						dataStatus.monthlyDividendPayoutLastDate().toString())}
+					${StockViewSupport.msg("stock.admin.payout.reference", dataStatus.monthlyDividendPayoutLastDate().toString())}
 					@if(dataStatus.monthlyDividendPayoutOverdueRows() != null && !dataStatus.monthlyDividendPayoutOverdueRows().isEmpty())
 						@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.MonthlyDividendPayoutOverdueRow row : dataStatus.monthlyDividendPayoutOverdueRows())
-							<div data-payout-elapsed="${row.elapsedDays()}" data-payout-widest="${row.widestGapDays()}" class="text-warning">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.payout.reference.overdue"),
-								String.valueOf(dataStatus.monthlyDividendPayoutOverdueRows().size()),
+							<div data-payout-elapsed="${row.elapsedDays()}" data-payout-widest="${row.widestGapDays()}" class="text-warning">${StockViewSupport.msg("stock.admin.payout.reference.overdue", String.valueOf(dataStatus.monthlyDividendPayoutOverdueRows().size()),
 								row.stockItemName(),
 								String.valueOf(row.elapsedDays()),
 								row.lastPayDate() != null ? row.lastPayDate().toString() : "-",
@@ -262,7 +251,7 @@
 				@if(ledgerIntegrity == null)
 					<span class="text-base-content/60">${MessageUtil.getMessage("stock.admin.ledger.unavailable")}</span>
 				@else
-					<span class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.ledger.checked"), ledgerIntegrity.dividendCount(), ledgerIntegrity.tradeCount())}</span>
+					<span class="text-xs text-base-content/60">${StockViewSupport.msg("stock.admin.ledger.checked", ledgerIntegrity.dividendCount(), ledgerIntegrity.tradeCount())}</span>
 					<%-- 한 행이 여러 규칙에 걸린다. 건수만 보면 할 일이 실제보다 커 보인다
 						 (실측 2026-08-23: 45건이 실제로는 29개 행). --%>
 					<%-- 계좌별로 나눠 보여야 어디부터 손대야 할지 알 수 있다
@@ -274,7 +263,7 @@
 					@endif
 					@if(ledgerIntegrity.hasOverlappingRows())
 						<span class="text-xs text-base-content/60" data-ledger-distinct="${ledgerIntegrity.distinctRowCount()}">
-							${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.ledger.distinct.rows"), ledgerIntegrity.totalFindingCount(), ledgerIntegrity.distinctRowCount())}
+							${StockViewSupport.msg("stock.admin.ledger.distinct.rows", ledgerIntegrity.totalFindingCount(), ledgerIntegrity.distinctRowCount())}
 						</span>
 					@endif
 				@endif
@@ -289,7 +278,7 @@
 				  배당 8행이 전부 여기 속하고 원인은 과세표준을 옛 수량 77주로 잡은 것 하나다). --%>
 			@if(ledgerIntegrity != null && ledgerIntegrity.hasMultiReasonRows())
 				<div class="alert alert-info py-2 px-3 text-xs mt-2 block" data-ledger-multi-rows="${ledgerIntegrity.multiReasonRows().size()}" role="status">
-					<div class="font-medium">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.ledger.multi.reason.rows"), ledgerIntegrity.multiReasonRows().size())}</div>
+					<div class="font-medium">${StockViewSupport.msg("stock.admin.ledger.multi.reason.rows", ledgerIntegrity.multiReasonRows().size())}</div>
 					@for(net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse.RowFindingSummary row : ledgerIntegrity.multiReasonRows())
 						<div class="opacity-80" data-ledger-row-codes="${row.codes().size()}">
 							${row.date()} ${row.stockItemName()}@if(row.accountName() != null) [${row.accountName()}]@endif
@@ -314,7 +303,7 @@
 							@if(finding.examples().size() > shownCount)
 								<details class="mt-1" data-ledger-collapsed="${finding.examples().size() - shownCount}">
 									<summary class="cursor-pointer select-none opacity-70">
-										${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.ledger.more.examples"), finding.examples().size() - shownCount)}
+										${StockViewSupport.msg("stock.admin.ledger.more.examples", finding.examples().size() - shownCount)}
 									</summary>
 									@for(int exampleIndex = shownCount; exampleIndex < finding.examples().size(); exampleIndex++)
 										!{var example = finding.examples().get(exampleIndex);}
@@ -324,7 +313,7 @@
 							@endif
 							@if(finding.count() > finding.examples().size())
 								<div class="opacity-60 mt-1" data-ledger-truncated="${finding.count() - finding.examples().size()}">
-									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.admin.ledger.truncated"), finding.count() - finding.examples().size())}
+									${StockViewSupport.msg("stock.admin.ledger.truncated", finding.count() - finding.examples().size())}
 								</div>
 							@endif
 						@endif
@@ -373,12 +362,12 @@
 		function readMap() {
 			try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch (e) { return {}; }
 		}
-		// 저장된 실행 시각 표시
+		<%-- 저장된 실행 시각 표시 --%>
 		var lastRunMap = readMap();
 		document.querySelectorAll('[data-admin-last-run]').forEach(function(el) {
 			var ts = lastRunMap[el.getAttribute('data-admin-last-run')];
-			// 시간대도 앱이 정한다(common.js 의 appTimeZone). 인자를 빼면 브라우저 존을 따라
-			// 같은 기록이 기기마다 다른 날짜로 읽힌다(실측 2026-09-16: 9/16 10:30 vs 9/15 8:30).
+			<%-- 시간대도 앱이 정한다(common.js 의 appTimeZone). 인자를 빼면 브라우저 존을 따라 --%>
+			<%-- 같은 기록이 기기마다 다른 날짜로 읽힌다(실측 2026-09-16: 9/16 10:30 vs 9/15 8:30). --%>
 			if (ts) {
 				el.textContent = new Date(ts).toLocaleString(appLocale(), { timeZone: appTimeZone() });
 			}
@@ -392,11 +381,11 @@
 			});
 		}
 
-		// 전체 시세 갱신은 뒤에서 돈다 - 시작 응답을 받은 뒤 진행 상황을 물어보고, 끝나면 새로고침한다.
+		<%-- 전체 시세 갱신은 뒤에서 돈다 - 시작 응답을 받은 뒤 진행 상황을 물어보고, 끝나면 새로고침한다. --%>
 		var progressBox = document.getElementById("price-history-progress");
 		var progressTimer = null;
-		// 이 화면에서 시작한 작업인가. 지난 실행의 DONE 을 지금 끝난 것으로 알리면 안 된다
-		// (실측 2026-09-22: 화면을 열 때마다 2 분 전 결과를 띄우고 새로고침해 되풀이됐다).
+		<%-- 이 화면에서 시작한 작업인가. 지난 실행의 DONE 을 지금 끝난 것으로 알리면 안 된다 --%>
+		<%-- (실측 2026-09-22: 화면을 열 때마다 2 분 전 결과를 띄우고 새로고침해 되풀이됐다). --%>
 		var watchingOurRun = false;
 
 		function showProgress(kind, values) {
@@ -423,7 +412,7 @@
 				.then(function(body) {
 					if (!body) return;
 					if (body.status === "RUNNING") {
-						// 다른 탭에서 시작했거나 새로고침 중이던 작업도 여기서 이어 본다.
+						<%-- 다른 탭에서 시작했거나 새로고침 중이던 작업도 여기서 이어 본다. --%>
 						watchingOurRun = true;
 						if (!progressTimer) progressTimer = setInterval(pollPriceHistoryJob, 1500);
 						showProgress("running", [body.processedSymbolCount, body.targetSymbolCount]);
@@ -431,7 +420,7 @@
 					}
 					stopWatching();
 					if (!watchingOurRun) {
-						// 지난 실행의 결과다 - 지금 일이 아니므로 아무 말도 하지 않는다.
+						<%-- 지난 실행의 결과다 - 지금 일이 아니므로 아무 말도 하지 않는다. --%>
 						return;
 					}
 					watchingOurRun = false;
@@ -440,10 +429,10 @@
 						return;
 					}
 					showProgress("done", [body.targetSymbolCount, (body.failedSymbols || []).length]);
-					// 값이 실제로 바뀌었으니 화면을 다시 그린다(기준일 · 종목 수가 여기 걸려 있다).
+					<%-- 값이 실제로 바뀌었으니 화면을 다시 그린다(기준일 · 종목 수가 여기 걸려 있다). --%>
 					setTimeout(function() { location.reload(); }, 1500);
 				})
-				.catch(function() { /* 다음 물음에서 다시 본다 */ });
+				.catch(function() { <%-- 다음 물음에서 다시 본다 --%> });
 		}
 
 		function watchPriceHistoryJob() {
@@ -453,14 +442,14 @@
 			pollPriceHistoryJob();
 		}
 
-		// 화면을 열 때 한 번 본다 - 돌고 있으면 이어 보고, 이미 끝난 지난 실행이면 잠자코 둔다.
+		<%-- 화면을 열 때 한 번 본다 - 돌고 있으면 이어 보고, 이미 끝난 지난 실행이면 잠자코 둔다. --%>
 		if (progressBox) pollPriceHistoryJob();
 
-		// 응답에서 "사용자가 알아야 할 것"만 뽑는다. 알릴 게 없으면 null.
+		<%-- 응답에서 "사용자가 알아야 할 것"만 뽑는다. 알릴 게 없으면 null. --%>
 		function summarize(action, body) {
 			if (!body || typeof body !== 'object') return null;
 			if (action === 'price-histories') {
-				// 이 응답은 "시작했다" 일 뿐이라 알릴 결과가 없다 - 결과는 진행 표시가 말한다.
+				<%-- 이 응답은 "시작했다" 일 뿐이라 알릴 결과가 없다 - 결과는 진행 표시가 말한다. --%>
 				return null;
 			}
 			if (action === 'trades' || action === 'dividends') {
@@ -474,19 +463,19 @@
 			return null;
 		}
 
-		// 갱신 성공 시 시각 기록 (기록 후 data-reload-after-request 위임이 새로고침한다)
+		<%-- 갱신 성공 시 시각 기록 (기록 후 data-reload-after-request 위임이 새로고침한다) --%>
 		document.addEventListener('htmx:afterRequest', function(evt) {
 			var btn = evt.target && evt.target.closest ? evt.target.closest('[data-admin-action]') : null;
 			if (!btn || !evt.detail || !evt.detail.successful) return;
 			var action = btn.getAttribute('data-admin-action');
 			if (action === 'price-histories') {
-				// 작업은 이제 막 시작됐다. 여기서 성공이라 적으면 아직 안 끝난 일을 끝났다고 말하는 셈이다.
+				<%-- 작업은 이제 막 시작됐다. 여기서 성공이라 적으면 아직 안 끝난 일을 끝났다고 말하는 셈이다. --%>
 				watchPriceHistoryJob();
 			}
 			var map = readMap();
 			map[action] = Date.now();
 			try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); } catch (e) {}
-			// 새로고침을 건너뛰고 사라지므로 결과는 세션에 남겨 둔다.
+			<%-- 새로고침을 건너뛰고 사라지므로 결과는 세션에 남겨 둔다. --%>
 			try {
 				var body = JSON.parse((evt.detail.xhr && evt.detail.xhr.responseText) || 'null');
 				var summary = summarize(action, body);
@@ -494,7 +483,7 @@
 			} catch (e) {}
 		});
 
-		// 새로고침된 화면에서 한 번만 그리고 지운다.
+		<%-- 새로고침된 화면에서 한 번만 그리고 지운다. --%>
 		(function renderStoredResult() {
 			var box = document.getElementById('admin-import-result');
 			if (!box) return;

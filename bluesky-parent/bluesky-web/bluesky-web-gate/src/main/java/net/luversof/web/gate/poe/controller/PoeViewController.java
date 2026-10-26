@@ -84,7 +84,7 @@ public class PoeViewController {
   @GetMapping("/gems/{slug}")
   public String gemPage(
       @org.springframework.web.bind.annotation.PathVariable String slug,
-      @RequestParam(required = false, defaultValue = "20") int level,
+      @RequestParam(required = false) Integer level,
       Model model,
       jakarta.servlet.http.HttpServletResponse response) {
     net.luversof.web.gate.poe.dto.PoeGem gem;
@@ -101,7 +101,8 @@ public class PoeViewController {
     }
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
     model.addAttribute("gem", gem);
-    model.addAttribute("displayLevel", level);
+    model.addAttribute(
+        "displayLevel", gem.displayLevel(level)); // 기본 = 자연 최대 · 데이터에 있는 레벨로(10-23 Q48)
     return "poe/gemPage";
   }
 
@@ -132,7 +133,7 @@ public class PoeViewController {
     return "poe/uniquePage";
   }
 
-  /** 베이스 아이템 상세 페이지 — 툴팁 + 모드 풀(티어표). */
+  /** 베이스 아이템 상세 페이지 — 툴팁 + 모드 풀(등급표). */
   @GetMapping("/items/{slug}")
   public String itemPage(
       @org.springframework.web.bind.annotation.PathVariable String slug,
@@ -156,7 +157,7 @@ public class PoeViewController {
         isEquipClass
             ? poeDataClient.modsForItemClass(item.itemClass(), variantOf(item), influence)
             : null);
-    // 엘드리치 임플리싯(총주교/포식자) — 방어구·목걸이 등 일부 슬롯만 부여 가능. 대상 아니면 API 가 null 반환.
+    // 섬뜩한 고정 속성(총주교/포식자) — 방어구·목걸이 등 일부 슬롯만 부여 가능. 대상 아니면 API 가 null 반환.
     model.addAttribute("eldritch", poeDataClient.eldritchForItemClass(item.itemClass()));
     model.addAttribute(
         "anoints", "Amulet".equals(item.itemClass()) ? poeDataClient.anoints() : null);
@@ -339,7 +340,7 @@ public class PoeViewController {
   public static final java.util.List<String> MOD_CATEGORIES =
       java.util.List.of("weapon", "offhand", "armour", "jewellery", "flask", "jewel");
 
-  /** PoE1 아이템 클래스 → 분류 칩 줄(PoE2 API 의 category 와 같은 이름). */
+  /** PoE1 아이템 종류 → 분류 칩 줄(PoE2 API 의 category 와 같은 이름). */
   public static String modCategory(String itemClass) {
     if (itemClass.contains("Flask")) {
       return "flask";
@@ -382,7 +383,7 @@ public class PoeViewController {
     return classes.get(0).itemClass();
   }
 
-  /** 모드(poedb Modifiers식) 페이지 — 아이템 클래스 선택 시 접두/접미 티어 사다리 표시. */
+  /** 모드(poedb Modifiers식) 페이지 — 아이템 종류 선택 시 접두/접미 등급 사다리 표시. */
   @GetMapping("/mods")
   public String mods(
       @RequestParam(required = false) String itemClass,
@@ -401,7 +402,7 @@ public class PoeViewController {
             ? itemClass
             : defaultModClass(classes);
     model.addAttribute("activeClass", active);
-    // 아뮬렛엔 poedb 속성부여식 도유 목록도 — 도유는 아뮬렛 전용 부여라 다른 클래스엔 무의미
+    // 목걸이엔 poedb 속성부여식 성유 목록도 — 성유는 목걸이 전용 부여라 다른 클래스엔 무의미
     model.addAttribute("anoints", "Amulet".equals(active) ? poeDataClient.anoints() : null);
     model.addAttribute(
         "essences", active == null ? null : poeDataClient.essencesForItemClass(active));
@@ -414,9 +415,10 @@ public class PoeViewController {
   }
 
   /**
-   * 삿된(Foulborn) 모드 사전 — 현재 리그 화폐로 유니크의 기존 모드를 대체할 때 붙는 모드 풀.
+   * 삿된(Foulborn) 모드 사전 — 삿된 고유 아이템에서 원래 속성 하나 대신 붙는 속성 풀(10-23 Q114 — 삿된 오브 3종은 마법 · 희귀용이라 '화폐로
+   * 대체'는 틀린 설명).
    *
-   * <p>아이템 클래스가 아니라 <b>유니크 토큰</b> 단위라 모드 페이지(클래스별)에 끼우지 않고 별도 페이지로 둔다.
+   * <p>아이템 종류가 아니라 <b>유니크 토큰</b> 단위라 모드 페이지(클래스별)에 끼우지 않고 별도 페이지로 둔다.
    */
   @GetMapping("/foulborn")
   public String foulborn(
@@ -431,7 +433,7 @@ public class PoeViewController {
     return "poe/foulborn";
   }
 
-  /** 클러스터 주얼 노터블 페이지 — craftofexile Cluster 식 브라우징(검색). */
+  /** 클러스터 주얼 주요 스킬 페이지 — craftofexile Cluster 식 브라우징(검색). */
   @GetMapping("/clusters")
   public String clusters(Model model) {
     model.addAttribute("patch", poeDataClient.gemMeta().patch());
@@ -596,6 +598,9 @@ public class PoeViewController {
       {"eldritch-implicits.json", "poe.admin.data.eldritch"},
       {"trade-stats.json", "poe.admin.data.tradestats"},
       {"skill-weapons.json", "poe.admin.data.skillweapons"},
+      // PoE2 목록과 짝 · 메뉴 '삿된 고유 속성'의 데이터(10-25 Q217)
+      {"rare-name-words.json", "poe2.admin.data.rarenames"},
+      {"foulborn-mods.json", "layout.menu.poe.foulborn"},
     };
     return dataArtifacts(dataDir, files);
   }
@@ -619,7 +624,11 @@ public class PoeViewController {
         }
       }
     }
-    long staleBefore = newest - java.time.Duration.ofDays(1).toMillis();
+    // 기준 = 수정 시각 중앙값(10-25 Q215 — 가장 최근 파일 기준이면 파일 하나만 다시 만들어도 나머지가 전부 '뒤처짐'으로 보였다)
+    java.util.List<Long> times =
+        modified.values().stream().filter(java.util.Objects::nonNull).sorted().toList();
+    long median = times.isEmpty() ? newest : times.get(times.size() / 2);
+    long staleBefore = median - java.time.Duration.ofDays(1).toMillis();
     for (String[] f : files) {
       Long ms = modified.get(f[0]);
       boolean exists = modified.containsKey(f[0]);

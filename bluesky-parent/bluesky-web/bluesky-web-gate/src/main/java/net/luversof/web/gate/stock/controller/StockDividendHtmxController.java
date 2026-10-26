@@ -161,22 +161,11 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       return loginRequiredView(model);
     }
 
-    // 역순 기간은 앞뒤를 바로잡는다(피커와 같은 규칙). 그대로 두면 빈 결과가 '데이터 없음' 으로 읽힌다.
-    Instant[] orderedRange = effectiveRange(rangeMode, startDate, endDate);
-    Instant startInstant = orderedRange[0];
-    Instant endInstant = orderedRange[1];
-    // rangeMode 는 어떤 프리셋 버튼이 눌렸는지 알리는 화면 상태값이지 기간 그 자체가 아니다
-    // (기간은 startDate/endDate 로 온다). 그런데 이 가드가 rangeMode 의 '존재'를 보는 바람에,
-    // 날짜 없이 rangeMode 만 실려 오면 기본 기간이 적용되지 않고 전 기간이 조회됐다
-    // (실측: rangeMode=ytd 인데 올해 106행이 아니라 전체 300행). 같은 가드를 asset-growth 는
-    // 이미 '날짜가 없고 all 도 아니면 기본 적용'으로 쓰고 있어, 그쪽에 맞춘다.
-    if (startInstant == null && endInstant == null && !"all".equalsIgnoreCase(rangeMode)) {
-      ZoneId zone = resolveZoneIdOrDefault(timeZone);
-      var preset = resolvePresetRange(rangeMode, zone);
-      startInstant = preset.start();
-      endInstant = preset.end();
-      rangeMode = preset.mode();
-    }
+    // 매매 목록과 같은 기간 규칙(listRange) - 역순은 바로잡고, 날짜가 없으면 프리셋 기본 기간.
+    ListRange range = listRange(rangeMode, startDate, endDate, resolveZoneIdOrDefault(timeZone));
+    Instant startInstant = range.start();
+    Instant endInstant = range.end();
+    rangeMode = range.rangeMode();
 
     // 이 화면 앞부분의 세 호출(배당/배당메타/계좌/종목)은 서로 의존이 없어 함께 던진다.
     // "전체 기간" 필터 UI 에 필요한 건 최초 기준일과 배당 보유 종목 ID 뿐이라,
@@ -587,8 +576,6 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return "stock/htmx/fragments/tabsDividendHistory";
   }
 
-  /** 비교용 "전기" 구간. 요청 파라미터만으로 정해지므로 원격 조회 전에 계산할 수 있다. */
-
   /**
    * 달력 프리셋이 아직 진행 중이면 {@code [경과일, 총일수]} 를, 아니면 {@code null} 을 돌려준다.
    *
@@ -626,6 +613,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return elapsedDays < totalDays ? new int[] {elapsedDays, totalDays} : null;
   }
 
+  /** 비교용 "전기" 구간. 요청 파라미터만으로 정해지므로 원격 조회 전에 계산할 수 있다. */
   record PreviousPeriod(LocalDate start, LocalDate end) {}
 
   static PreviousPeriod resolvePreviousPeriod(
@@ -1335,16 +1323,6 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   }
 
   /**
-   * 필터 목록에 해당 id 가 포함되는가.
-   *
-   * <p>{@code null} 은 "필터 없음"(전부 통과), <b>빈 목록</b>은 "필터를 걸었는데 해당이 없음"(전부 제외)이다. 이 구분이 무너지면 필터를 걸었는데
-   * 전체가 나온다.
-   *
-   * <p>같은 화면 안에서 이 규칙이 갈려 있었다. 이번 기간은 {@code list == null || list.contains(id)} 로 빈 목록을 "해당 없음" 으로
-   * 봤는데, 전기 비교는 {@code || list.isEmpty()} 가 붙어 "필터 없음" 으로 봤다. 그래서 해당이 없는 필터를 고르면 <b>이번 기간 0 원 vs 전기
-   * 전체 금액</b> 이 되어 증감이 통째로 잘못 나왔다. 판정을 한 곳으로 모아 갈릴 수 없게 한다.
-   */
-  /**
    * 전 기간 배당 원장에서 한 구간만 골라낸다. 백엔드의 기간 필터와 같은 규칙이다 - 지급일 기준, 시작은 포함, 끝은 배타적이며 지급일이 없는 행은 빠진다.
    *
    * <p>이 화면은 월별 차트 때문에 전 기간 원장을 어차피 받으므로, 구간마다 다시 묻는 대신 여기서 거른다. 실측 2026-09-10: 올해 116행 · 전기 56행 ·
@@ -1498,6 +1476,16 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     return new PreviousPeriodComparison(previousNetAmount, contributors);
   }
 
+  /**
+   * 필터 목록에 해당 id 가 포함되는가.
+   *
+   * <p>{@code null} 은 "필터 없음"(전부 통과), <b>빈 목록</b>은 "필터를 걸었는데 해당이 없음"(전부 제외)이다. 이 구분이 무너지면 필터를 걸었는데
+   * 전체가 나온다.
+   *
+   * <p>같은 화면 안에서 이 규칙이 갈려 있었다. 이번 기간은 {@code list == null || list.contains(id)} 로 빈 목록을 "해당 없음" 으로
+   * 봤는데, 전기 비교는 {@code || list.isEmpty()} 가 붙어 "필터 없음" 으로 봤다. 그래서 해당이 없는 필터를 고르면 <b>이번 기간 0 원 vs 전기
+   * 전체 금액</b> 이 되어 증감이 통째로 잘못 나왔다. 판정을 한 곳으로 모아 갈릴 수 없게 한다.
+   */
   static boolean matchesFilter(List<UUID> filter, UUID id) {
     if (filter == null) {
       return true;

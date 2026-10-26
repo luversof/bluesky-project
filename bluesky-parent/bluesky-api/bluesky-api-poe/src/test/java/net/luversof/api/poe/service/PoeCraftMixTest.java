@@ -17,7 +17,7 @@ import net.luversof.api.poe.service.PoeCraftEngine.Item;
 import net.luversof.api.poe.service.PoeCraftEngine.Rarity;
 
 /**
- * 여러 제작 콘텐츠를 섞는 규칙(10-15 C338) — 메타 제작 잠금 · 공격 금지 · 제작대 한도 · 화석 배수 · 수확 태그 보장 · 같은 유형 ± · 저항 변환 ·
+ * 여러 제작 콘텐츠를 섞는 규칙(10-15 C338) — 메타 제작 잠금 · 공격 금지 · 작업대 한도 · 화석 배수 · 수확 태그 보장 · 같은 유형 ± · 저항 변환 ·
  * 태그 추가/제거 · 정복자 엑잘 · 분열 오브.
  */
 class PoeCraftMixTest {
@@ -487,7 +487,7 @@ class PoeCraftMixTest {
   }
 
   @Test
-  void 제작대_옵션은_하나_제작_옵션_3개_메타면_셋() {
+  void 작업대_옵션은_하나_제작_옵션_3개_메타면_셋() {
     Item it = rare(a("Life1"), a("Str1"));
     Item one = E.apply(it, Action.BENCH, "CraftDex", null).item();
     assertThat(one.affixes()).anyMatch(x -> x.id().equals("CraftDex") && x.crafted());
@@ -605,7 +605,7 @@ class PoeCraftMixTest {
   }
 
   @Test
-  void 분열_오브는_제작대가_아닌_옵션_하나를_고정() {
+  void 분열_오브는_작업대가_아닌_옵션_하나를_고정() {
     Item it = rare(a("Life1"), a("Armour1"), a("Str1"), craft("CraftDex"));
     SplittableRandom rng = new SplittableRandom(9);
     for (int i = 0; i < 500; i++) {
@@ -761,7 +761,7 @@ class PoeCraftMixTest {
       assertThat(E.apply(guarded, Action.ELDRITCH_ANNUL, null, rng).removed())
           .containsExactly("Life1");
     }
-    // 정제는 임플리싯을 남긴다, 정복자는 엘드리치가 있으면 거절, 불씨는 영향력 · 다른 부위엔 못 쓴다
+    // 정제는 고정 속성을 남긴다, 정복자는 엘드리치가 있으면 거절, 불씨는 영향력 · 다른 부위엔 못 쓴다
     assertThat(E.apply(both, Action.SCOUR, null, rng).item().implicits()).hasSize(2);
     assertThat(E.apply(both, Action.CONQUEROR, "crusader", rng).error())
         .contains("영향력을 추가할 수 없습니다");
@@ -1060,7 +1060,7 @@ class PoeCraftMixTest {
           assertThat(r.item().implicits()).isEqualTo(withEx.implicits());
         }
         case "vaal:implicit" -> {
-          // 엘드리치 임플리싯까지 부패 임플리싯 하나로, 아이템 레벨 넘는 건 안 붙는다
+          // 섬뜩한 고정 속성까지 부패 고정 속성 하나로, 아이템 레벨 넘는 건 안 붙는다
           assertThat(r.item().implicits()).extracting(Affix::id).containsExactly("CorCurse");
           assertThat(r.removed()).containsExactly("Ex3");
           assertThat(r.item().affixes()).isEqualTo(withEx.affixes());
@@ -1449,7 +1449,7 @@ class PoeCraftMixTest {
   }
 
   @Test
-  void 위상_스킬은_제작_접미어_하나_제작대_한도와_같은_그룹을_본다() {
+  void 위상_스킬은_제작_접미어_하나_작업대_한도와_같은_그룹을_본다() {
     PoeCraftDataService.VeiledMod cat =
         new PoeCraftDataService.VeiledMod(
             "suffix",

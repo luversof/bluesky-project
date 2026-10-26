@@ -33,12 +33,12 @@
 	String tradeCountLabel = MessageUtil.getMessage("stock.activity.label.trade");
 }
 
-	<!-- Summary Cards -->
+	<%-- Summary Cards --%>
 	<%-- 세 칸은 화면 폭이 아니라 자리 폭(@3xl = 48rem, 글꼴을 키우면 같이 커진다)으로 정한다(2026-09-30 실측: 1280px · 글꼴 200% 에서
      sm:grid-cols-3 가 세 칸으로 눌러 "1,815,470|,942" 처럼 금액이 갈렸다). 카드 금액은 15 글자까지 들어간다. --%>
 	<div class="@container mb-4"><div class="grid grid-cols-1 @3xl:grid-cols-3 gap-3">
 
-		<!-- Card 1: 매수/매도 금액 -->
+		<%-- Card 1: 매수/매도 금액 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${periodStatusLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
@@ -55,7 +55,7 @@
 				</div>
 		`)
 
-		<!-- Card 2: 실현손익 -->
+		<%-- Card 2: 실현손익 --%>
 		@template._components.ui.card(body = @`
 				<%-- 이 카드의 값은 거래 기록에 저장된 실현손익의 합이고, 대시보드 누적치는 수수료·세금을
 					 반영해 계산한 값이라 서로 다르다(실측 차 0.11%). 어느 쪽이 틀린 게 아니라
@@ -79,7 +79,7 @@
 				<div class="text-xs text-base-content/60 mt-1">${sellLabel} ${countMessage.apply(sellCount)}</div>
 		`)
 
-		<!-- Card 3: 거래 비용 -->
+		<%-- Card 3: 거래 비용 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${tradingCostLabel}</div>
 				<div class="text-xl font-bold amount-value">&#8361; ${decimalFormat.format(safeFee.add(safeTax))}</div>

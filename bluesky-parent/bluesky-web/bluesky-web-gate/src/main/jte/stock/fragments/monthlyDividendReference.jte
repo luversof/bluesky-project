@@ -12,6 +12,7 @@
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendReferenceSummaryView
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<StockItem> stockItems = java.util.List.of()
 @param List<MonthlyDividendProfileResponse> monthlyDividendProfiles = java.util.List.of()
@@ -123,7 +124,7 @@
 	String latestRecordDateSortDirection = "latest-record-date".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String noPayoutLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.none");
 	String staleRecordLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale");
-	String staleRecordTitle = java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.title"), String.valueOf(net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView.STALE_AFTER_DAYS));
+	String staleRecordTitle = StockViewSupport.msg("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.title", String.valueOf(net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView.STALE_AFTER_DAYS));
 	String daysAgoPattern = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ago");
 	String successMessage = "";
 	if ("profile-saved".equals(monthlyDividendReferenceResult)) {
@@ -530,9 +531,9 @@
 												<td class="whitespace-nowrap" data-profile-latest-record-date="${String.valueOf(latestPayout.recordDate())}" data-profile-latest-record-stale="${latestPayout.stale() ? "true" : "false"}">
 													<div>${String.valueOf(latestPayout.recordDate())}</div>
 													<%-- 미리 발표돼 등록된 기준일은 아직 안 왔다 - "-1일 전" 으로 찍혔다(실측 2026-10-14, 10-15 기준일). 오늘 · N일 뒤로 적는다. --%>
-													<div class="text-xs text-base-content/60">${latestPayout.daysSinceRecord() > 0 ? java.text.MessageFormat.format(daysAgoPattern, String.valueOf(latestPayout.daysSinceRecord())) : (latestPayout.daysSinceRecord() == 0 ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.today") : java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ahead"), String.valueOf(-latestPayout.daysSinceRecord())))}</div>
+													<div class="text-xs text-base-content/60">${latestPayout.daysSinceRecord() > 0 ? java.text.MessageFormat.format(daysAgoPattern, String.valueOf(latestPayout.daysSinceRecord())) : (latestPayout.daysSinceRecord() == 0 ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.today") : StockViewSupport.msg("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ahead", String.valueOf(-latestPayout.daysSinceRecord())))}</div>
 													@if(latestPayout.stale())
-														<span class="badge badge-warning badge-sm mt-1" title="${latestPayout.expectedRecordDate() != null ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.missing"), String.valueOf(latestPayout.expectedRecordDate())) : staleRecordTitle}" data-profile-latest-record-expected="${latestPayout.expectedRecordDate() != null ? String.valueOf(latestPayout.expectedRecordDate()) : ""}">${staleRecordLabel}</span>
+														<span class="badge badge-warning badge-sm mt-1" title="${latestPayout.expectedRecordDate() != null ? StockViewSupport.msg("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.missing", String.valueOf(latestPayout.expectedRecordDate())) : staleRecordTitle}" data-profile-latest-record-expected="${latestPayout.expectedRecordDate() != null ? String.valueOf(latestPayout.expectedRecordDate()) : ""}">${staleRecordLabel}</span>
 													@endif
 												</td>
 											@else
@@ -589,14 +590,14 @@
 											<td class="text-right tabular-nums">₩${amountFormat.format(row.dividendAmountPerShare() != null ? row.dividendAmountPerShare() : BigDecimal.ZERO)}</td>
 											<td class="text-right tabular-nums">@if(row.taxableBasePerShare() == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else₩${amountFormat.format(row.taxableBasePerShare())}@endif</td>
 											<td class="text-right">
-												<form method="post" action="/stock/dividend/monthly-reference/payout/delete" class="inline" data-confirm="${java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.row.delete.confirm"), String.valueOf(row.recordDate()))}">
+												<form method="post" action="/stock/dividend/monthly-reference/payout/delete" class="inline" data-confirm="${StockViewSupport.msg("stock.page.dividend.monthly.reference.payout.row.delete.confirm", String.valueOf(row.recordDate()))}">
 													<input type="hidden" name="profileSort" value="${profileSortValue}" />
 													<input type="hidden" name="profileDirection" value="${profileDirectionValue}" />
 													<input type="hidden" name="profileWindow" value="${profileWindowValue}" />
 													<input type="hidden" name="symbol" value="${row.stockItemSymbol()}" />
 													<input type="hidden" name="recordDate" value="${String.valueOf(row.recordDate())}" />
 													<input type="hidden" name="payDate" value="${String.valueOf(row.payDate())}" />
-													<button type="submit" class="btn btn-xs btn-ghost text-error h-auto min-h-6 whitespace-normal" aria-label="${java.text.MessageFormat.format(MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.row.delete.aria"), String.valueOf(row.recordDate()))}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
+													<button type="submit" class="btn btn-xs btn-ghost text-error h-auto min-h-6 whitespace-normal" aria-label="${StockViewSupport.msg("stock.page.dividend.monthly.reference.payout.row.delete.aria", String.valueOf(row.recordDate()))}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.delete")}</button>
 												</form>
 											</td>
 										</tr>
@@ -613,7 +614,7 @@
 
 @template._components.ui.submitOverlay()
 <script nonce="${CspNonceHolder.getNonce()}">
-	// 프로필 목록만 바꿔 끼운 뒤(2026-10-13) 왼쪽 편집 폼의 숨은 정렬 · 거르기 칸을 새 값으로 맞춘다 - 안 그러면 저장 뒤 옛 정렬 · 거르기로 돌아간다.
+	<%-- 프로필 목록만 바꿔 끼운 뒤(2026-10-13) 왼쪽 편집 폼의 숨은 정렬 · 거르기 칸을 새 값으로 맞춘다 - 안 그러면 저장 뒤 옛 정렬 · 거르기로 돌아간다. --%>
 	document.addEventListener('htmx:afterSettle', function() {
 		var list = document.getElementById('monthlyReferenceProfileList');
 		if (!list) {

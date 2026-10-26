@@ -30,37 +30,20 @@ public class PlusMonthlyDividendPayoutSourceParser {
   }
 
   public String toBulkInput(List<PlusDividendRow> rows) {
-    if (rows == null || rows.isEmpty()) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.source.rows.missing", "PLUS"));
-    }
-
-    StringBuilder bulkInput = new StringBuilder(PayoutSourceText.BULK_INPUT_HEADER);
-    for (PlusDividendRow row : rows) {
-      // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 과세표준만 모름("-")으로 싣는다.
-      if (!StringUtils.hasText(row.wkdate())
-          || !StringUtils.hasText(row.dkdate())
-          || !StringUtils.hasText(row.dividend())) {
-        continue;
-      }
-
-      bulkInput
-          .append('\n')
-          .append(PayoutSourceText.isoDateOfCompact(row.wkdate()))
-          .append('\t')
-          .append(PayoutSourceText.isoDateOfCompact(row.dkdate()))
-          .append('\t')
-          .append(row.dividend().trim())
-          .append('\t')
-          .append(StringUtils.hasText(row.taxBase()) ? row.taxBase().trim() : "-");
-    }
-
-    if (bulkInput.toString().equals(PayoutSourceText.BULK_INPUT_HEADER)) {
-      throw new IllegalArgumentException(
-          msg("stock.monthly.reference.error.source.rows.missing", "PLUS"));
-    }
-
-    return bulkInput.toString();
+    return PayoutSourceText.bulkInput(
+        rows,
+        "PLUS",
+        // 과세표준이 비었다고 지급 행을 버리지 않는다(2026-10-08) - 과세표준만 모름("-")으로 싣는다.
+        row ->
+            !StringUtils.hasText(row.wkdate())
+                    || !StringUtils.hasText(row.dkdate())
+                    || !StringUtils.hasText(row.dividend())
+                ? null
+                : new PayoutSourceText.BulkRow(
+                    PayoutSourceText.isoDateOfCompact(row.wkdate()),
+                    PayoutSourceText.isoDateOfCompact(row.dkdate()),
+                    row.dividend().trim(),
+                    StringUtils.hasText(row.taxBase()) ? row.taxBase().trim() : "-"));
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

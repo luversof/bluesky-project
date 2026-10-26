@@ -5,6 +5,7 @@
 @import net.luversof.web.gate.stock.dto.response.DividendView
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<DividendView> dividendList
 <%-- 날짜 칸에 쓸 존. 이 화면의 기간 표시·필터와 같은 존이어야 한다(부모가 요청 타임존으로 푼 값). --%>
@@ -51,7 +52,7 @@
 			return null;
 		}
 		String basisDay = dateFormatter.format(basisInstant.atZone(zone));
-		String note = java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.basis.missing"), basisDay);
+		String note = StockViewSupport.msg("stock.dividend.basis.missing", basisDay);
 		// "기준일이 따로 적혀 있지 않다" 는 비어 있는 경우만이 아니다 - 실측 2026-09-11: 이 5건은 모두 기준일이
 		// 지급일과 같은 날로 적혀 있었다. api 의 원장 점검도 같은 기준(hasOwnRecordDate: 기준일이 있고 지급일과 다를 것)으로
 		// 이 줄들을 지적하지 않는다. 그래서 같은 날이면 "지급일로 되짚었다" 고 밝힌다.
@@ -67,7 +68,7 @@
 	String noDividendHistoryLabel = MessageUtil.getMessage("stock.dividend.message.no.period.history");
 }
 
-	<!-- Collapsible Detail List -->
+	<%-- Collapsible Detail List --%>
 	<details id="detailSection" class="mb-4" data-persist-open="dividendDetail" data-page-section="${detailSummaryLabel}">
 		<summary class="cursor-pointer select-none flex items-center gap-2 font-semibold text-sm p-3 bg-base-200 rounded-box hover:bg-base-300 transition-colors">
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform detail-arrow" viewBox="0 0 20 20" fill="currentColor">

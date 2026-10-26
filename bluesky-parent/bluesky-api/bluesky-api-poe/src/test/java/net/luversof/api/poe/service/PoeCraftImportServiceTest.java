@@ -32,7 +32,7 @@ class PoeCraftImportServiceTest {
 
   @Test
   void 군집_주얼_인챈트로_변형_영어_한국어_PoB() {
-    // 10-20 C515 — 일반 복사(꼬리표 enchant) · 한국어 · PoB(Implicits 아래 {crafted}) 셋 다 같은 변형 · 노터블
+    // 10-20 C515 — 일반 복사(꼬리표 enchant) · 한국어 · PoB(Implicits 아래 {crafted}) 셋 다 같은 변형 · 주요 스킬
     String en =
         """
         Item Class: Jewels
@@ -227,7 +227,7 @@ class PoeCraftImportServiceTest {
   }
 
   @Test
-  void 실제_복사_글의_요구사항_홈_품질_메모_줄과_제작대_옵션() {
+  void 실제_복사_글의_요구사항_홈_품질_메모_줄과_작업대_옵션() {
     String text =
         """
         Item Class: Gloves
@@ -267,7 +267,7 @@ class PoeCraftImportServiceTest {
   }
 
   @Test
-  void 엘드리치_임플리싯_등급_이름과_이름_없는_머리줄의_장막_줄() {
+  void 엘드리치_고정속성_등급_이름과_이름_없는_머리줄의_장막_줄() {
     String text =
         """
         Item Class: Gloves

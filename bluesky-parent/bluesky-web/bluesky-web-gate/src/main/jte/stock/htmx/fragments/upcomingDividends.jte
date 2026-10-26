@@ -3,6 +3,7 @@
 @import java.util.List
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param boolean hasSnapshots = false
 @param String nextWindowLabel = ""
@@ -57,12 +58,12 @@
 	@if(dividendAsOfOldest != null)
 	@if(payDayRangeFrom > 0 && payDayRangeTo > payDayRangeFrom)
 	<div class="text-[11px] text-base-content/60 mb-2" data-payday-range="${payDayRangeFrom}-${payDayRangeTo}">
-		${java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.dividend.payday.range"), String.valueOf(payDayRangeFrom), String.valueOf(payDayRangeTo))}
+		${StockViewSupport.msg("stock.summary.upcoming.dividend.payday.range", String.valueOf(payDayRangeFrom), String.valueOf(payDayRangeTo))}
 	</div>
 	@endif
 	@if(payDaySpreadFrom > 0 && payDaySpreadTo > payDaySpreadFrom)
 	<div class="text-[11px] text-base-content/60 mb-2" data-payday-spread="${payDaySpreadFrom}-${payDaySpreadTo}">
-		${java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.dividend.payday.spread"), String.valueOf(payDaySpreadFrom), String.valueOf(payDaySpreadTo))}
+		${StockViewSupport.msg("stock.summary.upcoming.dividend.payday.spread", String.valueOf(payDaySpreadFrom), String.valueOf(payDaySpreadTo))}
 	</div>
 	@endif
 	<div class="text-[11px] text-base-content/60 mb-2">
@@ -72,9 +73,7 @@
 	@endif
 	@if(staleQuantityCount > 0)
 	<div data-stale-quantity="${staleQuantityCount}" class="text-[11px] text-warning mb-2 amount-value" data-stale-quantity-notice>
-		${java.text.MessageFormat.format(
-			MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity.both"),
-			String.valueOf(staleQuantityCount),
+		${StockViewSupport.msg("stock.summary.upcoming.dividend.stale.quantity.both", String.valueOf(staleQuantityCount),
 			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityLatestTotal)),
 			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}
 	</div>
@@ -83,7 +82,7 @@
 	     예정 3,973,543)으로 읽혔다(2026-10-01 자율 점검) - 어느 날 몫인지 적고 "/ 월" 은 뺀다. --%>
 	@if(hasSnapshots)
 	<div class="text-right leading-tight tabular-nums mb-2">
-		<div class="font-mono font-bold text-dividend amount-value" data-window-latest-total title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60" data-window-latest-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.window.latest"), nextPayDateLabel) : latestLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal)))</div>
+		<div class="font-mono font-bold text-dividend amount-value" data-window-latest-total title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60" data-window-latest-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? StockViewSupport.msg("stock.summary.upcoming.window.latest", nextPayDateLabel) : latestLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal)))</div>
 		<div class="font-mono text-[11px] text-base-content/60 amount-value" data-window-average-total title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}">${avgLabel} ${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
 	</div>
 	<div class="space-y-1">
@@ -101,8 +100,7 @@
 		@endfor
 		@if(upcomingDividendHiddenCount > 0)
 			<div class="text-[11px] text-base-content/60 pt-1" data-upcoming-more="${upcomingDividendHiddenCount}">
-				${java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.upcoming.dividend.more"),
-					String.valueOf(upcomingDividendHiddenCount))}
+				${StockViewSupport.msg("stock.summary.upcoming.dividend.more", String.valueOf(upcomingDividendHiddenCount))}
 			</div>
 		@endif
 	</div>

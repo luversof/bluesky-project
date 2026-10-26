@@ -39,7 +39,7 @@
 	PoeGemLevel current = gem.levels().stream().filter(l -> l.level() == displayLevel).findFirst().orElse(null);
 	java.util.List<Integer> levelSteps = new java.util.ArrayList<>();
 	for (PoeGemLevel l : gem.levels()) {
-		if (l.level() == 1 || l.level() % 5 == 0) levelSteps.add(l.level());
+		if (l.level() == 1 || l.level() % 5 == 0 || gem.isMaxLevel(l.level())) levelSteps.add(l.level());
 	}
 	java.util.List<String> displayStatLines = current == null ? null : PoeText.lines(current.statLinesKo(), current.statLines());
 	// 게임 툴팁 색: 라벨 회색, 수치 흰색, 스킬 설명 금색, 스탯(모드) 파랑
@@ -47,7 +47,7 @@
 	String value = "text-white";
 }
 
-<%-- PoE 게임 스킬젬 툴팁 (인게임 배치: 헤더 → 스탯 → 설명(금색) → 스탯라인(파랑) → 퀄리티 → 소켓안내) --%>
+<%-- PoE 게임 스킬 젬 툴팁 (인게임 배치: 헤더 → 스탯 → 설명(금색) → 스탯라인(파랑) → 퀄리티 → 소켓안내) --%>
 	<div class="poe-tooltip poe-rar-gem poe-tt-w-gem max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:#1ba29b">
 		<%-- 헤더 밴드 (이름) --%>
 		<div class="poe-tt-band">
@@ -63,20 +63,25 @@
 		<%-- 레벨/요구/소모/피해 등 수치 (중앙 정렬, 라벨 회색 · 수치 흰색) --%>
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-[12px] text-center space-y-0.5">
-			<div><span class="${label}">${levelLabel}: </span><span class="${value}">${displayLevel}</span></div>
+			<%-- 자연 최대 레벨이면 '20 (Max)' · '5 (최대)'(10-23 Q48 — ClientStrings ItemDisplaySkillGemMaxLevel) --%>
+			<div><span class="${label}">${levelLabel}: </span><span class="${value}" data-tt-gem-level>${gem.isMaxLevel(displayLevel) ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.detail.level.max"), displayLevel) : String.valueOf(displayLevel)}</span></div>
 			@if(current != null)
 				@if(current.cost() != null && current.cost() > 0)
 					<%-- 수량 먼저 — 진행표(gemPage)와 순서를 맞춘다. 이전엔 툴팁만 "Mana 29", 표는 "29 Mana" 로 달랐다. --%>
 					<div><span class="${label}">${costLabel}: </span><span class="${value}">${net.luversof.web.gate.poe.PoeText.costValue(current.cost(), current.costType())}</span></div>
 				@endif
+				<%-- 고정 마나 점유(명료함 · 정밀 · 활력 · 지뢰 — '점유: 마나 34', 10-23 Q51. 예전엔 % 점유만 있어 줄째 빠졌다) --%>
+				@if(current.reservation() == null && current.reservationFlat() != null)
+					<div data-gem-reservation-flat><span class="${label}">${reservationLabel}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.cost.value.mana"), String.valueOf(current.reservationFlat()))}</span></div>
+				@endif
 				@if(current.reservation() != null)
-					<div><span class="${label}">${reservationLabel}: </span><span class="${value}">${String.format("%.0f", current.reservation())}%</span></div>
+					<div><span class="${label}">${reservationLabel}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.cost.value.manapercent"), String.format("%.0f", current.reservation()))}</span></div>
 				@endif
 				@if(current.costMultiplier() != null && current.costMultiplier() != 100)
 					<div><span class="${label}">${costMultiplierLabel}: </span><span class="${value}">${current.costMultiplier()}%</span></div>
 				@endif
 				@if(current.cooldownMs() != null)
-					<div><span class="${label}">${cooldownLabel}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.value.seconds"), String.format("%.2f", current.cooldownMs() / 1000.0))}</span></div>
+					<div><span class="${label}">${cooldownLabel}: </span><span class="${value}">${current.cooldownUses() != null ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.value.seconds.uses"), String.format("%.2f", current.cooldownMs() / 1000.0), String.valueOf(current.cooldownUses())) : java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.value.seconds"), String.format("%.2f", current.cooldownMs() / 1000.0))}</span></div>
 				@endif
 				<%-- 바알 스킬 영혼 정보(인게임 툴팁 파리티): 영혼 획득 방지 시간 · 저장 사용 횟수. 레벨 무관(젬 단위). --%>
 				<%-- 영혼 소모(10-09 C234 — ClientStrings ItemDisplaySkillGemSoulsPerUse "사용 시 영혼 소모", PoB cost.Soul). 줄 순서는 poedb · PoB GemTooltip.lua:
@@ -85,7 +90,7 @@
 					<div data-gem-souls><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.souls.per.use")}: </span><span class="${value}">${current.soulCost()}</span></div>
 				@endif
 				@if(gem.storedUses() != null)
-					<div data-gem-stored-uses><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.detail.soul.can.store"), String.valueOf(gem.storedUses()))}</span></div>
+					<div data-gem-stored-uses><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage(gem.storedUses() == 1 ? "poe.gems.detail.soul.can.store.one" : "poe.gems.detail.soul.can.store"), String.valueOf(gem.storedUses()))}</span></div>
 				@endif
 				@if(gem.soulPreventionSeconds() != null)
 					<div><span class="${label}">${soulPreventionLabel}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.value.seconds"), String.format("%.2f", gem.soulPreventionSeconds()).replaceAll("\\.?0+$", ""))}</span></div>
@@ -130,7 +135,7 @@
 						if (gem.requiresInt()) reqAttrs.add("<span class=\"poe-gem-blue\">" + MessageUtil.getMessage("poe.items.detail.int") + "</span>");
 					}
 				}
-				<div class="pt-0.5" data-gem-requirements>@if(numeric)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} ${MessageUtil.getMessage("poe.items.detail.level")} </span>@else<span class="${label}">${requiredLevelLabel} </span>@endif<span class="${value}">${current.requiredLevel()}</span>@if(!reqAttrs.isEmpty())<span class="${label}">, </span>$unsafe{String.join("<span class=\"" + label + "\">" + (numeric ? ", " : " · ") + "</span>", reqAttrs)}@endif</div>
+				<div class="pt-0.5" data-gem-requirements><%-- 능력치 요구가 없어도 게임 꼴 '요구 사항 레벨 70'(ItemRequirementsLabel + Level, 10-23 Q49 — ko 는 '요구 레벨 70' 이었다) --%><span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} ${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${current.requiredLevel()}</span>@if(!reqAttrs.isEmpty())<span class="${label}">, </span>$unsafe{String.join("<span class=\"" + label + "\">" + (numeric ? ", " : " · ") + "</span>", reqAttrs)}@endif</div>
 			@endif
 		</div>
 
@@ -168,7 +173,8 @@
 		!{java.util.List<String> displayQuality = PoeText.lines(gem.qualityStatLinesKo(), gem.qualityStatLines());}
 		@if(displayQuality != null && !displayQuality.isEmpty())
 			<div class="px-4 pb-1.5 pt-2 text-center space-y-0.5">
-				<div class="text-[12.5px] text-white/60">${qualityLabel}:</div>
+				<%-- 머리말은 흰색(ClientStrings ItemDescriptionGemQualityStatDivider '<white>{…}', 10-23 Q49) --%>
+				<div class="text-[12.5px] text-white">${qualityLabel}:</div>
 				<%-- 줄 밑 리마인더(10-04 C120, 레벨 줄과 같은 규칙 — 줄 수가 같을 때만) --%>
 				!{ boolean qRem = gem.qualityReminders() != null && gem.reminderText() != null && gem.qualityReminders().size() == displayQuality.size(); }
 				@for(int qi = 0; qi < displayQuality.size(); qi++)

@@ -109,6 +109,7 @@ for (const [name, file] of [["고유 아이템", "parse-uniques2.mjs"], ["패시
 step("아이템 그림", "icons2.mjs");
 step("트리 노드 아이콘", "tree-sprites2.mjs");
 step("아틀라스 노드 아이콘", "atlas-sprites2.mjs");
+step("트리 툴팁 머리 띠", "ui-assets2.mjs"); // PoE2 4K 패시브 머리 띠(10-23 Q60)
 // 고유 로어(플레이버)·요구 레벨 — 위키(poe2wiki.net) + 게임 FlavourText(영·한) 매칭(wiki-uniques2 → PoE1 과 같은 runWikiUniques).
 //   고유 JSON 을 다시 쓰는 단계(parse-uniques2·icons2) 뒤. 네트워크 단계라 비치명 — 실패하면 캐시로, 그것도 없으면 로어 없이 계속.
 try {

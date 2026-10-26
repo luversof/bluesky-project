@@ -67,12 +67,12 @@
 	String taxableNoteLabel = MessageUtil.getMessage("stock.dividend.taxable.note");
 }
 
-	<!-- Row 1: Summary Cards — 전기 대비가 불가능하면 카드를 빼고 2열로 렌더한다 -->
+	<%-- Row 1: Summary Cards — 전기 대비가 불가능하면 카드를 빼고 2열로 렌더한다 --%>
 	<div class="grid grid-cols-1 ${hasComparison ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-3 mb-4">
 
-		<!-- Card 1: 기간 합계 (세전/세후/과세) -->
+		<%-- Card 1: 기간 합계 (세전/세후/과세) --%>
 		@template._components.ui.card(body = @`
-				<!-- 세후 배당금 / 과세 금액: 서로 다른 개념이라 동등 비중의 별도 지표로 나란히 표시 -->
+				<%-- 세후 배당금 / 과세 금액: 서로 다른 개념이라 동등 비중의 별도 지표로 나란히 표시 --%>
 				<div class="flex flex-wrap items-start gap-x-6 gap-y-2 mb-2">
 					<div class="min-w-0">
 						<div class="text-xs text-base-content/60 mb-1">${periodDividendLabel}</div>
@@ -96,12 +96,12 @@
 						 활동 화면은 같은 수량에 이미 이 라벨을 쓴다. --%>
 					<span class="ml-auto">${dividendCountLabel} ${totalItemsCountText}</span>
 				</div>
-				<!-- 차감 분해(항상 표시): 세전 − (세금 + 수수료·기타) = 세후. 과세 금액은 차감 항목이 아님(별도 표시). -->
+				<%-- 차감 분해(항상 표시): 세전 − (세금 + 수수료·기타) = 세후. 과세 금액은 차감 항목이 아님(별도 표시). --%>
 				<div class="mt-1 text-[11px] leading-4 text-base-content/60" title="${calcNoteLabel}">
 					${deductionLabel} = ${taxLabel} <span class="amount-value">₩${decimalFormat.format(safeAllTax)}</span>
 					+ ${deductionOtherLabel} <span class="amount-value">₩${decimalFormat.format(allOtherDeduction)}</span>@template._components.ui.srExact(text = calcNoteLabel, visible = decimalFormat.format(allOtherDeduction))
 				</div>
-				<!-- 월중/월말 배당 구분(세후): 종목 태그(월중배당/월말배당) 기준. 태그 없는 종목은 기타. -->
+				<%-- 월중/월말 배당 구분(세후): 종목 태그(월중배당/월말배당) 기준. 태그 없는 종목은 기타. --%>
 				@if(hasWindowSplit)
 				<div class="mt-2 pt-2 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
 					<%-- 무엇으로 가르는지 밝힌다. 2026-09-12 까지 이 세 항목에는 title 도 aria-label 도 없었고
@@ -136,7 +136,7 @@
 				@endif
 		`)
 
-		<!-- Card 2: 전기 대비 -->
+		<%-- Card 2: 전기 대비 --%>
 		@if(hasComparison)
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${previousComparisonLabel}
@@ -158,7 +158,7 @@
 		`)
 		@endif
 
-		<!-- Card 3: 월평균 -->
+		<%-- Card 3: 월평균 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${monthlyAverageLabel}</div>
 				<div class="text-xl font-bold"><span id="avgAmountDisplay" class="amount-value">-</span></div>
@@ -167,7 +167,7 @@
 
 	</div>
 
-	<!-- 변동 요인: 전기 대비 종목별 배당 증감(왜 차이가 났는지) -->
+	<%-- 변동 요인: 전기 대비 종목별 배당 증감(왜 차이가 났는지) --%>
 	@if(hasComparison && dividendChangeContributors != null && !dividendChangeContributors.isEmpty())
 	@template._components.ui.card(cssClass = "mb-4", id = "dividendChangeCard", body = @`
 			<div class="flex items-baseline justify-between gap-2 mb-2">
@@ -176,7 +176,7 @@
 				<span class="text-xs text-base-content/60">vs <span class="whitespace-nowrap date-whole">${prevStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${prevEndDate.toString()}</span></span>
 				@endif
 			</div>
-			<!-- 선택 합산 패널: 수익률 랭킹(data-dividend-yield-selection-summary)과 동일한 UX -->
+			<%-- 선택 합산 패널: 수익률 랭킹(data-dividend-yield-selection-summary)과 동일한 UX --%>
 			<div class="selection-reveal"><div>
 			<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
 				 data-dividend-change-summary
@@ -247,8 +247,8 @@
 			@endif
 			<script nonce="${CspNonceHolder.getNonce()}">
 			(function() {
-				// 변동 요인 행 선택 합산 — 수익률 랭킹의 선택 방식(행 클릭 토글 + 상단 요약 + 선택 해제)과 동일.
-				// 행 결합 · 금액 넣기는 stockLayout 이 먼저 싣는 /js/stock/rowSelection.js(실현손익 표와 같은 것 - 2026-10-22 에 모았다).
+				<%-- 변동 요인 행 선택 합산 — 수익률 랭킹의 선택 방식(행 클릭 토글 + 상단 요약 + 선택 해제)과 동일. --%>
+				<%-- 행 결합 · 금액 넣기는 stockLayout 이 먼저 싣는 /js/stock/rowSelection.js(실현손익 표와 같은 것 - 2026-10-22 에 모았다). --%>
 				var RS = window.StockRowSelection;
 				var card = document.getElementById('dividendChangeCard');
 				if (!RS || !card || card.dataset.selectionInitialized === 'true') return;

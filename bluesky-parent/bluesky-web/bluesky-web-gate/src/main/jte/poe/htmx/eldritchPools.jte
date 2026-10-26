@@ -5,7 +5,7 @@
 @param PoeEldritch eldritch
 @param boolean ko = false
 
-<%-- 총주교/포식자 각 팩션의 계열 목록 — 접이식 카드, 티어 사다리(강→약) --%>
+<%-- 총주교/포식자 각 팩션의 계열 목록 — 접이식 카드, 등급 사다리(강→약) --%>
 <div class="grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
 	@for(var pair : java.util.List.of(
 			java.util.Map.entry(eldritch.exarchFaction(), eldritch.exarch()),
@@ -39,7 +39,9 @@
 						<div class="border-t border-base-200 px-3 py-1.5 space-y-0.5">
 							@for(PoeEldritch.Tier t : fam.tiers())
 								<div class="flex items-baseline gap-2 text-[12px]">
-									<span class="shrink-0 font-mono text-base-content/60 w-6">T${t.tier()}</span>
+									<%-- 등급 = 게임 이름(10-23 Q91 — ClientStrings EldritchCurrencyTier1~6 하급 · 상급 · 우수한 · 특출난 · 정교한 · 완벽한, 예전 'T6' 숫자) --%>
+									!{ String[] eldTierKo = {"하급", "상급", "우수한", "특출난", "정교한", "완벽한"}; String[] eldTierEn = {"Lesser", "Greater", "Grand", "Exceptional", "Exquisite", "Perfect"}; int ti = t.tier() - 1; }
+									<span class="shrink-0 text-base-content/60 w-16" data-eldritch-tier="${t.tier()}">${ti >= 0 && ti < 6 ? (ko ? eldTierKo[ti] : eldTierEn[ti]) : "T" + t.tier()}</span>
 									<span class="whitespace-pre-line">$unsafe{PoeText.highlightValues(String.join(", ", ko ? t.ko() : t.en()))}</span>
 								</div>
 							@endfor

@@ -79,7 +79,6 @@ public class MonthlyDividendCalculator {
         latestRow.payDate());
   }
 
-  /** 시뮬레이터 스냅샷 목록의 합계/예상 수익 집계 + 최선 종목 선정. */
   /**
    * 스냅샷 수량이 원장의 현재 보유와 얼마나 어긋났는지.
    *

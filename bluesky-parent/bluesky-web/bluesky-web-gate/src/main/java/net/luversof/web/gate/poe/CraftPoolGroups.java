@@ -43,6 +43,13 @@ public final class CraftPoolGroups {
         + ilvl;
   }
 
+  /** 화폐 배수 글(10-22 Q3e 검토 — jte 세 곳에 같은 식이 있었다) — 정수면 ×10, 아니면 ×1.43. */
+  public static String multText(double x) {
+    return x == Math.rint(x)
+        ? String.format(java.util.Locale.ROOT, "×%d", Math.round(x))
+        : String.format(java.util.Locale.ROOT, "×%.2f", x);
+  }
+
   /** 계열 키를 주소 인자로. */
   public static String enc(String v) {
     return java.net.URLEncoder.encode(v == null ? "" : v, java.nio.charset.StandardCharsets.UTF_8);

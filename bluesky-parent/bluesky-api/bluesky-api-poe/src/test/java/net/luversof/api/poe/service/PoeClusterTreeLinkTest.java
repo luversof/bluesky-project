@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-/** PoE1 빌드 → 트리 보기 c= 항목(10-03 C41) — PoB XML 의 클러스터 주얼 원문에서 크기 · 노드 수 · 스킬 키 · 노터블 · 주얼 칸 수. */
+/** PoE1 빌드 → 트리 보기 c= 항목(10-03 C41) — PoB XML 의 클러스터 주얼 원문에서 크기 · 노드 수 · 스킬 키 · 주요 스킬 · 주얼 칸 수. */
 class PoeClusterTreeLinkTest {
 
   private static final String NL = String.valueOf((char) 10);

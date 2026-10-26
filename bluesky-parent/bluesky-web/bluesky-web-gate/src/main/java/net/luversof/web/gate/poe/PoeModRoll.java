@@ -117,6 +117,54 @@ public final class PoeModRoll {
 
   private static final Pattern NUMBER = Pattern.compile("(?<![\\d.])\\d+(?:\\.\\d+)?");
 
+  // 범위 문장의 숫자 자리 — "(a-b)" · "(a~b)" · 괄호 없는 "a~b"(PoE2 한국어) 는 범위 하나, 그 밖 숫자는 고정값 하나
+  private static final Pattern RANGE_OR_NUMBER =
+      Pattern.compile(
+          "\\((-?\\d+(?:\\.\\d+)?)[-–~](-?\\d+(?:\\.\\d+)?)\\)"
+              + "|(?<![\\d.])(\\d+(?:\\.\\d+)?)~(\\d+(?:\\.\\d+)?)(?![\\d.])"
+              + "|(?<![\\d.])\\d+(?:\\.\\d+)?");
+
+  /**
+   * 인게임 상세 보기(Alt — 10-22 Q3c, craftofexile 'Hold Alt to toggle advanced modifier descriptions')처럼
+   * 굴린 값 뒤에 범위 — "+123 to maximum Life" + "+(115-129) to maximum Life" → "+123(115-129) to maximum
+   * Life". 숫자 자리를 차례로 맞추고, 범위 자리면 굴린 숫자 뒤에 "(a-b)", 고정값 자리면 그대로. 자리 수가 다르면(문장 모양이 달라짐) 굴린 문장 그대로.
+   */
+  public static String withRanges(String rolled, String ranges) {
+    if (rolled == null) {
+      return "";
+    }
+    if (ranges == null) {
+      return rolled;
+    }
+    List<String> slots = new ArrayList<>();
+    Matcher r = RANGE_OR_NUMBER.matcher(ranges);
+    while (r.find()) {
+      if (r.group(1) != null) {
+        slots.add("(" + r.group(1) + "-" + r.group(2) + ")");
+      } else if (r.group(3) != null) {
+        slots.add("(" + r.group(3) + "-" + r.group(4) + ")");
+      } else {
+        slots.add("");
+      }
+    }
+    List<int[]> nums = new ArrayList<>();
+    Matcher m = NUMBER.matcher(rolled);
+    while (m.find()) {
+      nums.add(new int[] {m.start(), m.end()});
+    }
+    if (nums.size() != slots.size() || slots.stream().allMatch(String::isEmpty)) {
+      return rolled;
+    }
+    StringBuilder sb = new StringBuilder();
+    int from = 0;
+    for (int k = 0; k < nums.size(); k++) {
+      sb.append(rolled, from, nums.get(k)[1]).append(slots.get(k));
+      from = nums.get(k)[1];
+    }
+    sb.append(rolled.substring(from));
+    return sb.toString();
+  }
+
   /**
    * 기폭제 퀄리티(C385) — 문장의 숫자를 × (100 + quality) / 100, 0 쪽으로 버림(PoB itemLib.formatValue
    * floorSymmetric). 소수는 그 자릿수에서 버린다. quality 가 0 이하면 그대로.

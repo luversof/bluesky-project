@@ -76,7 +76,10 @@ public class PoePobImportService {
   private static final Map<String, String> ASCENDANCY_KO =
       Map.ofEntries(
           Map.entry("Ascendant", "어센던트"),
-          Map.entry("Juggernaut", "저거너트"),
+          Map.entry("Reliquarian", "렐리쿼리언"),
+          Map.entry("Luminary", "루미너리"),
+          // 이름은 트리 데이터 전직 시작 노드의 한국어(10-25 Q192 — 저거넛 · 렐리쿼리언 · 루미너리)
+          Map.entry("Juggernaut", "저거넛"),
           Map.entry("Berserker", "버서커"),
           Map.entry("Chieftain", "치프틴"),
           Map.entry("Raider", "레이더"),
@@ -157,7 +160,7 @@ public class PoePobImportService {
       java.util.regex.Pattern.compile("<Item\\b[^>]*\\bid=\"(\\d+)\"");
 
   /**
-   * 외부에서 들어온 PoB XML 의 <b>실체 없는 주얼 소켓 참조</b>를 걷어낸다.
+   * 외부에서 들어온 PoB XML 의 <b>실체 없는 주얼 슬롯 참조</b>를 걷어낸다.
    *
    * <p>poe.ninja 실빌드 export 에는 {@code <Socket itemId="N"/>} 만 있고 정작 {@code <Item id="N">} 은 없는 경우가
    * 있다. PoB 의 {@code PassiveSpec:NodesInIntuitiveLeapLikeRadius} 는 {@code item.jewelRadiusIndex} 를
@@ -184,7 +187,7 @@ public class PoePobImportService {
     }
     sm.appendTail(out);
     if (dropped > 0) {
-      logger.info("PoB XML 정화: 실체 없는 주얼 소켓 참조 {}개 제거", dropped);
+      logger.info("PoB XML 정화: 실체 없는 주얼 슬롯 참조 {}개 제거", dropped);
     }
     return out.toString();
   }
@@ -521,8 +524,8 @@ public class PoePobImportService {
     List<String> kindsAll = extractModEntries(lines, modStart).stream().map(e -> e[1]).toList();
     // 모드 줄 한국어화(실패분은 영문 유지) — 고유도 옮긴다: 빌드 화면 고유 툴팁이 실제 굴림 수치를 보여 준다(10-04 C139, 예전엔 고유 일반 상세)
     List<String> modLinesKo = poeModTranslateService.translate(modLines);
-    // PoB 는 "Implicits: N" 뒤 N줄을 임플리싯으로 읽는다. 메타 줄은 모드 앞에 몰려 있으므로
-    // 추출된 모드 목록의 앞 N줄이 곧 임플리싯이다. 인게임처럼 구분선으로 갈라 보여주려면 여기서 나눠야 한다.
+    // PoB 는 "Implicits: N" 뒤 N줄을 고정 속성으로 읽는다. 메타 줄은 모드 앞에 몰려 있으므로
+    // 추출된 모드 목록의 앞 N줄이 곧 고정 속성이다. 인게임처럼 구분선으로 갈라 보여주려면 여기서 나눠야 한다.
     int implicitCount = implicitCount(lines);
     int split = Math.min(implicitCount, modLines.size());
     List<String> implicitLines = List.copyOf(modLines.subList(0, split));
@@ -686,7 +689,7 @@ public class PoePobImportService {
 
   /**
    * 마법 아이템 이름 "Vivid Rusted Cuirass of the Whelpling" → "선명한 녹슨 흉갑 - 새끼용". 게임 ClientStrings
-   * MagicNamePrefixSuffix = "{1} {0} {2}" (한국어도 접두 · 베이스 · 접미 순), 옵션 이름은 모드 데이터의 티어 이름(영 · 한). 접두 ·
+   * MagicNamePrefixSuffix = "{1} {0} {2}" (한국어도 접두 · 베이스 · 접미 순), 옵션 이름은 모드 데이터의 등급 이름(영 · 한). 접두 ·
    * 접미 중 있는 것은 모두 옮겨져야 하고, 아니면 null(10-04 C145).
    */
   private String magicNameKo(String name, String baseType, String baseKo) {
@@ -874,8 +877,8 @@ public class PoePobImportService {
   // ── 트리 보기 주소(10-03 C41) ──────────────────────────────
 
   /**
-   * /poe/tree 주소 — nodes= 에 클러스터 주얼 구성(c=소켓:크기:노드수:스킬키:노터블|..:주얼칸수)과 고유 주얼(j=노드:slug)을 붙인다. 트리 뷰어는
-   * c= 로 클러스터 노드(id ≥ 65536)를 다시 만들어야 그 할당이 살고 점수에 든다 — 예전엔 nodes 만 넘겨 실빌드가 "포인트 103 / 123"(실제
+   * /poe/tree 주소 — nodes= 에 클러스터 주얼 구성(c=소켓:크기:노드수:스킬키:주요 스킬|..:주얼칸수)과 고유 주얼(j=노드:slug)을 붙인다. 트리
+   * 뷰어는 c= 로 클러스터 노드(id ≥ 65536)를 다시 만들어야 그 할당이 살고 점수에 든다 — 예전엔 nodes 만 넘겨 실빌드가 "포인트 103 / 123"(실제
    * 122)으로 보였다.
    */
   private String treeLink(Element root, Element build, Element spec) {
@@ -991,7 +994,7 @@ public class PoePobImportService {
       java.util.regex.Pattern.compile("(?m)1 Added Passive Skill is (.+?)\\s*$");
 
   /**
-   * 클러스터 주얼 원문 → 트리 뷰어 c= 한 항목(소켓:크기:노드수:스킬키:노터블|..:주얼칸수). 클러스터가 아니면 null. 스킬 키는 "Added Small
+   * 클러스터 주얼 원문 → 트리 뷰어 c= 한 항목(소켓:크기:노드수:스킬키:주요 스킬|..:주얼칸수). 클러스터가 아니면 null. 스킬 키는 "Added Small
    * Passive Skills grant:" 문구를 스킬 첫 스탯과 숫자를 지우고 맞댄다(값은 크기마다 달라도 문구는 같다).
    */
   static String clusterEntry(
@@ -1006,7 +1009,7 @@ public class PoePobImportService {
     java.util.regex.Matcher override = CLUSTER_SOCKET_OVERRIDE.matcher(text);
     java.util.regex.Matcher nothing = CLUSTER_NOTHINGNESS.matcher(text);
     if (override.find()) {
-      // PoB PassiveSpec:BuildSubgraph — 노드 수 = 소켓 + 노터블(0) + 아무것도 없는 작은 패시브, 스킬 없음(Nothingness)
+      // PoB PassiveSpec:BuildSubgraph — 노드 수 = 소켓 + 주요 스킬(0) + 아무것도 없는 작은 패시브, 스킬 없음(Nothingness)
       int sockets = Integer.parseInt(override.group(1));
       int nodes = sockets + (nothing.find() ? Integer.parseInt(nothing.group(1)) : 0);
       return socketId + ":" + base.group(1) + ":" + nodes + ":::" + sockets;
@@ -1220,7 +1223,7 @@ public class PoePobImportService {
   /**
    * 트리 보기 주소의 나머지(10-03 C43) — 시뮬 결과 링크(simOptimizeResult.jte)와 같은 이름들: class · asc(없으면 사이온으로 열려 편집
    * 때 트리가 날아간다), masteries=노드:효과(PoB Spec masteryEffects "{노드,효과}"), tt=노드:문신명|…(Overrides 의
-   * Tattoo), an=도유 노터블 id(장비 "Allocates X").
+   * Tattoo), an=성유 주요 스킬 id(장비 "Allocates X").
    */
   private void appendTreeExtras(StringBuilder link, Element root, Element build, Element spec) {
     java.nio.charset.Charset utf8 = java.nio.charset.StandardCharsets.UTF_8;
@@ -1271,7 +1274,7 @@ public class PoePobImportService {
     }
   }
 
-  /** 장비 원문의 "Allocates X" 중 도유 가능한 노터블 → 노드 id(처음 하나 — 뷰어 an= 은 하나). */
+  /** 장비 원문의 "Allocates X" 중 성유 가능한 주요 스킬 → 노드 id(처음 하나 — 뷰어 an= 은 하나). */
   private Integer anointNode(Element root) {
     Element itemsEl = firstChild(root, "Items");
     if (itemsEl == null || !poeTreeGraphService.hasData()) {

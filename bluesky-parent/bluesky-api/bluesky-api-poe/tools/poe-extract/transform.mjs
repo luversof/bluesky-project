@@ -83,6 +83,9 @@ const scopeBySkill = (() => {
 	return map;
 })();
 const scopeDescribers = new Map();
+/** 게임 링크 표기 "[Id|보이는 글자]" → 보이는 글자(Q50). "[DNT]" 같은 단독 괄호는 남긴다(statDescriptions unmark 와 달리 — 개발 표식은 C299 결정대로 원문). */
+const unlink = (text) => (text == null ? text : text.replace(/\[([^\]|]+)\|([^\]]+)\]/g, "$2"));
+
 function describerForScope(scope) {
 	if (!scope || scope === "skill_stat_descriptions") return describe;
 	if (scope === "gem_stat_descriptions") return describeSupport;
@@ -154,7 +157,10 @@ for (const gem of en.gems) {
 		.map((t) => ko.tags[t] && ko.tags[t].Tag)
 		.filter((t) => t);
 
-	const desc = gem.IsSupport ? describeSupport : describerForScope(granted && scopeBySkill.get(granted.Id));
+	const descRaw = gem.IsSupport ? describeSupport : describerForScope(granted && scopeBySkill.get(granted.Id));
+	// 게임 링크 표기 "[EmpoweredSpell|강화]" → 보이는 글자(10-23 Q50 — 맹약 젬 4종 스탯 · 퀄리티 줄에 그대로 나왔다). 리마인더는 원래 기술자 것
+	const desc = (...args) => descRaw(...args).map(unlink);
+	Object.defineProperty(desc, "reminders", { get: () => descRaw.reminders });
 	// 레벨별 수치: 요구 레벨/소모/재사용/크리 확률/피해 효율/지원 배율
 	const levels = (perLevelByEffect.get(effect.GrantedEffect) || []).map((row) => {
 		const stat = statsByEffectLevel.get(effect.GrantedEffect + ":" + row.Level);
@@ -188,8 +194,13 @@ for (const gem of en.gems) {
 			costType,
 			// 오라/헤럴드 예약(마나 예약 %). 게임 원본은 permille 스케일(5000=50%) → /100.
 			reservation: row.ManaReservationPercent > 0 ? row.ManaReservationPercent / 100 : null,
+			// 고정 마나 점유(10-23 Q51 — 명료함 · 활력 같은 오라는 % 가 아니라 GEPL.ManaReservationFlat 으로 점유, 인게임 '점유: 마나 34'.
+			//   PoB Export skills.lua manaReservationFlat 과 같은 열 — config.json 에 열 추가). 없으면 null
+			reservationFlat: row.ManaReservationFlat > 0 ? row.ManaReservationFlat : null,
 			costMultiplier: gem.IsSupport ? row.CostMultiplier : null,
 			cooldownMs: row.Cooldown > 0 ? row.Cooldown : null,
+			// 재사용 사용 횟수(10-23 Q49b — 인게임 'Cooldown Time: 3.50 sec (3 uses)', ClientStrings ItemDisplaySkillGemCooldownValueCount). 2 이상만
+			cooldownUses: row.Cooldown > 0 && row.StoredUses > 1 ? row.StoredUses : null,
 			critChance: critChance > 0 ? critChance / 100 : null,
 			// 게임 값은 100% 에 **더하는** 만분율(+5000 = 150%, -1840 = 81.6%) — PoB 도 1 + x/10000(10-09 C224: 예전 x/100 · 양수만이라 회오리바람
 			//   20레벨 공격 피해가 "50%"(실제 150%), 파이어볼 추가 피해 효율 380%(실제 480%), 100% 미만 단계(회오리 1레벨 81.6%)는 줄째 빠졌다)
@@ -271,12 +282,12 @@ for (const gem of en.gems) {
 		reqDexPct: gem.DexterityRequirementPercent || null,
 		reqIntPct: gem.IntelligenceRequirementPercent || null,
 		castTimeMs: granted && !gem.IsSupport ? granted.CastTime : null,
-		description: gem.IsSupport ? effect.SupportText : active ? active.Description : null,
-		descriptionKo: gem.IsSupport
+		description: unlink(gem.IsSupport ? effect.SupportText : active ? active.Description : null),
+		descriptionKo: unlink(gem.IsSupport
 			? effectKo && effectKo.SupportText
 			: activeKo
 				? activeKo.Description
-				: null,
+				: null),
 		tags: tagNames,
 		tagsKo: tagNamesKo,
 		qualityStatLines,

@@ -132,6 +132,8 @@
 				</label>
 			</form>
 
+			<%-- 붙여넣기 · 보관함은 넓은 화면에서 한 줄(10-23 Q35 — 첫 화면에서 카드를 위로) --%>
+			<div class="grid gap-2 lg:grid-cols-2 items-start min-w-0" data-craft-tools-row>
 			<%-- 게임 아이템 붙여넣기(10-20 C485, craftofexile 의 Import item) — 게임에서 Ctrl+C(상세 Ctrl+Alt+C)한 글. 이 화면 아무 데서나 Ctrl+V 해도 연다(common.ts) --%>
 			<details class="rounded-box border border-base-300 bg-base-100 px-3 py-2" data-craft-import>
 				<summary class="cursor-pointer text-sm font-medium">${ko ? "게임 아이템 붙여넣기" : "Paste an in-game item"} <span class="text-xs font-normal text-base-content/60">${ko ? "— 게임에서 아이템에 마우스를 올리고 Ctrl+C(옵션 이름 · 등급까지는 Ctrl+Alt+C), 이 화면에서 Ctrl+V · Path of Building 아이템 글 · 빌드 코드(빌드 아이템 중 고르기)도" : "— hover the item in game, press Ctrl+C (Ctrl+Alt+C for names and tiers), then Ctrl+V on this page · Path of Building item text or a build code (pick a build item) works too"}</span></summary>
@@ -146,7 +148,15 @@
 			<%-- 보관함(10-20 C518, craftofexile beta 의 Inventory) — 이 브라우저에 담아 둔 아이템(공유 링크)을 다시 연다, 목록은 common.ts 가 그린다 --%>
 			<details class="rounded-box border border-base-300 bg-base-100 px-3 py-2" data-craft-inventory data-inv-lang="${ko ? "ko" : "en"}">
 				<summary class="cursor-pointer text-sm font-medium">${ko ? "보관함" : "Inventory"} <span class="text-xs font-normal text-base-content/60" data-craft-inv-count></span> <span class="text-xs font-normal text-base-content/60">${ko ? "— 저장한 아이템을 그대로 다시 엽니다(이 브라우저에만)" : "— reopen saved items as they were (this browser only)"}</span></summary>
+				<%-- 보관함 탭(10-23 Q22, craftofexile 'storage tabs') — 탭 줄은 common.ts renderCraftInventory 가 그린다. 저장은 고른 탭에, 탭을 지우면 아이템은 기본 탭으로 --%>
+				<div class="mt-2 flex flex-wrap items-center gap-1" role="group" aria-label="${ko ? "보관함 탭" : "Inventory tabs"}" data-craft-inv-tabs></div>
 				<div class="mt-2 space-y-1 min-w-0" data-craft-inv-list></div>
+				<div class="mt-2 flex flex-wrap items-center gap-2 text-xs" data-craft-inv-tab-tools>
+					<input type="text" maxlength="20" class="input input-xs input-bordered w-32" placeholder="${ko ? "새 탭 이름" : "New tab name"}" aria-label="${ko ? "새 탭 이름" : "New tab name"}" data-craft-inv-tab-new>
+					<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-inv-tab-add>${ko ? "탭 만들기" : "Add tab"}</button>
+					<button type="button" class="btn btn-xs btn-ghost border border-base-300" hidden data-craft-inv-tab-del>${ko ? "이 탭 지우기(아이템은 기본 탭으로)" : "Delete this tab (items move to Main)"}</button>
+					<span class="text-success" aria-live="polite" data-craft-inv-tab-msg></span>
+				</div>
 				<%-- 보관함 옮기기(10-21 C535) — 목록을 글로 복사해 다른 브라우저 · PC 의 이 칸에 붙여넣으면 합친다(같은 사이트 제작 화면 주소만) --%>
 				<details class="mt-2 text-xs" data-craft-inv-move>
 					<summary class="cursor-pointer select-none text-base-content/70">${ko ? "다른 브라우저로 옮기기" : "Move to another browser"}</summary>
@@ -160,6 +170,7 @@
 					</div>
 				</details>
 			</details>
+			</div>
 			@if(imported)
 				<div role="status" class="alert ${importNote != null && !importNote.isBlank() ? "alert-warning" : "alert-success"} py-2 text-sm" data-craft-import-note>
 					<span class="min-w-0 wrap-anywhere">${ko ? "게임 아이템을 가져왔습니다." : "Imported the in-game item."}@if(importNote != null && !importNote.isBlank()) ${ko ? "확인할 것: " : "Check: "}${importNote}@endif</span>
@@ -176,7 +187,7 @@
 				<%-- 계산기(10-15 C336) — 계열마다 최소 등급을 고르면 방법별 기대 비용(가장 적은 비용 순). 목표는 일반 → 레어 기준 전체 풀에서 고른다 --%>
 				<section id="craft-calc" class="space-y-3 border-t border-base-300 pt-4 scroll-mt-24" data-craft-calc data-no-success-toast>
 					<h2 class="text-lg font-semibold">${ko ? "제작 계산기 — 가장 적은 비용" : "Crafting calculator — cheapest method"}</h2>
-					<p class="text-sm text-base-content/60">${ko ? "목표 등급을 고르면 에센스 · 화석 · 수확 · 제작대(메타) · 짐승 · 화폐를 모두 섞어 지금 아이템에서 가장 싼 길을 찾습니다(같이 못 쓰는 조합은 제작 규칙대로 막음)." : "Pick target tiers — the cheapest path from the current item mixing essences, fossils, harvest, bench (meta), beasts and orbs (invalid combinations blocked by the crafting rules)."}</p>
+					<p class="text-sm text-base-content/60">${ko ? "목표 등급을 고르면 에센스 · 화석 · 수확 · 작업대(메타) · 야수 · 화폐를 모두 섞어 지금 아이템에서 가장 싼 길을 찾습니다(같이 못 쓰는 조합은 제작 규칙대로 막음)." : "Pick target tiers — the cheapest path from the current item mixing essences, fossils, harvest, bench (meta), beasts and orbs (invalid combinations blocked by the crafting rules)."}</p>
 					<%-- 한 화면(C458): 왼쪽 목표 · 시작 · 실행, 오른쪽 결과 --%>
 					<%-- 가격 직접 입력(10-21 C529, craftofexile 'custom pricing') — 비우면 시세. 이 브라우저에 저장, 계산 · 쓴 화폐 · 최적 조합 비용에 쓴다(common.ts 가 요청마다 prices 로) --%>
 					@if(!craftPriceList.isEmpty())
@@ -191,7 +202,7 @@
 						</details>
 					@endif
 					<div class="grid gap-4 items-start lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]" data-craft-calc-workspace>
-					<form hx-post="/poe/htmx/craft/calc" hx-target="#craft-calc-result" hx-swap="outerHTML" hx-include="#craft-emu input[name=state]" hx-disabled-elt="find [data-craft-calc-run], find [data-craft-strategy-run]" hx-indicator="[data-craft-calc-busy]" class="space-y-2 min-w-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:flex lg:flex-col lg:overflow-y-auto lg:pr-1" data-craft-calc-form>
+					<form hx-post="/poe/htmx/craft/calc" hx-target="#craft-calc-result" hx-swap="outerHTML" hx-include="#craft-emu input[name=state]" hx-disabled-elt="[data-craft-calc-run], [data-craft-strategy-run]" hx-indicator="[data-craft-calc-busy]" class="space-y-2 min-w-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:flex lg:flex-col lg:overflow-y-auto lg:pr-1" data-craft-calc-form>
 						<input type="hidden" name="itemClass" value="${activeClass}">
 						<input type="hidden" name="variant" value="${activeVariant}">
 						<input type="hidden" name="influence" value="${activeInfluence}">
@@ -229,25 +240,25 @@
 										}
 										<label class="flex items-center gap-2 text-xs min-w-0 rounded px-1 py-0.5" data-craft-calc-family="${gen}:${fe.getKey()}" data-craft-calc-ids="${String.join(" ", tiers.stream().filter(t -> t.tierRank() != null).map(t -> t.id() + "=" + t.tierRank()).toList())}" data-picked-row>
 											<span class="text-[10px] font-mono text-base-content/60 w-6 shrink-0">${"prefix".equals(gen) ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}</span>
-											<select name="t_${gen}:${fe.getKey()}" class="select select-xs select-bordered w-24 shrink-0 h-7 min-h-0" aria-label="${ko ? "최소 등급" : "Minimum tier"}">
+											<select name="t_${gen}:${fe.getKey()}" class="select select-xs select-bordered w-24 shrink-0 h-7 min-h-0" aria-label="${(ko ? "최소 등급 — " : "Minimum tier — ") + (mx == null || mx.isEmpty() ? fe.getKey() : mx.get(0))}">
 												<option value="">-</option>
 												@for(PoeCraft.PoolLine t : tiers)
 													@if(t.tierRank() != null)<option value="${t.tierRank()}">T1@if(t.tierRank() > 1)~T${t.tierRank()}@endif</option>@endif
 												@endfor
 											</select>
 											<span class="min-w-0 wrap-anywhere">@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(net.luversof.web.gate.poe.PoeModRange.range(mn != null && i < mn.size() ? mn.get(i) : null, mx.get(i)))}@if(i < mx.size() - 1), @endif@endfor@template.poe.htmx.craftCalcRowExtra(top = top, tiers = tiers, key = gen + ":" + fe.getKey(), extras = calcExtras, infName = active == null || active.influences() == null ? activeInfluence : active.influences().stream().filter(x -> x.key().equals(activeInfluence)).map(x -> ko && x.nameKo() != null ? x.nameKo() : x.name()).findFirst().orElse(activeInfluence))</span>
-											<input type="checkbox" name="t_grp:${gen}:${fe.getKey()}" value="1" class="checkbox checkbox-xs ml-auto shrink-0" title="${ko ? "묶음에 넣기 — 위 '묶음'에서 고른 개수 이상 채우면 충족(등급을 고르면 그 등급 이상)" : "Add to the group — met when at least the chosen number of the group is hit (picked tier or better)"}" aria-label="${ko ? "묶음에 넣기" : "Add to group"}" data-craft-calc-grp>
+											<input type="checkbox" name="t_grp:${gen}:${fe.getKey()}" value="1" class="checkbox checkbox-xs ml-auto shrink-0" title="${ko ? "묶음에 넣기 — 위 '묶음'에서 고른 개수 이상 채우면 충족(등급을 고르면 그 등급 이상)" : "Add to the group — met when at least the chosen number of the group is hit (picked tier or better)"}" aria-label="${(ko ? "묶음에 넣기 — " : "Add to group — ") + (mx == null || mx.isEmpty() ? fe.getKey() : mx.get(0))}" data-craft-calc-grp>
 										</label>
 									@endfor
 								@endfor
 							</div>
 						</div>
-						<%-- 정복자 · 쉐이퍼 · 엘더 바로가기 · 제작대 안내 · 바알 타락 임플리싯(10-21 C548) — 조각(craft.jte 생성 메서드 한도) --%>
+						<%-- 정복자 · 쉐이퍼 · 엘더 바로가기 · 작업대 안내 · 바알 타락 고정 속성(10-21 C548) — 조각(craft.jte 생성 메서드 한도) --%>
 						@template.poe.htmx.craftCalcMore(extras = calcExtras, influences = active == null || active.influences() == null ? java.util.List.of() : active.influences(), part = "top", activeInfluence = activeInfluence, infFamilies = calcExtras == null || calcExtras.influenceIds() == null ? 0 : calcPool.stream().filter(p -> calcExtras.influenceIds().contains(p.id())).map(p -> p.gen() + ":" + p.family()).distinct().count())
-						<%-- 빈 자리 남기기(10-20 C519, craftofexile 계산기 'open affix') — 목표 옵션을 채운 뒤에도 그 쪽에 남아야 할 빈 자리(제작대 옵션 · 다음 제작용).
+						<%-- 빈 자리 남기기(10-20 C519, craftofexile 계산기 'open affix') — 목표 옵션을 채운 뒤에도 그 쪽에 남아야 할 빈 자리(작업대 옵션 · 다음 제작용).
 						     방법 비교 표 · 적중 확률 · 연타 · 전략 모의 · 최적 조합(C520) 모두 반영 --%>
 						<div class="flex flex-wrap items-center gap-2 text-xs" data-craft-calc-open>
-							<span class="text-base-content/70" title="${ko ? "목표 옵션을 다 채운 뒤에도 남아 있어야 할 빈 자리 — 제작대 옵션 · 다음 제작을 위해(제작대 옵션도 자리를 차지)" : "Open slots that must remain after the targets are met — for a bench craft or the next step (bench mods take a slot too)"}">${ko ? "빈 자리 남기기" : "Keep open"}</span>
+							<span class="text-base-content/70" title="${ko ? "목표 옵션을 다 채운 뒤에도 남아 있어야 할 빈 자리 — 작업대 옵션 · 다음 제작을 위해(작업대 옵션도 자리를 차지)" : "Open slots that must remain after the targets are met — for a bench craft or the next step (bench mods take a slot too)"}">${ko ? "빈 자리 남기기" : "Keep open"}</span>
 							@for(String side : java.util.List.of("prefix", "suffix"))
 								<label class="flex items-center gap-1">${"prefix".equals(side) ? (ko ? "접두" : "Prefix") : (ko ? "접미" : "Suffix")}
 									<select name="t_open:${side}" class="select select-xs select-bordered h-7 min-h-0 w-16" aria-label="${"prefix".equals(side) ? (ko ? "남길 빈 접두 자리" : "Open prefixes to keep") : (ko ? "남길 빈 접미 자리" : "Open suffixes to keep")}">
@@ -277,9 +288,9 @@
 						<%-- 탐광 · 엘드리치 목표(10-21 C549) — 조각 --%>
 						@template.poe.htmx.craftCalcTargetsMore(extras = calcExtras)
 						<div class="flex flex-wrap items-center gap-2" data-craft-calc-run-row>
-							<label class="flex items-center gap-1 text-xs" title="${ko ? "최적 조합은 지금 아이템 그대로(이미 맞은 목표 · 옵션을 살린 채)에서, 아래 방법별 비교 표는 분열 옵션과 엘드리치 임플리싯만 남기고 계산합니다(C494 — 붙여넣은 게임 아이템을 마저 완성하는 비용)" : "The optimal plan starts from the current item as is (keeping matched targets); the method table keeps only fractured modifiers and eldritch implicits"}"><input type="checkbox" name="fromState" value="1" class="checkbox checkbox-xs" data-craft-from-state checked>${ko ? "에뮬레이터의 지금 아이템에서 시작" : "Start from the emulator item"}</label>
+							<label class="flex items-center gap-1 text-xs" title="${ko ? "최적 조합은 지금 아이템 그대로(이미 맞은 목표 · 옵션을 살린 채)에서, 아래 방법별 비교 표는 분열 옵션과 섬뜩한 고정 속성만 남기고 계산합니다(붙여넣은 게임 아이템을 마저 완성하는 비용)" : "The optimal plan starts from the current item as is (keeping matched targets); the method table keeps only fractured modifiers and eldritch implicits"}"><input type="checkbox" name="fromState" value="1" class="checkbox checkbox-xs" data-craft-from-state checked>${ko ? "에뮬레이터의 지금 아이템에서 시작" : "Start from the emulator item"}</label>
 							<button type="submit" class="btn btn-sm btn-primary" data-craft-calc-run>${ko ? "최소 비용 찾기" : "Find the cheapest way"}</button>
-							<span class="htmx-indicator text-xs text-base-content/70" data-craft-calc-busy role="status"><span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? "계산 중(최대 10초)…" : "Calculating (up to 10 s)…"}</span>
+							<span class="htmx-indicator text-xs text-base-content/70" data-craft-calc-busy role="status"><span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? "1/2 방법별 비교 표 계산 중(최대 10초)…" : "1/2 Calculating the method table (up to 10 s)…"}</span>
 						</div>
 						<%-- 최적 조합은 표와 동시에 시작(C458 — 표가 끝나길 기다리면 6~9초 늦었다). 백그라운드 작업이라 게이트 읽기 제한과 무관 --%>
 						<div hidden hx-post="/poe/htmx/craft/optimize" hx-trigger="submit from:closest form" hx-include="closest form, #craft-emu input[name=state]" hx-target="#craft-opt-result" hx-swap="outerHTML" data-craft-optimize-trigger></div>
@@ -305,7 +316,7 @@
 								<option value="suffix-lock">${ko ? "카오스로 접미 확보 → [접미 잠금 + 카오스] 반복" : "Chaos for suffixes → [suffix lock + chaos]"}</option>
 								<option value="custom">${ko ? "직접 엮기(아래 단계 표)" : "Custom (steps below)"}</option>
 							</select>
-							<button type="submit" class="btn btn-sm" hx-post="/poe/htmx/craft/strategy" hx-target="#craft-strategy-result" hx-swap="outerHTML" hx-disabled-elt="this" hx-indicator="[data-craft-calc-busy]" data-craft-strategy-run>${ko ? "전략 모의" : "Simulate strategy"}</button>
+							<button type="submit" class="btn btn-sm" hx-post="/poe/htmx/craft/strategy" hx-target="#craft-strategy-result" hx-swap="outerHTML" hx-include="#craft-emu input[name=state], #craft-emu input[name=baseName], #craft-emu input[name=passives]" hx-disabled-elt="this" hx-indicator="[data-craft-calc-busy]" data-craft-strategy-run>${ko ? "전략 모의" : "Simulate strategy"}</button>
 						</div>
 						<%-- 전략 직접 엮기(10-15 C344 — C339 남은 것). 줄마다 화폐 · 언제까지(한 번 / 목표 전부 · 접두 목표 · 접미 목표가 맞을 때까지) · 최대 횟수.
 						     "다음 줄과 묶음"이면 이어지는 줄들을 한 묶음으로 반복한다(예: [접두 잠금 → 카오스] 반복). 전략 칸에서 "직접 엮기"를 골라야 쓴다 --%>
@@ -317,11 +328,11 @@
 									new String[] {"ALCHEMY", "연금술의 오브", "Orb of Alchemy"}, new String[] {"CHAOS", "카오스 오브", "Chaos Orb"},
 									new String[] {"EXALT", "엑잘티드 오브", "Exalted Orb"}, new String[] {"ANNUL", "소멸의 오브", "Orb of Annulment"},
 									new String[] {"SCOUR", "정제의 오브", "Orb of Scouring"}, new String[] {"VEILED_CHAOS", "장막의 카오스 오브", "Veiled Chaos Orb"},
-									new String[] {"BENCH_REMOVE", "제작대 옵션 제거", "Remove crafted mods"})) acts.add(new String[] {ko ? "기본 화폐" : "Basic currency", b[0], ko ? b[1] : b[2]});
+									new String[] {"BENCH_REMOVE", "작업대 옵션 제거", "Remove crafted mods"})) acts.add(new String[] {ko ? "기본 화폐" : "Basic currency", b[0], ko ? b[1] : b[2]});
 							for (PoeCraft.Essence e : essences) acts.add(new String[] {ko ? "에센스" : "Essence", "ESSENCE:" + e.slug(), ko ? e.nameKo() : e.name()});
 							if (options != null) {
 								for (PoeCraft.Fossil f : options.fossils()) acts.add(new String[] {ko ? "화석(하나)" : "Fossil (one)", "FOSSIL:" + f.slug(), ko ? f.nameKo() : f.name()});
-								for (PoeCraft.BenchCraft b : options.bench()) if (b.modId() != null && b.modId().contains("MasterItemGeneration")) acts.add(new String[] {ko ? "제작대 메타" : "Bench meta", "BENCH:" + b.modId(), String.join(" ", ko && b.ko() != null && !b.ko().isEmpty() ? b.ko() : b.en())});
+								for (PoeCraft.BenchCraft b : options.bench()) if (b.modId() != null && b.modId().contains("MasterItemGeneration")) acts.add(new String[] {ko ? "작업대 메타" : "Bench meta", "BENCH:" + b.modId(), String.join(" ", ko && b.ko() != null && !b.ko().isEmpty() ? b.ko() : b.en())});
 								for (PoeCraft.Harvest h : options.harvest()) if ("reroll_with_mod".equals(h.command())) acts.add(new String[] {ko ? "수확" : "Harvest", "HARVEST:" + h.id(), ko && h.textKo() != null ? h.textKo() : h.text()});
 							}
 							// 섞어 쓰는 화폐(C340~C346) — 분열 · 장막 엑잘 · 엘드리치 · 지배 · 각성자
@@ -336,13 +347,13 @@
 							if (java.util.Set.of("Body Armour", "Boots", "Gloves", "Helmet").contains(activeClass)) {
 								String[] tk = {"하급", "상급", "우수한", "특출난"};
 								String[] te = {"Lesser", "Greater", "Grand", "Exceptional"};
-								for (int t = 1; t <= 4; t++) acts.add(new String[] {ko ? "엘드리치" : "Eldritch", "EMBER:" + t, ko ? tk[t - 1] + " 섬뜩한 불씨" : te[t - 1] + " Eldritch Ember"});
-								for (int t = 1; t <= 4; t++) acts.add(new String[] {ko ? "엘드리치" : "Eldritch", "ICHOR:" + t, ko ? tk[t - 1] + " 섬뜩한 영액" : te[t - 1] + " Eldritch Ichor"});
-								acts.add(new String[] {ko ? "엘드리치" : "Eldritch", "ELDRITCH_CHAOS", ko ? "섬뜩한 카오스 오브" : "Eldritch Chaos Orb"});
-								acts.add(new String[] {ko ? "엘드리치" : "Eldritch", "ELDRITCH_EXALT", ko ? "섬뜩한 엑잘티드 오브" : "Eldritch Exalted Orb"});
-								acts.add(new String[] {ko ? "엘드리치" : "Eldritch", "ELDRITCH_ANNUL", ko ? "섬뜩한 소멸의 오브" : "Eldritch Orb of Annulment"});
+								for (int t = 1; t <= 4; t++) acts.add(new String[] {ko ? "섬뜩한" : "Eldritch", "EMBER:" + t, ko ? tk[t - 1] + " 섬뜩한 불씨" : te[t - 1] + " Eldritch Ember"});
+								for (int t = 1; t <= 4; t++) acts.add(new String[] {ko ? "섬뜩한" : "Eldritch", "ICHOR:" + t, ko ? tk[t - 1] + " 섬뜩한 영액" : te[t - 1] + " Eldritch Ichor"});
+								acts.add(new String[] {ko ? "섬뜩한" : "Eldritch", "ELDRITCH_CHAOS", ko ? "섬뜩한 카오스 오브" : "Eldritch Chaos Orb"});
+								acts.add(new String[] {ko ? "섬뜩한" : "Eldritch", "ELDRITCH_EXALT", ko ? "섬뜩한 엑잘티드 오브" : "Eldritch Exalted Orb"});
+								acts.add(new String[] {ko ? "섬뜩한" : "Eldritch", "ELDRITCH_ANNUL", ko ? "섬뜩한 소멸의 오브" : "Eldritch Orb of Annulment"});
 								// 갈등의 오브(C412 — C398 은 에뮬레이터에만)
-								acts.add(new String[] {ko ? "엘드리치" : "Eldritch", "CONFLICT", ko ? "갈등의 오브" : "Orb of Conflict"});
+								acts.add(new String[] {ko ? "섬뜩한" : "Eldritch", "CONFLICT", ko ? "갈등의 오브" : "Orb of Conflict"});
 								acts.add(new String[] {ko ? "영향력" : "Influence", "DOMINANCE", ko ? "지배의 오브" : "Orb of Dominance"});
 							}
 							if (options != null) {
@@ -352,15 +363,15 @@
 									acts.add(new String[] {ko ? "영향력" : "Influence", "CONQUEROR:" + c, ko ? n[0] + "의 엑잘티드 오브" : n[1] + "'s Exalted Orb"});
 									acts.add(new String[] {ko ? "영향력" : "Influence", "AWAKENER:" + c, ko ? "각성자의 오브 + " + n[0] : "Awakener's Orb + " + n[1]});
 								}
-								// 짐승 제작(C395 — C387 · C388): 맞바꾸기 · 그 영향력 아이템에 영향력 옵션 · 위상 스킬
-								acts.add(new String[] {ko ? "짐승 제작" : "Beastcraft", "BEAST:swap-suffix", ko ? "접미어 추가, 무작위 접두어 제거" : "Add a Suffix, Remove a Random Prefix"});
-								acts.add(new String[] {ko ? "짐승 제작" : "Beastcraft", "BEAST:swap-prefix", ko ? "접두어 추가, 무작위 접미어 제거" : "Add a Prefix, Remove a Random Suffix"});
+								// 야수 제작(C395 — C387 · C388): 맞바꾸기 · 그 영향력 아이템에 영향력 옵션 · 위상 스킬
+								acts.add(new String[] {ko ? "야수 제작" : "Beastcraft", "BEAST:swap-suffix", ko ? "접미어 추가, 무작위 접두어 제거" : "Add a Suffix, Remove a Random Prefix"});
+								acts.add(new String[] {ko ? "야수 제작" : "Beastcraft", "BEAST:swap-prefix", ko ? "접두어 추가, 무작위 접미어 제거" : "Add a Prefix, Remove a Random Suffix"});
 								for (String c : options.conquerors()) {
 									String[] n = cq.getOrDefault(c, new String[] {c, c});
-									acts.add(new String[] {ko ? "짐승 제작" : "Beastcraft", "BEAST:influence:" + c, ko ? n[0] + " 아이템에 속성 부여 추가" : "Add a Mod to a " + n[1] + " Item"});
+									acts.add(new String[] {ko ? "야수 제작" : "Beastcraft", "BEAST:influence:" + c, ko ? n[0] + " 아이템에 속성 부여 추가" : "Add a Mod to a " + n[1] + " Item"});
 								}
 								if (!activeClass.contains("Flask") && !activeClass.contains("Jewel")) {
-									for (String[] asp : java.util.List.of(new String[] {"cat", "고양이", "Cat"}, new String[] {"avian", "새", "Avian"}, new String[] {"spider", "거미", "Spider"}, new String[] {"crab", "게", "Crab"})) acts.add(new String[] {ko ? "짐승 제작" : "Beastcraft", "BEAST:aspect:" + asp[0], ko ? "30레벨 " + asp[1] + "의 위상 스킬" : "Level 30 Aspect of the " + asp[2] + " skill"});
+									for (String[] asp : java.util.List.of(new String[] {"cat", "고양이", "Cat"}, new String[] {"avian", "새", "Avian"}, new String[] {"spider", "거미", "Spider"}, new String[] {"crab", "게", "Crab"})) acts.add(new String[] {ko ? "야수 제작" : "Beastcraft", "BEAST:aspect:" + asp[0], ko ? "30레벨 " + asp[1] + "의 위상 스킬" : "Level 30 Aspect of the " + asp[2] + " skill"});
 								}
 								// 두카트(C395 — C391~C394): 이 종류에 맞는 것만
 								acts.add(new String[] {ko ? "두카트" : "Ducat", "DUCAT:genteel", ko ? "고상한 자의 두카트" : "The Genteel's Ducat"});
@@ -412,10 +423,10 @@
 					<div class="min-w-0 space-y-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1" data-craft-calc-results>
 						<div id="craft-opt-result" class="rounded-box border border-dashed border-base-300 p-4 text-sm text-base-content/70" data-craft-optimize-empty>${ko ? "목표를 고르고 '최소 비용 찾기'를 누르면 여기에 가장 싼 제작 흐름(상태마다 쓸 수단)이, 아래에 방법별 비교 표가 나옵니다." : "Pick targets and press 'Find the cheapest way' — the cheapest crafting flow appears here and the per-method table below."}</div>
 						@template.poe.htmx.craftCalc(calc = null, targetLabels = java.util.List.of(), ghost = 0)
-						@template.poe.htmx.craftStrategy(result = null, presetLabel = "", targetLabels = java.util.List.of())
+						@template.poe.htmx.craftStrategy(result = null, presetLabel = "", targetLabels = java.util.List.of(), sampleLinks = java.util.List.of())
 					</div>
 					</div>
-					<%-- 바알 타락 임플리싯(10-21 C548) — 작업 영역 아래 전체 폭(폼은 화면 높이 고정 칸) --%>
+					<%-- 바알 타락 고정 속성(10-21 C548) — 작업 영역 아래 전체 폭(폼은 화면 높이 고정 칸) --%>
 					@template.poe.htmx.craftCalcMore(extras = calcExtras, part = "corrupted")
 				</section>
 			@endif

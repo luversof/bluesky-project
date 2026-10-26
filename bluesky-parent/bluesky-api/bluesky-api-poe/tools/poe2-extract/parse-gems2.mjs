@@ -105,6 +105,8 @@ function levelsOf(effectIdx, specific, maxLevel, support = false) {
 			costType: costIdx != null ? costTypes[costIdx]?.Id || null : null,
 			reservation: l?.Reservation || null,
 			cooldownMs: l?.Cooldown || null,
+			// 재사용 사용 횟수(10-23 Q53 — 인게임 'Cooldown Time: 3.50s (3 uses)', ClientStrings ItemDisplaySkillGemCooldownValueCount). 2 이상만
+			cooldownUses: l?.Cooldown && l?.StoredUses > 1 ? l.StoredUses : null,
 			critChance: crit ? crit / 100 : null,
 			// 공격 스킬 배율(10-08 C200) — PoB2 Export/Scripts/skills.lua 식: 피해 = 1 + BaseMultiplier/10000, 공격 속도 = 100 + AttackSpeedMultiplier(%).
 			//   인게임 "공격 피해: 기본 수치의 95%" · "공격 속도: 기본 수치의 90%"(ClientStrings PercentageOfBase). 0 이면 없음
@@ -244,7 +246,11 @@ for (let i = 0; i < gems.length; i++) {
 	const base = bases[g.BaseItemType];
 	const info = pob.get(base.Id) || pobByName.get(base.Name);
 	if (!info) continue; // PoB 기준표에 없는 행 = 미출시/내부용
-	const name = base.Name;
+	// 이름 끝 자리표시 ': {0}' 는 게임이 묶은 야수 · 망령 이름으로 채우는 칸(10-23 Q100 — 'Companion: {0}' · '반려수: {0}' 그대로 나왔다) → 뗀다.
+	//   slug 는 원래 이름 그대로(주소 'companion-0' 유지)
+	const PLACEHOLDER_TAIL = /:\s*\{\d\}\s*$/;
+	const rawName = base.Name;
+	const name = rawName.replace(PLACEHOLDER_TAIL, "");
 	if (!name || name.startsWith("[") || seen.has(name)) continue;
 	seen.add(name);
 	const effIdx = g.GemEffects?.[0];
@@ -306,7 +312,7 @@ for (let i = 0; i < gems.length; i++) {
 		for (const l of levels) {
 			l.grantedSkills = grantedByLevel.map((m) => {
 				const x = m.get(l.level);
-				return x ? { cost: x.cost, costType: x.costType, cooldownMs: x.cooldownMs, critChance: x.critChance, attackDamagePct: x.attackDamagePct, statLines: x.statLines, statLinesKo: x.statLinesKo, statSets: x.statSets?.length ? x.statSets : null } : null;
+				return x ? { cost: x.cost, costType: x.costType, cooldownMs: x.cooldownMs, cooldownUses: x.cooldownUses, critChance: x.critChance, attackDamagePct: x.attackDamagePct, statLines: x.statLines, statLinesKo: x.statLinesKo, statSets: x.statSets?.length ? x.statSets : null } : null;
 			});
 		}
 	}
@@ -319,9 +325,9 @@ for (let i = 0; i < gems.length; i++) {
 	const keywords = [...seenKeywordIds].filter((id) => keywordById.has(id)).map((id) => keywordById.get(id));
 	out.push({
 		id: base.Id,
-		slug: slug(name),
+		slug: slug(rawName),
 		name,
-		nameKo: basesKo[g.BaseItemType].Name || name,
+		nameKo: (basesKo[g.BaseItemType].Name || name).replace(PLACEHOLDER_TAIL, ""),
 		kind: KIND[g.GemType] || "skill",
 		color: COLOR[g.GemColour] || "white",
 		tier: info.tier,

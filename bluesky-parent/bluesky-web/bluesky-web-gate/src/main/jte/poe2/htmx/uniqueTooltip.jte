@@ -18,7 +18,10 @@
 	java.util.List<String> explicits = picked != null ? PoeText.lines(picked.explicitsKo(), picked.explicits()) : PoeText.lines(item.explicitsKo(), item.explicits());
 	// PoE 고유(주황) 색 — PoE1 과 같은 인게임 색
 	String rarity = "#af6025";
-	String itemClass = net.luversof.web.gate.poe.PoeClassNames.poe2(item.itemClassKo(), item.itemClass());
+	// 툴팁 종류 줄 = 단수 분류(10-23 Q39 — Bows · 쇠뇌 → Bow · 석궁)
+	String itemClass = net.luversof.web.gate.poe.PoeClassNames.poe2Tip(item.itemClassKo(), item.itemClass());
+	// 무기는 종류 줄을 속성 칸 첫 줄로(10-23 Q62) — 머리 아래 칸엔 안 쓴다
+	boolean weaponBase = base != null && base.weapon() != null && base.weapon().damageMax() != null && base.weapon().damageMax() > 0;
 	java.util.List<String> flavourLines = PoeText.lines(item.flavourKo(), item.flavour());
 	// 데이터의 "Corrupted"/"타락" 옵션 줄(고유 13) — 인게임은 옵션이 아니라 맨 아래 붉은 한 줄(10-05 C157, PoE1 uniqueDetail 짝)
 	java.util.Set<String> corruptedWords = java.util.Set.of("Corrupted", "타락");
@@ -30,24 +33,29 @@
 		<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${PoeText.name(item.nameKo(), item.name())}</div>
 		<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${PoeText.name(item.baseTypeKo(), item.baseType())}</div>
 	</div>
-	@if(itemClass != null || PoeText.isKorean())
+	@if((itemClass != null && !weaponBase) || PoeText.isKorean())
 		<div class="px-4 pt-1.5 text-center text-[11px]">
-			@if(itemClass != null)<span class="text-white/70">${itemClass}</span>@endif
+			@if(itemClass != null && !weaponBase)<span class="text-white/70">${itemClass}</span>@endif
 			@if(PoeText.isKorean())<div class="text-[10px] text-white/30">${item.name()} · ${item.baseType()}</div>@endif
 		</div>
 	@endif
 	@if(base != null)
-		@template.poe2.htmx.baseProps(base = base, lines = net.luversof.web.gate.poe.PoeLocalProps.join(picked != null ? picked.implicits() : item.implicits(), picked != null ? picked.explicits() : item.explicits()))
+		@template.poe2.htmx.baseProps(base = base, lines = net.luversof.web.gate.poe.PoeLocalProps.join(picked != null ? picked.implicits() : item.implicits(), picked != null ? picked.explicits() : item.explicits()), classLine = weaponBase ? itemClass : null, leadSep = !weaponBase)
 	@endif
 	<%-- 적용 반경(주얼, 10-08 C191 — 게임 ClientStrings JewelRadiusLabel "적용 반경" · JewelRadiusSmall "작게" 등, PoE1 고유 상세의 반경 줄 짝) --%>
 	<%-- 중복 사용 제한(10-08 C197, PoE1 짝 — 게임 ClientStrings JewelItemLimit) --%>
-	@if(item.limit() != null && !item.limit().isBlank())
+	@if((item.limit() != null && !item.limit().isBlank()) || (item.radius() != null && !item.radius().isBlank()))
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px]" data-tt-limit><span class="text-[#7f7f7f]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe.items.detail.limit")}: </span><span class="text-[#e0e0e0]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe.limit." + item.limit().replace(" ", ""), item.limit())}</span></div>
+		<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5" data-tt-jewel-props>
+	@endif
+	@if(item.limit() != null && !item.limit().isBlank())
+		<div data-tt-limit><span class="text-[#7f7f7f]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe.items.detail.limit")}: </span><span class="text-[#e0e0e0]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe.limit." + item.limit().replace(" ", ""), item.limit())}</span></div>
 	@endif
 	@if(item.radius() != null && !item.radius().isBlank())
-		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px]" data-tt-radius><span class="text-[#7f7f7f]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe2.radius.label")}: </span><span class="text-[#e0e0e0]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe2.radius." + item.radius().replace(" ", ""), item.radius())}</span></div>
+		<div data-tt-radius><span class="text-[#7f7f7f]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe2.radius.label")}: </span><span class="text-[#e0e0e0]">${io.github.luversof.boot.context.support.MessageUtil.getMessage("poe2.radius." + item.radius().replace(" ", ""), item.radius())}</span></div>
+	@endif
+	@if((item.limit() != null && !item.limit().isBlank()) || (item.radius() != null && !item.radius().isBlank()))
+		</div>
 	@endif
 	@template.poe2.htmx.requirements(level = item.requiredLevel() != null ? item.requiredLevel() : (base == null ? null : base.reqLevel()), base = base, implicits = picked != null ? picked.implicits() : item.implicits(), explicits = picked != null ? picked.explicits() : item.explicits())
 	@if(implicits != null && !implicits.isEmpty())

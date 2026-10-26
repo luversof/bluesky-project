@@ -200,12 +200,6 @@ class LedgerIntegrityServiceTest {
   }
 
   /**
-   * 원장상 취득한 적이 없는 주식으로 배당을 받을 수는 없다.
-   *
-   * <p>실측 2026-08-22: 하나금융지주 배당 2건에 대응하는 매매 기록이 0건이었다. 손익 집계는 매매에서 파생되므로 그 종목이 아예 빠지고, 종목별 시계열을 전부
-   * 더해도 전체와 배당이 2,100원 어긋난다 - 화면에서는 원인을 알 수 없다.
-   */
-  /**
    * 예시는 상한을 둔다. 전부 실으면 응답 크기가 원장 크기를 따라간다.
    *
    * <p>예전에는 {@code DIVIDEND_TAX_EXCEEDS_TAXABLE} 로 확인했는데, 그 규칙은 분리과세 때문에 걷어냈다. 규칙이 아니라 예시 상한을 보는
@@ -276,6 +270,12 @@ class LedgerIntegrityServiceTest {
         .contains("[KB증권 위탁]");
   }
 
+  /**
+   * 원장상 취득한 적이 없는 주식으로 배당을 받을 수는 없다.
+   *
+   * <p>실측 2026-08-22: 하나금융지주 배당 2건에 대응하는 매매 기록이 0건이었다. 손익 집계는 매매에서 파생되므로 그 종목이 아예 빠지고, 종목별 시계열을 전부
+   * 더해도 전체와 배당이 2,100원 어긋난다 - 화면에서는 원인을 알 수 없다.
+   */
   @Test
   void 매매_기록이_없는_종목의_배당을_찾는다() {
     UUID tradedOnly = UUID.randomUUID();
@@ -294,7 +294,6 @@ class LedgerIntegrityServiceTest {
     assertThat(hit.examples().get(0).detail()).contains("2100");
   }
 
-  /** 날짜를 지정할 수 있는 배당/매매. 기준일 보유 검사는 날짜가 전부이므로 따로 둔다. */
   /**
    * 기준일이 <b>따로</b> 적힌 배당. 지급일은 그보다 뒤로 둔다(결산배당의 실제 모양).
    *
@@ -317,6 +316,7 @@ class LedgerIntegrityServiceTest {
     return dividend;
   }
 
+  /** 날짜를 지정할 수 있는 매매(배당은 위 dividendOn). 기준일 보유 검사는 날짜가 전부이므로 따로 둔다. */
   private Trade tradeOn(String date, TradeType type, int quantity) {
     Trade trade = trade(type, quantity, "1000", "0", "0", type == TradeType.SELL ? "0" : null);
     trade.setTradeDate(Instant.parse(date + "T00:00:00Z"));

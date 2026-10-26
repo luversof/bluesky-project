@@ -100,42 +100,48 @@ public final class PoeText {
     return m.find() ? "&level=" + m.group(1) : "";
   }
 
+  /** 게임 CostTypes 종류(PoE1 · PoE2 합집합) — 메시지 키 poe.gems.cost.value.(소문자 종류) 가 그 FormatText. */
+  private static final java.util.Set<String> COST_TYPES =
+      java.util.Set.of(
+          "Mana",
+          "Life",
+          "ES",
+          "Rage",
+          "Ward",
+          "ManaPercent",
+          "LifePercent",
+          "WardPercent",
+          "ESPercent",
+          "ManaPerMinute",
+          "LifePerMinute",
+          "ManaPercentPerMinute",
+          "LifePercentPerMinute",
+          "ESPerMinute",
+          "ESPercentPerMinute",
+          "RagePerMinute",
+          "WardPerMinute");
+
   /**
-   * 젬 소모 값 — 게임 문구 순서(ClientStrings SkillPopupCostValueMana "마나 {0}" · Life "생명력 {0}", 10-09 C207 —
-   * 예전엔 "8 마나"). 마나 · 생명력 · 에너지 보호막만 그 꼴, 그 밖의 종류(분당 · % 마나)는 예전 꼴(수량 + 종류).
+   * 젬 소모 값 — 게임 CostTypes.FormatText 꼴("마나 {0}" · "{0}% Mana" · "1초당 마나 {0}", 10-09 C207 · 10-23
+   * Q49). 분당 종류는 초당으로 나눠 소수 둘째 자리까지(PoB Costs.lua Divisor 60 — 데이터는 분당 값). 모르는 종류면 수량 + 종류 이름.
    */
   public static String costValue(Integer amount, String raw) {
     if (amount == null) {
       return "";
     }
-    String key =
-        raw == null
-            ? null
-            : switch (raw) {
-              case "Mana" -> "poe.gems.cost.value.mana";
-              case "Life" -> "poe.gems.cost.value.life";
-              case "ES" -> "poe.gems.cost.value.es";
-              default -> null;
-            };
-    return key == null
-        ? amount + " " + costType(raw)
-        : java.text.MessageFormat.format(MessageUtil.getMessage(key), String.valueOf(amount));
-  }
-
-  public static String costType(String raw) {
-    if (raw == null || raw.isBlank()) {
-      return "";
+    if (raw == null || !COST_TYPES.contains(raw)) {
+      return raw == null || raw.isBlank() ? String.valueOf(amount) : amount + " " + raw;
     }
-    String key =
-        switch (raw) {
-          case "Mana" -> "poe.gems.costtype.mana";
-          case "Life" -> "poe.gems.costtype.life";
-          case "ES" -> "poe.gems.costtype.es";
-          case "ManaPerMinute" -> "poe.gems.costtype.manaperminute";
-          case "ManaPercent" -> "poe.gems.costtype.manapercent";
-          default -> null;
-        };
-    return key == null ? raw : MessageUtil.getMessage(key);
+    String shown =
+        raw.endsWith("PerMinute")
+            ? java.math.BigDecimal.valueOf(amount)
+                .divide(java.math.BigDecimal.valueOf(60), 2, java.math.RoundingMode.HALF_UP)
+                .stripTrailingZeros()
+                .toPlainString()
+            : String.valueOf(amount);
+    return java.text.MessageFormat.format(
+        MessageUtil.getMessage("poe.gems.cost.value." + raw.toLowerCase(java.util.Locale.ROOT)),
+        shown);
   }
 
   /**

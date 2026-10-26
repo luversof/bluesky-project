@@ -49,6 +49,8 @@ public final class Poe2CraftText {
         "Rare items only (removes one, adds the guaranteed modifier)");
     EN.put("매직 · 레어 아이템에만 쓸 수 있습니다", "Magic or rare items only");
     EN.put("매직 아이템에만 쓸 수 있습니다", "Magic items only");
+    // 결정화 징조가 꺼진 이유(API Poe2CraftService 기본 문구, 10-25 Q201 — 영어 화면 징조 title 에 한국어가 새었다)
+    EN.put("완벽 · 타락 에센스를 쓸 수 있는 레어에만", "Only rares that can take a Perfect or Corrupted Essence");
     EN.put(
         "매직 아이템에만 쓸 수 있습니다(레어로 바뀌며 보장 옵션 추가)",
         "Magic items only (becomes rare with the guaranteed modifier)");

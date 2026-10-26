@@ -22,7 +22,7 @@
 		<div class="text-sm text-warning">${korean ? "엔진 계산에 실패했습니다: " : "Engine calculation failed: "}<span class="font-mono text-xs">${recalc.error().length() > 160 ? recalc.error().substring(0, 160) + "…" : recalc.error()}</span></div>
 	@else
 		@if(recalc.unappliedSupports() != null && recalc.unappliedSupports() > 0)
-			<div role="alert" class="alert alert-warning py-2 text-sm">${korean ? "주 스킬 묶음에서 적용되지 않는 보조젬 " + recalc.unappliedSupports() + "개 — 인게임에선 효과가 없습니다(PoB 는 계산만 건너뜁니다)." : recalc.unappliedSupports() + " support gem(s) in the main skill group do not apply in game."}</div>
+			<div role="alert" class="alert alert-warning py-2 text-sm">${korean ? "주 스킬 묶음에서 적용되지 않는 보조 젬 " + recalc.unappliedSupports() + "개 — 인게임에선 효과가 없습니다(PoB 는 계산만 건너뜁니다)." : recalc.unappliedSupports() + " support gem(s) in the main skill group do not apply in game."}</div>
 		@endif
 		@if(Boolean.TRUE.equals(recalc.mainSkillCostWarning()))
 			<div role="alert" class="alert alert-warning py-2 text-sm">${korean ? "주 스킬 비용을 치를 자원이 모자랍니다 — 인게임에선 쓸 수 없습니다." : "Not enough resource to pay the main skill's cost — it cannot be used in game."}</div>

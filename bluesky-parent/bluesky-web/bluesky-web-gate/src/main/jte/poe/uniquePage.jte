@@ -97,9 +97,9 @@
 					@if(foulborn != null && !foulborn.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 							<div class="mb-2 flex flex-wrap items-baseline gap-2">
-								<h2 class="font-bold text-fuchsia-500">${ko ? "삿된 옵션" : "Foulborn options"}</h2>
+								<h2 class="font-bold text-fuchsia-500">${ko ? "삿된 고유 속성" : "Foulborn Unique Modifiers"}</h2>
 								<span class="text-xs font-mono text-base-content/60">${foulborn.stream().mapToInt(g -> g.mods().size()).sum()}</span>
-								<span class="text-xs text-base-content/60">${ko ? "삿된 오브로 기존 모드 하나가 아래 중 하나로 바뀝니다" : "Foulborn currency replaces one existing mod with one of these"}</span>
+								<span class="text-xs text-base-content/60">${ko ? "삿된 고유 아이템은 원래 속성 하나가 아래 중 하나로 바뀌어 있습니다" : "A Foulborn version has one original modifier replaced by one of these"}</span>
 								<a class="ml-auto link link-hover text-xs text-base-content/60" href="/poe/foulborn?q=${item.name()}">${ko ? "삿된 사전에서 보기 →" : "Open in Foulborn list →"}</a>
 							</div>
 							<%-- 원본 → 삿된 대비. 인게임 색(삿된 #CD2285)과 취소선으로 "무엇이 밀려나는지" 를 그대로 보여준다 --%>
@@ -110,7 +110,7 @@
 
 					@if(ko && engMods != null && !engMods.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
-							<h2 class="font-bold mb-2">모드 원문 (영문)</h2>
+							<h2 class="font-bold mb-2">옵션 원문 (영문)</h2>
 							@for(String line : engMods)
 								<div class="text-xs text-base-content/60 whitespace-pre-line">${line}</div>
 							@endfor

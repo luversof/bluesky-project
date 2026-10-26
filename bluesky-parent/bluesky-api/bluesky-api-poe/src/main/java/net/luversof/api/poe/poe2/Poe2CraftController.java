@@ -172,7 +172,12 @@ public class Poe2CraftController {
   public Poe2CraftCalcService.StrategyResult strategy(
       @RequestBody Poe2CraftCalcService.StrategyRequest req) {
     check(req.item());
-    return calc.strategy(req);
+    Poe2CraftCalcService.override(req.prices());
+    try {
+      return calc.strategy(req);
+    } finally {
+      Poe2CraftCalcService.override(null);
+    }
   }
 
   @GetMapping("/options")
@@ -196,6 +201,16 @@ public class Poe2CraftController {
   public List<Poe2CraftService.EssenceOption> essences(
       @org.springframework.web.bind.annotation.RequestParam String poolKey) {
     return craft.essences(poolKey);
+  }
+
+  /** 고른 화폐 기준 옵션 표(10-22 Q2) — 요청은 화폐 적용과 같다(씨앗은 무시). */
+  @PostMapping(value = "/action-pool", consumes = MediaType.APPLICATION_JSON_VALUE)
+  public Poe2CraftService.ActionPool actionPool(@RequestBody ApplyRequest req) {
+    check(req.item());
+    if (req.action() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "action 이 없습니다");
+    }
+    return craft.actionPool(req.item(), req.action(), req.arg(), req.omens());
   }
 
   @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)

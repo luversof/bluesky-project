@@ -62,7 +62,7 @@
 										<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 											<span class="text-xs text-base-content/60" aria-hidden="true">→</span>
 											@if("RARE".equals(p.rarity()))
-												<%-- 레어 목표 — 지금 아이템과 같은 베이스에 2티어 옵션을 얹은 것. 이름은 인게임 레어 색, 옵션은 아래 줄에. --%>
+												<%-- 레어 목표 — 지금 아이템과 같은 베이스에 2등급 옵션을 얹은 것. 이름은 인게임 레어 색, 옵션은 아래 줄에. --%>
 												<span class="badge badge-outline badge-sm">${MessageUtil.getMessage("poe.build.guide.rare")}</span>
 												<span class="font-semibold poe-name-rare">${net.luversof.web.gate.poe.PoeText.name(p.baseTypeKo(), p.baseType())}</span>
 											@else
@@ -73,10 +73,10 @@
 												   hx-trigger="mouseenter delay:100ms"
 												   hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(p.nameKo(), p.name())}</a>
 											@endif
-											<%-- 거래소(10-08 C171, 빌드 카드와 같은 배지) — 고유는 이름, 레어 목표는 베이스 + 옵션(그 티어 최저 롤 이상) --%>
+											<%-- 거래소(10-08 C171, 빌드 카드와 같은 배지) — 고유는 이름, 레어 목표는 베이스 + 옵션(그 등급 최저 롤 이상) --%>
 											@if(net.luversof.web.gate.poe.PoeText.tradeUrl(p.tradeQuery()) != null)
 												<a class="badge badge-xs badge-outline badge-info shrink-0" target="_blank" rel="noopener" href="${net.luversof.web.gate.poe.PoeText.tradeUrl(p.tradeQuery())}" data-guide-trade
-												   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? ("RARE".equals(p.rarity()) ? "베이스 + 옵션(그 티어 최저 롤 이상)으로 거래소 검색(즉시 구입 · 가격순)" : "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)") : ("RARE".equals(p.rarity()) ? "Search trade — base + mods at tier minimum" : "Search trade for this unique")}">${MessageUtil.getMessage("poe.common.trade")}</a>
+												   title="${net.luversof.web.gate.poe.PoeText.isKorean() ? ("RARE".equals(p.rarity()) ? "베이스 + 옵션(그 등급 최저 롤 이상)으로 거래소 검색(즉시 구입 · 가격순)" : "이 고유 아이템을 거래소에서 검색(즉시 구입 · 가격순)") : ("RARE".equals(p.rarity()) ? "Search trade — base + mods at tier minimum" : "Search trade for this unique")}">${MessageUtil.getMessage("poe.common.trade")}</a>
 											@endif
 											@template.poe.htmx.buildGuideDelta(label = "DPS", pct = p.dpsPct())
 											@template.poe.htmx.buildGuideDelta(label = "EHP", pct = p.ehpPct())

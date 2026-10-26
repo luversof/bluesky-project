@@ -63,7 +63,8 @@
 	<div class="poe-tt-sepimg"></div>
 	<div class="px-4 py-1.5 text-[12px] text-center space-y-0.5">
 		@if(lv != null && gem.maxLevel() != null && gem.maxLevel() > 1)
-			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.level")}: </span><span class="${value}">${lv.level()}</span><span class="${label}"> / ${gem.maxLevel()}</span></div>
+			<%-- 최대 레벨이면 '20 (Max)' · '20 (최대)'(10-23 Q52 — ItemDisplaySkillGemMaxLevel, 예전엔 '20 / 20') --%>
+			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.level")}: </span><span class="${value}" data-tt-gem-level>${lv.level().equals(gem.maxLevel()) ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.detail.level.max"), lv.level()) : String.valueOf(lv.level())}</span></div>
 		@endif
 		@if(gem.tier() != null && gem.tier() > 0)
 			<div><span class="${label}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.tier"), gem.tier())}</span></div>
@@ -85,7 +86,7 @@
 			<div data-gem-cast-time><span class="${label}">${MessageUtil.getMessage("poe2.tt.cast.time")}: </span><span class="${value}">${gem.castTimeMs() > 0 ? java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.value.seconds"), String.format("%.2f", gem.castTimeMs() / 1000.0)) : MessageUtil.getMessage("poe.gems.cast.instant")}</span></div>
 		@endif
 		@if(lv != null && lv.cooldownMs() != null && lv.cooldownMs() > 0)
-			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.cooldown")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.value.seconds"), String.format("%.2f", lv.cooldownMs() / 1000.0))}</span></div>
+			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.cooldown")}: </span><span class="${value}">${lv.cooldownUses() != null ? java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.value.seconds.uses"), String.format("%.2f", lv.cooldownMs() / 1000.0), String.valueOf(lv.cooldownUses())) : java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.value.seconds"), String.format("%.2f", lv.cooldownMs() / 1000.0))}</span></div>
 		@endif
 		@if(lv != null && lv.critChance() != null && lv.critChance() > 0)
 			<div><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${value}">${String.format("%.2f", lv.critChance())}%</span></div>
@@ -183,7 +184,7 @@
 					<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.cost")}: </span><span class="${value}">${PoeText.costValue(gl.cost(), gl.costType())}</span></div>
 				@endif
 				@if(gl.cooldownMs() != null && gl.cooldownMs() > 0)
-					<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.cooldown")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.value.seconds"), String.format("%.2f", gl.cooldownMs() / 1000.0))}</span></div>
+					<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.cooldown")}: </span><span class="${value}">${gl.cooldownUses() != null ? java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.value.seconds.uses"), String.format("%.2f", gl.cooldownMs() / 1000.0), String.valueOf(gl.cooldownUses())) : java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.value.seconds"), String.format("%.2f", gl.cooldownMs() / 1000.0))}</span></div>
 				@endif
 				@if(gs.castTimeMs() != null && gl.attackDamagePct() == null)
 					<div data-gem-granted-cast><span class="${label}">${MessageUtil.getMessage("poe2.tt.cast.time")}: </span><span class="${value}">${gs.castTimeMs() > 0 ? java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.value.seconds"), String.format("%.2f", gs.castTimeMs() / 1000.0)) : MessageUtil.getMessage("poe.gems.cast.instant")}</span></div>

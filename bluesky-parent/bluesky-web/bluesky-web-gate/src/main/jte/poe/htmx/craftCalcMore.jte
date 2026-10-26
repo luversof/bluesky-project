@@ -10,8 +10,8 @@
 @param String part = "all"
 
 <%-- 계산기 목표 칸 아래(10-21 C548 사용자 요청 "제작 계산기에 타락 · 정복자 · 제작 옵션이 안 보인다") — ① 영향력(정복자 · 쉐이퍼 · 엘더) 옵션은 베이스
-     영향력이 있어야 붙어, 고르면 위쪽 '영향력'을 바꿔 그 옵션을 목표 목록에 더한다(바로가기) ② 바알 오브 타락 임플리싯 — 타락하면 더 못 바꿔 계산기
-     목표는 아니고, 바알 한 번에 붙을 확률과 태그를 보인다(제작대 옵션은 목표 줄의 '제작대 ≈ Tn'). part = top(폼 안 — 짧은 두 줄) · corrupted(작업 영역 아래 —
+     영향력이 있어야 붙어, 고르면 위쪽 '영향력'을 바꿔 그 옵션을 목표 목록에 더한다(바로가기) ② 바알 오브 타락 고정 속성 — 타락하면 더 못 바꿔 계산기
+     목표는 아니고, 바알 한 번에 붙을 확률과 태그를 보인다(작업대 옵션은 목표 줄의 '작업대 ≈ Tn'). part = top(폼 안 — 짧은 두 줄) · corrupted(작업 영역 아래 —
      화면 높이 고정 칸 안에 긴 표를 넣으면 목표 목록이 0 높이로 눌려 겹쳤다) --%>
 !{
 	boolean ko = PoeText.isKorean();
@@ -34,11 +34,11 @@
 	</div>
 @endif
 @if(!"corrupted".equals(part) && benchCount > 0)
-	<p class="text-xs text-base-content/70 shrink-0" data-craft-calc-bench-note>${ko ? "제작대 옵션 — 위 목록의 '제작대 ≈ Tn' " + benchCount + "줄: 그 계열 목표를 T1~Tn 이하로 고르면 제작대로도 채웁니다(마우스를 올리면 제작대 옵션 문구)" : "Bench crafts — " + benchCount + " rows marked 'Bench ≈ Tn' above: with that family's target at T1~Tn or looser, the bench can finish it (hover for the craft)"}</p>
+	<p class="text-xs text-base-content/70 shrink-0" data-craft-calc-bench-note>${ko ? "작업대 옵션 — 위 목록의 '작업대 ≈ Tn' " + benchCount + "줄: 그 계열 목표를 T1~Tn 이하로 고르면 작업대로도 채웁니다(마우스를 올리면 작업대 옵션 문구)" : "Bench crafts — " + benchCount + " rows marked 'Bench ≈ Tn' above: with that family's target at T1~Tn or looser, the bench can finish it (hover for the craft)"}</p>
 @endif
 @if(!"top".equals(part) && extras != null && extras.corrupted() != null && !extras.corrupted().isEmpty())
 	<details class="rounded-box border border-base-300 bg-base-100" data-craft-calc-corrupted>
-		<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "타락 옵션(바알 오브)" : "Corrupted implicits (Vaal Orb)"} <span class="text-xs font-normal text-base-content/70">· ${extras.corrupted().size()}${ko ? "종 · 바알 한 번에 그 임플리싯이 붙을 확률(결과 넷 중 하나가 '임플리싯'). 타락하면 더 못 바꿔 계산기 목표로는 고르지 않습니다 — 위 에뮬레이터의 바알 오브로 시험" : " · chance per Vaal Orb (one of four outcomes is an implicit). Corrupted items can't be changed, so these aren't calculator targets — try the Vaal Orb in the emulator above"}</span></summary>
+		<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "타락 옵션(바알 오브)" : "Corrupted implicits (Vaal Orb)"} <span class="text-xs font-normal text-base-content/70">· ${extras.corrupted().size()}${ko ? "종 · 바알 한 번에 그 고정 속성이 붙을 확률(결과 넷 중 하나가 '고정 속성'). 타락하면 더 못 바꿔 계산기 목표로는 고르지 않습니다 — 위 에뮬레이터의 바알 오브로 시험" : " · chance per Vaal Orb (one of four outcomes is an implicit). Corrupted items can't be changed, so these aren't calculator targets — try the Vaal Orb in the emulator above"}</span></summary>
 		<div class="px-3 pb-3 overflow-x-auto">
 			<table class="table table-xs">
 				<thead><tr><th>${ko ? "옵션" : "Modifier"}</th><th class="text-right">${ko ? "레벨" : "Level"}</th><th class="text-right">${ko ? "바알 한 번" : "Per Vaal"}</th></tr></thead>

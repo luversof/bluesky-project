@@ -14,7 +14,7 @@
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe2.mods.title");
-	// 아이템 클래스별 칩 — 같은 클래스에 풀이 여럿(방어 속성)이면 속성 칩이 한 줄 더
+	// 아이템 종류별 칩 — 같은 클래스에 풀이 여럿(방어 속성)이면 속성 칩이 한 줄 더
 	java.util.Map<String, List<Poe2.ModPoolSummary>> byClass = new java.util.LinkedHashMap<>();
 	for (String cat : List.of("weapon", "offhand", "armour", "jewellery", "flask", "jewel", "other")) {
 		for (Poe2.ModPoolSummary p : pools) {

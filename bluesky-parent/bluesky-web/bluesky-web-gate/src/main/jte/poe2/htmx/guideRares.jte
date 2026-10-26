@@ -9,7 +9,7 @@
 <%-- 칸 → 지금 아이템(C310 — 한국어 이름 + 빌드 카드와 같은 툴팁 레이어). 컨트롤러가 같은 코드로 빌드를 읽어 넘긴다 --%>
 @param java.util.Map<String, Poe2.BuildItem> slotItems = java.util.Map.of()
 
-<%-- 가이드 "좋은 레어로 바꾸면"(10-02 사용자 요청) — buildGuide.jte 에서 따로 불러오는 조각. 같은 기준: PoE1 가이드 "레어 목표"(2티어 중간 롤, 접두 3 · 접미 3). --%>
+<%-- 가이드 "좋은 레어로 바꾸면"(10-02 사용자 요청) — buildGuide.jte 에서 따로 불러오는 조각. 같은 기준: PoE1 가이드 "레어 목표"(2등급 중간 롤, 접두 3 · 접미 3). --%>
 !{
 	boolean korean = PoeText.isKorean();
 	java.util.function.Function<Double, String> pct = v -> v == null ? "-" : Math.abs(v) < 0.05 ? "0" : String.format("%+.1f%%", v);
@@ -19,12 +19,12 @@
 @if(guide == null || guide.error() != null)
 	<div class="rounded-box border border-base-200 bg-base-100 p-2 text-xs text-base-content/60" data-guide-rares-error>${korean ? "레어 목표를 계산하지 못했습니다." : "Could not compute rare targets."}</div>
 @elseif(guide.rareTargets() != null && !guide.rareTargets().isEmpty())
-		<%-- ⑧ 레어 목표(10-02 사용자 요청 "고유만 보지 말고 레어로도") — 칸마다 지금 베이스의 좋은 레어(2티어 중간 롤, 접두 3 · 접미 3)로
+		<%-- ⑧ 레어 목표(10-02 사용자 요청 "고유만 보지 말고 레어로도") — 칸마다 지금 베이스의 좋은 레어(2등급 중간 롤, 접두 3 · 접미 3)로
 		     바꾸면. 피해용 · 생존용을 따로 골라 지금 아이템 대비 증감. 고유를 낀 칸도(그 고유 대신 레어). PoE1 가이드 "레어 목표"와 같은 기준. --%>
 			<div class="rounded-box border border-base-200 bg-base-100 p-2 space-y-2" data-guide-rares>
 				<div class="text-xs font-semibold">
 					${korean ? "좋은 레어로 바꾸면" : "If you swap to a good rare"}
-					<span class="font-normal text-base-content/60">${korean ? "(같은 베이스 · 옵션 2티어 중간 롤 · 접두 3 · 접미 3 · 지금 아이템 대비)" : "(same base · tier-2 mid rolls · 3 prefixes + 3 suffixes · vs current item)"}</span>
+					<span class="font-normal text-base-content/60">${korean ? "(같은 베이스 · 옵션 2등급 중간 롤 · 접두 3 · 접미 3 · 지금 아이템 대비)" : "(same base · tier-2 mid rolls · 3 prefixes + 3 suffixes · vs current item)"}</span>
 				</div>
 				<div class="grid gap-2 md:grid-cols-2">
 					@for(Poe2.GuideRareTarget rt : guide.rareTargets())
@@ -56,7 +56,7 @@
 									<details class="mt-1" data-rare-focus="${f == 0 ? "dps" : "ehp"}">
 										<summary class="cursor-pointer">
 											<%-- 올리면 인게임 레어 툴팁 레이어(10-14 C310 사용자 요청 "레이어 처리가 안 되어 있다" — 빌드 카드 아이템과 같은 [data-poe-tip] 인라인 방식, common.ts .poe-hover).
-											     이름 띠 = 피해용/생존용 레어 + 베이스(인게임 레어 이름 두 줄 자리), 아래 옵션(2티어 중간 롤) --%>
+											     이름 띠 = 피해용/생존용 레어 + 베이스(인게임 레어 이름 두 줄 자리), 아래 옵션(2등급 중간 롤) --%>
 											!{ java.util.List<String> tipLines = korean && r.linesKo() != null && !r.linesKo().isEmpty() ? r.linesKo() : r.lines(); String tipBase = rt.baseKo() != null && korean ? rt.baseKo() : rt.base(); }
 											<span class="poe-hover inline-flex flex-wrap items-baseline gap-1.5" tabindex="0" data-rare-hover>
 												<span class="text-base-content/70 underline decoration-dotted underline-offset-2">${focus}</span>

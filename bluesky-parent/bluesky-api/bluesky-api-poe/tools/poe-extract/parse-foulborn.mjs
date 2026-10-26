@@ -19,7 +19,7 @@ import path from "node:path";
 import { DATA_DIR, FILES_DIR, WORK_DIR, loadConfig, loadTable } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
-const OUT = path.join(DATA_DIR, "foulborn-mods.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "foulborn-mods.json");
 
 const mods = loadTable("English", "Mods");
 const stats = loadTable("English", "Stats");
@@ -204,6 +204,9 @@ if (foulbornMap) {
 				origId,
 				origEn: orig ? orig.en : null,
 				origKo: orig ? orig.ko : null,
+				// 원래 옵션 최소 롤(10-23 Q115 — 최대값만 있어 '생명력 최대치 +60' 으로 보였다, 고유 데이터는 '(30-60)')
+				origEnMin: orig ? orig.enMin : null,
+				origKoMin: orig ? orig.koMin : null,
 			});
 			usedFoulIds.add(foulId);
 			mapped++;

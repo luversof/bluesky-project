@@ -11,16 +11,16 @@
 		boolean ko = PoeText.isKorean();
 		// {패싯키, ko라벨, en라벨} — 사용자 요청 차원 우선 순서
 		String[][] order = {
-			{"masteries", "마스터리", "Masteries"},
-			{"runegrafts", "룬크래프트", "Runegrafts"},
+			{"masteries", "숙련", "Masteries"},
+			{"runegrafts", "룬 접목", "Runegrafts"},
 			{"tattoos", "문신", "Tattoos"},
 			{"weaponmode", "무기 구성", "Weapons"},
 			{"pantheon", "판테온", "Pantheon"},
 			{"atlasskills", "아틀라스 패시브", "Atlas passives"},
-			{"anointed", "도유", "Anoints"},
+			{"anointed", "성유", "Anoints"},
 			{"secondascendancy", "혈맹", "Bloodline"},
-			{"bandit", "산적", "Bandit"},
-			{"keypassives", "키스톤", "Keystones"},
+			{"bandit", "도적", "Bandit"},
+			{"keypassives", "핵심노드", "Keystones"},
 			{"items", "장비", "Items"},
 			{"shrinebeltbuffs", "성소 벨트", "Shrine belt"},
 		};

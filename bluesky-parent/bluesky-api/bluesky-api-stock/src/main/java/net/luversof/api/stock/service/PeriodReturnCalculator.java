@@ -1,7 +1,8 @@
 package net.luversof.api.stock.service;
 
+import static net.luversof.api.stock.util.StockMath.percent;
+
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -123,9 +124,5 @@ public final class PeriodReturnCalculator {
     LocalDate rawLast = rawAsc.get(rawAsc.size() - 1).tradeDate();
     LocalDate adjustedLast = adjustedAsc.get(adjustedAsc.size() - 1).tradeDate();
     return rawLast != null && rawLast.equals(adjustedLast) ? rawAsc : adjustedAsc;
-  }
-
-  private static BigDecimal percent(BigDecimal numerator, BigDecimal denominator) {
-    return numerator.multiply(BigDecimal.valueOf(100)).divide(denominator, 2, RoundingMode.HALF_UP);
   }
 }

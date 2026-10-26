@@ -15,13 +15,13 @@
 	<div class="rounded-box border border-base-200 bg-base-100 p-2 space-y-1.5 text-xs" data-guide-common-gaps>
 		<div class="font-semibold">
 			${korean ? "닌자 " + gaps.n() + "명 공통 특성 중 이 빌드에 없는 것" : "Common traits of " + gaps.n() + " ninja builds missing here"}
-			<span class="font-normal text-base-content/60">(${an} · ${nm} — ${korean ? "보조젬 · 고유는 절반 이상, 특화 · 핵심은 4분의 3 이상이 쓰는 것. 효과는 빌드마다 달라 위 표 · 시뮬레이터 다듬기로 확인" : "supports and uniques used by half or more, notables and keystones by three quarters or more; effect differs per build — check the tables above or the simulator"})</span>
+			<span class="font-normal text-base-content/60">(${an} · ${nm} — ${korean ? "보조 젬 · 고유는 절반 이상, 주요 · 핵심노드는 4분의 3 이상이 쓰는 것. 효과는 빌드마다 달라 위 표 · 시뮬레이터 다듬기로 확인" : "supports and uniques used by half or more, notables and keystones by three quarters or more; effect differs per build — check the tables above or the simulator"})</span>
 		</div>
 		@if(gaps.supports().isEmpty() && gaps.uniques().isEmpty() && gaps.nodes().isEmpty())
 			<div class="text-base-content/60" data-common-gaps-none>${korean ? "공통 특성을 이미 다 갖추고 있습니다." : "This build already has all the common traits."}</div>
 		@endif
 		@if(!gaps.supports().isEmpty())
-			<div data-common-gaps="supports"><span class="text-base-content/60">${korean ? "보조젬" : "Supports"}:</span>
+			<div data-common-gaps="supports"><span class="text-base-content/60">${korean ? "보조 젬" : "Supports"}:</span>
 				@for(Poe2.CommonGap g : gaps.supports())<span class="badge badge-outline badge-sm mr-1">${korean && g.nameKo() != null ? g.nameKo() : g.name()} <span class="ml-1 font-mono text-base-content/60">${g.count()}/${gaps.n()}</span></span>@endfor
 			</div>
 		@endif

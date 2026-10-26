@@ -152,11 +152,14 @@ class MonthlyEtfPageTest {
         .contains("@RequestParam(required = false) String account");
     // 받기만 하고 거르는 데 안 넘기면 주소에 쳐도 아무 일이 없다 - 넘기는 줄까지 본다.
     // 인자가 늘면 줄이 나뉜다 - 공백을 눌러 보아야 서식 바뀜에 가드가 깨지지 않는다.
+    // 2026-10-22 부터 목록과 지급 시기 칩 개수가 거르기 하나(visibleRows)를 쓴다 - 지급 시기는 그 함수의 인자로 들어간다.
+    // 검색어 · 지급 시기가 실제로 거르는지는 controller/MonthlyEtfPayoutWindowCountTest 가 불러서 본다.
     assertThat(squash(controller))
         .contains(
             squash(
-                "allRows, resolvedKeyword, minAnnualYield, resolvedPayoutWindow,"
-                    + " resolvedHolding, resolvedAccount"));
+                "allRows, resolvedKeyword, minAnnualYield, window,"
+                    + " resolvedHolding, resolvedAccount"))
+        .contains(squash("visibleRows.apply(resolvedPayoutWindow)"));
   }
 
   /** 이 화면은 종목 정보만 다룬다 - 금액 · 수량이 새어 들어오면 시뮬레이터와 역할이 섞인다. */
@@ -499,7 +502,7 @@ class MonthlyEtfPageTest {
         .as("카드도 뺄셈을 적는다 - 추세 % 를 그대로 적으면 점수와 이어지지 않는다")
         .contains(
             squash(
-                "MessageUtil.getMessage(\"stock.monthly.etf.pick.basis\"), pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()))"));
+                "StockViewSupport.msg(\"stock.monthly.etf.pick.basis\", pickYield, percentFormat.format(pickCut), percentFormat.format(pick.score()))"));
     assertThat(template)
         .as("계산 방법 · 예 · 점수순 보기 링크")
         .contains(squash("data-score-how"))
@@ -554,7 +557,7 @@ class MonthlyEtfPageTest {
         .contains(squash("data-etf-pick data-pick-symbol="))
         .contains(squash("data-pick-score"))
         .as("점수만 적으면 왜 그 종목인지 알 수 없다")
-        .contains(squash("MessageUtil.getMessage(\"stock.monthly.etf.pick.basis\")"));
+        .contains(squash("StockViewSupport.msg(\"stock.monthly.etf.pick.basis\""));
     assertThat(template)
         .as("월중과 월말은 적립하는 날이 다르다 - 지급 시기를 함께 적는다(사용자 요청 2026-09-23)")
         .contains(squash("data-pick-window=\"${pick.row().payoutWindow()}\""))
@@ -844,7 +847,6 @@ class MonthlyEtfPageTest {
     return builder.toString();
   }
 
-  /** 기간 합산 수익률만 다른 행(나머지는 같은 값). */
   /** 연배당 · 분배금 추세만 다른 행(추세 null = 이력 부족). */
   private static MonthlyEtfRowView rowWithScore(
       String symbol, String annualYieldPct, String payoutTrendPct) {
@@ -958,6 +960,7 @@ class MonthlyEtfPageTest {
         null);
   }
 
+  /** 기간 합산 수익률만 다른 행(나머지는 같은 값). */
   private static MonthlyEtfRowView rowWithPeriod(String symbol, BigDecimal periodTotal) {
     MonthlyEtfRowView base = row(symbol, "이름 " + symbol, "MID_MONTH", "10.00", 12, false);
     return new MonthlyEtfRowView(

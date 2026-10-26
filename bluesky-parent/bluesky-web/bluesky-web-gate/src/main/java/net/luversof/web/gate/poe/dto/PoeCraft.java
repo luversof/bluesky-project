@@ -7,7 +7,7 @@ public final class PoeCraft {
 
   private PoeCraft() {}
 
-  /** 옵션 하나 — crafted = 제작대, fractured = 분열. */
+  /** 옵션 하나 — crafted = 작업대, fractured = 분열. */
   public record Affix(
       String id, String gen, List<Integer> groups, boolean crafted, boolean fractured) {}
 
@@ -20,7 +20,7 @@ public final class PoeCraft {
       String rarity,
       List<Affix> affixes,
       boolean corrupted,
-      // 임플리싯(10-15 C343, 엘드리치 — gen = exarch|eater)
+      // 고정 속성(10-15 C343, 엘드리치 — gen = exarch|eater)
       List<Affix> implicits,
       // 기폭제 퀄리티(C385) — "종류:양"(예: attack:20), 없으면 null
       String quality,
@@ -101,12 +101,12 @@ public final class PoeCraft {
       List<Line> unveilOffers,
       // 지금 쓸 수 없는 화폐 → 이유(엔진이 시험 적용, C340). 정복자는 "CONQUEROR:영향력"
       java.util.Map<String, String> blocked,
-      // 엘드리치 임플리싯 줄(C343, tierRank = 등급 1~6) · 우세 진영(exarch|eater|null)
+      // 섬뜩한 고정 속성 줄(C343, tierRank = 등급 1~6) · 우세 진영(exarch|eater|null)
       List<Line> implicits,
       String dominance,
       // 결과 설명(C358 — 바알 오브 "vaal:결과[:사유]", C385 기폭제 "catalyst:종류:양:개수"), 없으면 null
       String note,
-      // 기폭제 퀄리티로 수치가 오르는 옵션 · 임플리싯 id(C385)
+      // 기폭제 퀄리티로 수치가 오르는 옵션 · 고정 속성 id(C385)
       List<String> boosted,
       // 옵션 태그(C480) — 줄 id → 태그 이름(영어 · 한국어), 인게임 상세 보기 " — 생명력, 방어력"
       java.util.Map<String, List<String>> tags,
@@ -243,7 +243,7 @@ public final class PoeCraft {
       List<String> fossils,
       List<String> fossilsKo) {}
 
-  /** 엘드리치 임플리싯 계열(C549) — side = exarch|eater, tiers = 등급 1~6. */
+  /** 섬뜩한 고정 속성 계열(C549) — side = exarch|eater, tiers = 등급 1~6. */
   public record EldritchFamily(
       String side, String key, List<String> tags, List<String> tagsKo, List<EldritchTier> tiers) {}
 
@@ -256,7 +256,7 @@ public final class PoeCraft {
       List<String> koMin,
       double chance) {}
 
-  /** 엘드리치 임플리싯 목표 비용(C549 — API PoeCraftCalcService.EldritchResult). */
+  /** 섬뜩한 고정 속성 목표 비용(C549 — API PoeCraftCalcService.EldritchResult). */
   public record EldritchResult(
       Double cost,
       List<EldritchStep> steps,
@@ -282,7 +282,7 @@ public final class PoeCraft {
       double attempts,
       Double cost) {}
 
-  /** 계열마다 그 목표를 채우는 제작대 옵션 — tier = 채우는 가장 높은 등급. */
+  /** 계열마다 그 목표를 채우는 작업대 옵션 — tier = 채우는 가장 높은 등급. */
   public record BenchEquiv(
       String gen,
       String family,
@@ -293,7 +293,7 @@ public final class PoeCraft {
       List<String> koMin,
       int tier) {}
 
-  /** 바알 오브 타락 임플리싯 — chance = 바알 한 번에 붙을 확률. */
+  /** 바알 오브 타락 고정 속성 — chance = 바알 한 번에 붙을 확률. */
   public record CorruptedLine(
       String id,
       List<String> en,
@@ -318,7 +318,10 @@ public final class PoeCraft {
       String modId,
       String slug,
       List<String> en,
-      List<String> ko) {}
+      List<String> ko,
+      // 최소 굴림 문구(10-22 Q7 — 고르개 · 안내에 최댓값만 보여 '+105 인데 +91 이 붙었다'로 읽혔다)
+      List<String> enMin,
+      List<String> koMin) {}
 
   public record ApplyRequest(Item item, String action, String essence, Long seed, String arg) {}
 
@@ -458,7 +461,18 @@ public final class PoeCraft {
   public record Step(String action, String arg, List<Integer> until, Integer max, List<Step> sub) {}
 
   public record StrategyRequest(
-      Item item, List<Target> targets, List<Step> steps, Integer trials) {}
+      Item item,
+      List<Target> targets,
+      List<Step> steps,
+      Integer trials,
+      // 사용자 가격(10-23 Q20a — 전엔 전략 요청에 없어 '가격 직접 입력'이 전략 비용에 안 먹었다)
+      java.util.Map<String, Double> prices) {
+
+    /** 지금 요청의 사용자 가격을 싣는다. */
+    public StrategyRequest(Item item, List<Target> targets, List<Step> steps, Integer trials) {
+      this(item, targets, steps, trials, net.luversof.web.gate.poe.CraftPrices.current());
+    }
+  }
 
   public record StepStat(String action, String arg, double avgUses, double reached) {}
 
@@ -470,14 +484,31 @@ public final class PoeCraft {
       Double costPerRun,
       Double expectedCost,
       List<StepStat> steps,
-      String error) {}
+      String error,
+      // 성공 예시(10-22 Q16 — craftofexile 시뮬레이터 'Store Items') — 목표를 채운 처음 몇 개
+      List<StrategySample> samples) {
+
+    public StrategyResult(
+        int runs,
+        int successes,
+        double successRate,
+        java.util.Map<String, Double> perRun,
+        Double costPerRun,
+        Double expectedCost,
+        List<StepStat> steps,
+        String error) {
+      this(runs, successes, successRate, perRun, costPerRun, expectedCost, steps, error, List.of());
+    }
+  }
+
+  public record StrategySample(Item item, List<Line> lines) {}
 
   public record CalcResponse(
       List<MethodResult> results,
       String league,
       String pricesAt,
       String error,
-      // 엘드리치 임플리싯 목표(C549) — 방법 표와 따로 잰 비용
+      // 섬뜩한 고정 속성 목표(C549) — 방법 표와 따로 잰 비용
       EldritchResult eldritch,
       // error 의 영어 판(C557)
       String errorEn) {
@@ -582,7 +613,7 @@ public final class PoeCraft {
       List<Showcase> showcase,
       // 성공 회차 비용 분포(C505) — 25% · 50% · 90% 지점
       List<Double> costQuantiles,
-      // 엘드리치 임플리싯 목표(C549) — 명시 옵션과 따로 잰 비용
+      // 섬뜩한 고정 속성 목표(C549) — 명시 옵션과 따로 잰 비용
       EldritchResult eldritch,
       // 영어 화면용(C557 ⑦ — 흐름 · 비교 기준 · 수단 · 설명 · 오류, PoE1 만 — PoE2 는 null)
       String upperLabelEn,
@@ -646,5 +677,15 @@ public final class PoeCraft {
       java.util.Map<String, Double> mult,
       boolean picked,
       String error,
-      String baseRarity) {}
+      String baseRarity,
+      // 확정 옵션(10-22 Q7 — 에센스, API PoeCraftService.Forced 와 같게)
+      List<Forced> forced) {}
+
+  public record Forced(
+      String family,
+      Integer rank,
+      List<String> en,
+      List<String> enMin,
+      List<String> ko,
+      List<String> koMin) {}
 }

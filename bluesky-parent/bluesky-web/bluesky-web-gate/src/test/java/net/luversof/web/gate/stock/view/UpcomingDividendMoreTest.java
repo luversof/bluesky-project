@@ -53,7 +53,7 @@ class UpcomingDividendMoreTest {
 
     assertThat(jte).contains("@param int upcomingDividendHiddenCount");
     assertThat(jte).contains("data-upcoming-more=\"${upcomingDividendHiddenCount}\"");
-    assertThat(jte).contains("MessageUtil.getMessage(\"stock.summary.upcoming.dividend.more\")");
+    assertThat(jte).contains("StockViewSupport.msg(\"stock.summary.upcoming.dividend.more\"");
   }
 
   /** 문구는 "합계는 모두 더한 값" 이라는 사실까지 말해야 한다 - 그래야 합계와 목록의 차이가 설명된다. */
@@ -106,7 +106,7 @@ class UpcomingDividendMoreTest {
     assertThat(read(CONTROLLER)).contains("::latestMonthlyDividend) .reversed())");
 
     String jte = read(FRAGMENT);
-    assertThat(jte).contains("MessageUtil.getMessage(\"stock.summary.upcoming.window.latest\")");
+    assertThat(jte).contains("StockViewSupport.msg(\"stock.summary.upcoming.window.latest\"");
     assertThat(jte).contains("data-window-average-total");
     assertThat(jte).contains("StockFormatUtil.displayWon(rowLatest)");
     assertThat(jte).doesNotContain("StockFormatUtil.displayWon(row.expectedMonthlyDividend())");

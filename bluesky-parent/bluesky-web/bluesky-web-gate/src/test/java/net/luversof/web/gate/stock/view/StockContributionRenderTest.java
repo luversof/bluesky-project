@@ -205,8 +205,8 @@ class StockContributionRenderTest {
 
     assertThat(controller)
         .as("필터를 안 넘기면 평가 변동만 전 계좌를 보게 되어 합계가 기간 손익과 어긋난다")
-        .contains("snapshotParams.add(\"accountIdList\"")
-        .contains("snapshotParams.add(\"stockItemIdList\"");
+        // 2026-10-22 부터 addFilterIds 로 싣는다(YearlyCostFilterParamTest 가 그 동작을 본다).
+        .contains("addFilterIds(snapshotParams, request);");
   }
 
   /** 접힌 나머지는 '기타 N종목' 한 줄로 낸다. 접어도 합계는 그대로여야 한다. */

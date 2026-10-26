@@ -14,14 +14,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 레어 아이템 크래프팅용 모드 풀 — tools/poe-extract/parse-mods.mjs 가 만든 {@code ~/.poe-gamedata/mod-pool.json}.
- * 패밀리별로 슬롯 적용 범위 + 키워드 + 티어 사다리(best-first, 각 티어의 최대 롤 문장 en/ko)를 담는다. 시뮬레이터의 레어 생성/티어 비교에 쓴다.
+ * 패밀리별로 슬롯 적용 범위 + 키워드 + 등급 사다리(best-first, 각 등급의 최대 롤 문장 en/ko)를 담는다. 시뮬레이터의 레어 생성/등급 비교에 쓴다.
  */
 @Service
 public class PoeModPoolDataService {
 
   private static final Logger logger = LoggerFactory.getLogger(PoeModPoolDataService.class);
 
-  /** 모드 티어 하나 — 최대 롤 기준 문장 (여러 스탯이면 여러 줄). koMin = 티어 최저 롤 문장(거래소 min 용, 구파일 null). */
+  /** 모드 등급 하나 — 최대 롤 기준 문장 (여러 스탯이면 여러 줄). koMin = 등급 최저 롤 문장(거래소 min 용, 구파일 null). */
   public record ModTier(int level, List<String> en, List<String> ko, List<String> koMin) {
     public ModTier(int level, List<String> en, List<String> ko) {
       this(level, en, ko, null);
@@ -31,7 +31,7 @@ public class PoeModPoolDataService {
   /**
    * @param gen prefix | suffix
    * @param slots 적용 슬롯 카테고리 (body/helmet/.../weaponAttack/weaponSpell)
-   * @param tiers best-first (index 0 = 최상위 티어)
+   * @param tiers best-first (index 0 = 최상위 등급)
    * @param pattern 게임 모드 Id 패턴 = 전체 풀(mods.json)의 패밀리 키. 베이스 속성 변형에 실제로 붙는 모드인지 데이터로 판정할 때 쓴다.
    */
   public record ModFamily(
@@ -83,7 +83,7 @@ public class PoeModPoolDataService {
     return data.families();
   }
 
-  /** 베이스 아이템 클래스 → 모드 풀 슬롯 카테고리 (일반 아이템 티어표용). 매핑 없으면 null. */
+  /** 베이스 아이템 종류 → 모드 풀 슬롯 카테고리 (일반 아이템 등급표용). 매핑 없으면 null. */
   public String slotForItemClass(String itemClass) {
     if (itemClass == null) {
       return null;
@@ -112,7 +112,7 @@ public class PoeModPoolDataService {
     };
   }
 
-  /** 베이스 아이템 클래스에 붙을 수 있는 패밀리들 (매핑 없으면 빈 목록) */
+  /** 베이스 아이템 종류에 붙을 수 있는 패밀리들 (매핑 없으면 빈 목록) */
   public List<ModFamily> familiesForItemClass(String itemClass) {
     String slot = slotForItemClass(itemClass);
     return slot == null ? List.of() : familiesForSlot(slot);

@@ -31,8 +31,10 @@
 							<tr data-craft2-calc-method="${m.method()}">
 								<td class="min-w-[9rem]">
 									!{ String lab = !ko && m.labelEn() != null ? m.labelEn() : m.label(); if (ko && lab != null) for (var en : nameKo.entrySet()) if (lab.contains(en.getKey())) lab = lab.replace(en.getKey(), en.getValue()); String mnote = !ko && m.noteEn() != null ? m.noteEn() : m.note(); }
-									<div class="font-medium">${lab}@if(i == 0 && m.costPerSuccess() != null) <span class="badge badge-sm badge-success badge-outline">${ko ? "가장 저렴" : "Cheapest"}</span>@endif</div>
+									<div class="font-medium">${lab}@if(i == 0 && m.costPerSuccess() != null) <span class="badge badge-sm badge-success badge-outline" title="${ko ? "이 표의 한 가지 방법 중 가장 저렴 — 여러 수단을 섞는 최적 조합은 위 결과" : "Cheapest single method in this table — the mixed optimal plan is above"}">${ko ? "가장 저렴" : "Cheapest"}</span>@endif</div>
 									@if(mnote != null)<div class="text-xs text-base-content/70">${mnote}</div>@endif
+									<%-- 좁은 화면(10-23 Q32 ⑪, PoE1 짝) — 성공당 비용을 방법 이름 아래에도 --%>
+									<div class="sm:hidden text-xs font-mono" data-craft2-calc-cost-mobile>${ko ? "성공당 " : "Per success "}@if(m.costPerSuccess() != null)${String.format("%.2f", m.costPerSuccess())} div@if(exPerDiv != null) (≈ ${String.format("%,.0f", m.costPerSuccess() * exPerDiv)} ex)@endif@else-@endif</div>
 								</td>
 								<td class="text-right font-mono">${String.format("%.2f%%", m.successRate() * 100)}</td>
 								<%-- 열 순서 = 계산 흐름(C439 UX QA): 성공률 · 화폐 개수 → 성공당 비용 → 90% 예산 --%>
@@ -51,7 +53,7 @@
 				</table>
 			</div>
 			@if(net.luversof.web.gate.poe.CraftPrices.current() != null)<p class="text-xs text-base-content/70" data-craft-calc-custom-prices>${ko ? "사용자 가격 " + net.luversof.web.gate.poe.CraftPrices.current().size() + "개 반영" : net.luversof.web.gate.poe.CraftPrices.current().size() + " custom prices applied"}</p>@endif
-			<p class="text-xs text-base-content/70">${ko ? "시세: poe.ninja " : "Prices: poe.ninja "}${calc.league() == null ? "-" : calc.league()}@if(calc.pricesAt() != null) (${calc.pricesAt().substring(0, Math.min(16, calc.pricesAt().length()))})@endif · ${ko ? "가중치 균등 가정(PoE2 비공개) · 베이스 값 제외 · 90% 예산 = 회차마다 독립일 때 90% 확률로 한 번은 성공하는 비용" : "uniform weights (PoE2 hidden) · base cost excluded · 90% budget = cost to succeed at least once with 90% probability"}</p>
+			<p class="text-xs text-base-content/70">${ko ? "시세: poe.ninja " : "Prices: poe.ninja "}${calc.league() == null ? "-" : calc.league()}@if(calc.pricesAt() != null) (${calc.pricesAt().substring(0, Math.min(16, calc.pricesAt().length()))})@endif · ${ko ? "가중치 균등 가정(PoE2 비공개) · 베이스 값 = '가격 직접 입력'의 베이스 아이템(비우면 제외) · 90% 예산 = 회차마다 독립일 때 90% 확률로 한 번은 성공하는 비용" : "uniform weights (PoE2 hidden) · base cost = 'Base item' in Custom prices (blank = excluded) · 90% budget = cost to succeed at least once with 90% probability"}</p>
 		@endif
 	@endif
 </div>

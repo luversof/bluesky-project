@@ -550,6 +550,9 @@ html.poe-theme [data-theme-toggle] { display: none; }
 		background-repeat: no-repeat; background-position: right 0.6rem center; background-size: 1rem;
 	}
 	.select[multiple] { background-image: none; padding-right: 0.75rem; height: auto; align-items: stretch; }
+	/* xs 크기(10-22 Q8) — 쓰는 곳은 많은데 정의가 없어 기본 3rem(48px)으로 나왔다. 여러 곳이 h-7 min-h-0 으로 28px 에 맞춰 둔 값에 맞춘다 */
+	.input-xs, .select-xs { height: 1.75rem; min-height: 1.75rem; padding-inline: 0.5rem; font-size: 0.75rem; }
+	.select-xs { padding-right: 1.75rem; background-position: right 0.4rem center; background-size: 0.85rem; }
 
 	/* ---- checkbox / toggle ---- */
 	.checkbox {
@@ -1453,6 +1456,27 @@ html:has([data-craft2-page]) {
 	--psh-mid: url("/poe-data/ui-assets/psheadermasterymiddle.png");
 	--psh-right: url("/poe-data/ui-assets/psheadermasteryright.png");
 }
+/* PoE2 머리 띠(10-23 Q60) — 게임 PoE2 4K 아트(아치형 캡 등, tools/poe2-extract/ui-assets2.mjs). 주얼 소켓 띠는 PoE2 에 없어 PoE1 그대로 */
+.poe2-psh.poe-psheader-normal {
+	--psh-left: url("/poe-data/poe2/ui-assets/psheadernormalleft.png");
+	--psh-mid: url("/poe-data/poe2/ui-assets/psheadernormalmiddle.png");
+	--psh-right: url("/poe-data/poe2/ui-assets/psheadernormalright.png");
+}
+.poe2-psh.poe-psheader-notable {
+	--psh-left: url("/poe-data/poe2/ui-assets/psheadernotableleft.png");
+	--psh-mid: url("/poe-data/poe2/ui-assets/psheadernotablemiddle.png");
+	--psh-right: url("/poe-data/poe2/ui-assets/psheadernotableright.png");
+}
+.poe2-psh.poe-psheader-keystone {
+	--psh-left: url("/poe-data/poe2/ui-assets/psheaderkeystoneleft.png");
+	--psh-mid: url("/poe-data/poe2/ui-assets/psheaderkeystonemiddle.png");
+	--psh-right: url("/poe-data/poe2/ui-assets/psheaderkeystoneright.png");
+}
+.poe2-psh.poe-psheader-ascendancy {
+	--psh-left: url("/poe-data/poe2/ui-assets/psheaderascendancyleft.png");
+	--psh-mid: url("/poe-data/poe2/ui-assets/psheaderascendancymiddle.png");
+	--psh-right: url("/poe-data/poe2/ui-assets/psheaderascendancyright.png");
+}
 .poe-popup-sep {
 	height: 8px;
 	margin: 0.15rem 0.4rem;
@@ -1564,6 +1588,10 @@ html:has([data-craft2-page]) {
 /* PoE2 키워드 설명(10-04 C111) — 서버가 그린 툴팁(젬 등)은 정의 상자를 숨겨 두고, Alt 를 누르는 동안(common.ts 가 html.poe-alt) 안내 줄 대신 보인다.
    트리 캔버스 툴팁(tree2.ts)은 스스로 다시 그린다 */
 .poe-kw-box { display: none; }
+/* 제작 카드 상세 보기(10-22 Q3c) — Alt 를 누르는 동안 굴린 값 뒤에 범위(인게임 상세 옵션 설명) */
+.poe-advanced { display: none; }
+html.poe-alt .poe-advanced, html.poe-alt-lock .poe-advanced { display: inline; }
+html.poe-alt .poe-classic, html.poe-alt-lock .poe-classic { display: none; }
 html.poe-alt .poe-kw-box,
 .poe-kw-open .poe-kw-box { display: block; }
 html.poe-alt .poe-kw-hint,
@@ -1670,7 +1698,11 @@ html.poe-alt .poe-kw-hint,
 #poeTreeShell:fullscreen { background: #0e1116; }
 #poe2TreeShell:fullscreen { background: #0e1116; padding: 0.5rem; }
 
-.poe-val { color: var(--color-base-content, inherit); font-weight: 600; }
+.poe-val { color: var(--color-base-content, inherit); font-weight: 600; white-space: nowrap; /* 범위 '(115–129)' 가 중간에서 꺾이지 않게(10-22 Q7) */ }
+/* 계산기 조건이 바뀐 뒤의 옛 결과(10-23 Q32) — 안내만 또렷하게 */
+[data-craft-calc-stale="1"] > :not([data-craft-calc-stale-note]) { opacity: 0.45; }
+/* 못 쓰는 다른 길 칩(10-23 Q21) — disabled 대신 aria-disabled(Tab 으로 닿고 누르면 까닭), 모양은 꺼진 단추처럼 */
+[data-craft-way][aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 /* 파생 섹션 강조색(에센스/작업대 요약줄·문신 이름) — 라이트 모드에선 -400 계열이 흰 바탕에서 옅다(#79/#81 계열).
    라이트(기본)는 진한 톤, 다크는 기존 -400 톤 유지. unlayered 라 utilities 를 이긴다. */
 #mod-sec-essence .text-teal-400 { color: #0f766e; }
@@ -1765,6 +1797,14 @@ html.poe-alt .poe-kw-hint,
 	background: var(--color-primary, #4f7bd4);
 	border-color: var(--color-primary, #4f7bd4);
 	color: var(--color-primary-content, #fff);
+}
+/* 화폐(10-23 Q77 — 문신 · 룬 접목은 StackableCurrency, 게임 화폐 이름색 #aa9e82 · ItemsHeaderCurrency 띠) */
+.poe-rar-currency {
+	--rarity: #aa9e82;
+	--band-left: url("/poe-data/ui-assets/itemsheadercurrencyleft.png");
+	--band-mid: url("/poe-data/ui-assets/itemsheadercurrencymiddle.png");
+	--band-right: url("/poe-data/ui-assets/itemsheadercurrencyright.png");
+	--band-sep: url("/poe-data/ui-assets/itemsseparatorcurrency.png");
 }
 .poe-rar-gem {
 	--rarity: #1ba29b;

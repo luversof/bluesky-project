@@ -21,10 +21,10 @@ public final class PoeUpgradeGuide {
   }
 
   /**
-   * 약한 칸에 끼워 재 본 교체 후보 한 개 — 고유(보통 롤) 또는 같은 베이스의 2티어 레어 목표.
+   * 약한 칸에 끼워 재 본 교체 후보 한 개 — 고유(보통 롤) 또는 같은 베이스의 2등급 레어 목표.
    *
    * @param rarity UNIQUE | RARE
-   * @param mods 레어 목표에 붙인 옵션(표시용 한국어, 2티어 범위) — 고유면 null
+   * @param mods 레어 목표에 붙인 옵션(표시용 한국어, 2등급 범위) — 고유면 null
    * @param minionPct 소환수 EHP 증감(%) — 소환수 빌드가 아니면 null
    * @param metaCount 이 전직·주 스킬 조합의 poe.ninja 캐릭터 중 이 아이템을 쓰는 수(모르면 0)
    * @param metaTotal 그 조합의 캐릭터 수(모르면 0)

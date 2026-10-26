@@ -9,6 +9,10 @@
 @param java.util.List<String> lines = null
 <%-- 실제 방어 수치(10-08 C184 — 빌드 아이템, PoB 원문 최종값). null 이면 계산 --%>
 @param net.luversof.web.gate.poe.dto.PoeBuild.Defences defences = null
+<%-- 첫 구분선(10-23 Q24) — 제작 카드는 머리 바로 아래라 끈다(인게임엔 머리와 속성 사이 구분선이 없다), 상세 툴팁은 종류 줄 다음이라 켠다 --%>
+@param boolean leadSep = true
+<%-- 무기 종류 줄(10-23 Q62) — 인게임은 무기만 속성 칸 첫 줄 회색('Crossbow' · '석궁'), 그 아래 바로 물리 피해. 무기가 아니면 안 씀 --%>
+@param String classLine = null
 
 !{
 	// 베이스 속성(툴팁 가운데 칸) — 인게임처럼 라벨 회색 · 값 흰색. 고유는 옵션으로 값이 바뀌므로 베이스 값을 그대로 보인다.
@@ -33,7 +37,7 @@
 	net.luversof.web.gate.poe.PoeLocalProps.Range spiritR = hasSpirit ? net.luversof.web.gate.poe.PoeLocalProps.spirit(base.spirit(), lines) : null;
 	// 플라스크 · 호신부 속성에 로컬 옵션 반영(10-08 C187, PoE1 C186 짝 — 회복량 · 지속, PoB 식). PoE2 베이스엔 충전 수치가 없어 충전 줄은 없다. 바뀐 숫자만 파랑
 	net.luversof.web.gate.poe.PoeFlaskProps.Result fp = hasFlask ? net.luversof.web.gate.poe.PoeFlaskProps.apply(nz(f.lifePerUse()), nz(f.manaPerUse()), f.recoverySeconds() == null ? 0 : f.recoverySeconds(), nz(f.maxCharges()), nz(f.perCharge()), nz(f.lifePerUse()) == 0 && nz(f.manaPerUse()) == 0, lines, quality) : null;
-	java.util.function.BiFunction<String, Boolean, String> fpNum = (v, ch) -> ch ? "<span class=\"text-[#8888ff]\">" + v + "</span>" : v;
+	java.util.function.BiFunction<String, Boolean, String> fpNum = (v, ch) -> ch ? "<span class=\"text-[#8888ff]\">" + v + "</span>" : "<span class=\"text-[#e0e0e0]\">" + v + "</span>";
 	String fdur = fp == null ? "" : fpNum.apply(fp.duration().seconds(1), fp.duration().changed() || (nz(f.lifePerUse()) == 0 && nz(f.manaPerUse()) == 0 && quality > 0));
 	String flife = fp == null ? "" : fpNum.apply(fp.life().text(), fp.life().changed() || quality > 0);
 	String fmana = fp == null ? "" : fpNum.apply(fp.mana().text(), fp.mana().changed() || quality > 0);
@@ -41,8 +45,9 @@
 	String fused = fp == null ? "" : fpNum.apply(fp.chargesUsed().text(), fp.chargesUsed().changed());
 }
 @if(hasWeapon || hasArmour || hasFlask || hasSpirit || quality > 0)
-	<div class="poe-tt-sepimg"></div>
+	@if(leadSep)<div class="poe-tt-sepimg"></div>@endif
 	<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+		@if(classLine != null && hasWeapon)<div class="${label}" data-tt-weapon-class>${classLine}</div>@endif
 		@if(quality > 0)<div data-tt-quality><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="text-[#8888ff]">+${quality}%</span></div>@endif
 		@if(hasSpirit)<div data-tt-spirit><span class="${label}">${MessageUtil.getMessage("poe2.items.spirit")}: </span><span class="${spiritR.changed() ? "text-[#8888ff]" : value}">${spiritR.text()}</span></div>@endif
 		@if(hasWeapon)
@@ -52,7 +57,7 @@
 			<div><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${lp.critChance().changed() ? aug : value}">${lp.critChance().text2()}%</span></div>
 			<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.attacks.per.second")}: </span><span class="${lp.attacksPerSecond().changed() ? aug : value}">${lp.attacksPerSecond().text2()}</span></div>
 			@if(nz(w.reloadTime()) > 0)
-				<div><span class="${label}">${MessageUtil.getMessage("poe2.items.reload")}: </span>!{ net.luversof.web.gate.poe.PoeLocalProps.Range rl = net.luversof.web.gate.poe.PoeLocalProps.reload(w.reloadTime() / 1000.0, lines); }<span class="${rl.changed() ? aug : value}" data-tt-reload>${rl.text2()}s</span></div>
+				<div><span class="${label}">${MessageUtil.getMessage("poe2.items.reload")}: </span>!{ net.luversof.web.gate.poe.PoeLocalProps.Range rl = net.luversof.web.gate.poe.PoeLocalProps.reload(w.reloadTime() / 1000.0, lines); }<span class="${rl.changed() ? aug : value}" data-tt-reload>${rl.text2()}</span></div>
 			@endif
 		@endif
 		@if(hasArmour)
@@ -66,11 +71,11 @@
 		@endif
 		@if(hasFlask)
 			@if(nz(f.lifePerUse()) > 0)
-				<div class="${value}" data-tt-flask>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), fdur, flife)}</div>
+				<div class="${label}" data-tt-flask>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), fdur, flife)}</div>
 			@elseif(nz(f.manaPerUse()) > 0)
-				<div class="${value}" data-tt-flask>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), fdur, fmana)}</div>
+				<div class="${label}" data-tt-flask>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), fdur, fmana)}</div>
 			@else
-				<div class="${value}" data-tt-flask>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
+				<div class="${label}" data-tt-flask>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
 			@endif
 			<%-- 충전(10-08 C189 — PoB2 베이스 chargesMax · chargesUsed, 인게임 "사용 시 충전 40회 중 30회 소모") · 호신부 버프 줄(인게임 파란 줄) --%>
 			@if(nz(f.maxCharges()) > 0)<div class="${label}" data-tt-charges>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.charges"), fmax, fused)}</div>

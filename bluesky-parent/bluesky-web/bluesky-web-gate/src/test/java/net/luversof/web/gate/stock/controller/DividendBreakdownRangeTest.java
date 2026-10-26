@@ -67,10 +67,10 @@ class DividendBreakdownRangeTest {
   void 들머리에서_역순을_바로잡는다() throws IOException {
     String source = Files.readString(CONTROLLER, StandardCharsets.UTF_8);
 
-    assertThat(source)
-        .contains("Instant[] orderedRange = effectiveRange(rangeMode, startDate, endDate);");
-    assertThat(source).contains("Instant startInstant = orderedRange[0];");
-    assertThat(source).contains("Instant endInstant = orderedRange[1];");
+    // 2026-10-22 부터 들머리 바로잡기는 StockBaseHtmxController.listRange 가 한다(ReversedRangeTest 가 그 안을 본다).
+    assertThat(source).contains("ListRange range = listRange(rangeMode, startDate, endDate,");
+    assertThat(source).contains("Instant startInstant = range.start();");
+    assertThat(source).contains("Instant endInstant = range.end();");
   }
 
   private int countOf(String text, String token) {

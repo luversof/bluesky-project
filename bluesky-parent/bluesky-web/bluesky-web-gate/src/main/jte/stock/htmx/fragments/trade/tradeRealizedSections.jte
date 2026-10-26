@@ -8,6 +8,7 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.RealizedBasisGap
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<AccountRealizedRow> accountRealizedList
 @param List<TradeProfit> stockRealizedList
@@ -33,8 +34,7 @@
 	// The return rate divides by sold cost. With nothing sold the denominator does not exist,
 	// so the cell shows a dash - and a bare dash says nothing to either a mouse or a screen reader.
 	String rateNoneLabel = MessageUtil.getMessage("stock.realized.rate.none");
-	String winCountBadgeLabel = java.text.MessageFormat.format(
-		MessageUtil.getMessage("stock.realized.summary.win.count"), realizedWinCount, realizedStockCount);
+	String winCountBadgeLabel = StockViewSupport.msg("stock.realized.summary.win.count", realizedWinCount, realizedStockCount);
 	String selectionSummaryLabel = MessageUtil.getMessage("stock.analytics.selection.summary");
 	String accountSelectionSummaryLabel = MessageUtil.getMessage("stock.analytics.account.selection.summary");
 	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
@@ -62,7 +62,7 @@
 }
 
 	@if(accountRealizedList != null && !accountRealizedList.isEmpty())
-	<!-- 계좌별 실현손익 -->
+	<%-- 계좌별 실현손익 --%>
 	<div class="mb-4" data-trade-realized-section>
 		<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byAccountSectionLabel}</h2>
 		<p class="text-[11px] leading-4 text-base-content/60 mb-2">${realizedBasisNote}</p>
@@ -139,7 +139,7 @@
 							@if(RealizedBasisGap.isNotable(rowNet, rowOwn))
 								<span class="block text-[10px] font-normal text-base-content/60" data-realized-basis-gap="${StockFormatUtil.displayWon(rowBasisGap)}"
 									  title="${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}">
-									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.trade.realized.basis.gap"), StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowOwn)))}
+									${StockViewSupport.msg("stock.trade.realized.basis.gap", StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowOwn)))}
 									<%-- 까닭이 title 에만 있으면 마우스 전용이다(2026-09-10 실측). 같은 문구를 보조기술에도 남긴다. --%>
 									<span class="sr-only">${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}</span>
 								</span>
@@ -180,7 +180,7 @@
 	@endif
 
 	@if(stockRealizedList != null && !stockRealizedList.isEmpty())
-	<!-- 종목별 실현손익 -->
+	<%-- 종목별 실현손익 --%>
 	<div class="mb-4" data-trade-realized-section>
 		<div class="flex items-center justify-between mb-2">
 			<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byStockSectionLabel}</h2>
@@ -290,9 +290,9 @@
 
 	<script nonce="${CspNonceHolder.getNonce()}">
 	(function() {
-		// 계좌별/종목별 실현손익 행 선택 합산 — 배당 효율 랭킹과 동일한 UX
-		// (행 클릭 토글 + 하이라이트 + 상단 요약 패널 펼침/접힘 + 선택 해제)
-		// 행 결합 · 금액 넣기는 stockLayout 이 먼저 싣는 /js/stock/rowSelection.js(배당 변동 요인 카드와 같은 것 - 2026-10-22 에 모았다).
+		<%-- 계좌별/종목별 실현손익 행 선택 합산 — 배당 효율 랭킹과 동일한 UX --%>
+		<%-- (행 클릭 토글 + 하이라이트 + 상단 요약 패널 펼침/접힘 + 선택 해제) --%>
+		<%-- 행 결합 · 금액 넣기는 stockLayout 이 먼저 싣는 /js/stock/rowSelection.js(배당 변동 요인 카드와 같은 것 - 2026-10-22 에 모았다). --%>
 		var RS = window.StockRowSelection;
 		if (!RS) return;
 		var sections = document.querySelectorAll('[data-trade-realized-section]');
@@ -321,14 +321,14 @@
 					var rateEl = summary.querySelector('[data-trade-realized-sel-rate]');
 					if (rateEl) {
 						if (soldCost > 0) {
-							// 표시 자릿수(2)로 먼저 반올림한다 - 0 에는 방향이 없다(StockFormatUtil.signedPct 와 같은 규칙).
+							<%-- 표시 자릿수(2)로 먼저 반올림한다 - 0 에는 방향이 없다(StockFormatUtil.signedPct 와 같은 규칙). --%>
 							var rate = Number((net / soldCost * 100).toFixed(2));
 							rateEl.textContent = (rate > 0 ? '+' : '') + rate.toFixed(2) + '%';
 							rateEl.removeAttribute('title');
 							rateEl.classList.toggle('text-profit', rate >= 0);
 							rateEl.classList.toggle('text-loss', rate < 0);
 						} else {
-							// 나눌 매도원가가 없다. 하이픈만 두면 왜 비었는지 마우스로도 낭독기로도 알 수 없다.
+							<%-- 나눌 매도원가가 없다. 하이픈만 두면 왜 비었는지 마우스로도 낭독기로도 알 수 없다. --%>
 							var rateNone = summary.dataset.rateNone || '';
 							rateEl.textContent = '';
 							var rateMark = document.createElement('span');

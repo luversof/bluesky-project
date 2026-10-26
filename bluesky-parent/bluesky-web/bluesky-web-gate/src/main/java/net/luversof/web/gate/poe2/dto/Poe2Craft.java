@@ -199,7 +199,19 @@ public final class Poe2Craft {
       Integer max,
       List<Step> sub) {}
 
-  public record StrategyRequest(Item item, List<Target> targets, List<Step> steps, Integer runs) {}
+  public record StrategyRequest(
+      Item item,
+      List<Target> targets,
+      List<Step> steps,
+      Integer runs,
+      // 사용자 가격(10-23 Q20a, PoE1 짝)
+      Map<String, Double> prices) {
+
+    /** 지금 요청의 사용자 가격을 싣는다. */
+    public StrategyRequest(Item item, List<Target> targets, List<Step> steps, Integer runs) {
+      this(item, targets, steps, runs, net.luversof.web.gate.poe.CraftPrices.current());
+    }
+  }
 
   public record StepStat(String action, String arg, double avgUses, double reached) {}
 
@@ -211,7 +223,24 @@ public final class Poe2Craft {
       Double costPerRun,
       Double expectedCost,
       List<StepStat> steps,
-      String error) {}
+      String error,
+      // 성공 예시(10-22 Q17, PoE1 Q16 짝) — 목표를 채운 처음 몇 개
+      List<StrategySample> samples) {
+
+    public StrategyResult(
+        int runs,
+        int successes,
+        double successRate,
+        Map<String, Double> perRun,
+        Double costPerRun,
+        Double expectedCost,
+        List<StepStat> steps,
+        String error) {
+      this(runs, successes, successRate, perRun, costPerRun, expectedCost, steps, error, List.of());
+    }
+  }
+
+  public record StrategySample(Item item, List<Line> lines) {}
 
   public record CalcResponse(
       List<CalcMethod> results,
@@ -322,6 +351,16 @@ public final class Poe2Craft {
 
   /** 화폐 적용 — arg = 화폐 등급(greater · perfect, 없으면 기본), omens = 이번에 걸 징조 키. */
   public record ApplyRequest(Item item, String action, String arg, List<String> omens, Long seed) {}
+
+  /** 고른 화폐 기준 옵션 표(10-22 Q2 — API Poe2CraftService.ActionPool 과 같게). */
+  public record ActionPool(
+      List<PoolLine> lines,
+      java.util.Map<String, Double> mult,
+      boolean picked,
+      String error,
+      String baseRarity,
+      // 확정 옵션 id(10-22 Q7 — 에센스가 보장하는 풀 옵션)
+      List<String> forced) {}
 
   /** 아이템 가져오기(C486) — text = 게임에서 Ctrl+C · Ctrl+Alt+C 로 복사한 글. */
   public record ImportRequest(String text) {}

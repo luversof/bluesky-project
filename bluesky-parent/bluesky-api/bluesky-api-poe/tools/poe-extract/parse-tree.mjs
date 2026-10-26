@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR, FILES_DIR, WORK_DIR, loadTable } from "./paths.mjs";
-import { createStatDescriber } from "./statDescriptions.mjs";
+import { createModTranslator, createStatDescriber } from "./statDescriptions.mjs";
 import { alignKoToGameOrder, buildKoreanMap, buildTree, joinReminderKo } from "./tree-common.mjs";
 import { createTemplateTranslator } from "./ko-templates.mjs";
 import { applyOfficialReminderKo, loadKakaoTree } from "./kakao-tree.mjs";
@@ -42,6 +42,27 @@ const passivesKo = loadTable("Korean", "PassiveSkills");
 const koByGraphId = buildKoreanMap({ describe, statsTable, passivesEn, passivesKo });
 
 const result = buildTree(tree, koByGraphId);
+
+// 패시브 서술에 없는 오라 문장 보충(10-23 Q69 — 스킬 군 노터블 '차오르는 존재감' 둘째 줄 "You and nearby Allies Regenerate 1.00% of Life per
+//   second" 가 한국어 화면에 영어로 남았다: 게임 PassiveSkills 행엔 첫 스탯뿐이고 둘째 줄은 GGG 트리 원문에만 있어 서술기로는 못 만든다).
+//   한국어가 비어 영어로 남은 줄만 aura_skill_stat_descriptions 역번역기로 옮긴다(서술 사슬 자체는 C257 대로 그대로)
+{
+	const auraTranslate = createModTranslator(FILES_DIR, ["metadata@statdescriptions@aura_skill_stat_descriptions.txt"]);
+	let fixed = 0;
+	const fill = (ko) => {
+		if (!ko || ko.every((line) => /[가-힣]/.test(line))) return ko;
+		return ko.map((line) => {
+			if (/[가-힣]/.test(line)) return line;
+			const [t] = auraTranslate([line]);
+			if (!t || !/[가-힣]/.test(t)) return line;
+			fixed++;
+			return t;
+		});
+	};
+	for (const c of result.clusterNotables || []) c.statsKo = fill(c.statsKo);
+	for (const n of result.nodes) n.statsKo = fill(n.statsKo);
+	console.log(`오라 문장으로 보충한 한국어 줄: ${fixed}`);
+}
 
 // 마스터리 효과 한글: GGG 트리 익스포트는 완성된 영문 문장만 주므로, 게임 테이블
 // PassiveSkillMasteryEffects 의 HASH16(= 트리 export 의 effect id) 로 조인해 스탯을 한글로 서술한다.
@@ -189,6 +210,19 @@ if (fs.existsSync(PREV)) {
 }
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+// 게임 링크 표기 "[BifurcatedCrit|Bifurcates]" → 보이는 글자(10-23 Q55 — 노드 3개 툴팁에 그대로 나왔다, 젬 Q50 과 같은 규칙).
+//   노드 글자 전부(스탯 · 리마인더 · 숙련 효과 · 플레이버) — 이름 · id 엔 이 표기가 없다. "[DNT]" 같은 단독 괄호는 남긴다
+{
+	const unlink = (v) =>
+		typeof v === "string"
+			? v.replace(/\[([^\]|]+)\|([^\]]+)\]/g, "$2")
+			: Array.isArray(v)
+				? v.map(unlink)
+				: v && typeof v === "object"
+					? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, unlink(x)]))
+					: v;
+	result.nodes = result.nodes.map(unlink);
+}
 fs.writeFileSync(OUT, JSON.stringify(result));
 console.log(`nodes ${result.nodes.length}, edges ${result.edges.length}, groups ${Object.keys(result.groups).length} → ${OUT}`);
 console.log("size:", (fs.statSync(OUT).size / 1024 / 1024).toFixed(1) + "MB");

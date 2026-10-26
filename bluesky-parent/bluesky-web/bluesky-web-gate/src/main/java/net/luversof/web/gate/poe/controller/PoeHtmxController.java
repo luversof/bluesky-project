@@ -226,7 +226,7 @@ public class PoeHtmxController {
 
   /**
    * 결과 고유 중 원래 고유와 옵션이 다른 것 → 실제 장착 옵션으로 바꾼 사본(슬롯별, 10-05 C152). 삿된(Foulborn) · 변형 사본은 원래 고유와 slug
-   * 가 같아 일반 상세(hx-get)가 **원래 옵션 · 기본 변형**을 띄웠다. 영문 결과 줄 = 도유 + 임플리싯 + 익스플리싯이라 앞의 두 묶음을 떼면 장착한
+   * 가 같아 일반 상세(hx-get)가 **원래 옵션 · 기본 변형**을 띄웠다. 영문 결과 줄 = 성유 + 고정 속성 + 익스플리싯이라 앞의 두 묶음을 떼면 장착한
    * 익스플리싯이 남는다. C153 부터 표식 없는 고유도(결과 줄 = 계산이 쓴 롤) — 결과가 있을 때만 고유 수만큼 조회. bases 에는 그 슬롯의 베이스(분류 · 요구
    * 사항)를 채운다.
    */
@@ -253,7 +253,7 @@ public class PoeHtmxController {
         while (off < en.size() && en.get(off).startsWith("(anoint) ")) {
           off++;
         }
-        // 변형 사본은 이름 꼬리 괄호 = 변형 이름(API uniqueVariants 규약) — 임플리싯 수가 기본 변형과 다른 변형이 78개라 그 변형 것으로
+        // 변형 사본은 이름 꼬리 괄호 = 변형 이름(API uniqueVariants 규약) — 고정 속성 수가 기본 변형과 다른 변형이 78개라 그 변형 것으로
         java.util.List<String> baseImplicits = u.implicits();
         Integer variantIdx = null;
         if (!foulborn
@@ -301,7 +301,7 @@ public class PoeHtmxController {
                 u.league(),
                 u.legacy(),
                 u.radius(),
-                // 임플리싯도 결과 줄(계산이 쓴 롤 · 고른 변형의 것)
+                // 고정 속성도 결과 줄(계산이 쓴 롤 · 고른 변형의 것)
                 java.util.List.copyOf(en.subList(implicitStart, off)),
                 explicitsKo == null ? null : java.util.List.copyOf(ko.subList(implicitStart, off)),
                 explicits,
@@ -352,7 +352,7 @@ public class PoeHtmxController {
 
   /**
    * 결과 고유 주얼 중 빌드마다 옵션이 다른 것(감시자의 눈 · 금단 짝 — 결과가 고른 옵션 줄을 보낸다) → 그 옵션으로 바꾼 사본(10-05 C154, 장비 고유
-   * C152 짝). 일반 상세는 감시자의 눈의 모든 후보 · 금단의 기본 노터블을 띄워 고른 물건과 달랐다. bases 엔 키별 베이스.
+   * C152 짝). 일반 상세는 감시자의 눈의 모든 후보 · 금단의 기본 주요 스킬을 띄워 고른 물건과 달랐다. bases 엔 키별 베이스.
    */
   private java.util.Map<String, PoeUniqueItem> jewelOverrides(
       net.luversof.web.gate.poe.dto.PoeOptimizeResult result,
@@ -546,7 +546,7 @@ public class PoeHtmxController {
       @RequestParam(required = false, defaultValue = "") String clusters,
       // 트리에서 새긴 문신 — 없으면 최적화기가 원래 패시브로 계산해 화면 수치와 어긋난다
       @RequestParam(required = false, defaultValue = "") String tattoos,
-      // 트리에서 고른 도유 노터블 id — 없으면 최적화기가 자동 전수 스윕으로 고른다
+      // 트리에서 고른 성유 주요 스킬 id — 없으면 최적화기가 자동 전수 스윕으로 고른다
       @RequestParam(required = false, defaultValue = "") String anoint,
       // 루미너리 용병 빌드 PoB 코드(선택)
       @RequestParam(required = false) String mercCode,
@@ -912,9 +912,12 @@ public class PoeHtmxController {
       @RequestParam(required = false) String clusters,
       // 문신 — 그 패시브가 문신 노드로 교체돼 계산된다(반경 주얼과 짝지어 쓰는 실전 조합)
       @RequestParam(required = false) String tattoos,
-      // 도유 노터블 id — nodes 에 끼우면 PoB 가 미연결 노드로 해제하므로 별도 인자
+      // 성유 주요 스킬 id — nodes 에 끼우면 PoB 가 미연결 노드로 해제하므로 별도 인자
       @RequestParam(required = false) Integer anoint,
+      // 결과 배지에 쓸 화면 언어 전직 이름(10-25 Q211 — 영어 id 가 그대로 '머라우더 · Juggernaut' 로 나왔다)
+      @RequestParam(required = false) String ascendancyLabel,
       Model model) {
+    model.addAttribute("ascendancyLabel", ascendancyLabel);
     try {
       model.addAttribute(
           "treeEval",
@@ -1001,7 +1004,7 @@ public class PoeHtmxController {
     return "poe/htmx/itemList";
   }
 
-  /** 모드 페이지 — 아이템 클래스 하나의 접두/접미 티어 fragment (칩 클릭 시 본문 교체). */
+  /** 모드 페이지 — 아이템 종류 하나의 접두/접미 등급 fragment (칩 클릭 시 본문 교체). */
   @GetMapping("/mods")
   public String modClass(
       @RequestParam String itemClass,
@@ -1009,9 +1012,9 @@ public class PoeHtmxController {
       @RequestParam(required = false, defaultValue = "") String influence,
       Model model) {
     model.addAttribute("mods", poeDataClient.modsForItemClass(itemClass, variant, influence));
-    // 엘드리치 임플리싯(총주교/포식자) — 방어구·목걸이 등 대상 슬롯만. API 가 대상 아니면 null 반환.
+    // 섬뜩한 고정 속성(총주교/포식자) — 방어구·목걸이 등 대상 슬롯만. API 가 대상 아니면 null 반환.
     model.addAttribute("eldritch", poeDataClient.eldritchForItemClass(itemClass));
-    // 도유(속성 부여) — 아뮬렛 전용. htmx 로 아뮬렛 칩에 전환해도 섹션이 나타나야 한다(전체 로드와 동일)
+    // 성유(속성 부여) — 목걸이 전용. htmx 로 목걸이 칩에 전환해도 섹션이 나타나야 한다(전체 로드와 동일)
     model.addAttribute("anoints", "Amulet".equals(itemClass) ? poeDataClient.anoints() : null);
     model.addAttribute("essences", poeDataClient.essencesForItemClass(itemClass));
     model.addAttribute("bench", poeDataClient.benchForItemClass(itemClass));
@@ -1178,7 +1181,7 @@ public class PoeHtmxController {
   public String uniqueDetail(@RequestParam String slug, Model model) {
     PoeUniqueItem item = poeDataClient.unique(slug);
     model.addAttribute("item", item);
-    // 베이스 아이템(무기/방어 속성·아이템 클래스·요구사항)을 조인해 게임 툴팁처럼 채워 보여준다
+    // 베이스 아이템(무기/방어 속성·아이템 종류·요구사항)을 조인해 게임 툴팁처럼 채워 보여준다
     model.addAttribute("base", poeDataClient.baseItemByName(item.baseType()));
     return "poe/htmx/uniqueDetail";
   }
@@ -1198,17 +1201,13 @@ public class PoeHtmxController {
     return "poe/htmx/tattooDetail";
   }
 
-  /** 게임 툴팁 형태의 젬 상세 레이어. level 파라미터로 표시 레벨을 바꾼다 (기본 20). */
+  /** 게임 툴팁 형태의 젬 상세 레이어. level 파라미터로 표시 레벨을 바꾼다 (기본 = 자연 최대 레벨, 10-23 Q48). */
   @GetMapping("/gems/detail")
   public String gemDetail(
-      @RequestParam String slug,
-      @RequestParam(required = false, defaultValue = "20") int level,
-      Model model) {
+      @RequestParam String slug, @RequestParam(required = false) Integer level, Model model) {
     PoeGem gem = poeDataClient.gem(slug);
-    int maxLevel = gem.levels().isEmpty() ? 1 : gem.levels().get(gem.levels().size() - 1).level();
-    int displayLevel = Math.min(Math.max(level, 1), maxLevel);
     model.addAttribute("gem", gem);
-    model.addAttribute("displayLevel", displayLevel);
+    model.addAttribute("displayLevel", gem.displayLevel(level));
     return "poe/htmx/gemDetail";
   }
 

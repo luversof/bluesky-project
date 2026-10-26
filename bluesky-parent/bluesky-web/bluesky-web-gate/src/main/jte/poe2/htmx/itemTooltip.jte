@@ -7,17 +7,22 @@
 !{
 	// 일반(노멀) 아이템 — 이름 흰색(인게임 노멀 희귀도)
 	java.util.List<String> implicits = Poe2View.implicitLines(base);
+	// 무기는 종류 줄을 속성 칸 첫 줄로(10-23 Q62)
+	boolean weaponBase = base.weapon() != null && base.weapon().damageMax() != null && base.weapon().damageMax() > 0;
+	String itemClass = net.luversof.web.gate.poe.PoeClassNames.poe2Tip(base.itemClassKo(), base.itemClass());
 }
 
 <div class="poe-tooltip poe-rar-white w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl">
 	<div class="poe-tt-band">
 		<div class="text-center font-bold text-[15px] leading-tight text-[#c8c8c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${PoeText.name(base.nameKo(), base.name())}</div>
 	</div>
+	@if(!weaponBase || PoeText.isKorean())
 	<div class="px-4 pt-1.5 text-center text-[11px]">
-		<span class="text-white/70">${net.luversof.web.gate.poe.PoeClassNames.poe2(base.itemClassKo(), base.itemClass())}</span>
+		@if(!weaponBase)<span class="text-white/70">${itemClass}</span>@endif
 		@if(PoeText.isKorean())<div class="text-[10px] text-white/30">${base.name()}</div>@endif
 	</div>
-	@template.poe2.htmx.baseProps(base = base)
+	@endif
+	@template.poe2.htmx.baseProps(base = base, classLine = weaponBase ? itemClass : null, leadSep = !weaponBase)
 	@template.poe2.htmx.requirements(level = base.reqLevel(), base = base)
 	@if(!implicits.isEmpty())
 		<div class="poe-tt-sepimg"></div>

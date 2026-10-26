@@ -13,7 +13,7 @@
 		q.append(q.length() == 0 ? "?" : "&").append("label=").append(java.net.URLEncoder.encode(l, java.nio.charset.StandardCharsets.UTF_8));
 	}
 }
-<div id="${"/poe2".equals(base) ? "craft2-opt-result" : "craft-opt-result"}" data-craft-optimize data-craft-optimize-wait="${progress}" hx-get="${base}/htmx/craft/optimize/${jobId}${q.toString()}" hx-trigger="load delay:1500ms" hx-swap="outerHTML" class="rounded-box border border-base-300 bg-base-100 p-3 space-y-2 text-sm" role="status">
-	<div><span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? ("/poe2".equals(base) ? "최적 조합 찾는 중(약 30초) — 화폐 · 등급 · 징조 · 에센스 · 훼손 · 새 베이스를 섞어 상태마다 가장 싼 수단을 찾습니다" : "최적 조합 찾는 중(약 30초) — 에센스 · 화석 · 수확 · 제작대 · 짐승 · 화폐를 섞어 상태마다 가장 싼 수단을 찾습니다") : "Searching the optimal combination (about 30 s)"}</div>
+<div id="${"/poe2".equals(base) ? "craft2-opt-result" : "craft-opt-result"}" data-craft-optimize data-craft-optimize-wait="${progress}" hx-get="${base}/htmx/craft/optimize/${jobId}${q.toString()}" hx-trigger="load delay:1500ms" hx-swap="outerHTML" class="rounded-box border border-base-300 bg-base-100 p-3 space-y-2 text-sm min-h-[24rem]" role="status">
+	<div><span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? ("/poe2".equals(base) ? "2/2 최적 조합 찾는 중(보통 10~30초) — 화폐 · 등급 · 징조 · 에센스 · 훼손 · 새 베이스를 섞어 상태마다 가장 싼 수단을 찾습니다" : "2/2 최적 조합 찾는 중(보통 10~30초) — 에센스 · 화석 · 수확 · 작업대 · 야수 · 화폐를 섞어 상태마다 가장 싼 수단을 찾습니다") : "2/2 Searching the optimal combination (usually 10–30 s)"}</div>
 	<progress class="progress progress-primary w-full" value="${progress}" max="100" aria-label="${ko ? "최적 조합 진행" : "Optimization progress"}"></progress>
 </div>

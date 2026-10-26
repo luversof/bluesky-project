@@ -80,7 +80,7 @@
 						<option value="3">${net.luversof.web.gate.poe.PoeText.name("위치", "Witch")}</option>
 						<option value="4">${net.luversof.web.gate.poe.PoeText.name("듀얼리스트", "Duelist")}</option>
 						<option value="5">${net.luversof.web.gate.poe.PoeText.name("템플러", "Templar")}</option>
-						<option value="6">${net.luversof.web.gate.poe.PoeText.name("섀도우", "Shadow")}</option>
+						<option value="6">${net.luversof.web.gate.poe.PoeText.name("쉐도우", "Shadow")}</option>
 					</select>
 					<select id="poeTreeAscend" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.tree.ascendancy")}"></select>
 					<select id="poeTreeBloodline" class="select select-sm select-bordered" title="${MessageUtil.getMessage("poe.tree.bloodline")}"></select>

@@ -18,6 +18,7 @@
 	String hintLabel = MessageUtil.getMessage("poe.tree.hint");
 	String legendKeystoneLabel = MessageUtil.getMessage("poe.tree.legend.keystone");
 	String legendNotableLabel = MessageUtil.getMessage("poe.tree.legend.notable");
+	String legendMasteryLabel = MessageUtil.getMessage("poe.tree.legend.mastery");
 }
 
 @template._layout.poeLayout(
@@ -50,9 +51,11 @@
 			@else
 				<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-base-content/60">
 					<span>${hintLabel}</span>
-					<span class="ml-auto flex items-center gap-3">
+					<span class="ml-auto flex flex-wrap items-center gap-3">
 						<span><span class="inline-block w-2.5 h-2.5 rounded-full align-[-1px]" style="background:#cf6642"></span> ${legendKeystoneLabel}</span>
 						<span><span class="inline-block w-2.5 h-2.5 rounded-full align-[-1px]" style="background:#d4a94e"></span> ${legendNotableLabel}</span>
+						<%-- 숙련 126개를 그린다(10-23 Q67 — 게임 PassiveSkillSearchMastery, 패시브 화면과 같은 색) --%>
+						<span><span class="inline-block w-2.5 h-2.5 rounded-full align-[-1px]" style="background:#9a6ad4"></span> ${legendMasteryLabel}</span>
 					</span>
 				</div>
 				<div id="poeTreeShell" class="relative bg-base-100">

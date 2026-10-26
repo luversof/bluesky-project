@@ -58,10 +58,10 @@ class UnreachableEndpointTest {
 
   private static final Pattern MENU_URL = Pattern.compile("menu\\.stock\\[\\d+\\]\\.url=(\\S+)");
 
-  /** 닿을 수 없는 것이 확인된 경로와 그 사유. */
   /** 큰따옴표 한 글자. 소스에 역슬래시 이스케이프를 남기지 않기 위한 것. */
   private static final String MARKER_QUOTE = String.valueOf((char) 34);
 
+  /** 닿을 수 없는 것이 확인된 경로와 그 사유. */
   private static final Map<String, String> KNOWN_UNREACHABLE = new LinkedHashMap<>();
 
   // 2026-09-09: /stock/htmx/dashboard 껍데기와 /api/stock/tradeProfit/calculateProfit 통과 경로는 지웠다(목록에 남길

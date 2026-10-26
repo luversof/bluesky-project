@@ -4,6 +4,7 @@
 @import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<HoldingsSnapshotItem> holdings
 @param String date
@@ -11,7 +12,7 @@
 !{
 	String snapshotTitle = MessageUtil.getMessage("stock.holdings.snapshot.title");
 	String asOfLabel = date != null && !date.isEmpty()
-		? java.text.MessageFormat.format(MessageUtil.getMessage("common.label.as.of"), date)
+		? StockViewSupport.msg("common.label.as.of", date)
 		: null;
 	String closeLabel = MessageUtil.getMessage("common.button.close");
 	String noDataLabel = MessageUtil.getMessage("stock.holdings.snapshot.message.no.data");

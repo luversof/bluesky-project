@@ -47,13 +47,14 @@
 		java.util.Map.entry("위치|Witch", List.of("Occultist", "Elementalist", "Necromancer")),
 		java.util.Map.entry("듀얼리스트|Duelist", List.of("Slayer", "Gladiator", "Champion")),
 		java.util.Map.entry("템플러|Templar", List.of("Inquisitor", "Hierophant", "Guardian")),
-		java.util.Map.entry("섀도우|Shadow", List.of("Assassin", "Trickster", "Saboteur")));
+		java.util.Map.entry("쉐도우|Shadow", List.of("Assassin", "Trickster", "Saboteur")));
 	java.util.List<String> topAsc = ascendancyOrder.stream().filter(ascKo::containsKey).limit(5).toList();
 }
 
 <div class="min-w-[min(14rem,100%)]">
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.ascendancy")}</label>
-	<select name="ascendancy" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe.sim.opt.ascendancy")}">
+	<%-- 바뀌면 이 조각(#poeSimSelects)을 다시 그린다 — 트리거를 select 에 둔다(10-25 Q178, CSP) --%>
+	<select name="ascendancy" class="select select-sm select-bordered w-full" title="${MessageUtil.getMessage("poe.sim.opt.ascendancy")}" hx-get="/poe/htmx/sim/selects" hx-trigger="change" hx-include="#poeSimSelects select" hx-target="#poeSimSelects" hx-swap="innerHTML">
 		<option value="" selected="${ascendancy.isBlank()}">${MessageUtil.getMessage("poe.sim.opt.ascendancy.auto")}</option>
 		@if(!topAsc.isEmpty())
 			<optgroup label="${MessageUtil.getMessage("poe.sim.popular.classes")}">
@@ -75,7 +76,7 @@
 	<label class="mb-1 block text-xs font-semibold text-base-content/70">${MessageUtil.getMessage("poe.sim.opt.skills")}
 		@if(popularSkills > 0)<span class="ml-1 font-normal text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.byusage")} ${popularSkills}</span>@endif
 	</label>
-	<select name="skills" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.skills.placeholder")}" size="4" class="select select-sm select-bordered w-full">
+	<select name="skills" multiple data-poe-multi data-placeholder="${MessageUtil.getMessage("poe.sim.opt.skills.placeholder")}" size="4" class="select select-sm select-bordered w-full" hx-get="/poe/htmx/sim/selects" hx-trigger="change" hx-include="#poeSimSelects select" hx-target="#poeSimSelects" hx-swap="innerHTML">
 		@for(PoeGem skillOpt : gems)
 			<option value="${skillOpt.slug()}" selected="${preSkills.contains(skillOpt.slug())}">${PoeText.name(skillOpt.nameKo(), skillOpt.name())}</option>
 		@endfor

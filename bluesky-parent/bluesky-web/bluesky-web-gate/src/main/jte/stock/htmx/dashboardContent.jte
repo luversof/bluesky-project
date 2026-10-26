@@ -1,6 +1,6 @@
-<!-- Dashboard Layout -->
+<%-- Dashboard Layout --%>
 <div class="space-y-6">
-	<!-- 1. 요약 허브: 총자산/통합손익 + 자산 추이 미니 차트 + 지표 스트립 -->
+	<%-- 1. 요약 허브: 총자산/통합손익 + 자산 추이 미니 차트 + 지표 스트립 --%>
 	<div hx-get="/stock/htmx/summary" hx-trigger="load" hx-swap="innerHTML">
 		<%-- 로딩 스켈레톤: 히어로 2열 + 지표 4칸 형태를 흉내낸다 --%>
 		<div class="flex flex-col gap-4 animate-pulse" aria-hidden="true">
@@ -36,7 +36,7 @@
 		</div>
 	</div>
 
-	<!-- 2. 최근 활동 + 다가올 배당 + 보유 비중 (2열/3열) -->
+	<%-- 2. 최근 활동 + 다가올 배당 + 보유 비중 (2열/3열) --%>
 	<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
 		<div hx-get="/stock/htmx/recent-activities" hx-trigger="intersect once" hx-swap="outerHTML">
 			@template.stock.htmx.fragments.cardSkeleton()

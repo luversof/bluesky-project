@@ -533,6 +533,30 @@ public class PoeCraftController {
           "Awakener's Orb",
           "Hinekora's Lock");
 
+  /**
+   * 가격 칸 화폐의 게임 한국어 이름(BaseItemTypes) — 지금 아이템의 화폐 목록에 없는 것도 한국어로(10-25 Q205: 신성한 오브 · 연금술의 오브 등
+   * 6개가 영어로 나왔다).
+   */
+  static final java.util.Map<String, String> PRICE_KO =
+      java.util.Map.ofEntries(
+          java.util.Map.entry("Divine Orb", "신성한 오브"),
+          java.util.Map.entry("Exalted Orb", "엑잘티드 오브"),
+          java.util.Map.entry("Orb of Alchemy", "연금술의 오브"),
+          java.util.Map.entry("Orb of Alteration", "변화의 오브"),
+          java.util.Map.entry("Orb of Augmentation", "확장의 오브"),
+          java.util.Map.entry("Orb of Transmutation", "진화의 오브"),
+          java.util.Map.entry("Regal Orb", "제왕의 오브"),
+          java.util.Map.entry("Orb of Scouring", "정제의 오브"),
+          java.util.Map.entry("Orb of Annulment", "소멸의 오브"),
+          java.util.Map.entry("Vaal Orb", "바알 오브"),
+          java.util.Map.entry("Blessed Orb", "축복의 오브"),
+          java.util.Map.entry("Fracturing Orb", "분열의 오브"),
+          java.util.Map.entry("Veiled Chaos Orb", "장막의 카오스 오브"),
+          java.util.Map.entry("Eldritch Chaos Orb", "섬뜩한 카오스 오브"),
+          java.util.Map.entry("Eldritch Exalted Orb", "섬뜩한 엑잘티드 오브"),
+          java.util.Map.entry("Orb of Dominance", "지배의 오브"),
+          java.util.Map.entry("Hinekora's Lock", "히네코라의 머리카락"));
+
   /** 가격 직접 입력 칸(C529) — [영어 이름, 한국어 이름, 시세 카오스]. 못 읽으면 빈 목록. */
   private List<String[]> priceList(String itemClass, String variant) {
     try {
@@ -553,7 +577,7 @@ public class PoeCraftController {
           out.add(
               new String[] {
                 n,
-                ko.getOrDefault(n, n),
+                ko.getOrDefault(n, PRICE_KO.getOrDefault(n, n)),
                 v >= 100 ? String.format("%.0f", v) : String.format("%.2f", v)
               });
         }
@@ -670,7 +694,7 @@ public class PoeCraftController {
       @RequestParam(required = false, defaultValue = "[]") String history,
       @RequestParam(name = "action", required = false, defaultValue = "RESET") String rawAction,
       @RequestParam(required = false) String essence,
-      // 섞어 쓰는 제작(10-15 C338) — 화석은 여러 개(체크), 제작대 · 수확은 고른 하나, 정복자는 action 값 "CONQUEROR:crusader"
+      // 섞어 쓰는 제작(10-15 C338) — 화석은 여러 개(체크), 작업대 · 수확은 고른 하나, 정복자는 action 값 "CONQUEROR:crusader"
       @RequestParam(required = false) List<String> fossil,
       @RequestParam(required = false) String bench,
       @RequestParam(required = false) String harvest,
@@ -682,7 +706,7 @@ public class PoeCraftController {
       @RequestParam(required = false, defaultValue = "") String itemNameKo,
       // 군집 주얼 패시브 수(C531)
       @RequestParam(required = false) Integer passives,
-      // 짐승 제작 각인(10-15 C350) — 각인한 매직 아이템(JSON), 한 번 되돌리면 사라진다
+      // 야수 제작 각인(10-15 C350) — 각인한 매직 아이템(JSON), 한 번 되돌리면 사라진다
       @RequestParam(required = false, defaultValue = "") String imprint,
       // 각인할 때 굴림 씨앗(C381) — 복원하면 그때 값으로
       @RequestParam(required = false, defaultValue = "{}") String imprintRolls,
@@ -813,7 +837,7 @@ public class PoeCraftController {
         spentLog.add(new PoeCraft.SpentStep("DIVINE", null));
       }
     } else if ("BLESSED".equals(action)) {
-      // 축복의 오브(C375) — 임플리싯 수치만 다시. 타락 · 임플리싯 없음이면 못 쓴다
+      // 축복의 오브(C375) — 고정 속성 수치만 다시. 타락 · 고정 속성 없음이면 못 쓴다
       if (current.corrupted()) {
         imprintError =
             ko ? "타락한 아이템은 다시 속성 부여 개조할 수 없습니다" : "Corrupted items cannot be modified again.";
@@ -1024,7 +1048,7 @@ public class PoeCraftController {
             model.addAttribute("itemNameKo", "");
           }
         }
-        // 새로 붙은 옵션은 새 씨앗(C378 검토 — 같은 id 가 다시 붙으면 옛 씨앗이 남아 매번 같은 값이었다), 임플리싯도
+        // 새로 붙은 옵션은 새 씨앗(C378 검토 — 같은 id 가 다시 붙으면 옛 씨앗이 남아 매번 같은 값이었다), 고정 속성도
         boolean luckyFossil =
             "FOSSIL".equals(act)
                 && arg != null
@@ -1166,7 +1190,7 @@ public class PoeCraftController {
 
   /**
    * gens(null 이면 안 씀) = 목표마다 prefix · suffix · implicit(엘드리치) · null(묶음 · 빈 자리) — 전략 모의가 접두/접미 목표를
-   * 고른다(C550). explicitOnly = 엘드리치 임플리싯 목표를 뺀다(전략 모의는 명시 옵션만). labels 는 화면 이름(묶음 · 빈 자리는 목표 여럿에 이름
+   * 고른다(C550). explicitOnly = 섬뜩한 고정 속성 목표를 뺀다(전략 모의는 명시 옵션만). labels 는 화면 이름(묶음 · 빈 자리는 목표 여럿에 이름
    * 하나). 패키지 공개 = 쪽 표시 시험(PoeCraftTargetSidesTest).
    */
   List<PoeCraft.Target> calcTargets(
@@ -1356,7 +1380,7 @@ public class PoeCraftController {
   }
 
   /**
-   * 같은 옵션을 얻는 다른 길(10-22 P4, poedb 속성 부여의 '같은 문구 다른 출처') — 확률 표에서 계열을 펼치면 불러온다. 에센스 · 제작대 · 화석 배수 ·
+   * 같은 옵션을 얻는 다른 길(10-22 P4, poedb 속성 부여의 '같은 문구 다른 출처') — 확률 표에서 계열을 펼치면 불러온다. 에센스 · 작업대 · 화석 배수 ·
    * 수확(API familyWays), 못 읽으면 빈 안내.
    */
   @GetMapping(value = "/poe/htmx/craft/family-ways", produces = MediaType.TEXT_HTML_VALUE)
@@ -1426,7 +1450,8 @@ public class PoeCraftController {
         picked ? ap.lines() : craftClient.pool(new PoeCraft.PoolRequest(view.item(), null));
     boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
     List<PoeCraft.Line> lines = view.lines() == null ? List.of() : view.lines();
-    model.addAttribute("poolGroups", poolGroups(view, pool, java.util.Set.of()));
+    var groups = poolGroups(view, pool, java.util.Set.of());
+    model.addAttribute("poolGroups", groups);
     model.addAttribute("lines", lines);
     model.addAttribute(
         "waysUrl",
@@ -1450,6 +1475,25 @@ public class PoeCraftController {
       model.addAttribute("actionRarity", picked ? ap.baseRarity() : null);
       model.addAttribute(
           "actionMult", picked && ap.mult() != null ? ap.mult() : java.util.Map.of());
+      // 확정 옵션(Q7 — 에센스) — 그 계열 · 등급 상당(계열 줄 배지)과 범위 글(안내)
+      java.util.Map<String, Integer> forcedFam = new java.util.LinkedHashMap<>();
+      List<String> forcedText = new ArrayList<>();
+      for (PoeCraft.Forced fc :
+          ap == null || ap.forced() == null ? List.<PoeCraft.Forced>of() : ap.forced()) {
+        if (fc.family() != null) {
+          forcedFam.put(fc.family(), fc.rank());
+        }
+        List<String> mx = ko && fc.ko() != null && !fc.ko().isEmpty() ? fc.ko() : fc.en();
+        List<String> mn =
+            ko && fc.koMin() != null && !fc.koMin().isEmpty() ? fc.koMin() : fc.enMin();
+        for (int i = 0; mx != null && i < mx.size(); i++) {
+          forcedText.add(
+              net.luversof.web.gate.poe.PoeModRange.range(
+                  mn != null && i < mn.size() ? mn.get(i) : null, mx.get(i)));
+        }
+      }
+      model.addAttribute("forcedFamilies", forcedFam);
+      model.addAttribute("forcedText", forcedText.isEmpty() ? null : String.join(", ", forcedText));
       model.addAttribute(
           "actionError",
           ap == null || ap.error() == null
@@ -1461,7 +1505,7 @@ public class PoeCraftController {
 
   /**
    * 올플레임 제작에 쓸 수 있는 화폐(C523) — 인게임 안내: 타락한 아이템 · 타락시키는 화폐(바알 · 더럽혀진), 품질 · 홈 화폐 대부분, 여러 아이템을 만드는
-   * 화폐는 안 된다. 제작대 · 수확 · 야수 · 직접 편집 · 장막 해제(셋 중 고르기) · 각성자(두 아이템)도 화폐 한 번이 아니라 뺀다.
+   * 화폐는 안 된다. 작업대 · 수확 · 야수 · 직접 편집 · 장막 해제(셋 중 고르기) · 각성자(두 아이템)도 화폐 한 번이 아니라 뺀다.
    */
   static final java.util.Set<String> GHOST_ACTS =
       java.util.Set.of(
@@ -1641,7 +1685,7 @@ public class PoeCraftController {
   }
 
   /**
-   * 최적 조합(10-19 C457 사용자 요청 "에센스 · 제작대 · 야수 같은 다양한 방법을 조합해 최소 비용") — 계산기와 같은 목표로, 계산기 표가 뜬 뒤 이어서
+   * 최적 조합(10-19 C457 사용자 요청 "에센스 · 작업대 · 야수 같은 다양한 방법을 조합해 최소 비용") — 계산기와 같은 목표로, 계산기 표가 뜬 뒤 이어서
    * 부른다(upper · upperLabel = 표의 가장 싼 방법). API 가 상태별 최소 기대 비용을 찾고(8초 안) 그 정책을 실제 아이템에 굴려 잰 비용.
    */
   @PostMapping(value = "/poe/htmx/craft/optimize", produces = MediaType.TEXT_HTML_VALUE)
@@ -1729,7 +1773,7 @@ public class PoeCraftController {
   /**
    * 다단계 전략 시뮬레이터(10-15 C339) — 계산기와 같은 목표 고르기(t_접두접미:계열 = 최소 등급)에 프리셋 전략을 얹어 모의한다. 목표 순서 = 화면 순서(접두
    * 먼저). 프리셋: alt-regal(변화 → [변경+확장]을 접두 · 접미 목표 하나씩 채울 때까지 → 제왕 → 엑잘 셋), chaos(연금 → 카오스 반복),
-   * essence(고른 에센스 반복), prefix-lock / suffix-lock(연금 → 그쪽 목표를 카오스로 채운 뒤 [제작대 잠금 → 카오스] 묶음 반복).
+   * essence(고른 에센스 반복), prefix-lock / suffix-lock(연금 → 그쪽 목표를 카오스로 채운 뒤 [작업대 잠금 → 카오스] 묶음 반복).
    */
   @PostMapping(value = "/poe/htmx/craft/strategy", produces = MediaType.TEXT_HTML_VALUE)
   public String strategy(
@@ -1744,7 +1788,7 @@ public class PoeCraftController {
     PoeCraft.Item item =
         new PoeCraft.Item(itemClass, variant, influence, clamp(ilvl), "NORMAL", List.of(), false);
     // 목표 해석은 계산기와 같은 것(10-21 C550 정리 — 두 벌이던 것을 하나로. 전략 쪽은 묶음 · 빈 자리 목표에 접두/접미 표시를 안 넣어 그 뒤
-    // 목표의 접두/접미 번호가 한 칸씩 어긋났다). 엘드리치 임플리싯은 명시 옵션 제작과 따로라 전략 모의에선 뺀다(C549)
+    // 목표의 접두/접미 번호가 한 칸씩 어긋났다). 섬뜩한 고정 속성은 명시 옵션 제작과 따로라 전략 모의에선 뺀다(C549)
     List<String> labels = new ArrayList<>();
     List<String> gens = new ArrayList<>();
     List<PoeCraft.Target> targets =
@@ -1858,7 +1902,7 @@ public class PoeCraftController {
                   null,
                   List.of(),
                   ko
-                      ? "그쪽(접두/접미) 목표나 잠금 제작대 옵션이 없습니다"
+                      ? "그쪽(접두/접미) 목표나 잠금 작업대 옵션이 없습니다"
                       : "No targets on that side or no lock craft"));
           model.addAttribute("presetLabel", preset);
           model.addAttribute("targetLabels", labels);
@@ -1924,7 +1968,35 @@ public class PoeCraftController {
     model.addAttribute("result", res);
     model.addAttribute("presetLabel", label);
     model.addAttribute("targetLabels", labels);
+    List<String> sampleLinks = new ArrayList<>();
+    for (PoeCraft.StrategySample sm :
+        res.samples() == null ? List.<PoeCraft.StrategySample>of() : res.samples()) {
+      sampleLinks.add(sampleLink(sm.item(), params));
+    }
+    model.addAttribute("sampleLinks", sampleLinks);
     return "poe/htmx/craftStrategy";
+  }
+
+  /**
+   * 전략 성공 예시를 제작 화면에서 여는 링크(10-22 Q16 — craftofexile 'Load in Crafting Interface'). 가져오기 링크와 같은 모양,
+   * 베이스 · 군집 패시브 수는 지금 제작 화면 것(전략 단추가 같이 보낸다).
+   */
+  private String sampleLink(
+      PoeCraft.Item it, org.springframework.util.MultiValueMap<String, String> params) {
+    StringBuilder url = new StringBuilder("/poe/craft?itemClass=").append(enc(it.itemClass()));
+    url.append("&variant=").append(enc(nz(it.variant())));
+    url.append("&influence=").append(enc(nz(it.influence())));
+    url.append("&ilvl=").append(it.ilvl());
+    url.append("&state=").append(enc(json.writeValueAsString(it)));
+    String base = params.getFirst("baseName");
+    if (base != null && !base.isBlank()) {
+      url.append("&base=").append(enc(base));
+    }
+    String passives = params.getFirst("passives");
+    if (passives != null && passives.matches("\\d{1,2}")) {
+      url.append("&passives=").append(passives);
+    }
+    return url.toString();
   }
 
   /**
@@ -1997,7 +2069,7 @@ public class PoeCraftController {
     return p.length == 4 ? base + "*" + p[3] : base;
   }
 
-  /** 화폐 인자 — 화석 = 고른 화석 쉼표 목록, 제작대 = 옵션 id, 수확 = id, 정복자 = action 값 뒤, 에센스 = 슬러그. */
+  /** 화폐 인자 — 화석 = 고른 화석 쉼표 목록, 작업대 = 옵션 id, 수확 = id, 정복자 = action 값 뒤, 에센스 = 슬러그. */
   static String argFor(
       String act,
       String actArg,
@@ -2139,7 +2211,7 @@ public class PoeCraftController {
 
   /**
    * 계산 · 전략의 출발 아이템(C349) — "지금 아이템에서 시작"(fromState=1)이면 에뮬레이터 상태(같은 종류 · 변형 · 아이템 레벨일 때만, API 가 분열
-   * · 임플리싯만 남긴다), 아니면 고른 종류의 일반 아이템.
+   * · 고정 속성만 남긴다), 아니면 고른 종류의 일반 아이템.
    */
   PoeCraft.Item startItem(
       PoeCraft.Item picked, org.springframework.util.MultiValueMap<String, String> params) {
@@ -2219,7 +2291,7 @@ public class PoeCraftController {
     }
   }
 
-  /** 옵션 씨앗 키 — 옵션 id, 임플리싯은 "imp:" + id(C375). */
+  /** 옵션 씨앗 키 — 옵션 id, 고정 속성은 "imp:" + id(C375). */
   private static java.util.Set<String> explicitIds(PoeCraft.Item item) {
     return item.affixes() == null
         ? java.util.Set.of()
@@ -2243,7 +2315,7 @@ public class PoeCraftController {
         : item.affixes().stream().map(PoeCraft.Affix::id).toList();
   }
 
-  /** 신성한 오브가 안 건드리는 씨앗 — 분열 옵션 · 임플리싯(C375). */
+  /** 신성한 오브가 안 건드리는 씨앗 — 분열 옵션 · 고정 속성(C375). */
   private static java.util.Set<String> fixedIds(PoeCraft.Item item) {
     java.util.Set<String> out = new java.util.HashSet<>();
     if (item.affixes() != null) {
@@ -2396,7 +2468,7 @@ public class PoeCraftController {
     return out;
   }
 
-  /** a 에만 있는 옵션 줄의 문구(id 대조) — "접두 T1 문구", 임플리싯은 진영 · 타락. */
+  /** a 에만 있는 옵션 줄의 문구(id 대조) — "접두 T1 문구", 고정 속성은 진영 · 타락. */
   private static List<String> lineDiff(
       List<PoeCraft.Line> a, List<PoeCraft.Line> b, boolean ko, java.util.Map<String, Long> rolls) {
     java.util.Set<String> bIds = new java.util.HashSet<>();

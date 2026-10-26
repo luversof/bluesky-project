@@ -22,7 +22,7 @@
 	String displayName = PoeText.name(item.nameKo(), item.name());
 	String displayClass = net.luversof.web.gate.poe.PoeClassNames.poe1(item.itemClassKo(), item.itemClass());
 
-	// 요구 사항은 인게임처럼 한 줄(값-라벨 순): "요구 사항 레벨 X, N 힘, M 민첩". 베이스는 dropLevel=요구 레벨.
+	// 요구 사항은 인게임처럼 한 줄(값-라벨 순): "요구 사항 레벨 X, N 힘, M 민첩". 베이스 요구 레벨 = PoB req.level(Q103 — 드롭 레벨 아님).
 	String levelLabel = MessageUtil.getMessage("poe.items.detail.level");
 	String reqStrLabel = MessageUtil.getMessage("poe.items.detail.str");
 	String reqDexLabel = MessageUtil.getMessage("poe.items.detail.dex");
@@ -41,44 +41,49 @@
 <%-- PoE 게임 아이템 툴팁 (일반/흰색) --%>
 	<div class="poe-tooltip poe-rar-white w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
 		<div class="poe-tt-band">
-			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#e6e6e6">${displayName}</div>
-			<div class="text-center text-[12px] leading-tight text-[#c8c8c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${displayClass}</div>
+			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#c8c8c8">${displayName}</div>
 		</div>
 		@if(PoeText.isKorean())
 			<div class="px-4 pt-1 text-center text-[10px] text-white/35">${item.name()}</div>
 		@endif
 
-		<%-- 아이템 클래스 속성 (방어/무기 수치) --%>
+		<%-- 아이템 종류 속성 (방어/무기 수치) — 인게임처럼 가운데 '라벨: 값'(10-23 Q43 — 왼쪽 라벨 · 오른쪽 값 양끝 정렬이었다), 무기는 첫 줄 종류 --%>
+		!{ String weaponCls = net.luversof.web.gate.poe.PoeClassNames.poe1Weapon(item.itemClass()); }
+		@if("AbyssJewel".equals(item.itemClass()))
+			<div class="poe-tt-sepimg"></div>
+			<div class="px-4 py-1.5 text-center text-[12px] text-[#7f7f7f]" data-tt-abyss>${PoeText.isKorean() ? "심연" : "Abyss"}</div>
+		@endif
 		@if(hasProps)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-[12px] space-y-0.5">
+			<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+				@if(item.weapon() != null && weaponCls != null)<div class="text-[#7f7f7f]" data-tt-weapon-class>${weaponCls}</div>@endif
 				@if(item.weapon() != null)
-					<div class="flex justify-between"><span class="text-[#7f7f7f]">${physicalDamageLabel}</span><span class="text-[#e0e0e0] font-medium">${item.weapon().damageMin()}-${item.weapon().damageMax()}</span></div>
-					<div class="flex justify-between"><span class="text-[#7f7f7f]">${critChanceLabel}</span><span class="text-white">${String.format("%.2f", item.weapon().critChance())}%</span></div>
-					<div class="flex justify-between"><span class="text-[#7f7f7f]">${attacksPerSecondLabel}</span><span class="text-white">${String.format("%.2f", item.weapon().attacksPerSecond())}</span></div>
+					<div><span class="text-[#7f7f7f]">${physicalDamageLabel}: </span><span class="text-[#e0e0e0]">${item.weapon().damageMin()}-${item.weapon().damageMax()}</span></div>
+					<div><span class="text-[#7f7f7f]">${critChanceLabel}: </span><span class="text-[#e0e0e0]">${String.format("%.2f", item.weapon().critChance())}%</span></div>
+					<div><span class="text-[#7f7f7f]">${attacksPerSecondLabel}: </span><span class="text-[#e0e0e0]">${String.format("%.2f", item.weapon().attacksPerSecond())}</span></div>
 					@if(showWeaponRange)
-						<div class="flex justify-between"><span class="text-[#7f7f7f]">${weaponRangeLabel}</span><span class="text-white">${String.format("%.1f", item.weapon().range() / 10.0)}${PoeText.isKorean() ? "미터" : (item.weapon().range() == 10 ? " metre" : " metres")}</span></div>
+						<div><span class="text-[#7f7f7f]">${weaponRangeLabel}: </span><span class="text-[#e0e0e0]">${String.format("%.1f", item.weapon().range() / 10.0)}${PoeText.isKorean() ? "미터" : (item.weapon().range() == 10 ? " metre" : " metres")}</span></div>
 					@endif
 				@endif
 				@if(item.armour() != null)
 					@if(item.armour().block() > 0)
-						<div class="flex justify-between"><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.block")}</span><span class="text-[#e0e0e0] font-medium">${item.armour().block()}%</span></div>
+						<div><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.block")}: </span><span class="text-[#e0e0e0]">${item.armour().block()}%</span></div>
 					@endif
 					@if(item.armour().armourMax() > 0)
-						<div class="flex justify-between"><span class="text-[#7f7f7f]">${armourLabel}</span><span class="text-[#e0e0e0] font-medium">${item.armour().armourMin()}-${item.armour().armourMax()}</span></div>
+						<div><span class="text-[#7f7f7f]">${armourLabel}: </span><span class="text-[#e0e0e0]">${item.armour().armourMin()}-${item.armour().armourMax()}</span></div>
 					@endif
 					@if(item.armour().evasionMax() > 0)
-						<div class="flex justify-between"><span class="text-[#7f7f7f]">${evasionLabel}</span><span class="text-[#e0e0e0] font-medium">${item.armour().evasionMin()}-${item.armour().evasionMax()}</span></div>
+						<div><span class="text-[#7f7f7f]">${evasionLabel}: </span><span class="text-[#e0e0e0]">${item.armour().evasionMin()}-${item.armour().evasionMax()}</span></div>
 					@endif
 					@if(item.armour().energyShieldMax() > 0)
-						<div class="flex justify-between"><span class="text-[#7f7f7f]">${energyShieldLabel}</span><span class="text-[#e0e0e0] font-medium">${item.armour().energyShieldMin()}-${item.armour().energyShieldMax()}</span></div>
+						<div><span class="text-[#7f7f7f]">${energyShieldLabel}: </span><span class="text-[#e0e0e0]">${item.armour().energyShieldMin()}-${item.armour().energyShieldMax()}</span></div>
 					@endif
 					@if(item.armour().wardMax() > 0)
-						<div class="flex justify-between"><span class="text-[#7f7f7f]">${wardLabel}</span><span class="text-[#e0e0e0] font-medium">${item.armour().wardMin()}-${item.armour().wardMax()}</span></div>
+						<div><span class="text-[#7f7f7f]">${wardLabel}: </span><span class="text-[#e0e0e0]">${item.armour().wardMin()}-${item.armour().wardMax()}</span></div>
 					@endif
 					<%-- 이동 속도 감소(10-09 C223 — 갑옷 · 방패, PoB Bases MovementPenalty · poedb 툴팁 "이동 속도: -3%", PoE2 와 같은 키) --%>
 					@if(item.armour().movementPenalty() != null && item.armour().movementPenalty() > 0)
-						<div class="flex justify-between" data-tt-movement><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe2.items.movement")}</span><span class="text-[#e0e0e0] font-medium">-${item.armour().movementPenalty()}%</span></div>
+						<div data-tt-movement><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe2.items.movement")}: </span><span class="text-[#e0e0e0]">-${item.armour().movementPenalty()}%</span></div>
 					@endif
 				@endif
 			</div>
@@ -89,19 +94,19 @@
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
 				@if(flask.type() == 4)
-					<div class="text-[#e0e0e0]">${java.text.MessageFormat.format(flaskDurationLabel, String.format("%.2f", flask.durationSeconds()))}</div>
+					<div class="text-[#7f7f7f]">$unsafe{java.text.MessageFormat.format(flaskDurationLabel, "<span class=\"text-[#e0e0e0]\">" + String.format("%.2f", flask.durationSeconds()) + "</span>")}</div>
 				@else
 					@if(flask.lifePerUse() > 0)
-						<div class="text-[#e0e0e0]">${java.text.MessageFormat.format(flaskLifeLabel, String.format("%.2f", flask.durationSeconds()), String.valueOf(flask.lifePerUse()))}</div>
+						<div class="text-[#7f7f7f]">$unsafe{java.text.MessageFormat.format(flaskLifeLabel, "<span class=\"text-[#e0e0e0]\">" + String.format("%.2f", flask.durationSeconds()) + "</span>", "<span class=\"text-[#e0e0e0]\">" + flask.lifePerUse() + "</span>")}</div>
 					@endif
 					@if(flask.manaPerUse() > 0)
-						<div class="text-[#e0e0e0]">${java.text.MessageFormat.format(flaskManaLabel, String.format("%.2f", flask.durationSeconds()), String.valueOf(flask.manaPerUse()))}</div>
+						<div class="text-[#7f7f7f]">$unsafe{java.text.MessageFormat.format(flaskManaLabel, "<span class=\"text-[#e0e0e0]\">" + String.format("%.2f", flask.durationSeconds()) + "</span>", "<span class=\"text-[#e0e0e0]\">" + flask.manaPerUse() + "</span>")}</div>
 					@endif
 				@endif
 				@if(flask.maxCharges() > 0)
-					<div class="text-[#7f7f7f]">${java.text.MessageFormat.format(flaskChargesLabel, String.valueOf(flask.maxCharges()), String.valueOf(flask.perCharge()))}</div>
+					<div class="text-[#7f7f7f]">$unsafe{java.text.MessageFormat.format(flaskChargesLabel, "<span class=\"text-[#e0e0e0]\">" + flask.maxCharges() + "</span>", "<span class=\"text-[#e0e0e0]\">" + flask.perCharge() + "</span>")}</div>
 					<%-- 현재 충전량(10-09 C221 — ClientStrings ItemDisplayChargesNCharges, 새 아이템 = 최대 충전) --%>
-					<div class="text-[#7f7f7f]" data-tt-charges-now>${java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.current"), String.valueOf(flask.maxCharges()))}</div>
+					<div class="text-[#7f7f7f]" data-tt-charges-now>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.current"), "<span class=\"text-[#e0e0e0]\">" + flask.maxCharges() + "</span>")}</div>
 					<%-- 플라스크 부여 버프 = 충전 줄 바로 아래 파란 줄(10-09 C241 — PoB ItemsTab.lua buffModLines · poedb 죽어가는 해 순서. 예전(C196·C204)엔 옵션 뒤 별도 칸) --%>
 					@if(flask != null && flask.buffLines() != null && !flask.buffLines().isEmpty())
 						@for(var buffLine : flask.buffLines())
@@ -112,12 +117,15 @@
 			</div>
 		@endif
 
-		<%-- 요구 사항 — 인게임처럼 한 줄(요구 사항 레벨 X, N 힘, M 민첩, K 지능). 베이스는 dropLevel=요구 레벨. --%>
+		<%-- 요구 사항 — 인게임처럼 한 줄(요구 사항 레벨 X, N 힘, M 민첩, K 지능). 베이스 요구 레벨 = PoB req.level(Q103 — 드롭 레벨 아님). --%>
+		<%-- 레벨 1 · 능력치 요구 없음이면 요구 줄 없음(Q43 — 고유 화면과 같게) --%>
+		@if(item.requiredLevel() > 1 || item.reqStr() > 0 || item.reqDex() > 0 || item.reqInt() > 0)
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center text-[12px]">
 			<span class="text-[#7f7f7f]">${requirementLabel} </span>
-			<span class="text-[#7f7f7f]">${levelLabel} </span><span class="text-[#e0e0e0]">${item.dropLevel()}</span>@if(item.reqStr() > 0)<span class="text-[#e0e0e0]">, ${item.reqStr()} </span><span class="text-[#7f7f7f]">${reqStrLabel}</span>@endif@if(item.reqDex() > 0)<span class="text-[#e0e0e0]">, ${item.reqDex()} </span><span class="text-[#7f7f7f]">${reqDexLabel}</span>@endif@if(item.reqInt() > 0)<span class="text-[#e0e0e0]">, ${item.reqInt()} </span><span class="text-[#7f7f7f]">${reqIntLabel}</span>@endif
+			<span class="text-[#7f7f7f]">${levelLabel} </span><span class="text-[#e0e0e0]">${item.requiredLevel()}</span>@if(item.reqStr() > 0)<span class="text-[#e0e0e0]">, ${item.reqStr()} </span><span class="text-[#7f7f7f]">${reqStrLabel}</span>@endif@if(item.reqDex() > 0)<span class="text-[#e0e0e0]">, ${item.reqDex()} </span><span class="text-[#7f7f7f]">${reqDexLabel}</span>@endif@if(item.reqInt() > 0)<span class="text-[#e0e0e0]">, ${item.reqInt()} </span><span class="text-[#7f7f7f]">${reqIntLabel}</span>@endif
 		</div>
+		@endif
 
 		<%-- 암시 모드 --%>
 		@if(!item.implicits().isEmpty())
@@ -141,5 +149,5 @@
 			<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
 		@endif
 
-		<%-- 가능한 모드 티어 열거는 레이어에서 제외(의미 없음, 사용자 요청). 전체 모드 풀은 상세 페이지(/poe/items/{slug})에서 확인. --%>
+		<%-- 가능한 모드 등급 열거는 레이어에서 제외(의미 없음, 사용자 요청). 전체 모드 풀은 상세 페이지(/poe/items/{slug})에서 확인. --%>
 	</div>

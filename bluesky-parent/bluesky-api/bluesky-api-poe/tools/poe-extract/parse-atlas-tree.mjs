@@ -59,6 +59,19 @@ try {
 }
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+// 게임 링크 표기 "[ContainsAbyss|심연]" → 보이는 글자(10-23 Q64 — 노드 28개 64건, 패시브 parse-tree.mjs Q55 와 같은 블록).
+//   "[DNT]" 같은 단독 괄호는 남긴다
+{
+	const unlink = (v) =>
+		typeof v === "string"
+			? v.replace(/\[([^\]|]+)\|([^\]]+)\]/g, "$2")
+			: Array.isArray(v)
+				? v.map(unlink)
+				: v && typeof v === "object"
+					? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, unlink(x)]))
+					: v;
+	result.nodes = result.nodes.map(unlink);
+}
 fs.writeFileSync(OUT, JSON.stringify(result));
 console.log(`atlas nodes ${result.nodes.length}, edges ${result.edges.length}, groups ${Object.keys(result.groups).length} → ${OUT}`);
 console.log("size:", (fs.statSync(OUT).size / 1024 / 1024).toFixed(1) + "MB");

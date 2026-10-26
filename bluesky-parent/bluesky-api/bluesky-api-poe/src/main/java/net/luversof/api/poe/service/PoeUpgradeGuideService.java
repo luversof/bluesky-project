@@ -132,13 +132,13 @@ public class PoeUpgradeGuideService {
   public record Metrics(double dps, double ehp, double maxHit, double minionEhp) {}
 
   /**
-   * 약한 칸에 끼워 재 본 교체 후보 한 개 — 고유(보통 롤) 또는 같은 베이스의 2티어 레어 목표.
+   * 약한 칸에 끼워 재 본 교체 후보 한 개 — 고유(보통 롤) 또는 같은 베이스의 2등급 레어 목표.
    *
    * @param rarity UNIQUE | RARE
    * @param slug 고유 아이템 slug(레어면 null)
    * @param name 고유 아이템 영문 이름(레어면 null)
    * @param baseType 베이스 영문 이름
-   * @param mods 레어 목표에 붙인 옵션(표시용 한국어, 2티어 범위) — 고유면 null
+   * @param mods 레어 목표에 붙인 옵션(표시용 한국어, 2등급 범위) — 고유면 null
    * @param minionPct 소환수 EHP 증감(%) — 소환수 빌드가 아니면 null
    * @param metaCount 이 전직·주 스킬 조합의 poe.ninja 캐릭터 중 이 아이템을 쓰는 수(모르면 0)
    * @param metaTotal 그 조합의 캐릭터 수(모르면 0)
@@ -161,7 +161,7 @@ public class PoeUpgradeGuideService {
       int metaTotal,
       String needs,
       String itemText,
-      // 거래소 검색 쿼리(q JSON) — 고유는 이름, 레어 목표는 베이스 + 옵션(그 티어 최저 롤 이상, 10-08 C171). 만들 수 없으면 null
+      // 거래소 검색 쿼리(q JSON) — 고유는 이름, 레어 목표는 베이스 + 옵션(그 등급 최저 롤 이상, 10-08 C171). 만들 수 없으면 null
       String tradeQuery) {}
 
   /**
@@ -234,7 +234,7 @@ public class PoeUpgradeGuideService {
   private record Trial(PoeUniqueItem item, Future<Map<String, Double>> result) {}
 
   /**
-   * @param rare 이 칸의 2티어 레어 목표 실측(베이스를 몰라 못 쟀으면 null)
+   * @param rare 이 칸의 2등급 레어 목표 실측(베이스를 몰라 못 쟀으면 null)
    * @param rareShown 추천 기준을 넘어 목록에 보였는지
    */
   private record SlotPicks(
@@ -319,7 +319,7 @@ public class PoeUpgradeGuideService {
     this.mercenary = mercenary;
   }
 
-  /** 레어 목표 → 거래소 쿼리(C171) — 옵션마다 그 티어 최저 롤 문장을 최소값 그대로(비율 1.0). */
+  /** 레어 목표 → 거래소 쿼리(C171) — 옵션마다 그 등급 최저 롤 문장을 최소값 그대로(비율 1.0). */
   private String rareTradeQuery(
       String itemClass,
       String baseKo,
@@ -468,10 +468,10 @@ public class PoeUpgradeGuideService {
             suggestions.add(
                 new Suggestion(
                     "free",
-                    "효과 없는 보조젬: " + label(supports.get(i).gem()),
-                    "이 보조젬은 "
+                    "효과 없는 보조 젬: " + label(supports.get(i).gem()),
+                    "이 보조 젬은 "
                         + mainSkill
-                        + "에 적용되지 않습니다(PoB 판정). 소켓만 차지하고 있어 다른 보조젬으로 바꾸는 게 이득입니다.",
+                        + "에 적용되지 않습니다(PoB 판정). 홈만 차지하고 있어 다른 보조 젬으로 바꾸는 게 이득입니다.",
                     null,
                     null,
                     null,
@@ -575,7 +575,7 @@ public class PoeUpgradeGuideService {
             new Suggestion(
                 "free",
                 "스킬 비용 부족: " + mainSkill,
-                "남은 마나(또는 생명력)로 이 스킬의 비용을 치를 수 없어 인게임에선 쓸 수 없습니다. 예약을 줄이거나 비용을 생명력으로 돌리세요. PoB 는 경고만 하고 계산하므로 아래 수치는 쓸 수 있다고 본 값입니다.",
+                "남은 마나(또는 생명력)로 이 스킬의 비용을 치를 수 없어 인게임에선 쓸 수 없습니다. 점유를 줄이거나 비용을 생명력으로 돌리세요. PoB 는 경고만 하고 계산하므로 아래 수치는 쓸 수 있다고 본 값입니다.",
                 null,
                 null,
                 null,
@@ -585,7 +585,7 @@ public class PoeUpgradeGuideService {
 
       // ── 2) 보조젬 — 가장 덜 일하는 보조를 찾아 더 나은 후보로 바꿔 본다 ──
       if (activeGem != null && !supports.isEmpty()) {
-        phase = "보조젬 기여도 측정";
+        phase = "보조 젬 기여도 측정";
         total += supports.size();
         List<Future<Map<String, Double>>> removal = new ArrayList<>();
         for (GemRef s : supports) {
@@ -639,7 +639,7 @@ public class PoeUpgradeGuideService {
           }
         }
         if (weakest != null) {
-          phase = "보조젬 교체 후보 측정";
+          phase = "보조 젬 교체 후보 측정";
           List<PoeGem> candidates = supportCandidates(activeGem.gem(), mainGems);
           total += candidates.size();
           final GemRef target = weakest;
@@ -688,7 +688,7 @@ public class PoeUpgradeGuideService {
                 minion == null ? dpsGain : ((1 + dpsGain / 100) * (1 + minion / 100) - 1) * 100;
             if (minion == null) {
               offer(
-                  "보조젬 교체: " + label(target.gem()) + " → " + label(candidates.get(i)),
+                  "보조 젬 교체: " + label(target.gem()) + " → " + label(candidates.get(i)),
                   replaceGem(xml, target, pobName(candidates.get(i)), candidates.get(i)),
                   base,
                   m);
@@ -711,7 +711,7 @@ public class PoeUpgradeGuideService {
             suggestions.add(
                 new Suggestion(
                     "support",
-                    "보조젬 교체: " + label(target.gem()) + " → " + label(best),
+                    "보조 젬 교체: " + label(target.gem()) + " → " + label(best),
                     // 변수 뒤에 조사를 붙이면 받침에 따라 틀리고 공백이 끼어 어색해진다(화면 실측 2026-09-29) — 콜론으로 끊는다.
                     label(target.gem())
                         + (minionBuild
@@ -721,10 +721,10 @@ public class PoeUpgradeGuideService {
                                 + String.format("%.1f", weakestMinionLoss * 100)
                                 + "% — 딜과 소환수 생존을 곱하면 "
                                 + String.format("%.1f", weakestLoss * 100)
-                                + "%로 주 스킬 보조젬 가운데 가장 적습니다"
+                                + "%로 주 스킬 보조 젬 가운데 가장 적습니다"
                             : ": 지금 DPS 기여 "
                                 + String.format("%.1f", weakestLoss * 100)
-                                + "%로 주 스킬 보조젬 가운데 가장 적습니다")
+                                + "%로 주 스킬 보조 젬 가운데 가장 적습니다")
                         + (essential > 0 ? "(빼면 스킬 비용을 못 치르는 젬 " + essential + "개는 제외)" : "")
                         + (assumed > 0
                             ? "(설정에 켜 둔 버프·충전을 이 빌드에서 공급하는 젬 "
@@ -764,7 +764,7 @@ public class PoeUpgradeGuideService {
   }
 
   /**
-   * 장비 제안 — ① 칸마다 빼 보고 기여가 작은 칸을 고른 뒤 ② 그 칸에 고유 아이템 후보와 ③ 같은 베이스의 2티어 레어 목표를 끼워 실측한다. 칸 순위는 가장 좋았던
+   * 장비 제안 — ① 칸마다 빼 보고 기여가 작은 칸을 고른 뒤 ② 그 칸에 고유 아이템 후보와 ③ 같은 베이스의 2등급 레어 목표를 끼워 실측한다. 칸 순위는 가장 좋았던
    * 추천의 이득(DPS% + EHP%) 순 — 그대로 끼울 수 있는 추천이 있는 칸이 먼저, 요구 능력치를 보충해야 하는 추천만 있는 칸이 다음, 더 나은 교체가 없던 칸은
    * 맨 뒤에 기여 순으로.
    */
@@ -896,7 +896,7 @@ public class PoeUpgradeGuideService {
       }
       if (v.getOrDefault("UnappliedSupportCount", 0d) > baseUnapplied
           || breaksCost(baseValues, v, castOnce)) {
-        logger.info("업그레이드 가이드 — {}: 레어 목표가 보조젬/스킬 비용을 깨뜨려 제외", e.getKey());
+        logger.info("업그레이드 가이드 — {}: 레어 목표가 보조 젬/스킬 비용을 깨뜨려 제외", e.getKey());
         continue;
       }
       Metrics m = metricsOf(v);
@@ -951,7 +951,10 @@ public class PoeUpgradeGuideService {
             "레어 목표: "
                 + SLOT_KO.getOrDefault(e.getKey(), e.getKey())
                 + " "
-                + c.plan().base().name()
+                // 한글 베이스 이름(10-25 Q199 — 자동 다듬기 단계 이름에 영어가 섞였다), 없으면 영어
+                + (c.plan().base().nameKo() != null && !c.plan().base().nameKo().isBlank()
+                    ? c.plan().base().nameKo()
+                    : c.plan().base().name())
                 + " ["
                 + String.join(" / ", modsKo.stream().filter(t -> !t.startsWith("남은 칸")).toList())
                 + "]",
@@ -1007,14 +1010,19 @@ public class PoeUpgradeGuideService {
         (needs == null ? fits : needy).add(pick);
         if (needs == null && pick.minionPct() == null) {
           offer(
-              "고유 교체: " + SLOT_KO.getOrDefault(s.slot(), s.slot()) + " ← " + u.name(),
+              "고유 교체: "
+                  + SLOT_KO.getOrDefault(s.slot(), s.slot())
+                  + " ← "
+                  + (u.nameKo() != null && !u.nameKo().isBlank()
+                      ? u.nameKo()
+                      : u.name()), // 한글 이름(10-25 Q199)
               equipItem(xml, s.slot(), uniqueItemText(u, uniqueData.canonicalName(u.slug()))),
               base,
               m);
         }
         logger.debug("업그레이드 가이드 — {} 후보 {}: {} 보충 {}", s.slot(), u.name(), deltasText(pick), needs);
       }
-      // 그대로 끼울 수 있는 추천 = 고유(DPS·EHP·소환수 EHP 최고) + 2티어 레어 목표(고유와 같은 기준: 한 축 +1% 이상, 다른 축 -5% 이내)
+      // 그대로 끼울 수 있는 추천 = 고유(DPS·EHP·소환수 EHP 최고) + 2등급 레어 목표(고유와 같은 기준: 한 축 +1% 이상, 다른 축 -5% 이내)
       ItemPick rare = rarePicks.get(s.slot());
       boolean rareUpgrade = rare != null && isUpgrade(rare);
       List<ItemPick> picks = new ArrayList<>(choosePicks(fits));
@@ -1036,7 +1044,7 @@ public class PoeUpgradeGuideService {
           Comparator.comparing((ItemPick p) -> p.needs() != null)
               .thenComparingDouble(p -> -gainOf(p)));
       logger.info(
-          "업그레이드 가이드 — {}: 고유 후보 {}개 · 보충 필요 {}개 · 막힘(보조젬 미적용/비용 부족) {}개 · 추천 {}",
+          "업그레이드 가이드 — {}: 고유 후보 {}개 · 보충 필요 {}개 · 막힘(보조 젬 미적용/비용 부족) {}개 · 추천 {}",
           s.slot(),
           list.size(),
           needy.size(),
@@ -1062,16 +1070,16 @@ public class PoeUpgradeGuideService {
       String slotKo = SLOT_KO.get(p.share().slot());
       String share = shareText(p.share());
       String excluded =
-          p.blocked() > 0 ? "(보조젬이 안 먹거나 스킬 비용을 못 치르게 되는 " + p.blocked() + "개 제외)" : "";
+          p.blocked() > 0 ? "(보조 젬이 안 먹거나 스킬 비용을 못 치르게 되는 " + p.blocked() + "개 제외)" : "";
       String tried =
           " 고유 아이템 "
               + p.tried()
               + "개"
-              + (p.rare() != null ? "와 같은 베이스 2티어 레어" : "")
+              + (p.rare() != null ? "와 같은 베이스 2등급 레어" : "")
               + "를 이 칸에 끼워 재 봤습니다"
               + excluded
               + ".";
-      // 레어 목표를 쟀는데 보이지 않은 경우 — 까닭을 나눠 적는다. "지금 아이템이 이미 2티어 레어보다 낫다"는 것 자체가 정보다.
+      // 레어 목표를 쟀는데 보이지 않은 경우 — 까닭을 나눠 적는다. "지금 아이템이 이미 2등급 레어보다 낫다"는 것 자체가 정보다.
       String rareNote;
       if (p.rare() == null) {
         rareNote = " (레어 목표는 베이스를 몰라 재지 못했습니다.)";
@@ -1079,7 +1087,7 @@ public class PoeUpgradeGuideService {
         rareNote = "";
       } else if (isUpgrade(p.rare())) {
         rareNote =
-            " 같은 베이스 2티어 레어("
+            " 같은 베이스 2등급 레어("
                 + deltasText(p.rare())
                 + ")는 "
                 + p.rare().needs()
@@ -1089,7 +1097,7 @@ public class PoeUpgradeGuideService {
         //   (반지 DPS -8.6% · EHP +24.7% 를 "지금 아이템이 더 낫다"고 적었던 것을 화면 판독에서 잡았다, 2026-09-29)
         //   소환수 빌드는 세 축 중 가장 크게 잃는 축과 가장 크게 얻는 축을 적는다.
         rareNote =
-            " 같은 베이스 2티어 레어는 "
+            " 같은 베이스 2등급 레어는 "
                 + deltasText(p.rare())
                 + "로 "
                 + axisName(p.rare(), false)
@@ -1097,7 +1105,7 @@ public class PoeUpgradeGuideService {
                 + axisName(p.rare(), true)
                 + "이 더 급하면 고려할 만합니다).";
       } else {
-        rareNote = " 같은 베이스 2티어 레어는 " + deltasText(p.rare()) + "라 지금 아이템이 더 낫거나 비슷합니다.";
+        rareNote = " 같은 베이스 2등급 레어는 " + deltasText(p.rare()) + "라 지금 아이템이 더 낫거나 비슷합니다.";
       }
       // 맞바꿈이 있는 칸은 "뒤로 미뤄도 된다"고 하지 않는다
       boolean tradeOff =
@@ -1406,7 +1414,7 @@ public class PoeUpgradeGuideService {
   }
 
   /**
-   * 자동 다듬기 시작 — 가이드를 돌려 적용 가능한 교체안(보조젬·고유·2티어 레어 목표) 중 두 축 모두 {@link #REFINE_TOLERANCE_PCT} 넘게 깎지
+   * 자동 다듬기 시작 — 가이드를 돌려 적용 가능한 교체안(보조젬·고유·2등급 레어 목표) 중 두 축 모두 {@link #REFINE_TOLERANCE_PCT} 넘게 깎지
    * 않으면서 DPS%+EHP% 가 가장 큰 것 하나를 실제로 적용하고, 다시 잰다({@link #REFINE_ROUNDS} 회). 가이드와 엔진을 함께 쓰므로 가이드 잡과
    * 동시에 돌지 않는다.
    *
@@ -1776,7 +1784,7 @@ public class PoeUpgradeGuideService {
         .filter(g -> !present.contains(g.slug()))
         // 주 스킬을 발동형으로 바꾸는 보조("Cast when Stunned" 등)는 스킬 사용 방식을 통째로 바꾸고, PoB 는 발동 빈도 가정에 따라 수치가 크게
         // 달라진다 —
-        //   같은 저울의 "보조젬 교체"가 아니다(2026-09-30 자동 다듬기 59빌드 일괄: 데드아이 에테르 칼날에 '기절 시 시전' +476%).
+        //   같은 저울의 "보조 젬 교체"가 아니다(2026-09-30 자동 다듬기 59빌드 일괄: 데드아이 에테르 칼날에 '기절 시 시전' +476%).
         .filter(g -> !isTriggerConversion(g))
         .filter(g -> compatible(skillTags, g.tags() == null ? List.of() : g.tags()))
         .sorted(

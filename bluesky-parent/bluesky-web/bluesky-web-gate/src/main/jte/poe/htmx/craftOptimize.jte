@@ -9,8 +9,8 @@
 @param String base = "/poe"
 @param String jobId = null
 
-<%-- 최적 조합(10-19 C457 사용자 요청 "에센스 · 제작대 · 야수 같은 다양한 방법을 조합해 원하는 아이템을 뽑는 최소 비용") — 계산기 표 아래.
-     제작 과정을 상태(희귀도 · 맞은 목표 · 잡옵션 · 막힌 자리 · 제작대 옵션)로 보고 상태마다 가장 싼 수단을 찾은 정책, 그 정책을 실제 아이템에 굴려 잰 비용. --%>
+<%-- 최적 조합(10-19 C457 사용자 요청 "에센스 · 작업대 · 야수 같은 다양한 방법을 조합해 원하는 아이템을 뽑는 최소 비용") — 계산기 표 아래.
+     제작 과정을 상태(희귀도 · 맞은 목표 · 잡옵션 · 막힌 자리 · 작업대 옵션)로 보고 상태마다 가장 싼 수단을 찾은 정책, 그 정책을 실제 아이템에 굴려 잰 비용. --%>
 !{
 	boolean ko = PoeText.isKorean();
 	java.util.function.Function<Double, String> num = v -> v == null ? "-" : v >= 100 ? String.format("%,.0f", v) : v >= 1 ? String.format("%,.1f", v) : String.format("%,.3f", v);
@@ -18,7 +18,7 @@
 	Double gain = opt == null || opt.expectedCost() == null || opt.upper() == null || opt.upper() <= 0 ? null : 1 - opt.expectedCost() / opt.upper();
 }
 <section id="${"/poe2".equals(base) ? "craft2-opt-result" : "craft-opt-result"}" class="rounded-box border border-primary/40 bg-base-100 p-3 space-y-3" data-craft-optimize-result>
-	<h3 class="text-base font-semibold">${ko ? "최적 조합" : "Optimal combination"} <span class="text-xs font-normal text-base-content/70">· ${"poe2".equals(game) ? (ko ? "화폐 · 등급 · 징조 · 에센스 · 훼손 · 분열 · 재조합기 · 새 베이스를 섞어 상태마다 가장 싼 수단" : "orbs, tiers, omens, essences, desecration, fracturing, the Recombinator and new bases mixed — the cheapest action in every state") : ko ? "에센스 · 화석 · 수확 · 제작대(메타 제작 포함) · 짐승 · 각인 · 분열 · 화폐를 섞어 상태마다 가장 싼 수단" : "essences, fossils, harvest, bench (incl. meta-crafts), beasts, imprints, fracturing and orbs mixed — the cheapest action in every state"}</span></h3>
+	<h3 class="text-base font-semibold">${ko ? "최적 조합" : "Optimal combination"} <span class="text-xs font-normal text-base-content/70">· ${"poe2".equals(game) ? (ko ? "화폐 · 등급 · 징조 · 에센스 · 훼손 · 분열 · 재조합기 · 새 베이스를 섞어 상태마다 가장 싼 수단" : "orbs, tiers, omens, essences, desecration, fracturing, the Recombinator and new bases mixed — the cheapest action in every state") : ko ? "에센스 · 화석 · 수확 · 작업대(메타 제작 포함) · 야수 · 각인 · 분열 · 화폐를 섞어 상태마다 가장 싼 수단" : "essences, fossils, harvest, bench (incl. meta-crafts), beasts, imprints, fracturing and orbs mixed — the cheapest action in every state"}</span></h3>
 	@if(!targetLabels.isEmpty())
 		<ol class="text-xs text-base-content/70 flex flex-wrap gap-x-3 gap-y-0.5" data-craft-optimize-targets>
 			@for(int i = 0; i < targetLabels.size(); i++)
@@ -32,8 +32,8 @@
 		<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
 			<div><span class="text-xs text-base-content/70">${ko ? "성공 한 번당 기대 비용" : "Expected cost per success"}</span>
 				<div class="text-2xl font-bold font-mono" data-craft-optimize-cost="${opt.expectedCost()}">${num.apply(opt.expectedCost())}${unit}@if(opt.stderr() != null)<span class="text-sm font-normal text-base-content/70"> ±${num.apply(opt.stderr() * 1.96)}</span>@endif</div>
-				@if(opt.eldritch() != null && opt.eldritch().error() == null && opt.eldritch().cost() != null)<div class="text-xs" data-craft-optimize-eldritch="${opt.eldritch().cost()}">+ ${ko ? "엘드리치 임플리싯 " : "Eldritch implicits "}<span class="font-mono">${num.apply(opt.eldritch().cost())}${unit}</span> ${ko ? "(따로 — 불씨 · 영액, 합계 " : "(separate — embers/ichors, total "}<span class="font-mono">${num.apply(opt.expectedCost() + opt.eldritch().cost())}${unit}</span>)</div>@endif
-				@if(opt.costQuantiles() != null && opt.costQuantiles().size() == 3)<div class="text-xs text-base-content/70" data-craft-optimize-quantiles title="${ko ? "성공한 회차의 비용 분포 — 운이 좋으면 25% 지점, 보통 중간, 운이 나쁘면 90% 지점까지 든다(못 닿은 회차 비용은 기대 비용에만)" : "Cost distribution of successful runs — lucky 25%, typical median, unlucky 90%"}">${ko ? "운 좋으면 " : "Lucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(0))}${unit}</span> · ${ko ? "보통 " : "typical "}<span class="font-mono">${num.apply(opt.costQuantiles().get(1))}${unit}</span> · ${ko ? "운 나쁘면 " : "unlucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(2))}${unit}</span></div>@endif
+				@if(opt.eldritch() != null && opt.eldritch().error() == null && opt.eldritch().cost() != null)<div class="text-xs" data-craft-optimize-eldritch="${opt.eldritch().cost()}">+ ${ko ? "섬뜩한 고정 속성 " : "Eldritch implicits "}<span class="font-mono">${num.apply(opt.eldritch().cost())}${unit}</span> ${ko ? "(따로 — 불씨 · 영액, 합계 " : "(separate — embers/ichors, total "}<span class="font-mono">${num.apply(opt.expectedCost() + opt.eldritch().cost())}${unit}</span>)</div>@endif
+				@if(opt.costQuantiles() != null && opt.costQuantiles().size() == 3)<div class="text-xs text-base-content/70" data-craft-optimize-quantiles title="${ko ? "성공 한 번까지 든 비용의 분포(앞서 목표에 못 닿은 회차 비용 포함) — 운이 좋으면 25% 지점, 보통 중간, 운이 나쁘면 90% 지점" : "Cost to get one success (including earlier runs that missed) — lucky 25%, typical median, unlucky 90%"}">${ko ? "운 좋으면 " : "Lucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(0))}${unit}</span> · ${ko ? "보통 " : "typical "}<span class="font-mono">${num.apply(opt.costQuantiles().get(1))}${unit}</span> · ${ko ? "운 나쁘면 " : "unlucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(2))}${unit}</span></div>@endif
 				<%-- 성공이 적은 결과(C539) — 못 끝낸 회차(C536)가 많으면 비용 = 전체 / 성공 수라 성공 몇 번으로 잰 거친 값.
 				     C563: 성공 1~4번이면 API 가 계획 값을 비용으로 보이고 모의 값은 simCost 로 --%>
 				@if(opt.simCost() != null)<div class="text-xs text-base-content/80" data-craft-optimize-few="${opt.successes()}" data-craft-optimize-plan-cost>⚠ ${ko ? "목표에 닿은 모의 회차가 " + opt.runs() + "번 중 " + opt.successes() + "번뿐이라 계획 값(표본 모형)을 비용으로 보였습니다 — 모의 값 " + num.apply(opt.simCost()) + unit : "Only " + opt.successes() + " of " + opt.runs() + " simulated runs reached the target, so the plan value (sampled model) is shown — simulated " + num.apply(opt.simCost()) + unit}</div>
@@ -147,7 +147,7 @@
 		@endif
 		<details class="text-xs text-base-content/70">
 			<summary class="cursor-pointer select-none">${ko ? "어떻게 계산했나" : "How this is computed"}</summary>
-			<p class="mt-1">${ko ? "제작 과정을 상태(희귀도 · 맞은 목표 · 쪽마다 남는 잡옵션 수 · 잡옵션이 목표 자리를 막는지 · 제작대 옵션)로 보고, 상태마다 쓸 수 있는 수단의 결과를 같은 제작 엔진으로 표본을 떠 확률을 만든 뒤 상태별 최소 기대 비용(가치 반복)을 구했습니다. 어느 상태에서든 '정제(PoE2 는 새 베이스) → 이 조합으로 처음부터'를 할 수 있어 그 값(다시 시작 비용 + 처음 상태 값, 뉴턴으로 풂)과 아는 가장 싼 방법(표의 첫 줄) 중 싼 쪽을 넘김 값으로 두었고, 정한 정책을 실제 아이템에 다시 굴려 비용을 쟀습니다(넘김도 실제로 다시 시작, ± = 95% 구간). 짐승 단가는 poe.ninja 짐승 시세(레시피에 필요한 짐승 합)." : "Crafting is modelled as states (rarity, targets met, unwanted modifiers per side, blocked target slots, bench modifiers); each action's outcomes are sampled with the same crafting engine, minimum expected costs per state come from value iteration, giving up is valued at the cheaper of 'scour (new base in PoE2) and restart with this plan' (restart cost + start value, solved by Newton's method) and the best single method, and the resulting policy is replayed on real items, restarts included (± = 95% interval). Beast recipe prices are the sum of the required beasts on poe.ninja."}</p>
+			<p class="mt-1">${ko ? "제작 과정을 상태(희귀도 · 맞은 목표 · 쪽마다 남는 잡옵션 수 · 잡옵션이 목표 자리를 막는지 · 작업대 옵션)로 보고, 상태마다 쓸 수 있는 수단의 결과를 같은 제작 엔진으로 표본을 떠 확률을 만든 뒤 상태별 최소 기대 비용(가치 반복)을 구했습니다. 어느 상태에서든 '정제(PoE2 는 새 베이스) → 이 조합으로 처음부터'를 할 수 있어 그 값(다시 시작 비용 + 처음 상태 값, 뉴턴으로 풂)과 아는 가장 싼 방법(표의 첫 줄) 중 싼 쪽을 넘김 값으로 두었고, 정한 정책을 실제 아이템에 다시 굴려 비용을 쟀습니다(넘김도 실제로 다시 시작, ± = 95% 구간). 야수 단가는 poe.ninja 야수 시세(레시피에 필요한 야수 합)." : "Crafting is modelled as states (rarity, targets met, unwanted modifiers per side, blocked target slots, bench modifiers); each action's outcomes are sampled with the same crafting engine, minimum expected costs per state come from value iteration, giving up is valued at the cheaper of 'scour (new base in PoE2) and restart with this plan' (restart cost + start value, solved by Newton's method) and the best single method, and the resulting policy is replayed on real items, restarts included (± = 95% interval). Beast recipe prices are the sum of the required beasts on poe.ninja."}</p>
 			<%-- 적용한 제작 규칙(C460 사용자 요청 "병행 안 되는 제작 규칙도 모두 체크") — 상태마다 수단을 제작 엔진으로 실제 적용해 보므로 엔진이 막는 조합은 쓰이지 않는다 --%>
 			<div class="mt-2" data-craft-optimize-rule-list>
 				<div class="font-medium">${ko ? "적용한 제작 규칙(엔진이 막는 조합은 계산에서 빠짐)" : "Crafting rules applied (combinations the engine rejects are never used)"}</div>
@@ -169,17 +169,17 @@
 						<li>New base — base price excluded (same assumption as the simulator table)</li>
 						<li>Recombinator — only with an entered in-game chance: a magic/rare with one side's targets complete is combined with the other side's half (made separately with the cheapest table method); success completes the item, failure loses both; not for jewels</li>
 					@elseif(ko)
-						<li>희귀도 — 진화 · 연금 = 일반, 변화 · 확장 · 제왕 = 매직, 카오스 · 엑잘 · 짐승 맞바꾸기 · 수확 재련 = 레어, 소멸 · 정제 = 매직/레어</li>
+						<li>희귀도 — 진화 · 연금 = 일반, 변화 · 확장 · 제왕 = 매직, 카오스 · 엑잘 · 야수 맞바꾸기 · 수확 재련 = 레어, 소멸 · 정제 = 매직/레어</li>
 						<li>자리 — 매직 접두 1 · 접미 1, 레어 3 · 3, 같은 옵션 그룹은 하나만, 아이템 레벨 · 화폐 등급이 허용하는 등급만</li>
 						<li>에센스 — 속삭이는 ~ 울부짖는(1~4 등급)은 일반 아이템에만, 비명 등급부터 · 타락 에센스는 레어 재련, 보장 옵션 쪽이 잠겼거나 자리가 없으면 못 씀</li>
-						<li>제작대 — 제작 속성은 하나(‘제작 속성 최대 3개’ 메타가 있으면 셋), 같은 그룹 · 빈 자리, 메타 제작은 접미/접두 자리를 차지</li>
-						<li>메타 제작 — 접두어/접미어 변경 불가면 카오스 · 소멸 · 정제 · 화석 · 수확 · 짐승 제거가 그쪽을 건드리지 않음, 공격/시전 속성 부여 불가면 그 옵션이 안 붙음</li>
-						<li>짐승 — 맞바꾸기는 레어만, 붙일 쪽에 빈 자리 · 지울 쪽에 지울 옵션(분열 · 잠긴 쪽 제외)이 있어야</li>
-						<li>엘드리치 — 갑옷 · 장화 · 장갑 · 투구, 쉐이퍼 · 엘더 · 정복자 영향 아이템엔 불가, 섬뜩한 화폐는 우세한 쪽만(동률이면 못 씀)</li>
+						<li>작업대 — 제작 속성은 하나(‘제작 속성 최대 3개’ 메타가 있으면 셋), 같은 그룹 · 빈 자리, 메타 제작은 접미/접두 자리를 차지</li>
+						<li>메타 제작 — 접두어/접미어 변경 불가면 카오스 · 소멸 · 정제 · 화석 · 수확 · 야수 제거가 그쪽을 건드리지 않음, 공격/시전 속성 부여 불가면 그 옵션이 안 붙음</li>
+						<li>야수 — 맞바꾸기는 레어만, 붙일 쪽에 빈 자리 · 지울 쪽에 지울 옵션(분열 · 잠긴 쪽 제외)이 있어야</li>
+						<li>섬뜩한 고정 속성 — 갑옷 · 장화 · 장갑 · 투구, 쉐이퍼 · 엘더 · 정복자 영향 아이템엔 불가, 섬뜩한 화폐는 우세한 쪽만(동률이면 못 씀)</li>
 						<li>장막 — 장막 옵션은 하나, 해제는 제시된 셋 중 하나 · 분열 옵션은 지워지지 않음 · 타락하면 더 못 바꿈</li>
 						<li>분열의 오브 — 옵션 4개 이상 · 영향력 없는 레어, 이미 분열이면 못 씀, 분열된 옵션은 이후 어떤 재련에도 남음</li>
 						<li>수확 — 원소 바꾸기는 첫 해당 옵션을 같은 등급의 다른 원소로(바뀐 옵션과 같은 그룹이 있으면 못 씀) · 유형 옵션 추가 + 무작위 제거는 영향력 없는 아이템만 · 같은 유형 더/덜 재련은 지금 옵션 유형에 달림</li>
-						<li>각인(짐승) — 매직 아이템만 저장, 되돌리면 각인은 사라짐(한 번에 하나)</li>
+						<li>각인(야수) — 매직 아이템만 저장, 되돌리면 각인은 사라짐(한 번에 하나)</li>
 					@else
 						<li>Rarity — Transmute/Alchemy on normal, Alteration/Augment/Regal on magic, Chaos/Exalt/beast swaps/harvest reforges on rare, Annul/Scour on magic or rare</li>
 						<li>Slots — magic 1 prefix · 1 suffix, rare 3 · 3, one modifier per group, tiers allowed by item level and currency tier</li>

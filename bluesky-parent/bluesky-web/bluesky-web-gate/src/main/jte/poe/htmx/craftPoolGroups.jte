@@ -14,6 +14,8 @@
 @param String actionRarity = null
 @param java.util.Map<String, Double> actionMult = java.util.Map.of()
 @param String actionError = null
+@param java.util.Map<String, Integer> forcedFamilies = java.util.Map.of()
+@param String forcedText = null
 @param String waysUrl = null
 
 !{
@@ -36,17 +38,9 @@
 	long famAllW = poolGroups.stream().flatMap(f -> f.tiers().stream()).filter(t -> t.rollable()).mapToLong(t -> t.line().weight()).sum();
 	java.util.List<String> famTags = famTagCount.keySet().stream().sorted(java.util.Comparator.comparing((String t) -> -famTagCount.get(t)).thenComparing(t -> t)).toList();
 }
-<%-- 고른 화폐 기준(10-22 P3) — 확률 = 그 수단이 처음 뽑는 옵션의 가중치 ÷ 합, ×n = 화폐가 바꾼 배수 --%>
-!{ java.util.function.Function<Double, String> multText = x -> x == Math.rint(x) ? String.format(java.util.Locale.ROOT, "×%d", Math.round(x)) : String.format(java.util.Locale.ROOT, "×%.2f", x); }
-@if(actionLabel != null)
-	<div class="rounded-box border border-warning/40 bg-warning/10 px-2 py-1.5 text-xs" data-craft-action-pool="${actionPicked ? "1" : "0"}">
-		@if(actionPicked)
-			<span class="font-medium">${ko ? "고른 화폐 기준" : "Armed currency"}</span> — <span data-craft-action-pool-label>${actionLabel}</span>: ${ko ? "확률 = 이 수단이 처음 뽑는 옵션 하나의 가중치 ÷ 합" : "chance = weight of the first modifier this rolls ÷ total"}@if("RARE".equals(actionRarity))${ko ? " (레어 자리 기준)" : " (as a rare)"}@endif@if(!actionMult.isEmpty()) · ${ko ? "노란 ×n = 이 화폐가 바꾼 가중치 배수" : "yellow ×n = weight multiplier from this currency"}@endif
-		@else
-			<span class="font-medium" data-craft-action-pool-label>${actionLabel}</span> — ${actionError != null ? actionError : (ko ? "이 수단은 표의 옵션을 무작위로 뽑지 않습니다 — 지금 아이템 기준 표" : "This doesn't roll a random modifier from the table — showing odds for the current item")}
-		@endif
-	</div>
-@endif
+@if(actionLabel != null)@template.poe.htmx.craftActionCaption(actionLabel = actionLabel, actionPicked = actionPicked, actionRarity = actionRarity, hasMult = !actionMult.isEmpty(), actionError = actionError, poe2 = false, forcedText = forcedText)@endif
+<%-- 더 붙을 옵션 없음(10-22 Q4 — 검토: 교체 칸 밖에 있어 화폐를 골라 표가 바뀌어도 남았다) — 지금 아이템 기준 표일 때만 --%>
+@if(!actionPicked && poolGroups.stream().noneMatch(f -> f.rollable()))<p class="text-sm text-base-content/60" data-craft-pool-none>${ko ? "더 붙을 수 있는 옵션이 없습니다." : "No more modifiers can roll."}</p>@endif
 @if(!poolGroups.isEmpty())@template.poe.htmx.craftFamFilter(tags = famTags)@endif
 @for(String gen : java.util.List.of("prefix", "suffix"))
 	!{
@@ -59,7 +53,7 @@
 	@if(!gf.isEmpty() || !outside.isEmpty())
 		<details class="rounded-box border border-base-300 bg-base-100" open data-craft-pool-gen="${gen}">
 			<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">
-				${"prefix".equals(gen) ? (ko ? "접두" : "Prefixes") : (ko ? "접미" : "Suffixes")} · ${ko ? "붙음 " : ""}${gon}/${max}${ko ? "" : " on"} · ${ko ? "계열 " : ""}${gf.size()}${ko ? "개" : " families"} · ${String.format("%.1f%%", gsum * 100)}@if(famAllW > 0) · <span class="font-normal text-base-content/70" title="${ko ? "확률 = 가중치 ÷ 양쪽(접두 + 접미) 붙을 수 있는 가중치 합" : "Chance = weight ÷ the rollable weight of both sides"}" data-craft-gen-weight="${gw}" data-craft-all-weight="${famAllW}">${ko ? "가중 " : "weight "}${String.format(java.util.Locale.ROOT, "%,d", gw)} / ${String.format(java.util.Locale.ROOT, "%,d", famAllW)}</span>@endif
+				${"prefix".equals(gen) ? (ko ? "접두" : "Prefixes") : (ko ? "접미" : "Suffixes")} · ${ko ? "붙음 " : ""}${gon}/${max}${ko ? "" : " filled"} · ${ko ? "계열 " : ""}${gf.size()}${ko ? "개" : " families"} · ${String.format("%.1f%%", gsum * 100)}@if(famAllW > 0) · <span class="font-normal text-base-content/70" title="${ko ? "확률 = 가중치 ÷ 양쪽(접두 + 접미) 붙을 수 있는 가중치 합" : "Chance = weight ÷ the rollable weight of both sides"}" data-craft-gen-weight="${gw}" data-craft-all-weight="${famAllW}">${ko ? "가중 " : "weight "}${String.format(java.util.Locale.ROOT, "%,d", gw)} / ${String.format(java.util.Locale.ROOT, "%,d", famAllW)}</span>@endif
 			</summary>
 			<div class="px-2 pb-2 space-y-1" data-craft-fam-list>
 				<p class="text-xs text-base-content/60" hidden data-craft-fam-none>${ko ? "거르기에 맞는 계열이 없습니다." : "No family matches the filter."}</p>
@@ -67,7 +61,7 @@
 					!{ java.util.List<String> ox = ko && !nz.apply(l.ko()).isEmpty() ? l.ko() : nz.apply(l.en()); java.util.List<String> on2 = ko && !nz.apply(l.koMin()).isEmpty() ? l.koMin() : nz.apply(l.enMin()); }
 					<div class="rounded border-l-4 border-primary bg-primary/10 px-2 py-1.5 text-xs min-w-0 wrap-anywhere" data-craft-fam-outside="${l.id()}">
 						@for(int i = 0; i < ox.size(); i++)<div>$unsafe{PoeText.highlightValues(PoeModRange.range(i < on2.size() ? on2.get(i) : null, ox.get(i)))}</div>@endfor
-						<div class="text-[10px] text-base-content/70"><span class="badge badge-primary badge-xs">${ko ? "적용" : "on"}@if(l.tierRank() != null) T${l.tierRank()}@endif</span> ${l.crafted() ? (ko ? "제작대 옵션" : "bench craft") : l.essence() ? (ko ? "에센스 옵션" : "essence mod") : (ko ? "이 표 밖 옵션" : "outside this table")}@if(lineTags.get(l.id()) != null) — ${String.join(", ", lineTags.get(l.id()))}@endif@if(l.fractured()) · ${ko ? "분열" : "fractured"}@endif@if(added != null && added.contains(l.id())) <span class="badge badge-success badge-xs">${ko ? "방금" : "new"}</span>@endif</div>
+						<div class="text-[10px] text-base-content/70"><span class="badge badge-primary badge-xs">${ko ? "적용" : "on"}@if(l.tierRank() != null) T${l.tierRank()}@endif</span> ${l.crafted() ? (ko ? "작업대 옵션" : "bench craft") : l.essence() ? (ko ? "에센스 옵션" : "essence mod") : (ko ? "이 표 밖 옵션" : "outside this table")}@if(lineTags.get(l.id()) != null) — ${String.join(", ", lineTags.get(l.id()))}@endif@if(l.fractured()) · ${ko ? "분열" : "fractured"}@endif@if(added != null && added.contains(l.id())) <span class="badge badge-success badge-xs">${ko ? "방금" : "new"}</span>@endif</div>
 					</div>
 				@endfor
 				@for(var f : gf)
@@ -80,11 +74,12 @@
 						java.util.List<String> ftags = ko ? nz.apply(top.tagsKo()) : nz.apply(top.tags());
 						Integer lastRank = f.tiers().get(f.tiers().size() - 1).line().tierRank();
 						var on = f.applied();
+						String famSearch = String.join(" ", fx) + " " + String.join(" ", ftags) + " " + f.tiers().stream().map(t -> ko && t.line().nameKo() != null ? t.line().nameKo() : t.line().name()).filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.joining(" "));
 						long fw = f.tiers().stream().filter(t -> t.rollable()).mapToLong(t -> t.line().weight()).sum();
 						int fl = f.tiers().stream().mapToInt(t -> t.line().ilvl()).max().orElse(0);
 						Double fm = f.tiers().stream().filter(t -> t.rollable()).map(t -> actionMult.get(t.line().id())).filter(java.util.Objects::nonNull).findFirst().orElse(null);
 					}
-					<details class="rounded border ${on != null ? "border-l-4 border-primary bg-primary/10" : "border-base-300"}" data-craft-group="fam:${f.key()}" data-swap-anchor-key="fam:${f.key()}" data-craft-fam="${f.key()}" data-craft-fam-tagset="${String.join("|", ftags)}" data-craft-fam-rollable="${f.rollable() ? "1" : null}" data-craft-fam-on="${on == null ? null : on.line().id()}">
+					<details class="rounded border ${on != null ? "border-l-4 border-primary bg-primary/10" : "border-base-300"}" data-craft-group="fam:${f.key()}" data-swap-anchor-key="fam:${f.key()}" data-craft-fam="${f.key()}" data-craft-fam-search="${famSearch}" data-craft-fam-tagset="${String.join("|", ftags)}" data-craft-fam-rollable="${f.rollable() ? "1" : null}" data-craft-fam-on="${on == null ? null : on.line().id()}">
 						<summary class="cursor-pointer select-none grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-2 py-1.5" title="${ko ? "누르면 등급별 상세" : "Click for every tier"}">
 							<div class="min-w-0 text-xs wrap-anywhere ${!f.rollable() && on == null ? "text-base-content/60" : null}">
 								@for(int i = 0; i < fx.size(); i++)<div>$unsafe{PoeText.highlightValues(PoeModRange.range(i < fn.size() ? fn.get(i) : null, fx.get(i)))}</div>@endfor
@@ -94,15 +89,16 @@
 								</div>
 							</div>
 							<div class="text-right font-mono text-xs leading-tight whitespace-nowrap" data-craft-fam-chance="${String.format("%.6f", f.sum())}">
-								@if(fm != null)<span class="badge badge-warning badge-xs" data-craft-fam-mult="${fm}">${multText.apply(fm)}</span>@endif
+								@if(forcedFamilies.containsKey(f.key()))<span class="badge badge-success badge-xs" data-craft-fam-forced title="${ko ? "고른 에센스가 이 옵션을 확정으로 붙입니다" : "The armed essence guarantees this modifier"}">${ko ? "확정" : "guaranteed"}@if(forcedFamilies.get(f.key()) != null) T${forcedFamilies.get(f.key())}${ko ? " 상당" : "-equivalent"}@endif</span>@endif
+								@if(fm != null)<span class="badge badge-info badge-xs" data-craft-fam-mult="${fm}">${net.luversof.web.gate.poe.CraftPoolGroups.multText(fm)}</span>@endif
 								@if(f.rollable())
 									${String.format("%.2f%%", f.sum() * 100)}
 									@if(topRank != null)<div class="text-[10px] text-base-content/60" data-craft-fam-top>T${topRank} ${String.format("%.2f%%", f.topChance() * 100)}</div>@endif
 								@else
-									<span class="text-base-content/60" title="${on != null ? (ko ? "이미 붙은 계열은 다시 붙지 않습니다" : "Already on the item — can't roll again") : (ko ? "지금 아이템에는 붙지 않습니다(자리 · 같은 그룹 · 희귀도)" : "Can't roll on this item now (slots, same group or rarity)")}">—</span>
+									<span class="text-base-content/60" title="${on != null ? (ko ? "이미 붙은 계열은 다시 붙지 않습니다" : "Already on the item — can't roll again") : actionPicked ? (ko ? "고른 화폐로는 붙지 않습니다(화석 태그 ×0 · 자리 · 같은 그룹 · 메타)" : "Can't roll with the armed currency (fossil tag ×0, slots, same group or meta)") : (ko ? "지금 아이템에는 붙지 않습니다(자리 · 같은 그룹 · 희귀도)" : "Can't roll on this item now (slots, same group or rarity)")}">—</span>
 								@endif
 							</div>
-							<div>@if(topRank != null && top.family() != null)<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-pool-target="${f.key()}" data-tier="${topRank}" aria-pressed="false" title="${ko ? "계산기 목표로 — 이 계열 최고 등급 T" + topRank + "(다시 누르면 끔). 낮은 등급까지 허용하려면 펼쳐서 그 등급의 ☆" : "Calculator target — this family's top tier T" + topRank + " (click again to clear). To allow lower tiers, expand and use that tier's ☆"}">☆</button>@endif</div>
+							<div>@if(topRank != null && top.family() != null)<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-pool-target="${f.key()}" data-tier="${topRank}" aria-pressed="false" aria-label="${ko ? "계산기 목표로 T" + topRank : "Calculator target T" + topRank}" title="${ko ? "계산기 목표로 — 이 계열 최고 등급 T" + topRank + "(다시 누르면 끔). 낮은 등급까지 허용하려면 펼쳐서 그 등급의 ☆" : "Calculator target — this family's top tier T" + topRank + " (click again to clear). To allow lower tiers, expand and use that tier's ☆"}">☆</button>@endif</div>
 						</summary>
 						<div class="px-2 pb-2 overflow-x-auto">
 							<table class="table table-xs">
@@ -119,7 +115,7 @@
 										}
 										<tr data-craft-pool-line="${t.rollable() ? p.id() : null}" data-craft-pool-tier="${p.id()}" data-craft-pool-on="${t.applied() ? "1" : null}" class="${t.applied() ? "bg-primary/10" : !t.rollable() ? "text-base-content/70" : null}">
 											<td class="font-mono text-xs whitespace-nowrap">@if(p.tierRank() != null)T${p.tierRank()}@endif@if(affix != null)<div class="font-sans text-[11px] leading-tight text-base-content/80" data-craft-affix-name>${affix}</div>@endif
-												<div class="text-[10px] leading-tight text-base-content/60" data-craft-pool-meta>${ko ? "레벨 " : "iLvl "}${p.ilvl()}<br>${ko ? "가중 " : "w "}${p.weight()}@if(t.rollable() && actionMult.get(p.id()) != null) <span class="badge badge-warning badge-xs" data-craft-tier-mult>${multText.apply(actionMult.get(p.id()))}</span>@endif</div>
+												<div class="text-[10px] leading-tight text-base-content/60" data-craft-pool-meta>${ko ? "레벨 " : "iLvl "}${p.ilvl()}<br>${ko ? "가중 " : "w "}${p.weight()}@if(t.rollable() && actionMult.get(p.id()) != null) <span class="badge badge-info badge-xs" data-craft-tier-mult>${net.luversof.web.gate.poe.CraftPoolGroups.multText(actionMult.get(p.id()))}</span>@endif</div>
 											</td>
 											<td class="min-w-0 wrap-anywhere">
 												@for(int i = 0; i < mx.size(); i++)
@@ -128,11 +124,11 @@
 												@if(t.applied())<span class="badge badge-primary badge-xs">${ko ? "적용" : "on"}</span>@if(t.fresh()) <span class="badge badge-success badge-xs">${ko ? "방금" : "new"}</span>@endif@endif
 											</td>
 											<td class="text-right font-mono" data-craft-chance="${t.rollable() ? "1" : null}">@if(t.rollable())${String.format("%.2f%%", t.chance() * 100)}@else<span class="text-base-content/60">—</span>@endif</td>
-											<td class="text-right whitespace-nowrap">
-												@if(p.tierRank() != null && p.family() != null)<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-pool-target="${p.gen()}:${p.family()}" data-tier="${p.tierRank()}" aria-pressed="false" title="${ko ? "계산기 목표로 — 이 계열 T1~T" + p.tierRank() + "(다시 누르면 끔). 고르면 화폐 단추에 목표 적중 확률" : "Calculator target — this family T1~T" + p.tierRank() + " (click again to clear). Shows hit chance on currency buttons"}">☆</button>@endif
+											<td class="text-right" data-craft-tier-actions><%-- 좁은 폭 · 영어(+frac)에서 잘리지 않게 줄바꿈 허용(10-22 Q6) --%>
+												@if(p.tierRank() != null && p.family() != null)<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-pool-target="${p.gen()}:${p.family()}" data-tier="${p.tierRank()}" aria-pressed="false" aria-label="${ko ? "계산기 목표로 T1~T" + p.tierRank() : "Calculator target T1-T" + p.tierRank()}" title="${ko ? "계산기 목표로 — 이 계열 T1~T" + p.tierRank() + "(다시 누르면 끔). 고르면 화폐 단추에 목표 적중 확률" : "Calculator target — this family T1~T" + p.tierRank() + " (click again to clear). Shows hit chance on currency buttons"}">☆</button>@endif
 												@if(t.rollable())
-													<button type="button" name="action" value="MANUAL_ADD:${p.id()}" class="btn btn-xs btn-ghost border border-base-300" hx-post="/poe/htmx/craft" hx-target="#craft-emu" hx-swap="outerHTML" hx-include="#craft-emu > form" data-craft-action="MANUAL_ADD:${p.id()}" title="${ko ? "이 옵션을 넣기" : "Add this modifier"}">+</button>
-													<button type="button" name="action" value="MANUAL_ADD:${p.id()}:F" class="btn btn-xs btn-ghost border border-base-300" hx-post="/poe/htmx/craft" hx-target="#craft-emu" hx-swap="outerHTML" hx-include="#craft-emu > form" data-craft-action="MANUAL_ADD:${p.id()}:F" title="${ko ? "분열 옵션으로 넣기" : "Add as fractured"}">${ko ? "+분열" : "+frac"}</button>
+													<button type="button" name="action" value="MANUAL_ADD:${p.id()}" class="btn btn-xs btn-ghost border border-base-300" hx-post="/poe/htmx/craft" hx-target="#craft-emu" hx-swap="outerHTML" hx-include="#craft-emu > form" data-craft-action="MANUAL_ADD:${p.id()}" title="${ko ? "직접 넣기 — 화폐 없이(비용 0), 단계 기록에 '직접 편집'으로 남음" : "Add directly — no currency (cost 0), recorded as a manual edit"}" aria-label="${ko ? "이 옵션 직접 넣기" : "Add this modifier directly"}">+</button>
+													<button type="button" name="action" value="MANUAL_ADD:${p.id()}:F" class="btn btn-xs btn-ghost border border-base-300" hx-post="/poe/htmx/craft" hx-target="#craft-emu" hx-swap="outerHTML" hx-include="#craft-emu > form" data-craft-action="MANUAL_ADD:${p.id()}:F" title="${ko ? "분열 옵션으로 넣기" : "Add as fractured"}">${ko ? "+분열" : "+fractured"}</button>
 												@endif
 											</td>
 										</tr>

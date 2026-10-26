@@ -12,13 +12,13 @@
 
 !{
 	java.util.List<PoeModTier> tiers = family.tiers();
-	// 대표 문장(최상위 티어의 스탯 줄, 수치 없이 라벨 느낌) — 패밀리 제목
+	// 대표 문장(최상위 등급의 스탯 줄, 수치 없이 라벨 느낌) — 패밀리 제목
 	PoeModTier top = tiers.isEmpty() ? null : tiers.get(0);
-	// 스폰웨이트 최대 — 티어별 상대 확률(%)의 분모. 같은 패밀리 안 상대값이라 대략의 등장 빈도 감을 준다.
+	// 스폰웨이트 최대 — 등급별 상대 확률(%)의 분모. 같은 패밀리 안 상대값이라 대략의 등장 빈도 감을 준다.
 	int maxW = 1;
 	for (PoeModTier t : tiers) maxW = Math.max(maxW, t.weight());
-	// 티어 라벨: T1 = 최상위(맨 위). 인게임 표기와 반대(게임은 낮은 숫자가 상위)라 위→아래로 T1..Tn.
-	// 패밀리 전체 등장 확률(임의 티어) = 티어 가중치 합 / 젠 풀 합 — 제작 계산기 곱셈용
+	// 등급 라벨: T1 = 최상위(맨 위). 인게임 표기와 반대(게임은 낮은 숫자가 상위)라 위→아래로 T1..Tn.
+	// 패밀리 전체 등장 확률(임의 등급) = 등급 가중치 합 / 젠 풀 합 — 제작 계산기 곱셈용
 	long famWeightSum = 0;
 	for (PoeModTier t : tiers) famWeightSum += t.weight();
 	double famOdds = poolWeight > 0 ? famWeightSum * 100.0 / poolWeight : 0;
@@ -30,9 +30,9 @@
 			<%-- 계산기 선택 — summary 안 체크박스는 클릭해도 details 를 토글하지 않는다(체크박스가 활성화 대상, PoE2 와 같다 — 10-13 C287 인라인 onclick 제거) --%>
 			<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" title="${MessageUtil.getMessage("poe.mods.odds.include")}">
 		@endif
-		<%-- 티어 "개수"(펼치면 T1..Tn). 접힌 배지가 "티어5"로 오해되지 않게 title 로 명시. --%>
+		<%-- 등급 "개수"(펼치면 T1..Tn). 접힌 배지가 "등급5"로 오해되지 않게 title 로 명시. --%>
 		<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), tiers.size())}</span>
-		<%-- 최상위 티어 요구 아이템 레벨 — 접힌 상태에서도 "이 옵션 T1 을 뜨게 하려면 몇 렙 아이템이 필요한지" 바로 보이게 --%>
+		<%-- 최상위 등급 요구 아이템 레벨 — 접힌 상태에서도 "이 옵션 T1 을 뜨게 하려면 몇 렙 아이템이 필요한지" 바로 보이게 --%>
 		@if(top != null)
 			<span class="text-[10px] font-mono text-base-content/60 shrink-0" data-top-ilvl title="${MessageUtil.getMessage("poe.mods.toptier.ilvl")}">i${top.ilvl()}</span>
 		@endif
@@ -43,13 +43,14 @@
 				@endfor
 			@endif
 		</span>
-		<span class="text-[10px] text-base-content/60 shrink-0">${key}</span>
+		<%-- 내부 계열 Id 는 영어 화면에만(10-23 Q87 — 한국어 화면에 영어 Id 가 카드마다 보였다) --%>
+		@if(!ko)<span class="text-[10px] text-base-content/60 min-w-0 max-w-32 truncate max-sm:hidden" title="${key}">${key}</span>@endif
 	</summary>
 	<div class="border-t border-base-200 overflow-x-auto">
 		<table class="table table-xs w-full">
 			<thead>
 				<tr class="text-base-content/60">
-					<%-- 머리글은 PoE2 옵션 풀(poe2.mods.tier/level "티어 · 레벨")과 같은 말 — 한국어 화면에 "T · iLvl" 이 남아 있었다(10-02 C30) --%>
+					<%-- 머리글은 PoE2 옵션 풀(poe2.mods.tier/level "등급 · 레벨")과 같은 말 — 한국어 화면에 "T · iLvl" 이 남아 있었다(10-02 C30) --%>
 					<th class="w-10">${MessageUtil.getMessage("poe.mods.col.tier")}</th>
 					<th class="w-12">${MessageUtil.getMessage("poe.mods.col.level")}</th>
 					<th>${MessageUtil.getMessage("poe.mods.col.effect")}</th>
@@ -72,7 +73,7 @@
 							!{java.util.List<String> mn = ko ? t.koMin() : t.enMin();}
 							@for(int i = 0; i < mx.size(); i++)
 								<div class="text-[12px] whitespace-pre-line">
-									$unsafe{PoeText.highlightValues(net.luversof.web.gate.poe.PoeModRange.range(mn != null && i < mn.size() ? mn.get(i) : null, mx.get(i)))}
+									$unsafe{PoeText.highlightValues(net.luversof.web.gate.poe.PoeModRange.rangeAscending(mn != null && i < mn.size() ? mn.get(i) : null, mx.get(i)))}
 								</div>
 							@endfor
 						</td>

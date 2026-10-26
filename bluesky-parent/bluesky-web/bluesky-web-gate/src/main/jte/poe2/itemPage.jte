@@ -13,7 +13,7 @@
 
 !{ String title = PoeText.name(base.nameKo(), base.name()); }
 
-<%-- PoE2 베이스 상세 — 툴팁 + 이 베이스에 붙을 수 있는 옵션(접두 · 접미 티어 표). --%>
+<%-- PoE2 베이스 상세 — 툴팁 + 이 베이스에 붙을 수 있는 옵션(접두 · 접미 등급 표). --%>
 @template._layout.poeLayout(
 	title = title,
 	isAuthenticated = isAuthenticated,

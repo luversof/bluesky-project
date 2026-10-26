@@ -69,8 +69,8 @@
 			<tbody>
 				<tr><td>DPS</td><td class="text-right font-mono">${fmt.apply(r.start().dps())}</td><td class="text-right font-mono font-semibold">${fmt.apply(r.refined().dps())}</td><td class="text-right font-mono">${chg.apply(r.start().dps(), r.refined().dps())}</td><td class="text-right font-mono text-base-content/60">${fmt.apply(bm == null ? null : bm.medianDps())}</td></tr>
 				<tr><td>EHP</td><td class="text-right font-mono">${fmt.apply(r.start().ehp())}</td><td class="text-right font-mono font-semibold">${fmt.apply(r.refined().ehp())}</td><td class="text-right font-mono">${chg.apply(r.start().ehp(), r.refined().ehp())}</td><td class="text-right font-mono text-base-content/60">${fmt.apply(bm == null ? null : bm.medianEhp())}</td></tr>
-				<tr><td>${ko ? "생명" : "Life"}</td><td class="text-right font-mono">${fmt.apply(r.start().life())}</td><td class="text-right font-mono">${fmt.apply(r.refined().life())}</td><td class="text-right font-mono">${chg.apply(r.start().life(), r.refined().life())}</td><td class="text-right font-mono text-base-content/60">${fmt.apply(bm == null ? null : bm.medianLife())}</td></tr>
-				<tr><td>ES</td><td class="text-right font-mono">${fmt.apply(r.start().es())}</td><td class="text-right font-mono">${fmt.apply(r.refined().es())}</td><td class="text-right font-mono">${chg.apply(r.start().es(), r.refined().es())}</td><td class="text-right font-mono text-base-content/60">${fmt.apply(bm == null ? null : bm.medianEs())}</td></tr>
+				<tr><td>${ko ? "생명력" : "Life"}</td><td class="text-right font-mono">${fmt.apply(r.start().life())}</td><td class="text-right font-mono">${fmt.apply(r.refined().life())}</td><td class="text-right font-mono">${chg.apply(r.start().life(), r.refined().life())}</td><td class="text-right font-mono text-base-content/60">${fmt.apply(bm == null ? null : bm.medianLife())}</td></tr>
+				<tr><td>${ko ? "에너지 보호막" : "ES"}</td><td class="text-right font-mono">${fmt.apply(r.start().es())}</td><td class="text-right font-mono">${fmt.apply(r.refined().es())}</td><td class="text-right font-mono">${chg.apply(r.start().es(), r.refined().es())}</td><td class="text-right font-mono text-base-content/60">${fmt.apply(bm == null ? null : bm.medianEs())}</td></tr>
 			</tbody>
 		</table>
 	</div>
@@ -89,9 +89,9 @@
 						String kind = sl.startsWith("패시브 재분배") ? (ko ? "재분배" : "Respec")
 							: sl.startsWith("닌자 공통 트리") ? (ko ? "공통 트리" : "Common tree")
 							: sl.startsWith("닌자 공통") ? (ko ? "닌자 공통" : "Ninja common")
-							: sl.startsWith("보조젬") ? (ko ? "보조젬" : "Support")
+							: sl.startsWith("보조 젬") || sl.startsWith("보조젬") ? (ko ? "보조 젬" : "Support") /* 옛 결과는 붙여 쓴 꼴(10-25 Q193) */
 							: sl.startsWith("고유") ? (ko ? "장비" : "Item") : null;
-						String kindCls = sl.startsWith("패시브 재분배") ? "badge-warning badge-outline" : sl.startsWith("닌자 공통") ? "badge-info badge-outline" : sl.startsWith("보조젬") ? "badge-primary badge-outline" : "badge-ghost";
+						String kindCls = sl.startsWith("패시브 재분배") ? "badge-warning badge-outline" : sl.startsWith("닌자 공통") ? "badge-info badge-outline" : sl.startsWith("보조 젬") || sl.startsWith("보조젬") ? "badge-primary badge-outline" : "badge-ghost";
 					}
 					<li class="${kept ? "text-base-content/60" : ""}" data-sim-step-kind="${kind == null ? "" : kind}">@if(kind != null)<span class="badge badge-xs ${kindCls} mr-1 align-middle">${kind}</span>@endif${!ko && st.labelEn() != null ? st.labelEn() : st.label()} <span class="font-mono text-xs text-base-content/60">DPS ${chg.apply(100d, 100d * (1 + (st.dpsPct() == null ? 0 : st.dpsPct()) / 100))} · EHP ${chg.apply(100d, 100d * (1 + (st.ehpPct() == null ? 0 : st.ehpPct()) / 100))}</span></li>
 				@endfor

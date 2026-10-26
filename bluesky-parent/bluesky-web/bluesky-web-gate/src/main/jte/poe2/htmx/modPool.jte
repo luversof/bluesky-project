@@ -14,7 +14,7 @@
 	boolean korean = PoeText.isKorean();
 }
 
-<%-- 옵션 풀 — 접두/접미 두 칸. 계열마다 1티어(최고) 문구를 머리에, 펼치면 모든 티어(레벨 · 가중치).
+<%-- 옵션 풀 — 접두/접미 두 칸. 계열마다 1등급(최고) 문구를 머리에, 펼치면 모든 등급(레벨 · 가중치).
      data-mod-family · data-tier-ilvl 등은 PoE1 모드 검색 + 아이템 레벨 막대(poe/modFilterBar.jte)가 읽는다(10-01). --%>
 <div class="space-y-2">
 	<div class="flex flex-wrap items-baseline gap-2 text-sm">
@@ -22,11 +22,22 @@
 		<span class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.mods.bases"), pool.bases() == null ? 0 : pool.bases().size())}</span>
 	</div>
 	<div class="text-xs text-base-content/60">${MessageUtil.getMessage("poe2.mods.hint")}</div>
+	!{
+		// 가중치가 모두 같으면(게임 PoE2 Mods.SpawnWeight 가 지금 전부 1) 확률은 '계열 수로 나눈 값'일 뿐이라 안내를 붙인다(10-23 Q92).
+		//   칸 · 계산기는 둔다 — PoE2 제작 화면도 같은 균등 가중치를 쓴다. 게임이 실제 가중치를 싣기 시작하면(값이 달라지면) 안내가 사라진다
+		boolean uniformWeights = true;
+		Integer firstWeight = null;
+		for (Poe2.ModGroup ug : prefixes) for (Poe2.ModTier ut : ug.tiers()) { if (firstWeight == null) firstWeight = ut.weight(); else if (!java.util.Objects.equals(firstWeight, ut.weight())) uniformWeights = false; }
+		for (Poe2.ModGroup ug : suffixes) for (Poe2.ModTier ut : ug.tiers()) { if (firstWeight == null) firstWeight = ut.weight(); else if (!java.util.Objects.equals(firstWeight, ut.weight())) uniformWeights = false; }
+	}
+	@if(uniformWeights)
+		<div class="text-xs text-base-content/60" data-mods-uniform-weight>${MessageUtil.getMessage("poe2.mods.uniformweight")}</div>
+	@endif
 	<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 		@for(String gen : java.util.List.of("prefix", "suffix"))
 			!{
 				java.util.List<Poe2.ModGroup> groups = "prefix".equals(gen) ? prefixes : suffixes;
-				// 확률 분모 = 이 칸(접두/접미) 모든 티어 가중치 합 — PoE1 modFamilyCard 의 poolWeight 와 같은 정의(10-01)
+				// 확률 분모 = 이 칸(접두/접미) 모든 등급 가중치 합 — PoE1 modFamilyCard 의 poolWeight 와 같은 정의(10-01)
 				long poolWeight = 0;
 				for (Poe2.ModGroup pg : groups) for (Poe2.ModTier pt : pg.tiers()) poolWeight += pt.weight() == null ? 0 : pt.weight();
 			}
@@ -40,7 +51,7 @@
 					!{
 						Poe2.ModTier top = g.tiers().get(0);
 						java.util.List<String> topLines = Poe2View.tierLines(top);
-						// 계열 등장 확률(아무 티어) = 계열 티어 가중치 합 / 칸 합 — PoE1 modFamilyCard 의 famOdds 와 같다(제작 계산기 곱셈용)
+						// 계열 등장 확률(아무 등급) = 계열 등급 가중치 합 / 칸 합 — PoE1 modFamilyCard 의 famOdds 와 같다(제작 계산기 곱셈용)
 						long famWeight = 0;
 						for (Poe2.ModTier ft : g.tiers()) famWeight += ft.weight() == null ? 0 : ft.weight();
 						String famOdds = poolWeight > 0 ? String.format(java.util.Locale.ROOT, "%.4f", famWeight * 100.0 / poolWeight) : null;
@@ -52,7 +63,7 @@
 								<input type="checkbox" class="checkbox checkbox-xs poe2-craft-pick mr-1 align-middle" title="${MessageUtil.getMessage("poe.mods.odds.include")}" aria-label="${MessageUtil.getMessage("poe.mods.odds.include")}">
 							@endif
 							<span class="text-[#8888ff]" data-family-stats data-join=" / ">${String.join(" / ", topLines)}</span>
-							<%-- 최상위 티어 요구 아이템 레벨 — PoE1 과 같은 i 배지(레벨 막대가 가용 최상위로 바꿔 준다) --%>
+							<%-- 최상위 등급 요구 아이템 레벨 — PoE1 과 같은 i 배지(레벨 막대가 가용 최상위로 바꿔 준다) --%>
 							<span class="ml-1 text-[10px] font-mono text-base-content/60" data-top-ilvl title="${MessageUtil.getMessage("poe.mods.toptier.ilvl")}">i${top.level()}</span>
 							<span class="ml-1 text-xs text-base-content/60" title="${MessageUtil.getMessage("poe.mods.tiers.title")}" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), g.tiers().size())}</span>
 						</summary>
@@ -81,7 +92,8 @@
 														<div>${line}</div>
 													@endfor
 												</div>
-												<div class="text-[10px] text-base-content/60">${PoeText.name(t.nameKo(), t.name())}@if(korean && t.name() != null) · ${t.name()}@endif</div>
+												<%-- 이름은 게임 Mods.Name 한 가지(10-23 Q88 — 한국어 화면에 ' · Impregnable' 처럼 영어가 덧붙었다) --%>
+												<div class="text-[10px] text-base-content/60">${PoeText.name(t.nameKo(), t.name())}</div>
 											</td>
 											<td class="text-right">${t.weight()}</td>
 											@if(poolWeight > 0)

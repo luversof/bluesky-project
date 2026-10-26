@@ -6,7 +6,7 @@
 !{ boolean ko = PoeText.isKorean(); }
 <div class="space-y-1 rounded-box border border-base-300 bg-base-100 px-2 py-1.5 text-xs" data-craft-fam-filter>
 	<div class="flex flex-wrap items-center gap-2">
-		<input type="search" class="input input-xs input-bordered w-40 min-w-0" placeholder="${ko ? "옵션 찾기" : "Find a modifier"}" aria-label="${ko ? "옵션 찾기" : "Find a modifier"}" data-craft-fam-q>
+		<input type="search" class="input input-sm input-bordered w-40 min-w-0" placeholder="${ko ? "옵션 찾기" : "Find a modifier"}" aria-label="${ko ? "옵션 찾기" : "Find a modifier"}" data-craft-fam-q>
 		<label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" class="checkbox checkbox-xs" data-craft-fam-rollable>${ko ? "붙을 수 있는 것만" : "Rollable only"}</label>
 		<span class="font-mono text-base-content/70" aria-live="polite" data-craft-fam-count></span>
 		<button type="button" class="btn btn-xs btn-ghost" data-craft-fam-clear>${ko ? "지우기" : "Clear"}</button>

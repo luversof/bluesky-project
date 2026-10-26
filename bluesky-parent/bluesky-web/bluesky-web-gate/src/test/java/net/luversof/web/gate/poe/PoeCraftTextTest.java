@@ -75,6 +75,10 @@ class PoeCraftTextTest {
     assertThat(PoeCraftText.en("그을린 화석 은(는) 이 아이템 종류에 쓸 수 없습니다"))
         .isEqualTo("This fossil cannot be used on this item class");
     assertThat(PoeCraftText.en("Fire 저항 옵션이 없습니다")).isEqualTo("No Fire resistance modifier");
+    // 엔진이 한국어 원소를 실어도 영어 화면은 영어(10-24 Q129)
+    assertThat(PoeCraftText.en("냉기 저항 옵션이 없습니다")).isEqualTo("No Cold resistance modifier");
+    assertThat(PoeCraftText.en("이 아이템에 바꿀 번개 옵션이 없습니다"))
+        .isEqualTo("This item has no Lightning modifier to change");
     assertThat(PoeCraftText.en("지울 접두어가 없습니다(분열 · 잠긴 쪽 제외)")).startsWith("No prefix");
   }
 }

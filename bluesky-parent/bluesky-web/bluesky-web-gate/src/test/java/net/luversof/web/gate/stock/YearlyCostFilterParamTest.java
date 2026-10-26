@@ -25,12 +25,26 @@ class YearlyCostFilterParamTest {
             Path.of(
                 "src/main/java/net/luversof/web/gate/stock/controller/StockAssetGrowthHtmxController.java"),
             StandardCharsets.UTF_8);
-    char q = (char) 34;
+    // 2026-10-22 부터 두 필터는 addFilterIds 한 곳에서 싣는다(아래 동작 시험이 그 내용을 본다).
     assertThat(source)
-        .as("계좌 필터를 연도별 세금·비용 호출에 실어야 한다")
-        .contains("yearlyCostParams.add(" + q + "accountIdList" + q + ", id.toString());");
-    assertThat(source)
-        .as("종목 필터도 같이 실어야 한다 - 한쪽만 실으면 표 안에서 범위가 갈린다")
-        .contains("yearlyCostParams.add(" + q + "stockItemIdList" + q + ", id.toString());");
+        .as("연도별 세금·비용 호출에 화면 필터를 실어야 한다")
+        .contains("addFilterIds(yearlyCostParams, request);");
+  }
+
+  /** 계좌와 종목을 둘 다 싣는다 - 한쪽만 실으면 표 안에서 범위가 갈린다. 빈 id 는 뺀다. */
+  @Test
+  void 필터_싣기는_계좌와_종목_둘_다() {
+    var request = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    java.util.UUID account = java.util.UUID.randomUUID();
+    java.util.UUID stock = java.util.UUID.randomUUID();
+    request.setAccountIdList(java.util.Arrays.asList(account, null));
+    request.setStockItemIdList(java.util.List.of(stock));
+    var params = new org.springframework.util.LinkedMultiValueMap<String, String>();
+
+    net.luversof.web.gate.stock.controller.StockAssetGrowthHtmxControllerAccess.addFilterIds(
+        params, request);
+
+    assertThat(params.get("accountIdList")).containsExactly(account.toString());
+    assertThat(params.get("stockItemIdList")).containsExactly(stock.toString());
   }
 }

@@ -13,7 +13,7 @@
 
 !{
 	boolean korean = PoeText.isKorean();
-	// 아이템 클래스별로 묶고, 안에서는 요구 레벨 순(게임에서 얻는 순서)
+	// 아이템 종류별로 묶고, 안에서는 요구 레벨 순(게임에서 얻는 순서)
 	java.util.Map<String, List<Poe2.BaseItem>> byClass = new java.util.LinkedHashMap<>();
 	for (Poe2.BaseItem b : items) byClass.computeIfAbsent(net.luversof.web.gate.poe.PoeClassNames.poe2(b.itemClassKo(), b.itemClass()), k -> new java.util.ArrayList<>()).add(b);
 	byClass.values().forEach(l -> l.sort(java.util.Comparator.comparingInt((Poe2.BaseItem b) -> nz(b.reqLevel())).thenComparing(Poe2.BaseItem::name)));
@@ -74,7 +74,7 @@
 											!{ String summary = net.luversof.web.gate.poe2.Poe2View.cardSummary(b); List<String> impl = net.luversof.web.gate.poe2.Poe2View.implicitLines(b); }
 											<div class="flex items-center gap-2 text-[13px] text-base-content/70">
 												<span class="font-mono truncate" data-card-summary>${summary}</span>
-												<span class="ml-auto shrink-0 text-base-content/60">${MessageUtil.getMessage("poe.gems.label.drop.level")} ${nz(b.reqLevel())}</span>
+												<span class="ml-auto shrink-0 text-base-content/60">${MessageUtil.getMessage("poe.gems.detail.required.level")} ${nz(b.reqLevel())}</span>
 											</div>
 											@if(!impl.isEmpty())
 												<p class="text-xs leading-5 text-sky-600/80 dark:text-sky-300/80 line-clamp-1" data-card-implicit>${impl.get(0)}</p>

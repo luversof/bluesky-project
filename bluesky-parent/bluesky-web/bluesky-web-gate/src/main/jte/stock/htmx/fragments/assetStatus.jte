@@ -11,6 +11,7 @@
 @import net.luversof.web.gate.stock.util.StockAssetStatusUtil
 @import net.luversof.web.gate.stock.util.StockHoldingReturnUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param Map<java.util.UUID, TradeProfit> accountTotalMap
 @param Map<java.util.UUID, BigDecimal> accountProfitBasisMap
@@ -118,7 +119,7 @@
 
 <div class="flex flex-col gap-6">
 
-	<!-- Section 1: 계좌별 현황 테이블 -->
+	<%-- Section 1: 계좌별 현황 테이블 --%>
 	<div data-asset-status-account-section>
 		<%-- "현재가"는 마지막으로 수집된 종가라, 오늘 시세가 없으면 며칠 전 값일 수 있다.
 			 어느 날 기준인지 밝혀 사용자가 실시간 시세로 오해하지 않게 한다. --%>
@@ -177,7 +178,7 @@
 			</div>
 		@endif
 		<style>
-			/* 행의 첫 칸은 th(scope=row)다 - td 만 칠하면 체크박스 · 이름 칸만 선택 배경이 빠지고 왼쪽 선택 막대(td:first-child)는 아예 안 그려진다(사용자 제보 2026-09-28). */
+			<%-- 행의 첫 칸은 th(scope=row)다 - td 만 칠하면 체크박스 · 이름 칸만 선택 배경이 빠지고 왼쪽 선택 막대(td:first-child)는 아예 안 그려진다(사용자 제보 2026-09-28). --%>
 			.asset-status-account-row-selected > :is(th, td) {
 				background-color: color-mix(in oklch, var(--color-secondary) 10%, var(--color-base-100));
 			}
@@ -395,7 +396,7 @@
 		`)
 	</div>
 
-	<!-- Section 2: 종목별 집계 테이블 (계좌 통합) -->
+	<%-- Section 2: 종목별 집계 테이블 (계좌 통합) --%>
 	<div data-asset-status-stock-section>
 		<h2 class="text-lg font-semibold mb-3 text-base-content/70" data-page-section="${stockSectionTitle}">${stockSectionTitle} <span class="text-xs font-normal text-base-content/60">(${allAccountsLabel})</span></h2>
 		@if(stockAggregated != null && !stockAggregated.isEmpty())
@@ -450,7 +451,7 @@
 				cursor: pointer;
 			}
 
-			/* 행의 첫 칸은 th(scope=row)다 - td 만 칠하면 체크박스 · 이름 칸만 선택 배경이 빠지고 왼쪽 선택 막대(td:first-child)는 아예 안 그려진다(사용자 제보 2026-09-28). */
+			<%-- 행의 첫 칸은 th(scope=row)다 - td 만 칠하면 체크박스 · 이름 칸만 선택 배경이 빠지고 왼쪽 선택 막대(td:first-child)는 아예 안 그려진다(사용자 제보 2026-09-28). --%>
 			.asset-status-stock-row.asset-status-stock-row-selected > :is(th, td) {
 				background-color: color-mix(in oklch, var(--color-info) 10%, var(--color-base-100));
 			}
@@ -620,7 +621,7 @@
 										<span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(breakdown.dividendTotal()))}</span>
 										<%-- 누적 배당의 연 수익률(사용자 요청 2026-09-28) - 배당 탭 연 수익률과 같은 잣대: 누적 배당 x 365 / 첫 매수일부터 날마다 들고 있던 원금의 합. --%>
 										@if(dividendAnnualizedByStockItem != null && dividendAnnualizedByStockItem.get(item.stockItemId()) != null)
-											<div class="text-xs font-normal text-dividend" data-dividend-annualized title="${MessageUtil.getMessage("stock.asset.status.dividend.annualized.desc")}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.yield.ttm.value"), StockFormatUtil.pct(dividendAnnualizedByStockItem.get(item.stockItemId()).doubleValue(), 2))}</div>
+											<div class="text-xs font-normal text-dividend" data-dividend-annualized title="${MessageUtil.getMessage("stock.asset.status.dividend.annualized.desc")}">${StockViewSupport.msg("stock.dividend.yield.ttm.value", StockFormatUtil.pct(dividendAnnualizedByStockItem.get(item.stockItemId()).doubleValue(), 2))}</div>
 										@endif
 									@else
 										<span class="text-base-content/60" aria-hidden="true" title="${MessageUtil.getMessage("stock.dividend.received.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.dividend.received.none")}</span>

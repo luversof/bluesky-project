@@ -15,7 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 에센스 제작 정보 — tools/poe-extract/parse-essences.mjs 가 만든 {@code ~/.poe-gamedata/essences.json}. "이
- * 에센스를 쓰면 이 아이템 클래스에 어떤 모드가 보장되는가"(poedb/craftofexile 의 에센스 섹션식)를 클래스별로 제공한다.
+ * 에센스를 쓰면 이 아이템 종류에 어떤 모드가 보장되는가"(poedb/craftofexile 의 에센스 섹션식)를 클래스별로 제공한다.
  */
 @Service
 public class PoeEssenceDataService {
@@ -64,7 +64,7 @@ public class PoeEssenceDataService {
     this.data = loaded;
   }
 
-  /** 이 아이템 클래스에 부여 가능한 에센스 목록(계열별 묶음, 티어 내림차순). 대상 아니면 null. */
+  /** 이 아이템 종류에 부여 가능한 에센스 목록(계열별 묶음, 등급 내림차순). 대상 아니면 null. */
   public List<EssenceEntry> forItemClass(String itemClass) {
     return data.classes().get(itemClass);
   }

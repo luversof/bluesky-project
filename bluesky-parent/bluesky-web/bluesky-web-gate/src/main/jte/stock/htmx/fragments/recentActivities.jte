@@ -6,6 +6,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<Activity> activities
 @param String thisMonthLabel
@@ -17,7 +18,7 @@
 @param BigDecimal dividendAmount
 
 !{
-	java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+	java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 	String recentActivityTitle = MessageUtil.getMessage("stock.recent.activity.title");
 	String viewAllLabel = MessageUtil.getMessage("common.button.view.all");
 	String noActivityLabel = MessageUtil.getMessage("stock.activity.message.no.data");
@@ -31,7 +32,7 @@
 	String sharesAfter = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(sharesPattern);
 	// 1 주일 때의 뒤 꼬리(영어 " share") - 2026-10-01 영어 점검에서 "1 shares". 한국어는 같은 "주".
 	String sharesAfterOne = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares.one"));
-	String monthSummaryLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.recent.activity.month.summary"), thisMonthLabel);
+	String monthSummaryLabel = StockViewSupport.msg("stock.recent.activity.month.summary", thisMonthLabel);
 }
 
 @template._components.ui.card(cssClass = "h-full", body = @`

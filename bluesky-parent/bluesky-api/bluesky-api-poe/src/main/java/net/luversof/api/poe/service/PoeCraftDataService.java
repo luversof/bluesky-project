@@ -58,16 +58,16 @@ public class PoeCraftDataService {
       // 화석 추가 · 강제 옵션(10-15 C342) — 델브 도메인 중 화석이 직접 넣는 것(젬 레벨 · 심연 홈 등). 모양은 해제 옵션과 같다
       Map<String, VeiledMod> fossilMods,
       Map<String, Map<String, Integer>> fossil,
-      // 엘드리치 임플리싯(C343) — g = exarch|eater, tier 1 하급 ~ 6 완벽한
+      // 섬뜩한 고정 속성(C343) — g = exarch|eater, tier 1 하급 ~ 6 완벽한
       Map<String, EldritchMod> eldritchMods,
       Map<String, Map<String, Integer>> eldritch,
       // 지배의 오브(C345) — 고양 옵션 · 풀별 한 등급 위
       Map<String, VeiledMod> elevatedMods,
       Map<String, Map<String, String>> upgrade,
-      // 바알 오브 부패 임플리싯(C358) — 모양은 해제 옵션과 같다(g = corrupted)
+      // 바알 오브 부패 고정 속성(C358) — 모양은 해제 옵션과 같다(g = corrupted)
       Map<String, VeiledMod> corruptedMods,
       Map<String, Map<String, Integer>> corrupted,
-      // 짐승 제작 위상 스킬(C388) — 제작 접미어, 레시피로만(풀 없음). 판테온 위상(C391 브라인훅의 두카트)도
+      // 야수 제작 위상 스킬(C388) — 제작 접미어, 레시피로만(풀 없음). 판테온 위상(C391 브라인훅의 두카트)도
       Map<String, VeiledMod> beastMods,
       // 부패모의 두카트 덫 · 지뢰 옵션(C391, 도메인 42) — w = 가중치
       Map<String, HazardMod> hazardMods,
@@ -105,7 +105,7 @@ public class PoeCraftDataService {
       List<String> koMin,
       int w) {}
 
-  /** 엘드리치 임플리싯 — g = exarch(작열의 총주교)|eater(세계 포식자), tier = 화폐 등급과 같은 1~6. */
+  /** 섬뜩한 고정 속성 — g = exarch(작열의 총주교)|eater(세계 포식자), tier = 화폐 등급과 같은 1~6. */
   public record EldritchMod(
       String g,
       int l,
@@ -237,7 +237,7 @@ public class PoeCraftDataService {
       List<Harvest> harvest,
       List<CurrencyInfo> currencies) {}
 
-  /** 제작대 옵션 한 줄(bench.json — modId · groups · tags · modLevel 은 10-15 C338). cost = 화폐 이름 · 수량. */
+  /** 작업대 옵션 한 줄(bench.json — modId · groups · tags · modLevel 은 10-15 C338). cost = 화폐 이름 · 수량. */
   public record BenchCost(String name, String nameKo, String icon, int count) {}
 
   public record BenchCraft(
@@ -344,7 +344,7 @@ public class PoeCraftDataService {
         BenchData b = json.readValue(in, BenchData.class);
         this.bench = b.classes() == null ? Map.of() : b.classes();
       } catch (Exception e) {
-        logger.warn("PoE 제작대 로드 실패(제작): {}", benchFile, e);
+        logger.warn("PoE 작업대 로드 실패(제작): {}", benchFile, e);
       }
     }
     this.tierRank = ranks(loaded);
@@ -457,7 +457,7 @@ public class PoeCraftDataService {
     return data.elevatedMods() == null ? null : data.elevatedMods().get(id);
   }
 
-  /** 엘드리치 임플리싯 풀(C343). 옛 파일 · 없는 풀이면 빈 맵. */
+  /** 섬뜩한 고정 속성 풀(C343). 옛 파일 · 없는 풀이면 빈 맵. */
   public Map<String, Integer> eldritchPool(String poolKey) {
     return data.eldritch() == null ? Map.of() : data.eldritch().getOrDefault(poolKey, Map.of());
   }
@@ -466,7 +466,7 @@ public class PoeCraftDataService {
     return data.eldritchMods() == null ? null : data.eldritchMods().get(id);
   }
 
-  /** 바알 오브 부패 임플리싯 풀(C358). 옛 파일 · 없는 풀(플라스크)이면 빈 맵. */
+  /** 바알 오브 부패 고정 속성 풀(C358). 옛 파일 · 없는 풀(플라스크)이면 빈 맵. */
   public Map<String, Integer> corruptedPool(String poolKey) {
     return data.corrupted() == null ? Map.of() : data.corrupted().getOrDefault(poolKey, Map.of());
   }
@@ -486,7 +486,7 @@ public class PoeCraftDataService {
     return data.hazardMods() == null ? Map.of() : data.hazardMods();
   }
 
-  /** 짐승 제작 위상 스킬 옵션(C388). */
+  /** 야수 제작 위상 스킬 옵션(C388). */
   public VeiledMod beastMod(String id) {
     return data.beastMods() == null ? null : data.beastMods().get(id);
   }
@@ -556,14 +556,14 @@ public class PoeCraftDataService {
         : currencies.harvest().stream().filter(h -> id.equals(h.id())).findFirst().orElse(null);
   }
 
-  /** 클래스의 제작대 옵션(옵션 id 가 있는 것만). */
+  /** 클래스의 작업대 옵션(옵션 id 가 있는 것만). */
   public List<BenchCraft> bench(String itemClass) {
     return bench.getOrDefault(itemClass, List.of()).stream()
         .filter(b -> b.modId() != null)
         .toList();
   }
 
-  // (클래스, 옵션 id) → 제작대 옵션 — 전략 모의가 화폐마다 찾아 목록 훑기가 많았다(C339)
+  // (클래스, 옵션 id) → 작업대 옵션 — 전략 모의가 화폐마다 찾아 목록 훑기가 많았다(C339)
   private final java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<BenchCraft>>
       benchIndex = new java.util.concurrent.ConcurrentHashMap<>();
 

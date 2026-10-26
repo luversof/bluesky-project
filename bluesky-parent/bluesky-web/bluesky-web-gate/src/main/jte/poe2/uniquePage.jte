@@ -102,7 +102,7 @@
 					</div>
 					@if(ko && engMods != null && !engMods.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-unique-english>
-							<h2 class="font-bold mb-2">모드 원문 (영문)</h2>
+							<h2 class="font-bold mb-2">옵션 원문 (영문)</h2>
 							@for(String line : engMods)
 								<div class="text-xs text-base-content/60 whitespace-pre-line">${line}</div>
 							@endfor

@@ -33,5 +33,8 @@ public record PoeFoulbornGroup(
       List<String> koMin,
       String origId,
       List<String> origEn,
-      List<String> origKo) {}
+      List<String> origKo,
+      // 원본 모드 최소 롤(10-23 Q115 — 범위로 보인다). 옛 데이터면 null.
+      List<String> origEnMin,
+      List<String> origKoMin) {}
 }

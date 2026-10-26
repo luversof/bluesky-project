@@ -25,7 +25,7 @@ public class PoeTradeStatDataService {
 
   /**
    * 합산(pseudo) 필터로 대체할 explicit 라인 — 정규화 explicit 텍스트 → 정규화 pseudo 텍스트. 생명력/저항/능력치는 시장 매물이 순수 모드 +
-   * 하이브리드 모드로 쪼개져 있어(아이템 표시는 합산 한 줄) explicit 단일 모드 min 검색은 최상위 티어 롤만 잡혀 매물이 거의 없다. pseudo_total_*
+   * 하이브리드 모드로 쪼개져 있어(아이템 표시는 합산 한 줄) explicit 단일 모드 min 검색은 최상위 등급 롤만 잡혀 매물이 거의 없다. pseudo_total_*
    * 은 모드 합산 총량 기준이라 같은 min 으로 구매 가능한 매물이 잡힌다. 무기 로컬 모드(공격속도·물리피해 등)는 로컬/글로벌 의미가 달라 제외.
    */
   private static final Map<String, String> PSEUDO_TEXT_BY_EXPLICIT_TEXT =
@@ -122,7 +122,7 @@ public class PoeTradeStatDataService {
   }
 
   /**
-   * 한글 키워드 중 하나라도 포함하는 임플리싯 stat id 목록. 결합(Synthesis) 유니크의 "빌드 유효 임플리싯 1개 이상" count 필터용 — cap 은
+   * 한글 키워드 중 하나라도 포함하는 고정 속성 stat id 목록. 결합(Synthesis) 유니크의 "빌드 유효 고정 속성 1개 이상" count 필터용 — cap 은
    * 호출처가 걸므로 **텍스트 길이 오름차순**(짧을수록 "화염 피해 #% 증가" 류 범용 핵심 모드, 길수록 조건부 희귀 모드)으로 정렬해 cap 에서 핵심이 잘리지 않게
    * 한다(id 정렬이었을 때 288매칭 중 핵심 전멸 실측). 동길이는 텍스트 순 — 결정성.
    */

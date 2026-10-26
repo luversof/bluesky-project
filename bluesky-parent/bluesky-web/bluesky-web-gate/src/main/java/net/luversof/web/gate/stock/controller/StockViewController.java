@@ -149,8 +149,6 @@ public class StockViewController {
     return "stock/activity";
   }
 
-  /** api-stock 이 "1년 평균" 을 낼 때 쓰는 건수(MonthlyDividendPayoutService 의 limit(12)). */
-
   /**
    * 원장 점검에서 규칙마다 받아 올 예시 개수. api-stock 의 상한은 100 이다.
    *
@@ -400,6 +398,66 @@ public class StockViewController {
         : ADMIN_TAB_DATA_MANAGEMENT;
   }
 
+  /** 줄마다 지급 이력 기준 과세표준 비중(종목 id 기준). 심볼은 앞뒤 공백을 빼고 대문자로 맞춰 찾는다. 없으면 그 줄은 빠진다. */
+  static java.util.Map<java.util.UUID, BigDecimal> referenceTaxableRatios(
+      List<MonthlyDividendSnapshotResponse> rows,
+      java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol) {
+    java.util.Map<java.util.UUID, BigDecimal> ratios = new java.util.LinkedHashMap<>();
+    for (MonthlyDividendSnapshotResponse row : rows) {
+      if (row.stockItemId() == null || row.stockItemSymbol() == null) {
+        continue;
+      }
+      BigDecimal referenceRatio =
+          referenceTaxableRatioBySymbol.get(
+              row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT));
+      if (referenceRatio != null) {
+        ratios.put(row.stockItemId(), referenceRatio);
+      }
+    }
+    return ratios;
+  }
+
+  /** 지급 이력 기준 예상 월 과세표준 합과, 저장된 비중과 1%p 이상 다른 줄 수. */
+  record ReferenceTaxableSummary(BigDecimal total, int staleCount) {}
+
+  /**
+   * 지급 이력 기준 비중이 있는 줄은 예상 월배당 x 그 비중(원 단위 반올림), 없는 줄은 저장된 예상 과세표준을 더한다. 저장 비중(1 년 평균)과 1%p 이상 다르면
+   * 낡은 줄로 센다. 2026-10-22 까지 populateMonthlyDividendModel 안에 그대로 적혀 있었다.
+   */
+  static ReferenceTaxableSummary referenceTaxableSummary(
+      List<MonthlyDividendSnapshotResponse> rows,
+      java.util.Map<java.util.UUID, BigDecimal> referenceTaxableRatios) {
+    BigDecimal total = BigDecimal.ZERO;
+    int staleCount = 0;
+    for (MonthlyDividendSnapshotResponse row : rows) {
+      BigDecimal expectedDividend =
+          row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO;
+      BigDecimal referenceRatio =
+          row.stockItemId() != null ? referenceTaxableRatios.get(row.stockItemId()) : null;
+      if (referenceRatio == null) {
+        total =
+            total.add(
+                row.expectedTaxableBaseAmount() != null
+                    ? row.expectedTaxableBaseAmount()
+                    : BigDecimal.ZERO);
+        continue;
+      }
+      total =
+          total.add(
+              expectedDividend
+                  .multiply(referenceRatio)
+                  .divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP));
+      BigDecimal savedRatio =
+          row.averageTaxableBaseRatio1y() != null
+              ? row.averageTaxableBaseRatio1y()
+              : BigDecimal.ZERO;
+      if (referenceRatio.subtract(savedRatio).abs().compareTo(BigDecimal.ONE) >= 0) {
+        staleCount++;
+      }
+    }
+    return new ReferenceTaxableSummary(total, staleCount);
+  }
+
   private void populateMonthlyDividendModel(
       Model model,
       UUID userId,
@@ -534,18 +592,7 @@ public class StockViewController {
     java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(referenceRatioFuture);
     java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios =
-        new java.util.LinkedHashMap<>();
-    for (MonthlyDividendSnapshotResponse row : allRows) {
-      if (row.stockItemId() == null || row.stockItemSymbol() == null) {
-        continue;
-      }
-      BigDecimal referenceRatio =
-          referenceTaxableRatioBySymbol.get(
-              row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT));
-      if (referenceRatio != null) {
-        monthlyDividendReferenceTaxableRatios.put(row.stockItemId(), referenceRatio);
-      }
-    }
+        referenceTaxableRatios(allRows, referenceTaxableRatioBySymbol);
     model.addAttribute(
         "monthlyDividendReferenceTaxableRatios", monthlyDividendReferenceTaxableRatios);
     model.addAttribute(
@@ -553,40 +600,10 @@ public class StockViewController {
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(taxableRatioBasisFuture));
     // 행마다 "지급 이력 기준 N%" 를 알려도 합계 카드는 저장값으로만 계산된다 - 실측 2026-09-11:
     // 총 예상 월 과세표준액이 220,539 인데 지급 이력 기준이면 994,375(4.5 배)였다. 세금은 이 값에 붙는다.
-    BigDecimal monthlyDividendReferenceTaxableTotal = BigDecimal.ZERO;
-    int monthlyDividendReferenceTaxableStaleCount = 0;
-    for (MonthlyDividendSnapshotResponse row : filteredRows) {
-      BigDecimal expectedDividend =
-          row.expectedMonthlyDividend() != null ? row.expectedMonthlyDividend() : BigDecimal.ZERO;
-      BigDecimal referenceRatio =
-          row.stockItemId() != null
-              ? monthlyDividendReferenceTaxableRatios.get(row.stockItemId())
-              : null;
-      if (referenceRatio == null) {
-        monthlyDividendReferenceTaxableTotal =
-            monthlyDividendReferenceTaxableTotal.add(
-                row.expectedTaxableBaseAmount() != null
-                    ? row.expectedTaxableBaseAmount()
-                    : BigDecimal.ZERO);
-        continue;
-      }
-      monthlyDividendReferenceTaxableTotal =
-          monthlyDividendReferenceTaxableTotal.add(
-              expectedDividend
-                  .multiply(referenceRatio)
-                  .divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP));
-      BigDecimal savedRatio =
-          row.averageTaxableBaseRatio1y() != null
-              ? row.averageTaxableBaseRatio1y()
-              : BigDecimal.ZERO;
-      if (referenceRatio.subtract(savedRatio).abs().compareTo(BigDecimal.ONE) >= 0) {
-        monthlyDividendReferenceTaxableStaleCount++;
-      }
-    }
-    model.addAttribute(
-        "monthlyDividendReferenceTaxableTotal", monthlyDividendReferenceTaxableTotal);
-    model.addAttribute(
-        "monthlyDividendReferenceTaxableStaleCount", monthlyDividendReferenceTaxableStaleCount);
+    ReferenceTaxableSummary referenceTaxable =
+        referenceTaxableSummary(filteredRows, monthlyDividendReferenceTaxableRatios);
+    model.addAttribute("monthlyDividendReferenceTaxableTotal", referenceTaxable.total());
+    model.addAttribute("monthlyDividendReferenceTaxableStaleCount", referenceTaxable.staleCount());
     // 이번에 무엇을 적립할까(사용자 요청 2026-09-22). 자리는 지급 시기 x 계좌(과세표준 10% 경계)로 갈리고,
     // 점수는 연배당 수익률 + min(분배금 추세, 0) 이다. 연배당 수익률과 추세는 종목 단위 정보라 카탈로그에서만 온다.
     // 원격 호출이 실패해도 화면은 살린다 - 추천은 덧붙인 것이고, 실패는 로그로 남긴다.

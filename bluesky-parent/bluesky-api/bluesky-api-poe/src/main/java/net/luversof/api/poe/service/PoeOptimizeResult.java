@@ -33,8 +33,8 @@ public record PoeOptimizeResult(
      */
     List<SupportPick> curseGems,
     /**
-     * 예약 없는 저주 전달 — 장갑 부패 임플리싯으로 얹은 저주. 이름만 문자열로 넘기면 화면이 영문으로 나간다 (실측: 냉기 급습에서 "Elemental Weakness"
-     * 그대로 노출). 다른 배지와 같은 SupportPick 으로 넘겨 한글명·아이콘·링크를 붙인다. 미채택이면 null.
+     * 예약 없는 저주 전달 — 장갑 부패 고정 속성으로 얹은 저주. 이름만 문자열로 넘기면 화면이 영문으로 나간다 (실측: 냉기 급습에서 "Elemental
+     * Weakness" 그대로 노출). 다른 배지와 같은 SupportPick 으로 넘겨 한글명·아이콘·링크를 붙인다. 미채택이면 null.
      */
     SupportPick curseOnHit,
     /**
@@ -47,7 +47,7 @@ public record PoeOptimizeResult(
     List<String> treeNotables,
     /** treeNotables 와 평행한 영문 이름 — 결과는 실행 시점에 저장되므로 화면에서 뒤늦게 번역할 수 없다. */
     List<String> treeNotablesEn,
-    /** treeNotables 와 인덱스 평행 — 트리 focus 딥링크용 노드 id(클러스터 생성 노터블은 0=링크 없음) */
+    /** treeNotables 와 인덱스 평행 — 트리 focus 딥링크용 노드 id(클러스터 생성 주요 스킬은 0=링크 없음) */
     List<Integer> treeNotableIds,
     List<SupportPick> jewels,
     List<ItemPick> items,
@@ -90,7 +90,7 @@ public record PoeOptimizeResult(
     List<String> treeTattooLabels,
     /** treeTattooLabels 의 영문판("English name ×N"). */
     List<String> treeTattooLabelsEn,
-    /** 트리 링크(an=)로 되돌아갈 도유 노터블 id — 없으면(null) 도유 미채택 */
+    /** 트리 링크(an=)로 되돌아갈 성유 주요 스킬 id — 없으면(null) 성유 미채택 */
     Integer treeAnoint,
     /**
      * P3 메타 기준선 게이트 — balanced 잡에서 최종 DPS·EHP 가 실빌드 중앙값을 **둘 다** 하회하면 true(지배당함, 결과 화면 경고). 비교
@@ -155,8 +155,8 @@ public record PoeOptimizeResult(
    * @param rarity UNIQUE | RARE
    * @param slug 유니크면 상세 링크용 slug, 레어면 null
    * @param modLines 레어면 한국어 모드 라인, 유니크면 빈 목록
-   * @param modTiers modLines 와 1:1 정렬된 티어 라벨("T{순위}/{총티어}") — 티어 없는 줄(임플리싯/도유/명중가정/유니크)은 빈 문자열. 레어
-   *     익스플리싯만 채워진다(인게임 Alt 고급 모드 설명의 티어 파리티).
+   * @param modTiers modLines 와 1:1 정렬된 등급 라벨("T{순위}/{총등급}") — 등급 없는 줄(고정 속성/성유/명중가정/유니크)은 빈 문자열. 레어
+   *     익스플리싯만 채워진다(인게임 Alt 고급 모드 설명의 등급 파리티).
    */
   public record ItemPick(
       String slot,
@@ -168,15 +168,15 @@ public record PoeOptimizeResult(
       List<String> modLines,
       List<String> modLinesEn,
       List<String> modTiers,
-      // 거래소 검색 쿼리(q JSON, 레어 전용) — 베이스(한글명)+스탯 필터(min=티어 최저 롤). null 이면 링크 없음.
+      // 거래소 검색 쿼리(q JSON, 레어 전용) — 베이스(한글명)+스탯 필터(min=등급 최저 롤). null 이면 링크 없음.
       String tradeQuery,
-      // 실속형 쿼리 — 필수(픽 우선순위 상위) 모드만, min=2티어 최저 롤(T2 이상 매물). null 이면 링크 없음.
+      // 실속형 쿼리 — 필수(픽 우선순위 상위) 모드만, min=2등급 최저 롤(T2 이상 매물). null 이면 링크 없음.
       String tradeQueryBudget,
       // modLines 와 1:1 정렬된 줄별 인게임 리마인더(회색 부연, 영 · 한) — 하나도 없으면 null(10-04 C150, 빌드 화면 C131 짝).
       List<List<String>> modReminders,
       List<List<String>> modRemindersKo) {}
 
-  /** 레어 슬롯의 티어별 성능 비교 (T1/중간/하위) */
+  /** 레어 슬롯의 등급별 성능 비교 (T1/중간/하위) */
   public record SlotTierCompare(String slot, String slotKo, List<TierRow> rows) {}
 
   public record TierRow(String label, String value) {}

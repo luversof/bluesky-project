@@ -52,12 +52,12 @@ public class PoeTreeGraphService {
       Boolean ascendancyStart,
       // 마스터리 노드만 보유 — 효과 하나를 골라야 스탯이 붙는다(PoB Spec masteryEffects)
       List<MasteryEffect> masteryEffects,
-      // 클러스터 주얼 소켓만 보유(0=소형 1=중형 2=대형). 일반 유니크 주얼은 이 소켓에 **못 넣는다**.
+      // 클러스터 주얼 슬롯만 보유(0=소형 1=중형 2=대형). 일반 유니크 주얼은 이 소켓에 **못 넣는다**.
       Integer clusterSize,
       // 트리 좌표 — 반경 주얼이 어떤 패시브를 덮는지 계산할 때 쓴다(문신 자리 선정 등)
       Double x,
       Double y,
-      // 아뮬렛 도유로 이 노터블을 부여할 때 드는 성유 3종(slug). 있으면 = 도유 가능 노터블.
+      // 목걸이 성유로 이 주요 스킬을 부여할 때 드는 성유 3종(slug). 있으면 = 성유 가능 주요 스킬.
       List<String> anoint,
       // 클러스터 서브그래프 참조(GGG 원본 expansionJewel) — 자동 클러스터 채택의 가상 노드 id 산출에
       // 필요(id = 0x10000 + size/index 비트 + sizeIndex<<4 + templateIndex, 프론트 buildClusterSubgraph
@@ -75,10 +75,10 @@ public class PoeTreeGraphService {
   /** 직업의 전직 목록 — 배열 순서가 PoB Spec 의 ascendClassId(1부터)와 일치 */
   public record ClassInfo(String name, List<String> ascendancies) {}
 
-  /** 성유(오일) 하나 — 도유 레시피 표시용. icon 은 /poe-assets/ 상대 경로. */
+  /** 성유(오일) 하나 — 성유 레시피 표시용. icon 은 /poe-assets/ 상대 경로. */
   public record Oil(String name, String nameKo, String icon) {}
 
-  /** 도유 목록 한 줄 — poedb 속성부여식 표(노터블 + 성유 3개). */
+  /** 성유 목록 한 줄 — poedb 속성부여식 표(주요 스킬 + 성유 3개). */
   public record AnointEntry(
       int nodeId,
       String name,
@@ -89,9 +89,15 @@ public class PoeTreeGraphService {
 
   public record OilRef(String slug, String name, String nameKo, String icon) {}
 
-  /** 클러스터 주얼 노터블 정의 — 트리 노드가 아니라 생성 노드용 사전(passive-tree.json clusterNotables). */
+  /** 클러스터 주얼 주요 스킬 정의 — 트리 노드가 아니라 생성 노드용 사전(passive-tree.json clusterNotables). */
   public record ClusterNotable(
-      String name, String nameKo, List<String> stats, List<String> statsKo, String icon) {}
+      String name,
+      String nameKo,
+      List<String> stats,
+      List<String> statsKo,
+      String icon,
+      // 핵심노드(10-23 Q75 — 트리 데이터 keystone:true 8개, 주요 스킬 선택지에 없다). 아니면 null
+      Boolean keystone) {}
 
   private record PoeTreeFile(
       List<ClassInfo> classes,
@@ -135,7 +141,7 @@ public class PoeTreeGraphService {
       for (TreeNode node : tree.nodes()) {
         nodes.put(node.id(), node);
       }
-      // 주얼 소켓 후보 구성이 바뀌면(=클러스터 소켓 제외) 로그로 확인할 수 있게 남긴다
+      // 주얼 슬롯 후보 구성이 바뀌면(=클러스터 소켓 제외) 로그로 확인할 수 있게 남긴다
       long clusterSockets =
           tree.nodes().stream()
               .filter(
@@ -148,7 +154,7 @@ public class PoeTreeGraphService {
                   n ->
                       n.ascendancy() == null && "jewel".equals(n.type()) && n.clusterSize() == null)
               .count();
-      logger.info("주얼 소켓 {}개 사용(클러스터 전용 소켓 {}개 제외)", plainSockets, clusterSockets);
+      logger.info("주얼 슬롯 {}개 사용(클러스터 전용 소켓 {}개 제외)", plainSockets, clusterSockets);
 
       Map<Integer, List<Integer>> edges = new HashMap<>();
       for (List<Integer> edge : tree.edges()) {
@@ -233,7 +239,7 @@ public class PoeTreeGraphService {
     return nodeById.values();
   }
 
-  /** 비전직 노터블/키스톤 후보 (최적화 탐색 대상). id 정렬로 실행 간 결정적 순서 보장(동점 타이브레이크 안정화) */
+  /** 비전직 주요 스킬/핵심노드 후보 (최적화 탐색 대상). id 정렬로 실행 간 결정적 순서 보장(동점 타이브레이크 안정화) */
   public List<TreeNode> searchCandidates() {
     return nodeById.values().stream()
         .filter(node -> node.ascendancy() == null)
@@ -243,7 +249,8 @@ public class PoeTreeGraphService {
   }
 
   /**
-   * 아뮬렛 도유로 부여할 수 있는 노터블 — 트리에 연결된 것(470개)과 도유로만 얻는 고립 노터블(30개)이 모두 포함된다. id 정렬로 실행 간 결정적 순서 보장.
+   * 목걸이 성유로 부여할 수 있는 주요 스킬 — 트리에 연결된 것(470개)과 성유로만 얻는 고립 주요 스킬(30개)이 모두 포함된다. id 정렬로 실행 간 결정적 순서
+   * 보장.
    */
   public List<TreeNode> anointableNotables() {
     return nodeById.values().stream()
@@ -253,24 +260,29 @@ public class PoeTreeGraphService {
         .toList();
   }
 
-  /** 성유 slug 의 등급 — mushruneuber 최상(99), 그 외 숫자부. 도유 목록 정렬(비싼 성유 우선)에 쓴다. */
-  private static int oilRank(String slug) {
+  /**
+   * 성유 slug 의 등급 — mushruneuber(분광) 최상(999), 그 외 숫자부 × 2, 끝이 'b' 면 +1. 성유 목록 정렬(비싼 성유 우선)에 쓴다.
+   *
+   * <p>남색 성유는 slug 가 mushrune6b(데이터 tier 7)라 숫자부만 보면 담청빛(mushrune6)과 같은 순위였다(10-23 Q74) — × 2 + b 로
+   * 담청빛 · 보라(mushrune7) 사이에 둔다.
+   */
+  static int oilRank(String slug) {
     if (slug == null) {
       return -1;
     }
     if (slug.endsWith("uber")) {
-      return 99;
+      return 999;
     }
     String digits = slug.replaceAll("\\D+", "");
-    return digits.isEmpty() ? -1 : Integer.parseInt(digits);
+    return digits.isEmpty() ? -1 : Integer.parseInt(digits) * 2 + (slug.endsWith("b") ? 1 : 0);
   }
 
-  /** 클러스터 주얼 노터블 사전(이름 오름차순) — 브라우징 페이지용. */
+  /** 클러스터 주얼 주요 스킬 사전(이름 오름차순) — 브라우징 페이지용. */
   public List<ClusterNotable> clusterNotables() {
     return clusterNotables;
   }
 
-  /** poedb 속성부여식 도유 목록 — 최고 성유 등급 내림차순(동급은 id). */
+  /** poedb 속성부여식 성유 목록 — 최고 성유 등급 내림차순(동급은 id). */
   public List<AnointEntry> anointList() {
     Map<String, Oil> oilMap = oils;
     List<AnointEntry> out = new ArrayList<>();
@@ -336,9 +348,9 @@ public class PoeTreeGraphService {
   }
 
   /**
-   * 일반 유니크 주얼을 꽂을 수 있는 비전직 주얼 소켓 id (id 정렬로 결정적).
+   * 일반 유니크 주얼을 꽂을 수 있는 비전직 주얼 슬롯 id (id 정렬로 결정적).
    *
-   * <p><b>클러스터 주얼 소켓은 제외</b>한다 — 게임에서 그 소켓엔 클러스터 주얼만 들어가는데, PoB 는 검증하지 않아 일반 주얼을 꽂으면 스탯이 그대로 반영된다(=
+   * <p><b>클러스터 주얼 슬롯은 제외</b>한다 — 게임에서 그 소켓엔 클러스터 주얼만 들어가는데, PoB 는 검증하지 않아 일반 주얼을 꽂으면 스탯이 그대로 반영된다(=
    * 게임에서 만들 수 없는 빌드가 더 높은 점수를 받는다). 전체 57개 중 42개가 클러스터 소켓이라 그냥 두면 후보의 대부분이 가짜다.
    */
   public List<Integer> jewelSockets() {
@@ -395,7 +407,7 @@ public class PoeTreeGraphService {
   /**
    * 해당 전직의 <b>스탯을 가진 모든 노드</b>(작은 노드 포함, 마스터리·시작 노드 제외).
    *
-   * <p>노터블만 후보로 두면 남은 포인트로 닿는 노터블이 없을 때 전직 포인트가 그냥 남는다(실측 6/8). 잔여 포인트를 작은 노드로 마저 쓰기 위한 목록.
+   * <p>주요 스킬만 후보로 두면 남은 포인트로 닿는 주요 스킬이 없을 때 전직 포인트가 그냥 남는다(실측 6/8). 잔여 포인트를 작은 노드로 마저 쓰기 위한 목록.
    */
   public List<TreeNode> ascendancyAllNodes(String ascendancy) {
     return nodeById.values().stream()
@@ -408,10 +420,10 @@ public class PoeTreeGraphService {
   }
 
   /**
-   * 금단의 화염/살점으로 사 올 수 있는 노터블 — <b>같은 직업의 다른 전직</b> 것만이다.
+   * 금단의 화염/살점으로 사 올 수 있는 주요 스킬 — <b>같은 직업의 다른 전직</b> 것만이다.
    *
    * <p>인게임 아이템에 {@code Requires Class <직업>} 이 붙는다(실측: 마라우더/치프틴 대표 빌드가 광전사의 "Aspect of Carnage" 를
-   * 가져감). 타 직업 노터블을 넣으면 엔진이 조용히 무시해 후보 전부가 같은 값으로 나온다.
+   * 가져감). 타 직업 주요 스킬을 넣으면 엔진이 조용히 무시해 후보 전부가 같은 값으로 나온다.
    */
   public List<TreeNode> foreignAscendancyNotables(String className, String ownAscendancy) {
     List<String> sameClass = ascendancies(className);

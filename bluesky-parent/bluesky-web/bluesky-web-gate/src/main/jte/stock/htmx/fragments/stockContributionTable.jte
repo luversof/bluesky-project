@@ -5,6 +5,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<Contribution> stockContributions = java.util.List.of()
 @param Contribution stockContributionTotal = null
@@ -31,9 +32,7 @@
 	String soldOutLabel = MessageUtil.getMessage("stock.asset.growth.contribution.sold.out");
 	String sumLabel = MessageUtil.getMessage("stock.asset.growth.cost.sum.row");
 	String othersLabel = stockContributionOthersCount > 0
-			? java.text.MessageFormat.format(
-				MessageUtil.getMessage("stock.asset.growth.contribution.others"),
-				String.valueOf(stockContributionOthersCount))
+			? StockViewSupport.msg("stock.asset.growth.contribution.others", String.valueOf(stockContributionOthersCount))
 			: "";
 	BigDecimal totalContribution = stockContributionTotal != null
 			? stockContributionTotal.contribution() : BigDecimal.ZERO;

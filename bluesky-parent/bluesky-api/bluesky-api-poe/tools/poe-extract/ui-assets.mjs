@@ -29,8 +29,9 @@ for (const side of ["Left", "Middle", "Right"]) {
 	WANTED.set(`ItemsHeaderWhite${side}`, `itemsheaderwhite${s}`);
 	WANTED.set(`ItemsHeaderMagic${side}`, `itemsheadermagic${s}`);
 	WANTED.set(`ItemsHeaderGem${side}`, `itemsheadergem${s}`);
+	WANTED.set(`ItemsHeaderCurrency${side}`, `itemsheadercurrency${s}`); // 문신 · 룬 접목(StackableCurrency) 툴팁(10-23 Q77)
 }
-for (const rarity of ["White", "Magic", "Rare", "Unique", "Gem"]) {
+for (const rarity of ["White", "Magic", "Rare", "Unique", "Gem", "Currency"]) {
 	WANTED.set(`ItemsSeparator${rarity}`, `itemsseparator${rarity.toLowerCase()}`);
 }
 WANTED.set("ItemsBackgroundGem", "itemsbackgroundgem");

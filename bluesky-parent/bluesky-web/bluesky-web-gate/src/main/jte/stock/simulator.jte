@@ -7,6 +7,7 @@
 @import net.luversof.web.gate.stock.dto.request.MonthlyDividendSnapshotUpsertRequest
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendSimulatorSummaryView
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -80,7 +81,7 @@
 		pageTitle = MessageUtil.getMessage("stock.page.simulator.monthly.title");
 		description = MessageUtil.getMessage("stock.simulator.monthly.description");
 		// 기준 데이터를 관리하는 곳(관리 > 월배당 기준 데이터)의 이름은 메뉴 · 탭 문구에서 받는다 - 예전에는 "배당 메뉴" 로 박혀 있어 관리로 옮긴 뒤 틀린 안내가 됐다(2026-10-01).
-		storageNote = java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.storage.note"), MessageUtil.getMessage("layout.menu.stock.admin"), MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference"));
+		storageNote = StockViewSupport.msg("stock.simulator.monthly.storage.note", MessageUtil.getMessage("layout.menu.stock.admin"), MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference"));
 		toolTitle = MessageUtil.getMessage("stock.simulator.monthly.tool.title");
 		toolDescription = MessageUtil.getMessage("stock.simulator.monthly.tool.desc");
 	} else {

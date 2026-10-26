@@ -73,9 +73,16 @@ class ReversedRangeTest {
             CONTROLLERS.resolve("StockTradeHtmxController.java"), StandardCharsets.UTF_8);
 
     assertThat(handlerBody(asset, "/asset-growth/view")).contains("effectiveRange(rangeMode,");
-    assertThat(handlerBody(dividend, "/dividend/list")).contains("effectiveRange(rangeMode,");
-    assertThat(handlerBody(trade, "/trade/list")).contains("effectiveRange(rangeMode,");
-    assertThat(handlerBody(trade, "/activity-list")).contains("effectiveRange(rangeMode,");
+    // 2026-10-22 부터 세 목록은 listRange 를 거친다 - listRange 가 effectiveRange 를 부른다.
+    assertThat(handlerBody(dividend, "/dividend/list")).contains("listRange(rangeMode,");
+    assertThat(handlerBody(trade, "/trade/list")).contains("listRange(rangeMode,");
+    assertThat(handlerBody(trade, "/activity-list")).contains("listRange(rangeMode,");
+    String base =
+        Files.readString(
+            CONTROLLERS.resolve("StockBaseHtmxController.java"), StandardCharsets.UTF_8);
+    int listRangeAt = base.indexOf("protected ListRange listRange(");
+    assertThat(base.substring(listRangeAt, base.indexOf("\n  }", listRangeAt)))
+        .contains("effectiveRange(rangeMode, startDate, endDate)");
   }
 
   /**

@@ -16,7 +16,15 @@
 	String[] tierEn = {"Whispering", "Muttering", "Weeping", "Wailing", "Screaming", "Shrieking", "Deafening"};
 	java.util.Map<String, java.util.List<PoeCraft.Essence>> fams = new java.util.LinkedHashMap<>();
 	for (PoeCraft.Essence e : essences) fams.computeIfAbsent(e.family() == null || e.family().isBlank() ? e.slug() : e.family(), k -> new java.util.ArrayList<>()).add(e);
-	java.util.function.Function<PoeCraft.Essence, String> modText = e -> String.join(", ", ko && e.ko() != null && !e.ko().isEmpty() ? e.ko() : (e.en() == null ? java.util.List.<String>of() : e.en()));
+	// 범위로(10-22 Q7 — 최댓값만 보여 '+105 인데 +91 이 붙었다'로 읽혔다)
+	java.util.function.Function<PoeCraft.Essence, String> modText = e -> {
+		boolean useKo = ko && e.ko() != null && !e.ko().isEmpty();
+		java.util.List<String> mx = useKo ? e.ko() : (e.en() == null ? java.util.List.<String>of() : e.en());
+		java.util.List<String> mn = useKo ? e.koMin() : e.enMin();
+		java.util.List<String> out = new java.util.ArrayList<>();
+		for (int i = 0; i < mx.size(); i++) out.add(net.luversof.web.gate.poe.PoeModRange.range(mn != null && i < mn.size() ? mn.get(i) : null, mx.get(i)));
+		return String.join(", ", out);
+	};
 }
 <select name="essence" class="sr-only" tabindex="-1" aria-hidden="true" aria-label="${selectLabel}" data-craft-ess-select>
 	@if(noneLabel != null)<option value="">${noneLabel}</option>@endif

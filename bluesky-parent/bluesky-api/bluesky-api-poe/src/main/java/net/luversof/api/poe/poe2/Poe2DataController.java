@@ -67,7 +67,8 @@ public class Poe2DataController {
   public Poe2NinjaService.Archetype simArchetype(
       @RequestParam(required = false, defaultValue = "") String ascendancy,
       @RequestParam String skill) {
-    Poe2NinjaService.Archetype a = ninja.findOrSkill(ascendancy, skill);
+    // 한글 이름은 미리보기 응답에서 채운다(10-25 Q172)
+    Poe2NinjaService.Archetype a = ninja.localize(ninja.findOrSkill(ascendancy, skill));
     if (a == null || a.start() == null) {
       return a;
     }
@@ -98,7 +99,9 @@ public class Poe2DataController {
             st.measured(),
             st.medianDps(),
             st.medianEhp(),
-            null));
+            null),
+        a.ascendancyKo(),
+        a.mainSkillKo());
   }
 
   /** poe.ninja 스냅샷 동기 상태(저장본·현재 버전, 마지막 갱신·엔진 단계). */

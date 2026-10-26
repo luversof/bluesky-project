@@ -872,7 +872,7 @@ public class Poe2RefineService {
         out.add(
             new Candidate(
                     COMMON_PREFIX
-                        + " 보조젬("
+                        + " 보조 젬("
                         + sp.getValue()
                         + "/"
                         + consensus.n()
@@ -1170,7 +1170,7 @@ public class Poe2RefineService {
       java.util.regex.Pattern.compile("<Socket\\b[^>]*\\bnodeId=\"(\\d+)\"[^>]*/>");
 
   /**
-   * 트리를 갈아 끼운 빌드에 원래 빌드의 주얼 소켓 장착(&lt;Sockets&gt;)을 되살린다 — 새 트리에도 찍힌 소켓만. withTree 는 &lt;Tree&gt; 를
+   * 트리를 갈아 끼운 빌드에 원래 빌드의 주얼 슬롯 장착(&lt;Sockets&gt;)을 되살린다 — 새 트리에도 찍힌 소켓만. withTree 는 &lt;Tree&gt; 를
    * 통째로 바꿔 소켓 장착이 사라졌다(10-14 실측: 얼음 화살 패스파인더 주얼 15개가 빠져 공통 트리 DPS −96.8%). 새 트리에 없는 소켓의 주얼은
    * 뺀다(인게임에서도 그 소켓을 안 찍으면 못 낀다).
    */
@@ -1258,7 +1258,7 @@ public class Poe2RefineService {
         ch.put("name", s.name());
         out.add(
             new Candidate(
-                    "보조젬 교체: "
+                    "보조 젬 교체: "
                         + (g.gemWeakestKo() != null ? g.gemWeakestKo() : g.gemWeakest())
                         + " → "
                         + (s.nameKo() != null ? s.nameKo() : s.name())

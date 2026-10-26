@@ -63,7 +63,8 @@ public record PoeGem(
         tagsKo,
         qualityStatLines,
         qualityStatLinesKo,
-        List.of(),
+        // 1레벨 한 줄만 남긴다(10-23 Q99 — 목록 카드가 인게임 요구 레벨 = 1레벨 requiredLevel 을 보인다, 예전엔 빈 목록이라 드롭 레벨뿐)
+        levels == null || levels.isEmpty() ? List.of() : List.of(levels.get(0)),
         null,
         null,
         reqStrPct,

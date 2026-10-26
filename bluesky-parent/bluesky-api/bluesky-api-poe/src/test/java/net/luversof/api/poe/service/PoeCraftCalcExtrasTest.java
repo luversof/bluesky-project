@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 class PoeCraftCalcExtrasTest {
 
   @Test
-  void 제작대_값어치_바알_타락_영향력_옵션() {
+  void 작업대_값어치_바알_타락_영향력_옵션() {
     String dir = System.getProperty("user.home") + "/.poe-gamedata";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
@@ -24,10 +24,10 @@ class PoeCraftCalcExtrasTest {
         new PoeCraftEngine.Item(
             "Gloves", "str_armour", "", 84, PoeCraftEngine.Rarity.NORMAL, List.of(), false);
     PoeCraftCalcService.CalcExtras x = calc.extras(plain);
-    // 제작대 — 생명력 계열은 제작대로 채울 수 있는 등급이 있다(그 등급은 1 이상)
+    // 작업대 — 생명력 계열은 작업대로 채울 수 있는 등급이 있다(그 등급은 1 이상)
     assertThat(x.bench()).anyMatch(b -> "IncreasedLife".equals(b.family()) && b.tier() >= 1);
     assertThat(x.bench()).allMatch(b -> b.modId() != null && b.tier() >= 1);
-    // 바알 — 결과 넷 중 '임플리싯' 한 갈래라 확률 합 = 1/4, 태그 이름이 붙는다
+    // 바알 — 결과 넷 중 '고정 속성' 한 갈래라 확률 합 = 1/4, 태그 이름이 붙는다
     assertThat(x.corrupted()).isNotEmpty();
     assertThat(x.corrupted().stream().mapToDouble(PoeCraftCalcService.CorruptedLine::chance).sum())
         .isCloseTo(0.25, org.assertj.core.data.Offset.offset(1e-9));
@@ -52,7 +52,7 @@ class PoeCraftCalcExtrasTest {
   }
 
   @Test
-  void 엘드리치_임플리싯_목표는_따로_재고_명시_옵션_표에_더한다() {
+  void 엘드리치_고정속성_목표는_따로_재고_명시_옵션_표에_더한다() {
     String dir = System.getProperty("user.home") + "/.poe-gamedata";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);

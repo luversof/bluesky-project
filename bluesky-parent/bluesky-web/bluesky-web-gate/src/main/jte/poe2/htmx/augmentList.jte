@@ -28,7 +28,7 @@
 							<img src="/poe-data/poe2/icons/${a.image()}" class="w-8 h-8 object-contain shrink-0" alt="" loading="lazy">
 						@endif
 						<span class="font-semibold truncate text-[#aa9e82]">${PoeText.name(a.nameKo(), a.name())}</span>
-						<span class="shrink-0 badge badge-xs badge-ghost">${PoeText.name(a.kindKo(), a.kind())}</span>
+						<span class="shrink-0 badge badge-xs badge-ghost">${PoeText.name(a.kindKo(), MessageUtil.getMessage("poe2.augments.kind." + a.kind(), a.kind()))}</span>
 						@if(nz(a.level()) > 0)
 							<span class="ml-auto shrink-0 text-[10px] text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.augments.level"), a.level())}</span>
 						@endif
@@ -38,14 +38,17 @@
 					@endif
 					<dl class="mt-1.5 space-y-1 text-sm">
 						@for(Poe2.AugmentEffect e : effects)
+							<%-- 결속 줄만 있는 분류(Q79)는 위 칸엔 없다 — 아래 '결속됨:' 에만 --%>
+							@if(e.lines() != null && !e.lines().isEmpty())
 							<div class="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] gap-2">
-								<dt class="text-xs text-base-content/60 pt-0.5">${PoeText.name(e.targetKo(), e.target())}</dt>
+								<dt class="text-xs text-base-content/60 pt-0.5">${PoeText.name(e.targetKo(), e.targetEn() != null ? e.targetEn() : e.target())}</dt>
 								<dd class="[overflow-wrap:anywhere]">
 									@for(String line : PoeText.lines(e.linesKo(), e.lines()))
-										<div class="text-[#8888ff]">${line}</div>
+										<div class="text-[#8888ff] whitespace-pre-line">${line}</div>
 									@endfor
 								</dd>
 							</div>
+							@endif
 						@endfor
 					</dl>
 					<%-- 결속 효과(10-09 C238 — 게임 ClientStrings ItemDisplayShamanOnly "결속됨:" · SoulCoreStats.BondedStats, poe2db 사막 룬과 같은 분류별 줄) --%>
@@ -55,10 +58,10 @@
 							@for(Poe2.AugmentEffect e : effects)
 								@if(e.bondedLines() != null && !e.bondedLines().isEmpty())
 									<div class="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] gap-2">
-										<dt class="text-xs text-base-content/60 pt-0.5">${PoeText.name(e.targetKo(), e.target())}</dt>
+										<dt class="text-xs text-base-content/60 pt-0.5">${PoeText.name(e.targetKo(), e.targetEn() != null ? e.targetEn() : e.target())}</dt>
 										<dd class="[overflow-wrap:anywhere]">
 											@for(String line : PoeText.lines(e.bondedLinesKo(), e.bondedLines()))
-												<div class="text-[#8888ff]">${line}</div>
+												<div class="text-[#8888ff] whitespace-pre-line">${line}</div>
 											@endfor
 										</dd>
 									</div>

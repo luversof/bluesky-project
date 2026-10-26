@@ -27,7 +27,7 @@
 			        hx-post="/poe2/htmx/build/refine/start" hx-include="#poe2BuildImport [name=code]" hx-target="#poe2RefineArea" hx-swap="innerHTML">
 				${MessageUtil.getMessage("poe.refine.start")}
 			</button>
-			<span class="text-xs text-base-content/60">${ko ? "가이드의 고유 아이템·보조젬 교체 중 DPS·EHP 를 함께 올리는 것을 하나씩 실제로 적용하고 엔진으로 다시 잽니다(최대 3단계, 로그인 필요)." : "Applies the guide's unique/support swaps that raise DPS and EHP together, one at a time, re-measured by the engine (up to 3 steps, sign-in required)."}</span>
+			<span class="text-xs text-base-content/60">${ko ? "가이드의 고유 아이템·보조 젬 교체 중 DPS·EHP 를 함께 올리는 것을 하나씩 실제로 적용하고 엔진으로 다시 잽니다(최대 3단계, 로그인 필요)." : "Applies the guide's unique/support swaps that raise DPS and EHP together, one at a time, re-measured by the engine (up to 3 steps, sign-in required)."}</span>
 		</div>
 		<div id="poe2RefineArea" class="w-full"></div>
 	</div>

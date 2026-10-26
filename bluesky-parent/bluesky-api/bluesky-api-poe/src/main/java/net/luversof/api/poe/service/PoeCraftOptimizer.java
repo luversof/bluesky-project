@@ -18,10 +18,10 @@ import net.luversof.api.poe.service.PoeCraftEngine.Item;
 import net.luversof.api.poe.service.PoeCraftEngine.Rarity;
 
 /**
- * 최적 제작 경로(10-19 C457 사용자 요청 "에센스 · 제작대 · 야수 같은 다양한 방법을 조합해 원하는 아이템을 뽑는 최소 비용을 계산할 수 있어야 한다").
+ * 최적 제작 경로(10-19 C457 사용자 요청 "에센스 · 작업대 · 야수 같은 다양한 방법을 조합해 원하는 아이템을 뽑는 최소 비용을 계산할 수 있어야 한다").
  *
- * <p>정해 둔 몇 갈래를 견주는 대신, 제작 과정을 상태(희귀도 · 맞은 목표 · 쪽마다 남는 잡옵션 수 · 같은 그룹이 막힌 목표 · 제작대 옵션)로 보고 상태마다 쓸 수
- * 있는 모든 수단(기본 화폐 · 에센스 · 화석 · 수확 · 제작대 목표 옵션 · 메타 제작 · 제작대 옵션 지우기 · 짐승 맞바꾸기)의 결과를 같은 제작 엔진으로 표본을 떠
+ * <p>정해 둔 몇 갈래를 견주는 대신, 제작 과정을 상태(희귀도 · 맞은 목표 · 쪽마다 남는 잡옵션 수 · 같은 그룹이 막힌 목표 · 작업대 옵션)로 보고 상태마다 쓸 수
+ * 있는 모든 수단(기본 화폐 · 에센스 · 화석 · 수확 · 작업대 목표 옵션 · 메타 제작 · 작업대 옵션 지우기 · 야수 맞바꾸기)의 결과를 같은 제작 엔진으로 표본을 떠
  * 전이 확률을 만든다. 그 위에서 가치 반복(확률적 최단 경로)으로 상태마다 "목표까지 남은 최소 기대 비용"과 그때 쓸 수단(정책)을 구하고, 그 정책을 실제 아이템에 따라
  * 굴려 비용을 다시 잰다(상태를 줄여 본 근사가 틀리면 여기서 드러난다).
  */
@@ -94,7 +94,7 @@ public class PoeCraftOptimizer {
       List<Showcase> showcase,
       // 성공 회차 비용 분포(C505) — 25% · 50% · 90% 지점(못 닿은 회차 비용은 안 넣음, 기대 비용과 다를 수 있다)
       List<Double> costQuantiles,
-      // 엘드리치 임플리싯 목표(C549) — 명시 옵션과 따로 잰 비용(더해서 본다), 없으면 null
+      // 섬뜩한 고정 속성 목표(C549) — 명시 옵션과 따로 잰 비용(더해서 본다), 없으면 null
       PoeCraftCalcService.EldritchResult eldritch,
       // 영어 화면용(10-21 C557 ⑦ — 영어 화면에 흐름 · 비교 기준 · 수단 · 설명이 한국어로 나왔다)
       String upperLabelEn,
@@ -241,7 +241,7 @@ public class PoeCraftOptimizer {
       String ko,
       Map<String, Double> spend,
       double cost,
-      // 영어 이름(C557 — 게임 화폐 · 짐승 · 제작대 영어 원문)
+      // 영어 이름(C557 — 게임 화폐 · 야수 · 작업대 영어 원문)
       String en) {}
 
   static final int MAX_STATES = 5_000;
@@ -385,7 +385,7 @@ public class PoeCraftOptimizer {
       }
     }
 
-    /** 상태 열쇠 — 희귀도 | 맞은 목표 | 잡옵션 접두,접미 | 그룹이 막힌 목표 | 제작대 옵션 종류. */
+    /** 상태 열쇠 — 희귀도 | 맞은 목표 | 잡옵션 접두,접미 | 그룹이 막힌 목표 | 작업대 옵션 종류. */
     String key(Item it) {
       int n = goal.size();
       List<Affix> af = it.affixes();
@@ -479,12 +479,12 @@ public class PoeCraftOptimizer {
       blocked &= ~mask;
       char[] c = cr.toString().toCharArray();
       java.util.Arrays.sort(c);
-      // 우세는 레어에서만(C469k — 섬뜩한 화폐는 레어 전용. 정제해도 임플리싯이 남아 '일반 · 작열의 총주교 우세'가 못 넓힌 다른 상태가 되면
+      // 우세는 레어에서만(C469k — 섬뜩한 화폐는 레어 전용. 정제해도 고정 속성이 남아 '일반 · 작열의 총주교 우세'가 못 넓힌 다른 상태가 되면
       // 처음부터 값을 못 써 넘김(위 경계 전부)이 났다)
       boolean rareDom = eldritch && it.rarity() == Rarity.RARE;
       String dom = rareDom ? engine.dominance(it) : null;
       if (rareDom && dom == null && it.implicits() != null) {
-        // 둘 다 있는데 우세가 없으면 동률(t) — 임플리싯 없음과 다르다(불씨 · 영액이 할 일이 다름)
+        // 둘 다 있는데 우세가 없으면 동률(t) — 고정 속성 없음과 다르다(불씨 · 영액이 할 일이 다름)
         boolean ex = it.implicits().stream().anyMatch(x -> PoeCraftEngine.EXARCH.equals(x.gen()));
         boolean ea = it.implicits().stream().anyMatch(x -> PoeCraftEngine.EATER.equals(x.gen()));
         dom = ex && ea ? "tie" : null;
@@ -505,7 +505,7 @@ public class PoeCraftOptimizer {
           + openBits(it);
     }
 
-    /** 빈 자리 조건이 있으면 '|o접두수,접미수'(C520) — 제작대 잡옵션의 쪽을 열쇠가 몰라 같은 열쇠에 남은 자리가 다른 아이템이 섞이지 않게. */
+    /** 빈 자리 조건이 있으면 '|o접두수,접미수'(C520) — 작업대 잡옵션의 쪽을 열쇠가 몰라 같은 열쇠에 남은 자리가 다른 아이템이 섞이지 않게. */
     String openBits(Item it) {
       if (openNeed[0] + openNeed[1] == 0) {
         return "";
@@ -737,7 +737,7 @@ public class PoeCraftOptimizer {
         if (!reroll && i == n - 1 && newHits > 0 && newHits < RARE_HITS && n < 8 * step) {
           n = Math.min(n * 2, 8 * step);
         }
-        // 정해진 결과(제작대 등 — 처음 40번이 모두 같은 상태)면 더 뜨지 않는다(C457i: 상태마다 300번씩 떠 넓히기가 느렸다)
+        // 정해진 결과(작업대 등 — 처음 40번이 모두 같은 상태)면 더 뜨지 않는다(C457i: 상태마다 300번씩 떠 넓히기가 느렸다)
         if (!reroll && ok == 40 && out.size() == 1) {
           break;
         }
@@ -827,12 +827,12 @@ public class PoeCraftOptimizer {
         PoeCraftCalcService.openNeed(req.targets() == null ? List.of() : req.targets());
     List<Target> allReal =
         PoeCraftCalcService.real(req.targets() == null ? List.of() : req.targets());
-    // 엘드리치 임플리싯 목표(C549) — 명시 옵션 제작과 무관해 따로 재서 붙인다(정책은 명시 옵션 목표로만)
+    // 섬뜩한 고정 속성 목표(C549) — 명시 옵션 제작과 무관해 따로 재서 붙인다(정책은 명시 옵션 목표로만)
     List<Target> eldTargets = allReal.stream().filter(calc::eldritchTarget).toList();
     List<Target> realTargets = allReal.stream().filter(t -> !calc.eldritchTarget(t)).toList();
     if (realTargets.isEmpty() && !eldTargets.isEmpty()) {
       return error(
-          "명시 옵션(접두 · 접미) 목표가 없습니다 — 엘드리치 임플리싯 비용은 계산기 표 위 '엘드리치 임플리싯' 줄",
+          "명시 옵션(접두 · 접미) 목표가 없습니다 — 섬뜩한 고정 속성 비용은 계산기 표 위 '섬뜩한 고정 속성' 줄",
           "No explicit (prefix · suffix) targets — the Eldritch implicit cost is on the 'Eldritch"
               + " implicits' line above the calculator table");
     }
@@ -897,7 +897,7 @@ public class PoeCraftOptimizer {
     String cls = start.itemClass();
     PoeCraftService.Options o = craft.options(cls, start.variant() == null ? "" : start.variant());
     List<Target> targets = realTargets;
-    // 목표로 치는 옵션 — 제작대 · 에센스 보장 옵션도(같은 그룹 · 문구 · 최소 굴림이 목표 최하 등급 이상)
+    // 목표로 치는 옵션 — 작업대 · 에센스 보장 옵션도(같은 그룹 · 문구 · 최소 굴림이 목표 최하 등급 이상)
     List<List<String>> extra = new ArrayList<>();
     targets.forEach(t -> extra.add(new ArrayList<>(t.anyOf())));
     List<Act> acts = new ArrayList<>();
@@ -914,7 +914,7 @@ public class PoeCraftOptimizer {
                 "BENCH:" + b.modId(),
                 Action.BENCH,
                 b.modId(),
-                "제작대: " + text(b.ko(), b.en()),
+                "작업대: " + text(b.ko(), b.en()),
                 "Bench: " + textEn(b.en()),
                 cls);
         if (a != null && a.cost() < bestCost) {
@@ -929,7 +929,7 @@ public class PoeCraftOptimizer {
                 "BENCH:" + best.modId(),
                 Action.BENCH,
                 best.modId(),
-                "제작대: " + text(best.ko(), best.en()),
+                "작업대: " + text(best.ko(), best.en()),
                 "Bench: " + textEn(best.en()),
                 cls));
       }
@@ -1098,7 +1098,7 @@ public class PoeCraftOptimizer {
               m[2].equals(m[0]) ? methodEn(fossil, arg) : m[2],
               cls));
     }
-    // 메타 제작 · 제작대 옵션 지우기 · 짐승 맞바꾸기
+    // 메타 제작 · 작업대 옵션 지우기 · 야수 맞바꾸기
     String lockPre = null;
     String lockSuf = null;
     String multi = null;
@@ -1111,7 +1111,7 @@ public class PoeCraftOptimizer {
                 "BENCH:" + id,
                 Action.BENCH,
                 id,
-                "제작대: 접두어 변경 불가",
+                "작업대: 접두어 변경 불가",
                 "Bench: Prefixes Cannot Be Changed",
                 cls));
       } else if (id.endsWith("ItemGenerationCannotChangeSuffixes")) {
@@ -1121,7 +1121,7 @@ public class PoeCraftOptimizer {
                 "BENCH:" + id,
                 Action.BENCH,
                 id,
-                "제작대: 접미어 변경 불가",
+                "작업대: 접미어 변경 불가",
                 "Bench: Suffixes Cannot Be Changed",
                 cls));
       } else if (id.endsWith("ItemGenerationCanHaveMultipleCraftedMods")) {
@@ -1131,7 +1131,7 @@ public class PoeCraftOptimizer {
                 "BENCH:" + id,
                 Action.BENCH,
                 id,
-                "제작대: 제작 속성 최대 3개",
+                "작업대: 제작 속성 최대 3개",
                 "Bench: Can have up to 3 Crafted Modifiers",
                 cls));
       }
@@ -1141,10 +1141,10 @@ public class PoeCraftOptimizer {
             "BENCH_REMOVE",
             Action.BENCH_REMOVE,
             null,
-            "제작대: 제작 속성 지우기",
+            "작업대: 제작 속성 지우기",
             "Bench: Remove Crafted Modifiers",
             cls));
-    // 영향력 아이템 — 짐승 '그 영향력 아이템에 속성 추가'(C463, BestiaryRecipes EinharMasterCraft42~47, 엑잘처럼 그 아이템 풀에서
+    // 영향력 아이템 — 야수 '그 영향력 아이템에 속성 추가'(C463, BestiaryRecipes EinharMasterCraft42~47, 엑잘처럼 그 아이템 풀에서
     // 하나)
     Map<String, String> infKo =
         Map.of(
@@ -1169,7 +1169,7 @@ public class PoeCraftOptimizer {
               "BEAST:influence:" + inf,
               Action.BEAST,
               "influence:" + inf,
-              "짐승: " + infKo.getOrDefault(inf, inf) + " 아이템에 속성 추가",
+              "야수: " + infKo.getOrDefault(inf, inf) + " 아이템에 속성 추가",
               "Beast: Add a Mod to a " + INFLUENCE_EN.getOrDefault(inf, inf) + " Item",
               cls));
     }
@@ -1178,7 +1178,7 @@ public class PoeCraftOptimizer {
             "BEAST:swap-prefix",
             Action.BEAST,
             "swap-prefix",
-            "짐승: 접두어 추가, 무작위 접미어 제거",
+            "야수: 접두어 추가, 무작위 접미어 제거",
             "Beast: Add a Prefix, Remove a Random Suffix",
             cls));
     acts.add(
@@ -1186,7 +1186,7 @@ public class PoeCraftOptimizer {
             "BEAST:swap-suffix",
             Action.BEAST,
             "swap-suffix",
-            "짐승: 접미어 추가, 무작위 접두어 제거",
+            "야수: 접미어 추가, 무작위 접두어 제거",
             "Beast: Add a Suffix, Remove a Random Prefix",
             cls));
     // 각인(C468) — 매직 아이템 저장 · 되돌리기(되돌리기는 화폐가 안 든다 — 최소 비용)
@@ -1195,7 +1195,7 @@ public class PoeCraftOptimizer {
             IMPRINT,
             Action.BEAST,
             "imprint",
-            "짐승: 각인(매직 아이템 저장)",
+            "야수: 각인(매직 아이템 저장)",
             "Beast: Imprint (save the magic item)",
             cls));
     acts.add(
@@ -1351,6 +1351,8 @@ public class PoeCraftOptimizer {
     Map<String, Integer> visits = new HashMap<>();
     List<List<Integer>> paths = new ArrayList<>();
     List<Double> runCost = new ArrayList<>();
+    // 성공 회차마다 앞서 못 닿은 회차 비용까지(결과 예시 비용 — 분위수와 같은 기준, Q37)
+    List<Double> runCostCarry = new ArrayList<>();
     // 목표에 실제로 닿은 회차의 비용(C540) — 분포(운 좋으면 · 보통 · 운 나쁘면)는 이것만. 넘김 · 고리 감시 회차는 '아는 최저'의 기대 비용을 덩어리로
     // 더해 분포처럼 보였다
     List<Double> reachedCost = new ArrayList<>();
@@ -1385,6 +1387,9 @@ public class PoeCraftOptimizer {
     String diag = "";
     int stuckStates = 0;
     double failCost = 0;
+    // 못 닿은 회차 비용을 다음 성공 회차에 얹는다(10-23 Q31 — 분위수가 성공 회차 비용만 봐 평균 19.5c 옆에 '운 좋으면 · 보통 · 운 나쁘면' 2.0c
+    // 셋이 나왔다)
+    double carry = 0;
     long simEnd = started + budget;
     // 하드 한도(C472f) — 최소 30회를 채우느라 예산을 크게 넘기지 않게(다시 시작이 많은 목표에서 2분 넘게 걸렸다)
     long simHard = simEnd + SIM_GRACE_MS;
@@ -1511,7 +1516,7 @@ public class PoeCraftOptimizer {
           unfinished++;
           break;
         }
-        // 고리 끊기(C469g) — 결과가 정해진 수단(제작대 만들기 · 지우기 등)을 한 회차에 같은 상태에서 20번 넘게 쓰면 상태 근사 차이로 두 상태를
+        // 고리 끊기(C469g) — 결과가 정해진 수단(작업대 만들기 · 지우기 등)을 한 회차에 같은 상태에서 20번 넘게 쓰면 상태 근사 차이로 두 상태를
         // 오가는 것(대표 아이템과 실제 아이템의 다음 열쇠가 다름). 그 상태의 결정을 다른 수단 중 Q 최소로 바꾼다
         if (ai != null && ai != FALLBACK && job.trans.get(k) != null) {
           Map<String, Double> d = job.trans.get(k).get(ai);
@@ -1652,12 +1657,15 @@ public class PoeCraftOptimizer {
         succ++;
         paths.add(path);
         runCost.add(c);
+        runCostCarry.add(c + carry);
         finals.add(reached ? it : null);
         if (reached) {
-          reachedCost.add(c);
+          reachedCost.add(c + carry);
+          carry = 0;
         }
       } else {
         failCost += c;
+        carry += c;
         if (diag.isEmpty()) {
           diag = "걸음 " + steps + " · 비용 " + Math.round(c) + " · " + String.join(" ; ", trace);
         }
@@ -1932,7 +1940,7 @@ public class PoeCraftOptimizer {
       }
       for (int i : pick) {
         PoeCraftService.View fv = craft.view(finals.get(i));
-        showcase.add(new Showcase(runCost.get(i), fv.item().rarity().name(), fv.lines()));
+        showcase.add(new Showcase(runCostCarry.get(i), fv.item().rarity().name(), fv.lines()));
       }
     }
     return new Result(
@@ -2414,11 +2422,11 @@ public class PoeCraftOptimizer {
     Map<String, Double> m = new LinkedHashMap<>();
     calc.spend(m, action, arg, cls);
     Double c = calc.cost(m);
-    // 비용 0 수단(제작대 옵션 지우기 등)이 고리를 만들지 않게 최소 비용(카오스 0.001)
+    // 비용 0 수단(작업대 옵션 지우기 등)이 고리를 만들지 않게 최소 비용(카오스 0.001)
     return new Act(id, action, arg, ko, m, c == null ? Double.NaN : Math.max(c, MIN_COST), en);
   }
 
-  /** 영향력 키 → 게임 영어 이름(짐승 제작 문구, C557). */
+  /** 영향력 키 → 게임 영어 이름(야수 제작 문구, C557). */
   private static final Map<String, String> INFLUENCE_EN =
       Map.of(
           "shaper",
@@ -2442,7 +2450,7 @@ public class PoeCraftOptimizer {
     return String.join(", ", ko != null && !ko.isEmpty() ? ko : en == null ? List.of() : en);
   }
 
-  /** 상태 설명 — "레어 · 목표 1·3 맞음 · 잡옵션 접두 1/접미 2 · 막힘 2 · 제작대 접두 잠금". */
+  /** 상태 설명 — "레어 · 목표 1·3 맞음 · 잡옵션 접두 1/접미 2 · 막힘 2 · 작업대 접두 잠금". */
   static String describe(String key, int n) {
     int hash = key.indexOf('#');
     if (hash >= 0) {
@@ -2475,7 +2483,7 @@ public class PoeCraftOptimizer {
       sb.append(
           f[0].charAt(1) == 'e'
               ? " · 작열의 총주교 우세"
-              : f[0].charAt(1) == 't' ? " · 엘드리치 동률(우세 없음)" : " · 세계 포식자 우세");
+              : f[0].charAt(1) == 't' ? " · 총주교 · 포식자 동률(우세 없음)" : " · 세계 포식자 우세");
     }
     sb.append(" · ").append(met.isEmpty() ? "맞은 목표 없음" : "목표 " + String.join("·", met) + " 맞음");
     if (!"0".equals(j[0]) || !"0".equals(j[1])) {
@@ -2490,7 +2498,7 @@ public class PoeCraftOptimizer {
       for (char ch : cr.toCharArray()) {
         c.add(
             switch (ch) {
-              case 'T' -> "제작대 목표 옵션";
+              case 'T' -> "작업대 목표 옵션";
               case 'P' -> "접두어 변경 불가";
               case 'S' -> "접미어 변경 불가";
               case 'M' -> "제작 속성 3개";

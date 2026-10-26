@@ -4,7 +4,7 @@
 @param String name
 @param String nameKo
 @param java.util.List<String> modLines
-<%-- modLines 와 1:1 정렬된 티어 라벨. 재버킷팅(임플리싯/익스플리싯) 시 인덱스로 익스플리싯에만 실어 나른다. --%>
+<%-- modLines 와 1:1 정렬된 등급 라벨. 재버킷팅(고정 속성/익스플리싯) 시 인덱스로 익스플리싯에만 실어 나른다. --%>
 @param java.util.List<String> modTiers = null
 @param net.luversof.web.gate.poe.dto.PoeBaseItem base = null
 <%-- modLines 와 1:1 정렬된 줄별 리마인더(회색 부연, 10-04 C150 — 빌드 화면 C131 짝). 길이가 다르면 무시. --%>
@@ -14,13 +14,13 @@
 
 <%-- 시뮬 결과 레어 아이템 인게임 툴팁 — 목록 행과 페이퍼돌 공용.
      엘드리치(총주교/포식자)·영향력(셰이퍼/엘더)은 인게임처럼 헤더 밴드 좌우 상단 모서리에 심볼 아이콘으로 표시.
-     임플리싯(고정)은 구분선 위, 접두/접미(폭발)는 아래. 모드 마커별 인게임 배색. --%>
+     고정 속성(고정)은 구분선 위, 접두/접미(폭발)는 아래. 모드 마커별 인게임 배색. --%>
 !{
-	String rareLabel = MessageUtil.getMessage("poe.sim.opt.result.rare");
+	String rareLabel = MessageUtil.getMessage("poe.sim.opt.result.rare.tooltip"); // 게임 낱말 '희귀'(10-23 Q109 — 표 배지 '레어' 와 키 분리)
 	String dName = PoeText.name(nameKo, name);
 	java.util.List<String> lines = modLines == null ? java.util.List.of() : modLines;
 	java.util.Set<String> implicitMarkers = new java.util.HashSet<>(java.util.List.of(
-		"총주교", "포식자", "엘드리치", "exarch", "eater", "eldritch"));
+		"총주교", "포식자", "엘드리치", "섬뜩한", "exarch", "eater", "eldritch"));
 	boolean hasExarch = false, hasEater = false, hasShaper = false, hasElder = false, hasEldritchGeneric = false;
 	java.util.List<String> ttImplicits = new java.util.ArrayList<>();
 	java.util.List<String> ttExplicits = new java.util.ArrayList<>();
@@ -79,19 +79,19 @@
 	     이 템플릿만 레벨이 빠지고 라벨·속성명이 하드코딩이라 다른 화면(itemTooltip·itemDetail, 사이클 12)과
 	     표기가 달랐다 — 같은 메시지 키를 쓰고 형식을 통일한다.
 	     ⚠ 한 줄로 붙여 쓸 것: @if 사이 줄바꿈이 공백으로 렌더돼 "레벨 62 , 180 힘"처럼 쉼표 앞이 벌어진다. --%>
-	@if(base != null && (base.dropLevel() > 0 || base.reqStr() > 0 || base.reqDex() > 0 || base.reqInt() > 0))
+	@if(base != null && (base.requiredLevel() > 0 || base.reqStr() > 0 || base.reqDex() > 0 || base.reqInt() > 0))
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center text-[12px]">
-			<span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>@if(base.dropLevel() > 0)<span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="text-[#e0e0e0]">${base.dropLevel()}</span>@endif@if(base.reqStr() > 0)<span class="text-[#e0e0e0]">${base.dropLevel() > 0 ? ", " : ""}${base.reqStr()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(base.reqDex() > 0)<span class="text-[#e0e0e0]">${(base.dropLevel() > 0 || base.reqStr() > 0) ? ", " : ""}${base.reqDex()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(base.reqInt() > 0)<span class="text-[#e0e0e0]">${(base.dropLevel() > 0 || base.reqStr() > 0 || base.reqDex() > 0) ? ", " : ""}${base.reqInt()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
+			<span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>@if(base.requiredLevel() > 0)<span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="text-[#e0e0e0]">${base.requiredLevel()}</span>@endif@if(base.reqStr() > 0)<span class="text-[#e0e0e0]">${base.requiredLevel() > 0 ? ", " : ""}${base.reqStr()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(base.reqDex() > 0)<span class="text-[#e0e0e0]">${(base.requiredLevel() > 0 || base.reqStr() > 0) ? ", " : ""}${base.reqDex()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(base.reqInt() > 0)<span class="text-[#e0e0e0]">${(base.requiredLevel() > 0 || base.reqStr() > 0 || base.reqDex() > 0) ? ", " : ""}${base.reqInt()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
 		</div>
 	@endif
 
-	<%-- (엘드리치) 임플리싯은 구분선 위(인게임 배치) — 팩션색 보라 계열 --%>
+	<%-- (엘드리치) 고정 속성은 구분선 위(인게임 배치) — 게임은 다른 암시와 같은 파랑(10-23 Q110, 예전 보라 #d0a2f7) --%>
 	@if(!ttImplicits.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
 			@for(int ii = 0; ii < ttImplicits.size(); ii++)
-				<div class="text-[#d0a2f7]" data-tt-line>$unsafe{PoeText.highlightValues(ttImplicits.get(ii))}</div>
+				<div class="text-[#8888ff]" data-tt-line>$unsafe{PoeText.highlightValues(ttImplicits.get(ii))}</div>
 				@for(String rem : ttImplicitRems.get(ii))
 					<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 				@endfor

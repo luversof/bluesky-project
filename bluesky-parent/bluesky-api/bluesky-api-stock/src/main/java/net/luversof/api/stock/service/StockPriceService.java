@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import net.luversof.api.stock.domain.StockDailyClosePrice;
 import net.luversof.api.stock.domain.StockPriceHistory;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
+import net.luversof.api.stock.util.StockIds;
 
 @Service
 public class StockPriceService {
@@ -57,8 +58,7 @@ public class StockPriceService {
     if (distinct.isEmpty()) {
       return java.util.Map.of();
     }
-    String ids =
-        distinct.stream().map(UUID::toString).collect(java.util.stream.Collectors.joining(","));
+    String ids = StockIds.joinOrNull(distinct);
     java.util.Map<UUID, StockDailyClosePrice> result = new java.util.HashMap<>();
     for (StockDailyClosePrice row : stockPriceHistoryRepository.findLatestClosePrices(ids)) {
       if (row != null && row.stockItemId() != null) {

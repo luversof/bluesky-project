@@ -15,6 +15,7 @@
 @import java.text.DecimalFormat
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<DividendView> dividendList
 @param List<DividendView> allDividendList = java.util.List.of()
@@ -157,9 +158,9 @@
 		&& dataFirstDate != null && !dataFirstDate.isEmpty()
 		&& startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
 
-	java.util.function.Function<Object, String> countMessage = value -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), value);
+	java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 	String totalItemsCountText = countMessage.apply(totalItems);
-	String detailSummaryLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.detail.summary"), countMessage.apply(totalItems));
+	String detailSummaryLabel = StockViewSupport.msg("stock.dividend.detail.summary", countMessage.apply(totalItems));
 
 	// 여러 섹션이 공유하는 라벨 (하위 컴포넌트에 param 으로 전달)
 	String accountLabel = MessageUtil.getMessage("common.label.account");
@@ -228,7 +229,7 @@
 		stockLabel = stockNameLabel
 	)
 
-	<!-- Dashboard -->
+	<%-- Dashboard --%>
 
 	@template.stock.htmx.fragments.dividend.dividendSummaryCards(
 		decimalFormat = decimalFormat,

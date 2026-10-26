@@ -106,4 +106,24 @@ class PoeCraftActionPoolTest {
     assertThat(ex.picked()).isFalse();
     assertThat(ex.error()).isNotBlank();
   }
+
+  @Test
+  void 가득_찬_레어의_카오스는_양쪽_다_보이고_합은_1() {
+    // 연금으로 레어를 만든 뒤 엑잘을 채워 6옵션 — 카오스(전부 다시 굴림)는 두 씨앗이 같아 한 번으로, 확률 합 1
+    PoeCraftEngine.Item rare = item;
+    java.util.SplittableRandom rng = new java.util.SplittableRandom(7);
+    rare = craft.engine().apply(rare, PoeCraftEngine.Action.ALCHEMY, null, rng).item();
+    for (int i = 0; i < 6; i++) {
+      PoeCraftEngine.Result r = craft.engine().apply(rare, PoeCraftEngine.Action.EXALT, null, rng);
+      if (r.error() == null) {
+        rare = r.item();
+      }
+    }
+    PoeCraftService.ActionPool chaos = craft.actionPool(rare, PoeCraftEngine.Action.CHAOS, null);
+    assertThat(chaos.picked()).isTrue();
+    assertThat(chaos.lines()).anyMatch(l -> "prefix".equals(l.gen()));
+    assertThat(chaos.lines()).anyMatch(l -> "suffix".equals(l.gen()));
+    assertThat(chaos.lines().stream().mapToDouble(PoeCraftService.PoolLine::chance).sum())
+        .isCloseTo(1.0, within(1e-6));
+  }
 }

@@ -84,13 +84,13 @@ public final class Poe2View {
         sb.append(ko ? "막기 " : "Block ").append(a.block()).append("%  ");
       }
       if (nz(a.armour()) > 0) {
-        sb.append("AR ").append(a.armour()).append("  ");
+        sb.append(ko ? "방어도 " : "AR ").append(a.armour()).append("  "); // 한국어 = 게임 낱말(10-23 Q105)
       }
       if (nz(a.evasion()) > 0) {
-        sb.append("EV ").append(a.evasion()).append("  ");
+        sb.append(ko ? "회피 " : "EV ").append(a.evasion()).append("  ");
       }
       if (nz(a.energyShield()) > 0) {
-        sb.append("ES ").append(a.energyShield()).append("  ");
+        sb.append(ko ? "에너지 보호막 " : "ES ").append(a.energyShield()).append("  ");
       }
     }
     Poe2.Weapon w = b.weapon();
@@ -98,7 +98,8 @@ public final class Poe2View {
       double aps = w.attacksPerSecond() == null ? 0 : w.attacksPerSecond();
       double pdps = (nz(w.damageMin()) + nz(w.damageMax())) / 2.0 * aps;
       sb.append(nz(w.damageMin())).append("-").append(w.damageMax());
-      sb.append(" · ").append(String.format(java.util.Locale.ROOT, "%.2f", aps)).append("/s");
+      String apsText = String.format(java.util.Locale.ROOT, "%.2f", aps);
+      sb.append(" · ").append(ko ? "초당 " + apsText + "회" : apsText + "/s");
       if (w.critChance() != null) {
         sb.append(" · ")
             .append(String.format(java.util.Locale.ROOT, "%.2f", w.critChance()))
@@ -136,9 +137,9 @@ public final class Poe2View {
         // 무기 칸은 번호가 뜻이다(1 = 주무기, 2 = 보조) — 번호를 떼고 고르면 "Weapon 2" 도 "무기" 가 됐다
         switch (slot.startsWith("Weapon") ? slot : slot.replaceAll(" \\d+$", "")) {
           case "Weapon", "Weapon 1" -> "무기";
-          case "Weapon 2" -> "보조 무기";
+          case "Weapon 2" -> "보조 장비"; // 게임 낱말(10-24 Q128 — 방패 · 화살통도 이 칸)
           case "Weapon 1 Swap" -> "무기(교체)";
-          case "Weapon 2 Swap" -> "보조 무기(교체)";
+          case "Weapon 2 Swap" -> "보조 장비(교체)";
           case "Helmet" -> "투구";
           case "Body Armour" -> "갑옷";
           case "Gloves" -> "장갑";
@@ -157,7 +158,7 @@ public final class Poe2View {
     return m.find() && !slot.startsWith("Weapon") ? s + " " + m.group(1) : s;
   }
 
-  /** 증강물 효과를 아이템 클래스로 거를 때 — API 와 같은 규칙(분류 대상 클래스, 없으면 분류 이름). */
+  /** 증강물 효과를 아이템 종류로 거를 때 — API 와 같은 규칙(분류 대상 클래스, 없으면 분류 이름). */
   public static boolean appliesTo(Poe2.AugmentEffect e, String itemClass) {
     if (itemClass == null || itemClass.isBlank()) {
       return true;

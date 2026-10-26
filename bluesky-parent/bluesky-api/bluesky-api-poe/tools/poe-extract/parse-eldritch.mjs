@@ -18,7 +18,7 @@ const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat
 // 팩션: GenerationType → {key, 이름}
 const FACTION = {
 	28: { key: "exarch", name: "Searing Exarch", nameKo: "작열의 총주교" },
-	29: { key: "eater", name: "Eater of Worlds", nameKo: "세계를 삼키는 포식자" },
+	29: { key: "eater", name: "Eater of Worlds", nameKo: "세계 포식자" }, // 게임 ItemPopupEaterofWorldsItem(10-23 Q89)
 };
 // 엘드리치 부여 가능 슬롯(스폰 태그 → 아이템 클래스명). 이 태그가 붙은 것만 취급.
 const SLOT_TAG_TO_CLASS = {

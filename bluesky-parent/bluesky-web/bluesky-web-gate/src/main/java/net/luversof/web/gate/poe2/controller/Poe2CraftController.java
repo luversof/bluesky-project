@@ -369,6 +369,9 @@ public class Poe2CraftController {
     return "poe/htmx/craftDist";
   }
 
+  /** 베이스 아이템 가격 이름(API Poe2CraftCalcService.BASE_ITEM 과 같은 글). */
+  static final String BASE_ITEM = "Base item";
+
   /** 가격 직접 입력 칸의 화폐 · 징조(C530) — 시세에 있는 것만. */
   static final List<String> PRICE_NAMES =
       List.of(
@@ -409,7 +412,16 @@ public class Poe2CraftController {
       } catch (RuntimeException e) {
         // 한국어 이름 없이
       }
+      // 옵션 목록에 한국어 이름이 없는 화폐(10-23 Q31 — 한국어 가격 표에 영어가 섞였다, nameKoMap 과 같은 이름)
+      ko.putIfAbsent("Divine Orb", "신성한 오브");
+      ko.putIfAbsent("Vaal Orb", "바알 오브");
+      ko.putIfAbsent("Hinekora's Lock", "히네코라의 머리카락");
+      ko.putIfAbsent("Orb of Alchemy", "연금술의 오브");
+      ko.values().removeIf(v -> v == null || v.isBlank());
       List<String[]> out = new ArrayList<>();
+      // 베이스 아이템(10-23 Q20b — craftofexile 'Base cost'): 시세가 없어 비우면 0. 새 베이스를 쓰는 방법 · 새 베이스 수단 · 전략
+      // 회차에 더한다
+      out.add(new String[] {BASE_ITEM, "베이스 아이템", "0"});
       for (String n : PRICE_NAMES) {
         Double v = p == null || p.divine() == null ? null : p.divine().get(n);
         if (v != null && v > 0) {
@@ -1388,7 +1400,24 @@ public class Poe2CraftController {
     model.addAttribute("targetLabels", labels);
     model.addAttribute("nameKo", nameKoMap(poolKey));
     model.addAttribute("argName", argNameMap(poolKey));
+    List<String> sampleLinks = new ArrayList<>();
+    for (Poe2Craft.StrategySample sm :
+        res.samples() == null ? List.<Poe2Craft.StrategySample>of() : res.samples()) {
+      sampleLinks.add(sampleLink(sm.item(), params.getFirst("base")));
+    }
+    model.addAttribute("sampleLinks", sampleLinks);
     return "poe2/htmx/craftStrategy";
+  }
+
+  /** 전략 성공 예시를 제작 화면에서 여는 링크(10-22 Q17, PoE1 Q16 짝) — 가져오기 링크와 같은 모양, 베이스는 지금 제작 화면 것. */
+  private String sampleLink(Poe2Craft.Item it, String base) {
+    StringBuilder url = new StringBuilder("/poe2/craft?pool=").append(enc(it.poolKey()));
+    url.append("&ilvl=").append(it.ilvl());
+    url.append("&state=").append(enc(json.writeValueAsString(it)));
+    if (base != null && !base.isBlank()) {
+      url.append("&base=").append(enc(base));
+    }
+    return url.toString();
   }
 
   /** 시뮬레이터(C352) — t_접두접미:계열 = 최소 등급(1 = 최상위만). 목표 = 그 계열에서 그 등급 이상 아무거나. */
@@ -1722,6 +1751,8 @@ public class Poe2CraftController {
       // 이름을 못 읽으면 영어 그대로
     }
     m.put("Hinekora's Lock", "히네코라의 머리카락");
+    m.put(BASE_ITEM, "베이스 아이템");
+    m.putIfAbsent("Orb of Alchemy", "연금술의 오브");
     m.put("Divine Orb", "신성한 오브");
     m.put("Vaal Orb", "바알 오브");
     m.values().removeIf(v -> v == null || v.isBlank());
@@ -1760,6 +1791,144 @@ public class Poe2CraftController {
               Poe2Craft.PoolLine::tierRank,
               Poe2Craft.PoolLine::chance);
 
+  /**
+   * 확률 표 계열 묶음(10-21 C543, PoE1 C542 짝) — 빈 레어 기준 전체 계열(시뮬레이터 목표와 같은 풀)에 pool 의 확률(지금 아이템 · 고른 화폐
+   * 기준 Q2) · 붙은 옵션. 못 읽으면 pool 만으로.
+   */
+  private List<net.luversof.web.gate.poe.CraftPoolGroups.Family<Poe2Craft.PoolLine>> poolGroups(
+      Poe2Craft.View view, List<Poe2Craft.PoolLine> pool, java.util.Set<String> freshIds) {
+    List<Poe2Craft.PoolLine> full;
+    try {
+      full =
+          craftClient.pool(
+              new Poe2Craft.Item(
+                  view.item().poolKey(), view.item().ilvl(), "RARE", List.of(), false));
+    } catch (RuntimeException e) {
+      full = List.of();
+    }
+    java.util.Set<String> onIds = new java.util.HashSet<>();
+    if (view.lines() != null) {
+      view.lines().forEach(l -> onIds.add(l.id()));
+    }
+    return net.luversof.web.gate.poe.CraftPoolGroups.group(
+        full == null ? List.of() : full, pool, POOL_ACC, onIds, freshIds);
+  }
+
+  /**
+   * 고른 화폐 기준 옵션 표(10-22 Q2, PoE1 /poe/htmx/craft/action-pool 짝) — 에뮬레이터에서 화폐를 고른 상태면 계열 표를 그 수단이 처음
+   * 고르는 후보(등급 최소 레벨 · 징조 쪽 · 동질화가 걸린 그대로)로 다시 그린다. action 이 없으면 지금 표(등급 · 엑잘 징조 반영 C441 · C396), 표의
+   * 옵션을 안 고르는 수단 · 못 쓰는 화폐면 지금 표에 그 안내.
+   */
+  @PostMapping(value = "/poe2/htmx/craft/action-pool", produces = MediaType.TEXT_HTML_VALUE)
+  public String actionPool(
+      @RequestParam String poolKey,
+      @RequestParam(required = false, defaultValue = "82") int ilvl,
+      @RequestParam(required = false, defaultValue = "") String state,
+      @RequestParam(required = false, defaultValue = "") String action,
+      @RequestParam(required = false, defaultValue = "") String actionLabel,
+      @RequestParam(required = false, defaultValue = "") String tier,
+      @RequestParam(required = false) List<String> omen,
+      @RequestParam(required = false, defaultValue = "") String essence,
+      @RequestParam(required = false, defaultValue = "") String bone,
+      Model model) {
+    Poe2Craft.Item fresh = new Poe2Craft.Item(poolKey, clamp(ilvl), "NORMAL", List.of(), false);
+    Poe2Craft.Item cur = parse(state, fresh);
+    // 종류 · 아이템 레벨이 다르면 새 아이템(본 처리기 apply 와 같게 — Q3e 검토)
+    if (!cur.poolKey().equals(fresh.poolKey()) || cur.ilvl() != fresh.ilvl()) {
+      cur = fresh;
+    }
+    Poe2Craft.View view = craftClient.view(cur);
+    List<String> omens = omen == null ? List.of() : omen;
+    String act = action.contains(":") ? action.substring(0, action.indexOf(':')) : action;
+    String actArg = action.contains(":") ? action.substring(action.indexOf(':') + 1) : null;
+    Poe2Craft.ActionPool ap = null;
+    if (ACTIONS.contains(act)) {
+      String arg =
+          switch (act) {
+            case "ESSENCE" -> essence.isBlank() ? null : essence;
+            case "DESECRATE" -> bone.isBlank() ? null : bone;
+            case "REVEAL", "MANUAL_ADD", "MANUAL_REMOVE", "CATALYST" -> actArg;
+            default -> tier.isBlank() ? null : tier;
+          };
+      try {
+        ap = craftClient.actionPool(new Poe2Craft.ApplyRequest(cur, act, arg, omens, null));
+      } catch (RuntimeException e) {
+        ap = null;
+      }
+    }
+    boolean picked = ap != null && ap.picked();
+    List<Poe2Craft.PoolLine> pool =
+        picked
+            ? ap.lines()
+            : craftClient.pool(
+                view.item(), omens.isEmpty() ? null : omens, tier.isBlank() ? null : tier);
+    boolean ko = net.luversof.web.gate.poe.PoeText.isKorean();
+    List<Poe2Craft.Line> lines = view.lines() == null ? List.of() : view.lines();
+    var groups = poolGroups(view, pool, java.util.Set.of());
+    model.addAttribute("poolGroups", groups);
+    model.addAttribute("lines", lines);
+    model.addAttribute("max", view.maxPerGen());
+    model.addAttribute("prefixes", lines.stream().filter(l -> "prefix".equals(l.gen())).count());
+    model.addAttribute("suffixes", lines.stream().filter(l -> "suffix".equals(l.gen())).count());
+    model.addAttribute(
+        "lineTags",
+        ko
+            ? (view.tagsKo() == null ? java.util.Map.of() : view.tagsKo())
+            : (view.tags() == null ? java.util.Map.of() : view.tags()));
+    List<Poe2Craft.EssenceOption> ess;
+    try {
+      ess = craftClient.essences(cur.poolKey());
+    } catch (RuntimeException e) {
+      ess = List.of();
+    }
+    model.addAttribute("essences", ess);
+    if (!act.isEmpty()) {
+      model.addAttribute("actionLabel", actionLabel.isBlank() ? act : actionLabel);
+      model.addAttribute("actionPicked", picked);
+      model.addAttribute("actionRarity", picked ? ap.baseRarity() : null);
+      model.addAttribute(
+          "actionMult", picked && ap.mult() != null ? ap.mult() : java.util.Map.of());
+      // 확정 옵션(Q7 — 에센스가 보장하는 풀 옵션) — 그 계열 · 등급(계열 줄 배지)과 문구(안내)
+      java.util.Set<String> forcedIds =
+          new java.util.HashSet<>(ap == null || ap.forced() == null ? List.of() : ap.forced());
+      java.util.Map<String, Integer> forcedFam = new java.util.LinkedHashMap<>();
+      List<String> forcedText = new ArrayList<>();
+      for (var f : groups) {
+        for (var t : f.tiers()) {
+          if (forcedIds.contains(t.line().id())) {
+            forcedFam.put(f.key(), t.line().tierRank());
+            List<String> tx =
+                ko && t.line().ko() != null && !t.line().ko().isEmpty()
+                    ? t.line().ko()
+                    : t.line().en();
+            if (tx != null) {
+              forcedText.addAll(tx);
+            }
+            forcedIds.remove(t.line().id());
+          }
+        }
+      }
+      // 표(빈 레어 풀)에 없는 보장 옵션(에센스 전용 · 아이템 레벨 위 등급)은 에센스 문구로 — 배지는 없이 안내만(Q15 검토)
+      for (Poe2Craft.EssenceOption e : ess) {
+        if (e.modId() != null && forcedIds.contains(e.modId())) {
+          List<String> tx = ko && e.ko() != null && !e.ko().isEmpty() ? e.ko() : e.en();
+          if (tx != null) {
+            forcedText.addAll(tx);
+          }
+          forcedIds.remove(e.modId());
+        }
+      }
+      model.addAttribute("forcedFamilies", forcedFam);
+      model.addAttribute("forcedText", forcedText.isEmpty() ? null : String.join(", ", forcedText));
+      model.addAttribute(
+          "actionError",
+          ap == null || ap.error() == null
+              ? null
+              : ko ? ap.error() : net.luversof.web.gate.poe2.Poe2CraftText.en(ap.error()));
+    }
+    return "poe2/htmx/craftPoolGroups";
+  }
+
   private void fill(
       Model model,
       Poe2Craft.Item item,
@@ -1787,29 +1956,11 @@ public class Poe2CraftController {
             // 고른 화폐 등급(C441 UX QA — 완벽 진화인데 레벨 1 옵션까지 균등으로 보였다)
             tier == null || tier.isBlank() ? null : tier);
     model.addAttribute("pool", pool);
-    // 확률 표 계열 묶음(10-21 C543, PoE1 C542 짝) — 빈 레어 기준 전체 계열(시뮬레이터 목표와 같은 풀)에 지금 확률 · 붙은 옵션. 못 읽으면 지금
-    // 풀만으로
-    List<Poe2Craft.PoolLine> full;
-    try {
-      full =
-          craftClient.pool(
-              new Poe2Craft.Item(
-                  view.item().poolKey(), view.item().ilvl(), "RARE", List.of(), false));
-    } catch (RuntimeException e) {
-      full = List.of();
-    }
-    java.util.Set<String> onIds = new java.util.HashSet<>();
-    if (view.lines() != null) {
-      view.lines().forEach(l -> onIds.add(l.id()));
-    }
     java.util.Set<String> freshIds =
         applied == null || applied.error() != null || applied.added() == null
             ? java.util.Set.of()
             : new java.util.HashSet<>(applied.added());
-    model.addAttribute(
-        "poolGroups",
-        net.luversof.web.gate.poe.CraftPoolGroups.group(
-            full == null ? List.of() : full, pool, POOL_ACC, onIds, freshIds));
+    model.addAttribute("poolGroups", poolGroups(view, pool, freshIds));
     model.addAttribute("omens", opts.omens() == null ? List.of() : opts.omens());
     model.addAttribute("currencies", opts.currencies() == null ? List.of() : opts.currencies());
     model.addAttribute("activeOmens", omens);

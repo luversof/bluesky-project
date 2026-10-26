@@ -3,6 +3,7 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockCoreHoldingUtil
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param BigDecimal totalAsset
 @param BigDecimal totalUnrealizedProfit
@@ -50,7 +51,7 @@
 	String periodDividendLabel = MessageUtil.getMessage("stock.summary.period.dividend");
 	String periodBuyLabel = MessageUtil.getMessage("stock.trade.label.buy");
 	String periodSellLabel = MessageUtil.getMessage("stock.trade.label.sell");
-	java.util.function.Function<Long, String> periodCount = n -> java.text.MessageFormat.format(MessageUtil.getMessage("common.count"), n);
+	java.util.function.Function<Long, String> periodCount = n -> StockViewSupport.msg("common.count", n);
 	String totalCombinedProfitLabel = MessageUtil.getMessage("stock.summary.label.total.combined.profit");
 	String calculationDetailsLabel = MessageUtil.getMessage("stock.summary.label.calculation.details");
 	String combinedAdjustmentLabel = MessageUtil.getMessage("stock.summary.label.combined.adjustment");
@@ -66,8 +67,7 @@
 	String trendChartCaptionLabel = MessageUtil.getMessage("stock.summary.trend.caption");
 	String assetGrowthMenuLabel = MessageUtil.getMessage("layout.menu.stock.assetGrowth");
 	// 이 비율이 무엇을 세는지 밝힌다 - 분자/분모와 손익 기준(실현+평가+배당)을 함께 보여준다.
-	String winRateBasisText = java.text.MessageFormat.format(
-		MessageUtil.getMessage("stock.summary.win.rate.basis.tooltip"), winCount, winDenominator);
+	String winRateBasisText = StockViewSupport.msg("stock.summary.win.rate.basis.tooltip", winCount, winDenominator);
 }
 
 !{BigDecimal currentPrincipal = displayPrincipal != null ? displayPrincipal : totalAsset.subtract(totalUnrealizedProfit);}
@@ -85,7 +85,7 @@
 <%-- 이 수익률의 분모는 화면에 적힌 '투자원금'(수동 설정 원금 반영)이 아니라 취득원가다.
 	 그대로 두면 화면 숫자로 나눠도 값이 안 나온다(실측: 화면의 손익/원금을 그대로 나누면 184.69% 인데 표시는 181.58%).
 	 기준 원금을 계산 내역과 툴팁에 밝혀 화면에서 재현할 수 있게 한다. --%>
-!{String combinedRateBasisText = java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.combined.rate.basis.tooltip"), String.format("%,d", StockFormatUtil.displayWon(totalCombinedProfit)), String.format("%,d", StockFormatUtil.displayWon(combinedPrincipal)), String.format("%+.2f", combinedRate));}
+!{String combinedRateBasisText = StockViewSupport.msg("stock.summary.combined.rate.basis.tooltip", String.format("%,d", StockFormatUtil.displayWon(totalCombinedProfit)), String.format("%,d", StockFormatUtil.displayWon(combinedPrincipal)), String.format("%+.2f", combinedRate));}
 !{String evalColor = currentEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
 !{String combinedColor = totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
 !{String realizedColor = totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
@@ -94,7 +94,7 @@
 
 <div class="flex flex-col gap-4">
 
-	<!-- 히어로: 총자산(주 지표) 카드 하나 + 자산 추이 미니 차트 -->
+	<%-- 히어로: 총자산(주 지표) 카드 하나 + 자산 추이 미니 차트 --%>
 	<div class="grid grid-cols-1 ${hasTrendSeries ? "lg:grid-cols-2" : ""} gap-3">
 		@template._components.ui.card(cssClass = "hero-card", bodyClass = "p-5", body = @`
 			<div class="flex items-center gap-1 text-sm text-base-content/60">
@@ -201,7 +201,7 @@
 		@endif
 	</div>
 
-	<!-- 보조 지표 -->
+	<%-- 보조 지표 --%>
 	<div class="grid stat-card-grid grid-cols-2 lg:grid-cols-4 gap-3">
 	<%-- 카드가 집계한 기간을 링크에 실어 보낸다. 안 실으면 마지막으로 보던 기간이 복원돼, 카드에 적힌 수와
 	     다른 수가 있는 화면에 떨어진다(실측 2026-09-11: 저장된 기간이 1개월일 때 '올해 매수 2억 1,899만'
@@ -287,7 +287,7 @@
 					label = periodDividendLabel,
 					value = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(periodSummary.dividendNet())),
 					valueTitle = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(periodSummary.dividendNet())),
-					sub = periodCount.apply(periodSummary.dividendCount()) + (financialIncome != null ? " · " + java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.financial.income.pct"), financialIncome.usedPct().toPlainString()) : ""),
+					sub = periodCount.apply(periodSummary.dividendCount()) + (financialIncome != null ? " · " + StockViewSupport.msg("stock.summary.financial.income.pct", financialIncome.usedPct().toPlainString()) : ""),
 					tone = "text-dividend",
 					icon = "gift",
 					accent = "dividend",
@@ -313,8 +313,8 @@
 			// 핵심이 한 종목이면 그 이름을, 여럿이면 개수를 적는다.
 			String coreName = coreHoldingSplit.core().label() != null
 				? coreHoldingSplit.core().label()
-				: java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.core.multi"), coreHoldingSplit.core().stockCount());
-			String restLabel = java.text.MessageFormat.format(MessageUtil.getMessage("stock.summary.core.rest"), coreHoldingSplit.rest().stockCount());
+				: StockViewSupport.msg("stock.summary.core.multi", coreHoldingSplit.core().stockCount());
+			String restLabel = StockViewSupport.msg("stock.summary.core.rest", coreHoldingSplit.rest().stockCount());
 			String coreWeightLabel = MessageUtil.getMessage("stock.summary.core.weight");
 			String coreNote = MessageUtil.getMessage("stock.summary.core.note");
 			String evaluationAmountLabel = MessageUtil.getMessage("stock.profit.evaluation.amount");
@@ -372,8 +372,8 @@
 @if(hasTrendSeries)
 <script nonce="${CspNonceHolder.getNonce()}">
 (function () {
-	// 자산 추이 미니 차트 — Chart.js 는 ensureStockCharts 로 필요할 때 불러온다.
-	// htmx 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다(activityList.jte 와 동일).
+	<%-- 자산 추이 미니 차트 — Chart.js 는 ensureStockCharts 로 필요할 때 불러온다. --%>
+	<%-- htmx 스왑 정착 후 실행(setTimeout 0): 스왑 중엔 이전/새 canvas 가 공존할 수 있다(activityList.jte 와 동일). --%>
 	setTimeout(function () {
 		var trendCanvas = document.getElementById('dashboardTrendChart');
 		if (!trendCanvas) return;
@@ -404,7 +404,7 @@
 				responsive: true,
 				maintainAspectRatio: false,
 				interaction: { mode: 'index', intersect: false },
-				// 차트 클릭 시 자산 성장 상세로 이동 (drill-down)
+				<%-- 차트 클릭 시 자산 성장 상세로 이동 (drill-down) --%>
 				onClick: function () { window.location.href = '/stock/asset-growth'; },
 				onHover: function (evt, elements, chart) { chart.canvas.style.cursor = 'pointer'; },
 				plugins: {
@@ -425,8 +425,8 @@
 						ticks: {
 							font: { size: 10 },
 							maxTicksLimit: 4,
-							// 압축 표기는 공용 포맷터 한 곳에 있다(로케일 + 경계 승격). 여기에 사본을 두었더니
-							// 승격 규칙이 빠져 99,999,999 가 '10000만' 으로 나갈 수 있었다(실측 2026-09-15).
+							<%-- 압축 표기는 공용 포맷터 한 곳에 있다(로케일 + 경계 승격). 여기에 사본을 두었더니 --%>
+							<%-- 승격 규칙이 빠져 99,999,999 가 '10000만' 으로 나갈 수 있었다(실측 2026-09-15). --%>
 							callback: function (v) { return StockCharts.formatCompactNumber(v); }
 						}
 					}

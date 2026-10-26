@@ -1,6 +1,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport
 @import net.luversof.web.gate.stock.util.StockPickBasisLabelUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 <%-- 한 자리의 기준별 1위(사용자 질문 2026-10-06: "기준에 대해 추천을 어떻게 보여줄거야?").
      여러 기준이 같은 종목을 꼽을수록 굳은 추천이다 - 몇 개가 꼽았는지 먼저 적고, 기준마다 1위와 그 근거를 한 줄씩 둔다.
@@ -13,9 +14,9 @@
 		<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
 			<span class="font-medium text-base-content/70">${MessageUtil.getMessage("stock.pick.compare.title")}</span>
 			@if(pick.agreement() >= pick.tops().size())
-				<span class="badge badge-sm badge-success h-auto whitespace-normal" data-compare-verdict="all">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.compare.all"), pick.tops().size())}</span>
+				<span class="badge badge-sm badge-success h-auto whitespace-normal" data-compare-verdict="all">${StockViewSupport.msg("stock.pick.compare.all", pick.tops().size())}</span>
 			@elseif(pick.agreement() >= 2)
-				<span class="badge badge-sm badge-info h-auto whitespace-normal" data-compare-verdict="some">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.pick.compare.some"), pick.tops().size(), pick.agreement())}</span>
+				<span class="badge badge-sm badge-info h-auto whitespace-normal" data-compare-verdict="some">${StockViewSupport.msg("stock.pick.compare.some", pick.tops().size(), pick.agreement())}</span>
 			@else
 				<span class="text-base-content/60" data-compare-verdict="split">${MessageUtil.getMessage("stock.pick.compare.split")}</span>
 			@endif

@@ -42,7 +42,7 @@
 	PoeBaseItem.Flask flask = baseItem != null ? baseItem.flask() : null;
 	// 플라스크 속성에 이 플라스크 자신의 로컬 옵션 반영(10-08 C186 — 회복량 · 지속 · 충전, PoB 식). 바뀐 숫자만 인게임처럼 파랑(품질이 바꾼 회복량 · 유틸 지속 포함)
 	net.luversof.web.gate.poe.PoeFlaskProps.Result fp = flask == null ? null : net.luversof.web.gate.poe.PoeFlaskProps.apply(flask.lifePerUse(), flask.manaPerUse(), flask.durationSeconds(), flask.maxCharges(), flask.perCharge(), flask.type() == 4, net.luversof.web.gate.poe.PoeLocalProps.join(reqImplicits, reqMods), quality);
-	java.util.function.BiFunction<String, Boolean, String> fpNum = (v, ch) -> ch ? "<span class=\"text-[#8888ff]\">" + v + "</span>" : v;
+	java.util.function.BiFunction<String, Boolean, String> fpNum = (v, ch) -> ch ? "<span class=\"text-[#8888ff]\">" + v + "</span>" : "<span class=\"text-[#e0e0e0]\">" + v + "</span>";
 	String fdur = fp == null ? "" : fpNum.apply(fp.duration().seconds(), fp.duration().changed() || (flask.type() == 4 && quality > 0));
 	String flife = fp == null ? "" : fpNum.apply(fp.life().text(), fp.life().changed() || quality > 0);
 	String fmana = fp == null ? "" : fpNum.apply(fp.mana().text(), fp.mana().changed() || quality > 0);
@@ -55,7 +55,7 @@
 	// 인게임 요구 사항 줄은 **레벨이 먼저**다("요구 능력치 레벨 68, 155 힘"). 속성만 보고 게이트하면
 	// 레벨 요구만 있는 아이템(장신구 등)은 요구 줄이 통째로 사라진다 → dropLevel 도 조건에 넣는다.
 	net.luversof.web.gate.poe.PoeRequirements.Result req = baseItem == null ? null : net.luversof.web.gate.poe.PoeRequirements.apply(baseItem.reqStr(), baseItem.reqDex(), baseItem.reqInt(), reqImplicits, reqMods);
-	int reqLevel = levelReq != null ? levelReq : (baseItem == null ? 0 : baseItem.dropLevel());
+	int reqLevel = levelReq != null ? levelReq : (baseItem == null ? 0 : baseItem.requiredLevel());
 	// 속성 칸 — 품질 · 로컬 옵션 반영(10-08 C184, C182 PoeLocalProps 와 같은 PoB 식). 예전엔 순수 베이스 값이라 물리 피해 170% 증가 무기도 베이스 피해였다.
 	//   방어는 PoB 원문 실제값이 있으면 그것(베이스 롤이 아이템마다 달라 계산은 범위뿐), 무기 · 막기 · 원소 피해는 계산(베이스 고정이라 정확)
 	net.luversof.web.gate.poe.PoeLocalProps.Result lp = baseItem == null ? null : net.luversof.web.gate.poe.PoeLocalProps.apply(new net.luversof.web.gate.poe.PoeLocalProps.Base(
@@ -96,9 +96,8 @@
 			<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${base}</div>
 		@endif
 	</div>
-	@if(itemClass != null)
-		<div class="px-4 pt-1 text-center text-[11px] text-white/60">${itemClass}</div>
-	@endif
+	<%-- 종류 줄은 무기만 속성 칸 첫 줄(10-23 Q43) --%>
+	!{ String weaponCls = net.luversof.web.gate.poe.PoeClassNames.poe1Weapon(baseItem != null ? baseItem.itemClass() : null); }
 
 	@if(hasWeapon || hasArmour || quality > 0 || intangibility > 0)
 		<div class="poe-tt-sepimg"></div>
@@ -106,6 +105,7 @@
 			<%-- 품질은 인게임 속성 블록의 **첫 줄**이고 값은 매직 파랑이다
 			     (PoB ItemsTab 이 무기/방어구/플라스크 세 분기 모두 같은 순서·색으로 그린다).
 			     PoB 텍스트의 "Quality: N" 을 ITEM_META 로 걸러내기만 해서 임포트하면 품질이 사라졌다. --%>
+			@if(hasWeapon)@if(weaponCls != null)<div class="${label}" data-tt-weapon-class>${weaponCls}</div>@endif@endif
 			@if(quality > 0)<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="text-[#8888ff]">+${quality}%</span></div>@endif
 			@if(intangibility > 0)<div data-tt-intangibility><span class="${label}">${MessageUtil.getMessage("poe.items.detail.intangibility")}: </span><span class="text-[#8888ff]">${intangibility}%</span></div>@endif
 			@if(hasWeapon)
@@ -136,13 +136,13 @@
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
 			@if(flask.type() == 4)
-				<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
+				<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
 			@else
 				@if(flask.lifePerUse() > 0)
-					<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), fdur, flife)}</div>
+					<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.life"), fdur, flife)}</div>
 				@endif
 				@if(flask.manaPerUse() > 0)
-					<div class="${value}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), fdur, fmana)}</div>
+					<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.mana"), fdur, fmana)}</div>
 				@endif
 			@endif
 			@if(flask.maxCharges() > 0)
@@ -170,7 +170,7 @@
 		</div>
 	@endif
 
-	<%-- 임플리싯(암시) — 인게임은 명시 모드와 **구분선으로 갈라진 별도 섹션**이다.
+	<%-- 고정 속성(암시) — 인게임은 명시 모드와 **구분선으로 갈라진 별도 섹션**이다.
 	     한 덩어리로 붙여두면 아이템 고유의 암시 능력인지 롤된 모드인지 구분이 안 된다. --%>
 	@if(implicitLines != null && !implicitLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>

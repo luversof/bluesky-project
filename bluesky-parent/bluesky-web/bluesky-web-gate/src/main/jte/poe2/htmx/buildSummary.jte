@@ -57,7 +57,7 @@
 		</div>
 		<%-- 업그레이드 가이드(약 3초) — 재계산과 나란히 따로 부른다 --%>
 		<div hx-post="/poe2/htmx/build/guide" hx-trigger="load" hx-include="#poe2BuildImport [name=code]" hx-swap="outerHTML" data-no-success-toast>
-			<div class="flex items-center gap-2 text-sm text-base-content/60"><span class="loading loading-spinner loading-xs"></span>${korean ? "업그레이드 가이드를 계산하는 중… (장비 칸·보조젬·패시브·고유 아이템 교체 — 레벨 100 빌드는 10초 안팎)" : "Computing the upgrade guide…"}</div>
+			<div class="flex items-center gap-2 text-sm text-base-content/60"><span class="loading loading-spinner loading-xs"></span>${korean ? "업그레이드 가이드를 계산하는 중… (장비 칸·보조 젬·패시브·고유 아이템 교체 — 레벨 100 빌드는 10초 안팎)" : "Computing the upgrade guide…"}</div>
 		</div>
 
 		<%-- 스킬 묶음 --%>

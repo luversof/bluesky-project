@@ -124,7 +124,10 @@ public final class Poe2 {
       // 추가 스탯 묶음(PoE2 GrantedEffects.AdditionalStatSets — 머리글 "폭파" 등, 10-09 C236). 없으면 null
       List<GemStatSet> statSets,
       // 젬이 덤으로 주는 스킬의 이 레벨 수치(10-10 C249 — Gem.grantedSkills 와 같은 순서, 그 레벨 행이 없으면 null)
-      List<GrantedSkillLevel> grantedSkills) {}
+      List<GrantedSkillLevel> grantedSkills,
+      // 재사용 사용 횟수(GrantedEffectsPerLevel.StoredUses — 인게임 '3.50s (3 uses)', 10-23 Q53). 재사용이 있고 2
+      // 이상일 때만
+      Integer cooldownUses) {}
 
   /** 추가 스탯 묶음 한 개(10-09 C236) — 머리글(GrantedEffectLabels) · 치명타 · 공격 피해 · 스탯 줄. */
   public record GemStatSet(
@@ -161,7 +164,9 @@ public final class Poe2 {
       List<String> statLines,
       List<String> statLinesKo,
       // 부여 스킬의 추가 스탯 묶음(poe2db 촉진시키는 방출 "화염" · "번개" · "냉기"). 없으면 null
-      List<GemStatSet> statSets) {}
+      List<GemStatSet> statSets,
+      // 재사용 사용 횟수(Q53, GemLevel 과 같은 규칙)
+      Integer cooldownUses) {}
 
   public record GemData(String patch, List<Gem> gems) {}
 
@@ -309,7 +314,14 @@ public final class Poe2 {
   }
 
   /** en = 게임 영어 분류 이름(옛 데이터면 null — 화면은 key 로 대신). */
-  public record ItemClass(String key, String ko, String category, String en) {}
+  /** tipEn · tipKo = 툴팁 종류 줄(10-23 Q39 — ItemClassCategories.Text 단수, 없으면 null). */
+  public record ItemClass(
+      String key, String ko, String category, String en, String tipEn, String tipKo) {
+
+    public ItemClass(String key, String ko, String category, String en) {
+      this(key, ko, category, en, null, null);
+    }
+  }
 
   /**
    * hiddenItems = PoB 숨김 베이스(고유 전용 · 내부, 10-08 C176) — 목록 · 검색엔 안 나오고 이름 정확 조회만(고유 툴팁의 베이스 수치). 옛
@@ -331,10 +343,10 @@ public final class Poe2 {
       // text 줄별 강조 용어 Id(mods.json keywords 사전 키 — 10-04 C132). 없으면 null
       List<List<String>> kw) {}
 
-  /** 같은 계열(ModType)의 티어 사다리 — tiers[0] 이 1티어(레벨이 가장 높은 것). gen = prefix | suffix. */
+  /** 같은 계열(ModType)의 등급 사다리 — tiers[0] 이 1등급(레벨이 가장 높은 것). gen = prefix | suffix. */
   public record ModGroup(String modType, String gen, List<ModTier> tiers) {}
 
-  /** 옵션 풀 — 같은 아이템 클래스에서 스폰 태그 조합이 같은 베이스 묶음(갑옷은 방어 속성별로 갈린다). */
+  /** 옵션 풀 — 같은 아이템 종류에서 스폰 태그 조합이 같은 베이스 묶음(갑옷은 방어 속성별로 갈린다). */
   public record ModPool(
       String key,
       String itemClass,
@@ -377,7 +389,10 @@ public final class Poe2 {
       List<String> linesKo,
       // 결속 효과(인게임 "결속됨:" — SoulCoreStats.BondedStats, 10-09 C238). 없으면 null
       List<String> bondedLines,
-      List<String> bondedLinesKo) {}
+      List<String> bondedLinesKo,
+      // 분류 영어 표시(10-23 Q80 — SoulCoreStatCategories.Display 'All Equipment' · 'Weapon'). target 은
+      // 걸러 내기 열쇠(분류 Id)라 따로. 없으면 null
+      String targetEn) {}
 
   public record Augment(
       String name,
@@ -670,7 +685,7 @@ public final class Poe2 {
       // 무기 세트를 나눠 쓰는 빌드면 이 가이드를 계산한 세트(1·2)와 주 세트(DPS 큰 쪽, 세트를 지정해 부르면 null), 아니면 둘 다 null(10-01)
       Integer weaponSet,
       Integer mainSet,
-      // 레어 목표 — 칸마다 같은 베이스의 좋은 레어(2티어 중간 롤 접두3·접미3)로 바꾸면(10-02 사용자 요청)
+      // 레어 목표 — 칸마다 같은 베이스의 좋은 레어(2등급 중간 롤 접두3·접미3)로 바꾸면(10-02 사용자 요청)
       List<GuideRareTarget> rareTargets,
       // 안 찍은 본 트리 특화 · 핵심까지 가는 길 점수(≤ 8, 10-14 C323 — 다듬기 공통 패시브 재분배용). 없으면 null
       Map<Integer, Integer> nodeDist) {
@@ -828,7 +843,13 @@ public final class Poe2 {
       // 레벨)
       Integer levelReq,
       // 실제 방어 수치(10-08 C184, PoE1 짝 — PoB 원문 최종값). 없으면 null
-      net.luversof.api.poe.service.PoeBuild.Defences defences) {}
+      net.luversof.api.poe.service.PoeBuild.Defences defences,
+      // mods 와 1:1 줄 종류(10-23 Q117 — PoB {rune}{enchant}{fractured}{crafted}{desecrated}{mutated}
+      // 태그, 예전엔 벗겨 모든 줄이
+      // 파랑 · 룬/인챈트가 암시 칸에 섞였다). 태그 없으면 빈 문자열
+      List<String> modKinds,
+      // 아이템 레벨(PoB "Item Level: N", Q117 — 게임 ItemLevelPopup '아이템 레벨 {0}'). 없으면 null
+      Integer itemLevel) {}
 
   public record BuildNode(Integer id, String name, String nameKo) {}
 

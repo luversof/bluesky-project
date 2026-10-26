@@ -23,10 +23,12 @@ const describe = createDescriber();
 const FALLBACK_KO = { All: "모든 장비", Armour: "방어구", "Martial Weapon": "무도 무기" };
 const catLabel = (i) => {
 	const en = cats[i].Id;
+	// 영어 표시 = 게임 Display(10-23 Q80 — 'All' → 'All Equipment', 'Martial Or Caster Weapon' → 'Weapon'). 비면 분류 Id 그대로
+	const enDisplay = stripMarkup(cats[i].Display || "") || en;
 	const ko = stripMarkup(catsKo[i].Display || "");
-	if (ko) return { en, ko };
+	if (ko) return { en, enDisplay, ko };
 	const targets = (cats[i].TargetItemClasses || []).map((c) => classesKo[c].Name).filter(Boolean);
-	return { en, ko: FALLBACK_KO[en] || (targets.length ? targets.join(", ") : en) };
+	return { en, enDisplay, ko: FALLBACK_KO[en] || (targets.length ? targets.join(", ") : en) };
 };
 const KIND = { Rune: "rune", SoulCore: "soulcore", Idol: "idol", AbyssalEye: "abyssaleye", CongealedMist: "mist" };
 
@@ -42,15 +44,17 @@ for (let i = 0; i < cores.length; i++) {
 		(s.Stats || []).forEach((k, j) => values.set(stats[k].Id, s.StatsValues[j]));
 		const lines = describe(values, "English");
 		const linesKo = describe(values, "Korean");
-		if (!lines.length) continue;
 		const label = catLabel(s.StatCategory);
 		// 결속 효과(10-09 C238 — SoulCoreStats.BondedStats · BondedStatsValues, 인게임 "결속됨:" 아래 같은 분류 줄. poe2db 사막 룬 "무도 무기: 점화 강도 30% 증가")
 		const bonded = new Map();
 		(s.BondedStats || []).forEach((k, j) => bonded.set(stats[k].Id, (s.BondedStatsValues || [])[j]));
 		const bondedLines = bonded.size ? describe(bonded, "English") : [];
 		const bondedLinesKo = bonded.size ? describe(bonded, "Korean") : [];
+		// 일반 줄 없이 결속 줄만 있는 분류 행도 남긴다(10-23 Q79 — 기본 룬 12종 무도 무기 · 마법봉/지팡이 · 방어구 결속 36줄이 통째로 빠졌다)
+		if (!lines.length && !bondedLines.length) continue;
 		effects.push({
 			target: label.en,
+			targetEn: label.enDisplay,
 			targetKo: label.ko,
 			targetClasses: (cats[s.StatCategory].TargetItemClasses || []).map((x) => classes[x].Id),
 			lines,

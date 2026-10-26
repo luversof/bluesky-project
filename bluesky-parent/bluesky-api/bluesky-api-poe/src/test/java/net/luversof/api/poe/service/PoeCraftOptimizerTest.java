@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-/** 최적 조합 상태 설명(10-19 C465) — 상태 열쇠의 제작대 · 분열 표시가 결정 표 문구로 바뀐다. */
+/** 최적 조합 상태 설명(10-19 C465) — 상태 열쇠의 작업대 · 분열 표시가 결정 표 문구로 바뀐다. */
 class PoeCraftOptimizerTest {
 
   @Test
@@ -16,12 +16,12 @@ class PoeCraftOptimizerTest {
   }
 
   @Test
-  void 제작대_표시와_엘드리치_우세() {
+  void 작업대_표시와_엘드리치_우세() {
     assertThat(PoeCraftOptimizer.describe("Re|3|0,0|0|PT", 2))
         .startsWith("레어 · 작열의 총주교 우세")
         .contains("목표 1·2 맞음")
         .contains("접두어 변경 불가")
-        .contains("제작대 목표 옵션");
+        .contains("작업대 목표 옵션");
     assertThat(PoeCraftOptimizer.describe("M|0|0,0|1|", 1))
         .isEqualTo("매직 · 맞은 목표 없음 · 목표 1 자리를 잡옵션이 막음");
   }

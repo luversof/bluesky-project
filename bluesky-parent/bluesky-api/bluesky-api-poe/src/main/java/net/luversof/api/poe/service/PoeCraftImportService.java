@@ -55,7 +55,7 @@ public class PoeCraftImportService {
       Integer tierRank,
       boolean crafted,
       String kind,
-      // 같은 문구일 때 먼저 볼 순서 — 0 일반 옵션 · 임플리싯, 1 제작대, 2 에센스, 3 해제 · 화석 · 고양
+      // 같은 문구일 때 먼저 볼 순서 — 0 일반 옵션 · 고정 속성, 1 작업대, 2 에센스, 3 해제 · 화석 · 고양
       int prio) {
 
     /** 자료 문구 한 항목에 줄바꿈이 든 것(플라스크 '출혈 · 부패한 피 면역')은 줄로 펼친다 — 복사 글은 줄마다 나온다. */
@@ -768,7 +768,7 @@ public class PoeCraftImportService {
     return NUMBER.matcher(line).find() && line.length() < 120;
   }
 
-  /** 이 아이템 풀의 후보 — 일반 옵션 · 에센스 · 제작대 · 해제 · 화석 · 고양 옵션, 엘드리치 · 부패 임플리싯. */
+  /** 이 아이템 풀의 후보 — 일반 옵션 · 에센스 · 작업대 · 해제 · 화석 · 고양 옵션, 엘드리치 · 부패 고정 속성. */
   List<Cand> candidates(PoeCraftEngine.Item item) {
     String pk = item.poolKey();
     List<Cand> out = new ArrayList<>();

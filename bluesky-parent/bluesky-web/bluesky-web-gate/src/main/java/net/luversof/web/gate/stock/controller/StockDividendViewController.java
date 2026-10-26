@@ -71,6 +71,7 @@ public class StockDividendViewController {
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(StockDividendViewController.class);
 
+  /** api-stock 이 "1년 평균" 을 낼 때 쓰는 건수(MonthlyDividendPayoutService 의 limit(12)). */
   private static final int MONTHLY_DIVIDEND_AVERAGE_WINDOW = 12;
 
   @Autowired private MonthlyDividendProfileClient monthlyDividendProfileClient;
@@ -561,19 +562,13 @@ public class StockDividendViewController {
     }
   }
 
-  @BlueskyPreAuthorize
-  /**
-   * 고른 종목 시세만 다시 받는다(사용자 요청 2026-09-22).
-   *
-   * <p>전체 갱신은 53 종목에 18~22 초가 걸려 게이트의 읽기 제한(10 초)에 매번 끊겼다(실측). 한 종목이면 1 초 안쪽이라 그 자리에서 끝난다. 실패하면 까닭을
-   * 그대로 화면에 띄운다 &mdash; 원격 사정을 "입력값을 확인하세요" 로 덮지 않는다.
-   */
   /**
    * 관리 &gt; 월배당 기준: 프로필 행 안에서 펼치는 그 종목의 지급 이력(사용자 요청 2026-09-29, A안).
    *
    * <p>예전에는 "이 종목 보기" 가 페이지를 통째로 다시 불러 맨 위로 돌아갔고, 지급 이력은 프로필 목록 전체 아래에 있었다(실측: 프로필 21 개일 때 1440px
    * 에서 2,019px · 휴대폰에서 2,542px 아래). 이 조각은 누른 행 바로 아래에 최근 이력만 싣는다 - 전체와 편집은 기존 목록(종목 선택)으로 잇는다.
    */
+  @BlueskyPreAuthorize
   @GetMapping("/dividend/monthly-reference/payout/peek")
   public String monthlyDividendPayoutPeek(
       HttpServletRequest request, Model model, @RequestParam String symbol) {
@@ -604,6 +599,12 @@ public class StockDividendViewController {
   /** 행 안에서 펼칠 때 보이는 지급 이력 수(월배당이면 1 년치). 전체는 종목을 골라 아래 목록에서 본다. */
   static final int PAYOUT_PEEK_LIMIT = 12;
 
+  /**
+   * 고른 종목 시세만 다시 받는다(사용자 요청 2026-09-22).
+   *
+   * <p>전체 갱신은 53 종목에 18~22 초가 걸려 게이트의 읽기 제한(10 초)에 매번 끊겼다(실측). 한 종목이면 1 초 안쪽이라 그 자리에서 끝난다. 실패하면 까닭을
+   * 그대로 화면에 띄운다 &mdash; 원격 사정을 "입력값을 확인하세요" 로 덮지 않는다.
+   */
   @PostMapping("/dividend/monthly-reference/profile/refresh-price")
   public String refreshMonthlyDividendProfilePrice(
       HttpServletRequest request,
@@ -851,12 +852,12 @@ public class StockDividendViewController {
     }
   }
 
-  @BlueskyPreAuthorize
   /**
    * 운용사 상세 링크만으로 등록한다(사용자 요청 2026-09-21). 여러 줄이면 줄마다 하나씩.
    *
    * <p>되는 줄만 등록하고 실패는 사유와 함께 알린다(사용자 결정). 미리보기 없이 바로 등록하고 결과를 요약한다.
    */
+  @BlueskyPreAuthorize
   @PostMapping("/dividend/monthly-reference/profile/import/links")
   public String registerMonthlyDividendProfilesFromLinks(
       HttpServletRequest request,
@@ -907,8 +908,8 @@ public class StockDividendViewController {
     return buildMonthlyDividendReferenceBulkRedirect(request);
   }
 
-  @BlueskyPreAuthorize
   /** 등록된 월배당 프로필의 총보수 · 상장일을 운용사에서 다시 읽는다(사용자 승인 2026-09-28). 바뀐 것만 저장하고, 못 읽은 값은 지우지 않는다. */
+  @BlueskyPreAuthorize
   @PostMapping("/dividend/monthly-reference/profile/facts/refresh")
   public String refreshMonthlyDividendProfileFacts(
       HttpServletRequest request, RedirectAttributes redirectAttributes) {

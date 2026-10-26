@@ -22,7 +22,8 @@
 		};
 		byColor.get(c).add(g);
 	}
-	byColor.values().forEach(l -> l.sort(java.util.Comparator.comparingInt(PoeGem::dropLevel)));
+	// 요구 레벨 → 표시 이름 순(10-23 Q99 · Q102 — 예전엔 드롭 레벨만, 같은 레벨은 데이터 순 = 영어 알파벳)
+	byColor.values().forEach(l -> l.sort(java.util.Comparator.comparingInt(PoeGem::listLevel).thenComparing(g -> net.luversof.web.gate.poe.PoeText.name(g.nameKo(), g.name()))));
 }
 
 @if(totalCount == 0)
@@ -82,12 +83,12 @@
 								<a class="font-semibold truncate link-hover ${gem.isVaal() ? "text-[#d20000]" : gemNameColor}" href="/poe/gems/${gem.slug()}" title="${gem.name()}">${displayName}</a>
 									@if(gem.isVaal())
 										<%-- 인게임 부패(corrupted) 관례: 바알 젬은 붉은색. 목록에서 바로 구분되게 배지 표시 --%>
-										<span class="shrink-0 text-[9px] font-bold px-1 rounded bg-[#d20000]/15 text-[#d20000] border border-[#d20000]/40" title="${korean ? "바알 스킬 (타락) — 브라우저 표시 전용, 최적화기 미포함" : "Vaal skill (corrupted) — browse only, excluded from optimizer"}">${korean ? "바알" : "Vaal"}</span>
+										<span class="shrink-0 text-[9px] font-bold px-1 rounded bg-[#d20000]/15 text-[#d20000] border border-[#d20000]/40" title="${korean ? "바알 스킬(타락) — 보기 전용, 시뮬레이터 최적화에서 제외" : "Vaal skill (corrupted) — browse only, excluded from optimizer"}">${korean ? "바알" : "Vaal"}</span>
 									@endif
 									@if(korean)
 										<span class="text-[11px] text-base-content/60 truncate">${gem.name()}</span>
 									@endif
-									<span class="ml-auto shrink-0 text-[10px] text-base-content/60">${MessageUtil.getMessage("poe.gems.label.drop.level")} ${gem.dropLevel()}</span>
+									<span class="ml-auto shrink-0 text-[10px] text-base-content/60">${MessageUtil.getMessage("poe.gems.label.drop.level")} ${gem.listLevel()}</span>
 								</div>
 								@if(displayTags != null && !displayTags.isEmpty())
 									<div class="flex flex-wrap gap-1 mt-1">

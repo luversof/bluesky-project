@@ -303,20 +303,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 화면의 계좌·종목 필터를 그대로 넘긴다. 2026-09-12 까지 이 표만 안 넘겨서, 한 계좌로 좁혀도
     // 연도별 세금·비용은 전 계좌 합계를 그렸다(실측: 좁히기 전후 표가 바이트 단위로 같았다).
     // 같은 화면의 다른 구역은 모두 이 필터를 따르므로 한 표만 다른 범위를 말하던 셈이다.
-    if (request.getAccountIdList() != null) {
-      for (UUID id : request.getAccountIdList()) {
-        if (id != null) {
-          yearlyCostParams.add("accountIdList", id.toString());
-        }
-      }
-    }
-    if (request.getStockItemIdList() != null) {
-      for (UUID id : request.getStockItemIdList()) {
-        if (id != null) {
-          yearlyCostParams.add("stockItemIdList", id.toString());
-        }
-      }
-    }
+    addFilterIds(yearlyCostParams, request);
     var yearlyCostFuture =
         java.util.concurrent.CompletableFuture.supplyAsync(
             () -> yearlyCostClient.findYearlyCost(yearlyCostParams), stockRemoteCallExecutor);
@@ -346,20 +333,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     snapshotParams.add("timeZone", contributionZone.getId());
     // 화면의 계좌·종목 필터를 그대로 넘긴다. 안 넘기면 평가 변동만 전 계좌를 보게 되어
     // 합계가 위 카드의 기간 손익과 어긋난다.
-    if (request.getAccountIdList() != null) {
-      for (UUID id : request.getAccountIdList()) {
-        if (id != null) {
-          snapshotParams.add("accountIdList", id.toString());
-        }
-      }
-    }
-    if (request.getStockItemIdList() != null) {
-      for (UUID id : request.getStockItemIdList()) {
-        if (id != null) {
-          snapshotParams.add("stockItemIdList", id.toString());
-        }
-      }
-    }
+    addFilterIds(snapshotParams, request);
     var snapshotFuture =
         emptySelection
             ? null
@@ -1023,5 +997,24 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       }
     }
     return true;
+  }
+
+  /** 화면의 계좌 · 종목 필터 id 를 그대로 싣는다(null id 는 뺀다). 연도별 세금 · 비용과 기초 · 기말 보유가 같은 두 고리를 한 벌씩 들고 있었다. */
+  static void addFilterIds(
+      org.springframework.util.MultiValueMap<String, String> params, TradeProfitRequest request) {
+    if (request.getAccountIdList() != null) {
+      for (UUID id : request.getAccountIdList()) {
+        if (id != null) {
+          params.add("accountIdList", id.toString());
+        }
+      }
+    }
+    if (request.getStockItemIdList() != null) {
+      for (UUID id : request.getStockItemIdList()) {
+        if (id != null) {
+          params.add("stockItemIdList", id.toString());
+        }
+      }
+    }
   }
 }

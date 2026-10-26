@@ -28,13 +28,13 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-sm text-base-content/60">${ko ? "클러스터 주얼 노터블 사전 — " : "Cluster jewel notables — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터의 클러스터 소켓에서 구성 →" : "configure in tree editor →"}</a></span>
+				<span class="text-sm text-base-content/60">${ko ? "클러스터 주얼 주요 스킬 사전 — " : "Cluster jewel notables — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터의 클러스터 소켓에서 구성 →" : "configure in tree editor →"}</a></span>
 				<span class="text-xs font-mono text-base-content/60">${notables.size()}</span>
 			</div>
 
 			<div class="flex flex-wrap items-center gap-1.5 rounded-2xl bg-base-100 p-3 shadow-sm">
 				<input id="poeClusterSearch" type="search" class="input input-sm input-bordered w-full sm:w-72"
-				       placeholder="${ko ? "노터블 검색 (예: 생명력, 투사체)" : "Search notables"}" autocomplete="off">
+				       placeholder="${ko ? "주요 스킬 검색 (예: 생명력, 투사체)" : "Search notables"}" autocomplete="off" aria-label="${ko ? "주요 스킬 검색" : "Search notables"}">
 				<span id="poeClusterCount" class="text-xs font-mono text-base-content/60"></span>
 			</div>
 
@@ -50,10 +50,12 @@
 							@if(clusterIcon != null)
 								<img src="/poe-assets/${clusterIcon}" class="w-12 h-12 object-contain shrink-0" alt="" loading="lazy" data-onerror="hide">
 							@endif
-							<%-- 인게임 색 관례: 노터블 **이름**은 툴팁 제목색(흰색), **스탯 줄**이 모드 파랑(#8888ff).
+							<%-- 인게임 색 관례: 주요 스킬 **이름**은 툴팁 제목색(흰색), **스탯 줄**이 모드 파랑(#8888ff).
 							     여기만 반대로 이름이 파랑·스탯이 본문색이라 트리 노드 팝업(.poe-popup-title/.poe-popup-stat)과 어긋났다. --%>
 							<span class="poe-entry-name font-semibold min-w-0 [overflow-wrap:anywhere]">${PoeText.name(n.nameKo(), n.name())}</span>
 							<span class="hidden">${n.name()}</span>
+							<%-- 핵심노드 8개(10-23 Q75 — 주요 스킬 선택지에 없는 핵심노드가 주요 스킬과 구분 없이 섞여 있었다, 게임 PassiveSkillSearchKeystone '핵심노드') --%>
+							@if(Boolean.TRUE.equals(n.keystone()))<span class="badge badge-ghost badge-xs shrink-0" data-cluster-keystone>${ko ? "핵심노드" : "Keystone"}</span>@endif
 						</div>
 						!{List<String> clusterLines = ko && n.statsKo() != null && !n.statsKo().isEmpty() ? n.statsKo() : n.stats();}
 						@for(String line : clusterLines)

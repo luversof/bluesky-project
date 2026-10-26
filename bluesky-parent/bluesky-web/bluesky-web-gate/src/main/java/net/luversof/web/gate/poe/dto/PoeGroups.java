@@ -35,7 +35,7 @@ public final class PoeGroups {
   }
 
   /**
-   * 아이템 클래스 그룹 ({@code /base-items/item-class-groups}, {@code /uniques/category-groups}). 고유도
+   * 아이템 종류 그룹 ({@code /base-items/item-class-groups}, {@code /uniques/category-groups}). 고유도
    * baseType 조인으로 얻은 세부 itemClass 를 같은 shape 으로 내려주므로 일반/고유가 동일 record 를 쓴다.
    */
   public record ClassGroup(String key, List<Entry> classes) implements Group {

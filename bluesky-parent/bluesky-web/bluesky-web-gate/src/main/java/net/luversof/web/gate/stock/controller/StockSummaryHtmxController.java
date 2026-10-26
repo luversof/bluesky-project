@@ -91,12 +91,12 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     this.stockRemoteCallExecutor = stockRemoteCallExecutor;
   }
 
-  /** 서로 의존이 없는 원격 호출을 동시에 던진다. */
   /** 올해 줄 배당 카드의 금융소득 기준 비율(2026-10-20). 없으면(시험) 그 말만 빠진다. */
   @org.springframework.beans.factory.annotation.Autowired(required = false)
   private net.luversof.web.gate.stock.service.FinancialIncomeThresholdSupport
       financialIncomeThresholdSupport;
 
+  /** 서로 의존이 없는 원격 호출을 동시에 던진다. */
   private <T> CompletableFuture<T> supplyRemote(Supplier<T> supplier) {
     return CompletableFuture.supplyAsync(supplier, stockRemoteCallExecutor);
   }
@@ -283,15 +283,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 담은 종목이 5번 세어지고, 같은 종목이 어떤 계좌에선 수익 어떤 계좌에선 손실로 양쪽에 잡힌다
     // (실측: 계좌x종목 61건 기준 63.9% vs 종목 42개 기준 73.8%).
     // 종목별로 손익을 합쳐서 센다 — 합계는 API 의 종목 그룹 결과와 일치한다(실측 확인).
-    Map<UUID, BigDecimal> profitByStockItem = new LinkedHashMap<>();
-    for (TradeProfit profit : profitList) {
-      if (profit == null || profit.stockItemId() == null) {
-        continue;
-      }
-      BigDecimal value =
-          profit.totalProfitNet() != null ? profit.totalProfitNet() : BigDecimal.ZERO;
-      profitByStockItem.merge(profit.stockItemId(), value, BigDecimal::add);
-    }
+    Map<UUID, BigDecimal> profitByStockItem = totalProfitByStockItem(profitList);
     Map<UUID, BigDecimal> dividendByStockItem =
         dividendByStockFuture == null ? Map.of() : joinRemote(dividendByStockFuture);
     BigDecimal dividendTotal =
@@ -321,30 +313,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                 point == null || point.timestamp() == null
                     ? null
                     : point.timestamp().atZone(trendZone).toLocalDate());
-    StringBuilder trendLabelSb = new StringBuilder();
-    StringBuilder trendValueSb = new StringBuilder();
-    int trendPointCount = 0;
-    for (TradeProfitTimeSeriesPoint point : trendSeries) {
-      if (point == null || point.timestamp() == null) {
-        continue;
-      }
-      if (trendLabelSb.length() > 0) {
-        trendLabelSb.append(",");
-        trendValueSb.append(",");
-      }
-      // 라벨은 ISO 날짜만 — 사용자 유래 문자열 추가 금지(이스케이프 없는 $unsafe 경로)
-      trendLabelSb
-          .append("\"")
-          .append(point.timestamp().atZone(trendZone).toLocalDate())
-          .append("\"");
-      BigDecimal holdingsValue =
-          point.totalHoldingsValue() != null ? point.totalHoldingsValue() : BigDecimal.ZERO;
-      trendValueSb.append(holdingsValue.toPlainString());
-      trendPointCount++;
-    }
-    model.addAttribute("trendChartLabelsJs", "[" + trendLabelSb + "]");
-    model.addAttribute("trendChartValuesJs", "[" + trendValueSb + "]");
-    model.addAttribute("trendPointCount", trendPointCount);
+    TrendChartJs trendChart = trendChartJs(trendSeries, trendZone);
+    model.addAttribute("trendChartLabelsJs", trendChart.labels());
+    model.addAttribute("trendChartValuesJs", trendChart.values());
+    model.addAttribute("trendPointCount", trendChart.pointCount());
 
     // 총자산은 마지막으로 수집된 종가로 계산된 값이다. 시세 수집이 자동이 아니라서 며칠 전 값일 수 있는데,
     // 요약 화면만 그 사실을 밝히지 않고 있었다(자산 현황·포트폴리오·종목/계좌 상세에는 이미 있다).
@@ -480,6 +452,50 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     model.addAttribute("othersRow", othersRow);
 
     return "stock/htmx/fragments/allocationBars";
+  }
+
+  /** 종목별 손익(실현 + 평가, 수수료 · 세금 반영) - 계좌 x 종목 행을 종목으로 합친다. 종목이 없는 행은 뺀다. */
+  static Map<UUID, BigDecimal> totalProfitByStockItem(List<TradeProfit> profitList) {
+    Map<UUID, BigDecimal> profitByStockItem = new LinkedHashMap<>();
+    for (TradeProfit profit : profitList) {
+      if (profit == null || profit.stockItemId() == null) {
+        continue;
+      }
+      BigDecimal value =
+          profit.totalProfitNet() != null ? profit.totalProfitNet() : BigDecimal.ZERO;
+      profitByStockItem.merge(profit.stockItemId(), value, BigDecimal::add);
+    }
+    return profitByStockItem;
+  }
+
+  /** 미니 추이 차트에 넘기는 JS 배열 둘(라벨 · 값)과 점 수. */
+  record TrendChartJs(String labels, String values, int pointCount) {}
+
+  /**
+   * 미니 추이 차트의 JS 배열 - 라벨은 그 존의 날짜(ISO), 값은 평가액(없으면 0, 소수 그대로). 시각이 없는 점은 뺀다. 2026-10-22 까지 summary
+   * 안에 그대로 적혀 있었다.
+   */
+  static TrendChartJs trendChartJs(
+      List<TradeProfitTimeSeriesPoint> trendSeries, java.time.ZoneId zone) {
+    StringBuilder trendLabelSb = new StringBuilder();
+    StringBuilder trendValueSb = new StringBuilder();
+    int trendPointCount = 0;
+    for (TradeProfitTimeSeriesPoint point : trendSeries) {
+      if (point == null || point.timestamp() == null) {
+        continue;
+      }
+      if (trendLabelSb.length() > 0) {
+        trendLabelSb.append(",");
+        trendValueSb.append(",");
+      }
+      // 라벨은 ISO 날짜만 — 사용자 유래 문자열 추가 금지(이스케이프 없는 $unsafe 경로)
+      trendLabelSb.append("\"").append(point.timestamp().atZone(zone).toLocalDate()).append("\"");
+      BigDecimal holdingsValue =
+          point.totalHoldingsValue() != null ? point.totalHoldingsValue() : BigDecimal.ZERO;
+      trendValueSb.append(holdingsValue.toPlainString());
+      trendPointCount++;
+    }
+    return new TrendChartJs("[" + trendLabelSb + "]", "[" + trendValueSb + "]", trendPointCount);
   }
 
   /**
@@ -731,9 +747,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         .anyMatch(s -> window.equals(windowBySymbol.get(normalizeSymbol(s.stockItemSymbol()))));
   }
 
-  /** 해당 시기 종목들의 최신 지급일 day-of-month 평균(반올림). 이력이 없으면 fallback. */
   /**
-   * 그 시기의 대표 지급일(day-of-month). 지급이력 전체에서 가장 자주 나온 날을 쓴다.
+   * 그 시기의 대표 지급일(day-of-month). 지급이력 전체에서 가장 자주 나온 날을 쓴다. 이력이 없으면 {@code fallback}.
    *
    * <p>예전에는 심볼별 <b>최신 지급 1건</b>의 일자를 평균했다. 그런데 실제 지급일은 영업일 보정 때문에 달마다 흔들린다(실측: 중순 지급은 17/19/20 일,
    * 월말 지급은 2~7 일 사이를 오간다). 최신 한 달만 보면 그 달이 어쩌다 늦게 지급된 달이면 예상일이 통째로 밀린다.
@@ -801,7 +816,6 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         .orElse(fallback);
   }
 
-  /** 오늘 이후 가장 가까운 대표 지급일. 이번 달 지급일이 오늘 이후면 이번 달, 지났으면 다음 달. */
   /**
    * 다음 지급일 추정.
    *

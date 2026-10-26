@@ -42,6 +42,7 @@ import net.luversof.api.stock.repository.StockPriceHistoryRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.kis.dto.KisDailyPriceItem;
 import net.luversof.api.stock.service.kis.dto.KisDailyPriceResponse;
+import net.luversof.api.stock.util.StockIds;
 import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult;
 
 @Service
@@ -705,7 +706,7 @@ public class KisStockPriceUpdateService {
     if (idSet.isEmpty()) {
       return new RawClosePriceFillResult(true, 0, 0, 0, List.of());
     }
-    String ids = idSet.stream().map(UUID::toString).collect(Collectors.joining(","));
+    String ids = StockIds.joinOrNull(idSet);
     Map<UUID, java.util.TreeSet<LocalDate>> tradeDays = new HashMap<>();
     // 최근 7 일은 채워져 있어도 다시 받는다(장중 갱신으로 들어간 원주가를 확정 종가로) - 같은 구간이라 호출 수는 그대로다.
     LocalDate recentFrom = LocalDate.now(MARKET_ZONE_ID).minusDays(7);

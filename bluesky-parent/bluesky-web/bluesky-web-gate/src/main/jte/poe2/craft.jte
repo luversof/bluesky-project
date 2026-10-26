@@ -68,7 +68,7 @@
 	contentPoe = @`
 		<div class="space-y-4" data-craft2-page>
 			@template.poe2.header(title = pageTitle, meta = meta)
-			<div class="text-sm text-base-content/70 -mt-2">${ko ? "화폐와 징조를 하나씩 써 보며 결과와 다음 옵션을 봅니다. PoE2 옵션 가중치는 게임 데이터에 없어(비공개) 붙을 수 있는 옵션 중 균등으로 굴립니다." : "Apply currency and omens one step at a time. PoE2 modifier weights are not in the game data (hidden), so modifiers are rolled uniformly among those that can appear."} <a href="#craft2-calc" class="link link-primary" data-craft2-calc-jump>${ko ? "→ 제작 시뮬레이터(가장 적은 비용) · 다단계 전략" : "→ Crafting simulator (cheapest) · multi-step strategy"}</a></div>
+			<div class="text-sm text-base-content/70 -mt-2">${ko ? "화폐와 징조를 하나씩 써 보며 결과와 다음 옵션을 봅니다. PoE2 옵션 가중치는 게임 데이터에 없어(비공개) 붙을 수 있는 옵션 중 균등으로 굴립니다." : "Apply currency and omens one step at a time. PoE2 modifier weights are not in the game data (hidden), so modifiers are rolled uniformly among those that can appear."} <a href="#craft2-calc" class="link link-primary" data-craft2-calc-jump>${ko ? "→ 제작 계산기(가장 적은 비용) · 다단계 전략" : "→ Crafting calculator (cheapest) · multi-step strategy"}</a></div>
 
 			<%-- 제작할 아이템 검색(10-21 C528, PoE1 C527 짝) — 베이스 이름(영 · 한)으로 풀 · 베이스를 한 번에 --%>
 			<div class="max-w-xl space-y-1" data-craft-base-search>
@@ -109,6 +109,8 @@
 				</label>
 			</form>
 
+			<%-- 붙여넣기 · 보관함은 넓은 화면에서 한 줄(10-23 Q35 — 첫 화면에서 카드를 위로) --%>
+			<div class="grid gap-2 lg:grid-cols-2 items-start min-w-0" data-craft-tools-row>
 			<%-- 게임 아이템 붙여넣기(10-20 C486, PoE1 C485 와 같은 칸) — 이 화면 아무 데서나 Ctrl+V 해도 연다(common.ts) --%>
 			<details class="rounded-box border border-base-300 bg-base-100 px-3 py-2" data-craft-import>
 				<summary class="cursor-pointer text-sm font-medium">${ko ? "게임 아이템 붙여넣기" : "Paste an in-game item"} <span class="text-xs font-normal text-base-content/60">${ko ? "— 게임에서 아이템에 마우스를 올리고 Ctrl+C(옵션 이름 · 등급까지는 Ctrl+Alt+C), 이 화면에서 Ctrl+V · Path of Building 아이템 글 · 빌드 코드(빌드 아이템 중 고르기)도" : "— hover the item in game, press Ctrl+C (Ctrl+Alt+C for names and tiers), then Ctrl+V on this page · Path of Building item text or a build code (pick a build item) works too"}</span></summary>
@@ -123,7 +125,15 @@
 			<%-- 보관함(10-20 C518, craftofexile beta 의 Inventory) — 이 브라우저에 담아 둔 아이템(공유 링크)을 다시 연다, 목록은 common.ts 가 그린다 --%>
 			<details class="rounded-box border border-base-300 bg-base-100 px-3 py-2" data-craft-inventory data-inv-lang="${ko ? "ko" : "en"}">
 				<summary class="cursor-pointer text-sm font-medium">${ko ? "보관함" : "Inventory"} <span class="text-xs font-normal text-base-content/60" data-craft-inv-count></span> <span class="text-xs font-normal text-base-content/60">${ko ? "— 저장한 아이템을 그대로 다시 엽니다(이 브라우저에만)" : "— reopen saved items as they were (this browser only)"}</span></summary>
+				<%-- 보관함 탭(10-23 Q22, craftofexile 'storage tabs') — 탭 줄은 common.ts renderCraftInventory 가 그린다. 저장은 고른 탭에, 탭을 지우면 아이템은 기본 탭으로 --%>
+				<div class="mt-2 flex flex-wrap items-center gap-1" role="group" aria-label="${ko ? "보관함 탭" : "Inventory tabs"}" data-craft-inv-tabs></div>
 				<div class="mt-2 space-y-1 min-w-0" data-craft-inv-list></div>
+				<div class="mt-2 flex flex-wrap items-center gap-2 text-xs" data-craft-inv-tab-tools>
+					<input type="text" maxlength="20" class="input input-xs input-bordered w-32" placeholder="${ko ? "새 탭 이름" : "New tab name"}" aria-label="${ko ? "새 탭 이름" : "New tab name"}" data-craft-inv-tab-new>
+					<button type="button" class="btn btn-xs btn-ghost border border-base-300" data-craft-inv-tab-add>${ko ? "탭 만들기" : "Add tab"}</button>
+					<button type="button" class="btn btn-xs btn-ghost border border-base-300" hidden data-craft-inv-tab-del>${ko ? "이 탭 지우기(아이템은 기본 탭으로)" : "Delete this tab (items move to Main)"}</button>
+					<span class="text-success" aria-live="polite" data-craft-inv-tab-msg></span>
+				</div>
 				<%-- 보관함 옮기기(10-21 C535) — 목록을 글로 복사해 다른 브라우저 · PC 의 이 칸에 붙여넣으면 합친다(같은 사이트 제작 화면 주소만) --%>
 				<details class="mt-2 text-xs" data-craft-inv-move>
 					<summary class="cursor-pointer select-none text-base-content/70">${ko ? "다른 브라우저로 옮기기" : "Move to another browser"}</summary>
@@ -137,6 +147,7 @@
 					</div>
 				</details>
 			</details>
+			</div>
 			@if(imported)
 				<div role="status" class="alert ${importNote != null && !importNote.isBlank() ? "alert-warning" : "alert-success"} py-2 text-sm" data-craft-import-note>
 					<span class="min-w-0 wrap-anywhere">${ko ? "게임 아이템을 가져왔습니다." : "Imported the in-game item."}@if(importNote != null && !importNote.isBlank()) ${ko ? "확인할 것: " : "Check: "}${importNote}@endif</span>
@@ -156,8 +167,8 @@
 					for (Poe2Craft.PoolLine p : calcPool) if (p.family() != null) fams.computeIfAbsent(p.gen() + ":" + p.family(), k -> new java.util.ArrayList<>()).add(p);
 				}
 				<section id="craft2-calc" class="space-y-3 border-t border-base-300 pt-4 scroll-mt-24" data-craft2-calc data-no-success-toast>
-					<h2 class="text-lg font-semibold">${ko ? "제작 시뮬레이터 — 가장 적은 비용" : "Crafting simulator — cheapest method"}</h2>
-					<p class="text-sm text-base-content/70">${ko ? "목표 등급을 고르면 화폐 · 등급 · 징조 · 에센스 · 훼손 · 분열 · 새 베이스를 모두 섞어 지금 아이템에서 가장 싼 길을 찾습니다(같이 못 쓰는 조합은 제작 규칙대로 막음, 베이스 값 제외, 옵션 가중치는 비공개라 균등 가정)." : "Pick target tiers — the cheapest path from the current item mixing orbs, tiers, omens, essences, desecration, fracturing and new bases (invalid combinations blocked by the crafting rules; base price excluded; weights assumed uniform)."}</p>
+					<h2 class="text-lg font-semibold">${ko ? "제작 계산기 — 가장 적은 비용" : "Crafting calculator — cheapest method"}</h2>
+					<p class="text-sm text-base-content/70">${ko ? "목표 등급을 고르면 화폐 · 등급 · 징조 · 에센스 · 훼손 · 분열 · 새 베이스를 모두 섞어 지금 아이템에서 가장 싼 길을 찾습니다(같이 못 쓰는 조합은 제작 규칙대로 막음, 베이스 값 = '가격 직접 입력'의 베이스 아이템(비우면 제외), 옵션 가중치는 비공개라 균등 가정)." : "Pick target tiers — the cheapest path from the current item mixing orbs, tiers, omens, essences, desecration, fracturing and new bases (invalid combinations blocked by the crafting rules; base cost = 'Base item' in Custom prices (blank = excluded); weights assumed uniform)."}</p>
 					<%-- 가격 직접 입력(10-21 C530, PoE1 C529 짝) — 디바인 기준, 비우면 시세. 이 브라우저에 저장 --%>
 					@if(!craftPriceList.isEmpty())
 						<details class="rounded-box border border-base-300 bg-base-100 px-3 py-2" data-craft-prices>
@@ -171,7 +182,7 @@
 						</details>
 					@endif
 					<div class="grid gap-4 items-start lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]" data-craft2-calc-workspace>
-					<form hx-post="/poe2/htmx/craft/calc" hx-target="#craft2-calc-result" hx-swap="outerHTML" hx-include="#craft2-emu input[name=state]" hx-disabled-elt="find [data-craft2-calc-run], find [data-craft2-strategy-run]" hx-indicator="[data-craft2-calc-busy]" class="space-y-2 min-w-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:flex lg:flex-col" data-craft2-calc-form>
+					<form hx-post="/poe2/htmx/craft/calc" hx-target="#craft2-calc-result" hx-swap="outerHTML" hx-include="#craft2-emu input[name=state]" hx-disabled-elt="[data-craft2-calc-run], [data-craft2-strategy-run]" hx-indicator="[data-craft2-calc-busy]" class="space-y-2 min-w-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:flex lg:flex-col" data-craft2-calc-form>
 						<input type="hidden" name="poolKey" value="${activeKey}">
 						<input type="hidden" name="ilvl" value="${ilvl}">
 						<%-- 목표 고르기(C461 — PoE1 C458 과 같은 한 화면): 검색 · 고른 줄 맨 위로 · 칸 안 스크롤 --%>
@@ -201,14 +212,14 @@
 									}
 									<label class="flex items-center gap-2 text-xs min-w-0 rounded px-1 py-0.5" data-craft2-calc-family="${fe.getKey()}" data-craft-calc-ids="${String.join(" ", tiers.stream().map(t -> t.id() + "=" + t.tierRank()).toList())}" data-picked-row>
 										<span class="text-[10px] font-mono text-base-content/60 w-6 shrink-0">${pre ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}</span>
-										<select name="t_${fe.getKey()}" class="select select-xs select-bordered w-24 shrink-0 h-7 min-h-0" aria-label="${ko ? "최소 등급" : "Minimum tier"}">
+										<select name="t_${fe.getKey()}" class="select select-xs select-bordered w-24 shrink-0 h-7 min-h-0" aria-label="${(ko ? "최소 등급 — " : "Minimum tier — ") + (tx == null || tx.isEmpty() ? fe.getKey() : tx.get(0))}">
 											<option value="">-</option>
 											@for(Poe2Craft.PoolLine t : tiers)
 												<option value="${t.tierRank()}">T1@if(t.tierRank() > 1)~T${t.tierRank()}@endif</option>
 											@endfor
 										</select>
 										<span class="min-w-0 wrap-anywhere">@for(int i = 0; i < tx.size(); i++)$unsafe{PoeText.highlightValues(tx.get(i))}@if(i < tx.size() - 1), @endif@endfor@if((ko ? top.tagsKo() : top.tags()) != null && !(ko ? top.tagsKo() : top.tags()).isEmpty())<span class="text-[10px] text-base-content/60" data-craft-calc-tags> — ${String.join(", ", ko ? top.tagsKo() : top.tags())}</span>@endif</span>
-										<input type="checkbox" name="t_grp:${fe.getKey()}" value="1" class="checkbox checkbox-xs ml-auto shrink-0" title="${ko ? "묶음에 넣기 — 위 '묶음'에서 고른 개수 이상 채우면 충족(등급을 고르면 그 등급 이상)" : "Add to the group — met when at least the chosen number of the group is hit (picked tier or better)"}" aria-label="${ko ? "묶음에 넣기" : "Add to group"}" data-craft-calc-grp>
+										<input type="checkbox" name="t_grp:${fe.getKey()}" value="1" class="checkbox checkbox-xs ml-auto shrink-0" title="${ko ? "묶음에 넣기 — 위 '묶음'에서 고른 개수 이상 채우면 충족(등급을 고르면 그 등급 이상)" : "Add to the group — met when at least the chosen number of the group is hit (picked tier or better)"}" aria-label="${(ko ? "묶음에 넣기 — " : "Add to group — ") + (tx == null || tx.isEmpty() ? fe.getKey() : tx.get(0))}" data-craft-calc-grp>
 									</label>
 								@endfor
 							</div>
@@ -248,7 +259,7 @@
 						<%-- 지금 아이템에서 시작(C357) — 에뮬레이터 아이템 그대로(분열 베이스 등): 카오스 반복 · 전략만, 새 베이스가 필요한 방법은 빠진다 --%>
 						<label class="flex items-center gap-1 text-xs" title="${ko ? "에뮬레이터의 지금 아이템에서 시작합니다(직접 편집으로 만든 분열 베이스 등). 카오스 반복 · 다단계 전략에 쓰이고, 새 베이스가 필요한 방법은 빠집니다" : "Start from the current emulator item (e.g. a fractured base built with direct edit). Applies to chaos spam and strategies; base-requiring methods are skipped"}"><input type="checkbox" name="fromState" value="1" class="checkbox checkbox-xs" data-craft2-from-state checked>${ko ? "에뮬레이터의 지금 아이템에서 시작" : "Start from the emulator item"}</label>
 						<button type="submit" class="btn btn-sm btn-primary" data-craft2-calc-run>${ko ? "최소 비용 찾기" : "Find the cheapest way"}</button>
-						<span class="htmx-indicator text-xs text-base-content/70" data-craft2-calc-busy role="status"><span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? "시뮬레이션 중(최대 10초)…" : "Simulating (up to 10 s)…"}</span>
+						<span class="htmx-indicator text-xs text-base-content/70" data-craft2-calc-busy role="status"><span class="loading loading-spinner loading-xs align-middle"></span> ${ko ? "1/2 방법별 비교 표 시뮬레이션 중(최대 10초)…" : "1/2 Simulating the method table (up to 10 s)…"}</span>
 						</div>
 						<%-- 최적 조합은 표와 동시에 시작(C461) — 백그라운드 작업 --%>
 						<div hidden hx-post="/poe2/htmx/craft/optimize" hx-trigger="submit from:closest form" hx-include="closest form, #craft2-emu input[name=state]" hx-target="#craft2-opt-result" hx-swap="outerHTML" data-craft2-optimize-trigger></div>
@@ -271,23 +282,24 @@
 							for (String[] a : acts2) actGroups2.computeIfAbsent(a[0], k -> new java.util.ArrayList<>()).add(a);
 							java.util.Set<String> craftOmenKeys = java.util.Set.of("SinistralExaltation", "DextralExaltation", "GreaterExaltation", "HomogenisingExaltation", "CatalysingExaltation", "SinistralCoronation", "DextralCoronation", "HomogenisingCoronation", "SinistralAlchemy", "DextralAlchemy", "Whittling", "SinistralErasure", "DextralErasure", "SinistralAnnulment", "DextralAnnulment", "GreaterAnnulment", "SinistralCrystallisation", "DextralCrystallisation", "SinistralNecromancy", "DextralNecromancy", "Sovereign", "Liege", "Blackblooded", "Light", "AbyssalEchoes", "Putrefaction");
 						}
+						<%-- 다단계 전략 줄(10-23 Q32 UX QA — PoE1 짝: 프리셋 · 실행 단추를 접힌 '단계 직접 엮기' 밖으로, 기본 = 연금 → 카오스. 전엔 상자 안에 있고 기본이 빈 '직접 엮기'라 눌러도 할 일이 없었다) --%>
+						<div class="flex flex-wrap items-center gap-2 border-t border-base-300 pt-3" data-craft2-strategy>
+							<span class="text-sm font-medium">${ko ? "다단계 전략" : "Multi-step strategy"}</span>
+							<select name="preset" class="select select-sm select-bordered min-w-0" aria-label="${ko ? "전략" : "Strategy"}" data-craft2-strategy-preset>
+								<option value="alch-chaos">${ko ? "연금 → 카오스(목표까지, 최대 300)" : "Alchemy → Chaos (until targets, max 300)"}</option>
+								<option value="exalt3">${ko ? "진화 → 확장 → 제왕 → 엑잘(목표까지, 최대 3)" : "Transmute → Augment → Regal → Exalt (until targets, max 3)"}</option>
+								<option value="dese-echo">${ko ? "연금 → 훼손(보존된 뼈) → 드러내기(심연의 메아리)" : "Alchemy → Desecrate (Preserved bone) → Reveal (Abyssal Echoes)"}</option>
+								<option value="custom">${ko ? "직접 엮기(아래 단계 표)" : "Custom (steps below)"}</option>
+							</select>
+							<button type="submit" class="btn btn-sm" hx-post="/poe2/htmx/craft/strategy" hx-target="#craft2-strategy-result" hx-swap="outerHTML" hx-include="#craft2-emu input[name=state], #craft2-emu input[name=base]" hx-disabled-elt="this" hx-indicator="[data-craft2-calc-busy]" data-craft2-strategy-run>${ko ? "전략 모의" : "Simulate strategy"}</button>
+						</div>
 						<details class="rounded-box border border-base-300 bg-base-100" data-craft2-strategy-editor>
-							<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "다단계 전략 — 단계 직접 엮기" : "Multi-step strategy — build steps"} <span class="text-xs font-normal text-base-content/70">· ${ko ? "줄마다 화폐 · 징조 · 언제까지 · 최대, \"다음 줄과 묶음\"이면 묶음 반복" : "currency · omen · until · max per row; grouped rows repeat together"}</span></summary>
+							<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "단계 직접 엮기(전략에서 '직접 엮기'를 고르면 이 표대로)" : "Build your own steps (pick 'Custom' above)"} <span class="text-xs font-normal text-base-content/70">· ${ko ? "줄마다 화폐 · 징조 · 언제까지 · 최대, \"다음 줄과 묶음\"이면 묶음 반복" : "currency · omen · until · max per row; grouped rows repeat together"}</span></summary>
 							<div class="px-3 pb-3 space-y-2">
-								<%-- 프리셋(C425 UX QA · C429 — 빈 6줄 아래 맨 끝에 있어 찾기 어려웠다 → 표 위로) — 단계 표가 다 비어 처음엔 무엇을 넣을지 몰랐다): 고르면 단계 표 대신 그 전략, 목표는 위에서 고른 것 --%>
-								<label class="flex flex-wrap items-center gap-2 text-xs min-w-0"><span>${ko ? "전략" : "Strategy"}</span>
-									<select name="preset" class="select select-xs select-bordered min-w-0" aria-label="${ko ? "전략 프리셋" : "Strategy preset"}" data-craft2-strategy-preset>
-										<option value="custom">${ko ? "직접 엮기(아래 단계 표)" : "Custom (steps below)"}</option>
-										<option value="alch-chaos">${ko ? "예시: 연금 → 카오스(목표까지, 최대 300)" : "Example: Alchemy → Chaos (until targets, max 300)"}</option>
-										<option value="exalt3">${ko ? "예시: 진화 → 확장 → 제왕 → 엑잘(목표까지, 최대 3)" : "Example: Transmute → Augment → Regal → Exalt (until targets, max 3)"}</option>
-										<option value="dese-echo">${ko ? "예시: 연금 → 훼손(보존된 뼈) → 드러내기(심연의 메아리)" : "Example: Alchemy → Desecrate (Preserved bone) → Reveal (Abyssal Echoes)"}</option>
-									</select>
-									<span class="text-base-content/70">${ko ? "프리셋을 고르면 아래 단계 표 대신 그 전략으로 모의합니다" : "A preset replaces the step table below"}</span>
-								</label>
 								@for(int i = 1; i <= 6; i++)
 									<div class="flex flex-wrap items-center gap-2" data-craft2-step-row="${i}">
 										<span class="text-xs text-base-content/70 w-4 shrink-0">${i}</span>
-										<select name="s${i}" class="select select-xs select-bordered min-w-0 flex-1" aria-label="${ko ? "화폐" : "Currency"} ${i}">
+										<select name="s${i}" class="select select-xs select-bordered min-w-[10rem] flex-1" aria-label="${ko ? "화폐" : "Currency"} ${i}">
 											<option value="">${ko ? "(안 씀)" : "(none)"}</option>
 											@for(var g : actGroups2.entrySet())
 												<optgroup label="${g.getKey()}">
@@ -313,7 +325,6 @@
 										<label class="flex items-center gap-1 text-xs"><input type="checkbox" name="g${i}" value="1" class="checkbox checkbox-xs">${ko ? "다음 줄과 묶음" : "Group with next"}</label>
 									</div>
 								@endfor
-								<button type="submit" class="btn btn-sm" hx-post="/poe2/htmx/craft/strategy" hx-target="#craft2-strategy-result" hx-swap="outerHTML" hx-disabled-elt="this" hx-indicator="[data-craft2-calc-busy]" data-craft2-strategy-run>${ko ? "전략 모의" : "Simulate strategy"}</button>
 							</div>
 						</details>
 							</div>
@@ -322,7 +333,7 @@
 					<div class="min-w-0 space-y-3 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1" data-craft2-calc-results>
 						<div id="craft2-opt-result" class="rounded-box border border-dashed border-base-300 p-4 text-sm text-base-content/70" data-craft-optimize-empty>${ko ? "목표를 고르고 '최소 비용 찾기'를 누르면 여기에 가장 싼 제작 흐름(상태마다 쓸 수단)이, 아래에 방법별 비교 표가 나옵니다." : "Pick targets and press 'Find the cheapest way' — the cheapest crafting flow appears here and the per-method table below."}</div>
 						@template.poe2.htmx.craftCalc(calc = null, targetLabels = java.util.List.of(), nameKo = java.util.Map.of())
-						@template.poe2.htmx.craftStrategy(result = null, targetLabels = java.util.List.of(), nameKo = java.util.Map.of(), argName = java.util.Map.of())
+						@template.poe2.htmx.craftStrategy(result = null, targetLabels = java.util.List.of(), nameKo = java.util.Map.of(), argName = java.util.Map.of(), sampleLinks = java.util.List.of())
 					</div>
 					</div>
 				</section>

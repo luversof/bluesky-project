@@ -124,15 +124,6 @@ public abstract class StockBaseHtmxController {
   }
 
   /**
-   * 시작이 종료보다 뒤면 둘을 맞바꾼다. 화면의 날짜 피커는 이미 그렇게 바로잡지만(date-range-picker.ts), 주소를 손으로 고치거나 공유 링크가 어긋나면
-   * 서버에 역순 그대로 온다.
-   *
-   * <p>실측 2026-09-09: 역순으로 부른 자산성장·배당·매매·활동 조각 4개가 전부 오류도 안내도 없이 "2026-07-01 ~ 2026-02-28" 과 빈 결과를
-   * 그렸다. 사용자에게는 '그 기간에 데이터가 없다' 로 읽힌다. 한쪽만 있거나 같으면 그대로 둔다.
-   *
-   * @return {start, end} 순서가 맞은 두 값
-   */
-  /**
    * 화면이 요청한 기간. {@code rangeMode=all} 이면 함께 실린 날짜를 버리고(전체), 아니면 앞뒤를 바로잡은 날짜다.
    *
    * <p>피커는 '전체' 를 고르면 날짜를 비워 보내므로 둘이 함께 오는 요청은 모순이다. 그런데 공유 주소 {@code ?rangeMode=all} 로 들어오면
@@ -147,6 +138,15 @@ public abstract class StockBaseHtmxController {
     return orderedRange(startDate, endDate);
   }
 
+  /**
+   * 시작이 종료보다 뒤면 둘을 맞바꾼다. 화면의 날짜 피커는 이미 그렇게 바로잡지만(date-range-picker.ts), 주소를 손으로 고치거나 공유 링크가 어긋나면
+   * 서버에 역순 그대로 온다.
+   *
+   * <p>실측 2026-09-09: 역순으로 부른 자산성장·배당·매매·활동 조각 4개가 전부 오류도 안내도 없이 "2026-07-01 ~ 2026-02-28" 과 빈 결과를
+   * 그렸다. 사용자에게는 '그 기간에 데이터가 없다' 로 읽힌다. 한쪽만 있거나 같으면 그대로 둔다.
+   *
+   * @return {start, end} 순서가 맞은 두 값
+   */
   protected static java.time.Instant[] orderedRange(
       java.time.Instant startDate, java.time.Instant endDate) {
     // 규칙은 StockRangePresetUtil 한 곳에만 둔다 - 상세 화면도 같은 것을 쓴다.
@@ -178,7 +178,6 @@ public abstract class StockBaseHtmxController {
     this.messageSource = messageSource;
   }
 
-  /** 현재 로케일에 맞는 메시지를 반환한다. */
   /**
    * 로케일에 맞는 짧은 월 표기. 한국어면 "8월", 영어면 "Aug".
    *
@@ -194,6 +193,7 @@ public abstract class StockBaseHtmxController {
     return msg("stock.common.date.month.day", shortMonthLabel(date), date.getDayOfMonth());
   }
 
+  /** 현재 로케일에 맞는 메시지를 반환한다. */
   protected String msg(String code, Object... args) {
     return messageSource.getMessage(
         code, args.length > 0 ? args : null, code, LocaleContextHolder.getLocale());
@@ -351,17 +351,31 @@ public abstract class StockBaseHtmxController {
             .collect(Collectors.toMap(StockItem::id, StockItem::name, (a, b) -> a)));
   }
 
-  // Helper to get enriched data
-  /**
-   * 요청된 필터 id 중 이 사용자에게 실제로 있는 것만 남긴다.
-   *
-   * <p>예전에는 하나라도 없는 id 가 섞이면 필터를 통째로 버려 "전체 보기"가 됐다. 필터는 넓어지는 쪽이 아니라 좁아지는 쪽으로 실패해야 한다 — 실측: 유효 계좌
-   * 1개 + 없는 계좌 1개를 주면 26행으로 좁아지는 대신 250행 전체가 나왔다.
-   *
-   * @return 필터를 요청하지 않았으면 null(= 필터 없음), 요청했으면 유효한 id 만 남긴 목록(전부 무효면 빈 목록 = 결과 없음)
-   */
   /** 날짜 없이 프리셋 상태만 왔을 때 적용할 기간. {@code end} 는 '오늘까지'를 뜻하는 배타적 경계다. */
   protected record PresetRange(java.time.Instant start, java.time.Instant end, String mode) {}
+
+  /** 목록 화면(매매 · 활동 · 배당)이 실제로 조회할 기간과, 기본 기간이 적용됐으면 그 프리셋 모드. */
+  protected record ListRange(java.time.Instant start, java.time.Instant end, String rangeMode) {}
+
+  /**
+   * 목록 화면의 기간 - {@link #effectiveRange} 로 바로잡은 날짜, 날짜가 둘 다 없고 {@code all} 도 아니면 프리셋 기본 기간(그때 모드도
+   * 프리셋 것으로). 2026-10-22 까지 세 핸들러가 같은 열 줄과 아래 까닭 주석을 한 벌씩 들고 있었다.
+   *
+   * <p>역순 기간을 바로잡지 않으면 빈 결과가 '데이터 없음' 으로 읽힌다(피커와 같은 규칙).
+   *
+   * <p>rangeMode 는 어떤 프리셋 버튼이 눌렸는지 알리는 화면 상태값이지 기간 그 자체가 아니다(기간은 startDate/endDate 로 온다). 그런데 이 가드가
+   * rangeMode 의 '존재'를 보는 바람에, 날짜 없이 rangeMode 만 실려 오면 기본 기간이 적용되지 않고 전 기간이 조회됐다(실측: rangeMode=ytd
+   * 인데 올해 106행이 아니라 전체 300행). 같은 가드를 asset-growth 는 이미 '날짜가 없고 all 도 아니면 기본 적용'으로 쓰고 있어, 그쪽에 맞춘다.
+   */
+  protected ListRange listRange(
+      String rangeMode, java.time.Instant startDate, java.time.Instant endDate, ZoneId zone) {
+    java.time.Instant[] ordered = effectiveRange(rangeMode, startDate, endDate);
+    if (ordered[0] == null && ordered[1] == null && !"all".equalsIgnoreCase(rangeMode)) {
+      PresetRange preset = resolvePresetRange(rangeMode, zone);
+      return new ListRange(preset.start(), preset.end(), preset.mode());
+    }
+    return new ListRange(ordered[0], ordered[1], rangeMode);
+  }
 
   /**
    * 화면의 기간 프리셋을 서버에서 그대로 계산한다.
@@ -375,15 +389,6 @@ public abstract class StockBaseHtmxController {
     return new PresetRange(preset.start(), preset.end(), preset.mode());
   }
 
-  /**
-   * 요청에 실린 계좌 필터를 이 사용자의 실제 계좌로 좁힌다.
-   *
-   * <p>없는 계좌 id 가 하나라도 섞이면 api-stock 이 요청 전체를 거절한다(계좌 소유 검증). 그러면 화면이 "불러오지 못했습니다" 로 통째로 죽는다 — 저장해
-   * 둔 선택이 가리키던 계좌가 지워졌을 때 그렇게 된다(실측: summary / asset-status / asset-growth / portfolio 가 가짜 계좌 id
-   * 하나에 전부 오류 화면). 목록·활동 화면은 이미 교집합을 취해 정상 동작하므로 같은 방식으로 맞춘다.
-   *
-   * @return 요청에 계좌 필터가 없으면 {@code null}, 있으면 유효한 것만 남긴 목록(하나도 유효하지 않으면 빈 목록)
-   */
   /**
    * 종목 필터를 실제로 존재하는 종목으로 좁힌다.
    *
@@ -431,6 +436,15 @@ public abstract class StockBaseHtmxController {
     return request.getAccountIdList().isEmpty();
   }
 
+  /**
+   * 요청에 실린 계좌 필터를 이 사용자의 실제 계좌로 좁힌다.
+   *
+   * <p>없는 계좌 id 가 하나라도 섞이면 api-stock 이 요청 전체를 거절한다(계좌 소유 검증). 그러면 화면이 "불러오지 못했습니다" 로 통째로 죽는다 — 저장해
+   * 둔 선택이 가리키던 계좌가 지워졌을 때 그렇게 된다(실측: summary / asset-status / asset-growth / portfolio 가 가짜 계좌 id
+   * 하나에 전부 오류 화면). 목록·활동 화면은 이미 교집합을 취해 정상 동작하므로 같은 방식으로 맞춘다.
+   *
+   * @return 요청에 계좌 필터가 없으면 {@code null}, 있으면 유효한 것만 남긴 목록(하나도 유효하지 않으면 빈 목록)
+   */
   protected List<UUID> retainOwnedAccountIds(List<UUID> requestedIds, List<Account> accountList) {
     return retainAvailableIds(
         requestedIds,
@@ -440,6 +454,14 @@ public abstract class StockBaseHtmxController {
             .collect(Collectors.toSet()));
   }
 
+  /**
+   * 요청된 필터 id 중 이 사용자에게 실제로 있는 것만 남긴다.
+   *
+   * <p>예전에는 하나라도 없는 id 가 섞이면 필터를 통째로 버려 "전체 보기"가 됐다. 필터는 넓어지는 쪽이 아니라 좁아지는 쪽으로 실패해야 한다 — 실측: 유효 계좌
+   * 1개 + 없는 계좌 1개를 주면 26행으로 좁아지는 대신 250행 전체가 나왔다.
+   *
+   * @return 필터를 요청하지 않았으면 null(= 필터 없음), 요청했으면 유효한 id 만 남긴 목록(전부 무효면 빈 목록 = 결과 없음)
+   */
   protected static List<UUID> retainAvailableIds(
       List<UUID> requestedIds, java.util.Set<UUID> availableIds) {
     if (requestedIds == null || requestedIds.isEmpty()) {

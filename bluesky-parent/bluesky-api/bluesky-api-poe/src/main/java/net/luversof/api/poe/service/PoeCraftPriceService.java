@@ -54,8 +54,8 @@ public class PoeCraftPriceService {
   }
 
   /**
-   * 짐승 제작 레시피 → 필요한 짐승(C457, 게임 데이터 BestiaryRecipes · BestiaryRecipeComponent — 레시피 시세는 없고 짐승 시세는
-   * poe.ninja 짐승 개요에 있다). 레시피 단가 = 짐승 시세 합(하나라도 모르면 null).
+   * 야수 제작 레시피 → 필요한 야수(C457, 게임 데이터 BestiaryRecipes · BestiaryRecipeComponent — 레시피 시세는 없고 야수 시세는
+   * poe.ninja 야수 개요에 있다). 레시피 단가 = 야수 시세 합(하나라도 모르면 null).
    */
   static final Map<String, List<String>> BEAST_OF_RECIPE =
       Map.ofEntries(
@@ -126,7 +126,7 @@ public class PoeCraftPriceService {
     return OVERRIDE.get();
   }
 
-  /** 이름 → 카오스 값. 모르면 null. 짐승 제작 레시피는 필요한 짐승 시세 합(C457). 사용자 가격(C529)이 있으면 그것. */
+  /** 이름 → 카오스 값. 모르면 null. 야수 제작 레시피는 필요한 야수 시세 합(C457). 사용자 가격(C529)이 있으면 그것. */
   public Double chaos(String name) {
     if (name == null) {
       return null;

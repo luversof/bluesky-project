@@ -66,7 +66,7 @@ class PoeCraftBuildImportTextTest {
   }
 
   @Test
-  void PoE2_앞_N줄은_임플리싯() {
+  void PoE2_앞_N줄은_고정속성() {
     Poe2.BuildItem bi =
         new Poe2.BuildItem(
             "Gloves",

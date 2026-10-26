@@ -56,8 +56,8 @@ public record PoeBuild(
       String baseSlug,
       List<String> modLines,
       List<String> modLinesKo,
-      // 인게임 툴팁은 임플리싯(암시)을 구분선 위 별도 섹션에 둔다. PoB 텍스트의 "Implicits: N" 이
-      // 뒤따르는 N줄이 임플리싯임을 알려주므로, 여기서 갈라두지 않으면 화면에서 되살릴 수 없다.
+      // 인게임 툴팁은 고정 속성(암시)을 구분선 위 별도 섹션에 둔다. PoB 텍스트의 "Implicits: N" 이
+      // 뒤따르는 N줄이 고정 속성임을 알려주므로, 여기서 갈라두지 않으면 화면에서 되살릴 수 없다.
       List<String> implicitLines,
       List<String> implicitLinesKo,
       /** 인게임 툴팁 맨 아래 빨간 "부패됨" 줄 — PoB 텍스트의 Corrupted 플래그. */

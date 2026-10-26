@@ -11,6 +11,7 @@
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendSimulatorSummaryView
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
 @param java.util.List<net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick> monthlyContributionPicks = java.util.List.of()
@@ -195,9 +196,7 @@
 	if ("single-saved".equals(monthlyDividendResult)) {
 		successMessage = MessageUtil.getMessage("stock.simulator.monthly.saved");
 	} else if ("sheet-imported".equals(monthlyDividendResult)) {
-		successMessage = java.text.MessageFormat.format(
-			MessageUtil.getMessage("stock.simulator.monthly.sheet.imported"),
-			monthlyDividendSavedCount != null ? monthlyDividendSavedCount : 0);
+		successMessage = StockViewSupport.msg("stock.simulator.monthly.sheet.imported", monthlyDividendSavedCount != null ? monthlyDividendSavedCount : 0);
 	}
 }
 
@@ -249,14 +248,14 @@
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.quantity")}</span></div>
 							<input name="heldQuantity" type="number" min="1" step="1" value="${heldQuantityValue}" class="input input-bordered w-full" required />
 							@if(formQuantityDiffers)
-								<span class="label-text-alt mt-1 text-warning amount-value" data-form-current-quantity>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.current"), amountFormat.format(formCurrentQuantity))}</span>
+								<span class="label-text-alt mt-1 text-warning amount-value" data-form-current-quantity>${StockViewSupport.msg("stock.simulator.monthly.table.cell.quantity.current", amountFormat.format(formCurrentQuantity))}</span>
 							@endif
 						</label>
 						<label class="form-control">
 							<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.monthly.form.field.average.buy.price")}</span></div>
 							<input name="averageBuyPrice" type="number" min="0" step="0.01" value="${averageBuyPriceValue}" class="input input-bordered w-full" required />
 							@if(formAverageBuyPriceDiffers)
-								<span class="label-text-alt mt-1 text-warning amount-value" data-form-current-average-buy-price>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.current"), amountFormat.format(formCurrentAverageBuyPrice))}</span>
+								<span class="label-text-alt mt-1 text-warning amount-value" data-form-current-average-buy-price>${StockViewSupport.msg("stock.simulator.monthly.table.cell.average.buy.price.current", amountFormat.format(formCurrentAverageBuyPrice))}</span>
 							@endif
 						</label>
 						<%-- 좁은 폭에서는 단추 글자가 줄을 바꾼다 - 글꼴 200% 에서 "시뮬레이터 반영" 한 줄이 칸보다 넓어 페이지를 밀었다(320px, 실측 2026-09-17).
@@ -312,9 +311,7 @@
 						@if(monthlyDividendStaleQuantityCount > 0)
 						<%-- 금액이 든 안내라 금액 가리기 대상이다(amount-value) - 2026-09-29 보유가 바뀌어 처음 나타나자 가리기를 켜도 금액이 보였다. --%>
 						<div class="text-[11px] text-warning amount-value" data-stale-quantity-notice>
-							${java.text.MessageFormat.format(
-								MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
-								String.valueOf(monthlyDividendStaleQuantityCount),
+							${StockViewSupport.msg("stock.summary.upcoming.dividend.stale.quantity", String.valueOf(monthlyDividendStaleQuantityCount),
 								StockFormatUtil.fullKrw(StockFormatUtil.displayWon(monthlyDividendCurrentQuantityTotal)))}
 						</div>
 						@endif
@@ -391,7 +388,7 @@
 							<div class="text-[11px] text-base-content/60">${totalMonthlyTaxableBaseSummaryLabel}</div>
 							<div class="mt-1 font-mono font-semibold amount-value">₩${amountFormat.format(totalExpectedTaxableBaseAmount)}</div>
 							@if(monthlyDividendReferenceTaxableStaleCount > 0 && monthlyDividendReferenceTaxableTotal != null)
-								<div class="mt-1 text-[11px] text-base-content/60 amount-value" data-reference-taxable-total="${monthlyDividendReferenceTaxableTotal.toPlainString()}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.summary.taxable.reference"), amountFormat.format(monthlyDividendReferenceTaxableTotal), String.valueOf(monthlyDividendReferenceTaxableStaleCount))}</div>
+								<div class="mt-1 text-[11px] text-base-content/60 amount-value" data-reference-taxable-total="${monthlyDividendReferenceTaxableTotal.toPlainString()}">${StockViewSupport.msg("stock.simulator.monthly.summary.taxable.reference", amountFormat.format(monthlyDividendReferenceTaxableTotal), String.valueOf(monthlyDividendReferenceTaxableStaleCount))}</div>
 							@endif
 						</div>
 						<div>
@@ -432,12 +429,12 @@
 								</div>
 								<%-- 점수만 보여 주면 무슨 수인지 알 수 없다 - 연배당과 추세를 함께 적는다. --%>
 								<div class="mt-2 text-xs text-base-content/70">
-									${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.basis"), percentFormat.format(pick.annualYieldPct()), pick.payoutTrendPct() == null ? MessageUtil.getMessage("stock.simulator.monthly.contribution.trend.unknown") : (pick.payoutTrendPct().signum() > 0 ? "+" : "") + percentFormat.format(pick.payoutTrendPct()) + "%")}
+									${StockViewSupport.msg("stock.simulator.monthly.contribution.basis", percentFormat.format(pick.annualYieldPct()), pick.payoutTrendPct() == null ? MessageUtil.getMessage("stock.simulator.monthly.contribution.trend.unknown") : (pick.payoutTrendPct().signum() > 0 ? "+" : "") + percentFormat.format(pick.payoutTrendPct()) + "%")}
 								</div>
 								@if(pick.tied())
-									<div class="mt-1 text-xs text-base-content/60" data-contribution-tied>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.tied"), pick.runnerUpName(), pick.runnerUpSymbol())}</div>
+									<div class="mt-1 text-xs text-base-content/60" data-contribution-tied>${StockViewSupport.msg("stock.simulator.monthly.contribution.tied", pick.runnerUpName(), pick.runnerUpSymbol())}</div>
 								@elseif(pick.runnerUpSymbol() != null)
-									<div class="mt-1 text-xs text-base-content/60" data-contribution-runner-up>${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.contribution.runner.up"), pick.runnerUpName(), pick.runnerUpSymbol(), percentFormat.format(pick.runnerUpScore()))}</div>
+									<div class="mt-1 text-xs text-base-content/60" data-contribution-runner-up>${StockViewSupport.msg("stock.simulator.monthly.contribution.runner.up", pick.runnerUpName(), pick.runnerUpSymbol(), percentFormat.format(pick.runnerUpScore()))}</div>
 								@endif
 								<%-- 기준별 1위 비교(사용자 질문 2026-10-06) - 몇 개 기준이 이 종목을 꼽았는지 + 기준마다 1위. --%>
 								@template.stock.fragments.contributionCompare(pick = pick, percentFormat = percentFormat)
@@ -828,7 +825,7 @@
 												@if(taxableRatioBasis != null && taxableRatioBasis.deferredOnly())
 													<div class="text-[11px] text-base-content/60 whitespace-nowrap" data-taxable-ratio-basis="deferred-only">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.deferred.only")}</div>
 												@elseif(taxableRatioBasis != null && taxableRatioBasis.mixed())
-													<div class="text-[11px] text-base-content/60 whitespace-nowrap tabular-nums" data-taxable-ratio-basis="taxable-accounts">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.taxable.accounts"), percentFormat.format(taxableRatioBasis.taxableAccountRatioPct()))}</div>
+													<div class="text-[11px] text-base-content/60 whitespace-nowrap tabular-nums" data-taxable-ratio-basis="taxable-accounts">${StockViewSupport.msg("stock.simulator.monthly.table.cell.taxable.ratio.taxable.accounts", percentFormat.format(taxableRatioBasis.taxableAccountRatioPct()))}</div>
 												@endif
 												<%-- 운용사 지급 이력 기준 비중이 1%p 이상 다르면 함께 적는다. 예전엔 '저장값이 낡았다' 고 보고 경고색과
 												     "저장값을 갱신합니다" 링크를 달았지만, 지급 이력을 가져올 때마다 비중을 원장 실적으로 다시 덮으므로
@@ -838,7 +835,7 @@
 												<%-- 링크는 그 종목의 지급 이력을 보러 가는 길이다(실측 2026-09-11: 이 표의 행에는 링크가 하나도 없었다). --%>
 												<div class="text-[11px] text-base-content/60 whitespace-nowrap tabular-nums" data-reference-taxable-ratio="${referenceTaxableRatio.toPlainString()}">
 													<a class="link link-hover" href="/stock/admin?tab=monthly-reference&amp;symbol=${java.net.URLEncoder.encode(row.stockItemSymbol() != null ? row.stockItemSymbol() : "", java.nio.charset.StandardCharsets.UTF_8)}"
-													   title="${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference.link")}">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference"), percentFormat.format(referenceTaxableRatio))}<span class="sr-only">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference.link")}</span></a>
+													   title="${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference.link")}">${StockViewSupport.msg("stock.simulator.monthly.table.cell.taxable.ratio.reference", percentFormat.format(referenceTaxableRatio))}<span class="sr-only">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.taxable.ratio.reference.link")}</span></a>
 												</div>
 												@endif
 											</td>
@@ -850,7 +847,7 @@
 														<span class="amount-value">${amountFormat.format(row.heldQuantity() != null ? row.heldQuantity() : 0)}</span>
 														!{Integer currentHeldQuantity = monthlyDividendCurrentQuantities.get(row.stockItemId());}
 														@if(currentHeldQuantity != null && row.heldQuantity() != null && currentHeldQuantity.intValue() != row.heldQuantity().intValue())
-														<span class="ml-1 text-[11px] text-warning amount-value">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.quantity.current"), amountFormat.format(currentHeldQuantity))}</span>
+														<span class="ml-1 text-[11px] text-warning amount-value">${StockViewSupport.msg("stock.simulator.monthly.table.cell.quantity.current", amountFormat.format(currentHeldQuantity))}</span>
 														@endif
 													</div>
 													<div class="text-sm text-base-content/80">
@@ -858,7 +855,7 @@
 														<span class="amount-value">₩${amountFormat.format(row.averageBuyPrice() != null ? row.averageBuyPrice() : BigDecimal.ZERO)}</span>
 														!{BigDecimal currentAverageBuyPrice = monthlyDividendCurrentAverageBuyPrices.get(row.stockItemId());}
 														@if(currentAverageBuyPrice != null && row.averageBuyPrice() != null && currentAverageBuyPrice.setScale(0, java.math.RoundingMode.HALF_UP).compareTo(row.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP)) != 0)
-														<span class="ml-1 text-[11px] text-warning amount-value">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.current"), amountFormat.format(currentAverageBuyPrice))}</span>
+														<span class="ml-1 text-[11px] text-warning amount-value">${StockViewSupport.msg("stock.simulator.monthly.table.cell.average.buy.price.current", amountFormat.format(currentAverageBuyPrice))}</span>
 														@endif
 													</div>
 												</div>
@@ -927,9 +924,7 @@
 															: java.text.MessageFormat.format(onCostGap.signum() > 0
 																? MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.higher")
 																: MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.lower"), onCostGapAmount);}
-														!{String onCostGapValue = java.text.MessageFormat.format(
-															MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.value"),
-															(onCostGap.signum() > 0 ? "+" : (onCostGap.signum() < 0 ? "-" : "")) + onCostGapAmount);}
+														!{String onCostGapValue = StockViewSupport.msg("stock.simulator.monthly.table.cell.on.cost.gap.value", (onCostGap.signum() > 0 ? "+" : (onCostGap.signum() < 0 ? "-" : "")) + onCostGapAmount);}
 														<div class="text-[11px] font-medium ${onCostGap.signum() > 0 ? "text-profit" : (onCostGap.signum() < 0 ? "text-loss" : "text-base-content/60")}" data-on-cost-gap="${onCostGapKind}" data-on-cost-gap-pct="${onCostGap.toPlainString()}" title="${onCostGapNote}"><span aria-hidden="true">${onCostGap.signum() > 0 ? "▲ " : (onCostGap.signum() < 0 ? "▼ " : "")}${onCostGapValue}</span><span class="sr-only">${onCostGapNote}</span></div>
 													@endif
 												</div>
@@ -980,14 +975,14 @@
 		box-shadow: inset 3px 0 0 color-mix(in oklch, var(--color-primary) 65%, transparent);
 	}
 
-	/* 행은 더 이상 초점을 받지 않는다(선택은 첫 칸 체크박스). 체크박스에 초점이 오면 행 전체를 표시한다. */
+	<%-- 행은 더 이상 초점을 받지 않는다(선택은 첫 칸 체크박스). 체크박스에 초점이 오면 행 전체를 표시한다. --%>
 	.monthly-dividend-row:has(input:focus-visible) {
 		outline: 2px solid color-mix(in oklch, var(--color-primary) 35%, transparent);
 		outline-offset: -2px;
 	}
 
-	/* 상단 그룹(기준 데이터/입력값/수익률)이 어느 열에 대한 것인지 세로 구분선으로 명확히 한다.
-	   구분선은 헤더(제목) 영역까지만 두고 본문은 zebra 줄무늬만 유지한다. 그룹 라벨 셀만 옅게 강조. */
+	<%-- 상단 그룹(기준 데이터/입력값/수익률)이 어느 열에 대한 것인지 세로 구분선으로 명확히 한다.
+	   구분선은 헤더(제목) 영역까지만 두고 본문은 zebra 줄무늬만 유지한다. 그룹 라벨 셀만 옅게 강조. --%>
 	[data-monthly-selection-table] thead .col-group-start {
 		border-left: 1px solid color-mix(in oklch, var(--color-base-content) 16%, transparent);
 	}

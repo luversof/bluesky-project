@@ -4,6 +4,7 @@
 
 @param PoeTreeEvaluation treeEval = null
 @param boolean treeEvalError = false
+@param String ascendancyLabel = null
 
 @if(treeEvalError)
 	<div class="rounded border border-error/40 bg-error/10 px-3 py-2 text-xs text-error">${MessageUtil.getMessage("poe.tree.eval.error")}</div>
@@ -16,7 +17,7 @@
 	}
 	<div class="space-y-2">
 		<div class="flex flex-wrap items-center gap-1.5 text-xs">
-			<span class="badge badge-primary badge-outline badge-sm">${classLabel}${treeEval.ascendancy() != null ? " · " + treeEval.ascendancy() : ""}</span>
+			<span class="badge badge-primary badge-outline badge-sm">${classLabel}${treeEval.ascendancy() != null ? " · " + (ascendancyLabel != null && !ascendancyLabel.isBlank() ? ascendancyLabel : treeEval.ascendancy()) : ""}</span>
 			<span class="badge badge-accent badge-outline badge-sm">${gemLabel}</span>
 			<span class="text-base-content/60 font-mono">${meta}</span>
 		</div>

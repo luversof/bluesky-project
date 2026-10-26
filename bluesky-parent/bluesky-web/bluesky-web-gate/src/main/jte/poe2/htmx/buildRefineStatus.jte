@@ -40,7 +40,7 @@
 		</table>
 		@template.poe2.htmx.weaponSets(mainSet = r.mainSet(), sets = r.sets())
 		@if(r.steps() == null || r.steps().isEmpty())
-			<div class="text-base-content/60">${ko ? "DPS·EHP 를 함께 올리는 고유 아이템·보조젬 교체를 찾지 못했습니다." : "No unique or support swap raised DPS and EHP together."}</div>
+			<div class="text-base-content/60">${ko ? "DPS·EHP 를 함께 올리는 고유 아이템·보조 젬 교체를 찾지 못했습니다." : "No unique or support swap raised DPS and EHP together."}</div>
 		@else
 			<ol class="list-decimal space-y-1 pl-5" data-refine-steps>
 				@for(Poe2.RefineStep st : r.steps())
@@ -52,7 +52,7 @@
 				<button type="submit" class="btn btn-primary btn-sm" data-refine-load>${MessageUtil.getMessage("poe.refine.load")}</button>
 			</form>
 		@endif
-		<div class="text-[11px] text-base-content/60">${ko ? "각 단계의 증감은 직전 빌드 대비이며, 적용한 빌드를 PoB-PoE2 엔진으로 다시 계산한 값입니다(가이드 예측이 아니라 실측). 고유 아이템은 품질 20% 기준. DPS 는 주 스킬 한 대상 기준이라, 갈래·연쇄·투사체 수 보조를 바꾸는 단계는 사냥 속도를 줄일 수 있습니다." : "Each step's change is vs. the previous build, measured by recalculating the applied build (not the guide's prediction). Uniques at 20% quality. DPS is single-target for the main skill — steps that swap out fork, chain or projectile-count supports can slow down clearing."}</div>
+		<div class="text-[11px] text-base-content/60">${ko ? "각 단계의 증감은 직전 빌드 대비이며, 적용한 빌드를 PoB-PoE2 엔진으로 다시 계산한 값입니다(가이드 예측이 아니라 실측). 고유 아이템은 퀄리티 20% 기준. DPS 는 주 스킬 한 대상 기준이라, 갈래·연쇄·투사체 수 보조를 바꾸는 단계는 사냥 속도를 줄일 수 있습니다." : "Each step's change is vs. the previous build, measured by recalculating the applied build (not the guide's prediction). Uniques at 20% quality. DPS is single-target for the main skill — steps that swap out fork, chain or projectile-count supports can slow down clearing."}</div>
 	</div>
 @endif
 </div>

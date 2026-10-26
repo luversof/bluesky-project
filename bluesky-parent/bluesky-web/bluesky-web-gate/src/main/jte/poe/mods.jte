@@ -38,7 +38,7 @@
 				<span class="text-sm text-base-content/60">${MessageUtil.getMessage("poe.mods.desc")}</span>
 			</div>
 
-			<%-- 아이템 클래스 칩 — 분류별 줄 + 줄 이름. PoE2 모드 화면(poe2/mods.jte)과 같은 묶음 · 순서 · 칩 모양(10-12 C272).
+			<%-- 아이템 종류 칩 — 분류별 줄 + 줄 이름. PoE2 모드 화면(poe2/mods.jte)과 같은 묶음 · 순서 · 칩 모양(10-12 C272).
 			     클릭 시 htmx 로 본문 교체 + URL ?itemClass= 동기화 --%>
 			<nav class="space-y-2 rounded-2xl bg-base-100 p-3 shadow-sm" aria-label="${MessageUtil.getMessage("poe.mods.title")}" data-mod-classchips>
 				@for(String cat : net.luversof.web.gate.poe.controller.PoeViewController.MOD_CATEGORIES)
@@ -55,7 +55,7 @@
 								   hx-swap="innerHTML"
 								   hx-push-url="/poe/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"
 								   aria-current="${on ? "page" : null}"
-								   data-chip-value="${c.itemClass()}">${ko ? c.nameKo() : c.name()}<span class="ml-1 text-[10px] opacity-60">${c.prefixes().size() + c.suffixes().size()}</span></a>
+								   data-chip-value="${c.itemClass()}">${net.luversof.web.gate.poe.PoeClassNames.poe1(c.nameKo(), c.itemClass())}<span class="ml-1 text-[10px] opacity-60">${c.prefixes().size() + c.suffixes().size()}</span></a>
 							@endfor
 						</div>
 					@endif

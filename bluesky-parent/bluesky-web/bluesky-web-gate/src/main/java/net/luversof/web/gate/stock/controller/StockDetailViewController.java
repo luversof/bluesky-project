@@ -194,7 +194,6 @@ public class StockDetailViewController {
     return entries;
   }
 
-  /** 종목 상세: 한 종목의 보유/손익 요약 + 매매·배당 내역을 모아 보여준다(기존 엔드포인트 재활용). */
   /**
    * 날짜 없이 프리셋 상태({@code rangeMode})만 실려 온 요청의 기간을 정한다.
    *
@@ -221,6 +220,7 @@ public class StockDetailViewController {
     return new java.time.Instant[] {preset.start(), preset.end()};
   }
 
+  /** 종목 상세: 한 종목의 보유/손익 요약 + 매매·배당 내역을 모아 보여준다(기존 엔드포인트 재활용). */
   @BlueskyPreAuthorize
   @GetMapping("/item")
   public String stockItemDetailPage(

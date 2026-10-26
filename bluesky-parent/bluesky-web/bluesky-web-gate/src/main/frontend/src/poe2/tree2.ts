@@ -4,7 +4,7 @@
 // 아틀라스 모드: 데이터에 mode "atlas" 면(/poe-data/poe2/atlas-tree.json) 직업 대신 하위 트리 뿌리 7개가 모두 공짜 시작점이고,
 //   점수는 하위 트리별로 센다(인게임도 트리마다 포인트가 따로다). 아이콘 시트 위치는 캔버스 data-sprite-base.
 // PoE1 뷰어(poe/tree.ts)와 따로 둔 까닭: 데이터 모양(좌표 미리 계산 · 전직이 본 트리 바깥 둘레 · 능력치 노드 선택지)이 다르고,
-// PoE1 뷰어는 아틀라스·문신·도유까지 얽혀 4천 줄이 넘는다.
+// PoE1 뷰어는 아틀라스·문신·성유까지 얽혀 4천 줄이 넘는다.
 (function () {
 	type Conn = { id: number; orbit: number };
 	type TreeNode = {
@@ -706,7 +706,7 @@
 			if (!unlockMet(n, (id) => allocated.has(id))) {
 				// 잠긴 노드(C50) — 무엇을 먼저 찍어야 하는지 이름으로
 				const need = (n.unlockConstraint || []).filter((id) => !allocated.has(id)).map((id) => { const c = nodes.get(id); return c ? t(c.nameKo || c.name, c.name) : String(id); });
-				flash(t(`먼저 찍어야 합니다: ${need.join(", ")}`, `Allocate these first: ${need.join(", ")}`));
+				flash(t(`${need.join(", ")} 필요`, `Requires ${need.join(", ")}`)); // 게임 PassiveNodeRequiresOtherPassiveAllocated '{0} 필요'(10-24 Q167)
 				return;
 			}
 			// 갈래 선택지는 하나만 — 이미 고른 형제와 바꾼다(그 아래 이어진 노드는 prune 이 함께 걷는다, C65)
@@ -745,7 +745,7 @@
 				if (k) per.set(k, (per.get(k) || 0) + 1);
 			}
 			const parts = (data?.trees || []).filter((s) => per.get(s.key)).map((s) => `${treeLabel(s)} ${per.get(s.key)}`);
-			if (points) points.textContent = parts.length ? parts.join(" · ") : t("할당 0점", "0 allocated");
+			if (points) points.textContent = parts.length ? parts.join(" · ") : t("0포인트", "0 allocated");
 			writeHash();
 			draw();
 			updateStatsPanel();
@@ -1014,7 +1014,7 @@
 		lastTip = [n, clientX, clientY];
 		tooltip.replaceChildren();
 		const header = document.createElement("div");
-		header.className = "poe-psheader poe-psheader-" + kindHeader(n);
+		header.className = "poe-psheader poe2-psh poe-psheader-" + kindHeader(n); // poe2-psh = PoE2 머리 띠 아트(Q60)
 		const ascName = n.ascendancy ? klass?.ascendancies.find((a) => a.id === n.ascendancy) : undefined;
 		let title = isKorean && n.nameKo ? n.nameKo : n.name;
 		// 능력치를 고른 노드는 인게임처럼 그 능력치 이름으로(예: "+5 아무 능력치" 노드 → "힘")
@@ -1054,7 +1054,7 @@
 			hint.className = "poe-popup-reminder";
 			hint.textContent = allocated.has(n.id)
 				? t("우클릭: 능력치 바꾸기", "Right-click: change attribute")
-				: t("찍은 뒤 우클릭으로 능력치를 고릅니다", "Allocate, then right-click to choose");
+				: t("할당한 뒤 우클릭으로 능력치를 고릅니다", "Allocate, then right-click to choose");
 			hint.setAttribute("data-attr-hint", "");
 			body.appendChild(hint);
 		}
@@ -1064,6 +1064,14 @@
 			line.className = "poe-popup-flavour";
 			line.textContent = fl;
 			body.appendChild(line);
+		}
+		// 공짜 노드(Sanguimancy · Sacred Unity · Smith's Masterwork) — 게임 ClientStrings PassiveSkillPopupFreeNode '<lightgrey>{…}'(10-23 Q58)
+		if (n.freeAllocate) {
+			const free = document.createElement("div");
+			free.className = "poe-popup-reminder";
+			free.setAttribute("data-tree-free", "");
+			free.textContent = t("이 패시브 스킬은 비용 없이 할당할 수 있습니다.", "This Passive Skill is free to allocate");
+			body.appendChild(free);
 		}
 		if (isKorean && n.nameKo && n.nameKo !== n.name && n.kind !== "classStart") {
 			const en = document.createElement("div");
@@ -1079,7 +1087,7 @@
 			const jl = document.createElement("div");
 			jl.className = "mt-1 text-xs text-emerald-300";
 			jl.setAttribute("data-tree-jewel", "");
-			jl.textContent = t("꽂은 주얼: ", "Socketed: ") + jewelLabel(jewelPicks.get(n.id)!);
+			jl.textContent = t("장착한 주얼: ", "Socketed: ") + jewelLabel(jewelPicks.get(n.id)!);
 			body.appendChild(jl);
 			// 꽂은 주얼의 옵션 줄 — 인게임은 꽂은 칸에 올리면 그 주얼의 아이템 툴팁(10-04 C92, PoE1 C91 짝). 변형을 골랐으면 그 변형의 줄
 			const pickV = jewelPicks.get(n.id)!;
@@ -1108,7 +1116,7 @@
 		if (hovered && hovered.id === n.id) {
 			let cost = "", cls = "";
 			if (allocated.has(n.id)) {
-				if (removalPreview.size) { cost = t(`해제 −${removalPreview.size} 포인트`, `Refund −${removalPreview.size} points`); cls = "text-rose-400"; }
+				if (removalPreview.size) { cost = t(`반환 −${removalPreview.size} 포인트`, `Refund −${removalPreview.size} points`); cls = "text-rose-400"; }
 			} else if (hoverPathIds.length) {
 				cost = t(`+${hoverPathIds.length} 포인트`, `+${hoverPathIds.length} points`); cls = "text-amber-300";
 			} else if (allocated.size > 0 && allocatable(n)) {
@@ -1319,7 +1327,7 @@
 		if (n && n.kind === "jewel" && !n.ascendancy && !isAtlas() && jewelDefs.size) {
 			e.preventDefault();
 			if (!allocated.has(n.id)) {
-				flash(t("먼저 주얼 칸을 찍으세요", "Allocate the jewel socket first"));
+				flash(t("먼저 주얼 슬롯을 할당하세요", "Allocate the jewel socket first"));
 				return;
 			}
 			openJewelPicker(n, e.clientX, e.clientY);
@@ -1328,7 +1336,7 @@
 		if (!n || !n.options?.length || isAtlas()) return;
 		e.preventDefault();
 		if (!allocated.has(n.id)) {
-			flash(t("먼저 노드를 찍으세요", "Allocate the node first"));
+			flash(t("먼저 노드를 할당하세요", "Allocate the node first"));
 			return;
 		}
 		const before = snapshot();
@@ -1535,7 +1543,7 @@
 		const body = document.getElementById("poe2TreeStatsBody");
 		if (!body || !statsPanel || statsPanel.classList.contains("hidden")) return;
 		body.replaceChildren();
-		// 찍은 키스톤 · 주요 노드 — 빌드의 정체성. 누르면 그 노드로 이동(PoE1 과 같다)
+		// 찍은 핵심노드 · 주요 노드 — 빌드의 정체성. 누르면 그 노드로 이동(PoE1 과 같다)
 		// 세트 전환 단추 — 세트 노드가 있을 때만 보인다
 		const toggle = document.getElementById("poe2TreeStatsSet");
 		if (toggle) {
@@ -1624,7 +1632,7 @@
 	// → 시뮬(10-02, PoE1 트리의 "→ 시뮬" 짝) — 트리 주소와 같은 이름(c·a·n·s)으로 시뮬레이터를 연다
 	document.getElementById("poe2TreeToSim")?.addEventListener("click", () => {
 		if (!klass || !allocated.size) {
-			flash(t("먼저 직업을 고르고 노드를 찍으세요", "Pick a class and allocate nodes first"));
+			flash(t("먼저 직업을 고르고 노드를 할당하세요", "Pick a class and allocate nodes first"));
 			return;
 		}
 		const p = new URLSearchParams();
@@ -1688,7 +1696,7 @@
 			toggle(cur);
 			const now = allocated.has(cur.id);
 			const label = isKorean && cur.nameKo ? cur.nameKo : cur.name;
-			const verdict = now === was ? t("못 찍음", "Not allocated") : now ? t("찍음", "Allocated") : t("해제", "Removed");
+			const verdict = now === was ? t("미할당", "Not allocated") : now ? t("할당", "Allocated") : t("해제", "Removed");
 			const countEl = document.getElementById("poe2TreeSearchCount");
 			if (countEl) countEl.textContent = `${verdict}: ${label} · ${(points?.textContent || "").trim()}`;
 			return;

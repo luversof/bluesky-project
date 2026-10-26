@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 장인 작업대(벤치크래프트) 모드 — tools/poe-extract/parse-bench.mjs 가 만든 {@code ~/.poe-gamedata/bench.json}.
+ * 작업대(벤치크래프트) 모드 — tools/poe-extract/parse-bench.mjs 가 만든 {@code ~/.poe-gamedata/bench.json}.
  * "작업대에서 이 클래스에 붙일 수 있는 모드 + 제작 비용"(poedb/craftofexile 의 Crafting Bench 섹션식)을 클래스별로 제공한다.
  */
 @Service
@@ -63,7 +63,7 @@ public class PoeBenchDataService {
     this.data = loaded;
   }
 
-  /** 이 아이템 클래스에 붙일 수 있는 벤치 모드 목록(접두→접미, 계열·티어 정렬). 대상 아니면 null. */
+  /** 이 아이템 종류에 붙일 수 있는 벤치 모드 목록(접두→접미, 계열·등급 정렬). 대상 아니면 null. */
   public List<BenchEntry> forItemClass(String itemClass) {
     return data.classes().get(itemClass);
   }

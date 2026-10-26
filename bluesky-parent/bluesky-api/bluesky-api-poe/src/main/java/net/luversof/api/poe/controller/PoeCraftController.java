@@ -27,7 +27,7 @@ public class PoeCraftController {
       PoeCraftEngine.Action action,
       String essence,
       Long seed,
-      // 화폐 인자(10-15 C338) — 화석 슬러그 쉼표 목록 · 제작대 옵션 id · 수확 id · 정복자 영향력 키. 없으면 essence
+      // 화폐 인자(10-15 C338) — 화석 슬러그 쉼표 목록 · 작업대 옵션 id · 수확 id · 정복자 영향력 키. 없으면 essence
       String arg) {}
 
   /** 옵션 풀 요청 — rarity = 그 희귀도로 볼 자리(없으면 일반 → 레어, 그 밖엔 지금 희귀도). */
@@ -66,7 +66,7 @@ public class PoeCraftController {
   /** 같은 옵션을 얻는 다른 길 요청(10-22 P4) — family = 접두/접미:계열(계산기 목표 키와 같다). */
   public record FamilyWaysRequest(PoeCraftEngine.Item item, String family) {}
 
-  /** 같은 옵션을 얻는 다른 길(10-22 P4) — 에센스 · 제작대 · 화석 배수 · 수확. */
+  /** 같은 옵션을 얻는 다른 길(10-22 P4) — 에센스 · 작업대 · 화석 배수 · 수확. */
   @PostMapping(value = "/family-ways", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftCalcService.FamilyWays familyWays(
       @RequestBody FamilyWaysRequest req) {
@@ -81,8 +81,12 @@ public class PoeCraftController {
     if (req.action() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "action 이 없습니다");
     }
-    return craft.actionPool(
-        req.item(), req.action(), req.arg() != null ? req.arg() : req.essence());
+    String arg = req.arg() != null ? req.arg() : req.essence();
+    PoeCraftService.ActionPool ap = craft.actionPool(req.item(), req.action(), arg);
+    // 에센스 확정 옵션(Q7) — 첫 뽑기 표엔 없으니 자연 계열 · 등급 상당을 따로
+    return req.action() == PoeCraftEngine.Action.ESSENCE && arg != null
+        ? ap.withForced(calc.essenceForced(req.item(), arg))
+        : ap;
   }
 
   /** 화폐 한 번의 목표 적중 확률(10-20 C494) — 에뮬레이터 화폐 단추마다. */
@@ -146,7 +150,7 @@ public class PoeCraftController {
   }
 
   /**
-   * 최적 제작 경로(10-19 C457 사용자 요청) — 에센스 · 제작대 · 짐승 · 화폐를 섞어 목표까지 성공 한 번당 최소 기대 비용과 상태별 수단(정책). 시간
+   * 최적 제작 경로(10-19 C457 사용자 요청) — 에센스 · 작업대 · 야수 · 화폐를 섞어 목표까지 성공 한 번당 최소 기대 비용과 상태별 수단(정책). 시간
    * 예산(budgetMs, 기본 8초) 안에서. 동기 호출(게이트는 /optimize/start 를 쓴다).
    */
   @PostMapping(value = "/optimize", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -201,7 +205,12 @@ public class PoeCraftController {
   public net.luversof.api.poe.service.PoeCraftCalcService.StrategyResult strategy(
       @RequestBody net.luversof.api.poe.service.PoeCraftCalcService.StrategyRequest req) {
     check(req.item());
-    return calc.strategy(req);
+    net.luversof.api.poe.service.PoeCraftPriceService.override(req.prices());
+    try {
+      return calc.strategy(req);
+    } finally {
+      net.luversof.api.poe.service.PoeCraftPriceService.override(null);
+    }
   }
 
   /** 에뮬레이터에서 쓴 화폐 · 총비용(10-16 C365) — 단계 목록 → 화폐별 개수 · 단가 · 합계(카오스). */
@@ -224,7 +233,7 @@ public class PoeCraftController {
     return calc.distribution(req);
   }
 
-  /** 계산기 목표 칸 덧붙임(C548) — 계열별 제작대 값어치 · 바알 타락 임플리싯 · 영향력 옵션 id. */
+  /** 계산기 목표 칸 덧붙임(C548) — 계열별 작업대 값어치 · 바알 타락 고정 속성 · 영향력 옵션 id. */
   @GetMapping("/calc-extras")
   public net.luversof.api.poe.service.PoeCraftCalcService.CalcExtras calcExtras(
       @RequestParam String itemClass,
@@ -259,7 +268,7 @@ public class PoeCraftController {
     return craft.linesOf(in);
   }
 
-  /** 아이템 종류에 쓸 수 있는 제작 수단(10-15 C338) — 에센스 · 화석 · 공명기 · 수확 · 제작대 · 정복자. */
+  /** 아이템 종류에 쓸 수 있는 제작 수단(10-15 C338) — 에센스 · 화석 · 공명기 · 수확 · 작업대 · 정복자. */
   @GetMapping("/options")
   public PoeCraftService.Options options(
       @RequestParam String itemClass,

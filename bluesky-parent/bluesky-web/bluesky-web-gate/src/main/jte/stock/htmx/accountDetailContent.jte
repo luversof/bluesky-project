@@ -18,6 +18,7 @@
 @import net.luversof.web.gate.stock.util.RealizedBasisGap
 @import net.luversof.web.gate.stock.util.ChartSeriesJs
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param Account account = null
 @param int holdingCount = 0
@@ -80,12 +81,12 @@
 	boolean accountReturnShown = accountReturn != null && accountReturn.hasPeriod() && holdingCount > 0 && accountFirstTradeDate != null;
 	String accountPeriodText = !accountReturnShown ? ""
 		: (accountReturn.daysOnly()
-			? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.days"), String.valueOf(accountReturn.holdingDays()))
+			? StockViewSupport.msg("stock.asset.status.cell.holding.days", String.valueOf(accountReturn.holdingDays()))
 			: (accountReturn.years() == 0
-				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.months"), String.valueOf(accountReturn.months()))
+				? StockViewSupport.msg("stock.asset.status.cell.holding.months", String.valueOf(accountReturn.months()))
 				: (accountReturn.months() == 0
-					? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.years.only"), String.valueOf(accountReturn.years()))
-					: java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.holding.years"), String.valueOf(accountReturn.years()), String.valueOf(accountReturn.months())))));
+					? StockViewSupport.msg("stock.asset.status.cell.holding.years.only", String.valueOf(accountReturn.years()))
+					: StockViewSupport.msg("stock.asset.status.cell.holding.years", String.valueOf(accountReturn.years()), String.valueOf(accountReturn.months())))));
 	String accountAnnualizedText = !accountReturnShown || accountReturn.annualizedPct() == null ? ""
 		: StockFormatUtil.signedPct(accountReturn.annualizedPct().doubleValue(), 1);
 	// 세금 0 은 잰 값이지만 표마다 다르게 적혀 있었다 - 배당 이력 · 수익률 표는 이미 "-" 와 사유를 달고,
@@ -146,7 +147,7 @@
 	@if(account != null && account.jsonConfig() != null && Boolean.TRUE.equals(account.jsonConfig().get("feeRecordsUnavailable")))
 		<p class="mb-2 text-xs text-warning">${MessageUtil.getMessage("stock.account.detail.fee.records.unavailable")}</p>
 	@endif
-	<!-- 보유/손익 요약 -->
+	<%-- 보유/손익 요약 --%>
 	<%-- 기간 매수·실현 손익·기간 배당은 고른 기간의 값이고, 평가 금액·평가 손익·보유 종목 수는 지금 보유분이다.
 	     라벨이 축을 말해야 나란히 놓인 값끼리 검산이 된다 - 종목 상세와 같은 이유(실측 2026-09-11). --%>
 	<div class="grid stat-card-grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -212,7 +213,7 @@
 			valueTitle = accountAnnualizedText.isEmpty() ? MessageUtil.getMessage("stock.item.detail.annualized.none") : "",
 			scopeNote = MessageUtil.getMessage("stock.account.detail.return.basis"),
 			sub = accountPeriodText + " · " + (accountReturn.shortTerm()
-				? java.text.MessageFormat.format(MessageUtil.getMessage("stock.asset.status.cell.annualized.short"), String.valueOf(accountReturn.holdingDays()))
+				? StockViewSupport.msg("stock.asset.status.cell.annualized.short", String.valueOf(accountReturn.holdingDays()))
 				: (accountSinceAt >= 0 ? accountSinceMessage.substring(0, accountSinceAt) : accountSinceMessage + " ")),
 			subDate = accountReturn.shortTerm() ? "" : accountFirstTradeDate.toString(),
 			subDateAfter = accountReturn.shortTerm() || accountSinceAt < 0 ? "" : accountSinceMessage.substring(accountSinceAt + 3),
@@ -222,7 +223,7 @@
 		@endif
 	</div>
 
-	<!-- 평가액·원가 추이 -->
+	<%-- 평가액·원가 추이 --%>
 	@if(timeSeries != null && !timeSeries.isEmpty() && chartFormatter != null)
 		<div>
 			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
@@ -284,7 +285,7 @@
 		</div>
 	@endif
 
-	<!-- 보유 종목 -->
+	<%-- 보유 종목 --%>
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.account.detail.holdings.title")}</h2>
 		@if(holdings == null || holdings.isEmpty())
@@ -325,7 +326,7 @@
 		@endif
 	</div>
 
-	<!-- 매매 내역 -->
+	<%-- 매매 내역 --%>
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.trade.title")}</h2>
 		@if(trades == null || trades.isEmpty())
@@ -366,7 +367,7 @@
 		@endif
 	</div>
 
-	<!-- 배당 내역 -->
+	<%-- 배당 내역 --%>
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.page.dividend.title")}</h2>
 		@if(dividends == null || dividends.isEmpty())

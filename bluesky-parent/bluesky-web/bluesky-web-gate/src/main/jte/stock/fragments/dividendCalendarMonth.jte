@@ -3,6 +3,7 @@
 @import java.time.format.TextStyle
 @import net.luversof.web.gate.stock.dto.view.DividendCalendarView
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 <%-- 배당 캘린더의 달력 한 달치.
      2026-09-14 까지 이 화면은 이름만 캘린더였다 - 날짜가 하나도 없고 월중/월말 두 덩어리로만 나뉘었다.
@@ -22,9 +23,7 @@
 @if(calendar != null && calendar.month() != null)
 !{
 	java.util.Locale locale = org.springframework.context.i18n.LocaleContextHolder.getLocale();
-	String monthLabel = java.text.MessageFormat.format(
-		MessageUtil.getMessage("stock.dividend.calendar.month.label"),
-		String.valueOf(calendar.month().getYear()),
+	String monthLabel = StockViewSupport.msg("stock.dividend.calendar.month.label", String.valueOf(calendar.month().getYear()),
 		calendar.month().getMonth().getDisplayName(TextStyle.FULL, locale));
 	String estimatedNote = MessageUtil.getMessage("stock.dividend.calendar.estimated");
 	String settledNote = MessageUtil.getMessage("stock.dividend.calendar.settled");
@@ -43,9 +42,7 @@
 	// '그 해엔 공휴일이 없다' 처럼 보인다 - 자료가 없는 것과 공휴일이 없는 것은 다르다.
 	boolean holidayDataMissing = !net.luversof.web.gate.util.KoreanHolidays.covered(calendar.month().getYear());
 	String holidayMissingNote = holidayDataMissing
-		? java.text.MessageFormat.format(
-			MessageUtil.getMessage("stock.dividend.calendar.holiday.unavailable"),
-			String.valueOf(calendar.month().getYear()))
+		? StockViewSupport.msg("stock.dividend.calendar.holiday.unavailable", String.valueOf(calendar.month().getYear()))
 		: "";
 }
 

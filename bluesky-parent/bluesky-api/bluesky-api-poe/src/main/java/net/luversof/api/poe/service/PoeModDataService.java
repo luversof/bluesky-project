@@ -15,7 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 전체 크래프팅 모드 풀 — tools/poe-extract/parse-mods-full.mjs 가 만든 {@code ~/.poe-gamedata/mods.json}.
- * poedb Modifiers 페이지식으로 아이템 클래스별 접두/접미 패밀리 + 티어 사다리(ilvl·수치범위·스폰웨이트)를 제공한다. 최적화기용 큐레이션({@link
+ * poedb Modifiers 페이지식으로 아이템 종류별 접두/접미 패밀리 + 등급 사다리(ilvl·수치범위·스폰웨이트)를 제공한다. 최적화기용 큐레이션({@link
  * PoeModPoolDataService})과는 별개의 "표시/탐색용" 전체 데이터.
  */
 @Service
@@ -23,7 +23,7 @@ public class PoeModDataService {
 
   private static final Logger logger = LoggerFactory.getLogger(PoeModDataService.class);
 
-  /** 모드 티어 한 줄 — 최대롤(en/ko) + 최소롤(enMin/koMin) 로 수치 범위 표기. */
+  /** 모드 등급 한 줄 — 최대롤(en/ko) + 최소롤(enMin/koMin) 로 수치 범위 표기. */
   public record ModTier(
       String id,
       String name,
@@ -37,7 +37,7 @@ public class PoeModDataService {
       // en(최대롤) 줄별 리마인더 Id(인게임 회색 부연, mods.json reminderText 사전 키 — 10-04 C131). 없으면 null
       List<List<String>> rem) {}
 
-  /** 패밀리 = 같은 그룹의 티어 사다리. gen = prefix|suffix. */
+  /** 패밀리 = 같은 그룹의 등급 사다리. gen = prefix|suffix. */
   public record ModFamily(String gen, Boolean essence, List<ModTier> tiers) {}
 
   /**
@@ -58,7 +58,7 @@ public class PoeModDataService {
   /** 영향력 하나(쉐이퍼/엘더/정복자 4종) — extraCount = 영향력 전용으로 더 붙는 패밀리 수. */
   public record ModInfluence(String key, String name, String nameKo, int extraCount) {}
 
-  /** 아이템 클래스 하나 — 변형·영향력 목록(없으면 빈 목록) + 기본 풀. */
+  /** 아이템 종류 하나 — 변형·영향력 목록(없으면 빈 목록) + 기본 풀. */
   public record ModItemClass(
       String itemClass,
       String name,
@@ -68,7 +68,7 @@ public class PoeModDataService {
       List<String> prefixes,
       List<String> suffixes) {}
 
-  /** 풀 하나(클래스|변형) — 접두/접미 패밀리 키(+영향력 없음 풀엔 부패 임플리싯 키). */
+  /** 풀 하나(클래스|변형) — 접두/접미 패밀리 키(+영향력 없음 풀엔 부패 고정 속성 키). */
   private record Pool(
       List<String> prefixes,
       List<String> suffixes,
@@ -81,7 +81,7 @@ public class PoeModDataService {
       Map<String, Pool> pools,
       Map<String, ModFamily> families,
       Map<String, PoeReminderText> reminderText,
-      // 풀 밖 옵션의 영 · 한 쌍(플라스크 · 제작대 · 엘드리치 …) — 빌드 화면 번역 사전 보강(10-04 C135)
+      // 풀 밖 옵션의 영 · 한 쌍(플라스크 · 작업대 · 엘드리치 …) — 빌드 화면 번역 사전 보강(10-04 C135)
       List<ExtraPair> extra,
       // 옵션 이름 영 → 한 전부(접두 · 접미) — 마법 아이템 이름(10-04 C146)
       Map<String, String> affixNames) {}
@@ -95,7 +95,7 @@ public class PoeModDataService {
       // en 줄별 리마인더 Id(10-04 C141). 없으면 null
       List<List<String>> rem) {}
 
-  /** 한 (아이템 클래스 × 변형)의 완전한 모드 풀 — 패밀리 키를 실제 패밀리로 해석해 접두/접미로 나눠 담는다. */
+  /** 한 (아이템 종류 × 변형)의 완전한 모드 풀 — 패밀리 키를 실제 패밀리로 해석해 접두/접미로 나눠 담는다. */
   public record ClassMods(
       String itemClass,
       String name,
@@ -126,9 +126,9 @@ public class PoeModDataService {
       new ModData("", List.of(), Map.of(), Map.of(), Map.of(), List.of(), Map.of());
 
   /**
-   * 한 풀에서 티어 사다리 하나 — 게임의 ModTypeKey 하나. 티어 Id 는 상위 먼저.
+   * 한 풀에서 등급 사다리 하나 — 게임의 ModTypeKey 하나. 등급 Id 는 상위 먼저.
    *
-   * @param key 사람이 읽는 이름(구성 티어의 패밀리 키 중 가장 많은 것)
+   * @param key 사람이 읽는 이름(구성 등급의 패밀리 키 중 가장 많은 것)
    * @param gen prefix | suffix
    * @param families 게임 ModFamily 값 — 둘이 겹치면 한 아이템에 같이 못 붙는다
    */
@@ -144,7 +144,7 @@ public class PoeModDataService {
   private final Path tiersFile;
   private volatile Map<String, List<PoolSig>> poolTiers = Map.of();
 
-  /** 티어 Id → 티어(모든 패밀리). 풀 묶음이 가리키는 티어의 문장을 찾을 때 쓴다. */
+  /** 등급 Id → 등급(모든 패밀리). 풀 묶음이 가리키는 등급의 문장을 찾을 때 쓴다. */
   private volatile Map<String, ModTier> tierIndex = Map.of();
 
   /**
@@ -195,21 +195,21 @@ public class PoeModDataService {
       try (InputStream inputStream = Files.newInputStream(tiersFile)) {
         PoolTierData t = JsonMapper.builder().build().readValue(inputStream, PoolTierData.class);
         tiers = t.pools() == null ? Map.of() : t.pools();
-        logger.info("PoE 풀별 티어 로드: {} (풀 {}개)", tiersFile, tiers.size());
+        logger.info("PoE 풀별 등급 로드: {} (풀 {}개)", tiersFile, tiers.size());
       } catch (Exception e) {
-        logger.warn("PoE 풀별 티어 로드 실패: {}", tiersFile, e);
+        logger.warn("PoE 풀별 등급 로드 실패: {}", tiersFile, e);
       }
     } else {
-      logger.warn("PoE 풀별 티어 없음: {} — parse-mods-full.mjs 실행 필요", tiersFile);
+      logger.warn("PoE 풀별 등급 없음: {} — parse-mods-full.mjs 실행 필요", tiersFile);
     }
     this.poolTiers = tiers;
   }
 
   /**
-   * 이 (아이템 클래스 × 속성 변형) 풀의 티어 사다리들 — 풀을 모르면 빈 목록.
+   * 이 (아이템 종류 × 속성 변형) 풀의 등급 사다리들 — 풀을 모르면 빈 목록.
    *
-   * <p>families 의 티어 사다리는 같은 그룹을 <b>모든 클래스에서 합친 것</b>이라(생명력 +175~189 는 갑옷 전용인데 장화 패밀리에도 들어 있다) "이
-   * 베이스에서 몇 티어"를 말하려면 이 목록을 써야 한다. 사다리는 게임 ModTypeKey 로 묶여 있어, Id 이름 규칙으로 쪼개진 최상위 티어(억제
+   * <p>families 의 등급 사다리는 같은 그룹을 <b>모든 클래스에서 합친 것</b>이라(생명력 +175~189 는 갑옷 전용인데 장화 패밀리에도 들어 있다) "이
+   * 베이스에서 몇 등급"를 말하려면 이 목록을 써야 한다. 사다리는 게임 ModTypeKey 로 묶여 있어, Id 이름 규칙으로 쪼개진 최상위 등급(억제
    * ChanceToSuppressSpells5__)도 제자리에 들어 있다.
    */
   public List<PoolGroup> poolGroups(String itemClass, String variant, String baseName) {
@@ -226,7 +226,7 @@ public class PoeModDataService {
     return List.of(); // 모르는 베이스면 추측하지 않는다(레어 목표를 건너뛴다)
   }
 
-  /** 티어 Id 로 티어(문장 포함)를 찾는다. 없으면 null. */
+  /** 등급 Id 로 등급(문장 포함)를 찾는다. 없으면 null. */
   public ModTier tier(String tierId) {
     return tierIndex.get(tierId);
   }
@@ -252,7 +252,7 @@ public class PoeModDataService {
           }
         }
       }
-      // 티어 이름에 없는 것(제작대 접미 "of Craft" 등)은 옵션 이름 전부 표에서(C146)
+      // 등급 이름에 없는 것(작업대 접미 "of Craft" 등)은 옵션 이름 전부 표에서(C146)
       if (data.affixNames() != null) {
         data.affixNames().forEach(built::putIfAbsent);
       }
@@ -277,7 +277,7 @@ public class PoeModDataService {
   }
 
   /**
-   * 이 (아이템 클래스 × 속성 변형)에 해당 패밀리(게임 모드 Id 패턴)가 실제로 붙을 수 있는지 — 시뮬레이터가 베이스에 맞지 않는 모드를 얹지 않도록 게임 데이터로
+   * 이 (아이템 종류 × 속성 변형)에 해당 패밀리(게임 모드 Id 패턴)가 실제로 붙을 수 있는지 — 시뮬레이터가 베이스에 맞지 않는 모드를 얹지 않도록 게임 데이터로
    * 판정한다. 풀 자체가 없으면(데이터 미로드/미지원 클래스) 판정을 보류하고 true.
    */
   public boolean canSpawn(String itemClass, String variant, String familyPattern) {
@@ -312,7 +312,7 @@ public class PoeModDataService {
     return pool.prefixes().contains(familyPattern) || pool.suffixes().contains(familyPattern);
   }
 
-  /** 표시할 아이템 클래스 목록(패밀리 키 없이 이름·개수만 필요할 때). */
+  /** 표시할 아이템 종류 목록(패밀리 키 없이 이름·개수만 필요할 때). */
   public List<ModItemClass> itemClasses() {
     return data.itemClasses();
   }
@@ -340,7 +340,7 @@ public class PoeModDataService {
   }
 
   /**
-   * (아이템 클래스 × 속성 변형)의 접두/접미 패밀리를 실제 티어와 함께 해석해 돌려준다. 없으면 null.
+   * (아이템 종류 × 속성 변형)의 접두/접미 패밀리를 실제 등급과 함께 해석해 돌려준다. 없으면 null.
    *
    * @param variant 방어구 속성 변형 키(str_armour 등). 빈 값/무효면 그 클래스의 첫 변형(없으면 기본 풀).
    */
@@ -374,7 +374,7 @@ public class PoeModDataService {
     Pool pool = data.pools().get(itemClass + "|" + resolvedVariant + "|" + resolvedInfluence);
     List<String> prefixKeys = pool != null ? pool.prefixes() : List.of();
     List<String> suffixKeys = pool != null ? pool.suffixes() : List.of();
-    // 부패 임플리싯은 영향력과 무관 — 추출기가 영향력 없음("") 풀에만 담아두므로 항상 거기서 읽는다
+    // 부패 고정 속성은 영향력과 무관 — 추출기가 영향력 없음("") 풀에만 담아두므로 항상 거기서 읽는다
     Pool basePool = data.pools().get(itemClass + "|" + resolvedVariant + "|");
     List<String> corruptedKeys =
         basePool != null && basePool.corrupted() != null ? basePool.corrupted() : List.of();
@@ -435,7 +435,86 @@ public class PoeModDataService {
                 nf.key(), new ModFamily(nf.family().gen(), nf.family().essence(), tiers)));
       }
     }
+    return mergeByModType(out);
+  }
+
+  /**
+   * 같은 옵션 사다리를 한 장으로(10-23 Q84) — mods.json 계열 키는 Id 꼬리 숫자를 뗀 것이라 같은 ModType · Families 의 등급이
+   * 'IncreasedLife' · 'IncreasedLife7__' 처럼 갈려 카드가 쪼개지고 등급 번호가 틀렸다(장갑 방어도 레벨 43 이 따로 'T1', 풀
+   * 433/510). 게임 사다리 = ModType + Families (craft-mods.json mt · grp). 모든 등급이 한 서명인 계열끼리만 합치고, 키는
+   * 등급이 가장 많은 계열 것(동률이면 짧은 키). 등급은 아이템 레벨 내림차순.
+   */
+  private List<NamedFamily> mergeByModType(List<NamedFamily> fams) {
+    if (craftData == null) {
+      return fams;
+    }
+    Map<String, List<NamedFamily>> bySig = new java.util.LinkedHashMap<>();
+    List<Object> order = new java.util.ArrayList<>();
+    for (NamedFamily nf : fams) {
+      String sig = signature(nf);
+      if (sig == null) {
+        order.add(nf);
+        continue;
+      }
+      List<NamedFamily> group = bySig.get(sig);
+      if (group == null) {
+        group = new java.util.ArrayList<>();
+        bySig.put(sig, group);
+        order.add(sig);
+      }
+      group.add(nf);
+    }
+    List<NamedFamily> out = new java.util.ArrayList<>();
+    for (Object o : order) {
+      if (o instanceof NamedFamily nf) {
+        out.add(nf);
+        continue;
+      }
+      List<NamedFamily> group = bySig.get((String) o);
+      if (group.size() == 1) {
+        out.add(group.get(0));
+        continue;
+      }
+      NamedFamily head =
+          group.stream()
+              .max(
+                  java.util.Comparator.<NamedFamily>comparingInt(g -> g.family().tiers().size())
+                      .thenComparing(g -> -g.key().length()))
+              .orElseThrow();
+      List<ModTier> tiers =
+          group.stream()
+              .flatMap(g -> g.family().tiers().stream())
+              .sorted(
+                  java.util.Comparator.comparingInt(ModTier::ilvl)
+                      .reversed()
+                      .thenComparing(ModTier::id))
+              .toList();
+      out.add(
+          new NamedFamily(
+              head.key(), new ModFamily(head.family().gen(), head.family().essence(), tiers)));
+    }
     return out;
+  }
+
+  /** 계열 서명 = 접두/접미 + ModType + Families — 모든 등급이 같을 때만, 아니면 null(합치지 않음). 에센스 전용 계열은 null. */
+  private String signature(NamedFamily nf) {
+    if (Boolean.TRUE.equals(nf.family().essence())) {
+      return null;
+    }
+    String sig = null;
+    for (ModTier t : nf.family().tiers()) {
+      PoeCraftDataService.CraftMod m = craftData.mod(t.id());
+      if (m == null || m.mt() == null) {
+        return null;
+      }
+      String one = nf.family().gen() + "|" + m.mt() + "|" + m.grp();
+      if (sig == null) {
+        sig = one;
+      } else if (!sig.equals(one)) {
+        return null;
+      }
+    }
+    return sig;
   }
 
   private List<NamedFamily> resolve(List<String> keys) {

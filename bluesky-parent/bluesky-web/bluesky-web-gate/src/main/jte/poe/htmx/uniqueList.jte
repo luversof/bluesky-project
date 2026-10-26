@@ -100,7 +100,7 @@
 						@endif
 						<%-- 인게임 "삿된 XXX" 가 존재하는 아이템 — 상세에서 붙을 수 있는 옵션 풀을 볼 수 있다 --%>
 						@if(foulbornNames != null && foulbornNames.contains(item.name()))
-							<a class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" href="/poe/uniques/${item.slug()}" title="${PoeText.isKorean() ? "삿된 오브로 바꿀 수 있는 옵션이 있습니다" : "Has Foulborn options"}">${PoeText.isKorean() ? "삿된" : "Foulborn"}</a>
+							<a class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" href="/poe/uniques/${item.slug()}" title="${PoeText.isKorean() ? "삿된 고유 아이템이 있습니다(원래 속성 하나가 바뀐 판)" : "Has a Foulborn version"}">${PoeText.isKorean() ? "삿된" : "Foulborn"}</a>
 						@endif
 					</div>
 					<%-- 옵션 — 인게임 툴팁 구조: 고정(암시)은 상단, 구분선 아래 접두/접미(폭발).

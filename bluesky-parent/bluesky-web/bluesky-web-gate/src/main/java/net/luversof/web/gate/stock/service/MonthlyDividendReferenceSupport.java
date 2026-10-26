@@ -366,11 +366,6 @@ public class MonthlyDividendReferenceSupport {
   }
 
   /**
-   * 종목코드 -> 종목 이름 순(사용자 요청 2026-09-21).
-   *
-   * <p>코드가 같은 종목은 없지만, 이름까지 비교해 두면 순서가 입력 순서에 흔들리지 않는다.
-   */
-  /**
    * 종목 이름 -> 코드 순(사용자 결정 2026-09-21).
    *
    * <p>처음에는 코드 순으로 뒀는데, 코드로는 운용사를 알 수 없어 목록에서 찾기 어려웠다(새 코드 0018C0 과 옛 코드 329200 이 섞인다). 이름 순이면
@@ -776,7 +771,10 @@ public class MonthlyDividendReferenceSupport {
         .orElse(1);
   }
 
-  /** 조회에 실패하면 빈 맵이라 표시는 예전 그대로다(없는 값을 지어내지 않는다). */
+  /**
+   * 원장의 현재 보유 상태(종목 단위, 계좌 합산). 조회 한 번으로 수량과 평균단가를 함께 얻는다. 조회에 실패하면 {@code
+   * CurrentHoldings.failed()}(unavailable) - 없는 값을 지어내지 않는다.
+   */
   public CurrentHoldings loadCurrentHoldings(UUID userId) {
     MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("userId", userId.toString());
@@ -814,8 +812,6 @@ public class MonthlyDividendReferenceSupport {
     return monthlyDividendSnapshotClient.findSnapshots(params);
   }
 
-  /** 원장의 현재 보유 수량(종목 단위, 계좌 합산). 조회에 실패하면 빈 맵이라 표시는 예전 그대로다. */
-  /** 원장의 현재 보유 상태(종목 단위). 조회 한 번으로 수량과 평균단가를 함께 얻는다. */
   /**
    * 원장 기준 현재 보유 상태.
    *

@@ -38,20 +38,26 @@
 				String displayClass = net.luversof.web.gate.poe.PoeClassNames.poe1(item.itemClassKo(), item.itemClass());
 				// 카드 요약 수치: 방어구는 방어 스탯, 무기는 피해/공속
 				StringBuilder summary = new StringBuilder();
+				boolean koSum = net.luversof.web.gate.poe.PoeText.isKorean(); // 한국어면 게임 낱말(Q105)
 				if (item.armour() != null) {
 					if (item.armour().block() > 0) summary.append(net.luversof.web.gate.poe.PoeText.isKorean() ? "막기 " : "Block ").append(item.armour().block()).append("%  ");
-					if (item.armour().armourMax() > 0) summary.append("AR ").append(item.armour().armourMin()).append("-").append(item.armour().armourMax()).append("  ");
-					if (item.armour().evasionMax() > 0) summary.append("EV ").append(item.armour().evasionMin()).append("-").append(item.armour().evasionMax()).append("  ");
-					if (item.armour().energyShieldMax() > 0) summary.append("ES ").append(item.armour().energyShieldMin()).append("-").append(item.armour().energyShieldMax()).append("  ");
-					if (item.armour().wardMax() > 0) summary.append("WD ").append(item.armour().wardMin()).append("-").append(item.armour().wardMax());
+					if (item.armour().armourMax() > 0) summary.append(koSum ? "방어도 " : "AR ").append(item.armour().armourMin()).append("-").append(item.armour().armourMax()).append("  ");
+					if (item.armour().evasionMax() > 0) summary.append(koSum ? "회피 " : "EV ").append(item.armour().evasionMin()).append("-").append(item.armour().evasionMax()).append("  ");
+					if (item.armour().energyShieldMax() > 0) summary.append(koSum ? "에너지 보호막 " : "ES ").append(item.armour().energyShieldMin()).append("-").append(item.armour().energyShieldMax()).append("  ");
+					if (item.armour().wardMax() > 0) summary.append(koSum ? "수호 " : "WD ").append(item.armour().wardMin()).append("-").append(item.armour().wardMax());
 				}
 				if (item.weapon() != null) {
 					// 물리 DPS = 평균 물리피해 × 초당공격(무기 비교 핵심 지표). 피해/공속/치명타 뒤에 붙인다.
 					double pdps = (item.weapon().damageMin() + item.weapon().damageMax()) / 2.0 * item.weapon().attacksPerSecond();
 					summary.append(item.weapon().damageMin()).append("-").append(item.weapon().damageMax())
-						.append(" · ").append(String.format("%.2f", item.weapon().attacksPerSecond())).append("/s")
+						.append(" · ").append(koSum ? "초당 " + String.format("%.2f", item.weapon().attacksPerSecond()) + "회" : String.format("%.2f", item.weapon().attacksPerSecond()) + "/s")
 						.append(" · ").append(String.format("%.2f", item.weapon().critChance())).append("%")
 						.append(" · ").append(Math.round(pdps)).append(" DPS");
+				}
+				if (item.flask() != null) {
+					if (item.flask().lifePerUse() > 0) summary.append(koSum ? "생명력 " : "Life ").append(item.flask().lifePerUse()).append("  ");
+					if (item.flask().manaPerUse() > 0) summary.append(koSum ? "마나 " : "Mana ").append(item.flask().manaPerUse()).append("  ");
+					if (item.flask().durationSeconds() > 0) summary.append(String.format(java.util.Locale.ROOT, "%.1f", item.flask().durationSeconds())).append(koSum ? "초" : "s");
 				}
 			}
 			<div class="poe-hover card bg-base-100 shadow-sm border border-base-200 cursor-pointer transition-colors duration-300 hover:border-primary/40 hover:duration-75"
@@ -77,7 +83,7 @@
 					</div>
 					<div class="flex items-center gap-2 text-[13px] text-base-content/70">
 						<span class="font-mono truncate">${summary.toString()}</span>
-						<span class="ml-auto shrink-0 text-base-content/60">${MessageUtil.getMessage("poe.gems.label.drop.level")} ${item.dropLevel()}</span>
+						<span class="ml-auto shrink-0 text-base-content/60">${MessageUtil.getMessage("poe.gems.detail.required.level")} ${item.requiredLevel()}</span>
 					</div>
 					@if(!item.implicits().isEmpty())
 						!{String implicitPreview = net.luversof.web.gate.poe.PoeText.name(item.implicits().get(0).ko(), item.implicits().get(0).en());}

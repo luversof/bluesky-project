@@ -24,26 +24,28 @@
 		String leanCls = "dps".equals(lean) ? "badge-error" : "ehp".equals(lean) ? "badge-info" : "badge-ghost";
 		boolean auto = archetype.ascendancy() == null || archetype.ascendancy().isBlank();
 		java.util.List<String> items = archetype.topItems() == null ? java.util.List.of()
-			: archetype.topItems().stream().map(Poe2.NinjaCount::name).filter(x -> x != null && !x.startsWith("Rare ") && !x.startsWith("Magic ") && !x.startsWith("Normal ")).limit(6).toList();
+			: archetype.topItems().stream().filter(c -> c.name() != null && !c.name().startsWith("Rare ") && !c.name().startsWith("Magic ") && !c.name().startsWith("Normal ")).limit(6).map(c -> PoeText.name(c.nameKo(), c.name())).toList();
+		// 한글 이름(10-25 Q172 — API 미리보기 응답이 채운다, 없으면 영어)
+		java.util.function.Function<java.util.List<Poe2.NinjaCount>, java.util.List<String>> names = l -> l.stream().map(c -> PoeText.name(c.nameKo(), c.name())).toList();
 	}
 	<div class="space-y-1 rounded-box border border-base-200 bg-base-100 px-3 py-2 text-xs" data-sim-hint>
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="text-base-content/60">${MessageUtil.getMessage("poe.sim.archetype")}</span>
 			<span class="badge badge-sm ${leanCls}">${leanLabel}</span>
-			<span class="badge badge-ghost badge-xs">${archetype.mainSkill()} · ${auto ? MessageUtil.getMessage("poe.sim.lean.allasc") : archetype.ascendancy()}</span>
+			<span class="badge badge-ghost badge-xs">${PoeText.name(archetype.mainSkillKo(), archetype.mainSkill())} · ${auto ? MessageUtil.getMessage("poe.sim.lean.allasc") : PoeText.name(archetype.ascendancyKo(), archetype.ascendancy())}</span>
 			<span class="text-base-content/60">n=${archetype.sample()}</span>
 		</div>
 		<div class="grid grid-cols-2 gap-1 sm:grid-cols-4">
-			<div class="rounded bg-base-200/60 px-2 py-1"><div class="text-[10px] text-base-content/60">${ko ? "생명" : "Life"}</div><div class="font-mono">${fmt.apply(archetype.medianLife())}</div></div>
-			<div class="rounded bg-base-200/60 px-2 py-1"><div class="text-[10px] text-base-content/60">ES</div><div class="font-mono">${fmt.apply(archetype.medianEs())}</div></div>
+			<div class="rounded bg-base-200/60 px-2 py-1"><div class="text-[10px] text-base-content/60">${ko ? "생명력" : "Life"}</div><div class="font-mono">${fmt.apply(archetype.medianLife())}</div></div>
+			<div class="rounded bg-base-200/60 px-2 py-1"><div class="text-[10px] text-base-content/60">${ko ? "에너지 보호막" : "ES"}</div><div class="font-mono">${fmt.apply(archetype.medianEs())}</div></div>
 			<div class="rounded bg-base-200/60 px-2 py-1"><div class="text-[10px] text-base-content/60">EHP</div><div class="font-mono">${fmt.apply(archetype.medianEhp())}</div></div>
 			<div class="rounded bg-base-200/60 px-2 py-1"><div class="text-[10px] text-base-content/60">DPS</div><div class="font-mono">${fmt.apply(archetype.medianDps())}</div></div>
 		</div>
 		@if(archetype.topKeystones() != null && !archetype.topKeystones().isEmpty())
-			<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.keystones")}: ${String.join(", ", archetype.topKeystones().stream().limit(4).map(Poe2.NinjaCount::name).toList())}</div>
+			<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.keystones")}: ${String.join(", ", names.apply(archetype.topKeystones().stream().limit(4).toList()))}</div>
 		@endif
 		@if(archetype.topCoSkills() != null && !archetype.topCoSkills().isEmpty())
-			<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.coskills")}: ${String.join(", ", archetype.topCoSkills().stream().limit(5).map(Poe2.NinjaCount::name).toList())}</div>
+			<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.coskills")}: ${String.join(", ", names.apply(archetype.topCoSkills().stream().limit(5).toList()))}</div>
 		@endif
 		@if(!items.isEmpty())
 			<div class="text-base-content/60">${ko ? "자주 쓰는 고유" : "Common uniques"}: ${String.join(", ", items)}</div>

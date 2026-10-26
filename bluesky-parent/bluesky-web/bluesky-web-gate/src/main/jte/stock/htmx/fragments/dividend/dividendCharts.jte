@@ -8,10 +8,10 @@
 	String monthlyDividendsLabel = MessageUtil.getMessage("stock.dividend.chart.title.monthly.simple");
 }
 
-	<!-- Row 2: Charts -->
+	<%-- Row 2: Charts --%>
 	<div class="flex flex-wrap gap-4 mb-4">
 
-		<!-- Left: 비중 분석 -->
+		<%-- Left: 비중 분석 --%>
 		@template._components.ui.card(cssClass = "flex-[2] min-w-[200px]", body = @`
 				<h2 class="text-sm font-bold mb-3" data-page-section>${weightAnalysisLabel}</h2>
 				<%-- 범례는 자리가 모자라면 아래 줄로 내려간다. 캔버스가 flex-shrink-0 w-[200px] 라
@@ -33,7 +33,7 @@
 				</div>
 		`)
 
-		<!-- Right: Monthly Bar Chart -->
+		<%-- Right: Monthly Bar Chart --%>
 		@template._components.ui.card(cssClass = "flex-[3] min-w-[280px] overflow-visible", body = @`
 				<h2 class="font-bold text-sm mb-3" data-page-section>${monthlyDividendsLabel}</h2>
 				<div class="relative h-[280px]">
@@ -44,7 +44,7 @@
 	</div>
 
 <script nonce="${CspNonceHolder.getNonce()}">
-	// 이 프래그먼트는 htmx 스왑마다 재렌더될 수 있으므로 document 위임 + 전역 1회 가드로 바인딩한다.
+	<%-- 이 프래그먼트는 htmx 스왑마다 재렌더될 수 있으므로 document 위임 + 전역 1회 가드로 바인딩한다. --%>
 	if (!window.__dividendDonutSwitchBound) {
 		window.__dividendDonutSwitchBound = true;
 		document.addEventListener('click', function(event) {

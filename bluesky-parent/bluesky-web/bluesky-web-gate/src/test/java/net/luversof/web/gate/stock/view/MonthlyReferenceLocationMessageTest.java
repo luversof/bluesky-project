@@ -59,6 +59,6 @@ class MonthlyReferenceLocationMessageTest {
         Files.readString(Path.of("src/main/jte/stock/simulator.jte"), StandardCharsets.UTF_8);
     assertThat(simulator)
         .contains(
-            "MessageUtil.getMessage(\"stock.simulator.monthly.storage.note\"), MessageUtil.getMessage(\"layout.menu.stock.admin\"), MessageUtil.getMessage(\"stock.page.dividend.tab.monthly.reference\")");
+            "StockViewSupport.msg(\"stock.simulator.monthly.storage.note\", MessageUtil.getMessage(\"layout.menu.stock.admin\"), MessageUtil.getMessage(\"stock.page.dividend.tab.monthly.reference\")");
   }
 }

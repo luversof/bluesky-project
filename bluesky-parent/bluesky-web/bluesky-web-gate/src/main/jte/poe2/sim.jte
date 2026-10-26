@@ -62,11 +62,8 @@
 								     ⚠ 트리거는 컨테이너가 받는 버블링 change — "change from:(선택자)" 는 처음 그린 select 에만 걸려,
 								       조각을 한 번 다시 그린 뒤의 변경은 조용히 무시됐다(10-01 탐침: 전직을 바꾼 뒤 스킬 변경이 반영 안 됨).
 								       이름으로 거른다(PoE1 과 같다) — 검색형 위젯의 검색칸도 change 를 내서(포커스를 잃을 때) 옛 스킬 값으로 먼저 요청이 나갔다(10-01). --%>
-							<div id="poe2SimSelects" class="contents"
-							     hx-get="/poe2/htmx/sim/selects"
-							     hx-trigger="change[target.name==='skill'||target.name==='ascendancy']"
-							     hx-include="#poe2SimSelects select"
-							     hx-target="this" hx-swap="innerHTML">
+							<%-- 다시 그리기 트리거는 전직 · 스킬 select 자체에 있다(simSelects.jte, 10-25 Q178 — 거름식 change[…] 은 CSP eval 위반) --%>
+							<div id="poe2SimSelects" class="contents">
 								@template.poe2.htmx.simSelects(skills = skills, ascendancies = ascs, popularAscendancies = options.popularAscendancies() == null ? java.util.List.of() : options.popularAscendancies(), classes = options.classes() == null ? java.util.List.of() : options.classes(), skill = preSkill, ascendancy = treeAsc)
 							</div>
 							<div class="flex min-w-0 flex-wrap items-center gap-2">

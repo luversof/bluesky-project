@@ -5,8 +5,8 @@
      scope 안의 [data-mod-family] 카드를 대상으로 하며, htmx 로 scope 내용이 바뀌어도 조건을 다시 적용한다.
      카드 요약 갱신 위치는 선택 표식으로 고를 수 있다(없으면 PoE1 마크업 기준):
        [data-family-stats]  요약 스탯 자리(data-join 이 있으면 줄을 그 문자열로 이어 글자로)
-       [data-family-tiers]  티어 수 배지(data-tiers-format 의 {0} 에 개수, 없으면 "NT")
-       [data-tier-lines]    티어 행 안의 스탯 줄 묶음(없으면 3번째 칸 div 중 첫째=모드명을 뺀 나머지) --%>
+       [data-family-tiers]  등급 수 배지(data-tiers-format 의 {0} 에 개수, 없으면 "NT")
+       [data-tier-lines]    등급 행 안의 스탯 줄 묶음(없으면 3번째 칸 div 중 첫째=모드명을 뺀 나머지) --%>
 @param String scope
 @param String idPrefix
 
@@ -14,31 +14,31 @@
 
 <div class="flex flex-wrap items-center gap-2">
 	<input id="${idPrefix}Search" type="search" class="input input-sm input-bordered w-full sm:w-72"
-	       placeholder="${ko ? "모드 검색 (예: 저항, 공격 속도)" : "Search mods (e.g. resistance)"}" autocomplete="off" aria-label="${ko ? "모드 검색 (예: 저항, 공격 속도)" : "Search mods (e.g. resistance)"}">
+	       placeholder="${ko ? "옵션 검색 (예: 저항, 공격 속도)" : "Search mods (e.g. resistance)"}" autocomplete="off" aria-label="${ko ? "옵션 검색 (예: 저항, 공격 속도)" : "Search mods (e.g. resistance)"}">
 	<label class="flex items-center gap-1.5 text-sm text-base-content/60">
 		${ko ? "아이템 레벨" : "Item level"}
 		<input id="${idPrefix}Ilvl" type="number" min="1" max="100" class="input input-sm input-bordered w-20"
-		       placeholder="${ko ? "전체" : "all"}" autocomplete="off" aria-label="${ko ? "전체" : "all"}">
+		       placeholder="${ko ? "전체" : "all"}" autocomplete="off" aria-label="${ko ? "아이템 레벨" : "Item level"}">
 	</label>
 	<span id="${idPrefix}Count" class="text-xs font-mono text-base-content/60"></span>
 </div>
 <script nonce="${CspNonceHolder.getNonce()}">
 	(function () {
 		//  - 검색어: 패밀리 카드 텍스트(모드명/스탯/키)에 포함된 것만.
-		//  - 아이템 레벨: 그 레벨에서 실제로 뜰 수 있는 티어만 보이고(요구 ilvl 초과 티어는 숨김),
-		//    쓸 수 있는 티어가 하나도 없는 패밀리는 통째로 숨긴다(poedb Modifiers 방식).
+		//  - 아이템 레벨: 그 레벨에서 실제로 뜰 수 있는 등급만 보이고(요구 ilvl 초과 등급은 숨김),
+		//    쓸 수 있는 등급이 하나도 없는 패밀리는 통째로 숨긴다(poedb Modifiers 방식).
 		var scope = "${scope}";
 		var input = document.getElementById("${idPrefix}Search");
 		var ilvlInput = document.getElementById("${idPrefix}Ilvl");
 		var count = document.getElementById("${idPrefix}Count");
 		if (!input) return;
-		/** 카드 요약(스탯줄 + NT 배지)을 가용 최상위 티어 기준으로 갱신. filtered=false 면 원래대로 복원. */
+		/** 카드 요약(스탯줄 + NT 배지)을 가용 최상위 등급 기준으로 갱신. filtered=false 면 원래대로 복원. */
 		function updateSummary(card, filtered) {
 			var statBox = card.querySelector("[data-family-stats]") || card.querySelector("summary .min-w-0");
 			var badge = card.querySelector("[data-family-tiers]") || card.querySelector("summary span");
 			var ilvlBadge = card.querySelector("summary [data-top-ilvl]");
 			if (!statBox || !badge) return;
-			// 티어 행이 아예 없는 카드(엘드리치 등)는 요약 갱신 대상이 아니다 — 방치하면
+			// 등급 행이 아예 없는 카드(엘드리치 등)는 요약 갱신 대상이 아니다 — 방치하면
 			// 레벨 필터 시 배지가 "0T"로 덮여버렸다(6T→0T 실증).
 			if (!card.querySelector("tr[data-tier-ilvl]")) filtered = false;
 			if (card.dataset.origStats === undefined) {
@@ -57,7 +57,7 @@
 			});
 			badge.textContent = badge.dataset.tiersFormat ? badge.dataset.tiersFormat.replace("{0}", rows.length) : rows.length + "T";
 			if (!rows.length) return;
-			// 요구 ilvl 배지도 가용 최상위 티어 기준으로 — 원래 값(T1)을 두면 레벨 필터와 모순돼 보인다
+			// 요구 ilvl 배지도 가용 최상위 등급 기준으로 — 원래 값(T1)을 두면 레벨 필터와 모순돼 보인다
 			if (ilvlBadge) ilvlBadge.textContent = "i" + rows[0].getAttribute("data-tier-ilvl");
 			// 효과 칸(3번째 td)의 div 중 첫째는 모드명, 나머지가 스탯 줄 — [data-tier-lines] 가 있으면 그 자식들이 스탯 줄
 			var lineBox = rows[0].querySelector("[data-tier-lines]");
@@ -82,8 +82,8 @@
 				var available = true;
 				var tierRows = card.querySelectorAll("tr[data-tier-ilvl]");
 				if (hasLvl && tierRows.length) {
-					// 티어 행이 없는 카드(도유/엘드리치)는 레벨 개념이 없다 — 레벨 필터로 숨기면
-					// ilvl 50 입력 시 도유 470행이 통째로 사라졌다(실증 버그).
+					// 등급 행이 없는 카드(성유/엘드리치)는 레벨 개념이 없다 — 레벨 필터로 숨기면
+					// ilvl 50 입력 시 성유 470행이 통째로 사라졌다(실증 버그).
 					var visibleTiers = 0;
 					tierRows.forEach(function (r) {
 						var need = parseInt(r.getAttribute("data-tier-ilvl"), 10);
@@ -98,8 +98,8 @@
 				var hit = (!q || card.textContent.toLowerCase().replace(/[ \t\u00a0]+/g, "").indexOf(q) !== -1) && available;
 				card.style.display = hit ? "" : "none";
 				if (hit) shown++;
-				// 요약줄은 기본이 **최상위 티어** 수치다. 레벨 필터를 걸면 그 레벨에서 못 뜨는 값을 계속
-				// 보여줘 오해를 부르므로, 가용 최상위 티어(티어 행은 ilvl 내림차순이라 첫 보이는 행)로 바꾼다.
+				// 요약줄은 기본이 **최상위 등급** 수치다. 레벨 필터를 걸면 그 레벨에서 못 뜨는 값을 계속
+				// 보여줘 오해를 부르므로, 가용 최상위 등급(등급 행은 ilvl 내림차순이라 첫 보이는 행)로 바꾼다.
 				updateSummary(card, hasLvl);
 			});
 			count.textContent = (q || hasLvl) ? shown + " / " + cards.length : "";

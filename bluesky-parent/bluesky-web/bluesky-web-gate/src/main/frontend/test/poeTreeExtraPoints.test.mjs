@@ -24,4 +24,6 @@ test("PoE1 추가 포인트 — Grants 1 / 2 Passive Skill Point(s) 합, 다른 
 	// 아틀라스 포인트 문장 등 비슷한 꼴은 세지 않는다(줄 전체가 맞아야)
 	assert.equal(extra(["Grants 1 Passive Skill Point to Minions"]), 0);
 	assert.equal(extra([]), 0);
+	// 아틀라스 '변함없는 시각'(10-23 Q65 — 게임 PassiveNodeGrantsAtlasPassivePoints)
+	assert.equal(extra(["Grants 20 Atlas Passive Skill Points"]), 20);
 });

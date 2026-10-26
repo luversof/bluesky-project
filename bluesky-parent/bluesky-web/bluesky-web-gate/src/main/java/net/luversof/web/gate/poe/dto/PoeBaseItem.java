@@ -19,7 +19,55 @@ public record PoeBaseItem(
     Flask flask,
     List<ModLine> implicits,
     /** 거래소가 이 베이스를 아는가(10-08 C174, 상세 응답만) — false 면 "거래소에서 찾기" 단추를 숨긴다, null = 모름(보인다). */
-    Boolean tradable) {
+    Boolean tradable,
+    /**
+     * 인게임 요구 레벨(PoB Bases req.level, 10-23 Q103). 옛 데이터면 null → {@link #requiredLevel()} 가 드롭 레벨로.
+     */
+    Integer reqLevel) {
+
+  /** 요구 레벨 없는 옛 모양(시험). */
+  public PoeBaseItem(
+      String name,
+      String nameKo,
+      String slug,
+      String itemClass,
+      String itemClassKo,
+      String category,
+      int dropLevel,
+      int reqStr,
+      int reqDex,
+      int reqInt,
+      Armour armour,
+      Weapon weapon,
+      Flask flask,
+      List<ModLine> implicits,
+      Boolean tradable) {
+    this(
+        name,
+        nameKo,
+        slug,
+        itemClass,
+        itemClassKo,
+        category,
+        dropLevel,
+        reqStr,
+        reqDex,
+        reqInt,
+        armour,
+        weapon,
+        flask,
+        implicits,
+        tradable,
+        null);
+  }
+
+  /**
+   * 인게임 요구 레벨(10-23 Q103) — 예전엔 화면이 드롭 레벨을 요구 레벨처럼 썼다(집중된 목걸이 드롭 80 · 요구 24, 진홍 주얼 드롭 20 · 요구 없음).
+   * 데이터에 없으면 드롭 레벨.
+   */
+  public int requiredLevel() {
+    return reqLevel != null ? reqLevel : dropLevel;
+  }
 
   public record Armour(
       int armourMin,

@@ -600,7 +600,10 @@ function parseBlock(block, category) {
 	const overrides = lineOverrides[name] || {};
 	// PoB 생성 고유(선도자의 상징) 원문의 관사 오타 "an Frenzy/Power Charge" — 게임 문구는 "a"(번역기도 그래야 맞춘다, C78)
 	//   비빈섹트 "a Endurance Charge" 는 반대 방향 같은 오타(10-09 C210)
-	const applyOverride = (line) => (overrides[line] || line).replace(/\ban (Frenzy|Power) Charge/g, "a $1 Charge").replace(/\ba Endurance Charge/g, "an Endurance Charge");
+	//   0 을 가로지르는 범위의 최소 · 최대가 뒤집힌 PoB 원문 "(35--35)% increased Mana Burn rate"(수액의 계절 — Mods
+	//   TinctureToxicityRateUnique__2 는 -35~35) → "(-35-35)%"(10-23 Q44). 부호를 괄호 밖에 둔 "-(30-20)%" 관례는 그대로
+	const applyOverride = (line) => (overrides[line] || line).replace(/\ban (Frenzy|Power) Charge/g, "a $1 Charge").replace(/\ba Endurance Charge/g, "an Endurance Charge")
+		.replace(/\((\d+(?:\.\d+)?)--(\d+(?:\.\d+)?)\)/g, "(-$2-$1)");
 	const linesFor = (variant) => ({
 		implicits: implicitRaw.map((l) => cleanLine(l, variant)).filter(Boolean).map(applyOverride),
 		explicits: explicitRaw.map((l) => cleanLine(l, variant)).filter(Boolean).map(applyOverride),

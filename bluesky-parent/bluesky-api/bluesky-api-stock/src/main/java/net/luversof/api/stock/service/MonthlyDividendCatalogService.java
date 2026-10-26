@@ -28,6 +28,7 @@ import net.luversof.api.stock.repository.StockDailyClosePriceQuery;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
 import net.luversof.api.stock.service.MonthlyDividendPayoutService.SnapshotStats;
+import net.luversof.api.stock.util.StockIds;
 import net.luversof.api.stock.web.dto.response.MonthlyDividendCatalogResponse;
 import net.luversof.api.stock.web.dto.response.MonthlyDividendCatalogResponse.PeriodReturnView;
 
@@ -92,19 +93,18 @@ public class MonthlyDividendCatalogService {
     Map<UUID, LocalDate> firstTradeDateById = new HashMap<>();
     // 기간 수익률용 원주가(2026-10-02, PeriodReturnCalculator.preferRaw).
     Map<UUID, List<StockDailyClosePrice>> rawHistoryById = new HashMap<>();
+    // 기간 수익률 · 위험 지표의 '오늘' 과 시세 창은 한 번 정한다 - 행마다 다시 읽으면 자정을 넘기는 응답에서 행끼리 기준일이 갈린다.
+    LocalDate today = LocalDate.now(MARKET_ZONE_ID);
     if (!stockItemIds.isEmpty()) {
       for (MonthlyDividendPayout payout :
           monthlyDividendPayoutQuery.findByStockItemIdInOrderByPayDateDescRecordDateDesc(
               stockItemIds)) {
         payoutsById.computeIfAbsent(payout.getStockItemId(), id -> new ArrayList<>()).add(payout);
       }
-      String ids =
-          stockItemIds.stream()
-              .map(UUID::toString)
-              .collect(java.util.stream.Collectors.joining(","));
+      String ids = StockIds.joinOrNull(stockItemIds);
       // 기간 수익률 · 위험 지표는 최근 12 개월만 쓴다 - 2 년치를 다 읽으면 행이 두 배다(실측 2026-09-23: 약 1 만 행).
       // 기초일이 휴장이면 그 전 거래일을 찾으므로 3 개월 여유를 둔다.
-      LocalDate fromDate = LocalDate.now(MARKET_ZONE_ID).minusMonths(CALCULATION_WINDOW_MONTHS);
+      LocalDate fromDate = today.minusMonths(CALCULATION_WINDOW_MONTHS);
       for (StockDailyClosePrice row :
           stockDailyClosePriceQuery.findDailyClosePricesForItems(ids, fromDate)) {
         priceHistoryById.computeIfAbsent(row.stockItemId(), id -> new ArrayList<>()).add(row);
@@ -139,7 +139,6 @@ public class MonthlyDividendCatalogService {
                       new PeriodReturnCalculator.PayoutPoint(
                           payout.getRecordDate(), payout.getDividendAmountPerShare()))
               .toList();
-      LocalDate today = LocalDate.now(MARKET_ZONE_ID);
       List<StockDailyClosePrice> periodHistory =
           PeriodReturnCalculator.preferRaw(
               stockItemId != null ? rawHistoryById.getOrDefault(stockItemId, List.of()) : List.of(),
@@ -169,13 +168,12 @@ public class MonthlyDividendCatalogService {
           stockItemId != null ? firstTradeDateById.get(stockItemId) : null;
 
       // 분배금 추세는 지급 이력만으로 난다. null 은 여기서 0 으로 맞춰 평균이 computeSnapshotStats 와 같게 나오게 한다.
+      List<BigDecimal> amountsPerShare =
+          payouts.stream().map(payout -> nz(payout.getDividendAmountPerShare())).toList();
       PayoutTrendCalculator.PayoutTrend payoutTrend =
-          PayoutTrendCalculator.compute(
-              payouts.stream().map(payout -> nz(payout.getDividendAmountPerShare())).toList());
-
+          PayoutTrendCalculator.compute(amountsPerShare);
       PayoutTrendCalculator.PayoutCuts payoutCuts =
-          PayoutTrendCalculator.countCuts(
-              payouts.stream().map(payout -> nz(payout.getDividendAmountPerShare())).toList());
+          PayoutTrendCalculator.countCuts(amountsPerShare);
 
       BigDecimal currentPrice = price != null ? nz(price.closePrice()) : BigDecimal.ZERO;
       BigDecimal averagePerShare = stats != null ? nz(stats.averagePerShare1y()) : BigDecimal.ZERO;

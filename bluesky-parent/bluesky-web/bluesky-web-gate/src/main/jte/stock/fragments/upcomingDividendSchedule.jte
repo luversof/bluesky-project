@@ -3,6 +3,7 @@
 @import net.luversof.web.gate.stock.dto.view.DividendCalendarView
 @import net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 <%-- 다가올 배당 - 이번 달 남은 날과 다음 달에 받을 것으로 예상되는 월배당(사용자 결정 2026-09-17: 캘린더 탭을 실수령 배당에 통합하고
      '앞으로' 는 화면 위 이 구역으로, 범위는 이번 달 남은 날 + 다음 달).
@@ -49,9 +50,7 @@
 		@endif
 		@if(staleQuantityCount > 0)
 			<div class="mt-1 text-[11px] text-warning amount-value" data-upcoming-stale-quantity="${staleQuantityCount}" data-stale-quantity-notice>
-				${java.text.MessageFormat.format(
-					MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity.both"),
-					String.valueOf(staleQuantityCount),
+				${StockViewSupport.msg("stock.summary.upcoming.dividend.stale.quantity.both", String.valueOf(staleQuantityCount),
 					StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityLatestTotal)),
 					StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}
 			</div>
@@ -59,7 +58,7 @@
 		<%-- "평균" 기준은 최근 12 건을 평균한다. 이력이 그보다 짧은 종목은 그만큼 짧은 평균이다(실측 2026-08-23: 8 종목 중 2 종목이 10 건). --%>
 		@if(shortHistorySymbols != null && !shortHistorySymbols.isEmpty())
 			<div class="mt-1 text-xs text-base-content/60" data-short-history-count="${shortHistorySymbols.size()}">
-				${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.calendar.short.history"), String.join(", ", shortHistorySymbols))}
+				${StockViewSupport.msg("stock.dividend.calendar.short.history", String.join(", ", shortHistorySymbols))}
 			</div>
 		@endif
 		@if(schedule != null && schedule.hasDays())
@@ -84,7 +83,7 @@
 					@for(DividendCalendarView.Entry entry : schedule.overdue())
 						<li class="flex items-center justify-between gap-2">
 							<span class="truncate" title="${entry.name()}">${entry.name()}</span>
-							<span class="shrink-0 font-mono"><span class="text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("stock.dividend.upcoming.overdue.day"), String.valueOf(entry.payDay()))}</span> <span class="text-base-content/60">${latestLabel}</span> <span class="text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span> <span class="text-base-content/60">· ${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span></span>
+							<span class="shrink-0 font-mono"><span class="text-base-content/60">${StockViewSupport.msg("stock.dividend.upcoming.overdue.day", String.valueOf(entry.payDay()))}</span> <span class="text-base-content/60">${latestLabel}</span> <span class="text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span> <span class="text-base-content/60">· ${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span></span>
 						</li>
 					@endfor
 				</ul>
