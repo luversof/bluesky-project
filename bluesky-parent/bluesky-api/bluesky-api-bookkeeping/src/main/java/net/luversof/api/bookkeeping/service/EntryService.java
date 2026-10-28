@@ -113,7 +113,7 @@ public class EntryService {
         assetService
             .findById(entry.getIncomeAssetId())
             .orElseThrow(BookkeepingErrorCode.NOT_EXIST_ASSET::exception);
-    if (!incomeAsset.getBookkeepingId().equals(bookkeeping)) {
+    if (!incomeAsset.getBookkeepingId().equals(bookkeeping.getId())) {
       BookkeepingErrorCode.INVALID_ASSET_ID.throwException();
     }
 
@@ -122,7 +122,7 @@ public class EntryService {
         assetService
             .findById(entry.getOutgoingAssetId())
             .orElseThrow(BookkeepingErrorCode.NOT_EXIST_ASSET::exception);
-    if (!outgoingAsset.getBookkeepingId().equals(bookkeeping)) {
+    if (!outgoingAsset.getBookkeepingId().equals(bookkeeping.getId())) {
       BookkeepingErrorCode.INVALID_ASSET_ID.throwException();
     }
 

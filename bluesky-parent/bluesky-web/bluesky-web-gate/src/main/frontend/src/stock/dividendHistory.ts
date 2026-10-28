@@ -71,6 +71,9 @@ interface MonthRange {
             'rgba(14,165,233,0.8)','rgba(249,115,22,0.8)','rgba(168,85,247,0.8)',
             'rgba(20,184,166,0.8)','rgba(245,158,11,0.8)','rgba(16,185,129,0.8)'
         ];
+        // 월별 막대 · 도넛(종목별)이 따로 두는 종목 수. 나머지는 "기타" 한 계열 · 한 조각.
+        const DIVIDEND_CHART_TOP = 8;
+        const DIVIDEND_OTHERS_COLOR = 'rgba(148,163,184,0.6)';
 
         // stock-charts.ts 의 resolveLocale 과 같은 순서. 인라인 시절엔 브라우저 로케일(undefined)을 썼는데 앱 로케일과 어긋난다.
         function resolveLocale(): string {
@@ -401,7 +404,7 @@ interface MonthRange {
             const stockTotal: Record<string, number> = {};
             dividendData.forEach((d: DividendRow) => { stockTotal[d.stockItem] = (stockTotal[d.stockItem] || 0) + Number(d.net); });
             const ranked = Object.keys(stockTotal).sort((a: string, b: string) => stockTotal[b] - stockTotal[a]);
-            const TOP = 8;
+            const TOP = DIVIDEND_CHART_TOP;
             const topStocks = ranked.slice(0, TOP);
             const isTop: Record<string, boolean> = {};
             topStocks.forEach((s: string) => { isTop[s] = true; });
@@ -437,7 +440,7 @@ interface MonthRange {
                 datasets.push({
                     label: othersText,
                     data: othersSeries,
-                    backgroundColor: 'rgba(148,163,184,0.6)',
+                    backgroundColor: DIVIDEND_OTHERS_COLOR,
                     borderRadius: 2
                 });
             }
@@ -451,7 +454,20 @@ interface MonthRange {
                 map[key] = (map[key] || 0) + Number(d.net);
             });
             const sorted = Object.entries(map).sort((a: [string, number], b: [string, number]) => b[1] - a[1]);
-            return { labels: sorted.map((e: [string, number]) => e[0]), data: sorted.map((e: [string, number]) => e[1]) };
+            const colors = sorted.map((_: [string, number], i: number) => CHART_COLORS[i % CHART_COLORS.length]);
+            // 종목별은 월별 막대와 같은 상위 DIVIDEND_CHART_TOP 개 + "기타" - 같은 종목이 두 그림에서 같은 색이다(2026-10-27,
+            // 예전엔 18 조각 중 작은 것들이 실선 한 줄로 겹쳤다). 계좌별은 몇 개뿐이라 그대로.
+            if (groupBy === 'stock' && sorted.length > DIVIDEND_CHART_TOP + 1) {
+                const tail = sorted.slice(DIVIDEND_CHART_TOP);
+                const head = sorted.slice(0, DIVIDEND_CHART_TOP);
+                const othersText = othersLabel.replace("{0}", String(tail.length)).replace("{1}", String(DIVIDEND_CHART_TOP));
+                return {
+                    labels: head.map((e: [string, number]) => e[0]).concat(othersText),
+                    data: head.map((e: [string, number]) => e[1]).concat(tail.reduce((acc: number, e: [string, number]) => acc + e[1], 0)),
+                    colors: colors.slice(0, DIVIDEND_CHART_TOP).concat(DIVIDEND_OTHERS_COLOR),
+                };
+            }
+            return { labels: sorted.map((e: [string, number]) => e[0]), data: sorted.map((e: [string, number]) => e[1]), colors };
         }
 
         function initMonthlyChart() {
@@ -494,8 +510,9 @@ interface MonthRange {
                         }
                     },
                     scales: {
-                        x: { stacked: true, grid: { color: gridColor }, ticks: { maxRotation: 45, font: { size: 11 } } },
-                        y: { stacked: true, beginAtZero: true, grid: { color: gridColor }, ticks: { callback: (v: any) => win.StockCharts ? win.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(appLocaleOrDefault()), font: { size: 11 } } }
+                        // 눈금 수 상한: 280px 높이에 세로 눈금 11 개(50만 간격) · 가로 79 개월을 45 도로 눕혀 빽빽했다(2026-10-27).
+                        x: { stacked: true, grid: { color: gridColor }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12, font: { size: 11 } } },
+                        y: { stacked: true, beginAtZero: true, grid: { color: gridColor }, ticks: { maxTicksLimit: 6, callback: (v: any) => win.StockCharts ? win.StockCharts.formatCompactNumber(v) : Math.round(v).toLocaleString(appLocaleOrDefault()), font: { size: 11 } } }
                     }
                 }
             };
@@ -528,7 +545,7 @@ interface MonthRange {
                     labels: d.labels,
                     datasets: [{
                         data: d.data,
-                        backgroundColor: d.labels.map((_: string, i: number) => CHART_COLORS[i % CHART_COLORS.length]),
+                        backgroundColor: d.colors,
                         borderWidth: 1
                     }]
                 },
@@ -551,7 +568,7 @@ interface MonthRange {
                     : d.data.map((v: number) => (total > 0 ? ((v / total) * 100).toFixed(1) : '0.0'));
                 legend.innerHTML = d.labels.map((label: string, i: number) => {
                     const pct = shownPercents[i];
-                    const color = CHART_COLORS[i % CHART_COLORS.length];
+                    const color = d.colors[i];
                     return '<div class="flex items-center gap-1 mb-0.5">'
                         + '<span class="chart-legend-swatch" style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + '"></span>'
                         + '<span class="flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + label + '">' + label + '</span>'

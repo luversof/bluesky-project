@@ -46,6 +46,18 @@ public final class StockRangePresetUtil {
     return rangeMode != null && !rangeMode.isBlank();
   }
 
+  /**
+   * 상대 N 개월 프리셋이면 N(1 ~ 1200), 아니면 null. 화면이 보내는 값만 받는다 - 큰 숫자를 그대로 parseInt · minusMonths 하면 400 이
+   * 아니라 500 이 났다(2026-10-27 감사: rangeMode=99999999999).
+   */
+  public static Integer relativeMonths(String rangeMode) {
+    String mode = rangeMode == null ? "" : rangeMode.trim();
+    if (mode.matches("[1-9][0-9]{0,3}") && Integer.parseInt(mode) <= 1200) {
+      return Integer.parseInt(mode);
+    }
+    return null;
+  }
+
   public static PresetRange resolve(String rangeMode, ZoneId zone) {
     LocalDate today = LocalDate.now(zone);
     String mode = rangeMode == null ? "" : rangeMode.trim();
@@ -54,9 +66,9 @@ public final class StockRangePresetUtil {
     if ("mtd".equalsIgnoreCase(mode)) {
       from = today.withDayOfMonth(1);
       resolvedMode = "mtd";
-    } else if (mode.matches("[1-9][0-9]{0,3}") && Long.parseLong(mode) <= 1200L) {
+    } else if (relativeMonths(mode) != null) {
       // 화면과 같은 규칙: minusMonths 는 양끝 포함이라 하루를 더해 정확히 N 개월로 만든다.
-      from = today.minusMonths(Long.parseLong(mode)).plusDays(1);
+      from = today.minusMonths(relativeMonths(mode)).plusDays(1);
       resolvedMode = mode;
     } else {
       from = LocalDate.of(today.getYear(), 1, 1);

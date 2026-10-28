@@ -52,6 +52,25 @@ public class KisAuthService {
     return config;
   }
 
+  /**
+   * 발급 시각으로 적을 값. KIS 는 짧은 사이에 다시 요청하면 이미 발급한 토큰을 그대로 준다 - 그때 지금을 발급 시각으로 적으면 실제 만료보다 몇 시간 늦게까지 그
+   * 토큰을 써서 그사이 갱신이 모두 실패했다(2026-10-27 감사). 응답의 남은 수명(expires_in, 초)이 있으면 "만료 - 24 시간" 을 적어 위의 23 시간
+   * 판정이 실제 만료 1 시간 전에 걸리게 한다. 모르는 꼴이면 예전처럼 지금.
+   */
+  static Instant tokenIssuedAt(Instant now, Object expiresIn) {
+    if (expiresIn != null) {
+      try {
+        long seconds = Long.parseLong(String.valueOf(expiresIn).trim());
+        if (seconds > 0) {
+          return now.plusSeconds(seconds).minus(24, ChronoUnit.HOURS);
+        }
+      } catch (NumberFormatException ignored) {
+        // 숫자가 아니면 지금으로 둔다.
+      }
+    }
+    return now;
+  }
+
   private void renewToken(OpenApiConfig config) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
@@ -70,7 +89,8 @@ public class KisAuthService {
     if (response.getBody() != null && response.getBody().containsKey("access_token")) {
       String newToken = (String) response.getBody().get("access_token");
       config.setAccessToken(newToken);
-      config.setTokenUpdatedDate(Instant.now());
+      config.setTokenUpdatedDate(
+          tokenIssuedAt(Instant.now(), response.getBody().get("expires_in")));
       openApiConfigRepository.save(config);
     } else {
       throw new RuntimeException("KIS access token 발급에 실패했습니다: " + response.getBody());

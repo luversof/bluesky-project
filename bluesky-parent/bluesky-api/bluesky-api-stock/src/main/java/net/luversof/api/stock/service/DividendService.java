@@ -13,19 +13,15 @@ import org.springframework.util.CollectionUtils;
 
 import net.luversof.api.stock.constant.StockErrorCode;
 import net.luversof.api.stock.domain.Dividend;
-import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 
 @Service
 public class DividendService {
 
   private final JdbcClient jdbcClient;
-  private final StockItemService stockItemService;
 
-  public DividendService(
-      @Qualifier("stockJdbcClient") JdbcClient jdbcClient, StockItemService stockItemService) {
+  public DividendService(@Qualifier("stockJdbcClient") JdbcClient jdbcClient) {
     this.jdbcClient = jdbcClient;
-    this.stockItemService = stockItemService;
   }
 
   /**
@@ -178,24 +174,6 @@ public class DividendService {
     sql.append(buildDividendWhere(request, params));
     sql.append(" ORDER BY d.\"payDate\" DESC, d.\"id\" DESC");
 
-    var result = jdbcClient.sql(sql.toString()).params(params).query(DIVIDEND_ROW_MAPPER).list();
-
-    // Fill missing stockItemId by looking up StockItem by name
-    for (var dividend : result) {
-      if (dividend != null
-          && dividend.getStockItemId() == null
-          && dividend.getStockItemName() != null) {
-        try {
-          StockItem si = stockItemService.findByName(dividend.getStockItemName());
-          if (si != null && si.getId() != null) {
-            dividend.setStockItemId(si.getId());
-          }
-        } catch (Exception ignored) {
-          // ignore lookup failures
-        }
-      }
-    }
-
-    return result;
+    return jdbcClient.sql(sql.toString()).params(params).query(DIVIDEND_ROW_MAPPER).list();
   }
 }

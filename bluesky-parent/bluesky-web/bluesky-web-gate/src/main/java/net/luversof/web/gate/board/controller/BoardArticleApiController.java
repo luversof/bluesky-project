@@ -51,7 +51,8 @@ public class BoardArticleApiController {
   @PostMapping
   public BoardArticle create(@RequestBody BoardArticle boardArticle) {
     var createdArticle =
-        boardArticleClient.create(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+        boardArticleClient.create(
+            boardArticle.toBuilder().userId(UserUtil.requireUserId()).build());
     return boardUserInfoService.enrich(createdArticle);
   }
 
@@ -82,13 +83,14 @@ public class BoardArticleApiController {
   @PutMapping
   public BoardArticle modify(@RequestBody BoardArticle boardArticle) {
     var updatedArticle =
-        boardArticleClient.modify(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+        boardArticleClient.modify(
+            boardArticle.toBuilder().userId(UserUtil.requireUserId()).build());
     return boardUserInfoService.enrich(updatedArticle);
   }
 
   @BlueskyPreAuthorize
   @DeleteMapping
   public void delete(@RequestBody BoardArticle boardArticle) {
-    boardArticleClient.delete(boardArticle.toBuilder().userId(UserUtil.getUserId()).build());
+    boardArticleClient.delete(boardArticle.toBuilder().userId(UserUtil.requireUserId()).build());
   }
 }

@@ -251,12 +251,18 @@ export {};
         var totalBuyAmount = 0;
         var totalEvaluationAmountValue = 0;
         var totalEvaluationProfitValue = 0;
+        var totalRealizedProfitValue = 0;
+        var totalDividendValue = 0;
+        var totalCombinedProfitValue = 0;
 
         for (var i = 0; i < selectedRows.length; i++) {
             var row = selectedRows[i];
             totalBuyAmount += Number(row.dataset.buyAmount || '0');
             totalEvaluationAmountValue += Number(row.dataset.evaluationAmount || '0');
             totalEvaluationProfitValue += Number(row.dataset.evaluationProfit || '0');
+            totalRealizedProfitValue += Number(row.dataset.realizedProfit || '0');
+            totalDividendValue += Number(row.dataset.dividendTotal || '0');
+            totalCombinedProfitValue += Number(row.dataset.combinedProfit || '0');
         }
 
         var totalEvaluationAmount = Number(summary.dataset.totalEvaluationAmount || '0');
@@ -294,6 +300,26 @@ export {};
             profitRateLabel.textContent = '(' + formatAssetStatusSignedNumber(profitRateValue, 1) + '%)';
             profitRateLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
             profitRateLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+        }
+
+        // 실현손익 · 합산 손익은 부호가 뜻이다. 0 에는 방향이 없어 색을 빼고 부호도 붙이지 않는다(formatAssetStatusSignedNumber).
+        var signedSummaries: Array<[string, number]> = [
+            ['[data-selection-realized-profit]', totalRealizedProfitValue],
+            ['[data-selection-combined-profit]', totalCombinedProfitValue],
+        ];
+        for (var s = 0; s < signedSummaries.length; s++) {
+            var signedLabel = summary.querySelector<HTMLElement>(signedSummaries[s][0]);
+            var signedValue = signedSummaries[s][1];
+            if (signedLabel) {
+                signedLabel.textContent = formatAssetStatusSignedNumber(signedValue, 0);
+                signedLabel.classList.toggle('text-profit', signedValue > 0);
+                signedLabel.classList.toggle('text-loss', signedValue < 0);
+            }
+        }
+
+        var dividendLabel = summary.querySelector<HTMLElement>('[data-selection-dividend-total]');
+        if (dividendLabel) {
+            dividendLabel.textContent = formatAssetStatusNumber(totalDividendValue, 0);
         }
 
         var weightLabel = summary.querySelector<HTMLElement>('[data-selection-weight]');

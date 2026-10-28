@@ -948,8 +948,9 @@ public class StockDetailViewController {
   }
 
   /**
-   * 상세 화면(종목 · 계좌)의 매매 내역 - 없으면 빈 목록, 거래일 순(오래된 것부터, 날짜가 없는 줄은 뒤). 표도 이 순서로 그린다. 2026-10-22 까지 두
-   * 핸들러가 한 벌씩 들고 있었고 주석은 '최신순' 이라 적혀 있었지만 정렬은 늘 오름차순이었다.
+   * 상세 화면(종목 · 계좌)의 매매 내역 - 없으면 빈 목록, 최근 거래부터(날짜가 없는 줄은 뒤). 표도 이 순서로 그린다. 2026-10-22 까지 두
+   * 핸들러가 한 벌씩 들고 있었고 주석은 '최신순' 이라 적혀 있었지만 정렬은 늘 오름차순이었다 - 2026-10-28 최신순으로(계좌 하나에 121 행이라 최근
+   * 거래가 맨 아래였다. 같은 날 줄은 받은 차례 그대로).
    */
   static List<TradeResponse> tradesByDate(List<TradeResponse> trades) {
     return trades == null
@@ -957,18 +958,18 @@ public class StockDetailViewController {
         : trades.stream()
             .sorted(
                 Comparator.comparing(
-                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.naturalOrder())))
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
             .toList();
   }
 
-  /** 상세 화면의 배당 내역 - 없으면 빈 목록, 지급일 순(오래된 것부터, 날짜가 없는 줄은 뒤). */
+  /** 상세 화면의 배당 내역 - 없으면 빈 목록, 최근 지급일부터(날짜가 없는 줄은 뒤). 매매 내역과 같은 차례(2026-10-28). */
   static List<DividendResponse> dividendsByPayDate(List<DividendResponse> dividends) {
     return dividends == null
         ? List.of()
         : dividends.stream()
             .sorted(
                 Comparator.comparing(
-                    DividendResponse::payDate, Comparator.nullsLast(Comparator.naturalOrder())))
+                    DividendResponse::payDate, Comparator.nullsLast(Comparator.reverseOrder())))
             .toList();
   }
 

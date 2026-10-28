@@ -1489,12 +1489,17 @@ function renderMonthlyDetailsTable(record) {
 			: [];
 		const labels = records.map((record) => record.year);
 		const datasets = [
-			buildLineDataset(
-				i18n.seriesTotalWealth,
-				records.map((record) => record.totalWealth),
-				"#2563eb",
-				"rgba(37, 99, 235, 0.15)",
-			),
+			// 현금이 0 이면 총 자산 = 평가금액이라 두 선이 포개져 평가금액이 안 보였다(2026-10-27). 총 자산을 넓고 옅은 띠로 그어
+			// 겹쳐도 가운데 평가금액 선이 비쳐 보이게 한다.
+			{
+				...buildLineDataset(
+					i18n.seriesTotalWealth,
+					records.map((record) => record.totalWealth),
+					"rgba(37, 99, 235, 0.45)",
+					"rgba(37, 99, 235, 0.15)",
+				),
+				borderWidth: 6,
+			},
 			buildLineDataset(
 				i18n.seriesMarketValue,
 				records.map((record) => record.marketValue),
@@ -1597,6 +1602,8 @@ function renderMonthlyDetailsTable(record) {
 						display: true,
 						text: i18n.chartAxisYear,
 					},
+					// 0 ~ 42 년 43 개를 다 찍느라 42 도로 눕혔다(2026-10-27) - 눕히지 않고 몇 개만.
+					ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 11 },
 				},
 				y: {
 					min: allowNegative ? undefined : 0,

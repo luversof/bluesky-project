@@ -30,7 +30,7 @@ public class BlogArticleController {
   @PostMapping
   public BlogArticle create(@RequestBody BlogArticle blogArticle) {
     return blogArticleClient.create(
-        blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
+        blogArticle.toBuilder().userId(UserUtil.requireUserId().toString()).build());
   }
 
   @GetMapping("/search/findByBlogId/{blogId}")
@@ -47,13 +47,13 @@ public class BlogArticleController {
   @PutMapping
   public BlogArticle update(@RequestBody BlogArticle blogArticle) {
     return blogArticleClient.update(
-        blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
+        blogArticle.toBuilder().userId(UserUtil.requireUserId().toString()).build());
   }
 
   @BlueskyPreAuthorize
   @DeleteMapping
   public void delete(@RequestBody BlogArticle blogArticle) {
     blogArticleClient.delete(
-        blogArticle.toBuilder().userId(UserUtil.getUserId().toString()).build());
+        blogArticle.toBuilder().userId(UserUtil.requireUserId().toString()).build());
   }
 }

@@ -190,17 +190,29 @@ class ActivityListRenderTest {
     assertThat(skippedMonths(html)).as("빈 달이 없으면 안내를 내지 않는다").isEqualTo(-1L);
   }
 
+  /** 빈 달도 칸을 둔다(2026-10-27 - 예전엔 활동 있는 달만 그려 2010-03 막대 옆에 2014-11 이 붙고, 생략한 달 수를 문구로만 밝혔다). */
   @Test
-  void 빈_달이_있으면_몇_개월이_생략됐는지_밝힌다() {
-    // 실데이터의 가장 큰 공백을 그대로 재현: 2010-03 다음 막대가 2014-11(55 개월 공백)
+  void 빈_달도_칸을_두어_시간축이_맞다() {
     String html =
         render(
             List.of(trade("2010-03-10", "BUY", "500000"), trade("2014-11-20", "SELL", "700000")));
 
-    assertThat(chartLabels(html))
-        .as("막대는 두 개뿐인데 실제로는 4년 7개월이 떨어져 있다")
-        .containsExactly("2010.03", "2014.11");
-    assertThat(skippedMonths(html)).isEqualTo(55L);
+    List<String> labels = chartLabels(html);
+    assertThat(labels).hasSize(57).startsWith("2010.03", "2010.04").endsWith("2014.11");
+    assertThat(skippedMonths(html)).as("생략이 없으니 안내도 없다").isEqualTo(-1L);
+  }
+
+  /** 60 개월을 넘으면 해 단위로 묶는다 - 매매 화면 월별 막대와 같은 규칙. 빈 해도 칸이 남는다. */
+  @Test
+  void 육십_개월을_넘으면_해_단위로_묶는다() {
+    String html =
+        render(
+            List.of(
+                trade("2009-10-06", "BUY", "500000"),
+                trade("2009-11-06", "BUY", "300000"),
+                trade("2014-11-20", "SELL", "700000")));
+
+    assertThat(chartLabels(html)).containsExactly("2009", "2010", "2011", "2012", "2013", "2014");
   }
 
   /** 달력 격자는 (앞 여백 + 그 달 일수) 를 7 의 배수로 올림한 칸 수여야 한다. */
@@ -299,6 +311,15 @@ class ActivityListRenderTest {
     assertThat(summary).contains("1,000");
     assertThat(summary).as("매도·배당·실현손익이 없으면 그 항목 자체가 없다").doesNotContain("₩0");
     assertThat(summary.split("amount-value").length - 1).as("적힌 항목 수").isEqualTo(1);
+  }
+
+  /** 캘린더 달 카드는 최신 달부터 - 펼쳐 둔 이번 달이 맨 위(2026-10-28, 예전엔 73 개 카드 맨 아래). */
+  @Test
+  void 캘린더는_최신_달부터() {
+    String html =
+        render(List.of(trade("2025-01-10", "BUY", "1000"), trade("2026-03-03", "BUY", "1000")));
+
+    assertThat(html.indexOf(">2026.03<")).isGreaterThan(0).isLessThan(html.indexOf(">2025.01<"));
   }
 
   /** 달 카드 헤더 안의 요약 마크업. */

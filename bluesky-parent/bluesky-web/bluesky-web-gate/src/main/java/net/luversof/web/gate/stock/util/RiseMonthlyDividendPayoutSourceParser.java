@@ -63,12 +63,8 @@ public class RiseMonthlyDividendPayoutSourceParser {
 
   /** 이 출처를 우리가 맡는가. 사이트가 kbam.co.kr 로 옮겨 가는 중이라 둘 다 같은 것으로 본다(2026-09-21). */
   public static boolean supportsHost(String host) {
-    if (host == null) {
-      return false;
-    }
-
-    String normalized = host.toLowerCase(java.util.Locale.ROOT);
-    return normalized.contains("riseetf.co.kr") || normalized.contains("kbam.co.kr");
+    return PayoutSourceText.hostIs(host, "riseetf.co.kr")
+        || PayoutSourceText.hostIs(host, "kbam.co.kr");
   }
 
   /**

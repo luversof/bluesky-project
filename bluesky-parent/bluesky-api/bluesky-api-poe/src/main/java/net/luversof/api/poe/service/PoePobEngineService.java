@@ -277,14 +277,22 @@ public class PoePobEngineService {
       if (cached != null) {
         return cached;
       }
-      EngineResult result = run(buildXml);
-      // 값이 하나도 없는 결과는 캐시하지 않는다 — 엔진 쪽 일시 장애를 sha256 키로 박제하면
-      // 재기동 전까지 같은 빌드가 계속 빈 결과를 받는다(실측: 갱신 직후 전건 stats 0).
-      if (!result.stats().isEmpty()) {
-        cache.put(cacheKey, result);
-      }
-      return result;
     }
+    // 실행(20~300초)은 잠금 밖에서 — 잠금을 쥔 채 돌면 다른 방문자의 재계산 · 캐시 적중 · 워커 생성 · reset 이
+    // 전부 이 한 건을 기다렸다(2026-10-28 감사). 같은 XML 이 동시에 두 번 계산될 수는 있지만 결과는 같다.
+    int gen = generation.get();
+    EngineResult result = run(buildXml);
+    // 값이 하나도 없는 결과는 캐시하지 않는다 — 엔진 쪽 일시 장애를 sha256 키로 박제하면
+    // 재기동 전까지 같은 빌드가 계속 빈 결과를 받는다(실측: 갱신 직후 전건 stats 0).
+    // 계산 중에 reset 이 지나갔으면 갱신 전 엔진 값이라 캐시하지 않는다.
+    if (!result.stats().isEmpty()) {
+      synchronized (this) {
+        if (gen == generation.get()) {
+          cache.put(cacheKey, result);
+        }
+      }
+    }
+    return result;
   }
 
   /**
@@ -514,6 +522,7 @@ public class PoePobEngineService {
   /** 스크립트 하나를 프로세스-per-실행으로 돌려 결과 마커 뒤 JSON 문자열을 돌려준다(calc.lua · party-export.lua 공용). */
   private String runOnce(Path script, String buildXml) {
     Path xmlFile = null;
+    Process started = null;
     try {
       xmlFile = Files.createTempFile("pob-build", ".xml");
       Files.writeString(xmlFile, buildXml, StandardCharsets.UTF_8);
@@ -523,6 +532,7 @@ public class PoePobEngineService {
       processBuilder.directory(sourceDir.resolve("src").toFile());
       processBuilder.redirectErrorStream(true);
       Process process = processBuilder.start();
+      started = process;
       // PoB 는 시작 오류 시 io.read 로 stdin 을 기다린다 — 먼저 닫아 프롬프트 대기(무한 멈춤)를 차단
       process.getOutputStream().close();
 
@@ -596,6 +606,11 @@ public class PoePobEngineService {
     } catch (Exception e) {
       throw new IllegalStateException("PoB 엔진 실행 실패", e);
     } finally {
+      // 중단(interrupt) · 예외로 빠져나오면 프로세스가 시간 제한 없이 남았다 — 가이드가 실패할 때마다 shutdownNow 로
+      // 최대 20여 개가 고아가 됐다(2026-10-28 감사). 정상 종료면 이미 끝나 있어 아무 일도 안 한다.
+      if (started != null && started.isAlive()) {
+        started.destroyForcibly();
+      }
       if (xmlFile != null) {
         try {
           Files.deleteIfExists(xmlFile);

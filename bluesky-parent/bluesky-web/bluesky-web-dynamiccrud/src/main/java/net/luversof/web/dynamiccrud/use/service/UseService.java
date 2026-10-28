@@ -1,5 +1,6 @@
 package net.luversof.web.dynamiccrud.use.service;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
@@ -18,6 +19,11 @@ public interface UseService {
       SettingParameter settingParameter, Pageable pageable, Map<String, String> dataMap);
 
   Object create(SettingParameter settingParameter, Map<String, String> dataMap);
+
+  /** 여러 행 등록(일괄 가져오기). 기본은 한 행씩이고, RDB 구현은 한 트랜잭션으로 묶어 중간 실패 시 전부 되돌린다. */
+  default void createAll(SettingParameter settingParameter, List<Map<String, String>> dataMapList) {
+    dataMapList.forEach(dataMap -> create(settingParameter, dataMap));
+  }
 
   Object update(SettingParameter settingParameter, Map<String, String> dataMap);
 

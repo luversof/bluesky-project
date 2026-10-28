@@ -63,4 +63,16 @@ class AverageCostProfitCalculatorOrderTest {
     assertEquals(buyFirst.getHoldingQuantity(), sellFirst.getHoldingQuantity());
     assertEquals(buyFirst.getAverageBuyPrice(), sellFirst.getAverageBuyPrice());
   }
+
+  /** 기간 끝(endDate)은 다음 날 0 시 - 그 시각의 거래는 다음 기간 것이다(2026-10-27 감사, 예전엔 두 기간에 모두 셌다). */
+  @Test
+  void tradeAtEndInstantBelongsToNextPeriod() {
+    Trade buy = trade(TradeType.BUY, 10, "1000", "0", "0");
+    TradeProfitRequest request = request();
+    request.setEndDate(SAME_INSTANT);
+
+    var profit = new AverageCostProfitCalculator().calculate(List.of(buy), request, null, null);
+
+    assertEquals(0, profit.getTotalBuyAmount().signum());
+  }
 }

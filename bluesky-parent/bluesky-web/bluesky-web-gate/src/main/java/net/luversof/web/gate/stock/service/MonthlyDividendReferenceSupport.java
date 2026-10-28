@@ -729,6 +729,18 @@ public class MonthlyDividendReferenceSupport {
   }
 
   /**
+   * 출처 주소는 http · https 만 - 화면이 이 값을 링크(href)로 그대로 걸어 {@code javascript:} 주소면 누르는 순간 스크립트가
+   * 돈다(2026-10-27 감사).
+   */
+  public static boolean isWebUrl(String url) {
+    if (url == null) {
+      return false;
+    }
+    String lower = url.trim().toLowerCase(Locale.ROOT);
+    return lower.startsWith("https://") || lower.startsWith("http://");
+  }
+
+  /**
    * 종목코드 정규화(비면 null, 아니면 앞뒤 공백을 걷고 대문자) - 규칙은 MonthlyDividendPayDayUtil.normalizeSymbol 한 곳에 있다.
    */
   public String normalizeMonthlyDividendSymbol(String symbol) {

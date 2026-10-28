@@ -136,7 +136,8 @@ public class StockAdminService {
    * 줄만 남기고 사라져 운영에서는 흔적이 없었다.
    */
   public LedgerImportResult tradeBulkInsert(UUID userId) {
-    tradeRepository.deleteAll();
+    // 이 사용자 계좌의 거래만 지운다 - 예전 deleteAll 은 다른 사용자 거래까지 지웠다(2026-10-27 감사).
+    accountService.findByUserId(userId).forEach(a -> tradeRepository.deleteByAccountId(a.getId()));
 
     var stockItemList =
         StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
@@ -175,7 +176,10 @@ public class StockAdminService {
             .map(
                 t -> {
                   Trade trade = toTrade(t, accountMap, stockItemList);
-                  if (trade == null && t.get종목() != null) {
+                  // 계좌 때문에 버린 행은 종목 이름 탓이 아니다 - 종목을 정말 못 찾았을 때만 모르는 이름에 담는다.
+                  if (trade == null
+                      && t.get종목() != null
+                      && stockItemList.stream().noneMatch(s -> s.getName().equals(t.get종목()))) {
                     unknownStockNames.add(t.get종목());
                   }
                   return trade;
@@ -212,12 +216,15 @@ public class StockAdminService {
 
   /** 시트의 배당을 통째로 다시 넣는다. 거래와 같은 이유로 버려진 행 수를 돌려준다. */
   public LedgerImportResult dividendBulkInsert(UUID userId) {
-    dividendRepository.deleteAll();
+    // 거래와 같다 - 이 사용자 계좌의 배당만 지운다.
+    accountService
+        .findByUserId(userId)
+        .forEach(a -> dividendRepository.deleteByAccountId(a.getId()));
 
     var googleSheetsDividendList = stockGoogleSheetService.getGoogleSheetDividendList(userId);
 
     var accountMap = prepareAccountMap(userId, googleSheetsDividendList);
-    var stockItemMap = prepareStockItemMap(googleSheetsDividendList);
+    var stockItemMap = prepareStockItemMap();
 
     var unknownStockNames = new java.util.LinkedHashSet<String>();
     var dividends =
@@ -295,7 +302,7 @@ public class StockAdminService {
       if (stats != null) {
         monthlyDividendPayoutService.applyStats(snapshot, stats, userId);
       } else if (snapshot.getAsOfDate() == null) {
-        snapshot.setAsOfDate(LocalDate.now());
+        snapshot.setAsOfDate(LocalDate.now(KST));
       }
       snapshot.setUpdatedDate(now);
 
@@ -404,6 +411,20 @@ public class StockAdminService {
     return new ArrayList<>(tags);
   }
 
+  /**
+   * 시트 구분 칸을 매매 종류로 읽는다. 매수 · 매도 말고는 null(그 행을 버린다).
+   *
+   * <p>예전엔 '매수' 와 정확히 같지 않으면 전부 매도로 담았다 - 뒤 공백 · 오타 · 빈칸 하나가 매수를 매도로 뒤집어 보유 수량과 실현 손익이 아무 표시 없이
+   * 틀어졌다(2026-10-28 감사).
+   */
+  private static TradeType tradeType(String raw) {
+    return switch (raw == null ? "" : raw.trim()) {
+      case "매수" -> TradeType.BUY;
+      case "매도" -> TradeType.SELL;
+      default -> null;
+    };
+  }
+
   private Trade toTrade(
       GoogleSheetTrade googleSheetTrade,
       HashMap<String, UUID> accountMap,
@@ -411,9 +432,14 @@ public class StockAdminService {
     if (!hasTradePriceAndQuantity(googleSheetTrade)) {
       return null;
     }
+    TradeType type = tradeType(googleSheetTrade.get구분());
+    if (type == null) {
+      log.warn("Skip trade row with unknown type: {}", googleSheetTrade.get구분());
+      return null;
+    }
 
     Trade trade = new Trade();
-    trade.setType("매수".equals(googleSheetTrade.get구분()) ? TradeType.BUY : TradeType.SELL);
+    trade.setType(type);
     trade.setQuantity(googleSheetTrade.get매매_수량());
     trade.setPrice(googleSheetTrade.get매매가());
     trade.setFee(googleSheetTrade.get수수료() == null ? BigDecimal.ZERO : googleSheetTrade.get수수료());
@@ -421,15 +447,16 @@ public class StockAdminService {
     trade.setTradeDate(googleSheetTrade.get날짜());
     trade.setRealizedProfit(googleSheetTrade.get매도_실현_손익());
 
+    // 계좌는 NOT NULL 이다 - 빈 칸 · 모르는 계좌 행을 계좌 없이 담으면 saveAll 이 그 한 행 때문에 통째로 실패했다(2026-10-27 감사).
+    // 배당 가져오기(toDividend)처럼 그 행만 버린다.
     String accountName = googleSheetTrade.get계좌();
-    if (accountName != null && !accountName.isBlank()) {
-      UUID accountId = accountMap.get(accountName.trim());
-      if (accountId != null) {
-        trade.setAccountId(accountId);
-      } else {
-        log.warn("Account not found for name: {}", accountName);
-      }
+    UUID accountId =
+        accountName != null && !accountName.isBlank() ? accountMap.get(accountName.trim()) : null;
+    if (accountId == null) {
+      log.warn("Skip trade row without a known account: {}", accountName);
+      return null;
     }
+    trade.setAccountId(accountId);
 
     var stockItem =
         stockItemList.stream()
@@ -494,46 +521,19 @@ public class StockAdminService {
     return accountMap;
   }
 
-  private Map<String, UUID> prepareStockItemMap(List<GoogleSheetDividend> records) {
-    var stockItemMap =
-        StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
-            .collect(
-                Collectors.toMap(
-                    StockItem::getName,
-                    StockItem::getId,
-                    (left, right) -> left,
-                    java.util.LinkedHashMap::new));
-
-    records.stream()
-        .map(GoogleSheetDividend::get종목)
-        .filter(StringUtils::hasText)
-        .map(String::trim)
-        .forEach(
-            stockName ->
-                stockItemMap.computeIfAbsent(
-                    stockName,
-                    name -> {
-                      var newStockItem = new StockItem();
-                      newStockItem.setName(name);
-                      newStockItem.setMarket("KOSPI");
-                      newStockItem.setSymbol(generateSymbol(name));
-                      var savedStockItem = stockItemRepository.save(newStockItem);
-                      log.debug("Created stock item for dividend import: {}", name);
-                      return savedStockItem.getId();
-                    }));
-
-    return stockItemMap;
-  }
-
-  private String generateSymbol(String baseName) {
-    var alphanumeric =
-        baseName == null ? "" : baseName.replaceAll("[^A-Za-z0-9]", "").toUpperCase();
-    if (!StringUtils.hasText(alphanumeric)) {
-      alphanumeric = "DIV";
-    }
-    var randomSuffix = UUID.randomUUID().toString().replace("-", "").substring(0, 5).toUpperCase();
-    var candidate = (alphanumeric + randomSuffix);
-    return candidate.substring(0, Math.min(candidate.length(), 12));
+  /**
+   * 종목명 → id. 시트의 이름이 없는 종목이면 만들지 않는다 - 그 행은 toDividend 가 버리고 결과의 "모르는 이름" 에 남는다. 예전에는 DIV+난수 심볼 ·
+   * KOSPI 종목을 새로 만들어 붙여, 오타 · 이름 변경 행이 "다 들어갔다" 로 보고되면서 매매와 따로 노는 가짜 종목에 쌓였다(2026-10-27 감사, 그때 그렇게
+   * 만든 종목 0 개 확인).
+   */
+  private Map<String, UUID> prepareStockItemMap() {
+    return StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
+        .collect(
+            Collectors.toMap(
+                StockItem::getName,
+                StockItem::getId,
+                (left, right) -> left,
+                java.util.LinkedHashMap::new));
   }
 
   private Dividend toDividend(

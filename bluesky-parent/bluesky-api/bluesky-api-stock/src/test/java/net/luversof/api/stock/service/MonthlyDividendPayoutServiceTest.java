@@ -124,8 +124,12 @@ class MonthlyDividendPayoutServiceTest {
     verify(monthlyDividendSnapshotRepository, never()).deleteAll(any());
   }
 
+  /**
+   * 이력이 다 지워져도 스냅샷(사용자가 입력한 보유 수량 · 평균 단가)은 남기고 배당 통계만 0 으로 비운다. 2026-10-27 감사 전에는 스냅샷을 통째로 지웠다 - 한
+   * 건뿐인 이력을 고쳐 넣으려고 지우는 순간 입력값이 사라졌다.
+   */
   @Test
-  void deleteRemovesAllSnapshotsWhenNoPayoutsRemain() {
+  void deleteKeepsSnapshotsAndClearsDividendStatsWhenNoPayoutsRemain() {
     StockItem stockItem = createStockItem("O");
     MonthlyDividendPayout payout =
         createPayout(stockItem.getId(), "2026-03-20", "2026-03-31", "1.20", "0.18");
@@ -147,8 +151,13 @@ class MonthlyDividendPayoutServiceTest {
         "O", LocalDate.of(2026, 3, 20), LocalDate.of(2026, 3, 31));
 
     verify(monthlyDividendPayoutRepository).delete(payout);
-    verify(monthlyDividendSnapshotRepository).deleteAll(snapshots);
-    verify(monthlyDividendSnapshotRepository, never()).saveAll(any());
+    verify(monthlyDividendSnapshotRepository, never()).deleteAll(any());
+    verify(monthlyDividendSnapshotRepository).saveAll(snapshots);
+    MonthlyDividendSnapshot kept = snapshots.get(0);
+    assertThat(kept.getHeldQuantity()).as("입력한 보유 수량").isEqualTo(10);
+    assertThat(kept.getAverageBuyPrice()).as("입력한 평균 단가").isEqualByComparingTo("42.50");
+    assertThat(kept.getLatestMonthlyDividendPerShare()).isEqualByComparingTo("0");
+    assertThat(kept.getAverageMonthlyDividendPerShare1y()).isEqualByComparingTo("0");
   }
 
   private void assertSnapshotRefreshed(

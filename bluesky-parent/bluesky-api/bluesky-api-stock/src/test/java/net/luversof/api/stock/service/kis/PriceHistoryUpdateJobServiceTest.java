@@ -1,6 +1,7 @@
 package net.luversof.api.stock.service.kis;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -19,6 +20,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import net.luversof.api.stock.service.kis.KisStockPriceUpdateService.ProgressListener;
 import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateJobStatus;
@@ -72,6 +75,23 @@ class PriceHistoryUpdateJobServiceTest {
     assertThat(done.targetSymbolCount()).isEqualTo(3);
     assertThat(done.processedSymbolCount()).isEqualTo(3);
     assertThat(done.finishedAt()).isNotNull();
+  }
+
+  /** 원주가 채우기에서 실패한 종목도 작업 결과에 보인다(2026-10-27 감사 - 예전엔 버려져 실패 0 으로 보였다). */
+  @Test
+  void 원주가_실패도_실패_목록에_싣는다() {
+    when(kisStockPriceUpdateService.updatePriceHistory(eq(USER), any(ProgressListener.class)))
+        .thenReturn(new PriceHistoryUpdateResult(2, List.of("489030")));
+    when(kisStockPriceUpdateService.fillRawClosePrices(USER))
+        .thenReturn(
+            new KisStockPriceUpdateService.RawClosePriceFillResult(
+                true, 5, 3, 2, List.of("0094M0")));
+
+    priceHistoryUpdateJobService.start(USER);
+    awaitDone(priceHistoryUpdateJobService);
+
+    assertThat(priceHistoryUpdateJobService.status().failedSymbols())
+        .containsExactly("489030", "raw:0094M0");
   }
 
   @Test
@@ -199,6 +219,41 @@ class PriceHistoryUpdateJobServiceTest {
     awaitDone(priceHistoryUpdateJobService);
     assertThat(priceHistoryUpdateJobService.status().status())
         .isEqualTo(PriceHistoryUpdateJobStatus.DONE);
+  }
+
+  /** 전체 작업이 도는 동안 한 종목 갱신 · 원주가 채우기는 겹쳐 돌지 않는다(2026-10-27 감사 - 같은 오늘 행을 두 스레드가 INSERT 했다). */
+  @Test
+  void 전체_작업이_도는_동안_수동_갱신은_409() throws Exception {
+    CountDownLatch entered = new CountDownLatch(1);
+    CountDownLatch hold = new CountDownLatch(1);
+    when(kisStockPriceUpdateService.updatePriceHistory(eq(USER), any(ProgressListener.class)))
+        .thenAnswer(
+            invocation -> {
+              entered.countDown();
+              hold.await(5, TimeUnit.SECONDS);
+              return new PriceHistoryUpdateResult(1, List.of());
+            });
+
+    priceHistoryUpdateJobService.start(USER);
+    assertThat(entered.await(5, TimeUnit.SECONDS)).isTrue();
+
+    assertThatThrownBy(() -> priceHistoryUpdateJobService.runExclusive(() -> "one"))
+        .isInstanceOfSatisfying(
+            ResponseStatusException.class,
+            ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.CONFLICT));
+
+    hold.countDown();
+    awaitDone(priceHistoryUpdateJobService);
+    // 작업은 상태를 DONE 으로 적은 뒤 자물쇠를 푼다 - 그 짧은 틈은 기다린다.
+    String value = null;
+    for (int attempt = 0; attempt < 40 && value == null; attempt++) {
+      try {
+        value = priceHistoryUpdateJobService.runExclusive(() -> "one");
+      } catch (ResponseStatusException busy) {
+        Thread.sleep(25);
+      }
+    }
+    assertThat(value).as("작업이 끝나면 수동 갱신이 돈다").isEqualTo("one");
   }
 
   @Test

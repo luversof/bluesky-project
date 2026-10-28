@@ -35,7 +35,7 @@ public class BlogArticleCommentController {
   @PostMapping
   public BlogArticleComment create(@RequestBody BlogArticleComment blogArticleComment) {
     return blogArticleCommentClient.create(
-        blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+        blogArticleComment.toBuilder().userId(UserUtil.requireUserId().toString()).build());
   }
 
   @GetMapping("/search/findByBlogArticleId/{blogArticleId}")
@@ -59,13 +59,13 @@ public class BlogArticleCommentController {
   @PutMapping
   public BlogArticleComment update(@RequestBody BlogArticleComment blogArticleComment) {
     return blogArticleCommentClient.update(
-        blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+        blogArticleComment.toBuilder().userId(UserUtil.requireUserId().toString()).build());
   }
 
   @BlueskyPreAuthorize
   @DeleteMapping
   public void delete(@RequestBody BlogArticleComment blogArticleComment) {
     blogArticleCommentClient.delete(
-        blogArticleComment.toBuilder().userId(UserUtil.getUserId().toString()).build());
+        blogArticleComment.toBuilder().userId(UserUtil.requireUserId().toString()).build());
   }
 }

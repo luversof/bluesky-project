@@ -99,7 +99,10 @@ public class MonthlyDividendSnapshotService {
 
     snapshot.setUserId(request.getUserId());
     snapshot.setStockItemId(stockItem.getId());
-    snapshot.setAsOfDate(request.getAsOfDate() != null ? request.getAsOfDate() : LocalDate.now());
+    snapshot.setAsOfDate(
+        request.getAsOfDate() != null
+            ? request.getAsOfDate()
+            : LocalDate.now(StockHoldingPeriodService.DEFAULT_ZONE));
     snapshot.setLatestMonthlyDividendPerShare(nz(request.getLatestMonthlyDividendPerShare()));
     snapshot.setAverageMonthlyDividendPerShare1y(nz(request.getAverageMonthlyDividendPerShare1y()));
     snapshot.setAverageTaxableBaseRatio1y(nz(request.getAverageTaxableBaseRatio1y()));

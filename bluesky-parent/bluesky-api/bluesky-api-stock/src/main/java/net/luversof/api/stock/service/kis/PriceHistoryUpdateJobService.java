@@ -1,14 +1,19 @@
 package net.luversof.api.stock.service.kis;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateJobStatus;
 import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult;
@@ -49,6 +54,25 @@ public class PriceHistoryUpdateJobService {
   private final AtomicReference<PriceHistoryUpdateJobStatus> state =
       new AtomicReference<>(PriceHistoryUpdateJobStatus.idle());
 
+  /**
+   * KIS 를 부르는 갱신은 한 번에 하나 - 전체 작업 · 한 종목 갱신 · 원주가 채우기가 이 자물쇠를 함께 쓴다. 예전에는 전체 작업에만 있어, 그 사이 월배당 프로필을
+   * 등록하면(게이트가 한 종목 갱신을 부른다) 같은 종목의 오늘 행을 두 스레드가 INSERT 해 유니크 키로 한쪽이 실패했고 호출 간격이 반으로 줄어 초당
+   * 한도(EGW00201)에 걸렸다(2026-10-27 감사).
+   */
+  private final ReentrantLock kisLock = new ReentrantLock();
+
+  /** 다른 갱신이 돌고 있으면 409, 아니면 그 자리에서 돌린다(한 종목 갱신 · 원주가 채우기). */
+  public <T> T runExclusive(Supplier<T> work) {
+    if (!kisLock.tryLock()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "price update already running");
+    }
+    try {
+      return work.get();
+    } finally {
+      kisLock.unlock();
+    }
+  }
+
   /** 지금 상태. 아무 일도 일으키지 않는다. */
   public PriceHistoryUpdateJobStatus status() {
     return state.get();
@@ -78,15 +102,31 @@ public class PriceHistoryUpdateJobService {
     return started;
   }
 
+  /** 수동 갱신이 돌고 있으면 그것이 끝나길 기다렸다 시작한다(한 종목은 1 초 안쪽). */
   private void run(UUID userId) {
+    kisLock.lock();
+    try {
+      runLocked(userId);
+    } finally {
+      kisLock.unlock();
+    }
+  }
+
+  private void runLocked(UUID userId) {
     Instant startedAt = state.get().startedAt();
     try {
       PriceHistoryUpdateResult result =
           kisStockPriceUpdateService.updatePriceHistory(userId, this::publishProgress);
       // 새 날의 원주가도 채운다(2026-10-02, 평가 = 원주가 x 실제 주식 수). 이미 채운 날은 건너뛰어 보통 보유 종목마다 한 번.
       // 실패해도 시세 갱신 결과는 그대로 둔다 - 빈 날은 평가가 직전 날 배율로 메운다(TradeProfitService.RawValuation).
+      List<String> failedSymbols =
+          new ArrayList<>(result.failedSymbols() != null ? result.failedSymbols() : List.of());
       try {
-        kisStockPriceUpdateService.fillRawClosePrices(userId);
+        // 원주가 실패도 실패 목록에 싣는다(raw: 접두) - 예전엔 버려져 "실패 0" 으로 보였다(2026-10-27 감사).
+        var rawClose = kisStockPriceUpdateService.fillRawClosePrices(userId);
+        if (rawClose != null && rawClose.failedSymbols() != null) {
+          rawClose.failedSymbols().forEach(symbol -> failedSymbols.add("raw:" + symbol));
+        }
       } catch (RuntimeException rawCloseFailure) {
         log.warn("raw close fill after price update failed", rawCloseFailure);
       }
@@ -97,7 +137,7 @@ public class PriceHistoryUpdateJobService {
               Instant.now(),
               result.targetSymbolCount(),
               result.targetSymbolCount(),
-              result.failedSymbols() != null ? List.copyOf(result.failedSymbols()) : List.of(),
+              List.copyOf(failedSymbols),
               null));
     } catch (Throwable throwable) {
       // Error 까지 받는다 - 안 그러면 상태가 RUNNING 에 갇혀 다시는 시작할 수 없다.

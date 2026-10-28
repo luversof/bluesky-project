@@ -5,7 +5,6 @@ import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,7 +47,7 @@ public class TimeMonthlyDividendPayoutSourceParser {
 
   /** 이 출처를 우리가 맡는가. */
   public static boolean supportsHost(String host) {
-    return host != null && host.toLowerCase(Locale.ROOT).contains("timeetf.co.kr");
+    return PayoutSourceText.hostIs(host, "timeetf.co.kr");
   }
 
   /** 상세 HTML 에서 지급 이력 줄을 뽑는다. */

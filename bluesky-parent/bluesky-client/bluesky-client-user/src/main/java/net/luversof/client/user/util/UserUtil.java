@@ -4,9 +4,11 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.github.luversof.boot.context.ApplicationContextUtil;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
@@ -35,6 +37,22 @@ public final class UserUtil {
     }
 
     return null;
+  }
+
+  /**
+   * 로그인한 사용자 id - 없으면 401.
+   *
+   * <p>게이트의 @BlueskyPreAuthorize 는 메서드 보안이 꺼져 있어 아무것도 막지 않는다. 그래서 쓰기 경로는 이걸로 직접 확인한다 - 예전엔 비로그인 요청이
+   * getUserId().toString() 에서 NPE 500 이 나거나, null 사용자로 API 까지 갔다(2026-10-28 감사).
+   *
+   * @return 사용자 id
+   */
+  public static UUID requireUserId() {
+    UUID userId = getUserId();
+    if (userId == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+    }
+    return userId;
   }
 
   private static UUID getUserIdFromUserInfo(OAuth2AuthenticationToken oauth2Auth) {

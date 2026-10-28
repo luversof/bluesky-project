@@ -76,6 +76,9 @@ public class StockDividendViewController {
 
   @Autowired private MonthlyDividendProfileClient monthlyDividendProfileClient;
 
+  @Autowired
+  private net.luversof.web.gate.stock.support.MonthlyReferenceEditors monthlyReferenceEditors;
+
   /** 종목별 시세 갱신은 관리 쪽 창구를 쓴다. */
   @Autowired private StockAdminClient stockAdminClient;
 
@@ -540,6 +543,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     try {
       normalizeMonthlyDividendProfileRequest(monthlyDividendProfileForm);
@@ -614,6 +618,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     String normalizedSymbol =
         monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(symbol);
@@ -642,6 +647,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     String normalizedSymbol =
         monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(symbol);
@@ -683,6 +689,7 @@ public class StockDividendViewController {
                   "isDisplayableMessage",
                   true));
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     try {
       normalizeMonthlyDividendProfileReorderRequest(monthlyDividendProfileReorderRequest);
@@ -715,6 +722,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     try {
       normalizeMonthlyDividendPayoutRequest(monthlyDividendPayoutForm);
@@ -752,6 +760,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     try {
       normalizeMonthlyDividendPayoutImportRequest(monthlyDividendPayoutImportForm);
@@ -796,6 +805,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     String normalizedSymbol =
         monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(symbol);
@@ -866,6 +876,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     try {
       var result = monthlyDividendLinkRegisterService.registerLinks(links);
@@ -916,6 +927,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     var result = monthlyDividendLinkRegisterService.refreshFacts();
     redirectAttributes.addFlashAttribute(
@@ -943,6 +955,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     String normalizedWindow =
         payoutWindow != null ? payoutWindow.trim().toUpperCase(Locale.ROOT) : "";
@@ -1068,6 +1081,7 @@ public class StockDividendViewController {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    monthlyReferenceEditors.requireEditor(UserUtil.getUserId());
 
     String normalizedSymbol =
         monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(symbol);
@@ -1132,12 +1146,14 @@ public class StockDividendViewController {
 
   private void saveMonthlyDividendPayoutRequests(
       List<MonthlyDividendPayoutUpsertRequest> requests) {
+    // 전부 검사한 뒤에 저장한다 - 한 줄씩 검사하며 저장하면 7 번째 줄이 틀렸을 때 1~6 번째만 들어가고 화면엔 오류만 보여,
+    // 다시 시도해도 무엇이 들어갔는지 알 수 없었다(2026-10-28 감사).
     requests.forEach(
         request -> {
           normalizeMonthlyDividendPayoutRequest(request);
           validateMonthlyDividendPayoutRequest(request);
-          monthlyDividendPayoutClient.upsertPayout(request);
         });
+    requests.forEach(monthlyDividendPayoutClient::upsertPayout);
   }
 
   private String buildMonthlyDividendReferenceRedirect(
@@ -1281,6 +1297,12 @@ public class StockDividendViewController {
 
   private void validateMonthlyDividendProfileRequest(MonthlyDividendProfileUpsertRequest request) {
     monthlyDividendReferenceSupport.validateMonthlyDividendSymbol(request.getSymbol());
+    if (request.getSourceUrl() != null
+        && !net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport.isWebUrl(
+            request.getSourceUrl())) {
+      throw new IllegalArgumentException(
+          MessageUtil.getMessage("stock.monthly.reference.error.source.url.invalid"));
+    }
   }
 
   private void normalizeMonthlyDividendProfileReorderRequest(

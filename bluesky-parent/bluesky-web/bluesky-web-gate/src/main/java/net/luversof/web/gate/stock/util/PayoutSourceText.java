@@ -21,6 +21,18 @@ final class PayoutSourceText {
 
   private PayoutSourceText() {}
 
+  /**
+   * 호스트가 그 도메인이거나 그 아래(하위 도메인)인가. 예전에는 {@code host.contains(domain)} 이라 {@code
+   * timeetf.co.kr.attacker.example} 도 통과해 그 주소로 요청이 나갔다(2026-10-27 감사).
+   */
+  static boolean hostIs(String host, String domain) {
+    if (host == null) {
+      return false;
+    }
+    String normalized = host.toLowerCase(java.util.Locale.ROOT);
+    return normalized.equals(domain) || normalized.endsWith("." + domain);
+  }
+
   /** 가져오기 붙여넣기 한 줄의 네 칸(기준일 · 지급일 · 분배금 · 과세표준) - 이미 내보낼 글자로 다듬은 값. */
   record BulkRow(String recordDate, String payDate, String amount, String taxableBase) {}
 

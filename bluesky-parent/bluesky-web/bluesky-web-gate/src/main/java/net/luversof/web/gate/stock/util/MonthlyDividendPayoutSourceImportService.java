@@ -9,6 +9,7 @@ import java.util.Locale;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -35,8 +36,9 @@ public class MonthlyDividendPayoutSourceImportService {
    * <p>지금은 여유가 크다(실측 2026-08-24: PLUS 고배당주위클리고정커버드콜의 저장된 지급 이력 17 건). 그래서 한계를 바꾸지 않고 성질만 적어 둔다.
    *
    * <p>이 상수와 {@link #TIGER_PAGE_SIZE} 는 <b>검사로 고정돼 있지 않다</b>. 값을 1 로 낮춰도 게이트 검사 360 개가 모두 통과한다 (실측
-   * 2026-08-24). 이 코드 경로는 호스트 이름으로 출처를 가려 내므로(예: {@code host.contains("plusetf.co.kr")}) 로컬 가짜 서버로는
-   * 탈 수 없고, 그걸 태우려면 호스트 판정을 주입 가능하게 바꿔야 한다. 결함이 확인되지 않은 상태에서 운영 코드를 그렇게 바꾸지는 않았다.
+   * 2026-08-24). 이 코드 경로는 호스트 이름으로 출처를 가려 내므로(예: {@code PayoutSourceText.hostIs(host,
+   * "plusetf.co.kr")}) 로컬 가짜 서버로는 탈 수 없고, 그걸 태우려면 호스트 판정을 주입 가능하게 바꿔야 한다. 결함이 확인되지 않은 상태에서 운영 코드를
+   * 그렇게 바꾸지는 않았다.
    */
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(MonthlyDividendPayoutSourceImportService.class);
@@ -45,6 +47,13 @@ public class MonthlyDividendPayoutSourceImportService {
 
   /** TIGER 출처에 한 번에 요청할 행 수. 위와 같은 이유로 검사로 고정돼 있지 않다. */
   private static final int TIGER_PAGE_SIZE = 200;
+
+  /** 외부 사이트로 가는 요청에서 Authorization 머리글을 뗀다. */
+  static final ClientHttpRequestInterceptor STRIP_AUTHORIZATION =
+      (request, body, execution) -> {
+        request.getHeaders().remove(HttpHeaders.AUTHORIZATION);
+        return execution.execute(request, body);
+      };
 
   private final RestClient restClient;
 
@@ -82,11 +91,14 @@ public class MonthlyDividendPayoutSourceImportService {
     // (로컬 서비스가 자체 서명), requestFactory(...) 로 덮으면 그 신뢰가 사라져 공개 사이트 인증서까지 못 믿는다
     // - 실측 2026-09-21: 삼성자산운용에서 PKIX path building failed 로 링크 등록이 실패했다(사용자 보고).
     // 타임아웃은 spring.http.clients.connect-timeout=3s / read-timeout=10s 로 이미 걸려 있다.
+    // 공용 빌더에는 로그인 사용자 토큰을 붙이는 OAuth 인터셉터가 들어 있다(GateHttpExchangeConfig) - 호스트를 가리지 않아
+    // 운용사 사이트로도 Bearer 토큰이 나갔다(2026-10-27 감사). 인터셉터는 등록 차례대로 돌므로 마지막에 그 머리글을 뗀다.
     this.restClient =
         restClientBuilder
             .defaultHeader(
                 HttpHeaders.USER_AGENT,
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0 Safari/537.36")
+            .requestInterceptor(STRIP_AUTHORIZATION)
             .build();
     this.timeMonthlyDividendPayoutSourceParser = timeMonthlyDividendPayoutSourceParser;
     this.monthlyDividendPayoutImportParser = monthlyDividendPayoutImportParser;
@@ -118,6 +130,7 @@ public class MonthlyDividendPayoutSourceImportService {
       throw new IllegalArgumentException(
           msg("stock.monthly.reference.error.source.url.invalid"), ex);
     }
+    requireHttps(sourceUri);
 
     String host = sourceUri.getHost() != null ? sourceUri.getHost().toLowerCase(Locale.ROOT) : "";
     String bulkInput;
@@ -131,11 +144,11 @@ public class MonthlyDividendPayoutSourceImportService {
                   fetchBody(sourceUri, msg("stock.monthly.reference.error.source.fetch.failed"))));
     } else if (SolMonthlyDividendPayoutSourceParser.supportsHost(host)) {
       bulkInput = solMonthlyDividendPayoutSourceParser.toBulkInput(fetchSolRows(sourceUri));
-    } else if (host.contains("plusetf.co.kr")) {
+    } else if (PayoutSourceText.hostIs(host, "plusetf.co.kr")) {
       bulkInput = plusMonthlyDividendPayoutSourceParser.toBulkInput(fetchPlusRows(sourceUri));
-    } else if (host.contains("samsungfund.com")) {
+    } else if (PayoutSourceText.hostIs(host, "samsungfund.com")) {
       bulkInput = kodexMonthlyDividendPayoutSourceParser.toBulkInput(fetchKodexRows(sourceUri));
-    } else if (host.contains("investments.miraeasset.com")
+    } else if (PayoutSourceText.hostIs(host, "investments.miraeasset.com")
         && sourceUri.getPath() != null
         && sourceUri.getPath().contains("/tigeretf/")) {
       bulkInput = tigerMonthlyDividendPayoutSourceParser.toBulkInput(fetchTigerRows(sourceUri));
@@ -303,6 +316,7 @@ public class MonthlyDividendPayoutSourceImportService {
    * <p>TIGER 는 주소에 표준코드가 실려 있어 코드만 보면 되지만 이름은 제목에서 가져온다. RISE 는 상세가 단일 페이지 앱이라 header API 를 쓴다.
    */
   public MonthlyDividendSourceMetaParser.SourceMeta fetchMeta(URI sourceUri) {
+    requireHttps(sourceUri);
     String host = sourceUri.getHost() != null ? sourceUri.getHost().toLowerCase(Locale.ROOT) : "";
     if (RiseMonthlyDividendPayoutSourceParser.supportsHost(host)) {
       String fundCode = RiseMonthlyDividendPayoutSourceParser.fundCodeFrom(sourceUri.getPath());
@@ -340,12 +354,12 @@ public class MonthlyDividendPayoutSourceImportService {
           .fromSolHtml(html)
           .withFacts(monthlyDividendSourceFactsParser.fromDetailHtml(html));
     }
-    if (host.contains("plusetf.co.kr")) {
+    if (PayoutSourceText.hostIs(host, "plusetf.co.kr")) {
       return monthlyDividendSourceMetaParser
           .fromPlusHtml(html)
           .withFacts(monthlyDividendSourceFactsParser.fromDetailHtml(html));
     }
-    if (host.contains("samsungfund.com")) {
+    if (PayoutSourceText.hostIs(host, "samsungfund.com")) {
       MonthlyDividendSourceMetaParser.SourceMeta meta =
           monthlyDividendSourceMetaParser.fromKodexHtml(html);
       // 상장일은 상세 HTML 에 없다 - 화면이 부르는 상품 API 에 총보수와 함께 있다(실측 2026-09-28).
@@ -362,7 +376,7 @@ public class MonthlyDividendPayoutSourceImportService {
       return meta.withFacts(
           factsOrNone(productUri, true, monthlyDividendSourceFactsParser::fromKodexProductJson));
     }
-    if (host.contains("investments.miraeasset.com")) {
+    if (PayoutSourceText.hostIs(host, "investments.miraeasset.com")) {
       return monthlyDividendSourceMetaParser
           .fromTiger(sourceUri, html)
           .withFacts(monthlyDividendSourceFactsParser.fromDetailHtml(html));
@@ -393,6 +407,13 @@ public class MonthlyDividendPayoutSourceImportService {
     } catch (Exception ex) {
       log.warn("총보수 · 상장일을 못 받았다(등록은 계속): {}", uri, ex);
       return MonthlyDividendSourceFactsParser.SourceFacts.NONE;
+    }
+  }
+
+  /** 출처는 https 운용사 사이트뿐이다 - 다른 scheme(http · file 등)으로는 부르지 않는다(2026-10-27 감사). */
+  private static void requireHttps(URI uri) {
+    if (uri == null || !"https".equalsIgnoreCase(uri.getScheme())) {
+      throw new IllegalArgumentException(msg("stock.monthly.reference.error.source.url.invalid"));
     }
   }
 

@@ -4,7 +4,6 @@ import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Locale;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -42,7 +41,7 @@ public class SolMonthlyDividendPayoutSourceParser {
 
   /** 이 출처를 우리가 맡는가. */
   public static boolean supportsHost(String host) {
-    return host != null && host.toLowerCase(Locale.ROOT).contains("soletf.co.kr");
+    return PayoutSourceText.hostIs(host, "soletf.co.kr");
   }
 
   /** 상세 주소에서 펀드 코드를 뽑는다(경로 마지막 조각). {@code /ko/fund/etf/211097} */

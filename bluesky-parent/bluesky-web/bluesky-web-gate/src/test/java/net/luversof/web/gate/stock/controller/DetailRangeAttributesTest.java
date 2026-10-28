@@ -76,20 +76,20 @@ class DetailRangeAttributesTest {
   }
 
   @Test
-  void 내역은_날짜_순이고_날짜가_없는_줄은_뒤로_간다() {
+  void 내역은_최근_날짜부터이고_날짜가_없는_줄은_뒤로_간다() {
     List<TradeResponse> trades =
         StockDetailViewController.tradesByDate(
             Arrays.asList(trade("2026-03-02"), trade(null), trade("2026-01-05")));
     assertThat(trades)
         .extracting(TradeResponse::stockItemName)
-        .containsExactly("t2026-01-05", "t2026-03-02", "tnull");
+        .containsExactly("t2026-03-02", "t2026-01-05", "tnull");
     List<DividendResponse> dividends =
         StockDetailViewController.dividendsByPayDate(
             Arrays.asList(
                 dividend(null, "1"), dividend("2026-05-01", "2"), dividend("2026-02-01", "3")));
     assertThat(dividends)
         .extracting(DividendResponse::stockItemName)
-        .containsExactly("d2026-02-01", "d2026-05-01", "dnull");
+        .containsExactly("d2026-05-01", "d2026-02-01", "dnull");
     assertThat(StockDetailViewController.tradesByDate(null)).isEmpty();
     assertThat(StockDetailViewController.dividendsByPayDate(null)).isEmpty();
   }

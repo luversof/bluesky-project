@@ -436,6 +436,20 @@
 							<div class="mt-1 font-mono font-semibold amount-value" data-selection-evaluation-profit>0</div>
 							<div class="text-xs text-base-content/60" data-selection-profit-rate>(0.0%)</div>
 						</div>
+						<%-- 표의 열과 같은 차례로 실현손익 · 누적 배당 · 합산 손익(사용자 요청 2026-10-27). 값은 행의 data-realized-profit ·
+						     data-dividend-total · data-combined-profit 을 더한다 - 합산 손익 = 평가손익 + 실현손익 + 배당(행마다 서버가 낸 값의 합). --%>
+						<div class="rounded-box bg-base-100/80 px-3 py-2">
+							<div class="text-xs text-base-content/60">${realizedProfitLabel}</div>
+							<div class="mt-1 font-mono font-semibold amount-value" data-selection-realized-profit>0</div>
+						</div>
+						<div class="rounded-box bg-base-100/80 px-3 py-2">
+							<div class="text-xs text-base-content/60">${dividendTotalLabel}</div>
+							<div class="mt-1 font-mono font-semibold amount-value text-dividend" data-selection-dividend-total>0</div>
+						</div>
+						<div class="rounded-box bg-base-100/80 px-3 py-2">
+							<div class="text-xs text-base-content/60">${combinedProfitLabel}</div>
+							<div class="mt-1 font-mono font-semibold amount-value" data-selection-combined-profit>0</div>
+						</div>
 						<div class="rounded-box bg-base-100/80 px-3 py-2">
 							<div class="text-xs text-base-content/60">${stockSelectionWeightLabel}</div>
 							<%-- 비중은 금액이 아니라 비율이다 - 금액 숨김에도 보인다(사용자 결정 2026-09-23, 계좌 쪽 선택 합산과 같게). --%>

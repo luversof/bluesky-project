@@ -239,6 +239,17 @@ public class KisStockPriceUpdateService {
     int targetSymbolCount = 0;
     List<String> failedSymbols = new ArrayList<>();
 
+    // 인증은 실행마다 한 번 받는다. 예전에는 블록마다 다시 받아, 발급이 한 번 실패하면 20 초 사이 발급 요청이 60 번 넘게 나갔다 - KIS 발급은 1 분에
+    // 1 회라 모두 막혔다(2026-10-27 감사). 못 받으면 이 실행의 종목은 모두 실패로 센다(성공으로 넘기면 그 사실이 사라진다).
+    OpenApiConfig config = null;
+    if (plannedSymbolCount > 0) {
+      try {
+        config = kisAuthService.getValidConfig(userId);
+      } catch (Exception e) {
+        log.warn("KIS auth unavailable - every symbol of this run fails: {}", e.getMessage());
+      }
+    }
+
     for (StockItem stockItem : stockItemsAssigned) {
       UUID stockItemId = stockItem.getId();
       DateRange window =
@@ -270,7 +281,7 @@ public class KisStockPriceUpdateService {
         // dbMin 이전에 가져와야할 과거 데이터가 있는 경우 - 상장 전이라 없다고 확인된 구간은 다시 부르지 않는다.
         if (shouldBackfill(minDate, dbMin, noHistoryBefore.get(stockItemId))) {
           if (!fetchRangesInBlocks(
-              userId, stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1))) {
+              config, stockItemId, stockItem.getSymbol(), minDate, dbMin.minusDays(1))) {
             symbolSucceeded = false;
           } else {
             LocalDate firstAfter =
@@ -300,12 +311,12 @@ public class KisStockPriceUpdateService {
         }
         for (DateRange range : mergeAdjacentRanges(fetchRanges)) {
           if (!fetchRangesInBlocks(
-              userId, stockItemId, stockItem.getSymbol(), range.start(), range.end())) {
+              config, stockItemId, stockItem.getSymbol(), range.start(), range.end())) {
             symbolSucceeded = false;
           }
         }
       } else if (!fetchRangesInBlocks(
-          userId, stockItemId, stockItem.getSymbol(), minDate, maxDate)) {
+          config, stockItemId, stockItem.getSymbol(), minDate, maxDate)) {
         symbolSucceeded = false;
       }
 
@@ -434,10 +445,14 @@ public class KisStockPriceUpdateService {
 
   /** 구간 하나라도 실패하면 false. */
   private boolean fetchRangesInBlocks(
-      UUID userId, UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
+      OpenApiConfig config,
+      UUID stockItemId,
+      String symbol,
+      LocalDate startDate,
+      LocalDate endDate) {
     boolean allSucceeded = true;
     for (DateRange block : splitIntoBlocks(List.of(new DateRange(startDate, endDate)))) {
-      if (!fetchAndSavePriceHistory(userId, stockItemId, symbol, block.start(), block.end())) {
+      if (!fetchAndSavePriceHistory(config, stockItemId, symbol, block.start(), block.end())) {
         allSucceeded = false;
       }
 
@@ -499,13 +514,13 @@ public class KisStockPriceUpdateService {
 
   /** 조회·저장에 성공하면 true. 실패는 여기서 삼키지 않고 호출자가 셀 수 있게 알린다. */
   private boolean fetchAndSavePriceHistory(
-      UUID userId, UUID stockItemId, String symbol, LocalDate startDate, LocalDate endDate) {
-    OpenApiConfig config;
-    try {
-      config = kisAuthService.getValidConfig(userId);
-    } catch (Exception e) {
-      // 인증 설정이 없으면 이 실행의 모든 종목이 실패한다. 성공으로 넘기면 그 사실이 사라진다.
-      log.warn("KIS API Auth is not configured: {}", e.getMessage());
+      OpenApiConfig config,
+      UUID stockItemId,
+      String symbol,
+      LocalDate startDate,
+      LocalDate endDate) {
+    // 인증을 못 받은 실행(updatePriceHistory 가 한 번 받는다)이면 부르지 않고 실패로 센다.
+    if (config == null) {
       return false;
     }
 
@@ -610,18 +625,9 @@ public class KisStockPriceUpdateService {
           // 수정주가 재조정 감지: 기존 종가와 신규 종가 차이가 2% 초과이고,
           // 오늘 날짜(장중 업데이트)가 아닌 과거 날짜인 경우 → 분할/합병 등 이벤트로 판단
           if (history.getId() != null
-              && history.getClosePrice() != null
-              && !tradeDate.isEqual(today)) {
-            BigDecimal oldClose = history.getClosePrice();
-            // 변동률 = |신규 - 기존| / 기존
-            java.math.BigDecimal changeRatio =
-                newClose
-                    .subtract(oldClose)
-                    .abs()
-                    .divide(oldClose, 6, java.math.RoundingMode.HALF_UP);
-            if (changeRatio.compareTo(new java.math.BigDecimal("0.02")) > 0) {
-              priceAdjustmentDetected = true;
-            }
+              && !tradeDate.isEqual(today)
+              && isPriceAdjustment(history.getClosePrice(), newClose)) {
+            priceAdjustmentDetected = true;
           }
 
           history.setOpenPrice(newOpen);
@@ -828,10 +834,35 @@ public class KisStockPriceUpdateService {
             .toUriString();
     ResponseEntity<KisDailyPriceResponse> response =
         exchangeWithRateLimitRetry(url, new HttpEntity<>(headers));
-    if (response.getBody() == null || response.getBody().getOutput2() == null) {
+    return itemsOf(response.getBody());
+  }
+
+  /**
+   * 과거 종가가 2% 넘게 바뀌었나(분할 · 병합 같은 수정주가 재조정). 변동률 = |신규 - 기존| / 기존. 기존 종가가 없거나 0 이면 견줄 수 없다 - 예전에는 0
+   * 으로 나누다 ArithmeticException 이 나 그 블록(최대 100 일)이 통째로 저장되지 않았고 다음 실행에서도 똑같이 되풀이됐다(2026-10-27 감사).
+   */
+  static boolean isPriceAdjustment(BigDecimal oldClose, BigDecimal newClose) {
+    if (oldClose == null || oldClose.signum() <= 0 || newClose == null) {
+      return false;
+    }
+    BigDecimal changeRatio =
+        newClose.subtract(oldClose).abs().divide(oldClose, 6, java.math.RoundingMode.HALF_UP);
+    return changeRatio.compareTo(new BigDecimal("0.02")) > 0;
+  }
+
+  /**
+   * 응답 → 일별 시세. KIS 는 일부 업무 오류를 HTTP 200 + {@code rt_cd} 가 "0" 이 아닌 값으로 준다 - 예전에는 그때 비어 있는 {@code
+   * output2} 를 휴장과 같은 "시세 없음" 으로 받아 성공으로 셌고, 과거 구간이면 상장 전이라고 기록해 다시 부르지 않았다(2026-10-27 감사). 이제 실패로
+   * 던진다(호출자가 그 종목을 실패로 센다).
+   */
+  static List<KisDailyPriceItem> itemsOf(KisDailyPriceResponse body) {
+    if (body == null) {
       return List.of();
     }
-    return response.getBody().getOutput2();
+    if (body.getRt_cd() != null && !"0".equals(body.getRt_cd())) {
+      throw new IllegalStateException("KIS error " + body.getMsg_cd() + " " + body.getMsg1());
+    }
+    return body.getOutput2() == null ? List.of() : body.getOutput2();
   }
 
   /**

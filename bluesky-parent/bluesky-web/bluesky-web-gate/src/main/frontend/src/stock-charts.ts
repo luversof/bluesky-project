@@ -24,6 +24,8 @@ interface StockChartsAPI {
 		message: string,
 	) => boolean;
 	createChart?: (canvasId: string, config: any, existingInstance?: any) => any;
+	dateAxisTicks?: (labels: string[]) => any;
+	logTickLabel?: (value: number) => string;
 	holdingsChartConfig?: (series: any, texts: any, opts?: any) => any;
 	createHoldingsChart?: (
 		canvasId: string,
@@ -280,6 +282,15 @@ StockCharts.formatCompactNumber = function (value: any) {
 // 이 개수를 넘으면 해 단위로 묶는다. 60 개월(5년)까지는 월 막대가 읽힌다(실측 1900px 기준 칸 14px).
 const MONTHLY_BAR_LIMIT = 60;
 
+// 매매 막대 아래 칸(실현손익) 눈금. 꼭대기 눈금은 위 칸 바닥과 같은 높이라 위 칸이 그 값에서 시작하는 것처럼
+// 읽혔다(실측 2026-10-27: 위 칸 바닥에 "2억"). 다른 양수 눈금이 남을 때만 꼭대기를 비운다 - 그것까지 없으면
+// 양수 쪽 배율이 사라진다(2026-09-14 연 단위: 0 과 -1억 만 남았다).
+function realizedPanelTick(value: any, index: number, ticks: { value: number }[]): string {
+	const isTop = index === ticks.length - 1;
+	const otherPositive = ticks.some((t, i) => i !== index && t.value > 0);
+	return isTop && otherPositive ? "" : compactNumber(value);
+}
+
 function fillMonthGaps(sortedMonths: string[]): string[] {
 	if (sortedMonths.length < 2) return sortedMonths;
 	const index = (m: string) => {
@@ -363,6 +374,10 @@ function buildMonthlyData(tradeData: any[] = []) {
 }
 
 (window as any).__monthlyChartInternals = {
+	logTickLabel,
+	yearTickLabel,
+	buildDonutData,
+	realizedPanelTick,
 	fillMonthGaps,
 	buildMonthlyData,
 	buildRealizedProfitDataset,
@@ -386,13 +401,28 @@ function buildDonutData(
 			map[key] = (map[key] || 0) + (Number(d.amount) || 0);
 		}
 	});
+	// 종목이 많으면 크기 상위 DONUT_TOP 개만 조각으로 두고 나머지는 "기타" 한 조각(2026-10-27). 실측 매매 전체 기간:
+	// 43 조각에 색 12 개가 돌아 같은 색이 3~4 번 나왔고 23 조각이 1% 미만이라 안 보였다(상위 10 개가 74%).
+	// 계좌는 몇 개뿐이고 문구가 "종목" 이라 종목별만 묶는다.
+	let entries = Object.entries(map);
+	let others: [string, number] | null = null;
+	if (groupBy === "stock" && entries.length > DONUT_TOP + 1) {
+		const byMagnitude = [...entries].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+		const tail = byMagnitude.slice(DONUT_TOP);
+		entries = byMagnitude.slice(0, DONUT_TOP);
+		const othersText = appMessage("stockChartLabelOthers", "Other {0} stocks (beyond top {1})")
+			.replace("{0}", String(tail.length))
+			.replace("{1}", String(DONUT_TOP));
+		others = [othersText, tail.reduce((acc, e) => acc + e[1], 0)];
+	}
+	// "기타" 조각의 크기는 합의 절댓값이 아니라 각 크기의 합이다 - 손익이 섞이면 서로 지워져 조각이 사라진다.
+	const othersSize = others ? sumMagnitude(map, entries) : 0;
 	if (metric === "profit") {
-		const entries = Object.entries(map);
 		const pos = entries.filter((e) => e[1] >= 0).sort((a, b) => b[1] - a[1]);
 		const neg = entries.filter((e) => e[1] < 0).sort((a, b) => a[1] - b[1]);
 		const sorted = pos.concat(neg);
 		const posLen = pos.length;
-		return {
+		const d = {
 			labels: sorted.map((e) => e[0]),
 			data: sorted.map((e) => Math.abs(e[1])),
 			rawData: sorted.map((e) => e[1]),
@@ -402,15 +432,86 @@ function buildDonutData(
 					: PROFIT_COLORS_NEG[(i - posLen) % PROFIT_COLORS_NEG.length],
 			),
 		};
+		return others ? appendOthers(d, others, othersSize) : d;
 	} else {
-		const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
-		return {
+		const sorted = entries.sort((a, b) => b[1] - a[1]);
+		const d = {
 			labels: sorted.map((e) => e[0]),
 			data: sorted.map((e) => e[1]),
 			rawData: sorted.map((e) => e[1]),
-			colors: TRADE_COLORS.slice(0, sorted.length),
+			colors: sorted.map((_, i) => TRADE_COLORS[i % TRADE_COLORS.length]),
 		};
+		return others ? appendOthers(d, others, othersSize) : d;
 	}
+}
+
+// 날짜(YYYY-MM-DD) 카테고리 축 눈금. 예전엔 45 도로 눕힌 날짜를 다 찍어 자산 성장 17 년치가 눈금 52 개였고, 아래 차트(250px)는
+// 축이 68px 를 먹어 그림이 140px 였다(실측 2026-10-27). 3 년 이상이면 해가 바뀌는 점에만 "2014" 를, 폭에 맞춰 몇 해 걸러 단다.
+// 짧으면 날짜 그대로 눕히지 않고 몇 개만.
+function dateAxisTicks(labels: string[]) {
+	const firstYear = Number(String(labels[0] || "").slice(0, 4));
+	const lastYear = Number(String(labels[labels.length - 1] || "").slice(0, 4));
+	if (!(lastYear - firstYear >= 3)) {
+		return { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 };
+	}
+	return {
+		maxRotation: 0,
+		autoSkip: false,
+		callback: function (this: any, _value: any, index: number) {
+			return yearTickLabel(labels, index, firstYear, lastYear, this?.chart?.width || 1000);
+		},
+	};
+}
+
+// 해가 바뀌는 점이면 그 해, 아니면 null(눈금 · 격자 없음). 첫 점은 그해 6 월까지일 때만 단다 - 늦게 시작하면 바로 다음 해 글자와 붙는다.
+function yearTickLabel(labels: string[], index: number, firstYear: number, lastYear: number, width: number): string | null {
+	const year = String(labels[index] || "").slice(0, 4);
+	const isBoundary = index === 0
+		? Number(String(labels[0]).slice(5, 7)) <= 6
+		: String(labels[index - 1] || "").slice(0, 4) !== year;
+	if (!isBoundary) return null;
+	// 해 글자 하나에 60px 쯤 - 넘치면 몇 해씩 건너뛴다.
+	const every = Math.max(1, Math.ceil((lastYear - firstYear + 1) / Math.max(2, Math.floor(width / 60))));
+	return (Number(year) - firstYear) % every === 0 ? year : null;
+}
+
+StockCharts.dateAxisTicks = dateAxisTicks;
+
+// 로그 눈금 글자: 1 · 2 · 5 x 10^n 에만 단다(그 사이 눈금은 격자만) - 다 달면 한 자리에 3~9 가 겹친다(자산 성장 세로 눈금, 2026-10-28).
+function logTickLabel(value: number): string {
+	if (!(value > 0)) return "";
+	const exp = Math.floor(Math.log10(value));
+	const base = Math.pow(10, exp);
+	const significand = Math.round(value / base);
+	if (Math.abs(value - significand * base) > base * 1e-6) return "";
+	return significand === 1 || significand === 2 || significand === 5 ? compactNumber(value) : "";
+}
+
+StockCharts.logTickLabel = logTickLabel;
+
+// 도넛에 따로 두는 조각 수. 넘으면 나머지는 "기타" 한 조각.
+const DONUT_TOP = 10;
+const DONUT_OTHERS_COLOR = "rgba(148,163,184,0.6)";
+
+// 조각으로 남지 않은 항목들의 크기(절댓값) 합.
+function sumMagnitude(map: Record<string, number>, kept: [string, number][]): number {
+	const keptKeys = new Set(kept.map((e) => e[0]));
+	return Object.entries(map)
+		.filter((e) => !keptKeys.has(e[0]))
+		.reduce((acc, e) => acc + Math.abs(e[1]), 0);
+}
+
+function appendOthers(
+	d: { labels: string[]; data: number[]; rawData: number[]; colors: string[] },
+	others: [string, number],
+	size: number,
+) {
+	return {
+		labels: d.labels.concat(others[0]),
+		data: d.data.concat(size),
+		rawData: d.rawData.concat(others[1]),
+		colors: d.colors.concat(DONUT_OTHERS_COLOR),
+	};
 }
 
 function makeDonutTooltipHandler(
@@ -756,7 +857,7 @@ StockCharts.initMonthlyFromData = function (
 					grid: gridY,
 					ticks: {
 						font: { size: 10 },
-						callback: (v: any) => compactNumber(v),
+						callback: realizedPanelTick,
 					},
 				},
 				y: {
@@ -1128,7 +1229,8 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 			animation: animate === false ? false : { duration: CHART_ANIMATION_MS },
 			normalized: true,
 			elements: {
-				line: { tension: 0.3 },
+				// monotone: 곡선이 이웃한 두 점 사이에서 둘보다 높거나 낮게 휘지 않게 한다(없던 고점 · 저점, 2026-10-27).
+				line: { tension: 0.3, cubicInterpolationMode: "monotone" },
 				point: { radius: 0, hitRadius: 10, hoverRadius: 4 },
 			},
 			layout: { padding: { top: 20, bottom: 5 } },
@@ -1195,7 +1297,7 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 				},
 			},
 			scales: {
-				x: { display: true, ticks: { maxRotation: 45, minRotation: 45 } },
+				x: { display: true, ticks: dateAxisTicks(labels) },
 				y: {
 					display: true,
 					position: "left",

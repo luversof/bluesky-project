@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -27,7 +28,9 @@ import net.luversof.api.stock.web.dto.request.MonthlyDividendPayoutRequest;
 import net.luversof.api.stock.web.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.api.stock.web.dto.response.MonthlyDividendPayoutResponse;
 
+// 지급 이력 저장 · 삭제와 그 뒤 스냅샷 갱신을 한 트랜잭션으로 - 갱신이 실패하면 지급 이력만 바뀐 채 남았다(2026-10-27 감사).
 @Service
+@Transactional(transactionManager = "stockTransactionManager")
 public class MonthlyDividendPayoutService {
 
   @Autowired private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
@@ -173,13 +176,21 @@ public class MonthlyDividendPayoutService {
       return;
     }
 
+    Instant now = Instant.now();
+    // 이력이 하나도 안 남으면(예: 한 건뿐인 이력을 지우고 다시 넣는 중) 배당 통계만 0 으로 비우고 스냅샷은 남긴다. 예전에는
+    // 사용자가 입력한 보유 수량 · 평균 단가가 든 스냅샷을 통째로 지웠다(2026-10-27 감사). 통계를 그대로 두면 지운 이력의 배당이 남아 보인다.
     SnapshotStats stats = computeSnapshotStats(stockItem.getId());
     if (stats == null) {
-      monthlyDividendSnapshotRepository.deleteAll(snapshots);
+      snapshots.forEach(
+          snapshot -> {
+            snapshot.setLatestMonthlyDividendPerShare(BigDecimal.ZERO);
+            snapshot.setAverageMonthlyDividendPerShare1y(BigDecimal.ZERO);
+            snapshot.setUpdatedDate(now);
+          });
+      monthlyDividendSnapshotRepository.saveAll(snapshots);
       return;
     }
 
-    Instant now = Instant.now();
     snapshots.forEach(
         snapshot -> {
           applyStats(snapshot, stats, snapshot.getUserId());

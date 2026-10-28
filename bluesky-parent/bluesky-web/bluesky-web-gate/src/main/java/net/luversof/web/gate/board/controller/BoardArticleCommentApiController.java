@@ -47,7 +47,7 @@ public class BoardArticleCommentApiController {
   public BoardArticleComment create(@RequestBody BoardArticleComment boardArticleComment) {
     var createdComment =
         boardArticleCommentClient.create(
-            boardArticleComment.toBuilder().userId(UserUtil.getUserId()).build());
+            boardArticleComment.toBuilder().userId(UserUtil.requireUserId()).build());
     return boardUserInfoService.enrich(createdComment);
   }
 
@@ -70,7 +70,7 @@ public class BoardArticleCommentApiController {
   public BoardArticleComment modify(@RequestBody BoardArticleComment boardArticleComment) {
     var updatedComment =
         boardArticleCommentClient.modify(
-            boardArticleComment.toBuilder().userId(UserUtil.getUserId()).build());
+            boardArticleComment.toBuilder().userId(UserUtil.requireUserId()).build());
     return boardUserInfoService.enrich(updatedComment);
   }
 
@@ -78,6 +78,6 @@ public class BoardArticleCommentApiController {
   @DeleteMapping
   public void delete(@RequestBody BoardArticleComment boardArticleComment) {
     boardArticleCommentClient.delete(
-        boardArticleComment.toBuilder().userId(UserUtil.getUserId()).build());
+        boardArticleComment.toBuilder().userId(UserUtil.requireUserId()).build());
   }
 }

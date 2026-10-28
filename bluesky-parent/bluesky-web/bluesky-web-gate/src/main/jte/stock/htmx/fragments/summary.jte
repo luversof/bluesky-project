@@ -397,7 +397,9 @@
 					fill: true,
 					borderWidth: 2,
 					pointRadius: 0,
-					tension: 0.3
+					tension: 0.3,
+					<%-- 곡선이 두 점 사이에서 둘보다 낮게 휘어 없던 저점을 그렸다(실측 2026-10-27: 07-31 15.66억 · 08-31 15.68억 사이). --%>
+					cubicInterpolationMode: 'monotone'
 				}]
 			},
 			options: {
@@ -418,7 +420,8 @@
 				scales: {
 					x: {
 						grid: { display: false },
-						ticks: { font: { size: 10 }, maxTicksLimit: 5, maxRotation: 0, autoSkip: true }
+						<%-- inner: 양 끝 날짜를 차트 안쪽으로 붙인다 - 가운데 맞춤이면 마지막 날짜가 오른쪽 끝에서 잘렸다(2026-10-27). --%>
+						ticks: { font: { size: 10 }, maxTicksLimit: 5, maxRotation: 0, autoSkip: true, align: 'inner' }
 					},
 					y: {
 						grid: { color: 'rgba(128,128,128,0.1)' },

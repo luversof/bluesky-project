@@ -72,7 +72,8 @@ public class StockAdminController {
   @PostMapping("/price-histories/{symbol}")
   public net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult priceHistoryUpdateOne(
       @PathVariable String symbol, @RequestParam UUID userId) {
-    return kisStockPriceUpdateService.updatePriceHistory(userId, symbol);
+    return priceHistoryUpdateJobService.runExclusive(
+        () -> kisStockPriceUpdateService.updatePriceHistory(userId, symbol));
   }
 
   /**
@@ -82,7 +83,8 @@ public class StockAdminController {
   @PostMapping("/raw-close-prices")
   public net.luversof.api.stock.service.kis.KisStockPriceUpdateService.RawClosePriceFillResult
       rawClosePriceFill(@RequestParam UUID userId) {
-    return kisStockPriceUpdateService.fillRawClosePrices(userId);
+    return priceHistoryUpdateJobService.runExclusive(
+        () -> kisStockPriceUpdateService.fillRawClosePrices(userId));
   }
 
   /** "배당주 검색" 시트의 보유/평단가를 월배당 기준 등록 종목에 한해 월배당 스냅샷에 추가/갱신한다. */

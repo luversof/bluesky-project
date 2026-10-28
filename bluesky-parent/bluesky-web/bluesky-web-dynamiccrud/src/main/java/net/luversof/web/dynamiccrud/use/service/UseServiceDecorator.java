@@ -1,5 +1,6 @@
 package net.luversof.web.dynamiccrud.use.service;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,14 @@ public class UseServiceDecorator implements UseService {
   public Object create(SettingParameter settingParameter, Map<String, String> dataMap) {
     var useService = getUseService(settingParameter);
     return useService == null ? null : useService.create(settingParameter, dataMap);
+  }
+
+  @Override
+  public void createAll(SettingParameter settingParameter, List<Map<String, String>> dataMapList) {
+    var useService = getUseService(settingParameter);
+    if (useService != null) {
+      useService.createAll(settingParameter, dataMapList);
+    }
   }
 
   @Override

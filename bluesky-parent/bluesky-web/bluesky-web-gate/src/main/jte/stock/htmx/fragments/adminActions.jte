@@ -51,76 +51,123 @@
 		<%-- 갱신 버튼 라벨이 길어 좁은 화면에서 화면 밖으로 나간다(실측: 320px 에서 16px).
 			 그 폭에서는 줄바꿈을 허용한다. 글꼴 200% 에서는 "(Dividends)" 같은 영어 한 단어가 버튼 안쪽보다 넓어
 			 페이지를 33px 밀었다 - 그때는 단어 안에서도 끊는다(wrap-anywhere, 실측 2026-09-17). 한글 단어는 띄어쓰기에서만 나눈다(break-keep). --%>
-		<div class="flex flex-wrap gap-4">
-			<button type="button" hx-post="/api/stock/admin/stock-items"
-					data-admin-action="stock-items"
-					hx-swap="none"
-					hx-indicator="#update-loading"
-					hx-confirm="${updateStockItemsConfirm}"
-					data-reload-after-request="true"
-					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-				</svg>
-				${updateStockItemsLabel}
-			</button>
-			<button type="button" hx-post="/api/stock/admin/trades"
-					data-admin-action="trades"
-					hx-swap="none"
-					hx-indicator="#update-loading"
-					hx-confirm="${updateTradesConfirm}"
-					data-reload-after-request="true"
-					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-				</svg>
-				${updateTradesLabel}
-			</button>
-			<button type="button" hx-post="/api/stock/admin/dividends"
-					data-admin-action="dividends"
-					hx-swap="none"
-					hx-indicator="#update-loading"
-					hx-confirm="${updateDividendsConfirm}"
-					data-reload-after-request="true"
-					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-				</svg>
-				${updateDividendsLabel}
-			</button>
-			<button type="button" hx-post="/api/stock/admin/price-histories"
-					data-admin-action="price-histories"
-					hx-swap="none"
-					hx-confirm="${updatePriceHistoriesConfirm}"
-					<%-- 이 단추는 작업을 시작만 한다 - 끝나는 건 아래 진행 표시가 보고 새로고침한다. 덮개(hx-indicator)도 안 쓴다(18~22 초 동안 화면을 가린다). --%>
-					class="btn btn-outline gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-				</svg>
-				${updatePriceHistoriesLabel}
-			</button>
-		</div>
-		<%-- 갱신 이력은 서버에 없으므로 이 브라우저에서 실행한 시각을 localStorage 로 기억해 표시한다 --%>
-		<%-- 실제 데이터가 어디까지 채워졌는지(서버 기준). 브라우저 로컬의 '마지막 갱신 클릭 시각'과 달리
-			 다른 브라우저에서 보거나 갱신이 실패했을 때도 실제 범위를 알 수 있다. --%>
-		@if(dataStatus != null)
-			<div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-base-content/70 mb-2">
-				<h3 class="font-semibold" data-page-section>${dataCoverageLabel}</h3>
-				<span>${updateTradesLabel}: <span class="whitespace-nowrap date-whole">${asDate.apply(dataStatus.tradeLastDate())}</span>${withCount.apply("", dataStatus.tradeCount())}</span>
-				<span>${updateDividendsLabel}: <span class="whitespace-nowrap date-whole">${asDate.apply(dataStatus.dividendLastDate())}</span>${withCount.apply("", dataStatus.dividendCount())}</span>
-				<span>${updatePriceHistoriesLabel}: <span class="whitespace-nowrap date-whole">${dataStatus.priceHistoryLastDate() != null ? dataStatus.priceHistoryLastDate().toString() : "-"}</span></span>
-				<span>${updateStockItemsLabel}: ${java.text.MessageFormat.format(countSuffix, dataStatus.stockItemCount())}</span>
+		<%-- 버튼마다 그 데이터의 최신 시점(서버)과 이 브라우저의 마지막 실행을 한 카드에 둔다 - 예전엔 버튼 줄 · "데이터 최신 시점" 줄 ·
+		     "마지막 실행" 줄이 따로이고 줄마다 순서도 달라 눈으로 짝을 맞춰야 했다(사용자 요청 2026-10-28).
+		     최신 시점은 서버의 실제 데이터 범위라 다른 브라우저 · 실패한 갱신에도 맞고, 마지막 실행은 서버에 기록이 없어
+		     이 브라우저의 localStorage 값이다. --%>
+		<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+			<div class="rounded-box border border-base-300 p-3 flex flex-col gap-2" data-admin-card="stock-items">
+				<button type="button" hx-post="/api/stock/admin/stock-items"
+						data-admin-action="stock-items"
+						hx-swap="none"
+						hx-indicator="#update-loading"
+						hx-confirm="${updateStockItemsConfirm}"
+						data-reload-after-request="true"
+						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+					</svg>
+					${updateStockItemsLabel}
+				</button>
+				<dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-base-content/70">
+					<dt>${dataCoverageLabel}</dt>
+					<dd class="font-medium text-base-content" data-admin-coverage="stock-items">${dataStatus != null ? java.text.MessageFormat.format(countSuffix, dataStatus.stockItemCount()) : "-"}</dd>
+					<dt>${lastRunLabel}</dt>
+					<dd><span data-admin-last-run="stock-items"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></dd>
+				</dl>
 			</div>
+			<div class="rounded-box border border-base-300 p-3 flex flex-col gap-2" data-admin-card="trades">
+				<button type="button" hx-post="/api/stock/admin/trades"
+						data-admin-action="trades"
+						hx-swap="none"
+						hx-indicator="#update-loading"
+						hx-confirm="${updateTradesConfirm}"
+						data-reload-after-request="true"
+						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+					</svg>
+					${updateTradesLabel}
+				</button>
+				<dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-base-content/70">
+					<dt>${dataCoverageLabel}</dt>
+					<dd class="font-medium text-base-content" data-admin-coverage="trades">@if(dataStatus != null)<span class="whitespace-nowrap date-whole">${asDate.apply(dataStatus.tradeLastDate())}</span>${withCount.apply("", dataStatus.tradeCount())}@else-@endif</dd>
+					<dt>${lastRunLabel}</dt>
+					<dd><span data-admin-last-run="trades"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></dd>
+				</dl>
+			</div>
+			<div class="rounded-box border border-base-300 p-3 flex flex-col gap-2" data-admin-card="dividends">
+				<button type="button" hx-post="/api/stock/admin/dividends"
+						data-admin-action="dividends"
+						hx-swap="none"
+						hx-indicator="#update-loading"
+						hx-confirm="${updateDividendsConfirm}"
+						data-reload-after-request="true"
+						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+					</svg>
+					${updateDividendsLabel}
+				</button>
+				<dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-base-content/70">
+					<dt>${dataCoverageLabel}</dt>
+					<dd class="font-medium text-base-content" data-admin-coverage="dividends">@if(dataStatus != null)<span class="whitespace-nowrap date-whole">${asDate.apply(dataStatus.dividendLastDate())}</span>${withCount.apply("", dataStatus.dividendCount())}@else-@endif</dd>
+					<dt>${lastRunLabel}</dt>
+					<dd><span data-admin-last-run="dividends"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></dd>
+				</dl>
+			</div>
+			<div class="rounded-box border border-base-300 p-3 flex flex-col gap-2" data-admin-card="price-histories">
+				<button type="button" hx-post="/api/stock/admin/price-histories"
+						data-admin-action="price-histories"
+						hx-swap="none"
+						hx-confirm="${updatePriceHistoriesConfirm}"
+						<%-- 이 단추는 작업을 시작만 한다 - 끝나는 건 아래 진행 표시가 보고 새로고침한다. 덮개(hx-indicator)도 안 쓴다(18~22 초 동안 화면을 가린다). --%>
+						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+					</svg>
+					${updatePriceHistoriesLabel}
+				</button>
+				<dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-base-content/70">
+					<dt>${dataCoverageLabel}</dt>
+					<dd class="font-medium text-base-content" data-admin-coverage="price-histories"><span class="whitespace-nowrap date-whole">${dataStatus != null && dataStatus.priceHistoryLastDate() != null ? dataStatus.priceHistoryLastDate().toString() : "-"}</span></dd>
+					<dt>${lastRunLabel}</dt>
+					<dd><span data-admin-last-run="price-histories"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></dd>
+				</dl>
+				<%-- "그중 이 날짜 행이 있는 종목은 …" 은 위 시세 최신 시점을 가리킨다 - 카드 밖에 두면 무엇의 "이 날짜" 인지 떨어진다. --%>
+				@if(dataStatus != null && dataStatus.stockItemCount() > 0 && dataStatus.priceHistoryLastDate() != null)
+					<p class="text-[11px] text-base-content/60" data-admin-price-coverage>
+						${StockViewSupport.msg("stock.admin.price.history.coverage", String.format("%,d", dataStatus.stockItemCount()),
+							String.format("%,d", dataStatus.priceHistoryLastDateItemCount()),
+							String.format("%,d", dataStatus.priceHistoryNoHistoryItemCount()))}
+					</p>
+				@endif
+			</div>
+		</div>
+		<%-- 버튼 바로 아래에 둔다 - 예전엔 카드 맨 끝(원장 점검 경고 목록 뒤)이라 경고가 많으면 진행 표시가 화면 밖이었다(사용자 지적 2026-10-28). --%>
+		<%-- 갱신 결과. 버튼이 hx-swap="none" + 전체 새로고침이라, 응답을 sessionStorage 에 담아 두고
+			 새로고침된 화면에서 여기에 그린다. 이게 없으면 몇 행이 빠졌는지 사용자가 알 방법이 없다. --%>
+		<div id="admin-import-result"
+			 class="hidden"
+			 data-import-ok-template="${importOkTemplate}"
+			 data-import-dropped-template="${importDroppedTemplate}"
+			 data-price-failed-template="${priceFailedTemplate}"></div>
+
+		<%-- 전체 갱신 진행 상황(사용자 결정 2026-09-22). 53 종목에 18~22 초라 게이트 읽기 제한(10 초)을 넘겨,
+		     누를 때마다 500 이 났고 데이터는 정작 갱신돼 있었다. 이제 시작만 하고 여기서 진행을 물어본다. --%>
+		<div id="price-history-progress" class="alert my-3 hidden" role="status" aria-live="polite"
+			 data-progress-template="${priceProgressTemplate}"
+			 data-progress-done-template="${priceProgressDoneTemplate}"
+			 data-progress-failed-template="${priceProgressFailedTemplate}">
+			<span class="loading loading-spinner loading-sm" data-progress-spinner></span>
+			<span data-progress-text></span>
+		</div>
+		@if(dataStatus != null)
 			<%-- 최신 시세 일자 한 줄만 적으면 전 종목이 그 날까지 최신인 것으로 읽힌다. 바로 위에 "종목 86건" 이
 				 나란히 있어 더 그렇다. 실측 2026-09-12: 86 종목 중 이 날짜 행이 있는 것은 9 종목뿐이고 70 종목은
 				 2026-04-01/03 에, 나머지는 그보다 더 전에 멈춰 있었다(이력이 아예 없는 종목 4). 시세 갱신이 보유
 				 종목 위주로 도는 결과라 데이터가 틀린 것은 아니지만, 밝히지 않으면 없는 최신성을 믿게 된다. --%>
 			@if(dataStatus.stockItemCount() > 0 && dataStatus.priceHistoryLastDate() != null)
-				<div class="text-[11px] text-base-content/60 mb-2">
-					${StockViewSupport.msg("stock.admin.price.history.coverage", String.format("%,d", dataStatus.stockItemCount()),
-						String.format("%,d", dataStatus.priceHistoryLastDateItemCount()),
-						String.format("%,d", dataStatus.priceHistoryNoHistoryItemCount()))}
-				</div>
 				<%-- 개수만 적으면 무엇을 고쳐야 할지 알 수 없다. 같은 화면의 다른 이상 항목(거래량 0 인데 종가가
 					 바뀐 행, 제한폭을 넘은 행)은 이미 종목·날짜까지 적는다 - 이것만 숫자였다. --%>
 				@if(dataStatus.priceHistoryNoHistoryItemRows() != null && !dataStatus.priceHistoryNoHistoryItemRows().isEmpty())
@@ -321,33 +368,8 @@
 				@endfor
 			@endif
 		</div>
-		<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-base-content/60">
-			<h3 class="font-semibold" data-page-section>${lastRunLabel}</h3>
-			<span>${updateStockItemsLabel}: <span data-admin-last-run="stock-items"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></span>
-			<span>${updateTradesLabel}: <span data-admin-last-run="trades"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></span>
-			<span>${updateDividendsLabel}: <span data-admin-last-run="dividends"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></span>
-			<span>${updatePriceHistoriesLabel}: <span data-admin-last-run="price-histories"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></span>
-		</div>
 	</div>
 	
-	<%-- 갱신 결과. 버튼이 hx-swap="none" + 전체 새로고침이라, 응답을 sessionStorage 에 담아 두고
-		 새로고침된 화면에서 여기에 그린다. 이게 없으면 몇 행이 빠졌는지 사용자가 알 방법이 없다. --%>
-	<div id="admin-import-result"
-		 class="hidden"
-		 data-import-ok-template="${importOkTemplate}"
-		 data-import-dropped-template="${importDroppedTemplate}"
-		 data-price-failed-template="${priceFailedTemplate}"></div>
-
-	<%-- 전체 갱신 진행 상황(사용자 결정 2026-09-22). 53 종목에 18~22 초라 게이트 읽기 제한(10 초)을 넘겨,
-	     누를 때마다 500 이 났고 데이터는 정작 갱신돼 있었다. 이제 시작만 하고 여기서 진행을 물어본다. --%>
-	<div id="price-history-progress" class="alert mt-3 hidden" role="status" aria-live="polite"
-		 data-progress-template="${priceProgressTemplate}"
-		 data-progress-done-template="${priceProgressDoneTemplate}"
-		 data-progress-failed-template="${priceProgressFailedTemplate}">
-		<span class="loading loading-spinner loading-sm" data-progress-spinner></span>
-		<span data-progress-text></span>
-	</div>
-
 	<div id="update-loading" class="htmx-indicator fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
 		<div class="bg-base-100 p-8 rounded-box shadow-xl flex flex-col items-center gap-4">
 			<span class="loading loading-spinner loading-lg text-primary"></span>
@@ -498,7 +520,7 @@
 				: summary.kind === 'dropped'
 					? box.getAttribute('data-import-dropped-template')
 					: box.getAttribute('data-import-ok-template');
-			box.className = 'alert mb-4 ' + (summary.level === 'warning' ? 'alert-warning' : 'alert-success');
+			box.className = 'alert my-3 ' + (summary.level === 'warning' ? 'alert-warning' : 'alert-success');
 			box.textContent = format(template, summary.args);
 		})();
 	})();

@@ -19,7 +19,9 @@ import net.luversof.api.stock.domain.StockDailyClosePrice;
  *       한다 &mdash; 분배금만 보면 원금이 줄어드는 상품을 좋게 오해한다.
  * </ul>
  *
- * <p>분배금은 <b>지급기준일</b>로 센다. 가격이 떨어지는 날이 기준일이므로, 지급일로 세면 가격 하락과 분배금이 서로 다른 기간에 들어가 합산이 어긋난다.
+ * <p>분배금은 <b>배당락일</b>(지급기준일 하루 전 평일)로 센다. 가격이 떨어지는 날이 그날이므로, 지급일로 세면 가격 하락과 분배금이 서로 다른 기간에 들어가 합산이
+ * 어긋난다. 예전엔 기준일로 셌다 - 국내 시장은 기준일 하루 전 거래일에 가격이 떨어져서, 기초일이 그 사이(금 · 토 · 일)에 걸리면 이미 떨어진 가격에 분배금을 또 더해
+ * 한 번 치 분배금만큼 부풀었다(2026-10-28 감사).
  *
  * <p><b>이력이 모자라면 아무 값도 내지 않는다</b>(null). 열흘치 이력으로 "1 년 수익률" 을 적으면 거짓이 된다 &mdash; 화면은 대신 이력 시작일을
  * 알린다.
@@ -78,7 +80,7 @@ public final class PeriodReturnCalculator {
         percent(priceChange.add(dividends), base.closePrice()));
   }
 
-  /** 기간 안 분배금 합(기초일 <b>다음날</b>부터 기말일까지). 기초일 당일 기준일 분배금은 이미 기초 가격에 반영돼 있다. */
+  /** 기간 안 분배금 합 - 배당락일이 기초일 <b>다음날</b>부터 기말일까지인 것. 배당락일이 기초일인 분배금은 이미 기초 가격에 반영돼 있다. */
   static BigDecimal sumPayouts(
       List<PayoutPoint> payouts, LocalDate afterDate, LocalDate untilDate) {
     if (payouts == null || payouts.isEmpty()) {
@@ -90,11 +92,27 @@ public final class PeriodReturnCalculator {
       if (payout == null || payout.recordDate() == null || payout.amountPerShare() == null) {
         continue;
       }
-      if (payout.recordDate().isAfter(afterDate) && !payout.recordDate().isAfter(untilDate)) {
+      LocalDate exDate = exDividendDate(payout.recordDate());
+      if (exDate.isAfter(afterDate) && !exDate.isAfter(untilDate)) {
         sum = sum.add(payout.amountPerShare());
       }
     }
     return sum;
+  }
+
+  /**
+   * 배당락일 - 기준일 하루 전 평일(결제가 2 거래일 뒤라 그날 산 주식은 기준일 명부에 못 오른다).
+   *
+   * <p>shortcut: 공휴일은 모른다 - 기준일 바로 전 평일이 휴장일이면 실제 배당락일은 그보다 앞이다. 그 경우가 기간 경계에 걸릴 때만 틀리며, 맞추려면 휴장일
+   * 표(krx 거래일 규칙)를 api 쪽에도 둔다.
+   */
+  static LocalDate exDividendDate(LocalDate recordDate) {
+    LocalDate date = recordDate.minusDays(1);
+    while (date.getDayOfWeek() == java.time.DayOfWeek.SATURDAY
+        || date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+      date = date.minusDays(1);
+    }
+    return date;
   }
 
   /** 그 날 또는 그 전의 마지막 종가(휴장일이면 직전 거래일). 날짜 오름차순 목록을 뒤에서부터 본다. */

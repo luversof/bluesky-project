@@ -2184,6 +2184,100 @@ function reconcileRowSelection(box: HTMLInputElement): void {
 	box.checked = isRowSelected(row);
 }
 
+// ---- 머리 줄의 전체 선택 체크박스(사용자 요청 2026-10-27 "모든 선택 처리에 대해 일괄 적용") ----
+// 행 체크박스가 있는 표마다 머리 줄 첫 칸에 하나 붙인다. 누르면 보이는 행을 하나씩 클릭한 것과 같게 만든다 -
+// 표마다 따로 있는 선택 코드와 선택 합산이 그대로 돈다(행 체크박스와 같은 길). 일부만 고르면 '일부' 표시(indeterminate).
+// 머리 줄이 없는 표(배당 변화 기여 목록)는 붙일 자리가 없어 건너뛴다.
+const ROW_SELECT_ALL_BOX = "[data-row-select-all]";
+
+/** 첫 열의 머리 칸. 첫 줄이 묶음 머리(colspan)로 시작하면 그 아래 줄에서 찾는다(rowspan 으로 내려온 칸은 첫 줄에 있다). */
+function selectAllHeaderCell(table: Element): Element | null {
+	const head = table.querySelector("thead");
+	if (!head) return null;
+	const headRows = head.querySelectorAll("tr");
+	for (let i = 0; i < headRows.length; i++) {
+		const cell = headRows[i].querySelector("th, td");
+		if (cell && Number(cell.getAttribute("colspan") || "1") <= 1) return cell;
+	}
+	return null;
+}
+
+/** 보이는 선택 가능한 행 - 거르기로 숨긴 행은 전체 선택에 넣지 않는다. */
+function visibleSelectableRows(table: Element): HTMLElement[] {
+	const rows = table.querySelectorAll<HTMLElement>(ROW_SELECT_ROW);
+	const out: HTMLElement[] = [];
+	for (let i = 0; i < rows.length; i++) {
+		const row = rows[i];
+		if (row.hidden || row.classList.contains("hidden")) continue;
+		if (typeof row.getClientRects === "function" && row.getClientRects().length === 0) continue;
+		out.push(row);
+	}
+	return out;
+}
+
+/** 머리 체크박스를 행들의 선택 상태에 맞춘다: 모두 → 체크, 일부 → 일부, 없음 → 빈 칸. */
+function syncSelectAll(table: Element | null): void {
+	if (!table) return;
+	const box = table.querySelector<HTMLInputElement>(ROW_SELECT_ALL_BOX);
+	if (!box) return;
+	const rows = visibleSelectableRows(table);
+	let selected = 0;
+	for (const row of rows) if (isRowSelected(row)) selected++;
+	box.checked = rows.length > 0 && selected === rows.length;
+	box.indeterminate = selected > 0 && selected < rows.length;
+	box.disabled = rows.length === 0;
+}
+
+/** 행 체크박스가 있는 표의 머리 칸에 전체 선택 체크박스를 붙인다(이미 있으면 상태만). 붙였으면 true. */
+function ensureSelectAllCheckbox(table: Element): boolean {
+	if (table.querySelector(ROW_SELECT_ALL_BOX)) {
+		syncSelectAll(table);
+		return false;
+	}
+	const firstRow = table.querySelector(ROW_SELECT_ROW);
+	const cell = firstRow ? selectAllHeaderCell(table) : null;
+	if (!firstRow || !cell) return false;
+	const template = firstRow.getAttribute("data-row-select") || "{0}";
+	const label = document.createElement("label");
+	label.className = "row-select-box";
+	const box = document.createElement("input");
+	box.type = "checkbox";
+	box.className = "checkbox checkbox-sm";
+	box.setAttribute("data-row-select-all", "");
+	box.setAttribute("aria-label", template.indexOf("{0}") < 0 ? template : template.replace("{0}", isKoreanDocument() ? "전체" : "all").trim());
+	label.appendChild(box);
+	cell.insertBefore(label, cell.firstChild);
+	syncSelectAll(table);
+	return true;
+}
+
+/** 전체 선택을 누르면 보이는 행 중 상태가 다른 것만 클릭한다. 행 코드가 거부한 행이 있으면 머리가 '일부' 로 되맞춰진다. */
+function applySelectAll(box: HTMLInputElement): void {
+	const table = box.closest("table");
+	if (!table) return;
+	const target = box.checked;
+	for (const row of visibleSelectableRows(table)) {
+		if (isRowSelected(row) !== target) row.click();
+	}
+	syncSelectAll(table);
+}
+
+/** 문서(또는 가지) 안에서 행 체크박스가 있는 표마다 전체 선택을 붙인다. 붙인 수를 돌려준다. */
+function markSelectAllCheckboxes(root: ParentNode = document): number {
+	const rows = root.querySelectorAll(ROW_SELECT_ROW);
+	const self = root as unknown as Element;
+	const tables: Element[] = [];
+	const add = (row: Element) => {
+		const table = row.closest("table");
+		if (table && tables.indexOf(table) < 0) tables.push(table);
+	};
+	for (let i = 0; i < rows.length; i++) add(rows[i]);
+	if (typeof self.matches === "function" && self.matches(ROW_SELECT_ROW)) add(self);
+	let added = 0;
+	for (const table of tables) if (ensureSelectAllCheckbox(table)) added++;
+	return added;
+}
+
 function observeRowSelection(): MutationObserver | null {
 	if (typeof MutationObserver !== "function" || !document.body) return null;
 	const observer = new MutationObserver((mutations) => {
@@ -2193,12 +2287,16 @@ function observeRowSelection(): MutationObserver | null {
 				if (target && typeof target.matches === "function" && target.matches(ROW_SELECT_ROW)) {
 					const box = target.querySelector<HTMLInputElement>(ROW_SELECT_BOX);
 					if (box) box.checked = isRowSelected(target);
+					syncSelectAll(target.closest("table"));
 				}
 				continue;
 			}
 			mutation.addedNodes.forEach((added) => {
 				const element = added as unknown as Element;
-				if (element && typeof element.querySelectorAll === "function") markRowSelectCheckboxes(element);
+				if (element && typeof element.querySelectorAll === "function") {
+					markRowSelectCheckboxes(element);
+					markSelectAllCheckboxes(element);
+				}
 			});
 		}
 	});
@@ -2209,10 +2307,12 @@ function observeRowSelection(): MutationObserver | null {
 function startRowSelection(): void {
 	const run = () => {
 		markRowSelectCheckboxes();
+		markSelectAllCheckboxes();
 		observeRowSelection();
 		document.addEventListener("change", (event) => {
 			const target = event.target;
 			if (target instanceof HTMLInputElement && target.matches(ROW_SELECT_BOX)) reconcileRowSelection(target);
+			else if (target instanceof HTMLInputElement && target.matches(ROW_SELECT_ALL_BOX)) applySelectAll(target);
 		});
 	};
 	if (document.readyState === "loading") {
@@ -2222,7 +2322,7 @@ function startRowSelection(): void {
 	run();
 }
 startRowSelection();
-(globalThis as any).__rowSelectInternals = { rowSelectName, ensureRowCheckbox, markRowSelectCheckboxes, reconcileRowSelection, observeRowSelection };
+(globalThis as any).__rowSelectInternals = { rowSelectName, ensureRowCheckbox, markRowSelectCheckboxes, reconcileRowSelection, observeRowSelection, selectAllHeaderCell, visibleSelectableRows, syncSelectAll, ensureSelectAllCheckbox, applySelectAll, markSelectAllCheckboxes };
 
 // ---- 화면 안 구역 막대 ----
 // 긴 화면에는 화면 안에서 구역으로 뛸 방법이 없었다 - 실측 2026-09-10(qa/ui-nav.cjs): 배당 7.2화면·활동 5.5화면·

@@ -7,7 +7,7 @@
      기준일의 2 거래일 전(T+2 결제)까지 사야 그 분배금을 받는다. 이번 달 마감이 지났으면 다음 달 것을 보인다. 계산은 KrxRecordDateUtil.
      필터와 무관해 결과 구역 밖에 둔다(구역 교체 때 같이 바뀔 이유가 없다). --%>
 @param List<RecordDateBuyByView> rows = java.util.List.of()
-<%-- 대시보드 다가올 배당 카드의 한 줄(2026-10-20) - 제목 · 안내 없이 시기별 마감만. --%>
+<%-- 대시보드 다가올 배당 카드의 한 줄(2026-10-20) - 제목 · 안내 없이 시기별 마감만. 오늘 마감은 전체판과 같은 경고 배지(2026-10-28 - 회색 괄호라 마감일에 안 보였다). --%>
 @param boolean compact = false
 
 @if(rows != null && !rows.isEmpty())
@@ -20,7 +20,7 @@
 	<p class="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[11px] text-base-content/60" data-record-buyby data-record-buyby-compact>
 		<span class="font-medium text-base-content/70">${MessageUtil.getMessage("stock.monthly.etf.buyby.compact.title")}</span>
 		@for(RecordDateBuyByView row : rows)
-			<span class="min-w-0 wrap-anywhere" data-record-buyby-window="${row.payoutWindow()}">${"MID_MONTH".equals(row.payoutWindow()) ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end")} <span class="font-mono text-base-content/80" data-buyby-date>${row.buyByDate().format(dateFormat)}</span> <span data-buyby-days-left="${row.daysLeft()}">(${row.daysLeft() == 0 ? MessageUtil.getMessage("stock.monthly.etf.buyby.today") : StockViewSupport.msg("stock.monthly.etf.buyby.days.left", String.valueOf(row.daysLeft()))})</span></span>
+			<span class="min-w-0 wrap-anywhere" data-record-buyby-window="${row.payoutWindow()}">${"MID_MONTH".equals(row.payoutWindow()) ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end")} <span class="font-mono text-base-content/80" data-buyby-date>${row.buyByDate().format(dateFormat)}</span> @if(row.daysLeft() == 0)<span class="inline-block rounded border border-warning/30 bg-warning/10 px-1 text-base-content" data-buyby-days-left="0">${MessageUtil.getMessage("stock.monthly.etf.buyby.today")}</span>@else<span data-buyby-days-left="${row.daysLeft()}">(${StockViewSupport.msg("stock.monthly.etf.buyby.days.left", String.valueOf(row.daysLeft()))})</span>@endif</span>
 		@endfor
 	</p>
 	@else

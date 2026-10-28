@@ -238,6 +238,14 @@ class HideAmountsKeepsRatesTest {
     assertThat(blurredMarker(html, "data-selection-evaluation-profit"))
         .as("비중을 꺼내면서 같은 카드의 금액까지 꺼내면 안 된다")
         .isTrue();
+    // 2026-10-27 더한 실현손익 · 누적 배당 · 합산 손익 카드도 금액이다.
+    for (String amount :
+        List.of(
+            "data-selection-realized-profit",
+            "data-selection-dividend-total",
+            "data-selection-combined-profit")) {
+      assertThat(blurredMarker(html, amount)).as(amount).isTrue();
+    }
   }
 
   @Test

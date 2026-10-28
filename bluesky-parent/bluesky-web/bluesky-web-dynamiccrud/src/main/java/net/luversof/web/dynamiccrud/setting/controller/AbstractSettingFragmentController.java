@@ -174,9 +174,7 @@ public abstract class AbstractSettingFragmentController
       }
     }
 
-    for (var map : dataMapList) {
-      useService.create(settingParameter, map);
-    }
+    useService.createAll(settingParameter, dataMapList);
   }
 
   @Override

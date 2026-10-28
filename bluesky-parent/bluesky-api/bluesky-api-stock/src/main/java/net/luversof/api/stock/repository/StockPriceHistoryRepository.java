@@ -322,6 +322,10 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
   /**
    * 원주가를 (다시) 받을 시세 날짜(종가 자리에는 수정 종가): 아직 빈 날 + recentFrom 이후의 날. 최근 날은 채워져 있어도 다시 받는다 - 장중에 시세를
    * 갱신하면 그 날 원주가가 장중 가격으로 들어가는데, 수정 종가는 다음 갱신 때 확정 종가로 덮여도 원주가는 "빈 날만" 채우면 그대로 남는다(2026-10-02).
+   *
+   * <p>recentFrom 이후에 종가가 다시 저장된 날(updatedDate)도 받는다 - 다음 갱신이 7 일 넘게 늦으면 수정 종가만 확정되고 원주가는 장중 값으로 굳어
+   * 그날 평가 배율이 틀렸다(2026-10-27 감사). 종가는 새 날 · 바뀐 값 · 장중 행 확정 때만 다시 저장되고, 원주가 저장은 updatedDate 를 바꾸지
+   * 않는다.
    */
   @Query(
       """
@@ -330,7 +334,9 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                            h."closePrice"    AS close_price
                     FROM "StockPriceHistory" h
                     WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
-                      AND (h."rawClosePrice" IS NULL OR h."tradeDate" >= CAST(:recentFrom AS date))
+                      AND (h."rawClosePrice" IS NULL
+                           OR h."tradeDate" >= CAST(:recentFrom AS date)
+                           OR h."updatedDate" >= CAST(:recentFrom AS date))
                       AND h."volume" > 0
                 """)
   List<StockDailyClosePrice> findRawCloseDaysToFill(

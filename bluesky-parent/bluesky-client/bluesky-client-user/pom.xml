@@ -46,5 +46,13 @@
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-client-common</artifactId>
 		</dependency>
+
+		<!-- (s) test -->
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- (e) test -->
 	</dependencies>
 </project>

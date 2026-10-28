@@ -48,6 +48,7 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.util.StockAmountUtil;
+import net.luversof.web.gate.stock.util.StockRangePresetUtil;
 import net.luversof.web.gate.stock.util.StockSortUtil;
 
 @Controller
@@ -640,9 +641,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       LocalDate thisYearFirst = startLocal.withDayOfYear(1);
       return new PreviousPeriod(thisYearFirst.minusYears(1), thisYearFirst.minusDays(1));
     }
-    if (rangeMode != null && rangeMode.matches("\\d+") && Integer.parseInt(rangeMode) > 0) {
+    Integer months = StockRangePresetUtil.relativeMonths(rangeMode);
+    if (months != null) {
       // 상대 N개월 프리셋(1/3/6/12/36개월). 전기 = 현재 시작 직전의 동일 N개월(달력 정렬).
-      int months = Integer.parseInt(rangeMode);
       return new PreviousPeriod(startLocal.minusMonths(months), startLocal.minusDays(1));
     }
     // 그 외(수동 지정 등 달력 정렬 불가)는 직전 동일 길이 구간으로 비교

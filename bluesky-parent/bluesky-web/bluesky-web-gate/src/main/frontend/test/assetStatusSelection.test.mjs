@@ -109,3 +109,42 @@ test("종목 선택 합계: 평가손익률은 매수금액으로 나눈다(평�
 	// 비중: 2,200 / 4,400
 	assert.equal(written["data-selection-weight"], "50.0%");
 });
+
+test("종목 선택 합계: 실현손익 · 누적 배당 · 합산 손익은 행 값을 더한다(2026-10-27)", () => {
+	const written = runStock(
+		[
+			{
+				buyAmount: "1000",
+				evaluationAmount: "1500",
+				evaluationProfit: "500",
+				realizedProfit: "-200",
+				dividendTotal: "120",
+				combinedProfit: "420",
+			},
+			{
+				buyAmount: "1000",
+				evaluationAmount: "700",
+				evaluationProfit: "-300",
+				realizedProfit: "50",
+				dividendTotal: "30",
+				combinedProfit: "-220",
+			},
+		],
+		{ totalEvaluationAmount: "4400", countTemplate: "{0}" },
+	);
+
+	assert.equal(written["data-selection-realized-profit"], "-150");
+	assert.equal(written["data-selection-dividend-total"], "150");
+	assert.equal(written["data-selection-combined-profit"], "+200");
+});
+
+test("종목 선택 합계: 판 적도 배당도 없으면 0 에 부호를 붙이지 않는다", () => {
+	const written = runStock(
+		[{ buyAmount: "1000", evaluationAmount: "1000", evaluationProfit: "0" }],
+		{ totalEvaluationAmount: "1000", countTemplate: "{0}" },
+	);
+
+	assert.equal(written["data-selection-realized-profit"], "0");
+	assert.equal(written["data-selection-dividend-total"], "0");
+	assert.equal(written["data-selection-combined-profit"], "0");
+});

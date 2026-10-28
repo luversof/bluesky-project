@@ -30,6 +30,7 @@ const SCRIPT_CREATED = new Map([
 	["data-scenario-id", "stockSimulator.ts 가 시나리오 버튼을 만들며 붙인다"],
 	["poeTreeEvalStale", "poe/tree.ts 가 만드는 표식"],
 	["data-row-select-checkbox", "common.ts 가 선택 가능한 행(data-row-select)의 첫 칸에 만들어 넣는 체크박스"],
+	["data-row-select-all", "common.ts 가 그 행들이 있는 표의 머리 줄 첫 칸에 만들어 넣는 전체 선택 체크박스"],
 	["data-page-section-nav", "common.ts 가 만드는 화면 안 구역 막대(구역 표식은 data-page-section)"],
 	["data-craft-calc-stale-note", "common.ts 가 계산기 조건이 바뀌면 결과 위에 붙이는 안내(10-23 Q32)"],
 	["data-craft-calc-stale", "common.ts 가 결과 상자에 붙이는 흐림 표식(10-23 Q32)"],

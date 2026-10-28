@@ -261,13 +261,28 @@ public abstract class AbstractDbUseService implements UseService {
           }
         });
 
-    List<Object> resultList = new ArrayList<Object>();
-    dataMapList.forEach(
-        map -> {
-          Object result = jdbcTemplateUpdate(dbQuery, queryString, dbFieldList, map);
-          resultList.add(result);
+    // 여러 건을 한 트랜잭션으로 - 건마다 따로 커밋하면 중간 한 건이 실패할 때 앞 건만 지워진 채 오류가 났다(2026-10-28 감사).
+    // 라우팅 키를 트랜잭션 시작 전에 정해야 그 DB 의 연결로 시작한다(시작 시점에 연결을 잡는다).
+    RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
+    return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+        () -> {
+          List<Object> resultList = new ArrayList<Object>();
+          dataMapList.forEach(
+              map -> resultList.add(jdbcTemplateUpdate(dbQuery, queryString, dbFieldList, map)));
+          return resultList;
         });
-    return resultList;
+  }
+
+  /** 일괄 등록을 한 트랜잭션으로 - 50 번째 행이 제약에 걸리면 1~49 번째도 되돌린다(예전엔 남아서 재시도 때 두 번 들어갔다, 2026-10-28 감사). */
+  @Override
+  public void createAll(SettingParameter settingParameter, List<Map<String, String>> dataMapList) {
+    var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.INSERT);
+    RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
+    dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+        () -> {
+          dataMapList.forEach(dataMap -> create(settingParameter, dataMap));
+          return null;
+        });
   }
 
   /**

@@ -74,13 +74,17 @@ class PeriodReturnCalculatorTest {
     assertThat(PeriodReturnCalculator.compute(prices, List.of(), TODAY, 12)).isNull();
   }
 
-  /** 기초일 당일의 분배금은 이미 기초 가격에 반영돼 있다 - 두 번 세면 안 된다. */
+  /**
+   * 배당락일(기준일 하루 전 평일)이 기초일인 분배금은 이미 기초 가격에 반영돼 있다 - 두 번 세면 안 된다.
+   *
+   * <p>기초일 금요일 8/21 · 기준일 월요일 8/24 면 배당락일이 8/21 이라 기초 가격이 이미 떨어져 있다(예전엔 기준일로 세어 더했다).
+   */
   @Test
-  void 기초일_당일_분배금은_세지_않는다() {
+  void 배당락일이_기초일인_분배금은_세지_않는다() {
     List<StockDailyClosePrice> prices =
         List.of(price("2026-08-21", "10000"), price("2026-09-21", "10000"));
-    List<PayoutPoint> sameDay = List.of(payout("2026-08-21", "500"));
-    List<PayoutPoint> nextDay = List.of(payout("2026-08-22", "500"));
+    List<PayoutPoint> sameDay = List.of(payout("2026-08-24", "500"));
+    List<PayoutPoint> nextDay = List.of(payout("2026-08-25", "500"));
 
     assertThat(PeriodReturnCalculator.compute(prices, sameDay, TODAY, 1).totalReturnPct())
         .isEqualByComparingTo("0.00");
@@ -92,11 +96,24 @@ class PeriodReturnCalculatorTest {
   void 기말_뒤의_분배금도_세지_않는다() {
     List<StockDailyClosePrice> prices =
         List.of(price("2026-08-21", "10000"), price("2026-09-18", "10000"));
-    // 마지막 종가(9/18) 뒤의 기준일 - 아직 가격에 반영되지 않았다.
-    List<PayoutPoint> later = List.of(payout("2026-09-20", "500"));
+    // 마지막 종가(9/18 금) 뒤의 배당락일(기준일 9/22 화 -> 9/21 월) - 아직 가격에 반영되지 않았다.
+    List<PayoutPoint> later = List.of(payout("2026-09-22", "500"));
+    // 기준일 9/21 월이면 배당락일이 9/18 금 = 기말이라 기말 가격에 이미 떨어져 있다 - 세야 한다.
+    List<PayoutPoint> exOnLast = List.of(payout("2026-09-21", "500"));
 
     assertThat(PeriodReturnCalculator.compute(prices, later, TODAY, 1).totalReturnPct())
         .isEqualByComparingTo("0.00");
+    assertThat(PeriodReturnCalculator.compute(prices, exOnLast, TODAY, 1).totalReturnPct())
+        .isEqualByComparingTo("5.00");
+  }
+
+  @Test
+  void 배당락일은_기준일_하루_전_평일이다() {
+    assertThat(PeriodReturnCalculator.exDividendDate(LocalDate.of(2026, 10, 20)))
+        .isEqualTo(LocalDate.of(2026, 10, 19));
+    assertThat(PeriodReturnCalculator.exDividendDate(LocalDate.of(2026, 10, 19)))
+        .as("월요일 기준일은 금요일")
+        .isEqualTo(LocalDate.of(2026, 10, 16));
   }
 
   @Test

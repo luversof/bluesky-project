@@ -208,35 +208,11 @@
 				} else { monthSums[0] = monthSums[0].add(chartAmount); }
 			}
 		}
-		// tradeList.jte 의 tradeDataJs 패턴: JS 배열 문자열을 만들어 $unsafe 로 심는다. 문구는 ChartSeriesJs.jsString 으로 감싼다(< 까지 막는다).
-		StringBuilder chartLabelSb = new StringBuilder();
-		StringBuilder chartDividendSb = new StringBuilder();
-		StringBuilder chartRealizedSb = new StringBuilder();
-		for (java.util.Map.Entry<java.time.YearMonth, BigDecimal[]> chartMonthEntry : monthlyChartAmounts.entrySet()) {
-			if (chartLabelSb.length() > 0) { chartLabelSb.append(","); chartDividendSb.append(","); chartRealizedSb.append(","); }
-			chartLabelSb.append("\"").append(chartMonthEntry.getKey().getYear()).append(".").append(String.format("%02d", chartMonthEntry.getKey().getMonthValue())).append("\"");
-			chartDividendSb.append(chartMonthEntry.getValue()[0].toPlainString());
-			chartRealizedSb.append(chartMonthEntry.getValue()[1].toPlainString());
-		}
-		String activityChartDataJs = "var activityChartLabels=[" + chartLabelSb + "];"
-			+ "var activityChartDividend=[" + chartDividendSb + "];"
-			+ "var activityChartRealized=[" + chartRealizedSb + "];"
+		// 빈 달도 칸을 두고 60 개월이 넘으면 해 단위(매매 화면 월별 막대와 같은 규칙, 2026-10-27) - ActivityChartBuckets.
+		String activityChartDataJs = net.luversof.web.gate.stock.util.ActivityChartBuckets.js(monthlyChartAmounts)
 			+ "var activityChartSeriesLabels=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(java.util.Arrays.asList(dividendLabel, realizedProfitLabel)) + ";";
 	}
 
-	<%-- 차트는 활동이 있는 달만 막대로 그린다. 즉 X축이 시간캕이 아니라 빈 달이 통째로 사라진다.
-		 실측(전체 기간): 2009-10~2026-08 203개월 중 132개월(65%)이 빠지고, 2010-03 막대 바로 옆에
-		 2014-11 막대가 붙는다(실제는 55개월 공백). 막대를 203개로 채우면 읽힐 수 없게 되므로,
-		 압축은 그대로 두고 생략된 달 수를 밝힌다. --%>
-	!{
-		long chartSkippedMonths = 0;
-		if (!activityMonths.isEmpty()) {
-			java.time.YearMonth chartFirstMonth = activityMonths.get(0);
-			java.time.YearMonth chartLastMonth = activityMonths.get(activityMonths.size() - 1);
-			long chartSpanMonths = java.time.temporal.ChronoUnit.MONTHS.between(chartFirstMonth, chartLastMonth) + 1;
-			chartSkippedMonths = chartSpanMonths - activityMonths.size();
-		}
-	}
 	@if(!activityMonths.isEmpty())
 		<div class="rounded-2xl bg-base-100 p-3 shadow-sm mb-4">
 			<%-- 성격이 다른 둘을 각자 축으로 그린다. 배당은 매달 꾸준하고 작고, 실현손익은 판 달에만
@@ -250,11 +226,6 @@
 			<div class="relative w-full" style="height:150px">
 				<canvas id="activityRealizedChart" role="img" aria-label="${realizedProfitLabel}" class="amount-chart"></canvas>
 			</div>
-			@if(chartSkippedMonths > 0)
-				<p class="mt-2 text-[11px] text-base-content/60" data-chart-skipped-months="${chartSkippedMonths}">
-					${StockViewSupport.msg("stock.activity.chart.skipped.months", chartSkippedMonths)}
-				</p>
-			@endif
 		</div>
 	@endif
 
@@ -274,7 +245,8 @@
 			<div class="space-y-3">
 				<%-- 기간이 길면 캘린더가 세로로 매우 길어지므로 최신 월만 펼치고 나머지는 접는다 --%>
 				!{java.time.YearMonth latestActivityMonth = activityMonths.get(activityMonths.size() - 1);}
-				@for(java.time.YearMonth activityMonth : activityMonths)
+				<%-- 최신 달부터(타임라인과 같은 차례, 2026-10-28). 오래된 달부터면 전체 기간에 카드 73 개 아래 끝에 펼친 이번 달이 있었다. --%>
+				@for(java.time.YearMonth activityMonth : activityMonths.reversed())
 					!{
 						String ymKey = activityMonth.toString();
 						java.time.LocalDate monthFirstDay = activityMonth.atDay(1);

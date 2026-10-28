@@ -26,7 +26,7 @@ class FakeElement {
 	hasAttribute(name) { return name in this.attrs; }
 	appendChild(child) { this.children.push(child); child.parent = this; return child; }
 	insertBefore(child, before) { this.children.unshift(child); child.parent = this; return child; }
-	matches(selector) { return selector.replace(/[[\]]/g, "") in this.attrs; }
+	matches(selector) { return selector.startsWith("[") ? selector.replace(/[[\]]/g, "") in this.attrs : this.tagName === selector.toUpperCase(); }
 	closest(selector) { let node = this; while (node) { if (node.matches && node.matches(selector)) return node; node = node.parent; } return null; }
 	querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
 	querySelectorAll(selector) {
@@ -212,4 +212,120 @@ test("행 머리 이름에는 '선택' 이 붙지 않는다", () => {
 	const name = tr.querySelector("th").getAttribute("aria-label");
 	assert.equal(name, "KB증권 위탁");
 	assert.ok(!name.includes("선택"), "행 머리 이름에 체크박스 문구가 섞였다");
+});
+
+// 머리 줄의 전체 선택(2026-10-27 사용자 요청 - 선택이 있는 표 모두에 한꺼번에).
+function selectionTable({ rows = 3, selected = [], headRows = [["종목"]], template = "{0} 선택" } = {}) {
+	const table = new FakeElement("table");
+	const thead = table.appendChild(new FakeElement("thead"));
+	for (const cells of headRows) {
+		const tr = thead.appendChild(new FakeElement("tr"));
+		for (const cell of cells) {
+			const th = tr.appendChild(new FakeElement("th"));
+			if (typeof cell === "object") {
+				th.setAttribute("colspan", String(cell.colspan));
+				th.textContent = cell.text;
+			} else {
+				th.textContent = cell;
+			}
+		}
+	}
+	const tbody = table.appendChild(new FakeElement("tbody"));
+	const list = [];
+	for (let i = 0; i < rows; i++) {
+		const tr = row({ template, label: "종목" + i, selected: selected.includes(i) });
+		tbody.appendChild(tr);
+		list.push(tr);
+	}
+	return { table, rows: list };
+}
+
+test("전체 선택: 머리 줄 첫 칸 맨 앞에 이름 있는 체크박스를 붙인다", () => {
+	document.documentElement.lang = "ko";
+	const { table } = selectionTable();
+	assert.equal(mod.ensureSelectAllCheckbox(table), true);
+	const box = table.querySelector("[data-row-select-all]");
+	assert.ok(box, "전체 선택 체크박스가 없다");
+	assert.equal(box.getAttribute("aria-label"), "전체 선택");
+	assert.equal(table.querySelector("thead").querySelector("th").firstChild.className, "row-select-box");
+	assert.equal(mod.ensureSelectAllCheckbox(table), false, "두 번 붙였다");
+	assert.equal(table.querySelectorAll("[data-row-select-all]").length, 1);
+});
+
+test("전체 선택: 영어 화면은 Select all", () => {
+	document.documentElement.lang = "en";
+	const { table } = selectionTable({ template: "Select {0}" });
+	mod.ensureSelectAllCheckbox(table);
+	assert.equal(table.querySelector("[data-row-select-all]").getAttribute("aria-label"), "Select all");
+	document.documentElement.lang = "ko";
+});
+
+test("전체 선택: 켜면 안 고른 행만 클릭하고, 숨긴 행은 건드리지 않는다", () => {
+	const { table, rows } = selectionTable({ rows: 4, selected: [1] });
+	rows[3].hidden = true;
+	mod.ensureSelectAllCheckbox(table);
+	const box = table.querySelector("[data-row-select-all]");
+	box.checked = true;
+	mod.applySelectAll(box);
+	assert.deepEqual(rows.map((r) => r.clicked), [1, 0, 1, 0]);
+	assert.deepEqual(rows.slice(0, 3).map((r) => r.getAttribute("aria-selected")), ["true", "true", "true"]);
+	assert.equal(rows[3].getAttribute("aria-selected"), "false", "숨긴 행을 골랐다");
+	assert.equal(box.checked, true);
+	assert.equal(box.indeterminate, false);
+});
+
+test("전체 선택: 끄면 고른 행을 모두 푼다", () => {
+	const { table, rows } = selectionTable({ rows: 3, selected: [0, 1, 2] });
+	mod.ensureSelectAllCheckbox(table);
+	const box = table.querySelector("[data-row-select-all]");
+	assert.equal(box.checked, true, "모두 고른 표인데 체크가 안 됐다");
+	box.checked = false;
+	mod.applySelectAll(box);
+	assert.deepEqual(rows.map((r) => r.getAttribute("aria-selected")), ["false", "false", "false"]);
+	assert.equal(box.checked, false);
+});
+
+test("전체 선택: 일부만 고르면 '일부' 로 보인다", () => {
+	const { table } = selectionTable({ rows: 3, selected: [2] });
+	mod.ensureSelectAllCheckbox(table);
+	const box = table.querySelector("[data-row-select-all]");
+	assert.equal(box.checked, false);
+	assert.equal(box.indeterminate, true);
+});
+
+test("전체 선택: 행 코드가 거부한 행이 있으면 '일부' 로 되맞춘다", () => {
+	const { table, rows } = selectionTable({ rows: 2 });
+	rows[1].onclick = () => {}; // 이 행은 선택을 받지 않는다
+	mod.ensureSelectAllCheckbox(table);
+	const box = table.querySelector("[data-row-select-all]");
+	box.checked = true;
+	mod.applySelectAll(box);
+	assert.equal(box.checked, false);
+	assert.equal(box.indeterminate, true);
+});
+
+test("전체 선택: 첫 머리 줄이 묶음 머리(colspan)면 아래 줄 첫 칸에 붙인다", () => {
+	const { table } = selectionTable({ headRows: [[{ colspan: 3, text: "기준 데이터" }], ["종목", "가격"]] });
+	mod.ensureSelectAllCheckbox(table);
+	const headRows = table.querySelector("thead").querySelectorAll("tr");
+	assert.equal(headRows[0].querySelectorAll("[data-row-select-all]").length, 0);
+	assert.equal(headRows[1].querySelectorAll("[data-row-select-all]").length, 1);
+});
+
+test("전체 선택: 머리 줄이 없는 표는 건너뛴다", () => {
+	const table = new FakeElement("table");
+	const tbody = table.appendChild(new FakeElement("tbody"));
+	tbody.appendChild(row());
+	assert.equal(mod.ensureSelectAllCheckbox(table), false);
+	assert.equal(table.querySelectorAll("[data-row-select-all]").length, 0);
+});
+
+test("전체 선택: 문서를 훑어 표마다 하나씩 붙인다", () => {
+	const root = new FakeElement("div");
+	const a = selectionTable();
+	const b = selectionTable({ rows: 2 });
+	root.appendChild(a.table);
+	root.appendChild(b.table);
+	assert.equal(mod.markSelectAllCheckboxes(root), 2);
+	assert.equal(mod.markSelectAllCheckboxes(root), 0, "다시 훑으면 붙이지 않는다");
 });

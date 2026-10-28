@@ -132,6 +132,7 @@
 		data-stock-chart-title-buy-concentration="${MessageUtil.getMessage("stock.trade.chart.title.buy.concentration")}"
 		data-stock-chart-message-no-sell-data="${MessageUtil.getMessage("stock.trade.chart.message.no.sell.data")}"
 		data-stock-chart-message-no-buy-data="${MessageUtil.getMessage("stock.trade.chart.message.no.buy.data")}"
+		data-stock-chart-label-others="${MessageUtil.getMessage("stock.dividend.chart.others.basis")}"
 		data-stock-chart-message-no-trade-data="${MessageUtil.getMessage("stock.trade.chart.message.no.trade.data")}"></div>
 
 	<%-- 본문 바로가기. 없으면 키보드 사용자가 화면마다 상단 메뉴를 전부 지나야 한다

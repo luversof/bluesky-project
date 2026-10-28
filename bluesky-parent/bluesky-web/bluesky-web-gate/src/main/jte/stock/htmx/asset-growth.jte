@@ -300,6 +300,14 @@
 					troughValue = troughValue,
 					troughValueDate = troughValueDate
 				)
+				<%-- 세로 눈금 전환(2026-10-28 12차 자율). 전체 기간이면 앞 10 여 년(그래프 폭 60%)이 0 근처에 깔려 안 읽혔다 - 로그 눈금은 같은 비율을 같은 높이로 그린다. 고른 값은 이 브라우저에만 기억한다. --%>
+				<div class="flex items-center justify-end gap-2 text-xs text-base-content/70 mb-1" role="group" aria-label="${MessageUtil.getMessage("stock.asset.growth.chart.scale")}" title="${MessageUtil.getMessage("stock.asset.growth.chart.scale.log.hint")}" data-asset-scale-group>
+					<span aria-hidden="true">${MessageUtil.getMessage("stock.asset.growth.chart.scale")}</span>
+					<div class="join">
+						<button type="button" class="btn btn-xs join-item btn-primary" aria-pressed="true" data-asset-scale="linear">${MessageUtil.getMessage("stock.asset.growth.chart.scale.linear")}</button>
+						<button type="button" class="btn btn-xs join-item btn-ghost" aria-pressed="false" data-asset-scale="logarithmic">${MessageUtil.getMessage("stock.asset.growth.chart.scale.log")}</button>
+					</div>
+				</div>
 				<div class="w-full relative" style="height: 450px;">
 					<canvas id="assetGrowthChart" role="img" aria-label="${MessageUtil.getMessage("stock.page.asset.growth.title")}" class="amount-chart"></canvas>
 				</div>

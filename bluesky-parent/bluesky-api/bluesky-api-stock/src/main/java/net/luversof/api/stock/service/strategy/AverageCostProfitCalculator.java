@@ -84,7 +84,8 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
       Instant tradeDate = trade.getTradeDate();
       boolean inPeriod = true;
       if (start != null && tradeDate.isBefore(start)) inPeriod = false;
-      if (end != null && tradeDate.isAfter(end)) inPeriod = false;
+      // end 는 다음 날 0 시(배타) - 배당 SQL(< :endDate) · TradeProfitService 와 같은 규칙(2026-10-27 감사).
+      if (end != null && !tradeDate.isBefore(end)) inPeriod = false;
 
       BigDecimal fee = nz(trade.getFee());
       BigDecimal tax = nz(trade.getTax());

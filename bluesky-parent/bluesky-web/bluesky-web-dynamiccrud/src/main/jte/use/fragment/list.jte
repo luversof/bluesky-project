@@ -10,6 +10,7 @@
 @import com.fasterxml.jackson.databind.ObjectMapper
 @import net.luversof.web.dynamiccrud.setting.util.SecurityUtil
 @import net.luversof.web.dynamiccrud.setting.domain.SubMenuDbType
+@import net.luversof.web.dynamiccrud.setting.domain.DbFieldColumnType
 
 @param Page<?> page
 @param ContentInfo contentInfo
@@ -28,6 +29,8 @@
                         try {
                                 pageContentJson = jacksonObjectMapper.writeValueAsString(page.getContent());
                         } catch (Exception e) {}
+                        // DB 값에 '</script>' 가 있으면 이 블록을 깨고 빠져나왔다(2026-10-28 감사) - JSON 안의 '<' 는 같은 뜻의 유니코드 이스케이프로
+                        pageContentJson = pageContentJson.replace("<", "\\u003c");
                 }$unsafe{pageContentJson};
                 /*]]>*/
         </script>
@@ -145,7 +148,13 @@
                                         </td>
                                         @for(ContentKeyInfo contentKeyInfo : contentInfo.getContentKeyInfoList())
                                                 @if(contentKeyInfo.visible())
+                                                @if(contentKeyInfo.type() == DbFieldColumnType.SPEL)
+                                                <%-- 화면용 SpEL 은 설정한 사람이 HTML(링크 등)을 만들 수 있게 그대로 낸다(예전 Thymeleaf utext 와 같음) --%>
                                                 <td>$unsafe{String.valueOf(content.get(contentKeyInfo.key()))}</td>
+                                                @else
+                                                <%-- DB 값은 글자로만 - 예전엔 게시판 글 같은 방문자 입력이 관리 화면에서 스크립트로 돌았다(2026-10-28 감사) --%>
+                                                <td>${String.valueOf(content.get(contentKeyInfo.key()))}</td>
+                                                @endif
                                                 @endif
                                         @endfor
                                         

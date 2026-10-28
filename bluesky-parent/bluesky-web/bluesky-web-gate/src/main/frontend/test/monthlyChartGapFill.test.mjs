@@ -21,7 +21,7 @@ globalThis.document = globalThis.document ?? {
 
 await import("../../resources/static/js/stock-charts.js");
 
-const { fillMonthGaps, buildMonthlyData } = globalThis.window.__monthlyChartInternals;
+const { fillMonthGaps, buildMonthlyData, realizedPanelTick } = globalThis.window.__monthlyChartInternals;
 
 test("사이에 낀 달을 빠짐없이 채운다", () => {
 	assert.deepEqual(fillMonthGaps(["2026-01", "2026-04"]), [
@@ -119,4 +119,14 @@ test("해 단위에서도 안 판 해의 실현손익은 null 이다", () => {
 	assert.equal(m.bucket, "year");
 	assert.equal(m.profitData[0], null);
 	assert.equal(m.profitData[10], 7);
+});
+
+// 2026-10-27: 아래 칸(실현손익) 꼭대기 눈금이 위 칸 바닥에 서서 위 칸이 "2억" 에서 시작하는 것처럼 읽혔다.
+test("아래 칸 꼭대기 눈금은 다른 양수 눈금이 남을 때만 비운다", () => {
+	const ticks = [-1e8, 0, 1e8, 2e8].map((value) => ({ value }));
+	assert.equal(realizedPanelTick(2e8, 3, ticks), "");
+	assert.notEqual(realizedPanelTick(1e8, 2, ticks), "");
+	assert.notEqual(realizedPanelTick(0, 1, ticks), "");
+	const onlyTopPositive = [-1e8, 0, 1e8].map((value) => ({ value }));
+	assert.notEqual(realizedPanelTick(1e8, 2, onlyTopPositive), "", "양수 배율을 통째로 잃으면 안 된다");
 });

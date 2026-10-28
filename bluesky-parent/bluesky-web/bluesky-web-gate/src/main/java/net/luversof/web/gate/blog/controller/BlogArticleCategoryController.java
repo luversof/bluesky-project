@@ -65,7 +65,7 @@ public class BlogArticleCategoryController {
   }
 
   private void checkUserBlog(BlogArticleCategory blogArticleCategory) {
-    var userBlogList = blogClient.findByUserId(UserUtil.getUserId().toString());
+    var userBlogList = blogClient.findByUserId(UserUtil.requireUserId().toString());
     if (userBlogList.stream()
         .noneMatch(blog -> blog.blogId().equals(blogArticleCategory.blogId()))) {
       throw new BlueskyException("NOT_USER_BLOG");

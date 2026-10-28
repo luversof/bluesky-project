@@ -331,7 +331,8 @@
 		<div>
 			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.price.chart.title")}</h2>
 			<div class="bg-base-100 rounded-box border border-base-200 p-4">
-				<div class="h-64"><canvas id="stockPriceChart" role="img" aria-label="${MessageUtil.getMessage("stock.item.detail.price.chart.title")}" class="amount-chart"></canvas></div>
+				<%-- 넓은 화면에서 256px 고정이면 1615 x 256(6:1)에 월봉 80 개가 납작했다(2026-10-27) - 폭 따라 키운다. --%>
+				<div class="h-64 md:h-80 xl:h-96"><canvas id="stockPriceChart" role="img" aria-label="${MessageUtil.getMessage("stock.item.detail.price.chart.title")}" class="amount-chart"></canvas></div>
 			</div>
 			@if(priceChart != null && !priceChart.isEmpty())
 			<%-- 캔들 + 그 시점 평균 단가(사용자 요청 2026-10-02). 점선은 그 날 보유분의 평단이라 보유가 없던 기간에는 끊긴다 -
