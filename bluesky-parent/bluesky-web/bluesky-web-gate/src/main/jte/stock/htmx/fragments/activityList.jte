@@ -675,7 +675,8 @@
 						}
 					},
 					scales: {
-						x: { grid: { color: gridColor }, ticks: { font: { size: 10 } } },
+						<%-- 눕히지 않고 건너뛴다 - 휴대폰 폭(400px)에서 50 도로 눕혀 축이 39px, 그림이 102px 였다(2026-10-28). --%>
+						x: { grid: { color: gridColor }, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true } },
 						y: { grid: { color: gridColor }, ticks: { font: { size: 10 }, callback: formatSignedCompact } }
 					}
 				}

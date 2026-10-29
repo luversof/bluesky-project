@@ -24,6 +24,8 @@
 @param String totalItemsCountText
 @param LocalDate prevStartDate
 @param LocalDate prevEndDate
+@param LocalDate prevToDateEndDate = null
+@param BigDecimal prevToDateNetAmount = null
 @param int currentPeriodElapsedDays = 0
 @param int currentPeriodTotalDays = 0
 @param List<DividendChange> dividendChangeContributors
@@ -150,6 +152,11 @@
 					<span class="text-xs amount-value ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">${diffZero ? "" : (diffPositive ? "+" : "-")}₩${decimalFormat.format(diffAmount.abs())}</span>
 				</div>
 				<div class="text-xs text-base-content/60">${previousPeriodLabel} <span class="amount-value">₩${decimalFormat.format(safePrevNet)}</span></div>
+				<%-- 전기는 완전한 전월 · 전년 그대로 두고, 그중 오늘과 같은 날까지의 값과 그 대비 증감도 함께(사용자 결정 2026-10-29). --%>
+				@if(prevToDateNetAmount != null && prevToDateEndDate != null)
+				!{BigDecimal prevToDatePct = net.luversof.web.gate.stock.util.StockAmountUtil.percentOrNull(safeAllNet.subtract(prevToDateNetAmount), prevToDateNetAmount, 1);}
+				<div class="text-xs text-base-content/60" data-dividend-previous-to-date>${MessageUtil.getMessage("stock.compare.previous.to.date")} (~ <span class="whitespace-nowrap date-whole">${prevToDateEndDate.toString()}</span>) <span class="amount-value">₩${decimalFormat.format(prevToDateNetAmount)}</span>@if(prevToDatePct != null) <span class="${prevToDatePct.signum() == 0 ? "" : (prevToDatePct.signum() > 0 ? "text-profit" : "text-loss")}">(${StockFormatUtil.signedPct(prevToDatePct.doubleValue(), 1)})</span>@endif</div>
+				@endif
 				<%-- 이번 달/올해는 아직 끝나지 않았는데 전기는 완전한 전월/전년이라, 증감률이 실제 추세와
 					 반대로 읽힌다. 비교가 불공평하다는 사실만 밝힌다(수치는 그대로 둔다). --%>
 				@if(currentPeriodElapsedDays > 0 && currentPeriodTotalDays > currentPeriodElapsedDays)

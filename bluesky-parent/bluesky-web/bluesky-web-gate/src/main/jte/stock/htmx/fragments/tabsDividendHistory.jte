@@ -49,6 +49,9 @@
 @param BigDecimal prevPeriodNetAmount = null
 @param LocalDate prevStartDate = null
 @param LocalDate prevEndDate = null
+<%-- 이번 달 · 올해면 전기 중 오늘과 같은 날까지의 세후 배당(사용자 결정 2026-10-29). --%>
+@param LocalDate prevToDateEndDate = null
+@param BigDecimal prevToDateNetAmount = null
 <%-- 달력 프리셋(이번 달 · 올해)이 아직 진행 중이면 [경과일, 총일수] - 전기 비교 카드에 "비교 기간 진행 중" 을 붙인다.
      컨트롤러는 넣고 있었는데 이 조각이 받지 않아 카드까지 오지 않았다(2026-10-21). --%>
 @param int currentPeriodElapsedDays = 0
@@ -248,6 +251,8 @@
 		totalItemsCountText = totalItemsCountText,
 		prevStartDate = prevStartDate,
 		prevEndDate = prevEndDate,
+		prevToDateEndDate = prevToDateEndDate,
+		prevToDateNetAmount = prevToDateNetAmount,
 		dividendChangeContributors = dividendChangeContributors,
 		taxLabel = taxLabel,
 		taxableAmountLabel = taxableAmountLabel,

@@ -252,3 +252,18 @@ test("표현 범위를 넘으면 NaN 을 내보내지 않고 거기서 멈춘다
 	// 지속 연수를 입력값(100)으로 두면 "100년 버틴다"고 잘못 말하게 된다.
 	assert.strictEqual(result.summary.sustainableYears, 89);
 });
+
+// 2026-10-28: 그래프 세로 점선 사건. 같은 해는 한 줄, 없거나 0 인 해는 빠진다, 해 순서.
+test("그래프 사건은 해 순서로, 같은 해는 묶는다", () => {
+	const names = { deficit: "적자", drawdown: "원금 훼손", decline: "총자산 감소", depleted: "소진" };
+	assert.deepEqual(
+		mod.chartMilestones({ firstDeficitYear: 14, firstShareSaleYear: 14, firstWealthDeclineYear: 29, depletionYear: 42 }, names),
+		[
+			{ year: 14, text: "적자 · 원금 훼손" },
+			{ year: 29, text: "총자산 감소" },
+			{ year: 42, text: "소진" },
+		],
+	);
+	assert.deepEqual(mod.chartMilestones({ firstDeficitYear: null, depletionYear: 0 }, names), []);
+	assert.deepEqual(mod.chartMilestones(null, names), []);
+});

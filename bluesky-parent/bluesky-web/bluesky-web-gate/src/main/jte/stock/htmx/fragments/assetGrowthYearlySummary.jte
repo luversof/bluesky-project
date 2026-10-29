@@ -32,13 +32,14 @@
 			</div>
 			<div class="overflow-x-auto">
 				<table class="table table-zebra table-sm whitespace-nowrap" aria-label="${title}">
+					<%-- 열은 계산 흐름대로 원금 변동 · 손익 · 기말 평가액(= 전년 기말 + 원금 변동 + 손익) · 투자 수익률(2026-10-28 - 예전엔 수익률 · 손익 · 원금 변동 · 기말). --%>
 					<thead>
 						<tr>
 							<th scope="col">${yearLabel}</th>
-							<th scope="col" class="text-right">${twrLabel}</th>
-							<th scope="col" class="text-right">${profitLabel}</th>
 							<th scope="col" class="text-right">${principalLabel}</th>
+							<th scope="col" class="text-right">${profitLabel}</th>
 							<th scope="col" class="text-right">${closingLabel}</th>
+							<th scope="col" class="text-right">${twrLabel}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -77,10 +78,10 @@
 									@endif
 								</th>
 								<td class="text-right tabular-nums">
-									@if(twr != null)
-										<span class="font-semibold ${twrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(twr, 2)}</span>
+									@if(principal != null && principal.signum() != 0)
+										<span class="amount-value text-base-content/60">${principal.signum() == 0 ? "" : (principalUp ? "+" : "-")}₩${amountFormat.format(principal.abs())}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${principalNoneTitle}">-</span><span class="sr-only">${principalNoneTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
@@ -91,15 +92,15 @@
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
-									@if(principal != null && principal.signum() != 0)
-										<span class="amount-value text-base-content/60">${principal.signum() == 0 ? "" : (principalUp ? "+" : "-")}₩${amountFormat.format(principal.abs())}</span>
+									@if(closing != null)
+										<span class="amount-value text-base-content/70">₩${amountFormat.format(closing)}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${principalNoneTitle}">-</span><span class="sr-only">${principalNoneTitle}</span>
+										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
-									@if(closing != null)
-										<span class="amount-value text-base-content/70">₩${amountFormat.format(closing)}</span>
+									@if(twr != null)
+										<span class="font-semibold ${twrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(twr, 2)}</span>
 									@else
 										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
 									@endif
@@ -123,23 +124,23 @@
 							<tr class="border-t-2 border-base-content/20 font-semibold" data-yearly-total>
 								<th scope="row">${totalLabel}</th>
 								<td class="text-right tabular-nums">
-									@if(totals.chainedReturnPct() != null)
-										<span class="${totalTwrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
-									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
-									@endif
-								</td>
-								<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totals.profit().signum() == 0 ? "" : (totalProfitUp ? "+" : "-")}₩${amountFormat.format(totals.profit().abs())}</span></td>
-								<td class="text-right tabular-nums">
 									@if(totals.principalDelta().signum() != 0)
 										<span class="amount-value text-base-content/60">${totals.principalDelta().signum() == 0 ? "" : (totalPrincipalUp ? "+" : "-")}₩${amountFormat.format(totals.principalDelta().abs())}</span>
 									@else
 										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
+								<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totals.profit().signum() == 0 ? "" : (totalProfitUp ? "+" : "-")}₩${amountFormat.format(totals.profit().abs())}</span></td>
 								<td class="text-right tabular-nums">
 									@if(latestClosing != null)
 										<span class="amount-value text-base-content/70">₩${amountFormat.format(latestClosing)}</span>
+									@else
+										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
+									@endif
+								</td>
+								<td class="text-right tabular-nums">
+									@if(totals.chainedReturnPct() != null)
+										<span class="${totalTwrUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
 									@else
 										<span class="text-base-content/60" aria-hidden="true" title="${noValueTitle}">-</span><span class="sr-only">${noValueTitle}</span>
 									@endif

@@ -285,4 +285,96 @@ class AccountDetailCardRatesTest {
         .contains(squash("StockHoldingReturnUtil.Row accountReturn"))
         .contains(squash("@param LocalDate accountFirstTradeDate"));
   }
+
+  /** 보유 종목 표: 평균 단가 옆에 현재가(없으면 "-"), 비중 칸에 자산 현황과 같은 막대(2026-10-28 12차 자율). */
+  @Test
+  void 보유_종목_표에_현재가와_비중_막대가_있다() {
+    Map<String, Object> model = pension();
+    model.put(
+        "holdings",
+        List.of(
+            new net.luversof.web.gate.stock.domain.TradeProfit(
+                UUID.randomUUID(),
+                "가",
+                UUID.randomUUID(),
+                "연금저축1",
+                null,
+                new BigDecimal("1000"),
+                0,
+                null,
+                null,
+                BigDecimal.ZERO,
+                10,
+                new BigDecimal("1250"),
+                new BigDecimal("12500"),
+                new BigDecimal("2500"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null),
+            new net.luversof.web.gate.stock.domain.TradeProfit(
+                UUID.randomUUID(),
+                "나",
+                UUID.randomUUID(),
+                "연금저축1",
+                null,
+                new BigDecimal("1000"),
+                0,
+                null,
+                null,
+                BigDecimal.ZERO,
+                1,
+                null,
+                new BigDecimal("1122.29"),
+                BigDecimal.ZERO,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null)));
+    model.put("evaluationAmount", new BigDecimal("13622.29"));
+
+    String html = render(model);
+
+    assertThat(html)
+        .contains("data-account-holding-current-price>1,250<")
+        .contains("data-account-holding-current-price>-<");
+    assertThat(html).contains("color-mix(in oklab, var(--color-primary) 16%, transparent) 91.8%");
+  }
+
+  /**
+   * 합산 손익 상자(사용자 결정 2026-10-29 "1. a"): 평가 변동 + 실현(카드와 같은 기록값) + 배당. 요약이 없으면(조회 실패) 평가 몫 0 으로 서되
+   * 비율은 없다.
+   */
+  @Test
+  void 합산_손익_상자는_평가_변동과_기록_실현과_배당을_더한다() {
+    Map<String, Object> model = pension();
+    model.put("periodUnrealizedDelta", new BigDecimal("-1925676"));
+    model.put("periodProfitRatePct", -0.71);
+    model.put("periodCapitalBase", new BigDecimal("46000000"));
+
+    String html = render(model);
+
+    assertThat(html).contains("data-combined-profit-box");
+    // -1,925,676 + 415,053 + 1,183,752 = -326,871
+    assertThat(html).contains("-326,871").contains("-0.71%");
+    assertThat(html.indexOf("data-combined-profit-box"))
+        .as("상자는 카드 줄 위")
+        .isLessThan(html.indexOf("stat-card-grid"));
+  }
 }

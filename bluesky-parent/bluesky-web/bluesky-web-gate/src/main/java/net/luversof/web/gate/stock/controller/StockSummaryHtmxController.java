@@ -160,6 +160,16 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         "endDate", periodTo.plusDays(1).atStartOfDay(periodZone).toInstant().toString());
     var periodSummaryFuture =
         supplyRemote(() -> periodSummaryClient.findPeriodSummary(periodParams));
+    // 작년 같은 기간(1/1 ~ 작년 오늘) - 올해 숫자만으로는 많은지 적은지 알 수 없었다(2026-10-28 12차 자율). 같은 호출을 나란히 던진다.
+    LocalDate previousFrom = periodFrom.minusYears(1);
+    LocalDate previousTo = periodTo.minusYears(1);
+    var previousParams = new org.springframework.util.LinkedMultiValueMap<String, String>();
+    previousParams.add("userId", userId.toString());
+    previousParams.add("startDate", previousFrom.atStartOfDay(periodZone).toInstant().toString());
+    previousParams.add(
+        "endDate", previousTo.plusDays(1).atStartOfDay(periodZone).toInstant().toString());
+    var previousPeriodSummaryFuture =
+        supplyRemote(() -> periodSummaryClient.findPeriodSummary(previousParams));
     // 올해 줄의 배당 카드에 금융소득 종합과세 기준 대비 비율(2026-10-20) - 올해 줄처럼 계좌 필터와 무관한 사용자 전체 값.
     // 조회가 실패하면 null 이라 그 말만 빠진다. 과세 연도는 한국 세법의 해라 존을 박는다.
     java.time.ZoneId taxZone = java.time.ZoneId.of("Asia/Seoul");
@@ -360,6 +370,12 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       model.addAttribute("periodSummary", joinRemote(periodSummaryFuture));
       model.addAttribute("periodSummaryFrom", periodFrom);
       model.addAttribute("periodSummaryTo", periodTo);
+      try {
+        model.addAttribute("previousPeriodSummary", joinRemote(previousPeriodSummaryFuture));
+      } catch (RuntimeException e) {
+        // 비교 줄만 빠진다.
+        log.warn("previous period summary lookup failed: userId={}", userId, e);
+      }
       model.addAttribute(
           "financialIncome",
           financialIncomeFuture == null ? null : joinRemote(financialIncomeFuture));
@@ -731,7 +747,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             .max(java.time.LocalDate::compareTo)
             .orElse(null));
     // 다음 분배금 매수 마감(2026-10-20) - 월배당 ETF 화면 머리와 같은 계산. 거래소 날짜라 존을 박는다.
-    java.time.LocalDate marketToday = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+    java.time.LocalDateTime marketToday =
+        java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Seoul"));
     model.addAttribute(
         "upcomingBuyBy",
         net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyByAllWindows(marketToday));

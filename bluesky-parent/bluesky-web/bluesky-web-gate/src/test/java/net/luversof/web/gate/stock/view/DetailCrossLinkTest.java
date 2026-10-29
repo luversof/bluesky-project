@@ -112,6 +112,10 @@ class DetailCrossLinkTest {
         .as("이 방향 링크만 없어서 종목에서 계좌로 가려면 뒤로 가야 했다")
         .contains("/stock/account?accountId=" + accountId)
         .contains("표본계좌");
+    assertThat(output.toString())
+        .as("계좌마다 다른 평균 단가 열 · 비중 막대(2026-10-28 12차 자율)")
+        .contains("data-item-account-average-cost>")
+        .contains("color-mix(in oklab, var(--color-primary) 16%, transparent) 100.0%");
   }
 
   @Test

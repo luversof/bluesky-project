@@ -61,8 +61,8 @@ class SignedCompactKrwTest {
             Path.of("src/main/jte/stock/htmx/fragments/summary.jte"), StandardCharsets.UTF_8);
 
     assertThat(countOf(summary, "signedCompactKrw("))
-        .as("평가손익 · 실현손익(전체) · 기간 실현손익 · 합산손익(값+낭독 두 번)")
-        .isEqualTo(5);
+        .as("평가손익 · 실현손익(전체) · 기간 실현손익 · 합산손익(값+낭독 두 번) · 작년 같은 기간 실현손익(2026-10-28)")
+        .isEqualTo(6);
     assertThat(summary)
         .as("누적 배당은 방향이 없는 값이다")
         .contains("value = StockFormatUtil.compactKrw(totalDividend.longValue())");

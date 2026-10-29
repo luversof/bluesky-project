@@ -46,9 +46,9 @@
 					<thead>
 						<tr>
 							<th scope="col">${periodLabel}</th>
-							<th scope="col" class="text-right">${profitLabel}</th>
 							<th scope="col" class="text-right">${unrealizedDeltaLabel}</th>
 							<th scope="col" class="text-right">${realizedDividendLabel}</th>
+							<th scope="col" class="text-right">${profitLabel}</th>
 							<th scope="col" class="text-right">${returnLabel}</th>
 						</tr>
 					</thead>
@@ -57,6 +57,7 @@
 							!{
 								var s = row.summary();
 								BigDecimal profit = s != null && s.periodProfit() != null ? s.periodProfit() : BigDecimal.ZERO;
+								// 열은 계산 흐름대로 평가 변동 · 실현+배당 · 손익(둘의 합) 순(2026-10-28 - 예전엔 손익이 맨 앞이었다).
 								// 손익 = 평가손익 변동 + (실현 + 배당). 위의 '합산 손익' 카드와 같은 쪼갬이라
 								// 두 자리가 같은 뜻을 말한다. 실현·배당은 따로 오지 않으므로 잔차로 구한다.
 								BigDecimal unrealizedStart = s != null && s.unrealizedStart() != null ? s.unrealizedStart() : BigDecimal.ZERO;
@@ -79,9 +80,6 @@
 										</div>
 									@endif
 								</th>
-								<td class="text-right tabular-nums">
-									<span class="amount-value font-semibold ${profitUp ? "text-profit" : "text-loss"}">${profit.signum() == 0 ? "" : (profitUp ? "+" : "-")}&#8361;${amountFormat.format(profit.abs())}</span>
-								</td>
 								<td class="text-right tabular-nums" aria-label="${unrealizedDelta.signum() == 0 ? zeroAmountTitle : null}">
 									@if(unrealizedDelta.signum() != 0)
 										<span class="amount-value ${deltaUp ? "text-profit" : "text-loss"}">${unrealizedDelta.signum() == 0 ? "" : (deltaUp ? "+" : "-")}&#8361;${amountFormat.format(unrealizedDelta.abs())}</span>
@@ -95,6 +93,9 @@
 									@else
 										<span class="text-base-content/60" title="${zeroAmountTitle}">-</span>
 									@endif
+								</td>
+								<td class="text-right tabular-nums">
+									<span class="amount-value font-semibold ${profitUp ? "text-profit" : "text-loss"}">${profit.signum() == 0 ? "" : (profitUp ? "+" : "-")}&#8361;${amountFormat.format(profit.abs())}</span>
 								</td>
 								<td class="text-right tabular-nums" aria-label="${rate == null ? rateNoneTitle : null}">
 									@if(rate != null)
@@ -118,9 +119,9 @@
 					<tfoot>
 						<tr class="border-t-2 border-base-content/20 font-semibold" data-period-breakdown-total>
 							<th scope="row">${totalLabel}</th>
-							<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totals.profit().signum() == 0 ? "" : (totalProfitUp ? "+" : "-")}&#8361;${amountFormat.format(totals.profit().abs())}</span></td>
 							<td class="text-right tabular-nums"><span class="amount-value ${totalDeltaUp ? "text-profit" : "text-loss"}">${totals.unrealizedDelta().signum() == 0 ? "" : (totalDeltaUp ? "+" : "-")}&#8361;${amountFormat.format(totals.unrealizedDelta().abs())}</span></td>
 							<td class="text-right tabular-nums"><span class="amount-value ${totalIncomeUp ? "text-profit" : "text-loss"}">${totals.realizedAndDividend().signum() == 0 ? "" : (totalIncomeUp ? "+" : "-")}&#8361;${amountFormat.format(totals.realizedAndDividend().abs())}</span></td>
+							<td class="text-right tabular-nums"><span class="amount-value ${totalProfitUp ? "text-profit" : "text-loss"}">${totals.profit().signum() == 0 ? "" : (totalProfitUp ? "+" : "-")}&#8361;${amountFormat.format(totals.profit().abs())}</span></td>
 							<td class="text-right tabular-nums" aria-label="${totals.chainedReturnPct() == null ? rateNoneTitle : null}">
 								@if(totals.chainedReturnPct() != null)
 									<span class="${totalRateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>

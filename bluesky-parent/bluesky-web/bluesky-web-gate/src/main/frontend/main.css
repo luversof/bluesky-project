@@ -905,6 +905,8 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	   (실측 2026-09-10 qa/print-new-parts.cjs: 막대 3화면, 체크박스 배당 14·매매 8·자산현황 14개). */
 	[data-page-section-nav],
 	.row-select-box,
+	/* 그래프 세로 눈금 단추(일반 | 로그, 2026-10-28)도 종이에서는 누를 수 없다 - 그래프는 고른 눈금 그대로 찍힌다. */
+	[data-chart-scale-for],
 	#app-toast,
 	#app-progress {
 		display: none !important;

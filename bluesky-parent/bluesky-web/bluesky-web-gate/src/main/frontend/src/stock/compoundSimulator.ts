@@ -504,7 +504,13 @@ function formatPercent(value: number, scale = 1): string {
 					y: {
 						stacked: true,
 						ticks: {
-							callback: (value: number) => currencyFormatter.format(value),
+							// 다른 그래프처럼 압축 표기("7,000만") - 원 단위 전체("70,000,000")는 이 그래프만이었다(2026-10-28). 공용 포맷터가 아직 없으면 전체 표기.
+							callback: (value: number) => {
+								const charts = (window as any).StockCharts;
+								return charts && charts.formatCompactNumber
+									? charts.formatCompactNumber(value)
+									: currencyFormatter.format(value);
+							},
 						},
 					},
 				},

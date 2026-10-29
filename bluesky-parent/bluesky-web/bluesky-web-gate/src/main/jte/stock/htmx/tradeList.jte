@@ -46,6 +46,12 @@
 @param List<TradeProfit> stockRealizedList = java.util.List.of()
 @param long realizedWinCount = 0L
 @param int realizedStockCount = 0
+<%-- 전기 실현 손익(2026-10-28) - 실현 손익 카드 아래 줄. 전체 기간이거나 조회 실패면 없다. --%>
+@param BigDecimal previousRealizedProfit = null
+@param java.time.LocalDate previousStartDate = null
+@param java.time.LocalDate previousEndDate = null
+@param BigDecimal previousToDateRealizedProfit = null
+@param java.time.LocalDate previousToDateEndDate = null
 
 !{
 	DecimalFormat decimalFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
@@ -152,6 +158,11 @@
 		totalAllFee = totalAllFee,
 		totalAllTax = totalAllTax,
 		totalAllRealizedProfit = totalAllRealizedProfit,
+		previousRealizedProfit = previousRealizedProfit,
+		previousStartDate = previousStartDate,
+		previousEndDate = previousEndDate,
+		previousToDateRealizedProfit = previousToDateRealizedProfit,
+		previousToDateEndDate = previousToDateEndDate,
 		decimalFormat = decimalFormat,
 		countMessage = countMessage,
 		buyLabel = buyLabel,

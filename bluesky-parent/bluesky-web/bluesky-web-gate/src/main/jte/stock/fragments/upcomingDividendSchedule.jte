@@ -83,6 +83,7 @@
 					@for(DividendCalendarView.Entry entry : schedule.overdue())
 						<li class="flex items-center justify-between gap-2">
 							<span class="truncate" title="${entry.name()}">${entry.name()}</span>
+							<span class="hidden sm:block min-w-4 flex-1 self-center border-b border-dotted border-base-content/20" aria-hidden="true" data-calendar-entry-leader></span>
 							<span class="shrink-0 font-mono"><span class="text-base-content/60">${StockViewSupport.msg("stock.dividend.upcoming.overdue.day", String.valueOf(entry.payDay()))}</span> <span class="text-base-content/60">${latestLabel}</span> <span class="text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span> <span class="text-base-content/60">· ${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span></span>
 						</li>
 					@endfor
@@ -97,6 +98,7 @@
 					@for(DividendCalendarView.Entry entry : schedule.undated())
 						<li class="flex items-center justify-between gap-2">
 							<span class="truncate" title="${entry.name()}">${entry.name()}</span>
+							<span class="hidden sm:block min-w-4 flex-1 self-center border-b border-dotted border-base-content/20" aria-hidden="true" data-calendar-entry-leader></span>
 							<span class="shrink-0 font-mono"><span class="text-base-content/60">${latestLabel}</span> <span class="text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span> <span class="text-base-content/60">· ${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span></span>
 						</li>
 					@endfor

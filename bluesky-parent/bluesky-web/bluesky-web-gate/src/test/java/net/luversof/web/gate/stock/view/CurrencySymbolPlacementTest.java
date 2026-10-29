@@ -30,7 +30,11 @@ class CurrencySymbolPlacementTest {
       for (Path file : files.filter(p -> p.toString().endsWith(".jte")).toList()) {
         String[] lines = Files.readString(file, StandardCharsets.UTF_8).split("\n");
         for (int i = 0; i < lines.length; i++) {
-          if (lines[i].contains("₩ ${") || lines[i].contains("₩ \" +")) {
+          // 엔티티(&#8361;)로 적은 곳도 본다 - 2026-10-28 까지 매매 요약 카드 7 곳이 "&#8361; ${" 로 띄어 이 검사를 빠져나갔다.
+          if (lines[i].contains("₩ ${")
+              || lines[i].contains("₩ \" +")
+              || lines[i].contains("&#8361; ${")
+              || lines[i].contains("&#8361; \" +")) {
             hits.add(file.getFileName() + ":" + (i + 1));
           }
         }

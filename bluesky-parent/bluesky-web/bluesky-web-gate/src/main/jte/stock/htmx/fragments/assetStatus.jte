@@ -290,7 +290,7 @@
 								(${StockFormatUtil.signedPct(rate, 1)})
 							</div>
 						</td>
-						<td class="text-right font-mono text-base-content/70">${StockFormatUtil.pct(accountWeightPct.doubleValue(), 1)}</td>
+						<td class="text-right font-mono text-base-content/70" style="${StockFormatUtil.weightBarStyle(accountWeightPct)}">${StockFormatUtil.pct(accountWeightPct.doubleValue(), 1)}</td>
 					</tr>
 					@if(!holdings.isEmpty())
 						<tr id="${detailRowId}" class="hidden bg-base-200/40" data-account-detail-row>
@@ -649,7 +649,8 @@
 									<div class="text-xs font-normal ${holdingReturn.shortTerm() ? "text-base-content/60" : "text-base-content/70"}" data-annualized-return data-short-term="${String.valueOf(holdingReturn.shortTerm())}" title="${annualizedNote}"><span class="sr-only">${annualizedNameLabel} </span>${annualizedText}<span class="sr-only">, ${annualizedNote}</span></div>
 								@endif
 								</td>
-								<td class="text-right font-mono text-base-content/70">${stockWeightLabelById.getOrDefault(item.stockItemId(), StockFormatUtil.pct(totalWeightPct.doubleValue(), 1))}</td>
+								<%-- 비중 막대(2026-10-28): 숫자만으로는 82% 와 5% 의 차이를 읽어야 했다. 글자는 그대로, 배경만. --%>
+								<td class="text-right font-mono text-base-content/70" style="${StockFormatUtil.weightBarStyle(totalWeightPct)}">${stockWeightLabelById.getOrDefault(item.stockItemId(), StockFormatUtil.pct(totalWeightPct.doubleValue(), 1))}</td>
 							</tr>
 							<%-- 이 종목을 가진 계좌들. 계좌 표의 보유 종목 상세와 같은 계좌 x 종목 행이라, 종이에는 계좌 표 쪽만 펼쳐 찍는다(같은 내용이 두 번 찍히지 않게). --%>
 							@if(!holdingAccounts.isEmpty())

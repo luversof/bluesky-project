@@ -272,6 +272,20 @@ public final class StockFormatUtil {
   }
 
   /**
+   * 비중 칸의 옅은 막대(오른쪽부터 그 비율만큼) - 숫자만 늘어선 비중 열은 크기 차이를 읽어야 했다(자산 현황, 2026-10-28). 글자는 그대로 두고 배경만 칠한다.
+   * 0 ~ 100 밖은 잘라 낸다.
+   */
+  public static String weightBarStyle(java.math.BigDecimal pct) {
+    double value = pct == null ? 0.0 : Math.max(0.0, Math.min(100.0, pct.doubleValue()));
+    String at = String.format(java.util.Locale.ROOT, "%.1f%%", value);
+    return "background:linear-gradient(to left, color-mix(in oklab, var(--color-primary) 16%, transparent) "
+        + at
+        + ", transparent "
+        + at
+        + ")";
+  }
+
+  /**
    * {@link #pct} 의 부호 표기판. 영에는 부호를 붙이지 않는다.
    *
    * <p>영 판정은 반올림 뒤에 한다 - -0.04 는 "-0.0%" 도 "+0.0%" 도 아니고 "0.0%" 다.

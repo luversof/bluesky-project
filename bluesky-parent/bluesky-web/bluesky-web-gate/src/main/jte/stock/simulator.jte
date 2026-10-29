@@ -438,8 +438,8 @@
 									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year.end.price")}</th>
 									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.annual.dividend")}</th>
 									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.annual.spending")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}</th>
 										<th scope="col">${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.simulator.metric.spending.coverage")}</th>
 										<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.annual.sold.shares")}</th>
 										<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.annual.reinvested.shares")}</th>
 										<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year.end.shares")}</th>

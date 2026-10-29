@@ -165,6 +165,9 @@ class DividendCalendarLayoutTest {
     assertThat(html).as("이름은 이름 자리에 있다").contains("data-calendar-entry-name=\"삼성전자\"");
     // 코드를 모르는 항목도 셀렉터로는 잡혀야 한다(빈 값으로 남는다).
     assertThat(html).as("코드를 몰라도 항목 자리는 남는다").contains("data-calendar-entry=\"\"");
+    assertThat(html)
+        .as("이름과 금액 사이 점선 길잡이(넓은 화면, 읽기 프로그램에는 숨김) - 2026-10-28")
+        .contains("aria-hidden=\"true\" data-calendar-entry-leader");
   }
 
   /** 칸에는 그 날 합계 하나만. 종목명과 종목별 금액은 칸에 없다. */

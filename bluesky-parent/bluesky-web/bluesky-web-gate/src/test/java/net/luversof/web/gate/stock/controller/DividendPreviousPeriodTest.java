@@ -79,7 +79,69 @@ class DividendPreviousPeriodTest {
 
     assertThat(source)
         .as("원본 startDate/endDate 를 넘기면 역순 교정과 프리셋 기본 기간이 전기에 반영되지 않는다")
-        .contains("resolvePreviousPeriod(startInstant, endInstant, rangeMode, earlyZone)")
+        .contains(
+            "resolvePreviousPeriod(startInstant, inclusiveEnd(endInstant), rangeMode, earlyZone)")
         .doesNotContain("resolvePreviousPeriod(startDate, endDate");
+  }
+
+  /**
+   * 목록 기간의 끝은 배타(다음 날 0 시)다 - inclusiveEnd 를 거치면 직접 지정 1/1 ~ 1/31 의 전기는 같은 31 일(검토 지적 2026-10-28:
+   * 32 일이었다).
+   */
+  @Test
+  void 배타_끝을_포함_날짜로_바꿔_같은_길이의_전기를_준다() {
+    var previous =
+        StockDividendHtmxController.resolvePreviousPeriod(
+            kst("2026-01-01"),
+            StockDividendHtmxController.inclusiveEnd(kst("2026-02-01")),
+            null,
+            KST);
+
+    assertThat(previous.start()).isEqualTo(LocalDate.parse("2025-12-01"));
+    assertThat(previous.end()).isEqualTo(LocalDate.parse("2025-12-31"));
+    assertThat(StockDividendHtmxController.inclusiveEnd(null)).isNull();
+  }
+
+  /** 이번 달 · 올해: 전기(완전한 전월 · 전년)는 그대로, 그중 오늘과 같은 날까지를 따로 낸다(사용자 결정 2026-10-29). */
+  @Test
+  void 올해와_이번_달은_전기_중_같은_날까지를_낸다() {
+    var ytdPrevious =
+        new StockDividendHtmxController.PreviousPeriod(
+            LocalDate.parse("2025-01-01"), LocalDate.parse("2025-12-31"));
+    var ytd =
+        StockDividendHtmxController.resolvePreviousToDate(
+            ytdPrevious, kst("2026-10-30"), "ytd", KST);
+    assertThat(ytd.start()).isEqualTo(LocalDate.parse("2025-01-01"));
+    assertThat(ytd.end()).as("오늘 10-29 의 작년 같은 날").isEqualTo(LocalDate.parse("2025-10-29"));
+
+    var mtdPrevious =
+        new StockDividendHtmxController.PreviousPeriod(
+            LocalDate.parse("2026-09-01"), LocalDate.parse("2026-09-30"));
+    assertThat(
+            StockDividendHtmxController.resolvePreviousToDate(
+                    mtdPrevious, kst("2026-10-30"), "mtd", KST)
+                .end())
+        .isEqualTo(LocalDate.parse("2026-09-29"));
+    assertThat(
+            StockDividendHtmxController.resolvePreviousToDate(
+                mtdPrevious, kst("2026-10-31"), "mtd", KST))
+        .as("10-30 이면 9 월은 이미 다 지났다 - 같은 길이라 줄이 필요 없다")
+        .isNull();
+    var febPrevious =
+        new StockDividendHtmxController.PreviousPeriod(
+            LocalDate.parse("2027-02-01"), LocalDate.parse("2027-02-28"));
+    assertThat(
+            StockDividendHtmxController.resolvePreviousToDate(
+                    febPrevious, kst("2027-03-28"), "mtd", KST)
+                .end())
+        .isEqualTo(LocalDate.parse("2027-02-27"));
+    assertThat(
+            StockDividendHtmxController.resolvePreviousToDate(
+                ytdPrevious, kst("2026-10-30"), "1y", KST))
+        .as("달력 프리셋이 아니면 없다")
+        .isNull();
+    assertThat(
+            StockDividendHtmxController.resolvePreviousToDate(null, kst("2026-10-30"), "ytd", KST))
+        .isNull();
   }
 }

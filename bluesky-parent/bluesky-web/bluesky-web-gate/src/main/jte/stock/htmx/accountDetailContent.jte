@@ -54,6 +54,12 @@
 @param String dataFirstDate = ""
 <%-- 지금 기간 모드. 빈 안내에 '전체 기간으로 보기' 를 띄울지 정한다. --%>
 @param String rangeMode = ""
+<%-- 합산 손익 상자 · 기간별 손익 표 - 종목 상세와 같은 입력(api-stock timeSeriesWithSummary 요약 · 쪼갬, 사용자 결정 2026-10-29). --%>
+@param BigDecimal periodUnrealizedDelta = null
+@param Double periodProfitRatePct = null
+@param BigDecimal periodCapitalBase = null
+@param List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
+@param String periodBreakdownNote = ""
 
 !{
 	// 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
@@ -147,6 +153,8 @@
 	@if(account != null && account.jsonConfig() != null && Boolean.TRUE.equals(account.jsonConfig().get("feeRecordsUnavailable")))
 		<p class="mb-2 text-xs text-warning">${MessageUtil.getMessage("stock.account.detail.fee.records.unavailable")}</p>
 	@endif
+	<%-- 실현 몫은 카드 금액과 같은 기록값(계좌 합산 원가)이다 - 이 계좌 기준과의 차이는 실현 카드의 '이 계좌 기준' 줄이 따로 말한다. --%>
+	@template.stock.fragments.combinedProfitBox(periodUnrealizedDelta = periodUnrealizedDelta, realizedProfit = realizedProfit, totalDividend = totalDividend, periodProfitRatePct = periodProfitRatePct, periodCapitalBase = periodCapitalBase)
 	<%-- 보유/손익 요약 --%>
 	<%-- 기간 매수·실현 손익·기간 배당은 고른 기간의 값이고, 평가 금액·평가 손익·보유 종목 수는 지금 보유분이다.
 	     라벨이 축을 말해야 나란히 놓인 값끼리 검산이 된다 - 종목 상세와 같은 이유(실측 2026-09-11). --%>
@@ -228,6 +236,7 @@
 		<div>
 			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
 			<div class="bg-base-100 rounded-box border border-base-200 p-4">
+				@template.stock.htmx.fragments.components.chartScaleToggle(canvasId = "accountDetailChart")
 				<div class="h-64"><canvas id="accountDetailChart" role="img" aria-label="${MessageUtil.getMessage("stock.item.detail.chart.title")}" class="amount-chart"></canvas></div>
 			</div>
 			<p class="text-xs text-base-content/60 mt-1">${MessageUtil.getMessage("stock.account.detail.chart.click.hint")}</p>
@@ -285,6 +294,9 @@
 		</div>
 	@endif
 
+	<%-- 기간별 손익 - 위 합산 손익을 달(또는 해)로 쪼갠다(종목 상세와 같은 조각). --%>
+	@template.stock.htmx.fragments.periodBreakdownTable(periodBreakdown = periodBreakdown, periodBreakdownNote = periodBreakdownNote)
+
 	<%-- 보유 종목 --%>
 	<div>
 		<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.account.detail.holdings.title")}</h2>
@@ -299,6 +311,8 @@
 							<th scope="col">${MessageUtil.getMessage("stock.account.detail.col.stock")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("common.label.quantity")}</th>
 							<th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.column.average.cost")}</th>
+							<%-- 평가 금액 = 수량 x 현재가 - 현재가가 없으면 평균 단가와 견줄 값을 나눗셈으로 구해야 했다(2026-10-28 12차 자율). --%>
+							<th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.column.current.price")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.evaluation.amount")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analytics.account.holdings.weight")}</th>
@@ -314,9 +328,10 @@
 								<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.item(holding.stockItemId() != null ? holding.stockItemId().toString() : "")}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
 								<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
+								<td class="text-right font-mono amount-value hidden sm:table-cell" data-account-holding-current-price>${holding.currentPrice() != null ? String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice())) : "-"}</td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
 								<td class="text-right font-mono amount-value ${evalProfit >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(evalProfit)} <span class="text-xs">(${StockFormatUtil.signedPct(holdingEvalRatePct, 1)})</span></td>
-									<td class="text-right font-mono text-base-content/70">${StockFormatUtil.pct(holdingWeightPct, 1)}</td>
+								<td class="text-right font-mono text-base-content/70" style="${StockFormatUtil.weightBarStyle(BigDecimal.valueOf(holdingWeightPct))}">${StockFormatUtil.pct(holdingWeightPct, 1)}</td>
 							</tr>
 						@endfor
 					</tbody>

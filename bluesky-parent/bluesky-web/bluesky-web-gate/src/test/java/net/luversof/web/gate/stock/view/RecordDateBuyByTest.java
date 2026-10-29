@@ -215,4 +215,28 @@ class RecordDateBuyByTest {
             KrxRecordDateUtil.nextBuyBy(today, "MID_MONTH"),
             KrxRecordDateUtil.nextBuyBy(today, "MONTH_END"));
   }
+
+  /**
+   * 마감일 당일 18:00(시간외 단일가 끝) 이 지나면 그 기준일은 놓친 것 - 다음 달 것을 보인다(2026-10-28 12차 자율: 18:34 에 "오늘 마감").
+   */
+  @Test
+  void 마감일_18시가_지나면_다음_달_기준일을_보인다() {
+    RecordDateBuyByView before =
+        KrxRecordDateUtil.nextBuyByAllWindows(java.time.LocalDateTime.parse("2026-10-28T17:59"))
+            .stream()
+            .filter(view -> "MONTH_END".equals(view.payoutWindow()))
+            .findFirst()
+            .orElseThrow();
+    RecordDateBuyByView after =
+        KrxRecordDateUtil.nextBuyByAllWindows(java.time.LocalDateTime.parse("2026-10-28T18:00"))
+            .stream()
+            .filter(view -> "MONTH_END".equals(view.payoutWindow()))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(before.buyByDate()).isEqualTo(LocalDate.parse("2026-10-28"));
+    assertThat(before.daysLeft()).isZero();
+    assertThat(after.recordDate()).isEqualTo(LocalDate.parse("2026-11-30"));
+    assertThat(after.buyByDate()).isAfter(LocalDate.parse("2026-10-28"));
+  }
 }

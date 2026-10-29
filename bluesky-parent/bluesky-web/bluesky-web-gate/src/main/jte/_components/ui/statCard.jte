@@ -8,6 +8,8 @@
 @param String subBefore = ""
 @param String subAmount = ""
 @param String subAfter = ""
+<%-- 금액 줄만 다른 색(2026-10-28) - 대시보드 실현 손익 카드의 "작년 같은 기간" 이 올해 부호의 색을 받아 손실도 이익 색이었다. 비우면 카드 색. --%>
+@param String subAmountTone = ""
 <%-- 보조줄 끝에 날짜가 붙을 때 쓴다 - 날짜만 한 덩어리로 묶어 "2025-09-/18" 처럼 하이픈에서 갈리지 않게(사용자 요청 2026-09-30
      "날짜 줄바꿈도 날짜만 묶어서"). sub 뒤에 subDate · subDateAfter 가 이어 붙는다. --%>
 @param String subDate = ""
@@ -52,7 +54,7 @@
 	<div class="stat-card-sub ${subClass}">${sub}@if(subDate != null && !subDate.isEmpty())<span class="whitespace-nowrap date-whole">${subDate}</span>${subDateAfter}@endif</div>
 	@endif
 	@if(subAmount != null && !subAmount.isEmpty())
-	<div class="stat-card-sub ${subClass}">${subBefore}<span class="amount-value">${subAmount}</span>${subAfter}</div>
+	<div class="stat-card-sub ${subAmountTone != null && !subAmountTone.isEmpty() ? subAmountTone : subClass}">${subBefore}<span class="amount-value">${subAmount}</span>${subAfter}</div>
 	@endif
 	@if(href != null)
 	<a href="${href}" class="stat-card-cover"><span class="sr-only">${label}${scopeNote != null && !scopeNote.isEmpty() ? " " + scopeNote : ""}</span></a>

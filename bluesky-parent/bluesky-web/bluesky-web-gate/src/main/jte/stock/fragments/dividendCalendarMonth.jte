@@ -124,6 +124,7 @@
 				@for(DividendCalendarView.Entry entry : calendar.undated())
 					<li class="flex items-center justify-between gap-2">
 						<span class="truncate" title="${entry.name()}">${entry.name()}</span>
+						<span class="hidden sm:block min-w-4 flex-1 self-center border-b border-dotted border-base-content/20" aria-hidden="true" data-calendar-entry-leader></span>
 						<span class="shrink-0 font-mono text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span>
 					</li>
 				@endfor
@@ -141,6 +142,7 @@
 				@for(DividendCalendarView.Missing item : calendar.missing())
 					<li class="flex items-center justify-between gap-2">
 						<span class="truncate" title="${item.name()}">${item.name()}</span>
+						<span class="hidden sm:block min-w-4 flex-1 self-center border-b border-dotted border-base-content/20" aria-hidden="true" data-calendar-entry-leader></span>
 						<span class="shrink-0 font-mono text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(item.amount()))}</span>
 					</li>
 				@endfor

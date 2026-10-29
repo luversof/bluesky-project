@@ -39,7 +39,32 @@ class SummaryFinancialIncomeTest {
   }
 
   private static String render(FinancialIncomeThresholdView financialIncome) {
+    return render(financialIncome, null);
+  }
+
+  private static String render(
+      FinancialIncomeThresholdView financialIncome, PeriodSummary previousPeriodSummary) {
+    return render(financialIncome, previousPeriodSummary, BigDecimal.ZERO);
+  }
+
+  private static String render(
+      FinancialIncomeThresholdView financialIncome,
+      PeriodSummary previousPeriodSummary,
+      BigDecimal realizedThisYear) {
+    BigDecimal z = BigDecimal.ZERO;
+    return render(
+        financialIncome,
+        previousPeriodSummary,
+        new PeriodSummary(
+            z, z, z, z, realizedThisYear, 0, 0, z, z, z, z, new BigDecimal("12000000"), 40));
+  }
+
+  private static String render(
+      FinancialIncomeThresholdView financialIncome,
+      PeriodSummary previousPeriodSummary,
+      PeriodSummary periodSummary) {
     Map<String, Object> params = new HashMap<>();
+    params.put("previousPeriodSummary", previousPeriodSummary);
     params.put("totalAsset", new BigDecimal("1500000000"));
     params.put("totalUnrealizedProfit", new BigDecimal("900000000"));
     params.put("totalRealizedProfit", new BigDecimal("200000000"));
@@ -50,10 +75,7 @@ class SummaryFinancialIncomeTest {
     params.put("combinedAdjustmentAmount", BigDecimal.ZERO);
     params.put("holdingFeeAdjustment", BigDecimal.ZERO);
     params.put("manualPrincipalAdjustment", BigDecimal.ZERO);
-    BigDecimal z = BigDecimal.ZERO;
-    params.put(
-        "periodSummary",
-        new PeriodSummary(z, z, z, z, z, 0, 0, z, z, z, z, new BigDecimal("12000000"), 40));
+    params.put("periodSummary", periodSummary);
     params.put("periodSummaryFrom", LocalDate.parse("2026-01-01"));
     params.put("periodSummaryTo", LocalDate.parse("2026-10-20"));
     params.put("financialIncome", financialIncome);
@@ -84,5 +106,75 @@ class SummaryFinancialIncomeTest {
 
     assertThat(render(view)).contains(expected);
     assertThat(render(null)).as("조회 실패면 그 말만 빠진다").doesNotContain(expected);
+  }
+
+  /** 작년 같은 기간(2026-10-28): 실현 손익 · 받은 배당 카드 둘째 줄. 배당은 증감률도. 없으면(null) 그 줄이 없다. */
+  @Test
+  void 작년_같은_기간을_실현_손익과_배당_카드에_붙인다() {
+    BigDecimal z = BigDecimal.ZERO;
+    PeriodSummary previous =
+        new PeriodSummary(
+            z,
+            z,
+            z,
+            z,
+            new BigDecimal("-3000000"),
+            0,
+            0,
+            z,
+            z,
+            z,
+            z,
+            new BigDecimal("10000000"),
+            30);
+    String html = render(null, previous);
+
+    assertThat(html)
+        .contains("stat-card-sub text-loss\">")
+        .contains("<span class=\"amount-value\">-300만</span>")
+        .contains("<span class=\"amount-value\">1,000만</span> (+20.0%)");
+    assertThat(render(null, null)).doesNotContain("-300만").doesNotContain("(+20.0%)");
+  }
+
+  /** 작년 줄 색은 작년 부호를 따른다 - 올해가 손실이어도 작년 이익은 이익 색(검토 지적 2026-10-28: 카드 색을 물려받아 손실 색이었다). */
+  @Test
+  void 작년_실현_손익_색은_작년_부호를_따른다() {
+    BigDecimal z = BigDecimal.ZERO;
+    PeriodSummary previousGain =
+        new PeriodSummary(z, z, z, z, new BigDecimal("4570000"), 0, 0, z, z, z, z, z, 0);
+    String html = render(null, previousGain, new BigDecimal("-1000000"));
+
+    assertThat(html)
+        .contains("stat-card-sub text-profit\">작년 같은 기간 <span class=\"amount-value\">+457만</span>");
+  }
+
+  /** 거래 비용 카드: 매매(매수+매도) 금액 대비 비율을 보조 줄에, 수수료 · 세금 나눔은 툴팁에(2026-10-28 12차 자율). 매매가 없으면 비율은 빠진다. */
+  @Test
+  void 거래_비용_카드에_매매_금액_대비_비율을_붙인다() {
+    BigDecimal z = BigDecimal.ZERO;
+    String html =
+        render(
+            null,
+            null,
+            new PeriodSummary(
+                new BigDecimal("200000000"),
+                new BigDecimal("100000000"),
+                new BigDecimal("400000"),
+                new BigDecimal("200000"),
+                z,
+                3,
+                2,
+                z,
+                z,
+                z,
+                z,
+                z,
+                0));
+
+    assertThat(html).contains("0.20%").contains("400,000").contains("200,000");
+    assertThat(render(null))
+        .as("매매가 없으면 비율 줄이 없다")
+        .doesNotContain("(buy + sell)")
+        .doesNotContain("(매수 + 매도)");
   }
 }

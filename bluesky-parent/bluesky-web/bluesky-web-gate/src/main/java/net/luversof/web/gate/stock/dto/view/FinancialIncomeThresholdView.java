@@ -80,6 +80,11 @@ public record FinancialIncomeThresholdView(
     return Math.max(0, Math.min(100, usedPct().setScale(0, RoundingMode.DOWN).intValue()));
   }
 
+  /** 연말 예상 막대 끝(0~100). 지금까지 막대 뒤에 옅게 이어 그린다(2026-10-28 - 예전엔 예상이 글자로만 있었다). */
+  public int projectedBarPct() {
+    return Math.max(0, Math.min(100, projectedPct().setScale(0, RoundingMode.DOWN).intValue()));
+  }
+
   /** 최근 기간의 하루 평균 과세표준(원, 반올림 전 소수 둘째 자리). */
   public BigDecimal recentDailyAverage() {
     if (recentWindowDays <= 0 || recentTaxable == null) {

@@ -50,8 +50,9 @@
 					<span class="text-base-content/70" data-financial-income-remaining>${MessageUtil.getMessage("stock.dividend.financial.income.remaining")} <span class="font-mono amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.remaining()))}</span></span>
 				@endif
 			</div>
-			<%-- daisyUI progress 는 빌드된 main.css 에 없다(2026-10-20 확인) - 있는 클래스로 막대를 그린다. --%>
-			<div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-base-200" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${view.usedBarPct()}" aria-label="${MessageUtil.getMessage("stock.dividend.financial.income.title")}" data-financial-income-bar data-bar-tone="${view.exceeded() || view.projectedToExceed() ? "warning" : "primary"}"><div class="h-2 rounded-full ${view.exceeded() || view.projectedToExceed() ? "bg-warning" : "bg-primary"}" style="width: ${view.usedBarPct()}%"></div></div>
+			<%-- daisyUI progress 는 빌드된 main.css 에 없다(2026-10-20 확인) - 있는 클래스로 막대를 그린다.
+			     연말 예상은 그 뒤에 옅게 잇는다(2026-10-28) - 지금까지 4.6% 막대만 있고 예상 16.6% 는 글자로만 있었다. --%>
+			<div class="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-base-200" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${view.usedBarPct()}" aria-label="${MessageUtil.getMessage("stock.dividend.financial.income.title")}" data-financial-income-bar data-bar-tone="${view.exceeded() || view.projectedToExceed() ? "warning" : "primary"}"><div class="h-2 ${view.exceeded() || view.projectedToExceed() ? "bg-warning" : "bg-primary"}" style="width: ${view.usedBarPct()}%"></div>@if(view.projectedBarPct() > view.usedBarPct())<div class="h-2 ${view.exceeded() || view.projectedToExceed() ? "bg-warning/35" : "bg-primary/35"}" style="width: ${view.projectedBarPct() - view.usedBarPct()}%" title="${MessageUtil.getMessage("stock.dividend.financial.income.projected")}" data-financial-income-projected-bar="${view.projectedBarPct()}"></div>@endif</div>
 			@if(view.projectedToExceed())
 				<p class="mt-1 text-xs" data-financial-income-projected-exceed><span class="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-base-content">${MessageUtil.getMessage("stock.dividend.financial.income.projected.exceed")}</span></p>
 			@endif

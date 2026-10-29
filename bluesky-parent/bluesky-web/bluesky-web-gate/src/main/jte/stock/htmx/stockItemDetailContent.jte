@@ -85,31 +85,6 @@
 	// 같은 값이 화면마다 달리 보였다. 사유는 title 과 aria-label 에 함께 단다(마우스 전용이 되지 않게).
 	String zeroAmountTitle = MessageUtil.getMessage("stock.dividend.zero.amount.title");
 
-	// 합산 손익 = <b>기간</b> 평가 변동 + 실현손익 + 배당.
-	//
-	// 세 값이 카드로 흩어져 있어서 "이 종목에서 결국 얼마를 벌었나" 를 사람이 더해야 알 수 있었다.
-	//
-	// 평가 몫은 현재 시점 평가손익이 아니라 <b>기간 평가 변동</b>(기말 - 기초)이다. 현재 시점 값을 더하면
-	// 아래 '기간별 손익' 표의 합과 맞지 않는다 - 실측 2026-09-01 삼성전자 '올해' 2.9 억 차이, '최근 1년'
-	// 은 부호까지 반대였다. 같은 화면의 두 숫자가 안 맞으면 어느 쪽이 맞는지 알 수 없다.
-	//
-	// 이렇게 더한 값은 요약의 periodProfit 과 1 원 오차 없이 같다(실측 두 기간 모두 차이 0).
-	BigDecimal unrealizedDelta = periodUnrealizedDelta != null ? periodUnrealizedDelta : BigDecimal.ZERO;
-	BigDecimal combinedProfit = unrealizedDelta
-		.add(realizedProfit != null ? realizedProfit : BigDecimal.ZERO)
-		.add(totalDividend != null ? totalDividend : BigDecimal.ZERO);
-	boolean combinedPositive = combinedProfit.signum() >= 0;
-	String deltaColor = unrealizedDelta.signum() >= 0 ? "text-profit" : "text-loss";
-	// 비율은 자산 성장 화면과 같은 정의(기초 평가액 + 기간 중 순유입 원금 대비)를 그대로 받아 쓴다.
-	// 화면마다 다른 분모를 쓰면 같은 이름이 다른 수를 뜻하게 된다.
-	boolean combinedRateAvailable = periodProfitRatePct != null;
-	double combinedRatePct = combinedRateAvailable ? periodProfitRatePct : 0.0;
-	// 세 몫(평가 변동 · 실현 · 배당)에도 비율을 붙인다 - 사용자 요청 2026-09-17: "보유 손익 + 배당 손익 표시(수익률 퍼센트도)".
-	// 합산 비율과 같은 분모를 써야 셋을 더한 값이 합산 비율이 된다(화면에서 검산할 수 있게).
-	boolean componentRateAvailable = combinedRateAvailable && periodCapitalBase != null && periodCapitalBase.signum() > 0;
-	double unrealizedDeltaRatePct = componentRateAvailable ? unrealizedDelta.doubleValue() * 100.0 / periodCapitalBase.doubleValue() : 0.0;
-	double realizedRatePct = componentRateAvailable && realizedProfit != null ? realizedProfit.doubleValue() * 100.0 / periodCapitalBase.doubleValue() : 0.0;
-	double dividendRatePct = componentRateAvailable && totalDividend != null ? totalDividend.doubleValue() * 100.0 / periodCapitalBase.doubleValue() : 0.0;
 	// 보유 전체 기준 보유 기간 · 연평균. 지금 보유하지 않는 종목에는 '보유 기간' 이 없다(자산 현황도 보유 종목만 적는다).
 	boolean holdingReturnShown = holdingReturn != null && holdingReturn.hasPeriod() && holdingQuantity > 0 && holdingFirstBuyDate != null;
 	String holdingPeriodText = !holdingReturnShown ? ""
@@ -179,37 +154,7 @@
 	@if(priceBasisDate != null)
 		<p class="mb-2 text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</p>
 	@endif
-	<%-- 합산 손익 - 평가손익·실현손익·배당이 카드로 흩어져 있어 사람이 더해야 알 수 있었다.
-	     아래 격자의 세 값을 그대로 더한 것이라, 화면에서 눈으로 검산할 수 있게 셋을 함께 적는다. --%>
-	<div class="mb-3 rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3">
-		<div class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("stock.item.detail.combined.profit")}</div>
-		<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-			<span class="text-3xl font-bold leading-none amount-value ${combinedPositive ? "text-profit" : "text-loss"}"
-				  title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(combinedProfit))}">
-				${StockFormatUtil.signedWon(StockFormatUtil.displayWon(combinedProfit))}
-			</span>
-			@if(combinedRateAvailable)
-				<span class="text-lg font-bold ${combinedPositive ? "text-profit" : "text-loss"}">
-					${StockFormatUtil.signedPct(combinedRatePct, 2)}
-				</span>
-				<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.basis")}</span>
-			@endif
-		</div>
-		<%-- 셋을 그대로 적어 화면에서 더해 볼 수 있게 한다. --%>
-		<p class="mt-1 text-[11px] leading-4 flex flex-wrap items-baseline gap-x-1.5" data-combined-breakdown>
-			<span class="text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.unrealized.delta")}</span>
-			<span class="amount-value ${deltaColor}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(unrealizedDelta))}</span>
-			@if(componentRateAvailable)<span class="${deltaColor}" data-component-rate="unrealized">(${StockFormatUtil.signedPct(unrealizedDeltaRatePct, 2)})</span>@endif
-			<span class="text-base-content/60">+</span>
-			<span class="text-base-content/60">${MessageUtil.getMessage("stock.profit.realized")}</span>
-			<span class="amount-value ${realizedColor}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(realizedProfit))}</span>
-			@if(componentRateAvailable)<span class="${realizedColor}" data-component-rate="realized">(${StockFormatUtil.signedPct(realizedRatePct, 2)})</span>@endif
-			<span class="text-base-content/60">+</span>
-			<span class="text-base-content/60">${MessageUtil.getMessage("stock.item.detail.period.dividend")}</span>
-			<span class="amount-value text-dividend">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalDividend))}</span>
-			@if(componentRateAvailable)<span class="text-dividend" data-component-rate="dividend">(${StockFormatUtil.signedPct(dividendRatePct, 2)})</span>@endif
-		</p>
-		<p class="mt-0.5 text-[11px] leading-4 text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.note")}</p>
+	@template.stock.fragments.combinedProfitBox(periodUnrealizedDelta = periodUnrealizedDelta, realizedProfit = realizedProfit, totalDividend = totalDividend, periodProfitRatePct = periodProfitRatePct, periodCapitalBase = periodCapitalBase, extra = @`
 		<%-- 보유 전체 기준 보유 기간 · 연평균은 아래 카드 줄로 옮겼다(사용자 선택 2026-09-17 - 이 자리의 작은 줄은 눈에 띄지 않았다).
 		     배당이 지금 평가손실을 얼마나 덮었는지만 여기 남긴다. --%>
 		@if(holdingReturnShown && holdingReturn.coveragePct() != null && holdingReturn.coveragePct() > 0)
@@ -217,7 +162,7 @@
 				<span class="text-dividend" data-holding-coverage="${holdingReturn.coveragePct()}">${holdingReturn.coveragePct() >= 100 ? MessageUtil.getMessage("stock.asset.status.cell.coverage.all") : StockViewSupport.msg("stock.asset.status.cell.coverage", String.valueOf(holdingReturn.coveragePct()))}</span>
 			</p>
 		@endif
-	</div>
+	`)
 
 	<%-- 보유/손익 요약 --%>
 	<%-- 이 카드 여덟 장 중 셋(실현 손익·기간 매수·기간 배당)은 고른 기간의 값이고, 나머지 다섯(수량·평균 단가·
@@ -423,6 +368,7 @@
 		<div>
 			<h2 class="text-lg font-semibold mb-2 text-base-content/70">${MessageUtil.getMessage("stock.item.detail.chart.title")}</h2>
 			<div class="bg-base-100 rounded-box border border-base-200 p-4">
+				@template.stock.htmx.fragments.components.chartScaleToggle(canvasId = "stockDetailChart")
 				<div class="h-64"><canvas id="stockDetailChart" role="img" aria-label="${MessageUtil.getMessage("stock.item.detail.chart.title")}" class="amount-chart"></canvas></div>
 			</div>
 		</div>
@@ -473,6 +419,8 @@
 						<tr>
 							<th scope="col">${MessageUtil.getMessage("common.label.account")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("common.label.quantity")}</th>
+							<%-- 현재가는 계좌마다 같지만 평균 단가는 다르다 - 평가 손익이 계좌마다 다른 까닭이 이 열이다(2026-10-28 12차 자율). --%>
+							<th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.column.average.cost")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.evaluation.amount")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analytics.account.holdings.weight")}</th>
@@ -494,9 +442,10 @@
 									@endif
 								</th>
 								<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
+								<td class="text-right font-mono amount-value hidden sm:table-cell" data-item-account-average-cost>${holding.averageBuyPrice() != null ? String.format("%,d", StockFormatUtil.displayWon(holding.averageBuyPrice())) : "-"}</td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
 								<td class="text-right font-mono amount-value ${acctEvalProfit >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(acctEvalProfit)} <span class="text-xs">(${StockFormatUtil.signedPct(acctEvalRatePct, 1)})</span></td>
-								<td class="text-right font-mono text-base-content/70">${StockFormatUtil.pct(acctWeightPct, 1)}</td>
+								<td class="text-right font-mono text-base-content/70" style="${StockFormatUtil.weightBarStyle(BigDecimal.valueOf(acctWeightPct))}">${StockFormatUtil.pct(acctWeightPct, 1)}</td>
 							</tr>
 						@endfor
 					</tbody>

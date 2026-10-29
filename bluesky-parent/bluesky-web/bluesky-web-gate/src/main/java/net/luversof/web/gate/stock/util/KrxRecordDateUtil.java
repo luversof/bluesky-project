@@ -135,10 +135,31 @@ public final class KrxRecordDateUtil {
     return null;
   }
 
-  /** 월중 · 월말 두 지급 창의 다음 매수 마감(정할 수 없는 창은 뺀다). 시뮬레이터 · 월배당 ETF · 대시보드 카드가 같은 목록을 쓴다. */
+  /**
+   * 월중 · 월말 두 지급 창의 다음 매수 마감(정할 수 없는 창은 뺀다). 날짜만 보는 판정이라 18 시 이후 "오늘 마감" 을 지난 것으로 치지 않는다 - 화면은
+   * {@link #nextBuyByAllWindows(java.time.LocalDateTime)} 를 쓴다(검토 지적 2026-10-28).
+   */
   public static java.util.List<RecordDateBuyByView> nextBuyByAllWindows(LocalDate today) {
+    return nextBuyByAllWindows(today, false);
+  }
+
+  /**
+   * 한국 시각 기준. 마감일 당일 {@link #LAST_BUY_TIME} 이 지났으면 그날은 더 살 수 없으니 다음 달 기준일을 보인다 - 2026-10-28 18:34 에
+   * "10/28(수)까지 매수 · 오늘 마감" 이 그대로 떠 있었다(12차 자율).
+   */
+  public static java.util.List<RecordDateBuyByView> nextBuyByAllWindows(
+      java.time.LocalDateTime nowInKorea) {
+    return nextBuyByAllWindows(
+        nowInKorea.toLocalDate(), !nowInKorea.toLocalTime().isBefore(LAST_BUY_TIME));
+  }
+
+  /** 그날 마지막으로 살 수 있는 시각 - 시간외 단일가가 18:00 에 끝난다(정규장 15:30 뒤에도 시간외로 사면 같은 T+2 결제라 그 기준일에 든다). */
+  static final java.time.LocalTime LAST_BUY_TIME = java.time.LocalTime.of(18, 0);
+
+  private static java.util.List<RecordDateBuyByView> nextBuyByAllWindows(
+      LocalDate today, boolean todayClosed) {
     return java.util.stream.Stream.of("MID_MONTH", "MONTH_END")
-        .map(window -> nextBuyBy(today, window))
+        .map(window -> nextBuyBy(today, window, todayClosed))
         .filter(java.util.Objects::nonNull)
         .toList();
   }
@@ -149,6 +170,11 @@ public final class KrxRecordDateUtil {
    * @return 지급 시기에 규칙이 없으면 null
    */
   public static RecordDateBuyByView nextBuyBy(LocalDate today, String payoutWindow) {
+    return nextBuyBy(today, payoutWindow, false);
+  }
+
+  /** {@code todayClosed} 면 오늘이 마감일인 기준일은 건너뛴다(오늘 더 살 수 없다). */
+  static RecordDateBuyByView nextBuyBy(LocalDate today, String payoutWindow, boolean todayClosed) {
     if (today == null || recordDate(YearMonth.from(today), payoutWindow) == null) {
       return null;
     }
@@ -156,7 +182,7 @@ public final class KrxRecordDateUtil {
     for (int i = 0; i < 3; i++, month = month.plusMonths(1)) {
       LocalDate record = recordDate(month, payoutWindow);
       LocalDate buyBy = minusTradingDays(record, SETTLEMENT_TRADING_DAYS);
-      if (!buyBy.isBefore(today)) {
+      if (buyBy.isAfter(today) || (buyBy.isEqual(today) && !todayClosed)) {
         boolean covered =
             KoreanHolidays.covered(record.getYear()) && KoreanHolidays.covered(buyBy.getYear());
         return new RecordDateBuyByView(

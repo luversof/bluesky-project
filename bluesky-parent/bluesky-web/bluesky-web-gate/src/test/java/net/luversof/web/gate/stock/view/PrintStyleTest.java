@@ -51,6 +51,7 @@ class PrintStyleTest {
     String block = printBlock();
     assertThat(block).as("구역 막대를 인쇄에서 숨기지 않는다").contains("[data-page-section-nav],");
     assertThat(block).as("행 선택 체크박스를 인쇄에서 숨기지 않는다").contains(".row-select-box,");
+    assertThat(block).as("그래프 눈금 단추를 인쇄에서 숨기지 않는다(2026-10-28)").contains("[data-chart-scale-for],");
     assertThat(block).as("토스트 층을 인쇄에서 숨기지 않는다").contains("#app-toast,");
   }
 

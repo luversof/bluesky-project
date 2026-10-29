@@ -194,7 +194,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     // (2) 날짜 없이 들어오는 기본 경로(파라미터 없음 · rangeMode=3/ytd/mtd)에서는 전기가 아예 없어
     //     "변동 요인 (전기 대비)" 섹션 전체가 화면에서 빠졌다.
     PreviousPeriod previousPeriod =
-        resolvePreviousPeriod(startInstant, endInstant, rangeMode, earlyZone);
+        resolvePreviousPeriod(startInstant, inclusiveEnd(endInstant), rangeMode, earlyZone);
 
     List<DividendResponse> allDividends =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(allDividendsFuture);
@@ -430,6 +430,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     LocalDate prevStartDate = null;
     LocalDate prevEndDate = null;
     List<DividendChange> dividendChangeContributors = java.util.List.of();
+    LocalDate prevToDateEndDate = null;
+    BigDecimal prevToDateNetAmount = null;
     if (previousPeriod != null) {
       // 전기 구간과 그 구간의 배당은 앞에서 이미 정해졌다(resolvePreviousPeriod + inPayDateRange).
       prevStartDate = previousPeriod.start();
@@ -445,6 +447,23 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
               stockItemList);
       prevPeriodNetAmount = comparison.previousNetAmount();
       dividendChangeContributors = comparison.contributors();
+      PreviousPeriod previousToDate =
+          resolvePreviousToDate(previousPeriod, endInstant, rangeMode, earlyZone);
+      if (previousToDate != null) {
+        prevToDateEndDate = previousToDate.end();
+        prevToDateNetAmount =
+            comparePreviousPeriod(
+                    inPayDateRange(
+                        prevDividends,
+                        previousToDate.start().atStartOfDay(earlyZone).toInstant(),
+                        previousToDate.end().plusDays(1).atStartOfDay(earlyZone).toInstant()),
+                    viewList,
+                    effectiveAccountIdList,
+                    effectiveStockItemIdList,
+                    taxDeferredMap,
+                    stockItemList)
+                .previousNetAmount();
+      }
     }
 
     // 화면에는 오름차순(오래된 것 위)으로 표시한다 - 기본 순서(지급일 최신순)를 뒤집기만 한다(명시 정렬 시 제외).
@@ -517,6 +536,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("dividendChangeContributors", dividendChangeContributors);
     model.addAttribute("prevStartDate", prevStartDate);
     model.addAttribute("prevEndDate", prevEndDate);
+    model.addAttribute("prevToDateEndDate", prevToDateEndDate);
+    model.addAttribute("prevToDateNetAmount", prevToDateNetAmount);
     // 달력 프리셋(mtd/ytd)은 '진행 중인 기간'을 '완전한 전월/전년'과 비교한다. 밝히지 않으면 증감률이
     // 실제 추세와 다르게 읽힌다(실측은 resolveInProgressPeriod 주석 참고).
     // 바로잡은 구간(프리셋 기본 포함)을 쓴다 - 날짜 없이 rangeMode 만 오면 원본 파라미터는 null 이다.
@@ -612,6 +633,41 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       return null;
     }
     return elapsedDays < totalDays ? new int[] {elapsedDays, totalDays} : null;
+  }
+
+  /**
+   * 목록 기간의 끝(다음 날 0 시, 배타)을 "그날 포함" 으로 - resolvePreviousPeriod 는 끝을 포함 날짜로 읽는다. 배타 끝을 그대로 넘겨 직접 지정
+   * 기간의 전기가 하루 길었다(1/1 ~ 1/31 의 전기가 11/30 ~ 12/31, 검토 지적 2026-10-28).
+   */
+  static Instant inclusiveEnd(Instant exclusiveEnd) {
+    return exclusiveEnd == null ? null : exclusiveEnd.minusNanos(1);
+  }
+
+  /**
+   * 이번 달 · 올해의 전기(완전한 전월 · 전년) 중 <b>오늘과 같은 날까지</b>의 앞부분. 전기 비교는 진행 중인 기간을 완전한 기간과 견주므로 같은 날까지 값도 함께
+   * 보인다(사용자 결정 2026-10-29 "a로 유지하면서 전기의 현재 일자 까지의 기준도 같이"). 그 밖의 기간이거나 전기가 이미 같은 길이면 null.
+   *
+   * @param exclusiveEnd 목록 기간의 끝(다음 날 0 시, 배타)
+   */
+  static PreviousPeriod resolvePreviousToDate(
+      PreviousPeriod previous, Instant exclusiveEnd, String rangeMode, ZoneId zone) {
+    if (previous == null || exclusiveEnd == null) {
+      return null;
+    }
+    LocalDate today = inclusiveEnd(exclusiveEnd).atZone(zone).toLocalDate();
+    LocalDate cutoff;
+    if ("mtd".equals(rangeMode)) {
+      cutoff =
+          previous
+              .start()
+              .withDayOfMonth(Math.min(today.getDayOfMonth(), previous.start().lengthOfMonth()));
+    } else if ("ytd".equals(rangeMode)) {
+      // 2/29 는 평년에 2/28 로 내려간다(withYear).
+      cutoff = today.withYear(previous.start().getYear());
+    } else {
+      return null;
+    }
+    return cutoff.isBefore(previous.end()) ? new PreviousPeriod(previous.start(), cutoff) : null;
   }
 
   /** 비교용 "전기" 구간. 요청 파라미터만으로 정해지므로 원격 조회 전에 계산할 수 있다. */

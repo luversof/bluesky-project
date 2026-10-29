@@ -478,8 +478,14 @@ function yearTickLabel(labels: string[], index: number, firstYear: number, lastY
 StockCharts.dateAxisTicks = dateAxisTicks;
 
 // 로그 눈금 글자: 1 · 2 · 5 x 10^n 에만 단다(그 사이 눈금은 격자만) - 다 달면 한 자리에 3~9 가 겹친다(자산 성장 세로 눈금, 2026-10-28).
-function logTickLabel(value: number): string {
+// 범위가 한 자릿수 배 안(최대/최소 < 10)이면 1 · 2 · 5 만으로는 글자가 한둘뿐이라(이번 달: 6억 ~ 20억에 "10억 · 20억") 모든 눈금에 단다.
+function logTickLabel(value: number, ticks?: { value: number }[]): string {
 	if (!(value > 0)) return "";
+	if (ticks && ticks.length > 1) {
+		const first = ticks[0].value;
+		const last = ticks[ticks.length - 1].value;
+		if (first > 0 && last / first < 10) return compactNumber(value);
+	}
 	const exp = Math.floor(Math.log10(value));
 	const base = Math.pow(10, exp);
 	const significand = Math.round(value / base);
@@ -819,8 +825,9 @@ StockCharts.initMonthlyFromData = function (
 			maintainAspectRatio: false,
 			interaction: { mode: "index", intersect: false },
 			plugins: {
+				// 범례는 다른 그래프(배당 · 자산 성장 · 시뮬레이터)처럼 아래(2026-10-28 - 이 그래프만 위였다).
 				legend: {
-					position: "top",
+					position: "bottom",
 					labels: { font: { size: 11 }, boxWidth: 12 },
 				},
 				tooltip: {
@@ -841,7 +848,8 @@ StockCharts.initMonthlyFromData = function (
 			},
 			scales: {
 				// 세 막대가 한 축을 쓴다 - 같은 달이 같은 세로줄에 서려면 축이 하나여야 한다.
-				x: { grid: gridX, ticks: { font: { size: 10 } } },
+				// 눕히지 않고 건너뛴다 - 휴대폰 폭(400px)에서 해 18 개를 50 도로 눕혀 축이 39px 였다(2026-10-28).
+				x: { grid: gridX, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true } },
 				// 매도가 있을 때만 칸을 나눈다 - 판 적이 없으면 아래 칸은 빈 띠일 뿐이다.
 				//
 				// 스택 안에서는 <b>먼저 적은 축이 아래</b>다(실측 2026-09-14: y 를 먼저 적었더니 손익 칸이 위로 갔다).
@@ -1321,12 +1329,66 @@ StockCharts.createHoldingsChart = function (
 	opts?: any,
 	existingInstance?: any,
 ) {
-	return StockCharts.createChart!(
+	const inst = StockCharts.createChart!(
 		canvasId,
 		StockCharts.holdingsChartConfig!(series, texts, opts),
 		existingInstance,
 	);
+	// 세로 눈금 전환 단추가 있는 그래프면 이 브라우저가 고른 눈금으로 연다(chartScaleToggle.jte).
+	if (inst && document.querySelector('[data-chart-scale-for="' + canvasId + '"]')) {
+		applyChartScale(inst, readChartScale());
+	}
+	return inst;
 };
+
+// 보유 평가액 그래프 세로 눈금(일반 | 로그, 2026-10-28). 고른 값은 이 브라우저에만 - 자산 성장 · 계좌 · 종목 상세가 하나를 같이 쓴다.
+// 로그는 0 이하를 그릴 수 없어 투자 전 0 구간은 비어 보인다.
+const CHART_SCALE_KEY = "stock.chart.yScale";
+
+function readChartScale(): string {
+	try {
+		return localStorage.getItem(CHART_SCALE_KEY) === "logarithmic" ? "logarithmic" : "linear";
+	} catch (e) {
+		return "linear";
+	}
+}
+
+function applyChartScale(chart: any, type: string) {
+	const scales = chart.config && chart.config.options && chart.config.options.scales;
+	if (!scales || !scales.y) return;
+	// 눈금 객체를 통째로 바꾼다 - 해석된 options 의 type 만 고치면 두 번째 전환부터 안 먹었다(실측: 로그 -> 일반 -> 로그 가 일반에 멈춤).
+	// update('none') 은 점 위치를 다시 재지 않았다(실측: 2015-01 점 y 380, 맞는 값 180) - 전체 갱신.
+	scales.y = Object.assign({}, scales.y, {
+		type,
+		ticks: Object.assign({}, scales.y.ticks, {
+			callback:
+				type === "logarithmic"
+					? (v: any, _i: number, ticks: { value: number }[]) => logTickLabel(Number(v), ticks)
+					: (v: any) => compactNumber(v),
+		}),
+	});
+	chart.update();
+	const id = chart.canvas && chart.canvas.id;
+	document.querySelectorAll('[data-chart-scale-for="' + id + '"] [data-chart-scale]').forEach((b: Element) => {
+		const on = (b as HTMLElement).dataset.chartScale === type;
+		b.setAttribute("aria-pressed", on ? "true" : "false");
+		b.classList.toggle("btn-primary", on);
+		b.classList.toggle("btn-ghost", !on);
+	});
+}
+
+// 시험은 addEventListener 없는 가짜 document 로 이 파일을 불러온다.
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") document.addEventListener("click", (event: Event) => {
+	const button = (event.target as Element | null)?.closest?.("[data-chart-scale]") as HTMLElement | null;
+	const group = button?.closest("[data-chart-scale-for]") as HTMLElement | null;
+	if (!button || !group) return;
+	const type = button.dataset.chartScale === "logarithmic" ? "logarithmic" : "linear";
+	try {
+		localStorage.setItem(CHART_SCALE_KEY, type);
+	} catch (e) {}
+	const chart = typeof Chart !== "undefined" && Chart.getChart ? Chart.getChart(group.dataset.chartScaleFor) : null;
+	if (chart) applyChartScale(chart, type);
+});
 
 // 종목 상세 주가 추이 캔들(사용자 요청 2026-10-02: "일반적인 주식 막대 그래프(시가 · 종가 · 고가 · 저가)").
 // 서버는 일봉(시 · 고 · 저 · 종 · 그 날 평균 단가)을 준다. 봉이 너무 많으면(전체 기간 삼성전자 1,600 일) 뭉개지므로 증권사 앱처럼

@@ -169,6 +169,7 @@ class DividendYieldFooterRenderTest {
   }
 
   // 합계 줄의 첫 칸은 th scope="row" 다(2026-09-11). 자리로 읽는 검사라 그 칸도 함께 잡아야 번호가 밀리지 않는다.
+  // 열 차례: 세전 · 세금 · 세후(사용자 결정 2026-10-29) - 연도별 표 세금 2 · 세후 3, 종목/계좌별 표 세전 4 · 세금 5 · 세후 6.
   private static final Pattern CELL = Pattern.compile("<t[dh][^>]*>(.*?)</t[dh]>", Pattern.DOTALL);
 
   /** 셀 안의 태그를 걷어 내고 남은 글자. */
@@ -288,14 +289,14 @@ class DividendYieldFooterRenderTest {
     // 원금 · 그 수익률 · 건수
     assertThat(cells.get(1)).as("세전 = 연도 합").isEqualTo("1,000,000");
     assertThat(dividendTotalAmounts(yearlyHtml).get(0)).as("세후 = 연도 합").isEqualTo("846,000");
-    assertThat(cells.get(4)).as("세금 = 세전 − 세후").isEqualTo("154,000");
+    assertThat(cells.get(2)).as("세금 = 세전 − 세후").isEqualTo("154,000");
     assertThat(cells.get(10)).as("건수 = 연도 합").isEqualTo("2");
     assertThat(cells.get(6)).as("원금은 연도 합이 아니라 전체 기간 값(종목별 표 합계행과 같다)").isEqualTo("10,000,000");
     // 종목 표 합계: 합계 · 세전 · 현재 평가금액 · 평가 손익 · 배당금 · 합산 손익 · 평균 투입원금 · 세금 · 과세 · 일평균 · 그 수익률 …
     List<String> stockCells = footerCells(render(rows));
     // 12 번: 평가 손익 뒤에 실현 손익 칸이 더해져 종목 표 쪽이 하나 더 밀린다.
     assertThat(cells.get(7)).as("수익률도 전체 기간 값").isEqualTo(stockCells.get(11));
-    assertThat(cells.get(2)).as("배당금 칸(연 수익률 포함)도 전체 기간 값").isEqualTo(stockCells.get(5));
+    assertThat(cells.get(3)).as("배당금 칸(연 수익률 포함)도 전체 기간 값").isEqualTo(stockCells.get(6));
   }
 
   /** 한 해뿐이면 그 줄이 곧 전체다. 연도별 성과 표와 같은 규칙. */
@@ -330,9 +331,9 @@ class DividendYieldFooterRenderTest {
     // 2026-09-28: 세후 뒤에 현재 평가금액 · 평균 투입원금 · 연 수익률 - 세금은 6 번째.
     // 2026-09-28 열: 종목 · 세전 · 현재 평가금액 · 평가 손익 · 배당금(+연 수익률) · 합산 손익 · 평균 투입원금 · 세금 · 과세 …
     // 12 번: 평가 손익 · 실현 손익 · 배당금 · 합산 손익 - 세금은 9 번째.
-    assertThat(cells.get(8)).as("세금 0").isEqualTo("-");
+    assertThat(cells.get(5)).as("세금 0").isEqualTo("-");
     assertThat(cells.get(9)).as("과세금액 0").isEqualTo("-");
-    assertThat(cells.get(5)).as("세후액은 값 그대로").contains("500,000");
+    assertThat(cells.get(6)).as("세후액은 값 그대로").contains("500,000");
   }
 
   /** 분모(일평균 투입원금)가 없으면 수익률은 0.00% 가 아니라 '-' 다. 0% 는 '못 벌었다' 로 읽힌다. */
@@ -347,7 +348,7 @@ class DividendYieldFooterRenderTest {
     }
 
     assertThat(cells.get(11)).as("예전 기본 수익률(열 더 보기)").isEqualTo("-");
-    assertThat(cells.get(5))
+    assertThat(cells.get(6))
         .as("배당금 칸의 연 수익률은 대시와 그 까닭")
         .contains("-")
         .contains(MessageUtil.getMessage("stock.dividend.yield.daily.basis.none"));

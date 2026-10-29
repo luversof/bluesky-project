@@ -253,6 +253,12 @@ class UpcomingDividendScheduleTest {
     model.put("shortHistorySymbols", List.of("SHORT(11)"));
     String html = renderSection(model);
 
+    // 늦는 지급 · 날짜 모름 상자도 이름과 금액 사이 점선 길잡이(2026-10-28 12차 자율, 날짜 카드와 같은 span).
+    int overdue = html.indexOf("data-upcoming-overdue");
+    int undated = html.indexOf("data-upcoming-undated");
+    assertThat(html.substring(overdue, undated)).contains("data-calendar-entry-leader");
+    assertThat(html.substring(undated)).contains("data-calendar-entry-leader");
+
     assertThat(html)
         .contains("data-upcoming-daylist=\"4\"")
         .contains("data-daycard-month")

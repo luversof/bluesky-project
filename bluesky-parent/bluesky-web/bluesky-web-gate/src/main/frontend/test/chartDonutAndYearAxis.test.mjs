@@ -69,3 +69,10 @@ test("로그 눈금 글자는 1 · 2 · 5 배에만", () => {
 	for (const v of [1e5, 2e6, 5e8, 1e9]) assert.notEqual(logTickLabel(v), "", String(v));
 	for (const v of [3e8, 7e6, 0, -1, 1.5e8]) assert.equal(logTickLabel(v), "", String(v));
 });
+
+test("로그 눈금 범위가 한 자릿수 배 안이면 모든 눈금에 단다", () => {
+	const narrow = [6e8, 7e8, 8e8, 9e8, 1e9, 1.5e9, 2e9].map((value) => ({ value }));
+	assert.notEqual(logTickLabel(7e8, narrow), "");
+	const wide = [1e5, 3e5, 1e6, 1e9].map((value) => ({ value }));
+	assert.equal(logTickLabel(3e5, wide), "");
+});

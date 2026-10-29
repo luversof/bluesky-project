@@ -49,6 +49,9 @@ import net.luversof.web.gate.stock.util.StockSortUtil;
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockTradeHtmxController extends StockBaseHtmxController {
 
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(StockTradeHtmxController.class);
+
   /**
    * 매매 목록 정렬 열(정렬 머리칸의 field) -> 비교기(값이 없으면 뒤로 가는 오름차순, 내림차순은 뒤집는다). 모르는 열은 StockSortParamException
    * 으로 끊는다. 2026-10-22 까지 같은 꼴의 switch 였다 - 열 목록과 템플릿 머리칸이 맞는지는 SortColumnMapTest 가 본다.
@@ -161,6 +164,26 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
     var tradeSearchParams = request.toParams();
     var tradesFuture = async.supply(() -> emptyIfNull(tradeClient.findTrades(tradeSearchParams)));
+    // 전기(직전 같은 길이 · 달력 정렬) 실현 손익 - 배당 내역의 "전기 대비" 와 같은 구간 규칙(2026-10-28 12차 자율). 전체 기간은 비교할 앞이 없다.
+    StockDividendHtmxController.PreviousPeriod previousPeriod =
+        "all".equals(rangeMode)
+            ? null
+            : StockDividendHtmxController.resolvePreviousPeriod(
+                startInst, StockDividendHtmxController.inclusiveEnd(endInst), rangeMode, zone);
+    var previousTradesFuture =
+        previousPeriod == null
+            ? null
+            : async.supply(
+                () ->
+                    emptyIfNull(
+                        tradeClient.findTrades(
+                            new TradeSearchRequest(
+                                    userId,
+                                    null,
+                                    null,
+                                    previousPeriod.start().atStartOfDay(zone).toInstant(),
+                                    previousPeriod.end().plusDays(1).atStartOfDay(zone).toInstant())
+                                .toParams())));
     var dataFirstDateFuture = async.supply(() -> resolveDataFirstDate(userId, zone, false));
     var accountsFuture = async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
     var stockItemsFuture = async.supply(() -> emptyIfNull(stockItemClient.getStockItems()));
@@ -454,6 +477,35 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     model.addAttribute("totalAllFee", totalAllFee);
     model.addAttribute("totalAllTax", totalAllTax);
     model.addAttribute("totalAllRealizedProfit", totalAllRealizedProfit);
+    if (previousPeriod != null) {
+      try {
+        List<TradeResponse> previousTrades = StockAsyncSupport.join(previousTradesFuture);
+        model.addAttribute(
+            "previousRealizedProfit",
+            sellRealizedTotal(previousTrades, effectiveAccountIdList, effectiveStockItemIdList));
+        model.addAttribute("previousStartDate", previousPeriod.start());
+        model.addAttribute("previousEndDate", previousPeriod.end());
+        // 이번 달 · 올해면 전기 중 오늘과 같은 날까지도(사용자 결정 2026-10-29) - 받은 전기 매매를 날짜로만 자른다(추가 호출 없음).
+        var previousToDate =
+            StockDividendHtmxController.resolvePreviousToDate(
+                previousPeriod, endInst, rangeMode, zone);
+        if (previousToDate != null && previousTrades != null) {
+          Instant cutoff = previousToDate.end().plusDays(1).atStartOfDay(zone).toInstant();
+          model.addAttribute(
+              "previousToDateRealizedProfit",
+              sellRealizedTotal(
+                  previousTrades.stream()
+                      .filter(t -> t.tradeDate() != null && t.tradeDate().isBefore(cutoff))
+                      .toList(),
+                  effectiveAccountIdList,
+                  effectiveStockItemIdList));
+          model.addAttribute("previousToDateEndDate", previousToDate.end());
+        }
+      } catch (RuntimeException e) {
+        // 비교 줄만 빠진다.
+        log.warn("previous period trades lookup failed: userId={}", userId, e);
+      }
+    }
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
     model.addAttribute("accountRealizedList", accountRealizedList);
     model.addAttribute("stockRealizedList", stockRealizedList);
@@ -481,6 +533,20 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                 .thenComparing(
                     TradeProfit::stockItemName, Comparator.nullsLast(Comparator.naturalOrder())))
         .toList();
+  }
+
+  /** 매도 줄의 실현 손익 합 - 목록 화면과 같은 계좌 · 종목 거르기(null 이면 거르지 않음). 전기 비교에 쓴다. */
+  static BigDecimal sellRealizedTotal(
+      List<TradeResponse> trades, List<UUID> accountIds, List<UUID> stockItemIds) {
+    if (trades == null) {
+      return BigDecimal.ZERO;
+    }
+    return trades.stream()
+        .filter(t -> t.type() == TradeType.SELL)
+        .filter(t -> accountIds == null || accountIds.contains(t.accountId()))
+        .filter(t -> stockItemIds == null || stockItemIds.contains(t.stockItemId()))
+        .map(t -> t.realizedProfit() != null ? t.realizedProfit() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
   /**

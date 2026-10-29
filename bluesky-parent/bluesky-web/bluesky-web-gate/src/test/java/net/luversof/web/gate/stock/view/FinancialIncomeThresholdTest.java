@@ -324,5 +324,9 @@ class FinancialIncomeThresholdTest {
         .contains("data-financial-income-unknown")
         .contains("data-bar-tone=\"warning\"")
         .doesNotContain("data-financial-income-over");
+    // 지금까지 98% 뒤에 연말 예상(110% -> 100 에서 자름)을 옅게 2% 잇는다.
+    assertThat(html)
+        .contains("data-financial-income-projected-bar=\"100\"")
+        .contains("style=\"width: 2%\" title=");
   }
 }

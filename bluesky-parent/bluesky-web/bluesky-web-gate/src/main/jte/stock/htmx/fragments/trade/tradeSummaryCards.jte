@@ -12,6 +12,12 @@
 @param BigDecimal totalAllFee
 @param BigDecimal totalAllTax
 @param BigDecimal totalAllRealizedProfit
+@param BigDecimal previousRealizedProfit = null
+@param java.time.LocalDate previousStartDate = null
+@param java.time.LocalDate previousEndDate = null
+<%-- 이번 달 · 올해면 전기 중 오늘과 같은 날까지의 실현 손익(사용자 결정 2026-10-29). 그 밖이면 없다. --%>
+@param BigDecimal previousToDateRealizedProfit = null
+@param java.time.LocalDate previousToDateEndDate = null
 @param DecimalFormat decimalFormat
 @param java.util.function.Function<Object, String> countMessage
 @param String buyLabel
@@ -42,11 +48,11 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${periodStatusLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
-					<span class="text-xl font-bold amount-value">&#8361; ${decimalFormat.format(safeBuy)}</span>
+					<span class="text-xl font-bold amount-value">&#8361;${decimalFormat.format(safeBuy)}</span>
 					<span class="text-xs text-base-content/60">${buyLabel}</span>
 				</div>
 				<div class="flex gap-4 text-xs text-base-content/60">
-					<span>${sellLabel} <span class="font-medium amount-value">&#8361; ${decimalFormat.format(safeSell)}</span></span>
+					<span>${sellLabel} <span class="font-medium amount-value">&#8361;${decimalFormat.format(safeSell)}</span></span>
 					<%-- 라벨을 붙인다. 이 수는 매수+매도 전체 건수인데 같은 줄 왼쪽이 "매도" 라, 라벨이 없으면
 						 매도 건수로 읽힌다 - 실측 2026-09-12(올해): 이 자리가 98건(매수 91 + 매도 7)인데
 						 바로 옆 실현손익 카드는 "매도 7건" 이라, 한 화면이 매도를 98건과 7건 둘로 말했다.
@@ -69,7 +75,7 @@
 					</span>
 				</div>
 				<div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
-					${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#8361; ${decimalFormat.format(safeRp)}
+					${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#8361;${decimalFormat.format(safeRp)}
 				</div>
 				!{
 					long sellCount = allTradeList != null ? allTradeList.stream()
@@ -77,15 +83,22 @@
 						.count() : 0L;
 				}
 				<div class="text-xs text-base-content/60 mt-1">${sellLabel} ${countMessage.apply(sellCount)}</div>
+				<%-- 전기(직전 같은 길이 · 배당 내역 "전기 대비" 와 같은 구간) 실현 손익 - 이 기간 숫자만으로는 많은지 적은지 몰랐다(2026-10-28). --%>
+				@if(previousRealizedProfit != null && previousStartDate != null && previousEndDate != null)
+				<div class="text-xs text-base-content/60 mt-0.5" data-trade-previous-realized>${MessageUtil.getMessage("stock.dividend.summary.previous.period")} <span class="whitespace-nowrap date-whole">${previousStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${previousEndDate.toString()}</span> <span class="amount-value ${previousRealizedProfit.signum() == 0 ? "" : (previousRealizedProfit.signum() > 0 ? "text-profit" : "text-loss")}">${StockFormatUtil.displayWon(previousRealizedProfit) > 0 ? "+" : (StockFormatUtil.displayWon(previousRealizedProfit) < 0 ? "-" : "")}&#8361;${decimalFormat.format(previousRealizedProfit.abs())}</span></div>
+				@endif
+				@if(previousToDateRealizedProfit != null && previousStartDate != null && previousToDateEndDate != null)
+				<div class="text-xs text-base-content/60 mt-0.5" data-trade-previous-to-date-realized>${MessageUtil.getMessage("stock.compare.previous.to.date")} <span class="whitespace-nowrap date-whole">${previousStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${previousToDateEndDate.toString()}</span> <span class="amount-value ${previousToDateRealizedProfit.signum() == 0 ? "" : (previousToDateRealizedProfit.signum() > 0 ? "text-profit" : "text-loss")}">${StockFormatUtil.displayWon(previousToDateRealizedProfit) > 0 ? "+" : (StockFormatUtil.displayWon(previousToDateRealizedProfit) < 0 ? "-" : "")}&#8361;${decimalFormat.format(previousToDateRealizedProfit.abs())}</span></div>
+				@endif
 		`)
 
 		<%-- Card 3: 거래 비용 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${tradingCostLabel}</div>
-				<div class="text-xl font-bold amount-value">&#8361; ${decimalFormat.format(safeFee.add(safeTax))}</div>
+				<div class="text-xl font-bold amount-value">&#8361;${decimalFormat.format(safeFee.add(safeTax))}</div>
 				<div class="flex gap-4 text-xs text-base-content/60 mt-1">
-					<span>${feeLabel} <span class="font-medium text-base-content/70 amount-value">&#8361; ${decimalFormat.format(safeFee)}</span></span>
-					<span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#8361; ${decimalFormat.format(safeTax)}</span></span>
+					<span>${feeLabel} <span class="font-medium text-base-content/70 amount-value">&#8361;${decimalFormat.format(safeFee)}</span></span>
+					<span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#8361;${decimalFormat.format(safeTax)}</span></span>
 				</div>
 		`)
 

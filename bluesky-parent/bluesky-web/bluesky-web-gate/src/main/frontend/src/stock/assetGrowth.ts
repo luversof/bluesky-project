@@ -126,38 +126,6 @@ interface AssetGrowthConfig {
             var syncing = false;
             var mainChart: any, dividendChart: any;
 
-            // 세로 눈금 전환(일반 · 로그, 2026-10-28). 전체 기간이면 앞 10 여 년이 0 근처에 깔려 안 읽혔다.
-            // 로그는 0 이하를 그릴 수 없어 투자 전 0 구간은 비어 보인다. 고른 값은 이 브라우저에만 둔다.
-            var SCALE_KEY = 'stock.assetGrowth.yScale';
-            var scaleButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('#assetGrowthFragment [data-asset-scale]'));
-            function readScale(): string {
-                try { return localStorage.getItem(SCALE_KEY) === 'logarithmic' ? 'logarithmic' : 'linear'; } catch (e) { return 'linear'; }
-            }
-            function applyScale(type: string) {
-                scaleButtons.forEach(function(b) {
-                    var on = b.dataset.assetScale === type;
-                    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-                    b.classList.toggle('btn-primary', on);
-                    b.classList.toggle('btn-ghost', !on);
-                });
-                if (!mainChart) return;
-                var y = mainChart.options.scales.y;
-                y.type = type;
-                y.ticks.callback = type === 'logarithmic'
-                    ? function(v: any) { return win.StockCharts.logTickLabel(Number(v)); }
-                    : yTicksCallback;
-                // update('none') 은 눈금 종류를 바꿔도 점 위치를 다시 재지 않았다(실측: 2015-01 점이 y 380, 맞는 값 180) - 전체 갱신.
-                mainChart.update();
-            }
-            scaleButtons.forEach(function(b) {
-                b.addEventListener('click', function() {
-                    var type = b.dataset.assetScale === 'logarithmic' ? 'logarithmic' : 'linear';
-                    try { localStorage.setItem(SCALE_KEY, type); } catch (e) {}
-                    applyScale(type);
-                });
-            });
-
-
             win.ensureStockCharts(function() {
                 var series = {
                     labels: labels,
@@ -216,7 +184,6 @@ interface AssetGrowthConfig {
                         });
                     }
                 }, mainChart);
-                applyScale(readScale());
             });
 
             win.ensureStockCharts(function() {

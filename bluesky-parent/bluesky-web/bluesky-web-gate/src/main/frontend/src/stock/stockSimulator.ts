@@ -341,7 +341,71 @@ function simulateScenario(scenario) {
 // 이 파일은 type="module" 없이 classic <script src> 로 로드된다. export 문을 넣으면 브라우저가
 // "Unexpected token 'export'" 로 파일 전체를 거부해 화면 기능이 통째로 죽는다(실제로 그렇게 깨뜨렸다).
 // 그래서 검증용으로는 export 대신 전역에 붙인다 - 브라우저에서는 쓰이지 않고 테스트만 읽는다.
+// 그래프에 세로 점선으로 찍을 시나리오 사건(2026-10-28 12차 자율). 요약 카드 · 타임라인 배지에는 "적자 14년 후" 같은 해가 있는데
+// 연도별 그래프에는 없어 선이 왜 꺾이는지 짝을 맞춰야 했다. 같은 해의 사건은 한 줄로 묶는다(점선이 겹쳐 글자가 포개진다).
+function chartMilestones(
+	summary: { firstDeficitYear?: number | null; firstShareSaleYear?: number | null; firstWealthDeclineYear?: number | null; depletionYear?: number | null } | null,
+	names: { deficit: string; drawdown: string; decline: string; depleted: string },
+): { year: number; text: string }[] {
+	if (!summary) return [];
+	const events: [number | null | undefined, string][] = [
+		[summary.firstDeficitYear, names.deficit],
+		[summary.firstShareSaleYear, names.drawdown],
+		[summary.firstWealthDeclineYear, names.decline],
+		[summary.depletionYear, names.depleted],
+	];
+	const byYear = new Map<number, string[]>();
+	for (const [year, name] of events) {
+		if (!year || year <= 0) continue;
+		if (!byYear.has(year)) byYear.set(year, []);
+		byYear.get(year)!.push(name);
+	}
+	return [...byYear.entries()].sort((a, b) => a[0] - b[0]).map(([year, list]) => ({ year, text: list.join(" · ") }));
+}
+
+// 위 사건을 그리는 Chart.js 플러그인. 차트마다 options.plugins.simMilestones.items 로 받는다. 글자가 가까우면 두 줄로 엇갈린다.
+const simMilestonesPlugin = {
+	id: "simMilestones",
+	afterDatasetsDraw(chart: any, _args: any, options: any) {
+		const items: { year: number; text: string }[] = (options && options.items) || [];
+		const xScale = chart.scales && chart.scales.x;
+		const area = chart.chartArea;
+		if (!items.length || !xScale || !area) return;
+		const ctx = chart.ctx;
+		const labels: any[] = chart.data.labels || [];
+		ctx.save();
+		ctx.font = "10px sans-serif";
+		ctx.textBaseline = "bottom";
+		// 줄마다 마지막 글자의 오른쪽 끝 - 빈 줄 중 첫째에 단다(가까운 사건이 셋이면 1 · 3 번째가 한 줄에서 겹쳤다).
+		const rowRight: number[] = [];
+		for (const item of items) {
+			const index = labels.indexOf(item.year);
+			if (index < 0) continue;
+			const x = xScale.getPixelForValue(index);
+			ctx.strokeStyle = "rgba(100,116,139,0.55)";
+			ctx.setLineDash([3, 3]);
+			ctx.beginPath();
+			ctx.moveTo(x, area.top);
+			ctx.lineTo(x, area.bottom);
+			ctx.stroke();
+			ctx.setLineDash([]);
+			const width = ctx.measureText(item.text).width;
+			const align = x + width / 2 > area.right ? "right" : x - width / 2 < area.left ? "left" : "center";
+			const left = align === "right" ? x - width : align === "left" ? x : x - width / 2;
+			let row = rowRight.findIndex((right) => right + 6 <= left);
+			// shortcut: 위 여백이 두 줄 자리뿐이라 두 줄 다 차 있으면 둘째 줄에 겹친다 - 사건이 넷 이상 몰리면 여백을 늘릴 것.
+			if (row < 0) row = Math.min(rowRight.length, 1);
+			rowRight[row] = left + width;
+			ctx.fillStyle = chart.options.color || "#64748b";
+			ctx.textAlign = align;
+			ctx.fillText(item.text, x, area.top - 2 - row * 11);
+		}
+		ctx.restore();
+	},
+};
+
 (globalThis as any).__stockWithdrawalSimulatorInternals = {
+	chartMilestones,
 	simulateScenario,
 	annualRateToMonthlyRate,
 	settleCashFlow,
@@ -1343,8 +1407,8 @@ function simulateScenario(scenario) {
 						<td class="amount-value">${formatCurrency(record.sharePrice)}</td>
 						<td class="amount-value">${formatCurrency(record.annualDividend)}</td>
 						<td class="amount-value">${formatCurrency(record.annualSpending)}</td>
-						<td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
 						<td class="amount-value ${record.annualGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(record.annualGap)}</td>
+						<td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
 						<td class="amount-value">${formatShares(record.soldSharesForSpending)}</td>
 						<td class="amount-value">${formatShares(record.reinvestedShares)}</td>
 						<td class="amount-value">${formatShares(record.shares)}</td>
@@ -1475,6 +1539,7 @@ function renderMonthlyDetailsTable(record) {
 			labels,
 			datasets,
 			true,
+			activeMilestones(simulations),
 		);
 	}
 
@@ -1521,6 +1586,7 @@ function renderMonthlyDetailsTable(record) {
 			labels,
 			datasets,
 			true,
+			activeMilestones(simulations),
 		);
 	}
 
@@ -1545,12 +1611,24 @@ function renderMonthlyDetailsTable(record) {
 		};
 	}
 
+	function activeMilestones(simulations) {
+		const activeScenario = getActiveScenario();
+		const simulation = activeScenario ? simulations.get(activeScenario.id) : null;
+		return chartMilestones(simulation ? simulation.summary : null, {
+			deficit: i18n.timelinePhaseDeficit,
+			drawdown: i18n.timelinePhaseDrawdown,
+			decline: i18n.timelinePhaseWealthDecline,
+			depleted: i18n.summaryDepletionYear,
+		});
+	}
+
 	function upsertCurrencyChart(
 		existingChart,
 		canvas,
 		labels,
 		datasets,
 		allowNegative,
+		milestones = [],
 	) {
 		if (!existingChart) {
 			// 차트 텍스트 대안 플러그인(common.ts). 이 화면은 chart.umd 를 직접 로드해 stock-charts.js 의 등록을 거치지 않는다.
@@ -1558,24 +1636,30 @@ function renderMonthlyDetailsTable(record) {
 				const summaryPlugin = (globalThis as any).__chartSummaryInternals?.chartSummaryPlugin;
 				if (summaryPlugin && Chart.register) Chart.register(summaryPlugin);
 			} catch (e) {}
+			const options = buildCurrencyChartOptions(allowNegative);
+			options.plugins.simMilestones = { items: milestones };
 			return new Chart(canvas, {
 				type: "line",
 				data: { labels, datasets },
-				options: buildCurrencyChartOptions(allowNegative),
+				options,
+				plugins: [simMilestonesPlugin],
 			});
 		}
 
 		existingChart.data.labels = labels;
 		existingChart.data.datasets = datasets;
+		existingChart.options.plugins.simMilestones = { items: milestones };
 		existingChart.options.scales.y.min = allowNegative ? undefined : 0;
 		existingChart.update();
 		return existingChart;
 	}
 
-	function buildCurrencyChartOptions(allowNegative) {
+	function buildCurrencyChartOptions(allowNegative): any {
 		return {
 			responsive: true,
 			maintainAspectRatio: false,
+			// 위 여백: 사건 이름(simMilestones) 두 줄 자리.
+			layout: { padding: { top: 24 } },
 			interaction: {
 				mode: "index",
 				intersect: false,
@@ -1608,8 +1692,12 @@ function renderMonthlyDetailsTable(record) {
 				y: {
 					min: allowNegative ? undefined : 0,
 					ticks: {
+						// 눈금은 다른 그래프와 같은 공용 압축 표기("10억") - 이 화면만 "₩10.0억" 이었다(2026-10-28). 요약 칩 · 툴팁은 그대로.
 						callback(value) {
-							return formatCompactCurrency(Number(value));
+							const charts = (globalThis as any).StockCharts;
+							return charts && charts.formatCompactNumber
+								? charts.formatCompactNumber(Number(value))
+								: formatCompactCurrency(Number(value));
 						},
 					},
 				},

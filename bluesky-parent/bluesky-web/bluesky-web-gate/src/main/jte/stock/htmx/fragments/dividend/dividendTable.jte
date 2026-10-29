@@ -88,12 +88,12 @@
 						@template.stock.htmx.fragments.components.sortHeader(field = "stockItemName", label = stockNameLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 						@template.stock.htmx.fragments.components.sortHeader(field = "accountName", label = accountLabel, cellClass = "cursor-pointer hover:bg-base-300 hidden sm:table-cell", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 						@template.stock.htmx.fragments.components.sortHeader(field = "grossAmount", label = grossAmountLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
+						@template.stock.htmx.fragments.components.sortHeader(field = "tax", label = taxLabel, cellClass = "text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell print:table-cell", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 						@template.stock.htmx.fragments.components.sortHeader(field = "netAmount", label = netAmountLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 						<th scope="col" class="text-right hidden md:table-cell">${quantityLabel}</th>
 						<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${referencePriceLabel}</th>
 						<th scope="col" class="text-right hidden xl:table-cell print:table-cell">${basisCostLabel}</th>
 						<th scope="col" class="text-right">${yieldOnBasisCostLabel}</th>
-						@template.stock.htmx.fragments.components.sortHeader(field = "tax", label = taxLabel, cellClass = "text-right cursor-pointer hover:bg-base-300 hidden lg:table-cell print:table-cell", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 						@template.stock.htmx.fragments.components.sortHeader(field = "taxableAmount", label = taxableAmountLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 					</tr>
 					</thead>
@@ -104,14 +104,14 @@
 						<td class="font-bold"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName()}</a></td>
 						<td class="hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(item.accountId() != null ? item.accountId().toString() : "")}" class="link link-hover">${item.accountName()}</a></td>
 						<td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
+						<%-- 이 표에서 "-" 는 두 뜻으로 읽힌다 - 0 원(세금 147 · 과세금액 119 줄)과 값 없음(기준 가격 등 5 줄, 까닭 tooltip 있음).
+						     0 을 그대로 적으면 표가 0 으로 도배되므로(2026-09-08 결정) 기호는 두고 0 쪽에만 까닭을 붙인다. --%>
+						<td class="text-right hidden lg:table-cell print:table-cell amount-value" title="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}">${item.tax() != null && item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : "-"}</td>
 						<td class="text-right text-dividend font-bold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
 						<td class="text-right hidden md:table-cell amount-value">${item.quantity() != null ? decimalFormat.format(item.quantity()) : "-"}</td>
 						<td class="text-right hidden xl:table-cell print:table-cell amount-value">${item.referencePrice() != null ? decimalFormat.format(item.referencePrice()) : "-"}</td>
 						<td class="text-right hidden xl:table-cell print:table-cell amount-value">${item.principalCost() != null ? decimalFormat.format(item.principalCost()) : "-"}</td>
 						<td class="text-right text-dividend font-medium" title="${basisMissingTitle.apply(item)}">${percentFormat.apply(item.yieldOnCostPct())}@if(basisMissingTitle.apply(item) != null)<span class="sr-only">${basisMissingTitle.apply(item)}</span>@endif</td>
-						<%-- 이 표에서 "-" 는 두 뜻으로 읽힌다 - 0 원(세금 147 · 과세금액 119 줄)과 값 없음(기준 가격 등 5 줄, 까닭 tooltip 있음).
-						     0 을 그대로 적으면 표가 0 으로 도배되므로(2026-09-08 결정) 기호는 두고 0 쪽에만 까닭을 붙인다. --%>
-						<td class="text-right hidden lg:table-cell print:table-cell amount-value" title="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}">${item.tax() != null && item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : "-"}</td>
 						<td class="text-right amount-value" title="${item.taxableAmount() != null && item.taxableAmount().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.taxableAmount() != null && item.taxableAmount().signum() == 0 ? zeroAmountTitle : null}">${item.taxableAmount() != null && item.taxableAmount().signum() != 0 ? decimalFormat.format(item.taxableAmount()) : "-"}</td>
 					</tr>
 					@endfor
@@ -129,12 +129,12 @@
 							<th scope="row" colspan="2" class="text-center sm:text-right sm:pr-4">${totalLabel}</th>
 							<td class="hidden sm:table-cell"></td>
 							<td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
+							<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">@if(totalTax == null || totalTax.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTax)}@endif</td>
 							<td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
 							<td class="text-right hidden md:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
 							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
 							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
 							<td class="text-right" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
-							<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">@if(totalTax == null || totalTax.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTax)}@endif</td>
 							<td class="text-right font-mono amount-value">@if(totalTaxableAmount == null || totalTaxableAmount.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTaxableAmount)}@endif</td>
 						</tr>
 					</tfoot>

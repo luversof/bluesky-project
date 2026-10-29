@@ -479,18 +479,7 @@ public class StockDetailViewController {
             ? timeSeriesResult.series()
             : List.of();
     model.addAttribute("timeSeries", timeSeries);
-    // 구간이 하나뿐이면 위의 합산 손익을 되풀이할 뿐이라 조각이 스스로 그리지 않는다.
-    model.addAttribute(
-        "periodBreakdown",
-        timeSeriesResult != null && timeSeriesResult.breakdown() != null
-            ? timeSeriesResult.breakdown()
-            : List.of());
-    // 표를 못 내는 구간에서도 자리를 비우지 않는다 - 자산 성장과 같은 규칙을 쓴다.
-    // 이 화면은 해 단위 표도 그리므로 monthlyOnly 는 false 다.
-    model.addAttribute(
-        "periodBreakdownNote",
-        net.luversof.web.gate.stock.util.StockBreakdownNoteUtil.note(
-            timeSeriesResult != null ? timeSeriesResult.breakdown() : null, false));
+    addPeriodSummaryAttributes(model, timeSeriesResult);
     var priceChart = net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceChartFuture);
     List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory =
         priceChart == null
@@ -522,29 +511,6 @@ public class StockDetailViewController {
       currentPrice = lastPricePoint.closePrice();
     }
 
-    // 합산 손익의 '평가' 몫은 <b>기간 평가 변동</b>이다(기말 평가손익 - 기초 평가손익).
-    //
-    // 예전에는 기간이 아닌 현재 시점 평가손익을 더했다. 그러면 아래 '기간별 손익' 표의 합과 맞지 않는다
-    // - 실측 2026-09-01 삼성전자 '올해' 2.9 억 차이, '최근 1년' 은 부호까지 반대(-0.26 억)였다.
-    // 같은 화면의 두 숫자가 안 맞으면 어느 쪽이 맞는지 알 수 없다.
-    //
-    // 평가 변동으로 바꾸면 (평가 변동 + 실현손익 + 배당) 이 요약의 periodProfit 과 1 원 오차 없이 같다
-    // (실측 두 기간 모두 차이 0). 표의 구간별 손익을 다 더한 값도 같은 수다.
-    var periodSummary = timeSeriesResult != null ? timeSeriesResult.summary() : null;
-    BigDecimal periodUnrealizedDelta =
-        periodSummary == null
-            ? null
-            : (periodSummary.unrealizedEnd() != null
-                    ? periodSummary.unrealizedEnd()
-                    : BigDecimal.ZERO)
-                .subtract(
-                    periodSummary.unrealizedStart() != null
-                        ? periodSummary.unrealizedStart()
-                        : BigDecimal.ZERO);
-    model.addAttribute("periodUnrealizedDelta", periodUnrealizedDelta);
-    // 비율도 자산 성장 화면과 같은 정의를 쓴다(기초 평가액 + 기간 중 순유입 원금 대비).
-    model.addAttribute(
-        "periodProfitRatePct", periodSummary != null ? periodSummary.periodProfitRatePct() : null);
     model.addAttribute(
         "stockNavEntries",
         stockNavEntries(
@@ -599,20 +565,6 @@ public class StockDetailViewController {
             evaluationAmount,
             evaluationProfit,
             holdingDividendTotal));
-    // 합산 손익의 세 몫(평가 변동 · 실현 · 배당)에 붙일 비율의 분모. 합산 비율(periodProfitRatePct)과 같은 분모라야 세 비율의
-    // 합이 합산 비율이 된다 - api-stock 은 '넣어 둔 돈' 을 기초 평가액 + max(기간 순유입, 0) 으로 둔다(TradeProfitService).
-    model.addAttribute(
-        "periodCapitalBase",
-        periodSummary == null
-            ? null
-            : (periodSummary.openingValue() != null
-                    ? periodSummary.openingValue()
-                    : BigDecimal.ZERO)
-                .add(
-                    (periodSummary.principalDelta() != null
-                            ? periodSummary.principalDelta()
-                            : BigDecimal.ZERO)
-                        .max(BigDecimal.ZERO)));
 
     model.addAttribute("holdingQuantity", holdingQuantity);
     model.addAttribute("averageBuyPrice", averageBuyPrice);
@@ -772,6 +724,8 @@ public class StockDetailViewController {
     seriesRequestPre.setEndDate(endDate);
     var accSeriesParams = seriesRequestPre.toParams();
     accSeriesParams.add("granularity", "AUTO");
+    // 합산 손익 상자 · 기간별 손익 표(사용자 결정 2026-10-29)를 차트 시리즈와 한 번의 시뮬레이션으로 함께 받는다 - 종목 상세와 같다.
+    accSeriesParams.add("breakdown", "AUTO");
 
     // 기간을 고르지 않은 기본 진입에서는 두 파라미터가 같아져 같은 호출이 두 번 나갔다(실측 2026-09-10).
     var accCalls = stockAsync.deduper();
@@ -787,7 +741,7 @@ public class StockDetailViewController {
     var accDividendsFuture =
         stockAsync.supply(() -> dividendClient.findDividends(accDividendParams));
     var accTimeSeriesFuture =
-        stockAsync.supply(() -> tradeProfitClient.timeSeries(accSeriesParams));
+        stockAsync.supply(() -> tradeProfitClient.timeSeriesWithSummary(accSeriesParams));
     var accStockItemsFuture = stockAsync.supply(this::loadStockItems);
     // 연평균 수익률(XIRR) 카드 입력 - 이 계좌의 매수 · 매도 · 배당 하루치 순현금흐름(종목별로 온다). 기간 선택과 무관한
     // '이 계좌 전체 거래' 값이라 기간을 싣지 않는다(사용자 선택 2026-09-17). 존은 '오늘' 을 정하는 존과 같게 싣는다 -
@@ -856,11 +810,13 @@ public class StockDetailViewController {
     BigDecimal totalDividend = netDividendTotal(dividends);
 
     // 평가액·원가 추이 (차트용, 기간 적용)
-    List<TradeProfitTimeSeriesPoint> timeSeries =
+    var accTimeSeriesResult =
         net.luversof.web.gate.stock.support.StockAsyncSupport.join(accTimeSeriesFuture);
-    if (timeSeries == null) {
-      timeSeries = List.of();
-    }
+    List<TradeProfitTimeSeriesPoint> timeSeries =
+        accTimeSeriesResult != null && accTimeSeriesResult.series() != null
+            ? accTimeSeriesResult.series()
+            : List.of();
+    addPeriodSummaryAttributes(model, accTimeSeriesResult);
 
     // 기간 필터 바 · 기간 배지 - 존(filterZone)은 최초 데이터 일자 조회가 쓰므로 조회를 던질 때 앞에서 정했다.
     addRangeFilterAttributes(
@@ -948,9 +904,9 @@ public class StockDetailViewController {
   }
 
   /**
-   * 상세 화면(종목 · 계좌)의 매매 내역 - 없으면 빈 목록, 최근 거래부터(날짜가 없는 줄은 뒤). 표도 이 순서로 그린다. 2026-10-22 까지 두
-   * 핸들러가 한 벌씩 들고 있었고 주석은 '최신순' 이라 적혀 있었지만 정렬은 늘 오름차순이었다 - 2026-10-28 최신순으로(계좌 하나에 121 행이라 최근
-   * 거래가 맨 아래였다. 같은 날 줄은 받은 차례 그대로).
+   * 상세 화면(종목 · 계좌)의 매매 내역 - 없으면 빈 목록, 거래일 순(오래된 것부터, 날짜가 없는 줄은 뒤). 표도 이 순서로 그린다. 2026-10-22 까지 두
+   * 핸들러가 한 벌씩 들고 있었고 주석은 '최신순' 이라 적혀 있었지만 정렬은 늘 오름차순이었다. 매매 · 배당 · 활동 목록과 같은 "오래된 것 위"
+   * 규칙이다(2026-10-28 최신순으로 바꿨다가 그 규칙과 갈려 되돌림).
    */
   static List<TradeResponse> tradesByDate(List<TradeResponse> trades) {
     return trades == null
@@ -958,18 +914,18 @@ public class StockDetailViewController {
         : trades.stream()
             .sorted(
                 Comparator.comparing(
-                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                    TradeResponse::tradeDate, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
   }
 
-  /** 상세 화면의 배당 내역 - 없으면 빈 목록, 최근 지급일부터(날짜가 없는 줄은 뒤). 매매 내역과 같은 차례(2026-10-28). */
+  /** 상세 화면의 배당 내역 - 없으면 빈 목록, 지급일 순(오래된 것부터, 날짜가 없는 줄은 뒤). */
   static List<DividendResponse> dividendsByPayDate(List<DividendResponse> dividends) {
     return dividends == null
         ? List.of()
         : dividends.stream()
             .sorted(
                 Comparator.comparing(
-                    DividendResponse::payDate, Comparator.nullsLast(Comparator.reverseOrder())))
+                    DividendResponse::payDate, Comparator.nullsLast(Comparator.naturalOrder())))
             .toList();
   }
 
@@ -978,6 +934,45 @@ public class StockDetailViewController {
     return dividends.stream()
         .map(dividend -> dividend.netAmount() != null ? dividend.netAmount() : BigDecimal.ZERO)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  /**
+   * 합산 손익 상자 · 기간별 손익 표 모델(종목 상세 · 계좌 상세 공용, 계좌는 2026-10-29 사용자 결정으로 추가). 입력은 api-stock
+   * timeSeriesWithSummary 한 번의 결과다.
+   *
+   * <p>합산 손익의 '평가' 몫은 <b>기간 평가 변동</b>이다(기말 평가손익 - 기초 평가손익). 예전에는 현재 시점 평가손익을 더해 아래 '기간별 손익' 표의 합과
+   * 맞지 않았다 - 실측 2026-09-01 삼성전자 '올해' 2.9 억 차이, '최근 1년' 은 부호까지 반대(-0.26 억). 평가 변동 + 실현손익 + 배당은 요약의
+   * periodProfit 과 1 원 오차 없이 같다(종목 실측 두 기간, 계좌 실측 2026-10-29 여섯 계좌 - 실현은 기록값).
+   */
+  static void addPeriodSummaryAttributes(
+      Model model,
+      net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult timeSeriesResult) {
+    var breakdown = timeSeriesResult != null ? timeSeriesResult.breakdown() : null;
+    // 구간이 하나뿐이면 위의 합산 손익을 되풀이할 뿐이라 조각이 스스로 그리지 않는다.
+    model.addAttribute("periodBreakdown", breakdown != null ? breakdown : List.of());
+    // 표를 못 내는 구간에서도 자리를 비우지 않는다 - 자산 성장과 같은 규칙. 상세 화면은 해 단위 표도 그리므로 monthlyOnly 는 false.
+    model.addAttribute(
+        "periodBreakdownNote",
+        net.luversof.web.gate.stock.util.StockBreakdownNoteUtil.note(breakdown, false));
+    var periodSummary = timeSeriesResult != null ? timeSeriesResult.summary() : null;
+    if (periodSummary == null) {
+      return;
+    }
+    model.addAttribute(
+        "periodUnrealizedDelta",
+        nz(periodSummary.unrealizedEnd()).subtract(nz(periodSummary.unrealizedStart())));
+    // 비율도 자산 성장 화면과 같은 정의를 쓴다(기초 평가액 + 기간 중 순유입 원금 대비).
+    model.addAttribute("periodProfitRatePct", periodSummary.periodProfitRatePct());
+    // 세 몫(평가 변동 · 실현 · 배당)에 붙일 비율의 분모. 합산 비율과 같은 분모라야 세 비율의 합이 합산 비율이 된다 - api-stock 은
+    // '넣어 둔 돈' 을 기초 평가액 + max(기간 순유입, 0) 으로 둔다(TradeProfitService).
+    model.addAttribute(
+        "periodCapitalBase",
+        nz(periodSummary.openingValue())
+            .add(nz(periodSummary.principalDelta()).max(BigDecimal.ZERO)));
+  }
+
+  private static BigDecimal nz(BigDecimal value) {
+    return value != null ? value : BigDecimal.ZERO;
   }
 
   /**

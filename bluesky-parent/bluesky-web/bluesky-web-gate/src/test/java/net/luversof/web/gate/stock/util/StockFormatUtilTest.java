@@ -271,4 +271,17 @@ class StockFormatUtilTest {
     assertThat(checked).as("기준표가 비었다").isGreaterThanOrEqualTo(16);
     assertThat(mismatches).as("기준표가 낡았다. 다시 뽑아 넣을 것").isEmpty();
   }
+
+  /** 비중 막대(2026-10-28): 그 비율만큼, 0 ~ 100 밖은 자르고, 로케일에 상관없이 점 소수. */
+  @Test
+  void 비중_막대는_비율만큼_칠한다() {
+    org.assertj.core.api.Assertions.assertThat(
+            StockFormatUtil.weightBarStyle(new java.math.BigDecimal("82.15")))
+        .contains(" 82.2%, transparent 82.2%)");
+    org.assertj.core.api.Assertions.assertThat(
+            StockFormatUtil.weightBarStyle(new java.math.BigDecimal("130")))
+        .contains(" 100.0%,");
+    org.assertj.core.api.Assertions.assertThat(StockFormatUtil.weightBarStyle(null))
+        .contains(" 0.0%,");
+  }
 }

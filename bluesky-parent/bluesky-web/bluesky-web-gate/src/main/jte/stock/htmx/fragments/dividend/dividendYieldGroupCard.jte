@@ -141,12 +141,12 @@
 									<div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-gross>0</div>
 								</div>
 								<div class="rounded-box bg-base-100/80 px-3 py-2">
-									<div class="text-xs text-base-content/60">${netAmountLabel}</div>
-									<div class="mt-1 font-mono font-semibold amount-value text-dividend" data-dividend-yield-selection-net>0</div>
-								</div>
-								<div class="rounded-box bg-base-100/80 px-3 py-2">
 									<div class="text-xs text-base-content/60">${taxLabel}</div>
 									<div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-tax>0</div>
+								</div>
+								<div class="rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${netAmountLabel}</div>
+									<div class="mt-1 font-mono font-semibold amount-value text-dividend" data-dividend-yield-selection-net>0</div>
 								</div>
 								<div class="rounded-box bg-base-100/80 px-3 py-2">
 									<div class="text-xs text-base-content/60">${taxableAmountLabel}</div>
@@ -175,7 +175,6 @@
 							<thead>
 								<tr class="text-base-content/60">
 									@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "label", sortType = "text", label = nameLabel, buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 w-full justify-start px-1 text-xs text-base-content/60 hover:text-base-content")
-									@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "grossAmount", sortType = "number", label = grossAmountLabel, cellClass = "text-right yield-extra-col", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content")
 								@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "currentValue", sortType = "number", label = currentValueLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content")
 								<th scope="col" class="text-right">
 									<button type="button"
@@ -195,6 +194,8 @@
 										<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 									</button>
 								</th>
+									@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "grossAmount", sortType = "number", label = grossAmountLabel, cellClass = "text-right yield-extra-col", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content")
+@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "taxAmount", sortType = "number", label = taxLabel, cellClass = "text-right yield-extra-col", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content")
 									<th scope="col" class="text-right">
 										<button type="button"
 												class="btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content"
@@ -222,7 +223,6 @@
 										<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 									</button>
 								</th>
-@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "taxAmount", sortType = "number", label = taxLabel, cellClass = "text-right yield-extra-col", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content")
 									@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "taxableAmount", sortType = "number", label = taxableAmountLabel, cellClass = "text-right yield-extra-col", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 w-full justify-end px-1 text-xs text-base-content/60 hover:text-base-content")
 									<th scope="col" class="text-right yield-extra-col">
 										<button type="button"
@@ -289,14 +289,14 @@
 										data-combined-profit="${holdingProfit != null ? holdingProfit.combinedProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-current-value="${row.groupId() != null && currentValues.get(row.groupId()) != null ? currentValues.get(row.groupId()).toPlainString() : BigDecimal.ZERO.toPlainString()}">
 										<th scope="row" class="font-medium"><a href="${"account".equals(kind) ? StockDetailLinkUtil.account(row.groupId() != null ? row.groupId().toString() : "") : StockDetailLinkUtil.item(row.groupId() != null ? row.groupId().toString() : "")}" class="link link-hover" data-stock-tag-tooltip="${tagTooltip}">${row.label()}</a></th>
-										<td class="text-right yield-extra-col amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
 										<td class="text-right amount-value" data-current-value-cell>@if(row.groupId() != null && currentValues.get(row.groupId()) != null)${decimalFormat.format(currentValues.get(row.groupId()))}@else<span class="text-base-content/60" aria-hidden="true" title="${currentValueNoneTitle}">-</span><span class="sr-only">${currentValueNoneTitle}</span>@endif</td>
 										<td class="text-right" data-evaluation-profit-cell>@if(holdingProfit != null && holdingProfit.held())<span class="amount-value font-semibold ${profitClass.apply(holdingProfit.evaluationProfit())}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingProfit.evaluationProfit()))}</span> <div class="text-[11px] whitespace-nowrap ${profitClass.apply(holdingProfit.evaluationProfitPct())}">(${signedPctText.apply(holdingProfit.evaluationProfitPct())})</div>@else<span class="text-base-content/60" aria-hidden="true" title="${evaluationProfitNoneTitle}">-</span><span class="sr-only">${evaluationProfitNoneTitle}</span>@endif</td>
 										<td class="text-right" data-realized-profit-cell>@if(holdingProfit != null && holdingProfit.realizedProfit() != null)<span class="amount-value font-semibold ${profitClass.apply(holdingProfit.realizedProfit())}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingProfit.realizedProfit()))}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${realizedProfitNoneTitle}">-</span><span class="sr-only">${realizedProfitNoneTitle}</span>@endif</td>
+										<td class="text-right yield-extra-col amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
+										<td class="text-right yield-extra-col amount-value" title="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}" aria-label="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>
 										<td class="text-right" data-annualized-cell data-amount-basis="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">@if(yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount()) != null)<span class="sr-only">${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}</span>@endif<div class="amount-value">${decimalFormat.format(row.totalNetAmount())}</div> <div class="text-[11px] whitespace-nowrap">@if(row.annualizedYieldPct() != null)<span class="font-semibold text-dividend" data-annualized-value>${StockViewSupport.msg("stock.dividend.yield.ttm.value", percentFormat.apply(row.annualizedYieldPct()))}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${dailyBasisNoneTitle}">-</span><span class="sr-only">${dailyBasisNoneTitle}</span>@endif@if(row.heldDayCount() > 0)<span class="text-base-content/60" data-held-days> · ${heldDaysText.apply(row.heldDayCount())}</span>@if(row.shortHeld()) <span class="badge badge-outline badge-xs align-middle" data-short-held-badge data-stock-tag-tooltip="${shortHeldDesc.apply(row.heldDayCount())}">${shortHeldLabel}</span><span class="sr-only">${shortHeldDesc.apply(row.heldDayCount())}</span>@endif@endif</div>@if(yearlyMaxAnnualized.signum() > 0 && row.annualizedYieldPct() != null && row.groupId() == null)<div class="ml-auto mt-0.5 h-1 w-16 rounded-full bg-base-200" aria-hidden="true" data-yearly-bar><div class="h-1 rounded-full text-dividend yield-bar-fill" style="width: ${row.annualizedYieldPct().multiply(BigDecimal.valueOf(100)).divide(yearlyMaxAnnualized, 1, RoundingMode.HALF_UP).max(BigDecimal.ZERO).min(BigDecimal.valueOf(100)).toPlainString()}%"></div></div>@endif</td>
 										<td class="text-right" data-combined-profit-cell>@if(holdingProfit != null)<span class="amount-value font-semibold ${profitClass.apply(holdingProfit.combinedProfit())}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingProfit.combinedProfit()))}</span>@if(holdingProfit.combinedProfitPct() != null)<div class="text-[11px] whitespace-nowrap ${profitClass.apply(holdingProfit.combinedProfitPct())}">${combinedRateText.apply(holdingProfit.combinedProfitPct())}</div>@endif@else<span class="text-base-content/60" aria-hidden="true" title="${evaluationProfitNoneTitle}">-</span>@endif</td>
 										<td class="text-right amount-value yield-extra-col" data-held-average-cell title="${row.heldAverageDailyPrincipalCost() == null ? dailyBasisNoneTitle : null}">${row.heldAverageDailyPrincipalCost() != null ? decimalFormat.format(row.heldAverageDailyPrincipalCost()) : "-"}</td>
-										<td class="text-right yield-extra-col amount-value" title="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}" aria-label="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>
 										<td class="text-right yield-extra-col amount-value" title="${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() == 0 ? zeroAmountTitle : null}" aria-label="${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() == 0 ? zeroAmountTitle : null}">${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() != 0 ? decimalFormat.format(row.totalTaxableAmount()) : "-"}</td>
 										<td class="text-right yield-extra-col amount-value" title="${row.averageDailyPrincipalCost() == null ? dailyBasisNoneTitle : null}">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}@if(row.averageDailyPrincipalCost() == null)<span class="sr-only">${dailyBasisNoneTitle}</span>@endif</td>
 										<td class="text-right text-dividend font-medium yield-extra-col" data-amount-basis="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${row.averageDailyPrincipalCost() != null && row.averageDailyPrincipalCost().signum() > 0 ? percentFormat.apply(row.yieldOnDailyAverageCostPct()) : "-"}</td>
@@ -310,15 +310,15 @@
 							<tfoot>
 								<tr class="bg-base-200 font-bold">
 									<th scope="row">${totalLabel}</th>
-									<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(footerGrossAmount)}</td>
 										!{var holdingProfitTotal = DividendHoldingProfitUtil.total(groupRows, currentValues, evaluationProfits, realizedProfits, totalBuyCosts);}
 										<td class="text-right font-mono amount-value" data-current-value-total>${decimalFormat.format(currentValueTotal)}</td>
 										<td class="text-right" data-evaluation-profit-total>@if(holdingProfitTotal != null && holdingProfitTotal.held())<span class="amount-value font-semibold ${profitClass.apply(holdingProfitTotal.evaluationProfit())}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingProfitTotal.evaluationProfit()))}</span> <div class="text-[11px] whitespace-nowrap ${profitClass.apply(holdingProfitTotal.evaluationProfitPct())}">(${signedPctText.apply(holdingProfitTotal.evaluationProfitPct())})</div>@else<span class="text-base-content/60" aria-hidden="true" title="${evaluationProfitNoneTitle}">-</span><span class="sr-only">${evaluationProfitNoneTitle}</span>@endif</td>
 										<td class="text-right" data-realized-profit-total>@if(holdingProfitTotal != null && holdingProfitTotal.realizedProfit() != null)<span class="amount-value font-semibold ${profitClass.apply(holdingProfitTotal.realizedProfit())}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingProfitTotal.realizedProfit()))}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${realizedProfitNoneTitle}">-</span><span class="sr-only">${realizedProfitNoneTitle}</span>@endif</td>
+									<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(footerGrossAmount)}</td>
+										<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(footerTaxAmount)}</td>
 										<td class="text-right text-dividend" data-annualized-total data-amount-basis="${yieldBasisTitle.apply(footerNetWithPrincipalCost, footerNetAmount)}" title="${yieldBasisTitle.apply(footerNetWithPrincipalCost, footerNetAmount)}">@if(yieldBasisTitle.apply(footerNetWithPrincipalCost, footerNetAmount) != null)<span class="sr-only">${yieldBasisTitle.apply(footerNetWithPrincipalCost, footerNetAmount)}</span>@endif<div class="font-mono amount-value">${decimalFormat.format(footerNetAmount)}</div> <div class="text-[11px] font-normal whitespace-nowrap">${footerAnnualizedPct.apply(groupRows) != null ? StockViewSupport.msg("stock.dividend.yield.ttm.value", percentFormat.apply(footerAnnualizedPct.apply(groupRows))) : "-"}@if(portfolioYield != null && portfolioYield.heldDayCount() > 0)<span class="text-base-content/60"> · ${heldDaysText.apply(portfolioYield.heldDayCount())}</span>@endif</div></td>
 										<td class="text-right" data-combined-profit-total>@if(holdingProfitTotal != null)<span class="amount-value font-semibold ${profitClass.apply(holdingProfitTotal.combinedProfit())}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingProfitTotal.combinedProfit()))}</span>@if(holdingProfitTotal.combinedProfitPct() != null)<div class="text-[11px] whitespace-nowrap ${profitClass.apply(holdingProfitTotal.combinedProfitPct())}">${combinedRateText.apply(holdingProfitTotal.combinedProfitPct())}</div>@endif@else<span class="text-base-content/60" aria-hidden="true" title="${evaluationProfitNoneTitle}">-</span>@endif</td>
 										<td class="text-right font-mono amount-value yield-extra-col" data-held-average-total>${footerHeldAverage != null ? decimalFormat.format(footerHeldAverage) : "-"}</td>
-										<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(footerTaxAmount)}</td>
 									<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(footerTaxableAmount)}</td>
 									<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(footerDailyPrincipalCost)}</td>
 									<td class="text-right text-dividend font-medium yield-extra-col" data-amount-basis="${yieldBasisTitle.apply(footerNetWithPrincipalCost, footerNetAmount)}" title="${yieldBasisTitle.apply(footerNetWithPrincipalCost, footerNetAmount)}">${percentFormat.apply(footerYieldOnDailyAverageCostPct)}</td>
