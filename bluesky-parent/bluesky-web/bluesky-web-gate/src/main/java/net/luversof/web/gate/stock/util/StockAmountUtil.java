@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 /**
  * 표의 <b>합계를 내는 규칙</b>.
@@ -59,7 +60,7 @@ public final class StockAmountUtil {
   }
 
   /** 같은 규칙으로 int 를 더한다(건수). */
-  public static <T> int count(Collection<T> rows, java.util.function.ToIntFunction<T> getter) {
+  public static <T> int count(Collection<T> rows, ToIntFunction<T> getter) {
     int total = 0;
     if (rows == null) {
       return total;

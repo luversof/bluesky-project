@@ -291,7 +291,12 @@ public class Poe2DataController {
       return build.summarize(code);
     } catch (IllegalArgumentException e) {
       // ResponseStatusException 은 공통 예외 처리기가 500 으로 바꾼다 — 4xx 는 상태를 실은 BlueskyException 으로(WARN 로그)
-      throw new io.github.luversof.boot.exception.BlueskyException("POE2_INVALID_BUILD_CODE", 400);
+      // PoE1 코드면 오류 코드를 따로(10-29 R9 — 게이트가 PoE1 빌드 화면으로 안내한다)
+      throw new io.github.luversof.boot.exception.BlueskyException(
+          Poe2BuildService.POE1_CODE.equals(e.getMessage())
+              ? "POE2_BUILD_IS_POE1"
+              : "POE2_INVALID_BUILD_CODE",
+          400);
     }
   }
 

@@ -5,8 +5,12 @@ import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -16,6 +20,7 @@ import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 import net.luversof.web.gate.stock.dto.view.MonthlyDividendReferenceSummaryView;
 import net.luversof.web.gate.stock.dto.view.MonthlyDividendSimulatorSummaryView;
 import net.luversof.web.gate.stock.util.StockAmountUtil;
+import net.luversof.web.gate.stock.util.StockFormatUtil;
 
 /** 월배당 기준 데이터(payout)와 시뮬레이터 스냅샷에 대한 순수 집계 계산. 컨트롤러에서 분리해 단위 테스트가 가능하도록 한다. */
 @Component
@@ -43,7 +48,7 @@ public class MonthlyDividendCalculator {
     BigDecimal averageDividendAmountPerShare1y =
         lastYearRows.stream()
             .map(MonthlyDividendPayoutResponse::dividendAmountPerShare)
-            .map(net.luversof.web.gate.stock.util.StockAmountUtil::nz)
+            .map(StockAmountUtil::nz)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .divide(BigDecimal.valueOf(lastYearRows.size()), 4, RoundingMode.HALF_UP);
 
@@ -105,16 +110,15 @@ public class MonthlyDividendCalculator {
    * 합계만 조용히 옛 수량 기준이었다.
    */
   public static CurrentQuantitySummary currentQuantitySummary(
-      List<MonthlyDividendSnapshotResponse> rows,
-      java.util.Map<java.util.UUID, Integer> currentQuantityByStockItem) {
+      List<MonthlyDividendSnapshotResponse> rows, Map<UUID, Integer> currentQuantityByStockItem) {
     long staleCount = 0;
     BigDecimal total = BigDecimal.ZERO;
     BigDecimal latestTotal = BigDecimal.ZERO;
     if (rows == null) {
       return new CurrentQuantitySummary(0, total, latestTotal);
     }
-    java.util.Map<java.util.UUID, Integer> quantities =
-        currentQuantityByStockItem != null ? currentQuantityByStockItem : java.util.Map.of();
+    Map<UUID, Integer> quantities =
+        currentQuantityByStockItem != null ? currentQuantityByStockItem : Map.of();
     for (MonthlyDividendSnapshotResponse row : rows) {
       BigDecimal perShare = row.averageMonthlyDividendPerShare1y();
       Integer currentQuantity = quantities.get(row.stockItemId());
@@ -158,7 +162,7 @@ public class MonthlyDividendCalculator {
 
   public MonthlyDividendSimulatorSummaryView buildSimulatorSummary(
       List<MonthlyDividendSnapshotResponse> rows) {
-    return buildSimulatorSummary(rows, java.util.Map.of());
+    return buildSimulatorSummary(rows, Map.of());
   }
 
   /**
@@ -166,10 +170,9 @@ public class MonthlyDividendCalculator {
    * 주어지면 최근 월 배당금을 월중/월말로 나눠 함께 집계한다.
    */
   public MonthlyDividendSimulatorSummaryView buildSimulatorSummary(
-      List<MonthlyDividendSnapshotResponse> rows,
-      java.util.Map<String, String> payoutWindowBySymbol) {
-    java.util.Map<String, String> windowBySymbol =
-        payoutWindowBySymbol != null ? payoutWindowBySymbol : java.util.Map.of();
+      List<MonthlyDividendSnapshotResponse> rows, Map<String, String> payoutWindowBySymbol) {
+    Map<String, String> windowBySymbol =
+        payoutWindowBySymbol != null ? payoutWindowBySymbol : Map.of();
     BigDecimal totalLatestMonthlyDividend = BigDecimal.ZERO;
     BigDecimal totalLatestMonthlyDividendMidMonth = BigDecimal.ZERO;
     BigDecimal totalLatestMonthlyDividendMonthEnd = BigDecimal.ZERO;
@@ -203,16 +206,14 @@ public class MonthlyDividendCalculator {
     BigDecimal totalExpectedMonthlyDividend =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::expectedMonthlyDividend)
-            .map(net.luversof.web.gate.stock.util.StockAmountUtil::nz)
+            .map(StockAmountUtil::nz)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     // 연 값은 <b>화면에 적히는 월 값</b>의 12 배여야 한다 - 실측 2026-09-11: 시뮬레이터는 원 단위로 자르기 전의
     // 합계에 12 를 곱해 36,657,049 를 냈는데, 화면의 월 값(3,054,754)에 12 를 곱하면 36,657,048 이다.
     // 배당 캘린더는 같은 자료로 ...048 을 적고 있어 두 화면이 1 원 달랐고, 시뮬레이터 안에서도 월x12 가 연과 안 맞았다
     // (과세표준은 220,539 x 12 = 2,646,468 인데 2,646,466 이었다).
     BigDecimal displayedMonthlyDividend =
-        BigDecimal.valueOf(
-            net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
-                totalExpectedMonthlyDividend));
+        BigDecimal.valueOf(StockFormatUtil.displayWon(totalExpectedMonthlyDividend));
     BigDecimal totalExpectedAnnualDividend =
         displayedMonthlyDividend.multiply(BigDecimal.valueOf(12));
     // 배당 캘린더도 같은 값을 적는다. 거기서는 종목별 과세표준을 칸에 찍으므로 <b>보이는 값</b>을 더해야
@@ -221,21 +222,16 @@ public class MonthlyDividendCalculator {
     BigDecimal totalExpectedTaxableBaseAmount =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::expectedTaxableBaseAmount)
-            .map(
-                value ->
-                    BigDecimal.valueOf(
-                        net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(value)))
+            .map(value -> BigDecimal.valueOf(StockFormatUtil.displayWon(value)))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal displayedMonthlyTaxableBase =
-        BigDecimal.valueOf(
-            net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
-                totalExpectedTaxableBaseAmount));
+        BigDecimal.valueOf(StockFormatUtil.displayWon(totalExpectedTaxableBaseAmount));
     BigDecimal totalExpectedAnnualTaxableBaseAmount =
         displayedMonthlyTaxableBase.multiply(BigDecimal.valueOf(12));
     BigDecimal totalCurrentMarketValue =
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::currentMarketValue)
-            .map(net.luversof.web.gate.stock.util.StockAmountUtil::nz)
+            .map(StockAmountUtil::nz)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     BigDecimal portfolioExpectedAnnualYieldPct =
@@ -295,14 +291,13 @@ public class MonthlyDividendCalculator {
    *
    * <p>2026-09-17 까지 화면은 1 위 하나만 말했다 &mdash; 사용자 요청: "비교 우위를 최상 1 개만 표시하는데 순위를 확인할 수 있으면".
    */
-  static java.util.Map<java.util.UUID, Integer> comparisonRanks(
-      List<MonthlyDividendSnapshotResponse> rows) {
-    java.util.Map<java.util.UUID, Integer> ranks = new java.util.LinkedHashMap<>();
+  static Map<UUID, Integer> comparisonRanks(List<MonthlyDividendSnapshotResponse> rows) {
+    Map<UUID, Integer> ranks = new LinkedHashMap<>();
     if (rows == null) {
       return ranks;
     }
     List<MonthlyDividendSnapshotResponse> ordered =
-        rows.stream().filter(java.util.Objects::nonNull).sorted(COMPARISON_ORDER).toList();
+        rows.stream().filter(Objects::nonNull).sorted(COMPARISON_ORDER).toList();
     int rank = 0;
     for (MonthlyDividendSnapshotResponse row : ordered) {
       rank++;

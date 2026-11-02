@@ -3,13 +3,21 @@ package net.luversof.web.gate.stock.service;
 import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
@@ -18,22 +26,29 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
+import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutImportRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertRequest;
+import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 import net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView;
+import net.luversof.web.gate.stock.httpexchange.AccountClient;
+import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.support.StockViewSupport;
+import net.luversof.web.gate.stock.util.KrxRecordDateUtil;
+import net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil;
 import net.luversof.web.gate.stock.util.StockAmountUtil;
+import net.luversof.web.gate.stock.util.StockPriceBasisUtil;
 
 /**
  * 월배당 기준(프로필·지급이력) 화면이 쓰는 <b>데이터 적재와 모델 조립</b>.
@@ -106,19 +121,15 @@ public class MonthlyDividendReferenceSupport {
     this.monthlyDividendViewSupport = monthlyDividendViewSupport;
   }
 
-  @org.springframework.beans.factory.annotation.Autowired
-  private net.luversof.web.gate.stock.httpexchange.DividendClient dividendClient;
+  @org.springframework.beans.factory.annotation.Autowired private DividendClient dividendClient;
 
-  @org.springframework.beans.factory.annotation.Autowired
-  private net.luversof.web.gate.stock.httpexchange.AccountClient accountClient;
+  @org.springframework.beans.factory.annotation.Autowired private AccountClient accountClient;
 
-  public void setDividendClient(
-      net.luversof.web.gate.stock.httpexchange.DividendClient dividendClient) {
+  public void setDividendClient(DividendClient dividendClient) {
     this.dividendClient = dividendClient;
   }
 
-  public void setAccountClient(
-      net.luversof.web.gate.stock.httpexchange.AccountClient accountClient) {
+  public void setAccountClient(AccountClient accountClient) {
     this.accountClient = accountClient;
   }
 
@@ -163,17 +174,15 @@ public class MonthlyDividendReferenceSupport {
       return Map.of();
     }
     try {
-      java.util.Set<UUID> deferredAccountIds = new java.util.HashSet<>();
-      for (net.luversof.web.gate.stock.domain.Account account :
-          accountClient.getAccountsByUserId(userId)) {
+      Set<UUID> deferredAccountIds = new HashSet<>();
+      for (Account account : accountClient.getAccountsByUserId(userId)) {
         if (account != null && account.isTaxDeferred()) {
           deferredAccountIds.add(account.id());
         }
       }
       MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
       params.add("userId", userId.toString());
-      params.add(
-          "startDate", java.time.Instant.now().minus(java.time.Duration.ofDays(365)).toString());
+      params.add("startDate", Instant.now().minus(Duration.ofDays(365)).toString());
       return taxableRatioBasis(dividendClient.findDividends(params), deferredAccountIds);
     } catch (RuntimeException ex) {
       log.warn("과세표준 비중 나눔 조회 실패: userId={}", userId, ex);
@@ -183,11 +192,10 @@ public class MonthlyDividendReferenceSupport {
 
   /** 배당 목록을 종목별로 과세이연 / 그 밖 계좌로 나눠 더한다. */
   public static Map<UUID, TaxableRatioBasis> taxableRatioBasis(
-      List<net.luversof.web.gate.stock.dto.response.DividendResponse> dividends,
-      java.util.Set<UUID> deferredAccountIds) {
+      List<DividendResponse> dividends, Set<UUID> deferredAccountIds) {
     Map<UUID, BigDecimal[]> sums = new LinkedHashMap<>();
     if (dividends != null) {
-      for (net.luversof.web.gate.stock.dto.response.DividendResponse dividend : dividends) {
+      for (DividendResponse dividend : dividends) {
         if (dividend == null || dividend.stockItemId() == null) {
           continue;
         }
@@ -231,8 +239,7 @@ public class MonthlyDividendReferenceSupport {
         monthlyDividendViewSupport.resolveProfileDirection(profileSort, requestedProfileDirection);
     Map<String, MonthlyDividendLatestPayoutView> latestPayoutBySymbol =
         latestPayoutBySymbol(
-            loadAllMonthlyDividendPayoutsQuietly(),
-            LocalDate.now(java.time.ZoneId.of("Asia/Seoul")));
+            loadAllMonthlyDividendPayoutsQuietly(), LocalDate.now(ZoneId.of("Asia/Seoul")));
     Map<String, LocalDate> latestRecordDateBySymbol = new HashMap<>();
     latestPayoutBySymbol.forEach(
         (symbol, view) -> latestRecordDateBySymbol.put(symbol, view.recordDate()));
@@ -373,7 +380,7 @@ public class MonthlyDividendReferenceSupport {
    *
    * <p>이름이 같은 종목은 없지만, 코드까지 비교해 두면 순서가 입력 순서에 흔들리지 않는다.
    */
-  public List<StockItem> sortSelectableStockItems(java.util.Collection<StockItem> stockItems) {
+  public List<StockItem> sortSelectableStockItems(Collection<StockItem> stockItems) {
     if (stockItems == null) {
       return List.of();
     }
@@ -443,7 +450,7 @@ public class MonthlyDividendReferenceSupport {
    *
    * <p>계산은 관리 화면이 쓰는 {@code buildReferenceSummary} 를 그대로 불러 정의를 하나로 둔다.
    */
-  public java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol() {
+  public Map<String, BigDecimal> referenceTaxableRatioBySymbol() {
     return referenceTaxableRatioBySymbol(
         monthlyDividendPayoutClient.findPayouts(new LinkedMultiValueMap<>()));
   }
@@ -453,24 +460,22 @@ public class MonthlyDividendReferenceSupport {
    *
    * <p>배당 캘린더는 지급일 추정 때문에 지급이력을 이미 갖고 있다 &mdash; 같은 목록을 한 번 더 받아 올 이유가 없다.
    */
-  public java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol(
+  public Map<String, BigDecimal> referenceTaxableRatioBySymbol(
       List<MonthlyDividendPayoutResponse> payouts) {
     if (payouts == null || payouts.isEmpty()) {
-      return java.util.Map.of();
+      return Map.of();
     }
-    java.util.Map<String, List<MonthlyDividendPayoutResponse>> bySymbol =
-        new java.util.LinkedHashMap<>();
+    Map<String, List<MonthlyDividendPayoutResponse>> bySymbol = new LinkedHashMap<>();
     for (MonthlyDividendPayoutResponse payout : payouts) {
       if (payout.stockItemSymbol() == null) {
         continue;
       }
       bySymbol
           .computeIfAbsent(
-              payout.stockItemSymbol().trim().toUpperCase(Locale.ROOT),
-              key -> new java.util.ArrayList<>())
+              payout.stockItemSymbol().trim().toUpperCase(Locale.ROOT), key -> new ArrayList<>())
           .add(payout);
     }
-    java.util.Map<String, BigDecimal> result = new java.util.LinkedHashMap<>();
+    Map<String, BigDecimal> result = new LinkedHashMap<>();
     for (var entry : bySymbol.entrySet()) {
       var summary =
           monthlyDividendCalculator.buildReferenceSummary(entry.getKey(), entry.getValue());
@@ -509,9 +514,8 @@ public class MonthlyDividendReferenceSupport {
           (left, right) -> byDate.compare(left, right) >= 0 ? left : right);
     }
     // 기준일 규칙이 선 종목은 규칙의 가장 최근 기준일로 "갱신 확인" 을 판정한다(2026-10-20 - 35 일을 기다리지 않는다).
-    Map<String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule> rules =
-        net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.settlementRulesFromResponses(
-            payouts);
+    Map<String, MonthlyDividendPayDayUtil.SettlementRule> rules =
+        MonthlyDividendPayDayUtil.settlementRulesFromResponses(payouts);
     Map<String, MonthlyDividendLatestPayoutView> result = new HashMap<>();
     latest.forEach(
         (symbol, payout) -> {
@@ -519,7 +523,7 @@ public class MonthlyDividendReferenceSupport {
           LocalDate expected =
               rule != null
                   // 기준일 "당일" 은 아직 지나지 않았다 - 어제까지 지난 기준일로 본다(검토 2026-10-20: 당일에 "지났는데" 배지가 떴다).
-                  ? net.luversof.web.gate.stock.util.KrxRecordDateUtil.latestRecordDateOnOrBefore(
+                  ? KrxRecordDateUtil.latestRecordDateOnOrBefore(
                       today.minusDays(1), rule.payoutWindow())
                   : null;
           result.put(
@@ -549,7 +553,7 @@ public class MonthlyDividendReferenceSupport {
       return List.of();
     }
     return payouts.stream()
-        .filter(java.util.Objects::nonNull)
+        .filter(Objects::nonNull)
         .sorted(
             Comparator.comparing(
                     MonthlyDividendPayoutResponse::recordDate,
@@ -744,7 +748,7 @@ public class MonthlyDividendReferenceSupport {
    * 종목코드 정규화(비면 null, 아니면 앞뒤 공백을 걷고 대문자) - 규칙은 MonthlyDividendPayDayUtil.normalizeSymbol 한 곳에 있다.
    */
   public String normalizeMonthlyDividendSymbol(String symbol) {
-    return net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.normalizeSymbol(symbol);
+    return MonthlyDividendPayDayUtil.normalizeSymbol(symbol);
   }
 
   public void validateMonthlyDividendSymbol(String symbol) {
@@ -777,7 +781,7 @@ public class MonthlyDividendReferenceSupport {
       List<MonthlyDividendProfileResponse> profiles) {
     return profiles.stream()
         .map(MonthlyDividendProfileResponse::displayOrder)
-        .filter(java.util.Objects::nonNull)
+        .filter(Objects::nonNull)
         .max(Integer::compareTo)
         .map(value -> value + 1)
         .orElse(1);
@@ -793,14 +797,12 @@ public class MonthlyDividendReferenceSupport {
     params.add("groupBy", "STOCKITEM");
     Map<UUID, Integer> quantities = new HashMap<>();
     Map<UUID, BigDecimal> averageBuyPrices = new HashMap<>();
-    java.time.LocalDate basisDate = null;
+    LocalDate basisDate = null;
     String basisIntradayTime = null;
     try {
       List<TradeProfit> rows = tradeProfitClient.calculateProfit(params);
-      basisDate =
-          net.luversof.web.gate.stock.util.StockPriceBasisUtil.priceBasisDateWithFallback(rows);
-      basisIntradayTime =
-          net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(rows, basisDate);
+      basisDate = StockPriceBasisUtil.priceBasisDateWithFallback(rows);
+      basisIntradayTime = StockPriceBasisUtil.intradayTime(rows, basisDate);
       if (rows != null) {
         for (TradeProfit row : rows) {
           if (row.stockItemId() != null) {
@@ -834,7 +836,7 @@ public class MonthlyDividendReferenceSupport {
   public record CurrentHoldings(
       Map<UUID, Integer> quantities,
       Map<UUID, BigDecimal> averageBuyPrices,
-      java.time.LocalDate priceBasisDate,
+      LocalDate priceBasisDate,
       boolean unavailable,
       /**
        * 그 날 시세를 장중에 받았으면 받은 시각("HH:mm"), 종가면 null(2026-10-02 - StockPriceBasisUtil.intradayTime).
@@ -844,7 +846,7 @@ public class MonthlyDividendReferenceSupport {
     public CurrentHoldings(
         Map<UUID, Integer> quantities,
         Map<UUID, BigDecimal> averageBuyPrices,
-        java.time.LocalDate priceBasisDate,
+        LocalDate priceBasisDate,
         boolean unavailable) {
       this(quantities, averageBuyPrices, priceBasisDate, unavailable, null);
     }

@@ -16,7 +16,7 @@
 // 사용법: node parse-foulborn.mjs (사전: extract.mjs, parse-uniques.mjs, PoB 소스)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, WORK_DIR, loadConfig, loadTable } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, WORK_DIR, loadConfig, loadTable, buffStatsOf } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
 const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "foulborn-mods.json");
@@ -31,9 +31,10 @@ const describe = createStatDescriber(FILES_DIR, [
 /** 모드의 스탯 → 값 맵 (min|max) — 다른 추출기와 동일 규칙 */
 function rollValues(mod, kind) {
 	const values = new Map();
-	for (let i = 1; i <= 6; i++) {
+	const buff = buffStatsOf(mod);
+	for (let i = 1; i <= 8; i++) {
 		const si = mod["StatsKey" + i];
-		if (si == null) continue;
+		if (si == null || buff.has(si)) continue;
 		const stat = stats[si];
 		if (stat) values.set(stat.Id, mod["Stat" + i + (kind === "min" ? "Min" : "Max")] ?? 0);
 	}

@@ -39,10 +39,13 @@
 		return "text";
 	}
 
-	function cellNum(cell: Element | undefined): number {
-		var t = leadingNumericText((cell ? cell.textContent : "") || "");
+	// 값 없는 칸("-" · 빈 칸)은 null - 0 으로 읽으면 매수 줄의 "-" 실현 손익이 손실과 이익 사이에 끼었다(검토 지적 2026-10-29).
+	function cellNum(cell: Element | undefined): number | null {
+		var raw = ((cell ? cell.textContent : "") || "").trim();
+		if (!raw || raw === "-") return null;
+		var t = leadingNumericText(raw);
 		var n = parseFloat(t.replace(/[^0-9.\-]/g, ""));
-		return isNaN(n) ? 0 : n;
+		return isNaN(n) ? null : n;
 	}
 	function cellText(cell: Element | undefined): string {
 		return ((cell ? cell.textContent : "") || "").trim();
@@ -84,7 +87,11 @@
 			var cb = b.children[idx];
 			var cmp: number;
 			if (type === "num") {
-				cmp = cellNum(ca) - cellNum(cb);
+				var na = cellNum(ca);
+				var nb = cellNum(cb);
+				// 값 없는 칸은 방향과 상관없이 맨 뒤.
+				if (na === null || nb === null) return na === nb ? 0 : na === null ? 1 : -1;
+				cmp = na - nb;
 			} else {
 				cmp = cellText(ca).localeCompare(cellText(cb), TEXT_COLLATION_LOCALE, {
 					numeric: true,

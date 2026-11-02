@@ -33,9 +33,27 @@ function parseBases(lua) {
 		const chargesMax = Number((fc.match(/chargesMax = (\d+)/) || [])[1]) || 0;
 		const buffM = fc.match(/buff = \{([^}]*)\}/);
 		const buff = buffM ? [...buffM[1].matchAll(/"([^"]*)"/g)].map((x) => x[1]) : [];
-		out.push({ name: m[1], type: str("type"), subType: str("subType"), hidden: /\n\thidden = true/.test(body), implicit: str("implicit"), req, tags, ward, spirit, chargesUsed, chargesMax, buff });
+		// 무기 피해 종류별(10-30 R14 — 게임 WeaponTypes 엔 물리 열 하나뿐이고 원소 · 카오스는 숨은 암시 스탯(…_base_damage_is_cold 등)으로 나뉜다.
+		//   PoB 내보내기가 그 규칙으로 나눈 weapon = { PhysicalMin, ColdMin, … } 를 쓴다 — 달 단검 냉기 11-26 이 물리로 나왔다)
+		const weapon = {};
+		const wM = body.match(/\n\tweapon = \{([^}]*)\}/);
+		if (wM) for (const x of wM[1].matchAll(/(Physical|Fire|Cold|Lightning|Chaos)(Min|Max) = (\d+)/g)) weapon[x[1] + x[2]] = Number(x[3]);
+		out.push({ name: m[1], type: str("type"), subType: str("subType"), hidden: /\n\thidden = true/.test(body), implicit: str("implicit"), req, tags, ward, spirit, chargesUsed, chargesMax, buff, weapon });
 	}
 	return out;
+}
+
+// 피해 종류별 — PoB 가 나눈 값이 있으면 그것(물리 · 원소 셋 · 카오스), 없으면 게임 표 물리 그대로(10-30 R14). 원소는 PoB 툴팁 순서(화염 · 냉기 · 번개)
+const ELEMENTS = ["Fire", "Cold", "Lightning"];
+function weaponDamage(w, pw) {
+	if (!pw || !Object.keys(pw).length) return { damageMin: w.DamageMin, damageMax: w.DamageMax };
+	const elemental = ELEMENTS.filter((e) => pw[e + "Max"] > 0).map((e) => ({ type: e, min: pw[e + "Min"] || 0, max: pw[e + "Max"] }));
+	return {
+		damageMin: pw.PhysicalMin || 0,
+		damageMax: pw.PhysicalMax || 0,
+		...(elemental.length ? { elemental } : {}),
+		...(pw.ChaosMax > 0 ? { chaosMin: pw.ChaosMin || 0, chaosMax: pw.ChaosMax } : {}),
+	};
 }
 
 const T = (t) => [loadTable("English", t), loadTable("Korean", t)];
@@ -84,6 +102,9 @@ activeSkills.forEach((a, i) => {
 	const en = stripMarkup(a.DisplayedName || ""), ko = stripMarkup(activeSkillsKo[i].DisplayedName || "");
 	if (en && ko && !skillKo.has(en)) skillKo.set(en, ko);
 });
+// 영어 줄도 게임 젬 이름으로(10-30 R14 — PoB 'Skeletal Warrior Minion' 이 영어 화면에 그대로 나왔다, 게임 '해골 전사' 젬은 'Skeletal Warrior')
+const grantedLineEn = (line) =>
+	line.replace(/^(Grants Skill: (?:Level (?:\d+|\(\d+-\d+\)) )?)(.+) Minion$/, (m, head, name) => (gemKo.has(name) && !gemKo.has(name + " Minion") ? head + name : m));
 const translate = (lines) =>
 	lines.map((line) => {
 		const g = stripMarkup(line).match(/^Grants Skill: (?:Level (\d+|\(\d+-\d+\)) )?(.+)$/);
@@ -219,7 +240,7 @@ const implicitLines = (baseIdx, lang) => {
 		if (!m) continue;
 		const lo = new Map();
 		const hi = new Map();
-		for (let i = 1; i <= 6; i++) {
+		for (let i = 1; i <= 8; i++) {
 			if (m["Stat" + i] == null) continue;
 			const v = m["Stat" + i + "Value"];
 			lo.set(stats[m["Stat" + i]].Id, Array.isArray(v) ? v[0] : v);
@@ -273,6 +294,8 @@ for (const file of FILES) {
 		if (pb.hidden) hidden++;
 		const i = pickBaseIdx(pb);
 		if (i == null) continue;
+		// 개발용 베이스(Id 끝이 Dev — Keyblade TwoHandSwordDev)는 숨긴다(10-30 R14 ③ — 목록에 일반 베이스처럼 나왔다, 참조하는 고유 없음)
+		if (!pb.hidden && /Dev$/.test(bases[i].Id)) pb.hidden = true;
 		const b = bases[i];
 		const cls = classes[b.ItemClass];
 		const a = armourOf.get(i), w = weaponOf.get(i), s = shieldOf.get(i), r = attrOf.get(i), f = flaskOf.get(i);
@@ -281,7 +304,7 @@ for (const file of FILES) {
 		const implicits = en.length
 			? en.map((line, k) => ({ en: line, ko: ko[k] || line }))
 			: pb.implicit
-				? pb.implicit.split("\\n").map((line) => ({ en: stripMarkup(line), ko: translate([line])[0] }))
+				? pb.implicit.split("\\n").map((line) => ({ en: grantedLineEn(stripMarkup(line)), ko: translate([line])[0] }))
 				: [];
 		// 허리띠 "Has (1-3) Charm Slot" — 게임 BaseItemTypes.Implicit_Mods 밖에서 붙어(PoB2 implicit 문장엔 있음) 예전 허리띠 12종에서 빠져 있었다(10-10 C254).
 		//   맨 앞에 둔다: 새 허리띠(갈래 · 기원 · 힘줄 · 추적)는 게임 임플리싯 목록 자체에 "Has 1 Charm Slot" 이 첫 줄이고, poe2db 베이스 · 고유 허리띠도 전부 첫 줄
@@ -291,7 +314,7 @@ for (const file of FILES) {
 			//   두 줄짜리 창 17종에서 빠졌다(poe2db 거대한 창 "스킬 부여: 창 투척" 이 첫 줄). 순서: 스킬 부여 → 호신부 슬롯 → 게임 줄
 			const extra = pb.implicit.split("\\n").map(stripMarkup).filter((l) => /Charm Slot|^Grants Skill:/.test(l) && !have.has(implicitKey([l])));
 			extra.sort((a, b) => Number(!/^Grants Skill:/.test(a)) - Number(!/^Grants Skill:/.test(b)));
-			if (extra.length) implicits.unshift(...extra.map((line) => ({ en: line, ko: translate([line])[0] })));
+			if (extra.length) implicits.unshift(...extra.map((line) => ({ en: grantedLineEn(line), ko: translate([line])[0] })));
 		}
 		const item = {
 			name: b.Name,
@@ -301,14 +324,15 @@ for (const file of FILES) {
 			itemClassKo: classesKo[b.ItemClass].Name || cls.Name,
 			category: CATEGORY[cls.Id] || "other",
 			dropLevel: b.DropLevel,
-			reqLevel: pb.req.level ?? b.DropLevel,
+			// PoB 가 level 을 빼면 요구 레벨 1(10-30 R14 — PoB Export bases.lua 는 드롭 레벨 4 초과일 때만 적는다. 예전엔 드롭 레벨로 채워 루비 '레벨 20' 등 42개)
+			reqLevel: pb.req.level ?? 1,
 			reqStr: r?.ReqStr ?? pb.req.str ?? 0,
 			reqDex: r?.ReqDex ?? pb.req.dex ?? 0,
 			reqInt: r?.ReqInt ?? pb.req.int ?? 0,
 			width: b.Width,
 			height: b.Height,
 			armour: a || s || pb.ward ? { armour: a?.Armour ?? 0, evasion: a?.Evasion ?? 0, energyShield: a?.EnergyShield ?? 0, movementPenalty: a ? -(a.IncreasedMovementSpeed || 0) / 100 : 0, block: s?.Block ?? 0, ...(pb.ward ? { ward: pb.ward } : {}) } : null,
-			weapon: w ? { damageMin: w.DamageMin, damageMax: w.DamageMax, critChance: w.CritChance / 100, attacksPerSecond: Math.round((1000 / w.Speed) * 100) / 100, range: w.RangeMax, reloadTime: w.ReloadTime || null } : null,
+			weapon: w ? { ...weaponDamage(w, pb.weapon), critChance: w.CritChance / 100, attacksPerSecond: Math.round((1000 / w.Speed) * 100) / 100, range: w.RangeMax, reloadTime: w.ReloadTime || null } : null,
 			flask: f
 				? {
 						type: f.Type,

@@ -134,3 +134,18 @@ test("버튼은 표마다 한 번만 묶고, 정렬 상태는 th 와 표시에",
 	assert.equal(name.indicator.textContent, "▲");
 	assert.equal(buy.th.attrs["aria-sort"], "none");
 });
+
+
+// 2026-10-29 검토 지적: 서버가 "-" 칸의 data-* 에 "0" 을 써 0 으로 정렬됐다 - 이제 빈 값이고 방향과 상관없이 맨 뒤.
+test("빈 값은 오름 · 내림 모두 맨 뒤", () => {
+	const make = () =>
+		table(
+			[row("x", { buy: "", stockName: "가" }), row("y", { buy: "-5", stockName: "나" }), row("z", { buy: "5", stockName: "다" })],
+			[],
+		);
+	const desc = make();
+	S.sortTable(desc, "buy", "number", OPTIONS);
+	assert.deepEqual(order(desc), ["z", "y", "x"]);
+	S.sortTable(desc, "buy", "number", OPTIONS);
+	assert.deepEqual(order(desc), ["y", "z", "x"]);
+});

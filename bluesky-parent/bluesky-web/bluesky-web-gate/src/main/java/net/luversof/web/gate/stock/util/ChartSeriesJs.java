@@ -2,11 +2,21 @@ package net.luversof.web.gate.stock.util;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
+import net.luversof.web.gate.stock.constant.TradeType;
+import net.luversof.web.gate.stock.dto.response.StockPriceChartPoint;
 import net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
+import net.luversof.web.gate.stock.dto.response.TradeResponse;
 
 /**
  * 상세 화면 차트 시리즈를 인라인 스크립트용 JS 객체 리터럴 한 줄로 만든다.
@@ -84,9 +94,8 @@ public final class ChartSeriesJs {
    * 주가 캔들 시리즈(2026-10-02): labels · open · high · low · close · avg(그 날 평균 단가, 보유가 없던 날 null). 봉
    * 묶기(주봉 · 월봉)는 브라우저(StockCharts.candleBuckets)가 한다 - 툴팁이 날짜별 원값을 알아야 해서 서버는 일봉을 그대로 준다.
    */
-  public static String candleSeries(
-      List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> points) {
-    return candleSeries(points, List.of(), java.time.ZoneOffset.UTC);
+  public static String candleSeries(List<StockPriceChartPoint> points) {
+    return candleSeries(points, List.of(), ZoneOffset.UTC);
   }
 
   /**
@@ -94,9 +103,7 @@ public final class ChartSeriesJs {
    * 그 다음 시세일 봉에 붙인다 - 버리면 첫 매수 표시가 사라진다. 기간 밖 매매는 뺀다.
    */
   public static String candleSeries(
-      List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> points,
-      List<net.luversof.web.gate.stock.dto.response.TradeResponse> trades,
-      java.time.ZoneId zone) {
+      List<StockPriceChartPoint> points, List<TradeResponse> trades, ZoneId zone) {
     return candleSeries(points, trades, zone, null);
   }
 
@@ -108,13 +115,12 @@ public final class ChartSeriesJs {
    * @param holdings 일별 보유 시계열(DAILY). timestamp 를 zone 의 날짜로 맞춰 시세일에 붙인다
    */
   public static String candleSeries(
-      List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> points,
-      List<net.luversof.web.gate.stock.dto.response.TradeResponse> trades,
-      java.time.ZoneId zone,
+      List<StockPriceChartPoint> points,
+      List<TradeResponse> trades,
+      ZoneId zone,
       List<TradeProfitTimeSeriesPoint> holdings) {
-    List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> safe =
-        points == null ? List.of() : points;
-    java.util.TreeMap<java.time.LocalDate, Integer> indexByDate = new java.util.TreeMap<>();
+    List<StockPriceChartPoint> safe = points == null ? List.of() : points;
+    TreeMap<LocalDate, Integer> indexByDate = new TreeMap<>();
     for (int i = 0; i < safe.size(); i++) {
       if (safe.get(i).tradeDate() != null) {
         indexByDate.put(safe.get(i).tradeDate(), i);
@@ -127,13 +133,13 @@ public final class ChartSeriesJs {
         if (trade == null || trade.tradeDate() == null || trade.type() == null) {
           continue;
         }
-        var at = indexByDate.ceilingEntry(trade.tradeDate().atZone(zone).toLocalDate());
+        var at = indexByDate.ceilingEntry(StockZoneUtil.recordedDate(trade.tradeDate(), zone));
         if (at == null) {
           continue;
         }
-        if (trade.type() == net.luversof.web.gate.stock.constant.TradeType.BUY) {
+        if (trade.type() == TradeType.BUY) {
           buyQty[at.getValue()] += trade.quantity();
-        } else if (trade.type() == net.luversof.web.gate.stock.constant.TradeType.SELL) {
+        } else if (trade.type() == TradeType.SELL) {
           sellQty[at.getValue()] += trade.quantity();
         }
       }
@@ -152,8 +158,7 @@ public final class ChartSeriesJs {
                   ? amount.stripTrailingZeros().toPlainString()
                   : "0");
     }
-    java.util.Map<java.time.LocalDate, TradeProfitTimeSeriesPoint> holdingByDate =
-        new java.util.HashMap<>();
+    Map<LocalDate, TradeProfitTimeSeriesPoint> holdingByDate = new HashMap<>();
     if (holdings != null) {
       for (TradeProfitTimeSeriesPoint h : holdings) {
         if (h != null && h.timestamp() != null) {
@@ -227,7 +232,7 @@ public final class ChartSeriesJs {
    * 활동 목록의 계열 이름이 쓴다. 결과는 $unsafe 로 스크립트에 들어간다 &mdash; 2026-10-22 까지 세 템플릿이 제각각 이스케이프를 들고 있었고
    * {@code <} 를 막지 않아 이름의 {@code </script>} 가 스크립트를 끊었다.
    */
-  public static String stringArray(java.util.Collection<String> values) {
+  public static String stringArray(Collection<String> values) {
     StringBuilder sb = new StringBuilder();
     for (String value : values) {
       sep(sb).append(jsString(value == null ? "" : value));

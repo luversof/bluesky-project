@@ -50,7 +50,7 @@
 	double qMul = 1 + quality / 100.0;
 	boolean hasWeapon = base != null && base.weapon() != null && base.weapon().damageMax() > 0;
 	PoeBaseItem.Armour armour = base != null ? base.armour() : null;
-	boolean hasArmour = armour != null && (armour.armourMax() > 0 || armour.evasionMax() > 0 || armour.energyShieldMax() > 0 || armour.wardMax() > 0);
+	boolean hasArmour = armour != null && (armour.block() > 0 || armour.armourMax() > 0 || armour.evasionMax() > 0 || armour.energyShieldMax() > 0 || armour.wardMax() > 0);
 	boolean hasProps = hasWeapon || hasArmour;
 	// 속성 칸에 이 고유 자신의 로컬 옵션 반영(10-08 C182 — "(30-50)% increased Ward" · "Adds … Physical Damage" 등, PoB Item.lua 식). 품질 20 은 그대로 곱한다
 	net.luversof.web.gate.poe.PoeLocalProps.Result lp = base == null ? null : net.luversof.web.gate.poe.PoeLocalProps.apply(new net.luversof.web.gate.poe.PoeLocalProps.Base(

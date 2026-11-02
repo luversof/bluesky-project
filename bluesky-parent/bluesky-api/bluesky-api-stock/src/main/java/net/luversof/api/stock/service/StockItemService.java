@@ -1,5 +1,6 @@
 package net.luversof.api.stock.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -23,6 +24,8 @@ import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemTag;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockItemTagRepository;
+import net.luversof.api.stock.repository.StockPriceHistoryRepository;
+import net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint;
 
 @Service
 public class StockItemService {
@@ -33,8 +36,7 @@ public class StockItemService {
 
   @Autowired private StockItemTagRepository stockItemTagRepository;
 
-  @Autowired
-  private net.luversof.api.stock.repository.StockPriceHistoryRepository stockPriceHistoryRepository;
+  @Autowired private StockPriceHistoryRepository stockPriceHistoryRepository;
 
   /**
    * 한 종목의 일별 종가. 종목 상세의 주가 차트가 쓴다.
@@ -44,11 +46,10 @@ public class StockItemService {
    *
    * <p>기간을 주지 않으면 전 구간이다.
    */
-  public java.util.List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint>
-      findDailyClosePrices(
-          java.util.UUID stockItemId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+  public List<StockPriceHistoryPoint> findDailyClosePrices(
+      UUID stockItemId, LocalDate startDate, LocalDate endDate) {
     if (stockItemId == null) {
-      return java.util.List.of();
+      return List.of();
     }
     // 원주가를 분할만 맞춘 가격으로(2026-10-02, TradeProfitService.splitAdjustedCloses). 배율은 고른 기간 뒤의 분할까지 알아야
     // 하므로 끝은
@@ -56,11 +57,11 @@ public class StockItemService {
     var rawRows =
         stockPriceService
             .getRawCloses(
-                java.util.Map.of(
+                Map.of(
                     stockItemId,
-                    new java.time.LocalDate[] {
-                      startDate != null ? startDate : java.time.LocalDate.of(1900, 1, 1),
-                      java.time.LocalDate.of(9999, 12, 31)
+                    new LocalDate[] {
+                      startDate != null ? startDate : LocalDate.of(1900, 1, 1),
+                      LocalDate.of(9999, 12, 31)
                     }))
             .get(stockItemId);
     var splitAdjusted = TradeProfitService.splitAdjustedCloses(rawRows);
@@ -69,13 +70,10 @@ public class StockItemService {
           .filter(point -> endDate == null || !point.tradeDate().isAfter(endDate))
           .toList();
     }
-    java.util.List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint> points =
-        new java.util.ArrayList<>();
+    List<StockPriceHistoryPoint> points = new ArrayList<>();
     for (var row :
         stockPriceHistoryRepository.findDailyClosePrices(stockItemId, startDate, endDate)) {
-      points.add(
-          new net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint(
-              row.tradeDate(), row.closePrice()));
+      points.add(new StockPriceHistoryPoint(row.tradeDate(), row.closePrice()));
     }
     return points;
   }

@@ -3,8 +3,10 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.controller.StockSummaryHtmxController.AllocationBarRow
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import java.math.BigDecimal
+@import java.util.ArrayList
 
-@param List<AllocationBarRow> allocationRows = java.util.List.of()
+@param List<AllocationBarRow> allocationRows = List.of()
 @param AllocationBarRow othersRow = null
 
 !{
@@ -21,14 +23,14 @@
 	<%-- 막대마다 따로 반올림하면 표시값의 합이 100.0% 가 아니게 된다(실측 2026-09-11: 대시보드 비중 합 99.9%).
 	     자산 현황 표·차트 범례와 같은 최대잔여법으로 한 번에 배분한다. 기타 줄도 같은 묶음이다. --%>
 	!{
-		java.util.List<java.math.BigDecimal> allocationWeights = new java.util.ArrayList<>();
+		List<BigDecimal> allocationWeights = new ArrayList<>();
 		for (AllocationBarRow weightRow : allocationRows) {
-			allocationWeights.add(java.math.BigDecimal.valueOf(weightRow.weightPercent()));
+			allocationWeights.add(BigDecimal.valueOf(weightRow.weightPercent()));
 		}
 		if (othersRow != null) {
-			allocationWeights.add(java.math.BigDecimal.valueOf(othersRow.weightPercent()));
+			allocationWeights.add(BigDecimal.valueOf(othersRow.weightPercent()));
 		}
-		java.util.List<String> allocationShown = StockFormatUtil.balancedPct(allocationWeights, 1);
+		List<String> allocationShown = StockFormatUtil.balancedPct(allocationWeights, 1);
 	}
 	<%-- 막대 너비는 옆 글자와 같은 값을 써야 한다. 2026-09-12 까지 막대는 원값 반올림, 글자는 balancedPct(합을 100.0% 로
 		 맞추는 최대잔여법)를 써서 한 행이 어긋났다 - 실측: RISE 200위클리커버드콜 이 막대 4.5% · 글자 4.6% 였다

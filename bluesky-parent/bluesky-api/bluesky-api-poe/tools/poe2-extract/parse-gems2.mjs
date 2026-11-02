@@ -92,6 +92,8 @@ function levelsOf(effectIdx, specific, maxLevel, support = false) {
 	const lv = new Map((levelsByEffect.get(effectIdx) || []).map((r) => [r.Level, r]));
 	const d = describerFor(specific, support);
 	const costIdx = ge.CostTypes?.[0];
+	// 둘째 소모(10-29 R10 — 기름 연사 · 화산 · 받아넘기기 등 6개: CostTypes [Mana, ManaPerMinute] · CostAmounts [6, 360], 인게임 "마나 41, 1초당 마나 6")
+	const costIdx2 = ge.CostTypes?.[1];
 	return rows.map((row) => {
 		const map = statsAt(ge.StatSet, row);
 		const l = lv.get(row.GemLevel);
@@ -103,6 +105,7 @@ function levelsOf(effectIdx, specific, maxLevel, support = false) {
 			requiredLevel: req == null ? null : Math.max(1, req),
 			cost: l?.CostAmounts?.[0] || null,
 			costType: costIdx != null ? costTypes[costIdx]?.Id || null : null,
+			...(costIdx2 != null && l?.CostAmounts?.[1] ? { cost2: l.CostAmounts[1], costType2: costTypes[costIdx2]?.Id || null } : {}),
 			reservation: l?.Reservation || null,
 			cooldownMs: l?.Cooldown || null,
 			// 재사용 사용 횟수(10-23 Q53 — 인게임 'Cooldown Time: 3.50s (3 uses)', ClientStrings ItemDisplaySkillGemCooldownValueCount). 2 이상만
@@ -318,9 +321,16 @@ for (let i = 0; i < gems.length; i++) {
 	}
 	// 퀄리티로 인한 추가 효과 — PoE1(transform.mjs)과 같이 퀄리티 20% 값(1%당 값 × 20, 반올림)으로 설명. 인게임 젬 툴팁 "퀄리티로 인한 추가 효과:" 줄
 	const qStats = ge ? qualityBySkill.get(ge.Id) : null;
-	const qMap = new Map((qStats || []).map(([id, v]) => [id, Math.round(v * 20)]));
-	const qd = describerFor(act?.StatDescription || null, isSupportGem, true);
-	const qualityStatLines = qMap.size ? qd(qMap, "English") : [];
+	// 1%당 값 × 20 은 버림(10-29 R10 — PoB calcLib.buildSkillInstanceStats math.modf, 고결한 방벽 0.125 × 20 = 2.5 → 2)
+	const qMap = new Map((qStats || []).map(([id, v]) => [id, Math.trunc(v * 20)]));
+	let qd = describerFor(act?.StatDescription || null, isSupportGem, true);
+	let qualityStatLines = qMap.size ? qd(qMap, "English") : [];
+	// 퀄리티 스탯이 추가 묶음 설명 파일(statset_k.csd)에만 있는 젬(10-29 R10 — 회오리 사격 · 폭풍 창 등 8개, 칸이 통째로 빠졌다)
+	// shortcut: 주 묶음에서 한 줄도 안 나올 때만 다음 묶음을 차례로 본다 — 퀄리티 스탯이 묶음 둘에 나뉘면 앞 묶음 줄만 나온다
+	for (let k = 1; qMap.size && !qualityStatLines.length && k <= (ge?.AdditionalStatSets || []).length; k++) {
+		qd = describerFor(specificFor(act?.StatDescription || null, k), isSupportGem, true);
+		qualityStatLines = qd(qMap, "English");
+	}
 	const qualityStatLinesKo = qMap.size ? qd(qMap, "Korean") : [];
 	const keywords = [...seenKeywordIds].filter((id) => keywordById.has(id)).map((id) => keywordById.get(id));
 	out.push({
@@ -348,7 +358,8 @@ for (let i = 0; i < gems.length; i++) {
 		familyKo: sup ? (sup.Family || []).map((f) => familiesKo[f]?.Text).filter(Boolean).map(stripMarkup) : [],
 		lineage: sup ? !!sup.IsLineage : false,
 		icon: act?.Icon_DDSFile || sup?.Icon || null,
-		castTimeMs: ge?.CastTime || null,
+		// 0 = 즉시 시전(10-29 R10 — '|| null' 이 0 을 지워 냉혹한 만찬 등 76개에서 '시전 속도: 즉시 시전' 줄이 빠졌다)
+		castTimeMs: ge?.CastTime ?? null,
 		// 주 스탯 묶음 이름(10-09 C236 — 추가 묶음이 있을 때 첫 머리글 "투사체", PoB2 는 스킬 이름과 다를 때만 보인다)
 		...(ge && ((ge.AdditionalStatSets || []).length || grantedSkills.length) && shownLabel(labelOf(ge.StatSet)) ? { statSetLabel: labelOf(ge.StatSet).en, statSetLabelKo: labelOf(ge.StatSet).ko } : {}),
 		...(grantedSkills.length ? { grantedSkills } : {}),

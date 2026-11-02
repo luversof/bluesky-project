@@ -60,11 +60,9 @@ class RealizedProfitSignTest {
 
     assertThat(template)
         .as("줄의 실현 손익 칸")
-        .contains(
-            "${trade.realizedProfit() != null ? (trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? \"text-profit\" : \"text-loss\") : \"\"}");
+        .contains("${StockFormatUtil.amountTone(trade.realizedProfit())}");
     assertThat(template)
         .as("합계 줄의 실현 손익 칸")
-        .contains(
-            "${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? \"text-profit\" : \"text-loss\"}");
+        .contains("${StockFormatUtil.amountTone(totalRealizedProfit)}");
   }
 }

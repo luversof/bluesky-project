@@ -1,7 +1,10 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,7 +30,9 @@ import net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient;
 import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport;
 import net.luversof.web.gate.stock.service.MonthlyEtfViewSupport;
+import net.luversof.web.gate.stock.support.StockAsyncSupport;
 import net.luversof.web.gate.stock.support.StockViewSupport;
+import net.luversof.web.gate.stock.util.KrxRecordDateUtil;
 
 /**
  * 월배당 ETF 목록 화면.
@@ -51,7 +56,7 @@ public class StockMonthlyEtfViewController {
 
   @Autowired private MonthlyContributionPickSupport monthlyContributionPickSupport;
 
-  @Autowired private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
+  @Autowired private StockAsyncSupport stockAsync;
 
   @BlueskyPreAuthorize
   @GetMapping("/monthly-etf")
@@ -99,13 +104,9 @@ public class StockMonthlyEtfViewController {
             ? null
             : stockAsync.supply(
                 monthlyDividendReferenceSupport::loadAllMonthlyDividendPayoutsQuietly);
-    List<MonthlyDividendCatalogResponse> catalog =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(catalogFuture);
+    List<MonthlyDividendCatalogResponse> catalog = StockAsyncSupport.join(catalogFuture);
     List<MonthlyEtfRowView> allRows =
-        loadRows(
-            resolvedPeriod,
-            catalog,
-            net.luversof.web.gate.stock.support.StockAsyncSupport.join(holdingsFuture));
+        loadRows(resolvedPeriod, catalog, StockAsyncSupport.join(holdingsFuture));
     // "이번 적립" 배지 - 시뮬레이터 월배당 탭(필터 없는 기본 화면)과 같은 답을 내야 한다(사용자 요청 2026-09-22 의 잇기).
     // 거르기 전에 낸다 - "이번 적립만 보기" 가 이것으로 거른다(사용자 요청 2026-09-23).
     // 추천 기준(사용자 요청 2026-10-06) - 자리 추천과 "지금 눈여겨볼 종목" 이 같은 기준을 쓴다. 모르는 값은 배당.
@@ -113,15 +114,13 @@ public class StockMonthlyEtfViewController {
         MonthlyContributionPickSupport.Basis.of(basis);
     // 추천 후보는 고른 수익률 기간으로 한 번 만든다(사용자 요청 2026-10-14 - 기간을 바꿔도 같은 종목만 추천됐다). "이번 적립" 과
     // "지금 눈여겨볼 종목" 이 같은 후보를 써야 서로 다른 말을 하지 않는다.
-    Map<String, java.math.BigDecimal> periodYieldBySymbol =
+    Map<String, BigDecimal> periodYieldBySymbol =
         payoutHistoryFuture == null
             ? Map.of()
             : MonthlyContributionPickSupport.periodYieldBySymbol(
-                net.luversof.web.gate.stock.support.StockAsyncSupport.join(payoutHistoryFuture),
-                catalog,
-                resolvedPeriod);
+                StockAsyncSupport.join(payoutHistoryFuture), catalog, resolvedPeriod);
     Map<String, MonthlyContributionPickSupport.ContributionCandidate> candidateBySymbol =
-        new java.util.LinkedHashMap<>();
+        new LinkedHashMap<>();
     for (MonthlyDividendCatalogResponse item : catalog) {
       if (item != null && item.stockItemSymbol() != null) {
         candidateBySymbol.put(
@@ -159,7 +158,7 @@ public class StockMonthlyEtfViewController {
     model.addAttribute("monthlyEtfRows", rows);
     // 지급 시기 칩(2026-10-13 사용자 요청 - 폼의 칸 대신 한 번 눌러 거르기)에 적을 개수. 다른 조건(검색어 · 수익률 · 보유 · 계좌 ·
     // 이번 적립 보기)은 그대로 두고 지급 시기만 바꿨을 때 남는 줄 수다.
-    Map<String, Integer> payoutWindowCounts = new java.util.LinkedHashMap<>();
+    Map<String, Integer> payoutWindowCounts = new LinkedHashMap<>();
     for (String window : List.of("", "MID_MONTH", "MONTH_END", "OTHER", "UNKNOWN")) {
       payoutWindowCounts.put(window, visibleRows.apply(window).size());
     }
@@ -187,11 +186,8 @@ public class StockMonthlyEtfViewController {
     model.addAttribute("monthlyEtfPeriod", resolvedPeriod);
     model.addAttribute("monthlyEtfPeriods", MonthlyEtfViewSupport.PERIODS);
     // 다음 분배금 기준일 · 매수 마감일(2026-10-20) - 적립하는 날을 정하는 데 쓴다. 거래소 날짜라 존을 박는다.
-    java.time.LocalDateTime marketToday =
-        java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Seoul"));
-    model.addAttribute(
-        "monthlyEtfBuyBy",
-        net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
+    LocalDateTime marketToday = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+    model.addAttribute("monthlyEtfBuyBy", KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
     return "stock/monthlyEtf";
   }
 
@@ -203,10 +199,9 @@ public class StockMonthlyEtfViewController {
       List<MonthlyDividendCatalogResponse> catalog,
       MonthlyContributionPickSupport.Basis basis,
       int months,
-      Map<String, java.math.BigDecimal> yields) {
+      Map<String, BigDecimal> yields) {
     try {
-      Map<String, MonthlyContributionPickSupport.ContributionPick> bySymbol =
-          new java.util.LinkedHashMap<>();
+      Map<String, MonthlyContributionPickSupport.ContributionPick> bySymbol = new LinkedHashMap<>();
       var picks = monthlyContributionPickSupport.pickFromCatalog(catalog, basis, months, yields);
       for (var pick : picks) {
         bySymbol.putIfAbsent(pick.symbol(), pick);

@@ -7,6 +7,9 @@
 @import net.luversof.web.gate.stock.controller.StockDividendHtmxController.DividendChange
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import java.text.MessageFormat
+@import java.util.function.LongFunction
+@import net.luversof.web.gate.stock.util.StockAmountUtil
 
 @param DecimalFormat decimalFormat
 @param BigDecimal safeAllNet
@@ -45,7 +48,7 @@
 	String otherWindowLabel = MessageUtil.getMessage("stock.dividend.summary.window.other");
 	String windowBasisLabel = MessageUtil.getMessage("stock.dividend.summary.window.basis");
 	String countPattern = MessageUtil.getMessage("common.count");
-	java.util.function.LongFunction<String> windowCount = c -> java.text.MessageFormat.format(countPattern, c);
+	LongFunction<String> windowCount = c -> MessageFormat.format(countPattern, c);
 	// 월중/월말 태그가 붙은 배당이 하나라도 있으면 구분 표시(둘 다 없으면 의미 없음)
 	boolean hasWindowSplit = midMonthCount > 0 || monthEndCount > 0;
 	String netLabel = MessageUtil.getMessage("common.label.net");
@@ -154,7 +157,7 @@
 				<div class="text-xs text-base-content/60">${previousPeriodLabel} <span class="amount-value">₩${decimalFormat.format(safePrevNet)}</span></div>
 				<%-- 전기는 완전한 전월 · 전년 그대로 두고, 그중 오늘과 같은 날까지의 값과 그 대비 증감도 함께(사용자 결정 2026-10-29). --%>
 				@if(prevToDateNetAmount != null && prevToDateEndDate != null)
-				!{BigDecimal prevToDatePct = net.luversof.web.gate.stock.util.StockAmountUtil.percentOrNull(safeAllNet.subtract(prevToDateNetAmount), prevToDateNetAmount, 1);}
+				!{BigDecimal prevToDatePct = StockAmountUtil.percentOrNull(safeAllNet.subtract(prevToDateNetAmount), prevToDateNetAmount, 1);}
 				<div class="text-xs text-base-content/60" data-dividend-previous-to-date>${MessageUtil.getMessage("stock.compare.previous.to.date")} (~ <span class="whitespace-nowrap date-whole">${prevToDateEndDate.toString()}</span>) <span class="amount-value">₩${decimalFormat.format(prevToDateNetAmount)}</span>@if(prevToDatePct != null) <span class="${prevToDatePct.signum() == 0 ? "" : (prevToDatePct.signum() > 0 ? "text-profit" : "text-loss")}">(${StockFormatUtil.signedPct(prevToDatePct.doubleValue(), 1)})</span>@endif</div>
 				@endif
 				<%-- 이번 달/올해는 아직 끝나지 않았는데 전기는 완전한 전월/전년이라, 증감률이 실제 추세와

@@ -18,12 +18,15 @@
 
 !{
 	BigDecimal unrealizedDelta = periodUnrealizedDelta != null ? periodUnrealizedDelta : BigDecimal.ZERO;
-	BigDecimal combinedProfit = unrealizedDelta
-		.add(realizedProfit != null ? realizedProfit : BigDecimal.ZERO)
-		.add(totalDividend != null ? totalDividend : BigDecimal.ZERO);
-	boolean combinedPositive = combinedProfit.signum() >= 0;
-	String deltaColor = unrealizedDelta.signum() >= 0 ? "text-profit" : "text-loss";
-	String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
+	// 합계는 화면에 적힌(원 단위로 반올림한) 세 몫의 합 - 몫마다 반올림하면 소수 원이 있을 때 합계와 1 원 어긋났다(검토 지적 2026-10-29: 10.4 + 10.4 + 0 -> 21 vs 10 + 10 + 0).
+	BigDecimal combinedProfit = BigDecimal.valueOf(StockFormatUtil.displayWon(unrealizedDelta)
+		+ StockFormatUtil.displayWon(realizedProfit)
+		+ StockFormatUtil.displayWon(totalDividend));
+	// 0 에는 방향이 없다 - 매매 · 배당이 없는 기간의 0 이 이익색(빨강)으로 칠해졌다(검토 지적 2026-10-29). 부호는 보이는(원 단위) 값으로.
+	java.util.function.Function<BigDecimal, String> tone = StockFormatUtil::amountTone;
+	String combinedColor = tone.apply(combinedProfit);
+	String deltaColor = tone.apply(unrealizedDelta);
+	String realizedColor = tone.apply(realizedProfit);
 	boolean combinedRateAvailable = periodProfitRatePct != null;
 	double combinedRatePct = combinedRateAvailable ? periodProfitRatePct : 0.0;
 	boolean componentRateAvailable = combinedRateAvailable && periodCapitalBase != null && periodCapitalBase.signum() > 0;
@@ -36,12 +39,12 @@
 <div class="mb-3 rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3" data-combined-profit-box>
 	<div class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("stock.item.detail.combined.profit")}</div>
 	<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-		<span class="text-3xl font-bold leading-none amount-value ${combinedPositive ? "text-profit" : "text-loss"}"
+		<span class="text-3xl font-bold leading-none amount-value ${combinedColor}"
 			  title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(combinedProfit))}">
 			${StockFormatUtil.signedWon(StockFormatUtil.displayWon(combinedProfit))}
 		</span>
 		@if(combinedRateAvailable)
-			<span class="text-lg font-bold ${combinedPositive ? "text-profit" : "text-loss"}">
+			<span class="text-lg font-bold ${combinedColor}">
 				${StockFormatUtil.signedPct(combinedRatePct, 2)}
 			</span>
 			<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.basis")}</span>

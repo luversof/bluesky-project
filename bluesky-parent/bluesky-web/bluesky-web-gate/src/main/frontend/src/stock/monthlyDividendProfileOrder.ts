@@ -86,6 +86,8 @@ function mergeVisibleOrderIntoAll(
 		let draggedRow: HTMLTableRowElement | null = null;
 		let armedHandleRow: HTMLTableRowElement | null = null;
 		let originalVisibleOrder: string[] = [];
+		// 끌기 전 줄 차례 그대로(순서 대상 아닌 줄 포함) - 저장 실패 때 되돌린다.
+		let originalChildren: Element[] = [];
 		let saving = false;
 
 		if (currentAllSymbols.length === 0) {
@@ -113,6 +115,7 @@ function mergeVisibleOrderIntoAll(
 
 			draggedRow = row;
 			originalVisibleOrder = collectSymbols();
+			originalChildren = Array.from(orderList.children);
 			row.classList.add("opacity-50");
 
 			if (event.dataTransfer) {
@@ -181,7 +184,8 @@ function mergeVisibleOrderIntoAll(
 				renderDisplayOrderValues();
 				showStatus("success", successMessage);
 			} catch (error) {
-				restoreOrder(originalVisibleOrder);
+				// 순서 대상 줄만 뒤로 붙이면 data-profile-order-row="false" 줄과 섞여 화면이 서버와 달라졌다(검토 지적 2026-10-29) - 통째로 되돌린다.
+				originalChildren.forEach((node) => orderList.appendChild(node));
 				renderDisplayOrderValues();
 				handleApiError(error, {
 					onDisplayableMessage: (message) => showStatus("error", message),
@@ -255,18 +259,6 @@ function mergeVisibleOrderIntoAll(
 			return mergeVisibleOrderIntoAll(currentAllSymbols, visibleSymbols);
 		}
 
-		function restoreOrder(symbols: string[]) {
-			const rowBySymbol = new Map(
-				collectRows().map((row) => [row.dataset.symbol || "", row]),
-			);
-
-			symbols.forEach((symbol) => {
-				const row = rowBySymbol.get(symbol);
-				if (row) {
-					orderList.appendChild(row);
-				}
-			});
-		}
 
 		function renderDisplayOrderValues(previewVisibleSymbols?: string[]) {
 			const previewAllSymbols = previewVisibleSymbols

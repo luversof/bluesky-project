@@ -31,8 +31,9 @@
 		// 같은 화면 안에서 자릿수 구분이 갈린다(실측 2026-09-15).
 		el.textContent = (signed ? sign : "") + "₩" + abs.toLocaleString(win.appLocale());
 		if (signed) {
-			el.classList.toggle("text-profit", value >= 0);
-			el.classList.toggle("text-loss", value < 0);
+			// 색도 반올림 뒤 값으로 - -0.4 가 "₩0" 인데 손실색이었다(검토 지적 2026-10-29).
+			el.classList.toggle("text-profit", rounded > 0);
+			el.classList.toggle("text-loss", rounded < 0);
 		}
 	}
 

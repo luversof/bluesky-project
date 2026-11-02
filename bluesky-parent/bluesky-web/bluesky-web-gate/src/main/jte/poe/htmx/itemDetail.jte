@@ -35,7 +35,7 @@
 	var flask = item.flask();
 	// 일반(흰색) 아이템 색
 	String rarity = "#c8c8c8";
-	boolean hasProps = (item.armour() != null && (item.armour().armourMax() > 0 || item.armour().evasionMax() > 0 || item.armour().energyShieldMax() > 0 || item.armour().wardMax() > 0)) || item.weapon() != null;
+	boolean hasProps = (item.armour() != null && (item.armour().block() > 0 || item.armour().armourMax() > 0 || item.armour().evasionMax() > 0 || item.armour().energyShieldMax() > 0 || item.armour().wardMax() > 0)) || item.weapon() != null;
 }
 
 <%-- PoE 게임 아이템 툴팁 (일반/흰색) --%>

@@ -56,7 +56,7 @@
 						for (Poe2.ModTier ft : g.tiers()) famWeight += ft.weight() == null ? 0 : ft.weight();
 						String famOdds = poolWeight > 0 ? String.format(java.util.Locale.ROOT, "%.4f", famWeight * 100.0 / poolWeight) : null;
 					}
-					<details class="rounded-lg bg-base-100 border border-base-200" data-mod-family data-family-odds="${famOdds}" data-family-gen="${gen}">
+					<details class="rounded-lg bg-base-100 border border-base-200" data-mod-family data-family-odds="${famOdds}" data-family-gen="${gen}" data-family-grp="${g.grp() != null && !g.grp().isEmpty() ? String.join(",", g.grp().stream().map(String::valueOf).toList()) : null}">
 						<summary class="cursor-pointer px-3 py-2 text-sm">
 							@if(famOdds != null)
 								<%-- 제작 계산기 선택 — PoE1 과 같은 체크박스(동시 확률에 포함) --%>
@@ -144,6 +144,18 @@
 			if (prefixN > 3 || suffixN > 3) {
 				value.setAttribute("data-impossible", "");
 				value.textContent = ko ? "불가 — " + (prefixN > 3 ? "접두" : "접미") + " 3개 초과" : "impossible (max 3 " + (prefixN > 3 ? "prefixes" : "suffixes") + ")";
+				return;
+			}
+			// 같은 옵션 그룹(게임 Mods.Families)은 한 아이템에 하나뿐 — 곱하면 있을 수 없는 조합에 확률이 나왔다(10-29 R6-1: 목걸이 젬 레벨 4종 = 그룹 144)
+			var seenGrp = {}, clash = false;
+			picked.forEach(function (c) {
+				var gid = c.closest("[data-family-odds]").getAttribute("data-family-grp");
+				if (!gid) return;
+				gid.split(",").forEach(function (id) { if (seenGrp[id]) clash = true; seenGrp[id] = true; });
+			});
+			if (clash) {
+				value.setAttribute("data-impossible", "");
+				value.textContent = ko ? "불가 — 같은 옵션 그룹은 한 아이템에 하나" : "impossible (same modifier group — only one per item)";
 				return;
 			}
 			value.removeAttribute("data-impossible");

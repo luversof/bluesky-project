@@ -85,7 +85,10 @@ public final class Poe2 {
       List<GrantedSkillLevel> grantedSkills,
       // 재사용 사용 횟수(GrantedEffectsPerLevel.StoredUses — 인게임 '3.50s (3 uses)', 10-23 Q53). 재사용이 있고 2
       // 이상일 때만
-      Integer cooldownUses) {}
+      Integer cooldownUses,
+      // 둘째 소모(인게임 '마나 41, 1초당 마나 6', 10-29 R10 — API 와 짝). 없으면 null
+      Integer cost2,
+      String costType2) {}
 
   /** 추가 스탯 묶음 한 개(10-09 C236) — 머리글(GrantedEffectLabels) · 치명타 · 공격 피해 · 스탯 줄. */
   public record GemStatSet(
@@ -169,12 +172,67 @@ public final class Poe2 {
   }
 
   public record Weapon(
+      // 물리 피해(원소 · 카오스만 있는 무기는 0 — 10-30 R14)
       Integer damageMin,
       Integer damageMax,
       Double critChance,
       Double attacksPerSecond,
       Integer range,
-      Integer reloadTime) {}
+      Integer reloadTime,
+      // 베이스 원소 · 카오스 피해(API 와 짝 — 달 단검 냉기 11-26 · 교단 활 카오스 7-19, 10-30 R14). 없으면 null
+      List<ElementalDamage> elemental,
+      Integer chaosMin,
+      Integer chaosMax) {
+
+    /** 예전 모양(시험용) — 물리만. */
+    public Weapon(
+        Integer damageMin,
+        Integer damageMax,
+        Double critChance,
+        Double attacksPerSecond,
+        Integer range,
+        Integer reloadTime) {
+      this(damageMin, damageMax, critChance, attacksPerSecond, range, reloadTime, null, null, null);
+    }
+
+    /** 피해가 있는 무기인가 — 물리가 0 이어도 원소 · 카오스가 있으면(10-30 R14 — 달 단검 · 고드름 도리깨). */
+    public boolean hasDamage() {
+      return (damageMax != null && damageMax > 0)
+          || (elemental != null && !elemental.isEmpty())
+          || (chaosMax != null && chaosMax > 0);
+    }
+
+    /** 베이스 추가 피해 — 종류(fire · cold · lightning · chaos) → {최소, 최대}. PoeLocalProps 에 바탕값으로 넘긴다. */
+    public java.util.Map<String, int[]> baseAdded() {
+      java.util.Map<String, int[]> out = new java.util.LinkedHashMap<>();
+      if (elemental != null) {
+        for (ElementalDamage e : elemental) {
+          if (e.type() != null && e.max() != null) {
+            out.put(
+                e.type().toLowerCase(java.util.Locale.ROOT),
+                new int[] {e.min() == null ? 0 : e.min(), e.max()});
+          }
+        }
+      }
+      if (chaosMax != null && chaosMax > 0) {
+        out.put("chaos", new int[] {chaosMin == null ? 0 : chaosMin, chaosMax});
+      }
+      return out;
+    }
+
+    /** 평균 피해 합(물리 + 원소 + 카오스) — 목록 카드 DPS. */
+    public double averageDamage() {
+      double sum =
+          ((damageMin == null ? 0 : damageMin) + (damageMax == null ? 0 : damageMax)) / 2.0;
+      for (int[] v : baseAdded().values()) {
+        sum += (v[0] + v[1]) / 2.0;
+      }
+      return sum;
+    }
+  }
+
+  /** 베이스 원소 피해 한 종류(API 와 짝, 10-30 R14). */
+  public record ElementalDamage(String type, Integer min, Integer max) {}
 
   public record Flask(
       Integer type,
@@ -255,7 +313,12 @@ public final class Poe2 {
       List<List<String>> kw) {}
 
   /** 같은 계열(ModType)의 등급 사다리 — tiers[0] 이 1등급(레벨이 가장 높은 것). gen = prefix | suffix. */
-  public record ModGroup(String modType, String gen, List<ModTier> tiers) {}
+  public record ModGroup(
+      String modType,
+      String gen,
+      List<ModTier> tiers,
+      // 게임 옵션 그룹(Mods.Families — 같은 그룹은 한 아이템에 하나, 10-29 R6-1). 없으면 null
+      List<Integer> grp) {}
 
   /** 옵션 풀 — 같은 아이템 종류에서 스폰 태그 조합이 같은 베이스 묶음(갑옷은 방어 속성별로 갈린다). */
   public record ModPool(
@@ -353,7 +416,9 @@ public final class Poe2 {
       // 기본 암시 · 옵션 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C112, 젬 Gem.keywords 와 같은 모양)
       List<Keyword> keywords,
       // 중복 사용 제한(API 와 짝, 10-08 C197) — 없으면 null
-      String limit) {}
+      String limit,
+      // 더는 얻을 수 없는 고유(PoB 'Source: No longer obtainable', API 와 짝 — 10-30 R12). 아니면 null
+      Boolean legacy) {}
 
   // ─────────────────────────── 빌드(PoB2 코드) ───────────────────────────
 
@@ -635,7 +700,9 @@ public final class Poe2 {
       Integer costWarnings,
       // 무기 세트를 나눠 쓰는 빌드면 저장 당시 켜진 세트·주 세트(DPS 가 큰 쪽), 아니면 null(10-01)
       Integer savedSet,
-      Integer mainSet) {}
+      Integer mainSet,
+      // 빌드에 찍혔지만 엔진이 모르는 노드 — 그 효과는 재계산 수치에 없다(10-29 R4). 옛 API 응답이면 null
+      List<BuildNode> engineMissingNodes) {}
 
   public record BuildTree(
       Integer allocated,

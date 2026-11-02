@@ -3,11 +3,13 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.dto.response.YearlyCostSummary
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockYearlyCostTotalUtil
 
-@param List<YearlyCostSummary> yearlyCosts = java.util.List.of()
+@param List<YearlyCostSummary> yearlyCosts = List.of()
 
 !{
-	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat amountFormat = StockFormatUtil.wonFormat();
 	String title = MessageUtil.getMessage("stock.asset.growth.cost.title");
 	String description = MessageUtil.getMessage("stock.asset.growth.cost.desc");
 	String yearLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.year");
@@ -101,7 +103,7 @@
 							 표가 해마다 한 줄씩만 적고 있어 눈으로 더해야 했다.
 							 성과 표와 달리 여기는 일곱 열이 모두 그냥 더하면 되는 값이다 - 곱해서 이어야 하는
 							 수익률도, 합계라는 것이 없는 기말 평가액도 없다. 그래서 '전체 기간' 이 아니라 '합계'. --%>
-						!{ var costTotals = net.luversof.web.gate.stock.util.StockYearlyCostTotalUtil.of(yearlyCosts);
+						!{ var costTotals = StockYearlyCostTotalUtil.of(yearlyCosts);
 						   boolean costRealizedUp = costTotals.realizedProfit().signum() >= 0; }
 						<tfoot>
 							<tr class="border-t-2 border-base-content/20 font-semibold" data-yearly-cost-total>

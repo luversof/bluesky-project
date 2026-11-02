@@ -87,7 +87,7 @@ public final class DividendMonthCalendarUtil {
         if (dividend == null || dividend.payDate() == null) {
           continue;
         }
-        LocalDate payDate = dividend.payDate().atZone(zone).toLocalDate();
+        LocalDate payDate = StockZoneUtil.recordedDate(dividend.payDate(), zone);
         if (!YearMonth.from(payDate).equals(month)) {
           continue;
         }

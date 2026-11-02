@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
+import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
 
 /**
  * 포트폴리오를 <b>핵심 보유 vs 나머지</b>로 가른다. 어느 쪽이 핵심인지는 종목의 {@link #CORE_TAG} 태그가 정한다.
@@ -76,9 +77,7 @@ public final class StockCoreHoldingUtil {
    * 보유 스냅샷(그날 종목별 평가액)에서 핵심 종목이 차지하는 비중(%, 소수 한 자리). 값이 없는 줄은 건너뛰고, 전체나 핵심 몫이 0 이하면(핵심을 안 들고 있거나
    * 스냅샷이 비면) null - 화면은 비중을 적지 않는다. 자산 성장 화면이 기간 끝 스냅샷으로 쓴다(2026-10-22 까지 핸들러 안에 적혀 있었고 시험이 없었다).
    */
-  public static BigDecimal snapshotWeightPct(
-      List<net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem> items,
-      Set<UUID> coreIds) {
+  public static BigDecimal snapshotWeightPct(List<HoldingsSnapshotItem> items, Set<UUID> coreIds) {
     if (items == null || coreIds == null) {
       return null;
     }

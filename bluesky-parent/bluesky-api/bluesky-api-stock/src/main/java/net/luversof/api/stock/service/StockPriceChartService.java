@@ -2,18 +2,22 @@ package net.luversof.api.stock.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import net.luversof.api.stock.domain.MonthlyDividendPayout;
 import net.luversof.api.stock.domain.StockOhlcRow;
 import net.luversof.api.stock.domain.StockRawClose;
+import net.luversof.api.stock.repository.MonthlyDividendPayoutQuery;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.response.StockPriceChartPoint;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
@@ -36,8 +40,7 @@ public class StockPriceChartService {
 
   @Autowired private TradeProfitService tradeProfitService;
 
-  @Autowired
-  private net.luversof.api.stock.repository.MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
+  @Autowired private MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
 
   public List<StockPriceChartPoint> chart(
       UUID stockItemId, LocalDate startDate, LocalDate endDate, UUID userId, String timeZone) {
@@ -108,13 +111,12 @@ public class StockPriceChartService {
    * 원주가가 9-11 18,085 -> 9-14(분배락) 16,995. 기준일보다 앞선 시세가 없으면 뺀다.
    */
   static Map<LocalDate, BigDecimal> exDateDistributions(
-      List<StockOhlcRow> rowsAsc,
-      List<net.luversof.api.stock.domain.MonthlyDividendPayout> payouts) {
+      List<StockOhlcRow> rowsAsc, List<MonthlyDividendPayout> payouts) {
     Map<LocalDate, BigDecimal> byExDate = new HashMap<>();
     if (rowsAsc.isEmpty() || payouts == null) {
       return byExDate;
     }
-    java.util.TreeSet<LocalDate> days = new java.util.TreeSet<>();
+    TreeSet<LocalDate> days = new TreeSet<>();
     rowsAsc.forEach(row -> days.add(row.tradeDate()));
     for (var payout : payouts) {
       if (payout == null
@@ -142,8 +144,7 @@ public class StockPriceChartService {
   static int weekdaysBetween(LocalDate from, LocalDate to) {
     int count = 0;
     for (LocalDate d = from.plusDays(1); d.isBefore(to); d = d.plusDays(1)) {
-      if (d.getDayOfWeek() != java.time.DayOfWeek.SATURDAY
-          && d.getDayOfWeek() != java.time.DayOfWeek.SUNDAY) {
+      if (d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY) {
         count++;
       }
     }

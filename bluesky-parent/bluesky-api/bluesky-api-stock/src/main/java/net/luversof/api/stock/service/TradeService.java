@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import net.luversof.api.stock.domain.Trade;
+import net.luversof.api.stock.repository.TradeQuery;
 import net.luversof.api.stock.repository.TradeRepository;
 
 @Service
@@ -16,7 +17,7 @@ public class TradeService {
 
   @Autowired private TradeRepository tradeRepository;
 
-  @Autowired private net.luversof.api.stock.repository.TradeQuery tradeQuery;
+  @Autowired private TradeQuery tradeQuery;
 
   public List<Trade> findByAccountId(UUID accountId) {
     return tradeRepository.findByAccountId(accountId);

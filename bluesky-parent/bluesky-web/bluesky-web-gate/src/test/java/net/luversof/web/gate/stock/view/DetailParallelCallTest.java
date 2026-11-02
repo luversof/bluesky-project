@@ -55,8 +55,7 @@ class DetailParallelCallTest {
     // 2026-10-22 부터 받은 값은 지역 변수를 거치지 않고 기간 배지 도우미(addRangeFilterAttributes)로 바로 넘긴다.
     assertThat(item)
         .as("던진 최초 일자를 받아 기간 배지에 넘긴다")
-        .contains(
-            "dividends,net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture));");
+        .contains("dividends,StockAsyncSupport.join(firstDateFuture));");
   }
 
   @Test
@@ -86,11 +85,10 @@ class DetailParallelCallTest {
     assertThat(count(account, "detailDataFirstDate(")).as("최초 일자 호출은 한 번").isEqualTo(1);
     assertThat(account)
         .as("던진 최초 일자를 받아 기간 배지에 넘긴다(2026-10-22 부터 addRangeFilterAttributes)")
-        .contains(
-            "dividends,net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstDateFuture));");
+        .contains("dividends,StockAsyncSupport.join(firstDateFuture));");
     assertThat(account)
         .as("받은 이동 목록을 모델에 싣는다")
         .contains(
-            "accountNavEntries(net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountNavFuture),resolvedId,request.getQueryString())");
+            "accountNavEntries(StockAsyncSupport.join(accountNavFuture),resolvedId,request.getQueryString())");
   }
 }

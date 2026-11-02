@@ -94,10 +94,16 @@ public final class Poe2View {
       }
     }
     Poe2.Weapon w = b.weapon();
-    if (w != null && nz(w.damageMax()) > 0) {
+    if (w != null && w.hasDamage()) {
       double aps = w.attacksPerSecond() == null ? 0 : w.attacksPerSecond();
-      double pdps = (nz(w.damageMin()) + nz(w.damageMax())) / 2.0 * aps;
-      sb.append(nz(w.damageMin())).append("-").append(w.damageMax());
+      // DPS = 물리 + 원소 + 카오스 평균 × 초당 공격(10-30 R14 — 원소 무기는 물리 칸이 0)
+      double pdps = w.averageDamage() * aps;
+      if (nz(w.damageMax()) > 0) {
+        sb.append(nz(w.damageMin())).append("-").append(w.damageMax());
+      } else {
+        int[] first = w.baseAdded().values().iterator().next();
+        sb.append(first[0]).append("-").append(first[1]);
+      }
       String apsText = String.format(java.util.Locale.ROOT, "%.2f", aps);
       sb.append(" · ").append(ko ? "초당 " + apsText + "회" : apsText + "/s");
       if (w.critChance() != null) {
@@ -149,6 +155,8 @@ public final class Poe2View {
           case "Belt" -> "허리띠";
           case "Flask" -> "플라스크";
           case "Charm" -> "호신부";
+          // 패시브 트리 주얼 홈의 주얼(10-29 R9 — 게임 ItemClasses Jewel)
+          case "Jewel" -> "주얼";
           default -> null;
         };
     if (s == null) {
@@ -162,9 +170,6 @@ public final class Poe2View {
   public static boolean appliesTo(Poe2.AugmentEffect e, String itemClass) {
     if (itemClass == null || itemClass.isBlank()) {
       return true;
-    }
-    if (e.targetClasses() != null && !e.targetClasses().isEmpty()) {
-      return e.targetClasses().contains(itemClass);
     }
     String t = e.target() == null ? "" : e.target();
     List<String> armour =
@@ -184,6 +189,15 @@ public final class Poe2View {
             "Amulet",
             "Ring",
             "Belt");
+    // '무기'(Martial Or Caster Weapon) · Martial Weapon Wand or Staff 는 대상 클래스에 지팡이류만 적혀 있고 무도 무기는 Id
+    // 로만 뜻한다
+    //   (SoulCoreStatCategories) — API 와 같게(10-29 A1)
+    if (t.startsWith("Martial") && !nonMartial.contains(itemClass)) {
+      return true;
+    }
+    if (e.targetClasses() != null && !e.targetClasses().isEmpty()) {
+      return e.targetClasses().contains(itemClass);
+    }
     return switch (t) {
       case "All" -> true;
       case "Armour" -> armour.contains(itemClass);

@@ -1,6 +1,13 @@
 package net.luversof.web.gate.stock.util;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+
+import net.luversof.web.gate.stock.support.StockZoneParamException;
 
 /**
  * 타임존 문자열을 ZoneId 로 바꾼다. 값이 없으면 서버 존, 값을 줬는데 모르는 값이면 이름을 들고 끊는다.
@@ -16,6 +23,34 @@ public final class StockZoneUtil {
 
   private StockZoneUtil() {}
 
+  /**
+   * 원장의 매매일 · 지급일 · 기준일을 날짜로 읽는다(2026-11-02 사용자 결정). 원장은 날짜를 KST 09:00(= 자정 UTC)으로 저장하므로 화면 존으로 바꾸면
+   * UTC 서쪽(미국 등)에서 하루 앞당겨진다. 자정 UTC 인 값은 UTC 날짜(= KST 날짜)로, 실제 시각이 든 값만 화면 존을 따른다 - api 의
+   * TradeProfitService.toRecordedDate 와 같은 규칙.
+   */
+  public static LocalDate recordedDate(Instant instant, ZoneId zone) {
+    if (instant == null) {
+      return null;
+    }
+    ZonedDateTime utc = instant.atZone(ZoneOffset.UTC);
+    return utc.toLocalTime().equals(LocalTime.MIDNIGHT)
+        ? utc.toLocalDate()
+        : instant.atZone(zone).toLocalDate();
+  }
+
+  /** 원장 날짜(KST 거래일)의 기준. */
+  private static final ZoneId LEDGER_ZONE = ZoneId.of("Asia/Seoul");
+
+  /**
+   * 원장 날짜와 견줄 "오늘" - 화면 존의 오늘과 KST 오늘 중 늦은 날. 원장 날짜는 KST 날짜라({@link #recordedDate}), KST 보다 서쪽 화면
+   * 존의 오늘만 쓰면 KST 로 오늘 생긴 매수 · 흐름이 하루 중 몇 시간 "미래" 로 빠졌다(검토 2026-10-31).
+   */
+  public static LocalDate ledgerToday(ZoneId zone) {
+    LocalDate local = LocalDate.now(zone);
+    LocalDate ledger = LocalDate.now(LEDGER_ZONE);
+    return ledger.isAfter(local) ? ledger : local;
+  }
+
   /** 파라미터 이름이 따로 없는 자리(내부 호출)는 timeZone 으로 적는다. */
   public static ZoneId resolve(String timeZone) {
     return resolve("timeZone", timeZone);
@@ -28,7 +63,7 @@ public final class StockZoneUtil {
     try {
       return ZoneId.of(timeZone.trim());
     } catch (Exception ex) {
-      throw new net.luversof.web.gate.stock.support.StockZoneParamException(name, timeZone, ex);
+      throw new StockZoneParamException(name, timeZone, ex);
     }
   }
 }

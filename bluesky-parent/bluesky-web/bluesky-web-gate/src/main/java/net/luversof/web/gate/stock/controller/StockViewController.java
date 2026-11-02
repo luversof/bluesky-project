@@ -4,12 +4,18 @@ import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 import static net.luversof.web.gate.stock.util.StockAmountUtil.nz;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,16 +35,25 @@ import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendSnapshotUpsertRequest;
+import net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 import net.luversof.web.gate.stock.dto.view.MonthlyDividendReferenceSummaryView;
+import net.luversof.web.gate.stock.httpexchange.DataStatusClient;
+import net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient;
+import net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
+import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
+import net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator;
 import net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendViewSupport;
+import net.luversof.web.gate.stock.support.StockAsyncSupport;
 import net.luversof.web.gate.stock.support.StockViewSupport;
+import net.luversof.web.gate.stock.util.KrxRecordDateUtil;
+import net.luversof.web.gate.stock.util.StockTabLinkUtil;
 
 @Controller
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
@@ -49,27 +64,22 @@ public class StockViewController {
   private static final String ADMIN_TAB_DATA_MANAGEMENT = "data-management";
   private static final String MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER = "display-order";
 
-  @org.springframework.beans.factory.annotation.Autowired
-  private net.luversof.web.gate.stock.httpexchange.DataStatusClient dataStatusClient;
+  @org.springframework.beans.factory.annotation.Autowired private DataStatusClient dataStatusClient;
 
-  @Autowired
-  private net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient ledgerIntegrityClient;
+  @Autowired private LedgerIntegrityClient ledgerIntegrityClient;
 
   /** 관리 화면의 두 조회를 나란히 던지기 위한 공용 실행기(다른 화면들이 쓰는 것과 같다). */
-  @Autowired private java.util.concurrent.ExecutorService stockRemoteCallExecutor;
+  @Autowired private ExecutorService stockRemoteCallExecutor;
 
   /** 상세 화면의 서로 독립적인 api-stock 조회를 동시에 던지기 위한 실행기. */
-  @org.springframework.beans.factory.annotation.Autowired
-  private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
+  @org.springframework.beans.factory.annotation.Autowired private StockAsyncSupport stockAsync;
 
   /** 적립 추천에 쓰는 종목 단위 정보(연배당 수익률 · 분배금 추세)는 이 창구에만 있다. */
   @org.springframework.beans.factory.annotation.Autowired
-  private net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient
-      monthlyDividendCatalogClient;
+  private MonthlyDividendCatalogClient monthlyDividendCatalogClient;
 
   @org.springframework.beans.factory.annotation.Autowired
-  private net.luversof.web.gate.stock.service.MonthlyContributionPickSupport
-      monthlyContributionPickSupport;
+  private MonthlyContributionPickSupport monthlyContributionPickSupport;
 
   private MonthlyDividendSnapshotClient monthlyDividendSnapshotClient;
 
@@ -79,9 +89,7 @@ public class StockViewController {
 
   private MonthlyDividendViewSupport monthlyDividendViewSupport;
 
-  @Autowired
-  private net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-      monthlyDividendReferenceSupport;
+  @Autowired private MonthlyDividendReferenceSupport monthlyDividendReferenceSupport;
 
   @Autowired
   public void setMonthlyDividendViewSupport(MonthlyDividendViewSupport monthlyDividendViewSupport) {
@@ -89,8 +97,7 @@ public class StockViewController {
   }
 
   public void setMonthlyDividendReferenceSupport(
-      net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-          monthlyDividendReferenceSupport) {
+      MonthlyDividendReferenceSupport monthlyDividendReferenceSupport) {
     this.monthlyDividendReferenceSupport = monthlyDividendReferenceSupport;
   }
 
@@ -212,8 +219,7 @@ public class StockViewController {
     for (String each : new String[] {"sustainability", "monthly-dividend", "compound"}) {
       model.addAttribute(
           simulatorTabHrefAttribute(each),
-          net.luversof.web.gate.stock.util.StockTabLinkUtil.tabHref(
-              "/stock/simulator", simulatorQuery, each));
+          StockTabLinkUtil.tabHref("/stock/simulator", simulatorQuery, each));
     }
 
     if ("monthly-dividend".equals(simulatorTab)) {
@@ -240,13 +246,10 @@ public class StockViewController {
       Object goalBasis = model.getAttribute("monthlyDividendGoalBasis");
       if (goalMonthly != null
           && goalMonthly.signum() > 0
-          && goalBasis
-              instanceof
-              net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Basis basis) {
+          && goalBasis instanceof MonthlyDividendGoalCalculator.Basis basis) {
         model.addAttribute(
             "monthlyDividendGoal",
-            net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.compute(
-                basis, goalMonthly, goalContribution));
+            MonthlyDividendGoalCalculator.compute(basis, goalMonthly, goalContribution));
       }
     }
 
@@ -399,17 +402,16 @@ public class StockViewController {
   }
 
   /** 줄마다 지급 이력 기준 과세표준 비중(종목 id 기준). 심볼은 앞뒤 공백을 빼고 대문자로 맞춰 찾는다. 없으면 그 줄은 빠진다. */
-  static java.util.Map<java.util.UUID, BigDecimal> referenceTaxableRatios(
+  static Map<UUID, BigDecimal> referenceTaxableRatios(
       List<MonthlyDividendSnapshotResponse> rows,
-      java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol) {
-    java.util.Map<java.util.UUID, BigDecimal> ratios = new java.util.LinkedHashMap<>();
+      Map<String, BigDecimal> referenceTaxableRatioBySymbol) {
+    Map<UUID, BigDecimal> ratios = new LinkedHashMap<>();
     for (MonthlyDividendSnapshotResponse row : rows) {
       if (row.stockItemId() == null || row.stockItemSymbol() == null) {
         continue;
       }
       BigDecimal referenceRatio =
-          referenceTaxableRatioBySymbol.get(
-              row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT));
+          referenceTaxableRatioBySymbol.get(row.stockItemSymbol().trim().toUpperCase(Locale.ROOT));
       if (referenceRatio != null) {
         ratios.put(row.stockItemId(), referenceRatio);
       }
@@ -425,8 +427,7 @@ public class StockViewController {
    * 낡은 줄로 센다. 2026-10-22 까지 populateMonthlyDividendModel 안에 그대로 적혀 있었다.
    */
   static ReferenceTaxableSummary referenceTaxableSummary(
-      List<MonthlyDividendSnapshotResponse> rows,
-      java.util.Map<java.util.UUID, BigDecimal> referenceTaxableRatios) {
+      List<MonthlyDividendSnapshotResponse> rows, Map<UUID, BigDecimal> referenceTaxableRatios) {
     BigDecimal total = BigDecimal.ZERO;
     int staleCount = 0;
     for (MonthlyDividendSnapshotResponse row : rows) {
@@ -446,7 +447,7 @@ public class StockViewController {
           total.add(
               expectedDividend
                   .multiply(referenceRatio)
-                  .divide(BigDecimal.valueOf(100), 0, java.math.RoundingMode.HALF_UP));
+                  .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP));
       BigDecimal savedRatio =
           row.averageTaxableBaseRatio1y() != null
               ? row.averageTaxableBaseRatio1y()
@@ -502,20 +503,17 @@ public class StockViewController {
         monthlyDividendViewSupport.buildProfileDisplayOrderMap(monthlyDividendProfiles);
     // 지급 시기(월중 · 월말) · 계좌(위탁 · ISA/연금) 자리로 좁힌다(사용자 요청 2026-09-23, 결정: 적립 추천과 같은 규칙).
     String monthlyDividendPayoutWindowFilter =
-        net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.resolveSlotWindow(
-            payoutWindow);
+        MonthlyContributionPickSupport.resolveSlotWindow(payoutWindow);
     String monthlyDividendAccountFilter =
-        net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.resolveSlotAccount(
-            account);
-    List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse>
-        monthlyDividendCatalog =
-            net.luversof.web.gate.stock.support.StockAsyncSupport.join(catalogFuture);
+        MonthlyContributionPickSupport.resolveSlotAccount(account);
+    List<MonthlyDividendCatalogResponse> monthlyDividendCatalog =
+        StockAsyncSupport.join(catalogFuture);
     boolean slotFilterRequested =
         !monthlyDividendPayoutWindowFilter.isEmpty() || !monthlyDividendAccountFilter.isEmpty();
     // 카탈로그를 못 받으면 자리를 못 정한다 - 조용히 전체를 보이면 걸린 줄로 읽히므로 화면에 알린다.
     boolean monthlyDividendSlotFilterUnavailable =
         slotFilterRequested && monthlyDividendCatalog == null;
-    java.util.Set<String> slotSymbols =
+    Set<String> slotSymbols =
         slotFilterRequested && monthlyDividendCatalog != null
             ? monthlyContributionPickSupport.symbolsInSlot(
                 monthlyDividendPayoutWindowFilter,
@@ -540,7 +538,7 @@ public class StockViewController {
           monthlyDividendViewSupport.filterRows(
               allRows, monthlyDividendKeyword, minAnnualYield, positiveOnly);
       for (String window : List.of("", "MID_MONTH", "MONTH_END")) {
-        java.util.Set<String> windowSymbols =
+        Set<String> windowSymbols =
             window.isEmpty() && monthlyDividendAccountFilter.isEmpty()
                 ? null
                 : monthlyContributionPickSupport.symbolsInSlot(
@@ -565,20 +563,16 @@ public class StockViewController {
     // 그대로 '보유수량' 으로 찍으므로, 어긋나면 사용자는 자기 보유량을 잘못 읽는다
     // (실측 2026-08-23: 8 종목 중 7 종목이 달랐고 전부 현재가 더 많았다).
     MonthlyDividendReferenceSupport.CurrentHoldings currentHoldings =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(currentHoldingsFuture);
+        StockAsyncSupport.join(currentHoldingsFuture);
     Map<UUID, Integer> monthlyDividendCurrentQuantities = currentHoldings.quantities();
     model.addAttribute("monthlyDividendCurrentQuantities", monthlyDividendCurrentQuantities);
     // 다음 분배금 기준일 · 매수 마감(2026-10-20) - 적립 추천 바로 위에서 사는 날을 정하게(월배당 ETF 화면 머리와 같은 계산).
-    java.time.LocalDateTime marketToday =
-        java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Seoul"));
-    model.addAttribute(
-        "monthlyDividendBuyBy",
-        net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
+    LocalDateTime marketToday = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+    model.addAttribute("monthlyDividendBuyBy", KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
     // 목표 월배당까지(2026-10-20)의 기준 - 전 종목(표 거르기 전), 원장 지금 수량.
     model.addAttribute(
         "monthlyDividendGoalBasis",
-        net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.basisOf(
-            allRows, monthlyDividendCurrentQuantities));
+        MonthlyDividendGoalCalculator.basisOf(allRows, monthlyDividendCurrentQuantities));
     model.addAttribute(
         "monthlyDividendCurrentAverageBuyPrices", currentHoldings.averageBuyPrices());
     // 이 표는 배당 기준값(스냅샷 시점)과 시세(최근 종가) 두 시점을 한 줄에 섞는다. 앞의 날짜만 적혀 있었다.
@@ -590,15 +584,14 @@ public class StockViewController {
     // "원장과 같다" 로 읽히므로(실측 2026-09-12: 8 줄 중 3 줄이 이 표시를 달고 있었다),
     // 실패했다는 사실을 화면에 남긴다.
     model.addAttribute("monthlyDividendCurrentHoldingsUnavailable", currentHoldings.unavailable());
-    java.util.Map<String, BigDecimal> referenceTaxableRatioBySymbol =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(referenceRatioFuture);
-    java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios =
+    Map<String, BigDecimal> referenceTaxableRatioBySymbol =
+        StockAsyncSupport.join(referenceRatioFuture);
+    Map<UUID, BigDecimal> monthlyDividendReferenceTaxableRatios =
         referenceTaxableRatios(allRows, referenceTaxableRatioBySymbol);
     model.addAttribute(
         "monthlyDividendReferenceTaxableRatios", monthlyDividendReferenceTaxableRatios);
     model.addAttribute(
-        "monthlyDividendTaxableRatioBasis",
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(taxableRatioBasisFuture));
+        "monthlyDividendTaxableRatioBasis", StockAsyncSupport.join(taxableRatioBasisFuture));
     // 행마다 "지급 이력 기준 N%" 를 알려도 합계 카드는 저장값으로만 계산된다 - 실측 2026-09-11:
     // 총 예상 월 과세표준액이 220,539 인데 지급 이력 기준이면 994,375(4.5 배)였다. 세금은 이 값에 붙는다.
     ReferenceTaxableSummary referenceTaxable =
@@ -623,7 +616,7 @@ public class StockViewController {
     // 사용자는 합계를 현재 기준으로 읽는다(실측 2026-08-23: 7/8 종목이 어긋나 1.66% 낮았다).
     // 요약 화면의 다가오는 배당 카드와 같은 규칙·같은 문구를 쓴다.
     var monthlyDividendQuantityBasis =
-        net.luversof.web.gate.stock.service.MonthlyDividendCalculator.currentQuantitySummary(
+        MonthlyDividendCalculator.currentQuantitySummary(
             filteredRows, monthlyDividendCurrentQuantities);
     model.addAttribute(
         "monthlyDividendStaleQuantityCount", monthlyDividendQuantityBasis.staleCount());
@@ -644,10 +637,7 @@ public class StockViewController {
         "monthlyDividendReorderEnabled",
         MONTHLY_DIVIDEND_PROFILE_SORT_DISPLAY_ORDER.equals(monthlyDividendSort)
             && "asc".equals(monthlyDividendDirection));
-    model.addAttribute(
-        "stockItems",
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(
-            monthlyDividendStockItemsFuture));
+    model.addAttribute("stockItems", StockAsyncSupport.join(monthlyDividendStockItemsFuture));
     model.addAttribute("monthlyDividendSort", monthlyDividendSort);
     model.addAttribute("monthlyDividendDirection", monthlyDividendDirection);
     model.addAttribute("monthlyDividendKeyword", monthlyDividendKeyword);
@@ -711,13 +701,11 @@ public class StockViewController {
       StockViewSupport.appendQueryParam(
           redirectUrl,
           "payoutWindow",
-          net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.resolveSlotWindow(
-              request.getParameter("payoutWindow")));
+          MonthlyContributionPickSupport.resolveSlotWindow(request.getParameter("payoutWindow")));
       StockViewSupport.appendQueryParam(
           redirectUrl,
           "account",
-          net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.resolveSlotAccount(
-              request.getParameter("account")));
+          MonthlyContributionPickSupport.resolveSlotAccount(request.getParameter("account")));
     }
     return redirectUrl.toString();
   }
@@ -883,16 +871,13 @@ public class StockViewController {
    * <p>지급 시기 · 계좌 필터가 걸려 있으면 그 자리의 추천만 남긴다 - 필터는 자리를 고르는 것이라 같은 경계(resolveSlotWindow ·
    * resolveSlotAccount)로 거른다.
    */
-  private java.util.List<
-          net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick>
-      loadContributionPicks(
-          java.util.List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse>
-              catalog,
-          String payoutWindowFilter,
-          String accountFilter) {
+  private List<MonthlyContributionPickSupport.ContributionPick> loadContributionPicks(
+      List<MonthlyDividendCatalogResponse> catalog,
+      String payoutWindowFilter,
+      String accountFilter) {
     // 카탈로그를 못 받은 까닭은 loadMonthlyDividendCatalog 가 이미 남겼다.
     if (catalog == null) {
-      return java.util.List.of();
+      return List.of();
     }
     try {
       // 후보 만드는 규칙은 월배당 ETF 목록의 "이번 적립" 배지와 같이 쓴다(pickFromCatalog).
@@ -909,13 +894,12 @@ public class StockViewController {
     } catch (Exception ex) {
       // 조용히 삼키면 추천이 사라진 까닭을 못 찾는다.
       log.warn("적립 추천을 못 냈다(화면은 그대로 둔다)", ex);
-      return java.util.List.of();
+      return List.of();
     }
   }
 
   /** 월배당 카탈로그. 실패하면 null - 적립 추천과 지급 시기 · 계좌 필터가 함께 쉬고, 까닭은 여기서 남긴다. */
-  private java.util.List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse>
-      loadMonthlyDividendCatalog() {
+  private List<MonthlyDividendCatalogResponse> loadMonthlyDividendCatalog() {
     try {
       return monthlyDividendCatalogClient.findCatalog(
           new org.springframework.util.LinkedMultiValueMap<>());
@@ -926,8 +910,8 @@ public class StockViewController {
   }
 
   /** 지급 시기 · 계좌 자리에 드는 행만 남긴다. 자리 조건이 없으면(null) 그대로. */
-  static java.util.List<MonthlyDividendSnapshotResponse> keepSlotRows(
-      java.util.List<MonthlyDividendSnapshotResponse> rows, java.util.Set<String> slotSymbols) {
+  static List<MonthlyDividendSnapshotResponse> keepSlotRows(
+      List<MonthlyDividendSnapshotResponse> rows, Set<String> slotSymbols) {
     if (slotSymbols == null) {
       return rows;
     }
@@ -969,11 +953,11 @@ public class StockViewController {
       // 두 조회는 서로 의존이 없는데 순차로 돌고 있었다 - 실측 2026-09-10: 데이터 상태 113ms +
       // 원장 점검 45ms 가 그대로 합산돼 이 화면만 TTFB 165~244ms 였다(대시보드 15ms·배당 25ms).
       // 한꺼번에 던지고 결과만 모은다.
-      java.util.concurrent.CompletableFuture<?> dataStatusFuture =
-          java.util.concurrent.CompletableFuture.supplyAsync(
+      CompletableFuture<?> dataStatusFuture =
+          CompletableFuture.supplyAsync(
               () -> dataStatusClient.findDataStatus(dataStatusUserId), stockRemoteCallExecutor);
-      java.util.concurrent.CompletableFuture<?> ledgerFuture =
-          java.util.concurrent.CompletableFuture.supplyAsync(
+      CompletableFuture<?> ledgerFuture =
+          CompletableFuture.supplyAsync(
               () -> ledgerIntegrityClient.check(dataStatusUserId, LEDGER_INTEGRITY_MAX_EXAMPLES),
               stockRemoteCallExecutor);
       try {

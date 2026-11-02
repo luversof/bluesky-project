@@ -5,10 +5,10 @@
 // 사용법: node parse-eldritch.mjs (사전: extract.mjs) — run-all 에선 parse-mods-full 뒤.
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, loadConfig, loadTable, buffStatsOf } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
-const OUT = path.join(DATA_DIR, "eldritch-implicits.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "eldritch-implicits.json");
 
 const mods = loadTable("English", "Mods");
 const stats = loadTable("English", "Stats");
@@ -33,9 +33,10 @@ const SLOT_TAG_TO_CLASS = {
 
 function rollValues(mod, kind) {
 	const values = new Map();
-	for (let i = 1; i <= 6; i++) {
+	const buff = buffStatsOf(mod);
+	for (let i = 1; i <= 8; i++) {
 		const si = mod["StatsKey" + i];
-		if (si == null) continue;
+		if (si == null || buff.has(si)) continue;
 		const stat = stats[si];
 		if (stat) values.set(stat.Id, mod["Stat" + i + (kind === "min" ? "Min" : "Max")] ?? 0);
 	}

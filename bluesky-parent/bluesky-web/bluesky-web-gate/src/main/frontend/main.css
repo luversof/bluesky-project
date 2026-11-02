@@ -838,6 +838,15 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	}
 }
 
+/* 전체 선택 체크박스가 붙은 머리 칸의 정렬 단추(w-full)는 떠 있는 체크박스 옆에 들어갈 자리가 없어 다음 줄로 내려갔다
+   - 실측 2026-11-02 배당 내역 "종목명" · "계좌" 머리: 체크박스가 글자 위에 따로 놓임. 체크박스 폭(1.5rem) + 간격(0.5rem)만큼 줄여
+   한 줄에 둔다. w-full 은 utilities 레이어라 같은 레이어에 더 높은 특이성으로 둔다. */
+@layer utilities {
+	th:has(> .row-select-box) > .w-full {
+		width: calc(100% - 2rem);
+	}
+}
+
 /* 적립식 복리 시뮬레이터 시리즈 색 — JTE 인라인 스타일과 TS(Chart.js) 가 공유하는 단일 소스.
    수익은 text-profit 과 같은 계열(빨강=수익 관례). */
 :root {

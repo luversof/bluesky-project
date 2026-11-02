@@ -1144,10 +1144,10 @@
 		if (ownerSocket !== undefined && nodeById.get(ownerSocket)) {
 			const ownerPlan = clusterPicks.get(ownerSocket);
 			item(
-				isKorean ? `클러스터 구성 변경 (${ownerPlan?.nodeCount ?? "?"}노드)` : `Change this cluster (${ownerPlan?.nodeCount ?? "?"})`,
+				isKorean ? `스킬 군 주얼 구성 변경 (${ownerPlan?.nodeCount ?? "?"}노드)` : `Change this cluster (${ownerPlan?.nodeCount ?? "?"})`,
 				() => openClusterPicker(nodeById.get(ownerSocket)!),
 			);
-			item(isKorean ? "클러스터 제거" : "Remove cluster", () => {
+			item(isKorean ? "스킬 군 주얼 제거" : "Remove cluster", () => {
 				const before = snapshot();
 				clusterPicks.delete(ownerSocket);
 				rebuildClusterNodes();
@@ -1163,11 +1163,11 @@
 		if (node.type === "jewel" && node.expansionJewel && !isAtlas && clusterDefs) {
 			const cur = clusterPicks.get(node.id);
 			item(
-				cur ? (isKorean ? `클러스터 변경 (${cur.nodeCount}노드)` : `Change cluster (${cur.nodeCount})`) : isKorean ? "클러스터 주얼 장착" : "Socket cluster jewel",
+				cur ? (isKorean ? `스킬 군 주얼 변경 (${cur.nodeCount}노드)` : `Change cluster (${cur.nodeCount})`) : isKorean ? "스킬 군 주얼 장착" : "Socket cluster jewel",
 				() => openClusterPicker(node),
 			);
 			if (cur) {
-				item(isKorean ? "클러스터 제거" : "Remove cluster", () => {
+				item(isKorean ? "스킬 군 주얼 제거" : "Remove cluster", () => {
 					const before = snapshot();
 					clusterPicks.delete(node.id);
 					rebuildClusterNodes();
@@ -3829,7 +3829,8 @@
 		const head = document.createElement("div");
 		head.className = "poe-popup-head flex items-center justify-between gap-2";
 		const headTitle = document.createElement("span");
-		headTitle.textContent = (isKorean ? "클러스터 주얼 — " : "Cluster jewel — ") + (isKorean ? CLUSTER_SIZE_KO[socket.expansionJewel?.size ?? 0] : sizeName);
+		// 게임 아이템 이름 순서(BaseItemTypes '대형 스킬 군 주얼', 10-29 C1)
+		headTitle.textContent = isKorean ? `${CLUSTER_SIZE_KO[socket.expansionJewel?.size ?? 0]} 스킬 군 주얼` : "Cluster jewel — " + sizeName;
 		head.appendChild(headTitle);
 		// 주요 스킬 사전(/poe/clusters) 바로가기 — 픽커 목록은 요약뿐이라 전체 스탯 비교는 사전에서
 		const dictLink = document.createElement("a");

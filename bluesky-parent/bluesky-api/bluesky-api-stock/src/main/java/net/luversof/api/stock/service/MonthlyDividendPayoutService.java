@@ -4,6 +4,7 @@ import static net.luversof.api.stock.util.StockMath.nz;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -20,9 +21,11 @@ import org.springframework.web.server.ResponseStatusException;
 import net.luversof.api.stock.domain.MonthlyDividendPayout;
 import net.luversof.api.stock.domain.MonthlyDividendSnapshot;
 import net.luversof.api.stock.domain.StockItem;
+import net.luversof.api.stock.repository.MonthlyDividendPayoutQuery;
 import net.luversof.api.stock.repository.MonthlyDividendPayoutRepository;
 import net.luversof.api.stock.repository.MonthlyDividendSnapshotRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
+import net.luversof.api.stock.util.StockMath;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 import net.luversof.api.stock.web.dto.request.MonthlyDividendPayoutRequest;
 import net.luversof.api.stock.web.dto.request.MonthlyDividendPayoutUpsertRequest;
@@ -35,8 +38,7 @@ public class MonthlyDividendPayoutService {
 
   @Autowired private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
-  @Autowired
-  private net.luversof.api.stock.repository.MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
+  @Autowired private MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
 
   @Autowired private MonthlyDividendSnapshotRepository monthlyDividendSnapshotRepository;
 
@@ -134,8 +136,7 @@ public class MonthlyDividendPayoutService {
     return toResponse(savedPayout, stockItem);
   }
 
-  public void deleteBySymbolAndDates(
-      String symbol, java.time.LocalDate recordDate, java.time.LocalDate payDate) {
+  public void deleteBySymbolAndDates(String symbol, LocalDate recordDate, LocalDate payDate) {
     if (!StringUtils.hasText(symbol)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "symbol is required");
     }
@@ -202,8 +203,8 @@ public class MonthlyDividendPayoutService {
   /**
    * 지급 이력 통계를 스냅샷에 옮긴다. 기준일을 모르면 저장된 값을 남긴다.
    *
-   * <p>과세비율은 원장 실적이 우선이다 - 계좌별 혜택(비과세 · 분리과세)이 참조에는 담기지 않는다. 스냅샷 칸은 NOT NULL 이라 모르면 0 으로 둔다(화면은
-   * 카탈로그의 null 로 "확인 안 됨" 을 적는다).
+   * <p>과세비율은 원장 실적이 우선이다 - 계좌별 혜택(비과세 · 분리과세)이 참조에는 담기지 않는다. 둘 다 모르면 null(모름)로 둔다 - 예전엔 칸이 NOT NULL
+   * 이라 0 으로 넣어 "비과세" 로 읽혔다(2026-11-02 사용자 결정, schema-alter 같은 날 묶음).
    *
    * <p>지급 이력 저장 뒤 갱신과 시트 가져오기(StockAdminService)가 같은 규칙을 쓴다. 예전엔 둘이 따로 적혀 가져오기 쪽만 기준일을 모르면 null 로
    * 덮었다(2026-10-21 정리).
@@ -214,7 +215,7 @@ public class MonthlyDividendPayoutService {
     snapshot.setAverageMonthlyDividendPerShare1y(stats.averagePerShare1y());
     BigDecimal ledgerRatio = ledgerTaxableBaseRatio1y(userId, snapshot.getStockItemId());
     snapshot.setAverageTaxableBaseRatio1y(
-        ledgerRatio != null ? ledgerRatio : nz(stats.taxableBaseRatio1y()));
+        ledgerRatio != null ? ledgerRatio : stats.taxableBaseRatio1y());
   }
 
   /**
@@ -241,7 +242,7 @@ public class MonthlyDividendPayoutService {
     DividendSearchRequest request = new DividendSearchRequest();
     request.setUserId(userId);
     request.setStockItemIdList(List.of(stockItemId));
-    request.setStartDate(Instant.now().minus(java.time.Duration.ofDays(365)));
+    request.setStartDate(Instant.now().minus(Duration.ofDays(365)));
     BigDecimal taxableSum = BigDecimal.ZERO;
     BigDecimal grossSum = BigDecimal.ZERO;
     for (var dividend : dividendService.findDividends(request)) {
@@ -288,7 +289,7 @@ public class MonthlyDividendPayoutService {
     BigDecimal averageDividendAmountPerShare1y =
         lastYearRows.stream()
             .map(MonthlyDividendPayout::getDividendAmountPerShare)
-            .map(net.luversof.api.stock.util.StockMath::nz)
+            .map(StockMath::nz)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .divide(BigDecimal.valueOf(lastYearRows.size()), 4, RoundingMode.HALF_UP);
 
@@ -363,7 +364,7 @@ public class MonthlyDividendPayoutService {
    * <p>지급이력 전수(202건)의 기준일→지급일 간격은 2~8 일이었다. 뒤집힌 행이 한 번 들어오면 배당 달력의 "다가올 지급일" 과 월별 집계가 그 행 때문에
    * 어긋나는데, 값 자체는 그럴듯해 보여 원인을 찾기 어렵다.
    */
-  private void requireConsistentDates(java.time.LocalDate recordDate, java.time.LocalDate payDate) {
+  private void requireConsistentDates(LocalDate recordDate, LocalDate payDate) {
     if (recordDate != null && payDate != null && payDate.isBefore(recordDate)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,

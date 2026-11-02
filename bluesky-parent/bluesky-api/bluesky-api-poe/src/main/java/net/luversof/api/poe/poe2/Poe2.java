@@ -127,7 +127,12 @@ public final class Poe2 {
       List<GrantedSkillLevel> grantedSkills,
       // 재사용 사용 횟수(GrantedEffectsPerLevel.StoredUses — 인게임 '3.50s (3 uses)', 10-23 Q53). 재사용이 있고 2
       // 이상일 때만
-      Integer cooldownUses) {}
+      Integer cooldownUses,
+      // 둘째 소모(GrantedEffects.CostTypes[1] · GrantedEffectsPerLevel.CostAmounts[1] — 인게임 '마나 41, 1초당
+      // 마나 6', 10-29
+      // R10). 없으면 null
+      Integer cost2,
+      String costType2) {}
 
   /** 추가 스탯 묶음 한 개(10-09 C236) — 머리글(GrantedEffectLabels) · 치명타 · 공격 피해 · 스탯 줄. */
   public record GemStatSet(
@@ -207,12 +212,21 @@ public final class Poe2 {
       Integer ward) {}
 
   public record Weapon(
+      // 물리 피해(원소 · 카오스만 있는 무기는 0 — 10-30 R14)
       Integer damageMin,
       Integer damageMax,
       Double critChance,
       Double attacksPerSecond,
       Integer range,
-      Integer reloadTime) {}
+      Integer reloadTime,
+      // 베이스 원소 피해(PoB 베이스 weapon — 달 단검 냉기 11-26 · 단조 망치 물리 5-9 + 화염 5-9, 10-30 R14). 없으면 null
+      List<ElementalDamage> elemental,
+      // 베이스 카오스 피해(교단 활 7-19 등, 10-30 R14). 없으면 null
+      Integer chaosMin,
+      Integer chaosMax) {}
+
+  /** 베이스 원소 피해 한 종류(Fire · Cold · Lightning, 10-30 R14). */
+  public record ElementalDamage(String type, Integer min, Integer max) {}
 
   public record Flask(
       Integer type,
@@ -344,7 +358,12 @@ public final class Poe2 {
       List<List<String>> kw) {}
 
   /** 같은 계열(ModType)의 등급 사다리 — tiers[0] 이 1등급(레벨이 가장 높은 것). gen = prefix | suffix. */
-  public record ModGroup(String modType, String gen, List<ModTier> tiers) {}
+  public record ModGroup(
+      String modType,
+      String gen,
+      List<ModTier> tiers,
+      // 게임 옵션 그룹(Mods.Families — 같은 그룹은 한 아이템에 하나, 10-29 R6-1). 없으면 null
+      List<Integer> grp) {}
 
   /** 옵션 풀 — 같은 아이템 종류에서 스폰 태그 조합이 같은 베이스 묶음(갑옷은 방어 속성별로 갈린다). */
   public record ModPool(
@@ -407,7 +426,9 @@ public final class Poe2 {
       Integer stackSize,
       List<AugmentEffect> effects,
       String icon,
-      String image) {}
+      String image,
+      // 장신구에 못 박음(SoulCores.CanSocketInJewellery=false, 10-29 A2) — 없으면 null(박을 수 있음)
+      Boolean noJewellery) {}
 
   public record AugmentData(String patch, List<Augment> items) {}
 
@@ -451,7 +472,10 @@ public final class Poe2 {
       // 기본 암시 · 옵션 줄의 강조 용어 정의(KeywordPopups, 인게임 Alt — 10-04 C112, 젬 Gem.keywords 와 같은 모양)
       List<Keyword> keywords,
       // 중복 사용 제한(주얼 "Limited to: 1", PoB 메타 줄 — 인게임 "중복 사용 제한: 1", 10-08 C197). 없으면 null
-      String limit) {
+      String limit,
+      // 더는 얻을 수 없는 고유(uniques.json legacy — PoB 'Source: No longer obtainable', 10-30 R12). 아니면
+      // null
+      Boolean legacy) {
 
     /** 제한 없는 옛 모양(시험 · 다시 짓는 곳용, 10-08 C197). */
     public Unique(
@@ -498,6 +522,7 @@ public final class Poe2 {
           image,
           radius,
           keywords,
+          null,
           null);
     }
 
@@ -541,7 +566,8 @@ public final class Poe2 {
           image,
           radius,
           null,
-          limit);
+          limit,
+          legacy);
     }
   }
 
@@ -799,7 +825,9 @@ public final class Poe2 {
       Integer costWarnings,
       // 무기 세트를 나눠 쓰는 빌드면 저장 당시 켜진 세트·주 세트(DPS 가 큰 쪽), 아니면 null(10-01)
       Integer savedSet,
-      Integer mainSet) {}
+      Integer mainSet,
+      // 빌드에 찍혔지만 엔진이 모르는 노드 — 그 효과는 위 수치에 없다(10-29 R4). 없으면 빈 목록
+      List<BuildNode> engineMissingNodes) {}
 
   public record BuildSkill(String slot, Boolean enabled, Boolean main, List<BuildGem> gems) {}
 

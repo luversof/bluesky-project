@@ -554,7 +554,11 @@ function formatPercent(value: number, scale = 1): string {
 		// 연/12 로 나눈 월 이율을 열두 번 곱하면 입력값보다 큰 실효 연이율이 된다(연 12% -> 12.68%).
 		// 기제만 적고 결과를 안 적으면, 사용자가 다른 상품의 연 수익률과 그대로 견주게 된다.
 		if (effectiveRateEl) {
-			const annualPct = rateInput ? Number(rateInput.value) : 0;
+			// 결과 계산(projectCompound)과 같은 범위로 자른다 - 300% 를 넣으면 계산은 200% 인데 안내만 300% 였다(검토 지적 2026-10-29).
+			const annualPct = Math.min(
+				COMPOUND_MAX_RATE_PCT,
+				Math.max(COMPOUND_MIN_RATE_PCT, rateInput ? Number(rateInput.value) : 0),
+			);
 			if (frequencySelect?.value === "monthly" && Number.isFinite(annualPct)) {
 				const effective = (Math.pow(1 + annualPct / 100 / 12, 12) - 1) * 100;
 				const template = effectiveRateEl.getAttribute("data-template") || "";

@@ -4,6 +4,7 @@
 @import net.luversof.web.gate.stock.dto.view.DividendCalendarView
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.util.Locale
 
 <%-- 배당 캘린더의 달력 한 달치.
      2026-09-14 까지 이 화면은 이름만 캘린더였다 - 날짜가 하나도 없고 월중/월말 두 덩어리로만 나뉘었다.
@@ -22,7 +23,7 @@
 
 @if(calendar != null && calendar.month() != null)
 !{
-	java.util.Locale locale = org.springframework.context.i18n.LocaleContextHolder.getLocale();
+	Locale locale = org.springframework.context.i18n.LocaleContextHolder.getLocale();
 	String monthLabel = StockViewSupport.msg("stock.dividend.calendar.month.label", String.valueOf(calendar.month().getYear()),
 		calendar.month().getMonth().getDisplayName(TextStyle.FULL, locale));
 	String estimatedNote = MessageUtil.getMessage("stock.dividend.calendar.estimated");

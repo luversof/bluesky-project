@@ -244,7 +244,7 @@
 					case "str" -> ko ? "힘" : "Str";
 					case "dex" -> ko ? "민첩" : "Dex";
 					case "int" -> ko ? "지능" : "Int";
-					case "cluster" -> ko ? "클러스터주얼" : "Cluster jewels";
+					case "cluster" -> ko ? "스킬 군 주얼" : "Cluster jewels";
 					case "unique" -> ko ? "고유 장비" : "Unique gear";
 					case "spellblock" -> ko ? "주문 막기" : "Spell block";
 					case "spelldodge" -> ko ? "주문회피" : "Spell dodge";
@@ -368,7 +368,7 @@
 					addInfo.accept(cmpR, new String[] {ko ? "충전(인/격/권)" : "Charges (E/F/P)", ninjaBenchmark.enduranceCharges() + "/" + ninjaBenchmark.frenzyCharges() + "/" + ninjaBenchmark.powerCharges()});
 				}
 				if (ninjaBenchmark.largeCluster() + ninjaBenchmark.mediumCluster() + ninjaBenchmark.smallCluster() > 0) {
-					addInfo.accept(cmpR, new String[] {ko ? "클러스터(대/중/소)" : "Cluster (L/M/S)", ninjaBenchmark.largeCluster() + "/" + ninjaBenchmark.mediumCluster() + "/" + ninjaBenchmark.smallCluster()});
+					addInfo.accept(cmpR, new String[] {ko ? "스킬 군 주얼(대/중/소)" : "Cluster (L/M/S)", ninjaBenchmark.largeCluster() + "/" + ninjaBenchmark.mediumCluster() + "/" + ninjaBenchmark.smallCluster()});
 				}
 				if (ninjaBenchmark.uniqueEquip() > 0) {
 					addInfo.accept(cmpR, new String[] {ko ? "고유 장비" : "Unique gear", String.valueOf(ninjaBenchmark.uniqueEquip())});
@@ -848,7 +848,7 @@
 		<!-- 클러스터 주얼 구성 — 주요 스킬만 보이면 "어떤 주얼로 얻은 건지"를 알 수 없다 -->
 		@if(result.treeClusters() != null && !result.treeClusters().isBlank())
 			<div class="space-y-1.5">
-				<span class="text-xs font-semibold text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "클러스터" : "Clusters"}</span>
+				<span class="text-xs font-semibold text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "스킬 군 주얼" : "Clusters"}</span>
 				<div class="flex flex-col gap-1">
 					@for(String entry : result.treeClusters().split(","))
 						!{

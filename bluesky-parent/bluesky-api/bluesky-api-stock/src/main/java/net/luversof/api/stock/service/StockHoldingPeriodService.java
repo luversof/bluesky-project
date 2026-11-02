@@ -64,7 +64,7 @@ public class StockHoldingPeriodService {
       if (firstBuy == null) {
         continue;
       }
-      result.put(row.stockItemId(), firstBuy.atZone(zone).toLocalDate());
+      result.put(row.stockItemId(), TradeProfitService.toRecordedDate(firstBuy, zone));
     }
     return result;
   }
@@ -90,7 +90,7 @@ public class StockHoldingPeriodService {
   /** 종목마다 같은 날(존 기준)의 돈을 더한다. 종목 · 날짜 · 금액이 빠진 줄은 버린다. */
   static Map<UUID, List<StockCashFlowResponse>> netByDay(
       List<StockItemCashFlow> rows, ZoneId zone) {
-    Map<UUID, TreeMap<java.time.LocalDate, BigDecimal>> byItem = new LinkedHashMap<>();
+    Map<UUID, TreeMap<LocalDate, BigDecimal>> byItem = new LinkedHashMap<>();
     if (rows != null) {
       for (StockItemCashFlow row : rows) {
         if (row == null
@@ -101,7 +101,10 @@ public class StockHoldingPeriodService {
         }
         byItem
             .computeIfAbsent(row.stockItemId(), key -> new TreeMap<>())
-            .merge(row.flowAt().atZone(zone).toLocalDate(), row.amount(), BigDecimal::add);
+            .merge(
+                TradeProfitService.toRecordedDate(row.flowAt(), zone),
+                row.amount(),
+                BigDecimal::add);
       }
     }
     Map<UUID, List<StockCashFlowResponse>> result = new LinkedHashMap<>();

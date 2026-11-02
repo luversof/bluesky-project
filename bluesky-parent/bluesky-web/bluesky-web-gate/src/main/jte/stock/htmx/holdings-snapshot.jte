@@ -5,6 +5,8 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.math.RoundingMode
+@import java.time.LocalDate
 
 @param List<HoldingsSnapshotItem> holdings
 @param String date
@@ -68,13 +70,13 @@
 				// 고른 날짜에 시세가 없으면 그 이전 마지막 종가로 계산된다. 표의 "기준가"가 고른 날짜의
 				// 시세로 보이면 안 되므로, 실제 종가 일자가 고른 날짜보다 이르면 그 사실을 밝힌다
 				// (실측: 2026-08-22 를 고르면 수집이 2026-08-20 에서 멈춰 있어 그 날 종가가 쓰인다).
-				java.time.LocalDate latestPriceDate = holdings.stream()
+				LocalDate latestPriceDate = holdings.stream()
 					.map(HoldingsSnapshotItem::priceDate)
 					.filter(v -> v != null)
-					.max(java.time.LocalDate::compareTo)
+					.max(LocalDate::compareTo)
 					.orElse(null);
 				boolean priceOlderThanRequested = latestPriceDate != null && date != null && !date.isEmpty()
-					&& latestPriceDate.isBefore(java.time.LocalDate.parse(date));
+					&& latestPriceDate.isBefore(LocalDate.parse(date));
 			}
 			<div class="grid gap-4 mb-3 text-sm md:grid-cols-3">
 				<div class="stat bg-base-200 rounded-box py-2 px-4">
@@ -122,7 +124,7 @@
 								? item.value().subtract(item.unrealizedProfit() != null ? item.unrealizedProfit() : BigDecimal.ZERO)
 								: BigDecimal.ZERO;
 							String pct = cost.compareTo(BigDecimal.ZERO) != 0 && item.unrealizedProfit() != null
-								? String.format("%.2f", item.unrealizedProfit().divide(cost, 4, java.math.RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue())
+								? String.format("%.2f", item.unrealizedProfit().divide(cost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100)).doubleValue())
 								: "0.00";
 							// 수량은 정수로 표시
 							String qtyDisplay = item.quantity() != null

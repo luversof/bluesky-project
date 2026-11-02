@@ -8,6 +8,16 @@
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.math.RoundingMode
+@import java.text.MessageFormat
+@import java.time.LocalDate
+@import java.time.ZoneId
+@import java.util.Map
+@import java.util.function.Function
+@import java.util.function.Predicate
+@import java.util.regex.Pattern
+@import net.luversof.web.gate.stock.dto.view.RecordDateBuyByView
+@import net.luversof.web.gate.stock.util.StockPickBasisLabelUtil
 
 <%-- 월배당 ETF 목록. 등록된 월배당 기준 데이터(프로필 + 지급 이력)로 만든 **종목 단위** 정보다.
      사용자 요청 2026-09-21: 내가 받을 배당금(시뮬레이터 월배당 탭)과 성격이 다르므로 화면을 나눴다.
@@ -16,7 +26,7 @@
 @param String username = ""
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
-@param List<MonthlyEtfRowView> monthlyEtfRows = java.util.List.of()
+@param List<MonthlyEtfRowView> monthlyEtfRows = List.of()
 @param int monthlyEtfTotalCount = 0
 @param long monthlyEtfHeldCount = 0L
 @param long monthlyEtfMissingPayoutCount = 0L
@@ -26,20 +36,20 @@
 @param BigDecimal monthlyEtfMinAnnualYield = null
 @param String monthlyEtfPayoutWindow = ""
 <%-- 지급 시기 칩의 개수(다른 조건은 그대로, 지급 시기만 바꿨을 때 남는 줄). 키 "" 는 전체. --%>
-@param java.util.Map<String, Integer> monthlyEtfPayoutWindowCounts = java.util.Map.of()
+@param Map<String, Integer> monthlyEtfPayoutWindowCounts = Map.of()
 @param String monthlyEtfHolding = "all"
 @param String monthlyEtfAccount = ""
-@param java.util.List<net.luversof.web.gate.stock.dto.view.RecordDateBuyByView> monthlyEtfBuyBy = java.util.List.of()
-@param java.util.List<net.luversof.web.gate.stock.service.MonthlyEtfViewSupport.MonthlyEtfPick> monthlyEtfPicks = java.util.List.of()
-@param java.util.Map<String, net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick> monthlyEtfContributionPicks = java.util.Map.of()
+@param List<RecordDateBuyByView> monthlyEtfBuyBy = List.of()
+@param List<MonthlyEtfViewSupport.MonthlyEtfPick> monthlyEtfPicks = List.of()
+@param Map<String, MonthlyContributionPickSupport.ContributionPick> monthlyEtfContributionPicks = Map.of()
 @param String monthlyEtfView = ""
 @param int monthlyEtfPeriod = 12
 @param String monthlyEtfBasis = "dividend"
-@param java.util.Map<String, net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionCandidate> monthlyEtfCandidates = java.util.Map.of()
-@param java.util.List<Integer> monthlyEtfPeriods = java.util.List.of(1, 3, 6, 12)
+@param Map<String, MonthlyContributionPickSupport.ContributionCandidate> monthlyEtfCandidates = Map.of()
+@param List<Integer> monthlyEtfPeriods = List.of(1, 3, 6, 12)
 
 !{
-	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat amountFormat = StockFormatUtil.wonFormat();
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
 	String referenceManageUrl = "/stock/admin?tab=monthly-reference";
 	String simulatorUrl = "/stock/simulator?tab=monthly-dividend";
@@ -85,15 +95,15 @@
 	String pickPeriodLabel = monthlyEtfPeriod == 12 ? MessageUtil.getMessage("stock.monthly.etf.period.year") : StockViewSupport.msg("stock.monthly.etf.period.month", monthlyEtfPeriod);
 	// 위험 지표는 1 년 기준이다. 이력이 그만큼 없는 종목은 "언제부터" 를 적어야 "1 년 기준" 이 거짓이 되지 않는다.
 	// 며칠 어긋나는 것까지 적으면 거의 모든 줄에 붙으므로, 한 달 넘게 모자랄 때만 적는다.
-	java.time.LocalDate riskFullFrom = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")).minusMonths(12).plusMonths(1);
-	java.util.function.Predicate<java.time.LocalDate> riskPartial = from -> from.isAfter(riskFullFrom);
+	LocalDate riskFullFrom = LocalDate.now(ZoneId.of("Asia/Seoul")).minusMonths(12).plusMonths(1);
+	Predicate<LocalDate> riskPartial = from -> from.isAfter(riskFullFrom);
 	String trendUnknownLabel = MessageUtil.getMessage("stock.monthly.etf.table.cell.trend.unknown");
 	// 날짜는 한 덩어리로 둔다(사용자 요청 2026-09-30: "날짜 줄바꿈도 날짜만 묶어서"). 칸이 좁으면 "2024-12-/03" 처럼 하이픈에서 갈렸다.
 	// 날짜 줄 전체를 묶으면 표가 1134 -> 1245px 로 넘친다(실측) - 날짜만 묶고 앞뒤 낱말은 흐르게 둔다.
 	// 문장 속 날짜 자리({0})에 표식을 넣어 앞뒤를 가른다. 표식은 제어 문자라 메시지에 나올 일이 없다.
 	String dateMark = String.valueOf((char) 1);
-	java.util.function.Function<String, String[]> aroundDate = key -> {
-		String[] parts = java.text.MessageFormat.format(MessageUtil.getMessage(key), dateMark).split(java.util.regex.Pattern.quote(dateMark), -1);
+	Function<String, String[]> aroundDate = key -> {
+		String[] parts = MessageFormat.format(MessageUtil.getMessage(key), dateMark).split(Pattern.quote(dateMark), -1);
 		return parts.length == 2 ? parts : new String[] { parts[0], "" };
 	};
 	String[] listingDateParts = aroundDate.apply("stock.monthly.etf.table.cell.listing.date");
@@ -192,7 +202,7 @@
 						<%-- 지급 시기 칩(2026-10-13 사용자 요청). 기타 · 미확인은 그런 종목이 있거나 지금 고른 값일 때만 낸다(평소엔 0 이라 칩만 늘어난다). --%>
 						<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${windowChipLabel}" data-etf-window-chips>
 							<span class="text-sm font-medium text-base-content/70">${windowChipLabel}</span>
-							@for(String windowOption : java.util.List.of("", "MID_MONTH", "MONTH_END", "OTHER", "UNKNOWN"))
+							@for(String windowOption : List.of("", "MID_MONTH", "MONTH_END", "OTHER", "UNKNOWN"))
 								!{boolean windowSelected = windowOption.equals(monthlyEtfPayoutWindow == null ? "" : monthlyEtfPayoutWindow);}
 								!{Integer windowCount = monthlyEtfPayoutWindowCounts.get(windowOption);}
 								@if(windowSelected || windowOption.isEmpty() || "MID_MONTH".equals(windowOption) || "MONTH_END".equals(windowOption) || (windowCount != null && windowCount > 0))
@@ -216,8 +226,8 @@
 						@if(monthlyEtfRows != null && !monthlyEtfRows.isEmpty() && (!monthlyEtfPicks.isEmpty() || !monthlyEtfContributionPicks.isEmpty() || !"dividend".equals(monthlyEtfBasis)))
 						<div class="flex flex-wrap items-center gap-2" data-pick-basis="${monthlyEtfBasis}" role="group" aria-label="${MessageUtil.getMessage("stock.pick.basis.label")}">
 							<span class="text-sm font-medium text-base-content/70">${MessageUtil.getMessage("stock.pick.basis.label")}</span>
-							@for(String basisOption : java.util.List.of("dividend", "total", "stable", "steady"))
-								<a href="${basisBase + ("dividend".equals(basisOption) ? "" : "basis=" + basisOption + "&") + basisSortQuery}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${basisOption.equals(monthlyEtfBasis) ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${basisOption.equals(monthlyEtfBasis) ? "true" : null}" data-pick-basis-link="${basisOption}">${net.luversof.web.gate.stock.util.StockPickBasisLabelUtil.label(basisOption)}</a>
+							@for(String basisOption : List.of("dividend", "total", "stable", "steady"))
+								<a href="${basisBase + ("dividend".equals(basisOption) ? "" : "basis=" + basisOption + "&") + basisSortQuery}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${basisOption.equals(monthlyEtfBasis) ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${basisOption.equals(monthlyEtfBasis) ? "true" : null}" data-pick-basis-link="${basisOption}">${StockPickBasisLabelUtil.label(basisOption)}</a>
 							@endfor
 						</div>
 						@endif
@@ -244,7 +254,7 @@
 					     후보는 기준과 상관없이 같고 셈만 바뀐다(MonthlyContributionPickSupport.Basis). --%>
 					@if(!monthlyEtfPicks.isEmpty() || !monthlyEtfContributionPicks.isEmpty() || !"dividend".equals(monthlyEtfBasis))
 						<%-- 기준 단추는 위 고정 줄(기간 옆)로 옮겼다(사용자 요청 2026-10-08) - 설명은 카드 옆에 남긴다. --%>
-						<p class="text-xs leading-5 text-base-content/60" data-pick-basis-desc>${net.luversof.web.gate.stock.util.StockPickBasisLabelUtil.description(monthlyEtfBasis)}</p>
+						<p class="text-xs leading-5 text-base-content/60" data-pick-basis-desc>${StockPickBasisLabelUtil.description(monthlyEtfBasis)}</p>
 						<%-- 수익률 기간도 추천에 쓴다(사용자 요청 2026-10-14). 12 개월이 아니면 무엇이 그 기간을 따르고 무엇이 12 회 그대로인지 적는다. --%>
 						@if(monthlyEtfPeriod != 12)
 							<p class="text-xs leading-5 text-base-content/60" data-pick-period-note>${StockViewSupport.msg("stock.monthly.etf.pick.period.note", pickPeriodLabel, monthlyEtfPeriod)}</p>
@@ -275,8 +285,8 @@
 									<%-- 점수가 어떻게 나왔는지 뺄셈으로 적는다(사용자 요청 2026-09-30). 두 수는 점수를 낼 때와 똑같이 반올림한다. --%>
 									!{BigDecimal pickCut = MonthlyContributionPickSupport.cutOf(pick.row().payoutTrendPct());}
 									<%-- 배당 값은 후보의 것(고른 기간 - 2026-10-14). 후보가 없을 때만 행의 12 개월 값. --%>
-									!{java.math.BigDecimal pickYieldValue = pickCandidate != null && pickCandidate.annualYieldPct() != null ? pickCandidate.annualYieldPct() : pick.row().annualYieldPct();}
-									!{String pickYield = percentFormat.format(pickYieldValue.setScale(2, java.math.RoundingMode.HALF_UP));}
+									!{BigDecimal pickYieldValue = pickCandidate != null && pickCandidate.annualYieldPct() != null ? pickCandidate.annualYieldPct() : pick.row().annualYieldPct();}
+									!{String pickYield = percentFormat.format(pickYieldValue.setScale(2, RoundingMode.HALF_UP));}
 									<div class="text-xs text-base-content/60 tabular-nums" data-pick-basis>
 										@if("total".equals(monthlyEtfBasis))
 											@if(monthlyEtfPeriod == 12)${StockViewSupport.msg("stock.pick.basis.value.total", percentFormat.format(pick.score()), pickYield)}@else${StockViewSupport.msg("stock.pick.basis.value.total.period", percentFormat.format(pick.score()), pickYield, pickPeriodLabel, monthlyEtfPeriod)}@endif
@@ -490,7 +500,7 @@
 										<%-- 시세가 없는 종목은 현재가 0 원이다. 그대로 두면 "수익률 0.00%" 가 사실처럼 읽힌다(실측 2026-09-21:
 										     KODEX 200커버드콜액티브가 이력 2 건인데 0.00%). 값이 없으면 '-' 로 적고 까닭을 함께 말한다. --%>
 										!{boolean priceKnown = row.currentPrice() != null && row.currentPrice().signum() > 0;}
-										!{boolean priceStale = priceKnown && MonthlyEtfViewSupport.priceStale(row.currentPriceDate(), java.time.LocalDate.now(java.time.ZoneId.of("Asia/Seoul")));}
+										!{boolean priceStale = priceKnown && MonthlyEtfViewSupport.priceStale(row.currentPriceDate(), LocalDate.now(ZoneId.of("Asia/Seoul")));}
 										<td class="align-top text-right">
 											<div class="space-y-1 tabular-nums">
 												@if(priceKnown)
@@ -539,7 +549,7 @@
 										<td class="align-top text-right" data-score-cell>
 											@if(rowScore != null)
 												!{BigDecimal rowCut = MonthlyContributionPickSupport.cutOf(row.payoutTrendPct());}
-												!{String rowYield = percentFormat.format(row.annualYieldPct().setScale(2, java.math.RoundingMode.HALF_UP));}
+												!{String rowYield = percentFormat.format(row.annualYieldPct().setScale(2, RoundingMode.HALF_UP));}
 												<div class="font-semibold tabular-nums" data-score>${percentFormat.format(rowScore)}</div>
 												@if(rowCut.signum() > 0)
 													<div class="text-[11px] tabular-nums text-base-content/60" data-score-basis>${rowYield} − ${percentFormat.format(rowCut)}<span class="sr-only"> ${StockViewSupport.msg("stock.monthly.etf.table.cell.score.basis", rowYield, percentFormat.format(rowCut))}</span></div>

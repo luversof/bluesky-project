@@ -3,6 +3,7 @@ package net.luversof.api.stock.service;
 import static net.luversof.api.stock.util.StockMath.percent;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -108,8 +109,7 @@ public final class PeriodReturnCalculator {
    */
   static LocalDate exDividendDate(LocalDate recordDate) {
     LocalDate date = recordDate.minusDays(1);
-    while (date.getDayOfWeek() == java.time.DayOfWeek.SATURDAY
-        || date.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+    while (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
       date = date.minusDays(1);
     }
     return date;

@@ -6,9 +6,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +29,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -35,6 +43,7 @@ import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockDailyClosePrice;
 import net.luversof.api.stock.domain.StockItem;
+import net.luversof.api.stock.domain.StockRawClose;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.service.strategy.ProfitCalculator;
@@ -43,12 +52,14 @@ import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
 import net.luversof.api.stock.web.dto.request.TradeProfitRequestType;
 import net.luversof.api.stock.web.dto.request.TradeSearchRequest;
 import net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem;
+import net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint;
 import net.luversof.api.stock.web.dto.response.TradeProfitPeriodSummary;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesResult;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesSummary;
 import net.luversof.api.stock.web.dto.response.TradeProfitYearlySummary;
 import net.luversof.api.stock.web.dto.response.TradeResponse;
+import net.luversof.api.stock.web.support.RequestZoneUtil;
 
 /** 통합 주식 손익 계산 서비스 실현손익(매매손익)과 미실현손익(보유손익)을 하나의 객체로 제공 */
 @Service
@@ -97,13 +108,13 @@ public class TradeProfitService {
   }
 
   /** 현재가가 필요한 경로(기간 미지정)에서만 종목별 최신 종가를 일괄 조회한다. */
-  private Map<UUID, net.luversof.api.stock.domain.StockDailyClosePrice> loadLatestPricesIfNeeded(
+  private Map<UUID, StockDailyClosePrice> loadLatestPricesIfNeeded(
       List<Trade> tradeList, TradeProfitRequest request) {
     if (request.hasDateRange() || tradeList == null || tradeList.isEmpty()) {
       return Map.of();
     }
     return stockPriceService.getLatestPrices(
-        tradeList.stream().map(Trade::getStockItemId).filter(java.util.Objects::nonNull).toList());
+        tradeList.stream().map(Trade::getStockItemId).filter(Objects::nonNull).toList());
   }
 
   /** accountId+stockItemId별 통합 손익 통계 (실현손익 + 미실현손익) */
@@ -154,9 +165,7 @@ public class TradeProfitService {
    * 합쳐 한 번에 WMA 를 돌리는 것과 다른 점이다.
    */
   private TradeProfit mergeByAccount(
-      List<Trade> group,
-      TradeProfitRequest request,
-      Map<UUID, net.luversof.api.stock.domain.StockDailyClosePrice> latestPrices) {
+      List<Trade> group, TradeProfitRequest request, Map<UUID, StockDailyClosePrice> latestPrices) {
     Map<UUID, List<Trade>> byAccount =
         group.stream()
             .collect(
@@ -234,10 +243,10 @@ public class TradeProfitService {
    * 수량 가중 평균. 가중치 합이 0 이면(전량 매도 등) 0 을 준다 — 계산기가 보유 0 일 때 0 을 주므로 그쪽에 맞춘다(null 을 주면 계좌별 경로와 달라져
    * 화면에서 빈칸이 된다).
    */
-  private static BigDecimal weighted(
+  static BigDecimal weighted(
       List<TradeProfit> parts,
       Function<TradeProfit, BigDecimal> priceGetter,
-      java.util.function.ToIntFunction<TradeProfit> quantityGetter) {
+      ToIntFunction<TradeProfit> quantityGetter) {
     BigDecimal weightedSum = BigDecimal.ZERO;
     long quantitySum = 0;
     for (TradeProfit part : parts) {
@@ -258,7 +267,7 @@ public class TradeProfitService {
   }
 
   /** 종목 id -> 종목(태그 없이 한 번에 읽는다 - 손익 · 시뮬레이션 경로는 심볼 / 이름만 쓴다). */
-  private Map<UUID, StockItem> loadStockItemMap(java.util.Collection<UUID> stockItemIds) {
+  private Map<UUID, StockItem> loadStockItemMap(Collection<UUID> stockItemIds) {
     Map<UUID, StockItem> stockItemMap = new HashMap<>();
     stockItemService
         .findAllByIdWithoutTags(stockItemIds)
@@ -505,26 +514,97 @@ public class TradeProfitService {
     assertSupportedGranularity(granularity);
     assertSupportedBreakdown(breakdown);
     ZoneId zoneId = request.resolveZoneId();
-    List<TradeProfitTimeSeriesPoint> dailySeries =
-        simulateDailySeries(request, null, null, null, null, null);
     // 시작일을 주지 않은 조회('전체' 기간)는 이력 맨 앞부터다. 이때 첫 지점은 '이전부터 있던 상태'가
     // 아니라 그날 처음 생긴 자산이므로, 기초를 0 으로 잡아야 첫날의 손익과 원금이 집계에 들어간다
     // (실측: 첫 매수일의 손익과 원금이 '전체' 합계에서 통째로 빠져 있었다.
     //  기간을 2009-01-01 처럼 명시하면 시리즈 앞에 0 인 날이 들어와 값이 맞는 것과 대비된다).
     boolean fullHistory = request.getStartDate() == null;
+    // 시작일을 준 조회는 하루 앞(시작 전날)부터 돌려 그날 마감을 기초로 쓴다(2026-11-02 사용자 결정). 첫 지점을 기초로 삼으면 시작일의
+    // 등락 · 매매가 요약에서 빠져, 매도일 >= 시작으로 세는 다른 화면의 기간 집계와 하루 어긋났다. 시리즈 · 쪼갬 표에는 시작일부터만 낸다.
+    LocalDate outputStart =
+        fullHistory ? null : request.getStartDate().atZone(zoneId).toLocalDate();
+    List<TradeProfitTimeSeriesPoint> withOpening =
+        simulateDailySeries(
+            fullHistory ? request : withStartDate(request, outputStart.minusDays(1), zoneId),
+            null,
+            null,
+            null,
+            null,
+            null);
+    List<TradeProfitTimeSeriesPoint> dailySeries =
+        fullHistory ? withOpening : fromDate(withOpening, outputStart, zoneId);
     List<TradeProfitPeriodSummary> periodBreakdown =
         breakdown == null || breakdown.isBlank()
             ? List.of()
-            : summarizeByPeriod(
-                dailySeries,
-                zoneId,
-                fullHistory,
-                resolveBreakdownUnit(dailySeries, zoneId, breakdown));
+            : withoutBucketsBefore(
+                summarizeByPeriod(
+                    withOpening,
+                    zoneId,
+                    fullHistory,
+                    resolveBreakdownUnit(dailySeries, zoneId, breakdown)),
+                outputStart);
+    List<TradeProfitYearlySummary> yearly = new ArrayList<>();
+    for (TradeProfitPeriodSummary row :
+        withoutBucketsBefore(
+            summarizeByPeriod(withOpening, zoneId, fullHistory, "YEAR"), outputStart)) {
+      yearly.add(
+          new TradeProfitYearlySummary(
+              Integer.parseInt(row.label()),
+              row.fromDate(),
+              row.toDate(),
+              row.complete(),
+              row.summary()));
+    }
     return new TradeProfitTimeSeriesResult(
         applyGranularity(dailySeries, granularity, zoneId),
-        summarizeSeries(dailySeries, zoneId, fullHistory),
-        summarizeByYear(dailySeries, zoneId, fullHistory),
+        summarizeSeries(withOpening, zoneId, fullHistory),
+        yearly,
         periodBreakdown);
+  }
+
+  /** 시작일만 바꾼 요청 복사본(나머지 필터 · 존 · 끝날은 그대로). */
+  private static TradeProfitRequest withStartDate(
+      TradeProfitRequest request, LocalDate startDate, ZoneId zoneId) {
+    TradeProfitRequest copy = new TradeProfitRequest();
+    org.springframework.beans.BeanUtils.copyProperties(request, copy);
+    copy.setStartDate(startDate.atStartOfDay(zoneId).toInstant());
+    return copy;
+  }
+
+  /** 그 날짜부터의 지점만. */
+  static List<TradeProfitTimeSeriesPoint> fromDate(
+      List<TradeProfitTimeSeriesPoint> series, LocalDate from, ZoneId zoneId) {
+    return series.stream().filter(point -> !pointDate(point, zoneId).isBefore(from)).toList();
+  }
+
+  /**
+   * 기초로만 붙인 시작 전날을 쪼갬 표에서 걷어낸다 - 그날이 홀로 만든 구간(끝이 시작일 전)은 빼고, 같은 구간에 들었으면 시작을 시작일로 되돌린다. 그대로 두면 2 일
+   * 시작 조회의 그 달이 1 일부터 덮은 "온전한 달" 로 나온다.
+   */
+  static List<TradeProfitPeriodSummary> withoutBucketsBefore(
+      List<TradeProfitPeriodSummary> rows, LocalDate from) {
+    if (from == null) {
+      return rows;
+    }
+    List<TradeProfitPeriodSummary> result = new ArrayList<>();
+    for (TradeProfitPeriodSummary row : rows) {
+      if (row.toDate() != null && row.toDate().isBefore(from)) {
+        continue;
+      }
+      if (row.fromDate() != null && row.fromDate().isBefore(from)) {
+        boolean monthly = "MONTH".equals(row.unit());
+        row =
+            new TradeProfitPeriodSummary(
+                row.unit(),
+                row.label(),
+                from,
+                row.toDate(),
+                row.toDate() != null && coversWholeBucket(from, row.toDate(), monthly),
+                row.summary());
+      }
+      result.add(row);
+    }
+    return result;
   }
 
   /**
@@ -647,14 +727,14 @@ public class TradeProfitService {
   static String resolveBreakdownUnit(
       List<TradeProfitTimeSeriesPoint> dailySeries, ZoneId zoneId, String requested) {
     if ("MONTH".equalsIgnoreCase(requested) || "YEAR".equalsIgnoreCase(requested)) {
-      return requested.toUpperCase(java.util.Locale.ROOT);
+      return requested.toUpperCase(Locale.ROOT);
     }
     if (dailySeries == null || dailySeries.size() < 2) {
       return "MONTH";
     }
     LocalDate first = pointDate(dailySeries.get(0), zoneId);
     LocalDate last = pointDate(dailySeries.get(dailySeries.size() - 1), zoneId);
-    long months = java.time.temporal.ChronoUnit.MONTHS.between(first, last);
+    long months = ChronoUnit.MONTHS.between(first, last);
     return months > MAX_MONTHLY_BREAKDOWN_MONTHS ? "YEAR" : "MONTH";
   }
 
@@ -703,12 +783,13 @@ public class TradeProfitService {
       dividendRequest.setStockItemIdList(request.getStockItemIdList());
     }
     List<Dividend> allDividends = new ArrayList<>(dividendService.findDividends(dividendRequest));
-    allDividends.sort(Comparator.comparing(Dividend::getPayDate));
+    // 배당은 배당락일에 센다(2026-11-02 사용자 결정) - 가격이 떨어지는 날이 그날이라, 지급일로 세면 월말 기준일 종목은 한 달은 하락만,
+    // 다음 달은 배당만 잡혀 월 · 연 쪼갬 표가 기운다. 기간 수익률(PeriodReturnCalculator)과 같은 규칙.
+    allDividends.sort(Comparator.comparing(dividend -> dividendDay(dividend, zoneId)));
     Iterator<Dividend> divIt = allDividends.iterator();
     Dividend nextDividend = divIt.hasNext() ? divIt.next() : null;
-    // 거래 커서와 같은 이유로 지급일도 옮겨갈 때만 계산한다.
-    LocalDate nextDividendDay =
-        nextDividend == null ? null : toRecordedDate(nextDividend.getPayDate(), zoneId);
+    // 거래 커서와 같은 이유로 배당일도 옮겨갈 때만 계산한다.
+    LocalDate nextDividendDay = nextDividend == null ? null : dividendDay(nextDividend, zoneId);
 
     // 종목 식별 키. 같은 종목이 여러 stockItemId 로 들어오는 경우를 하나로 본다(심볼 -> 이름 -> id 순).
     Function<Trade, String> getStockKey =
@@ -816,8 +897,7 @@ public class TradeProfitService {
         rawRangeByStockItem.put(entry.getKey(), new LocalDate[] {entry.getValue(), to});
       }
     }
-    Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> rawRows =
-        stockPriceService.getRawCloses(rawRangeByStockItem);
+    Map<UUID, List<StockRawClose>> rawRows = stockPriceService.getRawCloses(rawRangeByStockItem);
     // 일별 종가(수정 종가)도 같은 행에서 꺼낸다 - 원주가 범위(첫 매매일부터)가 종가 범위(출력 시작일부터)를 늘 감싸고, 거래량 0 제외도 같다.
     // 따로 한 번 더 읽으면 같은 행을 두 번 훑는다(실측 2026-10-02 JFR: 두 조회가 요청의 30%, 시계열 25 -> 50ms).
     // 원주가 열이 없는 DB 면 행이 없으므로 예전 조회로.
@@ -1045,8 +1125,7 @@ public class TradeProfitService {
         globalCumulativeDividend = globalCumulativeDividend.add(netDiv);
 
         nextDividend = divIt.hasNext() ? divIt.next() : null;
-        nextDividendDay =
-            nextDividend == null ? null : toRecordedDate(nextDividend.getPayDate(), zoneId);
+        nextDividendDay = nextDividend == null ? null : dividendDay(nextDividend, zoneId);
       }
 
       // 하루 마감 -> Global Cumulative Update
@@ -1145,7 +1224,7 @@ public class TradeProfitService {
   /** 이력 맨 앞의 전날 - 평가액 · 원가 · 실현 · 배당 · 현금흐름 모두 0. 값만 읽는다(날짜는 쓰지 않는다). */
   private static final TradeProfitTimeSeriesPoint ZERO_POINT =
       new TradeProfitTimeSeriesPoint(
-          java.time.Instant.EPOCH,
+          Instant.EPOCH,
           BigDecimal.ZERO,
           BigDecimal.ZERO,
           0L,
@@ -1413,8 +1492,7 @@ public class TradeProfitService {
 
   /** 타임존 ID 문자열을 해석한다. 비었으면 서버 기본 타임존, 알 수 없으면 400. */
   private static ZoneId resolveZoneIdOrDefault(String timeZone) {
-    return net.luversof.api.stock.web.support.RequestZoneUtil.parse(
-        timeZone, ZoneId.systemDefault());
+    return RequestZoneUtil.parse(timeZone, ZoneId.systemDefault());
   }
 
   /** 보유·거래·손익이 모두 0인 해(자산이 비어 있던 기간)인지. */
@@ -1457,6 +1535,13 @@ public class TradeProfitService {
     return outputEnd;
   }
 
+  /** 시계열에서 배당을 세는 날 - 기준일이 있으면 배당락일(기준일 하루 전 평일), 없으면 지급일. */
+  static LocalDate dividendDay(Dividend dividend, ZoneId zoneId) {
+    return dividend.getRecordDate() != null
+        ? PeriodReturnCalculator.exDividendDate(toRecordedDate(dividend.getRecordDate(), zoneId))
+        : toRecordedDate(dividend.getPayDate(), zoneId);
+  }
+
   /**
    * 거래·배당 "일자"를 읽는다.
    *
@@ -1469,9 +1554,9 @@ public class TradeProfitService {
    *
    * <p>자정 UTC 인 값은 날짜 전용으로 보고 UTC 날짜를 쓴다(= KST 날짜와 같다). 실제 시각이 들어 있는 데이터는 예전처럼 요청 타임존을 따른다.
    */
-  private static LocalDate toRecordedDate(Instant instant, ZoneId zoneId) {
-    java.time.ZonedDateTime utc = instant.atZone(java.time.ZoneOffset.UTC);
-    if (utc.toLocalTime().equals(java.time.LocalTime.MIDNIGHT)) {
+  static LocalDate toRecordedDate(Instant instant, ZoneId zoneId) {
+    ZonedDateTime utc = instant.atZone(ZoneOffset.UTC);
+    if (utc.toLocalTime().equals(LocalTime.MIDNIGHT)) {
       return utc.toLocalDate();
     }
     return instant.atZone(zoneId).toLocalDate();
@@ -1558,11 +1643,10 @@ public class TradeProfitService {
    * getDailyClosePricesGrouped 와 같은 결과다(같은 표, 같은 거래량 0 제외, 원주가 범위가 종가 범위를 감싼다).
    */
   static Map<LocalDate, Map<UUID, BigDecimal>> dailyClosesFromRawRows(
-      Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> rawRows,
-      Map<UUID, LocalDate[]> priceRangeByStockItem) {
+      Map<UUID, List<StockRawClose>> rawRows, Map<UUID, LocalDate[]> priceRangeByStockItem) {
     Map<LocalDate, Map<UUID, BigDecimal>> daily = new HashMap<>();
     for (Map.Entry<UUID, LocalDate[]> range : priceRangeByStockItem.entrySet()) {
-      List<net.luversof.api.stock.domain.StockRawClose> rows = rawRows.get(range.getKey());
+      List<StockRawClose> rows = rawRows.get(range.getKey());
       if (rows == null) {
         continue;
       }
@@ -1592,8 +1676,7 @@ public class TradeProfitService {
    *
    * @param rowsAsc 한 종목의 원주가 · 수정 종가, 날짜순(거래량 0 인 날은 빠져 있다)
    */
-  static List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint> splitAdjustedCloses(
-      List<net.luversof.api.stock.domain.StockRawClose> rowsAsc) {
+  static List<StockPriceHistoryPoint> splitAdjustedCloses(List<StockRawClose> rowsAsc) {
     if (rowsAsc == null || rowsAsc.isEmpty()) {
       return null;
     }
@@ -1603,8 +1686,7 @@ public class TradeProfitService {
       return null;
     }
     Map<LocalDate, BigDecimal> raw = valuation.rawCloseByStockItem().getOrDefault(id, Map.of());
-    List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint> descending =
-        new ArrayList<>();
+    List<StockPriceHistoryPoint> descending = new ArrayList<>();
     BigDecimal factor = BigDecimal.ONE;
     for (int index = rowsAsc.size() - 1; index >= 0; index--) {
       LocalDate day = rowsAsc.get(index).tradeDate();
@@ -1618,8 +1700,7 @@ public class TradeProfitService {
           close = close.setScale(0, RoundingMode.UNNECESSARY);
         }
       }
-      descending.add(
-          new net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint(day, close));
+      descending.add(new StockPriceHistoryPoint(day, close));
       Map<UUID, BigDecimal> events = valuation.shareEventsByDay().get(day);
       BigDecimal multiplier = events != null ? events.get(id) : null;
       if (multiplier != null) {
@@ -1627,7 +1708,7 @@ public class TradeProfitService {
         factor = factor.multiply(multiplier);
       }
     }
-    java.util.Collections.reverse(descending);
+    Collections.reverse(descending);
     return descending;
   }
 
@@ -1654,23 +1735,22 @@ public class TradeProfitService {
       Map<UUID, Map<LocalDate, BigDecimal>> adjustedCloseByStockItem,
       Map<LocalDate, Map<UUID, BigDecimal>> rawClosesByDay,
       Map<LocalDate, Map<UUID, BigDecimal>> shareEventsByDay,
-      java.util.Set<UUID> covered) {
+      Set<UUID> covered) {
 
     /** 0 원 매수가 이 날수 안에서 배율 뒤에 오면 같은 기업행위다(무상증자 신주 입고 - 원티드랩 권리락 10-08, 입고 10-28). */
     static final int BONUS_LISTING_DAYS = 60;
 
-    static RawValuation of(Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> rows) {
+    static RawValuation of(Map<UUID, List<StockRawClose>> rows) {
       Map<UUID, Map<LocalDate, BigDecimal>> raw = new HashMap<>();
       Map<UUID, Map<LocalDate, BigDecimal>> adjusted = new HashMap<>();
       Map<LocalDate, Map<UUID, BigDecimal>> byDay = new HashMap<>();
       Map<LocalDate, Map<UUID, BigDecimal>> events = new HashMap<>();
-      java.util.Set<UUID> covered = new HashSet<>();
-      for (Map.Entry<UUID, List<net.luversof.api.stock.domain.StockRawClose>> entry :
-          rows.entrySet()) {
+      Set<UUID> covered = new HashSet<>();
+      for (Map.Entry<UUID, List<StockRawClose>> entry : rows.entrySet()) {
         UUID id = entry.getKey();
         boolean complete = !entry.getValue().isEmpty();
         Map<LocalDate, BigDecimal> stockEvents = new HashMap<>();
-        net.luversof.api.stock.domain.StockRawClose previous = null;
+        StockRawClose previous = null;
         for (var original : entry.getValue()) {
           var row = original;
           if (row.adjustedClose() != null) {
@@ -1690,7 +1770,7 @@ public class TradeProfitService {
               continue;
             }
             row =
-                new net.luversof.api.stock.domain.StockRawClose(
+                new StockRawClose(
                     id,
                     row.tradeDate(),
                     row.adjustedClose()
@@ -2078,16 +2158,15 @@ public class TradeProfitService {
   }
 
   /** 주(ISO, 월요일 시작)마다 줄인다. */
-  private List<TradeProfitTimeSeriesPoint> downsampleWeekly(
+  static List<TradeProfitTimeSeriesPoint> downsampleWeekly(
       List<TradeProfitTimeSeriesPoint> series, ZoneId zoneId) {
     // 주 키도 월과 같은 '거래일'(pointDate)에서 만든다(2026-10-21 정리). 예전엔 주만 타임스탬프를 요청 타임존으로 되돌려 읽었는데,
     // 시계열 지점의 타임스탬프가 그 존의 0 시라 결과는 같았다 - 두 갈래가 같은 읽기를 쓰게 맞춘 것뿐이다.
-    return downsample(
-        series, p -> pointDate(p, zoneId).with(java.time.temporal.WeekFields.ISO.dayOfWeek(), 1));
+    return downsample(series, p -> pointDate(p, zoneId).with(WeekFields.ISO.dayOfWeek(), 1));
   }
 
   /** 달마다 줄인다. */
-  private List<TradeProfitTimeSeriesPoint> downsampleMonthly(
+  static List<TradeProfitTimeSeriesPoint> downsampleMonthly(
       List<TradeProfitTimeSeriesPoint> series, ZoneId zoneId) {
     return downsample(series, p -> YearMonth.from(pointDate(p, zoneId)));
   }
@@ -2100,8 +2179,7 @@ public class TradeProfitService {
    * granularity 에 따라 합계가 달라진다(실측: 일 121,305 / 주 680 / 월 3,947).
    */
   private static <K> List<TradeProfitTimeSeriesPoint> downsample(
-      List<TradeProfitTimeSeriesPoint> series,
-      java.util.function.Function<TradeProfitTimeSeriesPoint, K> bucketKey) {
+      List<TradeProfitTimeSeriesPoint> series, Function<TradeProfitTimeSeriesPoint, K> bucketKey) {
     return series.stream().collect(Collectors.groupingBy(bucketKey)).values().stream()
         .map(
             bucket -> {
@@ -2394,7 +2472,7 @@ public class TradeProfitService {
   }
 
   /** 캡처된 보유 상태(WmaState)를 화면용 항목으로 변환한다. */
-  private List<HoldingsSnapshotItem> buildHoldingsSnapshotItems(
+  List<HoldingsSnapshotItem> buildHoldingsSnapshotItems(
       Map<String, WmaState> stateMap,
       LocalDate date,
       Map<UUID, BigDecimal> capturedPrices,

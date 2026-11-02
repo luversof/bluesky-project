@@ -1,6 +1,31 @@
 {
-	"_comment": "PoB 원문이 롤 범위를 고정값으로 단순화한 유니크 라인 보정 — 인게임 실물 기준 범위 복원(거래소 가변 옵션 프리필 판정용). 키=유니크 영문명, 값={원문 라인: 교체 라인}.",
+	"_comment": "PoB 원문이 롤 범위를 고정값으로 단순화했거나 옛 문구로 남은 유니크 라인 보정 — 인게임 실물(게임 stat_descriptions 현재 문구) 기준으로 복원(거래소 가변 옵션 프리필 판정 · 한국어 번역 매칭용). 키=유니크 영문명, 값={원문 라인: 교체 라인}.",
+	"Maw of Conquest": {
+		"(60-80)% increased Critical Strike Chance for Spells": "(60-80)% increased Spell Critical Strike Chance"
+	},
 	"Coruscating Elixir": {
 		"Removed life is Regenerated as Energy Shield over 2 seconds": "Removed life is Regenerated as Energy Shield over (1-2) seconds"
+	},
+	"Bino's Kitchen Knife": {
+		"On Killing a Poisoned Enemy, Enemies within 3 metres are Poisoned": "On Killing a Poisoned Enemy, Enemies within 3 metres are Poisoned, and you and",
+		"and nearby Allies Regenerate 400 Life per second": "Allies Regenerate 400 Life per second for the Poison's duration if within 3 metres"
+	},
+	"Cinderswallow Urn": {
+		"(60-80)% reduced Reflected Damage taken during Effect": "Prevent +(60-80)% of Reflected Damage during Effect"
+	},
+	"Lifesprig": {
+		"Regenerate (6-8) Life over 1 second for each Spell you Cast": "Regenerate (6-8) Life over 1 second when you Cast a Spell"
+	},
+	"Panquetzaliztli": {
+		"Enemies killed explode dealing 10% of their Life as Fire Damage": "Enemies Killed with Attack or Spell Hits Explode, dealing 10% of their Life as Fire Damage"
+	},
+	"Quecholli": {
+		"Enemies killed explode dealing 10% of their Life as Fire Damage": "Enemies Killed with Attack or Spell Hits Explode, dealing 10% of their Life as Fire Damage"
+	},
+	"Replica Pure Talent": {
+		"Duelist: +2 to Melee Strike Range": "Duelist: +0.2 metres to Melee Strike Range"
+	},
+	"Skirmish": {
+		"Attack skills can have 1 additional Totem Summoned at a time": "Attack Skills have +1 to maximum number of Summoned Totems"
 	}
 }

@@ -1,5 +1,6 @@
 package net.luversof.web.gate.stock.httpexchange;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,6 +12,8 @@ import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
 import net.luversof.web.gate.stock.domain.StockItem;
+import net.luversof.web.gate.stock.dto.response.StockPriceChartPoint;
+import net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint;
 
 @HttpExchange(
     url = "/api/stockItem",
@@ -25,10 +28,10 @@ public interface StockItemClient {
   Optional<StockItem> getStockItemById(@PathVariable UUID id);
 
   @GetExchange("/search/findAll")
-  java.util.List<StockItem> getStockItems();
+  List<StockItem> getStockItems();
 
   @GetExchange("/search/findAllByTag/{tag}")
-  java.util.List<StockItem> getStockItemsByTag(@PathVariable String tag);
+  List<StockItem> getStockItemsByTag(@PathVariable String tag);
 
   /**
    * 한 종목의 일별 종가(차트용). 기간을 주지 않으면 전 구간.
@@ -36,7 +39,7 @@ public interface StockItemClient {
    * <p>보유 평가액 추이만으로는 주가 자체를 볼 수 없다 &mdash; 평가액은 수량이 바뀌면 같이 움직이기 때문이다.
    */
   @GetExchange("/{id}/priceHistory")
-  java.util.List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> getPriceHistory(
+  List<StockPriceHistoryPoint> getPriceHistory(
       @PathVariable UUID id,
       @org.springframework.web.bind.annotation.RequestParam
           org.springframework.util.MultiValueMap<String, String> params);
@@ -46,7 +49,7 @@ public interface StockItemClient {
    * endDate (ISO 날짜) · userId · timeZone.
    */
   @GetExchange("/{id}/priceChart")
-  java.util.List<net.luversof.web.gate.stock.dto.response.StockPriceChartPoint> getPriceChart(
+  List<StockPriceChartPoint> getPriceChart(
       @PathVariable UUID id,
       @org.springframework.web.bind.annotation.RequestParam
           org.springframework.util.MultiValueMap<String, String> params);

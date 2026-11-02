@@ -18,6 +18,13 @@ import java.util.regex.Pattern;
 public final class Poe2ModTranslator {
 
   private static final String SLOT = "§";
+  // 반경 주얼 "… in Radius also grant X" — 게임 틀 ClientStrings ModStatJewelAddToNotable ·
+  // ModStatJewelAddToSmall(10-30 R9 후속 —
+  //   트리 주얼을 장비 목록에 넣자 시간을 잃은 주얼 줄 200여 개가 영어로 드러났다). 사전에 통째로 있는 줄(투사체 속도 등)이 먼저다
+  private static final String[][] RADIUS_GRANT = {
+    {"Notable Passive Skills in Radius also grant ", "반경 내 주요 패시브 스킬이 {0}도 부여"},
+    {"Small Passive Skills in Radius also grant ", "반경 내 소형 패시브 스킬이 {0}도 부여"},
+  };
   private static final String NUM = "-?\\d+(?:\\.\\d+)?";
   private static final Pattern NUMBER = Pattern.compile(NUM);
   private static final Pattern PAREN_RANGE =
@@ -70,6 +77,12 @@ public final class Poe2ModTranslator {
     }
     String ko = dictionary.get(template(en));
     if (ko == null) {
+      for (String[] grant : RADIUS_GRANT) {
+        if (en.startsWith(grant[0])) {
+          String inner = translate(en.substring(grant[0].length()));
+          return inner == null ? null : grant[1].replace("{0}", inner);
+        }
+      }
       return null;
     }
     List<String> numbers = new ArrayList<>();

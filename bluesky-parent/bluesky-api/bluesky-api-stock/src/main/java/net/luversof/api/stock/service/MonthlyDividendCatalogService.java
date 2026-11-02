@@ -205,7 +205,11 @@ public class MonthlyDividendCatalogService {
               currentPrice,
               price != null ? price.tradeDate() : null,
               monthlyYieldPct,
-              monthlyYieldPct.multiply(BigDecimal.valueOf(12)).setScale(2, RoundingMode.HALF_UP),
+              // 연 수익률은 주당 배당 x 12 를 바로 나눈다 - 소수 2 자리로 반올림한 월 % 에 12 를 곱하면 최대 0.06%p 어긋났다
+              // (280 / 8,520: 3.29% x 12 = 39.48% · 실제 39.44%, 검토 지적 2026-10-29).
+              percent(
+                  averagePerShare != null ? averagePerShare.multiply(BigDecimal.valueOf(12)) : null,
+                  currentPrice),
               priceHistoryStartDate,
               List.copyOf(periodReturns),
               payoutTrend != null ? payoutTrend.recentAveragePerShare() : null,

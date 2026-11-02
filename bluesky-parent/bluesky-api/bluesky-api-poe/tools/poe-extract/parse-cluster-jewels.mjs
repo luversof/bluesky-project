@@ -52,7 +52,10 @@ for (const mod of Object.values(dumped.clusterMods || {})) {
 	const sizes = (mod.weightMultiplierKey || [])
 		.map((key, i) => (SIZE_BY_MULT[key] && (mod.weightMultiplierVal || [])[i] > 0 ? SIZE_BY_MULT[key] : null))
 		.filter(Boolean);
-	notableOptions[name] = { tags, sizes };
+	// 같은 이름의 모드가 둘이면 합친다(10-29 C4) — 'Evil Eye' 는 생성 안 되는 옛 모드(가중치 0)가 뒤에 와서 진짜 태그를 빈 배열로 덮어
+	//   트리 편집기가 사악한 눈을 고를 수 없었다.
+	const prev = notableOptions[name];
+	notableOptions[name] = prev ? { tags: [...new Set([...prev.tags, ...tags])], sizes: [...new Set([...prev.sizes, ...sizes])] } : { tags, sizes };
 }
 
 // jewels: 크기별 정의(노드 수/인덱스 배치/스킬 풀). notableSortOrder 등 부가 테이블은 그대로 보존.

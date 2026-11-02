@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,11 +20,13 @@ import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertReque
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
+import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser.LenientParseResult;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutSourceImportService;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutWindowGuesser;
 import net.luversof.web.gate.stock.util.MonthlyDividendSourceMetaParser.SourceMeta;
+import net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser;
 
 /**
  * 운용사 상세 <b>링크만</b>으로 월배당 기준 데이터를 등록한다(사용자 요청 2026-09-21).
@@ -58,14 +61,14 @@ public class MonthlyDividendLinkRegisterService {
   private final MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService;
 
   /** 시세 갱신은 관리 쪽 창구를 쓴다 - 종목 하나만 고르는 입구가 여기 있다. */
-  private final net.luversof.web.gate.stock.httpexchange.StockAdminClient stockAdminClient;
+  private final StockAdminClient stockAdminClient;
 
   public MonthlyDividendLinkRegisterService(
       StockItemClient stockItemClient,
       MonthlyDividendProfileClient monthlyDividendProfileClient,
       MonthlyDividendPayoutClient monthlyDividendPayoutClient,
       MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService,
-      net.luversof.web.gate.stock.httpexchange.StockAdminClient stockAdminClient) {
+      StockAdminClient stockAdminClient) {
     this.stockItemClient = stockItemClient;
     this.monthlyDividendProfileClient = monthlyDividendProfileClient;
     this.monthlyDividendPayoutClient = monthlyDividendPayoutClient;
@@ -306,8 +309,7 @@ public class MonthlyDividendLinkRegisterService {
     request.setSymbol(existing.stockItemSymbol());
     // 새로 가져오기를 한 번 돌리면 옛 RISE 주소도 새 주소로 바뀐다(2026-09-29).
     request.setSourceUrl(
-        net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
-            existing.sourceUrl()));
+        RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(existing.sourceUrl()));
     request.setPayoutWindow(existing.payoutWindow());
     request.setDisplayOrder(existing.displayOrder());
     request.setActive(existing.active());
@@ -330,8 +332,7 @@ public class MonthlyDividendLinkRegisterService {
             : request.getTotalExpenseRatioPct() != null
                 && existing.totalExpenseRatioPct().compareTo(request.getTotalExpenseRatioPct())
                     == 0;
-    return sameExpense
-        && java.util.Objects.equals(existing.listingDate(), request.getListingDate());
+    return sameExpense && Objects.equals(existing.listingDate(), request.getListingDate());
   }
 
   /**
@@ -362,9 +363,7 @@ public class MonthlyDividendLinkRegisterService {
     }
     profile.setSymbol(meta.symbol());
     // RISE 옛 주소(riseetf.co.kr)로 넣어도 새 주소(kbam.co.kr/products/…)로 저장한다(2026-09-29).
-    profile.setSourceUrl(
-        net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
-            link));
+    profile.setSourceUrl(RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(link));
     profile.setPayoutWindow(payoutWindow);
     profile.setActive(Boolean.TRUE);
     if (meta.totalExpenseRatioPct() != null) {

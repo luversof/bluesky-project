@@ -6,21 +6,21 @@
 // 사용법: node parse-mods-full.mjs (사전: extract.mjs — run-all 에선 parse-mods 직후)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, loadConfig, loadTable, buffStatsOf } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
-const OUT = path.join(DATA_DIR, "mods.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "mods.json");
 // 풀(클래스|변형)별로 **실제 붙는 티어** — families 는 같은 그룹의 티어를 모든 클래스에서 합쳐 담으므로(생명력 +175~189 는 갑옷 전용인데
 // 장화 패밀리에도 들어 있다) "이 장화에서 2티어" 를 알려면 풀별 목록이 따로 있어야 한다. mods.json 스키마를 건드리지 않으려고 별도 파일로 쓴다
 // (PoeModDataService 가 레코드로 읽는다). 소비자: 업그레이드 가이드의 레어 목표(2티어) 추천.
 // ⚠ 티어 사다리는 게임의 **ModTypeKey** 로 묶는다 — familyKey(Id 꼬리 숫자 떼기)는 "ChanceToSuppressSpells5__" 처럼 밑줄이 둘인 최상위
 //   티어를 따로 떼어 내, 2티어를 잘못 세고(억제 +9~10% 를 2티어로) 같은 계열을 한 아이템에 두 번 얹었다(2026-09-29). 한 아이템에 같이 못 붙는지는
 //   게임의 **Families** 로 판정한다(생명력[0] 과 방어도+생명력 복합[2605] 은 같이 붙는다).
-const OUT_TIERS = path.join(DATA_DIR, "mod-pool-tiers.json");
+const OUT_TIERS = path.join(process.env.POE_DATA_OUT || DATA_DIR, "mod-pool-tiers.json");
 // 제작 엔진용(10-15 C335 — 사용자 요청 "craftofexile 같은 제작 시뮬레이터 · 에뮬레이터"): 풀마다 옵션 id → 그 풀의 가중치, 옵션마다
 //   계열 · 접두/접미 · 아이템 레벨 · 옵션 그룹(Families — 같은 그룹은 한 아이템에 하나) · 옵션 태그(ImplicitTags — 화석 · 수확 가중치용).
 //   mods.json 의 등급 가중치는 그 등급이 처음 나온 풀의 값이라 클래스마다 가중치가 다른 옵션이 틀릴 수 있어 따로 싣는다
-const OUT_CRAFT = path.join(DATA_DIR, "craft-mods.json");
+const OUT_CRAFT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "craft-mods.json");
 
 const mods = loadTable("English", "Mods");
 // 옵션 유형 이름(C384 — 수확 원소 변환의 매개변수가 ModType 이름 목록이다). 옛 작업 폴더면 없을 수 있다
@@ -57,6 +57,7 @@ const describe = createStatDescriber(FILES_DIR, [
 
 // 장비 아이템 클래스만 (base-items.json 에 있는 클래스 = 장비 파이프라인이 이미 거른 것)
 const baseItems = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "base-items.json"), "utf8")).items;
+const baseKoByName = new Map(baseItems.map((b) => [b.name, b.nameKo || b.name]));
 
 // 클래스 레벨 태그 증강 — BaseItemTypes.TagsKeys 에는 속성 변형 태그(int_armour 등)만 담기고,
 // 스폰웨이트가 참조하는 일반 슬롯/무기 태그(armour, gloves, weapon, bow, default…)는 ItemClass 에서
@@ -72,7 +73,9 @@ const CLASS_TAGS = {
 	Belt: ["belt"],
 	Quiver: ["quiver"],
 	Claw: ["claw", "weapon", "one_hand_weapon", "onehand", "melee"],
-	Dagger: ["dagger", "weapon", "one_hand_weapon", "onehand", "melee"],
+	// attack_dagger · attack_staff(10-30 R27): 룬 단검이 아닌 단검 14개 · 전쟁 지팡이 12개 전부의 베이스 태그(PoB Data/Bases — 게임 BaseItemTypes 추출본은 상속 태그가 빠졌다).
+	//   없으면 단검에 주문 피해(SpellDamageOnWeapon, attack_dagger 0)가 붙고 장착 젬 레벨 등 9개가 빠졌다
+	Dagger: ["dagger", "attack_dagger", "weapon", "one_hand_weapon", "onehand", "melee"],
 	"Rune Dagger": ["rune_dagger", "dagger", "weapon", "one_hand_weapon", "onehand", "caster"],
 	Wand: ["wand", "weapon", "one_hand_weapon", "onehand", "ranged", "caster"],
 	"One Hand Sword": ["sword", "weapon", "one_hand_weapon", "onehand", "melee"],
@@ -82,7 +85,7 @@ const CLASS_TAGS = {
 	Sceptre: ["sceptre", "weapon", "one_hand_weapon", "onehand", "melee", "caster"],
 	Bow: ["bow", "weapon", "two_hand_weapon", "twohand", "ranged"],
 	Staff: ["staff", "weapon", "two_hand_weapon", "twohand", "melee"],
-	Warstaff: ["warstaff", "staff", "weapon", "two_hand_weapon", "twohand", "melee"],
+	Warstaff: ["warstaff", "staff", "attack_staff", "weapon", "two_hand_weapon", "twohand", "melee"],
 	"Two Hand Sword": ["sword", "weapon", "two_hand_weapon", "twohand", "melee"],
 	"Two Hand Axe": ["axe", "weapon", "two_hand_weapon", "twohand", "melee"],
 	"Two Hand Mace": ["mace", "weapon", "two_hand_weapon", "twohand", "melee"],
@@ -170,7 +173,9 @@ const INFLUENCES = [
 	{ key: "adjudicator", name: "Warlord", nameKo: "전쟁군주" },
 ];
 // 영향력 태그가 붙는 슬롯 태그 — CLASS_TAGS 의 슬롯 태그(첫 항목)를 쓴다(gloves/bow/wand …).
-const influenceSlotTag = (itemClass) => (CLASS_TAGS[itemClass] || [])[0];
+//   양손 도끼 · 검 · 둔기는 게임 태그가 2h_axe_shaper 꼴(10-30 R27 — 예전엔 한손 axe_shaper 로 만들어 영향력 풀 18개가 한손 옵션이었다)
+const TWO_HAND_INFLUENCE = new Set(["Two Hand Axe", "Two Hand Sword", "Two Hand Mace"]);
+const influenceSlotTag = (itemClass) => (TWO_HAND_INFLUENCE.has(itemClass) ? "2h_" : "") + ((CLASS_TAGS[itemClass] || [])[0] ?? "");
 
 // (아이템 클래스 × 속성 변형 × 영향력)별 태그 집합. 무기/장신구는 변형이 없어 변형 키 "", 영향력 없음도 "".
 const tagSetsByPool = new Map(); // "itemClass|variant|influence" → [{sig,tagSet}]
@@ -263,23 +268,29 @@ for (const b of baseItems) {
 	}
 }
 
-/** 스폰웨이트 첫 매치 — 스폰 가능하면 weight(>0), 아니면 0 */
+/** 스폰웨이트 첫 매치 — 스폰 가능하면 weight(>0), 아니면 0
+ *  × GenerationWeight 첫 매치 배수(값/100, 10-30 R27 — PoB Classes/Item.lua 1744 와 같음. 없던 동안 셉터 · 지팡이 · 룬 단검 풀 2212건이 보통 2배였다) */
 function spawnWeight(mod, tagSet) {
-	const keys = mod.SpawnWeight_TagsKeys || [];
-	const values = mod.SpawnWeight_Values || [];
-	for (let i = 0; i < keys.length; i++) {
-		const tagId = tags[keys[i]]?.Id;
-		if (tagId && tagSet.has(tagId)) return values[i] ?? 0;
-	}
-	return 0;
+	const firstMatch = (keys, values) => {
+		for (let i = 0; i < (keys || []).length; i++) {
+			const tagId = tags[keys[i]]?.Id;
+			if (tagId && tagSet.has(tagId)) return values?.[i] ?? 0;
+		}
+		return null;
+	};
+	const weight = firstMatch(mod.SpawnWeight_TagsKeys, mod.SpawnWeight_Values) ?? 0;
+	const multiplier = firstMatch(mod.GenerationWeight_TagsKeys, mod.GenerationWeight_Values);
+	// shortcut: API 가 가중치를 정수(Map<String, Integer>)로 읽어 반올림한다(25 × 50% = 12.5 → 13, 낮은 등급 42개 · 최대 0.5 차이) — 정밀 확률이 필요해지면 API 쪽을 double 로
+	return multiplier == null ? weight : Math.round((weight * multiplier) / 100);
 }
 
 /** 모드 스탯 → 값 맵 (min/max 선택) */
 function rollValues(mod, kind) {
 	const values = new Map();
-	for (let i = 1; i <= 6; i++) {
+	const buff = buffStatsOf(mod);
+	for (let i = 1; i <= 8; i++) {
 		const statIndex = mod["StatsKey" + i];
-		if (statIndex == null) continue;
+		if (statIndex == null || buff.has(statIndex)) continue;
 		const stat = stats[statIndex];
 		if (!stat) continue;
 		values.set(stat.Id, mod["Stat" + i + (kind === "min" ? "Min" : "Max")] ?? 0);
@@ -374,6 +385,7 @@ const craftPools = new Map(); // "itemClass|variant|influence" → Map<modId, we
 const craftMods = new Map(); // modId → {f, g, l, grp, t, ess}
 const perPoolTiers = new Map(); // "itemClass|variant|" → Map<sig, Map<modType, {gen, families:Set, mods:[{id, ilvl, fam}]}>> (영향력 없는 풀만)
 const corruptedPerPool = new Map(); // "itemClass|variant|" → Set<famKey>
+const famSigsPerPool = new Map(); // "itemClass|variant|" → { famSigs: Map<famKey, Set<sig>>, sigCount }
 const enchantPerPool = new Map(); // 플라스크 클래스 풀 → Set<famKey> (주입/점화 인챈트)
 for (const [poolKey, tagSets] of tagSetsByPool) {
 	if (poolKey.endsWith("|")) {
@@ -440,6 +452,9 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 	}
 	const famWeights = new Map();
 	perPool.set(poolKey, famWeights);
+	// 계열 → 그 계열이 붙는 베이스 서명(10-29 R6-2) — 영향력 없는 풀에서 일부 베이스에만 붙는 계열을 가려낸다
+	const famSigs = new Map();
+	if (poolKey.endsWith("|")) famSigsPerPool.set(poolKey, { famSigs, sigCount: tagSets.length });
 	const poolDomain = domainOf(poolKey);
 	const candidates = candidatesByDomain.get(poolDomain) || [];
 	// 바알 오브 부패 임플리싯(C358)은 플라스크(도메인 2 — 바알 오브를 못 쓴다)만 빼고 클래스 도메인별(주얼 10 · 심연 주얼 13)
@@ -475,6 +490,10 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 		if (weight <= 0) continue;
 		const key = familyKey(mod);
 		famWeights.set(key, Math.max(famWeights.get(key) || 0, weight));
+		if (poolKey.endsWith("|")) {
+			if (!famSigs.has(key)) famSigs.set(key, new Set());
+			for (const { sig, tagSet } of tagSets) if (spawnWeight(mod, tagSet) > 0) famSigs.get(key).add(sig);
+		}
 		if (!/Royale/.test(mod.Id)) {
 			if (!craftPools.has(poolKey)) craftPools.set(poolKey, new Map());
 			craftPools.get(poolKey).set(mod.Id, weight);
@@ -508,9 +527,11 @@ for (const [poolKey, tagSets] of tagSetsByPool) {
 		}
 		let fam = families.get(key);
 		if (!fam) {
-			fam = { gen: GEN[mod.GenerationType], essence: !!mod.IsEssenceOnlyModifier, tiers: new Map() };
+			fam = { gen: GEN[mod.GenerationType], essence: !!mod.IsEssenceOnlyModifier, tiers: new Map(), grp: new Set() };
 			families.set(key, fam);
 		}
+		// 게임 옵션 그룹(Mods.Families — 같은 그룹은 한 아이템에 하나, 10-29 R6-1). 옵션 화면 계산기가 같이 못 붙는 카드를 곱하지 않게 싣는다
+		for (const f of mod.Families || []) fam.grp.add(f);
 		if (!fam.tiers.has(index)) {
 			fam.tiers.set(index, {
 				id: mod.Id,
@@ -533,18 +554,32 @@ for (const [key, fam] of families) {
 	const tiers = [...fam.tiers.values()].sort((a, b) => b.ilvl - a.ilvl);
 	// 스탯 서술이 아예 안 나온 패밀리(내부용/특수)는 페이지에 보여줄 게 없다 — 제외
 	if (!tiers.some((t) => t.en?.length)) continue;
-	outFamilies[key] = { gen: fam.gen, essence: fam.essence || undefined, tiers };
+	outFamilies[key] = { gen: fam.gen, essence: fam.essence || undefined, grp: fam.grp?.size ? [...fam.grp].sort((a, b) => a - b) : undefined, tiers };
 }
 // 풀(클래스|변형) → 접두/접미(+부패 임플리싯) 패밀리 키
 const outPools = {};
 for (const [poolKey, famWeights] of perPool) {
 	const corrupted = [...(corruptedPerPool.get(poolKey) || [])].filter((k) => outFamilies[k]?.gen === "corrupted").sort();
 	const enchants = [...(enchantPerPool.get(poolKey) || [])].filter((k) => outFamilies[k]?.gen === "enchant").sort();
+	// 일부 베이스에만 붙는 계열 → 그 베이스 이름(10-29 R6-2: 반지 풀의 '장착된 젬 레벨 +1' 은 언셋 반지만, 소환수 옵션은 뼈 · 어스름 반지만).
+	//   옵션 화면은 이 계열을 '○○ 전용'으로 표시하고 일반 베이스 확률의 분모에서 뺀다 — 넣으면 쇠 반지 저항 확률이 3.58%(실제 4.83%)로 낮게 나왔다
+	const sigInfo = famSigsPerPool.get(poolKey);
+	let partial;
+	if (sigInfo && sigInfo.sigCount > 1) {
+		for (const [k, sigs] of sigInfo.famSigs) {
+			if (sigs.size >= sigInfo.sigCount || !outFamilies[k]) continue;
+			const names = new Set();
+			for (const sig of sigs) for (const n of basesBySig.get(poolKey)?.get(sig) || []) names.add(n);
+			if (!names.size) continue;
+			(partial ??= {})[k] = [...names].sort().map((n) => ({ en: n, ko: baseKoByName.get(n) || n }));
+		}
+	}
 	outPools[poolKey] = {
 		prefixes: [...famWeights.keys()].filter((k) => outFamilies[k]?.gen === "prefix").sort(),
 		suffixes: [...famWeights.keys()].filter((k) => outFamilies[k]?.gen === "suffix").sort(),
 		...(corrupted.length ? { corrupted } : {}),
 		...(enchants.length ? { enchants } : {}),
+		...(partial ? { partial } : {}),
 	};
 }
 // 클래스 목록 — 변형이 여럿이면 variants 로 노출(UI 가 하위 탭을 만든다). 변형 없으면 빈 목록.

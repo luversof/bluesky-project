@@ -200,7 +200,12 @@ public class Poe2HtmxController {
         throw e;
       }
       logger.info("PoE2 빌드 임포트 거절: {} ({})", e.getErrorCode(), e.getStatus());
-      model.addAttribute("error", "invalid");
+      // PoE1 코드면 그렇다고 알린다(10-29 R9 — 예전엔 '코드를 읽지 못했습니다' 로 덮었다)
+      // 게이트 API 클라이언트는 API_EXCEPTION 으로 감싸고 API 의 오류 코드는 errorMessage 안에 둔다
+      boolean poe1 =
+          "POE2_BUILD_IS_POE1".equals(e.getErrorCode())
+              || String.valueOf(e.getErrorMessage()).contains("POE2_BUILD_IS_POE1");
+      model.addAttribute("error", poe1 ? "poe1" : "invalid");
     } catch (org.springframework.web.client.HttpClientErrorException e) {
       logger.info("PoE2 빌드 임포트 거절: {}", e.getMessage());
       model.addAttribute("error", "invalid");

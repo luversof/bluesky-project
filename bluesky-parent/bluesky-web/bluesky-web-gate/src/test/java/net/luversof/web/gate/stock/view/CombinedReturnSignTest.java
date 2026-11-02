@@ -47,12 +47,9 @@ class CombinedReturnSignTest {
   void 손익_색도_그대로다() throws IOException {
     String template = Files.readString(TEMPLATE, StandardCharsets.UTF_8);
 
+    assertThat(template).contains("${StockFormatUtil.rateTone(row.totalReturnOnCostPct(), 2)}");
     assertThat(template)
-        .contains(
-            "${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? \"text-profit\" : \"text-loss\"}");
-    assertThat(template)
-        .contains(
-            "${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? \"text-profit\" : \"text-loss\"}");
+        .contains("${StockFormatUtil.rateTone(row.expectedCombinedReturnPct(), 2)}");
   }
 
   /** 방향이 없는 수익률(현재가/평단 기준 배당 수익률)은 손대지 않는다 - 배당률에 "+" 는 뜻이 없다. */

@@ -61,11 +61,17 @@ test("잘못된 입력은 0", () => {
 	assert.equal(s.monthEquivalent("2026-09-11", "2026-09-01"), 0, "역순 구간");
 });
 
-test("필터가 비면 데이터의 첫 배당일 ~ 마지막 배당일을 쓴다", () => {
+// 2026-10-29 검토 지적: 첫 배당일 ~ 마지막 배당일이면 배당 한 건의 분모가 하루(0.03 개월)라 월평균이 30 배였고, 다달이 받은 12 건(1/15 ~ 12/15)은
+// 11 개월로 9% 부풀었다. 옆 월별 막대처럼 첫 달 1 일 ~ 마지막 달 말일로 센다.
+test("필터가 비면 첫 배당이 있는 달 ~ 마지막 배당이 있는 달을 통째로 쓴다", () => {
 	const s = load({ dividendData: [{ payDate: "2026-01-15", net: 1 }, { payDate: "2026-03-14", net: 1 }] });
-	const span = s.averageMonthSpan();
-	// 2026-01-15~03-14 = 17/31 + 1 + 14/31
-	assert.ok(span > 1.9 && span < 2.1, "span " + span);
+	assert.equal(Math.round(s.averageMonthSpan() * 1000) / 1000, 3);
+});
+
+test("배당 한 건이면 한 달, 다달이 12 건이면 12 개월", () => {
+	assert.equal(Math.round(load({ dividendData: [{ payDate: "2026-09-11", net: 1 }] }).averageMonthSpan() * 1000) / 1000, 1);
+	const monthly = Array.from({ length: 12 }, (_, i) => ({ payDate: "2026-" + String(i + 1).padStart(2, "0") + "-15", net: 1 }));
+	assert.equal(Math.round(load({ dividendData: monthly }).averageMonthSpan() * 1000) / 1000, 12);
 });
 
 test("필터가 있으면 필터 기간을 쓴다", () => {

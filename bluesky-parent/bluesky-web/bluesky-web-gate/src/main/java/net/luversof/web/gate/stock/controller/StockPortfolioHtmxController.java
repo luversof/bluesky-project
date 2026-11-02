@@ -1,12 +1,17 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -19,17 +24,28 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.domain.TradeProfitAggregator;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
+import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.AssetStatusAccountHoldingView;
+import net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView;
+import net.luversof.web.gate.stock.dto.response.StockCashFlowResponse;
+import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DataFirstDateClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.support.StockAsyncSupport;
 import net.luversof.web.gate.stock.util.StockAmountUtil;
+import net.luversof.web.gate.stock.util.StockCombinedProfitUtil;
+import net.luversof.web.gate.stock.util.StockPriceBasisUtil;
+import net.luversof.web.gate.stock.util.StockYieldUtil;
+import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
@@ -47,7 +63,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
 
   private final DataFirstDateClient dataFirstDateClient;
 
-  private final net.luversof.web.gate.stock.support.StockAsyncSupport async;
+  private final StockAsyncSupport async;
 
   public StockPortfolioHtmxController(
       TradeProfitClient tradeProfitClient,
@@ -57,7 +73,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
       DividendClient dividendClient,
       DataFirstDateClient dataFirstDateClient,
       MessageSource messageSource,
-      net.luversof.web.gate.stock.support.StockAsyncSupport async) {
+      StockAsyncSupport async) {
     super(
         tradeProfitClient,
         tradeClient,
@@ -86,11 +102,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     // 두 번씩 더 나갔다). 이름 재료는 여기서 한 번만 읽어 두 손익 조회에 함께 넘기고,
     // 서로 의존이 없는 네 호출은 동시에 던진다.
     var stockItemsFuture =
-        async.supply(
-            () ->
-                emptyIfNull(
-                    (List<net.luversof.web.gate.stock.domain.StockItem>)
-                        stockItemClient.getStockItems()));
+        async.supply(() -> emptyIfNull((List<StockItem>) stockItemClient.getStockItems()));
     var accountsFuture = async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
 
     // 위 portfolio 와 같은 이유로, 계좌 필터가 있으면 보내기 전에 이 사용자 계좌로 좁힌다.
@@ -98,8 +110,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
 
     var profitParams = request.toParams();
     var stockGroupedRequest = copyTradeProfitRequest(request);
-    stockGroupedRequest.setGroupBy(
-        net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+    stockGroupedRequest.setGroupBy(TradeProfitRequestGroup.STOCKITEM);
     var stockGroupedParams = stockGroupedRequest.toParams();
     var rawProfitFuture =
         emptyAccountSelection
@@ -132,7 +143,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                 () ->
                     emptyIfNull(
                         tradeClient.findTrades(
-                            new net.luversof.web.gate.stock.dto.request.TradeSearchRequest(
+                            new TradeSearchRequest(
                                     userId, request.getAccountIdList(), null, null, null)
                                 .toParams())));
     var firstBuyDateFuture =
@@ -140,9 +151,8 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             ? null
             : async.supply(() -> tradeClient.findFirstBuyDateByStockItem(profitParams));
 
-    List<net.luversof.web.gate.stock.domain.StockItem> stockItemList =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockItemsFuture);
-    var accountList = net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountsFuture);
+    List<StockItem> stockItemList = StockAsyncSupport.join(stockItemsFuture);
+    var accountList = StockAsyncSupport.join(accountsFuture);
     var tradeProfitNames = toTradeProfitNames(accountList, stockItemList);
 
     List<TradeProfit> enrichedList =
@@ -150,9 +160,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             rawProfitFuture == null
                 ? List.<TradeProfit>of()
                 : enrichTradeProfits(
-                    net.luversof.web.gate.stock.support.StockAsyncSupport.join(rawProfitFuture),
-                    userId,
-                    tradeProfitNames));
+                    StockAsyncSupport.join(rawProfitFuture), userId, tradeProfitNames));
     enrichedList.removeIf(tp -> tp.holdingQuantity() == 0);
     BigDecimal totalEvaluationAmount =
         enrichedList.stream()
@@ -166,14 +174,14 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         accountStatusTables(enrichedList, accountPrincipalOverrideMap, totalEvaluationAmount);
     Map<UUID, TradeProfit> accountTotalMap = accountTables.accountTotalMap();
     Map<UUID, BigDecimal> accountProfitBasisMap = accountTables.accountProfitBasisMap();
-    java.util.Set<UUID> manualPrincipalAccountIds = accountTables.manualPrincipalAccountIds();
+    Set<UUID> manualPrincipalAccountIds = accountTables.manualPrincipalAccountIds();
     Map<UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap =
         accountTables.accountHoldingMap();
 
     // 종목별 보유 계좌(사용자 요청 2026-09-17: 계좌 표의 "보유 종목 보기" 처럼 종목 줄에서 그 종목을 가진 계좌를 펼쳐 본다).
     // 계좌 표 펼침과 같은 재료(계좌 x 종목 손익 행)를 뒤집어 모은다 - 두 펼침의 수량 · 금액이 서로 어긋나지 않게.
-    Map<UUID, List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView>>
-        stockHoldingAccountMap = buildStockHoldingAccountViews(enrichedList, totalEvaluationAmount);
+    Map<UUID, List<AssetStatusStockAccountView>> stockHoldingAccountMap =
+        buildStockHoldingAccountViews(enrichedList, totalEvaluationAmount);
 
     // 종목별 집계 (계좌 무시)
     List<TradeProfit> stockGroupedList =
@@ -181,10 +189,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             rawStockGroupedFuture == null
                 ? List.<TradeProfit>of()
                 : enrichTradeProfits(
-                    net.luversof.web.gate.stock.support.StockAsyncSupport.join(
-                        rawStockGroupedFuture),
-                    userId,
-                    tradeProfitNames));
+                    StockAsyncSupport.join(rawStockGroupedFuture), userId, tradeProfitNames));
     // 걸러내기 전에 '이미 다 판 종목' 을 따로 잡는다(셈은 soldOutSummary). 이 표의 합계는 보유 종목만이라 전체 누적보다 작은데,
     // 얼마나 작은지는 화면 어디에도 없었다 - 실측 2026-09-11: 실현손익 합계가 자산 현황 140,350,295 인데
     // 대시보드·매매·자산 성장은 225,630,135 를 적는다(차이 85,279,840, 37.8%). 그 차이를 숫자로 밝힌다.
@@ -215,62 +220,50 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     // 종목별 실현손익·누적배당·합산손익. 세 값은 종목 상세에만 있어서 종목끼리 견줄 수가 없었다.
     // 이 화면은 기간이 없는 '지금 보유' 스냅샷이라 전 기간이 대상이고, 전 기간의 평가 변동은 곧
     // 현재 평가손익이므로(기초가 0) 종목 상세의 '전체' 와 어긋나지 않는다.
-    java.util.Map<UUID, BigDecimal> dividendByStockItem =
+    Map<UUID, BigDecimal> dividendByStockItem =
         dividendByStockItemFuture == null
-            ? java.util.Map.<UUID, BigDecimal>of()
-            : emptyIfNullMap(
-                net.luversof.web.gate.stock.support.StockAsyncSupport.join(
-                    dividendByStockItemFuture));
+            ? Map.<UUID, BigDecimal>of()
+            : emptyIfNullMap(StockAsyncSupport.join(dividendByStockItemFuture));
     var stockProfitBreakdown =
-        net.luversof.web.gate.stock.util.StockCombinedProfitUtil.byStockItem(
-            stockAggregated, dividendByStockItem);
+        StockCombinedProfitUtil.byStockItem(stockAggregated, dividendByStockItem);
     SoldOutSummary soldOut = soldOutSummary(soldOutList, stockGroupedList, dividendByStockItem);
     model.addAttribute("soldOutStockCount", soldOut.stockCount());
     model.addAttribute("soldOutRealizedProfit", soldOut.realizedProfit());
     model.addAttribute("soldOutDividend", soldOut.dividend());
     model.addAttribute("stockProfitBreakdown", stockProfitBreakdown);
     model.addAttribute(
-        "stockProfitBreakdownTotal",
-        net.luversof.web.gate.stock.util.StockCombinedProfitUtil.total(stockProfitBreakdown));
+        "stockProfitBreakdownTotal", StockCombinedProfitUtil.total(stockProfitBreakdown));
     model.addAttribute("totalEvaluationAmount", totalEvaluationAmount);
     model.addAttribute("totalEvaluationProfit", totalEvaluationProfit);
 
     // 화면의 "현재가"는 마지막으로 수집된 종가다. 오늘 시세가 아직 없으면 며칠 전 값일 수 있어
     // 어느 날 기준인지 함께 보여준다(보유 종목 중 가장 최근 일자).
-    java.time.LocalDate priceBasisDate =
-        net.luversof.web.gate.stock.util.StockPriceBasisUtil.latestPriceBasisDate(enrichedList);
+    LocalDate priceBasisDate = StockPriceBasisUtil.latestPriceBasisDate(enrichedList);
     model.addAttribute("priceBasisDate", priceBasisDate);
     // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
     model.addAttribute(
-        "priceBasisIntradayTime",
-        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
-            enrichedList, priceBasisDate));
+        "priceBasisIntradayTime", StockPriceBasisUtil.intradayTime(enrichedList, priceBasisDate));
 
     // 보유 기간의 끝은 '오늘'이다. 요청 존으로 잡는다 - 서버 존(UTC)으로 잡으면 KST 오전에 하루가 덜 센다.
-    java.time.ZoneId holdingZone = resolveZoneIdOrDefault(request.getTimeZone());
-    model.addAttribute("holdingBasisDate", java.time.LocalDate.now(holdingZone));
+    ZoneId holdingZone = resolveZoneIdOrDefault(request.getTimeZone());
+    model.addAttribute("holdingBasisDate", StockZoneUtil.ledgerToday(holdingZone));
     model.addAttribute(
         "dividendAnnualizedByStockItem",
         dividendAnnualizedByStockItem(
             dividendByStockItem,
-            tradesForYieldFuture == null
-                ? List.of()
-                : net.luversof.web.gate.stock.support.StockAsyncSupport.join(tradesForYieldFuture),
-            java.time.LocalDate.now(holdingZone),
+            tradesForYieldFuture == null ? List.of() : StockAsyncSupport.join(tradesForYieldFuture),
+            StockZoneUtil.ledgerToday(holdingZone),
             holdingZone));
     model.addAttribute(
         "firstBuyDateByStockItem",
         firstBuyDateFuture == null
-            ? java.util.Map.<UUID, java.time.LocalDate>of()
-            : emptyIfNullMap(
-                net.luversof.web.gate.stock.support.StockAsyncSupport.join(firstBuyDateFuture)));
+            ? Map.<UUID, LocalDate>of()
+            : emptyIfNullMap(StockAsyncSupport.join(firstBuyDateFuture)));
     model.addAttribute(
         "cashFlowsByStockItem",
         cashFlowFuture == null
-            ? java.util.Map
-                .<UUID, List<net.luversof.web.gate.stock.dto.response.StockCashFlowResponse>>of()
-            : emptyIfNullMap(
-                net.luversof.web.gate.stock.support.StockAsyncSupport.join(cashFlowFuture)));
+            ? Map.<UUID, List<StockCashFlowResponse>>of()
+            : emptyIfNullMap(StockAsyncSupport.join(cashFlowFuture)));
     return "stock/htmx/fragments/assetStatus";
   }
 
@@ -278,22 +271,21 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
    * 종목별 누적 배당 연 수익률 = 누적 배당(세후) x 365 / (첫 매수일부터 오늘까지 날마다 들고 있던 원금의 합). 배당 탭의 연 수익률과 같은 식이다 - 다만 배당
    * 탭 "전체" 는 첫 배당 기준일부터 세므로, 첫 배당 전 보유 기간이 긴 종목은 여기가 조금 낮다. 원금 기록이 없으면(배당만 있는 종목) 넣지 않는다.
    */
-  static java.util.Map<UUID, BigDecimal> dividendAnnualizedByStockItem(
-      java.util.Map<UUID, BigDecimal> dividendByStockItem,
-      List<net.luversof.web.gate.stock.dto.response.TradeResponse> trades,
-      java.time.LocalDate today,
-      java.time.ZoneId zone) {
-    java.util.Map<UUID, BigDecimal> result = new java.util.LinkedHashMap<>();
+  static Map<UUID, BigDecimal> dividendAnnualizedByStockItem(
+      Map<UUID, BigDecimal> dividendByStockItem,
+      List<TradeResponse> trades,
+      LocalDate today,
+      ZoneId zone) {
+    Map<UUID, BigDecimal> result = new LinkedHashMap<>();
     if (dividendByStockItem == null || dividendByStockItem.isEmpty()) {
       return result;
     }
-    java.util.Map<UUID, BigDecimal> daySums =
+    Map<UUID, BigDecimal> daySums =
         StockDividendHtmxController.principalCostDaySumByStock(trades, today, zone);
     dividendByStockItem.forEach(
         (stockItemId, dividend) -> {
           BigDecimal pct =
-              net.luversof.web.gate.stock.util.StockYieldUtil.annualizedPctOnHeldDays(
-                  dividend, daySums.get(stockItemId));
+              StockYieldUtil.annualizedPctOnHeldDays(dividend, daySums.get(stockItemId));
           if (pct != null && dividend != null && dividend.signum() > 0) {
             result.put(stockItemId, pct);
           }
@@ -314,23 +306,23 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
   static SoldOutSummary soldOutSummary(
       List<TradeProfit> soldOutList,
       List<TradeProfit> heldList,
-      java.util.Map<UUID, BigDecimal> dividendByStockItem) {
-    java.util.Set<UUID> soldOutStockItemIds =
+      Map<UUID, BigDecimal> dividendByStockItem) {
+    Set<UUID> soldOutStockItemIds =
         soldOutList.stream()
             .map(TradeProfit::stockItemId)
             .filter(Objects::nonNull)
-            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+            .collect(Collectors.toCollection(LinkedHashSet::new));
     BigDecimal soldOutRealizedProfit =
         soldOutList.stream()
             .map(TradeProfit::realizedProfit)
             .filter(Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-    java.util.Set<UUID> heldStockItemIds =
+    Set<UUID> heldStockItemIds =
         heldList.stream()
             .map(TradeProfit::stockItemId)
             .filter(Objects::nonNull)
-            .collect(java.util.stream.Collectors.toSet());
-    java.util.Set<UUID> notListedStockItemIds = new java.util.LinkedHashSet<>(soldOutStockItemIds);
+            .collect(Collectors.toSet());
+    Set<UUID> notListedStockItemIds = new LinkedHashSet<>(soldOutStockItemIds);
     dividendByStockItem.forEach(
         (stockItemId, amount) -> {
           if (stockItemId != null && !heldStockItemIds.contains(stockItemId)) {
@@ -349,7 +341,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
   record AccountStatusTables(
       Map<UUID, TradeProfit> accountTotalMap,
       Map<UUID, BigDecimal> accountProfitBasisMap,
-      java.util.Set<UUID> manualPrincipalAccountIds,
+      Set<UUID> manualPrincipalAccountIds,
       Map<UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap) {}
 
   /**
@@ -366,7 +358,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     Map<UUID, TradeProfit> accountTotalMap = new LinkedHashMap<>();
     Map<UUID, BigDecimal> accountProfitBasisMap = new LinkedHashMap<>();
     // 원금이 계좌 설정의 수동 입력값인 계좌. 화면이 계산 원가와 구분해 표시한다.
-    java.util.Set<UUID> manualPrincipalAccountIds = new java.util.LinkedHashSet<>();
+    Set<UUID> manualPrincipalAccountIds = new LinkedHashSet<>();
     Map<UUID, List<AssetStatusAccountHoldingView>> accountHoldingMap = new LinkedHashMap<>();
     enrichedList.stream().collect(Collectors.groupingBy(TradeProfit::accountId)).entrySet().stream()
         .sorted(
@@ -460,8 +452,8 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
    * 종목마다 그 종목을 가진 계좌(평가액 큰 순, 같으면 계좌 이름 순). 금액 규칙은 계좌 표 펼침({@link #buildAccountHoldingViews})과 같다
    * &mdash; 매수금액은 지금 보유분 원가, 평단은 그 계좌의 평단.
    */
-  Map<UUID, List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView>>
-      buildStockHoldingAccountViews(List<TradeProfit> holdings, BigDecimal totalEvaluationAmount) {
+  Map<UUID, List<AssetStatusStockAccountView>> buildStockHoldingAccountViews(
+      List<TradeProfit> holdings, BigDecimal totalEvaluationAmount) {
     Map<UUID, List<TradeProfit>> byStock = new LinkedHashMap<>();
     if (holdings != null) {
       for (TradeProfit holding : holdings) {
@@ -471,8 +463,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
         byStock.computeIfAbsent(holding.stockItemId(), key -> new ArrayList<>()).add(holding);
       }
     }
-    Map<UUID, List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView>> result =
-        new LinkedHashMap<>();
+    Map<UUID, List<AssetStatusStockAccountView>> result = new LinkedHashMap<>();
     byStock.forEach(
         (stockItemId, rows) -> {
           BigDecimal stockEvaluationAmount =
@@ -480,8 +471,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                   .map(TradeProfit::evaluationAmount)
                   .filter(Objects::nonNull)
                   .reduce(BigDecimal.ZERO, BigDecimal::add);
-          List<net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView> views =
-              new ArrayList<>(rows.size());
+          List<AssetStatusStockAccountView> views = new ArrayList<>(rows.size());
           for (TradeProfit holding : rows) {
             BigDecimal evaluationAmount =
                 holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO;
@@ -489,7 +479,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             BigDecimal evaluationProfit =
                 holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO;
             views.add(
-                new net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView(
+                new AssetStatusStockAccountView(
                     holding.accountId(),
                     holding.accountName(),
                     holding.holdingQuantity(),
@@ -503,12 +493,10 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
           }
           views.sort(
               Comparator.comparing(
-                      net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView
-                          ::evaluationAmount,
+                      AssetStatusStockAccountView::evaluationAmount,
                       Comparator.nullsLast(Comparator.reverseOrder()))
                   .thenComparing(
-                      net.luversof.web.gate.stock.dto.response.AssetStatusStockAccountView
-                          ::accountName,
+                      AssetStatusStockAccountView::accountName,
                       Comparator.nullsLast(Comparator.naturalOrder())));
           result.put(stockItemId, views);
         });
@@ -530,14 +518,14 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
 
     if (holding.holdingQuantity() > 0) {
       return buyAmount.divide(
-          BigDecimal.valueOf(holding.holdingQuantity()), 4, java.math.RoundingMode.HALF_UP);
+          BigDecimal.valueOf(holding.holdingQuantity()), 4, RoundingMode.HALF_UP);
     }
 
     return BigDecimal.ZERO;
   }
 
-  private static <K, V> java.util.Map<K, V> emptyIfNullMap(java.util.Map<K, V> value) {
-    return value != null ? value : java.util.Map.of();
+  private static <K, V> Map<K, V> emptyIfNullMap(Map<K, V> value) {
+    return value != null ? value : Map.of();
   }
 
   private TradeProfit toAssetStatusStock(TradeProfit profit) {

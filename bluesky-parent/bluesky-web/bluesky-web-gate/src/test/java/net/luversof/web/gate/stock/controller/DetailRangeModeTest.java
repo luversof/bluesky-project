@@ -49,7 +49,7 @@ class DetailRangeModeTest {
 
     assertThat(controller)
         .as("두 상세 핸들러(/item, /account)가 모두 기간을 확정해야 한다")
-        .containsOnlyOnce("private java.time.Instant[] resolveRange(");
+        .containsOnlyOnce("private Instant[] resolveRange(");
     assertThat(
             count(
                 controller,

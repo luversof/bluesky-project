@@ -9,6 +9,7 @@
 @import net.luversof.web.gate.stock.util.RealizedBasisGap
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.util.function.Function
 
 @param List<AccountRealizedRow> accountRealizedList
 @param List<TradeProfit> stockRealizedList
@@ -48,9 +49,9 @@
 	// (실측 2026-09-11). 그래서 매도원가 총합(전체 기간 1,166,104,134)은 화면 어디에도 없었고,
 	// 매도금액·실현손익도 표에서 더해 카드와 맞춰 볼 수 없었다. 행에서 쓰는 식을 그대로 다시 쓴다.
 	// JTE 는 표를 람다(tableCard body) 안에서 렌더하므로 누적 변수는 effectively final 이어야 한다 - 스트림으로 한 번에 접는다.
-	java.util.List<AccountRealizedRow> accRows = accountRealizedList != null ? accountRealizedList : java.util.List.<AccountRealizedRow>of();
-	java.util.List<TradeProfit> stockRows = stockRealizedList != null ? stockRealizedList : java.util.List.<TradeProfit>of();
-	java.util.function.Function<BigDecimal, BigDecimal> zeroIfNull = v -> v != null ? v : BigDecimal.ZERO;
+	List<AccountRealizedRow> accRows = accountRealizedList != null ? accountRealizedList : List.<AccountRealizedRow>of();
+	List<TradeProfit> stockRows = stockRealizedList != null ? stockRealizedList : List.<TradeProfit>of();
+	Function<BigDecimal, BigDecimal> zeroIfNull = v -> v != null ? v : BigDecimal.ZERO;
 	BigDecimal accTotalSoldCost = accRows.stream().map(r -> zeroIfNull.apply(r.soldCost())).reduce(BigDecimal.ZERO, BigDecimal::add);
 	BigDecimal accTotalSell = accRows.stream().map(r -> zeroIfNull.apply(r.sellAmount())).reduce(BigDecimal.ZERO, BigDecimal::add);
 	BigDecimal accTotalNet = accRows.stream().map(r -> zeroIfNull.apply(r.realizedNet())).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -146,7 +147,7 @@
 							@endif
 						</td>
 						@if(rowHasRate)
-						<td class="text-right font-mono font-semibold ${rowRate >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(rowRate, 2)}</td>
+						<td class="text-right font-mono font-semibold ${StockFormatUtil.rateTone(rowRate, 2)}">${StockFormatUtil.signedPct(rowRate, 2)}</td>
 						@else
 						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
@@ -158,7 +159,7 @@
 						<th scope="row">${totalLabel}</th>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(accTotalSoldCost)}</td>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(accTotalSell)}</td>
-						<td class="text-right font-mono amount-value ${accTotalNet.signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(accTotalNet))}</td>
+						<td class="text-right font-mono amount-value ${StockFormatUtil.amountTone(accTotalNet)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(accTotalNet))}</td>
 						@if(accTotalSoldCost.signum() > 0)
 						<td class="text-right font-mono">${StockFormatUtil.signedPct(accTotalNet.doubleValue() / accTotalSoldCost.doubleValue() * 100, 2)}</td>
 						@else
@@ -258,7 +259,7 @@
 							${StockFormatUtil.signedWon(StockFormatUtil.displayWon(itemNet))}
 						</td>
 						@if(itemHasRate)
-						<td class="text-right font-mono font-semibold ${itemRate >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(itemRate, 2)}</td>
+						<td class="text-right font-mono font-semibold ${StockFormatUtil.rateTone(itemRate, 2)}">${StockFormatUtil.signedPct(itemRate, 2)}</td>
 						@else
 						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
@@ -270,7 +271,7 @@
 						<th scope="row">${totalLabel}</th>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(stockTotalSoldCost)}</td>
 						<td class="text-right font-mono amount-value">${decimalFormat.format(stockTotalSell)}</td>
-						<td class="text-right font-mono amount-value ${stockTotalNet.signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockTotalNet))}</td>
+						<td class="text-right font-mono amount-value ${StockFormatUtil.amountTone(stockTotalNet)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockTotalNet))}</td>
 						@if(stockTotalSoldCost.signum() > 0)
 						<td class="text-right font-mono">${StockFormatUtil.signedPct(stockTotalNet.doubleValue() / stockTotalSoldCost.doubleValue() * 100, 2)}</td>
 						@else

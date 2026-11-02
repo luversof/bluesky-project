@@ -92,7 +92,7 @@ public class StockAdminService {
   @CacheEvict(value = "stockItems", allEntries = true)
   public int stockItemBulkInsert(UUID userId) {
     var googleSheetStockItemList = stockGoogleSheetService.getGoogleSheetStockItemList(userId);
-    var allStockItems = new java.util.ArrayList<>(googleSheetStockItemList);
+    var allStockItems = new ArrayList<>(googleSheetStockItemList);
 
     for (var delistedStock : DelistedStocks.values()) {
       var googleSheetStockItem = new GoogleSheetStockItem();
@@ -170,7 +170,7 @@ public class StockAdminService {
 
     // 종목을 못 찾아 버린 이름을 모은다. 이름이 바뀌기만 해도 그 종목 거래가 전부 사라지므로,
     // 몇 행이 어떤 이름 때문에 빠졌는지가 이 작업의 가장 중요한 결과다.
-    var unknownStockNames = new java.util.LinkedHashSet<String>();
+    var unknownStockNames = new LinkedHashSet<String>();
     var tradeList =
         importableGoogleSheetsTradeList.stream()
             .map(
@@ -226,7 +226,7 @@ public class StockAdminService {
     var accountMap = prepareAccountMap(userId, googleSheetsDividendList);
     var stockItemMap = prepareStockItemMap();
 
-    var unknownStockNames = new java.util.LinkedHashSet<String>();
+    var unknownStockNames = new LinkedHashSet<String>();
     var dividends =
         googleSheetsDividendList.stream()
             .map(
@@ -496,10 +496,7 @@ public class StockAdminService {
         accountService.findByUserId(userId).stream()
             .collect(
                 Collectors.toMap(
-                    Account::getName,
-                    Account::getId,
-                    (left, right) -> left,
-                    java.util.LinkedHashMap::new));
+                    Account::getName, Account::getId, (left, right) -> left, LinkedHashMap::new));
 
     records.stream()
         .map(GoogleSheetDividend::get계좌)
@@ -530,10 +527,7 @@ public class StockAdminService {
     return StreamSupport.stream(stockItemRepository.findAll().spliterator(), false)
         .collect(
             Collectors.toMap(
-                StockItem::getName,
-                StockItem::getId,
-                (left, right) -> left,
-                java.util.LinkedHashMap::new));
+                StockItem::getName, StockItem::getId, (left, right) -> left, LinkedHashMap::new));
   }
 
   private Dividend toDividend(

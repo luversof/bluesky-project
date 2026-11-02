@@ -25,4 +25,9 @@ public record PoeGemLevel(
     Integer cooldownUses,
     // 고정 마나 점유(GrantedEffectsPerLevel.ManaReservationFlat — 명료함 · 정밀 · 활력 · 지뢰, 인게임 "점유: 마나 34",
     // 10-23 Q51). 없으면 null
-    Integer reservationFlat) {}
+    Integer reservationFlat,
+    // 공격 시간 ms(방패 돌진 등 '공격 속도: 0.50초', 10-29 R11 — API 와 짝). 없으면 null
+    Integer attackTimeMs,
+    // 둘째 이후 소모(극단의 사나운 타격 '마나 28, 생명력 28, 에너지 보호막 28', 10-29 R11). 없으면 null
+    java.util.List<Integer> extraCosts,
+    java.util.List<String> extraCostTypes) {}

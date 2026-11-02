@@ -1,6 +1,8 @@
 package net.luversof.web.gate.stock.domain;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record TradeProfit(
@@ -50,10 +52,10 @@ public record TradeProfit(
     BigDecimal totalProfitNet, // realizedNet + evaluationNet
 
     /** currentPrice 가 어느 거래일 종가인지. 오늘 시세가 아직 없으면 과거 일자가 온다. */
-    java.time.LocalDate currentPriceDate,
+    LocalDate currentPriceDate,
 
     /** currentPrice 행을 마지막으로 받은 시각(2026-10-02). 그 거래일 장중이면 currentPrice 는 종가가 아니라 장중 값이다. */
-    java.time.Instant currentPriceUpdatedAt) {
+    Instant currentPriceUpdatedAt) {
 
   /** 갱신 시각 없이(화면 집계 행 · 시험). */
   public TradeProfit(
@@ -82,7 +84,7 @@ public record TradeProfit(
       BigDecimal realizedProfitNet,
       BigDecimal evaluationProfitNet,
       BigDecimal totalProfitNet,
-      java.time.LocalDate currentPriceDate) {
+      LocalDate currentPriceDate) {
     this(
         stockItemId,
         stockItemName,

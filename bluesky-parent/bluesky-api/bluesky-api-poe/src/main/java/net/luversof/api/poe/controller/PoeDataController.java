@@ -46,6 +46,7 @@ public class PoeDataController {
   private final PoeTattooDataService poeTattooDataService;
   private final net.luversof.api.poe.service.PoeDataLoadStamp poeDataLoadStamp;
   private final net.luversof.api.poe.service.PoeTradeStatDataService poeTradeStatDataService;
+  private final net.luversof.api.poe.service.PoeClusterJewelDataService poeClusterJewelDataService;
 
   public PoeDataController(
       PoeGemDataService poeGemDataService,
@@ -61,7 +62,8 @@ public class PoeDataController {
       PoeTreeGraphService poeTreeGraphService,
       PoeTattooDataService poeTattooDataService,
       net.luversof.api.poe.service.PoeDataLoadStamp poeDataLoadStamp,
-      net.luversof.api.poe.service.PoeTradeStatDataService poeTradeStatDataService) {
+      net.luversof.api.poe.service.PoeTradeStatDataService poeTradeStatDataService,
+      net.luversof.api.poe.service.PoeClusterJewelDataService poeClusterJewelDataService) {
     this.poeGemDataService = poeGemDataService;
     this.poeMetaPopularityService = poeMetaPopularityService;
     this.poeUniqueDataService = poeUniqueDataService;
@@ -76,6 +78,7 @@ public class PoeDataController {
     this.poeTattooDataService = poeTattooDataService;
     this.poeDataLoadStamp = poeDataLoadStamp;
     this.poeTradeStatDataService = poeTradeStatDataService;
+    this.poeClusterJewelDataService = poeClusterJewelDataService;
   }
 
   // ── 스킬젬 ──
@@ -214,7 +217,7 @@ public class PoeDataController {
   // ── 전체 모드(poedb Modifiers식) ──
   @GetMapping("/mods/item-classes")
   public List<PoeModDataService.ModItemClass> modItemClasses() {
-    return poeModDataService.itemClasses();
+    return poeModDataService.itemClassesForList();
   }
 
   @GetMapping("/mods/for-item-class")
@@ -284,7 +287,7 @@ public class PoeDataController {
   }
 
   // ── 에센스 제작 정보 ──
-  // 엘드리치와 같은 이유로 비대상 클래스(퀴버 등)는 예외 대신 null(200).
+  // 엘드리치와 같은 이유로 비대상 클래스(주얼 · 플라스크 등)는 예외 대신 null(200). 화살통은 10-30 부터 대상.
   @GetMapping("/essences/for-item-class")
   public List<PoeEssenceDataService.EssenceEntry> essencesForItemClass(
       @RequestParam String itemClass) {
@@ -300,7 +303,15 @@ public class PoeDataController {
   /** 클러스터 주얼 주요 스킬 사전 — 브라우징 페이지용. */
   @GetMapping("/tree/cluster-notables")
   public List<PoeTreeGraphService.ClusterNotable> clusterNotables() {
-    return poeTreeGraphService.clusterNotables();
+    // 더 이상 생성되지 않는 주요 스킬(모드 가중치 0, 10-29 C2) 표시 — 옛 주얼엔 남아 있어 지우지 않고 알린다
+    return poeTreeGraphService.clusterNotables().stream()
+        .map(
+            n ->
+                poeClusterJewelDataService.retiredNotable(n.name())
+                    ? new PoeTreeGraphService.ClusterNotable(
+                        n.name(), n.nameKo(), n.stats(), n.statsKo(), n.icon(), n.keystone(), true)
+                    : n)
+        .toList();
   }
 
   // ── 패시브 트리 ──

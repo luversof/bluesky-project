@@ -58,4 +58,4 @@
 	          placeholder="${MessageUtil.getMessage("poe.build.code.placeholder")}" aria-label="${MessageUtil.getMessage("poe.build.code.placeholder")}"
 	          autocomplete="off" spellcheck="false">${fillCode}</textarea>
 @endif
-@template.poe.htmx.buildSummary(build = build, importError = importError, engineAvailable = engineAvailable)
+@template.poe.htmx.buildSummary(build = build, importError = importError, importErrorPoe2 = false, engineAvailable = engineAvailable)

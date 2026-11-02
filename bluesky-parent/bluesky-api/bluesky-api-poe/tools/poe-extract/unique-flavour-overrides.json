@@ -1,0 +1,10 @@
+{
+	"_comment": "위키 로어 ↔ 게임 FlavourText 자동 매칭(토큰 자카드 0.75)이 놓친 고유의 게임 로어 행 Id — 게임이 문장을 고쳐 써서(또는 위키 오타) 점수가 기준 아래로 떨어진 것만, 같은 문장임을 사람이 확인한 뒤 적는다. 키=label(poe1/poe2) → 고유 영문명 → FlavourText.Id.",
+	"poe1": {
+		"Tukohama's Fortress": "UniqueShieldStr10"
+	},
+	"poe2": {
+		"Waistgate": "FourUniqueBelt17",
+		"Widowhail": "FourUniqueBow1"
+	}
+}

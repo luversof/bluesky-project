@@ -1,5 +1,13 @@
 package net.luversof.web.gate.stock.util;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
 /** 화면 표시용 숫자 포맷 헬퍼. 요약 카드의 큰 금액을 억/만 단위로 압축해 가독성을 높인다(정확값은 툴팁으로 노출). */
 public final class StockFormatUtil {
 
@@ -22,13 +30,13 @@ public final class StockFormatUtil {
    * 설정에 좌우됐다(실측: 기본 로케일을 fr-FR 로 두면 이 클래스 테스트 7 개 중 6 개가 깨진다 - 자릿수 구분이 쉼표에서 공백으로, 소수점이 마침표에서 쉼표로
    * 바뀐다). 배포 JVM 이 ko-KR 이라 지금 눈에 보이는 증상은 없지만, 로케일 인자를 받아놓고 무시하는 것은 계약 위반이라 고쳤다.
    */
-  public static String compactKrw(long value, java.util.Locale locale) {
+  public static String compactKrw(long value, Locale locale) {
     if (value == 0) {
       return "0";
     }
 
-    java.util.Locale target = locale != null ? locale : java.util.Locale.KOREA;
-    if (!java.util.Locale.KOREAN.getLanguage().equals(target.getLanguage())) {
+    Locale target = locale != null ? locale : Locale.KOREA;
+    if (!Locale.KOREAN.getLanguage().equals(target.getLanguage())) {
       return compactWestern(value, target);
     }
 
@@ -69,28 +77,28 @@ public final class StockFormatUtil {
    *
    * @param scale 소수 자릿수(0 이면 정수 표기)
    */
-  public static String fullKrw(java.math.BigDecimal value, int scale) {
+  public static String fullKrw(BigDecimal value, int scale) {
     return fullKrw(value, scale, org.springframework.context.i18n.LocaleContextHolder.getLocale());
   }
 
   /** 한국어는 {@code 32.25원}, 그 외에는 {@code KRW 32.25}. 값이 없으면 0 으로 본다. */
-  public static String fullKrw(java.math.BigDecimal value, int scale, java.util.Locale locale) {
-    java.math.BigDecimal safe =
-        (value != null ? value : java.math.BigDecimal.ZERO)
-            .setScale(Math.max(scale, 0), java.math.RoundingMode.HALF_UP);
-    java.util.Locale target = locale != null ? locale : java.util.Locale.KOREA;
+  public static String fullKrw(BigDecimal value, int scale, Locale locale) {
+    BigDecimal safe =
+        (value != null ? value : BigDecimal.ZERO)
+            .setScale(Math.max(scale, 0), RoundingMode.HALF_UP);
+    Locale target = locale != null ? locale : Locale.KOREA;
     String amount = String.format(target, "%,." + Math.max(scale, 0) + "f", safe);
-    if (!java.util.Locale.KOREAN.getLanguage().equals(target.getLanguage())) {
+    if (!Locale.KOREAN.getLanguage().equals(target.getLanguage())) {
       return "KRW " + amount;
     }
     return amount + "원";
   }
 
   /** 한국어는 {@code 1,234원}, 그 외에는 {@code KRW 1,234}. */
-  public static String fullKrw(long value, java.util.Locale locale) {
-    java.util.Locale target = locale != null ? locale : java.util.Locale.KOREA;
+  public static String fullKrw(long value, Locale locale) {
+    Locale target = locale != null ? locale : Locale.KOREA;
     String amount = String.format(target, "%,d", value);
-    if (!java.util.Locale.KOREAN.getLanguage().equals(target.getLanguage())) {
+    if (!Locale.KOREAN.getLanguage().equals(target.getLanguage())) {
       return "KRW " + amount;
     }
     return amount + "원";
@@ -103,7 +111,7 @@ public final class StockFormatUtil {
    * 실측: 999,999 → "1,000K"(1M 이어야 한다), 999,950,000 과 999,999,999 → "1,000M"(1B). 압축 표기는 자릿수를 줄이려고
    * 쓰는 것인데 "1,000K" 는 그 목적을 정확히 어긴다. 같은 화면에 "1M" · "1B" 가 함께 나오므로 눈에도 어긋난다.
    */
-  private static String compactWestern(long value, java.util.Locale locale) {
+  private static String compactWestern(long value, Locale locale) {
     String sign = value < 0 ? "-" : "";
     long abs = Math.abs(value);
     if (abs < 1_000L) {
@@ -132,7 +140,7 @@ public final class StockFormatUtil {
    * <p>예전에는 포맷한 <b>문자열</b>이 ".0" 으로 끝나는지 봤다. 소수점 기호가 쉼표인 로케일(fr 등)에서는 "1,0" 이라 그 검사가 절대 맞지 않아
    * "1,0B" 가 그대로 나갔다. 문자열이 아니라 수로 판단한다.
    */
-  private static String trimZero(double v, java.util.Locale locale) {
+  private static String trimZero(double v, Locale locale) {
     double rounded = roundToTenth(v);
     if (rounded == Math.rint(rounded)) {
       return String.format(locale, "%,d", (long) rounded);
@@ -147,8 +155,8 @@ public final class StockFormatUtil {
    * 달랐다 &mdash; 실측 2026-08-23 월배당 8 종목에서 행 합과 소계가 <b>2 원</b> 차이 났다. 버림이라 행마다 최대 1 원씩 모자라고 종목 수만큼
    * 벌어진다. 지금은 행·소계 모두 반올림이라 정확히 맞는다.
    */
-  public static long displayWon(java.math.BigDecimal amount) {
-    return amount == null ? 0L : amount.setScale(0, java.math.RoundingMode.HALF_UP).longValue();
+  public static long displayWon(BigDecimal amount) {
+    return amount == null ? 0L : amount.setScale(0, RoundingMode.HALF_UP).longValue();
   }
 
   /**
@@ -159,9 +167,9 @@ public final class StockFormatUtil {
    * 시뮬레이터 월배당은 행마다 주당 260.5 원 같은 값에 수량을 곱해 x.5 원이 흔하고, 카드의 월 값(HALF_EVEN) x 12 가 연 값(HALF_UP x 12)과
    * 12 원 어긋날 수 있었다. 원 표기는 이 서식 하나로 쓴다.
    */
-  public static java.text.DecimalFormat wonFormat() {
-    java.text.DecimalFormat format = new java.text.DecimalFormat("#,##0");
-    format.setRoundingMode(java.math.RoundingMode.HALF_UP);
+  public static DecimalFormat wonFormat() {
+    DecimalFormat format = new DecimalFormat("#,##0");
+    format.setRoundingMode(RoundingMode.HALF_UP);
     return format;
   }
 
@@ -176,39 +184,36 @@ public final class StockFormatUtil {
    *
    * <p>입력 합이 100 과 크게 다르면(필터로 일부만 보는 표 등) 손대지 않고 행마다 반올림한 값을 그대로 돌려준다.
    */
-  public static java.util.List<String> balancedPct(
-      java.util.List<java.math.BigDecimal> values, int scale) {
-    java.util.List<String> fallback = new java.util.ArrayList<>();
+  public static List<String> balancedPct(List<BigDecimal> values, int scale) {
+    List<String> fallback = new ArrayList<>();
     if (values == null || values.isEmpty()) {
       return fallback;
     }
-    java.math.BigDecimal step = java.math.BigDecimal.ONE.movePointLeft(scale);
-    java.math.BigDecimal sum = java.math.BigDecimal.ZERO;
-    for (java.math.BigDecimal value : values) {
-      sum = sum.add(value == null ? java.math.BigDecimal.ZERO : value);
+    BigDecimal step = BigDecimal.ONE.movePointLeft(scale);
+    BigDecimal sum = BigDecimal.ZERO;
+    for (BigDecimal value : values) {
+      sum = sum.add(value == null ? BigDecimal.ZERO : value);
     }
-    for (java.math.BigDecimal value : values) {
+    for (BigDecimal value : values) {
       fallback.add(pct(value == null ? 0d : value.doubleValue(), scale));
     }
-    java.math.BigDecimal hundred = java.math.BigDecimal.valueOf(100);
+    BigDecimal hundred = BigDecimal.valueOf(100);
     if (sum.subtract(hundred).abs().compareTo(step) > 0) {
       return fallback;
     }
 
     int size = values.size();
-    java.math.BigDecimal[] floors = new java.math.BigDecimal[size];
-    java.math.BigDecimal[] remainders = new java.math.BigDecimal[size];
-    java.math.BigDecimal floorSum = java.math.BigDecimal.ZERO;
+    BigDecimal[] floors = new BigDecimal[size];
+    BigDecimal[] remainders = new BigDecimal[size];
+    BigDecimal floorSum = BigDecimal.ZERO;
     for (int i = 0; i < size; i++) {
-      java.math.BigDecimal value =
-          values.get(i) == null ? java.math.BigDecimal.ZERO : values.get(i);
-      java.math.BigDecimal floor = value.setScale(scale, java.math.RoundingMode.FLOOR);
+      BigDecimal value = values.get(i) == null ? BigDecimal.ZERO : values.get(i);
+      BigDecimal floor = value.setScale(scale, RoundingMode.FLOOR);
       floors[i] = floor;
       remainders[i] = value.subtract(floor);
       floorSum = floorSum.add(floor);
     }
-    int spare =
-        hundred.subtract(floorSum).divide(step, 0, java.math.RoundingMode.HALF_UP).intValue();
+    int spare = hundred.subtract(floorSum).divide(step, 0, RoundingMode.HALF_UP).intValue();
     if (spare < 0 || spare > size) {
       return fallback;
     }
@@ -216,14 +221,14 @@ public final class StockFormatUtil {
     for (int i = 0; i < size; i++) {
       order[i] = i;
     }
-    java.util.Arrays.sort(order, (a, b) -> remainders[b].compareTo(remainders[a]));
+    Arrays.sort(order, (a, b) -> remainders[b].compareTo(remainders[a]));
     boolean[] bump = new boolean[size];
     for (int i = 0; i < spare; i++) {
       bump[order[i]] = true;
     }
-    java.util.List<String> out = new java.util.ArrayList<>();
+    List<String> out = new ArrayList<>();
     for (int i = 0; i < size; i++) {
-      java.math.BigDecimal shown = bump[i] ? floors[i].add(step) : floors[i];
+      BigDecimal shown = bump[i] ? floors[i].add(step) : floors[i];
       out.add(pct(shown.doubleValue(), scale));
     }
     return out;
@@ -275,14 +280,38 @@ public final class StockFormatUtil {
    * 비중 칸의 옅은 막대(오른쪽부터 그 비율만큼) - 숫자만 늘어선 비중 열은 크기 차이를 읽어야 했다(자산 현황, 2026-10-28). 글자는 그대로 두고 배경만 칠한다.
    * 0 ~ 100 밖은 잘라 낸다.
    */
-  public static String weightBarStyle(java.math.BigDecimal pct) {
+  public static String weightBarStyle(BigDecimal pct) {
     double value = pct == null ? 0.0 : Math.max(0.0, Math.min(100.0, pct.doubleValue()));
-    String at = String.format(java.util.Locale.ROOT, "%.1f%%", value);
+    String at = String.format(Locale.ROOT, "%.1f%%", value);
     return "background:linear-gradient(to left, color-mix(in oklab, var(--color-primary) 16%, transparent) "
         + at
         + ", transparent "
         + at
         + ")";
+  }
+
+  /**
+   * 금액의 손익 색 - 원 단위로 반올림한 값이 0 이면 빈 글자(0 에는 방향이 없다). 화면마다 "&gt;= 0 이면 이익색" 이라 매매 · 배당이 없는 0 이 빨강이었다
+   * (검토 지적 2026-10-29). null 도 빈 글자.
+   */
+  public static String amountTone(java.math.BigDecimal amount) {
+    return amount == null ? "" : amountTone(displayWon(amount));
+  }
+
+  /** {@link #amountTone(java.math.BigDecimal)} 의 원 단위 정수판. */
+  public static String amountTone(long won) {
+    return won > 0 ? "text-profit" : (won < 0 ? "text-loss" : "");
+  }
+
+  /** 비율의 손익 색 - 보이는 자릿수({@code scale})로 반올림한 값이 0 이면 빈 글자(signedPct 와 같은 판정). */
+  public static String rateTone(double pct, int scale) {
+    double rounded = roundForDisplay(pct, scale);
+    return rounded > 0 ? "text-profit" : (rounded < 0 ? "text-loss" : "");
+  }
+
+  /** {@link #rateTone(double, int)} 의 BigDecimal 판, null 은 빈 글자. */
+  public static String rateTone(java.math.BigDecimal pct, int scale) {
+    return pct == null ? "" : rateTone(pct.doubleValue(), scale);
   }
 
   /**
@@ -307,8 +336,6 @@ public final class StockFormatUtil {
    */
   static double roundForDisplay(double value, int scale) {
     if (!Double.isFinite(value)) return value;
-    return new java.math.BigDecimal(value)
-        .setScale(scale, java.math.RoundingMode.HALF_UP)
-        .doubleValue();
+    return new BigDecimal(value).setScale(scale, RoundingMode.HALF_UP).doubleValue();
   }
 }

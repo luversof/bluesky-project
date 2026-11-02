@@ -2,6 +2,7 @@ package net.luversof.api.stock.repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,7 +50,7 @@ public class TradeQuery {
     trade.setTax(rs.getBigDecimal(8));
     // pgjdbc 는 timestamptz -> Instant 직접 변환을 지원하지 않는다(측정 중 확인).
     // OffsetDateTime 으로 받아 변환해야 타임존 해석이 드라이버와 일치한다.
-    java.time.OffsetDateTime tradeDate = rs.getObject(9, java.time.OffsetDateTime.class);
+    OffsetDateTime tradeDate = rs.getObject(9, OffsetDateTime.class);
     trade.setTradeDate(tradeDate != null ? tradeDate.toInstant() : null);
     trade.setRealizedProfit(rs.getBigDecimal(10));
     trade.setExchangeRate(rs.getBigDecimal(11));

@@ -88,7 +88,7 @@ class DetailDataFirstDateTest {
     String source = read(CONTROLLER);
 
     assertThat(source)
-        .contains("StockFirstDateUtil.coveredStart( covered.startDate(), detailFirstDate)");
+        .contains("StockFirstDateUtil.coveredStart(covered.startDate(), detailFirstDate)");
     int count = 0;
     int at = source.indexOf("StockFirstDateUtil.coveredStart(");
     while (at >= 0) {
@@ -106,7 +106,7 @@ class DetailDataFirstDateTest {
   void 배지_끝도_자료로_메운다() throws IOException {
     String source = read(CONTROLLER);
 
-    assertThat(source).contains("StockFirstDateUtil.coveredEnd( covered.endDate(), contentLast)");
+    assertThat(source).contains("StockFirstDateUtil.coveredEnd(covered.endDate(), contentLast)");
     assertThat(source).as("매매와 배당 둘 다 본다").contains("TradeResponse::tradeDate");
     assertThat(source).contains("DividendResponse::payDate");
   }

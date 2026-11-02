@@ -4,7 +4,7 @@
 // 사용법: node parse-mods.mjs  (사전: extract.mjs 실행 완료)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, loadConfig, loadTable, buffStatsOf } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
 const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "mod-pool.json"); // POE_DATA_OUT = 사본 출력(10-10)
@@ -196,9 +196,10 @@ const FAMILIES = [
 /** 모드 한 행의 스탯 → 롤 값 맵 (StatsKey1..N + StatN{Max|Min}) */
 function rollValues(mod, bound) {
 	const values = new Map();
-	for (let i = 1; i <= 6; i++) {
+	const buff = buffStatsOf(mod);
+	for (let i = 1; i <= 8; i++) {
 		const statIndex = mod["StatsKey" + i];
-		if (statIndex == null) continue;
+		if (statIndex == null || buff.has(statIndex)) continue;
 		const stat = stats[statIndex];
 		if (!stat) continue;
 		values.set(stat.Id, mod["Stat" + i + bound] ?? 0);

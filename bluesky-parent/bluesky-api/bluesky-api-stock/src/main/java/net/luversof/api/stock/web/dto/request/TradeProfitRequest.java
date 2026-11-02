@@ -1,6 +1,7 @@
 package net.luversof.api.stock.web.dto.request;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,6 +9,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 import net.luversof.api.stock.constant.StockErrorCode;
+import net.luversof.api.stock.web.support.RequestRangeUtil;
+import net.luversof.api.stock.web.support.RequestZoneUtil;
 
 /** 주식 손익 계산 요청 DTO 조회 기준 조합 */
 public class TradeProfitRequest {
@@ -80,7 +83,7 @@ public class TradeProfitRequest {
    * 앞뒤만 바꾸면 {@code calculateProfit} 이 43 행에서 0 행이 됐다.
    */
   public Instant getStartDate() {
-    return net.luversof.api.stock.web.support.RequestRangeUtil.ordered(startDate, endDate)[0];
+    return RequestRangeUtil.ordered(startDate, endDate)[0];
   }
 
   public void setStartDate(Instant startDate) {
@@ -89,7 +92,7 @@ public class TradeProfitRequest {
 
   /** 조회 끝. {@link #getStartDate()} 와 같은 규칙으로 앞뒤를 바로잡는다. */
   public Instant getEndDate() {
-    return net.luversof.api.stock.web.support.RequestRangeUtil.ordered(startDate, endDate)[1];
+    return RequestRangeUtil.ordered(startDate, endDate)[1];
   }
 
   public void setEndDate(Instant endDate) {
@@ -125,9 +128,8 @@ public class TradeProfitRequest {
   }
 
   /** 요청 타임존을 해석한다. 값이 없으면 서버 기본 타임존, 알 수 없는 ID 면 400. */
-  public java.time.ZoneId resolveZoneId() {
-    return net.luversof.api.stock.web.support.RequestZoneUtil.parse(
-        timeZone, java.time.ZoneId.systemDefault());
+  public ZoneId resolveZoneId() {
+    return RequestZoneUtil.parse(timeZone, ZoneId.systemDefault());
   }
 
   public boolean hasDateRange() {

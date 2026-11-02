@@ -284,4 +284,19 @@ class StockFormatUtilTest {
     org.assertj.core.api.Assertions.assertThat(StockFormatUtil.weightBarStyle(null))
         .contains(" 0.0%,");
   }
+
+  /** 0 에는 방향이 없다 - 보이는 값(원 단위 · 표시 자릿수)이 0 이면 색 없음(검토 지적 2026-10-29). */
+  @Test
+  void 손익_색은_보이는_값이_0_이면_없다() {
+    assertThat(StockFormatUtil.amountTone(new java.math.BigDecimal("1"))).isEqualTo("text-profit");
+    assertThat(StockFormatUtil.amountTone(new java.math.BigDecimal("-1"))).isEqualTo("text-loss");
+    assertThat(StockFormatUtil.amountTone(new java.math.BigDecimal("0.4"))).isEmpty();
+    assertThat(StockFormatUtil.amountTone(new java.math.BigDecimal("-0.4"))).isEmpty();
+    assertThat(StockFormatUtil.amountTone((java.math.BigDecimal) null)).isEmpty();
+    assertThat(StockFormatUtil.amountTone(0L)).isEmpty();
+    assertThat(StockFormatUtil.rateTone(-0.004, 2)).isEmpty();
+    assertThat(StockFormatUtil.rateTone(-0.006, 2)).isEqualTo("text-loss");
+    assertThat(StockFormatUtil.rateTone(new java.math.BigDecimal("0.04"), 1)).isEmpty();
+    assertThat(StockFormatUtil.rateTone((java.math.BigDecimal) null, 1)).isEmpty();
+  }
 }

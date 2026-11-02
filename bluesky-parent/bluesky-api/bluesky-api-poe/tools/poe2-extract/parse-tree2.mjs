@@ -52,6 +52,21 @@ if (!fs.existsSync(TREE_PATH)) {
 const tree = JSON.parse(fs.readFileSync(TREE_PATH, "utf8"));
 const { patch } = loadConfig();
 
+// 엔진(PoB-PoE2 릴리스, patch-pob2.mjs 가 받은 것)이 실제로 읽는 트리의 노드 id — PassiveTree.lua 는 tree.lua 를 연다(같은 폴더 tree.json 아님,
+//   v0.23.1 은 둘이 달랐다). 엔진이 없으면 null(표시 안 함). 노드 블록 = 두 탭 들여쓴 [id]={ 중 세 탭 name= 을 가진 것.
+const engineTreeLua = path.join(WORK_DIR, "pob2-src", "src", "TreeData", TREE_VERSION, "tree.lua");
+let engineNodeIds = null;
+if (fs.existsSync(engineTreeLua)) {
+	const lua = fs.readFileSync(engineTreeLua, "utf8");
+	const starts = [...lua.matchAll(/\n\t\t\[(\d+)\]=\{/g)];
+	engineNodeIds = new Set();
+	for (let i = 0; i < starts.length; i++) {
+		const block = lua.slice(starts[i].index, i + 1 < starts.length ? starts[i + 1].index : lua.length);
+		if (/\n\t\t\tname="/.test(block)) engineNodeIds.add(starts[i][1]);
+	}
+	console.log(`엔진 트리 노드 ${engineNodeIds.size}개(${path.relative(WORK_DIR, engineTreeLua)})`);
+}
+
 // ---- 텍스트 유틸 ----
 // PoE2 서술 텍스트 마크업: [Critical|Critical Hit] → "Critical Hit", [Spirit] → "Spirit"
 export const stripMarkup = (s) =>
@@ -432,6 +447,9 @@ for (const [idStr, n] of Object.entries(tree.nodes)) {
 	// 공짜 노드(PoB isFreeAllocate — 블러드 메이지 Sanguimancy · 스피릿 워커 Sacred Unity · 키타바의 대장장이 Smith's Masterwork):
 	//   CountAllocNodes 가 포인트로 안 센다. 없으면 실빌드가 "전직 9 / 8"(10-03 C49)
 	if (n.isFreeAllocate) entry.freeAllocate = true;
+	// 엔진이 모르는 노드(10-29 R4) — 트리는 PoB-PoE2 dev 에서, 엔진은 최신 릴리스 태그에서 받는데 엔진이 읽는 TreeData/<ver>/tree.lua 가
+	//   dev 보다 늦다(v0.23.1: 리추얼리스트 30100 · 38813 없음). 그 노드를 찍은 빌드는 재계산에서 효과가 조용히 빠지므로 표시해 둔다.
+	if (engineNodeIds && !engineNodeIds.has(String(id))) entry.engineMissing = true;
 	// 잠금 조건(PoB unlockConstraint — 스피릿 워커 Sacred Unity): 이 노드들이 다 찍혀야 찍히고, 하나라도 빠지면 같이 빠진다(10-03 C50)
 	if (n.unlockConstraint?.nodes?.length) entry.unlockConstraint = n.unlockConstraint.nodes;
 	// 심연 주얼 홈 순번(10-03 C39) — 목소리 "Allocates N Sinister Jewel sockets" 는 이 순번 1..N 홈을 공짜로 준다
@@ -486,6 +504,10 @@ const result = {
 	keywords: Object.fromEntries([...usedKeywords].sort().map((id) => [id, keywordById.get(id)])),
 };
 const outPath = writeJson("passive-tree.json", result);
+const engineMissing = Object.entries(nodes).filter(([, e]) => e.engineMissing);
+if (engineMissing.length) {
+	console.log(`엔진이 모르는 노드 ${engineMissing.length}개(재계산에서 빠짐): ${engineMissing.map(([id, e]) => `${id} ${e.name}`).join(", ")}`);
+}
 
 // ======================= 보고 =======================
 const pct = (a, b) => (b ? ((a / b) * 100).toFixed(1) + "%" : "-");

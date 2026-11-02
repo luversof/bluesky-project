@@ -4,6 +4,8 @@
 @import net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.LocalDate
+@import java.util.List
 
 <%-- 다가올 배당 - 이번 달 남은 날과 다음 달에 받을 것으로 예상되는 월배당(사용자 결정 2026-09-17: 캘린더 탭을 실수령 배당에 통합하고
      '앞으로' 는 화면 위 이 구역으로, 범위는 이번 달 남은 날 + 다음 달).
@@ -11,14 +13,14 @@
      짧은 이력)가 이 구역으로 따라왔다 - 같은 숫자가 화면에 따라 밝혀지기도 하고 조용히 나가기도 하면 안 된다(실측 2026-08-23). --%>
 @param boolean hasRows = false
 @param UpcomingDividendScheduleView schedule = null
-@param java.time.LocalDate asOfOldest = null
-@param java.time.LocalDate asOfNewest = null
+@param LocalDate asOfOldest = null
+@param LocalDate asOfNewest = null
 @param long staleQuantityCount = 0L
 @param boolean currentQuantityUnavailable = false
-@param BigDecimal currentQuantityTotal = java.math.BigDecimal.ZERO
+@param BigDecimal currentQuantityTotal = BigDecimal.ZERO
 <%-- 같은 안내의 최근 기준 합계 - 카드가 최근을 앞에 두므로 안내도 최근 · 평균을 함께(2026-10-13). --%>
-@param BigDecimal currentQuantityLatestTotal = java.math.BigDecimal.ZERO
-@param java.util.List<String> shortHistorySymbols = java.util.List.of()
+@param BigDecimal currentQuantityLatestTotal = BigDecimal.ZERO
+@param List<String> shortHistorySymbols = List.of()
 
 !{
 	String avgLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.average");

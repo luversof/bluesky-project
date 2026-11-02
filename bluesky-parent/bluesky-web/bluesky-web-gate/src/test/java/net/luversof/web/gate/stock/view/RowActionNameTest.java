@@ -35,10 +35,7 @@ class RowActionNameTest {
   void 기준_데이터의_줄_링크_셋은_종목을_달고_나온다() throws IOException {
     String template = Files.readString(REFERENCE, StandardCharsets.UTF_8);
 
-    assertThat(
-            countOf(
-                template,
-                "aria-label=\"${java.text.MessageFormat.format(profileActionAriaPattern,"))
+    assertThat(countOf(template, "aria-label=\"${MessageFormat.format(profileActionAriaPattern,"))
         // 2026-09-29: "이 종목 보기" 는 "편집" 이 되고 "지급 이력" 펼치기 단추가 더해졌다(A안) - 넷 다 종목 이름을 단다.
         // 2026-10-14: 출처에서 가져오기가 줄 단추로 옮겨 왔다(사용자 요청) - 이것도 종목 이름을 단다.
         .as("지급 이력 펼치기 · 편집 · 출처에서 가져오기 · 시뮬레이터 채우기 · 링크 열기")
@@ -72,8 +69,7 @@ class RowActionNameTest {
     assertThat(countOf(template, "data-collapse-aria=")).as("접을 때 이름").isEqualTo(toggles);
     assertThat(
             countOf(
-                template,
-                "aria-label=\"${java.text.MessageFormat.format(accountHoldingsToggleAriaPattern"))
+                template, "aria-label=\"${MessageFormat.format(accountHoldingsToggleAriaPattern"))
         .as("처음 이름(펼치기)")
         .isEqualTo(toggles);
   }

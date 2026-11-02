@@ -35,18 +35,15 @@ class CompoundQuickAddNameTest {
   void 증감_버튼은_칸_이름을_달고_나온다() throws IOException {
     String template = Files.readString(TEMPLATE, StandardCharsets.UTF_8);
 
-    assertThat(
-            countOf(template, "aria-label=\"${java.text.MessageFormat.format(quickAddAriaPattern,"))
+    assertThat(countOf(template, "aria-label=\"${MessageFormat.format(quickAddAriaPattern,"))
         .as("더하기 버튼 네 개(칸 둘 × 금액 둘)")
         .isEqualTo(4);
-    assertThat(
-            countOf(
-                template, "aria-label=\"${java.text.MessageFormat.format(quickResetAriaPattern,"))
+    assertThat(countOf(template, "aria-label=\"${MessageFormat.format(quickResetAriaPattern,"))
         .as("0 으로 되돌리는 버튼 두 개")
         .isEqualTo(2);
     // 이름이 붙지 않은 증감 버튼이 남아 있으면 안 된다.
     assertThat(countOf(template, "data-amount-add-target=")).as("증감 버튼 여섯 개 모두").isEqualTo(6);
-    assertThat(countOf(template, "aria-label=\"${java.text.MessageFormat.format(quick"))
+    assertThat(countOf(template, "aria-label=\"${MessageFormat.format(quick"))
         .as("여섯 개 모두 이름을 가진다")
         .isEqualTo(6);
   }

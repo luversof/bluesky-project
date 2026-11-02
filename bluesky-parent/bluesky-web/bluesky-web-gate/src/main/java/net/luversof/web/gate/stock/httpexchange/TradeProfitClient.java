@@ -1,6 +1,7 @@
 package net.luversof.web.gate.stock.httpexchange;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.service.annotation.GetExchange;
@@ -9,6 +10,7 @@ import org.springframework.web.service.annotation.HttpExchange;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
+import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult;
 
 @HttpExchange(
     url = "/api/tradeProfit",
@@ -22,7 +24,7 @@ public interface TradeProfitClient {
           org.springframework.util.MultiValueMap<String, String> request);
 
   @GetExchange("/timeSeriesWithSummary")
-  net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult timeSeriesWithSummary(
+  TradeProfitTimeSeriesResult timeSeriesWithSummary(
       @org.springframework.web.bind.annotation.RequestParam
           org.springframework.util.MultiValueMap<String, String> params);
 
@@ -42,7 +44,7 @@ public interface TradeProfitClient {
    * <p>날짜별로 {@link #holdingsSnapshot} 을 순차 호출하면 날짜 수만큼 왕복이 생긴다(배당 기준일이 수십 개라 수 초 소요).
    */
   @GetExchange("/holdingsSnapshotBatch")
-  java.util.Map<String, List<HoldingsSnapshotItem>> holdingsSnapshotBatch(
+  Map<String, List<HoldingsSnapshotItem>> holdingsSnapshotBatch(
       @org.springframework.web.bind.annotation.RequestParam
           org.springframework.util.MultiValueMap<String, String> params);
 }

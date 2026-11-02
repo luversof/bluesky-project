@@ -3,10 +3,10 @@
 // 사용법: node parse-essences.mjs  (사전: extract.mjs — config.json 에 Essences 테이블 포함)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, loadConfig, loadTable, buffStatsOf } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
-const OUT = path.join(DATA_DIR, "essences.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "essences.json");
 
 const essences = loadTable("English", "Essences");
 const mods = loadTable("English", "Mods");
@@ -19,8 +19,9 @@ const describe = createStatDescriber(FILES_DIR, [
 	"metadata@statdescriptions@stat_descriptions.txt",
 ]);
 
-// 우리 itemClass Id → Essences 테이블 컬럼. 퀴버는 에센스 부여 불가(컬럼 없음), 룬 단검/전쟁지팡이는
-// 게임이 단검/지팡이 컬럼을 그대로 쓴다.
+// 우리 itemClass Id → Essences 테이블 컬럼. 룬 단검/전쟁지팡이는 게임이 단검/지팡이 컬럼을 그대로 쓴다.
+// 화살통(10-30 R30): 스키마 이름은 Display_Quiver_ModsKey 뿐이지만 PoB Export spec 의 QuiverMod 와 같은 자리이고 값 104개가 PoB Essence.lua Quiver 와 전부 같다
+//   (예전 주석 '퀴버는 에센스 부여 불가(컬럼 없음)' 은 이 열을 못 찾은 것 — 화살통 에센스 제작이 통째로 빠졌다)
 const CLASS_COLUMN = {
 	Helmet: "Helmet_ModsKey",
 	"Body Armour": "BodyArmour_ModsKey",
@@ -45,14 +46,16 @@ const CLASS_COLUMN = {
 	Amulet: "Amulet_ModsKey",
 	Ring: "Ring_ModsKey",
 	Shield: "Shield_ModsKey",
+	Quiver: "Display_Quiver_ModsKey",
 };
 
 /** 모드 스탯 → 값 맵 (min/max) */
 function rollValues(mod, kind) {
 	const values = new Map();
-	for (let i = 1; i <= 6; i++) {
+	const buff = buffStatsOf(mod);
+	for (let i = 1; i <= 8; i++) {
 		const statIndex = mod["StatsKey" + i];
-		if (statIndex == null) continue;
+		if (statIndex == null || buff.has(statIndex)) continue;
 		const stat = stats[statIndex];
 		if (!stat) continue;
 		values.set(stat.Id, mod["Stat" + i + (kind === "min" ? "Min" : "Max")] ?? 0);

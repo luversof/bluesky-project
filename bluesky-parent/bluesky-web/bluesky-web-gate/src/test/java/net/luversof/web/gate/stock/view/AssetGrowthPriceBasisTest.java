@@ -58,7 +58,7 @@ class AssetGrowthPriceBasisTest {
     assertThat(call).isGreaterThan(0);
     assertThat(controller.substring(call + marker.length()).strip())
         .startsWith("priceBasisHoldings");
-    assertThat(template).contains("@param java.time.LocalDate priceBasisDate");
+    assertThat(template).contains("@param LocalDate priceBasisDate");
     // 문구 틀은 StockPriceBasisUtil.basisMessage 가 고른다(종가 / 장중 시세, 2026-10-02).
     assertThat(template).contains("StockPriceBasisUtil.basisMessage(priceBasisIntradayTime)");
   }

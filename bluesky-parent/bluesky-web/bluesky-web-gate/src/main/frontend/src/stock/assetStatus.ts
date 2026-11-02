@@ -84,7 +84,9 @@ export {};
         }).format(value);
     }
 
-    function formatAssetStatusSignedNumber(value: number, fractionDigits: number) {
+    function formatAssetStatusSignedNumber(rawValue: number, fractionDigits: number) {
+        // 부호는 보이는 자릿수로 반올림한 뒤에 정한다 - -0.03% 가 "(-0.0%)" 로 나왔다(0 에는 방향이 없다, 검토 지적 2026-10-29).
+        var value = Number(rawValue.toFixed(fractionDigits));
         var absoluteValue = Math.abs(value);
         var formattedValue = formatAssetStatusNumber(absoluteValue, fractionDigits);
 
@@ -193,15 +195,15 @@ export {};
         var evaluationProfitLabel = summary.querySelector<HTMLElement>('[data-account-selection-evaluation-profit]');
         if (evaluationProfitLabel) {
             evaluationProfitLabel.textContent = formatAssetStatusSignedNumber(totalEvaluationProfitValue, 0);
-            evaluationProfitLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
-            evaluationProfitLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+            evaluationProfitLabel.classList.toggle('text-profit', Math.round(totalEvaluationProfitValue) > 0);
+            evaluationProfitLabel.classList.toggle('text-loss', Math.round(totalEvaluationProfitValue) < 0);
         }
 
         var evaluationProfitRateLabel = summary.querySelector<HTMLElement>('[data-account-selection-profit-rate]');
         if (evaluationProfitRateLabel) {
             evaluationProfitRateLabel.textContent = '(' + formatAssetStatusSignedNumber(evaluationProfitRateValue, 1) + '%)';
-            evaluationProfitRateLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
-            evaluationProfitRateLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+            evaluationProfitRateLabel.classList.toggle('text-profit', Math.round(totalEvaluationProfitValue) > 0);
+            evaluationProfitRateLabel.classList.toggle('text-loss', Math.round(totalEvaluationProfitValue) < 0);
         }
 
         var principalLabelEl = summary.querySelector<HTMLElement>('[data-account-selection-principal]');
@@ -212,15 +214,15 @@ export {};
         var principalReturnLabelEl = summary.querySelector<HTMLElement>('[data-account-selection-principal-return]');
         if (principalReturnLabelEl) {
             principalReturnLabelEl.textContent = formatAssetStatusSignedNumber(totalPrincipalReturnValue, 0);
-            principalReturnLabelEl.classList.toggle('text-profit', totalPrincipalReturnValue >= 0);
-            principalReturnLabelEl.classList.toggle('text-loss', totalPrincipalReturnValue < 0);
+            principalReturnLabelEl.classList.toggle('text-profit', Math.round(totalPrincipalReturnValue) > 0);
+            principalReturnLabelEl.classList.toggle('text-loss', Math.round(totalPrincipalReturnValue) < 0);
         }
 
         var principalReturnRateLabel = summary.querySelector<HTMLElement>('[data-account-selection-principal-return-rate]');
         if (principalReturnRateLabel) {
             principalReturnRateLabel.textContent = '(' + formatAssetStatusSignedNumber(principalReturnRateValue, 1) + '%)';
-            principalReturnRateLabel.classList.toggle('text-profit', totalPrincipalReturnValue >= 0);
-            principalReturnRateLabel.classList.toggle('text-loss', totalPrincipalReturnValue < 0);
+            principalReturnRateLabel.classList.toggle('text-profit', Math.round(totalPrincipalReturnValue) > 0);
+            principalReturnRateLabel.classList.toggle('text-loss', Math.round(totalPrincipalReturnValue) < 0);
         }
     }
 
@@ -291,15 +293,15 @@ export {};
         var evaluationProfitLabel = summary.querySelector<HTMLElement>('[data-selection-evaluation-profit]');
         if (evaluationProfitLabel) {
             evaluationProfitLabel.textContent = formatAssetStatusSignedNumber(totalEvaluationProfitValue, 0);
-            evaluationProfitLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
-            evaluationProfitLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+            evaluationProfitLabel.classList.toggle('text-profit', Math.round(totalEvaluationProfitValue) > 0);
+            evaluationProfitLabel.classList.toggle('text-loss', Math.round(totalEvaluationProfitValue) < 0);
         }
 
         var profitRateLabel = summary.querySelector<HTMLElement>('[data-selection-profit-rate]');
         if (profitRateLabel) {
             profitRateLabel.textContent = '(' + formatAssetStatusSignedNumber(profitRateValue, 1) + '%)';
-            profitRateLabel.classList.toggle('text-profit', totalEvaluationProfitValue >= 0);
-            profitRateLabel.classList.toggle('text-loss', totalEvaluationProfitValue < 0);
+            profitRateLabel.classList.toggle('text-profit', Math.round(totalEvaluationProfitValue) > 0);
+            profitRateLabel.classList.toggle('text-loss', Math.round(totalEvaluationProfitValue) < 0);
         }
 
         // 실현손익 · 합산 손익은 부호가 뜻이다. 0 에는 방향이 없어 색을 빼고 부호도 붙이지 않는다(formatAssetStatusSignedNumber).

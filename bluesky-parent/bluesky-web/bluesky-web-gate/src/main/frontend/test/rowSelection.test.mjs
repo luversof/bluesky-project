@@ -130,9 +130,12 @@ test("putAmount: 원화 · 앱 로케일 자릿수 · 반올림 뒤 0 은 부호
 	assert.equal(cells["[b]"].textContent, "-₩2,000");
 	assert.deepEqual([...cells["[b]"].classList.set], ["text-loss"]);
 
-	// -0.4 는 0 으로 반올림된다 - 부호 없이 적는다(색은 값의 부호를 따른다: 예전 인라인 스크립트와 같다).
+	// -0.4 는 0 으로 반올림된다 - 부호도 색도 없다(0 에는 방향이 없다, 2026-10-29 - 예전엔 값의 부호대로 손실색이었다).
 	RS.putAmount(summary, "[c]", -0.4, true);
 	assert.equal(cells["[c]"].textContent, "₩0");
+	assert.equal(cells["[c]"].classList.set.size, 0);
+	RS.putAmount(summary, "[d]", 0, true);
+	assert.equal(cells["[d]"].classList.set.size, 0);
 
 	// 칸이 없으면 아무것도 안 한다.
 	RS.putAmount({ querySelector: () => null }, "[x]", 1, true);

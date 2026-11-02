@@ -13,15 +13,21 @@
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendReferenceSummaryView
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.math.RoundingMode
+@import java.text.MessageFormat
+@import java.util.Locale
+@import java.util.Map
+@import net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView
+@import net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil
 
-@param List<StockItem> stockItems = java.util.List.of()
-@param List<MonthlyDividendProfileResponse> monthlyDividendProfiles = java.util.List.of()
+@param List<StockItem> stockItems = List.of()
+@param List<MonthlyDividendProfileResponse> monthlyDividendProfiles = List.of()
 <%-- 종목코드(대문자) -> 가장 늦은 지급 기준일(2026-10-13 사용자 요청 - 목록에서 갱신 여부 확인). --%>
-@param java.util.Map<String, net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView> monthlyDividendLatestPayoutBySymbol = java.util.Map.of()
+@param Map<String, MonthlyDividendLatestPayoutView> monthlyDividendLatestPayoutBySymbol = Map.of()
 <%-- 목록 지급 시기 거르기(2026-10-13 사용자 요청): MID_MONTH · MONTH_END · 빈 값(전체), 칩에 적을 개수는 거르기 전 전체 기준. --%>
 @param String monthlyDividendProfileWindow = ""
-@param java.util.Map<String, Long> monthlyDividendProfileWindowCounts = java.util.Map.of()
-@param List<MonthlyDividendPayoutResponse> monthlyDividendPayouts = java.util.List.of()
+@param Map<String, Long> monthlyDividendProfileWindowCounts = Map.of()
+@param List<MonthlyDividendPayoutResponse> monthlyDividendPayouts = List.of()
 @param MonthlyDividendReferenceSummaryView monthlyDividendReferenceSummary = null
 @param MonthlyDividendProfileUpsertRequest monthlyDividendProfileForm = null
 @param MonthlyDividendPayoutUpsertRequest monthlyDividendPayoutForm = null
@@ -124,7 +130,7 @@
 	String latestRecordDateSortDirection = "latest-record-date".equals(profileSortValue) && "asc".equals(profileDirectionValue) ? "desc" : "asc";
 	String noPayoutLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.none");
 	String staleRecordLabel = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.stale");
-	String staleRecordTitle = StockViewSupport.msg("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.title", String.valueOf(net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView.STALE_AFTER_DAYS));
+	String staleRecordTitle = StockViewSupport.msg("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.title", String.valueOf(MonthlyDividendLatestPayoutView.STALE_AFTER_DAYS));
 	String daysAgoPattern = MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ago");
 	String successMessage = "";
 	if ("profile-saved".equals(monthlyDividendReferenceResult)) {
@@ -207,13 +213,13 @@
 			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.dividend")}</p>
 			<%-- 평균은 넷째 자리까지 구해 두고 **표시할 때 한 번만** 반올림한다. 그대로 찍으면 같은 카드가
 			     종목에 따라 ₩32.25 와 ₩106.3636 으로 갈린다(실측 2026-09-16). --%>
-			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">₩${amountFormat.format(averageDividend.setScale(2, java.math.RoundingMode.HALF_UP))}</p>
-			<p class="mt-2 text-sm text-base-content/60">${java.text.MessageFormat.format(basisRowsTemplate, averageBasisRows)}</p>
+			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">₩${amountFormat.format(averageDividend.setScale(2, RoundingMode.HALF_UP))}</p>
+			<p class="mt-2 text-sm text-base-content/60">${MessageFormat.format(basisRowsTemplate, averageBasisRows)}</p>
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
 			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.taxable.ratio")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">@if(averageTaxableRatio == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else${percentFormat.format(averageTaxableRatio)}%@endif</p>
-			<p class="mt-2 text-sm text-base-content/60">${java.text.MessageFormat.format(basisRowsTemplate, taxableBasisRows)}</p>
+			<p class="mt-2 text-sm text-base-content/60">${MessageFormat.format(basisRowsTemplate, taxableBasisRows)}</p>
 		</div>
 	</div>
 
@@ -407,9 +413,9 @@
 					<%-- 월중만 · 월말만 보기(2026-10-13 사용자 요청). 개수는 거르기 전 전체 기준이라 칩을 누르기 전에 몇 줄이 남을지 보인다. --%>
 					<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${profileWindowFilterLabel}" data-profile-window-filter hx-boost="true">
 						<span class="text-xs font-medium text-base-content/60" aria-hidden="true">${profileWindowFilterLabel}</span>
-						@for(String windowOption : java.util.List.of("", "MID_MONTH", "MONTH_END"))
+						@for(String windowOption : List.of("", "MID_MONTH", "MONTH_END"))
 							!{boolean windowSelected = windowOption.equals(profileWindowValue);}
-							<a href="${profileWindowBaseUrl + (windowOption.isEmpty() ? "" : "&profileWindow=" + windowOption)}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${windowSelected ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${windowSelected ? "true" : null}" data-profile-window-link="${windowOption.isEmpty() ? "all" : windowOption}">${windowOption.isEmpty() ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.window.all") : net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil.label(windowOption)} <span class="tabular-nums">${String.valueOf(monthlyDividendProfileWindowCounts.getOrDefault(windowOption, 0L))}</span></a>
+							<a href="${profileWindowBaseUrl + (windowOption.isEmpty() ? "" : "&profileWindow=" + windowOption)}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${windowSelected ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${windowSelected ? "true" : null}" data-profile-window-link="${windowOption.isEmpty() ? "all" : windowOption}">${windowOption.isEmpty() ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.window.all") : StockPayoutWindowLabelUtil.label(windowOption)} <span class="tabular-nums">${String.valueOf(monthlyDividendProfileWindowCounts.getOrDefault(windowOption, 0L))}</span></a>
 						@endfor
 					</div>
 					<div id="monthlyDividendProfileOrderStatus" class="hidden"></div>
@@ -494,8 +500,8 @@
 												<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}${profileWindowQuery}#monthly-reference-editor" class="link link-hover font-medium">${row.stockItemSymbol()}</a>
 												<div class="text-xs text-base-content/60">${row.stockItemName()}</div>
 												<div class="mt-2 flex flex-wrap gap-2">
-													<button type="button" class="btn btn-xs btn-outline h-auto min-h-6 whitespace-normal" data-payout-peek-toggle data-peek-url="/stock/dividend/monthly-reference/payout/peek?symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}" data-peek-loading="${payoutPeekLoading}" data-peek-failed="${payoutPeekFailed}" aria-expanded="false" aria-controls="payout-peek-${row.stockItemSymbol()}" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, payoutPeekLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${payoutPeekLabel} <span aria-hidden="true" data-payout-peek-icon>▾</span></button>
-													<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}${profileWindowQuery}#monthly-reference-editor" class="btn btn-xs btn-outline" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, profileEditLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${profileEditLabel}</a>
+													<button type="button" class="btn btn-xs btn-outline h-auto min-h-6 whitespace-normal" data-payout-peek-toggle data-peek-url="/stock/dividend/monthly-reference/payout/peek?symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}" data-peek-loading="${payoutPeekLoading}" data-peek-failed="${payoutPeekFailed}" aria-expanded="false" aria-controls="payout-peek-${row.stockItemSymbol()}" aria-label="${MessageFormat.format(profileActionAriaPattern, payoutPeekLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${payoutPeekLabel} <span aria-hidden="true" data-payout-peek-icon>▾</span></button>
+													<a href="/stock/admin?tab=monthly-reference&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&profileSort=${profileSortValue}&profileDirection=${profileDirectionValue}${profileWindowQuery}#monthly-reference-editor" class="btn btn-xs btn-outline" aria-label="${MessageFormat.format(profileActionAriaPattern, profileEditLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${profileEditLabel}</a>
 													@if(row.sourceUrl() != null && !row.sourceUrl().isEmpty())
 														<%-- 출처에서 지급 이력 가져오기(사용자 요청 2026-10-14 - 따로 구성하지 말고 목록에 단추). 출처를 내려받아 오래 걸리므로 덮개를 띄운다. --%>
 														<form method="post" action="/stock/dividend/monthly-reference/payout/import/source" class="inline" hx-boost="true" hx-replace-url="false" data-submit-overlay="true" data-submit-overlay-title="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.submit")}" data-submit-overlay-desc="${MessageUtil.getMessage("stock.page.dividend.monthly.reference.import.overlay.desc.source")}" data-payout-source-import="${row.stockItemSymbol()}">
@@ -505,19 +511,19 @@
 															<input type="hidden" name="symbol" value="${row.stockItemSymbol()}" />
 															<%-- 가져온 뒤에도 보던 종목(왼쪽 편집 · 아래 지급 이력)은 그대로 - 목록만 바꿔 끼우므로 선택이 바뀌면 화면이 갈린다. --%>
 															<input type="hidden" name="returnSymbol" value="${selectedMonthlyDividendSymbol}" />
-															<button type="submit" class="btn btn-xs btn-outline h-auto min-h-6 whitespace-normal" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.row"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.row")}</button>
+															<button type="submit" class="btn btn-xs btn-outline h-auto min-h-6 whitespace-normal" aria-label="${MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.row"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.payout.import.source.row")}</button>
 														</form>
 													@endif
-													<a href="/stock/simulator?tab=monthly-dividend&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&sort=display-order&direction=asc" class="btn btn-xs btn-primary" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
+													<a href="/stock/simulator?tab=monthly-dividend&symbol=${URLEncoder.encode(row.stockItemSymbol(), StandardCharsets.UTF_8)}&sort=display-order&direction=asc" class="btn btn-xs btn-primary" aria-label="${MessageFormat.format(profileActionAriaPattern, MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator"), row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol())}">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.to.simulator")}</a>
 												</div>
 											</td>
 											<%-- 같은 화면의 편집 폼은 "월중/월말/기타/미확인" 으로 보여 주는데 이 칸만 코드였다
 												 (실측 2026-09-12: 8 행이 MID_MONTH · MONTH_END). 폼과 같은 문구를 쓴다. --%>
-											<td>${net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil.label(row.payoutWindow())}</td>
+											<td>${StockPayoutWindowLabelUtil.label(row.payoutWindow())}</td>
 											<td>
 												@if(row.sourceUrl() != null && !row.sourceUrl().isEmpty())
 													<div class="space-y-1">
-														<a href="${row.sourceUrl()}" class="link link-primary" target="_blank" rel="noopener noreferrer" aria-label="${java.text.MessageFormat.format(profileActionAriaPattern, openLinkLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol()) + " (" + opensNewWindowLabel + ")"}">${openLinkLabel}<span class="sr-only"> (${opensNewWindowLabel})</span></a>
+														<a href="${row.sourceUrl()}" class="link link-primary" target="_blank" rel="noopener noreferrer" aria-label="${MessageFormat.format(profileActionAriaPattern, openLinkLabel, row.stockItemName() != null && !row.stockItemName().isBlank() ? row.stockItemName() : row.stockItemSymbol()) + " (" + opensNewWindowLabel + ")"}">${openLinkLabel}<span class="sr-only"> (${opensNewWindowLabel})</span></a>
 														<div class="max-w-xs break-all text-xs text-base-content/60">${row.sourceUrl()}</div>
 													</div>
 												@else
@@ -525,13 +531,13 @@
 												@endif
 											</td>
 											<td title="${row.lastVerifiedDate() == null ? notVerifiedLabel : null}">${row.lastVerifiedDate() != null ? String.valueOf(row.lastVerifiedDate()) : "-"}@if(row.lastVerifiedDate() == null)<span class="sr-only">${notVerifiedLabel}</span>@endif</td>
-											!{var latestPayout = row.stockItemSymbol() != null ? monthlyDividendLatestPayoutBySymbol.get(row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT)) : null;}
+											!{var latestPayout = row.stockItemSymbol() != null ? monthlyDividendLatestPayoutBySymbol.get(row.stockItemSymbol().trim().toUpperCase(Locale.ROOT)) : null;}
 											<%-- 마지막 기준일 + 며칠 전. 한 달 치가 빠졌을 만큼 오래됐으면 "갱신 확인" 표시(색만이 아니라 글자로). --%>
 											@if(latestPayout != null)
 												<td class="whitespace-nowrap" data-profile-latest-record-date="${String.valueOf(latestPayout.recordDate())}" data-profile-latest-record-stale="${latestPayout.stale() ? "true" : "false"}">
 													<div>${String.valueOf(latestPayout.recordDate())}</div>
 													<%-- 미리 발표돼 등록된 기준일은 아직 안 왔다 - "-1일 전" 으로 찍혔다(실측 2026-10-14, 10-15 기준일). 오늘 · N일 뒤로 적는다. --%>
-													<div class="text-xs text-base-content/60">${latestPayout.daysSinceRecord() > 0 ? java.text.MessageFormat.format(daysAgoPattern, String.valueOf(latestPayout.daysSinceRecord())) : (latestPayout.daysSinceRecord() == 0 ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.today") : StockViewSupport.msg("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ahead", String.valueOf(-latestPayout.daysSinceRecord())))}</div>
+													<div class="text-xs text-base-content/60">${latestPayout.daysSinceRecord() > 0 ? MessageFormat.format(daysAgoPattern, String.valueOf(latestPayout.daysSinceRecord())) : (latestPayout.daysSinceRecord() == 0 ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.latest.record.date.today") : StockViewSupport.msg("stock.page.dividend.monthly.reference.profile.latest.record.date.days.ahead", String.valueOf(-latestPayout.daysSinceRecord())))}</div>
 													@if(latestPayout.stale())
 														<span class="badge badge-warning badge-sm mt-1" title="${latestPayout.expectedRecordDate() != null ? StockViewSupport.msg("stock.page.dividend.monthly.reference.profile.latest.record.date.stale.missing", String.valueOf(latestPayout.expectedRecordDate())) : staleRecordTitle}" data-profile-latest-record-expected="${latestPayout.expectedRecordDate() != null ? String.valueOf(latestPayout.expectedRecordDate()) : ""}">${staleRecordLabel}</span>
 													@endif

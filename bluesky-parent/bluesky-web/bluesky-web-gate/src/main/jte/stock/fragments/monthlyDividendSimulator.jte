@@ -12,27 +12,37 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.text.MessageFormat
+@import java.time.LocalDate
+@import java.util.Locale
+@import java.util.Objects
+@import java.util.UUID
+@import net.luversof.web.gate.stock.dto.view.RecordDateBuyByView
+@import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport
+@import net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator
+@import net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
+@import net.luversof.web.gate.stock.util.StockPriceBasisUtil
 
-@param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
-@param java.util.List<net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick> monthlyContributionPicks = java.util.List.of()
+@param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = List.of()
+@param List<MonthlyContributionPickSupport.ContributionPick> monthlyContributionPicks = List.of()
 <%-- 이 표의 '현재가'가 어느 날 종가인지. 배당 기준값(스냅샷 시점)과 시세는 시점이 다르다. --%>
 @param String monthlyDividendPriceBasisIntradayTime = null
-@param java.time.LocalDate monthlyDividendPriceBasisDate = null
+@param LocalDate monthlyDividendPriceBasisDate = null
 @param boolean monthlyDividendCurrentHoldingsUnavailable = false
 <%-- 종목 -> 저장된 지급 이력으로 계산한 1년 평균 과세표준 비중(관리 탭과 같은 계산). 저장값과 벌어지면 그 자리에서 알린다. --%>
-@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = java.util.Map.of()
+@param Map<UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = Map.of()
 <%-- 종목별 최근 1 년 배당을 과세이연 계좌 몫 / 그 밖 계좌 몫으로 나눈 것. 비중 칸 아래 설명에 쓴다. --%>
-@param java.util.Map<java.util.UUID, net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport.TaxableRatioBasis> monthlyDividendTaxableRatioBasis = java.util.Map.of()
+@param Map<UUID, MonthlyDividendReferenceSupport.TaxableRatioBasis> monthlyDividendTaxableRatioBasis = Map.of()
 @param BigDecimal monthlyDividendReferenceTaxableTotal = null
 @param int monthlyDividendReferenceTaxableStaleCount = 0
 <%-- 원장의 현재 보유 수량(종목 id -> 수량). 스냅샷 수량과 다르면 표에 함께 적는다. --%>
-@param java.util.Map<java.util.UUID, Integer> monthlyDividendCurrentQuantities = java.util.Map.of()
+@param Map<UUID, Integer> monthlyDividendCurrentQuantities = Map.of()
 @param long monthlyDividendStaleQuantityCount = 0L
-@param BigDecimal monthlyDividendCurrentQuantityTotal = java.math.BigDecimal.ZERO
+@param BigDecimal monthlyDividendCurrentQuantityTotal = BigDecimal.ZERO
 <%-- 원장의 현재 평균단가. 스냅샷 평단과 다르면 표에 함께 적는다 - 원가기준 수익률이 이 값으로 계산되기 때문이다. --%>
-@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = java.util.Map.of()
+@param Map<UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = Map.of()
 @param MonthlyDividendSimulatorSummaryView monthlyDividendSummary = null
-@param List<StockItem> stockItems = java.util.List.of()
+@param List<StockItem> stockItems = List.of()
 @param MonthlyDividendSnapshotUpsertRequest monthlyDividendForm = null
 @param String monthlyDividendErrorMessage = ""
 @param String monthlyDividendResult = ""
@@ -44,27 +54,27 @@
 @param boolean monthlyDividendPositiveOnly = false
 @param String monthlyDividendPayoutWindowFilter = ""
 <%-- 지급 시기 칩의 개수(다른 조건은 그대로, 지급 시기만 바꿨을 때 남는 줄). 비면 개수 없이 칩만. --%>
-@param java.util.Map<String, Integer> monthlyDividendPayoutWindowCounts = java.util.Map.of()
+@param Map<String, Integer> monthlyDividendPayoutWindowCounts = Map.of()
 @param String monthlyDividendAccountFilter = ""
 @param boolean monthlyDividendSlotFilterUnavailable = false
 @param boolean monthlyDividendHasSavedRows = false
-@param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
-@param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
+@param Map<String, Integer> monthlyDividendProfileDisplayOrders = Map.of()
+@param List<String> monthlyDividendProfileOrderedSymbols = List.of()
 @param boolean monthlyDividendReorderEnabled = false
-@param Map<String, String> monthlyDividendPayoutWindowBySymbol = java.util.Map.of()
+@param Map<String, String> monthlyDividendPayoutWindowBySymbol = Map.of()
 <%-- 목표 월배당까지(2026-10-20). --%>
-@param java.util.List<net.luversof.web.gate.stock.dto.view.RecordDateBuyByView> monthlyDividendBuyBy = java.util.List.of()
-@param net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Basis monthlyDividendGoalBasis = null
-@param net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Goal monthlyDividendGoal = null
+@param List<RecordDateBuyByView> monthlyDividendBuyBy = List.of()
+@param MonthlyDividendGoalCalculator.Basis monthlyDividendGoalBasis = null
+@param MonthlyDividendGoalCalculator.Goal monthlyDividendGoal = null
 @param BigDecimal monthlyDividendGoalMonthly = null
 @param BigDecimal monthlyDividendGoalContribution = null
 
 !{
-	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat amountFormat = StockFormatUtil.wonFormat();
 	DecimalFormat percentFormat = new DecimalFormat("#,##0.00");
 	MonthlyDividendSnapshotResponse bestChoice = monthlyDividendSummary != null ? monthlyDividendSummary.bestChoice() : null;
 	// 행마다 비교 우위 순위. 1 위 하나만 배지를 달던 표에 순위를 전부 적는다(사용자 요청 2026-09-17).
-	java.util.Map<java.util.UUID, Integer> comparisonRanks = monthlyDividendSummary != null && monthlyDividendSummary.comparisonRanks() != null ? monthlyDividendSummary.comparisonRanks() : java.util.Map.of();
+	Map<UUID, Integer> comparisonRanks = monthlyDividendSummary != null && monthlyDividendSummary.comparisonRanks() != null ? monthlyDividendSummary.comparisonRanks() : Map.of();
 	String comparisonRankPattern = MessageUtil.getMessage("stock.simulator.compare.rank");
 	BigDecimal totalLatestMonthlyDividend = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividend() : BigDecimal.ZERO;
 	BigDecimal totalLatestMonthlyDividendMidMonth = monthlyDividendSummary != null ? monthlyDividendSummary.totalLatestMonthlyDividendMidMonth() : BigDecimal.ZERO;
@@ -89,7 +99,7 @@
 	// 폼은 저장된 스냅샷 값을 그대로 채운다 - 원장과 어긋날 수 있다. 아래 표는 이미 "현재 N" 으로 알려 주는데
 	// 정작 고치는 자리인 폼에는 아무 말이 없었다(실측 2026-09-12: 8 종목 중 3 종목의 평균단가가 달랐고
 	// 표에는 "현재 4,915" · "현재 4,367" · "현재 11,281" 이 떠 있었지만 폼에는 4,914 · 4,381 · 11,307 만 있었다).
-	java.util.UUID formStockItemId = null;
+	UUID formStockItemId = null;
 	if (!symbolValue.isBlank() && stockItems != null) {
 		for (StockItem candidate : stockItems) {
 			if (candidate != null && candidate.symbol() != null && candidate.symbol().equalsIgnoreCase(symbolValue.trim())) {
@@ -104,8 +114,8 @@
 	boolean formQuantityDiffers = formCurrentQuantity != null && form.getHeldQuantity() != null
 			&& formCurrentQuantity.intValue() != form.getHeldQuantity().intValue();
 	boolean formAverageBuyPriceDiffers = formCurrentAverageBuyPrice != null && form.getAverageBuyPrice() != null
-			&& formCurrentAverageBuyPrice.setScale(0, java.math.RoundingMode.HALF_UP)
-					.compareTo(form.getAverageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP)) != 0;
+			&& formCurrentAverageBuyPrice.setScale(0, RoundingMode.HALF_UP)
+					.compareTo(form.getAverageBuyPrice().setScale(0, RoundingMode.HALF_UP)) != 0;
 	String minAnnualYieldValue = monthlyDividendMinAnnualYield != null ? monthlyDividendMinAnnualYield.stripTrailingZeros().toPlainString() : "";
 	String monthlyDividendReferenceManageUrl = "/stock/admin?tab=monthly-reference";
 	String totalLatestMonthlyDividendLabel = MessageUtil.getMessage("stock.simulator.monthly.summary.latest.monthly.dividend");
@@ -130,12 +140,12 @@
 	// 기준 데이터의 '언제 시점' 값인지. asOfDate 는 그 종목 지급 이력의 최신 지급일과 같다.
 	// 이 값이 오래되면 최근 월 배당금 같은 대표 수치가 조용히 옛 분배금으로 계산된다
 	// (실측: 월중배당 4 종목이 30 일 뒤처져 총 최근 월 배당금이 과대).
-	java.time.LocalDate oldestAsOfDate = monthlyDividendRows.stream()
-		.map(net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse::asOfDate)
-		.filter(java.util.Objects::nonNull).min(java.time.LocalDate::compareTo).orElse(null);
-	java.time.LocalDate newestAsOfDate = monthlyDividendRows.stream()
-		.map(net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse::asOfDate)
-		.filter(java.util.Objects::nonNull).max(java.time.LocalDate::compareTo).orElse(null);
+	LocalDate oldestAsOfDate = monthlyDividendRows.stream()
+		.map(MonthlyDividendSnapshotResponse::asOfDate)
+		.filter(Objects::nonNull).min(LocalDate::compareTo).orElse(null);
+	LocalDate newestAsOfDate = monthlyDividendRows.stream()
+		.map(MonthlyDividendSnapshotResponse::asOfDate)
+		.filter(Objects::nonNull).max(LocalDate::compareTo).orElse(null);
 	String selectionDividendLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.dividend");
 	String selectionInvestmentLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.investment");
 	String selectionEfficiencyLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.efficiency");
@@ -298,7 +308,7 @@
 						@endif
 						<%-- 시세 기준일은 스냅샷 기준일과 다르다 - 실측 2026-09-11: 스냅샷 2026-08-19 인데 현재가는 2026-09-09 종가였다. --%>
 						@if(monthlyDividendPriceBasisDate != null)
-						<div class="text-[11px] text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(monthlyDividendPriceBasisIntradayTime, monthlyDividendPriceBasisDate)}</div>
+						<div class="text-[11px] text-base-content/60">${StockPriceBasisUtil.basisText(monthlyDividendPriceBasisIntradayTime, monthlyDividendPriceBasisDate)}</div>
 						@endif
 						<%-- 원장 조회가 실패하면 어긋난 줄에 붙던 "현재 N" 표시가 통째로 사라진다. 표시가 없는 표는
 						     "원장과 같다" 로 읽히므로(실측 2026-09-12: 8 줄 중 3 줄이 표시를 달고 있었다) 실패를 밝힌다. --%>
@@ -495,7 +505,7 @@
 					     칩과 칸은 같은 주소 값(payoutWindow)을 보므로 늘 같은 상태다. --%>
 					<div class="flex flex-wrap items-center gap-2" role="group" aria-label="${monthlyDividendWindowChipLabel}" data-monthly-window-chips>
 						<span class="text-xs font-medium text-base-content/60" aria-hidden="true">${monthlyDividendWindowChipLabel}</span>
-						@for(String windowOption : java.util.List.of("", "MID_MONTH", "MONTH_END"))
+						@for(String windowOption : List.of("", "MID_MONTH", "MONTH_END"))
 							!{boolean windowSelected = windowOption.equals(monthlyDividendPayoutWindowFilter);}
 							!{Integer windowCount = monthlyDividendPayoutWindowCounts.get(windowOption);}
 							<a hx-boost="true" href="${monthlyDividendWindowChipBaseUrl + (windowOption.isEmpty() ? "" : "&payoutWindow=" + windowOption)}" class="btn btn-sm h-auto min-h-8 whitespace-normal py-2 leading-snug break-keep ${windowSelected ? "btn-primary" : "btn-ghost border border-base-300"}" aria-current="${windowSelected ? "true" : null}" data-monthly-window-chip="${windowOption.isEmpty() ? "all" : windowOption}">${windowOption.isEmpty() ? MessageUtil.getMessage("stock.monthly.etf.filter.payout.window.all") : ("MID_MONTH".equals(windowOption) ? payoutWindowMidMonthLabel : payoutWindowMonthEndLabel)}@if(windowCount != null) <span class="tabular-nums">${String.valueOf(windowCount)}</span>@endif</a>
@@ -744,7 +754,7 @@
 											!{BigDecimal latestAnnualYieldPct = latestMonthlyYieldPct.multiply(BigDecimal.valueOf(12));}
 											!{BigDecimal latestMonthlyYieldOnCostPct = buyAmount.signum() > 0 ? latestMonthlyDividendAmount.multiply(BigDecimal.valueOf(100)).divide(buyAmount, 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;}
 											!{BigDecimal latestAnnualYieldOnCostPct = latestMonthlyYieldOnCostPct.multiply(BigDecimal.valueOf(12));}
-											!{String normalizedRowSymbol = row.stockItemSymbol() != null ? row.stockItemSymbol().trim().toUpperCase(java.util.Locale.ROOT) : "";}
+											!{String normalizedRowSymbol = row.stockItemSymbol() != null ? row.stockItemSymbol().trim().toUpperCase(Locale.ROOT) : "";}
 											!{Integer rowDisplayOrder = monthlyDividendProfileDisplayOrders != null ? monthlyDividendProfileDisplayOrders.get(normalizedRowSymbol) : null;}
 											!{boolean rowReorderable = monthlyDividendReorderEnabled && rowDisplayOrder != null;}
 											!{BigDecimal taxableBaseRatio = row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO;}
@@ -777,7 +787,7 @@
 															<span>${row.stockItemSymbol()}</span>
 															!{Integer comparisonRank = row.id() != null ? comparisonRanks.get(row.id()) : null;}
 															@if(comparisonRank != null)
-																<span class="badge badge-xs ${comparisonRank == 1 ? "badge-success" : "badge-ghost"}" data-comparison-rank="${comparisonRank}">${java.text.MessageFormat.format(comparisonRankPattern, String.valueOf(comparisonRank))}</span>
+																<span class="badge badge-xs ${comparisonRank == 1 ? "badge-success" : "badge-ghost"}" data-comparison-rank="${comparisonRank}">${MessageFormat.format(comparisonRankPattern, String.valueOf(comparisonRank))}</span>
 															@endif
 														</div>
 														<%-- 다른 표 17개(476행)는 모두 종목명을 상세로 잇는데 이 표만 링크가 없었다(실측 2026-09-11). --%>
@@ -816,7 +826,7 @@
 												</div>
 											</td>
 											<td class="text-right">
-												<div class="whitespace-nowrap tabular-nums">${percentFormat.format(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO)}%</div>
+												@if(row.averageTaxableBaseRatio1y() == null)<div class="whitespace-nowrap text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</div>@else<div class="whitespace-nowrap tabular-nums">${percentFormat.format(row.averageTaxableBaseRatio1y())}%</div>@endif
 												<%-- 이 비중은 원장 최근 1 년의 (과세금액 / 세전)을 모든 계좌 합쳐 낸 값이다. 과세이연 계좌(ISA · 연금저축)는
 												     과세금액이 0 으로 적혀 비중을 끌어내린다 - 실측 2026-09-17: 과세이연 계좌에서만 받은 두 종목이 0%,
 												     네 계좌 중 과세 계좌 한 곳만 100% 인 종목이 13.42% 였고, 사용자는 "0% 인데 실제는 100%" 로 읽었다.
@@ -831,7 +841,7 @@
 												     "저장값을 갱신합니다" 링크를 달았지만, 지급 이력을 가져올 때마다 비중을 원장 실적으로 다시 덮으므로
 												     갱신해도 그대로다(막다른 안내였다) - 차이는 낡은 게 아니라 기준이 다른 것이다. --%>
 												!{BigDecimal referenceTaxableRatio = monthlyDividendReferenceTaxableRatios.get(row.stockItemId());}
-												@if(referenceTaxableRatio != null && referenceTaxableRatio.subtract(row.averageTaxableBaseRatio1y() != null ? row.averageTaxableBaseRatio1y() : BigDecimal.ZERO).abs().compareTo(new BigDecimal("1")) >= 0)
+												@if(referenceTaxableRatio != null && (row.averageTaxableBaseRatio1y() == null || referenceTaxableRatio.subtract(row.averageTaxableBaseRatio1y()).abs().compareTo(new BigDecimal("1")) >= 0))
 												<%-- 링크는 그 종목의 지급 이력을 보러 가는 길이다(실측 2026-09-11: 이 표의 행에는 링크가 하나도 없었다). --%>
 												<div class="text-[11px] text-base-content/60 whitespace-nowrap tabular-nums" data-reference-taxable-ratio="${referenceTaxableRatio.toPlainString()}">
 													<a class="link link-hover" href="/stock/admin?tab=monthly-reference&amp;symbol=${java.net.URLEncoder.encode(row.stockItemSymbol() != null ? row.stockItemSymbol() : "", java.nio.charset.StandardCharsets.UTF_8)}"
@@ -854,7 +864,7 @@
 														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.average.buy.price.short")}</span>
 														<span class="amount-value">₩${amountFormat.format(row.averageBuyPrice() != null ? row.averageBuyPrice() : BigDecimal.ZERO)}</span>
 														!{BigDecimal currentAverageBuyPrice = monthlyDividendCurrentAverageBuyPrices.get(row.stockItemId());}
-														@if(currentAverageBuyPrice != null && row.averageBuyPrice() != null && currentAverageBuyPrice.setScale(0, java.math.RoundingMode.HALF_UP).compareTo(row.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP)) != 0)
+														@if(currentAverageBuyPrice != null && row.averageBuyPrice() != null && currentAverageBuyPrice.setScale(0, RoundingMode.HALF_UP).compareTo(row.averageBuyPrice().setScale(0, RoundingMode.HALF_UP)) != 0)
 														<span class="ml-1 text-[11px] text-warning amount-value">${StockViewSupport.msg("stock.simulator.monthly.table.cell.average.buy.price.current", amountFormat.format(currentAverageBuyPrice))}</span>
 														@endif
 													</div>
@@ -884,7 +894,7 @@
 													</div>
 													<div class="text-sm text-base-content/60">
 														<span class="mr-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.table.cell.expected.taxable.base.short")}</span>
-														<span class="amount-value">₩${amountFormat.format(row.expectedTaxableBaseAmount() != null ? row.expectedTaxableBaseAmount() : BigDecimal.ZERO)}</span>
+														@if(row.expectedTaxableBaseAmount() == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else<span class="amount-value">₩${amountFormat.format(row.expectedTaxableBaseAmount())}</span>@endif
 													</div>
 												</div>
 											</td>
@@ -921,7 +931,7 @@
 														!{String onCostGapKind = onCostGap.signum() > 0 ? "higher" : (onCostGap.signum() < 0 ? "lower" : "same");}
 														!{String onCostGapNote = onCostGap.signum() == 0
 															? MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.same")
-															: java.text.MessageFormat.format(onCostGap.signum() > 0
+															: MessageFormat.format(onCostGap.signum() > 0
 																? MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.higher")
 																: MessageUtil.getMessage("stock.simulator.monthly.table.cell.on.cost.gap.lower"), onCostGapAmount);}
 														!{String onCostGapValue = StockViewSupport.msg("stock.simulator.monthly.table.cell.on.cost.gap.value", (onCostGap.signum() > 0 ? "+" : (onCostGap.signum() < 0 ? "-" : "")) + onCostGapAmount);}
@@ -934,8 +944,8 @@
 													<%-- 손익 방향은 부호로도 말한다 - 실측 2026-09-12(고대비 모드): 이 열의 색이 모두 검정 한 가지로
 														 합쳐지면 "10.69%" 가 이득인지 손실인지 알 수 없다. 음수는 이미 "-" 를 달고 있었고(16 값 중 7),
 														 양수 9 개만 맨 숫자였다. 칸 폭 98px 에 "-13.92%" 가 이미 들어가므로 폭은 그대로다. --%>
-													<div class="${row.totalReturnOnCostPct() != null && row.totalReturnOnCostPct().signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct().doubleValue() : 0.0d, 2)}</div>
-													<div class="font-semibold ${row.expectedCombinedReturnPct() != null && row.expectedCombinedReturnPct().signum() >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct().doubleValue() : 0.0d, 2)}</div>
+													<div class="${StockFormatUtil.rateTone(row.totalReturnOnCostPct(), 2)}">${StockFormatUtil.signedPct(row.totalReturnOnCostPct() != null ? row.totalReturnOnCostPct().doubleValue() : 0.0d, 2)}</div>
+													<div class="font-semibold ${StockFormatUtil.rateTone(row.expectedCombinedReturnPct(), 2)}">${StockFormatUtil.signedPct(row.expectedCombinedReturnPct() != null ? row.expectedCombinedReturnPct().doubleValue() : 0.0d, 2)}</div>
 												</div>
 											</td>
 										</tr>

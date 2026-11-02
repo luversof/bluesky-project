@@ -423,6 +423,8 @@ const simMilestonesPlugin = {
 		sustainablePeriodFacts;
 	(globalThis as any).__stockWithdrawalSimulatorInternals.compareComparisonEntries =
 		compareComparisonEntries;
+	(globalThis as any).__stockWithdrawalSimulatorInternals.buildTimelineSegments =
+		buildTimelineSegments;
 
 	const root = document.getElementById("stockSimulatorApp");
 	if (!root || root.dataset.stockSimulatorInitialized === "true") {
@@ -510,6 +512,9 @@ const simMilestonesPlugin = {
 		summaryOverflowYear: "Stopped: numbers exceeded the representable range",
 		summaryLatestCoverage: "Latest Spending Coverage",
 		summaryNoSpending: "No Spending",
+		// ko 화면에도 "y" · " Copy" 가 박혀 있었다(검토 지적 2026-10-29) - 레이아웃 문구로.
+		yearsShort: "{0}y",
+		scenarioCopyName: "{0} Copy",
 		seriesAnnualDividend: "Annual Dividend",
 		seriesAnnualSpending: "Annual Spending",
 		seriesAnnualGap: "Annual Gap",
@@ -804,7 +809,7 @@ const simMilestonesPlugin = {
 			{
 				...activeScenario,
 				id: createId(),
-				name: `${activeScenario.name} Copy`,
+				name: i18n.scenarioCopyName.replace("{0}", () => activeScenario.name),
 			},
 			state.scenarios.length + 1,
 		);
@@ -881,6 +886,11 @@ const simMilestonesPlugin = {
 			return normalizeScenario(nextScenario, index);
 		}
 
+		// 숫자 칸을 비우는 중이면 값을 바꾸지 않는다 - Number("") 이 0 이라 원금이 최솟값 1 만 원으로 저장됐다(검토 지적 2026-10-29).
+		if (String(target.value).trim() === "") {
+			return scenario;
+		}
+
 		if (field === "years") {
 			nextScenario.years = Math.round(
 				clampNumber(target.value, 1, MAX_SIMULATION_YEARS, scenario.years),
@@ -914,7 +924,8 @@ const simMilestonesPlugin = {
 			field === "annualDividendGrowthPct" ||
 			field === "annualSpendingGrowthPct"
 		) {
-			return clampNumber(value, -100, 300, fallback);
+			// 입력 칸 max="200" 과 같은 상한 - 250 을 넣으면 칸은 잘못된 값 표시인데 계산은 250 이었다(검토 지적 2026-10-29).
+			return clampNumber(value, -100, 200, fallback);
 		}
 
 		if (field === "dividendYieldPct") {
@@ -963,6 +974,8 @@ const simMilestonesPlugin = {
 
 		expandedYearRows.set(activeScenario.id, nextYears);
 		render({ skipForm: true });
+		// 표를 다시 그리면 누른 단추가 사라져 포커스가 문서 처음으로 갔다 - 같은 해 단추로 돌려놓는다(검토 지적 2026-10-29).
+		(document.querySelector(`[data-year-toggle="${year}"]`) as HTMLElement | null)?.focus();
 	}
 
 	function isYearExpanded(scenarioId, year) {
@@ -1065,7 +1078,7 @@ const simMilestonesPlugin = {
 								<span class="mt-1 h-3 w-3 rounded-full ${COLOR_CLASSES[index % COLOR_CLASSES.length]}"></span>
 								<div class="space-y-1">
 									<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
-									<p class="text-xs text-base-content/60">${scenario.years}y · ${
+									<p class="text-xs text-base-content/60">${i18n.yearsShort.replace("{0}", String(scenario.years))} · ${
 										scenario.reinvestDividends
 											? i18n.reinvestOn
 											: i18n.reinvestOff
@@ -1096,9 +1109,11 @@ const simMilestonesPlugin = {
 			elements.scenarioList.querySelectorAll("[data-scenario-id]"),
 		).forEach((button) => {
 			button.addEventListener("click", () => {
-				state.activeScenarioId = button.dataset.scenarioId;
+				const scenarioId = button.dataset.scenarioId;
+				state.activeScenarioId = scenarioId;
 				saveState();
 				render();
+				focusScenario(elements.scenarioList, scenarioId);
 			});
 		});
 	}
@@ -1212,7 +1227,7 @@ const simMilestonesPlugin = {
 											: ""
 									}
 								</div>
-									<p class="text-xs text-base-content/60">${scenario.years}y · ${
+									<p class="text-xs text-base-content/60">${i18n.yearsShort.replace("{0}", String(scenario.years))} · ${
 										scenario.reinvestDividends
 											? i18n.reinvestOn
 											: i18n.reinvestOff
@@ -1247,8 +1262,8 @@ const simMilestonesPlugin = {
 									.join("")}
 							</div>
 							<div class="flex items-center justify-between text-[11px] text-base-content/60">
-								<span>0y</span>
-								<span>${scenario.years}y</span>
+								<span>${i18n.yearsShort.replace("{0}", "0")}</span>
+								<span>${i18n.yearsShort.replace("{0}", String(scenario.years))}</span>
 							</div>
 							<div class="flex flex-wrap gap-2 text-xs text-base-content/70">
 								${buildTimelineEventBadges(summary)}
@@ -1262,12 +1277,22 @@ const simMilestonesPlugin = {
 	}
 
 	function buildBestScenarioSet(simulations) {
+		// 기간이 다른 시나리오끼리는 가장 짧은 기간으로 잘라 견준다(2026-11-02 사용자 결정) - 그대로 견주면 "30 년 고갈 없음" 보다
+		// "100 년 중 60 년차 고갈" 이 더 오래 버틴 것으로 나와 위로 왔다.
+		const horizonYears = Math.min(
+			...state.scenarios.map((scenario) => Number(scenario.years) || 0),
+		);
+		const sameDuration = state.scenarios.every(
+			(scenario) => Number(scenario.years) === horizonYears,
+		);
 		const entries = state.scenarios
 			.map((scenario) => ({
 				scenarioId: scenario.id,
 				values: buildComparisonValues(
 					simulations.get(scenario.id)?.summary,
 					scenario.years,
+					horizonYears,
+					sameDuration,
 				),
 			}))
 			.sort(compareComparisonEntries);
@@ -1284,32 +1309,46 @@ const simMilestonesPlugin = {
 		);
 	}
 
-	function buildComparisonValues(summary, simulationYears) {
+	// horizonYears: 견줄 공통 기간(가장 짧은 시나리오). 그 뒤의 일은 없던 것으로 본다. 마지막 해 값(커버리지 · 자산)은 기간이 다르면
+	// 서로 다른 해의 값이라 견주지 않는다(sameDuration = false 면 모두 같은 값).
+	function buildComparisonValues(
+		summary,
+		simulationYears,
+		horizonYears = simulationYears,
+		sameDuration = true,
+	) {
 		return {
 			// 연 단위보다 먼저 본다. 같은 해에 고갈해도 몇 달 더 버틴 쪽이 실제로 낫다.
-			sustainableMonths: Number(summary?.sustainableMonths || 0),
-			sustainableYears: Number(summary?.sustainableYears || 0),
+			sustainableMonths: Math.min(
+				Number(summary?.sustainableMonths || 0),
+				horizonYears * 12,
+			),
+			sustainableYears: Math.min(
+				Number(summary?.sustainableYears || 0),
+				horizonYears,
+			),
 			drawdownStartYear: normalizeComparisonYear(
 				summary?.firstShareSaleYear,
-				simulationYears,
+				horizonYears,
 			),
-			finalCoveragePct: normalizeComparisonCoverage(
-				summary?.finalSpendingCoveragePct,
-			),
-			finalWealth: Number(summary?.finalWealth || 0),
+			finalCoveragePct: sameDuration
+				? normalizeComparisonCoverage(summary?.finalSpendingCoveragePct)
+				: 0,
+			finalWealth: sameDuration ? Number(summary?.finalWealth || 0) : 0,
 			firstDeficitYear: normalizeComparisonYear(
 				summary?.firstDeficitYear,
-				simulationYears,
+				horizonYears,
 			),
 			firstWealthDeclineYear: normalizeComparisonYear(
 				summary?.firstWealthDeclineYear,
-				simulationYears,
+				horizonYears,
 			),
 		};
 	}
 
-	function normalizeComparisonYear(year, simulationYears) {
-		return year ? Number(year) : simulationYears + 1;
+	// 공통 기간 안에 일어나지 않은 일(없거나 그 뒤)은 "기간 끝까지 없음" 으로 같게 본다.
+	function normalizeComparisonYear(year, horizonYears) {
+		return year && Number(year) <= horizonYears ? Number(year) : horizonYears + 1;
 	}
 
 	function normalizeComparisonCoverage(value) {
@@ -1407,8 +1446,8 @@ const simMilestonesPlugin = {
 						<td class="amount-value">${formatCurrency(record.sharePrice)}</td>
 						<td class="amount-value">${formatCurrency(record.annualDividend)}</td>
 						<td class="amount-value">${formatCurrency(record.annualSpending)}</td>
-						<td class="amount-value ${record.annualGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(record.annualGap)}</td>
-						<td class="${record.spendingCoveragePct !== null && record.spendingCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
+						<td class="amount-value ${Math.round(record.annualGap) < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(record.annualGap)}</td>
+						<td class="${record.spendingCoveragePct !== null && roundPercent(record.spendingCoveragePct) < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(record.spendingCoveragePct)}</td>
 						<td class="amount-value">${formatShares(record.soldSharesForSpending)}</td>
 						<td class="amount-value">${formatShares(record.reinvestedShares)}</td>
 						<td class="amount-value">${formatShares(record.shares)}</td>
@@ -1466,8 +1505,8 @@ function renderMonthlyDetailsTable(record) {
 											<td class="amount-value">${formatCurrency(monthRecord.sharePrice)}</td>
 											<td class="amount-value">${formatCurrency(monthRecord.monthlyDividend)}</td>
 											<td class="amount-value">${formatCurrency(monthRecord.monthlySpending)}</td>
-											<td class="${monthRecord.monthlyCoveragePct !== null && monthRecord.monthlyCoveragePct < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(monthRecord.monthlyCoveragePct)}</td>
-											<td class="amount-value ${monthRecord.monthlyGap < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(monthRecord.monthlyGap)}</td>
+											<td class="${monthRecord.monthlyCoveragePct !== null && roundPercent(monthRecord.monthlyCoveragePct) < 100 ? "font-semibold sim-text-warn" : ""}">${formatCoveragePercent(monthRecord.monthlyCoveragePct)}</td>
+											<td class="amount-value ${Math.round(monthRecord.monthlyGap) < 0 ? "font-semibold text-error" : "text-success"}">${formatCurrency(monthRecord.monthlyGap)}</td>
 											<td class="amount-value">${formatShares(monthRecord.soldSharesForSpending)}</td>
 											<td class="amount-value">${formatShares(monthRecord.reinvestedShares)}</td>
 											<td class="amount-value">${formatShares(monthRecord.shares)}</td>
@@ -1646,6 +1685,15 @@ function renderMonthlyDetailsTable(record) {
 			});
 		}
 
+		// 범례로 숨긴 선은 다시 그려도 숨긴 채로 - datasets 를 새 객체로 바꾸면 숨김 상태(meta)가 지워져 입력할 때마다 되살아났다(검토 지적 2026-10-29).
+		const hiddenLabels = new Set(
+			existingChart.data.datasets
+				.filter((_d: any, i: number) => !existingChart.isDatasetVisible(i))
+				.map((d: any) => d.label),
+		);
+		datasets.forEach((d: any) => {
+			if (hiddenLabels.has(d.label)) d.hidden = true;
+		});
 		existingChart.data.labels = labels;
 		existingChart.data.datasets = datasets;
 		existingChart.options.plugins.simMilestones = { items: milestones };
@@ -1721,9 +1769,19 @@ function renderMonthlyDetailsTable(record) {
 					state.activeScenarioId = scenarioId;
 					saveState();
 					render();
+					focusScenario(container, scenarioId);
 				});
 			},
 		);
+	}
+
+	/** 다시 그린 뒤 누른 시나리오 단추로 포커스를 돌려놓는다(키보드로 고르면 다음 Tab 이 문서 처음부터였다, 검토 지적 2026-10-29). */
+	function focusScenario(container, scenarioId) {
+		if (!container || !scenarioId) return;
+		const target = Array.from(container.querySelectorAll("[data-scenario-id]")).find(
+			(el: any) => el.dataset.scenarioId === scenarioId,
+		) as HTMLElement | undefined;
+		target?.focus();
 	}
 
 	function buildTimelineSegments(records, scenarioYears, maxYears) {
@@ -1751,16 +1809,17 @@ function renderMonthlyDetailsTable(record) {
 				continue;
 			}
 
+			// N 년차 기록은 (N-1, N] 구간이다 - 바뀐 단계는 N-1 부터 칠한다. N 부터 칠하면 마지막 해의 고갈이 폭 0 으로 빠지고 띠가 한 칸씩 늦었다(검토 지적 2026-10-29).
 			segments.push(
 				createTimelineSegment(
 					segmentStart,
-					record.year,
+					record.year - 1,
 					currentStage,
 					maxYears,
 				),
 			);
 			currentStage = nextStage;
-			segmentStart = record.year;
+			segmentStart = record.year - 1;
 		}
 
 		segments.push(
@@ -1795,7 +1854,8 @@ function renderMonthlyDetailsTable(record) {
 					year && year <= scenarioYears && values.indexOf(year) === index,
 			)
 			.map((year) => ({
-				leftPct: toTimelinePercent(year, maxYears),
+				// 띠와 같은 규칙 - 그 해가 시작하는 자리(N-1).
+				leftPct: toTimelinePercent(year - 1, maxYears),
 			}));
 	}
 

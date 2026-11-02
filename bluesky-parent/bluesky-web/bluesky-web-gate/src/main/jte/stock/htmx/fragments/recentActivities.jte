@@ -7,6 +7,9 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.util.StockMessageSplitUtil
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param List<Activity> activities
 @param String thisMonthLabel
@@ -18,7 +21,7 @@
 @param BigDecimal dividendAmount
 
 !{
-	java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
+	Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 	String recentActivityTitle = MessageUtil.getMessage("stock.recent.activity.title");
 	String viewAllLabel = MessageUtil.getMessage("common.button.view.all");
 	String noActivityLabel = MessageUtil.getMessage("stock.activity.message.no.data");
@@ -28,10 +31,10 @@
 	String sharesPattern = MessageUtil.getMessage("stock.activity.label.shares");
 	// The unit hugs the number in Korean ("111주") but needs a space in English ("111 shares"),
 	// so the spacing lives in the message and the template splits it at the placeholder.
-	String sharesBefore = net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(sharesPattern);
-	String sharesAfter = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(sharesPattern);
+	String sharesBefore = StockMessageSplitUtil.beforePlaceholder(sharesPattern);
+	String sharesAfter = StockMessageSplitUtil.afterPlaceholder(sharesPattern);
 	// 1 주일 때의 뒤 꼬리(영어 " share") - 2026-10-01 영어 점검에서 "1 shares". 한국어는 같은 "주".
-	String sharesAfterOne = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares.one"));
+	String sharesAfterOne = StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares.one"));
 	String monthSummaryLabel = StockViewSupport.msg("stock.recent.activity.month.summary", thisMonthLabel);
 }
 
@@ -105,7 +108,7 @@
 									₩${String.format("%,d", StockFormatUtil.displayWon(activity.amount()))}
 								</div>
 								<div class="text-xs text-base-content/60 mt-0.5">
-									${activity.date() != null ? activity.date().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("MM-dd")) : ""}
+									${activity.date() != null ? StockZoneUtil.recordedDate(activity.date(), ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("MM-dd")) : ""}
 								</div>
 							</div>
 						</li>

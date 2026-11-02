@@ -63,12 +63,7 @@ class StockPageNumberUtilTest {
                 "src/main/java/net/luversof/web/gate/stock/controller/StockAssetGrowthHtmxController.java"),
             StandardCharsets.UTF_8);
     assertThat(source)
-        .contains(
-            "page = net.luversof.web.gate.stock.util.StockPageNumberUtil.resolve("
-                + Q
-                + "page"
-                + Q
-                + ", page);");
+        .contains("page = StockPageNumberUtil.resolve(" + Q + "page" + Q + ", page);");
     assertThat(source)
         .as("the top end still pulls back to the last page")
         .contains("int currentPage = Math.min(page, Math.max(1, totalPages));");
@@ -86,8 +81,7 @@ class StockPageNumberUtilTest {
             StandardCharsets.UTF_8);
     // 2026-10-22 부터 해석기는 다섯 인자 예외를 공통 부모(StockParamException) 하나로 본다 - 부모가 판정 · 문구 두 곳에 쓰이고,
     // 이 예외는 그 부모를 이어받아 제 문구 키를 말한다.
-    assertThat(
-            count(resolver, "instanceof net.luversof.web.gate.stock.support.StockParamException"))
+    assertThat(count(resolver, "instanceof StockParamException"))
         .as("4xx 판정 한 번 + 문구 선택 한 번")
         .isEqualTo(2);
     StockPageNumberParamException thrown = new StockPageNumberParamException("page", 0);

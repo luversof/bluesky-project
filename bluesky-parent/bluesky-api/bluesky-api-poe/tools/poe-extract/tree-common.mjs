@@ -174,9 +174,14 @@ export function buildTree(tree, koByGraphId = null) {
 	// PoB 도 같은 규칙으로 clusterNodeMap 을 만든다(PassiveTree.lua: group 이 없고 type 이 Notable/Keystone).
 	// 주얼에 "1 Added Passive Skill is <이름>" 으로 얹히며, **이름이 하나라도 어긋나면 PoB 가 서브트리를 통째로 버린다**.
 	const clusterNotables = [];
+	const clusterNames = new Set();
 	for (const [id, node] of Object.entries(tree.nodes)) {
 		if (node.group != null || !node.name) continue;
 		if (!node.isNotable && !node.isKeystone) continue;
+		// 이름이 같은 노드는 하나만(10-29 C3) — 'Evil Eye' 는 생성 안 되는 옛 행(affliction_notable_whispers_of_death)과 둘이라 사전에 두 번 나왔다.
+		//   PoB clusterNodeMap 도 이름 키라 하나만 남는다(두 행은 이름 · 문구가 같아 어느 쪽이 남아도 같다).
+		if (clusterNames.has(node.name)) continue;
+		clusterNames.add(node.name);
 		const ko = koByGraphId ? koByGraphId.get(Number(id)) : null;
 		clusterNotables.push({
 			name: node.name,

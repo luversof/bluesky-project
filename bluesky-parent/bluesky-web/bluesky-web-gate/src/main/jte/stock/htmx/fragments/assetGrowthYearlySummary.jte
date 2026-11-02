@@ -3,11 +3,14 @@
 @import net.luversof.web.gate.stock.dto.response.TradeProfitYearlySummary
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import java.math.BigDecimal
+@import java.text.MessageFormat
+@import net.luversof.web.gate.stock.util.StockPeriodTotalUtil
 
-@param List<TradeProfitYearlySummary> yearlySummaries = java.util.List.of()
+@param List<TradeProfitYearlySummary> yearlySummaries = List.of()
 
 !{
-	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat amountFormat = StockFormatUtil.wonFormat();
 	String title = MessageUtil.getMessage("stock.asset.growth.yearly.title");
 	String description = MessageUtil.getMessage("stock.asset.growth.yearly.desc");
 	String yearLabel = MessageUtil.getMessage("stock.asset.growth.yearly.col.year");
@@ -51,16 +54,16 @@
 						@for(TradeProfitYearlySummary row : yearlySummaries)
 							@if(previousYear != null && previousYear - row.year() > 1)
 								<tr data-yearly-gap="${(row.year() + 1) + "-" + (previousYear - 1)}">
-									<td colspan="5" class="text-center text-[11px] text-base-content/60">${java.text.MessageFormat.format(gapTemplate, String.valueOf(row.year() + 1), String.valueOf(previousYear - 1))}</td>
+									<td colspan="5" class="text-center text-[11px] text-base-content/60">${MessageFormat.format(gapTemplate, String.valueOf(row.year() + 1), String.valueOf(previousYear - 1))}</td>
 								</tr>
 							@endif
 							!{previousYear = row.year();}
 							!{
 								var s = row.summary();
 								Double twr = s != null ? s.timeWeightedReturnPct() : null;
-								java.math.BigDecimal profit = s != null ? s.periodProfit() : null;
-								java.math.BigDecimal principal = s != null ? s.principalDelta() : null;
-								java.math.BigDecimal closing = s != null ? s.closingValue() : null;
+								BigDecimal profit = s != null ? s.periodProfit() : null;
+								BigDecimal principal = s != null ? s.principalDelta() : null;
+								BigDecimal closing = s != null ? s.closingValue() : null;
 								boolean twrUp = twr != null && twr >= 0.0d;
 								boolean profitUp = profit != null && profit.signum() >= 0;
 								boolean principalUp = principal != null && principal.signum() >= 0;
@@ -113,10 +116,10 @@
 					@if(yearlySummaries.size() > 1)
 						<%-- 전체 기간 줄. 기말 평가액만은 합계라는 것이 없다 - 가장 최근 줄의 값이 곧
 							 전체 기간의 기말이다(표는 최신이 위). 그래서 '합계' 가 아니라 '전체 기간' 이다. --%>
-						!{ var totals = net.luversof.web.gate.stock.util.StockPeriodTotalUtil.of(
+						!{ var totals = StockPeriodTotalUtil.of(
 								yearlySummaries.stream().map(TradeProfitYearlySummary::summary).toList());
 						   var latest = yearlySummaries.get(0).summary();
-						   java.math.BigDecimal latestClosing = latest != null ? latest.closingValue() : null;
+						   BigDecimal latestClosing = latest != null ? latest.closingValue() : null;
 						   boolean totalTwrUp = totals.chainedReturnPct() != null && totals.chainedReturnPct() >= 0.0d;
 						   boolean totalProfitUp = totals.profit().signum() >= 0;
 						   boolean totalPrincipalUp = totals.principalDelta().signum() >= 0; }

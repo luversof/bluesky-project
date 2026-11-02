@@ -74,7 +74,7 @@ class EmptyRowsRenderTest {
     if (trimmed.startsWith("Map<") || trimmed.startsWith("java.util.Map<")) {
       return Map.of();
     }
-    if (trimmed.startsWith("java.util.function.Function<")) {
+    if (trimmed.startsWith("Function<") || trimmed.startsWith("java.util.function.Function<")) {
       // 화면이 값을 문자열로 바꿀 때 쓰는 포맷터. 빈 문자열을 돌려주는 것으로 충분하다.
       return (java.util.function.Function<Object, String>) value -> "";
     }

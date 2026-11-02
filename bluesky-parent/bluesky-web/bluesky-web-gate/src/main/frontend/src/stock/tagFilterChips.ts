@@ -156,6 +156,9 @@ function optionMatchesSelectedTags(
 
 		syncButtons(root);
 		syncStockSelection(root);
+		// 태그 option 을 change 없이 풀었으므로 태그 드롭다운 요약 글자도 맞춘다 - "전체 취소" 뒤에도 "월배당" 이 남았다(검토 지적 2026-10-29).
+		const syncTagSummary = tagSelect ? (tagSelect as any).__msdSync : null;
+		if (typeof syncTagSummary === "function") syncTagSummary();
 	}
 
 	function syncStockSelection(root: HTMLElement): void {

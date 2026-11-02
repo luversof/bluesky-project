@@ -67,14 +67,28 @@ class ActivityGroupingTest {
   @Test
   void 존이_다르면_같은_날_판정이_달라진다() {
     UUID id = UUID.randomUUID();
-    // 서울에서는 둘 다 8/19, 뉴욕에서는 8/18 과 8/19 로 갈린다.
+    // 실제 시각이 든 값: 서울에서는 둘 다 8/19, 뉴욕에서는 8/18 과 8/19 로 갈린다.
+    List<Activity> raw =
+        List.of(
+            trade("2026-08-19T03:00:00Z", id, "삼성전자", 1, "1000"),
+            trade("2026-08-19T14:00:00Z", id, "삼성전자", 2, "2000"));
+
+    assertThat(StockTradeHtmxController.groupActivitiesByDay(raw, SEOUL)).hasSize(1);
+    assertThat(StockTradeHtmxController.groupActivitiesByDay(raw, NEW_YORK)).hasSize(2);
+  }
+
+  /**
+   * 원장 날짜(자정 UTC = KST 09:00)는 날짜 전용이라 어느 존에서도 그날이다(2026-11-02 사용자 결정, StockZoneUtil.recordedDate).
+   */
+  @Test
+  void 자정_UTC_원장_날짜는_뉴욕에서도_같은_날() {
+    UUID id = UUID.randomUUID();
     List<Activity> raw =
         List.of(
             trade("2026-08-19T00:00:00Z", id, "삼성전자", 1, "1000"),
             trade("2026-08-19T14:00:00Z", id, "삼성전자", 2, "2000"));
 
-    assertThat(StockTradeHtmxController.groupActivitiesByDay(raw, SEOUL)).hasSize(1);
-    assertThat(StockTradeHtmxController.groupActivitiesByDay(raw, NEW_YORK)).hasSize(2);
+    assertThat(StockTradeHtmxController.groupActivitiesByDay(raw, NEW_YORK)).hasSize(1);
   }
 
   /**

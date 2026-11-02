@@ -6,9 +6,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,6 +23,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,9 +38,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.stock.constant.TradeType;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
+import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.DividendView;
@@ -47,9 +55,15 @@ import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.support.StockAsyncSupport;
+import net.luversof.web.gate.stock.support.StockSortParamException;
+import net.luversof.web.gate.stock.util.DividendMonthCalendarUtil;
+import net.luversof.web.gate.stock.util.DividendPeriodBreakdown;
 import net.luversof.web.gate.stock.util.StockAmountUtil;
 import net.luversof.web.gate.stock.util.StockRangePresetUtil;
 import net.luversof.web.gate.stock.util.StockSortUtil;
+import net.luversof.web.gate.stock.util.StockYieldUtil;
+import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
@@ -125,7 +139,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         otherCount);
   }
 
-  private final net.luversof.web.gate.stock.support.StockAsyncSupport async;
+  private final StockAsyncSupport async;
 
   public StockDividendHtmxController(
       TradeProfitClient tradeProfitClient,
@@ -134,7 +148,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       StockItemClient stockItemClient,
       DividendClient dividendClient,
       MessageSource messageSource,
-      net.luversof.web.gate.stock.support.StockAsyncSupport async) {
+      StockAsyncSupport async) {
     super(
         tradeProfitClient,
         tradeClient,
@@ -194,20 +208,18 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     // (2) 날짜 없이 들어오는 기본 경로(파라미터 없음 · rangeMode=3/ytd/mtd)에서는 전기가 아예 없어
     //     "변동 요인 (전기 대비)" 섹션 전체가 화면에서 빠졌다.
     PreviousPeriod previousPeriod =
-        resolvePreviousPeriod(startInstant, inclusiveEnd(endInstant), rangeMode, earlyZone);
+        resolveListPreviousPeriod(startInstant, endInstant, rangeMode, earlyZone);
 
-    List<DividendResponse> allDividends =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(allDividendsFuture);
+    List<DividendResponse> allDividends = StockAsyncSupport.join(allDividendsFuture);
     List<DividendResponse> dividends = inPayDateRange(allDividends, startInstant, endInstant);
     List<DividendResponse> prevDividends =
         previousPeriod == null
-            ? java.util.List.<DividendResponse>of()
+            ? List.<DividendResponse>of()
             : inPayDateRange(
                 allDividends,
                 previousPeriod.start().atStartOfDay(earlyZone).toInstant(),
                 previousPeriod.end().plusDays(1).atStartOfDay(earlyZone).toInstant());
-    var dividendMeta =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(dividendMetaFuture);
+    var dividendMeta = StockAsyncSupport.join(dividendMetaFuture);
     ZoneId zone = resolveZoneIdOrDefault(timeZone);
     LocalDate dataFirstDate =
         dividendMeta != null && dividendMeta.firstBasisDate() != null
@@ -220,11 +232,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         dividends.stream().map(DividendResponse::stockItemId).collect(Collectors.toSet());
     var globalDividendStockIds =
         dividendMeta != null && dividendMeta.stockItemIds() != null
-            ? java.util.Set.copyOf(dividendMeta.stockItemIds())
-            : java.util.Set.<UUID>of();
+            ? Set.copyOf(dividendMeta.stockItemIds())
+            : Set.<UUID>of();
 
-    List<Account> accounts =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountsFuture);
+    List<Account> accounts = StockAsyncSupport.join(accountsFuture);
     List<Account> filteredAccountList =
         accounts.stream().filter(a -> dividendAccountIds.contains(a.id())).toList();
 
@@ -237,8 +248,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         accounts.stream()
             .collect(Collectors.toMap(Account::id, a -> a.isTaxDeferred(), (l, r) -> l));
 
-    List<StockItem> stockItemList =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockItemsFuture);
+    List<StockItem> stockItemList = StockAsyncSupport.join(stockItemsFuture);
     StockTagSelection stockTagSelection =
         resolveStockTagSelection(stockItemList, stockItemIdList, stockTagList);
     List<String> selectedStockTags = stockTagSelection.selectedStockTags();
@@ -289,7 +299,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
     // 최근 1 년 창에서도 같은 변환을 쓰므로 함수로 둔다(2026-09-28).
     String unknownLabel = msg("stock.label.unknown");
-    java.util.function.Function<DividendResponse, DividendView> toDividendView =
+    Function<DividendResponse, DividendView> toDividendView =
         dividend ->
             toDividendView(dividend, accountNames, stockItemNames, taxDeferredMap, unknownLabel);
     List<DividendView> viewList =
@@ -317,7 +327,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     boolean noCurrentHoldings =
         (effectiveAccountIdList != null && effectiveAccountIdList.isEmpty())
             || (effectiveStockItemIdList != null && effectiveStockItemIdList.isEmpty());
-    var currentHoldingsRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    var currentHoldingsRequest = new TradeProfitRequest();
     currentHoldingsRequest.setUserId(userId);
     currentHoldingsRequest.setAccountIdList(effectiveAccountIdList);
     currentHoldingsRequest.setStockItemIdList(effectiveStockItemIdList);
@@ -325,7 +335,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     var currentHoldingsParams = currentHoldingsRequest.toParams();
     // 실현 손익은 표의 배당금과 같은 기간(그 기간에 판 것)으로 센다 - 기간이 있으면 기간을 실어 한 번 더 부른다(평가 손익은 늘 '지금').
     boolean hasPeriod = startInstant != null || endInstant != null;
-    var periodProfitRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    var periodProfitRequest = new TradeProfitRequest();
     periodProfitRequest.setUserId(userId);
     periodProfitRequest.setAccountIdList(effectiveAccountIdList);
     periodProfitRequest.setStockItemIdList(effectiveStockItemIdList);
@@ -340,8 +350,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                 () -> emptyIfNull(tradeProfitClient.calculateProfit(periodProfitParams)));
     var currentHoldingsFuture =
         noCurrentHoldings
-            ? java.util.concurrent.CompletableFuture.completedFuture(
-                List.<net.luversof.web.gate.stock.domain.TradeProfit>of())
+            ? CompletableFuture.completedFuture(List.<TradeProfit>of())
             : async.supply(
                 () -> emptyIfNull(tradeProfitClient.calculateProfit(currentHoldingsParams)));
 
@@ -378,24 +387,21 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     model.addAttribute("ttmNetWithPrincipalCost", ttmHeadline.netWithPrincipalCost());
     model.addAttribute("ttmNetAmount", ttmHeadline.netAmount());
 
-    List<net.luversof.web.gate.stock.domain.TradeProfit> currentHoldings =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(currentHoldingsFuture);
+    List<TradeProfit> currentHoldings = StockAsyncSupport.join(currentHoldingsFuture);
     // 실현 손익은 기간을 골랐으면 그 기간의 계산에서, 아니면 지금 보유 계산에서(다 판 종목 포함).
-    List<net.luversof.web.gate.stock.domain.TradeProfit> realizedSource =
-        periodProfitFuture == null
-            ? currentHoldings
-            : net.luversof.web.gate.stock.support.StockAsyncSupport.join(periodProfitFuture);
+    List<TradeProfit> realizedSource =
+        periodProfitFuture == null ? currentHoldings : StockAsyncSupport.join(periodProfitFuture);
     addHoldingProfitAttributes(model, currentHoldings, realizedSource);
 
     if (sort != null && !sort.isEmpty()) {
-      String field = net.luversof.web.gate.stock.util.StockSortUtil.field(sort);
-      boolean descending = net.luversof.web.gate.stock.util.StockSortUtil.descending("sort", sort);
+      String field = StockSortUtil.field(sort);
+      boolean descending = StockSortUtil.descending("sort", sort);
 
       Comparator<DividendView> comparator = DIVIDEND_SORTS.get(field);
       // 모르는 열 이름은 조용히 넘기지 않는다 - 넘기면 정렬도 표시 역순도 걸리지 않아
       // 지정 없음과도 다른 세 번째 순서가 나온다(실측 2026-09-11).
       if (comparator == null) {
-        throw new net.luversof.web.gate.stock.support.StockSortParamException("sort", sort);
+        throw new StockSortParamException("sort", sort);
       }
 
       if (descending) {
@@ -429,7 +435,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     BigDecimal prevPeriodNetAmount = null;
     LocalDate prevStartDate = null;
     LocalDate prevEndDate = null;
-    List<DividendChange> dividendChangeContributors = java.util.List.of();
+    List<DividendChange> dividendChangeContributors = List.of();
     LocalDate prevToDateEndDate = null;
     BigDecimal prevToDateNetAmount = null;
     if (previousPeriod != null) {
@@ -467,28 +473,25 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     }
 
     // 화면에는 오름차순(오래된 것 위)으로 표시한다 - 기본 순서(지급일 최신순)를 뒤집기만 한다(명시 정렬 시 제외).
-    List<DividendView> displayDividendList = new java.util.ArrayList<>(viewList);
+    List<DividendView> displayDividendList = new ArrayList<>(viewList);
     if (sort == null || sort.isEmpty()) {
-      java.util.Collections.reverse(displayDividendList);
+      Collections.reverse(displayDividendList);
     }
     model.addAttribute("dividendList", displayDividendList);
     model.addAttribute("allDividendList", viewList);
     // 기간이 달력 한 달이면 그 달 지급을 날짜에 놓은 달력을 함께 그린다 - 옛 '배당 캘린더' 탭을 실수령 배당에 통합했다
     // (사용자 결정 2026-09-17). 이 목록(viewList)은 이미 계좌 · 종목 · 태그 필터를 거쳤으므로 달력도 필터를 따른다.
-    java.time.LocalDate calendarToday = java.time.LocalDate.now(zone);
-    java.time.YearMonth calendarMonth =
-        net.luversof.web.gate.stock.util.DividendMonthCalendarUtil.calendarMonth(
-            startInstant, endInstant, zone, calendarToday);
+    LocalDate calendarToday = LocalDate.now(zone);
+    YearMonth calendarMonth =
+        DividendMonthCalendarUtil.calendarMonth(startInstant, endInstant, zone, calendarToday);
     model.addAttribute(
         "dividendMonthCalendar",
         calendarMonth == null
             ? null
-            : net.luversof.web.gate.stock.util.DividendMonthCalendarUtil.build(
-                viewList, calendarMonth, calendarToday, zone));
+            : DividendMonthCalendarUtil.build(viewList, calendarMonth, calendarToday, zone));
     // 연도별·월별 집계(사용자 요청 2026-09-10): 월별 막대 차트만으로는 '그 해에 얼마' 를 숫자로 읽을 수 없었다.
     // 화면이 쓰는 존 그대로 지급일 기준으로 묶는다 - 표의 다른 날짜와 하루가 어긋나지 않게.
-    java.time.ZoneId breakdownZone =
-        net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+    ZoneId breakdownZone = StockZoneUtil.resolve(timeZone);
     // 바로잡은 구간(startInstant/endInstant)을 쓴다. 원본 파라미터를 그대로 읽으면 역순 기간에서
     // 이 표만 다른 모양이 된다 - 실측 2026-09-12: 뒤집힌 주소로 들어가면 월별 표가 213 행에서 37 행으로
     // 줄었다(빈 달 채우기가 rangeStart.isAfter(rangeEnd) 에서 그냥 빠져나간다). 합계와 상세 목록은 같았다.
@@ -499,11 +502,11 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         endInstant != null ? endInstant.atZone(breakdownZone).toLocalDate().minusDays(1) : null;
     model.addAttribute(
         "dividendYearlyRows",
-        net.luversof.web.gate.stock.util.DividendPeriodBreakdown.byYear(
+        DividendPeriodBreakdown.byYear(
             viewList, breakdownZone, breakdownFirstDay, breakdownLastDay));
     model.addAttribute(
         "dividendMonthlyRows",
-        net.luversof.web.gate.stock.util.DividendPeriodBreakdown.byMonth(
+        DividendPeriodBreakdown.byMonth(
             viewList, breakdownZone, breakdownFirstDay, breakdownLastDay));
     // 월별 배당 차트의 "최근 12개월 합" 선은 뺐다(사용자 요청 2026-10-02: "의미없는거 같은데? 괜히 오른쪽에 다른 금액 표시하고
     // 헷갈리기만"). 막대(그 달 배당)와 크기대가 다른 금액이 오른쪽 축에 따로 붙어 무엇을 읽어야 할지 흐렸다.
@@ -567,8 +570,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             ? analyticsResult.portfolioYield().yieldOnDailyAverageCostPct()
             : null;
     BigDecimal annualizedYieldPct =
-        net.luversof.web.gate.stock.util.StockYieldUtil.annualizedPct(
-            periodYieldPct, analyticsResult.periodDayCount());
+        StockYieldUtil.annualizedPct(periodYieldPct, analyticsResult.periodDayCount());
     model.addAttribute("portfolioYieldAnnualizedPct", annualizedYieldPct);
     model.addAttribute("periodDayCount", analyticsResult.periodDayCount());
 
@@ -644,6 +646,19 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   }
 
   /**
+   * 목록 기간(끝 배타)의 전기 - 매매 · 배당 목록 공용. 빈 기간(끝 &lt;= 시작)은 전기가 없다: 끝을 1 ns 당기면 시작보다 앞서
+   * resolvePreviousPeriod 의 뒤집기 분기가 돌아 전기가 두 배로 잡혔다(검토 지적 2026-10-29, 시작 = 끝 = 10-29 0 시 -> 10-26 ~
+   * 10-27).
+   */
+  static PreviousPeriod resolveListPreviousPeriod(
+      Instant start, Instant exclusiveEnd, String rangeMode, ZoneId zone) {
+    if (start != null && exclusiveEnd != null && !exclusiveEnd.isAfter(start)) {
+      return null;
+    }
+    return resolvePreviousPeriod(start, inclusiveEnd(exclusiveEnd), rangeMode, zone);
+  }
+
+  /**
    * 이번 달 · 올해의 전기(완전한 전월 · 전년) 중 <b>오늘과 같은 날까지</b>의 앞부분. 전기 비교는 진행 중인 기간을 완전한 기간과 견주므로 같은 날까지 값도 함께
    * 보인다(사용자 결정 2026-10-29 "a로 유지하면서 전기의 현재 일자 까지의 기준도 같이"). 그 밖의 기간이거나 전기가 이미 같은 길이면 null.
    *
@@ -655,6 +670,13 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       return null;
     }
     LocalDate today = inclusiveEnd(exclusiveEnd).atZone(zone).toLocalDate();
+    // 이미 끝난 달 · 해(주소를 고쳐 9 월 전체를 mtd 로 보는 경우)는 진행 중이 아니라 같은 날까지 줄이 필요 없다 - 경과일
+    // 안내(resolveInProgressPeriod)와
+    // 같은 판단(검토 지적 2026-10-29).
+    if (("mtd".equals(rangeMode) && today.getDayOfMonth() == today.lengthOfMonth())
+        || ("ytd".equals(rangeMode) && today.getDayOfYear() == today.lengthOfYear())) {
+      return null;
+    }
     LocalDate cutoff;
     if ("mtd".equals(rangeMode)) {
       cutoff =
@@ -732,7 +754,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     var snapshotFuture =
         includeMarketValue
             ? async.supply(() -> loadSnapshotsByDate(userId, basisDates, zone))
-            : java.util.concurrent.CompletableFuture.completedFuture(
+            : CompletableFuture.completedFuture(
                 Map.<LocalDate, Map<UUID, HoldingsSnapshotItem>>of());
     LocalDate maxBasisDate = basisDates.stream().max(Comparator.naturalOrder()).orElse(null);
     LocalDate minBasisDate = basisDates.stream().min(Comparator.naturalOrder()).orElse(null);
@@ -761,9 +783,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
             .toParams();
     var tradesFuture = async.supply(() -> emptyIfNull(tradeClient.findTrades(tradeParams)));
     Map<LocalDate, Map<UUID, HoldingsSnapshotItem>> snapshotByDate =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(snapshotFuture);
-    List<TradeResponse> trades =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(tradesFuture);
+        StockAsyncSupport.join(snapshotFuture);
+    List<TradeResponse> trades = StockAsyncSupport.join(tradesFuture);
 
     Map<PositionKey, List<TradeResponse>> tradesByKey = groupTradesByPosition(trades, zone);
 
@@ -812,7 +833,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
         while (tradeIndex < tradeList.size()) {
           TradeResponse trade = tradeList.get(tradeIndex);
-          LocalDate tradeDate = trade.tradeDate().atZone(zone).toLocalDate();
+          LocalDate tradeDate = StockZoneUtil.recordedDate(trade.tradeDate(), zone);
           if (tradeDate.isAfter(basisDate)) {
             break;
           }
@@ -934,8 +955,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       for (Map.Entry<Integer, YieldAccumulator> yearly : yearlyAccumulators.entrySet()) {
         LocalDate yearStart = LocalDate.of(yearly.getKey(), 1, 1);
         LocalDate yearEnd = LocalDate.of(yearly.getKey(), 12, 31);
-        int from = (int) java.time.temporal.ChronoUnit.DAYS.between(periodStartDate, yearStart);
-        int to = (int) java.time.temporal.ChronoUnit.DAYS.between(periodStartDate, yearEnd) + 1;
+        int from = (int) ChronoUnit.DAYS.between(periodStartDate, yearStart);
+        int to = (int) ChronoUnit.DAYS.between(periodStartDate, yearEnd) + 1;
         yearly.getValue().acceptHeldDays(portfolioAccumulator.heldDays);
         yearly.getValue().restrictHeldDays(from, to);
       }
@@ -1010,53 +1031,29 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
    * </ul>
    */
   static void addHoldingProfitAttributes(
-      Model model,
-      List<net.luversof.web.gate.stock.domain.TradeProfit> currentHoldings,
-      List<net.luversof.web.gate.stock.domain.TradeProfit> realizedSource) {
+      Model model, List<TradeProfit> currentHoldings, List<TradeProfit> realizedSource) {
     model.addAttribute(
-        "currentValueByStock",
-        sumCurrentValue(
-            currentHoldings, net.luversof.web.gate.stock.domain.TradeProfit::stockItemId));
+        "currentValueByStock", sumCurrentValue(currentHoldings, TradeProfit::stockItemId));
     model.addAttribute(
-        "currentValueByAccount",
-        sumCurrentValue(
-            currentHoldings, net.luversof.web.gate.stock.domain.TradeProfit::accountId));
+        "currentValueByAccount", sumCurrentValue(currentHoldings, TradeProfit::accountId));
     model.addAttribute(
         "evaluationProfitByStock",
-        sumHeld(
-            currentHoldings,
-            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
-            net.luversof.web.gate.stock.domain.TradeProfit::evaluationProfit));
+        sumHeld(currentHoldings, TradeProfit::stockItemId, TradeProfit::evaluationProfit));
     model.addAttribute(
         "evaluationProfitByAccount",
-        sumHeld(
-            currentHoldings,
-            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
-            net.luversof.web.gate.stock.domain.TradeProfit::evaluationProfit));
+        sumHeld(currentHoldings, TradeProfit::accountId, TradeProfit::evaluationProfit));
     model.addAttribute(
         "realizedProfitByStock",
-        sumAll(
-            realizedSource,
-            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
-            net.luversof.web.gate.stock.domain.TradeProfit::realizedProfit));
+        sumAll(realizedSource, TradeProfit::stockItemId, TradeProfit::realizedProfit));
     model.addAttribute(
         "realizedProfitByAccount",
-        sumAll(
-            realizedSource,
-            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
-            net.luversof.web.gate.stock.domain.TradeProfit::realizedProfit));
+        sumAll(realizedSource, TradeProfit::accountId, TradeProfit::realizedProfit));
     model.addAttribute(
         "totalBuyCostByStock",
-        sumAll(
-            currentHoldings,
-            net.luversof.web.gate.stock.domain.TradeProfit::stockItemId,
-            net.luversof.web.gate.stock.domain.TradeProfit::totalBuyCost));
+        sumAll(currentHoldings, TradeProfit::stockItemId, TradeProfit::totalBuyCost));
     model.addAttribute(
         "totalBuyCostByAccount",
-        sumAll(
-            currentHoldings,
-            net.luversof.web.gate.stock.domain.TradeProfit::accountId,
-            net.luversof.web.gate.stock.domain.TradeProfit::totalBuyCost));
+        sumAll(currentHoldings, TradeProfit::accountId, TradeProfit::totalBuyCost));
   }
 
   /**
@@ -1064,9 +1061,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
    * 원으로 적으면 값이 0 인 것처럼 읽힌다).
    */
   static Map<UUID, BigDecimal> sumCurrentValue(
-      List<net.luversof.web.gate.stock.domain.TradeProfit> holdings,
-      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, UUID> key) {
-    return sumHeld(holdings, key, net.luversof.web.gate.stock.domain.TradeProfit::evaluationAmount);
+      List<TradeProfit> holdings, Function<TradeProfit, UUID> key) {
+    return sumHeld(holdings, key, TradeProfit::evaluationAmount);
   }
 
   /**
@@ -1074,10 +1070,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
    * 둘의 차)이 맞는다.
    */
   static Map<UUID, BigDecimal> sumHeld(
-      List<net.luversof.web.gate.stock.domain.TradeProfit> holdings,
-      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, UUID> key,
-      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, BigDecimal>
-          value) {
+      List<TradeProfit> holdings,
+      Function<TradeProfit, UUID> key,
+      Function<TradeProfit, BigDecimal> value) {
     Map<UUID, BigDecimal> sums = new LinkedHashMap<>();
     if (holdings == null) {
       return sums;
@@ -1098,10 +1093,9 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
   /** 모든 행(다 판 것 포함)의 {@code value} 를 더한다 - 실현 손익 · 지금까지 산 총액. 값이 없거나 0 인 행은 건너뛴다. */
   static Map<UUID, BigDecimal> sumAll(
-      List<net.luversof.web.gate.stock.domain.TradeProfit> rows,
-      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, UUID> key,
-      java.util.function.Function<net.luversof.web.gate.stock.domain.TradeProfit, BigDecimal>
-          value) {
+      List<TradeProfit> rows,
+      Function<TradeProfit, UUID> key,
+      Function<TradeProfit, BigDecimal> value) {
     Map<UUID, BigDecimal> sums = new LinkedHashMap<>();
     if (rows == null) {
       return sums;
@@ -1177,13 +1171,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                       list.sort(
                           Comparator.comparing(
                                   (TradeResponse trade) ->
-                                      trade.tradeDate().atZone(zone).toLocalDate())
-                              .thenComparing(
-                                  trade ->
-                                      trade.type()
-                                              == net.luversof.web.gate.stock.constant.TradeType.BUY
-                                          ? 0
-                                          : 1)
+                                      StockZoneUtil.recordedDate(trade.tradeDate(), zone))
+                              .thenComparing(trade -> trade.type() == TradeType.BUY ? 0 : 1)
                               .thenComparing(TradeResponse::tradeDate));
                       return list;
                     })));
@@ -1203,7 +1192,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     for (Map.Entry<PositionKey, List<TradeResponse>> entry :
         groupTradesByPosition(trades, zone).entrySet()) {
       List<TradeResponse> positionTrades = entry.getValue();
-      LocalDate firstTradeDate = positionTrades.get(0).tradeDate().atZone(zone).toLocalDate();
+      LocalDate firstTradeDate =
+          StockZoneUtil.recordedDate(positionTrades.get(0).tradeDate(), zone);
       if (firstTradeDate.isAfter(endDate)) {
         continue;
       }
@@ -1303,7 +1293,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     // 이 메서드는 포지션마다 다시 돌기 때문에 변환이 곱절로 늘어난다(실측: 이 한 줄이 배당 화면
     // 프래그먼트 표본의 9.8%). 커서가 옮겨갈 때만 계산해 들고 있는다.
     LocalDate nextTradeDate =
-        tradeList.isEmpty() ? null : tradeList.get(0).tradeDate().atZone(zone).toLocalDate();
+        tradeList.isEmpty() ? null : StockZoneUtil.recordedDate(tradeList.get(0).tradeDate(), zone);
     while (tradeIndex < tradeList.size()) {
       if (!nextTradeDate.isBefore(periodStartDate)) {
         break;
@@ -1312,7 +1302,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       tradeIndex++;
       nextTradeDate =
           tradeIndex < tradeList.size()
-              ? tradeList.get(tradeIndex).tradeDate().atZone(zone).toLocalDate()
+              ? StockZoneUtil.recordedDate(tradeList.get(tradeIndex).tradeDate(), zone)
               : null;
     }
 
@@ -1320,7 +1310,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     Map<Integer, BigDecimal> principalCostSumByYear = new LinkedHashMap<>();
     BigDecimal startPrincipalCost = null;
     BigDecimal endPrincipalCost = null;
-    java.util.BitSet heldDays = new java.util.BitSet();
+    BitSet heldDays = new BitSet();
     int dayIndex = 0;
     LocalDate currentDate = periodStartDate;
     while (!currentDate.isAfter(periodEndDate)) {
@@ -1332,7 +1322,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         tradeIndex++;
         nextTradeDate =
             tradeIndex < tradeList.size()
-                ? tradeList.get(tradeIndex).tradeDate().atZone(zone).toLocalDate()
+                ? StockZoneUtil.recordedDate(tradeList.get(tradeIndex).tradeDate(), zone)
                 : null;
       }
 
@@ -1386,14 +1376,14 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
    * 1개월 18행 · 3개월 52행 · 경계 1일 1행 모두 서버 응답과 순서·필드까지 같았다(지급일 없는 행은 202행 중 0행).
    */
   static List<DividendResponse> inPayDateRange(
-      List<DividendResponse> dividends, java.time.Instant start, java.time.Instant end) {
+      List<DividendResponse> dividends, Instant start, Instant end) {
     if (start == null && end == null) {
       return dividends;
     }
     return dividends.stream()
         .filter(
             d -> {
-              java.time.Instant payDate = d.payDate();
+              Instant payDate = d.payDate();
               if (payDate == null) {
                 return false;
               }
@@ -1529,7 +1519,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                 })
             .filter(ch -> ch.delta().signum() != 0)
             .sorted((a, b) -> b.delta().abs().compareTo(a.delta().abs()))
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     return new PreviousPeriodComparison(previousNetAmount, contributors);
   }
 
@@ -1576,11 +1566,10 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       BigDecimal startPrincipalCost,
       BigDecimal endPrincipalCost,
       /** 원금이 있던 날(기간 첫날 = 0). 들고 있던 날 수와 그 평균 원금을 낸다. */
-      java.util.BitSet heldDays) {
+      BitSet heldDays) {
 
     private static PeriodPrincipalSummary empty() {
-      return new PeriodPrincipalSummary(
-          BigDecimal.ZERO, Map.of(), null, null, new java.util.BitSet());
+      return new PeriodPrincipalSummary(BigDecimal.ZERO, Map.of(), null, null, new BitSet());
     }
   }
 
@@ -1616,13 +1605,13 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       }
 
       BigDecimal amount = nz(trade.price()).multiply(BigDecimal.valueOf(quantity));
-      if (trade.type() == net.luversof.web.gate.stock.constant.TradeType.BUY) {
+      if (trade.type() == TradeType.BUY) {
         rawQuantity += quantity;
         totalCost = totalCost.add(amount);
         return;
       }
 
-      if (trade.type() == net.luversof.web.gate.stock.constant.TradeType.SELL && rawQuantity > 0) {
+      if (trade.type() == TradeType.SELL && rawQuantity > 0) {
         // 매도로 빠져나가는 원가는 증권사 기록 실현손익에서 역산한다. 기록 실현손익의 정의는
         // (매도금액 - 원가 - 세금) 으로 <b>매도 수수료는 빼지 않는다</b>. 실측(사용자 매도 중 실현손익이
         // 기록된 54건 전부): 40건이 이 정의와 1원 이내로 일치했고, 수수료까지 뺀 정의와 일치한 건은 0건.
@@ -1680,7 +1669,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
     private Instant lastDividendDate;
 
     /** 기간 첫날을 0 으로 하는 날 칸. 원금이 있던 날에 켠다. */
-    private final java.util.BitSet heldDays = new java.util.BitSet();
+    private final BitSet heldDays = new BitSet();
 
     private int heldDayFrom = 0;
     private int heldDayTo = Integer.MAX_VALUE;
@@ -1829,11 +1818,11 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
 
     /** 세후 배당 x 365 / (날마다 들고 있던 원금의 합). 분자는 다른 수익률과 같이 기준일 원금이 있는 배당만이다. */
     BigDecimal annualizedYieldPct() {
-      return net.luversof.web.gate.stock.util.StockYieldUtil.annualizedPctOnHeldDays(
+      return StockYieldUtil.annualizedPctOnHeldDays(
           netAmountWithPrincipalCost, dailyPrincipalCostSum);
     }
 
-    void acceptHeldDays(java.util.BitSet positionHeldDays) {
+    void acceptHeldDays(BitSet positionHeldDays) {
       if (positionHeldDays != null) {
         heldDays.or(positionHeldDays);
       }

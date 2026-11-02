@@ -2,10 +2,11 @@ package net.luversof.web.gate.stock.dto.view;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 public record DividendYieldGroupView(
     /** 상세 링크용 id(종목·계좌 행에만 존재). 이름으로 되찾던 매핑을 대체한다. */
-    java.util.UUID groupId,
+    UUID groupId,
     String label,
     BigDecimal totalGrossAmount,
     BigDecimal totalNetAmount,
@@ -50,7 +51,7 @@ public record DividendYieldGroupView(
 
   /** 예전 모양(연 수익률 이전) - 시험과 새 값을 모르는 곳이 쓴다. */
   public DividendYieldGroupView(
-      java.util.UUID groupId,
+      UUID groupId,
       String label,
       BigDecimal totalGrossAmount,
       BigDecimal totalNetAmount,

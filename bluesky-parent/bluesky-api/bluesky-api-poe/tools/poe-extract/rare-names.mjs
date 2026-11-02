@@ -67,6 +67,8 @@ const INHERITED = {
 	ManaFlask: ["flask"],
 	HybridFlask: ["flask"],
 	UtilityFlask: ["flask"],
+	// 희귀 지도 이름 낱말(10-29 R5-2) — 지도 정규식이 이 낱말에 걸리지 않게 parse-map-mods 가 '걸리면 안 되는 말뭉치'로 쓴다
+	Map: ["map"],
 };
 const classTags = {};
 enBases.forEach((b) => {

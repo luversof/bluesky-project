@@ -7,9 +7,10 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.util.function.Function
 
 @param String peekSymbol = ""
-@param List<MonthlyDividendPayoutResponse> peekPayouts = java.util.List.of()
+@param List<MonthlyDividendPayoutResponse> peekPayouts = List.of()
 @param int peekTotalCount = 0
 @param boolean peekFailed = false
 
@@ -17,7 +18,7 @@
      금액 · 분배율 서식은 아래 '저장된 지급 이력' 표와 같다. --%>
 !{
 	// 주당 금액은 원 단위보다 작을 수 있다(32.25 원) - 있는 자리만(최대 넷째) 적고 통화 단위는 로케일대로(StockFormatUtil.fullKrw).
-	java.util.function.Function<BigDecimal, String> perShare = value -> {
+	Function<BigDecimal, String> perShare = value -> {
 		BigDecimal safe = value != null ? value : BigDecimal.ZERO;
 		return StockFormatUtil.fullKrw(safe, Math.max(0, Math.min(4, safe.stripTrailingZeros().scale())));
 	};

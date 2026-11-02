@@ -71,9 +71,17 @@ function matcher(enTable, koTable) {
 	const koById = new Map(koTable.map((x) => [x.Id, x.Text]));
 	const cands = enTable
 		.filter((x) => x.Text && x.Text.trim())
-		.map((x) => ({ id: x.Id, text: x.Text, toks: new Set(tokens(x.Text)) }));
+		// 덧붙은 안내문(<default>{This item can be anointed by Cassia} 등)을 뺀 토큰도 — 점수는 둘 중 높은 쪽(10-30 R13 — 숨결도둑 · 짓밟기 등 16종이
+		//   안내문 탓에 0.75 아래로 떨어져 한국어 로어가 영어로 남았다). 본문 전체가 <default>{…} 인 행은 전체 토큰 쪽이 맞는다
+		.map((x) => ({ id: x.Id, text: x.Text, toks: new Set(tokens(x.Text)), bare: new Set(tokens(x.Text.replace(/<[^<>{}]*>\{[^{}]*\}/g, ""))) }));
 	const index = new Map(); // 토큰 → 후보(희귀 토큰으로 후보를 좁힌다)
 	for (const c of cands) for (const t of c.toks) (index.get(t) || index.set(t, []).get(t)).push(c);
+	const jaccard = (wt, toks) => {
+		if (!toks.size) return 0;
+		let inter = 0;
+		for (const t of wt) if (toks.has(t)) inter++;
+		return inter / (wt.size + toks.size - inter);
+	};
 	return (wikiText) => {
 		const wt = new Set(tokens(wikiText));
 		if (!wt.size) return null;
@@ -85,9 +93,7 @@ function matcher(enTable, koTable) {
 		const wikiLines = (String(wikiText).match(/&lt;br\s*\/?&gt;|<br\s*\/?>|\n/gi) || []).length + 1;
 		const lineCount = (c) => c.text.split(/\r?\n/).length;
 		for (const c of pool) {
-			let inter = 0;
-			for (const t of wt) if (c.toks.has(t)) inter++;
-			const score = inter / (wt.size + c.toks.size - inter);
+			const score = Math.max(jaccard(wt, c.toks), jaccard(wt, c.bare));
 			if (score > bestScore || (score === bestScore && best && lineCount(c) === wikiLines && lineCount(best) !== wikiLines)) { bestScore = score; best = c; }
 		}
 		if (!best || bestScore < 0.75) return null;
@@ -126,12 +132,25 @@ export async function runWikiUniques({ host, uniquesFile, tablesDir, cacheFile, 
 	const en = JSON.parse(fs.readFileSync(path.join(tablesDir, "English", "FlavourText.json"), "utf8"));
 	const ko = JSON.parse(fs.readFileSync(path.join(tablesDir, "Korean", "FlavourText.json"), "utf8"));
 	const match = matcher(en, ko);
+	// 자동 매칭이 놓친 고유의 게임 로어 Id(10-30 R32 — 게임이 문장을 고쳐 써 점수가 0.75 아래: 투코하마의 요새 · Waistgate(위키 오타 'alaways') · Widowhail)
+	let flavourIds = {};
+	try {
+		flavourIds = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "unique-flavour-overrides.json"), "utf8"))[label] || {};
+	} catch { /* 보정 표가 없으면 자동 매칭만 */ }
+	const enById = new Map(en.map((x) => [x.Id, x.Text]));
+	const koById = new Map(ko.map((x) => [x.Id, x.Text]));
 	const data = JSON.parse(fs.readFileSync(uniquesFile, "utf8"));
 	let flav = 0, game = 0, lvl = 0, missingWiki = 0;
 	for (const u of data.items) {
 		const w = wiki.get(u.name);
 		if (!w) { missingWiki++; continue; }
-		if (w.flavour) {
+		const fixedId = flavourIds[u.name];
+		if (fixedId && enById.has(fixedId)) {
+			u.flavour = cleanGame(enById.get(fixedId));
+			u.flavourKo = cleanGame(koById.get(fixedId));
+			flav++;
+			game++;
+		} else if (w.flavour) {
 			const m = match(w.flavour);
 			u.flavour = m ? cleanGame(m.en) : lines(w.flavour);
 			u.flavourKo = m && m.ko ? cleanGame(m.ko) : null;

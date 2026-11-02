@@ -32,6 +32,6 @@ class AssetGrowthDuplicateCallTest {
         .contains("booleansameAsPriceBasis=stockRealizedParams.equals(priceBasisParams);")
         .as("같으면 앞의 요청을 같이 쓴다")
         .contains(
-            "varstockRealizedFuture=emptySelection?null:sameAsPriceBasis?priceBasisFuture:java.util.concurrent.CompletableFuture.supplyAsync(()->tradeProfitClient.calculateProfit(stockRealizedParams),stockRemoteCallExecutor);");
+            "varstockRealizedFuture=emptySelection?null:sameAsPriceBasis?priceBasisFuture:CompletableFuture.supplyAsync(()->tradeProfitClient.calculateProfit(stockRealizedParams),stockRemoteCallExecutor);");
   }
 }

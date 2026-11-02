@@ -120,8 +120,7 @@ class MonthlyDividendBasisRowsTest {
 
     assertThat(squeezed)
         .as("표시 직전에 두 자리로 반올림한다")
-        .contains(
-            "amountFormat.format(averageDividend.setScale(2,java.math.RoundingMode.HALF_UP))");
+        .contains("amountFormat.format(averageDividend.setScale(2,RoundingMode.HALF_UP))");
   }
 
   private static MonthlyDividendPayoutResponse payout(

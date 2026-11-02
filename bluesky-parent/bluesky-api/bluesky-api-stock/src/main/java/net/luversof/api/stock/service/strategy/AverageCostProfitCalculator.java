@@ -5,9 +5,11 @@ import static net.luversof.api.stock.util.StockMath.nz;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import net.luversof.api.stock.constant.TradeType;
+import net.luversof.api.stock.domain.StockDailyClosePrice;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.service.StockPriceService;
@@ -31,8 +34,7 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
       List<Trade> trades,
       TradeProfitRequest request,
       StockPriceService stockPriceService,
-      java.util.Map<java.util.UUID, net.luversof.api.stock.domain.StockDailyClosePrice>
-          latestPrices) {
+      Map<UUID, StockDailyClosePrice> latestPrices) {
     if (trades == null || trades.isEmpty()) {
       return null;
     }
@@ -183,8 +185,8 @@ public class AverageCostProfitCalculator implements ProfitCalculator {
     BigDecimal evaluationProfit = BigDecimal.ZERO; // Gross
     BigDecimal evaluationProfitNet = BigDecimal.ZERO; // Net
 
-    java.time.LocalDate currentPriceDate = null;
-    java.time.Instant currentPriceUpdatedAt = null;
+    LocalDate currentPriceDate = null;
+    Instant currentPriceUpdatedAt = null;
     if (!request.hasDateRange()) {
       // 가격과 그 가격의 거래일을 함께 받는다. 상위에서 일괄 조회해 넘겨준 맵이 있으면 그것을 쓰고,
       // 없을 때만 개별 조회로 떨어진다(종목마다 조회하면 종목 수만큼 DB 왕복이 생긴다).

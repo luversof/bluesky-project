@@ -46,7 +46,7 @@ class ManualPrincipalDisclosureTest {
     String fragment = read(FRAGMENT);
     assertThat(fragment)
         .as("파라미터를 받지 않으면 컨트롤러가 넘겨도 쓰이지 않는다")
-        .contains("@param java.util.Set<java.util.UUID> manualPrincipalAccountIds");
+        .contains("@param Set<UUID> manualPrincipalAccountIds");
     assertThat(fragment)
         .as("집합으로 갈라 표시하지 않으면 계산 원가와 구분되지 않는다")
         .contains("manualPrincipalAccountIds.contains(");

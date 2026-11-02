@@ -247,6 +247,20 @@ public final class PoeLocalProps {
    */
   public static Result apply(
       Base base, List<String> lines, boolean armourPiece, boolean weapon, int quality) {
+    return apply(base, lines, armourPiece, weapon, quality, null);
+  }
+
+  /**
+   * 베이스 원소 · 카오스 피해가 있는 무기(PoE2 달 단검 냉기 11-26 등, 10-30 R14) — baseAdded 를 추가 피해 칸의 바탕값으로 깐다(바뀐 값 아님
+   * — 로컬 "Adds …" 가 더해질 때만 파란색).
+   */
+  public static Result apply(
+      Base base,
+      List<String> lines,
+      boolean armourPiece,
+      boolean weapon,
+      int quality,
+      java.util.Map<String, int[]> baseAdded) {
     Acc aF = new Acc(), eF = new Acc(), sF = new Acc(), wF = new Acc();
     Acc aI = new Acc(), eI = new Acc(), sI = new Acc(), wI = new Acc();
     Acc bF = new Acc(), bI = new Acc();
@@ -259,7 +273,15 @@ public final class PoeLocalProps {
     // 원소 · 카오스 추가 피해 — [종류][0 최소 · 1 최대]
     java.util.Map<String, Acc[]> ele = new java.util.LinkedHashMap<>();
     for (String t : List.of("fire", "cold", "lightning", "chaos")) {
-      ele.put(t, new Acc[] {new Acc(), new Acc()});
+      Acc[] pair = new Acc[] {new Acc(), new Acc()};
+      int[] b = weapon && baseAdded != null ? baseAdded.get(t) : null;
+      if (b != null) {
+        pair[0].lo = b[0];
+        pair[0].hi = b[0];
+        pair[1].lo = b[1];
+        pair[1].hi = b[1];
+      }
+      ele.put(t, pair);
     }
     for (String raw : lines == null ? List.<String>of() : lines) {
       if (raw == null) {

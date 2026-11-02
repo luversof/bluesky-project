@@ -36,6 +36,8 @@ public class Poe2BuildService {
           "EnergyShield",
           "Mana",
           "Spirit",
+          // 점유되지 않은 정신력(PoB BuildDisplayStats 'Unreserved Spirit', 10-29 R9)
+          "SpiritUnreserved",
           "Armour",
           "Evasion",
           "TotalEHP",
@@ -1093,7 +1095,8 @@ public class Poe2BuildService {
   /** 코드 → 엔진 재계산(저장값 대조 + 인게임 경고). 코드를 못 읽으면 IllegalArgumentException. */
   public Poe2.BuildRecalc recalc(String code) {
     String xml = decoder.decodeToXml(code.trim());
-    Element build = first(parse(xml).getDocumentElement(), "Build");
+    Element root = parse(xml).getDocumentElement();
+    Element build = first(root, "Build");
     if (build == null) {
       throw new IllegalArgumentException("PoB 빌드 형식이 아닙니다(<Build> 없음)");
     }
@@ -1105,7 +1108,8 @@ public class Poe2BuildService {
       }
     }
     if (!engine.available()) {
-      return new Poe2.BuildRecalc(false, null, 0L, List.of(), null, null, null, null, null);
+      return new Poe2.BuildRecalc(
+          false, null, 0L, List.of(), null, null, null, null, null, List.of());
     }
     // 무기 세트를 나눠 쓰면 세트 1·2 를 따로(병렬) 계산한다 — 엔진은 켜진 세트 하나로만 계산하고, 세트마다 패시브·무기가 달라 수치가 크게 갈린다
     //   (Poe2WeaponSets 머리말). 저장값과 견주는 열(computed)은 저장 당시 켜진 세트 값.
@@ -1154,7 +1158,37 @@ public class Poe2BuildService {
         mainWarn == null ? null : mainWarn > 0,
         warnCount == null ? null : warnCount.intValue(),
         split ? savedSet : null,
-        mainSet);
+        mainSet,
+        engineMissingNodes(root));
+  }
+
+  /**
+   * 활성 스펙(무기 세트 노드 포함)에 찍힌 노드 중 엔진이 모르는 것의 이름 — 트리는 PoB-PoE2 dev, 엔진은 릴리스라 새 노드가 엔진에 없을 수 있다
+   * (v0.23.1: 리추얼리스트 2개). 그 효과는 재계산에 빠지므로 화면에 알린다(10-29 R4).
+   */
+  private List<Poe2.BuildNode> engineMissingNodes(Element root) {
+    Element treeEl = first(root, "Tree");
+    Element spec = treeEl == null ? null : activeSpec(treeEl);
+    if (spec == null) {
+      return List.of();
+    }
+    Map<Integer, Poe2DataService.TreeNodeLite> nodes = data.treeIndex().nodes();
+    Map<Integer, Poe2.BuildNode> found = new LinkedHashMap<>();
+    List<Element> withNodes = new ArrayList<>(List.of(spec));
+    org.w3c.dom.NodeList all = spec.getElementsByTagName("*");
+    for (int i = 0; i < all.getLength(); i++) {
+      withNodes.add((Element) all.item(i));
+    }
+    for (Element el : withNodes) {
+      for (String s : el.getAttribute("nodes").split(",")) {
+        Integer id = intOrNull(s.trim());
+        Poe2DataService.TreeNodeLite n = id == null ? null : nodes.get(id);
+        if (n != null && n.engineMissing()) {
+          found.putIfAbsent(id, new Poe2.BuildNode(id, n.name(), n.nameKo()));
+        }
+      }
+    }
+    return List.copyOf(found.values());
   }
 
   /** 주 세트 — 두 세트를 병렬로 계산해 DPS 가 큰 쪽(같거나 실패하면 저장된 세트). */
@@ -1179,11 +1213,19 @@ public class Poe2BuildService {
     return full > 0 ? full : v.getOrDefault("CombinedDPS", 0d);
   }
 
+  /** summarize 가 PoE1 코드를 받았을 때의 사유 — 컨트롤러가 이걸 보고 따로 알린다. */
+  public static final String POE1_CODE = "PoE1 빌드 코드(<PathOfBuilding>)";
+
   /** 코드 → 요약. 코드를 못 읽으면 IllegalArgumentException(사유 포함). */
   public Poe2.BuildSummary summarize(String code) {
     String xml = decoder.decodeToXml(code.trim());
     Document doc = parse(xml);
     Element root = doc.getDocumentElement();
+    // PoE1 코드(<PathOfBuilding>)는 거절한다 — 예전엔 그대로 받아 PoE1 노드 번호를 PoE2 노드로 읽고 PoE1 젬을 영어로 보였다(10-29
+    // R9)
+    if ("PathOfBuilding".equals(root.getTagName())) {
+      throw new IllegalArgumentException(POE1_CODE);
+    }
     Element build = first(root, "Build");
     if (build == null) {
       throw new IllegalArgumentException("PoB 빌드 형식이 아닙니다(<Build> 없음)");
@@ -1227,6 +1269,14 @@ public class Poe2BuildService {
           if (found.isEmpty()) {
             found = data.gemByName(name + " Support");
           }
+          // 'Companion: Diretusk Boar' · 'Spectre: X' — 젬은 'Companion' · 'Spectre'(Q100), 묶은 야수 이름은
+          // 한글 표가
+          // 없어 한글 이름은 비운다(영어 그대로 — Q172 결정, 10-29 R9)
+          boolean bound = false;
+          if (found.isEmpty() && name.matches("(Companion|Spectre): .+")) {
+            found = data.gemByName(name.substring(0, name.indexOf(':')));
+            bound = found.isPresent();
+          }
           boolean support =
               found
                   .map(x -> "support".equals(x.kind()))
@@ -1234,7 +1284,7 @@ public class Poe2BuildService {
           gems.add(
               new Poe2.BuildGem(
                   name,
-                  found.map(Poe2.Gem::nameKo).orElse(null),
+                  bound ? null : found.map(Poe2.Gem::nameKo).orElse(null),
                   found.map(Poe2.Gem::slug).orElse(null),
                   intOrNull(gem.getAttribute("level")),
                   intOrNull(gem.getAttribute("quality")),
@@ -1305,7 +1355,7 @@ public class Poe2BuildService {
     // 무기 세트 전용 노드(<WeaponSet1/2 nodes>) — 트리 뷰어 주소 w1=·w2= 로(10-02, 뷰어가 세트 색으로 보이고 계산·시뮬에 실린다)
     List<List<String>> setNodes = List.of(new ArrayList<>(), new ArrayList<>());
     if (treeEl != null) {
-      Element spec = activeSet(treeEl, "Spec", "activeSpec");
+      Element spec = activeSpec(treeEl);
       if (spec != null) {
         treeVersion = spec.getAttribute("treeVersion");
         for (String s : spec.getAttribute("nodes").split(",")) {
@@ -1354,6 +1404,8 @@ public class Poe2BuildService {
               readGrants(jewel, grantedNames, sinisterSockets, altStarts);
               Integer socketId = intOrNull(socket.getAttribute("nodeId"));
               if (socketId != null && allocated.contains(socketId)) {
+                // 장비 목록에도(10-29 R9 — ItemSet 슬롯엔 없어 실빌드 472 중 471 의 트리 주얼이 통째로 빠졌다)
+                items.add(item("Jewel", jewel));
                 String jewelSpec = treeJewelSpec(jewel);
                 if (jewelSpec != null) {
                   treeJewels.add(socketId + ":" + jewelSpec);
@@ -1552,8 +1604,16 @@ public class Poe2BuildService {
       }
     }
     if (start >= 0) {
+      // 고른 변형 줄만 · 굴림 범위는 {range:x} 로 계산(10-29 R9 — PoE1 빌드 읽기와 같은 규칙. 예전엔 "+(40-60) to maximum
+      // Life" ·
+      // 한국어 "생명력 최대치 +40" 으로 보였다)
+      int variant = net.luversof.api.poe.service.PoePobImportService.selectedVariant(lines);
       for (int k = start; k < lines.size(); k++) {
-        String raw = lines.get(k);
+        String raw =
+            net.luversof.api.poe.service.PoePobImportService.resolvePobLine(lines.get(k), variant);
+        if (raw == null) {
+          continue;
+        }
         String m = raw.replaceAll("^(\\{[^}]*\\})+", "").trim();
         if (!m.isEmpty()) {
           mods.add(m);
@@ -1780,6 +1840,25 @@ public class Poe2BuildService {
   }
 
   /** activeX 속성이 가리키는 세트(없으면 첫 세트). */
+  /**
+   * 활성 패시브 트리 — PoB 는 Spec 에 id 를 쓰지 않고 activeSpec 은 목록 순번이다(TreeTab specList[activeSpec],
+   * PassiveSpec:Save 속성에 id 없음). id 로 찾으면 늘 첫 트리로 떨어져, 둘째 트리를 쓰는 빌드가 트리 0 노드로 보였다(10-29 R9).
+   * SkillSet · ItemSet 은 id 가 맞다.
+   */
+  private static Element activeSpec(Element treeEl) {
+    List<Element> specs = children(treeEl, "Spec");
+    if (specs.isEmpty()) {
+      return null;
+    }
+    int n;
+    try {
+      n = Integer.parseInt(treeEl.getAttribute("activeSpec").trim());
+    } catch (NumberFormatException e) {
+      n = 1;
+    }
+    return specs.get(Math.min(Math.max(n, 1), specs.size()) - 1);
+  }
+
   private static Element activeSet(Element parent, String tag, String activeAttr) {
     List<Element> sets = children(parent, tag);
     if (sets.isEmpty()) {

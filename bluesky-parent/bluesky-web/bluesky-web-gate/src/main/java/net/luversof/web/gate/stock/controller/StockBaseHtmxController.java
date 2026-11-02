@@ -1,14 +1,21 @@
 package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +33,9 @@ import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.support.StockAsyncSupport;
+import net.luversof.web.gate.stock.util.StockRangePresetUtil;
+import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 /** 주식 HTMX 컨트롤러들의 공통 베이스 클래스. 공통 상수, 의존성, 헬퍼 메서드를 제공한다. */
 public abstract class StockBaseHtmxController {
@@ -36,11 +46,11 @@ public abstract class StockBaseHtmxController {
    * <p>ZoneId.of 를 그대로 부르면 ZoneRulesException 이 컨트롤러 밖으로 나가는데, 공통 예외 처리기가 이를 본문 없는 200 으로 바꿔 htmx 가
    * 빈 내용을 갈아끼운다 — 화면이 조용히 비어버린다(실측: 자산성장/배당내역/매매내역).
    *
-   * <p>바꾸는 규칙 자체는 {@link net.luversof.web.gate.stock.util.StockZoneUtil#resolve} 한 곳에만 둔다. 템플릿은 그
-   * 유틸을 직접 부르므로, 두 벌이 있으면 같은 화면의 컨트롤러와 템플릿이 다른 존을 쓸 수 있다 — 이 세션에서 실제로 그 유형의 결함이 반복해 나왔다.
+   * <p>바꾸는 규칙 자체는 {@link StockZoneUtil#resolve} 한 곳에만 둔다. 템플릿은 그 유틸을 직접 부르므로, 두 벌이 있으면 같은 화면의 컨트롤러와
+   * 템플릿이 다른 존을 쓸 수 있다 — 이 세션에서 실제로 그 유형의 결함이 반복해 나왔다.
    */
   protected ZoneId resolveZoneIdOrDefault(String timeZone) {
-    return net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+    return StockZoneUtil.resolve(timeZone);
   }
 
   protected static final String ERROR_ATTRIBUTE = "error";
@@ -87,8 +97,7 @@ public abstract class StockBaseHtmxController {
       }
       target = url.toString();
     }
-    return "/login?redirectUrl="
-        + java.net.URLEncoder.encode(target, java.nio.charset.StandardCharsets.UTF_8);
+    return "/login?redirectUrl=" + java.net.URLEncoder.encode(target, StandardCharsets.UTF_8);
   }
 
   private static jakarta.servlet.http.HttpServletRequest currentRequest() {
@@ -103,10 +112,7 @@ public abstract class StockBaseHtmxController {
    * 없다. 배당 · 매매 · 활동 · 자산 성장 화면이 같은 루프를 따로 적고 있었다(2026-10-22 정리).
    */
   protected static <T> List<T> withSelectedFirst(
-      List<T> narrowed,
-      List<T> all,
-      List<UUID> requested,
-      java.util.function.Function<T, UUID> id) {
+      List<T> narrowed, List<T> all, List<UUID> requested, Function<T, UUID> id) {
     List<T> result = new ArrayList<>(narrowed);
     if (requested == null) {
       return result;
@@ -130,10 +136,9 @@ public abstract class StockBaseHtmxController {
    * hx-include 가 저장된 날짜를 같이 실어 보낸다 - 실측 2026-09-09: 네 목록 조각 모두 버튼은 '전체' 인데 내용은 올해였다. 사용자가 고른 것은
    * 모드이므로 모드가 이긴다.
    */
-  protected static java.time.Instant[] effectiveRange(
-      String rangeMode, java.time.Instant startDate, java.time.Instant endDate) {
+  protected static Instant[] effectiveRange(String rangeMode, Instant startDate, Instant endDate) {
     if ("all".equalsIgnoreCase(rangeMode)) {
-      return new java.time.Instant[] {null, null};
+      return new Instant[] {null, null};
     }
     return orderedRange(startDate, endDate);
   }
@@ -147,10 +152,9 @@ public abstract class StockBaseHtmxController {
    *
    * @return {start, end} 순서가 맞은 두 값
    */
-  protected static java.time.Instant[] orderedRange(
-      java.time.Instant startDate, java.time.Instant endDate) {
+  protected static Instant[] orderedRange(Instant startDate, Instant endDate) {
     // 규칙은 StockRangePresetUtil 한 곳에만 둔다 - 상세 화면도 같은 것을 쓴다.
-    return net.luversof.web.gate.stock.util.StockRangePresetUtil.ordered(startDate, endDate);
+    return StockRangePresetUtil.ordered(startDate, endDate);
   }
 
   protected static final List<String> ACCOUNT_PRINCIPAL_CONFIG_KEYS =
@@ -183,13 +187,12 @@ public abstract class StockBaseHtmxController {
    *
    * <p>이전에는 숫자에 "월"/"일" 을 직접 붙여, 영어 화면에도 한글이 그대로 나왔다.
    */
-  protected String shortMonthLabel(java.time.LocalDate date) {
-    return date.getMonth()
-        .getDisplayName(java.time.format.TextStyle.SHORT, LocaleContextHolder.getLocale());
+  protected String shortMonthLabel(LocalDate date) {
+    return date.getMonth().getDisplayName(TextStyle.SHORT, LocaleContextHolder.getLocale());
   }
 
   /** "8월 20일" / "Aug 20" 처럼 로케일에 맞는 월·일 표기. */
-  protected String monthDayLabel(java.time.LocalDate date) {
+  protected String monthDayLabel(LocalDate date) {
     return msg("stock.common.date.month.day", shortMonthLabel(date), date.getDayOfMonth());
   }
 
@@ -220,8 +223,8 @@ public abstract class StockBaseHtmxController {
    * 계좌 id -> 직접 입력한 투자원금(manualPrincipalAmount). 값이 없는 계좌는 빠지고, 같은 id 가 둘이면 앞의 값을 쓴다. 대시보드 요약과 자산
    * 현황이 같은 맵을 따로 만들고 있었다(2026-10-22 정리).
    */
-  protected java.util.Map<UUID, BigDecimal> accountPrincipalOverrides(List<Account> accounts) {
-    java.util.Map<UUID, BigDecimal> overrides = new java.util.LinkedHashMap<>();
+  protected Map<UUID, BigDecimal> accountPrincipalOverrides(List<Account> accounts) {
+    Map<UUID, BigDecimal> overrides = new LinkedHashMap<>();
     if (accounts == null) {
       return overrides;
     }
@@ -352,10 +355,10 @@ public abstract class StockBaseHtmxController {
   }
 
   /** 날짜 없이 프리셋 상태만 왔을 때 적용할 기간. {@code end} 는 '오늘까지'를 뜻하는 배타적 경계다. */
-  protected record PresetRange(java.time.Instant start, java.time.Instant end, String mode) {}
+  protected record PresetRange(Instant start, Instant end, String mode) {}
 
   /** 목록 화면(매매 · 활동 · 배당)이 실제로 조회할 기간과, 기본 기간이 적용됐으면 그 프리셋 모드. */
-  protected record ListRange(java.time.Instant start, java.time.Instant end, String rangeMode) {}
+  protected record ListRange(Instant start, Instant end, String rangeMode) {}
 
   /**
    * 목록 화면의 기간 - {@link #effectiveRange} 로 바로잡은 날짜, 날짜가 둘 다 없고 {@code all} 도 아니면 프리셋 기본 기간(그때 모드도
@@ -367,9 +370,8 @@ public abstract class StockBaseHtmxController {
    * rangeMode 의 '존재'를 보는 바람에, 날짜 없이 rangeMode 만 실려 오면 기본 기간이 적용되지 않고 전 기간이 조회됐다(실측: rangeMode=ytd
    * 인데 올해 106행이 아니라 전체 300행). 같은 가드를 asset-growth 는 이미 '날짜가 없고 all 도 아니면 기본 적용'으로 쓰고 있어, 그쪽에 맞춘다.
    */
-  protected ListRange listRange(
-      String rangeMode, java.time.Instant startDate, java.time.Instant endDate, ZoneId zone) {
-    java.time.Instant[] ordered = effectiveRange(rangeMode, startDate, endDate);
+  protected ListRange listRange(String rangeMode, Instant startDate, Instant endDate, ZoneId zone) {
+    Instant[] ordered = effectiveRange(rangeMode, startDate, endDate);
     if (ordered[0] == null && ordered[1] == null && !"all".equalsIgnoreCase(rangeMode)) {
       PresetRange preset = resolvePresetRange(rangeMode, zone);
       return new ListRange(preset.start(), preset.end(), preset.mode());
@@ -380,12 +382,11 @@ public abstract class StockBaseHtmxController {
   /**
    * 화면의 기간 프리셋을 서버에서 그대로 계산한다.
    *
-   * <p>규칙 자체는 {@link net.luversof.web.gate.stock.util.StockRangePresetUtil} 한 곳에만 둔다. 상세 화면 컨트롤러는 이
-   * 클래스를 상속하지 않으면서 같은 규칙이 필요해, 규칙을 유틸로 옮기고 여기서는 그것을 부른다 &mdash; 두 벌이 되면 같은 기간 버튼이 화면마다 다른 구간을 뜻하게
-   * 된다.
+   * <p>규칙 자체는 {@link StockRangePresetUtil} 한 곳에만 둔다. 상세 화면 컨트롤러는 이 클래스를 상속하지 않으면서 같은 규칙이 필요해, 규칙을
+   * 유틸로 옮기고 여기서는 그것을 부른다 &mdash; 두 벌이 되면 같은 기간 버튼이 화면마다 다른 구간을 뜻하게 된다.
    */
   protected PresetRange resolvePresetRange(String rangeMode, ZoneId zone) {
-    var preset = net.luversof.web.gate.stock.util.StockRangePresetUtil.resolve(rangeMode, zone);
+    var preset = StockRangePresetUtil.resolve(rangeMode, zone);
     return new PresetRange(preset.start(), preset.end(), preset.mode());
   }
 
@@ -399,7 +400,7 @@ public abstract class StockBaseHtmxController {
    * @return 필터 자체가 없으면 {@code null}, 있으면 유효한 것만 남긴 목록(하나도 없으면 빈 목록 = '고른 게 없음')
    */
   protected List<UUID> retainAvailableStockItemIds(
-      StockTagSelection selection, java.util.Set<UUID> availableStockIds) {
+      StockTagSelection selection, Set<UUID> availableStockIds) {
     if (selection == null || !selection.hasFilter()) {
       return null;
     }
@@ -430,9 +431,7 @@ public abstract class StockBaseHtmxController {
       return false;
     }
     request.setAccountIdList(
-        retainOwnedAccountIds(
-            request.getAccountIdList(),
-            net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountsFuture)));
+        retainOwnedAccountIds(request.getAccountIdList(), StockAsyncSupport.join(accountsFuture)));
     return request.getAccountIdList().isEmpty();
   }
 
@@ -450,7 +449,7 @@ public abstract class StockBaseHtmxController {
         requestedIds,
         emptyIfNull(accountList).stream()
             .map(Account::id)
-            .filter(java.util.Objects::nonNull)
+            .filter(Objects::nonNull)
             .collect(Collectors.toSet()));
   }
 
@@ -462,13 +461,12 @@ public abstract class StockBaseHtmxController {
    *
    * @return 필터를 요청하지 않았으면 null(= 필터 없음), 요청했으면 유효한 id 만 남긴 목록(전부 무효면 빈 목록 = 결과 없음)
    */
-  protected static List<UUID> retainAvailableIds(
-      List<UUID> requestedIds, java.util.Set<UUID> availableIds) {
+  protected static List<UUID> retainAvailableIds(List<UUID> requestedIds, Set<UUID> availableIds) {
     if (requestedIds == null || requestedIds.isEmpty()) {
       return null;
     }
     return requestedIds.stream()
-        .filter(java.util.Objects::nonNull)
+        .filter(Objects::nonNull)
         .filter(availableIds::contains)
         .distinct()
         .toList();

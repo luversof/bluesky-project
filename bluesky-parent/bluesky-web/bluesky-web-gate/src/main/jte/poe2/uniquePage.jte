@@ -64,14 +64,15 @@
 					<img src="/poe-data/poe2/icons/${item.image()}" class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${item.name()}">
 				@endif
 				<div class="max-w-md w-full sm:w-auto">
-					@template.poe2.htmx.uniqueTooltip(item = item, base = base, variant = active)
+					<%-- 변형을 고르지 않았으면 고유의 기본 줄(10-30 R12 — 여러 칸을 함께 고르는 메갈로매니악 · 마지블러드 등은 기본 조합 전부, 예전엔 칩 강조용 첫 변형 1개만) --%>
+					@template.poe2.htmx.uniqueTooltip(item = item, base = base, variant = variant)
 				</div>
 				!{
 					boolean ko = PoeText.isKorean();
 					java.util.List<String> engMods = item.explicits();
-					if (active != null && item.variants() != null) {
+					if (variant != null && item.variants() != null) {
 						for (Poe2.UniqueVariant v : item.variants()) {
-							if (v.index() != null && v.index().equals(active) && v.explicits() != null) engMods = v.explicits();
+							if (v.index() != null && v.index().equals(variant) && v.explicits() != null) engMods = v.explicits();
 						}
 					}
 				}
@@ -96,6 +97,10 @@
 								@endif
 								@if(item.league() != null && !item.league().isBlank())
 									<tr><td class="text-base-content/60">${MessageUtil.getMessage("poe.uniques.info.league")}</td><td>${item.league()}</td></tr>
+								@endif
+								<%-- 획득 가능 여부(10-30 R12 — PoE1 고유 상세와 같은 줄) --%>
+								@if(Boolean.TRUE.equals(item.legacy()))
+									<tr data-legacy><td class="text-base-content/60">${ko ? "획득" : "Obtainable"}</td><td class="text-warning">${ko ? "현재 리그 획득 불가 (스탠다드 보관분만)" : "Not obtainable in the current league"}</td></tr>
 								@endif
 							</tbody>
 						</table>

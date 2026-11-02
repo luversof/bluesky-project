@@ -1,6 +1,8 @@
 package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -24,10 +26,10 @@ public class TradeProfit {
   private BigDecimal currentPrice;
 
   /** currentPrice 가 어느 거래일의 종가인지. 오늘 시세가 아직 없으면 과거 일자가 된다. */
-  private java.time.LocalDate currentPriceDate;
+  private LocalDate currentPriceDate;
 
   /** currentPrice 행을 마지막으로 받은 시각. 그 거래일 장중이면 currentPrice 는 종가가 아니라 장중 값이다(2026-10-02). */
-  private java.time.Instant currentPriceUpdatedAt;
+  private Instant currentPriceUpdatedAt;
 
   private BigDecimal evaluationAmount;
   private BigDecimal evaluationProfit;
@@ -138,19 +140,19 @@ public class TradeProfit {
     this.currentPrice = currentPrice;
   }
 
-  public java.time.LocalDate getCurrentPriceDate() {
+  public LocalDate getCurrentPriceDate() {
     return currentPriceDate;
   }
 
-  public void setCurrentPriceDate(java.time.LocalDate currentPriceDate) {
+  public void setCurrentPriceDate(LocalDate currentPriceDate) {
     this.currentPriceDate = currentPriceDate;
   }
 
-  public java.time.Instant getCurrentPriceUpdatedAt() {
+  public Instant getCurrentPriceUpdatedAt() {
     return currentPriceUpdatedAt;
   }
 
-  public void setCurrentPriceUpdatedAt(java.time.Instant currentPriceUpdatedAt) {
+  public void setCurrentPriceUpdatedAt(Instant currentPriceUpdatedAt) {
     this.currentPriceUpdatedAt = currentPriceUpdatedAt;
   }
 

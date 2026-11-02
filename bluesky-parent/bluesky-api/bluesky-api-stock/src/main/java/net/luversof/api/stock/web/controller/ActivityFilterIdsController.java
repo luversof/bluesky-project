@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.web.dto.response.ActivityFilterIdsResponse;
+import net.luversof.api.stock.web.support.RequestRangeUtil;
 
 /** 필터 목록용 id 집계. DISTINCT 4건만 수행하는 경량 엔드포인트다. */
 @RestController
@@ -30,8 +31,7 @@ public class ActivityFilterIdsController {
           Instant startDate,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
           Instant endDate) {
-    java.time.Instant[] range =
-        net.luversof.api.stock.web.support.RequestRangeUtil.ordered(startDate, endDate);
+    Instant[] range = RequestRangeUtil.ordered(startDate, endDate);
     return new ActivityFilterIdsResponse(
         tradeRepository.findDistinctAccountIds(userId, range[0], range[1]),
         tradeRepository.findDistinctStockItemIds(userId, range[0], range[1]),

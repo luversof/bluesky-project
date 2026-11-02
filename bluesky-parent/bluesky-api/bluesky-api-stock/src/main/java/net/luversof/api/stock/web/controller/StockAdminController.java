@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.api.stock.service.StockAdminService;
 import net.luversof.api.stock.service.kis.KisStockPriceUpdateService;
+import net.luversof.api.stock.service.kis.PriceHistoryUpdateJobService;
+import net.luversof.api.stock.web.dto.response.LedgerImportResult;
+import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateJobStatus;
+import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult;
 
 @RestController
 @RequestMapping("/api/stock/admin")
@@ -21,9 +25,7 @@ public class StockAdminController {
 
   @Autowired private KisStockPriceUpdateService kisStockPriceUpdateService;
 
-  @Autowired
-  private net.luversof.api.stock.service.kis.PriceHistoryUpdateJobService
-      priceHistoryUpdateJobService;
+  @Autowired private PriceHistoryUpdateJobService priceHistoryUpdateJobService;
 
   @PostMapping("/stock-items")
   public int stockItemBulkInsert(@RequestParam UUID userId) {
@@ -32,14 +34,12 @@ public class StockAdminController {
 
   /** 시트 몇 행 중 몇 행이 들어갔는지 돌려준다. void 였을 때는 버려진 행이 흔적 없이 사라졌다. */
   @PostMapping("/trades")
-  public net.luversof.api.stock.web.dto.response.LedgerImportResult tradeBulkInsert(
-      @RequestParam UUID userId) {
+  public LedgerImportResult tradeBulkInsert(@RequestParam UUID userId) {
     return stockAdminService.tradeBulkInsert(userId);
   }
 
   @PostMapping("/dividends")
-  public net.luversof.api.stock.web.dto.response.LedgerImportResult dividendBulkInsert(
-      @RequestParam UUID userId) {
+  public LedgerImportResult dividendBulkInsert(@RequestParam UUID userId) {
     return stockAdminService.dividendBulkInsert(userId);
   }
 
@@ -52,15 +52,13 @@ public class StockAdminController {
    * <p>이미 돌고 있으면 새로 시작하지 않고 돌고 있는 상태를 그대로 돌려준다.
    */
   @PostMapping("/price-histories")
-  public net.luversof.api.stock.web.dto.response.PriceHistoryUpdateJobStatus priceHistoryUpdate(
-      @RequestParam UUID userId) {
+  public PriceHistoryUpdateJobStatus priceHistoryUpdate(@RequestParam UUID userId) {
     return priceHistoryUpdateJobService.start(userId);
   }
 
   /** 전체 갱신 작업의 지금 상태. 아무 일도 일으키지 않는다. */
   @GetMapping("/price-histories/status")
-  public net.luversof.api.stock.web.dto.response.PriceHistoryUpdateJobStatus
-      priceHistoryUpdateStatus() {
+  public PriceHistoryUpdateJobStatus priceHistoryUpdateStatus() {
     return priceHistoryUpdateJobService.status();
   }
 
@@ -70,7 +68,7 @@ public class StockAdminController {
    * <p>전체 갱신은 53 종목에 18~22 초라 게이트 읽기 제한(10 초)에 끕겼다. 한 종목이면 1 초 안쪽이라 그 자리에서 끝난다.
    */
   @PostMapping("/price-histories/{symbol}")
-  public net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult priceHistoryUpdateOne(
+  public PriceHistoryUpdateResult priceHistoryUpdateOne(
       @PathVariable String symbol, @RequestParam UUID userId) {
     return priceHistoryUpdateJobService.runExclusive(
         () -> kisStockPriceUpdateService.updatePriceHistory(userId, symbol));
@@ -81,8 +79,8 @@ public class StockAdminController {
    * 갱신 작업도 끝에 이것을 부른다. 원주가 열이 없는 DB 면 아무것도 안 하고 columnAvailable=false.
    */
   @PostMapping("/raw-close-prices")
-  public net.luversof.api.stock.service.kis.KisStockPriceUpdateService.RawClosePriceFillResult
-      rawClosePriceFill(@RequestParam UUID userId) {
+  public KisStockPriceUpdateService.RawClosePriceFillResult rawClosePriceFill(
+      @RequestParam UUID userId) {
     return priceHistoryUpdateJobService.runExclusive(
         () -> kisStockPriceUpdateService.fillRawClosePrices(userId));
   }

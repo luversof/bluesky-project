@@ -763,6 +763,10 @@ public class PoeHtmxController {
       // RestClientException 이 아니라 그대로 빠져나가, 사용자 화면에 날 JSON 오류가 떴다(2026-09-29 제보).
       log.warn("PoB 임포트 실패(코드 {}자): {}", code.length(), e.toString());
       model.addAttribute("importError", true);
+      // PoE2 코드면 그렇다고 알린다(10-29 R8 — API 는 'PoB XML 아님: PathOfBuilding2' 를 주는데 '코드 전체를 붙여넣어 주세요' 로
+      // 덮었다)
+      // 게이트 API 클라이언트는 API_EXCEPTION 으로 감싸고 원래 사유는 errorMessage 에 둔다 — toString 이 그것까지 담는다
+      model.addAttribute("importErrorPoe2", String.valueOf(e).contains("PathOfBuilding2"));
     }
     return "poe/htmx/buildSummary";
   }

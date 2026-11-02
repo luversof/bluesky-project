@@ -3,6 +3,7 @@ package net.luversof.web.gate.stock.util;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 
 /**
  * 화면의 날짜 선택기 하한(= 그 화면이 덮는 데이터의 최초일).
@@ -52,7 +53,7 @@ public final class StockFirstDateUtil {
     LocalDate parsed;
     try {
       parsed = LocalDate.parse(dataFirstDate);
-    } catch (java.time.format.DateTimeParseException ex) {
+    } catch (DateTimeParseException ex) {
       return seriesStart;
     }
     if (seriesStart == null) {

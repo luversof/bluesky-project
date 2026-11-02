@@ -7,6 +7,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
+import net.luversof.web.gate.stock.dto.response.LedgerImportResult;
+import net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus;
+import net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateResult;
+
 @HttpExchange(
     url = "/api/stock/admin",
     contentType = MediaType.APPLICATION_JSON_VALUE,
@@ -17,12 +21,10 @@ public interface StockAdminClient {
   int stockItemBulkInsert(@RequestParam UUID userId);
 
   @PostExchange("/trades")
-  net.luversof.web.gate.stock.dto.response.LedgerImportResult tradeBulkInsert(
-      @RequestParam UUID userId);
+  LedgerImportResult tradeBulkInsert(@RequestParam UUID userId);
 
   @PostExchange("/dividends")
-  net.luversof.web.gate.stock.dto.response.LedgerImportResult dividendBulkInsert(
-      @RequestParam UUID userId);
+  LedgerImportResult dividendBulkInsert(@RequestParam UUID userId);
 
   /**
    * 전체 갱신을 <b>시작만</b> 하고 지금 상태를 바로 받는다(사용자 결정 2026-09-22).
@@ -31,11 +33,10 @@ public interface StockAdminClient {
    * #priceHistoryUpdateStatus()} 로 따로 물어본다.
    */
   @PostExchange("/price-histories")
-  net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus priceHistoriesUpdate(
-      @RequestParam UUID userId);
+  PriceHistoryUpdateJobStatus priceHistoriesUpdate(@RequestParam UUID userId);
 
   @org.springframework.web.service.annotation.GetExchange("/price-histories/status")
-  net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus priceHistoryUpdateStatus();
+  PriceHistoryUpdateJobStatus priceHistoryUpdateStatus();
 
   /**
    * 종목 하나만 갱신한다(사용자 요청 2026-09-22).
@@ -44,7 +45,7 @@ public interface StockAdminClient {
    * 끝난다.
    */
   @PostExchange("/price-histories/{symbol}")
-  net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateResult priceHistoryUpdateOne(
+  PriceHistoryUpdateResult priceHistoryUpdateOne(
       @org.springframework.web.bind.annotation.PathVariable String symbol,
       @RequestParam UUID userId);
 

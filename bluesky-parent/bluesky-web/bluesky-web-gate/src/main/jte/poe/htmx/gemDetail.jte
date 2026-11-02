@@ -45,6 +45,9 @@
 	// 게임 툴팁 색: 라벨 회색, 수치 흰색, 스킬 설명 금색, 스탯(모드) 파랑
 	String label = "text-[#7f7f7f]";
 	String value = "text-white";
+	// 둘째 효과(10-29 R11): 바알 젬은 기본 스킬 구역이 먼저 · '바알 X' 소제목 뒤에 주 구역(PoB GemTooltip.AddGemTooltip VaalGem 갈래)
+	boolean vaalSplit = gem.isVaal() && gem.secondary() != null;
+	boolean attackGem = gem.tags() != null && gem.tags().contains("Attack");
 }
 
 <%-- PoE 게임 스킬 젬 툴팁 (인게임 배치: 헤더 → 스탯 → 설명(금색) → 스탯라인(파랑) → 퀄리티 → 소켓안내) --%>
@@ -60,15 +63,20 @@
 		<div class="px-4 pt-1 text-center text-[11.5px] text-[#7f7f7f]">${String.join(", ", displayTags)}</div>
 		@endif
 
+		@if(vaalSplit)
+			@template.poe.htmx.gemSecondary(sec = gem.secondary(), displayLevel = displayLevel, attack = attackGem, showLevel = true, header = null, reminderText = gem.reminderText(), nameColor = nameColor)
+			<div class="poe-tt-sepimg"></div>
+			<div class="px-4 py-1.5 text-center font-bold text-[12.5px]" style="color:${nameColor}" data-gem-secondary-title>${displayName}</div>
+		@endif
 		<%-- 레벨/요구/소모/피해 등 수치 (중앙 정렬, 라벨 회색 · 수치 흰색) --%>
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-[12px] text-center space-y-0.5">
-			<%-- 자연 최대 레벨이면 '20 (Max)' · '5 (최대)'(10-23 Q48 — ClientStrings ItemDisplaySkillGemMaxLevel) --%>
-			<div><span class="${label}">${levelLabel}: </span><span class="${value}" data-tt-gem-level>${gem.isMaxLevel(displayLevel) ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.detail.level.max"), displayLevel) : String.valueOf(displayLevel)}</span></div>
+			<%-- 자연 최대 레벨이면 '20 (Max)' · '5 (최대)'(10-23 Q48 — ClientStrings ItemDisplaySkillGemMaxLevel). 바알 젬은 기본 스킬 구역에 --%>
+			@if(!vaalSplit)<div><span class="${label}">${levelLabel}: </span><span class="${value}" data-tt-gem-level>${gem.isMaxLevel(displayLevel) ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.detail.level.max"), displayLevel) : String.valueOf(displayLevel)}</span></div>@endif
 			@if(current != null)
 				@if(current.cost() != null && current.cost() > 0)
 					<%-- 수량 먼저 — 진행표(gemPage)와 순서를 맞춘다. 이전엔 툴팁만 "Mana 29", 표는 "29 Mana" 로 달랐다. --%>
-					<div><span class="${label}">${costLabel}: </span><span class="${value}">${net.luversof.web.gate.poe.PoeText.costValue(current.cost(), current.costType())}</span></div>
+					<div><span class="${label}">${costLabel}: </span><span class="${value}">${net.luversof.web.gate.poe.PoeText.costValue(current.cost(), current.costType())}@if(current.extraCosts() != null)@for(int ci = 0; ci < current.extraCosts().size(); ci++), ${net.luversof.web.gate.poe.PoeText.costValue(current.extraCosts().get(ci), current.extraCostTypes().get(ci))}@endfor@endif</span></div>
 				@endif
 				<%-- 고정 마나 점유(명료함 · 정밀 · 활력 · 지뢰 — '점유: 마나 34', 10-23 Q51. 예전엔 % 점유만 있어 줄째 빠졌다) --%>
 				@if(current.reservation() == null && current.reservationFlat() != null)
@@ -106,6 +114,10 @@
 				<%-- 공격 속도 → 공격 피해 순(10-09 C234 — PoB GemTooltip.lua · poedb) --%>
 				@if(current.attackSpeedPct() != null)
 					<div data-gem-attack-speed><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.attack.speed")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.of.base"), String.valueOf(current.attackSpeedPct()))}</span></div>
+				@endif
+				<%-- 공격 시간(10-29 R11 — 방패 돌진 0.50초 등, PoB GemTooltip: 공격 속도 → 공격 시간 → 공격 피해, 공격 젬만) --%>
+				@if(attackGem && current.attackTimeMs() != null)
+					<div data-gem-attack-time><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.attack.time")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.value.seconds"), String.format("%.2f", current.attackTimeMs() / 1000.0))}</span></div>
 				@endif
 				@if(current.baseMultiplier() != null)
 					<%-- 공격 피해(10-08 C201 — 게임 ClientStrings ItemDisplaySkillGemAttackDamageEffectiveness "공격 피해" · PercentageOfBase "기본 수치의 {0}%", 소수 한 자리까지 — 예전엔 "피해: 79%") --%>
@@ -188,6 +200,10 @@
 					@endif
 				@endfor
 			</div>
+		@endif
+
+		@if(gem.secondary() != null && !vaalSplit)
+			@template.poe.htmx.gemSecondary(sec = gem.secondary(), displayLevel = displayLevel, attack = attackGem, showLevel = false, header = PoeText.name(gem.secondary().nameKo(), gem.secondary().name()), reminderText = gem.reminderText(), nameColor = nameColor)
 		@endif
 
 		<%-- 소켓 안내 (하단 회색 이탤릭) + 영문명 --%>

@@ -13,7 +13,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { WORK_DIR, findLuaJit } from "./paths.mjs";
+import { DATA_DIR, REPO_DIR, WORK_DIR, findLuaJit } from "./paths.mjs";
 
 const POB = path.join(WORK_DIR, "pob-src", "src");
 const problems = [];
@@ -128,6 +128,48 @@ if (!luajit) {
 	} catch (e) {
 		const detail = String(e.stdout || e.message).trim().split("\n").slice(0, 5).join(" / ");
 		problems.push(`PoB 소스에 표준 LuaJIT 이 못 읽는 문법이 있습니다 — 엔진이 로드 단계에서 죽습니다: ${detail}`);
+	}
+}
+
+// 5) 화면 트리와 엔진 트리가 같은 시즌인가(2026-10-29) — 화면 · 최적화기 그래프는 GGG 공식 트리(passive-tree.json)를 쓰고,
+//    계산은 PoB 의 TreeData/<poe.sim.tree-version> 으로 한다. GGG 는 시즌 시작에 바로 트리를 올리지만 PoB 새 폴더는 며칠 늦고,
+//    렐리쿼리언 선택지는 시즌마다 **노드 번호는 그대로 두고 이름 · 효과만** 바꾼다(3.28→3.29 23개 전부: 35448 Victario's Influence → Kaom's Roots).
+//    그 사이에 갱신하면 화면은 새 시즌 이름을 보이는데 엔진은 같은 번호를 옛 효과로 계산한다 — 오류 없이. 그래서 이름을 번호별로 대조한다.
+//    (기준선 10-29: 3_29 와 0건 · 3_28 과 44건 — 전직 25 · 선택지 23)
+const appTreeFile = path.join(DATA_DIR, "passive-tree.json");
+const optimizerSource = path.join(REPO_DIR, "..", "..", "src", "main", "java", "net", "luversof", "api", "poe", "service", "PoeOptimizeService.java");
+const engineVersion = fs.existsSync(optimizerSource)
+	? (fs.readFileSync(optimizerSource, "utf8").match(/poe\.sim\.tree-version:([0-9_]+)/) || [])[1]
+	: TREE_VERSIONS[TREE_VERSIONS.length - 1];
+const engineTreeFile = engineVersion && path.join(POB, "TreeData", engineVersion, "tree.lua");
+if (!engineVersion) {
+	problems.push("PoeOptimizeService 에서 poe.sim.tree-version 기본값을 못 찾았습니다 — 트리 시즌 대조를 못 합니다");
+} else if (fs.existsSync(appTreeFile) && fs.existsSync(engineTreeFile)) {
+	const pobNames = (lua) => {
+		const names = new Map();
+		for (const m of lua.matchAll(/\["skill"\]= (\d+),\s*\["name"\]= "((?:[^"\\]|\\.)*)"/g)) names.set(m[1], m[2].replace(/\\"/g, '"'));
+		return names;
+	};
+	const tree = JSON.parse(fs.readFileSync(appTreeFile, "utf8"));
+	const appNodes = (Array.isArray(tree.nodes) ? tree.nodes : Object.values(tree.nodes)).filter((n) => n.name);
+	const countMismatch = (names) => appNodes.filter((n) => names.get(String(n.id)) !== n.name);
+	const mismatched = countMismatch(pobNames(fs.readFileSync(engineTreeFile, "utf8")));
+	if (mismatched.length === 0) {
+		notes.push(`화면 트리 = 엔진 트리 ${engineVersion}(노드 ${appNodes.length}개 이름 일치)`);
+	} else {
+		// 어느 PoB 폴더가 화면 트리와 맞는지 찾아 알려 준다 — 보통 새 시즌 폴더가 생겼는데 기본값을 안 올린 경우다
+		const match = fs
+			.readdirSync(path.join(POB, "TreeData"))
+			.filter((v) => /^\d+_\d+$/.test(v) && v !== engineVersion && fs.existsSync(path.join(POB, "TreeData", v, "tree.lua")))
+			.find((v) => countMismatch(pobNames(fs.readFileSync(path.join(POB, "TreeData", v, "tree.lua"), "utf8"))).length === 0);
+		const choice = mismatched.filter((n) => n.multipleChoiceOption).length;
+		const sample = mismatched.slice(0, 3).map((n) => `${n.id} ${n.name}`).join(", ");
+		problems.push(
+			`화면 트리와 엔진 트리 ${engineVersion} 의 노드 ${mismatched.length}개가 다릅니다(전직 선택지 ${choice}개, 예: ${sample}) — ` +
+				(match
+					? `PoB TreeData/${match} 가 화면 트리와 맞습니다. poe.sim.tree-version 기본값(PoeOptimizeService · PoeSimService)을 ${match} 로 올리세요`
+					: "PoB 가 아직 이 시즌 트리를 내지 않았습니다. PoB 갱신 뒤 다시 돌리세요(그 전 계산은 옛 시즌 효과입니다)"),
+		);
 	}
 }
 

@@ -13,36 +13,49 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.LocalDate
+@import java.time.YearMonth
+@import java.util.ArrayList
+@import java.util.Arrays
+@import java.util.Map
+@import java.util.TreeMap
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.controller.StockTradeHtmxController
+@import net.luversof.web.gate.stock.util.ActivityChartBuckets
+@import net.luversof.web.gate.stock.util.ChartSeriesJs
+@import net.luversof.web.gate.stock.util.StockCoveredRangeUtil
+@import net.luversof.web.gate.stock.util.StockMessageSplitUtil
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param List<Activity> activities
 @param String activityView = "all"
-@param java.time.Instant startDate = null
-@param java.time.Instant endDate = null
+@param Instant startDate = null
+@param Instant endDate = null
 @param String timeZone = null
 @param String rangeMode = null
 @param String dataFirstDate = null
 @param List<Account> accountList = null
 @param List<StockItem> stockItemList = null
-@param List<String> stockTagList = java.util.List.of()
+@param List<String> stockTagList = List.of()
 @param UUID selectedAccountId = null
 @param UUID selectedStockItemId = null
-@param List<UUID> selectedAccountIds = java.util.List.of()
-@param List<UUID> selectedStockItemIds = java.util.List.of()
-@param List<String> selectedStockTags = java.util.List.of()
+@param List<UUID> selectedAccountIds = List.of()
+@param List<UUID> selectedStockItemIds = List.of()
+@param List<String> selectedStockTags = List.of()
 @param long buyCount = 0L
 @param long sellCount = 0L
 @param BigDecimal buyAmount = BigDecimal.ZERO
 @param BigDecimal sellAmount = BigDecimal.ZERO
 @param long dividendCount = 0L
 @param BigDecimal dividendAmount = BigDecimal.ZERO
-@param java.util.Map<UUID, String> accountNames = java.util.Map.of()
+@param Map<UUID, String> accountNames = Map.of()
 
 !{
-	DecimalFormat df = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat df = StockFormatUtil.wonFormat();
 	BigDecimal safeBuy = buyAmount != null ? buyAmount : BigDecimal.ZERO;
 	BigDecimal safeSell = sellAmount != null ? sellAmount : BigDecimal.ZERO;
 	BigDecimal safeDividend = dividendAmount != null ? dividendAmount : BigDecimal.ZERO;
-	java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
+	Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 	String advancedSearchLabel = MessageUtil.getMessage("stock.activity.label.advanced.search");
 	String accountLabel = MessageUtil.getMessage("common.label.account");
 	String stockLabel = MessageUtil.getMessage("common.label.stock");
@@ -66,10 +79,10 @@
 	String sharesPattern = MessageUtil.getMessage("stock.activity.label.shares");
 	// The unit hugs the number in Korean ("111주") but needs a space in English ("111 shares"),
 	// so the spacing lives in the message and the template splits it at the placeholder.
-	String sharesBefore = net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(sharesPattern);
-	String sharesAfter = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(sharesPattern);
+	String sharesBefore = StockMessageSplitUtil.beforePlaceholder(sharesPattern);
+	String sharesAfter = StockMessageSplitUtil.afterPlaceholder(sharesPattern);
 	// 1 주일 때의 뒤 꼬리(영어 " share") - 2026-10-01 영어 점검에서 "1 shares". 한국어는 같은 "주".
-	String sharesAfterOne = net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares.one"));
+	String sharesAfterOne = StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares.one"));
 }
 
 <%-- 보이는 뷰 하나만 그린다. activityView 가 "all" 이면(스크립트 없는 환경/직접 호출) 예전처럼 3종 모두. --%>
@@ -81,16 +94,16 @@
 
 	!{
 		boolean isAllMode = "all".equals(rangeMode);
-		java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
-		java.time.LocalDate today = java.time.LocalDate.now(zone);
-		java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
-		java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+		ZoneId zone = StockZoneUtil.resolve(timeZone);
+		LocalDate today = LocalDate.now(zone);
+		LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+		LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
 		boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
 		boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
-			&& startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+			&& startLocal.isAfter(LocalDate.parse(dataFirstDate));
 		// '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
 		// 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
-		var coveredRange = net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(activities, net.luversof.web.gate.stock.controller.StockTradeHtmxController.Activity::date, zone);
+		var coveredRange = StockCoveredRangeUtil.covered(activities, StockTradeHtmxController.Activity::date, zone);
 	}
 	@template.stock.htmx.fragments.components.dateRangeNavBar(
 		pickerName = "activityPicker",
@@ -171,14 +184,14 @@
 
 	!{
 		// 캘린더 뷰: timeZone 적용 LocalDate 기준 일별 그룹핑 → 활동이 있는 월만 그리드 생성
-		java.util.TreeMap<java.time.LocalDate, java.util.List<Activity>> activityByDate = new java.util.TreeMap<>();
+		TreeMap<LocalDate, List<Activity>> activityByDate = new TreeMap<>();
 		if (activities != null) {
 			for (Activity calActivity : activities) {
 				if (calActivity.date() == null) continue;
-				activityByDate.computeIfAbsent(calActivity.date().atZone(zone).toLocalDate(), k -> new java.util.ArrayList<Activity>()).add(calActivity);
+				activityByDate.computeIfAbsent(StockZoneUtil.recordedDate(calActivity.date(), zone), k -> new ArrayList<Activity>()).add(calActivity);
 			}
 		}
-		java.util.List<java.time.YearMonth> activityMonths = activityByDate.keySet().stream().map(java.time.YearMonth::from).distinct().sorted().toList();
+		List<YearMonth> activityMonths = activityByDate.keySet().stream().map(YearMonth::from).distinct().sorted().toList();
 		String[] weekdayLabels = MessageUtil.getMessage("common.calendar.weekdays").split(",");
 		String calendarTabLabel = MessageUtil.getMessage("stock.activity.view.calendar");
 		String timelineTabLabel = MessageUtil.getMessage("stock.activity.view.timeline");
@@ -195,9 +208,9 @@
 		// [0] 배당(세후) · [1] 실현손익. 예전에는 매수/매도/배당 금액을 한 축에 올렸는데,
 		// 성격이 다른 값이라 작은 쪽이 보이지 않았다(실측 2026-09-07: 배당 중앙값이 최대 막대의
 		// 0.62% = 170px 차트에서 1px). 이제 성격별로 나눠 각자 축을 준다.
-		java.util.TreeMap<java.time.YearMonth, BigDecimal[]> monthlyChartAmounts = new java.util.TreeMap<>();
-		for (java.util.Map.Entry<java.time.LocalDate, java.util.List<Activity>> chartDayEntry : activityByDate.entrySet()) {
-			BigDecimal[] monthSums = monthlyChartAmounts.computeIfAbsent(java.time.YearMonth.from(chartDayEntry.getKey()), k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });
+		TreeMap<YearMonth, BigDecimal[]> monthlyChartAmounts = new TreeMap<>();
+		for (Map.Entry<LocalDate, List<Activity>> chartDayEntry : activityByDate.entrySet()) {
+			BigDecimal[] monthSums = monthlyChartAmounts.computeIfAbsent(YearMonth.from(chartDayEntry.getKey()), k -> new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });
 			for (Activity chartActivity : chartDayEntry.getValue()) {
 				BigDecimal chartAmount = chartActivity.amount() != null ? chartActivity.amount() : BigDecimal.ZERO;
 				if ("TRADE".equals(chartActivity.type())) {
@@ -209,8 +222,8 @@
 			}
 		}
 		// 빈 달도 칸을 두고 60 개월이 넘으면 해 단위(매매 화면 월별 막대와 같은 규칙, 2026-10-27) - ActivityChartBuckets.
-		String activityChartDataJs = net.luversof.web.gate.stock.util.ActivityChartBuckets.js(monthlyChartAmounts)
-			+ "var activityChartSeriesLabels=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(java.util.Arrays.asList(dividendLabel, realizedProfitLabel)) + ";";
+		String activityChartDataJs = ActivityChartBuckets.js(monthlyChartAmounts)
+			+ "var activityChartSeriesLabels=" + ChartSeriesJs.stringArray(Arrays.asList(dividendLabel, realizedProfitLabel)) + ";";
 	}
 
 	@if(!activityMonths.isEmpty())
@@ -244,19 +257,19 @@
 		@else
 			<div class="space-y-3">
 				<%-- 기간이 길면 캘린더가 세로로 매우 길어지므로 최신 월만 펼치고 나머지는 접는다 --%>
-				!{java.time.YearMonth latestActivityMonth = activityMonths.get(activityMonths.size() - 1);}
+				!{YearMonth latestActivityMonth = activityMonths.get(activityMonths.size() - 1);}
 				<%-- 최신 달부터(타임라인과 같은 차례, 2026-10-28). 오래된 달부터면 전체 기간에 카드 73 개 아래 끝에 펼친 이번 달이 있었다. --%>
-				@for(java.time.YearMonth activityMonth : activityMonths.reversed())
+				@for(YearMonth activityMonth : activityMonths.reversed())
 					!{
 						String ymKey = activityMonth.toString();
-						java.time.LocalDate monthFirstDay = activityMonth.atDay(1);
+						LocalDate monthFirstDay = activityMonth.atDay(1);
 						int startPad = monthFirstDay.getDayOfWeek().getValue() % 7;
 						int daysInMonth = activityMonth.lengthOfMonth();
 						int totalCells = ((startPad + daysInMonth + 6) / 7) * 7;
 						String monthTitle = activityMonth.getYear() + "." + String.format("%02d", activityMonth.getMonthValue());
 						// 줄 수가 아니라 묶이기 전 건수를 센다. 위 '전체 활동' 카드와 같은 규칙이다 - 실측 2026-09-11:
 						// 올해 기준 월 카드의 합이 114 인데 헤더는 214 였다(전체 기간은 310 대 460).
-						int monthActivityCount = activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).values().stream().flatMap(java.util.List::stream).mapToInt(Activity::recordCount).sum();
+						int monthActivityCount = activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).values().stream().flatMap(List::stream).mapToInt(Activity::recordCount).sum();
 					}
 					<details class="rounded-2xl bg-base-100 p-3 shadow-sm" open="${activityMonth.equals(latestActivityMonth)}">
 						!{BigDecimal[] monthSummary = monthlyChartAmounts.getOrDefault(activityMonth, new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });}
@@ -275,7 +288,7 @@
 									<span><span class="text-base-content/60">${dividendLabel}</span> <span class="amount-value text-dividend">₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[0]))}</span></span>
 								@endif
 								@if(monthSummary[1].signum() != 0)
-									<span><span class="text-base-content/60">${realizedProfitLabel}</span> <span class="amount-value font-semibold ${monthSummary[1].signum() >= 0 ? "text-profit" : "text-loss"}">${monthSummary[1].signum() == 0 ? "" : (monthSummary[1].signum() > 0 ? "+" : "-")}₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[1].abs()))}</span></span>
+									<span><span class="text-base-content/60">${realizedProfitLabel}</span> <span class="amount-value font-semibold ${StockFormatUtil.amountTone(monthSummary[1])}">${monthSummary[1].signum() == 0 ? "" : (monthSummary[1].signum() > 0 ? "+" : "-")}₩${String.format("%,d", StockFormatUtil.displayWon(monthSummary[1].abs()))}</span></span>
 								@endif
 							</span>
 						</summary>
@@ -289,9 +302,9 @@
 						<div class="grid grid-cols-7 gap-1">
 							@for(int cellIndex = 0; cellIndex < totalCells; cellIndex++)
 								!{
-									java.time.LocalDate cellDate = monthFirstDay.plusDays((long) cellIndex - startPad);
+									LocalDate cellDate = monthFirstDay.plusDays((long) cellIndex - startPad);
 									boolean inMonth = cellIndex >= startPad && cellIndex < startPad + daysInMonth;
-									java.util.List<Activity> dayActivities = inMonth ? activityByDate.get(cellDate) : null;
+									List<Activity> dayActivities = inMonth ? activityByDate.get(cellDate) : null;
 									boolean hasActivity = dayActivities != null && !dayActivities.isEmpty();
 									long dayBuyCount = 0;
 									long daySellCount = 0;
@@ -341,7 +354,7 @@
 						<%-- 날짜 셀 클릭 시 해당 날짜 상세 목록 표시 (미리 렌더된 hidden 블록을 JS로 토글) --%>
 						<div class="selection-reveal mt-2" data-cal-panel="${ymKey}">
 							<div>
-								@for(java.util.Map.Entry<java.time.LocalDate, java.util.List<Activity>> dayEntry : activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).entrySet())
+								@for(Map.Entry<LocalDate, List<Activity>> dayEntry : activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).entrySet())
 									<div class="hidden rounded-xl bg-base-200/50 p-2 mb-1" id="cal-detail-${dayEntry.getKey().toString()}" data-cal-detail="${dayEntry.getKey().toString()}">
 										<div class="text-xs font-bold mb-1">${dayEntry.getKey().toString()}</div>
 										<div class="space-y-1">
@@ -378,7 +391,7 @@
 																<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left">${accountNames != null ? accountNames.getOrDefault(dayDetailActivity.accountIds().get(di), "") : ""}</span>
 															@endfor
 															@if(dayDetailActivity.accountIds().size() > 2)
-																!{java.util.List<String> detailAccountLabels = dayDetailActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
+																!{List<String> detailAccountLabels = dayDetailActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
 																<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", detailAccountLabels)}" data-tip="${String.join(", ", detailAccountLabels)}">
 																	<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${dayDetailActivity.accountIds().size() - 2}</span>
 																</div>
@@ -411,12 +424,12 @@
 			<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 				<%-- 타임라인은 날짜 묶음이 쭉 이어질 뿐이라 5.5화면을 굴려도 지금이 몇 월인지 알 수 없었다
 				     (실측 2026-09-10: 이 화면의 제목 수 0, 날짜 묶음 42개). 달이 바뀌는 자리에 구역 제목을 넣는다. --%>
-				!{ java.time.YearMonth tlPrevMonth = null; }
+				!{ YearMonth tlPrevMonth = null; }
 				<div class="relative border-l-2 border-base-300 ml-1.5 pl-6 space-y-6">
-					@for(java.util.Map.Entry<java.time.LocalDate, java.util.List<Activity>> tlEntry : activityByDate.descendingMap().entrySet())
+					@for(Map.Entry<LocalDate, List<Activity>> tlEntry : activityByDate.descendingMap().entrySet())
 						!{
-							java.time.LocalDate tlDate = tlEntry.getKey();
-							java.util.List<Activity> tlActivities = tlEntry.getValue();
+							LocalDate tlDate = tlEntry.getKey();
+							List<Activity> tlActivities = tlEntry.getValue();
 							long tlBuyCount = 0;
 							long tlSellCount = 0;
 							long tlDividendCount = 0;
@@ -440,7 +453,7 @@
 							String tlSummaryText = tlSummarySb.toString();
 						}
 						!{
-							java.time.YearMonth tlMonth = java.time.YearMonth.from(tlDate);
+							YearMonth tlMonth = YearMonth.from(tlDate);
 							boolean tlMonthChanged = !tlMonth.equals(tlPrevMonth);
 							tlPrevMonth = tlMonth;
 						}
@@ -484,7 +497,7 @@
 													<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left">${accountNames != null ? accountNames.getOrDefault(tlRowActivity.accountIds().get(ti), "") : ""}</span>
 												@endfor
 												@if(tlRowActivity.accountIds().size() > 2)
-													!{java.util.List<String> tlAccountLabels = tlRowActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
+													!{List<String> tlAccountLabels = tlRowActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
 													<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", tlAccountLabels)}" data-tip="${String.join(", ", tlAccountLabels)}">
 														<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${tlRowActivity.accountIds().size() - 2}</span>
 													</div>
@@ -526,7 +539,7 @@
 							@for(Activity activity : activities)
 								<tr>
 									<td class="whitespace-nowrap">
-										${activity.date() != null ? activity.date().atZone(zone).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : ""}
+										${activity.date() != null ? StockZoneUtil.recordedDate(activity.date(), zone).format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : ""}
 									</td>
 									<td>
 										@if("TRADE".equals(activity.type()))
@@ -556,7 +569,7 @@
 													@endfor
 
 													@if(activity.accountIds().size() > 2)
-														!{java.util.List<String> allAccountLabels = activity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> !n.isEmpty()).toList();}
+														!{List<String> allAccountLabels = activity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> !n.isEmpty()).toList();}
 														<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", allAccountLabels)}" data-tip="${String.join(", ", allAccountLabels)}">
 															<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${activity.accountIds().size() - 2}</span>
 														</div>

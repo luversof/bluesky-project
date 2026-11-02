@@ -36,7 +36,13 @@ public record PoeGem(
     Integer reqDexPct,
     Integer reqIntPct,
     // 자연 최대 레벨(API PoeGem 과 쌍 — PoB naturalMaxLevel: 각성 5 · 특출 보조 3 · 그 밖 20). 없으면 null
-    Integer naturalMaxLevel) {
+    Integer naturalMaxLevel,
+    // 둘째 효과(API PoeGem.Secondary 와 쌍 — 바알 젬의 기본 스킬 · 지옥불 함성 → 발화 등, 10-29 R11). 없으면 null
+    Secondary secondary) {
+
+  /** 둘째 효과 구역(10-29 R11) — 이름 · 시전 시간 · 레벨별 수치. */
+  public record Secondary(
+      String name, String nameKo, Integer castTimeMs, List<PoeGemLevel> levels) {}
 
   /**
    * 표시 레벨(10-23 Q48) — 요청이 없으면 min(20, 자연 최대)(예전엔 늘 20 이라 각성 젬이 'Level 20 · Requires Level 100'),

@@ -209,3 +209,18 @@ test("시나리오 비교가 실제로 더 오래 버틴 쪽을 위로 올린다
 		`더 오래 버틴 쪽(${better.lived}개월)이 위로 와야 한다`,
 	);
 });
+
+test("기간이 다른 시나리오는 가장 짧은 기간으로 잘라 견준다 - 100 년 중 60 년차 고갈이 30 년 무고갈보다 위로 오지 않는다", () => {
+	// 2026-11-02 사용자 결정. 30 년 무고갈 = 360 개월, 100 년 60 년차 고갈 = 720 개월 - 그대로 견주면 뒤가 위였다.
+	const thirty = { sustainableMonths: 360, sustainableYears: 30, finalWealth: 100, finalSpendingCoveragePct: 120 };
+	const hundred = { sustainableMonths: 720, sustainableYears: 60, firstDeficitYear: 55, finalWealth: 0, finalSpendingCoveragePct: 0 };
+	const entries = [
+		{ scenarioId: "30y", values: mod.buildComparisonValues(thirty, 30, 30, false) },
+		{ scenarioId: "100y", values: mod.buildComparisonValues(hundred, 100, 30, false) },
+	];
+	assert.equal(entries[1].values.sustainableMonths, 360, "공통 30 년으로 자른다");
+	assert.equal(entries[1].values.firstDeficitYear, 31, "공통 기간 뒤의 적자는 없던 것으로");
+	assert.equal(entries[1].values.finalWealth, 0, "기간이 다르면 마지막 해 값은 견주지 않는다");
+	assert.equal(entries[0].values.finalWealth, 0);
+	assert.equal(mod.compareComparisonEntries(entries[0], entries[1]), 0, "30 년 안에서는 둘 다 버텨 동률");
+});

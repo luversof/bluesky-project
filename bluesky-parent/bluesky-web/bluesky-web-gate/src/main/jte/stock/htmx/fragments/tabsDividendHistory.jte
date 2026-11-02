@@ -16,20 +16,29 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.text.MessageFormat
+@import java.util.LinkedHashMap
+@import java.util.Map
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.dto.view.DividendCalendarView
+@import net.luversof.web.gate.stock.util.ChartSeriesJs
+@import net.luversof.web.gate.stock.util.DividendPeriodBreakdown
+@import net.luversof.web.gate.stock.util.StockCoveredRangeUtil
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param List<DividendView> dividendList
-@param List<DividendView> allDividendList = java.util.List.of()
+@param List<DividendView> allDividendList = List.of()
 @param int totalItems
 @param List<Account> accountList
 @param List<StockItem> stockItemList
-@param List<String> stockTagList = java.util.List.of()
+@param List<String> stockTagList = List.of()
 @param UUID selectedAccountId
 @param UUID selectedStockItemId
-@param List<UUID> selectedAccountIds = java.util.List.of()
-@param List<UUID> selectedStockItemIds = java.util.List.of()
-@param List<String> selectedStockTags = java.util.List.of()
-@param java.time.Instant startDate
-@param java.time.Instant endDate
+@param List<UUID> selectedAccountIds = List.of()
+@param List<UUID> selectedStockItemIds = List.of()
+@param List<String> selectedStockTags = List.of()
+@param Instant startDate
+@param Instant endDate
 @param String timeZone = null
 @param String sort
 @param BigDecimal totalGrossAmount
@@ -56,26 +65,26 @@
      컨트롤러는 넣고 있었는데 이 조각이 받지 않아 카드까지 오지 않았다(2026-10-21). --%>
 @param int currentPeriodElapsedDays = 0
 @param int currentPeriodTotalDays = 0
-@param List<DividendChange> dividendChangeContributors = java.util.List.of()
+@param List<DividendChange> dividendChangeContributors = List.of()
 @param BigDecimal portfolioYieldOnDailyAverageCostPct = null
 @param BigDecimal portfolioYieldOnCostPct = null
 @param BigDecimal portfolioYieldOnMarketPct = null
 @param BigDecimal portfolioYieldAnnualizedPct = null
-@param net.luversof.web.gate.stock.dto.view.DividendYieldGroupView portfolioYield = null
-@param java.util.Map<java.util.UUID, BigDecimal> currentValueByStock = null
-@param java.util.Map<java.util.UUID, BigDecimal> currentValueByAccount = null
-@param java.util.Map<java.util.UUID, BigDecimal> evaluationProfitByStock = null
-@param java.util.Map<java.util.UUID, BigDecimal> evaluationProfitByAccount = null
-@param java.util.Map<java.util.UUID, BigDecimal> realizedProfitByStock = null
-@param java.util.Map<java.util.UUID, BigDecimal> realizedProfitByAccount = null
-@param java.util.Map<java.util.UUID, BigDecimal> totalBuyCostByStock = null
-@param java.util.Map<java.util.UUID, BigDecimal> totalBuyCostByAccount = null
+@param DividendYieldGroupView portfolioYield = null
+@param Map<UUID, BigDecimal> currentValueByStock = null
+@param Map<UUID, BigDecimal> currentValueByAccount = null
+@param Map<UUID, BigDecimal> evaluationProfitByStock = null
+@param Map<UUID, BigDecimal> evaluationProfitByAccount = null
+@param Map<UUID, BigDecimal> realizedProfitByStock = null
+@param Map<UUID, BigDecimal> realizedProfitByAccount = null
+@param Map<UUID, BigDecimal> totalBuyCostByStock = null
+@param Map<UUID, BigDecimal> totalBuyCostByAccount = null
 @param BigDecimal ttmYieldPct = null
 @param BigDecimal ttmAverageDailyPrincipalCost = null
 @param BigDecimal ttmNetWithPrincipalCost = null
 @param BigDecimal ttmNetAmount = null
-@param java.time.LocalDate ttmStartDate = null
-@param java.time.LocalDate ttmEndDate = null
+@param LocalDate ttmStartDate = null
+@param LocalDate ttmEndDate = null
 @param long periodDayCount = 0L
 @param BigDecimal periodStartPrincipal = null
 @param BigDecimal periodEndPrincipal = null
@@ -83,18 +92,18 @@
 @param BigDecimal periodPrincipalDeltaPct = null
 @param DividendYieldGroupView bestYieldStock = null
 @param DividendYieldGroupView bestYieldAccount = null
-@param List<DividendYieldGroupView> stockYieldRows = java.util.List.of()
-@param List<DividendYieldGroupView> accountYieldRows = java.util.List.of()
-@param List<DividendYieldGroupView> yearlyYieldRows = java.util.List.of()
+@param List<DividendYieldGroupView> stockYieldRows = List.of()
+@param List<DividendYieldGroupView> accountYieldRows = List.of()
+@param List<DividendYieldGroupView> yearlyYieldRows = List.of()
 @param String rangeMode = null
 @param String dataFirstDate = null
-@param java.util.List<net.luversof.web.gate.stock.util.DividendPeriodBreakdown.Row> dividendYearlyRows = java.util.List.of()
-@param java.util.List<net.luversof.web.gate.stock.util.DividendPeriodBreakdown.Row> dividendMonthlyRows = java.util.List.of()
+@param List<DividendPeriodBreakdown.Row> dividendYearlyRows = List.of()
+@param List<DividendPeriodBreakdown.Row> dividendMonthlyRows = List.of()
 <%-- 기간이 달력 한 달일 때만 있다 - 그 달 지급을 날짜에 놓은 달력(옛 배당 캘린더 탭을 통합, 사용자 결정 2026-09-17). --%>
-@param net.luversof.web.gate.stock.dto.view.DividendCalendarView dividendMonthCalendar = null
+@param DividendCalendarView dividendMonthCalendar = null
 
 !{
-	DecimalFormat decimalFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat decimalFormat = StockFormatUtil.wonFormat();
 
 	// Safe nulls
 	BigDecimal safeAllNet = totalAllNetAmount != null ? totalAllNetAmount : BigDecimal.ZERO;
@@ -128,10 +137,10 @@
 	// 차트가 쓰는 것은 월(payDate)·종목·계좌·세후 금액이다(gross 는 dividendHistory.ts 가 읽지 않는다).
 	// 종목/계좌 이름은 줄마다 되풀이되므로 색인표(S/A)로 한 번만 싣고 줄은 [날짜, 종목#, 계좌#, 세후] 로 줄인다.
 	// 실측 2026-09-09: 전체 기간 204 줄에서 20.8KB -> 약 7KB. 모양은 인라인에서 다시 펼치므로 모듈 계약은 그대로다.
-	java.time.ZoneId chartZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
-	List<DividendView> chartList = allDividendList != null ? allDividendList : java.util.List.of();
-	java.util.LinkedHashMap<String, Integer> stockIndex = new java.util.LinkedHashMap<>();
-	java.util.LinkedHashMap<String, Integer> accountIndex = new java.util.LinkedHashMap<>();
+	ZoneId chartZone = StockZoneUtil.resolve(timeZone);
+	List<DividendView> chartList = allDividendList != null ? allDividendList : List.of();
+	LinkedHashMap<String, Integer> stockIndex = new LinkedHashMap<>();
+	LinkedHashMap<String, Integer> accountIndex = new LinkedHashMap<>();
 	StringBuilder rowsSb = new StringBuilder();
 	for (int ci = 0; ci < chartList.size(); ci++) {
 		DividendView d = chartList.get(ci);
@@ -140,28 +149,28 @@
 		int si = stockIndex.computeIfAbsent(stockName, k -> stockIndex.size());
 		int ai = accountIndex.computeIfAbsent(accountName, k -> accountIndex.size());
 		if (ci > 0) rowsSb.append(",");
-		rowsSb.append("[\"").append(d.payDate() != null ? ymd.format(d.payDate().atZone(chartZone)) : "").append("\",")
+		rowsSb.append("[\"").append(d.payDate() != null ? ymd.format(StockZoneUtil.recordedDate(d.payDate(), chartZone)) : "").append("\",")
 			.append(si).append(",").append(ai).append(",")
 			.append(d.netAmount() != null ? d.netAmount().toPlainString() : "0").append("]");
 	}
 	// 이름표(S/A)는 JS 문자열 배열로 - 따옴표 · 역슬래시 · 꺾쇠(<) 와 제어문자를 막는다(ChartSeriesJs.jsString). 2026-10-22 까지 매매 목록 · 배당 목록 ·
 	// 활동 목록이 제각각 이스케이프를 들고 있었고 < 를 막지 않아, 이름에 </script> 가 들어가면 아래 $unsafe 스크립트가 끊겼다.
-	String dividendDataJs = "const S=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(stockIndex.keySet()) + ",A=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(accountIndex.keySet())
+	String dividendDataJs = "const S=" + ChartSeriesJs.stringArray(stockIndex.keySet()) + ",A=" + ChartSeriesJs.stringArray(accountIndex.keySet())
 		+ ",dividendData=[" + rowsSb + "].map(function(r){return {payDate:r[0],stockItem:S[r[1]],account:A[r[2]],net:r[3]};});";
 
 	// Nav 버튼 활성화 여부 (use client timezone if available)
 	boolean isAllMode = "all".equals(rangeMode);
-	java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
-	java.time.LocalDate today = java.time.LocalDate.now(zone);
-	java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
-	java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
-	java.time.LocalDate endLocalInclusive = endLocal != null ? endLocal.minusDays(1) : null;
+	ZoneId zone = StockZoneUtil.resolve(timeZone);
+	LocalDate today = LocalDate.now(zone);
+	LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+	LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+	LocalDate endLocalInclusive = endLocal != null ? endLocal.minusDays(1) : null;
 	boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
 	boolean canPrev = !isAllMode && startLocal != null
 		&& dataFirstDate != null && !dataFirstDate.isEmpty()
-		&& startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+		&& startLocal.isAfter(LocalDate.parse(dataFirstDate));
 
-	java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
+	Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 	String totalItemsCountText = countMessage.apply(totalItems);
 	String detailSummaryLabel = StockViewSupport.msg("stock.dividend.detail.summary", countMessage.apply(totalItems));
 
@@ -188,11 +197,11 @@
 	// 딱 1 개월일 때의 문구(영어 "Average for 1 months" 를 막으려고, 2026-10-01). 개월수는 브라우저가 채운다.
 	String averageDescOneTemplate = MessageUtil.getMessage("stock.dividend.summary.average.desc.one");
 	String countPattern = MessageUtil.getMessage("common.count");
-	java.util.function.Function<BigDecimal, String> percentFormat = value -> value != null ? StockFormatUtil.pct(value.doubleValue(), 2) : "-";
-	java.util.function.Function<Long, String> countFormat = count -> java.text.MessageFormat.format(countPattern, count);
+	Function<BigDecimal, String> percentFormat = value -> value != null ? StockFormatUtil.pct(value.doubleValue(), 2) : "-";
+	Function<Long, String> countFormat = count -> MessageFormat.format(countPattern, count);
 	// '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
 	// 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
-	var coveredRange = net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(allDividendList, net.luversof.web.gate.stock.dto.response.DividendView::payDate, zone);
+	var coveredRange = StockCoveredRangeUtil.covered(allDividendList, DividendView::payDate, zone);
 }
 
 <div id="dividendListFragment">

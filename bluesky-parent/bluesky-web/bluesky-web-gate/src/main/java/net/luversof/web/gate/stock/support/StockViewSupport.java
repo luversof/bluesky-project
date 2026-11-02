@@ -41,8 +41,7 @@ public final class StockViewSupport {
    */
   public static String loginRedirectView(HttpServletRequest request) {
     String encodedUrl =
-        java.net.URLEncoder.encode(
-            returnUrlAfterLogin(request), java.nio.charset.StandardCharsets.UTF_8);
+        java.net.URLEncoder.encode(returnUrlAfterLogin(request), StandardCharsets.UTF_8);
     return "redirect:/login?redirectUrl=" + encodedUrl;
   }
 

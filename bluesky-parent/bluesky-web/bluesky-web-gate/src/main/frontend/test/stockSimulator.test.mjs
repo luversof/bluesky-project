@@ -267,3 +267,17 @@ test("그래프 사건은 해 순서로, 같은 해는 묶는다", () => {
 	assert.deepEqual(mod.chartMilestones({ firstDeficitYear: null, depletionYear: 0 }, names), []);
 	assert.deepEqual(mod.chartMilestones(null, names), []);
 });
+
+
+// 2026-10-29 검토 지적: N 년차 기록은 (N-1, N] 인데 띠를 N 부터 칠해 마지막 해의 고갈이 폭 0 으로 빠지고 띠가 한 칸씩 늦었다.
+test("시간 띠: N 년차 단계는 N-1 부터, 마지막 해 고갈도 보인다", () => {
+	const build = globalThis.__stockWithdrawalSimulatorInternals.buildTimelineSegments;
+	const rec = (year, totalWealth, sold = 0) => ({ year, totalWealth, soldSharesForSpending: sold });
+	// 0 년(시작) · 1 ~ 2 년 안정 · 3 년 고갈, 기간 3 년
+	const segments = build([rec(0, 100), rec(1, 110), rec(2, 120), rec(3, 0)], 3, 3);
+	const last = segments[segments.length - 1];
+	assert.equal(Math.round(last.leftPct), 67, "고갈 띠는 2 년(66.7%)에서 시작");
+	assert.equal(Math.round(last.widthPct), 33, "폭 1 년");
+	assert.equal(Math.round(segments[0].leftPct), 0);
+	assert.equal(Math.round(segments[0].widthPct), 67);
+});

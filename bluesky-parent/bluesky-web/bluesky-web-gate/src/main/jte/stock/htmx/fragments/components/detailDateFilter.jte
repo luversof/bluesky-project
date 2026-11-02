@@ -16,8 +16,8 @@
 @param Instant endInstant = null
 @param String timeZone = null
 @param String rangeMode = null
-@param java.time.LocalDate coveredStartDate = null
-@param java.time.LocalDate coveredEndDate = null
+@param LocalDate coveredStartDate = null
+@param LocalDate coveredEndDate = null
 @param String dataFirstDate = ""
 @param boolean canPrev = true
 @param boolean canNext = true
@@ -33,7 +33,7 @@
 <%-- 내비바의 endDate 는 '배타적' 경계다(컴포넌트가 배지에 찍을 때 하루를 뺀다).
 	 여기 endLocal 은 컨트롤러가 이미 minusDays(1) 로 만든 '포함' 마지막 날이라 그대로 넘기면 하루가 더 빠진다.
 	 실측: 8/1~8/31 구간 배지가 8-30, 하루짜리 구간은 8-01 ~ 07-31 로 역전됐다. --%>
-!{java.time.LocalDate navBarEndExclusive = endLocal != null ? endLocal.plusDays(1) : null;}
+!{LocalDate navBarEndExclusive = endLocal != null ? endLocal.plusDays(1) : null;}
 <%-- 기간을 지정하지 않고 들어오면 화면은 실제로 전 기간을 보여 주는데, rangeMode 가 비어 있어 '전체' 버튼이
 	 눌린 것으로 보이지 않았다 - 실측 2026-09-11: 같은 종목 상세가 ?rangeMode=all 로 들어오면 '전체' 강조,
 	 파라미터 없이 들어오면 같은 데이터에 아무 버튼도 강조되지 않았다(배지는 둘 다 "전체 · 2020-03-23 ~ 2026-09-11").

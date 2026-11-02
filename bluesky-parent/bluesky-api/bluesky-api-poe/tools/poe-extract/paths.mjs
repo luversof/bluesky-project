@@ -16,6 +16,19 @@ export const POB_DIR = path.join(WORK_DIR, "pob-uniques");
 export const loadTable = (lang, table) =>
 	JSON.parse(fs.readFileSync(path.join(TABLES_DIR, lang, table + ".json"), "utf8"));
 
+let buffTemplatesCache = null;
+/** Mod 의 버프 템플릿 스탯 — 서술하지 않는다(PoB Export statdesc.lua describeMod, 10-30 R15 ④: 영향력 '주변 적이 받는 물리 피해 9% 증가' 밑에
+ *  버프 내용 '9% increased Physical Damage taken' 이 한 줄 더 나왔다). */
+export function buffStatsOf(mod) {
+	buffTemplatesCache ??= loadTable("English", "BuffTemplates");
+	const out = new Set();
+	for (const key of ["BuffTemplate1", "BuffTemplate2"]) {
+		const t = mod[key] != null ? buffTemplatesCache[mod[key]] : null;
+		for (const si of t?.StatsKey || []) out.add(si);
+	}
+	return out;
+}
+
 export const loadConfig = () =>
 	JSON.parse(fs.readFileSync(path.join(REPO_DIR, "config.json"), "utf8"));
 

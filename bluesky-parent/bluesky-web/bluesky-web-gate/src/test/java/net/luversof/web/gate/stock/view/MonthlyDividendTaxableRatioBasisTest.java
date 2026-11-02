@@ -276,7 +276,7 @@ class MonthlyDividendTaxableRatioBasisTest {
                 "src/main/java/net/luversof/web/gate/stock/controller/StockViewController.java"))
         .contains("monthlyDividendReferenceSupport.loadTaxableRatioBasis(userId)")
         .contains(
-            "\"monthlyDividendTaxableRatioBasis\", net.luversof.web.gate.stock.support.StockAsyncSupport.join(taxableRatioBasisFuture)");
+            "\"monthlyDividendTaxableRatioBasis\", StockAsyncSupport.join(taxableRatioBasisFuture)");
     assertThat(flatten("src/main/jte/stock/simulator.jte"))
         .contains("monthlyDividendTaxableRatioBasis = monthlyDividendTaxableRatioBasis,");
   }

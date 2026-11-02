@@ -10,6 +10,10 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.DividendHoldingProfitUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.text.DecimalFormat
+@import java.util.Map
+@import java.util.function.BiFunction
+@import java.util.function.Function
 
 <%-- 배당 수익 분석의 종목별 · 계좌별 카드 하나(선택 합산 상자 · 정렬 표 · 합계 줄).
 	 2026-10-22 까지 dividendYieldAnalytics.jte 가 종목 카드와 계좌 카드를 290 줄씩 한 벌씩 들고 있었다. 다른 것은 아래 인자뿐이다 -
@@ -26,16 +30,16 @@
 @param String summaryToneClass
 @param String badgeToneClass
 @param List<DividendYieldGroupView> groupRows
-@param java.util.Map<UUID, BigDecimal> currentValues
-@param java.util.Map<UUID, BigDecimal> evaluationProfits
-@param java.util.Map<UUID, BigDecimal> realizedProfits
-@param java.util.Map<UUID, BigDecimal> totalBuyCosts
+@param Map<UUID, BigDecimal> currentValues
+@param Map<UUID, BigDecimal> evaluationProfits
+@param Map<UUID, BigDecimal> realizedProfits
+@param Map<UUID, BigDecimal> totalBuyCosts
 @param BigDecimal currentValueTotal
 <%-- 종목 카드만 - 계좌 카드는 null(속성이 빠진다). --%>
-@param java.util.function.Function<String, String> tagTooltipByName = null
-@param java.text.DecimalFormat decimalFormat
-@param java.util.function.Function<BigDecimal, String> percentFormat
-@param java.util.function.Function<Long, String> countFormat
+@param Function<String, String> tagTooltipByName = null
+@param DecimalFormat decimalFormat
+@param Function<BigDecimal, String> percentFormat
+@param Function<Long, String> countFormat
 @param BigDecimal safeAllNet
 @param DividendYieldGroupView portfolioYield
 @param String grossAmountLabel
@@ -70,9 +74,9 @@
 	String realizedProfitNoneTitle = MessageUtil.getMessage("stock.profit.realized.none");
 	String evaluationProfitNoneTitle = MessageUtil.getMessage("stock.dividend.yield.evaluation.profit.none");
 	// 손익 색은 빨강 = 이익 · 파랑 = 손해 · 0 은 중립(게이트 관례).
-	java.util.function.Function<BigDecimal, String> profitClass = value -> value == null || value.signum() == 0 ? "text-base-content/70" : (value.signum() > 0 ? "text-profit" : "text-loss");
-	java.util.function.Function<BigDecimal, String> signedPctText = value -> value == null ? "-" : StockFormatUtil.signedPct(value.doubleValue(), 2);
-	java.util.function.Function<BigDecimal, String> combinedRateText = value -> StockViewSupport.msg("stock.dividend.yield.combined.rate", value == null ? "-" : StockFormatUtil.signedPct(value.doubleValue(), 2));
+	Function<BigDecimal, String> profitClass = value -> value == null || value.signum() == 0 ? "text-base-content/70" : (value.signum() > 0 ? "text-profit" : "text-loss");
+	Function<BigDecimal, String> signedPctText = value -> value == null ? "-" : StockFormatUtil.signedPct(value.doubleValue(), 2);
+	Function<BigDecimal, String> combinedRateText = value -> StockViewSupport.msg("stock.dividend.yield.combined.rate", value == null ? "-" : StockFormatUtil.signedPct(value.doubleValue(), 2));
 	String annualizedYieldLabel = MessageUtil.getMessage("stock.dividend.yield.column.annualized");
 	String heldTermDesc = MessageUtil.getMessage("stock.dividend.yield.term.held.average.principal.desc");
 	String annualizedTermDesc = MessageUtil.getMessage("stock.dividend.yield.term.annualized.desc");
@@ -80,13 +84,13 @@
 	String shortHeldLabel = MessageUtil.getMessage("stock.dividend.yield.cell.short.held");
 	// 합계 셈 · 칸 근거 문구(분자에서 빠진 배당 · 시가 분모 · 기준일 원금 없음 · 보유 일수)는 DividendYieldViewUtil 한 곳에 있다 - 부모의 연도별 표와
 	// 종목/계좌 카드가 같은 식을 한 벌씩 들고 있던 것을 모았다(2026-10-22). 까닭과 실측은 그 클래스 설명에.
-	java.util.function.Function<Long, String> heldDaysText = DividendYieldViewUtil::heldDaysText;
-	java.util.function.Function<Long, String> shortHeldDesc = DividendYieldViewUtil::shortHeldDesc;
+	Function<Long, String> heldDaysText = DividendYieldViewUtil::heldDaysText;
+	Function<Long, String> shortHeldDesc = DividendYieldViewUtil::shortHeldDesc;
 	String dividendYieldSelectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
 	String dividendYieldSelectionWeightLabel = MessageUtil.getMessage("stock.analytics.selection.weight");
-	java.util.function.BiFunction<List<DividendYieldGroupView>, java.util.function.Function<DividendYieldGroupView, BigDecimal>, BigDecimal> sumDividendYieldValue = StockAmountUtil::sum;
-	java.util.function.Function<List<DividendYieldGroupView>, Long> sumDividendYieldCount = DividendYieldViewUtil::dividendCount;
-	java.util.function.BiFunction<BigDecimal, BigDecimal, BigDecimal> computeYieldPct = DividendYieldViewUtil::yieldPct;
+	BiFunction<List<DividendYieldGroupView>, Function<DividendYieldGroupView, BigDecimal>, BigDecimal> sumDividendYieldValue = StockAmountUtil::sum;
+	Function<List<DividendYieldGroupView>, Long> sumDividendYieldCount = DividendYieldViewUtil::dividendCount;
+	BiFunction<BigDecimal, BigDecimal, BigDecimal> computeYieldPct = DividendYieldViewUtil::yieldPct;
 	BigDecimal footerGrossAmount = sumDividendYieldValue.apply(groupRows, DividendYieldGroupView::totalGrossAmount);
 	BigDecimal footerNetAmount = sumDividendYieldValue.apply(groupRows, DividendYieldGroupView::totalNetAmount);
 	BigDecimal footerTaxAmount = footerGrossAmount.subtract(footerNetAmount);
@@ -100,13 +104,13 @@
 	BigDecimal footerYieldOnCostPct = computeYieldPct.apply(footerNetWithPrincipalCost, footerPrincipalCost);
 	BigDecimal footerYieldOnMarketPct = computeYieldPct.apply(footerNetWithPrincipalMarket, footerMarketValue);
 	long footerDividendCount = sumDividendYieldCount.apply(groupRows);
-	java.util.function.Function<List<DividendYieldGroupView>, BigDecimal> footerAnnualizedPct = DividendYieldViewUtil::footerAnnualizedPct;
+	Function<List<DividendYieldGroupView>, BigDecimal> footerAnnualizedPct = DividendYieldViewUtil::footerAnnualizedPct;
 	BigDecimal footerHeldAverage = portfolioYield != null ? portfolioYield.heldAverageDailyPrincipalCost() : null;
-	java.util.function.BiFunction<BigDecimal, BigDecimal, String> yieldBasisTitle = (usedNet, totalNet) -> DividendYieldViewUtil.basisTitle(usedNet, totalNet, decimalFormat);
-	java.util.function.BiFunction<BigDecimal, BigDecimal, String> marketBasisTitle = (usedNet, base) -> DividendYieldViewUtil.marketBasisTitle(usedNet, base, decimalFormat);
+	BiFunction<BigDecimal, BigDecimal, String> yieldBasisTitle = (usedNet, totalNet) -> DividendYieldViewUtil.basisTitle(usedNet, totalNet, decimalFormat);
+	BiFunction<BigDecimal, BigDecimal, String> marketBasisTitle = (usedNet, base) -> DividendYieldViewUtil.marketBasisTitle(usedNet, base, decimalFormat);
 	String basisNoneTitle = MessageUtil.getMessage("stock.dividend.yield.basis.none");
 	String dailyBasisNoneTitle = MessageUtil.getMessage("stock.dividend.yield.daily.basis.none");
-	java.util.function.Function<BigDecimal, String> basisNoneOrNull = DividendYieldViewUtil::basisNoneOrNull;
+	Function<BigDecimal, String> basisNoneOrNull = DividendYieldViewUtil::basisNoneOrNull;
 }
 		<div class="card min-w-0 bg-base-100 shadow-sm border border-base-200">
 			<div class="card-body p-4" data-dividend-yield-selection-section data-yield-extra-scope>
@@ -284,10 +288,10 @@
 										data-principal-cost-day-sum="${row.principalCostDaySum() != null ? row.principalCostDaySum().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-held-day-count="${String.valueOf(row.heldDayCount())}"
 										data-short-held="${String.valueOf(row.shortHeld())}"
-										data-evaluation-profit="${holdingProfit != null && holdingProfit.evaluationProfit() != null ? holdingProfit.evaluationProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
-										data-realized-profit="${holdingProfit != null && holdingProfit.realizedProfit() != null ? holdingProfit.realizedProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
-										data-combined-profit="${holdingProfit != null ? holdingProfit.combinedProfit().toPlainString() : BigDecimal.ZERO.toPlainString()}"
-										data-current-value="${row.groupId() != null && currentValues.get(row.groupId()) != null ? currentValues.get(row.groupId()).toPlainString() : BigDecimal.ZERO.toPlainString()}">
+										data-evaluation-profit="${holdingProfit != null && holdingProfit.held() && holdingProfit.evaluationProfit() != null ? holdingProfit.evaluationProfit().toPlainString() : ""}"
+										data-realized-profit="${holdingProfit != null && holdingProfit.realizedProfit() != null ? holdingProfit.realizedProfit().toPlainString() : ""}"
+										data-combined-profit="${holdingProfit != null ? holdingProfit.combinedProfit().toPlainString() : ""}"
+										data-current-value="${row.groupId() != null && currentValues.get(row.groupId()) != null ? currentValues.get(row.groupId()).toPlainString() : ""}">
 										<th scope="row" class="font-medium"><a href="${"account".equals(kind) ? StockDetailLinkUtil.account(row.groupId() != null ? row.groupId().toString() : "") : StockDetailLinkUtil.item(row.groupId() != null ? row.groupId().toString() : "")}" class="link link-hover" data-stock-tag-tooltip="${tagTooltip}">${row.label()}</a></th>
 										<td class="text-right amount-value" data-current-value-cell>@if(row.groupId() != null && currentValues.get(row.groupId()) != null)${decimalFormat.format(currentValues.get(row.groupId()))}@else<span class="text-base-content/60" aria-hidden="true" title="${currentValueNoneTitle}">-</span><span class="sr-only">${currentValueNoneTitle}</span>@endif</td>
 										<td class="text-right" data-evaluation-profit-cell>@if(holdingProfit != null && holdingProfit.held())<span class="amount-value font-semibold ${profitClass.apply(holdingProfit.evaluationProfit())}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingProfit.evaluationProfit()))}</span> <div class="text-[11px] whitespace-nowrap ${profitClass.apply(holdingProfit.evaluationProfitPct())}">(${signedPctText.apply(holdingProfit.evaluationProfitPct())})</div>@else<span class="text-base-content/60" aria-hidden="true" title="${evaluationProfitNoneTitle}">-</span><span class="sr-only">${evaluationProfitNoneTitle}</span>@endif</td>

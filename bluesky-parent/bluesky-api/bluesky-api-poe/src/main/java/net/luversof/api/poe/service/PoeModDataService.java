@@ -37,8 +37,11 @@ public class PoeModDataService {
       // en(최대롤) 줄별 리마인더 Id(인게임 회색 부연, mods.json reminderText 사전 키 — 10-04 C131). 없으면 null
       List<List<String>> rem) {}
 
-  /** 패밀리 = 같은 그룹의 등급 사다리. gen = prefix|suffix. */
-  public record ModFamily(String gen, Boolean essence, List<ModTier> tiers) {}
+  /**
+   * 패밀리 = 같은 그룹의 등급 사다리. gen = prefix|suffix. grp = 게임 옵션 그룹(Mods.Families — 같은 그룹은 한 아이템에 하나,
+   * 10-29 R6-1). 없으면 null.
+   */
+  public record ModFamily(String gen, Boolean essence, List<ModTier> tiers, List<Integer> grp) {}
 
   /**
    * 속성 변형 하나(방어구 str/dex/int 등) — 변형마다 붙는 모드가 다르다. enchant · enchantKo = 군집 주얼 인챈트 줄(C514 — 패시브 수 ·
@@ -73,7 +76,12 @@ public class PoeModDataService {
       List<String> prefixes,
       List<String> suffixes,
       List<String> corrupted,
-      List<String> enchants) {}
+      List<String> enchants,
+      // 일부 베이스에만 붙는 계열 → 그 베이스(영향력 없는 풀만, 10-29 R6-2). 없으면 null
+      Map<String, List<BaseName>> partial) {}
+
+  /** 베이스 이름(영 · 한). */
+  public record BaseName(String en, String ko) {}
 
   private record ModData(
       String patch,
@@ -107,7 +115,10 @@ public class PoeModDataService {
       List<NamedFamily> prefixes,
       List<NamedFamily> suffixes,
       List<NamedFamily> corrupted,
-      List<NamedFamily> enchants) {}
+      List<NamedFamily> enchants,
+      // 일부 베이스에만 붙는 계열 키 → 그 베이스(10-29 R6-2 — 반지 '장착된 젬 레벨' = 무보석 반지만). 화면은 '○○ 전용'으로 보이고 일반
+      // 베이스 확률의 분모에서 뺀다. 없으면 빈 지도
+      Map<String, List<BaseName>> onlyBases) {}
 
   public record NamedFamily(String key, ModFamily family) {}
 
@@ -318,6 +329,29 @@ public class PoeModDataService {
   }
 
   /**
+   * 옵션 화면 분류 칩용 — 접두/접미 키를 카드와 같은 기준(기본 변형 · 영향력 없음, 풀에 실제로 붙는 계열)으로 걸러 개수가 카드 수와 맞는다(10-29 R6-4:
+   * 반지 칩 44 · 카드 41 — Royale · 밑줄 갈래 키가 칩 개수에만 들어갔다).
+   */
+  public List<ModItemClass> itemClassesForList() {
+    return data.itemClasses().stream()
+        .map(
+            c -> {
+              ClassMods mods = forItemClass(c.itemClass(), null);
+              return mods == null
+                  ? c
+                  : new ModItemClass(
+                      c.itemClass(),
+                      c.name(),
+                      c.nameKo(),
+                      c.variants(),
+                      c.influences(),
+                      mods.prefixes().stream().map(NamedFamily::key).toList(),
+                      mods.suffixes().stream().map(NamedFamily::key).toList());
+            })
+        .toList();
+  }
+
+  /**
    * 베이스 이름 → 변형(C516) — 그 베이스를 가진 변형이 정확히 하나면 그 키(주얼 색 · 심연 주얼 종류 · 방어구 속성), 없거나 여럿(군집 주얼 =
    * 인챈트마다)이면 null.
    */
@@ -391,7 +425,8 @@ public class PoeModDataService {
         inPool(resolve(prefixKeys), itemClass + "|" + resolvedVariant + "|" + resolvedInfluence),
         inPool(resolve(suffixKeys), itemClass + "|" + resolvedVariant + "|" + resolvedInfluence),
         resolve(corruptedKeys),
-        resolve(enchantKeys));
+        resolve(enchantKeys),
+        basePool != null && basePool.partial() != null ? basePool.partial() : Map.of());
   }
 
   /**
@@ -432,7 +467,8 @@ public class PoeModDataService {
       if (!tiers.isEmpty()) {
         out.add(
             new NamedFamily(
-                nf.key(), new ModFamily(nf.family().gen(), nf.family().essence(), tiers)));
+                nf.key(),
+                new ModFamily(nf.family().gen(), nf.family().essence(), tiers, nf.family().grp())));
       }
     }
     return mergeByModType(out);
@@ -491,7 +527,9 @@ public class PoeModDataService {
               .toList();
       out.add(
           new NamedFamily(
-              head.key(), new ModFamily(head.family().gen(), head.family().essence(), tiers)));
+              head.key(),
+              new ModFamily(
+                  head.family().gen(), head.family().essence(), tiers, head.family().grp())));
     }
     return out;
   }

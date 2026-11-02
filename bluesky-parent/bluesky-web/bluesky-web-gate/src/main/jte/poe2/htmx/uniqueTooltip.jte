@@ -21,7 +21,7 @@
 	// 툴팁 종류 줄 = 단수 분류(10-23 Q39 — Bows · 쇠뇌 → Bow · 석궁)
 	String itemClass = net.luversof.web.gate.poe.PoeClassNames.poe2Tip(item.itemClassKo(), item.itemClass());
 	// 무기는 종류 줄을 속성 칸 첫 줄로(10-23 Q62) — 머리 아래 칸엔 안 쓴다
-	boolean weaponBase = base != null && base.weapon() != null && base.weapon().damageMax() != null && base.weapon().damageMax() > 0;
+	boolean weaponBase = base != null && base.weapon() != null && base.weapon().hasDamage();
 	java.util.List<String> flavourLines = PoeText.lines(item.flavourKo(), item.flavour());
 	// 데이터의 "Corrupted"/"타락" 옵션 줄(고유 13) — 인게임은 옵션이 아니라 맨 아래 붉은 한 줄(10-05 C157, PoE1 uniqueDetail 짝)
 	java.util.Set<String> corruptedWords = java.util.Set.of("Corrupted", "타락");

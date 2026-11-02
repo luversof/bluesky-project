@@ -3,6 +3,7 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.LocalDate
 
 @param String fromDate = ""
 @param String toDate = ""
@@ -17,20 +18,20 @@
 @param BigDecimal recoveredAmount = null
 @param BigDecimal netNewProfit = null
 @param Double maxDrawdownPct = null
-@param java.time.LocalDate maxDrawdownPeakDate = null
-@param java.time.LocalDate maxDrawdownTroughDate = null
+@param LocalDate maxDrawdownPeakDate = null
+@param LocalDate maxDrawdownTroughDate = null
 @param Double currentDrawdownPct = null
 @param BigDecimal openingValue = null
 @param BigDecimal closingValue = null
 @param Double periodProfitRatePct = null
 @param BigDecimal peakValue = null
-@param java.time.LocalDate peakValueDate = null
+@param LocalDate peakValueDate = null
 @param BigDecimal troughValue = null
-@param java.time.LocalDate troughValueDate = null
+@param LocalDate troughValueDate = null
 @param boolean closingIsToday = true
 
 !{
-	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat amountFormat = StockFormatUtil.wonFormat();
 	String unrealizedLabel = MessageUtil.getMessage("stock.profit.unrealized");
 	String growthTitle = MessageUtil.getMessage("stock.asset.growth.summary.period.growth");
 	String growthDescription = MessageUtil.getMessage("stock.asset.growth.summary.period.growth.desc");

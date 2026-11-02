@@ -39,7 +39,7 @@ class DividendBreakdownRangeTest {
     // 서식에는 묶지 않는다 - spotless 가 삼항을 두세 줄로 나눈다(실측 2026-09-12: 이 검사가 그래서 한 번 깨졌다).
     String flat = source.replaceAll("\\s+", " ");
     // 2026-10-22 부터 첫날 · 끝날은 지역 변수로 한 번 셈하고 연도별 · 월별이 함께 쓴다.
-    int at = flat.indexOf("java.time.ZoneId breakdownZone =");
+    int at = flat.indexOf("ZoneId breakdownZone =");
     assertThat(at).as("집계 구역을 찾지 못했다").isGreaterThan(0);
     int end = flat.indexOf("model.addAttribute(\"totalItems\"", at);
     String block = flat.substring(at, end > at ? end : flat.length());

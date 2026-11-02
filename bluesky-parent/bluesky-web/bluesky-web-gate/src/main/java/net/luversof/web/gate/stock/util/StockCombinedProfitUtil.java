@@ -64,7 +64,7 @@ public final class StockCombinedProfitUtil {
 
   /** 표 아래 합계. 보유 중인 종목만 더한 값이라는 점은 화면이 밝힌다. */
   public static Breakdown total(Map<UUID, Breakdown> byStockItem) {
-    var rows = byStockItem == null ? java.util.List.<Breakdown>of() : byStockItem.values();
+    var rows = byStockItem == null ? List.<Breakdown>of() : byStockItem.values();
     return new Breakdown(
         StockAmountUtil.sum(rows, Breakdown::realizedProfit),
         StockAmountUtil.sum(rows, Breakdown::dividendTotal),

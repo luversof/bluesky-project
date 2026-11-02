@@ -3,10 +3,10 @@
 // 사용법: node parse-bench.mjs  (사전: extract.mjs — config.json 에 CraftingBenchOptions 포함)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, loadConfig, loadTable, buffStatsOf } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
-const OUT = path.join(DATA_DIR, "bench.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "bench.json");
 
 const options = loadTable("English", "CraftingBenchOptions");
 // ⚠ 장비 행은 ItemClasses 가 아니라 CraftingItemClassCategories 로 게이트된다(ItemClasses 는 맵 전용 행만).
@@ -27,9 +27,10 @@ const wantedClasses = new Set(baseItems.map((b) => b.itemClass));
 
 function rollValues(mod, kind) {
 	const values = new Map();
-	for (let i = 1; i <= 6; i++) {
+	const buff = buffStatsOf(mod);
+	for (let i = 1; i <= 8; i++) {
 		const statIndex = mod["StatsKey" + i];
-		if (statIndex == null) continue;
+		if (statIndex == null || buff.has(statIndex)) continue;
 		const stat = stats[statIndex];
 		if (!stat) continue;
 		values.set(stat.Id, mod["Stat" + i + (kind === "min" ? "Min" : "Max")] ?? 0);

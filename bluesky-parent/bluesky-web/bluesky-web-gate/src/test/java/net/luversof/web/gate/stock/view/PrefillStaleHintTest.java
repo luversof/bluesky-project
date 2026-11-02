@@ -50,8 +50,8 @@ class PrefillStaleHintTest {
 
     assertThat(template)
         .as("평균단가는 원 단위 반올림으로 견준다")
-        .contains("formCurrentAverageBuyPrice.setScale(0, java.math.RoundingMode.HALF_UP)");
-    assertThat(countOf(template, "setScale(0, java.math.RoundingMode.HALF_UP)"))
+        .contains("formCurrentAverageBuyPrice.setScale(0, RoundingMode.HALF_UP)");
+    assertThat(countOf(template, "setScale(0, RoundingMode.HALF_UP)"))
         .as("표의 판정 + 폼의 판정(양쪽 값 각각)")
         .isGreaterThanOrEqualTo(3);
     assertThat(template)
@@ -65,7 +65,7 @@ class PrefillStaleHintTest {
   void 종목을_못_찾으면_조용하다() throws IOException {
     String template = Files.readString(TEMPLATE, StandardCharsets.UTF_8);
 
-    assertThat(template).contains("java.util.UUID formStockItemId = null;");
+    assertThat(template).contains("UUID formStockItemId = null;");
     assertThat(template).contains("Integer formCurrentQuantity = formStockItemId != null ?");
     assertThat(template)
         .contains("BigDecimal formCurrentAverageBuyPrice = formStockItemId != null ?");

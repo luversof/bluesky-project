@@ -9,6 +9,8 @@
 @param long poolWeight = 0
 <%-- 제작 계산기 선택 체크박스(접두/접미 섹션에서만 true) --%>
 @param boolean selectable = false
+<%-- 일부 베이스에만 붙는 계열이면 그 베이스 이름(10-29 R6-2) — '○○ 전용' 표시, 확률은 그 베이스 풀 기준이 아니라 숨긴다 --%>
+@param String onlyFor = null
 
 !{
 	java.util.List<PoeModTier> tiers = family.tiers();
@@ -24,7 +26,7 @@
 	double famOdds = poolWeight > 0 ? famWeightSum * 100.0 / poolWeight : 0;
 }
 
-<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-mod-family="${key}" data-family-odds="${selectable && poolWeight > 0 ? String.format("%.4f", famOdds) : null}" data-family-gen="${selectable ? family.gen() : null}">
+<details class="rounded-lg border border-base-200 bg-base-100 overflow-hidden" data-mod-family="${key}" data-family-odds="${selectable && poolWeight > 0 ? String.format("%.4f", famOdds) : null}" data-family-gen="${selectable ? family.gen() : null}" data-family-grp="${selectable && family.grp() != null && !family.grp().isEmpty() ? String.join(",", family.grp().stream().map(String::valueOf).toList()) : null}">
 	<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
 		@if(selectable && poolWeight > 0)
 			<%-- 계산기 선택 — summary 안 체크박스는 클릭해도 details 를 토글하지 않는다(체크박스가 활성화 대상, PoE2 와 같다 — 10-13 C287 인라인 onclick 제거) --%>
@@ -41,6 +43,9 @@
 				@for(String line : (ko ? top.ko() : top.en()))
 					<span class="text-[13px] text-[#8888ff] block truncate">$unsafe{PoeText.highlightValues(line)}</span>
 				@endfor
+			@endif
+			@if(onlyFor != null)
+				<span class="badge badge-ghost badge-xs h-auto whitespace-normal [overflow-wrap:anywhere]" data-family-only>${ko ? onlyFor + " 전용" : onlyFor + " only"}</span>
 			@endif
 		</span>
 		<%-- 내부 계열 Id 는 영어 화면에만(10-23 Q87 — 한국어 화면에 영어 Id 가 카드마다 보였다) --%>

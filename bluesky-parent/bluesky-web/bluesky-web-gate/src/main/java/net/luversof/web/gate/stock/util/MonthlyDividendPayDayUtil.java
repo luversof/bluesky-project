@@ -1,11 +1,17 @@
 package net.luversof.web.gate.stock.util;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
+import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 
 /**
  * 지급이력에서 <b>종목별</b> 대표 지급일(day-of-month)을 낸다.
@@ -51,7 +57,7 @@ public final class MonthlyDividendPayDayUtil {
     }
     String trimmed = symbol.trim();
     // Locale.ROOT - 기본 로케일이 터키어면 소문자 i 가 점 있는 대문자가 된다. 다른 세 사본은 이미 ROOT 였다(2026-10-22 하나로 모음).
-    return trimmed.isEmpty() ? null : trimmed.toUpperCase(java.util.Locale.ROOT);
+    return trimmed.isEmpty() ? null : trimmed.toUpperCase(Locale.ROOT);
   }
 
   /**
@@ -63,8 +69,7 @@ public final class MonthlyDividendPayDayUtil {
    *
    * <p>한 달에 두 번 지급된 종목이 있으면 <b>가장 늦은 날</b>을 쓴다(달력 한 칸에 한 번만 놓는다).
    */
-  public static Map<String, Integer> actualDayByStockItem(
-      List<Payout> payouts, java.time.YearMonth month) {
+  public static Map<String, Integer> actualDayByStockItem(List<Payout> payouts, YearMonth month) {
     Map<String, Integer> bySymbol = new LinkedHashMap<>();
     if (payouts == null || month == null) {
       return bySymbol;
@@ -73,7 +78,7 @@ public final class MonthlyDividendPayDayUtil {
       if (payout == null || payout.payDate() == null) {
         continue;
       }
-      if (!java.time.YearMonth.from(payout.payDate()).equals(month)) {
+      if (!YearMonth.from(payout.payDate()).equals(month)) {
         continue;
       }
       String symbol = normalizeSymbol(payout.symbol());
@@ -144,7 +149,7 @@ public final class MonthlyDividendPayDayUtil {
    *
    * <p>31 일에 지급하던 종목도 2 월에는 31 일이 없다 &mdash; 그 달의 마지막 날로 당긴다. 안 그러면 달력에서 그 종목이 통째로 사라진다.
    */
-  public static int dayInMonth(int day, java.time.YearMonth month) {
+  public static int dayInMonth(int day, YearMonth month) {
     if (day <= 0 || month == null) {
       return 0;
     }
@@ -182,11 +187,10 @@ public final class MonthlyDividendPayDayUtil {
 
   /** 토 · 일이 아니고 공휴일 표에 없는 날. */
   public static boolean isBusinessDay(LocalDate date) {
-    java.time.DayOfWeek weekday = date.getDayOfWeek();
-    return weekday != java.time.DayOfWeek.SATURDAY
-        && weekday != java.time.DayOfWeek.SUNDAY
-        && net.luversof.web.gate.util.KoreanHolidays.holidayName(date, java.util.Locale.KOREAN)
-            == null;
+    DayOfWeek weekday = date.getDayOfWeek();
+    return weekday != DayOfWeek.SATURDAY
+        && weekday != DayOfWeek.SUNDAY
+        && net.luversof.web.gate.util.KoreanHolidays.holidayName(date, Locale.KOREAN) == null;
   }
 
   /** 기준일과 지급일이 둘 다 있는 한 건(2026-10-20). */
@@ -209,8 +213,8 @@ public final class MonthlyDividendPayDayUtil {
    * 확인이 같은 변환을 따로 적고 있었다(2026-10-22 정리).
    */
   public static Map<String, SettlementRule> settlementRulesFromResponses(
-      List<net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse> payouts) {
-    List<RecordedPayout> recorded = new java.util.ArrayList<>();
+      List<MonthlyDividendPayoutResponse> payouts) {
+    List<RecordedPayout> recorded = new ArrayList<>();
     if (payouts != null) {
       for (var payout : payouts) {
         if (payout != null) {
@@ -244,7 +248,7 @@ public final class MonthlyDividendPayDayUtil {
         }
         String symbol = normalizeSymbol(payout.symbol());
         if (symbol != null) {
-          bySymbol.computeIfAbsent(symbol, key -> new java.util.ArrayList<>()).add(payout);
+          bySymbol.computeIfAbsent(symbol, key -> new ArrayList<>()).add(payout);
         }
       }
     }
@@ -262,8 +266,7 @@ public final class MonthlyDividendPayDayUtil {
         boolean all = true;
         for (RecordedPayout payout : recent) {
           LocalDate expected =
-              KrxRecordDateUtil.recordDate(
-                  java.time.YearMonth.from(payout.recordDate()), candidate);
+              KrxRecordDateUtil.recordDate(YearMonth.from(payout.recordDate()), candidate);
           if (!payout.recordDate().equals(expected)) {
             all = false;
             break;
@@ -303,17 +306,17 @@ public final class MonthlyDividendPayDayUtil {
   /**
    * 그 달({@code payMonth})에 들어올 지급일. 월중은 그 달 기준일, 월말은 앞 달 기준일에서 센다. 지급일이 그 달을 벗어나면 null(예전 추정으로).
    */
-  public static LocalDate projectedPayDate(java.time.YearMonth payMonth, SettlementRule rule) {
+  public static LocalDate projectedPayDate(YearMonth payMonth, SettlementRule rule) {
     if (payMonth == null || rule == null) {
       return null;
     }
-    java.time.YearMonth recordMonth =
+    YearMonth recordMonth =
         "MID_MONTH".equals(rule.payoutWindow()) ? payMonth : payMonth.minusMonths(1);
     LocalDate record = KrxRecordDateUtil.recordDate(recordMonth, rule.payoutWindow());
     if (record == null) {
       return null;
     }
     LocalDate pay = KrxRecordDateUtil.plusTradingDays(record, rule.lagTradingDays());
-    return java.time.YearMonth.from(pay).equals(payMonth) ? pay : null;
+    return YearMonth.from(pay).equals(payMonth) ? pay : null;
   }
 }

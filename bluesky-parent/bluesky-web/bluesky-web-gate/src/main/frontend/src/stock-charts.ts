@@ -18,6 +18,7 @@ interface StockChartsAPI {
 		existingInstance?: any,
 	) => any;
 	balancedPercents?: (values: number[], digits?: number) => string[];
+	escapeHtml?: (value: unknown) => string;
 	renderChartEmptyNote?: (
 		canvasId: string,
 		isEmpty: boolean,
@@ -222,6 +223,17 @@ function balancedPercents(values: number[], digits?: number): string[] {
 	return bumped.map((v) => (v / factor).toFixed(scale));
 }
 StockCharts.balancedPercents = balancedPercents;
+
+/** innerHTML 로 짜는 범례에 넣는 이름 - 종목 · 계좌 이름은 사용자가 넣은 글자라 HTML 로 해석하지 않는다(검토 지적 2026-10-29). */
+function escapeHtml(value: unknown): string {
+	return String(value == null ? "" : value)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+}
+StockCharts.escapeHtml = escapeHtml;
 
 StockCharts.formatNumber = function (value: any) {
 	return new Intl.NumberFormat(resolveLocale()).format(Number(value) || 0);
@@ -969,7 +981,8 @@ StockCharts.initDonutFromData = function (
 		// 조각마다 따로 반올림하면 범례 백분율의 합이 100.0 이 아니게 된다(실측: 매매 도넛 43개 합 99.9%).
 		const shownPercents = balancedPercents(d.data, 1);
 		legendEl.innerHTML = d.labels
-			.map((l: string, i: number) => {
+			.map((rawLabel: string, i: number) => {
+				const l = escapeHtml(rawLabel);
 				const pct = shownPercents[i];
 				const raw = d.rawData[i];
 				const sign = isProfitMode ? (raw >= 0 ? "\u25b2 " : "\u25bc ") : "";

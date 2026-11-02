@@ -250,6 +250,8 @@ export function createStatDescriber(fileDir, extraFiles = [], options = {}) {
 			}
 			let sequential = 0;
 			const text = variant.text
+				// 게임 원문 오타 '{0%}' → '{0}%'(10-29 R10 — PoE2 지진 분쇄 퀄리티 한국어 줄이 자리표시자째 나왔다)
+				.replace(/\{(\d+)%\}/g, "{$1}%")
 				.replace(/\{(\d*)(?::([^}]*))?\}/g, (m, idx, spec) => {
 					const position = idx === "" ? sequential++ : Number(idx);
 					const value = display[position];
@@ -312,7 +314,7 @@ export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 	const tokensOf = (text) => unmark(text).replace(/\\n/g, " ").match(TOKEN) || [];
 	const isPlaceholder = (token) => token.includes("{");
 
-	// 영어 스켈레톤 → { enTokens, koText } (먼저 등장한 것 우선)
+	// 영어 스켈레톤 → [{ enTokens, koText }] (먼저 등장한 순 — 고정 숫자가 PoB 줄과 맞는 첫 후보를 고른다, 아래 pick)
 	const bySkeleton = new Map();
 	// 정확 일치가 없을 때만 대소문자 무시(10-09 C210 — PoB "50% Chance to avoid being Stunned during Effect" ↔ 게임 "Avoid". 처음부터 무시하면
 	//   "Bleeding cannot be inflicted on you" 가 대소문자만 다른 다른 설명으로 바뀌었다 — 출혈에 면역 → 출혈이 플레이어에게 유발될 수 없음)
@@ -323,17 +325,27 @@ export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 		for (let k = 0; k < en.length; k++) {
 			if (!ko[k]) continue;
 			const key = skel(en[k].text);
-			if (key && !bySkeleton.has(key)) bySkeleton.set(key, { enTokens: tokensOf(en[k].text), koText: ko[k].text });
-			if (key && !byLowerSkeleton.has(key.toLowerCase())) byLowerSkeleton.set(key.toLowerCase(), { enTokens: tokensOf(en[k].text), koText: ko[k].text });
+			if (!key) continue;
+			const entry = { enTokens: tokensOf(en[k].text), koText: ko[k].text };
+			if (!bySkeleton.has(key)) bySkeleton.set(key, []);
+			bySkeleton.get(key).push(entry);
+			if (!byLowerSkeleton.has(key.toLowerCase())) byLowerSkeleton.set(key.toLowerCase(), []);
+			byLowerSkeleton.get(key.toLowerCase()).push(entry);
 		}
 	}
 
+	// 뼈대가 같은 후보 중 템플릿의 고정 숫자가 PoB 줄 숫자와 같은 첫 후보(10-29 R12 — 숫자를 지운 뼈대만 보면
+	//   "25% chance to cause Bleeding on Hit"(local_chance_to_bleed_on_hit_25%) 가 "{0}% chance …" 보다 먼저라 (15-25)% 가 한국어로 '25%' 가 됐고,
+	//   "per 20 Dexterity" 가 "per 10" 을 이겼다). 맞는 후보가 없으면 null — 틀린 숫자보다 영어 그대로가 낫다
+	const bare = (token) => token.replace(/[+()]/g, "");
+	const pick = (entries, pobTokens) =>
+		(entries || []).find((e) => e.enTokens.length === pobTokens.length && e.enTokens.every((t, i) => isPlaceholder(t) || bare(t) === bare(pobTokens[i])));
+
 	// 단일 라인 번역
 	function translateLine(englishLine) {
-		const entry = bySkeleton.get(skel(englishLine)) || byLowerSkeleton.get(skel(englishLine).toLowerCase());
-		if (!entry) return null;
 		const pobTokens = tokensOf(englishLine);
-		if (pobTokens.length !== entry.enTokens.length) return null;
+		const entry = pick(bySkeleton.get(skel(englishLine)), pobTokens) || pick(byLowerSkeleton.get(skel(englishLine).toLowerCase()), pobTokens);
+		if (!entry) return null;
 		// 영어/PoB 토큰은 1:1 정렬 — 플레이스홀더 인덱스별 PoB 값 (고정 숫자는 무시)
 		const valueByIndex = new Map();
 		let seq = 0;

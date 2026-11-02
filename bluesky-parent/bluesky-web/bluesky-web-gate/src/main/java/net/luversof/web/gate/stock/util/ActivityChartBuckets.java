@@ -2,6 +2,7 @@ package net.luversof.web.gate.stock.util;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,7 +38,7 @@ public final class ActivityChartBuckets {
     }
     YearMonth first = monthSums.firstKey();
     YearMonth last = monthSums.lastKey();
-    boolean byYear = java.time.temporal.ChronoUnit.MONTHS.between(first, last) + 1 > MONTH_LIMIT;
+    boolean byYear = ChronoUnit.MONTHS.between(first, last) + 1 > MONTH_LIMIT;
     Map<String, BigDecimal[]> buckets = new LinkedHashMap<>();
     for (YearMonth month = first; !month.isAfter(last); month = month.plusMonths(1)) {
       String label =

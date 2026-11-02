@@ -105,7 +105,8 @@ public class MonthlyDividendSnapshotService {
             : LocalDate.now(StockHoldingPeriodService.DEFAULT_ZONE));
     snapshot.setLatestMonthlyDividendPerShare(nz(request.getLatestMonthlyDividendPerShare()));
     snapshot.setAverageMonthlyDividendPerShare1y(nz(request.getAverageMonthlyDividendPerShare1y()));
-    snapshot.setAverageTaxableBaseRatio1y(nz(request.getAverageTaxableBaseRatio1y()));
+    // 모르면 null 그대로(0 은 "비과세" 로 읽힌다, 2026-11-02).
+    snapshot.setAverageTaxableBaseRatio1y(request.getAverageTaxableBaseRatio1y());
     snapshot.setHeldQuantity(request.getHeldQuantity() != null ? request.getHeldQuantity() : 0);
     snapshot.setAverageBuyPrice(nz(request.getAverageBuyPrice()));
     snapshot.setUpdatedDate(now);
@@ -148,7 +149,7 @@ public class MonthlyDividendSnapshotService {
     BigDecimal latestMonthlyDividendPerShare = nz(snapshot.getLatestMonthlyDividendPerShare());
     BigDecimal averageMonthlyDividendPerShare1y =
         nz(snapshot.getAverageMonthlyDividendPerShare1y());
-    BigDecimal averageTaxableBaseRatio1y = nz(snapshot.getAverageTaxableBaseRatio1y());
+    BigDecimal averageTaxableBaseRatio1y = snapshot.getAverageTaxableBaseRatio1y();
     BigDecimal averageBuyPrice = nz(snapshot.getAverageBuyPrice());
     int heldQuantity = snapshot.getHeldQuantity() != null ? snapshot.getHeldQuantity() : 0;
     BigDecimal quantity = BigDecimal.valueOf(heldQuantity);
@@ -162,14 +163,19 @@ public class MonthlyDividendSnapshotService {
     // 수량이 0 이면 0 ÷ 0 이 되어 "수익률 0%" 라는 거짓이 나온다(2026-09-21). 미보유 월배당 ETF 비교는 monthlyDividendCatalog 가
     // 맡는다.
     BigDecimal expectedMonthlyYieldPct = percent(averageMonthlyDividendPerShare1y, currentPrice);
-    BigDecimal expectedAnnualYieldPct = annualize(expectedMonthlyYieldPct);
+    // 연 % 는 월 금액 x 12 를 바로 나눈다 - 반올림한 월 % x 12 는 최대 0.06%p 어긋났다(검토 지적 2026-10-29).
+    BigDecimal expectedAnnualYieldPct =
+        percent(averageMonthlyDividendPerShare1y.multiply(BigDecimal.valueOf(12)), currentPrice);
     BigDecimal totalCost = averageBuyPrice.multiply(quantity);
     BigDecimal expectedMonthlyYieldOnCostPct = percent(expectedMonthlyDividend, totalCost);
-    BigDecimal expectedAnnualYieldOnCostPct = annualize(expectedMonthlyYieldOnCostPct);
+    BigDecimal expectedAnnualYieldOnCostPct =
+        percent(expectedMonthlyDividend.multiply(BigDecimal.valueOf(12)), totalCost);
     BigDecimal expectedTaxableBaseAmount =
-        expectedMonthlyDividend
-            .multiply(averageTaxableBaseRatio1y)
-            .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        averageTaxableBaseRatio1y == null
+            ? null
+            : expectedMonthlyDividend
+                .multiply(averageTaxableBaseRatio1y)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     BigDecimal totalReturnOnCostPct =
         percent(currentPrice.subtract(averageBuyPrice), averageBuyPrice);
     BigDecimal expectedCombinedReturnPct =
@@ -275,9 +281,5 @@ public class MonthlyDividendSnapshotService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, field + " must not be negative: " + value);
     }
-  }
-
-  private BigDecimal annualize(BigDecimal monthlyPercent) {
-    return nz(monthlyPercent).multiply(BigDecimal.valueOf(12)).setScale(2, RoundingMode.HALF_UP);
   }
 }

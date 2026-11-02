@@ -1,4 +1,5 @@
 @import io.github.luversof.boot.context.support.MessageUtil
+@import java.text.MessageFormat
 
 @param String retryUrl = ""
 <%-- 잘못된 입력(4xx)이면 리졸버가 badrequest 키를 넘긴다. 기본은 "불러오지 못했습니다". --%>
@@ -15,7 +16,7 @@
 	</svg>
 	<div class="min-w-0">
 		<div class="font-semibold">${MessageUtil.getMessage(titleKey)}</div>
-		<div class="text-sm opacity-80 whitespace-normal">${descArg == null || descArg.isBlank() ? MessageUtil.getMessage(descKey) : java.text.MessageFormat.format(MessageUtil.getMessage(descKey), descArg)}</div>
+		<div class="text-sm opacity-80 whitespace-normal">${descArg == null || descArg.isBlank() ? MessageUtil.getMessage(descKey) : MessageFormat.format(MessageUtil.getMessage(descKey), descArg)}</div>
 	</div>
 	@if(retryUrl != null && !retryUrl.isEmpty())
 		<%-- 실패한 조회를 그 자리에서 다시 부른다. 이 알림 자체를 갈아끼우므로 성공하면 원래 조각이 들어온다. --%>

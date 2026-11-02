@@ -28,7 +28,9 @@ export {};
 			return '₩' + formatMonthlyDividendSimulatorNumber(value, 0);
 		}
 
-		function formatMonthlyDividendSimulatorSignedCurrency(value: number) {
+		// 부호 · 색은 보이는 자릿수로 반올림한 값으로 정한다 - -0.4 원이 "-₩0" 손실색으로 나왔다(검토 지적 2026-10-29).
+		function formatMonthlyDividendSimulatorSignedCurrency(rawValue: number) {
+			const value = Math.round(rawValue);
 			const absolute = formatMonthlyDividendSimulatorCurrency(Math.abs(value));
 			if (value > 0) {
 				return '+' + absolute;
@@ -39,7 +41,8 @@ export {};
 			return absolute;
 		}
 
-		function formatMonthlyDividendSimulatorSignedPercent(value: number) {
+		function formatMonthlyDividendSimulatorSignedPercent(rawValue: number) {
+			const value = Number(rawValue.toFixed(2));
 			const absolute = formatMonthlyDividendSimulatorNumber(Math.abs(value), 2) + '%';
 			if (value > 0) {
 				return '+' + absolute;
@@ -205,13 +208,13 @@ export {};
 			const profitLabel = summary.querySelector<HTMLElement>('[data-monthly-selection-profit]');
 			if (profitLabel) {
 				profitLabel.textContent = formatMonthlyDividendSimulatorSignedCurrency(evaluationProfit);
-				setMonthlyDividendSimulatorSignedTone(profitLabel, evaluationProfit);
+				setMonthlyDividendSimulatorSignedTone(profitLabel, Math.round(evaluationProfit));
 			}
 
 			const profitRateLabel = summary.querySelector<HTMLElement>('[data-monthly-selection-profit-rate]');
 			if (profitRateLabel) {
 				profitRateLabel.textContent = formatMonthlyDividendSimulatorSignedPercent(evaluationReturn);
-				setMonthlyDividendSimulatorSignedTone(profitRateLabel, evaluationReturn);
+				setMonthlyDividendSimulatorSignedTone(profitRateLabel, Number(evaluationReturn.toFixed(2)));
 			}
 
 			const annualYieldLabel = summary.querySelector<HTMLElement>('[data-monthly-selection-annual-yield]');

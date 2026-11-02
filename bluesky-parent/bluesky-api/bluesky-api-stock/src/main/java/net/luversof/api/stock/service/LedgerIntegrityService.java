@@ -5,16 +5,22 @@ import static net.luversof.api.stock.util.StockMath.nz;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -22,6 +28,7 @@ import java.util.function.Predicate;
 import org.springframework.stereotype.Service;
 
 import net.luversof.api.stock.constant.TradeType;
+import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.domain.Dividend;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.Trade;
@@ -172,11 +179,11 @@ public class LedgerIntegrityService {
    */
   static final class RowIndex {
 
-    private final Map<String, Set<String>> codesByRow = new java.util.LinkedHashMap<>();
-    private final Map<String, String> accountByRow = new java.util.LinkedHashMap<>();
+    private final Map<String, Set<String>> codesByRow = new LinkedHashMap<>();
+    private final Map<String, String> accountByRow = new LinkedHashMap<>();
 
     void add(String rowKey, String code, String accountName) {
-      codesByRow.computeIfAbsent(rowKey, key -> new java.util.LinkedHashSet<>()).add(code);
+      codesByRow.computeIfAbsent(rowKey, key -> new LinkedHashSet<>()).add(code);
       if (accountName != null) {
         accountByRow.putIfAbsent(rowKey, accountName);
       }
@@ -234,12 +241,11 @@ public class LedgerIntegrityService {
     // 서로 다른 행 수를 함께 낸다. 예시 상한과 무관하게 <b>모든</b> 적중을 센다.
     RowIndex distinctRows = new RowIndex();
     // 계좌별 집계: 계좌명 -> (발견 수, 서로 다른 행 키). 규칙 헬퍼가 채운다.
-    Map<String, long[]> accountFindingCounts = new java.util.LinkedHashMap<>();
-    Map<String, Set<String>> accountDistinctRows = new java.util.LinkedHashMap<>();
+    Map<String, long[]> accountFindingCounts = new LinkedHashMap<>();
+    Map<String, Set<String>> accountDistinctRows = new LinkedHashMap<>();
     Map<UUID, String> accountNames = new HashMap<>();
     // 아래 비과세 · 수수료 기록 없음 판정도 같은 목록을 쓴다 - 한 번만 읽는다(예전엔 같은 조회를 두 번 했다).
-    List<net.luversof.api.stock.domain.Account> userAccounts =
-        accountRepository.findByUserId(userId);
+    List<Account> userAccounts = accountRepository.findByUserId(userId);
     for (var account : userAccounts) {
       accountNames.put(account.getId(), account.getName());
     }
@@ -344,8 +350,8 @@ public class LedgerIntegrityService {
     // 계좌라는 전제). 그런데 그 계좌의 배당에 세금이 기록돼 있으면 실제 받은 돈보다 크게 보인다.
     // 지금은 그런 건이 없지만(실측 2026-08-22: 비과세 3계좌의 기록 세금 합 0 원) 화면이 이 전제에
     // 기대고 있으므로, 전제가 깨지는 순간 알 수 있어야 한다.
-    java.util.Set<UUID> taxDeferredAccountIds = new java.util.HashSet<>();
-    Set<UUID> feeRecordsUnavailableAccountIds = new java.util.HashSet<>();
+    Set<UUID> taxDeferredAccountIds = new HashSet<>();
+    Set<UUID> feeRecordsUnavailableAccountIds = new HashSet<>();
     for (var account : userAccounts) {
       var config = account.getJsonConfig();
       if (config == null) {
@@ -561,7 +567,7 @@ public class LedgerIntegrityService {
     // 그래서 관측이 시작되는 해보다 오래된 매도에 그 해의 세율을 적용하면 실제보다 <b>낮게</b> 잡힌다 -
     // 단언이 아니라 하한이므로 원장 밖 지식을 끌어오지 않고도 "적어도 이만큼" 을 말할 수 있다.
     Integer earliestYear =
-        ratesByYear.keySet().stream().min(java.util.Comparator.naturalOrder()).orElse(null);
+        ratesByYear.keySet().stream().min(Comparator.naturalOrder()).orElse(null);
     if (earliestYear == null || year > earliestYear) {
       return " (같은 해에 거래세가 기록된 매도가 없어 얼마가 빠졌는지 원장만으로는 알 수 없다)";
     }
@@ -603,12 +609,11 @@ public class LedgerIntegrityService {
    *
    * <p>기준일 이후의 재매수는 보지 않는다. 나중에 다시 사서 지금도 들고 있다고 해서, 그 배당이 어느 시점의 것인지 되짚는 데 도움이 되지는 않는다.
    */
-  private static String lastHeldHint(
-      java.util.List<Trade> stockItemTrades, Integer quantity, Instant basis) {
+  private static String lastHeldHint(List<Trade> stockItemTrades, Integer quantity, Instant basis) {
     if (stockItemTrades == null || quantity == null || quantity <= 0 || basis == null) {
       return "";
     }
-    java.util.List<Trade> ordered =
+    List<Trade> ordered =
         stockItemTrades.stream()
             .filter(t -> t.getTradeDate() != null && !t.getTradeDate().isAfter(basis))
             .sorted(Comparator.comparing(Trade::getTradeDate))
@@ -620,7 +625,7 @@ public class LedgerIntegrityService {
       running += trade.getType() == TradeType.SELL ? -trade.getQuantity() : trade.getQuantity();
       if (before >= quantity && running < quantity) {
         // 이 거래로 수량이 깨졌다. 그 전날까지는 들고 있었다.
-        lastHeld = trade.getTradeDate().minus(java.time.Duration.ofDays(1));
+        lastHeld = trade.getTradeDate().minus(Duration.ofDays(1));
       }
     }
     if (lastHeld == null) {
@@ -753,18 +758,18 @@ public class LedgerIntegrityService {
    *
    * <p>이 값보다 많은 수량에 배당이 붙었다면 시차로는 설명되지 않는다 &mdash; 배당 수량이 잘못됐거나 매수 기록이 빠진 것이다.
    */
-  private static int maxHoldingQuantityUntil(java.util.List<Trade> stockItemTrades, Instant at) {
+  private static int maxHoldingQuantityUntil(List<Trade> stockItemTrades, Instant at) {
     if (stockItemTrades == null || at == null) {
       return 0;
     }
-    java.util.List<Trade> ordered = new ArrayList<>();
+    List<Trade> ordered = new ArrayList<>();
     for (Trade trade : stockItemTrades) {
       if (trade.getTradeDate() != null && !trade.getTradeDate().isAfter(at)) {
         ordered.add(trade);
       }
     }
     ordered.sort(
-        java.util.Comparator.comparing(Trade::getTradeDate)
+        Comparator.comparing(Trade::getTradeDate)
             .thenComparing(trade -> trade.getType() == TradeType.SELL ? 1 : 0));
     int quantity = 0;
     int peak = 0;
@@ -780,7 +785,7 @@ public class LedgerIntegrityService {
    *
    * <p>이 계산은 화면의 보유 스냅샷과 같은 규칙이다 - 분할·병합 환산은 수량을 바꾸지 않는다(실측 확인).
    */
-  private static int holdingQuantityAt(java.util.List<Trade> stockItemTrades, Instant at) {
+  private static int holdingQuantityAt(List<Trade> stockItemTrades, Instant at) {
     if (stockItemTrades == null || at == null) {
       return 0;
     }
@@ -806,9 +811,7 @@ public class LedgerIntegrityService {
     }
     String accountName = accountNames.getOrDefault(accountId, "?");
     accountFindingCounts.computeIfAbsent(accountName, key -> new long[1])[0]++;
-    accountDistinctRows
-        .computeIfAbsent(accountName, key -> new java.util.LinkedHashSet<>())
-        .add(rowKey);
+    accountDistinctRows.computeIfAbsent(accountName, key -> new LinkedHashSet<>()).add(rowKey);
   }
 
   /**
@@ -892,7 +895,7 @@ public class LedgerIntegrityService {
     //
     // 한 번도 판 적이 없는 종목은 이 방법으로 가릴 수 없어 대상에서 빠진다(하나금융지주가 그렇고,
     // 그 건은 DIVIDEND_WITHOUT_TRADE 가 이미 잡는다).
-    java.util.Set<UUID> individualStockItemIds = new java.util.HashSet<>();
+    Set<UUID> individualStockItemIds = new HashSet<>();
     for (Trade trade : trades) {
       if (trade.getType() == TradeType.SELL
           && trade.getStockItemId() != null
@@ -967,24 +970,22 @@ public class LedgerIntegrityService {
     // 실측 2026-08-23: 4 건이며 주기 추정이 짚은 4 종목과 정확히 같다 - KODEX 200타겟위클리커버드콜,
     // KODEX 한국부동산리츠인프라, PLUS 고배당주위클리고정커버드콜, RISE 코리아밸류업위클리고정커버드콜의
     // 2026-08 이다(넷 다 참조 마지막이 2026-07-20). 참조가 있는 8 종목 중 나머지 4 종목은 빠진 달이 없다.
-    Set<String> referencedMonths = new java.util.HashSet<>();
-    Set<UUID> referencedStockItemIds = new java.util.HashSet<>();
+    Set<String> referencedMonths = new HashSet<>();
+    Set<UUID> referencedStockItemIds = new HashSet<>();
     for (var payout : monthlyDividendPayoutQuery.findAllByOrderByPayDateDescRecordDateDesc()) {
       if (payout.getStockItemId() == null || payout.getPayDate() == null) {
         continue;
       }
       referencedStockItemIds.add(payout.getStockItemId());
-      referencedMonths.add(
-          payout.getStockItemId() + "@" + java.time.YearMonth.from(payout.getPayDate()));
+      referencedMonths.add(payout.getStockItemId() + "@" + YearMonth.from(payout.getPayDate()));
     }
     // 이 규칙의 주어는 "이 종목의 이 달 참조가 없다" 이지 개별 배당 행이 아니다. 원장 행으로 세면 같은
     // (종목, 달)이 계좌 수만큼 부풀어 할 일이 실제보다 많아 보인다 - 실측 2026-08-23: 원장 행으로는
     // 9 건인데 자동 가져오기는 4 번이면 끝난다(KODEX 한국부동산리츠인프라 4 계좌, PLUS 고배당주위클리고정
     // 커버드콜 3 계좌, KODEX 200타겟위클리커버드콜·RISE 코리아밸류업위클리고정커버드콜 각 1 계좌).
     // 그래서 (종목, 달)로 묶어 세고, 어느 계좌들이 걸려 있는지는 상세에 적는다.
-    Map<String, java.util.TreeSet<String>> missingReferenceAccounts =
-        new java.util.LinkedHashMap<>();
-    Map<String, Dividend> missingReferenceSample = new java.util.LinkedHashMap<>();
+    Map<String, TreeSet<String>> missingReferenceAccounts = new LinkedHashMap<>();
+    Map<String, Dividend> missingReferenceSample = new LinkedHashMap<>();
     for (Dividend dividend : dividends) {
       if (dividend.getStockItemId() == null || dividend.getPayDate() == null) {
         continue;
@@ -992,8 +993,7 @@ public class LedgerIntegrityService {
       if (!referencedStockItemIds.contains(dividend.getStockItemId())) {
         continue;
       }
-      java.time.YearMonth month =
-          java.time.YearMonth.from(dividend.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate());
+      YearMonth month = YearMonth.from(dividend.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate());
       if (referencedMonths.contains(dividend.getStockItemId() + "@" + month)) {
         continue;
       }
@@ -1001,11 +1001,9 @@ public class LedgerIntegrityService {
       missingReferenceSample.putIfAbsent(key, dividend);
       String accountName = accountNames.get(dividend.getAccountId());
       if (accountName != null) {
-        missingReferenceAccounts
-            .computeIfAbsent(key, ignored -> new java.util.TreeSet<>())
-            .add(accountName);
+        missingReferenceAccounts.computeIfAbsent(key, ignored -> new TreeSet<>()).add(accountName);
       } else {
-        missingReferenceAccounts.computeIfAbsent(key, ignored -> new java.util.TreeSet<>());
+        missingReferenceAccounts.computeIfAbsent(key, ignored -> new TreeSet<>());
       }
     }
     if (!missingReferenceSample.isEmpty()) {
@@ -1017,14 +1015,13 @@ public class LedgerIntegrityService {
         if (missingReferenceExamples.size() >= maxExamples) {
           continue;
         }
-        java.util.TreeSet<String> accounts = missingReferenceAccounts.get(entry.getKey());
+        TreeSet<String> accounts = missingReferenceAccounts.get(entry.getKey());
         missingReferenceExamples.add(
             new LedgerIntegrityFinding.Example(
                 day(sample.getPayDate()),
                 names.get(sample.getStockItemId()),
                 "원장에는 "
-                    + java.time.YearMonth.from(
-                        sample.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate())
+                    + YearMonth.from(sample.getPayDate().atZone(MARKET_ZONE_ID).toLocalDate())
                     + " 배당이 있는데 참조 지급 이력에 그 달이 없다 (자동 가져오기 필요"
                     // 계좌를 모르는 행만 있으면 "계좌 0곳: " 같은 빈 꼬리가 남는다.
                     + (accounts.isEmpty()
@@ -1052,7 +1049,7 @@ public class LedgerIntegrityService {
     //
     // 조용히 어긋나는 곳: 손익 집계는 매매에서 파생되므로 그 종목이 아예 빠진다. 그래서 종목별
     // 시계열을 전부 더해도 전체와 배당이 2,100원 어긋난다 - 화면에서는 원인을 알 수 없다.
-    java.util.Set<UUID> tradedStockItemIds = new java.util.HashSet<>();
+    Set<UUID> tradedStockItemIds = new HashSet<>();
     for (Trade trade : trades) {
       if (trade.getStockItemId() != null) {
         tradedStockItemIds.add(trade.getStockItemId());
@@ -1084,7 +1081,7 @@ public class LedgerIntegrityService {
     // 배당만 걸린다.
     //
     // 거래가 아예 없는 종목은 DIVIDEND_WITHOUT_TRADE 가 이미 알리므로 여기서는 제외한다.
-    Map<UUID, java.util.List<Trade>> tradesByStockItem = new java.util.HashMap<>();
+    Map<UUID, List<Trade>> tradesByStockItem = new HashMap<>();
     for (Trade trade : trades) {
       if (trade.getStockItemId() != null && trade.getTradeDate() != null) {
         tradesByStockItem
@@ -1186,7 +1183,7 @@ public class LedgerIntegrityService {
     // 그런 계좌는 계좌 단위로 한 번만 알린다. 거래마다 또 알리면 같은 사정이 열몇 번 반복돼, 고칠 수 없는
     // 지적이 화면을 덮는다(실측 2026-08-24: 동양증권 하나가 매도 12 건 + 계좌 1 건 = 13 건이었다.
     // 그 계좌는 증권사에서 기록을 되받을 수 없어 채울 방법이 없다).
-    Set<UUID> feelessAccountIds = new java.util.HashSet<>();
+    Set<UUID> feelessAccountIds = new HashSet<>();
     Map<UUID, long[]> feeCountByAccount = new HashMap<>();
     for (Trade trade : trades) {
       if (trade.getAccountId() == null) {

@@ -6,13 +6,17 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.Instant
+@import java.time.ZoneId
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param List<DividendView> dividendList
 <%-- 날짜 칸에 쓸 존. 이 화면의 기간 표시·필터와 같은 존이어야 한다(부모가 요청 타임존으로 푼 값). --%>
-@param java.time.ZoneId zone
+@param ZoneId zone
 @param String sort
 @param DecimalFormat decimalFormat
-@param java.util.function.Function<BigDecimal, String> percentFormat
+@param Function<BigDecimal, String> percentFormat
 @param String detailSummaryLabel
 @param BigDecimal totalGrossAmount
 @param BigDecimal totalNetAmount
@@ -43,11 +47,11 @@
 	// 근거는 "항상 보이는" 수익률 칸 한 곳에만 단다. 세 칸에 달았더니 행 하나가 1,146B 가 되어
 	// 행당 1KB 상한(DividendTableCompactOutputTest)을 넘었다 - 실측 2026-09-11. 기준 가격·기준일 원금 칸은
 	// xl 이상에서만 보이고 그때도 이 칸이 바로 옆이다.
-	java.util.function.Function<DividendView, String> basisMissingTitle = item -> {
+	Function<DividendView, String> basisMissingTitle = item -> {
 		if (item.principalCost() != null) {
 			return null;
 		}
-		java.time.Instant basisInstant = item.recordDate() != null ? item.recordDate() : item.payDate();
+		Instant basisInstant = item.recordDate() != null ? item.recordDate() : item.payDate();
 		if (basisInstant == null) {
 			return null;
 		}
@@ -57,7 +61,7 @@
 		// 지급일과 같은 날로 적혀 있었다. api 의 원장 점검도 같은 기준(hasOwnRecordDate: 기준일이 있고 지급일과 다를 것)으로
 		// 이 줄들을 지적하지 않는다. 그래서 같은 날이면 "지급일로 되짚었다" 고 밝힌다.
 		boolean ownRecordDate = item.recordDate() != null && item.payDate() != null
-			&& !dateFormatter.format(item.recordDate().atZone(zone)).equals(dateFormatter.format(item.payDate().atZone(zone)));
+			&& !dateFormatter.format(StockZoneUtil.recordedDate(item.recordDate(), zone)).equals(dateFormatter.format(StockZoneUtil.recordedDate(item.payDate(), zone)));
 		return ownRecordDate ? note : note + " " + MessageUtil.getMessage("stock.dividend.basis.missing.paydate");
 	};
 	String dateLabel = MessageUtil.getMessage("common.label.date");
@@ -100,7 +104,7 @@
 					<tbody>
 					@for(DividendView item : dividendList)
 					<tr>
-						<td class="whitespace-nowrap date-whole">${item.payDate() != null ? dateFormatter.format(item.payDate().atZone(zone)) : ""}</td>
+						<td class="whitespace-nowrap date-whole">${item.payDate() != null ? dateFormatter.format(StockZoneUtil.recordedDate(item.payDate(), zone)) : ""}</td>
 						<td class="font-bold"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName()}</a></td>
 						<td class="hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(item.accountId() != null ? item.accountId().toString() : "")}" class="link link-hover">${item.accountName()}</a></td>
 						<td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>

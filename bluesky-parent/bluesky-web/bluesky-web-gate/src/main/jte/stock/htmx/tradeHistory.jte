@@ -12,10 +12,12 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param List<TradeResponse> trades
 <%-- 날짜 칸에 쓸 존. 이 화면(자산성장)의 기간 표시와 같은 존이어야 한다. --%>
-@param java.time.ZoneId zone
+@param ZoneId zone
 @param int totalItems
 @param int totalPages
 @param int pageSize
@@ -30,14 +32,14 @@
 <%-- 계좌명이 없으면 같은 날 같은 값의 다른 계좌 거래가 화면에서 완전히 같은 줄이 된다.
      실측 2026-09-10: 258행 중 2쌍이 연금저축1/연금저축2 로 갈리는 별개 거래인데 구분할 길이 없었다.
      매매 화면의 같은 표(tradeDetailList)는 계좌 열을 갖고 있어 둘이 어긋나 있었다. --%>
-@param Map<UUID, String> accountNames = java.util.Map.of()
+@param Map<UUID, String> accountNames = Map.of()
 @param String tradePeriod
 @param Pagination pagination = null
 @param String tradeHistoryFilterQuery = ""
 
 !{
 DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zone);
-DecimalFormat df = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+DecimalFormat df = StockFormatUtil.wonFormat();
 // 이 표는 매매 화면의 tradeDetailList 와 같은 표인데 두 규칙이 이쪽만 빠져 있었다 -
 // 실측 2026-09-13(258 행): 거래세 228 행 · 수수료 51 행이 "0", 매수 203 행의 실현 손익은 빈 칸,
 // 그리고 실현 손익 55 개 중 부호가 붙은 것은 음수 6 개뿐이고 양수 49 개는 맨 숫자였다.
@@ -61,7 +63,7 @@ long pageSellCount = trades != null ? trades.stream().filter(t -> t.type() == Tr
 boolean sellCountIsPeriod = totalSellCount >= 0;
 long sellCount = sellCountIsPeriod ? totalSellCount : pageSellCount;
 
-java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
+Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 String historyTitle = MessageUtil.getMessage("stock.page.trade.title");
 String noTradeInPeriodLabel = MessageUtil.getMessage("stock.trade.message.no.period.data");
 String periodStatusLabel = MessageUtil.getMessage("stock.trade.label.period.status");
@@ -155,8 +157,8 @@ ${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#x20A9;${df.format(safeRp)}
 !{
 boolean isBuy = trade.type() == TradeType.BUY;
 boolean hasProfit = trade.realizedProfit() != null && trade.realizedProfit().compareTo(BigDecimal.ZERO) != 0;
-String profitClass = trade.realizedProfit() != null && trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
-String tradeDateStr = trade.tradeDate() != null ? fmt.format(trade.tradeDate()) : "-";
+String profitClass = StockFormatUtil.amountTone(trade.realizedProfit());
+String tradeDateStr = trade.tradeDate() != null ? fmt.format(StockZoneUtil.recordedDate(trade.tradeDate(), zone)) : "-";
 }
 <tr>
 <td class="whitespace-nowrap">${tradeDateStr}</td>

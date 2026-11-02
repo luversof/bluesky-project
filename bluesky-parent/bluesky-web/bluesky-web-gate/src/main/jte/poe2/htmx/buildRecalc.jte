@@ -21,6 +21,9 @@
 	@elseif(recalc.error() != null)
 		<div class="text-sm text-warning">${korean ? "엔진 계산에 실패했습니다: " : "Engine calculation failed: "}<span class="font-mono text-xs">${recalc.error().length() > 160 ? recalc.error().substring(0, 160) + "…" : recalc.error()}</span></div>
 	@else
+		@if(recalc.engineMissingNodes() != null && !recalc.engineMissingNodes().isEmpty())
+			<div role="alert" class="alert alert-warning py-2 text-sm">${korean ? "계산 엔진(PoB)이 아직 모르는 패시브 " + recalc.engineMissingNodes().size() + "개 — 아래 수치에 효과가 빠져 있습니다: " : recalc.engineMissingNodes().size() + " passive(s) are not known to the calculation engine (PoB) yet — their effect is missing from the numbers below: "}${String.join(", ", recalc.engineMissingNodes().stream().map(n -> korean && n.nameKo() != null && !n.nameKo().isBlank() ? n.nameKo() : n.name()).toList())}</div>
+		@endif
 		@if(recalc.unappliedSupports() != null && recalc.unappliedSupports() > 0)
 			<div role="alert" class="alert alert-warning py-2 text-sm">${korean ? "주 스킬 묶음에서 적용되지 않는 보조 젬 " + recalc.unappliedSupports() + "개 — 인게임에선 효과가 없습니다(PoB 는 계산만 건너뜁니다)." : recalc.unappliedSupports() + " support gem(s) in the main skill group do not apply in game."}</div>
 		@endif
@@ -50,12 +53,15 @@
 							String key = r.key().toLowerCase(java.util.Locale.ROOT);
 							String label = "spirit".equals(key) ? MessageUtil.getMessage("poe2.build.stat.spirit") : MessageUtil.getMessage("poe.build.stat." + key, r.key());
 							boolean pct = key.endsWith("resist");
-							java.util.function.Function<Double, String> fmt = v -> v == null ? "-" : pct ? String.format("%.0f%%", v) : Math.abs(v) >= 100 || v == Math.rint(v) ? String.format("%,.0f", v) : String.format("%.2f", v);
+							// 이동 속도는 배율 → +x.x%, 차이는 %p(10-29 R9)
+							boolean move = "effectivemovementspeedmod".equals(key);
+							java.util.function.Function<Double, String> fmt = v -> v == null ? "-" : move ? String.format("%+.1f%%", (v - 1) * 100) : pct ? String.format("%.0f%%", v) : Math.abs(v) >= 100 || v == Math.rint(v) ? String.format("%,.0f", v) : String.format("%.2f", v);
 							// 저항은 이미 % 라 차이를 %p(포인트)로 — 75% → -13% 를 "-117%" 로 보이면 뜻이 없다
 							// ⚠ 삼항으로 null 과 double 을 섞으면 자동 언박싱으로 NPE — if 로 나눈다
 							Double diff = null;
 							if (r.saved() != null && r.computed() != null) {
 								if (pct) diff = r.computed() - r.saved();
+								else if (move) diff = (r.computed() - r.saved()) * 100;
 								else if (r.saved() != 0) diff = (r.computed() - r.saved()) / Math.abs(r.saved()) * 100;
 							}
 							boolean off = diff != null && Math.abs(diff) > 1;
@@ -64,7 +70,7 @@
 							<td>${label}</td>
 							<td class="text-right font-mono">${fmt.apply(r.saved())}</td>
 							<td class="text-right font-mono">${fmt.apply(r.computed())}</td>
-							<td class="text-right font-mono ${off ? "text-warning" : "text-base-content/60"}">@if(diff == null)-@elseif(Math.abs(diff) < 0.05)0@elseif(pct)${String.format("%+.0f", diff)}${korean ? "%p" : " pts"}@else${String.format("%+.1f%%", diff)}@endif</td>
+							<td class="text-right font-mono ${off ? "text-warning" : "text-base-content/60"}">@if(diff == null)-@elseif(Math.abs(diff) < 0.05)0@elseif(pct || move)${String.format(move ? "%+.1f" : "%+.0f", diff)}${korean ? "%p" : " pts"}@else${String.format("%+.1f%%", diff)}@endif</td>
 							@if(split)
 								<td class="text-right font-mono" data-recalc-set1>${fmt.apply(r.set1())}</td>
 								<td class="text-right font-mono" data-recalc-set2>${fmt.apply(r.set2())}</td>

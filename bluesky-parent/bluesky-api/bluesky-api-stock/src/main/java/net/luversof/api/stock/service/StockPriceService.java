@@ -3,17 +3,24 @@ package net.luversof.api.stock.service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import net.luversof.api.stock.domain.StockDailyClosePrice;
+import net.luversof.api.stock.domain.StockOhlcRow;
 import net.luversof.api.stock.domain.StockPriceHistory;
+import net.luversof.api.stock.domain.StockRawClose;
+import net.luversof.api.stock.repository.StockDailyClosePriceQuery;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
 import net.luversof.api.stock.util.StockIds;
 
@@ -22,8 +29,7 @@ public class StockPriceService {
 
   @Autowired private StockPriceHistoryRepository stockPriceHistoryRepository;
 
-  @Autowired
-  private net.luversof.api.stock.repository.StockDailyClosePriceQuery stockDailyClosePriceQuery;
+  @Autowired private StockDailyClosePriceQuery stockDailyClosePriceQuery;
 
   public BigDecimal getCurrentPrice(UUID stockItemId) {
     return getCurrentPriceHistory(stockItemId)
@@ -48,18 +54,17 @@ public class StockPriceService {
   }
 
   /** 종목별 최신 종가(+거래일)를 한 번에 조회한다. 빈 입력이면 빈 맵. */
-  public java.util.Map<UUID, StockDailyClosePrice> getLatestPrices(
-      java.util.Collection<UUID> stockItemIds) {
+  public Map<UUID, StockDailyClosePrice> getLatestPrices(Collection<UUID> stockItemIds) {
     if (stockItemIds == null || stockItemIds.isEmpty()) {
-      return java.util.Map.of();
+      return Map.of();
     }
-    java.util.Set<UUID> distinct = new java.util.LinkedHashSet<>(stockItemIds);
+    Set<UUID> distinct = new LinkedHashSet<>(stockItemIds);
     distinct.remove(null);
     if (distinct.isEmpty()) {
-      return java.util.Map.of();
+      return Map.of();
     }
     String ids = StockIds.joinOrNull(distinct);
-    java.util.Map<UUID, StockDailyClosePrice> result = new java.util.HashMap<>();
+    Map<UUID, StockDailyClosePrice> result = new HashMap<>();
     for (StockDailyClosePrice row : stockPriceHistoryRepository.findLatestClosePrices(ids)) {
       if (row != null && row.stockItemId() != null) {
         result.put(row.stockItemId(), row);
@@ -156,8 +161,7 @@ public class StockPriceService {
    *
    * <p>열이 없는 DB(schema-alter 2026-10-02 미적용)면 빈 맵 - 평가는 수정 종가로 돌아간다.
    */
-  public Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> getRawCloses(
-      Map<UUID, LocalDate[]> rangeByStockItemId) {
+  public Map<UUID, List<StockRawClose>> getRawCloses(Map<UUID, LocalDate[]> rangeByStockItemId) {
     if (rangeByStockItemId == null
         || rangeByStockItemId.isEmpty()
         || !rawClosePriceColumnPresent()) {
@@ -187,8 +191,7 @@ public class StockPriceService {
   }
 
   /** 한 종목의 일별 시가 · 고가 · 저가 · 종가와 원주가(열이 없는 DB 면 원주가 null) - 종목 상세 캔들 차트. */
-  public List<net.luversof.api.stock.domain.StockOhlcRow> getOhlc(
-      UUID stockItemId, LocalDate fromDate) {
+  public List<StockOhlcRow> getOhlc(UUID stockItemId, LocalDate fromDate) {
     return stockDailyClosePriceQuery.findOhlc(stockItemId, fromDate, rawClosePriceColumnPresent());
   }
 
@@ -198,10 +201,8 @@ public class StockPriceService {
     if (stockItemIds == null || days == null || stockItemIds.isEmpty()) {
       return List.of();
     }
-    String ids =
-        stockItemIds.stream().map(UUID::toString).collect(java.util.stream.Collectors.joining(","));
-    String dayCsv =
-        days.stream().map(LocalDate::toString).collect(java.util.stream.Collectors.joining(","));
+    String ids = stockItemIds.stream().map(UUID::toString).collect(Collectors.joining(","));
+    String dayCsv = days.stream().map(LocalDate::toString).collect(Collectors.joining(","));
     return stockDailyClosePriceQuery.findLatestClosePricesForPairs(ids, dayCsv);
   }
 }

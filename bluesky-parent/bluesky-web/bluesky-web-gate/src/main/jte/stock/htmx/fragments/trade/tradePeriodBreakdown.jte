@@ -3,8 +3,11 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.util.StockTradePeriodUtil.TradePeriod
 @import io.github.luversof.boot.context.support.MessageUtil
+@import net.luversof.web.gate.stock.util.StockBreakdownNoteUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockTradePeriodUtil
 
-@param List<TradePeriod> tradePeriods = java.util.List.of()
+@param List<TradePeriod> tradePeriods = List.of()
 
 !{
 	// 0 을 "-" 로 적는 자리에는 그 뜻을 달아 둔다(값이 없는 칸의 "-" 와 구분). 공용 규칙은 _components/ui/amountCell 과 같다.
@@ -12,7 +15,7 @@
 	// 판 것이 없어 비는 자리에도 까닭을 적는다 - 실측 2026-09-12: 이 표의 "-" 세 칸(2024·2017·2009)에는
 	// title 도 sr-only 도 없어 마우스로도 낭독기로도 왜 비었는지 알 수 없었다. 같은 줄의 다른 칸은 "0원" 을 달고 있었다.
 	String noSaleTitle = MessageUtil.getMessage("stock.trade.breakdown.realized.none");
-	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat amountFormat = StockFormatUtil.wonFormat();
 	String unit = tradePeriods != null && !tradePeriods.isEmpty() ? tradePeriods.get(0).unit() : "MONTH";
 	// 이 표는 '성과' 가 아니라 거래 집계다(건수·매수·매도·수수료·거래세). 자산 성장의 성과 표와
 	// 같은 이름을 쓰면 화면에 '연도별 성과' 라는 제목으로 전혀 다른 열이 뜬다(실측 2026-09-07:
@@ -31,7 +34,7 @@
 	// 연도별 세금·비용 표와 같은 키 - 두 표가 같은 줄을 다른 이름으로 부르지 않는다.
 	String sumLabel = MessageUtil.getMessage("stock.asset.growth.cost.sum.row");
 	// 표를 못 낼 때 남길 까닭. 고르는 규칙은 자산 성장·종목 상세와 한 곳에서 나온다.
-	String breakdownNote = net.luversof.web.gate.stock.util.StockBreakdownNoteUtil
+	String breakdownNote = StockBreakdownNoteUtil
 			.tradeNote(tradePeriods == null ? 0 : tradePeriods.size());
 }
 
@@ -113,7 +116,7 @@
 					<%-- 합계 줄. 여덟 값이 모두 그냥 더하면 되는 값이다 - 성과 표처럼 곱해서 이어야 하는
 						 수익률도, 합계라는 것이 없는 기말 평가액도 없다. 그래서 '전체 기간' 이 아니라 '합계'.
 						 이 줄은 화면 위 요약 카드와 같아야 한다 - 같은 원장을 같은 규칙으로 더한 값이다. --%>
-					!{ var totals = net.luversof.web.gate.stock.util.StockTradePeriodUtil.total(tradePeriods);
+					!{ var totals = StockTradePeriodUtil.total(tradePeriods);
 					   boolean totalRealizedUp = totals.realizedProfit().signum() >= 0; }
 					<tfoot>
 						<tr class="border-t-2 border-base-content/20 font-semibold" data-trade-breakdown-total>

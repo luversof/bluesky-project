@@ -15,6 +15,10 @@ const SEGMENT_FILE = path.join(WORK_DIR, "poe1-unique-segments.txt");
 // 숫자가 박힌 조각("Every 5 seconds, …" · "Duelist: +2 to Melee Strike Range")은 줄 전체가 같을 때만 쓴다(대소문자 · 공백 무시)
 const segKey = (text) => text.toLowerCase().replace(/\s+/g, " ").trim();
 const segExact = new Map();
+// 같은 영어 조각이 블록마다 다른 한국어인 경우(10-30 R38 — 11개: 직업 시작점 머리줄 '…연결된 동안' vs '…연결된 경우' · '반경 내 … 저항을 제공하는 패시브' 등)
+//   조각 파일은 먼저 것 하나만 갖는다 → 블록의 앞뒤 조각 뼈대를 함께 적어 두고, 아이템 줄의 앞뒤 줄 뼈대가 맞는 블록의 한국어를 고른다
+const segSkel = (text) => String(text || "").toLowerCase().replace(/\{[^}]*\}/g, " ").replace(/[-+]?\d+(?:\.\d+)?/g, " ").replace(/[()%+\-.,:]/g, " ").replace(/\s+/g, " ").trim();
+const segCtx = new Map(); // 조각 → [{ ko, prev, next }]
 {
 	const placeholders = (s) => [...s.matchAll(/\{(\d*)[^}]*\}/g)].map((m) => m[1]).sort().join(",");
 	const pairs = new Map();
@@ -39,6 +43,7 @@ const segExact = new Map();
 						return;
 					}
 					if (!pairs.has(s)) pairs.set(s, koSegs[j].trim());
+					(segCtx.get(s) || segCtx.set(s, []).get(s)).push({ ko: koSegs[j].trim(), prev: segSkel(enSegs[j - 1]), next: segSkel(enSegs[j + 1]) });
 				});
 			});
 		}
@@ -139,6 +144,14 @@ function toKo(lines) {
 			const exact = segExact.get(segKey(originalByPrepared.get(ko)));
 			if (exact) { out.push(exact); continue; }
 			const seg = toKoSeg([ko])[0]; // 안 풀린 줄만 여러 줄 문장 조각으로 한 번 더(C291)
+			const orig = originalByPrepared.get(ko);
+			const ctx = segCtx.get(orig.trim());
+			if (ctx && new Set(ctx.map((c) => c.ko)).size > 1) {
+				const at = lines.indexOf(orig);
+				const prev = segSkel(lines[at - 1]), next = segSkel(lines[at + 1]);
+				const hit = ctx.find((c) => c.next && c.next === next) || ctx.find((c) => c.prev && c.prev === prev);
+				if (hit) { out.push(hit.ko); continue; }
+			}
 			out.push(seg && seg !== ko ? restore(seg) : originalByPrepared.get(ko));
 		}
 		chunk = [];
@@ -325,6 +338,10 @@ const VARIANT_WORD_KO = {
 	"Maximum Life": "최대 생명력", "Energy Shield Regen": "에너지 보호막 재생",
 	"ES": "에너지 보호막", "Gems": "젬", "Chance to Freeze": "빙결 확률",
 	"Quantity": "수량", "Attributes": "속성", "Accuracy": "정확도",
+	// 한국어 없던 변형 라벨 3개(10-30 R28 — 강철의 군주 · 집어삼키는 왕관 · 비빈섹트). 낱말은 그 변형 줄의 게임 한국어(압도 · 소환수 최대 생명력 · 집중 시 주변의 적 감전)
+	//   'Holy Armaments'(어둠의 군주)는 게임 낱말 근거가 없어 영어 그대로
+	"Impale Overwhelm": "꿰뚫기 압도", "Additional Minions": "추가 소환수", "Minion Life": "소환수 생명력",
+	"Focus Shock Nearby Enemies": "집중 시 주변의 적 감전",
 	// 금단의 샤코 "Added Chaos Damage (Low Level)" — 보조 젬 레벨 1~10 / 11~20(C78)
 	"Low Level": "낮은 레벨", "High Level": "높은 레벨",
 	// "None"(공포의 균형 · 보라나의 행진 · 감시자의 눈 — 추가 옵션 없는 변형, C98)
@@ -486,11 +503,18 @@ function variantNameKo(_itemName, label) {
 // 변형(Variant) 이름 중 **지금 게임에 없는 것**(과거 버전 보존용)을 걸러낸다.
 //   PoB 는 옛 롤을 계속 들고 있어서(예: "Pre 3.21.0", "One Abyssal Socket (Pre 3.12.0)")
 //   그대로 보여주면 인게임에 없는 선택지가 목록에 섞인다. 인게임 정합이 우선이라 과거분은 감춘다.
-const HISTORICAL_VARIANT = /\bPre[ -]\d/i;
+// "Pre.3.19.0" 처럼 점으로 붙인 것도(10-30 R13 — 라스피스 구체 · 쉼 없는 수호자 등이 옛 수치로 나왔다)
+const HISTORICAL_VARIANT = /\bPre[ .-]\d/i;
+// 같은 블록에 "Current" 가 있으면 "3.19.0" 같은 맨 버전 번호 이름은 과거판(10-30 R13, PoE2 R12 짝)
+const VERSION_ONLY = /^\d+\.\d+(\.\d+)?$/;
 // PoB 가 시험용으로 넣은 변형("Everything (QoL Test Variant)" — 불가능한 탈출에 핵심 노드 49줄 전부)도 인게임에 없는 아이템이라 같은 취급(10-03 C76).
 //   이게 기본 변형(마지막)으로 잡혀 목록 · 최적화기에 49줄짜리 가짜 주얼이 나갔다.
 const TEST_VARIANT = /\bTest Variant\b/i;
-const isHistoricalVariant = (name) => name === "Current" || HISTORICAL_VARIANT.test(name) || TEST_VARIANT.test(name);
+// "Current" 는 현역(10-30 R13 — 예전엔 거꾸로 과거로 쳐서 진짜 현재판이 버려지고 옛 판이 대표로 나갔다: 라스피스 구체 · 쥐 우리 · 무덤주먹 등)
+const isHistoricalVariant = (name, names = []) =>
+	HISTORICAL_VARIANT.test(name) ||
+	TEST_VARIANT.test(name) ||
+	(VERSION_ONLY.test(name.trim()) && names.some((n) => /\bCurrent\b/i.test(n)));
 // "Fire and Chaos Resistances (Current)" → "Fire and Chaos Resistances" (현재분 표식은 라벨에서 군더더기)
 const normalizeVariantName = (name) =>
 	name
@@ -531,6 +555,8 @@ function parseBlock(block, category) {
 
 	const variantNames = [];
 	let selectedVariant = null;
+	let hasAlt = false;
+	const altSelected = []; // Selected Alt Variant / Two / Three …(10-30 R13)
 	let requiredLevel = null;
 	let league = null;
 	const influences = []; // 영향력("Shaper Item" · "Elder Item" — 인게임 툴팁 머리 좌우 상징, 10-08 C198)
@@ -543,6 +569,11 @@ function parseBlock(block, category) {
 	for (const line of bodyLines) {
 		if (line.startsWith("Variant:")) { variantNames.push(line.slice(8).trim()); continue; }
 		if (line.startsWith("Selected Variant:")) { selectedVariant = Number(line.slice(17).trim()) || null; continue; }
+		if (line.startsWith("Has Alt Variant")) hasAlt = true; // 칸을 따로 고르는 아이템(무덤주먹 · 감시자의 눈 등) — 아래 메타 줄 처리는 그대로
+		if (line.startsWith("Selected Alt Variant")) {
+			const v = Number(line.slice(line.indexOf(":") + 1).trim());
+			if (v) altSelected.push(v);
+		}
 		if (line.startsWith("League:")) { league = line.slice(7).trim(); continue; }
 		if (line.startsWith("Radius:")) { radius = line.slice(7).trim(); continue; }
 		if (line.startsWith("Limited to:")) { limit = line.slice(11).trim(); continue; }
@@ -552,7 +583,7 @@ function parseBlock(block, category) {
 		if (infM) { influences.push(infM[1].toLowerCase()); continue; }
 		if (line.startsWith("LevelReq:")) { requiredLevel = Number(line.slice(9).trim()) || null; continue; }
 		if (line.startsWith("Requires Level")) {
-			const m = line.match(/Requires Level (\d+)/);
+			const m = line.match(/Requires Level:? (\d+)/); // 콜론 붙은 꼴도(10-30 R13 — 요새의 서약 · 가속의 서약 요구 레벨이 비었다)
 			if (m) requiredLevel = Number(m[1]);
 			continue;
 		}
@@ -567,12 +598,12 @@ function parseBlock(block, category) {
 	// 지금 게임에 존재하는 변형만 (임프레션스 물리/화염/…, 도리아니의 망상 9종 등)
 	const liveVariants = variantNames
 		.map((vName, i) => ({ index: i + 1, name: normalizeVariantName(vName) }))
-		.filter((v, i) => !isHistoricalVariant(variantNames[i]));
+				.filter((v, i) => !isHistoricalVariant(variantNames[i], variantNames));
 
 	// 기본으로 보여줄 변형. PoB 규칙(Selected Variant 우선, 없으면 마지막)을 따르되,
 	// 그 기본이 과거분이면 **현재분 중 마지막**으로 당긴다 — 아니면 인게임에 없는 롤이 대표로 나간다.
 	let defaultVariant = selectedVariant && selectedVariant <= variantCount ? selectedVariant : (variantCount || null);
-	if (defaultVariant != null && isHistoricalVariant(variantNames[defaultVariant - 1]) && liveVariants.length) {
+	if (defaultVariant != null && isHistoricalVariant(variantNames[defaultVariant - 1], variantNames) && liveVariants.length) {
 		defaultVariant = liveVariants[liveVariants.length - 1].index;
 	}
 
@@ -584,11 +615,13 @@ function parseBlock(block, category) {
 			: lines[baseAt]);
 
 	// {variant:...} 필터 + {tags:...}/{range:...} 등 마크업 제거
-	function cleanLine(raw, variant) {
+	// active = 변형 번호 하나 또는 켜진 변형 집합(Alt 아이템은 주 변형 + Alt 선택들, 10-30 R13)
+	function cleanLine(raw, active) {
 		const variantMatch = raw.match(/\{variant:([\d,]+)\}/);
-		if (variantMatch && variant != null) {
+		if (variantMatch && active != null) {
 			const variants = variantMatch[1].split(",").map(Number);
-			if (!variants.includes(variant)) return null;
+			const on = active instanceof Set ? active : new Set([active]);
+			if (!variants.some((v) => on.has(v))) return null;
 		}
 		const text = raw.replace(/\{[^}]*\}/g, "").trim();
 		return text.length ? text : null;
@@ -609,7 +642,11 @@ function parseBlock(block, category) {
 		explicits: explicitRaw.map((l) => cleanLine(l, variant)).filter(Boolean).map(applyOverride),
 	});
 
-	const { implicits, explicits } = linesFor(defaultVariant);
+	// 고유 자체의 기본 줄 — Alt 아이템은 주 변형에 Alt 선택(없으면 마지막)을 함께 켠다(10-30 R13 — PoB 'Selected Alt Variant*', PoE2 parse-uniques2 와 같음.
+	//   예전엔 주 변형 하나만이라 감시자의 눈 오라 줄 1개 · 메갈로매니악 특출 1개 · 무덤주먹 1줄이었다)
+	const defaultActive = new Set(defaultVariant != null ? [defaultVariant] : []);
+	if (hasAlt) for (const v of altSelected.length ? altSelected : [variantCount]) if (v >= 1 && v <= variantCount) defaultActive.add(v);
+	const { implicits, explicits } = linesFor(defaultActive.size ? defaultActive : defaultVariant);
 	// 모든 변형에 똑같이 있는 줄 — 변형 이름을 그 변형만의 줄로 지을 때 뺀다(감시자의 눈 공통 3줄 등, C78)
 	const commonLines = liveVariants.length > 1
 		? liveVariants.map((v) => new Set(linesFor(v.index).explicits)).reduce((a, b) => new Set([...a].filter((x) => b.has(x))))
@@ -620,8 +657,10 @@ function parseBlock(block, category) {
 		: new Set();
 
 	// 변형이 여럿일 때만 전수 보존한다. 하나뿐이면(대개 "Pre x.y / Current") 기본분이 곧 전부라 잡음만 는다.
-	const variants = liveVariants.length > 1
-		? liveVariants.map((v) => {
+	// Alt 아이템의 "Current" 는 늘 켜지는 바탕 변형이라 칩으로 내지 않는다(10-30 R13 — PoE2 와 같음)
+	const chipVariants = liveVariants.filter((v) => !(hasAlt && /^Current$/i.test(v.name)));
+	const variants = chipVariants.length > 1
+		? chipVariants.map((v) => {
 			const set = linesFor(v.index);
 			const implicitsKo = toKo(set.implicits);
 			const explicitsKo = toKo(set.explicits);

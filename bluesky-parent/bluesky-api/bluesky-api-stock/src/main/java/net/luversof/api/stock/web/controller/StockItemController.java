@@ -1,5 +1,7 @@
 package net.luversof.api.stock.web.controller;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,12 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.service.StockItemService;
+import net.luversof.api.stock.service.StockPriceChartService;
+import net.luversof.api.stock.web.dto.response.StockPriceChartPoint;
+import net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint;
 
 @RestController
 @RequestMapping("/api/stockItem")
 public class StockItemController {
 
-  @Autowired private net.luversof.api.stock.service.StockPriceChartService stockPriceChartService;
+  @Autowired private StockPriceChartService stockPriceChartService;
 
   @Autowired private StockItemService stockItemService;
 
@@ -38,7 +43,7 @@ public class StockItemController {
   }
 
   @GetMapping("/search/findAll")
-  public java.util.List<net.luversof.api.stock.domain.StockItem> findAll() {
+  public List<StockItem> findAll() {
     return stockItemService.findAll();
   }
 
@@ -48,17 +53,16 @@ public class StockItemController {
    * <p>거래량 0 인 날은 빠진다 - 그 행의 종가 자리에는 직전 종가가 들어 있어 거래가 없던 날에 선이 이어진다.
    */
   @GetMapping("/{id}/priceHistory")
-  public java.util.List<net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint>
-      priceHistory(
-          @PathVariable UUID id,
-          @org.springframework.web.bind.annotation.RequestParam(required = false)
-              @org.springframework.format.annotation.DateTimeFormat(
-                  iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
-              java.time.LocalDate startDate,
-          @org.springframework.web.bind.annotation.RequestParam(required = false)
-              @org.springframework.format.annotation.DateTimeFormat(
-                  iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
-              java.time.LocalDate endDate) {
+  public List<StockPriceHistoryPoint> priceHistory(
+      @PathVariable UUID id,
+      @org.springframework.web.bind.annotation.RequestParam(required = false)
+          @org.springframework.format.annotation.DateTimeFormat(
+              iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @org.springframework.web.bind.annotation.RequestParam(required = false)
+          @org.springframework.format.annotation.DateTimeFormat(
+              iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+          LocalDate endDate) {
     return stockItemService.findDailyClosePrices(id, startDate, endDate);
   }
 
@@ -67,24 +71,23 @@ public class StockItemController {
    * 시점 평단" 선이 쓴다(StockPriceChartService).
    */
   @GetMapping("/{id}/priceChart")
-  public java.util.List<net.luversof.api.stock.web.dto.response.StockPriceChartPoint> priceChart(
+  public List<StockPriceChartPoint> priceChart(
       @PathVariable UUID id,
       @org.springframework.web.bind.annotation.RequestParam(required = false)
           @org.springframework.format.annotation.DateTimeFormat(
               iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
-          java.time.LocalDate startDate,
+          LocalDate startDate,
       @org.springframework.web.bind.annotation.RequestParam(required = false)
           @org.springframework.format.annotation.DateTimeFormat(
               iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
-          java.time.LocalDate endDate,
+          LocalDate endDate,
       @org.springframework.web.bind.annotation.RequestParam(required = false) UUID userId,
       @org.springframework.web.bind.annotation.RequestParam(required = false) String timeZone) {
     return stockPriceChartService.chart(id, startDate, endDate, userId, timeZone);
   }
 
   @GetMapping("/search/findAllByTag/{tag}")
-  public java.util.List<net.luversof.api.stock.domain.StockItem> findAllByTag(
-      @PathVariable String tag) {
+  public List<StockItem> findAllByTag(@PathVariable String tag) {
     return stockItemService.findAllByTag(tag);
   }
 }

@@ -3,9 +3,12 @@
 
 @param PoeBuild build = null
 @param boolean importError = false
+@param boolean importErrorPoe2 = false
 @param boolean engineAvailable = false
 
-@if(importError)
+@if(importError && importErrorPoe2)
+	<div class="alert alert-error text-sm" role="alert"><a class="link" href="/poe2/build">${MessageUtil.getMessage("poe.build.error.poe2")}</a></div>
+@elseif(importError)
 	<div class="alert alert-error text-sm" role="alert">${MessageUtil.getMessage("poe.build.error")}</div>
 @elseif(build != null)
 	!{
@@ -22,9 +25,13 @@
 					<h2 class="text-lg font-bold">${classLine}</h2>
 					<span class="badge badge-primary badge-outline">${levelLabel}</span>
 					@if(!build.treeVersion().isEmpty())
-						<span class="badge badge-ghost">${MessageUtil.getMessage("poe.build.summary.tree")} ${build.treeVersion()}</span>
+						<%-- 무자비 트리(3.27.ruthless — PoB GameVersions)는 게임 낱말 '무자비'(ClientStrings LeagueRuthless, 10-29 R8) --%>
+						<span class="badge badge-ghost">${MessageUtil.getMessage("poe.build.summary.tree")} ${net.luversof.web.gate.poe.PoeText.isKorean() ? build.treeVersion().replace(".ruthless", " 무자비").replace(".alternate", " 대체") : build.treeVersion().replace(".ruthless", " Ruthless").replace(".alternate", " alternate")}</span>
 					@endif
-					@if(!build.passiveNodeIds().isEmpty())
+					@if(!build.passiveNodeIds().isEmpty() && build.treeVersion().contains("ruthless"))
+						<%-- 트리 화면은 표준 트리라 무자비 노드 번호로 열면 다른 노드가 찍힌다 — 링크는 뺀다(10-29 R8) --%>
+						<span class="badge badge-ghost">${nodesLabel}</span>
+					@elseif(!build.passiveNodeIds().isEmpty())
 						<span class="badge badge-ghost">${nodesLabel}</span>
 						<a class="link link-primary text-sm ml-auto" href="${build.treeLink() != null && !build.treeLink().isBlank() ? build.treeLink() : "/poe/tree?nodes=" + nodesParam}">${MessageUtil.getMessage("poe.build.summary.tree.view")}</a>
 					@endif
@@ -93,12 +100,14 @@
 								}
 									@if(gem.slug() != null)
 										<button type="button"
-										        class="badge badge-sm badge-outline cursor-pointer transition-colors hover:bg-base-content/10 ${gemColor}${gem.isSupport() ? " bg-base-content/5" : ""}"
+										        class="badge badge-sm badge-outline cursor-pointer transition-colors hover:bg-base-content/10 ${gemColor}${gem.isSupport() ? " bg-base-content/5" : ""}${Boolean.FALSE.equals(gem.enabled()) ? " opacity-50" : ""}"
+										        title="${Boolean.FALSE.equals(gem.enabled()) ? (net.luversof.web.gate.poe.PoeText.isKorean() ? "꺼진 젬" : "Disabled gem") : null}"
 										        hx-get="/poe/htmx/gems/detail?slug=${gem.slug()}&level=${gem.level()}"
 										        hx-target="#poeBuildDetail"
 										        hx-swap="innerHTML">${net.luversof.web.gate.poe.PoeText.name(gem.nameKo(), gem.name())} <span class="opacity-60 font-mono">${gem.level()}/${gem.quality()}</span></button>
 									@else
-										<span class="badge badge-sm badge-ghost">${gem.name()} <span class="opacity-60 font-mono">${gem.level()}/${gem.quality()}</span></span>
+										<%-- 젬 DB 에 없는 스킬(아이템 · 변형 젬이 주는 것)도 한국어 이름(API 가 ActiveSkills 로 채움, 10-29 R8) · 꺼진 젬은 흐리게 --%>
+										<span class="badge badge-sm badge-ghost${Boolean.FALSE.equals(gem.enabled()) ? " opacity-50" : ""}" title="${Boolean.FALSE.equals(gem.enabled()) ? (net.luversof.web.gate.poe.PoeText.isKorean() ? "꺼진 젬" : "Disabled gem") : null}">${net.luversof.web.gate.poe.PoeText.name(gem.nameKo(), gem.name())} <span class="opacity-60 font-mono">${gem.level()}/${gem.quality()}</span></span>
 									@endif
 								@endfor
 							</div>

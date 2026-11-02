@@ -1,12 +1,16 @@
 package net.luversof.api.stock.web.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.service.DividendService;
 import net.luversof.api.stock.web.dto.request.DividendSearchRequest;
 import net.luversof.api.stock.web.dto.response.DividendMetaResponse;
@@ -45,7 +49,7 @@ public class DividendController {
 
   /** 같은 조건(계좌/종목/기간)의 세후 배당 합계. 합계 하나 때문에 목록 전체를 내려받지 않는다. */
   @GetMapping("/total")
-  public java.math.BigDecimal findDividendTotal(DividendSearchRequest request) {
+  public BigDecimal findDividendTotal(DividendSearchRequest request) {
     return dividendService.sumNetAmount(request);
   }
 
@@ -55,20 +59,19 @@ public class DividendController {
    * <p>요약 화면이 종목마다 손익 부호를 셀 때 배당을 함께 얹으려면 종목별 배당이 필요하다. 목록 전체(실측 79,919 바이트)를 다시 받지 않는다.
    */
   @GetMapping("/totalByStockItem")
-  public java.util.Map<java.util.UUID, java.math.BigDecimal> findDividendTotalByStockItem(
-      DividendSearchRequest request) {
+  public Map<UUID, BigDecimal> findDividendTotalByStockItem(DividendSearchRequest request) {
     return dividendService.sumNetAmountByStockItem(request);
   }
 
   /** 배당 메타(최초 기준일 + 배당 보유 종목 ID). 필터 UI 용으로 전 기간 이력을 내려받던 것을 대체하는 경량 조회. */
   @GetMapping("/meta")
   public DividendMetaResponse findDividendMeta(
-      @org.springframework.web.bind.annotation.RequestParam java.util.UUID userId) {
+      @org.springframework.web.bind.annotation.RequestParam UUID userId) {
     return new DividendMetaResponse(
         dividendRepository.findFirstDividendBasisDateByUserId(userId),
         dividendRepository.findDistinctStockItemIdsByUserId(userId));
   }
 
   @org.springframework.beans.factory.annotation.Autowired
-  private net.luversof.api.stock.repository.DividendRepository dividendRepository;
+  private DividendRepository dividendRepository;
 }

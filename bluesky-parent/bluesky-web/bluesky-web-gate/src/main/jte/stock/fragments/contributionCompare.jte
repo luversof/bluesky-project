@@ -2,12 +2,14 @@
 @import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport
 @import net.luversof.web.gate.stock.util.StockPickBasisLabelUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.text.DecimalFormat
+@import java.text.MessageFormat
 
 <%-- 한 자리의 기준별 1위(사용자 질문 2026-10-06: "기준에 대해 추천을 어떻게 보여줄거야?").
      여러 기준이 같은 종목을 꼽을수록 굳은 추천이다 - 몇 개가 꼽았는지 먼저 적고, 기준마다 1위와 그 근거를 한 줄씩 둔다.
      기준마다 갈리면 하나를 억지로 고르지 않고 갈린다고 말한다. 시뮬레이터 자리 카드와 월배당 ETF 자리 보기가 같이 쓴다. --%>
 @param MonthlyContributionPickSupport.ContributionPick pick
-@param java.text.DecimalFormat percentFormat
+@param DecimalFormat percentFormat
 
 @if(pick.tops() != null && pick.tops().size() > 1)
 	<div class="mt-2 border-t border-base-200 pt-2 space-y-1" data-contribution-compare data-agreement="${pick.agreement()}" data-basis-count="${pick.tops().size()}">
@@ -25,8 +27,8 @@
 			@for(var top : pick.tops())
 				!{boolean same = top.candidate().symbol().equals(pick.symbol());}
 				!{String valueText = "steady".equals(top.basis().param())
-				    ? java.text.MessageFormat.format(StockPickBasisLabelUtil.comparePattern("steady"), top.candidate().payoutCutCount(), top.candidate().payoutCutPairs())
-				    : java.text.MessageFormat.format(StockPickBasisLabelUtil.comparePattern(top.basis().param()), percentFormat.format(top.value()));}
+				    ? MessageFormat.format(StockPickBasisLabelUtil.comparePattern("steady"), top.candidate().payoutCutCount(), top.candidate().payoutCutPairs())
+				    : MessageFormat.format(StockPickBasisLabelUtil.comparePattern(top.basis().param()), percentFormat.format(top.value()));}
 				<li class="flex flex-wrap gap-x-2 ${same ? "font-medium text-base-content" : "text-base-content/70"}" data-compare-row="${top.basis().param()}" data-compare-symbol="${top.candidate().symbol()}">
 					<span class="break-keep">${StockPickBasisLabelUtil.label(top.basis())}</span>
 					<span class="min-w-0 wrap-anywhere">

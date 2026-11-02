@@ -76,11 +76,17 @@ for (let i = 0; i < cores.length; i++) {
 		limitText: lim && lim.Text ? stripMarkup(lim.Text).replace("{0}", String(lim.Limit)) : null,
 		limitTextKo: lim && limitsKo[c.Limit].Text ? stripMarkup(limitsKo[c.Limit].Text).replace("{0}", String(lim.Limit)) : null,
 		stackSize: stackByBase.get(c.BaseItemType) > 1 ? stackByBase.get(c.BaseItemType) : null,
+		// 장신구(목걸이 · 반지 · 허리띠)에 못 박는 것(SoulCores.CanSocketInJewellery=false, 313 중 76 — 게임 오류 문구 ClientStrings
+		//   ItemErrorCannotBeSocketedInJewellery). '모든 장비' 효과라도 장신구 거르기엔 나오면 안 된다(10-29 A2 — 알두르의 유산)
+		...(c.CanSocketInJewellery === false ? { noJewellery: true } : {}),
 		effects,
 		icon: b.ItemVisualIdentity != null ? visuals[b.ItemVisualIdentity]?.DDSFile || null : null,
 	});
 }
-items.sort((a, b) => a.kind.localeCompare(b.kind) || a.level - b.level || a.name.localeCompare(b.name));
+// 종류 묶음은 화면 칩 순서(룬 · 영혼 핵 · 우상 · 심연의 눈 · 굳은 연무)로 — 예전엔 영어 키 abc 순이라 칩과 어긋났다(10-29 A4)
+const KIND_ORDER = Object.values(KIND);
+const kindRank = (k) => (KIND_ORDER.indexOf(k) < 0 ? KIND_ORDER.length : KIND_ORDER.indexOf(k));
+items.sort((a, b) => kindRank(a.kind) - kindRank(b.kind) || a.kind.localeCompare(b.kind) || a.level - b.level || a.name.localeCompare(b.name));
 const file = writeJson("augments.json", { patch: loadConfig().patch, items });
 const by = items.reduce((m, x) => ((m[x.kind] = (m[x.kind] || 0) + 1), m), {});
 const untranslated = items.reduce((n, x) => n + x.effects.filter((e) => e.linesKo.join() === e.lines.join()).length, 0);

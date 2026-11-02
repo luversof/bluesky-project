@@ -1,5 +1,6 @@
 package net.luversof.api.stock.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import net.luversof.api.stock.domain.ItemWithoutPriceHistory;
 import net.luversof.api.stock.domain.PriceHistoryDuplicateSummary;
 import net.luversof.api.stock.domain.PriceHistoryRowCounts;
 import net.luversof.api.stock.domain.PriceLimitBreachRow;
+import net.luversof.api.stock.domain.RawCloseCoverage;
 import net.luversof.api.stock.domain.StockDailyClosePrice;
 import net.luversof.api.stock.domain.StockItemTradeDate;
 import net.luversof.api.stock.domain.StockPriceHistory;
@@ -365,7 +367,7 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
                       AND (t.net > 0 OR h."tradeDate" <= t.l)
                       AND h."volume" > 0
                 """)
-  net.luversof.api.stock.domain.RawCloseCoverage findRawCloseCoverage(@Param("userId") UUID userId);
+  RawCloseCoverage findRawCloseCoverage(@Param("userId") UUID userId);
 
   /** 한 행의 원주가만 바꾼다(엔티티 저장은 이 열을 모른다 - 다른 열은 건드리지 않는다). 바뀐 행 수(0 이면 그 날 시세 행이 없다). */
   @Modifying
@@ -377,5 +379,5 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
   int updateRawClosePrice(
       @Param("stockItemId") UUID stockItemId,
       @Param("tradeDate") LocalDate tradeDate,
-      @Param("rawClose") java.math.BigDecimal rawClose);
+      @Param("rawClose") BigDecimal rawClose);
 }

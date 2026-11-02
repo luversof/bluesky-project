@@ -2,7 +2,7 @@
 @import net.luversof.web.gate.stock.domain.DetailNavEntry
 @import io.github.luversof.boot.context.support.MessageUtil
 
-@param List<DetailNavEntry> entries = java.util.List.of()
+@param List<DetailNavEntry> entries = List.of()
 @param String switchLabel = ""
 
 <%-- 갈 곳이 하나뿐(=지금 보는 것)이거나 없으면 전환기가 할 일이 없다. --%>

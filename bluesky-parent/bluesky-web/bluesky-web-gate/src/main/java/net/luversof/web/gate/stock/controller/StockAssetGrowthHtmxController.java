@@ -5,14 +5,18 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import org.springframework.context.MessageSource;
@@ -31,10 +35,14 @@ import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.constant.TradeType;
 import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.StockItem;
+import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
+import net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint;
+import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult;
 import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesSummary;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
@@ -43,15 +51,25 @@ import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.httpexchange.YearlyCostClient;
+import net.luversof.web.gate.stock.support.StockAsyncSupport;
+import net.luversof.web.gate.stock.support.StockDateParamException;
+import net.luversof.web.gate.stock.util.StockBreakdownNoteUtil;
+import net.luversof.web.gate.stock.util.StockContributionUtil;
+import net.luversof.web.gate.stock.util.StockCoreHoldingUtil;
+import net.luversof.web.gate.stock.util.StockPageNumberUtil;
+import net.luversof.web.gate.stock.util.StockPageSizeUtil;
+import net.luversof.web.gate.stock.util.StockPriceBasisUtil;
+import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
 public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   private final DataFirstDateClient dataFirstDateClient;
 
-  private final java.util.concurrent.ExecutorService stockRemoteCallExecutor;
+  private final ExecutorService stockRemoteCallExecutor;
 
-  private final net.luversof.web.gate.stock.httpexchange.YearlyCostClient yearlyCostClient;
+  private final YearlyCostClient yearlyCostClient;
 
   public StockAssetGrowthHtmxController(
       TradeProfitClient tradeProfitClient,
@@ -60,8 +78,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       StockItemClient stockItemClient,
       DividendClient dividendClient,
       DataFirstDateClient dataFirstDateClient,
-      net.luversof.web.gate.stock.httpexchange.YearlyCostClient yearlyCostClient,
-      java.util.concurrent.ExecutorService stockRemoteCallExecutor,
+      YearlyCostClient yearlyCostClient,
+      ExecutorService stockRemoteCallExecutor,
       MessageSource messageSource) {
     super(
         tradeProfitClient,
@@ -79,9 +97,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   @GetMapping("/asset-growth/view")
   public String assetGrowthView(
       TradeProfitRequest request,
-      @RequestParam(required = false) java.util.List<String> stockTagList,
+      @RequestParam(required = false) List<String> stockTagList,
       @RequestParam(required = false) String rangeMode,
-      @RequestParam(required = false) java.util.List<String> excludeCore,
+      @RequestParam(required = false) List<String> excludeCore,
       Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
@@ -90,7 +108,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     request.setUserId(userId);
     // 역순 기간은 앞뒤를 바로잡는다(피커와 같은 규칙). 그대로 두면 빈 차트가 '데이터 없음' 으로 읽힌다.
-    java.time.Instant[] orderedRange =
+    Instant[] orderedRange =
         effectiveRange(rangeMode, request.getStartDate(), request.getEndDate());
     request.setStartDate(orderedRange[0]);
     request.setEndDate(orderedRange[1]);
@@ -126,13 +144,13 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     // 1단계: 서로 의존이 없는 조회를 동시에 던진다.
     var stockItemsFuture =
-        java.util.concurrent.CompletableFuture.supplyAsync(
+        CompletableFuture.supplyAsync(
             () -> emptyIfNull(stockItemClient.getStockItems()), stockRemoteCallExecutor);
     var accountsFuture =
-        java.util.concurrent.CompletableFuture.supplyAsync(
+        CompletableFuture.supplyAsync(
             () -> emptyIfNull(accountClient.getAccountsByUserId(userId)), stockRemoteCallExecutor);
     var dataFirstDateFuture =
-        java.util.concurrent.CompletableFuture.supplyAsync(
+        CompletableFuture.supplyAsync(
             () -> dataFirstDateClient.findDataFirstDate(userId), stockRemoteCallExecutor);
 
     // 계좌 필터가 있으면 보내기 전에 이 사용자 계좌로 좁힌다. 없는 id 가 하나라도 섞이면 api-stock 이
@@ -150,7 +168,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     var dateOnlyParams = dateOnlyReqPre.toParams();
     var dateRangeProfitFuture =
         clientProvidedRange
-            ? java.util.concurrent.CompletableFuture.supplyAsync(
+            ? CompletableFuture.supplyAsync(
                 () -> emptyIfNull(tradeProfitClient.calculateProfit(dateOnlyParams)),
                 stockRemoteCallExecutor)
             : null;
@@ -167,16 +185,14 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         noStockTagSelected && !excludeCoreRequested
             ? resolveStockTagSelection(null, request.getStockItemIdList(), stockTagList)
             : null;
-    java.util.concurrent.CompletableFuture<
-            net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult>
-        earlySeriesFuture = null;
+    CompletableFuture<TradeProfitTimeSeriesResult> earlySeriesFuture = null;
     if (earlySelection != null && !emptyAccountSelection) {
       request.setStockItemIdList(earlySelection.requestedStockItemIds());
       var earlySeriesParams = request.toParams();
       earlySeriesParams.add("granularity", "AUTO");
       earlySeriesParams.add("breakdown", "AUTO");
       earlySeriesFuture =
-          java.util.concurrent.CompletableFuture.supplyAsync(
+          CompletableFuture.supplyAsync(
               () -> tradeProfitClient.timeSeriesWithSummary(earlySeriesParams),
               stockRemoteCallExecutor);
     }
@@ -195,7 +211,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             : "";
     // 태그를 고르지 않았다면 종목 id 집합이 이미 확정돼 있어(earlySelection) 여기서 바로 던질 수 있다.
     // 태그를 골랐다면 종목 목록을 받아야 대상이 정해지므로 아래에서 던진다.
-    java.util.concurrent.CompletableFuture<List<TradeResponse>> earlyTradeHistoryFuture = null;
+    CompletableFuture<List<TradeResponse>> earlyTradeHistoryFuture = null;
     if (earlySelection != null && !emptyAccountSelection) {
       var earlyTradeHistoryParams =
           tradeHistoryParams(
@@ -205,20 +221,17 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
               request.getAccountIdList(),
               earlySelection.requestedStockItemIds());
       earlyTradeHistoryFuture =
-          java.util.concurrent.CompletableFuture.supplyAsync(
+          CompletableFuture.supplyAsync(
               () -> emptyIfNull(tradeClient.findTrades(earlyTradeHistoryParams)),
               stockRemoteCallExecutor);
     }
 
     // Load filter source lists (full account/stock lists for the detail filter form).
-    List<StockItem> stockItemList =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockItemsFuture);
-    List<net.luversof.web.gate.stock.domain.Account> accountList =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(accountsFuture);
+    List<StockItem> stockItemList = StockAsyncSupport.join(stockItemsFuture);
+    List<Account> accountList = StockAsyncSupport.join(accountsFuture);
 
     // 핵심 보유 제외: 명시적 종목 선택이 없을 때만, 종목 목록 전체에서 그 종목만 뺀 집합을 필터로 쓴다.
-    java.util.Set<UUID> coreStockItemIds =
-        net.luversof.web.gate.stock.util.StockCoreHoldingUtil.coreStockItemIds(stockItemList);
+    Set<UUID> coreStockItemIds = StockCoreHoldingUtil.coreStockItemIds(stockItemList);
     boolean excludedApplied = false;
     if (excludeCoreRequested
         && !coreStockItemIds.isEmpty()
@@ -230,6 +243,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
               .filter(id -> id != null && !coreStockItemIds.contains(id))
               .toList());
     }
+    // 모든 종목이 핵심이면 제외 뒤에 남는 종목이 없다 - 아래 태그 풀이가 빈 목록을 null(= 필터 없음)로 바꿔 전체가 나왔다(검토 지적 2026-10-29).
+    boolean exclusionLeavesNothing = excludedApplied && request.getStockItemIdList().isEmpty();
 
     // Resolve tag selection -> stock item ids (tags drive the stock selection).
     StockTagSelection stockTagSelection =
@@ -244,7 +259,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // (실측: 없는 태그로 조회하면 다른 화면은 0 건인데 이 화면만 250 건 전체가 그대로 나왔다).
     // 계좌 쪽과 같은 방식으로 조회를 건너뛴다.
     boolean emptyStockSelection =
-        request.getStockItemIdList() != null && request.getStockItemIdList().isEmpty();
+        exclusionLeavesNothing
+            || (request.getStockItemIdList() != null && request.getStockItemIdList().isEmpty());
     boolean emptySelection = emptyAccountSelection || emptyStockSelection;
 
     List<UUID> requestedAccountIds = request.getAccountIdList();
@@ -260,7 +276,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     final var tradeHistoryStockIds = request.getStockItemIdList();
     final var tradeHistoryPreFuture = earlyTradeHistoryFuture;
     var tradeHistoryFuture =
-        java.util.concurrent.CompletableFuture.supplyAsync(
+        CompletableFuture.supplyAsync(
             () ->
                 emptySelection
                     ? emptyTradeHistory(tradeHistoryFrom, tradeHistoryTo, 20)
@@ -277,9 +293,15 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
                         accountsFuture),
             stockRemoteCallExecutor);
     // 페이징 링크가 같은 필터를 유지하도록 질의 문자열을 만들어 넘긴다.
-    model.addAttribute(
-        "tradeHistoryFilterQuery",
-        tradeHistoryFilterQuery(tradeHistoryAccountIds, tradeHistoryStockIds));
+    // 매매 이력 링크 · 차트 점 · 날짜로 여는 보유 스냅숏도 같은 필터로(검토 지적 2026-10-29: 계좌 하나로 좁혀도 전 계좌 · 전 종목 스냅숏이 떴다).
+    // 핵심 제외면 종목 id 80 여 개 대신 excludeCore 하나를 싣는다 - 주소가 길어지면 Tomcat 이 400 을 냈다(위 실측). 받는 쪽이 같은 제외를
+    // 다시 만든다.
+    String filterQuery =
+        excludedApplied
+            ? tradeHistoryFilterQuery(tradeHistoryAccountIds, null) + "&excludeCore=true"
+            : tradeHistoryFilterQuery(tradeHistoryAccountIds, tradeHistoryStockIds);
+    model.addAttribute("tradeHistoryFilterQuery", filterQuery);
+    model.addAttribute("snapshotFilterQuery", filterQuery);
 
     // Chart data for the SELECTED range. The upstream aggregateTimeSeries simulates from
     // the first trade (carrying prior holdings) and only outputs from the requested start,
@@ -305,7 +327,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 같은 화면의 다른 구역은 모두 이 필터를 따르므로 한 표만 다른 범위를 말하던 셈이다.
     addFilterIds(yearlyCostParams, request);
     var yearlyCostFuture =
-        java.util.concurrent.CompletableFuture.supplyAsync(
+        CompletableFuture.supplyAsync(
             () -> yearlyCostClient.findYearlyCost(yearlyCostParams), stockRemoteCallExecutor);
 
     // 종목별 기여. 이 화면은 기간 손익을 시간(달/해)으로만 쪼갤 수 있었고, 종목으로 쪼갤 곳이
@@ -314,16 +336,16 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     //
     // 재료는 셋이다. 기초·기말 보유(한 번에 받는다) · 종목별 실현손익 · 종목별 배당.
     // 종목마다 부르지 않으므로 원격은 3 회만 는다.
-    java.time.ZoneId contributionZone = resolveZoneIdOrDefault(request.getTimeZone());
+    ZoneId contributionZone = resolveZoneIdOrDefault(request.getTimeZone());
     // 기초·기말 날짜는 요약의 규칙(기말 = 배타 endDate 직전 순간)을 따른다. 규칙은 유틸에 있고 거기서 검사한다.
     var contributionDates =
-        net.luversof.web.gate.stock.util.StockContributionUtil.snapshotDates(
+        StockContributionUtil.snapshotDates(
             request.getStartDate(),
             request.getEndDate(),
             contributionZone,
-            java.time.LocalDate.now(contributionZone));
-    java.time.LocalDate contributionStart = contributionDates.start();
-    java.time.LocalDate contributionEnd = contributionDates.end();
+            LocalDate.now(contributionZone));
+    LocalDate contributionStart = contributionDates.start();
+    LocalDate contributionEnd = contributionDates.end();
     var snapshotParams = new org.springframework.util.LinkedMultiValueMap<String, String>();
     snapshotParams.add("userId", userId.toString());
     if (contributionStart != null) {
@@ -337,7 +359,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     var snapshotFuture =
         emptySelection
             ? null
-            : java.util.concurrent.CompletableFuture.supplyAsync(
+            : CompletableFuture.supplyAsync(
                 () -> tradeProfitClient.holdingsSnapshotBatch(snapshotParams),
                 stockRemoteCallExecutor);
 
@@ -346,7 +368,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 기간 없이 부르면 43 행 전부 날짜가 있고 보유 종목의 마지막 종가가 2026-09-09 다. 그래서 이 화면의 안내 줄이
     // 늘 빠져 있었다(자산 현황·종목 상세·계좌 상세·월배당 탭은 기간 없는 호출을 써서 잘 나온다).
     // 기준일만 쓰는 가벼운 호출을 따로 병렬로 던진다(실측: 28~39ms).
-    var priceBasisRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    var priceBasisRequest = new TradeProfitRequest();
     priceBasisRequest.setUserId(userId);
     // 기간은 명시로 떨어낸다 - 실리면 api-stock 이 평가를 계산하지 않는다(HoldingEvaluationRangeGuardTest 의 규칙).
     priceBasisRequest.setStartDate(null);
@@ -354,23 +376,21 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     priceBasisRequest.setTimeZone(request.getTimeZone());
     priceBasisRequest.setAccountIdList(request.getAccountIdList());
     priceBasisRequest.setStockItemIdList(request.getStockItemIdList());
-    priceBasisRequest.setGroupBy(
-        net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+    priceBasisRequest.setGroupBy(TradeProfitRequestGroup.STOCKITEM);
     var priceBasisParams = priceBasisRequest.toParams();
     var priceBasisFuture =
         emptySelection
             ? null
-            : java.util.concurrent.CompletableFuture.supplyAsync(
+            : CompletableFuture.supplyAsync(
                 () -> tradeProfitClient.calculateProfit(priceBasisParams), stockRemoteCallExecutor);
-    var stockRealizedRequest = new net.luversof.web.gate.stock.dto.request.TradeProfitRequest();
+    var stockRealizedRequest = new TradeProfitRequest();
     stockRealizedRequest.setUserId(userId);
     stockRealizedRequest.setStartDate(request.getStartDate());
     stockRealizedRequest.setEndDate(request.getEndDate());
     stockRealizedRequest.setTimeZone(request.getTimeZone());
     stockRealizedRequest.setAccountIdList(request.getAccountIdList());
     stockRealizedRequest.setStockItemIdList(request.getStockItemIdList());
-    stockRealizedRequest.setGroupBy(
-        net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+    stockRealizedRequest.setGroupBy(TradeProfitRequestGroup.STOCKITEM);
     var stockRealizedParams = stockRealizedRequest.toParams();
     // 기간이 없으면(전체) 위 기준일 요청과 조건이 같다 - 실측 2026-09-23: 같은 calculateProfit?groupBy=STOCKITEM 을 두 번
     // 던졌다(각 18ms).
@@ -381,7 +401,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             ? null
             : sameAsPriceBasis
                 ? priceBasisFuture
-                : java.util.concurrent.CompletableFuture.supplyAsync(
+                : CompletableFuture.supplyAsync(
                     () -> tradeProfitClient.calculateProfit(stockRealizedParams),
                     stockRemoteCallExecutor);
 
@@ -389,16 +409,15 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     var contributionDividendFuture =
         emptySelection
             ? null
-            : java.util.concurrent.CompletableFuture.supplyAsync(
+            : CompletableFuture.supplyAsync(
                 () -> dividendClient.findDividendTotalByStockItem(contributionDividendParams),
                 stockRemoteCallExecutor);
 
-    net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesResult timeSeriesResult;
+    TradeProfitTimeSeriesResult timeSeriesResult;
     if (emptySelection) {
       timeSeriesResult = null;
     } else if (earlySeriesFuture != null) {
-      timeSeriesResult =
-          net.luversof.web.gate.stock.support.StockAsyncSupport.join(earlySeriesFuture);
+      timeSeriesResult = StockAsyncSupport.join(earlySeriesFuture);
     } else {
       var seriesParams = request.toParams();
       seriesParams.add("granularity", "AUTO");
@@ -417,19 +436,17 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     var breakdownRows =
         timeSeriesResult != null && timeSeriesResult.breakdown() != null
             ? timeSeriesResult.breakdown()
-            : java.util.List
-                .<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary>of();
+            : List.<TradeProfitPeriodSummary>of();
     boolean monthlyBreakdown =
         !breakdownRows.isEmpty() && "MONTH".equals(breakdownRows.get(0).unit());
     model.addAttribute("periodBreakdown", monthlyBreakdown ? breakdownRows : List.of());
     model.addAttribute("periodBreakdownNote", periodBreakdownNote(breakdownRows));
     var snapshots =
         snapshotFuture == null
-            ? java.util.Map
-                .<String, List<net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem>>of()
-            : net.luversof.web.gate.stock.support.StockAsyncSupport.join(snapshotFuture);
+            ? Map.<String, List<HoldingsSnapshotItem>>of()
+            : StockAsyncSupport.join(snapshotFuture);
     if (snapshots == null) {
-      snapshots = java.util.Map.of();
+      snapshots = Map.of();
     }
     // 제외 토글: 핵심 태그가 달린 종목이 있어야 낸다. 제외 중이면 그 종목이 스냅샷에 없으므로 비중은 못 낸다.
     model.addAttribute("coreHoldingTagged", !coreStockItemIds.isEmpty());
@@ -439,13 +456,13 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
           stockItemList.stream()
               .filter(item -> item.id() != null && coreStockItemIds.contains(item.id()))
               .map(StockItem::name)
-              .filter(java.util.Objects::nonNull)
+              .filter(Objects::nonNull)
               .toList();
       model.addAttribute("coreHoldingName", coreNames.size() == 1 ? coreNames.get(0) : null);
       model.addAttribute("coreHoldingCount", coreNames.size());
       if (!excludedApplied) {
-        java.math.BigDecimal coreWeightPct =
-            net.luversof.web.gate.stock.util.StockCoreHoldingUtil.snapshotWeightPct(
+        BigDecimal coreWeightPct =
+            StockCoreHoldingUtil.snapshotWeightPct(
                 snapshots.get(contributionEnd.toString()), coreStockItemIds);
         if (coreWeightPct != null) {
           model.addAttribute("coreHoldingWeightPct", coreWeightPct.toPlainString());
@@ -457,7 +474,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 없다 - 결함이 아니다. 다른 화면도 withNames 로 게이트에서 붙인다) 여기서 붙여야 하고, 스냅샷의
     // 이름은 기말에 들고 있는 종목만이라 그것만 믿으면 이미 다 판 종목이 전부 '-' 로 나가
     // "보유 중인 것만 나온다" 로 보인다(실측 2026-09-07: 44 줄 중 35 줄).
-    java.util.Map<UUID, String> contributionNames = new java.util.LinkedHashMap<>();
+    Map<UUID, String> contributionNames = new LinkedHashMap<>();
     for (StockItem item : stockItemList) {
       if (item != null && item.id() != null && item.name() != null) {
         contributionNames.put(item.id(), item.name());
@@ -466,44 +483,38 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 이 화면도 평가액을 보여 주는데 그 값이 어느 날 종가 기준인지 적지 않고 있었다
     // (실측 2026-09-11: 평가값을 보여 주는 여섯 화면 중 대시보드·자산 현황·종목 상세·계좌 상세 넷은 적고 여기만 없었다).
     // 종목별 손익 목록에 종목마다 쓰인 종가 일자가 들어 있으니 그중 가장 늦은 날을 쓴다.
-    List<net.luversof.web.gate.stock.domain.TradeProfit> stockRealizedList =
+    List<TradeProfit> stockRealizedList =
         stockRealizedFuture == null
-            ? List.<net.luversof.web.gate.stock.domain.TradeProfit>of()
-            : net.luversof.web.gate.stock.support.StockAsyncSupport.join(stockRealizedFuture);
-    List<net.luversof.web.gate.stock.domain.TradeProfit> priceBasisHoldings =
+            ? List.<TradeProfit>of()
+            : StockAsyncSupport.join(stockRealizedFuture);
+    List<TradeProfit> priceBasisHoldings =
         priceBasisFuture == null
-            ? List.<net.luversof.web.gate.stock.domain.TradeProfit>of()
-            : net.luversof.web.gate.stock.support.StockAsyncSupport.join(priceBasisFuture);
-    java.time.LocalDate growthPriceBasisDate =
-        net.luversof.web.gate.stock.util.StockPriceBasisUtil.priceBasisDateWithFallback(
-            priceBasisHoldings);
+            ? List.<TradeProfit>of()
+            : StockAsyncSupport.join(priceBasisFuture);
+    LocalDate growthPriceBasisDate =
+        StockPriceBasisUtil.priceBasisDateWithFallback(priceBasisHoldings);
     model.addAttribute("priceBasisDate", growthPriceBasisDate);
     // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
     model.addAttribute(
         "priceBasisIntradayTime",
-        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
-            priceBasisHoldings, growthPriceBasisDate));
+        StockPriceBasisUtil.intradayTime(priceBasisHoldings, growthPriceBasisDate));
     var contributions =
-        net.luversof.web.gate.stock.util.StockContributionUtil.of(
+        StockContributionUtil.of(
             contributionStart != null ? snapshots.get(contributionStart.toString()) : null,
             snapshots.get(contributionEnd.toString()),
             stockRealizedList,
             contributionDividendFuture == null
-                ? java.util.Map.<java.util.UUID, java.math.BigDecimal>of()
-                : net.luversof.web.gate.stock.support.StockAsyncSupport.join(
-                    contributionDividendFuture),
+                ? Map.<UUID, BigDecimal>of()
+                : StockAsyncSupport.join(contributionDividendFuture),
             contributionNames);
     // 합계는 접기 전 전체를 더한 값이다 - 접었다고 합계가 달라지면 위 카드와 어긋난다.
-    model.addAttribute(
-        "stockContributionTotal",
-        net.luversof.web.gate.stock.util.StockContributionUtil.total(contributions));
+    model.addAttribute("stockContributionTotal", StockContributionUtil.total(contributions));
     var foldedContributions =
-        net.luversof.web.gate.stock.util.StockContributionUtil.fold(
-            contributions, net.luversof.web.gate.stock.util.StockContributionUtil.DEFAULT_VISIBLE);
+        StockContributionUtil.fold(contributions, StockContributionUtil.DEFAULT_VISIBLE);
     model.addAttribute("stockContributions", foldedContributions.rows());
     model.addAttribute("stockContributionOthers", foldedContributions.others());
     model.addAttribute("stockContributionOthersCount", foldedContributions.othersCount());
-    var yearlyCosts = net.luversof.web.gate.stock.support.StockAsyncSupport.join(yearlyCostFuture);
+    var yearlyCosts = StockAsyncSupport.join(yearlyCostFuture);
     model.addAttribute("yearlyCosts", yearlyCosts != null ? yearlyCosts : List.of());
     model.addAttribute(
         "yearlySummaries",
@@ -515,15 +526,13 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 전 기간 시계열을 다시 집계하면(기간 제거 timeSeries) 이 화면에서만 초 단위가 걸렸다.
     // 집계 엔드포인트 1회로 대체한다.
     var zone = resolveZoneIdOrDefault(request.getTimeZone());
-    var firstDateResponse =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(dataFirstDateFuture);
-    java.time.Instant firstInstant = firstDateResponse.tradeFirstDate();
+    var firstDateResponse = StockAsyncSupport.join(dataFirstDateFuture);
+    Instant firstInstant = firstDateResponse.tradeFirstDate();
     if (firstDateResponse.dividendFirstDate() != null
         && (firstInstant == null || firstDateResponse.dividendFirstDate().isBefore(firstInstant))) {
       firstInstant = firstDateResponse.dividendFirstDate();
     }
-    java.time.LocalDate dataFirstDate =
-        firstInstant != null ? firstInstant.atZone(zone).toLocalDate() : null;
+    LocalDate dataFirstDate = firstInstant != null ? firstInstant.atZone(zone).toLocalDate() : null;
 
     model.addAttribute("timeSeries", timeSeries);
     model.addAttribute("dataFirstDate", dataFirstDate != null ? dataFirstDate.toString() : "");
@@ -537,14 +546,12 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // but keep previously-selected items visible even if absent from the range.
     Set<UUID> tradeAccountIds;
     Set<UUID> tradeStockIds;
-    List<net.luversof.web.gate.stock.domain.Account> filteredAccountList;
+    List<Account> filteredAccountList;
     List<StockItem> filteredStockItemList;
     if (clientProvidedRange) {
       // id 집합만 쓰므로 이름을 붙이지 않는다. 예전에는 이름 붙이기 안에서 계좌·종목 목록을
       // 한 번씩 더 읽어, 이 프래그먼트 한 건이 종목 목록을 3번·계좌 목록을 2번 조회했다(실측).
-      var dateRangeEnriched =
-          new ArrayList<>(
-              net.luversof.web.gate.stock.support.StockAsyncSupport.join(dateRangeProfitFuture));
+      var dateRangeEnriched = new ArrayList<>(StockAsyncSupport.join(dateRangeProfitFuture));
       tradeAccountIds =
           dateRangeEnriched.stream()
               .map(tp -> tp.accountId())
@@ -587,7 +594,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     }
 
     // Final dropdown lists: narrowed list + previously-selected items not in range.
-    List<net.luversof.web.gate.stock.domain.Account> finalAccountList;
+    List<Account> finalAccountList;
     if (clientProvidedRange) {
       finalAccountList =
           withSelectedFirst(filteredAccountList, accountList, requestedAccountIds, a -> a.id());
@@ -611,9 +618,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     model.addAttribute("selectedStockItemIds", effectiveStockItemIds);
     model.addAttribute("selectedStockTags", selectedStockTags);
     // 껍데기(CompletionException)를 벗기는 규칙은 StockAsyncSupport.join 한 곳에만 둔다.
-    model.addAttribute(
-        "tradeHistoryData",
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(tradeHistoryFuture));
+    model.addAttribute("tradeHistoryData", StockAsyncSupport.join(tradeHistoryFuture));
     return "stock/htmx/asset-growth";
   }
 
@@ -656,6 +661,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       @RequestParam(required = false) String date,
       @RequestParam(required = false) String accountId,
       @RequestParam(required = false) String timeZone,
+      @RequestParam(required = false) List<UUID> accountIdList,
+      @RequestParam(required = false) List<UUID> stockItemIdList,
+      @RequestParam(required = false) boolean excludeCore,
       Model model) {
     var userId = UserUtil.getUserId();
     if (userId == null) {
@@ -677,7 +685,38 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     if (timeZone != null && !timeZone.isBlank()) {
       params.add("timeZone", timeZone);
     }
-    List<HoldingsSnapshotItem> holdings = emptyIfNull(tradeProfitClient.holdingsSnapshot(params));
+    List<HoldingsSnapshotItem> holdings;
+    boolean listFiltered =
+        (accountIdList != null && !accountIdList.isEmpty())
+            || (stockItemIdList != null && !stockItemIdList.isEmpty());
+    if (listFiltered) {
+      // 단건 스냅숏은 계좌 하나만 받는다 - 화면의 다중 필터는 날짜 하나짜리 묶음 호출로(기초 · 기말 스냅숏과 같은 길).
+      var batchParams = new org.springframework.util.LinkedMultiValueMap<String, String>();
+      batchParams.add("userId", userId.toString());
+      batchParams.add("dates", date);
+      if (accountIdList != null) {
+        accountIdList.stream()
+            .filter(java.util.Objects::nonNull)
+            .forEach(id -> batchParams.add("accountIdList", id.toString()));
+      }
+      if (stockItemIdList != null) {
+        stockItemIdList.stream()
+            .filter(java.util.Objects::nonNull)
+            .forEach(id -> batchParams.add("stockItemIdList", id.toString()));
+      }
+      if (timeZone != null && !timeZone.isBlank()) {
+        batchParams.add("timeZone", timeZone);
+      }
+      var batch = tradeProfitClient.holdingsSnapshotBatch(batchParams);
+      holdings = batch != null ? emptyIfNull(batch.get(date)) : List.of();
+    } else {
+      holdings = emptyIfNull(tradeProfitClient.holdingsSnapshot(params));
+    }
+    if (excludeCore) {
+      Set<UUID> core =
+          StockCoreHoldingUtil.coreStockItemIds(emptyIfNull(stockItemClient.getStockItems()));
+      holdings = holdings.stream().filter(item -> !core.contains(item.stockItemId())).toList();
+    }
     model.addAttribute("holdings", holdings);
     model.addAttribute("date", date);
     return "stock/htmx/holdings-snapshot";
@@ -714,8 +753,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
   private static LocalDate parseDayParam(String name, String value) {
     try {
       return LocalDate.parse(value);
-    } catch (java.time.format.DateTimeParseException ex) {
-      throw new net.luversof.web.gate.stock.support.StockDateParamException(name, ex);
+    } catch (DateTimeParseException ex) {
+      throw new StockDateParamException(name, ex);
     }
   }
 
@@ -757,11 +796,11 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       List<StockItem> preloadedStockItems,
       List<UUID> accountIdList,
       List<UUID> stockItemIdList,
-      java.util.concurrent.CompletableFuture<List<TradeResponse>> preTradesFuture,
-      java.util.concurrent.CompletableFuture<List<Account>> preAccountsFuture) {
+      CompletableFuture<List<TradeResponse>> preTradesFuture,
+      CompletableFuture<List<Account>> preAccountsFuture) {
     var allFromApi =
         preTradesFuture != null
-            ? net.luversof.web.gate.stock.support.StockAsyncSupport.join(preTradesFuture)
+            ? StockAsyncSupport.join(preTradesFuture)
             : emptyIfNull(
                 tradeClient.findTrades(
                     tradeHistoryParams(userId, from, to, accountIdList, stockItemIdList)));
@@ -779,7 +818,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     // 자산성장 화면은 계좌를 이미 던져 뒀다 - 그 future 를 받으면 같은 요청에서 두 번 부르지 않는다.
     List<Account> accounts =
         preAccountsFuture != null
-            ? net.luversof.web.gate.stock.support.StockAsyncSupport.join(preAccountsFuture)
+            ? StockAsyncSupport.join(preAccountsFuture)
             : emptyIfNull(accountClient.getAccountsByUserId(userId));
     Map<UUID, String> accountNames =
         accounts.stream().collect(Collectors.toMap(Account::id, Account::name, (l, r) -> l));
@@ -822,11 +861,11 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     int totalItems = allTrades.size();
     // 2026-09-12 까지 size <= 0 이면 조용히 20 으로 바꿨고 위끝은 아예 없었다. 형제 값들이 이미
     // 이름을 들고 끊는 마당에(sort · timeZone · size=abc) 이것만 다른 수로 바꿔 그릴 까닭이 없다.
-    size = net.luversof.web.gate.stock.util.StockPageSizeUtil.resolve("size", size);
+    size = StockPageSizeUtil.resolve("size", size);
     int totalPages = totalItems > 0 ? (int) Math.ceil((double) totalItems / size) : 0;
     // A page below one is not a page. The top end still clamps: the list can shrink between two
     // visits and a bookmarked page 10 should open at the last page rather than be refused.
-    page = net.luversof.web.gate.stock.util.StockPageNumberUtil.resolve("page", page);
+    page = StockPageNumberUtil.resolve("page", page);
     int currentPage = Math.min(page, Math.max(1, totalPages));
     int fromIdx = (currentPage - 1) * size;
     int toIdx = Math.min(fromIdx + size, totalItems);
@@ -841,8 +880,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
             : periodFrom + (periodTo.isEmpty() ? "" : " ~ " + periodTo);
 
     // 화면에는 오름차순(오래된 것 위)으로 표시 — 조회/페이징은 그대로(1페이지=최신 묶음).
-    List<TradeResponse> displayTrades = new java.util.ArrayList<>(pagedTrades);
-    java.util.Collections.reverse(displayTrades);
+    List<TradeResponse> displayTrades = new ArrayList<>(pagedTrades);
+    Collections.reverse(displayTrades);
     return new TradeHistoryData(
         displayTrades,
         totalItems,
@@ -919,6 +958,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int size,
       @RequestParam(required = false) String timeZone,
+      @RequestParam(required = false) boolean excludeCore,
       Model model) {
     var userId = UserUtil.getUserId();
     // 로그인이 풀렸는데 빈 목록을 그리면 "해당 기간의 매매 내역이 없습니다" 로 보여, 사용자는 데이터가
@@ -933,18 +973,38 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
     from = orderedDays[0];
     to = orderedDays[1];
     // 화면의 계좌/종목 필터를 그대로 이어받는다. 없으면 예전처럼 전체를 본다.
+    // 핵심 제외는 id 목록 대신 표식으로 온다 - 화면(자산 성장 본문)과 같은 규칙으로 "핵심 태그 아닌 모든 종목" 을 다시 만든다.
+    // 핵심 태그 종목이 없으면 거르지 않는다(본문과 같은 조건, 검토 지적 2026-10-29). 남는 종목이 없으면 빈 목록 - 빈 id 목록은 API 에서 '필터 없음'
+    // 이다.
+    List<UUID> effectiveStockIds = stockItemIdList;
+    boolean excludedApplied = false;
+    if (excludeCore && (stockItemIdList == null || stockItemIdList.isEmpty())) {
+      List<StockItem> stockItems = emptyIfNull(stockItemClient.getStockItems());
+      Set<UUID> core = StockCoreHoldingUtil.coreStockItemIds(stockItems);
+      if (!core.isEmpty()) {
+        excludedApplied = true;
+        effectiveStockIds =
+            stockItems.stream()
+                .map(StockItem::id)
+                .filter(id -> id != null && !core.contains(id))
+                .toList();
+      }
+    }
     TradeHistoryData data =
-        buildTradeHistoryData(
-            userId, from, to, page, size, null, accountIdList, stockItemIdList, null, null);
-    addTradeHistoryAttributes(
-        model, data, net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone));
+        excludedApplied && effectiveStockIds.isEmpty()
+            ? emptyTradeHistory(from, to, size)
+            : buildTradeHistoryData(
+                userId, from, to, page, size, null, accountIdList, effectiveStockIds, null, null);
+    addTradeHistoryAttributes(model, data, StockZoneUtil.resolve(timeZone));
     model.addAttribute(
-        "tradeHistoryFilterQuery", tradeHistoryFilterQuery(accountIdList, stockItemIdList));
+        "tradeHistoryFilterQuery",
+        excludedApplied
+            ? tradeHistoryFilterQuery(accountIdList, null) + "&excludeCore=true"
+            : tradeHistoryFilterQuery(accountIdList, stockItemIdList));
     return "stock/htmx/tradeHistory";
   }
 
-  private static void addTradeHistoryAttributes(
-      Model model, TradeHistoryData data, java.time.ZoneId zone) {
+  private static void addTradeHistoryAttributes(Model model, TradeHistoryData data, ZoneId zone) {
     // 날짜 칸은 이 화면의 기간 표시와 같은 존으로 찍는다. timeZone 이 없으면 예전처럼 서버 존이다.
     model.addAttribute("zone", zone);
     model.addAttribute("trades", data.trades());
@@ -974,11 +1034,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
    * 2026-09-03: breakdown 만 106.6 KB, 응답이 72.7 &rarr; 162.7 KB). 틀린 것은 <b>말없이</b> 버린 쪽이었다. 기본 화면인
    * '전체' 가 정확히 이 경우라 표가 통째로 사라졌고, 기능이 있는지조차 알 수 없었다.
    */
-  String periodBreakdownNote(
-      List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> breakdownRows) {
+  String periodBreakdownNote(List<TradeProfitPeriodSummary> breakdownRows) {
     // 판단은 한 곳에 둔다(종목 상세도 같은 규칙을 쓴다) - 문구만 이 화면의 MessageSource 가 찾는다.
-    String key =
-        net.luversof.web.gate.stock.util.StockBreakdownNoteUtil.noteKey(breakdownRows, true);
+    String key = StockBreakdownNoteUtil.noteKey(breakdownRows, true);
     return key.isEmpty() ? "" : msg(key);
   }
 
@@ -987,7 +1045,7 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
    *
    * <p>거짓 값이 하나라도 있으면 '해제' 다 &mdash; 해제 버튼은 hidden 이 살아 있는 채로 눌리기 때문이다.
    */
-  static boolean resolveExcludeCore(java.util.List<String> values) {
+  static boolean resolveExcludeCore(List<String> values) {
     if (values == null || values.isEmpty()) {
       return false;
     }

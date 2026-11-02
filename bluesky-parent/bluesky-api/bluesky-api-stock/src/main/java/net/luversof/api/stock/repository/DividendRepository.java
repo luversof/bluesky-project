@@ -8,7 +8,9 @@ import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import net.luversof.api.stock.domain.Dividend;
+import net.luversof.api.stock.domain.PeriodDividendSummary;
 import net.luversof.api.stock.domain.StockItemDateRange;
+import net.luversof.api.stock.domain.YearlyDividendIncome;
 
 public interface DividendRepository extends CrudRepository<Dividend, UUID> {
 
@@ -35,10 +37,10 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
                 GROUP BY 1
                 ORDER BY 1
             """)
-  java.util.List<net.luversof.api.stock.domain.YearlyDividendIncome> findYearlyIncome(
-      @org.springframework.data.repository.query.Param("userId") java.util.UUID userId,
-      @org.springframework.data.repository.query.Param("startDate") java.time.Instant startDate,
-      @org.springframework.data.repository.query.Param("endDate") java.time.Instant endDate,
+  List<YearlyDividendIncome> findYearlyIncome(
+      @org.springframework.data.repository.query.Param("userId") UUID userId,
+      @org.springframework.data.repository.query.Param("startDate") Instant startDate,
+      @org.springframework.data.repository.query.Param("endDate") Instant endDate,
       @org.springframework.data.repository.query.Param("zone") String zone,
       @org.springframework.data.repository.query.Param("accountIds") String accountIds,
       @org.springframework.data.repository.query.Param("stockItemIds") String stockItemIds);
@@ -62,7 +64,7 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
                   AND (CAST(:startDate AS timestamptz) IS NULL OR d."payDate" >= CAST(:startDate AS timestamptz))
                   AND (CAST(:endDate   AS timestamptz) IS NULL OR d."payDate" <  CAST(:endDate   AS timestamptz))
             """)
-  net.luversof.api.stock.domain.PeriodDividendSummary findPeriodSummary(
+  PeriodDividendSummary findPeriodSummary(
       @org.springframework.data.repository.query.Param("userId") UUID userId,
       @org.springframework.data.repository.query.Param("startDate") Instant startDate,
       @org.springframework.data.repository.query.Param("endDate") Instant endDate);

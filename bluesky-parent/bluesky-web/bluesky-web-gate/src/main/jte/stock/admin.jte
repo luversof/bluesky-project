@@ -7,20 +7,24 @@
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendReferenceSummaryView
+@import java.util.Map
+@import net.luversof.web.gate.stock.dto.response.DataStatusResponse
+@import net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse
+@import net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView
 
 @param boolean isAuthenticated = false
 @param String username = ""
 @param String loginUrl = "https://user.web.bluesky.local/login/redirect"
 @param String profile = "local"
 @param String adminTab = "data-management"
-@param net.luversof.web.gate.stock.dto.response.DataStatusResponse dataStatus = null
-@param net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse ledgerIntegrity = null
-@param List<StockItem> stockItems = java.util.List.of()
-@param List<MonthlyDividendProfileResponse> monthlyDividendProfiles = java.util.List.of()
-@param java.util.Map<String, net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView> monthlyDividendLatestPayoutBySymbol = java.util.Map.of()
+@param DataStatusResponse dataStatus = null
+@param LedgerIntegrityResponse ledgerIntegrity = null
+@param List<StockItem> stockItems = List.of()
+@param List<MonthlyDividendProfileResponse> monthlyDividendProfiles = List.of()
+@param Map<String, MonthlyDividendLatestPayoutView> monthlyDividendLatestPayoutBySymbol = Map.of()
 @param String monthlyDividendProfileWindow = ""
-@param java.util.Map<String, Long> monthlyDividendProfileWindowCounts = java.util.Map.of()
-@param List<MonthlyDividendPayoutResponse> monthlyDividendPayouts = java.util.List.of()
+@param Map<String, Long> monthlyDividendProfileWindowCounts = Map.of()
+@param List<MonthlyDividendPayoutResponse> monthlyDividendPayouts = List.of()
 @param MonthlyDividendReferenceSummaryView monthlyDividendReferenceSummary = null
 @param MonthlyDividendProfileUpsertRequest monthlyDividendProfileForm = null
 @param MonthlyDividendPayoutUpsertRequest monthlyDividendPayoutForm = null

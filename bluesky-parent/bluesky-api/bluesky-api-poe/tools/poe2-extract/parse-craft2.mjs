@@ -102,7 +102,7 @@ try {
 	const describe = createDescriber();
 	const rangeText = (mod, lang) => {
 		const lo = new Map(), hi = new Map();
-		for (let i = 1; i <= 6; i++) {
+		for (let i = 1; i <= 8; i++) {
 			if (mod["Stat" + i] == null) continue;
 			const v = mod["Stat" + i + "Value"];
 			const [a, b] = Array.isArray(v) ? v : [v, v];
@@ -116,11 +116,14 @@ try {
 			const ln = line.match(/-?\d+(?:\.\d+)?/g) || [], hn = other.match(/-?\d+(?:\.\d+)?/g) || [];
 			if (ln.length !== hn.length) return line;
 			let idx = 0;
-			return line.replace(/-?\d+(?:\.\d+)?/g, (n) => {
+			return line.replace(/-?\d+(?:\.\d+)?/g, (n, offset) => {
 				let a = n, b = hn[idx++];
 				if (b === a) return a;
 				if (Number(a) > Number(b)) [a, b] = [b, a];
-				return lang !== "Korean" ? `(${a}-${b})` : `${a}~${b}`;
+				if (lang !== "Korean") return `(${a}-${b})`;
+				// 템플릿 물결 옆 자리는 괄호(10-30 R29, parse-mods2 짝): (9~14)~(15~22)
+				const near = line[offset - 1] === "~" || line[offset + n.length] === "~";
+				return near ? `(${a}~${b})` : `${a}~${b}`;
 			});
 		});
 	};
@@ -190,7 +193,7 @@ try {
 	const describe2 = createDescriber();
 	const text2 = (mod, lang) => {
 		const lo = new Map(), hi = new Map();
-		for (let i = 1; i <= 6; i++) {
+		for (let i = 1; i <= 8; i++) {
 			if (mod["Stat" + i] == null) continue;
 			const v = mod["Stat" + i + "Value"];
 			const [x, y] = Array.isArray(v) ? v : [v, v];
@@ -203,11 +206,14 @@ try {
 			if (!other || other === line) return line;
 			const hn = other.match(/-?\d+(?:\.\d+)?/g) || [];
 			let idx = 0;
-			return line.replace(/-?\d+(?:\.\d+)?/g, (n) => {
+			return line.replace(/-?\d+(?:\.\d+)?/g, (n, offset) => {
 				let x = n, y = hn[idx++];
 				if (y == null || y === x) return x;
 				if (Number(x) > Number(y)) [x, y] = [y, x];
-				return lang !== "Korean" ? `(${x}-${y})` : `${x}~${y}`;
+				if (lang !== "Korean") return `(${x}-${y})`;
+				// 템플릿 물결 옆 자리는 괄호(10-30 R29 — 타락 '화염 피해 9~14~15~22 추가' 8개)
+				const near = line[offset - 1] === "~" || line[offset + n.length] === "~";
+				return near ? `(${x}~${y})` : `${x}~${y}`;
 			});
 		});
 	};

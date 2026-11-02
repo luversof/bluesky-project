@@ -258,6 +258,13 @@
       ]
     },
     {
+      "name": "BuffTemplates",
+      "columns": [
+        "Id",
+        "Stats"
+      ]
+    },
+    {
       "name": "Mods",
       "columns": [
         "Id",
@@ -269,6 +276,8 @@
         "Stat4",
         "Stat5",
         "Stat6",
+        "Stat7",
+        "Stat8",
         "Domain",
         "Name",
         "GenerationType",
@@ -279,6 +288,10 @@
         "Stat4Value",
         "Stat5Value",
         "Stat6Value",
+        "Stat7Value",
+        "Stat8Value",
+        "BuffTemplate",
+        "BuffTemplate2",
         "SpawnWeight_Tags",
         "SpawnWeight_Values",
         "Tags",

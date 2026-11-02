@@ -2,10 +2,18 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.text.MessageFormat
+@import java.time.Instant
+@import java.time.ZoneId
+@import java.util.function.BiFunction
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.dto.response.DataStatusResponse
+@import net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse
+@import net.luversof.web.gate.stock.util.StockLedgerRuleLabelUtil
 
 @param boolean isAuthenticated = false
-@param net.luversof.web.gate.stock.dto.response.DataStatusResponse dataStatus = null
-@param net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse ledgerIntegrity = null
+@param DataStatusResponse dataStatus = null
+@param LedgerIntegrityResponse ledgerIntegrity = null
 
 !{
 	String dataManagementLabel = MessageUtil.getMessage("stock.admin.label.data.management");
@@ -32,10 +40,10 @@
 	String priceProgressFailedTemplate = MessageUtil.getMessage("stock.admin.price.progress.failed");
 
 	String countSuffix = MessageUtil.getMessage("common.count");
-	java.util.function.Function<java.time.Instant, String> asDate = instant ->
-		instant == null ? "-" : instant.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString();
-	java.util.function.BiFunction<String, Long, String> withCount = (text, count) ->
-		count == null ? text : text + " (" + java.text.MessageFormat.format(countSuffix, count) + ")";
+	Function<Instant, String> asDate = instant ->
+		instant == null ? "-" : instant.atZone(ZoneId.systemDefault()).toLocalDate().toString();
+	BiFunction<String, Long, String> withCount = (text, count) ->
+		count == null ? text : text + " (" + MessageFormat.format(countSuffix, count) + ")";
 }
 
 @if(isAuthenticated)
@@ -71,7 +79,7 @@
 				</button>
 				<dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-base-content/70">
 					<dt>${dataCoverageLabel}</dt>
-					<dd class="font-medium text-base-content" data-admin-coverage="stock-items">${dataStatus != null ? java.text.MessageFormat.format(countSuffix, dataStatus.stockItemCount()) : "-"}</dd>
+					<dd class="font-medium text-base-content" data-admin-coverage="stock-items">${dataStatus != null ? MessageFormat.format(countSuffix, dataStatus.stockItemCount()) : "-"}</dd>
 					<dt>${lastRunLabel}</dt>
 					<dd><span data-admin-last-run="stock-items"><span aria-hidden="true">-</span><span class="sr-only">${lastRunNoneLabel}</span></span></dd>
 				</dl>
@@ -172,7 +180,7 @@
 					 바뀐 행, 제한폭을 넘은 행)은 이미 종목·날짜까지 적는다 - 이것만 숫자였다. --%>
 				@if(dataStatus.priceHistoryNoHistoryItemRows() != null && !dataStatus.priceHistoryNoHistoryItemRows().isEmpty())
 					<div class="text-[11px] text-base-content/60 mb-2 font-mono" data-no-history-items="${dataStatus.priceHistoryNoHistoryItemRows().size()}">
-						@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.NoHistoryItemRow row : dataStatus.priceHistoryNoHistoryItemRows())
+						@for(DataStatusResponse.NoHistoryItemRow row : dataStatus.priceHistoryNoHistoryItemRows())
 							<div>${row.symbol()} ${row.stockItemName()}</div>
 						@endfor
 						@if(dataStatus.priceHistoryNoHistoryItemCount() > dataStatus.priceHistoryNoHistoryItemRows().size())
@@ -212,7 +220,7 @@
 						&middot; ${StockViewSupport.msg("stock.admin.price.quality.changed", String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseCount()))}
 					@endif
 					@if(dataStatus.priceHistoryZeroVolumeChangedCloseRows() != null)
-						@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.ZeroVolumeChangedCloseRow row : dataStatus.priceHistoryZeroVolumeChangedCloseRows())
+						@for(DataStatusResponse.ZeroVolumeChangedCloseRow row : dataStatus.priceHistoryZeroVolumeChangedCloseRows())
 							<%-- 두 숫자만 보면 시세 수집이 깨진 것처럼 보인다. 배율이 깔끔한 정수비면 액면분할·병합이므로
 								 그 비를 함께 적는다(실측 2026-08-23: 쌍방울 2025-05-08 13,450 -> 2,690 = 정확히 1/5). --%>
 							<div class="font-mono" data-zero-volume-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()}@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${StockViewSupport.msg("stock.admin.price.quality.split", row.splitRatioLabel())})</span>@endif</div>
@@ -244,7 +252,7 @@
 					@if(dataStatus.priceHistoryPriceLimitBreachCount() > 0)
 						<div class="mt-1">${StockViewSupport.msg("stock.admin.price.quality.limit", String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount()))}</div>
 						@if(dataStatus.priceHistoryPriceLimitBreachRows() != null)
-							@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.PriceLimitBreachRow row : dataStatus.priceHistoryPriceLimitBreachRows())
+							@for(DataStatusResponse.PriceLimitBreachRow row : dataStatus.priceHistoryPriceLimitBreachRows())
 								<div class="font-mono" data-price-limit-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}" data-price-limit-gap="${row.gapDays()}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()} (${StockFormatUtil.signedPct(row.changePercent(), 1)})@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${StockViewSupport.msg("stock.admin.price.quality.split", row.splitRatioLabel())})</span>@endif</div>
 							@endfor
 							<%-- 목록에는 상한이 있다. 개수만 크게 적고 몇 줄만 보이면 나머지가 있는 줄 모른다.
@@ -277,7 +285,7 @@
 				<div class="text-[11px] text-base-content/60 mb-2">
 					${StockViewSupport.msg("stock.admin.payout.reference", dataStatus.monthlyDividendPayoutLastDate().toString())}
 					@if(dataStatus.monthlyDividendPayoutOverdueRows() != null && !dataStatus.monthlyDividendPayoutOverdueRows().isEmpty())
-						@for(net.luversof.web.gate.stock.dto.response.DataStatusResponse.MonthlyDividendPayoutOverdueRow row : dataStatus.monthlyDividendPayoutOverdueRows())
+						@for(DataStatusResponse.MonthlyDividendPayoutOverdueRow row : dataStatus.monthlyDividendPayoutOverdueRows())
 							<div data-payout-elapsed="${row.elapsedDays()}" data-payout-widest="${row.widestGapDays()}" class="text-warning">${StockViewSupport.msg("stock.admin.payout.reference.overdue", String.valueOf(dataStatus.monthlyDividendPayoutOverdueRows().size()),
 								row.stockItemName(),
 								String.valueOf(row.elapsedDays()),
@@ -326,18 +334,18 @@
 			@if(ledgerIntegrity != null && ledgerIntegrity.hasMultiReasonRows())
 				<div class="alert alert-info py-2 px-3 text-xs mt-2 block" data-ledger-multi-rows="${ledgerIntegrity.multiReasonRows().size()}" role="status">
 					<div class="font-medium">${StockViewSupport.msg("stock.admin.ledger.multi.reason.rows", ledgerIntegrity.multiReasonRows().size())}</div>
-					@for(net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse.RowFindingSummary row : ledgerIntegrity.multiReasonRows())
+					@for(LedgerIntegrityResponse.RowFindingSummary row : ledgerIntegrity.multiReasonRows())
 						<div class="opacity-80" data-ledger-row-codes="${row.codes().size()}">
 							${row.date()} ${row.stockItemName()}@if(row.accountName() != null) [${row.accountName()}]@endif
-							&middot; ${String.join(", ", row.codes().stream().map(code -> net.luversof.web.gate.stock.util.StockLedgerRuleLabelUtil.label(code)).toList())}
+							&middot; ${String.join(", ", row.codes().stream().map(code -> StockLedgerRuleLabelUtil.label(code)).toList())}
 						</div>
 					@endfor
 				</div>
 			@endif
 			@if(ledgerIntegrity != null && !ledgerIntegrity.isClean())
-				@for(net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse.Finding finding : ledgerIntegrity.findings())
+				@for(LedgerIntegrityResponse.Finding finding : ledgerIntegrity.findings())
 					<div class="alert alert-warning py-2 px-3 text-xs mt-2 block wrap-anywhere" role="alert">
-						<div class="font-medium" data-ledger-count="${finding.count()}">${net.luversof.web.gate.stock.util.StockLedgerRuleLabelUtil.label(finding.code())} (${finding.count()})</div>
+						<div class="font-medium" data-ledger-count="${finding.count()}">${StockLedgerRuleLabelUtil.label(finding.code())} (${finding.count()})</div>
 						<%-- 예시를 3건만 보여 주던 시절에는 발견의 절반 이상을 화면에서 볼 수 없었다
 							 (실측 2026-08-23: 45건 중 25건). 조치하려면 어느 행인지 알아야 하므로
 							 앞 3건은 그대로 펼쳐 두고 나머지는 접어 둔다. --%>

@@ -1,5 +1,9 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
+@import java.time.LocalDate
+@import java.util.List
+@import net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView
+@import net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -7,15 +11,15 @@
 @param String profile = "local"
 <%-- 다가올 배당(이번 달 남은 날 + 다음 달 예정). 옛 배당 캘린더 탭의 '앞으로' 를 옮겨 왔다 - 2026-09-17 사용자 결정. --%>
 @param boolean upcomingHasRows = false
-@param net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView upcomingSchedule = null
-@param java.time.LocalDate upcomingAsOfOldest = null
-@param java.time.LocalDate upcomingAsOfNewest = null
+@param UpcomingDividendScheduleView upcomingSchedule = null
+@param LocalDate upcomingAsOfOldest = null
+@param LocalDate upcomingAsOfNewest = null
 @param long upcomingStaleQuantityCount = 0L
 @param boolean upcomingCurrentQuantityUnavailable = false
-@param BigDecimal upcomingCurrentQuantityTotal = java.math.BigDecimal.ZERO
-@param BigDecimal upcomingCurrentQuantityLatestTotal = java.math.BigDecimal.ZERO
-@param java.util.List<String> shortHistorySymbols = java.util.List.of()
-@param net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView financialIncome = null
+@param BigDecimal upcomingCurrentQuantityTotal = BigDecimal.ZERO
+@param BigDecimal upcomingCurrentQuantityLatestTotal = BigDecimal.ZERO
+@param List<String> shortHistorySymbols = List.of()
+@param FinancialIncomeThresholdView financialIncome = null
 
 @template._layout.stockLayout(
 	pageTitle = MessageUtil.getMessage("stock.page.dividend.title"),

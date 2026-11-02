@@ -1,7 +1,10 @@
 package net.luversof.api.stock.service.strategy;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
+import net.luversof.api.stock.domain.StockDailyClosePrice;
 import net.luversof.api.stock.domain.Trade;
 import net.luversof.api.stock.domain.TradeProfit;
 import net.luversof.api.stock.service.StockPriceService;
@@ -17,6 +20,5 @@ public interface ProfitCalculator {
       List<Trade> trades,
       TradeProfitRequest request,
       StockPriceService stockPriceService,
-      java.util.Map<java.util.UUID, net.luversof.api.stock.domain.StockDailyClosePrice>
-          latestPrices);
+      Map<UUID, StockDailyClosePrice> latestPrices);
 }

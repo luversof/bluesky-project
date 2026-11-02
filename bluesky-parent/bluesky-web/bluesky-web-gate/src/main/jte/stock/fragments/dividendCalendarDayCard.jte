@@ -3,6 +3,8 @@
 @import java.time.format.TextStyle
 @import net.luversof.web.gate.stock.dto.view.DividendCalendarView
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import java.text.MessageFormat
+@import java.util.Locale
 
 <%-- 지급일마다 한 장. 왼쪽 큰 숫자가 '며칠' 을, 오른쪽 큰 숫자가 '얼마' 를 먼저 말하고
      종목별 내역이 그 아래 붙는다(사용자 선택 2026-09-15). 한 달에 한두 장뿐이라 카드가 과하지 않다.
@@ -17,7 +19,7 @@
 @param boolean showMonth = false
 
 !{
-	java.util.Locale locale = org.springframework.context.i18n.LocaleContextHolder.getLocale();
+	Locale locale = org.springframework.context.i18n.LocaleContextHolder.getLocale();
 	String spreadPattern = MessageUtil.getMessage("stock.dividend.calendar.spread");
 	String samplePattern = MessageUtil.getMessage("stock.dividend.calendar.sample");
 	String dayTotalLabel = MessageUtil.getMessage("stock.dividend.calendar.day.total");
@@ -26,7 +28,7 @@
 	String taxableUnregisteredPattern = MessageUtil.getMessage("stock.dividend.calendar.taxable.unregistered");
 	String dayHoliday = net.luversof.web.gate.util.KoreanHolidays.holidayName(day.date());
 	String monthName = day.date().getMonth().getDisplayName(TextStyle.SHORT, locale);
-	String dayTitle = (showMonth ? monthName + " " : "") + java.text.MessageFormat.format(dayTitlePattern, String.valueOf(day.date().getDayOfMonth()), day.date().getDayOfWeek().getDisplayName(TextStyle.SHORT, locale));
+	String dayTitle = (showMonth ? monthName + " " : "") + MessageFormat.format(dayTitlePattern, String.valueOf(day.date().getDayOfMonth()), day.date().getDayOfWeek().getDisplayName(TextStyle.SHORT, locale));
 	boolean dayRed = day.date().getDayOfWeek() == DayOfWeek.SUNDAY || day.date().getDayOfWeek() == DayOfWeek.SATURDAY || dayHoliday != null;
 	boolean estimatedDay = day.entries() != null && !day.entries().isEmpty() && day.entries().stream().noneMatch(DividendCalendarView.Entry::actualAmount);
 }
@@ -57,10 +59,10 @@
 					<%-- 식별자는 비워 두지 않는다 - JTE 는 값이 null 인 속성을 통째로 지우고,
 					     원장으로만 놓은 종목은 심볼이 없다(실측 2024-11: 두 종목 전부 속성이 사라져 QA 탐침이 0 종목으로 읽었다). --%>
 					!{String entryNote = entry.actualAmount() ? "" : ((entry.spread()
-						? java.text.MessageFormat.format(spreadPattern, String.valueOf(entry.earliestDay()), String.valueOf(entry.latestDay())) + " "
-						: "") + java.text.MessageFormat.format(samplePattern, entry.sampleCount()));}
+						? MessageFormat.format(spreadPattern, String.valueOf(entry.earliestDay()), String.valueOf(entry.latestDay())) + " "
+						: "") + MessageFormat.format(samplePattern, entry.sampleCount()));}
 					!{boolean taxableUnknown = entry.taxableLooksUnregistered();}
-					!{String taxableNote = taxableUnknown ? java.text.MessageFormat.format(taxableUnregisteredPattern, StockFormatUtil.pct(entry.historyTaxableRatioPct().doubleValue(), 1)) : "";}
+					!{String taxableNote = taxableUnknown ? MessageFormat.format(taxableUnregisteredPattern, StockFormatUtil.pct(entry.historyTaxableRatioPct().doubleValue(), 1)) : "";}
 					<li class="flex flex-col gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-3" data-calendar-entry="${entry.symbol() != null ? entry.symbol() : ""}" data-calendar-entry-name="${entry.name()}" title="${entryNote}">
 						<span class="min-w-0 truncate text-xs" title="${entry.name()}">${entry.name()}</span>
 						<%-- 넓은 화면에서 이름(왼쪽)과 금액(오른쪽) 사이가 수백 px 라 줄을 눈으로 잇기 어려웠다 - 점선 길잡이(2026-10-28 12차 자율). --%>

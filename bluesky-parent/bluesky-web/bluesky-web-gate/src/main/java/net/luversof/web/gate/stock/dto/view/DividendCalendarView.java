@@ -3,7 +3,12 @@ package net.luversof.web.gate.stock.dto.view;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+
+import net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil;
+import net.luversof.web.gate.stock.util.StockFormatUtil;
 
 /**
  * 배당 캘린더 한 달치.
@@ -11,9 +16,8 @@ import java.util.List;
  * <p>2026-09-14 까지 이 화면은 이름만 캘린더였다 &mdash; 날짜가 하나도 없고 월중/월말 두 덩어리로만 나뉘었다. 그 덩어리 정보는 월배당 시뮬레이터의 요약
  * 카드에도 이미 있어(총 최근 월 배당금 옆의 월중/월말 분해), 이 화면이 홀로 주는 것이 사실상 "어느 종목이 어느 덩어리인가" 하나뿐이었다.
  *
- * <p>그래서 실제 달력으로 만든다 &mdash; 지급이력의 <b>종목별 최빈 지급일</b>에 종목을 놓는다({@link
- * net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil}). 시뮬레이터는 "어느 종목이 유리한가" 를, 이 화면은 "언제
- * 얼마가 들어오나" 를 답한다.
+ * <p>그래서 실제 달력으로 만든다 &mdash; 지급이력의 <b>종목별 최빈 지급일</b>에 종목을 놓는다({@link MonthlyDividendPayDayUtil}).
+ * 시뮬레이터는 "어느 종목이 유리한가" 를, 이 화면은 "언제 얼마가 들어오나" 를 답한다.
  */
 public record DividendCalendarView(
     YearMonth month,
@@ -108,7 +112,7 @@ public record DividendCalendarView(
       // '기준 데이터에 없다' 고 물음표를 달면 확인된 값을 의심하게 만든다(실측 2026-09-15:
       // 2026-08 에 네 종목이 실제 과세표준 0 인데 물음표가 붙었다).
       return !actualAmount
-          && net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(taxable) == 0
+          && StockFormatUtil.displayWon(taxable) == 0
           && historyTaxableRatioPct != null
           && historyTaxableRatioPct.signum() > 0;
     }
@@ -145,10 +149,7 @@ public record DividendCalendarView(
       }
       BigDecimal total = BigDecimal.ZERO;
       for (Entry entry : entries) {
-        total =
-            total.add(
-                BigDecimal.valueOf(
-                    net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(entry.taxable())));
+        total = total.add(BigDecimal.valueOf(StockFormatUtil.displayWon(entry.taxable())));
       }
       return total;
     }
@@ -166,10 +167,7 @@ public record DividendCalendarView(
       BigDecimal total = BigDecimal.ZERO;
       for (Entry entry : entries) {
         BigDecimal value = average ? entry.average() : entry.latest();
-        total =
-            total.add(
-                BigDecimal.valueOf(
-                    net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(value)));
+        total = total.add(BigDecimal.valueOf(StockFormatUtil.displayWon(value)));
       }
       return total;
     }
@@ -220,7 +218,7 @@ public record DividendCalendarView(
    * &mdash; 격자는 "언제" 만 말하고 금액은 이 목록이 제 크기로 말한다.
    */
   public List<Day> payDays() {
-    List<Day> result = new java.util.ArrayList<>();
+    List<Day> result = new ArrayList<>();
     if (weeks == null) {
       return result;
     }
@@ -283,10 +281,7 @@ public record DividendCalendarView(
       return total;
     }
     for (Missing item : missing) {
-      total =
-          total.add(
-              BigDecimal.valueOf(
-                  net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(item.amount())));
+      total = total.add(BigDecimal.valueOf(StockFormatUtil.displayWon(item.amount())));
     }
     return total;
   }
@@ -297,7 +292,7 @@ public record DividendCalendarView(
   }
 
   /** 보이는 값(원 단위로 반올림한 값)을 더한다 &mdash; 칸 합계와 같은 규칙이라 손으로 더한 값과 맞는다. */
-  private BigDecimal sumPlacedActual(java.util.function.Function<Entry, BigDecimal> value) {
+  private BigDecimal sumPlacedActual(Function<Entry, BigDecimal> value) {
     BigDecimal total = BigDecimal.ZERO;
     if (weeks == null) {
       return total;
@@ -309,11 +304,7 @@ public record DividendCalendarView(
         }
         for (Entry entry : day.entries()) {
           if (entry.actualAmount()) {
-            total =
-                total.add(
-                    BigDecimal.valueOf(
-                        net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
-                            value.apply(entry))));
+            total = total.add(BigDecimal.valueOf(StockFormatUtil.displayWon(value.apply(entry))));
           }
         }
       }

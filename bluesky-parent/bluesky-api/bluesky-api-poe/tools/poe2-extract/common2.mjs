@@ -174,7 +174,9 @@ export function createKeywordIndex(files) {
 export function createDescriber(chain = "item") {
 	const files = CSD_CHAINS[chain];
 	cleanCopies(files);
-	const describe = createStatDescriber(CLEAN_DIR, files);
+	// fileOrder(10-30 R29): 여러 줄 옵션의 줄 순서 = 게임 설명 파일 블록 순서(PoE1 parse-items · transform 짝). 없던 동안 옵션 46개 · 훼손 7 · 에센스 1 이
+	//   '방어도 % 증가' 가 '+방어도' 보다 먼저였다(게임 · PoB 는 반대)
+	const describe = createStatDescriber(CLEAN_DIR, files, { fileOrder: true });
 	// table_only 를 지워도 표 형식만 있는 설명("라벨@값")이 남으면 "라벨: 값" 으로 보인다
 	return (statValues, lang) => describe(statValues, lang).map((line) => stripMarkup(line).replace(/^([^@\n]+)@([^@\n]+)$/, "$1: $2"));
 }
@@ -202,7 +204,7 @@ export async function pobFile(relPath, { refresh = false } = {}) {
 }
 
 /** 한 row 의 Stat1..N / Stat1Value.. 를 Map 으로 (interval 값이면 [min,max] → 중간 대신 min/max 를 따로 준다). */
-export function statPairs(row, stats, count = 6) {
+export function statPairs(row, stats, count = 8) {
 	const out = [];
 	for (let i = 1; i <= count; i++) {
 		const key = row["Stat" + i];

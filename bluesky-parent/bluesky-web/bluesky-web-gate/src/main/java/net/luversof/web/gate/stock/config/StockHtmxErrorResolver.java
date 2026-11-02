@@ -1,5 +1,8 @@
 package net.luversof.web.gate.stock.config;
 
+import java.time.temporal.Temporal;
+import java.util.Locale;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
@@ -22,6 +25,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.advice.GlobalModelAttributeAdvice;
+import net.luversof.web.gate.stock.support.StockParamException;
 
 /**
  * 주식 화면 요청이 실패하면 화면에 보이는 오류로 응답한다(조각 요청은 조각, 페이지 요청은 전체 화면).
@@ -65,7 +69,7 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver, Environ
     //
     // 폼 전송(application/x-www-form-urlencoded)은 화면을 기대하므로 그대로 둔다.
     String contentType = request.getContentType();
-    if (contentType != null && contentType.toLowerCase(java.util.Locale.ROOT).contains("json")) {
+    if (contentType != null && contentType.toLowerCase(Locale.ROOT).contains("json")) {
       return null;
     }
     // 없는 주소는 404 여야 한다. 오류 화면을 200 으로 돌려주면 /stock 아래 오타 주소가 전부
@@ -109,8 +113,7 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver, Environ
     if (!methodNotAllowed && ex instanceof MethodArgumentTypeMismatchException mismatch) {
       clientDescArg = mismatch.getName();
       Class<?> requiredType = mismatch.getRequiredType();
-      boolean temporal =
-          requiredType != null && java.time.temporal.Temporal.class.isAssignableFrom(requiredType);
+      boolean temporal = requiredType != null && Temporal.class.isAssignableFrom(requiredType);
       clientDescKey =
           temporal ? "stock.error.badrequest.date.desc" : "stock.error.badrequest.param.desc";
     }
@@ -125,9 +128,7 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver, Environ
             fieldError.contains(TypeMismatchException.class)
                 ? fieldError.unwrap(TypeMismatchException.class).getRequiredType()
                 : null;
-        boolean temporal =
-            requiredType != null
-                && java.time.temporal.Temporal.class.isAssignableFrom(requiredType);
+        boolean temporal = requiredType != null && Temporal.class.isAssignableFrom(requiredType);
         clientDescKey =
             temporal ? "stock.error.badrequest.date.desc" : "stock.error.badrequest.param.desc";
       }
@@ -135,7 +136,7 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver, Environ
     // 컨트롤러 · 유틸이 직접 읽는 인자(날짜 · 타임존 · 정렬 · 줄 수 · 쪽 번호)도 같은 대접을 한다 - 이름과 문구 키를 들고 온다.
     // 실측 2026-09-11 ~ 12: 날짜는 서버 장애처럼("잠시 후 다시 시도"), 타임존 · 정렬 · 줄 수 · 쪽 번호는 아무 말 없이 다른 값으로 그렸다.
     // 예외별 사연은 각 클래스(StockDateParamException …)에, 공통 규칙은 StockParamException 에 있다.
-    if (ex instanceof net.luversof.web.gate.stock.support.StockParamException param) {
+    if (ex instanceof StockParamException param) {
       clientDescArg = param.getName();
       clientDescKey = param.descKey();
     }
@@ -199,7 +200,7 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver, Environ
     if (ex instanceof TypeMismatchException) {
       return true;
     }
-    if (ex instanceof net.luversof.web.gate.stock.support.StockParamException) {
+    if (ex instanceof StockParamException) {
       return true;
     }
     if (ex instanceof BlueskyException blueskyException) {

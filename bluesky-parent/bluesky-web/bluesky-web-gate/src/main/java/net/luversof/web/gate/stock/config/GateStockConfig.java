@@ -16,14 +16,17 @@ import net.luversof.web.gate.stock.httpexchange.ActivityFilterIdsClient;
 import net.luversof.web.gate.stock.httpexchange.DataFirstDateClient;
 import net.luversof.web.gate.stock.httpexchange.DataStatusClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
+import net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
+import net.luversof.web.gate.stock.httpexchange.PeriodSummaryClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.httpexchange.YearlyCostClient;
 
 @Configuration
 public class GateStockConfig {
@@ -52,19 +55,17 @@ public class GateStockConfig {
   }
 
   @Bean
-  net.luversof.web.gate.stock.httpexchange.PeriodSummaryClient periodSummaryClient(
+  PeriodSummaryClient periodSummaryClient(
       @Qualifier("stockHttpServiceProxyFactory")
           HttpServiceProxyFactory stockHttpServiceProxyFactory) {
-    return stockHttpServiceProxyFactory.createClient(
-        net.luversof.web.gate.stock.httpexchange.PeriodSummaryClient.class);
+    return stockHttpServiceProxyFactory.createClient(PeriodSummaryClient.class);
   }
 
   @Bean
-  net.luversof.web.gate.stock.httpexchange.YearlyCostClient yearlyCostClient(
+  YearlyCostClient yearlyCostClient(
       @Qualifier("stockHttpServiceProxyFactory")
           HttpServiceProxyFactory stockHttpServiceProxyFactory) {
-    return stockHttpServiceProxyFactory.createClient(
-        net.luversof.web.gate.stock.httpexchange.YearlyCostClient.class);
+    return stockHttpServiceProxyFactory.createClient(YearlyCostClient.class);
   }
 
   @Bean
@@ -82,11 +83,10 @@ public class GateStockConfig {
   }
 
   @Bean
-  net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient ledgerIntegrityClient(
+  LedgerIntegrityClient ledgerIntegrityClient(
       @Qualifier("stockHttpServiceProxyFactory")
           HttpServiceProxyFactory stockHttpServiceProxyFactory) {
-    return stockHttpServiceProxyFactory.createClient(
-        net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient.class);
+    return stockHttpServiceProxyFactory.createClient(LedgerIntegrityClient.class);
   }
 
   @Bean

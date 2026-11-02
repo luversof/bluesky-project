@@ -8,11 +8,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.springframework.context.MessageSource;
@@ -32,6 +34,7 @@ import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.domain.TradeProfitAggregator;
 import net.luversof.web.gate.stock.dto.request.DividendRequest;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequest;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
 import net.luversof.web.gate.stock.dto.request.TradeSearchRequest;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.TradeResponse;
@@ -43,7 +46,9 @@ import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.support.StockAsyncSupport;
+import net.luversof.web.gate.stock.support.StockSortParamException;
 import net.luversof.web.gate.stock.util.StockSortUtil;
+import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
@@ -68,7 +73,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
   private final ActivityFilterIdsClient activityFilterIdsClient;
 
-  private final net.luversof.web.gate.stock.support.StockAsyncSupport async;
+  private final StockAsyncSupport async;
 
   public StockTradeHtmxController(
       TradeProfitClient tradeProfitClient,
@@ -79,7 +84,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       DataFirstDateClient dataFirstDateClient,
       ActivityFilterIdsClient activityFilterIdsClient,
       MessageSource messageSource,
-      net.luversof.web.gate.stock.support.StockAsyncSupport async) {
+      StockAsyncSupport async) {
     super(
         tradeProfitClient,
         tradeClient,
@@ -124,8 +129,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               TradeResponse::stockItemName, Comparator.nullsLast(Comparator.naturalOrder()))
           .thenComparing(TradeResponse::type, Comparator.nullsLast(Comparator.naturalOrder()))
           .thenComparing(
-              TradeResponse::id,
-              Comparator.nullsLast(Comparator.comparing(java.util.UUID::toString)));
+              TradeResponse::id, Comparator.nullsLast(Comparator.comparing(UUID::toString)));
 
   @BlueskyPreAuthorize
   @GetMapping("/trade/list")
@@ -168,8 +172,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     StockDividendHtmxController.PreviousPeriod previousPeriod =
         "all".equals(rangeMode)
             ? null
-            : StockDividendHtmxController.resolvePreviousPeriod(
-                startInst, StockDividendHtmxController.inclusiveEnd(endInst), rangeMode, zone);
+            : StockDividendHtmxController.resolveListPreviousPeriod(
+                startInst, endInst, rangeMode, zone);
     var previousTradesFuture =
         previousPeriod == null
             ? null
@@ -201,8 +205,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             && (stockItemIdList == null || stockItemIdList.isEmpty())
             && (stockTagList == null || stockTagList.isEmpty());
     TradeProfitRequest earlyProfitRequest = null;
-    java.util.concurrent.CompletableFuture<List<TradeProfit>> earlyRealizedFuture = null;
-    java.util.concurrent.CompletableFuture<List<TradeProfit>> earlyStockGroupedFuture = null;
+    CompletableFuture<List<TradeProfit>> earlyRealizedFuture = null;
+    CompletableFuture<List<TradeProfit>> earlyStockGroupedFuture = null;
     if (noFilterSelected) {
       earlyProfitRequest = new TradeProfitRequest();
       earlyProfitRequest.setUserId(userId);
@@ -211,8 +215,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       earlyProfitRequest.setTimeZone(timeZone);
       var earlyParams = earlyProfitRequest.toParams();
       var earlyStockGrouped = copyTradeProfitRequest(earlyProfitRequest);
-      earlyStockGrouped.setGroupBy(
-          net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+      earlyStockGrouped.setGroupBy(TradeProfitRequestGroup.STOCKITEM);
       var earlyStockGroupedParams = earlyStockGrouped.toParams();
       earlyRealizedFuture =
           async.supply(() -> emptyIfNull(tradeProfitClient.calculateProfit(earlyParams)));
@@ -222,7 +225,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     }
 
     // 필터 목록에 쓰는 '해당 기간에 등장한 계좌/종목' 집합. id 만 필요하므로 이름은 붙이지 않는다.
-    java.util.concurrent.CompletableFuture<AvailableIds> availableIdsFuture = null;
+    CompletableFuture<AvailableIds> availableIdsFuture = null;
     if (clientProvidedRange) {
       // 예전에는 이 집합을 얻으려고 전체 거래 목록(80KB) 또는 손익 전체 계산을 다시 받아 id 만 뽑고 버렸다.
       // 집계 엔드포인트가 같은 집합을 2.8KB 로 준다(실측: 전체·YTD·최근 1개월·2024년 네 구간 id 집합 완전 일치).
@@ -237,8 +240,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
               () -> {
                 var ids = activityFilterIdsClient.findFilterIds(userId, availStart, availEnd);
                 return new AvailableIds(
-                    new java.util.HashSet<>(emptyIfNull(ids.tradeAccountIds())),
-                    new java.util.HashSet<>(emptyIfNull(ids.tradeStockItemIds())));
+                    new HashSet<>(emptyIfNull(ids.tradeAccountIds())),
+                    new HashSet<>(emptyIfNull(ids.tradeStockItemIds())));
               });
     }
 
@@ -337,12 +340,12 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             .collect(Collectors.toCollection(ArrayList::new));
 
     if (sort != null && !sort.isEmpty()) {
-      String field = net.luversof.web.gate.stock.util.StockSortUtil.field(sort);
-      boolean descending = net.luversof.web.gate.stock.util.StockSortUtil.descending("sort", sort);
+      String field = StockSortUtil.field(sort);
+      boolean descending = StockSortUtil.descending("sort", sort);
       Comparator<TradeResponse> comparator = TRADE_SORTS.get(field);
       // 배당 목록과 같은 규칙 - 모르는 열 이름은 이름을 들고 끊는다.
       if (comparator == null) {
-        throw new net.luversof.web.gate.stock.support.StockSortParamException("sort", sort);
+        throw new StockSortParamException("sort", sort);
       }
       if (descending) {
         comparator = comparator.reversed();
@@ -397,18 +400,17 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     // 순차로 부르면 각 40ms 가 그대로 더해지므로 함께 던지고 이름만 요청 스레드에서 입힌다.
     var profitParams = profitRequest.toParams();
     var stockGroupedRequest = copyTradeProfitRequest(profitRequest);
-    stockGroupedRequest.setGroupBy(
-        net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+    stockGroupedRequest.setGroupBy(TradeProfitRequestGroup.STOCKITEM);
     var stockGroupedParams = stockGroupedRequest.toParams();
 
     // 먼저 던져 둔 것이 있으면 그대로 쓴다. 위 조건에서 두 목록이 모두 null 이므로 파라미터가 같다.
-    java.util.concurrent.CompletableFuture<List<TradeProfit>> realizedRawFuture =
+    CompletableFuture<List<TradeProfit>> realizedRawFuture =
         emptyStockSelection
             ? null
             : earlyRealizedFuture != null
                 ? earlyRealizedFuture
                 : async.supply(() -> emptyIfNull(tradeProfitClient.calculateProfit(profitParams)));
-    java.util.concurrent.CompletableFuture<List<TradeProfit>> stockGroupedRawFuture =
+    CompletableFuture<List<TradeProfit>> stockGroupedRawFuture =
         emptyStockSelection
             ? null
             : earlyStockGroupedFuture != null
@@ -691,7 +693,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     for (Activity a : rawActivities) {
       if (a.date() == null) continue;
 
-      String dateStr = a.date().atZone(zone).toLocalDate().toString();
+      String dateStr = StockZoneUtil.recordedDate(a.date(), zone).toString();
       String stockKey =
           a.stockItemId() != null ? a.stockItemId().toString() : "name:" + a.stockItemName();
       String key = String.format("%s|%s|%s|%s", dateStr, a.type(), stockKey, a.tradeType());
@@ -881,8 +883,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
         (accountIdList == null || accountIdList.isEmpty())
             && (stockItemIdList == null || stockItemIdList.isEmpty())
             && (stockTagList == null || stockTagList.isEmpty());
-    java.util.concurrent.CompletableFuture<List<TradeResponse>> earlyActivityTrades = null;
-    java.util.concurrent.CompletableFuture<List<DividendResponse>> earlyActivityDividends = null;
+    CompletableFuture<List<TradeResponse>> earlyActivityTrades = null;
+    CompletableFuture<List<DividendResponse>> earlyActivityDividends = null;
     if (noActivityFilterSelected) {
       var earlyActivityParams = activitySearchParams(userId, startInstant, endInstant, null, null);
       earlyActivityTrades =
@@ -897,7 +899,7 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
         !((startInstant == null || startInstant.toEpochMilli() == 0)
             && (endInstant == null || endInstant.toEpochMilli() == 0)
             && (rangeMode == null || rangeMode.isBlank()));
-    java.util.concurrent.CompletableFuture<AvailableIds> activityAvailableFuture = null;
+    CompletableFuture<AvailableIds> activityAvailableFuture = null;
     if (clientProvidedRangeForActivity) {
       // 활동 필터는 거래·배당 합집합이다. 예전에는 손익 계산 1회 + 배당 목록 1회(44KB)를 더 받았다.
       final Instant availStart = startInstant;
@@ -906,9 +908,9 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
           async.supply(
               () -> {
                 var ids = activityFilterIdsClient.findFilterIds(userId, availStart, availEnd);
-                var accounts = new java.util.HashSet<UUID>(emptyIfNull(ids.tradeAccountIds()));
+                var accounts = new HashSet<UUID>(emptyIfNull(ids.tradeAccountIds()));
                 accounts.addAll(emptyIfNull(ids.dividendAccountIds()));
-                var stocks = new java.util.HashSet<UUID>(emptyIfNull(ids.tradeStockItemIds()));
+                var stocks = new HashSet<UUID>(emptyIfNull(ids.tradeStockItemIds()));
                 stocks.addAll(emptyIfNull(ids.dividendStockItemIds()));
                 return new AvailableIds(accounts, stocks);
               });
@@ -956,8 +958,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     // Determine date-only availability for activities (trades + dividends)
     List<Account> filteredAccountList;
     List<StockItem> filteredStockItemList;
-    java.util.Set<UUID> activityAccountIds = new java.util.HashSet<>();
-    java.util.Set<UUID> activityStockIds = new java.util.HashSet<>();
+    Set<UUID> activityAccountIds = new HashSet<>();
+    Set<UUID> activityStockIds = new HashSet<>();
     if (clientProvidedRangeForActivity) {
       AvailableIds availableIds = StockAsyncSupport.join(activityAvailableFuture);
       activityAccountIds.addAll(availableIds.accountIds());
@@ -1065,8 +1067,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       List<UUID> accountIdList,
       List<UUID> stockItemIdList,
       List<StockItem> preloadedStockItems,
-      java.util.concurrent.CompletableFuture<List<TradeResponse>> preTradesFuture,
-      java.util.concurrent.CompletableFuture<List<DividendResponse>> preDividendsFuture,
+      CompletableFuture<List<TradeResponse>> preTradesFuture,
+      CompletableFuture<List<DividendResponse>> preDividendsFuture,
       ZoneId zone) {
     // 세 조회(거래·배당·종목목록)는 서로 의존이 없다. 순차로 던지면 응답시간이 그대로 합산된다
     // (실측: 종목목록 16.7 + 거래 24.1 + 배당 13.6 + 계좌 17.7 = 72ms, 프래그먼트 실측 77.6ms).

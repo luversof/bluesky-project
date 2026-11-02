@@ -1,8 +1,12 @@
 package net.luversof.web.gate.stock.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,10 +20,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 
 import net.luversof.web.gate.stock.domain.Account;
+import net.luversof.web.gate.stock.domain.TradeProfit;
+import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
+import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 /**
  * 올해 과세 대상 배당이 금융소득 종합과세 기준(2,000 만 원)에 얼마나 다가갔는지(2026-10-20 자율 개선).
@@ -48,10 +56,9 @@ public class FinancialIncomeThresholdSupport {
   @Autowired private DividendClient dividendClient;
 
   /** 과세 계좌에 지금 들고 있는 종목(연말 예상에서 판 종목을 빼려고). */
-  @Autowired private net.luversof.web.gate.stock.httpexchange.TradeProfitClient tradeProfitClient;
+  @Autowired private TradeProfitClient tradeProfitClient;
 
-  public void setTradeProfitClient(
-      net.luversof.web.gate.stock.httpexchange.TradeProfitClient tradeProfitClient) {
+  public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
     this.tradeProfitClient = tradeProfitClient;
   }
 
@@ -103,15 +110,11 @@ public class FinancialIncomeThresholdSupport {
     try {
       LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
       params.add("userId", userId.toString());
-      params.add(
-          "groupBy",
-          net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM
-              .name());
+      params.add("groupBy", TradeProfitRequestGroup.ACCOUNT_AND_STOCKITEM.name());
       Set<UUID> held = new HashSet<>();
-      List<net.luversof.web.gate.stock.domain.TradeProfit> rows =
-          tradeProfitClient.calculateProfit(params);
+      List<TradeProfit> rows = tradeProfitClient.calculateProfit(params);
       if (rows != null) {
-        for (net.luversof.web.gate.stock.domain.TradeProfit row : rows) {
+        for (TradeProfit row : rows) {
           if (row != null
               && row.stockItemId() != null
               && row.holdingQuantity() > 0
@@ -163,7 +166,7 @@ public class FinancialIncomeThresholdSupport {
         if (deferredAccountIds != null && deferredAccountIds.contains(dividend.accountId())) {
           continue;
         }
-        LocalDate payDay = dividend.payDate().atZone(zone).toLocalDate();
+        LocalDate payDay = StockZoneUtil.recordedDate(dividend.payDate(), zone);
         if (payDay.isAfter(today)) {
           continue;
         }
@@ -214,8 +217,7 @@ public class FinancialIncomeThresholdSupport {
         periodicCount += times;
       }
     }
-    long remainingDays =
-        java.time.temporal.ChronoUnit.DAYS.between(today, LocalDate.of(year, 12, 31));
+    long remainingDays = ChronoUnit.DAYS.between(today, LocalDate.of(year, 12, 31));
     return new FinancialIncomeThresholdView(
         year,
         today,
@@ -226,7 +228,7 @@ public class FinancialIncomeThresholdSupport {
         RECENT_WINDOW_DAYS,
         recentMonthly,
         remainingDays,
-        periodicRest.setScale(0, java.math.RoundingMode.HALF_UP),
+        periodicRest.setScale(0, RoundingMode.HALF_UP),
         periodicCount);
   }
 
@@ -274,15 +276,15 @@ public class FinancialIncomeThresholdSupport {
     if (payDays == null || payDays.size() < 2) {
       return false;
     }
-    List<Long> gaps = new java.util.ArrayList<>();
+    List<Long> gaps = new ArrayList<>();
     LocalDate previous = null;
     for (LocalDate day : payDays.keySet()) {
       if (previous != null) {
-        gaps.add(java.time.temporal.ChronoUnit.DAYS.between(previous, day));
+        gaps.add(ChronoUnit.DAYS.between(previous, day));
       }
       previous = day;
     }
-    java.util.Collections.sort(gaps);
+    Collections.sort(gaps);
     long median = gaps.get(gaps.size() / 2);
     return median <= MONTHLY_MEDIAN_GAP_DAYS;
   }

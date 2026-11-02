@@ -145,6 +145,11 @@
 			// placeholder 는 값을 치면 사라진다 - 이름은 따로 달아 둔다(실측 2026-09-12: 이 상자만 이름이 없었다).
 			search.setAttribute("aria-label", msdSearchLabel(fieldLabel, lang()));
 			panel.appendChild(search);
+			// 검색칸은 form 안이라 Enter 가 고르던 필터를 그대로 제출했다(검토 지적 2026-10-29).
+			search.addEventListener("keydown", function (event) {
+				// 한글 조합을 끝내는 Enter 는 막지 않는다.
+				if (event.key === "Enter" && !event.isComposing) event.preventDefault();
+			});
 			// 걸러낸 결과 수는 눈으로만 보였다(43 → 2 → 0 으로 줄어도 알림 없음).
 			searchStatus = document.createElement("p");
 			searchStatus.className = "sr-only";

@@ -132,7 +132,7 @@ public class MonthlyDividendSourceMetaParser {
 
   /** TIME ETF 상세 HTML. 이름과 코드가 모두 제목에 있다. */
   public SourceMeta fromTimeHtml(String html) {
-    java.util.regex.Matcher matcher = TIME_TITLE.matcher(html != null ? html : "");
+    Matcher matcher = TIME_TITLE.matcher(html != null ? html : "");
     if (!matcher.find()) {
       return require("", "", "TIME");
     }

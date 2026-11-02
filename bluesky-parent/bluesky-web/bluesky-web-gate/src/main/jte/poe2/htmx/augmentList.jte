@@ -10,7 +10,21 @@
 <%-- 장착 대상 필터 — 있으면 그 아이템에 넣었을 때의 효과 줄만 보인다(나머지 대상 줄은 접는다) --%>
 @param String itemClass = null
 
-!{ boolean korean = PoeText.isKorean(); }
+!{
+	boolean korean = PoeText.isKorean();
+	// 한국어 화면은 종류 · 레벨 안에서 가나다순(10-29 A4 — 영어 이름 순이라 '아마나무, 쿠르갈, 테크로드, 울라만'). 종류 순서는 API 순서 그대로
+	List<Poe2.Augment> shownItems = items;
+	if (korean && items != null) {
+		java.util.Map<String, Integer> kindPos = new java.util.HashMap<>();
+		for (Poe2.Augment x : items) kindPos.putIfAbsent(String.valueOf(x.kind()), kindPos.size());
+		java.text.Collator collator = java.text.Collator.getInstance(java.util.Locale.KOREAN);
+		shownItems = items.stream()
+			.sorted(java.util.Comparator.<Poe2.Augment>comparingInt(x -> kindPos.get(String.valueOf(x.kind())))
+				.thenComparingInt(x -> x.level() == null ? 0 : x.level())
+				.thenComparing(x -> x.nameKo() != null ? x.nameKo() : x.name(), collator))
+			.toList();
+	}
+}
 
 @if(total == null || total == 0)
 	@template._components.ui.emptyState(message = MessageUtil.getMessage("poe2.nodata"), actionLabel = MessageUtil.getMessage("layout.menu.poe2.admin"), actionHref = "/poe2/admin")
@@ -20,7 +34,7 @@
 		@template._components.ui.emptyState(message = MessageUtil.getMessage("poe.list.empty"))
 	@else
 		<div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-2 items-start">
-			@for(Poe2.Augment a : items)
+			@for(Poe2.Augment a : shownItems)
 				!{ List<Poe2.AugmentEffect> effects = a.effects().stream().filter(e -> Poe2View.appliesTo(e, itemClass)).toList(); }
 				<article class="rounded-lg bg-base-100 border border-base-200 px-3 py-2">
 					<div class="flex flex-wrap items-center gap-1.5 min-w-0">

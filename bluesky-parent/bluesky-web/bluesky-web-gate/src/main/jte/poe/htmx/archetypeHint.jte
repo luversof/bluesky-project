@@ -40,7 +40,7 @@
 			case "str" -> ko ? "힘" : "Str";
 			case "dex" -> ko ? "민첩" : "Dex";
 			case "int" -> ko ? "지능" : "Int";
-			case "cluster" -> ko ? "클러스터 주얼" : "Cluster jewels";
+			case "cluster" -> ko ? "스킬 군 주얼" : "Cluster jewels";
 			case "unique" -> ko ? "고유 장비" : "Unique gear";
 			case "spellblock" -> ko ? "주문 막기" : "Spell block";
 			case "spelldodge" -> ko ? "주문 회피" : "Spell dodge";
@@ -115,7 +115,7 @@
 		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "구성" : "Setup"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(ko ? "충전(인·격·권)" : "Charges E·F·P", ninjaBenchmark.enduranceCharges() + NBSP + "·" + NBSP + ninjaBenchmark.frenzyCharges() + NBSP + "·" + NBSP + ninjaBenchmark.powerCharges())}
-			$unsafe{cell.apply(ko ? "클러스터(대·중·소)" : "Cluster L·M·S", ninjaBenchmark.largeCluster() + NBSP + "·" + NBSP + ninjaBenchmark.mediumCluster() + NBSP + "·" + NBSP + ninjaBenchmark.smallCluster())}
+			$unsafe{cell.apply(ko ? "스킬 군 주얼(대·중·소)" : "Cluster L·M·S", ninjaBenchmark.largeCluster() + NBSP + "·" + NBSP + ninjaBenchmark.mediumCluster() + NBSP + "·" + NBSP + ninjaBenchmark.smallCluster())}
 			$unsafe{cell.apply(ko ? "고유" : "Uniques", String.valueOf(ninjaBenchmark.uniqueEquip()))}
 			@if(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours() > 0)$unsafe{cell.apply(ko ? "복제" : "Mirrored", String.valueOf(ninjaBenchmark.mirroredItems() + ninjaBenchmark.mirroredWeapons() + ninjaBenchmark.mirroredArmours()))}@endif
 			$unsafe{cell.apply(ko ? "최대피격 물·화" : "Max hit Ph·F", fmt.apply(ninjaBenchmark.physicalMax()) + NBSP + "·" + NBSP + fmt.apply(ninjaBenchmark.fireMax()))}

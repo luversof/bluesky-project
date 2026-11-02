@@ -377,4 +377,20 @@ class AccountDetailCardRatesTest {
         .as("상자는 카드 줄 위")
         .isLessThan(html.indexOf("stat-card-grid"));
   }
+
+  /** 0 에는 방향이 없다 - 매매 · 배당이 없는 기간의 합산 0 이 이익색이었다(검토 지적 2026-10-29). */
+  @Test
+  void 합산_손익_0_은_이익색이_아니다() {
+    Map<String, Object> model = pension();
+    model.put("realizedProfit", BigDecimal.ZERO);
+    model.put("totalDividend", BigDecimal.ZERO);
+    model.put("periodUnrealizedDelta", BigDecimal.ZERO);
+
+    String html = render(model);
+    String box =
+        html.substring(
+            html.indexOf("data-combined-profit-box"), html.indexOf("data-combined-breakdown"));
+
+    assertThat(box).doesNotContain("text-profit").doesNotContain("text-loss");
+  }
 }

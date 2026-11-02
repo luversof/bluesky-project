@@ -104,6 +104,10 @@ for (const row of en.perLevel) {
 const statsByEffectLevel = new Map();
 for (const row of en.statSetsPerLevel) {
 	for (const effectIndex of row.GrantedEffects || []) {
+		// 효과의 주 스탯 세트 행만(10-29 R11 — 둘째 세트 행이 같은 '효과:레벨' 키를 덮어 소마 껍질 전 레벨 · 번개 타격 1레벨 수치가 비었다.
+		//   PoB Export skills.lua 가 GetRowList("GrantedEffectStatSets", granted.GrantedEffectStatSets) 로 거르는 것과 같음 — GrantedEffects.StatSet1)
+		const main = en.granted[effectIndex]?.StatSet1;
+		if (main != null && row.StatSet !== main) continue;
 		statsByEffectLevel.set(effectIndex + ":" + row.GemLevel, row);
 	}
 }
@@ -162,11 +166,9 @@ for (const gem of en.gems) {
 	const desc = (...args) => descRaw(...args).map(unlink);
 	Object.defineProperty(desc, "reminders", { get: () => descRaw.reminders });
 	// 레벨별 수치: 요구 레벨/소모/재사용/크리 확률/피해 효율/지원 배율
-	const levels = (perLevelByEffect.get(effect.GrantedEffect) || []).map((row) => {
-		const stat = statsByEffectLevel.get(effect.GrantedEffect + ":" + row.Level);
-		const costType = (row.CostTypes || []).length ? en.costTypes[row.CostTypes[0]].Id : null;
-		const critChance = stat ? Math.max(stat.SpellCritChance, stat.AttackCritChance) : 0;
-		// 스탯 id → 값 (표시 순서: 레벨별 float → 레벨별 int → 상수 → 암시 플래그)
+	// 한 효과 · 레벨의 스탯 id → 값 (표시 순서: 레벨별 float → 레벨별 int → 상수 → 암시 플래그)
+	const statValuesOf = (geIdx, level) => {
+		const stat = statsByEffectLevel.get(geIdx + ":" + level);
 		const statValues = new Map();
 		if (stat) {
 			(stat.FloatStats || []).forEach((statIndex, i) => {
@@ -187,6 +189,17 @@ for (const gem of en.gems) {
 				});
 			}
 		}
+		return statValues;
+	};
+	// 한 효과의 레벨 행 → 표시 수치(10-29 R11 — 둘째 효과 GrantedEffect2 도 같은 식으로 만들려고 함수로 뺐다)
+	// mergeFrom = 스탯을 합칠 보조 효과(10-30 R20 — 주문 투척자 · 치명타 시 시전 등: PoB GemTooltip addCommonGemInfo(mergeStatsFrom) 처럼
+	//   두 효과의 스탯 값을 더한 뒤 주 효과 서술 범위로 한 번에 서술 — 예전엔 보조 효과 스탯이 통째로 빠졌다)
+	const levelsOf = (geIdx, g, desc, mergeFrom = null) => (perLevelByEffect.get(geIdx) || []).map((row) => {
+		const stat = statsByEffectLevel.get(geIdx + ":" + row.Level);
+		const costType = (row.CostTypes || []).length ? en.costTypes[row.CostTypes[0]].Id : null;
+		const critChance = stat ? Math.max(stat.SpellCritChance, stat.AttackCritChance) : 0;
+		const statValues = statValuesOf(geIdx, row.Level);
+		if (mergeFrom != null) for (const [id, v] of statValuesOf(mergeFrom, row.Level)) statValues.set(id, (statValues.get(id) || 0) + v);
 		return {
 			level: row.Level,
 			requiredLevel: row.PlayerLevelReq,
@@ -197,6 +210,13 @@ for (const gem of en.gems) {
 			// 고정 마나 점유(10-23 Q51 — 명료함 · 활력 같은 오라는 % 가 아니라 GEPL.ManaReservationFlat 으로 점유, 인게임 '점유: 마나 34'.
 			//   PoB Export skills.lua manaReservationFlat 과 같은 열 — config.json 에 열 추가). 없으면 null
 			reservationFlat: row.ManaReservationFlat > 0 ? row.ManaReservationFlat : null,
+			// 공격 시간(10-29 R11 — 방패 돌진 0.50초 등, PoB GemTooltip 'Attack Time' · ClientStrings ItemDisplaySkillGemAttackTimeOverride). 게이트가 공격 젬에만 보인다
+			// (값이 있을 때만 싣는다 — 레벨 줄 3만여 개에 null 세 칸이 붙으면 파일이 1MB 가까이 는다)
+			...(row.AttackTime > 0 ? { attackTimeMs: row.AttackTime } : {}),
+			// 둘째 이후 소모(10-29 R11 — 극단의 사나운 타격 CostTypes [마나, 생명력, 에너지 보호막], PoB 는 쉼표로 이어 보인다)
+			...((row.CostTypes || []).length > 1
+				? { extraCosts: (row.CostAmounts || []).slice(1), extraCostTypes: row.CostTypes.slice(1).map((i) => en.costTypes[i].Id) }
+				: {}),
 			costMultiplier: gem.IsSupport ? row.CostMultiplier : null,
 			cooldownMs: row.Cooldown > 0 ? row.Cooldown : null,
 			// 재사용 사용 횟수(10-23 Q49b — 인게임 'Cooldown Time: 3.50 sec (3 uses)', ClientStrings ItemDisplaySkillGemCooldownValueCount). 2 이상만
@@ -209,19 +229,42 @@ for (const gem of en.gems) {
 			// 공격 속도 배율(10-08 C201) — GrantedEffectsPerLevel.AttackSpeedMultiplier(-10 → 기본 수치의 90%, PoE2 C200 짝). 0 이면 없음
 			attackSpeedPct: row.AttackSpeedMultiplier ? 100 + row.AttackSpeedMultiplier : null,
 			// 바알 스킬 영혼 소모(10-09 C234 — PoB cost.Soul). 없으면 null
-			soulCost: (granted && soulCostBySkill.get(granted.Id)?.get(row.Level)) ?? null,
+			soulCost: (g && soulCostBySkill.get(g.Id)?.get(row.Level)) ?? null,
 			statLines: desc(statValues, "English", { gemQuality: "skip" }),
 			// 바로 위 영어 호출의 고른 변형 기준(한국어 호출 전에 읽어야 한다)
 			statReminders: desc.reminders.map((ids) => ids.filter((id) => reminderTextById.has(id))),
 			statLinesKo: desc(statValues, "Korean", { gemQuality: "skip" }),
 		};
 	});
+	// 둘째 효과가 보조(주문 투척자 · 치명타 시 시전 등)면 그 스탯을 주 구역에 합친다(10-30 R20, PoB mergeStatsFrom)
+	const supportSecond = effect.GrantedEffect2 != null && en.granted[effect.GrantedEffect2]?.IsSupport && !gem.IsSupport ? effect.GrantedEffect2 : null;
+	const levels = levelsOf(effect.GrantedEffect, granted, desc, supportSecond);
 	const usedReminderIds = new Set();
-	for (const lv of levels) {
-		if (lv.statReminders.some((ids) => ids.length)) {
-			lv.statReminders.flat().forEach((id) => usedReminderIds.add(id));
-			reminderLineCount += lv.statReminders.filter((ids) => ids.length).length;
-		} else delete lv.statReminders;
+	const keepReminders = (lvs) => {
+		for (const lv of lvs) {
+			if (lv.statReminders.some((ids) => ids.length)) {
+				lv.statReminders.flat().forEach((id) => usedReminderIds.add(id));
+				reminderLineCount += lv.statReminders.filter((ids) => ids.length).length;
+			} else delete lv.statReminders;
+		}
+	};
+	keepReminders(levels);
+	// 둘째 효과(10-29 R11 — GemEffects.GrantedEffect2: 바알 젬의 기본 스킬(바알 화염구 → 화염구) · 지옥불 함성 → 발화 등. PoB GemTooltip.AddGemTooltip 이
+	//   구역을 따로 보인다 — 예전엔 버려 바알 젬 툴팁에 기본 스킬의 소모 · 스탯이 통째로 없었다).
+	// shortcut: 둘째 효과가 보조(IsSupport — 주문 투척자 · 치명타 시 시전 등)면 PoB 는 주 구역에 스탯을 합치는데 여기선 뺀다 — 합치려면 describe 를 한 번에
+	let secondary = null;
+	const granted2 = effect.GrantedEffect2 != null ? en.granted[effect.GrantedEffect2] : null;
+	if (granted2 && !granted2.IsSupport && !gem.IsSupport) {
+		const raw2 = describerForScope(scopeBySkill.get(granted2.Id));
+		const desc2 = (...args) => raw2(...args).map(unlink);
+		Object.defineProperty(desc2, "reminders", { get: () => raw2.reminders });
+		const levels2 = levelsOf(effect.GrantedEffect2, granted2, desc2);
+		if (levels2.length) {
+			keepReminders(levels2);
+			const active2 = granted2.ActiveSkill != null ? en.active[granted2.ActiveSkill] : null;
+			const active2Ko = granted2.ActiveSkill != null ? ko.active[granted2.ActiveSkill] : null;
+			secondary = { name: active2?.DisplayedName || null, nameKo: active2Ko?.DisplayedName || null, castTimeMs: granted2.CastTime ?? null, levels: levels2 };
+		}
 	}
 
 		// 퀄리티(20%)로 인한 추가 효과 — 젬 단위(레벨 무관). permille/1000 × 20 = 20% 퀄리티 값
@@ -251,7 +294,8 @@ for (const gem of en.gems) {
 			const r = rows.find((x) => x.SoulGainPreventionDuration > 0) || rows[0];
 			if (r) {
 				soulPreventionSeconds = r.SoulGainPreventionDuration > 0 ? r.SoulGainPreventionDuration / 1000 : null;
-				storedUses = r.StoredUses > 0 ? r.StoredUses : null;
+				// 바알 저장 횟수는 VaalStoredUses 열(10-29 R11 — StoredUses 는 재사용 충전 횟수라 바알 젬 41개의 '1회 사용 가능' 줄이 빠졌다, PoB vaalStoredUses)
+				storedUses = r.VaalStoredUses > 0 ? r.VaalStoredUses : r.StoredUses > 0 ? r.StoredUses : null;
 			}
 		}
 
@@ -294,6 +338,7 @@ for (const gem of en.gems) {
 		qualityStatLinesKo,
 		...(qualityReminders.some((ids) => ids.length) ? { qualityReminders } : {}),
 		levels,
+		...(secondary ? { secondary } : {}),
 		...(usedReminderIds.size ? { reminderText: Object.fromEntries([...usedReminderIds].sort().map((id) => [id, reminderTextById.get(id)])) } : {}),
 	});
 	} // 변형 루프

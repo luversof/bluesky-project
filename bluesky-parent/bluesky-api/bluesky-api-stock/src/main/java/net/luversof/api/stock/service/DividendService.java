@@ -1,7 +1,10 @@
 package net.luversof.api.stock.service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,9 +52,9 @@ public class DividendService {
         dividend.setTax(rs.getBigDecimal(11));
         dividend.setTaxableAmount(rs.getBigDecimal(12));
         // pgjdbc 는 timestamptz -> Instant 직접 변환을 지원하지 않는다.
-        java.time.OffsetDateTime recordDate = rs.getObject(13, java.time.OffsetDateTime.class);
+        OffsetDateTime recordDate = rs.getObject(13, OffsetDateTime.class);
         dividend.setRecordDate(recordDate != null ? recordDate.toInstant() : null);
-        java.time.OffsetDateTime payDate = rs.getObject(14, java.time.OffsetDateTime.class);
+        OffsetDateTime payDate = rs.getObject(14, OffsetDateTime.class);
         dividend.setPayDate(payDate != null ? payDate.toInstant() : null);
         return dividend;
       };
@@ -97,7 +100,7 @@ public class DividendService {
    * <p>게이트 요약 화면이 계좌/종목 필터를 건 상태에서도 배당만 전체 합계를 쓰고 있었다(실측: 계좌 하나를 골라도 '누적 확정 수익' 에 <b>전 계좌 배당</b>이
    * 그대로 더해져, KB증권 위탁 값이 그 계좌 실제 배당의 <b>6.1 배</b>로 표시됐다). 실현손익과 같은 조건으로 집계해 두 항이 어긋나지 않게 한다.
    */
-  public java.math.BigDecimal sumNetAmount(DividendSearchRequest request) {
+  public BigDecimal sumNetAmount(DividendSearchRequest request) {
     requireUser(request);
     Map<String, Object> params = new HashMap<>();
     String where = buildDividendWhere(request, params);
@@ -110,9 +113,9 @@ public class DividendService {
     return jdbcClient
         .sql(sql)
         .params(params)
-        .query(java.math.BigDecimal.class)
+        .query(BigDecimal.class)
         .optional()
-        .orElse(java.math.BigDecimal.ZERO);
+        .orElse(BigDecimal.ZERO);
   }
 
   /**
@@ -127,7 +130,7 @@ public class DividendService {
    *
    * <p>합계는 {@code sumNetAmount} 와 같아야 한다 - 값들의 합이 곧 그 값이다.
    */
-  public Map<UUID, java.math.BigDecimal> sumNetAmountByStockItem(DividendSearchRequest request) {
+  public Map<UUID, BigDecimal> sumNetAmountByStockItem(DividendSearchRequest request) {
     requireUser(request);
     Map<String, Object> params = new HashMap<>();
     String where = buildDividendWhere(request, params);
@@ -139,7 +142,7 @@ public class DividendService {
             + " JOIN \"Account\" a ON d.\"account_id\" = a.\"id\""
             + where
             + " GROUP BY d.\"stockItem_id\"";
-    Map<UUID, java.math.BigDecimal> result = new java.util.LinkedHashMap<>();
+    Map<UUID, BigDecimal> result = new LinkedHashMap<>();
     jdbcClient
         .sql(sql)
         .params(params)

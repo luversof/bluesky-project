@@ -58,7 +58,7 @@ function spawnWeight(mod, tagSet) {
 /** 최소·최대 값으로 각각 문장을 만든 뒤 숫자를 짝지어 합친다 — 영어 "(10-19)", 한국어 "10~19". */
 function rangeText(mod, lang) {
 	const lo = new Map(), hi = new Map();
-	for (let i = 1; i <= 6; i++) {
+	for (let i = 1; i <= 8; i++) {
 		if (mod["Stat" + i] == null) continue;
 		const v = mod["Stat" + i + "Value"];
 		const [a, b] = Array.isArray(v) ? v : [v, v];
@@ -120,7 +120,9 @@ for (const pool of pools.values()) {
 		if (w <= 0) continue;
 		const typeName = modTypes[m.ModType]?.Name || m.Id;
 		const k = GEN[m.GenerationType] + "|" + typeName;
-		if (!byType.has(k)) byType.set(k, { modType: typeName, gen: GEN[m.GenerationType], tiers: [] });
+		if (!byType.has(k)) byType.set(k, { modType: typeName, gen: GEN[m.GenerationType], tiers: [], grp: new Set() });
+		// 게임 옵션 그룹(Mods.Families — 같은 그룹은 한 아이템에 하나, 10-29 R6-1). 옵션 화면 계산기가 같이 못 붙는 카드를 곱하지 않게 싣는다
+		for (const f of m.Families || []) byType.get(k).grp.add(f);
 		byType.get(k).tiers.push({
 			id: m.Id,
 			name: stripMarkup(m.Name),
@@ -133,7 +135,7 @@ for (const pool of pools.values()) {
 		Object.assign(byType.get(k).tiers[byType.get(k).tiers.length - 1], kwOf(byType.get(k).tiers[byType.get(k).tiers.length - 1].text));
 	}
 	const groups = [...byType.values()]
-		.map((g) => ({ ...g, tiers: g.tiers.sort((a, b) => b.level - a.level || a.id.localeCompare(b.id)) }))
+		.map((g) => ({ ...g, grp: g.grp.size ? [...g.grp].sort((a, b) => a - b) : undefined, tiers: g.tiers.sort((a, b) => b.level - a.level || a.id.localeCompare(b.id)) }))
 		.filter((g) => g.tiers.some((t) => t.text.length))
 		// 표시 순서: 접두 먼저, 같은 쪽은 최고 티어 레벨이 낮은(흔한) 계열부터가 아니라 이름순 — 목록 화면에서 찾기 쉽게
 		.sort((a, b) => (a.gen === b.gen ? a.tiers[a.tiers.length - 1].text.join().localeCompare(b.tiers[b.tiers.length - 1].text.join()) : a.gen === "prefix" ? -1 : 1));
@@ -196,7 +198,7 @@ const poolTemplates = new Set(out.flatMap((p) => p.groups.flatMap((g) => g.tiers
 const extraSeen = new Set();
 const extra = [];
 mods.forEach((m, mi) => {
-	if (m.Stat1 == null) return; // 스탯 열은 Stat1..Stat6(rangeText 와 같은 규칙)
+	if (m.Stat1 == null) return; // 스탯 열은 Stat1..Stat8(rangeText 와 같은 규칙 — 10-30 R21 에 7 · 8 추출)
 	const en = rangeText(m, "English");
 	const ko = rangeText(m, "Korean");
 	if (!en.length || en.length !== ko.length || en.join() === ko.join()) return;

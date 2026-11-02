@@ -22,7 +22,7 @@ class ActivitySharesUnitTest {
 
   private static final String KEY = "stock.activity.label.shares";
   private static final String Q = String.valueOf((char) 34);
-  private static final String UTIL = "net.luversof.web.gate.stock.util.StockMessageSplitUtil";
+  private static final String UTIL = "StockMessageSplitUtil";
   private static final String[] TEMPLATES = {
     "src/main/jte/stock/htmx/fragments/recentActivities.jte",
     "src/main/jte/stock/htmx/fragments/activityList.jte",

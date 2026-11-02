@@ -54,7 +54,7 @@ class PriceBasisDisclosureTest {
       String source = read(template);
       assertThat(source)
           .as(template + " 이 기준일 파라미터를 받지 않는다. 컨트롤러가 넘겨도 쓰이지 않는다")
-          .contains("@param java.time.LocalDate priceBasisDate");
+          .contains("@param LocalDate priceBasisDate");
       // 문구는 StockPriceBasisUtil.basisText(→ basisMessage) 가 고른다(종가 / 장중 시세, 2026-10-02).
       // 키를 직접 부르면 장중 값도 "종가" 라고 부른다.
       assertThat(source)

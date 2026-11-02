@@ -8,6 +8,12 @@
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendSimulatorSummaryView
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.LocalDate
+@import java.util.UUID
+@import net.luversof.web.gate.stock.dto.view.RecordDateBuyByView
+@import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport
+@import net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator
+@import net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -17,24 +23,24 @@
 @param String simulatorTabHrefSustainability = "/stock/simulator?tab=sustainability"
 @param String simulatorTabHrefMonthlyDividend = "/stock/simulator?tab=monthly-dividend"
 @param String simulatorTabHrefCompound = "/stock/simulator?tab=compound"
-@param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = java.util.List.of()
-@param java.util.List<net.luversof.web.gate.stock.service.MonthlyContributionPickSupport.ContributionPick> monthlyContributionPicks = java.util.List.of()
-@param java.util.Map<java.util.UUID, Integer> monthlyDividendCurrentQuantities = java.util.Map.of()
-@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = java.util.Map.of()
-@param java.time.LocalDate monthlyDividendPriceBasisDate = null
+@param List<MonthlyDividendSnapshotResponse> monthlyDividendRows = List.of()
+@param List<MonthlyContributionPickSupport.ContributionPick> monthlyContributionPicks = List.of()
+@param Map<UUID, Integer> monthlyDividendCurrentQuantities = Map.of()
+@param Map<UUID, BigDecimal> monthlyDividendCurrentAverageBuyPrices = Map.of()
+@param LocalDate monthlyDividendPriceBasisDate = null
 @param String monthlyDividendPriceBasisIntradayTime = null
 @param boolean monthlyDividendCurrentHoldingsUnavailable = false
 <%-- 스냅샷 이후 원장 수량이 바뀐 종목 수와 현재 수량 기준 합계. 조각이 경고로 띄운다.
      컨트롤러는 늘 모델에 넣고 있었는데 이 화면이 조각에 넘기지 않아, 조각이 기본값 0 을 써서
      경고가 한 번도 렌더되지 않았다(같은 경고가 배당 캘린더에서는 정상 동작했다). --%>
 @param long monthlyDividendStaleQuantityCount = 0L
-@param BigDecimal monthlyDividendCurrentQuantityTotal = java.math.BigDecimal.ZERO
-@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = java.util.Map.of()
-@param java.util.Map<java.util.UUID, net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport.TaxableRatioBasis> monthlyDividendTaxableRatioBasis = java.util.Map.of()
+@param BigDecimal monthlyDividendCurrentQuantityTotal = BigDecimal.ZERO
+@param Map<UUID, BigDecimal> monthlyDividendReferenceTaxableRatios = Map.of()
+@param Map<UUID, MonthlyDividendReferenceSupport.TaxableRatioBasis> monthlyDividendTaxableRatioBasis = Map.of()
 @param BigDecimal monthlyDividendReferenceTaxableTotal = null
 @param int monthlyDividendReferenceTaxableStaleCount = 0
 @param MonthlyDividendSimulatorSummaryView monthlyDividendSummary = null
-@param List<StockItem> stockItems = java.util.List.of()
+@param List<StockItem> stockItems = List.of()
 @param MonthlyDividendSnapshotUpsertRequest monthlyDividendForm = null
 @param String monthlyDividendErrorMessage = ""
 @param String monthlyDividendResult = ""
@@ -45,18 +51,18 @@
 @param BigDecimal monthlyDividendMinAnnualYield = null
 @param boolean monthlyDividendPositiveOnly = false
 @param String monthlyDividendPayoutWindowFilter = ""
-@param java.util.Map<String, Integer> monthlyDividendPayoutWindowCounts = java.util.Map.of()
+@param Map<String, Integer> monthlyDividendPayoutWindowCounts = Map.of()
 @param String monthlyDividendAccountFilter = ""
 @param boolean monthlyDividendSlotFilterUnavailable = false
 @param boolean monthlyDividendHasSavedRows = false
-@param Map<String, Integer> monthlyDividendProfileDisplayOrders = java.util.Map.of()
-@param Map<String, String> monthlyDividendPayoutWindowBySymbol = java.util.Map.of()
-@param java.util.List<net.luversof.web.gate.stock.dto.view.RecordDateBuyByView> monthlyDividendBuyBy = java.util.List.of()
-@param net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Basis monthlyDividendGoalBasis = null
-@param net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Goal monthlyDividendGoal = null
+@param Map<String, Integer> monthlyDividendProfileDisplayOrders = Map.of()
+@param Map<String, String> monthlyDividendPayoutWindowBySymbol = Map.of()
+@param List<RecordDateBuyByView> monthlyDividendBuyBy = List.of()
+@param MonthlyDividendGoalCalculator.Basis monthlyDividendGoalBasis = null
+@param MonthlyDividendGoalCalculator.Goal monthlyDividendGoal = null
 @param BigDecimal monthlyDividendGoalMonthly = null
 @param BigDecimal monthlyDividendGoalContribution = null
-@param List<String> monthlyDividendProfileOrderedSymbols = java.util.List.of()
+@param List<String> monthlyDividendProfileOrderedSymbols = List.of()
 @param boolean monthlyDividendReorderEnabled = false
 
 !{
@@ -181,6 +187,8 @@
 						summaryOverflowYear: '${MessageUtil.getMessage("stock.simulator.summary.overflow.year")}',
 						summaryLatestCoverage: '${MessageUtil.getMessage("stock.simulator.summary.latest.coverage")}',
 						summaryNoSpending: '${MessageUtil.getMessage("stock.simulator.summary.no.spending")}',
+						yearsShort: '${MessageUtil.getMessage("stock.simulator.years.short")}',
+						scenarioCopyName: '${MessageUtil.getMessage("stock.simulator.scenario.copy.name")}',
 						seriesAnnualDividend: '${MessageUtil.getMessage("stock.simulator.table.header.annual.dividend")}',
 						seriesAnnualSpending: '${MessageUtil.getMessage("stock.simulator.table.header.annual.spending")}',
 						seriesAnnualGap: '${MessageUtil.getMessage("stock.simulator.metric.annual.gap")}',

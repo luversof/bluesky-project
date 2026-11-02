@@ -103,9 +103,10 @@ class MonthlyDividendCatalogServiceTest {
     assertThat(row.averageTaxableBasePerShare1y()).isEqualByComparingTo("35.00");
     assertThat(row.currentPrice()).isEqualByComparingTo("8520");
     assertThat(row.currentPriceDate()).isEqualTo(LocalDate.of(2026, 9, 18));
-    // 280 / 8520 = 3.29% · 연 39.48% - 수량이 없어도 나온다.
+    // 280 / 8520 = 3.29% · 연 3,360 / 8,520 = 39.44% - 수량이 없어도 나온다. 반올림한 월 % x 12(39.48)가
+    // 아니다(2026-10-29).
     assertThat(row.monthlyYieldPct()).isEqualByComparingTo("3.29");
-    assertThat(row.annualYieldPct()).isEqualByComparingTo("39.48");
+    assertThat(row.annualYieldPct()).isEqualByComparingTo("39.44");
     assertThat(row.payoutCount()).isEqualTo(1);
     assertThat(row.latestPayDate()).isEqualTo(LocalDate.of(2026, 9, 17));
   }

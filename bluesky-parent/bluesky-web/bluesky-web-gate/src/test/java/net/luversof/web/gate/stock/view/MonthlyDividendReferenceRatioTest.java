@@ -60,9 +60,7 @@ class MonthlyDividendReferenceRatioTest {
     assertThat(page)
         .as("simulator.jte 는 인자를 하나씩 넘기므로 모델에 넣는 것만으로는 조각에 안 닿는다")
         .contains("monthlyDividendReferenceTaxableRatios = monthlyDividendReferenceTaxableRatios,");
-    assertThat(page)
-        .contains(
-            "@param java.util.Map<java.util.UUID, BigDecimal> monthlyDividendReferenceTaxableRatios");
+    assertThat(page).contains("@param Map<UUID, BigDecimal> monthlyDividendReferenceTaxableRatios");
   }
 
   @Test

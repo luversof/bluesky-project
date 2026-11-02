@@ -9,30 +9,36 @@
 @import net.luversof.web.gate.stock.util.StockAmountUtil
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.LocalDate
+@import java.time.Year
+@import java.util.Map
+@import java.util.Objects
+@import java.util.function.BiFunction
+@import java.util.function.Function
 
 @param DecimalFormat decimalFormat
-@param java.util.function.Function<BigDecimal, String> percentFormat
-@param java.util.function.Function<Long, String> countFormat
+@param Function<BigDecimal, String> percentFormat
+@param Function<Long, String> countFormat
 @param BigDecimal safeAllNet
 @param BigDecimal portfolioYieldOnDailyAverageCostPct
 @param BigDecimal portfolioYieldOnCostPct
 @param BigDecimal portfolioYieldOnMarketPct
 @param BigDecimal portfolioYieldAnnualizedPct = null
 @param DividendYieldGroupView portfolioYield = null
-@param java.util.Map<UUID, BigDecimal> currentValueByStock = null
-@param java.util.Map<UUID, BigDecimal> currentValueByAccount = null
-@param java.util.Map<UUID, BigDecimal> evaluationProfitByStock = null
-@param java.util.Map<UUID, BigDecimal> evaluationProfitByAccount = null
-@param java.util.Map<UUID, BigDecimal> realizedProfitByStock = null
-@param java.util.Map<UUID, BigDecimal> realizedProfitByAccount = null
-@param java.util.Map<UUID, BigDecimal> totalBuyCostByStock = null
-@param java.util.Map<UUID, BigDecimal> totalBuyCostByAccount = null
+@param Map<UUID, BigDecimal> currentValueByStock = null
+@param Map<UUID, BigDecimal> currentValueByAccount = null
+@param Map<UUID, BigDecimal> evaluationProfitByStock = null
+@param Map<UUID, BigDecimal> evaluationProfitByAccount = null
+@param Map<UUID, BigDecimal> realizedProfitByStock = null
+@param Map<UUID, BigDecimal> realizedProfitByAccount = null
+@param Map<UUID, BigDecimal> totalBuyCostByStock = null
+@param Map<UUID, BigDecimal> totalBuyCostByAccount = null
 @param BigDecimal ttmYieldPct = null
 @param BigDecimal ttmAverageDailyPrincipalCost = null
 @param BigDecimal ttmNetWithPrincipalCost = null
 @param BigDecimal ttmNetAmount = null
-@param java.time.LocalDate ttmStartDate = null
-@param java.time.LocalDate ttmEndDate = null
+@param LocalDate ttmStartDate = null
+@param LocalDate ttmEndDate = null
 @param long periodDayCount = 0L
 @param BigDecimal periodStartPrincipal = null
 @param BigDecimal periodEndPrincipal = null
@@ -93,8 +99,8 @@
 	// 2026-09-28 사용자: "평균 투입원금은 기간 평균이라 - 표를 보며 지금 평가 금액이 얼마인지 알고 싶다". 기본 열은 현재 평가금액, 평균 투입원금은 열 더 보기.
 	String currentValueLabel = MessageUtil.getMessage("stock.dividend.yield.column.current.value");
 	String currentValueNoneTitle = MessageUtil.getMessage("stock.dividend.yield.current.value.none");
-	java.util.Map<UUID, BigDecimal> stockCurrentValues = currentValueByStock != null ? currentValueByStock : java.util.Map.of();
-	java.util.Map<UUID, BigDecimal> accountCurrentValues = currentValueByAccount != null ? currentValueByAccount : java.util.Map.of();
+	Map<UUID, BigDecimal> stockCurrentValues = currentValueByStock != null ? currentValueByStock : Map.of();
+	Map<UUID, BigDecimal> accountCurrentValues = currentValueByAccount != null ? currentValueByAccount : Map.of();
 	// 원금 대비 이익인가 손해인가(사용자 요청 2026-09-28: "평가금액이 원금에 대해 수익인지 손해인지", "합산 수익률도"). 원금 = 평가금액 - 평가 손익.
 	String evaluationProfitLabel = MessageUtil.getMessage("stock.dividend.yield.column.evaluation.profit");
 	String combinedProfitLabel = MessageUtil.getMessage("stock.dividend.yield.column.combined.profit");
@@ -103,12 +109,12 @@
 	// 실현 손익(사용자 승인 2026-09-28: 평가 + 실현 + 배당 = 합산). 판 적이 없으면 대시와 까닭(자산현황과 같은 문구).
 	String realizedProfitLabel = MessageUtil.getMessage("stock.dividend.yield.column.realized.profit");
 	String realizedProfitTermDesc = MessageUtil.getMessage("stock.dividend.yield.term.realized.profit.desc");
-	java.util.Map<UUID, BigDecimal> stockRealizedProfits = realizedProfitByStock != null ? realizedProfitByStock : java.util.Map.of();
-	java.util.Map<UUID, BigDecimal> accountRealizedProfits = realizedProfitByAccount != null ? realizedProfitByAccount : java.util.Map.of();
-	java.util.Map<UUID, BigDecimal> stockTotalBuyCosts = totalBuyCostByStock != null ? totalBuyCostByStock : java.util.Map.of();
-	java.util.Map<UUID, BigDecimal> accountTotalBuyCosts = totalBuyCostByAccount != null ? totalBuyCostByAccount : java.util.Map.of();
-	java.util.Map<UUID, BigDecimal> stockEvaluationProfits = evaluationProfitByStock != null ? evaluationProfitByStock : java.util.Map.of();
-	java.util.Map<UUID, BigDecimal> accountEvaluationProfits = evaluationProfitByAccount != null ? evaluationProfitByAccount : java.util.Map.of();
+	Map<UUID, BigDecimal> stockRealizedProfits = realizedProfitByStock != null ? realizedProfitByStock : Map.of();
+	Map<UUID, BigDecimal> accountRealizedProfits = realizedProfitByAccount != null ? realizedProfitByAccount : Map.of();
+	Map<UUID, BigDecimal> stockTotalBuyCosts = totalBuyCostByStock != null ? totalBuyCostByStock : Map.of();
+	Map<UUID, BigDecimal> accountTotalBuyCosts = totalBuyCostByAccount != null ? totalBuyCostByAccount : Map.of();
+	Map<UUID, BigDecimal> stockEvaluationProfits = evaluationProfitByStock != null ? evaluationProfitByStock : Map.of();
+	Map<UUID, BigDecimal> accountEvaluationProfits = evaluationProfitByAccount != null ? evaluationProfitByAccount : Map.of();
 	BigDecimal stockCurrentValueTotal = stockCurrentValues.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
 	BigDecimal accountCurrentValueTotal = accountCurrentValues.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
 	String annualizedYieldLabel = MessageUtil.getMessage("stock.dividend.yield.column.annualized");
@@ -122,19 +128,19 @@
 	String otherBasisLabel = MessageUtil.getMessage("stock.dividend.yield.other.basis");
 	// 합계 셈 · 칸 근거 문구(분자에서 빠진 배당 · 시가 분모 · 기준일 원금 없음 · 보유 일수)는 DividendYieldViewUtil 한 곳에 있다 - 부모의 연도별 표와
 	// 종목/계좌 카드가 같은 식을 한 벌씩 들고 있던 것을 모았다(2026-10-22). 까닭과 실측은 그 클래스 설명에.
-	java.util.function.Function<Long, String> heldDaysText = DividendYieldViewUtil::heldDaysText;
-	java.util.function.Function<Long, String> shortHeldDesc = DividendYieldViewUtil::shortHeldDesc;
+	Function<Long, String> heldDaysText = DividendYieldViewUtil::heldDaysText;
+	Function<Long, String> shortHeldDesc = DividendYieldViewUtil::shortHeldDesc;
 	// 올해처럼 기간이 한 해를 다 못 채운 연도 - 연 수익률은 그 날수를 1 년으로 늘린 값이라 밝힌다.
-	java.util.function.Function<DividendYieldGroupView, Long> partialYearDays = row -> {
+	Function<DividendYieldGroupView, Long> partialYearDays = row -> {
 		try {
 			int year = Integer.parseInt(row.label());
-			return row.periodDayCount() > 0 && row.periodDayCount() < java.time.Year.of(year).length() ? row.periodDayCount() : null;
+			return row.periodDayCount() > 0 && row.periodDayCount() < Year.of(year).length() ? row.periodDayCount() : null;
 		} catch (NumberFormatException ex) {
 			return null;
 		}
 	};
 	BigDecimal yearlyMaxAnnualized = yearlyYieldRows == null ? BigDecimal.ZERO : yearlyYieldRows.stream()
-		.map(DividendYieldGroupView::annualizedYieldPct).filter(java.util.Objects::nonNull)
+		.map(DividendYieldGroupView::annualizedYieldPct).filter(Objects::nonNull)
 		.reduce(BigDecimal.ZERO, BigDecimal::max);
 String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.yield.selection.stock.helper");
 	String stockYieldSelectionSummaryLabel = MessageUtil.getMessage("stock.dividend.yield.selection.stock.summary");
@@ -142,7 +148,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 	String accountYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.yield.selection.account.helper");
 	String accountYieldSelectionSummaryLabel = MessageUtil.getMessage("stock.dividend.yield.selection.account.summary");
 	String accountYieldSelectionCountLabel = MessageUtil.getMessage("stock.dividend.yield.selection.account.count");
-	java.util.function.Function<String, String> stockTagTooltipByName = stockName -> {
+	Function<String, String> stockTagTooltipByName = stockName -> {
 		if (stockName == null || stockName.isBlank() || stockItemList == null) {
 			return tagLabel + ": " + noDataLabel;
 		}
@@ -155,24 +161,24 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 				: tagLabel + ": " + noDataLabel)
 			.orElse(tagLabel + ": " + noDataLabel);
 	};
-	java.util.function.BiFunction<List<DividendYieldGroupView>, java.util.function.Function<DividendYieldGroupView, BigDecimal>, BigDecimal> sumDividendYieldValue = StockAmountUtil::sum;
-	java.util.function.Function<List<DividendYieldGroupView>, Long> sumDividendYieldCount = DividendYieldViewUtil::dividendCount;
-	java.util.function.BiFunction<BigDecimal, BigDecimal, BigDecimal> computeYieldPct = DividendYieldViewUtil::yieldPct;
+	BiFunction<List<DividendYieldGroupView>, Function<DividendYieldGroupView, BigDecimal>, BigDecimal> sumDividendYieldValue = StockAmountUtil::sum;
+	Function<List<DividendYieldGroupView>, Long> sumDividendYieldCount = DividendYieldViewUtil::dividendCount;
+	BiFunction<BigDecimal, BigDecimal, BigDecimal> computeYieldPct = DividendYieldViewUtil::yieldPct;
 	BigDecimal stockYieldFooterNetAmount = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::totalNetAmount);
 	BigDecimal stockYieldFooterDailyPrincipalCost = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::averageDailyPrincipalCost);
 	BigDecimal stockYieldFooterPrincipalCost = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::averagePrincipalCost);
 	BigDecimal stockYieldFooterNetWithPrincipalCost = sumDividendYieldValue.apply(stockYieldRows, DividendYieldGroupView::netAmountWithPrincipalCost);
 	BigDecimal stockYieldFooterYieldOnDailyAverageCostPct = computeYieldPct.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterDailyPrincipalCost);
 	BigDecimal stockYieldFooterYieldOnCostPct = computeYieldPct.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterPrincipalCost);
-	java.util.function.Function<List<DividendYieldGroupView>, BigDecimal> footerAnnualizedPct = DividendYieldViewUtil::footerAnnualizedPct;
+	Function<List<DividendYieldGroupView>, BigDecimal> footerAnnualizedPct = DividendYieldViewUtil::footerAnnualizedPct;
 	BigDecimal footerHeldAverage = portfolioYield != null ? portfolioYield.heldAverageDailyPrincipalCost() : null;
-	java.util.function.BiFunction<BigDecimal, BigDecimal, String> yieldBasisTitle = (usedNet, totalNet) -> DividendYieldViewUtil.basisTitle(usedNet, totalNet, decimalFormat);
+	BiFunction<BigDecimal, BigDecimal, String> yieldBasisTitle = (usedNet, totalNet) -> DividendYieldViewUtil.basisTitle(usedNet, totalNet, decimalFormat);
 	// 기준일 원금이 아예 없으면 금액도 수익률도 "-" 가 되는데, 2026-09-12 까지 그 "-" 에는 까닭이 없었다
 	// (실측: 연도별 2칸 + 종목별 랭킹 4칸). 왜 비었는지는 옆 칸 문구가 말하고 있었지만 이 칸 자체는 말이 없었다.
 	String basisNoneTitle = MessageUtil.getMessage("stock.dividend.yield.basis.none");
 	// 기간 일평균 투입원금도 마찬가지다 - 매매 없이 배당만 있는 종목(실측: 하나금융지주)은 이 칸이 비는데 까닭이 없었다.
 	String dailyBasisNoneTitle = MessageUtil.getMessage("stock.dividend.yield.daily.basis.none");
-	java.util.function.Function<BigDecimal, String> basisNoneOrNull = DividendYieldViewUtil::basisNoneOrNull;
+	Function<BigDecimal, String> basisNoneOrNull = DividendYieldViewUtil::basisNoneOrNull;
 }
 
 	<%-- Row 3: Yield Analytics --%>

@@ -91,7 +91,7 @@ public final class StockTradePeriodUtil {
     List<LocalDate> dates = new ArrayList<>();
     for (TradeResponse trade : trades) {
       if (trade != null && trade.tradeDate() != null) {
-        dates.add(trade.tradeDate().atZone(zone).toLocalDate());
+        dates.add(StockZoneUtil.recordedDate(trade.tradeDate(), zone));
       }
     }
     if (dates.isEmpty()) {
@@ -106,7 +106,7 @@ public final class StockTradePeriodUtil {
       if (trade == null || trade.tradeDate() == null) {
         continue;
       }
-      LocalDate date = trade.tradeDate().atZone(zone).toLocalDate();
+      LocalDate date = StockZoneUtil.recordedDate(trade.tradeDate(), zone);
       String label =
           yearly
               ? String.format(Locale.ROOT, "%04d", date.getYear())

@@ -62,3 +62,25 @@ ALTER TABLE "MonthlyDividendPayout" ALTER COLUMN "taxableBasePerShare" DROP NOT 
 -- 되돌리기(NULL 행이 있으면 먼저 0 으로 채워야 한다 - 그러면 "확인 안 됨" 이 다시 0 원이 된다)
 -- UPDATE "MonthlyDividendPayout" SET "taxableBasePerShare" = 0 WHERE "taxableBasePerShare" IS NULL;
 -- ALTER TABLE "MonthlyDividendPayout" ALTER COLUMN "taxableBasePerShare" SET NOT NULL;
+
+-- =====================================================================
+-- 2026-11-02
+-- =====================================================================
+
+-- (1) 월배당 스냅숏의 과세표준 비중을 모르면 NULL(확인 안 됨)로 둔다(사용자 결정 2026-11-02).
+--     지금은 NOT NULL 이라 원장 실적도 운용사 과세표준도 없으면 0 으로 저장돼 "비과세" 로 읽혔다(10-07 의 "모르면 null" 규칙과 어긋남).
+--     앱은 이제 모르면 NULL 을 넣는다(MonthlyDividendPayoutService.applyStats · MonthlyDividendSnapshotService.upsert) -
+--     이 DDL 전에 앱을 올리면 그런 종목의 저장이 실패한다. 이것부터 적용한다.
+--     잠금은 짧다(NOT NULL 제약만 푼다, 행을 다시 쓰지 않는다).
+ALTER TABLE "MonthlyDividendSnapshot" ALTER COLUMN "averageTaxableBaseRatio1y" DROP NOT NULL;
+
+-- 확인(is_nullable = YES 가 나오면 끝)
+-- SELECT column_name, is_nullable FROM information_schema.columns
+--  WHERE table_name = 'MonthlyDividendSnapshot' AND column_name = 'averageTaxableBaseRatio1y';
+
+-- 적용 뒤: 이미 0 으로 저장된 행은 진짜 0(비과세)인지 모름인지 구분할 수 없어 그대로 둔다. 지급 이력을 다시 가져오면(관리 > 월배당 참조)
+-- 그 종목 스냅숏을 다시 계산해 모르는 것은 NULL 로 바뀐다.
+
+-- 되돌리기(NULL 행이 있으면 먼저 0 으로 채워야 한다 - 그러면 "확인 안 됨" 이 다시 0% 가 된다)
+-- UPDATE "MonthlyDividendSnapshot" SET "averageTaxableBaseRatio1y" = 0 WHERE "averageTaxableBaseRatio1y" IS NULL;
+-- ALTER TABLE "MonthlyDividendSnapshot" ALTER COLUMN "averageTaxableBaseRatio1y" SET NOT NULL;

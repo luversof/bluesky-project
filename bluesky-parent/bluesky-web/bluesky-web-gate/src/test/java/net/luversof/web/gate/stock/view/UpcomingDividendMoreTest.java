@@ -86,11 +86,10 @@ class UpcomingDividendMoreTest {
   @Test
   void 합계는_평균과_최근을_배당_내역과_같은_계산으로_낸다() throws IOException {
     String controller = read(CONTROLLER);
-    assertThat(controller).contains("MonthlyDividendCalculator .latestMonthlyDividend(row)");
+    assertThat(controller).contains("MonthlyDividendCalculator.latestMonthlyDividend(row)");
     assertThat(controller).contains("\"windowLatestTotal\", windowLatestTotal");
     assertThat(controller)
-        .contains(
-            "BigDecimal.valueOf( net.luversof.web.gate.stock.util.StockFormatUtil.displayWon( row.expectedMonthlyDividend()))");
+        .contains("BigDecimal.valueOf(StockFormatUtil.displayWon(row.expectedMonthlyDividend()))");
 
     String jte = read(FRAGMENT);
     assertThat(jte).contains("@param BigDecimal windowLatestTotal");
@@ -103,7 +102,7 @@ class UpcomingDividendMoreTest {
    */
   @Test
   void 최근이_앞이고_목록도_최근_기준이다() throws IOException {
-    assertThat(read(CONTROLLER)).contains("::latestMonthlyDividend) .reversed())");
+    assertThat(read(CONTROLLER)).contains("::latestMonthlyDividend).reversed())");
 
     String jte = read(FRAGMENT);
     assertThat(jte).contains("StockViewSupport.msg(\"stock.summary.upcoming.window.latest\"");

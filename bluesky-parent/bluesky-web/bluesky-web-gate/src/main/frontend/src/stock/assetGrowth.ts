@@ -21,6 +21,8 @@ interface AssetGrowthSeries {
 }
 interface AssetGrowthConfig {
 	snapshotTz: string;
+	/** 보유 스냅숏 요청에 붙일 필터 질의("&accountIdList=…") - 화면 필터와 같은 스냅숏(2026-10-29). */
+	snapshotFilter?: string;
 	minDate: string;
 	series: AssetGrowthSeries | null;
 	labels: Record<string, string>;
@@ -75,6 +77,7 @@ interface AssetGrowthConfig {
             // 보유 스냅샷 조회 시 함께 넘길 타임존. 안 넘기면 서버 기본 타임존으로
             // 집계돼 컨테이너가 UTC 인 환경에서 날짜가 하루 어긋난다.
             var snapshotTz = encodeURIComponent(cfg.snapshotTz || Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+            var snapshotFilter = cfg.snapshotFilter || '';
             var ctxMain = document.getElementById('assetGrowthChart');
             var ctxDividend = document.getElementById('dividendChart');
             if (!ctxMain || !ctxDividend) return;
@@ -178,7 +181,7 @@ interface AssetGrowthConfig {
                         if (markerClicked) { markerClicked = false; return; }
                         var clicked = elements[0];
                         var date = labels[clicked.index];
-                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date + '&timeZone=' + snapshotTz, {
+                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date + '&timeZone=' + snapshotTz + snapshotFilter, {
                             target: '#holdings-snapshot-container',
                             swap: 'innerHTML'
                         });
@@ -286,7 +289,7 @@ interface AssetGrowthConfig {
                         if (!elements.length) return;
                         if (markerClicked) { markerClicked = false; return; } // 마커 클릭 시 중복 방지
                         var date = labels[elements[0].index];
-                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date + '&timeZone=' + snapshotTz, {
+                        htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + date + '&timeZone=' + snapshotTz + snapshotFilter, {
                             target: '#holdings-snapshot-container',
                             swap: 'innerHTML'
                         });
@@ -310,7 +313,7 @@ interface AssetGrowthConfig {
                         var m = drawnMarkers[k];
                         if (Math.abs(mx - m.px) <= hitR && Math.abs(my - m.py) <= hitR) {
                             markerClicked = true;
-                            htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + m.date + '&timeZone=' + snapshotTz, {
+                            htmx.ajax('GET', '/stock/htmx/holdings-snapshot?date=' + m.date + '&timeZone=' + snapshotTz + snapshotFilter, {
                                 target: '#holdings-snapshot-container',
                                 swap: 'innerHTML'
                             });

@@ -13,6 +13,7 @@ import java.util.zip.Inflater;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -110,7 +111,9 @@ public class PoePobImportService {
           Map.entry("Amulet", "목걸이"),
           Map.entry("Ring", "반지"),
           Map.entry("Belt", "허리띠"),
-          Map.entry("Flask", "플라스크"));
+          Map.entry("Flask", "플라스크"),
+          // 패시브 트리 주얼 홈(10-29 R8 — 게임 ItemClasses Jewel '주얼')
+          Map.entry("Jewel", "주얼"));
 
   private final PoeGemDataService poeGemDataService;
   private final PoeUniqueDataService poeUniqueDataService;
@@ -125,6 +128,11 @@ public class PoePobImportService {
   // 빌드 화면 아이템 → 거래소 검색 쿼리(10-08)
   private final PoeTradeStatDataService poeTradeStatDataService;
 
+  private final java.nio.file.Path dataDir;
+
+  /** 스킬 영문 이름 → 한국어(게임 ActiveSkills DisplayedName, Id 로 짝). 처음 쓸 때 읽는다. */
+  private volatile Map<String, String> skillNameKo;
+
   public PoePobImportService(
       PoeGemDataService poeGemDataService,
       PoeUniqueDataService poeUniqueDataService,
@@ -134,7 +142,9 @@ public class PoePobImportService {
       PoeTreeGraphService poeTreeGraphService,
       PoeRareNameService poeRareNameService,
       PoeModDataService poeModDataService,
-      PoeTradeStatDataService poeTradeStatDataService) {
+      PoeTradeStatDataService poeTradeStatDataService,
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+    this.dataDir = java.nio.file.Path.of(dataDir);
     this.poeTradeStatDataService = poeTradeStatDataService;
     this.poeRareNameService = poeRareNameService;
     this.poeModDataService = poeModDataService;
@@ -303,10 +313,23 @@ public class PoePobImportService {
       if (STAT_KEY_ALIAS.containsKey(key) && isZero(raw)) {
         continue;
       }
-      stats.add(new PoeBuild.PlayerStat(outKey, formatStatValue(raw)));
+      // 백분율 스탯은 PoB 처럼 '%' 를 붙인다(10-29 R8 — 저항 75 · 치명타 45.7 이 단위 없이 보였다)
+      String shown = formatStatValue(raw);
+      stats.add(new PoeBuild.PlayerStat(outKey, PERCENT_STATS.contains(key) ? shown + "%" : shown));
     }
     return stats;
   }
+
+  private static final java.util.Set<String> PERCENT_STATS =
+      java.util.Set.of(
+          "FireResist",
+          "ColdResist",
+          "LightningResist",
+          "ChaosResist",
+          "EffectiveSpellSuppressionChance",
+          "EffectiveBlockChance",
+          "EffectiveSpellBlockChance",
+          "CritChance");
 
   private boolean isZero(String raw) {
     try {
@@ -365,8 +388,7 @@ public class PoePobImportService {
     List<Element> skillSets = childElements(skills, "SkillSet");
     Element container = skills;
     if (!skillSets.isEmpty()) {
-      int active = parseInt(skills.getAttribute("activeSkillSet"), 1);
-      container = skillSets.get(Math.min(Math.max(active, 1), skillSets.size()) - 1);
+      container = activeById(skillSets, skills.getAttribute("activeSkillSet"));
     }
     List<PoeBuild.SkillGroup> groups = new ArrayList<>();
     for (Element skill : childElements(container, "Skill")) {
@@ -380,12 +402,13 @@ public class PoePobImportService {
         gems.add(
             new PoeBuild.BuildGem(
                 matched.map(PoeGem::name).orElse(name),
-                matched.map(PoeGem::nameKo).orElse(null),
+                matched.map(PoeGem::nameKo).orElseGet(() -> skillNameKo(name)),
                 matched.map(PoeGem::slug).orElse(null),
                 matched.map(PoeGem::isSupport).orElse(false),
                 parseInt(gem.getAttribute("level"), 1),
                 parseInt(gem.getAttribute("quality"), 0),
-                matched.map(PoeGem::color).orElse(null)));
+                matched.map(PoeGem::color).orElse(null),
+                !"false".equals(gem.getAttribute("enabled"))));
       }
       if (gems.isEmpty()) {
         continue;
@@ -421,12 +444,23 @@ public class PoePobImportService {
     Map<Integer, String> slotByItemId = new LinkedHashMap<>();
     List<Element> itemSets = childElements(items, "ItemSet");
     if (!itemSets.isEmpty()) {
-      int active = parseInt(items.getAttribute("activeItemSet"), 1);
-      Element itemSet = itemSets.get(Math.min(Math.max(active, 1), itemSets.size()) - 1);
+      Element itemSet = activeById(itemSets, items.getAttribute("activeItemSet"));
       for (Element slot : childElements(itemSet, "Slot")) {
         int itemId = parseInt(slot.getAttribute("itemId"), 0);
         if (itemId > 0 && !slotByItemId.containsKey(itemId)) {
           slotByItemId.put(itemId, slot.getAttribute("name"));
+        }
+      }
+    }
+    // 패시브 트리 주얼 홈에 꽂은 주얼(활성 스펙의 Sockets) — ItemSet 슬롯엔 없어 장비 카드에서 통째로 빠졌다(10-29 R8: 실빌드 60개 전부
+    // 10~15개)
+    Element spec = activeTreeSpec(root);
+    Element sockets = spec == null ? null : firstChild(spec, "Sockets");
+    if (sockets != null && !slotByItemId.isEmpty()) {
+      for (Element socket : childElements(sockets, "Socket")) {
+        int itemId = parseInt(socket.getAttribute("itemId"), 0);
+        if (itemId > 0 && !slotByItemId.containsKey(itemId)) {
+          slotByItemId.put(itemId, "Jewel");
         }
       }
     }
@@ -810,6 +844,7 @@ public class PoePobImportService {
   /** 옵션 줄과 그 종류([줄, crafted|fractured|""]) — 거르는 규칙은 하나(10-04 C138: 종류를 따로 세면 줄과 어긋난다). */
   private List<String[]> extractModEntries(List<String> lines, int start) {
     List<String[]> mods = new ArrayList<>();
+    int variant = selectedVariant(lines);
     for (int i = start; i < lines.size() && mods.size() < 12; i++) {
       String line = lines.get(i).trim();
       if (line.isEmpty()) {
@@ -819,6 +854,10 @@ public class PoePobImportService {
       if (ITEM_META.matcher(line).matches()
           || ITEM_PROPERTY.matcher(line).matches()
           || ITEM_FLAGS.contains(lower)) {
+        continue;
+      }
+      line = resolvePobLine(line, variant);
+      if (line == null) {
         continue;
       }
       // PoB 접두 태그 제거: {crafted}, {fractured}, {range:...} 등
@@ -833,6 +872,144 @@ public class PoePobImportService {
       }
     }
     return mods;
+  }
+
+  /**
+   * 활성 세트(SkillSet · ItemSet) — PoB 의 activeSkillSet · activeItemSet 은 목록 순번이 아니라 세트 id 다(SkillsTab
+   * · ItemsTab 은 세트를 순서 목록대로 저장하고 id 는 따로). 순서를 바꾼 빌드에서 순번으로 고르면 다른 세트(예: 레벨링 장비)가 나왔다(10-29 R8).
+   * id 가 없거나 안 맞으면 예전처럼 순번, 그것도 안 되면 첫 세트.
+   */
+  static Element activeById(List<Element> sets, String active) {
+    for (Element s : sets) {
+      if (!active.isBlank() && active.equals(s.getAttribute("id"))) {
+        return s;
+      }
+    }
+    int n = intOr(active, 1);
+    return sets.get(Math.min(Math.max(n, 1), sets.size()) - 1);
+  }
+
+  /**
+   * 젬 DB 에 없는 스킬 이름(아이템 · 변형 젬이 주는 'Void Shot' 'Herald of the Hive' 등)의 한국어 — 게임 ActiveSkills
+   * 표(10-29 R8: 실빌드 60 중 33개에 영어로 남은 스킬 41개). PoE2 Poe2DataService.nameKo 와 같은 방식. 표가 없으면 null(영어
+   * 그대로).
+   */
+  private String skillNameKo(String en) {
+    Map<String, String> m = skillNameKo;
+    if (m == null) {
+      Map<String, String> built = new java.util.HashMap<>();
+      try {
+        java.nio.file.Path enFile = dataDir.resolve("work/tables/English/ActiveSkills.json");
+        java.nio.file.Path koFile = dataDir.resolve("work/tables/Korean/ActiveSkills.json");
+        if (java.nio.file.Files.exists(enFile) && java.nio.file.Files.exists(koFile)) {
+          tools.jackson.databind.json.JsonMapper jm =
+              tools.jackson.databind.json.JsonMapper.builder().build();
+          Map<String, String> koById = new java.util.HashMap<>();
+          for (var r : jm.readTree(java.nio.file.Files.readString(koFile))) {
+            koById.put(r.path("Id").asString(""), r.path("DisplayedName").asString(""));
+          }
+          for (var r : jm.readTree(java.nio.file.Files.readString(enFile))) {
+            String n = r.path("DisplayedName").asString("");
+            String ko = koById.get(r.path("Id").asString(""));
+            if (!n.isBlank() && !n.contains("{") && ko != null && !ko.isBlank()) {
+              built.putIfAbsent(n, ko);
+            }
+          }
+        }
+      } catch (java.io.IOException | RuntimeException e) {
+        // 표가 없거나 깨졌으면 영어 그대로 — 빌드 읽기를 막지 않는다
+      }
+      m = Map.copyOf(built);
+      skillNameKo = m;
+    }
+    return m.get(en);
+  }
+
+  private static final java.util.regex.Pattern VARIANT_TAG =
+      java.util.regex.Pattern.compile("\\{variant:([\\d,]+)\\}");
+  private static final java.util.regex.Pattern RANGE_TAG =
+      java.util.regex.Pattern.compile("\\{range:([\\d.]+)\\}");
+  private static final java.util.regex.Pattern RANGE_VALUE =
+      java.util.regex.Pattern.compile("([+-]?)\\((-?\\d+(?:\\.\\d+)?)-(-?\\d+(?:\\.\\d+)?)\\)");
+
+  /**
+   * 아이템의 고른 변형 — "Selected Variant: N", 없으면 PoB 기본값(마지막 변형 = "Variant:" 줄 수). 변형이 없으면 0(거르지 않음).
+   */
+  public static int selectedVariant(List<String> lines) {
+    int count = 0;
+    for (String l : lines) {
+      String t = l.trim();
+      if (t.regionMatches(true, 0, "Selected Variant:", 0, 17)) {
+        return intOr(t.substring(17).trim(), 0);
+      }
+      if (t.regionMatches(true, 0, "Variant:", 0, 8)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * PoB 아이템 옵션 줄 하나를 화면용으로 — 고른 변형의 줄이 아니면 null(PoB 처럼 {variant:1,3} 이 고른 변형을 안 담으면 뺀다), 굴림 범위
+   * "(a-b)" 는 PoB 가 저장한 {range:x}(없으면 0.5)로 계산한다. 머리 태그({crafted} 등)는 그대로 둔다(10-29 R8 — 예전엔 모든 변형
+   * 줄과 "+(500-600) to maximum Life" 가 그대로 보였다). PoE1 · PoE2 빌드 읽기가 함께 쓴다.
+   *
+   * @param variant 고른 변형(selectedVariant), 0 이면 거르지 않는다
+   */
+  public static String resolvePobLine(String line, int variant) {
+    java.util.regex.Matcher vm = VARIANT_TAG.matcher(line);
+    if (variant > 0 && vm.find() && !variantIncludes(vm.group(1), variant)) {
+      return null;
+    }
+    java.util.regex.Matcher rm = RANGE_TAG.matcher(line);
+    return applyRange(line, rm.find() ? Double.parseDouble(rm.group(1)) : 0.5);
+  }
+
+  private static boolean variantIncludes(String list, int variant) {
+    for (String v : list.split(",")) {
+      if (intOr(v.trim(), -1) == variant) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static int intOr(String s, int fallback) {
+    try {
+      return Integer.parseInt(s);
+    } catch (NumberFormatException e) {
+      return fallback;
+    }
+  }
+
+  /**
+   * PoB itemLib.applyRange 와 같은 값 — min + range × (max − min), 반올림은 0 에서 먼 쪽(roundSymmetric)이고 자릿수는
+   * 범위 끝값의 소수 자릿수(최대 2, 게임 표기 한도).
+   *
+   * <p>shortcut: PoB 는 몇몇 스탯을 modScalability 형식(divide_by_ten 등)으로 따로 반올림한다 — 그 스탯은 소수 자릿수가 PoB 와
+   * 다를 수 있다. 차이가 보이면 PoB Data/ModScalability 를 읽어 형식을 맞춘다.
+   */
+  static String applyRange(String line, double range) {
+    java.util.regex.Matcher m = RANGE_VALUE.matcher(line);
+    StringBuilder out = new StringBuilder();
+    while (m.find()) {
+      java.math.BigDecimal min = new java.math.BigDecimal(m.group(2));
+      java.math.BigDecimal max = new java.math.BigDecimal(m.group(3));
+      int scale = Math.min(2, Math.max(min.scale(), max.scale()));
+      java.math.BigDecimal value =
+          min.add(max.subtract(min).multiply(java.math.BigDecimal.valueOf(range)))
+              .setScale(scale, java.math.RoundingMode.HALF_UP);
+      if ("-".equals(m.group(1))) {
+        value = value.negate();
+      }
+      String text = value.stripTrailingZeros().toPlainString();
+      if ("+".equals(m.group(1)) && value.signum() > 0) {
+        text = "+" + text;
+      }
+      m.appendReplacement(out, java.util.regex.Matcher.quoteReplacement(text));
+    }
+    m.appendTail(out);
+    return out.toString();
   }
 
   private String slotKo(String slot) {

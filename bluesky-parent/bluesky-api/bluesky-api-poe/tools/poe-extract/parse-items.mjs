@@ -49,6 +49,7 @@ const en = {
 	flasks: loadTable("English", "Flasks"),
 	charges: loadTable("English", "ComponentCharges"),
 	buffs: loadTable("English", "BuffDefinitions"),
+	buffTemplates: loadTable("English", "BuffTemplates"),
 	shields: loadTable("English", "ShieldTypes"),
 };
 const ko = {
@@ -58,7 +59,8 @@ const ko = {
 
 // stat_descriptions 를 마지막(최우선)으로(10-10 C256 — 기본 사슬은 뒤의 skill_stat_descriptions 가 같은 스탯을 스킬 문장으로 덮어 단검 임플리싯이
 //   "Global" 없이 "(60-65)% increased Critical Strike Chance" · "치명타 확률" 이었다. 게임 · poedb "일반 치명타 확률". parse-eldritch 와 같은 처리)
-const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt"]);
+// 줄 순서 = 게임 설명 파일 순서(10-30 R15 — 32개 베이스의 고정 속성 순서가 게임 · PoB 와 달랐다. transform.mjs 젬과 같은 fileOrder)
+const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt"], { fileOrder: true });
 
 const armourByBase = new Map(en.armour.map((row) => [row.BaseItemTypesKey, row]));
 // 방패 기본 막기 확률 (ShieldTypes.BaseItemTypesKey = 행 인덱스, Block = 정수 %)
@@ -72,11 +74,18 @@ const chargesByBase = new Map(en.charges.map((row) => [row.BaseItemTypesKey, row
 
 // 모드 → (한/영) 표시 문장. 값이 범위(min≠max)면 숫자 자리만 "min-max" 로 병합한다.
 function describeModRange(mod, lang) {
+	// 버프 템플릿 스탯은 서술하지 않는다(10-30 R15 ④ — PoB Export statdesc.lua describeMod 와 같음. 슬픔의 가면 등에 게임 툴팁엔 없는
+	//   '-15% additional Physical Damage Reduction'(타쇄 버프 내용)이 따로 나왔다)
+	const buffStats = new Set();
+	for (const key of ["BuffTemplate1", "BuffTemplate2"]) {
+		const t = mod[key] != null ? en.buffTemplates[mod[key]] : null;
+		for (const si of t?.StatsKey || []) buffStats.add(si);
+	}
 	const buildValues = (kind) => {
 		const values = new Map();
-		for (let statPosition = 1; statPosition <= 4; statPosition++) {
+		for (let statPosition = 1; statPosition <= 8; statPosition++) {
 			const statIndex = mod["StatsKey" + statPosition];
-			if (statIndex == null) continue;
+			if (statIndex == null || buffStats.has(statIndex)) continue;
 			values.set(en.stats[statIndex].Id, mod["Stat" + statPosition + (kind === "min" ? "Min" : "Max")] ?? 0);
 		}
 		return values;
@@ -123,6 +132,9 @@ for (const base of en.base) {
 	if (!category) continue;
 	if (!base.Name || junkName.test(base.Name)) continue;
 	if (base.Id.includes("Royale") || base.Id.includes("Talisman")) continue;
+	// 옛 화살통(Quiver1~13 · QuiverDescent — 같은 이름의 QuiverNew* 로 바뀌었다) · 개발용/스킬 전용(Energy Blade · Kaom's Plate/Greaves 임시 · Avian Slippers)
+	//   (10-30 R15 — 같은 이름이 둘이라 이름으로 붙는 PoB 요구 레벨 · 고유 베이스가 옛 화살통 속성을 썼다. 고유 아이템이 참조하는 이름은 새 화살통에 그대로 있다)
+	if (/\/(Quiver([1-9]|1[0-3])|QuiverDescent|StormBlade\w*|\w+StrTemp|BootsDescent1)$/.test(base.Id)) continue;
 
 	const armour = armourByBase.get(base._index);
 	const weapon = weaponByBase.get(base._index);
@@ -178,12 +190,13 @@ for (const base of en.base) {
 		reqDex: requirement?.ReqDex || 0,
 		reqInt: requirement?.ReqInt || 0,
 		armour:
-			armour && (armour.ArmourMax || armour.EvasionMax || armour.EnergyShieldMax || armour.WardMax)
+			// 막기만 있는 방패도(10-30 R15 — 금빛 불꽃 막기 20% 가 빠졌다)
+			(armour && (armour.ArmourMax || armour.EvasionMax || armour.EnergyShieldMax || armour.WardMax)) || shieldByBase.get(base._index)?.Block
 				? {
-						armourMin: armour.ArmourMin, armourMax: armour.ArmourMax,
-						evasionMin: armour.EvasionMin, evasionMax: armour.EvasionMax,
-						energyShieldMin: armour.EnergyShieldMin, energyShieldMax: armour.EnergyShieldMax,
-						wardMin: armour.WardMin, wardMax: armour.WardMax,
+						armourMin: armour?.ArmourMin ?? 0, armourMax: armour?.ArmourMax ?? 0,
+						evasionMin: armour?.EvasionMin ?? 0, evasionMax: armour?.EvasionMax ?? 0,
+						energyShieldMin: armour?.EnergyShieldMin ?? 0, energyShieldMax: armour?.EnergyShieldMax ?? 0,
+						wardMin: armour?.WardMin ?? 0, wardMax: armour?.WardMax ?? 0,
 						block: shieldByBase.get(base._index)?.Block || 0,
 						...(movementPenaltyByBase.get(base.Name) ? { movementPenalty: movementPenaltyByBase.get(base.Name) } : {}),
 					}

@@ -111,7 +111,7 @@ CREATE TABLE "MonthlyDividendSnapshot" (
 	"asOfDate" DATE NOT NULL,
 	"latestMonthlyDividendPerShare" NUMERIC NOT NULL,
 	"averageMonthlyDividendPerShare1y" NUMERIC NOT NULL,
-	"averageTaxableBaseRatio1y" NUMERIC NOT NULL,
+	"averageTaxableBaseRatio1y" NUMERIC,
 	"heldQuantity" INTEGER NOT NULL,
 	"averageBuyPrice" NUMERIC NOT NULL,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,

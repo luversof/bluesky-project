@@ -65,8 +65,10 @@ if (skinSkipped) {
 
 // slug → dds (우리가 가진 고유만)
 const ddsBySlug = new Map();
+// 대소문자만 다른 이름도 잇는다(10-30 R33 — 게임 Words 'Bound By Destiny' ↔ PoB 'Bound by Destiny' 1개가 아이콘 없이 빠졌다)
+const ddsByLower = new Map([...ddsByName].map(([name, dds]) => [name.toLowerCase(), dds]));
 for (const item of items) {
-	const dds = ddsByName.get(item.name);
+	const dds = ddsByName.get(item.name) || ddsByLower.get(item.name.toLowerCase());
 	if (dds) ddsBySlug.set(item.slug, dds);
 }
 console.log(`고유 ${items.length}개 중 아이콘 경로 확보 ${ddsBySlug.size}개 (${Math.round((ddsBySlug.size / items.length) * 100)}%)`);

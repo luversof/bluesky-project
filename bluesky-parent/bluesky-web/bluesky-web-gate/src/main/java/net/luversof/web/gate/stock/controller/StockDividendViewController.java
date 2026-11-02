@@ -5,13 +5,18 @@ import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,18 +45,30 @@ import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutImportReques
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileReorderRequest;
 import net.luversof.web.gate.stock.dto.request.MonthlyDividendProfileUpsertRequest;
+import net.luversof.web.gate.stock.dto.response.DividendResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendProfileResponse;
 import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse;
 import net.luversof.web.gate.stock.dto.view.DividendCalendarView;
+import net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView;
+import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
+import net.luversof.web.gate.stock.service.FinancialIncomeThresholdSupport;
+import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
+import net.luversof.web.gate.stock.service.MonthlyDividendLinkRegisterService;
+import net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendViewSupport;
+import net.luversof.web.gate.stock.support.MonthlyReferenceEditors;
+import net.luversof.web.gate.stock.support.StockAsyncSupport;
 import net.luversof.web.gate.stock.support.StockViewSupport;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser;
 import net.luversof.web.gate.stock.util.MonthlyDividendPayoutSourceImportService;
+import net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser;
+import net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil;
+import net.luversof.web.gate.stock.util.StockTabLinkUtil;
 
 /**
  * 배당 화면과 <b>월배당 기준(프로필·지급이력) 관리</b> 폼.
@@ -59,8 +76,8 @@ import net.luversof.web.gate.stock.util.MonthlyDividendPayoutSourceImportService
  * <p>{@code StockViewController} 안에 있을 때는 관리 화면·시뮬레이터·상세와 뒤섞여 있어, 한 폼을 고치려면 무관한 코드를 지나다녀야 했다. 이 갈래는
  * 저장·삭제·가져오기가 전부 같은 화면(관리 화면의 월배당 기준 탭)으로 되돌아가는 한 덩어리다.
  *
- * <p>조회·검증·기본 폼 조립은 {@link net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport} 에
- * 있다 &mdash; 관리 화면도 같은 것을 쓰기 때문이다. 여기 남은 것은 <b>받은 값을 다듬고, 부르고, 어디로 되돌릴지 정하는</b> 일뿐이다.
+ * <p>조회·검증·기본 폼 조립은 {@link MonthlyDividendReferenceSupport} 에 있다 &mdash; 관리 화면도 같은 것을 쓰기 때문이다. 여기
+ * 남은 것은 <b>받은 값을 다듬고, 부르고, 어디로 되돌릴지 정하는</b> 일뿐이다.
  *
  * <p>동작은 그대로다 &mdash; 옮기기만 했다.
  */
@@ -76,8 +93,7 @@ public class StockDividendViewController {
 
   @Autowired private MonthlyDividendProfileClient monthlyDividendProfileClient;
 
-  @Autowired
-  private net.luversof.web.gate.stock.support.MonthlyReferenceEditors monthlyReferenceEditors;
+  @Autowired private MonthlyReferenceEditors monthlyReferenceEditors;
 
   /** 종목별 시세 갱신은 관리 쪽 창구를 쓴다. */
   @Autowired private StockAdminClient stockAdminClient;
@@ -85,33 +101,26 @@ public class StockDividendViewController {
   @Autowired private MonthlyDividendPayoutClient monthlyDividendPayoutClient;
 
   /** 지나간 달의 <b>실제 수령액</b>은 기준 데이터가 아니라 원장에 있다. */
-  @Autowired private net.luversof.web.gate.stock.httpexchange.DividendClient dividendClient;
+  @Autowired private DividendClient dividendClient;
 
   /** 본문의 서로 기대지 않는 api-stock 조회를 동시에 던지는 실행기(StockViewController 와 같은 것). */
-  @Autowired private net.luversof.web.gate.stock.support.StockAsyncSupport stockAsync;
+  @Autowired private StockAsyncSupport stockAsync;
 
   @Autowired private MonthlyDividendPayoutImportParser monthlyDividendPayoutImportParser;
 
-  @Autowired
-  private net.luversof.web.gate.stock.service.MonthlyDividendLinkRegisterService
-      monthlyDividendLinkRegisterService;
+  @Autowired private MonthlyDividendLinkRegisterService monthlyDividendLinkRegisterService;
 
   @Autowired
   private MonthlyDividendPayoutSourceImportService monthlyDividendPayoutSourceImportService;
 
   @Autowired private MonthlyDividendViewSupport monthlyDividendViewSupport;
 
-  @Autowired
-  private net.luversof.web.gate.stock.service.FinancialIncomeThresholdSupport
-      financialIncomeThresholdSupport;
+  @Autowired private FinancialIncomeThresholdSupport financialIncomeThresholdSupport;
 
-  @Autowired
-  private net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-      monthlyDividendReferenceSupport;
+  @Autowired private MonthlyDividendReferenceSupport monthlyDividendReferenceSupport;
 
   public void setMonthlyDividendReferenceSupport(
-      net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-          monthlyDividendReferenceSupport) {
+      MonthlyDividendReferenceSupport monthlyDividendReferenceSupport) {
     this.monthlyDividendReferenceSupport = monthlyDividendReferenceSupport;
   }
 
@@ -148,9 +157,7 @@ public class StockDividendViewController {
 
     String dividendTab = resolveDividendTab(tab);
 
-    if (net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-        .DIVIDEND_TAB_MONTHLY_REFERENCE
-        .equals(dividendTab)) {
+    if (MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE.equals(dividendTab)) {
       return buildMonthlyDividendReferencePageRedirect(
           symbol, profileSort, profileDirection, payoutRecordDate, payoutPayDate, profileWindow);
     }
@@ -160,30 +167,28 @@ public class StockDividendViewController {
     if ("calendar".equals(dividendTab)) {
       return "redirect:"
           + calendarTabRedirect(
-              request.getQueryString(), month, LocalDate.now(), java.time.ZoneId.systemDefault());
+              request.getQueryString(), month, LocalDate.now(), ZoneId.systemDefault());
     }
 
     // 금융소득 종합과세 기준(2026-10-20)은 다가올 배당과 기대는 것이 없어 같이 던진다. 실패하면 null - 구역을 숨긴다.
     // 과세 연도는 한국 세법의 해라 존을 박아 둔다(JVM 기본 존에 기대지 않는다 - AmbientZoneDependencyTest).
     UUID financialIncomeUserId = UserUtil.getUserId();
-    java.time.ZoneId taxZone = java.time.ZoneId.of("Asia/Seoul");
+    ZoneId taxZone = ZoneId.of("Asia/Seoul");
     var financialIncomeFuture =
         stockAsync.supply(
             () ->
                 financialIncomeThresholdSupport.load(
                     financialIncomeUserId, LocalDate.now(taxZone), taxZone));
     populateUpcomingDividendModel(UserUtil.getUserId(), model);
-    model.addAttribute(
-        "financialIncome",
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(financialIncomeFuture));
+    model.addAttribute("financialIncome", StockAsyncSupport.join(financialIncomeFuture));
     return "stock/dividend";
   }
 
   /**
    * 옛 캘린더 탭 주소를 실수령 배당 주소로 바꾼다.
    *
-   * <p>{@code tab} · {@code month} 는 버리고 나머지 조건(필터 · 로케일)은 조각째 그대로 옮긴다({@link
-   * net.luversof.web.gate.stock.util.StockTabLinkUtil} 과 같은 규칙 &mdash; 다시 묶으면 인코딩과 중복 키 순서가 바뀐다).
+   * <p>{@code tab} · {@code month} 는 버리고 나머지 조건(필터 · 로케일)은 조각째 그대로 옮긴다({@link StockTabLinkUtil} 과
+   * 같은 규칙 &mdash; 다시 묶으면 인코딩과 중복 키 순서가 바뀐다).
    *
    * <p>달을 기간으로 바꾼다 &mdash; 이번 달은 '이번달' 프리셋({@code rangeMode=mtd}), 지난 달은 1 일 0 시 ~ 다음 달 1 일 0 시(배타,
    * {@code rangeMode=1}). 달을 안 적은 주소는 이번 달이다 &mdash; 옛 탭이 그때 이번 달을 그렸고, 대시보드 '다가올 배당' 카드가 바로 그 주소
@@ -192,7 +197,7 @@ public class StockDividendViewController {
    * 까닭이 없다.
    */
   static String calendarTabRedirect(
-      String currentQuery, String monthParam, LocalDate today, java.time.ZoneId zone) {
+      String currentQuery, String monthParam, LocalDate today, ZoneId zone) {
     YearMonth thisMonth = YearMonth.from(today);
     YearMonth month = thisMonth;
     if (StringUtils.hasText(monthParam)) {
@@ -203,9 +208,9 @@ public class StockDividendViewController {
       }
     }
     boolean withRange = month != null && !month.isAfter(thisMonth);
-    java.util.Set<String> dropped = new java.util.HashSet<>(java.util.List.of("tab", "month"));
+    Set<String> dropped = new HashSet<>(List.of("tab", "month"));
     if (withRange) {
-      dropped.addAll(java.util.List.of("startDate", "endDate", "rangeMode"));
+      dropped.addAll(List.of("startDate", "endDate", "rangeMode"));
     }
 
     StringBuilder query = new StringBuilder();
@@ -262,11 +267,9 @@ public class StockDividendViewController {
 
     // 스냅샷 수량은 사람이 갱신한 시점의 값이라 원장과 어긋난다(실측 2026-08-23: 8 종목 중 7 종목, 1.66% 낮다).
     // 요약 카드 · 월배당 시뮬레이터와 같은 계산 · 같은 문구를 쓴다.
-    var currentHoldings =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(holdingsFuture);
+    var currentHoldings = StockAsyncSupport.join(holdingsFuture);
     var quantityBasis =
-        net.luversof.web.gate.stock.service.MonthlyDividendCalculator.currentQuantitySummary(
-            rows, currentHoldings.quantities());
+        MonthlyDividendCalculator.currentQuantitySummary(rows, currentHoldings.quantities());
     model.addAttribute("upcomingStaleQuantityCount", quantityBasis.staleCount());
     // 조회가 실패해도 빈 맵이면 어긋난 줄이 0 이 되어 안내가 사라진다 - 안내가 없는 화면은 "수량이 원장과 같다" 로 읽힌다.
     model.addAttribute("upcomingCurrentQuantityUnavailable", currentHoldings.unavailable());
@@ -278,30 +281,25 @@ public class StockDividendViewController {
         "upcomingAsOfOldest",
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::asOfDate)
-            .filter(java.util.Objects::nonNull)
+            .filter(Objects::nonNull)
             .min(LocalDate::compareTo)
             .orElse(null));
     model.addAttribute(
         "upcomingAsOfNewest",
         rows.stream()
             .map(MonthlyDividendSnapshotResponse::asOfDate)
-            .filter(java.util.Objects::nonNull)
+            .filter(Objects::nonNull)
             .max(LocalDate::compareTo)
             .orElse(null));
 
     // "평균" 기준은 최근 12 건의 주당 배당을 평균한다(건수 기준). 이력이 12 건에 못 미치는 종목은 그만큼 짧은 평균이다
     // (실측 2026-08-23: 8 종목 중 2 종목이 10 건). 지급이력은 한 번만 읽어 이 안내와 예정일 추정 두 곳에 쓴다.
-    List<MonthlyDividendPayoutResponse> payouts =
-        net.luversof.web.gate.stock.support.StockAsyncSupport.join(payoutsFuture);
+    List<MonthlyDividendPayoutResponse> payouts = StockAsyncSupport.join(payoutsFuture);
     model.addAttribute("shortHistorySymbols", shortHistoryLabels(rows, payouts));
     model.addAttribute(
         "upcomingSchedule",
         buildUpcomingSchedule(
-            userId,
-            rows,
-            payouts,
-            today,
-            net.luversof.web.gate.stock.support.StockAsyncSupport.join(receivedFuture)));
+            userId, rows, payouts, today, StockAsyncSupport.join(receivedFuture)));
   }
 
   /**
@@ -316,7 +314,7 @@ public class StockDividendViewController {
    *
    * <p>오늘과 두 달은 <b>서버 존</b> 기준이다 &mdash; 이 화면은 타임존 파라미터를 받지 않는다(대시보드의 다가올 배당도 같은 규칙).
    */
-  net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView buildUpcomingSchedule(
+  UpcomingDividendScheduleView buildUpcomingSchedule(
       UUID userId,
       List<MonthlyDividendSnapshotResponse> rows,
       List<MonthlyDividendPayoutResponse> payouts,
@@ -330,12 +328,12 @@ public class StockDividendViewController {
   }
 
   /** 이번 달 받은 종목을 미리 읽어 둔 경우(본문이 다른 조회와 동시에 던진다). null 이면 원장을 못 읽은 것이다. */
-  net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView buildUpcomingSchedule(
+  UpcomingDividendScheduleView buildUpcomingSchedule(
       UUID userId,
       List<MonthlyDividendSnapshotResponse> rows,
       List<MonthlyDividendPayoutResponse> payouts,
       LocalDate today,
-      java.util.Set<UUID> receivedThisMonth) {
+      Set<UUID> receivedThisMonth) {
     List<MonthlyDividendPayDayUtil.Payout> payDayInput = new ArrayList<>();
     for (MonthlyDividendPayoutResponse payout : payouts) {
       if (payout != null) {
@@ -359,8 +357,7 @@ public class StockDividendViewController {
     Map<String, BigDecimal> historyTaxableRatioBySymbol =
         monthlyDividendReferenceSupport.referenceTaxableRatioBySymbol(payouts);
 
-    java.util.TreeMap<LocalDate, List<DividendCalendarView.Entry>> byDate =
-        new java.util.TreeMap<>();
+    TreeMap<LocalDate, List<DividendCalendarView.Entry>> byDate = new TreeMap<>();
     List<DividendCalendarView.Entry> undated = new ArrayList<>();
     List<DividendCalendarView.Entry> overdue = new ArrayList<>();
     for (MonthlyDividendSnapshotResponse row : rows) {
@@ -429,8 +426,7 @@ public class StockDividendViewController {
           entries.sort(byLatestDesc);
           days.add(new DividendCalendarView.Day(date, true, date.equals(today), entries));
         });
-    return new net.luversof.web.gate.stock.dto.view.UpcomingDividendScheduleView(
-        today, days, undated, overdue);
+    return new UpcomingDividendScheduleView(today, days, undated, overdue);
   }
 
   private static DividendCalendarView.Entry upcomingEntry(
@@ -462,17 +458,17 @@ public class StockDividendViewController {
    *
    * <p>기간은 그 달 전체다. {@code endDate} 는 배타적이라 다음 달 1 일을 준다. 존은 이 화면의 다른 날짜와 같은 서버 존이다.
    */
-  private java.util.Set<UUID> loadReceivedStockItemIdsQuietly(UUID userId, YearMonth month) {
+  private Set<UUID> loadReceivedStockItemIdsQuietly(UUID userId, YearMonth month) {
     if (userId == null || month == null) {
       return null;
     }
-    java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+    ZoneId zone = ZoneId.systemDefault();
     LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<>();
     params.add("userId", userId.toString());
     params.add("startDate", month.atDay(1).atStartOfDay(zone).toInstant().toString());
     params.add("endDate", month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toString());
 
-    List<net.luversof.web.gate.stock.dto.response.DividendResponse> rows;
+    List<DividendResponse> rows;
     try {
       rows = dividendClient.findDividends(params);
     } catch (RuntimeException ex) {
@@ -480,9 +476,9 @@ public class StockDividendViewController {
       log.warn("배당 원장을 읽지 못했다 - 이번 달 예정에서 받은 종목을 빼지 않는다", ex);
       return null;
     }
-    java.util.Set<UUID> received = new java.util.HashSet<>();
+    Set<UUID> received = new HashSet<>();
     if (rows != null) {
-      for (net.luversof.web.gate.stock.dto.response.DividendResponse row : rows) {
+      for (DividendResponse row : rows) {
         if (row != null && row.stockItemId() != null && row.payDate() != null) {
           received.add(row.stockItemId());
         }
@@ -592,9 +588,7 @@ public class StockDividendViewController {
     }
     model.addAttribute("peekSymbol", normalizedSymbol);
     model.addAttribute(
-        "peekPayouts",
-        net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport.recentPayouts(
-            payouts, PAYOUT_PEEK_LIMIT));
+        "peekPayouts", MonthlyDividendReferenceSupport.recentPayouts(payouts, PAYOUT_PEEK_LIMIT));
     model.addAttribute("peekTotalCount", payouts == null ? 0 : payouts.size());
     model.addAttribute("peekFailed", failed);
     return "stock/fragments/monthlyDividendPayoutPeek";
@@ -819,10 +813,9 @@ public class StockDividendViewController {
         throw new IllegalArgumentException(msg("stock.monthly.reference.error.source.url.missing"));
       }
 
-      net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser.LenientParseResult
-          imported =
-              monthlyDividendPayoutSourceImportService.fetchImport(
-                  normalizedSymbol, profile.sourceUrl());
+      MonthlyDividendPayoutImportParser.LenientParseResult imported =
+          monthlyDividendPayoutSourceImportService.fetchImport(
+              normalizedSymbol, profile.sourceUrl());
       saveMonthlyDividendPayoutRequests(imported.requests());
       // 출처 표의 잘못된 행은 건너뛰었다 - 조용히 삼키지 않고 무엇을 왜 건너뛰었는지 밝힌다(사용자 결정 2026-09-17).
       if (!imported.skipped().isEmpty()) {
@@ -831,8 +824,7 @@ public class StockDividendViewController {
             msg(
                 "stock.monthly.reference.import.skipped.rows",
                 imported.skipped().size(),
-                net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser.joinReasons(
-                    imported.skipped())));
+                MonthlyDividendPayoutImportParser.joinReasons(imported.skipped())));
       }
       // 목록 행 단추(2026-10-14)는 보던 종목을 returnSymbol 로 싣는다 - 목록만 바꿔 끼우므로 선택은 그대로 둔다.
       String returnSymbol =
@@ -978,8 +970,7 @@ public class StockDividendViewController {
             .filter(profile -> StringUtils.hasText(profile.sourceUrl()))
             .toList();
 
-    String windowLabel =
-        net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil.label(normalizedWindow);
+    String windowLabel = StockPayoutWindowLabelUtil.label(normalizedWindow);
 
     if (targets.isEmpty()) {
       redirectAttributes.addFlashAttribute(
@@ -1000,17 +991,13 @@ public class StockDividendViewController {
       String symbol =
           monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(profile.stockItemSymbol());
       try {
-        net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser.LenientParseResult
-            imported =
-                monthlyDividendPayoutSourceImportService.fetchImport(symbol, profile.sourceUrl());
+        MonthlyDividendPayoutImportParser.LenientParseResult imported =
+            monthlyDividendPayoutSourceImportService.fetchImport(symbol, profile.sourceUrl());
         saveMonthlyDividendPayoutRequests(imported.requests());
         successCount++;
         if (!imported.skipped().isEmpty()) {
           skippedBySymbol.add(
-              symbol
-                  + " "
-                  + net.luversof.web.gate.stock.util.MonthlyDividendPayoutImportParser.joinReasons(
-                      imported.skipped()));
+              symbol + " " + MonthlyDividendPayoutImportParser.joinReasons(imported.skipped()));
         }
       } catch (Exception ex) {
         failedSymbols.add(symbol);
@@ -1057,9 +1044,7 @@ public class StockDividendViewController {
             profileSort, request.getParameter("profileDirection"));
     StringBuilder redirectUrl =
         new StringBuilder("redirect:/stock/admin?tab=")
-            .append(
-                net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-                    .DIVIDEND_TAB_MONTHLY_REFERENCE);
+            .append(MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE);
     StockViewSupport.appendQueryParam(redirectUrl, "profileSort", profileSort);
     StockViewSupport.appendQueryParam(redirectUrl, "profileDirection", profileDirection);
     StockViewSupport.appendQueryParam(
@@ -1117,11 +1102,8 @@ public class StockDividendViewController {
   }
 
   private String resolveDividendTab(String tab) {
-    if (net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-        .DIVIDEND_TAB_MONTHLY_REFERENCE
-        .equalsIgnoreCase(tab)) {
-      return net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-          .DIVIDEND_TAB_MONTHLY_REFERENCE;
+    if (MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE.equalsIgnoreCase(tab)) {
+      return MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE;
     }
     if ("calendar".equalsIgnoreCase(tab)) {
       return "calendar";
@@ -1188,9 +1170,7 @@ public class StockDividendViewController {
         monthlyDividendViewSupport.resolveProfileDirection(resolvedProfileSort, profileDirection);
     StringBuilder redirectUrl =
         new StringBuilder("redirect:/stock/admin?tab=")
-            .append(
-                net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-                    .DIVIDEND_TAB_MONTHLY_REFERENCE);
+            .append(MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE);
     StockViewSupport.appendQueryParam(redirectUrl, "symbol", symbol);
     StockViewSupport.appendQueryParam(redirectUrl, "profileSort", resolvedProfileSort);
     StockViewSupport.appendQueryParam(redirectUrl, "profileDirection", resolvedProfileDirection);
@@ -1265,10 +1245,7 @@ public class StockDividendViewController {
       MonthlyDividendProfileUpsertRequest monthlyDividendProfileForm,
       MonthlyDividendPayoutUpsertRequest monthlyDividendPayoutForm,
       MonthlyDividendPayoutImportRequest monthlyDividendPayoutImportForm) {
-    model.addAttribute(
-        "adminTab",
-        net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport
-            .DIVIDEND_TAB_MONTHLY_REFERENCE);
+    model.addAttribute("adminTab", MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE);
     model.addAttribute("monthlyDividendProfileForm", monthlyDividendProfileForm);
     model.addAttribute("monthlyDividendPayoutForm", monthlyDividendPayoutForm);
     model.addAttribute("monthlyDividendPayoutImportForm", monthlyDividendPayoutImportForm);
@@ -1290,7 +1267,7 @@ public class StockDividendViewController {
         monthlyDividendReferenceSupport.normalizeMonthlyDividendSymbol(request.getSymbol()));
     // RISE 옛 주소(riseetf.co.kr)는 새 주소(kbam.co.kr/products/…)로 맞춰 저장한다(2026-09-29).
     request.setSourceUrl(
-        net.luversof.web.gate.stock.util.RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
+        RiseMonthlyDividendPayoutSourceParser.canonicalSourceUrl(
             trimToNull(request.getSourceUrl())));
     request.setNote(trimToNull(request.getNote()));
   }
@@ -1298,8 +1275,7 @@ public class StockDividendViewController {
   private void validateMonthlyDividendProfileRequest(MonthlyDividendProfileUpsertRequest request) {
     monthlyDividendReferenceSupport.validateMonthlyDividendSymbol(request.getSymbol());
     if (request.getSourceUrl() != null
-        && !net.luversof.web.gate.stock.service.MonthlyDividendReferenceSupport.isWebUrl(
-            request.getSourceUrl())) {
+        && !MonthlyDividendReferenceSupport.isWebUrl(request.getSourceUrl())) {
       throw new IllegalArgumentException(
           MessageUtil.getMessage("stock.monthly.reference.error.source.url.invalid"));
     }
@@ -1385,6 +1361,6 @@ public class StockDividendViewController {
   }
 
   private static BigDecimal latestMonthlyDividend(MonthlyDividendSnapshotResponse row) {
-    return net.luversof.web.gate.stock.service.MonthlyDividendCalculator.latestMonthlyDividend(row);
+    return MonthlyDividendCalculator.latestMonthlyDividend(row);
   }
 }

@@ -1,8 +1,10 @@
 package net.luversof.api.stock.service.kis;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -12,7 +14,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -49,7 +54,7 @@ import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult;
 public class KisStockPriceUpdateService {
 
   /** 국내 정규장 마감(KST). 그 거래일 이 시각 전에 받은 값은 장중 값이다. */
-  static final java.time.LocalTime MARKET_CLOSE = java.time.LocalTime.of(15, 30);
+  static final LocalTime MARKET_CLOSE = LocalTime.of(15, 30);
 
   /**
    * 오늘 행을 장중(마감 전)에 저장했고 지금 갱신이 마감 뒤면 값이 같아도 한 번 저장한다(갱신 시각을 마감 뒤로). 오늘 행이 아니거나 이미 마감 뒤에 저장했으면
@@ -97,8 +102,7 @@ public class KisStockPriceUpdateService {
    * 매번 같은 상장 전 빈 구간을 100 일씩 다시 부른 것이었다(0219E0 는 8 회 중 7 회). 서버 메모리라 재기동 뒤 첫 갱신은 한 번 더 확인한다 &mdash;
    * 상장일을 모으면 그때 영구 저장으로 바꾼다.
    */
-  private final Map<UUID, LocalDate> noHistoryBefore =
-      new java.util.concurrent.ConcurrentHashMap<>();
+  private final Map<UUID, LocalDate> noHistoryBefore = new ConcurrentHashMap<>();
 
   /**
    * 과거 구간을 받아야 하는가. 원하는 시작일이 저장된 첫날보다 이르고, 그 첫날이 "이 앞엔 없다" 고 이미 확인된 날이 아니면 받는다. 저장된 첫날이 바뀌면(행이 지워지는
@@ -149,7 +153,7 @@ public class KisStockPriceUpdateService {
       throw new ResponseStatusException(
           HttpStatus.NOT_FOUND, "unknown stock item symbol: " + symbol);
     }
-    return updatePriceHistory(userId, java.util.Set.of(stockItem.getId()), null);
+    return updatePriceHistory(userId, Set.of(stockItem.getId()), null);
   }
 
   /** 종목 하나를 끝낼 때마다 불린다. 백그라운드 작업이 "몇 / 몇" 을 말할 수 있게 하는 유일한 통로다. */
@@ -159,16 +163,16 @@ public class KisStockPriceUpdateService {
   }
 
   public PriceHistoryUpdateResult updatePriceHistory(UUID userId, ProgressListener listener) {
-    return updatePriceHistory(userId, (java.util.Set<UUID>) null, listener);
+    return updatePriceHistory(userId, (Set<UUID>) null, listener);
   }
 
   public PriceHistoryUpdateResult updatePriceHistory(UUID userId) {
-    return updatePriceHistory(userId, (java.util.Set<UUID>) null, null);
+    return updatePriceHistory(userId, (Set<UUID>) null, null);
   }
 
   /** onlyStockItemIds 가 null 이면 대상 전체, 아니면 그 종목만. */
   private PriceHistoryUpdateResult updatePriceHistory(
-      UUID userId, java.util.Set<UUID> onlyStockItemIds, ProgressListener listener) {
+      UUID userId, Set<UUID> onlyStockItemIds, ProgressListener listener) {
     Map<UUID, LocalDate> stockItemMinDateMap = new HashMap<>();
     Map<UUID, LocalDate> stockItemMaxDateMap = new HashMap<>();
 
@@ -185,7 +189,7 @@ public class KisStockPriceUpdateService {
     LocalDate today = LocalDate.now(zoneId);
 
     // 현재 보유 중인 종목 ID 집합 (net quantity > 0)
-    java.util.Set<UUID> currentlyHeldStockItemIds =
+    Set<UUID> currentlyHeldStockItemIds =
         new HashSet<>(tradeRepository.findCurrentlyHeldStockItemIds());
 
     Map<UUID, List<LocalDate>> historyRefreshTargetDatesByStockItemId =
@@ -198,7 +202,7 @@ public class KisStockPriceUpdateService {
     // 월배당 프로필로 등록한 종목(보유 · 매매와 무관). 목록 화면이 "현재가 기준 연배당 수익률" 로 종목을 견주므로 현재가가 있어야
     // 한다 - 실측 2026-09-21: 등록 12 종목 중 미보유 4 종목이 시세 없음 2 · 171 일 전 1 · 173 일 전 1 이었다(사용자 결정).
     // 활성 여부로 거르지 않는다 - 목록 화면은 비활성 프로필도 함께 보여 준다.
-    java.util.Set<UUID> monthlyDividendStockItemIds = new HashSet<>();
+    Set<UUID> monthlyDividendStockItemIds = new HashSet<>();
     monthlyDividendProfileRepository
         .findAllByOrderByDisplayOrderAscUpdatedDateDesc()
         .forEach(
@@ -209,7 +213,7 @@ public class KisStockPriceUpdateService {
             });
 
     // Trade · Dividend 이력이 있거나, 보유 중이거나, 월배당 프로필로 등록한 종목이 갱신 대상
-    java.util.Set<UUID> targetStockItemIds = new java.util.HashSet<>();
+    Set<UUID> targetStockItemIds = new HashSet<>();
     targetStockItemIds.addAll(stockItemMinDateMap.keySet());
     targetStockItemIds.addAll(currentlyHeldStockItemIds);
     targetStockItemIds.addAll(historyRefreshTargetDatesByStockItemId.keySet());
@@ -707,19 +711,17 @@ public class KisStockPriceUpdateService {
       log.info("rawClosePrice column is missing - skip raw close fill");
       return new RawClosePriceFillResult(false, 0, 0, 0, List.of());
     }
-    java.util.Set<UUID> idSet = new HashSet<>();
+    Set<UUID> idSet = new HashSet<>();
     stockItemRepository.findAll().forEach(item -> idSet.add(item.getId()));
     if (idSet.isEmpty()) {
       return new RawClosePriceFillResult(true, 0, 0, 0, List.of());
     }
     String ids = StockIds.joinOrNull(idSet);
-    Map<UUID, java.util.TreeSet<LocalDate>> tradeDays = new HashMap<>();
+    Map<UUID, TreeSet<LocalDate>> tradeDays = new HashMap<>();
     // 최근 7 일은 채워져 있어도 다시 받는다(장중 갱신으로 들어간 원주가를 확정 종가로) - 같은 구간이라 호출 수는 그대로다.
     LocalDate recentFrom = LocalDate.now(MARKET_ZONE_ID).minusDays(7);
     for (var row : stockPriceHistoryRepository.findRawCloseDaysToFill(ids, recentFrom)) {
-      tradeDays
-          .computeIfAbsent(row.stockItemId(), key -> new java.util.TreeSet<>())
-          .add(row.tradeDate());
+      tradeDays.computeIfAbsent(row.stockItemId(), key -> new TreeSet<>()).add(row.tradeDate());
     }
     Map<UUID, StockItem> items = new HashMap<>();
     stockItemRepository
@@ -747,7 +749,7 @@ public class KisStockPriceUpdateService {
         continue;
       }
       targetDays += needed.size();
-      java.util.Set<LocalDate> neededSet = new HashSet<>(needed);
+      Set<LocalDate> neededSet = new HashSet<>(needed);
       for (DateRange range : splitIntoBlocks(toContiguousRanges(needed))) {
         try {
           if (apiCalls > 0) {
@@ -846,7 +848,7 @@ public class KisStockPriceUpdateService {
       return false;
     }
     BigDecimal changeRatio =
-        newClose.subtract(oldClose).abs().divide(oldClose, 6, java.math.RoundingMode.HALF_UP);
+        newClose.subtract(oldClose).abs().divide(oldClose, 6, RoundingMode.HALF_UP);
     return changeRatio.compareTo(new BigDecimal("0.02")) > 0;
   }
 

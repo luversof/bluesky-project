@@ -4,6 +4,7 @@ import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 
 import org.springframework.util.StringUtils;
@@ -29,7 +30,7 @@ final class PayoutSourceText {
     if (host == null) {
       return false;
     }
-    String normalized = host.toLowerCase(java.util.Locale.ROOT);
+    String normalized = host.toLowerCase(Locale.ROOT);
     return normalized.equals(domain) || normalized.endsWith("." + domain);
   }
 

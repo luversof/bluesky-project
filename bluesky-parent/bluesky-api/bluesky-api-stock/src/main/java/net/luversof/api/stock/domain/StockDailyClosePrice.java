@@ -1,6 +1,7 @@
 package net.luversof.api.stock.domain;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -11,7 +12,7 @@ import java.util.UUID;
  * 행 수가 커서 그 차이가 응답 시간을 지배한다.
  */
 public record StockDailyClosePrice(
-    UUID stockItemId, LocalDate tradeDate, BigDecimal closePrice, java.time.Instant updatedDate) {
+    UUID stockItemId, LocalDate tradeDate, BigDecimal closePrice, Instant updatedDate) {
 
   /**
    * 갱신 시각까지(최근 종가 조회만 채운다, 2026-10-02). 시세 갱신이 장중이면 그 날 "종가" 는 장중 값이라 화면이 "종가" 라고 부르면 안 된다 &mdash;

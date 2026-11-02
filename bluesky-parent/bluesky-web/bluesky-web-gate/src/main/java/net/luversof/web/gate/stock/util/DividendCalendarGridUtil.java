@@ -1,5 +1,6 @@
 package net.luversof.web.gate.stock.util;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -84,7 +85,7 @@ public final class DividendCalendarGridUtil {
     Comparator<DividendCalendarView.Entry> byAmountDesc =
         Comparator.comparing(
                 (DividendCalendarView.Entry entry) ->
-                    entry.average() != null ? entry.average() : java.math.BigDecimal.ZERO)
+                    entry.average() != null ? entry.average() : BigDecimal.ZERO)
             .reversed();
     for (List<DividendCalendarView.Entry> sameDay : byDay.values()) {
       sameDay.sort(byAmountDesc);

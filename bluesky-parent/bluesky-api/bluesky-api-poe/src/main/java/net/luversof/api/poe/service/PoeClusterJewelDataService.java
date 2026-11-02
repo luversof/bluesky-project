@@ -134,6 +134,15 @@ public class PoeClusterJewelDataService {
     }
   }
 
+  /**
+   * 더 이상 생성되지 않는 주요 스킬인가 — 모드는 있지만 붙을 수 있는 스킬 태그가 하나도 없다(가중치 0, 10-29 C2: Supercharge 등 9개). 모드 자체가
+   * 없는 핵심노드는 false.
+   */
+  public boolean retiredNotable(String notableName) {
+    NotableOption option = notableOptions.get(notableName);
+    return option != null && (option.tags() == null || option.tags().isEmpty());
+  }
+
   public boolean hasData() {
     return !jewels.isEmpty();
   }

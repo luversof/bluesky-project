@@ -76,7 +76,8 @@
 			<div data-gem-cost-multiplier><span class="${label}">${MessageUtil.getMessage(cmul != null && cmul.equals(rmul) ? "poe2.gems.cost.reservation.multiplier" : rmul != null ? "poe2.gems.reservation.multiplier" : "poe2.gems.cost.multiplier")}: </span><span class="${value}">${rmul != null && (cmul == null || !cmul.equals(rmul)) ? rmul : cmul}%</span></div>
 		@endif
 		@if(lv != null && lv.cost() != null && lv.cost() > 0)
-			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.cost")}: </span><span class="${value}">${PoeText.costValue(lv.cost(), lv.costType())}</span></div>
+			<%-- 둘째 소모는 쉼표로 이어 붙인다(10-29 R10 — 기름 연사 · 화산 · 화염 숨결 · 광란, PoB2 GemTooltip 이 cost 를 이어 보임) --%>
+			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.cost")}: </span><span class="${value}" data-gem-cost>${PoeText.costValue(lv.cost(), lv.costType())}@if(lv.cost2() != null && lv.cost2() > 0), ${PoeText.costValue(lv.cost2(), lv.costType2())}@endif</span></div>
 		@endif
 		@if(lv != null && lv.reservation() != null && lv.reservation() > 0)
 			<div><span class="${label}">${MessageUtil.getMessage("poe2.gems.reservation")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.spirit.value"), lv.reservation())}</span></div>

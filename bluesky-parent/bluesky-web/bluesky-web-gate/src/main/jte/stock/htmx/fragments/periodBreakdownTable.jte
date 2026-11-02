@@ -4,12 +4,13 @@
 @import net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockPeriodTotalUtil
 
-@param List<TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
+@param List<TradeProfitPeriodSummary> periodBreakdown = List.of()
 @param String periodBreakdownNote = ""
 
 !{
-	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat amountFormat = StockFormatUtil.wonFormat();
 	String unit = periodBreakdown != null && !periodBreakdown.isEmpty()
 			? periodBreakdown.get(0).unit() : "MONTH";
 	// 아래 '연도별 성과' 와 같은 키를 쓴다 - 두 표의 이름이 갈라지지 않는다.
@@ -110,7 +111,7 @@
 					<%-- 전체 기간 줄. 표는 줄마다의 성과만 적고 '다 합치면 얼마인지' 가 없었다.
 						 수익률은 더하면 틀린다 - 곱해서 잇는다(실측 2026-09-03: 연쇄곱이 위 요약
 						 카드의 투자 수익률과 소수점 넷째 자리까지 같다). --%>
-					!{ var totals = net.luversof.web.gate.stock.util.StockPeriodTotalUtil.of(
+					!{ var totals = StockPeriodTotalUtil.of(
 							periodBreakdown.stream().map(TradeProfitPeriodSummary::summary).toList());
 					   boolean totalProfitUp = totals.profit().signum() >= 0;
 					   boolean totalDeltaUp = totals.unrealizedDelta().signum() >= 0;

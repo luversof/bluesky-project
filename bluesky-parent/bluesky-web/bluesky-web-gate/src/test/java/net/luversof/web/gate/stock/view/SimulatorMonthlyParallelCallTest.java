@@ -50,8 +50,7 @@ class SimulatorMonthlyParallelCallTest {
         .as("던진 것을 받아 폼에 싣는다")
         .contains(
             squash(
-                "\"stockItems\", net.luversof.web.gate.stock.support.StockAsyncSupport.join("
-                    + " monthlyDividendStockItemsFuture)"));
+                "\"stockItems\", StockAsyncSupport.join(" + " monthlyDividendStockItemsFuture)"));
     assertThat(count(source, "loadMonthlyDividendStockItems"))
         .as("동기로 한 번 더 부르면 동시화가 헛돈다")
         .isEqualTo(1);

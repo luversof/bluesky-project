@@ -4,6 +4,8 @@ import static net.luversof.web.gate.stock.support.StockViewSupport.msg;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -71,8 +73,8 @@ public class RiseMonthlyDividendPayoutSourceParser {
    * RISE 상세 주소의 두 모양 - 옛 riseetf.co.kr {@code /prod/finderDetail/44G3} 과 새 kbam.co.kr {@code
    * /products/44G3}.
    */
-  private static final java.util.regex.Pattern DETAIL_PATH =
-      java.util.regex.Pattern.compile("^/(?:prod/finderDetail|products)/([A-Za-z0-9]+)/?$");
+  private static final Pattern DETAIL_PATH =
+      Pattern.compile("^/(?:prod/finderDetail|products)/([A-Za-z0-9]+)/?$");
 
   /**
    * 저장할 RISE 주소를 새 주소 {@code https://kbam.co.kr/products/{펀드 코드}} 로 맞춘다(사용자 승인 2026-09-29).
@@ -90,7 +92,7 @@ public class RiseMonthlyDividendPayoutSourceParser {
       if (!supportsHost(uri.getHost()) || uri.getPath() == null) {
         return url;
       }
-      java.util.regex.Matcher matcher = DETAIL_PATH.matcher(uri.getPath());
+      Matcher matcher = DETAIL_PATH.matcher(uri.getPath());
       return matcher.matches() ? "https://kbam.co.kr/products/" + matcher.group(1) : url;
     } catch (IllegalArgumentException ex) {
       return url;

@@ -8,7 +8,7 @@
 	// 일반(노멀) 아이템 — 이름 흰색(인게임 노멀 희귀도)
 	java.util.List<String> implicits = Poe2View.implicitLines(base);
 	// 무기는 종류 줄을 속성 칸 첫 줄로(10-23 Q62)
-	boolean weaponBase = base.weapon() != null && base.weapon().damageMax() != null && base.weapon().damageMax() > 0;
+	boolean weaponBase = base.weapon() != null && base.weapon().hasDamage();
 	String itemClass = net.luversof.web.gate.poe.PoeClassNames.poe2Tip(base.itemClassKo(), base.itemClass());
 }
 

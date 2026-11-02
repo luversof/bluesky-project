@@ -75,8 +75,8 @@ class ContributionShareRoundingTest {
 
     assertThat(template)
         .as("표시 자릿수(1)보다 큰 자리로 미리 반올림하면 마지막 반올림이 이진표현에 끌려간다")
-        .doesNotContain(".divide(totalContribution, 2, java.math.RoundingMode.HALF_UP)");
-    assertThat(count(template, ".divide(totalContribution, 6, java.math.RoundingMode.HALF_UP)"))
+        .doesNotContain(".divide(totalContribution, 2, RoundingMode.HALF_UP)");
+    assertThat(count(template, ".divide(totalContribution, 6, RoundingMode.HALF_UP)"))
         .as("종목 행과 '기타' 행 두 곳")
         .isEqualTo(2);
   }

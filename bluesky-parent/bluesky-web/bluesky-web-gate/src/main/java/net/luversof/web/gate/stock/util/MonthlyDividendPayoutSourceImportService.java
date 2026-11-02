@@ -6,6 +6,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -390,9 +391,7 @@ public class MonthlyDividendPayoutSourceImportService {
    * 규칙).
    */
   private MonthlyDividendSourceFactsParser.SourceFacts factsOrNone(
-      URI uri,
-      boolean json,
-      java.util.function.Function<String, MonthlyDividendSourceFactsParser.SourceFacts> parse) {
+      URI uri, boolean json, Function<String, MonthlyDividendSourceFactsParser.SourceFacts> parse) {
     try {
       String body =
           json

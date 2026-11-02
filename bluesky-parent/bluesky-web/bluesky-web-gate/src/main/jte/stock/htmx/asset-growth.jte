@@ -5,66 +5,84 @@
 @import net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.math.BigDecimal
+@import java.math.RoundingMode
+@import java.time.Instant
+@import java.time.LocalDate
+@import java.util.UUID
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.controller.StockAssetGrowthHtmxController
+@import net.luversof.web.gate.stock.domain.Account
+@import net.luversof.web.gate.stock.domain.StockItem
+@import net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary
+@import net.luversof.web.gate.stock.dto.response.TradeProfitYearlySummary
+@import net.luversof.web.gate.stock.dto.response.YearlyCostSummary
+@import net.luversof.web.gate.stock.util.StockContributionUtil
+@import net.luversof.web.gate.stock.util.StockCoveredRangeUtil
+@import net.luversof.web.gate.stock.util.StockPriceBasisUtil
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param Object timeSeries
-@param java.util.List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
+@param List<TradeProfitPeriodSummary> periodBreakdown = List.of()
 @param String periodBreakdownNote = ""
-@param java.util.List<net.luversof.web.gate.stock.util.StockContributionUtil.Contribution> stockContributions = java.util.List.of()
-@param net.luversof.web.gate.stock.util.StockContributionUtil.Contribution stockContributionTotal = null
-@param net.luversof.web.gate.stock.util.StockContributionUtil.Contribution stockContributionOthers = null
+@param List<StockContributionUtil.Contribution> stockContributions = List.of()
+@param StockContributionUtil.Contribution stockContributionTotal = null
+@param StockContributionUtil.Contribution stockContributionOthers = null
 @param int stockContributionOthersCount = 0
-@param java.util.List<net.luversof.web.gate.stock.dto.response.YearlyCostSummary> yearlyCosts = java.util.List.of()
+@param List<YearlyCostSummary> yearlyCosts = List.of()
 @param String rangeMode
 @param String dataFirstDate = null
-@param java.time.Instant startDate = null
-@param java.time.Instant endDate = null
+@param Instant startDate = null
+@param Instant endDate = null
 @param String timeZone = null
-@param java.time.LocalDate priceBasisDate = null
+@param LocalDate priceBasisDate = null
 @param String priceBasisIntradayTime = null
-@param java.util.List<net.luversof.web.gate.stock.domain.Account> accountList = null
-@param java.util.List<net.luversof.web.gate.stock.domain.StockItem> stockItemList = null
-@param java.util.List<String> stockTagList = java.util.List.of()
-@param java.util.List<java.util.UUID> selectedAccountIds = java.util.List.of()
-@param java.util.List<java.util.UUID> selectedStockItemIds = java.util.List.of()
+@param List<Account> accountList = null
+@param List<StockItem> stockItemList = null
+@param List<String> stockTagList = List.of()
+@param List<UUID> selectedAccountIds = List.of()
+@param List<UUID> selectedStockItemIds = List.of()
 @param boolean coreHoldingTagged = false
 @param boolean coreHoldingExcluded = false
 @param String coreHoldingName = null
 @param int coreHoldingCount = 0
 @param String coreHoldingWeightPct = null
-@param java.util.List<String> selectedStockTags = java.util.List.of()
+@param List<String> selectedStockTags = List.of()
 @param Double periodReturnRatePct = null
 @param boolean returnCalculable = false
 @param Double timeWeightedReturnPct = null
-@param java.math.BigDecimal periodProfit = null
-@param java.math.BigDecimal principalDelta = null
-@param java.math.BigDecimal unrealizedStart = null
-@param java.math.BigDecimal unrealizedEnd = null
+@param BigDecimal periodProfit = null
+@param BigDecimal principalDelta = null
+@param BigDecimal unrealizedStart = null
+@param BigDecimal unrealizedEnd = null
 @param Double unrealizedEndPct = null
-@param java.math.BigDecimal recoveredAmount = null
-@param java.math.BigDecimal netNewProfit = null
-@param java.util.List<net.luversof.web.gate.stock.dto.response.TradeProfitYearlySummary> yearlySummaries = java.util.List.of()
+@param BigDecimal recoveredAmount = null
+@param BigDecimal netNewProfit = null
+@param List<TradeProfitYearlySummary> yearlySummaries = List.of()
 @param Double maxDrawdownPct = null
-@param java.time.LocalDate maxDrawdownPeakDate = null
-@param java.time.LocalDate maxDrawdownTroughDate = null
+@param LocalDate maxDrawdownPeakDate = null
+@param LocalDate maxDrawdownTroughDate = null
 @param Double currentDrawdownPct = null
-@param java.math.BigDecimal openingValue = null
-@param java.math.BigDecimal closingValue = null
+@param BigDecimal openingValue = null
+@param BigDecimal closingValue = null
 @param Double periodProfitRatePct = null
-@param java.math.BigDecimal peakValue = null
-@param java.time.LocalDate peakValueDate = null
-@param java.math.BigDecimal troughValue = null
-@param java.time.LocalDate troughValueDate = null
-@param net.luversof.web.gate.stock.controller.StockAssetGrowthHtmxController.TradeHistoryData tradeHistoryData = null
+@param BigDecimal peakValue = null
+@param LocalDate peakValueDate = null
+@param BigDecimal troughValue = null
+@param LocalDate troughValueDate = null
+@param StockAssetGrowthHtmxController.TradeHistoryData tradeHistoryData = null
 @param String tradeHistoryFilterQuery = ""
+<%-- 보유 스냅숏 요청에 붙일 필터("&accountIdList=…" 꼴, 핵심 제외면 "&excludeCore=true") - 2026-10-29. --%>
+@param String snapshotFilterQuery = ""
 
 !{
 	boolean isAllMode = "all".equals(rangeMode);
-	java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
+	ZoneId zone = StockZoneUtil.resolve(timeZone);
 	DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zone);
 
-	java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
-	java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
-	java.time.LocalDate endDisplayLocal = endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1) : null;
+	LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+	LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+	LocalDate endDisplayLocal = endDate != null ? endDate.atZone(zone).toLocalDate().minusDays(1) : null;
 
 	// Normalize model-provided `timeSeries` into `ts` for template use
 	// (content block 내부 클래스에서 참조하므로 effectively final 이어야 한다 — 단일 할당)
@@ -72,12 +90,12 @@
 	List<TradeProfitTimeSeriesPoint> ts = timeSeries instanceof List ? (List<TradeProfitTimeSeriesPoint>) timeSeries : null;
 	// '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
 	// 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
-	var coveredRange = net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(ts, net.luversof.web.gate.stock.dto.response.TradeProfitTimeSeriesPoint::timestamp, zone);
+	var coveredRange = StockCoveredRangeUtil.covered(ts, TradeProfitTimeSeriesPoint::timestamp, zone);
 
-	java.time.LocalDate today = java.time.LocalDate.now(zone);
+	LocalDate today = LocalDate.now(zone);
 	boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
 	boolean canPrev = !isAllMode && startLocal != null && dataFirstDate != null && !dataFirstDate.isEmpty()
-			&& startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+			&& startLocal.isAfter(LocalDate.parse(dataFirstDate));
 
 	String noDataLabel = MessageUtil.getMessage("common.message.no.data");
 	String rangeMaxLabel = MessageUtil.getMessage("stock.chart.range.max");
@@ -196,7 +214,7 @@
 						<select id="filterAccountSelect" name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
 							<option value="">${allLabel}</option>
 							@if(accountList != null)
-								@for(net.luversof.web.gate.stock.domain.Account account : accountList)
+								@for(Account account : accountList)
 									<option value="${account.id().toString()}" selected="${selectedAccountIds != null && selectedAccountIds.contains(account.id())}">${account.name()}</option>
 								@endfor
 							@endif
@@ -208,7 +226,7 @@
 						<select id="filterStockSelect" name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
 							<option value="">${allLabel}</option>
 							@if(stockItemList != null)
-								@for(net.luversof.web.gate.stock.domain.StockItem stockItem : stockItemList)
+								@for(StockItem stockItem : stockItemList)
 									!{String stockItemTags = stockItem.tags() != null ? String.join("|", stockItem.tags()) : "";}
 									<option value="${stockItem.id().toString()}"
 											selected="${selectedStockItemIds != null && selectedStockItemIds.contains(stockItem.id())}"
@@ -269,7 +287,7 @@
 				<p class="min-w-0 text-xs text-base-content/60">
 					<span>📈 ${chartDescriptionLabel} &bull;</span>
 					@if(priceBasisDate != null)
-					!{String priceBasisMessage = net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisMessage(priceBasisIntradayTime); int priceBasisAt = priceBasisMessage.indexOf("{0}");}<span>${priceBasisAt >= 0 ? priceBasisMessage.substring(0, priceBasisAt) : priceBasisMessage + " "}<span class="whitespace-nowrap date-whole">${priceBasisDate.toString()}</span>${priceBasisAt >= 0 ? priceBasisMessage.substring(priceBasisAt + 3) : ""} &bull;</span>
+					!{String priceBasisMessage = StockPriceBasisUtil.basisMessage(priceBasisIntradayTime); int priceBasisAt = priceBasisMessage.indexOf("{0}");}<span>${priceBasisAt >= 0 ? priceBasisMessage.substring(0, priceBasisAt) : priceBasisMessage + " "}<span class="whitespace-nowrap date-whole">${priceBasisDate.toString()}</span>${priceBasisAt >= 0 ? priceBasisMessage.substring(priceBasisAt + 3) : ""} &bull;</span>
 					@endif
 					<span class="inline-block text-info">${clickDateHoldingsLabel}</span>
 				</p>
@@ -374,6 +392,10 @@
 				<%-- 보유 스냅샷 키보드 경로(실측 2026-09-09): 차트 점 클릭은 마우스 전용이라 같은 조각을 날짜 입력으로도 부른다. --%>
 				<form class="flex flex-wrap items-end gap-2 mt-3" hx-get="/stock/htmx/holdings-snapshot" hx-target="#holdings-snapshot-container" hx-swap="innerHTML" data-holdings-snapshot-form>
 					<input type="hidden" name="timeZone" value="${timeZone != null ? timeZone : ""}">
+					<%-- 화면 필터를 같이 보낸다(차트 점 클릭과 같은 스냅숏, 2026-10-29). --%>
+					@for(String pair : snapshotFilterQuery.split("&"))
+						@if(pair.contains("="))<input type="hidden" name="${pair.substring(0, pair.indexOf("="))}" value="${pair.substring(pair.indexOf("=") + 1)}">@endif
+					@endfor
 					<%-- 날짜 칸은 글꼴을 키우면 제 폭(연 · 월 · 일 + 달력 단추)이 카드 안쪽보다 넓어 페이지를 밀었다(320px + 글꼴 200%: 칸 253px / 안쪽 158px, 실측 2026-09-17) - 칸이 줄어들 수 있게 한다. --%>
 					<label class="form-control min-w-0 max-w-full">
 						<span class="label-text text-xs">${MessageUtil.getMessage("stock.holdings.snapshot.date.label")}</span>
@@ -418,6 +440,7 @@
 <script nonce="${CspNonceHolder.getNonce()}">
 	window.assetGrowthConfig = {
 		snapshotTz: '${timeZone != null ? timeZone : ""}',
+		snapshotFilter: '${snapshotFilterQuery}',
 		minDate: '${dataFirstDate != null ? dataFirstDate : ""}',
 		series: null,
 		labels: {
@@ -448,7 +471,7 @@
 				StringBuilder sbLabels = new StringBuilder(), sbValue = new StringBuilder(), sbCost = new StringBuilder(),
 					sbRealized = new StringBuilder(), sbDividend = new StringBuilder(), sbTrades = new StringBuilder(),
 					sbBuys = new StringBuilder(), sbDaily = new StringBuilder();
-				java.util.function.Function<java.math.BigDecimal, String> won = v -> v != null ? v.setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() : "0";
+				Function<BigDecimal, String> won = v -> v != null ? v.setScale(0, RoundingMode.HALF_UP).toPlainString() : "0";
 				boolean firstPoint = true;
 				for (Object _pt : ts) {
 					TradeProfitTimeSeriesPoint pt = (TradeProfitTimeSeriesPoint) _pt;

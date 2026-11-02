@@ -29,8 +29,10 @@
 
 		const rawValue = row.dataset[sortKey];
 		if (sortType === "number") {
+			// 빈 값(칸이 "-")은 null - 맨 뒤로 보낸다(0 이면 이익과 손실 사이에 끼었다, 검토 지적 2026-10-29).
+			if (rawValue === undefined || rawValue === "") return null;
 			const parsedValue = Number(rawValue);
-			return Number.isFinite(parsedValue) ? parsedValue : 0;
+			return Number.isFinite(parsedValue) ? parsedValue : null;
 		}
 
 		return rawValue || "";
@@ -116,7 +118,11 @@
 		}
 
 		groups.sort(function (left, right) {
-			let compared = compareValues(sortValue(left.row, sortKey, sortType), sortValue(right.row, sortKey, sortType), sortType);
+			const leftValue = sortValue(left.row, sortKey, sortType);
+			const rightValue = sortValue(right.row, sortKey, sortType);
+			// 값 없는 줄은 방향과 상관없이 맨 뒤.
+			if ((leftValue === null) !== (rightValue === null)) return leftValue === null ? 1 : -1;
+			let compared = leftValue === null ? 0 : compareValues(leftValue, rightValue, sortType);
 			if (compared === 0) {
 				compared = compareValues(tieBreak(left.row, options.tieBreakKeys), tieBreak(right.row, options.tieBreakKeys), "text");
 			}

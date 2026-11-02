@@ -1,6 +1,7 @@
 package net.luversof.web.gate.stock.dto.response;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -152,7 +153,7 @@ public record DataStatusResponse(
           || previousClosePrice.compareTo(BigDecimal.ZERO) == 0) {
         return null;
       }
-      return closePrice.divide(previousClosePrice, 4, java.math.RoundingMode.HALF_UP);
+      return closePrice.divide(previousClosePrice, 4, RoundingMode.HALF_UP);
     }
 
     /** 분할·병합으로 설명되는 배율이면 그 비. 아니면 null - 그 경우는 시장에서 일어날 수 있는 변동이다. */
@@ -181,7 +182,7 @@ public record DataStatusResponse(
           || previousClosePrice.compareTo(BigDecimal.ZERO) == 0) {
         return null;
       }
-      return closePrice.divide(previousClosePrice, 4, java.math.RoundingMode.HALF_UP);
+      return closePrice.divide(previousClosePrice, 4, RoundingMode.HALF_UP);
     }
 
     /**
@@ -208,7 +209,7 @@ public record DataStatusResponse(
     for (int factor = 2; factor <= 20; factor++) {
       BigDecimal divisor = BigDecimal.valueOf(factor);
       if (ratio
-              .subtract(BigDecimal.ONE.divide(divisor, 4, java.math.RoundingMode.HALF_UP))
+              .subtract(BigDecimal.ONE.divide(divisor, 4, RoundingMode.HALF_UP))
               .abs()
               .compareTo(new BigDecimal("0.0005"))
           <= 0) {

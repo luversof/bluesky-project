@@ -5,9 +5,9 @@
 
 @param UUID selectedAccountId = null
 @param UUID selectedStockItemId = null
-@param List<UUID> selectedAccountIds = java.util.List.of()
-@param List<UUID> selectedStockItemIds = java.util.List.of()
-@param List<String> selectedStockTags = java.util.List.of()
+@param List<UUID> selectedAccountIds = List.of()
+@param List<UUID> selectedStockItemIds = List.of()
+@param List<String> selectedStockTags = List.of()
 @param String badgeText = null
 
 <%-- 기간은 이 배지의 판단 근거가 아니다.

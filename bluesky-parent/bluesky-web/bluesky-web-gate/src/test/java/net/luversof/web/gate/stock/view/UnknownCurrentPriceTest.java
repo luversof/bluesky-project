@@ -108,9 +108,7 @@ class UnknownCurrentPriceTest {
   /** 헬퍼 한 덩어리만 떼어 낸다 - 파일 전체로 보면 다른 try/catch 에 걸린다. */
   private String helperBody() throws IOException {
     String src = read(CONTROLLER);
-    int at =
-        src.indexOf(
-            "private List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> fullPriceHistory(");
+    int at = src.indexOf("private List<StockPriceHistoryPoint> fullPriceHistory(");
     if (at < 0) {
       return "";
     }

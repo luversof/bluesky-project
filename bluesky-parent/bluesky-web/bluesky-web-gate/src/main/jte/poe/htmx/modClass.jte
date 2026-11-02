@@ -104,10 +104,13 @@
 	!{
 		// 풀 총 가중치(접두/접미 분리) — Craft of Exile 식 "이 등급이 무작위 롤에서 뜰 확률"의 분모.
 		// 확률 = 등급 가중치 / 그 젠(접두|접미) 풀 전체 가중치 합.
+		// 일부 베이스 전용 계열(무보석 반지의 장착된 젬 레벨 등)은 일반 베이스 분모에서 뺀다(10-29 R6-2 — 넣으면 쇠 반지 저항 3.58%, 실제 4.83%)
+		java.util.Map<String, java.util.List<PoeModClass.BaseName>> onlyBases = mods.onlyBases() == null ? java.util.Map.of() : mods.onlyBases();
+		java.util.function.Function<String, String> onlyFor = k -> onlyBases.containsKey(k) ? String.join(", ", onlyBases.get(k).stream().map(b -> ko ? b.ko() : b.en()).toList()) : null;
 		long prefixPool = 0;
-		for (PoeModClass.NamedFamily nf : mods.prefixes()) for (var t : nf.family().tiers()) prefixPool += t.weight();
+		for (PoeModClass.NamedFamily nf : mods.prefixes()) if (!onlyBases.containsKey(nf.key())) for (var t : nf.family().tiers()) prefixPool += t.weight();
 		long suffixPool = 0;
-		for (PoeModClass.NamedFamily nf : mods.suffixes()) for (var t : nf.family().tiers()) suffixPool += t.weight();
+		for (PoeModClass.NamedFamily nf : mods.suffixes()) if (!onlyBases.containsKey(nf.key())) for (var t : nf.family().tiers()) suffixPool += t.weight();
 	}
 	<div id="mod-sec-affix" class="grid gap-4 md:grid-cols-2 scroll-mt-20">
 		<%-- 접두 --%>
@@ -118,7 +121,7 @@
 			</h2>
 			<div class="space-y-2">
 				@for(PoeModClass.NamedFamily nf : mods.prefixes())
-					@template.poe.htmx.modFamilyCard(key = nf.key(), family = nf.family(), ko = ko, poolWeight = prefixPool, selectable = true)
+					@template.poe.htmx.modFamilyCard(key = nf.key(), family = nf.family(), ko = ko, poolWeight = onlyBases.containsKey(nf.key()) ? 0 : prefixPool, selectable = !onlyBases.containsKey(nf.key()), onlyFor = onlyFor.apply(nf.key()))
 				@endfor
 			</div>
 		</div>
@@ -130,7 +133,7 @@
 			</h2>
 			<div class="space-y-2">
 				@for(PoeModClass.NamedFamily nf : mods.suffixes())
-					@template.poe.htmx.modFamilyCard(key = nf.key(), family = nf.family(), ko = ko, poolWeight = suffixPool, selectable = true)
+					@template.poe.htmx.modFamilyCard(key = nf.key(), family = nf.family(), ko = ko, poolWeight = onlyBases.containsKey(nf.key()) ? 0 : suffixPool, selectable = !onlyBases.containsKey(nf.key()), onlyFor = onlyFor.apply(nf.key()))
 				@endfor
 			</div>
 		</div>
@@ -167,6 +170,17 @@
 				label.textContent = (en ? "Combined odds (" : "동시 확률 (") + picked.length + (en ? " mods, per roll" : "개, 1롤")
 					+ (benchN ? (en ? " + " + benchN + " bench" : " + 작업대 " + benchN) : "")
 					+ (essenceN ? (en ? " + essence" : " + 에센스") : "") + ")";
+				// 같은 옵션 그룹(게임 Mods.Families)은 한 아이템에 하나뿐 — 곱하면 있을 수 없는 조합에 확률이 나왔다(10-29 R6-1: 마법봉 주문 · 화염 · 냉기 피해 % = 그룹 2609)
+				var seenGrp = {}, clash = false;
+				picked.forEach(function (c) {
+					var g = c.closest("[data-family-odds]").getAttribute("data-family-grp");
+					if (!g) return;
+					g.split(",").forEach(function (id) { if (seenGrp[id]) clash = true; seenGrp[id] = true; });
+				});
+				if (clash) {
+					value.textContent = en ? "impossible (same modifier group — only one per item)" : "불가 — 같은 옵션 그룹은 한 아이템에 하나";
+					return;
+				}
 				// 에센스 제작은 한 번에 1개만 — 2개+ 선택은 불가(서로 다른 에센스를 동시에 쓸 수 없다)
 				if (essenceN > 1) {
 					value.textContent = en ? "impossible (one essence per craft)" : "불가 — 에센스는 1개만";

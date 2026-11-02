@@ -4,6 +4,9 @@
 @import java.text.DecimalFormat
 @import net.luversof.web.gate.stock.dto.response.TradeResponse
 @import io.github.luversof.boot.context.support.MessageUtil
+@import java.time.LocalDate
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.constant.TradeType
 
 @param List<TradeResponse> allTradeList
 @param int totalItems
@@ -13,13 +16,13 @@
 @param BigDecimal totalAllTax
 @param BigDecimal totalAllRealizedProfit
 @param BigDecimal previousRealizedProfit = null
-@param java.time.LocalDate previousStartDate = null
-@param java.time.LocalDate previousEndDate = null
+@param LocalDate previousStartDate = null
+@param LocalDate previousEndDate = null
 <%-- 이번 달 · 올해면 전기 중 오늘과 같은 날까지의 실현 손익(사용자 결정 2026-10-29). 그 밖이면 없다. --%>
 @param BigDecimal previousToDateRealizedProfit = null
-@param java.time.LocalDate previousToDateEndDate = null
+@param LocalDate previousToDateEndDate = null
 @param DecimalFormat decimalFormat
-@param java.util.function.Function<Object, String> countMessage
+@param Function<Object, String> countMessage
 @param String buyLabel
 @param String sellLabel
 @param String realizedProfitLabel
@@ -79,16 +82,16 @@
 				</div>
 				!{
 					long sellCount = allTradeList != null ? allTradeList.stream()
-						.filter(t -> t.type() == net.luversof.web.gate.stock.constant.TradeType.SELL)
+						.filter(t -> t.type() == TradeType.SELL)
 						.count() : 0L;
 				}
 				<div class="text-xs text-base-content/60 mt-1">${sellLabel} ${countMessage.apply(sellCount)}</div>
 				<%-- 전기(직전 같은 길이 · 배당 내역 "전기 대비" 와 같은 구간) 실현 손익 - 이 기간 숫자만으로는 많은지 적은지 몰랐다(2026-10-28). --%>
 				@if(previousRealizedProfit != null && previousStartDate != null && previousEndDate != null)
-				<div class="text-xs text-base-content/60 mt-0.5" data-trade-previous-realized>${MessageUtil.getMessage("stock.dividend.summary.previous.period")} <span class="whitespace-nowrap date-whole">${previousStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${previousEndDate.toString()}</span> <span class="amount-value ${previousRealizedProfit.signum() == 0 ? "" : (previousRealizedProfit.signum() > 0 ? "text-profit" : "text-loss")}">${StockFormatUtil.displayWon(previousRealizedProfit) > 0 ? "+" : (StockFormatUtil.displayWon(previousRealizedProfit) < 0 ? "-" : "")}&#8361;${decimalFormat.format(previousRealizedProfit.abs())}</span></div>
+				<div class="text-xs text-base-content/60 mt-0.5" data-trade-previous-realized>${MessageUtil.getMessage("stock.dividend.summary.previous.period")} <span class="whitespace-nowrap date-whole">${previousStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${previousEndDate.toString()}</span> <span class="amount-value ${StockFormatUtil.displayWon(previousRealizedProfit) == 0 ? "" : (StockFormatUtil.displayWon(previousRealizedProfit) > 0 ? "text-profit" : "text-loss")}">${StockFormatUtil.displayWon(previousRealizedProfit) > 0 ? "+" : (StockFormatUtil.displayWon(previousRealizedProfit) < 0 ? "-" : "")}&#8361;${decimalFormat.format(previousRealizedProfit.abs())}</span></div>
 				@endif
 				@if(previousToDateRealizedProfit != null && previousStartDate != null && previousToDateEndDate != null)
-				<div class="text-xs text-base-content/60 mt-0.5" data-trade-previous-to-date-realized>${MessageUtil.getMessage("stock.compare.previous.to.date")} <span class="whitespace-nowrap date-whole">${previousStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${previousToDateEndDate.toString()}</span> <span class="amount-value ${previousToDateRealizedProfit.signum() == 0 ? "" : (previousToDateRealizedProfit.signum() > 0 ? "text-profit" : "text-loss")}">${StockFormatUtil.displayWon(previousToDateRealizedProfit) > 0 ? "+" : (StockFormatUtil.displayWon(previousToDateRealizedProfit) < 0 ? "-" : "")}&#8361;${decimalFormat.format(previousToDateRealizedProfit.abs())}</span></div>
+				<div class="text-xs text-base-content/60 mt-0.5" data-trade-previous-to-date-realized>${MessageUtil.getMessage("stock.compare.previous.to.date")} <span class="whitespace-nowrap date-whole">${previousStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${previousToDateEndDate.toString()}</span> <span class="amount-value ${StockFormatUtil.displayWon(previousToDateRealizedProfit) == 0 ? "" : (StockFormatUtil.displayWon(previousToDateRealizedProfit) > 0 ? "text-profit" : "text-loss")}">${StockFormatUtil.displayWon(previousToDateRealizedProfit) > 0 ? "+" : (StockFormatUtil.displayWon(previousToDateRealizedProfit) < 0 ? "-" : "")}&#8361;${decimalFormat.format(previousToDateRealizedProfit.abs())}</span></div>
 				@endif
 		`)
 

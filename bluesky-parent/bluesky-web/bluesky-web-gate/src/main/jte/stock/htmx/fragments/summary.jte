@@ -4,6 +4,12 @@
 @import net.luversof.web.gate.stock.util.StockCoreHoldingUtil
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.LocalDate
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.dto.response.PeriodSummary
+@import net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView
+@import net.luversof.web.gate.stock.util.StockAmountUtil
+@import net.luversof.web.gate.stock.util.StockPriceBasisUtil
 
 @param BigDecimal totalAsset
 @param BigDecimal totalUnrealizedProfit
@@ -16,21 +22,21 @@
 @param BigDecimal displayCurrentEvaluationProfit
 @param BigDecimal combinedAdjustmentAmount
 @param BigDecimal holdingFeeAdjustment
-@param BigDecimal excludedHoldingBuyFee = java.math.BigDecimal.ZERO
+@param BigDecimal excludedHoldingBuyFee = BigDecimal.ZERO
 @param BigDecimal manualPrincipalAdjustment
 @param String trendChartLabelsJs = "[]"
 @param String trendChartValuesJs = "[]"
 @param int trendPointCount = 0
-@param java.time.LocalDate priceBasisDate = null
+@param LocalDate priceBasisDate = null
 @param String priceBasisIntradayTime = null
 @param StockCoreHoldingUtil.Split coreHoldingSplit = null
-@param net.luversof.web.gate.stock.dto.response.PeriodSummary periodSummary = null
-@param java.time.LocalDate periodSummaryFrom = null
-@param java.time.LocalDate periodSummaryTo = null
+@param PeriodSummary periodSummary = null
+@param LocalDate periodSummaryFrom = null
+@param LocalDate periodSummaryTo = null
 <%-- 작년 같은 기간 합계(2026-10-28) - 실현 손익 · 받은 배당 카드 둘째 줄. 없으면 그 줄만 빠진다. --%>
-@param net.luversof.web.gate.stock.dto.response.PeriodSummary previousPeriodSummary = null
+@param PeriodSummary previousPeriodSummary = null
 <%-- 금융소득 종합과세 기준(2026-10-20) - 올해 배당 카드의 보조 문구에 기준 대비 비율. null 이면 그 말만 빠진다. --%>
-@param net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView financialIncome = null
+@param FinancialIncomeThresholdView financialIncome = null
 
 !{
 	String currentTotalAssetLabel = MessageUtil.getMessage("stock.summary.label.current.total.asset");
@@ -53,7 +59,7 @@
 	String periodDividendLabel = MessageUtil.getMessage("stock.summary.period.dividend");
 	String periodBuyLabel = MessageUtil.getMessage("stock.trade.label.buy");
 	String periodSellLabel = MessageUtil.getMessage("stock.trade.label.sell");
-	java.util.function.Function<Long, String> periodCount = n -> StockViewSupport.msg("common.count", n);
+	Function<Long, String> periodCount = n -> StockViewSupport.msg("common.count", n);
 	String totalCombinedProfitLabel = MessageUtil.getMessage("stock.summary.label.total.combined.profit");
 	String calculationDetailsLabel = MessageUtil.getMessage("stock.summary.label.calculation.details");
 	String combinedAdjustmentLabel = MessageUtil.getMessage("stock.summary.label.combined.adjustment");
@@ -88,9 +94,9 @@
 	 그대로 두면 화면 숫자로 나눠도 값이 안 나온다(실측: 화면의 손익/원금을 그대로 나누면 184.69% 인데 표시는 181.58%).
 	 기준 원금을 계산 내역과 툴팁에 밝혀 화면에서 재현할 수 있게 한다. --%>
 !{String combinedRateBasisText = StockViewSupport.msg("stock.summary.combined.rate.basis.tooltip", String.format("%,d", StockFormatUtil.displayWon(totalCombinedProfit)), String.format("%,d", StockFormatUtil.displayWon(combinedPrincipal)), String.format("%+.2f", combinedRate));}
-!{String evalColor = currentEvaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
-!{String combinedColor = totalCombinedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
-!{String realizedColor = totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";}
+!{String evalColor = StockFormatUtil.amountTone(currentEvaluationProfit);}
+!{String combinedColor = StockFormatUtil.amountTone(totalCombinedProfit);}
+!{String realizedColor = StockFormatUtil.amountTone(totalRealizedProfit);}
 <%-- 1개 포인트는 선을 그릴 수 없으므로 2개 이상일 때만 트렌드 차트를 렌더 (미만이면 기존 3열 레이아웃 유지) --%>
 !{boolean hasTrendSeries = trendPointCount >= 2;}
 
@@ -114,7 +120,7 @@
 				 (실측 2026-08-22 토요일: 거래일인 08-21 이 빠진 채 08-20 종가로 표시). 자산 현황·포트폴리오·
 				 종목 상세와 같은 문구를 쓴다. --%>
 			@if(priceBasisDate != null)
-				<div class="text-xs text-base-content/60 mt-1">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</div>
+				<div class="text-xs text-base-content/60 mt-1">${StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</div>
 			@endif
 			<%-- 통합손익은 총자산의 보조 지표로 같은 카드 하단에 배치한다 --%>
 			<div class="relative flex items-center justify-between border-t border-base-200 mt-4 pt-3">
@@ -254,9 +260,9 @@
 	     알 수 있었다(실측 2026-09-10). api-stock 의 집계 한 줄(268 바이트)을 그대로 쓴다.
 	     집계 호출이 실패하면 모델에 값이 없고 이 줄은 통째로 빠진다 - 0 으로 보여 오해를 만들지 않는다. --%>
 	@if(periodSummary != null)
-		!{ java.math.BigDecimal periodTradeCost = (periodSummary.tradeFee() != null ? periodSummary.tradeFee() : java.math.BigDecimal.ZERO).add(periodSummary.tradeTax() != null ? periodSummary.tradeTax() : java.math.BigDecimal.ZERO); }
+		!{ BigDecimal periodTradeCost = (periodSummary.tradeFee() != null ? periodSummary.tradeFee() : BigDecimal.ZERO).add(periodSummary.tradeTax() != null ? periodSummary.tradeTax() : BigDecimal.ZERO); }
 		<%-- 거래 비용만 덩그러니 있으면 큰지 작은지 모른다 - 매매(매수+매도) 금액 대비 비율을 보조 줄에, 수수료 · 세금 나눔은 툴팁에. --%>
-		!{ java.math.BigDecimal periodCostPct = net.luversof.web.gate.stock.util.StockAmountUtil.percentOrNull(periodTradeCost, (periodSummary.buyAmount() != null ? periodSummary.buyAmount() : java.math.BigDecimal.ZERO).add(periodSummary.sellAmount() != null ? periodSummary.sellAmount() : java.math.BigDecimal.ZERO), 2); }
+		!{ BigDecimal periodCostPct = StockAmountUtil.percentOrNull(periodTradeCost, (periodSummary.buyAmount() != null ? periodSummary.buyAmount() : BigDecimal.ZERO).add(periodSummary.sellAmount() != null ? periodSummary.sellAmount() : BigDecimal.ZERO), 2); }
 		<div class="mt-4">
 			<div class="mb-2 flex items-baseline gap-2">
 				<h2 class="text-sm font-bold" data-page-section>${periodTitleLabel}</h2>
@@ -285,9 +291,9 @@
 					subBefore = previousPeriodSummary != null ? MessageUtil.getMessage("stock.summary.period.previous.year") + " " : "",
 					subAmount = previousPeriodSummary != null && previousPeriodSummary.realizedProfit() != null ? StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(previousPeriodSummary.realizedProfit())) : "",
 					subAmountTone = previousPeriodSummary == null || previousPeriodSummary.realizedProfit() == null || previousPeriodSummary.realizedProfit().signum() == 0 ? "text-base-content/60" : (previousPeriodSummary.realizedProfit().signum() < 0 ? "text-loss" : "text-profit"),
-					tone = periodSummary.realizedProfit() != null && periodSummary.realizedProfit().signum() < 0 ? "text-loss" : "text-profit",
+					tone = StockFormatUtil.displayWon(periodSummary.realizedProfit()) < 0 ? "text-loss" : (StockFormatUtil.displayWon(periodSummary.realizedProfit()) > 0 ? "text-profit" : ""),
 					icon = "trend-up",
-					accent = periodSummary.realizedProfit() != null && periodSummary.realizedProfit().signum() < 0 ? "loss" : "profit",
+					accent = StockFormatUtil.displayWon(periodSummary.realizedProfit()) < 0 ? "loss" : (StockFormatUtil.displayWon(periodSummary.realizedProfit()) > 0 ? "profit" : "neutral"),
 					href = "/stock/trade?rangeMode=ytd",
 					scopeNote = ytdScopeNote)
 				@template._components.ui.statCard(
@@ -297,7 +303,7 @@
 					sub = periodCount.apply(periodSummary.dividendCount()) + (financialIncome != null ? " · " + StockViewSupport.msg("stock.summary.financial.income.pct", financialIncome.usedPct().toPlainString()) : ""),
 					subBefore = previousPeriodSummary != null ? MessageUtil.getMessage("stock.summary.period.previous.year") + " " : "",
 					subAmount = previousPeriodSummary != null && previousPeriodSummary.dividendNet() != null ? StockFormatUtil.compactKrw(StockFormatUtil.displayWon(previousPeriodSummary.dividendNet())) : "",
-					subAfter = previousPeriodSummary != null && previousPeriodSummary.dividendNet() != null && periodSummary.dividendNet() != null && net.luversof.web.gate.stock.util.StockAmountUtil.percentOrNull(periodSummary.dividendNet().subtract(previousPeriodSummary.dividendNet()), previousPeriodSummary.dividendNet(), 1) != null ? " (" + StockFormatUtil.signedPct(net.luversof.web.gate.stock.util.StockAmountUtil.percentOrNull(periodSummary.dividendNet().subtract(previousPeriodSummary.dividendNet()), previousPeriodSummary.dividendNet(), 1).doubleValue(), 1) + ")" : "",
+					subAfter = previousPeriodSummary != null && previousPeriodSummary.dividendNet() != null && periodSummary.dividendNet() != null && StockAmountUtil.percentOrNull(periodSummary.dividendNet().subtract(previousPeriodSummary.dividendNet()), previousPeriodSummary.dividendNet(), 1) != null ? " (" + StockFormatUtil.signedPct(StockAmountUtil.percentOrNull(periodSummary.dividendNet().subtract(previousPeriodSummary.dividendNet()), previousPeriodSummary.dividendNet(), 1).doubleValue(), 1) + ")" : "",
 					tone = "text-dividend",
 					icon = "gift",
 					accent = "dividend",
@@ -330,8 +336,8 @@
 			String coreNote = MessageUtil.getMessage("stock.summary.core.note");
 			String evaluationAmountLabel = MessageUtil.getMessage("stock.profit.evaluation.amount");
 			String combinedProfitLabel = MessageUtil.getMessage("stock.asset.status.col.combined.profit");
-			java.util.function.Function<BigDecimal, String> signedKrw = v -> (v.signum() == 0 ? "" : (v.signum() > 0 ? "+" : "-")) + StockFormatUtil.compactKrw(Math.abs(StockFormatUtil.displayWon(v)));
-			java.util.function.Function<BigDecimal, String> toneOf = v -> v.signum() >= 0 ? "text-profit" : "text-loss";
+			Function<BigDecimal, String> signedKrw = v -> (v.signum() == 0 ? "" : (v.signum() > 0 ? "+" : "-")) + StockFormatUtil.compactKrw(Math.abs(StockFormatUtil.displayWon(v)));
+			Function<BigDecimal, String> toneOf = StockFormatUtil::amountTone;
 		}
 		@template._components.ui.card(cssClass = "mt-3", bodyClass = "p-4", body = @`
 			<div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2" data-core-holding-split>

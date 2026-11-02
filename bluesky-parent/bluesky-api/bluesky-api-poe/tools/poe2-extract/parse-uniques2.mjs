@@ -158,7 +158,9 @@ const SEGMENT_FILE = "poe2-unique-segments.csd";
 }
 
 // PoE1 번역기 재사용 — 기본 PoE1 파일명(.txt)은 이 폴더에 없어 건너뛰고, 아래 순서(범용 → 전용 → 조각)로 읽는다.
-const toKoRaw = createModTranslator(PLAIN_DIR, [...CSD_FILES, SEGMENT_FILE]);
+// keepLineBreaks(10-30 R26, PoE1 parse-uniques 짝): 게임 한국어가 여러 줄이고 PoB 도 같은 줄 수로 쪼갰으면 한국어도 그 줄 수대로
+//   (석궁 '최근 4초 이내 재장전한 경우 석궁 공격으로' + '발사된 볼트가…' — 예전엔 한 줄로 합쳐 영어와 줄 순번이 어긋났다)
+const toKoRaw = createModTranslator(PLAIN_DIR, [...CSD_FILES, SEGMENT_FILE], { keepLineBreaks: true });
 
 // ─── 게임 테이블 사전 ───────────────────────────────────────────────────────────
 const wordsEn = loadTable("English", "Words");
@@ -359,7 +361,12 @@ function specialKo(line) {
 	const skillLevel = line.match(/^\+(\(\d+-\d+\)|\d+) to Level of all (.+) Skills$/i);
 	if (skillLevel) {
 		// PoB 원문은 낱말마다 대문자("Cull The Weak") — 게임 표시 이름("Cull the Weak")과 대소문자 무시로 맞댄다
-		const ko = skillKoByEn.get(skillLevel[2]) || skillKoByLower.get(skillLevel[2].toLowerCase()) || gemBaseKoByLower.get(skillLevel[2].toLowerCase());
+		// "Summon Spectre" · "Tamed Companion" 은 젬 이름이 'Spectre' · 'Companion'(Q100 — 'Spectre: {0}' 틀을 뗀 이름)이라 앞 낱말을 떼고 한 번 더(10-29 R12)
+		const lookup = (n) => skillKoByEn.get(n) || skillKoByLower.get(n.toLowerCase()) || gemBaseKoByLower.get(n.toLowerCase());
+		//   게임 표 이름은 'Spectre: {0}' · 'Companion: {0}'(ActiveSkills summon_spectre · summon_beast) — 그 틀로 찾고 ': {0}' 를 뗀다
+		const ko =
+			lookup(skillLevel[2]) ||
+			lookup(skillLevel[2].replace(/^(Summon|Tamed) /i, "") + ": {0}")?.replace(/:\s*\{0\}\s*$/, "");
 		return ko ? `모든 ${ko} 스킬 레벨 +${skillLevel[1]}` : null;
 	}
 	return null;
@@ -525,7 +532,11 @@ function variantNameKo(label, lineKo) {
 
 // 과거 버전 변형(Pre 0.4.0 등)은 지금 게임에 없어 목록에서 감춘다(PoE1 과 같은 규칙)
 const HISTORICAL_VARIANT = /\bPre[ -]\d/i;
-const isHistoricalVariant = (name) => name === "Current" || HISTORICAL_VARIANT.test(name);
+// "Current" 는 현역(10-29 R12 — 예전엔 거꾸로 과거로 쳐서 앗지리의 멸시 · 몽상 · 죽음의 하프가 0.2.0 · 0.5.0 옛 옵션으로 나왔다).
+//   같은 블록에 Current 가 있으면 "0.2.0" 같은 버전 번호 이름도 과거(PoB 블록 'Variant: 0.2.0' / 'Variant: Current')
+const VERSION_ONLY = /^\d+\.\d+(\.\d+)?$/;
+const isHistoricalVariant = (name, names = []) =>
+	HISTORICAL_VARIANT.test(name) || (VERSION_ONLY.test(name.trim()) && names.some((n) => /\bCurrent\b/i.test(n)));
 const normalizeVariantName = (name) =>
 	name
 		.replace(/^Current\s*\((.+)\)$/i, "$1")
@@ -698,9 +709,9 @@ function parseBlock(block, category) {
 	// 기본 선택 (PoB 규칙: Selected Variant 우선, 없으면 마지막. Alt 도 지정값 없으면 마지막)
 	let mainVariant = variantCount ? Math.max(1, Math.min(variantCount, selectedVariant || variantCount)) : null;
 	const liveVariants = variantNames
-		.map((vName, i) => ({ index: i + 1, name: normalizeVariantName(vName), historical: isHistoricalVariant(vName) }))
+		.map((vName, i) => ({ index: i + 1, name: normalizeVariantName(vName), historical: isHistoricalVariant(vName, variantNames) }))
 		.filter((v) => !v.historical);
-	if (!grouped && !hasAlt && mainVariant != null && isHistoricalVariant(variantNames[mainVariant - 1]) && liveVariants.length) {
+	if (!grouped && !hasAlt && mainVariant != null && isHistoricalVariant(variantNames[mainVariant - 1], variantNames) && liveVariants.length) {
 		mainVariant = liveVariants[liveVariants.length - 1].index;
 	}
 	const defaultActive = new Set(mainVariant ? [mainVariant] : []);
@@ -727,6 +738,8 @@ function parseBlock(block, category) {
 			if (ko && !isUntranslated(ko)) lineKo.set(l.text.toLowerCase(), ko);
 		}
 		variants = liveVariants
+			// 칸을 따로 고르는(Alt) 아이템의 "Current" 는 늘 켜지는 바탕 변형이라 칩으로 내지 않는다(10-29 R12 — Morior Invictus)
+			.filter((v) => !(hasAlt && /^Current$/i.test(v.name)))
 			.filter((v) => !grouped || [...groups.keys()].some((g) => eligible(g, v.index)))
 			.map((v) => {
 				let set;
@@ -840,7 +853,7 @@ const modRangeByStat = (() => {
 	const mods = loadTable("English", "Mods");
 	const out = new Map();
 	for (const m of mods) {
-		for (let i = 1; i <= 6; i++) {
+		for (let i = 1; i <= 8; i++) {
 			const st = m["Stat" + i];
 			const v = m["Stat" + i + "Value"];
 			const id = st != null ? stats[st]?.Id : null;

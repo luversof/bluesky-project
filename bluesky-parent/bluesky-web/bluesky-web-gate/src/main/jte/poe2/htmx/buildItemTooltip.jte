@@ -27,7 +27,7 @@
 	java.util.List<String> explicits = lines.subList(split, lines.size());
 	java.util.List<String> explicitKinds = kinds.subList(split, kinds.size());
 	// 무기는 종류 줄을 속성 칸 첫 줄로, 그 밖엔 머리 아래(itemTooltip · uniqueTooltip 과 같게, Q117)
-	boolean weaponBase = item.base() != null && item.base().weapon() != null && item.base().weapon().damageMax() != null && item.base().weapon().damageMax() > 0;
+	boolean weaponBase = item.base() != null && item.base().weapon() != null && item.base().weapon().hasDamage();
 	String itemClass = item.base() == null ? null : net.luversof.web.gate.poe.PoeClassNames.poe2Tip(item.base().itemClassKo(), item.base().itemClass());
 	// 두 번 타락(PoB "Twice Corrupted" — 게임 ItemPopupDoubleCorrupted '두 번 타락')은 타락 줄 자리에
 	boolean twiceCorrupted = item.mods().stream().anyMatch("Twice Corrupted"::equals);

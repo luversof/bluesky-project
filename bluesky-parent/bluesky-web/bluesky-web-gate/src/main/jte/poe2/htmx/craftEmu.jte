@@ -616,11 +616,11 @@
 				int cbReqLevel = Math.max(craftBase.reqLevel() == null ? 0 : craftBase.reqLevel(), (int) Math.floor(cbModLevel * 0.8));
 			}
 			<%-- 머리 바로 아래엔 구분선 없음(Q24 — 인게임 · PoE1 카드와 같게), 퀄리티 줄이 있으면 그 아래 구분선은 둔다 --%>
-			<div data-craft-props>@template.poe2.htmx.baseProps(base = craftBase, lines = cbMods, leadSep = qAmt > 0 && qInfo != null, classLine = craftBase.weapon() != null && craftBase.weapon().damageMax() != null && craftBase.weapon().damageMax() > 0 ? net.luversof.web.gate.poe.PoeClassNames.poe2Tip(craftBase.itemClassKo(), craftBase.itemClass()) : null)</div>
+			<div data-craft-props>@template.poe2.htmx.baseProps(base = craftBase, lines = cbMods, leadSep = qAmt > 0 && qInfo != null, classLine = craftBase.weapon() != null && craftBase.weapon().hasDamage() ? net.luversof.web.gate.poe.PoeClassNames.poe2Tip(craftBase.itemClassKo(), craftBase.itemClass()) : null)</div>
 			!{
 				// 속성 칸이 그려졌나(baseProps 와 같은 조건) — 없고 퀄리티 줄도 없으면 요구 사항이 머리 바로 아래라 첫 구분선을 끈다(Q28)
 				net.luversof.web.gate.poe2.dto.Poe2.Armour cbA2 = craftBase.armour();
-				boolean cbHasProps = (craftBase.weapon() != null && craftBase.weapon().damageMax() != null && craftBase.weapon().damageMax() > 0)
+				boolean cbHasProps = (craftBase.weapon() != null && craftBase.weapon().hasDamage())
 						|| (cbA2 != null && ((cbA2.armour() != null && cbA2.armour() > 0) || (cbA2.evasion() != null && cbA2.evasion() > 0) || (cbA2.energyShield() != null && cbA2.energyShield() > 0) || (cbA2.block() != null && cbA2.block() > 0) || (cbA2.ward() != null && cbA2.ward() > 0)))
 						|| craftBase.flask() != null || (craftBase.spirit() != null && craftBase.spirit() > 0);
 			}

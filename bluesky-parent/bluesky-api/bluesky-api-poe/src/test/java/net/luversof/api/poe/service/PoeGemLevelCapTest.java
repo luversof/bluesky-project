@@ -49,7 +49,8 @@ class PoeGemLevelCapTest {
         null,
         null,
         null,
-        naturalMax);
+        naturalMax,
+        null);
   }
 
   @Test

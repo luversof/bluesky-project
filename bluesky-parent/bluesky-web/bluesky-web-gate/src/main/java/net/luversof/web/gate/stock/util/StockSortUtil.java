@@ -1,5 +1,8 @@
 package net.luversof.web.gate.stock.util;
 
+import java.util.Comparator;
+import java.util.function.Function;
+
 import net.luversof.web.gate.stock.support.StockSortParamException;
 
 /**
@@ -12,10 +15,9 @@ import net.luversof.web.gate.stock.support.StockSortParamException;
 public final class StockSortUtil {
 
   /** 목록 정렬 열 하나의 비교기 - 값이 없으면 뒤로 가는 오름차순(내림차순은 부르는 쪽이 뒤집는다). */
-  public static <T, U extends Comparable<? super U>> java.util.Comparator<T> ascendingNullsLast(
-      java.util.function.Function<? super T, ? extends U> key) {
-    return java.util.Comparator.comparing(
-        key, java.util.Comparator.nullsLast(java.util.Comparator.<U>naturalOrder()));
+  public static <T, U extends Comparable<? super U>> Comparator<T> ascendingNullsLast(
+      Function<? super T, ? extends U> key) {
+    return Comparator.comparing(key, Comparator.nullsLast(Comparator.<U>naturalOrder()));
   }
 
   private StockSortUtil() {}

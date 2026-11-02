@@ -1,4 +1,5 @@
 @import io.github.luversof.boot.context.support.MessageUtil
+@import java.text.MessageFormat
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -28,7 +29,7 @@
 				<div class="min-w-0">
 					<%-- 오류 화면도 페이지다: h1 이 없으면 axe page-has-heading-one 에 걸린다(실측 2026-09-09, 백엔드 중지 시 4화면). --%>
 					<h1 class="font-semibold text-base">${MessageUtil.getMessage(titleKey)}</h1>
-					<div class="text-sm opacity-80 whitespace-normal">${descArg == null || descArg.isBlank() ? MessageUtil.getMessage(descKey) : java.text.MessageFormat.format(MessageUtil.getMessage(descKey), descArg)}</div>
+					<div class="text-sm opacity-80 whitespace-normal">${descArg == null || descArg.isBlank() ? MessageUtil.getMessage(descKey) : MessageFormat.format(MessageUtil.getMessage(descKey), descArg)}</div>
 				</div>
 				@if(retryUrl != null && !retryUrl.isEmpty())
 					<a href="${retryUrl}" class="btn btn-sm btn-outline shrink-0">${MessageUtil.getMessage("common.button.retry")}</a>

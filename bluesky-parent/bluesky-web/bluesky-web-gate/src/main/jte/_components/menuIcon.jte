@@ -47,7 +47,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
 @elseif(iconKey.endsWith(".poe.tattoos") || name.contains("문신"))
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
-@elseif(iconKey.endsWith(".poe.clusters") || name.contains("클러스터"))
+@elseif(iconKey.endsWith(".poe.clusters") || name.contains("클러스터") || name.contains("스킬 군"))
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="6" cy="17" r="2.2" stroke-width="2"/><circle cx="18" cy="17" r="2.2" stroke-width="2"/><circle cx="12" cy="6.5" r="2.2" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M10.9 8.4L7.2 15m5.9-6.6l3.7 6.6M8.2 17h7.6"/></svg>
 @elseif(iconKey.endsWith(".board") || name.contains("게시판") || name.contains("글"))
     <svg xmlns="http://www.w3.org/2000/svg" class="${cssClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H14" /></svg>

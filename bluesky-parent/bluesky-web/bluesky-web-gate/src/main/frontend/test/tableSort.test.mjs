@@ -81,3 +81,11 @@ test("텍스트 정렬 로케일은 'ko' 로 고정한다", () => {
 	const sorted = [...names].sort((a, b) => a.localeCompare(b, t.TEXT_COLLATION_LOCALE, { numeric: true }));
 	assert.deepEqual(sorted, ["삼성전자", "하이닉스", "CJ씨푸드", "KODEX 200"]);
 });
+
+
+// 2026-10-29 검토 지적: "-"(값 없음) 칸을 0 으로 읽어 매수 줄의 실현 손익 "-" 가 손실과 이익 사이에 끼었다.
+test("값 없는 칸은 숫자가 아니다(null)", () => {
+	assert.equal(t.cellNum({ textContent: "-" }), null);
+	assert.equal(t.cellNum({ textContent: "  " }), null);
+	assert.equal(t.cellNum({ textContent: "+1,200" }), 1200);
+});

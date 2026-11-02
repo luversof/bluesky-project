@@ -12,7 +12,11 @@
 
 @if(error != null)
 	<div class="alert alert-warning text-sm" role="alert">
-		<span>${"empty".equals(error) ? MessageUtil.getMessage("poe2.build.empty") : MessageUtil.getMessage("poe2.build.invalid")}</span>
+		@if("poe1".equals(error))
+			<a class="link" href="/poe/build">${MessageUtil.getMessage("poe2.build.poe1")}</a>
+		@else
+			<span>${"empty".equals(error) ? MessageUtil.getMessage("poe2.build.empty") : MessageUtil.getMessage("poe2.build.invalid")}</span>
+		@endif
 	</div>
 @elseif(build != null)
 	!{
@@ -38,8 +42,10 @@
 							String key = s.key().toLowerCase(java.util.Locale.ROOT);
 							String label = "spirit".equals(key) ? MessageUtil.getMessage("poe2.build.stat.spirit") : MessageUtil.getMessage("poe.build.stat." + key, s.key());
 							boolean pct = key.endsWith("resist");
+							// 이동 속도는 배율(1.25) → +25.0%(PoB BuildDisplayStats fmt "+.1f%%", mod = true — 10-29 R9)
+							boolean move = "effectivemovementspeedmod".equals(key);
 							double v = s.value();
-							String shown = pct ? String.format("%.0f%%", v) : Math.abs(v) >= 100 || v == Math.rint(v) ? String.format("%,.0f", v) : String.format("%.2f", v);
+							String shown = move ? String.format("%+.1f%%", (v - 1) * 100) : pct ? String.format("%.0f%%", v) : Math.abs(v) >= 100 || v == Math.rint(v) ? String.format("%,.0f", v) : String.format("%.2f", v);
 						}
 						<div class="rounded-box border border-base-200 bg-base-100 px-3 py-2">
 							<div class="text-xs text-base-content/60">${label}</div>

@@ -2,6 +2,7 @@ package net.luversof.api.stock.repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import net.luversof.api.stock.domain.StockDailyClosePrice;
+import net.luversof.api.stock.domain.StockOhlcRow;
+import net.luversof.api.stock.domain.StockRawClose;
 
 /**
  * 일별 종가 대량 조회. 같은 SQL 을 Spring Data 의 {@code @Query} 대신 JdbcTemplate 으로 직접 읽는다.
@@ -208,18 +211,18 @@ public class StockDailyClosePriceQuery {
       ORDER BY f.ord, h."tradeDate"
       """;
 
-  public Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> findRawClosesGrouped(
+  public Map<UUID, List<StockRawClose>> findRawClosesGrouped(
       String ids, String froms, String tos, List<UUID> idOrder) {
-    Map<UUID, List<net.luversof.api.stock.domain.StockRawClose>> grouped = new HashMap<>();
+    Map<UUID, List<StockRawClose>> grouped = new HashMap<>();
     namedParameterJdbcTemplate.query(
         RAW_RANGES_ORDINALITY_SQL,
         Map.of("ids", ids, "froms", froms, "tos", tos),
         rs -> {
           UUID stockItemId = idOrder.get(rs.getInt(1) - 1);
           grouped
-              .computeIfAbsent(stockItemId, k -> new java.util.ArrayList<>())
+              .computeIfAbsent(stockItemId, k -> new ArrayList<>())
               .add(
-                  new net.luversof.api.stock.domain.StockRawClose(
+                  new StockRawClose(
                       stockItemId,
                       rs.getObject(2, LocalDate.class),
                       rs.getBigDecimal(3),
@@ -255,13 +258,12 @@ public class StockDailyClosePriceQuery {
       ORDER BY h."tradeDate"
       """;
 
-  public List<net.luversof.api.stock.domain.StockOhlcRow> findOhlc(
-      UUID id, LocalDate fromDate, boolean withRaw) {
+  public List<StockOhlcRow> findOhlc(UUID id, LocalDate fromDate, boolean withRaw) {
     return namedParameterJdbcTemplate.query(
         withRaw ? OHLC_SQL : OHLC_NO_RAW_SQL,
         Map.of("id", id, "fromDate", fromDate),
         (rs, rowNum) ->
-            new net.luversof.api.stock.domain.StockOhlcRow(
+            new StockOhlcRow(
                 rs.getObject(1, LocalDate.class),
                 rs.getBigDecimal(2),
                 rs.getBigDecimal(3),

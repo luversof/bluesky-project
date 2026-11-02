@@ -346,8 +346,8 @@ class UpcomingDividendScheduleTest {
     assertThat(historyController)
         .as("달력은 필터를 거친 목록(viewList)으로 만든다")
         .contains(
-            "DividendMonthCalendarUtil.calendarMonth( startInstant, endInstant, zone, calendarToday)")
-        .contains("DividendMonthCalendarUtil.build( viewList, calendarMonth, calendarToday, zone)");
+            "DividendMonthCalendarUtil.calendarMonth(startInstant, endInstant, zone, calendarToday)")
+        .contains("DividendMonthCalendarUtil.build(viewList, calendarMonth, calendarToday, zone)");
 
     String dashboardCard = flatten("src/main/jte/stock/htmx/fragments/upcomingDividends.jte");
     assertThat(dashboardCard).contains("href=\"/stock/dividend\"").doesNotContain("tab=calendar");

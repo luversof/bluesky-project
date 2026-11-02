@@ -79,8 +79,7 @@ class DividendPreviousPeriodTest {
 
     assertThat(source)
         .as("원본 startDate/endDate 를 넘기면 역순 교정과 프리셋 기본 기간이 전기에 반영되지 않는다")
-        .contains(
-            "resolvePreviousPeriod(startInstant, inclusiveEnd(endInstant), rangeMode, earlyZone)")
+        .contains("resolveListPreviousPeriod(startInstant, endInstant, rangeMode, earlyZone)")
         .doesNotContain("resolvePreviousPeriod(startDate, endDate");
   }
 
@@ -142,6 +141,32 @@ class DividendPreviousPeriodTest {
         .isNull();
     assertThat(
             StockDividendHtmxController.resolvePreviousToDate(null, kst("2026-10-30"), "ytd", KST))
+        .isNull();
+  }
+
+  /** 빈 기간(끝 <= 시작)은 전기가 없다 - 끝을 1 ns 당기면 뒤집혀 전기가 두 배였다(검토 지적 2026-10-29). */
+  @Test
+  void 빈_기간은_전기가_없다() {
+    assertThat(
+            StockDividendHtmxController.resolveListPreviousPeriod(
+                kst("2026-10-29"), kst("2026-10-29"), null, KST))
+        .isNull();
+    var oneDay =
+        StockDividendHtmxController.resolveListPreviousPeriod(
+            kst("2026-10-29"), kst("2026-10-30"), null, KST);
+    assertThat(oneDay.start()).isEqualTo(LocalDate.parse("2026-10-28"));
+    assertThat(oneDay.end()).isEqualTo(LocalDate.parse("2026-10-28"));
+  }
+
+  /** 이미 끝난 달(9 월 전체를 mtd 로)은 진행 중이 아니라 같은 날까지 줄이 없다(검토 지적 2026-10-29). */
+  @Test
+  void 끝난_달은_같은_날까지_줄이_없다() {
+    var august =
+        new StockDividendHtmxController.PreviousPeriod(
+            LocalDate.parse("2026-08-01"), LocalDate.parse("2026-08-31"));
+    assertThat(
+            StockDividendHtmxController.resolvePreviousToDate(
+                august, kst("2026-10-01"), "mtd", KST))
         .isNull();
   }
 }

@@ -1,4 +1,5 @@
 @import io.github.luversof.boot.context.support.MessageUtil
+@import java.text.MessageFormat
 
 
 !{
@@ -63,9 +64,9 @@
 					<input id="stockCompoundInitial" name="initial" type="number" min="0" step="10000" value="0" class="input input-bordered w-full" aria-label="${initialLabel}" />
 					<%-- 0 개수를 세지 않도록 만원 단위 증감 버튼 제공 (클릭 시 즉시 재계산) --%>
 					<div class="mt-1 flex flex-wrap gap-1">
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">${quickAddSmallLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">${quickAddLargeLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickResetAriaPattern, initialLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="0">0</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">${quickAddSmallLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">${quickAddLargeLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickResetAriaPattern, initialLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="0">0</button>
 					</div>
 				</label>
 				<label class="form-control">
@@ -75,9 +76,9 @@
 					</div>
 					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full" aria-label="${contributionLabel}" />
 					<div class="mt-1 flex flex-wrap gap-1">
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">${quickAddSmallLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">${quickAddLargeLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${java.text.MessageFormat.format(quickResetAriaPattern, contributionLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="0">0</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">${quickAddSmallLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">${quickAddLargeLabel}</button>
+						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickResetAriaPattern, contributionLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="0">0</button>
 					</div>
 				</label>
 				<label class="form-control">

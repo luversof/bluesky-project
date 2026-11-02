@@ -4,17 +4,20 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.dto.response.MonthlyDividendSnapshotResponse
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.LocalDate
+@import net.luversof.web.gate.stock.dto.view.RecordDateBuyByView
+@import net.luversof.web.gate.stock.service.MonthlyDividendCalculator
 
 @param boolean hasSnapshots = false
 @param String nextWindowLabel = ""
 @param boolean nextWindowIsMid = false
 @param String nextPayDateLabel = ""
-@param BigDecimal windowTotal = java.math.BigDecimal.ZERO
+@param BigDecimal windowTotal = BigDecimal.ZERO
 <%-- 같은 날의 최근 기준 합계 - 배당 내역의 다가올 배당과 같은 두 값(평균 · 최근)을 보인다(2026-10-13 사용자 선택). --%>
-@param BigDecimal windowLatestTotal = java.math.BigDecimal.ZERO
-@param List<MonthlyDividendSnapshotResponse> topDividendSnapshots = java.util.List.of()
-@param java.time.LocalDate dividendAsOfOldest = null
-@param java.time.LocalDate dividendAsOfNewest = null
+@param BigDecimal windowLatestTotal = BigDecimal.ZERO
+@param List<MonthlyDividendSnapshotResponse> topDividendSnapshots = List.of()
+@param LocalDate dividendAsOfOldest = null
+@param LocalDate dividendAsOfNewest = null
 <%-- 스냅샷의 보유 수량이 원장의 현재 수량과 어긋난 종목 수와, 현재 수량으로 다시 낸 합계. --%>
 <%-- 예상일은 지급 이력의 최빈일 하나다. 실제 지급일이 퍼져 있으면 그 폭을 함께 적는다
      (실측 2026-09-11: 월중 17일x39 · 19일x20 · 18일x10 · 20일x9, 최근 두 달은 19·20일). --%>
@@ -24,12 +27,12 @@
 @param int payDayRangeFrom = 0
 @param int payDayRangeTo = 0
 @param long staleQuantityCount = 0L
-@param BigDecimal currentQuantityTotal = java.math.BigDecimal.ZERO
+@param BigDecimal currentQuantityTotal = BigDecimal.ZERO
 <%-- 같은 안내의 최근 기준 합계(2026-10-13 - 카드가 최근을 앞에 둔다). --%>
-@param BigDecimal currentQuantityLatestTotal = java.math.BigDecimal.ZERO
+@param BigDecimal currentQuantityLatestTotal = BigDecimal.ZERO
 @param int upcomingDividendHiddenCount = 0
 <%-- 다음 분배금 매수 마감(2026-10-20) - 적립하는 날을 정할 때 본다. 계산은 KrxRecordDateUtil. --%>
-@param java.util.List<net.luversof.web.gate.stock.dto.view.RecordDateBuyByView> upcomingBuyBy = java.util.List.of()
+@param List<RecordDateBuyByView> upcomingBuyBy = List.of()
 
 !{
 	String titleLabel = MessageUtil.getMessage("stock.dashboard.upcoming.dividend");
@@ -89,7 +92,7 @@
 		!{int upcomingRank = 1;}
 		@for(MonthlyDividendSnapshotResponse row : topDividendSnapshots)
 			<%-- 줄 금액도 최근 기준(2026-10-13 사용자 선택 "최근을 우선으로" - 배당 내역 다가올 배당의 종목 줄과 같은 값). --%>
-			!{BigDecimal rowLatest = net.luversof.web.gate.stock.service.MonthlyDividendCalculator.latestMonthlyDividend(row);}
+			!{BigDecimal rowLatest = MonthlyDividendCalculator.latestMonthlyDividend(row);}
 			<div class="flex items-center justify-between text-sm py-1.5 border-b border-base-200 last:border-0">
 				<span class="flex items-center gap-2 min-w-0">
 					<span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${upcomingRank++}</span>

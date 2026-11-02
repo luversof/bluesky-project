@@ -10,4 +10,6 @@ public record PoeClusterNotable(
     List<String> statsKo,
     String icon,
     // 핵심노드(10-23 Q75 — 주요 스킬과 섞여 보였다). 아니면 null
-    Boolean keystone) {}
+    Boolean keystone,
+    // 더 이상 생성되지 않음(모드 가중치 0, 10-29 C2). 아니면 null
+    Boolean retired) {}

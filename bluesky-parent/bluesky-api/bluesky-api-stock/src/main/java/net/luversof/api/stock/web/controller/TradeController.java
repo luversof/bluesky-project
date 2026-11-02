@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.stock.service.StockHoldingPeriodService;
 import net.luversof.api.stock.service.TradeProfitService;
 import net.luversof.api.stock.web.dto.request.TradeSearchRequest;
+import net.luversof.api.stock.web.dto.response.StockCashFlowResponse;
 import net.luversof.api.stock.web.dto.response.TradeResponse;
 import net.luversof.api.stock.web.support.RequestZoneUtil;
 
@@ -52,12 +53,11 @@ public class TradeController {
    * <p>원장 목록(매매 258 행 + 배당)을 다시 받지 않는다. 존 규칙은 최초 매수일과 같다 &mdash; 안 주면 한국 기준, 줬는데 모르는 값이면 400.
    */
   @GetMapping("/cashFlowsByStockItem")
-  public Map<UUID, List<net.luversof.api.stock.web.dto.response.StockCashFlowResponse>>
-      findCashFlowsByStockItem(
-          @RequestParam UUID userId,
-          @RequestParam(required = false) String timeZone,
-          @RequestParam(required = false) List<UUID> accountIdList,
-          @RequestParam(required = false) List<UUID> stockItemIdList) {
+  public Map<UUID, List<StockCashFlowResponse>> findCashFlowsByStockItem(
+      @RequestParam UUID userId,
+      @RequestParam(required = false) String timeZone,
+      @RequestParam(required = false) List<UUID> accountIdList,
+      @RequestParam(required = false) List<UUID> stockItemIdList) {
     ZoneId zoneId = RequestZoneUtil.parse(timeZone, StockHoldingPeriodService.DEFAULT_ZONE);
     return stockHoldingPeriodService.findCashFlowsByStockItem(
         userId, zoneId, accountIdList, stockItemIdList);

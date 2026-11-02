@@ -337,7 +337,10 @@ interface MonthRange {
             return total;
         }
 
-        /** 월평균의 분모. 필터 기간이 있으면 그 기간, 없으면(전체) 데이터의 첫 배당일 ~ 마지막 배당일. */
+        /**
+         * 월평균의 분모. 필터 기간이 있으면 그 기간, 없으면(전체) 첫 배당이 있는 달 1 일 ~ 마지막 배당이 있는 달 말일(옆 월별 막대와 같은 달 단위).
+         * 예전엔 첫 배당일 ~ 마지막 배당일이라 배당 한 건이면 분모가 하루(0.03 개월)로 월평균이 30 배, 다달이 받은 12 건(1/15 ~ 12/15)이면 11 개월로 9% 부풀었다(검토 지적 2026-10-29).
+         */
         function averageMonthSpan(): number {
             let from = filterStartDay, to = filterEndDay;
             if (!from || !to) {
@@ -346,8 +349,10 @@ interface MonthRange {
                     .map((d: DividendRow) => d.payDate)
                     .sort();
                 if (days.length === 0) return 0;
-                from = days[0];
-                to = days[days.length - 1];
+                const lastMonth = days[days.length - 1].slice(0, 7);
+                const lastDay = new Date(Date.UTC(Number(lastMonth.slice(0, 4)), Number(lastMonth.slice(5, 7)), 0)).getUTCDate();
+                from = days[0].slice(0, 7) + '-01';
+                to = lastMonth + '-' + String(lastDay).padStart(2, '0');
             }
             return monthEquivalent(from, to);
         }
@@ -566,7 +571,10 @@ interface MonthRange {
                 const shownPercents = win.StockCharts && win.StockCharts.balancedPercents
                     ? win.StockCharts.balancedPercents(d.data, 1)
                     : d.data.map((v: number) => (total > 0 ? ((v / total) * 100).toFixed(1) : '0.0'));
-                legend.innerHTML = d.labels.map((label: string, i: number) => {
+                // 이름은 사용자가 넣은 글자라 HTML 로 해석하지 않는다(따옴표가 title 을 깼다 - 검토 지적 2026-10-29).
+                const esc = win.StockCharts && win.StockCharts.escapeHtml ? win.StockCharts.escapeHtml : (v: string) => String(v);
+                legend.innerHTML = d.labels.map((rawLabel: string, i: number) => {
+                    const label = esc(rawLabel);
                     const pct = shownPercents[i];
                     const color = d.colors[i];
                     return '<div class="flex items-center gap-1 mb-0.5">'

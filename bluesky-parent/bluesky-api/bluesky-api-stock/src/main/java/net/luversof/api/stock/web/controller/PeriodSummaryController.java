@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.api.stock.service.PeriodSummaryService;
 import net.luversof.api.stock.web.dto.response.PeriodSummary;
+import net.luversof.api.stock.web.support.RequestRangeUtil;
 
 /** 기간 매매·배당 합계. 대시보드가 원장을 통째로 받지 않고 한 줄로 받는다. */
 @RestController
@@ -24,8 +25,7 @@ public class PeriodSummaryController {
       @RequestParam UUID userId,
       @RequestParam(required = false) Instant startDate,
       @RequestParam(required = false) Instant endDate) {
-    java.time.Instant[] range =
-        net.luversof.api.stock.web.support.RequestRangeUtil.ordered(startDate, endDate);
+    Instant[] range = RequestRangeUtil.ordered(startDate, endDate);
     return periodSummaryService.findPeriodSummary(userId, range[0], range[1]);
   }
 }

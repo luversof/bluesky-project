@@ -214,8 +214,7 @@ class ItemDetailHoldingReturnTest {
         .contains("tradeClient.findFirstBuyDateByStockItem(holdingReturnParams)")
         .contains("dividendClient.findDividendTotalByStockItem(holdingReturnParams)")
         .contains("tradeClient.findCashFlowsByStockItem(holdingReturnParams)")
-        .contains(
-            "holdingReturnParams.add( \"timeZone\", net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone).getId());")
+        .contains("holdingReturnParams.add(\"timeZone\", StockZoneUtil.resolve(timeZone).getId());")
         .contains("StockHoldingReturnUtil.of( holdingFirstBuyDate,")
         .contains("holdingCashFlows, evaluationAmount, evaluationProfit, holdingDividendTotal));")
         .contains("\"periodCapitalBase\"");
@@ -239,7 +238,7 @@ class ItemDetailHoldingReturnTest {
     assertThat(content)
         .contains("@param BigDecimal periodCapitalBase")
         .contains("StockHoldingReturnUtil.Row holdingReturn")
-        .contains("@param java.time.LocalDate holdingFirstBuyDate");
+        .contains("@param LocalDate holdingFirstBuyDate");
     List<String> missing = new ArrayList<>();
     for (String bundle : List.of("uiMessage.properties", "uiMessage_ko.properties")) {
       if (!Files.readString(Path.of("src/main/resources", bundle), StandardCharsets.UTF_8)

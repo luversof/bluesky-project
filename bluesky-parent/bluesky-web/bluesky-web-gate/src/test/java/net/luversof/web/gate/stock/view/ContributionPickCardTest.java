@@ -42,7 +42,7 @@ class ContributionPickCardTest {
         .contains("monthlyContributionPicks = monthlyContributionPicks");
     assertThat(read(FRAGMENT))
         .as("프래그먼트가 파라미터를 안 받으면 부모가 넘겨도 컴파일이 깨진다")
-        .contains("@param java.util.List<")
+        .contains("@param List<")
         .contains("monthlyContributionPicks");
   }
 

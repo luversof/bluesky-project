@@ -5,8 +5,10 @@
 //  · 보상 스탯(*_final_from_map)은 설명 문구가 없고 경로석 머리글(희귀도·무리 규모·경로석 출현 확률…)로 합산돼 보인다 →
 //    rewards 로 따로 담아 배지로 보여준다.
 //  · 머리글 문구(headers)·임계값 앵커(thresholds)·보상 라벨(rewardDefs)도 이 파일에 실어, 생성기가 게임별 차이를 데이터로 받는다.
+import fs from "node:fs";
+import path from "node:path";
 import { createDescriber, stripMarkup } from "./common2.mjs";
-import { loadConfig, loadTable, writeJson } from "./paths.mjs";
+import { DATA_DIR, loadConfig, loadTable, writeJson } from "./paths.mjs";
 
 const mods = loadTable("English", "Mods");
 const modsKo = loadTable("Korean", "Mods");
@@ -45,7 +47,7 @@ const NUM = /-?\d+(?:\.\d+)?/g;
 function valuesOf(mod, pick) {
 	const effect = new Map();
 	const reward = {};
-	for (let k = 1; k <= 6; k++) {
+	for (let k = 1; k <= 8; k++) {
 		const s = mod["Stat" + k];
 		if (s == null) continue;
 		const id = stats[s].Id;
@@ -157,6 +159,21 @@ baseEn.forEach((b, i) => {
 	names.en.push(b.Name);
 	if (baseKo[i]?.Name) names.ko.push(baseKo[i].Name);
 });
+// 희귀 경로석 이름 낱말(rare-names2 의 classWords.Map — 앞 낱말 · 뒷 낱말)도 '걸리면 안 되는 말뭉치'로 넣는다(10-29 R5-2).
+//   희귀 경로석은 "<앞> <뒤>" 이름 줄이 있어 검색에 걸린다 — 빼먹으면 Puncturing '!edi' 가 Breeding · Expedition 이름 경로석을, ko '!오스' 가
+//   '카오스' 이름 경로석을 함께 걸렀다(단일 제외 88 중 18). 게이트 regex.ts 는 names 를 걸러 낼 말뭉치로만 쓴다
+const rareWordsFile = path.join(DATA_DIR, "rare-name-words.json");
+if (fs.existsSync(rareWordsFile)) {
+	const rare = JSON.parse(fs.readFileSync(rareWordsFile, "utf8"));
+	const mapWords = rare.classWords?.Map;
+	for (const side of ["prefix", "suffix"]) {
+		for (const w of mapWords?.[side] || []) {
+			if (!names.en.includes(w)) names.en.push(w);
+			const ko = rare[side]?.[w];
+			if (ko && !names.ko.includes(ko)) names.ko.push(ko);
+		}
+	}
+}
 
 // 경로석 머리글 — 게임 ClientStrings 문구로 조립(인게임 툴팁 순서). 수치 자리는 99, 등급은 16.
 const cs = loadTable("English", "ClientStrings");

@@ -1,5 +1,6 @@
 package net.luversof.api.stock.web.dto.response;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -99,8 +100,8 @@ public record DataStatusResponse(
       String stockItemName,
       LocalDate tradeDate,
       LocalDate previousTradeDate,
-      java.math.BigDecimal previousClosePrice,
-      java.math.BigDecimal closePrice,
+      BigDecimal previousClosePrice,
+      BigDecimal closePrice,
       double changePercent,
       int gapDays) {}
 
@@ -111,6 +112,6 @@ public record DataStatusResponse(
   public record ZeroVolumeChangedCloseRow(
       String stockItemName,
       LocalDate tradeDate,
-      java.math.BigDecimal previousClosePrice,
-      java.math.BigDecimal closePrice) {}
+      BigDecimal previousClosePrice,
+      BigDecimal closePrice) {}
 }

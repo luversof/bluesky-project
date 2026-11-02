@@ -76,7 +76,7 @@ class StockTrendSeriesUtilTest {
     assertThat(flatten(source))
         .as("trendSeries 는 lastPerMonth 를 거쳐야 한다")
         .contains(
-            "List<TradeProfitTimeSeriesPoint> trendSeries = net.luversof.web.gate.stock.util.StockTrendSeriesUtil.lastPerMonth(");
+            "List<TradeProfitTimeSeriesPoint> trendSeries = StockTrendSeriesUtil.lastPerMonth(");
   }
 
   /** spotless 가 줄을 나누므로 공백을 평탄하게 해서 본다. */

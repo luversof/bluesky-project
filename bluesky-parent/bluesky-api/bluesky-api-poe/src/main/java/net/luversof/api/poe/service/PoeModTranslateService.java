@@ -25,6 +25,8 @@ public class PoeModTranslateService {
   private static final Logger logger = LoggerFactory.getLogger(PoeModTranslateService.class);
   private static final Pattern NUMBER = Pattern.compile("-?\\d+(?:\\.\\d+)?");
   private static final String SLOT = "§"; // §
+  private static final String CLUSTER_GRANT_EN = "Added Small Passive Skills grant: ";
+  private static final String CLUSTER_GRANT_KO = "추가된 소형 패시브 스킬 효과: ";
 
   private final PoeModPoolDataService poeModPoolDataService;
   private final PoeModDataService poeModDataService;
@@ -175,6 +177,14 @@ public class PoeModTranslateService {
   public String translate(String enLine) {
     if (enLine == null || enLine.isBlank() || dictionary.isEmpty()) {
       return enLine;
+    }
+    // 스킬 군 주얼 인챈트 "Added Small Passive Skills grant: X" — 게임 틀 ClientStrings
+    // StatDescripotionTreeExpansionJewelGrantedSmallStat
+    // "추가된 소형 패시브 스킬 효과: {0}" 에 X 번역을 넣는다(10-29 R8 — 트리 주얼을 장비 목록에 넣자 영어 줄 254개가 드러났다)
+    if (enLine.startsWith(CLUSTER_GRANT_EN)) {
+      String inner = enLine.substring(CLUSTER_GRANT_EN.length());
+      String innerKo = translate(inner);
+      return innerKo == null || innerKo.equals(inner) ? enLine : CLUSTER_GRANT_KO + innerKo;
     }
     String template = normalize(enLine);
     String koTemplate = dictionary.get(template.toLowerCase(Locale.ROOT));

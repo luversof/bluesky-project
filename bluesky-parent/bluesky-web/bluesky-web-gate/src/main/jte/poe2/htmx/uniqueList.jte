@@ -75,6 +75,10 @@
 								@if(u.league() != null && !u.league().isBlank())
 									<span class="badge badge-ghost badge-xs" data-league title="${MessageUtil.getMessage("poe.uniques.league.title")}">${u.league()}</span>
 								@endif
+								<%-- 레거시 — 더는 얻을 수 없는 고유(PoB 'No longer obtainable', 10-30 R12 — PoE1 목록과 같은 배지 · 문구) --%>
+								@if(Boolean.TRUE.equals(u.legacy()))
+									<span class="badge badge-outline badge-xs border-warning/50 text-warning" data-legacy title="${PoeText.isKorean() ? "현재 리그에서는 획득할 수 없습니다(스탠다드 보관분만 존재)" : "Cannot be obtained in the current league"}">${PoeText.isKorean() ? "레거시" : "Legacy"}</span>
+								@endif
 								@if(u.variants() != null && u.variants().size() > 1)
 									<span class="badge badge-outline badge-xs border-fuchsia-500/40 text-fuchsia-500" title="${MessageUtil.getMessage("poe.uniques.variants.title")}">${MessageUtil.getMessage("poe.uniques.variant")} ${u.variants().size()}</span>
 								@endif

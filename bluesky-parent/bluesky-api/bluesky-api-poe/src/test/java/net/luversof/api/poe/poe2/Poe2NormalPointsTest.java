@@ -16,12 +16,17 @@ class Poe2NormalPointsTest {
     Map<Integer, Poe2DataService.TreeNodeLite> nodes = new HashMap<>();
     for (int i = 1; i <= shared + set1 + set2 + 20; i++) {
       nodes.put(
-          i, new Poe2DataService.TreeNodeLite("n" + i, null, "normal", null, false, false, 0));
+          i,
+          new Poe2DataService.TreeNodeLite("n" + i, null, "normal", null, false, false, 0, false));
     }
     nodes.put(
-        1000, new Poe2DataService.TreeNodeLite("start", null, "classStart", null, false, false, 0));
+        1000,
+        new Poe2DataService.TreeNodeLite(
+            "start", null, "classStart", null, false, false, 0, false));
     nodes.put(
-        2000, new Poe2DataService.TreeNodeLite("asc", null, "notable", "Deadeye", false, false, 0));
+        2000,
+        new Poe2DataService.TreeNodeLite(
+            "asc", null, "notable", "Deadeye", false, false, 0, false));
     return new Poe2DataService.TreeIndex(nodes, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
   }
 
@@ -80,18 +85,19 @@ class Poe2NormalPointsTest {
     nodes.put(
         10,
         new Poe2DataService.TreeNodeLite(
-            "Sinister Jewel Socket", null, "jewel", null, false, false, 1));
+            "Sinister Jewel Socket", null, "jewel", null, false, false, 1, false));
     nodes.put(
         11,
         new Poe2DataService.TreeNodeLite(
-            "Sinister Jewel Socket", null, "jewel", null, false, false, 2));
+            "Sinister Jewel Socket", null, "jewel", null, false, false, 2, false));
     nodes.put(
         12,
         new Poe2DataService.TreeNodeLite(
-            "Sinister Jewel Socket", null, "jewel", null, false, false, 3));
+            "Sinister Jewel Socket", null, "jewel", null, false, false, 3, false));
     nodes.put(
         20,
-        new Poe2DataService.TreeNodeLite("Zarokh's Gift", null, "jewel", null, false, false, 0));
+        new Poe2DataService.TreeNodeLite(
+            "Zarokh's Gift", null, "jewel", null, false, false, 0, false));
     Poe2DataService.TreeIndex t =
         new Poe2DataService.TreeIndex(nodes, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
     assertThat(
@@ -134,7 +140,8 @@ class Poe2NormalPointsTest {
     Map<Integer, Poe2DataService.TreeNodeLite> nodes = new HashMap<>();
     nodes.put(
         77,
-        new Poe2DataService.TreeNodeLite("Blood Magic", null, "keystone", null, false, false, 0));
+        new Poe2DataService.TreeNodeLite(
+            "Blood Magic", null, "keystone", null, false, false, 0, false));
     Poe2DataService.TreeIndex t =
         new Poe2DataService.TreeIndex(nodes, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
     String jewel =

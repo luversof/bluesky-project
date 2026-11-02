@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import net.luversof.client.user.util.UserUtil;
+import net.luversof.web.gate.stock.dto.response.LedgerImportResult;
+import net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus;
+import net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateResult;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 
 /**
@@ -39,8 +42,7 @@ public class StockAdminApiController {
 
   @BlueskyPreAuthorize
   @PostMapping("/trades")
-  public ResponseEntity<net.luversof.web.gate.stock.dto.response.LedgerImportResult>
-      tradeBulkInsert() {
+  public ResponseEntity<LedgerImportResult> tradeBulkInsert() {
     UUID userId = UserUtil.getUserId();
     if (userId == null) {
       return ResponseEntity.status(401).build();
@@ -50,8 +52,7 @@ public class StockAdminApiController {
 
   @BlueskyPreAuthorize
   @PostMapping("/dividends")
-  public ResponseEntity<net.luversof.web.gate.stock.dto.response.LedgerImportResult>
-      dividendBulkInsert() {
+  public ResponseEntity<LedgerImportResult> dividendBulkInsert() {
     UUID userId = UserUtil.getUserId();
     if (userId == null) {
       return ResponseEntity.status(401).build();
@@ -67,8 +68,8 @@ public class StockAdminApiController {
    */
   @BlueskyPreAuthorize
   @PostMapping("/price-histories/{symbol}")
-  public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateResult>
-      priceHistoryUpdateOne(@PathVariable String symbol) {
+  public ResponseEntity<PriceHistoryUpdateResult> priceHistoryUpdateOne(
+      @PathVariable String symbol) {
     UUID userId = UserUtil.getUserId();
     if (userId == null) {
       return ResponseEntity.status(401).build();
@@ -79,8 +80,7 @@ public class StockAdminApiController {
   /** 전체 갱신 작업의 진행 상황. 화면이 주기적으로 물어본다. */
   @BlueskyPreAuthorize
   @GetMapping("/price-histories/status")
-  public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus>
-      priceHistoryUpdateStatus() {
+  public ResponseEntity<PriceHistoryUpdateJobStatus> priceHistoryUpdateStatus() {
     if (UserUtil.getUserId() == null) {
       return ResponseEntity.status(401).build();
     }
@@ -96,8 +96,7 @@ public class StockAdminApiController {
    */
   @BlueskyPreAuthorize
   @PostMapping("/price-histories")
-  public ResponseEntity<net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus>
-      priceHistoriesUpdate() {
+  public ResponseEntity<PriceHistoryUpdateJobStatus> priceHistoriesUpdate() {
     UUID userId = UserUtil.getUserId();
     if (userId == null) {
       return ResponseEntity.status(401).build();

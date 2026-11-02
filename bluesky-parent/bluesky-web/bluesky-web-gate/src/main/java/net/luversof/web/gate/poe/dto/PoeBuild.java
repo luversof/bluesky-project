@@ -36,7 +36,9 @@ public record PoeBuild(
       int level,
       int quality,
       /** 젬 소켓 색(red=힘 green=민첩 blue=지능 white) — 인게임 젬 색 관례로 렌더한다. */
-      String color) {}
+      String color,
+      /** PoB 에서 꺼진 젬이면 false(흐리게, 10-29 R8). 옛 API 응답이면 null = 켜짐. */
+      Boolean enabled) {}
 
   /**
    * 장착 아이템 하나. uniqueSlug/baseSlug 가 있으면 각각 고유/일반 아이템 DB와 매칭된 것.

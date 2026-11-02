@@ -79,11 +79,14 @@ function shiftFreeRange(startStr: string, endStr: string, dir: number) {
 	const e = new Date(endStr + "T00:00:00");
 	const span = e.getTime() - s.getTime();
 	if (isNaN(span) || span < 0) return null;
-	const step = span + 86400000; // 양끝 포함이므로 하루를 더해야 구간이 겹치지 않는다
-	return {
-		start: new Date(s.getTime() + dir * step),
-		end: new Date(e.getTime() + dir * step),
-	};
+	// 양끝 포함이므로 하루를 더해야 구간이 겹치지 않는다. 밀리초가 아니라 날짜로 옮긴다 - 서머타임이 있는 시간대에서 하루가 23 시간이면
+	// 다음 구간이 앞 구간 끝날에서 시작했다(검토 지적 2026-10-29, 서울은 해당 없음).
+	const days = Math.round(span / 86400000) + 1;
+	const start = new Date(s);
+	const end = new Date(e);
+	start.setDate(start.getDate() + dir * days);
+	end.setDate(end.getDate() + dir * days);
+	return { start: start, end: end };
 }
 
 /**

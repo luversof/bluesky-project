@@ -14,22 +14,30 @@
 @import java.text.DecimalFormat
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.time.LocalDate
+@import java.util.LinkedHashMap
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.util.ChartSeriesJs
+@import net.luversof.web.gate.stock.util.StockCoveredRangeUtil
+@import net.luversof.web.gate.stock.util.StockFormatUtil
+@import net.luversof.web.gate.stock.util.StockTradePeriodUtil
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param List<TradeResponse> tradeList
-@param List<TradeResponse> allTradeList = java.util.List.of()
+@param List<TradeResponse> allTradeList = List.of()
 @param int totalItems
 @param List<Account> accountList
 @param List<StockItem> stockItemList
 @param List<StockItem> tagCountStockItemList = stockItemList
-@param List<String> stockTagList = java.util.List.of()
+@param List<String> stockTagList = List.of()
 @param Map<UUID, String> accountNames
 @param UUID selectedAccountId
 @param UUID selectedStockItemId
-@param List<UUID> selectedAccountIds = java.util.List.of()
-@param List<UUID> selectedStockItemIds = java.util.List.of()
-@param List<String> selectedStockTags = java.util.List.of()
-@param java.time.Instant startDate
-@param java.time.Instant endDate
+@param List<UUID> selectedAccountIds = List.of()
+@param List<UUID> selectedStockItemIds = List.of()
+@param List<String> selectedStockTags = List.of()
+@param Instant startDate
+@param Instant endDate
 @param String timeZone = null
 @param String sort
 @param BigDecimal totalFee
@@ -42,20 +50,20 @@
 @param BigDecimal totalAllRealizedProfit = BigDecimal.ZERO
 @param String rangeMode = null
 @param String dataFirstDate = null
-@param List<AccountRealizedRow> accountRealizedList = java.util.List.of()
-@param List<TradeProfit> stockRealizedList = java.util.List.of()
+@param List<AccountRealizedRow> accountRealizedList = List.of()
+@param List<TradeProfit> stockRealizedList = List.of()
 @param long realizedWinCount = 0L
 @param int realizedStockCount = 0
 <%-- 전기 실현 손익(2026-10-28) - 실현 손익 카드 아래 줄. 전체 기간이거나 조회 실패면 없다. --%>
 @param BigDecimal previousRealizedProfit = null
-@param java.time.LocalDate previousStartDate = null
-@param java.time.LocalDate previousEndDate = null
+@param LocalDate previousStartDate = null
+@param LocalDate previousEndDate = null
 @param BigDecimal previousToDateRealizedProfit = null
-@param java.time.LocalDate previousToDateEndDate = null
+@param LocalDate previousToDateEndDate = null
 
 !{
-	DecimalFormat decimalFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
-	java.util.function.Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
+	DecimalFormat decimalFormat = StockFormatUtil.wonFormat();
+	Function<Object, String> countMessage = value -> StockViewSupport.msg("common.count", value);
 
 	// 여러 섹션이 공유하는 라벨 (하위 컴포넌트에 param 으로 전달)
 	String accountLabel = MessageUtil.getMessage("common.label.account");
@@ -72,10 +80,10 @@
 	DateTimeFormatter ymd = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	// 차트(stock-charts.ts)가 쓰는 것은 날짜·종목·계좌·구분·금액·실현손익이다. 종목/계좌 이름은 줄마다 되풀이되므로
 	// 색인표(S/A)로 한 번만 싣고 줄은 배열로 줄인다(실측 2026-09-09: 전체 기간 321 건에서 31KB → 약 11KB). 모양은 인라인에서 되펼친다.
-	java.time.ZoneId chartZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
-	List<TradeResponse> chartList = allTradeList != null ? allTradeList : java.util.List.of();
-	java.util.LinkedHashMap<String, Integer> stockIndex = new java.util.LinkedHashMap<>();
-	java.util.LinkedHashMap<String, Integer> accountIndex = new java.util.LinkedHashMap<>();
+	ZoneId chartZone = StockZoneUtil.resolve(timeZone);
+	List<TradeResponse> chartList = allTradeList != null ? allTradeList : List.of();
+	LinkedHashMap<String, Integer> stockIndex = new LinkedHashMap<>();
+	LinkedHashMap<String, Integer> accountIndex = new LinkedHashMap<>();
 	StringBuilder rowsSb = new StringBuilder();
 	for (int ci = 0; ci < chartList.size(); ci++) {
 		TradeResponse tr = chartList.get(ci);
@@ -84,29 +92,29 @@
 		int si = stockIndex.computeIfAbsent(stockName, k -> stockIndex.size());
 		int ai = accountIndex.computeIfAbsent(accountName, k -> accountIndex.size());
 		if (ci > 0) rowsSb.append(",");
-		rowsSb.append("[\"").append(tr.tradeDate() != null ? ymd.format(tr.tradeDate().atZone(chartZone)) : "").append("\",")
+		rowsSb.append("[\"").append(tr.tradeDate() != null ? ymd.format(StockZoneUtil.recordedDate(tr.tradeDate(), chartZone)) : "").append("\",")
 			.append(si).append(",").append(ai).append(",\"").append(tr.type() != null ? tr.type().name() : "").append("\",")
 			.append(tr.amount() != null ? tr.amount().toPlainString() : "0").append(",")
 			.append(tr.realizedProfit() != null ? tr.realizedProfit().toPlainString() : "0").append("]");
 	}
 	// 이름표(S/A)는 JS 문자열 배열로 - 따옴표 · 역슬래시 · 꺾쇠(<) 와 제어문자를 막는다(ChartSeriesJs.jsString). 2026-10-22 까지 매매 목록 · 배당 목록 ·
 	// 활동 목록이 제각각 이스케이프를 들고 있었고 < 를 막지 않아, 이름에 </script> 가 들어가면 아래 $unsafe 스크립트가 끊겼다.
-	String tradeDataJs = "const S=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(stockIndex.keySet()) + ",A=" + net.luversof.web.gate.stock.util.ChartSeriesJs.stringArray(accountIndex.keySet())
+	String tradeDataJs = "const S=" + ChartSeriesJs.stringArray(stockIndex.keySet()) + ",A=" + ChartSeriesJs.stringArray(accountIndex.keySet())
 		+ ",tradeData=[" + rowsSb + "].map(function(r){return {tradeDate:r[0],stockItem:S[r[1]],account:A[r[2]],type:r[3],amount:r[4],profit:r[5]};});";
 
 	// Nav 버튼 활성화 여부 (use client timezone if available)
 	boolean isAllMode = "all".equals(rangeMode);
-	java.time.ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(timeZone);
-	java.time.LocalDate today = java.time.LocalDate.now(zone);
-	java.time.LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
+	ZoneId zone = StockZoneUtil.resolve(timeZone);
+	LocalDate today = LocalDate.now(zone);
+	LocalDate startLocal = startDate != null ? startDate.atZone(zone).toLocalDate() : null;
 	// '전체' 는 날짜를 안 보내므로 기간 배지가 빌 수밖에 없다. 그때는 이 화면이 실제로 그린 자료의
 	// 구간을 대신 적는다 - 화면마다 덮는 범위가 다르므로 사용자 전체의 최초 일자를 쓰면 틀린 날짜가 나온다.
-	var coveredRange = net.luversof.web.gate.stock.util.StockCoveredRangeUtil.covered(allTradeList, net.luversof.web.gate.stock.dto.response.TradeResponse::tradeDate, zone);
-	java.time.LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
+	var coveredRange = StockCoveredRangeUtil.covered(allTradeList, TradeResponse::tradeDate, zone);
+	LocalDate endLocal = endDate != null ? endDate.atZone(zone).toLocalDate() : null;
 	boolean canNext = !isAllMode && endLocal != null && endLocal.isBefore(today);
 	boolean canPrev = !isAllMode && startLocal != null
 		&& dataFirstDate != null && !dataFirstDate.isEmpty()
-		&& startLocal.isAfter(java.time.LocalDate.parse(dataFirstDate));
+		&& startLocal.isAfter(LocalDate.parse(dataFirstDate));
 }
 
 <%-- 서버가 실제로 적용한 기간 프리셋. 프리셋 버튼의 눌린 표시는 클릭 즉시 바뀌는데, 앞 요청이
@@ -210,7 +218,7 @@
 		 얼마였는지, 실현손익이 얼마였는지는 읽을 수 없다.
 		 집계는 게이트에서 한다 - 화면이 이미 고른 기간의 매매 원장을 통째로 받고 있다. --%>
 	@template.stock.htmx.fragments.trade.tradePeriodBreakdown(
-		tradePeriods = net.luversof.web.gate.stock.util.StockTradePeriodUtil.of(allTradeList, zone)
+		tradePeriods = StockTradePeriodUtil.of(allTradeList, zone)
 	)
 
 	<%-- 빈 기간에서 다음 행동을 준다 - 실측 2026-09-13: 같은 상황(2019-02-01~07)에서 활동 목록만

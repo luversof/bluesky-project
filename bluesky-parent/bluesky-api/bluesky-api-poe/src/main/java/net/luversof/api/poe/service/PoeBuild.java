@@ -37,7 +37,9 @@ public record PoeBuild(
       int quality,
       // 젬 소켓 색(red=힘 green=민첩 blue=지능 white). 인게임은 젬을 이 색으로 구분하고
       // 우리 /poe/gems 목록도 이 색으로 묶는데, 빌드 화면만 색 정보가 없어 액티브/보조로 칠하고 있었다.
-      String color) {}
+      String color,
+      // PoB Gem enabled — 꺼진 젬(Phase Run 등)은 흐리게(10-29 R8: 실빌드 60 중 40개에 있다)
+      boolean enabled) {}
 
   /**
    * 장착 아이템 하나. uniqueSlug/baseSlug 가 있으면 각각 고유/일반 아이템 DB와 매칭된 것.

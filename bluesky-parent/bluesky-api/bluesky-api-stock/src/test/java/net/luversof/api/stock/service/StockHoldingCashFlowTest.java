@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.jdbc.repository.query.Query;
 
 import net.luversof.api.stock.domain.StockItemCashFlow;
+import net.luversof.api.stock.domain.StockItemFirstBuy;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.web.dto.response.StockCashFlowResponse;
 
@@ -107,5 +108,32 @@ class StockHoldingCashFlowTest {
         .containsPattern("d\\.\"stockItem_id\" = ANY\\(string_to_array\\(:stockItemIds")
         .contains("a.\"user_id\" = :userId AND t.")
         .contains("a.\"user_id\" = :userId AND d.");
+  }
+
+  /**
+   * 원장 날짜는 자정 UTC(= KST 09:00)로 박혀 있다. 그런 값을 UTC 서쪽 존으로 바꾸면 하루 앞당겨졌다(검토 2026-10-31: 보유 기간 · XIRR
+   * 날짜가 TradeProfitService 의 날짜 규칙과 달랐다). 실제 시각이 든 값은 예전처럼 요청 존을 따른다.
+   */
+  @Test
+  void 자정_UTC_날짜는_UTC_서쪽_존에서도_밀리지_않는다() {
+    ZoneId newYork = ZoneId.of("America/New_York");
+    var flows =
+        StockHoldingPeriodService.netByDay(
+            List.of(
+                row(SAMSUNG, "2026-09-02T00:00:00Z", "-100"),
+                row(SAMSUNG, "2026-09-03T15:30:00Z", "7")),
+            newYork);
+    assertThat(flows.get(SAMSUNG))
+        .containsExactly(
+            new StockCashFlowResponse(LocalDate.parse("2026-09-02"), new BigDecimal("-100")),
+            new StockCashFlowResponse(LocalDate.parse("2026-09-03"), new BigDecimal("7")));
+
+    TradeRepository repository = mock(TradeRepository.class);
+    when(repository.findFirstBuyDateByStockItem(eq(SAMSUNG), isNull()))
+        .thenReturn(List.of(new StockItemFirstBuy(RISE, Instant.parse("2026-09-02T00:00:00Z"))));
+    StockHoldingPeriodService service = new StockHoldingPeriodService();
+    service.setTradeRepository(repository);
+    assertThat(service.findFirstBuyDateByStockItem(SAMSUNG, newYork, null))
+        .containsEntry(RISE, LocalDate.parse("2026-09-02"));
   }
 }

@@ -19,30 +19,37 @@
 @import net.luversof.web.gate.stock.util.ChartSeriesJs
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.math.RoundingMode
+@import net.luversof.web.gate.stock.domain.DetailNavEntry
+@import net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary
+@import net.luversof.web.gate.stock.util.StockHoldingReturnUtil
+@import net.luversof.web.gate.stock.util.StockMessageSplitUtil
+@import net.luversof.web.gate.stock.util.StockPriceBasisUtil
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param Account account = null
 @param int holdingCount = 0
-@param BigDecimal evaluationAmount = java.math.BigDecimal.ZERO
-@param java.time.LocalDate priceBasisDate = null
+@param BigDecimal evaluationAmount = BigDecimal.ZERO
+@param LocalDate priceBasisDate = null
 @param String priceBasisIntradayTime = null
-@param BigDecimal totalBuyCost = java.math.BigDecimal.ZERO
-@param BigDecimal evaluationProfit = java.math.BigDecimal.ZERO
-@param BigDecimal realizedProfit = java.math.BigDecimal.ZERO
-@param BigDecimal realizedProfitOwnBasis = java.math.BigDecimal.ZERO
+@param BigDecimal totalBuyCost = BigDecimal.ZERO
+@param BigDecimal evaluationProfit = BigDecimal.ZERO
+@param BigDecimal realizedProfit = BigDecimal.ZERO
+@param BigDecimal realizedProfitOwnBasis = BigDecimal.ZERO
 <%-- 실현 손익 카드의 수익률 분모 - 카드 금액(기록값) 기준과 '이 계좌 기준' 줄의 기준 둘. 이 기간에 판 적이 없으면 0. --%>
-@param BigDecimal realizedCostBasis = java.math.BigDecimal.ZERO
-@param BigDecimal realizedOwnCostBasis = java.math.BigDecimal.ZERO
-@param BigDecimal totalDividend = java.math.BigDecimal.ZERO
+@param BigDecimal realizedCostBasis = BigDecimal.ZERO
+@param BigDecimal realizedOwnCostBasis = BigDecimal.ZERO
+@param BigDecimal totalDividend = BigDecimal.ZERO
 <%-- 이 계좌 전체 거래의 연평균(XIRR)과 그 시작일(최초 매수). 기간 선택과 무관하다. --%>
-@param net.luversof.web.gate.stock.util.StockHoldingReturnUtil.Row accountReturn = null
+@param StockHoldingReturnUtil.Row accountReturn = null
 @param LocalDate accountFirstTradeDate = null
-@param List<TradeProfit> holdings = java.util.List.of()
-@param List<TradeResponse> trades = java.util.List.of()
-@param List<DividendResponse> dividends = java.util.List.of()
-@param List<TradeProfitTimeSeriesPoint> timeSeries = java.util.List.of()
-@param List<net.luversof.web.gate.stock.domain.DetailNavEntry> accountNavEntries = java.util.List.of()
+@param List<TradeProfit> holdings = List.of()
+@param List<TradeResponse> trades = List.of()
+@param List<DividendResponse> dividends = List.of()
+@param List<TradeProfitTimeSeriesPoint> timeSeries = List.of()
+@param List<DetailNavEntry> accountNavEntries = List.of()
 @param DateTimeFormatter chartFormatter = null
-@param Map<UUID, String> stockNameById = java.util.Map.of()
+@param Map<UUID, String> stockNameById = Map.of()
 @param LocalDate filterStartLocal = null
 @param LocalDate filterEndLocal = null
 @param Instant filterStartInstant = null
@@ -58,15 +65,15 @@
 @param BigDecimal periodUnrealizedDelta = null
 @param Double periodProfitRatePct = null
 @param BigDecimal periodCapitalBase = null
-@param List<net.luversof.web.gate.stock.dto.response.TradeProfitPeriodSummary> periodBreakdown = java.util.List.of()
+@param List<TradeProfitPeriodSummary> periodBreakdown = List.of()
 @param String periodBreakdownNote = ""
 
 !{
 	// 아래 표의 날짜 칸은 이 페이지가 차트/필터에 넘기는 존과 같아야 한다.
 	// 예전에는 서버 존이라 브라우저 존이 다르면 한 화면 안에서 하루가 어긋났다.
-	ZoneId zone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(filterTimeZone);
-	String evalColor = evaluationProfit != null && evaluationProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
-	String realizedColor = realizedProfit != null && realizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss";
+	ZoneId zone = StockZoneUtil.resolve(filterTimeZone);
+	String evalColor = StockFormatUtil.amountTone(evaluationProfit);
+	String realizedColor = StockFormatUtil.amountTone(realizedProfit);
 	BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
 	double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 	// 원가가 0 이면 수익률은 <b>없는 값</b>이다(0 / 0). 예전에는 0.0 으로 떨어져 "0 0.0%" 가 잰 값처럼 보였다 -
@@ -145,7 +152,7 @@
 	<%-- "현재가"·평가액은 마지막으로 수집된 종가 기준이라, 오늘 시세가 아직 없으면 며칠 전 값일 수 있다.
 	     어느 날 기준인지 밝혀 실시간 시세로 오해하지 않게 한다(자산현황·포트폴리오와 같은 표기). --%>
 	@if(priceBasisDate != null)
-		<p class="mb-2 text-xs text-base-content/60">${net.luversof.web.gate.stock.util.StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</p>
+		<p class="mb-2 text-xs text-base-content/60">${StockPriceBasisUtil.basisText(priceBasisIntradayTime, priceBasisDate)}</p>
 	@endif
 	<%-- 수수료·거래세 기록을 되받을 수 없는 계좌. 원장 점검(ACCOUNT_WITHOUT_ANY_FEE)에서는 고칠 수 없는
 	     지적이라 빼지만, 사실 자체는 그 값이 어긋나는 자리에서 밝힌다 - 안 그러면 부풀려진 실현손익이
@@ -196,13 +203,13 @@
 				? StockFormatUtil.signedPct(realizedCostRatePct, 1) + " · " + MessageUtil.getMessage("stock.item.detail.rate.basis.sold")
 				: MessageUtil.getMessage("stock.item.detail.rate.none.sold"),
 			subBefore = basisGapNotable
-				? net.luversof.web.gate.stock.util.StockMessageSplitUtil.beforePlaceholder(basisGapPattern)
+				? StockMessageSplitUtil.beforePlaceholder(basisGapPattern)
 				: "",
 			subAmount = basisGapNotable
 				? StockFormatUtil.signedWon(StockFormatUtil.displayWon(realizedProfitOwnBasis))
 				: "",
 			subAfter = basisGapNotable
-				? net.luversof.web.gate.stock.util.StockMessageSplitUtil.afterPlaceholder(basisGapPattern) + (realizedOwnRateKnown ? " · " + StockFormatUtil.signedPct(realizedOwnRatePct, 1) : "")
+				? StockMessageSplitUtil.afterPlaceholder(basisGapPattern) + (realizedOwnRateKnown ? " · " + StockFormatUtil.signedPct(realizedOwnRatePct, 1) : "")
 				: "",
 			tone = realizedRateKnown ? realizedColor : "")
 		@template._components.ui.statCard(
@@ -225,7 +232,7 @@
 				: (accountSinceAt >= 0 ? accountSinceMessage.substring(0, accountSinceAt) : accountSinceMessage + " ")),
 			subDate = accountReturn.shortTerm() ? "" : accountFirstTradeDate.toString(),
 			subDateAfter = accountReturn.shortTerm() || accountSinceAt < 0 ? "" : accountSinceMessage.substring(accountSinceAt + 3),
-			tone = accountReturn.annualizedPct() == null ? "" : (accountReturn.annualizedPct().signum() >= 0 ? "text-profit" : "text-loss"),
+			tone = StockFormatUtil.rateTone(accountReturn.annualizedPct(), 1),
 			amount = false)
 		</div>
 		@endif
@@ -327,10 +334,10 @@
 							<tr>
 								<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.item(holding.stockItemId() != null ? holding.stockItemId().toString() : "")}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
 								<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
-								<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue() : 0)}</td>
+								<td class="text-right font-mono amount-value hidden sm:table-cell">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, RoundingMode.HALF_UP).longValue() : 0)}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell" data-account-holding-current-price>${holding.currentPrice() != null ? String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice())) : "-"}</td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
-								<td class="text-right font-mono amount-value ${evalProfit >= 0 ? "text-profit" : "text-loss"}">${StockFormatUtil.signedWon(evalProfit)} <span class="text-xs">(${StockFormatUtil.signedPct(holdingEvalRatePct, 1)})</span></td>
+								<td class="text-right font-mono amount-value ${StockFormatUtil.amountTone(evalProfit)}">${StockFormatUtil.signedWon(evalProfit)} <span class="text-xs">(${StockFormatUtil.signedPct(holdingEvalRatePct, 1)})</span></td>
 								<td class="text-right font-mono text-base-content/70" style="${StockFormatUtil.weightBarStyle(BigDecimal.valueOf(holdingWeightPct))}">${StockFormatUtil.pct(holdingWeightPct, 1)}</td>
 							</tr>
 						@endfor
@@ -367,7 +374,7 @@
 							!{boolean isBuy = trade.type() == TradeType.BUY;}
 							!{String tName = trade.stockItemName() != null ? trade.stockItemName() : stockNameById.getOrDefault(trade.stockItemId(), "-");}
 							<tr>
-								<td class="tabular-nums whitespace-nowrap date-whole">${trade.tradeDate() != null ? trade.tradeDate().atZone(zone).toLocalDate().toString() : "-"}</td>
+								<td class="tabular-nums whitespace-nowrap date-whole">${trade.tradeDate() != null ? StockZoneUtil.recordedDate(trade.tradeDate(), zone).toString() : "-"}</td>
 								<td class="font-semibold"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${tName}</a></td>
 								<td><span class="badge badge-sm ${isBuy ? "badge-error badge-outline" : "badge-info badge-outline"}">${isBuy ? MessageUtil.getMessage("stock.trade.label.buy") : MessageUtil.getMessage("stock.trade.label.sell")}</span></td>
 								<td class="text-right font-mono amount-value">${String.format("%,d", trade.quantity())}</td>
@@ -407,7 +414,7 @@
 							!{String dName = dividend.stockItemName() != null ? dividend.stockItemName() : stockNameById.getOrDefault(dividend.stockItemId(), "-");}
 							!{ boolean dividendTaxZero = dividend.tax() == null || dividend.tax().signum() == 0; }
 							<tr>
-								<td class="tabular-nums whitespace-nowrap date-whole">${dividend.payDate() != null ? dividend.payDate().atZone(zone).toLocalDate().toString() : "-"}</td>
+								<td class="tabular-nums whitespace-nowrap date-whole">${dividend.payDate() != null ? StockZoneUtil.recordedDate(dividend.payDate(), zone).toString() : "-"}</td>
 								<td class="font-semibold"><a href="${StockDetailLinkUtil.item(dividend.stockItemId() != null ? dividend.stockItemId().toString() : "")}" class="link link-hover">${dName}</a></td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
 								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60" title="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>

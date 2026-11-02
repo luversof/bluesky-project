@@ -8,6 +8,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -65,7 +67,7 @@ public class MonthlyEtfViewSupport {
   public static final String SORT_SLOT = "slot";
 
   /** 화면이 고를 수 있는 기간(개월). api-stock 이 내려보내는 기간과 같아야 한다. */
-  public static final java.util.List<Integer> PERIODS = java.util.List.of(1, 3, 6, 12);
+  public static final List<Integer> PERIODS = List.of(1, 3, 6, 12);
 
   /** 기본 기간. 한 해를 보면 분배금이 한 바퀴 돌아 합산이 뜻을 갖는다. */
   public static final int DEFAULT_PERIOD = 12;
@@ -236,7 +238,7 @@ public class MonthlyEtfViewSupport {
    * @param pickedSymbols 시뮬레이터와 같은 답으로 낸 이번 적립 종목코드
    */
   public List<MonthlyEtfRowView> filterContribution(
-      List<MonthlyEtfRowView> rows, java.util.Set<String> pickedSymbols, String view) {
+      List<MonthlyEtfRowView> rows, Set<String> pickedSymbols, String view) {
     if (!VIEW_CONTRIBUTION.equals(view)) {
       return rows;
     }
@@ -461,8 +463,7 @@ public class MonthlyEtfViewSupport {
   }
 
   /** 값이 없는 행을 뒤로 보내는 비교자. 정렬 방향을 뒤집어도 빈 칸은 계속 뒤에 남는다. */
-  private Comparator<MonthlyEtfRowView> nullsLast(
-      java.util.function.Function<MonthlyEtfRowView, BigDecimal> value) {
+  private Comparator<MonthlyEtfRowView> nullsLast(Function<MonthlyEtfRowView, BigDecimal> value) {
     return Comparator.comparing(value, Comparator.nullsLast(Comparator.naturalOrder()));
   }
 

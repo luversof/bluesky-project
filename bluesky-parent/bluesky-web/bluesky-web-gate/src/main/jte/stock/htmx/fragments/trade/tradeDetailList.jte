@@ -9,10 +9,13 @@
 @import net.luversof.web.gate.stock.constant.TradeType
 @import io.github.luversof.boot.context.support.MessageUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
+@import java.time.ZoneId
+@import java.util.function.Function
+@import net.luversof.web.gate.stock.util.StockZoneUtil
 
 @param List<TradeResponse> tradeList
 <%-- 날짜 칸에 쓸 존. 이 화면의 기간 표시·필터와 같은 존이어야 한다(부모가 요청 타임존으로 푼 값). --%>
-@param java.time.ZoneId zone
+@param ZoneId zone
 @param int totalItems
 @param Map<UUID, String> accountNames
 @param String sort
@@ -20,7 +23,7 @@
 @param BigDecimal totalTax
 @param BigDecimal totalRealizedProfit
 @param DecimalFormat decimalFormat
-@param java.util.function.Function<Object, String> countMessage
+@param Function<Object, String> countMessage
 @param String accountLabel
 @param String stockLabel
 @param String realizedProfitLabel
@@ -51,7 +54,7 @@
 	String amountLabel = MessageUtil.getMessage("common.label.amount");
 	String noTradeDataLabel = MessageUtil.getMessage("stock.trade.message.no.data");
 	String totalLabelText = MessageUtil.getMessage("common.label.total");
-	java.util.function.Function<TradeType, String> tradeTypeLabel = type -> type == TradeType.BUY ? buyLabel : sellLabel;
+	Function<TradeType, String> tradeTypeLabel = type -> type == TradeType.BUY ? buyLabel : sellLabel;
 }
 
 	<%-- Collapsible Detail List --%>
@@ -86,7 +89,7 @@
 					<tbody>
 					@for(TradeResponse trade : tradeList)
 					<tr>
-						<td class="whitespace-nowrap">${trade.tradeDate() != null ? dateFormatter.format(trade.tradeDate().atZone(zone)) : ""}</td>
+						<td class="whitespace-nowrap">${trade.tradeDate() != null ? dateFormatter.format(StockZoneUtil.recordedDate(trade.tradeDate(), zone)) : ""}</td>
 						<td>
 							<span class="${trade.type() == TradeType.BUY ? "badge badge-error badge-outline badge-sm" : "badge badge-info badge-outline badge-sm"}">
 								${tradeTypeLabel.apply(trade.type())}
@@ -99,7 +102,7 @@
 						<td class="text-right font-mono amount-value">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>
 						<td class="text-right text-xs text-base-content/60 amount-value hidden min-[1300px]:table-cell print:table-cell">@if(trade.fee() == null || trade.fee().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(trade.fee())}@endif</td>
 						<td class="text-right text-xs text-base-content/60 amount-value hidden min-[1300px]:table-cell print:table-cell">@if(trade.tax() == null || trade.tax().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(trade.tax())}@endif</td>
-						<td class="text-right font-bold font-mono amount-value ${trade.realizedProfit() != null ? (trade.realizedProfit().compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss") : ""}">
+						<td class="text-right font-bold font-mono amount-value ${StockFormatUtil.amountTone(trade.realizedProfit())}">
 							<%-- 손익은 부호가 뜻을 바꾼다 - 실측 2026-09-12: 이 열의 55 값 중 음수 6 개만 "-" 를 달고 양수 49 개는
 								 맨 숫자였다. 색만으로 방향을 말하면 고대비 모드(실측: 손익 색이 모두 검정 한 가지로 합쳐짐)와
 								 색을 구분하기 어려운 눈에는 뜻이 사라진다. 다른 화면은 StockFormatUtil.signedWon 으로 이미 부호를 붙인다. --%>
@@ -124,7 +127,7 @@
 							<td class="text-right font-mono amount-value"></td>
 							<td class="text-right font-mono amount-value hidden min-[1300px]:table-cell print:table-cell">${totalFee != null ? decimalFormat.format(totalFee) : "0"}</td>
 							<td class="text-right font-mono amount-value hidden min-[1300px]:table-cell print:table-cell">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
-							<td class="text-right font-mono amount-value ${totalRealizedProfit != null && totalRealizedProfit.compareTo(BigDecimal.ZERO) >= 0 ? "text-profit" : "text-loss"}">
+							<td class="text-right font-mono amount-value ${StockFormatUtil.amountTone(totalRealizedProfit)}">
 								${totalRealizedProfit != null ? StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalRealizedProfit)) : "0"}
 							</td>
 						</tr>

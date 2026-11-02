@@ -258,7 +258,9 @@
 				for (let len = 2; len <= Math.min(14, seg.length); len++) {
 					for (let i = 0; i + len <= seg.length; i++) {
 						const cand = seg.substr(i, len);
-						if (cand.trim().length < 2) continue;
+						// 앞뒤가 공백인 후보는 버린다(10-29 R5) — 걸러야 할 쪽 구간은 숫자 자리에서 잘려 앞뒤 공백이 지워져 'rs have ' 같은 후보가 안 걸린 척 통과했고,
+						//   인게임에선 'rs.have.' 가 'Monsters have 25%…' 에 걸렸다(다중 선택 3000회 중 156회). 다듬은 후보가 따로 있어 잃는 것은 없다
+						if (cand !== cand.trim() || cand.length < 2) continue;
 						seen.add(cand);
 					}
 				}

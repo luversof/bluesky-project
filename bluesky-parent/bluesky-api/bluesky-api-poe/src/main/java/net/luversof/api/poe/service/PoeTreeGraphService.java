@@ -97,7 +97,9 @@ public class PoeTreeGraphService {
       List<String> statsKo,
       String icon,
       // 핵심노드(10-23 Q75 — 트리 데이터 keystone:true 8개, 주요 스킬 선택지에 없다). 아니면 null
-      Boolean keystone) {}
+      Boolean keystone,
+      // 더 이상 생성되지 않음(모드 가중치 0 — cluster-jewels.json notableOptions 태그 없음, 10-29 C2). 아니면 null
+      Boolean retired) {}
 
   private record PoeTreeFile(
       List<ClassInfo> classes,

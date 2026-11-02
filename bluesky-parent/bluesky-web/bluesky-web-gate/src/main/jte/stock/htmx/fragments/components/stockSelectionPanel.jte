@@ -1,19 +1,20 @@
 @import java.util.List
 @import net.luversof.web.gate.stock.domain.StockItem
+@import java.util.function.Function
 
 @param String tagLabel
 @param String allLabel
 @param String helperLabel = null
 @param String selectedTagSummaryLabel = null
-@param List<String> stockTagList = java.util.List.of()
-@param List<String> selectedStockTags = java.util.List.of()
-@param List<StockItem> stockItemList = java.util.List.of()
+@param List<String> stockTagList = List.of()
+@param List<String> selectedStockTags = List.of()
+@param List<StockItem> stockItemList = List.of()
 @param List<StockItem> tagCountStockItemList = stockItemList
 
 !{
 	boolean hasTagOptions = stockTagList != null && !stockTagList.isEmpty();
 	boolean hasSelectedTags = selectedStockTags != null && !selectedStockTags.isEmpty();
-	java.util.function.Function<String, Long> stockTagCount = tag -> tagCountStockItemList != null
+	Function<String, Long> stockTagCount = tag -> tagCountStockItemList != null
 		? tagCountStockItemList.stream()
 			.filter(stockItem -> stockItem != null && stockItem.tags() != null && stockItem.tags().contains(tag))
 			.count()

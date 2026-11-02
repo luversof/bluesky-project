@@ -1,7 +1,11 @@
 package net.luversof.api.stock.web.controller;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +18,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.api.stock.domain.MonthlyDividendPayout;
+import net.luversof.api.stock.domain.PriceLimitBreachRow;
+import net.luversof.api.stock.domain.RawCloseCoverage;
+import net.luversof.api.stock.domain.ZeroVolumeChangedClose;
 import net.luversof.api.stock.repository.DividendRepository;
+import net.luversof.api.stock.repository.MonthlyDividendPayoutQuery;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockPriceHistoryRepository;
 import net.luversof.api.stock.repository.TradeRepository;
@@ -35,8 +44,7 @@ public class DataStatusController {
 
   @Autowired private StockItemRepository stockItemRepository;
 
-  @Autowired
-  private net.luversof.api.stock.repository.MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
+  @Autowired private MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
 
   @GetMapping
   public DataStatusResponse findDataStatus(@RequestParam UUID userId) {
@@ -49,12 +57,11 @@ public class DataStatusController {
     var rowCounts = stockPriceHistoryRepository.findRowCounts();
     // 개수와 예시 행을 따로 조회하면 같은 비싼 스캔(시세 57,586행 위 LATERAL/윈도우)을 두 번 한다
     // - 실측 2026-09-10: 이 엔드포인트만 113ms 로 다른 조회의 3~4배였다. 한 번에 행과 총 개수를 함께 받는다.
-    List<net.luversof.api.stock.domain.ZeroVolumeChangedClose> changedCloseRows =
+    List<ZeroVolumeChangedClose> changedCloseRows =
         stockPriceHistoryRepository.findZeroVolumeRowsWithChangedClose();
-    List<net.luversof.api.stock.domain.PriceLimitBreachRow> breachRows =
-        stockPriceHistoryRepository.findPriceLimitBreachRows();
+    List<PriceLimitBreachRow> breachRows = stockPriceHistoryRepository.findPriceLimitBreachRows();
     // 원주가 열(schema-alter 2026-10-02)이 없는 DB 면 묻지 않는다 - 없는 열을 부르면 화면 전체가 실패한다.
-    net.luversof.api.stock.domain.RawCloseCoverage rawCloseCoverage =
+    RawCloseCoverage rawCloseCoverage =
         stockPriceHistoryRepository.countRawClosePriceColumn() == 0
             ? null
             : stockPriceHistoryRepository.findRawCloseCoverage(userId);
@@ -77,7 +84,7 @@ public class DataStatusController {
         changedCloseRows.isEmpty() ? 0L : changedCloseRows.get(0).totalCount(),
         toChangedCloseRows(changedCloseRows),
         payouts.stream()
-            .map(net.luversof.api.stock.domain.MonthlyDividendPayout::getPayDate)
+            .map(MonthlyDividendPayout::getPayDate)
             .filter(Objects::nonNull)
             .max(LocalDate::compareTo)
             .orElse(null),
@@ -100,12 +107,12 @@ public class DataStatusController {
    * <p>이력이 3건 미만이면 주기를 알 수 없으므로 판단하지 않는다.
    */
   private List<DataStatusResponse.MonthlyDividendPayoutOverdueRow> overduePayouts(
-      Iterable<net.luversof.api.stock.domain.MonthlyDividendPayout> payouts) {
+      Iterable<MonthlyDividendPayout> payouts) {
     Map<UUID, List<LocalDate>> daysByItem = new HashMap<>();
     for (var payout : payouts) {
       if (payout.getStockItemId() != null && payout.getPayDate() != null) {
         daysByItem
-            .computeIfAbsent(payout.getStockItemId(), key -> new java.util.ArrayList<>())
+            .computeIfAbsent(payout.getStockItemId(), key -> new ArrayList<>())
             .add(payout.getPayDate());
       }
     }
@@ -117,7 +124,7 @@ public class DataStatusController {
         .findAllById(daysByItem.keySet())
         .forEach(item -> names.put(item.getId(), item.getName()));
     LocalDate today = LocalDate.now(MARKET_ZONE_ID);
-    List<DataStatusResponse.MonthlyDividendPayoutOverdueRow> overdue = new java.util.ArrayList<>();
+    List<DataStatusResponse.MonthlyDividendPayoutOverdueRow> overdue = new ArrayList<>();
     for (var entry : daysByItem.entrySet()) {
       List<LocalDate> days = entry.getValue().stream().distinct().sorted().toList();
       if (days.size() < 3) {
@@ -125,7 +132,7 @@ public class DataStatusController {
       }
       int widest = widestRecentGapDays(days);
       LocalDate last = days.get(days.size() - 1);
-      int elapsed = (int) java.time.temporal.ChronoUnit.DAYS.between(last, today);
+      int elapsed = (int) ChronoUnit.DAYS.between(last, today);
       if (elapsed > widest) {
         overdue.add(
             new DataStatusResponse.MonthlyDividendPayoutOverdueRow(
@@ -158,9 +165,7 @@ public class DataStatusController {
       widest =
           Math.max(
               widest,
-              (int)
-                  java.time.temporal.ChronoUnit.DAYS.between(
-                      sortedDays.get(index - 1), sortedDays.get(index)));
+              (int) ChronoUnit.DAYS.between(sortedDays.get(index - 1), sortedDays.get(index)));
     }
     return widest;
   }
@@ -174,7 +179,7 @@ public class DataStatusController {
    * <p>이름을 못 찾으면 id 를 그대로 쓴다 &mdash; 이름이 없다고 행을 숨기면 정작 이상한 데이터를 못 보게 된다.
    */
   private List<DataStatusResponse.ZeroVolumeChangedCloseRow> toChangedCloseRows(
-      List<net.luversof.api.stock.domain.ZeroVolumeChangedClose> rows) {
+      List<ZeroVolumeChangedClose> rows) {
     if (rows == null || rows.isEmpty()) {
       return List.of();
     }
@@ -182,7 +187,7 @@ public class DataStatusController {
   }
 
   private List<DataStatusResponse.PriceLimitBreachRow> toBreachRows(
-      List<net.luversof.api.stock.domain.PriceLimitBreachRow> rows) {
+      List<PriceLimitBreachRow> rows) {
     if (rows == null || rows.isEmpty()) {
       return List.of();
     }
@@ -205,7 +210,7 @@ public class DataStatusController {
    * > 0} 으로 걸러 여기 오지 않는다).
    */
   static List<DataStatusResponse.PriceLimitBreachRow> withBreachNames(
-      List<net.luversof.api.stock.domain.PriceLimitBreachRow> rows, Map<UUID, String> names) {
+      List<PriceLimitBreachRow> rows, Map<UUID, String> names) {
     if (rows == null || rows.isEmpty()) {
       return List.of();
     }
@@ -213,20 +218,18 @@ public class DataStatusController {
     return rows.stream()
         .map(
             row -> {
-              java.math.BigDecimal previous = row.previousClosePrice();
+              BigDecimal previous = row.previousClosePrice();
               double changePercent =
                   previous != null && previous.signum() != 0 && row.closePrice() != null
                       ? row.closePrice()
                               .subtract(previous)
-                              .divide(previous, 8, java.math.RoundingMode.HALF_UP)
+                              .divide(previous, 8, RoundingMode.HALF_UP)
                               .doubleValue()
                           * 100.0
                       : 0.0;
               int gapDays =
                   row.previousTradeDate() != null && row.tradeDate() != null
-                      ? (int)
-                          java.time.temporal.ChronoUnit.DAYS.between(
-                              row.previousTradeDate(), row.tradeDate())
+                      ? (int) ChronoUnit.DAYS.between(row.previousTradeDate(), row.tradeDate())
                       : 0;
               return new DataStatusResponse.PriceLimitBreachRow(
                   resolved.getOrDefault(row.stockItemId(), String.valueOf(row.stockItemId())),
@@ -247,7 +250,7 @@ public class DataStatusController {
    * 2025-05-08 로, 종가가 13,450 에서 2,690 으로 정확히 1/5 이 됐다(액면분할이며 수집 오류가 아니다).
    */
   static List<DataStatusResponse.ZeroVolumeChangedCloseRow> withNames(
-      List<net.luversof.api.stock.domain.ZeroVolumeChangedClose> rows, Map<UUID, String> names) {
+      List<ZeroVolumeChangedClose> rows, Map<UUID, String> names) {
     if (rows == null || rows.isEmpty()) {
       return List.of();
     }

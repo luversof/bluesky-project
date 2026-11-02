@@ -4,17 +4,25 @@ import static net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.normali
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -47,7 +55,18 @@ import net.luversof.web.gate.stock.httpexchange.PeriodSummaryClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
+import net.luversof.web.gate.stock.service.FinancialIncomeThresholdSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
+import net.luversof.web.gate.stock.support.StockAsyncSupport;
+import net.luversof.web.gate.stock.util.KrxRecordDateUtil;
+import net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil;
+import net.luversof.web.gate.stock.util.StockCoreHoldingUtil;
+import net.luversof.web.gate.stock.util.StockFormatUtil;
+import net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil;
+import net.luversof.web.gate.stock.util.StockPriceBasisUtil;
+import net.luversof.web.gate.stock.util.StockProfitBasisUtil;
+import net.luversof.web.gate.stock.util.StockTrendSeriesUtil;
+import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 @Controller
 @RequestMapping(value = "/stock/htmx", produces = MediaType.TEXT_HTML_VALUE)
@@ -93,8 +112,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
   /** 올해 줄 배당 카드의 금융소득 기준 비율(2026-10-20). 없으면(시험) 그 말만 빠진다. */
   @org.springframework.beans.factory.annotation.Autowired(required = false)
-  private net.luversof.web.gate.stock.service.FinancialIncomeThresholdSupport
-      financialIncomeThresholdSupport;
+  private FinancialIncomeThresholdSupport financialIncomeThresholdSupport;
 
   /** 서로 의존이 없는 원격 호출을 동시에 던진다. */
   private <T> CompletableFuture<T> supplyRemote(Supplier<T> supplier) {
@@ -108,7 +126,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
    * 이 저장소에서 같은 공식이 여러 곳에 있으면 한쪽만 고쳐져 갈라진 사례가 반복됐다(활동 묶기 3벌, 창 계산 3벌, 매도원가 2곳).
    */
   private static <T> T joinRemote(CompletableFuture<T> future) {
-    return net.luversof.web.gate.stock.support.StockAsyncSupport.join(future);
+    return StockAsyncSupport.join(future);
   }
 
   @BlueskyPreAuthorize
@@ -138,7 +156,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
     // 최근 6개월 자산 추이 (히어로 미니 차트) — assetGrowthView 와 동일한 timeSeries 조회 패턴
     // 들어온 필터(accountIdList/stockItemIdList)를 유지한 채 기간만 6개월로 덮어쓴다
-    java.time.ZoneId trendZone = java.time.ZoneId.systemDefault();
+    ZoneId trendZone = ZoneId.systemDefault();
     LocalDate trendToday = LocalDate.now(trendZone);
     TradeProfitRequest trendRequest = copyTradeProfitRequest(request);
     trendRequest.setStartDate(trendToday.minusMonths(6).atStartOfDay(trendZone).toInstant());
@@ -149,7 +167,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 올해 매매·배당 합계. 대시보드는 전기간 합계만 보여 줘서 "올해 얼마 벌었나" 는 화면 네 곳을
     // 돌아야 알 수 있었다(실측 2026-09-10). api-stock 이 집계 한 줄로 돌려주므로(268 바이트) 여기서
     // 나머지 호출과 나란히 던진다 - 순차로 붙이면 그만큼 응답이 늘어난다.
-    java.time.ZoneId periodZone = net.luversof.web.gate.stock.util.StockZoneUtil.resolve(null);
+    ZoneId periodZone = StockZoneUtil.resolve(null);
     LocalDate periodFrom = LocalDate.now(periodZone).withDayOfYear(1);
     LocalDate periodTo = LocalDate.now(periodZone);
     var periodParams = new org.springframework.util.LinkedMultiValueMap<String, String>();
@@ -172,7 +190,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         supplyRemote(() -> periodSummaryClient.findPeriodSummary(previousParams));
     // 올해 줄의 배당 카드에 금융소득 종합과세 기준 대비 비율(2026-10-20) - 올해 줄처럼 계좌 필터와 무관한 사용자 전체 값.
     // 조회가 실패하면 null 이라 그 말만 빠진다. 과세 연도는 한국 세법의 해라 존을 박는다.
-    java.time.ZoneId taxZone = java.time.ZoneId.of("Asia/Seoul");
+    ZoneId taxZone = ZoneId.of("Asia/Seoul");
     var financialIncomeFuture =
         financialIncomeThresholdSupport == null
             ? null
@@ -300,7 +318,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         dividendByStockFuture == null
             ? null
             : dividendByStockItem.values().stream()
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     // 배당을 얹어서 센다. totalProfitNet 은 실현+평가일 뿐 배당이 없다. 이 카드 바로 위에 누적 배당이
@@ -317,7 +335,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 끼워 넣기 때문이다. 자산 성장 화면은 그 점에 주석을 달지만 이 작은 선은 점도 주석도
     // 그리지 않고 x 축이 카테고리 축이라, 그 점은 날짜 간격만 어긋낸다(StockTrendSeriesUtil 참고).
     List<TradeProfitTimeSeriesPoint> trendSeries =
-        net.luversof.web.gate.stock.util.StockTrendSeriesUtil.lastPerMonth(
+        StockTrendSeriesUtil.lastPerMonth(
             trendFuture == null ? List.<TradeProfitTimeSeriesPoint>of() : joinRemote(trendFuture),
             point ->
                 point == null || point.timestamp() == null
@@ -330,14 +348,12 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
     // 총자산은 마지막으로 수집된 종가로 계산된 값이다. 시세 수집이 자동이 아니라서 며칠 전 값일 수 있는데,
     // 요약 화면만 그 사실을 밝히지 않고 있었다(자산 현황·포트폴리오·종목/계좌 상세에는 이미 있다).
-    java.time.LocalDate summaryPriceBasisDate =
-        net.luversof.web.gate.stock.util.StockPriceBasisUtil.latestPriceBasisDate(profitList);
+    LocalDate summaryPriceBasisDate = StockPriceBasisUtil.latestPriceBasisDate(profitList);
     model.addAttribute("priceBasisDate", summaryPriceBasisDate);
     // 그 날 시세를 장중에 받았으면 "종가" 가 아니라 받은 시각을 적는다(2026-10-02).
     model.addAttribute(
         "priceBasisIntradayTime",
-        net.luversof.web.gate.stock.util.StockPriceBasisUtil.intradayTime(
-            profitList, summaryPriceBasisDate));
+        StockPriceBasisUtil.intradayTime(profitList, summaryPriceBasisDate));
     model.addAttribute("totalAsset", totalAsset);
     model.addAttribute("totalRealizedProfit", totalRealizedVal);
     model.addAttribute("totalUnrealizedProfit", totalUnrealizedVal);
@@ -348,8 +364,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 표시되는 평가손익은 매수 수수료를 원가로 보지 않는 기준이다. 그 금액을 밝히지 않으면
     // 수수료가 반영된 값으로 오해한다(실측 2026-08-23).
     model.addAttribute(
-        "excludedHoldingBuyFee",
-        net.luversof.web.gate.stock.util.StockProfitBasisUtil.excludedHoldingBuyFee(profitList));
+        "excludedHoldingBuyFee", StockProfitBasisUtil.excludedHoldingBuyFee(profitList));
     model.addAttribute("manualPrincipalAdjustment", manualPrincipalAdjustment);
     model.addAttribute("totalDividend", totalDividendVal);
     // 핵심 보유 vs 나머지. 실측 2026-09-08: 한 종목이 83.9% 라 모든 차트가 그 종목 그래프였고, 배당 ETF 8종의
@@ -357,11 +372,10 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 주가가 움직이는 것만으로 기준이 말없이 바뀌어 그만뒀다). 손익·배당은 위와 같은 필터로 받은 것을 그대로 가른다.
     model.addAttribute(
         "coreHoldingSplit",
-        net.luversof.web.gate.stock.util.StockCoreHoldingUtil.split(
+        StockCoreHoldingUtil.split(
             profitList,
             dividendByStockItem,
-            net.luversof.web.gate.stock.util.StockCoreHoldingUtil.coreStockItemIds(
-                joinRemote(stockItemsFuture))));
+            StockCoreHoldingUtil.coreStockItemIds(joinRemote(stockItemsFuture))));
     model.addAttribute("winRate", winRate);
     model.addAttribute("winCount", winCount);
     model.addAttribute("winDenominator", winDenominator);
@@ -402,8 +416,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 손익 조회와 이름 재료(계좌/종목) 조회는 서로 의존이 없다. 예전에는 이름 붙이기 안에서
     // 계좌·종목을 다시 읽어 한 프래그먼트가 세 호출을 순차로 던졌다.
     var stockGroupedRequest = copyTradeProfitRequest(request);
-    stockGroupedRequest.setGroupBy(
-        net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup.STOCKITEM);
+    stockGroupedRequest.setGroupBy(TradeProfitRequestGroup.STOCKITEM);
     var stockGroupedParams = stockGroupedRequest.toParams();
     var rawStockGroupedFuture =
         supplyRemote(() -> emptyIfNull(tradeProfitClient.calculateProfit(stockGroupedParams)));
@@ -491,8 +504,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
    * 미니 추이 차트의 JS 배열 - 라벨은 그 존의 날짜(ISO), 값은 평가액(없으면 0, 소수 그대로). 시각이 없는 점은 뺀다. 2026-10-22 까지 summary
    * 안에 그대로 적혀 있었다.
    */
-  static TrendChartJs trendChartJs(
-      List<TradeProfitTimeSeriesPoint> trendSeries, java.time.ZoneId zone) {
+  static TrendChartJs trendChartJs(List<TradeProfitTimeSeriesPoint> trendSeries, ZoneId zone) {
     StringBuilder trendLabelSb = new StringBuilder();
     StringBuilder trendValueSb = new StringBuilder();
     int trendPointCount = 0;
@@ -603,10 +615,9 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     LocalDate nextPayDate = null;
     // 다음 지급일 = 기준일 규칙 + 결제 거래일 수(2026-10-20 - 배당 내역 다가올 배당과 같은 계산, 지급 이력 209 건 100% 재현).
     // 규칙이 안 서면(이력에 기준일이 없거나 규칙과 다름) 예전 추정(최빈 일자 ~ 관측된 가장 늦은 날).
-    Map<String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule> rules =
-        net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.settlementRulesFromResponses(
-            payouts);
-    java.util.Set<String> heldSymbols = new java.util.HashSet<>();
+    Map<String, MonthlyDividendPayDayUtil.SettlementRule> rules =
+        MonthlyDividendPayDayUtil.settlementRulesFromResponses(payouts);
+    Set<String> heldSymbols = new HashSet<>();
     for (MonthlyDividendSnapshotResponse snapshot : snapshots) {
       String sym = normalizeSymbol(snapshot.stockItemSymbol());
       if (sym != null) {
@@ -638,7 +649,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // (시기 미분류 종목만 있으면 전체 상위로 폴백)
     final String window = nextWindow;
     // 규칙 날짜면 그 달에 들어올 종목만(이번 달 몫을 이미 받은 종목은 뺀다 - 2026-10-20 검토).
-    final java.util.Set<String> payingSymbols = ruledRange != null ? ruledRange.symbols() : null;
+    final Set<String> payingSymbols = ruledRange != null ? ruledRange.symbols() : null;
     List<MonthlyDividendSnapshotResponse> windowRows =
         snapshots.stream()
             .filter(s -> s.expectedMonthlyDividend() != null)
@@ -651,10 +662,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
                     payingSymbols == null
                         || payingSymbols.contains(normalizeSymbol(s.stockItemSymbol())))
             .sorted(
-                Comparator.comparing(
-                        net.luversof.web.gate.stock.service.MonthlyDividendCalculator
-                            ::latestMonthlyDividend)
-                    .reversed())
+                Comparator.comparing(MonthlyDividendCalculator::latestMonthlyDividend).reversed())
             .toList();
     // 평균과 최근을 함께 낸다 - 배당 내역의 다가올 배당은 같은 날을 최근으로만 더해 두 화면 금액이 달랐다(2026-10-13 사용자 지적: 10월 17일분
     // 997,459 vs 1,601,445). 합계는 배당 내역 칸과 같은 규칙(종목마다 원 단위로 반올림한 뒤 더한다)이라 두 화면이 원 단위까지 같다.
@@ -662,22 +670,18 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         windowRows.stream()
             .map(
                 row ->
-                    BigDecimal.valueOf(
-                        net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
-                            row.expectedMonthlyDividend())))
+                    BigDecimal.valueOf(StockFormatUtil.displayWon(row.expectedMonthlyDividend())))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal windowLatestTotal =
         windowRows.stream()
             .map(
                 row ->
                     BigDecimal.valueOf(
-                        net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(
-                            net.luversof.web.gate.stock.service.MonthlyDividendCalculator
-                                .latestMonthlyDividend(row))))
+                        StockFormatUtil.displayWon(
+                            MonthlyDividendCalculator.latestMonthlyDividend(row))))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    String nextWindowLabel =
-        net.luversof.web.gate.stock.util.StockPayoutWindowLabelUtil.label(nextWindow);
+    String nextWindowLabel = StockPayoutWindowLabelUtil.label(nextWindow);
     String nextPayDateLabel = nextPayDate != null ? monthDayLabel(nextPayDate) : "";
 
     // 예상일은 지급 이력의 최빈일 하나다. 실제 지급일은 그 주변에 퍼져 있어, 날짜 하나만 적으면
@@ -721,8 +725,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
       }
     }
     var currentQuantitySummary =
-        net.luversof.web.gate.stock.service.MonthlyDividendCalculator.currentQuantitySummary(
-            windowRows, currentQuantityByStockItem);
+        MonthlyDividendCalculator.currentQuantitySummary(windowRows, currentQuantityByStockItem);
     model.addAttribute("staleQuantityCount", currentQuantitySummary.staleCount());
     model.addAttribute("currentQuantityTotal", currentQuantitySummary.totalAtCurrentQuantity());
     model.addAttribute(
@@ -736,22 +739,19 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         "dividendAsOfOldest",
         windowRows.stream()
             .map(MonthlyDividendSnapshotResponse::asOfDate)
-            .filter(java.util.Objects::nonNull)
-            .min(java.time.LocalDate::compareTo)
+            .filter(Objects::nonNull)
+            .min(LocalDate::compareTo)
             .orElse(null));
     model.addAttribute(
         "dividendAsOfNewest",
         windowRows.stream()
             .map(MonthlyDividendSnapshotResponse::asOfDate)
-            .filter(java.util.Objects::nonNull)
-            .max(java.time.LocalDate::compareTo)
+            .filter(Objects::nonNull)
+            .max(LocalDate::compareTo)
             .orElse(null));
     // 다음 분배금 매수 마감(2026-10-20) - 월배당 ETF 화면 머리와 같은 계산. 거래소 날짜라 존을 박는다.
-    java.time.LocalDateTime marketToday =
-        java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Seoul"));
-    model.addAttribute(
-        "upcomingBuyBy",
-        net.luversof.web.gate.stock.util.KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
+    LocalDateTime marketToday = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+    model.addAttribute("upcomingBuyBy", KrxRecordDateUtil.nextBuyByAllWindows(marketToday));
 
     return "stock/htmx/fragments/upcomingDividends";
   }
@@ -847,7 +847,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 대표일 · 마지막 날은 지급이력의 일자를 그 달에 놓은 것이라 주말 · 공휴일일 수 있다 - 그 달의 영업일로 옮긴 뒤 견준다
     // (2026-10-14: 대시보드가 "월중 · 10월 17일" 토요일을 가리켰다).
     LocalDate thisRep =
-        net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.businessDayInMonth(
+        MonthlyDividendPayDayUtil.businessDayInMonth(
             today.withDayOfMonth(Math.min(repDay, today.lengthOfMonth())));
     if (!today.isAfter(thisRep)) {
       return thisRep;
@@ -858,17 +858,16 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     LocalDate thisLast =
         today.withDayOfMonth(Math.min(Math.max(lastDay, repDay), today.lengthOfMonth()));
     if (!today.isAfter(thisLast)) {
-      LocalDate shifted =
-          net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.businessDayInMonth(thisLast);
+      LocalDate shifted = MonthlyDividendPayDayUtil.businessDayInMonth(thisLast);
       return shifted.isBefore(today) ? thisLast : shifted;
     }
     LocalDate nm = today.plusMonths(1);
-    return net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.businessDayInMonth(
+    return MonthlyDividendPayDayUtil.businessDayInMonth(
         nm.withDayOfMonth(Math.min(repDay, nm.lengthOfMonth())));
   }
 
   /** 규칙으로 낸 그 시기의 다음 지급일 - 가장 이른 날과 그 달 안에서 가장 늦은 날. */
-  record RuledPayDates(LocalDate first, LocalDate lastSameMonth, java.util.Set<String> symbols) {}
+  record RuledPayDates(LocalDate first, LocalDate lastSameMonth, Set<String> symbols) {}
 
   /**
    * 그 시기의 다음 지급일(오늘 포함, 2026-10-20) - <b>들고 있는 종목마다</b> 제 규칙(기준일 + 결제 거래일 수)으로 낸 날 중 가장 이른 날과, 그 달
@@ -878,9 +877,9 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
   static RuledPayDates ruledNextPayDates(
       LocalDate today,
       String window,
-      Map<String, net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.SettlementRule> rules,
+      Map<String, MonthlyDividendPayDayUtil.SettlementRule> rules,
       Map<String, String> windowBySymbol,
-      java.util.Set<String> heldSymbols) {
+      Set<String> heldSymbols) {
     Map<String, LocalDate> dateBySymbol = new HashMap<>();
     for (String symbol : heldSymbols) {
       if (!window.equals(windowBySymbol.get(symbol))) {
@@ -891,11 +890,9 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         return null;
       }
       LocalDate next = null;
-      java.time.YearMonth month = java.time.YearMonth.from(today);
+      YearMonth month = YearMonth.from(today);
       for (int i = 0; i < 3 && next == null; i++, month = month.plusMonths(1)) {
-        LocalDate pay =
-            net.luversof.web.gate.stock.util.MonthlyDividendPayDayUtil.projectedPayDate(
-                month, rule);
+        LocalDate pay = MonthlyDividendPayDayUtil.projectedPayDate(month, rule);
         if (pay != null && !pay.isBefore(today)) {
           next = pay;
         }
@@ -908,12 +905,12 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     if (dateBySymbol.isEmpty()) {
       return null;
     }
-    LocalDate first = java.util.Collections.min(dateBySymbol.values());
+    LocalDate first = Collections.min(dateBySymbol.values());
     LocalDate last = first;
     // 그 달에 들어올 종목만 - 이번 달 몫을 이미 받은 종목(다음 지급이 다음 달)을 카드 합계에 넣으면 "그 날 몫" 이 부풀었다(검토 2026-10-20).
-    java.util.Set<String> symbols = new java.util.HashSet<>();
+    Set<String> symbols = new HashSet<>();
     for (Map.Entry<String, LocalDate> entry : dateBySymbol.entrySet()) {
-      if (java.time.YearMonth.from(entry.getValue()).equals(java.time.YearMonth.from(first))) {
+      if (YearMonth.from(entry.getValue()).equals(YearMonth.from(first))) {
         symbols.add(entry.getKey());
         if (entry.getValue().isAfter(last)) {
           last = entry.getValue();
@@ -973,7 +970,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
   /** 계좌별 합계마다 값을 내 더한다(요약 카드의 표시 원금 · 평가손익). */
   private static BigDecimal sumAccounts(
       Map<UUID, TradeProfitAggregator.Sums> sumsByAccount,
-      java.util.function.BiFunction<UUID, TradeProfitAggregator.Sums, BigDecimal> value) {
+      BiFunction<UUID, TradeProfitAggregator.Sums, BigDecimal> value) {
     return sumsByAccount.entrySet().stream()
         .map(entry -> value.apply(entry.getKey(), entry.getValue()))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -981,7 +978,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
   /** 줄마다 값을 내 더한다 - 값이 없는 줄은 건너뛴다. */
   private static BigDecimal sumRows(
-      List<TradeProfit> rows, java.util.function.Function<TradeProfit, BigDecimal> value) {
+      List<TradeProfit> rows, Function<TradeProfit, BigDecimal> value) {
     return rows.stream()
         .map(value)
         .filter(Objects::nonNull)

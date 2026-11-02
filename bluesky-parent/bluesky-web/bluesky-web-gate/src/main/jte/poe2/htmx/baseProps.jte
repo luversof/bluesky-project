@@ -22,14 +22,15 @@
 	Poe2.Weapon w = base.weapon();
 	Poe2.Flask f = base.flask();
 	boolean hasArmour = a != null && (nz(a.armour()) > 0 || nz(a.evasion()) > 0 || nz(a.energyShield()) > 0 || nz(a.block()) > 0 || nz(a.ward()) > 0);
-	boolean hasWeapon = w != null && nz(w.damageMax()) > 0;
+	// 피해가 있는 무기 — 물리가 0 이어도 원소 · 카오스가 있으면(10-30 R14 — 달 단검 냉기 11-26)
+	boolean hasWeapon = w != null && w.hasDamage();
 	// 로컬 옵션 반영(10-08 C182, PoB 식) — 옵션으로 바뀐 값은 인게임처럼 파란색. 품질도 곱한다(빌드 아이템의 실제 품질)
 	net.luversof.web.gate.poe.PoeLocalProps.Result lp = net.luversof.web.gate.poe.PoeLocalProps.apply(new net.luversof.web.gate.poe.PoeLocalProps.Base(
 		a == null ? 0 : nz(a.armour()), a == null ? 0 : nz(a.armour()), a == null ? 0 : nz(a.evasion()), a == null ? 0 : nz(a.evasion()),
 		a == null ? 0 : nz(a.energyShield()), a == null ? 0 : nz(a.energyShield()), a == null ? 0 : nz(a.ward()), a == null ? 0 : nz(a.ward()), a == null ? 0 : nz(a.block()),
 		hasWeapon ? nz(w.damageMin()) : 0, hasWeapon ? nz(w.damageMax()) : 0,
 		hasWeapon && w.attacksPerSecond() != null ? w.attacksPerSecond() : 0, hasWeapon && w.critChance() != null ? w.critChance() : 0),
-		lines, hasArmour, hasWeapon, quality);
+		lines, hasArmour, hasWeapon, quality, hasWeapon ? w.baseAdded() : null);
 	String aug = "text-[#8888ff]";
 	boolean hasFlask = f != null && (nz(f.lifePerUse()) > 0 || nz(f.manaPerUse()) > 0 || (f.recoverySeconds() != null && f.recoverySeconds() > 0));
 	// 정신력(셉터 베이스 속성 "정신력: 100", 10-08 C188 — 게임 ClientStrings ItemDisplaySpiritValue). 셉터에선 "+N to Spirit" · "N% increased Spirit" 가 로컬(PoB2 식)
@@ -51,7 +52,7 @@
 		@if(quality > 0)<div data-tt-quality><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="text-[#8888ff]">+${quality}%</span></div>@endif
 		@if(hasSpirit)<div data-tt-spirit><span class="${label}">${MessageUtil.getMessage("poe2.items.spirit")}: </span><span class="${spiritR.changed() ? "text-[#8888ff]" : value}">${spiritR.text()}</span></div>@endif
 		@if(hasWeapon)
-			<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${lp.physMin().changed() || lp.physMax().changed() || quality > 0 ? aug : value}" data-tt-phys>${lp.physMin().damageText()}-${lp.physMax().damageText()}</span></div>
+			@if(lp.physMax().present())<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.physical.damage")}: </span><span class="${lp.physMin().changed() || lp.physMax().changed() || quality > 0 ? aug : value}" data-tt-phys>${lp.physMin().damageText()}-${lp.physMax().damageText()}</span></div>@endif
 			<%-- 원소 · 카오스 추가 피해(10-08 C183, PoE1 고유 상세 짝 — 게임 ClientStrings ItemDisplayWeaponElementalDamage "원소 피해") --%>
 			@if(lp.hasElemental())<div data-tt-ele><span class="${label}">${MessageUtil.getMessage("poe.items.detail.elemental.damage")}: </span>!{ boolean eleFirst = true; }@if(lp.fire().present())<span class="text-[#960000]">${lp.fire().text()}</span>!{ eleFirst = false; }@endif@if(lp.cold().present())${eleFirst ? "" : ", "}<span class="text-[#366492]">${lp.cold().text()}</span>!{ eleFirst = false; }@endif@if(lp.lightning().present())${eleFirst ? "" : ", "}<span class="text-[#ffd700]">${lp.lightning().text()}</span>@endif</div>@endif@if(lp.chaos().present())<div data-tt-chaos><span class="${label}">${MessageUtil.getMessage("poe.items.detail.chaos.damage")}: </span><span class="text-[#d02090]">${lp.chaos().text()}</span></div>@endif
 			<div><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${lp.critChance().changed() ? aug : value}">${lp.critChance().text2()}%</span></div>

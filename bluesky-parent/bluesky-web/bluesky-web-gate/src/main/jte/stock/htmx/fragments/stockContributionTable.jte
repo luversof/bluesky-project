@@ -6,8 +6,9 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.util.StockDetailLinkUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import java.math.RoundingMode
 
-@param List<Contribution> stockContributions = java.util.List.of()
+@param List<Contribution> stockContributions = List.of()
 @param Contribution stockContributionTotal = null
 @param Contribution stockContributionOthers = null
 @param int stockContributionOthersCount = 0
@@ -17,7 +18,7 @@
 	String zeroAmountTitle = MessageUtil.getMessage("common.amount.zero.title");
 	String shareNoneTitle = MessageUtil.getMessage("stock.contribution.share.none");
 	// A share needs a total to divide by - a bare dash says nothing about why it is missing.
-	DecimalFormat amountFormat = net.luversof.web.gate.stock.util.StockFormatUtil.wonFormat();
+	DecimalFormat amountFormat = StockFormatUtil.wonFormat();
 	String title = MessageUtil.getMessage("stock.asset.growth.contribution.title");
 	String description = MessageUtil.getMessage("stock.asset.growth.contribution.desc");
 	String stockLabel = MessageUtil.getMessage("common.label.stock");
@@ -74,7 +75,7 @@
 								// 표시 자릿수보다 넉넉한 자리로 나눠 두고 반올림은 표시할 때 한 번만 한다.
 								Double sharePct = totalContribution.signum() > 0
 										? row.contribution().multiply(BigDecimal.valueOf(100))
-												.divide(totalContribution, 6, java.math.RoundingMode.HALF_UP).doubleValue()
+												.divide(totalContribution, 6, RoundingMode.HALF_UP).doubleValue()
 										: null;
 							}
 							<tr>
@@ -125,7 +126,7 @@
 								boolean othersRealizedUp = stockContributionOthers.realizedProfit().signum() >= 0;
 								Double othersShare = totalContribution.signum() > 0
 										? stockContributionOthers.contribution().multiply(BigDecimal.valueOf(100))
-												.divide(totalContribution, 6, java.math.RoundingMode.HALF_UP).doubleValue()
+												.divide(totalContribution, 6, RoundingMode.HALF_UP).doubleValue()
 										: null;
 							}
 							<tr class="text-base-content/70" data-stock-contribution-others>

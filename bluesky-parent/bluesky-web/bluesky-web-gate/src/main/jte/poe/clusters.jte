@@ -15,6 +15,10 @@
 	String pageTitle = MessageUtil.getMessage("poe.clusters.title");
 	String patchLabel = java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.patch"), patch);
 	boolean ko = PoeText.isKorean();
+	// 한국어 화면은 가나다순(10-29 C6 — 영어 이름 순이라 '아드레날린, 선발대, …' 로 섞여 보였다)
+	List<PoeClusterNotable> shown = ko
+		? notables.stream().sorted(java.util.Comparator.comparing((PoeClusterNotable n) -> n.nameKo() != null ? n.nameKo() : n.name(), java.text.Collator.getInstance(java.util.Locale.KOREAN))).toList()
+		: notables;
 }
 
 @template._layout.poeLayout(
@@ -28,7 +32,7 @@
 			<div class="flex flex-wrap items-baseline gap-3">
 				<h1 class="text-2xl font-bold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
-				<span class="text-sm text-base-content/60">${ko ? "클러스터 주얼 주요 스킬 사전 — " : "Cluster jewel notables — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터의 클러스터 소켓에서 구성 →" : "configure in tree editor →"}</a></span>
+				<span class="text-sm text-base-content/60">${ko ? "스킬 군 주얼 주요 스킬 사전 — " : "Cluster jewel notables — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터의 스킬 군 주얼 홈에서 구성 →" : "configure in tree editor →"}</a></span>
 				<span class="text-xs font-mono text-base-content/60">${notables.size()}</span>
 			</div>
 
@@ -39,14 +43,15 @@
 			</div>
 
 			<div class="grid gap-2 md:grid-cols-2 [&>*]:min-w-0" id="poeClusterList">
-				@for(PoeClusterNotable n : notables)
+				@for(PoeClusterNotable n : shown)
 					!{
 						String clusterIcon = n.icon() != null && n.icon().contains("SkillIcons/")
 							? "tree/" + n.icon().substring(n.icon().indexOf("SkillIcons/") + 11).toLowerCase().replace("/", "_")
 							: null;
 					}
 					<div class="rounded-lg border border-base-200 bg-base-100 px-3 py-2" data-cluster-notable>
-						<div class="flex items-center gap-2">
+						<%-- 표시(핵심노드 · 고유 주얼 전용 · 생성 안 됨)는 좁은 폭 + 큰 글꼴에서 다음 줄로(10-29 — 320px+글꼴200% 에서 +152px 넘침) --%>
+						<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 							@if(clusterIcon != null)
 								<img src="/poe-assets/${clusterIcon}" class="w-12 h-12 object-contain shrink-0" alt="" loading="lazy" data-onerror="hide">
 							@endif
@@ -56,6 +61,10 @@
 							<span class="hidden">${n.name()}</span>
 							<%-- 핵심노드 8개(10-23 Q75 — 주요 스킬 선택지에 없는 핵심노드가 주요 스킬과 구분 없이 섞여 있었다, 게임 PassiveSkillSearchKeystone '핵심노드') --%>
 							@if(Boolean.TRUE.equals(n.keystone()))<span class="badge badge-ghost badge-xs shrink-0" data-cluster-keystone>${ko ? "핵심노드" : "Keystone"}</span>@endif
+							<%-- 핵심노드는 일반 스킬 군 주얼에 안 붙고 고유 소형 스킬 군 주얼(The Siege 등 — PoB Uniques/jewel.lua 'Adds <이름>')에서만 얻는다(10-29 C5) --%>
+							@if(Boolean.TRUE.equals(n.keystone()))<span class="badge badge-ghost badge-xs shrink-0">${ko ? "고유 주얼 전용" : "Unique jewels only"}</span>@endif
+							<%-- 모드 가중치 0 — 새로 나오지 않지만 옛 주얼엔 남아 있어 지우지 않고 알린다(10-29 C2) --%>
+							@if(Boolean.TRUE.equals(n.retired()))<span class="badge badge-ghost badge-xs shrink-0" data-cluster-retired>${ko ? "더 이상 생성되지 않음" : "No longer drops"}</span>@endif
 						</div>
 						!{List<String> clusterLines = ko && n.statsKo() != null && !n.statsKo().isEmpty() ? n.statsKo() : n.stats();}
 						@for(String line : clusterLines)

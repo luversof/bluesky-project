@@ -1,10 +1,16 @@
 package net.luversof.web.gate.stock.util;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
 import net.luversof.web.gate.stock.domain.TradeProfit;
+import net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint;
 
 /**
  * 화면에 적는 "현재가"가 실제로 어느 날 종가인지 고른다.
@@ -56,8 +62,7 @@ public final class StockPriceBasisUtil {
    *
    * @return 마지막 점(날짜 오름차순 기준). 이력이 비었으면 {@code null}
    */
-  public static net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint lastPricePoint(
-      List<net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint> priceHistory) {
+  public static StockPriceHistoryPoint lastPricePoint(List<StockPriceHistoryPoint> priceHistory) {
     if (priceHistory == null || priceHistory.isEmpty()) {
       return null;
     }
@@ -70,9 +75,9 @@ public final class StockPriceBasisUtil {
   }
 
   /** 국내 정규장 마감(KST). 그 거래일 이 시각 전에 받은 시세는 종가가 아니다. */
-  static final java.time.LocalTime MARKET_CLOSE = java.time.LocalTime.of(15, 30);
+  static final LocalTime MARKET_CLOSE = LocalTime.of(15, 30);
 
-  static final java.time.ZoneId MARKET_ZONE = java.time.ZoneId.of("Asia/Seoul");
+  static final ZoneId MARKET_ZONE = ZoneId.of("Asia/Seoul");
 
   /**
    * 기준일 시세가 장중 값이면 받은 시각("HH:mm", KST), 종가면 {@code null}(2026-10-02).
@@ -93,21 +98,21 @@ public final class StockPriceBasisUtil {
             .filter(row -> basisDate.equals(row.currentPriceDate()))
             .map(TradeProfit::currentPriceUpdatedAt)
             .filter(Objects::nonNull)
-            .min(java.time.Instant::compareTo)
+            .min(Instant::compareTo)
             .orElse(null),
         basisDate);
   }
 
   /** 받은 시각이 그 거래일(KST) 마감 전이면 "HH:mm", 아니면 {@code null}. 다음 날 이후에 받았으면 종가다. */
-  static String intradayTime(java.time.Instant updatedAt, LocalDate basisDate) {
+  static String intradayTime(Instant updatedAt, LocalDate basisDate) {
     if (updatedAt == null || basisDate == null) {
       return null;
     }
-    java.time.ZonedDateTime at = updatedAt.atZone(MARKET_ZONE);
+    ZonedDateTime at = updatedAt.atZone(MARKET_ZONE);
     if (!at.toLocalDate().equals(basisDate) || !at.toLocalTime().isBefore(MARKET_CLOSE)) {
       return null;
     }
-    return at.toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+    return at.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
   }
 
   /**
@@ -132,7 +137,7 @@ public final class StockPriceBasisUtil {
    * @param intradayTime 장중 시세 시각(HH:mm) - null 이면 종가 문구
    * @param basisDate 기준일 - null 이면 안 된다(부르는 템플릿은 모두 {@code @if(기준일 != null)} 안이다)
    */
-  public static String basisText(String intradayTime, java.time.LocalDate basisDate) {
+  public static String basisText(String intradayTime, LocalDate basisDate) {
     return basisMessage(intradayTime).replace("{0}", basisDate.toString());
   }
 

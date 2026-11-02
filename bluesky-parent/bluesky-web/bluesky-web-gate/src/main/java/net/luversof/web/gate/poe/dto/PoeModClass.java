@@ -23,11 +23,20 @@ public record PoeModClass(
     /** 바알 오브 부패 고정 속성 패밀리(영향력 무관). 없으면 빈 목록/null. */
     List<NamedFamily> corrupted,
     /** 플라스크 인챈트(주입/점화 오브) 패밀리 — 플라스크 클래스만. */
-    List<NamedFamily> enchants) {
+    List<NamedFamily> enchants,
+    /** 일부 베이스에만 붙는 계열 키 → 그 베이스(10-29 R6-2). 옛 응답이면 null. */
+    java.util.Map<String, List<BaseName>> onlyBases) {
+  /** 베이스 이름(영 · 한). */
+  public record BaseName(String en, String ko) {}
 
   /** 패밀리 키 + 그 패밀리(gen + 등급 목록). */
   public record NamedFamily(String key, Family family) {}
 
   /** gen = prefix|suffix, essence = 에센스 전용 여부(보통 null), tiers = ilvl 내림차순. */
-  public record Family(String gen, Boolean essence, List<PoeModTier> tiers) {}
+  public record Family(
+      String gen,
+      Boolean essence,
+      List<PoeModTier> tiers,
+      // 게임 옵션 그룹(Mods.Families — 같은 그룹은 한 아이템에 하나, 10-29 R6-1). 없으면 null
+      List<Integer> grp) {}
 }

@@ -4,12 +4,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
+import net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse;
+import net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse;
 import net.luversof.web.gate.stock.util.StockAmountUtil;
 
 /**
@@ -203,17 +207,15 @@ public class MonthlyContributionPickSupport {
    * #accountOf})로 가른다 &mdash; 표에 적힌 저장 비중으로 가르면 카드와 다른 답이 나온다(실측 2026-09-23: 0018C0 은 표 0% 인데 카탈로그
    * 25.05% 라 카드는 ISA/연금 자리에 둔다). 빈 값은 그 조건을 걸지 않는다. 계좌 조건이 걸렸는데 비중을 모르는 종목은 자리를 못 정하므로 뺀다.
    */
-  public java.util.Set<String> symbolsInSlot(
-      String payoutWindow,
-      String account,
-      List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse> catalog) {
+  public Set<String> symbolsInSlot(
+      String payoutWindow, String account, List<MonthlyDividendCatalogResponse> catalog) {
     String window = resolveSlotWindow(payoutWindow);
     String slotAccount = resolveSlotAccount(account);
-    java.util.Set<String> symbols = new java.util.HashSet<>();
+    Set<String> symbols = new HashSet<>();
     if (catalog == null) {
       return symbols;
     }
-    for (net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse item : catalog) {
+    for (MonthlyDividendCatalogResponse item : catalog) {
       if (item == null || item.stockItemSymbol() == null || item.stockItemSymbol().isBlank()) {
         continue;
       }
@@ -302,8 +304,7 @@ public class MonthlyContributionPickSupport {
   }
 
   /** 카탈로그 한 줄 &rarr; 후보. 두 화면(자리 추천 · 지금 눈여겨볼 종목)이 같은 원값을 쓰게 한 곳에서 만든다. */
-  public static ContributionCandidate candidateOf(
-      net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse item) {
+  public static ContributionCandidate candidateOf(MonthlyDividendCatalogResponse item) {
     return new ContributionCandidate(
         item.stockItemSymbol(),
         item.stockItemName(),
@@ -345,15 +346,13 @@ public class MonthlyContributionPickSupport {
    *
    * @param catalog 월배당 카탈로그(연배당 수익률 · 추세 · 과세표준 비중이 종목 단위로 들어 있다)
    */
-  public List<ContributionPick> pickFromCatalog(
-      List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse> catalog) {
+  public List<ContributionPick> pickFromCatalog(List<MonthlyDividendCatalogResponse> catalog) {
     return pickFromCatalog(catalog, Basis.DIVIDEND);
   }
 
   /** 기준을 골라 자리마다 하나씩(사용자 요청 2026-10-06). 후보는 기준과 상관없이 같다. */
   public List<ContributionPick> pickFromCatalog(
-      List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse> catalog,
-      Basis basis) {
+      List<MonthlyDividendCatalogResponse> catalog, Basis basis) {
     return pickFromCatalog(catalog, basis, TOTAL_RETURN_MONTHS, Map.of());
   }
 
@@ -363,7 +362,7 @@ public class MonthlyContributionPickSupport {
    * @param periodYieldBySymbol {@link #periodYieldBySymbol} 의 결과(12 개월이면 쓰지 않는다)
    */
   public List<ContributionPick> pickFromCatalog(
-      List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse> catalog,
+      List<MonthlyDividendCatalogResponse> catalog,
       Basis basis,
       int months,
       Map<String, BigDecimal> periodYieldBySymbol) {
@@ -380,26 +379,22 @@ public class MonthlyContributionPickSupport {
   }
 
   /** 카탈로그의 {@value #TOTAL_RETURN_MONTHS} 개월 총수익률. 이력이 짧아 그 기간이 없으면 null. */
-  public static BigDecimal totalReturnOf(
-      net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse item) {
+  public static BigDecimal totalReturnOf(MonthlyDividendCatalogResponse item) {
     return totalReturnOf(item, TOTAL_RETURN_MONTHS);
   }
 
   /**
    * 고른 수익률 기간으로 만든 후보(사용자 요청 2026-10-14: 월배당 ETF 에서 수익률 기간을 바꿔도 같은 종목만 추천됐다).
    *
-   * <p>{@value #TOTAL_RETURN_MONTHS} 개월이면 {@link
-   * #candidateOf(net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse)} 와 똑같다(기본
-   * 화면은 그대로). 다른 기간이면 배당 = {@code periodYieldPct}(최근 N 회 분배금 평균 x 12 &divide; 현재가), 총수익 = 그 기간의
-   * 총수익률. 분배금 감소 감점 · 변동성 · 꾸준함(감소 횟수)은 최근 12 회 기준 그대로다 - 짧은 기간으로는 낼 수 없다.
+   * <p>{@value #TOTAL_RETURN_MONTHS} 개월이면 {@link #candidateOf(MonthlyDividendCatalogResponse)} 와
+   * 똑같다(기본 화면은 그대로). 다른 기간이면 배당 = {@code periodYieldPct}(최근 N 회 분배금 평균 x 12 &divide; 현재가), 총수익 = 그
+   * 기간의 총수익률. 분배금 감소 감점 · 변동성 · 꾸준함(감소 횟수)은 최근 12 회 기준 그대로다 - 짧은 기간으로는 낼 수 없다.
    *
    * <p>"총수익 &minus; 가격 수익" 으로 배당을 추정하지 않는 까닭: 재투자 효과가 섞여 12 개월에서도 실제 연배당과 크게 어긋났다(실측 2026-10-14:
    * 472150 연배당 26.04% 對 36.41%).
    */
   public static ContributionCandidate candidateOf(
-      net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse item,
-      int months,
-      BigDecimal periodYieldPct) {
+      MonthlyDividendCatalogResponse item, int months, BigDecimal periodYieldPct) {
     if (months == TOTAL_RETURN_MONTHS) {
       return candidateOf(item);
     }
@@ -423,15 +418,14 @@ public class MonthlyContributionPickSupport {
    * 않는다.
    */
   public static Map<String, BigDecimal> periodYieldBySymbol(
-      List<net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse> history,
-      List<net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse> catalog,
+      List<MonthlyDividendPayoutResponse> history,
+      List<MonthlyDividendCatalogResponse> catalog,
       int payouts) {
     Map<String, BigDecimal> result = new LinkedHashMap<>();
     if (history == null || catalog == null || payouts <= 0) {
       return result;
     }
-    Map<String, List<net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse>>
-        bySymbol = new LinkedHashMap<>();
+    Map<String, List<MonthlyDividendPayoutResponse>> bySymbol = new LinkedHashMap<>();
     for (var payout : history) {
       if (payout == null
           || payout.stockItemSymbol() == null
@@ -456,15 +450,9 @@ public class MonthlyContributionPickSupport {
       }
       List<BigDecimal> recent =
           list.stream()
-              .sorted(
-                  Comparator.comparing(
-                          net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse
-                              ::recordDate)
-                      .reversed())
+              .sorted(Comparator.comparing(MonthlyDividendPayoutResponse::recordDate).reversed())
               .limit(payouts)
-              .map(
-                  net.luversof.web.gate.stock.dto.response.MonthlyDividendPayoutResponse
-                      ::dividendAmountPerShare)
+              .map(MonthlyDividendPayoutResponse::dividendAmountPerShare)
               .toList();
       BigDecimal sum = recent.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
       result.put(
@@ -479,16 +467,13 @@ public class MonthlyContributionPickSupport {
   }
 
   /** 카탈로그의 {@code months} 개월 총수익률. 이력이 짧아 그 기간이 없으면 null. */
-  public static BigDecimal totalReturnOf(
-      net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse item, int months) {
+  public static BigDecimal totalReturnOf(MonthlyDividendCatalogResponse item, int months) {
     if (item == null || item.periodReturns() == null) {
       return null;
     }
     return item.periodReturns().stream()
         .filter(one -> one != null && one.months() == months)
-        .map(
-            net.luversof.web.gate.stock.dto.response.MonthlyDividendCatalogResponse.PeriodReturnView
-                ::totalReturnPct)
+        .map(MonthlyDividendCatalogResponse.PeriodReturnView::totalReturnPct)
         .findFirst()
         .orElse(null);
   }

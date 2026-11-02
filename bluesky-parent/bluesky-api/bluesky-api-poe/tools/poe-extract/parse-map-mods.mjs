@@ -6,10 +6,10 @@
 // 사용법: node parse-map-mods.mjs (사전: extract.mjs)
 import fs from "node:fs";
 import path from "node:path";
-import { DATA_DIR, FILES_DIR, loadConfig, loadTable } from "./paths.mjs";
+import { DATA_DIR, FILES_DIR, loadConfig, loadTable, buffStatsOf } from "./paths.mjs";
 import { createStatDescriber } from "./statDescriptions.mjs";
 
-const OUT = path.join(DATA_DIR, "map-mods.json");
+const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "map-mods.json");
 
 const mods = loadTable("English", "Mods");
 const modsKo = loadTable("Korean", "Mods");
@@ -45,9 +45,10 @@ const NUM = /-?\d+(?:\.\d+)?/g;
 /** 모드 스탯 → 값 맵 (min/max 선택) — parse-mods-full 과 동일 규칙 */
 function rollValues(mod, kind) {
 	const values = new Map();
-	for (let i = 1; i <= 6; i++) {
+	const buff = buffStatsOf(mod);
+	for (let i = 1; i <= 8; i++) {
 		const statIndex = mod["StatsKey" + i];
-		if (statIndex == null) continue;
+		if (statIndex == null || buff.has(statIndex)) continue;
 		const stat = stats[statIndex];
 		if (!stat) continue;
 		values.set(stat.Id, mod["Stat" + i + (kind === "min" ? "Min" : "Max")] ?? 0);
@@ -201,6 +202,19 @@ baseEn.forEach((b, i) => {
 	const ko = baseKo[i]?.Name;
 	if (ko) names.ko.push(ko);
 });
+// 희귀 지도 이름 낱말(rare-names 의 classWords.Map — 앞 · 뒤 낱말)도 넣는다(10-29 R5-2, PoE2 경로석과 같게) — 희귀 지도는 "<앞> <뒤>" 이름 줄이
+//   있어 검색에 걸린다. 빼먹으면 옵션 검색어가 그 낱말을 이름으로 가진 희귀 지도까지 함께 걸렀다
+const rareWordsFile = path.join(DATA_DIR, "rare-name-words.json");
+if (fs.existsSync(rareWordsFile)) {
+	const rare = JSON.parse(fs.readFileSync(rareWordsFile, "utf8"));
+	for (const side of ["prefix", "suffix"]) {
+		for (const w of rare.classWords?.Map?.[side] || []) {
+			if (!names.en.includes(w)) names.en.push(w);
+			const ko = rare[side]?.[w];
+			if (ko && !names.ko.includes(ko)) names.ko.push(ko);
+		}
+	}
+}
 
 const config = loadConfig();
 fs.writeFileSync(OUT, JSON.stringify({ patch: config.patch, mods: list, names }, null, "\t"), "utf8");

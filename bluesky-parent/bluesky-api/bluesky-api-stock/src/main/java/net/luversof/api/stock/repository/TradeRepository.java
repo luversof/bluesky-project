@@ -8,8 +8,12 @@ import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import net.luversof.api.stock.domain.PeriodTradeSummary;
+import net.luversof.api.stock.domain.StockItemCashFlow;
 import net.luversof.api.stock.domain.StockItemDateRange;
+import net.luversof.api.stock.domain.StockItemFirstBuy;
 import net.luversof.api.stock.domain.Trade;
+import net.luversof.api.stock.domain.YearlyTradeCost;
 
 public interface TradeRepository extends CrudRepository<Trade, UUID> {
 
@@ -57,7 +61,7 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
                 GROUP BY 1
                 ORDER BY 1
             """)
-  List<net.luversof.api.stock.domain.YearlyTradeCost> findYearlyCost(
+  List<YearlyTradeCost> findYearlyCost(
       @Param("userId") UUID userId,
       @Param("startDate") Instant startDate,
       @Param("endDate") Instant endDate,
@@ -87,7 +91,7 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
                   AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= CAST(:startDate AS timestamptz))
                   AND (CAST(:endDate   AS timestamptz) IS NULL OR t."tradeDate" <  CAST(:endDate   AS timestamptz))
             """)
-  net.luversof.api.stock.domain.PeriodTradeSummary findPeriodSummary(
+  PeriodTradeSummary findPeriodSummary(
       @Param("userId") UUID userId,
       @Param("startDate") Instant startDate,
       @Param("endDate") Instant endDate);
@@ -163,7 +167,7 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
                   AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
                 GROUP BY t."stockItem_id"
             """)
-  List<net.luversof.api.stock.domain.StockItemFirstBuy> findFirstBuyDateByStockItem(
+  List<StockItemFirstBuy> findFirstBuyDateByStockItem(
       @Param("userId") UUID userId, @Param("accountIds") String accountIds);
 
   /**
@@ -205,7 +209,7 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
                 ) f
                 ORDER BY f.stock_item_id, f.flow_at
             """)
-  List<net.luversof.api.stock.domain.StockItemCashFlow> findCashFlowsByStockItem(
+  List<StockItemCashFlow> findCashFlowsByStockItem(
       @Param("userId") UUID userId,
       @Param("accountIds") String accountIds,
       @Param("stockItemIds") String stockItemIds);

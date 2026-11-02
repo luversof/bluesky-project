@@ -58,7 +58,9 @@ public class Poe2DataService {
       String ascendancy,
       boolean multipleChoiceOption,
       boolean freeAllocate,
-      int sinisterSlot) {}
+      int sinisterSlot,
+      // 엔진(PoB-PoE2 릴리스)이 읽는 트리에 없는 노드 — 재계산에서 효과가 빠진다(10-29 R4, parse-tree2 engineMissing)
+      boolean engineMissing) {}
 
   /** classAscendancies = 직업 → 전직 id 목록(트리 JSON 순서 — 시뮬 전직 셀렉트의 직업별 묶음). */
   public record TreeIndex(
@@ -459,40 +461,55 @@ public class Poe2DataService {
         .filter(a -> byName.test(new String[] {a.name(), a.nameKo()}))
         .filter(a -> blank(kind) || kind.equals(a.kind()))
         .filter(
+            a ->
+                blank(itemClass)
+                    || !(Boolean.TRUE.equals(a.noJewellery()) && JEWELLERY.contains(itemClass)))
+        .filter(
             a -> blank(itemClass) || a.effects().stream().anyMatch(e -> appliesTo(e, itemClass)))
         .toList();
   }
 
+  private static final List<String> JEWELLERY = List.of("Amulet", "Ring", "Belt");
+
   /** 효과가 그 아이템 종류에 들어가는가 — 분류에 대상 클래스가 적혀 있으면 그것으로, 없으면(모든 장비·방어구·무도 무기) 분류 이름으로. */
   static boolean appliesTo(Poe2.AugmentEffect e, String itemClass) {
+    String t = Objects.toString(e.target(), "");
+    // '무기'(Martial Or Caster Weapon) · Martial Weapon Wand or Staff 는 대상 클래스에 지팡이류만 적혀 있고 무도 무기는 Id
+    // 로만 뜻한다
+    //   (SoulCoreStatCategories) — 대상 클래스만 보면 한손 철퇴 · 창 · 활 거르기에서 알두르 룬 · 지콴의 영혼 핵 등 23개가 빠졌다(10-29
+    // A1)
+    if (t.startsWith("Martial") && !NON_MARTIAL.contains(itemClass)) {
+      return true;
+    }
     if (e.targetClasses() != null && !e.targetClasses().isEmpty()) {
       return e.targetClasses().contains(itemClass);
     }
-    String t = Objects.toString(e.target(), "");
     return switch (t) {
       case "All" -> true;
       case "Armour" ->
           List.of("Helmet", "Body Armour", "Gloves", "Boots", "Shield", "Buckler", "Focus")
               .contains(itemClass);
-      case "Martial Weapon" ->
-          !List.of(
-                  "Helmet",
-                  "Body Armour",
-                  "Gloves",
-                  "Boots",
-                  "Shield",
-                  "Buckler",
-                  "Focus",
-                  "Wand",
-                  "Staff",
-                  "Sceptre",
-                  "Amulet",
-                  "Ring",
-                  "Belt")
-              .contains(itemClass);
+      case "Martial Weapon" -> !NON_MARTIAL.contains(itemClass);
       default -> t.equals(itemClass);
     };
   }
+
+  /** 무도 무기가 아닌 장착 대상 — 방어구 · 시전 무기 · 장신구. */
+  private static final List<String> NON_MARTIAL =
+      List.of(
+          "Helmet",
+          "Body Armour",
+          "Gloves",
+          "Boots",
+          "Shield",
+          "Buckler",
+          "Focus",
+          "Wand",
+          "Staff",
+          "Sceptre",
+          "Amulet",
+          "Ring",
+          "Belt");
 
   public Optional<Poe2.Augment> augment(String slug) {
     return augments.items().stream().filter(a -> a.slug().equals(slug)).findFirst();
@@ -793,7 +810,8 @@ public class Poe2DataService {
                     n.path("ascendancy").isNull() ? null : n.path("ascendancy").asString(null),
                     n.path("multipleChoiceOption").asBoolean(false),
                     n.path("freeAllocate").asBoolean(false),
-                    n.path("sinisterSlot").asInt(0)));
+                    n.path("sinisterSlot").asInt(0),
+                    n.path("engineMissing").asBoolean(false)));
           }
         } catch (Exception e) {
           logger.warn("PoE2 트리 색인 로드 실패: {}", path, e);
