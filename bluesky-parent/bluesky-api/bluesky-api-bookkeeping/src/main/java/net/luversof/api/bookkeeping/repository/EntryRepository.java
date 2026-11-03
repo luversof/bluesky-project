@@ -1,21 +1,13 @@
 package net.luversof.api.bookkeeping.repository;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.repository.CrudRepository;
 
 import net.luversof.api.bookkeeping.domain.Entry;
 
+/** 기간 검색 · 잔액 · 통계 쿼리는 서비스 단계에서 JdbcClient 로 더한다. */
 public interface EntryRepository extends CrudRepository<Entry, UUID> {
 
-  List<Entry> findByBookkeepingId(UUID bookkeepingId);
-
-  /** (s) test * */
-  List<Entry> findByIncomeAssetId(UUID incomeAssetId);
-
-  List<Entry> findByOutgoingAssetId(UUID outgoingAssetId);
-
-  long deleteByBookkeepingId(UUID bookkeepingId);
-  /** (e) test * */
+  long deleteByBookId(UUID bookId);
 }

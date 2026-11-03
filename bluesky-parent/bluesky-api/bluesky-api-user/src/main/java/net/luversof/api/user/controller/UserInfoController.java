@@ -1,19 +1,17 @@
 package net.luversof.api.user.controller;
 
-import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.session.MapSession;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
-import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,24 +40,20 @@ public class UserInfoController {
   public void createSession(@RequestBody CreateSessionRequest request) {
     Session session = sessionRepository.findById(request.sessionId());
     if (session == null) {
-      session = sessionRepository.createSession();
-
-      try {
-        if (session instanceof MapSession) {
-          ((MapSession) session).setId(request.sessionId());
-        } else {
-          Field cachedField = ReflectionUtils.findField(session.getClass(), "cached");
-          if (cachedField != null) {
-            ReflectionUtils.makeAccessible(cachedField);
-            MapSession cached = (MapSession) cachedField.get(session);
-            cached.setId(request.sessionId());
-          }
-        }
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      // Only create-new-session mints ids (new session, changeSessionId), so a missing id was
+      // deleted or expired. Writing it anyway brought a logged-out session back to life with its
+      // security context when a request still in flight saved after the logout.
+      System.err.println(
+          "UserInfoController.createSession ignored, session not found. sessionId: "
+              + request.sessionId());
+      return;
     }
 
+    // Only names the client saw and removed, not "everything missing from the map": a concurrent
+    // request may have added attributes (e.g. the security context at login) this one never saw.
+    if (request.removedAttributeNames() != null) {
+      request.removedAttributeNames().forEach(session::removeAttribute);
+    }
     if (request.sessionAttributes() != null) {
       request.sessionAttributes().forEach(session::setAttribute);
     }
@@ -187,7 +181,8 @@ public class UserInfoController {
     sessionRepository.deleteById(request.sessionId());
   }
 
-  public record CreateSessionRequest(String sessionId, Map<String, Object> sessionAttributes) {}
+  public record CreateSessionRequest(
+      String sessionId, Map<String, Object> sessionAttributes, Set<String> removedAttributeNames) {}
 
   public record DeleteSessionRequest(String sessionId) {}
 

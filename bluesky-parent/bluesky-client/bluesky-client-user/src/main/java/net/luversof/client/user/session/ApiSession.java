@@ -58,10 +58,20 @@ public class ApiSession implements Session, Serializable {
 
   @Override
   public String changeSessionId() {
+    String oldSessionId = delegate.getId();
     String newSessionId = userInfoApiClient.createNewSession();
     delegate.setId(newSessionId);
     // 새 id 로 옮겨 담아야 하므로 다음 save 는 반드시 서버에 써야 한다.
     this.savedAttributes = null;
+    // 로그인(세션 고정 보호) 전 세션(OAuth2 인가 요청 · SavedRequest)이 서버에 TTL 까지 남지 않게 지운다.
+    // 지우기 실패는 예전처럼 TTL 까지 남을 뿐이라 로그인을 막지 않는다.
+    try {
+      ApiSessionRepository.deleteOnServer(userInfoApiClient, oldSessionId);
+    } catch (RuntimeException e) {
+      System.err.println(
+          "ApiSession.changeSessionId old session delete failed. id: " + oldSessionId);
+      e.printStackTrace();
+    }
     return newSessionId;
   }
 

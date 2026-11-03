@@ -81,7 +81,7 @@ public class BoardUserInfoService {
     return page;
   }
 
-  private Map<UUID, String> fetchUsernames(List<UUID> userIdList) {
+  public Map<UUID, String> fetchUsernames(List<UUID> userIdList) {
     if (userIdList == null || userIdList.isEmpty()) {
       return Collections.emptyMap();
     }

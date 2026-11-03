@@ -3,6 +3,7 @@ package net.luversof.client.user.httpexchange;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
@@ -41,7 +42,16 @@ public interface UserInfoApiClient {
       String provider, String providerId, String username, String email, String avatarUrl)
       implements Serializable {}
 
-  record CreateSessionRequest(String sessionId, Map<String, Object> sessionAttributes)
+  /**
+   * Session write.
+   *
+   * @param sessionId session id
+   * @param sessionAttributes attributes to set (serialized)
+   * @param removedAttributeNames attributes this request loaded and then removed; the server
+   *     deletes only these, so attributes another request added meanwhile survive
+   */
+  record CreateSessionRequest(
+      String sessionId, Map<String, Object> sessionAttributes, Set<String> removedAttributeNames)
       implements Serializable {}
 
   record DeleteSessionRequest(String sessionId) implements Serializable {}

@@ -9,8 +9,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.session.MapSession;
 import org.springframework.session.SessionRepository;
@@ -62,7 +64,16 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
       return;
     }
 
-    userInfoApiClient.createSession(new CreateSessionRequest(session.getId(), attributes));
+    // The server only sets what it receives, so a removeAttribute (a read flash map, a consumed
+    // OAuth2 authorization request) has to be sent by name or it stays on the server
+    // (found 2026-11-03: a flash error came back on every request until it expired).
+    Set<String> removed = new HashSet<>();
+    if (session.getSavedAttributes() != null) {
+      removed.addAll(session.getSavedAttributes().keySet());
+      removed.removeAll(attributes.keySet());
+    }
+
+    userInfoApiClient.createSession(new CreateSessionRequest(session.getId(), attributes, removed));
     session.setSavedAttributes(attributes);
   }
 
@@ -93,12 +104,21 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
       }
 
       MapSession session = new MapSession(id);
+      // 방금 서버에서 받은 '직렬화된' 상태 그대로를 기준으로 삼는다.
+      Map<String, Object> savedAttributes = new HashMap<>();
       if (userInfo.sessionAttributes() != null) {
         userInfo
             .sessionAttributes()
             .forEach(
                 (k, v) -> {
-                  session.setAttribute(k, deserialize(v));
+                  Object value = deserialize(v);
+                  // 이 빌드가 못 읽는 속성(다른 버전이 쓴 클래스 등)은 '읽은 것'으로 치지 않는다 - 그래야 save 가 지운 것으로 보고
+                  // 서버에서 지우지 않는다.
+                  if (value == null && v != null) {
+                    return;
+                  }
+                  session.setAttribute(k, value);
+                  savedAttributes.put(k, v);
                 });
       }
 
@@ -106,11 +126,7 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
       session.setMaxInactiveInterval(Duration.ofMinutes(30));
 
       ApiSession apiSession = new ApiSession(session, userInfoApiClient);
-      // 방금 서버에서 받은 '직렬화된' 상태 그대로를 기준으로 삼는다.
-      apiSession.setSavedAttributes(
-          userInfo.sessionAttributes() == null
-              ? new HashMap<>()
-              : new HashMap<>(userInfo.sessionAttributes()));
+      apiSession.setSavedAttributes(savedAttributes);
       return apiSession;
     } catch (Exception e) {
       e.printStackTrace();
@@ -120,6 +136,11 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
 
   @Override
   public void deleteById(String id) {
+    deleteOnServer(userInfoApiClient, id);
+  }
+
+  /** Also used by {@link ApiSession#changeSessionId()} to drop the session it moved away from. */
+  static void deleteOnServer(UserInfoApiClient userInfoApiClient, String id) {
     // Drop the request-scoped reuse so a lookup later in the same request (logout, session
     // invalidation) asks the server instead of handing back the session that was just deleted.
     if (RequestContextHolder.getRequestAttributes() != null) {

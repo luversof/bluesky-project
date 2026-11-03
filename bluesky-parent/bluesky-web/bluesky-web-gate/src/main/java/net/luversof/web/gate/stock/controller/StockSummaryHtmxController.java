@@ -356,6 +356,13 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
         StockPriceBasisUtil.intradayTime(profitList, summaryPriceBasisDate));
     model.addAttribute("totalAsset", totalAsset);
     model.addAttribute("totalRealizedProfit", totalRealizedVal);
+    // 합산 수익률의 분모 - 지금까지 산 총액(매수 수수료 포함). 배당 탭 합산 수익률과 같은 기준(2026-11-02).
+    model.addAttribute(
+        "totalBuyCost",
+        profitList.stream()
+            .map(TradeProfit::totalBuyCost)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add));
     model.addAttribute("totalUnrealizedProfit", totalUnrealizedVal);
     model.addAttribute("displayPrincipal", displayPrincipal);
     model.addAttribute("displayCurrentEvaluationProfit", displayCurrentEvaluationProfit);

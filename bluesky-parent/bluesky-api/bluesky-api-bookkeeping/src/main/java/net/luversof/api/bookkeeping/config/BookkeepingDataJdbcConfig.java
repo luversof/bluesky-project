@@ -1,26 +1,22 @@
 package net.luversof.api.bookkeeping.config;
 
-import java.util.List;
-
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
-import org.springframework.data.jdbc.repository.config.EnableJdbcAuditing;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
-import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import io.github.luversof.boot.data.convert.MapToPGobjectConverter;
-import io.github.luversof.boot.data.convert.PGobjectToMapConverter;
-import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
-
+/**
+ * 가계부 data-jdbc 설정.
+ *
+ * <p>도메인이 record 라 id 를 리플렉션으로 채우는 BeforeConvertCallback(DataJdbcConverterUtil)은 쓰지 않는다. 서비스가 id 를
+ * 넣고 새 행은 JdbcAggregateTemplate.insert, 수정은 repository.save 로 저장한다.
+ */
 @Configuration
-@EnableJdbcAuditing
 @EnableJdbcRepositories(
     basePackages = "net.luversof.api.bookkeeping.**.repository",
     transactionManagerRef = "bookkeepingTransactionManager")
@@ -35,19 +31,5 @@ public class BookkeepingDataJdbcConfig {
   PlatformTransactionManager bookkeepingTransactionManager(
       @Qualifier("routingDataSource") DataSource routingDataSource) {
     return new DataSourceTransactionManager(routingDataSource);
-  }
-
-  @Bean
-  <T> BeforeConvertCallback<T> bookkeepingBeforeConvertCallback() {
-    return DataJdbcConverterUtil::prepareEntity;
-  }
-
-  @Bean
-  JdbcCustomConversions bookkeepingJdbcCustomConversions() {
-    return new JdbcCustomConversions(
-        List.of(
-            // new MapToStringConverter(),
-            // new StringToMapConverter()
-            new MapToPGobjectConverter(), new PGobjectToMapConverter()));
   }
 }

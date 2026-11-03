@@ -9,9 +9,7 @@ import net.luversof.api.bookkeeping.domain.Asset;
 
 public interface AssetRepository extends CrudRepository<Asset, UUID> {
 
-  List<Asset> findByBookkeepingId(UUID bookkeepingId);
+  List<Asset> findByBookIdOrderByDisplayOrder(UUID bookId);
 
-  List<Asset> findByAssetTypeId(UUID assetTypeId);
-
-  long deleteByBookkeepingId(UUID bookkeepingId);
+  long deleteByBookId(UUID bookId);
 }

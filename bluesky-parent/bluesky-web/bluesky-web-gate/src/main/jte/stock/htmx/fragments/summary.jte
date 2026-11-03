@@ -24,6 +24,7 @@
 @param BigDecimal holdingFeeAdjustment
 @param BigDecimal excludedHoldingBuyFee = BigDecimal.ZERO
 @param BigDecimal manualPrincipalAdjustment
+@param BigDecimal totalBuyCost = null
 @param String trendChartLabelsJs = "[]"
 @param String trendChartValuesJs = "[]"
 @param int trendPointCount = 0
@@ -84,7 +85,9 @@
 !{BigDecimal totalRealizedIncome = totalRealizedProfit.add(totalDividend);}
 !{BigDecimal combinedAdjustment = combinedAdjustmentAmount != null ? combinedAdjustmentAmount : BigDecimal.ZERO;}
 !{BigDecimal totalCombinedProfit = currentEvaluationProfit.add(totalRealizedIncome).subtract(combinedAdjustment);}
-!{BigDecimal combinedPrincipal = totalAsset.subtract(totalUnrealizedProfit);}
+<%-- 분모는 지금까지 산 총액(매수 수수료 포함, 2026-11-02 사용자 결정 P0). 분자에 다 판 종목의 실현 · 배당까지 들어가는데 지금 보유 원가로 나누면
+	 부풀었다(실측 154.38% vs 배당 탭 같은 이름 55.76%) - 배당 탭(DividendHoldingProfitUtil)과 같은 기준. 총매수를 모르면 예전 기준. --%>
+!{BigDecimal combinedPrincipal = totalBuyCost != null && totalBuyCost.signum() > 0 ? totalBuyCost : totalAsset.subtract(totalUnrealizedProfit);}
 !{boolean hasCombinedAdjustment = combinedAdjustment.compareTo(BigDecimal.ZERO) != 0;}
 !{BigDecimal combinedAdjustmentAbs = combinedAdjustment.abs();}
 !{String combinedAdjustmentOperator = combinedAdjustment.compareTo(BigDecimal.ZERO) < 0 ? "+" : "-";}

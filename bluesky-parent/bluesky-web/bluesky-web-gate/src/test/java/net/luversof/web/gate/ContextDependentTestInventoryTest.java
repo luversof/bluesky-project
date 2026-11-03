@@ -45,14 +45,12 @@ class ContextDependentTestInventoryTest {
 
   private static final Path TEST_ROOT = Path.of("src/test/java/net/luversof/web/gate");
 
-  /** 컨텍스트를 띄우는 것으로 알려진 클래스. 실측 2026-09-07: 이 다섯 개가 오류 9 건을 낸다. */
+  /**
+   * 컨텍스트를 띄우는 것으로 알려진 클래스. 실측 2026-09-07: 이 다섯 개가 오류 9 건을 냈다(가계부 BookkeepingClientTest 는 2026-11-03
+   * 개편 때 삭제).
+   */
   private static final List<String> KNOWN =
-      List.of(
-          "BasicTest.java",
-          "BlogArticleTest.java",
-          "BoardArticleTest.java",
-          "BoardTest.java",
-          "BookkeepingClientTest.java");
+      List.of("BasicTest.java", "BlogArticleTest.java", "BoardArticleTest.java", "BoardTest.java");
 
   private static final String SELF = "ContextDependentTestInventoryTest.java";
 

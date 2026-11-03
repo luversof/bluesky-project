@@ -1,135 +1,180 @@
 package net.luversof.api.bookkeeping.service;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jdbc.core.JdbcAggregateOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import net.luversof.api.bookkeeping.constant.AssetJsonConfigConstant;
+import io.github.luversof.boot.uuid.UuidGenerator;
+import net.luversof.api.bookkeeping.constant.AssetKind;
 import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.repository.AssetRepository;
-import net.luversof.api.bookkeeping.repository.EntryRepository;
+import net.luversof.api.bookkeeping.repository.EntryQuery;
 
+/** 자산 목록(잔액) · 추가 · 수정 · 삭제(내역 있으면 숨김) · 순서. MEMBER 이상. */
 @Service
 public class AssetService {
 
-  @Autowired private BookkeepingService bookkeepingService;
+  /** 자산과 현재 잔액(openingBalance + 내역 증감, 자산 통화). */
+  public record AssetBalance(Asset asset, BigDecimal balance) {}
 
-  @Autowired private AssetRepository assetRepository;
+  /** 추가 · 수정 입력. paymentDay 는 CREDIT_CARD 만 쓰고 나머지는 무시. hidden 이 null 이면 그대로. */
+  public record AssetCommand(
+      AssetKind kind,
+      String name,
+      String currency,
+      BigDecimal openingBalance,
+      Integer paymentDay,
+      Boolean hidden) {}
 
-  @Autowired private EntryRepository entryRepository;
+  private final AssetRepository assetRepository;
+  private final EntryQuery entryQuery;
+  private final JdbcAggregateOperations jdbcAggregateOperations;
+  private final UuidGenerator uuidGenerator;
+  private final BookAccess bookAccess;
 
-  @Autowired private AssetTypeService assetTypeService;
-
-  public void setBookkeepingService(BookkeepingService bookkeepingService) {
-    this.bookkeepingService = bookkeepingService;
-  }
-
-  public void setAssetRepository(AssetRepository assetRepository) {
+  public AssetService(
+      AssetRepository assetRepository,
+      EntryQuery entryQuery,
+      JdbcAggregateOperations jdbcAggregateOperations,
+      UuidGenerator uuidGenerator,
+      BookAccess bookAccess) {
     this.assetRepository = assetRepository;
+    this.entryQuery = entryQuery;
+    this.jdbcAggregateOperations = jdbcAggregateOperations;
+    this.uuidGenerator = uuidGenerator;
+    this.bookAccess = bookAccess;
   }
 
-  public void setEntryRepository(EntryRepository entryRepository) {
-    this.entryRepository = entryRepository;
+  /** 숨긴 자산도 포함한다(화면이 거른다). */
+  public List<AssetBalance> list(UUID bookId, UUID userId) {
+    bookAccess.requireMember(bookId, userId);
+    var deltas = entryQuery.balanceDeltas(bookId);
+    return assetRepository.findByBookIdOrderByDisplayOrder(bookId).stream()
+        .map(
+            a ->
+                new AssetBalance(
+                    a, a.openingBalance().add(deltas.getOrDefault(a.id(), BigDecimal.ZERO))))
+        .toList();
   }
 
-  public void setAssetTypeService(AssetTypeService assetTypeService) {
-    this.assetTypeService = assetTypeService;
-  }
-
-  public Asset createAsset(Asset asset) {
-
-    checkAsset(asset);
-
-    // 사용자가 추가한 asset은 custom 설정으로 초기화
-    asset.setJsonConfig(AssetJsonConfigConstant.getCustomConfigList());
-
-    return assetRepository.save(asset);
-  }
-
-  public Optional<Asset> findById(UUID id) {
-    return assetRepository.findById(id);
-  }
-
-  public List<Asset> findByBookkeepingId(UUID bookkeepingId) {
-    return assetRepository.findByBookkeepingId(bookkeepingId);
-  }
-
-  public Asset updateAsset(Asset asset) {
-
-    checkAsset(asset);
-
-    var targetAsset =
-        assetRepository
-            .findById(asset.getId())
-            .orElseThrow(BookkeepingErrorCode.NOT_EXIST_ASSET::exception);
-    if (!targetAsset.getBookkeepingId().equals(asset.getBookkeepingId())) {
-      BookkeepingErrorCode.INVALID_BOOKKEEPING_ID.throwException();
+  @Transactional(transactionManager = "bookkeepingTransactionManager")
+  public Asset create(UUID bookId, UUID userId, AssetCommand command) {
+    bookAccess.requireMember(bookId, userId);
+    if (command.kind() == null) {
+      throw BookkeepingErrorCode.INVALID_REQUEST.exception();
     }
-
-    var enableUpdate =
-        targetAsset
-            .getJsonConfig()
-            .getOrDefault(AssetJsonConfigConstant.ENABLE_UPDATE, Boolean.FALSE);
-    if (!enableUpdate.equals(Boolean.TRUE)) {
-      BookkeepingErrorCode.UNABLE_UPDATE_ASSET.throwException();
-    }
-
-    // update 가능한 값들에 대해서만 처리
-    targetAsset.setAssetTypeId(asset.getAssetTypeId());
-    targetAsset.setName(asset.getName());
-
-    return assetRepository.save(targetAsset);
+    var currency = Money.currency(command.currency());
+    var siblings = assetRepository.findByBookIdOrderByDisplayOrder(bookId);
+    var order = siblings.stream().mapToInt(Asset::displayOrder).max().orElse(-1) + 1;
+    return jdbcAggregateOperations.insert(
+        new Asset(
+            uuidGenerator.create(),
+            bookId,
+            command.kind(),
+            BookService.name(command.name()),
+            currency,
+            Money.balance(command.openingBalance(), currency),
+            paymentDay(command.kind(), command.paymentDay()),
+            order,
+            Boolean.TRUE.equals(command.hidden())));
   }
 
-  /**
-   * asset id를 기준으로 삭제 처리 bookkeeping.id, bookkeeping.userId를 전달받아 체크해야 할듯?
-   *
-   * @param asset
-   */
-  public void deleteAsset(Asset asset) {
-
-    checkAsset(asset);
-
-    // 삭제 대상 확인
-    var targetAsset =
-        assetRepository
-            .findById(asset.getId())
-            .orElseThrow(BookkeepingErrorCode.NOT_EXIST_ASSET::exception);
-
-    // 대상 asset의 entry가 있는지 확인
-    boolean isEnableDelete =
-        entryRepository.findByIncomeAssetId(asset.getId()).isEmpty()
-            && entryRepository.findByOutgoingAssetId(asset.getId()).isEmpty();
-
-    // entry 가 있으면 삭제 불가
-    if (!isEnableDelete) {
-      BookkeepingErrorCode.UNABLE_DELETE_ASSET.throwException();
+  /** 내역이 있으면 통화를 바꿀 수 없다. */
+  @Transactional(transactionManager = "bookkeepingTransactionManager")
+  public Asset update(UUID bookId, UUID userId, UUID assetId, AssetCommand command) {
+    bookAccess.requireMember(bookId, userId);
+    var asset = find(bookId, assetId);
+    if (command.kind() == null) {
+      throw BookkeepingErrorCode.INVALID_REQUEST.exception();
     }
-    assetRepository.delete(targetAsset);
+    var currency = Money.currency(command.currency());
+    if (!currency.equals(asset.currency()) && entryQuery.existsByAssetId(assetId)) {
+      throw BookkeepingErrorCode.ASSET_CURRENCY_LOCKED.exception();
+    }
+    return assetRepository.save(
+        new Asset(
+            asset.id(),
+            bookId,
+            command.kind(),
+            BookService.name(command.name()),
+            currency,
+            Money.balance(command.openingBalance(), currency),
+            paymentDay(command.kind(), command.paymentDay()),
+            asset.displayOrder(),
+            command.hidden() == null ? asset.hidden() : command.hidden()));
   }
 
-  /**
-   * Create와 Update에서 공통으로 확인하는 항목 1. asset의 bookkeepingId 존재 체크 2. assetTypeId가 있으면 해당 assetType의
-   * bookkeepingId가 asset의 bookkeepingId와 같은지 체크
-   */
-  private void checkAsset(Asset asset) {
-    var targetBookkeeping =
-        bookkeepingService
-            .findById(asset.getBookkeepingId())
-            .orElseThrow(BookkeepingErrorCode.NOT_EXIST_BOOKKEEPING_ID::exception);
+  /** 내역이 없으면 지우고 true, 있으면 숨기고 false. */
+  @Transactional(transactionManager = "bookkeepingTransactionManager")
+  public boolean delete(UUID bookId, UUID userId, UUID assetId) {
+    bookAccess.requireMember(bookId, userId);
+    var asset = find(bookId, assetId);
+    if (entryQuery.existsByAssetId(assetId)) {
+      assetRepository.save(withOrder(asset, asset.displayOrder(), true));
+      return false;
+    }
+    assetRepository.delete(asset);
+    return true;
+  }
 
-    if (asset.getAssetTypeId() != null) {
-      var targetAssetType =
-          assetTypeService
-              .findById(asset.getAssetTypeId())
-              .orElseThrow(BookkeepingErrorCode.INVALID_ASSETTYPE_ID::exception);
-      if (!targetAssetType.getBookkeepingId().equals(targetBookkeeping.getId())) {
-        BookkeepingErrorCode.INVALID_ASSETTYPE_ID.throwException();
+  /** 같은 kind 안에서 한 칸 위(up) / 아래로. 끝이면 그대로. */
+  @Transactional(transactionManager = "bookkeepingTransactionManager")
+  public void move(UUID bookId, UUID userId, UUID assetId, boolean up) {
+    bookAccess.requireMember(bookId, userId);
+    var asset = find(bookId, assetId);
+    var group =
+        new ArrayList<>(
+            assetRepository.findByBookIdOrderByDisplayOrder(bookId).stream()
+                .filter(a -> a.kind() == asset.kind())
+                .toList());
+    if (Ordering.swap(group, Asset::id, assetId, up)) {
+      saveOrders(group);
+    }
+  }
+
+  Asset find(UUID bookId, UUID assetId) {
+    return assetRepository
+        .findById(assetId)
+        .filter(a -> a.bookId().equals(bookId))
+        .orElseThrow(BookkeepingErrorCode.NOT_EXIST_ASSET::exception);
+  }
+
+  // 순서는 그룹 안 위치를 기준으로 다시 매긴다(같은 값이 겹쳐도 바로잡힌다). 다른 그룹과 값이 겹쳐도 화면은 kind 별로 묶어 보여 준다.
+  private void saveOrders(List<Asset> group) {
+    for (int i = 0; i < group.size(); i++) {
+      var a = group.get(i);
+      if (a.displayOrder() != i) {
+        assetRepository.save(withOrder(a, i, a.hidden()));
       }
     }
+  }
+
+  private static Asset withOrder(Asset a, int order, boolean hidden) {
+    return new Asset(
+        a.id(),
+        a.bookId(),
+        a.kind(),
+        a.name(),
+        a.currency(),
+        a.openingBalance(),
+        a.paymentDay(),
+        order,
+        hidden);
+  }
+
+  private static Integer paymentDay(AssetKind kind, Integer paymentDay) {
+    if (kind != AssetKind.CREDIT_CARD || paymentDay == null) {
+      return null;
+    }
+    if (paymentDay < 1 || paymentDay > 31) {
+      throw BookkeepingErrorCode.INVALID_REQUEST.exception();
+    }
+    return paymentDay;
   }
 }

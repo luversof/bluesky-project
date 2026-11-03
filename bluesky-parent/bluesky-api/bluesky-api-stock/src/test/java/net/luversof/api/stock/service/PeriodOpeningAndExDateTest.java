@@ -34,6 +34,9 @@ class PeriodOpeningAndExDateTest {
     // 기준일 월요일이면 앞 금요일.
     assertThat(TradeProfitService.dividendDay(dividend("2026-11-02", "2026-11-04"), KST))
         .isEqualTo(LocalDate.parse("2026-10-30"));
+    assertThat(TradeProfitService.dividendDay(dividend("2026-11-04", "2026-11-04"), KST))
+        .as("기준일 = 지급일이면 원장 가져오기가 채운 값 - 모르는 것으로 보고 지급일")
+        .isEqualTo(LocalDate.parse("2026-11-04"));
     assertThat(TradeProfitService.dividendDay(dividend(null, "2026-11-04"), KST))
         .isEqualTo(LocalDate.parse("2026-11-04"));
   }

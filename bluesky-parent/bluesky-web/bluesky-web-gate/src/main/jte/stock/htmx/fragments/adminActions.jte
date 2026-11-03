@@ -34,6 +34,7 @@
 	String dataCoverageLabel = MessageUtil.getMessage("stock.admin.label.data.coverage");
 	String importOkTemplate = MessageUtil.getMessage("stock.admin.import.result.ok");
 	String importDroppedTemplate = MessageUtil.getMessage("stock.admin.import.result.dropped");
+	String importStoppedTemplate = MessageUtil.getMessage("stock.admin.import.result.stopped");
 	String priceFailedTemplate = MessageUtil.getMessage("stock.admin.import.result.price.failed");
 	String priceProgressTemplate = MessageUtil.getMessage("stock.admin.price.progress");
 	String priceProgressDoneTemplate = MessageUtil.getMessage("stock.admin.price.progress.done");
@@ -68,6 +69,7 @@
 				<button type="button" hx-post="/api/stock/admin/stock-items"
 						data-admin-action="stock-items"
 						hx-swap="none"
+						hx-disabled-elt="this"
 						hx-indicator="#update-loading"
 						hx-confirm="${updateStockItemsConfirm}"
 						data-reload-after-request="true"
@@ -88,6 +90,7 @@
 				<button type="button" hx-post="/api/stock/admin/trades"
 						data-admin-action="trades"
 						hx-swap="none"
+						hx-disabled-elt="this"
 						hx-indicator="#update-loading"
 						hx-confirm="${updateTradesConfirm}"
 						data-reload-after-request="true"
@@ -108,6 +111,7 @@
 				<button type="button" hx-post="/api/stock/admin/dividends"
 						data-admin-action="dividends"
 						hx-swap="none"
+						hx-disabled-elt="this"
 						hx-indicator="#update-loading"
 						hx-confirm="${updateDividendsConfirm}"
 						data-reload-after-request="true"
@@ -159,6 +163,7 @@
 			 class="hidden"
 			 data-import-ok-template="${importOkTemplate}"
 			 data-import-dropped-template="${importDroppedTemplate}"
+			 data-import-stopped-template="${importStoppedTemplate}"
 			 data-price-failed-template="${priceFailedTemplate}"></div>
 
 		<%-- 전체 갱신 진행 상황(사용자 결정 2026-09-22). 53 종목에 18~22 초라 게이트 읽기 제한(10 초)을 넘겨,
@@ -492,6 +497,24 @@
 			}
 			return null;
 		}
+
+		<%-- 원장 가져오기가 멈추면(api 409 - 시트 읽기 실패 · 행 급감, 원장은 그대로) 새로고침 없이 여기 바로 적는다. 예전엔 실패해도 아무 말이 없었다(2026-11-02). --%>
+		document.addEventListener('htmx:afterRequest', function(evt) {
+			var btn = evt.target && evt.target.closest ? evt.target.closest('[data-admin-action]') : null;
+			if (!btn || !evt.detail || evt.detail.successful) return;
+			var action = btn.getAttribute('data-admin-action');
+			if (action !== 'trades' && action !== 'dividends') return;
+			var box = document.getElementById('admin-import-result');
+			if (!box) return;
+			var detail = '';
+			try {
+				<%-- 실패 응답은 가져오기 결과 DTO 가 아니라 오류 본문(ProblemDetail)이다 - 이름을 body 와 나눈다(AdminResultBannerTest 는 body.* 를 DTO 와 대조). --%>
+				var problem = JSON.parse((evt.detail.xhr && evt.detail.xhr.responseText) || 'null');
+				detail = (problem && (problem.detail || problem.message)) || '';
+			} catch (e) {}
+			box.className = 'alert alert-error my-3';
+			box.textContent = format(box.getAttribute('data-import-stopped-template') || '', [detail]);
+		});
 
 		<%-- 갱신 성공 시 시각 기록 (기록 후 data-reload-after-request 위임이 새로고침한다) --%>
 		document.addEventListener('htmx:afterRequest', function(evt) {

@@ -79,7 +79,7 @@ public class StockAdminService {
       INSERT INTO "StockItem" (id, symbol, name, market)
       VALUES (?, ?, ?, ?)
       ON CONFLICT (symbol)
-      DO NOTHING
+      DO UPDATE SET name = EXCLUDED.name
       """;
 
   private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -136,8 +136,8 @@ public class StockAdminService {
    * 줄만 남기고 사라져 운영에서는 흔적이 없었다.
    */
   public LedgerImportResult tradeBulkInsert(UUID userId) {
-    // 이 사용자 계좌의 거래만 지운다 - 예전 deleteAll 은 다른 사용자 거래까지 지웠다(2026-10-27 감사).
-    accountService.findByUserId(userId).forEach(a -> tradeRepository.deleteByAccountId(a.getId()));
+    lockLedgerImport("trade", userId);
+    int existingCount = countLedgerRows("Trade", userId);
 
     var stockItemList =
         StreamSupport.stream(stockItemRepository.findAll().spliterator(), false).toList();
@@ -179,7 +179,8 @@ public class StockAdminService {
                   // 계좌 때문에 버린 행은 종목 이름 탓이 아니다 - 종목을 정말 못 찾았을 때만 모르는 이름에 담는다.
                   if (trade == null
                       && t.get종목() != null
-                      && stockItemList.stream().noneMatch(s -> s.getName().equals(t.get종목()))) {
+                      && stockItemList.stream()
+                          .noneMatch(s -> sameStockName(s.getName(), t.get종목()))) {
                     unknownStockNames.add(t.get종목());
                   }
                   return trade;
@@ -192,12 +193,63 @@ public class StockAdminService {
       log.debug("Skipped {} trade rows without price or quantity", skippedTradeCount);
     }
 
+    requireUsableImport("trade", existingCount, googleSheetsTradeList.size(), tradeList.size());
+    // 이 사용자 계좌의 거래만 지운다 - 예전 deleteAll 은 다른 사용자 거래까지 지웠다(2026-10-27 감사).
+    // 시트를 다 읽고 쓸 만한지 본 뒤에 지운다(2026-11-02 사용자 결정 P0) - 예전엔 먼저 지우고 읽어, 시트 읽기가 실패하면 빈 목록이
+    // 그대로 들어가 원장이 빈 채로 저장되고 화면은 성공이라 적었다.
+    accountService.findByUserId(userId).forEach(a -> tradeRepository.deleteByAccountId(a.getId()));
     tradeRepository.saveAll(tradeList);
     var result =
         new LedgerImportResult(
             googleSheetsTradeList.size(), tradeList.size(), List.copyOf(unknownStockNames));
     logImport("trade", result);
     return result;
+  }
+
+  /**
+   * 같은 사용자의 같은 가져오기를 한 번에 하나만 - 트랜잭션이 끝날 때 풀린다. 잠금이 없으면 두 요청이 차례로 지운 뒤 둘 다 넣어 원장이 두 배가
+   * 됐다(2026-11-02 검토).
+   */
+  private void lockLedgerImport(String kind, UUID userId) {
+    jdbcTemplate.query("SELECT pg_advisory_xact_lock(hashtext(?))", rs -> {}, kind + ":" + userId);
+  }
+
+  private int countLedgerRows(String table, UUID userId) {
+    Integer count =
+        jdbcTemplate.queryForObject(
+            "SELECT count(*) FROM \""
+                + table
+                + "\" WHERE account_id IN (SELECT id FROM \"Account\" WHERE user_id = ?)",
+            Integer.class,
+            userId);
+    return count == null ? 0 : count;
+  }
+
+  /**
+   * 지우기 전에 이번 가져오기가 쓸 만한지 본다. 들어갈 행이 없거나 지금 원장의 절반도 안 되면 멈춘다 - 시트 읽기 실패(빈 목록) · 머리글 이름 바뀜(모든 행이
+   * 걸러짐) · 범위 잘못 등. 지우기 전에 던지므로 원장은 그대로다.
+   */
+  static void requireUsableImport(
+      String kind, int existingCount, int sourceCount, int importCount) {
+    if (importCount == 0 || (existingCount > 0 && importCount * 2 < existingCount)) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.CONFLICT,
+          kind
+              + " import stopped before deleting: sheet rows "
+              + sourceCount
+              + ", importable "
+              + importCount
+              + ", current ledger "
+              + existingCount
+              + " (sheet read failure, renamed headers or wrong range?)");
+    }
+  }
+
+  /** 종목 이름은 앞뒤 공백을 다듬어 맞춘다 - 배당 가져오기(prepareStockItemMap)와 같은 규칙. */
+  static boolean sameStockName(String stockItemName, String sheetName) {
+    return stockItemName != null
+        && sheetName != null
+        && stockItemName.trim().equals(sheetName.trim());
   }
 
   /** 버려진 행이 있으면 한 줄로 남긴다. 없으면 INFO 로 "전부 들어갔다" 는 사실을 남긴다. */
@@ -216,10 +268,8 @@ public class StockAdminService {
 
   /** 시트의 배당을 통째로 다시 넣는다. 거래와 같은 이유로 버려진 행 수를 돌려준다. */
   public LedgerImportResult dividendBulkInsert(UUID userId) {
-    // 거래와 같다 - 이 사용자 계좌의 배당만 지운다.
-    accountService
-        .findByUserId(userId)
-        .forEach(a -> dividendRepository.deleteByAccountId(a.getId()));
+    lockLedgerImport("dividend", userId);
+    int existingCount = countLedgerRows("Dividend", userId);
 
     var googleSheetsDividendList = stockGoogleSheetService.getGoogleSheetDividendList(userId);
 
@@ -240,6 +290,12 @@ public class StockAdminService {
             .filter(Objects::nonNull)
             .toList();
 
+    requireUsableImport(
+        "dividend", existingCount, googleSheetsDividendList.size(), dividends.size());
+    // 거래와 같다 - 읽고 쓸 만한지 본 뒤에 이 사용자 계좌의 배당만 지운다.
+    accountService
+        .findByUserId(userId)
+        .forEach(a -> dividendRepository.deleteByAccountId(a.getId()));
     dividendRepository.saveAll(dividends);
     var result =
         new LedgerImportResult(
@@ -460,7 +516,7 @@ public class StockAdminService {
 
     var stockItem =
         stockItemList.stream()
-            .filter(s -> s.getName().equals(googleSheetTrade.get종목()))
+            .filter(s -> sameStockName(s.getName(), googleSheetTrade.get종목()))
             .findFirst()
             .orElse(null);
 

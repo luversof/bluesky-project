@@ -1535,10 +1535,16 @@ public class TradeProfitService {
     return outputEnd;
   }
 
-  /** 시계열에서 배당을 세는 날 - 기준일이 있으면 배당락일(기준일 하루 전 평일), 없으면 지급일. */
+  /**
+   * 시계열에서 배당을 세는 날 - 기준일이 있으면 배당락일(기준일 하루 전 평일), 없으면 지급일.
+   *
+   * <p>기준일이 지급일과 같으면 모르는 것으로 본다 - 원장 가져오기는 기준일 칸에 지급일을 넣는다(실측 2026-11-02: 228 건 전부 같음). 그 값으로 배당락일을
+   * 내면 "지급일 하루 전 평일" 이라는 실제와 다른 날이 된다.
+   */
   static LocalDate dividendDay(Dividend dividend, ZoneId zoneId) {
-    return dividend.getRecordDate() != null
-        ? PeriodReturnCalculator.exDividendDate(toRecordedDate(dividend.getRecordDate(), zoneId))
+    Instant recordDate = dividend.getRecordDate();
+    return recordDate != null && !recordDate.equals(dividend.getPayDate())
+        ? PeriodReturnCalculator.exDividendDate(toRecordedDate(recordDate, zoneId))
         : toRecordedDate(dividend.getPayDate(), zoneId);
   }
 

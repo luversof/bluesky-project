@@ -1,30 +1,30 @@
 package net.luversof.web.gate.bookkeeping.controller;
 
 import java.util.List;
+import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
-import net.luversof.web.gate.bookkeeping.domain.Bookkeeping;
-import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.BookClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.BookClient.BookSummary;
 
+/** 개발 점검: 게이트 → api-bookkeeping 연결 확인(devcheck 는 live 외 환경에서만 켜진다). */
 @DevCheckController
 @RequestMapping(value = "/bookkeeping", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookkeepingDevCheckController {
 
-  private BookkeepingClient bookkeepingClient;
+  private final BookClient bookClient;
 
-  @Autowired
-  public void setBookkeepingClient(BookkeepingClient bookkeepingClient) {
-    this.bookkeepingClient = bookkeepingClient;
+  public BookkeepingDevCheckController(BookClient bookClient) {
+    this.bookClient = bookClient;
   }
 
-  @GetMapping("/findByUserId")
-  public List<Bookkeeping> findByUserId(@RequestParam String userId) {
-    return bookkeepingClient.findByUserId(userId);
+  @GetMapping("/books")
+  public List<BookSummary> books(@RequestParam UUID userId) {
+    return bookClient.list(userId);
   }
 }

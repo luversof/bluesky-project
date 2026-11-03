@@ -9,11 +9,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import net.luversof.web.gate.bookkeeping.httpexchange.AssetClient;
-import net.luversof.web.gate.bookkeeping.httpexchange.AssetGroupClient;
-import net.luversof.web.gate.bookkeeping.httpexchange.BookkeepingClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.BookClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.CategoryClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.EntryClient;
-import net.luversof.web.gate.bookkeeping.httpexchange.EntryGroupClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.MemberClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.StatsClient;
 
+/** api-bookkeeping 클라이언트(base-url: spring.http.serviceclient.client-bookkeeping.base-url). */
 @Configuration
 public class GateBookkeepingConfig {
 
@@ -25,37 +27,38 @@ public class GateBookkeepingConfig {
   }
 
   @Bean
+  BookClient bookClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(BookClient.class);
+  }
+
+  @Bean
+  MemberClient memberClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(MemberClient.class);
+  }
+
+  @Bean
   AssetClient assetClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory")
-          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
-    return bookkeepingHttpServiceProxyFactory.createClient(AssetClient.class);
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(AssetClient.class);
   }
 
   @Bean
-  AssetGroupClient assetGroupClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory")
-          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
-    return bookkeepingHttpServiceProxyFactory.createClient(AssetGroupClient.class);
-  }
-
-  @Bean
-  BookkeepingClient bookkeepingClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory")
-          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
-    return bookkeepingHttpServiceProxyFactory.createClient(BookkeepingClient.class);
+  CategoryClient categoryClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(CategoryClient.class);
   }
 
   @Bean
   EntryClient entryClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory")
-          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
-    return bookkeepingHttpServiceProxyFactory.createClient(EntryClient.class);
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(EntryClient.class);
   }
 
   @Bean
-  EntryGroupClient entryGroupClient(
-      @Qualifier("bookkeepingHttpServiceProxyFactory")
-          HttpServiceProxyFactory bookkeepingHttpServiceProxyFactory) {
-    return bookkeepingHttpServiceProxyFactory.createClient(EntryGroupClient.class);
+  StatsClient statsClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(StatsClient.class);
   }
 }
