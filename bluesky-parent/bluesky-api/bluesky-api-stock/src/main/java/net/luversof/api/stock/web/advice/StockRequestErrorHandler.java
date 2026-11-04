@@ -28,7 +28,7 @@ import jakarta.servlet.ServletException;
  * {@code /api/dividend} 는 400 을 내주고 있어 엔드포인트마다 답이 달랐다.
  *
  * <p>이 서비스는 인증 없이 노출돼 있어 5xx 가 나면 그대로 서버 오류 알림으로 잡힌다. 응답 본문 모양은 공통 유틸을 그대로 써서 바꾸지 않고 상태 코드만 바로잡는다.
- * 로그 레벨은 {@code bluesky-boot.core.log-except-exception-list} 로 낮춘다.
+ * 로그 레벨은 {@code bluesky-boot.core.log-excluded-exceptions} 로 낮춘다.
  */
 @ControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)

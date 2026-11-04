@@ -2,6 +2,7 @@ package net.luversof.api.bookkeeping.service;
 
 import java.math.BigDecimal;
 
+import net.luversof.api.bookkeeping.constant.AssetKind;
 import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.api.bookkeeping.constant.EntryType;
 import net.luversof.api.bookkeeping.domain.Asset;
@@ -16,6 +17,8 @@ final class EntryRules {
 
   static final int MAX_CONTENT = 200;
   static final int MAX_MEMO = 1000;
+  static final int MIN_INSTALLMENT = 2;
+  static final int MAX_INSTALLMENT = 36;
 
   private EntryRules() {}
 
@@ -36,7 +39,18 @@ final class EntryRules {
     if (asset == null) {
       throw BookkeepingErrorCode.NOT_EXIST_ASSET.exception();
     }
-    var amount = Money.positive(c.amount(), asset.currency());
+    // 수입 · 지출은 0원도 받는다(복지카드 등). 이체 0원은 뜻이 없다
+    var amount =
+        c.type() == EntryType.TRANSFER
+            ? Money.positive(c.amount(), asset.currency())
+            : Money.nonNegative(c.amount(), asset.currency());
+    if (c.installmentMonths() != null
+        && (c.type() != EntryType.EXPENSE
+            || asset.kind() != AssetKind.CREDIT_CARD
+            || c.installmentMonths() < MIN_INSTALLMENT
+            || c.installmentMonths() > MAX_INSTALLMENT)) {
+      throw BookkeepingErrorCode.INVALID_INSTALLMENT.exception();
+    }
 
     if (c.type() != EntryType.TRANSFER) {
       if (c.toAssetId() != null || c.toAmount() != null || c.categoryId() == null) {

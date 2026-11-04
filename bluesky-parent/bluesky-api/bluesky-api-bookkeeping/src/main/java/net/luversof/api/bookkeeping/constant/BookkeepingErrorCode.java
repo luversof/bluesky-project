@@ -19,6 +19,7 @@ public enum BookkeepingErrorCode implements BlueskyErrorCode<BookkeepingErrorCod
   NOT_BOOK_OWNER,
   INVALID_CURRENCY,
   INVALID_MONTH_START_DAY,
+  INVALID_FX_RATE,
 
   // 멤버 · 초대
   ALREADY_BOOK_MEMBER,
@@ -40,4 +41,12 @@ public enum BookkeepingErrorCode implements BlueskyErrorCode<BookkeepingErrorCod
   INVALID_ENTRY_COLUMNS,
   INVALID_AMOUNT,
   TRANSFER_AMOUNT_MISMATCH,
+  INVALID_INSTALLMENT,
+  IMPORT_ROW_INVALID,
+
+  // 반복
+  NOT_EXIST_RECURRING,
+  INVALID_RECURRING_CYCLE,
+  NOT_RECURRING_OCCURRENCE,
+  RECURRING_ALREADY_DONE,
 }

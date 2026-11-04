@@ -61,14 +61,14 @@
 					<li class="bg-base-200/50 px-3 py-1 text-xs font-semibold text-base-content/70">${BookkeepingView.dayLabel(e.entryDate())}</li>
 				@endif
 				!{ String currency = BookkeepingView.assetCurrency(page.assetsById(), e.assetId()); }
-				!{ String sign = e.type() == EntryType.INCOME ? "+" : e.type() == EntryType.EXPENSE ? "-" : ""; }
+				!{ String sign = e.amount().signum() == 0 ? "" : e.type() == EntryType.INCOME ? "+" : e.type() == EntryType.EXPENSE ? "-" : ""; }
 				<li>
 					<a href="${BookkeepingView.href(book.id(), month, "day", BookkeepingView.str(page.day()), "q", page.q(), "categoryId", BookkeepingView.str(page.categoryId()), "assetId", BookkeepingView.str(page.assetId()), "edit", e.id().toString())}" class="flex items-center gap-3 px-3 py-2 hover:bg-base-200">
 						<span class="badge badge-sm shrink-0 ${e.type() == EntryType.INCOME ? "badge-info" : e.type() == EntryType.EXPENSE ? "badge-error" : "badge-ghost"}">${BookkeepingView.msg("bookkeeping.type." + e.type().name())}</span>
 						<span class="min-w-0 flex-1">
 							<span class="block truncate text-sm" title="${BookkeepingView.entryTitle(e, page.assetsById(), page.categoriesById())}">${BookkeepingView.entryTitle(e, page.assetsById(), page.categoriesById())}</span>
 							@if(e.content() != null || e.type() != EntryType.TRANSFER)
-								!{ String sub = (e.content() == null ? "" : e.content() + " · ") + BookkeepingView.assetName(page.assetsById(), e.assetId()); }
+								!{ String sub = (e.content() == null ? "" : e.content() + " · ") + BookkeepingView.assetName(page.assetsById(), e.assetId()) + (e.installmentMonths() == null ? "" : " · " + BookkeepingView.msg("bookkeeping.field.installment.months", e.installmentMonths())); }
 								<span class="block truncate text-xs text-base-content/60" title="${sub}">${sub}</span>
 							@endif
 						</span>

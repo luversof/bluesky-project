@@ -212,6 +212,86 @@ class RulesTest {
         () -> EntryRules.check(noDate, KRW, null, FOOD), BookkeepingErrorCode.INVALID_REQUEST);
   }
 
+  @Test
+  void installmentOnlyForCreditCardExpenseWithin2To36() {
+    var card =
+        new Asset(
+            UUID.randomUUID(),
+            BOOK,
+            AssetKind.CREDIT_CARD,
+            "card",
+            "KRW",
+            BigDecimal.ZERO,
+            15,
+            0,
+            false);
+    assertThat(EntryRules.check(installment(card, FOOD.id(), 3), card, null, FOOD)).isNull();
+    assertError(
+        () -> EntryRules.check(installment(card, FOOD.id(), 1), card, null, FOOD),
+        BookkeepingErrorCode.INVALID_INSTALLMENT);
+    assertError(
+        () -> EntryRules.check(installment(card, FOOD.id(), 37), card, null, FOOD),
+        BookkeepingErrorCode.INVALID_INSTALLMENT);
+    assertError(
+        () -> EntryRules.check(installment(KRW, FOOD.id(), 3), KRW, null, FOOD),
+        BookkeepingErrorCode.INVALID_INSTALLMENT); // 카드가 아님
+    var income =
+        new EntryCommand(
+            EntryType.INCOME,
+            LocalDate.now(),
+            null,
+            BigDecimal.TEN,
+            null,
+            card.id(),
+            null,
+            SALARY.id(),
+            null,
+            null,
+            3);
+    assertError(
+        () -> EntryRules.check(income, card, null, SALARY),
+        BookkeepingErrorCode.INVALID_INSTALLMENT);
+  }
+
+  static EntryCommand installment(Asset asset, UUID categoryId, int months) {
+    return new EntryCommand(
+        EntryType.EXPENSE,
+        LocalDate.now(),
+        null,
+        new BigDecimal("100000"),
+        null,
+        asset.id(),
+        null,
+        categoryId,
+        null,
+        null,
+        months);
+  }
+
+  @Test
+  void zeroAllowedForIncomeAndExpenseButNotTransfer() {
+    var zero =
+        new EntryCommand(
+            EntryType.EXPENSE,
+            LocalDate.now(),
+            null,
+            BigDecimal.ZERO,
+            null,
+            KRW.id(),
+            null,
+            FOOD.id(),
+            "복지카드",
+            "12,000원 사용");
+    assertThat(EntryRules.check(zero, KRW, null, FOOD)).isNull();
+    assertError(
+        () -> EntryRules.check(transfer(KRW, KRW2, "0", null), KRW, KRW2, null),
+        BookkeepingErrorCode.INVALID_AMOUNT);
+    assertError(
+        () -> Money.nonNegative(new BigDecimal("-1"), "KRW"), BookkeepingErrorCode.INVALID_AMOUNT);
+    assertError(
+        () -> Money.nonNegative(new BigDecimal("0.5"), "KRW"), BookkeepingErrorCode.INVALID_AMOUNT);
+  }
+
   // ---- 도우미
 
   static Asset asset(String currency) {

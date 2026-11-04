@@ -171,6 +171,10 @@ class BookkeepingScreenTest {
 
     assertThat(html).contains("<title>우리집 2026년 11월 · Bluesky 가계부</title>");
     assertThat(html).contains("10.25 ~ 11.24");
+    assertThat(html)
+        .contains("action=\"/bookkeeping/" + BOOK + "/export.csv\"")
+        .contains("name=\"from\" value=\"2026-10-25\"")
+        .contains("name=\"to\" value=\"2026-11-24\"");
     assertThat(html).contains("식비 &gt; 커피").contains("점심 &lt;b&gt;"); // 이스케이프
     assertThat(html).contains("현금 → 달러 통장").contains("→ 100.25 USD");
     assertThat(html).contains("-12,000");
@@ -250,7 +254,11 @@ class BookkeepingScreenTest {
         BookkeepingView.assetsById(assets),
         categories,
         BookkeepingView.categoriesById(categories),
-        form);
+        form,
+        net.luversof.web.gate.bookkeeping.support.BudgetView.Status.none(),
+        List.of(),
+        List.of(),
+        null);
   }
 
   static Entry entry(
@@ -274,6 +282,7 @@ class BookkeepingScreenTest {
         toAsset,
         category,
         content,
+        null,
         null,
         UUID.randomUUID(),
         Instant.now());

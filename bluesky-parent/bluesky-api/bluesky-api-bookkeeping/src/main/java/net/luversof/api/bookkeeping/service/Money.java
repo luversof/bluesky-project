@@ -34,9 +34,29 @@ final class Money {
     return checkDigits(amount, currency);
   }
 
+  /** 수입 · 지출 금액: 0 허용(복지카드처럼 실제로 나간 돈이 없는 내역), 음수는 거절. */
+  static BigDecimal nonNegative(BigDecimal amount, String currency) {
+    if (amount == null || amount.signum() < 0) {
+      throw BookkeepingErrorCode.INVALID_AMOUNT.exception();
+    }
+    return checkDigits(amount, currency);
+  }
+
   /** 자산 시작 잔액: 음수 · 0 허용(대출 · 카드), 자릿수만 검사. null 은 0. */
   static BigDecimal balance(BigDecimal amount, String currency) {
     return amount == null ? BigDecimal.ZERO : checkDigits(amount, currency);
+  }
+
+  /** 환율: 0 보다 크고 NUMERIC(19,8) 안(정수부 11자리, 소수 8자리). */
+  static BigDecimal rate(BigDecimal rate) {
+    if (rate == null || rate.signum() <= 0) {
+      throw BookkeepingErrorCode.INVALID_FX_RATE.exception();
+    }
+    var normalized = rate.stripTrailingZeros();
+    if (Math.max(normalized.scale(), 0) > 8 || normalized.precision() - normalized.scale() > 11) {
+      throw BookkeepingErrorCode.INVALID_FX_RATE.exception();
+    }
+    return rate;
   }
 
   private static BigDecimal checkDigits(BigDecimal amount, String currency) {

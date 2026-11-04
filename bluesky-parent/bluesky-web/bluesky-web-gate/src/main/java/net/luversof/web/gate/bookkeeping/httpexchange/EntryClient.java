@@ -36,10 +36,11 @@ public interface EntryClient {
       UUID categoryId,
       String content,
       String memo,
+      Integer installmentMonths,
       UUID createdBy,
       Instant createdDate) {}
 
-  /** 같은 통화 이체는 toAmount 를 비워도 된다. */
+  /** 같은 통화 이체는 toAmount 를 비워도 된다. installmentMonths 는 신용카드 지출 할부(2~36), null 이면 일시불. */
   record EntryCommand(
       EntryType type,
       LocalDate entryDate,
@@ -50,7 +51,8 @@ public interface EntryClient {
       UUID toAssetId,
       UUID categoryId,
       String content,
-      String memo) {}
+      String memo,
+      Integer installmentMonths) {}
 
   /**
    * 기간 검색(양 끝 포함), 최근 날짜 먼저.
@@ -67,6 +69,16 @@ public interface EntryClient {
       @RequestParam(required = false) String q,
       @RequestParam(required = false) UUID categoryId,
       @RequestParam(required = false) UUID assetId);
+
+  /** 가져오기 결과. */
+  record ImportResult(int count) {}
+
+  /** 한꺼번에 넣기(최대 2000, 하나라도 틀리면 아무것도 넣지 않는다). */
+  @PostExchange("/import")
+  ImportResult importAll(
+      @PathVariable UUID bookId,
+      @RequestParam UUID userId,
+      @RequestBody List<EntryCommand> commands);
 
   @PostExchange
   Entry create(

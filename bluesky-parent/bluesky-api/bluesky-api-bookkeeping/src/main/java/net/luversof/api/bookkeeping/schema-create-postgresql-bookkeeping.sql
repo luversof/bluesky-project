@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS "Entry" (
 	"type" VARCHAR(10) NOT NULL CHECK ("type" IN ('INCOME', 'EXPENSE', 'TRANSFER')),
 	"entryDate" DATE NOT NULL,
 	"entryTime" TIME,
-	"amount" NUMERIC(19,4) NOT NULL CHECK ("amount" > 0),
+	"amount" NUMERIC(19,4) NOT NULL CHECK ("amount" >= 0),
 	"toAmount" NUMERIC(19,4) CHECK ("toAmount" > 0),
 	"asset_id" UUID NOT NULL,
 	"toAsset_id" UUID,
@@ -80,6 +80,8 @@ CREATE TABLE IF NOT EXISTS "Entry" (
 	"memo" VARCHAR(1000),
 	"createdBy" UUID NOT NULL,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	-- 할부 개월 수(카드 지출만, 2~36, 2차). NULL 이면 일시불.
+	"installmentMonths" SMALLINT CHECK ("installmentMonths" BETWEEN 2 AND 36),
 	CONSTRAINT ck_entry_typeColumns CHECK (
 		("type" = 'TRANSFER' AND "toAsset_id" IS NOT NULL AND "toAmount" IS NOT NULL AND "category_id" IS NULL AND "toAsset_id" <> "asset_id")
 		OR ("type" IN ('INCOME', 'EXPENSE') AND "toAsset_id" IS NULL AND "toAmount" IS NULL AND "category_id" IS NOT NULL)
@@ -90,3 +92,84 @@ CREATE INDEX IF NOT EXISTS idx_entry_bookId_entryDate ON "Entry" ("book_id", "en
 CREATE INDEX IF NOT EXISTS idx_entry_assetId ON "Entry" ("asset_id");
 CREATE INDEX IF NOT EXISTS idx_entry_toAssetId ON "Entry" ("toAsset_id");
 CREATE INDEX IF NOT EXISTS idx_entry_categoryId ON "Entry" ("category_id");
+
+-- ---- 2차(2026-11-03) ----
+
+-- 예산: 매달 같은 금액. category_id 가 NULL 이면 가계부 전체 지출 예산, 아니면 대분류 지출 예산. 기준통화 기준.
+CREATE TABLE IF NOT EXISTS "Budget" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"book_id" UUID NOT NULL,
+	"category_id" UUID,
+	"amount" NUMERIC(19,4) NOT NULL CHECK ("amount" > 0)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_budget_book_total ON "Budget" ("book_id") WHERE "category_id" IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_budget_book_category ON "Budget" ("book_id", "category_id") WHERE "category_id" IS NOT NULL;
+
+-- 즐겨찾기: 이름 붙인 내역 틀. 값은 비워 둘 수 있다(모달을 채우는 용도).
+CREATE TABLE IF NOT EXISTS "BookFavorite" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"book_id" UUID NOT NULL,
+	"name" VARCHAR(100) NOT NULL,
+	"type" VARCHAR(10) NOT NULL CHECK ("type" IN ('INCOME', 'EXPENSE', 'TRANSFER')),
+	"amount" NUMERIC(19,4) CHECK ("amount" >= 0),
+	"toAmount" NUMERIC(19,4) CHECK ("toAmount" > 0),
+	"asset_id" UUID,
+	"toAsset_id" UUID,
+	"category_id" UUID,
+	"content" VARCHAR(200),
+	"memo" VARCHAR(1000),
+	"displayOrder" INTEGER NOT NULL DEFAULT 0,
+	"createdBy" UUID NOT NULL,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_bookFavorite_bookId ON "BookFavorite" ("book_id");
+
+-- 반복 내역 틀. 자동으로 넣지 않는다 - 화면이 도래한 회차를 보여 주고 사용자가 넣는다(RecurringDone 이 중복을 막는다).
+-- MONTHLY = 매월 dayOfMonth 일(그 달에 없으면 말일), WEEKLY = 매주 dayOfWeek(1 월 ~ 7 일), YEARLY = 매년 monthOfYear 월 dayOfMonth 일.
+CREATE TABLE IF NOT EXISTS "BookRecurring" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"book_id" UUID NOT NULL,
+	"type" VARCHAR(10) NOT NULL CHECK ("type" IN ('INCOME', 'EXPENSE', 'TRANSFER')),
+	"amount" NUMERIC(19,4) NOT NULL CHECK ("amount" >= 0),
+	"toAmount" NUMERIC(19,4) CHECK ("toAmount" > 0),
+	"asset_id" UUID NOT NULL,
+	"toAsset_id" UUID,
+	"category_id" UUID,
+	"content" VARCHAR(200),
+	"memo" VARCHAR(1000),
+	"cycle" VARCHAR(10) NOT NULL CHECK ("cycle" IN ('MONTHLY', 'WEEKLY', 'YEARLY')),
+	"dayOfMonth" SMALLINT CHECK ("dayOfMonth" BETWEEN 1 AND 31),
+	"dayOfWeek" SMALLINT CHECK ("dayOfWeek" BETWEEN 1 AND 7),
+	"monthOfYear" SMALLINT CHECK ("monthOfYear" BETWEEN 1 AND 12),
+	"startDate" DATE NOT NULL,
+	"endDate" DATE,
+	"createdBy" UUID NOT NULL,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	CONSTRAINT ck_recurring_cycle CHECK (
+		("cycle" = 'MONTHLY' AND "dayOfMonth" IS NOT NULL)
+		OR ("cycle" = 'WEEKLY' AND "dayOfWeek" IS NOT NULL)
+		OR ("cycle" = 'YEARLY' AND "dayOfMonth" IS NOT NULL AND "monthOfYear" IS NOT NULL)
+	),
+	CONSTRAINT ck_recurring_typeColumns CHECK (
+		("type" = 'TRANSFER' AND "toAsset_id" IS NOT NULL AND "category_id" IS NULL AND "toAsset_id" <> "asset_id")
+		OR ("type" IN ('INCOME', 'EXPENSE') AND "toAsset_id" IS NULL AND "toAmount" IS NULL AND "category_id" IS NOT NULL)
+	)
+);
+CREATE INDEX IF NOT EXISTS idx_bookRecurring_bookId ON "BookRecurring" ("book_id");
+
+-- 반복 틀에서 넣은 회차. 같은 회차를 두 번 넣지 않는다.
+CREATE TABLE IF NOT EXISTS "RecurringDone" (
+	"recurring_id" UUID NOT NULL,
+	"occurrenceDate" DATE NOT NULL,
+	"entry_id" UUID NOT NULL,
+	PRIMARY KEY ("recurring_id", "occurrenceDate")
+);
+
+-- 월 환율: 외화 1 단위 = 기준통화 rate. 월은 가계부 월(YYYY-MM).
+CREATE TABLE IF NOT EXISTS "BookFxRate" (
+	"book_id" UUID NOT NULL,
+	"month" CHAR(7) NOT NULL CHECK ("month" ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'),
+	"currency" CHAR(3) NOT NULL,
+	"rate" NUMERIC(19,8) NOT NULL CHECK ("rate" > 0),
+	PRIMARY KEY ("book_id", "month", "currency")
+);

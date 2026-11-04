@@ -53,6 +53,7 @@
 							@for(var c : page.currencies())
 								<option value="${c}" selected="${c.equals(page.currency())}">${c}</option>
 							@endfor
+							<option value="FX" selected="${page.converted()}">${BookkeepingView.msg("bookkeeping.stats.converted", page.book().baseCurrency())}</option>
 						</select>
 					</label>
 					<button type="submit" class="btn btn-sm">${BookkeepingView.msg("bookkeeping.stats.apply")}</button>
@@ -62,6 +63,9 @@
 
 		<section aria-labelledby="bk-stats-breakdown" class="mb-6">
 			<h2 id="bk-stats-breakdown" class="text-base font-semibold mb-2">${breakdownTitle}</h2>
+			@if(page.fxMissing() != null && !page.fxMissing().isEmpty())
+				<p role="status" class="mb-2 text-xs"><span class="badge badge-warning badge-sm">${BookkeepingView.msg("bookkeeping.stats.fxMissing", String.join(", ", page.fxMissing()))}</span></p>
+			@endif
 			@if(page.parent() != null)
 				<a href="${base}?month=${month.toString()}&kind=${page.kind().name()}&currency=${page.currency()}" class="btn btn-xs btn-ghost mb-2">${BookkeepingView.msg("bookkeeping.stats.back")}</a>
 			@endif
@@ -78,6 +82,9 @@
 								<th scope="col">${BookkeepingView.msg("bookkeeping.field.category")}</th>
 								<th scope="col" class="text-right">${BookkeepingView.msg("bookkeeping.field.amount")}</th>
 								<th scope="col" class="text-right">${BookkeepingView.msg("bookkeeping.stats.share")}</th>
+								@if(page.budgets() != null)
+									<th scope="col" class="text-right">${BookkeepingView.msg("bookkeeping.budget.title")}</th>
+								@endif
 							</tr>
 						</thead>
 						<tbody>
@@ -91,16 +98,23 @@
 											${name}
 										@endif
 									</td>
-									<td class="text-right amount-value">${BookkeepingView.amount(s.amount(), page.currency())}</td>
+									<td class="text-right amount-value">${BookkeepingView.amount(s.amount(), page.displayCurrency())}</td>
 									<td class="text-right">${s.percent().toPlainString()}%</td>
+									@if(page.budgets() != null)
+										!{ var b = page.budgets().of(s.categoryId()); }
+										<td class="text-right amount-value">${b == null ? "-" : BookkeepingView.amount(b, page.displayCurrency())}</td>
+									@endif
 								</tr>
 							@endfor
 						</tbody>
 						<tfoot>
 							<tr>
 								<th scope="row">${BookkeepingView.msg("bookkeeping.stats.total")}</th>
-								<td class="text-right font-semibold amount-value">${BookkeepingView.amount(total, page.currency())}</td>
+								<td class="text-right font-semibold amount-value">${BookkeepingView.amount(total, page.displayCurrency())}</td>
 								<td></td>
+								@if(page.budgets() != null)
+									<td class="text-right amount-value">${page.budgets().total() == null ? "-" : BookkeepingView.amount(page.budgets().total(), page.displayCurrency())}</td>
+								@endif
 							</tr>
 						</tfoot>
 					</table>
@@ -109,7 +123,7 @@
 		</section>
 
 		<section aria-labelledby="bk-stats-trend" class="mb-6">
-			<h2 id="bk-stats-trend" class="text-base font-semibold mb-2">${trendTitle} (${page.currency()})</h2>
+			<h2 id="bk-stats-trend" class="text-base font-semibold mb-2">${trendTitle} (${page.converted() ? BookkeepingView.msg("bookkeeping.stats.converted", page.book().baseCurrency()) : page.currency()})</h2>
 			@if(page.trend().isEmpty())
 				@template._components.ui.emptyState(message = BookkeepingView.msg("bookkeeping.stats.empty"), boxed = true)
 			@else

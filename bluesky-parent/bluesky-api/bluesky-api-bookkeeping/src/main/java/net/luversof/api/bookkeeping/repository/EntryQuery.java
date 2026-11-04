@@ -28,7 +28,7 @@ public class EntryQuery {
   private static final String COLUMNS =
       """
       "id", "book_id", "type", "entryDate", "entryTime", "amount", "toAmount", "asset_id", "toAsset_id",
-      "category_id", "content", "memo", "createdBy", "createdDate"
+      "category_id", "content", "memo", "installmentMonths", "createdBy", "createdDate"
       """;
 
   private final JdbcClient jdbcClient;
@@ -176,6 +176,31 @@ public class EntryQuery {
         .list();
   }
 
+  /** 신용카드 자산의 지출(결제 예정액 계산용), 기간 양 끝 포함. */
+  public List<CardExpense> cardExpenses(UUID bookId, LocalDate from, LocalDate to) {
+    return jdbcClient
+        .sql(
+            """
+            SELECT e."asset_id", e."entryDate", e."amount", e."installmentMonths"
+              FROM "Entry" e JOIN "Asset" a ON a."id" = e."asset_id"
+             WHERE e."book_id" = ? AND e."type" = 'EXPENSE' AND a."kind" = 'CREDIT_CARD'
+               AND e."entryDate" BETWEEN ? AND ?
+            """)
+        .params(bookId, from, to)
+        .query(
+            (rs, rowNum) ->
+                new CardExpense(
+                    rs.getObject("asset_id", UUID.class),
+                    rs.getObject("entryDate", LocalDate.class),
+                    rs.getBigDecimal("amount"),
+                    (Integer) rs.getObject("installmentMonths", Integer.class)))
+        .list();
+  }
+
+  /** 카드 지출 한 건. installmentMonths 가 null 이면 일시불. */
+  public record CardExpense(
+      UUID assetId, LocalDate entryDate, BigDecimal amount, Integer installmentMonths) {}
+
   static String escapeLike(String s) {
     return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
   }
@@ -194,6 +219,7 @@ public class EntryQuery {
         rs.getObject("category_id", UUID.class),
         rs.getString("content"),
         rs.getString("memo"),
+        (Integer) rs.getObject("installmentMonths", Integer.class),
         rs.getObject("createdBy", UUID.class),
         rs.getTimestamp("createdDate").toInstant());
   }

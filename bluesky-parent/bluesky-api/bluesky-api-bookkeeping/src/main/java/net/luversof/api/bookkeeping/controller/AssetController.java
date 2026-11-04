@@ -1,5 +1,6 @@
 package net.luversof.api.bookkeeping.controller;
 
+import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,6 +34,13 @@ public class AssetController {
   @GetMapping
   public List<AssetBalance> list(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return assetService.list(bookId, userId);
+  }
+
+  /** 카드별 결제 예정액. month 는 "2026-11"(결제 달). */
+  @GetMapping("/card-bills")
+  public List<AssetService.CardBill> cardBills(
+      @PathVariable UUID bookId, @RequestParam UUID userId, @RequestParam YearMonth month) {
+    return assetService.cardBills(bookId, userId, month);
   }
 
   @PostMapping

@@ -5,10 +5,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.jdbc.core.JdbcAggregateOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.github.luversof.boot.exception.BlueskyException;
 import io.github.luversof.boot.uuid.UuidGenerator;
 import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.api.bookkeeping.domain.Asset;
@@ -18,6 +21,7 @@ import net.luversof.api.bookkeeping.repository.AssetRepository;
 import net.luversof.api.bookkeeping.repository.CategoryRepository;
 import net.luversof.api.bookkeeping.repository.EntryQuery;
 import net.luversof.api.bookkeeping.repository.EntryRepository;
+import net.luversof.api.bookkeeping.repository.RecurringDoneRepository;
 
 /** 내역 검색 · 추가 · 수정 · 삭제. MEMBER 이상. 검증 규칙은 {@link EntryRules}. */
 @Service
@@ -35,9 +39,11 @@ public class EntryService {
   private final AssetRepository assetRepository;
   private final CategoryRepository categoryRepository;
   private final CategoryService categoryService;
+  private final RecurringDoneRepository recurringDoneRepository;
   private final JdbcAggregateOperations jdbcAggregateOperations;
   private final UuidGenerator uuidGenerator;
   private final BookAccess bookAccess;
+  private final MessageSource messageSource;
 
   public EntryService(
       EntryRepository entryRepository,
@@ -45,17 +51,21 @@ public class EntryService {
       AssetRepository assetRepository,
       CategoryRepository categoryRepository,
       CategoryService categoryService,
+      RecurringDoneRepository recurringDoneRepository,
       JdbcAggregateOperations jdbcAggregateOperations,
       UuidGenerator uuidGenerator,
-      BookAccess bookAccess) {
+      BookAccess bookAccess,
+      MessageSource messageSource) {
     this.entryRepository = entryRepository;
     this.entryQuery = entryQuery;
     this.assetRepository = assetRepository;
     this.categoryRepository = categoryRepository;
     this.categoryService = categoryService;
+    this.recurringDoneRepository = recurringDoneRepository;
     this.jdbcAggregateOperations = jdbcAggregateOperations;
     this.uuidGenerator = uuidGenerator;
     this.bookAccess = bookAccess;
+    this.messageSource = messageSource;
   }
 
   public List<Entry> search(UUID bookId, UUID userId, EntrySearch s) {
@@ -76,6 +86,29 @@ public class EntryService {
         toEntry(bookId, uuidGenerator.create(), command, userId, Timestamps.now()));
   }
 
+  /**
+   * 한꺼번에 넣기(CSV 가져오기). 최대 2000 건, 하나라도 틀리면 아무것도 넣지 않는다 - IMPORT_ROW_INVALID 에 몇 번째(1 부터)와 그 줄의 사유를
+   * 싣는다.
+   */
+  @Transactional(transactionManager = "bookkeepingTransactionManager")
+  public int importAll(UUID bookId, UUID userId, List<EntryCommand> commands) {
+    bookAccess.requireMember(bookId, userId);
+    if (commands == null || commands.isEmpty() || commands.size() > SEARCH_LIMIT) {
+      throw BookkeepingErrorCode.INVALID_REQUEST.exception();
+    }
+    var now = Timestamps.now();
+    for (int i = 0; i < commands.size(); i++) {
+      Entry entry;
+      try {
+        entry = toEntry(bookId, uuidGenerator.create(), commands.get(i), userId, now);
+      } catch (BlueskyException e) {
+        throw BookkeepingErrorCode.IMPORT_ROW_INVALID.exception(i + 1, reason(e));
+      }
+      jdbcAggregateOperations.insert(entry);
+    }
+    return commands.size();
+  }
+
   /** 기록자 · 기록 시각은 처음 값을 유지한다. */
   @Transactional(transactionManager = "bookkeepingTransactionManager")
   public Entry update(UUID bookId, UUID userId, UUID entryId, EntryCommand command) {
@@ -88,7 +121,9 @@ public class EntryService {
   @Transactional(transactionManager = "bookkeepingTransactionManager")
   public void delete(UUID bookId, UUID userId, UUID entryId) {
     bookAccess.requireMember(bookId, userId);
-    entryRepository.delete(find(bookId, entryId));
+    var entry = find(bookId, entryId);
+    recurringDoneRepository.deleteByEntryId(entry.id()); // 반복 회차였으면 다시 도래한다
+    entryRepository.delete(entry);
   }
 
   private Entry toEntry(UUID bookId, UUID id, EntryCommand c, UUID createdBy, Instant createdDate) {
@@ -111,8 +146,17 @@ public class EntryService {
         c.categoryId(),
         blankToNull(c.content()),
         blankToNull(c.memo()),
+        c.installmentMonths(),
         createdBy,
         createdDate);
+  }
+
+  private String reason(BlueskyException e) {
+    return messageSource.getMessage(
+        "BlueskyException." + e.getErrorCode(),
+        e.getErrorMessageArgs(),
+        e.getErrorCode(),
+        LocaleContextHolder.getLocale());
   }
 
   private Entry find(UUID bookId, UUID entryId) {

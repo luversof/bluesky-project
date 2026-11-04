@@ -1,9 +1,11 @@
 @import net.luversof.web.gate.bookkeeping.constant.AssetKind
 @import net.luversof.web.gate.bookkeeping.support.AssetGroups
 @import net.luversof.web.gate.bookkeeping.support.BookkeepingView
+@import net.luversof.web.gate.bookkeeping.support.CardBillView
 @import net.luversof.web.gate.bookkeeping.httpexchange.BookClient.Book
 @param Book book
 @param AssetGroups.Page page
+@param CardBillView cardBills = null
 @param boolean isAuthenticated = false
 @param String username = ""
 @param String profile = "local"
@@ -52,6 +54,9 @@
 										@if(a.asset().kind() == AssetKind.CREDIT_CARD && a.asset().paymentDay() != null)
 											<span class="block text-xs text-base-content/60">${BookkeepingView.msg("bookkeeping.assets.paymentDay", a.asset().paymentDay())}</span>
 										@endif
+										@if(a.asset().kind() == AssetKind.CREDIT_CARD && cardBills != null && cardBills.has(a.asset().id()))
+											<span class="block text-xs text-base-content/60 amount-value">${BookkeepingView.msg("bookkeeping.assets.cardBill", BookkeepingView.amount(cardBills.thisMonth(a.asset().id()), a.asset().currency()), BookkeepingView.amount(cardBills.nextMonth(a.asset().id()), a.asset().currency()))}</span>
+										@endif
 									</span>
 									<span class="shrink-0 text-right text-sm font-semibold amount-value">${BookkeepingView.amount(a.balance(), a.asset().currency())} <span class="text-xs font-normal text-base-content/60">${a.asset().currency()}</span></span>
 								</a>
@@ -60,6 +65,10 @@
 					</ul>
 				</section>
 			@endfor
+		@endif
+
+		@if(cardBills != null && cardBills.failed())
+			<p role="status" class="mt-2 text-sm text-base-content/60">${BookkeepingView.msg("bookkeeping.assets.cardBill.unavailable")}</p>
 		@endif
 
 		@if(!page.hidden().isEmpty())

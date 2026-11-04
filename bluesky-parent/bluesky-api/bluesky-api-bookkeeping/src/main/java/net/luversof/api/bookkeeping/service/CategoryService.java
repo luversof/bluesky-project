@@ -13,6 +13,7 @@ import io.github.luversof.boot.uuid.UuidGenerator;
 import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.api.bookkeeping.constant.CategoryKind;
 import net.luversof.api.bookkeeping.domain.Category;
+import net.luversof.api.bookkeeping.repository.BudgetRepository;
 import net.luversof.api.bookkeeping.repository.CategoryRepository;
 import net.luversof.api.bookkeeping.repository.EntryQuery;
 
@@ -24,6 +25,7 @@ public class CategoryService {
   public record CategoryCommand(UUID parentId, CategoryKind kind, String name, Boolean hidden) {}
 
   private final CategoryRepository categoryRepository;
+  private final BudgetRepository budgetRepository;
   private final EntryQuery entryQuery;
   private final JdbcAggregateOperations jdbcAggregateOperations;
   private final UuidGenerator uuidGenerator;
@@ -31,11 +33,13 @@ public class CategoryService {
 
   public CategoryService(
       CategoryRepository categoryRepository,
+      BudgetRepository budgetRepository,
       EntryQuery entryQuery,
       JdbcAggregateOperations jdbcAggregateOperations,
       UuidGenerator uuidGenerator,
       BookAccess bookAccess) {
     this.categoryRepository = categoryRepository;
+    this.budgetRepository = budgetRepository;
     this.entryQuery = entryQuery;
     this.jdbcAggregateOperations = jdbcAggregateOperations;
     this.uuidGenerator = uuidGenerator;
@@ -111,6 +115,7 @@ public class CategoryService {
         .filter(child -> categoryId.equals(child.parentId()))
         .forEach(targets::add);
     if (targets.size() == 1 && !entryQuery.existsByCategoryIdIn(List.of(categoryId))) {
+      budgetRepository.deleteByCategoryId(categoryId);
       categoryRepository.delete(c);
       return true;
     }

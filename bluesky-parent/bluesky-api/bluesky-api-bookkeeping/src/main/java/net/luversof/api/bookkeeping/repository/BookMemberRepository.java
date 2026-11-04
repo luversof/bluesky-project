@@ -69,6 +69,14 @@ public class BookMemberRepository {
   }
 
   /** 지운 행 수(0 또는 1). */
+  /** 역할만 바꾼다. 바뀐 행 수(0 또는 1). */
+  public int updateRole(UUID bookId, UUID userId, BookRole role) {
+    return jdbcClient
+        .sql("UPDATE \"BookMember\" SET \"role\" = ? WHERE \"book_id\" = ? AND \"user_id\" = ?")
+        .params(role.name(), bookId, userId)
+        .update();
+  }
+
   public int delete(UUID bookId, UUID userId) {
     return jdbcClient
         .sql("DELETE FROM \"BookMember\" WHERE \"book_id\" = ? AND \"user_id\" = ?")

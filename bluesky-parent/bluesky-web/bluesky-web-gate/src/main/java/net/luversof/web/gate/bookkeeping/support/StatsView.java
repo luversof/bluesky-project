@@ -2,15 +2,19 @@ package net.luversof.web.gate.bookkeeping.support;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 
 import net.luversof.web.gate.bookkeeping.constant.CategoryKind;
+import net.luversof.web.gate.bookkeeping.httpexchange.BudgetClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.CategoryClient.Category;
 import net.luversof.web.gate.bookkeeping.httpexchange.StatsClient.CategoryTotal;
 import net.luversof.web.gate.bookkeeping.httpexchange.StatsClient.MonthTotal;
@@ -36,6 +40,80 @@ public final class StatsView {
       BigDecimal percent,
       UUID drillParentId,
       boolean ownOfParent) {}
+
+  /** 통화 선택지 "기준통화 환산"의 값. */
+  public static final String CONVERTED = "FX";
+
+  /**
+   * 분류별 합을 기준통화로. 환율이 없는 통화는 빼고 missing 에 "USD 2026-11" 꼴로 남긴다.
+   *
+   * @param rates 그 달 환율(외화 1 = 기준통화 rate)
+   */
+  public static List<CategoryTotal> convert(
+      List<CategoryTotal> totals,
+      String base,
+      YearMonth month,
+      Map<String, BigDecimal> rates,
+      Set<String> missing) {
+    var result = new ArrayList<CategoryTotal>();
+    for (var t : totals) {
+      var amount = FxView.toBase(t.amount(), t.currency(), base, rates);
+      if (amount == null) {
+        missing.add(t.currency() + " " + month);
+      } else {
+        result.add(new CategoryTotal(t.categoryId(), t.kind(), base, amount));
+      }
+    }
+    return result;
+  }
+
+  /** 월별 합을 달마다 그 달 환율로 기준통화 한 줄로 합친다. 환율이 없는 통화 · 달은 빼고 missing 에. */
+  public static List<MonthTotal> convertTrend(
+      List<MonthTotal> trend,
+      String base,
+      Map<YearMonth, Map<String, BigDecimal>> rates,
+      Set<String> missing) {
+    var sums = new TreeMap<YearMonth, BigDecimal[]>();
+    for (var t : trend) {
+      var sum =
+          sums.computeIfAbsent(t.month(), m -> new BigDecimal[] {BigDecimal.ZERO, BigDecimal.ZERO});
+      var monthRates = rates.getOrDefault(t.month(), Map.of());
+      var income = FxView.toBase(t.income(), t.currency(), base, monthRates);
+      var expense = FxView.toBase(t.expense(), t.currency(), base, monthRates);
+      if (income == null) {
+        if (t.income().signum() != 0 || t.expense().signum() != 0) {
+          missing.add(t.currency() + " " + t.month());
+        }
+        continue;
+      }
+      sum[0] = sum[0].add(income);
+      sum[1] = sum[1].add(expense);
+    }
+    var result = new ArrayList<MonthTotal>();
+    sums.forEach((m, s) -> result.add(new MonthTotal(m, base, s[0], s[1])));
+    return result;
+  }
+
+  /** 통계 표의 예산 열: 대분류별 · 전체. 지출 · 대분류 단계 · 기준통화일 때만 화면이 싣는다. */
+  public record Budgets(Map<UUID, BigDecimal> byCategory, BigDecimal total) {
+
+    public static Budgets of(List<BudgetClient.Budget> budgets) {
+      var byCategory = new LinkedHashMap<UUID, BigDecimal>();
+      BigDecimal total = null;
+      for (var b : budgets) {
+        if (b.categoryId() == null) {
+          total = b.amount();
+        } else {
+          byCategory.put(b.categoryId(), b.amount());
+        }
+      }
+      return new Budgets(byCategory, total);
+    }
+
+    public BigDecimal of(UUID categoryId) {
+      return byCategory.get(categoryId);
+    }
+  }
 
   /** 분류별 합에 나온 통화(이름 순). */
   public static List<String> currencies(List<CategoryTotal> totals, List<MonthTotal> trend) {

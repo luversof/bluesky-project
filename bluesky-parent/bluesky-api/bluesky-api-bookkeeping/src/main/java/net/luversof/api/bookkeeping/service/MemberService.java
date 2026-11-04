@@ -72,6 +72,26 @@ public class MemberService {
     }
   }
 
+  /**
+   * OWNER 넘기기(OWNER 만). 대상 MEMBER 가 OWNER 가 되고 나는 MEMBER 가 된다.
+   *
+   * <p>OWNER 는 가계부당 1명(uk_bookMember_owner)이라 내 역할을 먼저 내린 뒤 대상을 올린다. 한 트랜잭션이라 중간에 실패하면 둘 다 되돌아간다.
+   */
+  @Transactional(transactionManager = "bookkeepingTransactionManager")
+  public BookMember transferOwner(UUID bookId, UUID userId, UUID targetUserId) {
+    bookAccess.requireOwner(bookId, userId);
+    if (targetUserId == null || targetUserId.equals(userId)) {
+      throw BookkeepingErrorCode.INVALID_REQUEST.exception();
+    }
+    var target =
+        bookMemberRepository
+            .findByBookIdAndUserId(bookId, targetUserId)
+            .orElseThrow(BookkeepingErrorCode.NOT_EXIST_MEMBER::exception);
+    bookMemberRepository.updateRole(bookId, userId, BookRole.MEMBER);
+    bookMemberRepository.updateRole(bookId, targetUserId, BookRole.OWNER);
+    return new BookMember(bookId, targetUserId, BookRole.OWNER, target.joinedDate());
+  }
+
   /** OWNER 만. 1회용, 7일 뒤 만료. 토큰은 32바이트 난수(base64url 43자). */
   @Transactional(transactionManager = "bookkeepingTransactionManager")
   public BookInvite createInvite(UUID bookId, UUID userId) {

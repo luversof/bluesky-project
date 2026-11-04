@@ -1,6 +1,7 @@
 @import net.luversof.web.gate.bookkeeping.constant.CategoryKind
 @import net.luversof.web.gate.bookkeeping.constant.EntryType
 @import net.luversof.web.gate.bookkeeping.support.BookkeepingView
+@import net.luversof.web.gate.bookkeeping.support.RecurringView
 @import net.luversof.web.gate.bookkeeping.controller.BookkeepingViewController.MonthPage
 @param MonthPage page
 
@@ -19,6 +20,14 @@
 		<h2 id="bk-entry-title" class="text-lg font-bold mb-3">${title}</h2>
 		<a href="${closeHref}" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" aria-label="${BookkeepingView.msg("bookkeeping.entry.close")}">✕</a>
 
+		@if(!editing && !page.favorites().isEmpty())
+			<div class="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="${BookkeepingView.msg("bookkeeping.favorite.title")}">
+				<span class="text-xs text-base-content/60">${BookkeepingView.msg("bookkeeping.favorite.title")}</span>
+				@for(var fav : page.favorites())
+					<a href="${BookkeepingView.href(book.id(), month, "new", "1", "fav", fav.id().toString(), "date", f.date())}" class="btn btn-xs btn-outline">${fav.name()}</a>
+				@endfor
+			</div>
+		@endif
 		@if(!editing)
 			<div class="join mb-4" role="group" aria-label="${BookkeepingView.msg("bookkeeping.field.type")}">
 				@for(var t : EntryType.values())
@@ -82,6 +91,18 @@
 						@endfor
 					</select>
 				</label>
+				@if(f.type() == EntryType.EXPENSE)
+					<label class="form-control">
+						<span class="label-text mb-1">${BookkeepingView.msg("bookkeeping.field.installment")}</span>
+						<select name="installmentMonths" class="select select-bordered w-full">
+							<option value="">${BookkeepingView.msg("bookkeeping.field.installment.none")}</option>
+							@for(int n = 2; n <= 36; n++)
+								<option value="${n}" selected="${f.installmentMonths() != null && f.installmentMonths() == n}">${BookkeepingView.msg("bookkeeping.field.installment.months", n)}</option>
+							@endfor
+						</select>
+						<span class="label-text-alt text-base-content/60 mt-1">${BookkeepingView.msg("bookkeeping.field.installment.hint")}</span>
+					</label>
+				@endif
 			@endif
 
 			<label class="form-control">
@@ -100,6 +121,42 @@
 					<button type="submit" name="next" value="continue" class="btn btn-outline">${BookkeepingView.msg("bookkeeping.entry.saveAndContinue")}</button>
 				@endif
 			</div>
+
+			<%-- 같은 폼을 즐겨찾기로 보낸다(formaction). 틀이라 필수 칸 검사를 건너뛴다(formnovalidate). --%>
+			<details class="mt-1">
+				<summary class="cursor-pointer text-xs text-base-content/60">${BookkeepingView.msg("bookkeeping.favorite.saveAs")}</summary>
+				<div class="mt-2 flex flex-wrap items-end gap-2">
+					<label class="form-control">
+						<span class="label-text text-xs mb-1">${BookkeepingView.msg("bookkeeping.favorite.name")}</span>
+						<input type="text" name="favoriteName" maxlength="100" class="input input-sm input-bordered" />
+					</label>
+					<button type="submit" formaction="/bookkeeping/${book.id().toString()}/favorites" formnovalidate class="btn btn-sm">${BookkeepingView.msg("bookkeeping.favorite.save")}</button>
+				</div>
+			</details>
+
+			<%-- 반복으로 저장: 시작일 = 위 날짜, 주기의 일 · 요일 · 월도 그 날짜에서 딴다. 필수 칸 검사는 그대로(금액 · 자산 필요). --%>
+			!{ var cycleDate = BookkeepingView.parseDate(f.date()); }
+			@if(cycleDate != null)
+				<details>
+					<summary class="cursor-pointer text-xs text-base-content/60">${BookkeepingView.msg("bookkeeping.recurring.saveAs")}</summary>
+					<div class="mt-2 flex flex-wrap items-end gap-2">
+						<label class="form-control">
+							<span class="label-text text-xs mb-1">${BookkeepingView.msg("bookkeeping.recurring.cycle")}</span>
+							<select name="cycle" class="select select-sm select-bordered">
+								@for(var c : RecurringView.CYCLES)
+									<option value="${c}">${RecurringView.cycleOption(c, cycleDate)}</option>
+								@endfor
+							</select>
+						</label>
+						<label class="form-control">
+							<span class="label-text text-xs mb-1">${BookkeepingView.msg("bookkeeping.recurring.endDate")}</span>
+							<input type="date" name="endDate" class="input input-sm input-bordered" />
+						</label>
+						<button type="submit" formaction="/bookkeeping/${book.id().toString()}/recurrings" class="btn btn-sm">${BookkeepingView.msg("bookkeeping.recurring.save")}</button>
+					</div>
+					<p class="mt-1 text-xs text-base-content/60">${BookkeepingView.msg("bookkeeping.recurring.saveHint")}</p>
+				</details>
+			@endif
 		</form>
 
 		@if(editing)

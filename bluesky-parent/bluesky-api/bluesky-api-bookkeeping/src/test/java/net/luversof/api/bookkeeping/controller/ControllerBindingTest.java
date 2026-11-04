@@ -72,7 +72,7 @@ class ControllerBindingTest {
     // 꺼낸다(앱에선
     // bluesky-boot 가 넣음).
     var properties = new CoreBaseProperties();
-    properties.setLogExceptExceptionList(List.of());
+    properties.setLogExcludedExceptions(List.of());
     var context = new StaticApplicationContext();
     context.getBeanFactory().registerSingleton("coreBaseProperties", properties);
     context.refresh();
@@ -277,6 +277,7 @@ class ControllerBindingTest {
         null,
         category,
         "점심",
+        null,
         null,
         USER,
         Instant.now());

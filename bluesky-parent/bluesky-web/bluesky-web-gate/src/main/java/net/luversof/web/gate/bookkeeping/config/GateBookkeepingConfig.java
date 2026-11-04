@@ -10,9 +10,13 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import net.luversof.web.gate.bookkeeping.httpexchange.AssetClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.BookClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.BudgetClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.CategoryClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.EntryClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.FavoriteClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.FxRateClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.MemberClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.RecurringClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.StatsClient;
 
 /** api-bookkeeping 클라이언트(base-url: spring.http.serviceclient.client-bookkeeping.base-url). */
@@ -30,6 +34,30 @@ public class GateBookkeepingConfig {
   BookClient bookClient(
       @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
     return factory.createClient(BookClient.class);
+  }
+
+  @Bean
+  BudgetClient budgetClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(BudgetClient.class);
+  }
+
+  @Bean
+  FavoriteClient favoriteClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(FavoriteClient.class);
+  }
+
+  @Bean
+  RecurringClient recurringClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(RecurringClient.class);
+  }
+
+  @Bean
+  FxRateClient fxRateClient(
+      @Qualifier("bookkeepingHttpServiceProxyFactory") HttpServiceProxyFactory factory) {
+    return factory.createClient(FxRateClient.class);
   }
 
   @Bean

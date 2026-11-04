@@ -112,10 +112,24 @@ class BookkeepingStatsScreenTest {
             CategoryKind.EXPENSE,
             null,
             StatsView.slices(TOTALS, CATS, "KRW", CategoryKind.EXPENSE, null),
-            trend);
+            trend,
+            StatsView.Budgets.of(
+                List.of(
+                    new net.luversof.web.gate.bookkeeping.httpexchange.BudgetClient.Budget(
+                        UUID.randomUUID(),
+                        BookkeepingScreenTest.BOOK,
+                        null,
+                        new BigDecimal("200000")),
+                    new net.luversof.web.gate.bookkeeping.httpexchange.BudgetClient.Budget(
+                        UUID.randomUUID(),
+                        BookkeepingScreenTest.BOOK,
+                        FOOD.id(),
+                        new BigDecimal("50000")))),
+            null);
     var html = BookkeepingScreenTest.render("bookkeeping/stats.jte", Map.of("page", page));
     assertThat(html).contains("<title>우리집 통계 · Bluesky 가계부</title>");
     assertThat(html).contains("지출 분류별").contains("60.0%").contains("100,000");
+    assertThat(html).contains(">예산</th>").contains("50,000").contains("200,000"); // 예산 열
     assertThat(html).contains("parent=" + FOOD.id()); // 식비만 펼치기 링크
     assertThat(html).doesNotContain("parent=" + TAXI.id());
     assertThat(html)

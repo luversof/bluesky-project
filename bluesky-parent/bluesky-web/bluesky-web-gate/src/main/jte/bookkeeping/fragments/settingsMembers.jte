@@ -19,6 +19,18 @@
 						<button type="submit" class="btn btn-xs btn-ghost text-error">${BookkeepingView.msg(m.me() ? "bookkeeping.settings.member.leave" : "bookkeeping.settings.member.remove")}</button>
 					</form>
 				@endif
+				@if(page.owner() && m.role() != BookRole.OWNER)
+					<details class="w-full">
+						<summary class="cursor-pointer text-xs text-base-content/60">${BookkeepingView.msg("bookkeeping.settings.member.makeOwner")}</summary>
+						<form method="post" action="${base}/members/${m.userId().toString()}/owner" class="mt-2 flex flex-wrap items-center gap-3">
+							<label class="flex items-center gap-2 text-sm">
+								<input type="checkbox" name="confirm" value="1" required class="checkbox checkbox-sm" />
+								${BookkeepingView.msg("bookkeeping.settings.member.makeOwner.confirm", m.name())}
+							</label>
+							<button type="submit" class="btn btn-sm">${BookkeepingView.msg("bookkeeping.settings.member.makeOwner.submit")}</button>
+						</form>
+					</details>
+				@endif
 			</li>
 		@endfor
 	</ul>

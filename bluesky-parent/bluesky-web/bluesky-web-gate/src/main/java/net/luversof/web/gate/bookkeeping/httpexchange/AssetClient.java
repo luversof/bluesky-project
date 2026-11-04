@@ -33,6 +33,10 @@ public interface AssetClient {
 
   record AssetBalance(Asset asset, BigDecimal balance) {}
 
+  /** 결제 달 하나의 카드 결제 예정액: 전달 일시불 + 할부 회차 몫. month 는 "2026-11". */
+  record CardBill(
+      UUID assetId, String month, BigDecimal lumpSum, BigDecimal installments, BigDecimal total) {}
+
   /** paymentDay 는 CREDIT_CARD 만. hidden 이 null 이면 그대로. */
   record AssetCommand(
       AssetKind kind,
@@ -47,6 +51,10 @@ public interface AssetClient {
 
   @GetExchange
   List<AssetBalance> list(@PathVariable UUID bookId, @RequestParam UUID userId);
+
+  @GetExchange("/card-bills")
+  List<CardBill> cardBills(
+      @PathVariable UUID bookId, @RequestParam UUID userId, @RequestParam String month);
 
   @PostExchange
   Asset create(

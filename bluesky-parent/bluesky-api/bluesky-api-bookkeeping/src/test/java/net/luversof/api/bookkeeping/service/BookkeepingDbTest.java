@@ -46,6 +46,7 @@ import net.luversof.api.bookkeeping.constant.BookRole;
 import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.api.bookkeeping.constant.CategoryKind;
 import net.luversof.api.bookkeeping.constant.EntryType;
+import net.luversof.api.bookkeeping.constant.RecurringCycle;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.domain.Book;
 import net.luversof.api.bookkeeping.domain.BookInvite;
@@ -53,8 +54,12 @@ import net.luversof.api.bookkeeping.domain.Category;
 import net.luversof.api.bookkeeping.repository.EntryQuery;
 import net.luversof.api.bookkeeping.service.AssetService.AssetCommand;
 import net.luversof.api.bookkeeping.service.BookService.BookCommand;
+import net.luversof.api.bookkeeping.service.BudgetService.BudgetCommand;
 import net.luversof.api.bookkeeping.service.CategoryService.CategoryCommand;
 import net.luversof.api.bookkeeping.service.EntryService.EntrySearch;
+import net.luversof.api.bookkeeping.service.FavoriteService.FavoriteCommand;
+import net.luversof.api.bookkeeping.service.FxRateService.FxRateCommand;
+import net.luversof.api.bookkeeping.service.RecurringService.RecurringCommand;
 
 /**
  * 실제 PostgreSQL 에 붙여 repository · 서비스를 끝까지 돌리는 시험. 평소 빌드에선 건너뛴다.
@@ -105,6 +110,10 @@ class BookkeepingDbTest {
   @Autowired EntryService entryService;
   @Autowired StatsService statsService;
   @Autowired MemberService memberService;
+  @Autowired BudgetService budgetService;
+  @Autowired FavoriteService favoriteService;
+  @Autowired RecurringService recurringService;
+  @Autowired FxRateService fxRateService;
   @Autowired JdbcAggregateOperations jdbcAggregateOperations;
   @Autowired JdbcClient bookkeepingJdbcClient;
 
@@ -496,6 +505,563 @@ class BookkeepingDbTest {
     assertThat(memberService.members(book.id(), owner)).hasSize(1);
     assertThat(bookService.list(a)).isEmpty();
     bookService.delete(book.id(), owner);
+  }
+
+  @Test
+  void transferOwnerSwapsRoles() {
+    var owner = UUID.randomUUID();
+    var book = newBook(owner, 1);
+    var friend = join(book, owner);
+    assertError(
+        () -> memberService.transferOwner(book.id(), owner, owner),
+        BookkeepingErrorCode.INVALID_REQUEST);
+    assertError(
+        () -> memberService.transferOwner(book.id(), owner, UUID.randomUUID()),
+        BookkeepingErrorCode.NOT_EXIST_MEMBER);
+    assertForbidden(
+        () -> memberService.transferOwner(book.id(), friend, friend),
+        BookkeepingErrorCode.NOT_BOOK_OWNER);
+
+    assertThat(memberService.transferOwner(book.id(), owner, friend).role())
+        .isEqualTo(BookRole.OWNER);
+    var roles =
+        memberService.members(book.id(), friend).stream()
+            .collect(Collectors.toMap(m -> m.userId(), m -> m.role()));
+    assertThat(roles).containsEntry(friend, BookRole.OWNER).containsEntry(owner, BookRole.MEMBER);
+    // 예전 OWNER 는 이제 OWNER 일을 못 하고, 새 OWNER 는 나갈 수 없다
+    assertForbidden(
+        () -> bookService.delete(book.id(), owner), BookkeepingErrorCode.NOT_BOOK_OWNER);
+    assertError(
+        () -> memberService.remove(book.id(), friend, friend),
+        BookkeepingErrorCode.OWNER_CANNOT_LEAVE);
+    memberService.remove(book.id(), owner, owner); // 예전 OWNER 는 나갈 수 있다
+    bookService.delete(book.id(), friend);
+  }
+
+  // ---- 0원
+
+  @Test
+  void zeroAmountExpenseRecurringAndFavoriteSaved() {
+    var owner = UUID.randomUUID();
+    var book = newBook(owner, 1);
+    var cash = assetService.list(book.id(), owner).get(0).asset();
+    var food =
+        categoryService.list(book.id(), owner).stream()
+            .filter(c -> c.kind() == CategoryKind.EXPENSE)
+            .findFirst()
+            .orElseThrow();
+    var e =
+        entryService.create(
+            book.id(),
+            owner,
+            new EntryCommand(
+                EntryType.EXPENSE,
+                LocalDate.of(2026, 11, 4),
+                null,
+                BigDecimal.ZERO,
+                null,
+                cash.id(),
+                null,
+                food.id(),
+                "복지카드 점심",
+                "12,000원"));
+    assertThat(e.amount()).isEqualByComparingTo("0");
+    recurringService.create(
+        book.id(),
+        owner,
+        new RecurringCommand(
+            EntryType.EXPENSE,
+            BigDecimal.ZERO,
+            null,
+            cash.id(),
+            null,
+            food.id(),
+            "복지카드",
+            null,
+            RecurringCycle.MONTHLY,
+            1,
+            null,
+            null,
+            LocalDate.of(2026, 11, 1),
+            null));
+    favoriteService.create(
+        book.id(),
+        owner,
+        new FavoriteCommand(
+            "복지카드",
+            EntryType.EXPENSE,
+            BigDecimal.ZERO,
+            null,
+            cash.id(),
+            null,
+            food.id(),
+            null,
+            null));
+    assertThat(assetService.list(book.id(), owner).get(0).balance())
+        .isEqualByComparingTo("0"); // 잔액은 그대로
+    bookService.delete(book.id(), owner);
+  }
+
+  // ---- 가져오기
+
+  @Test
+  void importAllOrNothingWithRowNumber() {
+    var owner = UUID.randomUUID();
+    var book = newBook(owner, 1);
+    var cash = assetService.list(book.id(), owner).get(0).asset();
+    var food =
+        categoryService.list(book.id(), owner).stream()
+            .filter(c -> c.kind() == CategoryKind.EXPENSE)
+            .findFirst()
+            .orElseThrow();
+    var ok =
+        new EntryCommand(
+            EntryType.EXPENSE,
+            LocalDate.of(2026, 11, 1),
+            null,
+            new BigDecimal("1000"),
+            null,
+            cash.id(),
+            null,
+            food.id(),
+            "a",
+            null);
+    var bad =
+        new EntryCommand(
+            EntryType.EXPENSE,
+            LocalDate.of(2026, 11, 2),
+            null,
+            new BigDecimal("0.5"),
+            null,
+            cash.id(),
+            null,
+            food.id(),
+            "b",
+            null);
+    assertThatThrownBy(() -> entryService.importAll(book.id(), owner, List.of(ok, ok, bad)))
+        .isInstanceOf(BlueskyException.class)
+        .satisfies(
+            e -> {
+              var be = (BlueskyException) e;
+              assertThat(be.getErrorCode()).isEqualTo("BookkeepingErrorCode.IMPORT_ROW_INVALID");
+              assertThat(be.getErrorMessageArgs()[0]).isEqualTo(3);
+              assertThat(be.getErrorMessageArgs()[1].toString()).contains("금액");
+            });
+    var nov =
+        new EntrySearch(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30), null, null, null);
+    assertThat(entryService.search(book.id(), owner, nov)).isEmpty(); // 하나도 안 들어갔다
+    assertThat(entryService.importAll(book.id(), owner, List.of(ok, ok))).isEqualTo(2);
+    assertThat(entryService.search(book.id(), owner, nov)).hasSize(2);
+    assertError(
+        () -> entryService.importAll(book.id(), owner, List.of()),
+        BookkeepingErrorCode.INVALID_REQUEST);
+    bookService.delete(book.id(), owner);
+  }
+
+  // ---- 환율
+
+  @Test
+  void fxRateUpsertDeleteAndRules() {
+    var owner = UUID.randomUUID();
+    var book = newBook(owner, 1);
+    var nov = YearMonth.of(2026, 11);
+    fxRateService.set(book.id(), owner, new FxRateCommand(nov, "USD", new BigDecimal("1380.5")));
+    fxRateService.set(
+        book.id(), owner, new FxRateCommand(nov, "JPY", new BigDecimal("9.12345678")));
+    var list =
+        fxRateService.set(book.id(), owner, new FxRateCommand(nov, "USD", new BigDecimal("1390")));
+    assertThat(list)
+        .extracting(r -> r.currency() + "=" + r.rate().stripTrailingZeros().toPlainString())
+        .containsExactly("JPY=9.12345678", "USD=1390");
+    assertThat(fxRateService.list(book.id(), owner, nov.plusMonths(1))).isEmpty();
+
+    assertError(
+        () -> fxRateService.set(book.id(), owner, new FxRateCommand(nov, "KRW", BigDecimal.ONE)),
+        BookkeepingErrorCode.INVALID_CURRENCY); // 기준통화
+    assertError(
+        () ->
+            fxRateService.set(
+                book.id(), owner, new FxRateCommand(nov, "USD", new BigDecimal("0.123456789"))),
+        BookkeepingErrorCode.INVALID_FX_RATE);
+    assertError(
+        () -> fxRateService.set(book.id(), owner, new FxRateCommand(nov, "XYZ", BigDecimal.ONE)),
+        BookkeepingErrorCode.INVALID_CURRENCY);
+    assertForbidden(
+        () -> fxRateService.list(book.id(), UUID.randomUUID(), nov),
+        BookkeepingErrorCode.NOT_BOOK_MEMBER);
+
+    assertThat(fxRateService.set(book.id(), owner, new FxRateCommand(nov, "JPY", null)))
+        .extracting(r -> r.currency())
+        .containsExactly("USD");
+    bookService.delete(book.id(), owner);
+    assertThat(
+            bookkeepingJdbcClient
+                .sql("SELECT COUNT(*) FROM \"BookFxRate\" WHERE \"book_id\" = ?")
+                .param(book.id())
+                .query(Long.class)
+                .single())
+        .isZero();
+  }
+
+  // ---- 카드 할부
+
+  @Test
+  void cardInstallmentStoredAndBilled() {
+    var owner = UUID.randomUUID();
+    var book = newBook(owner, 1);
+    var card =
+        assetService.create(
+            book.id(), owner, new AssetCommand(AssetKind.CREDIT_CARD, "카드", "KRW", null, 15, null));
+    var food =
+        categoryService.list(book.id(), owner).stream()
+            .filter(c -> c.kind() == CategoryKind.EXPENSE)
+            .findFirst()
+            .orElseThrow();
+    var tv =
+        entryService.create(
+            book.id(),
+            owner,
+            new EntryCommand(
+                EntryType.EXPENSE,
+                LocalDate.of(2026, 10, 10),
+                null,
+                new BigDecimal("100000"),
+                null,
+                card.id(),
+                null,
+                food.id(),
+                "TV",
+                null,
+                3));
+    assertThat(tv.installmentMonths()).isEqualTo(3);
+    entryService.create(
+        book.id(),
+        owner,
+        new EntryCommand(
+            EntryType.EXPENSE,
+            LocalDate.of(2026, 10, 20),
+            null,
+            new BigDecimal("5000"),
+            null,
+            card.id(),
+            null,
+            food.id(),
+            null,
+            null));
+    var found =
+        entryService.search(
+            book.id(),
+            owner,
+            new EntrySearch(
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 31), null, null, null));
+    assertThat(found).extracting(e -> e.installmentMonths()).containsExactlyInAnyOrder(3, null);
+    assertThat(assetService.cardBills(book.id(), owner, YearMonth.of(2026, 11)))
+        .singleElement()
+        .satisfies(
+            b -> {
+              assertThat(b.assetId()).isEqualTo(card.id());
+              assertThat(b.lumpSum()).isEqualByComparingTo("5000");
+              assertThat(b.installments()).isEqualByComparingTo("33334");
+              assertThat(b.total()).isEqualByComparingTo("38334");
+            });
+    // 잔액은 산 날 전액
+    assertThat(
+            assetService.list(book.id(), owner).stream()
+                .filter(a -> a.asset().id().equals(card.id()))
+                .findFirst()
+                .orElseThrow()
+                .balance())
+        .isEqualByComparingTo("-105000");
+    bookService.delete(book.id(), owner);
+  }
+
+  // ---- 반복
+
+  @Test
+  void recurringDueConfirmOnceAndReappearWhenEntryDeleted() {
+    var owner = UUID.randomUUID();
+    var book = newBook(owner, 1);
+    var cash = assetService.list(book.id(), owner).get(0).asset();
+    var rent =
+        categoryService.list(book.id(), owner).stream()
+            .filter(c -> c.kind() == CategoryKind.EXPENSE)
+            .findFirst()
+            .orElseThrow();
+    var monthly =
+        recurringService.create(
+            book.id(),
+            owner,
+            new RecurringCommand(
+                EntryType.EXPENSE,
+                new BigDecimal("500000"),
+                null,
+                cash.id(),
+                null,
+                rent.id(),
+                "월세",
+                null,
+                RecurringCycle.MONTHLY,
+                31,
+                3,
+                7,
+                LocalDate.of(2026, 1, 31),
+                null));
+    // 주기에 맞지 않는 칸은 버린다
+    assertThat(monthly.dayOfWeek()).isNull();
+    assertThat(monthly.monthOfYear()).isNull();
+
+    var feb =
+        recurringService.due(book.id(), owner, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 3, 31));
+    assertThat(feb)
+        .extracting(d -> d.date().toString())
+        .containsExactly("2026-02-28", "2026-03-31");
+
+    var entry = recurringService.confirm(book.id(), owner, monthly.id(), LocalDate.of(2026, 2, 28));
+    assertThat(entry.entryDate()).isEqualTo(LocalDate.of(2026, 2, 28));
+    assertThat(entry.content()).isEqualTo("월세");
+    assertThat(
+            recurringService.due(
+                book.id(), owner, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 3, 31)))
+        .extracting(d -> d.date().toString())
+        .containsExactly("2026-03-31");
+    assertError(
+        () -> recurringService.confirm(book.id(), owner, monthly.id(), LocalDate.of(2026, 2, 28)),
+        BookkeepingErrorCode.RECURRING_ALREADY_DONE);
+    assertError(
+        () -> recurringService.confirm(book.id(), owner, monthly.id(), LocalDate.of(2026, 2, 27)),
+        BookkeepingErrorCode.NOT_RECURRING_OCCURRENCE);
+
+    // 넣은 내역을 지우면 그 회차가 다시 보인다
+    entryService.delete(book.id(), owner, entry.id());
+    assertThat(
+            recurringService.due(
+                book.id(), owner, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 2, 28)))
+        .hasSize(1);
+
+    assertError(
+        () ->
+            recurringService.create(
+                book.id(),
+                owner,
+                new RecurringCommand(
+                    EntryType.EXPENSE,
+                    BigDecimal.TEN,
+                    null,
+                    cash.id(),
+                    null,
+                    rent.id(),
+                    null,
+                    null,
+                    RecurringCycle.WEEKLY,
+                    null,
+                    8,
+                    null,
+                    LocalDate.of(2026, 1, 1),
+                    null)),
+        BookkeepingErrorCode.INVALID_RECURRING_CYCLE);
+    assertError(
+        () ->
+            recurringService.create(
+                book.id(),
+                owner,
+                new RecurringCommand(
+                    EntryType.EXPENSE,
+                    BigDecimal.TEN,
+                    null,
+                    cash.id(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    RecurringCycle.WEEKLY,
+                    null,
+                    1,
+                    null,
+                    LocalDate.of(2026, 1, 1),
+                    null)),
+        BookkeepingErrorCode.INVALID_ENTRY_COLUMNS);
+    assertError(
+        () ->
+            recurringService.due(
+                book.id(), owner, LocalDate.of(2026, 1, 1), LocalDate.of(2027, 6, 1)),
+        BookkeepingErrorCode.INVALID_REQUEST);
+    assertForbidden(
+        () -> recurringService.list(book.id(), UUID.randomUUID()),
+        BookkeepingErrorCode.NOT_BOOK_MEMBER);
+
+    recurringService.confirm(book.id(), owner, monthly.id(), LocalDate.of(2026, 3, 31));
+    bookService.delete(book.id(), owner);
+    assertThat(
+            bookkeepingJdbcClient
+                .sql("SELECT COUNT(*) FROM \"RecurringDone\" WHERE \"recurring_id\" = ?")
+                .param(monthly.id())
+                .query(Long.class)
+                .single())
+        .isZero();
+  }
+
+  // ---- 즐겨찾기
+
+  @Test
+  void favoriteKeepsOnlyColumnsOfItsTypeAndChecksRules() {
+    var owner = UUID.randomUUID();
+    var book = newBook(owner, 1);
+    var cash = assetService.list(book.id(), owner).get(0).asset();
+    var categories = categoryService.list(book.id(), owner);
+    var food =
+        categories.stream().filter(c -> c.kind() == CategoryKind.EXPENSE).findFirst().orElseThrow();
+    var salary =
+        categories.stream().filter(c -> c.kind() == CategoryKind.INCOME).findFirst().orElseThrow();
+
+    var lunch =
+        favoriteService.create(
+            book.id(),
+            owner,
+            new FavoriteCommand(
+                " 점심 ",
+                EntryType.EXPENSE,
+                new BigDecimal("9000"),
+                BigDecimal.ONE,
+                cash.id(),
+                cash.id(),
+                food.id(),
+                " ",
+                "메모"));
+    assertThat(lunch.name()).isEqualTo("점심");
+    assertThat(lunch.toAmount()).isNull(); // 지출에 받는 칸은 버린다
+    assertThat(lunch.toAssetId()).isNull();
+    assertThat(lunch.content()).isNull();
+    // 값 없이 이름 · 종류만
+    var bare =
+        favoriteService.create(
+            book.id(),
+            owner,
+            new FavoriteCommand(
+                "빈 틀", EntryType.TRANSFER, null, null, null, null, food.id(), null, null));
+    assertThat(bare.categoryId()).isNull(); // 이체에 분류는 버린다
+    assertThat(favoriteService.list(book.id(), owner))
+        .extracting(f -> f.name() + ":" + f.displayOrder())
+        .containsExactly("점심:0", "빈 틀:1");
+
+    assertError(
+        () ->
+            favoriteService.create(
+                book.id(),
+                owner,
+                new FavoriteCommand(
+                    "x", EntryType.EXPENSE, null, null, null, null, salary.id(), null, null)),
+        BookkeepingErrorCode.CATEGORY_KIND_MISMATCH);
+    assertError(
+        () ->
+            favoriteService.create(
+                book.id(),
+                owner,
+                new FavoriteCommand(
+                    "x",
+                    EntryType.EXPENSE,
+                    new BigDecimal("0.5"),
+                    null,
+                    cash.id(),
+                    null,
+                    null,
+                    null,
+                    null)),
+        BookkeepingErrorCode.INVALID_AMOUNT);
+    assertError(
+        () ->
+            favoriteService.create(
+                book.id(),
+                owner,
+                new FavoriteCommand(
+                    " ", EntryType.EXPENSE, null, null, null, null, null, null, null)),
+        BookkeepingErrorCode.INVALID_NAME);
+    assertError(
+        () ->
+            favoriteService.create(
+                book.id(),
+                owner,
+                new FavoriteCommand(
+                    "x", EntryType.EXPENSE, null, null, UUID.randomUUID(), null, null, null, null)),
+        BookkeepingErrorCode.NOT_EXIST_ASSET);
+    assertForbidden(
+        () -> favoriteService.list(book.id(), UUID.randomUUID()),
+        BookkeepingErrorCode.NOT_BOOK_MEMBER);
+
+    favoriteService.delete(book.id(), owner, bare.id());
+    assertThat(favoriteService.list(book.id(), owner))
+        .extracting(f -> f.id())
+        .containsExactly(lunch.id());
+    bookService.delete(book.id(), owner);
+    assertThat(
+            bookkeepingJdbcClient
+                .sql("SELECT COUNT(*) FROM \"BookFavorite\" WHERE \"book_id\" = ?")
+                .param(book.id())
+                .query(Long.class)
+                .single())
+        .isZero();
+  }
+
+  // ---- 예산
+
+  @Test
+  void budgetUpsertDeleteAndCategoryRules() {
+    var owner = UUID.randomUUID();
+    var book = newBook(owner, 1);
+    var categories = categoryService.list(book.id(), owner);
+    var food =
+        categories.stream()
+            .filter(c -> c.kind() == CategoryKind.EXPENSE && c.parentId() == null)
+            .findFirst()
+            .orElseThrow();
+    var salary =
+        categories.stream().filter(c -> c.kind() == CategoryKind.INCOME).findFirst().orElseThrow();
+    var snack =
+        categoryService.create(book.id(), owner, new CategoryCommand(food.id(), null, "간식", null));
+
+    budgetService.set(book.id(), owner, new BudgetCommand(null, new BigDecimal("500000")));
+    budgetService.set(book.id(), owner, new BudgetCommand(food.id(), new BigDecimal("200000")));
+    // 같은 자리에 다시 넣으면 바뀐다(행이 늘지 않는다)
+    var list =
+        budgetService.set(book.id(), owner, new BudgetCommand(null, new BigDecimal("600000")));
+    assertThat(list)
+        .extracting(b -> b.categoryId() + "=" + b.amount().stripTrailingZeros().toPlainString())
+        .containsExactlyInAnyOrder("null=600000", food.id() + "=200000");
+
+    assertError(
+        () -> budgetService.set(book.id(), owner, new BudgetCommand(snack.id(), BigDecimal.TEN)),
+        BookkeepingErrorCode.CATEGORY_DEPTH_EXCEEDED);
+    assertError(
+        () -> budgetService.set(book.id(), owner, new BudgetCommand(salary.id(), BigDecimal.TEN)),
+        BookkeepingErrorCode.CATEGORY_KIND_MISMATCH);
+    assertError(
+        () -> budgetService.set(book.id(), owner, new BudgetCommand(null, new BigDecimal("0.5"))),
+        BookkeepingErrorCode.INVALID_AMOUNT); // KRW 소수
+    assertForbidden(
+        () -> budgetService.list(book.id(), UUID.randomUUID()),
+        BookkeepingErrorCode.NOT_BOOK_MEMBER);
+
+    // 0 이면 지운다
+    assertThat(budgetService.set(book.id(), owner, new BudgetCommand(null, BigDecimal.ZERO)))
+        .extracting(b -> b.categoryId())
+        .containsExactly(food.id());
+    // 분류를 지우면 그 예산도
+    var empty =
+        categoryService.create(
+            book.id(), owner, new CategoryCommand(null, CategoryKind.EXPENSE, "빈", null));
+    budgetService.set(book.id(), owner, new BudgetCommand(empty.id(), BigDecimal.TEN));
+    assertThat(categoryService.delete(book.id(), owner, empty.id())).isTrue();
+    assertThat(budgetService.list(book.id(), owner))
+        .extracting(b -> b.categoryId())
+        .containsExactly(food.id());
+
+    bookService.delete(book.id(), owner);
+    assertThat(
+            bookkeepingJdbcClient
+                .sql("SELECT COUNT(*) FROM \"Budget\" WHERE \"book_id\" = ?")
+                .param(book.id())
+                .query(Long.class)
+                .single())
+        .isZero();
   }
 
   @Test

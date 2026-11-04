@@ -38,6 +38,15 @@ public class MemberController {
     memberService.remove(bookId, userId, memberUserId);
   }
 
+  /** OWNER 넘기기(OWNER 만). 나는 MEMBER 가 된다. */
+  @PostMapping(
+      value = "/api/books/{bookId}/members/{memberUserId}/owner",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public BookMember transferOwner(
+      @PathVariable UUID bookId, @PathVariable UUID memberUserId, @RequestParam UUID userId) {
+    return memberService.transferOwner(bookId, userId, memberUserId);
+  }
+
   @PostMapping(value = "/api/books/{bookId}/invites", produces = MediaType.APPLICATION_JSON_VALUE)
   public BookInvite createInvite(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return memberService.createInvite(bookId, userId);

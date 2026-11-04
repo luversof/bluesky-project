@@ -22,11 +22,16 @@ import net.luversof.api.bookkeeping.domain.Book;
 import net.luversof.api.bookkeeping.domain.BookMember;
 import net.luversof.api.bookkeeping.domain.Category;
 import net.luversof.api.bookkeeping.repository.AssetRepository;
+import net.luversof.api.bookkeeping.repository.BookFavoriteRepository;
+import net.luversof.api.bookkeeping.repository.BookFxRateRepository;
 import net.luversof.api.bookkeeping.repository.BookInviteRepository;
 import net.luversof.api.bookkeeping.repository.BookMemberRepository;
+import net.luversof.api.bookkeeping.repository.BookRecurringRepository;
 import net.luversof.api.bookkeeping.repository.BookRepository;
+import net.luversof.api.bookkeeping.repository.BudgetRepository;
 import net.luversof.api.bookkeeping.repository.CategoryRepository;
 import net.luversof.api.bookkeeping.repository.EntryRepository;
+import net.luversof.api.bookkeeping.repository.RecurringDoneRepository;
 
 /** 가계부 목록 · 만들기(기본 데이터 포함) · 수정 · 삭제. */
 @Service
@@ -34,7 +39,7 @@ public class BookService {
 
   static final int MAX_NAME = 100;
 
-  // 모듈이 ko_KR 만 지원한다(application.properties enable-locale-list). 기본 데이터 이름은 한국어로 저장.
+  // 모듈이 ko_KR 만 지원한다(application.properties enabled-locales). 기본 데이터 이름은 한국어로 저장.
   private static final Locale DEFAULT_DATA_LOCALE = Locale.KOREA;
 
   /** 목록 한 줄: 가계부와 내 역할. */
@@ -49,6 +54,11 @@ public class BookService {
   private final CategoryRepository categoryRepository;
   private final EntryRepository entryRepository;
   private final BookInviteRepository bookInviteRepository;
+  private final BudgetRepository budgetRepository;
+  private final BookFavoriteRepository bookFavoriteRepository;
+  private final BookFxRateRepository bookFxRateRepository;
+  private final BookRecurringRepository bookRecurringRepository;
+  private final RecurringDoneRepository recurringDoneRepository;
   private final JdbcAggregateOperations jdbcAggregateOperations;
   private final UuidGenerator uuidGenerator;
   private final BookAccess bookAccess;
@@ -61,6 +71,11 @@ public class BookService {
       CategoryRepository categoryRepository,
       EntryRepository entryRepository,
       BookInviteRepository bookInviteRepository,
+      BudgetRepository budgetRepository,
+      BookFavoriteRepository bookFavoriteRepository,
+      BookFxRateRepository bookFxRateRepository,
+      BookRecurringRepository bookRecurringRepository,
+      RecurringDoneRepository recurringDoneRepository,
       JdbcAggregateOperations jdbcAggregateOperations,
       UuidGenerator uuidGenerator,
       BookAccess bookAccess,
@@ -71,6 +86,11 @@ public class BookService {
     this.categoryRepository = categoryRepository;
     this.entryRepository = entryRepository;
     this.bookInviteRepository = bookInviteRepository;
+    this.budgetRepository = budgetRepository;
+    this.bookFavoriteRepository = bookFavoriteRepository;
+    this.bookFxRateRepository = bookFxRateRepository;
+    this.bookRecurringRepository = bookRecurringRepository;
+    this.recurringDoneRepository = recurringDoneRepository;
     this.jdbcAggregateOperations = jdbcAggregateOperations;
     this.uuidGenerator = uuidGenerator;
     this.bookAccess = bookAccess;
@@ -158,6 +178,11 @@ public class BookService {
   public void delete(UUID bookId, UUID userId) {
     bookAccess.requireOwner(bookId, userId);
     entryRepository.deleteByBookId(bookId);
+    budgetRepository.deleteByBookId(bookId);
+    bookFavoriteRepository.deleteByBookId(bookId);
+    bookFxRateRepository.deleteByBookId(bookId);
+    recurringDoneRepository.deleteByBookId(bookId); // BookRecurring 보다 먼저(틀로 찾는다)
+    bookRecurringRepository.deleteByBookId(bookId);
     categoryRepository.deleteByBookId(bookId);
     assetRepository.deleteByBookId(bookId);
     bookInviteRepository.deleteByBookId(bookId);

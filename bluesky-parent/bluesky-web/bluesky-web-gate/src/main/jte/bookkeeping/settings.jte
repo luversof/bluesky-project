@@ -26,6 +26,9 @@
 		@endif
 		@template.bookkeeping.fragments.settingsBook(page = page, currencies = currencies)
 		@template.bookkeeping.fragments.settingsCategories(page = page)
+		@template.bookkeeping.fragments.settingsBudgets(page = page)
+		@template.bookkeeping.fragments.settingsFavorites(page = page)
+		@template.bookkeeping.fragments.settingsRecurrings(page = page)
 		@template.bookkeeping.fragments.settingsAssets(page = page, currencies = currencies)
 		@template.bookkeeping.fragments.settingsMembers(page = page)
 	`

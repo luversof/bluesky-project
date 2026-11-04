@@ -30,17 +30,28 @@ import net.luversof.web.gate.bookkeeping.httpexchange.AssetClient.AssetBalance;
 import net.luversof.web.gate.bookkeeping.httpexchange.BookClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.BookClient.Book;
 import net.luversof.web.gate.bookkeeping.httpexchange.BookClient.BookCommand;
+import net.luversof.web.gate.bookkeeping.httpexchange.BudgetClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.CategoryClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.CategoryClient.Category;
 import net.luversof.web.gate.bookkeeping.httpexchange.EntryClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.EntryClient.Entry;
 import net.luversof.web.gate.bookkeeping.httpexchange.EntryClient.EntryCommand;
+import net.luversof.web.gate.bookkeeping.httpexchange.FavoriteClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.FavoriteClient.Favorite;
+import net.luversof.web.gate.bookkeeping.httpexchange.FavoriteClient.FavoriteCommand;
+import net.luversof.web.gate.bookkeeping.httpexchange.FxRateClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.FxRateClient.FxRateCommand;
 import net.luversof.web.gate.bookkeeping.httpexchange.MemberClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.RecurringClient;
+import net.luversof.web.gate.bookkeeping.httpexchange.RecurringClient.Due;
+import net.luversof.web.gate.bookkeeping.httpexchange.RecurringClient.RecurringCommand;
 import net.luversof.web.gate.bookkeeping.httpexchange.StatsClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.StatsClient.MonthRange;
 import net.luversof.web.gate.bookkeeping.support.BookkeepingView;
 import net.luversof.web.gate.bookkeeping.support.BookkeepingView.CalendarDay;
 import net.luversof.web.gate.bookkeeping.support.BookkeepingView.CurrencyTotal;
+import net.luversof.web.gate.bookkeeping.support.BudgetView;
+import net.luversof.web.gate.bookkeeping.support.FxView;
 import net.luversof.web.gate.stock.support.StockViewSupport;
 
 /**
@@ -56,6 +67,10 @@ public class BookkeepingViewController {
   private static final Logger log = LoggerFactory.getLogger(BookkeepingViewController.class);
 
   static final String ERROR = "error";
+
+  /** 환율 입력 칸 이름: rate.USD 처럼. */
+  static final String FX_PREFIX = "rate.";
+
   static final String FORBIDDEN_VIEW = "bookkeeping/error";
 
   /** 월 화면 한 장에 필요한 것. */
@@ -73,7 +88,11 @@ public class BookkeepingViewController {
       Map<UUID, AssetBalance> assetsById,
       List<Category> categories,
       Map<UUID, Category> categoriesById,
-      EntryForm form) {}
+      EntryForm form,
+      BudgetView.Status budget,
+      List<Favorite> favorites,
+      List<Due> recurringDue,
+      FxView.Summary fx) {}
 
   /** 입력 모달의 값. open 이 false 면 모달을 그리지 않는다. 저장이 실패하면 받은 값 그대로 다시 그린다. */
   public record EntryForm(
@@ -88,7 +107,38 @@ public class BookkeepingViewController {
       UUID toAssetId,
       UUID categoryId,
       String content,
-      String memo) {
+      String memo,
+      Integer installmentMonths) {
+
+    /** 일시불(할부 칸 없음). */
+    public EntryForm(
+        boolean open,
+        UUID entryId,
+        EntryType type,
+        String date,
+        String time,
+        String amount,
+        String toAmount,
+        UUID assetId,
+        UUID toAssetId,
+        UUID categoryId,
+        String content,
+        String memo) {
+      this(
+          open,
+          entryId,
+          type,
+          date,
+          time,
+          amount,
+          toAmount,
+          assetId,
+          toAssetId,
+          categoryId,
+          content,
+          memo,
+          null);
+    }
 
     public static EntryForm closed() {
       return new EntryForm(
@@ -108,7 +158,25 @@ public class BookkeepingViewController {
           e.toAssetId(),
           e.categoryId(),
           e.content() == null ? "" : e.content(),
-          e.memo() == null ? "" : e.memo());
+          e.memo() == null ? "" : e.memo(),
+          e.installmentMonths());
+    }
+
+    /** 즐겨찾기로 채운 새 내역. 날짜는 모달이 보던 날. */
+    public static EntryForm of(Favorite f, String date) {
+      return new EntryForm(
+          true,
+          null,
+          f.type(),
+          date,
+          "",
+          BookkeepingView.plainAmount(f.amount()),
+          BookkeepingView.plainAmount(f.toAmount()),
+          f.assetId(),
+          f.toAssetId(),
+          f.categoryId(),
+          f.content() == null ? "" : f.content(),
+          f.memo() == null ? "" : f.memo());
     }
   }
 
@@ -118,6 +186,10 @@ public class BookkeepingViewController {
   private final CategoryClient categoryClient;
   private final EntryClient entryClient;
   private final StatsClient statsClient;
+  private final BudgetClient budgetClient;
+  private final FavoriteClient favoriteClient;
+  private final RecurringClient recurringClient;
+  private final FxRateClient fxRateClient;
 
   public BookkeepingViewController(
       BookClient bookClient,
@@ -125,13 +197,21 @@ public class BookkeepingViewController {
       AssetClient assetClient,
       CategoryClient categoryClient,
       EntryClient entryClient,
-      StatsClient statsClient) {
+      StatsClient statsClient,
+      BudgetClient budgetClient,
+      FavoriteClient favoriteClient,
+      RecurringClient recurringClient,
+      FxRateClient fxRateClient) {
     this.bookClient = bookClient;
     this.memberClient = memberClient;
     this.assetClient = assetClient;
     this.categoryClient = categoryClient;
     this.entryClient = entryClient;
     this.statsClient = statsClient;
+    this.budgetClient = budgetClient;
+    this.favoriteClient = favoriteClient;
+    this.recurringClient = recurringClient;
+    this.fxRateClient = fxRateClient;
   }
 
   // ---- 목록 · 만들기
@@ -219,15 +299,27 @@ public class BookkeepingViewController {
       @RequestParam(required = false) UUID edit,
       @RequestParam(required = false) EntryType type,
       @RequestParam(required = false) String date,
+      @RequestParam(required = false) UUID fav,
       HttpServletRequest request,
       HttpServletResponse response,
       Model model) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    var userId = UserUtil.requireUserId();
+    EntryForm forced = null;
+    if (newEntry != null && fav != null) {
+      var formDate = BookkeepingView.parseDate(date);
+      forced =
+          favorites(bookId, userId).stream()
+              .filter(f -> f.id().equals(fav))
+              .findFirst()
+              .map(f -> EntryForm.of(f, (formDate == null ? LocalDate.now() : formDate).toString()))
+              .orElse(null);
+    }
     return monthView(
         bookId,
-        UserUtil.requireUserId(),
+        userId,
         month,
         day,
         q,
@@ -237,7 +329,7 @@ public class BookkeepingViewController {
         edit,
         type,
         date,
-        null,
+        forced,
         response,
         model);
   }
@@ -322,12 +414,14 @@ public class BookkeepingViewController {
       form = withType(form, type);
     }
 
+    var totals = BookkeepingView.totals(stats.daily());
+    var rates = rates(bookId, userId, range);
     model.addAttribute(
         "page",
         new MonthPage(
             book,
             range,
-            BookkeepingView.totals(stats.daily()),
+            totals,
             BookkeepingView.calendar(range, stats.daily()),
             entries,
             selectedDay,
@@ -338,7 +432,11 @@ public class BookkeepingViewController {
             BookkeepingView.assetsById(assets),
             categories,
             BookkeepingView.categoriesById(categories),
-            form));
+            form,
+            budget(bookId, userId, book, stats.categories(), categories, rates),
+            form.open() && form.entryId() == null ? favorites(bookId, userId) : List.of(),
+            recurringDue(bookId, userId, range),
+            FxView.summary(totals, book.baseCurrency(), rates)));
     return "bookkeeping/month";
   }
 
@@ -362,6 +460,7 @@ public class BookkeepingViewController {
       @RequestParam(required = false) UUID expenseCategoryId,
       @RequestParam(required = false) String content,
       @RequestParam(required = false) String memo,
+      @RequestParam(required = false) Integer installmentMonths,
       @RequestParam(required = false) String month,
       @RequestParam(required = false) String next,
       HttpServletResponse response,
@@ -373,6 +472,7 @@ public class BookkeepingViewController {
           case EXPENSE -> expenseCategoryId;
           case TRANSFER -> null;
         };
+    var installment = type == EntryType.EXPENSE ? installmentMonths : null;
     var form =
         new EntryForm(
             true,
@@ -386,7 +486,8 @@ public class BookkeepingViewController {
             type == EntryType.TRANSFER ? toAssetId : null,
             categoryId,
             nullToEmpty(content),
-            nullToEmpty(memo));
+            nullToEmpty(memo),
+            installment);
     var back = monthUrl(bookId, month);
     try {
       var command =
@@ -400,7 +501,8 @@ public class BookkeepingViewController {
               type == EntryType.TRANSFER ? toAssetId : null,
               categoryId,
               content,
-              memo);
+              memo,
+              installment);
       if (entryId == null) {
         entryClient.create(bookId, userId, command);
       } else {
@@ -423,6 +525,219 @@ public class BookkeepingViewController {
           + monthUrl(bookId, month, "new", "1", "type", type.name(), "date", entryDate);
     }
     return "redirect:" + back;
+  }
+
+  /** 입력 모달의 값으로 즐겨찾기를 만든다(비어 있는 칸은 비워 둔다). 끝나면 새 내역 모달로 돌아가 단추가 보인다. */
+  @PostMapping("/{bookId}/favorites")
+  public String saveFavorite(
+      @PathVariable UUID bookId,
+      @RequestParam(required = false) UUID entryId,
+      @RequestParam EntryType type,
+      @RequestParam(required = false) String favoriteName,
+      @RequestParam(required = false) String entryDate,
+      @RequestParam(required = false) String amount,
+      @RequestParam(required = false) String toAmount,
+      @RequestParam(required = false) UUID assetId,
+      @RequestParam(required = false) UUID toAssetId,
+      @RequestParam(required = false) UUID incomeCategoryId,
+      @RequestParam(required = false) UUID expenseCategoryId,
+      @RequestParam(required = false) String content,
+      @RequestParam(required = false) String memo,
+      @RequestParam(required = false) String month,
+      HttpServletResponse response,
+      Model model) {
+    var userId = UserUtil.requireUserId();
+    var categoryId =
+        switch (type) {
+          case INCOME -> incomeCategoryId;
+          case EXPENSE -> expenseCategoryId;
+          case TRANSFER -> null;
+        };
+    var transfer = type == EntryType.TRANSFER;
+    var form =
+        new EntryForm(
+            true,
+            entryId,
+            type,
+            nullToEmpty(entryDate),
+            "",
+            nullToEmpty(amount),
+            nullToEmpty(toAmount),
+            assetId,
+            transfer ? toAssetId : null,
+            categoryId,
+            nullToEmpty(content),
+            nullToEmpty(memo));
+    try {
+      favoriteClient.create(
+          bookId,
+          userId,
+          new FavoriteCommand(
+              favoriteName,
+              type,
+              number(amount),
+              transfer ? number(toAmount) : null,
+              assetId,
+              transfer ? toAssetId : null,
+              categoryId,
+              content,
+              memo));
+    } catch (NumberFormatException e) {
+      response.setStatus(HttpStatus.BAD_REQUEST.value());
+      model.addAttribute(ERROR, BookkeepingView.msg("bookkeeping.error.input"));
+      return monthView(
+          bookId, userId, month, null, null, null, null, null, null, null, null, form, response,
+          model);
+    } catch (BlueskyException e) {
+      failed(e, response, model);
+      return monthView(
+          bookId, userId, month, null, null, null, null, null, null, null, null, form, response,
+          model);
+    }
+    return "redirect:"
+        + monthUrl(bookId, month, "new", "1", "type", type.name(), "date", entryDate);
+  }
+
+  /**
+   * 입력 모달의 값으로 반복 틀을 만든다. 시작일 = 모달의 날짜, 주기의 일 · 요일 · 월도 그 날짜에서 딴다. 만든 뒤 월 화면의 "예정 반복"에서 회차를 넣는다(이
+   * 저장은 내역을 넣지 않는다).
+   */
+  @PostMapping("/{bookId}/recurrings")
+  public String saveRecurring(
+      @PathVariable UUID bookId,
+      @RequestParam(required = false) UUID entryId,
+      @RequestParam EntryType type,
+      @RequestParam String entryDate,
+      @RequestParam String amount,
+      @RequestParam(required = false) String toAmount,
+      @RequestParam UUID assetId,
+      @RequestParam(required = false) UUID toAssetId,
+      @RequestParam(required = false) UUID incomeCategoryId,
+      @RequestParam(required = false) UUID expenseCategoryId,
+      @RequestParam(required = false) String content,
+      @RequestParam(required = false) String memo,
+      @RequestParam String cycle,
+      @RequestParam(required = false) String endDate,
+      @RequestParam(required = false) String month,
+      HttpServletResponse response,
+      Model model) {
+    var userId = UserUtil.requireUserId();
+    var categoryId =
+        switch (type) {
+          case INCOME -> incomeCategoryId;
+          case EXPENSE -> expenseCategoryId;
+          case TRANSFER -> null;
+        };
+    var transfer = type == EntryType.TRANSFER;
+    var form =
+        new EntryForm(
+            true,
+            entryId,
+            type,
+            entryDate,
+            "",
+            amount,
+            nullToEmpty(toAmount),
+            assetId,
+            transfer ? toAssetId : null,
+            categoryId,
+            nullToEmpty(content),
+            nullToEmpty(memo));
+    try {
+      var start = LocalDate.parse(entryDate);
+      recurringClient.create(
+          bookId,
+          userId,
+          new RecurringCommand(
+              type,
+              number(amount),
+              transfer ? number(toAmount) : null,
+              assetId,
+              transfer ? toAssetId : null,
+              categoryId,
+              content,
+              memo,
+              cycle,
+              start.getDayOfMonth(),
+              start.getDayOfWeek().getValue(),
+              start.getMonthValue(),
+              start,
+              endDate == null || endDate.isBlank() ? null : LocalDate.parse(endDate)));
+    } catch (DateTimeParseException | NumberFormatException e) {
+      response.setStatus(HttpStatus.BAD_REQUEST.value());
+      model.addAttribute(ERROR, BookkeepingView.msg("bookkeeping.error.input"));
+      return monthView(
+          bookId, userId, month, null, null, null, null, null, null, null, null, form, response,
+          model);
+    } catch (BlueskyException e) {
+      failed(e, response, model);
+      return monthView(
+          bookId, userId, month, null, null, null, null, null, null, null, null, form, response,
+          model);
+    }
+    return "redirect:" + monthUrl(bookId, month);
+  }
+
+  /** 그 달 환율 저장: rate.<통화> 칸 중 바뀐 것만 보낸다(빈 칸 = 지우기). */
+  @PostMapping("/{bookId}/fx-rates")
+  public String saveFxRates(
+      @PathVariable UUID bookId,
+      @RequestParam String month,
+      @RequestParam Map<String, String> params,
+      HttpServletResponse response,
+      Model model) {
+    var userId = UserUtil.requireUserId();
+    var parsed = BookkeepingView.parseMonth(month);
+    try {
+      if (parsed == null) {
+        throw new NumberFormatException(month);
+      }
+      var current = FxView.rates(fxRateClient.list(bookId, userId, parsed.toString()));
+      for (var p : params.entrySet()) {
+        if (!p.getKey().startsWith(FX_PREFIX)) {
+          continue;
+        }
+        var currency = p.getKey().substring(FX_PREFIX.length());
+        var rate = number(p.getValue());
+        var before = current.get(currency);
+        if (before == null ? rate != null : rate == null || before.compareTo(rate) != 0) {
+          fxRateClient.set(bookId, userId, new FxRateCommand(parsed.toString(), currency, rate));
+        }
+      }
+    } catch (NumberFormatException e) {
+      response.setStatus(HttpStatus.BAD_REQUEST.value());
+      model.addAttribute(ERROR, BookkeepingView.msg("bookkeeping.error.input"));
+      return monthView(
+          bookId, userId, month, null, null, null, null, null, null, null, null, null, response,
+          model);
+    } catch (BlueskyException e) {
+      failed(e, response, model);
+      return monthView(
+          bookId, userId, month, null, null, null, null, null, null, null, null, null, response,
+          model);
+    }
+    return "redirect:" + monthUrl(bookId, month);
+  }
+
+  /** 반복 회차 하나를 내역으로 넣는다. */
+  @PostMapping("/{bookId}/recurrings/{recurringId}/confirm")
+  public String confirmRecurring(
+      @PathVariable UUID bookId,
+      @PathVariable UUID recurringId,
+      @RequestParam String date,
+      @RequestParam(required = false) String month,
+      HttpServletResponse response,
+      Model model) {
+    var userId = UserUtil.requireUserId();
+    try {
+      recurringClient.confirm(bookId, recurringId, userId, date);
+    } catch (BlueskyException e) {
+      failed(e, response, model);
+      return monthView(
+          bookId, userId, month, null, null, null, null, null, null, null, null, null, response,
+          model);
+    }
+    return "redirect:" + monthUrl(bookId, month);
   }
 
   @PostMapping("/{bookId}/entries/{entryId}/delete")
@@ -496,6 +811,57 @@ public class BookkeepingViewController {
     log.warn("bookkeeping action failed", e);
     response.setStatus(e.getStatus() > 0 ? e.getStatus() : HttpStatus.BAD_REQUEST.value());
     model.addAttribute(ERROR, failure(e));
+  }
+
+  /** 예산은 곁가지 - 못 불러와도(API 미배포 · 스키마 미적용 등) 월 화면은 뜨고 한 줄 안내만 보인다. */
+  private BudgetView.Status budget(
+      UUID bookId,
+      UUID userId,
+      Book book,
+      List<StatsClient.CategoryTotal> totals,
+      List<Category> categories,
+      Map<String, BigDecimal> rates) {
+    try {
+      return BudgetView.status(
+          budgetClient.list(bookId, userId),
+          totals,
+          categories,
+          book.baseCurrency(),
+          rates == null ? Map.of() : rates);
+    } catch (RuntimeException e) {
+      log.warn("bookkeeping budgets unavailable", e);
+      return BudgetView.Status.unavailable();
+    }
+  }
+
+  /** 환율도 곁가지 - 못 불러오면 null(환산 줄에 안내). */
+  private Map<String, BigDecimal> rates(UUID bookId, UUID userId, MonthRange range) {
+    try {
+      return FxView.rates(fxRateClient.list(bookId, userId, range.month().toString()));
+    } catch (RuntimeException e) {
+      log.warn("bookkeeping fx rates unavailable", e);
+      return null;
+    }
+  }
+
+  /** 반복도 곁가지 - 못 불러오면 null(한 줄 안내). */
+  private List<Due> recurringDue(UUID bookId, UUID userId, MonthRange range) {
+    try {
+      return recurringClient.due(bookId, userId, range.from().toString(), range.to().toString());
+    } catch (RuntimeException e) {
+      log.warn("bookkeeping recurrings unavailable", e);
+      return null;
+    }
+  }
+
+  /** 즐겨찾기도 곁가지 - 못 불러오면 단추만 안 보인다. */
+  private List<Favorite> favorites(UUID bookId, UUID userId) {
+    try {
+      return favoriteClient.list(bookId, userId);
+    } catch (RuntimeException e) {
+      log.warn("bookkeeping favorites unavailable", e);
+      return List.of();
+    }
   }
 
   /** 멤버가 아니거나 없는 가계부. 있는지 여부는 알리지 않는다. */

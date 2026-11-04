@@ -38,6 +38,11 @@ public interface MemberClient {
   void remove(
       @PathVariable UUID bookId, @PathVariable UUID memberUserId, @RequestParam UUID userId);
 
+  /** OWNER 넘기기(OWNER 만). 나는 MEMBER 가 된다. */
+  @PostExchange("/api/books/{bookId}/members/{memberUserId}/owner")
+  BookMember transferOwner(
+      @PathVariable UUID bookId, @PathVariable UUID memberUserId, @RequestParam UUID userId);
+
   @PostExchange("/api/books/{bookId}/invites")
   BookInvite createInvite(@PathVariable UUID bookId, @RequestParam UUID userId);
 

@@ -50,6 +50,18 @@ public class EntryController {
     return entryService.create(bookId, userId, command);
   }
 
+  /** 가져오기 결과. */
+  public record ImportResult(int count) {}
+
+  /** 한꺼번에 넣기(최대 2000, 전부 아니면 무). */
+  @PostMapping("/import")
+  public ImportResult importAll(
+      @PathVariable UUID bookId,
+      @RequestParam UUID userId,
+      @RequestBody List<EntryCommand> commands) {
+    return new ImportResult(entryService.importAll(bookId, userId, commands));
+  }
+
   @PutMapping("/{entryId}")
   public Entry update(
       @PathVariable UUID bookId,

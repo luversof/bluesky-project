@@ -69,6 +69,10 @@ class BookkeepingSettingsScreenTest {
         .contains("/members/" + OTHER + "/remove")
         .doesNotContain("/members/" + ME + "/remove");
     assertThat(html).contains("내보내기").doesNotContain(">나가기<");
+    assertThat(html)
+        .contains("/members/" + OTHER + "/owner")
+        .doesNotContain("/members/" + ME + "/owner");
+    assertThat(html).contains("친구님에게 소유자를 넘깁니다");
     assertThat(html).contains("role=\"status\"").contains("저장했습니다.");
     assertThat(html).contains("· 커피").contains("숨김"); // 소분류 · 숨긴 표시
     assertThat(html)
@@ -84,7 +88,7 @@ class BookkeepingSettingsScreenTest {
         .doesNotContain("/settings/delete")
         .doesNotContain("/settings/invites");
     assertThat(html).contains("/members/" + ME + "/remove").contains("나가기");
-    assertThat(html).doesNotContain("/members/" + OTHER + "/remove");
+    assertThat(html).doesNotContain("/members/" + OTHER + "/remove").doesNotContain("/owner\"");
   }
 
   @Test
@@ -119,6 +123,9 @@ class BookkeepingSettingsScreenTest {
         editAsset,
         editCategory,
         inviteUrl,
-        notice);
+        notice,
+        List.of(),
+        List.of(),
+        List.of());
   }
 }

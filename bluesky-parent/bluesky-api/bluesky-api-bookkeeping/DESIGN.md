@@ -225,3 +225,46 @@
 
 - **체크카드**(2026-11-03): 체크카드는 자산 kind 로 두지 않는다. 체크카드로 쓴 돈은 연결 계좌에서 바로 빠지므로, 그 지출은 은행 자산에 바로 기록한다.
   - 연결 계좌(`linkedAsset_id`)로 잔액을 합산하는 방식은 단순함을 위해 택하지 않았다.
+
+## 10. 2차 구현 (2026-11-03)
+
+Q35~Q44 추천대로 만들었다. 스키마는 `schema-alter` 의 "2026-11-03 (2차)" 묶음과 `schema-create` 끝 묶음에 있다.
+
+### 배포 순서 (꼭 이 순서로)
+
+1. 로컬 DB 에 2차 스키마를 적용한다(`schema-alter` 2차 묶음, 다시 돌려도 안전).
+2. api-bookkeeping 을 새 코드로 다시 띄운다. 스키마보다 먼저 띄우면 `Entry` 조회가 `installmentMonths` 열이 없어 모두 실패한다.
+3. 게이트를 띄운다. 게이트는 새 API 를 못 부르면 예산·즐겨찾기·반복·환율·카드 결제 예정액 자리에 "불러오지 못했습니다" 한 줄만 보이고 나머지 화면은 그대로 뜬다.
+   - 옛 API 에 게이트가 할부 개월을 보내면 옛 API 는 그 값을 버린다(일시불로 저장). 그래서 2번을 먼저 한다.
+
+### 기능별
+
+| 기능 | API | 게이트 |
+|---|---|---|
+| OWNER 이양 | `POST /members/{memberUserId}/owner` - 내 역할을 먼저 MEMBER 로 내리고 대상을 OWNER 로(한 트랜잭션) | 설정 › 멤버: 확인 칸을 골라야 넘어간다 |
+| CSV 내보내기 | (없음, 검색 API 를 달마다 나눠 부른다) | `GET /bookkeeping/{id}/export.csv?from&to[&q&categoryId&assetId]` - UTF-8 BOM, 13 열(…·메모·할부), 수식으로 읽힐 글자 앞에 `'`, 최대 10 년. 월 화면 아래 "CSV 내보내기" |
+| 예산 | `GET/PUT /budgets` - 전체 1 + 지출 대분류마다 1, 기준통화 자릿수, 0/빈 값 = 지우기 | 월 화면 진행 막대(넘으면 "초과"), 설정 › 월 예산 한 폼(바뀐 칸만 보냄), 통계 표 예산 열(지출 · 대분류 · 기준통화나 환산 보기일 때). 외화 지출은 그 달 환율로 환산해 더하고 없는 통화는 안내 |
+| 즐겨찾기 | `GET/POST/DELETE /favorites` - 종류에 맞지 않는 칸은 버림, 값은 비워도 됨 | 새 내역 모달 위 단추(`?fav=` 로 모달을 채움), 모달 "즐겨찾기로 저장"(같은 폼을 `formaction` 으로, 필수 칸 검사 건너뜀), 설정 › 목록 · 지우기 |
+| 반복 내역 | `GET/POST/DELETE /recurrings`, `GET /recurrings/due?from&to`(최대 400 일), `POST /recurrings/{id}/confirm?date` | 월 화면 "예정 반복 N건" + 넣기, 모달 "반복으로 저장"(그 날짜로 매월 N일 · 매주 X요일 · 매년 M월 N일), 설정 › 목록 · 지우기 |
+| 카드 할부 · 결제 예정액 | `Entry.installmentMonths`(신용카드 지출만 2~36), `GET /assets/card-bills?month` | 지출 모달 할부 선택, 목록 "N개월 할부", 자산 화면 카드 줄 "이번 달 결제 · 다음 달" |
+| 기준통화 환산 | `GET/PUT /fx-rates?month` - 외화 1 = 기준통화 rate, NUMERIC(19,8), 기준통화 자신은 거절 | 월 화면에 외화 합계가 있으면 "기준통화 환산" 합계 + "환율 없음: JPY" + 이 달 환율 입력. 통계 화면 통화 선택지 "기준통화 환산"(분류별은 그 달 환율, 12개월 추이는 달마다 그 달 환율, 빠진 통화 · 달은 알림) |
+| CSV 가져오기 | `POST /entries/import` - 최대 2000, 전부 아니면 무, `IMPORT_ROW_INVALID` 에 몇 번째와 사유 | `/bookkeeping/{id}/import` 올리기 → 미리보기(줄마다 오류, 오류가 있으면 넣기 막음) → 넣기. 내보내기 형식만, 자산 · 분류는 이름으로 찾고 없으면 오류 |
+
+### 규칙
+
+- **반복**: 자동으로 넣지 않는다. 넣은 회차는 `RecurringDone` 에 남고, 그 내역을 지우면 회차가 다시 보인다. 그 달에 없는 날(31 일 · 2 월 29 일)은 말일로 계산한다. 틀을 지워도 이미 넣은 내역은 남는다.
+- **카드 결제 예정액**: 결제 달 M = (M-1 달 일시불 사용액) + (할부 중인 건의 이번 회차 몫). 할부 N 개월이면 산 달 다음 달부터 N 번 낸다. 한 회차 몫은 통화 자릿수에서 내림하고 끝전은 첫 회차에 더한다. 잔액은 산 날 전액이 빠진다.
+- **환율**: 통화별 합에 환율을 곱한 뒤 기준통화 자릿수에서 반올림한다. 환율이 없는 통화는 빼고 더한다.
+- **가계부 삭제**: 2차 표(Budget · BookFavorite · BookRecurring · RecurringDone · BookFxRate)까지 지운다. 분류를 지우면 그 예산도 지운다.
+
+### 하지 않은 것 (필요해지면)
+
+- 카드사별 이용 기간(전월 15 일 ~ 당월 14 일 등): 달력 월로 계산한다(`CardBills` 의 shortcut 주석).
+- 반복 "건너뛰기"(내역 없이 회차 닫기), 반복 · 즐겨찾기 수정과 순서 바꾸기: 지우고 다시 만든다.
+- 다른 앱(편한 가계부 등) CSV 형식 읽기, 가져올 때 없는 자산 · 분류 만들기.
+
+### 시험
+
+- API: `RulesTest`(할부 규칙 포함) · `RecurringRulesTest` · `CardBillsTest` · `BookkeepingDbTest`(2차 기능마다 하나, 임시 컨테이너 DB) · `SecondScopeBindingTest`(2차 경로의 JSON · 날짜 · 월 바인딩, 할부가 정식 생성자로 읽히는지) - 53 건.
+- 게이트: `BookkeepingCsvExportTest` · `BookkeepingCsvImportTest`(내보낸 파일 왕복) · `BookkeepingBudgetTest` · `BookkeepingFavoriteTest` · `BookkeepingRecurringTest` · `BookkeepingCardTest` · `BookkeepingFxTest` · `BookkeepingStatsFxTest` 와 1차 화면 시험.
+- 실제 확인(2026-11-04, 스키마 적용 · API 재기동 뒤): API 스모크 21 항목(실제 로컬 DB) · 가계부 삭제 뒤 2차 표에 남는 행 0, 크롬으로 환율 저장 → 환산 · 예산 반영, 반복 넣기, 즐겨찾기 채우기 · 저장, 카드 할부 저장 · 결제 예정액, 설정 예산 저장, 통계 예산 열 · 환산 보기, CSV 내보내기 → 가져오기 넣기(할부 · 통화 유지).

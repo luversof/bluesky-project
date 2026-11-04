@@ -1,7 +1,9 @@
 package net.luversof.api.bookkeeping.service;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,6 +17,7 @@ import net.luversof.api.bookkeeping.constant.BookkeepingErrorCode;
 import net.luversof.api.bookkeeping.domain.Asset;
 import net.luversof.api.bookkeeping.repository.AssetRepository;
 import net.luversof.api.bookkeeping.repository.EntryQuery;
+import net.luversof.api.bookkeeping.repository.EntryQuery.CardExpense;
 
 /** 자산 목록(잔액) · 추가 · 수정 · 삭제(내역 있으면 숨김) · 순서. MEMBER 이상. */
 @Service
@@ -52,6 +55,35 @@ public class AssetService {
   }
 
   /** 숨긴 자산도 포함한다(화면이 거른다). */
+  /** 결제 달 하나의 카드별 예정액(일시불 · 할부 몫). 숨긴 카드도 포함한다. */
+  public record CardBill(
+      UUID assetId,
+      YearMonth month,
+      BigDecimal lumpSum,
+      BigDecimal installments,
+      BigDecimal total) {}
+
+  public List<CardBill> cardBills(UUID bookId, UUID userId, YearMonth month) {
+    bookAccess.requireMember(bookId, userId);
+    if (month == null) {
+      throw BookkeepingErrorCode.INVALID_REQUEST.exception();
+    }
+    var currencies = new LinkedHashMap<UUID, String>();
+    assetRepository.findByBookIdOrderByDisplayOrder(bookId).stream()
+        .filter(a -> a.kind() == AssetKind.CREDIT_CARD)
+        .forEach(a -> currencies.put(a.id(), a.currency()));
+    var expenses =
+        currencies.isEmpty()
+            ? List.<CardExpense>of()
+            : entryQuery.cardExpenses(
+                bookId,
+                CardBills.firstUsageMonth(month).atDay(1),
+                month.minusMonths(1).atEndOfMonth());
+    return CardBills.bills(month, currencies, expenses).stream()
+        .map(b -> new CardBill(b.assetId(), b.month(), b.lumpSum(), b.installments(), b.total()))
+        .toList();
+  }
+
   public List<AssetBalance> list(UUID bookId, UUID userId) {
     bookAccess.requireMember(bookId, userId);
     var deltas = entryQuery.balanceDeltas(bookId);
