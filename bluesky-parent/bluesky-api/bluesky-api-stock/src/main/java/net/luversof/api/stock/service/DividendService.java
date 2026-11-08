@@ -146,14 +146,13 @@ public class DividendService {
     jdbcClient
         .sql(sql)
         .params(params)
-        .query(
-            (rs, rowNum) -> {
-              UUID stockItemId = rs.getObject(1, UUID.class);
-              if (stockItemId != null) {
-                result.put(stockItemId, rs.getBigDecimal(2));
-              }
-              return stockItemId;
-            })
+        .query((rs, rowNum) -> {
+          UUID stockItemId = rs.getObject(1, UUID.class);
+          if (stockItemId != null) {
+            result.put(stockItemId, rs.getBigDecimal(2));
+          }
+          return stockItemId;
+        })
         .list();
     return result;
   }

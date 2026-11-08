@@ -15,7 +15,7 @@ import io.swagger.v3.oas.models.OpenAPI;
             title = "Blog API",
             description =
                 """
-			Blog Client API 목록
-		""",
+                	Blog Client API 목록
+                """,
             version = "0.0.1-SNAPSHOT"))
 public class BlogSpringDocConfig {}

@@ -194,9 +194,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     var financialIncomeFuture =
         financialIncomeThresholdSupport == null
             ? null
-            : supplyRemote(
-                () ->
-                    financialIncomeThresholdSupport.load(userId, LocalDate.now(taxZone), taxZone));
+            : supplyRemote(() ->
+                financialIncomeThresholdSupport.load(userId, LocalDate.now(taxZone), taxZone));
 
     var stockItemsFuture = supplyRemote(() -> emptyIfNull(stockItemClient.getStockItems()));
     var rawProfitFuture =
@@ -443,10 +442,9 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     List<TradeProfit> holdings =
         stockGroupedList.stream()
             .filter(profit -> profit.holdingQuantity() > 0)
-            .filter(
-                profit ->
-                    profit.evaluationAmount() != null
-                        && profit.evaluationAmount().compareTo(BigDecimal.ZERO) > 0)
+            .filter(profit ->
+                profit.evaluationAmount() != null
+                    && profit.evaluationAmount().compareTo(BigDecimal.ZERO) > 0)
             .sorted(Comparator.comparing(TradeProfit::evaluationAmount).reversed())
             .toList();
 
@@ -458,15 +456,14 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     List<AllocationBarRow> allocationRows =
         holdings.stream()
             .limit(5)
-            .map(
-                profit ->
-                    new AllocationBarRow(
-                        profit.stockItemId(),
-                        profit.stockItemName() != null
-                            ? profit.stockItemName()
-                            : msg("stock.label.unknown"),
-                        weightPercent(profit.evaluationAmount(), totalEvaluationAmount),
-                        profit.evaluationAmount().longValue()))
+            .map(profit ->
+                new AllocationBarRow(
+                    profit.stockItemId(),
+                    profit.stockItemName() != null
+                        ? profit.stockItemName()
+                        : msg("stock.label.unknown"),
+                    weightPercent(profit.evaluationAmount(), totalEvaluationAmount),
+                    profit.evaluationAmount().longValue()))
             .toList();
 
     AllocationBarRow othersRow = null;
@@ -544,18 +541,17 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
   static long countProfitableStocks(
       Map<UUID, BigDecimal> profitByStockItem, Map<UUID, BigDecimal> dividendByStockItem) {
     return profitByStockItem.entrySet().stream()
-        .filter(
-            entry -> {
-              BigDecimal profit = entry.getValue() != null ? entry.getValue() : BigDecimal.ZERO;
-              BigDecimal dividend =
-                  dividendByStockItem == null
-                      ? BigDecimal.ZERO
-                      : dividendByStockItem.getOrDefault(entry.getKey(), BigDecimal.ZERO);
-              return profit
-                      .add(dividend != null ? dividend : BigDecimal.ZERO)
-                      .compareTo(BigDecimal.ZERO)
-                  > 0;
-            })
+        .filter(entry -> {
+          BigDecimal profit = entry.getValue() != null ? entry.getValue() : BigDecimal.ZERO;
+          BigDecimal dividend =
+              dividendByStockItem == null
+                  ? BigDecimal.ZERO
+                  : dividendByStockItem.getOrDefault(entry.getKey(), BigDecimal.ZERO);
+          return profit
+                  .add(dividend != null ? dividend : BigDecimal.ZERO)
+                  .compareTo(BigDecimal.ZERO)
+              > 0;
+        })
         .count();
   }
 
@@ -578,14 +574,11 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     var snapshotsFuture =
         supplyRemote(() -> emptyIfNull(monthlyDividendSnapshotClient.findSnapshots(params)));
     var profilesFuture =
-        supplyRemote(
-            () ->
-                emptyIfNull(
-                    monthlyDividendProfileClient.findProfiles(new LinkedMultiValueMap<>())));
+        supplyRemote(() ->
+            emptyIfNull(monthlyDividendProfileClient.findProfiles(new LinkedMultiValueMap<>())));
     var payoutsFuture =
-        supplyRemote(
-            () ->
-                emptyIfNull(monthlyDividendPayoutClient.findPayouts(new LinkedMultiValueMap<>())));
+        supplyRemote(() ->
+            emptyIfNull(monthlyDividendPayoutClient.findPayouts(new LinkedMultiValueMap<>())));
     // 스냅샷의 보유 수량은 사람이 갱신한 시점의 값이다. 원장의 현재 수량은 항상 정확하므로 함께 읽어
     // 두 값이 어긋난 종목을 화면에서 짚어 준다(실측 2026-08-23: 8종목 중 7종목이 어긋났고 그 몫이
     // 표시 합계의 80.2%였다).
@@ -660,14 +653,12 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     List<MonthlyDividendSnapshotResponse> windowRows =
         snapshots.stream()
             .filter(s -> s.expectedMonthlyDividend() != null)
-            .filter(
-                s ->
-                    window == null
-                        || window.equals(windowBySymbol.get(normalizeSymbol(s.stockItemSymbol()))))
-            .filter(
-                s ->
-                    payingSymbols == null
-                        || payingSymbols.contains(normalizeSymbol(s.stockItemSymbol())))
+            .filter(s ->
+                window == null
+                    || window.equals(windowBySymbol.get(normalizeSymbol(s.stockItemSymbol()))))
+            .filter(s ->
+                payingSymbols == null
+                    || payingSymbols.contains(normalizeSymbol(s.stockItemSymbol())))
             .sorted(
                 Comparator.comparing(MonthlyDividendCalculator::latestMonthlyDividend).reversed())
             .toList();
@@ -675,17 +666,15 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     // 997,459 vs 1,601,445). 합계는 배당 내역 칸과 같은 규칙(종목마다 원 단위로 반올림한 뒤 더한다)이라 두 화면이 원 단위까지 같다.
     BigDecimal windowTotal =
         windowRows.stream()
-            .map(
-                row ->
-                    BigDecimal.valueOf(StockFormatUtil.displayWon(row.expectedMonthlyDividend())))
+            .map(row ->
+                BigDecimal.valueOf(StockFormatUtil.displayWon(row.expectedMonthlyDividend())))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal windowLatestTotal =
         windowRows.stream()
-            .map(
-                row ->
-                    BigDecimal.valueOf(
-                        StockFormatUtil.displayWon(
-                            MonthlyDividendCalculator.latestMonthlyDividend(row))))
+            .map(row ->
+                BigDecimal.valueOf(
+                    StockFormatUtil.displayWon(
+                        MonthlyDividendCalculator.latestMonthlyDividend(row))))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     String nextWindowLabel = StockPayoutWindowLabelUtil.label(nextWindow);

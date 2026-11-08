@@ -50,7 +50,6 @@ public class BlogArticleCommentService {
             .orElseThrow(BlogErrorCode.NOT_EXIST_BLOGCOMMENT::exception);
     if (!targetBlogComment.getUserId().equals(blogArticleComment.getUserId())) {
       BlogErrorCode.NOT_USER_BLOGCOMMENT.throwException();
-      ;
     }
 
     targetBlogComment.setComment(blogArticleComment.getComment());

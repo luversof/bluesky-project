@@ -70,11 +70,10 @@ class PrintDarkThemeTest {
 
     assertThat(printDark).as("인쇄용 재정의가 비었다").hasSizeGreaterThanOrEqualTo(20);
     assertThat(printDark).containsKey("--color-base-content");
-    printDark.forEach(
-        (key, value) -> {
-          if (!light.containsKey(key)) return; // 라이트 @theme 밖 토큰(예: compound)은 따로 확인
-          assertThat(value).as(key + " 가 라이트 값과 다르다 - 종이 색이 화면과 어긋난다").isEqualTo(light.get(key));
-        });
+    printDark.forEach((key, value) -> {
+      if (!light.containsKey(key)) return; // 라이트 @theme 밖 토큰(예: compound)은 따로 확인
+      assertThat(value).as(key + " 가 라이트 값과 다르다 - 종이 색이 화면과 어긋난다").isEqualTo(light.get(key));
+    });
   }
 
   @Test

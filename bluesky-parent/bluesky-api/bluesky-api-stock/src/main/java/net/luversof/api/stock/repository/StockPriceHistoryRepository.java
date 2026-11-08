@@ -28,15 +28,15 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
   // (재조회 후 API 값이 기존과 다르면 갱신, 같으면 갱신하지 않는다.)
   @Query(
       """
-                    SELECT "stockItem_id" AS stock_item_id,
-                                 "tradeDate" AS trade_date
-                    FROM "StockPriceHistory"
-                    WHERE "stockItem_id" IS NOT NULL
-                        AND "tradeDate" IS NOT NULL
-                        AND "updatedDate" IS NOT NULL
-                        AND "tradeDate" = ("updatedDate" AT TIME ZONE 'Asia/Seoul')::date
-                    ORDER BY "stockItem_id", "tradeDate"
-                """)
+          SELECT "stockItem_id" AS stock_item_id,
+                       "tradeDate" AS trade_date
+          FROM "StockPriceHistory"
+          WHERE "stockItem_id" IS NOT NULL
+              AND "tradeDate" IS NOT NULL
+              AND "updatedDate" IS NOT NULL
+              AND "tradeDate" = ("updatedDate" AT TIME ZONE 'Asia/Seoul')::date
+          ORDER BY "stockItem_id", "tradeDate"
+      """)
   List<StockItemTradeDate> findRefreshTargetTradeDates();
 
   Optional<StockPriceHistory> findTopByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
@@ -51,33 +51,33 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    SELECT i.id  AS stock_item_id,
-                                 x."tradeDate"  AS trade_date,
-                                 x."closePrice" AS close_price,
-                                 x."updatedDate" AS updated_date
-                    FROM unnest(string_to_array(:ids, ',')::uuid[]) AS i(id)
-                    CROSS JOIN LATERAL (
-                            -- 거래가 있던 날의 최근 행, 없으면 그냥 최근 행. 두 갈래 모두 인덱스를 거꾸로 훑다
-                            -- 첫 행에서 멈춘다(예전 식 정렬은 종목 이력 전체를 정렬했다 - StockDailyClosePriceQuery 참고).
-                            SELECT y."tradeDate", y."closePrice", y."updatedDate"
-                            FROM (
-                                    (SELECT h."tradeDate", h."closePrice", h."updatedDate", 0 AS pick
-                                     FROM "StockPriceHistory" h
-                                     WHERE h."stockItem_id" = i.id
-                                       AND h."volume" > 0
-                                     ORDER BY h."tradeDate" DESC
-                                     LIMIT 1)
-                                    UNION ALL
-                                    (SELECT h."tradeDate", h."closePrice", h."updatedDate", 1 AS pick
-                                     FROM "StockPriceHistory" h
-                                     WHERE h."stockItem_id" = i.id
-                                     ORDER BY h."tradeDate" DESC
-                                     LIMIT 1)
-                            ) AS y
-                            ORDER BY y.pick
-                            LIMIT 1
-                    ) AS x
-                """)
+          SELECT i.id  AS stock_item_id,
+                       x."tradeDate"  AS trade_date,
+                       x."closePrice" AS close_price,
+                       x."updatedDate" AS updated_date
+          FROM unnest(string_to_array(:ids, ',')::uuid[]) AS i(id)
+          CROSS JOIN LATERAL (
+                  -- 거래가 있던 날의 최근 행, 없으면 그냥 최근 행. 두 갈래 모두 인덱스를 거꾸로 훑다
+                  -- 첫 행에서 멈춘다(예전 식 정렬은 종목 이력 전체를 정렬했다 - StockDailyClosePriceQuery 참고).
+                  SELECT y."tradeDate", y."closePrice", y."updatedDate"
+                  FROM (
+                          (SELECT h."tradeDate", h."closePrice", h."updatedDate", 0 AS pick
+                           FROM "StockPriceHistory" h
+                           WHERE h."stockItem_id" = i.id
+                             AND h."volume" > 0
+                           ORDER BY h."tradeDate" DESC
+                           LIMIT 1)
+                          UNION ALL
+                          (SELECT h."tradeDate", h."closePrice", h."updatedDate", 1 AS pick
+                           FROM "StockPriceHistory" h
+                           WHERE h."stockItem_id" = i.id
+                           ORDER BY h."tradeDate" DESC
+                           LIMIT 1)
+                  ) AS y
+                  ORDER BY y.pick
+                  LIMIT 1
+          ) AS x
+      """)
   List<StockDailyClosePrice> findLatestClosePrices(@Param("ids") String ids);
 
   /**
@@ -91,16 +91,16 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    SELECT h."stockItem_id" AS stock_item_id,
-                           h."tradeDate"    AS trade_date,
-                           h."closePrice"   AS close_price
-                    FROM "StockPriceHistory" h
-                    WHERE h."stockItem_id" = :stockItemId
-                      AND h."volume" > 0
-                      AND (CAST(:startDate AS date) IS NULL OR h."tradeDate" >= CAST(:startDate AS date))
-                      AND (CAST(:endDate   AS date) IS NULL OR h."tradeDate" <= CAST(:endDate   AS date))
-                    ORDER BY h."tradeDate"
-                """)
+          SELECT h."stockItem_id" AS stock_item_id,
+                 h."tradeDate"    AS trade_date,
+                 h."closePrice"   AS close_price
+          FROM "StockPriceHistory" h
+          WHERE h."stockItem_id" = :stockItemId
+            AND h."volume" > 0
+            AND (CAST(:startDate AS date) IS NULL OR h."tradeDate" >= CAST(:startDate AS date))
+            AND (CAST(:endDate   AS date) IS NULL OR h."tradeDate" <= CAST(:endDate   AS date))
+          ORDER BY h."tradeDate"
+      """)
   List<StockDailyClosePrice> findDailyClosePrices(
       @Param("stockItemId") UUID stockItemId,
       @Param("startDate") LocalDate startDate,
@@ -112,14 +112,14 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    SELECT h."stockItem_id"        AS stock_item_id,
-                           MIN(h."tradeDate")      AS trade_date,
-                           CAST(NULL AS numeric)   AS close_price
-                    FROM "StockPriceHistory" h
-                    WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
-                      AND h."volume" > 0
-                    GROUP BY h."stockItem_id"
-                """)
+          SELECT h."stockItem_id"        AS stock_item_id,
+                 MIN(h."tradeDate")      AS trade_date,
+                 CAST(NULL AS numeric)   AS close_price
+          FROM "StockPriceHistory" h
+          WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
+            AND h."volume" > 0
+          GROUP BY h."stockItem_id"
+      """)
   List<StockDailyClosePrice> findFirstTradeDatesForItems(@Param("ids") String ids);
 
   Optional<StockPriceHistory> findTopByStockItemIdOrderByTradeDateDesc(UUID stockItemId);
@@ -143,8 +143,8 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
   /** 가격 이력이 채워진 가장 최근 거래일(전 종목 기준). 데이터 최신 시점 표시용. */
   @Query(
       """
-				SELECT MAX("tradeDate") FROM "StockPriceHistory"
-			""")
+      	SELECT MAX("tradeDate") FROM "StockPriceHistory"
+      """)
   LocalDate findLastPriceDate();
 
   Optional<StockPriceHistory> findTopByStockItemIdOrderByTradeDateAsc(UUID stockItemId);
@@ -159,34 +159,34 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    WITH d AS (SELECT MAX("tradeDate") AS day FROM "StockPriceHistory"),
-                    pair AS (
-                        SELECT h."closePrice" AS c, h."openPrice" AS o, h."highPrice" AS hi,
-                               h."lowPrice" AS lo, h."volume" AS v,
-                               x."tradeDate" AS ptd, x."closePrice" AS pc, x."openPrice" AS po,
-                               x."highPrice" AS phi, x."lowPrice" AS plo, x."volume" AS pv
-                        FROM "StockPriceHistory" h
-                        CROSS JOIN d
-                        CROSS JOIN LATERAL (
-                            SELECT p."tradeDate", p."closePrice", p."openPrice",
-                                   p."highPrice", p."lowPrice", p."volume"
-                            FROM "StockPriceHistory" p
-                            WHERE p."stockItem_id" = h."stockItem_id"
-                                AND p."tradeDate" < d.day
-                            ORDER BY p."tradeDate" DESC
-                            LIMIT 1
-                        ) AS x
-                        WHERE h."tradeDate" = d.day
-                    )
-                    SELECT (SELECT day FROM d) AS trade_date,
-                           MAX(ptd) AS previous_trade_date,
-                           COUNT(*) AS item_count,
-                           COUNT(*) FILTER (WHERE c = pc) AS same_close_count,
-                           COUNT(*) FILTER (WHERE c = pc AND o = po AND hi = phi
-                                              AND lo = plo AND v = pv) AS same_all_count,
-                           COUNT(*) FILTER (WHERE v = 0) AS zero_volume_count
-                    FROM pair
-                """)
+          WITH d AS (SELECT MAX("tradeDate") AS day FROM "StockPriceHistory"),
+          pair AS (
+              SELECT h."closePrice" AS c, h."openPrice" AS o, h."highPrice" AS hi,
+                     h."lowPrice" AS lo, h."volume" AS v,
+                     x."tradeDate" AS ptd, x."closePrice" AS pc, x."openPrice" AS po,
+                     x."highPrice" AS phi, x."lowPrice" AS plo, x."volume" AS pv
+              FROM "StockPriceHistory" h
+              CROSS JOIN d
+              CROSS JOIN LATERAL (
+                  SELECT p."tradeDate", p."closePrice", p."openPrice",
+                         p."highPrice", p."lowPrice", p."volume"
+                  FROM "StockPriceHistory" p
+                  WHERE p."stockItem_id" = h."stockItem_id"
+                      AND p."tradeDate" < d.day
+                  ORDER BY p."tradeDate" DESC
+                  LIMIT 1
+              ) AS x
+              WHERE h."tradeDate" = d.day
+          )
+          SELECT (SELECT day FROM d) AS trade_date,
+                 MAX(ptd) AS previous_trade_date,
+                 COUNT(*) AS item_count,
+                 COUNT(*) FILTER (WHERE c = pc) AS same_close_count,
+                 COUNT(*) FILTER (WHERE c = pc AND o = po AND hi = phi
+                                    AND lo = plo AND v = pv) AS same_all_count,
+                 COUNT(*) FILTER (WHERE v = 0) AS zero_volume_count
+          FROM pair
+      """)
   PriceHistoryDuplicateSummary findLastDateDuplicateSummary();
 
   /**
@@ -203,21 +203,21 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    SELECT COUNT(*) AS total_count,
-                        COUNT(*) FILTER (WHERE "volume" = 0) AS zero_volume_count,
-                        (SELECT COUNT(DISTINCT x."stockItem_id")
-                             FROM "StockPriceHistory" x
-                             WHERE x."tradeDate" = (SELECT MAX(y."tradeDate")
-                                                        FROM "StockPriceHistory" y)
-                        ) AS last_date_item_count,
-                        (SELECT COUNT(*)
-                             FROM "StockItem" s
-                             WHERE NOT EXISTS (SELECT 1
-                                                   FROM "StockPriceHistory" z
-                                                   WHERE z."stockItem_id" = s."id")
-                        ) AS no_history_item_count
-                    FROM "StockPriceHistory"
-                """)
+          SELECT COUNT(*) AS total_count,
+              COUNT(*) FILTER (WHERE "volume" = 0) AS zero_volume_count,
+              (SELECT COUNT(DISTINCT x."stockItem_id")
+                   FROM "StockPriceHistory" x
+                   WHERE x."tradeDate" = (SELECT MAX(y."tradeDate")
+                                              FROM "StockPriceHistory" y)
+              ) AS last_date_item_count,
+              (SELECT COUNT(*)
+                   FROM "StockItem" s
+                   WHERE NOT EXISTS (SELECT 1
+                                         FROM "StockPriceHistory" z
+                                         WHERE z."stockItem_id" = s."id")
+              ) AS no_history_item_count
+          FROM "StockPriceHistory"
+      """)
   PriceHistoryRowCounts findRowCounts();
 
   /**
@@ -227,24 +227,24 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    SELECT h."stockItem_id" AS stock_item_id,
-                        h."tradeDate" AS trade_date,
-                        h."closePrice" AS close_price,
-                        x."closePrice" AS previous_close_price,
-                        COUNT(*) OVER () AS total_count
-                    FROM "StockPriceHistory" h
-                    CROSS JOIN LATERAL (
-                        SELECT p."closePrice"
-                        FROM "StockPriceHistory" p
-                        WHERE p."stockItem_id" = h."stockItem_id"
-                            AND p."tradeDate" < h."tradeDate"
-                        ORDER BY p."tradeDate" DESC
-                        LIMIT 1
-                    ) AS x
-                    WHERE h."volume" = 0 AND h."closePrice" <> x."closePrice"
-                    ORDER BY h."tradeDate" DESC
-                    LIMIT 5
-                """)
+          SELECT h."stockItem_id" AS stock_item_id,
+              h."tradeDate" AS trade_date,
+              h."closePrice" AS close_price,
+              x."closePrice" AS previous_close_price,
+              COUNT(*) OVER () AS total_count
+          FROM "StockPriceHistory" h
+          CROSS JOIN LATERAL (
+              SELECT p."closePrice"
+              FROM "StockPriceHistory" p
+              WHERE p."stockItem_id" = h."stockItem_id"
+                  AND p."tradeDate" < h."tradeDate"
+              ORDER BY p."tradeDate" DESC
+              LIMIT 1
+          ) AS x
+          WHERE h."volume" = 0 AND h."closePrice" <> x."closePrice"
+          ORDER BY h."tradeDate" DESC
+          LIMIT 5
+      """)
   List<ZeroVolumeChangedClose> findZeroVolumeRowsWithChangedClose();
 
   /**
@@ -255,14 +255,14 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    SELECT s."id" AS stock_item_id, s."symbol" AS symbol, s."name" AS name
-                    FROM "StockItem" s
-                    WHERE NOT EXISTS (SELECT 1
-                                          FROM "StockPriceHistory" z
-                                          WHERE z."stockItem_id" = s."id")
-                    ORDER BY s."symbol"
-                    LIMIT 50
-                """)
+          SELECT s."id" AS stock_item_id, s."symbol" AS symbol, s."name" AS name
+          FROM "StockItem" s
+          WHERE NOT EXISTS (SELECT 1
+                                FROM "StockPriceHistory" z
+                                WHERE z."stockItem_id" = s."id")
+          ORDER BY s."symbol"
+          LIMIT 50
+      """)
   List<ItemWithoutPriceHistory> findItemsWithoutPriceHistory();
 
   /**
@@ -286,28 +286,28 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    WITH w AS (
-                        SELECT "stockItem_id",
-                            "tradeDate",
-                            "closePrice",
-                            LAG("closePrice") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_close,
-                            LAG("tradeDate") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_date
-                        FROM "StockPriceHistory"
-                    )
-                    SELECT "stockItem_id" AS stock_item_id,
-                        "tradeDate" AS trade_date,
-                        "closePrice" AS close_price,
-                        prev_close AS previous_close_price,
-                        prev_date AS previous_trade_date,
-                        COUNT(*) OVER () AS total_count
-                    FROM w
-                    WHERE prev_close > 0
-                        AND "closePrice" > 0
-                        AND "tradeDate" - prev_date <= 7
-                        AND ABS("closePrice"::numeric / prev_close::numeric - 1) > 0.301
-                    ORDER BY "tradeDate" DESC
-                    LIMIT 5
-                """)
+          WITH w AS (
+              SELECT "stockItem_id",
+                  "tradeDate",
+                  "closePrice",
+                  LAG("closePrice") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_close,
+                  LAG("tradeDate") OVER (PARTITION BY "stockItem_id" ORDER BY "tradeDate") AS prev_date
+              FROM "StockPriceHistory"
+          )
+          SELECT "stockItem_id" AS stock_item_id,
+              "tradeDate" AS trade_date,
+              "closePrice" AS close_price,
+              prev_close AS previous_close_price,
+              prev_date AS previous_trade_date,
+              COUNT(*) OVER () AS total_count
+          FROM w
+          WHERE prev_close > 0
+              AND "closePrice" > 0
+              AND "tradeDate" - prev_date <= 7
+              AND ABS("closePrice"::numeric / prev_close::numeric - 1) > 0.301
+          ORDER BY "tradeDate" DESC
+          LIMIT 5
+      """)
   List<PriceLimitBreachRow> findPriceLimitBreachRows();
 
   /**
@@ -316,9 +316,9 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    SELECT COUNT(*) FROM information_schema.columns
-                    WHERE table_name = 'StockPriceHistory' AND column_name = 'rawClosePrice'
-                """)
+          SELECT COUNT(*) FROM information_schema.columns
+          WHERE table_name = 'StockPriceHistory' AND column_name = 'rawClosePrice'
+      """)
   long countRawClosePriceColumn();
 
   /**
@@ -331,16 +331,16 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    SELECT h."stockItem_id" AS stock_item_id,
-                           h."tradeDate"     AS trade_date,
-                           h."closePrice"    AS close_price
-                    FROM "StockPriceHistory" h
-                    WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
-                      AND (h."rawClosePrice" IS NULL
-                           OR h."tradeDate" >= CAST(:recentFrom AS date)
-                           OR h."updatedDate" >= CAST(:recentFrom AS date))
-                      AND h."volume" > 0
-                """)
+          SELECT h."stockItem_id" AS stock_item_id,
+                 h."tradeDate"     AS trade_date,
+                 h."closePrice"    AS close_price
+          FROM "StockPriceHistory" h
+          WHERE h."stockItem_id" = ANY(string_to_array(:ids, ',')::uuid[])
+            AND (h."rawClosePrice" IS NULL
+                 OR h."tradeDate" >= CAST(:recentFrom AS date)
+                 OR h."updatedDate" >= CAST(:recentFrom AS date))
+            AND h."volume" > 0
+      """)
   List<StockDailyClosePrice> findRawCloseDaysToFill(
       @Param("ids") String ids, @Param("recentFrom") LocalDate recentFrom);
 
@@ -350,32 +350,32 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
    */
   @Query(
       """
-                    WITH t AS (
-                        SELECT tr."stockItem_id" AS sid,
-                               MIN((tr."tradeDate" AT TIME ZONE 'UTC')::date) AS f,
-                               MAX((tr."tradeDate" AT TIME ZONE 'UTC')::date) AS l,
-                               SUM(CASE WHEN tr."type" = 'BUY' THEN tr."quantity" ELSE -tr."quantity" END) AS net
-                        FROM "Trade" tr
-                        JOIN "Account" a ON tr."account_id" = a."id"
-                        WHERE a."user_id" = :userId AND tr."stockItem_id" IS NOT NULL
-                        GROUP BY tr."stockItem_id")
-                    SELECT COUNT(*) AS day_count,
-                           COUNT(*) FILTER (WHERE h."rawClosePrice" IS NULL) AS missing_day_count
-                    FROM "StockPriceHistory" h
-                    JOIN t ON t.sid = h."stockItem_id"
-                    WHERE h."tradeDate" >= t.f
-                      AND (t.net > 0 OR h."tradeDate" <= t.l)
-                      AND h."volume" > 0
-                """)
+          WITH t AS (
+              SELECT tr."stockItem_id" AS sid,
+                     MIN((tr."tradeDate" AT TIME ZONE 'UTC')::date) AS f,
+                     MAX((tr."tradeDate" AT TIME ZONE 'UTC')::date) AS l,
+                     SUM(CASE WHEN tr."type" = 'BUY' THEN tr."quantity" ELSE -tr."quantity" END) AS net
+              FROM "Trade" tr
+              JOIN "Account" a ON tr."account_id" = a."id"
+              WHERE a."user_id" = :userId AND tr."stockItem_id" IS NOT NULL
+              GROUP BY tr."stockItem_id")
+          SELECT COUNT(*) AS day_count,
+                 COUNT(*) FILTER (WHERE h."rawClosePrice" IS NULL) AS missing_day_count
+          FROM "StockPriceHistory" h
+          JOIN t ON t.sid = h."stockItem_id"
+          WHERE h."tradeDate" >= t.f
+            AND (t.net > 0 OR h."tradeDate" <= t.l)
+            AND h."volume" > 0
+      """)
   RawCloseCoverage findRawCloseCoverage(@Param("userId") UUID userId);
 
   /** 한 행의 원주가만 바꾼다(엔티티 저장은 이 열을 모른다 - 다른 열은 건드리지 않는다). 바뀐 행 수(0 이면 그 날 시세 행이 없다). */
   @Modifying
   @Query(
       """
-                    UPDATE "StockPriceHistory" SET "rawClosePrice" = :rawClose
-                    WHERE "stockItem_id" = :stockItemId AND "tradeDate" = :tradeDate
-                """)
+          UPDATE "StockPriceHistory" SET "rawClosePrice" = :rawClose
+          WHERE "stockItem_id" = :stockItemId AND "tradeDate" = :tradeDate
+      """)
   int updateRawClosePrice(
       @Param("stockItemId") UUID stockItemId,
       @Param("tradeDate") LocalDate tradeDate,

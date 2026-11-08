@@ -356,17 +356,17 @@ class JSqlParserTest {
 
         log.debug(
             """
-						{}
-						{}
-						""",
+            {}
+            {}
+            """,
             queryCaseEnum.name(),
             formatSql(sqlStr));
         log.debug("Delete Column : {}", targetColumn);
         log.debug(
             """
-						Query Result :
-						{}
-						""",
+            Query Result :
+            {}
+            """,
             formatSql(plainSelect.toString()));
       }
     }
@@ -400,17 +400,17 @@ class JSqlParserTest {
 
         log.debug(
             """
-						{}
-						{}
-						""",
+            {}
+            {}
+            """,
             queryCaseEnum.name(),
             formatSql(sqlStr));
         log.debug("Delete Column : {}", targetColumn);
         log.debug(
             """
-						Query Result :
-						{}
-						""",
+            Query Result :
+            {}
+            """,
             formatSql(plainSelect.toString()));
       }
     }
@@ -434,17 +434,17 @@ class JSqlParserTest {
 
         log.debug(
             """
-						{}
-						{}
-						""",
+            {}
+            {}
+            """,
             queryCaseEnum.name(),
             formatSql(sqlStr));
         log.debug("target Column : {}", targetColumn);
         log.debug(
             """
-						target Column rightExpression class : {}
-						{}
-						""",
+            target Column rightExpression class : {}
+            {}
+            """,
             whereColumnRightExpression.getClass().getSimpleName(),
             formatSql(whereColumnRightExpression.toString()));
       }
@@ -471,17 +471,17 @@ class JSqlParserTest {
 
         log.debug(
             """
-						{}
-						{}
-						""",
+            {}
+            {}
+            """,
             queryCaseEnum.name(),
             formatSql(sqlStr));
         log.debug("target Column : {}", targetColumn);
         log.debug(
             """
-						target Column rightExpression class : {}
-						{}
-						""",
+            target Column rightExpression class : {}
+            {}
+            """,
             whereColumnRightExpressionTypeList.getClass().getSimpleName(),
             formatSql(whereColumnRightExpressionTypeList.toString()));
       }
@@ -501,9 +501,9 @@ class JSqlParserTest {
 
       log.debug(
           """
-					{}
-					{}
-					""",
+          {}
+          {}
+          """,
           queryCaseEnum.name(),
           formatSql(sqlStr));
       log.debug("target whereClauseColumnList : {}", whereClauseColumnList);
@@ -524,9 +524,9 @@ class JSqlParserTest {
 
       log.debug(
           """
-					{}
-					{}
-					""",
+          {}
+          {}
+          """,
           queryCaseEnum.name(),
           formatSql(sqlStr));
       log.debug("target whereClauseNamedParameterNameList : {}", whereClauseNamedParameterNameList);

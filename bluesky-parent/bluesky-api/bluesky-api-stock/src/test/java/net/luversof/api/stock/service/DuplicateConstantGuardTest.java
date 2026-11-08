@@ -72,12 +72,11 @@ class DuplicateConstantGuardTest {
           }
           byValue.computeIfAbsent(constant.value(), key -> new ArrayList<>()).add(constant.name());
         }
-        byValue.forEach(
-            (value, names) -> {
-              if (names.size() > 1) {
-                duplicates.put(file.getFileName() + " " + value, names);
-              }
-            });
+        byValue.forEach((value, names) -> {
+          if (names.size() > 1) {
+            duplicates.put(file.getFileName() + " " + value, names);
+          }
+        });
       }
     }
 

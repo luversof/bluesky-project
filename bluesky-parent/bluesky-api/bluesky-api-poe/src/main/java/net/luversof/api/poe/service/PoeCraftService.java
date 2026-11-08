@@ -516,12 +516,11 @@ public class PoeCraftService {
         PoeCraftEngine.maxPerGen(item, item.rarity()),
         PoeCraftEngine.meta(item.affixes()),
         engine.unveilOffers(item).stream()
-            .map(
-                id ->
-                    line(
-                        item,
-                        new PoeCraftEngine.Affix(
-                            id, data.veiledMod(id).g(), data.veiledMod(id).grp(), false, false)))
+            .map(id ->
+                line(
+                    item,
+                    new PoeCraftEngine.Affix(
+                        id, data.veiledMod(id).g(), data.veiledMod(id).grp(), false, false)))
             .toList(),
         blocked(item),
         item.implicits().stream().map(this::implicitLine).toList(),

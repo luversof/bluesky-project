@@ -160,10 +160,9 @@ public class MonthlyDividendProfileService {
     MonthlyDividendProfile profile =
         monthlyDividendProfileRepository
             .findByStockItemId(stockItem.getId())
-            .orElseThrow(
-                () ->
-                    new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Monthly dividend profile not found: " + symbol));
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Monthly dividend profile not found: " + symbol));
     monthlyDividendProfileRepository.delete(profile);
   }
 
@@ -258,10 +257,9 @@ public class MonthlyDividendProfileService {
     return profiles.stream()
         .filter(profile -> stockItemId.equals(profile.getStockItemId()))
         .findFirst()
-        .orElseThrow(
-            () ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, "Monthly dividend profile not found: " + symbol));
+        .orElseThrow(() ->
+            new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "Monthly dividend profile not found: " + symbol));
   }
 
   private String trimToNull(String value) {

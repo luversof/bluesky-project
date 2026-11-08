@@ -122,10 +122,8 @@ class Poe2CraftEngineTest {
           .allMatch(id -> id.startsWith("S"));
       // 지금 태그 = life(P1) · resistance(S3) → attack 태그 접두(P3~P6)는 안 나온다
       assertThat(E.apply(it, Action.EXALT, null, Set.of("HomogenisingExaltation"), rng).added())
-          .allMatch(
-              id ->
-                  MODS.get(id).tags().contains("life")
-                      || MODS.get(id).tags().contains("resistance"));
+          .allMatch(id ->
+              MODS.get(id).tags().contains("life") || MODS.get(id).tags().contains("resistance"));
     }
   }
 

@@ -24,8 +24,8 @@ public @interface BoardControllerOperation {
       summary = "Board 저장",
       description =
           """
-				Board 저장 설명
-			""",
+          	Board 저장 설명
+          """,
       parameters =
           @Parameter(
               name = "blog",
@@ -35,14 +35,14 @@ public @interface BoardControllerOperation {
                     name = "board 저장 요청 예제1",
                     description =
                         """
-						예제 1 설명
-					""",
+                        	예제 1 설명
+                        """,
                     value =
                         """
-						{
-						  "alias": "testAlias"
-						}
-					""")
+                        	{
+                        	  "alias": "testAlias"
+                        	}
+                        """)
               }),
       responses = {
         @ApiResponse(
@@ -55,15 +55,15 @@ public @interface BoardControllerOperation {
                         name = "Board 저장 응답 예제 1",
                         description =
                             """
-									예제 1 설명
-								""",
+                            	예제 1 설명
+                            """,
                         value =
                             """
-									{
-									  "idx": 0,
-									  "alias": "testAlias"
-									}
-								""")
+                            	{
+                            	  "idx": 0,
+                            	  "alias": "testAlias"
+                            	}
+                            """)
                   })
             })
       })
@@ -83,15 +83,15 @@ public @interface BoardControllerOperation {
                   name = "Board 저장 응답 401 예제",
                   description =
                       """
-								예제 1 설명
-							""",
+                      	예제 1 설명
+                      """,
                   value =
                       """
-								{
-								  "status": 401,
-								  "alias": "testAlias"
-								}
-							""")
+                      	{
+                      	  "status": 401,
+                      	  "alias": "testAlias"
+                      	}
+                      """)
             })
       })
   @interface ApiResponse401 {}

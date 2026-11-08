@@ -40,10 +40,10 @@ class MonthlyDividendPayoutImportParserTest {
         parser.parse(
             "498400",
             """
-						지급기준일	실지급일	분배율(%)	분배금액(원)	주당과세표준액(원)
-						26.05.15	26.05.19	1.42%	348	0
-						26.04.15	26.04.17	1.43%	262	43
-						""");
+            지급기준일	실지급일	분배율(%)	분배금액(원)	주당과세표준액(원)
+            26.05.15	26.05.19	1.42%	348	0
+            26.04.15	26.04.17	1.43%	262	43
+            """);
 
     assertThat(requests).hasSize(2);
     assertPayout(
@@ -70,10 +70,10 @@ class MonthlyDividendPayoutImportParserTest {
         parser.parse(
             "381170",
             """
-						지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
-						2024-12-30	2025-01-03	126	-
-						2024-11-29	2024-12-03	134	-
-						""");
+            지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
+            2024-12-30	2025-01-03	126	-
+            2024-11-29	2024-12-03	134	-
+            """);
 
     assertThat(requests).hasSize(2);
     assertPayout(
@@ -100,10 +100,10 @@ class MonthlyDividendPayoutImportParserTest {
         parser.parse(
             "488770",
             """
-						지급 기준일	실 지급일	분배금 (원)	주당과세표준액 (원)
-						2026.05.15	2026.05.19	159	44
-						2026.04.15	2026.04.17	163	163
-						""");
+            지급 기준일	실 지급일	분배금 (원)	주당과세표준액 (원)
+            2026.05.15	2026.05.19	159	44
+            2026.04.15	2026.04.17	163	163
+            """);
 
     assertThat(requests).hasSize(2);
     assertPayout(
@@ -130,10 +130,10 @@ class MonthlyDividendPayoutImportParserTest {
         parser.parse(
             "458730",
             """
-						지급기준일	실제지급일	분배금액(원)	주당 과세 표준액(원)
-						2026-04-30	2026-05-06	415	25
-						2026-03-31	2026-04-02	350	60
-						""");
+            지급기준일	실제지급일	분배금액(원)	주당 과세 표준액(원)
+            2026-04-30	2026-05-06	415	25
+            2026-03-31	2026-04-02	350	60
+            """);
 
     assertThat(requests).hasSize(2);
     assertPayout(
@@ -167,15 +167,14 @@ class MonthlyDividendPayoutImportParserTest {
    */
   @Test
   void 분배금액이_대시면_가져오기가_그_줄에서_멈춘다() {
-    assertThatThrownBy(
-            () ->
-                parser.parse(
-                    "381170",
-                    """
-						지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
-						2024-12-30	2025-01-03	-	-
-						2024-11-29	2024-12-03	134	-
-						"""))
+    assertThatThrownBy(() ->
+            parser.parse(
+                "381170",
+                """
+                지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
+                2024-12-30	2025-01-03	-	-
+                2024-11-29	2024-12-03	134	-
+                """))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("주당 분배금");
   }
@@ -187,9 +186,9 @@ class MonthlyDividendPayoutImportParserTest {
         parser.parse(
             "381170",
             """
-						지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
-						2024-12-30	2025-01-03	126	-
-						""");
+            지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
+            2024-12-30	2025-01-03	126	-
+            """);
 
     assertThat(requests).hasSize(1);
     assertThat(requests.get(0).getDividendAmountPerShare()).isEqualByComparingTo("126");
@@ -199,15 +198,14 @@ class MonthlyDividendPayoutImportParserTest {
 
   @Test
   void rejectsRowsWhosePayDateIsEarlierThanRecordDateWithExactValues() {
-    assertThatThrownBy(
-            () ->
-                parser.parse(
-                    "466940",
-                    """
-								지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
-								2026-05-15	2025-05-19	390	8
-								2026-04-15	2026-04-17	340	54
-								"""))
+    assertThatThrownBy(() ->
+            parser.parse(
+                "466940",
+                """
+                지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
+                2026-05-15	2025-05-19	390	8
+                2026-04-15	2026-04-17	340	54
+                """))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("2번째 줄의 실지급일(2025-05-19)은 지급기준일(2026-05-15)보다 빠를 수 없습니다.");
   }

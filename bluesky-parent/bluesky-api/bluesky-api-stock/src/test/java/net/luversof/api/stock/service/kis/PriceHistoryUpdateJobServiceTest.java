@@ -98,11 +98,10 @@ class PriceHistoryUpdateJobServiceTest {
   void 돌고_있으면_겹쳐_시작하지_않는다() throws Exception {
     CountDownLatch hold = new CountDownLatch(1);
     when(kisStockPriceUpdateService.updatePriceHistory(eq(USER), any(ProgressListener.class)))
-        .thenAnswer(
-            invocation -> {
-              hold.await(5, TimeUnit.SECONDS);
-              return new PriceHistoryUpdateResult(1, List.of());
-            });
+        .thenAnswer(invocation -> {
+          hold.await(5, TimeUnit.SECONDS);
+          return new PriceHistoryUpdateResult(1, List.of());
+        });
 
     priceHistoryUpdateJobService.start(USER);
     PriceHistoryUpdateJobStatus second = priceHistoryUpdateJobService.start(USER);
@@ -125,11 +124,10 @@ class PriceHistoryUpdateJobServiceTest {
 
     CountDownLatch hold = new CountDownLatch(1);
     when(kisStockPriceUpdateService.updatePriceHistory(eq(USER), any(ProgressListener.class)))
-        .thenAnswer(
-            invocation -> {
-              hold.await(5, TimeUnit.SECONDS);
-              return new PriceHistoryUpdateResult(2, List.of());
-            });
+        .thenAnswer(invocation -> {
+          hold.await(5, TimeUnit.SECONDS);
+          return new PriceHistoryUpdateResult(2, List.of());
+        });
 
     PriceHistoryUpdateJobStatus running = priceHistoryUpdateJobService.start(USER);
 
@@ -148,15 +146,14 @@ class PriceHistoryUpdateJobServiceTest {
     CountDownLatch reported = new CountDownLatch(1);
     CountDownLatch hold = new CountDownLatch(1);
     when(kisStockPriceUpdateService.updatePriceHistory(eq(USER), any(ProgressListener.class)))
-        .thenAnswer(
-            invocation -> {
-              ProgressListener listener = invocation.getArgument(1);
-              listener.onProgress(0, 5);
-              listener.onProgress(3, 5);
-              reported.countDown();
-              hold.await(5, TimeUnit.SECONDS);
-              return new PriceHistoryUpdateResult(5, List.of());
-            });
+        .thenAnswer(invocation -> {
+          ProgressListener listener = invocation.getArgument(1);
+          listener.onProgress(0, 5);
+          listener.onProgress(3, 5);
+          reported.countDown();
+          hold.await(5, TimeUnit.SECONDS);
+          return new PriceHistoryUpdateResult(5, List.of());
+        });
 
     priceHistoryUpdateJobService.start(USER);
     assertThat(reported.await(5, TimeUnit.SECONDS)).isTrue();
@@ -177,11 +174,10 @@ class PriceHistoryUpdateJobServiceTest {
     java.util.concurrent.atomic.AtomicReference<ProgressListener> captured =
         new java.util.concurrent.atomic.AtomicReference<>();
     when(kisStockPriceUpdateService.updatePriceHistory(eq(USER), any(ProgressListener.class)))
-        .thenAnswer(
-            invocation -> {
-              captured.set(invocation.getArgument(1));
-              return new PriceHistoryUpdateResult(4, List.of("489030"));
-            });
+        .thenAnswer(invocation -> {
+          captured.set(invocation.getArgument(1));
+          return new PriceHistoryUpdateResult(4, List.of("489030"));
+        });
 
     priceHistoryUpdateJobService.start(USER);
     awaitDone(priceHistoryUpdateJobService);
@@ -227,12 +223,11 @@ class PriceHistoryUpdateJobServiceTest {
     CountDownLatch entered = new CountDownLatch(1);
     CountDownLatch hold = new CountDownLatch(1);
     when(kisStockPriceUpdateService.updatePriceHistory(eq(USER), any(ProgressListener.class)))
-        .thenAnswer(
-            invocation -> {
-              entered.countDown();
-              hold.await(5, TimeUnit.SECONDS);
-              return new PriceHistoryUpdateResult(1, List.of());
-            });
+        .thenAnswer(invocation -> {
+          entered.countDown();
+          hold.await(5, TimeUnit.SECONDS);
+          return new PriceHistoryUpdateResult(1, List.of());
+        });
 
     priceHistoryUpdateJobService.start(USER);
     assertThat(entered.await(5, TimeUnit.SECONDS)).isTrue();

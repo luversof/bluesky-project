@@ -22,19 +22,19 @@ class TigerMonthlyDividendPayoutSourceParserTest {
     String bulkInput =
         parser.toBulkInput(
             """
-						<tr data-tot-cnt="29">
-						    <td> 2026-04-30</td>
-						    <td>2026-05-06</td>
-						    <td>415</td>
-						    <td>25</td>
-						</tr>
-						<tr data-tot-cnt="29">
-						    <td>2026-03-31</td>
-						    <td>2026-04-02</td>
-						    <td>350</td>
-						    <td>60</td>
-						</tr>
-						""");
+            <tr data-tot-cnt="29">
+                <td> 2026-04-30</td>
+                <td>2026-05-06</td>
+                <td>415</td>
+                <td>25</td>
+            </tr>
+            <tr data-tot-cnt="29">
+                <td>2026-03-31</td>
+                <td>2026-04-02</td>
+                <td>350</td>
+                <td>60</td>
+            </tr>
+            """);
 
     List<MonthlyDividendPayoutUpsertRequest> requests = importParser.parse("472150", bulkInput);
 

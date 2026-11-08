@@ -500,14 +500,13 @@ public abstract class StockBaseHtmxController {
                 .collect(Collectors.toMap(StockItem::id, StockItem::name, (a, b) -> a));
 
     return tradeProfitList.stream()
-        .map(
-            profit ->
-                TradeProfit.withNames(
-                    profit,
-                    stockItemNames.getOrDefault(profit.stockItemId(), unknownLabel),
-                    profit.accountId() != null
-                        ? accountNames.getOrDefault(profit.accountId(), unknownLabel)
-                        : null))
+        .map(profit ->
+            TradeProfit.withNames(
+                profit,
+                stockItemNames.getOrDefault(profit.stockItemId(), unknownLabel),
+                profit.accountId() != null
+                    ? accountNames.getOrDefault(profit.accountId(), unknownLabel)
+                    : null))
         .toList();
   }
 
@@ -582,12 +581,11 @@ public abstract class StockBaseHtmxController {
           .filter(Objects::nonNull)
           .filter(stockItem -> stockItem.id() != null)
           .filter(stockItem -> stockItem.tags() != null && !stockItem.tags().isEmpty())
-          .filter(
-              stockItem ->
-                  stockItem.tags().stream()
-                      .filter(StringUtils::hasText)
-                      .map(String::trim)
-                      .anyMatch(selectedStockTags::contains))
+          .filter(stockItem ->
+              stockItem.tags().stream()
+                  .filter(StringUtils::hasText)
+                  .map(String::trim)
+                  .anyMatch(selectedStockTags::contains))
           .map(StockItem::id)
           .forEach(requestedStockItemIds::add);
     }

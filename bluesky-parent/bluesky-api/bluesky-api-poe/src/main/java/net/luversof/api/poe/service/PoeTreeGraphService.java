@@ -146,15 +146,13 @@ public class PoeTreeGraphService {
       // 주얼 슬롯 후보 구성이 바뀌면(=클러스터 소켓 제외) 로그로 확인할 수 있게 남긴다
       long clusterSockets =
           tree.nodes().stream()
-              .filter(
-                  n ->
-                      n.ascendancy() == null && "jewel".equals(n.type()) && n.clusterSize() != null)
+              .filter(n ->
+                  n.ascendancy() == null && "jewel".equals(n.type()) && n.clusterSize() != null)
               .count();
       long plainSockets =
           tree.nodes().stream()
-              .filter(
-                  n ->
-                      n.ascendancy() == null && "jewel".equals(n.type()) && n.clusterSize() == null)
+              .filter(n ->
+                  n.ascendancy() == null && "jewel".equals(n.type()) && n.clusterSize() == null)
               .count();
       logger.info("주얼 슬롯 {}개 사용(클러스터 전용 소켓 {}개 제외)", plainSockets, clusterSockets);
 

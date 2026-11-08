@@ -102,11 +102,10 @@ class HttpClientPoolEffectTest {
               .requestFactory(
                   org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder
                       .httpComponents()
-                      .withConnectionManagerCustomizer(
-                          manager -> {
-                            manager.setMaxConnPerRoute(20);
-                            manager.setMaxConnTotal(40);
-                          })
+                      .withConnectionManagerCustomizer(manager -> {
+                        manager.setMaxConnPerRoute(20);
+                        manager.setMaxConnTotal(40);
+                      })
                       .build())
               .build();
 

@@ -29,16 +29,14 @@ public final class StockControllerSources {
       walk.filter(Files::isRegularFile)
           .filter(path -> path.getFileName().toString().endsWith(".java"))
           .sorted()
-          .forEach(
-              path -> {
-                try {
-                  result.put(
-                      path.getFileName().toString(),
-                      Files.readString(path, StandardCharsets.UTF_8));
-                } catch (IOException ex) {
-                  throw new UncheckedIOException(ex);
-                }
-              });
+          .forEach(path -> {
+            try {
+              result.put(
+                  path.getFileName().toString(), Files.readString(path, StandardCharsets.UTF_8));
+            } catch (IOException ex) {
+              throw new UncheckedIOException(ex);
+            }
+          });
       return result;
     } catch (IOException ex) {
       throw new UncheckedIOException(ex);
@@ -51,14 +49,13 @@ public final class StockControllerSources {
       return walk.filter(Files::isRegularFile)
           .filter(path -> path.getFileName().toString().endsWith(".java"))
           .sorted()
-          .map(
-              path -> {
-                try {
-                  return Files.readString(path, StandardCharsets.UTF_8);
-                } catch (IOException ex) {
-                  throw new UncheckedIOException(ex);
-                }
-              })
+          .map(path -> {
+            try {
+              return Files.readString(path, StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+              throw new UncheckedIOException(ex);
+            }
+          })
           .collect(Collectors.joining("\n"));
     } catch (IOException ex) {
       throw new UncheckedIOException(ex);

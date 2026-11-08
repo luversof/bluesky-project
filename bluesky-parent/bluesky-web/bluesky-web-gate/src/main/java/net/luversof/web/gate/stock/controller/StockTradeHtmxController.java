@@ -177,17 +177,16 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     var previousTradesFuture =
         previousPeriod == null
             ? null
-            : async.supply(
-                () ->
-                    emptyIfNull(
-                        tradeClient.findTrades(
-                            new TradeSearchRequest(
-                                    userId,
-                                    null,
-                                    null,
-                                    previousPeriod.start().atStartOfDay(zone).toInstant(),
-                                    previousPeriod.end().plusDays(1).atStartOfDay(zone).toInstant())
-                                .toParams())));
+            : async.supply(() ->
+                emptyIfNull(
+                    tradeClient.findTrades(
+                        new TradeSearchRequest(
+                                userId,
+                                null,
+                                null,
+                                previousPeriod.start().atStartOfDay(zone).toInstant(),
+                                previousPeriod.end().plusDays(1).atStartOfDay(zone).toInstant())
+                            .toParams())));
     var dataFirstDateFuture = async.supply(() -> resolveDataFirstDate(userId, zone, false));
     var accountsFuture = async.supply(() -> emptyIfNull(accountClient.getAccountsByUserId(userId)));
     var stockItemsFuture = async.supply(() -> emptyIfNull(stockItemClient.getStockItems()));
@@ -236,13 +235,12 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       final Instant availStart = startInst;
       final Instant availEnd = endInst;
       availableIdsFuture =
-          async.supply(
-              () -> {
-                var ids = activityFilterIdsClient.findFilterIds(userId, availStart, availEnd);
-                return new AvailableIds(
-                    new HashSet<>(emptyIfNull(ids.tradeAccountIds())),
-                    new HashSet<>(emptyIfNull(ids.tradeStockItemIds())));
-              });
+          async.supply(() -> {
+            var ids = activityFilterIdsClient.findFilterIds(userId, availStart, availEnd);
+            return new AvailableIds(
+                new HashSet<>(emptyIfNull(ids.tradeAccountIds())),
+                new HashSet<>(emptyIfNull(ids.tradeStockItemIds())));
+          });
     }
 
     List<TradeResponse> allFromApi = StockAsyncSupport.join(tradesFuture);
@@ -264,10 +262,9 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
     List<TradeResponse> enrichedAll =
         allFromApi.stream()
-            .map(
-                t ->
-                    t.withStockItemName(
-                        stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"))))
+            .map(t ->
+                t.withStockItemName(
+                    stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"))))
             .collect(Collectors.toCollection(ArrayList::new));
 
     // Prepare filtered lists based on date-only availability (do NOT include
@@ -329,14 +326,11 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
 
     List<TradeResponse> viewList =
         enrichedAll.stream()
-            .filter(
-                t ->
-                    effectiveAccountIdList == null
-                        || effectiveAccountIdList.contains(t.accountId()))
-            .filter(
-                t ->
-                    effectiveStockItemIdList == null
-                        || effectiveStockItemIdList.contains(t.stockItemId()))
+            .filter(t ->
+                effectiveAccountIdList == null || effectiveAccountIdList.contains(t.accountId()))
+            .filter(t ->
+                effectiveStockItemIdList == null
+                    || effectiveStockItemIdList.contains(t.stockItemId()))
             .collect(Collectors.toCollection(ArrayList::new));
 
     if (sort != null && !sort.isEmpty()) {
@@ -435,10 +429,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
                     StockAsyncSupport.join(stockGroupedRawFuture), userId, tradeProfitNames));
     long realizedWinCount =
         stockRealizedList.stream()
-            .filter(
-                tp ->
-                    tp.realizedProfit() != null
-                        && tp.realizedProfit().compareTo(BigDecimal.ZERO) > 0)
+            .filter(tp ->
+                tp.realizedProfit() != null && tp.realizedProfit().compareTo(BigDecimal.ZERO) > 0)
             .count();
 
     // 상세 목록은 페이징 없이 전체를 펼쳐서 표시한다(헤더 sticky 로 스크롤). 예전의 page/size 파라미터와 slice·Pagination 은
@@ -526,9 +518,8 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
         .map(StockBaseHtmxController::toStockRealized)
         // 표시 값과 같은 기준(거래에 기록된 실현손익)으로 걸러 정렬한다. 기준이 다르면
         // 기록값은 0 이 아닌데 목록에서 빠지거나, 정렬 순서가 표시 값과 어긋난다.
-        .filter(
-            tp ->
-                tp.realizedProfit() != null && tp.realizedProfit().compareTo(BigDecimal.ZERO) != 0)
+        .filter(tp ->
+            tp.realizedProfit() != null && tp.realizedProfit().compareTo(BigDecimal.ZERO) != 0)
         .sorted(
             Comparator.comparing(
                     TradeProfit::realizedProfit, Comparator.nullsLast(Comparator.reverseOrder()))
@@ -565,41 +556,39 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
             Comparator.comparing(
                 e -> e.getValue().isEmpty() ? null : e.getValue().get(0).accountName(),
                 Comparator.nullsLast(Comparator.naturalOrder())))
-        .forEach(
-            entry -> {
-              var s = TradeProfitAggregator.aggregate(entry.getValue());
-              String rowAccountName =
-                  entry.getValue().isEmpty() ? null : entry.getValue().get(0).accountName();
-              // 실현손익은 매도 거래에 기록된 값(증권사 기준)을 쓴다. 앱이 평균단가로 다시 계산한
-              // realizedProfitNet 을 쓰면 같은 화면의 헤드라인/거래목록(기록값 합계)과 어긋난다
-              // (실측: 헤드라인과 계좌별/종목별 합이 0.11% 어긋났다).
-              // 화면의 다른 곳(자산현황 등)도 기록값을 쓰므로 여기만 예외였다.
-              BigDecimal realized =
-                  s.realizedProfit() != null ? s.realizedProfit() : BigDecimal.ZERO;
-              BigDecimal sellAmount =
-                  s.totalSellAmount() != null ? s.totalSellAmount() : BigDecimal.ZERO;
-              // 매도 원가 = 매도금액 - 증권거래세 - 기록된 실현손익.
-              // 기록된 실현손익은 증권사가 세금까지 뺀 뒤의 값이라, 세금을 빼지 않으면 원가가 그만큼
-              // 부풀어 오른다. api-stock 의 costOfGoodsSold 와 배당 화면의 원가 계산이 이미 이 식을 쓴다.
-              // 실측 2026-08-22: 이 화면만 세금을 빠뜨려 두 계좌(한국투자증권 위탁 · ISA)의 매도 원가가
-              // 그 계좌 증권거래세 합만큼 과대 계상됐다.
-              BigDecimal sellTax = s.totalSellTax() != null ? s.totalSellTax() : BigDecimal.ZERO;
-              // 기록된 실현손익은 <b>계좌를 합친</b> 원가를 따른다(실측 2026-08-23: 매도 54 건 중 종목 단위
-              // 원가로 50 건이 재현되고 계좌x종목 단위로는 38 건뿐이다). 그래서 이 행의 실현손익과
-              // 매도원가는 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 은 그 계좌 매매만으로 계산하면
-              // 화면값의 5.0 배가 되고, ISA 는 반대로 화면값이 그 계좌 기준의 104 배다.
-              // 두 값이 크게 갈리면 그 사실을 화면이 밝힌다(값 자체는 다른 화면과 맞추기 위해 기록값 유지).
-              BigDecimal realizedOwnBasis =
-                  s.realizedProfitNet() != null ? s.realizedProfitNet() : BigDecimal.ZERO;
-              accountRealizedList.add(
-                  new AccountRealizedRow(
-                      rowAccountName,
-                      sellAmount,
-                      realized,
-                      sellAmount.subtract(sellTax).subtract(realized),
-                      realizedOwnBasis,
-                      entry.getKey()));
-            });
+        .forEach(entry -> {
+          var s = TradeProfitAggregator.aggregate(entry.getValue());
+          String rowAccountName =
+              entry.getValue().isEmpty() ? null : entry.getValue().get(0).accountName();
+          // 실현손익은 매도 거래에 기록된 값(증권사 기준)을 쓴다. 앱이 평균단가로 다시 계산한
+          // realizedProfitNet 을 쓰면 같은 화면의 헤드라인/거래목록(기록값 합계)과 어긋난다
+          // (실측: 헤드라인과 계좌별/종목별 합이 0.11% 어긋났다).
+          // 화면의 다른 곳(자산현황 등)도 기록값을 쓰므로 여기만 예외였다.
+          BigDecimal realized = s.realizedProfit() != null ? s.realizedProfit() : BigDecimal.ZERO;
+          BigDecimal sellAmount =
+              s.totalSellAmount() != null ? s.totalSellAmount() : BigDecimal.ZERO;
+          // 매도 원가 = 매도금액 - 증권거래세 - 기록된 실현손익.
+          // 기록된 실현손익은 증권사가 세금까지 뺀 뒤의 값이라, 세금을 빼지 않으면 원가가 그만큼
+          // 부풀어 오른다. api-stock 의 costOfGoodsSold 와 배당 화면의 원가 계산이 이미 이 식을 쓴다.
+          // 실측 2026-08-22: 이 화면만 세금을 빠뜨려 두 계좌(한국투자증권 위탁 · ISA)의 매도 원가가
+          // 그 계좌 증권거래세 합만큼 과대 계상됐다.
+          BigDecimal sellTax = s.totalSellTax() != null ? s.totalSellTax() : BigDecimal.ZERO;
+          // 기록된 실현손익은 <b>계좌를 합친</b> 원가를 따른다(실측 2026-08-23: 매도 54 건 중 종목 단위
+          // 원가로 50 건이 재현되고 계좌x종목 단위로는 38 건뿐이다). 그래서 이 행의 실현손익과
+          // 매도원가는 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 은 그 계좌 매매만으로 계산하면
+          // 화면값의 5.0 배가 되고, ISA 는 반대로 화면값이 그 계좌 기준의 104 배다.
+          // 두 값이 크게 갈리면 그 사실을 화면이 밝힌다(값 자체는 다른 화면과 맞추기 위해 기록값 유지).
+          BigDecimal realizedOwnBasis =
+              s.realizedProfitNet() != null ? s.realizedProfitNet() : BigDecimal.ZERO;
+          accountRealizedList.add(
+              new AccountRealizedRow(
+                  rowAccountName,
+                  sellAmount,
+                  realized,
+                  sellAmount.subtract(sellTax).subtract(realized),
+                  realizedOwnBasis,
+                  entry.getKey()));
+        });
     return accountRealizedList;
   }
 
@@ -807,11 +796,10 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
     Instant monthEndInst = now.plusDays(1).atStartOfDay(recentZone).toInstant();
     List<Activity> thisMonth =
         activities.stream()
-            .filter(
-                a ->
-                    a.date() != null
-                        && !a.date().isBefore(monthStartInst)
-                        && a.date().isBefore(monthEndInst))
+            .filter(a ->
+                a.date() != null
+                    && !a.date().isBefore(monthStartInst)
+                    && a.date().isBefore(monthEndInst))
             .toList();
 
     // 대시보드 "최근 활동"은 최신순 5건 유지.
@@ -905,15 +893,14 @@ public class StockTradeHtmxController extends StockBaseHtmxController {
       final Instant availStart = startInstant;
       final Instant availEnd = endInstant;
       activityAvailableFuture =
-          async.supply(
-              () -> {
-                var ids = activityFilterIdsClient.findFilterIds(userId, availStart, availEnd);
-                var accounts = new HashSet<UUID>(emptyIfNull(ids.tradeAccountIds()));
-                accounts.addAll(emptyIfNull(ids.dividendAccountIds()));
-                var stocks = new HashSet<UUID>(emptyIfNull(ids.tradeStockItemIds()));
-                stocks.addAll(emptyIfNull(ids.dividendStockItemIds()));
-                return new AvailableIds(accounts, stocks);
-              });
+          async.supply(() -> {
+            var ids = activityFilterIdsClient.findFilterIds(userId, availStart, availEnd);
+            var accounts = new HashSet<UUID>(emptyIfNull(ids.tradeAccountIds()));
+            accounts.addAll(emptyIfNull(ids.dividendAccountIds()));
+            var stocks = new HashSet<UUID>(emptyIfNull(ids.tradeStockItemIds()));
+            stocks.addAll(emptyIfNull(ids.dividendStockItemIds()));
+            return new AvailableIds(accounts, stocks);
+          });
     }
 
     LocalDate dataFirstDate = StockAsyncSupport.join(dataFirstDateFuture);

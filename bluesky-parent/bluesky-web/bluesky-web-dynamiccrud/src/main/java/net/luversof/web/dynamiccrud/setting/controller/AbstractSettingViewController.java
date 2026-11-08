@@ -21,7 +21,6 @@ public abstract class AbstractSettingViewController implements SettingViewContro
    */
   protected void checkPathVariable(
       String adminProjectId, String projectId, String mainMenuId, String subMenuId) {}
-  ;
 
   @Override
   public String view(

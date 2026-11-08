@@ -27,10 +27,10 @@ public interface BoardArticleCommentRepository
   // batch count by board article ids
   @Query(
       """
-			SELECT "boardArticle_id", COUNT(*) AS count
-			FROM "BoardArticleComment"
-			WHERE "boardArticle_id" IN (:ids)
-			GROUP BY "boardArticle_id"
-		""")
+      	SELECT "boardArticle_id", COUNT(*) AS count
+      	FROM "BoardArticleComment"
+      	WHERE "boardArticle_id" IN (:ids)
+      	GROUP BY "boardArticle_id"
+      """)
   List<BoardArticleCommentCount> countByBoardArticleIds(@Param("ids") Collection<UUID> ids);
 }

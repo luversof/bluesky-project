@@ -21,22 +21,22 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
    */
   @Query(
       """
-                SELECT EXTRACT(YEAR FROM (d."payDate" AT TIME ZONE :zone))::int AS year,
-                       COALESCE(SUM(d."grossAmount"), 0)   AS gross_amount,
-                       COALESCE(SUM(d."taxableAmount"), 0) AS taxable_amount,
-                       COALESCE(SUM(d."tax"), 0)           AS tax,
-                       COALESCE(SUM(d."fee"), 0)           AS fee
-                FROM "Dividend" d
-                JOIN "Account" a ON d."account_id" = a."id"
-                WHERE a."user_id" = :userId
-                  AND d."payDate" IS NOT NULL
-                  AND (CAST(:startDate AS timestamptz) IS NULL OR d."payDate" >= CAST(:startDate AS timestamptz))
-                  AND (CAST(:endDate   AS timestamptz) IS NULL OR d."payDate" <  CAST(:endDate   AS timestamptz))
-                  AND (CAST(:accountIds AS text) IS NULL OR d."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
-                  AND (CAST(:stockItemIds AS text) IS NULL OR d."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
-                GROUP BY 1
-                ORDER BY 1
-            """)
+          SELECT EXTRACT(YEAR FROM (d."payDate" AT TIME ZONE :zone))::int AS year,
+                 COALESCE(SUM(d."grossAmount"), 0)   AS gross_amount,
+                 COALESCE(SUM(d."taxableAmount"), 0) AS taxable_amount,
+                 COALESCE(SUM(d."tax"), 0)           AS tax,
+                 COALESCE(SUM(d."fee"), 0)           AS fee
+          FROM "Dividend" d
+          JOIN "Account" a ON d."account_id" = a."id"
+          WHERE a."user_id" = :userId
+            AND d."payDate" IS NOT NULL
+            AND (CAST(:startDate AS timestamptz) IS NULL OR d."payDate" >= CAST(:startDate AS timestamptz))
+            AND (CAST(:endDate   AS timestamptz) IS NULL OR d."payDate" <  CAST(:endDate   AS timestamptz))
+            AND (CAST(:accountIds AS text) IS NULL OR d."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+            AND (CAST(:stockItemIds AS text) IS NULL OR d."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
+          GROUP BY 1
+          ORDER BY 1
+      """)
   List<YearlyDividendIncome> findYearlyIncome(
       @org.springframework.data.repository.query.Param("userId") UUID userId,
       @org.springframework.data.repository.query.Param("startDate") Instant startDate,
@@ -52,18 +52,18 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
    */
   @Query(
       """
-                SELECT COALESCE(SUM(d."grossAmount"), 0)   AS gross_amount,
-                       COALESCE(SUM(d."taxableAmount"), 0) AS taxable_amount,
-                       COALESCE(SUM(d."tax"), 0)           AS tax,
-                       COALESCE(SUM(d."fee"), 0)           AS fee,
-                       COUNT(*)                            AS count
-                FROM "Dividend" d
-                JOIN "Account" a ON d."account_id" = a."id"
-                WHERE a."user_id" = :userId
-                  AND d."payDate" IS NOT NULL
-                  AND (CAST(:startDate AS timestamptz) IS NULL OR d."payDate" >= CAST(:startDate AS timestamptz))
-                  AND (CAST(:endDate   AS timestamptz) IS NULL OR d."payDate" <  CAST(:endDate   AS timestamptz))
-            """)
+          SELECT COALESCE(SUM(d."grossAmount"), 0)   AS gross_amount,
+                 COALESCE(SUM(d."taxableAmount"), 0) AS taxable_amount,
+                 COALESCE(SUM(d."tax"), 0)           AS tax,
+                 COALESCE(SUM(d."fee"), 0)           AS fee,
+                 COUNT(*)                            AS count
+          FROM "Dividend" d
+          JOIN "Account" a ON d."account_id" = a."id"
+          WHERE a."user_id" = :userId
+            AND d."payDate" IS NOT NULL
+            AND (CAST(:startDate AS timestamptz) IS NULL OR d."payDate" >= CAST(:startDate AS timestamptz))
+            AND (CAST(:endDate   AS timestamptz) IS NULL OR d."payDate" <  CAST(:endDate   AS timestamptz))
+      """)
   PeriodDividendSummary findPeriodSummary(
       @org.springframework.data.repository.query.Param("userId") UUID userId,
       @org.springframework.data.repository.query.Param("startDate") Instant startDate,
@@ -72,37 +72,37 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
   /** 종목·계좌로 좁힌 최초 배당일. 규칙은 {@code TradeRepository#findFirstTradeDate} 와 같다. */
   @Query(
       """
-				SELECT MIN(d."payDate")
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId AND d."payDate" IS NOT NULL
-					AND (CAST(:stockItemId AS uuid) IS NULL OR d."stockItem_id" = :stockItemId)
-					AND (CAST(:accountId AS uuid) IS NULL OR d."account_id" = :accountId)
-			""")
+      	SELECT MIN(d."payDate")
+      	FROM "Dividend" d
+      	JOIN "Account" a ON d."account_id" = a."id"
+      	WHERE a."user_id" = :userId AND d."payDate" IS NOT NULL
+      		AND (CAST(:stockItemId AS uuid) IS NULL OR d."stockItem_id" = :stockItemId)
+      		AND (CAST(:accountId AS uuid) IS NULL OR d."account_id" = :accountId)
+      """)
   Instant findFirstDividendDate(UUID userId, UUID stockItemId, UUID accountId);
 
   /** 기간 내 배당이 있는 계좌 id (필터 목록용). */
   @Query(
       """
-				SELECT DISTINCT d."account_id"
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId
-					AND (CAST(:startDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") >= :startDate)
-					AND (CAST(:endDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") < :endDate)
-			""")
+      	SELECT DISTINCT d."account_id"
+      	FROM "Dividend" d
+      	JOIN "Account" a ON d."account_id" = a."id"
+      	WHERE a."user_id" = :userId
+      		AND (CAST(:startDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") >= :startDate)
+      		AND (CAST(:endDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") < :endDate)
+      """)
   List<UUID> findDistinctAccountIds(UUID userId, Instant startDate, Instant endDate);
 
   /** 기간 내 배당이 있는 종목 id (필터 목록용). */
   @Query(
       """
-				SELECT DISTINCT d."stockItem_id"
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId
-					AND (CAST(:startDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") >= :startDate)
-					AND (CAST(:endDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") < :endDate)
-			""")
+      	SELECT DISTINCT d."stockItem_id"
+      	FROM "Dividend" d
+      	JOIN "Account" a ON d."account_id" = a."id"
+      	WHERE a."user_id" = :userId
+      		AND (CAST(:startDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") >= :startDate)
+      		AND (CAST(:endDate AS timestamptz) IS NULL OR COALESCE(d."payDate", d."recordDate") < :endDate)
+      """)
   List<UUID> findDistinctStockItemIds(UUID userId, Instant startDate, Instant endDate);
 
   /**
@@ -112,42 +112,42 @@ public interface DividendRepository extends CrudRepository<Dividend, UUID> {
    */
   @Query(
       """
-				SELECT MAX(d."payDate") AS last_date, COUNT(*) AS total_count
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId
-			""")
+      	SELECT MAX(d."payDate") AS last_date, COUNT(*) AS total_count
+      	FROM "Dividend" d
+      	JOIN "Account" a ON d."account_id" = a."id"
+      	WHERE a."user_id" = :userId
+      """)
   UserLedgerSummary findLedgerSummaryByUserId(UUID userId);
 
   /** 사용자의 최초 배당 기준일(지급일·기준일 중 이른 쪽). 게이트 배당 목록의 날짜 하한 계산과 동일한 규칙. */
   @Query(
       """
-				SELECT MIN(LEAST(COALESCE(d."recordDate", d."payDate"), COALESCE(d."payDate", d."recordDate")))
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId AND (d."recordDate" IS NOT NULL OR d."payDate" IS NOT NULL)
-			""")
+      	SELECT MIN(LEAST(COALESCE(d."recordDate", d."payDate"), COALESCE(d."payDate", d."recordDate")))
+      	FROM "Dividend" d
+      	JOIN "Account" a ON d."account_id" = a."id"
+      	WHERE a."user_id" = :userId AND (d."recordDate" IS NOT NULL OR d."payDate" IS NOT NULL)
+      """)
   Instant findFirstDividendBasisDateByUserId(UUID userId);
 
   /** 사용자가 배당을 받은 적 있는 종목 ID 목록. 전체 배당 이력 대신 DISTINCT 만 가져온다. */
   @Query(
       """
-				SELECT DISTINCT d."stockItem_id"
-				FROM "Dividend" d
-				JOIN "Account" a ON d."account_id" = a."id"
-				WHERE a."user_id" = :userId AND d."stockItem_id" IS NOT NULL
-			""")
+      	SELECT DISTINCT d."stockItem_id"
+      	FROM "Dividend" d
+      	JOIN "Account" a ON d."account_id" = a."id"
+      	WHERE a."user_id" = :userId AND d."stockItem_id" IS NOT NULL
+      """)
   List<UUID> findDistinctStockItemIdsByUserId(UUID userId);
 
   @Query(
       """
-				SELECT "stockItem_id" AS stock_item_id,
-				MIN(LEAST(COALESCE("recordDate", "payDate"), COALESCE("payDate", "recordDate"))) AS min_date,
-				MAX(GREATEST(COALESCE("recordDate", "payDate"), COALESCE("payDate", "recordDate"))) AS max_date
-				FROM "Dividend"
-				WHERE "stockItem_id" IS NOT NULL AND ("recordDate" IS NOT NULL OR "payDate" IS NOT NULL)
-				GROUP BY "stockItem_id"
-			""")
+      	SELECT "stockItem_id" AS stock_item_id,
+      	MIN(LEAST(COALESCE("recordDate", "payDate"), COALESCE("payDate", "recordDate"))) AS min_date,
+      	MAX(GREATEST(COALESCE("recordDate", "payDate"), COALESCE("payDate", "recordDate"))) AS max_date
+      	FROM "Dividend"
+      	WHERE "stockItem_id" IS NOT NULL AND ("recordDate" IS NOT NULL OR "payDate" IS NOT NULL)
+      	GROUP BY "stockItem_id"
+      """)
   List<StockItemDateRange> findDividendDateRanges();
 
   long deleteByAccountId(UUID accountId);

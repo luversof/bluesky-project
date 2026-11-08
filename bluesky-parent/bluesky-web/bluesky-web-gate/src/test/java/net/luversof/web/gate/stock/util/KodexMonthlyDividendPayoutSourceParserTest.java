@@ -24,13 +24,13 @@ class KodexMonthlyDividendPayoutSourceParserTest {
     KodexDividendResponse response =
         parser.parseResponse(
             """
-						{
-						  "dividList": [
-						    {"basicD":"20260515","payD":"20260519","dividA":"348","taxDividA":"0"},
-						    {"basicD":"20260415","payD":"20260417","dividA":"262","taxDividA":"43"}
-						  ]
-						}
-						""");
+            {
+              "dividList": [
+                {"basicD":"20260515","payD":"20260519","dividA":"348","taxDividA":"0"},
+                {"basicD":"20260415","payD":"20260417","dividA":"262","taxDividA":"43"}
+              ]
+            }
+            """);
 
     String bulkInput = parser.toBulkInput(response.dividList());
     List<MonthlyDividendPayoutUpsertRequest> requests = importParser.parse("498400", bulkInput);

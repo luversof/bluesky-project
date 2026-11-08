@@ -26,24 +26,23 @@ public class DividendController {
   public List<DividendResponse> findDividends(DividendSearchRequest request) {
     // Map domain Dividend to API response DTO DividendResponse
     return dividendService.findDividends(request).stream()
-        .map(
-            d ->
-                new DividendResponse(
-                    d.getId(),
-                    d.getAccountId(),
-                    d.getStockItemId(),
-                    d.getStockItemName(),
-                    d.getType(),
-                    d.getQuantity(),
-                    d.getAmountPerShare(),
-                    d.getTaxPerShare(),
-                    d.getGrossAmount(),
-                    d.getFee(),
-                    d.getTax(),
-                    d.getTaxableAmount(),
-                    d.getNetAmount(),
-                    d.getRecordDate(),
-                    d.getPayDate()))
+        .map(d ->
+            new DividendResponse(
+                d.getId(),
+                d.getAccountId(),
+                d.getStockItemId(),
+                d.getStockItemName(),
+                d.getType(),
+                d.getQuantity(),
+                d.getAmountPerShare(),
+                d.getTaxPerShare(),
+                d.getGrossAmount(),
+                d.getFee(),
+                d.getTax(),
+                d.getTaxableAmount(),
+                d.getNetAmount(),
+                d.getRecordDate(),
+                d.getPayDate()))
         .toList();
   }
 

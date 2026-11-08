@@ -49,18 +49,14 @@ class PoeCraftEnglishTextTest {
             "Gloves", "str_armour", "", 84, PoeCraftEngine.Rarity.NORMAL, List.of(), false);
     List<String> life =
         craft.pool(plain, PoeCraftEngine.Rarity.RARE).stream()
-            .filter(
-                p ->
-                    "IncreasedLife".equals(p.family()) && p.tierRank() != null && p.tierRank() <= 3)
+            .filter(p ->
+                "IncreasedLife".equals(p.family()) && p.tierRank() != null && p.tierRank() <= 3)
             .map(PoeCraftService.PoolLine::id)
             .toList();
     List<String> res =
         craft.pool(plain, PoeCraftEngine.Rarity.RARE).stream()
-            .filter(
-                p ->
-                    "FireResistance".equals(p.family())
-                        && p.tierRank() != null
-                        && p.tierRank() <= 2)
+            .filter(p ->
+                "FireResistance".equals(p.family()) && p.tierRank() != null && p.tierRank() <= 2)
             .map(PoeCraftService.PoolLine::id)
             .toList();
     assertThat(life).isNotEmpty();

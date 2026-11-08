@@ -90,12 +90,12 @@ public class UseTest implements GeneralTest {
     // ${whereClause}";
     String sqlTemplate =
         """
-				select
-					*,
-					${nonExistValue}
-				From ${table}
-				${whereClause}
-				""";
+        select
+        	*,
+        	${nonExistValue}
+        From ${table}
+        ${whereClause}
+        """;
     var param = new HashMap<String, String>();
     param.put("table", "users");
     param.put("whereClause", "where a = :aa and b = :bb");

@@ -691,11 +691,10 @@ public class PoeCraftCalcService {
       case CHAOS, ALTERATION, ESSENCE, FOSSIL, ALCHEMY, TRANSMUTE, VEILED_CHAOS -> true;
       case HARVEST ->
           craft.harvests().stream()
-              .anyMatch(
-                  h ->
-                      h.id().equals(arg)
-                          && ("reroll_with_mod".equals(h.command())
-                              || "reroll_with_influence_mod".equals(h.command())));
+              .anyMatch(h ->
+                  h.id().equals(arg)
+                      && ("reroll_with_mod".equals(h.command())
+                          || "reroll_with_influence_mod".equals(h.command())));
       default -> false;
     };
   }
@@ -1367,15 +1366,12 @@ public class PoeCraftCalcService {
           craft.harvests().stream()
               .filter(h -> h.id().equals(arg))
               .findFirst()
-              .ifPresent(
-                  h -> {
-                    if (h.lifeforce() != null) {
-                      m.merge(
-                          h.lifeforce() + " Crystallised Lifeforce",
-                          (double) h.cost(),
-                          Double::sum);
-                    }
-                  });
+              .ifPresent(h -> {
+                if (h.lifeforce() != null) {
+                  m.merge(
+                      h.lifeforce() + " Crystallised Lifeforce", (double) h.cost(), Double::sum);
+                }
+              });
       case CONQUEROR -> m.merge(CONQUEROR_ORB.getOrDefault(arg, "Exalted Orb"), 1d, Double::sum);
       case DUCAT -> {
         // 두카트(C391) — 이름은 화폐 표(action)
@@ -2308,12 +2304,11 @@ public class PoeCraftCalcService {
               new Item(n.itemClass(), n.variant(), "", n.ilvl(), Rarity.NORMAL, List.of(), false),
               Rarity.RARE)
           .forEach(p -> plain.add(p.id()));
-      pool.forEach(
-          p -> {
-            if (!plain.contains(p.id())) {
-              inf.add(p.id());
-            }
-          });
+      pool.forEach(p -> {
+        if (!plain.contains(p.id())) {
+          inf.add(p.id());
+        }
+      });
     }
     // 탐광(화석 전용) 옵션 — 화석마다 이 아이템에 붙일 수 있게 되는 자연 풀 밖 옵션(fossilEligible)
     java.util.Set<String> naturalIds = new java.util.HashSet<>();
@@ -2437,10 +2432,8 @@ public class PoeCraftCalcService {
               craft.tagNames(tags, 0),
               craft.tagNames(tags, 1),
               es.stream()
-                  .map(
-                      e ->
-                          new EssenceTier(
-                              e.tier(), e.modId(), e.name(), e.nameKo(), e.en(), e.ko()))
+                  .map(e ->
+                      new EssenceTier(e.tier(), e.modId(), e.name(), e.nameKo(), e.en(), e.ko()))
                   .toList()));
     }
     return out;
@@ -2710,13 +2703,12 @@ public class PoeCraftCalcService {
     int total = done;
     List<DistLine> lines =
         fam.entrySet().stream()
-            .map(
-                e ->
-                    new DistLine(
-                        e.getKey().substring(e.getKey().indexOf('|') + 1),
-                        e.getKey().substring(0, e.getKey().indexOf('|')),
-                        (double) e.getValue()[0] / total,
-                        (double) e.getValue()[1] / total))
+            .map(e ->
+                new DistLine(
+                    e.getKey().substring(e.getKey().indexOf('|') + 1),
+                    e.getKey().substring(0, e.getKey().indexOf('|')),
+                    (double) e.getValue()[0] / total,
+                    (double) e.getValue()[1] / total))
             .sorted(Comparator.comparingDouble(DistLine::share).reversed())
             .toList();
     Map<Integer, Double> affixes = new java.util.TreeMap<>();

@@ -27,13 +27,13 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
    */
   @Query(
       """
-				SELECT MIN(t."tradeDate")
-				FROM "Trade" t
-				JOIN "Account" a ON t."account_id" = a."id"
-				WHERE a."user_id" = :userId AND t."tradeDate" IS NOT NULL
-					AND (CAST(:stockItemId AS uuid) IS NULL OR t."stockItem_id" = :stockItemId)
-					AND (CAST(:accountId AS uuid) IS NULL OR t."account_id" = :accountId)
-			""")
+      	SELECT MIN(t."tradeDate")
+      	FROM "Trade" t
+      	JOIN "Account" a ON t."account_id" = a."id"
+      	WHERE a."user_id" = :userId AND t."tradeDate" IS NOT NULL
+      		AND (CAST(:stockItemId AS uuid) IS NULL OR t."stockItem_id" = :stockItemId)
+      		AND (CAST(:accountId AS uuid) IS NULL OR t."account_id" = :accountId)
+      """)
   Instant findFirstTradeDate(UUID userId, UUID stockItemId, UUID accountId);
 
   /**
@@ -45,22 +45,22 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
    */
   @Query(
       """
-                SELECT EXTRACT(YEAR FROM (t."tradeDate" AT TIME ZONE :zone))::int AS year,
-                       COALESCE(SUM(t."fee"), 0)            AS fee,
-                       COALESCE(SUM(t."tax"), 0)            AS tax,
-                       COALESCE(SUM(t."realizedProfit"), 0) AS realized_profit,
-                       COUNT(*) FILTER (WHERE t."type" = 'SELL') AS sell_count
-                FROM "Trade" t
-                JOIN "Account" a ON t."account_id" = a."id"
-                WHERE a."user_id" = :userId
-                  AND t."tradeDate" IS NOT NULL
-                  AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= CAST(:startDate AS timestamptz))
-                  AND (CAST(:endDate   AS timestamptz) IS NULL OR t."tradeDate" <  CAST(:endDate   AS timestamptz))
-                  AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
-                  AND (CAST(:stockItemIds AS text) IS NULL OR t."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
-                GROUP BY 1
-                ORDER BY 1
-            """)
+          SELECT EXTRACT(YEAR FROM (t."tradeDate" AT TIME ZONE :zone))::int AS year,
+                 COALESCE(SUM(t."fee"), 0)            AS fee,
+                 COALESCE(SUM(t."tax"), 0)            AS tax,
+                 COALESCE(SUM(t."realizedProfit"), 0) AS realized_profit,
+                 COUNT(*) FILTER (WHERE t."type" = 'SELL') AS sell_count
+          FROM "Trade" t
+          JOIN "Account" a ON t."account_id" = a."id"
+          WHERE a."user_id" = :userId
+            AND t."tradeDate" IS NOT NULL
+            AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= CAST(:startDate AS timestamptz))
+            AND (CAST(:endDate   AS timestamptz) IS NULL OR t."tradeDate" <  CAST(:endDate   AS timestamptz))
+            AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+            AND (CAST(:stockItemIds AS text) IS NULL OR t."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
+          GROUP BY 1
+          ORDER BY 1
+      """)
   List<YearlyTradeCost> findYearlyCost(
       @Param("userId") UUID userId,
       @Param("startDate") Instant startDate,
@@ -77,20 +77,20 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
    */
   @Query(
       """
-                SELECT COALESCE(SUM(CASE WHEN t."type" = 'BUY'  THEN t."price" * t."quantity" ELSE 0 END), 0) AS buy_amount,
-                       COALESCE(SUM(CASE WHEN t."type" = 'SELL' THEN t."price" * t."quantity" ELSE 0 END), 0) AS sell_amount,
-                       COALESCE(SUM(t."fee"), 0)            AS fee,
-                       COALESCE(SUM(t."tax"), 0)            AS tax,
-                       COALESCE(SUM(t."realizedProfit"), 0) AS realized_profit,
-                       COUNT(*) FILTER (WHERE t."type" = 'BUY')  AS buy_count,
-                       COUNT(*) FILTER (WHERE t."type" = 'SELL') AS sell_count
-                FROM "Trade" t
-                JOIN "Account" a ON t."account_id" = a."id"
-                WHERE a."user_id" = :userId
-                  AND t."tradeDate" IS NOT NULL
-                  AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= CAST(:startDate AS timestamptz))
-                  AND (CAST(:endDate   AS timestamptz) IS NULL OR t."tradeDate" <  CAST(:endDate   AS timestamptz))
-            """)
+          SELECT COALESCE(SUM(CASE WHEN t."type" = 'BUY'  THEN t."price" * t."quantity" ELSE 0 END), 0) AS buy_amount,
+                 COALESCE(SUM(CASE WHEN t."type" = 'SELL' THEN t."price" * t."quantity" ELSE 0 END), 0) AS sell_amount,
+                 COALESCE(SUM(t."fee"), 0)            AS fee,
+                 COALESCE(SUM(t."tax"), 0)            AS tax,
+                 COALESCE(SUM(t."realizedProfit"), 0) AS realized_profit,
+                 COUNT(*) FILTER (WHERE t."type" = 'BUY')  AS buy_count,
+                 COUNT(*) FILTER (WHERE t."type" = 'SELL') AS sell_count
+          FROM "Trade" t
+          JOIN "Account" a ON t."account_id" = a."id"
+          WHERE a."user_id" = :userId
+            AND t."tradeDate" IS NOT NULL
+            AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= CAST(:startDate AS timestamptz))
+            AND (CAST(:endDate   AS timestamptz) IS NULL OR t."tradeDate" <  CAST(:endDate   AS timestamptz))
+      """)
   PeriodTradeSummary findPeriodSummary(
       @Param("userId") UUID userId,
       @Param("startDate") Instant startDate,
@@ -99,25 +99,25 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
   /** 기간 내 거래가 있는 계좌 id (필터 목록용). 전체 거래를 내려받지 않도록 DISTINCT 로 뽑는다. */
   @Query(
       """
-				SELECT DISTINCT t."account_id"
-				FROM "Trade" t
-				JOIN "Account" a ON t."account_id" = a."id"
-				WHERE a."user_id" = :userId
-					AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= :startDate)
-					AND (CAST(:endDate AS timestamptz) IS NULL OR t."tradeDate" < :endDate)
-			""")
+      	SELECT DISTINCT t."account_id"
+      	FROM "Trade" t
+      	JOIN "Account" a ON t."account_id" = a."id"
+      	WHERE a."user_id" = :userId
+      		AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= :startDate)
+      		AND (CAST(:endDate AS timestamptz) IS NULL OR t."tradeDate" < :endDate)
+      """)
   List<UUID> findDistinctAccountIds(UUID userId, Instant startDate, Instant endDate);
 
   /** 기간 내 거래가 있는 종목 id (필터 목록용). */
   @Query(
       """
-				SELECT DISTINCT t."stockItem_id"
-				FROM "Trade" t
-				JOIN "Account" a ON t."account_id" = a."id"
-				WHERE a."user_id" = :userId
-					AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= :startDate)
-					AND (CAST(:endDate AS timestamptz) IS NULL OR t."tradeDate" < :endDate)
-			""")
+      	SELECT DISTINCT t."stockItem_id"
+      	FROM "Trade" t
+      	JOIN "Account" a ON t."account_id" = a."id"
+      	WHERE a."user_id" = :userId
+      		AND (CAST(:startDate AS timestamptz) IS NULL OR t."tradeDate" >= :startDate)
+      		AND (CAST(:endDate AS timestamptz) IS NULL OR t."tradeDate" < :endDate)
+      """)
   List<UUID> findDistinctStockItemIds(UUID userId, Instant startDate, Instant endDate);
 
   /**
@@ -127,20 +127,20 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
    */
   @Query(
       """
-				SELECT MAX(t."tradeDate") AS last_date, COUNT(*) AS total_count
-				FROM "Trade" t
-				JOIN "Account" a ON t."account_id" = a."id"
-				WHERE a."user_id" = :userId
-			""")
+      	SELECT MAX(t."tradeDate") AS last_date, COUNT(*) AS total_count
+      	FROM "Trade" t
+      	JOIN "Account" a ON t."account_id" = a."id"
+      	WHERE a."user_id" = :userId
+      """)
   UserLedgerSummary findLedgerSummaryByUserId(UUID userId);
 
   @Query(
       """
-				SELECT "stockItem_id" AS stock_item_id, MIN("tradeDate") AS min_date, MAX("tradeDate") AS max_date
-				FROM "Trade"
-				WHERE "stockItem_id" IS NOT NULL AND "tradeDate" IS NOT NULL
-				GROUP BY "stockItem_id"
-			""")
+      	SELECT "stockItem_id" AS stock_item_id, MIN("tradeDate") AS min_date, MAX("tradeDate") AS max_date
+      	FROM "Trade"
+      	WHERE "stockItem_id" IS NOT NULL AND "tradeDate" IS NOT NULL
+      	GROUP BY "stockItem_id"
+      """)
   List<StockItemDateRange> findTradeDateRanges();
 
   /**
@@ -157,16 +157,16 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
    */
   @Query(
       """
-                SELECT t."stockItem_id" AS stock_item_id, MIN(t."tradeDate") AS first_buy_date
-                FROM "Trade" t
-                JOIN "Account" a ON t."account_id" = a."id"
-                WHERE a."user_id" = :userId
-                  AND t."tradeDate" IS NOT NULL
-                  AND t."stockItem_id" IS NOT NULL
-                  AND t."type" = 'BUY'
-                  AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
-                GROUP BY t."stockItem_id"
-            """)
+          SELECT t."stockItem_id" AS stock_item_id, MIN(t."tradeDate") AS first_buy_date
+          FROM "Trade" t
+          JOIN "Account" a ON t."account_id" = a."id"
+          WHERE a."user_id" = :userId
+            AND t."tradeDate" IS NOT NULL
+            AND t."stockItem_id" IS NOT NULL
+            AND t."type" = 'BUY'
+            AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+          GROUP BY t."stockItem_id"
+      """)
   List<StockItemFirstBuy> findFirstBuyDateByStockItem(
       @Param("userId") UUID userId, @Param("accountIds") String accountIds);
 
@@ -181,34 +181,34 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
    */
   @Query(
       """
-                SELECT f.stock_item_id, f.flow_at, f.amount
-                FROM (
-                  SELECT t."stockItem_id" AS stock_item_id, t."tradeDate" AS flow_at,
-                         CASE WHEN t."type" = 'BUY'
-                              THEN -(COALESCE(t."price", 0) * t."quantity" + COALESCE(t."fee", 0) + COALESCE(t."tax", 0))
-                              ELSE COALESCE(t."price", 0) * t."quantity" - COALESCE(t."fee", 0) - COALESCE(t."tax", 0)
-                         END AS amount
-                  FROM "Trade" t
-                  JOIN "Account" a ON t."account_id" = a."id"
-                  WHERE a."user_id" = :userId
-                    AND t."tradeDate" IS NOT NULL
-                    AND t."stockItem_id" IS NOT NULL
-                    AND t."type" IN ('BUY', 'SELL')
-                    AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
-                    AND (CAST(:stockItemIds AS text) IS NULL OR t."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
-                  UNION ALL
-                  SELECT d."stockItem_id" AS stock_item_id, d."payDate" AS flow_at,
-                         COALESCE(d."grossAmount", 0) - COALESCE(d."tax", 0) - COALESCE(d."fee", 0) AS amount
-                  FROM "Dividend" d
-                  JOIN "Account" a ON d."account_id" = a."id"
-                  WHERE a."user_id" = :userId
-                    AND d."payDate" IS NOT NULL
-                    AND d."stockItem_id" IS NOT NULL
-                    AND (CAST(:accountIds AS text) IS NULL OR d."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
-                    AND (CAST(:stockItemIds AS text) IS NULL OR d."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
-                ) f
-                ORDER BY f.stock_item_id, f.flow_at
-            """)
+          SELECT f.stock_item_id, f.flow_at, f.amount
+          FROM (
+            SELECT t."stockItem_id" AS stock_item_id, t."tradeDate" AS flow_at,
+                   CASE WHEN t."type" = 'BUY'
+                        THEN -(COALESCE(t."price", 0) * t."quantity" + COALESCE(t."fee", 0) + COALESCE(t."tax", 0))
+                        ELSE COALESCE(t."price", 0) * t."quantity" - COALESCE(t."fee", 0) - COALESCE(t."tax", 0)
+                   END AS amount
+            FROM "Trade" t
+            JOIN "Account" a ON t."account_id" = a."id"
+            WHERE a."user_id" = :userId
+              AND t."tradeDate" IS NOT NULL
+              AND t."stockItem_id" IS NOT NULL
+              AND t."type" IN ('BUY', 'SELL')
+              AND (CAST(:accountIds AS text) IS NULL OR t."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+              AND (CAST(:stockItemIds AS text) IS NULL OR t."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
+            UNION ALL
+            SELECT d."stockItem_id" AS stock_item_id, d."payDate" AS flow_at,
+                   COALESCE(d."grossAmount", 0) - COALESCE(d."tax", 0) - COALESCE(d."fee", 0) AS amount
+            FROM "Dividend" d
+            JOIN "Account" a ON d."account_id" = a."id"
+            WHERE a."user_id" = :userId
+              AND d."payDate" IS NOT NULL
+              AND d."stockItem_id" IS NOT NULL
+              AND (CAST(:accountIds AS text) IS NULL OR d."account_id" = ANY(string_to_array(:accountIds, ',')::uuid[]))
+              AND (CAST(:stockItemIds AS text) IS NULL OR d."stockItem_id" = ANY(string_to_array(:stockItemIds, ',')::uuid[]))
+          ) f
+          ORDER BY f.stock_item_id, f.flow_at
+      """)
   List<StockItemCashFlow> findCashFlowsByStockItem(
       @Param("userId") UUID userId,
       @Param("accountIds") String accountIds,
@@ -216,12 +216,12 @@ public interface TradeRepository extends CrudRepository<Trade, UUID> {
 
   @Query(
       """
-                                SELECT "stockItem_id"
-                                FROM "Trade"
-                                WHERE "stockItem_id" IS NOT NULL
-                                GROUP BY "stockItem_id"
-                                HAVING SUM(CASE WHEN "type" = 'BUY' THEN "quantity" ELSE -"quantity" END) > 0
-                        """)
+              SELECT "stockItem_id"
+              FROM "Trade"
+              WHERE "stockItem_id" IS NOT NULL
+              GROUP BY "stockItem_id"
+              HAVING SUM(CASE WHEN "type" = 'BUY' THEN "quantity" ELSE -"quantity" END) > 0
+      """)
   List<UUID> findCurrentlyHeldStockItemIds();
 
   List<Trade> findByAccountId(UUID accountId);

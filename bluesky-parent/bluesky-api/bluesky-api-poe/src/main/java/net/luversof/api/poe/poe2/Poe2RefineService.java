@@ -493,11 +493,10 @@ public class Poe2RefineService {
       common.addAll(consensusNodeCandidates(xml, guide, consensus));
       // 다른 세트 무기 칸 고유는 주 세트를 켠 채로는 효과가 0 이라 늘 버려졌다 — 다른 세트 다듬기에서 그 세트를 켜고 잰다(10-15 C333)
       final int onSet = sets ? mainSet : 1;
-      common.removeIf(
-          c -> {
-            int ws = changeWeaponSet(c.change());
-            return ws != 0 && ws != onSet;
-          });
+      common.removeIf(c -> {
+        int ws = changeWeaponSet(c.change());
+        return ws != 0 && ws != onSet;
+      });
       // 같은 고유 · 젬은 한 번만 — 빼는 보조젬이 단계마다 달라 변경 JSON 으로 견주면 같은 젬을 매 단계 다시 쟀다(10-14: 가루칸의 투지 4번)
       common.removeIf(
           c -> !triedConsensus.add(c.label().replaceFirst(":.*→", "→").replaceFirst(":.*←", "←")));
@@ -935,15 +934,14 @@ public class Poe2RefineService {
     //   패시브 몫보다 잃는 게 커서 실측만 낭비한다(시험이 잡음: 약한 셋에 기여 40% 특화가 섞이면 그걸 골랐다)
     Poe2.GuideNode weak =
         g.nodes().stream()
-            .filter(
-                n ->
-                    n.id() != null
-                        && (n.ascendancy() == null || n.ascendancy().isBlank())
-                        && n.free() != null
-                        && n.free() > 0
-                        && n.free() <= RESPEC_MAX_FREE
-                        && n.set() == null
-                        && Math.abs(nz(n.dps())) + Math.abs(nz(n.ehp())) <= TOLERANCE_PCT)
+            .filter(n ->
+                n.id() != null
+                    && (n.ascendancy() == null || n.ascendancy().isBlank())
+                    && n.free() != null
+                    && n.free() > 0
+                    && n.free() <= RESPEC_MAX_FREE
+                    && n.set() == null
+                    && Math.abs(nz(n.dps())) + Math.abs(nz(n.ehp())) <= TOLERANCE_PCT)
             .max(Comparator.comparingInt(Poe2.GuideNode::free))
             .orElse(null);
     if (weak == null) {
@@ -954,48 +952,46 @@ public class Poe2RefineService {
         .filter(e -> !mine.contains(e.getKey()))
         .filter(e -> isNotableOrKeystone(e.getKey()))
         // 가는 길이 풀리는 점수 안이어야(C323 — 길이를 몰라 1점 풀리는 자리에 6점 길을 짝지어 엔진이 3번 거절했다). 가이드에 길이가 없으면 예전처럼
-        .filter(
-            e ->
-                g.nodeDist() == null
-                    || (g.nodeDist().get(e.getKey()) != null
-                        && g.nodeDist().get(e.getKey()) <= weak.free()))
+        .filter(e ->
+            g.nodeDist() == null
+                || (g.nodeDist().get(e.getKey()) != null
+                    && g.nodeDist().get(e.getKey()) <= weak.free()))
         .sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed())
         .limit(COMMON_NODES)
-        .forEach(
-            e -> {
-              ObjectNode ch = json.createObjectNode();
-              ch.put("type", "respec");
-              ch.put("remove", weak.id());
-              ch.put("add", e.getKey());
-              out.add(
-                  new Candidate(
-                          COMMON_PREFIX
-                              + " 패시브("
-                              + e.getValue()
-                              + "/"
-                              + consensus.n()
-                              + "명): "
-                              + (weak.nameKo() != null ? weak.nameKo() : weak.name())
-                              + "(풀리는 "
-                              + weak.free()
-                              + "점) 빼고 → "
-                              + nodeKo(e.getKey())
-                              + " 찍기",
-                          ch.toString(),
-                          0,
-                          0)
-                      .en(
-                          "Ninja common passive ("
-                              + e.getValue()
-                              + "/"
-                              + consensus.n()
-                              + "): "
-                              + weak.name()
-                              + " (frees "
-                              + weak.free()
-                              + ") → "
-                              + nodeEn(e.getKey())));
-            });
+        .forEach(e -> {
+          ObjectNode ch = json.createObjectNode();
+          ch.put("type", "respec");
+          ch.put("remove", weak.id());
+          ch.put("add", e.getKey());
+          out.add(
+              new Candidate(
+                      COMMON_PREFIX
+                          + " 패시브("
+                          + e.getValue()
+                          + "/"
+                          + consensus.n()
+                          + "명): "
+                          + (weak.nameKo() != null ? weak.nameKo() : weak.name())
+                          + "(풀리는 "
+                          + weak.free()
+                          + "점) 빼고 → "
+                          + nodeKo(e.getKey())
+                          + " 찍기",
+                      ch.toString(),
+                      0,
+                      0)
+                  .en(
+                      "Ninja common passive ("
+                          + e.getValue()
+                          + "/"
+                          + consensus.n()
+                          + "): "
+                          + weak.name()
+                          + " (frees "
+                          + weak.free()
+                          + ") → "
+                          + nodeEn(e.getKey())));
+        });
     return out;
   }
 
@@ -1078,14 +1074,13 @@ public class Poe2RefineService {
     }
     List<Poe2.GuideNode> weak =
         g.nodes().stream()
-            .filter(
-                n ->
-                    n.id() != null
-                        && (onlySet == null || onlySet.equals(n.set()))
-                        && (n.ascendancy() == null || n.ascendancy().isBlank())
-                        && n.free() != null
-                        && n.free() > 0
-                        && n.free() <= RESPEC_MAX_FREE)
+            .filter(n ->
+                n.id() != null
+                    && (onlySet == null || onlySet.equals(n.set()))
+                    && (n.ascendancy() == null || n.ascendancy().isBlank())
+                    && n.free() != null
+                    && n.free() > 0
+                    && n.free() <= RESPEC_MAX_FREE)
             // 잃는 몫 = 두 축 합 + 목표 축 한 번 더 — 목표 축만 보면 생존을 크게 주는 특화(EHP 14.9%)를 골라 맞바꿈 한도에 걸렸다(10-14
             // 실측)
             .sorted(
@@ -1280,10 +1275,9 @@ public class Poe2RefineService {
     }
     out.addAll(respecCandidates(g, objective));
     // 목표 축 교체가 먼저, 파레토 개선(목표 축 손해 0 · 다른 축 +)은 그 뒤(C328 — 목표 축 교체가 없는 단계에서만 쓰인다)
-    out.removeIf(
-        c ->
-            !acceptable(objective, c.dpsPct(), c.ehpPct())
-                && !pareto(objective, c.dpsPct(), c.ehpPct()));
+    out.removeIf(c ->
+        !acceptable(objective, c.dpsPct(), c.ehpPct())
+            && !pareto(objective, c.dpsPct(), c.ehpPct()));
     out.sort(
         Comparator.comparing((Candidate c) -> !acceptable(objective, c.dpsPct(), c.ehpPct()))
             .thenComparing(

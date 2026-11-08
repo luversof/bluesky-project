@@ -64,14 +64,16 @@ class ZeroVolumePriceSelectionTest {
             """
             (SELECT h."tradeDate", h."closePrice", 0 AS pick
              FROM "StockPriceHistory" h
-             WHERE h."stockItem_id" =""");
+             WHERE h."stockItem_id" =\
+            """);
     String fallback =
         squash(
             """
             UNION ALL
             (SELECT h."tradeDate", h."closePrice", 1 AS pick
              FROM "StockPriceHistory" h
-             WHERE h."stockItem_id" =""");
+             WHERE h."stockItem_id" =\
+            """);
     String pickFirst = squash(") AS y ORDER BY y.pick LIMIT 1");
     for (Path path : List.of(REPOSITORY, QUERY)) {
       // 저장소 쪽은 갱신 시각도 함께 고른다(장중 시세 표기, 2026-10-02) - 갈래 모양만 보려고 그 열은 지우고 센다.

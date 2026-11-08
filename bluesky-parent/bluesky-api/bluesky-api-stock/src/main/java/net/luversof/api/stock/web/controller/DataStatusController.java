@@ -216,30 +216,29 @@ public class DataStatusController {
     }
     Map<UUID, String> resolved = names != null ? names : Map.of();
     return rows.stream()
-        .map(
-            row -> {
-              BigDecimal previous = row.previousClosePrice();
-              double changePercent =
-                  previous != null && previous.signum() != 0 && row.closePrice() != null
-                      ? row.closePrice()
-                              .subtract(previous)
-                              .divide(previous, 8, RoundingMode.HALF_UP)
-                              .doubleValue()
-                          * 100.0
-                      : 0.0;
-              int gapDays =
-                  row.previousTradeDate() != null && row.tradeDate() != null
-                      ? (int) ChronoUnit.DAYS.between(row.previousTradeDate(), row.tradeDate())
-                      : 0;
-              return new DataStatusResponse.PriceLimitBreachRow(
-                  resolved.getOrDefault(row.stockItemId(), String.valueOf(row.stockItemId())),
-                  row.tradeDate(),
-                  row.previousTradeDate(),
-                  previous,
-                  row.closePrice(),
-                  changePercent,
-                  gapDays);
-            })
+        .map(row -> {
+          BigDecimal previous = row.previousClosePrice();
+          double changePercent =
+              previous != null && previous.signum() != 0 && row.closePrice() != null
+                  ? row.closePrice()
+                          .subtract(previous)
+                          .divide(previous, 8, RoundingMode.HALF_UP)
+                          .doubleValue()
+                      * 100.0
+                  : 0.0;
+          int gapDays =
+              row.previousTradeDate() != null && row.tradeDate() != null
+                  ? (int) ChronoUnit.DAYS.between(row.previousTradeDate(), row.tradeDate())
+                  : 0;
+          return new DataStatusResponse.PriceLimitBreachRow(
+              resolved.getOrDefault(row.stockItemId(), String.valueOf(row.stockItemId())),
+              row.tradeDate(),
+              row.previousTradeDate(),
+              previous,
+              row.closePrice(),
+              changePercent,
+              gapDays);
+        })
         .toList();
   }
 
@@ -256,13 +255,12 @@ public class DataStatusController {
     }
     Map<UUID, String> resolved = names != null ? names : Map.of();
     return rows.stream()
-        .map(
-            row ->
-                new DataStatusResponse.ZeroVolumeChangedCloseRow(
-                    resolved.getOrDefault(row.stockItemId(), String.valueOf(row.stockItemId())),
-                    row.tradeDate(),
-                    row.previousClosePrice(),
-                    row.closePrice()))
+        .map(row ->
+            new DataStatusResponse.ZeroVolumeChangedCloseRow(
+                resolved.getOrDefault(row.stockItemId(), String.valueOf(row.stockItemId())),
+                row.tradeDate(),
+                row.previousClosePrice(),
+                row.closePrice()))
         .toList();
   }
 }

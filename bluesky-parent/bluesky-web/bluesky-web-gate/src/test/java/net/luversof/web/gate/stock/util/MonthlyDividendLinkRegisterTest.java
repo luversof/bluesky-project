@@ -31,11 +31,11 @@ class MonthlyDividendLinkRegisterTest {
   void KODEX_는_JSON_LD_에서_코드와_이름을_읽는다() {
     String html =
         """
-				<script type="application/ld+json">
-				{"@type":"Product","name":"KODEX 한국부동산리츠인프라","alternateName":"KODEX KOREA REITs Infra",
-				 "identifier":"476800","url":"https://www.samsungfund.com/etf/product/view.do?id=2ETFM4"}
-				</script>
-				""";
+        <script type="application/ld+json">
+        {"@type":"Product","name":"KODEX 한국부동산리츠인프라","alternateName":"KODEX KOREA REITs Infra",
+         "identifier":"476800","url":"https://www.samsungfund.com/etf/product/view.do?id=2ETFM4"}
+        </script>
+        """;
 
     SourceMeta meta = parser.fromKodexHtml(html);
     assertThat(meta.symbol()).isEqualTo("476800");
@@ -46,10 +46,10 @@ class MonthlyDividendLinkRegisterTest {
   void PLUS_는_상품코드_칸과_제목에서_읽는다() {
     String html =
         """
-				<title>PLUS 고배당주위클리고정커버드콜 | PLUS ETF</title>
-				<h2 class="summary__title">PLUS 고배당주위클리고정커버드콜</h2>
-				<div class="summary__product-code">0018C0</div>
-				""";
+        <title>PLUS 고배당주위클리고정커버드콜 | PLUS ETF</title>
+        <h2 class="summary__title">PLUS 고배당주위클리고정커버드콜</h2>
+        <div class="summary__product-code">0018C0</div>
+        """;
 
     SourceMeta meta = parser.fromPlusHtml(html);
     assertThat(meta.symbol()).isEqualTo("0018C0");
@@ -74,9 +74,9 @@ class MonthlyDividendLinkRegisterTest {
   void RISE_는_header_API_에서_읽는다() {
     String json =
         """
-				{"fund_cd":"44J2","name":"RISE 코리아밸류업위클리고정커버드콜","krx_cd":"0094M0",
-				 "category1":"국내주식","seo_title":"RISE 코리아밸류업 커버드콜 ETF | 월배당 고배당 투자"}
-				""";
+        {"fund_cd":"44J2","name":"RISE 코리아밸류업위클리고정커버드콜","krx_cd":"0094M0",
+         "category1":"국내주식","seo_title":"RISE 코리아밸류업 커버드콜 ETF | 월배당 고배당 투자"}
+        """;
 
     SourceMeta meta = parser.fromRiseHeaderJson(json);
     assertThat(meta.symbol())

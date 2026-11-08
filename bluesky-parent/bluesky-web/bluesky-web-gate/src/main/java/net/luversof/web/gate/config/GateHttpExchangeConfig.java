@@ -42,32 +42,30 @@ public class GateHttpExchangeConfig {
   RestClientCustomizer oauth2RestClientCustomizer(
       OAuth2AuthorizedClientManager authorizedClientManager) {
     return builder ->
-        builder.requestInterceptor(
-            (request, body, execution) -> {
-              if (!request.getURI().getPath().startsWith("/api/userInfo")) {
-                Authentication authentication =
-                    SecurityContextHolder.getContext().getAuthentication();
-                if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-                  try {
-                    OAuth2AuthorizeRequest authorizeRequest =
-                        OAuth2AuthorizeRequest.withClientRegistrationId(
-                                oauthToken.getAuthorizedClientRegistrationId())
-                            .principal(authentication)
-                            .build();
+        builder.requestInterceptor((request, body, execution) -> {
+          if (!request.getURI().getPath().startsWith("/api/userInfo")) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
+              try {
+                OAuth2AuthorizeRequest authorizeRequest =
+                    OAuth2AuthorizeRequest.withClientRegistrationId(
+                            oauthToken.getAuthorizedClientRegistrationId())
+                        .principal(authentication)
+                        .build();
 
-                    OAuth2AuthorizedClient authorizedClient =
-                        authorizedClientManager.authorize(authorizeRequest);
-                    if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
-                      request
-                          .getHeaders()
-                          .setBearerAuth(authorizedClient.getAccessToken().getTokenValue());
-                    }
-                  } catch (Exception e) {
-                    // Ignore if authorization fails
-                  }
+                OAuth2AuthorizedClient authorizedClient =
+                    authorizedClientManager.authorize(authorizeRequest);
+                if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
+                  request
+                      .getHeaders()
+                      .setBearerAuth(authorizedClient.getAccessToken().getTokenValue());
                 }
+              } catch (Exception e) {
+                // Ignore if authorization fails
               }
-              return execution.execute(request, body);
-            });
+            }
+          }
+          return execution.execute(request, body);
+        });
   }
 }

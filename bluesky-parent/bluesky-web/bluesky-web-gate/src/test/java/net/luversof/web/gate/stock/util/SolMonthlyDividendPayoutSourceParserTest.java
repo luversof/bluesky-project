@@ -33,16 +33,16 @@ class SolMonthlyDividendPayoutSourceParserTest {
 
   private static final String SAMPLE_JSON =
       """
-			{
-			  "workDt": "20260915",
-			  "fundName": "SOL 코리아고배당",
-			  "totalCount": 11,
-			  "items": [
-			    {"FUND_CD":"211097","WORK_DT":"20260915","DIVIDEND_DT":"20260916","DIVIDEND_PRI":60,"WEEK_PRI":17,"TAX_PRI":10083.82,"BFAS_STAS_STPR":10100.95},
-			    {"FUND_CD":"211097","WORK_DT":"20260814","DIVIDEND_DT":"20260818","DIVIDEND_PRI":60,"WEEK_PRI":29,"TAX_PRI":9900.10,"BFAS_STAS_STPR":9930.20}
-			  ]
-			}
-			""";
+      {
+        "workDt": "20260915",
+        "fundName": "SOL 코리아고배당",
+        "totalCount": 11,
+        "items": [
+          {"FUND_CD":"211097","WORK_DT":"20260915","DIVIDEND_DT":"20260916","DIVIDEND_PRI":60,"WEEK_PRI":17,"TAX_PRI":10083.82,"BFAS_STAS_STPR":10100.95},
+          {"FUND_CD":"211097","WORK_DT":"20260814","DIVIDEND_DT":"20260818","DIVIDEND_PRI":60,"WEEK_PRI":29,"TAX_PRI":9900.10,"BFAS_STAS_STPR":9930.20}
+        ]
+      }
+      """;
 
   @Test
   void 팝업이_부르는_JSON_을_가져오기_입력으로_바꾼다() {
@@ -66,12 +66,12 @@ class SolMonthlyDividendPayoutSourceParserTest {
   void 상세_HTML_에서_종목코드와_이름을_읽는다() {
     String html =
         """
-				<h1 data-addtitle="this" class="fv-name">
-				  <span>SOL 코리아고배당</span>
-				  <small class="fd-code">(0105E0)</small>
-				</h1>
-				<ul class="fv-des"><li>매월 중순에 분배금을 지급하며, 국내 고배당 우량주 30종목에 투자하는 ETF</li></ul>
-				""";
+        <h1 data-addtitle="this" class="fv-name">
+          <span>SOL 코리아고배당</span>
+          <small class="fd-code">(0105E0)</small>
+        </h1>
+        <ul class="fv-des"><li>매월 중순에 분배금을 지급하며, 국내 고배당 우량주 30종목에 투자하는 ETF</li></ul>
+        """;
 
     SourceMeta meta = metaParser.fromSolHtml(html);
     assertThat(meta.symbol()).as("주소의 211097 은 펀드 코드라 종목코드가 아니다 - 본문에서 읽어야 한다").isEqualTo("0105E0");

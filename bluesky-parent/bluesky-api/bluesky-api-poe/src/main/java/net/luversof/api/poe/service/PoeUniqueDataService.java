@@ -219,14 +219,9 @@ public class PoeUniqueDataService {
         itemClass != null && !itemClass.isBlank() && !"all".equals(itemClass) ? itemClass : null;
 
     return data.items().stream()
-        .filter(
-            item ->
-                PoeSearchText.matches(
-                    normalizedQuery,
-                    item.name(),
-                    item.nameKo(),
-                    item.baseType(),
-                    item.baseTypeKo()))
+        .filter(item ->
+            PoeSearchText.matches(
+                normalizedQuery, item.name(), item.nameKo(), item.baseType(), item.baseTypeKo()))
         .filter(item -> categoryFilter == null || categoryFilter.equals(item.category()))
         .filter(item -> classFilter == null || classFilter.equals(itemClassOf(item)))
         .map(this::withBase)

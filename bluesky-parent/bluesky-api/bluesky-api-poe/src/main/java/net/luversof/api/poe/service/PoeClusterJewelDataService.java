@@ -72,42 +72,40 @@ public class PoeClusterJewelDataService {
       var jewelsNode = root.path("jewels");
       jewelsNode
           .fieldNames()
-          .forEachRemaining(
-              size -> {
-                var def = jewelsNode.path(size);
-                var skills = new java.util.LinkedHashMap<String, ClusterSkill>();
-                def.path("skills")
-                    .fieldNames()
-                    .forEachRemaining(
-                        key -> {
-                          var skill = def.path("skills").path(key);
-                          var stats = new java.util.ArrayList<String>();
-                          skill.path("stats").forEach(s -> stats.add(s.asText()));
-                          skills.put(
-                              key,
-                              new ClusterSkill(
-                                  skill.path("name").asText(),
-                                  stats,
-                                  !skill.path("masteryIcon").asText("").isEmpty()));
-                        });
-                java.util.function.Function<String, List<Integer>> ints =
-                    field -> {
-                      var out = new java.util.ArrayList<Integer>();
-                      def.path(field).forEach(v -> out.add(v.asInt()));
-                      return List.copyOf(out);
-                    };
-                parsed.put(
-                    size,
-                    new ClusterJewelDef(
-                        def.path("minNodes").asInt(),
-                        def.path("maxNodes").asInt(),
-                        skills,
-                        def.path("sizeIndex").asInt(),
-                        def.path("totalIndicies").asInt(),
-                        ints.apply("smallIndicies"),
-                        ints.apply("notableIndicies"),
-                        ints.apply("socketIndicies")));
-              });
+          .forEachRemaining(size -> {
+            var def = jewelsNode.path(size);
+            var skills = new java.util.LinkedHashMap<String, ClusterSkill>();
+            def.path("skills")
+                .fieldNames()
+                .forEachRemaining(key -> {
+                  var skill = def.path("skills").path(key);
+                  var stats = new java.util.ArrayList<String>();
+                  skill.path("stats").forEach(s -> stats.add(s.asText()));
+                  skills.put(
+                      key,
+                      new ClusterSkill(
+                          skill.path("name").asText(),
+                          stats,
+                          !skill.path("masteryIcon").asText("").isEmpty()));
+                });
+            java.util.function.Function<String, List<Integer>> ints =
+                field -> {
+                  var out = new java.util.ArrayList<Integer>();
+                  def.path(field).forEach(v -> out.add(v.asInt()));
+                  return List.copyOf(out);
+                };
+            parsed.put(
+                size,
+                new ClusterJewelDef(
+                    def.path("minNodes").asInt(),
+                    def.path("maxNodes").asInt(),
+                    skills,
+                    def.path("sizeIndex").asInt(),
+                    def.path("totalIndicies").asInt(),
+                    ints.apply("smallIndicies"),
+                    ints.apply("notableIndicies"),
+                    ints.apply("socketIndicies")));
+          });
       var sortOrder = new java.util.LinkedHashMap<String, Integer>();
       root.path("notableSortOrder")
           .fieldNames()
@@ -117,15 +115,14 @@ public class PoeClusterJewelDataService {
       var options = new java.util.LinkedHashMap<String, NotableOption>();
       root.path("notableOptions")
           .fieldNames()
-          .forEachRemaining(
-              name -> {
-                var opt = root.path("notableOptions").path(name);
-                var tags = new java.util.ArrayList<String>();
-                opt.path("tags").forEach(t -> tags.add(t.asText()));
-                var sizes = new java.util.ArrayList<String>();
-                opt.path("sizes").forEach(s -> sizes.add(s.asText()));
-                options.put(name, new NotableOption(List.copyOf(tags), List.copyOf(sizes)));
-              });
+          .forEachRemaining(name -> {
+            var opt = root.path("notableOptions").path(name);
+            var tags = new java.util.ArrayList<String>();
+            opt.path("tags").forEach(t -> tags.add(t.asText()));
+            var sizes = new java.util.ArrayList<String>();
+            opt.path("sizes").forEach(s -> sizes.add(s.asText()));
+            options.put(name, new NotableOption(List.copyOf(tags), List.copyOf(sizes)));
+          });
       this.notableOptions = Map.copyOf(options);
       this.jewels = Map.copyOf(parsed);
       logger.info("클러스터 주얼 정의 {}종 로드 (주요 스킬 순서 {}건)", jewels.size(), notableSortOrder.size());
@@ -184,63 +181,62 @@ public class PoeClusterJewelDataService {
       return Optional.empty();
     }
     return def(sizeName)
-        .map(
-            def -> {
-              int base = 0x10000;
-              if (exp.size() == 2) {
-                base += exp.index() << 6;
-              } else if (exp.size() == 1) {
-                base += exp.index() << 9;
+        .map(def -> {
+          int base = 0x10000;
+          if (exp.size() == 2) {
+            base += exp.index() << 6;
+          } else if (exp.size() == 1) {
+            base += exp.index() << 9;
+          }
+          int nodeId = base + (def.sizeIndex() << 4);
+          int notableCount = notables == null ? 0 : notables.size();
+          var used = new java.util.HashSet<Integer>();
+          var notableIdx = new java.util.ArrayList<Integer>();
+          for (int raw : def.notableIndicies()) {
+            if (notableIdx.size() == notableCount) {
+              break;
+            }
+            int idx = raw;
+            if ("Medium".equals(sizeName)) {
+              // 프론트/PoB 와 동일한 중형 배치 보정(소켓0·주요 스킬2, 4노드)
+              if (notableCount == 2) {
+                idx = idx == 6 ? 4 : idx == 10 ? 8 : idx;
+              } else if (nodeCount == 4) {
+                idx = idx == 10 ? 9 : idx == 2 ? 3 : idx;
               }
-              int nodeId = base + (def.sizeIndex() << 4);
-              int notableCount = notables == null ? 0 : notables.size();
-              var used = new java.util.HashSet<Integer>();
-              var notableIdx = new java.util.ArrayList<Integer>();
-              for (int raw : def.notableIndicies()) {
-                if (notableIdx.size() == notableCount) {
-                  break;
-                }
-                int idx = raw;
-                if ("Medium".equals(sizeName)) {
-                  // 프론트/PoB 와 동일한 중형 배치 보정(소켓0·주요 스킬2, 4노드)
-                  if (notableCount == 2) {
-                    idx = idx == 6 ? 4 : idx == 10 ? 8 : idx;
-                  } else if (nodeCount == 4) {
-                    idx = idx == 10 ? 9 : idx == 2 ? 3 : idx;
-                  }
-                }
-                if (used.add(idx)) {
-                  notableIdx.add(idx);
-                }
+            }
+            if (used.add(idx)) {
+              notableIdx.add(idx);
+            }
+          }
+          java.util.Collections.sort(notableIdx);
+          int smallCount = nodeCount - socketCount - notableCount;
+          var smallIdx = new java.util.ArrayList<Integer>();
+          for (int raw : def.smallIndicies()) {
+            if (smallIdx.size() == smallCount) {
+              break;
+            }
+            int idx = raw;
+            if ("Medium".equals(sizeName)) {
+              if (nodeCount == 5 && idx == 4) {
+                idx = 3;
+              } else if (nodeCount == 4) {
+                idx = idx == 8 ? 9 : idx == 4 ? 3 : idx;
               }
-              java.util.Collections.sort(notableIdx);
-              int smallCount = nodeCount - socketCount - notableCount;
-              var smallIdx = new java.util.ArrayList<Integer>();
-              for (int raw : def.smallIndicies()) {
-                if (smallIdx.size() == smallCount) {
-                  break;
-                }
-                int idx = raw;
-                if ("Medium".equals(sizeName)) {
-                  if (nodeCount == 5 && idx == 4) {
-                    idx = 3;
-                  } else if (nodeCount == 4) {
-                    idx = idx == 8 ? 9 : idx == 4 ? 3 : idx;
-                  }
-                }
-                if (used.add(idx)) {
-                  smallIdx.add(idx);
-                }
-              }
-              var ids = new java.util.ArrayList<Integer>();
-              for (int idx : notableIdx) {
-                ids.add(nodeId + idx);
-              }
-              for (int idx : smallIdx) {
-                ids.add(nodeId + idx);
-              }
-              return new SubgraphPlan(List.copyOf(ids), ids.size());
-            });
+            }
+            if (used.add(idx)) {
+              smallIdx.add(idx);
+            }
+          }
+          var ids = new java.util.ArrayList<Integer>();
+          for (int idx : notableIdx) {
+            ids.add(nodeId + idx);
+          }
+          for (int idx : smallIdx) {
+            ids.add(nodeId + idx);
+          }
+          return new SubgraphPlan(List.copyOf(ids), ids.size());
+        });
   }
 
   /**
@@ -250,45 +246,44 @@ public class PoeClusterJewelDataService {
   public Optional<String> itemText(
       String sizeName, int nodeCount, String skillKey, List<String> notables, int socketCount) {
     return def(sizeName)
-        .map(
-            def -> {
-              int nodes = Math.max(def.minNodes(), Math.min(def.maxNodes(), nodeCount));
-              ClusterSkill skill = def.skills().get(skillKey);
-              String grant =
-                  skill != null && !skill.stats().isEmpty()
-                      ? skill.stats().get(0)
-                      : def.skills().values().stream()
-                          .filter(s -> !s.stats().isEmpty())
-                          .findFirst()
-                          .map(s -> s.stats().get(0))
-                          .orElse(null);
-              if (grant == null) {
-                return null;
-              }
-              // 주요 스킬은 "1 Added Passive Skill is <영문 이름>" 한 줄씩. PoB 는 이 이름으로 트리의
-              // 클러스터 주요 스킬(clusterNodeMap)을 찾고, **하나라도 못 찾으면 서브트리를 통째로 버린다**.
-              StringBuilder added = new StringBuilder();
-              // 주얼 슬롯은 별도 문구다(PoB ItemsTab:CraftClusterJewel 과 동일한 표현).
-              // 소켓이 있어야 그 안에 다시 클러스터를 꽂을 수 있다(중첩).
-              if (socketCount == 1) {
-                added.append("1 Added Passive Skill is a Jewel Socket\n");
-              } else if (socketCount > 1) {
-                added.append(socketCount).append(" Added Passive Skills are Jewel Sockets\n");
-              }
-              for (String notable : notables == null ? List.<String>of() : notables) {
-                if (notable != null && !notable.isBlank()) {
-                  added.append("1 Added Passive Skill is ").append(notable.trim()).append("\n");
-                }
-              }
-              return "Rarity: RARE\nSim Cluster\n"
-                  + sizeName
-                  + " Cluster Jewel\nItem Level: 84\nImplicits: 0\nAdds "
-                  + nodes
-                  + " Passive Skills\n"
-                  + added
-                  + "Added Small Passive Skills grant: "
-                  + grant
-                  + "\n";
-            });
+        .map(def -> {
+          int nodes = Math.max(def.minNodes(), Math.min(def.maxNodes(), nodeCount));
+          ClusterSkill skill = def.skills().get(skillKey);
+          String grant =
+              skill != null && !skill.stats().isEmpty()
+                  ? skill.stats().get(0)
+                  : def.skills().values().stream()
+                      .filter(s -> !s.stats().isEmpty())
+                      .findFirst()
+                      .map(s -> s.stats().get(0))
+                      .orElse(null);
+          if (grant == null) {
+            return null;
+          }
+          // 주요 스킬은 "1 Added Passive Skill is <영문 이름>" 한 줄씩. PoB 는 이 이름으로 트리의
+          // 클러스터 주요 스킬(clusterNodeMap)을 찾고, **하나라도 못 찾으면 서브트리를 통째로 버린다**.
+          StringBuilder added = new StringBuilder();
+          // 주얼 슬롯은 별도 문구다(PoB ItemsTab:CraftClusterJewel 과 동일한 표현).
+          // 소켓이 있어야 그 안에 다시 클러스터를 꽂을 수 있다(중첩).
+          if (socketCount == 1) {
+            added.append("1 Added Passive Skill is a Jewel Socket\n");
+          } else if (socketCount > 1) {
+            added.append(socketCount).append(" Added Passive Skills are Jewel Sockets\n");
+          }
+          for (String notable : notables == null ? List.<String>of() : notables) {
+            if (notable != null && !notable.isBlank()) {
+              added.append("1 Added Passive Skill is ").append(notable.trim()).append("\n");
+            }
+          }
+          return "Rarity: RARE\nSim Cluster\n"
+              + sizeName
+              + " Cluster Jewel\nItem Level: 84\nImplicits: 0\nAdds "
+              + nodes
+              + " Passive Skills\n"
+              + added
+              + "Added Small Passive Skills grant: "
+              + grant
+              + "\n";
+        });
   }
 }

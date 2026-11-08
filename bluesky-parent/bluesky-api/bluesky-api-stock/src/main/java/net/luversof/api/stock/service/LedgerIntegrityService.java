@@ -476,12 +476,11 @@ public class LedgerIntegrityService {
 
     List<LedgerIntegrityResponse.AccountFindingSummary> accountSummary =
         accountFindingCounts.entrySet().stream()
-            .map(
-                entry ->
-                    new LedgerIntegrityResponse.AccountFindingSummary(
-                        entry.getKey(),
-                        entry.getValue()[0],
-                        accountDistinctRows.getOrDefault(entry.getKey(), Set.of()).size()))
+            .map(entry ->
+                new LedgerIntegrityResponse.AccountFindingSummary(
+                    entry.getKey(),
+                    entry.getValue()[0],
+                    accountDistinctRows.getOrDefault(entry.getKey(), Set.of()).size()))
             .sorted(
                 Comparator.comparingLong(
                         LedgerIntegrityResponse.AccountFindingSummary::findingCount)

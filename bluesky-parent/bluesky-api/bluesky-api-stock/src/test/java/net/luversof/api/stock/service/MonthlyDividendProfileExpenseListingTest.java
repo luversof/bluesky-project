@@ -85,15 +85,12 @@ class MonthlyDividendProfileExpenseListingTest {
             MonthlyDividendProfileService.normalizeTotalExpenseRatioPct(new BigDecimal("0.123456")))
         .isEqualByComparingTo("0.1235");
 
-    assertThatThrownBy(
-            () ->
-                MonthlyDividendProfileService.normalizeTotalExpenseRatioPct(
-                    new BigDecimal("-0.01")))
+    assertThatThrownBy(() ->
+            MonthlyDividendProfileService.normalizeTotalExpenseRatioPct(new BigDecimal("-0.01")))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("400");
-    assertThatThrownBy(
-            () ->
-                MonthlyDividendProfileService.normalizeTotalExpenseRatioPct(new BigDecimal("100")))
+    assertThatThrownBy(() ->
+            MonthlyDividendProfileService.normalizeTotalExpenseRatioPct(new BigDecimal("100")))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("400");
   }

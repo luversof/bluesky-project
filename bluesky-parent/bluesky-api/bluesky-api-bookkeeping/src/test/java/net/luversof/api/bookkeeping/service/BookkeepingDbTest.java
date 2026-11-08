@@ -143,12 +143,11 @@ class BookkeepingDbTest {
     assertThat(categories).filteredOn(c -> c.kind() == CategoryKind.EXPENSE).hasSize(8);
     assertThat(assetService.list(book.id(), owner))
         .singleElement()
-        .satisfies(
-            a -> {
-              assertThat(a.asset().name()).isEqualTo("현금");
-              assertThat(a.asset().currency()).isEqualTo("KRW");
-              assertThat(a.balance()).isEqualByComparingTo("0");
-            });
+        .satisfies(a -> {
+          assertThat(a.asset().name()).isEqualTo("현금");
+          assertThat(a.asset().currency()).isEqualTo("KRW");
+          assertThat(a.balance()).isEqualByComparingTo("0");
+        });
     bookService.delete(book.id(), owner);
   }
 
@@ -313,39 +312,36 @@ class BookkeepingDbTest {
     assertThat(stats.range().from()).isEqualTo(LocalDate.of(2026, 10, 25));
     assertThat(stats.range().to()).isEqualTo(LocalDate.of(2026, 11, 24));
     assertThat(stats.daily())
-        .extracting(
-            d ->
-                d.date()
-                    + " "
-                    + d.currency()
-                    + " "
-                    + d.income().stripTrailingZeros().toPlainString()
-                    + " "
-                    + d.expense().stripTrailingZeros().toPlainString())
+        .extracting(d ->
+            d.date()
+                + " "
+                + d.currency()
+                + " "
+                + d.income().stripTrailingZeros().toPlainString()
+                + " "
+                + d.expense().stripTrailingZeros().toPlainString())
         .containsExactly(
             "2026-10-25 KRW 3000000 0", "2026-11-24 KRW 0 15000", "2026-11-24 USD 0 3.5");
     assertThat(stats.categories())
-        .extracting(
-            c ->
-                c.categoryId()
-                    + " "
-                    + c.currency()
-                    + " "
-                    + c.amount().stripTrailingZeros().toPlainString())
+        .extracting(c ->
+            c.categoryId()
+                + " "
+                + c.currency()
+                + " "
+                + c.amount().stripTrailingZeros().toPlainString())
         .containsExactlyInAnyOrder(
             salary.id() + " KRW 3000000", food.id() + " KRW 15000", food.id() + " USD 3.5");
 
     var trend = statsService.trend(book.id(), owner, YearMonth.of(2026, 12), 3);
     assertThat(trend)
-        .extracting(
-            t ->
-                t.month()
-                    + " "
-                    + t.currency()
-                    + " "
-                    + t.income().stripTrailingZeros().toPlainString()
-                    + " "
-                    + t.expense().stripTrailingZeros().toPlainString())
+        .extracting(t ->
+            t.month()
+                + " "
+                + t.currency()
+                + " "
+                + t.income().stripTrailingZeros().toPlainString()
+                + " "
+                + t.expense().stripTrailingZeros().toPlainString())
         .containsExactly(
             "2026-10 KRW 0 0", "2026-10 USD 0 0",
             "2026-11 KRW 3000000 15000", "2026-11 USD 0 3.5",
@@ -447,12 +443,11 @@ class BookkeepingDbTest {
     var invite = memberService.createInvite(book.id(), owner);
     assertThat(invite.token()).hasSize(43);
     assertThat(memberService.preview(invite.token()))
-        .satisfies(
-            p -> {
-              assertThat(p.bookName()).isEqualTo("test");
-              assertThat(p.expired()).isFalse();
-              assertThat(p.used()).isFalse();
-            });
+        .satisfies(p -> {
+          assertThat(p.bookName()).isEqualTo("test");
+          assertThat(p.expired()).isFalse();
+          assertThat(p.used()).isFalse();
+        });
 
     // 이미 멤버(OWNER)는 거절하고 링크를 쓰지 않는다
     assertError(
@@ -640,13 +635,12 @@ class BookkeepingDbTest {
             null);
     assertThatThrownBy(() -> entryService.importAll(book.id(), owner, List.of(ok, ok, bad)))
         .isInstanceOf(BlueskyException.class)
-        .satisfies(
-            e -> {
-              var be = (BlueskyException) e;
-              assertThat(be.getErrorCode()).isEqualTo("BookkeepingErrorCode.IMPORT_ROW_INVALID");
-              assertThat(be.getErrorMessageArgs()[0]).isEqualTo(3);
-              assertThat(be.getErrorMessageArgs()[1].toString()).contains("금액");
-            });
+        .satisfies(e -> {
+          var be = (BlueskyException) e;
+          assertThat(be.getErrorCode()).isEqualTo("BookkeepingErrorCode.IMPORT_ROW_INVALID");
+          assertThat(be.getErrorMessageArgs()[0]).isEqualTo(3);
+          assertThat(be.getErrorMessageArgs()[1].toString()).contains("금액");
+        });
     var nov =
         new EntrySearch(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30), null, null, null);
     assertThat(entryService.search(book.id(), owner, nov)).isEmpty(); // 하나도 안 들어갔다
@@ -757,13 +751,12 @@ class BookkeepingDbTest {
     assertThat(found).extracting(e -> e.installmentMonths()).containsExactlyInAnyOrder(3, null);
     assertThat(assetService.cardBills(book.id(), owner, YearMonth.of(2026, 11)))
         .singleElement()
-        .satisfies(
-            b -> {
-              assertThat(b.assetId()).isEqualTo(card.id());
-              assertThat(b.lumpSum()).isEqualByComparingTo("5000");
-              assertThat(b.installments()).isEqualByComparingTo("33334");
-              assertThat(b.total()).isEqualByComparingTo("38334");
-            });
+        .satisfies(b -> {
+          assertThat(b.assetId()).isEqualTo(card.id());
+          assertThat(b.lumpSum()).isEqualByComparingTo("5000");
+          assertThat(b.installments()).isEqualByComparingTo("33334");
+          assertThat(b.total()).isEqualByComparingTo("38334");
+        });
     // 잔액은 산 날 전액
     assertThat(
             assetService.list(book.id(), owner).stream()

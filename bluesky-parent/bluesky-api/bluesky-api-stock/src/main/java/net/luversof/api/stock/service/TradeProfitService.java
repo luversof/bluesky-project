@@ -673,32 +673,31 @@ public class TradeProfitService {
     // 첫 구간만 앞에 붙일 직전 지점이 없어 자기 첫 지점을 기초로 쓰게 된다. 이력 맨 앞부터 보는
     // 조회라면 그 이전에는 아무것도 없었으므로 기초를 0 으로 잡는다(첫날이 빠지지 않게).
     String firstKey = byBucket.keySet().stream().findFirst().orElse(null);
-    byBucket.forEach(
-        (key, points) -> {
-          TradeProfitTimeSeriesSummary summary =
-              summarizeSeries(points, zoneId, fullHistory && key.equals(firstKey));
-          // 보유도 거래도 없던 구간(전부 0)은 표에 노이즈만 되므로 제외한다.
-          if (isEmptyBucket(summary)) {
-            return;
-          }
-          // 실제로 덮은 구간. 앞에 붙인 기초 지점은 제외하고 그 구간의 날짜만 본다.
-          LocalDate from = null;
-          LocalDate to = null;
-          for (TradeProfitTimeSeriesPoint point : points) {
-            LocalDate date = pointDate(point, zoneId);
-            if (!bucketKey(date, monthly).equals(key)) {
-              continue;
-            }
-            if (from == null) {
-              from = date;
-            }
-            to = date;
-          }
-          boolean complete = from != null && to != null && coversWholeBucket(from, to, monthly);
-          result.add(
-              new TradeProfitPeriodSummary(
-                  monthly ? "MONTH" : "YEAR", key, from, to, complete, summary));
-        });
+    byBucket.forEach((key, points) -> {
+      TradeProfitTimeSeriesSummary summary =
+          summarizeSeries(points, zoneId, fullHistory && key.equals(firstKey));
+      // 보유도 거래도 없던 구간(전부 0)은 표에 노이즈만 되므로 제외한다.
+      if (isEmptyBucket(summary)) {
+        return;
+      }
+      // 실제로 덮은 구간. 앞에 붙인 기초 지점은 제외하고 그 구간의 날짜만 본다.
+      LocalDate from = null;
+      LocalDate to = null;
+      for (TradeProfitTimeSeriesPoint point : points) {
+        LocalDate date = pointDate(point, zoneId);
+        if (!bucketKey(date, monthly).equals(key)) {
+          continue;
+        }
+        if (from == null) {
+          from = date;
+        }
+        to = date;
+      }
+      boolean complete = from != null && to != null && coversWholeBucket(from, to, monthly);
+      result.add(
+          new TradeProfitPeriodSummary(
+              monthly ? "MONTH" : "YEAR", key, from, to, complete, summary));
+    });
     // 최신이 위로. 문자열 키가 YYYY / YYYY-MM 라 사전순 역정렬이 곧 시간 역순이다.
     result.sort(Comparator.comparing(TradeProfitPeriodSummary::label).reversed());
     return result;
@@ -1192,16 +1191,15 @@ public class TradeProfitService {
         // (DB 캐시 대신 이 캡처를 쓰므로 시계열과 스냅샷이 어긋날 수 없다.)
         if (captureDates != null && capturedStates != null && captureDates.contains(currentDay)) {
           Map<String, WmaState> copied = new HashMap<>();
-          stateMap.forEach(
-              (stateKey, stateValue) -> {
-                WmaState copy = stateValue.copy();
-                // 시계열 평가액과 같은 값(원주가 x 실제 주식 수)을 스냅샷도 내도록 그 날 쓴 원주가를 붙인다.
-                copy.setCapturedRawClose(
-                    rawValuation.covers(stateValue.getStockItemId())
-                        ? lastKnownRawCloses.get(stateValue.getStockItemId())
-                        : null);
-                copied.put(stateKey, copy);
-              });
+          stateMap.forEach((stateKey, stateValue) -> {
+            WmaState copy = stateValue.copy();
+            // 시계열 평가액과 같은 값(원주가 x 실제 주식 수)을 스냅샷도 내도록 그 날 쓴 원주가를 붙인다.
+            copy.setCapturedRawClose(
+                rawValuation.covers(stateValue.getStockItemId())
+                    ? lastKnownRawCloses.get(stateValue.getStockItemId())
+                    : null);
+            copied.put(stateKey, copy);
+          });
           capturedStates.put(currentDay, copied);
           // 그 날 시점의 최근 종가도 함께 남긴다. 스냅샷 표시가격을 종목마다 다시 조회하면
           // (날짜 x 종목) 만큼 단건 쿼리가 나가는데, 여기 값이 그 조회 결과와 같다.
@@ -1809,12 +1807,10 @@ public class TradeProfitService {
         if (complete) {
           covered.add(id);
           raw.getOrDefault(id, Map.of())
-              .forEach(
-                  (day, close) ->
-                      byDay.computeIfAbsent(day, key -> new HashMap<>()).put(id, close));
-          stockEvents.forEach(
-              (day, multiplier) ->
-                  events.computeIfAbsent(day, key -> new HashMap<>()).put(id, multiplier));
+              .forEach((day, close) ->
+                  byDay.computeIfAbsent(day, key -> new HashMap<>()).put(id, close));
+          stockEvents.forEach((day, multiplier) ->
+              events.computeIfAbsent(day, key -> new HashMap<>()).put(id, multiplier));
         }
       }
       return new RawValuation(raw, adjusted, byDay, events, covered);
@@ -2187,41 +2183,36 @@ public class TradeProfitService {
   private static <K> List<TradeProfitTimeSeriesPoint> downsample(
       List<TradeProfitTimeSeriesPoint> series, Function<TradeProfitTimeSeriesPoint, K> bucketKey) {
     return series.stream().collect(Collectors.groupingBy(bucketKey)).values().stream()
-        .map(
-            bucket -> {
-              TradeProfitTimeSeriesPoint last =
-                  bucket.stream()
-                      .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
-                      .orElse(null);
-              if (last == null) return null;
-              long tradeCount =
-                  bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
-              long buyCount = bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
-              long tradeVolume =
-                  bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeVolume).sum();
-              BigDecimal dailyRealized =
-                  bucket.stream()
-                      .map(
-                          p ->
-                              p.dailyRealizedProfit() != null
-                                  ? p.dailyRealizedProfit()
-                                  : BigDecimal.ZERO)
-                      .reduce(BigDecimal.ZERO, BigDecimal::add);
-              return new TradeProfitTimeSeriesPoint(
-                  last.timestamp(),
-                  last.cumulativeRealizedProfit(),
-                  dailyRealized,
-                  tradeCount,
-                  buyCount,
-                  tradeVolume,
-                  last.totalHoldingsValue(),
-                  last.totalHoldingsCost(),
-                  last.cumulativeTotalProfit(),
-                  last.cumulativeDividend(),
-                  last.date(),
-                  last.cumulativeNetCashFlow(),
-                  last.cumulativeGrossInflow());
-            })
+        .map(bucket -> {
+          TradeProfitTimeSeriesPoint last =
+              bucket.stream()
+                  .max(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
+                  .orElse(null);
+          if (last == null) return null;
+          long tradeCount = bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeCount).sum();
+          long buyCount = bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::buyCount).sum();
+          long tradeVolume =
+              bucket.stream().mapToLong(TradeProfitTimeSeriesPoint::tradeVolume).sum();
+          BigDecimal dailyRealized =
+              bucket.stream()
+                  .map(p ->
+                      p.dailyRealizedProfit() != null ? p.dailyRealizedProfit() : BigDecimal.ZERO)
+                  .reduce(BigDecimal.ZERO, BigDecimal::add);
+          return new TradeProfitTimeSeriesPoint(
+              last.timestamp(),
+              last.cumulativeRealizedProfit(),
+              dailyRealized,
+              tradeCount,
+              buyCount,
+              tradeVolume,
+              last.totalHoldingsValue(),
+              last.totalHoldingsCost(),
+              last.cumulativeTotalProfit(),
+              last.cumulativeDividend(),
+              last.date(),
+              last.cumulativeNetCashFlow(),
+              last.cumulativeGrossInflow());
+        })
         .filter(Objects::nonNull)
         .sorted(Comparator.comparing(TradeProfitTimeSeriesPoint::timestamp))
         .collect(Collectors.toList());

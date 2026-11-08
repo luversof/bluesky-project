@@ -47,7 +47,7 @@ public class ClientCommonAutoConfiguration {
 
   @Bean
   RestClientCustomizer clientCommonRestClientCustomizer(JsonMapper jsonMapper) {
-    return (builder) -> {
+    return builder -> {
       builder.defaultStatusHandler(new BlueskyClientResponseErrorHandler(jsonMapper));
     };
   }

@@ -24,14 +24,14 @@ class PlusMonthlyDividendPayoutSourceParserTest {
     PlusDividendPage firstPage =
         parser.parsePage(
             """
-						{
-						  "content": [
-						    {"wkdate":"20260515","dkdate":"20260519","dividend":"159","taxBase":"44"},
-						    {"wkdate":"20260415","dkdate":"20260417","dividend":"163","taxBase":"163"}
-						  ],
-						  "last": true
-						}
-						""");
+            {
+              "content": [
+                {"wkdate":"20260515","dkdate":"20260519","dividend":"159","taxBase":"44"},
+                {"wkdate":"20260415","dkdate":"20260417","dividend":"163","taxBase":"163"}
+              ],
+              "last": true
+            }
+            """);
 
     String bulkInput = parser.toBulkInput(firstPage.content());
     List<MonthlyDividendPayoutUpsertRequest> requests = importParser.parse("0018C0", bulkInput);

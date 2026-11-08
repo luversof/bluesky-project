@@ -101,14 +101,13 @@ class KisBackfillSkipTest {
     when(kisAuthService.getValidConfig(any())).thenReturn(config);
     when(kisRestTemplate.exchange(
             any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(Class.class)))
-        .thenAnswer(
-            invocation -> {
-              calledUrls.add(invocation.getArgument(0));
-              if (kisFails) {
-                throw new RestClientException("잠시 끊김");
-              }
-              return ResponseEntity.ok().build();
-            });
+        .thenAnswer(invocation -> {
+          calledUrls.add(invocation.getArgument(0));
+          if (kisFails) {
+            throw new RestClientException("잠시 끊김");
+          }
+          return ResponseEntity.ok().build();
+        });
     return item.getId();
   }
 
@@ -154,13 +153,12 @@ class KisBackfillSkipTest {
         new java.util.concurrent.atomic.AtomicInteger();
     when(kisRestTemplate.exchange(
             any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(Class.class)))
-        .thenAnswer(
-            invocation -> {
-              if (calls.incrementAndGet() == 1) {
-                throw kisError("EGW00201");
-              }
-              return ResponseEntity.ok().build();
-            });
+        .thenAnswer(invocation -> {
+          if (calls.incrementAndGet() == 1) {
+            throw kisError("EGW00201");
+          }
+          return ResponseEntity.ok().build();
+        });
 
     var response = service.exchangeWithRateLimitRetry("http://kis/x", HttpEntity.EMPTY);
 
@@ -175,13 +173,12 @@ class KisBackfillSkipTest {
         new java.util.concurrent.atomic.AtomicInteger();
     when(kisRestTemplate.exchange(
             any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(Class.class)))
-        .thenAnswer(
-            invocation -> {
-              if (calls.incrementAndGet() == 1) {
-                throw kisError("EGW00201");
-              }
-              return ResponseEntity.ok().build();
-            });
+        .thenAnswer(invocation -> {
+          if (calls.incrementAndGet() == 1) {
+            throw kisError("EGW00201");
+          }
+          return ResponseEntity.ok().build();
+        });
 
     var result = service.updatePriceHistory(UUID.randomUUID());
 
@@ -194,11 +191,10 @@ class KisBackfillSkipTest {
         new java.util.concurrent.atomic.AtomicInteger();
     when(kisRestTemplate.exchange(
             any(String.class), any(HttpMethod.class), any(HttpEntity.class), any(Class.class)))
-        .thenAnswer(
-            invocation -> {
-              calls.incrementAndGet();
-              throw kisError("EGW00123");
-            });
+        .thenAnswer(invocation -> {
+          calls.incrementAndGet();
+          throw kisError("EGW00123");
+        });
 
     org.assertj.core.api.Assertions.assertThatThrownBy(
             () -> service.exchangeWithRateLimitRetry("http://kis/x", HttpEntity.EMPTY))

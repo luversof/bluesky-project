@@ -66,7 +66,6 @@ public class BlogArticleService {
             .orElseThrow(BlogErrorCode.NOT_EXIST_BLOGARTICLE::exception);
     if (!targetBlogArticle.getUserId().equals(blogArticle.getUserId())) {
       BlogErrorCode.NOT_USER_BLOGARTICLE.throwException();
-      ;
     }
     blogArticleRepository.delete(targetBlogArticle);
   }

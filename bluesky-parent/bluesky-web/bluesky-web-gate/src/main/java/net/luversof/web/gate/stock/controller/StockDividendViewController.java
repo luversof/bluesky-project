@@ -175,10 +175,9 @@ public class StockDividendViewController {
     UUID financialIncomeUserId = UserUtil.getUserId();
     ZoneId taxZone = ZoneId.of("Asia/Seoul");
     var financialIncomeFuture =
-        stockAsync.supply(
-            () ->
-                financialIncomeThresholdSupport.load(
-                    financialIncomeUserId, LocalDate.now(taxZone), taxZone));
+        stockAsync.supply(() ->
+            financialIncomeThresholdSupport.load(
+                financialIncomeUserId, LocalDate.now(taxZone), taxZone));
     populateUpcomingDividendModel(UserUtil.getUserId(), model);
     model.addAttribute("financialIncome", StockAsyncSupport.join(financialIncomeFuture));
     return "stock/dividend";
@@ -416,16 +415,14 @@ public class StockDividendViewController {
 
     // 같은 날에 여럿이면 최근 금액이 큰 종목부터 - 대시보드의 다가올 배당과 같은 순서(2026-10-13 사용자 선택 "최근을 우선으로").
     Comparator<DividendCalendarView.Entry> byLatestDesc =
-        Comparator.comparing(
-                (DividendCalendarView.Entry entry) ->
-                    entry.latest() != null ? entry.latest() : BigDecimal.ZERO)
+        Comparator.comparing((DividendCalendarView.Entry entry) ->
+                entry.latest() != null ? entry.latest() : BigDecimal.ZERO)
             .reversed();
     List<DividendCalendarView.Day> days = new ArrayList<>();
-    byDate.forEach(
-        (date, entries) -> {
-          entries.sort(byLatestDesc);
-          days.add(new DividendCalendarView.Day(date, true, date.equals(today), entries));
-        });
+    byDate.forEach((date, entries) -> {
+      entries.sort(byLatestDesc);
+      days.add(new DividendCalendarView.Day(date, true, date.equals(today), entries));
+    });
     return new UpcomingDividendScheduleView(today, days, undated, overdue);
   }
 
@@ -885,13 +882,12 @@ public class StockDividendViewController {
       }
       result.results().stream()
           .filter(one -> !one.succeeded())
-          .forEach(
-              one ->
-                  notes.add(
-                      msg(
-                          "stock.monthly.reference.link.result.failure",
-                          one.sourceUrl(),
-                          one.failureReason())));
+          .forEach(one ->
+              notes.add(
+                  msg(
+                      "stock.monthly.reference.link.result.failure",
+                      one.sourceUrl(),
+                      one.failureReason())));
 
       redirectAttributes.addFlashAttribute("monthlyDividendReferenceResultMessage", summary);
       redirectAttributes.addFlashAttribute(
@@ -964,9 +960,8 @@ public class StockDividendViewController {
     List<MonthlyDividendProfileResponse> targets =
         monthlyDividendReferenceSupport.loadMonthlyDividendProfiles().stream()
             .filter(MonthlyDividendProfileResponse::active)
-            .filter(
-                profile ->
-                    normalizedWindow.equals(StockViewSupport.safeString(profile.payoutWindow())))
+            .filter(profile ->
+                normalizedWindow.equals(StockViewSupport.safeString(profile.payoutWindow())))
             .filter(profile -> StringUtils.hasText(profile.sourceUrl()))
             .toList();
 
@@ -1118,10 +1113,8 @@ public class StockDividendViewController {
 
     String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
     return monthlyDividendReferenceSupport.loadMonthlyDividendProfiles().stream()
-        .filter(
-            row ->
-                normalizedSymbol.equalsIgnoreCase(
-                    StockViewSupport.safeString(row.stockItemSymbol())))
+        .filter(row ->
+            normalizedSymbol.equalsIgnoreCase(StockViewSupport.safeString(row.stockItemSymbol())))
         .findFirst()
         .orElse(null);
   }
@@ -1130,11 +1123,10 @@ public class StockDividendViewController {
       List<MonthlyDividendPayoutUpsertRequest> requests) {
     // 전부 검사한 뒤에 저장한다 - 한 줄씩 검사하며 저장하면 7 번째 줄이 틀렸을 때 1~6 번째만 들어가고 화면엔 오류만 보여,
     // 다시 시도해도 무엇이 들어갔는지 알 수 없었다(2026-10-28 감사).
-    requests.forEach(
-        request -> {
-          normalizeMonthlyDividendPayoutRequest(request);
-          validateMonthlyDividendPayoutRequest(request);
-        });
+    requests.forEach(request -> {
+      normalizeMonthlyDividendPayoutRequest(request);
+      validateMonthlyDividendPayoutRequest(request);
+    });
     requests.forEach(monthlyDividendPayoutClient::upsertPayout);
   }
 

@@ -87,25 +87,21 @@ public final class TemplateUtil {
 
   private static List<Menu> getMenuListFromMainMenuList(List<MainMenu> mainMenuList) {
     var menuList = new ArrayList<Menu>();
-    mainMenuList.forEach(
-        mainMenu -> {
-          var subMenuList =
-              SettingUtil.getSubMenuList(
-                  mainMenu.getAdminProjectId(), mainMenu.getProjectId(), mainMenu.getMainMenuId());
-          subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
-          if (!CollectionUtils.isEmpty(subMenuList)) {
-            var menu = new Menu();
-            var targetSubMenu =
-                subMenuList.stream()
-                    .filter(SubMenu::isEnableDisplay)
-                    .findFirst()
-                    .orElseGet(() -> null);
-            menu.setUrl(targetSubMenu == null ? null : targetSubMenu.getUrl());
-            menu.setMessageCode(mainMenu.getMainMenuName());
-            menu.setDisplay(mainMenu.isEnableDisplay());
-            menuList.add(menu);
-          }
-        });
+    mainMenuList.forEach(mainMenu -> {
+      var subMenuList =
+          SettingUtil.getSubMenuList(
+              mainMenu.getAdminProjectId(), mainMenu.getProjectId(), mainMenu.getMainMenuId());
+      subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
+      if (!CollectionUtils.isEmpty(subMenuList)) {
+        var menu = new Menu();
+        var targetSubMenu =
+            subMenuList.stream().filter(SubMenu::isEnableDisplay).findFirst().orElseGet(() -> null);
+        menu.setUrl(targetSubMenu == null ? null : targetSubMenu.getUrl());
+        menu.setMessageCode(mainMenu.getMainMenuName());
+        menu.setDisplay(mainMenu.isEnableDisplay());
+        menuList.add(menu);
+      }
+    });
     return menuList;
   }
 
@@ -135,14 +131,13 @@ public final class TemplateUtil {
   private static List<Menu> getMenuListFromSubMenuList(List<SubMenu> subMenuList) {
     subMenuList.sort(Comparator.comparing(SubMenu::getDisplayOrder));
     var menuList = new ArrayList<Menu>();
-    subMenuList.forEach(
-        subMenu -> {
-          var menu = new Menu();
-          menu.setUrl(subMenu.getUrl());
-          menu.setMessageCode(subMenu.getSubMenuName());
-          menu.setDisplay(subMenu.isEnableDisplay());
-          menuList.add(menu);
-        });
+    subMenuList.forEach(subMenu -> {
+      var menu = new Menu();
+      menu.setUrl(subMenu.getUrl());
+      menu.setMessageCode(subMenu.getSubMenuName());
+      menu.setDisplay(subMenu.isEnableDisplay());
+      menuList.add(menu);
+    });
     return menuList;
   }
 

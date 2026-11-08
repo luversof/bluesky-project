@@ -624,9 +624,9 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
               DbFieldEnable.REQUIRED,
               DbFieldEnable.REQUIRED,
               """
-							ConnectionInfo에 등록되어 있는 dataSource Name을 설정하면 미리 DataSource bean을 설정하지 않아도 후처리로 DataSource를 생성하고 등록합니다.
-							다만 잘못설정된 연결 정보를 설정한 경우 connectionInfo lazy load를 불필요하게 계속 호출하는 것을 방지하기 위해 현재 호출 실패시 1시간 동안 재호출을 막아두었습니다.
-							""",
+              ConnectionInfo에 등록되어 있는 dataSource Name을 설정하면 미리 DataSource bean을 설정하지 않아도 후처리로 DataSource를 생성하고 등록합니다.
+              다만 잘못설정된 연결 정보를 설정한 경우 connectionInfo lazy load를 불필요하게 계속 호출하는 것을 방지하기 위해 현재 호출 실패시 1시간 동안 재호출을 막아두었습니다.
+              """,
               null);
       dbFieldList.add(field);
     }
@@ -654,11 +654,11 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
               DbFieldEnable.REQUIRED,
               DbFieldEnable.REQUIRED,
               """
-							MsSql의 경우 SELECT query 등록 시 order by 절이 필수 항목입니다. (MySql은 선택 항목)
-							예) SELECT * FROM SomeTable Order By idx DESC
-							SELECT 쿼리는 동적으로 페이징/검색 쿼리를 구성합니다.
-							등록 시 Where 조건을 설정한 경우 동적 쿼리를 구성하지 않으며 연관한 기능들이 제대로 동작하지 않습니다.
-							""",
+              MsSql의 경우 SELECT query 등록 시 order by 절이 필수 항목입니다. (MySql은 선택 항목)
+              예) SELECT * FROM SomeTable Order By idx DESC
+              SELECT 쿼리는 동적으로 페이징/검색 쿼리를 구성합니다.
+              등록 시 Where 조건을 설정한 경우 동적 쿼리를 구성하지 않으며 연관한 기능들이 제대로 동작하지 않습니다.
+              """,
               null);
       dbFieldList.add(field);
     }
@@ -859,11 +859,11 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
               DbFieldEnable.ENABLED,
               DbFieldEnable.ENABLED,
               """
-							정해진 값 중 선택을 하는 컬럼은 preset을 지정하면 됩니다. ',' 로 각 값을 구분하면 됩니다.
-							예)  Avalue,Bvalue,Cvalue
-							만약 해당 값에 대해 화면의 표시 처리는 다르게 하려는 경우 '|'로 각 값의 표시값을 추가할 수 있습니다.
-							예) Avalue|A값,Bvalue|B값,Cvalue|C값
-							""",
+              정해진 값 중 선택을 하는 컬럼은 preset을 지정하면 됩니다. ',' 로 각 값을 구분하면 됩니다.
+              예)  Avalue,Bvalue,Cvalue
+              만약 해당 값에 대해 화면의 표시 처리는 다르게 하려는 경우 '|'로 각 값의 표시값을 추가할 수 있습니다.
+              예) Avalue|A값,Bvalue|B값,Cvalue|C값
+              """,
               null);
       dbFieldList.add(field);
     }
@@ -945,9 +945,9 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
               DbFieldEnable.REQUIRED,
               DbFieldEnable.REQUIRED,
               """
-							표시여부는 해당 컬럼을 화면에 노출할지 여부에 대한 설정입니다.
-							대부분 노출/비노출 설정을 선택하면 되며 해당 컬럼의 데이터를 사용하지 않아야 하는 경우 사용안함을 선택하면 됩니다.
-							""",
+              표시여부는 해당 컬럼을 화면에 노출할지 여부에 대한 설정입니다.
+              대부분 노출/비노출 설정을 선택하면 되며 해당 컬럼의 데이터를 사용하지 않아야 하는 경우 사용안함을 선택하면 됩니다.
+              """,
               null);
       dbFieldList.add(field);
     }
@@ -1002,9 +1002,9 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
               DbFieldEnable.ENABLED,
               DbFieldEnable.ENABLED,
               """
-							검색 조건 타입은 해당 컬럼을 검색하는 조건에 대한 설정입니다.
-							검색 조건을 활성화, 필수로 선택하는 경우 같이 선택해야만 합니다.
-							""",
+              검색 조건 타입은 해당 컬럼을 검색하는 조건에 대한 설정입니다.
+              검색 조건을 활성화, 필수로 선택하는 경우 같이 선택해야만 합니다.
+              """,
               null);
       dbFieldList.add(field);
     }
@@ -1032,8 +1032,8 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
               DbFieldEnable.ENABLED,
               DbFieldEnable.ENABLED,
               """
-							검색 입력 폼의 기본 값을 설정합니다.
-							""",
+              검색 입력 폼의 기본 값을 설정합니다.
+              """,
               null);
       dbFieldList.add(field);
     }
@@ -1061,8 +1061,8 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
               DbFieldEnable.ENABLED,
               DbFieldEnable.ENABLED,
               """
-							검색 입력 폼의 attribute를 지정할 수 있습니다. 예) minlength=2,maxlength=40
-							""",
+              검색 입력 폼의 attribute를 지정할 수 있습니다. 예) minlength=2,maxlength=40
+              """,
               null);
       dbFieldList.add(field);
     }
@@ -1419,12 +1419,11 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
   @Override
   public List<DbField> findList(SettingParameter settingParameter) {
     return dbFieldList.stream()
-        .filter(
-            x ->
-                x.getAdminProjectId().equals(settingParameter.adminProjectId())
-                    && x.getProjectId().equals(settingParameter.projectId())
-                    && x.getMainMenuId().equals(settingParameter.mainMenuId())
-                    && x.getSubMenuId().equals(settingParameter.subMenuId()))
+        .filter(x ->
+            x.getAdminProjectId().equals(settingParameter.adminProjectId())
+                && x.getProjectId().equals(settingParameter.projectId())
+                && x.getMainMenuId().equals(settingParameter.mainMenuId())
+                && x.getSubMenuId().equals(settingParameter.subMenuId()))
         .sorted(Comparator.comparing(DbField::getColumnOrder))
         .collect(Collectors.toList());
   }

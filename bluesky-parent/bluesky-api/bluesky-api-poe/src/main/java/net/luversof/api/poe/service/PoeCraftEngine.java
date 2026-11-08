@@ -722,10 +722,9 @@ public final class PoeCraftEngine {
     List<Affix> removable =
         item.affixes().stream()
             .filter(a -> !keep.contains(a))
-            .filter(
-                a ->
-                    !(am.noAttack() && affixTags(item, a).contains("attack"))
-                        && !(am.noCaster() && affixTags(item, a).contains("caster")))
+            .filter(a ->
+                !(am.noAttack() && affixTags(item, a).contains("attack"))
+                    && !(am.noCaster() && affixTags(item, a).contains("caster")))
             .toList();
     if (removable.isEmpty()) {
       return Result.fail(item, "지울 수 있는 옵션이 없습니다(분열 · 잠긴 쪽 · 금지 메타)");
@@ -1176,11 +1175,10 @@ public final class PoeCraftEngine {
     Affix byType =
         item.affixes().stream()
             .filter(a -> !a.fractured() && !a.crafted() && !fixedSide.contains(a))
-            .filter(
-                a -> {
-                  PoeCraftDataService.CraftMod m = data.mod(a.id());
-                  return m != null && m.mt() != null && srcTypes.contains(m.mt());
-                })
+            .filter(a -> {
+              PoeCraftDataService.CraftMod m = data.mod(a.id());
+              return m != null && m.mt() != null && srcTypes.contains(m.mt());
+            })
             .findFirst()
             .orElse(null);
     if (byType != null) {
@@ -1195,11 +1193,10 @@ public final class PoeCraftEngine {
     Affix src =
         item.affixes().stream()
             .filter(a -> !a.fractured() && !a.crafted() && !fixedSide.contains(a))
-            .filter(
-                a -> {
-                  PoeCraftDataService.CraftMod m = data.mod(a.id());
-                  return m != null && fromFam.equals(m.f());
-                })
+            .filter(a -> {
+              PoeCraftDataService.CraftMod m = data.mod(a.id());
+              return m != null && fromFam.equals(m.f());
+            })
             .findFirst()
             .orElse(null);
     if (src == null) {
@@ -1462,11 +1459,10 @@ public final class PoeCraftEngine {
         List<Affix> cand =
             item.affixes().stream()
                 .filter(x -> !x.fractured() && !x.crafted() && !keep.contains(x))
-                .filter(
-                    x -> {
-                      PoeCraftDataService.CraftMod m = data.mod(x.id());
-                      return m != null && m.mt() != null && ATTRIBUTE_TYPES.contains(m.mt());
-                    })
+                .filter(x -> {
+                  PoeCraftDataService.CraftMod m = data.mod(x.id());
+                  return m != null && m.mt() != null && ATTRIBUTE_TYPES.contains(m.mt());
+                })
                 .toList();
         if (cand.isEmpty()) {
           return Result.fail(item, "능력치 하나를 부여하는 속성이 없습니다");
@@ -1883,11 +1879,10 @@ public final class PoeCraftEngine {
     Meta dm = meta(item.affixes());
     List<Affix> upCand =
         inf.stream()
-            .filter(
-                a ->
-                    !a.fractured()
-                        && !(dm.prefixLocked() && "prefix".equals(a.gen()))
-                        && !(dm.suffixLocked() && "suffix".equals(a.gen())))
+            .filter(a ->
+                !a.fractured()
+                    && !(dm.prefixLocked() && "prefix".equals(a.gen()))
+                    && !(dm.suffixLocked() && "suffix".equals(a.gen())))
             .toList();
     if (upCand.isEmpty()) {
       return Result.fail(item, "올릴 수 있는 영향력 옵션이 없습니다(잠긴 쪽)");
@@ -2625,10 +2620,9 @@ public final class PoeCraftEngine {
         List<Affix> removable =
             item.affixes().stream()
                 .filter(a -> gen.equals(a.gen()) && !keep.contains(a))
-                .filter(
-                    a ->
-                        !(em.noAttack() && affixTags(item, a).contains("attack"))
-                            && !(em.noCaster() && affixTags(item, a).contains("caster")))
+                .filter(a ->
+                    !(em.noAttack() && affixTags(item, a).contains("attack"))
+                        && !(em.noCaster() && affixTags(item, a).contains("caster")))
                 .toList();
         if (removable.isEmpty()) {
           return Result.fail(item, (pre ? "접두" : "접미") + "에 지울 수 있는 옵션이 없습니다");

@@ -48,9 +48,8 @@ public class StockPriceService {
     // 모든 행이 거래량 0 인 종목(수집이 무거래일에만 돌았던 경우)은 값이 아예 사라지면 안 되므로 폴백한다.
     return stockPriceHistoryRepository
         .findTopByStockItemIdAndVolumeGreaterThanOrderByTradeDateDesc(stockItemId, 0L)
-        .or(
-            () ->
-                stockPriceHistoryRepository.findTopByStockItemIdOrderByTradeDateDesc(stockItemId));
+        .or(() ->
+            stockPriceHistoryRepository.findTopByStockItemIdOrderByTradeDateDesc(stockItemId));
   }
 
   /** 종목별 최신 종가(+거래일)를 한 번에 조회한다. 빈 입력이면 빈 맵. */
@@ -78,11 +77,9 @@ public class StockPriceService {
     return stockPriceHistoryRepository
         .findTopByStockItemIdAndTradeDateLessThanEqualAndVolumeGreaterThanOrderByTradeDateDesc(
             stockItemId, at, 0L)
-        .or(
-            () ->
-                stockPriceHistoryRepository
-                    .findTopByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
-                        stockItemId, at))
+        .or(() ->
+            stockPriceHistoryRepository
+                .findTopByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(stockItemId, at))
         .map(StockPriceHistory::getClosePrice)
         .orElseGet(() -> getCurrentPrice(stockItemId));
   }

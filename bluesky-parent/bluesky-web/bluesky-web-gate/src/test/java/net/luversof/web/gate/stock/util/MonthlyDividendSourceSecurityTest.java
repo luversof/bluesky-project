@@ -52,11 +52,10 @@ class MonthlyDividendSourceSecurityTest {
   /** 공용 빌더처럼 사용자 토큰을 붙이는 빌더 + 가짜 서버. 서비스는 이 빌더로 제 RestClient 를 만든다. */
   private static RestClient.Builder tokenAddingBuilder() {
     return RestClient.builder()
-        .requestInterceptor(
-            (request, body, execution) -> {
-              request.getHeaders().setBearerAuth("user-access-token");
-              return execution.execute(request, body);
-            });
+        .requestInterceptor((request, body, execution) -> {
+          request.getHeaders().setBearerAuth("user-access-token");
+          return execution.execute(request, body);
+        });
   }
 
   private static MonthlyDividendPayoutSourceImportService service(RestClient.Builder builder) {

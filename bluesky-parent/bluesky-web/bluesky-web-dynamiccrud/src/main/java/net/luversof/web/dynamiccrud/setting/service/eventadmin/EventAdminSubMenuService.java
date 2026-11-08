@@ -173,11 +173,10 @@ public class EventAdminSubMenuService implements SettingServiceListSupplier<SubM
   @Override
   public List<SubMenu> findList(SettingParameter settingParameter) {
     return subMenuList.stream()
-        .filter(
-            x ->
-                x.getAdminProjectId().equals(settingParameter.adminProjectId())
-                    && x.getProjectId().equals(settingParameter.projectId())
-                    && x.getMainMenuId().equals(settingParameter.mainMenuId()))
+        .filter(x ->
+            x.getAdminProjectId().equals(settingParameter.adminProjectId())
+                && x.getProjectId().equals(settingParameter.projectId())
+                && x.getMainMenuId().equals(settingParameter.mainMenuId()))
         .sorted(Comparator.comparing(SubMenu::getDisplayOrder))
         .collect(Collectors.toList());
   }

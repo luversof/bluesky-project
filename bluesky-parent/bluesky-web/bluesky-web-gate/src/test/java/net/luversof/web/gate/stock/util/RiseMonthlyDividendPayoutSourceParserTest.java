@@ -30,16 +30,16 @@ class RiseMonthlyDividendPayoutSourceParserTest {
   /** 실제 응답 모양(44J2, 2026-09-21 실측)에서 필요한 칸만 남긴 것. */
   private static final String SAMPLE_JSON =
       """
-			{
-			  "fund_cd": "44J2",
-			  "name": "RISE 코리아밸류업위클리고정커버드콜",
-			  "info": {"payment_schedule": "매월 15일(다만, 매월 15일이 영업일이 아닌 경우 그 직전 영업일)"},
-			  "history": [
-			    {"base_date":"2026-09-15","payment_date":"2026-09-17","amount":540.0,"tax_standard_amount":9.0,"dividend_ratio":2.98},
-			    {"base_date":"2026-08-14","payment_date":"2026-08-19","amount":420.0,"tax_standard_amount":0.0,"dividend_ratio":2.4}
-			  ]
-			}
-			""";
+      {
+        "fund_cd": "44J2",
+        "name": "RISE 코리아밸류업위클리고정커버드콜",
+        "info": {"payment_schedule": "매월 15일(다만, 매월 15일이 영업일이 아닌 경우 그 직전 영업일)"},
+        "history": [
+          {"base_date":"2026-09-15","payment_date":"2026-09-17","amount":540.0,"tax_standard_amount":9.0,"dividend_ratio":2.98},
+          {"base_date":"2026-08-14","payment_date":"2026-08-19","amount":420.0,"tax_standard_amount":0.0,"dividend_ratio":2.4}
+        ]
+      }
+      """;
 
   @Test
   void JSON_지급이력을_가져오기_입력으로_바꾼다() {

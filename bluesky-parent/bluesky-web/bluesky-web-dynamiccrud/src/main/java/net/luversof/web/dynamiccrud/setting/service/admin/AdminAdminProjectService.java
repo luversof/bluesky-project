@@ -24,9 +24,9 @@ public class AdminAdminProjectService implements SettingServiceSupplier<AdminPro
             "어드민",
             "",
             """
-			ROLE_ADMIN > ROLE_USER
-			ROLE_USER > ROLE_ANONYMOUS
-			""");
+            ROLE_ADMIN > ROLE_USER
+            ROLE_USER > ROLE_ANONYMOUS
+            """);
   }
 
   @Override

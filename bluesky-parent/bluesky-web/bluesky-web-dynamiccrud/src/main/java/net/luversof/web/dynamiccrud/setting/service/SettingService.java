@@ -12,5 +12,4 @@ public interface SettingService<T extends Setting> {
   default int getOrder() {
     return 0;
   }
-  ;
 }

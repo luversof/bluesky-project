@@ -232,35 +232,34 @@ public class Poe2DataController {
         o.globalMedianDps(),
         o.globalMedianEhp(),
         o.archetypes().stream()
-            .map(
-                a ->
-                    a.start() == null
-                        ? a
-                        : new Poe2NinjaService.Archetype(
-                            a.ascendancy(),
-                            a.mainSkill(),
-                            a.sample(),
-                            a.medianLevel(),
-                            a.medianLife(),
-                            a.medianEs(),
-                            a.medianEhp(),
-                            a.medianDps(),
-                            a.lean(),
-                            a.topKeystones(),
-                            a.topCoSkills(),
-                            a.facetTotal(),
-                            a.topItems(),
-                            a.topAnointed(),
-                            new Poe2NinjaService.RealStart(
-                                a.start().level(),
-                                a.start().dps(),
-                                a.start().ehp(),
-                                a.start().life(),
-                                a.start().es(),
-                                a.start().measured(),
-                                a.start().medianDps(),
-                                a.start().medianEhp(),
-                                null)))
+            .map(a ->
+                a.start() == null
+                    ? a
+                    : new Poe2NinjaService.Archetype(
+                        a.ascendancy(),
+                        a.mainSkill(),
+                        a.sample(),
+                        a.medianLevel(),
+                        a.medianLife(),
+                        a.medianEs(),
+                        a.medianEhp(),
+                        a.medianDps(),
+                        a.lean(),
+                        a.topKeystones(),
+                        a.topCoSkills(),
+                        a.facetTotal(),
+                        a.topItems(),
+                        a.topAnointed(),
+                        new Poe2NinjaService.RealStart(
+                            a.start().level(),
+                            a.start().dps(),
+                            a.start().ehp(),
+                            a.start().life(),
+                            a.start().es(),
+                            a.start().measured(),
+                            a.start().medianDps(),
+                            a.start().medianEhp(),
+                            null)))
             .toList());
   }
 
