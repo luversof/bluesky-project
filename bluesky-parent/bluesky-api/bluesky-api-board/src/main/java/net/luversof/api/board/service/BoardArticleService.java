@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.api.board.constant.BoardErrorCode;
@@ -52,6 +53,9 @@ public class BoardArticleService {
     return boardArticleRepository.findById(id);
   }
 
+  // Comments go first; without one transaction a failed article delete left the article with no
+  // comments.
+  @Transactional(transactionManager = "boardTransactionManager")
   public void delete(BoardArticle boardArticle) {
     var targetBoardArticle =
         boardArticleRepository

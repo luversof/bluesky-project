@@ -505,21 +505,22 @@ public class PoeOptimizeService {
     }
     try {
       JsonNode root = JsonMapper.builder().build().readTree(Files.readString(file));
-      // 재로드 대비 초기화 — put 병합만 하면 지난 리그의 아키타입 키가 남아 새 시드와 섞인다.
-      //   (읽기·파싱 성공 후에 비워야 깨진 파일 한 번에 멀쩡한 시드를 잃지 않는다)
-      ninjaSeedByKey.clear();
-      ninjaSeedBySkill.clear();
-      ninjaBenchByKey.clear();
-      ninjaBenchBySkill.clear();
-      ninjaFacetNodeByKey.clear();
-      ninjaFacetNodeBySkill.clear();
+      // 재로드는 새 맵에 채운 뒤 한 번에 바꿔 끼운다 — 요청 스레드가 읽는 맵을 clear() 하면 재로드 중 요청이 빈 시드로
+      //   판정하고 entrySet 순회가 ConcurrentModificationException 을 낸다(2026-11-08 감사). put 병합이 아니라 새 맵이라
+      //   지난 리그의 아키타입 키도 남지 않는다. 읽기·파싱이 실패하면 옛 맵이 그대로 남는다.
+      Map<String, NinjaSeed> seedByKey = new HashMap<>();
+      Map<String, NinjaSeed> seedBySkill = new HashMap<>();
+      Map<String, ArchetypeBenchmark> benchByKey = new HashMap<>();
+      Map<String, ArchetypeBenchmark> benchBySkill = new HashMap<>();
+      Map<String, JsonNode> facetNodeByKey = new HashMap<>();
+      Map<String, JsonNode> facetNodeBySkill = new HashMap<>();
       // (전직|스킬) 정확 매칭 시드
       JsonNode arr = root.get("archetypes");
       // 특화 판정 기준선 = 전체 아키타입의 **컬럼별 중앙값**(리그별 갱신). ⚠ 단순 평균 금지 — 중앙값이라 개별 이상치에
       //   강건하고, 여기에 더해 **저표본(sample<SPECIALIZE_MIN_SAMPLE) 아키타입은 제외**해 "값이 너무 다른" 소수 노이즈를
       //   거른다(사용자 요구: 가중·이상치 필터). 개별 벤치의 lean/specializations 산정 전에 먼저 계산.
       if (arr != null && arr.isArray()) {
-        ninjaColMedian.clear();
+        Map<String, Double> colMedian = new HashMap<>();
         for (String col : SPECIALIZE_COLS) {
           java.util.List<Double> vals = new java.util.ArrayList<>();
           for (JsonNode a : arr) {
@@ -533,9 +534,11 @@ public class PoeOptimizeService {
           }
           if (!vals.isEmpty()) {
             java.util.Collections.sort(vals);
-            ninjaColMedian.put(col, vals.get(vals.size() / 2));
+            colMedian.put(col, vals.get(vals.size() / 2));
           }
         }
+        // benchOf 의 특화 판정(specMag)이 이 중앙값을 읽으므로 아래 벤치 계산보다 먼저 바꿔 끼운다.
+        ninjaColMedian = colMedian;
         ninjaGlobalMedianDps = ninjaColMedian.getOrDefault("medianDPS", 2_500_000d);
         ninjaGlobalMedianEhp = ninjaColMedian.getOrDefault("medianEHP", 70_000d);
       }
@@ -547,10 +550,10 @@ public class PoeOptimizeService {
           if (seed == null || skill == null || skill.isEmpty() || asc.isEmpty()) {
             continue;
           }
-          ninjaSeedByKey.put(asc + "|" + skill, seed);
-          ninjaBenchByKey.put(asc + "|" + skill, benchOf(a));
+          seedByKey.put(asc + "|" + skill, seed);
+          benchByKey.put(asc + "|" + skill, benchOf(a));
           if (a.path("facets").isObject()) {
-            ninjaFacetNodeByKey.put(asc + "|" + skill, a.path("facets"));
+            facetNodeByKey.put(asc + "|" + skill, a.path("facets"));
           }
         }
       }
@@ -563,13 +566,19 @@ public class PoeOptimizeService {
           if (seed == null || skill == null || skill.isEmpty()) {
             continue;
           }
-          ninjaSeedBySkill.put(skill, seed);
-          ninjaBenchBySkill.put(skill, benchOf(a));
+          seedBySkill.put(skill, seed);
+          benchBySkill.put(skill, benchOf(a));
           if (a.path("facets").isObject()) {
-            ninjaFacetNodeBySkill.put(skill, a.path("facets"));
+            facetNodeBySkill.put(skill, a.path("facets"));
           }
         }
       }
+      ninjaSeedByKey = seedByKey;
+      ninjaSeedBySkill = seedBySkill;
+      ninjaBenchByKey = benchByKey;
+      ninjaBenchBySkill = benchBySkill;
+      ninjaFacetNodeByKey = facetNodeByKey;
+      ninjaFacetNodeBySkill = facetNodeBySkill;
       logger.info(
           "poe.ninja 시드 로드: {} 아키타입키 / {} 스킬", ninjaSeedByKey.size(), ninjaSeedBySkill.size());
     } catch (Exception e) {
@@ -581,17 +590,17 @@ public class PoeOptimizeService {
       Path weFile = watchersEyeFile;
       if (Files.exists(weFile)) {
         JsonNode we = JsonMapper.builder().build().readTree(Files.readString(weFile));
-        watchersEyeMods.clear();
+        Map<String, List<WatchersEyeMod>> mods = new HashMap<>();
         for (JsonNode mod : we.path("mods")) {
           String aura = mod.path("aura").asText(null);
           if (aura == null || aura.isBlank()) {
             continue;
           }
-          watchersEyeMods
-              .computeIfAbsent(aura, k -> new ArrayList<>())
+          mods.computeIfAbsent(aura, k -> new ArrayList<>())
               .add(new WatchersEyeMod(mod.path("en").asText(), mod.path("ko").asText()));
         }
-        logger.info("감시자의 눈 모드 풀 로드: 오라 {}종", watchersEyeMods.size());
+        watchersEyeMods = mods;
+        logger.info("감시자의 눈 모드 풀 로드: 오라 {}종", mods.size());
       }
     } catch (Exception e) {
       logger.warn("감시자의 눈 모드 풀 로드 실패", e);
@@ -602,11 +611,12 @@ public class PoeOptimizeService {
       Path ebFile = file.getParent().resolve("ninja-engine-bench.json");
       if (Files.exists(ebFile)) {
         JsonNode eb = JsonMapper.builder().build().readTree(Files.readString(ebFile));
-        ninjaEngineBench.clear();
+        Map<String, JsonNode> engineBench = new HashMap<>();
         for (Map.Entry<String, JsonNode> e : eb.properties()) {
-          ninjaEngineBench.put(e.getKey(), e.getValue());
+          engineBench.put(e.getKey(), e.getValue());
         }
-        logger.info("poe.ninja 엔진 벤치 로드: {} 아키타입(지표 정합 정답값)", ninjaEngineBench.size());
+        ninjaEngineBench = engineBench;
+        logger.info("poe.ninja 엔진 벤치 로드: {} 아키타입(지표 정합 정답값)", engineBench.size());
       }
     } catch (Exception e) {
       logger.warn("poe.ninja 엔진 벤치 로드 실패(기존 경로 사용): {}", file, e);
@@ -1027,16 +1037,16 @@ public class PoeOptimizeService {
   private volatile List<JsonNode> ninjaBuilds = List.of();
 
   // 패싯 원본 노드(사이드바 집계) — 조합 벤치가 메인 스킬의 패싯을 물려받을 때 사용. loadNinjaSeeds 에서 채운다.
-  private final Map<String, JsonNode> ninjaFacetNodeByKey = new HashMap<>();
-  private final Map<String, JsonNode> ninjaFacetNodeBySkill = new HashMap<>();
+  private volatile Map<String, JsonNode> ninjaFacetNodeByKey = new HashMap<>();
+  private volatile Map<String, JsonNode> ninjaFacetNodeBySkill = new HashMap<>();
 
   // 엔진 벤치("전직|스킬" → {dps,ehp,netRegen,life}) — 대표 실빌드의 우리-엔진 재계산값(지표 정합 정답).
-  private final Map<String, JsonNode> ninjaEngineBench = new HashMap<>();
+  private volatile Map<String, JsonNode> ninjaEngineBench = new HashMap<>();
 
   /** 감시자의 눈 모드 — 오라 이름 → 그 오라 조건부 모드 목록. */
   private record WatchersEyeMod(String en, String ko) {}
 
-  private final Map<String, List<WatchersEyeMod>> watchersEyeMods = new HashMap<>();
+  private volatile Map<String, List<WatchersEyeMod>> watchersEyeMods = new HashMap<>();
 
   private final Path watchersEyeFile;
 
@@ -2050,8 +2060,8 @@ public class PoeOptimizeService {
       int spellBlock) {}
 
   // key = "ascendancy|mainSkill"(정확) 및 "mainSkill"(전직 무관 폴백, 표본 최대 아키타입)
-  private final Map<String, NinjaSeed> ninjaSeedByKey = new HashMap<>();
-  private final Map<String, NinjaSeed> ninjaSeedBySkill = new HashMap<>();
+  private volatile Map<String, NinjaSeed> ninjaSeedByKey = new HashMap<>();
+  private volatile Map<String, NinjaSeed> ninjaSeedBySkill = new HashMap<>();
 
   // 기본 on. 귀속 실험용으로만 끈다(POE_NINJA_SEED=off) — 시드는 목표치뿐 아니라 핵심노드·마스터리·
   //   무기클래스·판테온 웜스타트로도 쓰여서, 벤치 갱신 후 결과가 크게 바뀌면 시드 탓인지 가려야 한다.
@@ -2300,15 +2310,15 @@ public class PoeOptimizeService {
    */
   public record FacetEntry(String name, int count, String nameKo) {}
 
-  private final Map<String, ArchetypeBenchmark> ninjaBenchByKey = new HashMap<>();
-  private final Map<String, ArchetypeBenchmark> ninjaBenchBySkill = new HashMap<>();
+  private volatile Map<String, ArchetypeBenchmark> ninjaBenchByKey = new HashMap<>();
+  private volatile Map<String, ArchetypeBenchmark> ninjaBenchBySkill = new HashMap<>();
 
   // 전체 아키타입의 DPS·EHP 중앙값 — 개별 (전직×스킬)의 성향(lean) 판정 기준선. loadNinjaSeeds 에서 리그 데이터로 채운다.
   private volatile double ninjaGlobalMedianDps = 2_500_000;
   private volatile double ninjaGlobalMedianEhp = 70_000;
 
   // 특화 판정용 전체 컬럼 중앙값(저표본 제외). 컬럼명 → 중앙값. loadNinjaSeeds 에서 채운다.
-  private final Map<String, Double> ninjaColMedian = new HashMap<>();
+  private volatile Map<String, Double> ninjaColMedian = new HashMap<>();
   // 특화 판정 대상 매그니튜드 컬럼(높을수록 특화). 저항/막기/회피억제는 캡형이라 별도 절대 임계.
   private static final String[] SPECIALIZE_COLS = {
     "medianDPS",
