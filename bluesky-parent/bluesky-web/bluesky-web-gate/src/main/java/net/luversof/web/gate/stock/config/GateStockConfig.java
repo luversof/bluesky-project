@@ -23,6 +23,7 @@ import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.PeriodSummaryClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
+import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
 import net.luversof.web.gate.stock.httpexchange.TradeClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
@@ -80,6 +81,13 @@ public class GateStockConfig {
       @Qualifier("stockHttpServiceProxyFactory")
           HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(DataStatusClient.class);
+  }
+
+  @Bean
+  StockAnalysisClient stockAnalysisClient(
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+    return stockHttpServiceProxyFactory.createClient(StockAnalysisClient.class);
   }
 
   @Bean

@@ -94,6 +94,9 @@
 					<script type="module" src="/js/stock/submitOverlay.js"></script>
 				@else
 					@template.stock.htmx.fragments.adminActions(isAuthenticated = isAuthenticated, dataStatus = dataStatus, ledgerIntegrity = ledgerIntegrity)
+					@if(isAuthenticated)
+						@template.stock.fragments.analysisAdmin()
+					@endif
 				@endif
 			</div>
 		</div>

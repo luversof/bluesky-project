@@ -1,0 +1,90 @@
+package net.luversof.web.gate.stock.httpexchange;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.DeleteExchange;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+
+/** 시황 분석(api-stock /api/stock/analysis) 조회. 응답 모양은 api-stock StockAnalysisService 의 record 와 같다. */
+@HttpExchange(
+    url = "/api/stock/analysis",
+    contentType = MediaType.APPLICATION_JSON_VALUE,
+    accept = MediaType.APPLICATION_JSON_VALUE)
+public interface StockAnalysisClient {
+
+  @GetExchange("/input")
+  AnalysisInput input();
+
+  @GetExchange("/summary")
+  Summary summary();
+
+  @GetExchange("/predictions")
+  List<RecentPrediction> recent(@RequestParam int days);
+
+  /** 기준일의 채점 전 예측 삭제(채점된 것은 남긴다). */
+  @DeleteExchange("/predictions")
+  DeleteResult deletePredictions(@RequestParam LocalDate baseDate);
+
+  record DeleteResult(int deleted, int keptGraded) {}
+
+  record Indicators(
+      BigDecimal change1dPct,
+      BigDecimal change5dPct,
+      BigDecimal change20dPct,
+      BigDecimal ma5,
+      BigDecimal ma20,
+      BigDecimal closeVsMa20Pct,
+      BigDecimal volumeRatio20) {}
+
+  record NewsLine(String source, String title, String summary, String url, Instant publishedDate) {}
+
+  record AnalysisItem(
+      String symbol,
+      String name,
+      LocalDate baseDate,
+      BigDecimal lastClose,
+      Indicators indicators,
+      List<BigDecimal> recentCloses,
+      List<NewsLine> news) {}
+
+  record AnalysisInput(Instant generatedAt, List<AnalysisItem> items) {}
+
+  record RateRow(
+      String group,
+      int horizonDays,
+      int graded,
+      BigDecimal hitRatePct,
+      BigDecimal alwaysUpRatePct,
+      BigDecimal prevDirectionRatePct) {}
+
+  record Summary(
+      int predictions,
+      int pending,
+      int late,
+      List<RateRow> byHorizon,
+      List<RateRow> byConfidence,
+      List<RateRow> byPromptVersion) {}
+
+  record RecentPrediction(
+      String symbol,
+      String name,
+      LocalDate baseDate,
+      int horizonDays,
+      String direction,
+      int confidence,
+      String rationale,
+      BigDecimal basePrice,
+      String promptVersion,
+      Instant createdDate,
+      LocalDate targetDate,
+      BigDecimal actualChangePct,
+      String actualDirection,
+      Boolean hit,
+      Boolean late) {}
+}

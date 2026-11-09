@@ -1,13 +1,18 @@
 package net.luversof.web.gate.stock.controller;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
@@ -16,6 +21,8 @@ import net.luversof.web.gate.stock.dto.response.LedgerImportResult;
 import net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateJobStatus;
 import net.luversof.web.gate.stock.dto.response.PriceHistoryUpdateResult;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
+import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient;
+import net.luversof.web.gate.stock.support.StockViewSupport;
 
 /**
  * 관리자용 대량 적재 API.
@@ -29,6 +36,8 @@ import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
 public class StockAdminApiController {
 
   @Autowired private StockAdminClient stockAdminClient;
+
+  @Autowired private StockAnalysisClient stockAnalysisClient;
 
   @BlueskyPreAuthorize
   @PostMapping("/stock-items")
@@ -102,5 +111,25 @@ public class StockAdminApiController {
       return ResponseEntity.status(401).build();
     }
     return ResponseEntity.ok(stockAdminClient.priceHistoriesUpdate(userId));
+  }
+
+  /**
+   * 시황 분석: 기준일의 채점 전 예측 삭제(사용자 결정 2026-11-09). 관리 화면이 htmx 로 부르고 응답 문장을 그대로 결과 칸에 넣는다. 다시 예측은 PC 의
+   * 아침 작업이 한다(예측은 PC 의 claude 가 만든다).
+   */
+  @BlueskyPreAuthorize
+  @DeleteMapping(value = "/analysis/predictions", produces = MediaType.TEXT_PLAIN_VALUE)
+  public ResponseEntity<String> analysisPredictionsDelete(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baseDate) {
+    if (UserUtil.getUserId() == null) {
+      return ResponseEntity.status(401).build();
+    }
+    StockAnalysisClient.DeleteResult result = stockAnalysisClient.deletePredictions(baseDate);
+    return ResponseEntity.ok(
+        StockViewSupport.msg(
+            "stock.admin.analysis.deleted",
+            baseDate.toString(),
+            String.valueOf(result.deleted()),
+            String.valueOf(result.keptGraded())));
   }
 }
