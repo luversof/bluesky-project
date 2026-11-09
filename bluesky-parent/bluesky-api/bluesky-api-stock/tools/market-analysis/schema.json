@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "predictions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string" },
+          "horizonDays": { "type": "integer", "enum": [1, 5] },
+          "direction": { "type": "string", "enum": ["UP", "DOWN", "FLAT"] },
+          "confidence": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "rationale": { "type": "string", "maxLength": 300 }
+        },
+        "required": ["symbol", "horizonDays", "direction", "confidence", "rationale"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["predictions"],
+  "additionalProperties": false
+}

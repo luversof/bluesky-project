@@ -84,3 +84,63 @@ ALTER TABLE "MonthlyDividendSnapshot" ALTER COLUMN "averageTaxableBaseRatio1y" D
 -- 되돌리기(NULL 행이 있으면 먼저 0 으로 채워야 한다 - 그러면 "확인 안 됨" 이 다시 0% 가 된다)
 -- UPDATE "MonthlyDividendSnapshot" SET "averageTaxableBaseRatio1y" = 0 WHERE "averageTaxableBaseRatio1y" IS NULL;
 -- ALTER TABLE "MonthlyDividendSnapshot" ALTER COLUMN "averageTaxableBaseRatio1y" SET NOT NULL;
+
+
+-- 시황 분석(2026-11-09): 뉴스 · 공시, 방향 예측, 채점. 예측은 넣기만 하고 고치지 않는다 - 채점은 별도 테이블에 쌓는다.
+CREATE TABLE IF NOT EXISTS "StockNews" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"stockItem_id" UUID NOT NULL,
+	-- NAVER(뉴스) | DART(공시)
+	"source" VARCHAR(10) NOT NULL,
+	-- NAVER: 기사 원문 URL, DART: 접수번호(rcept_no)
+	"externalId" VARCHAR(1000) NOT NULL,
+	"title" VARCHAR(500) NOT NULL,
+	"summary" VARCHAR(2000),
+	"url" VARCHAR(2000),
+	"publishedDate" TIMESTAMP WITH TIME ZONE NOT NULL,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_stockNews_stockItemId_source_externalId ON "StockNews" ("stockItem_id", "source", "externalId");
+CREATE INDEX IF NOT EXISTS idx_stockNews_publishedDate ON "StockNews" ("publishedDate");
+
+CREATE TABLE IF NOT EXISTS "StockPrediction" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"stockItem_id" UUID NOT NULL,
+	-- 예측의 기준 거래일(그때 DB 의 마지막 종가 날짜)과 그 종가
+	"baseDate" DATE NOT NULL,
+	"basePrice" NUMERIC NOT NULL,
+	-- 1 | 5 (거래일)
+	"horizonDays" SMALLINT NOT NULL,
+	-- UP | DOWN | FLAT
+	"direction" VARCHAR(4) NOT NULL,
+	"confidence" SMALLINT NOT NULL,
+	"rationale" VARCHAR(1000),
+	"modelId" VARCHAR(100) NOT NULL,
+	"promptVersion" VARCHAR(50) NOT NULL,
+	-- 예측에 쓴 입력(지표 · 뉴스) 그대로
+	"inputSnapshot" JSONB,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_stockPrediction_stockItemId_baseDate_horizonDays ON "StockPrediction" ("stockItem_id", "baseDate", "horizonDays");
+
+CREATE TABLE IF NOT EXISTS "StockPredictionGrade" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"prediction_id" UUID NOT NULL,
+	"targetDate" DATE NOT NULL,
+	"actualClose" NUMERIC NOT NULL,
+	"actualChangePct" NUMERIC(12,4) NOT NULL,
+	"actualDirection" VARCHAR(4) NOT NULL,
+	"hit" BOOLEAN NOT NULL,
+	-- 기준일 다음 거래일 09:00(KST) 이후에 만든 예측 - 장중 정보가 섞여 통계에서 뺀다
+	"late" BOOLEAN NOT NULL,
+	-- 기준선: 늘 UP / 기준일 하루 움직임 방향 그대로
+	"alwaysUpHit" BOOLEAN NOT NULL,
+	"prevDirectionHit" BOOLEAN,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_stockPredictionGrade_predictionId ON "StockPredictionGrade" ("prediction_id");
+-- 되돌리기
+-- DROP TABLE IF EXISTS "StockPredictionGrade", "StockPrediction", "StockNews";

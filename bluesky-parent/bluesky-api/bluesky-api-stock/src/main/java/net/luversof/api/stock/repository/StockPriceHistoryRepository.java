@@ -380,4 +380,15 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
       @Param("stockItemId") UUID stockItemId,
       @Param("tradeDate") LocalDate tradeDate,
       @Param("rawClose") BigDecimal rawClose);
+
+  /** 시황 분석 지표용 최근 시세(최신부터). */
+  List<StockPriceHistory> findTop30ByStockItemIdOrderByTradeDateDesc(UUID stockItemId);
+
+  /** 채점용: 기준일 다음 거래일부터(오래된 것부터). */
+  List<StockPriceHistory> findTop10ByStockItemIdAndTradeDateGreaterThanOrderByTradeDateAsc(
+      UUID stockItemId, LocalDate tradeDate);
+
+  /** 채점용: 기준일과 그 앞 거래일(최신부터). */
+  List<StockPriceHistory> findTop2ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+      UUID stockItemId, LocalDate tradeDate);
 }
