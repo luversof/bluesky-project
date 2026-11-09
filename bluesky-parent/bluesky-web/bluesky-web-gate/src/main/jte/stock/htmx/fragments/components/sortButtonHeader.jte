@@ -9,7 +9,10 @@
 @param String cellClass = null
 <%-- 버튼 class 전체. Tailwind 가 소스 글자로 모으므로 부르는 쪽이 통째로 준다. --%>
 @param String buttonClass
+<%-- 머리글 용어 설명(ⓘ 툴팁). 단추 안에는 초점 요소를 둘 수 없어 단추 옆에 둔다 - 정렬은 단추, 설명은 아이콘으로 나뉜다(2026-11-10 툴팁 통합). --%>
+@param String hint = null
 <th scope="col" class="${cellClass}">
+	@if(hint == null)
 	<button type="button"
 			class="${buttonClass}"
 			data-sort-key="${sortKey}"
@@ -17,4 +20,16 @@
 		<span>${label}</span>
 		<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
 	</button>
+	@else
+		<div class="flex items-center gap-0.5 ${cellClass != null && cellClass.contains("text-right") ? "justify-end" : "justify-start"}">
+		<button type="button"
+				class="${buttonClass}"
+				data-sort-key="${sortKey}"
+				data-sort-type="${sortType}">
+			<span>${label}</span>
+			<span data-sort-indicator aria-hidden="true" class="opacity-60">↕</span>
+		</button>
+			@template._components.ui.infoTip(desc = hint)
+		</div>
+	@endif
 </th>

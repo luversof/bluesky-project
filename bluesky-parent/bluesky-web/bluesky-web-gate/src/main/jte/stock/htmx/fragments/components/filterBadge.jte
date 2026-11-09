@@ -26,5 +26,5 @@
 }
 
 @if(hasFilter)
-	<span class="badge badge-xs badge-primary">${finalBadge}</span>
+	<span class="badge badge-primary badge-sm badge-outline">${finalBadge}</span>
 @endif

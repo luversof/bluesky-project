@@ -37,7 +37,7 @@
         <%-- 그 "-" 가 0 이라는 뜻인지 값이 없다는 뜻인지 표에서는 알 수 없다 - 실측 2026-09-11:
              배당 상세 목록에서 같은 기호가 두 뜻으로 쓰였다. 여기서는 값이 실제로 있을 때만(=0 원) 까닭을 단다.
              값이 아예 없는 칸(null)은 그대로 둔다 - 0 이라고 말할 근거가 없다. --%>
-        <span class="text-base-content/60" title="${value != null ? amountCellZeroTitle : null}">-</span>
+        <span class="text-base-content/60 tooltip" data-tip="${value != null ? amountCellZeroTitle : null}">-</span>
     @else
         <%-- 0 에는 부호를 붙이지 않는다 - 방향이 없는 값에 "+" 를 달면 "0 원 벌었다" 처럼 읽힌다
              (실측 2026-09-11: 자산 성장에 "+₩0" 한 곳). StockFormatUtil.signedWon 과 같은 규칙. --%>

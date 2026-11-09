@@ -316,7 +316,7 @@ class YearlyCostSummaryRenderTest {
                     bd("9589944"),
                     0L)));
     assertThat(noSale).as("매도 0 건인 해").contains("그 해엔 판 적이 없습니다");
-    assertThat(noSale).as("마우스에도 닿아야 한다").contains("title=" + Q + "그 해엔 판 적이 없습니다" + Q);
+    assertThat(noSale).as("마우스에도 닿아야 한다").contains("data-tip=" + Q + "그 해엔 판 적이 없습니다" + Q);
     assertThat(noSale)
         .as("낭독기에도 닿아야 한다")
         .contains("<span class=" + Q + "sr-only" + Q + ">그 해엔 판 적이 없습니다</span>");

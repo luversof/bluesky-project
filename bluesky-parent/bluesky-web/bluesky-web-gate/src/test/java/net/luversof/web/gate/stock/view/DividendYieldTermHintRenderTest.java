@@ -29,18 +29,18 @@ import net.luversof.web.gate.stock.dto.view.DividendYieldGroupView;
 /**
  * 배당 수익률 용어 풀이 &mdash; 사용자 요청 2026-09-28: "기간 일평균 투입원금과 배당 기준일 평균원금이 어떤 의미인지 볼 때마다 헷갈려".
  *
- * <p>용어에 점선 밑줄을 긋고 마우스를 올리면 뜻이 뜬다({@code data-stock-tag-tooltip} - 화면에 고정으로 떠서 가로 스크롤 상자에 안 잘린다).
- * 풍선은 마우스 전용이므로 같은 뜻을 섹션 위 "용어 풀이" 에 두고, 초점을 받는 정렬 단추는 {@code aria-describedby} 로 그 뜻에 잇는다.
+ * <p>용어 옆 ⓘ 에 마우스를 올리거나 키보드 초점이 오면 뜻이 뜬다({@code data-stock-tag-tooltip} - 화면에 고정으로 떠서 가로 스크롤 상자에 안
+ * 잘린다). 낭독기는 용어 옆 sr-only 뜻을 읽는다. 2026-11-10 섹션 위 "용어 풀이"(details)는 없앴다(사용자 요청 - 툴팁과 중복).
  */
 class DividendYieldTermHintRenderTest {
 
   private static final String TEMPLATE = "stock/htmx/fragments/dividend/dividendYieldAnalytics.jte";
 
+  // 용어 이름(바로 앞 글자 마디) + 공용 ⓘ 툴팁(tooltip.jte 의 짧은 말풍선). 정렬 머리글은 이름이 단추 안, 툴팁이 단추 옆이다.
   private static final Pattern HINT =
       Pattern.compile(
-          "<span [^>]*data-stock-tag-tooltip=\"([^\"]*)\" data-term-hint>([^<]*)</span>");
-
-  private static final Pattern DESCRIBED_BY = Pattern.compile("aria-describedby=\"([^\"]+)\"");
+          ">([^<>]*?)\\s*(?:</span>\\s*<span data-sort-indicator[^>]*>[^<]*</span>\\s*</button>\\s*)?"
+              + "<span class=\"tooltip inline-block tooltip-bottom\" role=\"note\" tabindex=\"0\" aria-label=\"([^\"]*)\" data-tip=\"([^\"]*)\"><svg");
 
   @BeforeAll
   static void primeMessages() {
@@ -138,32 +138,6 @@ class DividendYieldTermHintRenderTest {
 
   private static final String MARKET_DESC = "stock.dividend.yield.term.basis.market.desc";
 
-  /** 사용자가 물은 두 용어와 형제 하나(기준일 평균시가 수익률)의 뜻이 실제 문장으로 나온다 - 키 이름이 그대로 새면 안 된다. */
-  @Test
-  void 용어_풀이에_세_용어의_뜻이_실린다() {
-    String html = render();
-
-    assertThat(html).contains("data-yield-glossary");
-    assertThat(html)
-        .contains("<summary")
-        .contains(message("stock.dividend.yield.term.glossary.title"));
-    for (String[] term :
-        new String[][] {
-          {"daily", DAILY_DESC, "stock.dividend.yield.column.daily.average.invested.capital"},
-          {"basis", BASIS_DESC, "stock.dividend.yield.column.basis.average.invested.capital"},
-          {"market", MARKET_DESC, "stock.dividend.yield.column.yield.on.basis.market"},
-        }) {
-      String desc = message(term[1]);
-      assertThat(desc).as("문구가 비었거나 키가 그대로다: %s", term[1]).isNotBlank().doesNotContain("stock.");
-      int dd = html.indexOf("id=\"dividend-yield-term-" + term[0] + "\"");
-      assertThat(dd).as("용어 풀이 항목이 없다: %s", term[0]).isNotNegative();
-      assertThat(html.substring(dd, html.indexOf("</dd>", dd))).contains(escapedText(desc));
-      // 뜻 바로 앞에 그 용어 이름이 있다 - 뜻과 이름이 엇갈려 붙으면 안 된다.
-      int dt = html.lastIndexOf("<dt", dd);
-      assertThat(html.substring(dt, dd)).contains(escapedText(message(term[2])));
-    }
-  }
-
   /**
    * 밑줄 용어마다 <b>제</b> 뜻이 붙는다 - 풍선 문장은 용어 풀이와 같은 키를 쓰고, 이름과 뜻이 엇갈리면(투입원금에 기준일 원금 뜻) 안 된다. 뜻이 셋 중
    * 하나인지만 보면 엇갈려 붙인 것을 통과시킨다.
@@ -205,9 +179,13 @@ class DividendYieldTermHintRenderTest {
     Matcher matcher = HINT.matcher(html);
     List<String> labels = new ArrayList<>();
     while (matcher.find()) {
-      String label = matcher.group(2);
-      assertThat(expected).as("모르는 밑줄 용어: %s", label).containsKey(label);
-      assertThat(matcher.group(1)).as("%s 에 엉뚱한 뜻", label).isEqualTo(expected.get(label));
+      String label = matcher.group(1).trim();
+      assertThat(expected)
+          .as(
+              "모르는 밑줄 용어: %s / %s",
+              label, html.substring(Math.max(0, matcher.start() - 200), matcher.start() + 40))
+          .containsKey(label);
+      assertThat(matcher.group(3)).as("%s 에 엉뚱한 뜻", label).isEqualTo(expected.get(label));
       labels.add(label);
     }
     // 2026-09-28: 첫 카드 "다른 기준 보기" 3 + 최고 효율 카드 둘의 평균 투입원금 2 + 연도별 머리글 4(예전 2 · 새 2)
@@ -223,30 +201,25 @@ class DividendYieldTermHintRenderTest {
             escapedText(message("stock.dividend.yield.column.basis.average.invested.capital")));
   }
 
-  /** 정렬 단추는 초점을 받는다 - 그 단추가 가리키는 뜻이 실제로 화면에 있어야 낭독기가 읽는다. */
+  /**
+   * 2026-11-10 "용어 풀이"(details)를 없앴다 - 뜻은 용어 옆 ⓘ 툴팁 한곳이다. 낭독기는 그 툴팁의 aria-label 을 읽으므로 말풍선 문구와 같아야
+   * 한다(공용 조각이 같은 값을 쓴다 - 여기서는 실제 그린 결과로 본다).
+   */
   @Test
-  void 정렬_단추가_가리키는_뜻이_화면에_있다() {
+  void 용어마다_낭독기용_뜻이_풍선과_같다() {
     String html = render();
 
-    Matcher matcher = DESCRIBED_BY.matcher(html);
+    assertThat(html).doesNotContain("data-yield-glossary").doesNotContain("dividend-yield-term-");
+    Matcher matcher = HINT.matcher(html);
     int count = 0;
     while (matcher.find()) {
-      String id = matcher.group(1);
-      if (!id.startsWith("dividend-yield-term-")) {
-        continue;
-      }
       count++;
-      assertThat(html).as("가리키는 곳이 없다: %s", id).contains("id=\"" + id + "\"");
+      assertThat(matcher.group(2))
+          .as("%s", matcher.group(1))
+          .isNotBlank()
+          .isEqualTo(matcher.group(3));
     }
-    // 종목 · 계좌 표에 일곱 열씩(예전 3 · 연 수익률 · 평균 투입원금 · 평가 손익 · 합산 손익).
-    // 12 번: 실현 손익 +1 씩.
-    assertThat(count).isEqualTo(16);
-    String dailySort = html.substring(html.indexOf("data-sort-key=\"averageDailyPrincipalCost\""));
-    assertThat(dailySort.substring(0, dailySort.indexOf('>')))
-        .contains("aria-describedby=\"dividend-yield-term-daily\"");
-    String basisSort = html.substring(html.indexOf("data-sort-key=\"averagePrincipalCost\""));
-    assertThat(basisSort.substring(0, basisSort.indexOf('>')))
-        .contains("aria-describedby=\"dividend-yield-term-basis\"");
+    assertThat(count).isEqualTo(27);
   }
 
   /** 공용 조각이 호출한 자리에 개행을 끼우면 "라벨 값" 사이 모양이 바뀐다(srExact 에서 실제로 있었다). */
@@ -258,25 +231,6 @@ class DividendYieldTermHintRenderTest {
     assertThat(html)
         .doesNotContain("data-term-hint>\n")
         .doesNotContain("</span>\n <span class=\"font-medium");
-  }
-
-  /**
-   * 정렬 단추에는 누르는 영역을 넓히는 투명 띠({@code [data-sort-key]::after}, 절대 위치)가 단추 전체를 덮는다. 그 띠가 안쪽 밑줄 위에 있으면
-   * 마우스가 단추에만 닿아 풍선이 안 뜬다 - 사용자 제보 2026-09-28(랭킹 표 머리글 6 곳). 밑줄을 띠 위로 올리는 규칙이 <b>배포되는 빌드 산출물</b>에
-   * 있어야 한다(메이븐은 프론트엔드를 빌드하지 않는다).
-   */
-  @Test
-  void 정렬_단추_안_밑줄은_누름_영역_띠_위에_있다() throws java.io.IOException {
-    String built =
-        java.nio.file.Files.readString(
-            java.nio.file.Path.of("src/main/resources/static/main.css"),
-            java.nio.charset.StandardCharsets.UTF_8);
-    String selector = "[data-sort-key] [data-term-hint]{";
-    int at = built.indexOf(selector);
-    assertThat(at).as("빌드된 main.css 에 규칙이 없다 - npm run build 를 했는가").isNotNegative();
-    String rule = built.substring(at + selector.length(), built.indexOf('}', at));
-    assertThat(rule).contains("position:relative").contains("z-index:1");
-    assertThat(built).as("띠 규칙이 사라졌다면 이 시험의 전제도 바뀐 것이다").contains("[data-sort-key]:after");
   }
 
   private static String escapedText(String text) {

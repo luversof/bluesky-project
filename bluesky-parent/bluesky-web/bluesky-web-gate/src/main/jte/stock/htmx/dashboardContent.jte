@@ -5,16 +5,16 @@
 		<%-- 로딩 스켈레톤: 히어로 2열 + 지표 4칸 형태를 흉내낸다 --%>
 		<div class="flex flex-col gap-4 animate-pulse" aria-hidden="true">
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-				<div class="card bg-base-100 shadow-sm"><div class="card-body p-5 gap-3">
+				@template._components.ui.card(bodyClass = "p-5 gap-3", body = @`
 					<div class="h-3 w-24 rounded bg-base-300"></div>
 					<div class="h-9 w-48 rounded bg-base-300"></div>
 					<div class="h-3 w-36 rounded bg-base-200"></div>
 					<div class="h-6 w-full rounded bg-base-200 mt-3"></div>
-				</div></div>
-				<div class="card bg-base-100 shadow-sm"><div class="card-body p-4 gap-2">
+				`)
+				@template._components.ui.card(bodyClass = "p-4 gap-2", body = @`
 					<div class="h-3 w-32 rounded bg-base-300"></div>
 					<div class="h-36 w-full rounded bg-base-200"></div>
-				</div></div>
+				`)
 			</div>
 			<%-- 지표 카드는 아이콘 칩과 큰 값이 들어가 136px 다(실측 2026-09-10). 80px 로 두면 조각이 들어올 때
 			     아래가 통째로 밀린다 - 대시보드 CLS 0.095 의 원인이었다. --%>

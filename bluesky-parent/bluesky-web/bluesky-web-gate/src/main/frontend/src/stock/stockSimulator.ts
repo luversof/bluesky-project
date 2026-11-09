@@ -1087,7 +1087,7 @@ const simMilestonesPlugin = {
 							</div>
 							${
 								active
-									? `<span class="badge badge-primary badge-sm">${i18n.activeScenario}</span>`
+									? `<span class="badge badge-primary badge-sm badge-outline">${i18n.activeScenario}</span>`
 									: ""
 							}
 						</div>
@@ -1223,7 +1223,7 @@ const simMilestonesPlugin = {
 									<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
 									${
 										isBestChoice
-											? `<span class="badge badge-success badge-sm">${escapeHtml(i18n.compareBestChoice)}</span>`
+											? `<span class="badge badge-success badge-sm badge-outline">${escapeHtml(i18n.compareBestChoice)}</span>`
 											: ""
 									}
 								</div>
@@ -1479,7 +1479,7 @@ function renderMonthlyDetailsTable(record) {
 				<div class="text-sm font-semibold text-base-content">${escapeHtml(i18n.monthlyDetailsTitle)}</div>
 				<p class="text-xs leading-5 text-base-content/60">${escapeHtml(i18n.yearlyDetailGuide)}</p>
 				<div class="overflow-x-auto">
-					<table class="table table-zebra" aria-label="${escapeHtml(i18n.monthlyDetailsTitle)} ${escapeHtml(String(record.year))}">
+					<table class="table data-table" aria-label="${escapeHtml(i18n.monthlyDetailsTitle)} ${escapeHtml(String(record.year))}">
 						<thead>
 							<tr>
 								<th scope="col">${escapeHtml(i18n.tableHeaderMonth)}</th>

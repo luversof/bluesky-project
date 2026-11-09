@@ -31,7 +31,7 @@
 			<h2 id="recordBuyByTitle" class="font-semibold">${MessageUtil.getMessage("stock.monthly.etf.buyby.title")}</h2>
 			@for(RecordDateBuyByView row : rows)
 				<span class="min-w-0 wrap-anywhere" data-record-buyby-window="${row.payoutWindow()}">
-					<span class="badge badge-sm badge-ghost">${"MID_MONTH".equals(row.payoutWindow()) ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end")}</span>
+					<span class="badge badge-sm badge-outline">${"MID_MONTH".equals(row.payoutWindow()) ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end")}</span>
 					<span class="text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.buyby.record")}</span>
 					<span class="font-mono" data-record-date>${row.recordDate().format(dateFormat)}</span>
 					<span class="text-base-content/60">·</span>

@@ -292,8 +292,8 @@ function mergeVisibleOrderIntoAll(
 			status.hidden = false;
 			status.className =
 				type === "success"
-					? "alert alert-success border border-success/20 bg-success/10 text-success-content"
-					: "alert alert-error border border-error/20 bg-error/10 text-error-content";
+					? "alert alert-success"
+					: "alert alert-error";
 			status.textContent = message;
 		}
 	}

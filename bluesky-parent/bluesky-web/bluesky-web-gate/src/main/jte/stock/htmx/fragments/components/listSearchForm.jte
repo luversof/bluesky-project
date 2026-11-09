@@ -79,7 +79,7 @@
 
 			<div class="form-control w-full">
 				<label class="label p-1" for="filterAccountSelect"><span class="label-text text-xs">${accountLabel}</span></label>
-				<select id="filterAccountSelect" name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
+				<select id="filterAccountSelect" name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto select-sm" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
 					<option value="">${allLabel}</option>
 					@if(accountList != null)
 					@for(Account account : accountList)
@@ -91,7 +91,7 @@
 
 			<div class="form-control w-full">
 				<label class="label p-1" for="filterStockSelect"><span class="label-text text-xs">${stockLabel}</span></label>
-				<select id="filterStockSelect" name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
+				<select id="filterStockSelect" name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100 select-sm" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
 					<option value="">${allLabel}</option>
 					@if(stockItemList != null)
 					@for(StockItem stockItem : stockItemList)
@@ -123,7 +123,7 @@
 						hx-select="${fragmentSelector}"
 						hx-swap="outerHTML"
 						hx-include="${formSelector}">${searchLabel}</button>
-					<button type="button" class="btn btn-sm text-xs"
+					<button type="button" class="btn btn-sm text-xs btn-outline"
 						hx-get="${contentUrl}"
 						hx-target="${fragmentSelector}"
 						hx-select="${fragmentSelector}"

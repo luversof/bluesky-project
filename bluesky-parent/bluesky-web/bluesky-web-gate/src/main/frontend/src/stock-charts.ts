@@ -998,11 +998,12 @@ StockCharts.initDonutFromData = function (
 					'<span class="chart-legend-swatch" style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' +
 					d.colors[i] +
 					'"></span>' +
-					'<span class="flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' +
+					// 잘린 이름의 전체 글자는 공용 툴팁으로(2026-11-10 title 대신). 자르는 칸(overflow hidden)이 말풍선도 자르므로 바깥 칸이 툴팁이다.
+					'<span class="flex-1 min-w-0 tooltip" data-tip="' +
 					l +
-					'">' +
+					'"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
 					l +
-					"</span>" +
+					"</span></span>" +
 					'<span class="shrink-0 ' +
 					valClass +
 					'">' +

@@ -13,7 +13,7 @@ const MONTHS_PER_YEAR=12;function annualRateToMonthlyRate(annualRate){const nume
 									<p class="text-xs text-base-content/60">${i18n.yearsShort.replace("{0}",String(scenario.years))} \xB7 ${scenario.reinvestDividends?i18n.reinvestOn:i18n.reinvestOff}</p>
 								</div>
 							</div>
-							${active?`<span class="badge badge-primary badge-sm">${i18n.activeScenario}</span>`:""}
+							${active?`<span class="badge badge-primary badge-sm badge-outline">${i18n.activeScenario}</span>`:""}
 						</div>
 						<div class="mt-4 grid grid-cols-2 gap-3 text-sm">
 							<div>
@@ -38,7 +38,7 @@ const MONTHS_PER_YEAR=12;function annualRateToMonthlyRate(annualRate){const nume
 							<div class="space-y-1">
 								<div class="flex flex-wrap items-center gap-2">
 									<p class="font-semibold text-base-content">${escapeHtml(scenario.name)}</p>
-									${isBestChoice?`<span class="badge badge-success badge-sm">${escapeHtml(i18n.compareBestChoice)}</span>`:""}
+									${isBestChoice?`<span class="badge badge-success badge-sm badge-outline">${escapeHtml(i18n.compareBestChoice)}</span>`:""}
 								</div>
 									<p class="text-xs text-base-content/60">${i18n.yearsShort.replace("{0}",String(scenario.years))} \xB7 ${scenario.reinvestDividends?i18n.reinvestOn:i18n.reinvestOff}</p>
 								<div class="flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
@@ -107,7 +107,7 @@ const MONTHS_PER_YEAR=12;function annualRateToMonthlyRate(annualRate){const nume
 				<div class="text-sm font-semibold text-base-content">${escapeHtml(i18n.monthlyDetailsTitle)}</div>
 				<p class="text-xs leading-5 text-base-content/60">${escapeHtml(i18n.yearlyDetailGuide)}</p>
 				<div class="overflow-x-auto">
-					<table class="table table-zebra" aria-label="${escapeHtml(i18n.monthlyDetailsTitle)} ${escapeHtml(String(record.year))}">
+					<table class="table data-table" aria-label="${escapeHtml(i18n.monthlyDetailsTitle)} ${escapeHtml(String(record.year))}">
 						<thead>
 							<tr>
 								<th scope="col">${escapeHtml(i18n.tableHeaderMonth)}</th>

@@ -54,7 +54,7 @@
 				     hx-include="#globalDateRangeInputs input"
 				     hx-select="#accountDetailFragment"
 				     hx-swap="outerHTML">
-					<div class="flex justify-center p-10"><span class="loading loading-spinner text-primary loading-lg"></span></div>
+					<div class="flex justify-center p-10">@template._components.ui.spinner()</div>
 				</div>
 			@endif
 		</div>

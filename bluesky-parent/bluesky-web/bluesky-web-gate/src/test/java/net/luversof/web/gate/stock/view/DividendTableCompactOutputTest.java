@@ -136,10 +136,13 @@ class DividendTableCompactOutputTest {
         .isFalse();
   }
 
-  /** 두 행의 크기 차이 = 행 하나의 비용. 들여쓰기 공백을 뺀 뒤에는 한 행이 1KB 를 넘지 않는다(실측: 줄이기 전 1,130 자). */
+  /**
+   * 두 행의 크기 차이 = 행 하나의 비용. 들여쓰기 공백을 뺀 뒤에는 한 행이 1KB 언저리다(실측: 줄이기 전 1,130 자. 2026-11-10 title 을 공용 툴팁
+   * class="tooltip" 로 바꾸며 칸마다 8 자씩 늘어 1,007 자 - 상한 1,050).
+   */
   @Test
   void 행_하나는_1KB_를_넘지_않는다() {
-    assertThat(rowCost(DividendTableCompactOutputTest::row)).as("행 하나의 렌더 크기").isBetween(300, 1000);
+    assertThat(rowCost(DividendTableCompactOutputTest::row)).as("행 하나의 렌더 크기").isBetween(300, 1050);
   }
 
   /**

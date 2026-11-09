@@ -110,13 +110,11 @@
 		@template._components.ui.card(cssClass = "hero-card", bodyClass = "p-5", body = @`
 			<div class="flex items-center gap-1 text-sm text-base-content/60">
 				<span>${currentTotalAssetLabel}</span>
-				<span class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${MessageUtil.getMessage("stock.summary.tooltip.total.asset")}" data-tip="${MessageUtil.getMessage("stock.summary.tooltip.total.asset")}">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current opacity-60"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-				</span>
+				@template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.summary.tooltip.total.asset"))
 			</div>
-			<div class="text-3xl lg:text-4xl font-bold text-principal amount-value mt-1" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset)))</div>
+			<div class="text-3xl lg:text-4xl font-bold text-principal amount-value mt-1 tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset)))</div>
 			<div class="text-sm text-base-content/70 mt-2">
-				${principalLabel} <span class="font-mono amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal)))</span>
+				${principalLabel} <span class="font-mono amount-value tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal)))</span>
 			</div>
 			<%-- 총자산은 마지막으로 수집된 종가로 계산된다. 이 앱은 시세를 자동 수집하지 않아(스케줄러 없음,
 				 관리 화면에서 수동 실행) 며칠 전 값일 수 있는데, 요약 화면만 그 사실을 밝히지 않고 있었다
@@ -133,9 +131,7 @@
 						 (실측: 영어 라벨이 길어 375px 에서 14px 넘침). 중앙 정렬로 둔다.
 						 좁은 화면에서는 tooltip-span-row 로 이 줄(relative) 폭에 맞춘다 - 트리거 기준 상한 176px 이면 금액이 숫자 중간에서
 						 끊겼다(2026-10-21). --%>
-					<div class="tooltip tooltip-bottom tooltip-span-row shrink-0" tabindex="0">
-						<div class="tooltip-content z-[20] w-64 sm:w-72 lg:w-80 max-w-[calc(100vw-2rem)] rounded-box bg-neutral text-neutral-content shadow-lg">
-							<div class="space-y-1 text-left text-xs leading-5">
+					@template._components.ui.infoTip(label = calculationDetailsLabel, cssClass = "tooltip-span-row shrink-0", detail = @`<div class="space-y-1 text-left text-xs leading-5">
 								<%-- 금액은 줄지 않게(shrink-0) - 라벨이 긴 영어 320px 에서 금액이 숫자 중간에서 끊겼다("260,000,00 / 0", 2026-10-21). 라벨이 대신 줄바꿈한다. --%>
 								<div class="font-semibold mb-1">${calculationDetailsLabel}</div>
 								<div class="flex items-center justify-between gap-3">
@@ -186,15 +182,11 @@
 								</div>
 								@endif
 							</div>
-						</div>
-						<button type="button" class="btn btn-circle btn-ghost btn-xs text-info align-middle" aria-label="${calculationDetailsLabel}">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-						</button>
-					</div>
+					`)
 				</div>
 				<div class="text-right">
-					<span class="text-xl font-bold amount-value ${combinedColor}" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit))}">${StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit)), visible = StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit)))</span>
-					<span class="ml-2 text-sm font-semibold ${combinedColor}" title="${combinedRateBasisText}" data-amount-basis="${combinedRateBasisText}">${StockFormatUtil.signedPct(combinedRate, 2)}@template._components.ui.srExact(text = combinedRateBasisText, visible = StockFormatUtil.signedPct(combinedRate, 2))</span>
+					<span class="text-xl font-bold amount-value ${combinedColor} tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit))}">${StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit)), visible = StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit)))</span>
+					<span class="ml-2 text-sm font-semibold ${combinedColor} tooltip" data-tip="${combinedRateBasisText}" data-amount-basis="${combinedRateBasisText}">${StockFormatUtil.signedPct(combinedRate, 2)}@template._components.ui.srExact(text = combinedRateBasisText, visible = StockFormatUtil.signedPct(combinedRate, 2))</span>
 				</div>
 			</div>
 		`)
@@ -348,7 +340,7 @@
 				<span class="text-xs text-base-content/60">${coreNote}</span>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-xs w-full" aria-label="${coreTitle}">
+				<table class="table data-table w-full" aria-label="${coreTitle}">
 					<thead>
 						<tr>
 							<th scope="col"><span class="sr-only">${MessageUtil.getMessage("stock.summary.core.metric")}</span></th>
@@ -359,28 +351,28 @@
 					<tbody>
 						<tr>
 							<th scope="row" class="text-left font-normal">${evaluationAmountLabel} <span class="text-base-content/60">(${coreWeightLabel})</span></th>
-							<td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount())), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount())))</span> <span class="text-xs text-base-content/60" data-core-holding-weight>${coreHoldingSplit.core().weightPct().toPlainString()}%</span></td>
-							<td class="text-right font-mono"><span class="amount-value" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount())), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount())))</span> <span class="text-xs text-base-content/60">${coreHoldingSplit.rest().weightPct().toPlainString()}%</span></td>
+							<td class="text-right"><span class="amount-value tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount())), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().evaluationAmount())))</span> <span class="text-xs text-base-content/60" data-core-holding-weight>${coreHoldingSplit.core().weightPct().toPlainString()}%</span></td>
+							<td class="text-right"><span class="amount-value tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount()))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount())), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().evaluationAmount())))</span> <span class="text-xs text-base-content/60">${coreHoldingSplit.rest().weightPct().toPlainString()}%</span></td>
 						</tr>
 						<tr>
 							<th scope="row" class="text-left font-normal">${MessageUtil.getMessage("stock.profit.unrealized")}</th>
-							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().evaluationProfit())}">${signedKrw.apply(coreHoldingSplit.core().evaluationProfit())}</td>
-							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().evaluationProfit())}">${signedKrw.apply(coreHoldingSplit.rest().evaluationProfit())}</td>
+							<td class="text-right amount-value ${toneOf.apply(coreHoldingSplit.core().evaluationProfit())}">${signedKrw.apply(coreHoldingSplit.core().evaluationProfit())}</td>
+							<td class="text-right amount-value ${toneOf.apply(coreHoldingSplit.rest().evaluationProfit())}">${signedKrw.apply(coreHoldingSplit.rest().evaluationProfit())}</td>
 						</tr>
 						<tr>
 							<th scope="row" class="text-left font-normal">${realizedProfitLabel}</th>
-							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().realizedProfit())}">${signedKrw.apply(coreHoldingSplit.core().realizedProfit())}</td>
-							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().realizedProfit())}">${signedKrw.apply(coreHoldingSplit.rest().realizedProfit())}</td>
+							<td class="text-right amount-value ${toneOf.apply(coreHoldingSplit.core().realizedProfit())}">${signedKrw.apply(coreHoldingSplit.core().realizedProfit())}</td>
+							<td class="text-right amount-value ${toneOf.apply(coreHoldingSplit.rest().realizedProfit())}">${signedKrw.apply(coreHoldingSplit.rest().realizedProfit())}</td>
 						</tr>
 						<tr>
 							<th scope="row" class="text-left font-normal">${cumulativeDividendLabel}</th>
-							<td class="text-right font-mono amount-value text-dividend">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().dividendTotal()))}</td>
-							<td class="text-right font-mono amount-value text-dividend">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().dividendTotal()))}</td>
+							<td class="text-right amount-value text-dividend">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.core().dividendTotal()))}</td>
+							<td class="text-right amount-value text-dividend">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(coreHoldingSplit.rest().dividendTotal()))}</td>
 						</tr>
 						<tr class="font-semibold">
 							<th scope="row" class="text-left font-semibold">${combinedProfitLabel}</th>
-							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.core().combinedProfit())}">${signedKrw.apply(coreHoldingSplit.core().combinedProfit())}</td>
-							<td class="text-right font-mono amount-value ${toneOf.apply(coreHoldingSplit.rest().combinedProfit())}">${signedKrw.apply(coreHoldingSplit.rest().combinedProfit())}</td>
+							<td class="text-right amount-value ${toneOf.apply(coreHoldingSplit.core().combinedProfit())}">${signedKrw.apply(coreHoldingSplit.core().combinedProfit())}</td>
+							<td class="text-right amount-value ${toneOf.apply(coreHoldingSplit.rest().combinedProfit())}">${signedKrw.apply(coreHoldingSplit.rest().combinedProfit())}</td>
 						</tr>
 					</tbody>
 				</table>

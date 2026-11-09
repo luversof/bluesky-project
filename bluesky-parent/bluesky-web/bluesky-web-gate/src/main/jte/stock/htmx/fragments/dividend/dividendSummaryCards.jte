@@ -102,7 +102,7 @@
 					<span class="ml-auto">${dividendCountLabel} ${totalItemsCountText}</span>
 				</div>
 				<%-- 차감 분해(항상 표시): 세전 − (세금 + 수수료·기타) = 세후. 과세 금액은 차감 항목이 아님(별도 표시). --%>
-				<div class="mt-1 text-[11px] leading-4 text-base-content/60" title="${calcNoteLabel}">
+				<div class="mt-1 text-[11px] leading-4 text-base-content/60 tooltip" data-tip="${calcNoteLabel}">
 					${deductionLabel} = ${taxLabel} <span class="amount-value">₩${decimalFormat.format(safeAllTax)}</span>
 					+ ${deductionOtherLabel} <span class="amount-value">₩${decimalFormat.format(allOtherDeduction)}</span>@template._components.ui.srExact(text = calcNoteLabel, visible = decimalFormat.format(allOtherDeduction))
 				</div>
@@ -112,11 +112,7 @@
 					<%-- 무엇으로 가르는지 밝힌다. 2026-09-12 까지 이 세 항목에는 title 도 aria-label 도 없었고
 						 화면 어디에도 근거가 없었다(실측: 본문 전체에 "태그" 라는 말이 필터 드롭다운 말고는 없다).
 						 "기타 6,152,014원 3건" 만 보고는 그것이 월중도 월말도 아닌 무엇인지 알 수 없다. --%>
-					<span class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${windowBasisLabel}" data-tip="${windowBasisLabel}" data-window-basis>
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 opacity-60" aria-hidden="true">
-							<path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
-						</svg>
-					</span>
+					<span data-window-basis>@template._components.ui.infoTip(desc = windowBasisLabel)</span>
 					<span class="inline-flex items-baseline gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-info"></span>
 						<span class="text-base-content/60">${midMonthLabel}</span>
@@ -195,9 +191,9 @@
 				<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 					<div class="flex flex-wrap items-center gap-2">
 						<h3 class="text-sm font-semibold">${selectionSummaryLabel}</h3>
-						<span class="badge badge-info badge-outline" data-dividend-change-selection-count></span>
+						<span class="badge badge-info badge-outline badge-sm" data-dividend-change-selection-count></span>
 					</div>
-					<button type="button" class="btn btn-ghost btn-xs self-start" data-dividend-change-selection-clear>${selectionClearLabel}</button>
+					<button type="button" class="btn btn-xs self-start btn-outline" data-dividend-change-selection-clear>${selectionClearLabel}</button>
 				</div>
 				<div class="mt-3 grid gap-3 sm:grid-cols-3">
 					<div class="rounded-box bg-base-100/80 px-3 py-2">
@@ -221,7 +217,7 @@
 			     320px 에서 문서 219px, 640px 에서 표 321px, 1024px 에서 표 385px 넘쳤다(이번달 · 1년 보기, 전체 기간엔 이 표가 없다).
 			     종목 이름 칸의 max-w-0 truncate 는 표 자동 폭에서는 듣지 않는다(칸의 max-width 는 무시된다) - 이름은 줄지 않고 한 줄로 남는다. --%>
 			<div class="overflow-x-auto" data-dividend-change-table-scroll>
-			<table class="table table-sm w-full" aria-label="${changeTitleLabel}">
+			<table class="table data-table w-full" aria-label="${changeTitleLabel}">
 				<tbody>
 				@for(int ci = 0; ci < Math.min(dividendChangeContributors.size(), 8); ci++)
 					!{
@@ -238,13 +234,13 @@
 						data-prev="${ch.previousNet().toPlainString()}"
 						data-current="${ch.currentNet().toPlainString()}"
 						data-delta="${ch.delta().toPlainString()}">
-						<th scope="row" class="max-w-0 truncate" title="${ch.stockName()}">@if(ch.stockItemId() != null)<a href="${StockDetailLinkUtil.item(ch.stockItemId().toString())}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif
+						<th scope="row" class="max-w-0"><span class="block tooltip" data-tip="${ch.stockName()}"><span class="block truncate">@if(ch.stockItemId() != null)<a href="${StockDetailLinkUtil.item(ch.stockItemId().toString())}" class="link link-hover">${ch.stockName()}</a>@else${ch.stockName()}@endif
 							@if(isNew)
-							<span class="badge badge-xs badge-success badge-outline ml-1">${changeNewLabel}</span>
+							<span class="badge badge-success badge-outline ml-1 badge-sm">${changeNewLabel}</span>
 							@elseif(stopped)
-							<span class="badge badge-xs badge-ghost ml-1">${changeStoppedLabel}</span>
+							<span class="badge ml-1 badge-sm badge-outline">${changeStoppedLabel}</span>
 							@endif
-						</th>
+						</span></span></th>
 						<td class="hidden sm:table-cell text-right text-xs text-base-content/60 amount-value whitespace-nowrap">₩${decimalFormat.format(ch.previousNet())} → ₩${decimalFormat.format(ch.currentNet())}</td>
 						<td class="w-28 text-right font-semibold amount-value whitespace-nowrap ${up ? "text-profit" : "text-loss"}">${ch.delta().signum() == 0 ? "" : (up ? "+" : "-")}₩${decimalFormat.format(ch.delta().abs())}</td>
 					</tr>

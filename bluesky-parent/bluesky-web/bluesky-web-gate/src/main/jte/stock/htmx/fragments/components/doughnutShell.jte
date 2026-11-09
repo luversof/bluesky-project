@@ -23,9 +23,9 @@
 		     한 글자씩 세로로 쌓였다(실측 2026-09-17). --%>
 		<div class="flex flex-wrap items-center justify-between gap-2 mb-2">
 			<h2 class="text-sm font-bold" id="${titleId}" data-page-section>${resolvedTitle}</h2>
-			<div role="tablist" class="tabs tabs-box tabs-xs">
-				<a class="tab" id="${metricProfitId}" data-trade-donut-metric="profit" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${profitLabel}</a>
-				<a class="tab tab-active" id="${metricBuyId}" data-trade-donut-metric="buy" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${buyAmountLabel}</a>
+			<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1">
+				<a class="tab flex-1" id="${metricProfitId}" data-trade-donut-metric="profit" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${profitLabel}</a>
+				<a class="tab flex-1 tab-active" id="${metricBuyId}" data-trade-donut-metric="buy" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${buyAmountLabel}</a>
 			</div>
 		</div>
 		<%-- 범례는 자리가 모자라면 아래 줄로 내려간다. 캔버스가 flex-shrink-0 w-[200px] 라
@@ -38,9 +38,9 @@
 				<canvas id="${canvasId}" role="img" aria-label="${resolvedTitle}" class="amount-chart"></canvas>
 			</div>
 			<div class="flex flex-col min-w-[min(10rem,100%)] flex-1 h-[200px] overflow-hidden">
-				<div role="tablist" class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
-					<a class="tab tab-active" id="${tabStockId}" data-trade-donut-mode="stock" tabindex="0" role="tab" aria-controls="${legendId}">${byStockLabel}</a>
-					<a class="tab" id="${tabAccountId}" data-trade-donut-mode="account" tabindex="0" role="tab" aria-controls="${legendId}">${byAccountLabel}</a>
+				<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-1">
+					<a class="tab flex-1 tab-active" id="${tabStockId}" data-trade-donut-mode="stock" tabindex="0" role="tab" aria-controls="${legendId}">${byStockLabel}</a>
+					<a class="tab flex-1" id="${tabAccountId}" data-trade-donut-mode="account" tabindex="0" role="tab" aria-controls="${legendId}">${byAccountLabel}</a>
 				</div>
 				<div id="${legendId}" role="tabpanel" tabindex="0" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
 			</div>

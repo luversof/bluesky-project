@@ -177,7 +177,7 @@ class MonthlyDividendComparisonRankTest {
         Pattern.compile(
             "<span class="
                 + QUOTE
-                + "badge badge-xs ([a-z-]+)"
+                + "badge badge-sm badge-outline ([a-z-]+)"
                 + QUOTE
                 + " data-comparison-rank="
                 + QUOTE
@@ -191,7 +191,7 @@ class MonthlyDividendComparisonRankTest {
         found.add(matcher.group(2));
         assertThat(matcher.group(1))
             .as(entry.getKey() + " 배지 색")
-            .isEqualTo(entry.getValue() == 1 ? "badge-success" : "badge-ghost");
+            .isEqualTo(entry.getValue() == 1 ? "badge-success" : "badge-neutral");
         assertThat(matcher.group(3))
             .isEqualTo(
                 java.text.MessageFormat.format(

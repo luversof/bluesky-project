@@ -143,12 +143,12 @@
 				<div class="table-filter-sticky space-y-3" hx-boost="true" data-swap-anchor-key="etf-filter">
 					<div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 						<div class="space-y-2">
-							<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}</h2>
+							<h2 class="card-title">${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.section.table.desc")}</p>
 						</div>
 						<div class="flex flex-wrap items-center gap-2">
 							<a href="${referenceManageUrl}" class="btn btn-outline btn-sm h-auto max-w-full whitespace-normal" hx-boost="false">${MessageUtil.getMessage("stock.monthly.etf.manage")}</a>
-							<a href="${simulatorUrl}" class="btn btn-ghost btn-sm h-auto max-w-full whitespace-normal" hx-boost="false">${MessageUtil.getMessage("stock.monthly.etf.simulator.link")}</a>
+							<a href="${simulatorUrl}" class="btn btn-sm h-auto max-w-full whitespace-normal btn-outline" hx-boost="false">${MessageUtil.getMessage("stock.monthly.etf.simulator.link")}</a>
 						</div>
 					</div>
 					<form method="get" action="/stock/monthly-etf" class="grid gap-3 rounded-box bg-base-200/40 p-3 md:grid-cols-2 xl:grid-cols-5">
@@ -189,7 +189,7 @@
 						<div class="flex items-end gap-2">
 							<button type="submit" class="btn btn-primary btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.monthly.etf.filter.apply")}</button>
 							<%-- 필터 지우기 링크는 일부러 기준 주소(필터를 싣는 주소)를 쓰지 않는다. --%>
-							<a data-filter-reset href="${resetUrl}" class="btn btn-ghost btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere">${MessageUtil.getMessage("stock.monthly.etf.filter.reset")}</a>
+							<a data-filter-reset href="${resetUrl}" class="btn btn-sm max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere btn-outline">${MessageUtil.getMessage("stock.monthly.etf.filter.reset")}</a>
 						</div>
 					</form>
 
@@ -271,9 +271,9 @@
 								!{var pick = monthlyEtfPicks.get(pickIndex);}
 								<div class="rounded-box bg-base-100 p-2 sm:p-3 space-y-1" data-etf-pick data-pick-symbol="${pick.row().stockItemSymbol()}">
 									<div class="flex flex-wrap items-baseline gap-2">
-										<span class="badge badge-sm badge-neutral" data-pick-rank>${StockViewSupport.msg("stock.monthly.etf.pick.rank", pickIndex + 1)}</span>
+										<span class="badge badge-sm badge-neutral badge-outline" data-pick-rank>${StockViewSupport.msg("stock.monthly.etf.pick.rank", pickIndex + 1)}</span>
 										<%-- 지급 시기를 함께 적는다(사용자 요청 2026-09-23) - 월중과 월말은 적립하는 날이 다르다. --%>
-										<span class="badge badge-sm badge-ghost" data-pick-window="${pick.row().payoutWindow()}">${"MID_MONTH".equals(pick.row().payoutWindow()) ? midMonthLabel : ("MONTH_END".equals(pick.row().payoutWindow()) ? monthEndLabel : ("OTHER".equals(pick.row().payoutWindow()) ? otherWindowLabel : unknownWindowLabel))}</span>
+										<span class="badge badge-sm badge-outline" data-pick-window="${pick.row().payoutWindow()}">${"MID_MONTH".equals(pick.row().payoutWindow()) ? midMonthLabel : ("MONTH_END".equals(pick.row().payoutWindow()) ? monthEndLabel : ("OTHER".equals(pick.row().payoutWindow()) ? otherWindowLabel : unknownWindowLabel))}</span>
 										<span class="font-medium break-keep wrap-anywhere">${pick.row().stockItemName()}</span>
 									</div>
 									<div class="text-xs text-base-content/60">${pick.row().stockItemSymbol()}</div>
@@ -313,7 +313,7 @@
 									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.why")}</p>
 									<p class="tabular-nums">${MessageUtil.getMessage("stock.monthly.etf.pick.how.example")}</p>
 									<p>${MessageUtil.getMessage("stock.monthly.etf.pick.how.missing")}</p>
-									<p hx-boost="true" data-swap-anchor-key="etf-score"><a href="${baseUrl}sort=score&direction=desc" class="link link-primary" data-score-sort-link>${MessageUtil.getMessage("stock.monthly.etf.pick.how.sort")}</a></p>
+									<p hx-boost="true" data-swap-anchor-key="etf-score"><a href="${baseUrl}sort=score&direction=desc" class="link link-hover" data-score-sort-link>${MessageUtil.getMessage("stock.monthly.etf.pick.how.sort")}</a></p>
 								</div>
 							</details>
 							@endif
@@ -348,36 +348,36 @@
 					@endif
 
 					<div class="overflow-x-auto table-head-sticky">
-						<table class="table table-zebra table-sm whitespace-nowrap print-dense" aria-label="${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}">
+						<table class="table data-table print-dense" aria-label="${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}">
 							<thead hx-boost="true" data-swap-anchor-key="etf-thead">
 								<tr>
 									<%-- 종목 열 최소 폭 9rem -> 8rem(2026-09-30): 영어 1440px 표가 상자를 5px 넘었다(열 최소 폭 합 1,139 / 상자 1,134). 긴 종목명은 원래 줄을 바꾼다. --%>
 									<th scope="col" class="min-w-[8rem] align-bottom" aria-sort="${"symbol".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=symbol&direction=${"symbol".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center gap-1 font-medium no-underline">
+										<a href="${baseUrl}sort=symbol&direction=${"symbol".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center gap-1 font-medium">
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.item")}</span>
 											@if("symbol".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 										</a>
 									</th>
 									<th scope="col" data-keep-words class="align-bottom" aria-sort="${"payout-window".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=payout-window&direction=${"payout-window".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center gap-1 font-medium no-underline">
+										<a href="${baseUrl}sort=payout-window&direction=${"payout-window".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center gap-1 font-medium">
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.payout.window")}</span>
 											@if("payout-window".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 										</a>
 									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"monthly-dividend".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=monthly-dividend&direction=${"monthly-dividend".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
+										<a href="${baseUrl}sort=monthly-dividend&direction=${"monthly-dividend".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium">
 											@if("monthly-dividend".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.dividend.per.share")}</span>
 										</a>
 									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"taxable-base".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=taxable-base&direction=${"taxable-base".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
+										<a href="${baseUrl}sort=taxable-base&direction=${"taxable-base".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium">
 											@if("taxable-base".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.taxable")}</span>
 										</a>
 									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"expense-ratio".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=expense-ratio&direction=${"expense-ratio".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover no-underline">
+										<a href="${baseUrl}sort=expense-ratio&direction=${"expense-ratio".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover">
 											@if("expense-ratio".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.expense.ratio")}</span>
 											<div class="text-[11px] font-normal text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.header.expense.ratio.desc")}</div>
@@ -385,21 +385,21 @@
 									</th>
 									<th scope="col" class="align-bottom text-right">${MessageUtil.getMessage("stock.monthly.etf.table.header.price")}</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"max-drawdown".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=max-drawdown&direction=${"max-drawdown".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover no-underline">
+										<a href="${baseUrl}sort=max-drawdown&direction=${"max-drawdown".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover">
 											@if("max-drawdown".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.drawdown")}</span>
 											<div class="text-[11px] font-normal text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.header.drawdown.desc")}</div>
 										</a>
 									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"volatility".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=volatility&direction=${"volatility".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover no-underline">
+										<a href="${baseUrl}sort=volatility&direction=${"volatility".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover">
 											@if("volatility".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.volatility")}</span>
 											<div class="text-[11px] font-normal text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.header.volatility.desc")}</div>
 										</a>
 									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"annual-yield".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=annual-yield&direction=${"annual-yield".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
+										<a href="${baseUrl}sort=annual-yield&direction=${"annual-yield".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium">
 											@if("annual-yield".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.yield")}</span>
 										</a>
@@ -407,27 +407,27 @@
 									<%-- 점수 열(사용자 요청 2026-09-30: "점수 기준에 대한 설명도 추가해주고 점수 기준으로 정렬해서 볼 수 있으면").
 									     "지금 눈여겨볼 종목" 과 같은 셈 - 바로 왼쪽 연배당에서 분배금이 줄어든 만큼 뺀다. 칸 안에 그 뺄셈을 적는다. --%>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"score".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}" data-score-header>
-										<a href="${baseUrl}sort=score&direction=${"score".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover no-underline">
+										<a href="${baseUrl}sort=score&direction=${"score".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover">
 											@if("score".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.score")}</span>
 											<div class="text-[11px] font-normal text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.header.score.desc")}</div>
 										</a>
 									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"period-price".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=period-price&direction=${"period-price".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover no-underline">
+										<a href="${baseUrl}sort=period-price&direction=${"period-price".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover">
 											@if("period-price".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.period.price")}</span>
 										</a>
 									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"period-total".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=period-total&direction=${"period-total".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover no-underline">
+										<a href="${baseUrl}sort=period-total&direction=${"period-total".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover">
 											@if("period-total".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.period.total")}</span>
 											<div class="text-[11px] font-normal text-base-content/60">${MessageUtil.getMessage("stock.monthly.etf.table.header.period.total.desc")}</div>
 										</a>
 									</th>
 									<th scope="col" class="align-bottom text-right" aria-sort="${"payout-count".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
-										<a href="${baseUrl}sort=payout-count&direction=${"payout-count".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium no-underline">
+										<a href="${baseUrl}sort=payout-count&direction=${"payout-count".equals(monthlyEtfSort) && "desc".equals(monthlyEtfDirection) ? "asc" : "desc"}" class="link link-hover inline-flex items-center justify-end gap-1 font-medium">
 											@if("payout-count".equals(monthlyEtfSort))<span class="text-xs text-base-content/60" aria-hidden="true">${directionIndicator}</span>@endif
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.history")}</span>
 										</a>
@@ -442,17 +442,17 @@
 											<div class="flex items-center gap-2 whitespace-nowrap">
 												<span>${row.stockItemSymbol()}</span>
 												@if(row.held())
-													<span class="badge badge-xs badge-primary" data-held-badge title="${MessageUtil.getMessage("stock.monthly.etf.table.cell.held.title")}">${MessageUtil.getMessage("stock.monthly.etf.table.cell.held")}<span class="sr-only"> ${MessageUtil.getMessage("stock.monthly.etf.table.cell.held.title")}</span></span>
+													<span class="badge badge-primary tooltip badge-sm badge-outline" data-held-badge data-tip="${MessageUtil.getMessage("stock.monthly.etf.table.cell.held.title")}">${MessageUtil.getMessage("stock.monthly.etf.table.cell.held")}<span class="sr-only"> ${MessageUtil.getMessage("stock.monthly.etf.table.cell.held.title")}</span></span>
 												@endif
 												@if(!row.active())
-													<span class="badge badge-xs badge-ghost" data-inactive-badge>${MessageUtil.getMessage("stock.monthly.etf.table.cell.inactive")}</span>
+													<span class="badge badge-sm badge-outline" data-inactive-badge>${MessageUtil.getMessage("stock.monthly.etf.table.cell.inactive")}</span>
 												@endif
 											</div>
 											<div class="mt-1 text-sm font-normal leading-tight text-base-content/70">@if(row.stockItemId() != null)<a class="link link-hover" href="${StockDetailLinkUtil.item(row.stockItemId().toString())}">${row.stockItemName()}</a>@else${row.stockItemName()}@endif</div>
 											<%-- 이번 적립 자리(시뮬레이터 월배당 탭의 4자리 추천과 같은 답 - 같은 코드로 낸다). --%>
 											!{var contributionPick = monthlyEtfContributionPicks.get(row.stockItemSymbol());}
 											@if(contributionPick != null)
-												<div class="mt-1"><span class="badge badge-sm badge-primary whitespace-normal h-auto" data-contribution-pick="${contributionPick.payoutWindow()}|${contributionPick.account()}">${StockViewSupport.msg("stock.monthly.etf.table.cell.contribution", "MID_MONTH".equals(contributionPick.payoutWindow()) ? midMonthLabel : monthEndLabel, "BROKERAGE".equals(contributionPick.account()) ? MessageUtil.getMessage("stock.simulator.monthly.contribution.account.brokerage") : MessageUtil.getMessage("stock.simulator.monthly.contribution.account.pension"))}</span></div>
+												<div class="mt-1"><span class="badge badge-sm badge-primary whitespace-normal h-auto badge-outline" data-contribution-pick="${contributionPick.payoutWindow()}|${contributionPick.account()}">${StockViewSupport.msg("stock.monthly.etf.table.cell.contribution", "MID_MONTH".equals(contributionPick.payoutWindow()) ? midMonthLabel : monthEndLabel, "BROKERAGE".equals(contributionPick.account()) ? MessageUtil.getMessage("stock.simulator.monthly.contribution.account.brokerage") : MessageUtil.getMessage("stock.simulator.monthly.contribution.account.pension"))}</span></div>
 											@endif
 										</th>
 										<td class="align-top" data-keep-line>${windowLabel}</td>
@@ -469,8 +469,8 @@
 													<span class="mr-1 text-[11px] text-base-content/60">${trendLabel}</span>
 													@if(row.payoutTrendPct() != null && row.averageDividendPerShare3m() != null)
 														!{String trendBasis = StockViewSupport.msg("stock.monthly.etf.table.cell.trend.title", StockFormatUtil.fullKrw(row.averageDividendPerShare3m(), 2), StockFormatUtil.fullKrw(row.averageDividendPerShare1y(), 2));}
-														<span class="amount-value" title="${trendBasis}">${StockFormatUtil.fullKrw(row.averageDividendPerShare3m(), 2)}</span>
-														<span class="block font-medium ${row.payoutTrendPct().signum() > 0 ? "text-profit" : (row.payoutTrendPct().signum() < 0 ? "text-loss" : "text-base-content/60")}" data-payout-trend title="${trendBasis}">(${row.payoutTrendPct().signum() > 0 ? "+" : ""}${percentFormat.format(row.payoutTrendPct())}%)<span class="sr-only"> ${trendBasis}</span></span>
+														<span class="amount-value tooltip" data-tip="${trendBasis}">${StockFormatUtil.fullKrw(row.averageDividendPerShare3m(), 2)}</span>
+														<span class="block font-medium ${row.payoutTrendPct().signum() > 0 ? "text-profit" : (row.payoutTrendPct().signum() < 0 ? "text-loss" : "text-base-content/60")} tooltip" data-payout-trend data-tip="${trendBasis}">(${row.payoutTrendPct().signum() > 0 ? "+" : ""}${percentFormat.format(row.payoutTrendPct())}%)<span class="sr-only"> ${trendBasis}</span></span>
 													@else
 														<span class="text-base-content/60" data-payout-trend-missing>${trendUnknownLabel}</span>
 													@endif
@@ -606,7 +606,7 @@
 			</div>
 
 			@template._components.ui.card(bodyClass = "gap-4", body = @`
-				<h2 class="card-title text-lg">${MessageUtil.getMessage("stock.monthly.etf.criteria.title")}</h2>
+				<h2 class="card-title">${MessageUtil.getMessage("stock.monthly.etf.criteria.title")}</h2>
 				<ul class="list-disc space-y-3 pl-5 text-sm leading-6 text-base-content/70">
 					<li>${MessageUtil.getMessage("stock.monthly.etf.criteria.one")}</li>
 					<li>${MessageUtil.getMessage("stock.monthly.etf.criteria.two")}</li>

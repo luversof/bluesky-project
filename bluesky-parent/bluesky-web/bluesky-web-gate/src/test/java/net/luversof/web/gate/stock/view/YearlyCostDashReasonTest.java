@@ -42,7 +42,7 @@ class YearlyCostDashReasonTest {
     String template = Files.readString(TEMPLATE, StandardCharsets.UTF_8);
 
     // title 만 달면 마우스 전용이다 - 이 세션에서 두 번 겪은 실수다.
-    assertThat(template).as("빈 자리에 title 이 없다").contains("title=\"${realizedReason}\"");
+    assertThat(template).as("빈 자리에 title 이 없다").contains("data-tip=\"${realizedReason}\"");
     assertThat(template)
         .as("빈 자리에 sr-only 가 없다 - title 만으로는 낭독기에 닿지 않는다")
         .contains("<span class=\"sr-only\">${realizedReason}</span>");
@@ -91,7 +91,7 @@ class YearlyCostDashReasonTest {
     assertThat(squeeze(template))
         .as("까닭 없는 '-' 한 글자가 남아 있다")
         .doesNotContain("<span class=\"text-base-content/60\">-</span>");
-    assertThat(template).as("합계 줄 까닭이 마우스에 닿지 않는다").contains("title=\"${totalRealizedReason}\"");
+    assertThat(template).as("합계 줄 까닭이 마우스에 닿지 않는다").contains("data-tip=\"${totalRealizedReason}\"");
     assertThat(template)
         .as("합계 줄 까닭이 낭독기에 닿지 않는다")
         .contains("<span class=\"sr-only\">${totalRealizedReason}</span>");
@@ -120,7 +120,7 @@ class YearlyCostDashReasonTest {
         .as("까닭 없는 '-' 한 글자가 남아 있다")
         .doesNotContain("<span class=\"text-base-content/60\">-</span>");
     // 줄 하나 + 합계 하나.
-    assertThat(countOf(template, "title=\"${noSaleTitle}\">-</span><span"))
+    assertThat(countOf(template, "data-tip=\"${noSaleTitle}\">-</span><span"))
         .as("매도 0 건 까닭을 단 칸")
         .isEqualTo(2);
   }

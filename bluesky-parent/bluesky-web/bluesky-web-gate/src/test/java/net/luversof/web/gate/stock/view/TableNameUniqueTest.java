@@ -30,7 +30,7 @@ class TableNameUniqueTest {
         Files.readString(
             Path.of("src/main/jte/stock/htmx/fragments/assetStatus.jte"), StandardCharsets.UTF_8);
 
-    String label = attributeAfter(template, "<table class=\"table table-xs w-full\" aria-label=");
+    String label = attributeAfter(template, "<table class=\"table data-table w-full\" aria-label=");
     assertThat(label).as("계좌 보유 종목 상세 표의 aria-label 을 찾지 못했다").isNotNull();
     assertThat(label)
         .as("이름이 고정 문구면 계좌가 다섯이어도 이름이 하나다")

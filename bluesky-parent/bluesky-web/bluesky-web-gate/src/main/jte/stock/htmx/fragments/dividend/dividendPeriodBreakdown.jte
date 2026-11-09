@@ -33,8 +33,7 @@
 	DividendPeriodBreakdown.Row monthlyTotal = DividendPeriodBreakdown.total(monthlyRows, totalLabel);
 }
 
-<div class="card bg-base-100 border border-base-200 mb-4">
-	<div class="card-body p-4">
+@template._components.ui.card(cssClass = "mb-4", bodyClass = "p-4", body = @`
 		<h2 class="font-bold text-sm" data-page-section>${title}</h2>
 		<p class="text-xs text-base-content/60 mb-3">${description}</p>
 
@@ -52,7 +51,7 @@
 				<p class="text-sm text-base-content/60 py-4">${emptyLabel}</p>
 			@else
 				<div class="overflow-x-auto">
-					<table class="table table-zebra table-sm w-full" aria-label="${title} ${yearTabLabel}">
+					<table class="table data-table w-full" aria-label="${title} ${yearTabLabel}">
 						<thead>
 							<tr>
 								<th scope="col">${periodLabel}</th>
@@ -78,9 +77,9 @@
 										@endif
 									</th>
 									<td class="text-right tabular-nums">${decimalFormat.format(row.count())}</td>
-									<td class="text-right font-mono amount-value">${decimalFormat.format(StockFormatUtil.displayWon(row.grossAmount()))}</td>
-									<td class="text-right font-mono amount-value">@if(row.tax() == null || row.tax().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(row.tax()))}@endif</td>
-									<td class="text-right font-mono font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(row.netAmount()))}</td>
+									<td class="text-right amount-value">${decimalFormat.format(StockFormatUtil.displayWon(row.grossAmount()))}</td>
+									<td class="text-right amount-value">@if(row.tax() == null || row.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(row.tax()))}@endif</td>
+									<td class="text-right font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(row.netAmount()))}</td>
 								</tr>
 							@endfor
 						</tbody>
@@ -91,9 +90,9 @@
 								<tr class="border-t-2 border-base-content/20 font-semibold">
 									<th scope="row">${totalLabel}</th>
 									<td class="text-right tabular-nums">${decimalFormat.format(yearlyTotal.count())}</td>
-									<td class="text-right font-mono amount-value">${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.grossAmount()))}</td>
-									<td class="text-right font-mono amount-value">@if(yearlyTotal.tax() == null || yearlyTotal.tax().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.tax()))}@endif</td>
-									<td class="text-right font-mono font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.netAmount()))}</td>
+									<td class="text-right amount-value">${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.grossAmount()))}</td>
+									<td class="text-right amount-value">@if(yearlyTotal.tax() == null || yearlyTotal.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.tax()))}@endif</td>
+									<td class="text-right font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.netAmount()))}</td>
 								</tr>
 						</tfoot>
 					</table>
@@ -108,7 +107,7 @@
 				<p class="text-sm text-base-content/60 py-4">${emptyLabel}</p>
 			@else
 				<div class="overflow-x-auto">
-					<table class="table table-zebra table-sm w-full" aria-label="${title} ${monthTabLabel}">
+					<table class="table data-table w-full" aria-label="${title} ${monthTabLabel}">
 						<thead>
 							<tr>
 								<th scope="col">${periodLabel}</th>
@@ -123,9 +122,9 @@
 								<tr>
 									<th scope="row" class="font-medium whitespace-nowrap date-whole">${row.label()}</th>
 									<td class="text-right tabular-nums">${decimalFormat.format(row.count())}</td>
-									<td class="text-right font-mono amount-value">${decimalFormat.format(StockFormatUtil.displayWon(row.grossAmount()))}</td>
-									<td class="text-right font-mono amount-value">@if(row.tax() == null || row.tax().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(row.tax()))}@endif</td>
-									<td class="text-right font-mono font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(row.netAmount()))}</td>
+									<td class="text-right amount-value">${decimalFormat.format(StockFormatUtil.displayWon(row.grossAmount()))}</td>
+									<td class="text-right amount-value">@if(row.tax() == null || row.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(row.tax()))}@endif</td>
+									<td class="text-right font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(row.netAmount()))}</td>
 								</tr>
 							@endfor
 						</tbody>
@@ -136,14 +135,13 @@
 								<tr class="border-t-2 border-base-content/20 font-semibold">
 									<th scope="row">${totalLabel}</th>
 									<td class="text-right tabular-nums">${decimalFormat.format(monthlyTotal.count())}</td>
-									<td class="text-right font-mono amount-value">${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.grossAmount()))}</td>
-									<td class="text-right font-mono amount-value">@if(monthlyTotal.tax() == null || monthlyTotal.tax().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.tax()))}@endif</td>
-									<td class="text-right font-mono font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.netAmount()))}</td>
+									<td class="text-right amount-value">${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.grossAmount()))}</td>
+									<td class="text-right amount-value">@if(monthlyTotal.tax() == null || monthlyTotal.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.tax()))}@endif</td>
+									<td class="text-right font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.netAmount()))}</td>
 								</tr>
 						</tfoot>
 					</table>
 				</div>
 			@endif
 		</div>
-	</div>
-</div>
+	`)

@@ -106,7 +106,7 @@ class NavbarLabelBreakpointTest {
 
   /**
    * 매매 내역 표의 수량 머리글은 짧게(영어 "Qty") - 자산 성장 매매 내역 표가 영어 1280px 에서 16px 넓어 가로 스크롤이 생겼다(2026-10-02).
-   * 낭독기 · 툴팁에는 원래 이름(aria-label · abbr title).
+   * 낭독기 · 툴팁에는 원래 이름(aria-label · abbr 의 공용 툴팁 data-tip).
    */
   @Test
   void 매매_표_수량_머리글은_짧고_이름은_원래대로() throws IOException {
@@ -117,7 +117,7 @@ class NavbarLabelBreakpointTest {
       assertThat(read(template))
           .as(template)
           .contains(
-              "aria-label=\"${quantityLabel}\"><abbr title=\"${quantityLabel}\" class=\"no-underline\">${quantityShortLabel}</abbr></th>");
+              "aria-label=\"${quantityLabel}\"><abbr data-tip=\"${quantityLabel}\" class=\"no-underline tooltip\">${quantityShortLabel}</abbr></th>");
     }
   }
 

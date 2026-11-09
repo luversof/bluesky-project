@@ -90,12 +90,12 @@ String sellCountPageLabel = sellCountIsPeriod
 
 @template._components.ui.card(cssClass = "mt-4", id = "trade-history-panel", body = @`
 <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-<h3 class="card-title text-base">
+<h3 class="card-title">
 ${historyTitle}
 <span class="text-sm font-normal text-base-content/60 ml-2">${tradePeriod}</span>
 </h3>
 @if(totalItems > 0)
-<span class="badge badge-ghost badge-sm">${countMessage.apply(totalItems)}</span>
+<span class="badge badge-sm badge-outline">${countMessage.apply(totalItems)}</span>
 @endif
 </div>
 
@@ -137,15 +137,15 @@ ${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div></div>
 
 <div class="overflow-x-auto">
-<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${historyTitle}">
+<table class="table data-table w-full table-pin-rows pin-top-nav" aria-label="${historyTitle}">
 <thead>
-<tr class="bg-base-200">
+<tr>
 <th scope="col">${dateLabel}</th>
 <th scope="col">${typeLabel}</th>
 <th scope="col">${stockLabel}</th>
 <th scope="col" class="hidden sm:table-cell">${accountLabel}</th>
 <th scope="col" class="text-right">${unitPriceLabel}</th>
-<th scope="col" class="text-right" aria-label="${quantityLabel}"><abbr title="${quantityLabel}" class="no-underline">${quantityShortLabel}</abbr></th>
+<th scope="col" class="text-right" aria-label="${quantityLabel}"><abbr data-tip="${quantityLabel}" class="no-underline tooltip">${quantityShortLabel}</abbr></th>
 <th scope="col" class="text-right">${amountLabel}</th>
 <th scope="col" class="text-right hidden lg:table-cell print:table-cell">${feeLabel}</th>
 <th scope="col" class="text-right hidden lg:table-cell print:table-cell">${tradingTaxLabel}</th>
@@ -169,13 +169,13 @@ ${isBuy ? buyLabel : sellLabel}
 </td>
 <td class="font-bold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</a></td>
 <td class="whitespace-nowrap hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(trade.accountId() != null ? trade.accountId().toString() : "")}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
-<td class="text-right font-mono amount-value">${trade.price() != null ? df.format(trade.price()) : "0"}</td>
-<td class="text-right font-mono amount-value">${df.format(trade.quantity())}</td>
-<td class="text-right font-mono amount-value">${trade.amount() != null ? df.format(trade.amount()) : "0"}</td>
-<td class="text-right text-xs text-base-content/60 amount-value hidden lg:table-cell print:table-cell">@if(trade.fee() == null || trade.fee().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${df.format(trade.fee())}@endif</td>
-<td class="text-right text-xs text-base-content/60 amount-value hidden lg:table-cell print:table-cell">@if(trade.tax() == null || trade.tax().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${df.format(trade.tax())}@endif</td>
-<td class="text-right font-bold font-mono amount-value ${hasProfit ? profitClass : ""}">
-@if(hasProfit && !isBuy)${StockFormatUtil.signedWon(StockFormatUtil.displayWon(trade.realizedProfit()))}@else<span class="text-base-content/60" aria-hidden="true" title="${isBuy ? buyNoRealizedTitle : noDataTitle}">-</span><span class="sr-only">${isBuy ? buyNoRealizedTitle : noDataTitle}</span>@endif
+<td class="text-right amount-value">${trade.price() != null ? df.format(trade.price()) : "0"}</td>
+<td class="text-right amount-value">${df.format(trade.quantity())}</td>
+<td class="text-right amount-value">${trade.amount() != null ? df.format(trade.amount()) : "0"}</td>
+<td class="text-right text-xs text-base-content/60 amount-value hidden lg:table-cell print:table-cell">@if(trade.fee() == null || trade.fee().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${df.format(trade.fee())}@endif</td>
+<td class="text-right text-xs text-base-content/60 amount-value hidden lg:table-cell print:table-cell">@if(trade.tax() == null || trade.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${df.format(trade.tax())}@endif</td>
+<td class="text-right font-bold amount-value ${hasProfit ? profitClass : ""}">
+@if(hasProfit && !isBuy)${StockFormatUtil.signedWon(StockFormatUtil.displayWon(trade.realizedProfit()))}@else<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${isBuy ? buyNoRealizedTitle : noDataTitle}">-</span><span class="sr-only">${isBuy ? buyNoRealizedTitle : noDataTitle}</span>@endif
 </td>
 </tr>
 @endfor

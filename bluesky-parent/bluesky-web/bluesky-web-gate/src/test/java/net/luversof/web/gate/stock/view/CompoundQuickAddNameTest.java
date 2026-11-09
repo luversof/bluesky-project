@@ -57,11 +57,11 @@ class CompoundQuickAddNameTest {
     assertThat(template)
         .as("초기 원금 칸의 이름")
         .contains(
-            "value=\"0\" class=\"input input-bordered w-full\" aria-label=\"${initialLabel}\"");
+            "value=\"0\" class=\"input input-bordered w-full input-sm\" aria-label=\"${initialLabel}\"");
     assertThat(template)
         .as("정기 납입액 칸의 이름")
         .contains(
-            "value=\"20000000\" class=\"input input-bordered w-full\" aria-label=\"${contributionLabel}\"");
+            "value=\"20000000\" class=\"input input-bordered w-full input-sm\" aria-label=\"${contributionLabel}\"");
   }
 
   @Test

@@ -68,7 +68,7 @@ class MonthlyReferenceNarrowAndSortTest {
 
     assertThat(template())
         .as("카드 제목 배지도 접혀야 한다(종목명이 길다)")
-        .contains("badge badge-ghost badge-sm ml-2 align-middle h-auto whitespace-normal");
+        .contains("badge badge-sm ml-2 align-middle h-auto whitespace-normal");
   }
 
   @Test

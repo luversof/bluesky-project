@@ -209,7 +209,7 @@
 			<div class="rounded-3xl border border-base-300 bg-gradient-to-br from-base-100 via-base-100 to-base-200 shadow-sm">
 				<div class="flex flex-col gap-6 px-6 py-6 lg:flex-row lg:items-end lg:justify-between">
 					<div class="space-y-3">
-						<div class="badge badge-primary badge-outline h-auto min-h-6 whitespace-normal py-0.5 text-center">${toolTitle}</div>
+						<div class="badge badge-primary badge-outline h-auto min-h-6 whitespace-normal py-0.5 text-center badge-sm">${toolTitle}</div>
 						<h1 class="text-3xl font-bold tracking-tight">${pageTitle}</h1>
 						<p class="max-w-3xl text-sm leading-6 text-base-content/70">${description}</p>
 					</div>
@@ -290,7 +290,7 @@
 			<div class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[20rem_minmax(0,1fr)]">
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<div class="space-y-2">
-							<h2 class="card-title text-lg" data-page-section>${scenariosTitle}</h2>
+							<h2 class="card-title" data-page-section>${scenariosTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${scenariosDescription}</p>
 						</div>
 						<button id="stockSimulatorAddScenario" type="button" class="btn btn-primary btn-sm w-full">${addScenario}</button>
@@ -298,7 +298,7 @@
 						<div class="grid grid-cols-2 gap-2">
 							<button id="stockSimulatorDuplicateScenario" type="button" class="btn btn-outline btn-sm">${duplicateScenario}</button>
 							<button id="stockSimulatorDeleteScenario" type="button" class="btn btn-outline btn-sm btn-error">${deleteScenario}</button>
-							<button id="stockSimulatorResetStorage" type="button" class="btn btn-ghost btn-sm col-span-2">${resetStorage}</button>
+							<button id="stockSimulatorResetStorage" type="button" class="btn btn-sm col-span-2 btn-outline">${resetStorage}</button>
 						</div>
 				`)
 
@@ -306,7 +306,7 @@
 					@template._components.ui.card(bodyClass = "gap-5", body = @`
 							<div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
 								<div class="min-w-0 space-y-2">
-									<h2 class="card-title text-lg" data-page-section>${inputsTitle}</h2>
+									<h2 class="card-title" data-page-section>${inputsTitle}</h2>
 									<p class="text-sm leading-6 text-base-content/60">${inputsDescription}</p>
 								</div>
 								<%-- 저장 안내(localStorage)는 위 머리 상자에만 둔다(2026-10-01) - 여기 배지로 한 번 더 적혀 같은 문장이 한 화면에 두 번이었고,
@@ -316,48 +316,48 @@
 							<form id="stockSimulatorForm" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 								<label class="form-control">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.name")}</span></div>
-									<input id="stockSimulatorName" name="name" type="text" maxlength="40" class="input input-bordered w-full" />
+									<input id="stockSimulatorName" name="name" type="text" maxlength="40" class="input input-bordered w-full input-sm" />
 								</label>
 								<label class="form-control">
 									<div class="label flex-wrap justify-between gap-x-3 gap-y-0">
 										<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.principal")}</span>
 										<span id="stockSimulatorPrincipalPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 									</div>
-									<input id="stockSimulatorPrincipal" name="principal" type="number" min="10000" step="10000" class="input input-bordered w-full" />
+									<input id="stockSimulatorPrincipal" name="principal" type="number" min="10000" step="10000" class="input input-bordered w-full input-sm" />
 								</label>
 								<label class="form-control">
 									<div class="label flex-wrap justify-between gap-x-3 gap-y-0">
 										<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.current.price")}</span>
 										<span id="stockSimulatorCurrentPricePreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 									</div>
-									<input id="stockSimulatorCurrentPrice" name="currentPrice" type="number" min="1" step="1" class="input input-bordered w-full" />
+									<input id="stockSimulatorCurrentPrice" name="currentPrice" type="number" min="1" step="1" class="input input-bordered w-full input-sm" />
 								</label>
 								<label class="form-control">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.annual.price.growth")}</span></div>
-									<input id="stockSimulatorAnnualPriceGrowthPct" name="annualPriceGrowthPct" type="number" min="-100" max="200" step="0.1" class="input input-bordered w-full" />
+									<input id="stockSimulatorAnnualPriceGrowthPct" name="annualPriceGrowthPct" type="number" min="-100" max="200" step="0.1" class="input input-bordered w-full input-sm" />
 								</label>
 								<label class="form-control">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.dividend.yield")}</span></div>
-									<input id="stockSimulatorDividendYieldPct" name="dividendYieldPct" type="number" min="0" max="100" step="0.1" class="input input-bordered w-full" />
+									<input id="stockSimulatorDividendYieldPct" name="dividendYieldPct" type="number" min="0" max="100" step="0.1" class="input input-bordered w-full input-sm" />
 								</label>
 								<label class="form-control">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.annual.dividend.growth")}</span></div>
-									<input id="stockSimulatorAnnualDividendGrowthPct" name="annualDividendGrowthPct" type="number" min="-100" max="200" step="0.1" class="input input-bordered w-full" />
+									<input id="stockSimulatorAnnualDividendGrowthPct" name="annualDividendGrowthPct" type="number" min="-100" max="200" step="0.1" class="input input-bordered w-full input-sm" />
 								</label>
 												<label class="form-control">
 													<div class="label flex-wrap justify-between gap-x-3 gap-y-0">
 														<span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.annual.spending")}</span>
 														<span id="stockSimulatorAnnualSpendingPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 													</div>
-													<input id="stockSimulatorAnnualSpending" name="annualSpending" type="number" min="0" step="10000" class="input input-bordered w-full" />
+													<input id="stockSimulatorAnnualSpending" name="annualSpending" type="number" min="0" step="10000" class="input input-bordered w-full input-sm" />
 												</label>
 												<label class="form-control">
 													<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.annual.spending.growth")}</span></div>
-													<input id="stockSimulatorAnnualSpendingGrowthPct" name="annualSpendingGrowthPct" type="number" min="-100" max="200" step="0.1" class="input input-bordered w-full" />
+													<input id="stockSimulatorAnnualSpendingGrowthPct" name="annualSpendingGrowthPct" type="number" min="-100" max="200" step="0.1" class="input input-bordered w-full input-sm" />
 												</label>
 								<label class="form-control">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.years")}</span></div>
-									<input id="stockSimulatorYears" name="years" type="number" min="1" max="100" step="1" class="input input-bordered w-full" />
+									<input id="stockSimulatorYears" name="years" type="number" min="1" max="100" step="1" class="input input-bordered w-full input-sm" />
 								</label>
 								<div class="form-control md:col-span-2 xl:col-span-2">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.reinvest")}</span></div>
@@ -383,7 +383,7 @@
 						<div class="grid gap-4 grid-cols-[minmax(0,1fr)] xl:grid-cols-2">
 							@template._components.ui.card(bodyClass = "gap-4", body = @`
 									<div class="space-y-2">
-										<h3 class="card-title text-base">${cashFlowTitle}</h3>
+										<h3 class="card-title">${cashFlowTitle}</h3>
 										<p class="text-sm leading-6 text-base-content/60">${cashFlowDescription}</p>
 									</div>
 									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
@@ -392,7 +392,7 @@
 							`)
 							@template._components.ui.card(bodyClass = "gap-4", body = @`
 									<div class="space-y-2">
-										<h3 class="card-title text-base">${assetTitle}</h3>
+										<h3 class="card-title">${assetTitle}</h3>
 										<p class="text-sm leading-6 text-base-content/60">${assetDescription}</p>
 									</div>
 									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
@@ -407,21 +407,21 @@
 			<div class="grid gap-6 grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_20rem]">
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
 						<div class="space-y-2">
-							<h2 class="card-title text-lg" data-page-section>${compareTitle}</h2>
+							<h2 class="card-title" data-page-section>${compareTitle}</h2>
 							<p class="text-sm leading-6 text-base-content/60">${compareDescription}</p>
 						</div>
 						<div class="flex flex-wrap gap-2 text-xs text-base-content/70">
-							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-emerald-500 sim-tint-stable text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}</span>
-							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-amber-500 sim-tint-deficit text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}</span>
-							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-orange-500 sim-tint-drawdown text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}</span>
-							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-yellow-500 sim-tint-decline text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
-							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-red-500 sim-tint-depleted text-base-content">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-emerald-500 sim-tint-stable text-base-content badge-sm badge-outline">${MessageUtil.getMessage("stock.simulator.timeline.phase.stable")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-amber-500 sim-tint-deficit text-base-content badge-sm badge-outline">${MessageUtil.getMessage("stock.simulator.timeline.phase.deficit")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-orange-500 sim-tint-drawdown text-base-content badge-sm badge-outline">${MessageUtil.getMessage("stock.simulator.timeline.phase.drawdown")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-yellow-500 sim-tint-decline text-base-content badge-sm badge-outline">${MessageUtil.getMessage("stock.simulator.timeline.phase.wealth.decline")}</span>
+							<span class="badge max-sm:h-auto max-sm:whitespace-normal border-red-500 sim-tint-depleted text-base-content badge-sm badge-outline">${MessageUtil.getMessage("stock.simulator.timeline.phase.depleted")}</span>
 						</div>
 						<div id="stockSimulatorTimelineList" class="space-y-3"></div>
 				`)
 
 				@template._components.ui.card(bodyClass = "gap-4", body = @`
-						<h2 class="card-title text-lg" data-page-section>${assumptionsTitle}</h2>
+						<h2 class="card-title" data-page-section>${assumptionsTitle}</h2>
 						<ul class="list-disc space-y-3 pl-5 text-sm leading-6 text-base-content/70">
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.one")}</li>
 							<li>${MessageUtil.getMessage("stock.simulator.assumption.two")}</li>
@@ -435,11 +435,11 @@
 
 			@template._components.ui.card(bodyClass = "gap-4", body = @`
 					<div class="space-y-2">
-						<h2 class="card-title text-lg" data-page-section>${yearlyTitle}</h2>
+						<h2 class="card-title" data-page-section>${yearlyTitle}</h2>
 						<p class="text-sm leading-6 text-base-content/60">${yearlyDescription}</p>
 					</div>
 					<div class="overflow-x-auto">
-						<table class="table table-pin-rows table-zebra table-sm" data-sustain-yearly-table aria-label="${yearlyTitle}">
+						<table class="table data-table table-pin-rows" data-sustain-yearly-table aria-label="${yearlyTitle}">
 							<thead>
 								<tr>
 									<th scope="col">${MessageUtil.getMessage("stock.simulator.table.header.year")}</th>

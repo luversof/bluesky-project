@@ -45,8 +45,8 @@ class DividendYieldBasisNoteTest {
       String tag = template.substring(at, tagEnd);
       String body = template.substring(tagEnd, cellEnd);
       boolean hasReasonTitle =
-          tag.contains("title=" + '"' + "${yieldBasisTitle.apply(")
-              || tag.contains("title=" + '"' + "${basisNoneOrNull.apply(")
+          tag.contains("data-tip=" + '"' + "${yieldBasisTitle.apply(")
+              || tag.contains("data-tip=" + '"' + "${basisNoneOrNull.apply(")
               || tag.contains("dailyBasisNoneTitle");
       if (hasReasonTitle && !body.contains("sr-only")) {
         found++;
@@ -85,7 +85,7 @@ class DividendYieldBasisNoteTest {
     assertThat(
             count(
                 template,
-                "text-right text-dividend font-medium yield-extra-col"
+                "text-right text-dividend font-medium yield-extra-col tooltip"
                     + '"'
                     + " data-amount-basis="))
         .as("열 더 보기로 간 예전 기본 수익률 칸도 근거를 그대로 단다")
@@ -100,13 +100,13 @@ class DividendYieldBasisNoteTest {
     // 달면서 호출 자체는 28 번이 됐는데, 그건 칸이 늘어난 게 아니라 같은 근거를 두 번 쓴 것이다.
     // 2026-09-12: '기준일 평균원금 수익률' 세 칸은 기준일 원금이 아예 없을 때 다른 까닭을 쓴다
     // (그 전까지 그 칸의 "-" 에는 아무 말도 없었다 - 실측 4 칸). 그래서 툴팁 자리의 식이 두 갈래다.
-    int plainTitles = count(template, "title=" + '"' + "${yieldBasisTitle.apply(");
+    int plainTitles = count(template, "data-tip=" + '"' + "${yieldBasisTitle.apply(");
     // 갈래식은 '기준일 원금이 없으면 그 까닭, 아니면 기존 근거' 한 덩어리인데 title 과 data-amount-basis 두 자리에
     // 똑같이 쓰인다 - 칸 수를 세려면 title= 로 시작하는 것만 세야 한다(그냥 세면 칸마다 두 번 잡힌다).
     int forkedTitles =
         count(
             template,
-            "title="
+            "data-tip="
                 + '"'
                 + "${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle :"
                 + " yieldBasisTitle.apply(");
@@ -121,7 +121,7 @@ class DividendYieldBasisNoteTest {
     assertThat(
             count(
                 template,
-                "title=" + '"' + "${basisNoneOrNull.apply(row.averagePrincipalCost())}" + '"'))
+                "data-tip=" + '"' + "${basisNoneOrNull.apply(row.averagePrincipalCost())}" + '"'))
         .as("기준일 평균원금 금액 칸의 까닭")
         .isEqualTo(3);
     // 금액 가리기가 이 문구까지 가리도록 같은 값을 data-amount-basis 로도 싣는다 - 칸마다 하나.
@@ -170,7 +170,7 @@ class DividendYieldBasisNoteTest {
     String template = read();
 
     // 종목·계좌 두 표의 본문과 합계 = 4 칸. 연도별 표엔 이 열이 없다.
-    assertThat(count(template, "title=" + '\"' + "${marketBasisTitle.apply("))
+    assertThat(count(template, "data-tip=" + '\"' + "${marketBasisTitle.apply("))
         .as("시가 수익률 칸")
         .isEqualTo(4);
     // 금액 가리기가 이 문구까지 가리도록 같은 값을 data-amount-basis 로도 싪는다.

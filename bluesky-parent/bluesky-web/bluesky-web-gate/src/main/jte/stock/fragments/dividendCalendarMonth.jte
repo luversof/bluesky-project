@@ -89,7 +89,7 @@
 								     '이번 달이 아니다' 는 칸 배경(bg-base-200/40)과 이번 달 날짜(/70)와의 차이가 말한다. --%>
 								<div class="px-1 pt-0.5 text-[11px] ${day.today() ? "font-bold text-primary" : (day.inMonth() ? (redDay ? "text-error" : "text-base-content/70") : "text-base-content/60")}">${day.date().getDayOfMonth()}</div>
 								@if(holidayName != null)
-									<div class="truncate px-1 text-[9px] leading-tight text-error/80" title="${holidayName}">${holidayName}</div>
+									<div class="block tooltip" data-tip="${holidayName}"><div class="truncate px-1 text-[9px] leading-tight text-error/80">${holidayName}</div></div>
 								@endif
 								<%-- 42 칸 중 실제로 차는 칸은 평균 2 개다(실측 2026-09-15, 최근 24 개월: 지급일 1~3 일,
 								     늘 월초 2~6 일과 월중 17~20 일 두 덩어리). 격자의 95% 가 구조적으로 비는데 그 면적 때문에
@@ -124,7 +124,7 @@
 			<ul class="space-y-0.5">
 				@for(DividendCalendarView.Entry entry : calendar.undated())
 					<li class="flex items-center justify-between gap-2">
-						<span class="truncate" title="${entry.name()}">${entry.name()}</span>
+						<span class="max-w-full min-w-0 inline-block tooltip" data-tip="${entry.name()}"><span class="truncate block">${entry.name()}</span></span>
 						<span class="hidden sm:block min-w-4 flex-1 self-center border-b border-dotted border-base-content/20" aria-hidden="true" data-calendar-entry-leader></span>
 						<span class="shrink-0 font-mono text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span>
 					</li>
@@ -142,7 +142,7 @@
 			<ul class="space-y-0.5">
 				@for(DividendCalendarView.Missing item : calendar.missing())
 					<li class="flex items-center justify-between gap-2">
-						<span class="truncate" title="${item.name()}">${item.name()}</span>
+						<span class="max-w-full min-w-0 inline-block tooltip" data-tip="${item.name()}"><span class="truncate block">${item.name()}</span></span>
 						<span class="hidden sm:block min-w-4 flex-1 self-center border-b border-dotted border-base-content/20" aria-hidden="true" data-calendar-entry-leader></span>
 						<span class="shrink-0 font-mono text-dividend amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(item.amount()))}</span>
 					</li>

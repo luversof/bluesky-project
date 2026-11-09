@@ -72,6 +72,9 @@ class CalendarDetailAccountTest {
     assertThat(count(template, "Math.min(2, activity.accountIds().size())")).isEqualTo(1);
     assertThat(count(template, "Math.min(2, dayDetailActivity.accountIds().size())")).isEqualTo(1);
     assertThat(count(template, "Math.min(2, tlRowActivity.accountIds().size())")).isEqualTo(1);
-    assertThat(count(template, "cursor-help")).as("목록 1 + 캘린더 상세 1 + 타임라인 1").isEqualTo(3);
+    // 나머지 계좌는 공용 툴팁으로 보인다(2026-11-10 툴팁 통합 - 커서는 main.css .tooltip 이 정한다).
+    assertThat(count(template, "@template._components.ui.tooltip(text = String.join(\", \", "))
+        .as("목록 1 + 캘린더 상세 1 + 타임라인 1")
+        .isEqualTo(3);
   }
 }

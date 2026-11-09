@@ -152,9 +152,9 @@
 					<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 						<div class="flex flex-wrap items-center gap-2">
 							<h3 class="text-sm font-semibold">${accountSelectionSummaryLabel}</h3>
-							<span class="badge badge-secondary badge-outline" data-account-selection-count>${accountSelectionSummaryLabel}</span>
+							<span class="badge badge-secondary badge-outline badge-sm" data-account-selection-count>${accountSelectionSummaryLabel}</span>
 						</div>
-						<button type="button" class="btn btn-ghost btn-xs self-start" data-account-selection-clear>${stockSelectionClearLabel}</button>
+						<button type="button" class="btn btn-xs self-start btn-outline" data-account-selection-clear>${stockSelectionClearLabel}</button>
 					</div>
 					<div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
 						<div class="rounded-box bg-base-100/80 px-3 py-2">
@@ -204,8 +204,8 @@
 			     넓혔는데 더 나빠지는 구간이라 들어가는 폭에서 편다. 안쪽의 계좌별 보유 상세 표는 별도 분기점이므로 건드리지 않는다.
 			     인쇄는 A4 794px 라 이 분기점 아래로 떨어져 투자원금이 빠졌었다(실측 2026-09-10: 인쇄 7열 → 6열).
 			     인쇄에는 스크롤이 없어 열이 좁아질 뿐 표 폭은 760px 로 같으므로(넘침 0) print 에서는 항상 보인다. --%>
-			<table class="table table-sm w-full" data-sortable-table data-asset-status-account-table aria-label="${accountSectionTitle}">
-				<thead class="bg-base-200">
+			<table class="table data-table w-full" data-sortable-table data-asset-status-account-table aria-label="${accountSectionTitle}">
+				<thead>
 					<tr>
 						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "account", sortType = "text", label = accountLabel, buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
 						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "buyAmount", sortType = "number", label = buyAmountLabel, cellClass = "text-right", buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
@@ -252,7 +252,7 @@
 								<div class="text-xs text-base-content/60">${noHoldingsLabel}</div>
 							@else
 								<button type="button"
-										class="btn btn-ghost btn-xs h-auto min-h-6 px-1 mt-1 text-xs text-base-content/60 hover:text-base-content"
+										class="btn btn-xs h-auto min-h-6 px-1 mt-1 text-xs text-base-content/60 hover:text-base-content btn-outline"
 										data-account-detail-toggle="${detailRowId}"
 										aria-controls="${detailRowId}"
 										aria-expanded="false"
@@ -267,14 +267,14 @@
 								</button>
 							@endif
 						</th>
-						<td class="text-right font-mono amount-value text-base-content/60">
+						<td class="text-right amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(buyAmount))}
 						</td>
-						<td class="text-right font-bold font-mono amount-value text-principal">
+						<td class="text-right font-bold amount-value text-principal">
 							${String.format("%,d", StockFormatUtil.displayWon(evaluationAmount))}
 						</td>
 						<td class="text-right">
-							<div class="font-bold font-mono amount-value ${StockFormatUtil.amountTone(evaluationProfitAmount)}">
+							<div class="font-bold amount-value ${StockFormatUtil.amountTone(evaluationProfitAmount)}">
 								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(evaluationProfitAmount))}
 							</div>
 							<div class="text-xs font-semibold ${StockFormatUtil.amountTone(evaluationProfitAmount)}">
@@ -284,33 +284,33 @@
 						<%-- 원금이 계좌 설정의 수동 입력값이면 그 사실을 드러낸다. 표시가 없으면 계산 원가와
 							 구분되지 않아, 그 설정이 사라져도 수익률만 조용히 달라진다. --%>
 						!{boolean manualPrincipal = manualPrincipalAccountIds != null && manualPrincipalAccountIds.contains(entry.getKey());}
-						<td class="text-right font-mono hidden min-[850px]:table-cell print:table-cell amount-value text-base-content/60">
+						<td class="text-right hidden min-[850px]:table-cell print:table-cell amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(profitBasis))}
 							@if(manualPrincipal)
-								<span class="badge badge-ghost badge-xs align-middle ml-1"
-									  title="${MessageUtil.getMessage("stock.asset.status.label.manual.principal")}">
+								<span class="badge align-middle ml-1 tooltip badge-sm badge-outline"
+									  data-tip="${MessageUtil.getMessage("stock.asset.status.label.manual.principal")}">
 									${MessageUtil.getMessage("stock.asset.status.label.manual.principal")}
 								</span>
 							@endif
 						</td>
 						<td class="text-right ${StockFormatUtil.amountTone(principalReturnAmount)}">
-							<div class="font-bold font-mono amount-value">
+							<div class="font-bold amount-value">
 								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(principalReturnAmount))}
 							</div>
 							<div class="text-xs font-semibold">
 								(${StockFormatUtil.signedPct(rate, 1)})
 							</div>
 						</td>
-						<td class="text-right font-mono text-base-content/70" style="${StockFormatUtil.weightBarStyle(accountWeightPct)}">${StockFormatUtil.pct(accountWeightPct.doubleValue(), 1)}</td>
+						<td class="text-right text-base-content/70" style="${StockFormatUtil.weightBarStyle(accountWeightPct)}">${StockFormatUtil.pct(accountWeightPct.doubleValue(), 1)}</td>
 					</tr>
 					@if(!holdings.isEmpty())
 						<tr id="${detailRowId}" class="hidden bg-base-200/40" data-account-detail-row>
 							<td colspan="7" class="p-0">
 								<div class="px-3 py-3">
 									<div class="text-xs font-semibold text-base-content/60 mb-2">${accountHoldingsDetailLabel}</div>
-									<div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
-										<table class="table table-xs w-full" aria-label="${entry.getValue().accountName() != null && !entry.getValue().accountName().isBlank() ? MessageFormat.format(accountHoldingsDetailNamedPattern, entry.getValue().accountName()) : accountHoldingsDetailLabel}">
-											<thead class="bg-base-200/70">
+									<div class="overflow-x-auto">
+										<table class="table data-table w-full" aria-label="${entry.getValue().accountName() != null && !entry.getValue().accountName().isBlank() ? MessageFormat.format(accountHoldingsDetailNamedPattern, entry.getValue().accountName()) : accountHoldingsDetailLabel}">
+											<thead>
 												<tr>
 													<th scope="col">${stockNameLabel}</th>
 													<th scope="col" class="text-right hidden sm:table-cell print:table-cell">${quantityLabel}</th>
@@ -339,13 +339,13 @@
 												@for(AssetStatusAccountHoldingView holding : holdings)
 													<tr>
 														<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.item(holding.stockItemId() != null ? holding.stockItemId().toString() : "")}" class="link link-hover">${holding.stockItemName() != null ? holding.stockItemName() : "-"}</a></th>
-														<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
-														<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, RoundingMode.HALF_UP).longValue() : 0)}</td>
-														<td class="text-right font-mono hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holding.buyAmount()))}</td>
-														<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice()))}</td>
-														<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
+														<td class="text-right hidden sm:table-cell print:table-cell amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
+														<td class="text-right hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", holding.averageBuyPrice() != null ? holding.averageBuyPrice().setScale(0, RoundingMode.HALF_UP).longValue() : 0)}</td>
+														<td class="text-right hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holding.buyAmount()))}</td>
+														<td class="text-right hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice()))}</td>
+														<td class="text-right amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
 														<%-- 금액만 가린다 - 수익률(%)은 금액 숨김에도 보여야 한다(사용자 요청 2026-09-23). --%>
-														<td class="text-right font-mono font-bold ${StockFormatUtil.amountTone(holding.evaluationProfit())}">
+														<td class="text-right font-bold ${StockFormatUtil.amountTone(holding.evaluationProfit())}">
 															<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holding.evaluationProfit()))}</span>
 															<span class="text-xs">(${StockFormatUtil.signedPct(holding.evaluationProfitRatePct() != null ? holding.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
 														</td>
@@ -375,32 +375,32 @@
 					!{double totalPrincipalReturnRate = accountTotals.principalReturnRate();}
 					<tr>
 						<th scope="row">${totalLabel}</th>
-						<td class="text-right font-mono amount-value text-base-content/60">
+						<td class="text-right amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(totalBuyAmount))}
 						</td>
-						<td class="text-right font-mono amount-value text-principal">
+						<td class="text-right amount-value text-principal">
 							${String.format("%,d", StockFormatUtil.displayWon(totalAccountEvaluationAmount))}
 						</td>
 						<td class="text-right ${StockFormatUtil.amountTone(totalAccountEvaluationProfit)}">
-							<div class="font-bold font-mono amount-value">
+							<div class="font-bold amount-value">
 								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalAccountEvaluationProfit))}
 							</div>
 							<div class="text-xs font-semibold">
 								(${StockFormatUtil.signedPct(totalEvaluationProfitRate, 1)})
 							</div>
 						</td>
-						<td class="text-right font-mono hidden min-[850px]:table-cell print:table-cell amount-value text-base-content/60">
+						<td class="text-right hidden min-[850px]:table-cell print:table-cell amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(totalPrincipal))}
 						</td>
 						<td class="text-right ${StockFormatUtil.amountTone(totalPrincipalReturnAmount)}">
-							<div class="font-bold font-mono amount-value">
+							<div class="font-bold amount-value">
 								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalPrincipalReturnAmount))}
 							</div>
 							<div class="text-xs font-semibold">
 								(${StockFormatUtil.signedPct(totalPrincipalReturnRate, 1)})
 							</div>
 						</td>
-						<td class="text-right font-mono text-base-content/70">100.0%</td>
+						<td class="text-right text-base-content/70">100.0%</td>
 					</tr>
 				</tfoot>
 			</table>
@@ -429,9 +429,9 @@
 					<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 						<div class="flex flex-wrap items-center gap-2">
 							<h3 class="text-sm font-semibold">${stockSelectionSummaryLabel}</h3>
-							<span class="badge badge-info badge-outline" data-selection-count>${stockSelectionSummaryLabel}</span>
+							<span class="badge badge-info badge-outline badge-sm" data-selection-count>${stockSelectionSummaryLabel}</span>
 						</div>
-						<button type="button" class="btn btn-ghost btn-xs self-start" data-selection-clear>${stockSelectionClearLabel}</button>
+						<button type="button" class="btn btn-xs self-start btn-outline" data-selection-clear>${stockSelectionClearLabel}</button>
 					</div>
 					<div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 						<div class="rounded-box bg-base-100/80 px-3 py-2">
@@ -494,8 +494,8 @@
 			<%-- 평균 단가·실현 손익·누적 배당 열은 xl(1280px)에서 폈는데, 그 폭에서 이 표는 1,125px 이 필요하고 본문 열은 1,022px 뿐이다.
 			     실측 2026-09-10: 1279px 8열·표 1,021·넘침 0 → 1280px 11열·표 1,125·컨테이너 1,022·넘침 103 → 1366px 17 → 1400px 0. 2026-09-10 헤더 접기 뒤 최소폭이 1,063px 이 되어 1340px 부터 넘침 0(1320px 1).
 			     넓혔는데 더 나빠지는 구간이라 실제로 들어가는 폭에서 편다. 같은 파일의 계좌별 보유 상세 표(47열)는 xl 에서 들어가므로 그대로 둔다. --%>
-			<table class="table table-sm w-full print-dense" data-sortable-table data-asset-status-stock-table aria-label="${stockSectionTitle}">
-				<thead class="bg-base-200">
+			<table class="table data-table w-full print-dense" data-sortable-table data-asset-status-stock-table aria-label="${stockSectionTitle}">
+				<thead>
 					<tr>
 						@template.stock.htmx.fragments.components.sortButtonHeader(sortKey = "stockName", sortType = "text", label = stockNameLabel, buttonClass = "btn btn-ghost btn-xs h-auto min-h-6 px-1 text-xs text-base-content/60 hover:text-base-content")
 						<%-- 보유 기간은 종목 이름 다음에 온다 - "이 종목을 언제부터 들고 있나" 는 이름 바로 옆에서 읽힌다.
@@ -592,11 +592,11 @@
 								data-holding-days="${holdingReturn.holdingDays()}"
 								data-detail-row-id="${stockDetailRowId}">
 								<th scope="row" class="font-semibold">
-									<div><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover" data-stock-tag-tooltip="${stockTagTooltip}">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></div>
+									<div>@if(stockTagTooltip != null && !stockTagTooltip.isBlank())@template._components.ui.tooltip(text = stockTagTooltip, placement = "top", focusable = false, content = @`<a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a>`)@else<a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a>@endif</div>
 									<%-- 계좌 표의 "보유 종목 보기" 와 같은 모양 · 같은 여닫기(assetStatus.ts). 이름에 종목을 넣는다 - 줄마다 같은 글자면 버튼끼리 갈리지 않는다. --%>
 									@if(!holdingAccounts.isEmpty())
 										<button type="button"
-												class="btn btn-ghost btn-xs h-auto min-h-6 px-1 mt-1 text-xs font-normal text-base-content/60 hover:text-base-content"
+												class="btn btn-xs h-auto min-h-6 px-1 mt-1 text-xs font-normal text-base-content/60 hover:text-base-content btn-outline"
 												data-stock-detail-toggle="${stockDetailRowId}"
 												aria-controls="${stockDetailRowId}"
 												aria-expanded="false"
@@ -614,18 +614,18 @@
 								<%-- "6년 6개월" 이 "6개 / 월" 로 갈리지 않게 띄어쓰기에서만 줄을 바꾼다(2026-10-02, 375px · 글꼴 200%). --%>
 								<td class="text-base-content/70 break-keep" data-holding-period>
 									@if(holdingReturn.hasPeriod())
-										<span title="${MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}">${holdingPeriodText}</span><span class="sr-only">, ${MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}</span>
+										<span class="tooltip" data-tip="${MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}">${holdingPeriodText}</span><span class="sr-only">, ${MessageFormat.format(holdingSincePattern, firstBuyDate.toString())}</span>
 									@else
 										<%-- 최초 매수일을 모르는 종목. 빈 칸은 "0 일"로 읽히므로 사유를 적는다. --%>
-										<span class="text-base-content/60" aria-hidden="true" title="${holdingPeriodUnknownLabel}">-</span><span class="sr-only">${holdingPeriodUnknownLabel}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${holdingPeriodUnknownLabel}">-</span><span class="sr-only">${holdingPeriodUnknownLabel}</span>
 									@endif
 								</td>
-								<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
-								<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, RoundingMode.HALF_UP).longValue() : 0)}</td>
-								<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(item.totalBuyCost()))}</td>
-								<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(item.currentPrice()))}</td>
-								<td class="text-right font-mono font-semibold amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(item.evaluationAmount()))}</td>
-								<td class="text-right font-mono font-bold ${StockFormatUtil.amountTone(item.evaluationProfit())}">
+								<td class="text-right hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", item.holdingQuantity())}</td>
+								<td class="text-right hidden min-[1340px]:table-cell print:table-cell amount-value">${String.format("%,d", item.averageBuyPrice() != null ? item.averageBuyPrice().setScale(0, RoundingMode.HALF_UP).longValue() : 0)}</td>
+								<td class="text-right hidden sm:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(item.totalBuyCost()))}</td>
+								<td class="text-right hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(item.currentPrice()))}</td>
+								<td class="text-right font-semibold amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(item.evaluationAmount()))}</td>
+								<td class="text-right font-bold ${StockFormatUtil.amountTone(item.evaluationProfit())}">
 									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(item.evaluationProfit()))}</span>
 									<span class="text-xs">(${StockFormatUtil.signedPct(evalProfitRate.doubleValue(), 1)})</span>
 								@if(!coverageText.isEmpty())
@@ -634,34 +634,34 @@
 								@endif
 								</td>
 								<%-- 판 적이 없으면 실현손익은 0 이 아니라 '없음' 이다. 배당도 마찬가지. --%>
-								<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell">
+								<td class="text-right hidden min-[1340px]:table-cell print:table-cell">
 									@if(breakdown.realizedProfit().signum() != 0)
 										<span class="amount-value ${StockFormatUtil.amountTone(breakdown.realizedProfit())}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(breakdown.realizedProfit()))}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${MessageUtil.getMessage("stock.profit.realized.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.profit.realized.none")}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${MessageUtil.getMessage("stock.profit.realized.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.profit.realized.none")}</span>
 									@endif
 								</td>
-								<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell">
+								<td class="text-right hidden min-[1340px]:table-cell print:table-cell">
 									@if(breakdown.dividendTotal().signum() != 0)
 										<span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(breakdown.dividendTotal()))}</span>
 										<%-- 누적 배당의 연 수익률(사용자 요청 2026-09-28) - 배당 탭 연 수익률과 같은 잣대: 누적 배당 x 365 / 첫 매수일부터 날마다 들고 있던 원금의 합. --%>
 										@if(dividendAnnualizedByStockItem != null && dividendAnnualizedByStockItem.get(item.stockItemId()) != null)
-											<div class="text-xs font-normal text-dividend" data-dividend-annualized title="${MessageUtil.getMessage("stock.asset.status.dividend.annualized.desc")}">${StockViewSupport.msg("stock.dividend.yield.ttm.value", StockFormatUtil.pct(dividendAnnualizedByStockItem.get(item.stockItemId()).doubleValue(), 2))}</div>
+											<div class="text-xs font-normal text-dividend tooltip" data-dividend-annualized data-tip="${MessageUtil.getMessage("stock.asset.status.dividend.annualized.desc")}">${StockViewSupport.msg("stock.dividend.yield.ttm.value", StockFormatUtil.pct(dividendAnnualizedByStockItem.get(item.stockItemId()).doubleValue(), 2))}</div>
 										@endif
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${MessageUtil.getMessage("stock.dividend.received.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.dividend.received.none")}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${MessageUtil.getMessage("stock.dividend.received.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.dividend.received.none")}</span>
 									@endif
 								</td>
-								<td class="text-right font-mono font-bold hidden lg:table-cell print:table-cell ${StockFormatUtil.amountTone(breakdown.combinedProfit())}">
+								<td class="text-right font-bold hidden lg:table-cell print:table-cell ${StockFormatUtil.amountTone(breakdown.combinedProfit())}">
 									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(breakdown.combinedProfit()))}</span>
 								@if(!annualizedText.isEmpty())
 									<%-- 1 년이 안 된 보유의 연평균은 흐리게 둔다(요구: 표시하되 약하게). 다만 /50 은 대비 3.55:1 로
 									     읽히지 않았다 - /60(4.95:1) 이 기준을 넘는 가장 흐린 단계다. 여전히 /70 보다 약하다. --%>
-									<div class="text-xs font-normal ${holdingReturn.shortTerm() ? "text-base-content/60" : "text-base-content/70"}" data-annualized-return data-short-term="${String.valueOf(holdingReturn.shortTerm())}" title="${annualizedNote}"><span class="sr-only">${annualizedNameLabel} </span>${annualizedText}<span class="sr-only">, ${annualizedNote}</span></div>
+									<div class="text-xs font-normal ${holdingReturn.shortTerm() ? "text-base-content/60" : "text-base-content/70"} tooltip" data-annualized-return data-short-term="${String.valueOf(holdingReturn.shortTerm())}" data-tip="${annualizedNote}"><span class="sr-only">${annualizedNameLabel} </span>${annualizedText}<span class="sr-only">, ${annualizedNote}</span></div>
 								@endif
 								</td>
 								<%-- 비중 막대(2026-10-28): 숫자만으로는 82% 와 5% 의 차이를 읽어야 했다. 글자는 그대로, 배경만. --%>
-								<td class="text-right font-mono text-base-content/70" style="${StockFormatUtil.weightBarStyle(totalWeightPct)}">${stockWeightLabelById.getOrDefault(item.stockItemId(), StockFormatUtil.pct(totalWeightPct.doubleValue(), 1))}</td>
+								<td class="text-right text-base-content/70" style="${StockFormatUtil.weightBarStyle(totalWeightPct)}">${stockWeightLabelById.getOrDefault(item.stockItemId(), StockFormatUtil.pct(totalWeightPct.doubleValue(), 1))}</td>
 							</tr>
 							<%-- 이 종목을 가진 계좌들. 계좌 표의 보유 종목 상세와 같은 계좌 x 종목 행이라, 종이에는 계좌 표 쪽만 펼쳐 찍는다(같은 내용이 두 번 찍히지 않게). --%>
 							@if(!holdingAccounts.isEmpty())
@@ -669,9 +669,9 @@
 									<td colspan="12" class="p-0">
 										<div class="px-3 py-3">
 											<div class="text-xs font-semibold text-base-content/60 mb-2">${stockAccountsDetailLabel}</div>
-											<div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
-												<table class="table table-xs w-full" aria-label="${!stockRowName.isBlank() ? MessageFormat.format(stockAccountsDetailNamedPattern, stockRowName) : stockAccountsDetailLabel}">
-													<thead class="bg-base-200/70">
+											<div class="overflow-x-auto">
+												<table class="table data-table w-full" aria-label="${!stockRowName.isBlank() ? MessageFormat.format(stockAccountsDetailNamedPattern, stockRowName) : stockAccountsDetailLabel}">
+													<thead>
 														<tr>
 															<th scope="col">${accountLabel}</th>
 															<th scope="col" class="text-right hidden sm:table-cell print:table-cell">${quantityLabel}</th>
@@ -695,12 +695,12 @@
 															!{AssetStatusStockAccountView holdingAccount = holdingAccounts.get(accountIndex);}
 															<tr data-stock-detail-account="${holdingAccount.accountId() != null ? holdingAccount.accountId().toString() : ""}">
 																<th scope="row" class="font-semibold"><a href="${StockDetailLinkUtil.account(holdingAccount.accountId() != null ? holdingAccount.accountId().toString() : "")}" class="link link-hover">${holdingAccount.accountName() != null ? holdingAccount.accountName() : "-"}</a></th>
-																<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value">${String.format("%,d", holdingAccount.holdingQuantity())}</td>
-																<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", holdingAccount.averageBuyPrice() != null ? holdingAccount.averageBuyPrice().setScale(0, RoundingMode.HALF_UP).longValue() : 0)}</td>
-																<td class="text-right font-mono hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.buyAmount()))}</td>
-																<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.evaluationAmount()))}</td>
+																<td class="text-right hidden sm:table-cell print:table-cell amount-value">${String.format("%,d", holdingAccount.holdingQuantity())}</td>
+																<td class="text-right hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", holdingAccount.averageBuyPrice() != null ? holdingAccount.averageBuyPrice().setScale(0, RoundingMode.HALF_UP).longValue() : 0)}</td>
+																<td class="text-right hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.buyAmount()))}</td>
+																<td class="text-right amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.evaluationAmount()))}</td>
 																<%-- 금액만 가린다 - 수익률(%)은 금액 숨김에도 보여야 한다(사용자 요청 2026-09-23). --%>
-																<td class="text-right font-mono font-bold ${StockFormatUtil.amountTone(holdingAccount.evaluationProfit())}">
+																<td class="text-right font-bold ${StockFormatUtil.amountTone(holdingAccount.evaluationProfit())}">
 																	<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingAccount.evaluationProfit()))}</span>
 																	<span class="text-xs">(${StockFormatUtil.signedPct(holdingAccount.evaluationProfitRatePct() != null ? holdingAccount.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
 																</td>
@@ -728,14 +728,14 @@
 						<td></td>
 						<td class="hidden lg:table-cell print:table-cell"></td>
 						<td class="hidden min-[1340px]:table-cell print:table-cell"></td>
-						<td class="text-right font-mono hidden sm:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(totalStockBuyAmount))}</td>
+						<td class="text-right hidden sm:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(totalStockBuyAmount))}</td>
 						<td class="hidden lg:table-cell print:table-cell"></td>
-						<td class="text-right font-mono amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(totalEvaluationAmount))}</td>
-						<td class="text-right font-mono font-bold amount-value ${StockFormatUtil.amountTone(totalEvaluationProfit)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalEvaluationProfit))}</td>
-						<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell ${StockFormatUtil.amountTone(stockProfitBreakdownTotal.realizedProfit())}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.realizedProfit()))}</span></td>
-						<td class="text-right font-mono hidden min-[1340px]:table-cell print:table-cell"><span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.dividendTotal()))}</span></td>
-						<td class="text-right font-mono font-bold hidden lg:table-cell print:table-cell ${StockFormatUtil.amountTone(stockProfitBreakdownTotal.combinedProfit())}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.combinedProfit()))}</span></td>
-						<td class="text-right font-mono text-base-content/70">${totalEvaluationAmount != null && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0 ? "100.0%" : "0.0%"}</td>
+						<td class="text-right amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(totalEvaluationAmount))}</td>
+						<td class="text-right font-bold amount-value ${StockFormatUtil.amountTone(totalEvaluationProfit)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalEvaluationProfit))}</td>
+						<td class="text-right hidden min-[1340px]:table-cell print:table-cell ${StockFormatUtil.amountTone(stockProfitBreakdownTotal.realizedProfit())}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.realizedProfit()))}</span></td>
+						<td class="text-right hidden min-[1340px]:table-cell print:table-cell"><span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.dividendTotal()))}</span></td>
+						<td class="text-right font-bold hidden lg:table-cell print:table-cell ${StockFormatUtil.amountTone(stockProfitBreakdownTotal.combinedProfit())}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.combinedProfit()))}</span></td>
+						<td class="text-right text-base-content/70">${totalEvaluationAmount != null && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0 ? "100.0%" : "0.0%"}</td>
 					</tr>
 				</tfoot>
 			</table>
@@ -744,7 +744,7 @@
 
 </div>
 
-<%-- 브라우저 동작(상세 펼침·정렬·선택 합계)은 /js/stock/assetStatus.js 에 있다(태그 툴팁은 stockLayout 의 stockTagTooltip.js).
+<%-- 브라우저 동작(상세 펼침·정렬·선택 합계)은 /js/stock/assetStatus.js 에 있다(태그 툴팁은 공용 _components/ui/tooltip.jte).
 	 2026-09-08 까지 여기 669 줄 인라인 스크립트였다 - JTE 식이 없는 순수 JS 라 파일로 뺐다.
 	 모듈 스크립트는 문서당 한 번 실행되고, 재스왑은 htmx:afterSettle 에서 다시 초기화한다. --%>
 <script type="module" src="/js/stock/assetStatus.js"></script>

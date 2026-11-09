@@ -36,7 +36,7 @@ class EnglishNarrowReflowTest {
     assertThat(read("stock/htmx/fragments/upcomingDividends.jte"))
         .contains("<div class=\"flex flex-wrap justify-between items-center gap-2 mb-2\">")
         .as("제목이 shrink-0 이면 \"Upcoming Dividends\"(301px)가 줄지 않는다")
-        .contains("card-title text-base m-0 shrink-0 max-sm:shrink max-sm:min-w-0");
+        .contains("card-title m-0 shrink-0 max-sm:shrink max-sm:min-w-0");
   }
 
   /**

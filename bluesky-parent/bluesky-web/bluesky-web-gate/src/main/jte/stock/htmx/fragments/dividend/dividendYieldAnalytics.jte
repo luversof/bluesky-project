@@ -90,7 +90,6 @@
 	String noYieldAnalyticsLabel = MessageUtil.getMessage("stock.dividend.yield.message.no.analytics");
 	String yieldBasisNoteLabel = MessageUtil.getMessage("stock.dividend.yield.basis.note");
 	// 용어 풀이(사용자 요청 2026-09-28: "볼 때마다 이게 무슨 의미인지 헷갈려"). 풍선 · 용어 풀이 · 정렬 단추 설명이 같은 문구를 쓴다.
-	String yieldGlossaryTitleLabel = MessageUtil.getMessage("stock.dividend.yield.term.glossary.title");
 	String dailyCapitalTermDesc = MessageUtil.getMessage("stock.dividend.yield.term.daily.average.invested.capital.desc");
 	String basisCapitalTermDesc = MessageUtil.getMessage("stock.dividend.yield.term.basis.average.invested.capital.desc");
 	String basisMarketTermDesc = MessageUtil.getMessage("stock.dividend.yield.term.basis.market.desc");
@@ -185,58 +184,15 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 	<div class="mb-3 px-1">
 		<div class="flex items-center gap-2">
 			<h2 class="text-sm font-bold" data-page-section>${dividendYieldTitle}</h2>
-			<div class="tooltip tooltip-bottom shrink-0" tabindex="0">
-				<div class="tooltip-content z-[20] w-64 sm:w-72 max-w-[calc(100vw-2rem)] rounded-box bg-neutral text-neutral-content shadow-lg">
-					<div class="space-y-1 text-left text-xs leading-5">
+			@template._components.ui.infoTip(label = dividendYieldHelpTitleLabel, cssClass = "shrink-0", detail = @`<div class="space-y-1 text-left text-xs leading-5">
 						<div class="font-semibold mb-1">${dividendYieldHelpTitleLabel}</div>
 						<div>${dividendYieldHelpPrimaryLabel}</div>
 						<div>${dividendYieldHelpSecondaryLabel}</div>
 						<div>${dividendYieldHelpRankingLabel}</div>
 					</div>
-				</div>
-				<button type="button" class="btn btn-circle btn-ghost btn-xs text-info" aria-label="${dividendYieldHelpTitleLabel}">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-				</button>
-			</div>
+			`)
 		</div>
 		<div class="text-xs text-base-content/60 mt-1">${yieldBasisNoteLabel}</div>
-		<details class="mt-1 text-xs" data-yield-glossary>
-			<summary class="w-fit cursor-pointer text-base-content/70 hover:text-base-content">${yieldGlossaryTitleLabel}</summary>
-			<dl class="mt-1 space-y-2 rounded-box bg-base-200/60 px-3 py-2 leading-5">
-				<div>
-					<dt class="font-semibold">${annualizedYieldLabel}</dt>
-					<dd id="dividend-yield-term-annualized" class="text-base-content/70">${annualizedTermDesc}</dd>
-				</div>
-				<div>
-					<dt class="font-semibold">${evaluationProfitLabel}</dt>
-					<dd id="dividend-yield-term-evaluation-profit" class="text-base-content/70">${evaluationProfitTermDesc}</dd>
-				</div>
-				<div>
-					<dt class="font-semibold">${realizedProfitLabel}</dt>
-					<dd id="dividend-yield-term-realized-profit" class="text-base-content/70">${realizedProfitTermDesc}</dd>
-				</div>
-				<div>
-					<dt class="font-semibold">${combinedProfitLabel}</dt>
-					<dd id="dividend-yield-term-combined-profit" class="text-base-content/70">${combinedProfitTermDesc}</dd>
-				</div>
-				<div>
-					<dt class="font-semibold">${heldAverageLabel}</dt>
-					<dd id="dividend-yield-term-held" class="text-base-content/70">${heldTermDesc}</dd>
-				</div>
-<div>
-					<dt class="font-semibold">${dailyAverageInvestedCapitalLabel}</dt>
-					<dd id="dividend-yield-term-daily" class="text-base-content/70">${dailyCapitalTermDesc}</dd>
-				</div>
-				<div>
-					<dt class="font-semibold">${basisAverageInvestedCapitalLabel}</dt>
-					<dd id="dividend-yield-term-basis" class="text-base-content/70">${basisCapitalTermDesc}</dd>
-				</div>
-				<div>
-					<dt class="font-semibold">${yieldOnBasisMarketLabel}</dt>
-					<dd id="dividend-yield-term-market" class="text-base-content/70">${basisMarketTermDesc}</dd>
-				</div>
-			</dl>
-		</details>
 	</div>
 
 	<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -253,16 +209,16 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 				@endif
 				@if(portfolioYieldAnnualizedPct != null)
 				<div class="mt-2 border-t border-base-200/70 pt-2 text-xs text-base-content/60" data-period-annualized>
-					@template._components.ui.termHint(label = periodAnnualizedLabel, desc = annualizedTermDesc) <span class="font-semibold text-dividend">${percentFormat.apply(portfolioYieldAnnualizedPct)}</span>
+					${periodAnnualizedLabel} @template._components.ui.infoTip(desc = annualizedTermDesc) <span class="font-semibold text-dividend">${percentFormat.apply(portfolioYieldAnnualizedPct)}</span>
 					<div class="text-[11px] text-base-content/60">${annualizedNoteLabel}</div>
 				</div>
 				@endif
 				<details class="mt-2 text-xs" data-yield-other-basis>
 					<summary class="w-fit cursor-pointer text-base-content/70 hover:text-base-content">${otherBasisLabel}</summary>
 					<div class="mt-1 space-y-1">
-						<div class="text-base-content/60">@template._components.ui.termHint(label = dividendYieldPeriodDailyLabel, desc = dailyCapitalTermDesc) <span class="font-medium">${percentFormat.apply(portfolioYieldOnDailyAverageCostPct)}</span></div>
-						<div class="text-base-content/60">@template._components.ui.termHint(label = dividendYieldPeriodBasisLabel, desc = basisCapitalTermDesc) <span class="font-medium">${percentFormat.apply(portfolioYieldOnCostPct)}</span></div>
-						<div class="text-base-content/60">@template._components.ui.termHint(label = yieldOnBasisMarketLabel, desc = basisMarketTermDesc) <span class="font-medium">${percentFormat.apply(portfolioYieldOnMarketPct)}</span></div>
+						<div class="text-base-content/60">${dividendYieldPeriodDailyLabel} @template._components.ui.infoTip(desc = dailyCapitalTermDesc) <span class="font-medium">${percentFormat.apply(portfolioYieldOnDailyAverageCostPct)}</span></div>
+						<div class="text-base-content/60">${dividendYieldPeriodBasisLabel} @template._components.ui.infoTip(desc = basisCapitalTermDesc) <span class="font-medium">${percentFormat.apply(portfolioYieldOnCostPct)}</span></div>
+						<div class="text-base-content/60">${yieldOnBasisMarketLabel} @template._components.ui.infoTip(desc = basisMarketTermDesc) <span class="font-medium">${percentFormat.apply(portfolioYieldOnMarketPct)}</span></div>
 					</div>
 				</details>
 				@if(periodPrincipalDelta != null)
@@ -286,7 +242,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${bestYieldStockLabel}</div>
 				@if(bestYieldStock != null)
-					<div class="text-sm font-semibold truncate" title="${bestYieldStock.label()}">${bestYieldStock.label()}</div>
+					<div class="block tooltip" data-tip="${bestYieldStock.label()}"><div class="text-sm font-semibold truncate">${bestYieldStock.label()}</div></div>
 					<div class="text-xl font-bold text-dividend" data-best-annualized>${StockViewSupport.msg("stock.dividend.yield.ttm.value", percentFormat.apply(bestYieldStock.annualizedYieldPct()))}</div>
 					<div class="text-xs text-base-content/60 mt-1" data-best-current-value>${currentValueLabel} @if(bestYieldStock.groupId() != null && stockCurrentValues.get(bestYieldStock.groupId()) != null)<span class="font-medium amount-value">₩${decimalFormat.format(stockCurrentValues.get(bestYieldStock.groupId()))}</span>@else<span>${currentValueNoneTitle}</span>@endif <span class="text-base-content/60">· ${heldDaysText.apply(bestYieldStock.heldDayCount())}</span></div>
 <div class="text-xs text-base-content/60 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩${decimalFormat.format(bestYieldStock.totalNetAmount())}</span></div>
@@ -298,7 +254,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${bestYieldAccountLabel}</div>
 				@if(bestYieldAccount != null)
-					<div class="text-sm font-semibold truncate" title="${bestYieldAccount.label()}">${bestYieldAccount.label()}</div>
+					<div class="block tooltip" data-tip="${bestYieldAccount.label()}"><div class="text-sm font-semibold truncate">${bestYieldAccount.label()}</div></div>
 					<div class="text-xl font-bold text-dividend" data-best-annualized>${StockViewSupport.msg("stock.dividend.yield.ttm.value", percentFormat.apply(bestYieldAccount.annualizedYieldPct()))}</div>
 					<div class="text-xs text-base-content/60 mt-1" data-best-current-value>${currentValueLabel} @if(bestYieldAccount.groupId() != null && accountCurrentValues.get(bestYieldAccount.groupId()) != null)<span class="font-medium amount-value">₩${decimalFormat.format(accountCurrentValues.get(bestYieldAccount.groupId()))}</span>@else<span>${currentValueNoneTitle}</span>@endif <span class="text-base-content/60">· ${heldDaysText.apply(bestYieldAccount.heldDayCount())}</span></div>
 <div class="text-xs text-base-content/60 mt-1">${netAmountLabel} <span class="font-medium amount-value">₩${decimalFormat.format(bestYieldAccount.totalNetAmount())}</span></div>
@@ -319,18 +275,18 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 					<div class="text-sm text-base-content/60">${noYieldAnalyticsLabel}</div>
 				@else
 					<div class="overflow-x-auto">
-						<table class="table table-xs w-full" aria-label="${yearlyYieldSectionLabel}">
+						<table class="table data-table w-full" aria-label="${yearlyYieldSectionLabel}">
 							<thead>
 								<tr class="text-base-content/60">
 									<th scope="col">${yearLabel}</th>
 									<th scope="col" class="text-right yield-extra-col">${grossAmountLabel}</th>
 									<th scope="col" class="text-right yield-extra-col">${taxLabel}</th>
-									<th scope="col" class="text-right">@template._components.ui.termHint(label = netAmountLabel, desc = annualizedTermDesc)</th>
-									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = heldAverageLabel, desc = heldTermDesc)</th>
+									<th scope="col" class="text-right">${netAmountLabel} @template._components.ui.infoTip(desc = annualizedTermDesc)</th>
+									<th scope="col" class="text-right yield-extra-col">${heldAverageLabel} @template._components.ui.infoTip(desc = heldTermDesc)</th>
 									<th scope="col" class="text-right yield-extra-col">${taxableAmountLabel}</th>
-									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = dailyAverageInvestedCapitalLabel, desc = dailyCapitalTermDesc)</th>
+									<th scope="col" class="text-right yield-extra-col">${dailyAverageInvestedCapitalLabel} @template._components.ui.infoTip(desc = dailyCapitalTermDesc)</th>
 									<th scope="col" class="text-right yield-extra-col">${yieldOnDailyAverageCostLabel}</th>
-									<th scope="col" class="text-right yield-extra-col">@template._components.ui.termHint(label = basisAverageInvestedCapitalLabel, desc = basisCapitalTermDesc)</th>
+									<th scope="col" class="text-right yield-extra-col">${basisAverageInvestedCapitalLabel} @template._components.ui.infoTip(desc = basisCapitalTermDesc)</th>
 									<th scope="col" class="text-right yield-extra-col">${yieldOnBasisAverageCostLabel}</th>
 									<th scope="col" class="text-right">${dividendCountLabel}</th>
 								</tr>
@@ -339,16 +295,16 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 								@for(DividendYieldGroupView row : yearlyYieldRows)
 									!{BigDecimal rowTaxAmount = row.totalGrossAmount() != null && row.totalNetAmount() != null ? row.totalGrossAmount().subtract(row.totalNetAmount()) : null;}
 									<tr>
-										<th scope="row" class="font-medium">${row.label()}@if(partialYearDays.apply(row) != null) <span class="text-[11px] font-normal text-base-content/60" data-year-partial data-stock-tag-tooltip="${StockViewSupport.msg("stock.dividend.yield.year.partial.desc", partialYearDays.apply(row))}">${StockViewSupport.msg("stock.dividend.yield.year.partial", partialYearDays.apply(row))}</span><span class="sr-only">${StockViewSupport.msg("stock.dividend.yield.year.partial.desc", partialYearDays.apply(row))}</span>@endif</th>
+										<th scope="row" class="font-medium">${row.label()}@if(partialYearDays.apply(row) != null) @template._components.ui.tooltip(text = StockViewSupport.msg("stock.dividend.yield.year.partial.desc", partialYearDays.apply(row)), placement = "top", content = @`<span class="text-[11px] font-normal text-base-content/60" data-year-partial>${StockViewSupport.msg("stock.dividend.yield.year.partial", partialYearDays.apply(row))}</span>`)@endif</th>
 										<td class="text-right yield-extra-col amount-value">${decimalFormat.format(row.totalGrossAmount())}</td>
-										<td class="text-right yield-extra-col amount-value" title="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}" aria-label="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>
-										<td class="text-right" data-annualized-cell data-amount-basis="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">@if(yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount()) != null)<span class="sr-only">${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}</span>@endif<div class="amount-value">${decimalFormat.format(row.totalNetAmount())}</div> <div class="text-[11px] whitespace-nowrap">@if(row.annualizedYieldPct() != null)<span class="font-semibold text-dividend" data-annualized-value>${StockViewSupport.msg("stock.dividend.yield.ttm.value", percentFormat.apply(row.annualizedYieldPct()))}</span>@else<span class="text-base-content/60" aria-hidden="true" title="${dailyBasisNoneTitle}">-</span><span class="sr-only">${dailyBasisNoneTitle}</span>@endif@if(row.heldDayCount() > 0)<span class="text-base-content/60" data-held-days> · ${heldDaysText.apply(row.heldDayCount())}</span>@if(row.shortHeld()) <span class="badge badge-outline badge-xs align-middle" data-short-held-badge data-stock-tag-tooltip="${shortHeldDesc.apply(row.heldDayCount())}">${shortHeldLabel}</span><span class="sr-only">${shortHeldDesc.apply(row.heldDayCount())}</span>@endif@endif</div>@if(yearlyMaxAnnualized.signum() > 0 && row.annualizedYieldPct() != null && row.groupId() == null)<div class="ml-auto mt-0.5 h-1 w-16 rounded-full bg-base-200" aria-hidden="true" data-yearly-bar><div class="h-1 rounded-full text-dividend yield-bar-fill" style="width: ${row.annualizedYieldPct().multiply(BigDecimal.valueOf(100)).divide(yearlyMaxAnnualized, 1, RoundingMode.HALF_UP).max(BigDecimal.ZERO).min(BigDecimal.valueOf(100)).toPlainString()}%"></div></div>@endif</td>
-										<td class="text-right amount-value yield-extra-col" data-held-average-cell title="${row.heldAverageDailyPrincipalCost() == null ? dailyBasisNoneTitle : null}">${row.heldAverageDailyPrincipalCost() != null ? decimalFormat.format(row.heldAverageDailyPrincipalCost()) : "-"}</td>
-										<td class="text-right yield-extra-col amount-value" title="${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() == 0 ? zeroAmountTitle : null}" aria-label="${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() == 0 ? zeroAmountTitle : null}">${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() != 0 ? decimalFormat.format(row.totalTaxableAmount()) : "-"}</td>
-										<td class="text-right yield-extra-col amount-value" title="${row.averageDailyPrincipalCost() == null ? dailyBasisNoneTitle : null}">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}@if(row.averageDailyPrincipalCost() == null)<span class="sr-only">${dailyBasisNoneTitle}</span>@endif</td>
-										<td class="text-right text-dividend font-medium yield-extra-col" data-amount-basis="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${row.averageDailyPrincipalCost() != null && row.averageDailyPrincipalCost().signum() > 0 ? percentFormat.apply(row.yieldOnDailyAverageCostPct()) : "-"}</td>
-										<td class="text-right yield-extra-col amount-value" title="${basisNoneOrNull.apply(row.averagePrincipalCost())}">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}@if(basisNoneOrNull.apply(row.averagePrincipalCost()) != null)<span class="sr-only">${basisNoneTitle}</span>@endif</td>
-										<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" title="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
+										<td class="text-right yield-extra-col amount-value tooltip" data-tip="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}" aria-label="${rowTaxAmount != null && rowTaxAmount.signum() == 0 ? zeroAmountTitle : null}">${rowTaxAmount != null && rowTaxAmount.signum() != 0 ? decimalFormat.format(rowTaxAmount) : "-"}</td>
+										<td class="text-right tooltip" data-annualized-cell data-amount-basis="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" data-tip="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">@if(yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount()) != null)<span class="sr-only">${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}</span>@endif<div class="amount-value">${decimalFormat.format(row.totalNetAmount())}</div> <div class="text-[11px] whitespace-nowrap">@if(row.annualizedYieldPct() != null)<span class="font-semibold text-dividend" data-annualized-value>${StockViewSupport.msg("stock.dividend.yield.ttm.value", percentFormat.apply(row.annualizedYieldPct()))}</span>@else<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${dailyBasisNoneTitle}">-</span><span class="sr-only">${dailyBasisNoneTitle}</span>@endif@if(row.heldDayCount() > 0)<span class="text-base-content/60" data-held-days> · ${heldDaysText.apply(row.heldDayCount())}</span>@if(row.shortHeld()) @template._components.ui.tooltip(text = shortHeldDesc.apply(row.heldDayCount()), placement = "top", content = @`<span class="badge badge-outline align-middle badge-sm" data-short-held-badge>${shortHeldLabel}</span>`)@endif@endif</div>@if(yearlyMaxAnnualized.signum() > 0 && row.annualizedYieldPct() != null && row.groupId() == null)<div class="ml-auto mt-0.5 h-1 w-16 rounded-full bg-base-200" aria-hidden="true" data-yearly-bar><div class="h-1 rounded-full text-dividend yield-bar-fill" style="width: ${row.annualizedYieldPct().multiply(BigDecimal.valueOf(100)).divide(yearlyMaxAnnualized, 1, RoundingMode.HALF_UP).max(BigDecimal.ZERO).min(BigDecimal.valueOf(100)).toPlainString()}%"></div></div>@endif</td>
+										<td class="text-right amount-value yield-extra-col tooltip" data-held-average-cell data-tip="${row.heldAverageDailyPrincipalCost() == null ? dailyBasisNoneTitle : null}">${row.heldAverageDailyPrincipalCost() != null ? decimalFormat.format(row.heldAverageDailyPrincipalCost()) : "-"}</td>
+										<td class="text-right yield-extra-col amount-value tooltip" data-tip="${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() == 0 ? zeroAmountTitle : null}" aria-label="${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() == 0 ? zeroAmountTitle : null}">${row.totalTaxableAmount() != null && row.totalTaxableAmount().signum() != 0 ? decimalFormat.format(row.totalTaxableAmount()) : "-"}</td>
+										<td class="text-right yield-extra-col amount-value tooltip" data-tip="${row.averageDailyPrincipalCost() == null ? dailyBasisNoneTitle : null}">${row.averageDailyPrincipalCost() != null ? decimalFormat.format(row.averageDailyPrincipalCost()) : "-"}@if(row.averageDailyPrincipalCost() == null)<span class="sr-only">${dailyBasisNoneTitle}</span>@endif</td>
+										<td class="text-right text-dividend font-medium yield-extra-col tooltip" data-amount-basis="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" data-tip="${yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${row.averageDailyPrincipalCost() != null && row.averageDailyPrincipalCost().signum() > 0 ? percentFormat.apply(row.yieldOnDailyAverageCostPct()) : "-"}</td>
+										<td class="text-right yield-extra-col amount-value tooltip" data-tip="${basisNoneOrNull.apply(row.averagePrincipalCost())}">${row.averagePrincipalCost() != null ? decimalFormat.format(row.averagePrincipalCost()) : "-"}@if(basisNoneOrNull.apply(row.averagePrincipalCost()) != null)<span class="sr-only">${basisNoneTitle}</span>@endif</td>
+										<td class="text-right yield-extra-col text-base-content/70 tooltip" data-amount-basis="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}" data-tip="${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle : yieldBasisTitle.apply(row.netAmountWithPrincipalCost(), row.totalNetAmount())}">${percentFormat.apply(row.yieldOnCostPct())}</td>
 										<td class="text-right whitespace-nowrap">${countFormat.apply(row.dividendCount())}</td>
 									</tr>
 								@endfor
@@ -366,15 +322,15 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 								<tfoot data-dividend-yearly-total>
 									<tr class="bg-base-200 font-bold">
 										<th scope="row">${wholePeriodLabel}</th>
-										<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(yearlyTotalGross)}</td>
-										<td class="text-right yield-extra-col font-mono amount-value" title="${yearlyTotalTax.signum() == 0 ? zeroAmountTitle : null}" aria-label="${yearlyTotalTax.signum() == 0 ? zeroAmountTitle : null}">${yearlyTotalTax.signum() != 0 ? decimalFormat.format(yearlyTotalTax) : "-"}</td>
-										<td class="text-right text-dividend" data-annualized-total data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">@if(yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount) != null)<span class="sr-only">${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}</span>@endif<div class="font-mono amount-value">${decimalFormat.format(yearlyTotalNet)}</div> <div class="text-[11px] font-normal whitespace-nowrap">${footerAnnualizedPct.apply(yearlyYieldRows) != null ? StockViewSupport.msg("stock.dividend.yield.ttm.value", percentFormat.apply(footerAnnualizedPct.apply(yearlyYieldRows))) : "-"}@if(portfolioYield != null && portfolioYield.heldDayCount() > 0)<span class="text-base-content/60"> · ${heldDaysText.apply(portfolioYield.heldDayCount())}</span>@endif</div></td>
-										<td class="text-right font-mono amount-value yield-extra-col" data-held-average-total>${footerHeldAverage != null ? decimalFormat.format(footerHeldAverage) : "-"}</td>
-										<td class="text-right yield-extra-col font-mono amount-value" title="${yearlyTotalTaxable.signum() == 0 ? zeroAmountTitle : null}" aria-label="${yearlyTotalTaxable.signum() == 0 ? zeroAmountTitle : null}">${yearlyTotalTaxable.signum() != 0 ? decimalFormat.format(yearlyTotalTaxable) : "-"}</td>
-										<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(stockYieldFooterDailyPrincipalCost)}</td>
-										<td class="text-right text-dividend font-medium yield-extra-col" data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${stockYieldFooterDailyPrincipalCost.signum() > 0 ? percentFormat.apply(stockYieldFooterYieldOnDailyAverageCostPct) : "-"}</td>
-										<td class="text-right yield-extra-col font-mono amount-value">${decimalFormat.format(stockYieldFooterPrincipalCost)}</td>
-										<td class="text-right yield-extra-col text-base-content/70" data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" title="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${stockYieldFooterPrincipalCost.signum() > 0 ? percentFormat.apply(stockYieldFooterYieldOnCostPct) : "-"}</td>
+										<td class="text-right yield-extra-col amount-value">${decimalFormat.format(yearlyTotalGross)}</td>
+										<td class="text-right yield-extra-col amount-value tooltip" data-tip="${yearlyTotalTax.signum() == 0 ? zeroAmountTitle : null}" aria-label="${yearlyTotalTax.signum() == 0 ? zeroAmountTitle : null}">${yearlyTotalTax.signum() != 0 ? decimalFormat.format(yearlyTotalTax) : "-"}</td>
+										<td class="text-right text-dividend tooltip" data-annualized-total data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" data-tip="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">@if(yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount) != null)<span class="sr-only">${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}</span>@endif<div class="amount-value">${decimalFormat.format(yearlyTotalNet)}</div> <div class="text-[11px] font-normal whitespace-nowrap">${footerAnnualizedPct.apply(yearlyYieldRows) != null ? StockViewSupport.msg("stock.dividend.yield.ttm.value", percentFormat.apply(footerAnnualizedPct.apply(yearlyYieldRows))) : "-"}@if(portfolioYield != null && portfolioYield.heldDayCount() > 0)<span class="text-base-content/60"> · ${heldDaysText.apply(portfolioYield.heldDayCount())}</span>@endif</div></td>
+										<td class="text-right amount-value yield-extra-col" data-held-average-total>${footerHeldAverage != null ? decimalFormat.format(footerHeldAverage) : "-"}</td>
+										<td class="text-right yield-extra-col amount-value tooltip" data-tip="${yearlyTotalTaxable.signum() == 0 ? zeroAmountTitle : null}" aria-label="${yearlyTotalTaxable.signum() == 0 ? zeroAmountTitle : null}">${yearlyTotalTaxable.signum() != 0 ? decimalFormat.format(yearlyTotalTaxable) : "-"}</td>
+										<td class="text-right yield-extra-col amount-value">${decimalFormat.format(stockYieldFooterDailyPrincipalCost)}</td>
+										<td class="text-right text-dividend font-medium yield-extra-col tooltip" data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" data-tip="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${stockYieldFooterDailyPrincipalCost.signum() > 0 ? percentFormat.apply(stockYieldFooterYieldOnDailyAverageCostPct) : "-"}</td>
+										<td class="text-right yield-extra-col amount-value">${decimalFormat.format(stockYieldFooterPrincipalCost)}</td>
+										<td class="text-right yield-extra-col text-base-content/70 tooltip" data-amount-basis="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}" data-tip="${yieldBasisTitle.apply(stockYieldFooterNetWithPrincipalCost, stockYieldFooterNetAmount)}">${stockYieldFooterPrincipalCost.signum() > 0 ? percentFormat.apply(stockYieldFooterYieldOnCostPct) : "-"}</td>
 										<td class="text-right whitespace-nowrap">${countFormat.apply(yearlyTotalCount)}</td>
 									</tr>
 								</tfoot>

@@ -526,6 +526,10 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	/* 행 hover 는 모든 테이블 공통 기본 동작 (in 즉각 / out 스르륵 — 메뉴와 동일한 비대칭) */
 	.table :where(tbody tr) { transition: background-color .3s ease; }
 	.table :where(tbody tr):hover { background-color: color-mix(in oklab, var(--color-base-200) 70%, transparent); transition-duration: .075s; }
+	/* 주식 화면 표의 기준 모양 - 사용자 선택 2026-11-10(/dev/ui-catalog): D2 촘촘 · Z2 줄 사이 선만(줄무늬 없음) · N1 본문 글꼴 + 자릿수 맞춤 ·
+	   W2 칸 안 줄바꿈. 표마다 table-xs/sm · table-zebra · whitespace-nowrap · font-mono 를 골라 14 가지로 갈라졌던 것을 이 한 벌로 모았다.
+	   표 모양은 여기서만 바꾼다 - 화면에서는 class="table data-table" 만 쓴다(TableConsistencyTest). PoE · 가계부 표는 아직 대상이 아니다. */
+	.data-table :where(th, td) { padding: 0.4rem 0.75rem; font-size: 0.8125rem; white-space: normal; }
 
 	/* ---- form label ---- */
 	.label { display: flex; align-items: center; gap: 0.5rem; }
@@ -701,7 +705,13 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	.dropdown-end > .dropdown-content { right: 0; left: auto; }
 
 	/* ---- tooltip (hover bubble via ::before/::after or .tooltip-content) ---- */
-	.tooltip { position: relative; display: inline-block; }
+	/* 툴팁은 _components/ui/tooltip.jte 하나로만 그린다(2026-11-10 통합). 커서 · 말풍선 모양은 여기 한곳에서 정한다. */
+	/* 표 칸 · 글 줄 안의 요소에도 붙으므로(값 설명 - 옛 title 자리) display 는 바꾸지 않는다. 감싸는 칸(tooltip.jte)은 inline-block 을 스스로 단다.
+	   커서는 실제로 문구가 있을 때만 - 조건부 문구(${cond ? x : null})가 비면 data-tip 이 빠진다. 단추 · 링크는 원래 커서를 둔다. */
+	.tooltip { position: relative; }
+	.tooltip:is([data-tip], :has(> .tooltip-content)):not(a, button) { cursor: help; }
+	/* 여러 줄 내용 상자(tooltip-content)를 쓰는 툴팁은 data-tip 이 없다 - 빈 짧은 말풍선(::before)이 같이 뜨지 않게 한다. */
+	.tooltip:not([data-tip]):before { display: none; }
 	.tooltip > .tooltip-content, .tooltip:before {
 		/* visibility 는 0.2s 뒤에 숨긴다: 트리거와 말풍선 사이 0.25rem 틈을 포인터가 건널 시간(WCAG 1.4.13 hoverable). */
 		position: absolute; z-index: 40; opacity: 0; visibility: hidden; transition: opacity .12s, visibility 0s linear .2s, scale 0s linear .2s;
@@ -722,7 +732,8 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	}
 	/* 키보드 포커스에서도 연다(실측 2026-09-09: tabindex 를 줘도 hover 규칙뿐이라 4/4 툴팁이 포커스 시 0/hidden).
 	   :focus-visible 이라 마우스 클릭으로 받은 포커스는 열지 않는다(hover 가 대신 연다). */
-	.tooltip:is(:hover, :focus-visible) > .tooltip-content, .tooltip:is(:hover, :focus-visible):before {
+	/* 안쪽 링크가 초점을 받는 툴팁(tooltip.jte focusable=false)은 그 초점에서 연다 - 감싼 칸에 tabindex 를 또 주면 탭 정지가 겹친다. */
+	.tooltip:is(:hover, :focus-visible, [data-tooltip-inner-focus]:has(:focus-visible)) > .tooltip-content, .tooltip:is(:hover, :focus-visible, [data-tooltip-inner-focus]:has(:focus-visible)):before {
 		/* pointer-events 를 되살려 말풍선 위에서도 .tooltip:hover 가 유지된다(실측: none 이면 4/4 가 포인터를 옮기는 순간 hidden). */
 		opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; scale: 1;
 	}
@@ -730,7 +741,11 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	.tooltip.tooltip-dismissed > .tooltip-content, .tooltip.tooltip-dismissed:before { opacity: 0; visibility: hidden; pointer-events: none; scale: 0; }
 	/* .tooltip:before(짧은 말풍선)와 달리 .tooltip-content 는 블록 내용을 담으므로
 	   자체 안쪽 여백을 준다. (0 이면 텍스트가 박스 가장자리에 붙어 답답해 보인다.) */
-	.tooltip-content { padding: 0.75rem; }
+	/* 짧은 말풍선(::before)과 같은 모양 - 색 · 모서리 · 글자. 폭만 여러 줄 내용에 맞게 넓다. */
+	.tooltip-content {
+		width: min(18rem, calc(100vw - 2rem)); padding: 0.5rem; font-size: 0.75rem; line-height: calc(1.25 / 0.875); text-align: left;
+		border-radius: var(--radius-field); background: var(--color-neutral); color: var(--color-neutral-content);
+	}
 	.tooltip-bottom > .tooltip-content, .tooltip-bottom:before { bottom: auto; top: 100%; transform: translateX(-50%) translateY(0.25rem); }
 	.tooltip-right > .tooltip-content, .tooltip-right:before { bottom: auto; top: 50%; left: 100%; transform: translateY(-50%) translateX(0.25rem); }
 	.tooltip-bottom-end > .tooltip-content, .tooltip-bottom-end:before { bottom: auto; top: 100%; left: auto; right: 0; transform: translateY(0.25rem); }
@@ -1866,6 +1881,8 @@ html.poe-alt .poe-kw-hint,
 	max-width: 20rem;
 	white-space: normal;
 	text-align: left;
+	/* 줄 간격은 부모 글자 크기를 물려받아 화면마다 달랐다(text-sm 17px, text-xs 16px). 대시보드 값으로 고정한다(2026-11-10). */
+	line-height: calc(1.25 / 0.875);
 }
 
 @media (width < 40rem) {
@@ -2069,14 +2086,6 @@ thead [data-sort-key] {
 	top: 50%;
 	height: 24px;
 	transform: translateY(-50%);
-}
-
-/* 위 ::after 띠는 단추 전체를 덮어 안쪽 요소가 마우스를 못 받는다. 정렬 머리글 안의 용어 밑줄(termHint)은
-   마우스를 올리면 뜻 풍선을 띄워야 하므로 띠 위로 올린다 - 사용자 제보 2026-09-28: 카드의 밑줄은 뜨는데
-   랭킹 표 머리글 6곳은 안 떴다(커서 아래 요소가 span 이 아니라 button). 단추 안이라 눌러서 정렬하는 것은 그대로다. */
-[data-sort-key] [data-term-hint] {
-	position: relative;
-	z-index: 1;
 }
 
 /* 배당 수익률 표의 예전 열(세전 · 세금 · 과세 · 기간 일평균 투입원금 · 기준일 지표). 사용자 요청 2026-09-28:

@@ -579,7 +579,7 @@ interface MonthRange {
                     const color = d.colors[i];
                     return '<div class="flex items-center gap-1 mb-0.5">'
                         + '<span class="chart-legend-swatch" style="flex-shrink:0;display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + '"></span>'
-                        + '<span class="flex-1" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + label + '">' + label + '</span>'
+                        + '<span class="flex-1 min-w-0 tooltip" data-tip="' + label + '"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + label + '</span></span>' // 공용 툴팁(2026-11-10) - 자르는 칸 바깥이 툴팁
                         + '<span style="flex-shrink:0;opacity:0.75;">' + pct + '%</span>'
                         + '</div>';
                 }).join('');
@@ -620,8 +620,11 @@ interface MonthRange {
                 const spanDetail = spanFrom && spanTo
                     ? spanFrom + " ~ " + spanTo + " (" + (Math.round(monthCount * 100) / 100) + ")"
                     : "";
-                descEl.title = spanDetail;
-                // title 은 접근성 트리에 안 올라간다(이 앱이 2026-09-10 에 겪은 실수) - 같은 내용을 sr-only 로도 남긴다.
+                // 공용 CSS 툴팁(.tooltip + data-tip) - 브라우저 title 은 2026-11-10 화면 전체에서 걷었다.
+                descEl.classList.add("tooltip");
+                if (spanDetail) descEl.dataset.tip = spanDetail;
+                else delete descEl.dataset.tip;
+                // 툴팁 문구(data-tip · 예전 title)는 접근성 트리에 안 올라간다(이 앱이 2026-09-10 에 겪은 실수) - 같은 내용을 sr-only 로도 남긴다.
                 if (spanDetail) {
                     const srSpan = document.createElement("span");
                     srSpan.className = "sr-only";
@@ -693,8 +696,6 @@ interface MonthRange {
         // 수익률 표 정렬은 stockLayout 이 싣는 공용 정렬기(clientTableSort.ts) - 줄의 data-* 값, 같으면 이름 순.
         if (win.StockClientTableSort) win.StockClientTableSort.initialize({ tableSelector: "[data-dividend-yield-sortable-table]", rowSelector: "[data-dividend-yield-row]", tieBreakKeys: ["label"] });
         initializeDividendYieldSelection();
-        // 태그 풍선은 stockLayout 이 싣는 /js/stock/stockTagTooltip.js 에 있다 - 없으면(레이아웃 밖 · 검사) 건너뛰고 나머지 초기화는 계속한다.
-        if (typeof win.initializeStockTagHoverTooltips === "function") win.initializeStockTagHoverTooltips(document);
 
         // Chart.js 는 stockLayout 에서 1회 로드되어 항상 존재한다. (initAll 은 ensureStockCharts 로 헬퍼 보장)
         setTimeout(initAll, 0);

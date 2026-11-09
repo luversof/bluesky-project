@@ -225,7 +225,8 @@
 				realOpts.length,
 				allLabel,
 			);
-			toggle.title = summary.textContent || "";
+			toggle.classList.add("tooltip");
+			toggle.dataset.tip = summary.textContent || ""; // 공용 CSS 툴팁(2026-11-10 title 대신)
 			toggle.setAttribute(
 				"aria-label",
 				(fieldLabel ? fieldLabel + ": " : "") + (summary.textContent || ""),
@@ -375,7 +376,8 @@
 					});
 			}
 			summary.textContent = selected.length === 0 ? allLabel : selected.join(", ");
-			toggle.title = summary.textContent || "";
+			toggle.classList.add("tooltip");
+			toggle.dataset.tip = summary.textContent || ""; // 공용 CSS 툴팁(2026-11-10 title 대신)
 			toggle.setAttribute(
 				"aria-label",
 				(tagLabelText ? tagLabelText + ": " : "") + (summary.textContent || ""),

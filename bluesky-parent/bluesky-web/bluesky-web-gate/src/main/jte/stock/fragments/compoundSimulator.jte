@@ -48,7 +48,7 @@
 	@template._components.ui.card(bodyClass = "gap-4", body = @`
 			<div class="flex flex-col gap-2">
 				<div class="space-y-2">
-					<h2 class="card-title text-lg">${inputsTitle}</h2>
+					<h2 class="card-title">${inputsTitle}</h2>
 					<p class="text-sm leading-6 text-base-content/60">${inputsDescription}</p>
 				</div>
 				<%-- 저장 안내는 위 머리 상자에만 둔다(2026-10-01, 같은 문장이 한 화면에 두 번이었다). --%>
@@ -61,12 +61,12 @@
 						<span class="label-text font-medium">${initialLabel}</span>
 						<span id="stockCompoundInitialPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 					</div>
-					<input id="stockCompoundInitial" name="initial" type="number" min="0" step="10000" value="0" class="input input-bordered w-full" aria-label="${initialLabel}" />
+					<input id="stockCompoundInitial" name="initial" type="number" min="0" step="10000" value="0" class="input input-bordered w-full input-sm" aria-label="${initialLabel}" />
 					<%-- 0 개수를 세지 않도록 만원 단위 증감 버튼 제공 (클릭 시 즉시 재계산) --%>
 					<div class="mt-1 flex flex-wrap gap-1">
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">${quickAddSmallLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">${quickAddLargeLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickResetAriaPattern, initialLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="0">0</button>
+						<button type="button" class="btn btn-xs btn-outline" aria-label="${MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="1000000">${quickAddSmallLabel}</button>
+						<button type="button" class="btn btn-xs btn-outline" aria-label="${MessageFormat.format(quickAddAriaPattern, initialLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="10000000">${quickAddLargeLabel}</button>
+						<button type="button" class="btn btn-xs btn-outline" aria-label="${MessageFormat.format(quickResetAriaPattern, initialLabel)}" data-amount-add-target="stockCompoundInitial" data-amount-add="0">0</button>
 					</div>
 				</label>
 				<label class="form-control">
@@ -74,16 +74,16 @@
 						<span class="label-text font-medium">${contributionLabel}</span>
 						<span id="stockCompoundContributionPreview" class="label-text-alt text-right font-medium text-base-content/60 amount-value"></span>
 					</div>
-					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full" aria-label="${contributionLabel}" />
+					<input id="stockCompoundContribution" name="contribution" type="number" min="0" step="10000" value="20000000" class="input input-bordered w-full input-sm" aria-label="${contributionLabel}" />
 					<div class="mt-1 flex flex-wrap gap-1">
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">${quickAddSmallLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">${quickAddLargeLabel}</button>
-						<button type="button" class="btn btn-xs btn-ghost" aria-label="${MessageFormat.format(quickResetAriaPattern, contributionLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="0">0</button>
+						<button type="button" class="btn btn-xs btn-outline" aria-label="${MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddSmallLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="1000000">${quickAddSmallLabel}</button>
+						<button type="button" class="btn btn-xs btn-outline" aria-label="${MessageFormat.format(quickAddAriaPattern, contributionLabel, quickAddLargeLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="10000000">${quickAddLargeLabel}</button>
+						<button type="button" class="btn btn-xs btn-outline" aria-label="${MessageFormat.format(quickResetAriaPattern, contributionLabel)}" data-amount-add-target="stockCompoundContribution" data-amount-add="0">0</button>
 					</div>
 				</label>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${frequencyLabel}</span></div>
-					<select id="stockCompoundFrequency" name="frequency" class="select select-bordered w-full">
+					<select id="stockCompoundFrequency" name="frequency" class="select select-bordered w-full select-sm">
 						<option value="yearly" selected>${frequencyYearlyLabel}</option>
 						<option value="monthly">${frequencyMonthlyLabel}</option>
 					</select>
@@ -94,18 +94,18 @@
 					<span data-compound-effective data-template="${effectiveRateTemplate}"></span></p>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${timingLabel}</span></div>
-					<select id="stockCompoundTiming" name="timing" class="select select-bordered w-full">
+					<select id="stockCompoundTiming" name="timing" class="select select-bordered w-full select-sm">
 						<option value="begin" selected>${timingBeginLabel}</option>
 						<option value="end">${timingEndLabel}</option>
 					</select>
 				</label>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${rateLabel}</span></div>
-					<input id="stockCompoundRatePct" name="ratePct" type="number" min="-100" max="200" step="0.1" value="8" class="input input-bordered w-full" />
+					<input id="stockCompoundRatePct" name="ratePct" type="number" min="-100" max="200" step="0.1" value="8" class="input input-bordered w-full input-sm" />
 				</label>
 				<label class="form-control">
 					<div class="label"><span class="label-text font-medium">${yearsLabel}</span></div>
-					<input id="stockCompoundYears" name="years" type="number" min="1" max="100" step="1" value="3" class="input input-bordered w-full" />
+					<input id="stockCompoundYears" name="years" type="number" min="1" max="100" step="1" value="3" class="input input-bordered w-full input-sm" />
 				</label>
 			</form>
 	`)
@@ -135,7 +135,7 @@
 
 		@template._components.ui.card(bodyClass = "gap-4", body = @`
 				<div class="space-y-2">
-					<h3 class="card-title text-base">${chartTitle}</h3>
+					<h3 class="card-title">${chartTitle}</h3>
 					<p class="text-sm leading-6 text-base-content/60">${chartDescription}</p>
 				</div>
 				<div id="stockCompoundRatio" class="space-y-1">
@@ -155,11 +155,11 @@
 
 		@template._components.ui.card(bodyClass = "gap-4", body = @`
 				<div class="space-y-2">
-					<h3 class="card-title text-base">${yearlyTitle}</h3>
+					<h3 class="card-title">${yearlyTitle}</h3>
 					<p class="text-sm leading-6 text-base-content/60">${yearlyDescription}</p>
 				</div>
 				<div class="overflow-x-auto">
-					<table class="table table-zebra table-sm" aria-label="${yearlyTitle}">
+					<table class="table data-table" aria-label="${yearlyTitle}">
 						<thead>
 							<tr>
 								<th scope="col">${yearHeader}</th>

@@ -32,11 +32,11 @@
 @if(yearlyCosts != null && !yearlyCosts.isEmpty())
 	@template._components.ui.card(cssClass = "mb-4", bodyClass = "gap-3", body = @`
 			<div class="space-y-1">
-				<h3 class="card-title text-base">${title}</h3>
+				<h3 class="card-title">${title}</h3>
 				<p class="text-xs text-base-content/60">${description}</p>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-zebra table-sm whitespace-nowrap" data-yearly-cost aria-label="${title}">
+				<table class="table data-table" data-yearly-cost aria-label="${title}">
 					<thead>
 						<tr>
 							<th scope="col">${yearLabel}</th>
@@ -62,7 +62,7 @@
 									@if(realized.signum() != 0)
 										<span class="amount-value font-semibold ${realizedUp ? "text-profit" : "text-loss"}">${realized.signum() == 0 ? "" : (realizedUp ? "+" : "-")}&#8361;${amountFormat.format(realized.abs())}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${realizedReason}">-</span><span class="sr-only">${realizedReason}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${realizedReason}">-</span><span class="sr-only">${realizedReason}</span>
 									@endif
 								</td>
 								<%-- 수수료·거래세는 나간 돈이라 부호를 붙이지 않고 금액만 적는다. --%>
@@ -116,7 +116,7 @@
 									@if(costTotals.realizedProfit().signum() != 0)
 										<span class="amount-value ${costRealizedUp ? "text-profit" : "text-loss"}">${costTotals.realizedProfit().signum() == 0 ? "" : (costRealizedUp ? "+" : "-")}&#8361;${amountFormat.format(costTotals.realizedProfit().abs())}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${totalRealizedReason}">-</span><span class="sr-only">${totalRealizedReason}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${totalRealizedReason}">-</span><span class="sr-only">${totalRealizedReason}</span>
 									@endif
 								</td>
 								<%-- 줄과 같은 규칙: 나간 돈에는 부호를 붙이지 않는다. --%>

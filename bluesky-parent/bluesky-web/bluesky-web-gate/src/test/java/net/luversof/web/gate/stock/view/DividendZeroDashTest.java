@@ -58,7 +58,7 @@ class DividendZeroDashTest {
     // 실측 2026-09-11(전체 기간): 연도별 · 종목별 · 계좌별 표에도 설명 없는 "-" 가 25 칸 있었고
     // 그중 19 칸(세금 12 · 과세 금액 7)이 0 원이었다.
     assertThat(analytics).contains("stock.dividend.zero.amount.title");
-    String marker = "title=" + (char) 34 + "${";
+    String marker = "data-tip=" + (char) 34 + "${";
     int titled = 0;
     for (int at = analytics.indexOf(marker); at >= 0; at = analytics.indexOf(marker, at + 1)) {
       titled++;

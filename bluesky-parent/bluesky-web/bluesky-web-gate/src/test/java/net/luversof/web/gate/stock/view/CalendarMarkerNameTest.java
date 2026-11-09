@@ -48,7 +48,7 @@ class CalendarMarkerNameTest {
       String line = template.substring(at, template.indexOf((char) 10, at));
       assertThat(line)
           .as(countVar + " 는 title 을 가져야 한다")
-          .contains("title=" + (char) 34 + "${" + labelVar + "}");
+          .contains("data-tip=" + (char) 34 + "${" + labelVar + "}");
       assertThat(line)
           .as(countVar + " 는 sr-only 로도 이름이 나가야 한다(title 만으로는 안 닿는다)")
           .contains(

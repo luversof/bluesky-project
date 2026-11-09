@@ -39,8 +39,8 @@
 <div class="mb-3 rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3" data-combined-profit-box>
 	<div class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("stock.item.detail.combined.profit")}</div>
 	<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-		<span class="text-3xl font-bold leading-none amount-value ${combinedColor}"
-			  title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(combinedProfit))}">
+		<span class="text-3xl font-bold leading-none amount-value ${combinedColor} tooltip"
+			  data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(combinedProfit))}">
 			${StockFormatUtil.signedWon(StockFormatUtil.displayWon(combinedProfit))}
 		</span>
 		@if(combinedRateAvailable)

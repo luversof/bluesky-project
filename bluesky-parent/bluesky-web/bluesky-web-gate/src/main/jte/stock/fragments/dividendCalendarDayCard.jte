@@ -42,7 +42,7 @@
 			@if(showMonth)<div class="text-[11px] text-base-content/60" data-daycard-month>${monthName}</div>@endif
 			<div class="text-2xl font-medium ${dayRed ? "text-error" : ""}">${day.date().getDayOfMonth()}</div>
 			<div class="text-[11px] ${dayRed ? "text-error/80" : "text-base-content/60"}">${day.date().getDayOfWeek().getDisplayName(TextStyle.SHORT, locale)}</div>
-			@if(dayHoliday != null)<div class="truncate text-[10px] leading-tight text-error/80" title="${dayHoliday}">${dayHoliday}</div>@endif
+			@if(dayHoliday != null)<div class="block tooltip" data-tip="${dayHoliday}"><div class="truncate text-[10px] leading-tight text-error/80">${dayHoliday}</div></div>@endif
 		</div>
 		<div class="min-w-0 flex-1">
 			@if(estimatedDay)
@@ -63,8 +63,8 @@
 						: "") + MessageFormat.format(samplePattern, entry.sampleCount()));}
 					!{boolean taxableUnknown = entry.taxableLooksUnregistered();}
 					!{String taxableNote = taxableUnknown ? MessageFormat.format(taxableUnregisteredPattern, StockFormatUtil.pct(entry.historyTaxableRatioPct().doubleValue(), 1)) : "";}
-					<li class="flex flex-col gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-3" data-calendar-entry="${entry.symbol() != null ? entry.symbol() : ""}" data-calendar-entry-name="${entry.name()}" title="${entryNote}">
-						<span class="min-w-0 truncate text-xs" title="${entry.name()}">${entry.name()}</span>
+					<li class="flex flex-col gap-y-0.5 sm:flex-row sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-3 tooltip" data-calendar-entry="${entry.symbol() != null ? entry.symbol() : ""}" data-calendar-entry-name="${entry.name()}" data-tip="${entryNote}">
+						<span class="max-w-full min-w-0 inline-block tooltip" data-tip="${entry.name()}"><span class="truncate text-xs block">${entry.name()}</span></span>
 						<%-- 넓은 화면에서 이름(왼쪽)과 금액(오른쪽) 사이가 수백 px 라 줄을 눈으로 잇기 어려웠다 - 점선 길잡이(2026-10-28 12차 자율). --%>
 						<span class="hidden sm:block min-w-4 flex-1 self-center border-b border-dotted border-base-content/20" aria-hidden="true" data-calendar-entry-leader></span>
 						<span class="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] sm:shrink-0">
@@ -75,7 +75,7 @@
 							<span class="text-xs font-medium text-dividend" data-calendar-entry-latest><span class="font-normal text-base-content/60">${latestLabel}</span> <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span></span>
 							<span class="text-base-content/60" data-calendar-entry-average>${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span>
 							@endif
-							<span class="${taxableUnknown ? "text-warning" : "text-base-content/60"}" data-calendar-taxable data-taxable-unknown="${String.valueOf(taxableUnknown)}" title="${taxableNote}">${taxableShortLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.taxable()))}</span>@if(taxableUnknown)<span aria-hidden="true">&nbsp;?</span><span class="sr-only">, ${taxableNote}</span>@endif</span>
+							<span class="${taxableUnknown ? "text-warning" : "text-base-content/60"} tooltip" data-calendar-taxable data-taxable-unknown="${String.valueOf(taxableUnknown)}" data-tip="${taxableNote}">${taxableShortLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.taxable()))}</span>@if(taxableUnknown)<span aria-hidden="true">&nbsp;?</span><span class="sr-only">, ${taxableNote}</span>@endif</span>
 							@if(!entryNote.isEmpty())<span class="sr-only">, ${entryNote}</span>@endif
 						</span>
 					</li>

@@ -81,13 +81,14 @@
 			${detailSummaryLabel}
 		</summary>
 
-		<div id="dividendListContainer" class="flex flex-col relative mt-2">
+		<%-- 표 기준 B3(2026-11-10): 표는 카드 안에 둔다 - 공용 tableCard. id 는 htmx 가 목록을 갈아 끼우는 자리라 그대로. --%>
+		@template._components.ui.tableCard(id = "dividendListContainer", cssClass = "relative mt-2", body = @`
 			<div class="flex-1 min-h-0 overflow-x-auto table-head-sticky-xl">
-				<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${detailSummaryLabel}">
+				<table class="table data-table w-full table-pin-rows pin-top-nav" aria-label="${detailSummaryLabel}">
 					<%-- 정렬 머리는 <th> 에 hx-get 만 있어 마우스 전용이었다(실측 2026-09-09: 포커스 불가). tabindex 로 닿게 하고(Enter/Space 는 common.ts),
 					     정렬 상태는 ▲▼ 글자 외에 aria-sort 로도 알린다. --%>
 					<thead>
-					<tr class="bg-base-200">
+					<tr>
 						@template.stock.htmx.fragments.components.sortHeader(field = "payDate", label = dateLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 						@template.stock.htmx.fragments.components.sortHeader(field = "stockItemName", label = stockNameLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
 						@template.stock.htmx.fragments.components.sortHeader(field = "accountName", label = accountLabel, cellClass = "cursor-pointer hover:bg-base-300 hidden sm:table-cell", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/dividend/list", fragmentId = "dividendListFragment", formId = "dividendSearchForm")
@@ -110,13 +111,13 @@
 						<td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
 						<%-- 이 표에서 "-" 는 두 뜻으로 읽힌다 - 0 원(세금 147 · 과세금액 119 줄)과 값 없음(기준 가격 등 5 줄, 까닭 tooltip 있음).
 						     0 을 그대로 적으면 표가 0 으로 도배되므로(2026-09-08 결정) 기호는 두고 0 쪽에만 까닭을 붙인다. --%>
-						<td class="text-right hidden lg:table-cell print:table-cell amount-value" title="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}">${item.tax() != null && item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : "-"}</td>
+						<td class="text-right hidden lg:table-cell print:table-cell amount-value tooltip" data-tip="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}">${item.tax() != null && item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : "-"}</td>
 						<td class="text-right text-dividend font-bold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
 						<td class="text-right hidden md:table-cell amount-value">${item.quantity() != null ? decimalFormat.format(item.quantity()) : "-"}</td>
 						<td class="text-right hidden xl:table-cell print:table-cell amount-value">${item.referencePrice() != null ? decimalFormat.format(item.referencePrice()) : "-"}</td>
 						<td class="text-right hidden xl:table-cell print:table-cell amount-value">${item.principalCost() != null ? decimalFormat.format(item.principalCost()) : "-"}</td>
-						<td class="text-right text-dividend font-medium" title="${basisMissingTitle.apply(item)}">${percentFormat.apply(item.yieldOnCostPct())}@if(basisMissingTitle.apply(item) != null)<span class="sr-only">${basisMissingTitle.apply(item)}</span>@endif</td>
-						<td class="text-right amount-value" title="${item.taxableAmount() != null && item.taxableAmount().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.taxableAmount() != null && item.taxableAmount().signum() == 0 ? zeroAmountTitle : null}">${item.taxableAmount() != null && item.taxableAmount().signum() != 0 ? decimalFormat.format(item.taxableAmount()) : "-"}</td>
+						<td class="text-right text-dividend font-medium tooltip" data-tip="${basisMissingTitle.apply(item)}">${percentFormat.apply(item.yieldOnCostPct())}@if(basisMissingTitle.apply(item) != null)<span class="sr-only">${basisMissingTitle.apply(item)}</span>@endif</td>
+						<td class="text-right amount-value tooltip" data-tip="${item.taxableAmount() != null && item.taxableAmount().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.taxableAmount() != null && item.taxableAmount().signum() == 0 ? zeroAmountTitle : null}">${item.taxableAmount() != null && item.taxableAmount().signum() != 0 ? decimalFormat.format(item.taxableAmount()) : "-"}</td>
 					</tr>
 					@endfor
 					@if(dividendList == null || dividendList.isEmpty())
@@ -132,18 +133,18 @@
 						     숨는 열은 colspan 밖으로 빼고 헤더와 같은 클래스를 단 빈 칸으로 둔다. --%>
 							<th scope="row" colspan="2" class="text-center sm:text-right sm:pr-4">${totalLabel}</th>
 							<td class="hidden sm:table-cell"></td>
-							<td class="text-right font-mono amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
-							<td class="text-right font-mono hidden lg:table-cell print:table-cell amount-value">@if(totalTax == null || totalTax.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTax)}@endif</td>
-							<td class="text-right font-mono text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
-							<td class="text-right hidden md:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
-							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
-							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
-							<td class="text-right" aria-label="${noTotalTitle}"><span aria-hidden="true" title="${noTotalTitle}">-</span></td>
-							<td class="text-right font-mono amount-value">@if(totalTaxableAmount == null || totalTaxableAmount.signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTaxableAmount)}@endif</td>
+							<td class="text-right amount-value">${totalGrossAmount != null ? decimalFormat.format(totalGrossAmount) : "0"}</td>
+							<td class="text-right hidden lg:table-cell print:table-cell amount-value">@if(totalTax == null || totalTax.signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTax)}@endif</td>
+							<td class="text-right text-dividend amount-value">${totalNetAmount != null ? decimalFormat.format(totalNetAmount) : "0"}</td>
+							<td class="text-right hidden md:table-cell" aria-label="${noTotalTitle}"><span class="tooltip" aria-hidden="true" data-tip="${noTotalTitle}">-</span></td>
+							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span class="tooltip" aria-hidden="true" data-tip="${noTotalTitle}">-</span></td>
+							<td class="text-right hidden xl:table-cell print:table-cell" aria-label="${noTotalTitle}"><span class="tooltip" aria-hidden="true" data-tip="${noTotalTitle}">-</span></td>
+							<td class="text-right" aria-label="${noTotalTitle}"><span class="tooltip" aria-hidden="true" data-tip="${noTotalTitle}">-</span></td>
+							<td class="text-right amount-value">@if(totalTaxableAmount == null || totalTaxableAmount.signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(totalTaxableAmount)}@endif</td>
 						</tr>
 					</tfoot>
 				</table>
 			</div>
 
-		</div>
+		`)
 	</details>

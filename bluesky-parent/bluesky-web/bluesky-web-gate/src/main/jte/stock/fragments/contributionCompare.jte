@@ -16,9 +16,9 @@
 		<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
 			<span class="font-medium text-base-content/70">${MessageUtil.getMessage("stock.pick.compare.title")}</span>
 			@if(pick.agreement() >= pick.tops().size())
-				<span class="badge badge-sm badge-success h-auto whitespace-normal" data-compare-verdict="all">${StockViewSupport.msg("stock.pick.compare.all", pick.tops().size())}</span>
+				<span class="badge badge-sm badge-success h-auto whitespace-normal badge-outline" data-compare-verdict="all">${StockViewSupport.msg("stock.pick.compare.all", pick.tops().size())}</span>
 			@elseif(pick.agreement() >= 2)
-				<span class="badge badge-sm badge-info h-auto whitespace-normal" data-compare-verdict="some">${StockViewSupport.msg("stock.pick.compare.some", pick.tops().size(), pick.agreement())}</span>
+				<span class="badge badge-sm badge-info h-auto whitespace-normal badge-outline" data-compare-verdict="some">${StockViewSupport.msg("stock.pick.compare.some", pick.tops().size(), pick.agreement())}</span>
 			@else
 				<span class="text-base-content/60" data-compare-verdict="split">${MessageUtil.getMessage("stock.pick.compare.split")}</span>
 			@endif

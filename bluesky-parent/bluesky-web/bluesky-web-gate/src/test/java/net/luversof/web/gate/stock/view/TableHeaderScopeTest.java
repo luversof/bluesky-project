@@ -30,7 +30,7 @@ class TableHeaderScopeTest {
     List<String> found = new ArrayList<>();
     Matcher m = TH.matcher(text);
     while (m.find()) {
-      // 따옴표 안의 값은 지우고 본다 - title=\"scope=col\" 같은 글자에 속지 않게.
+      // 따옴표 안의 값은 지우고 본다 - data-tip=\"scope=col\" 같은 글자에 속지 않게.
       String attributes = m.group(1).replaceAll("\"[^\"]*\"|'[^']*'", "");
       if (!Pattern.compile("(?:^|\\s)scope\\s*=").matcher(attributes).find()) {
         found.add(m.group().replaceAll("\\s+", " "));
@@ -63,7 +63,7 @@ class TableHeaderScopeTest {
     assertThat(headersWithoutScope("<th\n\tclass=\"x\"\n\tscope=\"row\">a</th>")).isEmpty();
     assertThat(headersWithoutScope("<th class=\"text-right\">a</th>")).hasSize(1);
     assertThat(headersWithoutScope("<th></th>")).hasSize(1);
-    assertThat(headersWithoutScope("<th title=\"scope=col\">a</th>")).hasSize(1);
+    assertThat(headersWithoutScope("<th data-tip=\"scope=col\">a</th>")).hasSize(1);
     assertThat(headersWithoutScope("<%-- <th> --%><th scope=\"col\">a</th>")).isEmpty();
   }
 }

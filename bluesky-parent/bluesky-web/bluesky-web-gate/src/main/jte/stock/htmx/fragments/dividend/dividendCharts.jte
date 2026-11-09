@@ -24,9 +24,9 @@
 						<canvas id="donutChart" role="img" aria-label="${weightAnalysisLabel}" class="amount-chart"></canvas>
 					</div>
 					<div class="flex flex-col min-w-[min(10rem,100%)] flex-1 h-[200px] overflow-hidden">
-						<div role="tablist" class="tabs tabs-box tabs-xs mb-1 w-fit flex-shrink-0">
-							<a class="tab tab-active" id="donutTabStock" data-dividend-donut-switch="stock" tabindex="0" role="tab" aria-controls="donutLegend">${byStockLabel}</a>
-							<a class="tab" id="donutTabAccount" data-dividend-donut-switch="account" tabindex="0" role="tab" aria-controls="donutLegend">${byAccountLabel}</a>
+						<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1 mb-1">
+							<a class="tab flex-1 tab-active" id="donutTabStock" data-dividend-donut-switch="stock" tabindex="0" role="tab" aria-controls="donutLegend">${byStockLabel}</a>
+							<a class="tab flex-1" id="donutTabAccount" data-dividend-donut-switch="account" tabindex="0" role="tab" aria-controls="donutLegend">${byAccountLabel}</a>
 						</div>
 						<div id="donutLegend" role="tabpanel" tabindex="0" class="flex-1 min-h-0 overflow-y-auto text-[0.72rem]"></div>
 					</div>

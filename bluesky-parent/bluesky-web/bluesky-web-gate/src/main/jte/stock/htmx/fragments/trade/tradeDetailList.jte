@@ -66,11 +66,12 @@
 			${detailListLabel} (${countMessage.apply(totalItems)})
 		</summary>
 
-		<div id="tradeListContainer" class="flex flex-col relative mt-2">
+		<%-- 표 기준 B3(2026-11-10): 표는 카드 안에 둔다 - 공용 tableCard. id 는 htmx 가 목록을 갈아 끼우는 자리라 그대로. --%>
+		@template._components.ui.tableCard(id = "tradeListContainer", cssClass = "relative mt-2", body = @`
 			<div class="flex-1 min-h-0 overflow-x-auto table-head-sticky-xl">
-				<table class="table w-full table-sm table-pin-rows pin-top-nav" aria-label="${detailListLabel}">
+				<table class="table data-table w-full table-pin-rows pin-top-nav" aria-label="${detailListLabel}">
 					<thead>
-					<tr class="bg-base-200">
+					<tr>
 						@template.stock.htmx.fragments.components.sortHeader(field = "tradeDate", label = dateLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
 						<th scope="col">${typeLabel}</th>
 						@template.stock.htmx.fragments.components.sortHeader(field = "stockItemName", label = stockLabel, cellClass = "cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
@@ -79,7 +80,7 @@
 						     (1100px 189 · 1200px 89 · 1280px 9 · 1300px 0). 넓혔는데 더 나빠지는 구간이라 실제로 들어가는 폭에서 편다. --%>
 						<th scope="col" class="hidden sm:table-cell">${accountLabel}</th>
 						<th scope="col" class="text-right">${unitPriceLabel}</th>
-						<th scope="col" class="text-right" aria-label="${quantityLabel}"><abbr title="${quantityLabel}" class="no-underline">${quantityShortLabel}</abbr></th>
+						<th scope="col" class="text-right" aria-label="${quantityLabel}"><abbr data-tip="${quantityLabel}" class="no-underline tooltip">${quantityShortLabel}</abbr></th>
 						@template.stock.htmx.fragments.components.sortHeader(field = "amount", label = amountLabel, cellClass = "text-right cursor-pointer hover:bg-base-300", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
 						@template.stock.htmx.fragments.components.sortHeader(field = "fee", label = feeLabel, cellClass = "text-right cursor-pointer hover:bg-base-300 hidden min-[1300px]:table-cell print:table-cell", sortField = sortField, sortDir = sortDir, contentUrl = "/stock/htmx/trade/list", fragmentId = "tradeListFragment", formId = "tradeSearchForm")
 						<th scope="col" class="text-right hidden min-[1300px]:table-cell print:table-cell">${tradingTaxLabel}</th>
@@ -97,16 +98,16 @@
 						</td>
 						<td class="font-bold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${trade.stockItemName()}</a></td>
 						<td class="whitespace-nowrap hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(trade.accountId() != null ? trade.accountId().toString() : "")}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
-						<td class="text-right font-mono amount-value">${trade.price() != null ? decimalFormat.format(trade.price()) : "0"}</td>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(trade.quantity())}</td>
-						<td class="text-right font-mono amount-value">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>
-						<td class="text-right text-xs text-base-content/60 amount-value hidden min-[1300px]:table-cell print:table-cell">@if(trade.fee() == null || trade.fee().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(trade.fee())}@endif</td>
-						<td class="text-right text-xs text-base-content/60 amount-value hidden min-[1300px]:table-cell print:table-cell">@if(trade.tax() == null || trade.tax().signum() == 0)<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(trade.tax())}@endif</td>
-						<td class="text-right font-bold font-mono amount-value ${StockFormatUtil.amountTone(trade.realizedProfit())}">
+						<td class="text-right amount-value">${trade.price() != null ? decimalFormat.format(trade.price()) : "0"}</td>
+						<td class="text-right amount-value">${decimalFormat.format(trade.quantity())}</td>
+						<td class="text-right amount-value">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>
+						<td class="text-right text-xs text-base-content/60 amount-value hidden min-[1300px]:table-cell print:table-cell">@if(trade.fee() == null || trade.fee().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(trade.fee())}@endif</td>
+						<td class="text-right text-xs text-base-content/60 amount-value hidden min-[1300px]:table-cell print:table-cell">@if(trade.tax() == null || trade.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(trade.tax())}@endif</td>
+						<td class="text-right font-bold amount-value ${StockFormatUtil.amountTone(trade.realizedProfit())}">
 							<%-- 손익은 부호가 뜻을 바꾼다 - 실측 2026-09-12: 이 열의 55 값 중 음수 6 개만 "-" 를 달고 양수 49 개는
 								 맨 숫자였다. 색만으로 방향을 말하면 고대비 모드(실측: 손익 색이 모두 검정 한 가지로 합쳐짐)와
 								 색을 구분하기 어려운 눈에는 뜻이 사라진다. 다른 화면은 StockFormatUtil.signedWon 으로 이미 부호를 붙인다. --%>
-							@if(trade.realizedProfit() != null && trade.type() == TradeType.SELL)${StockFormatUtil.signedWon(StockFormatUtil.displayWon(trade.realizedProfit()))}@else<span class="text-base-content/60" aria-hidden="true" title="${trade.type() == TradeType.BUY ? buyNoRealizedTitle : noDataTitle}">-</span><span class="sr-only">${trade.type() == TradeType.BUY ? buyNoRealizedTitle : noDataTitle}</span>@endif
+							@if(trade.realizedProfit() != null && trade.type() == TradeType.SELL)${StockFormatUtil.signedWon(StockFormatUtil.displayWon(trade.realizedProfit()))}@else<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${trade.type() == TradeType.BUY ? buyNoRealizedTitle : noDataTitle}">-</span><span class="sr-only">${trade.type() == TradeType.BUY ? buyNoRealizedTitle : noDataTitle}</span>@endif
 						</td>
 					</tr>
 					@endfor
@@ -124,10 +125,10 @@
 							<th scope="row" colspan="3" class="text-right pr-4">${totalLabelText}</th>
 							<td class="hidden sm:table-cell"></td>
 							<td colspan="2"></td>
-							<td class="text-right font-mono amount-value"></td>
-							<td class="text-right font-mono amount-value hidden min-[1300px]:table-cell print:table-cell">${totalFee != null ? decimalFormat.format(totalFee) : "0"}</td>
-							<td class="text-right font-mono amount-value hidden min-[1300px]:table-cell print:table-cell">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
-							<td class="text-right font-mono amount-value ${StockFormatUtil.amountTone(totalRealizedProfit)}">
+							<td class="text-right amount-value"></td>
+							<td class="text-right amount-value hidden min-[1300px]:table-cell print:table-cell">${totalFee != null ? decimalFormat.format(totalFee) : "0"}</td>
+							<td class="text-right amount-value hidden min-[1300px]:table-cell print:table-cell">${totalTax != null ? decimalFormat.format(totalTax) : "0"}</td>
+							<td class="text-right amount-value ${StockFormatUtil.amountTone(totalRealizedProfit)}">
 								${totalRealizedProfit != null ? StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalRealizedProfit)) : "0"}
 							</td>
 						</tr>
@@ -135,5 +136,5 @@
 				</table>
 			</div>
 
-		</div>
+		`)
 	</details>

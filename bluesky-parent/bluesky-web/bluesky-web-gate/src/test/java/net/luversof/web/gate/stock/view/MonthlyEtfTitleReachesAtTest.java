@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 class MonthlyEtfTitleReachesAtTest {
 
   // 식 안에 따옴표가 든다(getMessage("...")) - [^"]+ 로는 못 잡는다. 식의 끝 }" 까지 게으르게.
-  private static final Pattern TITLE_EXPR = Pattern.compile("title=\"(\\$\\{.*?\\})\"");
+  private static final Pattern TITLE_EXPR = Pattern.compile("data-tip=\"(\\$\\{.*?\\})\"");
 
   @Test
   void title_식은_sr_only_로도_실린다() throws IOException {

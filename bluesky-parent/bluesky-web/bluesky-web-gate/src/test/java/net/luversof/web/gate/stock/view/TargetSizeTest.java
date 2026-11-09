@@ -80,7 +80,11 @@ class TargetSizeTest {
         Files.readString(
             JTE.resolve("htmx/fragments/components/mergedRecordBadge.jte"), StandardCharsets.UTF_8);
     Matcher m =
-        Pattern.compile("<div class=\"([^\"]*)\" role=\"note\" tabindex=\"0\"").matcher(html);
+        // 공용 툴팁(tooltip.jte)의 감싼 칸 class - role="note" tabindex="0" 은 그 조각이 붙인다(2026-11-10).
+        Pattern.compile(
+                Pattern.quote("@template._components.ui.tooltip(text = mergedNote, cssClass = \"")
+                    + "([^\"]*)\"")
+            .matcher(html);
     assertThat(m.find()).as("묶은 줄 배지의 설명 칸을 찾지 못했다").isTrue();
     assertThat(m.group(1).split(" "))
         .as("24px 높이")

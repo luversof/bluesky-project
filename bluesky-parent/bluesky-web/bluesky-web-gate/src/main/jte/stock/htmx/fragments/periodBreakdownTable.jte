@@ -39,11 +39,11 @@
 @if(periodBreakdown != null && periodBreakdown.size() > 1)
 	@template._components.ui.card(cssClass = "mb-4", bodyClass = "gap-3", body = @`
 			<div class="space-y-1">
-				<h2 class="card-title text-base">${title}</h2>
+				<h2 class="card-title">${title}</h2>
 				<p class="text-xs text-base-content/60">${description}</p>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-zebra table-sm whitespace-nowrap" data-period-breakdown="${periodBreakdown.get(0).unit()}" aria-label="${title}">
+				<table class="table data-table" data-period-breakdown="${periodBreakdown.get(0).unit()}" aria-label="${title}">
 					<thead>
 						<tr>
 							<th scope="col">${periodLabel}</th>
@@ -85,14 +85,14 @@
 									@if(unrealizedDelta.signum() != 0)
 										<span class="amount-value ${deltaUp ? "text-profit" : "text-loss"}">${unrealizedDelta.signum() == 0 ? "" : (deltaUp ? "+" : "-")}&#8361;${amountFormat.format(unrealizedDelta.abs())}</span>
 									@else
-										<span class="text-base-content/60" title="${zeroAmountTitle}">-</span>
+										<span class="text-base-content/60 tooltip" data-tip="${zeroAmountTitle}">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums" aria-label="${realizedAndDividend.signum() == 0 ? zeroAmountTitle : null}">
 									@if(realizedAndDividend.signum() != 0)
 										<span class="amount-value ${incomeUp ? "text-profit" : "text-loss"}">${realizedAndDividend.signum() == 0 ? "" : (incomeUp ? "+" : "-")}&#8361;${amountFormat.format(realizedAndDividend.abs())}</span>
 									@else
-										<span class="text-base-content/60" title="${zeroAmountTitle}">-</span>
+										<span class="text-base-content/60 tooltip" data-tip="${zeroAmountTitle}">-</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
@@ -102,7 +102,7 @@
 									@if(rate != null)
 										<span class="font-semibold ${rateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(rate, 2)}</span>
 									@else
-										<span class="text-base-content/60" title="${rateNoneTitle}">-</span>
+										<span class="text-base-content/60 tooltip" data-tip="${rateNoneTitle}">-</span>
 									@endif
 								</td>
 							</tr>
@@ -127,7 +127,7 @@
 								@if(totals.chainedReturnPct() != null)
 									<span class="${totalRateUp ? "text-profit" : "text-loss"}">${StockFormatUtil.signedPct(totals.chainedReturnPct(), 2)}</span>
 								@else
-									<span class="text-base-content/60" title="${rateNoneTitle}">-</span>
+									<span class="text-base-content/60 tooltip" data-tip="${rateNoneTitle}">-</span>
 								@endif
 							</td>
 						</tr>
@@ -143,7 +143,7 @@
 	<%-- 표를 낼 수 없는 구간이면 자리를 비우지 않고 까닭을 적는다. 말없이 사라지면
 		 기능이 있는지조차 알 수 없다(실측: 기본 화면 '전체' 에서 표가 통째로 없었다). --%>
 	@template._components.ui.card(cssClass = "mb-4", bodyClass = "gap-2", body = @`
-			<h2 class="card-title text-base">${title}</h2>
+			<h2 class="card-title">${title}</h2>
 			<p class="text-xs text-base-content/60" data-period-breakdown-note>${periodBreakdownNote}</p>
 	`)
 @endif

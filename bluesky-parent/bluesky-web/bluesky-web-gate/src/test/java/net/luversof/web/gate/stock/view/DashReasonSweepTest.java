@@ -34,7 +34,7 @@ class DashReasonSweepTest {
             StandardCharsets.UTF_8);
 
     assertThat(template).as("매도 건수로 갈라야 한다 - 0 원과 뜻이 다르다").contains("@if(row.sellCount() == 0)");
-    assertThat(template).as("마우스에 닿는 까닭이 없다").contains("title=\"${noSaleTitle}\">-</span>");
+    assertThat(template).as("마우스에 닿는 까닭이 없다").contains("data-tip=\"${noSaleTitle}\">-</span>");
     assertThat(template)
         .as("낭독기에 닿는 까닭이 없다 - title 만으로는 안 된다")
         .contains("<span class=\"sr-only\">${noSaleTitle}</span>");
@@ -58,13 +58,13 @@ class DashReasonSweepTest {
     assertThat(
             countOf(
                 template,
-                "title=" + Q + "${basisNoneOrNull.apply(row.averagePrincipalCost())}" + Q))
+                "data-tip=" + Q + "${basisNoneOrNull.apply(row.averagePrincipalCost())}" + Q))
         .as("기준일 평균원금 금액 칸의 까닭")
         .isEqualTo(3);
     assertThat(
             countOf(
                 template,
-                "title="
+                "data-tip="
                     + Q
                     + "${basisNoneOrNull.apply(row.averagePrincipalCost()) != null ? basisNoneTitle :"
                     + " yieldBasisTitle.apply("))
@@ -92,7 +92,7 @@ class DashReasonSweepTest {
     assertThat(
             countOf(
                 template,
-                "title="
+                "data-tip="
                     + Q
                     + "${row.averageDailyPrincipalCost() == null ? dailyBasisNoneTitle :"
                     + " null}"
@@ -104,7 +104,7 @@ class DashReasonSweepTest {
     assertThat(
             countOf(
                 template,
-                "title="
+                "data-tip="
                     + Q
                     + "${row.heldAverageDailyPrincipalCost() == null ? dailyBasisNoneTitle :"
                     + " null}"
@@ -139,7 +139,8 @@ class DashReasonSweepTest {
     assertThat(template).contains("stock.monthly.reference.profile.not.verified");
     assertThat(template)
         .as("마우스에 닿는 까닭")
-        .contains("<td title=\"${row.lastVerifiedDate() == null ? notVerifiedLabel : null}\">");
+        .contains(
+            "<td class=\"tooltip\" data-tip=\"${row.lastVerifiedDate() == null ? notVerifiedLabel : null}\">");
     assertThat(template)
         .as("낭독기에 닿는 까닭")
         .contains(

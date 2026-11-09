@@ -185,7 +185,7 @@ class DividendYieldFooterRenderTest {
     List<String> amounts = new ArrayList<>();
     Matcher matcher =
         Pattern.compile(
-                "data-annualized-total[^>]*>.*?<div class=\"font-mono amount-value\">([^<]*)</div>",
+                "data-annualized-total[^>]*>.*?<div class=\"amount-value\">([^<]*)</div>",
                 Pattern.DOTALL)
             .matcher(html);
     while (matcher.find()) {

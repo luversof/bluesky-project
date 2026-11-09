@@ -40,7 +40,7 @@
 
 @template._components.ui.card(cssClass = "h-full", body = @`
 	<div class="flex justify-between items-center mb-3">
-		<h2 class="card-title text-xl">${recentActivityTitle}</h2>
+		<h2 class="card-title">${recentActivityTitle}</h2>
 		<a href="/stock/activity" class="link link-hover text-xs">${viewAllLabel} <span aria-hidden="true">→</span></a>
 	</div>
 	<%-- 자리가 모자라면 요약이 아래 줄로 내려간다. 예전에는 요약이 폭을 고수해 왼쪽 목록이
@@ -84,8 +84,8 @@
 								<%-- 종목명은 두 줄까지(2026-10-01 자율 점검). 한 줄 잘림이면 1440px 에서 "TIGER 배…" · "TIGER 코리…" 처럼 같은 운용사 종목끼리
 								     구별이 안 됐다. 한국어 종목명은 빈칸 없는 긴 낱말이라 낱말 안에서도 줄을 바꾼다. --%>
 								<div class="flex items-start gap-1.5 mb-0.5">
-									<span class="badge badge-xs ${badgeClass} mt-0.5 shrink-0">${badgeText}</span>
-									<a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="font-bold text-sm line-clamp-2 wrap-anywhere link link-hover" title="${activity.stockItemName()}">${activity.stockItemName()}</a>
+									<span class="badge mt-0.5 shrink-0 badge-sm badge-outline ${badgeClass}">${badgeText}</span>
+									<a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="font-bold text-sm line-clamp-2 wrap-anywhere link link-hover tooltip" data-tip="${activity.stockItemName()}">${activity.stockItemName()}</a>
 								</div>
 								<%-- 이 카드는 계좌를 아예 보여주지 않으므로(폭이 없다) 묶인 줄은 건수로만 드러난다.
 								     그래서 accountCount 는 0 이다 - 배지 규칙은 "화면이 보여 주는 것으로 설명되지 않으면 건수를 적는다".
@@ -123,7 +123,7 @@
 			<div class="text-xs font-semibold text-base-content/60 mb-2">${monthSummaryLabel}</div>
 			<div class="grid grid-cols-3 gap-3 @[30rem]:block @[30rem]:space-y-2" data-month-summary-rows>
 				<div class="flex flex-wrap justify-between items-center gap-x-2">
-					<span class="badge badge-xs badge-error badge-outline">${buyLabel}</span>
+					<span class="badge badge-error badge-outline badge-sm">${buyLabel}</span>
 					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(buyCount)}</div>
 						<div class="font-mono text-xs font-bold amount-value text-base-content whitespace-nowrap">
@@ -132,7 +132,7 @@
 					</div>
 				</div>
 				<div class="flex flex-wrap justify-between items-center gap-x-2">
-					<span class="badge badge-xs badge-info badge-outline">${sellLabel}</span>
+					<span class="badge badge-info badge-outline badge-sm">${sellLabel}</span>
 					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(sellCount)}</div>
 						<div class="font-mono text-xs font-bold amount-value text-base-content whitespace-nowrap">
@@ -141,7 +141,7 @@
 					</div>
 				</div>
 				<div class="flex flex-wrap justify-between items-center gap-x-2">
-					<span class="badge badge-xs badge-success badge-outline">${dividendLabel}</span>
+					<span class="badge badge-success badge-outline badge-sm">${dividendLabel}</span>
 					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(dividendCount)}</div>
 						<div class="font-mono text-xs font-bold amount-value text-dividend whitespace-nowrap">

@@ -373,7 +373,9 @@ function formatPercent(value: number, scale = 1): string {
 			const spoken = document.createElement("span");
 			spoken.className = "sr-only";
 			spoken.textContent = reason;
-			td.title = reason;
+			// 공용 CSS 툴팁(.tooltip + data-tip) - 2026-11-10 브라우저 title 을 걷었다.
+			td.classList.add("tooltip");
+			td.dataset.tip = reason;
 			td.appendChild(mark);
 			td.appendChild(spoken);
 			return td;

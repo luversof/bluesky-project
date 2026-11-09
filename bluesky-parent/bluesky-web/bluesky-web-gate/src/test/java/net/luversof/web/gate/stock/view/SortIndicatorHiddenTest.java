@@ -22,7 +22,7 @@ class SortIndicatorHiddenTest {
 
   private static final String[] TEMPLATES = {
     "src/main/jte/stock/htmx/fragments/assetStatus.jte",
-    "src/main/jte/stock/htmx/fragments/dividend/dividendYieldAnalytics.jte",
+    // 배당 수익 카드의 용어 머리글 8 칸도 2026-11-10 부터 sortButtonHeader(hint) 가 그린다 - 배당 조각에는 직접 쓴 정렬 표시가 없다.
     // 2026-10-22: 단순 이름 칸 26 개(자산 현황 18 · 수익 카드 8)는 이 조각이 그린다.
     "src/main/jte/stock/htmx/fragments/components/sortButtonHeader.jte"
   };

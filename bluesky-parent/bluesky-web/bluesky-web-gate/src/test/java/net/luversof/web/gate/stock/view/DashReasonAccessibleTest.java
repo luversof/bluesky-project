@@ -85,7 +85,7 @@ class DashReasonAccessibleTest {
   void 기준을_못_되짚은_수익률도_보조기술에_닿는다() throws IOException {
     String table = read("src/main/jte/stock/htmx/fragments/dividend/dividendTable.jte");
 
-    assertThat(count(table, "title=" + (char) 34 + "${basisMissingTitle.apply(item)}"))
+    assertThat(count(table, "data-tip=" + (char) 34 + "${basisMissingTitle.apply(item)}"))
         .as("까닭 툴팁이 붙은 칸")
         .isEqualTo(1);
     assertThat(table)
@@ -135,7 +135,8 @@ class DashReasonAccessibleTest {
             "src/main/jte/stock/htmx/fragments/assetStatus.jte")) {
       String template = read(rel);
       int titles =
-          count(template, "title=\"${zeroAmountTitle}\"") + count(template, "none\")}\">-</span>");
+          count(template, "data-tip=\"${zeroAmountTitle}\"")
+              + count(template, "none\")}\">-</span>");
       int srOnly =
           count(template, "sr-only\">${zeroAmountTitle}")
               + count(template, "sr-only\">${MessageUtil.getMessage(\"stock.profit.realized.none")

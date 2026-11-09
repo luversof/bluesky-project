@@ -74,7 +74,7 @@ class DividendBasisMissingNoteTest {
 
     // 칸 수는 title= 자리의 호출만 센다. 2026-09-11 에 이 칸이 sr-only 도 함께 달면서 호출 자체는 3 번이 됐는데,
     // 그건 칸이 늘어난 게 아니라 같은 까닭을 눈과 보조기술 양쪽에 보낸 것이다.
-    assertThat(count(template, "title=" + '"' + "${basisMissingTitle.apply(item)}"))
+    assertThat(count(template, "data-tip=" + '"' + "${basisMissingTitle.apply(item)}"))
         .as("수익률 칸 하나")
         .isEqualTo(1);
     assertThat(count(template, "basisMissingTitle.apply(item)"))
@@ -83,7 +83,11 @@ class DividendBasisMissingNoteTest {
     assertThat(template)
         .as("그 칸은 폭에 따라 숨지 않는 칸이어야 한다")
         .contains(
-            "text-right text-dividend font-medium" + '"' + " title=" + '"' + "${basisMissingTitle");
+            "text-right text-dividend font-medium tooltip"
+                + '"'
+                + " data-tip="
+                + '"'
+                + "${basisMissingTitle");
   }
 
   @Test

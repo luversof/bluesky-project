@@ -1,4 +1,4 @@
-// 자산 현황 조각의 브라우저 동작: 계좌 상세 펼침 · 행 선택 합계(표 정렬은 clientTableSort.ts, 태그 툴팁은 stockTagTooltip.ts).
+// 자산 현황 조각의 브라우저 동작: 계좌 상세 펼침 · 행 선택 합계(표 정렬은 clientTableSort.ts, 태그 툴팁은 공용 tooltip.jte).
 //
 // 2026-09-08 까지 assetStatus.jte 안의 인라인 <script> 였다(669 줄 - 이 모듈 인라인 스크립트 22 개 중 가장 큰
 // 순수 JS 였다: JTE 식이 하나도 없어 파일로 뺄 수 있었다). 인라인일 때는 검사가 템플릿 문자열에서 함수를
@@ -462,8 +462,6 @@ export {};
         if (win.StockClientTableSort) win.StockClientTableSort.initialize({ tableSelector: "[data-sortable-table]", rowSelector: "[data-sortable-row]", tieBreakKeys: ["account", "stockName"] });
         initializeAssetStatusAccountSelection();
         initializeAssetStatusStockSelection();
-        // 태그 풍선은 stockLayout 이 싣는 /js/stock/stockTagTooltip.js 에 있다 - 없으면(레이아웃 밖 · 검사) 건너뛰고 나머지 초기화는 계속한다.
-        if (typeof win.initializeStockTagHoverTooltips === "function") win.initializeStockTagHoverTooltips(document);
     }
 
     win.initializeAssetStatus = initializeAssetStatus;

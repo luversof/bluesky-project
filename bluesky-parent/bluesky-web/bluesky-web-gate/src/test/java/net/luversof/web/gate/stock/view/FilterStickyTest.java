@@ -47,7 +47,7 @@ class FilterStickyTest {
     assertThat(inside).as("검색 폼이 상자 안에 없다").contains("action=\"/stock/monthly-etf\"");
     assertThat(inside).as("기간 줄이 상자 안에 없다").contains("role=\"group\"");
     // 사용자 요청 2026-09-22: "sticky 가 테이붔 제목도 유지해주었으면 해" - 어느 표를 보는 중인지가 사라진다.
-    assertThat(inside).as("표 제목이 상자 안에 없다").contains("class=\"card-title text-lg\"");
+    assertThat(inside).as("표 제목이 상자 안에 없다").contains("class=\"card-title\"");
   }
 
   /** table-filter-sticky 상자가 여는 지점부터 그것이 닫힐 때까지의 속을 돌려준다. */

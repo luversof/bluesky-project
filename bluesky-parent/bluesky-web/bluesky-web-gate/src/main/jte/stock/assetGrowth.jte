@@ -17,7 +17,7 @@
 			<div class="mb-8">
 				<div data-params-from-query="true" hx-get="/stock/htmx/asset-growth/view" hx-trigger="load" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 					<div class="flex justify-center p-10">
-						<span class="loading loading-spinner text-primary loading-lg"></span>
+						@template._components.ui.spinner()
 					</div>
 				</div>
 			</div>

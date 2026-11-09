@@ -56,7 +56,7 @@ class TradeHistoryMatchesDetailListTest {
   void 두_표가_매수_행에_까닭을_적는다() throws IOException {
     assertThat(read(HISTORY))
         .contains("<span class=\"sr-only\">${isBuy ? buyNoRealizedTitle : noDataTitle}</span>");
-    assertThat(read(HISTORY)).contains("title=\"${isBuy ? buyNoRealizedTitle : noDataTitle}\"");
+    assertThat(read(HISTORY)).contains("data-tip=\"${isBuy ? buyNoRealizedTitle : noDataTitle}\"");
     assertThat(read(DETAIL))
         .contains(
             "<span class=\"sr-only\">${trade.type() == TradeType.BUY ? buyNoRealizedTitle :"

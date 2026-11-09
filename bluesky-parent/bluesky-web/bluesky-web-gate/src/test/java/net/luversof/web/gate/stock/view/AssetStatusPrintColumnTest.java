@@ -53,7 +53,7 @@ class AssetStatusPrintColumnTest {
     assertThat(template)
         .as("종목별 현황(11열)에만 붙인다")
         .contains(
-            "table table-sm w-full print-dense"
+            "table data-table w-full print-dense"
                 + '"'
                 + " data-sortable-table data-asset-status-stock-table");
     assertThat(template)

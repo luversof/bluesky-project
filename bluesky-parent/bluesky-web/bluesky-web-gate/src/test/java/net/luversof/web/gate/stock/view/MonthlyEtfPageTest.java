@@ -749,7 +749,7 @@ class MonthlyEtfPageTest {
     assertThat(template)
         .as("추세 값은 3 회 평균 금액과 증감률을 함께 적는다")
         // data-payout-trend 만 찾으면 data-payout-trend-missing 이 대신 걸려 값 칸이 사라져도 통과한다.
-        .contains(squash("data-payout-trend title=\"${trendBasis}\">"))
+        .contains(squash("data-payout-trend data-tip=\"${trendBasis}\">"))
         .contains(squash("${percentFormat.format(row.payoutTrendPct())}%"));
   }
 

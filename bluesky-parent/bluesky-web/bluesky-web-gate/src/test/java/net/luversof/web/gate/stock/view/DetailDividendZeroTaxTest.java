@@ -55,7 +55,7 @@ class DetailDividendZeroTaxTest {
   /** 사유가 마우스 전용이 되면 안 된다 - title 과 aria-label 둘 다. */
   @Test
   void 사유를_보조기술도_읽는다() throws IOException {
-    String title = "title=\"${dividendTaxZero ? zeroAmountTitle : null}\"";
+    String title = "data-tip=\"${dividendTaxZero ? zeroAmountTitle : null}\"";
     String aria = "aria-label=\"${dividendTaxZero ? zeroAmountTitle : null}\"";
 
     assertThat(read(ITEM)).contains(title).contains(aria);

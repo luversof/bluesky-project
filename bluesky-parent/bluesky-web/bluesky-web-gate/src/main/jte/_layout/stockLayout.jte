@@ -76,8 +76,6 @@
 		<script src="/js/stock/globalDateRange.js"></script>
 		<script src="/js/stock/detailFilterState.js"></script>
 		<script src="/js/stock/tableSort.js"></script>
-		<%-- 표 안 태그 풍선(data-stock-tag-tooltip). 자산 현황 · 배당 내역 조각이 한 벌씩 들고 있던 것을 모았다(2026-10-22). --%>
-		<script src="/js/stock/stockTagTooltip.js"></script>
 		<%-- 브라우저 표 정렬(자산 현황 · 배당 수익 분석). 두 조각이 한 벌씩 들고 있던 것을 모았다(2026-10-22). --%>
 		<script src="/js/stock/clientTableSort.js"></script>
 		<script src="/js/stock/multiSelectDropdown.js"></script>

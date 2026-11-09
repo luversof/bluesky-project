@@ -50,7 +50,7 @@
 @if(isAuthenticated)
 @template._components.ui.tableCard(cssClass = "mb-6", body = @`
 	<div class="card-body">
-		<h2 class="card-title text-2xl mb-4">
+		<h2 class="card-title mb-4">
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -73,7 +73,7 @@
 						hx-indicator="#update-loading"
 						hx-confirm="${updateStockItemsConfirm}"
 						data-reload-after-request="true"
-						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
+						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left btn-sm">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
 					</svg>
@@ -94,7 +94,7 @@
 						hx-indicator="#update-loading"
 						hx-confirm="${updateTradesConfirm}"
 						data-reload-after-request="true"
-						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
+						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left btn-sm">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
 					</svg>
@@ -115,7 +115,7 @@
 						hx-indicator="#update-loading"
 						hx-confirm="${updateDividendsConfirm}"
 						data-reload-after-request="true"
-						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
+						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left btn-sm">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 					</svg>
@@ -134,7 +134,7 @@
 						hx-swap="none"
 						hx-confirm="${updatePriceHistoriesConfirm}"
 						<%-- 이 단추는 작업을 시작만 한다 - 끝나는 건 아래 진행 표시가 보고 새로고침한다. 덮개(hx-indicator)도 안 쓴다(18~22 초 동안 화면을 가린다). --%>
-						class="btn btn-outline w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
+						class="btn btn-outline btn-sm w-full justify-start gap-2 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere max-sm:text-left">
 					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
 					</svg>
@@ -172,7 +172,7 @@
 			 data-progress-template="${priceProgressTemplate}"
 			 data-progress-done-template="${priceProgressDoneTemplate}"
 			 data-progress-failed-template="${priceProgressFailedTemplate}">
-			<span class="loading loading-spinner loading-sm" data-progress-spinner></span>
+			@template._components.ui.spinner(size = "sm", progress = true)
 			<span data-progress-text></span>
 		</div>
 		@if(dataStatus != null)
@@ -201,7 +201,7 @@
 				 '평가 기준'으로 적으므로, 여기서 사실을 밝히지 않으면 있지도 않은 최신성을 믿게 된다.
 				 (실측 2026-08-22: 2026-08-20 행 9건이 전부 거래량 0, 종가는 08-19 와 동일) --%>
 			@if(dataStatus.priceHistoryLastDateLooksUntraded())
-				<div class="alert alert-warning py-2 px-3 text-xs mb-2" role="alert">
+				<div class="alert alert-warning mb-2" role="alert">
 					${StockViewSupport.msg("stock.admin.price.untraded", String.valueOf(dataStatus.priceHistoryLastDate()),
 						String.valueOf(dataStatus.priceHistoryItemCount()),
 						String.valueOf(dataStatus.priceHistoryPreviousDate()))}
@@ -337,7 +337,7 @@
 				 (실측 2026-08-23: 발견 48건 = 30행, 그중 10행이 사유 2~4개. KODEX 한국부동산리츠인프라
 				  배당 8행이 전부 여기 속하고 원인은 과세표준을 옛 수량 77주로 잡은 것 하나다). --%>
 			@if(ledgerIntegrity != null && ledgerIntegrity.hasMultiReasonRows())
-				<div class="alert alert-info py-2 px-3 text-xs mt-2 block" data-ledger-multi-rows="${ledgerIntegrity.multiReasonRows().size()}" role="status">
+				<div class="alert alert-info mt-2 block" data-ledger-multi-rows="${ledgerIntegrity.multiReasonRows().size()}" role="status">
 					<div class="font-medium">${StockViewSupport.msg("stock.admin.ledger.multi.reason.rows", ledgerIntegrity.multiReasonRows().size())}</div>
 					@for(LedgerIntegrityResponse.RowFindingSummary row : ledgerIntegrity.multiReasonRows())
 						<div class="opacity-80" data-ledger-row-codes="${row.codes().size()}">
@@ -349,7 +349,7 @@
 			@endif
 			@if(ledgerIntegrity != null && !ledgerIntegrity.isClean())
 				@for(LedgerIntegrityResponse.Finding finding : ledgerIntegrity.findings())
-					<div class="alert alert-warning py-2 px-3 text-xs mt-2 block wrap-anywhere" role="alert">
+					<div class="alert alert-warning mt-2 block wrap-anywhere" role="alert">
 						<div class="font-medium" data-ledger-count="${finding.count()}">${StockLedgerRuleLabelUtil.label(finding.code())} (${finding.count()})</div>
 						<%-- 예시를 3건만 보여 주던 시절에는 발견의 절반 이상을 화면에서 볼 수 없었다
 							 (실측 2026-08-23: 45건 중 25건). 조치하려면 어느 행인지 알아야 하므로
@@ -385,7 +385,7 @@
 	
 	<div id="update-loading" class="htmx-indicator fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
 		<div class="bg-base-100 p-8 rounded-box shadow-xl flex flex-col items-center gap-4">
-			<span class="loading loading-spinner loading-lg text-primary"></span>
+			@template._components.ui.spinner()
 			<div class="text-lg font-bold">${updatingLabel}</div>
 			<div class="text-sm opacity-70">${pleaseWaitLabel}</div>
 		</div>

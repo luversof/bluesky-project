@@ -50,7 +50,7 @@
 						data-tag-value="${stockTag}"
 						aria-pressed="${selected ? "true" : "false"}">
 					<span>${stockTag}</span>
-					<span class="badge badge-ghost badge-xs" data-stock-tag-count>${stockTagCount.apply(stockTag)}</span>
+					<span class="badge badge-sm badge-outline" data-stock-tag-count>${stockTagCount.apply(stockTag)}</span>
 				</button>
 			@endfor
 		</div>
@@ -59,7 +59,7 @@
 			<div class="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-base-content/65">
 				<span class="font-medium text-base-content/75">${selectedTagSummaryLabel}</span>
 				@for(String stockTag : selectedStockTags)
-					<span class="badge badge-primary badge-outline gap-1 px-2 py-2">${stockTag}</span>
+					<span class="badge badge-primary badge-outline gap-1 px-2 py-2 badge-sm">${stockTag}</span>
 				@endfor
 			</div>
 		@endif

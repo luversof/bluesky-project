@@ -76,9 +76,9 @@
 			<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div class="flex flex-wrap items-center gap-2">
 					<h3 class="text-sm font-semibold">${accountSelectionSummaryLabel}</h3>
-					<span class="badge badge-info badge-outline" data-trade-realized-selection-count></span>
+					<span class="badge badge-info badge-outline badge-sm" data-trade-realized-selection-count></span>
 				</div>
-				<button type="button" class="btn btn-ghost btn-xs self-start" data-trade-realized-clear>${selectionClearLabel}</button>
+				<button type="button" class="btn btn-xs self-start btn-outline" data-trade-realized-clear>${selectionClearLabel}</button>
 			</div>
 			<div class="mt-3 grid gap-3 sm:grid-cols-4">
 				<div class="rounded-box bg-base-100/80 px-3 py-2">
@@ -95,14 +95,14 @@
 				</div>
 				<div class="rounded-box bg-base-100/80 px-3 py-2">
 					<div class="text-xs text-base-content/60">${returnRateLabel}</div>
-					<div class="mt-1 font-mono font-semibold" data-trade-realized-sel-rate title="${rateNoneLabel}"><span aria-hidden="true">-</span><span class="sr-only">${rateNoneLabel}</span></div>
+					<div class="mt-1 font-mono font-semibold tooltip" data-trade-realized-sel-rate data-tip="${rateNoneLabel}"><span aria-hidden="true">-</span><span class="sr-only">${rateNoneLabel}</span></div>
 				</div>
 			</div>
 		</div>
 		</div></div>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
-			<table class="table table-sm w-full" aria-label="${byAccountSectionLabel}">
-				<thead class="bg-base-200">
+			<table class="table data-table w-full" aria-label="${byAccountSectionLabel}">
+				<thead>
 					<tr>
 						<th scope="col">${accountLabel}</th>
 						<th scope="col" class="text-right">${soldCostLabel}</th>
@@ -127,9 +127,9 @@
 						data-net="${rowNet.toPlainString()}"
 						data-sold-cost="${rowSoldCost.toPlainString()}">
 						<th scope="row" class="font-semibold whitespace-nowrap">@if(row.accountId() != null)<a href="${StockDetailLinkUtil.account(row.accountId().toString())}" class="link link-hover">${row.name()}</a>@else${row.name()}@endif</th>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(rowSoldCost)}</td>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO)}</td>
-						<td class="text-right font-bold font-mono amount-value ${rowPositive ? "text-profit" : "text-loss"}">
+						<td class="text-right amount-value">${decimalFormat.format(rowSoldCost)}</td>
+						<td class="text-right amount-value">${decimalFormat.format(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO)}</td>
+						<td class="text-right font-bold amount-value ${rowPositive ? "text-profit" : "text-loss"}">
 							${StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowNet))}
 							<%-- 기록된 실현손익은 계좌를 합친 원가를 따른다(실측 2026-08-23: 매도 54건 중
 								 종목 단위 원가로 50건이 재현되고 계좌x종목 단위로는 38건뿐). 그래서 이 값은
@@ -138,8 +138,8 @@
 							!{BigDecimal rowOwn = row.realizedOwnBasis() != null ? row.realizedOwnBasis() : BigDecimal.ZERO;}
 							!{BigDecimal rowBasisGap = RealizedBasisGap.amount(rowNet, rowOwn);}
 							@if(RealizedBasisGap.isNotable(rowNet, rowOwn))
-								<span class="block text-[10px] font-normal text-base-content/60" data-realized-basis-gap="${StockFormatUtil.displayWon(rowBasisGap)}"
-									  title="${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}">
+								<span class="block text-[10px] font-normal text-base-content/60 tooltip" data-realized-basis-gap="${StockFormatUtil.displayWon(rowBasisGap)}"
+									  data-tip="${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}">
 									${StockViewSupport.msg("stock.trade.realized.basis.gap", StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowOwn)))}
 									<%-- 까닭이 title 에만 있으면 마우스 전용이다(2026-09-10 실측). 같은 문구를 보조기술에도 남긴다. --%>
 									<span class="sr-only">${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}</span>
@@ -147,9 +147,9 @@
 							@endif
 						</td>
 						@if(rowHasRate)
-						<td class="text-right font-mono font-semibold ${StockFormatUtil.rateTone(rowRate, 2)}">${StockFormatUtil.signedPct(rowRate, 2)}</td>
+						<td class="text-right font-semibold ${StockFormatUtil.rateTone(rowRate, 2)}">${StockFormatUtil.signedPct(rowRate, 2)}</td>
 						@else
-						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
+						<td class="text-right"><span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
 					</tr>
 				@endfor
@@ -157,13 +157,13 @@
 				<tfoot>
 					<tr class="border-t-2 border-base-content/20 font-semibold" data-realized-total>
 						<th scope="row">${totalLabel}</th>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(accTotalSoldCost)}</td>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(accTotalSell)}</td>
-						<td class="text-right font-mono amount-value ${StockFormatUtil.amountTone(accTotalNet)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(accTotalNet))}</td>
+						<td class="text-right amount-value">${decimalFormat.format(accTotalSoldCost)}</td>
+						<td class="text-right amount-value">${decimalFormat.format(accTotalSell)}</td>
+						<td class="text-right amount-value ${StockFormatUtil.amountTone(accTotalNet)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(accTotalNet))}</td>
 						@if(accTotalSoldCost.signum() > 0)
-						<td class="text-right font-mono">${StockFormatUtil.signedPct(accTotalNet.doubleValue() / accTotalSoldCost.doubleValue() * 100, 2)}</td>
+						<td class="text-right">${StockFormatUtil.signedPct(accTotalNet.doubleValue() / accTotalSoldCost.doubleValue() * 100, 2)}</td>
 						@else
-						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
+						<td class="text-right"><span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
 					</tr>
 				</tfoot>
@@ -185,7 +185,7 @@
 	<div class="mb-4" data-trade-realized-section>
 		<div class="flex items-center justify-between mb-2">
 			<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byStockSectionLabel}</h2>
-			<span class="badge badge-sm badge-ghost">${winCountBadgeLabel}</span>
+			<span class="badge badge-sm badge-outline">${winCountBadgeLabel}</span>
 		</div>
 		<p class="text-[11px] leading-4 text-base-content/60 mb-2">${realizedBasisNote}</p>
 		<div class="selection-reveal"><div>
@@ -197,9 +197,9 @@
 			<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<div class="flex flex-wrap items-center gap-2">
 					<h3 class="text-sm font-semibold">${selectionSummaryLabel}</h3>
-					<span class="badge badge-info badge-outline" data-trade-realized-selection-count></span>
+					<span class="badge badge-info badge-outline badge-sm" data-trade-realized-selection-count></span>
 				</div>
-				<button type="button" class="btn btn-ghost btn-xs self-start" data-trade-realized-clear>${selectionClearLabel}</button>
+				<button type="button" class="btn btn-xs self-start btn-outline" data-trade-realized-clear>${selectionClearLabel}</button>
 			</div>
 			<div class="mt-3 grid gap-3 sm:grid-cols-4">
 				<div class="rounded-box bg-base-100/80 px-3 py-2">
@@ -216,14 +216,14 @@
 				</div>
 				<div class="rounded-box bg-base-100/80 px-3 py-2">
 					<div class="text-xs text-base-content/60">${returnRateLabel}</div>
-					<div class="mt-1 font-mono font-semibold" data-trade-realized-sel-rate title="${rateNoneLabel}"><span aria-hidden="true">-</span><span class="sr-only">${rateNoneLabel}</span></div>
+					<div class="mt-1 font-mono font-semibold tooltip" data-trade-realized-sel-rate data-tip="${rateNoneLabel}"><span aria-hidden="true">-</span><span class="sr-only">${rateNoneLabel}</span></div>
 				</div>
 			</div>
 		</div>
 		</div></div>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto table-head-sticky-xl", body = @`
-			<table class="table table-sm w-full" aria-label="${byStockSectionLabel}">
-				<thead class="bg-base-200">
+			<table class="table data-table w-full" aria-label="${byStockSectionLabel}">
+				<thead>
 					<tr>
 						<th scope="col">${stockLabel}</th>
 						<th scope="col" class="text-right">${soldCostLabel}</th>
@@ -253,15 +253,15 @@
 						data-net="${itemNet.toPlainString()}"
 						data-sold-cost="${itemSoldCost.toPlainString()}">
 						<th scope="row" class="font-semibold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(itemSoldCost)}</td>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO)}</td>
-						<td class="text-right font-bold font-mono amount-value ${itemPositive ? "text-profit" : "text-loss"}">
+						<td class="text-right amount-value">${decimalFormat.format(itemSoldCost)}</td>
+						<td class="text-right amount-value">${decimalFormat.format(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO)}</td>
+						<td class="text-right font-bold amount-value ${itemPositive ? "text-profit" : "text-loss"}">
 							${StockFormatUtil.signedWon(StockFormatUtil.displayWon(itemNet))}
 						</td>
 						@if(itemHasRate)
-						<td class="text-right font-mono font-semibold ${StockFormatUtil.rateTone(itemRate, 2)}">${StockFormatUtil.signedPct(itemRate, 2)}</td>
+						<td class="text-right font-semibold ${StockFormatUtil.rateTone(itemRate, 2)}">${StockFormatUtil.signedPct(itemRate, 2)}</td>
 						@else
-						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
+						<td class="text-right"><span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
 					</tr>
 				@endfor
@@ -269,13 +269,13 @@
 				<tfoot>
 					<tr class="border-t-2 border-base-content/20 font-semibold" data-realized-total>
 						<th scope="row">${totalLabel}</th>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(stockTotalSoldCost)}</td>
-						<td class="text-right font-mono amount-value">${decimalFormat.format(stockTotalSell)}</td>
-						<td class="text-right font-mono amount-value ${StockFormatUtil.amountTone(stockTotalNet)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockTotalNet))}</td>
+						<td class="text-right amount-value">${decimalFormat.format(stockTotalSoldCost)}</td>
+						<td class="text-right amount-value">${decimalFormat.format(stockTotalSell)}</td>
+						<td class="text-right amount-value ${StockFormatUtil.amountTone(stockTotalNet)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockTotalNet))}</td>
 						@if(stockTotalSoldCost.signum() > 0)
-						<td class="text-right font-mono">${StockFormatUtil.signedPct(stockTotalNet.doubleValue() / stockTotalSoldCost.doubleValue() * 100, 2)}</td>
+						<td class="text-right">${StockFormatUtil.signedPct(stockTotalNet.doubleValue() / stockTotalSoldCost.doubleValue() * 100, 2)}</td>
 						@else
-						<td class="text-right font-mono"><span class="text-base-content/60" aria-hidden="true" title="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
+						<td class="text-right"><span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${rateNoneLabel}">-</span><span class="sr-only">${rateNoneLabel}</span></td>
 						@endif
 					</tr>
 				</tfoot>

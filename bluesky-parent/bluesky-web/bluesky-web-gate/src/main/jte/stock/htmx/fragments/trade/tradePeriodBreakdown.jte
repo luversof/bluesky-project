@@ -42,11 +42,11 @@
 @if(tradePeriods != null && tradePeriods.size() > 1)
 	@template._components.ui.card(cssClass = "mb-4", bodyClass = "gap-3", body = @`
 			<div class="space-y-1">
-				<h3 class="card-title text-base" data-page-section>${title}</h3>
+				<h3 class="card-title" data-page-section>${title}</h3>
 				<p class="text-xs text-base-content/60">${description}</p>
 			</div>
 			<div class="overflow-x-auto">
-				<table class="table table-zebra table-sm whitespace-nowrap" data-trade-breakdown="${unit}" aria-label="${title}">
+				<table class="table data-table" data-trade-breakdown="${unit}" aria-label="${title}">
 					<thead>
 						<tr>
 							<th scope="col">${periodLabel}</th>
@@ -77,14 +77,14 @@
 									@if(row.buyAmount().signum() != 0)
 										<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.buyAmount())}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(row.sellAmount().signum() != 0)
 										<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.sellAmount())}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<%-- 수수료·거래세는 나간 돈이라 부호를 붙이지 않고 금액만 적는다. --%>
@@ -92,20 +92,20 @@
 									@if(row.fee().signum() != 0)
 										<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.fee())}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									@if(row.tax().signum() != 0)
 										<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(row.tax())}</span>
 									@else
-										<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 									@endif
 								</td>
 								<td class="text-right tabular-nums">
 									<%-- 판 것이 없으면 실현손익은 0 이 아니라 '없음' 이다. 0 원과 뜻이 다르다. --%>
 									@if(row.sellCount() == 0)
-										<span class="text-base-content/60" aria-hidden="true" title="${noSaleTitle}">-</span><span class="sr-only">${noSaleTitle}</span>
+										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${noSaleTitle}">-</span><span class="sr-only">${noSaleTitle}</span>
 									@else
 										<span class="amount-value font-semibold ${realizedUp ? "text-profit" : "text-loss"}">${realized.signum() == 0 ? "" : (realizedUp ? "+" : "-")}&#8361;${amountFormat.format(realized.abs())}</span>
 									@endif
@@ -132,35 +132,35 @@
 								@if(totals.buyAmount().signum() != 0)
 									<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(totals.buyAmount())}</span>
 								@else
-									<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
+									<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
 								@if(totals.sellAmount().signum() != 0)
 									<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(totals.sellAmount())}</span>
 								@else
-									<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
+									<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
 								@if(totals.fee().signum() != 0)
 									<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(totals.fee())}</span>
 								@else
-									<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
+									<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
 								@if(totals.tax().signum() != 0)
 									<span class="amount-value text-base-content/70">&#8361;${amountFormat.format(totals.tax())}</span>
 								@else
-									<span class="text-base-content/60" aria-hidden="true" title="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
+									<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>
 								@endif
 							</td>
 							<td class="text-right tabular-nums">
 								<%-- 고른 기간에 판 것이 하나도 없으면 실현손익은 0 이 아니라 '없음' 이다.
 									 그 까닭은 줄과 마찬가지로 마우스와 낭독기 모두에 닿아야 한다 - 여기만 맨 '-' 였다. --%>
 								@if(totals.sellCount() == 0)
-									<span class="text-base-content/60" aria-hidden="true" title="${noSaleTitle}">-</span><span class="sr-only">${noSaleTitle}</span>
+									<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${noSaleTitle}">-</span><span class="sr-only">${noSaleTitle}</span>
 								@else
 									<span class="amount-value font-semibold ${totalRealizedUp ? "text-profit" : "text-loss"}">${totals.realizedProfit().signum() == 0 ? "" : (totalRealizedUp ? "+" : "-")}&#8361;${amountFormat.format(totals.realizedProfit().abs())}</span>
 								@endif
@@ -174,7 +174,7 @@
      그렇게 한다. 실측 2026-09-16(빈 기간): 이 표만 제목째 사라져 같은 화면의 다른 구역과 어긋났다. --%>
 @elseif(!breakdownNote.isEmpty())
 	@template._components.ui.card(cssClass = "mb-4", bodyClass = "gap-2", body = @`
-			<h3 class="card-title text-base" data-page-section>${title}</h3>
+			<h3 class="card-title" data-page-section>${title}</h3>
 			<p class="text-xs text-base-content/60" data-trade-breakdown-note>${breakdownNote}</p>
 	`)
 @endif

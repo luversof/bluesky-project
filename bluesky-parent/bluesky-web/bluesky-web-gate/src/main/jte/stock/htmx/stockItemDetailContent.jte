@@ -132,7 +132,7 @@
 	@if(stockItem.tags() != null && !stockItem.tags().isEmpty())
 		<div class="flex flex-wrap gap-1.5 -mt-2">
 			@for(String tag : stockItem.tags())
-				<span class="badge badge-sm badge-ghost">${tag}</span>
+				<span class="badge badge-sm badge-outline">${tag}</span>
 			@endfor
 		</div>
 	@endif
@@ -422,8 +422,8 @@
 		@else
 			@template._components.ui.tableCard(body = @`
 				<div class="overflow-x-auto">
-				<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable aria-label="${MessageUtil.getMessage("stock.item.detail.account.holdings.title")}">
-					<thead class="bg-base-200">
+				<table class="table data-table w-full table-pin-rows pin-top-nav" data-sortable aria-label="${MessageUtil.getMessage("stock.item.detail.account.holdings.title")}">
+					<thead>
 						<tr>
 							<th scope="col">${MessageUtil.getMessage("common.label.account")}</th>
 							<th scope="col" class="text-right">${MessageUtil.getMessage("common.label.quantity")}</th>
@@ -449,11 +449,11 @@
 										${holding.accountName() != null ? holding.accountName() : "-"}
 									@endif
 								</th>
-								<td class="text-right font-mono amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
-								<td class="text-right font-mono amount-value hidden sm:table-cell" data-item-account-average-cost>${holding.averageBuyPrice() != null ? String.format("%,d", StockFormatUtil.displayWon(holding.averageBuyPrice())) : "-"}</td>
-								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
-								<td class="text-right font-mono amount-value ${StockFormatUtil.amountTone(acctEvalProfit)}">${StockFormatUtil.signedWon(acctEvalProfit)} <span class="text-xs">(${StockFormatUtil.signedPct(acctEvalRatePct, 1)})</span></td>
-								<td class="text-right font-mono text-base-content/70" style="${StockFormatUtil.weightBarStyle(BigDecimal.valueOf(acctWeightPct))}">${StockFormatUtil.pct(acctWeightPct, 1)}</td>
+								<td class="text-right amount-value">${String.format("%,d", holding.holdingQuantity())}</td>
+								<td class="text-right amount-value hidden sm:table-cell" data-item-account-average-cost>${holding.averageBuyPrice() != null ? String.format("%,d", StockFormatUtil.displayWon(holding.averageBuyPrice())) : "-"}</td>
+								<td class="text-right amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
+								<td class="text-right amount-value ${StockFormatUtil.amountTone(acctEvalProfit)}">${StockFormatUtil.signedWon(acctEvalProfit)} <span class="text-xs">(${StockFormatUtil.signedPct(acctEvalRatePct, 1)})</span></td>
+								<td class="text-right text-base-content/70" style="${StockFormatUtil.weightBarStyle(BigDecimal.valueOf(acctWeightPct))}">${StockFormatUtil.pct(acctWeightPct, 1)}</td>
 							</tr>
 						@endfor
 					</tbody>
@@ -473,8 +473,8 @@
 		@else
 			@template._components.ui.tableCard(body = @`
 				<div class="overflow-x-auto table-head-sticky-xl">
-				<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable aria-label="${MessageUtil.getMessage("stock.page.trade.title")}">
-					<thead class="bg-base-200">
+				<table class="table data-table w-full table-pin-rows pin-top-nav" data-sortable aria-label="${MessageUtil.getMessage("stock.page.trade.title")}">
+					<thead>
 						<tr>
 							<th scope="col">${MessageUtil.getMessage("common.label.date")}</th>
 							<th scope="col">${MessageUtil.getMessage("stock.item.detail.col.type")}</th>
@@ -491,12 +491,12 @@
 							!{long fees = (trade.fee() != null ? trade.fee().longValue() : 0) + (trade.tax() != null ? trade.tax().longValue() : 0);}
 							<tr>
 								<td class="tabular-nums whitespace-nowrap date-whole">${trade.tradeDate() != null ? StockZoneUtil.recordedDate(trade.tradeDate(), zone).toString() : "-"}</td>
-								<td><span class="badge badge-sm ${isBuy ? "badge-error badge-outline" : "badge-info badge-outline"}">${isBuy ? MessageUtil.getMessage("stock.trade.label.buy") : MessageUtil.getMessage("stock.trade.label.sell")}</span></td>
-								<td class="text-right font-mono amount-value">${String.format("%,d", trade.quantity())}</td>
-								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(trade.price()))}</td>
-								<td class="text-right font-mono amount-value">${String.format("%,d", StockFormatUtil.displayWon(trade.amount()))}</td>
-								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60">${String.format("%,d", fees)}</td>
-								<td class="text-right font-mono amount-value ${!isBuy && trade.realizedProfit() != null ? StockFormatUtil.amountTone(trade.realizedProfit()) : "opacity-40"}" title="${!isBuy && trade.realizedProfit() != null ? null : MessageUtil.getMessage("stock.trade.realized.none.buy")}" aria-label="${!isBuy && trade.realizedProfit() != null ? null : MessageUtil.getMessage("stock.trade.realized.none.buy")}">${!isBuy && trade.realizedProfit() != null ? StockFormatUtil.signedWon(StockFormatUtil.displayWon(trade.realizedProfit())) : "-"}</td>
+								<td><span class="badge badge-sm badge-outline ${isBuy ? "badge-error badge-outline" : "badge-info badge-outline"}">${isBuy ? MessageUtil.getMessage("stock.trade.label.buy") : MessageUtil.getMessage("stock.trade.label.sell")}</span></td>
+								<td class="text-right amount-value">${String.format("%,d", trade.quantity())}</td>
+								<td class="text-right amount-value">${String.format("%,d", StockFormatUtil.displayWon(trade.price()))}</td>
+								<td class="text-right amount-value">${String.format("%,d", StockFormatUtil.displayWon(trade.amount()))}</td>
+								<td class="text-right amount-value hidden sm:table-cell opacity-60">${String.format("%,d", fees)}</td>
+								<td class="text-right amount-value ${!isBuy && trade.realizedProfit() != null ? StockFormatUtil.amountTone(trade.realizedProfit()) : "opacity-40"} tooltip" data-tip="${!isBuy && trade.realizedProfit() != null ? null : MessageUtil.getMessage("stock.trade.realized.none.buy")}" aria-label="${!isBuy && trade.realizedProfit() != null ? null : MessageUtil.getMessage("stock.trade.realized.none.buy")}">${!isBuy && trade.realizedProfit() != null ? StockFormatUtil.signedWon(StockFormatUtil.displayWon(trade.realizedProfit())) : "-"}</td>
 							</tr>
 						@endfor
 					</tbody>
@@ -516,8 +516,8 @@
 		@else
 			@template._components.ui.tableCard(body = @`
 				<div class="overflow-x-auto table-head-sticky-xl">
-				<table class="table table-sm w-full table-pin-rows pin-top-nav" data-sortable aria-label="${MessageUtil.getMessage("stock.page.dividend.title")}">
-					<thead class="bg-base-200">
+				<table class="table data-table w-full table-pin-rows pin-top-nav" data-sortable aria-label="${MessageUtil.getMessage("stock.page.dividend.title")}">
+					<thead>
 						<tr>
 							<th scope="col">${MessageUtil.getMessage("common.label.date")}</th>
 							<th scope="col" class="text-right hidden sm:table-cell">${MessageUtil.getMessage("stock.item.detail.div.gross")}</th>
@@ -530,9 +530,9 @@
 							!{ boolean dividendTaxZero = dividend.tax() == null || dividend.tax().signum() == 0; }
 							<tr>
 								<td class="tabular-nums whitespace-nowrap date-whole">${dividend.payDate() != null ? StockZoneUtil.recordedDate(dividend.payDate(), zone).toString() : "-"}</td>
-								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
-								<td class="text-right font-mono amount-value hidden sm:table-cell opacity-60" title="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
-								<td class="text-right font-mono font-bold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>
+								<td class="text-right amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
+								<td class="text-right amount-value hidden sm:table-cell opacity-60 tooltip" data-tip="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
+								<td class="text-right font-bold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>
 							</tr>
 						@endfor
 					</tbody>

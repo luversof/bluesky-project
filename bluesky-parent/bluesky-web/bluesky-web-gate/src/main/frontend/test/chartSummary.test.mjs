@@ -155,37 +155,39 @@ test("영어도 같은 규칙", () => {
 	assert.equal(hiddenText, "Principal: 2 points (amounts hidden)");
 });
 
-// 근거 문구(title + sr-only)의 금액도 가린다.
+// 근거 문구(툴팁 data-tip + sr-only)의 금액도 가린다. 2026-11-10 브라우저 title 을 공용 툴팁(.tooltip + data-tip)으로 바꿨다.
 //
 // 실측 2026-09-11: 가리기를 켠 채 대시보드 합산 수익률에 hover 하면 "수익률 = 총 합산 수익 1,271,376,178 ÷ 기준 원금 642,..."
 // 가 그대로 떴다(그 요소는 백분율이라 가림 대상이 아니었다).
 // 흐리게 하는 자리(.amount-value)에 붙은 title 은 흐림이 안 걸린다 - 켜 놓고 hover 하면 정확한 금액이 그대로 뜬다.
 // 실측 2026-09-12(가리기 켜고 9 화면): 31 개가 그랬다(대시보드 "1,622,109,770원" · 종목 상세 "1,359,088,500원" 등).
 // 템플릿 52 곳이 이런 title 을 내므로 하나씩 표식을 다는 대신 공통 처리에서 가린다.
-test("가리기를 켜면 amount-value 의 title 도 가려지고, 끄면 되돌아온다", () => {
+test("가리기를 켜면 amount-value 의 툴팁 문구도 가려지고, 끄면 되돌아온다", () => {
 	const original = "1,622,109,770원";
 	// srExact 짝(sr-only)도 같은 값을 낭독기에 준다 - 2026-09-12 에 title 만 가렸더니 대시보드 10 곳에서
 	// title 은 "가림" 인데 sr-only 는 "1,622,109,770원" 그대로였다.
 	const sr = { textContent: original };
 	const el = {
-		attrs: { title: original },
+		attrs: { "data-tip": original },
 		getAttribute(n) { return this.attrs[n] ?? null; },
+		hasAttribute(n) { return n in this.attrs; },
+		classList: { contains: (c) => c === "tooltip" },
 		setAttribute(n, v) { this.attrs[n] = v; },
 		querySelector(sel) { return sel === ".sr-only" ? sr : null; },
 	};
-	document.querySelectorAll = (sel) => (sel === ".amount-value[title]" ? [el] : []);
+	document.querySelectorAll = (sel) => (sel === ".amount-value[data-tip], .tooltip[data-tip]:has(> .amount-value)" ? [el] : []);
 	document.documentElement.lang = "ko-KR";
 
 	document.documentElement.classList.contains = (name) => name === "hide-amounts";
 	assert.equal(mod.maskAmountBasis(document), 1);
-	assert.ok(!/1,622,109,770/.test(el.attrs.title), el.attrs.title);
+	assert.ok(!/1,622,109,770/.test(el.attrs["data-tip"]), el.attrs["data-tip"]);
 	assert.equal(el.attrs["data-amount-title"], original, "되돌리려면 원본을 남겨야 한다");
-	assert.equal(el.attrs.title, "가림", "숫자에 붙은 원도 같이 가려 \"가림원\" 이 되지 않게 한다");
+	assert.equal(el.attrs["data-tip"], "가림", "숫자에 붙은 원도 같이 가려 \"가림원\" 이 되지 않게 한다");
 	assert.equal(sr.textContent, "가림", "낭독기가 읽는 짝도 같이 가린다");
 
 	document.documentElement.classList.contains = () => false;
 	assert.equal(mod.maskAmountBasis(document), 1);
-	assert.equal(el.attrs.title, original, "끄면 원래 금액으로 돌아온다");
+	assert.equal(el.attrs["data-tip"], original, "끄면 원래 금액으로 돌아온다");
 	assert.equal(sr.textContent, original, "sr-only 도 되돌아온다");
 	document.querySelectorAll = () => [];
 });
@@ -194,8 +196,10 @@ test("가리기를 켜면 근거 문구의 금액만 가려지고 백분율은 �
 	const original = "수익률 = 총 합산 수익 1,271,376,178 ÷ 기준 원금 642,014,000 = +12.34%. 기준 원금은 ...";
 	const sr = { textContent: original };
 	const el = {
-		attrs: { title: original, "data-amount-basis": original },
+		attrs: { "data-tip": original, "data-amount-basis": original },
 		getAttribute(n) { return this.attrs[n] ?? null; },
+		hasAttribute(n) { return n in this.attrs; },
+		classList: { contains: (c) => c === "tooltip" },
 		setAttribute(n, v) { this.attrs[n] = v; },
 		querySelector(sel) { return sel === ".sr-only" ? sr : null; },
 	};
@@ -204,14 +208,14 @@ test("가리기를 켜면 근거 문구의 금액만 가려지고 백분율은 �
 
 	document.documentElement.classList.contains = (name) => name === "hide-amounts";
 	assert.equal(mod.maskAmountBasis(document), 1);
-	assert.ok(!/1,271,376,178/.test(el.attrs.title), el.attrs.title);
-	assert.ok(!/642,014,000/.test(el.attrs.title), el.attrs.title);
-	assert.ok(el.attrs.title.includes("+12.34%"), "백분율은 화면에서도 안 가린다");
-	assert.equal(sr.textContent, el.attrs.title, "보조기술이 읽는 값도 같이 가린다");
+	assert.ok(!/1,271,376,178/.test(el.attrs["data-tip"]), el.attrs["data-tip"]);
+	assert.ok(!/642,014,000/.test(el.attrs["data-tip"]), el.attrs["data-tip"]);
+	assert.ok(el.attrs["data-tip"].includes("+12.34%"), "백분율은 화면에서도 안 가린다");
+	assert.equal(sr.textContent, el.attrs["data-tip"], "보조기술이 읽는 값도 같이 가린다");
 
 	document.documentElement.classList.contains = () => false;
 	assert.equal(mod.maskAmountBasis(document), 1);
-	assert.equal(el.attrs.title, original, "끄면 원래 문구로 돌아온다");
+	assert.equal(el.attrs["data-tip"], original, "끄면 원래 문구로 돌아온다");
 	assert.equal(sr.textContent, original);
 	document.querySelectorAll = () => [];
 });

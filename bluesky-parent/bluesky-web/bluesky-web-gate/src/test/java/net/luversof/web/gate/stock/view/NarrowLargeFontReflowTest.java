@@ -107,7 +107,7 @@ class NarrowLargeFontReflowTest {
   void 월배당_반영_단추는_단어를_지키며_줄을_바꾼다() throws IOException {
     assertThat(squash(read("src/main/jte/stock/fragments/monthlyDividendSimulator.jte")))
         .contains(
-            "class=\"btn btn-primary w-full max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere\"");
+            "class=\"btn btn-primary w-full max-sm:h-auto max-sm:min-h-0 max-sm:py-2 max-sm:whitespace-normal max-sm:break-keep max-sm:wrap-anywhere btn-sm\"");
   }
 
   /**
@@ -125,7 +125,7 @@ class NarrowLargeFontReflowTest {
             "<div class=\"rounded-box border border-base-300 bg-base-200/40 p-2 sm:p-4 space-y-3\" data-etf-picks>")
         .contains("<div class=\"rounded-box bg-base-100 p-2 sm:p-3 space-y-1\" data-etf-pick ")
         .contains(
-            "<div class=\"flex flex-wrap items-baseline gap-2\"> <span class=\"badge badge-sm badge-neutral\" data-pick-rank>")
+            "<div class=\"flex flex-wrap items-baseline gap-2\"> <span class=\"badge badge-sm badge-neutral badge-outline\" data-pick-rank>")
         .contains(
             "<div class=\"flex flex-wrap items-baseline gap-1\"> <span class=\"text-lg font-semibold tabular-nums\" data-pick-score>")
         .contains(

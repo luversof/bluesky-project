@@ -348,7 +348,8 @@ class DividendYieldHeadlineRenderTest {
         headCells.add(cells.group(1));
       }
       for (int i = 0; i < headCells.size(); i++) {
-        if (headCells.get(i).contains(">netAmountLabel<")) {
+        // 정렬 머리글은 <span>이름</span>, 연도별 머리글은 "이름 <ⓘ 툴팁>" 이다(2026-11-10 툴팁 통합).
+        if (headCells.get(i).matches("(?s)(.*>)?\\s*netAmountLabel\\s*<.*")) {
           dividendAt = i;
         }
       }

@@ -67,7 +67,7 @@ class RealizedRateNoneReasonTest {
     String template = template();
 
     // 계좌별 본문·합계 + 종목별 본문·합계 = 넷.
-    assertThat(countOf(template, "title=" + QUOTE + "${rateNoneLabel}" + QUOTE + ">-</span>"))
+    assertThat(countOf(template, "data-tip=" + QUOTE + "${rateNoneLabel}" + QUOTE + ">-</span>"))
         .as("표의 빈 수익률 칸에 단 마우스 까닭")
         .isEqualTo(4);
     // 표 넷 + 선택 합산 둘.
@@ -93,7 +93,7 @@ class RealizedRateNoneReasonTest {
     String template = template();
 
     assertThat(template).as("대비 미달 표기가 남아 있다").doesNotContain("font-mono opacity-40");
-    assertThat(countOf(template, "<span class=" + QUOTE + "text-base-content/60" + QUOTE))
+    assertThat(countOf(template, "<span class=" + QUOTE + "text-base-content/60"))
         .as("amountCell 과 같은 대비로 적은 칸")
         .isGreaterThanOrEqualTo(4);
   }

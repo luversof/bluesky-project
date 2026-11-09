@@ -167,8 +167,8 @@
 			}
 			@if(coreHoldingExcluded)
 				<div class="mb-2 flex flex-wrap items-center gap-2" data-exclude-core="active">
-					<span class="badge badge-warning badge-outline">${coreExcludingLabel}</span>
-					<button type="button" class="btn btn-xs btn-ghost" data-exclude-core-clear
+					<span class="badge badge-warning badge-outline badge-sm">${coreExcludingLabel}</span>
+					<button type="button" class="btn btn-xs btn-outline" data-exclude-core-clear
 							hx-get="/stock/htmx/asset-growth/view" hx-include="#assetGrowthSearchForm" hx-vals='{"excludeCore": "false"}'
 							hx-target="#assetGrowthFragment" hx-select="#assetGrowthFragment" hx-swap="outerHTML">${MessageUtil.getMessage("stock.asset.growth.exclude.core.clear")}</button>
 				</div>
@@ -211,7 +211,7 @@
 
 					<div class="form-control w-full">
 						<label class="label p-1" for="filterAccountSelect"><span class="label-text text-xs">${accountLabel}</span></label>
-						<select id="filterAccountSelect" name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
+						<select id="filterAccountSelect" name="accountIdList" class="select select-bordered w-full max-h-40 overflow-auto select-sm" multiple size="${Math.min(accountList != null ? accountList.size() + 1 : 1, 7)}" data-max-visible="7">
 							<option value="">${allLabel}</option>
 							@if(accountList != null)
 								@for(Account account : accountList)
@@ -223,7 +223,7 @@
 
 					<div class="form-control w-full">
 						<label class="label p-1" for="filterStockSelect"><span class="label-text text-xs">${stockNameLabel}</span></label>
-						<select id="filterStockSelect" name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
+						<select id="filterStockSelect" name="stockItemIdList" class="select select-bordered w-full max-h-40 overflow-auto bg-base-100 select-sm" multiple size="${Math.min(stockItemList != null ? stockItemList.size() + 1 : 1, 7)}" data-max-visible="7">
 							<option value="">${allLabel}</option>
 							@if(stockItemList != null)
 								@for(StockItem stockItem : stockItemList)
@@ -254,7 +254,7 @@
 								hx-select="#assetGrowthFragment"
 								hx-swap="outerHTML"
 								hx-include="#assetGrowthSearchForm">${searchLabel}</button>
-							<button type="button" class="btn btn-sm text-xs"
+							<button type="button" class="btn btn-sm text-xs btn-outline"
 								hx-get="/stock/htmx/asset-growth/view"
 								hx-target="#assetGrowthFragment"
 								hx-select="#assetGrowthFragment"
@@ -401,7 +401,7 @@
 						<span class="label-text text-xs">${MessageUtil.getMessage("stock.holdings.snapshot.date.label")}</span>
 						<input type="date" name="date" required class="input input-sm input-bordered max-w-full">
 					</label>
-					<button type="submit" class="btn btn-sm">${MessageUtil.getMessage("common.button.search")}</button>
+					<button type="submit" class="btn btn-sm btn-outline">${MessageUtil.getMessage("common.button.search")}</button>
 				</form>
 				<div id="holdings-snapshot-container"></div>
 				<%-- 매매 이력은 이 응답과 같은 기간으로 서버에서 함께 계산해 넣는다(추가 왕복 없음).

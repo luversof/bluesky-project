@@ -16,7 +16,7 @@
 <%-- outerHTML 스왑 대상이므로 데이터 유무와 무관하게 항상 최상위 요소(카드)를 출력한다 --%>
 @template._components.ui.card(cssClass = "h-full", body = @`
 	<div class="flex justify-between items-center mb-2">
-		<h2 class="card-title text-base m-0">${titleLabel}</h2>
+		<h2 class="card-title m-0">${titleLabel}</h2>
 		<a href="/stock/analytics" class="link link-hover text-xs">${assetStatusLabel} <span aria-hidden="true">→</span></a>
 	</div>
 	@if(!allocationRows.isEmpty())
@@ -46,25 +46,25 @@
 			!{String barColor = allocationBarColors[allocationRowIndex % allocationBarColors.length];}
 			<div class="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
 				@if(row.stockItemId() != null)
-				<a href="${StockDetailLinkUtil.item(row.stockItemId().toString())}" class="link link-hover truncate w-24 sm:w-28 shrink-0" title="${row.stockItemName()}">${row.stockItemName()}</a>
+				<span class="max-w-full min-w-0 w-24 sm:w-28 shrink-0 inline-block tooltip" data-tip="${row.stockItemName()}"><a href="${StockDetailLinkUtil.item(row.stockItemId().toString())}" class="link link-hover truncate block">${row.stockItemName()}</a></span>
 				@else
-				<span class="truncate w-24 sm:w-28 shrink-0" title="${row.stockItemName()}">${row.stockItemName()}</span>
+				<span class="max-w-full min-w-0 w-24 sm:w-28 shrink-0 inline-block tooltip" data-tip="${row.stockItemName()}"><span class="truncate block">${row.stockItemName()}</span></span>
 				@endif
 				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200 max-[400px]:hidden">
 					<div class="h-2 rounded-full" style="width: ${allocationShown.get(allocationRowIndex).replace("%", "")}%; background: ${barColor}"></div>
 				</div>
 				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${allocationShown.get(allocationRowIndex)}</span>
-				<span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0" title="${StockFormatUtil.fullKrw(row.amount())}">${String.format("%,d", row.amount())}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(row.amount()), visible = String.format("%,d", row.amount()))</span>
+				<span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(row.amount())}">${String.format("%,d", row.amount())}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(row.amount()), visible = String.format("%,d", row.amount()))</span>
 			</div>
 		@endfor
 		@if(othersRow != null)
 			<div class="flex flex-wrap items-center justify-between gap-2 text-sm py-1.5 border-b border-base-200 last:border-0">
-				<span class="truncate w-24 sm:w-28 shrink-0 text-base-content/60" title="${othersRow.stockItemName()}">${othersRow.stockItemName()}</span>
+				<span class="max-w-full min-w-0 w-24 sm:w-28 shrink-0 inline-block tooltip" data-tip="${othersRow.stockItemName()}"><span class="truncate text-base-content/60 block">${othersRow.stockItemName()}</span></span>
 				<div class="flex-1 min-w-0 h-2 rounded-full bg-base-200 max-[400px]:hidden">
 					<div class="h-2 rounded-full" style="width: ${allocationShown.get(allocationRows.size()).replace("%", "")}%; background: rgba(156,163,175,0.8)"></div>
 				</div>
 				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${allocationShown.get(allocationRows.size())}</span>
-				<span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0" title="${StockFormatUtil.fullKrw(othersRow.amount())}">${String.format("%,d", othersRow.amount())}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(othersRow.amount()), visible = String.format("%,d", othersRow.amount()))</span>
+				<span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(othersRow.amount())}">${String.format("%,d", othersRow.amount())}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(othersRow.amount()), visible = String.format("%,d", othersRow.amount()))</span>
 			</div>
 		@endif
 	</div>

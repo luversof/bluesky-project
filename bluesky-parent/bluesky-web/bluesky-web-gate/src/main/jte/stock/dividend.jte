@@ -63,7 +63,7 @@
 
 			<div class="min-h-[200px]" data-params-from-query="true" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex items-center gap-2 text-base-content/60">
-					<span class="loading loading-spinner loading-sm text-primary"></span>
+					@template._components.ui.spinner(size = "sm")
 					<span>${MessageUtil.getMessage("common.message.loading")}</span>
 				</div>
 			</div>

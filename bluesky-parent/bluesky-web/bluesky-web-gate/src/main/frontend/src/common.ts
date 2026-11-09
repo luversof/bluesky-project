@@ -1224,7 +1224,8 @@ document.addEventListener("htmx:afterSettle", () => hideDecorativeSvgs());
 const TOOLTIP_DISMISSED = "tooltip-dismissed";
 function dismissOpenTooltips(root: ParentNode = document): number {
 	let n = 0;
-	root.querySelectorAll(".tooltip:hover, .tooltip:focus-visible").forEach((el) => {
+	// 안쪽 링크가 초점을 받는 툴팁(tooltip.jte focusable=false)은 감싼 칸이 아니라 안쪽이 :focus-visible 이다.
+	root.querySelectorAll(".tooltip:hover, .tooltip:focus-visible, .tooltip[data-tooltip-inner-focus]:has(:focus-visible)").forEach((el) => {
 		if (!el.classList.contains(TOOLTIP_DISMISSED)) {
 			el.classList.add(TOOLTIP_DISMISSED);
 			n++;
@@ -1242,7 +1243,10 @@ document.addEventListener("keydown", (event) => {
 });
 // mouseleave/focusout 은 버블링하지 않으므로 캡처로 받는다.
 document.addEventListener("mouseleave", (event) => restoreTooltip(event.target), true);
-document.addEventListener("focusout", (event) => restoreTooltip(event.target), true);
+document.addEventListener("focusout", (event) => {
+	const target = event.target;
+	restoreTooltip(target instanceof Element ? (target.closest("[data-tooltip-inner-focus]") ?? target) : target);
+}, true);
 (globalThis as any).__tooltipInternals = { dismissOpenTooltips, restoreTooltip, TOOLTIP_DISMISSED };
 
 // 말풍선은 트리거 가운데에 맞춰 펼쳐지는데 뷰포트 충돌 회피가 없다. 실측 2026-09-11(활동 화면):
@@ -1952,7 +1956,7 @@ function resyncChartSummaries(root: ParentNode = document): number {
 	return n;
 }
 // 근거 문구는 백분율 옆에 붙어 있어 요소 자체는 가림 대상이 아니다 - 그래서 가리기를 켠 채 hover 하면
-// title 로 정확한 금액이 그대로 보였다(실측 2026-09-11, 대시보드 합산 수익률: "총 합산 수익 1,271,376,178 ...").
+// 툴팁(예전 title, 2026-11-10 부터 공용 툴팁 data-tip)으로 정확한 금액이 그대로 보였다(실측 2026-09-11, 대시보드 합산 수익률: "총 합산 수익 1,271,376,178 ...").
 // 자릿수 구분이 있는 수만 가린다(백분율은 화면에서도 안 가리므로 그대로 둔다).
 // 숫자에 바로 붙은 "원" 도 같이 삼킨다 - 안 그러면 "1,622,109,770원" 이 "가림원" 이 된다(실측 2026-09-12).
 // 띄어쓰기가 있으면 삼키지 않는다("642,014,000 원금" 의 원금이 깨지지 않게).
@@ -1973,20 +1977,22 @@ function maskAmountBasis(root: ParentNode = document): number {
 			n++;
 			return;
 		}
-		if (el.getAttribute("title") !== next) el.setAttribute("title", next);
+		// 툴팁 문구는 공용 툴팁(.tooltip + data-tip) 자리에만 둔다 - 툴팁이 없는 칸에 문구만 붙이면 아무 데도 안 보인다.
+		if ((el.hasAttribute("data-tip") || el.classList.contains("tooltip")) && el.getAttribute("data-tip") !== next) el.setAttribute("data-tip", next);
 		const sr = el.querySelector(".sr-only");
 		if (sr && sr.textContent !== next) sr.textContent = next;
 		n++;
 	});
-	// 흐리게 하는 자리(.amount-value)에 붙은 title 은 흐림이 안 걸린다 - 켜 놓고 hover 하면 정확한 금액이 그대로 뜬다.
+	// 흐리게 하는 자리(.amount-value)에 붙은 툴팁 문구(data-tip, 예전 title)는 흐림이 안 걸린다 - 켜 놓고 hover 하면 정확한 금액이 그대로 뜬다.
 	// 실측 2026-09-12(가리기 켜고 9 화면): 31 개가 그랬다(대시보드 "1,622,109,770원" · 종목 상세 "1,359,088,500원" 등).
 	// 템플릿 52 곳이 이런 title 을 내므로 하나씩 표식을 다는 대신 여기서 한 번에 가린다. 원본은 되돌리려고 남겨 둔다.
-	root.querySelectorAll(".amount-value[title]").forEach((el) => {
-		const kept = el.getAttribute("data-amount-title") ?? el.getAttribute("title");
+	// 글자를 자르는(truncate) 금액은 말풍선이 잘리지 않게 바깥 감싸개가 툴팁이다 - 그 감싸개도 같이 가린다.
+	root.querySelectorAll(".amount-value[data-tip], .tooltip[data-tip]:has(> .amount-value)").forEach((el) => {
+		const kept = el.getAttribute("data-amount-title") ?? el.getAttribute("data-tip");
 		if (kept === null) return;
 		if (el.getAttribute("data-amount-title") === null) el.setAttribute("data-amount-title", kept);
 		const next = hidden ? kept.replace(AMOUNT_IN_TEXT, mask) : kept;
-		if (el.getAttribute("title") !== next) el.setAttribute("title", next);
+		if (el.getAttribute("data-tip") !== next) el.setAttribute("data-tip", next);
 		// 같은 값을 낭독기에 주는 sr-only 짝도 함께 가린다 - 2026-09-12 에 title 만 가렸더니
 		// 대시보드 10 곳에서 title 은 "가림" 인데 sr-only 는 "1,622,109,770원" 그대로였다.
 		// data-amount-basis 쪽은 예전부터 둘을 같이 가려 왔다 - 규칙을 맞춘다.

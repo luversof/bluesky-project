@@ -8,7 +8,7 @@
 <%-- 갈 곳이 하나뿐(=지금 보는 것)이거나 없으면 전환기가 할 일이 없다. --%>
 @if(entries != null && entries.size() > 1)
 	<div class="dropdown dropdown-end" data-detail-nav>
-		<div tabindex="0" role="button" aria-haspopup="menu" class="btn btn-sm btn-ghost gap-1 max-sm:h-auto max-sm:min-h-0 max-sm:py-2">
+		<div tabindex="0" role="button" aria-haspopup="menu" class="btn btn-sm gap-1 max-sm:h-auto max-sm:min-h-0 max-sm:py-2 btn-outline">
 			<%-- 영어 "Other accounts" 가 글꼴 200% 에서 300px 을 넘겨 320px 화면을 밀었다(2026-09-30) - 좁은 폭에서는 줄을 바꾼다. --%>
 			<span class="whitespace-nowrap max-sm:whitespace-normal max-sm:break-keep">${switchLabel}</span>
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
@@ -21,7 +21,7 @@
 			@for(DetailNavEntry entry : entries)
 				<li>
 					<a href="${entry.href()}" class="${entry.current() ? "active font-semibold" : ""} justify-between gap-3">
-						<span class="truncate" title="${entry.label()}">${entry.label()}</span>
+						<span class="max-w-full min-w-0 inline-block tooltip" data-tip="${entry.label()}"><span class="truncate block">${entry.label()}</span></span>
 						@if(entry.detail() != null && !entry.detail().isEmpty())
 							<span class="amount-value shrink-0 text-[11px] text-base-content/60">${entry.detail()}</span>
 						@endif

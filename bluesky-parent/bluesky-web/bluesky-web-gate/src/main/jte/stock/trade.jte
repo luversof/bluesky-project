@@ -16,7 +16,7 @@
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.trade.title"))
 
 			<div style="min-height:200px;" data-params-from-query="true" hx-get="/stock/htmx/trade/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
-				<span class="loading loading-spinner text-primary"></span>
+				@template._components.ui.spinner()
 			</div>
 		</div>
 	`

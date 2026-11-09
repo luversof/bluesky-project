@@ -54,7 +54,7 @@ class DashMeaningInRowTest {
     assertThat(bareDashSpans(template)).as("까닭 없는 대시").isZero();
 
     // 이 표는 한 행에 다른 까닭이 없다 - 그러니 빈 칸마다 제 뜻을 말해야 한다.
-    int withReason = count(template, "aria-hidden=" + QUOTE + "true" + QUOTE + " title=${");
+    int withReason = count(template, "aria-hidden=" + QUOTE + "true" + QUOTE + " data-tip=${");
     int spoken = count(template, "<span class=" + QUOTE + "sr-only" + QUOTE + ">${");
     assertThat(spoken).as("눈에 보이는 대시마다 낭독되는 짝").isGreaterThanOrEqualTo(withReason);
     assertThat(spoken).as("본문 네 칸 + 합계 세 칸").isGreaterThanOrEqualTo(7);
@@ -76,7 +76,7 @@ class DashMeaningInRowTest {
     assertThat(template).contains("common.total.none");
 
     // 본문 줄의 "-" 는 건드리지 않는다 - 그 까닭은 같은 행의 수익률 칸이 이미 말한다(1KB 예산 결정).
-    assertThat(count(template, "title=" + QUOTE + "${basisMissingTitle.apply(item)}" + QUOTE))
+    assertThat(count(template, "data-tip=" + QUOTE + "${basisMissingTitle.apply(item)}" + QUOTE))
         .as("본문의 까닭은 여전히 한 곳")
         .isEqualTo(1);
   }
@@ -127,12 +127,12 @@ class DashMeaningInRowTest {
     // 금액 0 과 '수익률을 낼 수 없음' 은 다른 말이다 - 둘을 같은 문구로 덮으면 안 된다.
     assertThat(breakdown).contains("common.amount.zero.title");
     assertThat(breakdown).contains("stock.breakdown.return.none");
-    assertThat(count(breakdown, "title=\"${zeroAmountTitle}\"")).as("0 원 칸").isEqualTo(2);
-    assertThat(count(breakdown, "title=\"${rateNoneTitle}\"")).as("수익률 칸").isEqualTo(2);
+    assertThat(count(breakdown, "data-tip=\"${zeroAmountTitle}\"")).as("0 원 칸").isEqualTo(2);
+    assertThat(count(breakdown, "data-tip=\"${rateNoneTitle}\"")).as("수익률 칸").isEqualTo(2);
 
     String contribution = read("src/main/jte/stock/htmx/fragments/stockContributionTable.jte");
     assertThat(contribution).contains("stock.contribution.share.none");
-    assertThat(count(contribution, "title=\"${shareNoneTitle}\"")).as("비중 칸").isEqualTo(3);
+    assertThat(count(contribution, "data-tip=\"${shareNoneTitle}\"")).as("비중 칸").isEqualTo(3);
   }
 
   /** 배당 상세 합계의 빈 칸은 낭독기엔 닿았는데 마우스엔 안 닿았다(aria-label 만 있었다). */
@@ -143,7 +143,10 @@ class DashMeaningInRowTest {
     assertThat(table)
         .as("aria-label 만 달면 마우스 사용자는 왜 비었는지 알 수 없다")
         .doesNotContain("aria-label=\"${noTotalTitle}\"><span aria-hidden=\"true\">-</span>");
-    assertThat(count(table, "<span aria-hidden=\"true\" title=\"${noTotalTitle}\">-</span>"))
+    assertThat(
+            count(
+                table,
+                "<span class=\"tooltip\" aria-hidden=\"true\" data-tip=\"${noTotalTitle}\">-</span>"))
         .as("합계가 성립하지 않는 네 열")
         .isEqualTo(4);
   }
@@ -178,9 +181,9 @@ class DashMeaningInRowTest {
         .as("합계 비중이 까닭 없는 대시다")
         .doesNotContain("signum() > 0 ? \"100.0%\" : \"-\"");
     // 본문 3 + 기타 3 + 합계 3 = 아홉 칸이 같은 규칙을 쓴다.
-    assertThat(count(template, "title=\"${zeroAmountTitle}\"")).as("0 원 까닭을 단 칸").isEqualTo(9);
+    assertThat(count(template, "data-tip=\"${zeroAmountTitle}\"")).as("0 원 까닭을 단 칸").isEqualTo(9);
     // 본문 비중 + 기타 비중 + 합계 비중.
-    assertThat(count(template, "title=\"${shareNoneTitle}\"")).as("비중을 낼 수 없다는 까닭").isEqualTo(3);
+    assertThat(count(template, "data-tip=\"${shareNoneTitle}\"")).as("비중을 낼 수 없다는 까닭").isEqualTo(3);
   }
 
   /** 빌드가 ${} 안 공백을 지우므로 원본 서식 그대로 비교하면 변이를 통과시킨다. */

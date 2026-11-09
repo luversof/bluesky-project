@@ -71,7 +71,7 @@ class ZeroDashAriaHiddenTest {
           continue;
         }
         assertThat(line).as(path).contains("<span class=\"sr-only\">");
-        assertThat(line).as(path + " title 도 함께 둔다(마우스)").contains("title=");
+        assertThat(line).as(path + " title 도 함께 둔다(마우스)").contains("data-tip=");
       }
     }
   }

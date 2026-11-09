@@ -89,7 +89,7 @@ class DateRangeBadgeBoundaryTest {
   private String badge(String html) {
     java.util.regex.Matcher matcher =
         java.util.regex.Pattern.compile(
-                "badge badge-ghost[^>]*>\\s*<span class=\"min-w-0\">((?:[^<]|<span class=\"whitespace-nowrap date-whole\">[^<]*</span>)*)</span>\\s*</span>",
+                "badge badge-sm[^>]*>\\s*<span class=\"min-w-0\">((?:[^<]|<span class=\"whitespace-nowrap date-whole\">[^<]*</span>)*)</span>\\s*</span>",
                 32)
             .matcher(html);
     assertThat(matcher.find()).as("기간 배지를 찾지 못했다").isTrue();

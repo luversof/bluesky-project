@@ -29,7 +29,7 @@ class AmountCellZeroTitleTest {
     assertThat(component).contains("common.amount.zero.title");
     assertThat(component)
         .as("null 이면 title 자체가 나가지 않아야 한다(JTE 스마트 속성)")
-        .contains("title=\"${value != null ? amountCellZeroTitle : null}\"");
+        .contains("data-tip=\"${value != null ? amountCellZeroTitle : null}\"");
   }
 
   @Test
@@ -52,7 +52,7 @@ class AmountCellZeroTitleTest {
         }) {
       String template = Files.readString(Path.of(rel), StandardCharsets.UTF_8);
       assertThat(template).as(rel).contains("common.amount.zero.title");
-      assertThat(template).as(rel).contains("title=\"${zeroAmountTitle}\"");
+      assertThat(template).as(rel).contains("data-tip=\"${zeroAmountTitle}\"");
     }
   }
 

@@ -330,23 +330,23 @@
 								     빠지는 속성(data-cal-*, title)은 줄을 나누면 빈 줄의 탭이 그대로 실리므로 한 줄에 둔다.
 								     활동 있는 칸은 클릭으로 그날 상세를 펼치므로 버튼 역할·탭 포커스·aria-expanded 를 준다(수익률 표의 행과 같은 규칙,
 								     실측 2026-09-09: 전체 기간 181칸이 키보드로는 열 수 없었다). Enter/Space 는 common.ts 가 받는다. --%>
-								<div class="cal-day ${isToday ? "border-primary" : "border-transparent"}${!inMonth ? " cal-day-out" : ""}${hasActivity ? " cal-day-act" : ""}" data-cal-date="${hasActivity ? cellDate.toString() : null}" data-cal-month="${hasActivity ? ymKey : null}" role="${hasActivity ? "button" : null}" tabindex="${hasActivity ? "0" : null}" aria-expanded="${hasActivity ? "false" : null}" aria-controls="${hasActivity ? "cal-detail-" + cellDate.toString() : null}" title="${holidayName}">
+								<div class="cal-day ${isToday ? "border-primary" : "border-transparent"}${!inMonth ? " cal-day-out" : ""}${hasActivity ? " cal-day-act" : ""} tooltip" data-cal-date="${hasActivity ? cellDate.toString() : null}" data-cal-month="${hasActivity ? ymKey : null}" role="${hasActivity ? "button" : null}" tabindex="${hasActivity ? "0" : null}" aria-expanded="${hasActivity ? "false" : null}" aria-controls="${hasActivity ? "cal-detail-" + cellDate.toString() : null}" data-tip="${holidayName}">
 									<%-- 칸은 role=button 이라 버튼 목록에 오른다. 보이는 건 날짜 숫자뿐이지만
 									     낭독기에는 온 날짜를 준다 - '6' 만 들으면 어느 달인지 알 수 없다. --%>
 									<div class="cal-day-num${isToday ? " text-primary" : (isRedDay ? " text-error" : "")}"><span aria-hidden="true">${cellDate.getDayOfMonth()}</span><span class="sr-only">${cellDate.toString()}</span></div>
 									@if(holidayName != null)
-										<div class="text-[9px] leading-tight text-error/80 truncate" title="${holidayName}">${holidayName}</div>
+										<div class="block tooltip" data-tip="${holidayName}"><div class="text-[9px] leading-tight text-error/80 truncate">${holidayName}</div></div>
 									@endif
 									@if(hasActivity)
 										<div class="flex flex-wrap gap-x-1 justify-center leading-tight">
 											<%-- 종류를 색으로만 갈랐다 - 낭독기에는 "●8" 로만 들리고, 색으로 못 가르는 사람에게도 뜻이 없다
 											     (실측 2026-09-12: 매수 text-profit · 매도 text-loss · 배당 text-dividend 세 가지가 모두 ●N 뿐).
 											     보이는 글자는 그대로 두고 이름만 붙인다. --%>
-											@if(dayBuyCount > 0)<span class="text-profit" title="${buyLabel}"><span aria-hidden="true">●</span>${dayBuyCount}<span class="sr-only"> ${buyLabel}</span></span>@endif
-											@if(daySellCount > 0)<span class="text-loss" title="${sellLabel}"><span aria-hidden="true">●</span>${daySellCount}<span class="sr-only"> ${sellLabel}</span></span>@endif
-											@if(dayDividendCount > 0)<span class="text-dividend" title="${dividendLabel}"><span aria-hidden="true">●</span>${dayDividendCount}<span class="sr-only"> ${dividendLabel}</span></span>@endif
+											@if(dayBuyCount > 0)<span class="text-profit tooltip" data-tip="${buyLabel}"><span aria-hidden="true">●</span>${dayBuyCount}<span class="sr-only"> ${buyLabel}</span></span>@endif
+											@if(daySellCount > 0)<span class="text-loss tooltip" data-tip="${sellLabel}"><span aria-hidden="true">●</span>${daySellCount}<span class="sr-only"> ${sellLabel}</span></span>@endif
+											@if(dayDividendCount > 0)<span class="text-dividend tooltip" data-tip="${dividendLabel}"><span aria-hidden="true">●</span>${dayDividendCount}<span class="sr-only"> ${dividendLabel}</span></span>@endif
 										</div>
-										<div class="amount-value text-[10px] text-base-content/60 truncate" title="${dayNetAmount.signum() < 0 ? "-" : ""}₩${df.format(dayNetAmount.abs())}">${dayNetAmount.signum() < 0 ? "-" : ""}₩${df.format(dayNetAmount.abs())}</div>
+										<div class="block tooltip" data-tip="${dayNetAmount.signum() < 0 ? "-" : ""}₩${df.format(dayNetAmount.abs())}"><div class="amount-value text-[10px] text-base-content/60 truncate">${dayNetAmount.signum() < 0 ? "-" : ""}₩${df.format(dayNetAmount.abs())}</div></div>
 									@endif
 								</div>
 							@endfor
@@ -388,13 +388,11 @@
 													@if(dayDetailActivity.accountIds() != null && !dayDetailActivity.accountIds().isEmpty())
 														<span class="flex flex-wrap items-center gap-1 min-w-0" data-cal-detail-accounts>
 															@for(int di = 0; di < Math.min(2, dayDetailActivity.accountIds().size()); di++)
-																<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left">${accountNames != null ? accountNames.getOrDefault(dayDetailActivity.accountIds().get(di), "") : ""}</span>
+																<span class="badge badge-outline h-auto whitespace-normal py-0.5 text-left badge-sm">${accountNames != null ? accountNames.getOrDefault(dayDetailActivity.accountIds().get(di), "") : ""}</span>
 															@endfor
 															@if(dayDetailActivity.accountIds().size() > 2)
 																!{List<String> detailAccountLabels = dayDetailActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
-																<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", detailAccountLabels)}" data-tip="${String.join(", ", detailAccountLabels)}">
-																	<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${dayDetailActivity.accountIds().size() - 2}</span>
-																</div>
+																@template._components.ui.tooltip(text = String.join(", ", detailAccountLabels), content = @`<span class="badge badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 badge-sm">+${dayDetailActivity.accountIds().size() - 2}</span>`)
 															@endif
 														</span>
 													@endif
@@ -494,13 +492,11 @@
 										@if(tlRowActivity.accountIds() != null && !tlRowActivity.accountIds().isEmpty())
 											<span class="flex flex-wrap items-center gap-1 min-w-0" data-timeline-accounts>
 												@for(int ti = 0; ti < Math.min(2, tlRowActivity.accountIds().size()); ti++)
-													<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left">${accountNames != null ? accountNames.getOrDefault(tlRowActivity.accountIds().get(ti), "") : ""}</span>
+													<span class="badge badge-outline h-auto whitespace-normal py-0.5 text-left badge-sm">${accountNames != null ? accountNames.getOrDefault(tlRowActivity.accountIds().get(ti), "") : ""}</span>
 												@endfor
 												@if(tlRowActivity.accountIds().size() > 2)
 													!{List<String> tlAccountLabels = tlRowActivity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> n != null && !n.isBlank()).toList();}
-													<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", tlAccountLabels)}" data-tip="${String.join(", ", tlAccountLabels)}">
-														<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${tlRowActivity.accountIds().size() - 2}</span>
-													</div>
+													@template._components.ui.tooltip(text = String.join(", ", tlAccountLabels), content = @`<span class="badge badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 badge-sm">+${tlRowActivity.accountIds().size() - 2}</span>`)
 												@endif
 											</span>
 										@endif
@@ -525,9 +521,9 @@
 				@template._components.ui.emptyState(message = noActivityDataLabel, widenRangeAction = !isAllMode)
 			@else
 				<div class="overflow-x-auto table-head-sticky-xl">
-					<table class="table w-full table-sm table-pin-rows pin-top-nav" data-activity-list-table aria-label="${listTabLabel}">
+					<table class="table data-table w-full table-pin-rows pin-top-nav" data-activity-list-table aria-label="${listTabLabel}">
 						<thead>
-							<tr class="bg-base-200">
+							<tr>
 								<th scope="col">${dateLabel}</th>
 								<th scope="col">${typeLabel}</th>
 								<th scope="col">${stockNameLabel}</th>
@@ -565,21 +561,19 @@
 											@if(activity.accountIds() != null && !activity.accountIds().isEmpty())
 												<span class="flex flex-wrap items-center gap-1 min-w-0">
 													@for(int i = 0; i < Math.min(2, activity.accountIds().size()); i++)
-														<a href="${StockDetailLinkUtil.account(activity.accountIds().get(i) != null ? activity.accountIds().get(i).toString() : "")}" class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 link link-hover">${accountNames != null ? accountNames.getOrDefault(activity.accountIds().get(i), "") : ""}</a>
+														<a href="${StockDetailLinkUtil.account(activity.accountIds().get(i) != null ? activity.accountIds().get(i).toString() : "")}" class="badge badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 link link-hover badge-sm">${accountNames != null ? accountNames.getOrDefault(activity.accountIds().get(i), "") : ""}</a>
 													@endfor
 
 													@if(activity.accountIds().size() > 2)
 														!{List<String> allAccountLabels = activity.accountIds().stream().map(id -> accountNames != null ? accountNames.getOrDefault(id, "") : "").filter(n -> !n.isEmpty()).toList();}
-														<div class="tooltip tooltip-bottom" role="note" tabindex="0" aria-label="${String.join(", ", allAccountLabels)}" data-tip="${String.join(", ", allAccountLabels)}">
-															<span class="badge badge-xs badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 cursor-help">+${activity.accountIds().size() - 2}</span>
-														</div>
+														@template._components.ui.tooltip(text = String.join(", ", allAccountLabels), content = @`<span class="badge badge-outline h-auto whitespace-normal py-0.5 text-left opacity-70 badge-sm">+${activity.accountIds().size() - 2}</span>`)
 													@endif
 												</span>
 											@endif
 											@template.stock.htmx.fragments.components.mergedRecordBadge(recordCount = activity.recordCount(), accountCount = activity.accountIds() == null ? 0 : activity.accountIds().size())
 										</div>
 									</td>
-									<td class="text-right font-mono font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
+									<td class="text-right font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
 										₩${String.format("%,d", StockFormatUtil.displayWon(activity.amount()))}
 									</td>
 								</tr>

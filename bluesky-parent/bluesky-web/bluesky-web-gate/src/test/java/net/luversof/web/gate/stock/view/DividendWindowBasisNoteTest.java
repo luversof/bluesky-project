@@ -29,11 +29,11 @@ class DividendWindowBasisNoteTest {
             StandardCharsets.UTF_8);
     String flat = flatten(template);
     assertThat(flat).as("설명 자리가 있어야 한다").contains("data-window-basis");
+    // 공용 ⓘ 툴팁(infoTip -> tooltip.jte)이 aria-label · data-tip · role="note" tabindex="0" 을 같이 그린다 -
+    // TooltipConsistencyTest.
     assertThat(flat)
-        .as("마우스와 보조기술 양쪽에 닿아야 한다")
-        .contains("aria-label=\"${windowBasisLabel}\"")
-        .contains("data-tip=\"${windowBasisLabel}\"");
-    assertThat(flat).as("키보드로도 닿아야 한다").contains("role=\"note\" tabindex=\"0\"");
+        .as("마우스 · 키보드 · 보조기술 모두에 닿아야 한다")
+        .contains("@template._components.ui.infoTip(desc = windowBasisLabel)");
     assertThat(template).contains("stock.dividend.summary.window.basis");
   }
 

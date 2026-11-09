@@ -33,15 +33,15 @@
 
 @template._components.ui.card(cssClass = "mt-4", body = @`
 		<div class="flex items-center justify-between mb-3">
-			<h3 class="card-title text-base">
+			<h3 class="card-title">
 				&#128203; ${snapshotTitle}
 				@if(asOfLabel != null)
 					<span class="text-sm font-normal text-base-content/60 ml-2">${asOfLabel}</span>
 				@endif
 			</h3>
-			<button type="button" class="btn btn-xs btn-ghost btn-circle"
+			<button type="button" class="btn btn-xs btn-ghost btn-circle tooltip"
 					data-holdings-snapshot-close
-					title="${closeLabel}">✕</button>
+					data-tip="${closeLabel}">✕</button>
 		</div>
 
 		@if(holdings == null || holdings.isEmpty())
@@ -98,7 +98,7 @@
 				<p class="mb-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.asset.status.price.basis").replace("{0}", latestPriceDate.toString())}</p>
 			@endif
 			<div class="overflow-x-auto">
-				<table class="table table-xs table-zebra w-full" aria-label="${snapshotTitle}">
+				<table class="table data-table w-full" aria-label="${snapshotTitle}">
 					<thead>
 						<tr class="text-xs text-base-content/60">
 							<th scope="col">${stockNameLabel}</th>

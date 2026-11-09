@@ -45,7 +45,7 @@
 @template._components.ui.card(cssClass = "h-full", body = @`
 	<div class="flex flex-wrap justify-between items-center gap-2 mb-2">
 		<div class="flex flex-wrap items-center gap-2 min-w-0">
-			<h2 class="card-title text-base m-0 shrink-0 max-sm:shrink max-sm:min-w-0 max-sm:break-keep">${titleLabel}</h2>
+			<h2 class="card-title m-0 shrink-0 max-sm:shrink max-sm:min-w-0 max-sm:break-keep">${titleLabel}</h2>
 			@if(hasWindow)
 			<%-- 아주 좁은 화면에서는 줄바꿈을 허용한다. nowrap + shrink-0 이면 이 배지가 카드의 최소 폭을
 				 라벨 길이만큼 밀어 화면 밖으로 나간다(실측: 영어 320px 에서 29px). --%>
@@ -85,8 +85,8 @@
 	     예정 3,973,543)으로 읽혔다(2026-10-01 자율 점검) - 어느 날 몫인지 적고 "/ 월" 은 뺀다. --%>
 	@if(hasSnapshots)
 	<div class="text-right leading-tight tabular-nums mb-2">
-		<div class="font-mono font-bold text-dividend amount-value" data-window-latest-total title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60" data-window-latest-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? StockViewSupport.msg("stock.summary.upcoming.window.latest", nextPayDateLabel) : latestLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal)))</div>
-		<div class="font-mono text-[11px] text-base-content/60 amount-value" data-window-average-total title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}">${avgLabel} ${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
+		<div class="font-mono font-bold text-dividend amount-value tooltip" data-window-latest-total data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60" data-window-latest-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? StockViewSupport.msg("stock.summary.upcoming.window.latest", nextPayDateLabel) : latestLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal)))</div>
+		<div class="font-mono text-[11px] text-base-content/60 amount-value tooltip" data-window-average-total data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}">${avgLabel} ${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
 	</div>
 	<div class="space-y-1">
 		!{int upcomingRank = 1;}
@@ -95,10 +95,10 @@
 			!{BigDecimal rowLatest = MonthlyDividendCalculator.latestMonthlyDividend(row);}
 			<div class="flex items-center justify-between text-sm py-1.5 border-b border-base-200 last:border-0">
 				<span class="flex items-center gap-2 min-w-0">
-					<span class="badge badge-sm badge-ghost w-5 h-5 p-0 flex justify-center shrink-0">${upcomingRank++}</span>
-					<span class="truncate" title="${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}">${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}</span>
+					<span class="badge badge-sm w-5 h-5 p-0 flex justify-center shrink-0 badge-outline">${upcomingRank++}</span>
+					<span class="max-w-full min-w-0 inline-block tooltip" data-tip="${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}"><span class="truncate block">${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}</span></span>
 				</span>
-				<span class="font-mono font-bold text-dividend amount-value shrink-0" title="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest))}">${String.format("%,d", StockFormatUtil.displayWon(rowLatest))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest)), visible = String.format("%,d", StockFormatUtil.displayWon(rowLatest)))</span>
+				<span class="font-mono font-bold text-dividend amount-value shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest))}">${String.format("%,d", StockFormatUtil.displayWon(rowLatest))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest)), visible = String.format("%,d", StockFormatUtil.displayWon(rowLatest)))</span>
 			</div>
 		@endfor
 		@if(upcomingDividendHiddenCount > 0)
