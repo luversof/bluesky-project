@@ -11,6 +11,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "pathofexile-dat": "^15.2.0"
+    "pathofexile-dat": "^16.0.1"
   }
 }
