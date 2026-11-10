@@ -16,6 +16,7 @@
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
 !{java.util.function.Function<BigDecimal, String> rate = v -> v == null ? "-" : v.toPlainString() + "%";}
+!{java.time.format.DateTimeFormatter runTime = java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(java.time.ZoneId.of("Asia/Seoul"));}
 
 @template._layout.stockLayout(
 	pageTitle = MessageUtil.getMessage("stock.analysis.title"),
@@ -67,8 +68,9 @@
 					`)
 				@endif
 
-				<div class="grid gap-6 lg:grid-cols-3">
+				<div class="grid gap-6 lg:grid-cols-2">
 					@for(var section : List.of(
+							List.of("stock.analysis.rate.run", summary.byRun() == null ? List.of() : summary.byRun()),
 							List.of("stock.analysis.rate.horizon", summary.byHorizon()),
 							List.of("stock.analysis.rate.confidence", summary.byConfidence()),
 							List.of("stock.analysis.rate.version", summary.byPromptVersion())))
@@ -85,22 +87,28 @@
 												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.graded")}</th>
 												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.hitRate")}</th>
 												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.alwaysUp")}</th>
-												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.prevDirection")}</th>
+												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.trend")}</th>
+												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.majority")}</th>
+												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.edge")}</th>
 											</tr></thead>
 											<tbody>
 												@for(var r : rows)
-													<tr>
+													<%-- 표본이 적으면 흐리게: 적중률이 우연에 크게 흔들린다. --%>
+													<tr class="${r.graded() < 20 ? "opacity-60" : null}">
 														<td>${r.group()}</td>
 														<td>D+${r.horizonDays()}</td>
 														<td class="text-right">${r.graded()}</td>
 														<td class="text-right font-semibold">${rate.apply(r.hitRatePct())}</td>
 														<td class="text-right">${rate.apply(r.alwaysUpRatePct())}</td>
-														<td class="text-right">${rate.apply(r.prevDirectionRatePct())}</td>
+														<td class="text-right">${rate.apply(r.trendRatePct())}</td>
+														<td class="text-right">${rate.apply(r.majorityRatePct())}</td>
+														<td class="text-right font-semibold ${r.edgePct() == null ? "" : (r.edgePct().signum() > 0 ? "text-profit" : "text-loss")}">${r.edgePct() == null ? "-" : (r.edgePct().signum() > 0 ? "+" : "") + r.edgePct().toPlainString() + "%p"}</td>
 													</tr>
 												@endfor
 											</tbody>
 										</table>
 									</div>
+									<p class="mt-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.analysis.rate.note")}</p>
 								@endif
 				`)
 					@endfor
@@ -113,6 +121,7 @@
 							<div class="overflow-x-auto">
 								<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.recent.title")}">
 									<thead><tr>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.runTime")}</th>
 										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
 										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.stock")}</th>
 										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.horizon")}</th>
@@ -124,6 +133,7 @@
 									<tbody>
 										@for(var p : recent)
 											<tr>
+												<td class="whitespace-nowrap">${p.createdDate() == null ? "-" : runTime.format(p.createdDate())} <span class="opacity-60 text-xs">${p.promptVersion()}</span></td>
 												<td class="whitespace-nowrap">${String.valueOf(p.baseDate())}</td>
 												<td class="whitespace-nowrap">${p.name()} <span class="opacity-60 text-xs">${p.symbol()}</span></td>
 												<td>D+${p.horizonDays()}</td>

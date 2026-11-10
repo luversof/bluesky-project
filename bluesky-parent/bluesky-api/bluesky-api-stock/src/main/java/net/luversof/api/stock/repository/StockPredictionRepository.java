@@ -13,9 +13,6 @@ import net.luversof.api.stock.domain.StockPrediction;
 
 public interface StockPredictionRepository extends CrudRepository<StockPrediction, UUID> {
 
-  boolean existsByStockItemIdAndBaseDateAndHorizonDays(
-      UUID stockItemId, LocalDate baseDate, int horizonDays);
-
   List<StockPrediction> findByBaseDateGreaterThanEqual(LocalDate baseDate);
 
   /** 아직 채점하지 않은 예측. */

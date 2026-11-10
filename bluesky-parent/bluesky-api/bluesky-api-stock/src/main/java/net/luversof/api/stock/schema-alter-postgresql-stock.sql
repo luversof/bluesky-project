@@ -144,3 +144,19 @@ CREATE TABLE IF NOT EXISTS "StockPredictionGrade" (
 CREATE UNIQUE INDEX IF NOT EXISTS uk_stockPredictionGrade_predictionId ON "StockPredictionGrade" ("prediction_id");
 -- 되돌리기
 -- DROP TABLE IF EXISTS "StockPredictionGrade", "StockPrediction", "StockNews";
+
+-- =====================================================================
+-- 2026-11-10
+-- =====================================================================
+
+-- (1) 시황 분석 회차. 같은 종목 · 기준일 · 기간이라도 분석할 때마다 따로 쌓는다(회차끼리 적중률을 비교해 개선을 판단).
+--     기존 예측은 제출 단위(모델 · 프롬프트 버전 · 분)로 회차를 채운다.
+ALTER TABLE "StockPrediction" ADD COLUMN IF NOT EXISTS "runId" UUID;
+UPDATE "StockPrediction" SET "runId" = md5("modelId" || '|' || "promptVersion" || '|' || date_trunc('minute', "createdDate")::text)::uuid WHERE "runId" IS NULL;
+DROP INDEX IF EXISTS uk_stockPrediction_stockItemId_baseDate_horizonDays;
+CREATE INDEX IF NOT EXISTS idx_stockPrediction_stockItemId_baseDate_horizonDays ON "StockPrediction" ("stockItem_id", "baseDate", "horizonDays");
+CREATE INDEX IF NOT EXISTS idx_stockPrediction_runId ON "StockPrediction" ("runId");
+-- 되돌리기(같은 종목 · 기준일 · 기간에 회차가 둘 이상이면 먼저 정리해야 유일 인덱스가 만들어진다)
+-- DROP INDEX IF EXISTS idx_stockPrediction_runId, idx_stockPrediction_stockItemId_baseDate_horizonDays;
+-- CREATE UNIQUE INDEX uk_stockPrediction_stockItemId_baseDate_horizonDays ON "StockPrediction" ("stockItem_id", "baseDate", "horizonDays");
+-- ALTER TABLE "StockPrediction" DROP COLUMN "runId";

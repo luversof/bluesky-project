@@ -74,7 +74,9 @@ public interface StockAnalysisClient {
       int graded,
       BigDecimal hitRatePct,
       BigDecimal alwaysUpRatePct,
-      BigDecimal prevDirectionRatePct) {}
+      BigDecimal trendRatePct,
+      BigDecimal majorityRatePct,
+      BigDecimal edgePct) {}
 
   record Summary(
       int predictions,
@@ -82,7 +84,8 @@ public interface StockAnalysisClient {
       int late,
       List<RateRow> byHorizon,
       List<RateRow> byConfidence,
-      List<RateRow> byPromptVersion) {}
+      List<RateRow> byPromptVersion,
+      List<RateRow> byRun) {}
 
   record RecentPrediction(
       String symbol,

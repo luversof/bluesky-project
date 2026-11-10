@@ -23,6 +23,7 @@ import java.util.stream.StreamSupport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import net.luversof.api.stock.domain.StockItem;
@@ -92,7 +93,8 @@ public class StockAnalysisService {
   public record SubmitRequest(
       String modelId, String promptVersion, List<PredictionInput> predictions) {}
 
-  public record SubmitResult(int saved, int skippedExisting, List<String> rejected) {}
+  /** runId: 이번 제출로 저장한 예측 묶음(분석 회차). */
+  public record SubmitResult(UUID runId, int saved, List<String> rejected) {}
 
   public record GradeResult(int graded, int pending) {}
 
@@ -174,6 +176,7 @@ public class StockAnalysisService {
         newsLines);
   }
 
+  @Transactional
   public SubmitResult submit(SubmitRequest request) {
     if (request == null
         || isBlank(request.modelId())
@@ -191,8 +194,9 @@ public class StockAnalysisService {
     Map<UUID, List<String>> tagsByItem = tagsByItem(List.copyOf(targets.values()));
     Map<String, AnalysisItem> builtItems = new HashMap<>();
 
+    // 분석 회차(사용자 결정 2026-11-10): 하루 몇 번이든 돌릴 때마다 따로 쌓고, 회차끼리 적중률을 비교해 개선을 판단한다.
+    UUID runId = UUID.randomUUID();
     int saved = 0;
-    int skipped = 0;
     List<String> rejected = new ArrayList<>();
     for (PredictionInput p : request.predictions()) {
       String reason = validate(p, targets);
@@ -213,12 +217,8 @@ public class StockAnalysisService {
         rejected.add(p.symbol() + ": 시세 없음");
         continue;
       }
-      if (stockPredictionRepository.existsByStockItemIdAndBaseDateAndHorizonDays(
-          item.getId(), built.baseDate(), p.horizonDays())) {
-        skipped++;
-        continue;
-      }
       StockPrediction prediction = new StockPrediction();
+      prediction.setRunId(runId);
       prediction.setStockItemId(item.getId());
       prediction.setBaseDate(built.baseDate());
       prediction.setBasePrice(built.lastClose());
@@ -240,7 +240,7 @@ public class StockAnalysisService {
       stockPredictionRepository.save(prediction);
       saved++;
     }
-    return new SubmitResult(saved, skipped, rejected);
+    return new SubmitResult(saved == 0 ? null : runId, saved, rejected);
   }
 
   static String validate(PredictionInput p, Map<String, StockItem> targets) {
@@ -334,13 +334,25 @@ public class StockAnalysisService {
 
   // ---- 적중률 ----
 
+  /**
+   * 기준선(사용자 요청 2026-11-10: 적중률은 단순 규칙보다 높아야 의미가 있다).
+   *
+   * <ul>
+   *   <li>alwaysUp: 항상 UP
+   *   <li>trend: 직전 같은 기간(D+1 은 전일, D+5 는 직전 5 거래일) 방향이 이어진다 - 입력 기록의 recentCloses 로 계산
+   *   <li>majority: 그 묶음에서 실제로 가장 많이 나온 방향 하나만 찍었을 때(사후에 정해지므로 단순 규칙의 상한)
+   *   <li>edge: 적중률 - 세 기준선 중 가장 높은 것(%p). 0 이하면 단순 규칙보다 나을 게 없다.
+   * </ul>
+   */
   public record RateRow(
       String group,
       int horizonDays,
       int graded,
       BigDecimal hitRatePct,
       BigDecimal alwaysUpRatePct,
-      BigDecimal prevDirectionRatePct) {}
+      BigDecimal trendRatePct,
+      BigDecimal majorityRatePct,
+      BigDecimal edgePct) {}
 
   public record Summary(
       int predictions,
@@ -348,7 +360,8 @@ public class StockAnalysisService {
       int late,
       List<RateRow> byHorizon,
       List<RateRow> byConfidence,
-      List<RateRow> byPromptVersion) {}
+      List<RateRow> byPromptVersion,
+      List<RateRow> byRun) {}
 
   public record RecentPrediction(
       String symbol,
@@ -367,7 +380,7 @@ public class StockAnalysisService {
       Boolean hit,
       Boolean late) {}
 
-  private record Graded(StockPrediction prediction, StockPredictionGrade grade) {}
+  record Graded(StockPrediction prediction, StockPredictionGrade grade) {}
 
   /** 늦은 예측은 뺀다(장중 정보가 섞여 적중률을 부풀린다). */
   public Summary summary() {
@@ -387,7 +400,27 @@ public class StockAnalysisService {
         late,
         rates(onTime, g -> "all"),
         rates(onTime, g -> confidenceBucket(g.prediction().getConfidence())),
-        rates(onTime, g -> g.prediction().getPromptVersion()));
+        rates(onTime, g -> g.prediction().getPromptVersion()),
+        rates(
+            predictions.stream()
+                .filter(p -> grades.containsKey(p.getId()))
+                .map(p -> new Graded(p, grades.get(p.getId())))
+                .toList(),
+            StockAnalysisService::runLabel));
+  }
+
+  private static final java.time.format.DateTimeFormatter RUN_TIME =
+      java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")
+          .withZone(PredictionMath.MARKET_ZONE_ID);
+
+  /**
+   * 회차 이름: 분석 시각(KST) + 프롬프트 버전. 한 회차는 한 번의 claude 호출이라 분 단위로 겹치지 않는다. 장중(기준일 다음 거래일 09:00 이후)에 돌린
+   * 회차는 장중 정보가 섞여 표시만 하고 다른 표에서는 뺀다.
+   */
+  static String runLabel(Graded g) {
+    StockPrediction p = g.prediction();
+    String time = p.getCreatedDate() == null ? "?" : RUN_TIME.format(p.getCreatedDate());
+    return time + " " + p.getPromptVersion() + (g.grade().isLate() ? " (late)" : "");
   }
 
   static String confidenceBucket(int confidence) {
@@ -417,18 +450,66 @@ public class StockAnalysisService {
     List<RateRow> rows = new ArrayList<>();
     grouped.forEach((group, byHorizon) ->
         byHorizon.forEach((horizon, list) -> {
-          List<Graded> withPrev =
-              list.stream().filter(g -> g.grade().getPrevDirectionHit() != null).toList();
+          List<Graded> withTrend = list.stream().filter(g -> trendHit(g) != null).toList();
+          BigDecimal hit = ratePct(list, g -> g.grade().isHit());
+          BigDecimal alwaysUp = ratePct(list, g -> g.grade().isAlwaysUpHit());
+          BigDecimal trend = ratePct(withTrend, StockAnalysisService::trendHit);
+          BigDecimal majority = majorityRatePct(list);
+          BigDecimal best =
+              java.util.stream.Stream.of(alwaysUp, trend, majority)
+                  .filter(java.util.Objects::nonNull)
+                  .max(Comparator.naturalOrder())
+                  .orElse(null);
           rows.add(
               new RateRow(
                   group,
                   horizon,
                   list.size(),
-                  ratePct(list, g -> g.grade().isHit()),
-                  ratePct(list, g -> g.grade().isAlwaysUpHit()),
-                  ratePct(withPrev, g -> g.grade().getPrevDirectionHit())));
+                  hit,
+                  alwaysUp,
+                  trend,
+                  majority,
+                  hit == null || best == null ? null : hit.subtract(best)));
         }));
     return rows;
+  }
+
+  /** 직전 같은 기간의 방향이 이어졌는가. 입력 기록이 없으면 D+1 만 채점 때 남긴 전일 방향으로 대신한다. */
+  static Boolean trendHit(Graded g) {
+    int horizon = g.prediction().getHorizonDays();
+    Map<String, Object> snapshot = g.prediction().getInputSnapshot();
+    Object raw = snapshot == null ? null : snapshot.get("recentCloses");
+    if (raw instanceof List<?> closes && closes.size() > horizon) {
+      BigDecimal from = decimal(closes.get(closes.size() - 1 - horizon));
+      BigDecimal to = decimal(closes.get(closes.size() - 1));
+      BigDecimal change = PredictionMath.changePct(from, to);
+      if (change != null) {
+        return PredictionMath.classify(change, PredictionMath.flatBandPct(horizon))
+            .name()
+            .equals(g.grade().getActualDirection());
+      }
+    }
+    return horizon == 1 ? g.grade().getPrevDirectionHit() : null;
+  }
+
+  private static BigDecimal decimal(Object value) {
+    return value == null ? null : new BigDecimal(String.valueOf(value));
+  }
+
+  static BigDecimal majorityRatePct(List<Graded> list) {
+    if (list.isEmpty()) {
+      return null;
+    }
+    long top =
+        list.stream()
+            .collect(
+                Collectors.groupingBy(g -> g.grade().getActualDirection(), Collectors.counting()))
+            .values()
+            .stream()
+            .max(Long::compare)
+            .orElse(0L);
+    return BigDecimal.valueOf(top * 100)
+        .divide(BigDecimal.valueOf(list.size()), 1, RoundingMode.HALF_UP);
   }
 
   static <T> BigDecimal ratePct(List<T> list, Predicate<T> hit) {
@@ -472,8 +553,8 @@ public class StockAnalysisService {
               g == null ? null : g.isLate());
         })
         .sorted(
-            Comparator.comparing(RecentPrediction::baseDate)
-                .reversed()
+            Comparator.comparing(
+                    RecentPrediction::createdDate, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(r -> r.name() == null ? "" : r.name())
                 .thenComparingInt(RecentPrediction::horizonDays))
         .toList();

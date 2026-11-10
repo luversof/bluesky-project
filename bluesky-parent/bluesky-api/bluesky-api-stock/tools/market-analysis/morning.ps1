@@ -1,5 +1,7 @@
-# Morning job: prices -> news -> analysis input -> claude -p -> predictions.
-# Registered by register-tasks.ps1 (weekdays 08:00, runs late if the PC was asleep or off).
+# Analysis run: prices -> grade earlier runs -> news -> analysis input -> claude -p -> predictions.
+# Run it any time, as often as needed: every run is stored as its own run (runId) and graded later,
+# so runs can be compared to see whether a prompt/input change improved the analysis.
+# register-tasks.ps1 also schedules it (weekdays 08:00, runs late if the PC was asleep or off).
 $JobName = 'morning'
 . "$PSScriptRoot\common.ps1"
 
@@ -7,6 +9,8 @@ try {
     Write-Log "start ($Api)"
     Wait-Api
     Update-PriceHistory
+    $grade = Invoke-Api POST '/api/stock/analysis/grades'
+    Write-Log ("grades: graded {0}, pending {1}" -f $grade.graded, $grade.pending)
     Update-News
 
     $inputJson = Invoke-ApiRaw GET "/api/stock/analysis/input?userId=$UserId"
@@ -40,8 +44,8 @@ try {
         promptVersion = $promptVersion
         predictions   = @($result.structured_output.predictions)
     }
-    Write-Log ("predictions: saved {0}, existing {1}, rejected {2} [{3}] model {4} {5}" -f `
-            $submit.saved, $submit.skippedExisting, @($submit.rejected).Count, ($submit.rejected -join ' / '), $modelId, $promptVersion)
+    Write-Log ("predictions: run {0} saved {1}, rejected {2} [{3}] model {4} {5}" -f `
+            $submit.runId, $submit.saved, @($submit.rejected).Count, ($submit.rejected -join ' / '), $modelId, $promptVersion)
     exit 0
 } catch {
     Write-Log "FAILED: $_"

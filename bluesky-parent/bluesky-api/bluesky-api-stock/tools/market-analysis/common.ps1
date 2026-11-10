@@ -114,6 +114,13 @@ function Invoke-Claude([string]$Prompt, [string]$Schema, [int]$TimeoutMinutes = 
     $psi.FileName = Resolve-Claude
     $psi.Arguments = ($claudeArgs | ForEach-Object { ConvertTo-NativeArg $_ }) -join ' '
     $psi.UseShellExecute = $false
+    # Started from inside a Claude Code session (the improve-and-rerun loop), the session's own
+    # CLAUDE_* / ANTHROPIC_* variables break the child's login. Use the user-level token instead.
+    foreach ($name in @($psi.EnvironmentVariables.Keys)) {
+        if ($name -match '^(CLAUDE|ANTHROPIC)') { $psi.EnvironmentVariables.Remove($name) }
+    }
+    $token = [Environment]::GetEnvironmentVariable('CLAUDE_CODE_OAUTH_TOKEN', 'User')
+    if ($token) { $psi.EnvironmentVariables['CLAUDE_CODE_OAUTH_TOKEN'] = $token }
     $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true

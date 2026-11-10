@@ -173,6 +173,8 @@ CREATE INDEX IF NOT EXISTS idx_stockNews_publishedDate ON "StockNews" ("publishe
 
 CREATE TABLE IF NOT EXISTS "StockPrediction" (
 	"id" UUID NOT NULL PRIMARY KEY,
+	-- 분석 회차: 한 번의 제출로 저장한 예측 묶음(하루 몇 번이든 쌓인다). NULL 허용 - 회차 기능 전 앱이 배포 전까지 넣는 행
+	"runId" UUID,
 	"stockItem_id" UUID NOT NULL,
 	-- 예측의 기준 거래일(그때 DB 의 마지막 종가 날짜)과 그 종가
 	"baseDate" DATE NOT NULL,
@@ -190,7 +192,8 @@ CREATE TABLE IF NOT EXISTS "StockPrediction" (
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_stockPrediction_stockItemId_baseDate_horizonDays ON "StockPrediction" ("stockItem_id", "baseDate", "horizonDays");
+CREATE INDEX IF NOT EXISTS idx_stockPrediction_stockItemId_baseDate_horizonDays ON "StockPrediction" ("stockItem_id", "baseDate", "horizonDays");
+CREATE INDEX IF NOT EXISTS idx_stockPrediction_runId ON "StockPrediction" ("runId");
 
 CREATE TABLE IF NOT EXISTS "StockPredictionGrade" (
 	"id" UUID NOT NULL PRIMARY KEY,

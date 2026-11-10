@@ -21,6 +21,10 @@ public class StockPrediction {
   @Column("id")
   private UUID id;
 
+  /** 분석 회차: 한 번의 제출로 저장한 예측 묶음. 회차 기능 전(2026-11-10) 예측은 제출 시각으로 채웠다. */
+  @Column("runId")
+  private UUID runId;
+
   @Column("stockItem_id")
   private UUID stockItemId;
 
@@ -57,6 +61,14 @@ public class StockPrediction {
 
   public UUID getId() {
     return id;
+  }
+
+  public UUID getRunId() {
+    return runId;
+  }
+
+  public void setRunId(UUID runId) {
+    this.runId = runId;
   }
 
   public void setId(UUID id) {
