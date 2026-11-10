@@ -8,7 +8,7 @@
 # Remove: Unregister-ScheduledTask -TaskPath '\bluesky\' -TaskName 'market-analysis-*' -Confirm:$false
 param(
     [Parameter(Mandatory = $true)][string]$UserId,
-    [string]$Api = 'https://dev.bluesky.local:40134',
+    [string]$Api = 'http://localhost:30134',
     [string]$MorningAt = '08:00',
     [string]$EveningAt = '18:00'
 )

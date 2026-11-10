@@ -3,12 +3,12 @@
 #
 # Settings (user environment variables, set by register-tasks.ps1):
 #   BLUESKY_USER_ID     user id whose OpenApiConfig (KIS / NAVER / DART) is used. Required.
-#   BLUESKY_STOCK_API   api-stock base URL. Default https://dev.bluesky.local:40134 (same as the gate's client-stock)
+#   BLUESKY_STOCK_API   api-stock base URL. Default http://localhost:30134 (k8s NodePort bluesky-api-stock-service)
 #   BLUESKY_CLAUDE_EXE  claude executable. Default: 'claude' on PATH, else the newest desktop-bundled one.
 
 $ErrorActionPreference = 'Stop'
 
-$Api = if ($env:BLUESKY_STOCK_API) { $env:BLUESKY_STOCK_API.TrimEnd('/') } else { 'https://dev.bluesky.local:40134' }
+$Api = if ($env:BLUESKY_STOCK_API) { $env:BLUESKY_STOCK_API.TrimEnd('/') } else { 'http://localhost:30134' }
 # .NET Framework may default to TLS 1.0/1.1
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 $UserId = $env:BLUESKY_USER_ID
