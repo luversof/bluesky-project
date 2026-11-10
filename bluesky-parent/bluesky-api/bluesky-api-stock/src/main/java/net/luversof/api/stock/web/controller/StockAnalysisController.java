@@ -65,6 +65,14 @@ public class StockAnalysisController {
     return stockAnalysisService.grade();
   }
 
+  /** 분석 날짜(KST) 하루의 회차들을 종목 · 기간별로 나란히. date 를 빼면 가장 최근 날짜. */
+  @GetMapping("/runs")
+  public StockAnalysisService.RunComparison runs(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate date) {
+    return stockAnalysisService.runs(date);
+  }
+
   @GetMapping("/summary")
   public StockAnalysisService.Summary summary() {
     return stockAnalysisService.summary();

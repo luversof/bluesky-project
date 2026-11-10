@@ -26,6 +26,39 @@ public interface StockAnalysisClient {
   @GetExchange("/summary")
   Summary summary();
 
+  @GetExchange("/runs")
+  RunComparison runs(@RequestParam(required = false) LocalDate date);
+
+  record RunInfo(
+      UUID runId,
+      int seq,
+      Instant createdDate,
+      String promptVersion,
+      String modelId,
+      int predictions,
+      int graded,
+      BigDecimal hitRatePct,
+      BigDecimal flatPct) {}
+
+  record RunCell(
+      String direction,
+      int confidence,
+      String rationale,
+      LocalDate baseDate,
+      Boolean hit,
+      String actualDirection,
+      BigDecimal actualChangePct) {}
+
+  record RunRow(
+      String symbol,
+      String name,
+      int horizonDays,
+      java.util.Map<String, RunCell> cells,
+      boolean disagree) {}
+
+  record RunComparison(
+      LocalDate date, List<LocalDate> dates, List<RunInfo> runs, List<RunRow> rows) {}
+
   @GetExchange("/predictions")
   List<RecentPrediction> recent(@RequestParam int days);
 

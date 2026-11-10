@@ -1,8 +1,11 @@
 package net.luversof.web.gate.stock.controller;
 
+import java.time.LocalDate;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -33,7 +36,12 @@ public class StockAnalysisViewController {
   @BlueskyPreAuthorize
   @GetMapping("/analysis")
   public String analysisPage(
-      HttpServletRequest request, @RequestParam(required = false) String keyword, Model model) {
+      HttpServletRequest request,
+      @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate runDate,
+      @RequestParam(defaultValue = "false") boolean onlyDisagree,
+      Model model) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
@@ -46,6 +54,21 @@ public class StockAnalysisViewController {
           stockAnalysisClient.recent(RECENT_DAYS).stream()
               .filter(p -> matches(q, p.name(), p.symbol()))
               .toList());
+      // 회차 비교: 그날의 회차들을 종목 · 기간별로 나란히(사용자 요청 2026-11-10). 종목 검색 · 불일치만 보기를 함께 건다.
+      StockAnalysisClient.RunComparison runs = stockAnalysisClient.runs(runDate);
+      model.addAttribute("onlyDisagree", onlyDisagree);
+      model.addAttribute(
+          "runs",
+          runs == null
+              ? null
+              : new StockAnalysisClient.RunComparison(
+                  runs.date(),
+                  runs.dates(),
+                  runs.runs(),
+                  runs.rows().stream()
+                      .filter(r -> matches(q, r.name(), r.symbol()))
+                      .filter(r -> !onlyDisagree || r.disagree())
+                      .toList()));
       StockAnalysisClient.AnalysisInput input = stockAnalysisClient.input(UserUtil.getUserId());
       model.addAttribute(
           "input",

@@ -26,12 +26,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import net.luversof.api.stock.domain.MonthlyDividendPayout;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemTag;
 import net.luversof.api.stock.domain.StockNews;
 import net.luversof.api.stock.domain.StockPrediction;
 import net.luversof.api.stock.domain.StockPredictionGrade;
 import net.luversof.api.stock.domain.StockPriceHistory;
+import net.luversof.api.stock.repository.MonthlyDividendPayoutRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockItemTagRepository;
 import net.luversof.api.stock.repository.StockNewsRepository;
@@ -69,6 +71,7 @@ public class StockAnalysisService {
   @Autowired private StockPredictionGradeRepository stockPredictionGradeRepository;
   @Autowired private JsonMapper jsonMapper;
   @Autowired private MarketContextService marketContextService;
+  @Autowired private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
   public record NewsLine(
       String source, String title, String summary, String url, Instant publishedDate) {}
@@ -81,7 +84,20 @@ public class StockAnalysisService {
       List<String> tags,
       Indicators indicators,
       List<BigDecimal> recentCloses,
-      List<NewsLine> news) {}
+      List<NewsLine> news,
+      PredictionMath.BaseRates baseRates,
+      DividendInfo dividend) {}
+
+  /**
+   * 분배(v3): 배당락일에는 분배금만큼 가격이 빠진다 - 월배당 ETF 의 D+1 · D+5 방향을 가르는 가장 큰 일정. 지급 이력의 마지막 기준일 · 분배금과 그
+   * 패턴으로 추정한 다음 기준일 · 배당락일. lastYieldPct = 마지막 분배금 / 기준 종가(배당락일 예상 하락폭). 지급 이력이 없으면 null.
+   */
+  public record DividendInfo(
+      LocalDate lastRecordDate,
+      BigDecimal lastAmountPerShare,
+      BigDecimal lastYieldPct,
+      LocalDate estimatedNextRecordDate,
+      LocalDate estimatedExDate) {}
 
   /** market: 간밤 미국 · 환율 · 금리 · 국내 지수(모든 종목 공통, 2026-11-10 v2). */
   public record AnalysisInput(
@@ -149,7 +165,7 @@ public class StockAnalysisService {
   private AnalysisItem buildItem(StockItem item, List<StockNews> news, List<String> tags) {
     List<StockPriceHistory> rows =
         new ArrayList<>(
-            stockPriceHistoryRepository.findTop30ByStockItemIdOrderByTradeDateDesc(item.getId()));
+            stockPriceHistoryRepository.findTop70ByStockItemIdOrderByTradeDateDesc(item.getId()));
     Collections.reverse(rows);
     List<Bar> bars =
         rows.stream()
@@ -173,7 +189,42 @@ public class StockAnalysisService {
         tags,
         PredictionMath.indicators(bars),
         bars.stream().skip(Math.max(0, bars.size() - RECENT_CLOSES)).map(Bar::close).toList(),
-        newsLines);
+        newsLines,
+        PredictionMath.baseRates(bars, BASE_RATE_WINDOW),
+        last == null ? null : dividendOf(item, last));
+  }
+
+  static final int BASE_RATE_WINDOW = 60;
+
+  private DividendInfo dividendOf(StockItem item, Bar last) {
+    List<MonthlyDividendPayout> payouts =
+        monthlyDividendPayoutRepository.findByStockItemIdOrderByPayDateDescRecordDateDesc(
+            item.getId());
+    return dividendInfo(payouts, last);
+  }
+
+  static DividendInfo dividendInfo(List<MonthlyDividendPayout> payouts, Bar last) {
+    MonthlyDividendPayout latest =
+        payouts.stream()
+            .filter(p -> p.getRecordDate() != null)
+            .max(Comparator.comparing(MonthlyDividendPayout::getRecordDate))
+            .orElse(null);
+    if (latest == null) {
+      return null;
+    }
+    LocalDate next =
+        PredictionMath.estimateNextRecordDate(latest.getRecordDate(), last.tradeDate().plusDays(1));
+    BigDecimal amount = latest.getDividendAmountPerShare();
+    return new DividendInfo(
+        latest.getRecordDate(),
+        amount,
+        amount == null || last.close().signum() <= 0
+            ? null
+            : amount
+                .multiply(BigDecimal.valueOf(100))
+                .divide(last.close(), 2, RoundingMode.HALF_UP),
+        next,
+        PredictionMath.exDateOf(next));
   }
 
   @Transactional
@@ -614,6 +665,141 @@ public class StockAnalysisService {
                 .thenComparing(r -> r.name() == null ? "" : r.name())
                 .thenComparingInt(RecentPrediction::horizonDays))
         .toList();
+  }
+
+  // ---- 회차 비교 ----
+
+  /** 회차 하나의 요약. flatPct: 예측 중 FLAT 비율 - 방향을 정하지 않고 피하는 정도. */
+  public record RunInfo(
+      UUID runId,
+      int seq,
+      Instant createdDate,
+      String promptVersion,
+      String modelId,
+      int predictions,
+      int graded,
+      BigDecimal hitRatePct,
+      BigDecimal flatPct) {}
+
+  /** 한 회차의 한 종목 · 기간 예측. 채점 전이면 hit · actual* 은 null. */
+  public record RunCell(
+      String direction,
+      int confidence,
+      String rationale,
+      LocalDate baseDate,
+      Boolean hit,
+      String actualDirection,
+      BigDecimal actualChangePct) {}
+
+  /** cells: runId(문자열) -> 예측. disagree: 그 행을 예측한 회차들의 방향이 하나가 아니다. */
+  public record RunRow(
+      String symbol, String name, int horizonDays, Map<String, RunCell> cells, boolean disagree) {}
+
+  /** 분석 날짜(KST) 하루의 회차들을 나란히 놓는다. dates: 회차가 있는 날짜(최근 것부터). */
+  public record RunComparison(
+      LocalDate date, List<LocalDate> dates, List<RunInfo> runs, List<RunRow> rows) {}
+
+  /** date 가 null 이면 회차가 있는 가장 최근 날짜. */
+  public RunComparison runs(LocalDate date) {
+    // shortcut: 전체 예측을 읽어 날짜로 거른다(하루 수십 건 규모), 수만 건을 넘으면 날짜 조건 쿼리로 바꾼다.
+    List<StockPrediction> all =
+        StreamSupport.stream(stockPredictionRepository.findAll().spliterator(), false)
+            .filter(p -> p.getCreatedDate() != null)
+            .toList();
+    List<LocalDate> dates =
+        all.stream()
+            .map(p -> p.getCreatedDate().atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate())
+            .distinct()
+            .sorted(Comparator.reverseOrder())
+            .toList();
+    LocalDate day = date != null ? date : dates.isEmpty() ? null : dates.get(0);
+    if (day == null) {
+      return new RunComparison(null, dates, List.of(), List.of());
+    }
+    List<StockPrediction> ofDay =
+        all.stream()
+            .filter(p ->
+                p.getCreatedDate().atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate().equals(day))
+            .toList();
+    Map<UUID, Integer> seqs = runSeqs(all);
+    Map<UUID, StockPredictionGrade> grades = gradesOf(ofDay);
+    Map<UUID, StockItem> items = new HashMap<>();
+    stockItemRepository
+        .findAllById(
+            ofDay.stream().map(StockPrediction::getStockItemId).collect(Collectors.toSet()))
+        .forEach(item -> items.put(item.getId(), item));
+    return compare(day, dates, ofDay, seqs, grades, items);
+  }
+
+  static RunComparison compare(
+      LocalDate day,
+      List<LocalDate> dates,
+      List<StockPrediction> ofDay,
+      Map<UUID, Integer> seqs,
+      Map<UUID, StockPredictionGrade> grades,
+      Map<UUID, StockItem> items) {
+    Map<UUID, List<StockPrediction>> byRun =
+        ofDay.stream().collect(Collectors.groupingBy(StockAnalysisService::runKey));
+    List<RunInfo> runs =
+        byRun.entrySet().stream()
+            .map(e -> {
+              List<StockPrediction> list = e.getValue();
+              StockPrediction first =
+                  list.stream().min(Comparator.comparing(StockPrediction::getCreatedDate)).get();
+              List<StockPredictionGrade> graded =
+                  list.stream().map(p -> grades.get(p.getId())).filter(g -> g != null).toList();
+              return new RunInfo(
+                  e.getKey(),
+                  seqs.getOrDefault(e.getKey(), 0),
+                  first.getCreatedDate(),
+                  first.getPromptVersion(),
+                  first.getModelId(),
+                  list.size(),
+                  graded.size(),
+                  ratePct(graded, StockPredictionGrade::isHit),
+                  ratePct(list, p -> Direction.FLAT.name().equals(p.getDirection())));
+            })
+            .sorted(Comparator.comparingInt(RunInfo::seq))
+            .toList();
+
+    Map<String, Map<String, RunCell>> cells = new LinkedHashMap<>();
+    Map<String, StockPrediction> keyOf = new HashMap<>();
+    for (StockPrediction p : ofDay) {
+      String rowKey = p.getStockItemId() + "|" + p.getHorizonDays();
+      keyOf.putIfAbsent(rowKey, p);
+      StockPredictionGrade g = grades.get(p.getId());
+      cells
+          .computeIfAbsent(rowKey, k -> new LinkedHashMap<>())
+          .put(
+              runKey(p).toString(),
+              new RunCell(
+                  p.getDirection(),
+                  p.getConfidence(),
+                  p.getRationale(),
+                  p.getBaseDate(),
+                  g == null ? null : g.isHit(),
+                  g == null ? null : g.getActualDirection(),
+                  g == null ? null : g.getActualChangePct()));
+    }
+    List<RunRow> rows =
+        cells.entrySet().stream()
+            .map(e -> {
+              StockPrediction p = keyOf.get(e.getKey());
+              StockItem item = items.get(p.getStockItemId());
+              boolean disagree =
+                  e.getValue().values().stream().map(RunCell::direction).distinct().count() > 1;
+              return new RunRow(
+                  item == null ? null : item.getSymbol(),
+                  item == null ? null : item.getName(),
+                  p.getHorizonDays(),
+                  e.getValue(),
+                  disagree);
+            })
+            .sorted(
+                Comparator.comparing((RunRow r) -> r.name() == null ? "" : r.name())
+                    .thenComparingInt(RunRow::horizonDays))
+            .toList();
+    return new RunComparison(day, dates, runs, rows);
   }
 
   private Map<UUID, StockPredictionGrade> gradesOf(List<StockPrediction> predictions) {

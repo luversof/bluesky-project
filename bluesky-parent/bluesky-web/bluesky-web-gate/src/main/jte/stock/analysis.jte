@@ -13,6 +13,8 @@
 @param List<StockAnalysisClient.RecentPrediction> recent = null
 @param StockAnalysisClient.AnalysisInput input = null
 @param String keyword = ""
+@param StockAnalysisClient.RunComparison runs = null
+@param boolean onlyDisagree = false
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -114,6 +116,68 @@
 				`)
 					@endfor
 				</div>
+
+				<%-- 회차 비교(사용자 요청 2026-11-10): 그날 돌린 회차들을 열로 놓고 종목 · 기간별 방향 · 신뢰도를 나란히 본다. 방향이 갈린 행은 표시하고 그것만 볼 수 있다. --%>
+				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.runs.title"), body = @`
+					@if(runs == null || runs.date() == null)
+						<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
+					@else
+						<form method="get" action="/stock/analysis" class="flex flex-wrap items-center gap-2 mb-3">
+							<input type="hidden" name="keyword" value="${keyword}" />
+							<label class="text-sm" for="analysis-run-date">${MessageUtil.getMessage("stock.analysis.runs.date")}</label>
+							<select id="analysis-run-date" name="runDate" class="select select-bordered select-sm">
+								@for(var d : runs.dates())
+									<option value="${d.toString()}" selected="${d.equals(runs.date())}">${d.toString()}</option>
+								@endfor
+							</select>
+							<label class="label cursor-pointer gap-2 text-sm">
+								<input type="checkbox" name="onlyDisagree" value="true" class="checkbox checkbox-sm" checked="${onlyDisagree}" />
+								${MessageUtil.getMessage("stock.analysis.runs.onlyDisagree")}
+							</label>
+							<button type="submit" class="btn btn-sm btn-outline">${MessageUtil.getMessage("stock.analysis.runs.show")}</button>
+						</form>
+						<div class="overflow-x-auto">
+							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.runs.title")}">
+								<thead><tr>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.stock")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.horizon")}</th>
+									@for(var run : runs.runs())
+										<th scope="col">
+											<div class="whitespace-nowrap">#${run.seq()} ${run.createdDate() == null ? "" : runTime.format(run.createdDate()).substring(6)} ${run.promptVersion()}</div>
+											<div class="text-xs font-normal opacity-70 whitespace-nowrap">${StockViewSupport.msg("stock.analysis.runs.summary", rate.apply(run.hitRatePct()), rate.apply(run.flatPct()))}</div>
+										</th>
+									@endfor
+								</tr></thead>
+								<tbody>
+									@for(var row : runs.rows())
+										<tr>
+											<td class="whitespace-nowrap">${row.name()} <span class="opacity-60 text-xs">${row.symbol()}</span>
+												@if(row.disagree())
+													<span class="badge badge-sm badge-outline badge-warning">${MessageUtil.getMessage("stock.analysis.runs.disagree")}</span>
+												@endif
+											</td>
+											<td>D+${row.horizonDays()}</td>
+											@for(var run : runs.runs())
+												!{var cell = row.cells().get(run.runId().toString());}
+												<td class="whitespace-nowrap">
+													@if(cell == null)
+														-
+													@else
+														@template._components.ui.tooltip(text = cell.rationale() == null ? cell.direction() : cell.rationale(), placement = "top", content = @`<span class="badge badge-sm badge-outline${cell.hit() == null ? "" : (cell.hit() ? " badge-success" : " badge-error")}">${cell.direction()} ${cell.confidence()}</span>`)
+														@if(cell.actualDirection() != null)
+															<span class="text-xs opacity-70">${cell.actualDirection()} ${pct.apply(cell.actualChangePct())}</span>
+														@endif
+													@endif
+												</td>
+											@endfor
+										</tr>
+									@endfor
+								</tbody>
+							</table>
+						</div>
+						<p class="mt-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.analysis.runs.note")}</p>
+					@endif
+				`)
 
 				<%-- 종목 검색: 아래 최근 예측 · 종목별 지표와 뉴스를 종목명 · 코드로 거른다. --%>
 				<form method="get" action="/stock/analysis" role="search" class="flex flex-wrap items-center gap-2">
