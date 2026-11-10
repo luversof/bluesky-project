@@ -9,7 +9,7 @@ try {
     Update-PriceHistory
     Update-News
 
-    $inputJson = Invoke-ApiRaw GET '/api/stock/analysis/input'
+    $inputJson = Invoke-ApiRaw GET "/api/stock/analysis/input?userId=$UserId"
     $itemCount = @(($inputJson | ConvertFrom-Json).items).Count
     if ($itemCount -eq 0) {
         Write-Log 'no analysis targets - done'

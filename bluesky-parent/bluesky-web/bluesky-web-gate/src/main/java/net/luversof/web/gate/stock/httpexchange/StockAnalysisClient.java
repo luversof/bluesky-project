@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,8 +19,9 @@ import org.springframework.web.service.annotation.HttpExchange;
     accept = MediaType.APPLICATION_JSON_VALUE)
 public interface StockAnalysisClient {
 
+  /** userId: KIS 키 주인 - 시장 상황(market)을 KIS 로 가져온다. */
   @GetExchange("/input")
-  AnalysisInput input();
+  AnalysisInput input(@RequestParam UUID userId);
 
   @GetExchange("/summary")
   Summary summary();
@@ -49,11 +51,22 @@ public interface StockAnalysisClient {
       String name,
       LocalDate baseDate,
       BigDecimal lastClose,
+      List<String> tags,
       Indicators indicators,
       List<BigDecimal> recentCloses,
       List<NewsLine> news) {}
 
-  record AnalysisInput(Instant generatedAt, List<AnalysisItem> items) {}
+  record MarketLine(
+      String key,
+      String name,
+      LocalDate lastDate,
+      BigDecimal close,
+      BigDecimal change1dPct,
+      BigDecimal change5dPct) {}
+
+  record MarketContext(Instant fetchedAt, List<MarketLine> lines, List<String> unavailable) {}
+
+  record AnalysisInput(Instant generatedAt, MarketContext market, List<AnalysisItem> items) {}
 
   record RateRow(
       String group,

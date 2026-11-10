@@ -2,6 +2,7 @@
 @import java.math.BigDecimal
 @import java.util.List
 @import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -29,20 +30,42 @@
 			@if(loadError || summary == null)
 				<div role="alert" class="alert alert-warning">${MessageUtil.getMessage("stock.analysis.loadError")}</div>
 			@else
-				<div class="flex flex-wrap gap-3">
-					<div class="stat bg-base-200 rounded-box py-2 px-4 w-auto">
-						<div class="stat-title text-xs">${MessageUtil.getMessage("stock.analysis.card.predictions")}</div>
-						<div class="stat-value text-2xl">${summary.predictions()}</div>
-					</div>
-					<div class="stat bg-base-200 rounded-box py-2 px-4 w-auto">
-						<div class="stat-title text-xs">${MessageUtil.getMessage("stock.analysis.card.pending")}</div>
-						<div class="stat-value text-2xl">${summary.pending()}</div>
-					</div>
-					<div class="stat bg-base-200 rounded-box py-2 px-4 w-auto">
-						<div class="stat-title text-xs">${MessageUtil.getMessage("stock.analysis.card.late")}</div>
-						<div class="stat-value text-2xl">${summary.late()}</div>
-					</div>
+				<div class="grid stat-card-grid grid-cols-3 gap-3">
+					@template._components.ui.statCard(label = MessageUtil.getMessage("stock.analysis.card.predictions"), value = String.valueOf(summary.predictions()), amount = false)
+					@template._components.ui.statCard(label = MessageUtil.getMessage("stock.analysis.card.pending"), value = String.valueOf(summary.pending()), amount = false)
+					@template._components.ui.statCard(label = MessageUtil.getMessage("stock.analysis.card.late"), value = String.valueOf(summary.late()), amount = false)
 				</div>
+
+				<%-- 시장 상황(v2, 2026-11-10): 예측이 보는 공통 근거 - 간밤 미국 · 변동성 · 금리 · 환율 · 국내 지수. --%>
+				@if(input != null && input.market() != null && !input.market().lines().isEmpty())
+					@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.market.title"), body = @`
+						<div class="overflow-x-auto">
+							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.market.title")}">
+								<thead><tr>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.market.col.indicator")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
+									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.close")}</th>
+									<th scope="col" class="text-right">D-1</th>
+									<th scope="col" class="text-right">D-5</th>
+								</tr></thead>
+								<tbody>
+									@for(var line : input.market().lines())
+										<tr>
+											<th scope="row" class="font-medium">${line.name()}</th>
+											<td>${line.lastDate() != null ? line.lastDate().toString() : "-"}</td>
+											<td class="text-right">${num.apply(line.close())}</td>
+											<td class="text-right ${line.change1dPct() == null ? "" : (line.change1dPct().signum() > 0 ? "text-profit" : (line.change1dPct().signum() < 0 ? "text-loss" : ""))}">${pct.apply(line.change1dPct())}</td>
+											<td class="text-right ${line.change5dPct() == null ? "" : (line.change5dPct().signum() > 0 ? "text-profit" : (line.change5dPct().signum() < 0 ? "text-loss" : ""))}">${pct.apply(line.change5dPct())}</td>
+										</tr>
+									@endfor
+								</tbody>
+							</table>
+						</div>
+						@if(!input.market().unavailable().isEmpty())
+							<p class="mt-2 text-xs text-base-content/60">${StockViewSupport.msg("stock.analysis.market.unavailable", String.join(", ", input.market().unavailable()))}</p>
+						@endif
+					`)
+				@endif
 
 				<div class="grid gap-6 lg:grid-cols-3">
 					@for(var section : List.of(

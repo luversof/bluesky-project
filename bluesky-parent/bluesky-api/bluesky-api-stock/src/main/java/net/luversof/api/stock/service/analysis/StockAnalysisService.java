@@ -67,6 +67,7 @@ public class StockAnalysisService {
   @Autowired private StockPredictionRepository stockPredictionRepository;
   @Autowired private StockPredictionGradeRepository stockPredictionGradeRepository;
   @Autowired private JsonMapper jsonMapper;
+  @Autowired private MarketContextService marketContextService;
 
   public record NewsLine(
       String source, String title, String summary, String url, Instant publishedDate) {}
@@ -76,11 +77,14 @@ public class StockAnalysisService {
       String name,
       LocalDate baseDate,
       BigDecimal lastClose,
+      List<String> tags,
       Indicators indicators,
       List<BigDecimal> recentCloses,
       List<NewsLine> news) {}
 
-  public record AnalysisInput(Instant generatedAt, List<AnalysisItem> items) {}
+  /** market: 간밤 미국 · 환율 · 금리 · 국내 지수(모든 종목 공통, 2026-11-10 v2). */
+  public record AnalysisInput(
+      Instant generatedAt, MarketContextService.MarketContext market, List<AnalysisItem> items) {}
 
   public record PredictionInput(
       String symbol, Integer horizonDays, String direction, Integer confidence, String rationale) {}
@@ -106,14 +110,32 @@ public class StockAnalysisService {
     return items;
   }
 
-  public AnalysisInput buildInput() {
+  /** userId: KIS 키 주인(시장 상황을 KIS 로 가져온다). 없으면 시장 상황은 비고 unavailable 에 모두 적힌다. */
+  public AnalysisInput buildInput(UUID userId) {
     List<StockItem> targets = findTargets();
     Map<UUID, List<StockNews>> newsByItem = recentNewsByItem();
+    Map<UUID, List<String>> tagsByItem = tagsByItem(targets);
     List<AnalysisItem> items =
         targets.stream()
-            .map(item -> buildItem(item, newsByItem.getOrDefault(item.getId(), List.of())))
+            .map(item ->
+                buildItem(
+                    item,
+                    newsByItem.getOrDefault(item.getId(), List.of()),
+                    tagsByItem.getOrDefault(item.getId(), List.of())))
             .toList();
-    return new AnalysisInput(Instant.now(), items);
+    return new AnalysisInput(Instant.now(), marketContextService.fetch(userId), items);
+  }
+
+  /** 종목 태그(월배당 · 커버드콜 · 리츠 등) - ETF 의 기초자산을 가늠하는 단서. 분석 대상 표식(analysis)은 뺀다. */
+  private Map<UUID, List<String>> tagsByItem(List<StockItem> items) {
+    return stockItemTagRepository
+        .findByStockItemIdIn(items.stream().map(StockItem::getId).toList())
+        .stream()
+        .filter(tag -> !ANALYSIS_TAG.equals(tag.getTag()))
+        .collect(
+            Collectors.groupingBy(
+                StockItemTag::getStockItemId,
+                Collectors.mapping(StockItemTag::getTag, Collectors.toList())));
   }
 
   private Map<UUID, List<StockNews>> recentNewsByItem() {
@@ -122,7 +144,7 @@ public class StockAnalysisService {
         .collect(Collectors.groupingBy(StockNews::getStockItemId));
   }
 
-  private AnalysisItem buildItem(StockItem item, List<StockNews> news) {
+  private AnalysisItem buildItem(StockItem item, List<StockNews> news, List<String> tags) {
     List<StockPriceHistory> rows =
         new ArrayList<>(
             stockPriceHistoryRepository.findTop30ByStockItemIdOrderByTradeDateDesc(item.getId()));
@@ -146,6 +168,7 @@ public class StockAnalysisService {
         item.getName(),
         last == null ? null : last.tradeDate(),
         last == null ? null : last.close(),
+        tags,
         PredictionMath.indicators(bars),
         bars.stream().skip(Math.max(0, bars.size() - RECENT_CLOSES)).map(Bar::close).toList(),
         newsLines);
@@ -165,6 +188,7 @@ public class StockAnalysisService {
         findTargets().stream()
             .collect(Collectors.toMap(StockItem::getSymbol, Function.identity(), (a, b) -> a));
     Map<UUID, List<StockNews>> newsByItem = recentNewsByItem();
+    Map<UUID, List<String>> tagsByItem = tagsByItem(List.copyOf(targets.values()));
     Map<String, AnalysisItem> builtItems = new HashMap<>();
 
     int saved = 0;
@@ -179,7 +203,12 @@ public class StockAnalysisService {
       StockItem item = targets.get(p.symbol());
       AnalysisItem built =
           builtItems.computeIfAbsent(
-              p.symbol(), s -> buildItem(item, newsByItem.getOrDefault(item.getId(), List.of())));
+              p.symbol(),
+              s ->
+                  buildItem(
+                      item,
+                      newsByItem.getOrDefault(item.getId(), List.of()),
+                      tagsByItem.getOrDefault(item.getId(), List.of())));
       if (built.baseDate() == null) {
         rejected.add(p.symbol() + ": 시세 없음");
         continue;
@@ -203,7 +232,10 @@ public class StockAnalysisService {
       prediction.setModelId(request.modelId());
       prediction.setPromptVersion(request.promptVersion());
       @SuppressWarnings("unchecked")
-      Map<String, Object> snapshot = jsonMapper.convertValue(built, Map.class);
+      Map<String, Object> snapshot = new HashMap<>(jsonMapper.convertValue(built, Map.class));
+      // 예측이 본 시장 상황도 함께 남긴다(아침 작업이 입력을 만들 때 가져온 것 - 30 분 캐시).
+      snapshot.put(
+          "market", jsonMapper.convertValue(marketContextService.lastFetched(), Map.class));
       prediction.setInputSnapshot(snapshot);
       stockPredictionRepository.save(prediction);
       saved++;

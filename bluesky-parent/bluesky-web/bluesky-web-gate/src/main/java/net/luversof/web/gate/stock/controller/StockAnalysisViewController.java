@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
+import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient;
 import net.luversof.web.gate.stock.support.StockViewSupport;
 
@@ -37,7 +38,7 @@ public class StockAnalysisViewController {
     try {
       model.addAttribute("summary", stockAnalysisClient.summary());
       model.addAttribute("recent", stockAnalysisClient.recent(RECENT_DAYS));
-      model.addAttribute("input", stockAnalysisClient.input());
+      model.addAttribute("input", stockAnalysisClient.input(UserUtil.getUserId()));
     } catch (RuntimeException e) {
       // 화면 껍데기는 그대로 그리고 안내만 한다 - 다른 stock 화면과 같은 규칙.
       log.warn("market analysis load failed", e);

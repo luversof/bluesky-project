@@ -37,8 +37,8 @@ public class StockAnalysisController {
   }
 
   @GetMapping("/input")
-  public StockAnalysisService.AnalysisInput input() {
-    return stockAnalysisService.buildInput();
+  public StockAnalysisService.AnalysisInput input(@RequestParam(required = false) UUID userId) {
+    return stockAnalysisService.buildInput(userId);
   }
 
   @PostMapping("/predictions")
