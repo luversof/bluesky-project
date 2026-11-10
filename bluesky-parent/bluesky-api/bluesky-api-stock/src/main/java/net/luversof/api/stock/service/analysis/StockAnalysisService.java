@@ -374,6 +374,7 @@ public class StockAnalysisService {
       BigDecimal basePrice,
       String promptVersion,
       Instant createdDate,
+      int runSeq,
       LocalDate targetDate,
       BigDecimal actualChangePct,
       String actualDirection,
@@ -393,6 +394,7 @@ public class StockAnalysisService {
             .map(p -> new Graded(p, grades.get(p.getId())))
             .toList();
     int late = (int) grades.values().stream().filter(StockPredictionGrade::isLate).count();
+    Map<UUID, Integer> runSeqs = runSeqs(predictions);
 
     return new Summary(
         predictions.size(),
@@ -406,21 +408,69 @@ public class StockAnalysisService {
                 .filter(p -> grades.containsKey(p.getId()))
                 .map(p -> new Graded(p, grades.get(p.getId())))
                 .toList(),
-            StockAnalysisService::runLabel));
+            g -> runLabel(g, runSeqs.getOrDefault(runKey(g.prediction()), 0))));
   }
 
+  private static final java.time.format.DateTimeFormatter RUN_DATE =
+      java.time.format.DateTimeFormatter.ofPattern("MM-dd").withZone(PredictionMath.MARKET_ZONE_ID);
   private static final java.time.format.DateTimeFormatter RUN_TIME =
-      java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")
-          .withZone(PredictionMath.MARKET_ZONE_ID);
+      java.time.format.DateTimeFormatter.ofPattern("HH:mm").withZone(PredictionMath.MARKET_ZONE_ID);
 
   /**
-   * 회차 이름: 분석 시각(KST) + 프롬프트 버전. 한 회차는 한 번의 claude 호출이라 분 단위로 겹치지 않는다. 장중(기준일 다음 거래일 09:00 이후)에 돌린
-   * 회차는 장중 정보가 섞여 표시만 하고 다른 표에서는 뺀다.
+   * 회차 이름: 분석 날짜(KST) · 그날 몇 번째 분석인지 · 시각 · 프롬프트 버전(예: 11-10 #2 20:18 v2). 장중(기준일 다음 거래일 09:00 이후)에
+   * 돌린 회차는 장중 정보가 섞여 표시만 하고 다른 표에서는 뺀다.
    */
-  static String runLabel(Graded g) {
+  static String runLabel(Graded g, int seq) {
     StockPrediction p = g.prediction();
-    String time = p.getCreatedDate() == null ? "?" : RUN_TIME.format(p.getCreatedDate());
-    return time + " " + p.getPromptVersion() + (g.grade().isLate() ? " (late)" : "");
+    if (p.getCreatedDate() == null) {
+      return "? " + p.getPromptVersion();
+    }
+    return RUN_DATE.format(p.getCreatedDate())
+        + " #"
+        + seq
+        + " "
+        + RUN_TIME.format(p.getCreatedDate())
+        + " "
+        + p.getPromptVersion()
+        + (g.grade().isLate() ? " (late)" : "");
+  }
+
+  /** 회차 키. runId 가 없는 행(회차 기능 전 앱이 넣은 것)은 schema-alter 의 채우기와 같은 기준(모델 · 버전 · 분)으로 묶는다. */
+  static UUID runKey(StockPrediction p) {
+    if (p.getRunId() != null) {
+      return p.getRunId();
+    }
+    String minute =
+        p.getCreatedDate() == null
+            ? ""
+            : p.getCreatedDate().truncatedTo(java.time.temporal.ChronoUnit.MINUTES).toString();
+    return UUID.nameUUIDFromBytes(
+        (p.getModelId() + "|" + p.getPromptVersion() + "|" + minute)
+            .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+  }
+
+  /** 회차 키 -> 분석 날짜(KST)에서 몇 번째 분석인지(1 부터, 회차의 첫 저장 시각 순). */
+  static Map<UUID, Integer> runSeqs(List<StockPrediction> predictions) {
+    Map<UUID, Instant> started = new HashMap<>();
+    for (StockPrediction p : predictions) {
+      if (p.getCreatedDate() != null) {
+        started.merge(runKey(p), p.getCreatedDate(), (a, b) -> a.isBefore(b) ? a : b);
+      }
+    }
+    Map<UUID, Integer> seqs = new HashMap<>();
+    started.entrySet().stream()
+        .collect(
+            Collectors.groupingBy(
+                e -> e.getValue().atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate()))
+        .values()
+        .forEach(runs -> {
+          List<Map.Entry<UUID, Instant>> sorted =
+              runs.stream().sorted(Map.Entry.comparingByValue()).toList();
+          for (int i = 0; i < sorted.size(); i++) {
+            seqs.put(sorted.get(i).getKey(), i + 1);
+          }
+        });
+    return seqs;
   }
 
   static String confidenceBucket(int confidence) {
@@ -526,6 +576,11 @@ public class StockAnalysisService {
     List<StockPrediction> predictions =
         stockPredictionRepository.findByBaseDateGreaterThanEqual(since);
     Map<UUID, StockPredictionGrade> grades = gradesOf(predictions);
+    // shortcut: 그날 몇 번째인지 세려고 전체 예측을 읽는다(하루 수십 건 규모), 수만 건을 넘으면 회차 표를 따로 둔다.
+    Map<UUID, Integer> runSeqs =
+        runSeqs(
+            StreamSupport.stream(stockPredictionRepository.findAll().spliterator(), false)
+                .toList());
     Map<UUID, StockItem> items = new LinkedHashMap<>();
     stockItemRepository
         .findAllById(
@@ -546,6 +601,7 @@ public class StockAnalysisService {
               p.getBasePrice(),
               p.getPromptVersion(),
               p.getCreatedDate(),
+              runSeqs.getOrDefault(runKey(p), 0),
               g == null ? null : g.getTargetDate(),
               g == null ? null : g.getActualChangePct(),
               g == null ? null : g.getActualDirection(),

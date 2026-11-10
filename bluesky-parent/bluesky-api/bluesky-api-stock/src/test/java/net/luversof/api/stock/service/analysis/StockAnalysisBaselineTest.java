@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
@@ -42,13 +43,36 @@ class StockAnalysisBaselineTest {
   }
 
   @Test
-  void 회차_이름은_분석_시각_KST_와_버전이고_장중_회차는_표시한다() {
+  void 회차_이름은_분석_날짜_몇번째_시각_버전이고_장중_회차는_표시한다() {
     Graded g = graded(1, null, "UP", null);
     g.prediction().setCreatedDate(java.time.Instant.parse("2026-11-10T11:07:12Z"));
     g.prediction().setPromptVersion("v2");
-    assertThat(StockAnalysisService.runLabel(g)).isEqualTo("11-10 20:07 v2");
+    assertThat(StockAnalysisService.runLabel(g, 2)).isEqualTo("11-10 #2 20:07 v2");
     g.grade().setLate(true);
-    assertThat(StockAnalysisService.runLabel(g)).isEqualTo("11-10 20:07 v2 (late)");
+    assertThat(StockAnalysisService.runLabel(g, 2)).isEqualTo("11-10 #2 20:07 v2 (late)");
+  }
+
+  private static StockPrediction saved(UUID runId, String createdUtc) {
+    StockPrediction p = new StockPrediction();
+    p.setRunId(runId);
+    p.setCreatedDate(java.time.Instant.parse(createdUtc));
+    return p;
+  }
+
+  @Test
+  void 회차_번호는_KST_날짜마다_1부터_시각순이다() {
+    UUID a = UUID.randomUUID();
+    UUID b = UUID.randomUUID();
+    UUID c = UUID.randomUUID();
+    Map<UUID, Integer> seqs =
+        StockAnalysisService.runSeqs(
+            List.of(
+                saved(b, "2026-11-10T11:18:58Z"),
+                saved(a, "2026-11-10T11:07:12Z"),
+                saved(a, "2026-11-10T11:07:13Z"),
+                // KST 11-11 00:30 - 다음 날 첫 회차
+                saved(c, "2026-11-10T15:30:00Z")));
+    assertThat(seqs).containsEntry(a, 1).containsEntry(b, 2).containsEntry(c, 1);
   }
 
   @Test

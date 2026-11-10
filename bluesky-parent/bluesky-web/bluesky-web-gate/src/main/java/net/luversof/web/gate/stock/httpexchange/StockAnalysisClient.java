@@ -98,6 +98,7 @@ public interface StockAnalysisClient {
       BigDecimal basePrice,
       String promptVersion,
       Instant createdDate,
+      int runSeq,
       LocalDate targetDate,
       BigDecimal actualChangePct,
       String actualDirection,

@@ -12,6 +12,7 @@
 @param StockAnalysisClient.Summary summary = null
 @param List<StockAnalysisClient.RecentPrediction> recent = null
 @param StockAnalysisClient.AnalysisInput input = null
+@param String keyword = ""
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -114,6 +115,15 @@
 					@endfor
 				</div>
 
+				<%-- 종목 검색: 아래 최근 예측 · 종목별 지표와 뉴스를 종목명 · 코드로 거른다. --%>
+				<form method="get" action="/stock/analysis" role="search" class="flex flex-wrap items-center gap-2">
+					<input name="keyword" type="search" value="${keyword}" aria-label="${MessageUtil.getMessage("stock.analysis.search.placeholder")}" placeholder="${MessageUtil.getMessage("stock.analysis.search.placeholder")}" class="input input-bordered input-sm w-full max-w-xs" />
+					<button type="submit" class="btn btn-sm btn-primary">${MessageUtil.getMessage("stock.analysis.search.submit")}</button>
+					@if(keyword != null && !keyword.isBlank())
+						<a href="/stock/analysis" class="link link-hover text-sm">${MessageUtil.getMessage("stock.analysis.search.reset")}</a>
+					@endif
+				</form>
+
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.recent.title"), body = @`
 						@if(recent == null || recent.isEmpty())
 							<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
@@ -133,7 +143,7 @@
 									<tbody>
 										@for(var p : recent)
 											<tr>
-												<td class="whitespace-nowrap">${p.createdDate() == null ? "-" : runTime.format(p.createdDate())} <span class="opacity-60 text-xs">${p.promptVersion()}</span></td>
+												<td class="whitespace-nowrap">${p.createdDate() == null ? "-" : runTime.format(p.createdDate())} <span class="opacity-60 text-xs">#${p.runSeq()} ${p.promptVersion()}</span></td>
 												<td class="whitespace-nowrap">${String.valueOf(p.baseDate())}</td>
 												<td class="whitespace-nowrap">${p.name()} <span class="opacity-60 text-xs">${p.symbol()}</span></td>
 												<td>D+${p.horizonDays()}</td>
