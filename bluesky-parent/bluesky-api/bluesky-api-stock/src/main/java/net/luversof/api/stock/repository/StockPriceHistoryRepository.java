@@ -387,6 +387,10 @@ public interface StockPriceHistoryRepository extends CrudRepository<StockPriceHi
   /** 시황 분석 입력: 지표(20 일) + 종목별 기준 비율(60 거래일 x 5 일 변화). */
   List<StockPriceHistory> findTop70ByStockItemIdOrderByTradeDateDesc(UUID stockItemId);
 
+  /** 리플레이: 지난 기준일까지의 시세만(그 뒤 시세가 입력에 섞이지 않게). */
+  List<StockPriceHistory> findTop70ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+      UUID stockItemId, LocalDate tradeDate);
+
   /** 채점용: 기준일 다음 거래일부터(오래된 것부터). */
   List<StockPriceHistory> findTop10ByStockItemIdAndTradeDateGreaterThanOrderByTradeDateAsc(
       UUID stockItemId, LocalDate tradeDate);

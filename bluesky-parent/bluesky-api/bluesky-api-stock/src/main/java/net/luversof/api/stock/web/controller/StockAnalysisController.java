@@ -37,8 +37,19 @@ public class StockAnalysisController {
   }
 
   @GetMapping("/input")
-  public StockAnalysisService.AnalysisInput input(@RequestParam(required = false) UUID userId) {
-    return stockAnalysisService.buildInput(userId);
+  public StockAnalysisService.AnalysisInput input(
+      @RequestParam(required = false) UUID userId,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf,
+      @RequestParam(defaultValue = "false") boolean morning) {
+    return stockAnalysisService.buildInput(userId, asOf, morning);
+  }
+
+  /** 리플레이: 지난 기준일 asOf 의 예측을 저장하지 않고 채점한다(tools/market-analysis/replay.py). */
+  @PostMapping("/evaluate")
+  public StockAnalysisService.EvalResult evaluate(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf,
+      @RequestBody StockAnalysisService.SubmitRequest request) {
+    return stockAnalysisService.evaluate(asOf, request);
   }
 
   @PostMapping("/predictions")

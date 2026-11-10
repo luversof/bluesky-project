@@ -83,16 +83,53 @@ public class MarketContextService {
 
   private volatile MarketContext cached;
 
+  /** 리플레이(지난 기준일) 결과 - 지난 날의 일별 시세는 바뀌지 않으니 TTL 없이 둔다. */
+  private final java.util.Map<String, MarketContext> pastCache =
+      new java.util.concurrent.ConcurrentHashMap<>();
+
   /** 마지막으로 가져온 시장 상황(없으면 null). 예측 저장 때 입력 기록에 함께 남긴다. */
   public MarketContext lastFetched() {
     return cached;
   }
 
   public MarketContext fetch(UUID userId) {
+    return fetch(userId, null);
+  }
+
+  /** 저녁 분석 기준의 리플레이(아래 morning=false). */
+  public MarketContext fetch(UUID userId, LocalDate asOf) {
+    return fetch(userId, asOf, false);
+  }
+
+  /**
+   * asOf: 리플레이 기준일. 국내 지수는 asOf 까지. 해외는 저녁 분석(asOf 20:00 KST)이면 asOf 전날(미국 날짜)까지 - asOf 날짜의 미국 장은
+   * 한국 시간으로 다음 날 새벽에 끝난다. morning(다음 거래일 08:00 KST, 아침 작업 시각)이면 asOf 날짜의 미국 장까지 들어간다. null 이면 지금.
+   */
+  public MarketContext fetch(UUID userId, LocalDate asOf, boolean morning) {
+    if (asOf != null) {
+      String key = asOf + (morning ? "@morning" : "@evening");
+      MarketContext past = pastCache.get(key);
+      if (past != null) {
+        return past;
+      }
+      MarketContext result = load(userId, asOf, morning);
+      if (!result.lines().isEmpty()) {
+        pastCache.put(key, result);
+      }
+      return result;
+    }
     MarketContext hit = cached;
     if (hit != null && hit.fetchedAt().isAfter(Instant.now().minus(CACHE_TTL))) {
       return hit;
     }
+    MarketContext result = load(userId, null, false);
+    if (!result.lines().isEmpty()) {
+      cached = result;
+    }
+    return result;
+  }
+
+  private MarketContext load(UUID userId, LocalDate asOf, boolean morning) {
     if (userId == null) {
       return new MarketContext(Instant.now(), List.of(), DEFS.stream().map(Def::key).toList());
     }
@@ -103,13 +140,14 @@ public class MarketContextService {
       log.warn("market context: KIS config unavailable", e);
       return new MarketContext(Instant.now(), List.of(), DEFS.stream().map(Def::key).toList());
     }
-    LocalDate end = LocalDate.now(PredictionMath.MARKET_ZONE_ID);
-    LocalDate start = end.minusDays(LOOKBACK_DAYS);
+    LocalDate today = asOf != null ? asOf : LocalDate.now(PredictionMath.MARKET_ZONE_ID);
     List<MarketLine> lines = new ArrayList<>();
     List<String> unavailable = new ArrayList<>();
     for (Def def : DEFS) {
       try {
-        MarketLine line = lineOf(def, fetchRows(config, def, start, end));
+        LocalDate end =
+            asOf != null && !morning && def.kind() == Kind.OVERSEAS ? today.minusDays(1) : today;
+        MarketLine line = lineOf(def, fetchRows(config, def, end.minusDays(LOOKBACK_DAYS), end));
         if (line == null) {
           unavailable.add(def.key());
         } else {
@@ -126,11 +164,7 @@ public class MarketContextService {
         unavailable.add(def.key());
       }
     }
-    MarketContext result = new MarketContext(Instant.now(), lines, unavailable);
-    if (!lines.isEmpty()) {
-      cached = result;
-    }
-    return result;
+    return new MarketContext(Instant.now(), lines, unavailable);
   }
 
   @SuppressWarnings("unchecked")

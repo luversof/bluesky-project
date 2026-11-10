@@ -28,7 +28,8 @@ class AssetStatusPrintColumnTest {
   private static final Path BUILT_CSS = Path.of("src/main/resources/static/main.css");
 
   private String read(Path path) throws IOException {
-    return Files.readString(path, StandardCharsets.UTF_8);
+    // Windows 체크아웃(core.autocrlf)은 CRLF 다 - 아래 검사는 LF 기준이라 맞춘다.
+    return Files.readString(path, StandardCharsets.UTF_8).replace("\r\n", "\n");
   }
 
   @Test

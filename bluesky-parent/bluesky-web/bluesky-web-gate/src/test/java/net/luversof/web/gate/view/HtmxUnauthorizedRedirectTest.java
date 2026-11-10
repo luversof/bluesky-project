@@ -21,8 +21,10 @@ import org.junit.jupiter.api.Test;
 class HtmxUnauthorizedRedirectTest {
 
   private static String layout() throws IOException {
+    // Windows 체크아웃(core.autocrlf)은 CRLF 다 - 아래 검사는 LF 기준이라 맞춘다.
     return Files.readString(
-        Path.of("src/main/jte/_layout/defaultLayout.jte"), StandardCharsets.UTF_8);
+            Path.of("src/main/jte/_layout/defaultLayout.jte"), StandardCharsets.UTF_8)
+        .replace("\r\n", "\n");
   }
 
   private static String showLoadErrorBody(String layout) {

@@ -86,6 +86,7 @@ public class StockAnalysisService {
       List<BigDecimal> recentCloses,
       List<NewsLine> news,
       PredictionMath.BaseRates baseRates,
+      PredictionMath.BaseRates recentBaseRates,
       DividendInfo dividend) {}
 
   /**
@@ -130,8 +131,21 @@ public class StockAnalysisService {
 
   /** userId: KIS 키 주인(시장 상황을 KIS 로 가져온다). 없으면 시장 상황은 비고 unavailable 에 모두 적힌다. */
   public AnalysisInput buildInput(UUID userId) {
+    return buildInput(userId, null);
+  }
+
+  /**
+   * asOf: 리플레이 - 그 거래일 저녁(20:00 KST)에 분석했다면 보였을 것만으로 입력을 만든다(시세 · 분배 이력 · 뉴스 · 시장 상황). null 이면 지금.
+   * 프롬프트 · 입력을 고친 뒤 실제 채점(1 ~ 5 거래일)을 기다리지 않고 지난 날들로 바로 비교하려는 것(사용자 요청 2026-11-10).
+   */
+  public AnalysisInput buildInput(UUID userId, LocalDate asOf) {
+    return buildInput(userId, asOf, false);
+  }
+
+  /** morning: 리플레이 분석 시각을 기준일 다음 날 08:00 KST(아침 작업)로 - 간밤 미국 장과 그 사이 뉴스까지 보인다. */
+  public AnalysisInput buildInput(UUID userId, LocalDate asOf, boolean morning) {
     List<StockItem> targets = findTargets();
-    Map<UUID, List<StockNews>> newsByItem = recentNewsByItem();
+    Map<UUID, List<StockNews>> newsByItem = recentNewsByItem(asOf, morning);
     Map<UUID, List<String>> tagsByItem = tagsByItem(targets);
     List<AnalysisItem> items =
         targets.stream()
@@ -139,9 +153,11 @@ public class StockAnalysisService {
                 buildItem(
                     item,
                     newsByItem.getOrDefault(item.getId(), List.of()),
-                    tagsByItem.getOrDefault(item.getId(), List.of())))
+                    tagsByItem.getOrDefault(item.getId(), List.of()),
+                    asOf))
             .toList();
-    return new AnalysisInput(Instant.now(), marketContextService.fetch(userId), items);
+    return new AnalysisInput(
+        Instant.now(), marketContextService.fetch(userId, asOf, morning), items);
   }
 
   /** 종목 태그(월배당 · 커버드콜 · 리츠 등) - ETF 의 기초자산을 가늠하는 단서. 분석 대상 표식(analysis)은 뺀다. */
@@ -157,15 +173,43 @@ public class StockAnalysisService {
   }
 
   private Map<UUID, List<StockNews>> recentNewsByItem() {
-    Instant since = Instant.now().minus(NEWS_DAYS, ChronoUnit.DAYS);
-    return stockNewsRepository.findByPublishedDateAfter(since).stream()
+    return recentNewsByItem(null, false);
+  }
+
+  private Map<UUID, List<StockNews>> recentNewsByItem(LocalDate asOf, boolean morning) {
+    if (asOf == null) {
+      Instant since = Instant.now().minus(NEWS_DAYS, ChronoUnit.DAYS);
+      return stockNewsRepository.findByPublishedDateAfter(since).stream()
+          .collect(Collectors.groupingBy(StockNews::getStockItemId));
+    }
+    Instant until = analyzedAt(asOf, morning);
+    return stockNewsRepository
+        .findByPublishedDateBetween(until.minus(NEWS_DAYS, ChronoUnit.DAYS), until)
+        .stream()
         .collect(Collectors.groupingBy(StockNews::getStockItemId));
   }
 
+  /** 리플레이의 분석 시각: 기준일 20:00 KST(장 마감 · 시세 갱신 뒤), morning 이면 기준일 다음 날 08:00 KST(장 전). */
+  static Instant analyzedAt(LocalDate asOf, boolean morning) {
+    return morning
+        ? asOf.plusDays(1).atTime(8, 0).atZone(PredictionMath.MARKET_ZONE_ID).toInstant()
+        : asOf.atTime(20, 0).atZone(PredictionMath.MARKET_ZONE_ID).toInstant();
+  }
+
   private AnalysisItem buildItem(StockItem item, List<StockNews> news, List<String> tags) {
+    return buildItem(item, news, tags, null);
+  }
+
+  private AnalysisItem buildItem(
+      StockItem item, List<StockNews> news, List<String> tags, LocalDate asOf) {
     List<StockPriceHistory> rows =
         new ArrayList<>(
-            stockPriceHistoryRepository.findTop70ByStockItemIdOrderByTradeDateDesc(item.getId()));
+            asOf == null
+                ? stockPriceHistoryRepository.findTop70ByStockItemIdOrderByTradeDateDesc(
+                    item.getId())
+                : stockPriceHistoryRepository
+                    .findTop70ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+                        item.getId(), asOf));
     Collections.reverse(rows);
     List<Bar> bars =
         rows.stream()
@@ -191,10 +235,95 @@ public class StockAnalysisService {
         bars.stream().skip(Math.max(0, bars.size() - RECENT_CLOSES)).map(Bar::close).toList(),
         newsLines,
         PredictionMath.baseRates(bars, BASE_RATE_WINDOW),
+        // 60 일 비율은 국면이 바뀌면 늦다(리플레이 2026-11-10: 9 월 하락 전환 때 60 일 UP 우세를 따라가 틀렸다) - 최근 20 일도 함께.
+        PredictionMath.baseRates(bars, RECENT_BASE_RATE_WINDOW),
         last == null ? null : dividendOf(item, last));
   }
 
+  // ---- 리플레이 채점(저장하지 않는다) ----
+
+  public record EvalLine(
+      String symbol,
+      int horizonDays,
+      String direction,
+      int confidence,
+      String actualDirection,
+      BigDecimal actualChangePct,
+      Boolean hit) {}
+
+  /** pending: 만기 종가가 아직 없는 예측 수. */
+  public record EvalResult(
+      LocalDate baseDate, int pending, List<RateRow> byHorizon, List<EvalLine> lines) {}
+
+  /**
+   * 리플레이 예측을 지난 기준일 asOf 로 채점한다 - DB 에 넣지 않는다(실제 예측 · 적중률과 섞이지 않게). 채점 규칙 · 기준선은 실제 채점과 같다 (gradeOf
+   * · rates).
+   */
+  public EvalResult evaluate(LocalDate asOf, SubmitRequest request) {
+    if (asOf == null || request == null || request.predictions() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "asOf, predictions are required");
+    }
+    Map<String, StockItem> targets =
+        findTargets().stream()
+            .collect(Collectors.toMap(StockItem::getSymbol, Function.identity(), (a, b) -> a));
+    Map<String, AnalysisItem> built = new HashMap<>();
+    List<Graded> graded = new ArrayList<>();
+    List<EvalLine> lines = new ArrayList<>();
+    int pending = 0;
+    for (PredictionInput p : request.predictions()) {
+      if (validate(p, targets) != null) {
+        continue;
+      }
+      StockItem item = targets.get(p.symbol());
+      AnalysisItem b =
+          built.computeIfAbsent(p.symbol(), s -> buildItem(item, List.of(), List.of(), asOf));
+      if (b.baseDate() == null) {
+        continue;
+      }
+      List<StockPriceHistory> after =
+          stockPriceHistoryRepository
+              .findTop10ByStockItemIdAndTradeDateGreaterThanOrderByTradeDateAsc(
+                  item.getId(), b.baseDate());
+      if (after.size() < p.horizonDays()) {
+        pending++;
+        lines.add(
+            new EvalLine(
+                p.symbol(), p.horizonDays(), p.direction(), p.confidence(), null, null, null));
+        continue;
+      }
+      StockPrediction prediction = new StockPrediction();
+      prediction.setStockItemId(item.getId());
+      prediction.setBaseDate(b.baseDate());
+      prediction.setBasePrice(b.lastClose());
+      prediction.setHorizonDays(p.horizonDays());
+      prediction.setDirection(p.direction());
+      prediction.setConfidence(p.confidence());
+      prediction.setCreatedDate(analyzedAt(b.baseDate(), false));
+      prediction.setInputSnapshot(Map.of("recentCloses", b.recentCloses()));
+      StockPredictionGrade grade =
+          gradeOf(
+              prediction,
+              after.get(p.horizonDays() - 1),
+              after.get(0).getTradeDate(),
+              stockPriceHistoryRepository
+                  .findTop2ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+                      item.getId(), b.baseDate()));
+      graded.add(new Graded(prediction, grade));
+      lines.add(
+          new EvalLine(
+              p.symbol(),
+              p.horizonDays(),
+              p.direction(),
+              p.confidence(),
+              grade.getActualDirection(),
+              grade.getActualChangePct(),
+              grade.isHit()));
+    }
+    return new EvalResult(asOf, pending, rates(graded, g -> "all"), lines);
+  }
+
   static final int BASE_RATE_WINDOW = 60;
+  static final int RECENT_BASE_RATE_WINDOW = 20;
 
   private DividendInfo dividendOf(StockItem item, Bar last) {
     List<MonthlyDividendPayout> payouts =
@@ -206,7 +335,8 @@ public class StockAnalysisService {
   static DividendInfo dividendInfo(List<MonthlyDividendPayout> payouts, Bar last) {
     MonthlyDividendPayout latest =
         payouts.stream()
-            .filter(p -> p.getRecordDate() != null)
+            // 리플레이: 기준일 뒤의 지급 이력은 그때 알 수 없었다.
+            .filter(p -> p.getRecordDate() != null && !p.getRecordDate().isAfter(last.tradeDate()))
             .max(Comparator.comparing(MonthlyDividendPayout::getRecordDate))
             .orElse(null);
     if (latest == null) {
