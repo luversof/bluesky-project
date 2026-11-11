@@ -139,11 +139,13 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     var tradesForYieldFuture =
         emptyAccountSelection
             ? null
-            : async.supply(() ->
-                emptyIfNull(
-                    tradeClient.findTrades(
-                        new TradeSearchRequest(userId, request.getAccountIdList(), null, null, null)
-                            .toParams())));
+            : async.supply(
+                () ->
+                    emptyIfNull(
+                        tradeClient.findTrades(
+                            new TradeSearchRequest(
+                                    userId, request.getAccountIdList(), null, null, null)
+                                .toParams())));
     var firstBuyDateFuture =
         emptyAccountSelection
             ? null
@@ -280,12 +282,14 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     }
     Map<UUID, BigDecimal> daySums =
         StockDividendHtmxController.principalCostDaySumByStock(trades, today, zone);
-    dividendByStockItem.forEach((stockItemId, dividend) -> {
-      BigDecimal pct = StockYieldUtil.annualizedPctOnHeldDays(dividend, daySums.get(stockItemId));
-      if (pct != null && dividend != null && dividend.signum() > 0) {
-        result.put(stockItemId, pct);
-      }
-    });
+    dividendByStockItem.forEach(
+        (stockItemId, dividend) -> {
+          BigDecimal pct =
+              StockYieldUtil.annualizedPctOnHeldDays(dividend, daySums.get(stockItemId));
+          if (pct != null && dividend != null && dividend.signum() > 0) {
+            result.put(stockItemId, pct);
+          }
+        });
     return result;
   }
 
@@ -319,11 +323,12 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
     Set<UUID> notListedStockItemIds = new LinkedHashSet<>(soldOutStockItemIds);
-    dividendByStockItem.forEach((stockItemId, amount) -> {
-      if (stockItemId != null && !heldStockItemIds.contains(stockItemId)) {
-        notListedStockItemIds.add(stockItemId);
-      }
-    });
+    dividendByStockItem.forEach(
+        (stockItemId, amount) -> {
+          if (stockItemId != null && !heldStockItemIds.contains(stockItemId)) {
+            notListedStockItemIds.add(stockItemId);
+          }
+        });
     BigDecimal soldOutDividend =
         notListedStockItemIds.stream()
             .map(dividendByStockItem::get)
@@ -366,42 +371,44 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                   return list.get(0).accountName();
                 },
                 Comparator.nullsLast(Comparator.naturalOrder())))
-        .forEach(entry -> {
-          UUID accountId = entry.getKey();
-          List<TradeProfit> list = entry.getValue();
-          TradeProfit first = list.get(0);
-          String accountName = first.accountName();
-          List<TradeProfit> sortedHoldings =
-              list.stream().sorted(BY_EVALUATION_DESC_THEN_NAME).toList();
-          var s = TradeProfitAggregator.aggregate(list);
-          BigDecimal evaluationAmount =
-              s.evaluationAmount() != null ? s.evaluationAmount() : BigDecimal.ZERO;
-          BigDecimal holdingCost =
-              resolveCurrentHoldingCost(
-                  evaluationAmount, s.evaluationProfit(), s.avgBuyPrice(), s.holdingQuantity());
-          BigDecimal defaultEvaluationProfit =
-              s.evaluationProfit() != null ? s.evaluationProfit() : BigDecimal.ZERO;
-          BigDecimal defaultPrincipal = holdingCost;
-          BigDecimal manualPrincipal =
-              accountId != null ? accountPrincipalOverrideMap.get(accountId) : null;
-          BigDecimal profitBasis = manualPrincipal != null ? manualPrincipal : defaultPrincipal;
-          accountProfitBasisMap.put(accountId, profitBasis);
-          if (manualPrincipal != null && accountId != null) {
-            manualPrincipalAccountIds.add(accountId);
-          }
-          accountHoldingMap.put(
-              accountId,
-              buildAccountHoldingViews(sortedHoldings, evaluationAmount, totalEvaluationAmount));
-          accountTotalMap.put(
-              accountId,
-              TradeProfit.ofAccountStatus(
-                  accountName,
-                  evaluationAmount,
-                  defaultEvaluationProfit,
-                  s.realizedProfit(),
-                  holdingCost,
-                  s.totalSellProceeds()));
-        });
+        .forEach(
+            entry -> {
+              UUID accountId = entry.getKey();
+              List<TradeProfit> list = entry.getValue();
+              TradeProfit first = list.get(0);
+              String accountName = first.accountName();
+              List<TradeProfit> sortedHoldings =
+                  list.stream().sorted(BY_EVALUATION_DESC_THEN_NAME).toList();
+              var s = TradeProfitAggregator.aggregate(list);
+              BigDecimal evaluationAmount =
+                  s.evaluationAmount() != null ? s.evaluationAmount() : BigDecimal.ZERO;
+              BigDecimal holdingCost =
+                  resolveCurrentHoldingCost(
+                      evaluationAmount, s.evaluationProfit(), s.avgBuyPrice(), s.holdingQuantity());
+              BigDecimal defaultEvaluationProfit =
+                  s.evaluationProfit() != null ? s.evaluationProfit() : BigDecimal.ZERO;
+              BigDecimal defaultPrincipal = holdingCost;
+              BigDecimal manualPrincipal =
+                  accountId != null ? accountPrincipalOverrideMap.get(accountId) : null;
+              BigDecimal profitBasis = manualPrincipal != null ? manualPrincipal : defaultPrincipal;
+              accountProfitBasisMap.put(accountId, profitBasis);
+              if (manualPrincipal != null && accountId != null) {
+                manualPrincipalAccountIds.add(accountId);
+              }
+              accountHoldingMap.put(
+                  accountId,
+                  buildAccountHoldingViews(
+                      sortedHoldings, evaluationAmount, totalEvaluationAmount));
+              accountTotalMap.put(
+                  accountId,
+                  TradeProfit.ofAccountStatus(
+                      accountName,
+                      evaluationAmount,
+                      defaultEvaluationProfit,
+                      s.realizedProfit(),
+                      holdingCost,
+                      s.totalSellProceeds()));
+            });
     return new AccountStatusTables(
         accountTotalMap, accountProfitBasisMap, manualPrincipalAccountIds, accountHoldingMap);
   }
@@ -457,41 +464,42 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
       }
     }
     Map<UUID, List<AssetStatusStockAccountView>> result = new LinkedHashMap<>();
-    byStock.forEach((stockItemId, rows) -> {
-      BigDecimal stockEvaluationAmount =
-          rows.stream()
-              .map(TradeProfit::evaluationAmount)
-              .filter(Objects::nonNull)
-              .reduce(BigDecimal.ZERO, BigDecimal::add);
-      List<AssetStatusStockAccountView> views = new ArrayList<>(rows.size());
-      for (TradeProfit holding : rows) {
-        BigDecimal evaluationAmount =
-            holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO;
-        BigDecimal buyAmount = resolveCurrentHoldingCost(holding);
-        BigDecimal evaluationProfit =
-            holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO;
-        views.add(
-            new AssetStatusStockAccountView(
-                holding.accountId(),
-                holding.accountName(),
-                holding.holdingQuantity(),
-                resolveHoldingAverageBuyPrice(holding, buyAmount),
-                evaluationAmount,
-                buyAmount,
-                evaluationProfit,
-                percentage(evaluationProfit, buyAmount),
-                percentage(evaluationAmount, stockEvaluationAmount),
-                percentage(evaluationAmount, totalEvaluationAmount)));
-      }
-      views.sort(
-          Comparator.comparing(
-                  AssetStatusStockAccountView::evaluationAmount,
-                  Comparator.nullsLast(Comparator.reverseOrder()))
-              .thenComparing(
-                  AssetStatusStockAccountView::accountName,
-                  Comparator.nullsLast(Comparator.naturalOrder())));
-      result.put(stockItemId, views);
-    });
+    byStock.forEach(
+        (stockItemId, rows) -> {
+          BigDecimal stockEvaluationAmount =
+              rows.stream()
+                  .map(TradeProfit::evaluationAmount)
+                  .filter(Objects::nonNull)
+                  .reduce(BigDecimal.ZERO, BigDecimal::add);
+          List<AssetStatusStockAccountView> views = new ArrayList<>(rows.size());
+          for (TradeProfit holding : rows) {
+            BigDecimal evaluationAmount =
+                holding.evaluationAmount() != null ? holding.evaluationAmount() : BigDecimal.ZERO;
+            BigDecimal buyAmount = resolveCurrentHoldingCost(holding);
+            BigDecimal evaluationProfit =
+                holding.evaluationProfit() != null ? holding.evaluationProfit() : BigDecimal.ZERO;
+            views.add(
+                new AssetStatusStockAccountView(
+                    holding.accountId(),
+                    holding.accountName(),
+                    holding.holdingQuantity(),
+                    resolveHoldingAverageBuyPrice(holding, buyAmount),
+                    evaluationAmount,
+                    buyAmount,
+                    evaluationProfit,
+                    percentage(evaluationProfit, buyAmount),
+                    percentage(evaluationAmount, stockEvaluationAmount),
+                    percentage(evaluationAmount, totalEvaluationAmount)));
+          }
+          views.sort(
+              Comparator.comparing(
+                      AssetStatusStockAccountView::evaluationAmount,
+                      Comparator.nullsLast(Comparator.reverseOrder()))
+                  .thenComparing(
+                      AssetStatusStockAccountView::accountName,
+                      Comparator.nullsLast(Comparator.naturalOrder())));
+          result.put(stockItemId, views);
+        });
     return result;
   }
 

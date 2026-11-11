@@ -108,11 +108,12 @@ public class StockHoldingPeriodService {
       }
     }
     Map<UUID, List<StockCashFlowResponse>> result = new LinkedHashMap<>();
-    byItem.forEach((stockItemId, days) -> {
-      List<StockCashFlowResponse> flows = new ArrayList<>();
-      days.forEach((date, amount) -> flows.add(new StockCashFlowResponse(date, amount)));
-      result.put(stockItemId, flows);
-    });
+    byItem.forEach(
+        (stockItemId, days) -> {
+          List<StockCashFlowResponse> flows = new ArrayList<>();
+          days.forEach((date, amount) -> flows.add(new StockCashFlowResponse(date, amount)));
+          result.put(stockItemId, flows);
+        });
     return result;
   }
 }

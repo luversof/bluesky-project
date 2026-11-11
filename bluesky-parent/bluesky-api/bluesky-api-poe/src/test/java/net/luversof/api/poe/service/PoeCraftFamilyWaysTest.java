@@ -37,10 +37,11 @@ class PoeCraftFamilyWaysTest {
     assertThat(w.essences().get(0).rank())
         .isLessThanOrEqualTo(w.essences().get(w.essences().size() - 1).rank());
     assertThat(w.fossils())
-        .anySatisfy(f -> {
-          assertThat(f.slug()).isEqualTo("CurrencyDelveCraftingLife");
-          assertThat(f.mult()).isEqualTo(10.0);
-        });
+        .anySatisfy(
+            f -> {
+              assertThat(f.slug()).isEqualTo("CurrencyDelveCraftingLife");
+              assertThat(f.mult()).isEqualTo(10.0);
+            });
     assertThat(w.harvests()).extracting(PoeCraftCalcService.HarvestWay::id).contains("ReforgeLife");
     assertThat(w.bench()).isNotNull();
     assertThat(w.bench().tier()).isGreaterThanOrEqualTo(1);

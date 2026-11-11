@@ -69,10 +69,11 @@ class StockAsyncSupportTest {
       var support = new StockAsyncSupport(executor);
       AtomicReference<String> threadName = new AtomicReference<>();
       var future =
-          support.supply(() -> {
-            threadName.set(Thread.currentThread().getName());
-            return "done";
-          });
+          support.supply(
+              () -> {
+                threadName.set(Thread.currentThread().getName());
+                return "done";
+              });
 
       assertThat(StockAsyncSupport.join(future)).isEqualTo("done");
       assertThat(threadName.get())

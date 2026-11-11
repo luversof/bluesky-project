@@ -78,19 +78,20 @@ public final class TradeProfitAggregator {
       Function<TradeProfit, BigDecimal> fallbackAmountGetter) {
     return list.stream()
         .filter(Objects::nonNull)
-        .map(tradeProfit -> {
-          if (tradeProfit.holdingQuantity() <= 0) {
-            return BigDecimal.ZERO;
-          }
+        .map(
+            tradeProfit -> {
+              if (tradeProfit.holdingQuantity() <= 0) {
+                return BigDecimal.ZERO;
+              }
 
-          BigDecimal average = averageGetter.apply(tradeProfit);
-          if (average != null) {
-            return average.multiply(BigDecimal.valueOf(tradeProfit.holdingQuantity()));
-          }
+              BigDecimal average = averageGetter.apply(tradeProfit);
+              if (average != null) {
+                return average.multiply(BigDecimal.valueOf(tradeProfit.holdingQuantity()));
+              }
 
-          BigDecimal fallbackAmount = fallbackAmountGetter.apply(tradeProfit);
-          return fallbackAmount != null ? fallbackAmount : BigDecimal.ZERO;
-        })
+              BigDecimal fallbackAmount = fallbackAmountGetter.apply(tradeProfit);
+              return fallbackAmount != null ? fallbackAmount : BigDecimal.ZERO;
+            })
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 

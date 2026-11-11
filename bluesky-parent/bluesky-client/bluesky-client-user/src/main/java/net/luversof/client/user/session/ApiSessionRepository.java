@@ -54,18 +54,19 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
     Map<String, Object> attributes = new HashMap<>();
     session
         .getAttributeNames()
-        .forEach(name -> {
-          Object value = session.getAttribute(name);
-          Object serialized = serialize(value);
-          if (value != null && serialized == null) {
-            System.err.println(
-                "ApiSessionRepository.save serialization failed. key: "
-                    + name
-                    + ", value: "
-                    + value);
-          }
-          attributes.put(name, serialized);
-        });
+        .forEach(
+            name -> {
+              Object value = session.getAttribute(name);
+              Object serialized = serialize(value);
+              if (value != null && serialized == null) {
+                System.err.println(
+                    "ApiSessionRepository.save serialization failed. key: "
+                        + name
+                        + ", value: "
+                        + value);
+              }
+              attributes.put(name, serialized);
+            });
 
     // 내용이 그대로면 서버에 이미 같은 값이 있다. 만료 갱신은 validate-session 쪽에서 이미 하므로
     // 여기서 굳이 왕복을 한 번 더 쓸 이유가 없다(자세한 근거는 ApiSession#savedAttributes 주석).
@@ -118,16 +119,17 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
       if (userInfo.sessionAttributes() != null) {
         userInfo
             .sessionAttributes()
-            .forEach((k, v) -> {
-              Object value = deserialize(v);
-              // 이 빌드가 못 읽는 속성(다른 버전이 쓴 클래스 등)은 '읽은 것'으로 치지 않는다 - 그래야 save 가 지운 것으로 보고
-              // 서버에서 지우지 않는다.
-              if (value == null && v != null) {
-                return;
-              }
-              session.setAttribute(k, value);
-              savedAttributes.put(k, v);
-            });
+            .forEach(
+                (k, v) -> {
+                  Object value = deserialize(v);
+                  // 이 빌드가 못 읽는 속성(다른 버전이 쓴 클래스 등)은 '읽은 것'으로 치지 않는다 - 그래야 save 가 지운 것으로 보고
+                  // 서버에서 지우지 않는다.
+                  if (value == null && v != null) {
+                    return;
+                  }
+                  session.setAttribute(k, value);
+                  savedAttributes.put(k, v);
+                });
       }
 
       session.setLastAccessedTime(Instant.now());

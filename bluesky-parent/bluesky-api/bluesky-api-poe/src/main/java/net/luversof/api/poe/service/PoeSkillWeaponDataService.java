@@ -97,11 +97,12 @@ public class PoeSkillWeaponDataService {
       this.dualWieldSkills = Set.copyOf(duals);
       var parsed = new java.util.LinkedHashMap<String, List<String>>();
       root.fieldNames()
-          .forEachRemaining(name -> {
-            var types = new java.util.ArrayList<String>();
-            root.path(name).forEach(t -> types.add(t.asText()));
-            parsed.put(name, List.copyOf(types));
-          });
+          .forEachRemaining(
+              name -> {
+                var types = new java.util.ArrayList<String>();
+                root.path(name).forEach(t -> types.add(t.asText()));
+                parsed.put(name, List.copyOf(types));
+              });
       this.bySkill = Map.copyOf(parsed);
       logger.info("스킬 무기 제한 {}종 · 방패 필요 {}종 로드", bySkill.size(), shieldSkills.size());
     } catch (Exception e) {

@@ -19,23 +19,25 @@ public class ResourceServerConfig {
   @Order(2)
   SecurityFilterChain resourceServerSecurityFilterChain(HttpSecurity http) throws Exception {
     http.securityMatcher("/api/**")
-        .authorizeHttpRequests(authorize ->
-            authorize
-                .requestMatchers("/api/oAuth2AuthorizedClient/**")
-                .permitAll()
-                .requestMatchers(
-                    "/api/userInfo/oauth2",
-                    "/api/userInfo/search/findByProvider",
-                    "/api/userInfo/search/findByIdIn",
-                    "/api/userInfo/create-new-session",
-                    "/api/userInfo/create-session",
-                    "/api/userInfo/validate-session",
-                    "/api/userInfo/delete-session")
-                .permitAll()
-                .anyRequest()
-                .authenticated())
-        .oauth2ResourceServer(oauth2 ->
-            oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+        .authorizeHttpRequests(
+            authorize ->
+                authorize
+                    .requestMatchers("/api/oAuth2AuthorizedClient/**")
+                    .permitAll()
+                    .requestMatchers(
+                        "/api/userInfo/oauth2",
+                        "/api/userInfo/search/findByProvider",
+                        "/api/userInfo/search/findByIdIn",
+                        "/api/userInfo/create-new-session",
+                        "/api/userInfo/create-session",
+                        "/api/userInfo/validate-session",
+                        "/api/userInfo/delete-session")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .oauth2ResourceServer(
+            oauth2 ->
+                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
         .csrf(csrf -> csrf.disable());
 
     return http.build();

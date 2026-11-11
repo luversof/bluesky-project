@@ -57,9 +57,10 @@ public class MonthlyDividendCalculator {
         lastYearRows.stream()
             .filter(row -> nz(row.dividendAmountPerShare()).signum() > 0)
             .filter(row -> row.taxableBasePerShare() != null)
-            .map(row ->
-                StockAmountUtil.percentOrNull(
-                    row.taxableBasePerShare(), row.dividendAmountPerShare(), 2))
+            .map(
+                row ->
+                    StockAmountUtil.percentOrNull(
+                        row.taxableBasePerShare(), row.dividendAmountPerShare(), 2))
             .toList();
     // 아는 행이 없으면 null(확인 안 됨) - 0 이면 "비과세" 로 읽힌다.
     BigDecimal averageTaxableBaseRatio1y =
@@ -195,11 +196,12 @@ public class MonthlyDividendCalculator {
     }
     BigDecimal totalBuyAmount =
         rows.stream()
-            .map(row ->
-                nz(row.averageBuyPrice())
-                    .multiply(
-                        BigDecimal.valueOf(
-                            row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
+            .map(
+                row ->
+                    nz(row.averageBuyPrice())
+                        .multiply(
+                            BigDecimal.valueOf(
+                                row.heldQuantity() != null ? row.heldQuantity().longValue() : 0L)))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal totalExpectedMonthlyDividend =
         rows.stream()

@@ -1610,16 +1610,17 @@ public class PoeCraftController {
       for (PoeCraft.PoolLine p : craftClient.pool(new PoeCraft.PoolRequest(cur, "RARE"))) {
         byFam.computeIfAbsent(p.gen() + "|" + p.family(), k -> new ArrayList<>()).add(p);
       }
-      byFam.forEach((k, v) -> {
-        List<PoeCraft.PoolLine> tiers =
-            v.stream()
-                .filter(p -> p.tierRank() != null)
-                .sorted(java.util.Comparator.comparing(PoeCraft.PoolLine::tierRank))
-                .toList();
-        if (!tiers.isEmpty()) {
-          labels.put(k, spanLabel(tiers, ko));
-        }
-      });
+      byFam.forEach(
+          (k, v) -> {
+            List<PoeCraft.PoolLine> tiers =
+                v.stream()
+                    .filter(p -> p.tierRank() != null)
+                    .sorted(java.util.Comparator.comparing(PoeCraft.PoolLine::tierRank))
+                    .toList();
+            if (!tiers.isEmpty()) {
+              labels.put(k, spanLabel(tiers, ko));
+            }
+          });
     } catch (RuntimeException e) {
       // 이름 없이 계열 키로
     }

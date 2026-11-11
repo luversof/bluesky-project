@@ -53,13 +53,14 @@ class MonthlyDividendProfileServiceTest {
     when(monthlyDividendProfileRepository.findByStockItemId(stockItem.getId()))
         .thenReturn(Optional.empty());
     when(monthlyDividendProfileRepository.save(any(MonthlyDividendProfile.class)))
-        .thenAnswer(invocation -> {
-          MonthlyDividendProfile profile = invocation.getArgument(0);
-          assertThat(profile.getId()).isNull();
-          assertThat(profile.getCreatedDate()).isNotNull();
-          profile.setId(generatedId);
-          return profile;
-        });
+        .thenAnswer(
+            invocation -> {
+              MonthlyDividendProfile profile = invocation.getArgument(0);
+              assertThat(profile.getId()).isNull();
+              assertThat(profile.getCreatedDate()).isNotNull();
+              profile.setId(generatedId);
+              return profile;
+            });
 
     MonthlyDividendProfileResponse response = monthlyDividendProfileService.upsert(request);
 

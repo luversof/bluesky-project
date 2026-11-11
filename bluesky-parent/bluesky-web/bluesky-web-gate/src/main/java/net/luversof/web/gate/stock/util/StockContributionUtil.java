@@ -113,11 +113,12 @@ public final class StockContributionUtil {
     start.forEach((id, item) -> names.putIfAbsent(id, item.name()));
     end.forEach((id, item) -> names.putIfAbsent(id, item.name()));
     if (nameByStock != null) {
-      nameByStock.forEach((id, name) -> {
-        if (name != null && !name.isBlank()) {
-          names.putIfAbsent(id, name);
-        }
-      });
+      nameByStock.forEach(
+          (id, name) -> {
+            if (name != null && !name.isBlank()) {
+              names.putIfAbsent(id, name);
+            }
+          });
     }
 
     // 네 재료 어디에든 나타난 종목이 대상이다. 한 곳만 보면 그 기간에 배당만 받은 종목을 놓친다.

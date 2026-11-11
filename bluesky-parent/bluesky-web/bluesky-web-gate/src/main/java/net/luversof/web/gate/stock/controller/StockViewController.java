@@ -773,9 +773,10 @@ public class StockViewController {
 
     MonthlyDividendSnapshotResponse savedRow =
         allRows.stream()
-            .filter(row ->
-                normalizedSymbol.equalsIgnoreCase(
-                    StockViewSupport.safeString(row.stockItemSymbol())))
+            .filter(
+                row ->
+                    normalizedSymbol.equalsIgnoreCase(
+                        StockViewSupport.safeString(row.stockItemSymbol())))
             .findFirst()
             .orElse(null);
     if (savedRow != null) {
@@ -881,13 +882,14 @@ public class StockViewController {
     try {
       // 후보 만드는 규칙은 월배당 ETF 목록의 "이번 적립" 배지와 같이 쓴다(pickFromCatalog).
       return monthlyContributionPickSupport.pickFromCatalog(catalog).stream()
-          .filter(pick ->
-              (payoutWindowFilter == null
-                      || payoutWindowFilter.isEmpty()
-                      || payoutWindowFilter.equals(pick.payoutWindow()))
-                  && (accountFilter == null
-                      || accountFilter.isEmpty()
-                      || accountFilter.equals(pick.account())))
+          .filter(
+              pick ->
+                  (payoutWindowFilter == null
+                          || payoutWindowFilter.isEmpty()
+                          || payoutWindowFilter.equals(pick.payoutWindow()))
+                      && (accountFilter == null
+                          || accountFilter.isEmpty()
+                          || accountFilter.equals(pick.account())))
           .toList();
     } catch (Exception ex) {
       // 조용히 삼키면 추천이 사라진 까닭을 못 찾는다.
@@ -914,8 +916,9 @@ public class StockViewController {
       return rows;
     }
     return rows.stream()
-        .filter(row ->
-            row.stockItemSymbol() != null && slotSymbols.contains(row.stockItemSymbol().trim()))
+        .filter(
+            row ->
+                row.stockItemSymbol() != null && slotSymbols.contains(row.stockItemSymbol().trim()))
         .toList();
   }
 

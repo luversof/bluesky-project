@@ -78,11 +78,12 @@ public class MonthlyDividendCatalogService {
 
     // 종목 · 현재가는 한 번에 읽는다(행마다 읽으면 행 수만큼 질의가 나간다).
     Set<UUID> stockItemIds = new HashSet<>();
-    profiles.forEach(profile -> {
-      if (profile.getStockItemId() != null) {
-        stockItemIds.add(profile.getStockItemId());
-      }
-    });
+    profiles.forEach(
+        profile -> {
+          if (profile.getStockItemId() != null) {
+            stockItemIds.add(profile.getStockItemId());
+          }
+        });
     Map<UUID, StockItem> stockItemById = StockItemLookup.byIds(stockItemRepository, stockItemIds);
     Map<UUID, StockDailyClosePrice> priceById = stockPriceService.getLatestPrices(stockItemIds);
     // 지급 이력 · 시세 이력도 한 번에 읽는다. 실측 2026-09-23: 종목(21)마다 지급 이력 두 번(통계 · 추세) · 시세 한 번씩 63 번 왕복해
@@ -133,9 +134,10 @@ public class MonthlyDividendCatalogService {
           stockItemId != null ? priceHistoryById.getOrDefault(stockItemId, List.of()) : List.of();
       List<PeriodReturnCalculator.PayoutPoint> payoutPoints =
           payouts.stream()
-              .map(payout ->
-                  new PeriodReturnCalculator.PayoutPoint(
-                      payout.getRecordDate(), payout.getDividendAmountPerShare()))
+              .map(
+                  payout ->
+                      new PeriodReturnCalculator.PayoutPoint(
+                          payout.getRecordDate(), payout.getDividendAmountPerShare()))
               .toList();
       List<StockDailyClosePrice> periodHistory =
           PeriodReturnCalculator.preferRaw(

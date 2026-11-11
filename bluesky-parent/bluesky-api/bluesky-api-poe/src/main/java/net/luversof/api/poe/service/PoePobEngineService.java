@@ -147,11 +147,12 @@ public class PoePobEngineService {
   private final AtomicInteger generation = new AtomicInteger();
 
   private final ScheduledExecutorService watchdog =
-      Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "pob-worker-watchdog");
-        t.setDaemon(true);
-        return t;
-      });
+      Executors.newSingleThreadScheduledExecutor(
+          r -> {
+            Thread t = new Thread(r, "pob-worker-watchdog");
+            t.setDaemon(true);
+            return t;
+          });
   private volatile boolean shuttingDown;
 
   public PoePobEngineService(

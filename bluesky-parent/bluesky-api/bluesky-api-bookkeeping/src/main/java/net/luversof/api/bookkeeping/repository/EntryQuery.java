@@ -52,9 +52,10 @@ public class EntryQuery {
             ) t GROUP BY "assetId"
             """)
         .param("bookId", bookId)
-        .query(rs -> {
-          result.put(rs.getObject("assetId", UUID.class), rs.getBigDecimal("delta"));
-        });
+        .query(
+            rs -> {
+              result.put(rs.getObject("assetId", UUID.class), rs.getBigDecimal("delta"));
+            });
     return result;
   }
 
@@ -137,12 +138,13 @@ public class EntryQuery {
         .param("bookId", bookId)
         .param("from", from)
         .param("to", to)
-        .query((rs, rowNum) ->
-            new DailyTotal(
-                rs.getObject("date", LocalDate.class),
-                rs.getString("currency"),
-                rs.getBigDecimal("income"),
-                rs.getBigDecimal("expense")))
+        .query(
+            (rs, rowNum) ->
+                new DailyTotal(
+                    rs.getObject("date", LocalDate.class),
+                    rs.getString("currency"),
+                    rs.getBigDecimal("income"),
+                    rs.getBigDecimal("expense")))
         .list();
   }
 
@@ -164,12 +166,13 @@ public class EntryQuery {
         .param("bookId", bookId)
         .param("from", from)
         .param("to", to)
-        .query((rs, rowNum) ->
-            new CategoryTotal(
-                rs.getObject("categoryId", UUID.class),
-                CategoryKind.valueOf(rs.getString("kind")),
-                rs.getString("currency"),
-                rs.getBigDecimal("amount")))
+        .query(
+            (rs, rowNum) ->
+                new CategoryTotal(
+                    rs.getObject("categoryId", UUID.class),
+                    CategoryKind.valueOf(rs.getString("kind")),
+                    rs.getString("currency"),
+                    rs.getBigDecimal("amount")))
         .list();
   }
 
@@ -184,12 +187,13 @@ public class EntryQuery {
                AND e."entryDate" BETWEEN ? AND ?
             """)
         .params(bookId, from, to)
-        .query((rs, rowNum) ->
-            new CardExpense(
-                rs.getObject("asset_id", UUID.class),
-                rs.getObject("entryDate", LocalDate.class),
-                rs.getBigDecimal("amount"),
-                (Integer) rs.getObject("installmentMonths", Integer.class)))
+        .query(
+            (rs, rowNum) ->
+                new CardExpense(
+                    rs.getObject("asset_id", UUID.class),
+                    rs.getObject("entryDate", LocalDate.class),
+                    rs.getBigDecimal("amount"),
+                    (Integer) rs.getObject("installmentMonths", Integer.class)))
         .list();
   }
 

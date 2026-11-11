@@ -60,12 +60,13 @@ final class CardBills {
       }
     }
     return currencies.keySet().stream()
-        .map(id ->
-            new Bill(
-                id,
-                billMonth,
-                lump.getOrDefault(id, BigDecimal.ZERO),
-                inst.getOrDefault(id, BigDecimal.ZERO)))
+        .map(
+            id ->
+                new Bill(
+                    id,
+                    billMonth,
+                    lump.getOrDefault(id, BigDecimal.ZERO),
+                    inst.getOrDefault(id, BigDecimal.ZERO)))
         .toList();
   }
 

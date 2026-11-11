@@ -176,8 +176,10 @@ public record PoeUniqueItem(
         variants == null
             ? null
             : variants.stream()
-                .map(v ->
-                    new PoeUniqueVariant(v.index(), v.name(), v.nameKo(), null, null, null, null))
+                .map(
+                    v ->
+                        new PoeUniqueVariant(
+                            v.index(), v.name(), v.nameKo(), null, null, null, null))
                 .toList();
     return new PoeUniqueItem(
         name,
@@ -210,15 +212,16 @@ public record PoeUniqueItem(
         variants == null
             ? null
             : variants.stream()
-                .map(v ->
-                    new PoeUniqueVariant(
-                        v.index(),
-                        v.name(),
-                        v.nameKo(),
-                        v.implicits(),
-                        v.implicitsKo(),
-                        v.explicits(),
-                        v.explicitsKo()))
+                .map(
+                    v ->
+                        new PoeUniqueVariant(
+                            v.index(),
+                            v.name(),
+                            v.nameKo(),
+                            v.implicits(),
+                            v.implicitsKo(),
+                            v.explicits(),
+                            v.explicitsKo()))
                 .toList();
     return new PoeUniqueItem(
         name,

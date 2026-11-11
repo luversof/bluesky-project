@@ -38,8 +38,9 @@ class RealizedProfitDisplayBasisTest {
               "StockViewController",
               "StockTradeHtmxController",
               "StockAssetGrowthHtmxController")
-          .map(name ->
-              Path.of("src/main/java/net/luversof/web/gate/stock/controller/" + name + ".java"))
+          .map(
+              name ->
+                  Path.of("src/main/java/net/luversof/web/gate/stock/controller/" + name + ".java"))
           .toList();
 
   /**

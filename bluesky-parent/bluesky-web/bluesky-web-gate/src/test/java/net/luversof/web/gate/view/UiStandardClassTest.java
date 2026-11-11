@@ -95,28 +95,29 @@ class UiStandardClassTest {
     // 바탕 없는 단추(ghost)는 아이콘 단추 · 기간 이동 화살표만. 정렬 머리글은 sortButtonHeader 가 buttonClass 식으로 넘긴다.
     Set<String> iconOnly = Set.of("btn-circle", "btn-square", "date-range-prev", "date-range-next");
     assertThat(
-            offenders(t -> {
-              if (!t.tokens().contains("btn")) {
-                return false;
-              }
-              boolean dynLook = t.raw().contains("\"btn-");
-              boolean look =
-                  dynLook
-                      || t.tokens().stream().anyMatch(looks::contains)
-                      || (t.tokens().contains("btn-ghost")
-                          && (t.tokens().stream().anyMatch(iconOnly::contains)
-                              || t.tag().contains("data-sort-key")));
-              boolean size =
-                  t.tokens().contains("btn-sm")
-                      || t.tokens().contains("btn-xs")
-                      || t.raw().contains("btn-sm")
-                      || t.raw().contains("btn-xs");
-              boolean banned =
-                  t.tokens().contains("btn-secondary")
-                      || t.tokens().contains("btn-md")
-                      || t.tokens().contains("btn-lg");
-              return !look || !size || banned;
-            }))
+            offenders(
+                t -> {
+                  if (!t.tokens().contains("btn")) {
+                    return false;
+                  }
+                  boolean dynLook = t.raw().contains("\"btn-");
+                  boolean look =
+                      dynLook
+                          || t.tokens().stream().anyMatch(looks::contains)
+                          || (t.tokens().contains("btn-ghost")
+                              && (t.tokens().stream().anyMatch(iconOnly::contains)
+                                  || t.tag().contains("data-sort-key")));
+                  boolean size =
+                      t.tokens().contains("btn-sm")
+                          || t.tokens().contains("btn-xs")
+                          || t.raw().contains("btn-sm")
+                          || t.raw().contains("btn-xs");
+                  boolean banned =
+                      t.tokens().contains("btn-secondary")
+                          || t.tokens().contains("btn-md")
+                          || t.tokens().contains("btn-lg");
+                  return !look || !size || banned;
+                }))
         .as("BT2: 주 동작 btn-primary · 보조 btn-outline · 위험 btn-error, 크기 btn-sm(표 · 도구 막대 btn-xs)")
         .isEmpty();
   }
@@ -124,13 +125,14 @@ class UiStandardClassTest {
   @Test
   void 배지는_테두리_sm_이다() throws IOException {
     assertThat(
-            offenders(t ->
-                t.tokens().contains("badge")
-                    && (!t.tokens().contains("badge-outline")
-                        || !t.tokens().contains("badge-sm")
-                        || t.tokens().contains("badge-xs")
-                        || t.tokens().contains("badge-lg")
-                        || t.tokens().contains("badge-ghost"))))
+            offenders(
+                t ->
+                    t.tokens().contains("badge")
+                        && (!t.tokens().contains("badge-outline")
+                            || !t.tokens().contains("badge-sm")
+                            || t.tokens().contains("badge-xs")
+                            || t.tokens().contains("badge-lg")
+                            || t.tokens().contains("badge-ghost"))))
         .as("BG1: badge badge-sm badge-outline (+ 색)")
         .isEmpty();
   }
@@ -141,9 +143,10 @@ class UiStandardClassTest {
         Pattern.compile(
             "bg-\\S+|border(-\\S+)?|text-(xs|sm|\\S+-content|base-content)|p[xy]?-\\S+");
     assertThat(
-            offenders(t ->
-                t.tokens().contains("alert")
-                    && t.tokens().stream().anyMatch(x -> override.matcher(x).matches())))
+            offenders(
+                t ->
+                    t.tokens().contains("alert")
+                        && t.tokens().stream().anyMatch(x -> override.matcher(x).matches())))
         .as("AL1: alert alert-{error|warning|success|info} - 색 · 테두리 · 여백을 덧칠하지 않는다")
         .isEmpty();
   }
@@ -152,8 +155,10 @@ class UiStandardClassTest {
   void 카드_제목은_크기를_따로_고르지_않는다() throws IOException {
     Set<String> sizes = Set.of("text-sm", "text-base", "text-lg", "text-xl", "text-2xl");
     assertThat(
-            offenders(t ->
-                t.tokens().contains("card-title") && t.tokens().stream().anyMatch(sizes::contains)))
+            offenders(
+                t ->
+                    t.tokens().contains("card-title")
+                        && t.tokens().stream().anyMatch(sizes::contains)))
         .as("CT1: .card-title 의 16px(main.css) 그대로")
         .isEmpty();
   }
@@ -161,11 +166,12 @@ class UiStandardClassTest {
   @Test
   void 링크는_마우스를_올리면_밑줄이다() throws IOException {
     assertThat(
-            offenders(t ->
-                t.tokens().contains("link")
-                    && (!t.tokens().contains("link-hover")
-                        || t.tokens().contains("no-underline")
-                        || t.tokens().contains("link-primary"))))
+            offenders(
+                t ->
+                    t.tokens().contains("link")
+                        && (!t.tokens().contains("link-hover")
+                            || t.tokens().contains("no-underline")
+                            || t.tokens().contains("link-primary"))))
         .as("LK1: link link-hover")
         .isEmpty();
   }
@@ -173,9 +179,10 @@ class UiStandardClassTest {
   @Test
   void 입력과_선택은_작은_크기다() throws IOException {
     assertThat(
-            offenders(t ->
-                (t.tokens().contains("input") && !t.tokens().contains("input-sm"))
-                    || (t.tokens().contains("select") && !t.tokens().contains("select-sm"))))
+            offenders(
+                t ->
+                    (t.tokens().contains("input") && !t.tokens().contains("input-sm"))
+                        || (t.tokens().contains("select") && !t.tokens().contains("select-sm"))))
         .as("IN2: input-sm · select-sm")
         .isEmpty();
   }
@@ -184,12 +191,13 @@ class UiStandardClassTest {
   void 탭은_상자형_칸_나눔이다() throws IOException {
     Set<String> required = Set.of("tabs-box", "w-full", "bg-base-200/70", "p-1");
     assertThat(
-            offenders(t ->
-                t.tokens().contains("tabs")
-                    && (!t.tokens().containsAll(required)
-                        || t.tokens().contains("tabs-xs")
-                        || t.tokens().contains("tabs-sm")
-                        || t.tokens().contains("w-fit"))))
+            offenders(
+                t ->
+                    t.tokens().contains("tabs")
+                        && (!t.tokens().containsAll(required)
+                            || t.tokens().contains("tabs-xs")
+                            || t.tokens().contains("tabs-sm")
+                            || t.tokens().contains("w-fit"))))
         .as("TB1: tabs tabs-box w-full bg-base-200/70 p-1")
         .isEmpty();
   }

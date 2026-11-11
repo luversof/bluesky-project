@@ -205,11 +205,12 @@ public class KisStockPriceUpdateService {
     Set<UUID> monthlyDividendStockItemIds = new HashSet<>();
     monthlyDividendProfileRepository
         .findAllByOrderByDisplayOrderAscUpdatedDateDesc()
-        .forEach(profile -> {
-          if (profile.getStockItemId() != null) {
-            monthlyDividendStockItemIds.add(profile.getStockItemId());
-          }
-        });
+        .forEach(
+            profile -> {
+              if (profile.getStockItemId() != null) {
+                monthlyDividendStockItemIds.add(profile.getStockItemId());
+              }
+            });
 
     // Trade · Dividend 이력이 있거나, 보유 중이거나, 월배당 프로필로 등록한 종목이 갱신 대상
     Set<UUID> targetStockItemIds = new HashSet<>();

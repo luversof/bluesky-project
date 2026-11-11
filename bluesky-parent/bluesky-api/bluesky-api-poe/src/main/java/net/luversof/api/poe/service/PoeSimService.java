@@ -103,16 +103,17 @@ public class PoeSimService {
   public java.util.Optional<PoeGemRankingSnapshot> rankingOf(String season) {
     return seasons
         .read(season)
-        .map(json -> {
-          try {
-            PoeGemRankingData d =
-                JsonMapper.builder().build().readValue(json, PoeGemRankingData.class);
-            return new PoeGemRankingSnapshot(d.patch(), d.ranking());
-          } catch (RuntimeException e) {
-            logger.warn("PoE 젬 랭킹 시즌 해석 실패: {}", season, e);
-            return null;
-          }
-        });
+        .map(
+            json -> {
+              try {
+                PoeGemRankingData d =
+                    JsonMapper.builder().build().readValue(json, PoeGemRankingData.class);
+                return new PoeGemRankingSnapshot(d.patch(), d.ranking());
+              } catch (RuntimeException e) {
+                logger.warn("PoE 젬 랭킹 시즌 해석 실패: {}", season, e);
+                return null;
+              }
+            });
   }
 
   /** 시즌 랭킹 한 벌(밖으로 내보내는 모양). */

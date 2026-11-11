@@ -75,8 +75,9 @@ public class StockDetailViewController {
 
   /** 보유 줄 순서 - 평가액 큰 순(값이 없으면 0). 종목 상세의 계좌별 보유와 계좌 상세의 종목별 보유가 같이 쓴다(2026-10-22 까지 두 벌). */
   private static final Comparator<TradeProfit> BY_EVALUATION_DESC =
-      Comparator.comparing((TradeProfit p) ->
-              p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO)
+      Comparator.comparing(
+              (TradeProfit p) ->
+                  p.evaluationAmount() != null ? p.evaluationAmount() : BigDecimal.ZERO)
           .reversed();
 
   private static final org.slf4j.Logger log =
@@ -268,9 +269,10 @@ public class StockDetailViewController {
       String target = name.trim();
       stockItem =
           loadStockItems().stream()
-              .filter(item ->
-                  item != null
-                      && (target.equals(item.name()) || target.equalsIgnoreCase(item.symbol())))
+              .filter(
+                  item ->
+                      item != null
+                          && (target.equals(item.name()) || target.equalsIgnoreCase(item.symbol())))
               .findFirst()
               .orElse(null);
     }
@@ -459,9 +461,10 @@ public class StockDetailViewController {
     // 평균단가 = 보유원가 합 ÷ 보유수량 합 (행별 averageBuyPrice 의 수량 가중 평균)
     BigDecimal holdingCost =
         snapshotProfits.stream()
-            .map(p ->
-                (p.averageBuyPrice() != null ? p.averageBuyPrice() : BigDecimal.ZERO)
-                    .multiply(BigDecimal.valueOf(p.holdingQuantity())))
+            .map(
+                p ->
+                    (p.averageBuyPrice() != null ? p.averageBuyPrice() : BigDecimal.ZERO)
+                        .multiply(BigDecimal.valueOf(p.holdingQuantity())))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal averageBuyPrice =
         holdingQuantity > 0
@@ -581,9 +584,10 @@ public class StockDetailViewController {
     List<TradeProfit> accountHoldings =
         snapshotProfits.stream()
             .filter(p -> p.holdingQuantity() > 0)
-            .map(p ->
-                TradeProfit.withNames(
-                    p, resolvedStockName, accountNameById.getOrDefault(p.accountId(), "-")))
+            .map(
+                p ->
+                    TradeProfit.withNames(
+                        p, resolvedStockName, accountNameById.getOrDefault(p.accountId(), "-")))
             .sorted(BY_EVALUATION_DESC)
             .toList();
     model.addAttribute("accountHoldings", accountHoldings);
@@ -744,11 +748,12 @@ public class StockDetailViewController {
     // 종목 id → 종목명 (보유/내역 표의 종목명 + 종목 상세 링크용)
     Map<UUID, String> stockNameById = new HashMap<>();
     StockAsyncSupport.join(accStockItemsFuture)
-        .forEach(s -> {
-          if (s.id() != null) {
-            stockNameById.put(s.id(), s.name() != null ? s.name() : "-");
-          }
-        });
+        .forEach(
+            s -> {
+              if (s.id() != null) {
+                stockNameById.put(s.id(), s.name() != null ? s.name() : "-");
+              }
+            });
     model.addAttribute("stockNameById", stockNameById);
 
     // 기간 지표(실현손익·기간 매수원가)는 기간 적용 호출로 집계
@@ -771,9 +776,10 @@ public class StockDetailViewController {
     }
     List<TradeProfit> enriched =
         snapshotProfits.stream()
-            .map(p ->
-                TradeProfit.withNames(
-                    p, stockNameById.getOrDefault(p.stockItemId(), "-"), account.name()))
+            .map(
+                p ->
+                    TradeProfit.withNames(
+                        p, stockNameById.getOrDefault(p.stockItemId(), "-"), account.name()))
             .toList();
     List<TradeProfit> holdings =
         enriched.stream().filter(p -> p.holdingQuantity() > 0).sorted(BY_EVALUATION_DESC).toList();

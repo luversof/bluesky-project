@@ -23,13 +23,14 @@ public class TomcatErrorReportConfig {
   @Bean
   WebServerFactoryCustomizer<TomcatServletWebServerFactory> hideTomcatErrorReport() {
     return factory ->
-        factory.addContextCustomizers(context -> {
-          if (context.getParent() instanceof StandardHost host) {
-            ErrorReportValve valve = new ErrorReportValve();
-            valve.setShowReport(false);
-            valve.setShowServerInfo(false);
-            host.getPipeline().addValve(valve);
-          }
-        });
+        factory.addContextCustomizers(
+            context -> {
+              if (context.getParent() instanceof StandardHost host) {
+                ErrorReportValve valve = new ErrorReportValve();
+                valve.setShowReport(false);
+                valve.setShowServerInfo(false);
+                host.getPipeline().addValve(valve);
+              }
+            });
   }
 }

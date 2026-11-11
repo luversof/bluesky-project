@@ -97,18 +97,19 @@ public class YearlyCostService {
       slot[6] = nz(row.grossAmount()).subtract(nz(row.tax())).subtract(nz(row.fee()));
     }
     List<YearlyCostSummary> result = new ArrayList<>();
-    byYear.forEach((year, slot) ->
-        result.add(
-            new YearlyCostSummary(
-                year,
-                slot[0],
-                slot[1],
-                slot[2],
-                slot[3],
-                slot[4],
-                slot[5],
-                slot[6],
-                sellCountByYear.getOrDefault(year, 0L))));
+    byYear.forEach(
+        (year, slot) ->
+            result.add(
+                new YearlyCostSummary(
+                    year,
+                    slot[0],
+                    slot[1],
+                    slot[2],
+                    slot[3],
+                    slot[4],
+                    slot[5],
+                    slot[6],
+                    sellCountByYear.getOrDefault(year, 0L))));
     // 최신이 위로. 표는 늘 최근부터 읽는다.
     result.sort(Comparator.comparingInt(YearlyCostSummary::year).reversed());
     return result;

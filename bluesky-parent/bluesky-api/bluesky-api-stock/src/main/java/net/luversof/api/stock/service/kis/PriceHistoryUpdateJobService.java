@@ -44,11 +44,12 @@ public class PriceHistoryUpdateJobService {
    * 데몬이라 종료를 막지 않는다.
    */
   private final ExecutorService executor =
-      Executors.newSingleThreadExecutor(runnable -> {
-        Thread thread = new Thread(runnable, "price-history-update");
-        thread.setDaemon(true);
-        return thread;
-      });
+      Executors.newSingleThreadExecutor(
+          runnable -> {
+            Thread thread = new Thread(runnable, "price-history-update");
+            thread.setDaemon(true);
+            return thread;
+          });
 
   private final AtomicReference<PriceHistoryUpdateJobStatus> state =
       new AtomicReference<>(PriceHistoryUpdateJobStatus.idle());
@@ -155,16 +156,17 @@ public class PriceHistoryUpdateJobService {
 
   /** 종목 하나를 끝낼 때마다 불린다. 끝난 작업의 상태는 건드리지 않는다. */
   private void publishProgress(int processed, int total) {
-    state.updateAndGet(current ->
-        current.running()
-            ? new PriceHistoryUpdateJobStatus(
-                current.status(),
-                current.startedAt(),
-                null,
-                processed,
-                total,
-                current.failedSymbols(),
-                null)
-            : current);
+    state.updateAndGet(
+        current ->
+            current.running()
+                ? new PriceHistoryUpdateJobStatus(
+                    current.status(),
+                    current.startedAt(),
+                    null,
+                    processed,
+                    total,
+                    current.failedSymbols(),
+                    null)
+                : current);
   }
 }

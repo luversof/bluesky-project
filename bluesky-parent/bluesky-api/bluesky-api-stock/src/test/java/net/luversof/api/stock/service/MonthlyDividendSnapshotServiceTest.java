@@ -53,13 +53,14 @@ class MonthlyDividendSnapshotServiceTest {
     when(monthlyDividendSnapshotRepository.findByUserIdAndStockItemId(userId, stockItem.getId()))
         .thenReturn(Optional.empty());
     when(monthlyDividendSnapshotRepository.save(any(MonthlyDividendSnapshot.class)))
-        .thenAnswer(invocation -> {
-          MonthlyDividendSnapshot snapshot = invocation.getArgument(0);
-          assertThat(snapshot.getId()).isNull();
-          assertThat(snapshot.getCreatedDate()).isNotNull();
-          snapshot.setId(generatedId);
-          return snapshot;
-        });
+        .thenAnswer(
+            invocation -> {
+              MonthlyDividendSnapshot snapshot = invocation.getArgument(0);
+              assertThat(snapshot.getId()).isNull();
+              assertThat(snapshot.getCreatedDate()).isNotNull();
+              snapshot.setId(generatedId);
+              return snapshot;
+            });
     when(stockPriceService.getCurrentPrice(stockItem.getId())).thenReturn(new BigDecimal("50.00"));
 
     MonthlyDividendSnapshotResponse response = monthlyDividendSnapshotService.upsert(request);

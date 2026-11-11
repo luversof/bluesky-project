@@ -246,29 +246,30 @@ public class Poe2SimService {
           .filter(f -> f.getFileName().toString().endsWith(".json"))
           .sorted(Comparator.comparing((Path f) -> f.getFileName().toString()).reversed())
           .limit(HISTORY_LIMIT)
-          .map(f -> {
-            try {
-              long id = Long.parseLong(f.getFileName().toString().replace(".json", ""));
-              SimResult r = json.readValue(Files.readString(f), SimResult.class);
-              return new HistoryEntry(
-                  id,
-                  r.skill(),
-                  r.skillKo(),
-                  r.ascendancy(),
-                  r.objective(),
-                  r.scenario(),
-                  r.start() == null ? null : r.start().dps(),
-                  r.start() == null ? null : r.start().ehp(),
-                  r.refined() == null ? null : r.refined().dps(),
-                  r.refined() == null ? null : r.refined().ehp(),
-                  r.durationMs(),
-                  r.ascendancy() == null
-                      ? null
-                      : data.treeIndex().ascendancyKo().get(r.ascendancy()));
-            } catch (Exception e) {
-              return null; // 깨진 파일 한 건이 목록 전체를 막지 않게
-            }
-          })
+          .map(
+              f -> {
+                try {
+                  long id = Long.parseLong(f.getFileName().toString().replace(".json", ""));
+                  SimResult r = json.readValue(Files.readString(f), SimResult.class);
+                  return new HistoryEntry(
+                      id,
+                      r.skill(),
+                      r.skillKo(),
+                      r.ascendancy(),
+                      r.objective(),
+                      r.scenario(),
+                      r.start() == null ? null : r.start().dps(),
+                      r.start() == null ? null : r.start().ehp(),
+                      r.refined() == null ? null : r.refined().dps(),
+                      r.refined() == null ? null : r.refined().ehp(),
+                      r.durationMs(),
+                      r.ascendancy() == null
+                          ? null
+                          : data.treeIndex().ascendancyKo().get(r.ascendancy()));
+                } catch (Exception e) {
+                  return null; // 깨진 파일 한 건이 목록 전체를 막지 않게
+                }
+              })
           .filter(java.util.Objects::nonNull)
           .toList();
     } catch (java.io.IOException e) {
@@ -621,16 +622,17 @@ public class Poe2SimService {
       final String picked = topAsc;
       ascCompare =
           ascCompare.stream()
-              .map(a ->
-                  new AscCompare(
-                      a.ascendancy(),
-                      a.ascendancyKo(),
-                      a.dps(),
-                      a.ehp(),
-                      a.treeDps(),
-                      a.treeEhp(),
-                      a.consensusN(),
-                      a.ascendancy().equals(picked)))
+              .map(
+                  a ->
+                      new AscCompare(
+                          a.ascendancy(),
+                          a.ascendancyKo(),
+                          a.dps(),
+                          a.ehp(),
+                          a.treeDps(),
+                          a.treeEhp(),
+                          a.consensusN(),
+                          a.ascendancy().equals(picked)))
               .toList();
     }
     // 고른 후보만 chosen=true 로 남긴다(루프 중 갱신된 앞 후보의 표시는 지운다)
@@ -713,18 +715,19 @@ public class Poe2SimService {
     }
     Poe2NinjaService.SetRoles sr = consensus.setRoles();
     return sr.sets().stream()
-        .map(x ->
-            new SetRoleView(
-                x.set(),
-                x.kind(),
-                x.focus(),
-                x.weapon(),
-                x.weaponKo(),
-                x.weaponCount(),
-                x.active(),
-                sr.n(),
-                x.set() == mainSet ? objective : Poe2RefineService.roleObjective(x.kind()),
-                x.set() == mainSet))
+        .map(
+            x ->
+                new SetRoleView(
+                    x.set(),
+                    x.kind(),
+                    x.focus(),
+                    x.weapon(),
+                    x.weaponKo(),
+                    x.weaponCount(),
+                    x.active(),
+                    sr.n(),
+                    x.set() == mainSet ? objective : Poe2RefineService.roleObjective(x.kind()),
+                    x.set() == mainSet))
         .toList();
   }
 

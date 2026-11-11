@@ -147,11 +147,14 @@ class MonthlyDividendSourceImportSkipTest {
   /** 가져올 것이 하나도 없으면 예전처럼 실패한다 - 그래야 일괄 가져오기가 실패 종목으로 센다. */
   @Test
   void 모든_행이_잘못되면_사유와_함께_실패한다() {
-    assertThatThrownBy(() ->
-            parser.parseLenient(
-                "0094M0",
-                String.join(
-                    "\n", "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)", "2026-05-15\t2025-05-19\t390\t8")))
+    assertThatThrownBy(
+            () ->
+                parser.parseLenient(
+                    "0094M0",
+                    String.join(
+                        "\n",
+                        "지급기준일\t실지급일\t분배금액(원)\t주당과세표준액(원)",
+                        "2026-05-15\t2025-05-19\t390\t8")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("2025-05-19");
   }

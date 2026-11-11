@@ -133,14 +133,15 @@ public class Poe2SimRankingService {
   public java.util.Optional<RankingData> rankingOf(String season) {
     return seasons
         .read(season)
-        .map(j -> {
-          try {
-            return json.readValue(j, RankingData.class);
-          } catch (RuntimeException e) {
-            logger.warn("PoE2 젬 랭킹 시즌 해석 실패: {}", season, e);
-            return null;
-          }
-        });
+        .map(
+            j -> {
+              try {
+                return json.readValue(j, RankingData.class);
+              } catch (RuntimeException e) {
+                logger.warn("PoE2 젬 랭킹 시즌 해석 실패: {}", season, e);
+                return null;
+              }
+            });
   }
 
   public RankingData ranking() {

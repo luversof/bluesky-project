@@ -340,8 +340,9 @@ public class Poe2ViewController {
           client.searchUniques(null, null).stream()
               .filter(u -> FORCE_CLASSES.contains(u.itemClass()))
               .sorted(
-                  java.util.Comparator.comparing((Poe2.Unique u) ->
-                      net.luversof.web.gate.poe.PoeText.name(u.nameKo(), u.name())))
+                  java.util.Comparator.comparing(
+                      (Poe2.Unique u) ->
+                          net.luversof.web.gate.poe.PoeText.name(u.nameKo(), u.name())))
               .toList();
     } catch (RuntimeException e) {
       // 목록이 안 와도 시뮬레이터는 연다

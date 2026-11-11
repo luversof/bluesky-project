@@ -125,13 +125,14 @@ public class Poe2CommonGapsService {
           .filter(t -> t.getValue() >= c.n() * Poe2RefineService.COMMON_SHARE)
           .filter(t -> !Poe2RefineService.equipsUnique(xml, t.getKey()))
           .filter(t -> seenUnique.add(t.getKey())) // 교체 무기 칸 등 같은 고유가 두 칸에 잡히면 한 번만
-          .ifPresent(t ->
-              uniques.add(
-                  new Gap(
-                      t.getKey(),
-                      data.uniqueByName(t.getKey()).map(Poe2.Unique::nameKo).orElse(null),
-                      sl.getKey(),
-                      t.getValue())));
+          .ifPresent(
+              t ->
+                  uniques.add(
+                      new Gap(
+                          t.getKey(),
+                          data.uniqueByName(t.getKey()).map(Poe2.Unique::nameKo).orElse(null),
+                          sl.getKey(),
+                          t.getValue())));
     }
     Set<Integer> mine = new HashSet<>();
     Matcher sn = SPEC_NODES.matcher(xml);
@@ -148,14 +149,15 @@ public class Poe2CommonGapsService {
           .filter(e -> e.getValue() >= c.n() * Poe2RefineService.COMMON_NODE_SHARE)
           .filter(e -> !mine.contains(e.getKey()))
           .sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed())
-          .forEach(e -> {
-            Poe2DataService.TreeNodeLite t = data.treeIndex().nodes().get(e.getKey());
-            if (t != null
-                && (t.ascendancy() == null || t.ascendancy().isBlank())
-                && ("notable".equals(t.kind()) || "keystone".equals(t.kind()))) {
-              nodes.add(new Gap(t.name(), t.nameKo(), null, e.getValue()));
-            }
-          });
+          .forEach(
+              e -> {
+                Poe2DataService.TreeNodeLite t = data.treeIndex().nodes().get(e.getKey());
+                if (t != null
+                    && (t.ascendancy() == null || t.ascendancy().isBlank())
+                    && ("notable".equals(t.kind()) || "keystone".equals(t.kind()))) {
+                  nodes.add(new Gap(t.name(), t.nameKo(), null, e.getValue()));
+                }
+              });
     }
     supports.sort((x, y) -> Integer.compare(y.count(), x.count()));
     uniques.sort((x, y) -> Integer.compare(y.count(), x.count()));

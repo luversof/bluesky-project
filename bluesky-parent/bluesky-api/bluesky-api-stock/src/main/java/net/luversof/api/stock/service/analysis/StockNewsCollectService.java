@@ -76,10 +76,11 @@ public class StockNewsCollectService {
         openApiConfigRepository
             .findByProviderAndUserId("DART", userId)
             .map(config -> saveNew(collectDart(config, targets, messages), existingKeys))
-            .orElseGet(() -> {
-              messages.add("DART: OpenApiConfig(provider='DART') 없음 - 건너뜀");
-              return 0;
-            });
+            .orElseGet(
+                () -> {
+                  messages.add("DART: OpenApiConfig(provider='DART') 없음 - 건너뜀");
+                  return 0;
+                });
 
     return new CollectResult(naverSaved, dartSaved, messages);
   }

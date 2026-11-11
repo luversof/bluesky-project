@@ -35,12 +35,13 @@ class GateRestClientTimeoutTest {
     try (ServerSocket hung = new ServerSocket(0)) {
       List<Socket> accepted = new ArrayList<>();
       Thread acceptor =
-          new Thread(() -> {
-            try {
-              while (!hung.isClosed()) accepted.add(hung.accept()); // 받기만 하고 답하지 않는다
-            } catch (IOException ignored) {
-            }
-          });
+          new Thread(
+              () -> {
+                try {
+                  while (!hung.isClosed()) accepted.add(hung.accept()); // 받기만 하고 답하지 않는다
+                } catch (IOException ignored) {
+                }
+              });
       acceptor.setDaemon(true);
       acceptor.start();
 
@@ -52,12 +53,13 @@ class GateRestClientTimeoutTest {
       RestClient client = RestClient.builder().requestFactory(factory).build();
 
       long started = System.nanoTime();
-      assertThatThrownBy(() ->
-              client
-                  .get()
-                  .uri("http://127.0.0.1:" + hung.getLocalPort() + "/hang")
-                  .retrieve()
-                  .body(String.class))
+      assertThatThrownBy(
+              () ->
+                  client
+                      .get()
+                      .uri("http://127.0.0.1:" + hung.getLocalPort() + "/hang")
+                      .retrieve()
+                      .body(String.class))
           .isInstanceOf(ResourceAccessException.class);
       long elapsedMs = (System.nanoTime() - started) / 1_000_000;
       assertThat(elapsedMs).as("읽기 타임아웃(700ms) 근처에서 끊겨야 한다").isBetween(500L, 5_000L);

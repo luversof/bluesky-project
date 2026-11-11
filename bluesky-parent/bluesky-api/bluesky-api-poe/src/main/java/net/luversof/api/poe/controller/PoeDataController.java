@@ -305,11 +305,12 @@ public class PoeDataController {
   public List<PoeTreeGraphService.ClusterNotable> clusterNotables() {
     // 더 이상 생성되지 않는 주요 스킬(모드 가중치 0, 10-29 C2) 표시 — 옛 주얼엔 남아 있어 지우지 않고 알린다
     return poeTreeGraphService.clusterNotables().stream()
-        .map(n ->
-            poeClusterJewelDataService.retiredNotable(n.name())
-                ? new PoeTreeGraphService.ClusterNotable(
-                    n.name(), n.nameKo(), n.stats(), n.statsKo(), n.icon(), n.keystone(), true)
-                : n)
+        .map(
+            n ->
+                poeClusterJewelDataService.retiredNotable(n.name())
+                    ? new PoeTreeGraphService.ClusterNotable(
+                        n.name(), n.nameKo(), n.stats(), n.statsKo(), n.icon(), n.keystone(), true)
+                    : n)
         .toList();
   }
 

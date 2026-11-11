@@ -26,24 +26,29 @@ public class ClientUserSecurityConfig {
       HttpSecurity http, ClientUserProperties clientUserProperties) throws Exception {
     return http.csrf(CsrfConfigurer::disable)
         .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
-        .exceptionHandling(exception ->
-            exception.authenticationEntryPoint((request, response, authException) -> {
-              String url =
-                  UriComponentsBuilder.fromUriString(clientUserProperties.getLoginUrl())
-                      .queryParam(
-                          "redirectUrl",
-                          ServletUriComponentsBuilder.fromRequest(request).build().toUriString())
-                      .build()
-                      .toUriString();
-              response.sendRedirect(url);
-            }))
+        .exceptionHandling(
+            exception ->
+                exception.authenticationEntryPoint(
+                    (request, response, authException) -> {
+                      String url =
+                          UriComponentsBuilder.fromUriString(clientUserProperties.getLoginUrl())
+                              .queryParam(
+                                  "redirectUrl",
+                                  ServletUriComponentsBuilder.fromRequest(request)
+                                      .build()
+                                      .toUriString())
+                              .build()
+                              .toUriString();
+                      response.sendRedirect(url);
+                    }))
         .oauth2Client(Customizer.withDefaults())
-        .logout(logout ->
-            logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true))
+        .logout(
+            logout ->
+                logout
+                    .logoutUrl("/logout")
+                    .logoutSuccessUrl("/")
+                    .invalidateHttpSession(true)
+                    .clearAuthentication(true))
         .build();
   }
 }

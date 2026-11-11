@@ -612,13 +612,14 @@ public class PoePobImportService {
             ? PoeTradeQueries.unique(
                 unique
                     .map(PoeUniqueItem::nameKo)
-                    .orElseGet(() ->
-                        name.startsWith("Foulborn ")
-                            ? poeUniqueDataService
-                                .findByName(name.substring("Foulborn ".length()))
-                                .map(PoeUniqueItem::nameKo)
-                                .orElse(null)
-                            : null),
+                    .orElseGet(
+                        () ->
+                            name.startsWith("Foulborn ")
+                                ? poeUniqueDataService
+                                    .findByName(name.substring("Foulborn ".length()))
+                                    .map(PoeUniqueItem::nameKo)
+                                    .orElse(null)
+                                : null),
                 name.replaceFirst("^Foulborn ", ""))
             // 시뮬레이터 가정 무기(PoB 이름 "Sim Weapon" — 물리 60~120 · 정확도 +2000 가정)는 실제 아이템이 아니라 거래소 링크
             // 없음(C170)
@@ -1133,13 +1134,15 @@ public class PoePobImportService {
     Map<String, String> out = new java.util.LinkedHashMap<>();
     poeClusterJewelDataService
         .def(sizeName)
-        .ifPresent(def ->
-            def.skills()
-                .forEach((key, skill) -> {
-                  if (skill.stats() != null && !skill.stats().isEmpty()) {
-                    out.put(key, skill.stats().get(0));
-                  }
-                }));
+        .ifPresent(
+            def ->
+                def.skills()
+                    .forEach(
+                        (key, skill) -> {
+                          if (skill.stats() != null && !skill.stats().isEmpty()) {
+                            out.put(key, skill.stats().get(0));
+                          }
+                        }));
     return out;
   }
 
@@ -1317,10 +1320,11 @@ public class PoePobImportService {
       if (lines[i].trim().equalsIgnoreCase("Rarity: UNIQUE")) {
         return poeUniqueDataService
             .findByName(lines[i + 1].trim())
-            .map(u -> {
-              Integer variant = matchVariant(u.variants(), text);
-              return variant == null ? u.slug() : u.slug() + ":v" + variant;
-            })
+            .map(
+                u -> {
+                  Integer variant = matchVariant(u.variants(), text);
+                  return variant == null ? u.slug() : u.slug() + ":v" + variant;
+                })
             .orElse(null);
       }
     }
@@ -1337,9 +1341,10 @@ public class PoePobImportService {
         ? null
         : matchVariantLines(
             variants.stream()
-                .map(v ->
-                    java.util.Map.entry(
-                        v.index(), v.explicits() == null ? List.<String>of() : v.explicits()))
+                .map(
+                    v ->
+                        java.util.Map.entry(
+                            v.index(), v.explicits() == null ? List.<String>of() : v.explicits()))
                 .toList(),
             text);
   }

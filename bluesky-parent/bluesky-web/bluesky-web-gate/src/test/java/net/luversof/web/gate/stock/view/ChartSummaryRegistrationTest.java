@@ -62,17 +62,20 @@ class ChartSummaryRegistrationTest {
       List<Path> offenders =
           walk.filter(p -> p.toString().endsWith(".ts"))
               .filter(p -> !p.toString().replace('\\', '/').contains("/poe/"))
-              .filter(p -> {
-                String rel = SRC.relativize(p).toString().replace('\\', '/');
-                if (List.of(
-                        "stock-charts.ts", "stock/compoundSimulator.ts", "stock/stockSimulator.ts")
-                    .contains(rel)) return false;
-                try {
-                  return Files.readString(p, StandardCharsets.UTF_8).contains("new Chart(");
-                } catch (IOException e) {
-                  return false;
-                }
-              })
+              .filter(
+                  p -> {
+                    String rel = SRC.relativize(p).toString().replace('\\', '/');
+                    if (List.of(
+                            "stock-charts.ts",
+                            "stock/compoundSimulator.ts",
+                            "stock/stockSimulator.ts")
+                        .contains(rel)) return false;
+                    try {
+                      return Files.readString(p, StandardCharsets.UTF_8).contains("new Chart(");
+                    } catch (IOException e) {
+                      return false;
+                    }
+                  })
               .toList();
       assertThat(offenders).as("새 차트 진입점이 생겼으면 요약 플러그인 등록을 추가하고 위 목록에 넣는다").isEmpty();
     }

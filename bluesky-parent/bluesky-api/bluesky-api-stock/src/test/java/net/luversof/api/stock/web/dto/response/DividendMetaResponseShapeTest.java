@@ -33,9 +33,10 @@ class DividendMetaResponseShapeTest {
     List<String> aggregateLike =
         Arrays.stream(components)
             .map(RecordComponent::getName)
-            .filter(name ->
-                AGGREGATE_HINTS.stream()
-                    .anyMatch(hint -> name.toLowerCase(Locale.ROOT).contains(hint)))
+            .filter(
+                name ->
+                    AGGREGATE_HINTS.stream()
+                        .anyMatch(hint -> name.toLowerCase(Locale.ROOT).contains(hint)))
             .toList();
 
     assertThat(aggregateLike)

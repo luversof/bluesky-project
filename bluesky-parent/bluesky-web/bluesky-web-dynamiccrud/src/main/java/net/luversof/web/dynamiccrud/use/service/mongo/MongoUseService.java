@@ -77,9 +77,10 @@ public class MongoUseService implements UseService {
             .filter(x -> DbFieldEnable.REQUIRED.equals(x.getEnableSearch()))
             .toList();
     if (requiredFieldList.stream()
-        .anyMatch(x ->
-            !dataMap.containsKey(x.getColumnId())
-                || !StringUtils.hasText(dataMap.get(x.getColumnId())))) {
+        .anyMatch(
+            x ->
+                !dataMap.containsKey(x.getColumnId())
+                    || !StringUtils.hasText(dataMap.get(x.getColumnId())))) {
       return new PageImpl<>(Collections.emptyList(), pageable, 0);
     }
 
@@ -99,11 +100,12 @@ public class MongoUseService implements UseService {
     // 검색 조건 추가
     var targetFieldList =
         dbFieldList.stream()
-            .filter(x ->
-                (DbFieldEnable.REQUIRED.equals(x.getEnableSearch())
-                        || DbFieldEnable.ENABLED.equals(x.getEnableSearch()))
-                    && dataMap.containsKey(x.getColumnId())
-                    && StringUtils.hasText(dataMap.get(x.getColumnId())))
+            .filter(
+                x ->
+                    (DbFieldEnable.REQUIRED.equals(x.getEnableSearch())
+                            || DbFieldEnable.ENABLED.equals(x.getEnableSearch()))
+                        && dataMap.containsKey(x.getColumnId())
+                        && StringUtils.hasText(dataMap.get(x.getColumnId())))
             .toList();
     var filter = new Document();
     if (!targetFieldList.isEmpty()) {
@@ -158,24 +160,26 @@ public class MongoUseService implements UseService {
 
     var dataMapList = new ArrayList<Map<String, String>>();
 
-    dataMap.forEach((key, value) -> {
-      // 갯수 만큼 맵을 추가한다.
-      if (dataMapList.isEmpty()) {
-        for (int i = 0; i < value.size(); i++) {
-          dataMapList.add(new HashMap<>());
-        }
-      }
+    dataMap.forEach(
+        (key, value) -> {
+          // 갯수 만큼 맵을 추가한다.
+          if (dataMapList.isEmpty()) {
+            for (int i = 0; i < value.size(); i++) {
+              dataMapList.add(new HashMap<>());
+            }
+          }
 
-      for (int i = 0; i < value.size(); i++) {
-        dataMapList.get(i).put(key, value.get(i));
-      }
-    });
+          for (int i = 0; i < value.size(); i++) {
+            dataMapList.get(i).put(key, value.get(i));
+          }
+        });
 
     var resultList = new ArrayList<Object>();
-    dataMapList.forEach(map -> {
-      Object result = runCommand(dbQuery, map);
-      resultList.add(result);
-    });
+    dataMapList.forEach(
+        map -> {
+          Object result = runCommand(dbQuery, map);
+          resultList.add(result);
+        });
     return resultList;
   }
 

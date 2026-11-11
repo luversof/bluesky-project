@@ -98,14 +98,15 @@ class DecorativeArrowHiddenTest {
         Stream.of(
                 "src/main/jte/stock/htmx/fragments/adminActions.jte",
                 "src/main/jte/stock/htmx/fragments/dividend/dividendSummaryCards.jte")
-            .filter(file -> {
-              try {
-                String text = Files.readString(Path.of(file));
-                return text.contains("&rarr;") || text.contains(ARROW);
-              } catch (IOException e) {
-                return false;
-              }
-            })
+            .filter(
+                file -> {
+                  try {
+                    String text = Files.readString(Path.of(file));
+                    return text.contains("&rarr;") || text.contains(ARROW);
+                  } catch (IOException e) {
+                    return false;
+                  }
+                })
             .count();
     assertThat(kept).as("값 사이 관계를 나타내는 화살표는 남아 있어야 한다").isEqualTo(2);
   }

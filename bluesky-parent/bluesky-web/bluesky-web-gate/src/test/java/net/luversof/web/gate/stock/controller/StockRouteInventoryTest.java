@@ -81,20 +81,21 @@ class StockRouteInventoryTest {
   void 같은_주소를_두_번_매핑하지_않는다() {
     List<String> full = new java.util.ArrayList<>();
     StockControllerSources.byFile()
-        .forEach((name, source) -> {
-          Matcher prefix =
-              Pattern.compile("@RequestMapping\\s*\\((?:[^)]*?)\"([^\"]+)\"", Pattern.DOTALL)
-                  .matcher(source);
-          String base = prefix.find() ? prefix.group(1) : "";
-          Matcher method =
-              Pattern.compile(
-                      "@(?:Get|Post|Put|Delete)Mapping\\s*\\((?:[^)]*?)\"([^\"]+)\"",
-                      Pattern.DOTALL)
-                  .matcher(source);
-          while (method.find()) {
-            full.add(base + method.group(1));
-          }
-        });
+        .forEach(
+            (name, source) -> {
+              Matcher prefix =
+                  Pattern.compile("@RequestMapping\\s*\\((?:[^)]*?)\"([^\"]+)\"", Pattern.DOTALL)
+                      .matcher(source);
+              String base = prefix.find() ? prefix.group(1) : "";
+              Matcher method =
+                  Pattern.compile(
+                          "@(?:Get|Post|Put|Delete)Mapping\\s*\\((?:[^)]*?)\"([^\"]+)\"",
+                          Pattern.DOTALL)
+                      .matcher(source);
+              while (method.find()) {
+                full.add(base + method.group(1));
+              }
+            });
 
     List<String> duplicated =
         full.stream()

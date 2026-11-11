@@ -58,10 +58,11 @@ public final class ActivityChartBuckets {
     List<BigDecimal> realized = new ArrayList<>();
     buckets
         .values()
-        .forEach(sum -> {
-          dividend.add(sum[0]);
-          realized.add(sum[1]);
-        });
+        .forEach(
+            sum -> {
+              dividend.add(sum[0]);
+              realized.add(sum[1]);
+            });
     return new Buckets(labels, dividend, realized);
   }
 

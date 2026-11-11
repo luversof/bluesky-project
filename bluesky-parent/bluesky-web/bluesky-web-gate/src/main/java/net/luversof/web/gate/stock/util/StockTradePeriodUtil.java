@@ -147,21 +147,22 @@ public final class StockTradePeriodUtil {
     }
 
     List<TradePeriod> result = new ArrayList<>();
-    buckets.forEach((label, slot) ->
-        result.add(
-            new TradePeriod(
-                unit,
-                label,
-                (LocalDate) slot[0],
-                (LocalDate) slot[1],
-                (int) slot[2] + (int) slot[3],
-                (int) slot[2],
-                (int) slot[3],
-                (BigDecimal) slot[4],
-                (BigDecimal) slot[5],
-                (BigDecimal) slot[6],
-                (BigDecimal) slot[7],
-                (BigDecimal) slot[8])));
+    buckets.forEach(
+        (label, slot) ->
+            result.add(
+                new TradePeriod(
+                    unit,
+                    label,
+                    (LocalDate) slot[0],
+                    (LocalDate) slot[1],
+                    (int) slot[2] + (int) slot[3],
+                    (int) slot[2],
+                    (int) slot[3],
+                    (BigDecimal) slot[4],
+                    (BigDecimal) slot[5],
+                    (BigDecimal) slot[6],
+                    (BigDecimal) slot[7],
+                    (BigDecimal) slot[8])));
     // 최신이 위로. 표는 늘 최근부터 읽는다(다른 성과 표와 같은 차례).
     result.sort(Comparator.comparing(TradePeriod::label).reversed());
     return result;

@@ -68,11 +68,12 @@ class TradeImportAccountNameTrimTest {
     when(accountService.findByUserId(USER)).thenReturn(List.of());
     UUID created = UUID.randomUUID();
     when(accountService.createAccount(any(Account.class)))
-        .thenAnswer(invocation -> {
-          Account account = invocation.getArgument(0);
-          account.setId(created);
-          return account;
-        });
+        .thenAnswer(
+            invocation -> {
+              Account account = invocation.getArgument(0);
+              account.setId(created);
+              return account;
+            });
 
     StockAdminService service = new StockAdminService();
     ReflectionTestUtils.setField(service, "stockGoogleSheetService", stockGoogleSheetService);

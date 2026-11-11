@@ -392,13 +392,23 @@ public class Poe2CraftImportService {
     Poe2CraftService.CraftData d = craft.craftData();
     if (d.essenceMods() != null) {
       d.essenceMods()
-          .forEach((id, m) -> {
-            if (out.stream().noneMatch(c -> c.id().equals(id))) {
-              out.add(
-                  new Cand(
-                      id, m.g(), m.l(), m.name(), m.nameKo(), m.en(), m.ko(), null, "affix", 1));
-            }
-          });
+          .forEach(
+              (id, m) -> {
+                if (out.stream().noneMatch(c -> c.id().equals(id))) {
+                  out.add(
+                      new Cand(
+                          id,
+                          m.g(),
+                          m.l(),
+                          m.name(),
+                          m.nameKo(),
+                          m.en(),
+                          m.ko(),
+                          null,
+                          "affix",
+                          1));
+                }
+              });
     }
     List<String> des = d.desecrated() == null ? null : d.desecrated().get(pool.key());
     for (String id : des == null ? List.<String>of() : des) {

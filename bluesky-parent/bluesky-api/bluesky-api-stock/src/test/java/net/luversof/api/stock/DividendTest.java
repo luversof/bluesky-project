@@ -55,13 +55,14 @@ class DividendTest implements GeneralTest {
   void selectAllDividends() {
     var all = StreamSupport.stream(dividendRepository.findAll().spliterator(), false).toList();
     log.info("Total dividends in DB: {}", all.size());
-    all.forEach(d ->
-        log.info(
-            "Dividend id={}, accountId={}, stockItemId={}, stockItemName={}",
-            d.getId(),
-            d.getAccountId(),
-            d.getStockItemId(),
-            d.getStockItemName()));
+    all.forEach(
+        d ->
+            log.info(
+                "Dividend id={}, accountId={}, stockItemId={}, stockItemName={}",
+                d.getId(),
+                d.getAccountId(),
+                d.getStockItemId(),
+                d.getStockItemName()));
     assertThat(all).isNotNull();
   }
 }

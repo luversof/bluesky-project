@@ -59,13 +59,14 @@ class DashboardCardRangeLinkTest {
 
     assertThat(links).as("'보조 지표' 카드가 사라졌다").isNotEmpty();
     assertThat(links)
-        .allSatisfy(href -> {
-          if (href.startsWith("/stock/analytics")) {
-            assertThat(href).as("기간 선택기가 없는 화면에는 기간을 싣지 않는다").doesNotContain("rangeMode");
-          } else {
-            assertThat(href).contains("rangeMode=all");
-          }
-        });
+        .allSatisfy(
+            href -> {
+              if (href.startsWith("/stock/analytics")) {
+                assertThat(href).as("기간 선택기가 없는 화면에는 기간을 싣지 않는다").doesNotContain("rangeMode");
+              } else {
+                assertThat(href).contains("rangeMode=all");
+              }
+            });
   }
 
   @Test

@@ -339,8 +339,9 @@ public class PoeBaseItemDataService {
 
     return data.items().stream()
         .filter(item -> PoeSearchText.matches(normalizedQuery, item.name(), item.nameKo()))
-        .filter(item ->
-            itemClass == null || "all".equals(itemClass) || itemClass.equals(item.itemClass()))
+        .filter(
+            item ->
+                itemClass == null || "all".equals(itemClass) || itemClass.equals(item.itemClass()))
         .toList();
   }
 }

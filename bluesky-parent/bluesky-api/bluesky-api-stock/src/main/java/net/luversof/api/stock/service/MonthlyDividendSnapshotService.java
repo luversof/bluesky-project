@@ -64,11 +64,12 @@ public class MonthlyDividendSnapshotService {
         .forEach((stockItemId, price) -> currentPriceById.put(stockItemId, price.closePrice()));
 
     return snapshots.stream()
-        .map(snapshot ->
-            toResponse(
-                snapshot,
-                stockItemById.get(snapshot.getStockItemId()),
-                currentPriceById.get(snapshot.getStockItemId())))
+        .map(
+            snapshot ->
+                toResponse(
+                    snapshot,
+                    stockItemById.get(snapshot.getStockItemId()),
+                    currentPriceById.get(snapshot.getStockItemId())))
         .sorted(this::compareResponses)
         .toList();
   }

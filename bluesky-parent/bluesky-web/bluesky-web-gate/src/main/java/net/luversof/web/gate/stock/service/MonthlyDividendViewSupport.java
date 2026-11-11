@@ -122,38 +122,41 @@ public class MonthlyDividendViewSupport {
     Map<String, LocalDate> latest =
         latestRecordDateBySymbol == null ? Map.of() : latestRecordDateBySymbol;
     return profiles.stream()
-        .sorted((left, right) -> {
-          int result =
-              switch (sort) {
-                case "symbol" ->
-                    compareProfileText(left.stockItemSymbol(), right.stockItemSymbol(), direction);
-                case "payout-window" ->
-                    compareProfileText(left.payoutWindow(), right.payoutWindow(), direction);
-                case "source-url" ->
-                    compareProfileText(left.sourceUrl(), right.sourceUrl(), direction);
-                case "last-verified-date" ->
-                    compareNullableProfileValue(
-                        left.lastVerifiedDate(), right.lastVerifiedDate(), direction);
-                case SORT_LATEST_RECORD_DATE ->
-                    compareNullableProfileValue(
-                        latest.get(symbolKey(left.stockItemSymbol())),
-                        latest.get(symbolKey(right.stockItemSymbol())),
-                        direction);
-                case "active" -> compareProfileBoolean(left.active(), right.active(), direction);
-                case SORT_DISPLAY_ORDER ->
-                    compareNullableProfileValue(
-                        left.displayOrder(), right.displayOrder(), direction);
-                default ->
-                    compareNullableProfileValue(
-                        left.displayOrder(), right.displayOrder(), direction);
-              };
+        .sorted(
+            (left, right) -> {
+              int result =
+                  switch (sort) {
+                    case "symbol" ->
+                        compareProfileText(
+                            left.stockItemSymbol(), right.stockItemSymbol(), direction);
+                    case "payout-window" ->
+                        compareProfileText(left.payoutWindow(), right.payoutWindow(), direction);
+                    case "source-url" ->
+                        compareProfileText(left.sourceUrl(), right.sourceUrl(), direction);
+                    case "last-verified-date" ->
+                        compareNullableProfileValue(
+                            left.lastVerifiedDate(), right.lastVerifiedDate(), direction);
+                    case SORT_LATEST_RECORD_DATE ->
+                        compareNullableProfileValue(
+                            latest.get(symbolKey(left.stockItemSymbol())),
+                            latest.get(symbolKey(right.stockItemSymbol())),
+                            direction);
+                    case "active" ->
+                        compareProfileBoolean(left.active(), right.active(), direction);
+                    case SORT_DISPLAY_ORDER ->
+                        compareNullableProfileValue(
+                            left.displayOrder(), right.displayOrder(), direction);
+                    default ->
+                        compareNullableProfileValue(
+                            left.displayOrder(), right.displayOrder(), direction);
+                  };
 
-          if (result != 0) {
-            return result;
-          }
+              if (result != 0) {
+                return result;
+              }
 
-          return compareProfileText(left.stockItemSymbol(), right.stockItemSymbol(), "asc");
-        })
+              return compareProfileText(left.stockItemSymbol(), right.stockItemSymbol(), "asc");
+            })
         .toList();
   }
 
@@ -218,9 +221,10 @@ public class MonthlyDividendViewSupport {
       boolean positiveOnly) {
     return rows.stream()
         .filter(row -> matchesKeyword(row, keyword))
-        .filter(row ->
-            minAnnualYield == null
-                || nz(row.expectedAnnualYieldPct()).compareTo(minAnnualYield) >= 0)
+        .filter(
+            row ->
+                minAnnualYield == null
+                    || nz(row.expectedAnnualYieldPct()).compareTo(minAnnualYield) >= 0)
         .filter(row -> !positiveOnly || nz(row.expectedCombinedReturnPct()).signum() >= 0)
         .toList();
   }

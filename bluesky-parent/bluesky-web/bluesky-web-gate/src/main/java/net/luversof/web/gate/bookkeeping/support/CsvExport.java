@@ -46,16 +46,17 @@ public final class CsvExport {
     var b = new StringBuilder("\uFEFF");
     line(b, HEADER_KEYS.stream().map(BookkeepingView::msg).toList());
     var sorted = new ArrayList<>(entries);
-    sorted.sort((x, y) -> {
-      int c = x.entryDate().compareTo(y.entryDate());
-      if (c != 0) {
-        return c;
-      }
-      if (x.entryTime() == null || y.entryTime() == null) {
-        return x.entryTime() == null ? (y.entryTime() == null ? 0 : -1) : 1;
-      }
-      return x.entryTime().compareTo(y.entryTime());
-    });
+    sorted.sort(
+        (x, y) -> {
+          int c = x.entryDate().compareTo(y.entryDate());
+          if (c != 0) {
+            return c;
+          }
+          if (x.entryTime() == null || y.entryTime() == null) {
+            return x.entryTime() == null ? (y.entryTime() == null ? 0 : -1) : 1;
+          }
+          return x.entryTime().compareTo(y.entryTime());
+        });
     for (var e : sorted) {
       var category = e.categoryId() == null ? null : categories.get(e.categoryId());
       var parent =

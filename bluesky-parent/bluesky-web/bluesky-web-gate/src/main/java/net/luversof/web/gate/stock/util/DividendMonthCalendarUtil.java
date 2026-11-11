@@ -113,12 +113,24 @@ public final class DividendMonthCalendarUtil {
     }
 
     List<DividendCalendarView.Entry> entries = new ArrayList<>();
-    sums.forEach((key, sum) -> {
-      int day = days.get(key);
-      entries.add(
-          new DividendCalendarView.Entry(
-              null, names.get(key), sum[1], sum[0], sum[2], null, day, day, day, 0, true, true));
-    });
+    sums.forEach(
+        (key, sum) -> {
+          int day = days.get(key);
+          entries.add(
+              new DividendCalendarView.Entry(
+                  null,
+                  names.get(key),
+                  sum[1],
+                  sum[0],
+                  sum[2],
+                  null,
+                  day,
+                  day,
+                  day,
+                  0,
+                  true,
+                  true));
+        });
     return new DividendCalendarView(
         month,
         DividendCalendarGridUtil.build(

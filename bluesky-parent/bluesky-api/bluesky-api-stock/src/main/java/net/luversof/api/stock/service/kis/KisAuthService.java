@@ -35,9 +35,10 @@ public class KisAuthService {
     OpenApiConfig config =
         openApiConfigRepository
             .findByProviderAndUserId("KIS", userId)
-            .orElseThrow(() ->
-                new RuntimeException(
-                    "KIS API 설정이 DB에 없습니다. (provider='KIS', userId=" + userId + ")"));
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        "KIS API 설정이 DB에 없습니다. (provider='KIS', userId=" + userId + ")"));
 
     Instant now = Instant.now();
     // 토큰이 없거나 발행된지 23시간이 넘었으면 재발급 (KIS 토큰 유효기간 24시간)

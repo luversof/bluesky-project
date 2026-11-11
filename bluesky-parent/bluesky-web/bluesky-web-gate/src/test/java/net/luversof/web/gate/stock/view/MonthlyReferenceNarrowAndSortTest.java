@@ -55,10 +55,11 @@ class MonthlyReferenceNarrowAndSortTest {
 
     List<String> fields =
         lines.stream()
-            .filter(line ->
-                line.contains("<input ")
-                    || line.contains("<select ")
-                    || line.contains("<textarea "))
+            .filter(
+                line ->
+                    line.contains("<input ")
+                        || line.contains("<select ")
+                        || line.contains("<textarea "))
             .filter(line -> !line.contains("type=\"hidden\""))
             .toList();
     assertThat(fields).as("전제: 이 화면에 입력칸이 있다").hasSizeGreaterThanOrEqualTo(8);

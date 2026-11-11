@@ -242,15 +242,16 @@ public class Poe2CraftOptimizer {
         new Running(
             now,
             budget,
-            pool.submit(() -> {
-              // 사용자 가격(C530) — 작업 스레드에서
-              Poe2CraftCalcService.override(r.prices());
-              try {
-                return optimize(r, id);
-              } finally {
-                Poe2CraftCalcService.override(null);
-              }
-            })));
+            pool.submit(
+                () -> {
+                  // 사용자 가격(C530) — 작업 스레드에서
+                  Poe2CraftCalcService.override(r.prices());
+                  try {
+                    return optimize(r, id);
+                  } finally {
+                    Poe2CraftCalcService.override(null);
+                  }
+                })));
     policies.entrySet().removeIf(e -> now - e.getValue().at() > 10 * 60_000L);
     return id;
   }
@@ -703,11 +704,12 @@ public class Poe2CraftOptimizer {
     Map<String, String> omenKo = new HashMap<>();
     Map<String, String> omenEn = new HashMap<>();
     (o.omens() == null ? List.<Poe2CraftService.Omen>of() : o.omens())
-        .forEach(x -> {
-          omenKo.put(x.key(), x.nameKo());
-          omenEn.put(x.key(), x.name());
-          ko.put(x.name(), x.nameKo());
-        });
+        .forEach(
+            x -> {
+              omenKo.put(x.key(), x.nameKo());
+              omenEn.put(x.key(), x.name());
+              ko.put(x.name(), x.nameKo());
+            });
     List<Act> acts = new ArrayList<>();
     // 화폐 × 등급 × 징조(같은 화폐의 좌 · 우 징조를 함께 거는 등 막히는 조합은 엔진이 거절)
     Map<Action, List<List<String>>> omenSets = new java.util.EnumMap<>(Action.class);
@@ -818,21 +820,22 @@ public class Poe2CraftOptimizer {
     Set<String> liches = new java.util.LinkedHashSet<>();
     craft
         .desecratedOf(pk)
-        .forEach(d -> {
-          deseIds.add(d.mod().id());
-          if (targetIds.contains(d.mod().id()) && d.lich() != null) {
-            String om =
-                switch (d.lich()) {
-                  case "ulaman" -> "Sovereign";
-                  case "amanamu" -> "Liege";
-                  case "kurgal" -> "Blackblooded";
-                  default -> null;
-                };
-            if (om != null) {
-              liches.add(om);
-            }
-          }
-        });
+        .forEach(
+            d -> {
+              deseIds.add(d.mod().id());
+              if (targetIds.contains(d.mod().id()) && d.lich() != null) {
+                String om =
+                    switch (d.lich()) {
+                      case "ulaman" -> "Sovereign";
+                      case "amanamu" -> "Liege";
+                      case "kurgal" -> "Blackblooded";
+                      default -> null;
+                    };
+                if (om != null) {
+                  liches.add(om);
+                }
+              }
+            });
     if (targetIds.stream().anyMatch(deseIds::contains)) {
       String cls = pk.split("[|]")[0];
       for (Poe2CraftService.BoneInfo b :
@@ -1079,18 +1082,19 @@ public class Poe2CraftOptimizer {
       final long until = learnEnd;
       boolean[] hitCap = {false};
       frontier.parallelStream()
-          .forEach(k -> {
-            // 상태 한도와 시간 한도를 가른다(C538 — 시간이 다 돼도 '상태 한도로 더 넓히지 못함'이라 적어 상태 1,520개(한도 5,000)에도
-            // 그렇게 보였다). 시간이면 바깥 반복이 끝난다
-            if (job.trans.size() >= MAX_STATES) {
-              hitCap[0] = true;
-              return;
-            }
-            if (System.currentTimeMillis() >= until) {
-              return;
-            }
-            expand(job, k);
-          });
+          .forEach(
+              k -> {
+                // 상태 한도와 시간 한도를 가른다(C538 — 시간이 다 돼도 '상태 한도로 더 넓히지 못함'이라 적어 상태 1,520개(한도 5,000)에도
+                // 그렇게 보였다). 시간이면 바깥 반복이 끝난다
+                if (job.trans.size() >= MAX_STATES) {
+                  hitCap[0] = true;
+                  return;
+                }
+                if (System.currentTimeMillis() >= until) {
+                  return;
+                }
+                expand(job, k);
+              });
       capped = hitCap[0];
       if (capped) {
         break;
@@ -1408,18 +1412,19 @@ public class Poe2CraftOptimizer {
         visits.entrySet().stream()
             .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
             .limit(12)
-            .map(e ->
-                new Rule(
-                    describe(e.getKey(), targets.size()),
-                    pol.get(e.getKey()) == null
-                        ? "(모름)"
-                        : label(usable, pol.get(e.getKey()), fbLabel),
-                    Math.min(1, (double) e.getValue() / runsF),
-                    v.get(e.getKey()),
-                    describeEn(e.getKey(), targets.size()),
-                    pol.get(e.getKey()) == null
-                        ? "(unknown)"
-                        : labelEn(usable, pol.get(e.getKey()), fbLabelEn)))
+            .map(
+                e ->
+                    new Rule(
+                        describe(e.getKey(), targets.size()),
+                        pol.get(e.getKey()) == null
+                            ? "(모름)"
+                            : label(usable, pol.get(e.getKey()), fbLabel),
+                        Math.min(1, (double) e.getValue() / runsF),
+                        v.get(e.getKey()),
+                        describeEn(e.getKey(), targets.size()),
+                        pol.get(e.getKey()) == null
+                            ? "(unknown)"
+                            : labelEn(usable, pol.get(e.getKey()), fbLabelEn)))
             .toList();
     Double se = null;
     if (succ > 1) {
@@ -1740,21 +1745,22 @@ public class Poe2CraftOptimizer {
       }
       // 상태마다 한 스레드(안쪽 맵은 동시 맵이 아니다)
       work.entrySet().parallelStream()
-          .forEach(w -> {
-            if (System.currentTimeMillis() >= until) {
-              return;
-            }
-            Map<Integer, Map<String, Double>> tk = job.trans.get(w.getKey());
-            for (int ai : w.getValue()) {
-              Map<String, Double> t = job.sample(w.getKey(), ai, SAMPLE_REFINE);
-              if (t == null) {
-                tk.remove(ai);
-              } else {
-                tk.put(ai, t);
-              }
-              done.add(w.getKey() + "#" + ai);
-            }
-          });
+          .forEach(
+              w -> {
+                if (System.currentTimeMillis() >= until) {
+                  return;
+                }
+                Map<Integer, Map<String, Double>> tk = job.trans.get(w.getKey());
+                for (int ai : w.getValue()) {
+                  Map<String, Double> t = job.sample(w.getKey(), ai, SAMPLE_REFINE);
+                  if (t == null) {
+                    tk.remove(ai);
+                  } else {
+                    tk.put(ai, t);
+                  }
+                  done.add(w.getKey() + "#" + ai);
+                }
+              });
       decide(job, v, pol, until);
     }
     return done.size();
@@ -1765,12 +1771,13 @@ public class Poe2CraftOptimizer {
     Map<Integer, Map<String, Double>> tk = new java.util.concurrent.ConcurrentHashMap<>();
     java.util.stream.IntStream.range(0, job.acts.size())
         .parallel()
-        .forEach(ai -> {
-          Map<String, Double> t = job.sample(k, ai);
-          if (t != null) {
-            tk.put(ai, t);
-          }
-        });
+        .forEach(
+            ai -> {
+              Map<String, Double> t = job.sample(k, ai);
+              if (t != null) {
+                tk.put(ai, t);
+              }
+            });
     job.trans.put(k, new HashMap<>(tk));
   }
 

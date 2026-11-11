@@ -49,15 +49,16 @@ public class PoeRegexPresetService {
           .filter(p -> p.getFileName().toString().endsWith(".json"))
           .sorted(Comparator.comparing((Path p) -> p.getFileName().toString()).reversed())
           .limit(PRESET_LIMIT)
-          .map(p -> {
-            try {
-              RegexPreset preset = jsonMapper.readValue(Files.readString(p), RegexPreset.class);
-              return new RegexPresetEntry(
-                  preset.id(), preset.name(), preset.updatedMs(), preset.regex());
-            } catch (Exception e) {
-              return null; // 깨진 파일 한 건이 목록 전체를 막지 않게
-            }
-          })
+          .map(
+              p -> {
+                try {
+                  RegexPreset preset = jsonMapper.readValue(Files.readString(p), RegexPreset.class);
+                  return new RegexPresetEntry(
+                      preset.id(), preset.name(), preset.updatedMs(), preset.regex());
+                } catch (Exception e) {
+                  return null; // 깨진 파일 한 건이 목록 전체를 막지 않게
+                }
+              })
           .filter(java.util.Objects::nonNull)
           .toList();
     } catch (Exception e) {

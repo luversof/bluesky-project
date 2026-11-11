@@ -825,9 +825,10 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
 
     var allTrades =
         allFromApi.stream()
-            .map(t ->
-                t.withStockItemName(
-                    stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"))))
+            .map(
+                t ->
+                    t.withStockItemName(
+                        stockItemNames.getOrDefault(t.stockItemId(), msg("stock.label.unknown"))))
             .sorted(
                 Comparator.comparing(
                     TradeResponse::tradeDate, Comparator.nullsLast(Comparator.reverseOrder())))

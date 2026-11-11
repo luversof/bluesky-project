@@ -31,30 +31,33 @@ public class WebUserSecurityConfig {
       throws Exception {
     return http.csrf(CsrfConfigurer::disable)
         .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
-        .oauth2Login(oauth2 ->
-            oauth2
-                .successHandler(successHandlerProvider.getObject())
-                .failureHandler(
-                    new SimpleUrlAuthenticationFailureHandler() {
-                      @Override
-                      public void onAuthenticationFailure(
-                          jakarta.servlet.http.HttpServletRequest request,
-                          jakarta.servlet.http.HttpServletResponse response,
-                          org.springframework.security.core.AuthenticationException exception)
-                          throws java.io.IOException, jakarta.servlet.ServletException {
-                        exception.printStackTrace();
-                        super.onAuthenticationFailure(request, response, exception);
-                      }
-                    })
-                .userInfoEndpoint(
-                    userInfo -> userInfo.userService(customOAuth2UserServiceProvider.getObject())))
+        .oauth2Login(
+            oauth2 ->
+                oauth2
+                    .successHandler(successHandlerProvider.getObject())
+                    .failureHandler(
+                        new SimpleUrlAuthenticationFailureHandler() {
+                          @Override
+                          public void onAuthenticationFailure(
+                              jakarta.servlet.http.HttpServletRequest request,
+                              jakarta.servlet.http.HttpServletResponse response,
+                              org.springframework.security.core.AuthenticationException exception)
+                              throws java.io.IOException, jakarta.servlet.ServletException {
+                            exception.printStackTrace();
+                            super.onAuthenticationFailure(request, response, exception);
+                          }
+                        })
+                    .userInfoEndpoint(
+                        userInfo ->
+                            userInfo.userService(customOAuth2UserServiceProvider.getObject())))
         .oauth2Client(Customizer.withDefaults())
-        .logout(logout ->
-            logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true))
+        .logout(
+            logout ->
+                logout
+                    .logoutUrl("/logout")
+                    .logoutSuccessUrl("/")
+                    .invalidateHttpSession(true)
+                    .clearAuthentication(true))
         .build();
   }
 

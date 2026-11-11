@@ -253,9 +253,10 @@ public class MonthlyDividendReferenceSupport {
             model, requestedSymbol, profiles, selectableStockItems);
     MonthlyDividendProfileResponse selectedProfile =
         profiles.stream()
-            .filter(profile ->
-                selectedSymbol.equalsIgnoreCase(
-                    StockViewSupport.safeString(profile.stockItemSymbol())))
+            .filter(
+                profile ->
+                    selectedSymbol.equalsIgnoreCase(
+                        StockViewSupport.safeString(profile.stockItemSymbol())))
             .findFirst()
             .orElse(null);
     List<MonthlyDividendPayoutResponse> payouts = loadMonthlyDividendPayouts(selectedSymbol);
@@ -420,19 +421,20 @@ public class MonthlyDividendReferenceSupport {
               Comparator.comparing(
                   profile -> StockViewSupport.safeString(profile.stockItemSymbol()),
                   String.CASE_INSENSITIVE_ORDER))
-          .forEach(profile -> {
-            String normalizedSymbol = profile.stockItemSymbol().trim().toUpperCase(Locale.ROOT);
-            stockItemsBySymbol.putIfAbsent(
-                normalizedSymbol,
-                new StockItem(
-                    profile.stockItemId(),
+          .forEach(
+              profile -> {
+                String normalizedSymbol = profile.stockItemSymbol().trim().toUpperCase(Locale.ROOT);
+                stockItemsBySymbol.putIfAbsent(
                     normalizedSymbol,
-                    StringUtils.hasText(profile.stockItemName())
-                        ? profile.stockItemName().trim()
-                        : normalizedSymbol,
-                    null,
-                    List.of(MONTHLY_DIVIDEND_TAG)));
-          });
+                    new StockItem(
+                        profile.stockItemId(),
+                        normalizedSymbol,
+                        StringUtils.hasText(profile.stockItemName())
+                            ? profile.stockItemName().trim()
+                            : normalizedSymbol,
+                        null,
+                        List.of(MONTHLY_DIVIDEND_TAG)));
+              });
     }
 
     // 붙이는 순서(태그 종목 -> 프로필에만 있는 종목)를 그대로 두면 코드 순이 두 덩이로 끊긴다 - 합친 뒤 한 줄로 정렬한다.
@@ -515,19 +517,20 @@ public class MonthlyDividendReferenceSupport {
     Map<String, MonthlyDividendPayDayUtil.SettlementRule> rules =
         MonthlyDividendPayDayUtil.settlementRulesFromResponses(payouts);
     Map<String, MonthlyDividendLatestPayoutView> result = new HashMap<>();
-    latest.forEach((symbol, payout) -> {
-      var rule = rules.get(symbol);
-      LocalDate expected =
-          rule != null
-              // 기준일 "당일" 은 아직 지나지 않았다 - 어제까지 지난 기준일로 본다(검토 2026-10-20: 당일에 "지났는데" 배지가 떴다).
-              ? KrxRecordDateUtil.latestRecordDateOnOrBefore(
-                  today.minusDays(1), rule.payoutWindow())
-              : null;
-      result.put(
-          symbol,
-          MonthlyDividendLatestPayoutView.of(
-              payout.recordDate(), payout.payDate(), today, expected));
-    });
+    latest.forEach(
+        (symbol, payout) -> {
+          var rule = rules.get(symbol);
+          LocalDate expected =
+              rule != null
+                  // 기준일 "당일" 은 아직 지나지 않았다 - 어제까지 지난 기준일로 본다(검토 2026-10-20: 당일에 "지났는데" 배지가 떴다).
+                  ? KrxRecordDateUtil.latestRecordDateOnOrBefore(
+                      today.minusDays(1), rule.payoutWindow())
+                  : null;
+          result.put(
+              symbol,
+              MonthlyDividendLatestPayoutView.of(
+                  payout.recordDate(), payout.payDate(), today, expected));
+        });
     return result;
   }
 

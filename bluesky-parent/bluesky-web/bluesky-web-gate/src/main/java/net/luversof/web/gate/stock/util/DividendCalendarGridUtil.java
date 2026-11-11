@@ -83,8 +83,9 @@ public final class DividendCalendarGridUtil {
       byDay.computeIfAbsent(day, key -> new ArrayList<>()).add(entry);
     }
     Comparator<DividendCalendarView.Entry> byAmountDesc =
-        Comparator.comparing((DividendCalendarView.Entry entry) ->
-                entry.average() != null ? entry.average() : BigDecimal.ZERO)
+        Comparator.comparing(
+                (DividendCalendarView.Entry entry) ->
+                    entry.average() != null ? entry.average() : BigDecimal.ZERO)
             .reversed();
     for (List<DividendCalendarView.Entry> sameDay : byDay.values()) {
       sameDay.sort(byAmountDesc);

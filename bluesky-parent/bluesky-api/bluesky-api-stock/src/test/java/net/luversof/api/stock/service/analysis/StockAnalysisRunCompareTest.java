@@ -38,6 +38,15 @@ class StockAnalysisRunCompareTest {
   }
 
   @Test
+  void 아침_작업은_버전에_am_을_붙여_따로_센다() {
+    // 기준일 11-10: 20:07 KST(저녁) 는 그대로, 다음 날 08:05 KST(아침) 는 @am
+    assertThat(StockAnalysisService.versionLabel(prediction(RUN1, "2026-11-10T11:07:00Z", 1, "UP")))
+        .isEqualTo("v2");
+    assertThat(StockAnalysisService.versionLabel(prediction(RUN1, "2026-11-10T23:05:00Z", 1, "UP")))
+        .isEqualTo("v2@am");
+  }
+
+  @Test
   void 회차를_열로_놓고_방향이_갈린_행을_표시한다() {
     StockPrediction a1 = prediction(RUN1, "2026-11-10T11:07:00Z", 1, "FLAT");
     StockPrediction a5 = prediction(RUN1, "2026-11-10T11:07:00Z", 5, "UP");

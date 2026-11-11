@@ -63,13 +63,14 @@ class MonthlyDividendPayoutServiceTest {
             stockItem.getId(), request.getRecordDate(), request.getPayDate()))
         .thenReturn(Optional.empty());
     when(monthlyDividendPayoutRepository.save(any(MonthlyDividendPayout.class)))
-        .thenAnswer(invocation -> {
-          MonthlyDividendPayout payout = invocation.getArgument(0);
-          assertThat(payout.getId()).isNull();
-          assertThat(payout.getCreatedDate()).isNotNull();
-          payout.setId(generatedId);
-          return payout;
-        });
+        .thenAnswer(
+            invocation -> {
+              MonthlyDividendPayout payout = invocation.getArgument(0);
+              assertThat(payout.getId()).isNull();
+              assertThat(payout.getCreatedDate()).isNotNull();
+              payout.setId(generatedId);
+              return payout;
+            });
     when(monthlyDividendSnapshotRepository.findByStockItemIdOrderByUpdatedDateDesc(
             stockItem.getId()))
         .thenReturn(List.of());

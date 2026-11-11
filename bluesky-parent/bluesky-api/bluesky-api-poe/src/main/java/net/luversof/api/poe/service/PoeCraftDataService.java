@@ -315,12 +315,14 @@ public class PoeCraftDataService {
     this.essences = ess;
     Map<String, List<String>> et = new java.util.HashMap<>();
     ess.values()
-        .forEach(l ->
-            l.forEach(e -> {
-              if (e.modId() != null && e.t() != null && !e.t().isEmpty()) {
-                et.putIfAbsent(e.modId(), e.t());
-              }
-            }));
+        .forEach(
+            l ->
+                l.forEach(
+                    e -> {
+                      if (e.modId() != null && e.t() != null && !e.t().isEmpty()) {
+                        et.putIfAbsent(e.modId(), e.t());
+                      }
+                    }));
     this.essenceTags = et;
     benchIndex.clear();
     if (Files.exists(currencyFile)) {

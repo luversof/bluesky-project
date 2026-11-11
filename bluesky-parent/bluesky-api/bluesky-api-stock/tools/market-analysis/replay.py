@@ -9,6 +9,7 @@ and baselines as the live grading.
     python replay.py summary [--split 2026-10-20]
 
 Results append to %LOCALAPPDATA%/bluesky-market-analysis/replay/results.jsonl.
+Inputs are cached per date under replay/inputs (delete it after an API input change).
 Settings come from the same user environment variables as the scheduled jobs
 (BLUESKY_USER_ID, BLUESKY_STOCK_API, CLAUDE_CODE_OAUTH_TOKEN, BLUESKY_CLAUDE_EXE).
 
@@ -32,7 +33,11 @@ from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(os.environ.get('LOCALAPPDATA', HERE), 'bluesky-market-analysis', 'replay')
-RESULTS = os.path.join(OUT_DIR, 'results.jsonl')
+# BLUESKY_REPLAY_RESULTS: a separate file per process when runs go in parallel (merge afterwards)
+RESULTS = os.environ.get('BLUESKY_REPLAY_RESULTS') or os.path.join(OUT_DIR, 'results.jsonl')
+# Past inputs do not change, and each /input call reads the KIS config and calls KIS for the market lines.
+# Delete this folder to rebuild them (after an input change in the API).
+INPUTS = os.path.join(OUT_DIR, 'inputs')
 
 
 def user_env(name):
@@ -121,9 +126,21 @@ def cmd_run(a):
     os.makedirs(OUT_DIR, exist_ok=True)
     start, end = dt.date.fromisoformat(a.date_from), dt.date.fromisoformat(a.date_to)
     trading = 0
+    done = set()
+    if a.resume:  # skip (version, date, rep) already in the main or this run's results file
+        main = os.path.join(OUT_DIR, 'results.jsonl')
+        done = {(l['version'], l['asOf'], l['rep']) for p in {main, RESULTS} if os.path.exists(p)
+                for l in map(json.loads, open(p, encoding='utf-8')) if l.get('mode') == ('morning' if a.morning else 'evening')}
     for day in weekdays(start, end):
-        input_json = http('GET', '/api/stock/analysis/input?userId=%s&asOf=%s&morning=%s'
-                          % (USER_ID, day, 'true' if a.morning else 'false'))
+        cached = os.path.join(INPUTS, '%s%s.json' % (day, '@am' if a.morning else ''))
+        if os.path.exists(cached):
+            input_json = json.load(open(cached, encoding='utf-8'))
+        else:
+            input_json = http('GET', '/api/stock/analysis/input?userId=%s&asOf=%s&morning=%s'
+                              % (USER_ID, day, 'true' if a.morning else 'false'))
+            os.makedirs(INPUTS, exist_ok=True)
+            with open(cached, 'w', encoding='utf-8') as f:
+                json.dump(input_json, f, ensure_ascii=False)
         bases = {it.get('baseDate') for it in input_json['items'] if it.get('baseDate')}
         if str(day) not in bases:
             print(day, 'holiday - skip', flush=True)
@@ -132,6 +149,8 @@ def cmd_run(a):
         if (trading - 1) % a.step:
             continue
         for rep in range(a.reps):
+            if (version + ('@am' if a.morning else ''), str(day), rep) in done:
+                continue
             try:
                 result = run_claude(template.replace('{{INPUT_JSON}}', json.dumps(input_json, ensure_ascii=False)),
                                     schema, a.model)
@@ -219,6 +238,7 @@ def main():
     r.add_argument('--reps', type=int, default=1)
     r.add_argument('--step', type=int, default=1, help='every Nth trading day (long windows at lower cost)')
     r.add_argument('--model', default='sonnet')
+    r.add_argument('--resume', action='store_true', help='skip dates already in the results (after failures)')
     r.add_argument('--morning', action='store_true',
                    help='analyze at 08:00 KST the next day (the scheduled morning job) instead of 20:00 KST')
     r.set_defaults(fn=cmd_run)

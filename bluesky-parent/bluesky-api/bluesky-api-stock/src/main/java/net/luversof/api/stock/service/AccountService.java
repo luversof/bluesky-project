@@ -65,8 +65,9 @@ public class AccountService {
       var stored =
           accountRepository
               .findById(account.getId())
-              .orElseThrow(() ->
-                  new ResponseStatusException(HttpStatus.BAD_REQUEST, "account is not found"));
+              .orElseThrow(
+                  () ->
+                      new ResponseStatusException(HttpStatus.BAD_REQUEST, "account is not found"));
       if (!account.getUserId().equals(stored.getUserId())) {
         StockErrorCode.INVALID_USER_ID.throwException(account.getUserId(), account.getId());
       }
@@ -148,10 +149,11 @@ public class AccountService {
   @Transactional
   public void deleteAllByUserId(UUID userId) {
     var accountList = accountRepository.findByUserId(userId);
-    accountList.forEach(account -> {
-      dividendRepository.deleteByAccountId(account.getId());
-      tradeRepository.deleteByAccountId(account.getId());
-    });
+    accountList.forEach(
+        account -> {
+          dividendRepository.deleteByAccountId(account.getId());
+          tradeRepository.deleteByAccountId(account.getId());
+        });
     accountRepository.deleteAll(accountList);
   }
 }

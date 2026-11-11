@@ -168,8 +168,9 @@ public abstract class AbstractDbUseService implements UseService {
 
     // SPEL_FOR_EDIT 같이 추가 처리된 값을 설정하기 위해 일괄 처리
     // 검색 조건이 like인 경우 문자열 처리 추가
-    dataMap.forEach((key, value) ->
-        paramSource.addValue(key, getMapSqlParameterSourceValue(key, value, dbFieldList)));
+    dataMap.forEach(
+        (key, value) ->
+            paramSource.addValue(key, getMapSqlParameterSourceValue(key, value, dbFieldList)));
 
     // customQuery 조건에 대해 검토 필요
     // 이 부분은 일단 주석 처리함
@@ -184,8 +185,9 @@ public abstract class AbstractDbUseService implements UseService {
     // }
 
     List<Map<String, Object>> contentList =
-        dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() ->
-            namedParameterJdbcTemplate.query(selectQuery.toString(), paramSource, ROW_MAPPER));
+        dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+            () ->
+                namedParameterJdbcTemplate.query(selectQuery.toString(), paramSource, ROW_MAPPER));
 
     // 첫페이지 호출에 pageSize보다 결과 값이 적은 경우 count 호출이 불필요함
     if (pageable.getOffset() == 0 && contentList.size() < pageable.getPageSize()) {
@@ -206,9 +208,10 @@ public abstract class AbstractDbUseService implements UseService {
     countQuery.setOrderByElements(null);
 
     int totalCount =
-        dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() ->
-            namedParameterJdbcTemplate.queryForObject(
-                countQuery.toString(), paramSource, Integer.class));
+        dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+            () ->
+                namedParameterJdbcTemplate.queryForObject(
+                    countQuery.toString(), paramSource, Integer.class));
     return new PageImpl<>(contentList, pageable, totalCount);
   }
 
@@ -244,28 +247,30 @@ public abstract class AbstractDbUseService implements UseService {
 
     List<Map<String, String>> dataMapList = new ArrayList<>();
 
-    dataMap.forEach((key, value) -> {
-      // 갯수 만큼 맵을 추가한다.
-      if (dataMapList.isEmpty()) {
-        for (int i = 0; i < value.size(); i++) {
-          dataMapList.add(new HashMap<String, String>());
-        }
-      }
+    dataMap.forEach(
+        (key, value) -> {
+          // 갯수 만큼 맵을 추가한다.
+          if (dataMapList.isEmpty()) {
+            for (int i = 0; i < value.size(); i++) {
+              dataMapList.add(new HashMap<String, String>());
+            }
+          }
 
-      for (int i = 0; i < value.size(); i++) {
-        dataMapList.get(i).put(key, value.get(i));
-      }
-    });
+          for (int i = 0; i < value.size(); i++) {
+            dataMapList.get(i).put(key, value.get(i));
+          }
+        });
 
     // 여러 건을 한 트랜잭션으로 - 건마다 따로 커밋하면 중간 한 건이 실패할 때 앞 건만 지워진 채 오류가 났다(2026-10-28 감사).
     // 라우팅 키를 트랜잭션 시작 전에 정해야 그 DB 의 연결로 시작한다(시작 시점에 연결을 잡는다).
     RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
-    return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> {
-      List<Object> resultList = new ArrayList<Object>();
-      dataMapList.forEach(
-          map -> resultList.add(jdbcTemplateUpdate(dbQuery, queryString, dbFieldList, map)));
-      return resultList;
-    });
+    return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+        () -> {
+          List<Object> resultList = new ArrayList<Object>();
+          dataMapList.forEach(
+              map -> resultList.add(jdbcTemplateUpdate(dbQuery, queryString, dbFieldList, map)));
+          return resultList;
+        });
   }
 
   /** 일괄 등록을 한 트랜잭션으로 - 50 번째 행이 제약에 걸리면 1~49 번째도 되돌린다(예전엔 남아서 재시도 때 두 번 들어갔다, 2026-10-28 감사). */
@@ -273,10 +278,11 @@ public abstract class AbstractDbUseService implements UseService {
   public void createAll(SettingParameter settingParameter, List<Map<String, String>> dataMapList) {
     var dbQuery = SettingUtil.getDbQuery(settingParameter, DbQuerySqlCommandType.INSERT);
     RoutingDataSourceContextHolder.setContext(() -> dbQuery.getDataSourceName());
-    dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() -> {
-      dataMapList.forEach(dataMap -> create(settingParameter, dataMap));
-      return null;
-    });
+    dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+        () -> {
+          dataMapList.forEach(dataMap -> create(settingParameter, dataMap));
+          return null;
+        });
   }
 
   /**
@@ -302,9 +308,10 @@ public abstract class AbstractDbUseService implements UseService {
       try {
         if (statement instanceof net.sf.jsqlparser.statement.select.Select) {
           List<Map<String, Object>> rows =
-              dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(() ->
-                  namedParameterJdbcTemplate.query(
-                      single, new MapSqlParameterSource(), ROW_MAPPER));
+              dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
+                  () ->
+                      namedParameterJdbcTemplate.query(
+                          single, new MapSqlParameterSource(), ROW_MAPPER));
           results.add(new BulkQueryResult(single, "select", rows, null, null));
         } else {
           Integer affected =
@@ -331,29 +338,30 @@ public abstract class AbstractDbUseService implements UseService {
     var paramSource = new MapSqlParameterSource();
     setSqlParameterSourceRegisterSqlType(paramSource, dbFieldList);
 
-    dataMap.forEach((key, value) -> {
-      if (StringUtils.hasText(value)) {
-        paramSource.addValue(key, value);
-      } else {
-        DbField filterDbField =
-            dbFieldList.stream()
-                .filter(dbField -> dbField.getColumnId().equals(key))
-                .findAny()
-                .orElse(null);
-        if (filterDbField != null) {
-          if (StringUtils.hasText(filterDbField.getColumnDefaultValue())) {
-            paramSource.addValue(key, filterDbField.getColumnDefaultValue());
-          } else if (filterDbField.getColumnType() == DbFieldColumnType.INT
-              || filterDbField.getColumnType() == DbFieldColumnType.LONG) {
-            paramSource.addValue(key, 0); // 숫자형인데 값이 없으면 0으로 기본값 할당
+    dataMap.forEach(
+        (key, value) -> {
+          if (StringUtils.hasText(value)) {
+            paramSource.addValue(key, value);
           } else {
-            paramSource.addValue(key, null);
+            DbField filterDbField =
+                dbFieldList.stream()
+                    .filter(dbField -> dbField.getColumnId().equals(key))
+                    .findAny()
+                    .orElse(null);
+            if (filterDbField != null) {
+              if (StringUtils.hasText(filterDbField.getColumnDefaultValue())) {
+                paramSource.addValue(key, filterDbField.getColumnDefaultValue());
+              } else if (filterDbField.getColumnType() == DbFieldColumnType.INT
+                  || filterDbField.getColumnType() == DbFieldColumnType.LONG) {
+                paramSource.addValue(key, 0); // 숫자형인데 값이 없으면 0으로 기본값 할당
+              } else {
+                paramSource.addValue(key, null);
+              }
+            } else {
+              paramSource.addValue(key, null);
+            }
           }
-        } else {
-          paramSource.addValue(key, null);
-        }
-      }
-    });
+        });
 
     return dynamicCrudSettingTransactionHandler.runInReadUncommittedTransaction(
         () -> namedParameterJdbcTemplate.update(insertQueryBuilder.toString(), paramSource));
@@ -361,11 +369,12 @@ public abstract class AbstractDbUseService implements UseService {
 
   private void setSqlParameterSourceRegisterSqlType(
       MapSqlParameterSource paramSource, List<DbField> dbFieldList) {
-    dbFieldList.forEach(dbField -> {
-      if (dbField.getColumnType().equals(DbFieldColumnType.BOOLEAN)) {
-        paramSource.registerSqlType(dbField.getColumnId(), JDBCType.BIT.getVendorTypeNumber());
-      }
-    });
+    dbFieldList.forEach(
+        dbField -> {
+          if (dbField.getColumnType().equals(DbFieldColumnType.BOOLEAN)) {
+            paramSource.registerSqlType(dbField.getColumnId(), JDBCType.BIT.getVendorTypeNumber());
+          }
+        });
   }
 
   /**

@@ -1419,11 +1419,12 @@ public class EventAdminDbFieldService implements SettingServiceListSupplier<DbFi
   @Override
   public List<DbField> findList(SettingParameter settingParameter) {
     return dbFieldList.stream()
-        .filter(x ->
-            x.getAdminProjectId().equals(settingParameter.adminProjectId())
-                && x.getProjectId().equals(settingParameter.projectId())
-                && x.getMainMenuId().equals(settingParameter.mainMenuId())
-                && x.getSubMenuId().equals(settingParameter.subMenuId()))
+        .filter(
+            x ->
+                x.getAdminProjectId().equals(settingParameter.adminProjectId())
+                    && x.getProjectId().equals(settingParameter.projectId())
+                    && x.getMainMenuId().equals(settingParameter.mainMenuId())
+                    && x.getSubMenuId().equals(settingParameter.subMenuId()))
         .sorted(Comparator.comparing(DbField::getColumnOrder))
         .collect(Collectors.toList());
   }

@@ -197,15 +197,16 @@ public class PoeCraftOptimizer {
         new Running(
             now,
             budget,
-            pool.submit(() -> {
-              // 사용자 가격(C529) — 작업 스레드에서(요청 스레드의 값은 따라오지 않는다)
-              PoeCraftPriceService.override(r.prices());
-              try {
-                return optimize(r, id);
-              } finally {
-                PoeCraftPriceService.override(null);
-              }
-            })));
+            pool.submit(
+                () -> {
+                  // 사용자 가격(C529) — 작업 스레드에서(요청 스레드의 값은 따라오지 않는다)
+                  PoeCraftPriceService.override(r.prices());
+                  try {
+                    return optimize(r, id);
+                  } finally {
+                    PoeCraftPriceService.override(null);
+                  }
+                })));
     policies.entrySet().removeIf(e -> now - e.getValue().at() > JOB_KEEP_MS);
     return id;
   }
@@ -1231,14 +1232,15 @@ public class PoeCraftOptimizer {
       craft.harvests().stream()
           .filter(h -> h.id().equals(a.arg()) && "convert_mod".equals(h.command()))
           .findFirst()
-          .ifPresent(h -> {
-            List<String> ps = java.util.Arrays.asList(h.params().trim().split(" +"));
-            int cv = ps.indexOf("CONVERT");
-            if (cv > 0) {
-              job.converts.add(a);
-              job.convertSrc.add(new java.util.HashSet<>(ps.subList(0, cv)));
-            }
-          });
+          .ifPresent(
+              h -> {
+                List<String> ps = java.util.Arrays.asList(h.params().trim().split(" +"));
+                int cv = ps.indexOf("CONVERT");
+                if (cv > 0) {
+                  job.converts.add(a);
+                  job.convertSrc.add(new java.util.HashSet<>(ps.subList(0, cv)));
+                }
+              });
     }
     // 위 경계 — 정제 + 아는 가장 싼 방법. 계산기 표 최저가 없으면 카오스 · 변화(+확장) · 에센스 연타를 표본으로 잰다
     double scour =
@@ -1312,18 +1314,19 @@ public class PoeCraftOptimizer {
       long te0 = System.currentTimeMillis();
       boolean[] hitCap = {false};
       frontier.parallelStream()
-          .forEach(k -> {
-            // 상태 한도와 시간 한도를 가른다(C538 — 시간이 다 돼도 '상태 한도로 더 넓히지 못함'이라 적어 상태 1,520개(한도 5,000)에도
-            // 그렇게 보였다). 시간이면 바깥 반복이 끝난다
-            if (job.trans.size() >= MAX_STATES) {
-              hitCap[0] = true;
-              return;
-            }
-            if (System.currentTimeMillis() >= until) {
-              return;
-            }
-            expand(job, k);
-          });
+          .forEach(
+              k -> {
+                // 상태 한도와 시간 한도를 가른다(C538 — 시간이 다 돼도 '상태 한도로 더 넓히지 못함'이라 적어 상태 1,520개(한도 5,000)에도
+                // 그렇게 보였다). 시간이면 바깥 반복이 끝난다
+                if (job.trans.size() >= MAX_STATES) {
+                  hitCap[0] = true;
+                  return;
+                }
+                if (System.currentTimeMillis() >= until) {
+                  return;
+                }
+                expand(job, k);
+              });
       capped = hitCap[0];
       tExp += System.currentTimeMillis() - te0;
       if (capped) {
@@ -1719,33 +1722,36 @@ public class PoeCraftOptimizer {
     Map<String, Rule> merged = new LinkedHashMap<>();
     visits.entrySet().stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-        .forEach(e -> {
-          String st = describe(e.getKey(), targets.size());
-          String act =
-              pol.get(e.getKey()) == null ? "(모름)" : label(usable, pol.get(e.getKey()), fbLabel);
-          String actEn =
-              pol.get(e.getKey()) == null
-                  ? "(unknown)"
-                  : labelEn(usable, pol.get(e.getKey()), fbLabelEn);
-          double share = (double) e.getValue() / runsF;
-          merged.merge(
-              st + "|" + act,
-              new Rule(
-                  st,
-                  act,
-                  Math.min(1, share),
-                  v.get(e.getKey()),
-                  describeEn(e.getKey(), targets.size()),
-                  actEn),
-              (x, y) ->
+        .forEach(
+            e -> {
+              String st = describe(e.getKey(), targets.size());
+              String act =
+                  pol.get(e.getKey()) == null
+                      ? "(모름)"
+                      : label(usable, pol.get(e.getKey()), fbLabel);
+              String actEn =
+                  pol.get(e.getKey()) == null
+                      ? "(unknown)"
+                      : labelEn(usable, pol.get(e.getKey()), fbLabelEn);
+              double share = (double) e.getValue() / runsF;
+              merged.merge(
+                  st + "|" + act,
                   new Rule(
-                      x.state(),
-                      x.action(),
-                      Math.min(1, x.share() + y.share()),
-                      x.remaining(),
-                      x.stateEn(),
-                      x.actionEn()));
-        });
+                      st,
+                      act,
+                      Math.min(1, share),
+                      v.get(e.getKey()),
+                      describeEn(e.getKey(), targets.size()),
+                      actEn),
+                  (x, y) ->
+                      new Rule(
+                          x.state(),
+                          x.action(),
+                          Math.min(1, x.share() + y.share()),
+                          x.remaining(),
+                          x.stateEn(),
+                          x.actionEn()));
+            });
     List<Rule> rules =
         merged.values().stream()
             .sorted(Comparator.comparingDouble(Rule::share).reversed())
@@ -2170,21 +2176,22 @@ public class PoeCraftOptimizer {
       }
       // 상태마다 한 스레드(안쪽 맵은 동시 맵이 아니다)
       work.entrySet().parallelStream()
-          .forEach(w -> {
-            if (System.currentTimeMillis() >= until) {
-              return;
-            }
-            Map<Integer, Map<String, Double>> tk = job.trans.get(w.getKey());
-            for (int ai : w.getValue()) {
-              Map<String, Double> t = job.sample(w.getKey(), ai, SAMPLE_REFINE);
-              if (t == null) {
-                tk.remove(ai);
-              } else {
-                tk.put(ai, t);
-              }
-              done.add(w.getKey() + "#" + ai);
-            }
-          });
+          .forEach(
+              w -> {
+                if (System.currentTimeMillis() >= until) {
+                  return;
+                }
+                Map<Integer, Map<String, Double>> tk = job.trans.get(w.getKey());
+                for (int ai : w.getValue()) {
+                  Map<String, Double> t = job.sample(w.getKey(), ai, SAMPLE_REFINE);
+                  if (t == null) {
+                    tk.remove(ai);
+                  } else {
+                    tk.put(ai, t);
+                  }
+                  done.add(w.getKey() + "#" + ai);
+                }
+              });
       decide(job, v, pol, until);
     }
     return done.size();
@@ -2196,12 +2203,13 @@ public class PoeCraftOptimizer {
     Map<Integer, Map<String, Double>> tk = new java.util.concurrent.ConcurrentHashMap<>();
     java.util.stream.IntStream.range(0, job.acts.size())
         .parallel()
-        .forEach(ai -> {
-          Map<String, Double> t = job.sample(k, ai);
-          if (t != null) {
-            tk.put(ai, t);
-          }
-        });
+        .forEach(
+            ai -> {
+              Map<String, Double> t = job.sample(k, ai);
+              if (t != null) {
+                tk.put(ai, t);
+              }
+            });
     job.trans.put(k, new HashMap<>(tk));
   }
 

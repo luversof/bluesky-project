@@ -73,14 +73,16 @@ class RecordDateBuyByTest {
             "2026-05", "2026-05-29", // 31 일 일요일
             "2026-08", "2026-08-31",
             "2026-09", "2026-09-30");
-    midMonth.forEach((month, record) ->
-        assertThat(KrxRecordDateUtil.recordDate(YearMonth.parse(month), "MID_MONTH"))
-            .as("월중 " + month)
-            .isEqualTo(LocalDate.parse(record)));
-    monthEnd.forEach((month, record) ->
-        assertThat(KrxRecordDateUtil.recordDate(YearMonth.parse(month), "MONTH_END"))
-            .as("월말 " + month)
-            .isEqualTo(LocalDate.parse(record)));
+    midMonth.forEach(
+        (month, record) ->
+            assertThat(KrxRecordDateUtil.recordDate(YearMonth.parse(month), "MID_MONTH"))
+                .as("월중 " + month)
+                .isEqualTo(LocalDate.parse(record)));
+    monthEnd.forEach(
+        (month, record) ->
+            assertThat(KrxRecordDateUtil.recordDate(YearMonth.parse(month), "MONTH_END"))
+                .as("월말 " + month)
+                .isEqualTo(LocalDate.parse(record)));
     assertThat(KrxRecordDateUtil.recordDate(YearMonth.parse("2026-10"), "OTHER")).isNull();
   }
 

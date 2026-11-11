@@ -16,10 +16,11 @@ class PoeGemLevelCapTest {
   private static PoeGem gem(String name, int tableLevels, Integer naturalMax) {
     List<PoeGemLevel> levels =
         IntStream.rangeClosed(1, tableLevels)
-            .mapToObj(i ->
-                new PoeGemLevel(
-                    i, 1, null, null, null, null, null, null, null, null, null, null, List.of(),
-                    null, null))
+            .mapToObj(
+                i ->
+                    new PoeGemLevel(
+                        i, 1, null, null, null, null, null, null, null, null, null, null, List.of(),
+                        null, null))
             .toList();
     return new PoeGem(
         name,

@@ -149,12 +149,13 @@ public class StockAnalysisService {
     Map<UUID, List<String>> tagsByItem = tagsByItem(targets);
     List<AnalysisItem> items =
         targets.stream()
-            .map(item ->
-                buildItem(
-                    item,
-                    newsByItem.getOrDefault(item.getId(), List.of()),
-                    tagsByItem.getOrDefault(item.getId(), List.of()),
-                    asOf))
+            .map(
+                item ->
+                    buildItem(
+                        item,
+                        newsByItem.getOrDefault(item.getId(), List.of()),
+                        tagsByItem.getOrDefault(item.getId(), List.of()),
+                        asOf))
             .toList();
     return new AnalysisInput(
         Instant.now(), marketContextService.fetch(userId, asOf, morning), items);
@@ -221,9 +222,14 @@ public class StockAnalysisService {
         news.stream()
             .sorted(Comparator.comparing(StockNews::getPublishedDate).reversed())
             .limit(NEWS_PER_ITEM)
-            .map(n ->
-                new NewsLine(
-                    n.getSource(), n.getTitle(), n.getSummary(), n.getUrl(), n.getPublishedDate()))
+            .map(
+                n ->
+                    new NewsLine(
+                        n.getSource(),
+                        n.getTitle(),
+                        n.getSummary(),
+                        n.getUrl(),
+                        n.getPublishedDate()))
             .toList();
     return new AnalysisItem(
         item.getSymbol(),
@@ -583,7 +589,7 @@ public class StockAnalysisService {
         late,
         rates(onTime, g -> "all"),
         rates(onTime, g -> confidenceBucket(g.prediction().getConfidence())),
-        rates(onTime, g -> g.prediction().getPromptVersion()),
+        rates(onTime, g -> versionLabel(g.prediction())),
         rates(
             predictions.stream()
                 .filter(p -> grades.containsKey(p.getId()))
@@ -596,6 +602,19 @@ public class StockAnalysisService {
       java.time.format.DateTimeFormatter.ofPattern("MM-dd").withZone(PredictionMath.MARKET_ZONE_ID);
   private static final java.time.format.DateTimeFormatter RUN_TIME =
       java.time.format.DateTimeFormatter.ofPattern("HH:mm").withZone(PredictionMath.MARKET_ZONE_ID);
+
+  /**
+   * 버전별 적중률의 행 이름. 아침 작업(기준일 다음 날 장 전, 간밤 미국 장을 본 뒤)은 "@am" 을 붙여 저녁 작업과 따로 센다 - 리플레이(2026-11-11)에서
+   * 같은 프롬프트라도 아침이 D+1 을 5.8%p 더 맞혀, 섞으면 버전끼리 비교가 아침 · 저녁 비율에 휘둘린다. replay.py 의 버전 표기와 같다.
+   */
+  static String versionLabel(StockPrediction p) {
+    boolean morning =
+        p.getCreatedDate() != null
+            && p.getBaseDate() != null
+            && LocalDate.ofInstant(p.getCreatedDate(), PredictionMath.MARKET_ZONE_ID)
+                .isAfter(p.getBaseDate());
+    return p.getPromptVersion() + (morning ? "@am" : "");
+  }
 
   /**
    * 회차 이름: 분석 날짜(KST) · 그날 몇 번째 분석인지 · 시각 · 프롬프트 버전(예: 11-10 #2 20:18 v2). 장중(기준일 다음 거래일 09:00 이후)에
@@ -644,13 +663,14 @@ public class StockAnalysisService {
             Collectors.groupingBy(
                 e -> e.getValue().atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate()))
         .values()
-        .forEach(runs -> {
-          List<Map.Entry<UUID, Instant>> sorted =
-              runs.stream().sorted(Map.Entry.comparingByValue()).toList();
-          for (int i = 0; i < sorted.size(); i++) {
-            seqs.put(sorted.get(i).getKey(), i + 1);
-          }
-        });
+        .forEach(
+            runs -> {
+              List<Map.Entry<UUID, Instant>> sorted =
+                  runs.stream().sorted(Map.Entry.comparingByValue()).toList();
+              for (int i = 0; i < sorted.size(); i++) {
+                seqs.put(sorted.get(i).getKey(), i + 1);
+              }
+            });
     return seqs;
   }
 
@@ -679,29 +699,31 @@ public class StockAnalysisService {
                         java.util.TreeMap::new,
                         Collectors.toList())));
     List<RateRow> rows = new ArrayList<>();
-    grouped.forEach((group, byHorizon) ->
-        byHorizon.forEach((horizon, list) -> {
-          List<Graded> withTrend = list.stream().filter(g -> trendHit(g) != null).toList();
-          BigDecimal hit = ratePct(list, g -> g.grade().isHit());
-          BigDecimal alwaysUp = ratePct(list, g -> g.grade().isAlwaysUpHit());
-          BigDecimal trend = ratePct(withTrend, StockAnalysisService::trendHit);
-          BigDecimal majority = majorityRatePct(list);
-          BigDecimal best =
-              java.util.stream.Stream.of(alwaysUp, trend, majority)
-                  .filter(java.util.Objects::nonNull)
-                  .max(Comparator.naturalOrder())
-                  .orElse(null);
-          rows.add(
-              new RateRow(
-                  group,
-                  horizon,
-                  list.size(),
-                  hit,
-                  alwaysUp,
-                  trend,
-                  majority,
-                  hit == null || best == null ? null : hit.subtract(best)));
-        }));
+    grouped.forEach(
+        (group, byHorizon) ->
+            byHorizon.forEach(
+                (horizon, list) -> {
+                  List<Graded> withTrend = list.stream().filter(g -> trendHit(g) != null).toList();
+                  BigDecimal hit = ratePct(list, g -> g.grade().isHit());
+                  BigDecimal alwaysUp = ratePct(list, g -> g.grade().isAlwaysUpHit());
+                  BigDecimal trend = ratePct(withTrend, StockAnalysisService::trendHit);
+                  BigDecimal majority = majorityRatePct(list);
+                  BigDecimal best =
+                      java.util.stream.Stream.of(alwaysUp, trend, majority)
+                          .filter(java.util.Objects::nonNull)
+                          .max(Comparator.naturalOrder())
+                          .orElse(null);
+                  rows.add(
+                      new RateRow(
+                          group,
+                          horizon,
+                          list.size(),
+                          hit,
+                          alwaysUp,
+                          trend,
+                          majority,
+                          hit == null || best == null ? null : hit.subtract(best)));
+                }));
     return rows;
   }
 
@@ -768,27 +790,28 @@ public class StockAnalysisService {
             predictions.stream().map(StockPrediction::getStockItemId).collect(Collectors.toSet()))
         .forEach(item -> items.put(item.getId(), item));
     return predictions.stream()
-        .map(p -> {
-          StockItem item = items.get(p.getStockItemId());
-          StockPredictionGrade g = grades.get(p.getId());
-          return new RecentPrediction(
-              item == null ? null : item.getSymbol(),
-              item == null ? null : item.getName(),
-              p.getBaseDate(),
-              p.getHorizonDays(),
-              p.getDirection(),
-              p.getConfidence(),
-              p.getRationale(),
-              p.getBasePrice(),
-              p.getPromptVersion(),
-              p.getCreatedDate(),
-              runSeqs.getOrDefault(runKey(p), 0),
-              g == null ? null : g.getTargetDate(),
-              g == null ? null : g.getActualChangePct(),
-              g == null ? null : g.getActualDirection(),
-              g == null ? null : g.isHit(),
-              g == null ? null : g.isLate());
-        })
+        .map(
+            p -> {
+              StockItem item = items.get(p.getStockItemId());
+              StockPredictionGrade g = grades.get(p.getId());
+              return new RecentPrediction(
+                  item == null ? null : item.getSymbol(),
+                  item == null ? null : item.getName(),
+                  p.getBaseDate(),
+                  p.getHorizonDays(),
+                  p.getDirection(),
+                  p.getConfidence(),
+                  p.getRationale(),
+                  p.getBasePrice(),
+                  p.getPromptVersion(),
+                  p.getCreatedDate(),
+                  runSeqs.getOrDefault(runKey(p), 0),
+                  g == null ? null : g.getTargetDate(),
+                  g == null ? null : g.getActualChangePct(),
+                  g == null ? null : g.getActualDirection(),
+                  g == null ? null : g.isHit(),
+                  g == null ? null : g.isLate());
+            })
         .sorted(
             Comparator.comparing(
                     RecentPrediction::createdDate, Comparator.nullsLast(Comparator.reverseOrder()))
@@ -848,8 +871,12 @@ public class StockAnalysisService {
     }
     List<StockPrediction> ofDay =
         all.stream()
-            .filter(p ->
-                p.getCreatedDate().atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate().equals(day))
+            .filter(
+                p ->
+                    p.getCreatedDate()
+                        .atZone(PredictionMath.MARKET_ZONE_ID)
+                        .toLocalDate()
+                        .equals(day))
             .toList();
     Map<UUID, Integer> seqs = runSeqs(all);
     Map<UUID, StockPredictionGrade> grades = gradesOf(ofDay);
@@ -872,23 +899,26 @@ public class StockAnalysisService {
         ofDay.stream().collect(Collectors.groupingBy(StockAnalysisService::runKey));
     List<RunInfo> runs =
         byRun.entrySet().stream()
-            .map(e -> {
-              List<StockPrediction> list = e.getValue();
-              StockPrediction first =
-                  list.stream().min(Comparator.comparing(StockPrediction::getCreatedDate)).get();
-              List<StockPredictionGrade> graded =
-                  list.stream().map(p -> grades.get(p.getId())).filter(g -> g != null).toList();
-              return new RunInfo(
-                  e.getKey(),
-                  seqs.getOrDefault(e.getKey(), 0),
-                  first.getCreatedDate(),
-                  first.getPromptVersion(),
-                  first.getModelId(),
-                  list.size(),
-                  graded.size(),
-                  ratePct(graded, StockPredictionGrade::isHit),
-                  ratePct(list, p -> Direction.FLAT.name().equals(p.getDirection())));
-            })
+            .map(
+                e -> {
+                  List<StockPrediction> list = e.getValue();
+                  StockPrediction first =
+                      list.stream()
+                          .min(Comparator.comparing(StockPrediction::getCreatedDate))
+                          .get();
+                  List<StockPredictionGrade> graded =
+                      list.stream().map(p -> grades.get(p.getId())).filter(g -> g != null).toList();
+                  return new RunInfo(
+                      e.getKey(),
+                      seqs.getOrDefault(e.getKey(), 0),
+                      first.getCreatedDate(),
+                      first.getPromptVersion(),
+                      first.getModelId(),
+                      list.size(),
+                      graded.size(),
+                      ratePct(graded, StockPredictionGrade::isHit),
+                      ratePct(list, p -> Direction.FLAT.name().equals(p.getDirection())));
+                })
             .sorted(Comparator.comparingInt(RunInfo::seq))
             .toList();
 
@@ -913,18 +943,19 @@ public class StockAnalysisService {
     }
     List<RunRow> rows =
         cells.entrySet().stream()
-            .map(e -> {
-              StockPrediction p = keyOf.get(e.getKey());
-              StockItem item = items.get(p.getStockItemId());
-              boolean disagree =
-                  e.getValue().values().stream().map(RunCell::direction).distinct().count() > 1;
-              return new RunRow(
-                  item == null ? null : item.getSymbol(),
-                  item == null ? null : item.getName(),
-                  p.getHorizonDays(),
-                  e.getValue(),
-                  disagree);
-            })
+            .map(
+                e -> {
+                  StockPrediction p = keyOf.get(e.getKey());
+                  StockItem item = items.get(p.getStockItemId());
+                  boolean disagree =
+                      e.getValue().values().stream().map(RunCell::direction).distinct().count() > 1;
+                  return new RunRow(
+                      item == null ? null : item.getSymbol(),
+                      item == null ? null : item.getName(),
+                      p.getHorizonDays(),
+                      e.getValue(),
+                      disagree);
+                })
             .sorted(
                 Comparator.comparing((RunRow r) -> r.name() == null ? "" : r.name())
                     .thenComparingInt(RunRow::horizonDays))

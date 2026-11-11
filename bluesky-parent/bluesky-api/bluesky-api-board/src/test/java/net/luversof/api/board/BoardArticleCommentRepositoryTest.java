@@ -39,9 +39,10 @@ class BoardArticleCommentRepositoryTest implements GeneralTest {
     List<UUID> ids = new ArrayList<>();
     boardArticleRepository
         .findAll()
-        .forEach(a -> {
-          if (ids.size() < 335) ids.add(a.getId());
-        });
+        .forEach(
+            a -> {
+              if (ids.size() < 335) ids.add(a.getId());
+            });
 
     // if repository is empty the test is inconclusive but should not fail hard
     if (ids.isEmpty()) {
@@ -56,9 +57,10 @@ class BoardArticleCommentRepositoryTest implements GeneralTest {
     assertThat(counts).isNotEmpty();
 
     // each returned entry must have a non-null boardArticleId and a non-negative count
-    counts.forEach(c -> {
-      assertThat(c.getBoardArticleId()).isNotNull();
-      assertThat(c.getCount()).isGreaterThanOrEqualTo(0);
-    });
+    counts.forEach(
+        c -> {
+          assertThat(c.getBoardArticleId()).isNotNull();
+          assertThat(c.getCount()).isGreaterThanOrEqualTo(0);
+        });
   }
 }

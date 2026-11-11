@@ -528,13 +528,14 @@ public class BookkeepingSettingsViewController {
     var names = userInfoService.fetchUsernames(members.stream().map(m -> m.userId()).toList());
     var rows =
         members.stream()
-            .map(m ->
-                new MemberRow(
-                    m.userId(),
-                    names.getOrDefault(
-                        m.userId(), BookkeepingView.msg("bookkeeping.members.unknown")),
-                    m.role(),
-                    m.userId().equals(userId)))
+            .map(
+                m ->
+                    new MemberRow(
+                        m.userId(),
+                        names.getOrDefault(
+                            m.userId(), BookkeepingView.msg("bookkeeping.members.unknown")),
+                        m.role(),
+                        m.userId().equals(userId)))
             .toList();
     var myRole =
         rows.stream()
