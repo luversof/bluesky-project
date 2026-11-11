@@ -121,6 +121,9 @@ public class KisStockPriceUpdateService {
 
   @Autowired private StockItemRepository stockItemRepository;
 
+  @Autowired
+  private net.luversof.api.stock.repository.StockItemTagRepository stockItemTagRepository;
+
   @Autowired private StockPriceHistoryRepository stockPriceHistoryRepository;
 
   @Autowired private KisAuthService kisAuthService;
@@ -211,7 +214,12 @@ public class KisStockPriceUpdateService {
           }
         });
 
-    // Trade · Dividend 이력이 있거나, 보유 중이거나, 월배당 프로필로 등록한 종목이 갱신 대상
+    // 시황 분석 대상(analysis 태그, 2026-11-11): 매매가 없어도 리플레이에 쓸 2 년 시세가 있어야 한다 - 월배당 프로필과 같은 창.
+    stockItemTagRepository
+        .findByTag(net.luversof.api.stock.service.analysis.StockAnalysisService.ANALYSIS_TAG)
+        .forEach(tag -> monthlyDividendStockItemIds.add(tag.getStockItemId()));
+
+    // Trade · Dividend 이력이 있거나, 보유 중이거나, 월배당 프로필 · 분석 대상인 종목이 갱신 대상
     Set<UUID> targetStockItemIds = new HashSet<>();
     targetStockItemIds.addAll(stockItemMinDateMap.keySet());
     targetStockItemIds.addAll(currentlyHeldStockItemIds);

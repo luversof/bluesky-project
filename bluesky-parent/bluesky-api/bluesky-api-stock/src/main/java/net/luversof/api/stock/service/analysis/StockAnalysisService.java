@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import net.luversof.api.stock.domain.MonthlyDividendPayout;
+import net.luversof.api.stock.domain.OpenApiConfig;
 import net.luversof.api.stock.domain.StockItem;
 import net.luversof.api.stock.domain.StockItemTag;
 import net.luversof.api.stock.domain.StockNews;
@@ -44,6 +45,7 @@ import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.service.analysis.PredictionMath.Bar;
 import net.luversof.api.stock.service.analysis.PredictionMath.Direction;
 import net.luversof.api.stock.service.analysis.PredictionMath.Indicators;
+import net.luversof.api.stock.service.kis.KisAuthService;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -60,6 +62,7 @@ public class StockAnalysisService {
 
   static final int NEWS_DAYS = 2;
   static final int NEWS_PER_ITEM = 15;
+  static final int NEWS_SUMMARY_CHARS = 300;
   static final int RECENT_CLOSES = 10;
 
   @Autowired private TradeRepository tradeRepository;
@@ -71,6 +74,8 @@ public class StockAnalysisService {
   @Autowired private StockPredictionGradeRepository stockPredictionGradeRepository;
   @Autowired private JsonMapper jsonMapper;
   @Autowired private MarketContextService marketContextService;
+  @Autowired private InvestorFlowService investorFlowService;
+  @Autowired private KisAuthService kisAuthService;
   @Autowired private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
   public record NewsLine(
@@ -100,9 +105,15 @@ public class StockAnalysisService {
       LocalDate estimatedNextRecordDate,
       LocalDate estimatedExDate) {}
 
-  /** market: 간밤 미국 · 환율 · 금리 · 국내 지수(모든 종목 공통, 2026-11-10 v2). */
+  /**
+   * market: 간밤 미국 · 환율 · 금리 · 국내 지수(모든 종목 공통, 2026-11-10 v2). investorFlows: 종목 코드 -> 외국인 · 기관
+   * 순매수(백만 원, 2026-11-11). KIS 가 최근 약 30 거래일만 주어 오래된 리플레이 기준일이나 KIS 키가 없으면 비어 있다.
+   */
   public record AnalysisInput(
-      Instant generatedAt, MarketContextService.MarketContext market, List<AnalysisItem> items) {}
+      Instant generatedAt,
+      MarketContextService.MarketContext market,
+      List<AnalysisItem> items,
+      Map<String, InvestorFlowService.InvestorFlow> investorFlows) {}
 
   public record PredictionInput(
       String symbol, Integer horizonDays, String direction, Integer confidence, String rationale) {}
@@ -116,6 +127,52 @@ public class StockAnalysisService {
   public record GradeResult(int graded, int pending) {}
 
   public record DeleteResult(int deleted, int keptGraded) {}
+
+  public record TargetInput(String symbol, String name) {}
+
+  public record TargetResult(int created, int tagged, int alreadyTagged) {}
+
+  /**
+   * 분석 대상 추가(사용자 요청 2026-11-11: 대상이 9 종목뿐이고 서로 같이 움직여 버전 비교의 표본이 작다). 없는 종목은 KRX 종목으로 만들고 analysis
+   * 태그를 붙인다. 시세는 다음 시세 갱신이 2 년치를 채운다(KisStockPriceUpdateService).
+   */
+  @Transactional
+  public TargetResult addTargets(List<TargetInput> inputs) {
+    if (inputs == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "targets are required");
+    }
+    Set<UUID> tagged =
+        stockItemTagRepository.findByTag(ANALYSIS_TAG).stream()
+            .map(StockItemTag::getStockItemId)
+            .collect(Collectors.toSet());
+    int created = 0;
+    int newlyTagged = 0;
+    int already = 0;
+    for (TargetInput in : inputs) {
+      if (in == null || isBlank(in.symbol()) || isBlank(in.name())) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "symbol and name are required");
+      }
+      StockItem item = stockItemRepository.findBySymbol(in.symbol().trim());
+      if (item == null) {
+        item = new StockItem();
+        item.setMarket("KRX");
+        item.setSymbol(in.symbol().trim());
+        item.setName(in.name().trim());
+        item = stockItemRepository.save(item);
+        created++;
+      }
+      if (!tagged.add(item.getId())) {
+        already++;
+        continue;
+      }
+      StockItemTag tag = new StockItemTag();
+      tag.setStockItemId(item.getId());
+      tag.setTag(ANALYSIS_TAG);
+      stockItemTagRepository.save(tag);
+      newlyTagged++;
+    }
+    return new TargetResult(created, newlyTagged, already);
+  }
 
   /** 현재 보유 종목 + analysis 태그 종목. 이름순. */
   public List<StockItem> findTargets() {
@@ -144,6 +201,14 @@ public class StockAnalysisService {
 
   /** morning: 리플레이 분석 시각을 기준일 다음 날 08:00 KST(아침 작업)로 - 간밤 미국 장과 그 사이 뉴스까지 보인다. */
   public AnalysisInput buildInput(UUID userId, LocalDate asOf, boolean morning) {
+    return buildInput(userId, asOf, morning, false);
+  }
+
+  /**
+   * flows: 외국인 · 기관 수급을 붙인다. 기본은 끈다 - 리플레이(2026-11-11, 9 종목 23 거래일)에서 수급을 쓰게 한 v6 이 v3 보다 D+1 4.8%p
+   * 낮았다. 대상을 늘린 뒤 다시 시험한다.
+   */
+  public AnalysisInput buildInput(UUID userId, LocalDate asOf, boolean morning, boolean flows) {
     List<StockItem> targets = findTargets();
     Map<UUID, List<StockNews>> newsByItem = recentNewsByItem(asOf, morning);
     Map<UUID, List<String>> tagsByItem = tagsByItem(targets);
@@ -157,7 +222,39 @@ public class StockAnalysisService {
                     asOf))
             .toList();
     return new AnalysisInput(
-        Instant.now(), marketContextService.fetch(userId, asOf, morning), items);
+        Instant.now(),
+        marketContextService.fetch(userId, asOf, morning),
+        items,
+        flows ? investorFlows(userId, targets, asOf) : Map.of());
+  }
+
+  private Map<String, InvestorFlowService.InvestorFlow> investorFlows(
+      UUID userId, List<StockItem> targets, LocalDate asOf) {
+    if (userId == null) {
+      return Map.of();
+    }
+    OpenApiConfig config;
+    try {
+      config = kisAuthService.getValidConfig(userId);
+    } catch (RuntimeException e) {
+      return Map.of();
+    }
+    Map<String, InvestorFlowService.InvestorFlow> flows = new LinkedHashMap<>();
+    for (StockItem item : targets) {
+      InvestorFlowService.InvestorFlow flow =
+          investorFlowService.fetch(config, item.getSymbol(), asOf);
+      if (flow != null) {
+        flows.put(item.getSymbol(), flow);
+      }
+      try {
+        // shortcut: 초당 한도(EGW00201)를 피하려고 고정 간격만 둔다(MarketContextService 와 같다), 종목이 크게 늘면 재시도로 옮긴다.
+        Thread.sleep(250);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+    return flows;
   }
 
   /** 종목 태그(월배당 · 커버드콜 · 리츠 등) - ETF 의 기초자산을 가늠하는 단서. 분석 대상 표식(analysis)은 뺀다. */
@@ -223,7 +320,14 @@ public class StockAnalysisService {
             .limit(NEWS_PER_ITEM)
             .map(n ->
                 new NewsLine(
-                    n.getSource(), n.getTitle(), n.getSummary(), n.getUrl(), n.getPublishedDate()))
+                    n.getSource(),
+                    n.getTitle(),
+                    // 대상 40 종목(2026-11-11)이면 요약 전문으로 입력이 12 만 자를 넘는다 - 판단에는 앞부분이면 된다.
+                    n.getSummary() == null || n.getSummary().length() <= NEWS_SUMMARY_CHARS
+                        ? n.getSummary()
+                        : n.getSummary().substring(0, NEWS_SUMMARY_CHARS),
+                    n.getUrl(),
+                    n.getPublishedDate()))
             .toList();
     return new AnalysisItem(
         item.getSymbol(),
@@ -667,17 +771,21 @@ public class StockAnalysisService {
     return seqs;
   }
 
+  /**
+   * 예측이 실제로 쓰는 범위로 나눈다(리플레이 2026-11-11: confidence 는 거의 30 ~ 70 이고, 60 이상이 D+1 69% · D+5 56% 로 가장 잘
+   * 맞았다 - 믿고 볼 신호는 60+ 줄이다).
+   */
   static String confidenceBucket(int confidence) {
-    if (confidence >= 85) {
-      return "85-100";
-    }
-    if (confidence >= 70) {
-      return "70-84";
+    if (confidence >= 60) {
+      return "60-100";
     }
     if (confidence >= 50) {
-      return "50-69";
+      return "50-59";
     }
-    return "0-49";
+    if (confidence >= 40) {
+      return "40-49";
+    }
+    return "0-39";
   }
 
   private static List<RateRow> rates(List<Graded> graded, Function<Graded, String> groupOf) {

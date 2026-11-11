@@ -127,13 +127,14 @@ def cmd_run(a):
     start, end = dt.date.fromisoformat(a.date_from), dt.date.fromisoformat(a.date_to)
     trading = 0
     done = set()
-    if a.resume:  # skip (version, date, rep) already in the main or this run's results file
-        main = os.path.join(OUT_DIR, 'results.jsonl')
-        done = {(l['version'], l['asOf'], l['rep']) for p in {main, RESULTS} if os.path.exists(p)
+    if a.resume:  # skip (version, date, rep) already in this run's results file
+        # Only RESULTS: a separate results file (BLUESKY_REPLAY_RESULTS, e.g. a new target set) must not
+        # be skipped because the main file holds the same version on the same dates.
+        done = {(l['version'], l['asOf'], l['rep']) for p in {RESULTS} if os.path.exists(p)
                 for l in map(json.loads, open(p, encoding='utf-8')) if l.get('mode') == ('morning' if a.morning else 'evening')}
     for day in weekdays(start, end):
         cached = os.path.join(INPUTS, '%s%s.json' % (day, '@am' if a.morning else ''))
-        if os.path.exists(cached):
+        if os.path.exists(cached) and not a.refresh_inputs:
             input_json = json.load(open(cached, encoding='utf-8'))
         else:
             input_json = http('GET', '/api/stock/analysis/input?userId=%s&asOf=%s&morning=%s'
@@ -151,13 +152,18 @@ def cmd_run(a):
         for rep in range(a.reps):
             if (version + ('@am' if a.morning else ''), str(day), rep) in done:
                 continue
+            # Same chunking as morning.ps1: ~40 targets in one prompt would carry 100k+ characters.
+            predictions = []
             try:
-                result = run_claude(template.replace('{{INPUT_JSON}}', json.dumps(input_json, ensure_ascii=False)),
-                                    schema, a.model)
+                items = input_json['items']
+                for i in range(0, len(items), a.chunk):
+                    part = dict(input_json, items=items[i:i + a.chunk])
+                    result = run_claude(template.replace('{{INPUT_JSON}}', json.dumps(part, ensure_ascii=False)),
+                                        schema, a.model)
+                    predictions += result['structured_output']['predictions']
             except Exception as e:  # one bad day must not stop a long replay
                 print(day, 'rep', rep, 'FAILED', e, flush=True)
                 continue
-            predictions = result['structured_output']['predictions']
             ev = http('POST', '/api/stock/analysis/evaluate?asOf=%s' % day,
                       {'modelId': a.model, 'promptVersion': version, 'predictions': predictions})
             line = {'version': version + ('@am' if a.morning else ''), 'asOf': str(day), 'rep': rep,
@@ -238,6 +244,9 @@ def main():
     r.add_argument('--reps', type=int, default=1)
     r.add_argument('--step', type=int, default=1, help='every Nth trading day (long windows at lower cost)')
     r.add_argument('--model', default='sonnet')
+    r.add_argument('--chunk', type=int, default=10, help='targets per claude call (morning.ps1 uses 10)')
+    r.add_argument('--refresh-inputs', action='store_true',
+                   help='rebuild cached inputs (after the targets or the input fields change)')
     r.add_argument('--resume', action='store_true', help='skip dates already in the results (after failures)')
     r.add_argument('--morning', action='store_true',
                    help='analyze at 08:00 KST the next day (the scheduled morning job) instead of 20:00 KST')

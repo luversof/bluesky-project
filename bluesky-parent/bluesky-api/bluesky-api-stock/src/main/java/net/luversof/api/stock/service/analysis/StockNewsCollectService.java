@@ -44,6 +44,14 @@ public class StockNewsCollectService {
   static final String NAVER_ARTICLE_URL = "https://n.news.naver.com/mnews/article/";
   static final DateTimeFormatter NAVER_DATETIME = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
   static final int NAVER_PAGE_SIZE = 15;
+
+  /**
+   * 네이버 종목 뉴스 API 의 상한(실측 2026-11-11: page 100 · pageSize 20 을 넘으면 400). 그래서 되채우기는 종목마다 최근 2000
+   * 묶음까지다 - 기사가 많은 대형주는 며칠, ETF 는 수개월을 거슬러 간다.
+   */
+  static final int NAVER_MAX_PAGE = 100;
+
+  static final int NAVER_MAX_PAGE_SIZE = 20;
   static final String DART_LIST_URL = "https://opendart.fss.or.kr/api/list.json";
   static final String DART_VIEWER_URL = "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=";
 
@@ -61,6 +69,79 @@ public class StockNewsCollectService {
   @Autowired private RestTemplate kisRestTemplate;
 
   public record CollectResult(int naverSaved, int dartSaved, List<String> messages) {}
+
+  /** oldestReached: 마지막으로 읽은 기사 날짜(from 까지 못 갔으면 그보다 늦다). */
+  public record BackfillResult(String symbol, int pages, int saved, LocalDate oldestReached) {}
+
+  /**
+   * 과거 뉴스 되채우기(사용자 요청 2026-11-11): 리플레이가 과거 기준일에도 뉴스를 보게 한다. 네이버 증권 종목 뉴스는 쪽을 넘기면 과거로 간다 - from 보다
+   * 오래된 기사가 나오거나 maxPages 에 닿을 때까지 읽는다. 기사가 많은 종목(대형주는 하루 30 쪽 넘게)은 쪽을 건너뛰어 하루에 몇 쪽만 읽는다 - 입력은 종목마다
+   * 최근 15 건만 쓰므로 그날의 일부면 된다.
+   */
+  public BackfillResult backfill(StockItem item, LocalDate from, int maxPages) {
+    Instant fromInstant = from.atStartOfDay(PredictionMath.MARKET_ZONE_ID).toInstant();
+    Set<String> existingKeys =
+        stockNewsRepository.findByPublishedDateAfter(fromInstant.minus(1, ChronoUnit.DAYS)).stream()
+            .map(StockNewsCollectService::key)
+            .collect(Collectors.toCollection(HashSet::new));
+    int page = 1;
+    int pages = 0;
+    int stride = 1;
+    int saved = 0;
+    Instant oldest = null;
+    while (pages < maxPages && page <= NAVER_MAX_PAGE) {
+      URI uri =
+          UriComponentsBuilder.fromUriString(NAVER_NEWS_URL)
+              .queryParam("itemCode", item.getSymbol())
+              .queryParam("page", page)
+              .queryParam("pageSize", NAVER_MAX_PAGE_SIZE)
+              .build()
+              .encode()
+              .toUri();
+      @SuppressWarnings("unchecked")
+      Map<String, Object> body = kisRestTemplate.getForObject(uri, Map.class);
+      pages++;
+      List<StockNews> news = naverClustersToNews(item.getId(), body);
+      if (news.isEmpty()) {
+        break;
+      }
+      List<StockNews> inRange =
+          news.stream().filter(n -> !n.getPublishedDate().isBefore(fromInstant)).toList();
+      saved += saveNew(inRange, existingKeys);
+      Instant newest = news.stream().map(StockNews::getPublishedDate).max(Instant::compareTo).get();
+      Instant pageOldest =
+          news.stream().map(StockNews::getPublishedDate).min(Instant::compareTo).get();
+      oldest = pageOldest;
+      if (pageOldest.isBefore(fromInstant)) {
+        break;
+      }
+      stride = nextStride(stride, java.time.Duration.between(pageOldest, newest));
+      page += stride;
+      try {
+        // 비공식 화면 API 라 천천히 읽는다.
+        Thread.sleep(150);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+    return new BackfillResult(
+        item.getSymbol(),
+        pages,
+        saved,
+        oldest == null ? null : oldest.atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate());
+  }
+
+  /** 한 쪽이 몇 시간을 덮는지로 다음 보폭을 정한다: 6 시간보다 짧으면 두 배(하루 몇 쪽만 읽게), 하루보다 길면 다시 한 쪽씩. */
+  static int nextStride(int stride, java.time.Duration pageSpan) {
+    if (pageSpan.compareTo(java.time.Duration.ofHours(6)) < 0) {
+      return Math.min(stride * 2, 64);
+    }
+    if (pageSpan.compareTo(java.time.Duration.ofDays(1)) > 0) {
+      return 1;
+    }
+    return stride;
+  }
 
   public CollectResult collect(UUID userId, List<StockItem> targets) {
     List<String> messages = new ArrayList<>();

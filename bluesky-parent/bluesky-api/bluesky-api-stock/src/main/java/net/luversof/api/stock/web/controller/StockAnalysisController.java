@@ -36,12 +36,53 @@ public class StockAnalysisController {
     return stockNewsCollectService.collect(userId, stockAnalysisService.findTargets());
   }
 
+  /** 분석 대상 추가: 없는 종목은 만들고 analysis 태그를 붙인다. */
+  @PostMapping("/targets")
+  public StockAnalysisService.TargetResult addTargets(
+      @RequestBody List<StockAnalysisService.TargetInput> targets) {
+    return stockAnalysisService.addTargets(targets);
+  }
+
+  /** 과거 뉴스 되채우기: 종목 하나를 from 까지(쪽 수 상한 maxPages). 리플레이가 과거 기준일에도 뉴스를 보게 한다. */
+  @PostMapping("/news/backfill")
+  public StockNewsCollectService.BackfillResult backfillNews(
+      @RequestParam String symbol,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+      @RequestParam(defaultValue = "300") int maxPages) {
+    return stockNewsCollectService.backfill(
+        stockAnalysisService.findTargets().stream()
+            .filter(i -> i.getSymbol().equals(symbol))
+            .findFirst()
+            .orElseThrow(() ->
+                new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND,
+                    "not an analysis target: " + symbol)),
+        from,
+        Math.clamp(maxPages, 1, 2000));
+  }
+
   @GetMapping("/input")
   public StockAnalysisService.AnalysisInput input(
       @RequestParam(required = false) UUID userId,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf,
-      @RequestParam(defaultValue = "false") boolean morning) {
-    return stockAnalysisService.buildInput(userId, asOf, morning);
+      @RequestParam(defaultValue = "false") boolean morning,
+      @RequestParam(defaultValue = "false") boolean flows,
+      @RequestParam(defaultValue = "-1") int chunk,
+      @RequestParam(defaultValue = "10") int chunkSize) {
+    StockAnalysisService.AnalysisInput input =
+        stockAnalysisService.buildInput(userId, asOf, morning, flows);
+    if (chunk < 0) {
+      return input;
+    }
+    // 대상이 많으면(40 종목, 2026-11-11) 한 번의 claude 호출에 다 넣지 않고 나눠 부른다 - 스크립트가 chunk 0, 1, ... 을 빈 목록이 올
+    // 때까지 부른다.
+    int size = Math.clamp(chunkSize, 1, 100);
+    int from = Math.min(chunk * size, input.items().size());
+    return new StockAnalysisService.AnalysisInput(
+        input.generatedAt(),
+        input.market(),
+        input.items().subList(from, Math.min(from + size, input.items().size())),
+        input.investorFlows());
   }
 
   /** 리플레이: 지난 기준일 asOf 의 예측을 저장하지 않고 채점한다(tools/market-analysis/replay.py). */

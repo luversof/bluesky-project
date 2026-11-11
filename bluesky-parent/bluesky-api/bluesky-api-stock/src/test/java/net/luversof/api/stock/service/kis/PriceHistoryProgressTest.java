@@ -43,6 +43,8 @@ class PriceHistoryProgressTest {
 
   @Mock private MonthlyDividendProfileRepository monthlyDividendProfileRepository;
 
+  @Mock private net.luversof.api.stock.repository.StockItemTagRepository stockItemTagRepository;
+
   @Mock private StockItemRepository stockItemRepository;
 
   @Mock private StockPriceHistoryRepository stockPriceHistoryRepository;

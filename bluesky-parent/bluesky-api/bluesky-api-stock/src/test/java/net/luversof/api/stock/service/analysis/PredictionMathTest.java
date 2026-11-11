@@ -124,8 +124,10 @@ class PredictionMathTest {
     assertThat(StockAnalysisService.ratePct(List.of(true, false, true), b -> b))
         .isEqualByComparingTo("66.7");
     assertThat(StockAnalysisService.ratePct(List.<Boolean>of(), b -> b)).isNull();
-    assertThat(StockAnalysisService.confidenceBucket(85)).isEqualTo("85-100");
-    assertThat(StockAnalysisService.confidenceBucket(49)).isEqualTo("0-49");
+    assertThat(StockAnalysisService.confidenceBucket(60)).isEqualTo("60-100");
+    assertThat(StockAnalysisService.confidenceBucket(59)).isEqualTo("50-59");
+    assertThat(StockAnalysisService.confidenceBucket(40)).isEqualTo("40-49");
+    assertThat(StockAnalysisService.confidenceBucket(39)).isEqualTo("0-39");
   }
 
   @Test
